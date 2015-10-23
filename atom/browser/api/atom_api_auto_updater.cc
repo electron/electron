@@ -8,6 +8,7 @@
 #include "atom/browser/browser.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/window_list.h"
+#include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/node_includes.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
@@ -68,7 +69,9 @@ void AutoUpdater::OnUpdateDownloaded(const std::string& release_notes,
                                      const std::string& release_name,
                                      const base::Time& release_date,
                                      const std::string& url) {
-  Emit("update-downloaded", release_notes, release_name, release_date, url);
+  Emit("update-downloaded", release_notes, release_name, release_date, url,
+       // Keep compatibility with old APIs.
+       base::Bind(&AutoUpdater::QuitAndInstall, base::Unretained(this)));
 }
 
 void AutoUpdater::OnWindowAllClosed() {

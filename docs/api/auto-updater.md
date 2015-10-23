@@ -136,10 +136,8 @@ Returns:
 * `releaseName` String
 * `releaseDate` Date
 * `updateUrl` String
-* `quitAndUpdate` Function
 
-Emitted when an update has been downloaded. Calling `quitAndUpdate()` will
-restart the application and install the update.
+Emitted when an update has been downloaded.
 
 ## Methods
 
@@ -149,10 +147,15 @@ The `autoUpdater` object has the following methods:
 
 * `url` String
 
-Set the `url` and initialize the auto updater. The `url` cannot be changed
+Sets the `url` and initialize the auto updater. The `url` cannot be changed
 once it is set.
 
 ### `autoUpdater.checkForUpdates()`
 
-Ask the server whether there is an update. You must call `setFeedUrl` before
+Asks the server whether there is an update. You must call `setFeedUrl` before
 using this API.
+
+### `autoUpdater.quitAndUpdate()`
+
+Restarts the app and install the update after it has been downloaded. It should
+only be called after `update-downloaded` has been emitted.
