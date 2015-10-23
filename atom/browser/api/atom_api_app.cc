@@ -19,7 +19,6 @@
 #include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
-#include "atom/common/native_mate_converters/command_line_converter.h"
 #include "atom/common/node_includes.h"
 #include "atom/common/options_switches.h"
 #include "base/command_line.h"
@@ -112,6 +111,23 @@ int GetPathConstant(const std::string& name) {
     return -1;
 }
 
+bool NotificationCallbackWrapper(
+    const ProcessSingleton::NotificationCallback& callback,
+    const base::CommandLine::StringVector& cmd,
+    const base::FilePath& cwd) {
+  // Make sure the callback is called after app gets ready.
+  if (Browser::Get()->is_ready()) {
+    callback.Run(cmd, cwd);
+  } else {
+    scoped_refptr<base::SingleThreadTaskRunner> task_runner(
+        base::ThreadTaskRunnerHandle::Get());
+    task_runner->PostTask(
+        FROM_HERE, base::Bind(base::IgnoreResult(callback), cmd, cwd));
+  }
+  // ProcessSingleton needs to know whether current process is quiting.
+  return !Browser::Get()->is_shutting_down();
+}
+
 void OnClientCertificateSelected(
     v8::Isolate* isolate,
     std::shared_ptr<content::ClientCertificateDelegate> delegate,
@@ -163,10 +179,7 @@ void App::OnQuit() {
   Emit("quit");
 
   if (process_singleton_.get()) {
-    if (process_notify_result_ == ProcessSingleton::PROCESS_NONE) {
-      process_singleton_->Cleanup();
-    }
-
+    process_singleton_->Cleanup();
     process_singleton_.reset();
   }
 }
@@ -195,10 +208,6 @@ void App::OnFinishLaunching() {
       AtomBrowserMainParts::Get()->browser_context());
   auto handle = Session::CreateFrom(isolate(), browser_context);
   default_session_.Reset(isolate(), handle.ToV8());
-
-  if (process_singleton_.get()) {
-    process_singleton_startup_lock_->Unlock();
-  }
 
   Emit("ready");
 }
@@ -281,35 +290,24 @@ v8::Local<v8::Value> App::DefaultSession(v8::Isolate* isolate) {
     return v8::Local<v8::Value>::New(isolate, default_session_);
 }
 
-bool App::MakeSingleInstance(ProcessSingleton::NotificationCallback callback) {
-  base::FilePath userDir;
-  PathService::Get(brightray::DIR_USER_DATA, &userDir);
+bool App::MakeSingleInstance(
+    const ProcessSingleton::NotificationCallback& callback) {
+  if (process_singleton_.get())
+    return false;
 
-  if (!process_singleton_.get()) {
-    auto browser = Browser::Get();
-    process_singleton_startup_lock_.reset(
-      new ProcessSingletonStartupLock(callback));
+  base::FilePath user_dir;
+  PathService::Get(brightray::DIR_USER_DATA, &user_dir);
+  process_singleton_.reset(new ProcessSingleton(
+      user_dir, base::Bind(NotificationCallbackWrapper, callback)));
 
-    process_singleton_.reset(
-      new ProcessSingleton(
-        userDir,
-        process_singleton_startup_lock_->AsNotificationCallback()));
-
-    if (browser->is_ready()) {
-      process_singleton_startup_lock_->Unlock();
-    }
-
-    process_notify_result_ = process_singleton_->NotifyOtherProcessOrCreate();
-  }
-
-  switch (process_notify_result_) {
-    case ProcessSingleton::NotifyResult::PROCESS_NONE:
-      return false;
+  switch (process_singleton_->NotifyOtherProcessOrCreate()) {
     case ProcessSingleton::NotifyResult::LOCK_ERROR:
     case ProcessSingleton::NotifyResult::PROFILE_IN_USE:
     case ProcessSingleton::NotifyResult::PROCESS_NOTIFIED:
+      process_singleton_.reset();
       return true;
-    default:
+    case ProcessSingleton::NotifyResult::PROCESS_NONE:
+    default:  // Shouldn't be needed, but VS warns if it is not there.
       return false;
   }
 }

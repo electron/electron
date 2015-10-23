@@ -52,6 +52,7 @@
 #include <set>
 #include <string>
 
+#include "atom/common/atom_command_line.h"
 #include "base/base_paths.h"
 #include "base/basictypes.h"
 #include "base/bind.h"
@@ -316,8 +317,7 @@ bool IsChromeProcess(pid_t pid) {
   PathService::Get(base::FILE_EXE, &exec_path);
 
   return (!other_chrome_path.empty() &&
-          other_chrome_path.BaseName() ==
-          exec_path.BaseName());
+          other_chrome_path.BaseName() == exec_path.BaseName());
 }
 
 // A helper class to hold onto a socket.
@@ -600,7 +600,7 @@ void ProcessSingleton::LinuxWatcher::HandleMessage(
   DCHECK(ui_message_loop_ == base::MessageLoop::current());
   DCHECK(reader);
 
-  if (parent_->notification_callback_.Run(base::CommandLine(argv),
+  if (parent_->notification_callback_.Run(argv,
                                           base::FilePath(current_dir))) {
     // Send back "ACK" message to prevent the client process from starting up.
     reader->FinishWithACK(kACKToken, arraysize(kACKToken) - 1);
@@ -716,8 +716,7 @@ ProcessSingleton::ProcessSingleton(
     const base::FilePath& user_data_dir,
     const NotificationCallback& notification_callback)
     : notification_callback_(notification_callback),
-      current_pid_(base::GetCurrentProcId()),
-      watcher_(new LinuxWatcher(this)) {
+      current_pid_(base::GetCurrentProcId()) {
   socket_path_ = user_data_dir.Append(kSingletonSocketFilename);
   lock_path_ = user_data_dir.Append(kSingletonLockFilename);
   cookie_path_ = user_data_dir.Append(kSingletonCookieFilename);
@@ -819,7 +818,7 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessWithTimeout(
     return PROCESS_NONE;
   to_send.append(current_dir.value());
 
-  const std::vector<std::string>& argv = cmd_line.argv();
+  const std::vector<std::string>& argv = atom::AtomCommandLine::argv();
   for (std::vector<std::string>::const_iterator it = argv.begin();
       it != argv.end(); ++it) {
     to_send.push_back(kTokenDelimiter);
@@ -988,13 +987,15 @@ bool ProcessSingleton::Create() {
   if (listen(sock, 5) < 0)
     NOTREACHED() << "listen failed: " << base::safe_strerror(errno);
 
-  DCHECK(BrowserThread::IsMessageLoopValid(BrowserThread::IO));
-  BrowserThread::PostTask(
-      BrowserThread::IO,
+  // In Electron the ProcessSingleton is created earlier than the IO
+  // thread gets created, so we have to postpone the call until message
+  // loop is up an running.
+  scoped_refptr<base::SingleThreadTaskRunner> task_runner(
+      base::ThreadTaskRunnerHandle::Get());
+  task_runner->PostTask(
       FROM_HERE,
-      base::Bind(&ProcessSingleton::LinuxWatcher::StartListening,
-                 watcher_.get(),
-                 sock));
+      base::Bind(&ProcessSingleton::StartListening,
+                 base::Unretained(this), sock));
 
   return true;
 }
@@ -1003,6 +1004,17 @@ void ProcessSingleton::Cleanup() {
   UnlinkPath(socket_path_);
   UnlinkPath(cookie_path_);
   UnlinkPath(lock_path_);
+}
+
+void ProcessSingleton::StartListening(int sock) {
+  watcher_ = new LinuxWatcher(this);
+  DCHECK(BrowserThread::IsMessageLoopValid(BrowserThread::IO));
+  BrowserThread::PostTask(
+      BrowserThread::IO,
+      FROM_HERE,
+      base::Bind(&ProcessSingleton::LinuxWatcher::StartListening,
+                 watcher_.get(),
+                 sock));
 }
 
 bool ProcessSingleton::IsSameChromeInstance(pid_t pid) {

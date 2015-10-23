@@ -60,7 +60,7 @@ class ProcessSingleton : public base::NonThreadSafe {
   // handled within the current browser instance or false if the remote process
   // should handle it (i.e., because the current process is shutting down).
   using NotificationCallback =
-      base::Callback<bool(const base::CommandLine& command_line,
+      base::Callback<bool(const base::CommandLine::StringVector& command_line,
                           const base::FilePath& current_directory)>;
 
   ProcessSingleton(const base::FilePath& user_data_dir,
@@ -133,6 +133,9 @@ class ProcessSingleton : public base::NonThreadSafe {
   base::FilePath user_data_dir_;
   ShouldKillRemoteProcessCallback should_kill_remote_process_callback_;
 #elif defined(OS_POSIX) && !defined(OS_ANDROID)
+  // Start listening to the socket.
+  void StartListening(int sock);
+
   // Return true if the given pid is one of our child processes.
   // Assumes that the current pid is the root of all pids of the current
   // instance.

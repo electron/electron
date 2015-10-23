@@ -130,6 +130,7 @@ class Browser : public WindowListObserver {
     observers_.RemoveObserver(obs);
   }
 
+  bool is_shutting_down() const { return is_shutdown_; }
   bool is_quiting() const { return is_quiting_; }
   bool is_ready() const { return is_ready_; }
 
