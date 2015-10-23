@@ -47,6 +47,7 @@ metaToValue = (meta) ->
     when 'buffer' then new Buffer(meta.value)
     when 'promise' then Promise.resolve(then: metaToValue(meta.then))
     when 'error' then new Error(meta.message)
+    when 'date' then new Date(meta.value)
     when 'exception'
       throw new Error("#{meta.message}\n#{meta.stack}")
     else

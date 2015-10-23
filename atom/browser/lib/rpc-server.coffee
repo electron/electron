@@ -11,6 +11,7 @@ valueToMeta = (sender, value, optimizeSimpleObject=false) ->
   meta.type = 'value' if value is null
   meta.type = 'array' if Array.isArray value
   meta.type = 'error' if value instanceof Error
+  meta.type = 'date' if value instanceof Date
   meta.type = 'promise' if value? and value.constructor.name is 'Promise'
 
   # Treat simple objects as value.
@@ -39,6 +40,8 @@ valueToMeta = (sender, value, optimizeSimpleObject=false) ->
     meta.then = valueToMeta(sender, value.then.bind(value))
   else if meta.type is 'error'
     meta.message = value.message
+  else if meta.type is 'date'
+    meta.value = value.getTime()
   else
     meta.type = 'value'
     meta.value = value
