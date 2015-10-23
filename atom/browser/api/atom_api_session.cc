@@ -105,6 +105,24 @@ struct Converter<ClearStorageDataOptions> {
   }
 };
 
+template<>
+struct Converter<net::ProxyConfig> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     net::ProxyConfig* out) {
+    std::string proxy;
+    if (!ConvertFromV8(isolate, val, &proxy))
+      return false;
+    auto pac_url = GURL(proxy);
+    if (pac_url.is_valid()) {
+      out->set_pac_url(pac_url);
+    } else {
+      out->proxy_rules().ParseFromString(proxy);
+    }
+    return true;
+  }
+};
+
 }  // namespace mate
 
 namespace atom {
@@ -209,12 +227,12 @@ void ClearHttpCacheInIO(
 }
 
 void SetProxyInIO(net::URLRequestContextGetter* getter,
-                  const std::string& proxy,
+                  const net::ProxyConfig& config,
                   const base::Closure& callback) {
-  net::ProxyConfig config;
-  config.proxy_rules().ParseFromString(proxy);
   auto proxy_service = getter->GetURLRequestContext()->proxy_service();
   proxy_service->ResetConfigService(new net::ProxyConfigServiceFixed(config));
+  // Refetches and applies the new pac script if provided.
+  proxy_service->ForceReloadProxyConfig();
   RunCallbackInUI(callback);
 }
 
@@ -287,11 +305,11 @@ void Session::ClearStorageData(mate::Arguments* args) {
       base::Time(), base::Time::Max(), callback);
 }
 
-void Session::SetProxy(const std::string& proxy,
+void Session::SetProxy(const net::ProxyConfig& config,
                        const base::Closure& callback) {
   auto getter = browser_context_->GetRequestContext();
   BrowserThread::PostTask(BrowserThread::IO, FROM_HERE,
-      base::Bind(&SetProxyInIO, base::Unretained(getter), proxy, callback));
+      base::Bind(&SetProxyInIO, base::Unretained(getter), config, callback));
 }
 
 void Session::SetDownloadPath(const base::FilePath& path) {
