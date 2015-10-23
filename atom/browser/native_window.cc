@@ -139,6 +139,10 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
   if (options.Get(switches::kKiosk, &kiosk) && kiosk) {
     SetKiosk(kiosk);
   }
+  std::string color;
+  if (options.Get(switches::kBackgroundColor, &color)) {
+    SetBackgroundColor(color);
+  }
   std::string title("Electron");
   options.Get(switches::kTitle, &title);
   SetTitle(title);

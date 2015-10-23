@@ -42,6 +42,7 @@
 #elif defined(OS_WIN)
 #include "atom/browser/ui/views/win_frame_view.h"
 #include "atom/browser/ui/win/atom_desktop_window_tree_host_win.h"
+#include "skia/ext/skia_utils_win.h"
 #include "ui/base/win/shell.h"
 #include "ui/gfx/win/dpi.h"
 #include "ui/views/widget/desktop_aura/desktop_native_widget_aura.h"
@@ -228,12 +229,6 @@ NativeWindowViews::NativeWindowViews(
 
   // Add web view.
   SetLayoutManager(new MenuLayout(this, kMenuBarHeight));
-
-  // web views' background color.
-  std::string background_color = "#fff";
-  options.Get(switches::kBackgroundColor, &background_color);
-  set_background(views::Background::CreateSolidBackground(
-      ParseHexColor(background_color)));
 
   AddChildView(web_view_);
 
@@ -523,6 +518,21 @@ void NativeWindowViews::SetKiosk(bool kiosk) {
 
 bool NativeWindowViews::IsKiosk() {
   return IsFullscreen();
+}
+
+void NativeWindowViews::SetBackgroundColor(const std::string& color_name) {
+  // web views' background color.
+  SkColor background_color = ParseHexColor(color_name);
+  set_background(views::Background::CreateSolidBackground(background_color));
+
+#if defined(OS_WIN)
+  // Set the background color of native window.
+  HBRUSH brush = CreateSolidBrush(skia::SkColorToCOLORREF(background_color));
+  ULONG_PTR previous_brush = SetClassLongPtr(
+      GetAcceleratedWidget(), GCLP_HBRBACKGROUND, (LONG)brush);
+  if (previous_brush)
+    DeleteObject((HBRUSH)previous_brush);
+#endif
 }
 
 void NativeWindowViews::SetMenu(ui::MenuModel* menu_model) {
