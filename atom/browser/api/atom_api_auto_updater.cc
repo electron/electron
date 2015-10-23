@@ -23,8 +23,15 @@ AutoUpdater::~AutoUpdater() {
   auto_updater::AutoUpdater::SetDelegate(NULL);
 }
 
-void AutoUpdater::OnError(const std::string& error) {
-  Emit("error", error);
+void AutoUpdater::OnError(const std::string& message) {
+  v8::Locker locker(isolate());
+  v8::HandleScope handle_scope(isolate());
+  auto error = v8::Exception::Error(mate::StringToV8(isolate(), message));
+  EmitCustomEvent(
+      "error",
+      error->ToObject(isolate()->GetCurrentContext()).ToLocalChecked(),
+      // Message is also emitted to keep compatibility with old code.
+      message);
 }
 
 void AutoUpdater::OnCheckingForUpdate() {

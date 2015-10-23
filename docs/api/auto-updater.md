@@ -110,8 +110,7 @@ The `autoUpdater` object emits the following events:
 
 Returns:
 
-* `event` Event
-* `message` String
+* `error` Error
 
 Emitted when there is an error while updating.
 
