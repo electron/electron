@@ -5,8 +5,9 @@
 #include "atom/browser/api/atom_api_auto_updater.h"
 
 #include "base/time/time.h"
-#include "atom/browser/auto_updater.h"
 #include "atom/browser/browser.h"
+#include "atom/browser/native_window.h"
+#include "atom/browser/window_list.h"
 #include "atom/common/node_includes.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
@@ -37,7 +38,7 @@ AutoUpdater::AutoUpdater() {
 }
 
 AutoUpdater::~AutoUpdater() {
-  auto_updater::AutoUpdater::SetDelegate(NULL);
+  auto_updater::AutoUpdater::SetDelegate(nullptr);
 }
 
 void AutoUpdater::OnError(const std::string& message) {
@@ -66,10 +67,12 @@ void AutoUpdater::OnUpdateNotAvailable() {
 void AutoUpdater::OnUpdateDownloaded(const std::string& release_notes,
                                      const std::string& release_name,
                                      const base::Time& release_date,
-                                     const std::string& url,
-                                     const base::Closure& quit_and_install) {
-  quit_and_install_ = quit_and_install;
+                                     const std::string& url) {
   Emit("update-downloaded", release_notes, release_name, release_date, url);
+}
+
+void AutoUpdater::OnWindowAllClosed() {
+  QuitAndInstall();
 }
 
 mate::ObjectTemplateBuilder AutoUpdater::GetObjectTemplateBuilder(
@@ -77,14 +80,21 @@ mate::ObjectTemplateBuilder AutoUpdater::GetObjectTemplateBuilder(
   return mate::ObjectTemplateBuilder(isolate)
       .SetMethod("setFeedUrl", &auto_updater::AutoUpdater::SetFeedURL)
       .SetMethod("checkForUpdates", &auto_updater::AutoUpdater::CheckForUpdates)
-      .SetMethod("_quitAndInstall", &AutoUpdater::QuitAndInstall);
+      .SetMethod("quitAndInstall", &AutoUpdater::QuitAndInstall);
 }
 
 void AutoUpdater::QuitAndInstall() {
-  if (quit_and_install_.is_null())
-    Browser::Get()->Shutdown();
-  else
-    quit_and_install_.Run();
+  // If we don't have any window then quitAndInstall immediately.
+  WindowList* window_list = WindowList::GetInstance();
+  if (window_list->size() == 0) {
+    auto_updater::AutoUpdater::QuitAndInstall();
+    return;
+  }
+
+  // Otherwise do the restart after all windows have been closed.
+  window_list->AddObserver(this);
+  for (NativeWindow* window : *window_list)
+    window->Close();
 }
 
 // static
