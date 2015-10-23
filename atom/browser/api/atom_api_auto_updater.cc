@@ -11,6 +11,23 @@
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 
+namespace mate {
+
+template<>
+struct Converter<base::Time> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const base::Time& val) {
+    v8::MaybeLocal<v8::Value> date = v8::Date::New(
+        isolate->GetCurrentContext(), val.ToJsTime());
+    if (date.IsEmpty())
+      return v8::Null(isolate);
+    else
+      return date.ToLocalChecked();
+  }
+};
+
+}  // namespace mate
+
 namespace atom {
 
 namespace api {
@@ -49,11 +66,10 @@ void AutoUpdater::OnUpdateNotAvailable() {
 void AutoUpdater::OnUpdateDownloaded(const std::string& release_notes,
                                      const std::string& release_name,
                                      const base::Time& release_date,
-                                     const std::string& update_url,
+                                     const std::string& url,
                                      const base::Closure& quit_and_install) {
   quit_and_install_ = quit_and_install;
-  Emit("update-downloaded-raw", release_notes, release_name,
-       release_date.ToJsTime(), update_url);
+  Emit("update-downloaded", release_notes, release_name, release_date, url);
 }
 
 mate::ObjectTemplateBuilder AutoUpdater::GetObjectTemplateBuilder(

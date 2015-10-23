@@ -1,15 +1,12 @@
-switch process.platform
-  when 'win32'
-    autoUpdater = require './auto-updater/auto-updater-win'
-  else
-    # take the default binding for the current platform
-    autoUpdater  = process.atomBinding('auto_updater').autoUpdater
-    EventEmitter = require('events').EventEmitter
-    autoUpdater.__proto__ = EventEmitter.prototype
+if process.platform is 'win32'
+  module.exports = require './auto-updater/auto-updater-win'
+  return
 
-autoUpdater.on 'update-downloaded-raw', (args...) ->
-  args[3] = new Date(args[3])  # releaseDate
-  @emit 'update-downloaded', args..., => @quitAndInstall()
+# Implementation on OS X.
+autoUpdater  = process.atomBinding('auto_updater').autoUpdater
+EventEmitter = require('events').EventEmitter
+
+autoUpdater.__proto__ = EventEmitter.prototype
 
 autoUpdater.quitAndInstall = ->
   # If we don't have any window then quitAndInstall immediately.
