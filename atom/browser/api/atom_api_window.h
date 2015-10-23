@@ -122,6 +122,7 @@ class Window : public mate::TrackableObject<Window>,
   void SetSkipTaskbar(bool skip);
   void SetKiosk(bool kiosk);
   bool IsKiosk();
+  void SetBackgroundColor(const std::string& color_name);
   void FocusOnWebView();
   void BlurWebView();
   bool IsWebViewFocused();

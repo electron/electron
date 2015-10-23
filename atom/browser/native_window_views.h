@@ -77,6 +77,7 @@ class NativeWindowViews : public NativeWindow,
   void SetSkipTaskbar(bool skip) override;
   void SetKiosk(bool kiosk) override;
   bool IsKiosk() override;
+  void SetBackgroundColor(const std::string& color_name) override;
   void SetMenu(ui::MenuModel* menu_model) override;
   gfx::NativeWindow GetNativeWindow() override;
   void SetOverlayIcon(const gfx::Image& overlay,

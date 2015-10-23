@@ -57,6 +57,7 @@ class NativeWindowMac : public NativeWindow {
   void SetSkipTaskbar(bool skip) override;
   void SetKiosk(bool kiosk) override;
   bool IsKiosk() override;
+  void SetBackgroundColor(const std::string& color_name) override;
   void SetRepresentedFilename(const std::string& filename) override;
   std::string GetRepresentedFilename() override;
   void SetDocumentEdited(bool edited) override;

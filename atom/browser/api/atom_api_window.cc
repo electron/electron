@@ -385,6 +385,10 @@ bool Window::IsKiosk() {
   return window_->IsKiosk();
 }
 
+void Window::SetBackgroundColor(const std::string& color_name) {
+  window_->SetBackgroundColor(color_name);
+}
+
 void Window::FocusOnWebView() {
   window_->FocusOnWebView();
 }
@@ -564,6 +568,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setSkipTaskbar", &Window::SetSkipTaskbar)
       .SetMethod("setKiosk", &Window::SetKiosk)
       .SetMethod("isKiosk", &Window::IsKiosk)
+      .SetMethod("setBackgroundColor", &Window::SetBackgroundColor)
       .SetMethod("setRepresentedFilename", &Window::SetRepresentedFilename)
       .SetMethod("getRepresentedFilename", &Window::GetRepresentedFilename)
       .SetMethod("setDocumentEdited", &Window::SetDocumentEdited)

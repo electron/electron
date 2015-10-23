@@ -230,23 +230,9 @@ NativeWindowViews::NativeWindowViews(
   // Add web view.
   SetLayoutManager(new MenuLayout(this, kMenuBarHeight));
 
-  // web views' background color.
-  SkColor background_color = SK_ColorWHITE;
-  std::string color_name;
-  if (options.Get(switches::kBackgroundColor, &color_name))
-    background_color = ParseHexColor(color_name);
-  set_background(views::Background::CreateSolidBackground(background_color));
-
   AddChildView(web_view_);
 
 #if defined(OS_WIN)
-  // Set the background color of native window.
-  HBRUSH brush = CreateSolidBrush(skia::SkColorToCOLORREF(background_color));
-  ULONG_PTR previous_brush = SetClassLongPtr(
-      GetAcceleratedWidget(), GCLP_HBRBACKGROUND, (LONG)brush);
-  if (previous_brush)
-    DeleteObject((HBRUSH)previous_brush);
-
   // Save initial window state.
   if (fullscreen)
     last_window_state_ = ui::SHOW_STATE_FULLSCREEN;
@@ -532,6 +518,21 @@ void NativeWindowViews::SetKiosk(bool kiosk) {
 
 bool NativeWindowViews::IsKiosk() {
   return IsFullscreen();
+}
+
+void NativeWindowViews::SetBackgroundColor(const std::string& color_name) {
+  // web views' background color.
+  SkColor background_color = ParseHexColor(color_name);
+  set_background(views::Background::CreateSolidBackground(background_color));
+
+#if defined(OS_WIN)
+  // Set the background color of native window.
+  HBRUSH brush = CreateSolidBrush(skia::SkColorToCOLORREF(background_color));
+  ULONG_PTR previous_brush = SetClassLongPtr(
+      GetAcceleratedWidget(), GCLP_HBRBACKGROUND, (LONG)brush);
+  if (previous_brush)
+    DeleteObject((HBRUSH)previous_brush);
+#endif
 }
 
 void NativeWindowViews::SetMenu(ui::MenuModel* menu_model) {
