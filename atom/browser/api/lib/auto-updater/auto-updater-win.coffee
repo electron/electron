@@ -1,45 +1,42 @@
+app = require 'app'
+url = require 'url'
 {EventEmitter} = require 'events'
-SquirrelUpdate = require './auto-updater/squirrel-update-win'
-app            = require 'app'
-url            = require 'url'
+
+squirrelUpdate = require './squirrel-update-win'
 
 class AutoUpdater extends EventEmitter
-
   quitAndInstall: ->
-    SquirrelUpdate.processStart ->
-      app.quit()
+    squirrelUpdate.processStart()
+    app.quit()
 
   setFeedUrl: (updateUrl) ->
-    # set feed URL only when it hasn't been set before
-    unless @updateUrl
-      @updateUrl = updateUrl
+    @updateUrl = updateUrl
 
   checkForUpdates: ->
-    throw new Error('Update URL is not set') unless @updateUrl
+    return @emitError 'Update URL is not set' unless @updateUrl
+    return @emitError 'Can not find Squirrel' unless squirrelUpdate.supported()
 
     @emit 'checking-for-update'
 
-    unless SquirrelUpdate.supported()
-      @emit 'update-not-available'
-      return
-
-    SquirrelUpdate.download (error, update) =>
-      if error?
-        @emit 'update-not-available'
-        return
-
-      unless update?
-        @emit 'update-not-available'
-        return
+    squirrelUpdate.download @updateUrl, (error, update) =>
+      return @emitError error if error?
+      return @emit 'update-not-available' unless update?
 
       @emit 'update-available'
 
-      SquirrelUpdate.update @updateUrl, (error) =>
-        if error?
-          @emit 'update-not-available'
-          return
+      squirrelUpdate.update @updateUrl, (error) =>
+        return @emitError error if error?
 
-        # info about the newly installed version and a function any of the event listeners can call to restart the application
-        @emit 'update-downloaded', {}, update.releaseNotes, update.version, new Date(), @updateUrl, => @quitAndInstall()
+        {releaseNotes, version} = update
+        # Following information is not available on Windows, so fake them.
+        date = new Date
+        url = @updateUrl
 
-module.exports = new AutoUpdater()
+        @emit 'update-downloaded', {}, releaseNotes, version, date, url, => @quitAndInstall()
+
+  # Private: Emit both error object and message, this is to keep compatibility
+  # with Old APIs.
+  emitError: (message) ->
+    @emit 'error', new Error(message), message
+
+module.exports = new AutoUpdater
