@@ -11,6 +11,8 @@
       'atom/browser/api/lib/app.coffee',
       'atom/browser/api/lib/atom-delegate.coffee',
       'atom/browser/api/lib/auto-updater.coffee',
+      'atom/browser/api/lib/auto-updater/auto-updater-win.coffee',
+      'atom/browser/api/lib/auto-updater/squirrel-update-win.coffee',
       'atom/browser/api/lib/browser-window.coffee',
       'atom/browser/api/lib/content-tracing.coffee',
       'atom/browser/api/lib/dialog.coffee',

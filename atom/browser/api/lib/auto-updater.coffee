@@ -1,7 +1,11 @@
-autoUpdater = process.atomBinding('auto_updater').autoUpdater
-EventEmitter = require('events').EventEmitter
-
-autoUpdater.__proto__ = EventEmitter.prototype
+switch process.platform
+  when 'win32'
+    autoUpdater = require './auto-updater/auto-updater-win'
+  else
+    # take the default binding for the current platform
+    autoUpdater  = process.atomBinding('auto_updater').autoUpdater
+    EventEmitter = require('events').EventEmitter
+    autoUpdater.__proto__ = EventEmitter.prototype
 
 autoUpdater.on 'update-downloaded-raw', (args...) ->
   args[3] = new Date(args[3])  # releaseDate
