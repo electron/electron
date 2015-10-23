@@ -31,8 +31,13 @@ which handles the manual steps of downloading headers and building native module
 ```sh
 npm install --save-dev electron-rebuild
 
-# Every time you run npm install, run this
+# Every time you run "npm install", run this
+
+# Linux or Mac
 node ./node_modules/.bin/electron-rebuild
+
+# Windows
+./node_modules/.bin/electron-rebuild
 ```
 
 ### The npm Way
