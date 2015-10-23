@@ -74,11 +74,11 @@ Returns:
 
 사용자가 어플리케이션을 통해 파일을 열고자 할 때 발생하는 이벤트입니다.
 
-`open-file` 이벤트는 보통 어플리케이션이 열려 있을 때와 OS가 파일을 열기 위해 어플리케이션을 재사용할 때 발생합니다.
-`open-file` 이벤트는 파일을 dock에 떨어트릴 때와 어플리케이션이 실행되기 전에도 발생합니다.
-이 경우엔 확실히 `open-file` 이벤트 리스너를 어플리케이션이 시작하기 전에 설정해 놓았는지 확인해야 합니다. (`ready` 이벤트가 발생하기 전에)
+`open-file` 이벤트는 보통 어플리케이션이 열려 있을 때 OS가 파일을 열기 위해 어플리케이션을 재사용할 때 발생합니다.
+이 이벤트는 파일을 dock에 떨어트릴 때, 어플리케이션이 실행되기 전에도 발생합니다.
+따라서 이 이벤트를 제대로 처리하려면 `open-file` 이벤트 핸들러를 어플리케이션이 시작하기 전에 등록해 놓았는지 확실히 확인해야 합니다. (`ready` 이벤트가 발생하기 전에)
 
-이 이벤트를 처리하려면 반드시 `event.preventDefault()`를 호출해야 합니다.
+이 이벤트를 처리할 땐 반드시 `event.preventDefault()`를 호출해야 합니다.
 
 ### Event: 'open-url'
 
@@ -89,9 +89,9 @@ Returns:
 
 유저가 어플리케이션을 통해 URL을 열고자 할 때 발생하는 이벤트입니다.
 
-어플리케이션에서 URL을 열기 위해선 반드시 URL 스킴이 등록되어 있어야 합니다.
+어플리케이션에서 URL을 열기 위해 반드시 URL 스킴이 등록되어 있어야 합니다.
 
-이 이벤트를 처리하려면 반드시 `event.preventDefault()`를 호출해야 합니다.
+이 이벤트를 처리할 땐 반드시 `event.preventDefault()`를 호출해야 합니다.
 
 ### Event: 'activate' _OS X_
 
@@ -245,7 +245,7 @@ npm 모듈 규칙에 따라 대부분의 경우 `package.json`의 `name` 필드�
 `url`의 프록시 정보를 해석합니다.
 `callback`은 요청이 수행되었을 때 `callback(proxy)` 형태로 호출됩니다.
 
-### `app.addRecentDocument(path)`
+### `app.addRecentDocument(path)` _OS X_ _Windows_
 
 * `path` String
 
@@ -254,7 +254,7 @@ npm 모듈 규칙에 따라 대부분의 경우 `package.json`의 `name` 필드�
 이 목록은 OS에 의해 관리됩니다.
 최근 문서 목록은 Windows의 경우 작업 표시줄에서 찾을 수 있고, OS X의 경우 dock 메뉴에서 찾을 수 있습니다.
 
-### `app.clearRecentDocuments()`
+### `app.clearRecentDocuments()` _OS X_ _Windows_
 
 최근 문서 목록을 모두 비웁니다.
 
@@ -288,6 +288,52 @@ Windows에서 사용할 수 있는 JumpList의 [Tasks][tasks] 카테고리에 `t
 그러나 기업 네트워크가 잘못 구성된 경우 종종 작업에 실패할 수 있습니다.
 이때 이 메서드를 통해 모든 URL을 허용할 수 있습니다.
 
+### `app.makeSingleInstance(callback)`
+
+* `callback` Function
+
+현재 어플리케이션을 **Single Instance Application**으로 만들어줍니다.
+이 메서드는 어플리케이션이 여러 번 실행됐을 때 다중 인스턴스가 생성되는 대신 한 개의 주 인스턴스만 유지되도록 만들 수 있습니다.
+이때 중복 생성된 인스턴스는 주 인스턴스에 신호를 보내고 종료됩니다.
+
+`callback`은 주 인스턴스가 생성된 이후 또 다른 인스턴스가 생성됐을 때 `callback(argv, workingDirectory)` 형식으로 호출됩니다.
+`argv`는 두 번째 인스턴스의 명령줄 인수이며 `workingDirectory`는 현재 작업중인 디렉터리입니다.
+보통 대부분의 어플리케이션은 이러한 콜백이 호출될 때 주 윈도우창을 포커스하고 최소화되어있으면 창 복구를 실행합니다.
+
+`callback`은 `app`의 `ready` 이벤트가 발생한 후 실행됨을 보장합니다.
+
+이 메서드는 현재 실행된 어플리케이션이 주 인스턴스인 경우 `false`를 반환하고 어플리케이션의 로드가 계속 진행 되도록 합니다.
+그리고 두 번째 중복된 인스턴스 생성인 경우 `true`를 반환합니다. (다른 인스턴스에 인수가 전달됬을 때)
+이 불리언 값을 통해 중복 생성된 인스턴스는 즉시 종료시켜야 합니다.
+
+OS X에선 사용자가 Finder에서 어플리케이션의 두 번째 인스턴스를 열려고 했을 때 자동으로 **Single Instance**화 하고 `open-file`과 `open-url` 이벤트를 발생시킵니다.
+그러나 사용자가 어플리케이션을 CLI 터미널에서 실행하면 운영체제 시스템의 싱글 인스턴스 메커니즘이 무시되며 그대로 중복 실행됩니다.
+따라서 OS X에서도 이 메서드를 통해 확실히 중복 실행을 방지하는 것이 좋습니다.
+
+다음 예제는 두 번째 인스턴스가 생성되었을 때 중복된 인스턴스를 종료하고 주 어플리케이션 인스턴스의 윈도우창을 활성화 시키는 예제입니다:
+
+```javascript
+var myWindow = null;
+
+var shouldQuit = app.makeSingleInstance(function(commandLine, workingDirectory) {
+  // 어플리케이션을 중복 실행했습니다. 주 어플리케이션 인스턴스를 활성화 합니다.
+  if (myWindow) {
+    if (myWindow.isMinimized()) myWindow.restore();
+    myWindow.focus();
+  }
+  return true;
+});
+
+if (shouldQuit) {
+  app.quit();
+  return;
+}
+
+// 윈도우창을 생성하고 각종 리소스를 로드하고 작업합니다..
+app.on('ready', function() {
+});
+```
+
 ### `app.commandLine.appendSwitch(switch[, value])`
 
 Chrominum의 명령줄에 스위치를 추가합니다. `value`는 추가적인 값을 뜻하며 옵션입니다.
@@ -297,7 +343,7 @@ Chrominum의 명령줄에 스위치를 추가합니다. `value`는 추가적인 
 
 ### `app.commandLine.appendArgument(value)`
 
-Chrominum의 명령줄에 인자를 추가합니다. 인자는 올바르게 인용됩니다.
+Chrominum의 명령줄에 인수를 추가합니다. 인수는 올바르게 인용됩니다.
 
 **참고:** 이 메서드는 `process.argv`에 영향을 주지 않습니다.
 

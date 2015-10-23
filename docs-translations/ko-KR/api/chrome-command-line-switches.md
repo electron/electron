@@ -94,8 +94,8 @@ SSL 암호화를 비활성화할 대상 목록을 지정합니다. (`,`로 구�
 
 Chromium의 로그를 콘솔에 출력합니다.
 
-이 스위치는 어플리케이션이 로드되기 전에 인식 되므로 `app.commandLine.appendSwitch` 메서드에선 사용할 수 없습니다.
-하지만 `ELECTRON_ENABLE_LOGGING` 환경 변수를 설정하면 본 스위치와 같은 효과를 낼 수 있습니다.
+이 스위치는 어플리케이션이 로드되기 전에 분석 되므로 `app.commandLine.appendSwitch` 메서드에선 사용할 수 없습니다.
+하지만 `ELECTRON_ENABLE_LOGGING` 환경 변수를 설정하면 본 스위치를 지정한 것과 같은 효과를 낼 수 있습니다.
 
 ## --v=`log_level`
 

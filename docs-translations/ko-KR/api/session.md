@@ -147,6 +147,8 @@ win.webContents.on('did-finish-load', function() {
 
 세션에 사용할 프록시 `config`를 분석하고 프록시를 적용합니다.
 
+세션에 사용할 프록시는 `config`가 PAC 주소일 경우 그대로 적용하고, 다른 형식일 경우 다음 규칙에 따라 적용합니다.
+
 ```
 config = scheme-proxies[";"<scheme-proxies>]
 scheme-proxies = [<url-scheme>"="]<proxy-uri-list>
