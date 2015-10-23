@@ -10,6 +10,7 @@ valueToMeta = (sender, value, optimizeSimpleObject=false) ->
   meta.type = 'buffer' if Buffer.isBuffer value
   meta.type = 'value' if value is null
   meta.type = 'array' if Array.isArray value
+  meta.type = 'error' if value instanceof Error
   meta.type = 'promise' if value? and value.constructor.name is 'Promise'
 
   # Treat simple objects as value.
@@ -36,6 +37,8 @@ valueToMeta = (sender, value, optimizeSimpleObject=false) ->
     meta.value = Array::slice.call value, 0
   else if meta.type is 'promise'
     meta.then = valueToMeta(sender, value.then.bind(value))
+  else if meta.type is 'error'
+    meta.message = value.message
   else
     meta.type = 'value'
     meta.value = value
@@ -43,8 +46,8 @@ valueToMeta = (sender, value, optimizeSimpleObject=false) ->
   meta
 
 # Convert Error into meta data.
-errorToMeta = (error) ->
-  type: 'error', message: error.message, stack: (error.stack || error)
+exceptionToMeta = (error) ->
+  type: 'exception', message: error.message, stack: (error.stack || error)
 
 # Convert array of meta data from renderer into array of real values.
 unwrapArgs = (sender, args) ->
@@ -100,19 +103,19 @@ ipc.on 'ATOM_BROWSER_REQUIRE', (event, module) ->
   try
     event.returnValue = valueToMeta event.sender, process.mainModule.require(module)
   catch e
-    event.returnValue = errorToMeta e
+    event.returnValue = exceptionToMeta e
 
 ipc.on 'ATOM_BROWSER_GLOBAL', (event, name) ->
   try
     event.returnValue = valueToMeta event.sender, global[name]
   catch e
-    event.returnValue = errorToMeta e
+    event.returnValue = exceptionToMeta e
 
 ipc.on 'ATOM_BROWSER_CURRENT_WINDOW', (event) ->
   try
     event.returnValue = valueToMeta event.sender, event.sender.getOwnerBrowserWindow()
   catch e
-    event.returnValue = errorToMeta e
+    event.returnValue = exceptionToMeta e
 
 ipc.on 'ATOM_BROWSER_CURRENT_WEB_CONTENTS', (event) ->
   event.returnValue = valueToMeta event.sender, event.sender
@@ -126,7 +129,7 @@ ipc.on 'ATOM_BROWSER_CONSTRUCTOR', (event, id, args) ->
     obj = new (Function::bind.apply(constructor, [null].concat(args)))
     event.returnValue = valueToMeta event.sender, obj
   catch e
-    event.returnValue = errorToMeta e
+    event.returnValue = exceptionToMeta e
 
 ipc.on 'ATOM_BROWSER_FUNCTION_CALL', (event, id, args) ->
   try
@@ -134,7 +137,7 @@ ipc.on 'ATOM_BROWSER_FUNCTION_CALL', (event, id, args) ->
     func = objectsRegistry.get id
     callFunction event, func, global, args
   catch e
-    event.returnValue = errorToMeta e
+    event.returnValue = exceptionToMeta e
 
 ipc.on 'ATOM_BROWSER_MEMBER_CONSTRUCTOR', (event, id, method, args) ->
   try
@@ -144,7 +147,7 @@ ipc.on 'ATOM_BROWSER_MEMBER_CONSTRUCTOR', (event, id, method, args) ->
     obj = new (Function::bind.apply(constructor, [null].concat(args)))
     event.returnValue = valueToMeta event.sender, obj
   catch e
-    event.returnValue = errorToMeta e
+    event.returnValue = exceptionToMeta e
 
 ipc.on 'ATOM_BROWSER_MEMBER_CALL', (event, id, method, args) ->
   try
@@ -152,7 +155,7 @@ ipc.on 'ATOM_BROWSER_MEMBER_CALL', (event, id, method, args) ->
     obj = objectsRegistry.get id
     callFunction event, obj[method], obj, args
   catch e
-    event.returnValue = errorToMeta e
+    event.returnValue = exceptionToMeta e
 
 ipc.on 'ATOM_BROWSER_MEMBER_SET', (event, id, name, value) ->
   try
@@ -160,14 +163,14 @@ ipc.on 'ATOM_BROWSER_MEMBER_SET', (event, id, name, value) ->
     obj[name] = value
     event.returnValue = null
   catch e
-    event.returnValue = errorToMeta e
+    event.returnValue = exceptionToMeta e
 
 ipc.on 'ATOM_BROWSER_MEMBER_GET', (event, id, name) ->
   try
     obj = objectsRegistry.get id
     event.returnValue = valueToMeta event.sender, obj[name]
   catch e
-    event.returnValue = errorToMeta e
+    event.returnValue = exceptionToMeta e
 
 ipc.on 'ATOM_BROWSER_DEREFERENCE', (event, id) ->
   objectsRegistry.remove event.sender.getId(), id
@@ -177,4 +180,4 @@ ipc.on 'ATOM_BROWSER_GUEST_WEB_CONTENTS', (event, guestInstanceId) ->
     guestViewManager = require './guest-view-manager'
     event.returnValue = valueToMeta event.sender, guestViewManager.getGuest(guestInstanceId)
   catch e
-    event.returnValue = errorToMeta e
+    event.returnValue = exceptionToMeta e
