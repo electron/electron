@@ -65,7 +65,6 @@ a ser ejecutado por el proceso principal. Un ejemplo de `package.json` podría v
 ```
 
 El `main.js` debería crear las ventanas y gestionar los eventos del sistema, un ejemplo típico sería:
-example being:
 
 ```javascript
 var app = require('app');  // Módulo para controlar el ciclo de vida de la aplicación.
