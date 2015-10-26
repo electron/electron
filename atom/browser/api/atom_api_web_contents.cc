@@ -618,6 +618,10 @@ void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
   if (options.Get("userAgent", &user_agent))
     SetUserAgent(user_agent);
 
+  std::string extra_headers;
+  if (options.Get("extraHeaders", &extra_headers))
+    params.extra_headers = extra_headers;
+
   params.transition_type = ui::PAGE_TRANSITION_TYPED;
   params.should_clear_history_list = true;
   params.override_user_agent = content::NavigationController::UA_OVERRIDE_TRUE;
