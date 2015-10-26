@@ -36,6 +36,7 @@ Returns:
 
 This event is like `did-finish-load` but emitted when the load failed or was
 cancelled, e.g. `window.stop()` is invoked.
+The full list of error codes and their meaning is available [here](https://code.google.com/p/chromium/codesearch#chromium/src/net/base/net_error_list.h).
 
 ### Event: 'did-frame-finish-load'
 
