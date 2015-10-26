@@ -171,6 +171,8 @@ class NativeWindow : public base::SupportsUserData,
   virtual bool IsMenuBarAutoHide();
   virtual void SetMenuBarVisibility(bool visible);
   virtual bool IsMenuBarVisible();
+  virtual void SetToggleMenuBarOnAltPressed(bool toggle_on_alt_pressed);
+  virtual bool DoesToggleMenuBarOnAltPressed();
 
   // Set the aspect ratio when resizing window.
   double GetAspectRatio();

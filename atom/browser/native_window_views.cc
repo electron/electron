@@ -129,11 +129,14 @@ NativeWindowViews::NativeWindowViews(
       menu_bar_autohide_(false),
       menu_bar_visible_(false),
       menu_bar_alt_pressed_(false),
+      toggle_menu_bar_on_alt_pressed_(true),
       keyboard_event_handler_(new views::UnhandledKeyboardEventHandler),
       use_content_size_(false),
       resizable_(true) {
   options.Get(switches::kTitle, &title_);
   options.Get(switches::kAutoHideMenuBar, &menu_bar_autohide_);
+  options.Get(switches::kToggleMenuBarOnAltPressed,
+              &toggle_menu_bar_on_alt_pressed_);
 
 #if defined(OS_WIN)
   // On Windows we rely on the CanResize() to indicate whether window can be
@@ -651,6 +654,15 @@ bool NativeWindowViews::IsMenuBarVisible() {
   return menu_bar_visible_;
 }
 
+void NativeWindowViews::SetToggleMenuBarOnAltPressed(
+  bool toggle_on_alt_pressed) {
+  toggle_menu_bar_on_alt_pressed_ = toggle_on_alt_pressed;
+}
+
+bool NativeWindowViews::DoesToggleMenuBarOnAltPressed() {
+  return toggle_menu_bar_on_alt_pressed_;
+}
+
 void NativeWindowViews::SetVisibleOnAllWorkspaces(bool visible) {
   window_->SetVisibleOnAllWorkspaces(visible);
 }
@@ -868,7 +880,9 @@ void NativeWindowViews::HandleKeyboardEvent(
              menu_bar_alt_pressed_) {
     // When a single Alt is released right after a Alt is pressed:
     menu_bar_alt_pressed_ = false;
-    SetMenuBarVisibility(!menu_bar_visible_);
+    if (toggle_menu_bar_on_alt_pressed_) {
+      SetMenuBarVisibility(!menu_bar_visible_);
+    }
   } else {
     // When any other keys except single Alt have been pressed/released:
     menu_bar_alt_pressed_ = false;

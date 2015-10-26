@@ -320,6 +320,13 @@ bool NativeWindow::IsMenuBarVisible() {
   return true;
 }
 
+void NativeWindow::SetToggleMenuBarOnAltPressed(bool toggle_on_alt_pressed) {
+}
+
+bool NativeWindow::DoesToggleMenuBarOnAltPressed() {
+  return false;
+}
+
 double NativeWindow::GetAspectRatio() {
   return aspect_ratio_;
 }

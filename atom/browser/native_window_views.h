@@ -87,6 +87,8 @@ class NativeWindowViews : public NativeWindow,
   bool IsMenuBarAutoHide() override;
   void SetMenuBarVisibility(bool visible) override;
   bool IsMenuBarVisible() override;
+  void SetToggleMenuBarOnAltPressed(bool toggle_on_alt_pressed) override;
+  bool DoesToggleMenuBarOnAltPressed() override;
   void SetVisibleOnAllWorkspaces(bool visible) override;
   bool IsVisibleOnAllWorkspaces() override;
 
@@ -162,6 +164,7 @@ class NativeWindowViews : public NativeWindow,
   bool menu_bar_autohide_;
   bool menu_bar_visible_;
   bool menu_bar_alt_pressed_;
+  bool toggle_menu_bar_on_alt_pressed_;
 
 #if defined(USE_X11)
   scoped_ptr<GlobalMenuBarX11> global_menu_bar_;
