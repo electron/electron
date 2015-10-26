@@ -130,6 +130,15 @@ describe 'browser-window module', ->
     it 'returns the window with id', ->
       assert.equal w.id, BrowserWindow.fromId(w.id).id
 
+  describe 'BrowserWindow.setToggleMenuBarOnAltPressed(toggle)', ->
+    return if process.platform is 'darwin'
+    it 'should change the value of toggleOnAltPressed', ->
+      w.destroy()
+      w = new BrowserWindow(show: true, frame: false)
+      assert(w.doesToggleMenuBarOnAltPressed())
+      w.setToggleMenuBarOnAltPressed(false)
+      assert.equal(false, w.doesToggleMenuBarOnAltPressed())
+
   describe 'BrowserWindow.setResizable(resizable)', ->
     it 'does not change window size for frameless window', ->
       w.destroy()

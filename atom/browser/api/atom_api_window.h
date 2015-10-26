@@ -141,6 +141,8 @@ class Window : public mate::TrackableObject<Window>,
   bool IsMenuBarAutoHide();
   void SetMenuBarVisibility(bool visible);
   bool IsMenuBarVisible();
+  void SetToggleMenuBarOnAltPressed(bool toggle_on_alt_pressed);
+  bool DoesToggleMenuBarOnAltPressed();
   void SetAspectRatio(double aspect_ratio, mate::Arguments* args);
 
 #if defined(OS_MACOSX)

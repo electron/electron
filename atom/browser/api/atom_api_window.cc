@@ -492,6 +492,14 @@ bool Window::IsMenuBarVisible() {
   return window_->IsMenuBarVisible();
 }
 
+void Window::SetToggleMenuBarOnAltPressed(bool toggle_on_alt_pressed) {
+  window_->SetToggleMenuBarOnAltPressed(toggle_on_alt_pressed);
+}
+
+bool Window::DoesToggleMenuBarOnAltPressed() {
+  return window_->DoesToggleMenuBarOnAltPressed();
+}
+
 #if defined(OS_MACOSX)
 void Window::ShowDefinitionForSelection() {
   window_->ShowDefinitionForSelection();
@@ -586,6 +594,10 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("isMenuBarAutoHide", &Window::IsMenuBarAutoHide)
       .SetMethod("setMenuBarVisibility", &Window::SetMenuBarVisibility)
       .SetMethod("isMenuBarVisible", &Window::IsMenuBarVisible)
+      .SetMethod("setToggleMenuBarOnAltPressed",
+                 &Window::SetToggleMenuBarOnAltPressed)
+      .SetMethod("doesToggleMenuBarOnAltPressed",
+                 &Window::DoesToggleMenuBarOnAltPressed)
       .SetMethod("setVisibleOnAllWorkspaces",
                  &Window::SetVisibleOnAllWorkspaces)
       .SetMethod("isVisibleOnAllWorkspaces",

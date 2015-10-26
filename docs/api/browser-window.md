@@ -59,6 +59,8 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
 * `disable-auto-hide-cursor` Boolean - Whether to hide cursor when typing.
 * `auto-hide-menu-bar` Boolean - Auto hide the menu bar unless the `Alt`
   key is pressed.
+* `toggle-menu-bar-on-alt-pressed` Boolean - Avoid showing the menu bar when
+   the `Alt` key is pressed.
 * `enable-larger-than-screen` Boolean - Enable the window to be resized larger
   than screen.
 * `background-color` String - Window's background color as Hexadecimal value,
@@ -701,6 +703,16 @@ can still bring up the menu bar by pressing the single `Alt` key.
 ### `win.isMenuBarVisible()`
 
 Returns whether the menu bar is visible.
+
+### `win.setToggleMenuBarOnAltPressed(toggle_on_alt_pressed)`
+
+* `toggle_on_alt_pressed` Boolean
+
+Sets whether the menu bar visibility should toggle when `Alt` key is pressed.
+
+### `win.doesToggleMenuBarOnAltPressed()`
+
+Returns whether the menu bar is toggle when `Alt` key is pressed.
 
 ### `win.setVisibleOnAllWorkspaces(visible)`
 
