@@ -61,7 +61,7 @@ class NativeWindowObserver {
 
   // Called when window message received
   #if defined(OS_WIN)
-  virtual void OnWindowMessage(UINT message, LPARAM l_param, WPARAM w_param) {}
+  virtual void OnWindowMessage(UINT message, WPARAM w_param, LPARAM l_param) {}
   #endif
 
   // Called when renderer is hung.
