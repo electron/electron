@@ -19,16 +19,16 @@
 ## แหล่งอ้างอิงของ API
 
 * [สรุปความ](api/synopsis.md)
-* [Process Object](api/process.md)
-* [คำสั่งของ Chrome Command Line Switches ที่รองรับ](api/chrome-command-line-switches.md)
+* [โปรเซสออบเจค](api/process.md)
+* [คำสั่งสำหรับเปลี่ยนแปลงค่าของ Chrome ที่รองรับ](api/chrome-command-line-switches.md)
 
 ### การปรับแต่ง DOM:
 
 * [วัตถุ `File`](api/file-object.md)
-* [แท็ก `<webview>` Tag](api/web-view-tag.md)
+* [แท็ก `<webview>`](api/web-view-tag.md)
 * [ฟังก์ชัน `window.open`](api/window-open.md)
 
-### โมดูลสำหรับโปรเซสหลัก :
+### โมดูลสำหรับกระบวนการหลัก :
 
 * [app](api/app.md)
 * [auto-updater](api/auto-updater.md)
@@ -46,7 +46,7 @@
 * [web-contents](api/web-contents.md)
 * [tray](api/tray.md)
 
-### โมดูลสำหรับโปรเซส Renderer (Web Page):
+### โมดูลสำหรับกระบวนการ Renderer (เว็บเพจ):
 
 * [ipc (renderer)](api/ipc-renderer.md)
 * [remote](api/remote.md)
@@ -64,7 +64,6 @@
 
 * [ลักษณะการเขียนโค้ด](development/coding-style.md)
 * [โครงสร้างไดเรคทอรี่ของซอร์สโค้ด](development/source-code-directory-structure.md)
-* [Technical Differences to NW.js (formerly node-webkit)](development/atom-shell-vs-node-webkit.md)
 * [ความแตกต่างทางเทคนิคจาก NW.js (หรือ node-webkit)](development/atom-shell-vs-node-webkit.md)
 * [ภาพรวมการสร้างระบบ](development/build-system-overview.md)
 * [ขั้นตอนการสร้าง (OS X)](development/build-instructions-osx.md)
