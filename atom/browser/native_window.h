@@ -210,6 +210,10 @@ class NativeWindow : public base::SupportsUserData,
   void NotifyWindowLeaveHtmlFullScreen();
   void NotifyWindowExecuteWindowsCommand(const std::string& command);
 
+  #if defined(OS_WIN)
+  void NotifyWindowMessage(UINT message, WPARAM w_param, LPARAM l_param);
+  #endif
+
   void AddObserver(NativeWindowObserver* obs) {
     observers_.AddObserver(obs);
   }

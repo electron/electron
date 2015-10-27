@@ -75,6 +75,11 @@ class Window : public mate::TrackableObject<Window>,
   void OnRendererResponsive() override;
   void OnExecuteWindowsCommand(const std::string& command_name) override;
 
+  #if defined(OS_WIN)
+  void OnWindowMessage(unsigned int message, LPARAM l_param,
+                       WPARAM w_param) override;
+  #endif
+
   // mate::Wrappable:
   bool IsDestroyed() const override;
 

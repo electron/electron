@@ -189,6 +189,12 @@ void Window::OnExecuteWindowsCommand(const std::string& command_name) {
   Emit("app-command", command_name);
 }
 
+#if defined(OS_WIN)
+void Window::OnWindowMessage(UINT message, LPARAM l_param, WPARAM w_param) {
+  Emit("message", message, l_param, w_param);
+}
+#endif
+
 // static
 mate::Wrappable* Window::New(v8::Isolate* isolate,
                              const mate::Dictionary& options) {
