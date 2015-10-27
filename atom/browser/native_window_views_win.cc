@@ -80,6 +80,8 @@ bool NativeWindowViews::ExecuteWindowsCommand(int command_id) {
 
 bool NativeWindowViews::PreHandleMSG(
     UINT message, WPARAM w_param, LPARAM l_param, LRESULT* result) {
+  NotifyWindowMessage(message, w_param, l_param);
+
   switch (message) {
     case WM_COMMAND:
       // Handle thumbar button click message.

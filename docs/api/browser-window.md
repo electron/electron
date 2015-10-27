@@ -552,6 +552,30 @@ Enters or leaves the kiosk mode.
 
 Returns whether the window is in kiosk mode.
 
+### `win.hookWindowMessage(message, callback)` _WINDOWS_
+
+* `message` Integer
+* `callback` Function
+
+Hooks a windows message. The `callback` is called when
+the message is received in the WndProc.
+
+### `win.isWindowMessageHooked(message)` _WINDOWS_
+
+* `message` Integer
+
+Returns `true` or `false` depending on whether the message is hooked.
+
+### `win.unhookWindowMessage(message)` _WINDOWS_
+
+* `message` Integer
+
+Unhook the window message.
+
+### `win.unhookAllWindowMessages()` _WINDOWS_
+
+Unhooks all of the window messages.
+
 ### `win.setRepresentedFilename(filename)` _OS X_
 
 * `filename` String

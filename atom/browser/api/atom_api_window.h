@@ -5,6 +5,7 @@
 #ifndef ATOM_BROWSER_API_ATOM_API_WINDOW_H_
 #define ATOM_BROWSER_API_ATOM_API_WINDOW_H_
 
+#include <map>
 #include <string>
 #include <vector>
 
@@ -75,6 +76,11 @@ class Window : public mate::TrackableObject<Window>,
   void OnRendererResponsive() override;
   void OnExecuteWindowsCommand(const std::string& command_name) override;
 
+  #if defined(OS_WIN)
+  void OnWindowMessage(UINT message, WPARAM w_param,
+                       LPARAM l_param) override;
+  #endif
+
   // mate::Wrappable:
   bool IsDestroyed() const override;
 
@@ -142,6 +148,18 @@ class Window : public mate::TrackableObject<Window>,
   void SetMenuBarVisibility(bool visible);
   bool IsMenuBarVisible();
   void SetAspectRatio(double aspect_ratio, mate::Arguments* args);
+
+#if defined(OS_WIN)
+  typedef base::Callback<void(WPARAM, LPARAM)> MessageCallback;
+  typedef std::map<UINT, MessageCallback> MessageCallbackMap;
+  MessageCallbackMap messages_callback_map_;
+
+  bool HookWindowMessage(UINT message,
+                         const MessageCallback& callback);
+  bool IsWindowMessageHooked(UINT message);
+  void UnhookWindowMessage(UINT message);
+  void UnhookAllWindowMessages();
+#endif
 
 #if defined(OS_MACOSX)
   void ShowDefinitionForSelection();
