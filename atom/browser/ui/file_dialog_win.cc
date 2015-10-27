@@ -79,8 +79,25 @@ class FileDialog {
     if (!title.empty())
       GetPtr()->SetTitle(base::UTF8ToUTF16(title).c_str());
 
-    if (!filterspec.empty())
-      GetPtr()->SetDefaultExtension(filterspec.front().pszSpec);
+    // By default, *.* will be added to the file name if file type is "*.*". In
+    // Electron, we disable it to make a better experience.
+    //
+    // From MSDN: https://msdn.microsoft.com/en-us/library/windows/desktop/
+    // bb775970(v=vs.85).aspx
+    //
+    // If SetDefaultExtension is not called, the dialog will not update
+    // automatically when user choose a new file type in the file dialog.
+    //
+    // We set file extension to the first none-wildcard extension to make
+    // sure the dialog will update file extension automatically.
+    for (size_t i = 0; i < filterspec.size(); ++i) {
+      if (std::wstring(filterspec[i].pszSpec) != L"*.*") {
+        // SetFileTypeIndex is regarded as one-based index.
+        GetPtr()->SetFileTypeIndex(i+1);
+        GetPtr()->SetDefaultExtension(filterspec[i].pszSpec);
+        break;
+      }
+    }
 
     SetDefaultFolder(default_path);
   }
