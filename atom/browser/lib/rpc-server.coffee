@@ -3,6 +3,9 @@ path = require 'path'
 objectsRegistry = require './objects-registry.js'
 v8Util = process.atomBinding 'v8_util'
 
+# caches callback with their registry ID.
+rendererCallbacks = {}
+
 # Convert a real value into meta data.
 valueToMeta = (sender, value, optimizeSimpleObject=false) ->
   meta = type: typeof value
@@ -74,6 +77,8 @@ unwrapArgs = (sender, args) ->
         objectsRegistry.once "clear-#{sender.getId()}", ->
           rendererReleased = true
 
+        return rendererCallbacks[meta.id] if rendererCallbacks[meta.id]?
+
         ret = ->
           if rendererReleased
             throw new Error("Attempting to call a function in a renderer window
@@ -81,7 +86,9 @@ unwrapArgs = (sender, args) ->
           sender.send 'ATOM_RENDERER_CALLBACK', meta.id, valueToMeta(sender, arguments)
         v8Util.setDestructor ret, ->
           return if rendererReleased
+          delete rendererCallbacks[meta.id]
           sender.send 'ATOM_RENDERER_RELEASE_CALLBACK', meta.id
+        rendererCallbacks[meta.id] = ret
         ret
       else throw new TypeError("Unknown type: #{meta.type}")
 

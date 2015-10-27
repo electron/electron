@@ -7,6 +7,10 @@ class CallbacksRegistry
   add: (callback) ->
     id = ++@nextId
 
+    for id,value of @callbacks
+      if value == callback
+        return id
+
     # Capture the location of the function and put it in the ID string,
     # so that release errors can be tracked down easily.
     regexp = /at (.*)/gi
