@@ -46,7 +46,6 @@
 * [web-contents](api/web-contents.md)
 * [tray](api/tray.md)
 
-### Modules for the Renderer Process (Web Page):
 ### โมดูลสำหรับโปรเซส Renderer (Web Page):
 
 * [ipc (renderer)](api/ipc-renderer.md)
