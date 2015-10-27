@@ -34,6 +34,12 @@ bool IsDirectory(const base::FilePath& path) {
 void ConvertFilters(const Filters& filters,
                     std::vector<std::wstring>* buffer,
                     std::vector<COMDLG_FILTERSPEC>* filterspec) {
+  if (filters.empty()) {
+    COMDLG_FILTERSPEC spec = { L"All Files (*.*)", L"*.*" };
+    filterspec->push_back(spec);
+    return;
+  }
+
   buffer->reserve(filters.size() * 2);
   for (size_t i = 0; i < filters.size(); ++i) {
     const Filter& filter = filters[i];
