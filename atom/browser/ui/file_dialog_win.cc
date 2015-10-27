@@ -272,7 +272,8 @@ bool ShowSaveDialog(atom::NativeWindow* parent_window,
 
     bool matched = false;
     for (size_t i = 0; i < filter.second.size(); ++i) {
-      if (base::EndsWith(file_name, filter.second[i], false)) {
+      if (filter.second[i] == "*" ||
+          base::EndsWith(file_name, filter.second[i], false)) {
         matched = true;
         break;;
       }
