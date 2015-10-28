@@ -263,7 +263,9 @@ exports.wrapFsWithAsar = (fs) ->
 
     info = archive.getFileInfo filePath
     notFoundError asarPath, filePath unless info
-    return new Buffer(0) if info.size is 0
+
+    if info.size is 0
+      return if options then '' else new Buffer(0)
 
     if info.unpacked
       realPath = archive.copyFileOut filePath
@@ -329,7 +331,7 @@ exports.wrapFsWithAsar = (fs) ->
 
     buffer = new Buffer(info.size)
     fd = archive.getFd()
-    retrun undefined unless fd >= 0
+    return undefined unless fd >= 0
 
     fs.readSync fd, buffer, 0, info.size, info.offset
     buffer.toString 'utf8'

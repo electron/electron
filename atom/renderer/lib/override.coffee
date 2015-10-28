@@ -1,4 +1,3 @@
-process = global.process
 ipc = require 'ipc'
 remote = require 'remote'
 
@@ -11,6 +10,7 @@ resolveUrl = (url) ->
 # Window object returned by "window.open".
 class BrowserWindowProxy
   constructor: (@guestId) ->
+    @closed = false
     ipc.on 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_CLOSED', (guestId) =>
       if guestId is @guestId
         @closed = true
@@ -61,7 +61,7 @@ window.open = (url, frameName='', features='') ->
   (options[name] = parseInt(options[name], 10) if options[name]?) for name in ints
 
   # Inherit the node-integration option of current window.
-  unless options['node-integration']
+  unless options['node-integration']?
     for arg in process.argv when arg.indexOf('--node-integration=') is 0
       options['node-integration'] = arg.substr(-4) is 'true'
       break
@@ -70,7 +70,6 @@ window.open = (url, frameName='', features='') ->
   if guestId
     new BrowserWindowProxy(guestId)
   else
-    console.error 'It is not allowed to open new window from this WebContents'
     null
 
 # Use the dialog API to implement alert().
@@ -79,25 +78,36 @@ window.alert = (message, title='') ->
   buttons = ['OK']
   message = message.toString()
   dialog.showMessageBox remote.getCurrentWindow(), {message, title, buttons}
+  # Alert should always return undefined.
+  return
 
 # And the confirm().
 window.confirm = (message, title='') ->
   dialog = remote.require 'dialog'
   buttons = ['OK', 'Cancel']
-  not dialog.showMessageBox remote.getCurrentWindow(), {message, title, buttons}
+  cancelId = 1
+  not dialog.showMessageBox remote.getCurrentWindow(), {message, title, buttons, cancelId}
 
 # But we do not support prompt().
 window.prompt = ->
   throw new Error('prompt() is and will not be supported.')
 
-# Simple implementation of postMessage.
-unless process.guestInstanceId?
+# Implement window.postMessage if current window is a guest window.
+guestId = ipc.sendSync 'ATOM_SHELL_GUEST_WINDOW_MANAGER_GET_GUEST_ID'
+if guestId?
   window.opener =
     postMessage: (message, targetOrigin='*') ->
-      ipc.send 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_OPENER_POSTMESSAGE', message, targetOrigin
+      ipc.send 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_OPENER_POSTMESSAGE', guestId, message, targetOrigin, location.origin
 
-ipc.on 'ATOM_SHELL_GUEST_WINDOW_POSTMESSAGE', (message, targetOrigin) ->
-  window.postMessage message, targetOrigin
+ipc.on 'ATOM_SHELL_GUEST_WINDOW_POSTMESSAGE', (guestId, message, sourceOrigin) ->
+  # Manually dispatch event instead of using postMessage because we also need to
+  # set event.source.
+  event = document.createEvent 'Event'
+  event.initEvent 'message', false, false
+  event.data = message
+  event.origin = sourceOrigin
+  event.source = new BrowserWindowProxy(guestId)
+  window.dispatchEvent event
 
 # Forward history operations to browser.
 sendHistoryOperation = (args...) ->
@@ -112,3 +122,7 @@ window.history.go = (offset) -> sendHistoryOperation 'goToOffset', offset
 Object.defineProperty window.history, 'length',
   get: ->
     getHistoryOperation 'length'
+
+# Make document.hidden return the correct value.
+Object.defineProperty document, 'hidden',
+  get: -> !remote.getCurrentWindow().isVisible()

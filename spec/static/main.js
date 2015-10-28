@@ -1,8 +1,8 @@
 var app = require('app');
 var ipc = require('ipc');
 var dialog = require('dialog');
+var path = require('path');
 var BrowserWindow = require('browser-window');
-var Menu = require('menu');
 
 var window = null;
 process.port = 0;  // will be used by crash-reporter spec.
@@ -10,16 +10,21 @@ process.port = 0;  // will be used by crash-reporter spec.
 app.commandLine.appendSwitch('js-flags', '--expose_gc');
 app.commandLine.appendSwitch('ignore-certificate-errors');
 
+// Accessing stdout in the main process will result in the process.stdout
+// throwing UnknownSystemError in renderer process sometimes. This line makes
+// sure we can reproduce it in renderer process.
+process.stdout;
+
 ipc.on('message', function(event, arg) {
   event.sender.send('message', arg);
 });
 
 ipc.on('console.log', function(event, args) {
-  console.log.apply(console, args);
+  console.error.apply(console, args);
 });
 
 ipc.on('console.error', function(event, args) {
-  console.log.apply(console, args);
+  console.error.apply(console, args);
 });
 
 ipc.on('process.exit', function(event, code) {
@@ -47,95 +52,8 @@ app.on('window-all-closed', function() {
 });
 
 app.on('ready', function() {
-  var template = [
-    {
-      label: 'Atom',
-      submenu: [
-        {
-          label: 'Quit',
-          accelerator: 'CommandOrControl+Q',
-          click: function(item, window) { app.quit(); }
-        },
-      ],
-    },
-    {
-      label: 'Edit',
-      submenu: [
-        {
-          label: 'Undo',
-          accelerator: 'CommandOrControl+Z',
-          selector: 'undo:',
-        },
-        {
-          label: 'Redo',
-          accelerator: 'CommandOrControl+Shift+Z',
-          selector: 'redo:',
-        },
-        {
-          type: 'separator',
-        },
-        {
-          label: 'Cut',
-          accelerator: 'CommandOrControl+X',
-          selector: 'cut:',
-        },
-        {
-          label: 'Copy',
-          accelerator: 'CommandOrControl+C',
-          selector: 'copy:',
-        },
-        {
-          label: 'Paste',
-          accelerator: 'CommandOrControl+V',
-          selector: 'paste:',
-        },
-        {
-          label: 'Select All',
-          accelerator: 'CommandOrControl+A',
-          selector: 'selectAll:',
-        },
-      ]
-    },
-    {
-      label: 'View',
-      submenu: [
-        {
-          label: 'Reload',
-          accelerator: 'CommandOrControl+R',
-          click: function(item, window) { window.restart(); }
-        },
-        {
-          label: 'Enter Fullscreen',
-          click: function(item, window) { window.setFullScreen(true); }
-        },
-        {
-          label: 'Toggle DevTools',
-          accelerator: 'Alt+CommandOrControl+I',
-          click: function(item, window) { window.toggleDevTools(); }
-        },
-      ]
-    },
-    {
-      label: 'Window',
-      submenu: [
-        {
-          label: 'Open',
-          accelerator: 'CommandOrControl+O',
-        },
-        {
-          label: 'Close',
-          accelerator: 'CommandOrControl+W',
-          click: function(item, window) { window.close(); }
-        },
-      ]
-    },
-  ];
-
-  var menu = Menu.buildFromTemplate(template);
-  app.setApplicationMenu(menu);
-
   // Test if using protocol module would crash.
-  require('protocol').registerProtocol('test-if-crashes', function() {});
+  require('protocol').registerStringProtocol('test-if-crashes', function() {});
 
   window = new BrowserWindow({
     title: 'Electron Tests',
@@ -155,5 +73,28 @@ app.on('ready', function() {
       detail: 'The window is not responding. Would you like to force close it or just keep waiting?'
     });
     if (chosen == 0) window.destroy();
+  });
+
+  // For session's download test, listen 'will-download' event in browser, and
+  // reply the result to renderer for verifying
+  var downloadFilePath = path.join(__dirname, '..', 'fixtures', 'mock.pdf');
+  require('ipc').on('set-download-option', function(event, need_cancel) {
+    window.webContents.session.once('will-download',
+        function(e, item, webContents) {
+          item.setSavePath(downloadFilePath);
+          item.on('done', function(e, state) {
+            window.webContents.send('download-done',
+                                    state,
+                                    item.getUrl(),
+                                    item.getMimeType(),
+                                    item.getReceivedBytes(),
+                                    item.getTotalBytes(),
+                                    item.getContentDisposition(),
+                                    item.getFilename());
+          });
+          if (need_cancel)
+            item.cancel();
+        });
+    event.returnValue = "done";
   });
 });

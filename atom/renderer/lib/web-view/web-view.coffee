@@ -46,6 +46,7 @@ class WebViewImpl
     # that we don't end up allocating a second guest.
     if @guestInstanceId
       guestViewInternal.destroyGuest @guestInstanceId
+      @webContents = null
       @guestInstanceId = undefined
       @beforeFirstNavigation = true
       @attributes[webViewConstants.ATTRIBUTE_PARTITION].validPartitionId = true
@@ -123,11 +124,9 @@ class WebViewImpl
       # changed.
       @dispatchEvent webViewEvent
 
-  onElementResize: (oldSize, newSize) ->
+  onElementResize: (newSize) ->
     # Dispatch the 'resize' event.
     resizeEvent = new Event('resize', bubbles: true)
-    resizeEvent.oldWidth = oldSize.width
-    resizeEvent.oldHeight = oldSize.height
     resizeEvent.newWidth = newSize.width
     resizeEvent.newHeight = newSize.height
     @dispatchEvent resizeEvent
@@ -157,10 +156,10 @@ class WebViewImpl
       enumerable: true
 
   # Updates state upon loadcommit.
-  onLoadCommit: (@baseUrlForDataUrl, @currentEntryIndex, @entryCount, @processId, url, isTopLevel) ->
+  onLoadCommit: (webViewEvent) ->
     oldValue = @webviewNode.getAttribute webViewConstants.ATTRIBUTE_SRC
-    newValue = url
-    if isTopLevel and (oldValue != newValue)
+    newValue = webViewEvent.url
+    if webViewEvent.isMainFrame and (oldValue != newValue)
       # Touching the src attribute triggers a navigation. To avoid
       # triggering a page reload on every guest-initiated navigation,
       # we do not handle this mutation
@@ -190,6 +189,7 @@ class WebViewImpl
 
   attachWindow: (guestInstanceId) ->
     @guestInstanceId = guestInstanceId
+    @webContents = remote.getGuestWebContents @guestInstanceId
     return true unless @internalInstanceId
 
     guestViewInternal.attachGuest @internalInstanceId, @guestInstanceId, @buildParams()
@@ -269,6 +269,7 @@ registerWebViewElement = ->
     "goToOffset"
     "isCrashed"
     "setUserAgent"
+    "getUserAgent"
     "executeJavaScript"
     "insertCSS"
     "openDevTools"
@@ -293,13 +294,14 @@ registerWebViewElement = ->
     "inspectServiceWorker"
     "print"
     "printToPDF"
+    "sendInputEvent"
   ]
 
   # Forward proto.foo* method calls to WebViewImpl.foo*.
   createHandler = (m) ->
     (args...) ->
       internal = v8Util.getHiddenValue this, 'internal'
-      remote.getGuestWebContents(internal.guestInstanceId)[m]  args...
+      internal.webContents[m] args...
   proto[m] = createHandler m for m in methods
 
   window.WebView = webFrame.registerEmbedderCustomElement 'webview',

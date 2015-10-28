@@ -10,6 +10,22 @@
 
 namespace atom {
 
+namespace {
+
+struct ObjectKey {
+  ObjectKey(int id, IDWeakMap* map) : id(id), map(map) {}
+  int id;
+  IDWeakMap* map;
+};
+
+void OnObjectGC(const v8::WeakCallbackInfo<ObjectKey>& data) {
+  ObjectKey* key = data.GetParameter();
+  key->map->Remove(key->id);
+  delete key;
+}
+
+}  // namespace
+
 IDWeakMap::IDWeakMap() : next_id_(0) {
 }
 
@@ -18,11 +34,9 @@ IDWeakMap::~IDWeakMap() {
 
 int32_t IDWeakMap::Add(v8::Isolate* isolate, v8::Local<v8::Object> object) {
   int32_t id = GetNextID();
-  object->SetHiddenValue(mate::StringToSymbol(isolate, "IDWeakMapKey"),
-                         mate::Converter<int32_t>::ToV8(isolate, id));
-
   auto global = make_linked_ptr(new v8::Global<v8::Object>(isolate, object));
-  global->SetWeak(this, &WeakCallback);
+  ObjectKey* key = new ObjectKey(id, this);
+  global->SetWeak(key, OnObjectGC, v8::WeakCallbackType::kParameter);
   map_[id] = global;
   return id;
 }
@@ -69,14 +83,6 @@ void IDWeakMap::Clear() {
 
 int32_t IDWeakMap::GetNextID() {
   return ++next_id_;
-}
-
-// static
-void IDWeakMap::WeakCallback(
-    const v8::WeakCallbackData<v8::Object, IDWeakMap>& data) {
-  int32_t id = data.GetValue()->GetHiddenValue(
-      mate::StringToV8(data.GetIsolate(), "IDWeakMapKey"))->Int32Value();
-  data.GetParameter()->Remove(id);
 }
 
 }  // namespace atom

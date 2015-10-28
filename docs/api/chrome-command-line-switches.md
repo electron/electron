@@ -1,7 +1,7 @@
 # Supported Chrome command line switches
 
-The following command lines switches in Chrome browser are also supported in
-Electron, you can use [app.commandLine.appendSwitch][append-switch] to append
+This page lists the command line switches used by the Chrome browser that are also supported by
+Electron. You can use [app.commandLine.appendSwitch][append-switch] to append
 them in your app's main script before the [ready][ready] event of [app][app]
 module is emitted:
 
@@ -17,11 +17,11 @@ app.on('ready', function() {
 
 ## --client-certificate=`path`
 
-Sets `path` of client certificate file.
+Sets the `path` of client certificate file.
 
 ## --ignore-connections-limit=`domains`
 
-Ignore the connections limit for `domains` list seperated by `,`.
+Ignore the connections limit for `domains` list separated by `,`.
 
 ## --disable-http-cache
 
@@ -29,11 +29,11 @@ Disables the disk cache for HTTP requests.
 
 ## --remote-debugging-port=`port`
 
-Enables remote debug over HTTP on the specified `port`.
+Enables remote debugging over HTTP on the specified `port`.
 
 ## --proxy-server=`address:port`
 
-Uses a specified proxy server, overrides system settings. This switch only
+Use a specified proxy server, which overrides the system setting. This switch only
 affects HTTP and HTTPS requests.
 
 ## --proxy-pac-url=`url`
@@ -42,12 +42,12 @@ Uses the PAC script at the specified `url`.
 
 ## --no-proxy-server
 
-Don't use a proxy server, always make direct connections. Overrides any other
+Don't use a proxy server and always make direct connections. Overrides any other
 proxy server flags that are passed.
 
 ## --host-rules=`rules`
 
-Comma-separated list of `rules` that control how hostnames are mapped.
+A comma-separated list of `rules` that control how hostnames are mapped.
 
 For example:
 
@@ -60,7 +60,7 @@ For example:
   "www.google.com".
 
 These mappings apply to the endpoint host in a net request (the TCP connect
-and host resolver in a direct connection, and the `CONNECT` in an http proxy
+and host resolver in a direct connection, and the `CONNECT` in an HTTP proxy
 connection, and the endpoint host in a `SOCKS` proxy connection).
 
 ## --host-resolver-rules=`rules`
@@ -77,22 +77,39 @@ Ignores certificate related errors.
 
 ## --ppapi-flash-path=`path`
 
-Sets `path` of pepper flash plugin.
+Sets the `path` of the pepper flash plugin.
 
 ## --ppapi-flash-version=`version`
 
-Sets `version` of pepper flash plugin.
+Sets the `version` of the pepper flash plugin.
 
 ## --log-net-log=`path`
 
-Enables saving net log events and writes them to `path`.
+Enables net log events to be saved and writes them to `path`.
+
+## --ssl-version-fallback-min=`version`
+
+Sets the minimum SSL/TLS version ("tls1", "tls1.1" or "tls1.2") that TLS
+fallback will accept.
+
+## --cipher-suite-blacklist=`cipher_suites`
+
+Specify comma-separated list of SSL cipher suites to disable.
+
+## --enable-logging
+
+Prints Chromium's logging into console.
+
+This switch can not be used in `app.commandLine.appendSwitch` since it is parsed
+earlier than user's app is loaded, but you can set the `ELECTRON_ENABLE_LOGGING`
+environment variable to achieve the same effect.
 
 ## --v=`log_level`
 
 Gives the default maximal active V-logging level; 0 is the default. Normally
 positive values are used for V-logging levels.
 
-Passing `--v=-1` will disable logging.
+This switch only works when `--enable-logging` is also passed.
 
 ## --vmodule=`pattern`
 
@@ -102,12 +119,6 @@ source files `my_module.*` and `foo*.*`.
 
 Any pattern containing a forward or backward slash will be tested against the
 whole pathname and not just the module. E.g. `*/foo/bar/*=2` would change the
-logging level for all code in source files under a `foo/bar` directory.
+logging level for all code in the source files under a `foo/bar` directory.
 
-To disable all chromium related logs and only enable your application logs you
-can do:
-
-```javascript
-app.commandLine.appendSwitch('v', -1);
-app.commandLine.appendSwitch('vmodule', 'console=0');
-```
+This switch only works when `--enable-logging` is also passed.

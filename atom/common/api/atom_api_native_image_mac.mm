@@ -14,6 +14,10 @@ void NativeImage::SetTemplateImage(bool setAsTemplate) {
   [image_.AsNSImage() setTemplate:setAsTemplate];
 }
 
+bool NativeImage::IsTemplateImage() {
+  return [image_.AsNSImage() isTemplate];
+}
+
 }  // namespace api
 
 }  // namespace atom

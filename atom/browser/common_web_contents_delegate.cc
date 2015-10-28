@@ -21,6 +21,14 @@
 #include "content/public/browser/render_view_host.h"
 #include "storage/browser/fileapi/isolated_context.h"
 
+#if defined(TOOLKIT_VIEWS)
+#include "atom/browser/native_window_views.h"
+#endif
+
+#if defined(USE_X11)
+#include "atom/browser/browser.h"
+#endif
+
 using content::BrowserThread;
 
 namespace atom {
@@ -128,7 +136,11 @@ void CommonWebContentsDelegate::InitWithWebContents(
 }
 
 void CommonWebContentsDelegate::SetOwnerWindow(NativeWindow* owner_window) {
-  content::WebContents* web_contents = GetWebContents();
+  SetOwnerWindow(GetWebContents(), owner_window);
+}
+
+void CommonWebContentsDelegate::SetOwnerWindow(
+    content::WebContents* web_contents, NativeWindow* owner_window) {
   owner_window_ = owner_window->GetWeakPtr();
   NativeWindowRelay* relay = new NativeWindowRelay(owner_window_);
   web_contents->SetUserData(relay->key, relay);
@@ -274,16 +286,21 @@ void CommonWebContentsDelegate::DevToolsAppendToFile(
                  base::Unretained(this), url));
 }
 
-void CommonWebContentsDelegate::DevToolsAddFileSystem() {
-  file_dialog::Filters filters;
-  base::FilePath default_path;
-  std::vector<base::FilePath> paths;
-  int flag = file_dialog::FILE_DIALOG_OPEN_DIRECTORY;
-  if (!file_dialog::ShowOpenDialog(owner_window(), "", default_path,
-                                   filters, flag, &paths))
-    return;
+void CommonWebContentsDelegate::DevToolsAddFileSystem(
+    const base::FilePath& file_system_path) {
+  base::FilePath path = file_system_path;
+  if (path.empty()) {
+    file_dialog::Filters filters;
+    base::FilePath default_path;
+    std::vector<base::FilePath> paths;
+    int flag = file_dialog::FILE_DIALOG_OPEN_DIRECTORY;
+    if (!file_dialog::ShowOpenDialog(owner_window(), "", default_path,
+                                     filters, flag, &paths))
+      return;
 
-  base::FilePath path = paths[0];
+    path = paths[0];
+  }
+
   std::string registered_name;
   std::string file_system_id = RegisterFileSystem(GetDevToolsWebContents(),
                                                   path,
@@ -313,20 +330,20 @@ void CommonWebContentsDelegate::DevToolsAddFileSystem() {
 }
 
 void CommonWebContentsDelegate::DevToolsRemoveFileSystem(
-    const std::string& file_system_path) {
+    const base::FilePath& file_system_path) {
   if (!web_contents_)
     return;
 
-  base::FilePath path = base::FilePath::FromUTF8Unsafe(file_system_path);
-  storage::IsolatedContext::GetInstance()->RevokeFileSystemByPath(path);
+  storage::IsolatedContext::GetInstance()->
+      RevokeFileSystemByPath(file_system_path);
 
   for (auto it = saved_paths_.begin(); it != saved_paths_.end(); ++it)
-    if (it->second == path) {
+    if (it->second == file_system_path) {
       saved_paths_.erase(it);
       break;
     }
 
-  base::StringValue file_system_path_value(file_system_path);
+  base::StringValue file_system_path_value(file_system_path.AsUTF8Unsafe());
   web_contents_->CallClientFunction(
       "DevToolsAPI.fileSystemRemoved",
        &file_system_path_value,
@@ -349,6 +366,23 @@ void CommonWebContentsDelegate::OnDevToolsAppendToFile(
   web_contents_->CallClientFunction(
       "DevToolsAPI.appendedToURL", &url_value, nullptr, nullptr);
 }
+
+#if defined(TOOLKIT_VIEWS)
+gfx::ImageSkia CommonWebContentsDelegate::GetDevToolsWindowIcon() {
+  if (!owner_window())
+    return gfx::ImageSkia();
+  return static_cast<views::WidgetDelegate*>(static_cast<NativeWindowViews*>(
+      owner_window()))->GetWindowAppIcon();
+}
+#endif
+
+#if defined(USE_X11)
+void CommonWebContentsDelegate::GetDevToolsWindowWMClass(
+    std::string* name, std::string* class_name) {
+  *class_name = Browser::Get()->GetName();
+  *name = base::StringToLowerASCII(*class_name);
+}
+#endif
 
 void CommonWebContentsDelegate::SetHtmlApiFullscreen(bool enter_fullscreen) {
   // Window is already in fullscreen mode, save the state.

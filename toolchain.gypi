@@ -9,6 +9,9 @@
     'sysroot%': '',
 
     'variables': {
+      # The minimum OS X SDK version to use.
+      'mac_sdk_min%': '10.10',
+
       # Set ARM architecture version.
       'arm_version%': 7,
 
@@ -17,6 +20,7 @@
     },
 
     # Copy conditionally-set variables out one scope.
+    'mac_sdk_min%': '<(mac_sdk_min)',
     'arm_version%': '<(arm_version)',
     'arm_neon%': '<(arm_neon)',
 
@@ -34,6 +38,11 @@
       ['OS!="win"', {
         'source_root': '<!(cd <(DEPTH) && pwd -P)',
       }],  # OS!="win"
+
+      # Search for the available version of SDK.
+      ['OS=="mac"', {
+        'mac_sdk%': '<!(python <(DEPTH)/tools/mac/find_sdk.py <(mac_sdk_min))',
+      }],
 
       # Set default compiler flags depending on ARM version.
       ['arm_version==6', {
@@ -93,6 +102,15 @@
         ],
       },
     }],  # clang==1
+
+    # Specify the SDKROOT.
+    ['OS=="mac"', {
+      'target_defaults': {
+        'xcode_settings': {
+          'SDKROOT': 'macosx<(mac_sdk)',  # -isysroot
+        },
+      },
+    }],
 
     # Setup sysroot environment.
     ['OS=="linux" and target_arch in ["arm", "ia32"]', {

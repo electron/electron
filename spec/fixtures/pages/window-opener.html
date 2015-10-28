@@ -1,0 +1,11 @@
+<html>
+<body>
+<script type="text/javascript" charset="utf-8">
+  if (window.opener !== null)
+    window.opener.postMessage(typeof window.opener, '*');
+  else
+    require('ipc').send('opener', window.opener);
+</script>
+</body>
+</html>
+

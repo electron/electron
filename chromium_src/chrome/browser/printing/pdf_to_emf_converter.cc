@@ -296,8 +296,7 @@ void PdfToEmfUtilityProcessHostClient::Start(
   // generate when sent to a metafile DC.
   utility_process_host_ =
       content::UtilityProcessHost::Create(
-          this, base::MessageLoop::current()->message_loop_proxy())
-          ->AsWeakPtr();
+          this, base::MessageLoop::current()->task_runner())->AsWeakPtr();
   if (!utility_process_host_)
     return OnFailed();
   // Should reply with OnProcessStarted().

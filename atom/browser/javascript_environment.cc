@@ -4,7 +4,9 @@
 
 #include "atom/browser/javascript_environment.h"
 
+#include "base/command_line.h"
 #include "gin/array_buffer.h"
+#include "gin/v8_initializer.h"
 
 namespace atom {
 
@@ -19,7 +21,12 @@ JavascriptEnvironment::JavascriptEnvironment()
 }
 
 bool JavascriptEnvironment::Initialize() {
-  gin::IsolateHolder::LoadV8Snapshot();
+  auto cmd = base::CommandLine::ForCurrentProcess();
+  if (cmd->HasSwitch("debug-brk")) {
+    // Need to be called before v8::Initialize().
+    const char expose_debug_as[] = "--expose_debug_as=v8debug";
+    v8::V8::SetFlagsFromString(expose_debug_as, sizeof(expose_debug_as) - 1);
+  }
   gin::IsolateHolder::Initialize(gin::IsolateHolder::kNonStrictMode,
                                  gin::ArrayBufferAllocator::SharedInstance());
   return true;

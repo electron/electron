@@ -8,10 +8,6 @@
 #include <utility>
 #include <vector>
 
-#if defined(OS_WIN)
-#include <shlobj.h>
-#endif
-
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/window_list.h"
@@ -19,12 +15,10 @@
 #include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/options_switches.h"
-#include "base/command_line.h"
 #include "base/files/file_util.h"
 #include "base/json/json_writer.h"
 #include "base/prefs/pref_service.h"
 #include "base/message_loop/message_loop.h"
-#include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "brightray/browser/inspectable_web_contents.h"
 #include "brightray/browser/inspectable_web_contents_view.h"
@@ -35,8 +29,6 @@
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/render_widget_host_view.h"
 #include "content/public/common/content_switches.h"
-#include "content/public/common/renderer_preferences.h"
-#include "content/public/common/web_preferences.h"
 #include "ipc/ipc_message_macros.h"
 #include "native_mate/dictionary.h"
 #include "ui/gfx/codec/png_codec.h"
@@ -47,52 +39,26 @@
 #include "ui/gfx/screen.h"
 #include "ui/gl/gpu_switching_manager.h"
 
-#if defined(OS_WIN)
-#include "ui/gfx/switches.h"
-#endif
-
-using content::NavigationEntry;
-using content::RenderWidgetHostView;
-using content::RenderWidgetHost;
-
 DEFINE_WEB_CONTENTS_USER_DATA_KEY(atom::NativeWindowRelay);
 
 namespace atom {
-
-namespace {
-
-// Array of available web runtime features.
-const char* kWebRuntimeFeatures[] = {
-  switches::kExperimentalFeatures,
-  switches::kExperimentalCanvasFeatures,
-  switches::kSubpixelFontScaling,
-  switches::kOverlayScrollbars,
-  switches::kOverlayFullscreenVideo,
-  switches::kSharedWorker,
-  switches::kPageVisibility,
-};
-
-}  // namespace
 
 NativeWindow::NativeWindow(
     brightray::InspectableWebContents* inspectable_web_contents,
     const mate::Dictionary& options)
     : content::WebContentsObserver(inspectable_web_contents->GetWebContents()),
       has_frame_(true),
+      force_using_draggable_region_(false),
       transparent_(false),
       enable_larger_than_screen_(false),
       is_closed_(false),
-      node_integration_(true),
       has_dialog_attached_(false),
-      zoom_factor_(1.0),
+      aspect_ratio_(0.0),
       inspectable_web_contents_(inspectable_web_contents),
       weak_factory_(this) {
-  inspectable_web_contents->GetView()->SetDelegate(this);
-
   options.Get(switches::kFrame, &has_frame_);
   options.Get(switches::kTransparent, &transparent_);
   options.Get(switches::kEnableLargerThanScreen, &enable_larger_than_screen_);
-  options.Get(switches::kNodeIntegration, &node_integration_);
 
   // Tell the content module to initialize renderer widget with transparent
   // mode.
@@ -100,25 +66,6 @@ NativeWindow::NativeWindow(
 
   // Read icon before window is created.
   options.Get(switches::kIcon, &icon_);
-
-  // The "preload" option must be absolute path.
-  if (options.Get(switches::kPreloadScript, &preload_script_) &&
-      !preload_script_.IsAbsolute()) {
-    LOG(ERROR) << "Path of \"preload\" script must be absolute.";
-    preload_script_.clear();
-  }
-
-  // Be compatible with old API of "node-integration" option.
-  std::string old_string_token;
-  if (options.Get(switches::kNodeIntegration, &old_string_token) &&
-      old_string_token != "disable")
-    node_integration_ = true;
-
-  // Read the web preferences.
-  options.Get(switches::kWebPreferences, &web_preferences_);
-
-  // Read the zoom factor before any navigation.
-  options.Get(switches::kZoomFactor, &zoom_factor_);
 
   WindowList::AddWindow(this);
 }
@@ -145,27 +92,35 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
   int x = -1, y = -1;
   bool center;
   if (options.Get(switches::kX, &x) && options.Get(switches::kY, &y)) {
-    int width = -1, height = -1;
-    options.Get(switches::kWidth, &width);
-    options.Get(switches::kHeight, &height);
-    SetBounds(gfx::Rect(x, y, width, height));
+    SetPosition(gfx::Point(x, y));
   } else if (options.Get(switches::kCenter, &center) && center) {
     Center();
   }
+  // On Linux and Window we may already have maximum size defined.
+  extensions::SizeConstraints size_constraints(GetContentSizeConstraints());
   int min_height = 0, min_width = 0;
   if (options.Get(switches::kMinHeight, &min_height) |
       options.Get(switches::kMinWidth, &min_width)) {
-    SetMinimumSize(gfx::Size(min_width, min_height));
+    size_constraints.set_minimum_size(gfx::Size(min_width, min_height));
   }
   int max_height = INT_MAX, max_width = INT_MAX;
   if (options.Get(switches::kMaxHeight, &max_height) |
       options.Get(switches::kMaxWidth, &max_width)) {
-    SetMaximumSize(gfx::Size(max_width, max_height));
+    size_constraints.set_maximum_size(gfx::Size(max_width, max_height));
   }
+  bool use_content_size = false;
+  options.Get(switches::kUseContentSize, &use_content_size);
+  if (use_content_size) {
+    SetContentSizeConstraints(size_constraints);
+  } else {
+    SetSizeConstraints(size_constraints);
+  }
+#if defined(OS_WIN) || defined(USE_X11)
   bool resizable;
   if (options.Get(switches::kResizable, &resizable)) {
     SetResizable(resizable);
   }
+#endif
   bool top;
   if (options.Get(switches::kAlwaysOnTop, &top) && top) {
     SetAlwaysOnTop(true);
@@ -183,6 +138,10 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
   bool kiosk;
   if (options.Get(switches::kKiosk, &kiosk) && kiosk) {
     SetKiosk(kiosk);
+  }
+  std::string color;
+  if (options.Get(switches::kBackgroundColor, &color)) {
+    SetBackgroundColor(color);
   }
   std::string title("Electron");
   options.Get(switches::kTitle, &title);
@@ -211,6 +170,67 @@ gfx::Point NativeWindow::GetPosition() {
   return GetBounds().origin();
 }
 
+void NativeWindow::SetContentSize(const gfx::Size& size) {
+  SetSize(ContentSizeToWindowSize(size));
+}
+
+gfx::Size NativeWindow::GetContentSize() {
+  return WindowSizeToContentSize(GetSize());
+}
+
+void NativeWindow::SetSizeConstraints(
+    const extensions::SizeConstraints& window_constraints) {
+  extensions::SizeConstraints content_constraints;
+  if (window_constraints.HasMaximumSize())
+    content_constraints.set_maximum_size(
+        WindowSizeToContentSize(window_constraints.GetMaximumSize()));
+  if (window_constraints.HasMinimumSize())
+    content_constraints.set_minimum_size(
+        WindowSizeToContentSize(window_constraints.GetMinimumSize()));
+  SetContentSizeConstraints(content_constraints);
+}
+
+extensions::SizeConstraints NativeWindow::GetSizeConstraints() {
+  extensions::SizeConstraints content_constraints = GetContentSizeConstraints();
+  extensions::SizeConstraints window_constraints;
+  if (content_constraints.HasMaximumSize())
+    window_constraints.set_maximum_size(
+        ContentSizeToWindowSize(content_constraints.GetMaximumSize()));
+  if (content_constraints.HasMinimumSize())
+    window_constraints.set_minimum_size(
+        ContentSizeToWindowSize(content_constraints.GetMinimumSize()));
+  return window_constraints;
+}
+
+void NativeWindow::SetContentSizeConstraints(
+    const extensions::SizeConstraints& size_constraints) {
+  size_constraints_ = size_constraints;
+}
+
+extensions::SizeConstraints NativeWindow::GetContentSizeConstraints() {
+  return size_constraints_;
+}
+
+void NativeWindow::SetMinimumSize(const gfx::Size& size) {
+  extensions::SizeConstraints size_constraints;
+  size_constraints.set_minimum_size(size);
+  SetSizeConstraints(size_constraints);
+}
+
+gfx::Size NativeWindow::GetMinimumSize() {
+  return GetSizeConstraints().GetMinimumSize();
+}
+
+void NativeWindow::SetMaximumSize(const gfx::Size& size) {
+  extensions::SizeConstraints size_constraints;
+  size_constraints.set_maximum_size(size);
+  SetSizeConstraints(size_constraints);
+}
+
+gfx::Size NativeWindow::GetMaximumSize() {
+  return GetSizeConstraints().GetMaximumSize();
+}
+
 void NativeWindow::SetRepresentedFilename(const std::string& filename) {
 }
 
@@ -228,24 +248,6 @@ bool NativeWindow::IsDocumentEdited() {
 void NativeWindow::SetMenu(ui::MenuModel* menu) {
 }
 
-void NativeWindow::ShowDefinitionForSelection() {
-  NOTIMPLEMENTED();
-}
-
-void NativeWindow::SetAutoHideMenuBar(bool auto_hide) {
-}
-
-bool NativeWindow::IsMenuBarAutoHide() {
-  return false;
-}
-
-void NativeWindow::SetMenuBarVisibility(bool visible) {
-}
-
-bool NativeWindow::IsMenuBarVisible() {
-  return true;
-}
-
 bool NativeWindow::HasModalDialog() {
   return has_dialog_attached_;
 }
@@ -261,6 +263,10 @@ void NativeWindow::BlurWebView() {
 bool NativeWindow::IsWebViewFocused() {
   auto host_view = web_contents()->GetRenderViewHost()->GetView();
   return host_view && host_view->HasFocus();
+}
+
+bool NativeWindow::IsDevToolsFocused() {
+  return inspectable_web_contents_->GetView()->IsDevToolsViewFocused();
 }
 
 void NativeWindow::CapturePage(const gfx::Rect& rect,
@@ -294,6 +300,38 @@ void NativeWindow::CapturePage(const gfx::Rect& rect,
                  weak_factory_.GetWeakPtr(),
                  callback),
       kBGRA_8888_SkColorType);
+}
+
+void NativeWindow::ShowDefinitionForSelection() {
+  NOTIMPLEMENTED();
+}
+
+void NativeWindow::SetAutoHideMenuBar(bool auto_hide) {
+}
+
+bool NativeWindow::IsMenuBarAutoHide() {
+  return false;
+}
+
+void NativeWindow::SetMenuBarVisibility(bool visible) {
+}
+
+bool NativeWindow::IsMenuBarVisible() {
+  return true;
+}
+
+double NativeWindow::GetAspectRatio() {
+  return aspect_ratio_;
+}
+
+gfx::Size NativeWindow::GetAspectRatioExtraSize() {
+  return aspect_ratio_extraSize_;
+}
+
+void NativeWindow::SetAspectRatio(double aspect_ratio,
+                                  const gfx::Size& extra_size) {
+  aspect_ratio_ = aspect_ratio;
+  aspect_ratio_extraSize_ = extra_size;
 }
 
 void NativeWindow::RequestToClosePage() {
@@ -352,86 +390,6 @@ void NativeWindow::RendererUnresponsive(content::WebContents* source) {
 void NativeWindow::RendererResponsive(content::WebContents* source) {
   window_unresposive_closure_.Cancel();
   FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnRendererResponsive());
-}
-
-void NativeWindow::AppendExtraCommandLineSwitches(
-    base::CommandLine* command_line) {
-  // Append --node-integration to renderer process.
-  command_line->AppendSwitchASCII(switches::kNodeIntegration,
-                                  node_integration_ ? "true" : "false");
-
-  // Append --preload.
-  if (!preload_script_.empty())
-    command_line->AppendSwitchPath(switches::kPreloadScript, preload_script_);
-
-  // Append --zoom-factor.
-  if (zoom_factor_ != 1.0)
-    command_line->AppendSwitchASCII(switches::kZoomFactor,
-                                    base::DoubleToString(zoom_factor_));
-
-#if defined(OS_WIN)
-  // Append --app-user-model-id.
-  PWSTR current_app_id;
-  if (SUCCEEDED(GetCurrentProcessExplicitAppUserModelID(&current_app_id))) {
-    command_line->AppendSwitchNative(switches::kAppUserModelId, current_app_id);
-    CoTaskMemFree(current_app_id);
-  }
-#endif
-
-  if (web_preferences_.IsEmpty())
-    return;
-
-  bool b;
-#if defined(OS_WIN)
-  // Check if DirectWrite is disabled.
-  if (web_preferences_.Get(switches::kDirectWrite, &b) && !b)
-    command_line->AppendSwitch(::switches::kDisableDirectWrite);
-#endif
-
-  // Check if plugins are enabled.
-  if (web_preferences_.Get("plugins", &b) && b)
-    command_line->AppendSwitch(switches::kEnablePlugins);
-
-  // This set of options are not availabe in WebPreferences, so we have to pass
-  // them via command line and enable them in renderer procss.
-  for (size_t i = 0; i < arraysize(kWebRuntimeFeatures); ++i) {
-    const char* feature = kWebRuntimeFeatures[i];
-    if (web_preferences_.Get(feature, &b))
-      command_line->AppendSwitchASCII(feature, b ? "true" : "false");
-  }
-}
-
-void NativeWindow::OverrideWebkitPrefs(content::WebPreferences* prefs) {
-  if (web_preferences_.IsEmpty())
-    return;
-
-  bool b;
-  std::vector<base::FilePath> list;
-  if (web_preferences_.Get("javascript", &b))
-    prefs->javascript_enabled = b;
-  if (web_preferences_.Get("images", &b))
-    prefs->images_enabled = b;
-  if (web_preferences_.Get("java", &b))
-    prefs->java_enabled = b;
-  if (web_preferences_.Get("text-areas-are-resizable", &b))
-    prefs->text_areas_are_resizable = b;
-  if (web_preferences_.Get("webgl", &b))
-    prefs->experimental_webgl_enabled = b;
-  if (web_preferences_.Get("webaudio", &b))
-    prefs->webaudio_enabled = b;
-  if (web_preferences_.Get("web-security", &b)) {
-    prefs->web_security_enabled = b;
-    prefs->allow_displaying_insecure_content = !b;
-    prefs->allow_running_insecure_content = !b;
-  }
-  if (web_preferences_.Get("extra-plugin-dirs", &list)) {
-    if (content::PluginService::GetInstance()->NPAPIPluginsSupported()) {
-      for (size_t i = 0; i < list.size(); ++i)
-        content::PluginService::GetInstance()->AddExtraPluginDir(list[i]);
-    } else {
-      LOG(WARNING) << "NPAPI plugins not supported on this platform";
-    }
-  }
 }
 
 void NativeWindow::NotifyWindowClosed() {
@@ -500,16 +458,32 @@ void NativeWindow::NotifyWindowLeaveHtmlFullScreen() {
                     OnWindowLeaveHtmlFullScreen());
 }
 
-void NativeWindow::DevToolsFocused() {
-  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnDevToolsFocus());
+void NativeWindow::NotifyWindowExecuteWindowsCommand(
+    const std::string& command) {
+  FOR_EACH_OBSERVER(NativeWindowObserver, observers_,
+                    OnExecuteWindowsCommand(command));
 }
 
-void NativeWindow::DevToolsOpened() {
-  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnDevToolsOpened());
+#if defined(OS_WIN)
+void NativeWindow::NotifyWindowMessage(UINT message, WPARAM w_param,
+                                       LPARAM l_param) {
+  FOR_EACH_OBSERVER(NativeWindowObserver, observers_,
+                    OnWindowMessage(message, w_param, l_param));
 }
+#endif
 
-void NativeWindow::DevToolsClosed() {
-  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnDevToolsClosed());
+scoped_ptr<SkRegion> NativeWindow::DraggableRegionsToSkRegion(
+    const std::vector<DraggableRegion>& regions) {
+  scoped_ptr<SkRegion> sk_region(new SkRegion);
+  for (const DraggableRegion& region : regions) {
+    sk_region->op(
+        region.bounds.x(),
+        region.bounds.y(),
+        region.bounds.right(),
+        region.bounds.bottom(),
+        region.draggable ? SkRegion::kUnion_Op : SkRegion::kDifference_Op);
+  }
+  return sk_region.Pass();
 }
 
 void NativeWindow::RenderViewCreated(
@@ -534,7 +508,7 @@ void NativeWindow::BeforeUnloadDialogCancelled() {
 void NativeWindow::TitleWasSet(content::NavigationEntry* entry,
                                bool explicit_set) {
   bool prevent_default = false;
-  std::string text = base::UTF16ToUTF8(entry->GetTitle());
+  std::string text = entry ? base::UTF16ToUTF8(entry->GetTitle()) : "";
   FOR_EACH_OBSERVER(NativeWindowObserver,
                     observers_,
                     OnPageTitleUpdated(&prevent_default, text));
@@ -551,6 +525,14 @@ bool NativeWindow::OnMessageReceived(const IPC::Message& message) {
   IPC_END_MESSAGE_MAP()
 
   return handled;
+}
+
+void NativeWindow::UpdateDraggableRegions(
+    const std::vector<DraggableRegion>& regions) {
+  // Draggable region is not supported for non-frameless window.
+  if (has_frame_ && !force_using_draggable_region_)
+    return;
+  draggable_region_ = DraggableRegionsToSkRegion(regions);
 }
 
 void NativeWindow::ScheduleUnresponsiveEvent(int ms) {

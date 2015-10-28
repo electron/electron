@@ -64,4 +64,23 @@ CrashReporter::GetUploadedReports(const std::string& path) {
   return result;
 }
 
+void CrashReporter::InitBreakpad(const std::string& product_name,
+                                 const std::string& version,
+                                 const std::string& company_name,
+                                 const std::string& submit_url,
+                                 bool auto_submit,
+                                 bool skip_system_crash_handler) {
+}
+
+void CrashReporter::SetUploadParameters() {
+}
+
+#if defined(OS_MACOSX) && defined(MAS_BUILD)
+// static
+CrashReporter* CrashReporter::GetInstance() {
+  static CrashReporter crash_reporter;
+  return &crash_reporter;
+}
+#endif
+
 }  // namespace crash_reporter

@@ -1,4 +1,3 @@
-process = global.process
 ipc = require 'ipc'
 v8Util = process.atomBinding 'v8_util'
 CallbacksRegistry = require 'callbacks-registry'
@@ -20,6 +19,8 @@ wrapArgs = (args, visited=[]) ->
       type: 'array', value: wrapArgs(value, visited)
     else if Buffer.isBuffer value
       type: 'buffer', value: Array::slice.call(value, 0)
+    else if value? and value.constructor.name is 'Promise'
+      type: 'promise', then: valueToMeta(value.then.bind(value))
     else if value? and typeof value is 'object' and v8Util.getHiddenValue value, 'atomId'
       type: 'remote-object', id: v8Util.getHiddenValue value, 'atomId'
     else if value? and typeof value is 'object'
@@ -44,7 +45,10 @@ metaToValue = (meta) ->
     when 'value' then meta.value
     when 'array' then (metaToValue(el) for el in meta.members)
     when 'buffer' then new Buffer(meta.value)
-    when 'error'
+    when 'promise' then Promise.resolve(then: metaToValue(meta.then))
+    when 'error' then new Error(meta.message)
+    when 'date' then new Date(meta.value)
+    when 'exception'
       throw new Error("#{meta.message}\n#{meta.stack}")
     else
       if meta.type is 'function'
@@ -99,7 +103,7 @@ metaToValue = (meta) ->
       # Track delegate object's life time, and tell the browser to clean up
       # when the object is GCed.
       v8Util.setDestructor ret, ->
-        ipc.send 'ATOM_BROWSER_DEREFERENCE', meta.storeId
+        ipc.send 'ATOM_BROWSER_DEREFERENCE', meta.id
 
       # Remember object's id.
       v8Util.setHiddenValue ret, 'atomId', meta.id
@@ -128,7 +132,7 @@ exports.require = (module) ->
 windowCache = null
 exports.getCurrentWindow = ->
   return windowCache if windowCache?
-  meta = ipc.sendSync 'ATOM_BROWSER_CURRENT_WINDOW', process.guestInstanceId
+  meta = ipc.sendSync 'ATOM_BROWSER_CURRENT_WINDOW'
   windowCache = metaToValue meta
 
 # Get current WebContents object.

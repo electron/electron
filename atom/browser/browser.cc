@@ -16,7 +16,8 @@ namespace atom {
 
 Browser::Browser()
     : is_quiting_(false),
-      is_ready_(false) {
+      is_ready_(false),
+      is_shutdown_(false) {
   WindowList::AddObserver(this);
 }
 
@@ -30,6 +31,9 @@ Browser* Browser::Get() {
 }
 
 void Browser::Quit() {
+  if (is_quiting_)
+    return;
+
   is_quiting_ = HandleBeforeQuit();
   if (!is_quiting_)
     return;
@@ -42,10 +46,21 @@ void Browser::Quit() {
 }
 
 void Browser::Shutdown() {
+  if (is_shutdown_)
+    return;
+
+  is_shutdown_ = true;
+  is_quiting_ = true;
+
   FOR_EACH_OBSERVER(BrowserObserver, observers_, OnQuit());
 
-  is_quiting_ = true;
-  base::MessageLoop::current()->Quit();
+  if (base::MessageLoop::current()) {
+    base::MessageLoop::current()->PostTask(
+        FROM_HERE, base::MessageLoop::QuitWhenIdleClosure());
+  } else {
+    // There is no message loop available so we are in early stage.
+    exit(0);
+  }
 }
 
 std::string Browser::GetVersion() const {
@@ -93,8 +108,10 @@ void Browser::OpenURL(const std::string& url) {
   FOR_EACH_OBSERVER(BrowserObserver, observers_, OnOpenURL(url));
 }
 
-void Browser::ActivateWithNoOpenWindows() {
-  FOR_EACH_OBSERVER(BrowserObserver, observers_, OnActivateWithNoOpenWindows());
+void Browser::Activate(bool has_visible_windows) {
+  FOR_EACH_OBSERVER(BrowserObserver,
+                    observers_,
+                    OnActivate(has_visible_windows));
 }
 
 void Browser::WillFinishLaunching() {
@@ -118,6 +135,9 @@ void Browser::ClientCertificateSelector(
 }
 
 void Browser::NotifyAndShutdown() {
+  if (is_shutdown_)
+    return;
+
   bool prevent_default = false;
   FOR_EACH_OBSERVER(BrowserObserver, observers_, OnWillQuit(&prevent_default));
 

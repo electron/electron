@@ -42,6 +42,9 @@ const char kAcceptFirstMouse[] = "accept-first-mouse";
 // Whether window size should include window frame.
 const char kUseContentSize[] = "use-content-size";
 
+// The requested title bar style for the window
+const char kTitleBarStyle[] = "title-bar-style";
+
 // The WebPreferences.
 const char kWebPreferences[] = "web-preferences";
 
@@ -75,6 +78,9 @@ const char kGuestInstanceID[] = "guest-instance-id";
 // Script that will be loaded by guest WebContents before other scripts.
 const char kPreloadScript[] = "preload";
 
+// Like --preload, but the passed argument is an URL.
+const char kPreloadUrl[] = "preload-url";
+
 // Whether the window should be transparent.
 const char kTransparent[] = "transparent";
 
@@ -87,13 +93,15 @@ const char kDisableAutoHideCursor[] = "disable-auto-hide-cursor";
 // Use the OS X's standard window instead of the textured window.
 const char kStandardWindow[] = "standard-window";
 
+// Default browser window background color.
+const char kBackgroundColor[] = "background-color";
+
 // Path to client certificate.
 const char kClientCertificate[] = "client-certificate";
 
 // Web runtime features.
 const char kExperimentalFeatures[]       = "experimental-features";
 const char kExperimentalCanvasFeatures[] = "experimental-canvas-features";
-const char kSubpixelFontScaling[]        = "subpixel-font-scaling";
 const char kOverlayScrollbars[]          = "overlay-scrollbars";
 const char kOverlayFullscreenVideo[]     = "overlay-fullscreen-video";
 const char kSharedWorker[]               = "shared-worker";
@@ -106,6 +114,13 @@ const char kDisableHttpCache[] = "disable-http-cache";
 
 // Register schemes to standard.
 const char kRegisterStandardSchemes[] = "register-standard-schemes";
+
+// The minimum SSL/TLS version ("tls1", "tls1.1", or "tls1.2") that
+// TLS fallback will accept.
+const char kSSLVersionFallbackMin[] = "ssl-version-fallback-min";
+
+// Comma-separated list of SSL cipher suites to disable.
+const char kCipherSuiteBlacklist[] = "cipher-suite-blacklist";
 
 // The browser process app model ID
 const char kAppUserModelId[] = "app-user-model-id";

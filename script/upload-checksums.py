@@ -40,6 +40,7 @@ def get_files_list(version):
   return [
     'node-{0}.tar.gz'.format(version),
     'iojs-{0}.tar.gz'.format(version),
+    'iojs-{0}-headers.tar.gz'.format(version),
     'node.lib',
     'x64/node.lib',
     'win-x86/iojs.lib',

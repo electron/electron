@@ -5,12 +5,14 @@
 #ifndef ATOM_BROWSER_API_ATOM_API_WINDOW_H_
 #define ATOM_BROWSER_API_ATOM_API_WINDOW_H_
 
+#include <map>
 #include <string>
 #include <vector>
 
 #include "base/memory/scoped_ptr.h"
 #include "ui/gfx/image/image.h"
 #include "atom/browser/api/trackable_object.h"
+#include "atom/browser/native_window.h"
 #include "atom/browser/native_window_observer.h"
 #include "native_mate/handle.h"
 
@@ -42,6 +44,10 @@ class Window : public mate::TrackableObject<Window>,
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::ObjectTemplate> prototype);
 
+  // Returns the BrowserWindow object from |native_window|.
+  static v8::Local<v8::Value> From(v8::Isolate* isolate,
+                                   NativeWindow* native_window);
+
   NativeWindow* window() const { return window_.get(); }
 
  protected:
@@ -68,17 +74,21 @@ class Window : public mate::TrackableObject<Window>,
   void OnWindowLeaveHtmlFullScreen() override;
   void OnRendererUnresponsive() override;
   void OnRendererResponsive() override;
-  void OnDevToolsFocus() override;
-  void OnDevToolsOpened() override;
-  void OnDevToolsClosed() override;
   void OnExecuteWindowsCommand(const std::string& command_name) override;
+
+  #if defined(OS_WIN)
+  void OnWindowMessage(UINT message, WPARAM w_param,
+                       LPARAM l_param) override;
+  #endif
 
   // mate::Wrappable:
   bool IsDestroyed() const override;
 
  private:
+  // mate::TrackableObject:
+  void Destroy() override;
+
   // APIs for NativeWindow.
-  void Destroy();
   void Close();
   bool IsClosed();
   void Focus();
@@ -118,9 +128,11 @@ class Window : public mate::TrackableObject<Window>,
   void SetSkipTaskbar(bool skip);
   void SetKiosk(bool kiosk);
   bool IsKiosk();
+  void SetBackgroundColor(const std::string& color_name);
   void FocusOnWebView();
   void BlurWebView();
   bool IsWebViewFocused();
+  bool IsDevToolsFocused();
   void SetRepresentedFilename(const std::string& filename);
   std::string GetRepresentedFilename();
   void SetDocumentEdited(bool edited);
@@ -129,11 +141,25 @@ class Window : public mate::TrackableObject<Window>,
   void SetProgressBar(double progress);
   void SetOverlayIcon(const gfx::Image& overlay,
                       const std::string& description);
+  bool SetThumbarButtons(mate::Arguments* args);
   void SetMenu(v8::Isolate* isolate, v8::Local<v8::Value> menu);
   void SetAutoHideMenuBar(bool auto_hide);
   bool IsMenuBarAutoHide();
   void SetMenuBarVisibility(bool visible);
   bool IsMenuBarVisible();
+  void SetAspectRatio(double aspect_ratio, mate::Arguments* args);
+
+#if defined(OS_WIN)
+  typedef base::Callback<void(WPARAM, LPARAM)> MessageCallback;
+  typedef std::map<UINT, MessageCallback> MessageCallbackMap;
+  MessageCallbackMap messages_callback_map_;
+
+  bool HookWindowMessage(UINT message,
+                         const MessageCallback& callback);
+  bool IsWindowMessageHooked(UINT message);
+  void UnhookWindowMessage(UINT message);
+  void UnhookAllWindowMessages();
+#endif
 
 #if defined(OS_MACOSX)
   void ShowDefinitionForSelection();
@@ -144,10 +170,8 @@ class Window : public mate::TrackableObject<Window>,
 
   int32_t ID() const;
   v8::Local<v8::Value> WebContents(v8::Isolate* isolate);
-  v8::Local<v8::Value> DevToolsWebContents(v8::Isolate* isolate);
 
   v8::Global<v8::Value> web_contents_;
-  v8::Global<v8::Value> devtools_web_contents_;
   v8::Global<v8::Value> menu_;
 
   api::WebContents* api_web_contents_;

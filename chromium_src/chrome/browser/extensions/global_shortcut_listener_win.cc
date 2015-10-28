@@ -4,11 +4,14 @@
 
 #include "chrome/browser/extensions/global_shortcut_listener_win.h"
 
+#include "base/bind.h"
+#include "base/bind_helpers.h"
 #include "base/win/win_util.h"
 #include "content/public/browser/browser_thread.h"
 #include "ui/base/accelerators/accelerator.h"
 #include "ui/events/event_constants.h"
 #include "ui/events/keycodes/keyboard_code_conversion_win.h"
+#include "ui/gfx/win/singleton_hwnd.h"
 
 using content::BrowserThread;
 
@@ -35,14 +38,17 @@ GlobalShortcutListenerWin::~GlobalShortcutListenerWin() {
 void GlobalShortcutListenerWin::StartListening() {
   DCHECK(!is_listening_);  // Don't start twice.
   DCHECK(!hotkey_ids_.empty());  // Also don't start if no hotkey is registered.
-  gfx::SingletonHwnd::GetInstance()->AddObserver(this);
+  singleton_hwnd_observer_.reset(new gfx::SingletonHwndObserver(
+      base::Bind(
+          &GlobalShortcutListenerWin::OnWndProc, base::Unretained(this))));
+
   is_listening_ = true;
 }
 
 void GlobalShortcutListenerWin::StopListening() {
   DCHECK(is_listening_);  // No point if we are not already listening.
   DCHECK(hotkey_ids_.empty());  // Make sure the map is clean before ending.
-  gfx::SingletonHwnd::GetInstance()->RemoveObserver(this);
+  singleton_hwnd_observer_.reset(nullptr);
   is_listening_ = false;
 }
 

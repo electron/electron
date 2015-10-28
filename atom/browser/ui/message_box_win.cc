@@ -10,6 +10,7 @@
 #include <map>
 #include <vector>
 
+#include "atom/browser/browser.h"
 #include "atom/browser/native_window_views.h"
 #include "base/callback.h"
 #include "base/strings/string_util.h"
@@ -72,13 +73,14 @@ int ShowMessageBoxUTF16(HWND parent,
                         MessageBoxType type,
                         const std::vector<base::string16>& buttons,
                         int cancel_id,
+                        int options,
                         const base::string16& title,
                         const base::string16& message,
                         const base::string16& detail,
                         const gfx::ImageSkia& icon) {
-  TASKDIALOG_FLAGS flags = TDF_SIZE_TO_CONTENT;  // show all content.
-  if (cancel_id != 0)
-    flags |= TDF_ALLOW_DIALOG_CANCELLATION;  // allow dialog to be cancelled.
+  TASKDIALOG_FLAGS flags =
+      TDF_SIZE_TO_CONTENT |  // Show all content.
+      TDF_ALLOW_DIALOG_CANCELLATION;  // Allow canceling the dialog.
 
   TASKDIALOGCONFIG config = { 0 };
   config.cbSize     = sizeof(config);
@@ -86,7 +88,12 @@ int ShowMessageBoxUTF16(HWND parent,
   config.hInstance  = GetModuleHandle(NULL);
   config.dwFlags    = flags;
 
-  if (!title.empty())
+  // TaskDialogIndirect doesn't allow empty name, if we set empty title it
+  // will show "electron.exe" in title.
+  base::string16 app_name = base::UTF8ToUTF16(Browser::Get()->GetName());
+  if (title.empty())
+    config.pszWindowTitle = app_name.c_str();
+  else
     config.pszWindowTitle = title.c_str();
 
   base::win::ScopedHICON hicon;
@@ -122,11 +129,17 @@ int ShowMessageBoxUTF16(HWND parent,
   // and custom buttons in pButtons.
   std::map<int, int> id_map;
   std::vector<TASKDIALOG_BUTTON> dialog_buttons;
-  MapToCommonID(buttons, &id_map, &config.dwCommonButtons, &dialog_buttons);
+  if (options & MESSAGE_BOX_NO_LINK) {
+    for (size_t i = 0; i < buttons.size(); ++i)
+      dialog_buttons.push_back({i + kIDStart, buttons[i].c_str()});
+  } else {
+    MapToCommonID(buttons, &id_map, &config.dwCommonButtons, &dialog_buttons);
+  }
   if (dialog_buttons.size() > 0) {
     config.pButtons = &dialog_buttons.front();
     config.cButtons = dialog_buttons.size();
-    config.dwFlags |= TDF_USE_COMMAND_LINKS;  // custom buttons as links.
+    if (!(options & MESSAGE_BOX_NO_LINK))
+      config.dwFlags |= TDF_USE_COMMAND_LINKS;  // custom buttons as links.
   }
 
   int id = 0;
@@ -144,13 +157,14 @@ void RunMessageBoxInNewThread(base::Thread* thread,
                               MessageBoxType type,
                               const std::vector<std::string>& buttons,
                               int cancel_id,
+                              int options,
                               const std::string& title,
                               const std::string& message,
                               const std::string& detail,
                               const gfx::ImageSkia& icon,
                               const MessageBoxCallback& callback) {
-  int result = ShowMessageBox(parent, type, buttons, cancel_id, title, message,
-                              detail, icon);
+  int result = ShowMessageBox(parent, type, buttons, cancel_id, options, title,
+                              message, detail, icon);
   content::BrowserThread::PostTask(
       content::BrowserThread::UI, FROM_HERE, base::Bind(callback, result));
   content::BrowserThread::DeleteSoon(
@@ -163,6 +177,7 @@ int ShowMessageBox(NativeWindow* parent,
                    MessageBoxType type,
                    const std::vector<std::string>& buttons,
                    int cancel_id,
+                   int options,
                    const std::string& title,
                    const std::string& message,
                    const std::string& detail,
@@ -180,6 +195,7 @@ int ShowMessageBox(NativeWindow* parent,
                              type,
                              utf16_buttons,
                              cancel_id,
+                             options,
                              base::UTF8ToUTF16(title),
                              base::UTF8ToUTF16(message),
                              base::UTF8ToUTF16(detail),
@@ -190,6 +206,7 @@ void ShowMessageBox(NativeWindow* parent,
                     MessageBoxType type,
                     const std::vector<std::string>& buttons,
                     int cancel_id,
+                    int options,
                     const std::string& title,
                     const std::string& message,
                     const std::string& detail,
@@ -207,12 +224,12 @@ void ShowMessageBox(NativeWindow* parent,
   unretained->message_loop()->PostTask(
       FROM_HERE,
       base::Bind(&RunMessageBoxInNewThread, base::Unretained(unretained),
-                 parent, type, buttons, cancel_id, title, message, detail, icon,
-                 callback));
+                 parent, type, buttons, cancel_id, options, title, message,
+                 detail, icon, callback));
 }
 
 void ShowErrorBox(const base::string16& title, const base::string16& content) {
-  ShowMessageBoxUTF16(NULL, MESSAGE_BOX_TYPE_ERROR, {}, 0, L"Error", title,
+  ShowMessageBoxUTF16(NULL, MESSAGE_BOX_TYPE_ERROR, {}, 0, 0, L"Error", title,
                       content, gfx::ImageSkia());
 }
 

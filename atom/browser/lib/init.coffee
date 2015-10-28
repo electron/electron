@@ -7,21 +7,29 @@ Module = require 'module'
 # we need to restore it here.
 process.argv.splice 1, 1
 
+# Clear search paths.
+require path.resolve(__dirname, '..', '..', 'common', 'lib', 'reset-search-paths')
+
+# Import common settings.
+require path.resolve(__dirname, '..', '..', 'common', 'lib', 'init')
+
 # Add browser/api/lib to module search paths, which contains javascript part of
 # Electron's built-in libraries.
 globalPaths = Module.globalPaths
 globalPaths.push path.resolve(__dirname, '..', 'api', 'lib')
 
-# Import common settings.
-require path.resolve(__dirname, '..', '..', 'common', 'lib', 'init')
-
 if process.platform is 'win32'
   # Redirect node's console to use our own implementations, since node can not
   # handle console output when running as GUI program.
-  print = (args...) ->
-    process.log util.format(args...)
-  console.log = console.error = console.warn = print
-  process.stdout.write = process.stderr.write = print
+  consoleLog = (args...) ->
+    process.log util.format(args...) + "\n"
+  streamWrite = (chunk, encoding, callback) ->
+    chunk = chunk.toString(encoding) if Buffer.isBuffer chunk
+    process.log chunk
+    callback() if callback
+    true
+  console.log = console.error = console.warn = consoleLog
+  process.stdout.write = process.stderr.write = streamWrite
 
   # Always returns EOF for stdin stream.
   Readable = require('stream').Readable
@@ -38,7 +46,7 @@ process.on 'uncaughtException', (error) ->
   # Show error in GUI.
   stack = error.stack ? "#{error.name}: #{error.message}"
   message = "Uncaught Exception:\n#{stack}"
-  require('dialog').showErrorBox 'A JavaScript error occured in the browser process', message
+  require('dialog').showErrorBox 'A JavaScript error occurred in the main process', message
 
 # Emit 'exit' event on quit.
 app = require 'app'
@@ -64,7 +72,9 @@ for packagePath in searchPaths
   catch e
     continue
 
-throw new Error("Unable to find a valid app") unless packageJson?
+unless packageJson?
+  process.nextTick -> process.exit 1
+  throw new Error("Unable to find a valid app")
 
 # Set application's version.
 app.setVersion packageJson.version if packageJson.version?
@@ -92,5 +102,8 @@ app.setAppPath packagePath
 # Load the chrome extension support.
 require './chrome-extension'
 
+# Set main startup script of the app.
+mainStartupScript = packageJson.main or 'index.js'
+
 # Finally load app's main.js and transfer control to C++.
-Module._load path.join(packagePath, packageJson.main), Module, true
+Module._load path.join(packagePath, mainStartupScript), Module, true

@@ -108,8 +108,9 @@ class Browser : public WindowListObserver {
   // Tell the application to open a url.
   void OpenURL(const std::string& url);
 
-  // Tell the application that application is activated with no open windows.
-  void ActivateWithNoOpenWindows();
+  // Tell the application that application is activated with visible/invisible
+  // windows.
+  void Activate(bool has_visible_windows);
 
   // Tell the application the loading has been done.
   void WillFinishLaunching();
@@ -129,6 +130,7 @@ class Browser : public WindowListObserver {
     observers_.RemoveObserver(obs);
   }
 
+  bool is_shutting_down() const { return is_shutdown_; }
   bool is_quiting() const { return is_quiting_; }
   bool is_ready() const { return is_ready_; }
 
@@ -153,10 +155,13 @@ class Browser : public WindowListObserver {
   void OnWindowAllClosed() override;
 
   // Observers of the browser.
-  ObserverList<BrowserObserver> observers_;
+  base::ObserverList<BrowserObserver> observers_;
 
   // Whether "ready" event has been emitted.
   bool is_ready_;
+
+  // The browse is being shutdown.
+  bool is_shutdown_;
 
   std::string version_override_;
   std::string name_override_;

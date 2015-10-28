@@ -6,7 +6,11 @@
 
 #include <X11/Xatom.h>
 
+#include "base/environment.h"
 #include "base/strings/string_util.h"
+#include "dbus/bus.h"
+#include "dbus/object_proxy.h"
+#include "dbus/message.h"
 #include "ui/base/x/x11_util.h"
 
 namespace atom {
@@ -38,12 +42,49 @@ void SetWindowType(::Window xwindow, const std::string& type) {
   XDisplay* xdisplay = gfx::GetXDisplay();
   std::string type_prefix = "_NET_WM_WINDOW_TYPE_";
   ::Atom window_type = XInternAtom(
-      xdisplay, (type_prefix + StringToUpperASCII(type)).c_str(), False);
+      xdisplay, (type_prefix + base::StringToUpperASCII(type)).c_str(), False);
   XChangeProperty(xdisplay, xwindow,
                   XInternAtom(xdisplay, "_NET_WM_WINDOW_TYPE", False),
                   XA_ATOM,
                   32, PropModeReplace,
                   reinterpret_cast<unsigned char*>(&window_type), 1);
+}
+
+bool ShouldUseGlobalMenuBar() {
+  scoped_ptr<base::Environment> env(base::Environment::Create());
+  if (env->HasVar("ELECTRON_FORCE_WINDOW_MENU_BAR"))
+    return false;
+
+  dbus::Bus::Options options;
+  scoped_refptr<dbus::Bus> bus(new dbus::Bus(options));
+
+  dbus::ObjectProxy* object_proxy =
+      bus->GetObjectProxy(DBUS_SERVICE_DBUS, dbus::ObjectPath(DBUS_PATH_DBUS));
+  dbus::MethodCall method_call(DBUS_INTERFACE_DBUS, "ListNames");
+  scoped_ptr<dbus::Response> response(object_proxy->CallMethodAndBlock(
+      &method_call, dbus::ObjectProxy::TIMEOUT_USE_DEFAULT));
+  if (!response) {
+    bus->ShutdownAndBlock();
+    return false;
+  }
+
+  dbus::MessageReader reader(response.get());
+  dbus::MessageReader array_reader(NULL);
+  if (!reader.PopArray(&array_reader)) {
+    bus->ShutdownAndBlock();
+    return false;
+  }
+  while (array_reader.HasMoreData()) {
+    std::string name;
+    if (array_reader.PopString(&name) &&
+        name == "com.canonical.AppMenu.Registrar") {
+      bus->ShutdownAndBlock();
+      return true;
+    }
+  }
+
+  bus->ShutdownAndBlock();
+  return false;
 }
 
 }  // namespace atom

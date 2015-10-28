@@ -45,7 +45,7 @@ class AtomRendererClient : public content::ContentRendererClient,
                             blink::WebLocalFrame* frame,
                             const blink::WebPluginParams& params,
                             blink::WebPlugin** plugin) override;
-  bool ShouldFork(blink::WebFrame* frame,
+  bool ShouldFork(blink::WebLocalFrame* frame,
                   const GURL& url,
                   const std::string& http_method,
                   bool is_initial_navigation,
@@ -63,9 +63,6 @@ class AtomRendererClient : public content::ContentRendererClient,
 
   scoped_ptr<NodeBindings> node_bindings_;
   scoped_ptr<AtomBindings> atom_bindings_;
-
-  // The main frame.
-  blink::WebFrame* main_frame_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomRendererClient);
 };

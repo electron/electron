@@ -4,7 +4,7 @@ path   = require 'path'
 remote = require 'remote'
 http   = require 'http'
 url    = require 'url'
-auth   = require 'basic-auth'
+os     = require 'os'
 
 BrowserWindow = remote.require 'browser-window'
 
@@ -117,9 +117,26 @@ describe 'browser-window module', ->
       assert.equal after[0], size[0]
       assert.equal after[1], size[1]
 
+    it 'works for framless window', ->
+      w.destroy()
+      w = new BrowserWindow(show: false, frame: false, width: 400, height: 400)
+      size = [400, 400]
+      w.setContentSize size[0], size[1]
+      after = w.getContentSize()
+      assert.equal after[0], size[0]
+      assert.equal after[1], size[1]
+
   describe 'BrowserWindow.fromId(id)', ->
     it 'returns the window with id', ->
       assert.equal w.id, BrowserWindow.fromId(w.id).id
+
+  describe 'BrowserWindow.setResizable(resizable)', ->
+    it 'does not change window size for frameless window', ->
+      w.destroy()
+      w = new BrowserWindow(show: true, frame: false)
+      s = w.getSize()
+      w.setResizable not w.isResizable()
+      assert.deepEqual s, w.getSize()
 
   describe '"use-content-size" option', ->
     it 'make window created with content size when used', ->
@@ -133,6 +150,32 @@ describe 'browser-window module', ->
       size = w.getSize()
       assert.equal size[0], 400
       assert.equal size[1], 400
+
+    it 'works for framless window', ->
+      w.destroy()
+      w = new BrowserWindow(show: false, frame: false, width: 400, height: 400, 'use-content-size': true)
+      contentSize = w.getContentSize()
+      assert.equal contentSize[0], 400
+      assert.equal contentSize[1], 400
+      size = w.getSize()
+      assert.equal size[0], 400
+      assert.equal size[1], 400
+
+  describe '"title-bar-style" option', ->
+    return if process.platform isnt 'darwin'
+    return if parseInt(os.release().split('.')[0]) < 14 # only run these tests on Yosemite or newer
+
+    it 'creates browser window with hidden title bar', ->
+      w.destroy()
+      w = new BrowserWindow(show: false, width: 400, height: 400, 'title-bar-style': 'hidden')
+      contentSize = w.getContentSize()
+      assert.equal contentSize[1], 400
+
+    it 'creates browser window with hidden inset title bar', ->
+      w.destroy()
+      w = new BrowserWindow(show: false, width: 400, height: 400, 'title-bar-style': 'hidden-inset')
+      contentSize = w.getContentSize()
+      assert.equal contentSize[1], 400
 
   describe '"enable-larger-than-screen" option', ->
     return if process.platform is 'linux'
@@ -156,15 +199,36 @@ describe 'browser-window module', ->
       assert.equal after[0], size.width
       assert.equal after[1], size.height
 
-  describe '"preload" options', ->
-    it 'loads the script before other scripts in window', (done) ->
-      preload = path.join fixtures, 'module', 'set-global.js'
-      remote.require('ipc').once 'preload', (event, test) ->
-        assert.equal(test, 'preload')
-        done()
-      w.destroy()
-      w = new BrowserWindow(show: false, width: 400, height: 400, preload: preload)
-      w.loadUrl 'file://' + path.join(fixtures, 'api', 'preload.html')
+  describe '"web-preferences" option', ->
+    afterEach ->
+      remote.require('ipc').removeAllListeners('answer')
+
+    describe '"preload" option', ->
+      it 'loads the script before other scripts in window', (done) ->
+        preload = path.join fixtures, 'module', 'set-global.js'
+        remote.require('ipc').once 'answer', (event, test) ->
+          assert.equal(test, 'preload')
+          done()
+        w.destroy()
+        w = new BrowserWindow
+          show: false
+          'web-preferences':
+            preload: preload
+        w.loadUrl 'file://' + path.join(fixtures, 'api', 'preload.html')
+
+    describe '"node-integration" option', ->
+      it 'disables node integration when specified to false', (done) ->
+        preload = path.join fixtures, 'module', 'send-later.js'
+        remote.require('ipc').once 'answer', (event, test) ->
+          assert.equal(test, 'undefined')
+          done()
+        w.destroy()
+        w = new BrowserWindow
+          show: false
+          'web-preferences':
+            preload: preload
+            'node-integration': false
+        w.loadUrl 'file://' + path.join(fixtures, 'api', 'blank.html')
 
   describe 'beforeunload handler', ->
     it 'returning true would not prevent close', (done) ->
@@ -230,57 +294,31 @@ describe 'browser-window module', ->
       w.show()
       w.minimize()
 
-  describe 'will-navigate event', ->
-    return if isCI and process.platform is 'darwin'
-    it 'emits when user starts a navigation', (done) ->
-      @timeout 10000
-      w.webContents.on 'will-navigate', (event, url) ->
-        event.preventDefault()
-        assert.equal url, 'https://www.github.com/'
+  xdescribe 'beginFrameSubscription method', ->
+    it 'subscribes frame updates', (done) ->
+      w.loadUrl "file://#{fixtures}/api/blank.html"
+      w.webContents.beginFrameSubscription (data) ->
+        assert.notEqual data.length, 0
+        w.webContents.endFrameSubscription()
         done()
-      w.loadUrl "file://#{fixtures}/pages/will-navigate.html"
 
-  describe 'dom-ready event', ->
-    return if isCI and process.platform is 'darwin'
-    it 'emits when document is loaded', (done) ->
-      ipc = remote.require 'ipc'
-      server = http.createServer (req, res) ->
-        action = url.parse(req.url, true).pathname
-        if action == '/logo.png'
-          img = fs.readFileSync(path.join(fixtures, 'assets', 'logo.png'))
-          res.writeHead(200, {'Content-Type': 'image/png'})
-          setTimeout ->
-            res.end(img, 'binary')
-          , 2000
-          server.close()
-      server.listen 62542, '127.0.0.1'
-      ipc.on 'dom-ready', (e, state) ->
-        ipc.removeAllListeners 'dom-ready'
-        assert.equal state, 'interactive'
-        done()
+  describe 'save page', ->
+    savePageDir = path.join fixtures, 'save_page'
+    savePageHtmlPath = path.join savePageDir, 'save_page.html'
+    savePageJsPath = path.join savePageDir, 'save_page_files', 'test.js'
+    savePageCssPath = path.join savePageDir, 'save_page_files', 'test.css'
+    it 'should save page', (done) ->
       w.webContents.on 'did-finish-load', ->
-        w.close()
-      w.loadUrl "file://#{fixtures}/pages/f.html"
+        w.webContents.savePage savePageHtmlPath, 'HTMLComplete', (error) ->
+          assert.equal error, null
+          assert fs.existsSync savePageHtmlPath
+          assert fs.existsSync savePageJsPath
+          assert fs.existsSync savePageCssPath
+          fs.unlinkSync savePageCssPath
+          fs.unlinkSync savePageJsPath
+          fs.unlinkSync savePageHtmlPath
+          fs.rmdirSync path.join savePageDir, 'save_page_files'
+          fs.rmdirSync savePageDir
+          done()
 
-  describe 'basic auth', ->
-    it 'should authenticate with correct credentials', (done) ->
-      ipc = remote.require 'ipc'
-      server = http.createServer (req, res) ->
-        action = url.parse(req.url, true).pathname
-        if action == '/'
-          credentials = auth(req)
-          if credentials.name == 'test' and credentials.pass == 'test'
-            res.end('Authenticated')
-            server.close()
-        else if action == '/jquery.js'
-          js = fs.readFileSync(path.join(__dirname, 'static', 'jquery-2.0.3.min.js'))
-          res.writeHead(200, {'Content-Type': 'text/javascript'})
-          res.end(js, 'utf-8')
-      server.listen 62342, '127.0.0.1'
-      ipc.on 'console-message', (e, message) ->
-        ipc.removeAllListeners 'console-message'
-        assert.equal message, 'Authenticated'
-        done()
-      w.webContents.on 'did-finish-load', ->
-        w.close()
-      w.loadUrl "file://#{fixtures}/pages/basic-auth.html"
+      w.loadUrl "file://#{fixtures}/pages/save_page/index.html"

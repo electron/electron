@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 
+#include "atom/common/atom_version.h"
 #include "atom/common/chrome_version.h"
 #include "atom/common/options_switches.h"
 #include "base/command_line.h"
@@ -14,6 +15,7 @@
 #include "base/strings/string_util.h"
 #include "content/public/common/content_constants.h"
 #include "content/public/common/pepper_plugin_info.h"
+#include "content/public/common/user_agent.h"
 #include "ppapi/shared_impl/ppapi_permissions.h"
 
 namespace atom {
@@ -72,6 +74,12 @@ std::string AtomContentClient::GetProduct() const {
   return "Chrome/" CHROME_VERSION_STRING;
 }
 
+std::string AtomContentClient::GetUserAgent() const {
+  return content::BuildUserAgentFromProduct(
+      "Chrome/" CHROME_VERSION_STRING " "
+      ATOM_PRODUCT_NAME "/" ATOM_VERSION_STRING);
+}
+
 void AtomContentClient::AddAdditionalSchemes(
     std::vector<std::string>* standard_schemes,
     std::vector<std::string>* savable_schemes) {
@@ -91,7 +99,7 @@ void AtomContentClient::AddAdditionalSchemes(
 void AtomContentClient::AddPepperPlugins(
     std::vector<content::PepperPluginInfo>* plugins) {
   auto command_line = base::CommandLine::ForCurrentProcess();
-  auto flash_path = command_line->GetSwitchValueNative(
+  auto flash_path = command_line->GetSwitchValuePath(
       switches::kPpapiFlashPath);
   if (flash_path.empty())
     return;
@@ -100,7 +108,7 @@ void AtomContentClient::AddPepperPlugins(
       switches::kPpapiFlashVersion);
 
   plugins->push_back(
-      CreatePepperFlashInfo(base::FilePath(flash_path), flash_version));
+      CreatePepperFlashInfo(flash_path, flash_version));
 }
 
 }  // namespace atom

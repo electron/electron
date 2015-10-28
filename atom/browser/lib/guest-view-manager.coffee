@@ -3,6 +3,7 @@ webContents = require 'web-contents'
 webViewManager = null  # Doesn't exist in early initialization.
 
 supportedWebViewEvents = [
+  'load-commit'
   'did-finish-load'
   'did-fail-load'
   'did-frame-finish-load'
@@ -29,6 +30,10 @@ guestInstances = {}
 embedderElementsMap = {}
 reverseEmbedderElementsMap = {}
 
+# Moves the last element of array to the first one.
+moveLastToFirst = (list) ->
+  list.unshift list.pop()
+
 # Generate guestInstanceId.
 getNextInstanceId = (webContents) ->
   ++nextInstanceId
@@ -38,14 +43,20 @@ createGuest = (embedder, params) ->
   webViewManager ?= process.atomBinding 'web_view_manager'
 
   id = getNextInstanceId embedder
-  guest = webContents.create {isGuest: true, embedder}
+  guest = webContents.create {isGuest: true, partition: params.partition, embedder}
   guestInstances[id] = {guest, embedder}
 
   # Destroy guest when the embedder is gone or navigated.
   destroyEvents = ['destroyed', 'crashed', 'did-navigate-to-different-page']
   destroy = ->
     destroyGuest embedder, id if guestInstances[id]?
-  embedder.once event, destroy for event in destroyEvents
+  for event in destroyEvents
+    embedder.once event, destroy
+    # Users might also listen to the crashed event, so We must ensure the guest
+    # is destroyed before users' listener gets called. It is done by moving our
+    # listener to the first one in queue.
+    listeners = embedder._events[event]
+    moveLastToFirst listeners if Array.isArray listeners
   guest.once 'destroyed', ->
     embedder.removeListener event, destroy for event in destroyEvents
 
@@ -72,6 +83,8 @@ createGuest = (embedder, params) ->
 
     if params.allowtransparency?
       @setAllowTransparency params.allowtransparency
+
+    guest.allowPopups = params.allowpopups
 
   # Dispatch events to embedder.
   for event in supportedWebViewEvents
@@ -104,11 +117,13 @@ attachGuest = (embedder, elementInstanceId, guestInstanceId, params) ->
     return unless guestInstances[oldGuestInstanceId]?
     destroyGuest embedder, oldGuestInstanceId
 
-  webViewManager.addGuest guestInstanceId, elementInstanceId, embedder, guest,
-    nodeIntegration: params.nodeintegration
-    plugins: params.plugins
-    disableWebSecurity: params.disablewebsecurity
-    preloadUrl: params.preload ? ''
+  webPreferences =
+    'guest-instance-id': guestInstanceId
+    'node-integration': params.nodeintegration ? false
+    'plugins': params.plugins
+    'web-security': !params.disablewebsecurity
+  webPreferences['preload-url'] = params.preload if params.preload
+  webViewManager.addGuest guestInstanceId, elementInstanceId, embedder, guest, webPreferences
 
   guest.attachParams = params
   embedderElementsMap[key] = guestInstanceId

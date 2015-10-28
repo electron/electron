@@ -120,7 +120,7 @@ class SrcAttribute extends WebViewAttribute
       ''
 
   setValueIgnoreMutation: (value) ->
-    WebViewAttribute::setValueIgnoreMutation value
+    WebViewAttribute::setValueIgnoreMutation.call(this, value)
     # takeRecords() is needed to clear queued up src mutations. Without it, it
     # is possible for this change to get picked up asyncronously by src's
     # mutation observer |observer|, and then get handled even though we do not
@@ -216,6 +216,7 @@ WebViewImpl::setupWebViewAttributes = ->
   @attributes[webViewConstants.ATTRIBUTE_NODEINTEGRATION] = new BooleanAttribute(webViewConstants.ATTRIBUTE_NODEINTEGRATION, this)
   @attributes[webViewConstants.ATTRIBUTE_PLUGINS] = new BooleanAttribute(webViewConstants.ATTRIBUTE_PLUGINS, this)
   @attributes[webViewConstants.ATTRIBUTE_DISABLEWEBSECURITY] = new BooleanAttribute(webViewConstants.ATTRIBUTE_DISABLEWEBSECURITY, this)
+  @attributes[webViewConstants.ATTRIBUTE_ALLOWPOPUPS] = new BooleanAttribute(webViewConstants.ATTRIBUTE_ALLOWPOPUPS, this)
   @attributes[webViewConstants.ATTRIBUTE_PRELOAD] = new PreloadAttribute(this)
 
   autosizeAttributes = [

@@ -8,12 +8,18 @@
 #include <string>
 #include <vector>
 
+#include "atom/browser/api/frame_subscriber.h"
+#include "atom/browser/api/save_page_handler.h"
 #include "atom/browser/api/trackable_object.h"
 #include "atom/browser/common_web_contents_delegate.h"
-#include "content/public/common/favicon_url.h"
 #include "content/public/browser/web_contents_observer.h"
+#include "content/public/common/favicon_url.h"
 #include "native_mate/handle.h"
 #include "ui/gfx/image/image.h"
+
+namespace blink {
+struct WebDeviceEmulationParams;
+}
 
 namespace brightray {
 class InspectableWebContents;
@@ -37,8 +43,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
                     public content::WebContentsObserver {
  public:
   // For node.js callback function type: function(error, buffer)
-  typedef base::Callback<void(v8::Local<v8::Value>, v8::Local<v8::Value>)>
-      PrintToPDFCallback;
+  using PrintToPDFCallback =
+      base::Callback<void(v8::Local<v8::Value>, v8::Local<v8::Value>)>;
 
   // Create from an existing WebContents.
   static mate::Handle<WebContents> CreateFrom(
@@ -48,11 +54,14 @@ class WebContents : public mate::TrackableObject<WebContents>,
   static mate::Handle<WebContents> Create(
       v8::Isolate* isolate, const mate::Dictionary& options);
 
-  void Destroy();
+  // mate::TrackableObject:
+  void Destroy() override;
+
   bool IsAlive() const;
   int GetID() const;
   bool Equal(const WebContents* web_contents) const;
   void LoadURL(const GURL& url, const mate::Dictionary& options);
+  GURL GetURL() const;
   base::string16 GetTitle() const;
   bool IsLoading() const;
   bool IsWaitingForResponse() const;
@@ -63,15 +72,21 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void GoToOffset(int offset);
   bool IsCrashed() const;
   void SetUserAgent(const std::string& user_agent);
+  std::string GetUserAgent();
   void InsertCSS(const std::string& css);
-  void ExecuteJavaScript(const base::string16& code);
+  bool SavePage(const base::FilePath& full_file_path,
+                const content::SavePageType& save_type,
+                const SavePageHandler::SavePageCallback& callback);
+  void ExecuteJavaScript(const base::string16& code,
+                         bool has_user_gesture);
   void OpenDevTools(mate::Arguments* args);
   void CloseDevTools();
   bool IsDevToolsOpened();
   void ToggleDevTools();
+  void EnableDeviceEmulation(const blink::WebDeviceEmulationParams& params);
+  void DisableDeviceEmulation();
   void InspectElement(int x, int y);
   void InspectServiceWorker();
-  v8::Local<v8::Value> Session(v8::Isolate* isolate);
   void HasServiceWorker(const base::Callback<void(bool)>&);
   void UnregisterServiceWorker(const base::Callback<void(bool)>&);
   void SetAudioMuted(bool muted);
@@ -81,6 +96,10 @@ class WebContents : public mate::TrackableObject<WebContents>,
   // Print current page as PDF.
   void PrintToPDF(const base::DictionaryValue& setting,
                   const PrintToPDFCallback& callback);
+
+  // DevTools workspace api.
+  void AddWorkSpace(mate::Arguments* args, const base::FilePath& path);
+  void RemoveWorkSpace(mate::Arguments* args, const base::FilePath& path);
 
   // Editing commands.
   void Undo();
@@ -95,18 +114,40 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void Replace(const base::string16& word);
   void ReplaceMisspelling(const base::string16& word);
 
-  // Sending messages to browser.
+  // Focus.
+  void Focus();
+  void TabTraverse(bool reverse);
+
+  // Send messages to browser.
   bool SendIPCMessage(const base::string16& channel,
                       const base::ListValue& args);
+
+  // Send WebInputEvent to the page.
+  void SendInputEvent(v8::Isolate* isolate, v8::Local<v8::Value> input_event);
+
+  // Subscribe to the frame updates.
+  void BeginFrameSubscription(
+      const FrameSubscriber::FrameCaptureCallback& callback);
+  void EndFrameSubscription();
 
   // Methods for creating <webview>.
   void SetSize(const SetSizeParams& params);
   void SetAllowTransparency(bool allow);
   bool IsGuest() const;
 
+  // Returns the web preferences of current WebContents.
+  v8::Local<v8::Value> GetWebPreferences(v8::Isolate* isolate);
+
+  // Returns the owner window.
+  v8::Local<v8::Value> GetOwnerBrowserWindow();
+
+  // Properties.
+  v8::Local<v8::Value> Session(v8::Isolate* isolate);
+  v8::Local<v8::Value> DevToolsWebContents(v8::Isolate* isolate);
+
  protected:
   explicit WebContents(content::WebContents* web_contents);
-  explicit WebContents(const mate::Dictionary& options);
+  WebContents(v8::Isolate* isolate, const mate::Dictionary& options);
   ~WebContents();
 
   // mate::Wrappable:
@@ -125,7 +166,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
       int route_id,
       int main_frame_route_id,
       WindowContainerType window_container_type,
-      const base::string16& frame_name,
+      const std::string& frame_name,
       const GURL& target_url,
       const std::string& partition_id,
       content::SessionStorageNamespace* session_storage_namespace) override;
@@ -160,11 +201,13 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void DidFailLoad(content::RenderFrameHost* render_frame_host,
                    const GURL& validated_url,
                    int error_code,
-                   const base::string16& error_description) override;
+                   const base::string16& error_description,
+                   bool was_ignored_by_handler) override;
   void DidFailProvisionalLoad(content::RenderFrameHost* render_frame_host,
                               const GURL& validated_url,
                               int error_code,
-                              const base::string16& error_description) override;
+                              const base::string16& error_description,
+                              bool was_ignored_by_handler) override;
   void DidStartLoading() override;
   void DidStopLoading() override;
   void DidGetResourceResponseStart(
@@ -185,6 +228,11 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void PluginCrashed(const base::FilePath& plugin_path,
                      base::ProcessId plugin_pid) override;
 
+  // brightray::InspectableWebContentsViewDelegate:
+  void DevToolsFocused() override;
+  void DevToolsOpened() override;
+  void DevToolsClosed() override;
+
  private:
   enum Type {
     BROWSER_WINDOW,  // Used by BrowserWindow.
@@ -203,7 +251,12 @@ class WebContents : public mate::TrackableObject<WebContents>,
                              const base::ListValue& args,
                              IPC::Message* message);
 
+  // Called when guests need to be notified of
+  // embedders' zoom level change.
+  void OnZoomLevelChanged(double level);
+
   v8::Global<v8::Value> session_;
+  v8::Global<v8::Value> devtools_web_contents_;
 
   scoped_ptr<WebViewGuestDelegate> guest_delegate_;
 

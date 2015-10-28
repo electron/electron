@@ -6,7 +6,10 @@
 
 #include <map>
 
+#include "base/bind.h"
 #include "base/lazy_instance.h"
+#include "base/message_loop/message_loop.h"
+#include "ui/gfx/geometry/size.h"
 
 namespace atom {
 
@@ -19,7 +22,8 @@ static base::LazyInstance<GuestViewContainerMap> g_guest_view_container_map =
 }  // namespace
 
 GuestViewContainer::GuestViewContainer(content::RenderFrame* render_frame)
-    : render_frame_(render_frame) {
+    : render_frame_(render_frame),
+      weak_ptr_factory_(this) {
 }
 
 GuestViewContainer::~GuestViewContainer() {
@@ -46,12 +50,16 @@ void GuestViewContainer::SetElementInstanceID(int element_instance_id) {
       std::make_pair(element_instance_id, this));
 }
 
-void GuestViewContainer::DidResizeElement(const gfx::Size& old_size,
-                                          const gfx::Size& new_size) {
+void GuestViewContainer::DidResizeElement(const gfx::Size& new_size) {
   if (element_resize_callback_.is_null())
     return;
 
-  element_resize_callback_.Run(old_size, new_size);
+  base::MessageLoop::current()->PostTask(
+      FROM_HERE, base::Bind(element_resize_callback_, new_size));
+}
+
+base::WeakPtr<content::BrowserPluginDelegate> GuestViewContainer::GetWeakPtr() {
+  return weak_ptr_factory_.GetWeakPtr();
 }
 
 }  // namespace atom

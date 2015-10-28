@@ -23,10 +23,7 @@ AtomURLRequestJobFactory::~AtomURLRequestJobFactory() {
 }
 
 bool AtomURLRequestJobFactory::SetProtocolHandler(
-    const std::string& scheme,
-    ProtocolHandler* protocol_handler) {
-  DCHECK_CURRENTLY_ON(BrowserThread::IO);
-
+    const std::string& scheme, scoped_ptr<ProtocolHandler> protocol_handler) {
   if (!protocol_handler) {
     ProtocolHandlerMap::iterator it = protocol_handler_map_.find(scheme);
     if (it == protocol_handler_map_.end())
@@ -39,21 +36,17 @@ bool AtomURLRequestJobFactory::SetProtocolHandler(
 
   if (ContainsKey(protocol_handler_map_, scheme))
     return false;
-  protocol_handler_map_[scheme] = protocol_handler;
+  protocol_handler_map_[scheme] = protocol_handler.release();
   return true;
 }
 
-ProtocolHandler* AtomURLRequestJobFactory::ReplaceProtocol(
-    const std::string& scheme,
-    ProtocolHandler* protocol_handler) {
-  DCHECK_CURRENTLY_ON(BrowserThread::IO);
-  DCHECK(protocol_handler);
-
+scoped_ptr<ProtocolHandler> AtomURLRequestJobFactory::ReplaceProtocol(
+    const std::string& scheme, scoped_ptr<ProtocolHandler> protocol_handler) {
   if (!ContainsKey(protocol_handler_map_, scheme))
     return nullptr;
   ProtocolHandler* original_protocol_handler = protocol_handler_map_[scheme];
-  protocol_handler_map_[scheme] = protocol_handler;
-  return original_protocol_handler;
+  protocol_handler_map_[scheme] = protocol_handler.release();
+  return make_scoped_ptr(original_protocol_handler);
 }
 
 ProtocolHandler* AtomURLRequestJobFactory::GetProtocolHandler(
