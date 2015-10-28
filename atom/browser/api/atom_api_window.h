@@ -77,7 +77,8 @@ class Window : public mate::TrackableObject<Window>,
   void OnExecuteWindowsCommand(const std::string& command_name) override;
 
   #if defined(OS_WIN)
-  void OnWindowMessage(UINT message, WPARAM w_param, uint64_t l_param) override;
+  void OnWindowMessage(UINT message, uint64_t w_param,
+                       int64_t l_param) override;
   #endif
 
   // mate::Wrappable:

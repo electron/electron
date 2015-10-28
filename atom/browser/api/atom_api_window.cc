@@ -190,7 +190,7 @@ void Window::OnExecuteWindowsCommand(const std::string& command_name) {
 }
 
 #if defined(OS_WIN)
-void Window::OnWindowMessage(UINT message, WPARAM w_param, uint64_t l_param) {
+void Window::OnWindowMessage(UINT message, uint64_t w_param, int64_t l_param) {
   if (IsWindowMessageHooked(message)) {
     messages_callback_map_[message].Run(w_param, l_param);
   }

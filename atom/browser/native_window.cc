@@ -469,7 +469,8 @@ void NativeWindow::NotifyWindowMessage(UINT message, WPARAM w_param,
                                        LPARAM l_param) {
   FOR_EACH_OBSERVER(
       NativeWindowObserver, observers_,
-      OnWindowMessage(message, w_param, static_cast<uint64_t>(l_param)));
+      OnWindowMessage(message, static_cast<uint64_t>(w_param),
+                      static_cast<int64_t>(l_param)));
 }
 #endif
 
