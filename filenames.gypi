@@ -150,6 +150,8 @@
       'atom/browser/common_web_contents_delegate.h',
       'atom/browser/javascript_environment.cc',
       'atom/browser/javascript_environment.h',
+      'atom/browser/login_handler.cc',
+      'atom/browser/login_handler.h',
       'atom/browser/mac/atom_application.h',
       'atom/browser/mac/atom_application.mm',
       'atom/browser/mac/atom_application_delegate.h',
