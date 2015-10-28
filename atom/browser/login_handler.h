@@ -8,6 +8,10 @@
 #include "base/strings/string16.h"
 #include "content/public/browser/resource_dispatcher_host_login_delegate.h"
 
+namespace content {
+class WebContents;
+}
+
 namespace net {
 class AuthChallengeInfo;
 class URLRequest;
@@ -19,6 +23,10 @@ namespace atom {
 class LoginHandler : public content::ResourceDispatcherHostLoginDelegate {
  public:
   LoginHandler(net::AuthChallengeInfo* auth_info, net::URLRequest* request);
+
+  // Returns the WebContents associated with the request, must be called on UI
+  // thread.
+  content::WebContents* GetWebContents() const;
 
   // The auth is cancelled, must be called on UI thread.
   void CancelAuth();
@@ -46,6 +54,10 @@ class LoginHandler : public content::ResourceDispatcherHostLoginDelegate {
   // The request that wants login data.
   // This should only be accessed on the IO loop.
   net::URLRequest* request_;
+
+  // Cached from the net::URLRequest, in case it goes NULL on us.
+  int render_process_host_id_;
+  int render_frame_id_;
 
   DISALLOW_COPY_AND_ASSIGN(LoginHandler);
 };

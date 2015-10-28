@@ -6,7 +6,10 @@
 
 #include "atom/browser/browser.h"
 #include "content/public/browser/browser_thread.h"
+#include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/resource_dispatcher_host.h"
+#include "content/public/browser/resource_request_info.h"
+#include "content/public/browser/web_contents.h"
 #include "net/base/auth.h"
 #include "net/url_request/url_request.h"
 
@@ -27,7 +30,12 @@ void ResetLoginHandlerForRequest(net::URLRequest* request) {
 
 LoginHandler::LoginHandler(net::AuthChallengeInfo* auth_info,
                            net::URLRequest* request)
-    : auth_info_(auth_info), request_(request) {
+    : auth_info_(auth_info),
+      request_(request),
+      render_process_host_id_(0),
+      render_frame_id_(0) {
+  content::ResourceRequestInfo::ForRequest(request_)->GetAssociatedRenderFrame(
+      &render_process_host_id_,  &render_frame_id_);
   BrowserThread::PostTask(BrowserThread::UI, FROM_HERE,
                           base::Bind(&Browser::RequestLogin,
                                      base::Unretained(Browser::Get()),
@@ -35,6 +43,14 @@ LoginHandler::LoginHandler(net::AuthChallengeInfo* auth_info,
 }
 
 LoginHandler::~LoginHandler() {
+}
+
+content::WebContents* LoginHandler::GetWebContents() const {
+  DCHECK_CURRENTLY_ON(BrowserThread::UI);
+
+  content::RenderFrameHost* rfh = content::RenderFrameHost::FromID(
+      render_process_host_id_, render_frame_id_);
+  return content::WebContents::FromRenderFrameHost(rfh);
 }
 
 void LoginHandler::Login(const base::string16& username,

@@ -244,6 +244,7 @@ void App::OnSelectCertificate(
 void App::OnLogin(LoginHandler* login_handler) {
   bool prevent_default = Emit(
       "login", login_handler->request(), login_handler->auth_info(),
+      api::WebContents::CreateFrom(isolate(), login_handler->GetWebContents()),
       base::Bind(&PassLoginInformation, make_scoped_refptr(login_handler)));
 
   // Default behavior is to alwasy cancel the auth.

@@ -17,7 +17,7 @@ v8::Local<v8::Value> Converter<const net::URLRequest*>::ToV8(
   dict.Set("url", val->url().spec());
   dict.Set("referrer", val->referrer());
   return mate::ConvertToV8(isolate, dict);
-};
+}
 
 // static
 v8::Local<v8::Value> Converter<const net::AuthChallengeInfo*>::ToV8(
@@ -29,6 +29,6 @@ v8::Local<v8::Value> Converter<const net::AuthChallengeInfo*>::ToV8(
   dict.Set("port", static_cast<uint32_t>(val->challenger.port()));
   dict.Set("realm", val->realm);
   return mate::ConvertToV8(isolate, dict);
-};
+}
 
 }  // namespace mate
