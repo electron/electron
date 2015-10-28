@@ -133,17 +133,22 @@ Emitted when a new [browserWindow](browser-window.md) is created.
 
 ### Event: 'select-certificate'
 
-Emitted when a client certificate is requested.
-
 Returns:
 
 * `event` Event
-* `webContents` [WebContents](browser-window.md#class-webcontents)
-* `url` String
+* `webContents` [WebContents](web-contents.md)
+* `url` URL
 * `certificateList` [Objects]
   * `data` PEM encoded data
   * `issuerName` Issuer's Common Name
 * `callback` Function
+
+Emitted when a client certificate is requested.
+
+The `url` corresponds to the navigation entry requesting the client certificate
+and `callback` needs to be called with an entry filtered from the list. Using
+`event.preventDefault()` prevents the application from using the first
+certificate from the store.
 
 ```javascript
 app.on('select-certificate', function(event, host, url, list, callback) {
@@ -152,10 +157,36 @@ app.on('select-certificate', function(event, host, url, list, callback) {
 })
 ```
 
-The `url` corresponds to the navigation entry requesting the client certificate
-and `callback` needs to be called with an entry filtered from the list. Using
-`event.preventDefault()` prevents the application from using the first
-certificate from the store.
+### Event: 'login'
+
+Returns:
+
+* `event` Event
+* `webContents` [WebContents](web-contents.md)
+* `request` Object
+  * `method` String
+  * `url` URL
+  * `referrer` URL
+* `authInfo` Object
+  * `isProxy` Boolean
+  * `scheme` String
+  * `host` String
+  * `port` Integer
+  * `realm` String
+* `callback` Function
+
+Emitted when `webContents` wants to do basic auth.
+
+The default behavior is to cancel all authentications, to override this you
+should prevent the default behavior with  `event.preventDefault()` and call
+`callback(username, password)` with the credentials.
+
+```javascript
+app.on('login', function(event, webContents, request, authInfo, callback) {
+  event.preventDefault();
+  callback('username', 'secret');
+})
+```
 
 ### Event: 'gpu-process-crashed'
 
