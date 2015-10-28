@@ -467,8 +467,9 @@ void NativeWindow::NotifyWindowExecuteWindowsCommand(
 #if defined(OS_WIN)
 void NativeWindow::NotifyWindowMessage(UINT message, WPARAM w_param,
                                        LPARAM l_param) {
-  FOR_EACH_OBSERVER(NativeWindowObserver, observers_,
-                    OnWindowMessage(message, w_param, l_param));
+  FOR_EACH_OBSERVER(
+      NativeWindowObserver, observers_,
+      OnWindowMessage(message, w_param, static_cast<uint64_t>(l_param)));
 }
 #endif
 

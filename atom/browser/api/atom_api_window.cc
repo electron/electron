@@ -42,14 +42,6 @@ struct Converter<atom::TaskbarHost::ThumbarButton> {
   }
 };
 
-template<>
-struct Converter<LPARAM> {
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   LPARAM val) {
-    return ConvertToV8(isolate, static_cast<int64_t>(val));
-  }
-};
-
 }  // namespace mate
 #endif
 
@@ -198,7 +190,7 @@ void Window::OnExecuteWindowsCommand(const std::string& command_name) {
 }
 
 #if defined(OS_WIN)
-void Window::OnWindowMessage(UINT message, WPARAM w_param, LPARAM l_param) {
+void Window::OnWindowMessage(UINT message, WPARAM w_param, uint64_t l_param) {
   if (IsWindowMessageHooked(message)) {
     messages_callback_map_[message].Run(w_param, l_param);
   }
