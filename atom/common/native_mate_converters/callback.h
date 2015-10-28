@@ -101,21 +101,16 @@ struct NativeFunctionInvoker<ReturnType(ArgTypes...)> {
   }
 };
 
-// Create a static function that accepts generic callback.
-template <typename Sig>
-Translater ConvertToTranslater(const base::Callback<Sig>& val) {
-  return base::Bind(&NativeFunctionInvoker<Sig>::Go, val);
-}
-
 }  // namespace internal
 
 template<typename Sig>
-struct Converter<base::Callback<Sig> > {
+struct Converter<base::Callback<Sig>> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    const base::Callback<Sig>& val) {
     // We don't use CreateFunctionTemplate here because it creates a new
     // FunctionTemplate everytime, which is cached by V8 and causes leaks.
-    internal::Translater translater = internal::ConvertToTranslater(val);
+    internal::Translater translater = base::Bind(
+        &internal::NativeFunctionInvoker<Sig>::Go, val);
     return internal::CreateFunctionFromTranslater(isolate, translater);
   }
   static bool FromV8(v8::Isolate* isolate,

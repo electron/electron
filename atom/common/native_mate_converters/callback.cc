@@ -4,21 +4,22 @@
 
 #include "atom/common/native_mate_converters/callback.h"
 
+#include "native_mate/wrappable.h"
+
 namespace mate {
 
 namespace internal {
 
 namespace {
 
-struct TranslaterHolder {
+struct TranslaterHolder : public Wrappable {
   Translater translater;
 };
 
 // Cached JavaScript version of |CallTranslater|.
 v8::Persistent<v8::FunctionTemplate> g_call_translater;
 
-void CallTranslater(v8::Local<v8::External> external, mate::Arguments* args) {
-  TranslaterHolder* holder = static_cast<TranslaterHolder*>(external->Value());
+void CallTranslater(TranslaterHolder* holder, mate::Arguments* args) {
   holder->translater.Run(args);
 }
 
@@ -54,7 +55,7 @@ v8::Local<v8::Value> CreateFunctionFromTranslater(
   return BindFunctionWith(isolate,
                           isolate->GetCurrentContext(),
                           call_translater->GetFunction(),
-                          v8::External::New(isolate, holder));
+                          holder->GetWrapper(isolate));
 }
 
 }  // namespace internal
