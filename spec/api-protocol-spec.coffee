@@ -23,8 +23,10 @@ describe 'protocol module', ->
 
     it 'does not crash when handler is called twice', (done) ->
       doubleHandler = (request, callback) ->
-        callback(text)
-        callback()
+        try
+          callback(text)
+          callback()
+        catch
       protocol.registerStringProtocol protocolName, doubleHandler, (error) ->
         return done(error) if error
         $.ajax
@@ -302,8 +304,10 @@ describe 'protocol module', ->
 
     it 'does not crash when handler is called twice', (done) ->
       doubleHandler = (request, callback) ->
-        callback(text)
-        callback()
+        try
+          callback(text)
+          callback()
+        catch
       protocol.interceptStringProtocol 'http', doubleHandler, (error) ->
         return done(error) if error
         $.ajax

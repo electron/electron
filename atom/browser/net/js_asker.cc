@@ -16,18 +16,7 @@ namespace internal {
 namespace {
 
 // The callback which is passed to |handler|.
-void HandlerCallback(const ResponseCallback& callback,
-                     v8::Local<v8::Object> state,
-                     mate::Arguments* args) {
-  v8::Isolate* isolate = args->isolate();
-
-  // Check if the callback has already been called.
-  v8::Local<v8::String> called_symbol = mate::StringToSymbol(isolate, "called");
-  if (state->Has(called_symbol))
-    return;  // no nothing
-  else
-    state->Set(called_symbol, v8::Boolean::New(isolate, true));
-
+void HandlerCallback(const ResponseCallback& callback, mate::Arguments* args) {
   // If there is no argument passed then we failed.
   v8::Local<v8::Value> value;
   if (!args->GetNext(&value)) {
@@ -57,10 +46,9 @@ void AskForOptions(v8::Isolate* isolate,
   v8::HandleScope handle_scope(isolate);
   v8::Local<v8::Context> context = isolate->GetCurrentContext();
   v8::Context::Scope context_scope(context);
-  v8::Local<v8::Object> state = v8::Object::New(isolate);
   handler.Run(request,
               mate::ConvertToV8(isolate,
-                                base::Bind(&HandlerCallback, callback, state)));
+                                base::Bind(&HandlerCallback, callback)));
 }
 
 bool IsErrorOptions(base::Value* value, int* error) {
