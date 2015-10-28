@@ -42,6 +42,14 @@ struct Converter<atom::TaskbarHost::ThumbarButton> {
   }
 };
 
+template<>
+struct Converter<LPARAM> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   LPARAM val) {
+    return ConvertToV8(isolate, static_cast<int64_t>(val));
+  }
+};
+
 }  // namespace mate
 #endif
 
