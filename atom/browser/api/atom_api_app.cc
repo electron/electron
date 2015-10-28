@@ -242,12 +242,26 @@ void App::OnSelectCertificate(
 }
 
 void App::OnLogin(LoginHandler* login_handler) {
-  bool prevent_default = Emit(
-      "login", login_handler->request(), login_handler->auth_info(),
-      api::WebContents::CreateFrom(isolate(), login_handler->GetWebContents()),
+  // Convert the args explicitly since they will be passed for twice.
+  v8::Locker locker(isolate());
+  v8::HandleScope handle_scope(isolate());
+  auto web_contents =
+      WebContents::CreateFrom(isolate(), login_handler->GetWebContents());
+  auto request = mate::ConvertToV8(isolate(), login_handler->request());
+  auto auth_info = mate::ConvertToV8(isolate(), login_handler->auth_info());
+  auto callback = mate::ConvertToV8(
+      isolate(),
       base::Bind(&PassLoginInformation, make_scoped_refptr(login_handler)));
 
-  // Default behavior is to alwasy cancel the auth.
+  bool prevent_default =
+      Emit("login", web_contents, request, auth_info, callback);
+
+  // Also pass it to WebContents.
+  if (!prevent_default)
+    prevent_default =
+        web_contents->Emit("login", request, auth_info, callback);
+
+  // Default behavior is to always cancel the auth.
   if (!prevent_default)
     login_handler->CancelAuth();
 }
