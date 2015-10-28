@@ -3,8 +3,8 @@ path = require 'path'
 objectsRegistry = require './objects-registry.js'
 v8Util = process.atomBinding 'v8_util'
 
-# caches callback with their registry ID.
-rendererCallbacks = {}
+# weak refereence to callback with their registry ID.
+rendererCallbacks = v8Util.createWeakMap()
 
 # Convert a real value into meta data.
 valueToMeta = (sender, value, optimizeSimpleObject=false) ->
@@ -77,18 +77,19 @@ unwrapArgs = (sender, args) ->
         objectsRegistry.once "clear-#{sender.getId()}", ->
           rendererReleased = true
 
-        return rendererCallbacks[meta.id] if rendererCallbacks[meta.id]?
+        if rendererCallbacks.has(meta.id)
+          return rendererCallbacks.get(meta.id)
 
         ret = ->
           if rendererReleased
             throw new Error("Attempting to call a function in a renderer window
-              that has been closed or released. Function provided here: #{meta.id}.")
+              that has been closed or released. Function provided here: #{meta.location}.")
           sender.send 'ATOM_RENDERER_CALLBACK', meta.id, valueToMeta(sender, arguments)
         v8Util.setDestructor ret, ->
           return if rendererReleased
-          delete rendererCallbacks[meta.id]
+          rendererCallbacks.remove meta.id
           sender.send 'ATOM_RENDERER_RELEASE_CALLBACK', meta.id
-        rendererCallbacks[meta.id] = ret
+        rendererCallbacks.set meta.id, ret
         ret
       else throw new TypeError("Unknown type: #{meta.type}")
 

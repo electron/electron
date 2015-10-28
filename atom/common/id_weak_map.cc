@@ -8,6 +8,18 @@
 
 #include "native_mate/converter.h"
 
+namespace mate {
+
+template<typename T>
+struct Converter<v8::MaybeLocal<T>> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   v8::MaybeLocal<T> val) {
+    return ConvertToV8(isolate, val.ToLocalChecked());
+  }
+};
+
+}  // namespace mate
+
 namespace atom {
 
 namespace {
@@ -39,6 +51,15 @@ int32_t IDWeakMap::Add(v8::Isolate* isolate, v8::Local<v8::Object> object) {
   global->SetWeak(key, OnObjectGC, v8::WeakCallbackType::kParameter);
   map_[id] = global;
   return id;
+}
+
+void IDWeakMap::Set(v8::Isolate* isolate,
+                    int32_t id,
+                    v8::Local<v8::Object> object) {
+  auto global = make_linked_ptr(new v8::Global<v8::Object>(isolate, object));
+  ObjectKey* key = new ObjectKey(id, this);
+  global->SetWeak(key, OnObjectGC, v8::WeakCallbackType::kParameter);
+  map_[id] = global;
 }
 
 v8::MaybeLocal<v8::Object> IDWeakMap::Get(v8::Isolate* isolate, int32_t id) {
@@ -83,6 +104,15 @@ void IDWeakMap::Clear() {
 
 int32_t IDWeakMap::GetNextID() {
   return ++next_id_;
+}
+
+mate::ObjectTemplateBuilder IDWeakMap::GetObjectTemplateBuilder(
+    v8::Isolate* isolate) {
+  return mate::ObjectTemplateBuilder(isolate)
+      .SetMethod("set", &IDWeakMap::Set)
+      .SetMethod("get", &IDWeakMap::Get)
+      .SetMethod("has", &IDWeakMap::Has)
+      .SetMethod("remove", &IDWeakMap::Remove);
 }
 
 }  // namespace atom

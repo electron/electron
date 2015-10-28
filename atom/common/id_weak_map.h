@@ -9,18 +9,23 @@
 #include <vector>
 
 #include "base/memory/linked_ptr.h"
+#include "native_mate/object_template_builder.h"
+#include "native_mate/wrappable.h"
 #include "v8/include/v8.h"
 
 namespace atom {
 
 // Like ES6's WeakMap, but the key is Integer and the value is Weak Pointer.
-class IDWeakMap {
+class IDWeakMap : public mate::Wrappable {
  public:
   IDWeakMap();
   ~IDWeakMap();
 
   // Adds |object| to WeakMap and returns its allocated |id|.
   int32_t Add(v8::Isolate* isolate, v8::Local<v8::Object> object);
+
+  // Sets the object to WeakMap with the given |id|.
+  void Set(v8::Isolate* isolate, int32_t id, v8::Local<v8::Object> object);
 
   // Gets the object from WeakMap by its |id|.
   v8::MaybeLocal<v8::Object> Get(v8::Isolate* isolate, int32_t id);
@@ -39,6 +44,10 @@ class IDWeakMap {
 
   // Clears the weak map.
   void Clear();
+
+ protected:
+  mate::ObjectTemplateBuilder GetObjectTemplateBuilder(
+      v8::Isolate* isolate) override;
 
  private:
   // Returns next available ID.
