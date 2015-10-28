@@ -13,10 +13,11 @@
 
 #include "atom/browser/api/atom_api_menu.h"
 #include "atom/browser/api/atom_api_session.h"
+#include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/browser.h"
-#include "atom/browser/api/atom_api_web_contents.h"
+#include "atom/browser/login_handler.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/node_includes.h"
@@ -132,8 +133,6 @@ void OnClientCertificateSelected(
     v8::Isolate* isolate,
     std::shared_ptr<content::ClientCertificateDelegate> delegate,
     mate::Arguments* args) {
-  v8::Locker locker(isolate);
-  v8::HandleScope handle_scope(isolate);
   mate::Dictionary cert_data;
   if (!(args->Length() == 1 && args->GetNext(&cert_data))) {
     args->ThrowError();
@@ -147,8 +146,16 @@ void OnClientCertificateSelected(
       net::X509Certificate::CreateCertificateListFromBytes(
           encoded_data.data(), encoded_data.size(),
           net::X509Certificate::FORMAT_AUTO);
-
   delegate->ContinueWithCertificate(certs[0].get());
+}
+
+void PassLoginInformation(scoped_refptr<LoginHandler> login_handler,
+                          mate::Arguments* args) {
+  base::string16 username, password;
+  if (args->GetNext(&username) && args->GetNext(&password))
+    login_handler->Login(username, password);
+  else
+    login_handler->CancelAuth();
 }
 
 }  // namespace
@@ -231,6 +238,16 @@ void App::OnSelectCertificate(
   if (!prevent_default)
     shared_delegate->ContinueWithCertificate(
         cert_request_info->client_certs[0].get());
+}
+
+void App::OnLogin(LoginHandler* login_handler) {
+  bool prevent_default =
+      Emit("login", base::Bind(&PassLoginInformation,
+                               make_scoped_refptr(login_handler)));
+
+  // Default behavior is to alwasy cancel the auth.
+  if (!prevent_default)
+    login_handler->CancelAuth();
 }
 
 void App::OnGpuProcessCrashed(base::TerminationStatus exit_code) {

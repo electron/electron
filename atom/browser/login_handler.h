@@ -5,7 +5,7 @@
 #ifndef ATOM_BROWSER_LOGIN_HANDLER_H_
 #define ATOM_BROWSER_LOGIN_HANDLER_H_
 
-#include "base/memory/weak_ptr.h"
+#include "base/strings/string16.h"
 #include "content/public/browser/resource_dispatcher_host_login_delegate.h"
 
 namespace net {
@@ -15,9 +15,16 @@ class URLRequest;
 
 namespace atom {
 
+// Handles the HTTP basic auth, must be created on IO thread.
 class LoginHandler : public content::ResourceDispatcherHostLoginDelegate {
  public:
   LoginHandler(net::AuthChallengeInfo* auth_info, net::URLRequest* request);
+
+  // The auth is cancelled, must be called on UI thread.
+  void CancelAuth();
+
+  // Login with |username| and |password|, must be called on UI thread.
+  void Login(const base::string16& username, const base::string16& password);
 
  protected:
   ~LoginHandler() override;
@@ -26,14 +33,16 @@ class LoginHandler : public content::ResourceDispatcherHostLoginDelegate {
   void OnRequestCancelled() override;
 
  private:
+  // Must be called on IO thread.
+  void DoCancelAuth();
+  void DoLogin(const base::string16& username, const base::string16& password);
+
   // Who/where/what asked for the authentication.
   scoped_refptr<net::AuthChallengeInfo> auth_info_;
 
   // The request that wants login data.
   // This should only be accessed on the IO loop.
   net::URLRequest* request_;
-
-  base::WeakPtrFactory<LoginHandler> weak_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(LoginHandler);
 };

@@ -50,6 +50,7 @@ class App : public mate::EventEmitter,
       content::WebContents* web_contents,
       net::SSLCertRequestInfo* cert_request_info,
       scoped_ptr<content::ClientCertificateDelegate> delegate) override;
+  void OnLogin(LoginHandler* login_handler) override;
 
   // content::GpuDataManagerObserver:
   void OnGpuProcessCrashed(base::TerminationStatus exit_code) override;

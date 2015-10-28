@@ -134,6 +134,10 @@ void Browser::ClientCertificateSelector(
                                         delegate.Pass()));
 }
 
+void Browser::RequestLogin(LoginHandler* login_handler) {
+  FOR_EACH_OBSERVER(BrowserObserver, observers_, OnLogin(login_handler));
+}
+
 void Browser::NotifyAndShutdown() {
   if (is_shutdown_)
     return;
