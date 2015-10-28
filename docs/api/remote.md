@@ -3,7 +3,7 @@
 The `remote` module provides a simple way to do inter-process communication
 (IPC) between the renderer process (web page) and the main process.
 
-In Electron, only GUI-unrelated modules are available in the renderer process.
+In Electron, only GUI-related modules are available in the renderer process.
 Without the `remote` module, users who want to call a main process API in
 the renderer process will have to explicitly send inter-process messages
 to the main process. With the `remote` module, you can invoke methods of the
