@@ -20,6 +20,7 @@ namespace internal {
 
 typedef scoped_refptr<RefCountedPersistent<v8::Function> > SafeV8Function;
 
+// Helper to invoke a V8 function with C++ parameters.
 template <typename Sig>
 struct V8FunctionInvoker {};
 
@@ -81,13 +82,41 @@ struct V8FunctionInvoker<ReturnType(ArgTypes...)> {
   }
 };
 
+// Helper to pass a C++ funtion to JavaScript.
+using Translater = base::Callback<void(Arguments* args)>;
+v8::Local<v8::Value> CreateFunctionFromTranslater(
+    v8::Isolate* isolate, const Translater& translater);
+
+// Calls callback with Arguments.
+template <typename Sig>
+struct NativeFunctionInvoker {};
+
+template <typename ReturnType, typename... ArgTypes>
+struct NativeFunctionInvoker<ReturnType(ArgTypes...)> {
+  static void Go(base::Callback<ReturnType(ArgTypes...)> val, Arguments* args) {
+    using Indices = typename IndicesGenerator<sizeof...(ArgTypes)>::type;
+    Invoker<Indices, ArgTypes...> invoker(args, 0);
+    if (invoker.IsOK())
+      invoker.DispatchToCallback(val);
+  }
+};
+
+// Create a static function that accepts generic callback.
+template <typename Sig>
+Translater ConvertToTranslater(const base::Callback<Sig>& val) {
+  return base::Bind(&NativeFunctionInvoker<Sig>::Go, val);
+}
+
 }  // namespace internal
 
 template<typename Sig>
 struct Converter<base::Callback<Sig> > {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                    const base::Callback<Sig>& val) {
-    return CreateFunctionTemplate(isolate, val)->GetFunction();
+                                   const base::Callback<Sig>& val) {
+    // We don't use CreateFunctionTemplate here because it creates a new
+    // FunctionTemplate everytime, which is cached by V8 and causes leaks.
+    internal::Translater translater = internal::ConvertToTranslater(val);
+    return internal::CreateFunctionFromTranslater(isolate, translater);
   }
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
