@@ -6,6 +6,7 @@
 #define ATOM_BROWSER_LOGIN_HANDLER_H_
 
 #include "base/strings/string16.h"
+#include "base/synchronization/lock.h"
 #include "content/public/browser/resource_dispatcher_host_login_delegate.h"
 
 namespace content {
@@ -47,6 +48,14 @@ class LoginHandler : public content::ResourceDispatcherHostLoginDelegate {
   // Must be called on IO thread.
   void DoCancelAuth();
   void DoLogin(const base::string16& username, const base::string16& password);
+
+  // Marks authentication as handled and returns the previous handled
+  // state.
+  bool TestAndSetAuthHandled();
+
+  // True if we've handled auth (Login or CancelAuth has been called).
+  bool handled_auth_;
+  mutable base::Lock handled_auth_lock_;
 
   // Who/where/what asked for the authentication.
   scoped_refptr<net::AuthChallengeInfo> auth_info_;

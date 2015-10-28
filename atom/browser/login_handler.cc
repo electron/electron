@@ -30,7 +30,8 @@ void ResetLoginHandlerForRequest(net::URLRequest* request) {
 
 LoginHandler::LoginHandler(net::AuthChallengeInfo* auth_info,
                            net::URLRequest* request)
-    : auth_info_(auth_info),
+    : handled_auth_(false),
+      auth_info_(auth_info),
       request_(request),
       render_process_host_id_(0),
       render_frame_id_(0) {
@@ -56,6 +57,8 @@ content::WebContents* LoginHandler::GetWebContents() const {
 void LoginHandler::Login(const base::string16& username,
                          const base::string16& password) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
+  if (TestAndSetAuthHandled())
+    return;
   BrowserThread::PostTask(
       BrowserThread::IO, FROM_HERE,
       base::Bind(&LoginHandler::DoLogin, this, username, password));
@@ -63,12 +66,23 @@ void LoginHandler::Login(const base::string16& username,
 
 void LoginHandler::CancelAuth() {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
+  if (TestAndSetAuthHandled())
+    return;
   BrowserThread::PostTask(BrowserThread::IO, FROM_HERE,
                           base::Bind(&LoginHandler::DoCancelAuth, this));
 }
 
 void LoginHandler::OnRequestCancelled() {
+  TestAndSetAuthHandled();
   request_ = nullptr;
+}
+
+// Marks authentication as handled and returns the previous handled state.
+bool LoginHandler::TestAndSetAuthHandled() {
+  base::AutoLock lock(handled_auth_lock_);
+  bool was_handled = handled_auth_;
+  handled_auth_ = true;
+  return was_handled;
 }
 
 void LoginHandler::DoCancelAuth() {
