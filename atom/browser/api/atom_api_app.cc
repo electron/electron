@@ -19,6 +19,7 @@
 #include "atom/browser/browser.h"
 #include "atom/browser/login_handler.h"
 #include "atom/common/native_mate_converters/callback.h"
+#include "atom/common/native_mate_converters/content_converter.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/node_includes.h"
 #include "atom/common/options_switches.h"
@@ -241,9 +242,9 @@ void App::OnSelectCertificate(
 }
 
 void App::OnLogin(LoginHandler* login_handler) {
-  bool prevent_default =
-      Emit("login", base::Bind(&PassLoginInformation,
-                               make_scoped_refptr(login_handler)));
+  bool prevent_default = Emit(
+      "login", login_handler->request(), login_handler->auth_info(),
+      base::Bind(&PassLoginInformation, make_scoped_refptr(login_handler)));
 
   // Default behavior is to alwasy cancel the auth.
   if (!prevent_default)

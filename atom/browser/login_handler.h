@@ -26,6 +26,9 @@ class LoginHandler : public content::ResourceDispatcherHostLoginDelegate {
   // Login with |username| and |password|, must be called on UI thread.
   void Login(const base::string16& username, const base::string16& password);
 
+  const net::AuthChallengeInfo* auth_info() const { return auth_info_.get(); }
+  const net::URLRequest* request() const { return request_; }
+
  protected:
   ~LoginHandler() override;
 
