@@ -60,6 +60,16 @@ void OnCapturePageDone(
   callback.Run(gfx::Image::CreateFrom1xBitmap(bitmap));
 }
 
+#if defined(OS_WIN)
+v8::Local<v8::Value> ToBuffer(v8::Isolate* isolate, void* val, int size) {
+  auto buffer = node::Buffer::New(isolate, static_cast<char*>(val), size);
+  if (buffer.IsEmpty())
+    return v8::Null(isolate);
+  else
+    return buffer.ToLocalChecked();
+}
+#endif
+
 }  // namespace
 
 
@@ -190,21 +200,11 @@ void Window::OnExecuteWindowsCommand(const std::string& command_name) {
 }
 
 #if defined(OS_WIN)
-v8::Local<v8::Value> Window::ToBuffer(void* val, int size) {
-  auto buffer = node::Buffer::New(isolate(), static_cast<char*>(val), size);
-
-  if (buffer.IsEmpty()) {
-    return v8::Null(isolate());
-  } else {
-    return buffer.ToLocalChecked();
-  }
-}
-
 void Window::OnWindowMessage(UINT message, WPARAM w_param, LPARAM l_param) {
   if (IsWindowMessageHooked(message)) {
     messages_callback_map_[message].Run(
-      ToBuffer(static_cast<void*>(&w_param), sizeof(WPARAM)),
-      ToBuffer(static_cast<void*>(&l_param), sizeof(LPARAM)));
+        ToBuffer(isolate(), static_cast<void*>(&w_param), sizeof(WPARAM)),
+        ToBuffer(isolate(), static_cast<void*>(&l_param), sizeof(LPARAM)));
   }
 }
 #endif

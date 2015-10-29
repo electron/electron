@@ -77,8 +77,7 @@ class Window : public mate::TrackableObject<Window>,
   void OnExecuteWindowsCommand(const std::string& command_name) override;
 
   #if defined(OS_WIN)
-  void OnWindowMessage(UINT message, WPARAM w_param,
-                       LPARAM l_param) override;
+  void OnWindowMessage(UINT message, WPARAM w_param, LPARAM l_param) override;
   #endif
 
   // mate::Wrappable:
@@ -150,15 +149,10 @@ class Window : public mate::TrackableObject<Window>,
   void SetAspectRatio(double aspect_ratio, mate::Arguments* args);
 
 #if defined(OS_WIN)
-  v8::Local<v8::Value> ToBuffer(void* val, int size);
-
   typedef base::Callback<void(v8::Local<v8::Value>,
                               v8::Local<v8::Value>)> MessageCallback;
-  typedef std::map<UINT, MessageCallback> MessageCallbackMap;
-  MessageCallbackMap messages_callback_map_;
 
-  bool HookWindowMessage(UINT message,
-                         const MessageCallback& callback);
+  bool HookWindowMessage(UINT message, const MessageCallback& callback);
   bool IsWindowMessageHooked(UINT message);
   void UnhookWindowMessage(UINT message);
   void UnhookAllWindowMessages();
@@ -173,6 +167,11 @@ class Window : public mate::TrackableObject<Window>,
 
   int32_t ID() const;
   v8::Local<v8::Value> WebContents(v8::Isolate* isolate);
+
+#if defined(OS_WIN)
+  typedef std::map<UINT, MessageCallback> MessageCallbackMap;
+  MessageCallbackMap messages_callback_map_;
+#endif
 
   v8::Global<v8::Value> web_contents_;
   v8::Global<v8::Value> menu_;
