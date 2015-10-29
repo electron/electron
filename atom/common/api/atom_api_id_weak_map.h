@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_COMMON_API_ATOM_API_WEAK_MAP_H_
-#define ATOM_COMMON_API_ATOM_API_WEAK_MAP_H_
+#ifndef ATOM_COMMON_API_ATOM_API_ID_WEAK_MAP_H_
+#define ATOM_COMMON_API_ATOM_API_ID_WEAK_MAP_H_
 
 #include "atom/common/id_weak_map.h"
 #include "native_mate/object_template_builder.h"
@@ -13,7 +13,7 @@ namespace atom {
 
 namespace api {
 
-class WeakMap : public mate::Wrappable {
+class IDWeakMap : public mate::Wrappable {
  public:
   static mate::Wrappable* Create(v8::Isolate* isolate);
 
@@ -21,8 +21,8 @@ class WeakMap : public mate::Wrappable {
                              v8::Local<v8::ObjectTemplate> prototype);
 
  protected:
-  WeakMap();
-  virtual ~WeakMap();
+  IDWeakMap();
+  virtual ~IDWeakMap();
 
   // mate::Wrappable:
   bool IsDestroyed() const override;
@@ -34,13 +34,13 @@ class WeakMap : public mate::Wrappable {
   bool Has(int32_t id);
   void Remove(int32_t id);
 
-  scoped_ptr<IDWeakMap> id_weak_map_;
+  scoped_ptr<atom::IDWeakMap> id_weak_map_;
 
-  DISALLOW_COPY_AND_ASSIGN(WeakMap);
+  DISALLOW_COPY_AND_ASSIGN(IDWeakMap);
 };
 
 }  // namespace api
 
 }  // namespace atom
 
-#endif  // ATOM_COMMON_API_ATOM_API_WEAK_MAP_H_
+#endif  // ATOM_COMMON_API_ATOM_API_ID_WEAK_MAP_H_

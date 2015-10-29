@@ -7,6 +7,9 @@ class CallbacksRegistry
     @callbacks = {}
 
   add: (callback) ->
+    if v8Util.getHiddenValue(callback, 'metaId')?
+      return v8Util.getHiddenValue(callback, 'metaId')
+
     id = ++@nextId
 
     # Capture the location of the function and put it in the ID string,
@@ -19,10 +22,9 @@ class CallbacksRegistry
       continue if location.indexOf('(native)') isnt -1
       continue if location.indexOf('atom.asar') isnt -1
       [x, filenameAndLine] = /([^/^\)]*)\)?$/gi.exec(location)
+      [x, line, column] = /(\d+):(\d+)/g.exec(filenameAndLine)
+      id += parseInt(line) + parseInt(column)
       break
-
-    if v8Util.getHiddenValue(callback, 'metaId')?
-      return v8Util.getHiddenValue(callback, 'metaId')
 
     @callbacks[id] = callback
     v8Util.setHiddenValue callback, 'metaId', id

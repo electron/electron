@@ -2,10 +2,10 @@ ipc = require 'ipc'
 path = require 'path'
 objectsRegistry = require './objects-registry.js'
 v8Util = process.atomBinding 'v8_util'
-WeakMap = process.atomBinding('weak_map').WeakMap
+IDWeakMap = process.atomBinding('id_weak_map').IDWeakMap
 
 # Weak reference to callback with their registry ID.
-rendererCallbacks = new WeakMap()
+rendererCallbacks = new IDWeakMap()
 
 # Convert a real value into meta data.
 valueToMeta = (sender, value, optimizeSimpleObject=false) ->

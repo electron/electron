@@ -3,7 +3,6 @@
 // found in the LICENSE file.
 
 #include "atom/common/api/object_life_monitor.h"
-#include "atom/common/id_weak_map.h"
 #include "atom/common/node_includes.h"
 #include "native_mate/dictionary.h"
 #include "v8/include/v8-profiler.h"
