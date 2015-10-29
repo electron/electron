@@ -167,6 +167,27 @@ Emitted when DevTools is closed.
 
 Emitted when DevTools is focused / opened.
 
+### Event: 'login'
+
+Returns:
+
+* `event` Event
+* `request` Object
+  * `method` String
+  * `url` URL
+  * `referrer` URL
+* `authInfo` Object
+  * `isProxy` Boolean
+  * `scheme` String
+  * `host` String
+  * `port` Integer
+  * `realm` String
+* `callback` Function
+
+Emitted when `webContents` wants to do basic auth.
+
+The usage is the same with [the `login` event of `app`](app.md#event-login).
+
 ## Instance Methods
 
 The `webContents` object has the following instance methods:

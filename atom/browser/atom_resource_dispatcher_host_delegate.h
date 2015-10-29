@@ -21,6 +21,9 @@ class AtomResourceDispatcherHostDelegate
                               bool is_main_frame,
                               ui::PageTransition transition,
                               bool has_user_gesture) override;
+  content::ResourceDispatcherHostLoginDelegate* CreateLoginDelegate(
+      net::AuthChallengeInfo* auth_info,
+      net::URLRequest* request) override;
 };
 
 }  // namespace atom

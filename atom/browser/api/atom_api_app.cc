@@ -13,11 +13,13 @@
 
 #include "atom/browser/api/atom_api_menu.h"
 #include "atom/browser/api/atom_api_session.h"
+#include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/browser.h"
-#include "atom/browser/api/atom_api_web_contents.h"
+#include "atom/browser/login_handler.h"
 #include "atom/common/native_mate_converters/callback.h"
+#include "atom/common/native_mate_converters/content_converter.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/node_includes.h"
 #include "atom/common/options_switches.h"
@@ -132,8 +134,6 @@ void OnClientCertificateSelected(
     v8::Isolate* isolate,
     std::shared_ptr<content::ClientCertificateDelegate> delegate,
     mate::Arguments* args) {
-  v8::Locker locker(isolate);
-  v8::HandleScope handle_scope(isolate);
   mate::Dictionary cert_data;
   if (!(args->Length() == 1 && args->GetNext(&cert_data))) {
     args->ThrowError();
@@ -147,8 +147,16 @@ void OnClientCertificateSelected(
       net::X509Certificate::CreateCertificateListFromBytes(
           encoded_data.data(), encoded_data.size(),
           net::X509Certificate::FORMAT_AUTO);
-
   delegate->ContinueWithCertificate(certs[0].get());
+}
+
+void PassLoginInformation(scoped_refptr<LoginHandler> login_handler,
+                          mate::Arguments* args) {
+  base::string16 username, password;
+  if (args->GetNext(&username) && args->GetNext(&password))
+    login_handler->Login(username, password);
+  else
+    login_handler->CancelAuth();
 }
 
 }  // namespace
@@ -231,6 +239,31 @@ void App::OnSelectCertificate(
   if (!prevent_default)
     shared_delegate->ContinueWithCertificate(
         cert_request_info->client_certs[0].get());
+}
+
+void App::OnLogin(LoginHandler* login_handler) {
+  // Convert the args explicitly since they will be passed for twice.
+  v8::Locker locker(isolate());
+  v8::HandleScope handle_scope(isolate());
+  auto web_contents =
+      WebContents::CreateFrom(isolate(), login_handler->GetWebContents());
+  auto request = mate::ConvertToV8(isolate(), login_handler->request());
+  auto auth_info = mate::ConvertToV8(isolate(), login_handler->auth_info());
+  auto callback = mate::ConvertToV8(
+      isolate(),
+      base::Bind(&PassLoginInformation, make_scoped_refptr(login_handler)));
+
+  bool prevent_default =
+      Emit("login", web_contents, request, auth_info, callback);
+
+  // Also pass it to WebContents.
+  if (!prevent_default)
+    prevent_default =
+        web_contents->Emit("login", request, auth_info, callback);
+
+  // Default behavior is to always cancel the auth.
+  if (!prevent_default)
+    login_handler->CancelAuth();
 }
 
 void App::OnGpuProcessCrashed(base::TerminationStatus exit_code) {
