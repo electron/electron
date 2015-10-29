@@ -39,16 +39,8 @@ namespace atom {
 namespace {
 
 bool IsSwitchEnabled(base::CommandLine* command_line,
-                     const char* switch_string,
-                     bool* enabled) {
-  std::string value = command_line->GetSwitchValueASCII(switch_string);
-  if (value == "true")
-    *enabled = true;
-  else if (value == "false")
-    *enabled = false;
-  else
-    return false;
-  return true;
+                     const char* switch_string) {
+  return command_line->GetSwitchValueASCII(switch_string) == "true";
 }
 
 // Helper class to forward the messages to the client.
@@ -216,10 +208,8 @@ bool AtomRendererClient::ShouldOverridePageVisibilityState(
     const content::RenderFrame* render_frame,
     blink::WebPageVisibilityState* override_state) {
   base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
-  bool b;
 
-  if (IsSwitchEnabled(command_line, switches::kPageVisibility, &b)
-      && b) {
+  if (IsSwitchEnabled(command_line, switches::kPageVisibility)) {
     *override_state = blink::WebPageVisibilityStateVisible;
     return true;
   }
@@ -229,17 +219,17 @@ bool AtomRendererClient::ShouldOverridePageVisibilityState(
 
 void AtomRendererClient::EnableWebRuntimeFeatures() {
   base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
-  bool b;
-  if (IsSwitchEnabled(command_line, switches::kExperimentalFeatures, &b))
-    blink::WebRuntimeFeatures::enableExperimentalFeatures(b);
-  if (IsSwitchEnabled(command_line, switches::kExperimentalCanvasFeatures, &b))
-    blink::WebRuntimeFeatures::enableExperimentalCanvasFeatures(b);
-  if (IsSwitchEnabled(command_line, switches::kOverlayScrollbars, &b))
-    blink::WebRuntimeFeatures::enableOverlayScrollbars(b);
-  if (IsSwitchEnabled(command_line, switches::kOverlayFullscreenVideo, &b))
-    blink::WebRuntimeFeatures::enableOverlayFullscreenVideo(b);
-  if (IsSwitchEnabled(command_line, switches::kSharedWorker, &b))
-    blink::WebRuntimeFeatures::enableSharedWorker(b);
+
+  if (IsSwitchEnabled(command_line, switches::kExperimentalFeatures))
+    blink::WebRuntimeFeatures::enableExperimentalFeatures(true);
+  if (IsSwitchEnabled(command_line, switches::kExperimentalCanvasFeatures))
+    blink::WebRuntimeFeatures::enableExperimentalCanvasFeatures(true);
+  if (IsSwitchEnabled(command_line, switches::kOverlayScrollbars))
+    blink::WebRuntimeFeatures::enableOverlayScrollbars(true);
+  if (IsSwitchEnabled(command_line, switches::kOverlayFullscreenVideo))
+    blink::WebRuntimeFeatures::enableOverlayFullscreenVideo(true);
+  if (IsSwitchEnabled(command_line, switches::kSharedWorker))
+    blink::WebRuntimeFeatures::enableSharedWorker(true);
 }
 
 }  // namespace atom

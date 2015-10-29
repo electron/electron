@@ -53,8 +53,14 @@ void Browser::Shutdown() {
   is_quiting_ = true;
 
   FOR_EACH_OBSERVER(BrowserObserver, observers_, OnQuit());
-  base::MessageLoop::current()->PostTask(
-      FROM_HERE, base::MessageLoop::QuitWhenIdleClosure());
+
+  if (base::MessageLoop::current()) {
+    base::MessageLoop::current()->PostTask(
+        FROM_HERE, base::MessageLoop::QuitWhenIdleClosure());
+  } else {
+    // There is no message loop available so we are in early stage.
+    exit(0);
+  }
 }
 
 std::string Browser::GetVersion() const {
@@ -126,6 +132,10 @@ void Browser::ClientCertificateSelector(
                     OnSelectCertificate(web_contents,
                                         cert_request_info,
                                         delegate.Pass()));
+}
+
+void Browser::RequestLogin(LoginHandler* login_handler) {
+  FOR_EACH_OBSERVER(BrowserObserver, observers_, OnLogin(login_handler));
 }
 
 void Browser::NotifyAndShutdown() {

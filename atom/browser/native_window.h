@@ -134,6 +134,7 @@ class NativeWindow : public base::SupportsUserData,
   virtual void SetSkipTaskbar(bool skip) = 0;
   virtual void SetKiosk(bool kiosk) = 0;
   virtual bool IsKiosk() = 0;
+  virtual void SetBackgroundColor(const std::string& color_name) = 0;
   virtual void SetRepresentedFilename(const std::string& filename);
   virtual std::string GetRepresentedFilename();
   virtual void SetDocumentEdited(bool edited);
@@ -208,6 +209,10 @@ class NativeWindow : public base::SupportsUserData,
   void NotifyWindowEnterHtmlFullScreen();
   void NotifyWindowLeaveHtmlFullScreen();
   void NotifyWindowExecuteWindowsCommand(const std::string& command);
+
+  #if defined(OS_WIN)
+  void NotifyWindowMessage(UINT message, WPARAM w_param, LPARAM l_param);
+  #endif
 
   void AddObserver(NativeWindowObserver* obs) {
     observers_.AddObserver(obs);

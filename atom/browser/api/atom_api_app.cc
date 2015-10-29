@@ -13,11 +13,13 @@
 
 #include "atom/browser/api/atom_api_menu.h"
 #include "atom/browser/api/atom_api_session.h"
+#include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/browser.h"
-#include "atom/browser/api/atom_api_web_contents.h"
+#include "atom/browser/login_handler.h"
 #include "atom/common/native_mate_converters/callback.h"
+#include "atom/common/native_mate_converters/content_converter.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/node_includes.h"
 #include "atom/common/options_switches.h"
@@ -111,12 +113,27 @@ int GetPathConstant(const std::string& name) {
     return -1;
 }
 
+bool NotificationCallbackWrapper(
+    const ProcessSingleton::NotificationCallback& callback,
+    const base::CommandLine::StringVector& cmd,
+    const base::FilePath& cwd) {
+  // Make sure the callback is called after app gets ready.
+  if (Browser::Get()->is_ready()) {
+    callback.Run(cmd, cwd);
+  } else {
+    scoped_refptr<base::SingleThreadTaskRunner> task_runner(
+        base::ThreadTaskRunnerHandle::Get());
+    task_runner->PostTask(
+        FROM_HERE, base::Bind(base::IgnoreResult(callback), cmd, cwd));
+  }
+  // ProcessSingleton needs to know whether current process is quiting.
+  return !Browser::Get()->is_shutting_down();
+}
+
 void OnClientCertificateSelected(
     v8::Isolate* isolate,
     std::shared_ptr<content::ClientCertificateDelegate> delegate,
     mate::Arguments* args) {
-  v8::Locker locker(isolate);
-  v8::HandleScope handle_scope(isolate);
   mate::Dictionary cert_data;
   if (!(args->Length() == 1 && args->GetNext(&cert_data))) {
     args->ThrowError();
@@ -130,8 +147,16 @@ void OnClientCertificateSelected(
       net::X509Certificate::CreateCertificateListFromBytes(
           encoded_data.data(), encoded_data.size(),
           net::X509Certificate::FORMAT_AUTO);
-
   delegate->ContinueWithCertificate(certs[0].get());
+}
+
+void PassLoginInformation(scoped_refptr<LoginHandler> login_handler,
+                          mate::Arguments* args) {
+  base::string16 username, password;
+  if (args->GetNext(&username) && args->GetNext(&password))
+    login_handler->Login(username, password);
+  else
+    login_handler->CancelAuth();
 }
 
 }  // namespace
@@ -160,6 +185,11 @@ void App::OnWindowAllClosed() {
 
 void App::OnQuit() {
   Emit("quit");
+
+  if (process_singleton_.get()) {
+    process_singleton_->Cleanup();
+    process_singleton_.reset();
+  }
 }
 
 void App::OnOpenFile(bool* prevent_default, const std::string& file_path) {
@@ -209,6 +239,31 @@ void App::OnSelectCertificate(
   if (!prevent_default)
     shared_delegate->ContinueWithCertificate(
         cert_request_info->client_certs[0].get());
+}
+
+void App::OnLogin(LoginHandler* login_handler) {
+  // Convert the args explicitly since they will be passed for twice.
+  v8::Locker locker(isolate());
+  v8::HandleScope handle_scope(isolate());
+  auto web_contents =
+      WebContents::CreateFrom(isolate(), login_handler->GetWebContents());
+  auto request = mate::ConvertToV8(isolate(), login_handler->request());
+  auto auth_info = mate::ConvertToV8(isolate(), login_handler->auth_info());
+  auto callback = mate::ConvertToV8(
+      isolate(),
+      base::Bind(&PassLoginInformation, make_scoped_refptr(login_handler)));
+
+  bool prevent_default =
+      Emit("login", web_contents, request, auth_info, callback);
+
+  // Also pass it to WebContents.
+  if (!prevent_default)
+    prevent_default =
+        web_contents->Emit("login", request, auth_info, callback);
+
+  // Default behavior is to always cancel the auth.
+  if (!prevent_default)
+    login_handler->CancelAuth();
 }
 
 void App::OnGpuProcessCrashed(base::TerminationStatus exit_code) {
@@ -268,6 +323,28 @@ v8::Local<v8::Value> App::DefaultSession(v8::Isolate* isolate) {
     return v8::Local<v8::Value>::New(isolate, default_session_);
 }
 
+bool App::MakeSingleInstance(
+    const ProcessSingleton::NotificationCallback& callback) {
+  if (process_singleton_.get())
+    return false;
+
+  base::FilePath user_dir;
+  PathService::Get(brightray::DIR_USER_DATA, &user_dir);
+  process_singleton_.reset(new ProcessSingleton(
+      user_dir, base::Bind(NotificationCallbackWrapper, callback)));
+
+  switch (process_singleton_->NotifyOtherProcessOrCreate()) {
+    case ProcessSingleton::NotifyResult::LOCK_ERROR:
+    case ProcessSingleton::NotifyResult::PROFILE_IN_USE:
+    case ProcessSingleton::NotifyResult::PROCESS_NOTIFIED:
+      process_singleton_.reset();
+      return true;
+    case ProcessSingleton::NotifyResult::PROCESS_NONE:
+    default:  // Shouldn't be needed, but VS warns if it is not there.
+      return false;
+  }
+}
+
 mate::ObjectTemplateBuilder App::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
   auto browser = base::Unretained(Browser::Get());
@@ -294,6 +371,7 @@ mate::ObjectTemplateBuilder App::GetObjectTemplateBuilder(
       .SetMethod("allowNTLMCredentialsForAllDomains",
                  &App::AllowNTLMCredentialsForAllDomains)
       .SetMethod("getLocale", &App::GetLocale)
+      .SetMethod("makeSingleInstance", &App::MakeSingleInstance)
       .SetProperty("defaultSession", &App::DefaultSession);
 }
 

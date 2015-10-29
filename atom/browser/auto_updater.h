@@ -9,21 +9,48 @@
 
 #include "base/basictypes.h"
 
+namespace base {
+class Time;
+}
+
 namespace auto_updater {
 
-class AutoUpdaterDelegate;
+class Delegate {
+ public:
+  // An error happened.
+  virtual void OnError(const std::string& error) {}
+
+  // Checking to see if there is an update
+  virtual void OnCheckingForUpdate() {}
+
+  // There is an update available and it is being downloaded
+  virtual void OnUpdateAvailable() {}
+
+  // There is no available update.
+  virtual void OnUpdateNotAvailable() {}
+
+  // There is a new update which has been downloaded.
+  virtual void OnUpdateDownloaded(const std::string& release_notes,
+                                  const std::string& release_name,
+                                  const base::Time& release_date,
+                                  const std::string& update_url) {}
+
+ protected:
+  virtual ~Delegate() {}
+};
 
 class AutoUpdater {
  public:
   // Gets/Sets the delegate.
-  static AutoUpdaterDelegate* GetDelegate();
-  static void SetDelegate(AutoUpdaterDelegate* delegate);
+  static Delegate* GetDelegate();
+  static void SetDelegate(Delegate* delegate);
 
   static void SetFeedURL(const std::string& url);
   static void CheckForUpdates();
+  static void QuitAndInstall();
 
  private:
-  static AutoUpdaterDelegate* delegate_;
+  static Delegate* delegate_;
 
   DISALLOW_IMPLICIT_CONSTRUCTORS(AutoUpdater);
 };

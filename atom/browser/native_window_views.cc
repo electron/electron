@@ -42,6 +42,7 @@
 #elif defined(OS_WIN)
 #include "atom/browser/ui/views/win_frame_view.h"
 #include "atom/browser/ui/win/atom_desktop_window_tree_host_win.h"
+#include "skia/ext/skia_utils_win.h"
 #include "ui/base/win/shell.h"
 #include "ui/gfx/win/dpi.h"
 #include "ui/views/widget/desktop_aura/desktop_native_widget_aura.h"
@@ -75,6 +76,29 @@ bool IsAltModifier(const content::NativeWebKeyboardEvent& event) {
   return (modifiers == Modifiers::AltKey) ||
          (modifiers == (Modifiers::AltKey | Modifiers::IsLeft)) ||
          (modifiers == (Modifiers::AltKey | Modifiers::IsRight));
+}
+
+SkColor ParseHexColor(const std::string& name) {
+  SkColor result = 0xFF000000;
+  unsigned value = 0;
+  auto color = name.substr(1);
+  unsigned length = color.size();
+  if (length != 3 && length != 6)
+    return result;
+  for (unsigned i = 0; i < length; ++i) {
+    if (!base::IsHexDigit(color[i]))
+      return result;
+    value <<= 4;
+    value |= (color[i] < 'A' ? color[i] - '0' : (color[i] - 'A' + 10) & 0xF);
+  }
+  if (length == 6) {
+    result |= value;
+    return result;
+  }
+  result |= (value & 0xF00) << 12 | (value & 0xF00) << 8
+      | (value & 0xF0) << 8 | (value & 0xF0) << 4
+      | (value & 0xF) << 4 | (value & 0xF);
+  return result;
 }
 
 class NativeWindowClientView : public views::ClientView {
@@ -205,7 +229,7 @@ NativeWindowViews::NativeWindowViews(
 
   // Add web view.
   SetLayoutManager(new MenuLayout(this, kMenuBarHeight));
-  set_background(views::Background::CreateStandardPanelBackground());
+
   AddChildView(web_view_);
 
 #if defined(OS_WIN)
@@ -494,6 +518,21 @@ void NativeWindowViews::SetKiosk(bool kiosk) {
 
 bool NativeWindowViews::IsKiosk() {
   return IsFullscreen();
+}
+
+void NativeWindowViews::SetBackgroundColor(const std::string& color_name) {
+  // web views' background color.
+  SkColor background_color = ParseHexColor(color_name);
+  set_background(views::Background::CreateSolidBackground(background_color));
+
+#if defined(OS_WIN)
+  // Set the background color of native window.
+  HBRUSH brush = CreateSolidBrush(skia::SkColorToCOLORREF(background_color));
+  ULONG_PTR previous_brush = SetClassLongPtr(
+      GetAcceleratedWidget(), GCLP_HBRBACKGROUND, (LONG)brush);
+  if (previous_brush)
+    DeleteObject((HBRUSH)previous_brush);
+#endif
 }
 
 void NativeWindowViews::SetMenu(ui::MenuModel* menu_model) {

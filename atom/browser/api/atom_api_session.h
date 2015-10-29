@@ -23,6 +23,10 @@ class Arguments;
 class Dictionary;
 }
 
+namespace net {
+class ProxyConfig;
+}
+
 namespace atom {
 
 class AtomBrowserContext;
@@ -64,7 +68,7 @@ class Session: public mate::TrackableObject<Session>,
   void ResolveProxy(const GURL& url, ResolveProxyCallback callback);
   void ClearCache(const net::CompletionCallback& callback);
   void ClearStorageData(mate::Arguments* args);
-  void SetProxy(const std::string& proxy, const base::Closure& callback);
+  void SetProxy(const net::ProxyConfig& config, const base::Closure& callback);
   void SetDownloadPath(const base::FilePath& path);
   void EnableNetworkEmulation(const mate::Dictionary& options);
   void DisableNetworkEmulation();

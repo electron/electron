@@ -61,6 +61,8 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
   key is pressed.
 * `enable-larger-than-screen` Boolean - Enable the window to be resized larger
   than screen.
+* `background-color` String - Window's background color as Hexadecimal value,
+  like `#66CD00` or `#FFF`. This is only implemented on Linux and Windows.
 * `dark-theme` Boolean - Forces using dark theme for the window, only works on
   some GTK+3 desktop environments.
 * `transparent` Boolean - Makes the window [transparent](frameless-window.md).
@@ -549,6 +551,30 @@ Enters or leaves the kiosk mode.
 ### `win.isKiosk()`
 
 Returns whether the window is in kiosk mode.
+
+### `win.hookWindowMessage(message, callback)` _WINDOWS_
+
+* `message` Integer
+* `callback` Function
+
+Hooks a windows message. The `callback` is called when
+the message is received in the WndProc.
+
+### `win.isWindowMessageHooked(message)` _WINDOWS_
+
+* `message` Integer
+
+Returns `true` or `false` depending on whether the message is hooked.
+
+### `win.unhookWindowMessage(message)` _WINDOWS_
+
+* `message` Integer
+
+Unhook the window message.
+
+### `win.unhookAllWindowMessages()` _WINDOWS_
+
+Unhooks all of the window messages.
 
 ### `win.setRepresentedFilename(filename)` _OS X_
 

@@ -635,6 +635,9 @@ bool NativeWindowMac::IsKiosk() {
   return is_kiosk_;
 }
 
+void NativeWindowMac::SetBackgroundColor(const std::string& color_name) {
+}
+
 void NativeWindowMac::SetRepresentedFilename(const std::string& filename) {
   [window_ setRepresentedFilename:base::SysUTF8ToNSString(filename)];
 }

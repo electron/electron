@@ -93,6 +93,9 @@ const char kDisableAutoHideCursor[] = "disable-auto-hide-cursor";
 // Use the OS X's standard window instead of the textured window.
 const char kStandardWindow[] = "standard-window";
 
+// Default browser window background color.
+const char kBackgroundColor[] = "background-color";
+
 // Path to client certificate.
 const char kClientCertificate[] = "client-certificate";
 

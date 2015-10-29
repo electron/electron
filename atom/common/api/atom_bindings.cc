@@ -41,7 +41,7 @@ void FatalErrorCallback(const char* location, const char* message) {
 }
 
 void Log(const base::string16& message) {
-  std::cout << message;
+  std::cout << message << std::flush;
 }
 
 }  // namespace

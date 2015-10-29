@@ -36,6 +36,7 @@ Returns:
 
 This event is like `did-finish-load` but emitted when the load failed or was
 cancelled, e.g. `window.stop()` is invoked.
+The full list of error codes and their meaning is available [here](https://code.google.com/p/chromium/codesearch#chromium/src/net/base/net_error_list.h).
 
 ### Event: 'did-frame-finish-load'
 
@@ -166,6 +167,27 @@ Emitted when DevTools is closed.
 
 Emitted when DevTools is focused / opened.
 
+### Event: 'login'
+
+Returns:
+
+* `event` Event
+* `request` Object
+  * `method` String
+  * `url` URL
+  * `referrer` URL
+* `authInfo` Object
+  * `isProxy` Boolean
+  * `scheme` String
+  * `host` String
+  * `port` Integer
+  * `realm` String
+* `callback` Function
+
+Emitted when `webContents` wants to do basic auth.
+
+The usage is the same with [the `login` event of `app`](app.md#event-login).
+
 ## Instance Methods
 
 The `webContents` object has the following instance methods:
@@ -182,6 +204,7 @@ See [session documentation](session.md) for this object's methods.
 * `options` Object (optional), properties:
   * `httpReferrer` String - A HTTP Referrer url.
   * `userAgent` String - A user agent originating the request.
+  * `extraHeaders` String - Extra headers separated by "\n"
 
 Loads the `url` in the window, the `url` must contain the protocol prefix,
 e.g. the `http://` or `file://`.

@@ -133,17 +133,22 @@ Emitted when a new [browserWindow](browser-window.md) is created.
 
 ### Event: 'select-certificate'
 
-Emitted when a client certificate is requested.
-
 Returns:
 
 * `event` Event
-* `webContents` [WebContents](browser-window.md#class-webcontents)
-* `url` String
+* `webContents` [WebContents](web-contents.md)
+* `url` URL
 * `certificateList` [Objects]
   * `data` PEM encoded data
   * `issuerName` Issuer's Common Name
 * `callback` Function
+
+Emitted when a client certificate is requested.
+
+The `url` corresponds to the navigation entry requesting the client certificate
+and `callback` needs to be called with an entry filtered from the list. Using
+`event.preventDefault()` prevents the application from using the first
+certificate from the store.
 
 ```javascript
 app.on('select-certificate', function(event, host, url, list, callback) {
@@ -152,10 +157,36 @@ app.on('select-certificate', function(event, host, url, list, callback) {
 })
 ```
 
-The `url` corresponds to the navigation entry requesting the client certificate
-and `callback` needs to be called with an entry filtered from the list. Using
-`event.preventDefault()` prevents the application from using the first
-certificate from the store.
+### Event: 'login'
+
+Returns:
+
+* `event` Event
+* `webContents` [WebContents](web-contents.md)
+* `request` Object
+  * `method` String
+  * `url` URL
+  * `referrer` URL
+* `authInfo` Object
+  * `isProxy` Boolean
+  * `scheme` String
+  * `host` String
+  * `port` Integer
+  * `realm` String
+* `callback` Function
+
+Emitted when `webContents` wants to do basic auth.
+
+The default behavior is to cancel all authentications, to override this you
+should prevent the default behavior with  `event.preventDefault()` and call
+`callback(username, password)` with the credentials.
+
+```javascript
+app.on('login', function(event, webContents, request, authInfo, callback) {
+  event.preventDefault();
+  callback('username', 'secret');
+})
+```
 
 ### Event: 'gpu-process-crashed'
 
@@ -245,7 +276,7 @@ Returns the current application locale.
 Resolves the proxy information for `url`. The `callback` will be called with
 `callback(proxy)` when the request is performed.
 
-### `app.addRecentDocument(path)`
+### `app.addRecentDocument(path)` _OS X_ _Windows_
 
 * `path` String
 
@@ -254,7 +285,7 @@ Adds `path` to the recent documents list.
 This list is managed by the OS. On Windows you can visit the list from the task
 bar, and on OS X you can visit it from dock menu.
 
-### `app.clearRecentDocuments()`
+### `app.clearRecentDocuments()` _OS X_ _Windows_
 
 Clears the recent documents list.
 
@@ -289,6 +320,60 @@ authentication - normally, Electron will only send NTLM/Kerberos credentials for
 URLs that fall under "Local Intranet" sites (i.e. are in the same domain as you).
 However, this detection often fails when corporate networks are badly configured,
 so this lets you co-opt this behavior and enable it for all URLs.
+
+### `app.makeSingleInstance(callback)`
+
+* `callback` Function
+
+This method makes your application a Single Instance Application - instead of
+allowing multiple instances of your app to run, this will ensure that only a
+single instance of your app is running, and other instances signal this
+instance and exit.
+
+`callback` will be called with `callback(argv, workingDirectory)` when a second
+instance has been executed. `argv` is an Array of the second instance's command
+line arguments, and `workingDirectory` is its current working directory. Usually
+applications respond to this by making their primary window focused and
+non-minimized.
+
+The `callback` is guaranteed to be executed after the `ready` event of `app`
+gets emitted.
+
+This method returns `false` if your process is the primary instance of the
+application and your app should continue loading. And returns `true` if your
+process has sent its parameters to another instance, and you should immediately
+quit.
+
+On OS X the system enforces single instance automatically when users try to open
+a second instance of your app in Finder, and the `open-file` and `open-url`
+events will be emitted for that. However when users start your app in command
+line the system's single instance machanism will be bypassed and you have to
+use this method to ensure single instance.
+
+An example of activating the window of primary instance when a second instance
+starts:
+
+```js
+var myWindow = null;
+
+var shouldQuit = app.makeSingleInstance(function(commandLine, workingDirectory) {
+  // Someone tried to run a second instance, we should focus our window
+  if (myWindow) {
+    if (myWindow.isMinimized()) myWindow.restore();
+    myWindow.focus();
+  }
+  return true;
+});
+
+if (shouldQuit) {
+  app.quit();
+  return;
+}
+
+// Create myWindow, load the rest of the app, etc...
+app.on('ready', function() {
+});
+```
 
 ### `app.commandLine.appendSwitch(switch[, value])`
 

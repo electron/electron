@@ -30,7 +30,7 @@ Electron 的用戶擁有在網頁中呼叫 Node.js APIs 的能力，允許低級
 在網頁中，是不允許呼叫原生 GUI 相關 APIs 因為管理原生 GUI 資源在網頁上是非常危險而且容易造成資源洩露。
 如果你想要在網頁中呼叫 GUI 相關的 APIs 的操作，網頁的渲染行程必須與主行程進行通訊，請求主行程進行相關的操作。
 
-在 Electron ，我們提供用於在主行程與渲染行程之間通訊的 [ipc][1] 模組。並且也有一個遠端模使用 RPC 通訊方式 [remote][2]。
+在 Electron，我們提供用於在主行程與渲染行程之間通訊的 [ipc](../api/ipc-renderer.md) 模組。並且也有一個遠端模組使用 RPC 通訊方式 [remote](../api/remote.md)。
 
 # 打造你第一個 Electron 應用
 
@@ -43,7 +43,7 @@ your-app/
 └── index.html
 ```
 
-`package.json ` 的格式與 Node 的模組完全一樣，並且有個腳本被指定為 `main` 是用來啟動你的應用程式，它運行在主行程上。
+`package.json` 的格式與 Node 的模組完全一樣，並且有個腳本被指定為 `main` 是用來啟動你的應用程式，它運行在主行程上。
 你應用裡的 一個範例在你的 `package.json` 看起來可能像這樣：
 
 ```json
@@ -88,7 +88,7 @@ app.on('ready', function() {
   mainWindow.loadUrl('file://' + __dirname + '/index.html');
 
   // 打開開發者工具
-  mainWindow.openDevTools();
+  mainWindow.webContents.openDevTools();
 
   // 當window 被關閉，這個事件會被觸發
   mainWindow.on('closed', function() {
@@ -110,8 +110,9 @@ app.on('ready', function() {
   </head>
   <body>
     <h1>Hello World!</h1>
-    We are using Node.js <script>document.write(process.version)</script>
-    and Electron <script>document.write(process.versions['electron'])</script>.
+    We are using node <script>document.write(process.versions.node)</script>,
+    Chrome <script>document.write(process.versions.chrome)</script>,
+    and Electron <script>document.write(process.versions.electron)</script>.
   </body>
 </html>
 ```
@@ -160,6 +161,17 @@ $ ./Electron.app/Contents/MacOS/Electron your-app/
 # 作為版本發行
 在你完成了你的應用程式後，你可以依照 [應用部署](https://github.com/atom/electron/blob/master/docs/tutorial/application-distribution.md) 指南發布一個版本，並且運行已經打包好的應用程式。
 
-[1]: https://github.com/atom/electron/blob/master/docs/api/ipc-renderer.md
+# 試試這個範例
 
-[2]: https://github.com/atom/electron/blob/master/docs/api/remote.md
+Clone 與執行本篇教學的程式碼，它們都放在 [`atom/electron-quick-start`](https://github.com/atom/electron-quick-start) 這個 repository。
+
+**Note**: 執行這個範例需要 [Git](https://git-scm.com) 以及 [Node.js](https://nodejs.org/en/download/) (其中包括 [npm](https://npmjs.org)) 在你的作業系統。
+
+```bash
+# Clone the repository
+$ git clone https://github.com/atom/electron-quick-start
+# Go into the repository
+$ cd electron-quick-start
+# Install dependencies and run the app
+$ npm install && npm start
+```

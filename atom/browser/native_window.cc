@@ -139,6 +139,10 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
   if (options.Get(switches::kKiosk, &kiosk) && kiosk) {
     SetKiosk(kiosk);
   }
+  std::string color;
+  if (options.Get(switches::kBackgroundColor, &color)) {
+    SetBackgroundColor(color);
+  }
   std::string title("Electron");
   options.Get(switches::kTitle, &title);
   SetTitle(title);
@@ -459,6 +463,14 @@ void NativeWindow::NotifyWindowExecuteWindowsCommand(
   FOR_EACH_OBSERVER(NativeWindowObserver, observers_,
                     OnExecuteWindowsCommand(command));
 }
+
+#if defined(OS_WIN)
+void NativeWindow::NotifyWindowMessage(
+    UINT message, WPARAM w_param, LPARAM l_param) {
+  FOR_EACH_OBSERVER(NativeWindowObserver, observers_,
+                    OnWindowMessage(message, w_param, l_param));
+}
+#endif
 
 scoped_ptr<SkRegion> NativeWindow::DraggableRegionsToSkRegion(
     const std::vector<DraggableRegion>& regions) {

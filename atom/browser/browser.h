@@ -29,6 +29,8 @@ class MenuModel;
 
 namespace atom {
 
+class LoginHandler;
+
 // This class is used for control application-wide operations.
 class Browser : public WindowListObserver {
  public:
@@ -122,6 +124,9 @@ class Browser : public WindowListObserver {
       net::SSLCertRequestInfo* cert_request_info,
       scoped_ptr<content::ClientCertificateDelegate> delegate);
 
+  // Request basic auth login.
+  void RequestLogin(LoginHandler* login_handler);
+
   void AddObserver(BrowserObserver* obs) {
     observers_.AddObserver(obs);
   }
@@ -130,6 +135,7 @@ class Browser : public WindowListObserver {
     observers_.RemoveObserver(obs);
   }
 
+  bool is_shutting_down() const { return is_shutdown_; }
   bool is_quiting() const { return is_quiting_; }
   bool is_ready() const { return is_ready_; }
 

@@ -9,6 +9,8 @@
 
 #include "atom/browser/api/event_emitter.h"
 #include "atom/browser/browser_observer.h"
+#include "atom/common/native_mate_converters/callback.h"
+#include "chrome/browser/process_singleton.h"
 #include "content/public/browser/gpu_data_manager_observer.h"
 #include "native_mate/handle.h"
 
@@ -48,6 +50,7 @@ class App : public mate::EventEmitter,
       content::WebContents* web_contents,
       net::SSLCertRequestInfo* cert_request_info,
       scoped_ptr<content::ClientCertificateDelegate> delegate) override;
+  void OnLogin(LoginHandler* login_handler) override;
 
   // content::GpuDataManagerObserver:
   void OnGpuProcessCrashed(base::TerminationStatus exit_code) override;
@@ -66,11 +69,14 @@ class App : public mate::EventEmitter,
   void SetDesktopName(const std::string& desktop_name);
   void SetAppUserModelId(const std::string& app_id);
   void AllowNTLMCredentialsForAllDomains(bool should_allow);
-
+  bool MakeSingleInstance(
+      const ProcessSingleton::NotificationCallback& callback);
   std::string GetLocale();
   v8::Local<v8::Value> DefaultSession(v8::Isolate* isolate);
 
   v8::Global<v8::Value> default_session_;
+
+  scoped_ptr<ProcessSingleton> process_singleton_;
 
   DISALLOW_COPY_AND_ASSIGN(App);
 };
