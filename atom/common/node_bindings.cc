@@ -52,6 +52,7 @@ REFERENCE_MODULE(atom_common_native_image);
 REFERENCE_MODULE(atom_common_screen);
 REFERENCE_MODULE(atom_common_shell);
 REFERENCE_MODULE(atom_common_v8_util);
+REFERENCE_MODULE(atom_common_weak_map);
 REFERENCE_MODULE(atom_renderer_ipc);
 REFERENCE_MODULE(atom_renderer_web_frame);
 #undef REFERENCE_MODULE

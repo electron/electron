@@ -260,6 +260,8 @@
       'atom/common/api/atom_api_native_image_mac.mm',
       'atom/common/api/atom_api_shell.cc',
       'atom/common/api/atom_api_v8_util.cc',
+      'atom/common/api/atom_api_weak_map.cc',
+      'atom/common/api/atom_api_weak_map.h',
       'atom/common/api/atom_bindings.cc',
       'atom/common/api/atom_bindings.h',
       'atom/common/api/event_emitter_caller.cc',

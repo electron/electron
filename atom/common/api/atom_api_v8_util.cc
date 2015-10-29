@@ -5,7 +5,6 @@
 #include "atom/common/api/object_life_monitor.h"
 #include "atom/common/id_weak_map.h"
 #include "atom/common/node_includes.h"
-#include "native_mate/handle.h"
 #include "native_mate/dictionary.h"
 #include "v8/include/v8-profiler.h"
 
@@ -48,11 +47,6 @@ void TakeHeapSnapshot(v8::Isolate* isolate) {
   isolate->GetHeapProfiler()->TakeHeapSnapshot();
 }
 
-mate::Handle<atom::IDWeakMap> CreateWeakMap(v8::Isolate* isolate) {
-  auto handle = mate::CreateHandle(isolate, new atom::IDWeakMap);
-  return handle;
-}
-
 void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
   mate::Dictionary dict(context->GetIsolate(), exports);
@@ -63,7 +57,6 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   dict.SetMethod("getObjectHash", &GetObjectHash);
   dict.SetMethod("setDestructor", &SetDestructor);
   dict.SetMethod("takeHeapSnapshot", &TakeHeapSnapshot);
-  dict.SetMethod("createWeakMap", &CreateWeakMap);
 }
 
 }  // namespace
