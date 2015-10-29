@@ -77,8 +77,8 @@ class Window : public mate::TrackableObject<Window>,
   void OnExecuteWindowsCommand(const std::string& command_name) override;
 
   #if defined(OS_WIN)
-  void OnWindowMessage(UINT message, uint64_t w_param,
-                       int64_t l_param) override;
+  void OnWindowMessage(UINT message, WPARAM w_param,
+                       LPARAM l_param) override;
   #endif
 
   // mate::Wrappable:
@@ -150,7 +150,10 @@ class Window : public mate::TrackableObject<Window>,
   void SetAspectRatio(double aspect_ratio, mate::Arguments* args);
 
 #if defined(OS_WIN)
-  typedef base::Callback<void(WPARAM, uint64_t)> MessageCallback;
+  v8::Local<v8::Value> ToBuffer(void* val, int size);
+
+  typedef base::Callback<void(v8::Local<v8::Value>,
+                              v8::Local<v8::Value>)> MessageCallback;
   typedef std::map<UINT, MessageCallback> MessageCallbackMap;
   MessageCallbackMap messages_callback_map_;
 
