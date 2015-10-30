@@ -1,19 +1,18 @@
 #Diferencias Técnicas entre Electron y  NW.js (anteriormente conocido como node-webkit)
 
-**Nota:**Electron se llamaba antes Atom Shell.
+**Nota:Electron se llamaba antes Atom Shell.**
 
+Como NW.js, Electron proporciona una plataforma para escribir aplicaciones de escritorio con JavaScript y HTML y tiene la integración de nodo para permitir el acceso al sistema de bajo nivel de las páginas web.
 
-Like NW.js, Electron provides a platform to write desktop applications with JavaScript and HTML and has Node integration to grant access to the low level system from web pages.
+Pero también hay diferencias fundamentales entre los dos proyectos que hacen a Electron un producto totalmente independiente de NW.js:
 
-But there are also fundamental differences between the two projects that make Electron a completely separate product from NW.js:
+**1. Ingreso a la aplicación**
 
-1. Entry of Application
+En NW.js el principal punto de ingreso de una aplicación es una página web. Usted especifica una página principal de URL en el package.json y se abre en una ventana del navegador como ventana principal de la aplicación.
 
-In NW.js the main entry point of an application is a web page. You specify a main page URL in the package.json and it is opened in a browser window as the application's main window.
+En Electron, el punto de ingreso es un script de JavaScript. En lugar de proporcionar una dirección URL directamente, usted crea manualmente una ventana del navegador y carga un archivo HTML utilizando la API. También es necesario escuchar a los eventos de la ventana para decidir cuándo salir de la aplicación.
 
-In Electron, the entry point is a JavaScript script. Instead of providing a URL directly, you manually create a browser window and load an HTML file using the API. You also need to listen to window events to decide when to quit the application.
-
-Electron works more like the Node.js runtime. Electron's APIs are lower level so you can use it for browser testing in place of PhantomJS.
+Electron works more like the Node.js runtime. Electron's APIs are lower level so you can use it for browser testing in place of [PhantomJS.](http://phantomjs.org/)
 
 2. Build System
 
