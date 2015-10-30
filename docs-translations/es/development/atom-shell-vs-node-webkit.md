@@ -29,6 +29,6 @@ En NW.js, la integración de Node en las páginas web requiere parchear Chromium
 
 Si usted es un usuario experimentado NW.js, usted debe estar familiarizado con el concepto de contexto Node y el contexto web. Estos conceptos fueron inventados debido a la forma cómo se implementó NW.js.
 
-Mediante el uso de la característica multi-contexto de Node, Electron no introduce un nuevo contexto JavaScript en páginas web.Resultados de búsqueda
+Mediante el uso de la característica [multi-contexto](http://strongloop.com/strongblog/whats-new-node-js-v0-12-multiple-context-execution/) de Node, Electron no introduce un nuevo contexto JavaScript en páginas web.Resultados de búsqueda
 
     
