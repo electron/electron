@@ -2,7 +2,7 @@
         
        
 
-        <h1 id="technical-differences-between-electron-and-nw-js-formerly-node-webkit">Diferencias Técnicas con NW.js (anteriormente conocido como node-webkit)</h1>
+        <h1 id="technical-differences-between-electron-and-nw-js-formerly-node-webkit">Diferencias Técnicas entre Electron y NW.js (anteriormente conocido como node-webkit)</h1>
 
 <p><strong>Note: Electron was previously named Atom Shell.</strong></p>
 
