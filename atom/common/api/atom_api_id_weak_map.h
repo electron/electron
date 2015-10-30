@@ -22,7 +22,7 @@ class IDWeakMap : public mate::Wrappable {
 
  protected:
   IDWeakMap();
-  virtual ~IDWeakMap();
+  ~IDWeakMap();
 
   // mate::Wrappable:
   bool IsDestroyed() const override;
@@ -34,7 +34,7 @@ class IDWeakMap : public mate::Wrappable {
   bool Has(int32_t id);
   void Remove(int32_t id);
 
-  scoped_ptr<atom::IDWeakMap> id_weak_map_;
+  atom::IDWeakMap* id_weak_map_;
 
   DISALLOW_COPY_AND_ASSIGN(IDWeakMap);
 };

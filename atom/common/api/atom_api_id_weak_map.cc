@@ -12,11 +12,11 @@ namespace atom {
 
 namespace api {
 
-IDWeakMap::IDWeakMap() {
-  id_weak_map_.reset(new atom::IDWeakMap);
+IDWeakMap::IDWeakMap() : id_weak_map_(new atom::IDWeakMap) {
 }
 
 IDWeakMap::~IDWeakMap() {
+  id_weak_map_ = nullptr;
 }
 
 void IDWeakMap::Set(v8::Isolate* isolate,

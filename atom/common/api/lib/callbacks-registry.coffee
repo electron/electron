@@ -22,8 +22,6 @@ class CallbacksRegistry
       continue if location.indexOf('(native)') isnt -1
       continue if location.indexOf('atom.asar') isnt -1
       [x, filenameAndLine] = /([^/^\)]*)\)?$/gi.exec(location)
-      [x, line, column] = /(\d+):(\d+)/g.exec(filenameAndLine)
-      id += parseInt(line) + parseInt(column)
       break
 
     @callbacks[id] = callback
