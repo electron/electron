@@ -114,4 +114,5 @@ will be passed via `callback(response)`.
 Displays a modal dialog that shows an error message.
 
 This API can be called safely before the `ready` event the `app` module emits,
-it is usually used to report errors in early stage of startup.
+it is usually used to report errors in early stage of startup.  If called before the app `ready`
++event on Linux, the message will be emitted to stderr, and no GUI dialog will appear.
