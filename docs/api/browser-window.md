@@ -594,7 +594,7 @@ Returns the pathname of the file the window represents.
 Specifies whether the window’s document has been edited, and the icon in title
 bar will become grey when set to `true`.
 
-### `win.IsDocumentEdited()` _OS X_
+### `win.isDocumentEdited()` _OS X_
 
 Whether the window's document has been edited.
 
