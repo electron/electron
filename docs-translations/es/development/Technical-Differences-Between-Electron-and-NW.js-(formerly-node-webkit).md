@@ -1,10 +1,8 @@
 <div class='ten columns release offset-by-one'>
         
-        <h6 class='docs-breadcrumb'>v0.34.0 / Development
-           / Atom Shell vs Node Webkit </h6>
-        
+       
 
-        <h1 id="technical-differences-between-electron-and-nw-js-formerly-node-webkit">Technical Differences Between Electron and NW.js (formerly node-webkit)</h1>
+        <h1 id="technical-differences-between-electron-and-nw-js-formerly-node-webkit">Diferencias Técnicas con NW.js (anteriormente conocido como node-webkit)</h1>
 
 <p><strong>Note: Electron was previously named Atom Shell.</strong></p>
 
