@@ -134,17 +134,21 @@ Returns:
 
 ### Event: 'select-certificate'
 
-사용자 인증이 요청되었을 때 발생하는 이벤트 입니다.
-
 Returns:
 
 * `event` Event
-* `webContents` [WebContents](browser-window.md#class-webcontents)
-* `url` String
+* `webContents` [WebContents](web-contents.md)
+* `url` URL
 * `certificateList` [Objects]
   * `data` PEM으로 인코딩된 데이터
   * `issuerName` 발급자의 공통 이름
 * `callback` Function
+
+사용자 인증이 요청되었을 때 발생하는 이벤트 입니다.
+
+`url`은 클라이언트 인증서를 요청하는 탐색 항목에 해당합니다.
+그리고 `callback`은 목록에서 필터링된 항목과 함께 호출될 필요가 있습니다.
+이 이벤트에서의 `event.preventDefault()` 호출은 초기 인증 때 저장된 데이터를 사용하는 것을 막습니다.
 
 ```javascript
 app.on('select-certificate', function(event, host, url, list, callback) {
@@ -153,12 +157,36 @@ app.on('select-certificate', function(event, host, url, list, callback) {
 })
 ```
 
-`url`에 대한 
+### Event: 'login'
 
-`url`은 클라이언트 인증서를 요청하는 탐색 항목에 해당합니다.
-그리고 `callback`은 목록에서 필터링된 항목과 함께 호출될 필요가 있습니다.
+Returns:
 
-이 이벤트에서의 `event.preventDefault()` 호출은 초기 인증에 사용한 저장된 데이터를 사용하는 것을 막습니다.
+* `event` Event
+* `webContents` [WebContents](web-contents.md)
+* `request` Object
+  * `method` String
+  * `url` URL
+  * `referrer` URL
+* `authInfo` Object
+  * `isProxy` Boolean
+  * `scheme` String
+  * `host` String
+  * `port` Integer
+  * `realm` String
+* `callback` Function
+
+`webContents`가 기본 인증을 요청할 때 발생하는 이벤트입니다.
+
+기본 동작은 인증 요청을 모두 취소시킵니다.
+동작을 새로 정의하려면 반드시 `event.preventDefault()`를 호출한 후
+`callback(username, password)` 형태의 콜백을 호출하여 인증을 처리해야 합니다.
+
+```javascript
+app.on('login', function(event, webContents, request, authInfo, callback) {
+  event.preventDefault();
+  callback('username', 'secret');
+})
+```
 
 ### Event: 'gpu-process-crashed'
 
