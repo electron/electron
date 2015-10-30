@@ -82,7 +82,7 @@ once it is set.
 Asks the server whether there is an update. You must call `setFeedUrl` before
 using this API.
 
-### `autoUpdater.quitAndUpdate()`
+### `autoUpdater.quitAndInstall()`
 
 Restarts the app and install the update after it has been downloaded. It should
 only be called after `update-downloaded` has been emitted.
