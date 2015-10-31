@@ -40,7 +40,7 @@ valueToMeta = (sender, value, optimizeSimpleObject=false) ->
   else if meta.type is 'promise'
     meta.then = valueToMeta(sender, value.then.bind(value))
   else if meta.type is 'error'
-    meta.message = value.message
+    meta = errorValueToMeta(value, meta)
   else if meta.type is 'date'
     meta.value = value.getTime()
   else
@@ -48,6 +48,13 @@ valueToMeta = (sender, value, optimizeSimpleObject=false) ->
     meta.value = value
 
   meta
+
+# Convert Error into meta data.
+errorValueToMeta = (err, meta) ->
+  Object.getOwnPropertyNames(err).reduce((obj, key) ->
+    obj[key] = err[key]
+    obj
+  , meta)
 
 # Convert Error into meta data.
 exceptionToMeta = (error) ->

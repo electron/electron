@@ -46,7 +46,7 @@ metaToValue = (meta) ->
     when 'array' then (metaToValue(el) for el in meta.members)
     when 'buffer' then new Buffer(meta.value)
     when 'promise' then Promise.resolve(then: metaToValue(meta.then))
-    when 'error' then new Error(meta.message)
+    when 'error' then metaToError(meta)
     when 'date' then new Date(meta.value)
     when 'exception'
       throw new Error("#{meta.message}\n#{meta.stack}")
@@ -109,6 +109,17 @@ metaToValue = (meta) ->
       v8Util.setHiddenValue ret, 'atomId', meta.id
 
       ret
+
+# Convert meta data from browser into Error.
+metaToError = (meta) ->
+  Object.getOwnPropertyNames(meta).reduce((error, prop) ->
+    Object.defineProperty(error, prop, {
+      get: -> meta[prop],
+      enumerable: false,
+      configurable: false
+    })
+    error
+  , new Error())
 
 # Browser calls a callback in renderer.
 ipc.on 'ATOM_RENDERER_CALLBACK', (id, args) ->
