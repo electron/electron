@@ -1,71 +1,72 @@
-[![Electron Logo](http://electron.atom.io/images/electron-logo.svg)](http://electron.atom.io/)
+## Guides
 
-[![Build Status](https://travis-ci.org/atom/electron.svg?branch=master)](https://travis-ci.org/atom/electron)
-[![devDependency Status](https://david-dm.org/atom/electron/dev-status.svg)](https://david-dm.org/atom/electron#info=devDependencies)
-[![Join the Electron Community on Slack](http://atom-slack.herokuapp.com/badge.svg)](http://atom-slack.herokuapp.com/)
+* [Supported Platforms](tutorial/supported-platforms.md)
+* [Application Distribution](tutorial/application-distribution.md)
+* [Mac App Store Submission Guide](tutorial/mac-app-store-submission-guide.md)
+* [Application Packaging](tutorial/application-packaging.md)
+* [Using Native Node Modules](tutorial/using-native-node-modules.md)
+* [Debugging Main Process](tutorial/debugging-main-process.md)
+* [Using Selenium and WebDriver](tutorial/using-selenium-and-webdriver.md)
+* [DevTools Extension](tutorial/devtools-extension.md)
+* [Using Pepper Flash Plugin](tutorial/using-pepper-flash-plugin.md)
 
-:zap: *Formerly known as Atom Shell* :zap:
+## Tutorials
 
-The Electron framework lets you write cross-platform desktop applications
-using JavaScript, HTML and CSS. It is based on [Node.js](https://nodejs.org) and
-[Chromium](http://www.chromium.org) and is used in the [Atom
-editor](https://github.com/atom/atom).
+* [Quick Start](tutorial/quick-start.md)
+* [Desktop Environment Integration](tutorial/desktop-environment-integration.md)
+* [Online/Offline Event Detection](tutorial/online-offline-events.md)
 
-Follow [@ElectronJS](https://twitter.com/electronjs) on Twitter for important
-announcements.
+## API References
 
-This project adheres to the [Contributor Covenant 1.2](http://contributor-covenant.org/version/1/2/0).
-By participating, you are expected to uphold this code. Please report
-unacceptable behavior to atom@github.com.
+* [Synopsis](api/synopsis.md)
+* [Process Object](api/process.md)
+* [Supported Chrome Command Line Switches](api/chrome-command-line-switches.md)
 
-## Downloads
+### Custom DOM Elements:
 
-Prebuilt binaries and debug symbols of Electron for Linux, Windows and Mac can
-be found on the [releases](https://github.com/atom/electron/releases) page.
+* [`File` Object](api/file-object.md)
+* [`<webview>` Tag](api/web-view-tag.md)
+* [`window.open` Function](api/window-open.md)
 
-You can also use [`npm`](https://docs.npmjs.com/) to install prebuilt electron
-binaries:
+### Modules for the Main Process:
 
-```sh
-# Install the `electron` command globally in your $PATH
-npm install electron-prebuilt -g
+* [app](api/app.md)
+* [auto-updater](api/auto-updater.md)
+* [browser-window](api/browser-window.md)
+* [content-tracing](api/content-tracing.md)
+* [dialog](api/dialog.md)
+* [global-shortcut](api/global-shortcut.md)
+* [ipc (main process)](api/ipc-main-process.md)
+* [menu](api/menu.md)
+* [menu-item](api/menu-item.md)
+* [power-monitor](api/power-monitor.md)
+* [power-save-blocker](api/power-save-blocker.md)
+* [protocol](api/protocol.md)
+* [session](api/session.md)
+* [web-contents](api/web-contents.md)
+* [tray](api/tray.md)
 
-# Install as a development dependency
-npm install electron-prebuilt --save-dev
-```
+### Modules for the Renderer Process (Web Page):
 
-### Mirrors
+* [ipc (renderer)](api/ipc-renderer.md)
+* [remote](api/remote.md)
+* [web-frame](api/web-frame.md)
 
-- [China](https://npm.taobao.org/mirrors/electron)
+### Modules for Both Processes:
 
-## Documentation
+* [clipboard](api/clipboard.md)
+* [crash-reporter](api/crash-reporter.md)
+* [native-image](api/native-image.md)
+* [screen](api/screen.md)
+* [shell](api/shell.md)
 
-Guides and the API reference are located in the
-[docs](https://github.com/atom/electron/tree/master/docs) directory. It also
-contains documents describing how to build and contribute to Electron.
+## Development
 
-## Documentation Translations
-
-- [Brazilian Portuguese](https://github.com/atom/electron/tree/master/docs-translations/pt-BR)
-- [Korean](https://github.com/atom/electron/tree/master/docs-translations/ko-KR)
-- [Japanese](https://github.com/atom/electron/tree/master/docs-translations/jp)
-- [Spanish](https://github.com/atom/electron/tree/master/docs-translations/es)
-- [Simplified Chinese](https://github.com/atom/electron/tree/master/docs-translations/zh-CN)
-- [Traditional Chinese](https://github.com/atom/electron/tree/master/docs-translations/zh-TW)
-
-## Quick Start
-
-Clone and run the [`atom/electron-quick-start`](https://github.com/atom/electron-quick-start)
-repository to see a minimal Electron app in action.
-
-## Community
-
-You can ask questions and interact with the community in the following
-locations:
-- [`electron`](http://discuss.atom.io/category/electron) category on the Atom
-forums
-- `#atom-shell` channel on Freenode
-- [`Atom`](http://atom-slack.herokuapp.com/) channel on Slack
-
-Check out [awesome-electron](https://github.com/sindresorhus/awesome-electron)
-for a community maintained list of useful example apps, tools and resources.
+* [Coding Style](development/coding-style.md)
+* [Source Code Directory Structure](development/source-code-directory-structure.md)
+* [Technical Differences to NW.js (formerly node-webkit)](development/atom-shell-vs-node-webkit.md)
+* [Build System Overview](development/build-system-overview.md)
+* [Build Instructions (OS X)](development/build-instructions-osx.md)
+* [Build Instructions (Windows)](development/build-instructions-windows.md)
+* [Build Instructions (Linux)](development/build-instructions-linux.md)
+* [Setting Up Symbol Server in debugger](development/setting-up-symbol-server.md)
