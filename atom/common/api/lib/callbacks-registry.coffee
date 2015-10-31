@@ -1,3 +1,5 @@
+v8Util = process.atomBinding 'v8_util'
+
 module.exports =
 class CallbacksRegistry
   constructor: ->
@@ -5,6 +7,9 @@ class CallbacksRegistry
     @callbacks = {}
 
   add: (callback) ->
+    if v8Util.getHiddenValue(callback, 'metaId')?
+      return v8Util.getHiddenValue(callback, 'metaId')
+
     id = ++@nextId
 
     # Capture the location of the function and put it in the ID string,
@@ -17,10 +22,11 @@ class CallbacksRegistry
       continue if location.indexOf('(native)') isnt -1
       continue if location.indexOf('atom.asar') isnt -1
       [x, filenameAndLine] = /([^/^\)]*)\)?$/gi.exec(location)
-      id = "#{filenameAndLine} (#{id})"
       break
 
     @callbacks[id] = callback
+    v8Util.setHiddenValue callback, 'metaId', id
+    v8Util.setHiddenValue callback, 'location', filenameAndLine
     id
 
   get: (id) ->

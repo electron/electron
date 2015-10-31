@@ -88,3 +88,16 @@ describe 'ipc module', ->
         w.destroy()
         done()
       w.loadUrl 'file://' + path.join(fixtures, 'api', 'send-sync-message.html')
+
+  describe 'remote listeners', ->
+    it 'can be added and removed correctly', ->
+      count = 0
+      w = new BrowserWindow(show: false)
+      listener = () ->
+        count += 1
+        w.removeListener 'blur', listener
+      w.on 'blur', listener
+      w.emit 'blur'
+      w.emit 'blur'
+      assert.equal count, 1
+      w.destroy()

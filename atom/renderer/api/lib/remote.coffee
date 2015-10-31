@@ -33,7 +33,7 @@ wrapArgs = (args, visited=[]) ->
     else if typeof value is 'function' and v8Util.getHiddenValue value, 'returnValue'
       type: 'function-with-return-value', value: valueToMeta(value())
     else if typeof value is 'function'
-      type: 'function', id: callbacksRegistry.add(value)
+      type: 'function', id: callbacksRegistry.add(value), location: v8Util.getHiddenValue value, 'location'
     else
       type: 'value', value: value
 
