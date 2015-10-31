@@ -12,33 +12,32 @@ namespace atom {
 
 namespace api {
 
-IDWeakMap::IDWeakMap() : id_weak_map_(new atom::IDWeakMap) {
+IDWeakMap::IDWeakMap() {
 }
 
 IDWeakMap::~IDWeakMap() {
-  id_weak_map_ = nullptr;
 }
 
 void IDWeakMap::Set(v8::Isolate* isolate,
                     int32_t id,
                     v8::Local<v8::Object> object) {
-  id_weak_map_->Set(isolate, id, object);
+  id_weak_map_.Set(isolate, id, object);
 }
 
 v8::Local<v8::Object> IDWeakMap::Get(v8::Isolate* isolate, int32_t id) {
-  return id_weak_map_->Get(isolate, id).ToLocalChecked();
+  return id_weak_map_.Get(isolate, id).ToLocalChecked();
 }
 
 bool IDWeakMap::Has(int32_t id) {
-  return id_weak_map_->Has(id);
+  return id_weak_map_.Has(id);
 }
 
 void IDWeakMap::Remove(int32_t id) {
-  id_weak_map_->Remove(id);
+  id_weak_map_.Remove(id);
 }
 
-bool IDWeakMap::IsDestroyed() const {
-  return !id_weak_map_;
+void IDWeakMap::Clear() {
+  id_weak_map_.Clear();
 }
 
 // static
@@ -48,7 +47,8 @@ void IDWeakMap::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("set", &IDWeakMap::Set)
       .SetMethod("get", &IDWeakMap::Get)
       .SetMethod("has", &IDWeakMap::Has)
-      .SetMethod("remove", &IDWeakMap::Remove);
+      .SetMethod("remove", &IDWeakMap::Remove)
+      .SetMethod("clear", &IDWeakMap::Clear);
 }
 
 // static

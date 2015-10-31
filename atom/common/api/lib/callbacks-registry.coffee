@@ -7,8 +7,9 @@ class CallbacksRegistry
     @callbacks = {}
 
   add: (callback) ->
-    if v8Util.getHiddenValue(callback, 'metaId')?
-      return v8Util.getHiddenValue(callback, 'metaId')
+    # The callback is already added.
+    id = v8Util.getHiddenValue callback, 'callbackId'
+    return id if id?
 
     id = ++@nextId
 
@@ -25,7 +26,7 @@ class CallbacksRegistry
       break
 
     @callbacks[id] = callback
-    v8Util.setHiddenValue callback, 'metaId', id
+    v8Util.setHiddenValue callback, 'callbackId', id
     v8Util.setHiddenValue callback, 'location', filenameAndLine
     id
 

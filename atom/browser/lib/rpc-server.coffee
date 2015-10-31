@@ -4,9 +4,6 @@ objectsRegistry = require './objects-registry.js'
 v8Util = process.atomBinding 'v8_util'
 IDWeakMap = process.atomBinding('id_weak_map').IDWeakMap
 
-# Object mapping from webcontents id to their renderer callbacks weakmap.
-rendererRegistry = {}
-
 # Convert a real value into meta data.
 valueToMeta = (sender, value, optimizeSimpleObject=false) ->
   meta = type: typeof value
@@ -74,18 +71,15 @@ unwrapArgs = (sender, args) ->
         returnValue = metaToValue meta.value
         -> returnValue
       when 'function'
-        webContentsId = sender.getId()
-        rendererCallbacks = rendererRegistry[webContentsId]
-        if not rendererCallbacks?
-          # Weak reference to callbacks with their ID
-          rendererCallbacks = new IDWeakMap()
-          rendererRegistry[webContentsId] = rendererCallbacks
-
-        if rendererCallbacks.has(meta.id)
-          return rendererCallbacks.get(meta.id)
+        # Cache the callbacks in renderer.
+        unless sender.callbacks
+          sender.callbacks = new IDWeakMap
+          sender.on 'render-view-deleted', ->
+            sender.callbacks.clear()
+        return sender.callbacks.get meta.id if sender.callbacks.has meta.id
 
         rendererReleased = false
-        objectsRegistry.once "clear-#{webContentsId}", ->
+        objectsRegistry.once "clear-#{sender.getId()}", ->
           rendererReleased = true
 
         ret = ->
@@ -95,9 +89,9 @@ unwrapArgs = (sender, args) ->
           sender.send 'ATOM_RENDERER_CALLBACK', meta.id, valueToMeta(sender, arguments)
         v8Util.setDestructor ret, ->
           return if rendererReleased
-          rendererCallbacks.remove meta.id
+          sender.callbacks.remove meta.id
           sender.send 'ATOM_RENDERER_RELEASE_CALLBACK', meta.id
-        rendererCallbacks.set meta.id, ret
+        sender.callbacks.set meta.id, ret
         ret
       else throw new TypeError("Unknown type: #{meta.type}")
 
@@ -116,8 +110,6 @@ callFunction = (event, func, caller, args) ->
 
 # Send by BrowserWindow when its render view is deleted.
 process.on 'ATOM_BROWSER_RELEASE_RENDER_VIEW', (id) ->
-  if rendererRegistry.id?
-    delete rendererRegistry.id
   objectsRegistry.clear id
 
 ipc.on 'ATOM_BROWSER_REQUIRE', (event, module) ->

@@ -24,17 +24,15 @@ class IDWeakMap : public mate::Wrappable {
   IDWeakMap();
   ~IDWeakMap();
 
-  // mate::Wrappable:
-  bool IsDestroyed() const override;
-
  private:
   // Api for IDWeakMap.
   void Set(v8::Isolate* isolate, int32_t id, v8::Local<v8::Object> object);
   v8::Local<v8::Object> Get(v8::Isolate* isolate, int32_t id);
   bool Has(int32_t id);
   void Remove(int32_t id);
+  void Clear();
 
-  atom::IDWeakMap* id_weak_map_;
+  atom::IDWeakMap id_weak_map_;
 
   DISALLOW_COPY_AND_ASSIGN(IDWeakMap);
 };
