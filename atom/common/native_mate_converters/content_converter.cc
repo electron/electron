@@ -4,30 +4,50 @@
 
 #include "atom/common/native_mate_converters/content_converter.h"
 
+#include "atom/common/native_mate_converters/string16_converter.h"
+#include "content/public/common/context_menu_params.h"
+#include "content/public/common/menu_item.h"
 #include "native_mate/dictionary.h"
-#include "net/url_request/url_request.h"
 
 namespace mate {
 
+template<>
+struct Converter<content::MenuItem::Type> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const content::MenuItem::Type& val) {
+    switch (val) {
+      case content::MenuItem::CHECKABLE_OPTION:
+        return StringToV8(isolate, "checkbox");
+      case content::MenuItem::SEPARATOR:
+        return StringToV8(isolate, "separator");
+      case content::MenuItem::SUBMENU:
+        return StringToV8(isolate, "submenu");
+      default:
+        return StringToV8(isolate, "normal");
+    }
+  }
+};
+
 // static
-v8::Local<v8::Value> Converter<const net::URLRequest*>::ToV8(
-    v8::Isolate* isolate, const net::URLRequest* val) {
+v8::Local<v8::Value> Converter<content::MenuItem>::ToV8(
+    v8::Isolate* isolate, const content::MenuItem& val) {
   mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
-  dict.Set("method", val->method());
-  dict.Set("url", val->url().spec());
-  dict.Set("referrer", val->referrer());
+  dict.Set("id", val.action);
+  dict.Set("type", val.type);
+  dict.Set("label", val.label);
+  dict.Set("enabled", val.enabled);
+  dict.Set("checked", val.checked);
   return mate::ConvertToV8(isolate, dict);
 }
 
 // static
-v8::Local<v8::Value> Converter<const net::AuthChallengeInfo*>::ToV8(
-    v8::Isolate* isolate, const net::AuthChallengeInfo* val) {
+v8::Local<v8::Value> Converter<content::ContextMenuParams>::ToV8(
+    v8::Isolate* isolate, const content::ContextMenuParams& val) {
   mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
-  dict.Set("isProxy", val->is_proxy);
-  dict.Set("scheme", val->scheme);
-  dict.Set("host", val->challenger.host());
-  dict.Set("port", static_cast<uint32_t>(val->challenger.port()));
-  dict.Set("realm", val->realm);
+  dict.Set("x", val.x);
+  dict.Set("y", val.y);
+  dict.Set("isPepperMenu", val.custom_context.is_pepper_menu);
+  dict.Set("menuItems", val.custom_items);
   return mate::ConvertToV8(isolate, dict);
 }
 
