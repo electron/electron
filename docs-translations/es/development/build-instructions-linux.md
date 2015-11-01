@@ -42,20 +42,18 @@ El script de bootstrap descargará todas las dependencias necesarias para constr
 
 #compilación cruzada
 
-Si usted quiere construir para un brazo objetivo(rama objetivo) también debe instalar las siguientes dependencias:
+Si usted quiere construir para un `arm` objetivo también debe instalar las siguientes dependencias:
 
-$ sudo apt-get install libc6-dev-armhf-cross linux-libc-dev-armhf-cross \
-                       g++-arm-linux-gnueabihf
+`$ sudo apt-get install libc6-dev-armhf-cross linux-libc-dev-armhf-cross \ g++-arm-linux-gnueabihf`
 
 And to cross compile for arm or ia32 targets, you should pass the --target_arch parameter to the bootstrap.py script:
+cruzar y  compilar para `arm` o `ia32` objetivos, debe pasar el parámetro `--target_arch` al script `bootstrap.py`:
+`$ ./script/bootstrap.py -v --target_arch=arm`
 
-$ ./script/bootstrap.py -v --target_arch=arm
+#Construcción
 
-Building
-
-If you would like to build both Release and Debug targets:
-
-$ ./script/build.py
+Si a usted le gustaría construir dos objetivos de `Release` y `Debug`:
+    `$ ./script/build.py`
 
 This script will cause a very large Electron executable to be placed in the directory out/R. The file size is in excess of 1.3 gigabytes. This happens because the Release target binary contains debugging symbols. To reduce the file size, run the create-dist.py script:
 
