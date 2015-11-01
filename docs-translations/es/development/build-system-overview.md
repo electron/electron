@@ -6,7 +6,6 @@ los siguientes archivos `gyp` contienen las principales reglas para la contrucci
 
   * `atom.gyp` define en si como se compila en Electron.
   * `common.gypi` ajusta las configuraciones de generación de Node para  construir junto con Chromium.
-  * vendor/brightray/brightray.gyp defines how brightray is built and includes the default configurations for linking      with Chromium.
   * `vendor/brightray/brightray.gyp` define cómo se construye `brightray` e incluye las configuraciones predeterminadas para linkear con Chromium.
   * `vendor/brightray/brightray.gypi` incluye configuraciones de generación generales sobre la construcción.
 
