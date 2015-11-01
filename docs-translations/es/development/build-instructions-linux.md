@@ -37,8 +37,8 @@ The bootstrap script will download all necessary build dependencies and create t
 
 El script de bootstrap descargará todas las dependencias necesarias para construcción  y creara los archivos del proyecto de construcción. Debe tener Python 2.7.x para que la secuencia de comandos tenga éxito. La descarga de determinados archivos puede llevar mucho tiempo. Nótese que estamos usando`ninja` para construir Electron por lo que no hay `Makefile` generado.
 
-    `$ cd electron`
-    `$ ./script/bootstrap.py -v`
+    $ cd electron
+    $ ./script/bootstrap.py -v
 
 #Cross compilation
 
