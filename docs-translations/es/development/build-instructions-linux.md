@@ -53,40 +53,44 @@ cruzar y  compilar para `arm` o `ia32` objetivos, debe pasar el parámetro `--ta
 #Construcción
 
 Si a usted le gustaría construir dos objetivos de `Release` y `Debug`:
+
     `$ ./script/build.py`
 
-This script will cause a very large Electron executable to be placed in the directory out/R. The file size is in excess of 1.3 gigabytes. This happens because the Release target binary contains debugging symbols. To reduce the file size, run the create-dist.py script:
 
-$ ./script/create-dist.py
+Este script causará que el ejecutable de Electron se muy grande para ser colocado en el directorio `out / R`. El tamaño del archivo es de más de 1,3 gigabytes. Esto sucede porque el binario de destino lanzamiento contiene los símbolos de depuración. Para reducir el tamaño de archivo, ejecute el script `create-dist.py`:
+
+`$ ./script/create-dist.py`
 
 This will put a working distribution with much smaller file sizes in the dist directory. After running the create-dist.py script, you may want to remove the 1.3+ gigabyte binary which is still in out/R.
 
-You can also build the Debug target only:
+Esto pondrá una distribución a trabajar con tamaños de archivo mucho más pequeños en el directorio `dist`. Después de ejecutar el script create-dist.py, es posible que desee quitar el binario 1.3+ gigabyte que todavía está en  `out/R`.
 
-$ ./script/build.py -c D
+También se puede construir sólo el objetivo  `Debug`:
+`$ ./script/build.py -c D`
 
-After building is done, you can find the electron debug binary under out/D.
-Cleaning
+Después de la construcción está hecho, usted puede encontrar el `Electron` de depuración binario bajo `out / D`.
 
-To clean the build files:
+#Limpieza
 
-$ ./script/clean.py
+Para limpiar los archivos de creación:
 
-Troubleshooting
+`$ ./script/clean.py`
 
-Make sure you have installed all of the build dependencies.
-Error While Loading Shared Libraries: libtinfo.so.5
+#Solución de problemas
+Asegúrese de que ha instalado todas las dependencias de construcción.
+
+#Error al cargar bibliotecas compartidas: libtinfo.so.5
 
 Prebulit clang will try to link to libtinfo.so.5. Depending on the host architecture, symlink to appropriate libncurses:
+preconstruir `clang`  intentará enlazar a `libtinfo.so.5`. Dependiendo de la arquitectura anfitrión, enlace simbólico apropiado a `libncurses` :
 
-$ sudo ln -s /usr/lib/libncurses.so.5 /usr/lib/libtinfo.so.5
+`$ sudo ln -s /usr/lib/libncurses.so.5 /usr/lib/libtinfo.so.5`
 
-Tests
+#Pruebas
+Pon a prueba tus cambios que ajustan al estilo de codificación proyecto mediante:
 
-Test your changes conform to the project coding style using:
+`$ ./script/cpplint.py`
 
-$ ./script/cpplint.py
+prueba de funcionalidad utilizando:
 
-Test functionality using:
-
-$ ./script/test.py
+`$ ./script/test.py`
