@@ -4,27 +4,27 @@ This module provides an interface for the `Squirrel` auto-updater framework.
 
 ## Platform notices
 
-Though `autoUpdater` provides an uniform API for different platforms, there are
+Though `autoUpdater` provides a uniform API for different platforms, there are
 still some subtle differences on each platform.
 
 ### OS X
 
-On OS X the `autoUpdater` module is built upon [Squirrel.Mac][squirrel-mac], you
+On OS X, the `autoUpdater` module is built upon [Squirrel.Mac][squirrel-mac], meaning you
 don't need any special setup to make it work. For server-side requirements, you
 can read [Server Support][server-support].
 
 ### Windows
 
-On Windows you have to install your app into user's machine before you can use
-the auto-updater, it is recommended to use [grunt-electron-installer][installer]
+On Windows, you have to install your app into a user's machine before you can use
+the auto-updater, so it is recommended to use [grunt-electron-installer][installer]
 module to generate a Windows installer.
 
-The server-side setup is also different from OS X, you can read the documents of
+The server-side setup is also different from OS X. You can read the documents of
 [Squirrel.Windows][squirrel-windows] to get more details.
 
 ### Linux
 
-There is not built-in support for auto-updater on Linux, it is recommended to
+There is not built-in support for auto-updater on Linux, so it is recommended to
 use the distribution's package manager to update your app.
 
 ## Events
@@ -84,7 +84,7 @@ using this API.
 
 ### `autoUpdater.quitAndInstall()`
 
-Restarts the app and install the update after it has been downloaded. It should
+Restarts the app and installs the update after it has been downloaded. It should
 only be called after `update-downloaded` has been emitted.
 
 [squirrel-mac]: https://github.com/Squirrel/Squirrel.Mac
