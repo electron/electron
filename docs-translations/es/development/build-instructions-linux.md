@@ -1,0 +1,91 @@
+#Instrucciones de Compilación (Linux)
+
+Siga las siguientes pautas para la construcción de Electron en Linux.
+#Requisitos previos
+
+    *Python 2.7.x. Some distributions like CentOS still use Python 2.6.x so you may need to check your Python version with python -V.
+    *Node.js v0.12.x. There are various ways to install Node. You can download source code from Node.js and compile from source. Doing so permits installing Node on your own home directory as a standard user. Or try repositories such as NodeSource.
+    *Clang 3.4 or later.
+    *Development headers of GTK+ and libnotify.
+
+On Ubuntu, install the following libraries:
+
+$ sudo apt-get install build-essential clang libdbus-1-dev libgtk2.0-dev \
+                       libnotify-dev libgnome-keyring-dev libgconf2-dev \
+                       libasound2-dev libcap-dev libcups2-dev libxtst-dev \
+                       libxss1 libnss3-dev gcc-multilib g++-multilib
+
+On Fedora, install the following libraries:
+
+$ sudo yum install clang dbus-devel gtk2-devel libnotify-devel libgnome-keyring-devel \
+                   xorg-x11-server-utils libcap-devel cups-devel libXtst-devel \
+                   alsa-lib-devel libXrandr-devel GConf2-devel nss-devel
+
+Other distributions may offer similar packages for installation via package managers such as pacman. Or one can compile from source code.
+If You Use Virtual Machines For Building
+
+If you plan to build Electron on a virtual machine you will need a fixed-size device container of at least 25 gigabytes in size.
+Getting the Code
+
+$ git clone https://github.com/atom/electron.git
+
+Bootstrapping
+
+The bootstrap script will download all necessary build dependencies and create the build project files. You must have Python 2.7.x for the script to succeed. Downloading certain files can take a long time. Notice that we are using ninja to build Electron so there is no Makefile generated.
+
+$ cd electron
+$ ./script/bootstrap.py -v
+
+Cross compilation
+
+If you want to build for an arm target you should also install the following dependencies:
+
+$ sudo apt-get install libc6-dev-armhf-cross linux-libc-dev-armhf-cross \
+                       g++-arm-linux-gnueabihf
+
+And to cross compile for arm or ia32 targets, you should pass the --target_arch parameter to the bootstrap.py script:
+
+$ ./script/bootstrap.py -v --target_arch=arm
+
+Building
+
+If you would like to build both Release and Debug targets:
+
+$ ./script/build.py
+
+This script will cause a very large Electron executable to be placed in the directory out/R. The file size is in excess of 1.3 gigabytes. This happens because the Release target binary contains debugging symbols. To reduce the file size, run the create-dist.py script:
+
+$ ./script/create-dist.py
+
+This will put a working distribution with much smaller file sizes in the dist directory. After running the create-dist.py script, you may want to remove the 1.3+ gigabyte binary which is still in out/R.
+
+You can also build the Debug target only:
+
+$ ./script/build.py -c D
+
+After building is done, you can find the electron debug binary under out/D.
+Cleaning
+
+To clean the build files:
+
+$ ./script/clean.py
+
+Troubleshooting
+
+Make sure you have installed all of the build dependencies.
+Error While Loading Shared Libraries: libtinfo.so.5
+
+Prebulit clang will try to link to libtinfo.so.5. Depending on the host architecture, symlink to appropriate libncurses:
+
+$ sudo ln -s /usr/lib/libncurses.so.5 /usr/lib/libtinfo.so.5
+
+Tests
+
+Test your changes conform to the project coding style using:
+
+$ ./script/cpplint.py
+
+Test functionality using:
+
+$ ./script/test.py
+
