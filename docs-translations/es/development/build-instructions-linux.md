@@ -40,9 +40,9 @@ El script de bootstrap descargará todas las dependencias necesarias para constr
     $ cd electron
     $ ./script/bootstrap.py -v
 
-#Cross compilation
+#compilación cruzada
 
-If you want to build for an arm target you should also install the following dependencies:
+Si usted quiere construir para un brazo objetivo(rama objetivo) también debe instalar las siguientes dependencias:
 
 $ sudo apt-get install libc6-dev-armhf-cross linux-libc-dev-armhf-cross \
                        g++-arm-linux-gnueabihf
