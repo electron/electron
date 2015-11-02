@@ -35,36 +35,6 @@ PDFPageSize =
     width_microns: 279400
     custom_display_name: "Tabloid"
 
-clickHandler = (action) ->
-  @_executeContextMenuCommand action
-
-convertToMenuTemplate = (items, handler) ->
-  template = []
-  for item in items
-    do (item) ->
-      transformed =
-        if item.type is 'submenu'
-          type: 'submenu'
-          label: item.label
-          enabled: item.enabled
-          submenu: convertToMenuTemplate item.subItems, handler
-        else if item.type is 'separator'
-          type: 'separator'
-        else if item.type is 'checkbox'
-          type: 'checkbox'
-          label: item.label
-          enabled: item.enabled
-          checked: item.checked
-        else
-          type: 'normal'
-          label: item.label
-          enabled: item.enabled
-      if item.id?
-        transformed.click = ->
-          handler item.id
-      template.push transformed
-  template
-
 wrapWebContents = (webContents) ->
   # webContents is an EventEmitter.
   webContents.__proto__ = EventEmitter.prototype
@@ -96,15 +66,10 @@ wrapWebContents = (webContents) ->
     Object.defineProperty event, 'returnValue', set: (value) -> event.sendReply JSON.stringify(value)
     ipc.emit channel, event, args...
 
-  # Handle context menu action request from renderer widget.
-  webContents.on '-context-menu', (event, params) ->
-    if params.isPepperMenu
-      template = convertToMenuTemplate(params.menuItems, clickHandler.bind(webContents))
-      menu = Menu.buildFromTemplate template
-      # The menu is expected to show asynchronously.
-      setImmediate ->
-        menu.popup params.x, params.y
-        webContents._notifyContextMenuClosed()
+  # Handle context menu action request from pepper plugin.
+  webContents.on 'pepper-context-menu', (event, params) ->
+    menu = Menu.buildFromTemplate params.menu
+    menu.popup params.x, params.y
 
   webContents.printToPDF = (options, callback) ->
     printingSetting =

@@ -47,6 +47,7 @@
 #include "content/public/browser/storage_partition.h"
 #include "content/public/browser/site_instance.h"
 #include "content/public/browser/web_contents.h"
+#include "content/public/common/context_menu_params.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 #include "net/http/http_response_headers.h"
@@ -407,8 +408,11 @@ void WebContents::RendererResponsive(content::WebContents* source) {
 }
 
 bool WebContents::HandleContextMenu(const content::ContextMenuParams& params) {
-  context_menu_context_ = params.custom_context;
-  Emit("-context-menu", params);
+  if (!params.custom_context.is_pepper_menu)
+    return false;
+
+  Emit("pepper-context-menu", std::make_pair(params, web_contents()));
+  web_contents()->NotifyContextMenuClosed(params.custom_context);
   return true;
 }
 
@@ -848,15 +852,6 @@ void WebContents::RemoveWorkSpace(mate::Arguments* args,
   DevToolsRemoveFileSystem(path);
 }
 
-void WebContents::ExecuteContextMenuCommand(int action) {
-  web_contents()->ExecuteCustomContextMenuCommand(action,
-                                                  context_menu_context_);
-}
-
-void WebContents::NotifyContextMenuClosed() {
-  web_contents()->NotifyContextMenuClosed(context_menu_context_);
-}
-
 void WebContents::Undo() {
   web_contents()->Undo();
 }
@@ -1068,10 +1063,6 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
         .SetMethod("_printToPDF", &WebContents::PrintToPDF)
         .SetMethod("addWorkSpace", &WebContents::AddWorkSpace)
         .SetMethod("removeWorkSpace", &WebContents::RemoveWorkSpace)
-        .SetMethod("_executeContextMenuCommand",
-                   &WebContents::ExecuteContextMenuCommand)
-        .SetMethod("_notifyContextMenuClosed",
-                   &WebContents::NotifyContextMenuClosed)
         .SetProperty("session", &WebContents::Session, true)
         .SetProperty("devToolsWebContents",
                      &WebContents::DevToolsWebContents, true)

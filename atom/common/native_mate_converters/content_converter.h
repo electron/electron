@@ -5,25 +5,31 @@
 #ifndef ATOM_COMMON_NATIVE_MATE_CONVERTERS_CONTENT_CONVERTER_H_
 #define ATOM_COMMON_NATIVE_MATE_CONVERTERS_CONTENT_CONVERTER_H_
 
+#include <utility>
+
+#include "content/public/common/menu_item.h"
 #include "native_mate/converter.h"
 
 namespace content {
 struct ContextMenuParams;
-struct MenuItem;
+class WebContents;
 }
+
+using ContextMenuParamsWithWebContents =
+    std::pair<content::ContextMenuParams, content::WebContents*>;
 
 namespace mate {
 
 template<>
-struct Converter<content::MenuItem> {
+struct Converter<content::MenuItem::Type> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   const content::MenuItem& val);
+                                   const content::MenuItem::Type& val);
 };
 
 template<>
-struct Converter<content::ContextMenuParams> {
+struct Converter<ContextMenuParamsWithWebContents> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   const content::ContextMenuParams& val);
+                                   const ContextMenuParamsWithWebContents& val);
 };
 
 }  // namespace mate
