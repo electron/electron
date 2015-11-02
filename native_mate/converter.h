@@ -255,11 +255,6 @@ struct Converter<std::set<T> > {
   }
 };
 
-template<typename T>
-struct ToV8ReturnsMaybe<std::vector<T>> {
-  static const bool value = true;
-};
-
 // Convenience functions that deduce T.
 template<typename T>
 v8::Local<v8::Value> ConvertToV8(v8::Isolate* isolate, const T& input) {
