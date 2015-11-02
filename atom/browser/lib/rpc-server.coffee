@@ -33,14 +33,13 @@ valueToMeta = (sender, value, optimizeSimpleObject=false) ->
     # it.
     meta.id = objectsRegistry.add sender.getId(), value
 
-    meta.members = []
-    meta.members.push {name: prop, type: typeof field} for prop, field of value
+    meta.members = ({name, type: typeof field} for name, field of value)
   else if meta.type is 'buffer'
     meta.value = Array::slice.call value, 0
   else if meta.type is 'promise'
-    meta.then = valueToMeta(sender, value.then.bind(value))
+    meta.then = valueToMeta sender, value.then.bind(value)
   else if meta.type is 'error'
-    meta = errorValueToMeta(value, meta)
+    meta.members = plainObjectToMeta value
   else if meta.type is 'date'
     meta.value = value.getTime()
   else
@@ -49,12 +48,9 @@ valueToMeta = (sender, value, optimizeSimpleObject=false) ->
 
   meta
 
-# Convert Error into meta data.
-errorValueToMeta = (err, meta) ->
-  Object.getOwnPropertyNames(err).reduce((obj, key) ->
-    obj[key] = err[key]
-    obj
-  , meta)
+# Convert object to meta by value.
+plainObjectToMeta = (obj) ->
+  Object.getOwnPropertyNames(obj).map (name) -> {name, value: obj[name]}
 
 # Convert Error into meta data.
 exceptionToMeta = (error) ->
