@@ -169,11 +169,12 @@ struct Converter<content::SavePageType> {
     std::string save_type;
     if (!ConvertFromV8(isolate, val, &save_type))
       return false;
-    if (save_type == "HTMLOnly") {
+    save_type = base::StringToLowerASCII(save_type);
+    if (save_type == "htmlonly") {
       *out = content::SAVE_PAGE_TYPE_AS_ONLY_HTML;
-    } else if (save_type == "HTMLComplete") {
+    } else if (save_type == "htmlcomplete") {
       *out = content::SAVE_PAGE_TYPE_AS_COMPLETE_HTML;
-    } else if (save_type == "MHTML") {
+    } else if (save_type == "mhtml") {
       *out = content::SAVE_PAGE_TYPE_AS_MHTML;
     } else {
       return false;
