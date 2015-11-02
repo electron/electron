@@ -18,6 +18,7 @@
 #include "atom/common/api/event_emitter_caller.h"
 #include "atom/common/native_mate_converters/blink_converter.h"
 #include "atom/common/native_mate_converters/callback.h"
+#include "atom/common/native_mate_converters/content_converter.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
@@ -403,6 +404,12 @@ void WebContents::RendererResponsive(content::WebContents* source) {
   Emit("responsive");
   if (type_ == BROWSER_WINDOW)
     owner_window()->RendererResponsive(source);
+}
+
+bool WebContents::HandleContextMenu(const content::ContextMenuParams& params) {
+  context_menu_context_ = params.custom_context;
+  Emit("-context-menu", params);
+  return true;
 }
 
 void WebContents::BeforeUnloadFired(const base::TimeTicks& proceed_time) {
@@ -841,6 +848,15 @@ void WebContents::RemoveWorkSpace(mate::Arguments* args,
   DevToolsRemoveFileSystem(path);
 }
 
+void WebContents::ExecuteContextMenuCommand(int action) {
+  web_contents()->ExecuteCustomContextMenuCommand(action,
+                                                  context_menu_context_);
+}
+
+void WebContents::NotifyContextMenuClosed() {
+  web_contents()->NotifyContextMenuClosed(context_menu_context_);
+}
+
 void WebContents::Undo() {
   web_contents()->Undo();
 }
@@ -1052,6 +1068,10 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
         .SetMethod("_printToPDF", &WebContents::PrintToPDF)
         .SetMethod("addWorkSpace", &WebContents::AddWorkSpace)
         .SetMethod("removeWorkSpace", &WebContents::RemoveWorkSpace)
+        .SetMethod("_executeContextMenuCommand",
+                   &WebContents::ExecuteContextMenuCommand)
+        .SetMethod("_notifyContextMenuClosed",
+                   &WebContents::NotifyContextMenuClosed)
         .SetProperty("session", &WebContents::Session, true)
         .SetProperty("devToolsWebContents",
                      &WebContents::DevToolsWebContents, true)

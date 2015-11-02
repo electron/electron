@@ -19,7 +19,7 @@
 #include "atom/browser/browser.h"
 #include "atom/browser/login_handler.h"
 #include "atom/common/native_mate_converters/callback.h"
-#include "atom/common/native_mate_converters/content_converter.h"
+#include "atom/common/native_mate_converters/net_converter.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/node_includes.h"
 #include "atom/common/options_switches.h"

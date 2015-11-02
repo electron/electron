@@ -13,6 +13,7 @@
 #include "atom/browser/api/trackable_object.h"
 #include "atom/browser/common_web_contents_delegate.h"
 #include "content/public/browser/web_contents_observer.h"
+#include "content/public/common/context_menu_params.h"
 #include "content/public/common/favicon_url.h"
 #include "native_mate/handle.h"
 #include "ui/gfx/image/image.h"
@@ -92,6 +93,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void SetAudioMuted(bool muted);
   bool IsAudioMuted();
   void Print(mate::Arguments* args);
+  void ExecuteContextMenuCommand(int action);
+  void NotifyContextMenuClosed();
 
   // Print current page as PDF.
   void PrintToPDF(const base::DictionaryValue& setting,
@@ -189,6 +192,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void ExitFullscreenModeForTab(content::WebContents* source) override;
   void RendererUnresponsive(content::WebContents* source) override;
   void RendererResponsive(content::WebContents* source) override;
+  bool HandleContextMenu(const content::ContextMenuParams& params) override;
 
   // content::WebContentsObserver:
   void BeforeUnloadFired(const base::TimeTicks& proceed_time) override;
@@ -254,6 +258,9 @@ class WebContents : public mate::TrackableObject<WebContents>,
   // Called when guests need to be notified of
   // embedders' zoom level change.
   void OnZoomLevelChanged(double level);
+
+  // Recent unhandled context menu context.
+  content::CustomContextMenuContext context_menu_context_;
 
   v8::Global<v8::Value> session_;
   v8::Global<v8::Value> devtools_web_contents_;

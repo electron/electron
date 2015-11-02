@@ -7,23 +7,23 @@
 
 #include "native_mate/converter.h"
 
-namespace net {
-class AuthChallengeInfo;
-class URLRequest;
+namespace content {
+struct ContextMenuParams;
+struct MenuItem;
 }
 
 namespace mate {
 
 template<>
-struct Converter<const net::URLRequest*> {
+struct Converter<content::MenuItem> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   const net::URLRequest* val);
+                                   const content::MenuItem& val);
 };
 
 template<>
-struct Converter<const net::AuthChallengeInfo*> {
+struct Converter<content::ContextMenuParams> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   const net::AuthChallengeInfo* val);
+                                   const content::ContextMenuParams& val);
 };
 
 }  // namespace mate
