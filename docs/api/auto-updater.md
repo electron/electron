@@ -9,15 +9,22 @@ still some subtle differences on each platform.
 
 ### OS X
 
-On OS X, the `autoUpdater` module is built upon [Squirrel.Mac][squirrel-mac], meaning you
-don't need any special setup to make it work. For server-side requirements, you
-can read [Server Support][server-support].
+On OS X, the `autoUpdater` module is built upon [Squirrel.Mac][squirrel-mac],
+meaning you don't need any special setup to make it work. For server-side
+requirements, you can read [Server Support][server-support].
 
 ### Windows
 
-On Windows, you have to install your app into a user's machine before you can use
-the auto-updater, so it is recommended to use [grunt-electron-installer][installer]
-module to generate a Windows installer.
+On Windows, you have to install your app into a user's machine before you can
+use the auto-updater, so it is recommended to use
+[grunt-electron-installer][installer] module to generate a Windows installer.
+
+The installer generated with Squirrel will create a shortcut icon with an
+[Application User Model ID][app-user-model-id] in the format of
+`com.squirrel.PACKAGE_ID.YOUR_EXE_WITHOUT_DOT_EXE`, examples are
+`com.squirrel.slack.Slack` and `com.squirrel.code.Code`. You have to use the
+same ID for your app with `app.setAppUserModelId` API, otherwise Windows will
+not be able to pin your app properly in task bar.
 
 The server-side setup is also different from OS X. You can read the documents of
 [Squirrel.Windows][squirrel-windows] to get more details.
@@ -84,10 +91,11 @@ using this API.
 
 ### `autoUpdater.quitAndInstall()`
 
-Restarts the app and installs the update after it has been downloaded. It should
-only be called after `update-downloaded` has been emitted.
+Restarts the app and installs the update after it has been downloaded. It
+should only be called after `update-downloaded` has been emitted.
 
 [squirrel-mac]: https://github.com/Squirrel/Squirrel.Mac
 [server-support]: https://github.com/Squirrel/Squirrel.Mac#server-support
 [squirrel-windows]: https://github.com/Squirrel/Squirrel.Windows
 [installer]: https://github.com/atom/grunt-electron-installer
+[app-user-model-id]: https://msdn.microsoft.com/en-us/library/windows/desktop/dd378459(v=vs.85).aspx

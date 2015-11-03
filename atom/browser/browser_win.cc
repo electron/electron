@@ -15,6 +15,7 @@
 #include "base/files/file_path.h"
 #include "base/memory/scoped_ptr.h"
 #include "base/path_service.h"
+#include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/win/win_util.h"
@@ -24,6 +25,8 @@
 namespace atom {
 
 namespace {
+
+const wchar_t kAppUserModelIDFormat[] = L"electron.app.$1";
 
 BOOL CALLBACK WindowsEnumerationHandler(HWND hwnd, LPARAM param) {
   DWORD target_process_id = *reinterpret_cast<DWORD*>(param);
@@ -56,7 +59,7 @@ void Browser::AddRecentDocument(const base::FilePath& path) {
   if (SUCCEEDED(hr)) {
     SHARDAPPIDINFO info;
     info.psi = item;
-    info.pszAppID = app_user_model_id_.c_str();
+    info.pszAppID = GetAppUserModelID();
     SHAddToRecentDocs(SHARD_APPIDINFO, &info);
   }
 }
@@ -66,16 +69,21 @@ void Browser::ClearRecentDocuments() {
   if (FAILED(destinations.CoCreateInstance(CLSID_ApplicationDestinations,
                                            NULL, CLSCTX_INPROC_SERVER)))
     return;
-  if (FAILED(destinations->SetAppID(app_user_model_id_.c_str())))
+  if (FAILED(destinations->SetAppID(GetAppUserModelID())))
     return;
   destinations->RemoveAllDestinations();
+}
+
+void Browser::SetAppUserModelID(const base::string16& name) {
+  app_user_model_id_ = name;
+  SetCurrentProcessExplicitAppUserModelID(app_user_model_id_.c_str());
 }
 
 void Browser::SetUserTasks(const std::vector<UserTask>& tasks) {
   CComPtr<ICustomDestinationList> destinations;
   if (FAILED(destinations.CoCreateInstance(CLSID_DestinationList)))
     return;
-  if (FAILED(destinations->SetAppID(app_user_model_id_.c_str())))
+  if (FAILED(destinations->SetAppID(GetAppUserModelID())))
     return;
 
   // Start a transaction that updates the JumpList of this application.
@@ -117,10 +125,13 @@ void Browser::SetUserTasks(const std::vector<UserTask>& tasks) {
   destinations->CommitList();
 }
 
-void Browser::SetAppUserModelID(const std::string& name) {
-  app_user_model_id_ = base::string16(L"electron.app.");
-  app_user_model_id_ += base::UTF8ToUTF16(name);
-  SetCurrentProcessExplicitAppUserModelID(app_user_model_id_.c_str());
+PCWSTR Browser::GetAppUserModelID() {
+  if (app_user_model_id_.empty()) {
+    SetAppUserModelID(ReplaceStringPlaceholders(
+        kAppUserModelIDFormat, base::UTF8ToUTF16(GetName()), nullptr));
+  }
+
+  return app_user_model_id_.c_str();
 }
 
 std::string Browser::GetExecutableFileVersion() const {

@@ -26,6 +26,9 @@ void Browser::AddRecentDocument(const base::FilePath& path) {
 void Browser::ClearRecentDocuments() {
 }
 
+void Browser::SetAppUserModelID(const base::string16& name) {
+}
+
 std::string Browser::GetExecutableFileVersion() const {
   return brightray::GetApplicationVersion();
 }
