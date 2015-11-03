@@ -7,14 +7,14 @@
 :zap: *Formerly known as Atom Shell* :zap:
 
 The Electron framework lets you write cross-platform desktop applications
-using JavaScript, HTML and CSS. It is based on [Node.js](https://nodejs.org) and
+using JavaScript, HTML and CSS. It is based on [Node.js](https://nodejs.org/en/) and
 [Chromium](http://www.chromium.org) and is used in the [Atom
 editor](https://github.com/atom/atom).
 
 Follow [@ElectronJS](https://twitter.com/electronjs) on Twitter for important
 announcements.
 
-This project adheres to the [Contributor Covenant 1.2](http://contributor-covenant.org/version/1/2/0).
+This project adheres to the [Contributor Covenant 1.2](http://contributor-covenant.org/version/1/2/0/).
 By participating, you are expected to uphold this code. Please report
 unacceptable behavior to atom@github.com.
 
@@ -62,7 +62,7 @@ repository to see a minimal Electron app in action.
 
 You can ask questions and interact with the community in the following
 locations:
-- [`electron`](http://discuss.atom.io/category/electron) category on the Atom
+- [`electron`](http://discuss.atom.io/c/electron) category on the Atom
 forums
 - `#atom-shell` channel on Freenode
 - [`Atom`](http://atom-slack.herokuapp.com/) channel on Slack
