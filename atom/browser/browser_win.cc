@@ -56,7 +56,7 @@ void Browser::AddRecentDocument(const base::FilePath& path) {
   if (SUCCEEDED(hr)) {
     SHARDAPPIDINFO info;
     info.psi = item;
-    info.pszAppID = app_user_model_id_.c_str();
+    info.pszAppID = GetAppUserModelID();
     SHAddToRecentDocs(SHARD_APPIDINFO, &info);
   }
 }
@@ -66,7 +66,7 @@ void Browser::ClearRecentDocuments() {
   if (FAILED(destinations.CoCreateInstance(CLSID_ApplicationDestinations,
                                            NULL, CLSCTX_INPROC_SERVER)))
     return;
-  if (FAILED(destinations->SetAppID(app_user_model_id_.c_str())))
+  if (FAILED(destinations->SetAppID(GetAppUserModelID())))
     return;
   destinations->RemoveAllDestinations();
 }
@@ -75,7 +75,7 @@ void Browser::SetUserTasks(const std::vector<UserTask>& tasks) {
   CComPtr<ICustomDestinationList> destinations;
   if (FAILED(destinations.CoCreateInstance(CLSID_DestinationList)))
     return;
-  if (FAILED(destinations->SetAppID(app_user_model_id_.c_str())))
+  if (FAILED(destinations->SetAppID(GetAppUserModelID())))
     return;
 
   // Start a transaction that updates the JumpList of this application.
@@ -117,10 +117,16 @@ void Browser::SetUserTasks(const std::vector<UserTask>& tasks) {
   destinations->CommitList();
 }
 
-void Browser::SetAppUserModelID(const std::string& name) {
-  app_user_model_id_ = base::string16(L"electron.app.");
-  app_user_model_id_ += base::UTF8ToUTF16(name);
+void Browser::SetAppUserModelID(const base::string16& name) {
+  app_user_model_id_ = name;
   SetCurrentProcessExplicitAppUserModelID(app_user_model_id_.c_str());
+}
+
+PCWSTR Browser::GetAppUserModelID() {
+  if (app_user_model_id_.empty())
+    SetAppUserModelID(base::UTF8ToUTF16(GetName()));
+
+  return app_user_model_id_.c_str();
 }
 
 std::string Browser::GetExecutableFileVersion() const {
