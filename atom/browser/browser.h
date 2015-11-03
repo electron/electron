@@ -66,6 +66,9 @@ class Browser : public WindowListObserver {
   // Clear the recent documents list.
   void ClearRecentDocuments();
 
+  // Set the application user model ID.
+  void SetAppUserModelID(const base::string16& name);
+
 #if defined(OS_MACOSX)
   // Bounce the dock icon.
   enum BounceType {
@@ -99,9 +102,6 @@ class Browser : public WindowListObserver {
 
   // Add a custom task to jump list.
   void SetUserTasks(const std::vector<UserTask>& tasks);
-
-  // Set the application user model ID.
-  void SetAppUserModelID(const base::string16& name);
 
   // Returns the application user model ID, if there isn't one, then create
   // one from app's name.

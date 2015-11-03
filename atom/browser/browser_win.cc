@@ -71,6 +71,11 @@ void Browser::ClearRecentDocuments() {
   destinations->RemoveAllDestinations();
 }
 
+void Browser::SetAppUserModelID(const base::string16& name) {
+  app_user_model_id_ = name;
+  SetCurrentProcessExplicitAppUserModelID(app_user_model_id_.c_str());
+}
+
 void Browser::SetUserTasks(const std::vector<UserTask>& tasks) {
   CComPtr<ICustomDestinationList> destinations;
   if (FAILED(destinations.CoCreateInstance(CLSID_DestinationList)))
@@ -115,11 +120,6 @@ void Browser::SetUserTasks(const std::vector<UserTask>& tasks) {
   CComQIPtr<IObjectArray> task_array = collection;
   destinations->AddUserTasks(task_array);
   destinations->CommitList();
-}
-
-void Browser::SetAppUserModelID(const base::string16& name) {
-  app_user_model_id_ = name;
-  SetCurrentProcessExplicitAppUserModelID(app_user_model_id_.c_str());
 }
 
 PCWSTR Browser::GetAppUserModelID() {
