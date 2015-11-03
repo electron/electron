@@ -15,6 +15,7 @@
 #include "base/files/file_path.h"
 #include "base/memory/scoped_ptr.h"
 #include "base/path_service.h"
+#include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/win/win_util.h"
@@ -24,6 +25,8 @@
 namespace atom {
 
 namespace {
+
+const wchar_t kAppUserModelIDFormat[] = L"electron.app.$1";
 
 BOOL CALLBACK WindowsEnumerationHandler(HWND hwnd, LPARAM param) {
   DWORD target_process_id = *reinterpret_cast<DWORD*>(param);
@@ -123,8 +126,10 @@ void Browser::SetUserTasks(const std::vector<UserTask>& tasks) {
 }
 
 PCWSTR Browser::GetAppUserModelID() {
-  if (app_user_model_id_.empty())
-    SetAppUserModelID(base::UTF8ToUTF16(GetName()));
+  if (app_user_model_id_.empty()) {
+    SetAppUserModelID(ReplaceStringPlaceholders(
+        kAppUserModelIDFormat, base::UTF8ToUTF16(GetName()), nullptr));
+  }
 
   return app_user_model_id_.c_str();
 }
