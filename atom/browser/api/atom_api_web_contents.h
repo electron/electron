@@ -57,6 +57,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   // mate::TrackableObject:
   void Destroy() override;
 
+  void SetEmbedder(const WebContents* web_contents);
   bool IsAlive() const;
   int GetID() const;
   bool Equal(const WebContents* web_contents) const;

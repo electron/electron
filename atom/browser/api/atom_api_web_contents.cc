@@ -280,14 +280,9 @@ WebContents::WebContents(v8::Isolate* isolate,
 
     NativeWindow* owner_window = nullptr;
     WebContents* embedder = nullptr;
-    if (options.Get("embedder", &embedder) && embedder) {
-      // New WebContents's owner_window is the embedder's owner_window.
-      auto relay = NativeWindowRelay::FromWebContents(embedder->web_contents());
-      if (relay)
-        owner_window = relay->window.get();
+    if (options.Get("embedder", &embedder)) {
+      SetEmbedder(embedder);
     }
-    if (owner_window)
-      SetOwnerWindow(owner_window);
   }
 }
 
@@ -604,6 +599,17 @@ void WebContents::Destroy() {
     Observe(nullptr);
     DestroyWebContents();
   }
+}
+
+void WebContents::SetEmbedder(const WebContents* embedder) {
+  NativeWindow* owner_window = nullptr;
+  if (embedder) {
+    auto relay = NativeWindowRelay::FromWebContents(embedder->web_contents());
+    if (relay)
+      owner_window = relay->window.get();
+  }
+  if (owner_window)
+    SetOwnerWindow(owner_window);
 }
 
 bool WebContents::IsAlive() const {
@@ -1061,6 +1067,7 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
         .SetMethod("inspectServiceWorker", &WebContents::InspectServiceWorker)
         .SetMethod("print", &WebContents::Print)
         .SetMethod("_printToPDF", &WebContents::PrintToPDF)
+        .SetMethod("_setEmbedder", &WebContents::SetEmbedder)
         .SetMethod("addWorkSpace", &WebContents::AddWorkSpace)
         .SetMethod("removeWorkSpace", &WebContents::RemoveWorkSpace)
         .SetProperty("session", &WebContents::Session, true)
