@@ -37,7 +37,7 @@ class WebViewImpl
     browserPluginNode
 
   # Resets some state upon reattaching <webview> element to the DOM.
-  reset: ->
+  reset: (shouldDestroyGuest = true, shouldResetInternalInstanceId = true)->
     # If guestInstanceId is defined then the <webview> has navigated and has
     # already picked up a partition ID. Thus, we need to reset the initialization
     # state. However, it may be the case that beforeFirstNavigation is false BUT
@@ -45,12 +45,15 @@ class WebViewImpl
     # heard back from createGuest yet. We will not reset the flag in this case so
     # that we don't end up allocating a second guest.
     if @guestInstanceId
-      guestViewInternal.destroyGuest @guestInstanceId
+      if shouldDestroyGuest
+        guestViewInternal.destroyGuest @guestInstanceId
       @webContents = null
       @guestInstanceId = undefined
       @beforeFirstNavigation = true
       @attributes[webViewConstants.ATTRIBUTE_PARTITION].validPartitionId = true
-    @internalInstanceId = 0
+
+    if shouldResetInternalInstanceId
+      @internalInstanceId = 0
 
   # Sets the <webview>.request property.
   setRequestPropertyOnWebViewNode: (request) ->
@@ -196,6 +199,27 @@ class WebViewImpl
     return true unless @internalInstanceId
 
     guestViewInternal.attachGuest @internalInstanceId, @guestInstanceId, @buildParams()
+
+  detachWindow: ->
+    @reset(false, false)
+    @attributes[webViewConstants.ATTRIBUTE_SRC].setValueIgnoreMutation ''
+
+  attachExisting: (guestInstanceId, src) ->
+    if @guestInstanceId
+      @reset(true, false)
+    @attachWindow guestInstanceId
+    @attributes[webViewConstants.ATTRIBUTE_SRC].setValueIgnoreMutation src
+    @fireResize()
+
+  fireResize: ->
+    node = @webviewNode
+
+    width = node.offsetWidth
+    height = node.offsetHeight
+
+    #forcing chrome to refresh DOM
+    @onElementResize({width: width - 1, height: height - 1})
+    @onElementResize({width, height})
 
 # Registers browser plugin <object> custom element.
 registerBrowserPluginElement = ->
