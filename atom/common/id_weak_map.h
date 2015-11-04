@@ -19,6 +19,9 @@ class IDWeakMap {
   IDWeakMap();
   ~IDWeakMap();
 
+  // Sets the object to WeakMap with the given |id|.
+  void Set(v8::Isolate* isolate, int32_t id, v8::Local<v8::Object> object);
+
   // Adds |object| to WeakMap and returns its allocated |id|.
   int32_t Add(v8::Isolate* isolate, v8::Local<v8::Object> object);
 

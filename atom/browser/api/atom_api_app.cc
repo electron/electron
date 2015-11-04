@@ -7,10 +7,6 @@
 #include <string>
 #include <vector>
 
-#if defined(OS_WIN)
-#include <shlobj.h>
-#endif
-
 #include "atom/browser/api/atom_api_menu.h"
 #include "atom/browser/api/atom_api_session.h"
 #include "atom/browser/api/atom_api_web_contents.h"
@@ -19,7 +15,7 @@
 #include "atom/browser/browser.h"
 #include "atom/browser/login_handler.h"
 #include "atom/common/native_mate_converters/callback.h"
-#include "atom/common/native_mate_converters/content_converter.h"
+#include "atom/common/native_mate_converters/net_converter.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/node_includes.h"
 #include "atom/common/options_switches.h"
@@ -299,13 +295,6 @@ void App::SetDesktopName(const std::string& desktop_name) {
 #endif
 }
 
-void App::SetAppUserModelId(const std::string& app_id) {
-#if defined(OS_WIN)
-  base::string16 app_id_utf16 = base::UTF8ToUTF16(app_id);
-  SetCurrentProcessExplicitAppUserModelID(app_id_utf16.c_str());
-#endif
-}
-
 void App::AllowNTLMCredentialsForAllDomains(bool should_allow) {
   auto browser_context = static_cast<AtomBrowserContext*>(
         AtomBrowserMainParts::Get()->browser_context());
@@ -360,6 +349,8 @@ mate::ObjectTemplateBuilder App::GetObjectTemplateBuilder(
                  base::Bind(&Browser::AddRecentDocument, browser))
       .SetMethod("clearRecentDocuments",
                  base::Bind(&Browser::ClearRecentDocuments, browser))
+      .SetMethod("setAppUserModelId",
+                 base::Bind(&Browser::SetAppUserModelID, browser))
 #if defined(OS_WIN)
       .SetMethod("setUserTasks",
                  base::Bind(&Browser::SetUserTasks, browser))
@@ -367,7 +358,6 @@ mate::ObjectTemplateBuilder App::GetObjectTemplateBuilder(
       .SetMethod("setPath", &App::SetPath)
       .SetMethod("getPath", &App::GetPath)
       .SetMethod("setDesktopName", &App::SetDesktopName)
-      .SetMethod("setAppUserModelId", &App::SetAppUserModelId)
       .SetMethod("allowNTLMCredentialsForAllDomains",
                  &App::AllowNTLMCredentialsForAllDomains)
       .SetMethod("getLocale", &App::GetLocale)

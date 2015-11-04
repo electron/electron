@@ -2,6 +2,7 @@ ipc = require 'ipc'
 path = require 'path'
 objectsRegistry = require './objects-registry.js'
 v8Util = process.atomBinding 'v8_util'
+IDWeakMap = process.atomBinding('id_weak_map').IDWeakMap
 
 # Convert a real value into meta data.
 valueToMeta = (sender, value, optimizeSimpleObject=false) ->
@@ -32,14 +33,13 @@ valueToMeta = (sender, value, optimizeSimpleObject=false) ->
     # it.
     meta.id = objectsRegistry.add sender.getId(), value
 
-    meta.members = []
-    meta.members.push {name: prop, type: typeof field} for prop, field of value
+    meta.members = ({name, type: typeof field} for name, field of value)
   else if meta.type is 'buffer'
     meta.value = Array::slice.call value, 0
   else if meta.type is 'promise'
-    meta.then = valueToMeta(sender, value.then.bind(value))
+    meta.then = valueToMeta sender, value.then.bind(value)
   else if meta.type is 'error'
-    meta.message = value.message
+    meta.members = plainObjectToMeta value
   else if meta.type is 'date'
     meta.value = value.getTime()
   else
@@ -47,6 +47,10 @@ valueToMeta = (sender, value, optimizeSimpleObject=false) ->
     meta.value = value
 
   meta
+
+# Convert object to meta by value.
+plainObjectToMeta = (obj) ->
+  Object.getOwnPropertyNames(obj).map (name) -> {name, value: obj[name]}
 
 # Convert Error into meta data.
 exceptionToMeta = (error) ->
@@ -70,6 +74,13 @@ unwrapArgs = (sender, args) ->
         returnValue = metaToValue meta.value
         -> returnValue
       when 'function'
+        # Cache the callbacks in renderer.
+        unless sender.callbacks
+          sender.callbacks = new IDWeakMap
+          sender.on 'render-view-deleted', ->
+            sender.callbacks.clear()
+        return sender.callbacks.get meta.id if sender.callbacks.has meta.id
+
         rendererReleased = false
         objectsRegistry.once "clear-#{sender.getId()}", ->
           rendererReleased = true
@@ -77,11 +88,13 @@ unwrapArgs = (sender, args) ->
         ret = ->
           if rendererReleased
             throw new Error("Attempting to call a function in a renderer window
-              that has been closed or released. Function provided here: #{meta.id}.")
+              that has been closed or released. Function provided here: #{meta.location}.")
           sender.send 'ATOM_RENDERER_CALLBACK', meta.id, valueToMeta(sender, arguments)
         v8Util.setDestructor ret, ->
           return if rendererReleased
+          sender.callbacks.remove meta.id
           sender.send 'ATOM_RENDERER_RELEASE_CALLBACK', meta.id
+        sender.callbacks.set meta.id, ret
         ret
       else throw new TypeError("Unknown type: #{meta.type}")
 

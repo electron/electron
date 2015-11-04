@@ -18,6 +18,7 @@
 #include "atom/common/api/event_emitter_caller.h"
 #include "atom/common/native_mate_converters/blink_converter.h"
 #include "atom/common/native_mate_converters/callback.h"
+#include "atom/common/native_mate_converters/content_converter.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
@@ -46,6 +47,7 @@
 #include "content/public/browser/storage_partition.h"
 #include "content/public/browser/site_instance.h"
 #include "content/public/browser/web_contents.h"
+#include "content/public/common/context_menu_params.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 #include "net/http/http_response_headers.h"
@@ -169,11 +171,12 @@ struct Converter<content::SavePageType> {
     std::string save_type;
     if (!ConvertFromV8(isolate, val, &save_type))
       return false;
-    if (save_type == "HTMLOnly") {
+    save_type = base::StringToLowerASCII(save_type);
+    if (save_type == "htmlonly") {
       *out = content::SAVE_PAGE_TYPE_AS_ONLY_HTML;
-    } else if (save_type == "HTMLComplete") {
+    } else if (save_type == "htmlcomplete") {
       *out = content::SAVE_PAGE_TYPE_AS_COMPLETE_HTML;
-    } else if (save_type == "MHTML") {
+    } else if (save_type == "mhtml") {
       *out = content::SAVE_PAGE_TYPE_AS_MHTML;
     } else {
       return false;
@@ -402,6 +405,15 @@ void WebContents::RendererResponsive(content::WebContents* source) {
   Emit("responsive");
   if (type_ == BROWSER_WINDOW)
     owner_window()->RendererResponsive(source);
+}
+
+bool WebContents::HandleContextMenu(const content::ContextMenuParams& params) {
+  if (!params.custom_context.is_pepper_menu)
+    return false;
+
+  Emit("pepper-context-menu", std::make_pair(params, web_contents()));
+  web_contents()->NotifyContextMenuClosed(params.custom_context);
+  return true;
 }
 
 void WebContents::BeforeUnloadFired(const base::TimeTicks& proceed_time) {

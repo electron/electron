@@ -67,7 +67,6 @@ class App : public mate::EventEmitter,
                const base::FilePath& path);
 
   void SetDesktopName(const std::string& desktop_name);
-  void SetAppUserModelId(const std::string& app_id);
   void AllowNTLMCredentialsForAllDomains(bool should_allow);
   bool MakeSingleInstance(
       const ProcessSingleton::NotificationCallback& callback);

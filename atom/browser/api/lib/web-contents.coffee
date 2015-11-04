@@ -1,4 +1,5 @@
 EventEmitter = require('events').EventEmitter
+Menu = require './menu'
 NavigationController = require './navigation-controller'
 binding = process.atomBinding 'web_contents'
 ipc = require 'ipc'
@@ -64,6 +65,11 @@ wrapWebContents = (webContents) ->
     [channel, args...] = packed
     Object.defineProperty event, 'returnValue', set: (value) -> event.sendReply JSON.stringify(value)
     ipc.emit channel, event, args...
+
+  # Handle context menu action request from pepper plugin.
+  webContents.on 'pepper-context-menu', (event, params) ->
+    menu = Menu.buildFromTemplate params.menu
+    menu.popup params.x, params.y
 
   webContents.printToPDF = (options, callback) ->
     printingSetting =

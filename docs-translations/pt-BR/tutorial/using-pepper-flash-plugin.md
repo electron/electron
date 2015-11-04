@@ -39,7 +39,7 @@ app.on('window-all-closed', function() {
 
 // Epecifica o caminho do flash.
 // No Windows, deve ser /path/to/pepflashplayer.dll
-// No Mac, /path/to/PepperFlashPlayer.plugin
+// No OS X, /path/to/PepperFlashPlayer.plugin
 // No Linux, /path/to/libpepflashplayer.so
 app.commandLine.appendSwitch('ppapi-flash-path', '/path/to/libpepflashplayer.so');
 
