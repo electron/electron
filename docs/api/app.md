@@ -178,7 +178,7 @@ Returns:
 Emitted when `webContents` wants to do basic auth.
 
 The default behavior is to cancel all authentications, to override this you
-should prevent the default behavior with  `event.preventDefault()` and call
+should prevent the default behavior with `event.preventDefault()` and call
 `callback(username, password)` with the credentials.
 
 ```javascript
