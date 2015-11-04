@@ -11,14 +11,14 @@ wrapSession = (session) ->
   # session is an Event Emitter.
   session.__proto__ = EventEmitter.prototype
 
-wrapDownloadItem = (download_item) ->
-  # download_item is an Event Emitter.
-  download_item.__proto__ = EventEmitter.prototype
+wrapDownloadItem = (downloadItem) ->
+  # downloadItem is an Event Emitter.
+  downloadItem.__proto__ = EventEmitter.prototype
   # Be compatible with old APIs.
-  download_item.url = download_item.getUrl()
-  download_item.filename = download_item.getFilename()
-  download_item.mimeType = download_item.getMimeType()
-  download_item.hasUserGesture = download_item.hasUserGesture()
+  downloadItem.url = downloadItem.getUrl()
+  downloadItem.filename = downloadItem.getFilename()
+  downloadItem.mimeType = downloadItem.getMimeType()
+  downloadItem.hasUserGesture = downloadItem.hasUserGesture()
 
 app.setApplicationMenu = (menu) ->
   require('menu').setApplicationMenu menu
@@ -57,7 +57,7 @@ app.setDataPath = (path) -> @setPath 'userData', path
 app.resolveProxy = -> @defaultSession.resolveProxy.apply @defaultSession, arguments
 app.on 'activate', (event, hasVisibleWindows) -> @emit 'activate-with-no-open-windows' if not hasVisibleWindows
 
-# Session wrapper.
+# Wrappers for native classes.
 sessionBindings._setWrapSession wrapSession
 process.once 'exit', sessionBindings._clearWrapSession
 
