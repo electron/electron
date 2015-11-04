@@ -20,10 +20,8 @@ PlatformNotificationServiceImpl::PlatformNotificationServiceImpl() {}
 PlatformNotificationServiceImpl::~PlatformNotificationServiceImpl() {}
 
 NotificationPresenter* PlatformNotificationServiceImpl::notification_presenter() {
-#if defined(OS_MACOSX) || defined(OS_LINUX)
   if (!notification_presenter_)
     notification_presenter_.reset(NotificationPresenter::Create());
-#endif
   return notification_presenter_.get();
 }
 
