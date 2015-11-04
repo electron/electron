@@ -5,7 +5,9 @@
 #include "atom/common/platform_util.h"
 
 #include <windows.h>
+#include <atlbase.h>
 #include <commdlg.h>
+#include <comdef.h>
 #include <dwmapi.h>
 #include <shellapi.h>
 #include <shlobj.h>
@@ -41,6 +43,241 @@ bool ValidateShellCommandForScheme(const std::string& scheme) {
     return false;
   return true;
 }
+
+// Required COM implementation of IFileOperationProgressSink so we can
+// precheck files before deletion to make sure they can be move to the
+// Recycle Bin.
+class DeleteFileProgressSink : public IFileOperationProgressSink {
+ public:
+    DeleteFileProgressSink();
+
+ private:
+    ULONG STDMETHODCALLTYPE AddRef(void);
+
+    HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, LPVOID * ppvObj);
+
+    ULONG STDMETHODCALLTYPE Release(void);
+
+    HRESULT STDMETHODCALLTYPE StartOperations(void);
+
+    HRESULT STDMETHODCALLTYPE FinishOperations(HRESULT hrResult);
+
+    HRESULT STDMETHODCALLTYPE PreRenameItem(DWORD dwFlags,
+                                            IShellItem *psiItem,
+                                            LPCWSTR pszNewName);
+
+    HRESULT STDMETHODCALLTYPE PostRenameItem(DWORD dwFlags,
+                                             IShellItem *psiItem,
+                                             LPCWSTR pszNewName,
+                                             HRESULT hrRename,
+    IShellItem *psiNewlyCreated);
+
+    HRESULT STDMETHODCALLTYPE PreMoveItem(DWORD dwFlags,
+                                          IShellItem *psiItem,
+                                          IShellItem *psiDestinationFolder,
+                                          LPCWSTR pszNewName);
+
+    HRESULT STDMETHODCALLTYPE PostMoveItem(DWORD dwFlags,
+                                           IShellItem *psiItem,
+                                           IShellItem *psiDestinationFolder,
+                                           LPCWSTR pszNewName,
+                                           HRESULT hrMove,
+                                           IShellItem *psiNewlyCreated);
+
+    HRESULT STDMETHODCALLTYPE PreCopyItem(DWORD dwFlags,
+                                          IShellItem *psiItem,
+                                          IShellItem *psiDestinationFolder,
+                                          LPCWSTR pszNewName);
+
+    HRESULT STDMETHODCALLTYPE PostCopyItem(DWORD dwFlags,
+                                           IShellItem *psiItem,
+                                           IShellItem *psiDestinationFolder,
+                                           LPCWSTR pszNewName,
+                                           HRESULT hrCopy,
+                                           IShellItem *psiNewlyCreated);
+
+    HRESULT STDMETHODCALLTYPE PreDeleteItem(DWORD dwFlags,
+                                            IShellItem *psiItem);
+
+    HRESULT STDMETHODCALLTYPE PostDeleteItem(DWORD dwFlags,
+                                             IShellItem *psiItem,
+                                             HRESULT hrDelete,
+                                             IShellItem *psiNewlyCreated);
+
+    HRESULT STDMETHODCALLTYPE PreNewItem(DWORD dwFlags,
+                                         IShellItem *psiDestinationFolder,
+                                         LPCWSTR pszNewName);
+
+    HRESULT STDMETHODCALLTYPE PostNewItem(DWORD dwFlags,
+                                          IShellItem *psiDestinationFolder,
+                                          LPCWSTR pszNewName,
+                                          LPCWSTR pszTemplateName,
+                                          DWORD dwFileAttributes,
+                                          HRESULT hrNew,
+                                          IShellItem *psiNewItem);
+
+    HRESULT STDMETHODCALLTYPE UpdateProgress(UINT iWorkTotal,
+                                             UINT iWorkSoFar);
+
+    HRESULT STDMETHODCALLTYPE ResetTimer(void);
+
+    HRESULT STDMETHODCALLTYPE PauseTimer(void);
+
+    HRESULT STDMETHODCALLTYPE ResumeTimer(void);
+
+    ULONG m_cRef;
+};
+
+DeleteFileProgressSink::DeleteFileProgressSink() {
+  m_cRef = 0;
+}
+
+HRESULT DeleteFileProgressSink::PreDeleteItem(DWORD dwFlags,
+                                              IShellItem *psiItem) {
+  if (!(dwFlags & TSF_DELETE_RECYCLE_IF_POSSIBLE)) {
+    // TSF_DELETE_RECYCLE_IF_POSSIBLE will not be set for items that cannot be
+    // recycled.  In this case, we abort the delete operation.  This bubbles
+    // up and stops the Delete in IFileOperation.
+    return E_ABORT;
+  }
+  // Returns S_OK if successful, or an error value otherwise. In the case of an
+  // error value, the delete operation and all subsequent operations pending
+  // from the call to IFileOperation are canceled.
+  return S_OK;
+}
+
+HRESULT DeleteFileProgressSink::QueryInterface(REFIID riid, LPVOID * ppvObj) {
+    // Always set out parameter to NULL, validating it first.
+    if (!ppvObj)
+        return E_INVALIDARG;
+    *ppvObj = nullptr;
+    if (riid == IID_IUnknown || riid == IID_IFileOperationProgressSink) {
+        // Increment the reference count and return the pointer.
+        *ppvObj = reinterpret_cast<IUnknown*>(this);
+        AddRef();
+        return NOERROR;
+    }
+    return E_NOINTERFACE;
+}
+
+ULONG DeleteFileProgressSink::AddRef() {
+    InterlockedIncrement(&m_cRef);
+    return m_cRef;
+}
+
+ULONG DeleteFileProgressSink::Release() {
+    // Decrement the object's internal counter.
+    ULONG ulRefCount = InterlockedDecrement(&m_cRef);
+    if (0 == m_cRef) {
+        delete this;
+    }
+    return ulRefCount;
+}
+
+HRESULT DeleteFileProgressSink::StartOperations() {
+  return S_OK;
+}
+
+HRESULT DeleteFileProgressSink::FinishOperations(HRESULT hrResult) {
+  return S_OK;
+}
+
+HRESULT DeleteFileProgressSink::PreRenameItem(
+  DWORD dwFlags,
+  IShellItem *psiItem,
+  LPCWSTR pszNewName) {
+  return S_OK;
+}
+
+HRESULT DeleteFileProgressSink::PostRenameItem(
+  DWORD dwFlags,
+  IShellItem *psiItem,
+  __RPC__in_string LPCWSTR pszNewName,
+  HRESULT hrRename,
+  IShellItem *psiNewlyCreated) {
+  return E_NOTIMPL;
+}
+
+HRESULT DeleteFileProgressSink::PreMoveItem(
+  DWORD dwFlags,
+  IShellItem *psiItem,
+  IShellItem *psiDestinationFolder,
+  LPCWSTR pszNewName) {
+  return E_NOTIMPL;
+}
+
+HRESULT DeleteFileProgressSink::PostMoveItem(
+  DWORD dwFlags,
+  IShellItem *psiItem,
+  IShellItem *psiDestinationFolder,
+  LPCWSTR pszNewName,
+  HRESULT hrMove,
+  IShellItem *psiNewlyCreated) {
+  return E_NOTIMPL;
+}
+
+HRESULT DeleteFileProgressSink::PreCopyItem(
+  DWORD dwFlags,
+  IShellItem *psiItem,
+  IShellItem *psiDestinationFolder,
+  LPCWSTR pszNewName) {
+  return E_NOTIMPL;
+}
+
+HRESULT DeleteFileProgressSink::PostCopyItem(
+  DWORD dwFlags,
+  IShellItem *psiItem,
+  IShellItem *psiDestinationFolder,
+  LPCWSTR pszNewName,
+  HRESULT hrCopy,
+  IShellItem *psiNewlyCreated) {
+  return E_NOTIMPL;
+}
+
+HRESULT DeleteFileProgressSink::PostDeleteItem(
+  DWORD dwFlags,
+  IShellItem *psiItem,
+  HRESULT hrDelete,
+  IShellItem *psiNewlyCreated) {
+  return S_OK;
+}
+
+HRESULT DeleteFileProgressSink::PreNewItem(
+  DWORD dwFlags,
+  IShellItem *psiDestinationFolder,
+  LPCWSTR pszNewName) {
+  return E_NOTIMPL;
+}
+
+HRESULT DeleteFileProgressSink::PostNewItem(
+  DWORD dwFlags,
+  IShellItem *psiDestinationFolder,
+  LPCWSTR pszNewName,
+  LPCWSTR pszTemplateName,
+  DWORD dwFileAttributes,
+  HRESULT hrNew,
+  IShellItem *psiNewItem) {
+  return E_NOTIMPL;
+}
+
+HRESULT DeleteFileProgressSink::UpdateProgress(
+  UINT iWorkTotal,
+  UINT iWorkSoFar) {
+  return S_OK;
+}
+
+HRESULT DeleteFileProgressSink::ResetTimer() {
+  return S_OK;
+}
+
+HRESULT DeleteFileProgressSink::PauseTimer() {
+  return S_OK;
+}
+
+HRESULT DeleteFileProgressSink::ResumeTimer() {
+  return S_OK;
+}
+
 
 }  // namespace
 
@@ -170,32 +407,52 @@ bool OpenExternal(const GURL& url) {
 }
 
 bool MoveItemToTrash(const base::FilePath& path) {
-  // SHFILEOPSTRUCT wants the path to be terminated with two NULLs,
-  // so we have to use wcscpy because wcscpy_s writes non-NULLs
-  // into the rest of the buffer.
-  wchar_t double_terminated_path[MAX_PATH + 1] = {0};
-#pragma warning(suppress:4996)  // don't complain about wcscpy deprecation
-  wcscpy(double_terminated_path, path.value().c_str());
+  bool return_result = false;
 
-  SHFILEOPSTRUCT file_operation = {0};
-  file_operation.wFunc = FO_DELETE;
-  file_operation.pFrom = double_terminated_path;
-  file_operation.fFlags = FOF_ALLOWUNDO | FOF_SILENT | FOF_NOCONFIRMATION;
-  int err = SHFileOperation(&file_operation);
-
-  // Since we're passing flags to the operation telling it to be silent,
-  // it's possible for the operation to be aborted/cancelled without err
-  // being set (although MSDN doesn't give any scenarios for how this can
-  // happen).  See MSDN for SHFileOperation and SHFILEOPTSTRUCT.
-  if (file_operation.fAnyOperationsAborted)
-    return false;
-
-  // Some versions of Windows return ERROR_FILE_NOT_FOUND (0x2) when deleting
-  // an empty directory and some return 0x402 when they should be returning
-  // ERROR_FILE_NOT_FOUND. MSDN says Vista and up won't return 0x402.  Windows 7
-  // can return DE_INVALIDFILES (0x7C) for nonexistent directories.
-  return (err == 0 || err == ERROR_FILE_NOT_FOUND || err == 0x402 ||
-          err == 0x7C);
+  HRESULT hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED |
+                                    COINIT_DISABLE_OLE1DDE);
+  if (SUCCEEDED(hr)) {
+    CComPtr<IFileOperation> pfo;
+    hr = CoCreateInstance(CLSID_FileOperation,
+                          NULL,
+                          CLSCTX_ALL,
+                          IID_PPV_ARGS(&pfo));
+    if (SUCCEEDED(hr)) {
+      // Elevation prompt enabled for UAC protected files.  This overrides the
+      // SILENT, NO_UI and NOERRORUI flags.
+      hr = pfo->SetOperationFlags(FOF_NO_UI |
+                                  FOF_ALLOWUNDO |
+                                  FOF_NOERRORUI |
+                                  FOF_SILENT |
+                                  FOFX_SHOWELEVATIONPROMPT |
+                                  FOFX_RECYCLEONDELETE);
+      if (SUCCEEDED(hr)) {
+        // Create an IShellItem from the supplied source path.
+        CComPtr<IShellItem> spsi_delete_item;
+        hr = SHCreateItemFromParsingName(path.value().c_str(),
+                                         NULL,
+                                         IID_PPV_ARGS(&spsi_delete_item));
+        if (SUCCEEDED(hr)) {
+          CComPtr<IFileOperationProgressSink> delete_sink =
+            new DeleteFileProgressSink();
+          if (delete_sink) {
+            hr = pfo->DeleteItem(spsi_delete_item, delete_sink);
+            if (SUCCEEDED(hr)) {
+              // Processes the queued command DeleteItem.  This will trigger
+              // the DeleteFileProgressSink to check for Recycle Bin.
+              hr = pfo->PerformOperations();
+              if (SUCCEEDED(hr)) {
+                //  If the Operation returns true, then file was recycled.
+                return_result = true;
+              }
+            }
+          }
+        }
+      }
+    }
+    CoUninitialize();
+  }
+  return return_result;
 }
 
 void Beep() {
