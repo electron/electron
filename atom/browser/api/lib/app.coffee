@@ -59,10 +59,7 @@ app.on 'activate', (event, hasVisibleWindows) -> @emit 'activate-with-no-open-wi
 
 # Wrappers for native classes.
 sessionBindings._setWrapSession wrapSession
-process.once 'exit', sessionBindings._clearWrapSession
-
 downloadItemBindings._setWrapDownloadItem wrapDownloadItem
-process.once 'exit', downloadItemBindings._clearWrapDownloadItem
 
 # Only one App object pemitted.
 module.exports = app
