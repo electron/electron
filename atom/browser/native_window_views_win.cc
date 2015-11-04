@@ -84,15 +84,17 @@ bool NativeWindowViews::PreHandleMSG(
   NotifyWindowMessage(message, w_param, l_param);
 
   switch (message) {
-    // Screen readers send WM_GETOBJECT in order to get the accessibility object, so take this opportunity
-    // to push Chromium into accessible mode if it isn't already, always say we didn't handle the message
-    // because we still want Chromium to handle returning the actual accessibility object.
-    case WM_GETOBJECT:
-    {
+    // Screen readers send WM_GETOBJECT in order to get the accessibility
+    // object, so take this opportunity to push Chromium into accessible
+    // mode if it isn't already, always say we didn't handle the message
+    // because we still want Chromium to handle returning the actual
+    // accessibility object.
+    case WM_GETOBJECT: {
         const DWORD objId = static_cast<DWORD>(static_cast<DWORD_PTR>(l_param));
-        if (objId == OBJID_CLIENT)
-        {
-            const auto axState = content::BrowserAccessibilityState::GetInstance();
+        if (objId == OBJID_CLIENT) {
+            const auto axState =
+              content::BrowserAccessibilityState::GetInstance();
+
             if (axState && !axState->IsAccessibleBrowser())
                 axState->OnScreenReaderDetected();
         }
