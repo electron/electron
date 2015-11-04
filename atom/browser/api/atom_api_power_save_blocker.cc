@@ -45,6 +45,11 @@ PowerSaveBlocker::PowerSaveBlocker()
 PowerSaveBlocker::~PowerSaveBlocker() {
 }
 
+void PowerSaveBlocker::Destroy() {
+  power_save_blocker_types_.clear();
+  power_save_blocker_.reset();
+}
+
 void PowerSaveBlocker::UpdatePowerSaveBlocker() {
   if (power_save_blocker_types_.empty()) {
     power_save_blocker_.reset();

@@ -112,7 +112,6 @@ wrapWebContents = (webContents) ->
     @_printToPDF printingSetting, callback
 
 binding._setWrapWebContents wrapWebContents
-process.once 'exit', binding._clearWrapWebContents
 
 module.exports.create = (options={}) ->
   binding.create(options)

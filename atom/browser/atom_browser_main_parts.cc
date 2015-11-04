@@ -128,11 +128,23 @@ void AtomBrowserMainParts::PostMainMessageLoopStart() {
 void AtomBrowserMainParts::PostMainMessageLoopRun() {
   brightray::BrowserMainParts::PostMainMessageLoopRun();
 
+#if defined(OS_MACOSX)
+  FreeAppDelegate();
+#endif
+
   // Make sure destruction callbacks are called before message loop is
   // destroyed, otherwise some objects that need to be deleted on IO thread
   // won't be freed.
   for (const auto& callback : destruction_callbacks_)
     callback.Run();
+
+  // Destroy JavaScript environment immediately after running destruction
+  // callbacks.
+  gc_timer_.Stop();
+  node_debugger_.reset();
+  atom_bindings_.reset();
+  node_bindings_.reset();
+  js_env_.reset();
 }
 
 }  // namespace atom

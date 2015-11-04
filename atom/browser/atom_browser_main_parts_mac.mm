@@ -34,7 +34,7 @@ void AtomBrowserMainParts::PreMainMessageLoopStart() {
       setObject:@"NO" forKey:@"NSTreatUnknownArgumentsAsOpen"];
 }
 
-void AtomBrowserMainParts::PostDestroyThreads() {
+void AtomBrowserMainParts::FreeAppDelegate() {
   [[NSApp delegate] release];
   [NSApp setDelegate:nil];
 }
