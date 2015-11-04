@@ -129,6 +129,7 @@
         ['OS=="win"', {
           'include_dirs': [
             '<(libchromiumcontent_dir)/gen/ui/resources',
+            '<(libchromiumcontent_src_dir)',
           ],
           'msvs_settings': {
             'VCManifestTool': {
