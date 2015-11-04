@@ -3,9 +3,12 @@ Menu = require './menu'
 NavigationController = require './navigation-controller'
 binding = process.atomBinding 'web_contents'
 ipc = require 'ipc'
+WebViewRef = require 'web-view-ref'
 
+nextRequestId = 0
 nextId = 0
 getNextId = -> ++nextId
+getNextRequestId = -> ++nextRequestId
 
 PDFPageSize =
   A4:
@@ -110,6 +113,17 @@ wrapWebContents = (webContents) ->
       printingSetting.mediaSize = PDFPageSize['A4']
 
     @_printToPDF printingSetting, callback
+
+  webContents.findWebview = (id, callback) ->
+    requestId = getNextRequestId()
+    ipc.once "ATOM_SHELL_GUEST_VIEW_MANAGER_FIND_WEB_VIEW_RESPONSE_#{requestId}", (event, viewInstanceId) ->
+      webviewRef = null
+      if viewInstanceId
+        webviewRef = new WebViewRef(event.sender, viewInstanceId)
+
+      callback(webviewRef)
+
+    @send('ATOM_SHELL_GUEST_VIEW_MANAGER_FIND_WEB_VIEW_REQUEST', id, requestId)
 
 binding._setWrapWebContents wrapWebContents
 process.once 'exit', binding._clearWrapWebContents

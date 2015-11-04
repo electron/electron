@@ -48,6 +48,7 @@ else
   unless process.guestInstanceId?
     require './web-view/web-view'
     require './web-view/web-view-attributes'
+    require './web-view/web-view-finder'
 
 if nodeIntegration in ['true', 'all', 'except-iframe', 'manual-enable-iframe']
   # Export node bindings to global.

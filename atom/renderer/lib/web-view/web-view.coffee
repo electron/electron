@@ -87,6 +87,9 @@ class WebViewImpl
       @browserPluginNode.removeAttribute webViewConstants.ATTRIBUTE_INTERNALINSTANCEID
       @internalInstanceId = parseInt newValue
 
+      #send instanceid to the main process (webviewref might need it)
+      ipc.send "ATOM_SHELL_GUEST_VIEW_MANAGER_WEB_VIEW_INTERNALINSTANCEID", @viewInstanceId, @internalInstanceId
+
       # Track when the element resizes using the element resize callback.
       webFrame.registerElementResizeCallback @internalInstanceId, @onElementResize.bind(this)
 
@@ -241,6 +244,7 @@ registerWebViewElement = ->
     guestViewInternal.deregisterEvents internal.viewInstanceId
     internal.elementAttached = false
     internal.reset()
+    ipc.send 'ATOM_SHELL_GUEST_VIEW_MANAGER_WEB_VIEW_DETACHED', internal.viewInstanceId
 
   proto.attachedCallback = ->
     internal = v8Util.getHiddenValue this, 'internal'
