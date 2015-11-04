@@ -137,6 +137,14 @@ void AtomBrowserMainParts::PostMainMessageLoopRun() {
   // won't be freed.
   for (const auto& callback : destruction_callbacks_)
     callback.Run();
+
+  // Destroy JavaScript environment immediately after running destruction
+  // callbacks.
+  gc_timer_.Stop();
+  node_debugger_.reset();
+  atom_bindings_.reset();
+  node_bindings_.reset();
+  js_env_.reset();
 }
 
 }  // namespace atom
