@@ -128,6 +128,10 @@ void AtomBrowserMainParts::PostMainMessageLoopStart() {
 void AtomBrowserMainParts::PostMainMessageLoopRun() {
   brightray::BrowserMainParts::PostMainMessageLoopRun();
 
+#if defined(OS_MACOSX)
+  FreeAppDelegate();
+#endif
+
   // Make sure destruction callbacks are called before message loop is
   // destroyed, otherwise some objects that need to be deleted on IO thread
   // won't be freed.
