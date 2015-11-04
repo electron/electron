@@ -29,6 +29,9 @@ npm install --save-dev electron-rebuild
 
 # 필요한 네이티브 모듈을 `npm install`로 설치한 후 다음 명령을 실행하세요:
 ./node_modules/.bin/electron-rebuild
+
+# Windows에서 문제가 발생하면 다음 명령을 대신 실행하세요:
+.\node_modules\.bin\electron-rebuild.cmd
 ```
 
 ### `npm`을 이용한 방법

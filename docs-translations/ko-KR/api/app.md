@@ -362,6 +362,12 @@ app.on('ready', function() {
 });
 ```
 
+### `app.setAppUserModelId(id)` _Windows_
+
+* `id` String
+
+[Application User Model ID][app-user-model-id]를 `id`로 변경합니다.
+
 ### `app.commandLine.appendSwitch(switch[, value])`
 
 Chrominum의 명령줄에 스위치를 추가합니다. `value`는 추가적인 값을 뜻하며 옵션입니다.
@@ -418,3 +424,4 @@ dock 아이콘을 표시합니다.
 
 [dock-menu]:https://developer.apple.com/library/mac/documentation/Carbon/Conceptual/customizing_docktile/concepts/dockconcepts.html#//apple_ref/doc/uid/TP30000986-CH2-TPXREF103
 [tasks]:http://msdn.microsoft.com/en-us/library/windows/desktop/dd378460(v=vs.85).aspx#tasks
+[app-user-model-id]: https://msdn.microsoft.com/en-us/library/windows/desktop/dd378459(v=vs.85).aspx
