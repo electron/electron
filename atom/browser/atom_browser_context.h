@@ -27,6 +27,7 @@ class AtomBrowserContext : public brightray::BrowserContext {
       content::URLRequestInterceptorScopedVector* interceptors) override;
   net::HttpCache::BackendFactory* CreateHttpCacheBackendFactory(
       const base::FilePath& base_path) override;
+  net::CertVerifier* CreateCertVerifier() override;
   net::SSLConfigService* CreateSSLConfigService() override;
   bool AllowNTLMCredentialsForDomain(const GURL& auth_origin) override;
 

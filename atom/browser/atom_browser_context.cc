@@ -5,6 +5,7 @@
 #include "atom/browser/atom_browser_context.h"
 
 #include "atom/browser/atom_browser_main_parts.h"
+#include "atom/browser/atom_cert_verifier.h"
 #include "atom/browser/atom_download_manager_delegate.h"
 #include "atom/browser/atom_ssl_config_service.h"
 #include "atom/browser/browser.h"
@@ -156,6 +157,10 @@ content::BrowserPluginGuestManager* AtomBrowserContext::GetGuestManager() {
   if (!guest_manager_)
     guest_manager_.reset(new WebViewManager);
   return guest_manager_.get();
+}
+
+net::CertVerifier* AtomBrowserContext::CreateCertVerifier() {
+  return new AtomCertVerifier;
 }
 
 net::SSLConfigService* AtomBrowserContext::CreateSSLConfigService() {

@@ -61,21 +61,6 @@ struct Converter<Browser::UserTask> {
 };
 #endif
 
-template<>
-struct Converter<scoped_refptr<net::X509Certificate>> {
-  static v8::Local<v8::Value> ToV8(
-      v8::Isolate* isolate,
-      const scoped_refptr<net::X509Certificate>& val) {
-    mate::Dictionary dict(isolate, v8::Object::New(isolate));
-    std::string encoded_data;
-    net::X509Certificate::GetPEMEncoded(
-        val->os_cert_handle(), &encoded_data);
-    dict.Set("data", encoded_data);
-    dict.Set("issuerName", val->issuer().GetDisplayName());
-    return dict.GetHandle();
-  }
-};
-
 }  // namespace mate
 
 

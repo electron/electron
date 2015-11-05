@@ -220,3 +220,34 @@ window.webContents.session.enableNetworkEmulation({offline: true});
 
 Disables any network emulation already active for the `session`. Resets to
 the original network configuration.
+
+### `session.setCertificateVerifier(handler)`
+
+* `handler` Function
+  * `hostname` String
+  * `certificate` Object
+    * `data` Buffer - PEM encoded data
+    * `issuerName` String
+  * `callback` Function
+
+Sets the certificate verifier for the `session`, will be called
+whenever a server certificate verification is requested by the
+network layer with `hostname`, `certificate` and `callback`.
+`callback` should be called with a boolean response to
+indicate continuation or cancellation of the request.
+
+```js
+var handler = function(hostname, certificate, callback) {
+  if (hostname == "github.com") {
+    // verification logic
+    callback(true)
+  }
+  callback(false)
+}
+
+window.webContents.session.setCertificateVerifier(handler)
+```
+
+### `session.removeCertificateVerifier()`
+
+Removes the certificate verifier provided for the `session`.

@@ -13,9 +13,11 @@
 #include "atom/browser/api/save_page_handler.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
+#include "atom/browser/browser.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
+#include "atom/common/native_mate_converters/net_converter.h"
 #include "atom/common/node_includes.h"
 #include "base/files/file_path.h"
 #include "base/prefs/pref_service.h"
@@ -365,6 +367,7 @@ v8::Local<v8::Value> Session::Cookies(v8::Isolate* isolate) {
 
 mate::ObjectTemplateBuilder Session::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
+  auto browser = base::Unretained(Browser::Get());
   return mate::ObjectTemplateBuilder(isolate)
       .SetMethod("resolveProxy", &Session::ResolveProxy)
       .SetMethod("clearCache", &Session::ClearCache)
@@ -373,6 +376,10 @@ mate::ObjectTemplateBuilder Session::GetObjectTemplateBuilder(
       .SetMethod("setDownloadPath", &Session::SetDownloadPath)
       .SetMethod("enableNetworkEmulation", &Session::EnableNetworkEmulation)
       .SetMethod("disableNetworkEmulation", &Session::DisableNetworkEmulation)
+      .SetMethod("setCertificateVerifier",
+                 base::Bind(&Browser::SetCertificateVerifier, browser))
+      .SetMethod("removeCertificateVerifier",
+                 base::Bind(&Browser::RemoveCertificateVerifier, browser))
       .SetProperty("cookies", &Session::Cookies);
 }
 

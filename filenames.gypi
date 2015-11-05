@@ -128,6 +128,8 @@
       'atom/browser/atom_download_manager_delegate.h',
       'atom/browser/atom_browser_main_parts.cc',
       'atom/browser/atom_browser_main_parts.h',
+      'atom/browser/atom_cert_verifier.cc',
+      'atom/browser/atom_cert_verifier.h',
       'atom/browser/atom_browser_main_parts_mac.mm',
       'atom/browser/atom_browser_main_parts_posix.cc',
       'atom/browser/atom_javascript_dialog_manager.cc',

@@ -7,6 +7,7 @@
 
 #include <string>
 
+#include "base/callback.h"
 #include "base/memory/scoped_ptr.h"
 #include "content/public/browser/client_certificate_delegate.h"
 
@@ -16,11 +17,18 @@ class WebContents;
 
 namespace net {
 class SSLCertRequestInfo;
+class X509Certificate;
 }
 
 namespace atom {
 
 class LoginHandler;
+
+// A callback specialisation used by AtomCertVerifier during verification.
+using CertificateVerifier =
+    base::Callback<void(const std::string&,
+                        scoped_refptr<net::X509Certificate>,
+                        const base::Callback<void(bool)>&)>;
 
 class BrowserObserver {
  public:
@@ -61,6 +69,9 @@ class BrowserObserver {
 
   // The browser requests HTTP login.
   virtual void OnLogin(LoginHandler* login_handler) {}
+
+  virtual void OnSetCertificateVerifier(const CertificateVerifier& handler) {}
+  virtual void OnRemoveCertificateVerifier() {}
 
  protected:
   virtual ~BrowserObserver() {}
