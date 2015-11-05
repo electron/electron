@@ -278,7 +278,6 @@ WebContents::WebContents(v8::Isolate* isolate,
   if (is_guest) {
     guest_delegate_->Initialize(this);
 
-    NativeWindow* owner_window = nullptr;
     WebContents* embedder = nullptr;
     if (options.Get("embedder", &embedder)) {
       SetEmbedder(embedder);
