@@ -172,11 +172,7 @@ destroyGuest = (id) ->
     delete reverseEmbedderElementsMap[id]
     delete embedderElementsMap[key]
 
-transferGuest = (sourceWebViewRef, targetWebViewRef) ->
-  return unless sourceWebViewRef && targetWebViewRef
-
-  source = v8Util.getHiddenValue sourceWebViewRef, 'internal'
-  target = v8Util.getHiddenValue targetWebViewRef, 'internal'
+transferGuest = (source, target) ->
   return unless source.transferable() && target.isAlive()
 
   key = "#{source.embedder.getId()}-#{source.internalInstanceId}"

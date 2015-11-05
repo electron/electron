@@ -279,6 +279,15 @@ registerWebViewElement = ->
       internal.elementAttached = true
       internal.attributes[webViewConstants.ATTRIBUTE_SRC].parse()
 
+  proto.transferTo = (webViewRef) ->
+    internal = v8Util.getHiddenValue this, 'internal'
+    internalTarget = v8Util.getHiddenValue webViewRef, 'internal'
+    if webViewRef.getRefId
+      ipc.send 'ATOM_SHELL_GUEST_VIEW_MANAGER_TRANSFER_REMOTE_WEBVIEWREF', internal.viewInstanceId, internal.internalInstanceId, webViewRef.getRefId()
+    else if internalTarget
+      ipc.send 'ATOM_SHELL_GUEST_VIEW_MANAGER_TRANSFER_REMOTE_WEBVIEW', internal.viewInstanceId, internal.internalInstanceId, internalTarget.viewInstanceId
+
+
   # Public-facing API methods.
   methods = [
     "getUrl"
