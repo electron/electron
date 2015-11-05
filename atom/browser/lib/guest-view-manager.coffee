@@ -1,5 +1,7 @@
 ipc = require 'ipc'
+app = require 'app'
 webContents = require 'web-contents'
+v8Util = process.atomBinding 'v8_util'
 webViewManager = null  # Doesn't exist in early initialization.
 
 supportedWebViewEvents = [
@@ -170,6 +172,22 @@ destroyGuest = (id) ->
     delete reverseEmbedderElementsMap[id]
     delete embedderElementsMap[key]
 
+transferGuest = (sourceWebViewRef, targetWebViewRef) ->
+  return unless sourceWebViewRef && targetWebViewRef
+
+  source = v8Util.getHiddenValue sourceWebViewRef, 'internal'
+  target = v8Util.getHiddenValue targetWebViewRef, 'internal'
+  return unless source.transferable() && target.isAlive()
+
+  key = "#{source.embedder.getId()}-#{source.internalInstanceId}"
+  guestInstanceId = embedderElementsMap[key]
+  return unless guestInstanceId
+
+  url = guestInstances[guestInstanceId].guest.getUrl()
+
+  source.embedder.send "ATOM_SHELL_GUEST_VIEW_DETACH-#{source.viewInstanceId}"
+  target.embedder.send "ATOM_SHELL_GUEST_VIEW_ATTACH-#{target.viewInstanceId}", guestInstanceId, url
+
 ipc.on 'ATOM_SHELL_GUEST_VIEW_MANAGER_CREATE_GUEST', (event, params, requestId) ->
   event.sender.send "ATOM_SHELL_RESPONSE_#{requestId}", createGuest(event.sender, params)
 
@@ -184,6 +202,9 @@ ipc.on 'ATOM_SHELL_GUEST_VIEW_MANAGER_SET_SIZE', (event, id, params) ->
 
 ipc.on 'ATOM_SHELL_GUEST_VIEW_MANAGER_SET_ALLOW_TRANSPARENCY', (event, id, allowtransparency) ->
   guestInstances[id]?.guest.setAllowTransparency allowtransparency
+
+app.once 'ATOM_SHELL_GUEST_VIEW_MANAGER_TRANSFER', (source, target) ->
+  transferGuest(source, target);
 
 # Returns WebContents from its guest id.
 exports.getGuest = (id) ->

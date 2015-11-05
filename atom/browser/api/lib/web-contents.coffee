@@ -116,10 +116,10 @@ wrapWebContents = (webContents) ->
 
   webContents.findWebview = (id, callback) ->
     requestId = getNextRequestId()
-    ipc.once "ATOM_SHELL_GUEST_VIEW_MANAGER_FIND_WEB_VIEW_RESPONSE_#{requestId}", (event, viewInstanceId) ->
+    ipc.once "ATOM_SHELL_GUEST_VIEW_MANAGER_FIND_WEB_VIEW_RESPONSE_#{requestId}", (event, viewInstanceId, internalInstanceId) ->
       webviewRef = null
       if viewInstanceId
-        webviewRef = new WebViewRef(event.sender, viewInstanceId)
+        webviewRef = new WebViewRef(event.sender, viewInstanceId, internalInstanceId)
 
       callback(webviewRef)
 

@@ -3,6 +3,7 @@ guestViewInternal = require './guest-view-internal'
 webViewConstants = require './web-view-constants'
 webFrame = require 'web-frame'
 remote = require 'remote'
+ipc = require 'ipc'
 
 # ID generator.
 nextId = 0
@@ -91,7 +92,7 @@ class WebViewImpl
       @internalInstanceId = parseInt newValue
 
       #send instanceid to the main process (webviewref might need it)
-      ipc.send "ATOM_SHELL_GUEST_VIEW_MANAGER_WEB_VIEW_INTERNALINSTANCEID", @viewInstanceId, @internalInstanceId
+      ipc.send 'ATOM_SHELL_GUEST_VIEW_MANAGER_WEB_VIEW_INTERNALINSTANCEID', @viewInstanceId, @internalInstanceId
 
       # Track when the element resizes using the element resize callback.
       webFrame.registerElementResizeCallback @internalInstanceId, @onElementResize.bind(this)
@@ -112,9 +113,9 @@ class WebViewImpl
     # Check the current bounds to make sure we do not resize <webview>
     # outside of current constraints.
     maxWidth = @attributes[webViewConstants.ATTRIBUTE_MAXWIDTH].getValue() | width
-    maxHeight = @attributes[webViewConstants.ATTRIBUTE_MAXHEIGHT].getValue() | width
+    maxHeight = @attributes[webViewConstants.ATTRIBUTE_MAXHEIGHT].getValue() | height
     minWidth = @attributes[webViewConstants.ATTRIBUTE_MINWIDTH].getValue() | width
-    minHeight = @attributes[webViewConstants.ATTRIBUTE_MINHEIGHT].getValue() | width
+    minHeight = @attributes[webViewConstants.ATTRIBUTE_MINHEIGHT].getValue() | height
 
     minWidth = Math.min minWidth, maxWidth
     minHeight = Math.min minHeight, maxHeight

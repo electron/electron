@@ -1,4 +1,5 @@
 ipc = require('ipc')
+app = require('app')
 v8Util = process.atomBinding 'v8_util'
 
 destroyEvents = ['destroyed', 'crashed', 'did-navigate-to-different-page']
@@ -10,6 +11,7 @@ class WebViewRefInternal
     @embedder = embedder
     @viewInstanceId = viewInstanceId
     @internalInstanceId = internalInstanceId
+    console.log(internalInstanceId)
     webviewRefs["#{@embedder.getId()}-#{@viewInstanceId}"] = this
 
     for event in destroyEvents
@@ -23,20 +25,24 @@ class WebViewRefInternal
   isAlive: ->
     return !@isDetached && @embedder && @embedder.isAlive()
 
+  transferable: ->
+    @isAlive() && @internalInstanceId
+
   gotInstanceId: (internalInstanceId) ->
     @internalInstanceId = internalInstanceId
 
 
 class WebViewRef
-  constructor: (embedder, viewInstanceId) ->
-    v8Util.setHiddenValue this, 'internal', new WebViewRefInternal(embedder, viewInstanceId)
+  constructor: (embedder, viewInstanceId, internalInstanceId) ->
+    v8Util.setHiddenValue this, 'internal', new WebViewRefInternal(embedder, viewInstanceId, internalInstanceId)
 
   isAlive: ->
     internal = v8Util.getHiddenValue this, 'internal'
     internal.isAlive()
 
-  transferTo: (webViewRef, callback) ->
-    callback()
+  transferTo: (webViewRef) ->
+    #let guest-view-manager do the job
+    app.emit 'ATOM_SHELL_GUEST_VIEW_MANAGER_TRANSFER', this, webViewRef
 
 ipc.on 'ATOM_SHELL_GUEST_VIEW_MANAGER_WEB_VIEW_INTERNALINSTANCEID', (event, viewInstanceId, internalInstanceId) ->
   webviewRef = webviewRefs["#{event.sender.getId()}-#{viewInstanceId}"]
