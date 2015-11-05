@@ -203,6 +203,10 @@ HRESULT DeleteFileProgressSink::ResumeTimer() {
 namespace platform_util {
 
 void ShowItemInFolder(const base::FilePath& full_path) {
+  base::win::ScopedCOMInitializer com_initializer;
+  if (!com_initializer.succeeded())
+    return;
+
   base::FilePath dir = full_path.DirName().AsEndingWithSeparator();
   // ParseDisplayName will fail if the directory is "C:", it must be "C:\\".
   if (dir.empty())
