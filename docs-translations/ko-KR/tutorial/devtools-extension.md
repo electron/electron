@@ -5,7 +5,9 @@
 개발자 콘솔 확장 기능은 간단하게 사용할 확장 기능 플러그인의 소스 코드를 다운로드한 후 `BrowserWindow.addDevToolsExtension` API를 이용하여
 어플리케이션 내에 로드할 수 있습니다. 한가지 주의할 점은 확장 기능 사용시 창이 생성될 때 마다 일일이 해당 API를 호출할 필요는 없습니다.
 
-예시로 [React DevTools Extension](https://github.com/facebook/react-devtools)을 사용합니다.
+** 주의: 현재 React DevTools은 작동하지 않습니다. https://github.com/atom/electron/issues/915 이슈를 참고하세요! **
+
+다음 예제는 [React DevTools Extension](https://github.com/facebook/react-devtools)을 사용합니다.
 
 먼저 소스코드를 다운로드 받습니다:
 
@@ -15,8 +17,7 @@ $ git clone --recursive https://github.com/facebook/react-devtools.git
 ```
 
 [`react-devtools/shells/chrome/Readme.md`](https://github.com/facebook/react-devtools/blob/master/shells/chrome/Readme.md)
-가이드를 통해 확장 기능을 개발하는 방법을 알아볼 수 있습니다.
-
+를 통해 확장 기능을 개발하는 방법을 알아볼 수 있습니다.
 
 그리고 개발자 콘솔에서 다음 코드를 입력하면 확장 기능을 로드할 수 있습니다:
 
