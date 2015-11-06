@@ -4,6 +4,8 @@
 
 #include "atom/common/native_mate_converters/callback.h"
 
+#include "atom/browser/atom_browser_main_parts.h"
+
 namespace mate {
 
 namespace internal {
@@ -53,6 +55,33 @@ v8::Local<v8::Value> BindFunctionWith(v8::Isolate* isolate,
 }
 
 }  // namespace
+
+SafeV8Function::SafeV8Function(v8::Isolate* isolate, v8::Local<v8::Value> value)
+    : v8_function_(new RefCountedPersistent<v8::Function>(isolate, value)),
+      weak_factory_(this) {
+  Init();
+}
+
+SafeV8Function::SafeV8Function(const SafeV8Function& other)
+    : v8_function_(other.v8_function_),
+      weak_factory_(this) {
+  Init();
+}
+
+v8::Local<v8::Function> SafeV8Function::NewHandle() const {
+  return v8_function_->NewHandle();
+}
+
+void SafeV8Function::Init() {
+  if (Locker::IsBrowserProcess() && atom::AtomBrowserMainParts::Get())
+    atom::AtomBrowserMainParts::Get()->RegisterDestructionCallback(
+        base::Bind(&SafeV8Function::FreeHandle, weak_factory_.GetWeakPtr()));
+}
+
+void SafeV8Function::FreeHandle() {
+  Locker locker(v8_function_->isolate());
+  v8_function_ = nullptr;
+}
 
 v8::Local<v8::Value> CreateFunctionFromTranslater(
     v8::Isolate* isolate, const Translater& translater) {
