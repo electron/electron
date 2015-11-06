@@ -53,6 +53,9 @@ app = require 'app'
 app.on 'quit', ->
   process.emit 'exit'
 
+# Map process.exit to app.exit, which quits gracefully.
+process.exit = app.exit
+
 # Load the RPC server.
 require './rpc-server'
 

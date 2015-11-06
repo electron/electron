@@ -208,6 +208,15 @@ This method guarantees that all `beforeunload` and `unload` event handlers are
 correctly executed. It is possible that a window cancels the quitting by
 returning `false` in the `beforeunload` event handler.
 
+### `app.exit(exitCode)`
+
+* `exitCode` Integer
+
+Exits immediately with `exitCode`.
+
+All windows will be closed immediately without asking user and the `before-quit`
+and `will-quit` events will not be emitted.
+
 ### `app.getAppPath()`
 
 Returns the current application directory.

@@ -30,6 +30,7 @@ AtomBrowserMainParts* AtomBrowserMainParts::self_ = NULL;
 
 AtomBrowserMainParts::AtomBrowserMainParts()
     : fake_browser_process_(new BrowserProcess),
+      exit_code_(nullptr),
       browser_(new Browser),
       node_bindings_(NodeBindings::Create(true)),
       atom_bindings_(new AtomBindings),
@@ -45,6 +46,14 @@ AtomBrowserMainParts::~AtomBrowserMainParts() {
 AtomBrowserMainParts* AtomBrowserMainParts::Get() {
   DCHECK(self_);
   return self_;
+}
+
+bool AtomBrowserMainParts::SetExitCode(int code) {
+  if (!exit_code_)
+    return false;
+
+  *exit_code_ = code;
+  return true;
 }
 
 void AtomBrowserMainParts::RegisterDestructionCallback(
@@ -116,6 +125,11 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
   Browser::Get()->WillFinishLaunching();
   Browser::Get()->DidFinishLaunching();
 #endif
+}
+
+bool AtomBrowserMainParts::MainMessageLoopRun(int* result_code) {
+  exit_code_ = result_code;
+  return brightray::BrowserMainParts::MainMessageLoopRun(result_code);
 }
 
 void AtomBrowserMainParts::PostMainMessageLoopStart() {
