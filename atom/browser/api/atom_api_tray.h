@@ -49,6 +49,8 @@ class Tray : public mate::TrackableObject<Tray>,
   void OnBalloonClicked() override;
   void OnBalloonClosed() override;
   void OnDropFiles(const std::vector<std::string>& files) override;
+  void OnDragEntered() override;
+  void OnDragExited() override;
 
   // mate::Wrappable:
   bool IsDestroyed() const override;

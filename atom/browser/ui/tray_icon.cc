@@ -59,4 +59,12 @@ void TrayIcon::NotifyDropFiles(const std::vector<std::string>& files) {
   FOR_EACH_OBSERVER(TrayIconObserver, observers_, OnDropFiles(files));
 }
 
+void TrayIcon::NotifyDragEntered() {
+  FOR_EACH_OBSERVER(TrayIconObserver, observers_, OnDragEntered());
+}
+
+void TrayIcon::NotifyDragExited() {
+  FOR_EACH_OBSERVER(TrayIconObserver, observers_, OnDragExited());
+}
+
 }  // namespace atom

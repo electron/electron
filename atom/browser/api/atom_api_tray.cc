@@ -78,6 +78,14 @@ void Tray::OnDropFiles(const std::vector<std::string>& files) {
   Emit("drop-files", files);
 }
 
+void Tray::OnDragEntered() {
+  Emit("drag-entered");
+}
+
+void Tray::OnDragExited() {
+  Emit("drag-exited");
+}
+
 bool Tray::IsDestroyed() const {
   return !tray_icon_;
 }
