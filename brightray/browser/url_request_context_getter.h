@@ -44,14 +44,15 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
         content::URLRequestInterceptorScopedVector* protocol_interceptors);
     virtual net::HttpCache::BackendFactory* CreateHttpCacheBackendFactory(
         const base::FilePath& base_path);
+    virtual net::CertVerifier* CreateCertVerifier();
     virtual net::SSLConfigService* CreateSSLConfigService();
     virtual bool AllowNTLMCredentialsForDomain(const GURL& auth_origin);
     virtual bool CanDelegateURLSecurity(const GURL& auth_origin);
-    
+
    private:
     scoped_ptr<net::URLSecurityManager> orig_url_sec_mgr_;
   };
-  
+
   class DelegateURLSecurityManager : public net::URLSecurityManager {
    public:
     DelegateURLSecurityManager(URLRequestContextGetter::Delegate* delegate);

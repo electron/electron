@@ -142,6 +142,10 @@ URLRequestContextGetter::Delegate::CreateHttpCacheBackendFactory(const base::Fil
       BrowserThread::GetMessageLoopProxyForThread(BrowserThread::CACHE));
 }
 
+net::CertVerifier* URLRequestContextGetter::Delegate::CreateCertVerifier() {
+  return net::CertVerifier::CreateDefault();
+}
+
 net::SSLConfigService* URLRequestContextGetter::Delegate::CreateSSLConfigService() {
   return new net::SSLConfigServiceDefaults;
 }
@@ -286,7 +290,7 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
             false,          // auth_android_negotiate_account_type
             true);          // negotiate_enable_port
 
-    storage_->set_cert_verifier(net::CertVerifier::CreateDefault());
+    storage_->set_cert_verifier(delegate_->CreateCertVerifier());
     storage_->set_transport_security_state(new net::TransportSecurityState);
     storage_->set_ssl_config_service(delegate_->CreateSSLConfigService());
     storage_->set_http_auth_handler_factory(auth_handler_factory);
