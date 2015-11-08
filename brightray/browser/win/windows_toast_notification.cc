@@ -1,4 +1,4 @@
-// Copyright (c) 2015 Felix Rieseberg <feriese@microsoft.com> and Jason Poon <jpoon@microsoft.com>. All rights reserved.
+// Copyright (c) 2015 Felix Rieseberg <feriese@microsoft.com> and Jason Poon <jason.poon@microsoft.com>. All rights reserved.
 // Copyright (c) 2015 Ryan McShane <rmcshane@bandwidth.com> and Brandon Smith <bsmith@bandwidth.com>
 // Thanks to both of those folks mentioned above who first thought up a bunch of this code
 // and released it as MIT to the world.
@@ -6,26 +6,41 @@
 #include "windows_toast_notification.h"
 #include "content/public/browser/desktop_notification_delegate.h"
 
-#include <Psapi.h>
-#include <stdio.h>
-#include <ShObjidl.h>
-#include <propvarutil.h>
-#include <propkey.h>
-#include <wincrypt.h>
-#include <string>
-
 using namespace WinToasts;
-using namespace Windows::Foundation;
+using namespace Microsoft::WRL;
+using namespace ABI::Windows::UI::Notifications;
+using namespace ABI::Windows::Data::Xml::Dom;
 
 #define BREAK_IF_BAD(hr)    if(!SUCCEEDED(hr)) break;
 
-char WindowsToastNotification::s_appName[MAX_PATH] = {};
-
 namespace WinToasts {
+
+// Initialize Windows Runtime
+static HRESULT init = Windows::Foundation::Initialize(RO_INIT_MULTITHREADED);
 
 WindowsToastNotification::WindowsToastNotification(const char* appName, content::DesktopNotificationDelegate* delegate)
 {
-    sprintf_s(s_appName, ARRAYSIZE(s_appName), "%s", appName);
+    HSTRING toastNotifMgrStr = NULL;
+    HSTRING appId = NULL;
+
+    HRESULT hr = CreateHString(RuntimeClass_Windows_UI_Notifications_ToastNotificationManager, &toastNotifMgrStr);
+
+    hr = Windows::Foundation::GetActivationFactory(toastNotifMgrStr, &m_toastManager);
+
+    WCHAR wAppName[MAX_PATH];
+    swprintf(wAppName, ARRAYSIZE(wAppName), L"%S", appName);
+    hr = CreateHString(wAppName, &appId);
+
+    m_toastManager->CreateToastNotifierWithId(appId, &m_toastNotifier);
+
+    if (toastNotifMgrStr != NULL) {
+        WindowsDeleteString(toastNotifMgrStr);
+    }
+
+    if (appId != NULL) {
+        WindowsDeleteString(appId);
+    }
+
     m_eventHandler = NULL;
     n_delegate = delegate;
 }
@@ -41,35 +56,14 @@ WindowsToastNotification::~WindowsToastNotification()
     }
 }
 
-void WindowsToastNotification::ShowNotification(const WCHAR* title, const WCHAR* msg, std::string iconPath)
+void WindowsToastNotification::ShowNotification(const WCHAR* title, const WCHAR* msg, std::string iconPath, ComPtr<IToastNotification>& toast)
 {        
-    // Init using WRL
-    Windows::Foundation::Initialize(RO_INIT_MULTITHREADED);
-
-    HSTRING toastNotifMgrStr = NULL;
-    HSTRING appId = NULL;
-    HSTRING toastNotifStr = NULL;
     HRESULT hr;
+    HSTRING toastNotifStr = NULL;
 
     do {         
-        hr = CreateHString(RuntimeClass_Windows_UI_Notifications_ToastNotificationManager, &toastNotifMgrStr);
-        BREAK_IF_BAD(hr);
-
-        ComPtr<IToastNotificationManagerStatics> toastMgr;
-        hr = Windows::Foundation::GetActivationFactory(toastNotifMgrStr, &toastMgr);
-        BREAK_IF_BAD(hr);
-
         ComPtr<IXmlDocument> toastXml;
-        hr = GetToastXml(toastMgr.Get(), title, msg, iconPath, &toastXml);
-        BREAK_IF_BAD(hr);
-
-        WCHAR wAppName[MAX_PATH];
-        swprintf(wAppName, ARRAYSIZE(wAppName), L"%S", s_appName);
-        hr = CreateHString(wAppName, &appId);
-        BREAK_IF_BAD(hr);
-
-        ComPtr<IToastNotifier> notifier;
-        toastMgr->CreateToastNotifierWithId(appId, &notifier);
+        hr = GetToastXml(m_toastManager.Get(), title, msg, iconPath, &toastXml);
         BREAK_IF_BAD(hr);
 
         hr = CreateHString(RuntimeClass_Windows_UI_Notifications_ToastNotification, &toastNotifStr);
@@ -79,34 +73,26 @@ void WindowsToastNotification::ShowNotification(const WCHAR* title, const WCHAR*
         hr = Windows::Foundation::GetActivationFactory(toastNotifStr, &toastFactory);
         BREAK_IF_BAD(hr);
 
-        ComPtr<IToastNotification> toast;
         hr = toastFactory->CreateToastNotification(toastXml.Get(), &toast);
         BREAK_IF_BAD(hr);
 
         hr = SetupCallbacks(toast.Get());
         BREAK_IF_BAD(hr);
 
-        hr = notifier->Show(toast.Get());
+        hr = m_toastNotifier->Show(toast.Get());
         BREAK_IF_BAD(hr);
 
         n_delegate->NotificationDisplayed();
     } while (FALSE);
 
-    if (toastNotifMgrStr != NULL) {
-        WindowsDeleteString(toastNotifMgrStr);
-    }
-
-    if (appId != NULL) {
-        WindowsDeleteString(appId);
-    }
-
     if (toastNotifStr != NULL) {
         WindowsDeleteString(toastNotifStr);
     }
+}
 
-    if (!SUCCEEDED(hr)) {
-        delete this;
-    }
+void WindowsToastNotification::DismissNotification(ComPtr<IToastNotification> toast)
+{
+    m_toastNotifier->Hide(toast.Get());
 }
 
 void WindowsToastNotification::NotificationClicked()
@@ -120,7 +106,7 @@ void WindowsToastNotification::NotificationDismissed()
 }
 
 HRESULT WindowsToastNotification::GetToastXml(
-    IToastNotificationManagerStatics* toastMgr,
+    IToastNotificationManagerStatics* toastManager,
     const WCHAR* title,
     const WCHAR* msg,
     std::string iconPath,
@@ -131,7 +117,7 @@ HRESULT WindowsToastNotification::GetToastXml(
     if (title == NULL || msg == NULL) {
         // Single line toast
         templateType = iconPath.length() == 0 ? ToastTemplateType_ToastText01 : ToastTemplateType_ToastImageAndText01;
-        hr = toastMgr->GetTemplateContent(templateType, toastXml);
+        hr = m_toastManager->GetTemplateContent(templateType, toastXml);
         if (SUCCEEDED(hr)) {
             const WCHAR* text = title != NULL ? title : msg;
             hr = SetXmlText(*toastXml, text);
@@ -139,7 +125,7 @@ HRESULT WindowsToastNotification::GetToastXml(
     } else {
         // Title and body toast
         templateType = iconPath.length() == 0 ? ToastTemplateType_ToastText02 : ToastTemplateType_ToastImageAndText02;
-        hr = toastMgr->GetTemplateContent(templateType, toastXml);
+        hr = toastManager->GetTemplateContent(templateType, toastXml);
         if (SUCCEEDED(hr)) {
             hr = SetXmlText(*toastXml, title, msg);
         }
@@ -164,7 +150,7 @@ HRESULT WindowsToastNotification::SetXmlText(IXmlDocument* doc, const WCHAR* tex
 
     ComPtr<IXmlNodeList> nodeList;
     HRESULT hr = GetTextNodeList(&tag, doc, &nodeList, 1);
-    do{
+    do {
         BREAK_IF_BAD(hr);
 
         ComPtr<IXmlNode> node;
@@ -186,7 +172,7 @@ HRESULT WindowsToastNotification::SetXmlText(IXmlDocument* doc, const WCHAR* tit
     HSTRING tag = NULL;
     ComPtr<IXmlNodeList> nodeList;
     HRESULT hr = GetTextNodeList(&tag, doc, &nodeList, 2);
-    do{
+    do {
         BREAK_IF_BAD(hr);
 
         ComPtr<IXmlNode> node;

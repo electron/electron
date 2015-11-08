@@ -1,5 +1,5 @@
 // Copyright (c) 2012 The Chromium Authors. All rights reserved.
-// Copyright (c) 2015 Felix Rieseberg <feriese@microsoft.com> and Jason Poon <jpoon@microsoft.com>. All rights reserved.
+// Copyright (c) 2015 Felix Rieseberg <feriese@microsoft.com> and Jason Poon <jason.poon@microsoft.com>. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
@@ -19,8 +19,12 @@
 
 #include "base/compiler_specific.h"
 #include "browser/notification_presenter.h"
+#include "windows_toast_notification.h"
 
 #include <windows.h>
+#include <windows.ui.notifications.h>
+#include <wrl/client.h>
+#include <wrl/implements.h>
 
 namespace brightray {
 
@@ -29,7 +33,6 @@ class NotificationPresenterWin : public NotificationPresenter {
   NotificationPresenterWin();
   ~NotificationPresenterWin();
 
-  // NotificationPresenter:
   void ShowNotification(
       const content::PlatformNotificationData&,
       const SkBitmap& icon,
@@ -39,11 +42,10 @@ class NotificationPresenterWin : public NotificationPresenter {
   void RemoveNotification();
 
  private:
-
-  void CancelNotification();
-  void DeleteNotification();
+  WinToasts::WindowsToastNotification* wtn;
+  Microsoft::WRL::ComPtr<ABI::Windows::UI::Notifications::IToastNotification> m_lastNotification;
 };
 
-}  // namespace brightray
+}  // namespace
 
-#endif
+#endif // BRIGHTRAY_BROWSER_NOTIFICATION_PRESENTER_WIN_H_

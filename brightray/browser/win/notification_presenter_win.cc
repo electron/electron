@@ -1,29 +1,14 @@
 // Copyright (c) 2012 The Chromium Authors. All rights reserved.
-// Copyright (c) 2015 Felix Rieseberg <feriese@microsoft.com> and Jason Poon <jpoon@microsoft.com>. All rights reserved.
+// Copyright (c) 2015 Felix Rieseberg <feriese@microsoft.com> and Jason Poon <jason.poon@microsoft.com>. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
 #include "browser/win/notification_presenter_win.h"
-#include "base/strings/string_util.h"
 #include "base/win/windows_version.h"
 #include "content/public/browser/desktop_notification_delegate.h"
 #include "content/public/common/platform_notification_data.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "common/application_info.h"
-
-#include <stdlib.h>
-#include <stdio.h>
-#include <vector>
-
-// Windows Header
-#define WIN32_LEAN_AND_MEAN
-
-#include <windows.h>
-#include <windows.ui.notifications.h>
-#include <wrl/client.h>
-#include <wrl/implements.h>
-#include <winstring.h>
-#include "windows_toast_notification.h"
 
 #pragma comment(lib, "runtimeobject.lib")
 #pragma comment(lib, "Crypt32.lib")
@@ -42,6 +27,7 @@ NotificationPresenter* NotificationPresenter::Create() {
 }
 
 NotificationPresenterWin::NotificationPresenterWin() {
+  m_lastNotification = nullptr;
 }
 
 NotificationPresenterWin::~NotificationPresenterWin() {
@@ -57,17 +43,25 @@ void NotificationPresenterWin::ShowNotification(
   std::wstring body = data.body;
   std::string iconPath = data.icon.spec();  
   std::string appName = GetApplicationName();
+
+  // toast notification supported in version >= Windows 8
+  // for prior versions, use Tray.displayBalloon
+  if (base::win::GetVersion() >= base::win::VERSION_WIN8) {
+    wtn = new WindowsToastNotification(appName.c_str(), delegate_ptr.release());
+    wtn->ShowNotification(title.c_str(), body.c_str(), iconPath, m_lastNotification);
+  }
   
-  WinToasts::WindowsToastNotification* wtn = new WinToasts::WindowsToastNotification(appName.c_str(), delegate_ptr.release());
-  wtn->ShowNotification(title.c_str(), body.c_str(), iconPath);
+  if (cancel_callback) {
+    *cancel_callback = base::Bind(
+      &NotificationPresenterWin::RemoveNotification,
+      base::Unretained(this));
+  }
 }
 
-void NotificationPresenterWin::CancelNotification() {
-  // No can do.
-}
-
-void NotificationPresenterWin::DeleteNotification() {
-  // No can do.
+void NotificationPresenterWin::RemoveNotification() {
+  if (m_lastNotification != nullptr && wtn != NULL) {
+    wtn->DismissNotification(m_lastNotification);
+  }
 }
 
 }  // namespace brightray
