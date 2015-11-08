@@ -206,6 +206,14 @@ GPU가 작동하던 중 크래시가 일어났을 때 발생하는 이벤트입�
 이 함수는 모든 `beforeunload`와 `unload` 이벤트 핸들러가 제대로 실행됨을 보장합니다.
 `beforeunload` 이벤트 핸들러에서 `false`를 반환했을 때 윈도우창 종료가 취소 될 수 있습니다.
 
+### `app.exit(exitCode)`
+
+* `exitCode` Integer
+
+`exitCode`와 함께 어플리케이션을 즉시 종료합니다.
+
+모든 윈도우창은 사용자의 동의 여부에 상관없이 즉시 종료되며 `before-quit` 이벤트와 `will-quit` 이벤트가 발생하지 않습니다.
+
 ### `app.getAppPath()`
 
 현재 어플리케이션의 디렉터리를 반환합니다.
