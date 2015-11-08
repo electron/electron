@@ -3,16 +3,15 @@
     'vendor/download/libchromiumcontent/filenames.gypi',
   ],
   'variables': {
-    'libchromiumcontent_src_dir': '<(libchromiumcontent_root_dir)/src',
     'libchromiumcontent_component%': 1,
     'conditions': [
       # The "libchromiumcontent_component" is defined when calling "gyp".
       ['libchromiumcontent_component', {
-        'libchromiumcontent_dir%': '<(libchromiumcontent_root_dir)/shared_library',
+        'libchromiumcontent_dir%': '<(libchromiumcontent_shared_libraries_dir)',
         'libchromiumcontent_libraries%': '<(libchromiumcontent_shared_libraries)',
         'libchromiumcontent_v8_libraries%': '<(libchromiumcontent_shared_v8_libraries)',
       }, {
-        'libchromiumcontent_dir%': '<(libchromiumcontent_root_dir)/static_library',
+        'libchromiumcontent_dir%': '<(libchromiumcontent_static_libraries_dir)',
         'libchromiumcontent_libraries%': '<(libchromiumcontent_static_libraries)',
         'libchromiumcontent_v8_libraries%': '<(libchromiumcontent_static_v8_libraries)',
       }],

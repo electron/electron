@@ -14,9 +14,28 @@ DOWNLOAD_DIR = os.path.join(VENDOR_DIR, 'download')
 
 def main():
   args = parse_args()
-
+  if (args.libcc_source_path != None and
+      args.libcc_shared_library_path != None and
+      args.libcc_static_library_path != None):
+    if (not os.path.isdir(args.libcc_source_path)):
+      print "Error: Directory does not exist:", args.libcc_source_path
+      sys.exit(0)
+    elif (not os.path.isdir(args.libcc_shared_library_path)):
+      print "Error: Directory does not exist:", args.libcc_shared_library_path
+      sys.exit(0)
+    elif (not os.path.isdir(args.libcc_static_library_path)):
+      print "Error: Directory does not exist:", args.libcc_static_library_path
+      sys.exit(0)
+  elif (args.libcc_source_path != None or
+        args.libcc_shared_library_path != None or
+        args.libcc_static_library_path != None):
+    print "Error: All options of libchromiumcontent are required OR let brightray choose it"
+    sys.exit(0)
   update_submodules()
-  download_libchromiumcontent(args.dev, args.commit, args.target_arch, args.url)
+  setup_libchromiumcontent(args.dev, args.commit, args.target_arch, args.url,
+                           args.libcc_source_path,
+                           args.libcc_shared_library_path,
+                           args.libcc_static_library_path)
 
 
 def parse_args():
@@ -30,6 +49,12 @@ def parse_args():
   parser.add_argument('url', help='The base URL from which to download '
                       'libchromiumcontent (i.e., the URL you passed to '
                       'libchromiumcontent\'s script/upload script')
+  parser.add_argument('--libcc_source_path', required=False,
+                        help='The source path of libchromiumcontent. NOTE: All options of libchromiumcontent are required OR let brightray choose it')
+  parser.add_argument('--libcc_shared_library_path', required=False,
+                        help='The shared library path of libchromiumcontent. NOTE: All options of libchromiumcontent are required OR let brightray choose it')
+  parser.add_argument('--libcc_static_library_path', required=False,
+                        help='The static library path of libchromiumcontent. NOTE: All options of libchromiumcontent are required OR let brightray choose it')
   return parser.parse_args()
 
 
@@ -39,17 +64,25 @@ def update_submodules():
                            '--recursive']))
 
 
-def download_libchromiumcontent(is_dev, commit, target_arch, url):
-  mkdir_p(DOWNLOAD_DIR)
-  download = os.path.join(VENDOR_DIR, 'libchromiumcontent', 'script',
-                          'download')
-  target_dir = os.path.join(DOWNLOAD_DIR, 'libchromiumcontent')
-  args = ['-f', '-c', commit, '--target_arch', target_arch, url, target_dir]
-  if is_dev:
-    subprocess.check_call([sys.executable, download] + args)
-  else:
-    subprocess.check_call([sys.executable, download, '-s'] + args)
-
+def setup_libchromiumcontent(is_dev, commit, target_arch, url,
+                             libcc_source_path,
+                             libcc_shared_library_path,
+                             libcc_static_library_path):
+    mkdir_p(DOWNLOAD_DIR)
+    target_dir = os.path.join(DOWNLOAD_DIR, 'libchromiumcontent')
+    download = os.path.join(VENDOR_DIR, 'libchromiumcontent', 'script',
+                            'download')
+    args = ['-f', '-c', commit, '--target_arch', target_arch, url, target_dir]
+    if (libcc_source_path != None and
+        libcc_shared_library_path != None and
+        libcc_static_library_path != None):
+          args.append(['--libcc_source_path', libcc_source_path,
+                      '--libcc_shared_library_path', libcc_shared_library_path,
+                      '--libcc_static_library_path', libcc_static_library_path])
+    if is_dev:
+        subprocess.check_call([sys.executable, download] + args)
+    else:
+        subprocess.check_call([sys.executable, download, '-s'] + args)
 
 def mkdir_p(path):
   try:
