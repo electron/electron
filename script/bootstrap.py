@@ -41,7 +41,8 @@ def main():
   elif (args.libcc_source_path != None or
         args.libcc_shared_library_path != None or
         args.libcc_static_library_path != None):
-    print "Error: All options of libchromiumcontent are required OR let electron choose it"
+    print "Error: All options of libchromiumcontent are required OR let " \
+          "electron choose it"
     sys.exit(0)
   if not args.yes and PLATFORM != 'win32':
     check_root()
@@ -90,11 +91,17 @@ def parse_args():
   parser.add_argument('--target_arch', default=get_target_arch(),
                       help='Manually specify the arch to build for')
   parser.add_argument('--libcc_source_path', required=False,
-                        help='The source path of libchromiumcontent. NOTE: All options of libchromiumcontent are required OR let electron choose it')
+                        help='The source path of libchromiumcontent. ' \
+                        'NOTE: All options of libchromiumcontent are '
+                        'required OR let electron choose it')
   parser.add_argument('--libcc_shared_library_path', required=False,
-                        help='The shared library path of libchromiumcontent. NOTE: All options of libchromiumcontent are required OR let electron choose it')
+                        help='The shared library path of libchromiumcontent. ' \
+                        'NOTE: All options of libchromiumcontent are ' \
+                        'required OR let electron choose it')
   parser.add_argument('--libcc_static_library_path', required=False,
-                        help='The static library path of libchromiumcontent. NOTE: All options of libchromiumcontent are required OR let electron choose it')
+                        help='The static library path of libchromiumcontent. ' \
+                        'NOTE: All options of libchromiumcontent are ' \
+                        'required OR let electron choose it')
   return parser.parse_args()
 
 
