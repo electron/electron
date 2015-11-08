@@ -1,12 +1,22 @@
+// Copyright (c) 2015 Felix Rieseberg <feriese@microsoft.com>. All rights reserved.
+// Copyright (c) 2015 Ryan McShane <rmcshane@bandwidth.com> and Brandon Smith <bsmith@bandwidth.com>
+// Thanks to both of those folks mentioned above who first thought up a bunch of this code
+// and released it as MIT to the world.
+
 #ifndef __WINDOWS_TOAST_NOTIFICATION_H__
 #define __WINDOWS_TOAST_NOTIFICATION_H__
 
 #define WIN32_LEAN_AND_MEAN
 
+#include "content/public/browser/desktop_notification_delegate.h"
+#include "content/public/common/platform_notification_data.h"
+#include "base/bind.h"
+
 #include <windows.h>
 #include <windows.ui.notifications.h>
 #include <wrl/client.h>
 #include <wrl/implements.h>
+#include <string>
 
 using namespace Microsoft::WRL;
 using namespace ABI::Windows::UI::Notifications;
@@ -24,35 +34,24 @@ namespace WinToasts{
     {
     private:
         static char s_appName[MAX_PATH];
-        static char s_tempDirPath[MAX_PATH];
-
-        char* m_tempFilePath;
         ToastEventHandler* m_eventHandler;
+        content::DesktopNotificationDelegate* n_delegate;
 
-        HRESULT GetToastXml(IToastNotificationManagerStatics* toastMgr, const WCHAR* title, const WCHAR* msg, const char* img, IXmlDocument** toastXml);
+        HRESULT GetToastXml(IToastNotificationManagerStatics* toastMgr, const WCHAR* title, const WCHAR* msg, std::string iconPath, IXmlDocument** toastXml);
         HRESULT SetXmlText(IXmlDocument* doc, const WCHAR* text);
         HRESULT SetXmlText(IXmlDocument* doc, const WCHAR* title, const WCHAR* body);
-        HRESULT SetXmlImage(IXmlDocument* doc);
+        HRESULT SetXmlImage(IXmlDocument* doc, std::string iconPath);
         HRESULT GetTextNodeList(HSTRING* tag, IXmlDocument* doc, IXmlNodeList** nodeList, UINT32 reqLength);
         HRESULT AppendTextToXml(IXmlDocument* doc, IXmlNode* node, const WCHAR* text);
         HRESULT SetupCallbacks(IToastNotification* toast);
         HRESULT CreateHString(const WCHAR* source, HSTRING* dest);
-        HRESULT CreateTempImageFile(const char* base64);
-        HRESULT ConvertBase64DataToImage(const char* base64, BYTE** buff, DWORD* buffLen);
-        HRESULT WriteToFile(BYTE* buff, DWORD buffLen);
-        HRESULT EnsureTempDir();
-        HRESULT DeleteTempImageFile();
-        HRESULT EnsureShortcut();
-        HRESULT CreateShortcut(WCHAR* path);
 
     public:
-        WindowsToastNotification(const char* appName);
+        WindowsToastNotification(const char* appName, content::DesktopNotificationDelegate* delegate);
         ~WindowsToastNotification();
-        void ShowNotification(const WCHAR* title, const WCHAR* msg, const char* img);
+        void ShowNotification(const WCHAR* title, const WCHAR* msg, std::string iconPath);
         void NotificationClicked();
         void NotificationDismissed();
-
-        static void InitSystemProps(char* appName, char* tempDirPath);
     };
 
 
@@ -62,9 +61,10 @@ namespace WinToasts{
     private:
         ULONG m_ref;
         WindowsToastNotification* m_notification;
+        content::DesktopNotificationDelegate* n_delegate;
 
     public:
-        ToastEventHandler(WindowsToastNotification* notification);
+        ToastEventHandler(WindowsToastNotification* notification, content::DesktopNotificationDelegate* delegate);
         ~ToastEventHandler();
         IFACEMETHODIMP Invoke(IToastNotification* sender, IInspectable* args);
         IFACEMETHODIMP Invoke(IToastNotification* sender, IToastDismissedEventArgs* e);

@@ -1,30 +1,26 @@
 // Copyright (c) 2012 The Chromium Authors. All rights reserved.
-// Copyright (c) 2013 Patrick Reynolds <piki@github.com>. All rights reserved.
+// Copyright (c) 2015 Felix Rieseberg <feriese@microsoft.com> and Jason Poon <jpoon@microsoft.com>. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
 #include "browser/win/notification_presenter_win.h"
-
-#include "base/bind.h"
-#include "base/logging.h"
-#include "base/files/file_enumerator.h"
 #include "base/strings/string_util.h"
-#include "base/strings/utf_string_conversions.h"
+#include "base/win/windows_version.h"
 #include "content/public/browser/desktop_notification_delegate.h"
 #include "content/public/common/platform_notification_data.h"
+#include "third_party/skia/include/core/SkBitmap.h"
 #include "common/application_info.h"
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <vector>
-#include "third_party/skia/include/core/SkBitmap.h"
-#include "base/win/windows_version.h"
 
 // Windows Header
 #define WIN32_LEAN_AND_MEAN
 
 #include <windows.h>
-#include <wrl/client.h>
 #include <windows.ui.notifications.h>
+#include <wrl/client.h>
 #include <wrl/implements.h>
 #include <winstring.h>
 #include "windows_toast_notification.h"
@@ -58,18 +54,20 @@ void NotificationPresenterWin::ShowNotification(
   base::Closure* cancel_callback) {
   
   std::wstring title = data.title;
-  std::wstring body = data.body;  
+  std::wstring body = data.body;
+  std::string iconPath = data.icon.spec();  
   std::string appName = GetApplicationName();
-  char* img = NULL;
   
-  WinToasts::WindowsToastNotification* wtn = new WinToasts::WindowsToastNotification(appName.c_str());
-  wtn->ShowNotification(title.c_str(), body.c_str(), img);
+  WinToasts::WindowsToastNotification* wtn = new WinToasts::WindowsToastNotification(appName.c_str(), delegate_ptr.release());
+  wtn->ShowNotification(title.c_str(), body.c_str(), iconPath);
 }
 
 void NotificationPresenterWin::CancelNotification() {
+  // No can do.
 }
 
 void NotificationPresenterWin::DeleteNotification() {
+  // No can do.
 }
 
 }  // namespace brightray
