@@ -339,6 +339,7 @@ mate::ObjectTemplateBuilder App::GetObjectTemplateBuilder(
   auto browser = base::Unretained(Browser::Get());
   return mate::ObjectTemplateBuilder(isolate)
       .SetMethod("quit", base::Bind(&Browser::Quit, browser))
+      .SetMethod("exit", base::Bind(&Browser::Exit, browser))
       .SetMethod("focus", base::Bind(&Browser::Focus, browser))
       .SetMethod("getVersion", base::Bind(&Browser::GetVersion, browser))
       .SetMethod("setVersion", base::Bind(&Browser::SetVersion, browser))

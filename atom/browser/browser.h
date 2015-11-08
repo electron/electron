@@ -42,6 +42,9 @@ class Browser : public WindowListObserver {
   // Try to close all windows and quit the application.
   void Quit();
 
+  // Exit the application immediately and set exit code.
+  void Exit(int code);
+
   // Cleanup everything and shutdown the application gracefully.
   void Shutdown();
 

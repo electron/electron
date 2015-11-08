@@ -80,7 +80,7 @@ struct ExceptionHandlerRecord {
   unsigned char thunk[12];
 };
 
-void RegisterNonABICompliantCodeRange(void* start, size_t size_in_bytes) {
+bool RegisterNonABICompliantCodeRange(void* start, size_t size_in_bytes) {
   ExceptionHandlerRecord* record =
       reinterpret_cast<ExceptionHandlerRecord*>(start);
 
@@ -117,17 +117,17 @@ void RegisterNonABICompliantCodeRange(void* start, size_t size_in_bytes) {
 
   // Protect reserved page against modifications.
   DWORD old_protect;
-  CHECK(VirtualProtect(
-      start, sizeof(ExceptionHandlerRecord), PAGE_EXECUTE_READ, &old_protect));
-  CHECK(RtlAddFunctionTable(
-      &record->runtime_function, 1, reinterpret_cast<DWORD64>(start)));
+  return VirtualProtect(start, sizeof(ExceptionHandlerRecord),
+                        PAGE_EXECUTE_READ, &old_protect) &&
+         RtlAddFunctionTable(&record->runtime_function, 1,
+                             reinterpret_cast<DWORD64>(start));
 }
 
 void UnregisterNonABICompliantCodeRange(void* start) {
   ExceptionHandlerRecord* record =
       reinterpret_cast<ExceptionHandlerRecord*>(start);
 
-  CHECK(RtlDeleteFunctionTable(&record->runtime_function));
+  RtlDeleteFunctionTable(&record->runtime_function);
 }
 #endif  // _WIN64
 
@@ -184,6 +184,7 @@ void CrashReporterWin::InitBreakpad(const std::string& product_name,
     LOG(ERROR) << "Cannot initialize out-of-process crash handler";
 
 #ifdef _WIN64
+  bool registered = false;
   // Hook up V8 to breakpad.
   {
     // gin::Debug::SetCodeRangeCreatedCallback only runs the callback when
@@ -192,9 +193,10 @@ void CrashReporterWin::InitBreakpad(const std::string& product_name,
     size_t size = 0;
     v8::Isolate::GetCurrent()->GetCodeRange(&code_range, &size);
     if (code_range && size)
-      RegisterNonABICompliantCodeRange(code_range, size);
+      registered = RegisterNonABICompliantCodeRange(code_range, size);
   }
-  gin::Debug::SetCodeRangeDeletedCallback(UnregisterNonABICompliantCodeRange);
+  if (registered)
+    gin::Debug::SetCodeRangeDeletedCallback(UnregisterNonABICompliantCodeRange);
 #endif
 }
 

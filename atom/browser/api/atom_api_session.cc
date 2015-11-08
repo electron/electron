@@ -9,9 +9,10 @@
 
 #include "atom/browser/api/atom_api_cookies.h"
 #include "atom/browser/api/atom_api_download_item.h"
-#include "atom/browser/atom_browser_context.h"
 #include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/browser/api/save_page_handler.h"
+#include "atom/browser/atom_browser_context.h"
+#include "atom/browser/atom_browser_main_parts.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
@@ -395,12 +396,16 @@ mate::Handle<Session> Session::FromPartition(
                     static_cast<AtomBrowserContext*>(browser_context.get()));
 }
 
-void SetWrapSession(const WrapSessionCallback& callback) {
-  g_wrap_session = callback;
-}
-
 void ClearWrapSession() {
   g_wrap_session.Reset();
+}
+
+void SetWrapSession(const WrapSessionCallback& callback) {
+  g_wrap_session = callback;
+
+  // Cleanup the wrapper on exit.
+  atom::AtomBrowserMainParts::Get()->RegisterDestructionCallback(
+      base::Bind(ClearWrapSession));
 }
 
 }  // namespace api
@@ -415,7 +420,6 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   mate::Dictionary dict(isolate, exports);
   dict.SetMethod("fromPartition", &atom::api::Session::FromPartition);
   dict.SetMethod("_setWrapSession", &atom::api::SetWrapSession);
-  dict.SetMethod("_clearWrapSession", &atom::api::ClearWrapSession);
 }
 
 }  // namespace

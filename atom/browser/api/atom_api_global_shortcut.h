@@ -8,9 +8,9 @@
 #include <map>
 #include <string>
 
+#include "atom/browser/api/trackable_object.h"
 #include "base/callback.h"
 #include "chrome/browser/extensions/global_shortcut_listener.h"
-#include "native_mate/wrappable.h"
 #include "native_mate/handle.h"
 #include "ui/base/accelerators/accelerator.h"
 
@@ -19,13 +19,16 @@ namespace atom {
 namespace api {
 
 class GlobalShortcut : public extensions::GlobalShortcutListener::Observer,
-                       public mate::Wrappable {
+                       public mate::TrackableObject<GlobalShortcut> {
  public:
   static mate::Handle<GlobalShortcut> Create(v8::Isolate* isolate);
 
  protected:
   GlobalShortcut();
-  virtual ~GlobalShortcut();
+  ~GlobalShortcut() override;
+
+  // mate::TrackableObject:
+  void Destroy() override;
 
   // mate::Wrappable implementations:
   mate::ObjectTemplateBuilder GetObjectTemplateBuilder(
