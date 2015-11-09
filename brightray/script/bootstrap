@@ -68,21 +68,22 @@ def setup_libchromiumcontent(is_dev, commit, target_arch, url,
                              libcc_source_path,
                              libcc_shared_library_path,
                              libcc_static_library_path):
-    mkdir_p(DOWNLOAD_DIR)
-    target_dir = os.path.join(DOWNLOAD_DIR, 'libchromiumcontent')
-    download = os.path.join(VENDOR_DIR, 'libchromiumcontent', 'script',
-                            'download')
-    args = ['-f', '-c', commit, '--target_arch', target_arch, url, target_dir]
-    if (libcc_source_path != None and
-        libcc_shared_library_path != None and
-        libcc_static_library_path != None):
-          args.append(['--libcc_source_path', libcc_source_path,
-                      '--libcc_shared_library_path', libcc_shared_library_path,
-                      '--libcc_static_library_path', libcc_static_library_path])
-    if is_dev:
-        subprocess.check_call([sys.executable, download] + args)
-    else:
-        subprocess.check_call([sys.executable, download, '-s'] + args)
+  mkdir_p(DOWNLOAD_DIR)
+  target_dir = os.path.join(DOWNLOAD_DIR, 'libchromiumcontent')
+  download = os.path.join(VENDOR_DIR, 'libchromiumcontent', 'script',
+                          'download')
+  args = ['-f', '-c', commit, '--target_arch', target_arch, url, target_dir]
+  if (libcc_source_path != None and
+      libcc_shared_library_path != None and
+      libcc_static_library_path != None):
+    args.append(['--libcc_source_path', libcc_source_path,
+                '--libcc_shared_library_path', libcc_shared_library_path,
+                '--libcc_static_library_path', libcc_static_library_path])
+  if is_dev:
+    subprocess.check_call([sys.executable, download] + args)
+  else:
+    subprocess.check_call([sys.executable, download, '-s'] + args)
+
 
 def mkdir_p(path):
   try:
