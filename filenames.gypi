@@ -37,6 +37,7 @@
       'atom/common/api/lib/callbacks-registry.coffee',
       'atom/common/api/lib/clipboard.coffee',
       'atom/common/api/lib/crash-reporter.coffee',
+      'atom/common/api/lib/deprecate.coffee',
       'atom/common/api/lib/native-image.coffee',
       'atom/common/api/lib/shell.coffee',
       'atom/common/lib/init.coffee',
