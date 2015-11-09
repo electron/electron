@@ -1,5 +1,7 @@
 ipc = require 'ipc'
+app = require 'app'
 webContents = require 'web-contents'
+v8Util = process.atomBinding 'v8_util'
 webViewManager = null  # Doesn't exist in early initialization.
 
 supportedWebViewEvents = [
@@ -38,18 +40,11 @@ moveLastToFirst = (list) ->
 getNextInstanceId = (webContents) ->
   ++nextInstanceId
 
-# Create a new guest instance.
-createGuest = (embedder, params) ->
-  webViewManager ?= process.atomBinding 'web_view_manager'
+# Destroy guest when the embedder is gone or navigated.
+destroyEvents = ['destroyed', 'crashed', 'did-navigate-to-different-page']
 
-  id = getNextInstanceId embedder
-  guest = webContents.create {isGuest: true, partition: params.partition, embedder}
-  guestInstances[id] = {guest, embedder}
-
-  # Destroy guest when the embedder is gone or navigated.
-  destroyEvents = ['destroyed', 'crashed', 'did-navigate-to-different-page']
-  destroy = ->
-    destroyGuest embedder, id if guestInstances[id]?
+attachEmbedderToGuest = (embedder, id) ->
+  destroy = guestInstances[id].destroy
   for event in destroyEvents
     embedder.once event, destroy
     # Users might also listen to the crashed event, so We must ensure the guest
@@ -57,8 +52,28 @@ createGuest = (embedder, params) ->
     # listener to the first one in queue.
     listeners = embedder._events[event]
     moveLastToFirst listeners if Array.isArray listeners
+
+detachEmbedderFromGuest = (id) ->
+  destroy = guestInstances[id].destroy
+  embedder = guestInstances[id].embedder
+  embedder.removeListener event, destroy for event in destroyEvents
+
+# Create a new guest instance.
+createGuest = (embedder, params) ->
+  webViewManager ?= process.atomBinding 'web_view_manager'
+
+  id = getNextInstanceId embedder
+  guest = webContents.create {isGuest: true, partition: params.partition, embedder}
+
+  destroy = ->
+    destroyGuest id if guestInstances[id]?
+
+  guestInstances[id] = {guest, embedder, destroy}
+
+  attachEmbedderToGuest embedder, id
+
   guest.once 'destroyed', ->
-    embedder.removeListener event, destroy for event in destroyEvents
+    detachEmbedderFromGuest id
 
   # Init guest web view after attached.
   guest.once 'did-attach', ->
@@ -90,22 +105,38 @@ createGuest = (embedder, params) ->
   for event in supportedWebViewEvents
     do (event) ->
       guest.on event, (_, args...) ->
-        embedder.send "ATOM_SHELL_GUEST_VIEW_INTERNAL_DISPATCH_EVENT-#{guest.viewInstanceId}", event, args...
+        guestInstances[id]?.embedder.send "ATOM_SHELL_GUEST_VIEW_INTERNAL_DISPATCH_EVENT-#{guest.viewInstanceId}", event, args...
 
   # Dispatch guest's IPC messages to embedder.
   guest.on 'ipc-message-host', (_, packed) ->
     [channel, args...] = packed
-    embedder.send "ATOM_SHELL_GUEST_VIEW_INTERNAL_IPC_MESSAGE-#{guest.viewInstanceId}", channel, args...
+    guestInstances[id]?.embedder.send "ATOM_SHELL_GUEST_VIEW_INTERNAL_IPC_MESSAGE-#{guest.viewInstanceId}", channel, args...
 
   # Autosize.
   guest.on 'size-changed', (_, args...) ->
-    embedder.send "ATOM_SHELL_GUEST_VIEW_INTERNAL_SIZE_CHANGED-#{guest.viewInstanceId}", args...
+    guestInstances[id]?.embedder.send "ATOM_SHELL_GUEST_VIEW_INTERNAL_SIZE_CHANGED-#{guest.viewInstanceId}", args...
 
   id
 
 # Attach the guest to an element of embedder.
 attachGuest = (embedder, elementInstanceId, guestInstanceId, params) ->
   guest = guestInstances[guestInstanceId].guest
+
+  currentEmbedder = guestInstances[guestInstanceId].embedder
+
+  # Remove old embedder when switching over
+  if currentEmbedder != embedder
+    webViewManager.removeGuest currentEmbedder, guestInstanceId
+
+    key = reverseEmbedderElementsMap[guestInstanceId]
+    if key?
+      delete reverseEmbedderElementsMap[guestInstanceId]
+      delete embedderElementsMap[key]
+
+    detachEmbedderFromGuest guestInstanceId
+    guest._setEmbedder(embedder);
+    guestInstances[guestInstanceId].embedder = embedder
+    attachEmbedderToGuest embedder, guestInstanceId
 
   # Destroy the old guest when attaching.
   key = "#{embedder.getId()}-#{elementInstanceId}"
@@ -115,7 +146,7 @@ attachGuest = (embedder, elementInstanceId, guestInstanceId, params) ->
     return unless oldGuestInstanceId != guestInstanceId
 
     return unless guestInstances[oldGuestInstanceId]?
-    destroyGuest embedder, oldGuestInstanceId
+    destroyGuest oldGuestInstanceId
 
   webPreferences =
     'guest-instance-id': guestInstanceId
@@ -130,7 +161,8 @@ attachGuest = (embedder, elementInstanceId, guestInstanceId, params) ->
   reverseEmbedderElementsMap[guestInstanceId] = key
 
 # Destroy an existing guest instance.
-destroyGuest = (embedder, id) ->
+destroyGuest = (id) ->
+  embedder = guestInstances[id].embedder
   webViewManager.removeGuest embedder, id
   guestInstances[id].guest.destroy()
   delete guestInstances[id]
@@ -140,6 +172,18 @@ destroyGuest = (embedder, id) ->
     delete reverseEmbedderElementsMap[id]
     delete embedderElementsMap[key]
 
+transferGuest = (source, target) ->
+  return unless source.transferable() && target.isAlive()
+
+  key = "#{source.embedder.getId()}-#{source.internalInstanceId}"
+  guestInstanceId = embedderElementsMap[key]
+  return unless guestInstanceId
+
+  url = guestInstances[guestInstanceId].guest.getUrl()
+
+  source.embedder.send "ATOM_SHELL_GUEST_VIEW_DETACH-#{source.viewInstanceId}"
+  target.embedder.send "ATOM_SHELL_GUEST_VIEW_ATTACH-#{target.viewInstanceId}", guestInstanceId, url
+
 ipc.on 'ATOM_SHELL_GUEST_VIEW_MANAGER_CREATE_GUEST', (event, params, requestId) ->
   event.sender.send "ATOM_SHELL_RESPONSE_#{requestId}", createGuest(event.sender, params)
 
@@ -147,13 +191,16 @@ ipc.on 'ATOM_SHELL_GUEST_VIEW_MANAGER_ATTACH_GUEST', (event, elementInstanceId, 
   attachGuest event.sender, elementInstanceId, guestInstanceId, params
 
 ipc.on 'ATOM_SHELL_GUEST_VIEW_MANAGER_DESTROY_GUEST', (event, id) ->
-  destroyGuest event.sender, id
+  destroyGuest id
 
 ipc.on 'ATOM_SHELL_GUEST_VIEW_MANAGER_SET_SIZE', (event, id, params) ->
   guestInstances[id]?.guest.setSize params
 
 ipc.on 'ATOM_SHELL_GUEST_VIEW_MANAGER_SET_ALLOW_TRANSPARENCY', (event, id, allowtransparency) ->
   guestInstances[id]?.guest.setAllowTransparency allowtransparency
+
+app.once 'ATOM_SHELL_GUEST_VIEW_MANAGER_TRANSFER', (source, target) ->
+  transferGuest(source, target);
 
 # Returns WebContents from its guest id.
 exports.getGuest = (id) ->

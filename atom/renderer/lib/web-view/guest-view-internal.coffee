@@ -52,6 +52,13 @@ module.exports =
         domEvent[f] = args[i]
       webView.onSizeChanged domEvent
 
+    ipc.on "ATOM_SHELL_GUEST_VIEW_DETACH-#{viewInstanceId}", ->
+      webFrame.detachGuest webView.internalInstanceId
+      webView.detachWindow()
+
+    ipc.on "ATOM_SHELL_GUEST_VIEW_ATTACH-#{viewInstanceId}", (guestInstanceId, src) ->
+      webView.attachExisting guestInstanceId, src
+
   deregisterEvents: (viewInstanceId) ->
     ipc.removeAllListeners "ATOM_SHELL_GUEST_VIEW_INTERNAL_DISPATCH_EVENT-#{viewInstanceId}"
     ipc.removeAllListeners "ATOM_SHELL_GUEST_VIEW_INTERNAL_IPC_MESSAGE-#{viewInstanceId}"

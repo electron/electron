@@ -78,6 +78,10 @@ void WebFrame::AttachGuest(int id) {
   content::RenderFrame::FromWebFrame(web_frame_)->AttachGuest(id);
 }
 
+void WebFrame::DetachGuest(int id) {
+  content::RenderFrame::FromWebFrame(web_frame_)->DetachGuest(id);
+}
+
 void WebFrame::SetSpellCheckProvider(mate::Arguments* args,
                                      const std::string& language,
                                      bool auto_spell_correct_turned_on,
@@ -128,6 +132,7 @@ mate::ObjectTemplateBuilder WebFrame::GetObjectTemplateBuilder(
       .SetMethod("registerElementResizeCallback",
                  &WebFrame::RegisterElementResizeCallback)
       .SetMethod("attachGuest", &WebFrame::AttachGuest)
+      .SetMethod("detachGuest", &WebFrame::DetachGuest)
       .SetMethod("setSpellCheckProvider", &WebFrame::SetSpellCheckProvider)
       .SetMethod("registerUrlSchemeAsSecure",
                  &WebFrame::RegisterURLSchemeAsSecure)

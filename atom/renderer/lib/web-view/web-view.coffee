@@ -3,6 +3,7 @@ guestViewInternal = require './guest-view-internal'
 webViewConstants = require './web-view-constants'
 webFrame = require 'web-frame'
 remote = require 'remote'
+ipc = require 'ipc'
 
 # ID generator.
 nextId = 0
@@ -37,7 +38,7 @@ class WebViewImpl
     browserPluginNode
 
   # Resets some state upon reattaching <webview> element to the DOM.
-  reset: ->
+  reset: (shouldDestroyGuest = true, shouldResetInternalInstanceId = true)->
     # If guestInstanceId is defined then the <webview> has navigated and has
     # already picked up a partition ID. Thus, we need to reset the initialization
     # state. However, it may be the case that beforeFirstNavigation is false BUT
@@ -45,12 +46,15 @@ class WebViewImpl
     # heard back from createGuest yet. We will not reset the flag in this case so
     # that we don't end up allocating a second guest.
     if @guestInstanceId
-      guestViewInternal.destroyGuest @guestInstanceId
+      if shouldDestroyGuest
+        guestViewInternal.destroyGuest @guestInstanceId
       @webContents = null
       @guestInstanceId = undefined
       @beforeFirstNavigation = true
       @attributes[webViewConstants.ATTRIBUTE_PARTITION].validPartitionId = true
-    @internalInstanceId = 0
+
+    if shouldResetInternalInstanceId
+      @internalInstanceId = 0
 
   # Sets the <webview>.request property.
   setRequestPropertyOnWebViewNode: (request) ->
@@ -87,6 +91,9 @@ class WebViewImpl
       @browserPluginNode.removeAttribute webViewConstants.ATTRIBUTE_INTERNALINSTANCEID
       @internalInstanceId = parseInt newValue
 
+      #send instanceid to the main process (webviewref might need it)
+      ipc.send 'ATOM_SHELL_GUEST_VIEW_MANAGER_WEB_VIEW_INTERNALINSTANCEID', @viewInstanceId, @internalInstanceId
+
       # Track when the element resizes using the element resize callback.
       webFrame.registerElementResizeCallback @internalInstanceId, @onElementResize.bind(this)
 
@@ -106,9 +113,9 @@ class WebViewImpl
     # Check the current bounds to make sure we do not resize <webview>
     # outside of current constraints.
     maxWidth = @attributes[webViewConstants.ATTRIBUTE_MAXWIDTH].getValue() | width
-    maxHeight = @attributes[webViewConstants.ATTRIBUTE_MAXHEIGHT].getValue() | width
+    maxHeight = @attributes[webViewConstants.ATTRIBUTE_MAXHEIGHT].getValue() | height
     minWidth = @attributes[webViewConstants.ATTRIBUTE_MINWIDTH].getValue() | width
-    minHeight = @attributes[webViewConstants.ATTRIBUTE_MINHEIGHT].getValue() | width
+    minHeight = @attributes[webViewConstants.ATTRIBUTE_MINHEIGHT].getValue() | height
 
     minWidth = Math.min minWidth, maxWidth
     minHeight = Math.min minHeight, maxHeight
@@ -194,6 +201,27 @@ class WebViewImpl
 
     guestViewInternal.attachGuest @internalInstanceId, @guestInstanceId, @buildParams()
 
+  detachWindow: ->
+    @reset(false, false)
+    @attributes[webViewConstants.ATTRIBUTE_SRC].setValueIgnoreMutation ''
+
+  attachExisting: (guestInstanceId, src) ->
+    if @guestInstanceId
+      @reset(true, false)
+    @attachWindow guestInstanceId
+    @attributes[webViewConstants.ATTRIBUTE_SRC].setValueIgnoreMutation src
+    @fireResize()
+
+  fireResize: ->
+    node = @webviewNode
+
+    width = node.offsetWidth
+    height = node.offsetHeight
+
+    #forcing chrome to refresh DOM
+    @onElementResize({width: width - 1, height: height - 1})
+    @onElementResize({width, height})
+
 # Registers browser plugin <object> custom element.
 registerBrowserPluginElement = ->
   proto = Object.create HTMLObjectElement.prototype
@@ -241,6 +269,7 @@ registerWebViewElement = ->
     guestViewInternal.deregisterEvents internal.viewInstanceId
     internal.elementAttached = false
     internal.reset()
+    ipc.send 'ATOM_SHELL_GUEST_VIEW_MANAGER_WEB_VIEW_DETACHED', internal.viewInstanceId
 
   proto.attachedCallback = ->
     internal = v8Util.getHiddenValue this, 'internal'
@@ -249,6 +278,15 @@ registerWebViewElement = ->
       guestViewInternal.registerEvents internal, internal.viewInstanceId
       internal.elementAttached = true
       internal.attributes[webViewConstants.ATTRIBUTE_SRC].parse()
+
+  proto.transferTo = (webViewRef) ->
+    internal = v8Util.getHiddenValue this, 'internal'
+    internalTarget = v8Util.getHiddenValue webViewRef, 'internal'
+    if webViewRef.getRefId
+      ipc.send 'ATOM_SHELL_GUEST_VIEW_MANAGER_TRANSFER_REMOTE_WEBVIEWREF', internal.viewInstanceId, internal.internalInstanceId, webViewRef.getRefId()
+    else if internalTarget
+      ipc.send 'ATOM_SHELL_GUEST_VIEW_MANAGER_TRANSFER_REMOTE_WEBVIEW', internal.viewInstanceId, internal.internalInstanceId, internalTarget.viewInstanceId
+
 
   # Public-facing API methods.
   methods = [

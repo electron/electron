@@ -49,6 +49,7 @@ class WebFrame : public mate::Wrappable {
       int element_instance_id,
       const GuestViewContainer::ResizeCallback& callback);
   void AttachGuest(int element_instance_id);
+  void DetachGuest(int element_instance_id);
 
   // Set the provider that will be used by SpellCheckClient for spell check.
   void SetSpellCheckProvider(mate::Arguments* args,
