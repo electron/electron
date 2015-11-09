@@ -9,7 +9,6 @@
     ],
     'coffee_sources': [
       'atom/browser/api/lib/app.coffee',
-      'atom/browser/api/lib/atom-delegate.coffee',
       'atom/browser/api/lib/auto-updater.coffee',
       'atom/browser/api/lib/auto-updater/auto-updater-mac.coffee',
       'atom/browser/api/lib/auto-updater/auto-updater-win.coffee',
@@ -37,6 +36,7 @@
       'atom/common/api/lib/callbacks-registry.coffee',
       'atom/common/api/lib/clipboard.coffee',
       'atom/common/api/lib/crash-reporter.coffee',
+      'atom/common/api/lib/deprecate.coffee',
       'atom/common/api/lib/native-image.coffee',
       'atom/common/api/lib/shell.coffee',
       'atom/common/lib/init.coffee',

@@ -1,3 +1,5 @@
+deprecate = require 'deprecate'
+
 binding = process.atomBinding 'ipc'
 v8Util  = process.atomBinding 'v8_util'
 
@@ -14,7 +16,7 @@ ipc.sendToHost = (args...) ->
   binding.send 'ipc-message-host', [args...]
 
 # Deprecated.
-ipc.sendChannel = ipc.send
-ipc.sendChannelSync = ipc.sendSync
+deprecate.rename ipc, 'sendChannel', 'send'
+deprecate.rename ipc, 'sendChannelSync', 'sendSync'
 
 module.exports = ipc
