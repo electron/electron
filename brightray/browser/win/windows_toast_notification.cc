@@ -41,16 +41,11 @@ WindowsToastNotification::WindowsToastNotification(const char* appName, content:
         WindowsDeleteString(appId);
     }
 
-    m_eventHandler = NULL;
     n_delegate = delegate;
 }
 
 WindowsToastNotification::~WindowsToastNotification()
 {
-    if (m_eventHandler) {
-        delete m_eventHandler;
-    }
-    
     if (n_delegate) {
         delete n_delegate;
     }
@@ -309,12 +304,11 @@ HRESULT WindowsToastNotification::AppendTextToXml(IXmlDocument* doc, IXmlNode* n
 HRESULT WindowsToastNotification::SetupCallbacks(IToastNotification* toast)
 {
     EventRegistrationToken activatedToken, dismissedToken;
-    m_eventHandler = new ToastEventHandler(this, n_delegate);
-    ComPtr<ToastEventHandler> eventHandler(m_eventHandler);
-    HRESULT hr = toast->add_Activated(eventHandler.Get(), &activatedToken);
-    
+    m_eventHandler = Make<ToastEventHandler>(this, n_delegate);
+    HRESULT hr = toast->add_Activated(m_eventHandler.Get(), &activatedToken);
+
     if (SUCCEEDED(hr)) {
-        hr = toast->add_Dismissed(eventHandler.Get(), &dismissedToken);
+        hr = toast->add_Dismissed(m_eventHandler.Get(), &dismissedToken);
     }
 
     return hr;
