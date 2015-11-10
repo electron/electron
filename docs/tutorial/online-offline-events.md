@@ -21,18 +21,18 @@ _online-status.html_
 ```html
 <!DOCTYPE html>
 <html>
-  <body>
-    <script>
-      var alertOnlineStatus = function() {
-        window.alert(navigator.onLine ? 'online' : 'offline');
-      };
+<body>
+<script>
+  var alertOnlineStatus = function() {
+    window.alert(navigator.onLine ? 'online' : 'offline');
+  };
 
-      window.addEventListener('online',  alertOnlineStatus);
-      window.addEventListener('offline',  alertOnlineStatus);
+  window.addEventListener('online',  alertOnlineStatus);
+  window.addEventListener('offline',  alertOnlineStatus);
 
-      alertOnlineStatus();
-    </script>
-  </body>
+  alertOnlineStatus();
+</script>
+</body>
 </html>
 ```
 
@@ -46,7 +46,7 @@ _main.js_
 
 ```javascript
 var app = require('app');
-var ipc = require('ipc');
+var ipcMain = require('ipc-main');
 var BrowserWindow = require('browser-window');
 var onlineStatusWindow;
 
@@ -55,7 +55,7 @@ app.on('ready', function() {
   onlineStatusWindow.loadUrl('file://' + __dirname + '/online-status.html');
 });
 
-ipc.on('online-status-changed', function(event, status) {
+ipcMain.on('online-status-changed', function(event, status) {
   console.log(status);
 });
 ```
@@ -65,18 +65,18 @@ _online-status.html_
 ```html
 <!DOCTYPE html>
 <html>
-  <body>
-    <script>
-      var ipc = require('ipc');
-      var updateOnlineStatus = function() {
-        ipc.send('online-status-changed', navigator.onLine ? 'online' : 'offline');
-      };
+<body>
+<script>
+  var ipcRenderer = require('ipc-renderer');
+  var updateOnlineStatus = function() {
+    ipcRenderer.send('online-status-changed', navigator.onLine ? 'online' : 'offline');
+  };
 
-      window.addEventListener('online',  updateOnlineStatus);
-      window.addEventListener('offline',  updateOnlineStatus);
+  window.addEventListener('online',  updateOnlineStatus);
+  window.addEventListener('offline',  updateOnlineStatus);
 
-      updateOnlineStatus();
-    </script>
-  </body>
+  updateOnlineStatus();
+</script>
+</body>
 </html>
 ```
