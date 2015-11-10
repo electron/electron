@@ -9,12 +9,9 @@
 #include "browser/win/scoped_hstring.h"
 #include "content/public/browser/desktop_notification_delegate.h"
 
-using namespace WinToasts;
 using namespace ABI::Windows::Data::Xml::Dom;
 
-#define BREAK_IF_BAD(hr) if(!SUCCEEDED(hr)) break;
-
-namespace WinToasts {
+namespace brightray {
 
 namespace {
 
@@ -47,8 +44,8 @@ WindowsToastNotification::~WindowsToastNotification() {
 }
 
 void WindowsToastNotification::ShowNotification(
-    const WCHAR* title,
-    const WCHAR* msg,
+    const std::wstring& title,
+    const std::wstring& msg,
     std::string icon_path,
     ComPtr<IToastNotification>& toast) {
   ComPtr<IXmlDocument> toast_xml;
@@ -93,18 +90,18 @@ void WindowsToastNotification::NotificationDismissed() {
 
 bool WindowsToastNotification::GetToastXml(
     IToastNotificationManagerStatics* toastManager,
-    const WCHAR* title,
-    const WCHAR* msg,
+    const std::wstring& title,
+    const std::wstring& msg,
     std::string icon_path,
     IXmlDocument** toast_xml) {
   ToastTemplateType template_type;
-  if (!title || !msg) {
+  if (title.empty() || msg.empty()) {
     // Single line toast.
     template_type = icon_path.empty() ? ToastTemplateType_ToastText01 :
                                         ToastTemplateType_ToastImageAndText01;
     if (FAILED(toast_manager_->GetTemplateContent(template_type, toast_xml)))
       return false;
-    if (!SetXmlText(*toast_xml, title ? title : msg))
+    if (!SetXmlText(*toast_xml, title.empty() ? msg : title))
       return false;
   } else {
     // Title and body toast.
@@ -124,7 +121,7 @@ bool WindowsToastNotification::GetToastXml(
 }
 
 bool WindowsToastNotification::SetXmlText(
-    IXmlDocument* doc, const WCHAR* text) {
+    IXmlDocument* doc, const std::wstring& text) {
   ScopedHString tag;
   ComPtr<IXmlNodeList> node_list;
   if (!GetTextNodeList(&tag, doc, &node_list, 1))
@@ -138,7 +135,7 @@ bool WindowsToastNotification::SetXmlText(
 }
 
 bool WindowsToastNotification::SetXmlText(
-    IXmlDocument* doc, const WCHAR* title, const WCHAR* body) {
+    IXmlDocument* doc, const std::wstring& title, const std::wstring& body) {
   ScopedHString tag;
   ComPtr<IXmlNodeList> node_list;
   if (!GetTextNodeList(&tag, doc, &node_list, 2))
@@ -219,7 +216,7 @@ bool WindowsToastNotification::GetTextNodeList(
 }
 
 bool WindowsToastNotification::AppendTextToXml(
-    IXmlDocument* doc, IXmlNode* node, const WCHAR* text) {
+    IXmlDocument* doc, IXmlNode* node, const std::wstring& text) {
   ScopedHString str(text);
   if (!str.success())
     return false;
@@ -267,4 +264,4 @@ IFACEMETHODIMP ToastEventHandler::Invoke(
   return S_OK;
 }
 
-}  // namespace WinToasts
+}  // namespace brightray

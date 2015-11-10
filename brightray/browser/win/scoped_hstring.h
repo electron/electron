@@ -5,6 +5,8 @@
 #ifndef BRIGHTRAY_BROWSER_WIN_SCOPED_HSTRING_H_
 #define BRIGHTRAY_BROWSER_WIN_SCOPED_HSTRING_H_
 
+#include <string>
+
 #include <hstring.h>
 #include <windows.h>
 
@@ -14,6 +16,7 @@ class ScopedHString {
  public:
   // Copy from |source|.
   ScopedHString(const wchar_t* source);
+  ScopedHString(const std::wstring& source);
   // Create empty string.
   ScopedHString();
   ~ScopedHString();

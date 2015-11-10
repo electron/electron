@@ -20,7 +20,7 @@ using namespace ABI::Windows::Foundation;
 
 class ScopedHString;
 
-namespace WinToasts {
+namespace brightray {
 
 using DesktopToastActivatedEventHandler =
     ITypedEventHandler<ToastNotification*, IInspectable*>;
@@ -36,7 +36,10 @@ class WindowsToastNotification {
       scoped_ptr<content::DesktopNotificationDelegate> delegate);
   ~WindowsToastNotification();
 
-  void ShowNotification(const WCHAR* title, const WCHAR* msg, std::string iconPath, ComPtr<IToastNotification>& toast);
+  void ShowNotification(const std::wstring& title,
+                        const std::wstring& msg,
+                        std::string icon_path,
+                        ComPtr<IToastNotification>& toast);
   void DismissNotification(ComPtr<IToastNotification> toast);
   void NotificationClicked();
   void NotificationDismissed();
@@ -47,12 +50,25 @@ class WindowsToastNotification {
   ComPtr<IToastNotificationManagerStatics> toast_manager_;
   ComPtr<IToastNotifier> toast_notifier_;
 
-  bool GetToastXml(IToastNotificationManagerStatics* toastManager, const WCHAR* title, const WCHAR* msg, std::string iconPath, ABI::Windows::Data::Xml::Dom::IXmlDocument** toastXml);
-  bool SetXmlText(ABI::Windows::Data::Xml::Dom::IXmlDocument* doc, const WCHAR* text);
-  bool SetXmlText(ABI::Windows::Data::Xml::Dom::IXmlDocument* doc, const WCHAR* title, const WCHAR* body);
-  bool SetXmlImage(ABI::Windows::Data::Xml::Dom::IXmlDocument* doc, std::string iconPath);
-  bool GetTextNodeList(ScopedHString* tag, ABI::Windows::Data::Xml::Dom::IXmlDocument* doc, ABI::Windows::Data::Xml::Dom::IXmlNodeList** nodeList, UINT32 reqLength);
-  bool AppendTextToXml(ABI::Windows::Data::Xml::Dom::IXmlDocument* doc, ABI::Windows::Data::Xml::Dom::IXmlNode* node, const WCHAR* text);
+  bool GetToastXml(IToastNotificationManagerStatics* toastManager,
+                   const std::wstring& title,
+                   const std::wstring& msg,
+                   std::string icon_path,
+                   ABI::Windows::Data::Xml::Dom::IXmlDocument** toastXml);
+  bool SetXmlText(ABI::Windows::Data::Xml::Dom::IXmlDocument* doc,
+                  const std::wstring& text);
+  bool SetXmlText(ABI::Windows::Data::Xml::Dom::IXmlDocument* doc,
+                  const std::wstring& title,
+                  const std::wstring& body);
+  bool SetXmlImage(ABI::Windows::Data::Xml::Dom::IXmlDocument* doc,
+                   std::string icon_path);
+  bool GetTextNodeList(ScopedHString* tag,
+                       ABI::Windows::Data::Xml::Dom::IXmlDocument* doc,
+                       ABI::Windows::Data::Xml::Dom::IXmlNodeList** nodeList,
+                       UINT32 reqLength);
+  bool AppendTextToXml(ABI::Windows::Data::Xml::Dom::IXmlDocument* doc,
+                       ABI::Windows::Data::Xml::Dom::IXmlNode* node,
+                       const std::wstring& text);
   bool SetupCallbacks(IToastNotification* toast);
 };
 
@@ -71,6 +87,6 @@ class ToastEventHandler : public RuntimeClass<RuntimeClassFlags<ClassicCom>,
   WindowsToastNotification* notification_;  // weak ref.
 };
 
-} // namespace
+}  // namespace brightray
 
 #endif  // BRIGHTRAY_BROWSER_WIN_WINDOWS_TOAST_NOTIFICATION_H_

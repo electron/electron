@@ -11,6 +11,11 @@ ScopedHString::ScopedHString(const wchar_t* source)
   Set(source);
 }
 
+ScopedHString::ScopedHString(const std::wstring& source)
+    : str_(nullptr) {
+  WindowsCreateString(source.c_str(), source.length(), &str_);
+}
+
 ScopedHString::ScopedHString() : str_(nullptr) {
 }
 

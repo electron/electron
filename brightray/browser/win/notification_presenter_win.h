@@ -16,16 +16,15 @@
 #ifndef BRIGHTRAY_BROWSER_WIN_NOTIFICATION_PRESENTER_WIN_H_
 #define BRIGHTRAY_BROWSER_WIN_NOTIFICATION_PRESENTER_WIN_H_
 
-#include "base/compiler_specific.h"
-#include "browser/notification_presenter.h"
-#include "windows_toast_notification.h"
-
-#include <windows.h>
 #include <windows.ui.notifications.h>
-#include <wrl/client.h>
 #include <wrl/implements.h>
 
+#include "base/compiler_specific.h"
+#include "browser/notification_presenter.h"
+
 namespace brightray {
+
+class WindowsToastNotification;
 
 class NotificationPresenterWin : public NotificationPresenter {
  public:
@@ -41,7 +40,7 @@ class NotificationPresenterWin : public NotificationPresenter {
   void RemoveNotification();
 
  private:
-  WinToasts::WindowsToastNotification* wtn;
+  WindowsToastNotification* wtn;
   Microsoft::WRL::ComPtr<ABI::Windows::UI::Notifications::IToastNotification> m_lastNotification;
 };
 

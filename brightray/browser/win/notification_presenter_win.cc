@@ -4,7 +4,9 @@
 // found in the LICENSE-CHROMIUM file.
 
 #include "browser/win/notification_presenter_win.h"
+
 #include "base/win/windows_version.h"
+#include "browser/win/windows_toast_notification.h"
 #include "common/application_info.h"
 #include "content/public/browser/desktop_notification_delegate.h"
 #include "content/public/common/platform_notification_data.h"
@@ -12,7 +14,6 @@
 
 #pragma comment(lib, "runtimeobject.lib")
 
-using namespace WinToasts;
 using namespace Microsoft::WRL;
 using namespace ABI::Windows::UI::Notifications;
 using namespace ABI::Windows::Data::Xml::Dom;
@@ -46,7 +47,7 @@ void NotificationPresenterWin::ShowNotification(
   // for prior versions, use Tray.displayBalloon
   if (base::win::GetVersion() >= base::win::VERSION_WIN8) {
     wtn = new WindowsToastNotification(appName.c_str(), delegate.Pass());
-    wtn->ShowNotification(title.c_str(), body.c_str(), iconPath, m_lastNotification);
+    wtn->ShowNotification(title, body, iconPath, m_lastNotification);
   }
 
   if (cancel_callback) {
