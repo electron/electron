@@ -88,6 +88,12 @@ class Dictionary {
         CallbackTraits<T>::CreateTemplate(isolate_, callback)->GetFunction());
   }
 
+  bool Delete(const base::StringPiece& key) {
+    v8::Maybe<bool> result = GetHandle()->Delete(isolate_->GetCurrentContext(),
+                                                 StringToV8(isolate_, key));
+    return !result.IsNothing() && result.FromJust();
+  }
+
   bool IsEmpty() const { return isolate() == NULL; }
 
   virtual v8::Local<v8::Object> GetHandle() const;
