@@ -36,7 +36,7 @@ namespace WinToasts {
         void NotificationDismissed();
 
     private:
-        ToastEventHandler* m_eventHandler;
+        ComPtr<ToastEventHandler> m_eventHandler;
 
         content::DesktopNotificationDelegate* n_delegate;
         ComPtr<IToastNotificationManagerStatics> m_toastManager;
@@ -54,40 +54,15 @@ namespace WinToasts {
 
 
     class ToastEventHandler :
-        public Implements <DesktopToastActivatedEventHandler, DesktopToastDismissedEventHandler>
+        public RuntimeClass<RuntimeClassFlags<ClassicCom>, DesktopToastActivatedEventHandler, DesktopToastDismissedEventHandler>
     {
     public:
         ToastEventHandler(WindowsToastNotification* notification, content::DesktopNotificationDelegate* delegate);
         ~ToastEventHandler();
         IFACEMETHODIMP Invoke(IToastNotification* sender, IInspectable* args);
         IFACEMETHODIMP Invoke(IToastNotification* sender, IToastDismissedEventArgs* e);
-        IFACEMETHODIMP_(ULONG) AddRef() { return InterlockedIncrement(&m_ref); }
-
-        IFACEMETHODIMP_(ULONG) Release() {
-            ULONG l = InterlockedDecrement(&m_ref);
-            if (l == 0) delete this;
-            return l;
-        }
-
-        IFACEMETHODIMP QueryInterface(_In_ REFIID riid, _COM_Outptr_ void **ppv) {
-            if (IsEqualIID(riid, IID_IUnknown))
-                *ppv = static_cast<IUnknown*>(static_cast<DesktopToastActivatedEventHandler*>(this));
-            else if (IsEqualIID(riid, __uuidof(DesktopToastActivatedEventHandler)))
-                *ppv = static_cast<DesktopToastActivatedEventHandler*>(this);
-            else if (IsEqualIID(riid, __uuidof(DesktopToastDismissedEventHandler)))
-                *ppv = static_cast<DesktopToastDismissedEventHandler*>(this);
-            else *ppv = nullptr;
-
-            if (*ppv) {
-                reinterpret_cast<IUnknown*>(*ppv)->AddRef();
-                return S_OK;
-            }
-
-            return E_NOINTERFACE;
-        }
 
     private:
-        ULONG m_ref;
         WindowsToastNotification* m_notification;
         content::DesktopNotificationDelegate* n_delegate;
     };
