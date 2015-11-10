@@ -3,70 +3,102 @@
 // Thanks to both of those folks mentioned above who first thought up a bunch of this code
 // and released it as MIT to the world.
 
-#ifndef __WINDOWS_TOAST_NOTIFICATION_H__
-#define __WINDOWS_TOAST_NOTIFICATION_H__
-
-#include "content/public/browser/desktop_notification_delegate.h"
-#include "content/public/common/platform_notification_data.h"
-#include "base/bind.h"
+#ifndef BRIGHTRAY_BROWSER_WIN_WINDOWS_TOAST_NOTIFICATION_H_
+#define BRIGHTRAY_BROWSER_WIN_WINDOWS_TOAST_NOTIFICATION_H_
 
 #include <windows.h>
 #include <windows.ui.notifications.h>
 #include <wrl/implements.h>
 
+#include "base/bind.h"
+#include "base/memory/weak_ptr.h"
+#include "content/public/browser/desktop_notification_delegate.h"
+#include "content/public/common/platform_notification_data.h"
+
 using namespace Microsoft::WRL;
 using namespace ABI::Windows::UI::Notifications;
 using namespace ABI::Windows::Foundation;
 
-namespace WinToasts {
+class ScopedHString;
 
-    typedef ITypedEventHandler<ToastNotification*, IInspectable*> DesktopToastActivatedEventHandler;
-    typedef ITypedEventHandler<ToastNotification*, ToastDismissedEventArgs*> DesktopToastDismissedEventHandler;
+namespace brightray {
 
-    class ToastEventHandler;
+using DesktopToastActivatedEventHandler =
+    ITypedEventHandler<ToastNotification*, IInspectable*>;
+using DesktopToastDismissedEventHandler =
+    ITypedEventHandler<ToastNotification*, ToastDismissedEventArgs*>;
 
-    class WindowsToastNotification
-    {
-    public:
-        WindowsToastNotification(const char* appName, content::DesktopNotificationDelegate* delegate);
-        ~WindowsToastNotification();
-        void ShowNotification(const WCHAR* title, const WCHAR* msg, std::string iconPath, ComPtr<IToastNotification>& toast);
-        void DismissNotification(ComPtr<IToastNotification> toast);
-        void NotificationClicked();
-        void NotificationDismissed();
+class WindowsToastNotification {
+ public:
+  WindowsToastNotification(
+      const std::string& app_name,
+      scoped_ptr<content::DesktopNotificationDelegate> delegate);
+  ~WindowsToastNotification();
 
-    private:
-        ComPtr<ToastEventHandler> m_eventHandler;
+  void ShowNotification(const std::wstring& title,
+                        const std::wstring& msg,
+                        std::string icon_path);
+  void DismissNotification();
 
-        content::DesktopNotificationDelegate* n_delegate;
-        ComPtr<IToastNotificationManagerStatics> m_toastManager;
-        ComPtr<IToastNotifier> m_toastNotifier;
+  base::WeakPtr<WindowsToastNotification> GetWeakPtr() {
+    return weak_factory_.GetWeakPtr();
+  }
 
-        HRESULT GetToastXml(IToastNotificationManagerStatics* toastManager, const WCHAR* title, const WCHAR* msg, std::string iconPath, ABI::Windows::Data::Xml::Dom::IXmlDocument** toastXml);
-        HRESULT SetXmlText(ABI::Windows::Data::Xml::Dom::IXmlDocument* doc, const WCHAR* text);
-        HRESULT SetXmlText(ABI::Windows::Data::Xml::Dom::IXmlDocument* doc, const WCHAR* title, const WCHAR* body);
-        HRESULT SetXmlImage(ABI::Windows::Data::Xml::Dom::IXmlDocument* doc, std::string iconPath);
-        HRESULT GetTextNodeList(HSTRING* tag, ABI::Windows::Data::Xml::Dom::IXmlDocument* doc, ABI::Windows::Data::Xml::Dom::IXmlNodeList** nodeList, UINT32 reqLength);
-        HRESULT AppendTextToXml(ABI::Windows::Data::Xml::Dom::IXmlDocument* doc, ABI::Windows::Data::Xml::Dom::IXmlNode* node, const WCHAR* text);
-        HRESULT SetupCallbacks(IToastNotification* toast);
-        HRESULT CreateHString(const WCHAR* source, HSTRING* dest);
-    };
+ private:
+  friend class ToastEventHandler;
+
+  void NotificationClicked();
+  void NotificationDismissed();
+
+  bool GetToastXml(IToastNotificationManagerStatics* toastManager,
+                   const std::wstring& title,
+                   const std::wstring& msg,
+                   std::string icon_path,
+                   ABI::Windows::Data::Xml::Dom::IXmlDocument** toastXml);
+  bool SetXmlText(ABI::Windows::Data::Xml::Dom::IXmlDocument* doc,
+                  const std::wstring& text);
+  bool SetXmlText(ABI::Windows::Data::Xml::Dom::IXmlDocument* doc,
+                  const std::wstring& title,
+                  const std::wstring& body);
+  bool SetXmlImage(ABI::Windows::Data::Xml::Dom::IXmlDocument* doc,
+                   std::string icon_path);
+  bool GetTextNodeList(ScopedHString* tag,
+                       ABI::Windows::Data::Xml::Dom::IXmlDocument* doc,
+                       ABI::Windows::Data::Xml::Dom::IXmlNodeList** nodeList,
+                       UINT32 reqLength);
+  bool AppendTextToXml(ABI::Windows::Data::Xml::Dom::IXmlDocument* doc,
+                       ABI::Windows::Data::Xml::Dom::IXmlNode* node,
+                       const std::wstring& text);
+  bool SetupCallbacks(IToastNotification* toast);
+
+  scoped_ptr<content::DesktopNotificationDelegate> delegate_;
+  ComPtr<ToastEventHandler> event_handler_;
+  ComPtr<IToastNotificationManagerStatics> toast_manager_;
+  ComPtr<IToastNotifier> toast_notifier_;
+  ComPtr<IToastNotification> toast_notification_;
+
+  base::WeakPtrFactory<WindowsToastNotification> weak_factory_;
+
+  DISALLOW_COPY_AND_ASSIGN(WindowsToastNotification);
+};
 
 
-    class ToastEventHandler :
-        public RuntimeClass<RuntimeClassFlags<ClassicCom>, DesktopToastActivatedEventHandler, DesktopToastDismissedEventHandler>
-    {
-    public:
-        ToastEventHandler(WindowsToastNotification* notification, content::DesktopNotificationDelegate* delegate);
-        ~ToastEventHandler();
-        IFACEMETHODIMP Invoke(IToastNotification* sender, IInspectable* args);
-        IFACEMETHODIMP Invoke(IToastNotification* sender, IToastDismissedEventArgs* e);
+class ToastEventHandler : public RuntimeClass<RuntimeClassFlags<ClassicCom>,
+                                              DesktopToastActivatedEventHandler,
+                                              DesktopToastDismissedEventHandler> {
+ public:
+  ToastEventHandler(WindowsToastNotification* notification);
+  ~ToastEventHandler();
 
-    private:
-        WindowsToastNotification* m_notification;
-        content::DesktopNotificationDelegate* n_delegate;
-    };
+  IFACEMETHODIMP Invoke(IToastNotification* sender, IInspectable* args);
+  IFACEMETHODIMP Invoke(IToastNotification* sender, IToastDismissedEventArgs* e);
 
-} // namespace
+ private:
+  WindowsToastNotification* notification_;  // weak ref.
 
-#endif //__WINDOWS_TOAST_NOTIFICATION_H__
+  DISALLOW_COPY_AND_ASSIGN(ToastEventHandler);
+};
+
+}  // namespace brightray
+
+#endif  // BRIGHTRAY_BROWSER_WIN_WINDOWS_TOAST_NOTIFICATION_H_

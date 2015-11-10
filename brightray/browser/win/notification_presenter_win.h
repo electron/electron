@@ -13,18 +13,10 @@
 // windowsNotification.onclick = function () { console.log("Notification clicked") };
 // windowsNotification.onclose = function () { console.log("Notification dismissed") };
 
+#ifndef BRIGHTRAY_BROWSER_WIN_NOTIFICATION_PRESENTER_WIN_H_
+#define BRIGHTRAY_BROWSER_WIN_NOTIFICATION_PRESENTER_WIN_H_
 
-#ifndef BRIGHTRAY_BROWSER_NOTIFICATION_PRESENTER_WIN_H_
-#define BRIGHTRAY_BROWSER_NOTIFICATION_PRESENTER_WIN_H_
-
-#include "base/compiler_specific.h"
 #include "browser/notification_presenter.h"
-#include "windows_toast_notification.h"
-
-#include <windows.h>
-#include <windows.ui.notifications.h>
-#include <wrl/client.h>
-#include <wrl/implements.h>
 
 namespace brightray {
 
@@ -38,14 +30,11 @@ class NotificationPresenterWin : public NotificationPresenter {
       const SkBitmap& icon,
       scoped_ptr<content::DesktopNotificationDelegate> delegate,
       base::Closure* cancel_callback) override;
-  
-  void RemoveNotification();
 
  private:
-  WinToasts::WindowsToastNotification* wtn;
-  Microsoft::WRL::ComPtr<ABI::Windows::UI::Notifications::IToastNotification> m_lastNotification;
+  DISALLOW_COPY_AND_ASSIGN(NotificationPresenterWin);
 };
 
 }  // namespace
 
-#endif // BRIGHTRAY_BROWSER_NOTIFICATION_PRESENTER_WIN_H_
+#endif  // BRIGHTRAY_BROWSER_WIN_NOTIFICATION_PRESENTER_WIN_H_

@@ -164,8 +164,11 @@
           'msvs_settings': {
             'VCLinkerTool': {
               'AdditionalDependencies': [
+                # Windows Runtime.
+                'crypt32.lib',
                 'runtimeobject.lib',
-                'windowsapp.lib'
+                'shlwapi.lib',
+                'windowsapp.lib',
               ],
             },
           },
@@ -203,8 +206,6 @@
                 'msvs_settings': {
                   'VCLinkerTool': {
                     'AdditionalDependencies': [
-                      'Shlwapi.lib',
-                      'Crypt32.lib',
                       'advapi32.lib',
                       'dbghelp.lib',
                       'delayimp.lib',
