@@ -1,4 +1,4 @@
-ipc = require 'ipc'
+ipc = require 'ipc-main'
 v8Util = process.atomBinding 'v8_util'
 BrowserWindow = require 'browser-window'
 

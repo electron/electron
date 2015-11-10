@@ -2,7 +2,7 @@ EventEmitter = require('events').EventEmitter
 Menu = require './menu'
 NavigationController = require './navigation-controller'
 binding = process.atomBinding 'web_contents'
-ipc = require 'ipc'
+ipc = require 'ipc-main'
 
 nextId = 0
 getNextId = -> ++nextId

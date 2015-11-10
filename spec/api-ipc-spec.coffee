@@ -83,7 +83,7 @@ describe 'ipc module', ->
     it 'does not crash when reply is not sent and browser is destroyed', (done) ->
       @timeout 10000
       w = new BrowserWindow(show: false)
-      remote.require('ipc').once 'send-sync-message', (event) ->
+      remote.require('ipc-main').once 'send-sync-message', (event) ->
         event.returnValue = null
         w.destroy()
         done()

@@ -1,5 +1,5 @@
 var app = require('app');
-var ipc = require('ipc');
+var ipc = require('ipc-main');
 var dialog = require('dialog');
 var path = require('path');
 var BrowserWindow = require('browser-window');
@@ -78,7 +78,7 @@ app.on('ready', function() {
   // For session's download test, listen 'will-download' event in browser, and
   // reply the result to renderer for verifying
   var downloadFilePath = path.join(__dirname, '..', 'fixtures', 'mock.pdf');
-  require('ipc').on('set-download-option', function(event, need_cancel) {
+  ipc.on('set-download-option', function(event, need_cancel) {
     window.webContents.session.once('will-download',
         function(e, item, webContents) {
           item.setSavePath(downloadFilePath);

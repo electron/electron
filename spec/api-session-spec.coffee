@@ -60,9 +60,9 @@ describe 'session module', ->
   describe 'session.clearStorageData(options)', ->
     fixtures = path.resolve __dirname, 'fixtures'
     it 'clears localstorage data', (done) ->
-      ipc = remote.require('ipc')
-      ipc.on 'count', (event, count) ->
-        ipc.removeAllListeners 'count'
+      ipcMain = remote.require('ipc-main')
+      ipcMain.on 'count', (event, count) ->
+        ipcMain.removeAllListeners 'count'
         assert not count
         done()
       w.loadUrl 'file://' + path.join(fixtures, 'api', 'localstorage.html')
