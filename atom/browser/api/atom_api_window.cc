@@ -60,7 +60,10 @@ void OnCapturePageDone(
   callback.Run(gfx::Image::CreateFrom1xBitmap(bitmap));
 }
 
+// Convert min-width to minWidth recursively in the dictionary.
+
 #if defined(OS_WIN)
+// Convert binary data to Buffer.
 v8::Local<v8::Value> ToBuffer(v8::Isolate* isolate, void* val, int size) {
   auto buffer = node::Buffer::New(isolate, static_cast<char*>(val), size);
   if (buffer.IsEmpty())

@@ -34,8 +34,6 @@ const char kKiosk[] = "kiosk";
 // Make windows stays on the top of all other windows.
 const char kAlwaysOnTop[] = "always-on-top";
 
-const char kNodeIntegration[] = "node-integration";
-
 // Enable the NSView to accept first mouse event.
 const char kAcceptFirstMouse[] = "accept-first-mouse";
 
@@ -45,12 +43,6 @@ const char kUseContentSize[] = "use-content-size";
 // The requested title bar style for the window
 const char kTitleBarStyle[] = "title-bar-style";
 
-// The WebPreferences.
-const char kWebPreferences[] = "web-preferences";
-
-// The factor of which page should be zoomed.
-const char kZoomFactor[] = "zoom-factor";
-
 // The menu bar is hidden unless "Alt" is pressed.
 const char kAutoHideMenuBar[] = "auto-hide-menu-bar";
 
@@ -59,27 +51,6 @@ const char kEnableLargerThanScreen[] = "enable-larger-than-screen";
 
 // Forces to use dark theme on Linux.
 const char kDarkTheme[] = "dark-theme";
-
-// Enable DirectWrite on Windows.
-const char kDirectWrite[] = "direct-write";
-
-// Enable plugins.
-const char kEnablePlugins[] = "enable-plugins";
-
-// Ppapi Flash path.
-const char kPpapiFlashPath[] = "ppapi-flash-path";
-
-// Ppapi Flash version.
-const char kPpapiFlashVersion[] = "ppapi-flash-version";
-
-// Instancd ID of guest WebContents.
-const char kGuestInstanceID[] = "guest-instance-id";
-
-// Script that will be loaded by guest WebContents before other scripts.
-const char kPreloadScript[] = "preload";
-
-// Like --preload, but the passed argument is an URL.
-const char kPreloadUrl[] = "preload-url";
 
 // Whether the window should be transparent.
 const char kTransparent[] = "transparent";
@@ -96,8 +67,23 @@ const char kStandardWindow[] = "standard-window";
 // Default browser window background color.
 const char kBackgroundColor[] = "background-color";
 
-// Path to client certificate.
-const char kClientCertificate[] = "client-certificate";
+// The WebPreferences.
+const char kWebPreferences[] = "web-preferences";
+
+// The factor of which page should be zoomed.
+const char kZoomFactor[] = "zoom-factor";
+
+// Script that will be loaded by guest WebContents before other scripts.
+const char kPreloadScript[] = "preload";
+
+// Like --preload, but the passed argument is an URL.
+const char kPreloadUrl[] = "preload-url";
+
+// Enable the node integration.
+const char kNodeIntegration[] = "node-integration";
+
+// Instancd ID of guest WebContents.
+const char kGuestInstanceID[] = "guest-instance-id";
 
 // Web runtime features.
 const char kExperimentalFeatures[]       = "experimental-features";
@@ -106,8 +92,23 @@ const char kOverlayScrollbars[]          = "overlay-scrollbars";
 const char kOverlayFullscreenVideo[]     = "overlay-fullscreen-video";
 const char kSharedWorker[]               = "shared-worker";
 
+// Enable plugins.
+const char kEnablePlugins[] = "enable-plugins";
+
+// Ppapi Flash path.
+const char kPpapiFlashPath[] = "ppapi-flash-path";
+
+// Ppapi Flash version.
+const char kPpapiFlashVersion[] = "ppapi-flash-version";
+
 // Set page visiblity to always visible.
 const char kPageVisibility[] = "page-visibility";
+
+// Enable DirectWrite on Windows.
+const char kDirectWrite[] = "direct-write";
+
+// Path to client certificate.
+const char kClientCertificate[] = "client-certificate";
 
 // Disable HTTP cache.
 const char kDisableHttpCache[] = "disable-http-cache";
