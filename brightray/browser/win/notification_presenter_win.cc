@@ -21,13 +21,21 @@ using namespace ABI::Windows::Foundation;
 
 namespace brightray {
 
+namespace {
+
+void RemoveNotification(base::WeakPtr<WindowsToastNotification> notification) {
+  if (notification)
+    notification->DismissNotification();
+}
+
+}  // namespace
+
 // static
 NotificationPresenter* NotificationPresenter::Create() {
   return new NotificationPresenterWin;
 }
 
 NotificationPresenterWin::NotificationPresenterWin() {
-  m_lastNotification = nullptr;
 }
 
 NotificationPresenterWin::~NotificationPresenterWin() {
@@ -38,28 +46,14 @@ void NotificationPresenterWin::ShowNotification(
     const SkBitmap& icon,
     scoped_ptr<content::DesktopNotificationDelegate> delegate,
     base::Closure* cancel_callback) {
-  std::wstring title = data.title;
-  std::wstring body = data.body;
-  std::string iconPath = data.icon.spec();
-  std::string appName = GetApplicationName();
-
-  // toast notification supported in version >= Windows 8
-  // for prior versions, use Tray.displayBalloon
-  if (base::win::GetVersion() >= base::win::VERSION_WIN8) {
-    wtn = new WindowsToastNotification(appName.c_str(), delegate.Pass());
-    wtn->ShowNotification(title, body, iconPath, m_lastNotification);
-  }
+  // This class manages itself.
+  auto notification = new WindowsToastNotification(
+      GetApplicationName(), delegate.Pass());
+  notification->ShowNotification(data.title, data.body, data.icon.spec());
 
   if (cancel_callback) {
     *cancel_callback = base::Bind(
-      &NotificationPresenterWin::RemoveNotification,
-      base::Unretained(this));
-  }
-}
-
-void NotificationPresenterWin::RemoveNotification() {
-  if (m_lastNotification != nullptr && wtn != NULL) {
-    wtn->DismissNotification(m_lastNotification);
+        &RemoveNotification, notification->GetWeakPtr());
   }
 }
 

@@ -21,9 +21,10 @@ HRESULT init = Windows::Foundation::Initialize(RO_INIT_MULTITHREADED);
 }  // namespace
 
 WindowsToastNotification::WindowsToastNotification(
-    const char* app_name,
+    const std::string& app_name,
     scoped_ptr<content::DesktopNotificationDelegate> delegate)
-    : delegate_(delegate.Pass()) {
+    : delegate_(delegate.Pass()),
+      weak_factory_(this) {
   ScopedHString toast_manager_str(
       RuntimeClass_Windows_UI_Notifications_ToastNotificationManager);
   if (!toast_manager_str.success())
@@ -46,8 +47,7 @@ WindowsToastNotification::~WindowsToastNotification() {
 void WindowsToastNotification::ShowNotification(
     const std::wstring& title,
     const std::wstring& msg,
-    std::string icon_path,
-    ComPtr<IToastNotification>& toast) {
+    std::string icon_path) {
   ComPtr<IXmlDocument> toast_xml;
   if(FAILED(GetToastXml(toast_manager_.Get(), title, msg, icon_path, &toast_xml)))
     return;
@@ -57,25 +57,26 @@ void WindowsToastNotification::ShowNotification(
   if (!toast_str.success())
     return;
 
-  ComPtr<IToastNotificationFactory> toastFactory;
-  if (FAILED(Windows::Foundation::GetActivationFactory(toast_str, &toastFactory)))
+  ComPtr<IToastNotificationFactory> toast_factory;
+  if (FAILED(Windows::Foundation::GetActivationFactory(toast_str,
+                                                       &toast_factory)))
     return;
 
-  if (FAILED(toastFactory->CreateToastNotification(toast_xml.Get(), &toast)))
+  if (FAILED(toast_factory->CreateToastNotification(toast_xml.Get(),
+                                                    &toast_notification_)))
     return;
 
-  if (FAILED(SetupCallbacks(toast.Get())))
+  if (FAILED(SetupCallbacks(toast_notification_.Get())))
     return;
 
-  if (FAILED(toast_notifier_->Show(toast.Get())))
+  if (FAILED(toast_notifier_->Show(toast_notification_.Get())))
     return;
 
   delegate_->NotificationDisplayed();
 }
 
-void WindowsToastNotification::DismissNotification(
-    ComPtr<IToastNotification> toast) {
-  toast_notifier_->Hide(toast.Get());
+void WindowsToastNotification::DismissNotification() {
+  toast_notifier_->Hide(toast_notification_.Get());
 }
 
 void WindowsToastNotification::NotificationClicked() {

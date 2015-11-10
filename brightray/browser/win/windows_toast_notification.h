@@ -11,6 +11,7 @@
 #include <wrl/implements.h>
 
 #include "base/bind.h"
+#include "base/memory/weak_ptr.h"
 #include "content/public/browser/desktop_notification_delegate.h"
 #include "content/public/common/platform_notification_data.h"
 
@@ -27,28 +28,27 @@ using DesktopToastActivatedEventHandler =
 using DesktopToastDismissedEventHandler =
     ITypedEventHandler<ToastNotification*, ToastDismissedEventArgs*>;
 
-class ToastEventHandler;
-
 class WindowsToastNotification {
  public:
   WindowsToastNotification(
-      const char* app_name,
+      const std::string& app_name,
       scoped_ptr<content::DesktopNotificationDelegate> delegate);
   ~WindowsToastNotification();
 
   void ShowNotification(const std::wstring& title,
                         const std::wstring& msg,
-                        std::string icon_path,
-                        ComPtr<IToastNotification>& toast);
-  void DismissNotification(ComPtr<IToastNotification> toast);
-  void NotificationClicked();
-  void NotificationDismissed();
+                        std::string icon_path);
+  void DismissNotification();
+
+  base::WeakPtr<WindowsToastNotification> GetWeakPtr() {
+    return weak_factory_.GetWeakPtr();
+  }
 
  private:
-  scoped_ptr<content::DesktopNotificationDelegate> delegate_;
-  ComPtr<ToastEventHandler> event_handler_;
-  ComPtr<IToastNotificationManagerStatics> toast_manager_;
-  ComPtr<IToastNotifier> toast_notifier_;
+  friend class ToastEventHandler;
+
+  void NotificationClicked();
+  void NotificationDismissed();
 
   bool GetToastXml(IToastNotificationManagerStatics* toastManager,
                    const std::wstring& title,
@@ -70,6 +70,16 @@ class WindowsToastNotification {
                        ABI::Windows::Data::Xml::Dom::IXmlNode* node,
                        const std::wstring& text);
   bool SetupCallbacks(IToastNotification* toast);
+
+  scoped_ptr<content::DesktopNotificationDelegate> delegate_;
+  ComPtr<ToastEventHandler> event_handler_;
+  ComPtr<IToastNotificationManagerStatics> toast_manager_;
+  ComPtr<IToastNotifier> toast_notifier_;
+  ComPtr<IToastNotification> toast_notification_;
+
+  base::WeakPtrFactory<WindowsToastNotification> weak_factory_;
+
+  DISALLOW_COPY_AND_ASSIGN(WindowsToastNotification);
 };
 
 
@@ -85,6 +95,8 @@ class ToastEventHandler : public RuntimeClass<RuntimeClassFlags<ClassicCom>,
 
  private:
   WindowsToastNotification* notification_;  // weak ref.
+
+  DISALLOW_COPY_AND_ASSIGN(ToastEventHandler);
 };
 
 }  // namespace brightray
