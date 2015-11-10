@@ -1,5 +1,5 @@
 assert = require 'assert'
-ipc    = require 'ipc'
+ipc    = require 'ipc-renderer'
 path   = require 'path'
 remote = require 'remote'
 
@@ -70,7 +70,7 @@ describe 'ipc module', ->
   describe 'ipc.sender.send', ->
     it 'should work when sending an object containing id property', (done) ->
       obj = id: 1, name: 'ly'
-      ipc.once 'message', (message) ->
+      ipc.once 'message', (event, message) ->
         assert.deepEqual message, obj
         done()
       ipc.send 'message', obj

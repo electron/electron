@@ -135,7 +135,7 @@ class WebViewImpl
       guestViewInternal.setSize @guestInstanceId, normal: newSize
 
   createGuest: ->
-    guestViewInternal.createGuest @buildParams(), (guestInstanceId) =>
+    guestViewInternal.createGuest @buildParams(), (event, guestInstanceId) =>
       @attachWindow guestInstanceId
 
   dispatchEvent: (webViewEvent) ->

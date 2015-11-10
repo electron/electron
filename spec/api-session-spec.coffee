@@ -78,7 +78,7 @@ describe 'session module', ->
     # A 5 MB mock pdf.
     mockPDF = new Buffer 1024 * 1024 * 5
     contentDisposition = 'inline; filename="mock.pdf"'
-    ipc = require 'ipc'
+    ipc = require 'ipc-renderer'
     downloadFilePath = path.join fixtures, 'mock.pdf'
     downloadServer = http.createServer (req, res) ->
       res.writeHead 200, {
@@ -94,8 +94,7 @@ describe 'session module', ->
         {port} = downloadServer.address()
         ipc.sendSync 'set-download-option', false
         w.loadUrl "#{url}:#{port}"
-        ipc.once 'download-done', (state, url, mimeType, receivedBytes,
-            totalBytes, disposition, filename) ->
+        ipc.once 'download-done', (event, state, url, mimeType, receivedBytes, totalBytes, disposition, filename) ->
           assert.equal state, 'completed'
           assert.equal filename, 'mock.pdf'
           assert.equal url, "http://127.0.0.1:#{port}/"
@@ -112,8 +111,7 @@ describe 'session module', ->
         {port} = downloadServer.address()
         ipc.sendSync 'set-download-option', true
         w.loadUrl "#{url}:#{port}/"
-        ipc.once 'download-done', (state, url, mimeType, receivedBytes,
-            totalBytes, disposition, filename) ->
+        ipc.once 'download-done', (event, state, url, mimeType, receivedBytes, totalBytes, disposition, filename) ->
           assert.equal state, 'cancelled'
           assert.equal filename, 'mock.pdf'
           assert.equal mimeType, 'application/pdf'
