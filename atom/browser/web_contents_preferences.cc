@@ -135,21 +135,21 @@ void WebContentsPreferences::OverrideWebkitPrefs(
     prefs->images_enabled = b;
   if (self->web_preferences_.GetBoolean("java", &b))
     prefs->java_enabled = b;
-  if (self->web_preferences_.GetBoolean("text-areas-are-resizable", &b))
+  if (self->web_preferences_.GetBoolean("textAreasAreResizable", &b))
     prefs->text_areas_are_resizable = b;
   if (self->web_preferences_.GetBoolean("webgl", &b))
     prefs->experimental_webgl_enabled = b;
   if (self->web_preferences_.GetBoolean("webaudio", &b))
     prefs->webaudio_enabled = b;
-  if (self->web_preferences_.GetBoolean("web-security", &b)) {
+  if (self->web_preferences_.GetBoolean("webSecurity", &b)) {
     prefs->web_security_enabled = b;
     prefs->allow_displaying_insecure_content = !b;
     prefs->allow_running_insecure_content = !b;
   }
-  if (self->web_preferences_.GetBoolean("allow-displaying-insecure-content",
+  if (self->web_preferences_.GetBoolean("allowDisplayingInsecureContent",
                                         &b))
     prefs->allow_displaying_insecure_content = b;
-  if (self->web_preferences_.GetBoolean("allow-running-insecure-content", &b))
+  if (self->web_preferences_.GetBoolean("allowRunningInsecureContent", &b))
     prefs->allow_running_insecure_content = b;
 }
 

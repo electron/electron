@@ -11,8 +11,8 @@ mergeBrowserWindowOptions = (embedder, options) ->
     options.__proto__ = embedder.browserWindowOptions
   else
     # Or only inherit web-preferences if it is a webview.
-    options['web-preferences'] ?= {}
-    options['web-preferences'].__proto__ = embedder.getWebPreferences()
+    options.webPreferences ?= {}
+    options.webPreferences.__proto__ = embedder.getWebPreferences()
   options
 
 # Create a new guest created by |embedder| with |options|.

@@ -70,7 +70,7 @@ describe 'chromium feature', ->
         b.close()
         done()
       window.addEventListener 'message', listener
-      b = window.open "file://#{fixtures}/pages/window-opener-node.html", '', 'node-integration=no,show=no'
+      b = window.open "file://#{fixtures}/pages/window-opener-node.html", '', 'nodeIntegration=no,show=no'
 
     it 'inherit options of parent window', (done) ->
       listener = (event) ->

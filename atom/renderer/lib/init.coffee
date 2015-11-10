@@ -25,10 +25,10 @@ v8Util.setHiddenValue global, 'ipc', new events.EventEmitter
 # Process command line arguments.
 nodeIntegration = 'false'
 for arg in process.argv
-  if arg.indexOf('--guest-instance-id=') == 0
+  if arg.indexOf('--guestInstanceId=') == 0
     # This is a guest web view.
     process.guestInstanceId = parseInt arg.substr(arg.indexOf('=') + 1)
-  else if arg.indexOf('--node-integration=') == 0
+  else if arg.indexOf('--nodeIntegration=') == 0
     nodeIntegration = arg.substr arg.indexOf('=') + 1
   else if arg.indexOf('--preload=') == 0
     preloadScript = arg.substr arg.indexOf('=') + 1
