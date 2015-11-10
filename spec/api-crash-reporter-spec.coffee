@@ -3,7 +3,7 @@ path       = require 'path'
 http       = require 'http'
 url        = require 'url'
 remote     = require 'remote'
-formidable = require 'formidable'
+multiparty = require 'multiparty'
 
 crashReporter = remote.require 'crash-reporter'
 BrowserWindow = remote.require 'browser-window'
@@ -26,10 +26,8 @@ describe 'crash-reporter module', ->
     @timeout 120000
     server = http.createServer (req, res) ->
       server.close()
-      form = new formidable.IncomingForm()
-      process.throwDeprecation = false
+      form = new multiparty.Form()
       form.parse req, (error, fields, files) ->
-        process.throwDeprecation = true
         assert.equal fields['prod'], 'Electron'
         assert.equal fields['ver'], process.versions['electron']
         assert.equal fields['process_type'], 'renderer'
@@ -39,7 +37,6 @@ describe 'crash-reporter module', ->
         assert.equal fields['_productName'], 'Zombies'
         assert.equal fields['_companyName'], 'Umbrella Corporation'
         assert.equal fields['_version'], require('remote').require('app').getVersion()
-        assert files['upload_file_minidump']['name']?
 
         res.end('abc-123-def')
         done()

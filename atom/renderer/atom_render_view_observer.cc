@@ -31,6 +31,7 @@
 #include "third_party/WebKit/public/web/WebScriptSource.h"
 #include "third_party/WebKit/public/web/WebView.h"
 #include "ui/base/resource/resource_bundle.h"
+#include "native_mate/dictionary.h"
 
 namespace atom {
 
@@ -142,7 +143,12 @@ void AtomRenderViewObserver::OnBrowserMessage(const base::string16& channel,
 
   v8::Local<v8::Object> ipc;
   if (GetIPCObject(isolate, context, &ipc)) {
-    mate::EmitEvent(isolate, ipc, channel, ListValueToVector(isolate, args));
+    auto args_vector = ListValueToVector(isolate, args);
+    // Insert the Event object, event.sender is ipc.
+    mate::Dictionary event = mate::Dictionary::CreateEmpty(isolate);
+    event.Set("sender", ipc);
+    args_vector.insert(args_vector.begin(), event.GetHandle());
+    mate::EmitEvent(isolate, ipc, channel, args_vector);
   }
 }
 

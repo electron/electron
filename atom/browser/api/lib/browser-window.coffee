@@ -1,6 +1,6 @@
 EventEmitter = require('events').EventEmitter
 app = require 'app'
-ipc = require 'ipc'
+ipc = require 'ipc-main'
 deprecate = require 'deprecate'
 
 BrowserWindow = process.atomBinding('window').BrowserWindow

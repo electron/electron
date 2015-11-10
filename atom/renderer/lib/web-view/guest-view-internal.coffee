@@ -1,4 +1,4 @@
-ipc = require 'ipc'
+ipc = require 'ipc-renderer'
 webFrame = require 'web-frame'
 
 requestId = 0
@@ -37,16 +37,16 @@ dispatchEvent = (webView, event, args...) ->
 
 module.exports =
   registerEvents: (webView, viewInstanceId) ->
-    ipc.on "ATOM_SHELL_GUEST_VIEW_INTERNAL_DISPATCH_EVENT-#{viewInstanceId}", (event, args...) ->
-      dispatchEvent webView, event, args...
+    ipc.on "ATOM_SHELL_GUEST_VIEW_INTERNAL_DISPATCH_EVENT-#{viewInstanceId}", (event, domEvent, args...) ->
+      dispatchEvent webView, domEvent, args...
 
-    ipc.on "ATOM_SHELL_GUEST_VIEW_INTERNAL_IPC_MESSAGE-#{viewInstanceId}", (channel, args...) ->
+    ipc.on "ATOM_SHELL_GUEST_VIEW_INTERNAL_IPC_MESSAGE-#{viewInstanceId}", (event, channel, args...) ->
       domEvent = new Event('ipc-message')
       domEvent.channel = channel
       domEvent.args = [args...]
       webView.dispatchEvent domEvent
 
-    ipc.on "ATOM_SHELL_GUEST_VIEW_INTERNAL_SIZE_CHANGED-#{viewInstanceId}", (args...) ->
+    ipc.on "ATOM_SHELL_GUEST_VIEW_INTERNAL_SIZE_CHANGED-#{viewInstanceId}", (event, args...) ->
       domEvent = new Event('size-changed')
       for f, i in ['oldWidth', 'oldHeight', 'newWidth', 'newHeight']
         domEvent[f] = args[i]

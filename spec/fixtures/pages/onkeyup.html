@@ -2,7 +2,7 @@
 <body>
 <script type="text/javascript" charset="utf-8">
 document.onkeyup = function(e) {
-  require('ipc').sendToHost('keyup', e.keyCode, e.shiftKey, e.ctrlKey);
+  require('ipc-renderer').sendToHost('keyup', e.keyCode, e.shiftKey, e.ctrlKey);
 }
 </script>
 </body>

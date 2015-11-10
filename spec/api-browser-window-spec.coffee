@@ -201,12 +201,12 @@ describe 'browser-window module', ->
 
   describe '"web-preferences" option', ->
     afterEach ->
-      remote.require('ipc').removeAllListeners('answer')
+      remote.require('ipc-main').removeAllListeners('answer')
 
     describe '"preload" option', ->
       it 'loads the script before other scripts in window', (done) ->
         preload = path.join fixtures, 'module', 'set-global.js'
-        remote.require('ipc').once 'answer', (event, test) ->
+        remote.require('ipc-main').once 'answer', (event, test) ->
           assert.equal(test, 'preload')
           done()
         w.destroy()
@@ -219,7 +219,7 @@ describe 'browser-window module', ->
     describe '"node-integration" option', ->
       it 'disables node integration when specified to false', (done) ->
         preload = path.join fixtures, 'module', 'send-later.js'
-        remote.require('ipc').once 'answer', (event, test) ->
+        remote.require('ipc-main').once 'answer', (event, test) ->
           assert.equal(test, 'undefined')
           done()
         w.destroy()

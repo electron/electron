@@ -510,13 +510,14 @@ Starts inspecting element at position (`x`, `y`).
 
 Opens the developer tools for the service worker context.
 
-### `webContents.send(channel[, args...])`
+### `webContents.send(channel[, arg1][, arg2][, ...])`
 
 * `channel` String
-* `args...` (optional)
+* `arg` (optional)
 
-Send `args...` to the web page via `channel` in an asynchronous message, the web
-page can handle it by listening to the `channel` event of the `ipc` module.
+Send an asynchronous message to renderer process via `channel`, you can also
+send arbitrary arguments. The renderer process can handle the message by
+listening to the `channel` event with the `ipcRenderer` module.
 
 An example of sending messages from the main process to the renderer process:
 
@@ -537,20 +538,13 @@ app.on('ready', function() {
 <html>
 <body>
   <script>
-    require('ipc').on('ping', function(message) {
+    require('ipcRenderer').on('ping', function(event, message) {
       console.log(message);  // Prints "whoooooooh!"
     });
   </script>
 </body>
 </html>
 ```
-
-**Note:**
-
-1. The IPC message handler in web pages does not have an `event` parameter,
-   which is different from the handlers in the main process.
-2. There is no way to send synchronous messages from the main process to a
-   renderer process, because it would be very easy to cause dead locks.
 
 ### `webContents.enableDeviceEmulation(parameters)`
 
