@@ -13,9 +13,8 @@
 // windowsNotification.onclick = function () { console.log("Notification clicked") };
 // windowsNotification.onclose = function () { console.log("Notification dismissed") };
 
-
-#ifndef BRIGHTRAY_BROWSER_NOTIFICATION_PRESENTER_WIN_H_
-#define BRIGHTRAY_BROWSER_NOTIFICATION_PRESENTER_WIN_H_
+#ifndef BRIGHTRAY_BROWSER_WIN_NOTIFICATION_PRESENTER_WIN_H_
+#define BRIGHTRAY_BROWSER_WIN_NOTIFICATION_PRESENTER_WIN_H_
 
 #include "base/compiler_specific.h"
 #include "browser/notification_presenter.h"
@@ -38,7 +37,7 @@ class NotificationPresenterWin : public NotificationPresenter {
       const SkBitmap& icon,
       scoped_ptr<content::DesktopNotificationDelegate> delegate,
       base::Closure* cancel_callback) override;
-  
+
   void RemoveNotification();
 
  private:
@@ -48,4 +47,4 @@ class NotificationPresenterWin : public NotificationPresenter {
 
 }  // namespace
 
-#endif // BRIGHTRAY_BROWSER_NOTIFICATION_PRESENTER_WIN_H_
+#endif  // BRIGHTRAY_BROWSER_WIN_NOTIFICATION_PRESENTER_WIN_H_

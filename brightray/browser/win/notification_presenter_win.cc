@@ -5,13 +5,12 @@
 
 #include "browser/win/notification_presenter_win.h"
 #include "base/win/windows_version.h"
+#include "common/application_info.h"
 #include "content/public/browser/desktop_notification_delegate.h"
 #include "content/public/common/platform_notification_data.h"
 #include "third_party/skia/include/core/SkBitmap.h"
-#include "common/application_info.h"
 
 #pragma comment(lib, "runtimeobject.lib")
-#pragma comment(lib, "Crypt32.lib")
 
 using namespace WinToasts;
 using namespace Microsoft::WRL;
@@ -34,14 +33,13 @@ NotificationPresenterWin::~NotificationPresenterWin() {
 }
 
 void NotificationPresenterWin::ShowNotification(
-  const content::PlatformNotificationData& data,
-  const SkBitmap& icon,
-  scoped_ptr<content::DesktopNotificationDelegate> delegate_ptr,
-  base::Closure* cancel_callback) {
-  
+    const content::PlatformNotificationData& data,
+    const SkBitmap& icon,
+    scoped_ptr<content::DesktopNotificationDelegate> delegate_ptr,
+    base::Closure* cancel_callback) {
   std::wstring title = data.title;
   std::wstring body = data.body;
-  std::string iconPath = data.icon.spec();  
+  std::string iconPath = data.icon.spec();
   std::string appName = GetApplicationName();
 
   // toast notification supported in version >= Windows 8
@@ -50,7 +48,7 @@ void NotificationPresenterWin::ShowNotification(
     wtn = new WindowsToastNotification(appName.c_str(), delegate_ptr.release());
     wtn->ShowNotification(title.c_str(), body.c_str(), iconPath, m_lastNotification);
   }
-  
+
   if (cancel_callback) {
     *cancel_callback = base::Bind(
       &NotificationPresenterWin::RemoveNotification,
