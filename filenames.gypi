@@ -50,6 +50,7 @@
       'atom/renderer/lib/web-view/web-view-attributes.coffee',
       'atom/renderer/lib/web-view/web-view-constants.coffee',
       'atom/renderer/api/lib/ipc.coffee',
+      'atom/renderer/api/lib/ipc-renderer.coffee',
       'atom/renderer/api/lib/remote.coffee',
       'atom/renderer/api/lib/screen.coffee',
       'atom/renderer/api/lib/web-frame.coffee',

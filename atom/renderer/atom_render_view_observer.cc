@@ -142,7 +142,10 @@ void AtomRenderViewObserver::OnBrowserMessage(const base::string16& channel,
 
   v8::Local<v8::Object> ipc;
   if (GetIPCObject(isolate, context, &ipc)) {
-    mate::EmitEvent(isolate, ipc, channel, ListValueToVector(isolate, args));
+    auto args_vector = ListValueToVector(isolate, args);
+    // Insert a dummy Event object.
+    args_vector.insert(args_vector.begin(), v8::Object::New(isolate));
+    mate::EmitEvent(isolate, ipc, channel, args_vector);
   }
 }
 
