@@ -119,11 +119,11 @@ closes it.
 
 Emitted when dragged files are dropped in the tray icon.
 
-### Event: 'drag-entered' _OS X_
+### Event: 'drag-enter' _OS X_
 
 Emitted when a drag operation enters the tray icon.
 
-### Event: 'drag-exited' _OS X_
+### Event: 'drag-leave' _OS X_
 
 Emitted when a drag operation exits the tray icon.
 
