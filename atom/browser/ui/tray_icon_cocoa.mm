@@ -262,6 +262,15 @@ const CGFloat kVerticalTitleMargin = 2;
   trayIcon_->NotifyDragExited();
 }
 
+- (void)draggingEnded:(id <NSDraggingInfo>)sender {
+  trayIcon_->NotifyDragEnded();
+}
+
+- (BOOL)prepareForDragOperation:(id <NSDraggingInfo>)sender {
+  trayIcon_->NotifyDrop();
+  return YES;
+}
+
 - (BOOL)performDragOperation:(id <NSDraggingInfo>)sender {
   NSPasteboard* pboard = [sender draggingPasteboard];
 
