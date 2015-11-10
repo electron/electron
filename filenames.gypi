@@ -18,6 +18,7 @@
       'atom/browser/api/lib/dialog.coffee',
       'atom/browser/api/lib/global-shortcut.coffee',
       'atom/browser/api/lib/ipc.coffee',
+      'atom/browser/api/lib/ipc-main.coffee',
       'atom/browser/api/lib/menu.coffee',
       'atom/browser/api/lib/menu-item.coffee',
       'atom/browser/api/lib/navigation-controller.coffee',
