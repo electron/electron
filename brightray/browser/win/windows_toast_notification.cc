@@ -329,7 +329,6 @@ HRESULT WindowsToastNotification::CreateHString(const WCHAR* source, HSTRING* de
 */
 ToastEventHandler::ToastEventHandler(WindowsToastNotification* notification, content::DesktopNotificationDelegate* delegate)
 {
-    m_ref = 1;
     m_notification = notification;
     n_delegate = delegate;
 }
