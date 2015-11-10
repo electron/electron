@@ -67,6 +67,8 @@
       'browser/win/notification_presenter_win.cc',
       'browser/win/windows_toast_notification.h',
       'browser/win/windows_toast_notification.cc',
+      'browser/win/scoped_hstring.h',
+      'browser/win/scoped_hstring.cc',
       'browser/special_storage_policy.cc',
       'browser/special_storage_policy.h',
       'browser/url_request_context_getter.cc',

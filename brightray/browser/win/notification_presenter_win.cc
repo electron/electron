@@ -35,7 +35,7 @@ NotificationPresenterWin::~NotificationPresenterWin() {
 void NotificationPresenterWin::ShowNotification(
     const content::PlatformNotificationData& data,
     const SkBitmap& icon,
-    scoped_ptr<content::DesktopNotificationDelegate> delegate_ptr,
+    scoped_ptr<content::DesktopNotificationDelegate> delegate,
     base::Closure* cancel_callback) {
   std::wstring title = data.title;
   std::wstring body = data.body;
@@ -45,7 +45,7 @@ void NotificationPresenterWin::ShowNotification(
   // toast notification supported in version >= Windows 8
   // for prior versions, use Tray.displayBalloon
   if (base::win::GetVersion() >= base::win::VERSION_WIN8) {
-    wtn = new WindowsToastNotification(appName.c_str(), delegate_ptr.release());
+    wtn = new WindowsToastNotification(appName.c_str(), delegate.Pass());
     wtn->ShowNotification(title.c_str(), body.c_str(), iconPath, m_lastNotification);
   }
 

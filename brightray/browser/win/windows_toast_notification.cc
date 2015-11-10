@@ -5,6 +5,8 @@
 
 #include "browser/win/windows_toast_notification.h"
 
+#include "base/strings/utf_string_conversions.h"
+#include "browser/win/scoped_hstring.h"
 #include "content/public/browser/desktop_notification_delegate.h"
 
 using namespace WinToasts;
@@ -22,317 +24,232 @@ HRESULT init = Windows::Foundation::Initialize(RO_INIT_MULTITHREADED);
 }  // namespace
 
 WindowsToastNotification::WindowsToastNotification(
-    const char* appName, content::DesktopNotificationDelegate* delegate) {
-  HSTRING toastNotifMgrStr = nullptr;
-  HSTRING appId = nullptr;
+    const char* app_name,
+    scoped_ptr<content::DesktopNotificationDelegate> delegate)
+    : delegate_(delegate.Pass()) {
+  ScopedHString toast_manager_str(
+      RuntimeClass_Windows_UI_Notifications_ToastNotificationManager);
+  if (!toast_manager_str.success())
+    return;
+  HRESULT hr = Windows::Foundation::GetActivationFactory(
+      toast_manager_str, &toast_manager_);
+  if (FAILED(hr))
+    return;
 
-  HRESULT hr = CreateHString(RuntimeClass_Windows_UI_Notifications_ToastNotificationManager, &toastNotifMgrStr);
+  ScopedHString app_id(base::UTF8ToUTF16(app_name).c_str());
+  if (!app_id.success())
+    return;
 
-  hr = Windows::Foundation::GetActivationFactory(toastNotifMgrStr, &m_toastManager);
-
-  WCHAR wAppName[MAX_PATH];
-  swprintf(wAppName, ARRAYSIZE(wAppName), L"%S", appName);
-  hr = CreateHString(wAppName, &appId);
-
-  m_toastManager->CreateToastNotifierWithId(appId, &m_toastNotifier);
-
-  if (toastNotifMgrStr) {
-    WindowsDeleteString(toastNotifMgrStr);
-  }
-
-  if (appId) {
-    WindowsDeleteString(appId);
-  }
-
-  n_delegate = delegate;
+  toast_manager_->CreateToastNotifierWithId(app_id, &toast_notifier_);
 }
 
 WindowsToastNotification::~WindowsToastNotification() {
-  if (n_delegate) {
-    delete n_delegate;
-  }
 }
 
 void WindowsToastNotification::ShowNotification(
-    const WCHAR* title, const WCHAR* msg, std::string iconPath, ComPtr<IToastNotification>& toast) {
-  HRESULT hr;
-  HSTRING toastNotifStr = nullptr;
+    const WCHAR* title,
+    const WCHAR* msg,
+    std::string icon_path,
+    ComPtr<IToastNotification>& toast) {
+  ComPtr<IXmlDocument> toast_xml;
+  if(FAILED(GetToastXml(toast_manager_.Get(), title, msg, icon_path, &toast_xml)))
+    return;
 
-  do {
-    ComPtr<IXmlDocument> toastXml;
-    hr = GetToastXml(m_toastManager.Get(), title, msg, iconPath, &toastXml);
-    BREAK_IF_BAD(hr);
+  ScopedHString toast_str(
+      RuntimeClass_Windows_UI_Notifications_ToastNotification);
+  if (!toast_str.success())
+    return;
 
-    hr = CreateHString(RuntimeClass_Windows_UI_Notifications_ToastNotification, &toastNotifStr);
-    BREAK_IF_BAD(hr);
+  ComPtr<IToastNotificationFactory> toastFactory;
+  if (FAILED(Windows::Foundation::GetActivationFactory(toast_str, &toastFactory)))
+    return;
 
-    ComPtr<IToastNotificationFactory> toastFactory;
-    hr = Windows::Foundation::GetActivationFactory(toastNotifStr, &toastFactory);
-    BREAK_IF_BAD(hr);
+  if (FAILED(toastFactory->CreateToastNotification(toast_xml.Get(), &toast)))
+    return;
 
-    hr = toastFactory->CreateToastNotification(toastXml.Get(), &toast);
-    BREAK_IF_BAD(hr);
+  if (FAILED(SetupCallbacks(toast.Get())))
+    return;
 
-    hr = SetupCallbacks(toast.Get());
-    BREAK_IF_BAD(hr);
+  if (FAILED(toast_notifier_->Show(toast.Get())))
+    return;
 
-    hr = m_toastNotifier->Show(toast.Get());
-    BREAK_IF_BAD(hr);
-
-    n_delegate->NotificationDisplayed();
-  } while (FALSE);
-
-  if (toastNotifStr) {
-    WindowsDeleteString(toastNotifStr);
-  }
+  delegate_->NotificationDisplayed();
 }
 
 void WindowsToastNotification::DismissNotification(
     ComPtr<IToastNotification> toast) {
-  m_toastNotifier->Hide(toast.Get());
+  toast_notifier_->Hide(toast.Get());
 }
 
 void WindowsToastNotification::NotificationClicked() {
-    delete this;
+  delegate_->NotificationClick();
+  delete this;
 }
 
 void WindowsToastNotification::NotificationDismissed() {
-    delete this;
+  delegate_->NotificationClosed();
+  delete this;
 }
 
-HRESULT WindowsToastNotification::GetToastXml(
+bool WindowsToastNotification::GetToastXml(
     IToastNotificationManagerStatics* toastManager,
     const WCHAR* title,
     const WCHAR* msg,
-    std::string iconPath,
-    IXmlDocument** toastXml) {
-  HRESULT hr;
-  ToastTemplateType templateType;
-  if (title == NULL || msg == NULL) {
-    // Single line toast
-    templateType = iconPath.length() == 0 ? ToastTemplateType_ToastText01 : ToastTemplateType_ToastImageAndText01;
-    hr = m_toastManager->GetTemplateContent(templateType, toastXml);
-    if (SUCCEEDED(hr)) {
-      const WCHAR* text = title != NULL ? title : msg;
-      hr = SetXmlText(*toastXml, text);
-    }
+    std::string icon_path,
+    IXmlDocument** toast_xml) {
+  ToastTemplateType template_type;
+  if (!title || !msg) {
+    // Single line toast.
+    template_type = icon_path.empty() ? ToastTemplateType_ToastText01 :
+                                        ToastTemplateType_ToastImageAndText01;
+    if (FAILED(toast_manager_->GetTemplateContent(template_type, toast_xml)))
+      return false;
+    if (!SetXmlText(*toast_xml, title ? title : msg))
+      return false;
   } else {
-    // Title and body toast
-    templateType = iconPath.length() == 0 ? ToastTemplateType_ToastText02 : ToastTemplateType_ToastImageAndText02;
-    hr = toastManager->GetTemplateContent(templateType, toastXml);
-    if (SUCCEEDED(hr)) {
-      hr = SetXmlText(*toastXml, title, msg);
-    }
+    // Title and body toast.
+    template_type = icon_path.empty() ? ToastTemplateType_ToastText02 :
+                                        ToastTemplateType_ToastImageAndText02;
+    if (FAILED(toastManager->GetTemplateContent(template_type, toast_xml)))
+      return false;
+    if (!SetXmlText(*toast_xml, title, msg))
+      return false;
   }
 
-  if (iconPath.length() != 0 && SUCCEEDED(hr)) {
-    // Toast has image
-    if (SUCCEEDED(hr)) {
-      hr = SetXmlImage(*toastXml, iconPath);
-    }
+  // Toast has image
+  if (!icon_path.empty())
+    return SetXmlImage(*toast_xml, icon_path);
 
-    // Don't stop a notification from showing just because an image couldn't be displayed. By default the app icon will be shown.
-    hr = S_OK;
-  }
-
-  return hr;
+  return true;
 }
 
-HRESULT WindowsToastNotification::SetXmlText(
+bool WindowsToastNotification::SetXmlText(
     IXmlDocument* doc, const WCHAR* text) {
-  HSTRING tag = NULL;
+  ScopedHString tag;
+  ComPtr<IXmlNodeList> node_list;
+  if (!GetTextNodeList(&tag, doc, &node_list, 1))
+    return false;
 
-  ComPtr<IXmlNodeList> nodeList;
-  HRESULT hr = GetTextNodeList(&tag, doc, &nodeList, 1);
-  do {
-    BREAK_IF_BAD(hr);
+  ComPtr<IXmlNode> node;
+  if (FAILED(node_list->Item(0, &node)))
+    return false;
 
-    ComPtr<IXmlNode> node;
-    hr = nodeList->Item(0, &node);
-    BREAK_IF_BAD(hr);
-
-    hr = AppendTextToXml(doc, node.Get(), text);
-  } while (FALSE);
-
-  if (tag != NULL) {
-    WindowsDeleteString(tag);
-  }
-
-  return hr;
+  return AppendTextToXml(doc, node.Get(), text);
 }
 
-HRESULT WindowsToastNotification::SetXmlText(
+bool WindowsToastNotification::SetXmlText(
     IXmlDocument* doc, const WCHAR* title, const WCHAR* body) {
-  HSTRING tag = NULL;
-  ComPtr<IXmlNodeList> nodeList;
-  HRESULT hr = GetTextNodeList(&tag, doc, &nodeList, 2);
-  do {
-    BREAK_IF_BAD(hr);
+  ScopedHString tag;
+  ComPtr<IXmlNodeList> node_list;
+  if (!GetTextNodeList(&tag, doc, &node_list, 2))
+    return false;
 
-    ComPtr<IXmlNode> node;
-    hr = nodeList->Item(0, &node);
-    BREAK_IF_BAD(hr);
+  ComPtr<IXmlNode> node;
+  if (FAILED(node_list->Item(0, &node)))
+    return false;
 
-    hr = AppendTextToXml(doc, node.Get(), title);
-    BREAK_IF_BAD(hr);
+  if (!AppendTextToXml(doc, node.Get(), title))
+    return false;
 
-    hr = nodeList->Item(1, &node);
-    BREAK_IF_BAD(hr);
+  if (FAILED(node_list->Item(1, &node)))
+    return false;
 
-    hr = AppendTextToXml(doc, node.Get(), body);
-  } while (FALSE);
-
-  if (tag != NULL) {
-    WindowsDeleteString(tag);
-  }
-
-  return hr;
+  return AppendTextToXml(doc, node.Get(), body);
 }
 
-HRESULT WindowsToastNotification::SetXmlImage(
-    IXmlDocument* doc, std::string iconPath) {
-  HSTRING tag = NULL;
-  HSTRING src = NULL;
-  HSTRING imgPath = NULL;
-  HRESULT hr = CreateHString(L"image", &tag);
+bool WindowsToastNotification::SetXmlImage(
+    IXmlDocument* doc, std::string icon_path) {
+  ScopedHString tag(L"imag");
+  if (!tag.success())
+    return false;
 
-  do {
-    BREAK_IF_BAD(hr);
+  ComPtr<IXmlNodeList> node_list;
+  if (FAILED(doc->GetElementsByTagName(tag, &node_list)))
+    return false;
 
-    ComPtr<IXmlNodeList> nodeList;
-    hr = doc->GetElementsByTagName(tag, &nodeList);
-    BREAK_IF_BAD(hr);
+  ComPtr<IXmlNode> image_node;
+  if (FAILED(node_list->Item(0, &image_node)))
+    return false;
 
-    ComPtr<IXmlNode> imageNode;
-    hr = nodeList->Item(0, &imageNode);
-    BREAK_IF_BAD(hr);
+  ComPtr<IXmlNamedNodeMap> attrs;
+  if (FAILED(image_node->get_Attributes(&attrs)))
+    return false;
 
-    ComPtr<IXmlNamedNodeMap> attrs;
-    hr = imageNode->get_Attributes(&attrs);
-    BREAK_IF_BAD(hr);
+  ScopedHString src(L"src");
+  if (!src.success())
+    return false;
 
-    hr = CreateHString(L"src", &src);
-    BREAK_IF_BAD(hr);
+  ComPtr<IXmlNode> src_attr;
+  if (FAILED(attrs->GetNamedItem(src, &src_attr)))
+    return false;
 
-    ComPtr<IXmlNode> srcAttr;
-    hr = attrs->GetNamedItem(src, &srcAttr);
-    BREAK_IF_BAD(hr);
+  ScopedHString img_path(base::UTF8ToUTF16(icon_path).c_str());
+  if (!img_path.success())
+    return false;
 
-    WCHAR xmlPath[MAX_PATH];
-    swprintf(xmlPath, ARRAYSIZE(xmlPath), L"%S", iconPath);
-    hr = CreateHString(xmlPath, &imgPath);
-    BREAK_IF_BAD(hr);
+  ComPtr<IXmlText> src_text;
+  if (FAILED(doc->CreateTextNode(img_path, &src_text)))
+    return false;
 
-    ComPtr<IXmlText> srcText;
-    hr = doc->CreateTextNode(imgPath, &srcText);
-    BREAK_IF_BAD(hr);
+  ComPtr<IXmlNode> src_node;
+  if (FAILED(src_text.As(&src_node)))
+    return false;
 
-    ComPtr<IXmlNode> srcNode;
-    hr = srcText.As(&srcNode);
-    BREAK_IF_BAD(hr);
-
-    ComPtr<IXmlNode> childNode;
-    hr = srcAttr->AppendChild(srcNode.Get(), &childNode);
-  } while (FALSE);
-
-  if (tag != NULL) {
-    WindowsDeleteString(tag);
-  }
-  if (src != NULL) {
-    WindowsDeleteString(src);
-  }
-  if (imgPath != NULL) {
-    WindowsDeleteString(imgPath);
-  }
-
-  return hr;
+  ComPtr<IXmlNode> child_node;
+  return SUCCEEDED(src_attr->AppendChild(src_node.Get(), &child_node));
 }
 
-HRESULT WindowsToastNotification::GetTextNodeList(
-    HSTRING* tag,
+bool WindowsToastNotification::GetTextNodeList(
+    ScopedHString* tag,
     IXmlDocument* doc,
-    IXmlNodeList** nodeList,
-    UINT32 reqLength) {
-  HRESULT hr = CreateHString(L"text", tag);
-  do {
-    BREAK_IF_BAD(hr);
+    IXmlNodeList** node_list,
+    UINT32 req_length) {
+  tag->Set(L"text");
+  if (!tag->success())
+    return false;
 
-    hr = doc->GetElementsByTagName(*tag, nodeList);
-    BREAK_IF_BAD(hr);
+  if (FAILED(doc->GetElementsByTagName(*tag, node_list)))
+    return false;
 
-    UINT32 nodeLength;
-    hr = (*nodeList)->get_Length(&nodeLength);
-    BREAK_IF_BAD(hr);
+  UINT32 node_length;
+  if (FAILED((*node_list)->get_Length(&node_length)))
+    return false;
 
-    if (nodeLength < reqLength) {
-      hr = E_INVALIDARG;
-    }
-  } while (FALSE);
-
-  if (!SUCCEEDED(hr)) {
-    // Allow the caller to delete this string on success
-    WindowsDeleteString(*tag);
-  }
-
-  return hr;
+  return node_length >= req_length;
 }
 
-HRESULT WindowsToastNotification::AppendTextToXml(
+bool WindowsToastNotification::AppendTextToXml(
     IXmlDocument* doc, IXmlNode* node, const WCHAR* text) {
-  HSTRING str = NULL;
-  HRESULT hr = CreateHString(text, &str);
-  do {
-    BREAK_IF_BAD(hr);
+  ScopedHString str(text);
+  if (!str.success())
+    return false;
 
-    ComPtr<IXmlText> xmlText;
-    hr = doc->CreateTextNode(str, &xmlText);
-    BREAK_IF_BAD(hr);
+  ComPtr<IXmlText> xml_text;
+  if (FAILED(doc->CreateTextNode(str, &xml_text)))
+    return false;
 
-    ComPtr<IXmlNode> textNode;
-    hr = xmlText.As(&textNode);
-    BREAK_IF_BAD(hr);
+  ComPtr<IXmlNode> text_node;
+  if (FAILED(xml_text.As(&text_node)))
+    return false;
 
-    ComPtr<IXmlNode> appendNode;
-    hr = node->AppendChild(textNode.Get(), &appendNode);
-  } while (FALSE);
-
-  if (str != NULL) {
-    WindowsDeleteString(str);
-  }
-
-  return hr;
+  ComPtr<IXmlNode> append_node;
+  return SUCCEEDED(node->AppendChild(text_node.Get(), &append_node));
 }
 
-HRESULT WindowsToastNotification::SetupCallbacks(IToastNotification* toast) {
+bool WindowsToastNotification::SetupCallbacks(IToastNotification* toast) {
   EventRegistrationToken activatedToken, dismissedToken;
-  m_eventHandler = Make<ToastEventHandler>(this, n_delegate);
-  HRESULT hr = toast->add_Activated(m_eventHandler.Get(), &activatedToken);
+  event_handler_ = Make<ToastEventHandler>(this);
+  if (FAILED(toast->add_Activated(event_handler_.Get(), &activatedToken)))
+    return false;
 
-  if (SUCCEEDED(hr)) {
-    hr = toast->add_Dismissed(m_eventHandler.Get(), &dismissedToken);
-  }
-
-  return hr;
-}
-
-HRESULT WindowsToastNotification::CreateHString(
-    const WCHAR* source, HSTRING* dest) {
-  if (source == NULL || dest == NULL) {
-    return E_INVALIDARG;
-  }
-
-  HRESULT hr = WindowsCreateString(source, wcslen(source), dest);
-  return hr;
+  return SUCCEEDED(toast->add_Dismissed(event_handler_.Get(), &dismissedToken));
 }
 
 /*
 / Toast Event Handler
 */
-ToastEventHandler::ToastEventHandler(
-    WindowsToastNotification* notification,
-    content::DesktopNotificationDelegate* delegate) {
-  m_notification = notification;
-  n_delegate = delegate;
+ToastEventHandler::ToastEventHandler(WindowsToastNotification* notification)
+    : notification_(notification) {
 }
 
 ToastEventHandler::~ToastEventHandler() {
@@ -340,26 +257,14 @@ ToastEventHandler::~ToastEventHandler() {
 
 IFACEMETHODIMP ToastEventHandler::Invoke(
     IToastNotification* sender, IInspectable* args) {
-  // Notification "activated" (clicked)
-  n_delegate->NotificationClick();
-
-  if (m_notification != NULL) {
-    m_notification->NotificationClicked();
-  }
-
+  notification_->NotificationClicked();
   return S_OK;
 }
 
 IFACEMETHODIMP ToastEventHandler::Invoke(
     IToastNotification* sender, IToastDismissedEventArgs* e) {
-  // Notification dismissed
-  n_delegate->NotificationClosed();
-
-  if (m_notification != NULL) {
-    m_notification->NotificationDismissed();
-  }
-
+  notification_->NotificationDismissed();
   return S_OK;
 }
 
-} //namespace
+}  // namespace WinToasts

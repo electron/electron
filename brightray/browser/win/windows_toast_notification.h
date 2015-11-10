@@ -18,6 +18,8 @@ using namespace Microsoft::WRL;
 using namespace ABI::Windows::UI::Notifications;
 using namespace ABI::Windows::Foundation;
 
+class ScopedHString;
+
 namespace WinToasts {
 
 using DesktopToastActivatedEventHandler =
@@ -29,7 +31,9 @@ class ToastEventHandler;
 
 class WindowsToastNotification {
  public:
-  WindowsToastNotification(const char* appName, content::DesktopNotificationDelegate* delegate);
+  WindowsToastNotification(
+      const char* app_name,
+      scoped_ptr<content::DesktopNotificationDelegate> delegate);
   ~WindowsToastNotification();
 
   void ShowNotification(const WCHAR* title, const WCHAR* msg, std::string iconPath, ComPtr<IToastNotification>& toast);
@@ -38,20 +42,18 @@ class WindowsToastNotification {
   void NotificationDismissed();
 
  private:
-  ComPtr<ToastEventHandler> m_eventHandler;
+  scoped_ptr<content::DesktopNotificationDelegate> delegate_;
+  ComPtr<ToastEventHandler> event_handler_;
+  ComPtr<IToastNotificationManagerStatics> toast_manager_;
+  ComPtr<IToastNotifier> toast_notifier_;
 
-  content::DesktopNotificationDelegate* n_delegate;
-  ComPtr<IToastNotificationManagerStatics> m_toastManager;
-  ComPtr<IToastNotifier> m_toastNotifier;
-
-  HRESULT GetToastXml(IToastNotificationManagerStatics* toastManager, const WCHAR* title, const WCHAR* msg, std::string iconPath, ABI::Windows::Data::Xml::Dom::IXmlDocument** toastXml);
-  HRESULT SetXmlText(ABI::Windows::Data::Xml::Dom::IXmlDocument* doc, const WCHAR* text);
-  HRESULT SetXmlText(ABI::Windows::Data::Xml::Dom::IXmlDocument* doc, const WCHAR* title, const WCHAR* body);
-  HRESULT SetXmlImage(ABI::Windows::Data::Xml::Dom::IXmlDocument* doc, std::string iconPath);
-  HRESULT GetTextNodeList(HSTRING* tag, ABI::Windows::Data::Xml::Dom::IXmlDocument* doc, ABI::Windows::Data::Xml::Dom::IXmlNodeList** nodeList, UINT32 reqLength);
-  HRESULT AppendTextToXml(ABI::Windows::Data::Xml::Dom::IXmlDocument* doc, ABI::Windows::Data::Xml::Dom::IXmlNode* node, const WCHAR* text);
-  HRESULT SetupCallbacks(IToastNotification* toast);
-  HRESULT CreateHString(const WCHAR* source, HSTRING* dest);
+  bool GetToastXml(IToastNotificationManagerStatics* toastManager, const WCHAR* title, const WCHAR* msg, std::string iconPath, ABI::Windows::Data::Xml::Dom::IXmlDocument** toastXml);
+  bool SetXmlText(ABI::Windows::Data::Xml::Dom::IXmlDocument* doc, const WCHAR* text);
+  bool SetXmlText(ABI::Windows::Data::Xml::Dom::IXmlDocument* doc, const WCHAR* title, const WCHAR* body);
+  bool SetXmlImage(ABI::Windows::Data::Xml::Dom::IXmlDocument* doc, std::string iconPath);
+  bool GetTextNodeList(ScopedHString* tag, ABI::Windows::Data::Xml::Dom::IXmlDocument* doc, ABI::Windows::Data::Xml::Dom::IXmlNodeList** nodeList, UINT32 reqLength);
+  bool AppendTextToXml(ABI::Windows::Data::Xml::Dom::IXmlDocument* doc, ABI::Windows::Data::Xml::Dom::IXmlNode* node, const WCHAR* text);
+  bool SetupCallbacks(IToastNotification* toast);
 };
 
 
@@ -59,15 +61,14 @@ class ToastEventHandler : public RuntimeClass<RuntimeClassFlags<ClassicCom>,
                                               DesktopToastActivatedEventHandler,
                                               DesktopToastDismissedEventHandler> {
  public:
-  ToastEventHandler(WindowsToastNotification* notification, content::DesktopNotificationDelegate* delegate);
+  ToastEventHandler(WindowsToastNotification* notification);
   ~ToastEventHandler();
 
   IFACEMETHODIMP Invoke(IToastNotification* sender, IInspectable* args);
   IFACEMETHODIMP Invoke(IToastNotification* sender, IToastDismissedEventArgs* e);
 
  private:
-  WindowsToastNotification* m_notification;
-  content::DesktopNotificationDelegate* n_delegate;
+  WindowsToastNotification* notification_;  // weak ref.
 };
 
 } // namespace
