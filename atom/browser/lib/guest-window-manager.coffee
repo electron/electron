@@ -4,15 +4,24 @@ BrowserWindow = require 'browser-window'
 
 frameToGuest = {}
 
+# Copy attribute of |parent| to |child| if it is not defined in |child|.
+mergeOptions = (child, parent) ->
+  for own key, value of parent when key not in child
+    if typeof value is 'object'
+      child[key] = mergeOptions {}, value
+    else
+      child[key] = value
+  child
+
 # Merge |options| with the |embedder|'s window's options.
 mergeBrowserWindowOptions = (embedder, options) ->
   if embedder.browserWindowOptions?
     # Inherit the original options if it is a BrowserWindow.
-    options.__proto__ = embedder.browserWindowOptions
+    mergeOptions options, embedder.browserWindowOptions
   else
     # Or only inherit web-preferences if it is a webview.
     options.webPreferences ?= {}
-    options.webPreferences.__proto__ = embedder.getWebPreferences()
+    mergeOptions options.webPreferences, embedder.getWebPreferences()
   options
 
 # Create a new guest created by |embedder| with |options|.
