@@ -1,6 +1,7 @@
 EventEmitter = require('events').EventEmitter
 app = require 'app'
-ipc = require 'ipc'
+ipc = require 'ipc-main'
+deprecate = require 'deprecate'
 
 BrowserWindow = process.atomBinding('window').BrowserWindow
 BrowserWindow::__proto__ = EventEmitter.prototype
@@ -71,32 +72,32 @@ BrowserWindow.fromDevToolsWebContents = (webContents) ->
 
 # Helpers.
 BrowserWindow::loadUrl = -> @webContents.loadUrl.apply @webContents, arguments
-BrowserWindow::send = -> @webContents.send.apply @webContents, arguments
-
-# Be compatible with old API.
-BrowserWindow::undo = -> @webContents.undo()
-BrowserWindow::redo = -> @webContents.redo()
-BrowserWindow::cut = -> @webContents.cut()
-BrowserWindow::copy = -> @webContents.copy()
-BrowserWindow::paste = -> @webContents.paste()
-BrowserWindow::selectAll = -> @webContents.selectAll()
-BrowserWindow::restart = -> @webContents.reload()
-BrowserWindow::getUrl = -> @webContents.getUrl()
 BrowserWindow::reload = -> @webContents.reload.apply @webContents, arguments
-BrowserWindow::reloadIgnoringCache = -> @webContents.reloadIgnoringCache.apply @webContents, arguments
-BrowserWindow::getPageTitle = -> @webContents.getTitle()
-BrowserWindow::isLoading = -> @webContents.isLoading()
-BrowserWindow::isWaitingForResponse = -> @webContents.isWaitingForResponse()
-BrowserWindow::stop = -> @webContents.stop()
-BrowserWindow::isCrashed = -> @webContents.isCrashed()
-BrowserWindow::executeJavaScriptInDevTools = (code) -> @devToolsWebContents?.executeJavaScript code
+BrowserWindow::send = -> @webContents.send.apply @webContents, arguments
 BrowserWindow::openDevTools = -> @webContents.openDevTools.apply @webContents, arguments
 BrowserWindow::closeDevTools = -> @webContents.closeDevTools()
 BrowserWindow::isDevToolsOpened = -> @webContents.isDevToolsOpened()
 BrowserWindow::toggleDevTools = -> @webContents.toggleDevTools()
 BrowserWindow::inspectElement = -> @webContents.inspectElement.apply @webContents, arguments
 BrowserWindow::inspectServiceWorker = -> @webContents.inspectServiceWorker()
-BrowserWindow::print = -> @webContents.print.apply @webContents, arguments
-BrowserWindow::printToPDF = -> @webContents.printToPDF.apply @webContents, arguments
+
+# Deprecated.
+deprecate.rename BrowserWindow, 'restart', 'reload'
+deprecate.member BrowserWindow, 'undo', 'webContents'
+deprecate.member BrowserWindow, 'redo', 'webContents'
+deprecate.member BrowserWindow, 'cut', 'webContents'
+deprecate.member BrowserWindow, 'copy', 'webContents'
+deprecate.member BrowserWindow, 'paste', 'webContents'
+deprecate.member BrowserWindow, 'selectAll', 'webContents'
+deprecate.member BrowserWindow, 'getUrl', 'webContents'
+deprecate.member BrowserWindow, 'reloadIgnoringCache', 'webContents'
+deprecate.member BrowserWindow, 'getPageTitle', 'webContents'
+deprecate.member BrowserWindow, 'isLoading', 'webContents'
+deprecate.member BrowserWindow, 'isWaitingForResponse', 'webContents'
+deprecate.member BrowserWindow, 'stop', 'webContents'
+deprecate.member BrowserWindow, 'isCrashed', 'webContents'
+deprecate.member BrowserWindow, 'executeJavaScriptInDevTools', 'webContents'
+deprecate.member BrowserWindow, 'print', 'webContents'
+deprecate.member BrowserWindow, 'printToPDF', 'webContents'
 
 module.exports = BrowserWindow

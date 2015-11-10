@@ -1,4 +1,4 @@
-ipc = require 'ipc'
+ipc = require 'ipc-main'
 
 # The history operation in renderer is redirected to browser.
 ipc.on 'ATOM_SHELL_NAVIGATION_CONTROLLER', (event, method, args...) ->

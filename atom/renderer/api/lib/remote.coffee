@@ -1,4 +1,4 @@
-ipc = require 'ipc'
+ipc = require 'ipc-renderer'
 v8Util = process.atomBinding 'v8_util'
 CallbacksRegistry = require 'callbacks-registry'
 
@@ -119,11 +119,11 @@ metaToPlainObject = (meta) ->
   obj
 
 # Browser calls a callback in renderer.
-ipc.on 'ATOM_RENDERER_CALLBACK', (id, args) ->
+ipc.on 'ATOM_RENDERER_CALLBACK', (event, id, args) ->
   callbacksRegistry.apply id, metaToValue(args)
 
 # A callback in browser is released.
-ipc.on 'ATOM_RENDERER_RELEASE_CALLBACK', (id) ->
+ipc.on 'ATOM_RENDERER_RELEASE_CALLBACK', (event, id) ->
   callbacksRegistry.remove id
 
 # Get remote module.

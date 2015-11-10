@@ -1,4 +1,4 @@
-ipc = require 'ipc'
+ipc = require 'ipc-main'
 webContents = require 'web-contents'
 webViewManager = null  # Doesn't exist in early initialization.
 

@@ -55,7 +55,7 @@ app.once 'ready', ->
   BrowserWindow = require 'browser-window'
 
   # Load persistented extensions.
-  loadedExtensionsPath = path.join app.getDataPath(), 'DevTools Extensions'
+  loadedExtensionsPath = path.join app.getPath('userData'), 'DevTools Extensions'
 
   try
     loadedExtensions = JSON.parse fs.readFileSync(loadedExtensionsPath)

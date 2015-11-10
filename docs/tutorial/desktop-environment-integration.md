@@ -8,6 +8,67 @@ applications can put a custom menu in the dock menu.
 This guide explains how to integrate your application into those desktop
 environments with Electron APIs.
 
+## Notifications (Windows, Linux, OS X)
+
+All three operating systems provide means for applications to send notifications
+to the user. Electron conveniently allows developers to send notifications with
+the [HTML5 Notification API](https://notifications.spec.whatwg.org/), using
+the currently running operating system's native notification APIs to display it.
+
+```javascript
+var myNotificiation = new Notification('Title', {
+  body: 'Lorem Ipsum Dolor Sit Amet'
+});
+
+myNotification.onclick = function () {
+  console.log('Notification clicked')
+}
+```
+
+While code and user experience across operating systems are similar, but there
+are fine differences.
+
+### Windows
+
+* On Windows 10, notifications "just work".
+* On Windows 8.1 and Windows 8, a shortcut to your app, with a [Application User
+Model ID][app-user-model-id], must be installed to the Start screen. Note,
+however, that it does not need to be pinned to the Start screen.
+* On Windows 7 and below, notifications are not supported. You can however send
+"balloon notifications" using the [Tray API](tray-balloon).
+
+To use an image in your notification, pass a local image file (preferably `png`)
+in the `icon` property of your notification's options. The notification will
+still display if you submit and incorrect or `http/https`-based URL, but the
+image will not be displayed.
+
+```javascript
+new Notification('Title', {
+  body: 'Notification with icon',
+  icon: 'file:///C:/Users/feriese/Desktop/icon.png'
+});
+```
+
+Keep furthermore in mind that the maximum length for the body is 250 characters,
+with the Windows team recommending that notifications should be kept to 200
+characters.
+
+### Linux
+
+Notifications are sent using `libnotify`, it can show notifications on any
+desktop environment that follows [Desktop Notifications
+Specification][notification-spec], including Cinnamon, Enlightenment, Unity,
+GNOME, KDE.
+
+### OS X
+
+Notifications are straight-forward on OS X, you should however be aware of
+[Apple's Human Interface guidelines regarding
+notifications](https://developer.apple.com/library/mac/documentation/UserExperience/Conceptual/OSXHIGuidelines/NotificationCenter.html).
+
+Note that notifications are limited to 256 bytes in size - and will be truncated
+if you exceed that limit.
+
 ## Recent documents (Windows & OS X)
 
 Windows and OS X provide easy access to a list of recent documents opened by
@@ -43,7 +104,8 @@ registered as a handler of the file type of the document, otherwise the file
 won't appear in JumpList even after you have added it. You can find everything
 on registering your application in [Application Registration][app-registration].
 
-When a user clicks a file from the JumpList, a new instance of your application will be started with the path of the file added as a command line argument.
+When a user clicks a file from the JumpList, a new instance of your application
+will be started with the path of the file added as a command line argument.
 
 ### OS X Notes
 
@@ -154,10 +216,10 @@ __Thumbnail toolbar of Windows Media Player:__
 
 ![player](https://i-msdn.sec.s-msft.com/dynimg/IC420540.png)
 
-You can use [BrowserWindow.setThumbarButtons][setthumbarbuttons] to set thumbnail
-toolbar in your application:
+You can use [BrowserWindow.setThumbarButtons][setthumbarbuttons] to set
+thumbnail toolbar in your application:
 
-```
+```javascript
 var BrowserWindow = require('browser-window');
 var path = require('path');
 var win = new BrowserWindow({
@@ -188,8 +250,8 @@ win.setThumbarButtons([]);
 
 ## Unity Launcher Shortcuts (Linux)
 
-In Unity, you can add custom entries to its launcher via modifying the `.desktop`
-file, see [Adding Shortcuts to a Launcher][unity-launcher].
+In Unity, you can add custom entries to its launcher via modifying the
+`.desktop` file, see [Adding Shortcuts to a Launcher][unity-launcher].
 
 __Launcher shortcuts of Audacious:__
 
@@ -252,3 +314,6 @@ window.setDocumentEdited(true);
 [app-registration]: http://msdn.microsoft.com/en-us/library/windows/desktop/ee872121(v=vs.85).aspx
 [unity-launcher]: https://help.ubuntu.com/community/UnityLaunchersAndDesktopFiles#Adding_shortcuts_to_a_launcher
 [setthumbarbuttons]: ../api/browser-window.md#browserwindowsetthumbarbuttonsbuttons
+[tray-balloon]: ../api/tray.md#traydisplayballoonoptions-windows
+[app-user-model-id]: https://msdn.microsoft.com/en-us/library/windows/desktop/dd378459(v=vs.85).aspx
+[notification-spec]: https://developer.gnome.org/notification-spec/

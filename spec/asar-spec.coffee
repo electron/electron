@@ -407,7 +407,7 @@ describe 'asar package', ->
   describe 'asar protocol', ->
     url = require 'url'
     remote = require 'remote'
-    ipc = remote.require 'ipc'
+    ipc = remote.require 'ipc-main'
     BrowserWindow = remote.require 'browser-window'
 
     it 'can request a file in package', (done) ->

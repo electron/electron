@@ -355,15 +355,16 @@ Prints `webview`'s web page. Same with `webContents.print([options])`.
 
 Prints webview's web page as PDF, Same with `webContents.printToPDF(options, callback)`
 
-### `<webview>.send(channel[, args...])`
+### `<webview>.send(channel[, arg1][, arg2][, ...])`
 
 * `channel` String
 * `arg` (optional)
 
-Send `args..` to guest page via `channel` in asynchronous message, the guest
-page can handle it by listening to the `channel` event of `ipc` module.
+Send an asynchronous message to renderer process via `channel`, you can also
+send arbitrary arguments. The renderer process can handle the message by
+listening to the `channel` event with the `ipcRenderer` module.
 
-See [WebContents.send](web-contents.md#webcontentssendchannel-args) for
+See [webContents.send](web-contents.md#webcontentssendchannel-args) for
 examples.
 
 ### `<webview>.sendInputEvent(event)`
@@ -372,7 +373,7 @@ examples.
 
 Sends an input `event` to the page.
 
-See [WebContents.sendInputEvent](web-contents.md##webcontentssendinputeventevent)
+See [webContents.sendInputEvent](web-contents.md##webcontentssendinputeventevent)
 for detailed description of `event` object.
 
 ## DOM events
