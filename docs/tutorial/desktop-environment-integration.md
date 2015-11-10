@@ -8,6 +8,44 @@ applications can put a custom menu in the dock menu.
 This guide explains how to integrate your application into those desktop
 environments with Electron APIs.
 
+## Notifications (Windows, Linux, OS X)
+All three operating systems provide means for applications to send notifications to the user. Electron conveniently allows developers to send notifications using the [JavaScript Notification API](https://notifications.spec.whatwg.org/), using the currently running operating system's native notification APIs to display it.
+
+```javascript
+var myNotificiation = new Notification('Title', {
+  body: 'Lorem Ipsum Dolor Sit Amet'
+});
+
+myNotification.onclick = function () {
+  console.log('Notification clicked')
+}
+```
+While code and user experience across operating systems are similar, but there are fine differences. 
+
+#### Windows
+ * On Windows 10, notifications "just work".
+ * On Windows 8.1 and Windows 8, a shortcut to your app, with a [System.AppUserModel.ID](https://msdn.microsoft.com/en-us/library/windows/desktop/dd391569(v=vs.85).aspx), must be installed to the Start screen. Note, however, that it does not need to be pinned to the Start screen.
+ * On Windows 7 and below, notifications are not supported. You can however send "balloon notifications" using the [Tray API](trayballoon).
+
+To use an image in your notification, pass a local image file (preferably `png`) in the `icon` property of your notification's options. The notification will still display if you submit and incorrect or `http/https`-based URL, but the image will not be displayed.
+
+```
+new Notification('Title', {
+  body: 'Notification with icon',
+  icon: 'file:///C:/Users/feriese/Desktop/icon.png'
+});
+```
+
+Keep furthermore in mind that the maximum length for the body is 250 characters, with the Windows team recommending that notifications should be kept to 200 characters.
+
+#### Linux
+Notifications are sent using Ubuntu's Unity (and will obviously not be displayed if Unity is not running). For more information about Unity's on screen notifications, [check out the project page](https://unity.ubuntu.com/projects/notifyosd/).
+
+#### OS X
+Notifications are straight-forward on OS X, you should however be aware of [Apple's Human Interface guidelines regarding notifications](https://developer.apple.com/library/mac/documentation/UserExperience/Conceptual/OSXHIGuidelines/NotificationCenter.html).
+
+Note that notifications are limited to 256 bytes in size - and will be truncated if you exceed that limit.
+
 ## Recent documents (Windows & OS X)
 
 Windows and OS X provide easy access to a list of recent documents opened by
@@ -252,3 +290,4 @@ window.setDocumentEdited(true);
 [app-registration]: http://msdn.microsoft.com/en-us/library/windows/desktop/ee872121(v=vs.85).aspx
 [unity-launcher]: https://help.ubuntu.com/community/UnityLaunchersAndDesktopFiles#Adding_shortcuts_to_a_launcher
 [setthumbarbuttons]: ../api/browser-window.md#browserwindowsetthumbarbuttonsbuttons
+[trayballoon]: ../api/tray.md#traydisplayballoonoptions-windows
