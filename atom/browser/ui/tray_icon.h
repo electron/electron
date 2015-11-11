@@ -61,7 +61,11 @@ class TrayIcon {
   void NotifyBalloonClosed();
   void NotifyRightClicked(const gfx::Rect& bounds = gfx::Rect(),
                           int modifiers = 0);
+  void NotifyDrop();
   void NotifyDropFiles(const std::vector<std::string>& files);
+  void NotifyDragEntered();
+  void NotifyDragExited();
+  void NotifyDragEnded();
 
  protected:
   TrayIcon();

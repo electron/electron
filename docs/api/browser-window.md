@@ -33,20 +33,20 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
 * `height` Integer - Window's height.
 * `x` Integer - Window's left offset from screen.
 * `y` Integer - Window's top offset from screen.
-* `use-content-size` Boolean - The `width` and `height` would be used as web
+* `useContentSize` Boolean - The `width` and `height` would be used as web
    page's size, which means the actual window's size will include window
    frame's size and be slightly larger.
 * `center` Boolean - Show window in the center of the screen.
-* `min-width` Integer - Window's minimum width.
-* `min-height` Integer - Window's minimum height.
-* `max-width` Integer - Window's maximum width.
-* `max-height` Integer - Window's maximum height.
+* `minWidth` Integer - Window's minimum width.
+* `minHeight` Integer - Window's minimum height.
+* `maxWidth` Integer - Window's maximum width.
+* `maxHeight` Integer - Window's maximum height.
 * `resizable` Boolean - Whether window is resizable.
-* `always-on-top` Boolean - Whether the window should always stay on top of
+* `alwaysOnTop` Boolean - Whether the window should always stay on top of
    other windows.
 * `fullscreen` Boolean - Whether the window should show in fullscreen. When
   set to `false` the fullscreen button will be hidden or disabled on OS X.
-* `skip-taskbar` Boolean - Whether to show the window in taskbar.
+* `skipTaskbar` Boolean - Whether to show the window in taskbar.
 * `kiosk` Boolean - The kiosk mode.
 * `title` String - Default window title.
 * `icon` [NativeImage](native-image.md) - The window icon, when omitted on
@@ -54,24 +54,24 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
 * `show` Boolean - Whether window should be shown when created.
 * `frame` Boolean - Specify `false` to create a
 [Frameless Window](frameless-window.md).
-* `accept-first-mouse` Boolean - Whether the web view accepts a single
+* `acceptFirstMouse` Boolean - Whether the web view accepts a single
   mouse-down event that simultaneously activates the window.
-* `disable-auto-hide-cursor` Boolean - Whether to hide cursor when typing.
-* `auto-hide-menu-bar` Boolean - Auto hide the menu bar unless the `Alt`
+* `disableAutoHideCursor` Boolean - Whether to hide cursor when typing.
+* `autoHideMenuBar` Boolean - Auto hide the menu bar unless the `Alt`
   key is pressed.
-* `enable-larger-than-screen` Boolean - Enable the window to be resized larger
+* `enableLargerThanScreen` Boolean - Enable the window to be resized larger
   than screen.
-* `background-color` String - Window's background color as Hexadecimal value,
+* `backgroundColor` String - Window's background color as Hexadecimal value,
   like `#66CD00` or `#FFF`. This is only implemented on Linux and Windows.
-* `dark-theme` Boolean - Forces using dark theme for the window, only works on
+* `darkTheme` Boolean - Forces using dark theme for the window, only works on
   some GTK+3 desktop environments.
 * `transparent` Boolean - Makes the window [transparent](frameless-window.md).
 * `type` String - Specifies the type of the window, possible types are
   `desktop`, `dock`, `toolbar`, `splash`, `notification`. This only works on
   Linux.
-* `standard-window` Boolean - Uses the OS X's standard window instead of the
+* `standardWindow` Boolean - Uses the OS X's standard window instead of the
   textured window. Defaults to `true`.
-* `title-bar-style` String, OS X - specifies the style of window title bar.
+* `titleBarStyle` String, OS X - specifies the style of window title bar.
   This option is supported on OS X 10.10 Yosemite and newer. There are three
   possible values:
   * `default` or not specified results in the standard gray opaque Mac title
@@ -81,8 +81,8 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
   the top left.
   * `hidden-inset` results in a hidden title bar with an alternative look
   where the traffic light buttons are slightly more inset from the window edge.
-* `web-preferences` Object - Settings of web page's features, properties:
-  * `node-integration` Boolean - Whether node integration is enabled. Default
+* `webPreferences` Object - Settings of web page's features, properties:
+  * `nodeIntegration` Boolean - Whether node integration is enabled. Default
     is `true`.
   * `preload` String - Specifies a script that will be loaded before other
     scripts run in the page. This script will always have access to node APIs
@@ -94,31 +94,31 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     prefix, the page will use an in-memory session. By assigning the same
     `partition`, multiple pages can share the same session. If the `partition`
     is unset then default session of the app will be used.
-  * `zoom-factor` Number - The default zoom factor of the page, `3.0` represents
+  * `zoomFactor` Number - The default zoom factor of the page, `3.0` represents
     `300%`.
   * `javascript` Boolean
-  * `web-security` Boolean - When setting `false`, it will disable the
+  * `webSecurity` Boolean - When setting `false`, it will disable the
     same-origin policy (Usually using testing websites by people), and set
-    `allow_displaying_insecure_content` and `allow_running_insecure_content` to
+    `allowDisplayingInsecureContent` and `allowRunningInsecureContent` to
     `true` if these two options are not set by user.
-  * `allow-displaying-insecure-content` Boolean - Allow an https page to display
+  * `allowDisplayingInsecureContent` Boolean - Allow an https page to display
     content like images from http URLs.
-  * `allow-running-insecure-content` Boolean - Allow a https page to run
+  * `allowRunningInsecureContent` Boolean - Allow a https page to run
     JavaScript, CSS or plugins from http URLs.
   * `images` Boolean
   * `java` Boolean
-  * `text-areas-are-resizable` Boolean
+  * `textAreasAreResizable` Boolean
   * `webgl` Boolean
   * `webaudio` Boolean
   * `plugins` Boolean - Whether plugins should be enabled.
-  * `experimental-features` Boolean
-  * `experimental-canvas-features` Boolean
-  * `overlay-scrollbars` Boolean
-  * `overlay-fullscreen-video` Boolean
-  * `shared-worker` Boolean
-  * `direct-write` Boolean - Whether the DirectWrite font rendering system on
+  * `experimentalFeatures` Boolean
+  * `experimentalCanvasFeatures` Boolean
+  * `overlayScrollbars` Boolean
+  * `overlayFullscreenVideo` Boolean
+  * `sharedWorker` Boolean
+  * `directWrite` Boolean - Whether the DirectWrite font rendering system on
      Windows is enabled.
-  * `page-visibility` Boolean - Page would be forced to be always in visible
+  * `pageVisibility` Boolean - Page would be forced to be always in visible
      or hidden state once set, instead of reflecting current window's
      visibility. Users can set it to `true` to prevent throttling of DOM
      timers.

@@ -74,8 +74,24 @@ void Tray::OnBalloonClosed() {
   Emit("balloon-closed");
 }
 
+void Tray::OnDrop() {
+  Emit("drop");
+}
+
 void Tray::OnDropFiles(const std::vector<std::string>& files) {
   Emit("drop-files", files);
+}
+
+void Tray::OnDragEntered() {
+  Emit("drag-enter");
+}
+
+void Tray::OnDragExited() {
+  Emit("drag-leave");
+}
+
+void Tray::OnDragEnded() {
+  Emit("drag-end");
 }
 
 bool Tray::IsDestroyed() const {
