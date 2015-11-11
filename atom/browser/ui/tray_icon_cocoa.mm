@@ -254,7 +254,21 @@ const CGFloat kVerticalTitleMargin = 2;
 }
 
 - (NSDragOperation)draggingEntered:(id <NSDraggingInfo>)sender {
+  trayIcon_->NotifyDragEntered();
   return NSDragOperationCopy;
+}
+
+- (void)draggingExited:(id <NSDraggingInfo>)sender {
+  trayIcon_->NotifyDragExited();
+}
+
+- (void)draggingEnded:(id <NSDraggingInfo>)sender {
+  trayIcon_->NotifyDragEnded();
+}
+
+- (BOOL)prepareForDragOperation:(id <NSDraggingInfo>)sender {
+  trayIcon_->NotifyDrop();
+  return YES;
 }
 
 - (BOOL)performDragOperation:(id <NSDraggingInfo>)sender {

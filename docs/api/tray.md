@@ -112,12 +112,28 @@ Emitted when the tray balloon is clicked.
 Emitted when the tray balloon is closed because of timeout or user manually
 closes it.
 
+### Event: 'drop' _OS X_
+
+Emitted when any dragged items are dropped on the tray icon.
+
 ### Event: 'drop-files' _OS X_
 
 * `event`
 * `files` Array - the file path of dropped files.
 
 Emitted when dragged files are dropped in the tray icon.
+
+### Event: 'drag-enter' _OS X_
+
+Emitted when a drag operation enters the tray icon.
+
+### Event: 'drag-leave' _OS X_
+
+Emitted when a drag operation exits the tray icon.
+
+### Event: 'drag-end' _OS X_
+
+Emitted when a drag operation ends on the tray or ends at another location.
 
 ## Methods
 
