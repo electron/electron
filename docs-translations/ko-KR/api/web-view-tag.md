@@ -333,15 +333,15 @@ Webview 페이지를 인쇄합니다. `webContents.print([options])` 메서드�
 
 Webview 페이지를 PDF 형식으로 인쇄합니다. `webContents.printToPDF(options, callback)` 메서드와 같습니다.
 
-### `<webview>.send(channel[, args...])`
+### `<webview>.send(channel[, arg1][, arg2][, ...])`
 
 * `channel` String
 * `args` (optional)
 
-`channel`을 통해 페이지에 `args` 비동기 메시지를 보냅니다.
-페이지에선 `ipc` 모듈의 `channel` 이벤트를 사용하면 이 메시지를 받을 수 있습니다.
+`channel`을 통해 랜더러 프로세스로 비동기 메시지를 보냅니다. 또한 `args`를 지정하여 임의의 인자를 보낼 수도 있습니다.
+랜더러 프로세스는 `ipcRenderer` 모듈의 `channel` 이벤트로 이 메시지를 받아 처리할 수 있습니다.
 
-예제는 [WebContents.send](web-contents.md#webcontentssendchannel-args)를 참고하세요.
+예제는 [webContents.send](web-contents.md#webcontentssendchannel-args)를 참고하세요.
 
 ### `<webview>.sendInputEvent(event)`
 
@@ -349,7 +349,7 @@ Webview 페이지를 PDF 형식으로 인쇄합니다. `webContents.printToPDF(o
 
 페이지에 input `event`를 보냅니다.
 
-`event` 객체에 대해 자세한 내용을 알아보려면 [WebContents.sendInputEvent](web-contents.md##webcontentssendinputeventevent)를 참고하세요.
+`event` 객체에 대해 자세히 알아보려면 [webContents.sendInputEvent](web-contents.md##webcontentssendinputeventevent)를 참고하세요.
 
 ## DOM 이벤트
 
