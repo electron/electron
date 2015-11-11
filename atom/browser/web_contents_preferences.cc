@@ -6,10 +6,12 @@
 
 #include <string>
 
+#include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/options_switches.h"
 #include "base/command_line.h"
 #include "base/strings/string_number_conversions.h"
 #include "content/public/common/web_preferences.h"
+#include "native_mate/dictionary.h"
 #include "net/base/filename_util.h"
 
 #if defined(OS_WIN)
@@ -36,12 +38,16 @@ const char* kWebRuntimeFeatures[] = {
 
 WebContentsPreferences::WebContentsPreferences(
     content::WebContents* web_contents,
-    base::DictionaryValue* web_preferences) {
-  web_preferences_.Swap(web_preferences);
-  web_contents->SetUserData(UserDataKey(), this);
+    const mate::Dictionary& web_preferences) {
+  v8::Isolate* isolate = web_preferences.isolate();
+  mate::Dictionary copied(isolate, web_preferences.GetHandle()->Clone());
+  // Following fields should not be stored.
+  copied.Delete("embedder");
+  copied.Delete("isGuest");
+  copied.Delete("session");
 
-  // The "isGuest" is not a preferences field.
-  web_preferences_.Remove("isGuest", nullptr);
+  mate::ConvertFromV8(isolate, copied.GetHandle(), &web_preferences_);
+  web_contents->SetUserData(UserDataKey(), this);
 }
 
 WebContentsPreferences::~WebContentsPreferences() {
@@ -135,21 +141,21 @@ void WebContentsPreferences::OverrideWebkitPrefs(
     prefs->images_enabled = b;
   if (self->web_preferences_.GetBoolean("java", &b))
     prefs->java_enabled = b;
-  if (self->web_preferences_.GetBoolean("text-areas-are-resizable", &b))
+  if (self->web_preferences_.GetBoolean("textAreasAreResizable", &b))
     prefs->text_areas_are_resizable = b;
   if (self->web_preferences_.GetBoolean("webgl", &b))
     prefs->experimental_webgl_enabled = b;
   if (self->web_preferences_.GetBoolean("webaudio", &b))
     prefs->webaudio_enabled = b;
-  if (self->web_preferences_.GetBoolean("web-security", &b)) {
+  if (self->web_preferences_.GetBoolean("webSecurity", &b)) {
     prefs->web_security_enabled = b;
     prefs->allow_displaying_insecure_content = !b;
     prefs->allow_running_insecure_content = !b;
   }
-  if (self->web_preferences_.GetBoolean("allow-displaying-insecure-content",
+  if (self->web_preferences_.GetBoolean("allowDisplayingInsecureContent",
                                         &b))
     prefs->allow_displaying_insecure_content = b;
-  if (self->web_preferences_.GetBoolean("allow-running-insecure-content", &b))
+  if (self->web_preferences_.GetBoolean("allowRunningInsecureContent", &b))
     prefs->allow_running_insecure_content = b;
 }
 

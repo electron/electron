@@ -24,10 +24,15 @@ describe 'crash-reporter module', ->
 
   it 'should send minidump when renderer crashes', (done) ->
     @timeout 120000
+    called = false
     server = http.createServer (req, res) ->
       server.close()
       form = new multiparty.Form()
       form.parse req, (error, fields, files) ->
+        # This callback can be called for twice sometimes.
+        return if called
+        called = true
+
         assert.equal fields['prod'], 'Electron'
         assert.equal fields['ver'], process.versions['electron']
         assert.equal fields['process_type'], 'renderer'
