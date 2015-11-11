@@ -138,10 +138,10 @@ describe 'browser-window module', ->
       w.setResizable not w.isResizable()
       assert.deepEqual s, w.getSize()
 
-  describe '"use-content-size" option', ->
+  describe '"useContentSize" option', ->
     it 'make window created with content size when used', ->
       w.destroy()
-      w = new BrowserWindow(show: false, width: 400, height: 400, 'use-content-size': true)
+      w = new BrowserWindow(show: false, width: 400, height: 400, useContentSize: true)
       contentSize = w.getContentSize()
       assert.equal contentSize[0], 400
       assert.equal contentSize[1], 400
@@ -153,7 +153,7 @@ describe 'browser-window module', ->
 
     it 'works for framless window', ->
       w.destroy()
-      w = new BrowserWindow(show: false, frame: false, width: 400, height: 400, 'use-content-size': true)
+      w = new BrowserWindow(show: false, frame: false, width: 400, height: 400, useContentSize: true)
       contentSize = w.getContentSize()
       assert.equal contentSize[0], 400
       assert.equal contentSize[1], 400
@@ -167,22 +167,22 @@ describe 'browser-window module', ->
 
     it 'creates browser window with hidden title bar', ->
       w.destroy()
-      w = new BrowserWindow(show: false, width: 400, height: 400, 'title-bar-style': 'hidden')
+      w = new BrowserWindow(show: false, width: 400, height: 400, titleBarStyle: 'hidden')
       contentSize = w.getContentSize()
       assert.equal contentSize[1], 400
 
     it 'creates browser window with hidden inset title bar', ->
       w.destroy()
-      w = new BrowserWindow(show: false, width: 400, height: 400, 'title-bar-style': 'hidden-inset')
+      w = new BrowserWindow(show: false, width: 400, height: 400, titleBarStyle: 'hidden-inset')
       contentSize = w.getContentSize()
       assert.equal contentSize[1], 400
 
-  describe '"enable-larger-than-screen" option', ->
+  describe '"enableLargerThanScreen" option', ->
     return if process.platform is 'linux'
 
     beforeEach ->
       w.destroy()
-      w = new BrowserWindow(show: true, width: 400, height: 400, 'enable-larger-than-screen': true)
+      w = new BrowserWindow(show: true, width: 400, height: 400, enableLargerThanScreen: true)
 
     it 'can move the window out of screen', ->
       w.setPosition -10, -10
@@ -212,7 +212,7 @@ describe 'browser-window module', ->
         w.destroy()
         w = new BrowserWindow
           show: false
-          'web-preferences':
+          webPreferences:
             preload: preload
         w.loadUrl 'file://' + path.join(fixtures, 'api', 'preload.html')
 
@@ -225,9 +225,9 @@ describe 'browser-window module', ->
         w.destroy()
         w = new BrowserWindow
           show: false
-          'web-preferences':
+          webPreferences:
             preload: preload
-            'node-integration': false
+            nodeIntegration: false
         w.loadUrl 'file://' + path.join(fixtures, 'api', 'blank.html')
 
   describe 'beforeunload handler', ->
