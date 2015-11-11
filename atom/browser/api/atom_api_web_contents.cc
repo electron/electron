@@ -269,9 +269,7 @@ WebContents::WebContents(v8::Isolate* isolate,
   managed_web_contents()->GetView()->SetDelegate(this);
 
   // Save the preferences in C++.
-  base::DictionaryValue web_preferences;
-  mate::ConvertFromV8(isolate, options.GetHandle(), &web_preferences);
-  new WebContentsPreferences(web_contents, &web_preferences);
+  new WebContentsPreferences(web_contents, options);
 
   web_contents->SetUserAgentOverride(GetBrowserContext()->GetUserAgent());
 

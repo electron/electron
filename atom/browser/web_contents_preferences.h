@@ -16,6 +16,10 @@ namespace content {
 struct WebPreferences;
 }
 
+namespace mate {
+class Dictionary;
+}
+
 namespace atom {
 
 // Stores and applies the preferences of WebContents.
@@ -31,7 +35,7 @@ class WebContentsPreferences
       content::WebContents* web_contents, content::WebPreferences* prefs);
 
   WebContentsPreferences(content::WebContents* web_contents,
-                         base::DictionaryValue* web_preferences);
+                         const mate::Dictionary& web_preferences);
   ~WebContentsPreferences() override;
 
   // $.extend(|web_preferences_|, |new_web_preferences|).
