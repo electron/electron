@@ -36,7 +36,7 @@
 * [content-tracing](api/content-tracing.md)
 * [dialog](api/dialog.md)
 * [global-shortcut](api/global-shortcut.md)
-* [ipc (main process)](api/ipc-main-process.md)
+* [ipc-main](api/ipc-main.md)
 * [menu](api/menu.md)
 * [menu-item](api/menu-item.md)
 * [power-monitor](api/power-monitor.md)
@@ -48,7 +48,7 @@
 
 ### 랜더러 프로세스에서 사용할 수 있는 모듈 (웹 페이지):
 
-* [ipc (renderer)](api/ipc-renderer.md)
+* [ipc-renderer](api/ipc-renderer.md)
 * [remote](api/remote.md)
 * [web-frame](api/web-frame.md)
 

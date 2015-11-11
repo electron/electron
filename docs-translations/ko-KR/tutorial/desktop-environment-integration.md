@@ -3,7 +3,57 @@
 어플리케이션 배포의 대상이 되는 서로 다른 운영체제 시스템의 환경에 맞춰 어플리케이션의 기능을 통합할 수 있습니다.
 예를 들어 Windows에선 태스크바의 JumpList에 바로가기를 추가할 수 있고 Mac(OS X)에선 dock 메뉴에 커스텀 메뉴를 추가할 수 있습니다.
 
-이 가이드는 Electron API를 이용하여 각 운영체제 시스템의 기능을 활용하는 방법을 설명합니다.
+이 문서는 Electron API를 이용하여 각 운영체제 시스템의 기능을 활용하는 방법을 설명합니다.
+
+## 데스크톱 알림 (Windows, Linux, OS X)
+
+Windows, Linux, OS X 운영체제 모두 기본적으로 어플리케이션에서 유저에게 알림 보낼 수 있는 방법을 제공합니다.
+Electron은 HTML5 Notification API](https://notifications.spec.whatwg.org/)를 통해 개발자가
+편리하게 데스크톱 알림을 사용할 수 있는 기능을 제공합니다. 데스크톱 알림은 운영체제의 네이티브 알림 API를 사용하여 표시합니다.
+
+```javascript
+var myNotificiation = new Notification('Title', {
+  body: 'Lorem Ipsum Dolor Sit Amet'
+});
+
+myNotification.onclick = function () {
+  console.log('Notification clicked')
+}
+```
+
+위 코드를 통해 생성한 데스크톱 알림은 각 운영체제 모두 비슷한 사용자 경험을 제공합니다. 하지만 몇 가지 다른 점들이 있습니다.
+
+### Windows
+
+* Windows 10에선 "아무 문제 없이 잘" 작동합니다.
+* Windows 8.1과 8에선 [Application User Model ID][app-user-model-id]로 바로가기를 만들어 놔야 합니다.
+이 바로가기는 반드시 시작 화면에 설치되어 있어야 합니다. 참고로 반드시 시작 화면에 고정 할 필요는 없습니다.
+* Windows 7과 그 이하 버전은 데스크톱 알림을 지원하지 않습니다. 혹시 "풍선 알림" 기능을 찾는다면 [Tray API](tray-balloon)를 사용하세요.
+
+이미지를 데스크톱 알림에 사용하려면 알림 옵션의 `icon` 속성에 로컬 이미지 파일(`png` 권장)을 지정하면 됩니다.
+데스크톱 알림은 잘못된 경로를 지정하거나 `http/https` 기반의 URL을 지정해도 이미지가 보이지 않을 뿐 정상 작동합니다.
+
+```javascript
+new Notification('Title', {
+  body: 'Notification with icon',
+  icon: 'file:///C:/Users/feriese/Desktop/icon.png'
+});
+```
+
+또한 `body`의 최대 길이는 250자 입니다. Windows 개발팀에선 알림 문자열을 200자 이하로 유지하는 것을 권장합니다.
+
+### Linux
+
+데스크톱 알림의 구현으로 `libnotify`를 사용합니다. 따라서 [Desktop Notifications Specification][notification-spec]을
+따르는 모든 데스크탑 환경에서 데스크톱 알림 기능을 사용할 수 있습니다. Cinnamon, Enlightenment, Unity, GNOME, KDE등을 지원합니다.
+
+### OS X
+
+OS X에서의 데스크톱 알림은 아주 직관적입니다. 하지만 데스크톱 알림을 사용할 땐
+[Apple's Human Interface guidelines regarding notifications](https://developer.apple.com/library/mac/documentation/UserExperience/Conceptual/OSXHIGuidelines/NotificationCenter.html)
+가이드를 고려해야 합니다.
+
+참고로 데스크롭 알림의 최대 길이는 256 바이트 입니다. 길이가 초과할 경우 초과한 글자가 잘립니다.
 
 ## 최근 사용한 문서 (Windows & OS X)
 
@@ -220,3 +270,4 @@ window.setDocumentEdited(true);
 [app-registration]: http://msdn.microsoft.com/en-us/library/windows/desktop/ee872121(v=vs.85).aspx
 [unity-launcher]: https://help.ubuntu.com/community/UnityLaunchersAndDesktopFiles#Adding_shortcuts_to_a_launcher
 [setthumbarbuttons]: ../api/browser-window.md#browserwindowsetthumbarbuttonsbuttons
+[trayballoon]: ../api/tray.md#traydisplayballoonoptions-windows
