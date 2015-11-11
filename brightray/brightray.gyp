@@ -161,17 +161,6 @@
           ]
         }],  # OS=="mac"
         ['OS=="win"', {
-          'msvs_settings': {
-            'VCLinkerTool': {
-              'AdditionalDependencies': [
-                # Windows Runtime.
-                'crypt32.lib',
-                'runtimeobject.lib',
-                'shlwapi.lib',
-                'windowsapp.lib',
-              ],
-            },
-          },
           'conditions': [
             ['libchromiumcontent_component', {
               # sandbox, base_static, devtools_discovery, devtools_http_handler,
@@ -231,6 +220,9 @@
                       'BluetoothApis.dll',
                       'Bthprops.cpl',
                       'setupapi.dll',
+                      # windows runtime
+                      'API-MS-WIN-CORE-WINRT-L1-1-0.DLL',
+                      'API-MS-WIN-CORE-WINRT-STRING-L1-1-0.DLL',
                     ],
                   },
                 },
