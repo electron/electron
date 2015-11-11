@@ -14,6 +14,8 @@ app.setApplicationMenu = (menu) ->
 app.getApplicationMenu = ->
   require('menu').getApplicationMenu()
 
+app.hide = bindings.appHide
+
 app.commandLine =
   appendSwitch: bindings.appendSwitch,
   appendArgument: bindings.appendArgument

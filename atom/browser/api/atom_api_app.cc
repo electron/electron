@@ -410,6 +410,10 @@ int DockBounce(const std::string& type) {
 void DockSetMenu(atom::api::Menu* menu) {
   Browser::Get()->DockSetMenu(menu->model());
 }
+
+void AppHide() {
+  Browser::Get()->AppHide();
+}
 #endif
 
 void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
@@ -435,6 +439,8 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   dict.SetMethod("dockHide", base::Bind(&Browser::DockHide, browser));
   dict.SetMethod("dockShow", base::Bind(&Browser::DockShow, browser));
   dict.SetMethod("dockSetMenu", &DockSetMenu);
+
+  dict.SetMethod("appHide", &AppHide);
 #endif
 }
 

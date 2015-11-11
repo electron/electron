@@ -74,4 +74,9 @@ void Browser::DockSetMenu(ui::MenuModel* model) {
   [delegate setApplicationDockMenu:model];
 }
 
+void Browser::AppHide() {
+  AtomApplicationDelegate* delegate = (AtomApplicationDelegate*)[NSApp delegate];
+  [NSApp hide:delegate];
+}
+
 }  // namespace atom
