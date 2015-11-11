@@ -12,20 +12,15 @@
 using namespace ABI::Windows::Data::Xml::Dom;
 
 namespace brightray {
-
-namespace {
-
-// Initialize Windows Runtime
-
-HRESULT init = Windows::Foundation::Initialize(RO_INIT_MULTITHREADED);
-
-}  // namespace
-
+  
 WindowsToastNotification::WindowsToastNotification(
     const std::string& app_name,
     scoped_ptr<content::DesktopNotificationDelegate> delegate)
     : delegate_(delegate.Pass()),
       weak_factory_(this) {
+  // If it wasn't for Windows 7, we could do this statically
+  HRESULT init = Windows::Foundation::Initialize(RO_INIT_MULTITHREADED);
+  
   ScopedHString toast_manager_str(
       RuntimeClass_Windows_UI_Notifications_ToastNotificationManager);
   if (!toast_manager_str.success())
