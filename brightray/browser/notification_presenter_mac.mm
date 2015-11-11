@@ -48,7 +48,7 @@ void NotificationPresenterMac::ShowNotification(
   notification.title = base::SysUTF16ToNSString(data.title);
   notification.informativeText = base::SysUTF16ToNSString(data.body);
 
-  if (base::mac::IsOSYosemiteOrLater() && !icon.drawsNothing())
+  if ([notification respondsToSelector:@selector(setContentImage:)] && !icon.drawsNothing())
     notification.contentImage = gfx::SkBitmapToNSImageWithColorSpace(icon, base::mac::GetGenericRGBColorSpace());
 
   notifications_map_[delegate.get()].reset(notification);
