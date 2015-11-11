@@ -14,11 +14,6 @@
 
 #pragma comment(lib, "runtimeobject.lib")
 
-using namespace Microsoft::WRL;
-using namespace ABI::Windows::UI::Notifications;
-using namespace ABI::Windows::Data::Xml::Dom;
-using namespace ABI::Windows::Foundation;
-
 namespace brightray {
 
 namespace {

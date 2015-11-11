@@ -16,6 +16,7 @@ namespace brightray {
 namespace {
 
 // Initialize Windows Runtime
+
 HRESULT init = Windows::Foundation::Initialize(RO_INIT_MULTITHREADED);
 
 }  // namespace
@@ -57,7 +58,7 @@ void WindowsToastNotification::ShowNotification(
   if (!toast_str.success())
     return;
 
-  ComPtr<IToastNotificationFactory> toast_factory;
+  ComPtr<ABI::Windows::UI::Notifications::IToastNotificationFactory> toast_factory;
   if (FAILED(Windows::Foundation::GetActivationFactory(toast_str,
                                                        &toast_factory)))
     return;
@@ -90,24 +91,24 @@ void WindowsToastNotification::NotificationDismissed() {
 }
 
 bool WindowsToastNotification::GetToastXml(
-    IToastNotificationManagerStatics* toastManager,
+    ABI::Windows::UI::Notifications::IToastNotificationManagerStatics* toastManager,
     const std::wstring& title,
     const std::wstring& msg,
     std::string icon_path,
     IXmlDocument** toast_xml) {
-  ToastTemplateType template_type;
+  ABI::Windows::UI::Notifications::ToastTemplateType template_type;
   if (title.empty() || msg.empty()) {
     // Single line toast.
-    template_type = icon_path.empty() ? ToastTemplateType_ToastText01 :
-                                        ToastTemplateType_ToastImageAndText01;
+    template_type = icon_path.empty() ? ABI::Windows::UI::Notifications::ToastTemplateType_ToastText01 :
+                                        ABI::Windows::UI::Notifications::ToastTemplateType_ToastImageAndText01;
     if (FAILED(toast_manager_->GetTemplateContent(template_type, toast_xml)))
       return false;
     if (!SetXmlText(*toast_xml, title.empty() ? msg : title))
       return false;
   } else {
     // Title and body toast.
-    template_type = icon_path.empty() ? ToastTemplateType_ToastText02 :
-                                        ToastTemplateType_ToastImageAndText02;
+    template_type = icon_path.empty() ? ABI::Windows::UI::Notifications::ToastTemplateType_ToastText02 :
+                                        ABI::Windows::UI::Notifications::ToastTemplateType_ToastImageAndText02;
     if (FAILED(toastManager->GetTemplateContent(template_type, toast_xml)))
       return false;
     if (!SetXmlText(*toast_xml, title, msg))
@@ -234,7 +235,7 @@ bool WindowsToastNotification::AppendTextToXml(
   return SUCCEEDED(node->AppendChild(text_node.Get(), &append_node));
 }
 
-bool WindowsToastNotification::SetupCallbacks(IToastNotification* toast) {
+bool WindowsToastNotification::SetupCallbacks(ABI::Windows::UI::Notifications::IToastNotification* toast) {
   EventRegistrationToken activatedToken, dismissedToken;
   event_handler_ = Make<ToastEventHandler>(this);
   if (FAILED(toast->add_Activated(event_handler_.Get(), &activatedToken)))
@@ -254,13 +255,14 @@ ToastEventHandler::~ToastEventHandler() {
 }
 
 IFACEMETHODIMP ToastEventHandler::Invoke(
-    IToastNotification* sender, IInspectable* args) {
+    ABI::Windows::UI::Notifications::IToastNotification* sender, IInspectable* args) {
   notification_->NotificationClicked();
   return S_OK;
 }
 
 IFACEMETHODIMP ToastEventHandler::Invoke(
-    IToastNotification* sender, IToastDismissedEventArgs* e) {
+    ABI::Windows::UI::Notifications::IToastNotification* sender,
+    ABI::Windows::UI::Notifications::IToastDismissedEventArgs* e) {
   notification_->NotificationDismissed();
   return S_OK;
 }
