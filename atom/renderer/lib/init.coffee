@@ -17,7 +17,7 @@ require path.resolve(__dirname, '..', '..', 'common', 'lib', 'init')
 globalPaths = Module.globalPaths
 globalPaths.push path.resolve(__dirname, '..', 'api', 'lib', 'exports')
 
-unless process.env.ELECTRON_DISABLE_OLD_STYLE_MODULES
+unless process.env.ELECTRON_HIDE_INTERNAL_MODULES
   globalPaths.push path.resolve(__dirname, '..', 'api', 'lib')
 
 # The global variable will be used by ipc for event dispatching

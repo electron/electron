@@ -9,7 +9,7 @@ process.atomBinding = (name) ->
   catch e
     process.binding "atom_common_#{name}" if /No such module/.test e.message
 
-unless process.env.ELECTRON_DISABLE_OLD_STYLE_MODULES
+unless process.env.ELECTRON_HIDE_INTERNAL_MODULES
   # Add common/api/lib to module search paths.
   Module.globalPaths.push path.resolve(__dirname, '..', 'api', 'lib')
 
