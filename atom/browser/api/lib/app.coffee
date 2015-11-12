@@ -9,10 +9,10 @@ app = bindings.app
 app.__proto__ = EventEmitter.prototype
 
 app.setApplicationMenu = (menu) ->
-  electron.menu.setApplicationMenu menu
+  electron.Menu.setApplicationMenu menu
 
 app.getApplicationMenu = ->
-  electron.menu.getApplicationMenu()
+  electron.Menu.getApplicationMenu()
 
 app.commandLine =
   appendSwitch: bindings.appendSwitch,
