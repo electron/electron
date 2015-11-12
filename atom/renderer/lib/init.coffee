@@ -17,6 +17,7 @@ require path.resolve(__dirname, '..', '..', 'common', 'lib', 'init')
 # of Atom's built-in libraries.
 globalPaths = Module.globalPaths
 globalPaths.push path.resolve(__dirname, '..', 'api', 'lib')
+globalPaths.push path.resolve(__dirname, '..', 'api', 'lib', 'exports')
 
 # The global variable will be used by ipc for event dispatching
 v8Util = process.atomBinding 'v8_util'

@@ -17,6 +17,7 @@ require path.resolve(__dirname, '..', '..', 'common', 'lib', 'init')
 # Electron's built-in libraries.
 globalPaths = Module.globalPaths
 globalPaths.push path.resolve(__dirname, '..', 'api', 'lib')
+globalPaths.push path.resolve(__dirname, '..', 'api', 'lib', 'exports')
 
 if process.platform is 'win32'
   # Redirect node's console to use our own implementations, since node can not
