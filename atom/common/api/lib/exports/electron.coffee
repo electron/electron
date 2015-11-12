@@ -13,3 +13,8 @@ Object.defineProperties exports,
   shell:
     enumerable: true
     get: -> require '../shell'
+  # The internal modules, invisible unless you know their names.
+  CallbacksRegistry:
+    get: -> require '../callbacks-registry'
+  deprecate:
+    get: -> require '../deprecate'

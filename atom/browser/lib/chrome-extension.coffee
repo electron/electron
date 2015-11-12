@@ -1,4 +1,4 @@
-app  = require 'app'
+electron = require 'electron'
 fs   = require 'fs'
 path = require 'path'
 url  = require 'url'
@@ -40,6 +40,7 @@ loadedExtensions = null
 loadedExtensionsPath = null
 
 # Persistent loaded extensions.
+{app} = electron
 app.on 'will-quit', ->
   try
     loadedExtensions = Object.keys(extensionInfoMap).map (key) -> extensionInfoMap[key].srcDirectory
@@ -51,8 +52,7 @@ app.on 'will-quit', ->
 
 # We can not use protocol or BrowserWindow until app is ready.
 app.once 'ready', ->
-  protocol = require 'protocol'
-  BrowserWindow = require 'browser-window'
+  {protocol, BrowserWindow} = electron
 
   # Load persistented extensions.
   loadedExtensionsPath = path.join app.getPath('userData'), 'DevTools Extensions'

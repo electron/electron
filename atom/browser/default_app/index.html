@@ -57,13 +57,17 @@
 </head>
 <body>
   <script>
-    var execPath = require('remote').process.execPath;
+    const electron = require('electron');
+    const remote = electron.remote;
+    const shell = electron.shell;
+
+    var execPath = remote.process.execPath;
     var command = execPath + ' path-to-your-app';
 
     document.onclick = function(e) {
       e.preventDefault();
       if (e.target.tagName == 'A')
-        require('shell').openExternal(e.target.href);
+        shell.openExternal(e.target.href);
       return false;
     };
     document.ondragover = document.ondrop = function(e) {

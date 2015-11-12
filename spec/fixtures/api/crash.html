@@ -2,7 +2,7 @@
 <body>
 <script type="text/javascript" charset="utf-8">
 var port = require('url').parse(window.location.href, true).query.port;
-var crashReporter = require('crash-reporter');
+var crashReporter = require('electron').crashReporter;
 crashReporter.start({
   productName: 'Zombies',
   companyName: 'Umbrella Corporation',

@@ -1,7 +1,7 @@
 assert = require 'assert'
-clipboard = require 'clipboard'
-nativeImage = require 'native-image'
 path = require 'path'
+
+{clipboard, nativeImage} = require 'electron'
 
 describe 'clipboard module', ->
   fixtures = path.resolve __dirname, 'fixtures'

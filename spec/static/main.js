@@ -1,8 +1,10 @@
-var app = require('app');
-var ipc = require('ipc-main');
-var dialog = require('dialog');
-var path = require('path');
-var BrowserWindow = require('browser-window');
+const electron      = require('electron');
+const app           = electron.app;
+const ipcMain       = electron.ipcMain;
+const dialog        = electron.dialog;
+const BrowserWindow = electron.BrowserWindow;
+
+const path = require('path');
 
 var window = null;
 process.port = 0;  // will be used by crash-reporter spec.
@@ -16,27 +18,27 @@ app.commandLine.appendSwitch('disable-renderer-backgrounding');
 // sure we can reproduce it in renderer process.
 process.stdout;
 
-ipc.on('message', function(event, arg) {
+ipcMain.on('message', function(event, arg) {
   event.sender.send('message', arg);
 });
 
-ipc.on('console.log', function(event, args) {
+ipcMain.on('console.log', function(event, args) {
   console.error.apply(console, args);
 });
 
-ipc.on('console.error', function(event, args) {
+ipcMain.on('console.error', function(event, args) {
   console.error.apply(console, args);
 });
 
-ipc.on('process.exit', function(event, code) {
+ipcMain.on('process.exit', function(event, code) {
   process.exit(code);
 });
 
-ipc.on('eval', function(event, script) {
+ipcMain.on('eval', function(event, script) {
   event.returnValue = eval(script);
 });
 
-ipc.on('echo', function(event, msg) {
+ipcMain.on('echo', function(event, msg) {
   event.returnValue = msg;
 });
 
@@ -54,7 +56,7 @@ app.on('window-all-closed', function() {
 
 app.on('ready', function() {
   // Test if using protocol module would crash.
-  require('protocol').registerStringProtocol('test-if-crashes', function() {});
+  electron.protocol.registerStringProtocol('test-if-crashes', function() {});
 
   window = new BrowserWindow({
     title: 'Electron Tests',
@@ -79,7 +81,7 @@ app.on('ready', function() {
   // For session's download test, listen 'will-download' event in browser, and
   // reply the result to renderer for verifying
   var downloadFilePath = path.join(__dirname, '..', 'fixtures', 'mock.pdf');
-  ipc.on('set-download-option', function(event, need_cancel) {
+  ipcMain.on('set-download-option', function(event, need_cancel) {
     window.webContents.session.once('will-download',
         function(e, item, webContents) {
           item.setSavePath(downloadFilePath);

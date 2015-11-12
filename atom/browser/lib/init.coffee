@@ -46,12 +46,13 @@ process.on 'uncaughtException', (error) ->
     return
 
   # Show error in GUI.
+  {dialog} = require 'electron'
   stack = error.stack ? "#{error.name}: #{error.message}"
   message = "Uncaught Exception:\n#{stack}"
-  require('dialog').showErrorBox 'A JavaScript error occurred in the main process', message
+  dialog.showErrorBox 'A JavaScript error occurred in the main process', message
 
 # Emit 'exit' event on quit.
-app = require 'app'
+{app} = require 'electron'
 app.on 'quit', ->
   process.emit 'exit'
 

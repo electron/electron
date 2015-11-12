@@ -1,5 +1,4 @@
-ipc = require 'ipc-renderer'
-remote = require 'remote'
+{ipcRenderer, remote} = require 'electron'
 
 # Helper function to resolve relative url.
 a = window.top.document.createElement 'a'
@@ -11,24 +10,24 @@ resolveUrl = (url) ->
 class BrowserWindowProxy
   constructor: (@guestId) ->
     @closed = false
-    ipc.on 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_CLOSED', (event, guestId) =>
+    ipcRenderer.on 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_CLOSED', (event, guestId) =>
       if guestId is @guestId
         @closed = true
 
   close: ->
-    ipc.send 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_CLOSE', @guestId
+    ipcRenderer.send 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_CLOSE', @guestId
 
   focus: ->
-    ipc.send 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_METHOD', @guestId, 'focus'
+    ipcRenderer.send 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_METHOD', @guestId, 'focus'
 
   blur: ->
-    ipc.send 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_METHOD', @guestId, 'blur'
+    ipcRenderer.send 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_METHOD', @guestId, 'blur'
 
   postMessage: (message, targetOrigin='*') ->
-    ipc.send 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_POSTMESSAGE', @guestId, message, targetOrigin
+    ipcRenderer.send 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_POSTMESSAGE', @guestId, message, targetOrigin
 
   eval: (args...) ->
-    ipc.send 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WEB_CONTENTS_METHOD', @guestId, 'executeJavaScript', args...
+    ipcRenderer.send 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WEB_CONTENTS_METHOD', @guestId, 'executeJavaScript', args...
 
 unless process.guestInstanceId?
   # Override default window.close.
@@ -60,7 +59,7 @@ window.open = (url, frameName='', features='') ->
 
   (options[name] = parseInt(options[name], 10) if options[name]?) for name in ints
 
-  guestId = ipc.sendSync 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_OPEN', url, frameName, options
+  guestId = ipcRenderer.sendSync 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_OPEN', url, frameName, options
   if guestId
     new BrowserWindowProxy(guestId)
   else
@@ -87,13 +86,13 @@ window.prompt = ->
   throw new Error('prompt() is and will not be supported.')
 
 # Implement window.postMessage if current window is a guest window.
-guestId = ipc.sendSync 'ATOM_SHELL_GUEST_WINDOW_MANAGER_GET_GUEST_ID'
+guestId = ipcRenderer.sendSync 'ATOM_SHELL_GUEST_WINDOW_MANAGER_GET_GUEST_ID'
 if guestId?
   window.opener =
     postMessage: (message, targetOrigin='*') ->
-      ipc.send 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_OPENER_POSTMESSAGE', guestId, message, targetOrigin, location.origin
+      ipcRenderer.send 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_OPENER_POSTMESSAGE', guestId, message, targetOrigin, location.origin
 
-ipc.on 'ATOM_SHELL_GUEST_WINDOW_POSTMESSAGE', (event, guestId, message, sourceOrigin) ->
+ipcRenderer.on 'ATOM_SHELL_GUEST_WINDOW_POSTMESSAGE', (event, guestId, message, sourceOrigin) ->
   # Manually dispatch event instead of using postMessage because we also need to
   # set event.source.
   event = document.createEvent 'Event'
@@ -105,10 +104,10 @@ ipc.on 'ATOM_SHELL_GUEST_WINDOW_POSTMESSAGE', (event, guestId, message, sourceOr
 
 # Forward history operations to browser.
 sendHistoryOperation = (args...) ->
-  ipc.send 'ATOM_SHELL_NAVIGATION_CONTROLLER', args...
+  ipcRenderer.send 'ATOM_SHELL_NAVIGATION_CONTROLLER', args...
 
 getHistoryOperation = (args...) ->
-  ipc.sendSync 'ATOM_SHELL_SYNC_NAVIGATION_CONTROLLER', args...
+  ipcRenderer.sendSync 'ATOM_SHELL_SYNC_NAVIGATION_CONTROLLER', args...
 
 window.history.back = -> sendHistoryOperation 'goBack'
 window.history.forward = -> sendHistoryOperation 'goForward'

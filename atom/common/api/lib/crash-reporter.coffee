@@ -8,11 +8,12 @@ class CrashReporter
   start: (options={}) ->
     {@productName, companyName, submitUrl, autoSubmit, ignoreSystemCrashHandler, extra} = options
 
-    app =
+    electron = require 'electron'
+    {app} =
       if process.type is 'browser'
-        require 'app'
+        electron
       else
-        require('remote').require 'app'
+        electron.remote.require 'electron'
 
     @productName ?= app.getName()
     companyName ?= 'GitHub, Inc'

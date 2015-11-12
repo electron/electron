@@ -45,3 +45,8 @@ Object.defineProperties module.exports,
   tray:
     enumerable: true
     get: -> require '../tray'
+  # The internal modules, invisible unless you know their names.
+  NavigationController:
+    get: -> require '../navigation-controller'
+  webContents:
+    get: -> require '../web-contents'

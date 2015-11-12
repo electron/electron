@@ -1,7 +1,5 @@
-EventEmitter = require('events').EventEmitter
-app = require 'app'
-ipc = require 'ipc-main'
-deprecate = require 'deprecate'
+{app, ipcMain, deprecate} = require 'electron'
+{EventEmitter} = require 'events'
 
 BrowserWindow = process.atomBinding('window').BrowserWindow
 BrowserWindow::__proto__ = EventEmitter.prototype
@@ -15,7 +13,7 @@ BrowserWindow::_init = ->
   # Make new windows requested by links behave like "window.open"
   @webContents.on '-new-window', (event, url, frameName) ->
     options = show: true, width: 800, height: 600
-    ipc.emit 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_OPEN', event, url, frameName, options
+    ipcMain.emit 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_OPEN', event, url, frameName, options
 
   # window.resizeTo(...)
   # window.moveTo(...)

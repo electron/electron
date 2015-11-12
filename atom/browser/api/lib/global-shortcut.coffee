@@ -1,5 +1,3 @@
-bindings = process.atomBinding 'global_shortcut'
-
-globalShortcut = bindings.globalShortcut
+{globalShortcut} = process.atomBinding 'global_shortcut'
 
 module.exports = globalShortcut

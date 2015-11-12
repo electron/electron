@@ -1,5 +1,4 @@
-deprecate = require 'deprecate'
-ipcRenderer = require 'ipc-renderer'
+{ipcRenderer, deprecate} = require 'electron'
 {EventEmitter} = require 'events'
 
 # This module is deprecated, we mirror everything from ipcRenderer.

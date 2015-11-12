@@ -1,8 +1,9 @@
-ipc = require 'ipc-main'
+{ipcMain} = require 'electron'
 path = require 'path'
-objectsRegistry = require './objects-registry.js'
+objectsRegistry = require './objects-registry'
+
 v8Util = process.atomBinding 'v8_util'
-IDWeakMap = process.atomBinding('id_weak_map').IDWeakMap
+{IDWeakMap} = process.atomBinding 'id_weak_map'
 
 # Convert a real value into meta data.
 valueToMeta = (sender, value, optimizeSimpleObject=false) ->
@@ -115,28 +116,28 @@ callFunction = (event, func, caller, args) ->
 process.on 'ATOM_BROWSER_RELEASE_RENDER_VIEW', (id) ->
   objectsRegistry.clear id
 
-ipc.on 'ATOM_BROWSER_REQUIRE', (event, module) ->
+ipcMain.on 'ATOM_BROWSER_REQUIRE', (event, module) ->
   try
     event.returnValue = valueToMeta event.sender, process.mainModule.require(module)
   catch e
     event.returnValue = exceptionToMeta e
 
-ipc.on 'ATOM_BROWSER_GLOBAL', (event, name) ->
+ipcMain.on 'ATOM_BROWSER_GLOBAL', (event, name) ->
   try
     event.returnValue = valueToMeta event.sender, global[name]
   catch e
     event.returnValue = exceptionToMeta e
 
-ipc.on 'ATOM_BROWSER_CURRENT_WINDOW', (event) ->
+ipcMain.on 'ATOM_BROWSER_CURRENT_WINDOW', (event) ->
   try
     event.returnValue = valueToMeta event.sender, event.sender.getOwnerBrowserWindow()
   catch e
     event.returnValue = exceptionToMeta e
 
-ipc.on 'ATOM_BROWSER_CURRENT_WEB_CONTENTS', (event) ->
+ipcMain.on 'ATOM_BROWSER_CURRENT_WEB_CONTENTS', (event) ->
   event.returnValue = valueToMeta event.sender, event.sender
 
-ipc.on 'ATOM_BROWSER_CONSTRUCTOR', (event, id, args) ->
+ipcMain.on 'ATOM_BROWSER_CONSTRUCTOR', (event, id, args) ->
   try
     args = unwrapArgs event.sender, args
     constructor = objectsRegistry.get id
@@ -147,7 +148,7 @@ ipc.on 'ATOM_BROWSER_CONSTRUCTOR', (event, id, args) ->
   catch e
     event.returnValue = exceptionToMeta e
 
-ipc.on 'ATOM_BROWSER_FUNCTION_CALL', (event, id, args) ->
+ipcMain.on 'ATOM_BROWSER_FUNCTION_CALL', (event, id, args) ->
   try
     args = unwrapArgs event.sender, args
     func = objectsRegistry.get id
@@ -155,7 +156,7 @@ ipc.on 'ATOM_BROWSER_FUNCTION_CALL', (event, id, args) ->
   catch e
     event.returnValue = exceptionToMeta e
 
-ipc.on 'ATOM_BROWSER_MEMBER_CONSTRUCTOR', (event, id, method, args) ->
+ipcMain.on 'ATOM_BROWSER_MEMBER_CONSTRUCTOR', (event, id, method, args) ->
   try
     args = unwrapArgs event.sender, args
     constructor = objectsRegistry.get(id)[method]
@@ -165,7 +166,7 @@ ipc.on 'ATOM_BROWSER_MEMBER_CONSTRUCTOR', (event, id, method, args) ->
   catch e
     event.returnValue = exceptionToMeta e
 
-ipc.on 'ATOM_BROWSER_MEMBER_CALL', (event, id, method, args) ->
+ipcMain.on 'ATOM_BROWSER_MEMBER_CALL', (event, id, method, args) ->
   try
     args = unwrapArgs event.sender, args
     obj = objectsRegistry.get id
@@ -173,7 +174,7 @@ ipc.on 'ATOM_BROWSER_MEMBER_CALL', (event, id, method, args) ->
   catch e
     event.returnValue = exceptionToMeta e
 
-ipc.on 'ATOM_BROWSER_MEMBER_SET', (event, id, name, value) ->
+ipcMain.on 'ATOM_BROWSER_MEMBER_SET', (event, id, name, value) ->
   try
     obj = objectsRegistry.get id
     obj[name] = value
@@ -181,17 +182,17 @@ ipc.on 'ATOM_BROWSER_MEMBER_SET', (event, id, name, value) ->
   catch e
     event.returnValue = exceptionToMeta e
 
-ipc.on 'ATOM_BROWSER_MEMBER_GET', (event, id, name) ->
+ipcMain.on 'ATOM_BROWSER_MEMBER_GET', (event, id, name) ->
   try
     obj = objectsRegistry.get id
     event.returnValue = valueToMeta event.sender, obj[name]
   catch e
     event.returnValue = exceptionToMeta e
 
-ipc.on 'ATOM_BROWSER_DEREFERENCE', (event, id) ->
+ipcMain.on 'ATOM_BROWSER_DEREFERENCE', (event, id) ->
   objectsRegistry.remove event.sender.getId(), id
 
-ipc.on 'ATOM_BROWSER_GUEST_WEB_CONTENTS', (event, guestInstanceId) ->
+ipcMain.on 'ATOM_BROWSER_GUEST_WEB_CONTENTS', (event, guestInstanceId) ->
   try
     guestViewManager = require './guest-view-manager'
     event.returnValue = valueToMeta event.sender, guestViewManager.getGuest(guestInstanceId)

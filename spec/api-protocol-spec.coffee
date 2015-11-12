@@ -1,8 +1,9 @@
 assert   = require 'assert'
 http     = require 'http'
 path     = require 'path'
-remote   = require 'remote'
-protocol = remote.require 'protocol'
+
+{remote} = require 'electron'
+{protocol} = remote.require 'electron'
 
 describe 'protocol module', ->
   protocolName = 'sp'
