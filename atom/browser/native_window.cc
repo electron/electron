@@ -512,7 +512,7 @@ void NativeWindow::TitleWasSet(content::NavigationEntry* entry,
   FOR_EACH_OBSERVER(NativeWindowObserver,
                     observers_,
                     OnPageTitleUpdated(&prevent_default, text));
-  if (!prevent_default)
+  if (!prevent_default && !is_closed_)
     SetTitle(text);
 }
 
