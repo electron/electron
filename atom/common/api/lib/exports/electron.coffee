@@ -4,7 +4,7 @@ Object.defineProperties exports,
     # Must be enumerable, otherwise it woulde be invisible to remote module.
     enumerable: true
     get: -> require '../clipboard'
-  crashRepoter:
+  crashReporter:
     enumerable: true
     get: -> require '../crash-reporter'
   nativeImage:

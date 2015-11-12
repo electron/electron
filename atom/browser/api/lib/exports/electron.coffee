@@ -1,6 +1,9 @@
 # Import common modules.
 module.exports = require '../../../../common/api/lib/exports/electron'
 
+v8Util = process.atomBinding 'v8_util'
+v8Util.setHiddenValue module.exports, 'electronModule', true
+
 Object.defineProperties module.exports,
   # Browser side modules, please sort with alphabet order.
   app:

@@ -18,7 +18,7 @@ wrapArgs = (args, visited=[]) ->
       type: 'array', value: wrapArgs(value, visited)
     else if Buffer.isBuffer value
       type: 'buffer', value: Array::slice.call(value, 0)
-    else if value? and value.constructor.name is 'Promise'
+    else if value?.constructor.name is 'Promise'
       type: 'promise', then: valueToMeta(value.then.bind(value))
     else if value? and typeof value is 'object' and v8Util.getHiddenValue value, 'atomId'
       type: 'remote-object', id: v8Util.getHiddenValue value, 'atomId'
@@ -49,6 +49,15 @@ metaToValue = (meta) ->
     when 'date' then new Date(meta.value)
     when 'exception'
       throw new Error("#{meta.message}\n#{meta.stack}")
+    when 'electronModule'
+      # require('electron').
+      ret = {}
+      for member in meta.members
+        do (member) ->
+          Object.defineProperty ret, member,
+            enumerable: true
+            get: -> exports.getBuiltin member
+      ret
     else
       if meta.type is 'function'
         # A shadow class to represent the remote function object.
@@ -134,6 +143,14 @@ exports.require = (module) ->
 
   meta = ipcRenderer.sendSync 'ATOM_BROWSER_REQUIRE', module
   moduleCache[module] = metaToValue meta
+
+# Alias to remote.require('electron').xxx.
+builtinCache = {}
+exports.getBuiltin = (module) ->
+  return builtinCache[module] if builtinCache[module]?
+
+  meta = ipcRenderer.sendSync 'ATOM_BROWSER_GET_BUILTIN', module
+  builtinCache[module] = metaToValue meta
 
 # Get current BrowserWindow object.
 windowCache = null

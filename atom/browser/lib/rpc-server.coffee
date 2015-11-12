@@ -1,5 +1,7 @@
-{ipcMain} = require 'electron'
 path = require 'path'
+
+electron = require 'electron'
+{ipcMain} = electron
 objectsRegistry = require './objects-registry'
 
 v8Util = process.atomBinding 'v8_util'
@@ -14,7 +16,11 @@ valueToMeta = (sender, value, optimizeSimpleObject=false) ->
   meta.type = 'array' if Array.isArray value
   meta.type = 'error' if value instanceof Error
   meta.type = 'date' if value instanceof Date
-  meta.type = 'promise' if value? and value.constructor.name is 'Promise'
+  meta.type = 'promise' if value?.constructor.name is 'Promise'
+
+  # require('electron').
+  if meta.type is 'object' and v8Util.getHiddenValue value, 'electronModule'
+    meta.type = 'electronModule'
 
   # Treat simple objects as value.
   if optimizeSimpleObject and meta.type is 'object' and v8Util.getHiddenValue value, 'simple'
@@ -43,6 +49,8 @@ valueToMeta = (sender, value, optimizeSimpleObject=false) ->
     meta.members = plainObjectToMeta value
   else if meta.type is 'date'
     meta.value = value.getTime()
+  else if meta.type is 'electronModule'
+    meta.members = (name for name of value)
   else
     meta.type = 'value'
     meta.value = value
@@ -119,6 +127,12 @@ process.on 'ATOM_BROWSER_RELEASE_RENDER_VIEW', (id) ->
 ipcMain.on 'ATOM_BROWSER_REQUIRE', (event, module) ->
   try
     event.returnValue = valueToMeta event.sender, process.mainModule.require(module)
+  catch e
+    event.returnValue = exceptionToMeta e
+
+ipcMain.on 'ATOM_BROWSER_GET_BUILTIN', (event, module) ->
+  try
+    event.returnValue = valueToMeta event.sender, electron[module]
   catch e
     event.returnValue = exceptionToMeta e
 
