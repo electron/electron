@@ -44,9 +44,12 @@ var webdriver = require('selenium-webdriver');
 var driver = new webdriver.Builder()
   // 작동하고 있는 크롬 드라이버의 포트 "9515"를 사용합니다.
   .usingServer('http://localhost:9515')
-  .withCapabilities({chromeOptions: {
-    // 여기에 사용중인 Electron 바이너리의 경로를 지정하세요.
-    binary: '/Path-to-Your-App.app/Contents/MacOS/Atom'}})
+  .withCapabilities({
+    chromeOptions: {
+      // 여기에 사용중인 Electron 바이너리의 경로를 지정하세요.
+      binary: '/Path-to-Your-App.app/Contents/MacOS/Atom',
+    }
+  })
   .forBrowser('electron')
   .build();
 
@@ -92,7 +95,10 @@ var options = {
     port: 9515,        // 연결할 크롬 드라이버 서버의 포트를 설정합니다.
     desiredCapabilities: {
         browserName: 'chrome',
-        chromeOptions: {binary: '/Path-to-Your-App.app/Electron'} // Electron 바이너리의 위치
+        chromeOptions: {
+          binary: '/Path-to-Your-App/electron', // Electron 바이너리 경로
+          args: [/* cli arguments */]           // 선택 사항, 'app=' + /path/to/your/app/
+        }
     }
 };
 
@@ -109,9 +115,12 @@ client
     .end();
 ```
 
-## 작업환경
+## 작업 환경
 
 따로 Electron을 다시 빌드하지 않는 경우 간단히 어플리케이션을 Electron의 리소스 디렉터리에
 [배치](application-distribution.md)하여 바로 테스트 할 수 있습니다.
+
+또한, Electron 바이너리의 명령줄 인수에 어플리케이션 폴더를 지정하는 방법으로 실행할 수도 있습니다.
+이 방법을 사용하면 어플리케이션 폴더를 Electron의 `resource` 디렉터리로 복사하는 불필요한 과정을 생략할 수 있습니다.
 
 [chrome-driver]: https://sites.google.com/a/chromium.org/chromedriver/
