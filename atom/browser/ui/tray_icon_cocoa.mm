@@ -254,7 +254,21 @@ const CGFloat kVerticalTitleMargin = 2;
 }
 
 - (NSDragOperation)draggingEntered:(id <NSDraggingInfo>)sender {
+  trayIcon_->NotifyDragEntered();
   return NSDragOperationCopy;
+}
+
+- (void)draggingExited:(id <NSDraggingInfo>)sender {
+  trayIcon_->NotifyDragExited();
+}
+
+- (void)draggingEnded:(id <NSDraggingInfo>)sender {
+  trayIcon_->NotifyDragEnded();
+}
+
+- (BOOL)prepareForDragOperation:(id <NSDraggingInfo>)sender {
+  trayIcon_->NotifyDrop();
+  return YES;
 }
 
 - (BOOL)performDragOperation:(id <NSDraggingInfo>)sender {
@@ -265,7 +279,7 @@ const CGFloat kVerticalTitleMargin = 2;
     NSArray* files = [pboard propertyListForType:NSFilenamesPboardType];
     for (NSString* file in files)
       dropFiles.push_back(base::SysNSStringToUTF8(file));
-    trayIcon_->NotfiyDropFiles(dropFiles);
+    trayIcon_->NotifyDropFiles(dropFiles);
     return YES;
   }
   return NO;

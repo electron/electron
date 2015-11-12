@@ -1,20 +1,20 @@
-binding = process.atomBinding 'ipc'
-v8Util  = process.atomBinding 'v8_util'
+deprecate = require 'deprecate'
+ipcRenderer = require 'ipc-renderer'
+{EventEmitter} = require 'events'
 
-# Created by init.coffee.
-ipc = v8Util.getHiddenValue global, 'ipc'
+# This module is deprecated, we mirror everything from ipcRenderer.
+deprecate.warn 'ipc module', 'ipcRenderer module'
 
-ipc.send = (args...) ->
-  binding.send 'ipc-message', [args...]
-
-ipc.sendSync = (args...) ->
-  JSON.parse binding.sendSync('ipc-message-sync', [args...])
-
-ipc.sendToHost = (args...) ->
-  binding.send 'ipc-message-host', [args...]
+# Routes events of ipcRenderer.
+ipc = new EventEmitter
+ipcRenderer.emit = (channel, event, args...) ->
+  ipc.emit channel, args...
+  EventEmitter::emit.apply ipcRenderer, arguments
 
 # Deprecated.
-ipc.sendChannel = ipc.send
-ipc.sendChannelSync = ipc.sendSync
+for method of ipcRenderer when method.startsWith 'send'
+  ipc[method] = ipcRenderer[method]
+deprecate.rename ipc, 'sendChannel', 'send'
+deprecate.rename ipc, 'sendChannelSync', 'sendSync'
 
 module.exports = ipc

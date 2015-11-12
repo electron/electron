@@ -1,4 +1,4 @@
-ipc = require 'ipc'
+ipc = require 'ipc-main'
 webContents = require 'web-contents'
 webViewManager = null  # Doesn't exist in early initialization.
 
@@ -118,11 +118,11 @@ attachGuest = (embedder, elementInstanceId, guestInstanceId, params) ->
     destroyGuest embedder, oldGuestInstanceId
 
   webPreferences =
-    'guest-instance-id': guestInstanceId
-    'node-integration': params.nodeintegration ? false
-    'plugins': params.plugins
-    'web-security': !params.disablewebsecurity
-  webPreferences['preload-url'] = params.preload if params.preload
+    guestInstanceId: guestInstanceId
+    nodeIntegration: params.nodeintegration ? false
+    plugins: params.plugins
+    webSecurity: !params.disablewebsecurity
+  webPreferences.preloadUrl = params.preload if params.preload
   webViewManager.addGuest guestInstanceId, elementInstanceId, embedder, guest, webPreferences
 
   guest.attachParams = params

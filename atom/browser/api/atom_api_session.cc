@@ -9,8 +9,10 @@
 
 #include "atom/browser/api/atom_api_cookies.h"
 #include "atom/browser/api/atom_api_download_item.h"
-#include "atom/browser/atom_browser_context.h"
 #include "atom/browser/api/atom_api_web_contents.h"
+#include "atom/browser/api/save_page_handler.h"
+#include "atom/browser/atom_browser_context.h"
+#include "atom/browser/atom_browser_main_parts.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
@@ -100,6 +102,24 @@ struct Converter<ClearStorageDataOptions> {
       out->storage_types = GetStorageMask(types);
     if (options.Get("quotas", &types))
       out->quota_types = GetQuotaMask(types);
+    return true;
+  }
+};
+
+template<>
+struct Converter<net::ProxyConfig> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     net::ProxyConfig* out) {
+    std::string proxy;
+    if (!ConvertFromV8(isolate, val, &proxy))
+      return false;
+    auto pac_url = GURL(proxy);
+    if (pac_url.is_valid()) {
+      out->set_pac_url(pac_url);
+    } else {
+      out->proxy_rules().ParseFromString(proxy);
+    }
     return true;
   }
 };
@@ -208,12 +228,12 @@ void ClearHttpCacheInIO(
 }
 
 void SetProxyInIO(net::URLRequestContextGetter* getter,
-                  const std::string& proxy,
+                  const net::ProxyConfig& config,
                   const base::Closure& callback) {
-  net::ProxyConfig config;
-  config.proxy_rules().ParseFromString(proxy);
   auto proxy_service = getter->GetURLRequestContext()->proxy_service();
   proxy_service->ResetConfigService(new net::ProxyConfigServiceFixed(config));
+  // Refetches and applies the new pac script if provided.
+  proxy_service->ForceReloadProxyConfig();
   RunCallbackInUI(callback);
 }
 
@@ -237,6 +257,8 @@ Session::~Session() {
 void Session::OnDownloadCreated(content::DownloadManager* manager,
                                 content::DownloadItem* item) {
   auto web_contents = item->GetWebContents();
+  if (SavePageHandler::IsSavePageTypes(item->GetMimeType()))
+    return;
   bool prevent_default = Emit(
       "will-download",
       DownloadItem::Create(isolate(), item),
@@ -284,11 +306,11 @@ void Session::ClearStorageData(mate::Arguments* args) {
       base::Time(), base::Time::Max(), callback);
 }
 
-void Session::SetProxy(const std::string& proxy,
+void Session::SetProxy(const net::ProxyConfig& config,
                        const base::Closure& callback) {
   auto getter = browser_context_->GetRequestContext();
   BrowserThread::PostTask(BrowserThread::IO, FROM_HERE,
-      base::Bind(&SetProxyInIO, base::Unretained(getter), proxy, callback));
+      base::Bind(&SetProxyInIO, base::Unretained(getter), config, callback));
 }
 
 void Session::SetDownloadPath(const base::FilePath& path) {
@@ -374,12 +396,16 @@ mate::Handle<Session> Session::FromPartition(
                     static_cast<AtomBrowserContext*>(browser_context.get()));
 }
 
-void SetWrapSession(const WrapSessionCallback& callback) {
-  g_wrap_session = callback;
-}
-
 void ClearWrapSession() {
   g_wrap_session.Reset();
+}
+
+void SetWrapSession(const WrapSessionCallback& callback) {
+  g_wrap_session = callback;
+
+  // Cleanup the wrapper on exit.
+  atom::AtomBrowserMainParts::Get()->RegisterDestructionCallback(
+      base::Bind(ClearWrapSession));
 }
 
 }  // namespace api
@@ -394,7 +420,6 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   mate::Dictionary dict(isolate, exports);
   dict.SetMethod("fromPartition", &atom::api::Session::FromPartition);
   dict.SetMethod("_setWrapSession", &atom::api::SetWrapSession);
-  dict.SetMethod("_clearWrapSession", &atom::api::ClearWrapSession);
 }
 
 }  // namespace

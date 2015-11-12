@@ -407,7 +407,7 @@ describe 'asar package', ->
   describe 'asar protocol', ->
     url = require 'url'
     remote = require 'remote'
-    ipc = remote.require 'ipc'
+    ipc = remote.require 'ipc-main'
     BrowserWindow = remote.require 'browser-window'
 
     it 'can request a file in package', (done) ->
@@ -450,10 +450,10 @@ describe 'asar package', ->
       w = new BrowserWindow(show: false, width: 400, height: 400)
       p = path.resolve fixtures, 'asar', 'web.asar', 'index.html'
       u = url.format protocol: 'file', slashed: true, pathname: p
-      w.loadUrl u
       ipc.once 'dirname', (event, dirname) ->
         assert.equal dirname, path.dirname(p)
         done()
+      w.loadUrl u
 
     it 'loads script tag in html', (done) ->
       after ->

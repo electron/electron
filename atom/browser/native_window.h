@@ -19,6 +19,7 @@
 #include "content/public/browser/readback_types.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "content/public/browser/web_contents_user_data.h"
+#include "extensions/browser/app_window/size_constraints.h"
 #include "ui/gfx/image/image.h"
 #include "ui/gfx/image/image_skia.h"
 
@@ -110,12 +111,18 @@ class NativeWindow : public base::SupportsUserData,
   virtual gfx::Size GetSize();
   virtual void SetPosition(const gfx::Point& position);
   virtual gfx::Point GetPosition();
-  virtual void SetContentSize(const gfx::Size& size) = 0;
-  virtual gfx::Size GetContentSize() = 0;
-  virtual void SetMinimumSize(const gfx::Size& size) = 0;
-  virtual gfx::Size GetMinimumSize() = 0;
-  virtual void SetMaximumSize(const gfx::Size& size) = 0;
-  virtual gfx::Size GetMaximumSize() = 0;
+  virtual void SetContentSize(const gfx::Size& size);
+  virtual gfx::Size GetContentSize();
+  virtual void SetSizeConstraints(
+      const extensions::SizeConstraints& size_constraints);
+  virtual extensions::SizeConstraints GetSizeConstraints();
+  virtual void SetContentSizeConstraints(
+      const extensions::SizeConstraints& size_constraints);
+  virtual extensions::SizeConstraints GetContentSizeConstraints();
+  virtual void SetMinimumSize(const gfx::Size& size);
+  virtual gfx::Size GetMinimumSize();
+  virtual void SetMaximumSize(const gfx::Size& size);
+  virtual gfx::Size GetMaximumSize();
   virtual void SetResizable(bool resizable) = 0;
   virtual bool IsResizable() = 0;
   virtual void SetAlwaysOnTop(bool top) = 0;
@@ -127,6 +134,7 @@ class NativeWindow : public base::SupportsUserData,
   virtual void SetSkipTaskbar(bool skip) = 0;
   virtual void SetKiosk(bool kiosk) = 0;
   virtual bool IsKiosk() = 0;
+  virtual void SetBackgroundColor(const std::string& color_name) = 0;
   virtual void SetRepresentedFilename(const std::string& filename);
   virtual std::string GetRepresentedFilename();
   virtual void SetDocumentEdited(bool edited);
@@ -202,6 +210,10 @@ class NativeWindow : public base::SupportsUserData,
   void NotifyWindowLeaveHtmlFullScreen();
   void NotifyWindowExecuteWindowsCommand(const std::string& command);
 
+  #if defined(OS_WIN)
+  void NotifyWindowMessage(UINT message, WPARAM w_param, LPARAM l_param);
+  #endif
+
   void AddObserver(NativeWindowObserver* obs) {
     observers_.AddObserver(obs);
   }
@@ -234,6 +246,19 @@ class NativeWindow : public base::SupportsUserData,
   NativeWindow(brightray::InspectableWebContents* inspectable_web_contents,
                const mate::Dictionary& options);
 
+  // Convert draggable regions in raw format to SkRegion format. Caller is
+  // responsible for deleting the returned SkRegion instance.
+  scoped_ptr<SkRegion> DraggableRegionsToSkRegion(
+      const std::vector<DraggableRegion>& regions);
+
+  // Converts between content size to window size.
+  virtual gfx::Size ContentSizeToWindowSize(const gfx::Size& size) = 0;
+  virtual gfx::Size WindowSizeToContentSize(const gfx::Size& size) = 0;
+
+  // Called when the window needs to update its draggable region.
+  virtual void UpdateDraggableRegions(
+      const std::vector<DraggableRegion>& regions);
+
   // content::WebContentsObserver:
   void RenderViewCreated(content::RenderViewHost* render_view_host) override;
   void BeforeUnloadDialogCancelled() override;
@@ -241,10 +266,6 @@ class NativeWindow : public base::SupportsUserData,
   bool OnMessageReceived(const IPC::Message& message) override;
 
  private:
-  // Called when the window needs to update its draggable region.
-  void UpdateDraggableRegions(
-      const std::vector<DraggableRegion>& regions);
-
   // Schedule a notification unresponsive event.
   void ScheduleUnresponsiveEvent(int ms);
 
@@ -268,6 +289,9 @@ class NativeWindow : public base::SupportsUserData,
   // For custom drag, the whole window is non-draggable and the draggable region
   // has to been explicitly provided.
   scoped_ptr<SkRegion> draggable_region_;  // used in custom drag.
+
+  // Minimum and maximum size, stored as content size.
+  extensions::SizeConstraints size_constraints_;
 
   // Whether window can be resized larger than screen.
   bool enable_larger_than_screen_;

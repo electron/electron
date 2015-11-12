@@ -6,6 +6,7 @@
 
 #include <map>
 
+#include "atom/browser/atom_browser_main_parts.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
@@ -159,14 +160,6 @@ mate::ObjectTemplateBuilder DownloadItem::GetObjectTemplateBuilder(
       .SetMethod("setSavePath", &DownloadItem::SetSavePath);
 }
 
-void SetWrapDownloadItem(const WrapDownloadItemCallback& callback) {
-  g_wrap_download_item = callback;
-}
-
-void ClearWrapDownloadItem() {
-  g_wrap_download_item.Reset();
-}
-
 // static
 mate::Handle<DownloadItem> DownloadItem::Create(
     v8::Isolate* isolate, content::DownloadItem* item) {
@@ -182,6 +175,18 @@ void* DownloadItem::UserDataKey() {
   return &kDownloadItemSavePathKey;
 }
 
+void ClearWrapDownloadItem() {
+  g_wrap_download_item.Reset();
+}
+
+void SetWrapDownloadItem(const WrapDownloadItemCallback& callback) {
+  g_wrap_download_item = callback;
+
+  // Cleanup the wrapper on exit.
+  atom::AtomBrowserMainParts::Get()->RegisterDestructionCallback(
+      base::Bind(ClearWrapDownloadItem));
+}
+
 }  // namespace api
 
 }  // namespace atom
@@ -193,7 +198,6 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
   dict.SetMethod("_setWrapDownloadItem", &atom::api::SetWrapDownloadItem);
-  dict.SetMethod("_clearWrapDownloadItem", &atom::api::ClearWrapDownloadItem);
 }
 
 }  // namespace

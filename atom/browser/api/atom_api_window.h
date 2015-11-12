@@ -5,6 +5,7 @@
 #ifndef ATOM_BROWSER_API_ATOM_API_WINDOW_H_
 #define ATOM_BROWSER_API_ATOM_API_WINDOW_H_
 
+#include <map>
 #include <string>
 #include <vector>
 
@@ -75,6 +76,10 @@ class Window : public mate::TrackableObject<Window>,
   void OnRendererResponsive() override;
   void OnExecuteWindowsCommand(const std::string& command_name) override;
 
+  #if defined(OS_WIN)
+  void OnWindowMessage(UINT message, WPARAM w_param, LPARAM l_param) override;
+  #endif
+
   // mate::Wrappable:
   bool IsDestroyed() const override;
 
@@ -122,6 +127,7 @@ class Window : public mate::TrackableObject<Window>,
   void SetSkipTaskbar(bool skip);
   void SetKiosk(bool kiosk);
   bool IsKiosk();
+  void SetBackgroundColor(const std::string& color_name);
   void FocusOnWebView();
   void BlurWebView();
   bool IsWebViewFocused();
@@ -142,6 +148,16 @@ class Window : public mate::TrackableObject<Window>,
   bool IsMenuBarVisible();
   void SetAspectRatio(double aspect_ratio, mate::Arguments* args);
 
+#if defined(OS_WIN)
+  typedef base::Callback<void(v8::Local<v8::Value>,
+                              v8::Local<v8::Value>)> MessageCallback;
+
+  bool HookWindowMessage(UINT message, const MessageCallback& callback);
+  bool IsWindowMessageHooked(UINT message);
+  void UnhookWindowMessage(UINT message);
+  void UnhookAllWindowMessages();
+#endif
+
 #if defined(OS_MACOSX)
   void ShowDefinitionForSelection();
 #endif
@@ -151,6 +167,11 @@ class Window : public mate::TrackableObject<Window>,
 
   int32_t ID() const;
   v8::Local<v8::Value> WebContents(v8::Isolate* isolate);
+
+#if defined(OS_WIN)
+  typedef std::map<UINT, MessageCallback> MessageCallbackMap;
+  MessageCallbackMap messages_callback_map_;
+#endif
 
   v8::Global<v8::Value> web_contents_;
   v8::Global<v8::Value> menu_;

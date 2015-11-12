@@ -27,6 +27,14 @@ Menu::Menu()
 Menu::~Menu() {
 }
 
+void Menu::Destroy() {
+  model_.reset();
+}
+
+bool Menu::IsDestroyed() const {
+  return !model_;
+}
+
 void Menu::AfterInit(v8::Isolate* isolate) {
   mate::Dictionary wrappable(isolate, GetWrapper(isolate));
   mate::Dictionary delegate;

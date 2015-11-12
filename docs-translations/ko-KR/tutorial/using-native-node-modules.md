@@ -5,14 +5,16 @@ Electron에선 node.js 네이티브 모듈이 지원됩니다. 하지만 Electro
 
 ## 네이티브 node 모듈 호환성
 
-Node v0.11.x 버전부터는 V8 API의 중대한 변경이 있었습니다. 하지만 대부분의 네이티브 모듈은 Node v0.10.x 버전을 타겟으로 작성 되었기 때문에
-새로운 Node 또는 io.js 버전에서 작동하지 않을 수 있습니다. Electron은 내부적으로 __io.js v3.1.0__ 버전을 사용하기 때문에 호환성 문제가 발생할 수 있습니다.
+네이티브 모듈은 node.js가 새로운 V8 버전을 사용함으로 인해 작동하지 않을 수 있습니다.
+사용하는 네이티브 모듈이 Electron에 맞춰 작동할 수 있도록 하려면 Electron에서 사용하는 node.js의 버전을 확인할 필요가 있습니다.
+Electron에서 사용하는 node 버전은 [releases](https://github.com/atom/electron/releases)에서 확인할 수 있으며
+`process.version`을 출력하여 버전을 확인할 수도 있습니다. ([시작하기](https://github.com/atom/electron/blob/master/docs/tutorial/quick-start.md)의 예제를 참고하세요)
 
-이 문제를 해결하기 위해선 모듈이 v0.11.x 또는 최신 버전을 지원할 수 있도록 변경해야 합니다.
-현재 [많은 모듈들](https://www.npmjs.org/browse/depended/nan)이 안정적으로 두 버전 모두 지원하고 있지만 오래된 모듈의 경우 여전히 Node v0.10.x 버전만을 지원하고 있습니다.
-예를 들어 [nan](https://github.com/rvagg/nan) 모듈을 사용해야 한다면 Node v0.11.x 또는 최신 버전의 Node와 io.js로 포팅 할 필요가 있습니다.
+혹시 직접 만든 네이티브 모듈이 있다면 [NAN](https://github.com/nodejs/nan/) 모듈을 사용하는 것을 고려해보는 것이 좋습니다.
+이 모듈은 다중 버전의 node.js를 지원하기 쉽게 해줍니다. 이를 통해 오래된 모듈을 새 버전의 node.js에 맞게 포팅할 수 있습니다.
+Electron도 이 모듈을 통해 포팅된 네이티브 모듈을 사용할 수 있습니다.
 
-## 네이티브 모듈 설치하는 방법
+## 네이티브 모듈을 설치하는 방법
 
 네이티브 모듈을 설치하는 방법은 세 가지 종류가 있습니다.
 
@@ -26,7 +28,10 @@ Node v0.11.x 버전부터는 V8 API의 중대한 변경이 있었습니다. 하�
 npm install --save-dev electron-rebuild
 
 # 필요한 네이티브 모듈을 `npm install`로 설치한 후 다음 명령을 실행하세요:
-node ./node_modules/.bin/electron-rebuild
+./node_modules/.bin/electron-rebuild
+
+# Windows에서 문제가 발생하면 다음 명령을 대신 실행하세요:
+.\node_modules\.bin\electron-rebuild.cmd
 ```
 
 ### `npm`을 이용한 방법

@@ -21,10 +21,15 @@ globalPaths.push path.resolve(__dirname, '..', 'api', 'lib')
 if process.platform is 'win32'
   # Redirect node's console to use our own implementations, since node can not
   # handle console output when running as GUI program.
-  print = (args...) ->
-    process.log util.format(args...)
-  console.log = console.error = console.warn = print
-  process.stdout.write = process.stderr.write = print
+  consoleLog = (args...) ->
+    process.log util.format(args...) + "\n"
+  streamWrite = (chunk, encoding, callback) ->
+    chunk = chunk.toString(encoding) if Buffer.isBuffer chunk
+    process.log chunk
+    callback() if callback
+    true
+  console.log = console.error = console.warn = consoleLog
+  process.stdout.write = process.stderr.write = streamWrite
 
   # Always returns EOF for stdin stream.
   Readable = require('stream').Readable
@@ -47,6 +52,9 @@ process.on 'uncaughtException', (error) ->
 app = require 'app'
 app.on 'quit', ->
   process.emit 'exit'
+
+# Map process.exit to app.exit, which quits gracefully.
+process.exit = app.exit
 
 # Load the RPC server.
 require './rpc-server'

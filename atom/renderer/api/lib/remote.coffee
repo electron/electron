@@ -1,4 +1,4 @@
-ipc = require 'ipc'
+ipc = require 'ipc-renderer'
 v8Util = process.atomBinding 'v8_util'
 CallbacksRegistry = require 'callbacks-registry'
 
@@ -33,7 +33,7 @@ wrapArgs = (args, visited=[]) ->
     else if typeof value is 'function' and v8Util.getHiddenValue value, 'returnValue'
       type: 'function-with-return-value', value: valueToMeta(value())
     else if typeof value is 'function'
-      type: 'function', id: callbacksRegistry.add(value)
+      type: 'function', id: callbacksRegistry.add(value), location: v8Util.getHiddenValue value, 'location'
     else
       type: 'value', value: value
 
@@ -46,7 +46,9 @@ metaToValue = (meta) ->
     when 'array' then (metaToValue(el) for el in meta.members)
     when 'buffer' then new Buffer(meta.value)
     when 'promise' then Promise.resolve(then: metaToValue(meta.then))
-    when 'error'
+    when 'error' then metaToPlainObject meta
+    when 'date' then new Date(meta.value)
+    when 'exception'
       throw new Error("#{meta.message}\n#{meta.stack}")
     else
       if meta.type is 'function'
@@ -108,12 +110,20 @@ metaToValue = (meta) ->
 
       ret
 
+# Construct a plain object from the meta.
+metaToPlainObject = (meta) ->
+  obj = switch meta.type
+    when 'error' then new Error
+    else {}
+  obj[name] = value for {name, value} in meta.members
+  obj
+
 # Browser calls a callback in renderer.
-ipc.on 'ATOM_RENDERER_CALLBACK', (id, args) ->
+ipc.on 'ATOM_RENDERER_CALLBACK', (event, id, args) ->
   callbacksRegistry.apply id, metaToValue(args)
 
 # A callback in browser is released.
-ipc.on 'ATOM_RENDERER_RELEASE_CALLBACK', (id) ->
+ipc.on 'ATOM_RENDERER_RELEASE_CALLBACK', (event, id) ->
   callbacksRegistry.remove id
 
 # Get remote module.

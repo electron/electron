@@ -54,11 +54,10 @@ crashReporter.start({
 
 Crash Reporter는 다음과 같은 데이터를 `submitUrl`에 `POST` 방식으로 전송합니다:
 
-* `rept` String - 예시 'electron-crash-service'
 * `ver` String - Electron의 버전
 * `platform` String - 예시 'win32'
 * `process_type` String - 예시 'renderer'
-* `ptime` Number
+* `guid` String - e.g. '5e1286fc-da97-479e-918b-6bfb0c3d1c72'
 * `_version` String - `package.json`내의 `version` 필드
 * `_productName` String - Crash Reporter의 `options` 객체에서 정의한 제품명.
 * `prod` String - 기본 제품의 이름. 이 경우 Electron으로 표시됩니다.

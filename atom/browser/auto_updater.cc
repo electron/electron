@@ -6,14 +6,25 @@
 
 namespace auto_updater {
 
-AutoUpdaterDelegate* AutoUpdater::delegate_ = NULL;
+Delegate* AutoUpdater::delegate_ = nullptr;
 
-AutoUpdaterDelegate* AutoUpdater::GetDelegate() {
+Delegate* AutoUpdater::GetDelegate() {
   return delegate_;
 }
 
-void AutoUpdater::SetDelegate(AutoUpdaterDelegate* delegate) {
+void AutoUpdater::SetDelegate(Delegate* delegate) {
   delegate_ = delegate;
 }
+
+#if !defined(OS_MACOSX) || defined(MAS_BUILD)
+void AutoUpdater::SetFeedURL(const std::string& url) {
+}
+
+void AutoUpdater::CheckForUpdates() {
+}
+
+void AutoUpdater::QuitAndInstall() {
+}
+#endif
 
 }  // namespace auto_updater

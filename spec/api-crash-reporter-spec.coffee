@@ -3,7 +3,7 @@ path       = require 'path'
 http       = require 'http'
 url        = require 'url'
 remote     = require 'remote'
-formidable = require 'formidable'
+multiparty = require 'multiparty'
 
 crashReporter = remote.require 'crash-reporter'
 BrowserWindow = remote.require 'browser-window'
@@ -15,8 +15,8 @@ describe 'crash-reporter module', ->
   beforeEach -> w = new BrowserWindow(show: false)
   afterEach -> w.destroy()
 
-  # It is not working on 64bit Windows.
-  return if process.platform is 'win32' and process.arch is 'x64'
+  # It is not working for mas build.
+  return if process.mas
 
   # The crash-reporter test is not reliable on CI machine.
   isCI = remote.process.argv[2] == '--ci'
@@ -24,12 +24,15 @@ describe 'crash-reporter module', ->
 
   it 'should send minidump when renderer crashes', (done) ->
     @timeout 120000
+    called = false
     server = http.createServer (req, res) ->
       server.close()
-      form = new formidable.IncomingForm()
-      process.throwDeprecation = false
+      form = new multiparty.Form()
       form.parse req, (error, fields, files) ->
-        process.throwDeprecation = true
+        # This callback can be called for twice sometimes.
+        return if called
+        called = true
+
         assert.equal fields['prod'], 'Electron'
         assert.equal fields['ver'], process.versions['electron']
         assert.equal fields['process_type'], 'renderer'
@@ -39,7 +42,6 @@ describe 'crash-reporter module', ->
         assert.equal fields['_productName'], 'Zombies'
         assert.equal fields['_companyName'], 'Umbrella Corporation'
         assert.equal fields['_version'], require('remote').require('app').getVersion()
-        assert files['upload_file_minidump']['name']?
 
         res.end('abc-123-def')
         done()
@@ -53,5 +55,6 @@ describe 'crash-reporter module', ->
         protocol: 'file'
         pathname: path.join fixtures, 'api', 'crash.html'
         search: "?port=#{port}"
-      crashReporter.start {'submitUrl': 'http://127.0.0.1:' + port}
+      if process.platform is 'darwin'
+        crashReporter.start {'submitUrl': 'http://127.0.0.1:' + port}
       w.loadUrl url

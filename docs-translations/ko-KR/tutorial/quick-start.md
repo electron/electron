@@ -3,7 +3,7 @@
 ## 소개
 
 Electron은 자바스크립트와 함께 제공된 풍부한 네이티브 API를 사용하여 멋진 데스크탑 어플리케이션을 만들 수 있도록 해주는 프레임워크입니다.
-이 프레임워크의 io.js(node.js)는 웹 서버 개발이 아닌 데스크탑 어플리케이션 개발에 초점을 맞췄습니다.
+이 프레임워크의 Node.js는 웹 서버 개발이 아닌 데스크탑 어플리케이션 개발에 초점을 맞췄습니다.
 
 이 말은 Electron이 GUI 라이브러리의 자바스크립트 바인딩이라는 뜻이 아닙니다.
 대신, Electron은 웹 페이지의 GUI를 사용합니다. 쉽게 말해 Electron은 자바스크립트를 사용하여 조작하는 작은 Chromium 브라우저로 볼 수 있습니다.
@@ -19,7 +19,7 @@ Electron이 웹페이지를 보여줄 때 Chromium의 multi-processes 구조도 
 Electron 프로세스 내에서 작동하는 웹 페이지를 __랜더러 프로세스__ 라고 불립니다.
 
 보통 일반 브라우저의 웹 페이지들은 샌드박스가 적용된 환경에서 작동하며 네이티브 리소스에는 접근할 수 없도록 되어 있습니다.
-하지만 Electron은 웹 페이지 내에서 io.js(node.js) API를 사용하여 low-level 수준으로 운영체제와 상호작용할 수 있습니다.
+하지만 Electron은 웹 페이지 내에서 Node.js API를 사용하여 low-level 수준으로 운영체제와 상호작용할 수 있습니다.
 
 ### 메인 프로세스와 랜더러 프로세스의 차이점
 
@@ -71,7 +71,7 @@ var BrowserWindow = require('browser-window');  // 네이티브 브라우저 창
 require('crash-reporter').start();
 
 // 윈도우 객체를 전역에 유지합니다. 만약 이렇게 하지 않으면
-// 자바스크립트 GC가 일어날 때 창이 자동으로 닫혀버립니다.
+// 자바스크립트 GC가 일어날 때 창이 멋대로 닫혀버립니다.
 var mainWindow = null;
 
 // 모든 창이 닫히면 어플리케이션 종료.
@@ -93,7 +93,7 @@ app.on('ready', function() {
   mainWindow.loadUrl('file://' + __dirname + '/index.html');
 
   // 개발자 콘솔을 엽니다.
-  mainWindow.openDevTools();
+  mainWindow.webContents.openDevTools();
 
   // 창이 닫히면 호출됩니다.
   mainWindow.on('closed', function() {
@@ -116,7 +116,8 @@ app.on('ready', function() {
   </head>
   <body>
     <h1>헬로 월드!</h1>
-    이 어플리케이션은 io.js <script>document.write(process.version)</script> 과
+    이 어플리케이션은 node <script>document.write(process.version)</script>,
+    Chrome <script>document.write(process.versions.chrome)</script>,
     Electron <script>document.write(process.versions['electron'])</script>을 사용합니다.
   </body>
 </html>
@@ -174,6 +175,23 @@ $ ./Electron.app/Contents/MacOS/Electron your-app/
 어플리케이션 실행파일은 `Electron`의 release 패키지에 포함되어 있습니다.
 [여기](https://github.com/atom/electron/releases)에서 다운로드 받을 수 있습니다.
 
-### 배포용 파일 만들기
+### 배포용 실행 파일 만들기
 
-어플리케이션 작성을 완료했다면 [어플리케이션 배포](application-distribution.md) 가이드를 통해 제작한 앱을 본격적으로 배포할 수 있습니다.
+어플리케이션 작성을 모두 끝냈다면 [어플리케이션 배포](application-distribution.md) 가이드를 통해 제작한 앱을 패키징하고 배포할 수 있습니다.
+
+### 미리 작성된 앱 실행하기
+
+[`atom/electron-quick-start`](https://github.com/atom/electron-quick-start) 저장소를 클론하면 이 가이드에서 작성한 예제 앱을 바로 실행해 볼 수 있습니다.
+
+**참고**: 이 예제를 실행시키려면 [Git](https://git-scm.com)과 [Node.js](https://nodejs.org/en/download/)가 필요합니다. (CLI에서 실행 가능한 [npm](https://npmjs.org)이 있어야 합니다)
+
+**역주**: `npm`은 보통 Node.js를 설치하면 자동으로 같이 설치됩니다.
+
+```bash
+# 저장소를 클론합니다
+$ git clone https://github.com/atom/electron-quick-start
+# 저장소 안으로 들어갑니다
+$ cd electron-quick-start
+# 어플리케이션의 종속성 모듈을 설치한 후 실행합니다
+$ npm install && npm start
+```

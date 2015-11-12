@@ -5,6 +5,7 @@
 #include "atom/app/atom_main_delegate.h"
 
 #include <string>
+#include <iostream>
 
 #include "atom/app/atom_content_client.h"
 #include "atom/browser/atom_browser_client.h"
@@ -20,6 +21,15 @@
 
 namespace atom {
 
+namespace {
+
+bool IsBrowserProcess(base::CommandLine* cmd) {
+  std::string process_type = cmd->GetSwitchValueASCII(switches::kProcessType);
+  return process_type.empty();
+}
+
+}  // namespace
+
 AtomMainDelegate::AtomMainDelegate() {
 }
 
@@ -27,8 +37,14 @@ AtomMainDelegate::~AtomMainDelegate() {
 }
 
 bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
+  auto command_line = base::CommandLine::ForCurrentProcess();
+
   logging::LoggingSettings settings;
 #if defined(OS_WIN)
+  // On Windows the terminal returns immediately, so we add a new line to
+  // prevent output in the same line as the prompt.
+  if (IsBrowserProcess(command_line))
+    std::wcout << std::endl;
 #if defined(DEBUG)
   // Print logging to debug.log on Windows
   settings.logging_dest = logging::LOG_TO_ALL;
@@ -43,19 +59,25 @@ bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
 #endif  // !defined(OS_WIN)
 
   // Only enable logging when --enable-logging is specified.
-  auto command_line = base::CommandLine::ForCurrentProcess();
-  if (!command_line->HasSwitch(switches::kEnableLogging))
+  scoped_ptr<base::Environment> env(base::Environment::Create());
+  if (!command_line->HasSwitch(switches::kEnableLogging) &&
+      !env->HasVar("ELECTRON_ENABLE_LOGGING")) {
     settings.logging_dest = logging::LOG_NONE;
+    logging::SetMinLogLevel(logging::LOG_NUM_SEVERITIES);
+  }
 
   logging::InitLogging(settings);
 
   // Logging with pid and timestamp.
   logging::SetLogItems(true, false, true, false);
 
-#if defined(DEBUG) && defined(OS_LINUX)
   // Enable convient stack printing.
-  base::debug::EnableInProcessStackDumping();
+  bool enable_stack_dumping = env->HasVar("ELECTRON_ENABLE_STACK_DUMPING");
+#if defined(DEBUG) && defined(OS_LINUX)
+  enable_stack_dumping = true;
 #endif
+  if (enable_stack_dumping)
+    base::debug::EnableInProcessStackDumping();
 
   return brightray::MainDelegate::BasicStartupComplete(exit_code);
 }
@@ -77,15 +99,8 @@ void AtomMainDelegate::PreSandboxStartup() {
   }
 
   // Only append arguments for browser process.
-  if (!process_type.empty())
+  if (!IsBrowserProcess(command_line))
     return;
-
-#if defined(OS_WIN)
-  // Disable the LegacyRenderWidgetHostHWND, it made frameless windows unable
-  // to move and resize. We may consider enabling it again after upgraded to
-  // Chrome 38, which should have fixed the problem.
-  command_line->AppendSwitch(switches::kDisableLegacyIntermediateWindow);
-#endif
 
   // Disable renderer sandbox for most of node's functions.
   command_line->AppendSwitch(switches::kNoSandbox);

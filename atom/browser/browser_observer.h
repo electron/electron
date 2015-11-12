@@ -20,6 +20,8 @@ class SSLCertRequestInfo;
 
 namespace atom {
 
+class LoginHandler;
+
 class BrowserObserver {
  public:
   // The browser is about to close all windows.
@@ -56,6 +58,9 @@ class BrowserObserver {
       content::WebContents* web_contents,
       net::SSLCertRequestInfo* cert_request_info,
       scoped_ptr<content::ClientCertificateDelegate> delegate) {}
+
+  // The browser requests HTTP login.
+  virtual void OnLogin(LoginHandler* login_handler) {}
 
  protected:
   virtual ~BrowserObserver() {}

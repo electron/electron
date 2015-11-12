@@ -8,6 +8,8 @@ upstream node:
 * `process.versions['electron']` String - Version of Electron.
 * `process.versions['chrome']` String - Version of Chromium.
 * `process.resourcesPath` String - Path to JavaScript source code.
+* `process.mas` Boolean - For Mac App Store build, this value is `true`, for
+  other builds it is `undefined`.
 
 ## Events
 
@@ -21,9 +23,11 @@ the global scope when node integration is turned off:
 
 ```js
 // preload.js
+var _setImmediate = setImmediate;
+var _clearImmediate = clearImmediate;
 process.once('loaded', function() {
-  global.setImmediate = setImmediate;
-  global.clearImmediate = clearImmediate;
+  global.setImmediate = _setImmediate;
+  global.clearImmediate = _clearImmediate;
 });
 ```
 
@@ -35,7 +39,7 @@ The `process` object has the following method:
 
 Causes the main thread of the current process hang.
 
-### process.setFdLimit(maxDescriptors) _OS X_ _Linux_
+### `process.setFdLimit(maxDescriptors)` _OS X_ _Linux_
 
 * `maxDescriptors` Integer
 

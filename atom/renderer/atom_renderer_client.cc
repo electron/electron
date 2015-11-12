@@ -6,6 +6,7 @@
 
 #include <string>
 
+#include "atom/common/api/api_messages.h"
 #include "atom/common/api/atom_bindings.h"
 #include "atom/common/node_bindings.h"
 #include "atom/common/node_includes.h"
@@ -21,11 +22,13 @@
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_frame_observer.h"
 #include "content/public/renderer/render_thread.h"
+#include "ipc/ipc_message_macros.h"
 #include "third_party/WebKit/public/web/WebCustomElement.h"
 #include "third_party/WebKit/public/web/WebLocalFrame.h"
 #include "third_party/WebKit/public/web/WebPluginParams.h"
 #include "third_party/WebKit/public/web/WebKit.h"
 #include "third_party/WebKit/public/web/WebRuntimeFeatures.h"
+#include "third_party/WebKit/public/web/WebView.h"
 
 #if defined(OS_WIN)
 #include <shlobj.h>
@@ -36,16 +39,8 @@ namespace atom {
 namespace {
 
 bool IsSwitchEnabled(base::CommandLine* command_line,
-                     const char* switch_string,
-                     bool* enabled) {
-  std::string value = command_line->GetSwitchValueASCII(switch_string);
-  if (value == "true")
-    *enabled = true;
-  else if (value == "false")
-    *enabled = false;
-  else
-    return false;
-  return true;
+                     const char* switch_string) {
+  return command_line->GetSwitchValueASCII(switch_string) == "true";
 }
 
 // Helper class to forward the messages to the client.
@@ -62,6 +57,22 @@ class AtomRenderFrameObserver : public content::RenderFrameObserver {
                               int world_id) {
     renderer_client_->DidCreateScriptContext(
         render_frame()->GetWebFrame(), context);
+  }
+
+  bool OnMessageReceived(const IPC::Message& message) {
+    bool handled = true;
+    IPC_BEGIN_MESSAGE_MAP(AtomRenderFrameObserver, message)
+      IPC_MESSAGE_HANDLER(AtomViewMsg_SetZoomLevel, OnSetZoomLevel)
+      IPC_MESSAGE_UNHANDLED(handled = false)
+    IPC_END_MESSAGE_MAP()
+
+    return handled;
+  }
+
+  void OnSetZoomLevel(double level) {
+    auto view = render_frame()->GetWebFrame()->view();
+    if (view)
+      view->setZoomLevel(level);
   }
 
  private:
@@ -197,10 +208,8 @@ bool AtomRendererClient::ShouldOverridePageVisibilityState(
     const content::RenderFrame* render_frame,
     blink::WebPageVisibilityState* override_state) {
   base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
-  bool b;
 
-  if (IsSwitchEnabled(command_line, switches::kPageVisibility, &b)
-      && b) {
+  if (IsSwitchEnabled(command_line, switches::kPageVisibility)) {
     *override_state = blink::WebPageVisibilityStateVisible;
     return true;
   }
@@ -210,19 +219,17 @@ bool AtomRendererClient::ShouldOverridePageVisibilityState(
 
 void AtomRendererClient::EnableWebRuntimeFeatures() {
   base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
-  bool b;
-  if (IsSwitchEnabled(command_line, switches::kExperimentalFeatures, &b))
-    blink::WebRuntimeFeatures::enableExperimentalFeatures(b);
-  if (IsSwitchEnabled(command_line, switches::kExperimentalCanvasFeatures, &b))
-    blink::WebRuntimeFeatures::enableExperimentalCanvasFeatures(b);
-  if (IsSwitchEnabled(command_line, switches::kSubpixelFontScaling, &b))
-    blink::WebRuntimeFeatures::enableSubpixelFontScaling(b);
-  if (IsSwitchEnabled(command_line, switches::kOverlayScrollbars, &b))
-    blink::WebRuntimeFeatures::enableOverlayScrollbars(b);
-  if (IsSwitchEnabled(command_line, switches::kOverlayFullscreenVideo, &b))
-    blink::WebRuntimeFeatures::enableOverlayFullscreenVideo(b);
-  if (IsSwitchEnabled(command_line, switches::kSharedWorker, &b))
-    blink::WebRuntimeFeatures::enableSharedWorker(b);
+
+  if (IsSwitchEnabled(command_line, switches::kExperimentalFeatures))
+    blink::WebRuntimeFeatures::enableExperimentalFeatures(true);
+  if (IsSwitchEnabled(command_line, switches::kExperimentalCanvasFeatures))
+    blink::WebRuntimeFeatures::enableExperimentalCanvasFeatures(true);
+  if (IsSwitchEnabled(command_line, switches::kOverlayScrollbars))
+    blink::WebRuntimeFeatures::enableOverlayScrollbars(true);
+  if (IsSwitchEnabled(command_line, switches::kOverlayFullscreenVideo))
+    blink::WebRuntimeFeatures::enableOverlayFullscreenVideo(true);
+  if (IsSwitchEnabled(command_line, switches::kSharedWorker))
+    blink::WebRuntimeFeatures::enableSharedWorker(true);
 }
 
 }  // namespace atom

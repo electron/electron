@@ -154,7 +154,9 @@ Clears the data of web storages.
 * `config` String
 * `callback` Function - Called when operation is done.
 
-Parses the `config` indicating which proxies to use for the session.
+If `config` is a PAC url, it is used directly otherwise
+`config` is parsed based on the following rules indicating which
+proxies to use for the session.
 
 ```
 config = scheme-proxies[";"<scheme-proxies>]

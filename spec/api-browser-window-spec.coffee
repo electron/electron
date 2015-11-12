@@ -138,10 +138,10 @@ describe 'browser-window module', ->
       w.setResizable not w.isResizable()
       assert.deepEqual s, w.getSize()
 
-  describe '"use-content-size" option', ->
+  describe '"useContentSize" option', ->
     it 'make window created with content size when used', ->
       w.destroy()
-      w = new BrowserWindow(show: false, width: 400, height: 400, 'use-content-size': true)
+      w = new BrowserWindow(show: false, width: 400, height: 400, useContentSize: true)
       contentSize = w.getContentSize()
       assert.equal contentSize[0], 400
       assert.equal contentSize[1], 400
@@ -153,7 +153,7 @@ describe 'browser-window module', ->
 
     it 'works for framless window', ->
       w.destroy()
-      w = new BrowserWindow(show: false, frame: false, width: 400, height: 400, 'use-content-size': true)
+      w = new BrowserWindow(show: false, frame: false, width: 400, height: 400, useContentSize: true)
       contentSize = w.getContentSize()
       assert.equal contentSize[0], 400
       assert.equal contentSize[1], 400
@@ -167,22 +167,22 @@ describe 'browser-window module', ->
 
     it 'creates browser window with hidden title bar', ->
       w.destroy()
-      w = new BrowserWindow(show: false, width: 400, height: 400, 'title-bar-style': 'hidden')
+      w = new BrowserWindow(show: false, width: 400, height: 400, titleBarStyle: 'hidden')
       contentSize = w.getContentSize()
       assert.equal contentSize[1], 400
 
     it 'creates browser window with hidden inset title bar', ->
       w.destroy()
-      w = new BrowserWindow(show: false, width: 400, height: 400, 'title-bar-style': 'hidden-inset')
+      w = new BrowserWindow(show: false, width: 400, height: 400, titleBarStyle: 'hidden-inset')
       contentSize = w.getContentSize()
       assert.equal contentSize[1], 400
 
-  describe '"enable-larger-than-screen" option', ->
+  describe '"enableLargerThanScreen" option', ->
     return if process.platform is 'linux'
 
     beforeEach ->
       w.destroy()
-      w = new BrowserWindow(show: true, width: 400, height: 400, 'enable-larger-than-screen': true)
+      w = new BrowserWindow(show: true, width: 400, height: 400, enableLargerThanScreen: true)
 
     it 'can move the window out of screen', ->
       w.setPosition -10, -10
@@ -201,33 +201,33 @@ describe 'browser-window module', ->
 
   describe '"web-preferences" option', ->
     afterEach ->
-      remote.require('ipc').removeAllListeners('answer')
+      remote.require('ipc-main').removeAllListeners('answer')
 
     describe '"preload" option', ->
       it 'loads the script before other scripts in window', (done) ->
         preload = path.join fixtures, 'module', 'set-global.js'
-        remote.require('ipc').once 'answer', (event, test) ->
+        remote.require('ipc-main').once 'answer', (event, test) ->
           assert.equal(test, 'preload')
           done()
         w.destroy()
         w = new BrowserWindow
           show: false
-          'web-preferences':
+          webPreferences:
             preload: preload
         w.loadUrl 'file://' + path.join(fixtures, 'api', 'preload.html')
 
     describe '"node-integration" option', ->
       it 'disables node integration when specified to false', (done) ->
         preload = path.join fixtures, 'module', 'send-later.js'
-        remote.require('ipc').once 'answer', (event, test) ->
+        remote.require('ipc-main').once 'answer', (event, test) ->
           assert.equal(test, 'undefined')
           done()
         w.destroy()
         w = new BrowserWindow
           show: false
-          'web-preferences':
+          webPreferences:
             preload: preload
-            'node-integration': false
+            nodeIntegration: false
         w.loadUrl 'file://' + path.join(fixtures, 'api', 'blank.html')
 
   describe 'beforeunload handler', ->
@@ -301,3 +301,24 @@ describe 'browser-window module', ->
         assert.notEqual data.length, 0
         w.webContents.endFrameSubscription()
         done()
+
+  describe 'save page', ->
+    savePageDir = path.join fixtures, 'save_page'
+    savePageHtmlPath = path.join savePageDir, 'save_page.html'
+    savePageJsPath = path.join savePageDir, 'save_page_files', 'test.js'
+    savePageCssPath = path.join savePageDir, 'save_page_files', 'test.css'
+    it 'should save page', (done) ->
+      w.webContents.on 'did-finish-load', ->
+        w.webContents.savePage savePageHtmlPath, 'HTMLComplete', (error) ->
+          assert.equal error, null
+          assert fs.existsSync savePageHtmlPath
+          assert fs.existsSync savePageJsPath
+          assert fs.existsSync savePageCssPath
+          fs.unlinkSync savePageCssPath
+          fs.unlinkSync savePageJsPath
+          fs.unlinkSync savePageHtmlPath
+          fs.rmdirSync path.join savePageDir, 'save_page_files'
+          fs.rmdirSync savePageDir
+          done()
+
+      w.loadUrl "file://#{fixtures}/pages/save_page/index.html"

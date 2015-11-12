@@ -7,19 +7,18 @@
 #include <string>
 #include <vector>
 
-#if defined(OS_WIN)
-#include <shlobj.h>
-#endif
-
 #include "atom/browser/api/atom_api_menu.h"
 #include "atom/browser/api/atom_api_session.h"
+#include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/browser.h"
-#include "atom/browser/api/atom_api_web_contents.h"
+#include "atom/browser/login_handler.h"
 #include "atom/common/native_mate_converters/callback.h"
+#include "atom/common/native_mate_converters/net_converter.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/node_includes.h"
+#include "atom/common/options_switches.h"
 #include "base/command_line.h"
 #include "base/environment.h"
 #include "base/files/file_path.h"
@@ -27,6 +26,7 @@
 #include "brightray/browser/brightray_paths.h"
 #include "content/public/browser/client_certificate_delegate.h"
 #include "content/public/browser/gpu_data_manager.h"
+#include "content/public/common/content_switches.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 #include "net/ssl/ssl_cert_request_info.h"
@@ -109,12 +109,27 @@ int GetPathConstant(const std::string& name) {
     return -1;
 }
 
+bool NotificationCallbackWrapper(
+    const ProcessSingleton::NotificationCallback& callback,
+    const base::CommandLine::StringVector& cmd,
+    const base::FilePath& cwd) {
+  // Make sure the callback is called after app gets ready.
+  if (Browser::Get()->is_ready()) {
+    callback.Run(cmd, cwd);
+  } else {
+    scoped_refptr<base::SingleThreadTaskRunner> task_runner(
+        base::ThreadTaskRunnerHandle::Get());
+    task_runner->PostTask(
+        FROM_HERE, base::Bind(base::IgnoreResult(callback), cmd, cwd));
+  }
+  // ProcessSingleton needs to know whether current process is quiting.
+  return !Browser::Get()->is_shutting_down();
+}
+
 void OnClientCertificateSelected(
     v8::Isolate* isolate,
     std::shared_ptr<content::ClientCertificateDelegate> delegate,
     mate::Arguments* args) {
-  v8::Locker locker(isolate);
-  v8::HandleScope handle_scope(isolate);
   mate::Dictionary cert_data;
   if (!(args->Length() == 1 && args->GetNext(&cert_data))) {
     args->ThrowError();
@@ -128,8 +143,16 @@ void OnClientCertificateSelected(
       net::X509Certificate::CreateCertificateListFromBytes(
           encoded_data.data(), encoded_data.size(),
           net::X509Certificate::FORMAT_AUTO);
-
   delegate->ContinueWithCertificate(certs[0].get());
+}
+
+void PassLoginInformation(scoped_refptr<LoginHandler> login_handler,
+                          mate::Arguments* args) {
+  base::string16 username, password;
+  if (args->GetNext(&username) && args->GetNext(&password))
+    login_handler->Login(username, password);
+  else
+    login_handler->CancelAuth();
 }
 
 }  // namespace
@@ -158,6 +181,11 @@ void App::OnWindowAllClosed() {
 
 void App::OnQuit() {
   Emit("quit");
+
+  if (process_singleton_.get()) {
+    process_singleton_->Cleanup();
+    process_singleton_.reset();
+  }
 }
 
 void App::OnOpenFile(bool* prevent_default, const std::string& file_path) {
@@ -209,6 +237,31 @@ void App::OnSelectCertificate(
         cert_request_info->client_certs[0].get());
 }
 
+void App::OnLogin(LoginHandler* login_handler) {
+  // Convert the args explicitly since they will be passed for twice.
+  v8::Locker locker(isolate());
+  v8::HandleScope handle_scope(isolate());
+  auto web_contents =
+      WebContents::CreateFrom(isolate(), login_handler->GetWebContents());
+  auto request = mate::ConvertToV8(isolate(), login_handler->request());
+  auto auth_info = mate::ConvertToV8(isolate(), login_handler->auth_info());
+  auto callback = mate::ConvertToV8(
+      isolate(),
+      base::Bind(&PassLoginInformation, make_scoped_refptr(login_handler)));
+
+  bool prevent_default =
+      Emit("login", web_contents, request, auth_info, callback);
+
+  // Also pass it to WebContents.
+  if (!prevent_default)
+    prevent_default =
+        web_contents->Emit("login", request, auth_info, callback);
+
+  // Default behavior is to always cancel the auth.
+  if (!prevent_default)
+    login_handler->CancelAuth();
+}
+
 void App::OnGpuProcessCrashed(base::TerminationStatus exit_code) {
   Emit("gpu-process-crashed");
 }
@@ -242,11 +295,10 @@ void App::SetDesktopName(const std::string& desktop_name) {
 #endif
 }
 
-void App::SetAppUserModelId(const std::string& app_id) {
-#if defined(OS_WIN)
-  base::string16 app_id_utf16 = base::UTF8ToUTF16(app_id);
-  SetCurrentProcessExplicitAppUserModelID(app_id_utf16.c_str());
-#endif
+void App::AllowNTLMCredentialsForAllDomains(bool should_allow) {
+  auto browser_context = static_cast<AtomBrowserContext*>(
+        AtomBrowserMainParts::Get()->browser_context());
+  browser_context->AllowNTLMCredentialsForAllDomains(should_allow);
 }
 
 std::string App::GetLocale() {
@@ -260,11 +312,34 @@ v8::Local<v8::Value> App::DefaultSession(v8::Isolate* isolate) {
     return v8::Local<v8::Value>::New(isolate, default_session_);
 }
 
+bool App::MakeSingleInstance(
+    const ProcessSingleton::NotificationCallback& callback) {
+  if (process_singleton_.get())
+    return false;
+
+  base::FilePath user_dir;
+  PathService::Get(brightray::DIR_USER_DATA, &user_dir);
+  process_singleton_.reset(new ProcessSingleton(
+      user_dir, base::Bind(NotificationCallbackWrapper, callback)));
+
+  switch (process_singleton_->NotifyOtherProcessOrCreate()) {
+    case ProcessSingleton::NotifyResult::LOCK_ERROR:
+    case ProcessSingleton::NotifyResult::PROFILE_IN_USE:
+    case ProcessSingleton::NotifyResult::PROCESS_NOTIFIED:
+      process_singleton_.reset();
+      return true;
+    case ProcessSingleton::NotifyResult::PROCESS_NONE:
+    default:  // Shouldn't be needed, but VS warns if it is not there.
+      return false;
+  }
+}
+
 mate::ObjectTemplateBuilder App::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
   auto browser = base::Unretained(Browser::Get());
   return mate::ObjectTemplateBuilder(isolate)
       .SetMethod("quit", base::Bind(&Browser::Quit, browser))
+      .SetMethod("exit", base::Bind(&Browser::Exit, browser))
       .SetMethod("focus", base::Bind(&Browser::Focus, browser))
       .SetMethod("getVersion", base::Bind(&Browser::GetVersion, browser))
       .SetMethod("setVersion", base::Bind(&Browser::SetVersion, browser))
@@ -275,6 +350,8 @@ mate::ObjectTemplateBuilder App::GetObjectTemplateBuilder(
                  base::Bind(&Browser::AddRecentDocument, browser))
       .SetMethod("clearRecentDocuments",
                  base::Bind(&Browser::ClearRecentDocuments, browser))
+      .SetMethod("setAppUserModelId",
+                 base::Bind(&Browser::SetAppUserModelID, browser))
 #if defined(OS_WIN)
       .SetMethod("setUserTasks",
                  base::Bind(&Browser::SetUserTasks, browser))
@@ -282,8 +359,10 @@ mate::ObjectTemplateBuilder App::GetObjectTemplateBuilder(
       .SetMethod("setPath", &App::SetPath)
       .SetMethod("getPath", &App::GetPath)
       .SetMethod("setDesktopName", &App::SetDesktopName)
-      .SetMethod("setAppUserModelId", &App::SetAppUserModelId)
+      .SetMethod("allowNTLMCredentialsForAllDomains",
+                 &App::AllowNTLMCredentialsForAllDomains)
       .SetMethod("getLocale", &App::GetLocale)
+      .SetMethod("makeSingleInstance", &App::MakeSingleInstance)
       .SetProperty("defaultSession", &App::DefaultSession);
 }
 
@@ -301,6 +380,16 @@ namespace {
 
 void AppendSwitch(const std::string& switch_string, mate::Arguments* args) {
   auto command_line = base::CommandLine::ForCurrentProcess();
+
+  if (switch_string == atom::switches::kPpapiFlashPath ||
+      switch_string == atom::switches::kClientCertificate ||
+      switch_string == switches::kLogNetLog) {
+    base::FilePath path;
+    args->GetNext(&path);
+    command_line->AppendSwitchPath(switch_string, path);
+    return;
+  }
+
   std::string value;
   if (args->GetNext(&value))
     command_line->AppendSwitchASCII(switch_string, value);

@@ -254,7 +254,8 @@ exports.wrapFsWithAsar = (fs) ->
 
   openSync = fs.openSync
   readFileSync = fs.readFileSync
-  fs.readFileSync = (p, options) ->
+  fs.readFileSync = (p, opts) ->
+    options = opts # this allows v8 to optimize this function
     [isAsar, asarPath, filePath] = splitPath p
     return readFileSync.apply this, arguments unless isAsar
 
@@ -263,7 +264,9 @@ exports.wrapFsWithAsar = (fs) ->
 
     info = archive.getFileInfo filePath
     notFoundError asarPath, filePath unless info
-    return new Buffer(0) if info.size is 0
+
+    if info.size is 0
+      return if options then '' else new Buffer(0)
 
     if info.unpacked
       realPath = archive.copyFileOut filePath

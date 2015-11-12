@@ -12,8 +12,8 @@ app.on('ready', function() {
   mainWindow = new BrowserWindow({
     width: 800,
     height: 600,
-    'auto-hide-menu-bar': true,
-    'use-content-size': true,
+    autoHideMenuBar: true,
+    useContentSize: true,
   });
   mainWindow.loadUrl('file://' + __dirname + '/index.html');
   mainWindow.focus();

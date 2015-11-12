@@ -36,6 +36,7 @@ Returns:
 
 This event is like `did-finish-load` but emitted when the load failed or was
 cancelled, e.g. `window.stop()` is invoked.
+The full list of error codes and their meaning is available [here](https://code.google.com/p/chromium/codesearch#chromium/src/net/base/net_error_list.h).
 
 ### Event: 'did-frame-finish-load'
 
@@ -166,6 +167,27 @@ Emitted when DevTools is closed.
 
 Emitted when DevTools is focused / opened.
 
+### Event: 'login'
+
+Returns:
+
+* `event` Event
+* `request` Object
+  * `method` String
+  * `url` URL
+  * `referrer` URL
+* `authInfo` Object
+  * `isProxy` Boolean
+  * `scheme` String
+  * `host` String
+  * `port` Integer
+  * `realm` String
+* `callback` Function
+
+Emitted when `webContents` wants to do basic auth.
+
+The usage is the same with [the `login` event of `app`](app.md#event-login).
+
 ## Instance Methods
 
 The `webContents` object has the following instance methods:
@@ -182,6 +204,7 @@ See [session documentation](session.md) for this object's methods.
 * `options` Object (optional), properties:
   * `httpReferrer` String - A HTTP Referrer url.
   * `userAgent` String - A user agent originating the request.
+  * `extraHeaders` String - Extra headers separated by "\n"
 
 Loads the `url` in the window, the `url` must contain the protocol prefix,
 e.g. the `http://` or `file://`.
@@ -487,13 +510,14 @@ Starts inspecting element at position (`x`, `y`).
 
 Opens the developer tools for the service worker context.
 
-### `webContents.send(channel[, args...])`
+### `webContents.send(channel[, arg1][, arg2][, ...])`
 
 * `channel` String
-* `args...` (optional)
+* `arg` (optional)
 
-Send `args...` to the web page via `channel` in an asynchronous message, the web
-page can handle it by listening to the `channel` event of the `ipc` module.
+Send an asynchronous message to renderer process via `channel`, you can also
+send arbitrary arguments. The renderer process can handle the message by
+listening to the `channel` event with the `ipcRenderer` module.
 
 An example of sending messages from the main process to the renderer process:
 
@@ -514,20 +538,13 @@ app.on('ready', function() {
 <html>
 <body>
   <script>
-    require('ipc').on('ping', function(message) {
+    require('ipcRenderer').on('ping', function(event, message) {
       console.log(message);  // Prints "whoooooooh!"
     });
   </script>
 </body>
 </html>
 ```
-
-**Note:**
-
-1. The IPC message handler in web pages does not have an `event` parameter,
-   which is different from the handlers in the main process.
-2. There is no way to send synchronous messages from the main process to a
-   renderer process, because it would be very easy to cause dead locks.
 
 ### `webContents.enableDeviceEmulation(parameters)`
 
@@ -631,3 +648,26 @@ Get the `WebContents` of DevTools for this `WebContents`.
 
 **Note:** Users should never store this object because it may become `null`
 when the DevTools has been closed.
+
+### `webContents.savePage(fullPath, saveType, callback)`
+
+* `fullPath` String - The full file path.
+* `saveType` String - Specify the save type.
+  * `HTMLOnly` - Save only the HTML of the page.
+  * `HTMLComplete` - Save complete-html page.
+  * `MHTML` - Save complete-html page as MHTML.
+* `callback` Function - `function(error) {}`.
+  * `error` Error
+
+Returns true if the process of saving page has been initiated successfully.
+
+```javascript
+win.loadUrl('https://github.com');
+
+win.webContents.on('did-finish-load', function() {
+  win.webContents.savePage('/tmp/test.html', 'HTMLComplete', function(error) {
+    if (!error)
+      console.log("Save page successfully");
+  });
+});
+```

@@ -1,4 +1,4 @@
-var ipc = require('ipc');
-ipc.on('ping', function(message) {
+var ipc = require('ipc-renderer');
+ipc.on('ping', function(event, message) {
   ipc.sendToHost('pong', message);
 });

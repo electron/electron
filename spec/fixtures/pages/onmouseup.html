@@ -2,7 +2,7 @@
 <body>
 <script type="text/javascript" charset="utf-8">
 document.onmouseup = function(e) {
-  require('ipc').sendToHost('mouseup', e.x, e.y, e.shiftKey, e.ctrlKey);
+  require('ipc-renderer').sendToHost('mouseup', e.x, e.y, e.shiftKey, e.ctrlKey);
 }
 </script>
 </body>

@@ -1,5 +1,5 @@
 assert = require 'assert'
-ipc    = require 'ipc'
+ipc    = require 'ipc-renderer'
 path   = require 'path'
 remote = require 'remote'
 
@@ -70,7 +70,7 @@ describe 'ipc module', ->
   describe 'ipc.sender.send', ->
     it 'should work when sending an object containing id property', (done) ->
       obj = id: 1, name: 'ly'
-      ipc.once 'message', (message) ->
+      ipc.once 'message', (event, message) ->
         assert.deepEqual message, obj
         done()
       ipc.send 'message', obj
@@ -83,8 +83,21 @@ describe 'ipc module', ->
     it 'does not crash when reply is not sent and browser is destroyed', (done) ->
       @timeout 10000
       w = new BrowserWindow(show: false)
-      remote.require('ipc').once 'send-sync-message', (event) ->
+      remote.require('ipc-main').once 'send-sync-message', (event) ->
         event.returnValue = null
         w.destroy()
         done()
       w.loadUrl 'file://' + path.join(fixtures, 'api', 'send-sync-message.html')
+
+  describe 'remote listeners', ->
+    it 'can be added and removed correctly', ->
+      count = 0
+      w = new BrowserWindow(show: false)
+      listener = () ->
+        count += 1
+        w.removeListener 'blur', listener
+      w.on 'blur', listener
+      w.emit 'blur'
+      w.emit 'blur'
+      assert.equal count, 1
+      w.destroy()

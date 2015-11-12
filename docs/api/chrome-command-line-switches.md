@@ -33,8 +33,10 @@ Enables remote debugging over HTTP on the specified `port`.
 
 ## --proxy-server=`address:port`
 
-Use a specified proxy server, which overrides the system setting. This switch only
-affects HTTP and HTTPS requests.
+Use a specified proxy server, which overrides the system setting. This switch
+only affects requests with HTTP protocol, including HTTPS and WebSocket
+requests. It is also noteworthy that not all proxy servers support HTTPS and
+WebSocket requests.
 
 ## --proxy-pac-url=`url`
 
@@ -92,11 +94,17 @@ Enables net log events to be saved and writes them to `path`.
 Sets the minimum SSL/TLS version ("tls1", "tls1.1" or "tls1.2") that TLS
 fallback will accept.
 
+## --cipher-suite-blacklist=`cipher_suites`
+
+Specify comma-separated list of SSL cipher suites to disable.
+
 ## --enable-logging
 
 Prints Chromium's logging into console.
 
-This switch can not be used in `app.commandLine.appendSwitch` since it is parsed earlier than user's app is loaded.
+This switch can not be used in `app.commandLine.appendSwitch` since it is parsed
+earlier than user's app is loaded, but you can set the `ELECTRON_ENABLE_LOGGING`
+environment variable to achieve the same effect.
 
 ## --v=`log_level`
 

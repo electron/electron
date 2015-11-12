@@ -1,3 +1,4 @@
+deprecate = require 'deprecate'
 EventEmitter = require('events').EventEmitter
 
 bindings = process.atomBinding 'app'
@@ -6,19 +7,6 @@ downloadItemBindings = process.atomBinding 'download_item'
 
 app = bindings.app
 app.__proto__ = EventEmitter.prototype
-
-wrapSession = (session) ->
-  # session is an Event Emitter.
-  session.__proto__ = EventEmitter.prototype
-
-wrapDownloadItem = (download_item) ->
-  # download_item is an Event Emitter.
-  download_item.__proto__ = EventEmitter.prototype
-  # Be compatible with old APIs.
-  download_item.url = download_item.getUrl()
-  download_item.filename = download_item.getFilename()
-  download_item.mimeType = download_item.getMimeType()
-  download_item.hasUserGesture = download_item.hasUserGesture()
 
 app.setApplicationMenu = (menu) ->
   require('menu').setApplicationMenu menu
@@ -47,22 +35,38 @@ app.setAppPath = (path) ->
 app.getAppPath = ->
   appPath
 
-# Be compatible with old API.
-app.once 'ready', -> @emit 'finish-launching'
-app.terminate = app.quit
-app.exit = process.exit
-app.getHomeDir = -> @getPath 'home'
-app.getDataPath = -> @getPath 'userData'
-app.setDataPath = (path) -> @setPath 'userData', path
-app.resolveProxy = -> @defaultSession.resolveProxy.apply @defaultSession, arguments
-app.on 'activate', (event, hasVisibleWindows) -> @emit 'activate-with-no-open-windows' if not hasVisibleWindows
+# Helpers.
+app.resolveProxy = (url, callback) -> @defaultSession.resolveProxy url, callback
 
-# Session wrapper.
+# Deprecated.
+app.getHomeDir = deprecate 'app.getHomeDir', 'app.getPath', ->
+  @getPath 'home'
+app.getDataPath = deprecate 'app.getDataPath', 'app.getPath', ->
+  @getPath 'userData'
+app.setDataPath = deprecate 'app.setDataPath', 'app.setPath', (path) ->
+  @setPath 'userData', path
+deprecate.rename app, 'terminate', 'quit'
+deprecate.event app, 'finish-launching', 'ready', ->
+  setImmediate => # give default app a chance to setup default menu.
+    @emit 'finish-launching'
+deprecate.event app, 'activate-with-no-open-windows', 'activate', (event, hasVisibleWindows) ->
+  @emit 'activate-with-no-open-windows' if not hasVisibleWindows
+
+# Wrappers for native classes.
+wrapSession = (session) ->
+  # session is an EventEmitter.
+  session.__proto__ = EventEmitter.prototype
 sessionBindings._setWrapSession wrapSession
-process.once 'exit', sessionBindings._clearWrapSession
 
+wrapDownloadItem = (downloadItem) ->
+  # downloadItem is an EventEmitter.
+  downloadItem.__proto__ = EventEmitter.prototype
+  # Deprecated.
+  deprecate.property downloadItem, 'url', 'getUrl'
+  deprecate.property downloadItem, 'filename', 'getFilename'
+  deprecate.property downloadItem, 'mimeType', 'getMimeType'
+  deprecate.property downloadItem, 'hasUserGesture', 'hasUserGesture'
 downloadItemBindings._setWrapDownloadItem wrapDownloadItem
-process.once 'exit', downloadItemBindings._clearWrapDownloadItem
 
 # Only one App object pemitted.
 module.exports = app

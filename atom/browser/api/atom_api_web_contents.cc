@@ -18,6 +18,7 @@
 #include "atom/common/api/event_emitter_caller.h"
 #include "atom/common/native_mate_converters/blink_converter.h"
 #include "atom/common/native_mate_converters/callback.h"
+#include "atom/common/native_mate_converters/content_converter.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
@@ -31,6 +32,7 @@
 #include "chrome/browser/printing/print_view_manager_basic.h"
 #include "chrome/browser/printing/print_preview_message_handler.h"
 #include "content/common/view_messages.h"
+#include "content/public/browser/browser_plugin_guest_manager.h"
 #include "content/public/browser/favicon_status.h"
 #include "content/public/browser/native_web_keyboard_event.h"
 #include "content/public/browser/navigation_details.h"
@@ -45,12 +47,14 @@
 #include "content/public/browser/storage_partition.h"
 #include "content/public/browser/site_instance.h"
 #include "content/public/browser/web_contents.h"
+#include "content/public/common/context_menu_params.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 #include "net/http/http_response_headers.h"
 #include "net/url_request/static_http_user_agent_settings.h"
 #include "net/url_request/url_request_context.h"
 #include "third_party/WebKit/public/web/WebInputEvent.h"
+#include "ui/base/l10n/l10n_util.h"
 
 #include "atom/common/node_includes.h"
 
@@ -62,9 +66,21 @@ struct PrintSettings {
 };
 
 void SetUserAgentInIO(scoped_refptr<net::URLRequestContextGetter> getter,
+                      std::string accept_lang,
                       std::string user_agent) {
   getter->GetURLRequestContext()->set_http_user_agent_settings(
-      new net::StaticHttpUserAgentSettings("en-us,en", user_agent));
+      new net::StaticHttpUserAgentSettings(
+          net::HttpUtil::GenerateAcceptLanguageHeader(accept_lang),
+          user_agent));
+}
+
+bool NotifyZoomLevelChanged(
+    double level, content::WebContents* guest_web_contents) {
+  guest_web_contents->SendToAllFrames(
+      new AtomViewMsg_SetZoomLevel(MSG_ROUTING_NONE, level));
+
+  // Return false to iterate over all guests.
+  return false;
 }
 
 }  // namespace
@@ -133,7 +149,6 @@ struct Converter<net::HttpResponseHeaders*> {
       std::string value;
       while (headers->EnumerateHeaderLines(&iter, &key, &value)) {
         key = base::StringToLowerASCII(key);
-        value = base::StringToLowerASCII(value);
         if (response_headers.HasKey(key)) {
           base::ListValue* values = nullptr;
           if (response_headers.GetList(key, &values))
@@ -146,6 +161,27 @@ struct Converter<net::HttpResponseHeaders*> {
       }
     }
     return ConvertToV8(isolate, response_headers);
+  }
+};
+
+template<>
+struct Converter<content::SavePageType> {
+  static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
+                     content::SavePageType* out) {
+    std::string save_type;
+    if (!ConvertFromV8(isolate, val, &save_type))
+      return false;
+    save_type = base::StringToLowerASCII(save_type);
+    if (save_type == "htmlonly") {
+      *out = content::SAVE_PAGE_TYPE_AS_ONLY_HTML;
+    } else if (save_type == "htmlcomplete") {
+      *out = content::SAVE_PAGE_TYPE_AS_COMPLETE_HTML;
+    } else if (save_type == "mhtml") {
+      *out = content::SAVE_PAGE_TYPE_AS_MHTML;
+    } else {
+      return false;
+    }
+    return true;
   }
 };
 
@@ -233,9 +269,7 @@ WebContents::WebContents(v8::Isolate* isolate,
   managed_web_contents()->GetView()->SetDelegate(this);
 
   // Save the preferences in C++.
-  base::DictionaryValue web_preferences;
-  mate::ConvertFromV8(isolate, options.GetHandle(), &web_preferences);
-  new WebContentsPreferences(web_contents, &web_preferences);
+  new WebContentsPreferences(web_contents, options);
 
   web_contents->SetUserAgentOverride(GetBrowserContext()->GetUserAgent());
 
@@ -369,6 +403,15 @@ void WebContents::RendererResponsive(content::WebContents* source) {
   Emit("responsive");
   if (type_ == BROWSER_WINDOW)
     owner_window()->RendererResponsive(source);
+}
+
+bool WebContents::HandleContextMenu(const content::ContextMenuParams& params) {
+  if (!params.custom_context.is_pepper_menu)
+    return false;
+
+  Emit("pepper-context-menu", std::make_pair(params, web_contents()));
+  web_contents()->NotifyContextMenuClosed(params.custom_context);
+  return true;
 }
 
 void WebContents::BeforeUnloadFired(const base::TimeTicks& proceed_time) {
@@ -528,6 +571,7 @@ bool WebContents::OnMessageReceived(const IPC::Message& message) {
     IPC_MESSAGE_HANDLER(AtomViewHostMsg_Message, OnRendererMessage)
     IPC_MESSAGE_HANDLER_DELAY_REPLY(AtomViewHostMsg_Message_Sync,
                                     OnRendererMessageSync)
+    IPC_MESSAGE_HANDLER(AtomViewHostMsg_ZoomLevelChanged, OnZoomLevelChanged)
     IPC_MESSAGE_UNHANDLED(handled = false)
   IPC_END_MESSAGE_MAP()
 
@@ -584,6 +628,10 @@ void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
   if (options.Get("userAgent", &user_agent))
     SetUserAgent(user_agent);
 
+  std::string extra_headers;
+  if (options.Get("extraHeaders", &extra_headers))
+    params.extra_headers = extra_headers;
+
   params.transition_type = ui::PAGE_TRANSITION_TYPED;
   params.should_clear_history_list = true;
   params.override_user_agent = content::NavigationController::UA_OVERRIDE_TRUE;
@@ -637,8 +685,10 @@ void WebContents::SetUserAgent(const std::string& user_agent) {
   web_contents()->SetUserAgentOverride(user_agent);
   scoped_refptr<net::URLRequestContextGetter> getter =
       web_contents()->GetBrowserContext()->GetRequestContext();
+
+  auto accept_lang = l10n_util::GetApplicationLocale("");
   getter->GetNetworkTaskRunner()->PostTask(FROM_HERE,
-      base::Bind(&SetUserAgentInIO, getter, user_agent));
+      base::Bind(&SetUserAgentInIO, getter, accept_lang, user_agent));
 }
 
 std::string WebContents::GetUserAgent() {
@@ -647,6 +697,13 @@ std::string WebContents::GetUserAgent() {
 
 void WebContents::InsertCSS(const std::string& css) {
   web_contents()->InsertCSS(css);
+}
+
+bool WebContents::SavePage(const base::FilePath& full_file_path,
+                           const content::SavePageType& save_type,
+                           const SavePageHandler::SavePageCallback& callback) {
+  auto handler = new SavePageHandler(web_contents(), callback);
+  return handler->Handle(full_file_path, save_type);
 }
 
 void WebContents::ExecuteJavaScript(const base::string16& code,
@@ -960,6 +1017,7 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
         .SetMethod("setUserAgent", &WebContents::SetUserAgent)
         .SetMethod("getUserAgent", &WebContents::GetUserAgent)
         .SetMethod("insertCSS", &WebContents::InsertCSS)
+        .SetMethod("savePage", &WebContents::SavePage)
         .SetMethod("_executeJavaScript", &WebContents::ExecuteJavaScript)
         .SetMethod("openDevTools", &WebContents::OpenDevTools)
         .SetMethod("closeDevTools", &WebContents::CloseDevTools)
@@ -1033,6 +1091,15 @@ void WebContents::OnRendererMessageSync(const base::string16& channel,
   EmitWithSender(base::UTF16ToUTF8(channel), web_contents(), message, args);
 }
 
+void WebContents::OnZoomLevelChanged(double level) {
+  auto manager = web_contents()->GetBrowserContext()->GetGuestManager();
+  if (!manager)
+    return;
+  manager->ForEachGuest(web_contents(),
+                        base::Bind(&NotifyZoomLevelChanged,
+                                   level));
+}
+
 // static
 mate::Handle<WebContents> WebContents::CreateFrom(
     v8::Isolate* isolate, content::WebContents* web_contents) {
@@ -1055,12 +1122,16 @@ mate::Handle<WebContents> WebContents::Create(
   return handle;
 }
 
-void SetWrapWebContents(const WrapWebContentsCallback& callback) {
-  g_wrap_web_contents = callback;
-}
-
 void ClearWrapWebContents() {
   g_wrap_web_contents.Reset();
+}
+
+void SetWrapWebContents(const WrapWebContentsCallback& callback) {
+  g_wrap_web_contents = callback;
+
+  // Cleanup the wrapper on exit.
+  atom::AtomBrowserMainParts::Get()->RegisterDestructionCallback(
+      base::Bind(ClearWrapWebContents));
 }
 
 }  // namespace api
@@ -1076,7 +1147,6 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   mate::Dictionary dict(isolate, exports);
   dict.SetMethod("create", &atom::api::WebContents::Create);
   dict.SetMethod("_setWrapWebContents", &atom::api::SetWrapWebContents);
-  dict.SetMethod("_clearWrapWebContents", &atom::api::ClearWrapWebContents);
 }
 
 }  // namespace

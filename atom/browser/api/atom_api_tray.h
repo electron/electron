@@ -8,7 +8,7 @@
 #include <string>
 #include <vector>
 
-#include "atom/browser/api/event_emitter.h"
+#include "atom/browser/api/trackable_object.h"
 #include "atom/browser/ui/tray_icon_observer.h"
 #include "base/memory/scoped_ptr.h"
 
@@ -29,7 +29,7 @@ namespace api {
 
 class Menu;
 
-class Tray : public mate::EventEmitter,
+class Tray : public mate::TrackableObject<Tray>,
              public TrayIconObserver {
  public:
   static mate::Wrappable* New(v8::Isolate* isolate, const gfx::Image& image);
@@ -39,7 +39,7 @@ class Tray : public mate::EventEmitter,
 
  protected:
   explicit Tray(const gfx::Image& image);
-  virtual ~Tray();
+  ~Tray() override;
 
   // TrayIconObserver:
   void OnClicked(const gfx::Rect& bounds, int modifiers) override;
@@ -48,12 +48,18 @@ class Tray : public mate::EventEmitter,
   void OnBalloonShow() override;
   void OnBalloonClicked() override;
   void OnBalloonClosed() override;
+  void OnDrop() override;
   void OnDropFiles(const std::vector<std::string>& files) override;
+  void OnDragEntered() override;
+  void OnDragExited() override;
+  void OnDragEnded() override;
 
   // mate::Wrappable:
   bool IsDestroyed() const override;
 
-  void Destroy();
+  // mate::TrackableObject:
+  void Destroy() override;
+
   void SetImage(mate::Arguments* args, const gfx::Image& image);
   void SetPressedImage(mate::Arguments* args, const gfx::Image& image);
   void SetToolTip(mate::Arguments* args, const std::string& tool_tip);

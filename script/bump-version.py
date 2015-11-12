@@ -106,10 +106,11 @@ def update_info_plist(version):
     line = lines[i]
     if 'CFBundleVersion' in line:
       lines[i + 1] = '  <string>{0}</string>\n'.format(version)
+    if 'CFBundleShortVersionString' in line:
+      lines[i + 1] = '  <string>{0}</string>\n'.format(version)
 
-      with open(info_plist, 'w') as f:
-        f.write(''.join(lines))
-      return
+  with open(info_plist, 'w') as f:
+    f.write(''.join(lines))
 
 
 def tag_version(version):

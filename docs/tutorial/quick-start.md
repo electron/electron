@@ -2,7 +2,7 @@
 
 Electron enables you to create desktop applications with pure JavaScript by
 providing a runtime with rich native (operating system) APIs. You could see it
-as a variant of the io.js runtime that is focused on desktop applications
+as a variant of the Node.js runtime that is focused on desktop applications
 instead of web servers.
 
 This doesn't mean Electron is a JavaScript binding to graphical user interface
@@ -22,8 +22,9 @@ multi-process architecture is also used. Each web page in Electron runs in
 its own process, which is called __the renderer process__.
 
 In normal browsers, web pages usually run in a sandboxed environment and are not
-allowed access to native resources. Electron users, however, have the power to use
-io.js APIs in web pages allowing lower level operating system interactions.
+allowed access to native resources. Electron users, however, have the power to
+use Node.js APIs in web pages allowing lower level operating system
+interactions.
 
 ### Differences Between Main Process and Renderer Process
 
@@ -106,7 +107,7 @@ app.on('ready', function() {
   mainWindow.loadUrl('file://' + __dirname + '/index.html');
 
   // Open the DevTools.
-  mainWindow.openDevTools();
+  mainWindow.webContents.openDevTools();
 
   // Emitted when the window is closed.
   mainWindow.on('closed', function() {
@@ -129,8 +130,9 @@ Finally the `index.html` is the web page you want to show:
   </head>
   <body>
     <h1>Hello World!</h1>
-    We are using io.js <script>document.write(process.version)</script>
-    and Electron <script>document.write(process.versions['electron'])</script>.
+    We are using node <script>document.write(process.versions.node)</script>,
+    Chrome <script>document.write(process.versions.chrome)</script>,
+    and Electron <script>document.write(process.versions.electron)</script>.
   </body>
 </html>
 ```
@@ -187,3 +189,19 @@ it from [here](https://github.com/atom/electron/releases).
 After you're done writing your app, you can create a distribution by
 following the [Application Distribution](./application-distribution.md) guide
 and then executing the packaged app.
+
+### Try this Example
+
+Clone and run the code in this tutorial by using the [`atom/electron-quick-start`](https://github.com/atom/electron-quick-start)
+repository.
+
+**Note**: Running this requires [Git](https://git-scm.com) and [Node.js](https://nodejs.org/en/download/) (which includes [npm](https://npmjs.org)) on your system.
+
+```bash
+# Clone the repository
+$ git clone https://github.com/atom/electron-quick-start
+# Go into the repository
+$ cd electron-quick-start
+# Install dependencies and run the app
+$ npm install && npm start
+```

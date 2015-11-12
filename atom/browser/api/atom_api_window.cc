@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 #include "atom/browser/api/atom_api_window.h"
+#include "atom/common/native_mate_converters/value_converter.h"
 
 #include "atom/browser/api/atom_api_menu.h"
 #include "atom/browser/api/atom_api_web_contents.h"
@@ -60,11 +61,71 @@ void OnCapturePageDone(
   callback.Run(gfx::Image::CreateFrom1xBitmap(bitmap));
 }
 
+// Converts min-width to minWidth, returns false if no conversion is needed.
+bool TranslateOldKey(const std::string& key, std::string* new_key) {
+  if (key.find('-') == std::string::npos)
+    return false;
+  new_key->reserve(key.size());
+  bool next_upper_case = false;
+  for (char c : key) {
+    if (c == '-') {
+      next_upper_case = true;
+    } else if (next_upper_case) {
+      new_key->push_back(base::ToUpperASCII(c));
+      next_upper_case = false;
+    } else {
+      new_key->push_back(c);
+    }
+  }
+  return true;
+}
+
+// Converts min-width to minWidth recursively in the dictionary.
+void TranslateOldOptions(v8::Isolate* isolate, v8::Local<v8::Object> options) {
+  auto context = isolate->GetCurrentContext();
+  auto maybe_keys = options->GetOwnPropertyNames(context);
+  if (maybe_keys.IsEmpty())
+    return;
+  std::vector<std::string> keys;
+  if (!mate::ConvertFromV8(isolate, maybe_keys.ToLocalChecked(), &keys))
+    return;
+  mate::Dictionary dict(isolate, options);
+  for (const auto& key : keys) {
+    v8::Local<v8::Value> value;
+    if (!dict.Get(key, &value))  // Shouldn't happen, but guard it anyway.
+      continue;
+    // Go recursively.
+    v8::Local<v8::Object> sub_options;
+    if (mate::ConvertFromV8(isolate, value, &sub_options))
+      TranslateOldOptions(isolate, sub_options);
+    // Translate key.
+    std::string new_key;
+    if (TranslateOldKey(key, &new_key)) {
+      dict.Set(new_key, value);
+      dict.Delete(key);
+    }
+  }
+}
+
+#if defined(OS_WIN)
+// Converts binary data to Buffer.
+v8::Local<v8::Value> ToBuffer(v8::Isolate* isolate, void* val, int size) {
+  auto buffer = node::Buffer::New(isolate, static_cast<char*>(val), size);
+  if (buffer.IsEmpty())
+    return v8::Null(isolate);
+  else
+    return buffer.ToLocalChecked();
+}
+#endif
+
 }  // namespace
 
 
 Window::Window(v8::Isolate* isolate, const mate::Dictionary& options) {
-  // Use options['web-preferences'] to create WebContents.
+  // Be compatible with old style field names like min-width.
+  TranslateOldOptions(isolate, options.GetHandle());
+
+  // Use options.webPreferences to create WebContents.
   mate::Dictionary web_preferences = mate::Dictionary::CreateEmpty(isolate);
   options.Get(switches::kWebPreferences, &web_preferences);
 
@@ -188,6 +249,16 @@ void Window::OnRendererResponsive() {
 void Window::OnExecuteWindowsCommand(const std::string& command_name) {
   Emit("app-command", command_name);
 }
+
+#if defined(OS_WIN)
+void Window::OnWindowMessage(UINT message, WPARAM w_param, LPARAM l_param) {
+  if (IsWindowMessageHooked(message)) {
+    messages_callback_map_[message].Run(
+        ToBuffer(isolate(), static_cast<void*>(&w_param), sizeof(WPARAM)),
+        ToBuffer(isolate(), static_cast<void*>(&l_param), sizeof(LPARAM)));
+  }
+}
+#endif
 
 // static
 mate::Wrappable* Window::New(v8::Isolate* isolate,
@@ -385,6 +456,10 @@ bool Window::IsKiosk() {
   return window_->IsKiosk();
 }
 
+void Window::SetBackgroundColor(const std::string& color_name) {
+  window_->SetBackgroundColor(color_name);
+}
+
 void Window::FocusOnWebView() {
   window_->FocusOnWebView();
 }
@@ -488,6 +563,29 @@ bool Window::IsMenuBarVisible() {
   return window_->IsMenuBarVisible();
 }
 
+#if defined(OS_WIN)
+bool Window::HookWindowMessage(UINT message,
+                               const MessageCallback& callback) {
+  messages_callback_map_[message] = callback;
+  return true;
+}
+
+void Window::UnhookWindowMessage(UINT message) {
+  if (!ContainsKey(messages_callback_map_, message))
+    return;
+
+  messages_callback_map_.erase(message);
+}
+
+bool Window::IsWindowMessageHooked(UINT message) {
+  return ContainsKey(messages_callback_map_, message);
+}
+
+void Window::UnhookAllWindowMessages() {
+  messages_callback_map_.clear();
+}
+#endif
+
 #if defined(OS_MACOSX)
 void Window::ShowDefinitionForSelection() {
   window_->ShowDefinitionForSelection();
@@ -564,6 +662,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setSkipTaskbar", &Window::SetSkipTaskbar)
       .SetMethod("setKiosk", &Window::SetKiosk)
       .SetMethod("isKiosk", &Window::IsKiosk)
+      .SetMethod("setBackgroundColor", &Window::SetBackgroundColor)
       .SetMethod("setRepresentedFilename", &Window::SetRepresentedFilename)
       .SetMethod("getRepresentedFilename", &Window::GetRepresentedFilename)
       .SetMethod("setDocumentEdited", &Window::SetDocumentEdited)
@@ -585,6 +684,12 @@ void Window::BuildPrototype(v8::Isolate* isolate,
                  &Window::SetVisibleOnAllWorkspaces)
       .SetMethod("isVisibleOnAllWorkspaces",
                  &Window::IsVisibleOnAllWorkspaces)
+#if defined(OS_WIN)
+      .SetMethod("hookWindowMessage", &Window::HookWindowMessage)
+      .SetMethod("isWindowMessageHooked", &Window::IsWindowMessageHooked)
+      .SetMethod("unhookWindowMessage", &Window::UnhookWindowMessage)
+      .SetMethod("unhookAllWindowMessages", &Window::UnhookAllWindowMessages)
+#endif
 #if defined(OS_MACOSX)
       .SetMethod("showDefinitionForSelection",
                  &Window::ShowDefinitionForSelection)

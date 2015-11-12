@@ -19,6 +19,9 @@ PowerMonitor::PowerMonitor() {
 }
 
 PowerMonitor::~PowerMonitor() {
+}
+
+void PowerMonitor::Destroy() {
   base::PowerMonitor::Get()->RemoveObserver(this);
 }
 

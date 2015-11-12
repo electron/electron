@@ -1,18 +1,27 @@
-ipc = require 'ipc'
+ipc = require 'ipc-main'
 v8Util = process.atomBinding 'v8_util'
 BrowserWindow = require 'browser-window'
 
 frameToGuest = {}
 
+# Copy attribute of |parent| to |child| if it is not defined in |child|.
+mergeOptions = (child, parent) ->
+  for own key, value of parent when key not in child
+    if typeof value is 'object'
+      child[key] = mergeOptions {}, value
+    else
+      child[key] = value
+  child
+
 # Merge |options| with the |embedder|'s window's options.
 mergeBrowserWindowOptions = (embedder, options) ->
   if embedder.browserWindowOptions?
     # Inherit the original options if it is a BrowserWindow.
-    options.__proto__ = embedder.browserWindowOptions
+    mergeOptions options, embedder.browserWindowOptions
   else
     # Or only inherit web-preferences if it is a webview.
-    options['web-preferences'] ?= {}
-    options['web-preferences'].__proto__ = embedder.getWebPreferences()
+    options.webPreferences ?= {}
+    mergeOptions options.webPreferences, embedder.getWebPreferences()
   options
 
 # Create a new guest created by |embedder| with |options|.
@@ -67,7 +76,7 @@ ipc.on 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_METHOD', (event, guestId, method,
 ipc.on 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_POSTMESSAGE', (event, guestId, message, targetOrigin) ->
   guestContents = BrowserWindow.fromId(guestId)?.webContents
   if guestContents?.getUrl().indexOf(targetOrigin) is 0 or targetOrigin is '*'
-    guestContents.send 'ATOM_SHELL_GUEST_WINDOW_POSTMESSAGE', message, targetOrigin
+    guestContents.send 'ATOM_SHELL_GUEST_WINDOW_POSTMESSAGE', guestId, message, targetOrigin
 
 ipc.on 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_OPENER_POSTMESSAGE', (event, guestId, message, targetOrigin, sourceOrigin) ->
   embedder = v8Util.getHiddenValue event.sender, 'embedder'

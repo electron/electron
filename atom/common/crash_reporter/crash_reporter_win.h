@@ -29,6 +29,9 @@ class CrashReporterWin : public CrashReporter {
                     bool skip_system_crash_handler) override;
   void SetUploadParameters() override;
 
+  // Crashes the process after generating a dump for the provided exception.
+  int CrashForException(EXCEPTION_POINTERS* info);
+
  private:
   friend struct DefaultSingletonTraits<CrashReporterWin>;
 
