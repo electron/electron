@@ -13,11 +13,12 @@ require path.resolve(__dirname, '..', '..', 'common', 'lib', 'reset-search-paths
 # Import common settings.
 require path.resolve(__dirname, '..', '..', 'common', 'lib', 'init')
 
-# Add renderer/api/lib to require's search paths, which contains javascript part
-# of Atom's built-in libraries.
+# Expose public APIs.
 globalPaths = Module.globalPaths
-globalPaths.push path.resolve(__dirname, '..', 'api', 'lib')
 globalPaths.push path.resolve(__dirname, '..', 'api', 'lib', 'exports')
+
+unless process.env.ELECTRON_DISABLE_OLD_STYLE_MODULES
+  globalPaths.push path.resolve(__dirname, '..', 'api', 'lib')
 
 # The global variable will be used by ipc for event dispatching
 v8Util = process.atomBinding 'v8_util'

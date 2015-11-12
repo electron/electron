@@ -9,8 +9,9 @@ process.atomBinding = (name) ->
   catch e
     process.binding "atom_common_#{name}" if /No such module/.test e.message
 
-# Add common/api/lib to module search paths.
-Module.globalPaths.push path.resolve(__dirname, '..', 'api', 'lib')
+unless process.env.ELECTRON_DISABLE_OLD_STYLE_MODULES
+  # Add common/api/lib to module search paths.
+  Module.globalPaths.push path.resolve(__dirname, '..', 'api', 'lib')
 
 # setImmediate and process.nextTick makes use of uv_check and uv_prepare to
 # run the callbacks, however since we only run uv loop on requests, the

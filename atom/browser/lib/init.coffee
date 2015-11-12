@@ -13,11 +13,12 @@ require path.resolve(__dirname, '..', '..', 'common', 'lib', 'reset-search-paths
 # Import common settings.
 require path.resolve(__dirname, '..', '..', 'common', 'lib', 'init')
 
-# Add browser/api/lib to module search paths, which contains javascript part of
-# Electron's built-in libraries.
+# Expose public APIs.
 globalPaths = Module.globalPaths
-globalPaths.push path.resolve(__dirname, '..', 'api', 'lib')
 globalPaths.push path.resolve(__dirname, '..', 'api', 'lib', 'exports')
+
+unless process.env.ELECTRON_DISABLE_OLD_STYLE_MODULES
+  globalPaths.push path.resolve(__dirname, '..', 'api', 'lib')
 
 if process.platform is 'win32'
   # Redirect node's console to use our own implementations, since node can not
