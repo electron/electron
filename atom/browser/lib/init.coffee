@@ -13,12 +13,12 @@ require path.resolve(__dirname, '..', '..', 'common', 'lib', 'reset-search-paths
 # Import common settings.
 require path.resolve(__dirname, '..', '..', 'common', 'lib', 'init')
 
-# Expose public APIs.
 globalPaths = Module.globalPaths
-globalPaths.push path.resolve(__dirname, '..', 'api', 'lib', 'exports')
-
 unless process.env.ELECTRON_HIDE_INTERNAL_MODULES
   globalPaths.push path.resolve(__dirname, '..', 'api', 'lib')
+
+# Expose public APIs.
+globalPaths.push path.resolve(__dirname, '..', 'api', 'lib', 'exports')
 
 if process.platform is 'win32'
   # Redirect node's console to use our own implementations, since node can not

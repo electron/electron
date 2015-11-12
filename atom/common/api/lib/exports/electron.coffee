@@ -1,3 +1,10 @@
+# Do not expose the internal modules to `require`.
+exports.hideInternalModules = ->
+  {globalPaths} = require 'module'
+  if globalPaths.length is 3
+    # Remove the "common/api/lib" and "browser-or-renderer/api/lib".
+    globalPaths.splice 0, 2
+
 Object.defineProperties exports,
   # Common modules, please sort with alphabet order.
   clipboard:
