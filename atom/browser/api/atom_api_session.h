@@ -8,6 +8,8 @@
 #include <string>
 
 #include "atom/browser/api/trackable_object.h"
+#include "atom/browser/atom_cert_verifier.h"
+#include "atom/browser/browser_observer.h"
 #include "content/public/browser/download_manager.h"
 #include "native_mate/handle.h"
 #include "net/base/completion_callback.h"
@@ -34,6 +36,7 @@ class AtomBrowserContext;
 namespace api {
 
 class Session: public mate::TrackableObject<Session>,
+               public BrowserObserver,
                public content::DownloadManager::Observer {
  public:
   using ResolveProxyCallback = base::Callback<void(std::string)>;
@@ -51,6 +54,10 @@ class Session: public mate::TrackableObject<Session>,
  protected:
   explicit Session(AtomBrowserContext* browser_context);
   ~Session();
+
+  // BrowserObserver:
+  void OnCertVerification(
+      const scoped_refptr<AtomCertVerifier::CertVerifyRequest>&) override;
 
   // content::DownloadManager::Observer:
   void OnDownloadCreated(content::DownloadManager* manager,

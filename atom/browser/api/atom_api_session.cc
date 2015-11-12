@@ -239,11 +239,23 @@ void SetProxyInIO(net::URLRequestContextGetter* getter,
   RunCallbackInUI(callback);
 }
 
+void PassVerificationResult(
+    scoped_refptr<AtomCertVerifier::CertVerifyRequest> request,
+    bool success) {
+  int result = net::OK;
+  if (!success)
+    result = net::ERR_FAILED;
+  request->ContinueWithResult(result);
+}
+
 }  // namespace
 
 Session::Session(AtomBrowserContext* browser_context)
     : browser_context_(browser_context) {
   AttachAsUserData(browser_context);
+
+  // Observe Browser to get certificate verification notification.
+  Browser::Get()->AddObserver(this);
 
   // Observe DownloadManger to get download notifications.
   content::BrowserContext::GetDownloadManager(browser_context)->
@@ -253,7 +265,20 @@ Session::Session(AtomBrowserContext* browser_context)
 Session::~Session() {
   content::BrowserContext::GetDownloadManager(browser_context())->
       RemoveObserver(this);
+  Browser::Get()->RemoveObserver(this);
   Destroy();
+}
+
+void Session::OnCertVerification(
+    const scoped_refptr<AtomCertVerifier::CertVerifyRequest>& request) {
+  bool prevent_default = Emit(
+      "verify-certificate",
+      request->hostname(),
+      request->certificate(),
+      base::Bind(&PassVerificationResult, request));
+
+  if (!prevent_default)
+    request->ContinueWithResult(net::ERR_IO_PENDING);
 }
 
 void Session::OnDownloadCreated(content::DownloadManager* manager,
@@ -367,7 +392,6 @@ v8::Local<v8::Value> Session::Cookies(v8::Isolate* isolate) {
 
 mate::ObjectTemplateBuilder Session::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
-  auto browser = base::Unretained(Browser::Get());
   return mate::ObjectTemplateBuilder(isolate)
       .SetMethod("resolveProxy", &Session::ResolveProxy)
       .SetMethod("clearCache", &Session::ClearCache)
@@ -376,10 +400,6 @@ mate::ObjectTemplateBuilder Session::GetObjectTemplateBuilder(
       .SetMethod("setDownloadPath", &Session::SetDownloadPath)
       .SetMethod("enableNetworkEmulation", &Session::EnableNetworkEmulation)
       .SetMethod("disableNetworkEmulation", &Session::DisableNetworkEmulation)
-      .SetMethod("setCertificateVerifier",
-                 base::Bind(&Browser::SetCertificateVerifier, browser))
-      .SetMethod("removeCertificateVerifier",
-                 base::Bind(&Browser::RemoveCertificateVerifier, browser))
       .SetProperty("cookies", &Session::Cookies);
 }
 

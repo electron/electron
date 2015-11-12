@@ -29,6 +29,7 @@ class MenuModel;
 
 namespace atom {
 
+class AtomCertVerifier;
 class LoginHandler;
 
 // This class is used for control application-wide operations.
@@ -135,9 +136,9 @@ class Browser : public WindowListObserver {
   // Request basic auth login.
   void RequestLogin(LoginHandler* login_handler);
 
-  // Set.remove the ceritificate verifier provided by the user.
-  void SetCertificateVerifier(const CertificateVerifier& handler);
-  void RemoveCertificateVerifier();
+  // Request Server Certificate Verification.
+  void RequestCertVerification(
+      const scoped_refptr<AtomCertVerifier::CertVerifyRequest>& request);
 
   void AddObserver(BrowserObserver* obs) {
     observers_.AddObserver(obs);

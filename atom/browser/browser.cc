@@ -7,6 +7,7 @@
 #include <string>
 
 #include "atom/browser/atom_browser_main_parts.h"
+#include "atom/browser/atom_cert_verifier.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/window_list.h"
 #include "base/message_loop/message_loop.h"
@@ -156,14 +157,11 @@ void Browser::RequestLogin(LoginHandler* login_handler) {
   FOR_EACH_OBSERVER(BrowserObserver, observers_, OnLogin(login_handler));
 }
 
-void Browser::SetCertificateVerifier(const CertificateVerifier& handler) {
+void Browser::RequestCertVerification(
+    const scoped_refptr<AtomCertVerifier::CertVerifyRequest>& request) {
   FOR_EACH_OBSERVER(BrowserObserver,
                     observers_,
-                    OnSetCertificateVerifier(handler));
-}
-
-void Browser::RemoveCertificateVerifier() {
-  FOR_EACH_OBSERVER(BrowserObserver, observers_, OnRemoveCertificateVerifier());
+                    OnCertVerification(request));
 }
 
 void Browser::NotifyAndShutdown() {
