@@ -91,6 +91,8 @@ class Browser : public WindowListObserver {
 
   // Set docks' menu.
   void DockSetMenu(ui::MenuModel* model);
+
+  void AppHide();
 #endif  // defined(OS_MACOSX)
 
 #if defined(OS_WIN)
