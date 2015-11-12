@@ -41,7 +41,7 @@ upstream, except that you have to manually specify how to connect chrome driver
 and where to find Electron's binary:
 
 ```javascript
-var webdriver = require('selenium-webdriver');
+const webdriver = require('selenium-webdriver');
 
 var driver = new webdriver.Builder()
   // The "9515" is the port opened by chrome driver.
@@ -93,7 +93,7 @@ $ npm install webdriverio
 ### 3. Connect to chrome driver
 
 ```javascript
-var webdriverio = require('webdriverio');
+const webdriverio = require('webdriverio');
 var options = {
     host: "localhost", // Use localhost as chrome driver server
     port: 9515,        // "9515" is the port opened by chrome driver.

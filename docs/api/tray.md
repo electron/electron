@@ -4,9 +4,10 @@ A `Tray` represents an icon in an operating system's notification area, it is
 usually attached with a context menu.
 
 ```javascript
-var app = require('app');
-var Menu = require('menu');
-var Tray = require('tray');
+const electron = require('electron');
+const app = electron.app;
+const Menu = electron.Menu;
+const Tray = electron.Tray;
 
 var appIcon = null;
 app.on('ready', function(){

@@ -8,7 +8,7 @@ the [`BrowserWindow`](browser-window.md) object. An example of accessing the
 `webContents` object:
 
 ```javascript
-var BrowserWindow = require('browser-window');
+const BrowserWindow = require('electron').BrowserWindow;
 
 var win = new BrowserWindow({width: 800, height: 1500});
 win.loadUrl("http://github.com");
@@ -211,16 +211,14 @@ e.g. the `http://` or `file://`.
 
 ### `webContents.getUrl()`
 
-```javascript
-var BrowserWindow = require('browser-window');
+Returns URL of the current web page.
 
+```javascript
 var win = new BrowserWindow({width: 800, height: 600});
 win.loadUrl("http://github.com");
 
 var currentUrl = win.webContents.getUrl();
 ```
-
-Returns URL of the current web page.
 
 ### `webContents.getTitle()`
 
@@ -445,8 +443,8 @@ By default, an empty `options` will be regarded as:
 ```
 
 ```javascript
-var BrowserWindow = require('browser-window');
-var fs = require('fs');
+const BrowserWindow = require('electron').BrowserWindow;
+const fs = require('fs');
 
 var win = new BrowserWindow({width: 800, height: 600});
 win.loadUrl("http://github.com");
@@ -538,7 +536,7 @@ app.on('ready', function() {
 <html>
 <body>
   <script>
-    require('ipcRenderer').on('ping', function(event, message) {
+    require('electron').ipcRenderer.on('ping', function(event, message) {
       console.log(message);  // Prints "whoooooooh!"
     });
   </script>

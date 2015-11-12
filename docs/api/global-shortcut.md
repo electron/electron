@@ -9,8 +9,9 @@ not have the keyboard focus. You should not use this module until the `ready`
 event of the app module is emitted.
 
 ```javascript
-var app = require('app');
-var globalShortcut = require('global-shortcut');
+const electron = require('electron');
+const app = electron.app;
+const globalShortcut = electron.globalShortcut;
 
 app.on('ready', function() {
   // Register a 'ctrl+x' shortcut listener.

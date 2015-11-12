@@ -515,7 +515,7 @@ The following example code opens the new url in system's default browser.
 
 ```javascript
 webview.addEventListener('new-window', function(e) {
-  require('shell').openExternal(e.url);
+  require('electron').shell.openExternal(e.url);
 });
 ```
 
@@ -555,9 +555,9 @@ webview.send('ping');
 
 ```javascript
 // In guest page.
-var ipc = require('ipc');
-ipc.on('ping', function() {
-  ipc.sendToHost('pong');
+var ipcRenderer = require('electron').ipcRenderer;
+ipcRenderer.on('ping', function() {
+  ipcRenderer.sendToHost('pong');
 });
 ```
 

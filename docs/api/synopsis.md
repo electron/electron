@@ -19,8 +19,9 @@ scripts to be able to use those modules.
 The main process script is just like a normal Node.js script:
 
 ```javascript
-var app = require('app');
-var BrowserWindow = require('browser-window');
+const electron = require('electron');
+const app = electron.app;
+const BrowserWindow = electron.BrowserWindow;
 
 var window = null;
 
@@ -38,8 +39,8 @@ ability to use node modules:
 <html>
   <body>
     <script>
-      var remote = require('remote');
-      console.log(remote.require('app').getVersion());
+      const remote = require('electron').remote;
+      console.log(remote.require('electron').app.getVersion());
     </script>
   </body>
 </html>

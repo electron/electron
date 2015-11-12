@@ -19,7 +19,7 @@ processes:
 
 ```javascript
 // In main process.
-var ipcMain = require('ipc-main');
+const ipcMain = require('electron').ipcMain;
 ipcMain.on('asynchronous-message', function(event, arg) {
   console.log(arg);  // prints "ping"
   event.sender.send('asynchronous-reply', 'pong');
@@ -33,7 +33,7 @@ ipcMain.on('synchronous-message', function(event, arg) {
 
 ```javascript
 // In renderer process (web page).
-var ipcRenderer = require('ipc-renderer');
+const ipcRenderer = require('electron').ipcRenderer;
 console.log(ipcRenderer.sendSync('synchronous-message', 'ping')); // prints "pong"
 
 ipcRenderer.on('asynchronous-reply', function(event, arg) {
