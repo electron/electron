@@ -27,8 +27,17 @@ bool JavascriptEnvironment::Initialize() {
     const char expose_debug_as[] = "--expose_debug_as=v8debug";
     v8::V8::SetFlagsFromString(expose_debug_as, sizeof(expose_debug_as) - 1);
   }
+  
+  const std::string js_flags_switch = "js-flags";
+  
+  if (cmd->HasSwitch(js_flags_switch)) {
+    const char *js_flags_value = (cmd->GetSwitchValueASCII(js_flags_switch)).c_str();
+    v8::V8::SetFlagsFromString(js_flags_value, strlen(js_flags_value));
+  }
+  
   gin::IsolateHolder::Initialize(gin::IsolateHolder::kNonStrictMode,
                                  gin::ArrayBufferAllocator::SharedInstance());
+  
   return true;
 }
 
