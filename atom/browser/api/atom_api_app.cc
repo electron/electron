@@ -22,6 +22,7 @@
 #include "base/command_line.h"
 #include "base/environment.h"
 #include "base/files/file_path.h"
+#include "base/nix/xdg_util.h"
 #include "base/path_service.h"
 #include "brightray/browser/brightray_paths.h"
 #include "content/public/browser/client_certificate_delegate.h"
@@ -155,6 +156,17 @@ void PassLoginInformation(scoped_refptr<LoginHandler> login_handler,
     login_handler->CancelAuth();
 }
 
+bool GetUserDownloadsDirectory(base::FilePath* path) {
+#if defined(OS_LINUX)
+  *path = base::nix::GetXDGUserDirectory("DOWNLOAD", "Downloads");
+  return true;
+#elif defined(OS_MACOSX)
+  return false;
+#elif defined(OS_WIN)
+  return false;
+#endif
+}
+
 }  // namespace
 
 App::App() {
@@ -272,8 +284,11 @@ base::FilePath App::GetPath(mate::Arguments* args, const std::string& name) {
   int key = GetPathConstant(name);
   if (key >= 0)
     succeed = PathService::Get(key, &path);
-  if (!succeed)
+  if (!succeed) {
+    if (name == "downloads" && GetUserDownloadsDirectory(&path))
+      return path;
     args->ThrowError("Failed to get path");
+  }
   return path;
 }
 
