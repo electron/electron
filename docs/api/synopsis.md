@@ -38,7 +38,7 @@ extra ability to use node modules:
 <body>
 <script>
   const remote = require('electron').remote;
-  console.log(remote.require('electron').app.getVersion());
+  console.log(remote.app.getVersion());
 </script>
 </body>
 </html>

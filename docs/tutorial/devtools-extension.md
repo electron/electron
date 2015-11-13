@@ -24,7 +24,7 @@ Then you can load the extension in Electron by opening DevTools in any window,
 and running the following code in the DevTools console:
 
 ```javascript
-const BrowserWindow = require('electron').remote.require('electron').BrowserWindow;
+const BrowserWindow = require('electron').remote.BrowserWindow;
 BrowserWindow.addDevToolsExtension('/some-directory/react-devtools/shells/chrome');
 ```
 

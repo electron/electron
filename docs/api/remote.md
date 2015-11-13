@@ -13,7 +13,7 @@ renderer process:
 
 ```javascript
 const remote = require('electron').remote;
-const BrowserWindow = remote.require('electron').BrowserWindow;
+const BrowserWindow = remote.BrowserWindow;
 
 var win = new BrowserWindow({ width: 800, height: 600 });
 win.loadURL('https://github.com');
@@ -117,6 +117,15 @@ To avoid this problem, ensure you clean up any references to renderer callbacks
 passed to the main process. This involves cleaning up event handlers, or
 ensuring the main process is explicitly told to deference callbacks that came
 from a renderer process that is exiting.
+
+## Accessing built-in modules in the main process
+
+The built-in modules in the main process are added as getters in the `remote`
+module, so you can use them directly like the `electron` module.
+
+```javascript
+const app = remote.app;
+```
 
 ## Methods
 
