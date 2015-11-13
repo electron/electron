@@ -320,8 +320,8 @@ NativeWindowMac::NativeWindowMac(
       is_kiosk_(false),
       attention_request_id_(0) {
   int width = 800, height = 600;
-  options.Get(switches::kWidth, &width);
-  options.Get(switches::kHeight, &height);
+  options.Get(options::kWidth, &width);
+  options.Get(options::kHeight, &height);
 
   NSRect main_screen_rect = [[[NSScreen screens] objectAtIndex:0] frame];
   NSRect cocoa_bounds = NSMakeRect(
@@ -331,14 +331,14 @@ NativeWindowMac::NativeWindowMac(
       height);
 
   bool useStandardWindow = true;
-  options.Get(switches::kStandardWindow, &useStandardWindow);
+  options.Get(options::kStandardWindow, &useStandardWindow);
   bool resizable = true;
-  options.Get(switches::kResizable, &resizable);
+  options.Get(options::kResizable, &resizable);
 
   // New title bar styles are available in Yosemite or newer
   std::string titleBarStyle;
   if (base::mac::IsOSYosemiteOrLater())
-    options.Get(switches::kTitleBarStyle, &titleBarStyle);
+    options.Get(options::kTitleBarStyle, &titleBarStyle);
 
   NSUInteger styleMask = NSTitledWindowMask | NSClosableWindowMask |
                          NSMiniaturizableWindowMask;
@@ -394,23 +394,23 @@ NativeWindowMac::NativeWindowMac(
 
   // On OS X the initial window size doesn't include window frame.
   bool use_content_size = false;
-  options.Get(switches::kUseContentSize, &use_content_size);
+  options.Get(options::kUseContentSize, &use_content_size);
   if (!has_frame() || !use_content_size)
     SetSize(gfx::Size(width, height));
 
   // Enable the NSView to accept first mouse event.
   bool acceptsFirstMouse = false;
-  options.Get(switches::kAcceptFirstMouse, &acceptsFirstMouse);
+  options.Get(options::kAcceptFirstMouse, &acceptsFirstMouse);
   [window_ setAcceptsFirstMouse:acceptsFirstMouse];
 
   // Disable auto-hiding cursor.
   bool disableAutoHideCursor = false;
-  options.Get(switches::kDisableAutoHideCursor, &disableAutoHideCursor);
+  options.Get(options::kDisableAutoHideCursor, &disableAutoHideCursor);
   [window_ setDisableAutoHideCursor:disableAutoHideCursor];
 
   // Disable fullscreen button when 'fullscreen' is specified to false.
   bool fullscreen;
-  if (!(options.Get(switches::kFullscreen, &fullscreen) &&
+  if (!(options.Get(options::kFullscreen, &fullscreen) &&
         !fullscreen)) {
     NSUInteger collectionBehavior = [window_ collectionBehavior];
     collectionBehavior |= NSWindowCollectionBehaviorFullScreenPrimary;

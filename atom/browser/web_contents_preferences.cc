@@ -25,13 +25,23 @@ namespace atom {
 namespace {
 
 // Array of available web runtime features.
-const char* kWebRuntimeFeatures[] = {
-  switches::kExperimentalFeatures,
-  switches::kExperimentalCanvasFeatures,
-  switches::kOverlayScrollbars,
-  switches::kOverlayFullscreenVideo,
-  switches::kSharedWorker,
-  switches::kPageVisibility,
+struct FeaturePair {
+  const char* name;
+  const char* cmd;
+};
+FeaturePair kWebRuntimeFeatures[] = {
+  { options::kExperimentalFeatures,
+    switches::kExperimentalFeatures },
+  { options::kExperimentalCanvasFeatures,
+    switches::kExperimentalCanvasFeatures },
+  { options::kOverlayScrollbars,
+    switches::kOverlayScrollbars },
+  { options::kOverlayFullscreenVideo,
+    switches::kOverlayFullscreenVideo },
+  { options::kSharedWorker,
+    switches::kSharedWorker },
+  { options::kPageVisibility,
+    switches::kPageVisibility },
 };
 
 }  // namespace
@@ -69,7 +79,7 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
   bool b;
 #if defined(OS_WIN)
   // Check if DirectWrite is disabled.
-  if (web_preferences.GetBoolean(switches::kDirectWrite, &b) && !b)
+  if (web_preferences.GetBoolean(options::kDirectWrite, &b) && !b)
     command_line->AppendSwitch(::switches::kDisableDirectWrite);
 #endif
 
@@ -80,17 +90,17 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
   // This set of options are not availabe in WebPreferences, so we have to pass
   // them via command line and enable them in renderer procss.
   for (size_t i = 0; i < arraysize(kWebRuntimeFeatures); ++i) {
-    const char* feature = kWebRuntimeFeatures[i];
-    if (web_preferences.GetBoolean(feature, &b))
-      command_line->AppendSwitchASCII(feature, b ? "true" : "false");
+    const auto& feature = kWebRuntimeFeatures[i];
+    if (web_preferences.GetBoolean(feature.name, &b))
+      command_line->AppendSwitchASCII(feature.cmd, b ? "true" : "false");
   }
 
   // Check if we have node integration specified.
   bool node_integration = true;
-  web_preferences.GetBoolean(switches::kNodeIntegration, &node_integration);
+  web_preferences.GetBoolean(options::kNodeIntegration, &node_integration);
   // Be compatible with old API of "node-integration" option.
   std::string old_token;
-  if (web_preferences.GetString(switches::kNodeIntegration, &old_token) &&
+  if (web_preferences.GetString(options::kNodeIntegration, &old_token) &&
       old_token != "disable")
     node_integration = true;
   command_line->AppendSwitchASCII(switches::kNodeIntegration,
@@ -98,12 +108,12 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
 
   // The preload script.
   base::FilePath::StringType preload;
-  if (web_preferences.GetString(switches::kPreloadScript, &preload)) {
+  if (web_preferences.GetString(options::kPreloadScript, &preload)) {
     if (base::FilePath(preload).IsAbsolute())
       command_line->AppendSwitchNative(switches::kPreloadScript, preload);
     else
       LOG(ERROR) << "preload script must have absolute path.";
-  } else if (web_preferences.GetString(switches::kPreloadUrl, &preload)) {
+  } else if (web_preferences.GetString(options::kPreloadUrl, &preload)) {
     // Translate to file path if there is "preload-url" option.
     base::FilePath preload_path;
     if (net::FileURLToFilePath(GURL(preload), &preload_path))
@@ -114,15 +124,14 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
 
   // The zoom factor.
   double zoom_factor = 1.0;
-  if (web_preferences.GetDouble(switches::kZoomFactor, &zoom_factor) &&
+  if (web_preferences.GetDouble(options::kZoomFactor, &zoom_factor) &&
       zoom_factor != 1.0)
     command_line->AppendSwitchASCII(switches::kZoomFactor,
                                     base::DoubleToString(zoom_factor));
 
   // --guest-instance-id, which is used to identify guest WebContents.
   int guest_instance_id;
-  if (web_preferences.GetInteger(switches::kGuestInstanceID,
-                                 &guest_instance_id))
+  if (web_preferences.GetInteger(options::kGuestInstanceID, &guest_instance_id))
       command_line->AppendSwitchASCII(switches::kGuestInstanceID,
                                       base::IntToString(guest_instance_id));
 }
@@ -152,8 +161,7 @@ void WebContentsPreferences::OverrideWebkitPrefs(
     prefs->allow_displaying_insecure_content = !b;
     prefs->allow_running_insecure_content = !b;
   }
-  if (self->web_preferences_.GetBoolean("allowDisplayingInsecureContent",
-                                        &b))
+  if (self->web_preferences_.GetBoolean("allowDisplayingInsecureContent", &b))
     prefs->allow_displaying_insecure_content = b;
   if (self->web_preferences_.GetBoolean("allowRunningInsecureContent", &b))
     prefs->allow_running_insecure_content = b;

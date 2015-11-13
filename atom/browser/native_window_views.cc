@@ -132,13 +132,13 @@ NativeWindowViews::NativeWindowViews(
       keyboard_event_handler_(new views::UnhandledKeyboardEventHandler),
       use_content_size_(false),
       resizable_(true) {
-  options.Get(switches::kTitle, &title_);
-  options.Get(switches::kAutoHideMenuBar, &menu_bar_autohide_);
+  options.Get(options::kTitle, &title_);
+  options.Get(options::kAutoHideMenuBar, &menu_bar_autohide_);
 
 #if defined(OS_WIN)
   // On Windows we rely on the CanResize() to indicate whether window can be
   // resized, and it should be set before window is created.
-  options.Get(switches::kResizable, &resizable_);
+  options.Get(options::kResizable, &resizable_);
 #endif
 
   if (enable_larger_than_screen())
@@ -150,8 +150,8 @@ NativeWindowViews::NativeWindowViews(
         gfx::Size(), gfx::Size(INT_MAX / 10, INT_MAX / 10)));
 
   int width = 800, height = 600;
-  options.Get(switches::kWidth, &width);
-  options.Get(switches::kHeight, &height);
+  options.Get(options::kWidth, &width);
+  options.Get(options::kHeight, &height);
   gfx::Rect bounds(0, 0, width, height);
   widget_size_ = bounds.size();
 
@@ -187,7 +187,7 @@ NativeWindowViews::NativeWindowViews(
   window_->Init(params);
 
   bool fullscreen = false;
-  options.Get(switches::kFullscreen, &fullscreen);
+  options.Get(options::kFullscreen, &fullscreen);
 
 #if defined(USE_X11)
   // Start monitoring window states.
@@ -195,7 +195,7 @@ NativeWindowViews::NativeWindowViews(
 
   // Set _GTK_THEME_VARIANT to dark if we have "dark-theme" option set.
   bool use_dark_theme = false;
-  if (options.Get(switches::kDarkTheme, &use_dark_theme) && use_dark_theme) {
+  if (options.Get(options::kDarkTheme, &use_dark_theme) && use_dark_theme) {
     XDisplay* xdisplay = gfx::GetXDisplay();
     XChangeProperty(xdisplay, GetAcceleratedWidget(),
                     XInternAtom(xdisplay, "_GTK_THEME_VARIANT", False),
@@ -209,7 +209,7 @@ NativeWindowViews::NativeWindowViews(
   // to manually set the _NET_WM_STATE.
   std::vector<::Atom> state_atom_list;
   bool skip_taskbar = false;
-  if (options.Get(switches::kSkipTaskbar, &skip_taskbar) && skip_taskbar) {
+  if (options.Get(options::kSkipTaskbar, &skip_taskbar) && skip_taskbar) {
     state_atom_list.push_back(GetAtom("_NET_WM_STATE_SKIP_TASKBAR"));
   }
 
@@ -223,7 +223,7 @@ NativeWindowViews::NativeWindowViews(
 
   // Set the _NET_WM_WINDOW_TYPE.
   std::string window_type;
-  if (options.Get(switches::kType, &window_type))
+  if (options.Get(options::kType, &window_type))
     SetWindowType(GetAcceleratedWidget(), window_type);
 #endif
 
@@ -274,7 +274,7 @@ NativeWindowViews::NativeWindowViews(
 
   gfx::Size size = bounds.size();
   if (has_frame() &&
-      options.Get(switches::kUseContentSize, &use_content_size_) &&
+      options.Get(options::kUseContentSize, &use_content_size_) &&
       use_content_size_)
     size = ContentSizeToWindowSize(size);
 
