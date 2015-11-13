@@ -1,7 +1,6 @@
-EventEmitter = require('events').EventEmitter
-bindings = process.atomBinding 'tray'
+{EventEmitter} = require 'events'
+{Tray} = process.atomBinding 'tray'
 
-Tray = bindings.Tray
 Tray::__proto__ = EventEmitter.prototype
 
 Tray::setContextMenu = (menu) ->

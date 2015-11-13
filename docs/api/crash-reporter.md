@@ -6,7 +6,7 @@ The following is an example of automatically submitting a crash report to a
 remote server:
 
 ```javascript
-var crashReporter = require('crash-reporter');
+const crashReporter = require('electron').crashReporter;
 
 crashReporter.start({
   productName: 'YourName',
@@ -62,7 +62,7 @@ The crash reporter will send the following data to the `submitUrl` as `POST`:
 * `ver` String - The version of Electron.
 * `platform` String - e.g. 'win32'.
 * `process_type` String - e.g. 'renderer'.
-* `guid` String - e.g. '5e1286fc-da97-479e-918b-6bfb0c3d1c72' 
+* `guid` String - e.g. '5e1286fc-da97-479e-918b-6bfb0c3d1c72'
 * `_version` String - The version in `package.json`.
 * `_productName` String - The product name in the `crashReporter` `options`
   object.

@@ -1,10 +1,10 @@
-ipc = require 'ipc-main'
+{ipcMain} = require 'electron'
 
 # The history operation in renderer is redirected to browser.
-ipc.on 'ATOM_SHELL_NAVIGATION_CONTROLLER', (event, method, args...) ->
+ipcMain.on 'ATOM_SHELL_NAVIGATION_CONTROLLER', (event, method, args...) ->
   event.sender[method] args...
 
-ipc.on 'ATOM_SHELL_SYNC_NAVIGATION_CONTROLLER', (event, method, args...) ->
+ipcMain.on 'ATOM_SHELL_SYNC_NAVIGATION_CONTROLLER', (event, method, args...) ->
   event.returnValue = event.sender[method] args...
 
 # JavaScript implementation of Chromium's NavigationController.

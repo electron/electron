@@ -5,7 +5,7 @@ a property of [`BrowserWindow`](browser-window.md). You can access it through an
 instance of `BrowserWindow`. For example:
 
 ```javascript
-var BrowserWindow = require('browser-window');
+const BrowserWindow = require('electron').BrowserWindow;
 
 var win = new BrowserWindow({ width: 800, height: 600 });
 win.loadUrl("http://github.com");
@@ -43,7 +43,7 @@ The `session` object has the following methods:
 The `cookies` gives you ability to query and modify cookies. For example:
 
 ```javascript
-var BrowserWindow = require('browser-window');
+const BrowserWindow = require('electron').BrowserWindow;
 
 var win = new BrowserWindow({ width: 800, height: 600 });
 

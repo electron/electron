@@ -1,8 +1,7 @@
 assert = require 'assert'
-remote = require 'remote'
 
-Menu     = remote.require 'menu'
-MenuItem = remote.require 'menu-item'
+{remote} = require 'electron'
+{Menu, MenuItem} = remote.require 'electron'
 
 describe 'menu module', ->
   describe 'Menu.buildFromTemplate', ->

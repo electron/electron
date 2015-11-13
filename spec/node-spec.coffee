@@ -3,7 +3,8 @@ child_process = require 'child_process'
 fs            = require 'fs'
 path          = require 'path'
 os            = require 'os'
-remote        = require 'remote'
+
+{remote} = require 'electron'
 
 describe 'node feature', ->
   fixtures = path.join __dirname, 'fixtures'

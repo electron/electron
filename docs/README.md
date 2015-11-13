@@ -31,32 +31,32 @@
 ### Modules for the Main Process:
 
 * [app](api/app.md)
-* [auto-updater](api/auto-updater.md)
-* [browser-window](api/browser-window.md)
-* [content-tracing](api/content-tracing.md)
+* [autoUpdater](api/auto-updater.md)
+* [BrowserWindow](api/browser-window.md)
+* [contentTracing](api/content-tracing.md)
 * [dialog](api/dialog.md)
-* [global-shortcut](api/global-shortcut.md)
-* [ipc-main](api/ipc-main.md)
-* [menu](api/menu.md)
-* [menu-item](api/menu-item.md)
-* [power-monitor](api/power-monitor.md)
-* [power-save-blocker](api/power-save-blocker.md)
+* [globalShortcut](api/global-shortcut.md)
+* [ipcMain](api/ipc-main.md)
+* [Menu](api/menu.md)
+* [MenuItem](api/menu-item.md)
+* [powerMonitor](api/power-monitor.md)
+* [powerSaveBlocker](api/power-save-blocker.md)
 * [protocol](api/protocol.md)
 * [session](api/session.md)
-* [web-contents](api/web-contents.md)
-* [tray](api/tray.md)
+* [webContents](api/web-contents.md)
+* [Tray](api/tray.md)
 
 ### Modules for the Renderer Process (Web Page):
 
-* [ipc-renderer](api/ipc-renderer.md)
+* [ipcRenderer](api/ipc-renderer.md)
 * [remote](api/remote.md)
-* [web-frame](api/web-frame.md)
+* [webFrame](api/web-frame.md)
 
 ### Modules for Both Processes:
 
 * [clipboard](api/clipboard.md)
-* [crash-reporter](api/crash-reporter.md)
-* [native-image](api/native-image.md)
+* [crashReporter](api/crash-reporter.md)
+* [nativeImage](api/native-image.md)
 * [screen](api/screen.md)
 * [shell](api/shell.md)
 

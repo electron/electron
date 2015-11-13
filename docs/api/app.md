@@ -6,7 +6,7 @@ The following example shows how to quit the application when the last window is
 closed:
 
 ```javascript
-var app = require('app');
+const app = require('electron').app;
 app.on('window-all-closed', function() {
   app.quit();
 });

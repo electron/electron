@@ -1,8 +1,7 @@
-BrowserWindow = require 'browser-window'
-EventEmitter = require('events').EventEmitter
-MenuItem = require 'menu-item'
-v8Util = process.atomBinding 'v8_util'
+{BrowserWindow, MenuItem} = require 'electron'
+{EventEmitter} = require 'events'
 
+v8Util = process.atomBinding 'v8_util'
 bindings = process.atomBinding 'menu'
 
 # Automatically generated radio menu item's group id.

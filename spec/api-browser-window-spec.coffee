@@ -1,12 +1,12 @@
 assert = require 'assert'
 fs     = require 'fs'
 path   = require 'path'
-remote = require 'remote'
 http   = require 'http'
 url    = require 'url'
 os     = require 'os'
 
-BrowserWindow = remote.require 'browser-window'
+{remote, screen} = require 'electron'
+{ipcMain, BrowserWindow} = remote.require 'electron'
 
 isCI = remote.process.argv[2] == '--ci'
 
@@ -191,7 +191,7 @@ describe 'browser-window module', ->
       assert.equal after[1], -10
 
     it 'can set the window larger than screen', ->
-      size = require('screen').getPrimaryDisplay().size
+      size = screen.getPrimaryDisplay().size
       size.width += 100
       size.height += 100
       w.setSize size.width, size.height
@@ -201,12 +201,12 @@ describe 'browser-window module', ->
 
   describe '"web-preferences" option', ->
     afterEach ->
-      remote.require('ipc-main').removeAllListeners('answer')
+      ipcMain.removeAllListeners('answer')
 
     describe '"preload" option', ->
       it 'loads the script before other scripts in window', (done) ->
         preload = path.join fixtures, 'module', 'set-global.js'
-        remote.require('ipc-main').once 'answer', (event, test) ->
+        ipcMain.once 'answer', (event, test) ->
           assert.equal(test, 'preload')
           done()
         w.destroy()
@@ -219,7 +219,7 @@ describe 'browser-window module', ->
     describe '"node-integration" option', ->
       it 'disables node integration when specified to false', (done) ->
         preload = path.join fixtures, 'module', 'send-later.js'
-        remote.require('ipc-main').once 'answer', (event, test) ->
+        ipcMain.once 'answer', (event, test) ->
           assert.equal(test, 'undefined')
           done()
         w.destroy()

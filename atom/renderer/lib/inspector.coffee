@@ -32,8 +32,8 @@ convertToMenuTemplate = (items) ->
   template
 
 createMenu = (x, y, items, document) ->
-  remote = require 'remote'
-  Menu = remote.require 'menu'
+  {remote} = require 'electron'
+  {Menu} = remote.require 'electron'
 
   menu = Menu.buildFromTemplate convertToMenuTemplate(items)
   # The menu is expected to show asynchronously.
@@ -42,8 +42,8 @@ createMenu = (x, y, items, document) ->
     DevToolsAPI.contextMenuCleared()
 
 showFileChooserDialog = (callback) ->
-  remote = require 'remote'
-  dialog = remote.require 'dialog'
+  {remote} = require 'electron'
+  {dialog} = remote.require 'electron'
   files = dialog.showOpenDialog {}
   callback pathToHtml5FileObject files[0] if files?
 

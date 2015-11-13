@@ -1,8 +1,7 @@
-EventEmitter = require('events').EventEmitter
-Menu = require './menu'
-NavigationController = require './navigation-controller'
+{EventEmitter} = require 'events'
+{ipcMain, NavigationController, Menu} = require 'electron'
+
 binding = process.atomBinding 'web_contents'
-ipc = require 'ipc-main'
 
 nextId = 0
 getNextId = -> ++nextId
@@ -60,11 +59,11 @@ wrapWebContents = (webContents) ->
   # Dispatch IPC messages to the ipc module.
   webContents.on 'ipc-message', (event, packed) ->
     [channel, args...] = packed
-    ipc.emit channel, event, args...
+    ipcMain.emit channel, event, args...
   webContents.on 'ipc-message-sync', (event, packed) ->
     [channel, args...] = packed
     Object.defineProperty event, 'returnValue', set: (value) -> event.sendReply JSON.stringify(value)
-    ipc.emit channel, event, args...
+    ipcMain.emit channel, event, args...
 
   # Handle context menu action request from pepper plugin.
   webContents.on 'pepper-context-menu', (event, params) ->

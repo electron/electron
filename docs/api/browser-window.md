@@ -4,7 +4,7 @@ The `BrowserWindow` class gives you the ability to create a browser window. For
 example:
 
 ```javascript
-var BrowserWindow = require('browser-window');
+const BrowserWindow = require('electron').BrowserWindow;
 
 var win = new BrowserWindow({ width: 800, height: 600, show: false });
 win.on('closed', function() {
@@ -291,11 +291,8 @@ Remove the DevTools extension whose name is `name`.
 Objects created with `new BrowserWindow` have the following properties:
 
 ```javascript
-var BrowserWindow = require('browser-window');
-
 // In this example `win` is our instance
 var win = new BrowserWindow({ width: 800, height: 600 });
-
 ```
 
 ### `win.webContents`
@@ -315,14 +312,6 @@ The unique ID of this window.
 Objects created with `new BrowserWindow` have the following instance methods:
 
 **Note:** Some methods are only available on specific operating systems and are labeled as such.
-
-```javascript
-var BrowserWindow = require('browser-window');
-
-// In this example `win` is our instance
-var win = new BrowserWindow({ width: 800, height: 600 });
-
-```
 
 ### `win.destroy()`
 

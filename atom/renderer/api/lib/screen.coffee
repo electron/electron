@@ -1,1 +1,1 @@
-module.exports = require('remote').require('screen')
+module.exports = require('electron').remote.require('electron').screen

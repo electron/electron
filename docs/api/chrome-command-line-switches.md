@@ -6,7 +6,7 @@ them in your app's main script before the [ready][ready] event of [app][app]
 module is emitted:
 
 ```javascript
-var app = require('app');
+const app = require('electron').app;
 app.commandLine.appendSwitch('remote-debugging-port', '8315');
 app.commandLine.appendSwitch('host-rules', 'MAP * 127.0.0.1');
 

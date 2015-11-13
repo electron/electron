@@ -3,8 +3,9 @@ http = require 'http'
 https = require 'https'
 path = require 'path'
 ws = require 'ws'
-remote = require 'remote'
-BrowserWindow = remote.require 'browser-window'
+
+{remote} = require 'electron'
+{BrowserWindow} = remote.require 'electron'
 
 describe 'chromium feature', ->
   fixtures = path.resolve __dirname, 'fixtures'

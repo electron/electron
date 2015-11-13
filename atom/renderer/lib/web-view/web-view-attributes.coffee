@@ -1,7 +1,8 @@
 WebViewImpl = require './web-view'
 guestViewInternal = require './guest-view-internal'
 webViewConstants = require './web-view-constants'
-remote = require 'remote'
+
+{remote} = require 'electron'
 
 # Helper function to resolve url set in attribute.
 a = document.createElement 'a'

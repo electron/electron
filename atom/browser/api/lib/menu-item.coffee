@@ -1,4 +1,3 @@
-BrowserWindow = require 'browser-window'
 v8Util = process.atomBinding 'v8_util'
 
 nextCommandId = 0
@@ -18,7 +17,7 @@ class MenuItem
   @types = ['normal', 'separator', 'submenu', 'checkbox', 'radio']
 
   constructor: (options) ->
-    Menu = require 'menu'
+    {Menu} = require 'electron'
 
     {click, @selector, @type, @role, @label, @sublabel, @accelerator, @icon, @enabled, @visible, @checked, @submenu} = options
 
