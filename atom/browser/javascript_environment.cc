@@ -2,11 +2,12 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include <string>
-
 #include "atom/browser/javascript_environment.h"
 
+#include <string>
+
 #include "base/command_line.h"
+#include "content/public/common/content_switches.h"
 #include "gin/array_buffer.h"
 #include "gin/v8_initializer.h"
 
@@ -30,17 +31,13 @@ bool JavascriptEnvironment::Initialize() {
     v8::V8::SetFlagsFromString(expose_debug_as, sizeof(expose_debug_as) - 1);
   }
 
-  const std::string js_flags_switch = "js-flags";
-
-  if (cmd->HasSwitch(js_flags_switch)) {
-    const char *js_flags_value =
-      (cmd->GetSwitchValueASCII(js_flags_switch)).c_str();
-    v8::V8::SetFlagsFromString(js_flags_value, strlen(js_flags_value));
-  }
+  // --js-flags.
+  std::string js_flags = cmd->GetSwitchValueASCII(switches::kJavaScriptFlags);
+  if (!js_flags.empty())
+    v8::V8::SetFlagsFromString(js_flags.c_str(), js_flags.size());
 
   gin::IsolateHolder::Initialize(gin::IsolateHolder::kNonStrictMode,
                                  gin::ArrayBufferAllocator::SharedInstance());
-
   return true;
 }
 

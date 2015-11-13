@@ -31,6 +31,15 @@ Disables the disk cache for HTTP requests.
 
 Enables remote debugging over HTTP on the specified `port`.
 
+## --js-flags=`flags`
+
+Specifies the flags passed to JS engine. It has to be passed when starting
+Electron if you want to enable the `flags` in the main process.
+
+```bash
+$ electron --js-flags="--harmony_proxies --harmony_collections" your-app
+```
+
 ## --proxy-server=`address:port`
 
 Use a specified proxy server, which overrides the system setting. This switch
