@@ -62,8 +62,8 @@ class NavigationController
     @webContents._loadURL @getURL(), {}
 
   reloadIgnoringCache: ->
-    @webContents._reloadIgnoringCache()  # Rely on WebContents to clear cache.
-    @reload()
+    @pendingIndex = @currentIndex
+    @webContents._loadURL @getURL(), {extraHeaders: "pragma: no-cache\n"}
 
   canGoBack: ->
     @getActiveIndex() > 0
