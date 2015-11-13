@@ -134,6 +134,19 @@ ipcRenderer.on 'ATOM_RENDERER_CALLBACK', (event, id, args) ->
 ipcRenderer.on 'ATOM_RENDERER_RELEASE_CALLBACK', (event, id) ->
   callbacksRegistry.remove id
 
+# List all built-in modules in browser process.
+# NB(zcbenz): We should probably send an sync message to browser process to get
+# them, but that would slow down the startup speed.
+browserModules =
+  ['app', 'autoUpdater', 'BrowserWindow', 'contentTracing', 'dialog',
+   'globalShortcut', 'ipcMain', 'Menu', 'MenuItem', 'powerMonitor',
+   'powerSaveBlocker', 'protocol', 'Tray', 'clipboard', 'crashReporter',
+   'nativeImage', 'screen', 'shell']
+# And add a helper receiver for each one.
+for name in browserModules
+  do (name) ->
+    Object.defineProperty exports, name, get: -> exports.getBuiltin name
+
 # Get remote module.
 # (Just like node's require, the modules are cached permanently, note that this
 #  is safe leak since the object is not expected to get freed in browser)
