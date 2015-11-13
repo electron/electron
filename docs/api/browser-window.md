@@ -11,7 +11,7 @@ win.on('closed', function() {
   win = null;
 });
 
-win.loadUrl('https://github.com');
+win.loadURL('https://github.com');
 win.show();
 ```
 
@@ -613,9 +613,9 @@ Same as `webContents.print([options])`
 
 Same as `webContents.printToPDF(options, callback)`
 
-### `win.loadUrl(url[, options])`
+### `win.loadURL(url[, options])`
 
-Same as `webContents.loadUrl(url[, options])`.
+Same as `webContents.loadURL(url[, options])`.
 
 ### `win.reload()`
 

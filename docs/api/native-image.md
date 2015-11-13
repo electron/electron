@@ -103,11 +103,11 @@ Creates a new `nativeImage` instance from a file located at `path`.
 Creates a new `nativeImage` instance from `buffer`. The default `scaleFactor` is
 1.0.
 
-### `nativeImage.createFromDataUrl(dataUrl)`
+### `nativeImage.createFromDataURL(dataURL)`
 
-* `dataUrl` String
+* `dataURL` String
 
-Creates a new `nativeImage` instance from `dataUrl`.
+Creates a new `nativeImage` instance from `dataURL`.
 
 ## Instance Methods
 
@@ -129,7 +129,7 @@ Returns a [Buffer][buffer] that contains the image's `PNG` encoded data.
 
 Returns a [Buffer][buffer] that contains the image's `JPEG` encoded data.
 
-### `image.toDataUrl()`
+### `image.toDataURL()`
 
 Returns the data URL of the image.
 

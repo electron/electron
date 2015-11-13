@@ -8,7 +8,7 @@ instance of `BrowserWindow`. For example:
 const BrowserWindow = require('electron').BrowserWindow;
 
 var win = new BrowserWindow({ width: 800, height: 600 });
-win.loadUrl("http://github.com");
+win.loadURL("http://github.com");
 
 var session = win.webContents.session
 ```
@@ -28,7 +28,7 @@ Calling `event.preventDefault()` will cancel the download.
 ```javascript
 session.on('will-download', function(event, item, webContents) {
   event.preventDefault();
-  require('request')(item.getUrl(), function(data) {
+  require('request')(item.getURL(), function(data) {
     require('fs').writeFileSync('/somewhere', data);
   });
 });
@@ -47,7 +47,7 @@ const BrowserWindow = require('electron').BrowserWindow;
 
 var win = new BrowserWindow({ width: 800, height: 600 });
 
-win.loadUrl('https://github.com');
+win.loadURL('https://github.com');
 
 win.webContents.on('did-finish-load', function() {
   // Query all cookies.

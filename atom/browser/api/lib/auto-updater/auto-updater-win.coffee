@@ -9,28 +9,28 @@ class AutoUpdater extends EventEmitter
     squirrelUpdate.processStart()
     app.quit()
 
-  setFeedUrl: (updateUrl) ->
-    @updateUrl = updateUrl
+  setFeedURL: (updateURL) ->
+    @updateURL = updateURL
 
   checkForUpdates: ->
-    return @emitError 'Update URL is not set' unless @updateUrl
+    return @emitError 'Update URL is not set' unless @updateURL
     return @emitError 'Can not find Squirrel' unless squirrelUpdate.supported()
 
     @emit 'checking-for-update'
 
-    squirrelUpdate.download @updateUrl, (error, update) =>
+    squirrelUpdate.download @updateURL, (error, update) =>
       return @emitError error if error?
       return @emit 'update-not-available' unless update?
 
       @emit 'update-available'
 
-      squirrelUpdate.update @updateUrl, (error) =>
+      squirrelUpdate.update @updateURL, (error) =>
         return @emitError error if error?
 
         {releaseNotes, version} = update
         # Following information is not available on Windows, so fake them.
         date = new Date
-        url = @updateUrl
+        url = @updateURL
 
         @emit 'update-downloaded', {}, releaseNotes, version, date, url, => @quitAndInstall()
 

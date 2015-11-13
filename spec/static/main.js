@@ -67,7 +67,7 @@ app.on('ready', function() {
       javascript: true  // Test whether web-preferences crashes.
     },
   });
-  window.loadUrl('file://' + __dirname + '/index.html');
+  window.loadURL('file://' + __dirname + '/index.html');
   window.on('unresponsive', function() {
     var chosen = dialog.showMessageBox(window, {
       type: 'warning',
@@ -88,7 +88,7 @@ app.on('ready', function() {
           item.on('done', function(e, state) {
             window.webContents.send('download-done',
                                     state,
-                                    item.getUrl(),
+                                    item.getURL(),
                                     item.getMimeType(),
                                     item.getReceivedBytes(),
                                     item.getTotalBytes(),

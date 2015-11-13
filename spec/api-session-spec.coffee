@@ -23,7 +23,7 @@ describe 'session module', ->
 
     server.listen 0, '127.0.0.1', ->
       {port} = server.address()
-      w.loadUrl "#{url}:#{port}"
+      w.loadURL "#{url}:#{port}"
       w.webContents.on 'did-finish-load', ->
         w.webContents.session.cookies.get {url: url}, (error, list) ->
           return done(error) if error
@@ -64,7 +64,7 @@ describe 'session module', ->
         ipcMain.removeAllListeners 'count'
         assert not count
         done()
-      w.loadUrl 'file://' + path.join(fixtures, 'api', 'localstorage.html')
+      w.loadURL 'file://' + path.join(fixtures, 'api', 'localstorage.html')
       w.webContents.on 'did-finish-load', ->
         options =
           origin: "file://",
@@ -91,7 +91,7 @@ describe 'session module', ->
       downloadServer.listen 0, '127.0.0.1', ->
         {port} = downloadServer.address()
         ipcRenderer.sendSync 'set-download-option', false
-        w.loadUrl "#{url}:#{port}"
+        w.loadURL "#{url}:#{port}"
         ipcRenderer.once 'download-done', (event, state, url, mimeType, receivedBytes, totalBytes, disposition, filename) ->
           assert.equal state, 'completed'
           assert.equal filename, 'mock.pdf'
@@ -108,7 +108,7 @@ describe 'session module', ->
       downloadServer.listen 0, '127.0.0.1', ->
         {port} = downloadServer.address()
         ipcRenderer.sendSync 'set-download-option', true
-        w.loadUrl "#{url}:#{port}/"
+        w.loadURL "#{url}:#{port}/"
         ipcRenderer.once 'download-done', (event, state, url, mimeType, receivedBytes, totalBytes, disposition, filename) ->
           assert.equal state, 'cancelled'
           assert.equal filename, 'mock.pdf'

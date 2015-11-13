@@ -11,7 +11,7 @@ const crashReporter = require('electron').crashReporter;
 crashReporter.start({
   productName: 'YourName',
   companyName: 'YourCompany',
-  submitUrl: 'https://your-domain.com/url-to-submit',
+  submitURL: 'https://your-domain.com/url-to-submit',
   autoSubmit: true
 });
 ```
@@ -26,7 +26,7 @@ The `crash-reporter` module has the following methods:
 
 * `productName` String, default: Electron.
 * `companyName` String, default: GitHub, Inc.
-* `submitUrl` String, default: http://54.249.141.255:1127/post.
+* `submitURL` String, default: http://54.249.141.255:1127/post.
   * URL that crash reports will be sent to as POST.
 * `autoSubmit` Boolean, default: `true`.
   * Send the crash report without user interaction.
@@ -57,7 +57,7 @@ ID.
 
 ## crash-reporter Payload
 
-The crash reporter will send the following data to the `submitUrl` as `POST`:
+The crash reporter will send the following data to the `submitURL` as `POST`:
 
 * `ver` String - The version of Electron.
 * `platform` String - e.g. 'win32'.

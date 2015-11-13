@@ -73,7 +73,7 @@ You can also display a web page in an `asar` archive with `BrowserWindow`:
 ```javascript
 const BrowserWindow = require('electron').BrowserWindow;
 var win = new BrowserWindow({width: 800, height: 600});
-win.loadUrl('file:///path/to/example.asar/static/index.html');
+win.loadURL('file:///path/to/example.asar/static/index.html');
 ```
 
 ### Web API

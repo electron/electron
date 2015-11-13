@@ -2,7 +2,7 @@
 
 # Helper function to resolve relative url.
 a = window.top.document.createElement 'a'
-resolveUrl = (url) ->
+resolveURL = (url) ->
   a.href = url
   a.href
 
@@ -55,7 +55,7 @@ window.open = (url, frameName='', features='') ->
   options.height ?= 600
 
   # Resolve relative urls.
-  url = resolveUrl url
+  url = resolveURL url
 
   (options[name] = parseInt(options[name], 10) if options[name]?) for name in ints
 

@@ -44,7 +44,7 @@ extern const char kWebPreferences[];
 extern const char kDirectWrite[];
 extern const char kZoomFactor[];
 extern const char kPreloadScript[];
-extern const char kPreloadUrl[];
+extern const char kPreloadURL[];
 extern const char kNodeIntegration[];
 extern const char kGuestInstanceID[];
 extern const char kExperimentalFeatures[];
@@ -73,7 +73,7 @@ extern const char kAppUserModelId[];
 
 extern const char kZoomFactor[];
 extern const char kPreloadScript[];
-extern const char kPreloadUrl[];
+extern const char kPreloadURL[];
 extern const char kNodeIntegration[];
 extern const char kGuestInstanceID[];
 extern const char kExperimentalFeatures[];

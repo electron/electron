@@ -86,7 +86,7 @@ describe 'ipc module', ->
         event.returnValue = null
         w.destroy()
         done()
-      w.loadUrl 'file://' + path.join(fixtures, 'api', 'send-sync-message.html')
+      w.loadURL 'file://' + path.join(fixtures, 'api', 'send-sync-message.html')
 
   describe 'remote listeners', ->
     it 'can be added and removed correctly', ->

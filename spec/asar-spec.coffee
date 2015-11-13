@@ -453,7 +453,7 @@ describe 'asar package', ->
       ipcMain.once 'dirname', (event, dirname) ->
         assert.equal dirname, path.dirname(p)
         done()
-      w.loadUrl u
+      w.loadURL u
 
     it 'loads script tag in html', (done) ->
       after ->
@@ -463,7 +463,7 @@ describe 'asar package', ->
       w = new BrowserWindow(show: false, width: 400, height: 400)
       p = path.resolve fixtures, 'asar', 'script.asar', 'index.html'
       u = url.format protocol: 'file', slashed: true, pathname: p
-      w.loadUrl u
+      w.loadURL u
       ipcMain.once 'ping', (event, message) ->
         assert.equal message, 'pong'
         done()

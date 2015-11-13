@@ -55,5 +55,5 @@ describe 'crash-reporter module', ->
         pathname: path.join fixtures, 'api', 'crash.html'
         search: "?port=#{port}"
       if process.platform is 'darwin'
-        crashReporter.start {'submitUrl': 'http://127.0.0.1:' + port}
-      w.loadUrl url
+        crashReporter.start {'submitURL': 'http://127.0.0.1:' + port}
+      w.loadURL url

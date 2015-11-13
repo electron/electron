@@ -67,7 +67,7 @@ Returns:
 * `releaseNotes` String
 * `releaseName` String
 * `releaseDate` Date
-* `updateUrl` String
+* `updateURL` String
 
 Emitted when an update has been downloaded.
 
@@ -77,7 +77,7 @@ On Windows only `releaseName` is available.
 
 The `autoUpdater` object has the following methods:
 
-### `autoUpdater.setFeedUrl(url)`
+### `autoUpdater.setFeedURL(url)`
 
 * `url` String
 
@@ -86,7 +86,7 @@ once it is set.
 
 ### `autoUpdater.checkForUpdates()`
 
-Asks the server whether there is an update. You must call `setFeedUrl` before
+Asks the server whether there is an update. You must call `setFeedURL` before
 using this API.
 
 ### `autoUpdater.quitAndInstall()`

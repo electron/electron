@@ -204,7 +204,7 @@ void Cookies::GetCookiesOnIOThread(scoped_ptr<base::DictionaryValue> filter,
               Passed(&filter), callback))) {
     BrowserThread::PostTask(BrowserThread::UI, FROM_HERE,
         base::Bind(&RunGetCookiesCallbackOnUIThread, isolate(),
-                   "Url is not valid", net::CookieList(), callback));
+                   "URL is not valid", net::CookieList(), callback));
   }
 }
 
@@ -229,7 +229,7 @@ void Cookies::Remove(const mate::Dictionary& details,
     error_message = "Details(url, name) of removing cookie are required.";
   }
   if (error_message.empty() && !url.is_valid()) {
-    error_message = "Url is not valid.";
+    error_message = "URL is not valid.";
   }
   if (!error_message.empty()) {
      RunRemoveCookiesCallbackOnUIThread(isolate(), error_message, callback);
@@ -261,7 +261,7 @@ void Cookies::Set(const base::DictionaryValue& options,
 
   GURL gurl(url);
   if (error_message.empty() && !gurl.is_valid()) {
-    error_message = "Url is not valid.";
+    error_message = "URL is not valid.";
   }
 
   if (!error_message.empty()) {

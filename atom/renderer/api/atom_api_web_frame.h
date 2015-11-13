@@ -57,7 +57,7 @@ class WebFrame : public mate::Wrappable {
                              v8::Local<v8::Object> provider);
 
   void RegisterURLSchemeAsSecure(const std::string& scheme);
-  void RegisterURLSchemeAsBypassingCsp(const std::string& scheme);
+  void RegisterURLSchemeAsBypassingCSP(const std::string& scheme);
   void RegisterURLSchemeAsPrivileged(const std::string& scheme);
 
   // mate::Wrappable:

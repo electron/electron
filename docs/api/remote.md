@@ -16,7 +16,7 @@ const remote = require('electron').remote;
 const BrowserWindow = remote.require('electron').BrowserWindow;
 
 var win = new BrowserWindow({ width: 800, height: 600 });
-win.loadUrl('https://github.com');
+win.loadURL('https://github.com');
 ```
 
 **Note:** for the reverse (access the renderer process from the main process),

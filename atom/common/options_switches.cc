@@ -77,7 +77,7 @@ const char kZoomFactor[] = "zoomFactor";
 const char kPreloadScript[] = "preload";
 
 // Like --preload, but the passed argument is an URL.
-const char kPreloadUrl[] = "preloadUrl";
+const char kPreloadURL[] = "preloadURL";
 
 // Enable the node integration.
 const char kNodeIntegration[] = "nodeIntegration";
@@ -133,7 +133,7 @@ const char kAppUserModelId[] = "app-user-model-id";
 // The command line switch versions of the options.
 const char kZoomFactor[]                 = "zoom-factor";
 const char kPreloadScript[]              = "preload";
-const char kPreloadUrl[]                 = "preload-url";
+const char kPreloadURL[]                 = "preload-url";
 const char kNodeIntegration[]            = "node-integration";
 const char kGuestInstanceID[]            = "guest-instance-id";
 const char kExperimentalFeatures[]       = "experimental-features";
