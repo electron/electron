@@ -15,9 +15,6 @@
 #include "base/win/metro.h"
 #include "base/win/scoped_co_mem.h"
 #include "chrome/common/chrome_constants.h"
-#include "chrome/common/chrome_switches.h"
-#include "chrome/installer/util/browser_distribution.h"
-#include "components/nacl/common/nacl_switches.h"
 
 namespace chrome {
 
@@ -43,12 +40,7 @@ bool GetUserDirectory(int csidl_folder, base::FilePath* result) {
 }  // namespace
 
 bool GetDefaultUserDataDirectory(base::FilePath* result) {
-  if (!PathService::Get(base::DIR_LOCAL_APP_DATA, result))
-    return false;
-  BrowserDistribution* dist = BrowserDistribution::GetDistribution();
-  *result = result->Append(dist->GetInstallSubDir());
-  *result = result->Append(chrome::kUserDataDirname);
-  return true;
+  return PathService::Get(base::DIR_LOCAL_APP_DATA, result);
 }
 
 void GetUserCacheDirectory(const base::FilePath& profile_dir,
@@ -106,15 +98,8 @@ bool ProcessNeedsProfileDir(const std::string& process_type) {
   // service processes to be able to use the profile directory because if it
   // lies on a network share the sandbox will prevent us from accessing it.
 
-  if (process_type.empty() || process_type == switches::kServiceProcess)
+  if (process_type.empty())
     return true;
-
-#if !defined(DISABLE_NACL)
-  if (process_type == switches::kNaClBrokerProcess ||
-      process_type == switches::kNaClLoaderProcess) {
-    return true;
-  }
-#endif
 
   return false;
 }
