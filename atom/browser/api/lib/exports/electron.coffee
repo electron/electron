@@ -45,7 +45,7 @@ Object.defineProperties module.exports,
   screen:
     enumerable: true
     get: -> require '../screen'
-  tray:
+  Tray:
     enumerable: true
     get: -> require '../tray'
   # The internal modules, invisible unless you know their names.
