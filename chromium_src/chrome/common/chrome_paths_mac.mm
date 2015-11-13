@@ -179,10 +179,9 @@ base::FilePath GetVersionedDirectory() {
     // .app's versioned directory.  Go up two steps to get to the browser
     // .app's versioned directory.
     path = path.DirName().DirName();
-    DCHECK_EQ(path.BaseName().value(), kChromeVersion);
   } else {
     // Go into the versioned directory.
-    path = path.Append("Versions").Append(kChromeVersion);
+    path = path.Append("Frameworks");
   }
 
   return path;

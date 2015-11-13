@@ -3,9 +3,15 @@
 // found in the LICENSE file.
 
 #include "chrome/common/chrome_constants.h"
-#include "chrome/common/chrome_version.h"
+
+#define FPL FILE_PATH_LITERAL
 
 namespace chrome {
+
+#if defined(OS_MACOSX)
+const base::FilePath::CharType kFrameworkName[] =
+    FPL(ATOM_PRODUCT_NAME " Framework.framework");
+#endif  // OS_MACOSX
 
 // filenames
 const base::FilePath::CharType kCacheDirname[] = FPL("Cache");

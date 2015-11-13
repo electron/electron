@@ -11,6 +11,14 @@
 
 namespace chrome {
 
+#if defined(OS_MACOSX)
+// NOTE: if you change the value of kFrameworkName, please don't forget to
+// update components/test/run_all_unittests.cc as well.
+// TODO(tfarina): Remove the comment above, when you fix components to use plist
+// on Mac.
+extern const base::FilePath::CharType kFrameworkName[];
+#endif  // OS_MACOSX
+
 // filenames
 extern const base::FilePath::CharType kCacheDirname[];
 extern const base::FilePath::CharType kChannelIDFilename[];
