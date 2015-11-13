@@ -126,13 +126,7 @@ ipcRenderer.on 'ATOM_RENDERER_RELEASE_CALLBACK', (event, id) ->
   callbacksRegistry.remove id
 
 # List all built-in modules in browser process.
-# NB(zcbenz): We should probably send an sync message to browser process to get
-# them, but that would slow down the startup speed.
-browserModules =
-  ['app', 'autoUpdater', 'BrowserWindow', 'contentTracing', 'dialog',
-   'globalShortcut', 'ipcMain', 'Menu', 'MenuItem', 'powerMonitor',
-   'powerSaveBlocker', 'protocol', 'Tray', 'clipboard', 'crashReporter',
-   'nativeImage', 'screen', 'shell']
+browserModules = ipcRenderer.sendSync 'ATOM_BROWSER_LIST_MODULES'
 # And add a helper receiver for each one.
 for name in browserModules
   do (name) ->

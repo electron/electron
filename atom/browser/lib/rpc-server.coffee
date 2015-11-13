@@ -206,3 +206,6 @@ ipcMain.on 'ATOM_BROWSER_GUEST_WEB_CONTENTS', (event, guestInstanceId) ->
     event.returnValue = valueToMeta event.sender, guestViewManager.getGuest(guestInstanceId)
   catch e
     event.returnValue = exceptionToMeta e
+
+ipcMain.on 'ATOM_BROWSER_LIST_MODULES', (event) ->
+  event.returnValue = (name for name of electron)
