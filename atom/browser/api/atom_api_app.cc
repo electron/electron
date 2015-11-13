@@ -22,9 +22,9 @@
 #include "base/command_line.h"
 #include "base/environment.h"
 #include "base/files/file_path.h"
-#include "base/nix/xdg_util.h"
 #include "base/path_service.h"
 #include "brightray/browser/brightray_paths.h"
+#include "chrome/common/chrome_paths.h"
 #include "content/public/browser/client_certificate_delegate.h"
 #include "content/public/browser/gpu_data_manager.h"
 #include "content/public/common/content_switches.h"
@@ -100,12 +100,22 @@ int GetPathConstant(const std::string& name) {
     return base::DIR_HOME;
   else if (name == "temp")
     return base::DIR_TEMP;
-  else if (name == "userDesktop")
+  else if (name == "userDesktop" || name == "desktop")
     return base::DIR_USER_DESKTOP;
   else if (name == "exe")
     return base::FILE_EXE;
   else if (name == "module")
     return base::FILE_MODULE;
+  else if (name == "documents")
+    return chrome::DIR_USER_DOCUMENTS;
+  else if (name == "downloads")
+    return chrome::DIR_DEFAULT_DOWNLOADS;
+  else if (name == "music")
+    return chrome::DIR_USER_MUSIC;
+  else if (name == "pictures")
+    return chrome::DIR_USER_PICTURES;
+  else if (name == "videos")
+    return chrome::DIR_USER_VIDEOS;
   else
     return -1;
 }
@@ -154,17 +164,6 @@ void PassLoginInformation(scoped_refptr<LoginHandler> login_handler,
     login_handler->Login(username, password);
   else
     login_handler->CancelAuth();
-}
-
-bool GetUserDownloadsDirectory(base::FilePath* path) {
-#if defined(OS_LINUX)
-  *path = base::nix::GetXDGUserDirectory("DOWNLOAD", "Downloads");
-  return true;
-#elif defined(OS_MACOSX)
-  return false;
-#elif defined(OS_WIN)
-  return false;
-#endif
 }
 
 }  // namespace
@@ -284,11 +283,8 @@ base::FilePath App::GetPath(mate::Arguments* args, const std::string& name) {
   int key = GetPathConstant(name);
   if (key >= 0)
     succeed = PathService::Get(key, &path);
-  if (!succeed) {
-    if (name == "downloads" && GetUserDownloadsDirectory(&path))
-      return path;
+  if (!succeed)
     args->ThrowError("Failed to get path");
-  }
   return path;
 }
 

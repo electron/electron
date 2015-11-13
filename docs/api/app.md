@@ -238,10 +238,14 @@ You can request the following paths by the name:
 * `userData` The directory for storing your app's configuration files, which by
   default it is the `appData` directory appended with your app's name.
 * `temp` Temporary directory.
-* `userDesktop` The current user's Desktop directory.
 * `exe` The current executable file.
 * `module` The `libchromiumcontent` library.
-* `downloads` User's download directory.
+* `desktop` The current user's Desktop directory.
+* `documents` Directory for a user's "My Documents".
+* `downloads` Directory for a user's downloads.
+* `music` Directory for a user's music.
+* `pictures` Directory for a user's pictures.
+* `videos` Directory for a user's videos.
 
 ### `app.setPath(name, path)`
 
