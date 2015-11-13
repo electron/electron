@@ -49,15 +49,6 @@ metaToValue = (meta) ->
     when 'date' then new Date(meta.value)
     when 'exception'
       throw new Error("#{meta.message}\n#{meta.stack}")
-    when 'electronModule'
-      # require('electron').
-      ret = {}
-      for member in meta.members
-        do (member) ->
-          Object.defineProperty ret, member,
-            enumerable: true
-            get: -> exports.getBuiltin member
-      ret
     else
       if meta.type is 'function'
         # A shadow class to represent the remote function object.
@@ -134,6 +125,13 @@ ipcRenderer.on 'ATOM_RENDERER_CALLBACK', (event, id, args) ->
 ipcRenderer.on 'ATOM_RENDERER_RELEASE_CALLBACK', (event, id) ->
   callbacksRegistry.remove id
 
+# List all built-in modules in browser process.
+browserModules = ipcRenderer.sendSync 'ATOM_BROWSER_LIST_MODULES'
+# And add a helper receiver for each one.
+for name in browserModules
+  do (name) ->
+    Object.defineProperty exports, name, get: -> exports.getBuiltin name
+
 # Get remote module.
 # (Just like node's require, the modules are cached permanently, note that this
 #  is safe leak since the object is not expected to get freed in browser)
@@ -143,6 +141,9 @@ exports.require = (module) ->
 
   meta = ipcRenderer.sendSync 'ATOM_BROWSER_REQUIRE', module
   moduleCache[module] = metaToValue meta
+
+# Optimize require('electron').
+moduleCache.electron = exports
 
 # Alias to remote.require('electron').xxx.
 builtinCache = {}

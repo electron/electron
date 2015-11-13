@@ -1,9 +1,6 @@
 # Import common modules.
 module.exports = require '../../../../common/api/lib/exports/electron'
 
-v8Util = process.atomBinding 'v8_util'
-v8Util.setHiddenValue module.exports, 'electronModule', true
-
 Object.defineProperties module.exports,
   # Browser side modules, please sort with alphabet order.
   app:
@@ -45,7 +42,7 @@ Object.defineProperties module.exports,
   screen:
     enumerable: true
     get: -> require '../screen'
-  tray:
+  Tray:
     enumerable: true
     get: -> require '../tray'
   # The internal modules, invisible unless you know their names.

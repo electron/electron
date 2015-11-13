@@ -67,19 +67,17 @@ window.open = (url, frameName='', features='') ->
 
 # Use the dialog API to implement alert().
 window.alert = (message, title='') ->
-  dialog = remote.require 'dialog'
   buttons = ['OK']
   message = message.toString()
-  dialog.showMessageBox remote.getCurrentWindow(), {message, title, buttons}
+  remote.dialog.showMessageBox remote.getCurrentWindow(), {message, title, buttons}
   # Alert should always return undefined.
   return
 
 # And the confirm().
 window.confirm = (message, title='') ->
-  dialog = remote.require 'dialog'
   buttons = ['OK', 'Cancel']
   cancelId = 1
-  not dialog.showMessageBox remote.getCurrentWindow(), {message, title, buttons, cancelId}
+  not remote.dialog.showMessageBox remote.getCurrentWindow(), {message, title, buttons, cancelId}
 
 # But we do not support prompt().
 window.prompt = ->
