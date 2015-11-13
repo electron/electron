@@ -1,6 +1,6 @@
-app = require 'app'
-url = require 'url'
+{app} = require 'electron'
 {EventEmitter} = require 'events'
+url = require 'url'
 
 squirrelUpdate = require './squirrel-update-win'
 
