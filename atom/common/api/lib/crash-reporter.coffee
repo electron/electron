@@ -16,11 +16,7 @@ class CrashReporter
       submitURL ?= options.submitUrl
       deprecate.warn 'submitUrl', 'submitURL'
 
-    {app} =
-      if process.type is 'browser'
-        electron
-      else
-        electron.remote.require 'electron'
+    {app} = if process.type is 'browser' then electron else electron.remote
 
     @productName ?= app.getName()
     companyName ?= 'GitHub, Inc'

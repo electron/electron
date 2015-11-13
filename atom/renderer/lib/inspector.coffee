@@ -33,7 +33,7 @@ convertToMenuTemplate = (items) ->
 
 createMenu = (x, y, items, document) ->
   {remote} = require 'electron'
-  {Menu} = remote.require 'electron'
+  {Menu} = remote
 
   menu = Menu.buildFromTemplate convertToMenuTemplate(items)
   # The menu is expected to show asynchronously.
@@ -43,7 +43,7 @@ createMenu = (x, y, items, document) ->
 
 showFileChooserDialog = (callback) ->
   {remote} = require 'electron'
-  {dialog} = remote.require 'electron'
+  {dialog} = remote
   files = dialog.showOpenDialog {}
   callback pathToHtml5FileObject files[0] if files?
 
