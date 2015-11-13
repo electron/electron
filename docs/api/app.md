@@ -241,6 +241,7 @@ You can request the following paths by the name:
 * `userDesktop` The current user's Desktop directory.
 * `exe` The current executable file.
 * `module` The `libchromiumcontent` library.
+* `downloads` User's download directory.
 
 ### `app.setPath(name, path)`
 

@@ -8,7 +8,12 @@ generated file to view the result.
 ```javascript
 const contentTracing = require('electron').contentTracing;
 
-contentTracing.startRecording('*', contentTracing.DEFAULT_OPTIONS, function() {
+const options = {
+  categoryFilter: '*',
+  traceOptions: 'record-until-full,enable-sampling'
+}
+
+contentTracing.startRecording(options, function() {
   console.log('Tracing started');
 
   setTimeout(function() {
