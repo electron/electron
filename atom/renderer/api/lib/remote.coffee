@@ -49,15 +49,6 @@ metaToValue = (meta) ->
     when 'date' then new Date(meta.value)
     when 'exception'
       throw new Error("#{meta.message}\n#{meta.stack}")
-    when 'electronModule'
-      # require('electron').
-      ret = {}
-      for member in meta.members
-        do (member) ->
-          Object.defineProperty ret, member,
-            enumerable: true
-            get: -> exports.getBuiltin member
-      ret
     else
       if meta.type is 'function'
         # A shadow class to represent the remote function object.
@@ -156,6 +147,9 @@ exports.require = (module) ->
 
   meta = ipcRenderer.sendSync 'ATOM_BROWSER_REQUIRE', module
   moduleCache[module] = metaToValue meta
+
+# Optimize require('electron').
+moduleCache.electron = exports
 
 # Alias to remote.require('electron').xxx.
 builtinCache = {}

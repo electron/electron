@@ -18,10 +18,6 @@ valueToMeta = (sender, value, optimizeSimpleObject=false) ->
   meta.type = 'date' if value instanceof Date
   meta.type = 'promise' if value?.constructor.name is 'Promise'
 
-  # require('electron').
-  if meta.type is 'object' and v8Util.getHiddenValue value, 'electronModule'
-    meta.type = 'electronModule'
-
   # Treat simple objects as value.
   if optimizeSimpleObject and meta.type is 'object' and v8Util.getHiddenValue value, 'simple'
     meta.type = 'value'
@@ -49,8 +45,6 @@ valueToMeta = (sender, value, optimizeSimpleObject=false) ->
     meta.members = plainObjectToMeta value
   else if meta.type is 'date'
     meta.value = value.getTime()
-  else if meta.type is 'electronModule'
-    meta.members = (name for name of value)
   else
     meta.type = 'value'
     meta.value = value
