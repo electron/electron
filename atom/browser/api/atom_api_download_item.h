@@ -49,7 +49,7 @@ class DownloadItem : public mate::EventEmitter,
   bool HasUserGesture();
   std::string GetFilename();
   std::string GetContentDisposition();
-  const GURL& GetUrl();
+  const GURL& GetURL();
   void SetSavePath(const base::FilePath& path);
 
  private:

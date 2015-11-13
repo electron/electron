@@ -1,14 +1,21 @@
-binding = process.atomBinding 'crash_reporter'
 fs      = require 'fs'
 os      = require 'os'
 path    = require 'path'
 {spawn} = require 'child_process'
 
+electron = require 'electron'
+binding = process.atomBinding 'crash_reporter'
+
 class CrashReporter
   start: (options={}) ->
-    {@productName, companyName, submitUrl, autoSubmit, ignoreSystemCrashHandler, extra} = options
+    {@productName, companyName, submitURL, autoSubmit, ignoreSystemCrashHandler, extra} = options
 
-    electron = require 'electron'
+    # Deprecated.
+    {deprecate} = electron
+    if options.submitUrl
+      submitURL ?= options.submitUrl
+      deprecate.warn 'submitUrl', 'submitURL'
+
     {app} =
       if process.type is 'browser'
         electron
@@ -17,7 +24,7 @@ class CrashReporter
 
     @productName ?= app.getName()
     companyName ?= 'GitHub, Inc'
-    submitUrl ?= 'http://54.249.141.255:1127/post'
+    submitURL ?= 'http://54.249.141.255:1127/post'
     autoSubmit ?= true
     ignoreSystemCrashHandler ?= false
     extra ?= {}
@@ -26,11 +33,11 @@ class CrashReporter
     extra._companyName ?= companyName
     extra._version ?= app.getVersion()
 
-    start = => binding.start @productName, companyName, submitUrl, autoSubmit, ignoreSystemCrashHandler, extra
+    start = => binding.start @productName, companyName, submitURL, autoSubmit, ignoreSystemCrashHandler, extra
 
     if process.platform is 'win32'
       args = [
-        "--reporter-url=#{submitUrl}"
+        "--reporter-url=#{submitURL}"
         "--application-name=#{@productName}"
         "--v=1"
       ]

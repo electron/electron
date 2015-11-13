@@ -66,7 +66,7 @@ Resumes the download that has been paused.
 
 Cancels the download operation.
 
-### `downloadItem.getUrl()`
+### `downloadItem.getURL()`
 
 Returns a `String` represents the origin url where the item is downloaded from.
 

@@ -5,14 +5,14 @@ requestId = 0
 WEB_VIEW_EVENTS =
   'load-commit': ['url', 'isMainFrame']
   'did-finish-load': []
-  'did-fail-load': ['errorCode', 'errorDescription', 'validatedUrl']
+  'did-fail-load': ['errorCode', 'errorDescription', 'validatedURL']
   'did-frame-finish-load': ['isMainFrame']
   'did-start-loading': []
   'did-stop-loading': []
-  'did-get-response-details': ['status', 'newUrl', 'originalUrl',
+  'did-get-response-details': ['status', 'newURL', 'originalURL',
                                'httpResponseCode', 'requestMethod', 'referrer',
                                'headers']
-  'did-get-redirect-request': ['oldUrl', 'newUrl', 'isMainFrame']
+  'did-get-redirect-request': ['oldURL', 'newURL', 'isMainFrame']
   'dom-ready': []
   'console-message': ['level', 'message', 'line', 'sourceId']
   'new-window': ['url', 'frameName', 'disposition', 'options']

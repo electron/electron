@@ -81,7 +81,7 @@ void AutoUpdater::OnWindowAllClosed() {
 mate::ObjectTemplateBuilder AutoUpdater::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
   return mate::ObjectTemplateBuilder(isolate)
-      .SetMethod("setFeedUrl", &auto_updater::AutoUpdater::SetFeedURL)
+      .SetMethod("setFeedURL", &auto_updater::AutoUpdater::SetFeedURL)
       .SetMethod("checkForUpdates", &auto_updater::AutoUpdater::CheckForUpdates)
       .SetMethod("quitAndInstall", &AutoUpdater::QuitAndInstall);
 }

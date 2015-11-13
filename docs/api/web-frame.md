@@ -66,7 +66,7 @@ webFrame.setSpellCheckProvider("en-US", true, {
 });
 ```
 
-### `webFrame.registerUrlSchemeAsSecure(scheme)`
+### `webFrame.registerURLSchemeAsSecure(scheme)`
 
 * `scheme` String
 
@@ -76,14 +76,14 @@ Secure schemes do not trigger mixed content warnings. For example, `https` and
 `data` are secure schemes because they cannot be corrupted by active network
 attackers.
 
-### `webFrame.registerUrlSchemeAsBypassingCsp(scheme)`
+### `webFrame.registerURLSchemeAsBypassingCSP(scheme)`
 
 * `scheme` String
 
 Resources will be loaded from this `scheme` regardless of the current page's
 Content Security Policy.
 
-### `webFrame.registerUrlSchemeAsPrivileged(scheme)`
+### `webFrame.registerURLSchemeAsPrivileged(scheme)`
 
 * `scheme` String
 

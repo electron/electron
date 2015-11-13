@@ -43,7 +43,7 @@ describe 'chromium feature', ->
       w.webContents.on 'ipc-message', (event, args) ->
         assert.deepEqual args, ['hidden', true]
         done()
-      w.loadUrl url
+      w.loadURL url
 
   describe 'navigator.webkitGetUserMedia', ->
     it 'calls its callbacks', (done) ->
@@ -96,7 +96,7 @@ describe 'chromium feature', ->
       w.webContents.on 'ipc-message', (event, args) ->
         assert.deepEqual args, ['opener', null]
         done()
-      w.loadUrl url
+      w.loadURL url
 
     it 'is not null for window opened by window.open', (done) ->
       listener = (event) ->

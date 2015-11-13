@@ -69,7 +69,8 @@ BrowserWindow.fromDevToolsWebContents = (webContents) ->
   return window for window in windows when window.devToolsWebContents?.equal webContents
 
 # Helpers.
-BrowserWindow::loadUrl = -> @webContents.loadUrl.apply @webContents, arguments
+BrowserWindow::loadURL = -> @webContents.loadURL.apply @webContents, arguments
+BrowserWindow::getURL = -> @webContents.getURL()
 BrowserWindow::reload = -> @webContents.reload.apply @webContents, arguments
 BrowserWindow::send = -> @webContents.send.apply @webContents, arguments
 BrowserWindow::openDevTools = -> @webContents.openDevTools.apply @webContents, arguments
@@ -80,14 +81,12 @@ BrowserWindow::inspectElement = -> @webContents.inspectElement.apply @webContent
 BrowserWindow::inspectServiceWorker = -> @webContents.inspectServiceWorker()
 
 # Deprecated.
-deprecate.rename BrowserWindow, 'restart', 'reload'
 deprecate.member BrowserWindow, 'undo', 'webContents'
 deprecate.member BrowserWindow, 'redo', 'webContents'
 deprecate.member BrowserWindow, 'cut', 'webContents'
 deprecate.member BrowserWindow, 'copy', 'webContents'
 deprecate.member BrowserWindow, 'paste', 'webContents'
 deprecate.member BrowserWindow, 'selectAll', 'webContents'
-deprecate.member BrowserWindow, 'getUrl', 'webContents'
 deprecate.member BrowserWindow, 'reloadIgnoringCache', 'webContents'
 deprecate.member BrowserWindow, 'getPageTitle', 'webContents'
 deprecate.member BrowserWindow, 'isLoading', 'webContents'
@@ -97,5 +96,8 @@ deprecate.member BrowserWindow, 'isCrashed', 'webContents'
 deprecate.member BrowserWindow, 'executeJavaScriptInDevTools', 'webContents'
 deprecate.member BrowserWindow, 'print', 'webContents'
 deprecate.member BrowserWindow, 'printToPDF', 'webContents'
+deprecate.rename BrowserWindow, 'restart', 'reload'
+deprecate.rename BrowserWindow, 'loadUrl', 'loadURL'
+deprecate.rename BrowserWindow, 'getUrl', 'getURL'
 
 module.exports = BrowserWindow

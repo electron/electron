@@ -307,8 +307,8 @@ bool OpenExternal(const GURL& url) {
   // "Some versions of windows (Win2k before SP3, Win XP before SP1) crash in
   // ShellExecute on long URLs (bug 161357 on bugzilla.mozilla.org). IE 5 and 6
   // support URLS of 2083 chars in length, 2K is safe."
-  const size_t kMaxUrlLength = 2048;
-  if (escaped_url.length() > kMaxUrlLength) {
+  const size_t kMaxURLLength = 2048;
+  if (escaped_url.length() > kMaxURLLength) {
     NOTREACHED();
     return false;
   }

@@ -63,10 +63,11 @@ wrapDownloadItem = (downloadItem) ->
   # downloadItem is an EventEmitter.
   downloadItem.__proto__ = EventEmitter.prototype
   # Deprecated.
-  deprecate.property downloadItem, 'url', 'getUrl'
+  deprecate.property downloadItem, 'url', 'getURL'
   deprecate.property downloadItem, 'filename', 'getFilename'
   deprecate.property downloadItem, 'mimeType', 'getMimeType'
   deprecate.property downloadItem, 'hasUserGesture', 'hasUserGesture'
+  deprecate.rename downloadItem, 'getUrl', 'getURL'
 downloadItemBindings._setWrapDownloadItem wrapDownloadItem
 
 # Only one App object pemitted.

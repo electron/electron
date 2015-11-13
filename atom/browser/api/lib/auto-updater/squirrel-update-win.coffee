@@ -41,8 +41,8 @@ exports.processStart = (callback) ->
   spawnUpdate ['--processStart', exeName], true, ->
 
 # Download the releases specified by the URL and write new results to stdout.
-exports.download = (updateUrl, callback) ->
-  spawnUpdate ['--download', updateUrl], false, (error, stdout) ->
+exports.download = (updateURL, callback) ->
+  spawnUpdate ['--download', updateURL], false, (error, stdout) ->
     return callback(error) if error?
 
     try
@@ -55,8 +55,8 @@ exports.download = (updateUrl, callback) ->
     callback null, update
 
 # Update the application to the latest remote version specified by URL.
-exports.update = (updateUrl, callback) ->
-  spawnUpdate ['--update', updateUrl], false, callback
+exports.update = (updateURL, callback) ->
+  spawnUpdate ['--update', updateURL], false, callback
 
 # Is the Update.exe installed with the current application?
 exports.supported = ->

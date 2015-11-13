@@ -9,7 +9,7 @@ ipcMain.on 'ATOM_SHELL_SYNC_NAVIGATION_CONTROLLER', (event, method, args...) ->
 
 # JavaScript implementation of Chromium's NavigationController.
 # Instead of relying on Chromium for history control, we compeletely do history
-# control on user land, and only rely on WebContents.loadUrl for navigation.
+# control on user land, and only rely on WebContents.loadURL for navigation.
 # This helps us avoid Chromium's various optimizations so we can ensure renderer
 # process is restarted everytime.
 class NavigationController
@@ -17,9 +17,9 @@ class NavigationController
     @clearHistory()
 
     # webContents may have already navigated to a page.
-    if @webContents._getUrl()
+    if @webContents._getURL()
       @currentIndex++
-      @history.push @webContents._getUrl()
+      @history.push @webContents._getURL()
 
     @webContents.on 'navigation-entry-commited', (event, url, inPage, replaceEntry) =>
       if @inPageIndex > -1 and not inPage
@@ -42,12 +42,12 @@ class NavigationController
           @currentIndex++
           @history.push url
 
-  loadUrl: (url, options={}) ->
+  loadURL: (url, options={}) ->
     @pendingIndex = -1
-    @webContents._loadUrl url, options
+    @webContents._loadURL url, options
     @webContents.emit 'load-url', url, options
 
-  getUrl: ->
+  getURL: ->
     if @currentIndex is -1
       ''
     else
@@ -59,7 +59,7 @@ class NavigationController
 
   reload: ->
     @pendingIndex = @currentIndex
-    @webContents._loadUrl @getUrl(), {}
+    @webContents._loadURL @getURL(), {}
 
   reloadIgnoringCache: ->
     @webContents._reloadIgnoringCache()  # Rely on WebContents to clear cache.
@@ -89,7 +89,7 @@ class NavigationController
     if @inPageIndex > -1 and @pendingIndex >= @inPageIndex
       @webContents._goBack()
     else
-      @webContents._loadUrl @history[@pendingIndex], {}
+      @webContents._loadURL @history[@pendingIndex], {}
 
   goForward: ->
     return unless @canGoForward()
@@ -97,12 +97,12 @@ class NavigationController
     if @inPageIndex > -1 and @pendingIndex >= @inPageIndex
       @webContents._goForward()
     else
-      @webContents._loadUrl @history[@pendingIndex], {}
+      @webContents._loadURL @history[@pendingIndex], {}
 
   goToIndex: (index) ->
     return unless @canGoToIndex index
     @pendingIndex = index
-    @webContents._loadUrl @history[@pendingIndex], {}
+    @webContents._loadURL @history[@pendingIndex], {}
 
   goToOffset: (offset) ->
     return unless @canGoToOffset offset

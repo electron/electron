@@ -79,7 +79,7 @@ createGuest = (embedder, params) ->
       opts = {}
       opts.httpReferrer = params.httpreferrer if params.httpreferrer
       opts.userAgent = params.useragent if params.useragent
-      @loadUrl params.src, opts
+      @loadURL params.src, opts
 
     if params.allowtransparency?
       @setAllowTransparency params.allowtransparency
@@ -122,7 +122,7 @@ attachGuest = (embedder, elementInstanceId, guestInstanceId, params) ->
     nodeIntegration: params.nodeintegration ? false
     plugins: params.plugins
     webSecurity: !params.disablewebsecurity
-  webPreferences.preloadUrl = params.preload if params.preload
+  webPreferences.preloadURL = params.preload if params.preload
   webViewManager.addGuest guestInstanceId, elementInstanceId, embedder, guest, webPreferences
 
   guest.attachParams = params

@@ -6,7 +6,7 @@ webViewConstants = require './web-view-constants'
 
 # Helper function to resolve url set in attribute.
 a = document.createElement 'a'
-resolveUrl = (url) ->
+resolveURL = (url) ->
   a.href = url
   a.href
 
@@ -116,7 +116,7 @@ class SrcAttribute extends WebViewAttribute
 
   getValue: ->
     if @webViewImpl.webviewNode.hasAttribute @name
-      resolveUrl @webViewImpl.webviewNode.getAttribute(@name)
+      resolveURL @webViewImpl.webviewNode.getAttribute(@name)
     else
       ''
 
@@ -178,7 +178,7 @@ class SrcAttribute extends WebViewAttribute
     if useragent then opts.userAgent = useragent
 
     guestContents = remote.getGuestWebContents(@webViewImpl.guestInstanceId)
-    guestContents.loadUrl @getValue(), opts
+    guestContents.loadURL @getValue(), opts
 
 # Attribute specifies HTTP referrer.
 class HttpReferrerAttribute extends WebViewAttribute
@@ -197,7 +197,7 @@ class PreloadAttribute extends WebViewAttribute
 
   getValue: ->
     return '' unless @webViewImpl.webviewNode.hasAttribute @name
-    preload = resolveUrl @webViewImpl.webviewNode.getAttribute(@name)
+    preload = resolveURL @webViewImpl.webviewNode.getAttribute(@name)
     protocol = preload.substr 0, 5
     unless protocol is 'file:'
       console.error webViewConstants.ERROR_MSG_INVALID_PRELOAD_ATTRIBUTE

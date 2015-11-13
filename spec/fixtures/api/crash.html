@@ -6,7 +6,7 @@ var crashReporter = require('electron').crashReporter;
 crashReporter.start({
   productName: 'Zombies',
   companyName: 'Umbrella Corporation',
-  submitUrl: 'http://127.0.0.1:' + port,
+  submitURL: 'http://127.0.0.1:' + port,
   autoSubmit: true,
   ignoreSystemCrashHandler: true,
   extra: {
