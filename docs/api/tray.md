@@ -31,10 +31,10 @@ __Platform limitations:__
 * On Linux distributions that only have app indicator support, you have to
   install `libappindicator1` to make the tray icon work.
 * App indicator will only be shown when it has a context menu.
-* When app indicator is used on Linux, the `clicked` event is ignored.
+* When app indicator is used on Linux, the `click` event is ignored.
 
 If you want to keep exact same behaviors on all platforms, you should not
-rely on the `clicked` event and always attach a context menu to the tray icon.
+rely on the `click` event and always attach a context menu to the tray icon.
 
 ## Class: Tray
 
@@ -53,7 +53,7 @@ The `Tray` module emits the following events:
 **Note:** Some events are only available on specific operating systems and are
 labeled as such.
 
-### Event: 'clicked'
+### Event: 'click'
 
 * `event` Event
   * `altKey` Boolean
@@ -70,7 +70,7 @@ Emitted when the tray icon is clicked.
 
 __Note:__ The `bounds` payload is only implemented on OS X and Windows.
 
-### Event: 'right-clicked' _OS X_ _Windows_
+### Event: 'right-click' _OS X_ _Windows_
 
 * `event` Event
   * `altKey` Boolean
@@ -85,7 +85,7 @@ __Note:__ The `bounds` payload is only implemented on OS X and Windows.
 
 Emitted when the tray icon is right clicked.
 
-### Event: 'double-clicked' _OS X_ _Windows_
+### Event: 'double-click' _OS X_ _Windows_
 
 * `event` Event
   * `altKey` Boolean
@@ -104,7 +104,7 @@ Emitted when the tray icon is double clicked.
 
 Emitted when the tray balloon shows.
 
-### Event: 'balloon-clicked' _Windows_
+### Event: 'balloon-click' _Windows_
 
 Emitted when the tray balloon is clicked.
 

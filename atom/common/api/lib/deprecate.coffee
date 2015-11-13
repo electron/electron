@@ -42,12 +42,15 @@ deprecate.property = (object, property, method) ->
 # Deprecate an event.
 deprecate.event = (emitter, oldName, newName, fn) ->
   warned = false
-  emitter.on newName, ->
+  emitter.on newName, (args...) ->
     if @listenerCount(oldName) > 0  # there is listeners for old API.
       unless warned or process.noDeprecation
         warned = true
         deprecate.warn "'#{oldName}' event", "'#{newName}' event"
-      fn.apply this, arguments
+      if fn?
+        fn.apply this, arguments
+      else
+        @emit oldName, args...
 
 # Print deprecate warning.
 deprecate.warn = (oldName, newName) ->
