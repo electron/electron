@@ -1,7 +1,7 @@
 {app, ipcMain, deprecate} = require 'electron'
 {EventEmitter} = require 'events'
 
-BrowserWindow = process.atomBinding('window').BrowserWindow
+{BrowserWindow} = process.atomBinding 'window'
 BrowserWindow::__proto__ = EventEmitter.prototype
 
 BrowserWindow::_init = ->
