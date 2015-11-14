@@ -33,8 +33,10 @@ Enables remote debugging over HTTP on the specified `port`.
 
 ## --proxy-server=`address:port`
 
-Use a specified proxy server, which overrides the system setting. This switch only
-affects HTTP and HTTPS requests.
+Use a specified proxy server, which overrides the system setting. This switch
+only affects requests with HTTP protocol, including HTTPS and WebSocket
+requests. It is also noteworthy that not all proxy servers support HTTPS and
+WebSocket requests.
 
 ## --proxy-pac-url=`url`
 
