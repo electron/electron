@@ -38,6 +38,9 @@ void FrameSubscriber::OnFrameDelivered(
   if (!result)
     return;
 
+  v8::Locker locker(isolate_);
+  v8::HandleScope handle_scope(isolate_);
+
   gfx::Rect rect = frame->visible_rect();
   size_t rgb_arr_size = rect.width() * rect.height() * 4;
   v8::MaybeLocal<v8::Object> buffer = node::Buffer::New(isolate_, rgb_arr_size);
@@ -56,8 +59,6 @@ void FrameSubscriber::OnFrameDelivered(
                            rect.width() * 4,
                            media::YV12);
 
-  v8::Locker locker(isolate_);
-  v8::HandleScope handle_scope(isolate_);
   callback_.Run(buffer.ToLocalChecked());
 }
 
