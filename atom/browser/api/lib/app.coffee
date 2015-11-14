@@ -1,5 +1,5 @@
-deprecate = require 'deprecate'
-EventEmitter = require('events').EventEmitter
+electron = require 'electron'
+{EventEmitter} = require 'events'
 
 bindings = process.atomBinding 'app'
 sessionBindings = process.atomBinding 'session'
@@ -9,10 +9,10 @@ app = bindings.app
 app.__proto__ = EventEmitter.prototype
 
 app.setApplicationMenu = (menu) ->
-  require('menu').setApplicationMenu menu
+  electron.Menu.setApplicationMenu menu
 
 app.getApplicationMenu = ->
-  require('menu').getApplicationMenu()
+  electron.Menu.getApplicationMenu()
 
 app.commandLine =
   appendSwitch: bindings.appendSwitch,
@@ -39,6 +39,7 @@ app.getAppPath = ->
 app.resolveProxy = (url, callback) -> @defaultSession.resolveProxy url, callback
 
 # Deprecated.
+{deprecate} = electron
 app.getHomeDir = deprecate 'app.getHomeDir', 'app.getPath', ->
   @getPath 'home'
 app.getDataPath = deprecate 'app.getDataPath', 'app.getPath', ->
@@ -62,10 +63,11 @@ wrapDownloadItem = (downloadItem) ->
   # downloadItem is an EventEmitter.
   downloadItem.__proto__ = EventEmitter.prototype
   # Deprecated.
-  deprecate.property downloadItem, 'url', 'getUrl'
+  deprecate.property downloadItem, 'url', 'getURL'
   deprecate.property downloadItem, 'filename', 'getFilename'
   deprecate.property downloadItem, 'mimeType', 'getMimeType'
   deprecate.property downloadItem, 'hasUserGesture', 'hasUserGesture'
+  deprecate.rename downloadItem, 'getUrl', 'getURL'
 downloadItemBindings._setWrapDownloadItem wrapDownloadItem
 
 # Only one App object pemitted.

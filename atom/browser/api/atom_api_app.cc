@@ -24,6 +24,7 @@
 #include "base/files/file_path.h"
 #include "base/path_service.h"
 #include "brightray/browser/brightray_paths.h"
+#include "chrome/common/chrome_paths.h"
 #include "content/public/browser/client_certificate_delegate.h"
 #include "content/public/browser/gpu_data_manager.h"
 #include "content/public/common/content_switches.h"
@@ -99,12 +100,22 @@ int GetPathConstant(const std::string& name) {
     return base::DIR_HOME;
   else if (name == "temp")
     return base::DIR_TEMP;
-  else if (name == "userDesktop")
+  else if (name == "userDesktop" || name == "desktop")
     return base::DIR_USER_DESKTOP;
   else if (name == "exe")
     return base::FILE_EXE;
   else if (name == "module")
     return base::FILE_MODULE;
+  else if (name == "documents")
+    return chrome::DIR_USER_DOCUMENTS;
+  else if (name == "downloads")
+    return chrome::DIR_DEFAULT_DOWNLOADS;
+  else if (name == "music")
+    return chrome::DIR_USER_MUSIC;
+  else if (name == "pictures")
+    return chrome::DIR_USER_PICTURES;
+  else if (name == "videos")
+    return chrome::DIR_USER_VIDEOS;
   else
     return -1;
 }

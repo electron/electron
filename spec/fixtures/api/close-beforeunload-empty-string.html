@@ -3,7 +3,7 @@
 <script type="text/javascript" charset="utf-8">
   window.onbeforeunload = function() {
     setTimeout(function() {
-      require('remote').getCurrentWindow().emit('onbeforeunload');
+      require('electron').remote.getCurrentWindow().emit('onbeforeunload');
     }, 0);
     return '';
   }

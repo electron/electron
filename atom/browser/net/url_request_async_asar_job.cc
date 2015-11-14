@@ -6,13 +6,13 @@
 
 namespace atom {
 
-UrlRequestAsyncAsarJob::UrlRequestAsyncAsarJob(
+URLRequestAsyncAsarJob::URLRequestAsyncAsarJob(
     net::URLRequest* request,
     net::NetworkDelegate* network_delegate)
     : JsAsker<asar::URLRequestAsarJob>(request, network_delegate) {
 }
 
-void UrlRequestAsyncAsarJob::StartAsync(scoped_ptr<base::Value> options) {
+void URLRequestAsyncAsarJob::StartAsync(scoped_ptr<base::Value> options) {
   base::FilePath::StringType file_path;
   if (options->IsType(base::Value::TYPE_DICTIONARY)) {
     static_cast<base::DictionaryValue*>(options.get())->GetString(

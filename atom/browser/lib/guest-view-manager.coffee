@@ -1,5 +1,5 @@
-ipc = require 'ipc-main'
-webContents = require 'web-contents'
+{ipcMain, webContents} = require 'electron'
+
 webViewManager = null  # Doesn't exist in early initialization.
 
 supportedWebViewEvents = [
@@ -79,7 +79,7 @@ createGuest = (embedder, params) ->
       opts = {}
       opts.httpReferrer = params.httpreferrer if params.httpreferrer
       opts.userAgent = params.useragent if params.useragent
-      @loadUrl params.src, opts
+      @loadURL params.src, opts
 
     if params.allowtransparency?
       @setAllowTransparency params.allowtransparency
@@ -122,7 +122,7 @@ attachGuest = (embedder, elementInstanceId, guestInstanceId, params) ->
     nodeIntegration: params.nodeintegration ? false
     plugins: params.plugins
     webSecurity: !params.disablewebsecurity
-  webPreferences.preloadUrl = params.preload if params.preload
+  webPreferences.preloadURL = params.preload if params.preload
   webViewManager.addGuest guestInstanceId, elementInstanceId, embedder, guest, webPreferences
 
   guest.attachParams = params
@@ -140,19 +140,19 @@ destroyGuest = (embedder, id) ->
     delete reverseEmbedderElementsMap[id]
     delete embedderElementsMap[key]
 
-ipc.on 'ATOM_SHELL_GUEST_VIEW_MANAGER_CREATE_GUEST', (event, params, requestId) ->
+ipcMain.on 'ATOM_SHELL_GUEST_VIEW_MANAGER_CREATE_GUEST', (event, params, requestId) ->
   event.sender.send "ATOM_SHELL_RESPONSE_#{requestId}", createGuest(event.sender, params)
 
-ipc.on 'ATOM_SHELL_GUEST_VIEW_MANAGER_ATTACH_GUEST', (event, elementInstanceId, guestInstanceId, params) ->
+ipcMain.on 'ATOM_SHELL_GUEST_VIEW_MANAGER_ATTACH_GUEST', (event, elementInstanceId, guestInstanceId, params) ->
   attachGuest event.sender, elementInstanceId, guestInstanceId, params
 
-ipc.on 'ATOM_SHELL_GUEST_VIEW_MANAGER_DESTROY_GUEST', (event, id) ->
+ipcMain.on 'ATOM_SHELL_GUEST_VIEW_MANAGER_DESTROY_GUEST', (event, id) ->
   destroyGuest event.sender, id
 
-ipc.on 'ATOM_SHELL_GUEST_VIEW_MANAGER_SET_SIZE', (event, id, params) ->
+ipcMain.on 'ATOM_SHELL_GUEST_VIEW_MANAGER_SET_SIZE', (event, id, params) ->
   guestInstances[id]?.guest.setSize params
 
-ipc.on 'ATOM_SHELL_GUEST_VIEW_MANAGER_SET_ALLOW_TRANSPARENCY', (event, id, allowtransparency) ->
+ipcMain.on 'ATOM_SHELL_GUEST_VIEW_MANAGER_SET_ALLOW_TRANSPARENCY', (event, id, allowtransparency) ->
   guestInstances[id]?.guest.setAllowTransparency allowtransparency
 
 # Returns WebContents from its guest id.

@@ -2,11 +2,10 @@ assert     = require 'assert'
 path       = require 'path'
 http       = require 'http'
 url        = require 'url'
-remote     = require 'remote'
 multiparty = require 'multiparty'
 
-crashReporter = remote.require 'crash-reporter'
-BrowserWindow = remote.require 'browser-window'
+{remote} = require 'electron'
+{app, crashReporter, BrowserWindow} = remote.require 'electron'
 
 describe 'crash-reporter module', ->
   fixtures = path.resolve __dirname, 'fixtures'
@@ -41,7 +40,7 @@ describe 'crash-reporter module', ->
         assert.equal fields['extra2'], 'extra2'
         assert.equal fields['_productName'], 'Zombies'
         assert.equal fields['_companyName'], 'Umbrella Corporation'
-        assert.equal fields['_version'], require('remote').require('app').getVersion()
+        assert.equal fields['_version'], app.getVersion()
 
         res.end('abc-123-def')
         done()
@@ -56,5 +55,5 @@ describe 'crash-reporter module', ->
         pathname: path.join fixtures, 'api', 'crash.html'
         search: "?port=#{port}"
       if process.platform is 'darwin'
-        crashReporter.start {'submitUrl': 'http://127.0.0.1:' + port}
-      w.loadUrl url
+        crashReporter.start {'submitURL': 'http://127.0.0.1:' + port}
+      w.loadURL url

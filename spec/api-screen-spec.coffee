@@ -1,5 +1,6 @@
 assert = require 'assert'
-screen = require 'screen'
+
+{screen} = require 'electron'
 
 describe 'screen module', ->
   describe 'screen.getCursorScreenPoint()', ->

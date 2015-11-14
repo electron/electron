@@ -1,1 +1,7 @@
-module.exports = process.atomBinding 'native_image'
+{deprecate} = require 'electron'
+nativeImage = process.atomBinding 'native_image'
+
+# Deprecated.
+deprecate.rename nativeImage, 'createFromDataUrl', 'createFromDataURL'
+
+module.exports = nativeImage

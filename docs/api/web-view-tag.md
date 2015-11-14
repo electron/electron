@@ -170,7 +170,7 @@ webview.addEventListener("dom-ready", function() {
 });
 ```
 
-### `<webview>.getUrl()`
+### `<webview>.getURL()`
 
 Returns URL of guest page.
 
@@ -402,7 +402,7 @@ Returns:
 
 * `errorCode` Integer
 * `errorDescription` String
-* `validatedUrl` String
+* `validatedURL` String
 
 This event is like `did-finish-load`, but fired when the load failed or was
 cancelled, e.g. `window.stop()` is invoked.
@@ -428,8 +428,8 @@ Corresponds to the points in time when the spinner of the tab stops spinning.
 Returns:
 
 * `status` Boolean
-* `newUrl` String
-* `originalUrl` String
+* `newURL` String
+* `originalURL` String
 * `httpResponseCode` Integer
 * `requestMethod` String
 * `referrer` String
@@ -442,8 +442,8 @@ Fired when details regarding a requested resource is available.
 
 Returns:
 
-* `oldUrl` String
-* `newUrl` String
+* `oldURL` String
+* `newURL` String
 * `isMainFrame` Boolean
 
 Fired when a redirect was received while requesting a resource.
@@ -466,7 +466,7 @@ url.
 
 Returns:
 
-* `favicons` Array - Array of Urls.
+* `favicons` Array - Array of URLs.
 
 Fired when page receives favicon urls.
 
@@ -515,7 +515,7 @@ The following example code opens the new url in system's default browser.
 
 ```javascript
 webview.addEventListener('new-window', function(e) {
-  require('shell').openExternal(e.url);
+  require('electron').shell.openExternal(e.url);
 });
 ```
 
@@ -555,9 +555,9 @@ webview.send('ping');
 
 ```javascript
 // In guest page.
-var ipc = require('ipc');
-ipc.on('ping', function() {
-  ipc.sendToHost('pong');
+var ipcRenderer = require('electron').ipcRenderer;
+ipcRenderer.on('ping', function() {
+  ipcRenderer.sendToHost('pong');
 });
 ```
 

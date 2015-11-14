@@ -86,7 +86,6 @@ To add a file to recent documents, you can use the
 [app.addRecentDocument][addrecentdocument] API:
 
 ```javascript
-var app = require('app');
 app.addRecentDocument('/Users/USERNAME/Desktop/work.type');
 ```
 
@@ -125,8 +124,10 @@ To set your custom dock menu, you can use the `app.dock.setMenu` API, which is
 only available on OS X:
 
 ```javascript
-var app = require('app');
-var Menu = require('menu');
+const electron = require('electron');
+const app = electron.app;
+const Menu = electron.Menu;
+
 var dockMenu = Menu.buildFromTemplate([
   { label: 'New Window', click: function() { console.log('New Window'); } },
   { label: 'New Window with Settings', submenu: [
@@ -172,7 +173,6 @@ To set user tasks for your application, you can use
 [app.setUserTasks][setusertaskstasks] API:
 
 ```javascript
-var app = require('app');
 app.setUserTasks([
   {
     program: process.execPath,
@@ -220,8 +220,9 @@ You can use [BrowserWindow.setThumbarButtons][setthumbarbuttons] to set
 thumbnail toolbar in your application:
 
 ```javascript
-var BrowserWindow = require('browser-window');
-var path = require('path');
+const BrowserWindow = require('electron').BrowserWindow;
+const path = require('path');
+
 var win = new BrowserWindow({
   width: 800,
   height: 600

@@ -11,15 +11,15 @@
 namespace atom {
 
 // Like URLRequestAsarJob, but asks the JavaScript handler for file path.
-class UrlRequestAsyncAsarJob : public JsAsker<asar::URLRequestAsarJob> {
+class URLRequestAsyncAsarJob : public JsAsker<asar::URLRequestAsarJob> {
  public:
-  UrlRequestAsyncAsarJob(net::URLRequest*, net::NetworkDelegate*);
+  URLRequestAsyncAsarJob(net::URLRequest*, net::NetworkDelegate*);
 
   // JsAsker:
   void StartAsync(scoped_ptr<base::Value> options) override;
 
  private:
-  DISALLOW_COPY_AND_ASSIGN(UrlRequestAsyncAsarJob);
+  DISALLOW_COPY_AND_ASSIGN(URLRequestAsyncAsarJob);
 };
 
 }  // namespace atom

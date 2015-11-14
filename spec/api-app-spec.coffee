@@ -1,7 +1,6 @@
 assert = require 'assert'
-remote = require 'remote'
-app = remote.require 'app'
-BrowserWindow = remote.require 'browser-window'
+{remote} = require 'electron'
+{app, BrowserWindow} = remote.require 'electron'
 
 describe 'app module', ->
   describe 'app.getVersion()', ->

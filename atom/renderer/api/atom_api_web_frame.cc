@@ -98,7 +98,7 @@ void WebFrame::RegisterURLSchemeAsSecure(const std::string& scheme) {
       blink::WebString::fromUTF8(scheme));
 }
 
-void WebFrame::RegisterURLSchemeAsBypassingCsp(const std::string& scheme) {
+void WebFrame::RegisterURLSchemeAsBypassingCSP(const std::string& scheme) {
   // Register scheme to bypass pages's Content Security Policy.
   blink::WebSecurityPolicy::registerURLSchemeAsBypassingContentSecurityPolicy(
       blink::WebString::fromUTF8(scheme));
@@ -129,11 +129,11 @@ mate::ObjectTemplateBuilder WebFrame::GetObjectTemplateBuilder(
                  &WebFrame::RegisterElementResizeCallback)
       .SetMethod("attachGuest", &WebFrame::AttachGuest)
       .SetMethod("setSpellCheckProvider", &WebFrame::SetSpellCheckProvider)
-      .SetMethod("registerUrlSchemeAsSecure",
+      .SetMethod("registerURLSchemeAsSecure",
                  &WebFrame::RegisterURLSchemeAsSecure)
-      .SetMethod("registerUrlSchemeAsBypassingCsp",
-                 &WebFrame::RegisterURLSchemeAsBypassingCsp)
-      .SetMethod("registerUrlSchemeAsPrivileged",
+      .SetMethod("registerURLSchemeAsBypassingCSP",
+                 &WebFrame::RegisterURLSchemeAsBypassingCSP)
+      .SetMethod("registerURLSchemeAsPrivileged",
                  &WebFrame::RegisterURLSchemeAsPrivileged);
 }
 
