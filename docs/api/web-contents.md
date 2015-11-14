@@ -207,7 +207,13 @@ See [session documentation](session.md) for this object's methods.
   * `extraHeaders` String - Extra headers separated by "\n"
 
 Loads the `url` in the window, the `url` must contain the protocol prefix,
-e.g. the `http://` or `file://`.
+e.g. the `http://` or `file://`. If the load should bypass http cache then
+use the `pragma` header to achieve it.
+
+```javascript
+const options = {"extraHeaders" : "pragma: no-cache\n"}
+webContents.loadURL(url, options)
+```
 
 ### `webContents.getURL()`
 
