@@ -16,7 +16,7 @@ the [HTML5 Notification API](https://notifications.spec.whatwg.org/), using
 the currently running operating system's native notification APIs to display it.
 
 ```javascript
-var myNotificiation = new Notification('Title', {
+var myNotification = new Notification('Title', {
   body: 'Lorem Ipsum Dolor Sit Amet'
 });
 
