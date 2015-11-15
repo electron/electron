@@ -181,7 +181,7 @@ $ ./Electron.app/Contents/MacOS/Electron your-app/
 
 ### 미리 작성된 앱 실행하기
 
-[`atom/electron-quick-start`](https://github.com/atom/electron-quick-start) 저장소를 클론하면 이 가이드에서 작성한 예제 앱을 바로 실행해 볼 수 있습니다.
+[`atom/electron-quick-start`](https://github.com/atom/electron-quick-start) 저장소를 클론하면 이 문서에서 작성한 예제 앱을 바로 실행해 볼 수 있습니다.
 
 **참고**: 이 예제를 실행시키려면 [Git](https://git-scm.com)과 [Node.js](https://nodejs.org/en/download/)가 필요합니다. (CLI에서 실행 가능한 [npm](https://npmjs.org)이 있어야 합니다)
 
