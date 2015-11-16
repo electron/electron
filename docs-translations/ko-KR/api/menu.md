@@ -11,9 +11,9 @@
 ```html
 <!-- index.html -->
 <script>
-var remote = require('remote');
-var Menu = remote.require('menu');
-var MenuItem = remote.require('menu-item');
+const remote = require('electron').remote;
+const Menu = remote.Menu;
+const MenuItem = remote.MenuItem;
 
 var menu = new Menu();
 menu.append(new MenuItem({ label: 'MenuItem1', click: function() { console.log('item 1 clicked'); } }));
@@ -130,14 +130,14 @@ var template = [
     submenu: [
       {
         label: 'Learn More',
-        click: function() { require('shell').openExternal('http://electron.atom.io') }
+        click: function() { require('electron').shell.openExternal('http://electron.atom.io') }
       },
     ]
   },
 ];
 
 if (process.platform == 'darwin') {
-  var name = require('app').getName();
+  var name = require('electron').app.getName();
   template.unshift({
     label: name,
     submenu: [

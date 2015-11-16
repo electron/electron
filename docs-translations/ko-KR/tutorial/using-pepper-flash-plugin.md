@@ -14,24 +14,9 @@ Electron에서 플래시 플러그인을 지원하기 위해선 이 두 가지�
 그리고 `browser-window`에 `plugins` 스위치도 추가해야합니다.
 
 ```javascript
-var app = require('app');
-var BrowserWindow = require('browser-window');
-
-// Report crashes to our server.
-require('crash-reporter').start();
-
-var mainWindow = null;
-
-// Quit when all windows are closed.
-app.on('window-all-closed', function() {
-  if (process.platform != 'darwin') {
-    app.quit();
-  }
-});
-
 // 플래시 플러그인의 위치를 설정합니다.
 // Windows의 경우, /path/to/pepflashplayer.dll
-// Mac의 경우, /path/to/PepperFlashPlayer.plugin
+// OS X의 경우, /path/to/PepperFlashPlayer.plugin
 // Linux의 경우, /path/to/libpepflashplayer.so
 app.commandLine.appendSwitch('ppapi-flash-path', '/path/to/libpepflashplayer.so');
 
@@ -46,7 +31,7 @@ app.on('ready', function() {
       'plugins': true
     }
   });
-  mainWindow.loadUrl('file://' + __dirname + '/index.html');
+  mainWindow.loadURL('file://' + __dirname + '/index.html');
   // Something else
 });
 ```

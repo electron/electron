@@ -22,13 +22,14 @@ $ git clone --recursive https://github.com/facebook/react-devtools.git
 그리고 개발자 콘솔에서 다음 코드를 입력하면 확장 기능을 로드할 수 있습니다:
 
 ```javascript
-require('remote').require('browser-window').addDevToolsExtension('/some-directory/react-devtools/shells/chrome');
+const BrowserWindow = require('electron').remote.BrowserWindow;
+BrowserWindow.addDevToolsExtension('/some-directory/react-devtools/shells/chrome');
 ```
 
 확장 기능을 언로드 하고 콘솔을 다시 열 때 해당 확장 기능이 로드되지 않도록 하려면 `BrowserWindow.removeDevToolsExtension` API를 사용하면 됩니다:
 
 ```javascript
-require('remote').require('browser-window').removeDevToolsExtension('React Developer Tools');
+BrowserWindow.removeDevToolsExtension('React Developer Tools');
 ```
 
 ## 개발자 콘솔 확장 기능의 구성 형식

@@ -31,32 +31,32 @@
 ### 메인 프로세스에서 사용할 수 있는 모듈:
 
 * [app](api/app.md)
-* [auto-updater](api/auto-updater.md)
-* [browser-window (0% 번역됨)](api/browser-window.md)
-* [content-tracing](api/content-tracing.md)
+* [autoUpdater](api/auto-updater.md)
+* [BrowserWindow (0% 번역됨)](api/browser-window.md)
+* [contentTracing](api/content-tracing.md)
 * [dialog](api/dialog.md)
-* [global-shortcut](api/global-shortcut.md)
-* [ipc-main](api/ipc-main.md)
-* [menu](api/menu.md)
-* [menu-item](api/menu-item.md)
-* [power-monitor](api/power-monitor.md)
-* [power-save-blocker](api/power-save-blocker.md)
+* [globalShortcut](api/global-shortcut.md)
+* [ipcMain](api/ipc-main.md)
+* [Menu](api/menu.md)
+* [MenuItem](api/menu-item.md)
+* [powerMonitor](api/power-monitor.md)
+* [powerSaveBlocker](api/power-save-blocker.md)
 * [protocol](api/protocol.md)
 * [session](api/session.md)
-* [web-contents (0% 번역됨)](api/web-contents.md)
-* [tray](api/tray.md)
+* [webContents (0% 번역됨)](api/web-contents.md)
+* [Tray](api/tray.md)
 
 ### 랜더러 프로세스에서 사용할 수 있는 모듈 (웹 페이지):
 
-* [ipc-renderer](api/ipc-renderer.md)
+* [ipcRenderer](api/ipc-renderer.md)
 * [remote](api/remote.md)
-* [web-frame](api/web-frame.md)
+* [webFrame](api/web-frame.md)
 
 ### 두 프로세스 모두 사용할 수 있는 모듈:
 
 * [clipboard](api/clipboard.md)
-* [crash-reporter](api/crash-reporter.md)
-* [native-image](api/native-image.md)
+* [crashReporter](api/crash-reporter.md)
+* [nativeImage](api/native-image.md)
 * [screen](api/screen.md)
 * [shell](api/shell.md)
 

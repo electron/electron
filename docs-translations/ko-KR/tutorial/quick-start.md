@@ -64,11 +64,12 @@ __알림__: 만약 `main` 필드가 `package.json`에 설정되어 있지 않으
 반드시 `main.js`에서 창을 만들고 시스템 이밴트를 처리해야합니다. 대표적인 예제로 다음과 같이 작성할 수 있습니다:
 
 ```javascript
-var app = require('app');  // 어플리케이션 기반을 조작 하는 모듈.
-var BrowserWindow = require('browser-window');  // 네이티브 브라우저 창을 만드는 모듈.
+const electron = require('electron');
+const app = electron.app;  // 어플리케이션 기반을 조작 하는 모듈.
+const BrowserWindow = electron.BrowserWindow;  // 네이티브 브라우저 창을 만드는 모듈.
 
 // Electron 개발자에게 crash-report를 보냄.
-require('crash-reporter').start();
+electron.crashReporter.start();
 
 // 윈도우 객체를 전역에 유지합니다. 만약 이렇게 하지 않으면
 // 자바스크립트 GC가 일어날 때 창이 멋대로 닫혀버립니다.
@@ -90,7 +91,7 @@ app.on('ready', function() {
   mainWindow = new BrowserWindow({width: 800, height: 600});
 
   // 그리고 현재 디렉터리의 index.html을 로드합니다.
-  mainWindow.loadUrl('file://' + __dirname + '/index.html');
+  mainWindow.loadURL('file://' + __dirname + '/index.html');
 
   // 개발자 콘솔을 엽니다.
   mainWindow.webContents.openDevTools();

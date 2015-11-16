@@ -4,9 +4,14 @@
 이 모듈은 웹 인터페이스를 포함하고 있지 않으며 크롬 브라우저에서 `chrome://tracing/` 페이지를 열어 생성된 파일을 로드하면 결과를 볼 수 있습니다.
 
 ```javascript
-var contentTracing = require('content-tracing');
+const contentTracing = require('electron').contentTracing;
 
-contentTracing.startRecording('*', contentTracing.DEFAULT_OPTIONS, function() {
+const options = {
+  categoryFilter: '*',
+  traceOptions: 'record-until-full,enable-sampling'
+};
+
+contentTracing.startRecording(options, function() {
   console.log('Tracing started');
 
   setTimeout(function() {
