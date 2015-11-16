@@ -1,27 +1,27 @@
-# Mac ¾Û ½ºÅä¾î ¾îÇÃ¸®ÄÉÀÌ¼Ç Á¦Ãâ °¡ÀÌµå
+# Mac ì•± ìŠ¤í† ì–´ ì–´í”Œë¦¬ì¼€ì´ì…˜ ì œì¶œ ê°€ì´ë“œ
 
-ElectronÀº v0.34.0 ¹öÀüºÎÅÍ ¾Û ÆÐÅ°Áö¸¦ Mac App Store(MAS)¿¡ Á¦ÃâÇÒ ¼ö ÀÖ°Ô µÇ¾ú½À´Ï´Ù.
-ÀÌ °¡ÀÌµå´Â ¾îÇÃ¸®ÄÉÀÌ¼ÇÀ» ¾Û ½ºÅä¾î¿¡ µî·ÏÇÏ´Â ¹æ¹ý°ú ºôµåÀÇ ÇÑ°è¿¡ ´ëÇÑ ¼³¸íÀ» Á¦°øÇÕ´Ï´Ù.
+Electronì€ v0.34.0 ë²„ì „ë¶€í„° ì•± íŒ¨í‚¤ì§€ë¥¼ Mac App Store(MAS)ì— ì œì¶œí•  ìˆ˜ ìžˆê²Œ ë˜ì—ˆìŠµë‹ˆë‹¤.
+ì´ ê°€ì´ë“œëŠ” ì–´í”Œë¦¬ì¼€ì´ì…˜ì„ ì•± ìŠ¤í† ì–´ì— ë“±ë¡í•˜ëŠ” ë°©ë²•ê³¼ ë¹Œë“œì˜ í•œê³„ì— ëŒ€í•œ ì„¤ëª…ì„ ì œê³µí•©ë‹ˆë‹¤.
 
-## ¾Û ½ºÅä¾î¿¡ ¾îÇÃ¸®ÄÉÀÌ¼ÇÀ» µî·ÏÇÏ´Â ¹æ¹ý
+## ì•± ìŠ¤í† ì–´ì— ì–´í”Œë¦¬ì¼€ì´ì…˜ì„ ë“±ë¡í•˜ëŠ” ë°©ë²•
 
-´ÙÀ½ ¸î °¡Áö °£´ÜÇÑ ÀýÂ÷¿¡ µû¶ó ¾Û ½ºÅä¾î¿¡ ¾îÇÃ¸®ÄÉÀÌ¼ÇÀ» µî·ÏÇÏ´Â ¹æ¹ýÀ» ¾Ë¾Æº¾´Ï´Ù.
-ÇÑ°¡Áö, ÀÌ ÀýÂ÷´Â Á¦ÃâÇÑ ¾ÛÀÌ Apple·ÎºÎÅÍ ½ÂÀÎµÈ´Ù´Â °ÍÀ» È®½ÅÇÏÁö ¾Ê½À´Ï´Ù.
-µû¶ó¼­ ¿©ÀüÈ÷ AppleÀÇ [Submitting Your App][submitting-your-app] °¡ÀÌµå¸¦ ¼÷ÁöÇÏ°í ÀÖ¾î¾ß ÇÏ¸ç
-¾Û ½ºÅä¾î Á¦Ãâ ¿ä±¸ »çÇ×À» È®½ÇÈ÷ ÀÎÁöÇÏ°í ÀÖ¾î¾ßÇÕ´Ï´Ù.
+ë‹¤ìŒ ëª‡ ê°€ì§€ ê°„ë‹¨í•œ ì ˆì°¨ì— ë”°ë¼ ì•± ìŠ¤í† ì–´ì— ì–´í”Œë¦¬ì¼€ì´ì…˜ì„ ë“±ë¡í•˜ëŠ” ë°©ë²•ì„ ì•Œì•„ë´…ë‹ˆë‹¤.
+í•œê°€ì§€, ì´ ì ˆì°¨ëŠ” ì œì¶œí•œ ì•±ì´ Appleë¡œë¶€í„° ìŠ¹ì¸ëœë‹¤ëŠ” ê²ƒì„ í™•ì‹ í•˜ì§€ ì•ŠìŠµë‹ˆë‹¤.
+ë”°ë¼ì„œ ì—¬ì „ížˆ Appleì˜ [Submitting Your App][submitting-your-app] ê°€ì´ë“œë¥¼ ìˆ™ì§€í•˜ê³  ìžˆì–´ì•¼ í•˜ë©°
+ì•± ìŠ¤í† ì–´ ì œì¶œ ìš”êµ¬ ì‚¬í•­ì„ í™•ì‹¤ížˆ ì¸ì§€í•˜ê³  ìžˆì–´ì•¼í•©ë‹ˆë‹¤.
 
-### ÀÎÁõ¼­ Ãëµæ
+### ì¸ì¦ì„œ ì·¨ë“
 
-¾Û ½ºÅä¾î¿¡ ¾îÇÃ¸®ÄÉÀÌ¼ÇÀ» Á¦ÃâÇÏ·Á¸é, ¸ÕÀú Apple·ÎºÎÅÍ ÀÎÁõ¼­¸¦ ÃëµæÇØ¾ß ÇÕ´Ï´Ù.
-Ãëµæ ¹æ¹ýÀº À¥¿¡¼­ Ã£¾Æº¼ ¼ö ÀÖ´Â [°¡ÀÌµå][nwjs-guide]¸¦ Âü°íÇÏ¸é µË´Ï´Ù.
+ì•± ìŠ¤í† ì–´ì— ì–´í”Œë¦¬ì¼€ì´ì…˜ì„ ì œì¶œí•˜ë ¤ë©´, ë¨¼ì € Appleë¡œë¶€í„° ì¸ì¦ì„œë¥¼ ì·¨ë“í•´ì•¼ í•©ë‹ˆë‹¤.
+ì·¨ë“ ë°©ë²•ì€ ì›¹ì—ì„œ ì°¾ì•„ë³¼ ìˆ˜ ìžˆëŠ” [ê°€ì´ë“œ][nwjs-guide]ë¥¼ ì°¸ê³ í•˜ë©´ ë©ë‹ˆë‹¤.
 
-### ¾Û¿¡ »çÀÎÇÏ±â
+### ì•±ì— ì‚¬ì¸í•˜ê¸°
 
-Apple·ÎºÎÅÍ ÀÎÁõ¼­¸¦ ÃëµæÇß´Ù¸é, [¾îÇÃ¸®ÄÉÀÌ¼Ç ¹èÆ÷](application-distribution.md) ¹®¼­¿¡ µû¶ó ¾îÇÃ¸®ÄÉÀÌ¼ÇÀ» ÆÐÅ°Â¡ÇÕ´Ï´Ù.
-±×¸®°í ¾îÇÃ¸®ÄÉÀÌ¼Ç¿¡ »çÀÎÀ» ÇÕ´Ï´Ù. ÀÌ ÀýÂ÷´Â ±âº»ÀûÀ¸·Î ´Ù¸¥ ÇÁ·Î±×·¥°ú °°½À´Ï´Ù.
-ÇÏÁö¸¸ Å°´Â Electron Á¾¼Ó¼º ÆÄÀÏ¿¡ °¢°¢ µû·Î »çÀÎ ÇØ¾ß ÇÕ´Ï´Ù.
+Appleë¡œë¶€í„° ì¸ì¦ì„œë¥¼ ì·¨ë“í–ˆë‹¤ë©´, [ì–´í”Œë¦¬ì¼€ì´ì…˜ ë°°í¬](application-distribution.md) ë¬¸ì„œì— ë”°ë¼ ì–´í”Œë¦¬ì¼€ì´ì…˜ì„ íŒ¨í‚¤ì§•í•©ë‹ˆë‹¤.
+ê·¸ë¦¬ê³  ì–´í”Œë¦¬ì¼€ì´ì…˜ì— ì‚¬ì¸ì„ í•©ë‹ˆë‹¤. ì´ ì ˆì°¨ëŠ” ê¸°ë³¸ì ìœ¼ë¡œ ë‹¤ë¥¸ í”„ë¡œê·¸ëž¨ê³¼ ê°™ìŠµë‹ˆë‹¤.
+í•˜ì§€ë§Œ í‚¤ëŠ” Electron ì¢…ì†ì„± íŒŒì¼ì— ê°ê° ë”°ë¡œ ì‚¬ì¸ í•´ì•¼ í•©ë‹ˆë‹¤.
 
-Ã¹¹øÂ°, ´ÙÀ½ µÎ ÀÚ°Ý(plist) ÆÄÀÏÀ» ÁØºñÇÕ´Ï´Ù.
+ì²«ë²ˆì§¸, ë‹¤ìŒ ë‘ ìžê²©(plist) íŒŒì¼ì„ ì¤€ë¹„í•©ë‹ˆë‹¤.
 
 `child.plist`:
 
@@ -51,18 +51,18 @@ Apple·ÎºÎÅÍ ÀÎÁõ¼­¸¦ ÃëµæÇß´Ù¸é, [¾îÇÃ¸®ÄÉÀÌ¼Ç ¹èÆ÷](application-distribution.md
 </plist>
 ```
 
-±×¸®°í ´ÙÀ½ ½ºÅ©¸³Æ®¿¡ µû¶ó ¾îÇÃ¸®ÄÉÀÌ¼Ç¿¡ »çÀÎÇÕ´Ï´Ù:
+ê·¸ë¦¬ê³  ë‹¤ìŒ ìŠ¤í¬ë¦½íŠ¸ì— ë”°ë¼ ì–´í”Œë¦¬ì¼€ì´ì…˜ì— ì‚¬ì¸í•©ë‹ˆë‹¤:
 
 ```bash
 #!/bin/bash
 
-# ¾îÇÃ¸®ÄÉÀÌ¼ÇÀÇ ÀÌ¸§
+# ì–´í”Œë¦¬ì¼€ì´ì…˜ì˜ ì´ë¦„
 APP="YourApp"
-# »çÀÎÇÒ ¾îÇÃ¸®ÄÉÀÌ¼ÇÀÇ °æ·Î
+# ì‚¬ì¸í•  ì–´í”Œë¦¬ì¼€ì´ì…˜ì˜ ê²½ë¡œ
 APP_PATH="/path/to/YouApp.app"
-# »çÀÎµÈ ÆÐÅ°ÁöÀÇ Ãâ·Â °æ·Î
+# ì‚¬ì¸ëœ íŒ¨í‚¤ì§€ì˜ ì¶œë ¥ ê²½ë¡œ
 RESULT_PATH="~/Desktop/$APP.pkg"
-# ¿äÃ»ÇÑ ÀÎÁõ¼­ÀÇ ÀÌ¸§
+# ìš”ì²­í•œ ì¸ì¦ì„œì˜ ì´ë¦„
 APP_KEY="3rd Party Mac Developer Application: Company Name (APPIDENTITY)"
 INSTALLER_KEY="3rd Party Mac Developer Installer: Company Name (APPIDENTITY)"
 
@@ -78,30 +78,30 @@ codesign  -fs "$APP_KEY" --entitlements parent.plist "$APP_PATH"
 productbuild --component "$APP_PATH" /Applications --sign "$INSTALLER_KEY" "$RESULT_PATH"
 ```
 
-¸¸¾à OS XÀÇ »÷µå¹Ú½º °³³ä¿¡ ´ëÇØ Ã³À½ Á¢ÇÑ´Ù¸é AppleÀÇ [Enabling App Sandbox][enable-app-sandbox] ¹®¼­¸¦
-Âü°íÇÏ¿© ±âº»ÀûÀÎ °³³äÀ» ÀÌÇØÇØ¾ß ÇÕ´Ï´Ù. ±×¸®°í ÀÚ°Ý(plist) ÆÄÀÏ¿¡ ¾îÇÃ¸®ÄÉÀÌ¼Ç¿¡¼­ ¿ä±¸ÇÏ´Â ±ÇÇÑÀÇ Å°¸¦ Ãß°¡ÇÕ´Ï´Ù.
+ë§Œì•½ OS Xì˜ ìƒŒë“œë°•ìŠ¤ ê°œë…ì— ëŒ€í•´ ì²˜ìŒ ì ‘í•œë‹¤ë©´ Appleì˜ [Enabling App Sandbox][enable-app-sandbox] ë¬¸ì„œë¥¼
+ì°¸ê³ í•˜ì—¬ ê¸°ë³¸ì ì¸ ê°œë…ì„ ì´í•´í•´ì•¼ í•©ë‹ˆë‹¤. ê·¸ë¦¬ê³  ìžê²©(plist) íŒŒì¼ì— ì–´í”Œë¦¬ì¼€ì´ì…˜ì—ì„œ ìš”êµ¬í•˜ëŠ” ê¶Œí•œì˜ í‚¤ë¥¼ ì¶”ê°€í•©ë‹ˆë‹¤.
 
-### ¾îÇÃ¸®ÄÉÀÌ¼ÇÀ» ¾÷·ÎµåÇÏ°í ¸®ºä¿ë ¾ÛÀ¸·Î Á¦Ãâ
+### ì–´í”Œë¦¬ì¼€ì´ì…˜ì„ ì—…ë¡œë“œí•˜ê³  ë¦¬ë·°ìš© ì•±ìœ¼ë¡œ ì œì¶œ
 
-¾îÇÃ¸®ÄÉÀÌ¼Ç »çÀÎÀ» ¿Ï·áÇÑ ÈÄ iTunes Connect¿¡ ¾÷·ÎµåÇÏ±â À§ÇØ Application Loader¸¦ »ç¿ëÇÒ ¼ö ÀÖ½À´Ï´Ù.
-Âü°í·Î ¾÷·ÎµåÇÏ±â Àü¿¡ [·¹ÄÚµå][create-record]¸¦ ¸¸µé¾ú´ÂÁö È®ÀÎÇØ¾ß ÇÕ´Ï´Ù.
-±×¸®°í [¸®ºä¿ë ¾ÛÀ» Á¦Ãâ][submit-for-review]ÇÒ ¼ö ÀÖ½À´Ï´Ù.
+ì–´í”Œë¦¬ì¼€ì´ì…˜ ì‚¬ì¸ì„ ì™„ë£Œí•œ í›„ iTunes Connectì— ì—…ë¡œë“œí•˜ê¸° ìœ„í•´ Application Loaderë¥¼ ì‚¬ìš©í•  ìˆ˜ ìžˆìŠµë‹ˆë‹¤.
+ì°¸ê³ ë¡œ ì—…ë¡œë“œí•˜ê¸° ì „ì— [ë ˆì½”ë“œ][create-record]ë¥¼ ë§Œë“¤ì—ˆëŠ”ì§€ í™•ì¸í•´ì•¼ í•©ë‹ˆë‹¤.
+ê·¸ë¦¬ê³  [ë¦¬ë·°ìš© ì•±ì„ ì œì¶œ][submit-for-review]í•  ìˆ˜ ìžˆìŠµë‹ˆë‹¤.
 
-## MAS ºôµåÀÇ ÇÑ°è
+## MAS ë¹Œë“œì˜ í•œê³„
 
-¸ðµç ¾îÇÃ¸®ÄÉÀÌ¼Ç »÷µå¹Ú½º¿¡ ´ëÇÑ ¿ä±¸ »çÇ×À» ÃæÁ·½ÃÅ°±â À§ÇØ, ´ÙÀ½ ¸ðµâµéÀº MAS ºôµå¿¡¼­ ºñÈ°¼ºÈ­µË´Ï´Ù:
+ëª¨ë“  ì–´í”Œë¦¬ì¼€ì´ì…˜ ìƒŒë“œë°•ìŠ¤ì— ëŒ€í•œ ìš”êµ¬ ì‚¬í•­ì„ ì¶©ì¡±ì‹œí‚¤ê¸° ìœ„í•´, ë‹¤ìŒ ëª¨ë“ˆë“¤ì€ MAS ë¹Œë“œì—ì„œ ë¹„í™œì„±í™”ë©ë‹ˆë‹¤:
 
 * `crash-reporter`
 * `auto-updater`
 
-±×¸®°í ´ÙÀ½ µ¿ÀÛÀ¸·Î ´ëÃ¼µË´Ï´Ù:
+ê·¸ë¦¬ê³  ë‹¤ìŒ ë™ìž‘ìœ¼ë¡œ ëŒ€ì²´ë©ë‹ˆë‹¤:
 
-* ºñµð¿À Ä¸ÃÄ ±â´ÉÀº ¸î¸î ÀåÄ¡¿¡¼­ ÀÛµ¿ÇÏÁö ¾ÊÀ» ¼ö ÀÖ½À´Ï´Ù.
-* Æ¯Á¤ Á¢±Ù¼º ±â´ÉÀÌ ÀÛµ¿ÇÏÁö ¾ÊÀ» ¼ö ÀÖ½À´Ï´Ù.
-* ¾îÇÃ¸®ÄÉÀÌ¼ÇÀÌ DNSÀÇ º¯°æÀ» °¨ÁöÇÏÁö ¸øÇÒ ¼ö ÀÖ½À´Ï´Ù.
+* ë¹„ë””ì˜¤ ìº¡ì³ ê¸°ëŠ¥ì€ ëª‡ëª‡ ìž¥ì¹˜ì—ì„œ ìž‘ë™í•˜ì§€ ì•Šì„ ìˆ˜ ìžˆìŠµë‹ˆë‹¤.
+* íŠ¹ì • ì ‘ê·¼ì„± ê¸°ëŠ¥ì´ ìž‘ë™í•˜ì§€ ì•Šì„ ìˆ˜ ìžˆìŠµë‹ˆë‹¤.
+* ì–´í”Œë¦¬ì¼€ì´ì…˜ì´ DNSì˜ ë³€ê²½ì„ ê°ì§€í•˜ì§€ ëª»í•  ìˆ˜ ìžˆìŠµë‹ˆë‹¤.
 
-¶ÇÇÑ ¾îÇÃ¸®ÄÉÀÌ¼Ç »÷µå¹Ú½º »ç¿ëÀ¸·Î ÀÎÇØ ¾îÇÃ¸®ÄÉÀÌ¼Ç¿¡¼­ Á¢±ÙÇÒ ¼ö ÀÖ´Â ¸®¼Ò½º´Â ¾ö°ÝÇÏ°Ô Á¦ÇÑµÇ¾î ÀÖ½À´Ï´Ù.
-ÀÚ¼¼ÇÑ »çÇ×Àº [App Sandboxing][app-sandboxing] ¹®¼­¸¦ Âü°íÇÏ¼¼¿ä.
+ë˜í•œ ì–´í”Œë¦¬ì¼€ì´ì…˜ ìƒŒë“œë°•ìŠ¤ ì‚¬ìš©ìœ¼ë¡œ ì¸í•´ ì–´í”Œë¦¬ì¼€ì´ì…˜ì—ì„œ ì ‘ê·¼í•  ìˆ˜ ìžˆëŠ” ë¦¬ì†ŒìŠ¤ëŠ” ì—„ê²©í•˜ê²Œ ì œí•œë˜ì–´ ìžˆìŠµë‹ˆë‹¤.
+ìžì„¸í•œ ì‚¬í•­ì€ [App Sandboxing][app-sandboxing] ë¬¸ì„œë¥¼ ì°¸ê³ í•˜ì„¸ìš”.
 
 [submitting-your-app]: https://developer.apple.com/library/mac/documentation/IDEs/Conceptual/AppDistributionGuide/SubmittingYourApp/SubmittingYourApp.html
 [nwjs-guide]: https://github.com/nwjs/nw.js/wiki/Mac-App-Store-%28MAS%29-Submission-Guideline#first-steps
