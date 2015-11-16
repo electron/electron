@@ -39,7 +39,7 @@ $ npm install selenium-webdriver
 한가지 다른점이 있다면 수동으로 크롬 드라이버 연결에 대해 설정하고 Electron 실행파일의 위치를 전달합니다:
 
 ```javascript
-var webdriver = require('selenium-webdriver');
+const webdriver = require('selenium-webdriver');
 
 var driver = new webdriver.Builder()
   // 작동하고 있는 크롬 드라이버의 포트 "9515"를 사용합니다.
@@ -89,7 +89,7 @@ $ npm install webdriverio
 
 ### 3. 크롬 드라이버에 연결
 ```javascript
-var webdriverio = require('webdriverio');
+const webdriverio = require('webdriverio');
 var options = {
     host: "localhost", // localhost에서 작동중인 크롬 드라이버 서버를 사용합니다.
     port: 9515,        // 연결할 크롬 드라이버 서버의 포트를 설정합니다.

@@ -5,11 +5,12 @@
 다음 예제는 `file://` 프로토콜과 비슷한 일을 하는 커스텀 프로토콜을 설정합니다:
 
 ```javascript
-var app = require('app');
-var path = require('path');
+const electron = require('electron');
+const app = electron.app;
+const path = require('path');
 
 app.on('ready', function() {
-    var protocol = require('protocol');
+    var protocol = electron.protocol;
     protocol.registerFileProtocol('atom', function(request, callback) {
       var url = request.url.substr(7);
       callback({path: path.normalize(__dirname + '/' + url)});

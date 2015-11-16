@@ -5,7 +5,7 @@
 어플리케이션 내부에서 스위치들을 추가할 수 있습니다:
 
 ```javascript
-var app = require('app');
+const app = require('electron').app;
 app.commandLine.appendSwitch('remote-debugging-port', '8315');
 app.commandLine.appendSwitch('host-rules', 'MAP * 127.0.0.1');
 
@@ -28,7 +28,16 @@ HTTP 요청 캐시를 비활성화 합니다.
 
 ## --remote-debugging-port=`port`
 
-지정한 `port`에 HTTP기반의 리모트 디버거를 활성화 시킵니다. (개발자 콘솔)
+지정한 `port`에 HTTP 기반의 리모트 디버거를 활성화 시킵니다. (개발자 콘솔)
+
+## --js-flags=`flags`
+
+JS 엔진에 지정한 플래그를 전달합니다.
+`flags`를 메인 프로세스에서 활성화하고자 한다면, Electron이 시작되기 전에 스위치를 전달해야 합니다.
+
+```bash
+$ electron --js-flags="--harmony_proxies --harmony_collections" your-app
+```
 
 ## --proxy-server=`address:port`
 

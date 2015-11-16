@@ -35,7 +35,7 @@ __3. Node Integration__
 In NW.js, the Node integration in web pages requires patching Chromium to
 work, while in Electron we chose a different way to integrate the libuv loop
 with each platform's message loop to avoid hacking Chromium. See the
-[`node_bindings`](../../atom/common/) code for how that was done.
+[`node_bindings`](../../../atom/common/) code for how that was done.
 
 __4. Multi-context__
 

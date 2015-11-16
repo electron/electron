@@ -62,7 +62,7 @@ Returns:
 * `releaseNotes` String
 * `releaseName` String
 * `releaseDate` Date
-* `updateUrl` String
+* `updateURL` String
 
 업데이트의 다운로드가 완료되었을 때 발생하는 이벤트입니다.
 
@@ -70,7 +70,7 @@ Returns:
 
 `autoUpdater` 객체에서 사용할 수 있는 메서드입니다:
 
-### `autoUpdater.setFeedUrl(url)`
+### `autoUpdater.setFeedURL(url)`
 
 * `url` String
 
@@ -78,7 +78,7 @@ Returns:
 
 ### `autoUpdater.checkForUpdates()`
 
-서버에 새로운 업데이트가 있는지 요청을 보내 확인합니다. API를 사용하기 전에 `setFeedUrl`를 호출해야 합니다.
+서버에 새로운 업데이트가 있는지 요청을 보내 확인합니다. API를 사용하기 전에 `setFeedURL`를 호출해야 합니다.
 
 ### `autoUpdater.quitAndInstall()`
 

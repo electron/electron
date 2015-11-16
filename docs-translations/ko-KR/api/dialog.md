@@ -7,7 +7,7 @@
 
 ```javascript
 var win = ...;  // 대화 상자를 사용할 BrowserWindow 객체
-var dialog = require('dialog');
+const dialog = require('electron').dialog;
 console.log(dialog.showOpenDialog({ properties: [ 'openFile', 'openDirectory', 'multiSelections' ]}));
 ```
 

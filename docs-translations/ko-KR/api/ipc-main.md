@@ -16,25 +16,25 @@
 
 ```javascript
 // 메인 프로세스
-var ipc = require('ipc');
+const ipcMain = require('electron').ipcMain;
 ipc.on('asynchronous-message', function(event, arg) {
-  console.log(arg);  // prints "ping"
+  console.log(arg);  // "ping" 출력
   event.sender.send('asynchronous-reply', 'pong');
 });
 
 ipc.on('synchronous-message', function(event, arg) {
-  console.log(arg);  // prints "ping"
+  console.log(arg);  // "ping" 출력
   event.returnValue = 'pong';
 });
 ```
 
 ```javascript
 // 랜더러 프로세스 (웹 페이지)
-var ipc = require('ipc');
-console.log(ipc.sendSync('synchronous-message', 'ping')); // prints "pong"
+const ipcRenderer = require('electron').ipcRenderer;
+console.log(ipc.sendSync('synchronous-message', 'ping')); // "pong" 출력
 
 ipc.on('asynchronous-reply', function(arg) {
-  console.log(arg); // prints "pong"
+  console.log(arg); // "pong" 출력
 });
 ipc.send('asynchronous-message', 'ping');
 ```

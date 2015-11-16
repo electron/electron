@@ -5,13 +5,14 @@
 _main.js_
 
 ```javascript
-var app = require('app');
-var BrowserWindow = require('browser-window');
-var onlineStatusWindow;
+const electron = require('electron');
+const app = electron.app;
+const BrowserWindow = electron.BrowserWindow;
 
+var onlineStatusWindow;
 app.on('ready', function() {
   onlineStatusWindow = new BrowserWindow({ width: 0, height: 0, show: false });
-  onlineStatusWindow.loadUrl('file://' + __dirname + '/online-status.html');
+  onlineStatusWindow.loadURL('file://' + __dirname + '/online-status.html');
 });
 ```
 
@@ -43,14 +44,15 @@ _online-status.html_
 _main.js_
 
 ```javascript
-var app = require('app');
-var ipcMain = require('ipc-main');
-var BrowserWindow = require('browser-window');
-var onlineStatusWindow;
+const electron = require('electron');
+const app = electron.app;
+const ipcMain = electron.ipcMain;
+const BrowserWindow = electron.BrowserWindow;
 
+var onlineStatusWindow;
 app.on('ready', function() {
   onlineStatusWindow = new BrowserWindow({ width: 0, height: 0, show: false });
-  onlineStatusWindow.loadUrl('file://' + __dirname + '/online-status.html');
+  onlineStatusWindow.loadURL('file://' + __dirname + '/online-status.html');
 });
 
 ipcMain.on('online-status-changed', function(event, status) {
@@ -65,7 +67,7 @@ _online-status.html_
 <html>
 <body>
 <script>
-  var ipcRenderer = require('ipc-renderer');
+  const ipcRenderer = require('electron').ipcRenderer;
   var updateOnlineStatus = function() {
     ipcRenderer.send('online-status-changed', navigator.onLine ? 'online' : 'offline');
   };
