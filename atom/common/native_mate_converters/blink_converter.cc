@@ -159,10 +159,17 @@ bool Converter<blink::WebKeyboardEvent>::FromV8(
   if (!ConvertFromV8(isolate, val, static_cast<blink::WebInputEvent*>(out)))
     return false;
   base::char16 code;
-  if (!dict.Get("keyCode", &code))
-    return false;
+  std::string identifier;
   bool shifted = false;
-  out->windowsKeyCode = atom::KeyboardCodeFromCharCode(code, &shifted);
+
+  if (dict.Get("keyCode", &code))
+    out->windowsKeyCode = atom::KeyboardCodeFromCharCode(code, &shifted);
+  else if (dict.Get("keyCode", &identifier))
+    out->windowsKeyCode = atom::KeyboardCodeFromKeyIdentifier(
+      base::StringToLowerASCII(identifier));
+  else
+    return false;
+
   if (shifted)
     out->modifiers |= blink::WebInputEvent::ShiftKey;
   out->setKeyIdentifierFromWindowsKeyCode();
