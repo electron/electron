@@ -12,7 +12,7 @@ Electron은 HTML5 Notification API](https://notifications.spec.whatwg.org/)를 �
 편리하게 데스크톱 알림을 사용할 수 있는 기능을 제공합니다. 데스크톱 알림은 운영체제의 네이티브 알림 API를 사용하여 표시합니다.
 
 ```javascript
-var myNotificiation = new Notification('Title', {
+var myNotification = new Notification('Title', {
   body: 'Lorem Ipsum Dolor Sit Amet'
 });
 

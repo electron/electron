@@ -1,6 +1,6 @@
 # Electron이 NW.js(node-webkit)와 기술적으로 다른점
 
-__주의: Electron은 Atom Shell의 새로운 이름입니다.__
+__참고: Electron은 Atom Shell의 새로운 이름입니다.__
 
 NW.js 처럼 Electron은 JavaScript와 HTML 그리고 Node 통합 환경을 제공함으로써
 웹 페이지에서 저 수준 시스템에 접근할 수 있도록 하여 웹 기반 데스크탑 어플리케이션을 작성할 수 있도록 하는 프레임워크 입니다.
@@ -26,7 +26,7 @@ Chromium의 Content API에 접근합니다. libchromiumcontent은 단일 공유 
 __3. Node 통합__
 
 NW.js는 웹 페이지에서 require를 사용할 수 있도록 Chromium을 패치했습니다. 한편 Electron은 Chromium의 해킹을 방지하기 위해 libuv loop와 각 플랫폼의 메시지 루프에 통합하는 등의 다른 방법을 채택하였습니다.
-[`node_bindings`](../../atom/common/) 코드를 보면 이 부분이 어떻게 구현됬는지를 알 수 있습니다.
+[`node_bindings`](../../../atom/common/) 코드를 보면 이 부분이 어떻게 구현됬는지를 알 수 있습니다.
 
 __4. 다중 컨텍스트__
 
