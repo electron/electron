@@ -27,6 +27,9 @@ using DesktopToastActivatedEventHandler =
 using DesktopToastDismissedEventHandler =
     ABI::Windows::Foundation::ITypedEventHandler<ABI::Windows::UI::Notifications::ToastNotification*,
     ABI::Windows::UI::Notifications::ToastDismissedEventArgs*>;
+using DesktopToastFailedEventHandler =
+    ABI::Windows::Foundation::ITypedEventHandler<ABI::Windows::UI::Notifications::ToastNotification*,
+    ABI::Windows::UI::Notifications::ToastFailedEventArgs*>;
 
 class WindowsToastNotification {
  public:
@@ -49,6 +52,7 @@ class WindowsToastNotification {
 
   void NotificationClicked();
   void NotificationDismissed();
+  void NotificationFailed();
 
   bool GetToastXml(ABI::Windows::UI::Notifications::IToastNotificationManagerStatics* toastManager,
                    const std::wstring& title,
@@ -85,13 +89,15 @@ class WindowsToastNotification {
 
 class ToastEventHandler : public RuntimeClass<RuntimeClassFlags<ClassicCom>,
                                               DesktopToastActivatedEventHandler,
-                                              DesktopToastDismissedEventHandler> {
+                                              DesktopToastDismissedEventHandler,
+                                              DesktopToastFailedEventHandler> {
  public:
   ToastEventHandler(WindowsToastNotification* notification);
   ~ToastEventHandler();
 
   IFACEMETHODIMP Invoke(ABI::Windows::UI::Notifications::IToastNotification* sender, IInspectable* args);
   IFACEMETHODIMP Invoke(ABI::Windows::UI::Notifications::IToastNotification* sender, ABI::Windows::UI::Notifications::IToastDismissedEventArgs* e);
+  IFACEMETHODIMP Invoke(ABI::Windows::UI::Notifications::IToastNotification* sender, ABI::Windows::UI::Notifications::IToastFailedEventArgs* e);
 
  private:
   WindowsToastNotification* notification_;  // weak ref.

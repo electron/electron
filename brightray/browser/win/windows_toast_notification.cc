@@ -85,6 +85,11 @@ void WindowsToastNotification::NotificationDismissed() {
   delete this;
 }
 
+void WindowsToastNotification::NotificationFailed() {
+  delegate_->NotificationError();
+  delete this;
+}
+
 bool WindowsToastNotification::GetToastXml(
     ABI::Windows::UI::Notifications::IToastNotificationManagerStatics* toastManager,
     const std::wstring& title,
@@ -231,12 +236,15 @@ bool WindowsToastNotification::AppendTextToXml(
 }
 
 bool WindowsToastNotification::SetupCallbacks(ABI::Windows::UI::Notifications::IToastNotification* toast) {
-  EventRegistrationToken activatedToken, dismissedToken;
+  EventRegistrationToken activatedToken, dismissedToken, failedToken;
   event_handler_ = Make<ToastEventHandler>(this);
   if (FAILED(toast->add_Activated(event_handler_.Get(), &activatedToken)))
     return false;
 
-  return SUCCEEDED(toast->add_Dismissed(event_handler_.Get(), &dismissedToken));
+  if (FAILED(toast->add_Dismissed(event_handler_.Get(), &dismissedToken)))
+    return false;
+
+  return SUCCEEDED(toast->add_Failed(event_handler_.Get(), &failedToken));
 }
 
 /*
@@ -259,6 +267,13 @@ IFACEMETHODIMP ToastEventHandler::Invoke(
     ABI::Windows::UI::Notifications::IToastNotification* sender,
     ABI::Windows::UI::Notifications::IToastDismissedEventArgs* e) {
   notification_->NotificationDismissed();
+  return S_OK;
+}
+
+IFACEMETHODIMP ToastEventHandler::Invoke(
+    ABI::Windows::UI::Notifications::IToastNotification* sender,
+    ABI::Windows::UI::Notifications::IToastFailedEventArgs* e) {
+  notification_->NotificationFailed();
   return S_OK;
 }
 
