@@ -81,11 +81,11 @@ productbuild --component "$APP_PATH" /Applications --sign "$INSTALLER_KEY" "$RES
 만약 OS X의 샌드박스 개념에 대해 처음 접한다면 Apple의 [Enabling App Sandbox][enable-app-sandbox] 문서를
 참고하여 기본적인 개념을 이해해야 합니다. 그리고 자격(plist) 파일에 어플리케이션에서 요구하는 권한의 키를 추가합니다.
 
-### 어플리케이션을 업로드하고 리뷰용 앱으로 제출
+### 어플리케이션을 업로드하고 심사용 앱으로 제출
 
 어플리케이션 사인을 완료한 후 iTunes Connect에 업로드하기 위해 Application Loader를 사용할 수 있습니다.
 참고로 업로드하기 전에 [레코드][create-record]를 만들었는지 확인해야 합니다.
-그리고 [리뷰용 앱을 제출][submit-for-review]할 수 있습니다.
+그리고 [심사를 위해 앱을 제출][submit-for-review]할 수 있습니다.
 
 ## MAS 빌드의 한계
 
@@ -102,6 +102,8 @@ productbuild --component "$APP_PATH" /Applications --sign "$INSTALLER_KEY" "$RES
 
 또한 어플리케이션 샌드박스 사용으로 인해 어플리케이션에서 접근할 수 있는 리소스는 엄격하게 제한되어 있습니다.
 자세한 사항은 [App Sandboxing][app-sandboxing] 문서를 참고하세요.
+
+**역주:** [Mac 앱 배포 가이드 공식 문서](https://developer.apple.com/osx/distribution/kr/)
 
 [submitting-your-app]: https://developer.apple.com/library/mac/documentation/IDEs/Conceptual/AppDistributionGuide/SubmittingYourApp/SubmittingYourApp.html
 [nwjs-guide]: https://github.com/nwjs/nw.js/wiki/Mac-App-Store-%28MAS%29-Submission-Guideline#first-steps
