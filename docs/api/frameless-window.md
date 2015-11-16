@@ -9,7 +9,7 @@ To create a frameless window, you need to set `frame` to `false` in
 
 
 ```javascript
-var BrowserWindow = require('browser-window');
+const BrowserWindow = require('electron').BrowserWindow;
 var win = new BrowserWindow({ width: 800, height: 600, frame: false });
 ```
 
@@ -23,8 +23,7 @@ the window controls ("traffic lights") for standard window actions.
 You can do so by specifying the new `title-bar-style` option:
 
 ```javascript
-var BrowserWindow = require('browser-window');
-var win = new BrowserWindow({ width: 800, height: 600, 'title-bar-style': 'hidden' });
+var win = new BrowserWindow({ 'title-bar-style': 'hidden' });
 ```
 
 ## Transparent window

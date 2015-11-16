@@ -1,7 +1,12 @@
-switch process.platform
-  when 'win32'
-    module.exports = require './auto-updater/auto-updater-win'
-  when 'darwin'
-    module.exports = require './auto-updater/auto-updater-mac'
+{deprecate} = require 'electron'
+
+autoUpdater =
+  if process.platform is 'win32'
+    require './auto-updater/auto-updater-win'
   else
-    throw new Error('auto-updater is not implemented on this platform')
+    require './auto-updater/auto-updater-native'
+
+# Deprecated.
+deprecate.rename autoUpdater, 'setFeedUrl', 'setFeedURL'
+
+module.exports = autoUpdater

@@ -6,7 +6,7 @@
 
 namespace atom {
 
-namespace switches {
+namespace options {
 
 const char kTitle[]      = "title";
 const char kIcon[]       = "icon";
@@ -77,7 +77,7 @@ const char kZoomFactor[] = "zoomFactor";
 const char kPreloadScript[] = "preload";
 
 // Like --preload, but the passed argument is an URL.
-const char kPreloadUrl[] = "preloadUrl";
+const char kPreloadURL[] = "preloadURL";
 
 // Enable the node integration.
 const char kNodeIntegration[] = "nodeIntegration";
@@ -85,12 +85,22 @@ const char kNodeIntegration[] = "nodeIntegration";
 // Instancd ID of guest WebContents.
 const char kGuestInstanceID[] = "guestInstanceId";
 
+// Set page visiblity to always visible.
+const char kPageVisibility[] = "pageVisibility";
+
+// Enable DirectWrite on Windows.
+const char kDirectWrite[] = "directWrite";
+
 // Web runtime features.
 const char kExperimentalFeatures[]       = "experimentalFeatures";
 const char kExperimentalCanvasFeatures[] = "experimentalCanvasFeatures";
 const char kOverlayScrollbars[]          = "overlayScrollbars";
 const char kOverlayFullscreenVideo[]     = "overlayFullscreenVideo";
 const char kSharedWorker[]               = "sharedWorker";
+
+}  // namespace options
+
+namespace switches {
 
 // Enable plugins.
 const char kEnablePlugins[] = "enable-plugins";
@@ -100,12 +110,6 @@ const char kPpapiFlashPath[] = "ppapi-flash-path";
 
 // Ppapi Flash version.
 const char kPpapiFlashVersion[] = "ppapi-flash-version";
-
-// Set page visiblity to always visible.
-const char kPageVisibility[] = "page-visibility";
-
-// Enable DirectWrite on Windows.
-const char kDirectWrite[] = "direct-write";
 
 // Path to client certificate.
 const char kClientCertificate[] = "client-certificate";
@@ -125,6 +129,19 @@ const char kCipherSuiteBlacklist[] = "cipher-suite-blacklist";
 
 // The browser process app model ID
 const char kAppUserModelId[] = "app-user-model-id";
+
+// The command line switch versions of the options.
+const char kZoomFactor[]                 = "zoom-factor";
+const char kPreloadScript[]              = "preload";
+const char kPreloadURL[]                 = "preload-url";
+const char kNodeIntegration[]            = "node-integration";
+const char kGuestInstanceID[]            = "guest-instance-id";
+const char kExperimentalFeatures[]       = "experimental-features";
+const char kExperimentalCanvasFeatures[] = "experimental-canvas-features";
+const char kOverlayScrollbars[]          = "overlay-scrollbars";
+const char kOverlayFullscreenVideo[]     = "overlay-fullscreen-video";
+const char kSharedWorker[]               = "shared-worker";
+const char kPageVisibility[]             = "page-visiblity";
 
 }  // namespace switches
 

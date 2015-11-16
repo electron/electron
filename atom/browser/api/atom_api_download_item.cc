@@ -103,7 +103,7 @@ int64 DownloadItem::GetTotalBytes() {
   return download_item_->GetTotalBytes();
 }
 
-const GURL& DownloadItem::GetUrl() {
+const GURL& DownloadItem::GetURL() {
   return download_item_->GetURL();
 }
 
@@ -116,7 +116,7 @@ bool DownloadItem::HasUserGesture() {
 }
 
 std::string DownloadItem::GetFilename() {
-  return base::UTF16ToUTF8(net::GenerateFileName(GetUrl(),
+  return base::UTF16ToUTF8(net::GenerateFileName(GetURL(),
                            GetContentDisposition(),
                            std::string(),
                            download_item_->GetSuggestedFilename(),
@@ -152,7 +152,7 @@ mate::ObjectTemplateBuilder DownloadItem::GetObjectTemplateBuilder(
       .SetMethod("cancel", &DownloadItem::Cancel)
       .SetMethod("getReceivedBytes", &DownloadItem::GetReceivedBytes)
       .SetMethod("getTotalBytes", &DownloadItem::GetTotalBytes)
-      .SetMethod("getUrl", &DownloadItem::GetUrl)
+      .SetMethod("getURL", &DownloadItem::GetURL)
       .SetMethod("getMimeType", &DownloadItem::GetMimeType)
       .SetMethod("hasUserGesture", &DownloadItem::HasUserGesture)
       .SetMethod("getFilename", &DownloadItem::GetFilename)

@@ -1,7 +1,7 @@
 assert = require 'assert'
-clipboard = require 'clipboard'
-nativeImage = require 'native-image'
 path = require 'path'
+
+{clipboard, nativeImage} = require 'electron'
 
 describe 'clipboard module', ->
   fixtures = path.resolve __dirname, 'fixtures'
@@ -11,7 +11,7 @@ describe 'clipboard module', ->
       p = path.join fixtures, 'assets', 'logo.png'
       i = nativeImage.createFromPath p
       clipboard.writeImage p
-      assert.equal clipboard.readImage().toDataUrl(), i.toDataUrl()
+      assert.equal clipboard.readImage().toDataURL(), i.toDataURL()
 
   describe 'clipboard.readText()', ->
     it 'returns unicode string correctly', ->
@@ -49,4 +49,4 @@ describe 'clipboard module', ->
       clipboard.write {text: "test", html: '<b>Hi</b>', image: p}
       assert.equal clipboard.readText(), text
       assert.equal clipboard.readHtml(), markup
-      assert.equal clipboard.readImage().toDataUrl(), i.toDataUrl()
+      assert.equal clipboard.readImage().toDataURL(), i.toDataURL()

@@ -13,10 +13,12 @@ require path.resolve(__dirname, '..', '..', 'common', 'lib', 'reset-search-paths
 # Import common settings.
 require path.resolve(__dirname, '..', '..', 'common', 'lib', 'init')
 
-# Add renderer/api/lib to require's search paths, which contains javascript part
-# of Atom's built-in libraries.
 globalPaths = Module.globalPaths
-globalPaths.push path.resolve(__dirname, '..', 'api', 'lib')
+unless process.env.ELECTRON_HIDE_INTERNAL_MODULES
+  globalPaths.push path.resolve(__dirname, '..', 'api', 'lib')
+
+# Expose public APIs.
+globalPaths.push path.resolve(__dirname, '..', 'api', 'lib', 'exports')
 
 # The global variable will be used by ipc for event dispatching
 v8Util = process.atomBinding 'v8_util'
@@ -25,10 +27,10 @@ v8Util.setHiddenValue global, 'ipc', new events.EventEmitter
 # Process command line arguments.
 nodeIntegration = 'false'
 for arg in process.argv
-  if arg.indexOf('--guestInstanceId=') == 0
+  if arg.indexOf('--guest-instance-id=') == 0
     # This is a guest web view.
     process.guestInstanceId = parseInt arg.substr(arg.indexOf('=') + 1)
-  else if arg.indexOf('--nodeIntegration=') == 0
+  else if arg.indexOf('--node-integration=') == 0
     nodeIntegration = arg.substr arg.indexOf('=') + 1
   else if arg.indexOf('--preload=') == 0
     preloadScript = arg.substr arg.indexOf('=') + 1

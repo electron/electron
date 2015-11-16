@@ -168,7 +168,8 @@ mate::ObjectTemplateBuilder NativeImage::GetObjectTemplateBuilder(
     template_.Reset(isolate, mate::ObjectTemplateBuilder(isolate)
         .SetMethod("toPng", &NativeImage::ToPNG)
         .SetMethod("toJpeg", &NativeImage::ToJPEG)
-        .SetMethod("toDataUrl", &NativeImage::ToDataURL)
+        .SetMethod("toDataURL", &NativeImage::ToDataURL)
+        .SetMethod("toDataUrl", &NativeImage::ToDataURL)  // deprecated.
         .SetMethod("isEmpty", &NativeImage::IsEmpty)
         .SetMethod("getSize", &NativeImage::GetSize)
         .SetMethod("setTemplateImage", &NativeImage::SetTemplateImage)
@@ -309,7 +310,7 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   dict.SetMethod("createEmpty", &atom::api::NativeImage::CreateEmpty);
   dict.SetMethod("createFromPath", &atom::api::NativeImage::CreateFromPath);
   dict.SetMethod("createFromBuffer", &atom::api::NativeImage::CreateFromBuffer);
-  dict.SetMethod("createFromDataUrl",
+  dict.SetMethod("createFromDataURL",
                  &atom::api::NativeImage::CreateFromDataURL);
 }
 

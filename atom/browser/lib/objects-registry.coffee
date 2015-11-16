@@ -1,4 +1,4 @@
-EventEmitter = require('events').EventEmitter
+{EventEmitter} = require 'events'
 v8Util = process.atomBinding 'v8_util'
 
 class ObjectsRegistry extends EventEmitter

@@ -8,10 +8,10 @@ the [`BrowserWindow`](browser-window.md) object. An example of accessing the
 `webContents` object:
 
 ```javascript
-var BrowserWindow = require('browser-window');
+const BrowserWindow = require('electron').BrowserWindow;
 
 var win = new BrowserWindow({width: 800, height: 1500});
-win.loadUrl("http://github.com");
+win.loadURL("http://github.com");
 
 var webContents = win.webContents;
 ```
@@ -32,7 +32,7 @@ Returns:
 * `event` Event
 * `errorCode` Integer
 * `errorDescription` String
-* `validatedUrl` String
+* `validatedURL` String
 
 This event is like `did-finish-load` but emitted when the load failed or was
 cancelled, e.g. `window.stop()` is invoked.
@@ -61,8 +61,8 @@ Returns:
 
 * `event` Event
 * `status` Boolean
-* `newUrl` String
-* `originalUrl` String
+* `newURL` String
+* `originalURL` String
 * `httpResponseCode` Integer
 * `requestMethod` String
 * `referrer` String
@@ -76,8 +76,8 @@ Emitted when details regarding a requested resource are available.
 Returns:
 
 * `event` Event
-* `oldUrl` String
-* `newUrl` String
+* `oldURL` String
+* `newURL` String
 * `isMainFrame` Boolean
 * `httpResponseCode` Integer
 * `requestMethod` String
@@ -99,7 +99,7 @@ Emitted when the document in the given frame is loaded.
 Returns:
 
 * `event` Event
-* `favicons` Array - Array of Urls
+* `favicons` Array - Array of URLs
 
 Emitted when page receives favicon urls.
 
@@ -133,7 +133,7 @@ Emitted when a user or the page wants to start navigation. It can happen when th
 `window.location` object is changed or a user clicks a link in the page.
 
 This event will not emit when the navigation is started programmatically with
-APIs like `webContents.loadUrl` and `webContents.back`.
+APIs like `webContents.loadURL` and `webContents.back`.
 
 Calling `event.preventDefault()` will prevent the navigation.
 
@@ -198,7 +198,7 @@ Returns the `session` object used by this webContents.
 
 See [session documentation](session.md) for this object's methods.
 
-### `webContents.loadUrl(url[, options])`
+### `webContents.loadURL(url[, options])`
 
 * `url` URL
 * `options` Object (optional), properties:
@@ -209,18 +209,16 @@ See [session documentation](session.md) for this object's methods.
 Loads the `url` in the window, the `url` must contain the protocol prefix,
 e.g. the `http://` or `file://`.
 
-### `webContents.getUrl()`
-
-```javascript
-var BrowserWindow = require('browser-window');
-
-var win = new BrowserWindow({width: 800, height: 600});
-win.loadUrl("http://github.com");
-
-var currentUrl = win.webContents.getUrl();
-```
+### `webContents.getURL()`
 
 Returns URL of the current web page.
+
+```javascript
+var win = new BrowserWindow({width: 800, height: 600});
+win.loadURL("http://github.com");
+
+var currentURL = win.webContents.getURL();
+```
 
 ### `webContents.getTitle()`
 
@@ -445,11 +443,11 @@ By default, an empty `options` will be regarded as:
 ```
 
 ```javascript
-var BrowserWindow = require('browser-window');
-var fs = require('fs');
+const BrowserWindow = require('electron').BrowserWindow;
+const fs = require('fs');
 
 var win = new BrowserWindow({width: 800, height: 600});
-win.loadUrl("http://github.com");
+win.loadURL("http://github.com");
 
 win.webContents.on("did-finish-load", function() {
   // Use default printing options
@@ -526,7 +524,7 @@ An example of sending messages from the main process to the renderer process:
 var window = null;
 app.on('ready', function() {
   window = new BrowserWindow({width: 800, height: 600});
-  window.loadUrl('file://' + __dirname + '/index.html');
+  window.loadURL('file://' + __dirname + '/index.html');
   window.webContents.on('did-finish-load', function() {
     window.webContents.send('ping', 'whoooooooh!');
   });
@@ -538,7 +536,7 @@ app.on('ready', function() {
 <html>
 <body>
   <script>
-    require('ipcRenderer').on('ping', function(event, message) {
+    require('electron').ipcRenderer.on('ping', function(event, message) {
       console.log(message);  // Prints "whoooooooh!"
     });
   </script>
@@ -662,7 +660,7 @@ when the DevTools has been closed.
 Returns true if the process of saving page has been initiated successfully.
 
 ```javascript
-win.loadUrl('https://github.com');
+win.loadURL('https://github.com');
 
 win.webContents.on('did-finish-load', function() {
   win.webContents.savePage('/tmp/test.html', 'HTMLComplete', function(error) {

@@ -7,7 +7,7 @@
 
 namespace atom {
 
-namespace switches {
+namespace options {
 
 extern const char kTitle[];
 extern const char kIcon[];
@@ -41,9 +41,10 @@ extern const char kBackgroundColor[];
 extern const char kWebPreferences[];
 
 // WebPreferences.
+extern const char kDirectWrite[];
 extern const char kZoomFactor[];
 extern const char kPreloadScript[];
-extern const char kPreloadUrl[];
+extern const char kPreloadURL[];
 extern const char kNodeIntegration[];
 extern const char kGuestInstanceID[];
 extern const char kExperimentalFeatures[];
@@ -52,9 +53,14 @@ extern const char kOverlayScrollbars[];
 extern const char kOverlayFullscreenVideo[];
 extern const char kSharedWorker[];
 extern const char kPageVisibility[];
-extern const char kDirectWrite[];
+
+}   // namespace options
+
 
 // Following are actually command line switches, should be moved to other files.
+
+namespace switches {
+
 extern const char kEnablePlugins[];
 extern const char kPpapiFlashPath[];
 extern const char kPpapiFlashVersion[];
@@ -64,6 +70,18 @@ extern const char kRegisterStandardSchemes[];
 extern const char kSSLVersionFallbackMin[];
 extern const char kCipherSuiteBlacklist[];
 extern const char kAppUserModelId[];
+
+extern const char kZoomFactor[];
+extern const char kPreloadScript[];
+extern const char kPreloadURL[];
+extern const char kNodeIntegration[];
+extern const char kGuestInstanceID[];
+extern const char kExperimentalFeatures[];
+extern const char kExperimentalCanvasFeatures[];
+extern const char kOverlayScrollbars[];
+extern const char kOverlayFullscreenVideo[];
+extern const char kSharedWorker[];
+extern const char kPageVisibility[];
 
 }  // namespace switches
 

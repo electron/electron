@@ -5,10 +5,10 @@ a property of [`BrowserWindow`](browser-window.md). You can access it through an
 instance of `BrowserWindow`. For example:
 
 ```javascript
-var BrowserWindow = require('browser-window');
+const BrowserWindow = require('electron').BrowserWindow;
 
 var win = new BrowserWindow({ width: 800, height: 600 });
-win.loadUrl("http://github.com");
+win.loadURL("http://github.com");
 
 var session = win.webContents.session
 ```
@@ -28,7 +28,7 @@ Calling `event.preventDefault()` will cancel the download.
 ```javascript
 session.on('will-download', function(event, item, webContents) {
   event.preventDefault();
-  require('request')(item.getUrl(), function(data) {
+  require('request')(item.getURL(), function(data) {
     require('fs').writeFileSync('/somewhere', data);
   });
 });
@@ -43,11 +43,11 @@ The `session` object has the following methods:
 The `cookies` gives you ability to query and modify cookies. For example:
 
 ```javascript
-var BrowserWindow = require('browser-window');
+const BrowserWindow = require('electron').BrowserWindow;
 
 var win = new BrowserWindow({ width: 800, height: 600 });
 
-win.loadUrl('https://github.com');
+win.loadURL('https://github.com');
 
 win.webContents.on('did-finish-load', function() {
   // Query all cookies.

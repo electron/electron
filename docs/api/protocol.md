@@ -7,11 +7,12 @@ An example of implementing a protocol that has the same effect as the
 `file://` protocol:
 
 ```javascript
-var app = require('app');
-var path = require('path');
+const electron = require('electron');
+const app = electron.app;
+const path = require('path');
 
 app.on('ready', function() {
-    var protocol = require('protocol');
+    var protocol = electron.protocol;
     protocol.registerFileProtocol('atom', function(request, callback) {
       var url = request.url.substr(7);
       callback({path: path.normalize(__dirname + '/' + url)});

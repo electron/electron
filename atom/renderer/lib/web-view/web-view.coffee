@@ -1,8 +1,8 @@
+{deprecate, webFrame, remote} = require 'electron'
 v8Util = process.atomBinding 'v8_util'
+
 guestViewInternal = require './guest-view-internal'
 webViewConstants = require './web-view-constants'
-webFrame = require 'web-frame'
-remote = require 'remote'
 
 # ID generator.
 nextId = 0
@@ -252,49 +252,49 @@ registerWebViewElement = ->
 
   # Public-facing API methods.
   methods = [
-    "getUrl"
-    "getTitle"
-    "isLoading"
-    "isWaitingForResponse"
-    "stop"
-    "reload"
-    "reloadIgnoringCache"
-    "canGoBack"
-    "canGoForward"
-    "canGoToOffset"
-    "clearHistory"
-    "goBack"
-    "goForward"
-    "goToIndex"
-    "goToOffset"
-    "isCrashed"
-    "setUserAgent"
-    "getUserAgent"
-    "executeJavaScript"
-    "insertCSS"
-    "openDevTools"
-    "closeDevTools"
-    "isDevToolsOpened"
-    "inspectElement"
-    "setAudioMuted"
-    "isAudioMuted"
-    "undo"
-    "redo"
-    "cut"
-    "copy"
-    "paste"
-    "pasteAndMatchStyle"
-    "delete"
-    "selectAll"
-    "unselect"
-    "replace"
-    "replaceMisspelling"
-    "send"
-    "getId"
-    "inspectServiceWorker"
-    "print"
-    "printToPDF"
-    "sendInputEvent"
+    'getURL'
+    'getTitle'
+    'isLoading'
+    'isWaitingForResponse'
+    'stop'
+    'reload'
+    'reloadIgnoringCache'
+    'canGoBack'
+    'canGoForward'
+    'canGoToOffset'
+    'clearHistory'
+    'goBack'
+    'goForward'
+    'goToIndex'
+    'goToOffset'
+    'isCrashed'
+    'setUserAgent'
+    'getUserAgent'
+    'executeJavaScript'
+    'insertCSS'
+    'openDevTools'
+    'closeDevTools'
+    'isDevToolsOpened'
+    'inspectElement'
+    'setAudioMuted'
+    'isAudioMuted'
+    'undo'
+    'redo'
+    'cut'
+    'copy'
+    'paste'
+    'pasteAndMatchStyle'
+    'delete'
+    'selectAll'
+    'unselect'
+    'replace'
+    'replaceMisspelling'
+    'send'
+    'getId'
+    'inspectServiceWorker'
+    'print'
+    'printToPDF'
+    'sendInputEvent'
   ]
 
   # Forward proto.foo* method calls to WebViewImpl.foo*.
@@ -303,6 +303,9 @@ registerWebViewElement = ->
       internal = v8Util.getHiddenValue this, 'internal'
       internal.webContents[m] args...
   proto[m] = createHandler m for m in methods
+
+  # Deprecated.
+  deprecate.rename proto, 'getUrl', 'getURL'
 
   window.WebView = webFrame.registerEmbedderCustomElement 'webview',
     prototype: proto

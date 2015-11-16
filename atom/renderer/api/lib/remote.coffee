@@ -1,6 +1,5 @@
-ipc = require 'ipc-renderer'
+{ipcRenderer, CallbacksRegistry} = require 'electron'
 v8Util = process.atomBinding 'v8_util'
-CallbacksRegistry = require 'callbacks-registry'
 
 callbacksRegistry = new CallbacksRegistry
 
@@ -19,7 +18,7 @@ wrapArgs = (args, visited=[]) ->
       type: 'array', value: wrapArgs(value, visited)
     else if Buffer.isBuffer value
       type: 'buffer', value: Array::slice.call(value, 0)
-    else if value? and value.constructor.name is 'Promise'
+    else if value?.constructor.name is 'Promise'
       type: 'promise', then: valueToMeta(value.then.bind(value))
     else if value? and typeof value is 'object' and v8Util.getHiddenValue value, 'atomId'
       type: 'remote-object', id: v8Util.getHiddenValue value, 'atomId'
@@ -58,7 +57,7 @@ metaToValue = (meta) ->
           constructor: ->
             if @constructor == RemoteFunction
               # Constructor call.
-              obj = ipc.sendSync 'ATOM_BROWSER_CONSTRUCTOR', meta.id, wrapArgs(arguments)
+              obj = ipcRenderer.sendSync 'ATOM_BROWSER_CONSTRUCTOR', meta.id, wrapArgs(arguments)
 
               # Returning object in constructor will replace constructed object
               # with the returned object.
@@ -66,7 +65,7 @@ metaToValue = (meta) ->
               return metaToValue obj
             else
               # Function call.
-              ret = ipc.sendSync 'ATOM_BROWSER_FUNCTION_CALL', meta.id, wrapArgs(arguments)
+              ret = ipcRenderer.sendSync 'ATOM_BROWSER_FUNCTION_CALL', meta.id, wrapArgs(arguments)
               return metaToValue ret
       else
         ret = v8Util.createObjectWithName meta.name
@@ -80,11 +79,11 @@ metaToValue = (meta) ->
               constructor: ->
                 if @constructor is RemoteMemberFunction
                   # Constructor call.
-                  obj = ipc.sendSync 'ATOM_BROWSER_MEMBER_CONSTRUCTOR', meta.id, member.name, wrapArgs(arguments)
+                  obj = ipcRenderer.sendSync 'ATOM_BROWSER_MEMBER_CONSTRUCTOR', meta.id, member.name, wrapArgs(arguments)
                   return metaToValue obj
                 else
                   # Call member function.
-                  ret = ipc.sendSync 'ATOM_BROWSER_MEMBER_CALL', meta.id, member.name, wrapArgs(arguments)
+                  ret = ipcRenderer.sendSync 'ATOM_BROWSER_MEMBER_CALL', meta.id, member.name, wrapArgs(arguments)
                   return metaToValue ret
           else
             Object.defineProperty ret, member.name,
@@ -92,18 +91,18 @@ metaToValue = (meta) ->
               configurable: false,
               set: (value) ->
                 # Set member data.
-                ipc.sendSync 'ATOM_BROWSER_MEMBER_SET', meta.id, member.name, value
+                ipcRenderer.sendSync 'ATOM_BROWSER_MEMBER_SET', meta.id, member.name, value
                 value
 
               get: ->
                 # Get member data.
-                ret = ipc.sendSync 'ATOM_BROWSER_MEMBER_GET', meta.id, member.name
+                ret = ipcRenderer.sendSync 'ATOM_BROWSER_MEMBER_GET', meta.id, member.name
                 metaToValue ret
 
       # Track delegate object's life time, and tell the browser to clean up
       # when the object is GCed.
       v8Util.setDestructor ret, ->
-        ipc.send 'ATOM_BROWSER_DEREFERENCE', meta.id
+        ipcRenderer.send 'ATOM_BROWSER_DEREFERENCE', meta.id
 
       # Remember object's id.
       v8Util.setHiddenValue ret, 'atomId', meta.id
@@ -119,12 +118,19 @@ metaToPlainObject = (meta) ->
   obj
 
 # Browser calls a callback in renderer.
-ipc.on 'ATOM_RENDERER_CALLBACK', (event, id, args) ->
+ipcRenderer.on 'ATOM_RENDERER_CALLBACK', (event, id, args) ->
   callbacksRegistry.apply id, metaToValue(args)
 
 # A callback in browser is released.
-ipc.on 'ATOM_RENDERER_RELEASE_CALLBACK', (event, id) ->
+ipcRenderer.on 'ATOM_RENDERER_RELEASE_CALLBACK', (event, id) ->
   callbacksRegistry.remove id
+
+# List all built-in modules in browser process.
+browserModules = ipcRenderer.sendSync 'ATOM_BROWSER_LIST_MODULES'
+# And add a helper receiver for each one.
+for name in browserModules
+  do (name) ->
+    Object.defineProperty exports, name, get: -> exports.getBuiltin name
 
 # Get remote module.
 # (Just like node's require, the modules are cached permanently, note that this
@@ -133,26 +139,37 @@ moduleCache = {}
 exports.require = (module) ->
   return moduleCache[module] if moduleCache[module]?
 
-  meta = ipc.sendSync 'ATOM_BROWSER_REQUIRE', module
+  meta = ipcRenderer.sendSync 'ATOM_BROWSER_REQUIRE', module
   moduleCache[module] = metaToValue meta
+
+# Optimize require('electron').
+moduleCache.electron = exports
+
+# Alias to remote.require('electron').xxx.
+builtinCache = {}
+exports.getBuiltin = (module) ->
+  return builtinCache[module] if builtinCache[module]?
+
+  meta = ipcRenderer.sendSync 'ATOM_BROWSER_GET_BUILTIN', module
+  builtinCache[module] = metaToValue meta
 
 # Get current BrowserWindow object.
 windowCache = null
 exports.getCurrentWindow = ->
   return windowCache if windowCache?
-  meta = ipc.sendSync 'ATOM_BROWSER_CURRENT_WINDOW'
+  meta = ipcRenderer.sendSync 'ATOM_BROWSER_CURRENT_WINDOW'
   windowCache = metaToValue meta
 
 # Get current WebContents object.
 webContentsCache = null
 exports.getCurrentWebContents = ->
   return webContentsCache if webContentsCache?
-  meta = ipc.sendSync 'ATOM_BROWSER_CURRENT_WEB_CONTENTS'
+  meta = ipcRenderer.sendSync 'ATOM_BROWSER_CURRENT_WEB_CONTENTS'
   webContentsCache = metaToValue meta
 
 # Get a global object in browser.
 exports.getGlobal = (name) ->
-  meta = ipc.sendSync 'ATOM_BROWSER_GLOBAL', name
+  meta = ipcRenderer.sendSync 'ATOM_BROWSER_GLOBAL', name
   metaToValue meta
 
 # Get the process object in browser.
@@ -169,5 +186,5 @@ exports.createFunctionWithReturnValue = (returnValue) ->
 
 # Get the guest WebContents from guestInstanceId.
 exports.getGuestWebContents = (guestInstanceId) ->
-  meta = ipc.sendSync 'ATOM_BROWSER_GUEST_WEB_CONTENTS', guestInstanceId
+  meta = ipcRenderer.sendSync 'ATOM_BROWSER_GUEST_WEB_CONTENTS', guestInstanceId
   metaToValue meta

@@ -1,9 +1,11 @@
-var app = require('app');
-var dialog = require('dialog');
+const electron = require('electron');
+const app      = electron.app;
+const dialog   = electron.dialog;
+const shell    = electron.shell;
+const Menu     = electron.Menu;
+
 var fs = require('fs');
 var path = require('path');
-var Menu = require('menu');
-var BrowserWindow = require('browser-window');
 
 // Quit when all windows are closed and no other one is listening to this.
 app.on('window-all-closed', function() {
@@ -142,19 +144,19 @@ app.once('ready', function() {
       submenu: [
         {
           label: 'Learn More',
-          click: function() { require('shell').openExternal('http://electron.atom.io') }
+          click: function() { shell.openExternal('http://electron.atom.io') }
         },
         {
           label: 'Documentation',
-          click: function() { require('shell').openExternal('https://github.com/atom/electron/tree/master/docs#readme') }
+          click: function() { shell.openExternal('https://github.com/atom/electron/tree/master/docs#readme') }
         },
         {
           label: 'Community Discussions',
-          click: function() { require('shell').openExternal('https://discuss.atom.io/c/electron') }
+          click: function() { shell.openExternal('https://discuss.atom.io/c/electron') }
         },
         {
           label: 'Search Issues',
-          click: function() { require('shell').openExternal('https://github.com/atom/electron/issues') }
+          click: function() { shell.openExternal('https://github.com/atom/electron/issues') }
         }
       ]
     },
@@ -269,5 +271,5 @@ if (option.file && !option.webdriver) {
   console.log(helpMessage);
   process.exit(0);
 } else {
-  require('./default_app.js');
+  require('./default_app');
 }

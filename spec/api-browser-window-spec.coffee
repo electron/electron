@@ -1,12 +1,12 @@
 assert = require 'assert'
 fs     = require 'fs'
 path   = require 'path'
-remote = require 'remote'
 http   = require 'http'
 url    = require 'url'
 os     = require 'os'
 
-BrowserWindow = remote.require 'browser-window'
+{remote, screen} = require 'electron'
+{ipcMain, BrowserWindow} = remote.require 'electron'
 
 isCI = remote.process.argv[2] == '--ci'
 
@@ -31,14 +31,14 @@ describe 'browser-window module', ->
         fs.unlinkSync(test)
         assert.equal String(content), 'unload'
         done()
-      w.loadUrl 'file://' + path.join(fixtures, 'api', 'unload.html')
+      w.loadURL 'file://' + path.join(fixtures, 'api', 'unload.html')
 
     it 'should emit beforeunload handler', (done) ->
       w.on 'onbeforeunload', ->
         done()
       w.webContents.on 'did-finish-load', ->
         w.close()
-      w.loadUrl 'file://' + path.join(fixtures, 'api', 'beforeunload-false.html')
+      w.loadURL 'file://' + path.join(fixtures, 'api', 'beforeunload-false.html')
 
   describe 'window.close()', ->
     it 'should emit unload handler', (done) ->
@@ -48,23 +48,23 @@ describe 'browser-window module', ->
         fs.unlinkSync(test)
         assert.equal String(content), 'close'
         done()
-      w.loadUrl 'file://' + path.join(fixtures, 'api', 'close.html')
+      w.loadURL 'file://' + path.join(fixtures, 'api', 'close.html')
 
     it 'should emit beforeunload handler', (done) ->
       w.on 'onbeforeunload', ->
         done()
-      w.loadUrl 'file://' + path.join(fixtures, 'api', 'close-beforeunload-false.html')
+      w.loadURL 'file://' + path.join(fixtures, 'api', 'close-beforeunload-false.html')
 
-  describe 'BrowserWindow.loadUrl(url)', ->
+  describe 'BrowserWindow.loadURL(url)', ->
     it 'should emit did-start-loading event', (done) ->
       w.webContents.on 'did-start-loading', ->
         done()
-      w.loadUrl 'about:blank'
+      w.loadURL 'about:blank'
 
     it 'should emit did-fail-load event', (done) ->
       w.webContents.on 'did-fail-load', ->
         done()
-      w.loadUrl 'file://a.txt'
+      w.loadURL 'file://a.txt'
 
   describe 'BrowserWindow.show()', ->
     it 'should focus on window', ->
@@ -191,7 +191,7 @@ describe 'browser-window module', ->
       assert.equal after[1], -10
 
     it 'can set the window larger than screen', ->
-      size = require('screen').getPrimaryDisplay().size
+      size = screen.getPrimaryDisplay().size
       size.width += 100
       size.height += 100
       w.setSize size.width, size.height
@@ -201,12 +201,12 @@ describe 'browser-window module', ->
 
   describe '"web-preferences" option', ->
     afterEach ->
-      remote.require('ipc-main').removeAllListeners('answer')
+      ipcMain.removeAllListeners('answer')
 
     describe '"preload" option', ->
       it 'loads the script before other scripts in window', (done) ->
         preload = path.join fixtures, 'module', 'set-global.js'
-        remote.require('ipc-main').once 'answer', (event, test) ->
+        ipcMain.once 'answer', (event, test) ->
           assert.equal(test, 'preload')
           done()
         w.destroy()
@@ -214,12 +214,12 @@ describe 'browser-window module', ->
           show: false
           webPreferences:
             preload: preload
-        w.loadUrl 'file://' + path.join(fixtures, 'api', 'preload.html')
+        w.loadURL 'file://' + path.join(fixtures, 'api', 'preload.html')
 
     describe '"node-integration" option', ->
       it 'disables node integration when specified to false', (done) ->
         preload = path.join fixtures, 'module', 'send-later.js'
-        remote.require('ipc-main').once 'answer', (event, test) ->
+        ipcMain.once 'answer', (event, test) ->
           assert.equal(test, 'undefined')
           done()
         w.destroy()
@@ -228,28 +228,28 @@ describe 'browser-window module', ->
           webPreferences:
             preload: preload
             nodeIntegration: false
-        w.loadUrl 'file://' + path.join(fixtures, 'api', 'blank.html')
+        w.loadURL 'file://' + path.join(fixtures, 'api', 'blank.html')
 
   describe 'beforeunload handler', ->
     it 'returning true would not prevent close', (done) ->
       w.on 'closed', ->
         done()
-      w.loadUrl 'file://' + path.join(fixtures, 'api', 'close-beforeunload-true.html')
+      w.loadURL 'file://' + path.join(fixtures, 'api', 'close-beforeunload-true.html')
 
     it 'returning non-empty string would not prevent close', (done) ->
       w.on 'closed', ->
         done()
-      w.loadUrl 'file://' + path.join(fixtures, 'api', 'close-beforeunload-string.html')
+      w.loadURL 'file://' + path.join(fixtures, 'api', 'close-beforeunload-string.html')
 
     it 'returning false would prevent close', (done) ->
       w.on 'onbeforeunload', ->
         done()
-      w.loadUrl 'file://' + path.join(fixtures, 'api', 'close-beforeunload-false.html')
+      w.loadURL 'file://' + path.join(fixtures, 'api', 'close-beforeunload-false.html')
 
     it 'returning empty string would prevent close', (done) ->
       w.on 'onbeforeunload', ->
         done()
-      w.loadUrl 'file://' + path.join(fixtures, 'api', 'close-beforeunload-empty-string.html')
+      w.loadURL 'file://' + path.join(fixtures, 'api', 'close-beforeunload-empty-string.html')
 
   describe 'new-window event', ->
     return if isCI and process.platform is 'darwin'
@@ -259,7 +259,7 @@ describe 'browser-window module', ->
         assert.equal url, 'http://host/'
         assert.equal frameName, 'host'
         done()
-      w.loadUrl "file://#{fixtures}/pages/window-open.html"
+      w.loadURL "file://#{fixtures}/pages/window-open.html"
 
     it 'emits when link with target is called', (done) ->
       w.webContents.once 'new-window', (e, url, frameName) ->
@@ -267,7 +267,7 @@ describe 'browser-window module', ->
         assert.equal url, 'http://host/'
         assert.equal frameName, 'target'
         done()
-      w.loadUrl "file://#{fixtures}/pages/target-name.html"
+      w.loadURL "file://#{fixtures}/pages/target-name.html"
 
   describe 'maximize event', ->
     return if isCI
@@ -296,7 +296,7 @@ describe 'browser-window module', ->
 
   xdescribe 'beginFrameSubscription method', ->
     it 'subscribes frame updates', (done) ->
-      w.loadUrl "file://#{fixtures}/api/blank.html"
+      w.loadURL "file://#{fixtures}/api/blank.html"
       w.webContents.beginFrameSubscription (data) ->
         assert.notEqual data.length, 0
         w.webContents.endFrameSubscription()
@@ -321,4 +321,4 @@ describe 'browser-window module', ->
           fs.rmdirSync savePageDir
           done()
 
-      w.loadUrl "file://#{fixtures}/pages/save_page/index.html"
+      w.loadURL "file://#{fixtures}/pages/save_page/index.html"

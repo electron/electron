@@ -1,10 +1,10 @@
 assert = require 'assert'
-remote = require 'remote'
 http   = require 'http'
 path   = require 'path'
 fs     = require 'fs'
-app    = remote.require 'app'
-BrowserWindow = remote.require 'browser-window'
+
+{ipcRenderer, remote} = require 'electron'
+{app, ipcMain, BrowserWindow} = remote.require 'electron'
 
 describe 'session module', ->
   @timeout 10000
@@ -23,7 +23,7 @@ describe 'session module', ->
 
     server.listen 0, '127.0.0.1', ->
       {port} = server.address()
-      w.loadUrl "#{url}:#{port}"
+      w.loadURL "#{url}:#{port}"
       w.webContents.on 'did-finish-load', ->
         w.webContents.session.cookies.get {url: url}, (error, list) ->
           return done(error) if error
@@ -60,12 +60,11 @@ describe 'session module', ->
   describe 'session.clearStorageData(options)', ->
     fixtures = path.resolve __dirname, 'fixtures'
     it 'clears localstorage data', (done) ->
-      ipcMain = remote.require('ipc-main')
       ipcMain.on 'count', (event, count) ->
         ipcMain.removeAllListeners 'count'
         assert not count
         done()
-      w.loadUrl 'file://' + path.join(fixtures, 'api', 'localstorage.html')
+      w.loadURL 'file://' + path.join(fixtures, 'api', 'localstorage.html')
       w.webContents.on 'did-finish-load', ->
         options =
           origin: "file://",
@@ -78,7 +77,6 @@ describe 'session module', ->
     # A 5 MB mock pdf.
     mockPDF = new Buffer 1024 * 1024 * 5
     contentDisposition = 'inline; filename="mock.pdf"'
-    ipc = require 'ipc-renderer'
     downloadFilePath = path.join fixtures, 'mock.pdf'
     downloadServer = http.createServer (req, res) ->
       res.writeHead 200, {
@@ -92,9 +90,9 @@ describe 'session module', ->
     it 'can download successfully', (done) ->
       downloadServer.listen 0, '127.0.0.1', ->
         {port} = downloadServer.address()
-        ipc.sendSync 'set-download-option', false
-        w.loadUrl "#{url}:#{port}"
-        ipc.once 'download-done', (event, state, url, mimeType, receivedBytes, totalBytes, disposition, filename) ->
+        ipcRenderer.sendSync 'set-download-option', false
+        w.loadURL "#{url}:#{port}"
+        ipcRenderer.once 'download-done', (event, state, url, mimeType, receivedBytes, totalBytes, disposition, filename) ->
           assert.equal state, 'completed'
           assert.equal filename, 'mock.pdf'
           assert.equal url, "http://127.0.0.1:#{port}/"
@@ -109,9 +107,9 @@ describe 'session module', ->
     it 'can cancel download', (done) ->
       downloadServer.listen 0, '127.0.0.1', ->
         {port} = downloadServer.address()
-        ipc.sendSync 'set-download-option', true
-        w.loadUrl "#{url}:#{port}/"
-        ipc.once 'download-done', (event, state, url, mimeType, receivedBytes, totalBytes, disposition, filename) ->
+        ipcRenderer.sendSync 'set-download-option', true
+        w.loadURL "#{url}:#{port}/"
+        ipcRenderer.once 'download-done', (event, state, url, mimeType, receivedBytes, totalBytes, disposition, filename) ->
           assert.equal state, 'cancelled'
           assert.equal filename, 'mock.pdf'
           assert.equal mimeType, 'application/pdf'

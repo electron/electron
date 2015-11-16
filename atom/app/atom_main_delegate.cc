@@ -16,6 +16,7 @@
 #include "base/debug/stack_trace.h"
 #include "base/environment.h"
 #include "base/logging.h"
+#include "chrome/common/chrome_paths.h"
 #include "content/public/common/content_switches.h"
 #include "ui/base/resource/resource_bundle.h"
 
@@ -78,6 +79,8 @@ bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
 #endif
   if (enable_stack_dumping)
     base::debug::EnableInProcessStackDumping();
+
+  chrome::RegisterPathProvider();
 
   return brightray::MainDelegate::BasicStartupComplete(exit_code);
 }
