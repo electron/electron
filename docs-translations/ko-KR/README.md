@@ -43,8 +43,8 @@
 * [powerSaveBlocker](api/power-save-blocker.md)
 * [protocol](api/protocol.md)
 * [session](api/session.md)
-* [webContents (0% 번역됨)](api/web-contents.md)
-* [Tray](api/tray.md)
+* [web-contents](api/web-contents.md)
+* [tray](api/tray.md)
 
 ### 랜더러 프로세스에서 사용할 수 있는 모듈 (웹 페이지):
 
