@@ -5,7 +5,7 @@
 다음 예제는 현재 페이지를 200% 줌 합니다:
 
 ```javascript
-var webFrame = require('web-frame');
+var webFrame = require('electron').webFrame;
 
 webFrame.setZoomFactor(2);
 ```
@@ -55,14 +55,14 @@ Input field나 text area에 철자 검사(spell checking) 제공자를 설정합
 [node-spellchecker][spellchecker]를 철자 검사 제공자로 사용하는 예제입니다:
 
 ```javascript
-require('web-frame').setSpellCheckProvider("en-US", true, {
+webFrame.setSpellCheckProvider("en-US", true, {
   spellCheck: function(text) {
     return !(require('spellchecker').isMisspelled(text));
   }
 });
 ```
 
-### `webFrame.registerUrlSchemeAsSecure(scheme)`
+### `webFrame.registerURLSchemeAsSecure(scheme)`
 
 * `scheme` String
 
@@ -70,10 +70,16 @@ require('web-frame').setSpellCheckProvider("en-US", true, {
 
 보안 스킴은 혼합된 컨텐츠 경고를 발생시키지 않습니다. 예를 들어 `https` 와 `data`는 네트워크 공격자로부터 손상될 가능성이 없기 때문에 보안 스킴이라고 할 수 있습니다.
 
-### `webFrame.registerUrlSchemeAsBypassingCsp(scheme)`
+### `webFrame.registerURLSchemeAsBypassingCSP(scheme)`
 
 * `scheme` String
 
-현재 페이지 컨텐츠의 보안 정책에 상관없이 이 `scheme`로부터 리소스가 로드됩니다.
+현재 페이지 컨텐츠의 보안 정책에 상관없이 `scheme`로부터 리소스가 로드됩니다.
+
+### `webFrame.registerURLSchemeAsPrivileged(scheme)`
+ 
+ * `scheme` String
+ 
+보안 `scheme`를 지정합니다. 리소스와 ServiceWorker 설정에 대해 보안 정책을 우회합니다.
 
 [spellchecker]: https://github.com/atom/node-spellchecker

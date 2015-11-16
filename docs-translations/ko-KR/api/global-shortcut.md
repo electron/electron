@@ -7,8 +7,9 @@
 이 모듈은 `app` 모듈의 `ready` 이벤트 이전에 사용할 수 없습니다.
 
 ```javascript
-var app = require('app');
-var globalShortcut = require('global-shortcut');
+const electron = require('electron');
+const app = electron.app;
+const globalShortcut = electron.globalShortcut;
 
 app.on('ready', function() {
   // 'ctrl+x' 단축키를 리스너에 등록합니다.

@@ -156,7 +156,7 @@ webview.addEventListener("dom-ready", function() {
 });
 ```
 
-### `<webview>.getUrl()`
+### `<webview>.getURL()`
 
 페이지의 URL을 반환합니다.
 
@@ -376,7 +376,7 @@ Returns:
 
 * `errorCode` Integer
 * `errorDescription` String
-* `validatedUrl` String
+* `validatedURL` String
 
 `did-finish-load`와 비슷합니다. 하지만 이 이벤트는 `window.stop()`과 같은 무언가로 인해 로드에 실패했을 때 발생하는 이벤트입니다.
 
@@ -401,8 +401,8 @@ Returns:
 Returns:
 
 * `status` Boolean
-* `newUrl` String
-* `originalUrl` String
+* `newURL` String
+* `originalURL` String
 * `httpResponseCode` Integer
 * `requestMethod` String
 * `referrer` String
@@ -415,8 +415,8 @@ Returns:
 
 Returns:
 
-* `oldUrl` String
-* `newUrl` String
+* `oldURL` String
+* `newURL` String
 * `isMainFrame` Boolean
 
 리소스를 요청하고 받는 도중에 리다이렉트가 생기면 발생하는 이벤트입니다.
@@ -484,7 +484,7 @@ Returns:
 
 ```javascript
 webview.addEventListener('new-window', function(e) {
-  require('shell').openExternal(e.url);
+  require('electron').shell.openExternal(e.url);
 });
 ```
 
@@ -522,9 +522,9 @@ webview.send('ping');
 
 ```javascript
 // In guest page.
-var ipc = require('ipc');
-ipc.on('ping', function() {
-  ipc.sendToHost('pong');
+var ipcRenderer = require('electron').ipcRenderer;
+ipcRenderer.on('ping', function() {
+  ipcRenderer.sendToHost('pong');
 });
 ```
 

@@ -11,13 +11,14 @@
 다음 예제는 화면 전체를 채우는 윈도우 창을 생성합니다:
 
 ```javascript
-var app = require('app');
-var BrowserWindow = require('browser-window');
+const electron = require('electron');
+const app = electron.app;
+const BrowserWindow = electron.BrowserWindow;
 
 var mainWindow;
 
 app.on('ready', function() {
-  var electronScreen = require('screen');
+  var electronScreen = electron.screen;
   var size = electronScreen.getPrimaryDisplay().workAreaSize;
   mainWindow = new BrowserWindow({ width: size.width, height: size.height });
 });

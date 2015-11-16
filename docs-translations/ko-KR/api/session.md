@@ -7,7 +7,7 @@
 var BrowserWindow = require('browser-window');
 
 var win = new BrowserWindow({ width: 800, height: 600 });
-win.loadUrl("http://github.com");
+win.loadURL("http://github.com");
 
 var session = win.webContents.session
 ```
@@ -27,7 +27,7 @@ Electron의 `webContents`에서 `item`을 다운로드할 때 발생하는 이�
 ```javascript
 session.on('will-download', function(event, item, webContents) {
   event.preventDefault();
-  require('request')(item.getUrl(), function(data) {
+  require('request')(item.getURL(), function(data) {
     require('fs').writeFileSync('/somewhere', data);
   });
 });
@@ -46,7 +46,7 @@ var BrowserWindow = require('browser-window');
 
 var win = new BrowserWindow({ width: 800, height: 600 });
 
-win.loadUrl('https://github.com');
+win.loadURL('https://github.com');
 
 win.webContents.on('did-finish-load', function() {
   // 모든 쿠키를 가져옵니다.

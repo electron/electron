@@ -3,9 +3,10 @@
 `Tray`는 OS의 알림 영역에 아이콘을 표시합니다. 보통 컨텍스트 메뉴(context menu)를 같이 사용합니다.
 
 ```javascript
-var app = require('app');
-var Menu = require('menu');
-var Tray = require('tray');
+const electron = require('electron');
+const app = electron.app;
+const Menu = electron.Menu;
+const Tray = electron.Tray;
 
 var appIcon = null;
 app.on('ready', function(){
@@ -29,7 +30,7 @@ __플랫폼별 한계:__
 * 앱 알림 표시기는 컨텍스트 메뉴를 가지고 있을 때만 보입니다.
 * Linux에서 앱 알림 표시기가 사용될 경우, `clicked` 이벤트는 무시됩니다.
 
-이러한 이유로 Tray API가 모든 플랫폼에서 똑같이 작동하게 하고 싶다면 `clicked` 이벤트에 의존해선 안됩니다.
+이러한 이유로 Tray API가 모든 플랫폼에서 똑같이 작동하게 하고 싶다면 `click` 이벤트에 의존해선 안됩니다.
 그리고 언제나 컨텍스트 메뉴를 포함해야 합니다.
 
 ## Class: Tray
@@ -48,7 +49,7 @@ __플랫폼별 한계:__
 
 **참고:** 몇가지 이벤트는 특정한 플랫폼에서만 작동합니다.
 
-### Event: 'clicked'
+### Event: 'click'
 
 * `event` Event
   * `altKey` Boolean
@@ -65,7 +66,7 @@ __플랫폼별 한계:__
 
 __주의:__ `bounds`는 OS X 와 Windows에서만 작동합니다.
 
-### Event: 'right-clicked' _OS X_ _Windows_
+### Event: 'right-click' _OS X_ _Windows_
 
 * `event` Event
   * `altKey` Boolean
@@ -80,7 +81,7 @@ __주의:__ `bounds`는 OS X 와 Windows에서만 작동합니다.
 
 트레이 아이콘을 오른쪽 클릭될 때 호출 됩니다.
 
-### Event: 'double-clicked' _OS X_ _Windows_
+### Event: 'double-click' _OS X_ _Windows_
 
 * `event` Event
   * `altKey` Boolean
@@ -97,15 +98,15 @@ __주의:__ `bounds`는 OS X 와 Windows에서만 작동합니다.
 
 ### Event: 'balloon-show' _Windows_
 
-알림풍선이 보여질 때 발생하는 이벤트입니다.
+풍선 팝업이 보여질 때 발생하는 이벤트입니다.
 
-### Event: 'balloon-clicked' _Windows_
+### Event: 'balloon-click' _Windows_
 
-알림풍선이 클릭될 때 발생하는 이벤트입니다.
+풍선 팝업이 클릭될 때 발생하는 이벤트입니다.
 
 ### Event: 'balloon-closed' _Windows_
 
-알림풍선이 시간이 지나 사라지거나 유저가 클릭하여 닫을 때 발생하는 이벤트입니다.
+풍선 팝업이 시간이 지나 사라지거나 유저가 클릭하여 닫을 때 발생하는 이벤트입니다.
 
 ### Event: 'drop' _OS X_
 
@@ -177,7 +178,7 @@ __주의:__ `bounds`는 OS X 와 Windows에서만 작동합니다.
   * `title` String
   * `content` String
 
-트레이에 알림풍선을 생성합니다.
+트레이에 풍선 팝업을 생성합니다.
 
 ### `Tray.popContextMenu([position])` _OS X_ _Windows_
 

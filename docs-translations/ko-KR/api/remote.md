@@ -4,17 +4,17 @@
 
 Electron의 메인 프로세스에선 GUI와 관련 있는(`dialog`, `menu`등) 모듈만 사용할 수 있습니다.
 랜더러 프로세스에서 이러한 모듈들을 사용하려면 `ipc` 모듈을 통해 메인 프로세스와 inter-process 통신을 해야합니다.
-또한, `remote` 모듈을 사용하면 inter-process 통신을 하지 않고도 간단한 메서드를 통해 직접 메인 프로세스의 모듈과 메서드를 사용할 수 있습니다.
-이 개념은 Java의 [RMI](http://en.wikipedia.org/wiki/Java_remote_method_invocation)와 비슷합니다.
+또한, `remote` 모듈을 사용하면 inter-process 통신을 하지 않고도 간단한 API를 통해 직접 메인 프로세스의 모듈과 메서드를 사용할 수 있습니다.
+이 개념은 Java의 [RMI][rmi]와 비슷합니다.
 
 다음 예제는 랜더러 프로세스에서 브라우저 창을 만드는 예제입니다:
 
 ```javascript
-var remote = require('remote');
-var BrowserWindow = remote.require('browser-window');
+const remote = require('electron').remote;
+const BrowserWindow = remote.BrowserWindow;
 
 var win = new BrowserWindow({ width: 800, height: 600 });
-win.loadUrl('https://github.com');
+win.loadURL('https://github.com');
 ```
 
 **참고:** 반대로 메인 프로세스에서 랜더러 프로세스에 접근 하려면 [webContents.executeJavascript](web-contents.md#webcontentsexecutejavascriptcode-usergesture) 메서드를 사용하면 됩니다.
@@ -98,6 +98,15 @@ remote.getCurrentWindow().on('close', function() {
 이러한 문제를 피하려면 랜더러 프로세스에서 메인 프로세스로 넘긴 함수의 참조를 사용 후 확실하게 제거해야 합니다.
 작업 후 이벤트 콜백을 포함하여 책임 있게 함수의 참조를 제거하거나 메인 프로세스에서 랜더러 프로세스가 종료될 때 내부적으로 함수 참조를 제거하도록 설계해야 합니다.
 
+## 메인 프로세스의 빌트인 모듈에 접근
+
+메인 프로세스의 빌트인 모듈은 `remote` 모듈에 getter로 등록되어 있습니다.
+따라서 `remote` 모듈을 `electron` 모듈처럼 직접 사용할 수 있습니다.
+
+```javascript
+const app = remote.app;
+```
+
 ## Methods
 
 `remote` 모듈은 다음과 같은 메서드를 가지고 있습니다:
@@ -125,3 +134,5 @@ remote.getCurrentWindow().on('close', function() {
 ### `remote.process`
 
 메인 프로세스의 `process` 객체를 반환합니다. `remote.getGlobal('process')`와 같습니다. 하지만 캐시 됩니다.
+
+[rmi]: http://en.wikipedia.org/wiki/Java_remote_method_invocation

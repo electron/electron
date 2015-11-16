@@ -47,14 +47,14 @@ $ asar list /path/to/example.asar
 `asar` 아카이브에선 다음과 같이 파일을 읽을 수 있습니다:
 
 ```javascript
-var fs = require('fs');
+const fs = require('fs');
 fs.readFileSync('/path/to/example.asar/file.txt');
 ```
 
 아카이브 내의 루트 디렉터리를 리스팅합니다:
 
 ```javascript
-var fs = require('fs');
+const fs = require('fs');
 fs.readdirSync('/path/to/example.asar');
 ```
 
@@ -67,9 +67,9 @@ require('/path/to/example.asar/dir/module.js');
 `BrowserWindow` 클래스를 이용해 원하는 웹 페이지도 표시할 수 있습니다:
 
 ```javascript
-var BrowserWindow = require('browser-window');
+const BrowserWindow = require('electron').BrowserWindow;
 var win = new BrowserWindow({width: 800, height: 600});
-win.loadUrl('file:///path/to/example.asar/static/index.html');
+win.loadURL('file:///path/to/example.asar/static/index.html');
 ```
 
 ### Web API
@@ -90,8 +90,8 @@ $.get('file:///path/to/example.asar/file.txt', function(data) {
 
 ### `asar` 아카이브를 일반 파일로 취급하기
 
-`asar` 아카이브의 체크섬(checksum)등을 검사하기 위해선 `asar` 아카이브를 파일 그대로 읽어들여야 할 필요가 있습니다.
-이 작업을 하기 위해 `original-fs`라고 하는 빌트인 모듈을 `fs` 모듈 대신에 사용할 수 있습니다.
+`asar` 아카이브의 체크섬(checksum)을 검사하는 작업등을 하기 위해선 `asar` 아카이브를 파일 그대로 읽어야 합니다.
+이러한 작업을 하기 위해 `original-fs` 빌트인 모듈을 `fs` 모듈 대신에 사용할 수 있습니다.
 이 모듈은 `asar` 지원이 빠져있습니다. 즉 파일 그대로를 읽어들입니다: 
 
 ```javascript
@@ -112,13 +112,13 @@ originalFs.readFileSync('/path/to/example.asar');
 `asar` 아카이브는 디렉터리처럼 사용할 수 있도록 구현되었지만 그것은 실제 파일시스템의 디렉터리가 아닌 가상의 디렉터리입니다.
 그런 이유로 몇몇 API에서 지원하는 `cwd` 옵션을 `asar` 아카이브 안의 디렉터리 경로로 지정하면 나중에 문제가 발생할 수 있습니다.
 
-### 특정 API로 인한 예외적인 압축 해제
+### 특정 API로 인한 예외적인 아카이브 압축 해제
 
 많은 `fs` API가 `asar` 아카이브의 압축을 해제하지 않고 바로 아카이브를 읽거나 정보를 가져올 수 있으나 
-몇몇 API는 시스템의 실제 파일의 경로를 기반으로 작동하므로 이 API들을 사용할 땐 Electron은
-이 API가 원할하게 작동할 수 있도록 하기 위해 임시경로에 해당 파일들의 압축을 해제합니다. 이 작업은 약간의 오버헤드를 불러 일으킬 수 있습니다.
+몇몇 API는 시스템의 실제 파일의 경로를 기반으로 작동하므로 Electron은 API가 원할하게 작동할 수 있도록
+임시 경로에 해당되는 파일의 압축을 해제합니다. 이 작업은 약간의 오버헤드를 불러 일으킬 수 있습니다.
 
-해당하는 API 메서드는 다음과 같습니다:
+위 예외에 해당하는 API 메서드는 다음과 같습니다:
 
 * `child_process.execFile`
 * `fs.open`
@@ -127,7 +127,7 @@ originalFs.readFileSync('/path/to/example.asar');
 
 ### `fs.stat`의 잘못된 스테이터스 정보
 
-`fs.stat` 로 부터 반환되는 `Stats` 객체와 비슷한 API들은 `asar` 아카이브를 타겟으로 할 경우 예측된 디렉터리 피일 정보를 가집니다.
+`fs.stat` 로 부터 반환되는 `Stats` 객체와 비슷한 API들은 `asar` 아카이브를 타겟으로 할 경우 예측된 디렉터리 파일 정보를 가집니다.
 왜냐하면 아카이브의 디렉터리 경로는 실제 파일시스템에 존재하지 않기 때문입니다.
 그러한 이유로 파일 크기와 파일 타입 등을 확인할 때 `Stats` 객체를 신뢰해선 안됩니다.
 
@@ -145,6 +145,6 @@ $ asar pack app app.asar --unpack *.node
 
 커맨드를 실행한 후 같은 디렉터리에 `app.asar` 파일 외에 `app.asar.unpacked` 폴더가 같이 생성됩니다.
 이 폴더안에 unpack 옵션에서 설정한 파일들이 압축이 풀린 상태로 포함되어 있습니다.
-유저에게 어플리케이션을 배포할 때 반드시 해당 폴더도 같이 배포하여야합니다.
+사용자에게 어플리케이션을 배포할 때 반드시 해당 폴더도 같이 배포해야 합니다.
 
 [asar]: https://github.com/atom/asar

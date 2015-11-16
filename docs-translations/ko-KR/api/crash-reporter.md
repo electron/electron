@@ -5,12 +5,12 @@
 다음 예제는 윈격 서버에 어플리케이션 크래시 정보를 자동으로 보고하는 예제입니다:
 
 ```javascript
-var crashReporter = require('crash-reporter');
+const crashReporter = require('electron').crashReporter;
 
 crashReporter.start({
   productName: 'YourName',
   companyName: 'YourCompany',
-  submitUrl: 'https://your-domain.com/url-to-submit',
+  submitURL: 'https://your-domain.com/url-to-submit',
   autoSubmit: true
 });
 ```
@@ -25,7 +25,7 @@ crashReporter.start({
 
 * `productName` String, 기본값: Electron
 * `companyName` String, 기본값: GitHub, Inc
-* `submitUrl` String, 기본값: http://54.249.141.255:1127/post
+* `submitURL` String, 기본값: http://54.249.141.255:1127/post
   * 크래시 리포트는 POST 방식으로 이 URL로 전송됩니다.
 * `autoSubmit` Boolean, 기본값: true
   * true로 지정할 경우 유저의 승인 없이 자동으로 오류를 보고합니다.
@@ -52,7 +52,7 @@ crashReporter.start({
 
 ## crash-reporter 업로드 형식
 
-Crash Reporter는 다음과 같은 데이터를 `submitUrl`에 `POST` 방식으로 전송합니다:
+Crash Reporter는 다음과 같은 데이터를 `submitURL`에 `POST` 방식으로 전송합니다:
 
 * `ver` String - Electron의 버전
 * `platform` String - 예시 'win32'

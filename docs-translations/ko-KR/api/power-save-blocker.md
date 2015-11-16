@@ -1,11 +1,11 @@
 ﻿# powerSaveBlocker
 
-`power-save-blocker` 모듈은 시스템이 저전력(슬립) 모드로 진입하는 것을 막고 앱 시스템과 화면이 항상 활성화 상태를 유지할 수 있도록 하는 몇가지 유틸리티를 제공하는 모듈입니다.
+`powerSaveBlocker` 모듈은 시스템이 저전력(슬립) 모드로 진입하는 것을 막고 앱 시스템과 화면이 항상 활성화 상태를 유지할 수 있도록 하는 몇가지 유틸리티를 제공하는 모듈입니다.
 
 예제:
 
 ```javascript
-var powerSaveBlocker = require('power-save-blocker');
+const powerSaveBlocker = require('electron').powerSaveBlocker;
 
 var id = powerSaveBlocker.start('prevent-display-sleep');
 console.log(powerSaveBlocker.isStarted(id));

@@ -1,6 +1,6 @@
-﻿# NativeImage
+﻿# nativeImage
 
-Electron은 파일 경로 또는 `NativeImage` 인스턴스를 통해 이미지를 사용할 수 있는 API를 가지고 있습니다.
+Electron은 파일 경로 또는 `nativeImage` 인스턴스를 통해 이미지를 사용할 수 있는 API를 가지고 있습니다.
 `null`을 전달할 경우 빈 이미지가 생성됩니다.
 
 예를 들어 트레이 메뉴를 만들거나 윈도우의 아이콘을 설정할 때 다음과 같이 파일 경로를 전달하여 이미지를 사용할 수 있습니다:
@@ -10,10 +10,9 @@ var appIcon = new Tray('/Users/somebody/images/icon.png');
 var window = new BrowserWindow({icon: '/Users/somebody/images/window.png'});
 ```
 
-이 예제는 클립보드로부터 가져온 `NativeImage`로 트레이 메뉴를 생성합니다:
+이 예제는 클립보드로부터 가져온 `nativeImage`로 트레이 메뉴를 생성합니다:
 
 ```javascript
-var clipboard = require('clipboard');
 var image = clipboard.readImage();
 var appIcon = new Tray(image);
 ```
@@ -75,39 +74,39 @@ var appIcon = new Tray('/Users/somebody/images/icon.png');
 
 ## Methods
 
-`NativeImage` 클래스는 다음과 같은 메서드를 가지고 있습니다:
+`nativeImage` 클래스는 다음과 같은 메서드를 가지고 있습니다:
 
-### `NativeImage.createEmpty()`
+### `nativeImage.createEmpty()`
 
-빈 `NativeImage` 인스턴스를 만듭니다.
+빈 `nativeImage` 인스턴스를 만듭니다.
 
-### `NativeImage.createFromPath(path)`
+### `nativeImage.createFromPath(path)`
 
 * `path` String
 
-`path`로부터 이미지를 로드하여 새로운 `NativeImage` 인스턴스를 만듭니다.
+`path`로부터 이미지를 로드하여 새로운 `nativeImage` 인스턴스를 만듭니다.
 
-### `NativeImage.createFromBuffer(buffer[, scaleFactor])`
+### `nativeImage.createFromBuffer(buffer[, scaleFactor])`
 
 * `buffer` [Buffer][buffer]
 * `scaleFactor` Double (optional)
 
-`buffer`로부터 이미지를 로드하여 새로운 `NativeImage` 인스턴스를 만듭니다. `scaleFactor`는 1.0이 기본입니다.
+`buffer`로부터 이미지를 로드하여 새로운 `nativeImage` 인스턴스를 만듭니다. `scaleFactor`의 기본값은 1.0 입니다.
 
-### `NativeImage.createFromDataUrl(dataUrl)`
+### `nativeImage.createFromDataURL(dataURL)`
 
-* `dataUrl` String
+* `dataURL` String
 
-`dataUrl`로부터 이미지를 로드하여 새로운 `NativeImage` 인스턴스를 만듭니다.
+`dataURL`로부터 이미지를 로드하여 새로운 `nativeImage` 인스턴스를 만듭니다.
 
 ## Instance Methods
 
 `nativeImage` 인스턴스 객체에서 사용할 수 있는 메서드 입니다:
 
 ```javascript
-var NativeImage = require('native-image');
+const nativeImage = require('electron').nativeImage;
 
-var image = NativeImage.createFromPath('/Users/somebody/images/icon.png');
+var image = nativeImage.createFromPath('/Users/somebody/images/icon.png');
 ```
 
 ### `image.toPng()`
@@ -120,7 +119,7 @@ var image = NativeImage.createFromPath('/Users/somebody/images/icon.png');
 
 `JPEG` 이미지를 인코딩한 데이터를 [Buffer][buffer]로 반환합니다.
 
-### `image.toDataUrl()`
+### `image.toDataURL()`
 
 이미지를 data URL로 반환합니다.
 

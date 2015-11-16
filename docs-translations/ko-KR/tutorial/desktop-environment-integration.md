@@ -28,7 +28,7 @@ myNotification.onclick = function () {
 * Windows 10에선 "아무 문제 없이 잘" 작동합니다.
 * Windows 8.1과 8에선 [Application User Model ID][app-user-model-id]로 바로가기를 만들어 놔야 합니다.
 이 바로가기는 반드시 시작 화면에 설치되어 있어야 합니다. 참고로 반드시 시작 화면에 고정 할 필요는 없습니다.
-* Windows 7과 그 이하 버전은 데스크톱 알림을 지원하지 않습니다. 혹시 "풍선 알림" 기능을 찾는다면 [Tray API](tray-balloon)를 사용하세요.
+* Windows 7과 그 이하 버전은 데스크톱 알림을 지원하지 않습니다. 혹시 "풍선 팝업 알림" 기능을 찾는다면 [Tray API](tray-balloon)를 사용하세요.
 
 이미지를 데스크톱 알림에 사용하려면 알림 옵션의 `icon` 속성에 로컬 이미지 파일(`png` 권장)을 지정하면 됩니다.
 데스크톱 알림은 잘못된 경로를 지정하거나 `http/https` 기반의 URL을 지정해도 이미지가 보이지 않을 뿐 정상 작동합니다.
@@ -70,7 +70,6 @@ __어플리케이션 dock menu:__
 파일을 최근 문서에 추가하려면 [app.addRecentDocument][addrecentdocument] API를 사용할 수 있습니다:
 
 ```javascript
-var app = require('app');
 app.addRecentDocument('/Users/USERNAME/Desktop/work.type');
 ```
 
@@ -104,8 +103,10 @@ __Terminal.app의 dock menu:__
 커스텀 dock menu를 설정하려면 `app.dock.setMenu` API를 사용하면 됩니다. OS X에서만 사용 가능합니다:
 
 ```javascript
-var app = require('app');
-var Menu = require('menu');
+const electron = require('electron');
+const app = electron.app;
+const Menu = electron.Menu;
+
 var dockMenu = Menu.buildFromTemplate([
   { label: 'New Window', click: function() { console.log('New Window'); } },
   { label: 'New Window with Settings', submenu: [
@@ -144,7 +145,6 @@ OS X의 dock menu(진짜 메뉴)와는 달리 Windows의 사용자 작업은 어
 사용자 작업을 설정하려면 [app.setUserTasks][setusertaskstasks] 메서드를 통해 구현할 수 있습니다:
 
 ```javascript
-var app = require('app');
 app.setUserTasks([
   {
     program: process.execPath,
@@ -187,8 +187,9 @@ __Windows Media Player의 섬네일 툴바:__
 [BrowserWindow.setThumbarButtons][setthumbarbuttons] API를 통해 어플리케이션에 섬네일 툴바를 설정할 수 있습니다:
 
 ```javascript
-var BrowserWindow = require('browser-window');
-var path = require('path');
+const BrowserWindow = require('electron').BrowserWindow;
+const path = require('path');
+
 var win = new BrowserWindow({
   width: 800,
   height: 600
