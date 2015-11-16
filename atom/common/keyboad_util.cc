@@ -2,12 +2,13 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+#include <string>
 #include "atom/common/keyboad_util.h"
 
 namespace atom {
 
 // Return key code of the char.
-ui::KeyboardCode KeyboardCodeFromCharCode(char c, bool* shifted) {
+ui::KeyboardCode KeyboardCodeFromCharCode(base::char16 c, bool* shifted) {
   *shifted = false;
   switch (c) {
     case 0x08: return ui::VKEY_BACK;
@@ -69,6 +70,30 @@ ui::KeyboardCode KeyboardCodeFromCharCode(char c, bool* shifted) {
 
     default: return ui::VKEY_UNKNOWN;
   }
+}
+
+// Return key code of the char.
+ui::KeyboardCode KeyboardCodeFromKeyIdentifier(std::string chr) {
+  if (chr == "enter")        return ui::VKEY_RETURN;
+  if (chr == "backspace")    return ui::VKEY_BACK;
+  if (chr == "delete")       return ui::VKEY_DELETE;
+  if (chr == "tab")          return ui::VKEY_TAB;
+  if (chr == "escape")       return ui::VKEY_ESCAPE;
+  if (chr == "control")      return ui::VKEY_CONTROL;
+  if (chr == "alt")          return ui::VKEY_MENU;
+  if (chr == "shift")        return ui::VKEY_SHIFT;
+  if (chr == "end")          return ui::VKEY_END;
+  if (chr == "home")         return ui::VKEY_HOME;
+  if (chr == "insert")       return ui::VKEY_INSERT;
+  if (chr == "left")         return ui::VKEY_LEFT;
+  if (chr == "up")           return ui::VKEY_UP;
+  if (chr == "right")        return ui::VKEY_RIGHT;
+  if (chr == "down")         return ui::VKEY_DOWN;
+  if (chr == "pageup")       return ui::VKEY_PRIOR;
+  if (chr == "pagedown")     return ui::VKEY_NEXT;
+  if (chr == "printscreen")  return ui::VKEY_SNAPSHOT;
+
+  return ui::VKEY_UNKNOWN;
 }
 
 }  // namespace atom
