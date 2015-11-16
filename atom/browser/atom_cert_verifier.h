@@ -38,8 +38,7 @@ class AtomCertVerifier : public net::CertVerifier {
   };
 
   class CertVerifyRequest
-      : public net::CertVerifier::Request,
-        public base::RefCountedThreadSafe<CertVerifyRequest> {
+      : public base::RefCountedThreadSafe<CertVerifyRequest> {
    public:
     CertVerifyRequest(
         AtomCertVerifier* cert_verifier,
@@ -58,12 +57,6 @@ class AtomCertVerifier : public net::CertVerifier {
           net_log_(net_log),
           handled_(false),
           weak_ptr_factory_(this) {
-      out_req_->reset(this);
-      new_out_req_.reset(new net::CertVerifier::Request());
-    }
-
-    ~CertVerifyRequest() {
-      out_req_->reset();
     }
 
     void RunResult(int result);
@@ -84,6 +77,7 @@ class AtomCertVerifier : public net::CertVerifier {
 
    private:
     friend class base::RefCountedThreadSafe<CertVerifyRequest>;
+    ~CertVerifyRequest() {}
 
     AtomCertVerifier* cert_verifier_;
     const RequestParams key_;
@@ -92,7 +86,6 @@ class AtomCertVerifier : public net::CertVerifier {
     scoped_refptr<net::CRLSet> crl_set_;
     net::CertVerifyResult* verify_result_;
     scoped_ptr<Request>* out_req_;
-    scoped_ptr<Request> new_out_req_;
     const net::BoundNetLog net_log_;
 
     std::vector<net::CompletionCallback> callbacks_;
@@ -103,8 +96,22 @@ class AtomCertVerifier : public net::CertVerifier {
     DISALLOW_COPY_AND_ASSIGN(CertVerifyRequest);
   };
 
+  class Delegate {
+   public:
+    Delegate() {}
+    virtual ~Delegate() {}
+
+    // Called on UI thread.
+    virtual void RequestCertVerification(
+        const scoped_refptr<CertVerifyRequest>& request) {}
+  };
+
   AtomCertVerifier();
-  ~AtomCertVerifier() override;
+  virtual ~AtomCertVerifier();
+
+  void SetDelegate(Delegate* delegate) {
+    delegate_ = delegate;
+  }
 
  protected:
   // net::CertVerifier:
@@ -145,6 +152,8 @@ class AtomCertVerifier : public net::CertVerifier {
       std::set<scoped_refptr<CertVerifyRequest>,
                CertVerifyRequestComparator>;
   ActiveRequestSet requests_;
+
+  Delegate* delegate_;
 
   scoped_ptr<net::CertVerifier> default_cert_verifier_;
 

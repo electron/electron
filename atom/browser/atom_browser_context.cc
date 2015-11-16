@@ -61,6 +61,7 @@ std::string RemoveWhitespace(const std::string& str) {
 AtomBrowserContext::AtomBrowserContext(const std::string& partition,
                                        bool in_memory)
     : brightray::BrowserContext(partition, in_memory),
+      cert_verifier_(new AtomCertVerifier),
       job_factory_(new AtomURLRequestJobFactory),
       allow_ntlm_everywhere_(false) {
 }
@@ -160,7 +161,7 @@ content::BrowserPluginGuestManager* AtomBrowserContext::GetGuestManager() {
 }
 
 net::CertVerifier* AtomBrowserContext::CreateCertVerifier() {
-  return new AtomCertVerifier;
+  return cert_verifier_;
 }
 
 net::SSLConfigService* AtomBrowserContext::CreateSSLConfigService() {

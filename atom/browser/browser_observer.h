@@ -7,7 +7,6 @@
 
 #include <string>
 
-#include "atom/browser/atom_cert_verifier.h"
 #include "base/memory/scoped_ptr.h"
 #include "content/public/browser/client_certificate_delegate.h"
 
@@ -17,7 +16,6 @@ class WebContents;
 
 namespace net {
 class SSLCertRequestInfo;
-class X509Certificate;
 }
 
 namespace atom {
@@ -63,10 +61,6 @@ class BrowserObserver {
 
   // The browser requests HTTP login.
   virtual void OnLogin(LoginHandler* login_handler) {}
-
-  // The browser requests Server Certificate Verification.
-  virtual void OnCertVerification(
-      const scoped_refptr<AtomCertVerifier::CertVerifyRequest>& request) {}
 
  protected:
   virtual ~BrowserObserver() {}

@@ -13,7 +13,6 @@
 #include "atom/browser/api/save_page_handler.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
-#include "atom/browser/browser.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
@@ -253,9 +252,7 @@ void PassVerificationResult(
 Session::Session(AtomBrowserContext* browser_context)
     : browser_context_(browser_context) {
   AttachAsUserData(browser_context);
-
-  // Observe Browser to get certificate verification notification.
-  Browser::Get()->AddObserver(this);
+  browser_context->cert_verifier()->SetDelegate(this);
 
   // Observe DownloadManger to get download notifications.
   content::BrowserContext::GetDownloadManager(browser_context)->
@@ -265,11 +262,10 @@ Session::Session(AtomBrowserContext* browser_context)
 Session::~Session() {
   content::BrowserContext::GetDownloadManager(browser_context())->
       RemoveObserver(this);
-  Browser::Get()->RemoveObserver(this);
   Destroy();
 }
 
-void Session::OnCertVerification(
+void Session::RequestCertVerification(
     const scoped_refptr<AtomCertVerifier::CertVerifyRequest>& request) {
   bool prevent_default = Emit(
       "verify-certificate",

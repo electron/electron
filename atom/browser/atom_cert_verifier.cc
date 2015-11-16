@@ -6,7 +6,6 @@
 
 #include "atom/browser/browser.h"
 #include "atom/common/native_mate_converters/net_converter.h"
-#include "base/callback_helpers.h"
 #include "base/sha1.h"
 #include "base/stl_util.h"
 #include "content/public/browser/browser_thread.h"
@@ -55,7 +54,6 @@ void AtomCertVerifier::CertVerifyRequest::RunResult(int result) {
   for (auto& callback : callbacks_)
     callback.Run(result);
   cert_verifier_->RemoveRequest(this);
-  Release();
 }
 
 void AtomCertVerifier::CertVerifyRequest::DelegateToDefaultVerifier() {
@@ -70,15 +68,11 @@ void AtomCertVerifier::CertVerifyRequest::DelegateToDefaultVerifier() {
       verify_result_,
       base::Bind(&CertVerifyRequest::RunResult,
                  weak_ptr_factory_.GetWeakPtr()),
-      &new_out_req_,
+      out_req_,
       net_log_);
 
-  if (rv != net::ERR_IO_PENDING && !callbacks_.empty()) {
-    for (auto& callback : callbacks_)
-      callback.Run(rv);
-    cert_verifier_->RemoveRequest(this);
-    Release();
-  }
+  if (rv != net::ERR_IO_PENDING)
+    RunResult(rv);
 }
 
 void AtomCertVerifier::CertVerifyRequest::ContinueWithResult(int result) {
@@ -103,7 +97,8 @@ void AtomCertVerifier::CertVerifyRequest::ContinueWithResult(int result) {
                  weak_ptr_factory_.GetWeakPtr()));
 }
 
-AtomCertVerifier::AtomCertVerifier() {
+AtomCertVerifier::AtomCertVerifier()
+    : delegate_(nullptr) {
   default_cert_verifier_.reset(net::CertVerifier::CreateDefault());
 }
 
@@ -122,7 +117,7 @@ int AtomCertVerifier::Verify(
     const net::BoundNetLog& net_log) {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
 
-  if (callback.is_null() || !verify_result || hostname.empty())
+  if (callback.is_null() || !verify_result || hostname.empty() || !delegate_)
     return net::ERR_INVALID_ARGUMENT;
 
   const RequestParams key(cert->fingerprint(),
@@ -144,8 +139,8 @@ int AtomCertVerifier::Verify(
     requests_.insert(make_scoped_refptr(request));
 
     BrowserThread::PostTask(BrowserThread::UI, FROM_HERE,
-                            base::Bind(&Browser::RequestCertVerification,
-                                       base::Unretained(Browser::Get()),
+                            base::Bind(&Delegate::RequestCertVerification,
+                                       base::Unretained(delegate_),
                                        make_scoped_refptr(request)));
   }
 
