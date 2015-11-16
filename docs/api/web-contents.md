@@ -593,14 +593,12 @@ Disable device emulation enabled by `webContents.enableDeviceEmulation`.
 Sends an input `event` to the page.
 
 For keyboard events, the `event` object also have following properties:
-(only one of `keyCode` and `keyIdentifier` is required)
 
-* `keyCode` Char (**required**) - A single character that will be sent as
-  keyboard event. Can be any UTF-8 character.
-* `keyIdentifier` String (**required**) - A text representation of the character
-  that will be sent as keyboard event, can be `Enter`, `Backspace`, `Delete`,
-  `Tab`, `Escape`, `Control`, `Alt`, `Shift`, `End`, `Home`, `Insert`, `Left`,
-  `Up`, `Right`, `Down`, `PageUp`, `PageDown`, `PrintScreen`
+* `keyCode` Char or String (**required**) - The character that will be sent
+  as the keyboard event. Can be a single UTF-8 character, or the name of the
+  key that generates the event. Accepted key names are `enter`, `backspace`,
+  `delete`, `tab`, `escape`, `control`, `alt`, `shift`, `end`, `home`, `insert`,
+  `left`, `up`, `right`, `down`, `pageUp`, `pageDown`, `printScreen`
 
 For mouse events, the `event` object also have following properties:
 

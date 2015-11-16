@@ -16,7 +16,7 @@ namespace atom {
 ui::KeyboardCode KeyboardCodeFromCharCode(base::char16 c, bool* shifted);
 
 // Return key code of the char from a string representation of the char
-ui::KeyboardCode KeyboardCodeFromKeyIdentifier(std::string chr);
+ui::KeyboardCode KeyboardCodeFromKeyIdentifier(const std::string& chr);
 
 }  // namespace atom
 

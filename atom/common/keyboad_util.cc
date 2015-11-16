@@ -73,7 +73,7 @@ ui::KeyboardCode KeyboardCodeFromCharCode(base::char16 c, bool* shifted) {
 }
 
 // Return key code of the char.
-ui::KeyboardCode KeyboardCodeFromKeyIdentifier(std::string chr) {
+ui::KeyboardCode KeyboardCodeFromKeyIdentifier(const std::string& chr) {
   if (chr == "enter")        return ui::VKEY_RETURN;
   if (chr == "backspace")    return ui::VKEY_BACK;
   if (chr == "delete")       return ui::VKEY_DELETE;

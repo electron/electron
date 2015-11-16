@@ -164,7 +164,7 @@ bool Converter<blink::WebKeyboardEvent>::FromV8(
 
   if (dict.Get("keyCode", &code))
     out->windowsKeyCode = atom::KeyboardCodeFromCharCode(code, &shifted);
-  else if (dict.Get("keyIdentifier", &identifier))
+  else if (dict.Get("keyCode", &identifier))
     out->windowsKeyCode = atom::KeyboardCodeFromKeyIdentifier(
       base::StringToLowerASCII(identifier));
   else
