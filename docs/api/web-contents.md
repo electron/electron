@@ -590,7 +590,7 @@ Disable device emulation enabled by `webContents.enableDeviceEmulation`.
 * `event` Object
   * `type` String (**required**) - The type of the event, can be `mouseDown`,
     `mouseUp`, `mouseEnter`, `mouseLeave`, `contextMenu`, `mouseWheel`,
-    `keyDown`, `keyUp`, `char`.
+    `mouseMove`, `keyDown`, `keyUp`, `char`.
   * `modifiers` Array - An array of modifiers of the event, can
     include `shift`, `control`, `alt`, `meta`, `isKeypad`, `isAutoRepeat`,
     `leftButtonDown`, `middleButtonDown`, `rightButtonDown`, `capsLock`,
@@ -600,8 +600,11 @@ Sends an input `event` to the page.
 
 For keyboard events, the `event` object also have following properties:
 
-* `keyCode` String (**required**) - A single character that will be sent as
-  keyboard event. Can be any UTF-8 character.
+* `keyCode` Char or String (**required**) - The character that will be sent
+  as the keyboard event. Can be a single UTF-8 character, or the name of the
+  key that generates the event. Accepted key names are `enter`, `backspace`,
+  `delete`, `tab`, `escape`, `control`, `alt`, `shift`, `end`, `home`, `insert`,
+  `left`, `up`, `right`, `down`, `pageUp`, `pageDown`, `printScreen`
 
 For mouse events, the `event` object also have following properties:
 
