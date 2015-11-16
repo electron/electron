@@ -157,7 +157,7 @@ bool WindowsToastNotification::SetXmlText(
 
 bool WindowsToastNotification::SetXmlImage(
     IXmlDocument* doc, std::string icon_path) {
-  ScopedHString tag(L"imag");
+  ScopedHString tag(L"image");
   if (!tag.success())
     return false;
 
