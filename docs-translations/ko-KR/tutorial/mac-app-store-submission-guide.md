@@ -100,8 +100,8 @@ productbuild --component "$APP_PATH" /Applications --sign "$INSTALLER_KEY" "$RES
 * 특정 접근성 기능이 작동하지 않을 수 있습니다.
 * 어플리케이션이 DNS의 변경을 감지하지 못할 수 있습니다.
 
-또한 어플리케이션 샌드박스 사용으로 인해 어플리케이션에서 접근할 수 있는 리소스는 엄격하게 제한되어 있습니다.
-자세한 사항은 [App Sandboxing][app-sandboxing] 문서를 참고하세요.
+또한 어플리케이션 샌드박스 개념으로 인해 어플리케이션에서 접근할 수 있는 리소스는 엄격하게 제한되어 있습니다.
+자세한 내용은 [App Sandboxing][app-sandboxing] 문서를 참고하세요.
 
 **역주:** [Mac 앱 배포 가이드 공식 문서](https://developer.apple.com/osx/distribution/kr/)
 
