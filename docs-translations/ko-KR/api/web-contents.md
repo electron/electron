@@ -1,9 +1,8 @@
 # webContents
 
-`webContents`는
-[EventEmitter](http://nodejs.org/api/events.html#events_class_events_eventemitter)입니다.
+`webContents`는 [EventEmitter](http://nodejs.org/api/events.html#events_class_events_eventemitter)를 상속받았습니다.
 
-웹페이지의 렌더링과 관리를 책임지며 [`BrowserWindow`](browser-window.md)의 속성입니다. 다음은 `webContents` 객체를 접근하는 예입니다:
+웹 페이지의 렌더링과 관리를 책임지며 [`BrowserWindow`](browser-window.md)의 속성입니다. 다음은 `webContents` 객체에 접근하는 예제입니다:
 
 ```javascript
 const BrowserWindow = require('electron').BrowserWindow;
@@ -20,7 +19,7 @@ var webContents = win.webContents;
 
 ### Event: 'did-finish-load'
 
-네비게이션이 끝났을 때 발생하는 이벤트입니다. 즉, 탭의 스피너가 멈추고 `onload` 이벤트가 발생했을 때를 얘기합니다.
+탐색 작업이 끝났을 때 발생하는 이벤트입니다. 브라우저의 탭의 스피너가 멈추고 `onload` 이벤트가 발생했을 때를 말합니다.
 
 ### Event: 'did-fail-load'
 
@@ -31,8 +30,8 @@ Returns:
 * `errorDescription` String
 * `validatedURL` String
 
-이 이벤트는 `did-finish-load`와 비슷하나, 로드가 실패했거나 취소되었을 때도 발생합니다. 예를들면 `window.stop()`이 실행되었을 때 발생합니다.
-모든 에러 코드들의 목록과 설명은 [여기](https://code.google.com/p/chromium/codesearch#chromium/src/net/base/net_error_list.h)서 확인 가능합니다.
+이 이벤트는 `did-finish-load`와 비슷하나, 로드가 실패했거나 취소되었을 때 발생합니다. 예를 들면 `window.stop()`이 실행되었을 때 발생합니다.
+발생할 수 있는 전체 에러 코드의 목록과 설명은 [여기](https://code.google.com/p/chromium/codesearch#chromium/src/net/base/net_error_list.h)서 확인할 수 있습니다.
 
 ### Event: 'did-frame-finish-load'
 
@@ -41,15 +40,15 @@ Returns:
 * `event` Event
 * `isMainFrame` Boolean
 
-프레임(Frame)이 네비게이션을 끝냈을 때 발생하는 이벤트입니다.
+프레임(Frame)이 탐색을 끝냈을 때 발생하는 이벤트입니다.
 
 ### Event: 'did-start-loading'
 
-탭의 스피너가 회전을 시작한 시점과 같습니다.
+브라우저 탭의 스피너가 회전을 시작한 때와 같은 시점에 대응하는 이벤트입니다.
 
 ### Event: 'did-stop-loading'
 
-탭의 스피너가 회전을 멈추었을 떄의 시점과 같습니다.
+브라우저 탭의 스피너가 회전을 멈추었을 때와 같은 시점에 대응하는 이벤트입니다.
 
 ### Event: 'did-get-response-details'
 
@@ -64,7 +63,7 @@ Returns:
 * `referrer` String
 * `headers` Object
 
-요청한 리소스의 정보가 존재할 때 발생하는 이벤트입니다.
+요청한 리소스에 관련된 자세한 정보를 사용할 수 있을 때 발생하는 이벤트입니다.
 `status`는 리소스를 다운로드하기 위한 소켓 연결을 나타냅니다.
 
 ### Event: 'did-get-redirect-request'
@@ -80,7 +79,7 @@ Returns:
 * `referrer` String
 * `headers` Object
 
-리소스를 요청할 때 리다이렉트 응답을 받았을 때 발생하는 이벤트입니다.
+리소스를 요청하는 동안에 리다이렉트 응답을 받았을 때 발생하는 이벤트입니다.
 
 ### Event: 'dom-ready'
 
@@ -95,9 +94,9 @@ Returns:
 Returns:
 
 * `event` Event
-* `favicons` Array - Array of URLs
+* `favicons` Array - URL 배열
 
-페이지가 favicon을 받았을 때 발생하는 이벤트입니다.
+페이지가 favicon(파비콘) URL을 받았을 때 발생하는 이벤트입니다.
 
 ### Event: 'new-window'
 
@@ -108,14 +107,14 @@ Returns:
 * `frameName` String
 * `disposition` String - `default`, `foreground-tab`, `background-tab`,
   `new-window`, `other`중 하나일 수 있습니다.
-* `options` Object - 새로운 `BrowserWindow`를 만들 때 사용되는 옵션들입니다.
+* `options` Object - 새로운 `BrowserWindow` 객체를 만들 때 사용되는 옵션 객체입니다.
 
 페이지가 `url`에 대하여 새로운 윈도우를 열기위해 요청한 경우 발생하는 이벤트입니다.
-`window.open`이나 `<a target='_blank'>`과 같은 외부 링크 등에 의해 요청될 수 있습니다.
+`window.open`이나 `<a target='_blank'>`과 같은 외부 링크에 의해 요청될 수 있습니다.
 
-기본값으로 `BrowserWindow`는 `url`로 생성됩니다.
+기본값으로 `BrowserWindow`는 `url`을 기반으로 생성됩니다.
 
-`event.preventDefault()`를 호출하면 새로운 창을 만드는 것을 방지할 수 있습니다.
+`event.preventDefault()`를 호출하면 새로운 창이 생성되는 것을 방지할 수 있습니다.
 
 ### Event: 'will-navigate'
 
@@ -124,13 +123,13 @@ Returns:
 * `event` Event
 * `url` String
 
-사용자 또는 페이지가 새로운 네비게이션을 원할 때 발생하는 이벤트입니다.
+사용자 또는 페이지가 새로운 페이지로 이동할 때 발생하는 이벤트입니다.
 `window.location` 객체가 변경되거나 사용자가 페이지의 링크를 클릭했을 때 발생합니다.
 
 이 이벤트는 `webContents.loadURL`과 `webContents.back` 같은 API를 이용하여 프로그램적으로
-시작된 네비게이션에 대해서는 발생하지 않습니다.
+시작된 탐색에 대해서는 발생하지 않습니다.
 
-`event.preventDefault()`를 호출하면 네비게이션을 방지할 수 있습니다.
+`event.preventDefault()`를 호출하면 탐색을 방지할 수 있습니다.
 
 ### Event: 'crashed'
 
@@ -152,15 +151,15 @@ Returns:
 
 ### Event: 'devtools-opened'
 
-DevTools가 열렸을 때 발생되는 이벤트입니다.
+개발자 도구가 열렸을 때 발생되는 이벤트입니다.
 
 ### Event: 'devtools-closed'
 
-DevTools가 닫혔을 때 발생되는 이벤트입니다.
+개발자 도구가 닫혔을 때 발생되는 이벤트입니다.
 
 ### Event: 'devtools-focused'
 
-DevTools에 포커스가 가거나 DevTools가 열렸을 때 발생되는 이벤트입니다.
+개발자 도구에 포커스가 가거나 개발자 도구가 열렸을 때 발생되는 이벤트입니다.
 
 ### Event: 'login'
 
@@ -185,13 +184,13 @@ Returns:
 
 ## Instance Methods
 
-`webContents`객체는 다음과 같은 인스턴스 메소드들을 가지고 있습니다.
+`webContents`객체는 다음과 같은 인스턴스 메서드들을 가지고 있습니다.
 
 ### `webContents.session`
 
 webContents에서 사용되는 `session`객체를 반환합니다.
 
-[session 문서](session.md)에서 이 객체의 메소드들을 확인할 수 있습니다.
+[session](session.md) 문서에서 이 객체의 메서드들을 확인할 수 있습니다.
 
 ### `webContents.loadURL(url[, options])`
 
@@ -229,7 +228,7 @@ var currentURL = win.webContents.getURL();
 
 ### `webContents.stop()`
 
-대기중인 네비게이션들을 모두 멈춥니다.
+대기중인 탐색 작업을 모두 멈춥니다.
 
 ### `webContents.reload()`
 
@@ -237,11 +236,11 @@ var currentURL = win.webContents.getURL();
 
 ### `webContents.reloadIgnoringCache()`
 
-현재 페이지를 캐시를 무시한채로 새로고침합니다.
+현재 웹 페이지의 캐시를 무시한 채로 새로고침합니다.
 
 ### `webContents.canGoBack()`
 
-브라우저가 이전의 웹 페이지로 돌아갈 수 있는지 여부를 반환합니다.
+브라우저가 이전 웹 페이지로 돌아갈 수 있는지 여부를 반환합니다.
 
 ### `webContents.canGoForward()`
 
@@ -255,7 +254,7 @@ var currentURL = win.webContents.getURL();
 
 ### `webContents.clearHistory()`
 
-네비게이션 기록을 삭제합니다.
+탐색 기록을 삭제합니다.
 
 ### `webContents.goBack()`
 
@@ -269,13 +268,13 @@ var currentURL = win.webContents.getURL();
 
 * `index` Integer
 
-브라우저가 지정된 절대 웹 페이지 인덱스로 네비게이트하게 합니다.
+브라우저가 지정된 절대 웹 페이지 인덱스로 탐색하게 합니다.
 
 ### `webContents.goToOffset(offset)`
 
 * `offset` Integer
 
-"current entry"에서 지정된 offset으로 네비게이트 합니다.
+"current entry"에서 지정된 offset으로 탐색합니다.
 
 ### `webContents.isCrashed()`
 
@@ -285,27 +284,27 @@ var currentURL = win.webContents.getURL();
 
 * `userAgent` String
 
-현재의 웹 페이지의 유저 에이전트를 오버라이드 합니다.
+현재 웹 페이지의 유저 에이전트를 덮어씌웁니다.
 
 ### `webContents.getUserAgent()`
 
-현재 웹 페이지의 유저 에이전트 `String`을 반환합니다.
+현재 웹 페이지의 유저 에이전트 문자열을 반환합니다.
 
 ### `webContents.insertCSS(css)`
 
 * `css` String
 
-Injects CSS into the current web page.
+CSS 코드를 현재 웹 페이지에 삽입합니다.
 
 ### `webContents.executeJavaScript(code[, userGesture])`
 
 * `code` String
 * `userGesture` Boolean (optional)
 
-페이지에서 코드를 실행합니다.
+페이지에서 자바스크립트 코드를 실행합니다.
 
-브라우저 윈도우에서 `requestFullScreen`와 같은 몇몇 HTML API들은 사용자의 행동으로만 호출될 수
-있습니다. `userGesture`를 `true`로 설정하면 이런 제약을 무시할 수 있습니다.
+기본적으로 `requestFullScreen`와 같은 몇몇 HTML API들은 사용자의 조작에 의해서만 호출될 수 있습니다.
+`userGesture`를 `true`로 설정하면 이러한 제약을 무시할 수 있습니다.
 
 ### `webContents.setAudioMuted(muted)`
 
@@ -319,64 +318,64 @@ Injects CSS into the current web page.
 
 ### `webContents.undo()`
 
-웹 페이지에서 `undo` 에디팅 커맨드를 실행합니다.
+웹 페이지에서 `undo` 편집 커맨드를 실행합니다.
 
 ### `webContents.redo()`
 
-웹 페이지에서 `redo` 에디팅 커맨드를 실행합니다.
+웹 페이지에서 `redo` 편집 커맨드를 실행합니다.
 
 ### `webContents.cut()`
 
-웹 페이지에서 `cut` 에디팅 커맨드를 실행합니다.
+웹 페이지에서 `cut` 편집 커맨드를 실행합니다.
 
 ### `webContents.copy()`
 
-웹 페이지에서 `copy` 에디팅 커맨드를 실행합니다.
+웹 페이지에서 `copy` 편집 커맨드를 실행합니다.
 
 ### `webContents.paste()`
 
-웹 페이지에서 `paste` 에디팅 커맨드를 실행합니다.
+웹 페이지에서 `paste` 편집 커맨드를 실행합니다.
 
 ### `webContents.pasteAndMatchStyle()`
 
-웹 페이지에서 `pasteAndMatchStyle` 에디팅 커맨드를 실행합니다.
+웹 페이지에서 `pasteAndMatchStyle` 편집 커맨드를 실행합니다.
 
 ### `webContents.delete()`
 
-웹 페이지에서 `delete` 에디팅 커맨드를 실행합니다.
+웹 페이지에서 `delete` 편집 커맨드를 실행합니다.
 
 ### `webContents.selectAll()`
 
-웹 페이지에서 `selectAll` 에디팅 커맨드를 실행합니다.
+웹 페이지에서 `selectAll` 편집 커맨드를 실행합니다.
 
 ### `webContents.unselect()`
 
-웹 페이지에서 `unselect` 에디팅 커맨드를 실행합니다.
+웹 페이지에서 `unselect` 편집 커맨드를 실행합니다.
 
 ### `webContents.replace(text)`
 
 * `text` String
 
-웹 페이지에서 `replace` 에디팅 커맨드를 실행합니다.
+웹 페이지에서 `replace` 편집 커맨드를 실행합니다.
 
 ### `webContents.replaceMisspelling(text)`
 
 * `text` String
 
-웹 페이지에서 `replaceMisspelling` 에디팅 커맨드를 실행합니다.
+웹 페이지에서 `replaceMisspelling` 편집 커맨드를 실행합니다.
 
 ### `webContents.hasServiceWorker(callback)`
 
 * `callback` Function
 
-ServiceWorker가 등록되어있는지 확인하고 `callback`에 대한 응답으로 boolean을 반환합니다.
+ServiceWorker가 등록되어있는지 확인하고 `callback`에 대한 응답으로 boolean 값을 반환합니다.
 
 ### `webContents.unregisterServiceWorker(callback)`
 
 * `callback` Function
 
-ServiceWorker가 존재하면 모두 등록을 해제하고 JS promise가 만족될 때 `callback`에 대한
-응답으로 boolean을 반환하거나 JS promise가 만족되지 않을 때 false를 반환합니다.
+ServiceWorker가 존재하면 모두 등록을 해제하고 JS Promise가 만족될 때 `callback`에 대한
+응답으로 boolean을 반환하거나 JS Promise가 만족되지 않을 때 `false`를 반환합니다.
 
 ### `webContents.print([options])`
 
@@ -392,8 +391,8 @@ ServiceWorker가 존재하면 모두 등록을 해제하고 JS promise가 만족
 웹 페이지에서 `window.print()`를 호출하는 것은
 `webContents.print({silent: false, printBackground: false})`를 호출하는 것과 같습니다.
 
-**Note:** 윈도우즈에서 print API는 `pdf.dll`에 의존합니다. 당신의 어플리케이션이 print 기능을
-필요로 하지 않는다면 바이너리 크기를 줄이기 위해 `pdf.dll`을 삭제하셔도 안전합니다.
+**Note:** Windows에서의 프린터 API는 `pdf.dll`에 의존합니다.
+어플리케이션이 print 기능을 사용하지 않는 경우 전체 바이너리 크기를 줄이기 위해 `pdf.dll`을 삭제해도 됩니다.
 
 ### `webContents.printToPDF(options, callback)`
 
@@ -456,18 +455,18 @@ win.webContents.on("did-finish-load", function() {
 
 * `path` String
 
-특정 경로를 DevTools의 워크스페이스에 추가합니다.
+특정 경로를 개발자 도구의 워크스페이스에 추가합니다.
 
 ### `webContents.removeWorkSpace(path)`
 
 * `path` String
 
-특정 경로를 DevTools의 워크스페이스에서 제거합니다.
+특정 경로를 개발자 도구의 워크스페이스에서 제거합니다.
 
 ### `webContents.openDevTools([options])`
 
 * `options` Object (optional). Properties:
-  * `detach` Boolean - 새 창에서 DevTools를 엽니다.
+  * `detach` Boolean - 새 창에서 개발자 도구를 엽니다.
 
 개발자 도구를 엽니다.
 
@@ -538,18 +537,18 @@ app.on('ready', function() {
 `parameters` Object, properties:
 
 * `screenPosition` String - 에뮬레이트 할 화면 종료를 지정합니다
-    (default: `desktop`)
+    (기본값: `desktop`)
   * `desktop`
   * `mobile`
 * `screenSize` Object - 에뮬레이트 화면의 크기를 지정합니다 (screenPosition == mobile)
   * `width` Integer - 에뮬레이트 화면의 너비를 지정합니다
   * `height` Integer - 에뮬레이트 화면의 높이를 지정합니다
 * `viewPosition` Object - 화면에서 뷰의 위치
-    (screenPosition == mobile) (default: `{x: 0, y: 0}`)
+    (screenPosition == mobile) (기본값: `{x: 0, y: 0}`)
   * `x` Integer - 좌상단 모서리로부터의 x 축의 오프셋
   * `y` Integer - 좌상단 모서리로부터의 y 축의 오프셋
 * `deviceScaleFactor` Integer - 디바이스의 스케일 팩터(scale factor)를 지정합니다.
-	(0일 경우 기본 디바이스 스케일 팩터를 기본으로 사용합니다) (default: `0`)
+	(0일 경우 기본 디바이스 스케일 팩터를 기본으로 사용합니다) (기본값: `0`)
 * `viewSize` Object - 에뮬레이트 된 뷰의 크기를 지정합니다 (빈 값은 오버라이드 하지 않는 다는
 	것을 의미합니다)
   * `width` Integer - 에뮬레이트 된 뷰의 너비를 지정합니다
@@ -572,20 +571,22 @@ app.on('ready', function() {
 ### `webContents.sendInputEvent(event)`
 
 * `event` Object
-  * `type` String (**required**) - 이벤트의 타입. 다음 값들이 가능합니다. `mouseDown`,
+  * `type` String (**required**) - 이벤트의 타입. 다음 값들을 사용할 수 있습니다: `mouseDown`,
     `mouseUp`, `mouseEnter`, `mouseLeave`, `contextMenu`, `mouseWheel`,
     `keyDown`, `keyUp`, `char`.
   * `modifiers` Array - 이벤트의 수정자(modifier)들에 대한 배열. 다음 값들을 포함 할 수
-		있습니다. `shift`, `control`, `alt`, `meta`, `isKeypad`, `isAutoRepeat`,
+		있습니다: `shift`, `control`, `alt`, `meta`, `isKeypad`, `isAutoRepeat`,
     `leftButtonDown`, `middleButtonDown`, `rightButtonDown`, `capsLock`,
     `numLock`, `left`, `right`.
 
-input `event`를 페이지로 보냅니다.
+Input `event`를 웹 페이지로 전송합니다.
 
-키보드 이벤트들에 대해서는 `event` 객체는 다음 속성들을 추가적으로 가지고 있습니다:
+키보드 이벤트들에 대해서는 `event` 객체는 다음 속성들을 추가로 가지고 있습니다:
 
-* `keyCode` String (**required**) - 키보드 이벤트로 보낼 수 있는 단일 캐릭터. 모든 UTF-8가
-	사용 가능합니다.
+* `keyCode` String (**required**) - 키보드 이벤트로 보내지는 문자.
+  단일 UTF-8 문자를 사용할 수 있고 이벤트를 발생시키는 다음 키 중 하나를 포함할 수 있습니다:
+  `enter`, `backspace`, `delete`, `tab`, `escape`, `control`, `alt`, `shift`, `end`,
+  `home`, `insert`, `left`, `up`, `right`, `down`, `pageUp`, `pageDown`, `printScreen`
 
 마우스 이벤트들에 대해서는 `event` 객체는 다음 속성들을 추가적으로 가지고 있습니다:
 
@@ -631,10 +632,9 @@ BGRA 포맷으로 효율적으로 저장됩니다. 하지만 실제 재프리젠
 
 ### `webContents.devToolsWebContents`
 
-이 `WebContents`에 대한 DevTools의 `WebContents`를 가져옵니다.
+이 `WebContents`에 대한 개발자 도구의 `WebContents`를 가져옵니다.
 
-**Note:** 사용자가 절대로 이 객체를 저장해서는 안됩니다. 그럴경우 DevTools가 닫혔을 때, `null`이
-될 수도 있습니다.
+**Note:** 사용자가 절대로 이 객체를 저장해서는 안 됩니다. 개발자 도구가 닫혔을 때, `null`이 반환될 수 있습니다.
 
 ### `webContents.savePage(fullPath, saveType, callback)`
 

@@ -7,7 +7,7 @@
 * [네이티브 Node 모듈 사용하기](tutorial/using-native-node-modules.md)
 * [메인 프로세스 디버깅하기](tutorial/debugging-main-process.md)
 * [Selenium 과 WebDriver 사용하기](tutorial/using-selenium-and-webdriver.md)
-* [개발자 콘솔 확장기능](tutorial/devtools-extension.md)
+* [개발자 도구 확장 기능](tutorial/devtools-extension.md)
 * [Pepper 플래시 플러그인 사용하기](tutorial/using-pepper-flash-plugin.md)
 
 ## 튜토리얼

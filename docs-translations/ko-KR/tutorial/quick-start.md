@@ -93,7 +93,7 @@ app.on('ready', function() {
   // 그리고 현재 디렉터리의 index.html을 로드합니다.
   mainWindow.loadURL('file://' + __dirname + '/index.html');
 
-  // 개발자 콘솔을 엽니다.
+  // 개발자 도구를 엽니다.
   mainWindow.webContents.openDevTools();
 
   // 창이 닫히면 호출됩니다.

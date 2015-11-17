@@ -1,6 +1,6 @@
 ﻿# MenuItem
 
-`menu-item` 모듈은 어플리케이션 또는 컨텍스트 [`menu`](menu.md)에 아이템을 추가할 수 있도록 관련 클래스를 제공합니다.
+`menu-item` 모듈은 어플리케이션 또는 컨텍스트 [`menu`](menu.md)에 항목 아이템을 추가할 수 있도록 관련 클래스를 제공합니다.
 
 [`menu`](menu.md)에서 예제를 확인할 수 있습니다.
 
@@ -25,10 +25,9 @@
   * `id` String - 현재 메뉴 아이템에 대해 유일키를 지정합니다. 이 키는 이후 `position` 옵션에서 사용할 수 있습니다.
   * `position` String - 미리 지정한 `id`를 이용하여 메뉴 아이템의 위치를 세밀하게 조정합니다.
 
-메뉴 아이템을 생성할 때, 매칭되는 액션이 있다면 수동으로 직접 구현하는 대신 `role`을 설정하여,
-고유 OS 경험을 최대한 살릴 것을 권장합니다.
+메뉴 아이템을 생성할 때, 다음 목록과 일치하는 표준 동작은 수동으로 직접 구현하는 대신 `role` 속성을 지정하여 고유 OS 경험을 최대한 살릴 수 있습니다.
 
-`role` 속성은 다음 값을 가질 수 있습니다.:
+`role` 속성은 다음 값을 가질 수 있습니다:
 
 * `undo`
 * `redo`
@@ -36,16 +35,16 @@
 * `copy`
 * `paste`
 * `selectall`
-* `minimize` - 현재 윈도우를 최소화 합니다.
-* `close` - 현재 윈도우를 닫습니다.
+* `minimize` - 현재 윈도우를 최소화합니다
+* `close` - 현재 윈도우를 닫습니다
 
-OS X에서 `role`은 다음 값을 추가로 가질 수 있습니다.
+OS X에서의 `role`은 다음 값을 추가로 가질 수 있습니다:
 
-* `about` - `orderFrontStandardAboutPanel` 액션에 매핑합니다.
-* `hide` - `hide` 액션에 매핑합니다.
-* `hideothers` - `hideOtherApplications` 액션에 매핑합니다.
-* `unhide` - `unhideAllApplications` 액션에 매핑합니다.
-* `front` - `arrangeInFront` 액션에 매핑합니다.
-* `window` - 부메뉴가 "Window" 메뉴입니다.
-* `help` - 부메뉴가 "Help" 메뉴입니다.
-* `services` - 부메뉴가 "Services" 메뉴입니다.
+* `about` - 매핑된 `orderFrontStandardAboutPanel` 액션
+* `hide` - 매핑된 `hide` 액션
+* `hideothers` - 매핑된 `hideOtherApplications` 액션
+* `unhide` - 매핑된 `unhideAllApplications` 액션
+* `front` - 매핑된 `arrangeInFront` 액션
+* `window` - 부 메뉴를 가지는 "Window" 메뉴
+* `help` - 부 메뉴를 가지는 "Help" 메뉴
+* `services` - 부 메뉴를 가지는 "Services" 메뉴

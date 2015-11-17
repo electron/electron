@@ -1,8 +1,8 @@
-﻿# 개발자 콘솔 확장
+﻿# 개발자 도구 확장 기능
 
 어플리케이션의 디버깅을 쉽게 하기 위해 Electron은 기본적으로 [Chrome DevTools Extension][devtools-extension]을 지원합니다.
 
-개발자 콘솔 확장 기능은 간단하게 사용할 확장 기능 플러그인의 소스 코드를 다운로드한 후 `BrowserWindow.addDevToolsExtension` API를 이용하여
+개발자 도구 확장 기능은 간단하게 사용할 확장 기능 플러그인의 소스 코드를 다운로드한 후 `BrowserWindow.addDevToolsExtension` API를 이용하여
 어플리케이션 내에 로드할 수 있습니다. 한가지 주의할 점은 확장 기능 사용시 창이 생성될 때 마다 일일이 해당 API를 호출할 필요는 없습니다.
 
 ** 주의: 현재 React DevTools은 작동하지 않습니다. https://github.com/atom/electron/issues/915 이슈를 참고하세요! **
@@ -19,7 +19,7 @@ $ git clone --recursive https://github.com/facebook/react-devtools.git
 [`react-devtools/shells/chrome/Readme.md`](https://github.com/facebook/react-devtools/blob/master/shells/chrome/Readme.md)
 를 통해 확장 기능을 개발하는 방법을 알아볼 수 있습니다.
 
-그리고 개발자 콘솔에서 다음 코드를 입력하면 확장 기능을 로드할 수 있습니다:
+그리고 개발자 도구에서 다음 코드를 입력하면 확장 기능을 로드할 수 있습니다:
 
 ```javascript
 const BrowserWindow = require('electron').remote.BrowserWindow;
@@ -32,9 +32,9 @@ BrowserWindow.addDevToolsExtension('/some-directory/react-devtools/shells/chrome
 BrowserWindow.removeDevToolsExtension('React Developer Tools');
 ```
 
-## 개발자 콘솔 확장 기능의 구성 형식
+## 개발자 도구 확장 기능의 구성 형식
 
-모든 개발자 콘솔 확장은 완벽히 Chrome 브라우저를 위해 작성되었기 때문에 Electron에서도 로드할 수 있습니다.
+모든 개발자 도구 확장은 완벽히 Chrome 브라우저를 위해 작성되었기 때문에 Electron에서도 로드할 수 있습니다.
 하지만 반드시 확장 기능은 소스 코드 디렉터리(폴더) 형태여야 합니다. 그래서 `crx` 등의 포맷으로 패키징된 확장 기능의 경우
 사용자가 직접 해당 패키지의 압축을 풀어서 로드하지 않는 이상 Electron에서 해당 확장 기능의 압축을 풀 방법이 없습니다.
 
