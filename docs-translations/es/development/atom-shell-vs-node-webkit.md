@@ -22,7 +22,7 @@ Con el fin de evitar la complejidad de la construcción de todo Chromium, Electr
 
 In NW.js, the Node integration in web pages requires patching Chromium to work, while in Electron we chose a different way to integrate the libuv loop with each platform's message loop to avoid hacking Chromium. See the node_bindings code for how that was done.
 
-En NW.js, la integración de Node en las páginas web requiere parchear Chromium para que funcione, mientras que en Electron elegimos una manera diferente para integrar el cilco libuv con cada ciclo de mensaje de las plataformas para evitar el hacking en Chromium. Ver el código  `node_bindings` de cómo se hizo.
+En NW.js, la integración de Node en las páginas web requiere parchear Chromium para que funcione, mientras que en Electron elegimos una manera diferente para integrar el cilco libuv con cada ciclo de mensaje de las plataformas para evitar el hacking en Chromium. Ver el código [`node_bindings`][node-bindings] de cómo se hizo.
 
 
 **4. Multi-contexto**
@@ -31,4 +31,4 @@ Si usted es un usuario experimentado NW.js, usted debe estar familiarizado con e
 
 Mediante el uso de la característica [multi-contexto](http://strongloop.com/strongblog/whats-new-node-js-v0-12-multiple-context-execution/) de Node, Electron no introduce un nuevo contexto JavaScript en páginas web.Resultados de búsqueda
 
-    
+[node-bindings]: https://github.com/atom/electron/tree/master/atom/common
