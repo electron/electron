@@ -266,11 +266,12 @@ void Session::RequestCertVerification(
     const scoped_refptr<AtomCertVerifier::CertVerifyRequest>& request) {
   bool prevent_default = Emit(
       "verify-certificate",
-      request->hostname(),
-      make_scoped_refptr(request->cert()),
+      request->args().hostname,
+      request->args().cert,
       base::Bind(&PassVerificationResult, request));
 
   if (!prevent_default)
+    // Tell the request to use the result of default verifier.
     request->ContinueWithResult(net::ERR_IO_PENDING);
 }
 

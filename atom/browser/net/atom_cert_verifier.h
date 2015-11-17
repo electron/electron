@@ -14,55 +14,35 @@ namespace atom {
 
 class AtomCertVerifier : public net::CertVerifier {
  public:
+  struct VerifyArgs {
+    scoped_refptr<net::X509Certificate> cert;
+    const std::string& hostname;
+    net::CompletionCallback callback;
+  };
+
   class CertVerifyRequest
       : public base::RefCountedThreadSafe<CertVerifyRequest> {
    public:
     CertVerifyRequest(AtomCertVerifier* cert_verifier,
-                      net::X509Certificate* cert,
-                      const std::string& hostname,
-                      const std::string& ocsp_response,
-                      int flags,
-                      net::CRLSet* crl_set,
-                      net::CertVerifyResult* verify_result,
-                      const net::CompletionCallback& callback,
-                      scoped_ptr<Request>* out_req,
-                      const net::BoundNetLog& net_log)
+                      int result,
+                      const VerifyArgs& args)
         : cert_verifier_(cert_verifier),
-          cert_(cert),
-          hostname_(hostname),
-          ocsp_response_(ocsp_response),
-          flags_(flags),
-          crl_set_(crl_set),
-          verify_result_(verify_result),
-          callback_(callback),
-          out_req_(out_req),
-          net_log_(net_log),
+          result_(result),
+          args_(args),
           handled_(false) {
     }
 
     void ContinueWithResult(int result);
 
-    const std::string& hostname() const { return hostname_; }
-    net::X509Certificate* cert() const { return cert_.get(); }
+    const VerifyArgs& args() const { return args_; }
 
    private:
     friend class base::RefCountedThreadSafe<CertVerifyRequest>;
-    ~CertVerifyRequest() {}
-
-    void DelegateToDefaultVerifier();
+    ~CertVerifyRequest();
 
     AtomCertVerifier* cert_verifier_;
-
-    scoped_refptr<net::X509Certificate> cert_;
-    std::string hostname_;
-    std::string ocsp_response_;
-    int flags_;
-    scoped_refptr<net::CRLSet> crl_set_;
-    net::CertVerifyResult* verify_result_;
-    net::CompletionCallback callback_;
-    scoped_ptr<Request>* out_req_;
-    const net::BoundNetLog& net_log_;
-
+    int result_;
+    VerifyArgs args_;
     bool handled_;
 
     DISALLOW_COPY_AND_ASSIGN(CertVerifyRequest);
@@ -99,6 +79,9 @@ class AtomCertVerifier : public net::CertVerifier {
 
  private:
   friend class CertVerifyRequest;
+
+  void VerifyCertificateFromDelegate(const VerifyArgs& args, int result);
+  void OnDefaultVerificationResult(const VerifyArgs& args, int result);
 
   Delegate* delegate_;
   scoped_ptr<net::CertVerifier> default_cert_verifier_;
