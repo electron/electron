@@ -25,11 +25,10 @@
   * `id` String - 현재 메뉴 아이템에 대해 유일키를 지정합니다. 이 키는 이후 `position` 옵션에서 사용할 수 있습니다.
   * `position` String - 미리 지정한 `id`를 이용하여 메뉴 아이템의 위치를 세밀하게 조정합니다.
 
-When creating menu items, it is recommended to specify `role` instead of
-manually implementing the behavior if there is matching action, so menu can have
-best native experience.
+메뉴 아이템을 생성할 때, 매칭되는 액션이 있다면 수동으로 직접 구현하는 대신 `role`을 설정하여,
+고유 OS 경험을 최대한 살릴 것을 권장합니다.
 
-The `role` property can have following values:
+`role` 속성은 다음 값을 가질 수 있습니다.:
 
 * `undo`
 * `redo`
@@ -37,16 +36,16 @@ The `role` property can have following values:
 * `copy`
 * `paste`
 * `selectall`
-* `minimize` - Minimize current window
-* `close` - Close current window
+* `minimize` - 현재 윈도우를 최소화 합니다.
+* `close` - 현재 윈도우를 닫습니다.
 
-On OS X `role` can also have following additional values:
+OS X에서 `role`은 다음 값을 추가로 가질 수 있습니다.
 
-* `about` - Map to the `orderFrontStandardAboutPanel` action
-* `hide` - Map to the `hide` action
-* `hideothers` - Map to the `hideOtherApplications` action
-* `unhide` - Map to the `unhideAllApplications` action
-* `front` - Map to the `arrangeInFront` action
-* `window` - The submenu is a "Window" menu
-* `help` - The submenu is a "Help" menu
-* `services` - The submenu is a "Services" menu
+* `about` - `orderFrontStandardAboutPanel` 액션에 매핑합니다.
+* `hide` - `hide` 액션에 매핑합니다.
+* `hideothers` - `hideOtherApplications` 액션에 매핑합니다.
+* `unhide` - `unhideAllApplications` 액션에 매핑합니다.
+* `front` - `arrangeInFront` 액션에 매핑합니다.
+* `window` - 부메뉴가 "Window" 메뉴입니다.
+* `help` - 부메뉴가 "Help" 메뉴입니다.
+* `services` - 부메뉴가 "Services" 메뉴입니다.
