@@ -140,8 +140,8 @@ Returns:
 * `webContents` [WebContents](web-contents.md)
 * `url` URL
 * `certificateList` [Objects]
-  * `data` PEM으로 인코딩된 데이터
-  * `issuerName` 발급자의 공통 이름
+  * `data` Buffer - PEM으로 인코딩된 데이터
+  * `issuerName` String - 발급자의 공통 이름
 * `callback` Function
 
 사용자 인증이 요청되었을 때 발생하는 이벤트 입니다.

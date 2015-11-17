@@ -200,8 +200,13 @@ webContents에서 사용되는 `session`객체를 반환합니다.
   * `userAgent` String - 요청을 시작한 유저 에이전트.
   * `extraHeaders` String - "\n"로 구분된 Extra 헤더들.
 
-윈도우에 `url`을 로드합니다. `url`은 `http://` or `file://`과 같은 프로토콜 접두사를
-가지고 있어야 합니다.
+윈도우에 웹 페이지 `url`을 로드합니다. `url`은 `http://` or `file://`과 같은 프로토콜 접두사를 가지고 있어야 합니다.
+만약 반드시 http 캐시를 사용하지 않고 로드해야 하는 경우 `pragma` 헤더를 사용할 수 있습니다.
+
+```javascript
+const options = {"extraHeaders" : "pragma: no-cache\n"}
+webContents.loadURL(url, options)
+```
 
 ### `webContents.getURL()`
 
@@ -573,7 +578,7 @@ app.on('ready', function() {
 * `event` Object
   * `type` String (**required**) - 이벤트의 타입. 다음 값들을 사용할 수 있습니다: `mouseDown`,
     `mouseUp`, `mouseEnter`, `mouseLeave`, `contextMenu`, `mouseWheel`,
-    `keyDown`, `keyUp`, `char`.
+    `mouseMove`, `keyDown`, `keyUp`, `char`.
   * `modifiers` Array - 이벤트의 수정자(modifier)들에 대한 배열. 다음 값들을 포함 할 수
 		있습니다: `shift`, `control`, `alt`, `meta`, `isKeypad`, `isAutoRepeat`,
     `leftButtonDown`, `middleButtonDown`, `rightButtonDown`, `capsLock`,
@@ -581,14 +586,14 @@ app.on('ready', function() {
 
 Input `event`를 웹 페이지로 전송합니다.
 
-키보드 이벤트들에 대해서는 `event` 객체는 다음 속성들을 추가로 가지고 있습니다:
+키보드 이벤트들에 대해서는 `event` 객체는 다음 속성들을 사용할 수 있습니다:
 
-* `keyCode` String (**required**) - 키보드 이벤트로 보내지는 문자.
+* `keyCode` Char or String (**required**) - 키보드 이벤트로 보내지는 문자.
   단일 UTF-8 문자를 사용할 수 있고 이벤트를 발생시키는 다음 키 중 하나를 포함할 수 있습니다:
   `enter`, `backspace`, `delete`, `tab`, `escape`, `control`, `alt`, `shift`, `end`,
   `home`, `insert`, `left`, `up`, `right`, `down`, `pageUp`, `pageDown`, `printScreen`
 
-마우스 이벤트들에 대해서는 `event` 객체는 다음 속성들을 추가적으로 가지고 있습니다:
+마우스 이벤트들에 대해서는 `event` 객체는 다음 속성들을 사용할 수 있습니다:
 
 * `x` Integer (**required**)
 * `y` Integer (**required**)
@@ -599,7 +604,7 @@ Input `event`를 웹 페이지로 전송합니다.
 * `movementY` Integer
 * `clickCount` Integer
 
-`mouseWheel` 이벤트에 대해서는 `event` 객체는 다음 속성들을 추가적으로 가지고 있습니다:
+`mouseWheel` 이벤트에 대해서는 `event` 객체는 다음 속성들을 사용할 수 있습니다:
 
 * `deltaX` Integer
 * `deltaY` Integer
