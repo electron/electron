@@ -265,7 +265,7 @@ Session::~Session() {
 void Session::RequestCertVerification(
     const scoped_refptr<AtomCertVerifier::CertVerifyRequest>& request) {
   bool prevent_default = Emit(
-      "verify-certificate",
+      "untrusted-certificate",
       request->args().hostname,
       request->args().cert,
       base::Bind(&PassVerificationResult, request));

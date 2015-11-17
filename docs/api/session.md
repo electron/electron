@@ -34,7 +34,7 @@ session.on('will-download', function(event, item, webContents) {
 });
 ```
 
-### Event: 'verify-certificate'
+### Event: 'untrusted-certificate'
 
 * `event` Event
 * `hostname` String
