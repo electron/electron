@@ -34,6 +34,30 @@ session.on('will-download', function(event, item, webContents) {
 });
 ```
 
+### Event: 'verify-certificate'
+
+* `event` Event
+* `hostname` String
+* `certificate` Object
+  * `data` Buffer - PEM encoded data
+  * `issuerName` String
+* `callback` Function
+
+Fired whenever a server certificate verification is requested by the
+network layer with `hostname`, `certificate` and `callback`.
+`callback` should be called with a boolean response to
+indicate continuation or cancellation of the request.
+
+```js
+session.on('verify-certificate', function(event, hostname, certificate, callback) {
+  if (hostname == "github.com") {
+    // verification logic
+    callback(true);
+  }
+  callback(false);
+});
+```
+
 ## Methods
 
 The `session` object has the following methods:

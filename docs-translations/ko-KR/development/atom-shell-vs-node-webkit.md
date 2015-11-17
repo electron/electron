@@ -26,10 +26,12 @@ Chromium의 Content API에 접근합니다. libchromiumcontent은 단일 공유 
 __3. Node 통합__
 
 NW.js는 웹 페이지에서 require를 사용할 수 있도록 Chromium을 패치했습니다. 한편 Electron은 Chromium의 해킹을 방지하기 위해 libuv loop와 각 플랫폼의 메시지 루프에 통합하는 등의 다른 방법을 채택하였습니다.
-[`node_bindings`](../../../atom/common/) 코드를 보면 이 부분이 어떻게 구현됬는지를 알 수 있습니다.
+[`node_bindings`][node-bindings] 코드를 보면 이 부분이 어떻게 구현됬는지를 알 수 있습니다.
 
 __4. 다중 컨텍스트__
 
 만약 NW.js를 사용해본적이 있다면 Node context와 Web context의 개념을 잘 알고 있을겁니다. 이 개념은 NW.js가 구현된 방식에 따라 만들어졌습니다.
 
 Node의 [다중 컨텍스트](http://strongloop.com/strongblog/whats-new-node-js-v0-12-multiple-context-execution/)를 사용할 경우 Electron은 웹 페이지에서 새로운 JavaScript 컨텍스트를 생성하지 않습니다.
+
+[node-bindings]: https://github.com/atom/electron/tree/master/atom/common

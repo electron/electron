@@ -16,6 +16,7 @@
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
+#include "atom/common/native_mate_converters/net_converter.h"
 #include "atom/common/node_includes.h"
 #include "base/files/file_path.h"
 #include "base/prefs/pref_service.h"
@@ -237,11 +238,21 @@ void SetProxyInIO(net::URLRequestContextGetter* getter,
   RunCallbackInUI(callback);
 }
 
+void PassVerificationResult(
+    scoped_refptr<AtomCertVerifier::CertVerifyRequest> request,
+    bool success) {
+  int result = net::OK;
+  if (!success)
+    result = net::ERR_FAILED;
+  request->ContinueWithResult(result);
+}
+
 }  // namespace
 
 Session::Session(AtomBrowserContext* browser_context)
     : browser_context_(browser_context) {
   AttachAsUserData(browser_context);
+  browser_context->cert_verifier()->SetDelegate(this);
 
   // Observe DownloadManger to get download notifications.
   content::BrowserContext::GetDownloadManager(browser_context)->
@@ -252,6 +263,18 @@ Session::~Session() {
   content::BrowserContext::GetDownloadManager(browser_context())->
       RemoveObserver(this);
   Destroy();
+}
+
+void Session::RequestCertVerification(
+    const scoped_refptr<AtomCertVerifier::CertVerifyRequest>& request) {
+  bool prevent_default = Emit(
+      "verify-certificate",
+      request->hostname(),
+      request->certificate(),
+      base::Bind(&PassVerificationResult, request));
+
+  if (!prevent_default)
+    request->ContinueWithResult(net::ERR_IO_PENDING);
 }
 
 void Session::OnDownloadCreated(content::DownloadManager* manager,
