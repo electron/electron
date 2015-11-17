@@ -241,10 +241,7 @@ void SetProxyInIO(net::URLRequestContextGetter* getter,
 void PassVerificationResult(
     scoped_refptr<AtomCertVerifier::CertVerifyRequest> request,
     bool success) {
-  int result = net::OK;
-  if (!success)
-    result = net::ERR_FAILED;
-  request->ContinueWithResult(result);
+  request->ContinueWithResult(success ? net::OK : net::ERR_FAILED);
 }
 
 }  // namespace

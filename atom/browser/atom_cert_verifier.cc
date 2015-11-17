@@ -66,8 +66,7 @@ void AtomCertVerifier::CertVerifyRequest::DelegateToDefaultVerifier() {
       key_.flags,
       crl_set_.get(),
       verify_result_,
-      base::Bind(&CertVerifyRequest::RunResult,
-                 weak_ptr_factory_.GetWeakPtr()),
+      base::Bind(&CertVerifyRequest::RunResult, this),
       out_req_,
       net_log_);
 
@@ -86,15 +85,14 @@ void AtomCertVerifier::CertVerifyRequest::ContinueWithResult(int result) {
   if (result != net::ERR_IO_PENDING) {
     BrowserThread::PostTask(BrowserThread::IO, FROM_HERE,
                             base::Bind(&CertVerifyRequest::RunResult,
-                                       weak_ptr_factory_.GetWeakPtr(),
+                                       this,
                                        result));
     return;
   }
 
   BrowserThread::PostTask(
       BrowserThread::IO, FROM_HERE,
-      base::Bind(&CertVerifyRequest::DelegateToDefaultVerifier,
-                 weak_ptr_factory_.GetWeakPtr()));
+      base::Bind(&CertVerifyRequest::DelegateToDefaultVerifier, this));
 }
 
 AtomCertVerifier::AtomCertVerifier()

@@ -55,8 +55,7 @@ class AtomCertVerifier : public net::CertVerifier {
           verify_result_(verify_result),
           out_req_(out_req),
           net_log_(net_log),
-          handled_(false),
-          weak_ptr_factory_(this) {
+          handled_(false) {
     }
 
     void RunResult(int result);
@@ -90,8 +89,6 @@ class AtomCertVerifier : public net::CertVerifier {
 
     std::vector<net::CompletionCallback> callbacks_;
     bool handled_;
-
-    base::WeakPtrFactory<CertVerifyRequest> weak_ptr_factory_;
 
     DISALLOW_COPY_AND_ASSIGN(CertVerifyRequest);
   };
