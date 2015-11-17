@@ -4,7 +4,11 @@
 
 #include "atom/common/native_mate_converters/net_converter.h"
 
+#include <string>
+
+#include "atom/common/node_includes.h"
 #include "native_mate/dictionary.h"
+#include "net/cert/x509_certificate.h"
 #include "net/url_request/url_request.h"
 
 namespace mate {
@@ -29,6 +33,21 @@ v8::Local<v8::Value> Converter<const net::AuthChallengeInfo*>::ToV8(
   dict.Set("port", static_cast<uint32_t>(val->challenger.port()));
   dict.Set("realm", val->realm);
   return mate::ConvertToV8(isolate, dict);
+}
+
+// static
+v8::Local<v8::Value> Converter<scoped_refptr<net::X509Certificate>>::ToV8(
+    v8::Isolate* isolate, const scoped_refptr<net::X509Certificate>& val) {
+  mate::Dictionary dict(isolate, v8::Object::New(isolate));
+  std::string encoded_data;
+  net::X509Certificate::GetPEMEncoded(
+      val->os_cert_handle(), &encoded_data);
+  auto buffer = node::Buffer::Copy(isolate,
+                                   encoded_data.data(),
+                                   encoded_data.size()).ToLocalChecked();
+  dict.Set("data", buffer);
+  dict.Set("issuerName", val->issuer().GetDisplayName());
+  return dict.GetHandle();
 }
 
 }  // namespace mate

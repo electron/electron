@@ -139,8 +139,8 @@ Returns:
 * `webContents` [WebContents](web-contents.md)
 * `url` URL
 * `certificateList` [Objects]
-  * `data` PEM encoded data
-  * `issuerName` Issuer's Common Name
+  * `data` Buffer - PEM encoded data
+  * `issuerName` String - Issuer's Common Name
 * `callback` Function
 
 Emitted when a client certificate is requested.
