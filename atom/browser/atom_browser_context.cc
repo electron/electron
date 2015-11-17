@@ -5,10 +5,10 @@
 #include "atom/browser/atom_browser_context.h"
 
 #include "atom/browser/atom_browser_main_parts.h"
-#include "atom/browser/atom_cert_verifier.h"
 #include "atom/browser/atom_download_manager_delegate.h"
-#include "atom/browser/atom_ssl_config_service.h"
 #include "atom/browser/browser.h"
+#include "atom/browser/net/atom_cert_verifier.h"
+#include "atom/browser/net/atom_ssl_config_service.h"
 #include "atom/browser/net/atom_url_request_job_factory.h"
 #include "atom/browser/net/asar/asar_protocol_handler.h"
 #include "atom/browser/net/http_protocol_handler.h"

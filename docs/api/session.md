@@ -21,7 +21,7 @@ var session = win.webContents.session
 * `item` [DownloadItem](download-item.md)
 * `webContents` [WebContents](web-contents.md)
 
-Fired when Electron is about to download `item` in `webContents`.
+Emitted when Electron is about to download `item` in `webContents`.
 
 Calling `event.preventDefault()` will cancel the download.
 
@@ -34,7 +34,7 @@ session.on('will-download', function(event, item, webContents) {
 });
 ```
 
-### Event: 'verify-certificate'
+### Event: 'untrusted-certificate'
 
 * `event` Event
 * `hostname` String
@@ -43,18 +43,19 @@ session.on('will-download', function(event, item, webContents) {
   * `issuerName` String
 * `callback` Function
 
-Fired whenever a server certificate verification is requested by the
-network layer with `hostname`, `certificate` and `callback`.
-`callback` should be called with a boolean response to
-indicate continuation or cancellation of the request.
+Emitted when failed to verify the `certificate` for `hostname`, to trust the
+certificate you should prevent the default behavior with
+`event.preventDefault()` and call `callback(true)`.
 
 ```js
 session.on('verify-certificate', function(event, hostname, certificate, callback) {
   if (hostname == "github.com") {
-    // verification logic
+    // Verification logic.
+    event.preventDefault();
     callback(true);
+  } else {
+    callback(false);
   }
-  callback(false);
 });
 ```
 
