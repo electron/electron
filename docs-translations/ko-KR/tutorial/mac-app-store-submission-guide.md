@@ -15,11 +15,10 @@ Electron은 v0.34.0 버전부터 앱 패키지를 Mac App Store(MAS)에 제출�
 앱 스토어에 어플리케이션을 제출하려면, 먼저 Apple로부터 인증서를 취득해야 합니다.
 취득 방법은 웹에서 찾아볼 수 있는 [가이드][nwjs-guide]를 참고하면 됩니다.
 
-### 앱에 사인하기
+### 앱에 서명하기
 
-Apple로부터 인증서를 취득했다면, [어플리케이션 배포](application-distribution.md) 문서에 따라 어플리케이션을 패키징합니다.
-그리고 어플리케이션에 사인을 합니다. 이 절차는 기본적으로 다른 프로그램과 같습니다.
-하지만 키는 Electron 종속성 파일에 각각 따로 사인 해야 합니다.
+Apple로부터 인증서를 취득했다면, [어플리케이션 배포](application-distribution.md) 문서에 따라 어플리케이션을 패키징한 후 어플리케이션에 서명 합니다.
+이 절차는 기본적으로 다른 프로그램과 같습니다. 하지만 키는 Electron 종속성 파일에 각각 따로 서명 해야 합니다.
 
 첫번째, 다음 두 자격(plist) 파일을 준비합니다.
 
@@ -51,16 +50,16 @@ Apple로부터 인증서를 취득했다면, [어플리케이션 배포](applica
 </plist>
 ```
 
-그리고 다음 스크립트에 따라 어플리케이션에 사인합니다:
+그리고 다음 스크립트에 따라 어플리케이션에 서명합니다:
 
 ```bash
 #!/bin/bash
 
 # 어플리케이션의 이름
 APP="YourApp"
-# 사인할 어플리케이션의 경로
+# 서명할 어플리케이션의 경로
 APP_PATH="/path/to/YouApp.app"
-# 사인된 패키지의 출력 경로
+# 서명된 패키지의 출력 경로
 RESULT_PATH="~/Desktop/$APP.pkg"
 # 요청한 인증서의 이름
 APP_KEY="3rd Party Mac Developer Application: Company Name (APPIDENTITY)"
