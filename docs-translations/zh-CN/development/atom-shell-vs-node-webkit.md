@@ -20,10 +20,12 @@ __2. 构建系统__
 
 __3. Node 集成__
 
-在 NW.js，网页中的 Node 集成需要通过给 Chromium 打补丁来实现。但在 Electron 中，我们选择了另一种方式：通过各个平台的消息循环与 libuv 的循环集成，避免了直接在 Chromium 上做改动。你可以看 [`node_bindings`](../../atom/common/) 来了解这是如何完成的。
+在 NW.js，网页中的 Node 集成需要通过给 Chromium 打补丁来实现。但在 Electron 中，我们选择了另一种方式：通过各个平台的消息循环与 libuv 的循环集成，避免了直接在 Chromium 上做改动。你可以看 [`node_bindings`][node-bindings] 来了解这是如何完成的。
 
 __4. 多上下文__
 
 如果你是有经验的 NW.js 用户，你应该会熟悉 Node 上下文和 web 上下文的概念。这些概念的产生源于 NW.js 的实现方式。
 
 通过使用 Node 的[多上下文](http://strongloop.com/strongblog/whats-new-node-js-v0-12-multiple-context-execution/)特性，Electron不需要在网页中引入新的 JavaScript 上下文。
+
+[node-bindings]: https://github.com/atom/electron/tree/master/atom/common
