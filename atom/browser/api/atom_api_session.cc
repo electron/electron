@@ -267,7 +267,7 @@ void Session::RequestCertVerification(
   bool prevent_default = Emit(
       "verify-certificate",
       request->hostname(),
-      request->certificate(),
+      make_scoped_refptr(request->cert()),
       base::Bind(&PassVerificationResult, request));
 
   if (!prevent_default)
@@ -294,6 +294,7 @@ bool Session::IsDestroyed() const {
 }
 
 void Session::Destroy() {
+  browser_context_->cert_verifier()->SetDelegate(nullptr);
   browser_context_ = nullptr;
 }
 
