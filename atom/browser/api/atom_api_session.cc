@@ -241,10 +241,7 @@ void SetProxyInIO(net::URLRequestContextGetter* getter,
 void PassVerificationResult(
     scoped_refptr<AtomCertVerifier::CertVerifyRequest> request,
     bool success) {
-  int result = net::OK;
-  if (!success)
-    result = net::ERR_FAILED;
-  request->ContinueWithResult(result);
+  request->ContinueWithResult(success ? net::OK : net::ERR_FAILED);
 }
 
 }  // namespace
@@ -268,12 +265,13 @@ Session::~Session() {
 void Session::RequestCertVerification(
     const scoped_refptr<AtomCertVerifier::CertVerifyRequest>& request) {
   bool prevent_default = Emit(
-      "verify-certificate",
-      request->hostname(),
-      request->certificate(),
+      "untrusted-certificate",
+      request->args().hostname,
+      request->args().cert,
       base::Bind(&PassVerificationResult, request));
 
   if (!prevent_default)
+    // Tell the request to use the result of default verifier.
     request->ContinueWithResult(net::ERR_IO_PENDING);
 }
 
@@ -297,6 +295,7 @@ bool Session::IsDestroyed() const {
 }
 
 void Session::Destroy() {
+  browser_context_->cert_verifier()->SetDelegate(nullptr);
   browser_context_ = nullptr;
 }
 
