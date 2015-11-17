@@ -82,7 +82,7 @@ productbuild --component "$APP_PATH" /Applications --sign "$INSTALLER_KEY" "$RES
 
 ### 어플리케이션을 업로드하고 심사용 앱으로 제출
 
-어플리케이션 사인을 완료한 후 iTunes Connect에 업로드하기 위해 Application Loader를 사용할 수 있습니다.
+어플리케이션 서명을 완료한 후 iTunes Connect에 업로드하기 위해 Application Loader를 사용할 수 있습니다.
 참고로 업로드하기 전에 [레코드][create-record]를 만들었는지 확인해야 합니다.
 그리고 [심사를 위해 앱을 제출][submit-for-review]할 수 있습니다.
 
