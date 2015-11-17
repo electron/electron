@@ -1,6 +1,6 @@
 # Frameless Window
 
-Frameless Window는 [테두리](https://developer.mozilla.org/en-US/docs/Glossary/Chrome)가 없는 창입니다.
+Frameless Window는 [창 테두리](https://developer.mozilla.org/en-US/docs/Glossary/Chrome)가 없는 윈도우를 말합니다.
 이 기능은 윈도우 창의 일부분인 툴바와 같이 웹 페이지의 일부분이 아닌 부분을 보이지 않도록 합니다.
 [`BrowserWindow`](browser-window.md) 클래스의 옵션에서 설정할 수 있습니다.
 
@@ -25,7 +25,7 @@ var win = new BrowserWindow({ 'title-bar-style': 'hidden' });
 
 ## 투명한 창 만들기
 
-Frameless Window의 창의 배경을 투명하게 만들고 싶다면 `transparent` 옵션을 `true`로 바꿔주기만 하면됩니다:
+Frameless Window 창의 배경을 투명하게 만들고 싶다면 `transparent` 옵션을 `true`로 바꿔주기만 하면됩니다:
 
 ```javascript
 var win = new BrowserWindow({ transparent: true, frame: false });
