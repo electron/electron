@@ -26,7 +26,7 @@ Chromium의 Content API에 접근합니다. libchromiumcontent은 단일 공유 
 __3. Node 통합__
 
 NW.js는 웹 페이지에서 require를 사용할 수 있도록 Chromium을 패치했습니다. 한편 Electron은 Chromium의 해킹을 방지하기 위해 libuv loop와 각 플랫폼의 메시지 루프에 통합하는 등의 다른 방법을 채택하였습니다.
-[`node_bindings`](../../atom/common/) 코드를 보면 이 부분이 어떻게 구현됬는지를 알 수 있습니다.
+[`node_bindings`](../../../../../tree/master/atom/common/) 코드를 보면 이 부분이 어떻게 구현됬는지를 알 수 있습니다.
 
 __4. 다중 컨텍스트__
 
