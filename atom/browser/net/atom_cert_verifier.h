@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_ATOM_CERT_VERIFIER_H_
-#define ATOM_BROWSER_ATOM_CERT_VERIFIER_H_
+#ifndef ATOM_BROWSER_NET_ATOM_CERT_VERIFIER_H_
+#define ATOM_BROWSER_NET_ATOM_CERT_VERIFIER_H_
 
 #include <set>
 #include <string>
@@ -159,4 +159,4 @@ class AtomCertVerifier : public net::CertVerifier {
 
 }   // namespace atom
 
-#endif  // ATOM_BROWSER_ATOM_CERT_VERIFIER_H_
+#endif  // ATOM_BROWSER_NET_ATOM_CERT_VERIFIER_H_

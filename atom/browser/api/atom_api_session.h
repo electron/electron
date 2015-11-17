@@ -8,7 +8,7 @@
 #include <string>
 
 #include "atom/browser/api/trackable_object.h"
-#include "atom/browser/atom_cert_verifier.h"
+#include "atom/browser/net/atom_cert_verifier.h"
 #include "content/public/browser/download_manager.h"
 #include "native_mate/handle.h"
 #include "net/base/completion_callback.h"
