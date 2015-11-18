@@ -118,103 +118,104 @@ Returns:
 
 * `event` Event
 
-Emitted when the window is going to be closed. It's emitted before the
-`beforeunload` and `unload` event of the DOM. Calling `event.preventDefault()`
-will cancel the close.
+윈도우가 닫히기 시작할 때 발생하는 이벤트입니다.
+이 이벤트는 DOM의 `beforeunload` 와 `unload` 이벤트가 호출되기 전에 발생합니다.
+`event.preventDefault()`를 호출하여 윈도우 종료를 취소할 수 있습니다.
 
-Usually you would want to use the `beforeunload` handler to decide whether the
-window should be closed, which will also be called when the window is
-reloaded. In Electron, returning an empty string or `false` would cancel the
-close. For example:
+보통 창을 닫아야 할지 결정하기 위해 `beforeunload` 이벤트를 사용하려고 할 것입니다.
+이 이벤트는 윈도우 컨텐츠를 새로고칠 때도 발생합니다.
+Electron에선 빈 문자열 또는 `false`를 전달할 경우 윈도우 종료를 취소합니다.
+
+예시는 다음과 같습니다:
 
 ```javascript
 window.onbeforeunload = function(e) {
   console.log('I do not want to be closed');
 
-  // Unlike usual browsers, in which a string should be returned and the user is
-  // prompted to confirm the page unload, Electron gives developers more options.
-  // Returning empty string or false would prevent the unloading now.
-  // You can also use the dialog API to let the user confirm closing the application.
+  // 반드시 문자열을 반환해야 하고 사용자에게 페이지 언로드에 대한 확인 창을 보여주는 보통의 브라우저와는 달리
+  // Electron은 개발자에게 더 많은 옵션을 제공합니다.
+  // 빈 문자열을 반환하거나 false를 반환하면 페이지 언로드를 방지합니다.
+  // 또한 dialog API를 통해 사용자에게 어플리케이션을 종료할지에 대한 확인 창을 보여줄 수도 있습니다.
   e.returnValue = false;
 };
 ```
 
 ### Event: 'closed'
 
-Emitted when the window is closed. After you have received this event you should
-remove the reference to the window and avoid using it anymore.
+윈도우 종료가 완료된 경우 발생하는 이벤트입니다.
+이 이벤트가 발생했을 경우 반드시 윈도우 창의 레퍼런스가 더 이상 사용되지 않도록 제거해야 합니다.
 
 ### Event: 'unresponsive'
 
-Emitted when the web page becomes unresponsive.
+웹 페이지가 응답하지 않을 때 발생하는 이벤트입니다.
 
 ### Event: 'responsive'
 
-Emitted when the unresponsive web page becomes responsive again.
+응답하지 않는 웹 페이지가 다시 응답하기 시작했을 때 발생하는 이벤트입니다.
 
 ### Event: 'blur'
 
-Emitted when the window loses focus.
+윈도우가 포커스를 잃었을 떄 발생하는 이벤트입니다.
 
 ### Event: 'focus'
 
-Emitted when the window gains focus.
+윈도우가 포커스를 가졌을 때 발생하는 이벤트입니다.
 
 ### Event: 'maximize'
 
-Emitted when window is maximized.
+윈도우가 최대화됐을 때 발생하는 이벤트입니다.
 
 ### Event: 'unmaximize'
 
-Emitted when the window exits from maximized state.
+윈도우의 최대화 상태가 해제되었을 때 발생하는 이벤트입니다.
 
 ### Event: 'minimize'
 
-Emitted when the window is minimized.
+윈도우가 최소화됐을 때 발생하는 이벤트입니다.
 
 ### Event: 'restore'
 
-Emitted when the window is restored from minimized state.
+윈도우가 최소화 상태에서 복구되었을 때 발생하는 이벤트입니다.
 
 ### Event: 'resize'
 
-Emitted when the window is getting resized.
+윈도우의 크기가 재조정될 때 발생하는 이벤트입니다.
 
 ### Event: 'move'
 
-Emitted when the window is getting moved to a new position.
+윈도우가 새로운 위치로 이동될 때 발생하는 이벤트입니다.
 
-__Note__: On OS X this event is just an alias of `moved`.
+__참고__: OS X에선 이 이벤트가 그저 `moved` 이벤트의 별칭(alias)으로 사용됩니다.
 
 ### Event: 'moved' _OS X_
 
-Emitted once when the window is moved to a new position.
+윈도우가 새로운 위치로 이동되었을 때 발생하는 이벤트입니다. (한 번만)
 
 ### Event: 'enter-full-screen'
 
-Emitted when the window enters full screen state.
+윈도우가 풀 스크린 모드로 진입할 때 발생하는 이벤트입니다.
 
 ### Event: 'leave-full-screen'
 
-Emitted when the window leaves full screen state.
+윈도우가 풀 스크린 모드에서 해제될 때 발생하는 이벤트입니다.
 
 ### Event: 'enter-html-full-screen'
 
-Emitted when the window enters full screen state triggered by html api.
+윈도우가 HTML API에 의해 풀 스크린 모드로 진입할 때 발생하는 이벤트입니다.
 
 ### Event: 'leave-html-full-screen'
 
-Emitted when the window leaves full screen state triggered by html api.
+윈도우가 HTML API에 의해 풀 스크린 모드에서 해제될 때 발생하는 이벤트입니다.
 
 ### Event: 'app-command':
 
-Emitted when an [App Command](https://msdn.microsoft.com/en-us/library/windows/desktop/ms646275(v=vs.85).aspx)
-is invoked. These are typically related to keyboard media keys or browser
-commands, as well as the "Back" button built into some mice on Windows.
+[App Command](https://msdn.microsoft.com/en-us/library/windows/desktop/ms646275(v=vs.85).aspx)가 호출됐을 때 발생하는 이벤트입니다.
+이 이벤트는 일반적으로 키보드 미디어 키 또는 브라우저 커맨드(기본 동작 키)에 관련되어 있습니다.
+예를 들어 Windows에서 작동하는 몇몇 마우스는 "뒤로가기" 같은 동작을 포함하고 있습니다.
 
-```js
+```javascript
 someWindow.on('app-command', function(e, cmd) {
-  // Navigate the window back when the user hits their mouse back button
+  // 마우스의 뒤로가기 버튼을 눌렀을 때 뒤로가기 탐색을 실행합니다
   if (cmd === 'browser-backward' && someWindow.webContents.canGoBack()) {
     someWindow.webContents.goBack();
   }
