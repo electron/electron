@@ -232,7 +232,7 @@ Emitted when the window enters full screen state triggered by html api.
 
 Emitted when the window leaves full screen state triggered by html api.
 
-### Event: 'app-command':
+### Event: 'app-command' __Windows__
 
 Emitted when an [App Command](https://msdn.microsoft.com/en-us/library/windows/desktop/ms646275(v=vs.85).aspx)
 is invoked. These are typically related to keyboard media keys or browser
