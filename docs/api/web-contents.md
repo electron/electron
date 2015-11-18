@@ -167,6 +167,39 @@ Emitted when DevTools is closed.
 
 Emitted when DevTools is focused / opened.
 
+### Event: 'certificate-error'
+
+Returns:
+
+* `event` Event
+* `url` URL
+* `error` String - The error code
+* `certificate` Object
+  * `data` Buffer - PEM encoded data
+  * `issuerName` String
+* `callback` Function
+
+Emitted when failed to verify the `certificate` for `url`.
+
+The usage is the same with [the `certificate-error` event of
+`app`](app.md#event-certificate-error).
+
+### Event: 'select-client-certificate'
+
+Returns:
+
+* `event` Event
+* `url` URL
+* `certificateList` [Objects]
+  * `data` Buffer - PEM encoded data
+  * `issuerName` String - Issuer's Common Name
+* `callback` Function
+
+Emitted when a client certificate is requested.
+
+The usage is the same with [the `select-client-certificate` event of
+`app`](app.md#event-select-client-certificate).
+
 ### Event: 'login'
 
 Returns:

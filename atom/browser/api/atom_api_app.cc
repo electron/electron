@@ -252,7 +252,7 @@ void App::AllowCertificateError(
   bool prevent_default = Emit("certificate-error",
                               WebContents::CreateFrom(isolate(), web_contents),
                               request_url,
-                              cert_error,
+                              net::ErrorToString(cert_error),
                               ssl_info.cert,
                               callback);
 

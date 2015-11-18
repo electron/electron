@@ -131,6 +131,35 @@ Returns:
 
 Emitted when a new [browserWindow](browser-window.md) is created.
 
+### Event: 'certificate-error'
+
+Returns:
+
+* `event` Event
+* `webContents` [WebContents](web-contents.md)
+* `url` URL
+* `error` String - The error code
+* `certificate` Object
+  * `data` Buffer - PEM encoded data
+  * `issuerName` String
+* `callback` Function
+
+Emitted when failed to verify the `certificate` for `url`, to trust the
+certificate you should prevent the default behavior with
+`event.preventDefault()` and call `callback(true)`.
+
+```javascript
+session.on('certificate-error', function(event, webContents, url, error, certificate, callback) {
+  if (url == "https://github.com") {
+    // Verification logic.
+    event.preventDefault();
+    callback(true);
+  } else {
+    callback(false);
+  }
+});
+```
+
 ### Event: 'select-client-certificate'
 
 Returns:
