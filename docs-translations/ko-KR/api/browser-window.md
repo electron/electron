@@ -388,92 +388,91 @@ height areas you have within the overall content view.
 * `width` Integer
 * `height` Integer
 
-Resizes and moves the window to `width`, `height`, `x`, `y`.
+윈도우를 지정한 `width`, `height`, `x`, `y`로 크기 재조정 및 이동합니다.
 
 ### `win.getBounds()`
 
-Returns an object that contains window's width, height, x and y values.
+윈도우의 width, height, x, y 값을 가지는 객체를 반환합니다.
 
 ### `win.setSize(width, height)`
 
 * `width` Integer
 * `height` Integer
 
-Resizes the window to `width` and `height`.
+`width`와 `height` 값으로 윈도우 크기를 재조정합니다. (너비, 높이)
 
 ### `win.getSize()`
 
-Returns an array that contains window's width and height.
+윈도우의 너비, 높이값을 가지는 배열을 반환합니다.
 
 ### `win.setContentSize(width, height)`
 
 * `width` Integer
 * `height` Integer
 
-Resizes the window's client area (e.g. the web page) to `width` and `height`.
+윈도우 클라이언트 영역(웹 페이지)의 크기를 `width`, `height`로 재조정합니다.
 
 ### `win.getContentSize()`
 
-Returns an array that contains window's client area's width and height.
+윈도우 클라이언트 영역의 너비, 높이 크기를 배열로 반환합니다.
 
 ### `win.setMinimumSize(width, height)`
 
 * `width` Integer
 * `height` Integer
 
-Sets the minimum size of window to `width` and `height`.
+윈도우의 최소 `width`, `height` 크기를 지정합니다.
 
 ### `win.getMinimumSize()`
 
-Returns an array that contains window's minimum width and height.
+윈도우의 최소 너비, 높이 크기를 배열로 반환합니다.
 
 ### `win.setMaximumSize(width, height)`
 
 * `width` Integer
 * `height` Integer
 
-Sets the maximum size of window to `width` and `height`.
+윈도우의 최대 `width`, `height` 크기를 지정합니다.
 
 ### `win.getMaximumSize()`
 
-Returns an array that contains window's maximum width and height.
+윈도우의 최대 너비, 높이 크기를 배열로 반환합니다.
 
 ### `win.setResizable(resizable)`
 
 * `resizable` Boolean
 
-Sets whether the window can be manually resized by user.
+윈도우의 크기가 사용자에 의해 재조정될 수 있는지를 지정합니다.
 
 ### `win.isResizable()`
 
-Returns whether the window can be manually resized by user.
+윈도우의 크기가 사용자에 의해 재조정될 수 있는지 여부를 반환합니다.
 
 ### `win.setAlwaysOnTop(flag)`
 
 * `flag` Boolean
 
-Sets whether the window should show always on top of other windows. After
-setting this, the window is still a normal window, not a toolbox window which
-can not be focused on.
+윈도우가 언제나 다른 윈도우들 위에 표시되는지 여부를 지정합니다.
+이 설정을 활성화 하면 윈도우는 포커스 될 수 없는 툴박스 윈도우가 아닌 일반 윈도우로 유지됩니다.
 
 ### `win.isAlwaysOnTop()`
 
-Returns whether the window is always on top of other windows.
+윈도우가 언제나 다른 윈도우들 위에 표시되는지 여부를 반환합니다.
 
 ### `win.center()`
 
-Moves window to the center of the screen.
+윈도우를 화면 정 중앙으로 이동합니다.
 
 ### `win.setPosition(x, y)`
 
 * `x` Integer
 * `y` Integer
 
-Moves window to `x` and `y`.
+윈도우의 위치를 `x`, `y`로 이동합니다.
 
 ### `win.getPosition()`
 
-Returns an array that contains window's current position.
+윈도우의 현재 위치를 배열로 반환합니다.
 
 ### `win.setTitle(title)`
 
