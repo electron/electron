@@ -169,7 +169,8 @@ __주의:__ `bounds`는 OS X 와 Windows에서만 작동합니다.
 
 * `highlight` Boolean
 
-트레이 아이콘을 클릭했을 때 하이라이트 될지 설정합니다.
+트레이 아이콘이 클릭됐을 때 아이콘의 배경이 파란색으로 하이라이트 될지 여부를 지정합니다.
+기본값은 true입니다.
 
 ### `Tray.displayBalloon(options)` _Windows_
 
