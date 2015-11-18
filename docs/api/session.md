@@ -34,31 +34,6 @@ session.on('will-download', function(event, item, webContents) {
 });
 ```
 
-### Event: 'untrusted-certificate'
-
-* `event` Event
-* `hostname` String
-* `certificate` Object
-  * `data` Buffer - PEM encoded data
-  * `issuerName` String
-* `callback` Function
-
-Emitted when failed to verify the `certificate` for `hostname`, to trust the
-certificate you should prevent the default behavior with
-`event.preventDefault()` and call `callback(true)`.
-
-```js
-session.on('verify-certificate', function(event, hostname, certificate, callback) {
-  if (hostname == "github.com") {
-    // Verification logic.
-    event.preventDefault();
-    callback(true);
-  } else {
-    callback(false);
-  }
-});
-```
-
 ## Methods
 
 The `session` object has the following methods:
@@ -245,3 +220,24 @@ window.webContents.session.enableNetworkEmulation({offline: true});
 
 Disables any network emulation already active for the `session`. Resets to
 the original network configuration.
+
+### `session.setCertificateVerifyProc(proc)`
+
+* `proc` Function
+
+Sets the certificate verify proc for `session`, the `proc` will be called with
+`proc(hostname, certificate, callback)` whenever a server certificate
+verification is requested. Calling `callback(true)` accepts the certificate,
+calling `callback(false)` rejects it.
+
+Calling `setCertificateVerifyProc(null)` will revert back to default certificate
+verify proc.
+
+```javascript
+myWindow.webContents.session.setCertificateVerifyProc(function(hostname, cert, callback) {
+  if (hostname == 'github.com')
+    callback(true);
+  else
+    callback(false);
+});
+```
