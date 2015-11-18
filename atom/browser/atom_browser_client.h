@@ -31,6 +31,9 @@ class AtomBrowserClient : public brightray::BrowserClient,
   AtomBrowserClient();
   virtual ~AtomBrowserClient();
 
+  using Delegate = content::ContentBrowserClient;
+  void set_delegate(Delegate* delegate) { delegate_ = delegate; }
+
   // Don't force renderer process to restart for once.
   static void SuppressRendererProcessRestartForOnce();
   // Custom schemes to be registered to standard.
@@ -73,6 +76,8 @@ class AtomBrowserClient : public brightray::BrowserClient,
 
   scoped_ptr<AtomResourceDispatcherHostDelegate>
       resource_dispatcher_host_delegate_;
+
+  Delegate* delegate_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomBrowserClient);
 };

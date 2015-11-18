@@ -126,12 +126,6 @@ class Browser : public WindowListObserver {
   void WillFinishLaunching();
   void DidFinishLaunching();
 
-  // Called when client certificate is required.
-  void ClientCertificateSelector(
-      content::WebContents* web_contents,
-      net::SSLCertRequestInfo* cert_request_info,
-      scoped_ptr<content::ClientCertificateDelegate> delegate);
-
   // Request basic auth login.
   void RequestLogin(LoginHandler* login_handler);
 

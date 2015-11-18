@@ -14,7 +14,6 @@
 #include "atom/browser/atom_quota_permission_context.h"
 #include "atom/browser/atom_resource_dispatcher_host_delegate.h"
 #include "atom/browser/atom_speech_recognition_manager_delegate.h"
-#include "atom/browser/browser.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/web_contents_preferences.h"
 #include "atom/browser/window_list.h"
@@ -88,7 +87,7 @@ void AtomBrowserClient::SetCustomSchemes(
   g_custom_schemes = JoinString(schemes, ',');
 }
 
-AtomBrowserClient::AtomBrowserClient() {
+AtomBrowserClient::AtomBrowserClient() : delegate_(nullptr) {
 }
 
 AtomBrowserClient::~AtomBrowserClient() {
@@ -222,10 +221,10 @@ void AtomBrowserClient::SelectClientCertificate(
     return;
   }
 
-  if (!cert_request_info->client_certs.empty())
-    Browser::Get()->ClientCertificateSelector(web_contents,
-                                              cert_request_info,
-                                              delegate.Pass());
+  if (!cert_request_info->client_certs.empty() && delegate_) {
+    delegate_->SelectClientCertificate(
+        web_contents, cert_request_info, delegate.Pass());
+  }
 }
 
 void AtomBrowserClient::ResourceDispatcherHostCreated() {

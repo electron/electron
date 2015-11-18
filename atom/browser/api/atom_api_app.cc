@@ -154,11 +154,14 @@ void PassLoginInformation(scoped_refptr<LoginHandler> login_handler,
 }  // namespace
 
 App::App() {
+  static_cast<AtomBrowserClient*>(AtomBrowserClient::Get())->set_delegate(this);
   Browser::Get()->AddObserver(this);
   content::GpuDataManager::GetInstance()->AddObserver(this);
 }
 
 App::~App() {
+  static_cast<AtomBrowserClient*>(AtomBrowserClient::Get())->set_delegate(
+      nullptr);
   Browser::Get()->RemoveObserver(this);
   content::GpuDataManager::GetInstance()->RemoveObserver(this);
 }
@@ -212,27 +215,6 @@ void App::OnFinishLaunching() {
   Emit("ready");
 }
 
-void App::OnSelectCertificate(
-    content::WebContents* web_contents,
-    net::SSLCertRequestInfo* cert_request_info,
-    scoped_ptr<content::ClientCertificateDelegate> delegate) {
-  std::shared_ptr<content::ClientCertificateDelegate>
-      shared_delegate(delegate.release());
-  bool prevent_default =
-      Emit("select-certificate",
-           api::WebContents::CreateFrom(isolate(), web_contents),
-           cert_request_info->host_and_port.ToString(),
-           cert_request_info->client_certs,
-           base::Bind(&OnClientCertificateSelected,
-                      isolate(),
-                      shared_delegate));
-
-  // Default to first certificate from the platform store.
-  if (!prevent_default)
-    shared_delegate->ContinueWithCertificate(
-        cert_request_info->client_certs[0].get());
-}
-
 void App::OnLogin(LoginHandler* login_handler) {
   // Convert the args explicitly since they will be passed for twice.
   v8::Locker locker(isolate());
@@ -256,6 +238,27 @@ void App::OnLogin(LoginHandler* login_handler) {
   // Default behavior is to always cancel the auth.
   if (!prevent_default)
     login_handler->CancelAuth();
+}
+
+void App::SelectClientCertificate(
+    content::WebContents* web_contents,
+    net::SSLCertRequestInfo* cert_request_info,
+    scoped_ptr<content::ClientCertificateDelegate> delegate) {
+  std::shared_ptr<content::ClientCertificateDelegate>
+      shared_delegate(delegate.release());
+  bool prevent_default =
+      Emit("select-certificate",
+           api::WebContents::CreateFrom(isolate(), web_contents),
+           cert_request_info->host_and_port.ToString(),
+           cert_request_info->client_certs,
+           base::Bind(&OnClientCertificateSelected,
+                      isolate(),
+                      shared_delegate));
+
+  // Default to first certificate from the platform store.
+  if (!prevent_default)
+    shared_delegate->ContinueWithCertificate(
+        cert_request_info->client_certs[0].get());
 }
 
 void App::OnGpuProcessCrashed(base::TerminationStatus exit_code) {
