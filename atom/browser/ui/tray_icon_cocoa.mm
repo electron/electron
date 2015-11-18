@@ -40,15 +40,9 @@ const CGFloat kVerticalTitleMargin = 2;
   trayIcon_ = icon;
   isHighlightEnable_ = YES;
 
-  // Get the initial size.
-  NSStatusBar* statusBar = [NSStatusBar systemStatusBar];
-  NSRect frame = NSMakeRect(0, 0, [self fullWidth], [statusBar thickness]);
-
-  if ((self = [super initWithFrame:frame])) {
+  if ((self = [super initWithFrame: CGRectZero])) {
     // Setup the image view.
-    NSRect iconFrame = frame;
-    iconFrame.size.width = [self iconWidth];
-    image_view_.reset([[NSImageView alloc] initWithFrame:iconFrame]);
+    image_view_.reset([[NSImageView alloc] initWithFrame: CGRectZero]);
     [image_view_ setImageScaling:NSImageScaleNone];
     [image_view_ setImageAlignment:NSImageAlignCenter];
     [self addSubview:image_view_];
@@ -56,15 +50,25 @@ const CGFloat kVerticalTitleMargin = 2;
     // Unregister image_view_ as a dragged destination, allows its parent view
     // (StatusItemView) handle dragging events.
     [image_view_ unregisterDraggedTypes];
-    NSArray* types = [NSArray arrayWithObjects:NSFilenamesPboardType, nil];
-    [self registerForDraggedTypes:types];
+    [self registerForDraggedTypes: @[NSFilenamesPboardType]];
 
     // Create the status item.
-    statusItem_.reset([[[NSStatusBar systemStatusBar]
-                        statusItemWithLength:NSWidth(frame)] retain]);
+    NSStatusItem * item = [[NSStatusBar systemStatusBar]
+                            statusItemWithLength:NSVariableStatusItemLength];
+    statusItem_.reset([item retain]);
     [statusItem_ setView:self];
+
+    // Finalize setup by sizing our views
+    [self updateDimensions];
   }
   return self;
+}
+
+- (void)updateDimensions {
+  NSStatusBar * bar = [NSStatusBar systemStatusBar];
+  [image_view_ setFrame: NSMakeRect(0, 0, [self iconWidth], [bar thickness])];
+  [self setFrame: NSMakeRect(0, 0, [self fullWidth], [bar thickness])];
+  [self setNeedsDisplay:YES];
 }
 
 - (void)removeItem {
@@ -81,9 +85,7 @@ const CGFloat kVerticalTitleMargin = 2;
   // Draw background.
   BOOL highlight = [self shouldHighlight];
   CGFloat thickness = [[statusItem_ statusBar] thickness];
-  NSRect statusItemBounds = NSMakeRect(0, 0, [statusItem_ length], thickness);
-  [statusItem_ drawStatusBarBackgroundInRect:statusItemBounds
-                               withHighlight:highlight];
+  [statusItem_ drawStatusBarBackgroundInRect:self.bounds withHighlight:highlight];
 
   // Make use of NSImageView to draw the image, which can correctly draw
   // template image under dark menu bar.
@@ -157,10 +159,10 @@ const CGFloat kVerticalTitleMargin = 2;
   NSColor* foregroundColor = highlight ?
       [NSColor whiteColor] :
       [NSColor colorWithRed:0.265625 green:0.25390625 blue:0.234375 alpha:1.0];
-  return [NSDictionary dictionaryWithObjectsAndKeys:
-             font, NSFontAttributeName,
-             foregroundColor, NSForegroundColorAttributeName,
-             nil];
+  return @{
+    NSFontAttributeName: font,
+    NSForegroundColorAttributeName: foregroundColor
+  };
 }
 
 - (NSDictionary*)titleAttributes {
@@ -169,7 +171,7 @@ const CGFloat kVerticalTitleMargin = 2;
 
 - (void)setImage:(NSImage*)image {
   image_.reset([image copy]);
-  [self setNeedsDisplay:YES];
+  [self updateDimensions];
 }
 
 - (void)setAlternateImage:(NSImage*)image {
@@ -181,12 +183,12 @@ const CGFloat kVerticalTitleMargin = 2;
 }
 
 - (void)setTitle:(NSString*)title {
-  if (title.length > 0)
+  if (title.length > 0) {
     title_.reset([title copy]);
-  else
+  } else {
     title_.reset();
-  [statusItem_ setLength:[self fullWidth]];
-  [self setNeedsDisplay:YES];
+  }
+  [self updateDimensions];
 }
 
 - (void)setMenuController:(AtomMenuController*)menu {

@@ -13,6 +13,7 @@
 #include "atom/browser/api/save_page_handler.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
+#include "atom/browser/net/atom_cert_verifier.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
@@ -238,18 +239,11 @@ void SetProxyInIO(net::URLRequestContextGetter* getter,
   RunCallbackInUI(callback);
 }
 
-void PassVerificationResult(
-    scoped_refptr<AtomCertVerifier::CertVerifyRequest> request,
-    bool success) {
-  request->ContinueWithResult(success ? net::OK : net::ERR_FAILED);
-}
-
 }  // namespace
 
 Session::Session(AtomBrowserContext* browser_context)
     : browser_context_(browser_context) {
   AttachAsUserData(browser_context);
-  browser_context->cert_verifier()->SetDelegate(this);
 
   // Observe DownloadManger to get download notifications.
   content::BrowserContext::GetDownloadManager(browser_context)->
@@ -260,19 +254,6 @@ Session::~Session() {
   content::BrowserContext::GetDownloadManager(browser_context())->
       RemoveObserver(this);
   Destroy();
-}
-
-void Session::RequestCertVerification(
-    const scoped_refptr<AtomCertVerifier::CertVerifyRequest>& request) {
-  bool prevent_default = Emit(
-      "untrusted-certificate",
-      request->args().hostname,
-      request->args().cert,
-      base::Bind(&PassVerificationResult, request));
-
-  if (!prevent_default)
-    // Tell the request to use the result of default verifier.
-    request->ContinueWithResult(net::ERR_IO_PENDING);
 }
 
 void Session::OnDownloadCreated(content::DownloadManager* manager,
@@ -295,7 +276,6 @@ bool Session::IsDestroyed() const {
 }
 
 void Session::Destroy() {
-  browser_context_->cert_verifier()->SetDelegate(nullptr);
   browser_context_ = nullptr;
 }
 
@@ -377,6 +357,17 @@ void Session::DisableNetworkEmulation() {
                  base::Passed(&conditions)));
 }
 
+void Session::SetCertVerifyProc(v8::Local<v8::Value> val,
+                                mate::Arguments* args) {
+  AtomCertVerifier::VerifyProc proc;
+  if (!(val->IsNull() || mate::ConvertFromV8(args->isolate(), val, &proc))) {
+    args->ThrowError("Must pass null or function");
+    return;
+  }
+
+  browser_context_->cert_verifier()->SetVerifyProc(proc);
+}
+
 v8::Local<v8::Value> Session::Cookies(v8::Isolate* isolate) {
   if (cookies_.IsEmpty()) {
     auto handle = atom::api::Cookies::Create(isolate, browser_context());
@@ -395,6 +386,7 @@ mate::ObjectTemplateBuilder Session::GetObjectTemplateBuilder(
       .SetMethod("setDownloadPath", &Session::SetDownloadPath)
       .SetMethod("enableNetworkEmulation", &Session::EnableNetworkEmulation)
       .SetMethod("disableNetworkEmulation", &Session::DisableNetworkEmulation)
+      .SetMethod("setCertificateVerifyProc", &Session::SetCertVerifyProc)
       .SetProperty("cookies", &Session::Cookies);
 }
 

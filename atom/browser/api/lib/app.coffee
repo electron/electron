@@ -38,6 +38,12 @@ app.getAppPath = ->
 # Helpers.
 app.resolveProxy = (url, callback) -> @defaultSession.resolveProxy url, callback
 
+# Routes the events to webContents.
+for name in ['login', 'certificate-error', 'select-client-certificate']
+  do (name) ->
+    app.on name, (event, webContents, args...) ->
+      webContents.emit name, event, args...
+
 # Deprecated.
 {deprecate} = electron
 app.getHomeDir = deprecate 'app.getHomeDir', 'app.getPath', ->
@@ -52,6 +58,7 @@ deprecate.event app, 'finish-launching', 'ready', ->
     @emit 'finish-launching'
 deprecate.event app, 'activate-with-no-open-windows', 'activate', (event, hasVisibleWindows) ->
   @emit 'activate-with-no-open-windows' if not hasVisibleWindows
+deprecate.event app, 'select-certificate', 'select-client-certificate'
 
 # Wrappers for native classes.
 wrapSession = (session) ->

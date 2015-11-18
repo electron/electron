@@ -8,61 +8,22 @@
 #include <string>
 
 #include "base/memory/ref_counted.h"
+#include "base/synchronization/lock.h"
 #include "net/cert/cert_verifier.h"
 
 namespace atom {
 
 class AtomCertVerifier : public net::CertVerifier {
  public:
-  struct VerifyArgs {
-    scoped_refptr<net::X509Certificate> cert;
-    const std::string& hostname;
-    net::CompletionCallback callback;
-  };
-
-  class CertVerifyRequest
-      : public base::RefCountedThreadSafe<CertVerifyRequest> {
-   public:
-    CertVerifyRequest(AtomCertVerifier* cert_verifier,
-                      int result,
-                      const VerifyArgs& args)
-        : cert_verifier_(cert_verifier),
-          result_(result),
-          args_(args),
-          handled_(false) {
-    }
-
-    void ContinueWithResult(int result);
-
-    const VerifyArgs& args() const { return args_; }
-
-   private:
-    friend class base::RefCountedThreadSafe<CertVerifyRequest>;
-    ~CertVerifyRequest();
-
-    AtomCertVerifier* cert_verifier_;
-    int result_;
-    VerifyArgs args_;
-    bool handled_;
-
-    DISALLOW_COPY_AND_ASSIGN(CertVerifyRequest);
-  };
-
-  class Delegate {
-   public:
-    virtual ~Delegate() {}
-
-    // Called on UI thread.
-    virtual void RequestCertVerification(
-        const scoped_refptr<CertVerifyRequest>& request) {}
-  };
-
   AtomCertVerifier();
   virtual ~AtomCertVerifier();
 
-  void SetDelegate(Delegate* delegate) {
-    delegate_ = delegate;
-  }
+  using VerifyProc =
+      base::Callback<void(const std::string& hostname,
+                          scoped_refptr<net::X509Certificate>,
+                          const base::Callback<void(bool)>&)>;
+
+  void SetVerifyProc(const VerifyProc& proc);
 
  protected:
   // net::CertVerifier:
@@ -78,12 +39,8 @@ class AtomCertVerifier : public net::CertVerifier {
   bool SupportsOCSPStapling() override;
 
  private:
-  friend class CertVerifyRequest;
-
-  void VerifyCertificateFromDelegate(const VerifyArgs& args, int result);
-  void OnDefaultVerificationResult(const VerifyArgs& args, int result);
-
-  Delegate* delegate_;
+  base::Lock lock_;
+  VerifyProc verify_proc_;
   scoped_ptr<net::CertVerifier> default_cert_verifier_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomCertVerifier);
