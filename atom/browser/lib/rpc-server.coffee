@@ -103,13 +103,25 @@ unwrapArgs = (sender, args) ->
 # Call a function and send reply asynchronously if it's a an asynchronous
 # style function and the caller didn't pass a callback.
 callFunction = (event, func, caller, args) ->
-  if v8Util.getHiddenValue(func, 'asynchronous') and typeof args[args.length - 1] isnt 'function'
-    args.push (ret) ->
+  funcMarkedAsync = v8Util.getHiddenValue(func, 'asynchronous')
+  funcPassedCallback = args[args.length - 1] is 'function'
+
+  try
+    if funcMarkedAsync and not funcPassedCallback
+      args.push (ret) ->
+        event.returnValue = valueToMeta event.sender, ret, true
+      func.apply caller, args
+    else
+      ret = func.apply caller, args
       event.returnValue = valueToMeta event.sender, ret, true
-    func.apply caller, args
-  else
-    ret = func.apply caller, args
-    event.returnValue = valueToMeta event.sender, ret, true
+  catch e
+    # Catch functions thrown further down in function invocation and wrap
+    # them with the function name so it's easier to trace things like
+    # `Error processing argument -1.`
+    funcName = func.name ? "anonymous"
+    throw new Error("Could not call remote function `#{funcName}`.
+                     Check that the function signature is correct.
+                     Underlying error: #{e.message}")
 
 # Send by BrowserWindow when its render view is deleted.
 process.on 'ATOM_BROWSER_RELEASE_RENDER_VIEW', (id) ->
