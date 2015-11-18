@@ -358,26 +358,20 @@ var win = new BrowserWindow({ width: 800, height: 600 });
 
 ### `win.setAspectRatio(aspectRatio[, extraSize])` _OS X_
 
-* `aspectRatio` The aspect ratio we want to maintain for some portion of the
-content view.
-* `extraSize` Object (optional) - The extra size not to be included while
-maintaining the aspect ratio. Properties:
+* `aspectRatio` 유지하려 하는 컨텐츠 뷰 일부의 종횡비
+* `extraSize` Object (optional) - 종횡비를 유지하는 동안 포함되지 않을 엑스트라 크기. 사용 가능한 속성:
   * `width` Integer
   * `height` Integer
 
-This will have a window maintain an aspect ratio. The extra size allows a
-developer to have space, specified in pixels, not included within the aspect
-ratio calculations. This API already takes into account the difference between a
-window's size and its content size.
+이 메서드는 윈도우의 종횡비를 유지하는 기능을 수행합니다.
+엑스트라 크기는 개발자가 픽셀로 특정한 공간이 있을 때 종횡비 계산에서 제외됩니다.
+이 API는 윈도우의 크기와 컨텐츠 사이즈의 차이를 이미 고려하고 있습니다.
 
-Consider a normal window with an HD video player and associated controls.
-Perhaps there are 15 pixels of controls on the left edge, 25 pixels of controls
-on the right edge and 50 pixels of controls below the player. In order to
-maintain a 16:9 aspect ratio (standard aspect ratio for HD @1920x1080) within
-the player itself we would call this function with arguments of 16/9 and
-[ 40, 50 ]. The second argument doesn't care where the extra width and height
-are within the content view--only that they exist. Just sum any extra width and
-height areas you have within the overall content view.
+일반 윈도우에서 작동하는 HD 비디오 플레이어와 관련된 컨트롤을 고려합니다.
+만약 15 픽셀의 컨트롤이 왼쪽 가장자리에 있고 25 픽셀의 컨트롤이 오른쪽 가장자리에 있으며 50 픽셀의 컨트롤이 플레이어 밑에 있을 때
+플레이어 자체가 16:9 종횡비(HD의 표준 종횡비는 @1920x1080)를 유지하기 위해선 이 함수를 16/9, [ 40, 50 ] 인수와 함께 호출해야 합니다.
+두번째 인수 엑스트라 크기는 존재하는 크기만 관여하고 컨텐츠 뷰 내의 크기는 관여하지 않습니다.
+그저 전체 컨텐츠 뷰 내에 있는 모든 엑스트라 너비, 높이 영역이 합해집니다.
 
 ### `win.setBounds(options)`
 
