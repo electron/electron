@@ -8,7 +8,6 @@
 #include <string>
 
 #include "atom/browser/api/trackable_object.h"
-#include "atom/browser/net/atom_cert_verifier.h"
 #include "content/public/browser/download_manager.h"
 #include "native_mate/handle.h"
 #include "net/base/completion_callback.h"
@@ -35,7 +34,6 @@ class AtomBrowserContext;
 namespace api {
 
 class Session: public mate::TrackableObject<Session>,
-               public AtomCertVerifier::Delegate,
                public content::DownloadManager::Observer {
  public:
   using ResolveProxyCallback = base::Callback<void(std::string)>;
@@ -74,6 +72,7 @@ class Session: public mate::TrackableObject<Session>,
   void SetDownloadPath(const base::FilePath& path);
   void EnableNetworkEmulation(const mate::Dictionary& options);
   void DisableNetworkEmulation();
+  void SetCertVerifyProc(v8::Local<v8::Value> proc, mate::Arguments* args);
   v8::Local<v8::Value> Cookies(v8::Isolate* isolate);
 
   // Cached object for cookies API.
