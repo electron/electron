@@ -304,7 +304,7 @@ var win = new BrowserWindow({ width: 800, height: 600 });
 
 ### `win.isFocused()`
 
-윈도우가 포커스 되었는지 여부를 반환합니다.
+윈도우가 포커스되었는지 여부를 반환합니다.
 
 ### `win.show()`
 
@@ -344,7 +344,7 @@ var win = new BrowserWindow({ width: 800, height: 600 });
 
 ### `win.isMinimized()`
 
-윈도우가 최소화 되었는지 여부를 반환합니다.
+윈도우가 최소화되었는지 여부를 반환합니다.
 
 ### `win.setFullScreen(flag)`
 
@@ -513,45 +513,43 @@ Kiosk(키오스크) 모드를 설정합니다.
 * `message` Integer
 * `callback` Function
 
-Windows 메시지를 후킹합니다. `callback`은 WndProc에서 메시지를 받았을 때 호출됩니다.
+Windows 메시지 훅을 등록합니다. `callback`은 WndProc에서 메시지를 받았을 때 호출됩니다.
 
 ### `win.isWindowMessageHooked(message)` _WINDOWS_
 
 * `message` Integer
 
-Returns `true` or `false` depending on whether the message is hooked.
+지정한 메시지가 후킹됬는지 여부를 반환합니다.
 
 ### `win.unhookWindowMessage(message)` _WINDOWS_
 
 * `message` Integer
 
-Unhook the window message.
+지정한 메시지 훅을 등록 해제합니다.
 
 ### `win.unhookAllWindowMessages()` _WINDOWS_
 
-Unhooks all of the window messages.
+모든 메시지 훅을 등록 해제합니다.
 
 ### `win.setRepresentedFilename(filename)` _OS X_
 
 * `filename` String
 
-Sets the pathname of the file the window represents, and the icon of the file
-will show in window's title bar.
+윈도우 대표 파일의 경로명을 설정합니다. 파일의 아이콘이 윈도우 타이틀 바에 표시됩니다.
 
 ### `win.getRepresentedFilename()` _OS X_
 
-Returns the pathname of the file the window represents.
+윈도우 대표 파일의 경로명을 반환합니다.
 
 ### `win.setDocumentEdited(edited)` _OS X_
 
 * `edited` Boolean
 
-Specifies whether the window’s document has been edited, and the icon in title
-bar will become grey when set to `true`.
+윈도우의 문서가 변경되었는지 여부를 설정합니다. 그리고 `true`로 설정했을 때 타이틀 바의 아이콘이 회색으로 표시됩니다.
 
 ### `win.isDocumentEdited()` _OS X_
 
-Whether the window's document has been edited.
+윈도우의 문서가 변경되었는지 여부를 반환합니다.
 
 ### `win.focusOnWebView()`
 
@@ -559,69 +557,65 @@ Whether the window's document has been edited.
 
 ### `win.capturePage([rect, ]callback)`
 
-* `rect` Object (optional)- The area of page to be captured, properties:
+* `rect` Object (optional)- 캡쳐할 페이지의 영역. 사용할 수 있는 속성은 다음과 같습니다:
   * `x` Integer
   * `y` Integer
   * `width` Integer
   * `height` Integer
 * `callback` Function
 
-Captures a snapshot of the page within `rect`. Upon completion `callback` will
-be called with `callback(image)`. The `image` is an instance of
-[NativeImage](native-image.md) that stores data of the snapshot. Omitting
-`rect` will capture the whole visible page.
+페이지의 스크린샷을 `rect`에 설정한 만큼 캡처합니다.
+캡처가 완료되면 `callback`이 `callback(image)` 형식으로 호출됩니다.
+`image`는 [NativeImage](native-image.md)의 인스턴스이며 스크린샷 데이터를 담고있습니다.
+`rect`를 생략하면 페이지 전체를 캡처합니다.
 
 ### `win.print([options])`
 
-Same as `webContents.print([options])`
+`webContents.print([options])` API와 같습니다.
 
 ### `win.printToPDF(options, callback)`
 
-Same as `webContents.printToPDF(options, callback)`
+`webContents.printToPDF(options, callback)` API와 같습니다.
 
 ### `win.loadURL(url[, options])`
 
-Same as `webContents.loadURL(url[, options])`.
+`webContents.loadURL(url[, options])` API와 같습니다.
 
 ### `win.reload()`
 
-Same as `webContents.reload`.
+`webContents.reload` API와 같습니다.
 
 ### `win.setMenu(menu)` _Linux_ _Windows_
 
 * `menu` Menu
 
-Sets the `menu` as the window's menu bar, setting it to `null` will remove the
-menu bar.
+지정한 `menu`를 윈도우의 메뉴로 설정합니다 `null`을 설정하면 메뉴를 제거합니다.
 
 ### `win.setProgressBar(progress)`
 
 * `progress` Double
 
-Sets progress value in progress bar. Valid range is [0, 1.0].
+작업 표시줄에 표시되고 있는 어플리케이션 아이콘에 진행 상태를 표시합니다. [0, 1.0] 사이의 값을 지정할 수 있습니다.
 
-Remove progress bar when progress < 0;
-Change to indeterminate mode when progress > 1.
+진행 상태가 < 0 이 되면 진행 상태 표시를 제거합니다.
+진행 상태가 > 1 이 되면 불확정 상태 표시로 전환합니다.
 
-On Linux platform, only supports Unity desktop environment, you need to specify
-the `*.desktop` file name to `desktopName` field in `package.json`. By default,
-it will assume `app.getName().desktop`.
+Linux 플랫폼에선 Unity 데스크톱 환경만 지원합니다.
+그리고 이 기능을 사용하려면 `*.desktop` 파일을 생성한 후 `package.json`의 `desktopName` 필드에 파일 이름을 지정해야 합니다.
+기본적으로 `app.getName().desktop`을 통해 접근합니다.
 
 ### `win.setOverlayIcon(overlay, description)` _Windows 7+_
 
-* `overlay` [NativeImage](native-image.md) - the icon to display on the bottom
-right corner of the taskbar icon. If this parameter is `null`, the overlay is
-cleared
-* `description` String - a description that will be provided to Accessibility
-screen readers
+* `overlay` [NativeImage](native-image.md) - 작업 표시줄 아이콘의 우측 하단에 표시될 아이콘입니다.
+`null`로 지정하면 빈 오버레이가 사용됩니다
+* `description` String - 접근성 설정에 의한 스크린 리더에 제공될 설명입니다
 
-Sets a 16px overlay onto the current taskbar icon, usually used to convey some
-sort of application status or to passively notify the user.
-
+현재 작업 표시줄 아이콘에 16px 크기의 오버레이를 지정합니다.
+보통 이 기능은 어플리케이션의 여러 상태를 사용자에게 소극적으로 알리기 위한 방법으로 사용됩니다.
 
 ### `win.setThumbarButtons(buttons)` _Windows 7+_
 
-`buttons` Array of `button` Objects:
+`buttons` `button` 객체의 배열:
 
 `button` Object, properties:
 
@@ -654,43 +648,45 @@ array to clean the buttons.
 
 ### `win.showDefinitionForSelection()` _OS X_
 
-Shows pop-up dictionary that searches the selected word on the page.
+페이지의 선택된 단어에 대한 사전 검색 결과 팝업을 표시합니다.
 
 ### `win.setAutoHideMenuBar(hide)`
 
 * `hide` Boolean
 
-Sets whether the window menu bar should hide itself automatically. Once set the
-menu bar will only show when users press the single `Alt` key.
+메뉴 막대 자동 숨김 기능을 활성화 합니다.
+숨겨진 메뉴는 사용자가 `Alt` 키를 단일 입력했을 때만 표시됩니다.
 
-If the menu bar is already visible, calling `setAutoHideMenuBar(true)` won't
-hide it immediately.
+메뉴 막대가 이미 표시되고 있을 때 `setAutoHideMenuBar(true)`를 호출한다고 해서 메뉴가 즉시 숨겨지지는 않습니다.
 
 ### `win.isMenuBarAutoHide()`
 
-Returns whether menu bar automatically hides itself.
+메뉴 막대 자동 숨김 상태인지 여부를 반환합니다.
 
 ### `win.setMenuBarVisibility(visible)`
 
 * `visible` Boolean
 
-Sets whether the menu bar should be visible. If the menu bar is auto-hide, users
-can still bring up the menu bar by pressing the single `Alt` key.
+메뉴 막대의 표시 여부를 설정합니다.
+만약 메뉴 막대 자동 숨김 상태라면 여전히 사용자가 `Alt` 키를 입력하여 메뉴 막대를 표시되도록 할 수 있습니다.
+
+**역주:** 기본 메뉴 막대를 완전히 없애려면 `win.setMenu(null)`을 호출해야 합니다.
+단순히 이 API를 사용하면 여전히 메뉴에 등록된 핫 키가 작동합니다.
 
 ### `win.isMenuBarVisible()`
 
-Returns whether the menu bar is visible.
+메뉴 막대가 표시되고 있는지 여부를 반환합니다.
 
 ### `win.setVisibleOnAllWorkspaces(visible)`
 
 * `visible` Boolean
 
-Sets whether the window should be visible on all workspaces.
+윈도우가 모든 워크스페이스에서 보여질지 여부를 설정합니다.
 
 **참고:** 이 API는 Windows에서 아무 일도 하지 않습니다.
 
 ### `win.isVisibleOnAllWorkspaces()`
 
-Returns whether the window is visible on all workspaces.
+윈도우가 모든 워크스페이스에서 보여질지 여부를 반환합니다.
 
 **참고:** 이 API는 Windows에서 언제나 false를 반환합니다.
