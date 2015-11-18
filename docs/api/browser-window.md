@@ -86,8 +86,12 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     is `true`.
   * `preload` String - Specifies a script that will be loaded before other
     scripts run in the page. This script will always have access to node APIs
-    no matter whether node integration is turned on for the page, and the path
-    of `preload` script has to be absolute path.
+    no matter whether node integration is turned on or off. The value should 
+    be the absolute file path to the script.
+
+    When node integration is turned off, the preload script can reintroduce 
+    Node global symbols back to the global scope. See example 
+    [here](process.md#event-loaded).
   * `partition` String - Sets the session used by the page. If `partition`
     starts with `persist:`, the page will use a persistent session available to
     all pages in the app with the same `partition`. if there is no `persist:`
