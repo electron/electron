@@ -484,38 +484,36 @@ height areas you have within the overall content view.
 
 윈도우의 제목을 반환합니다.
 
-**참고:** The title of web page can be different from the title of the native
-window.
+**참고:** 웹 페이지의 제목과 네이티브 윈도우의 제목은 서로 다를 수 있습니다.
 
 ### `win.flashFrame(flag)`
 
 * `flag` Boolean
 
-Starts or stops flashing the window to attract user's attention.
+사용자가 윈도우에 관심을 가질 수 있도록 창을 깜빡이거나 이를 중지합니다.
 
 ### `win.setSkipTaskbar(skip)`
 
 * `skip` Boolean
 
-Makes the window not show in the taskbar.
+어플리케이션 아이콘을 작업 표시줄에 보이지 않도록 설정합니다.
 
 ### `win.setKiosk(flag)`
 
 * `flag` Boolean
 
-Enters or leaves the kiosk mode.
+Kiosk(키오스크) 모드를 설정합니다.
 
 ### `win.isKiosk()`
 
-Returns whether the window is in kiosk mode.
+현재 윈도우가 kiosk 모드인지 여부를 반환합니다.
 
 ### `win.hookWindowMessage(message, callback)` _WINDOWS_
 
 * `message` Integer
 * `callback` Function
 
-Hooks a windows message. The `callback` is called when
-the message is received in the WndProc.
+Windows 메시지를 후킹합니다. `callback`은 WndProc에서 메시지를 받았을 때 호출됩니다.
 
 ### `win.isWindowMessageHooked(message)` _WINDOWS_
 
