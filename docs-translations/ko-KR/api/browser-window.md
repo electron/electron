@@ -207,7 +207,7 @@ __참고__: OS X에선 이 이벤트가 그저 `moved` 이벤트의 별칭(alias
 
 윈도우가 HTML API에 의해 풀 스크린 모드에서 해제될 때 발생하는 이벤트입니다.
 
-### Event: 'app-command' _WINDOWS_
+### Event: 'app-command' _Windows_
 
 [App Command](https://msdn.microsoft.com/en-us/library/windows/desktop/ms646275(v=vs.85).aspx)가 호출됐을 때 발생하는 이벤트입니다.
 이 이벤트는 일반적으로 키보드 미디어 키 또는 브라우저 커맨드(기본 동작 키)에 관련되어 있습니다.
@@ -508,26 +508,26 @@ Kiosk(키오스크) 모드를 설정합니다.
 
 현재 윈도우가 kiosk 모드인지 여부를 반환합니다.
 
-### `win.hookWindowMessage(message, callback)` _WINDOWS_
+### `win.hookWindowMessage(message, callback)` _Windows_
 
 * `message` Integer
 * `callback` Function
 
 Windows 메시지 훅을 등록합니다. `callback`은 WndProc에서 메시지를 받았을 때 호출됩니다.
 
-### `win.isWindowMessageHooked(message)` _WINDOWS_
+### `win.isWindowMessageHooked(message)` _Windows_
 
 * `message` Integer
 
 지정한 메시지가 후킹됬는지 여부를 반환합니다.
 
-### `win.unhookWindowMessage(message)` _WINDOWS_
+### `win.unhookWindowMessage(message)` _Windows_
 
 * `message` Integer
 
 지정한 메시지 훅을 등록 해제합니다.
 
-### `win.unhookAllWindowMessages()` _WINDOWS_
+### `win.unhookAllWindowMessages()` _Windows_
 
 모든 메시지 훅을 등록 해제합니다.
 
