@@ -131,7 +131,7 @@ Returns:
 
 Emitted when a new [browserWindow](browser-window.md) is created.
 
-### Event: 'select-certificate'
+### Event: 'select-client-certificate'
 
 Returns:
 
@@ -151,7 +151,7 @@ and `callback` needs to be called with an entry filtered from the list. Using
 certificate from the store.
 
 ```javascript
-app.on('select-certificate', function(event, host, url, list, callback) {
+app.on('select-client-certificate', function(event, webContents, url, list, callback) {
   event.preventDefault();
   callback(list[0]);
 })

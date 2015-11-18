@@ -247,7 +247,7 @@ void App::SelectClientCertificate(
   std::shared_ptr<content::ClientCertificateDelegate>
       shared_delegate(delegate.release());
   bool prevent_default =
-      Emit("select-certificate",
+      Emit("select-client-certificate",
            api::WebContents::CreateFrom(isolate(), web_contents),
            cert_request_info->host_and_port.ToString(),
            cert_request_info->client_certs,
