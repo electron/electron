@@ -283,7 +283,7 @@ var currentURL = win.webContents.getURL();
 
 ### `webContents.isCrashed()`
 
-렌더러 프로세스가 예기치 않게 종료 되었는지 여부를 반환합니다.
+렌더러 프로세스가 예기치 않게 종료되었는지 여부를 반환합니다.
 
 ### `webContents.setUserAgent(userAgent)`
 
