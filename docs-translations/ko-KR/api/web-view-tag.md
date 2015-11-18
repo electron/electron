@@ -256,15 +256,15 @@ webview.addEventListener("dom-ready", function() {
 
 ### `<webview>.openDevTools()`
 
-페이지에 대한 개발자 콘솔을 엽니다.
+페이지에 대한 개발자 도구를 엽니다.
 
 ### `<webview>.closeDevTools()`
 
-페이지에 대한 개발자 콘솔을 닫습니다.
+페이지에 대한 개발자 도구를 닫습니다.
 
 ### `<webview>.isDevToolsOpened()`
 
-페이지에 대한 개발자 콘솔이 열려있는지 확인합니다. 불린 값을 반환합니다.
+페이지에 대한 개발자 도구가 열려있는지 확인합니다. 불린 값을 반환합니다.
 
 ### `<webview>.inspectElement(x, y)`
 
@@ -275,7 +275,7 @@ webview.addEventListener("dom-ready", function() {
 
 ### `<webview>.inspectServiceWorker()`
 
-Service worker에 대한 개발자 콘솔을 엽니다.
+Service worker에 대한 개발자 도구를 엽니다.
 
 ### `<webview>.undo()`
 

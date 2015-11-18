@@ -33,6 +33,30 @@ session.on('will-download', function(event, item, webContents) {
 });
 ```
 
+### Event: 'untrusted-certificate'
+
+* `event` Event
+* `hostname` String
+* `certificate` Object
+  * `data` Buffer - PEM encoded data
+  * `issuerName` String
+* `callback` Function
+
+`hostname`에 대한 `certificate`의 유효성 검증이 실패했을 때 발생하는 이벤트 입니다.
+인증서를 신뢰한다면 `event.preventDefault()` 와 `callback(true)`를 호출하여 기본 동작을 방지해야 합니다.
+
+```javascript
+session.on('verify-certificate', function(event, hostname, certificate, callback) {
+  if (hostname == "github.com") {
+    // verification logic.
+    event.preventDefault();
+    callback(true);
+  } else {
+    callback(false);
+  }
+});
+```
+
 ## Methods
 
 `session` 객체는 다음과 같은 메서드와 속성을 가지고 있습니다:
