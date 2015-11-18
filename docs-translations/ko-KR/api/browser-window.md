@@ -207,7 +207,7 @@ __참고__: OS X에선 이 이벤트가 그저 `moved` 이벤트의 별칭(alias
 
 윈도우가 HTML API에 의해 풀 스크린 모드에서 해제될 때 발생하는 이벤트입니다.
 
-### Event: 'app-command':
+### Event: 'app-command' _Windows_
 
 [App Command](https://msdn.microsoft.com/en-us/library/windows/desktop/ms646275(v=vs.85).aspx)가 호출됐을 때 발생하는 이벤트입니다.
 이 이벤트는 일반적으로 키보드 미디어 키 또는 브라우저 커맨드(기본 동작 키)에 관련되어 있습니다.
