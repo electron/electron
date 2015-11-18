@@ -181,25 +181,20 @@ proxy-uri-list = <proxy-uri>[","<proxy-uri-list>]
 proxy-uri = [<proxy-scheme>"://"]<proxy-host>[":"<proxy-port>]
 
   예시:
-       "http=foopy:80;ftp=foopy2"  -- use HTTP proxy "foopy:80" for http://
-                                      URLs, and HTTP proxy "foopy2:80" for
-                                      ftp:// URLs.
-       "foopy:80"                  -- use HTTP proxy "foopy:80" for all URLs.
-       "foopy:80,bar,direct://"    -- use HTTP proxy "foopy:80" for all URLs,
-                                      failing over to "bar" if "foopy:80" is
-                                      unavailable, and after that using no
-                                      proxy.
-       "socks4://foopy"            -- use SOCKS v4 proxy "foopy:1080" for all
-                                      URLs.
-       "http=foopy,socks5://bar.com -- use HTTP proxy "foopy" for http URLs,
-                                      and fail over to the SOCKS5 proxy
-                                      "bar.com" if "foopy" is unavailable.
-       "http=foopy,direct://       -- use HTTP proxy "foopy" for http URLs,
-                                      and use no proxy if "foopy" is
-                                      unavailable.
-       "http=foopy;socks=foopy2   --  use HTTP proxy "foopy" for http URLs,
-                                      and use socks4://foopy2 for all other
-                                      URLs.
+       "http=foopy:80;ftp=foopy2"  -- http:// URL에 "foopy:80" HTTP 프록시를 사용합니다.
+                                      "foopy2:80" 는 ftp:// URL에 사용됩니다.
+       "foopy:80"                  -- 모든 URL에 "foopy:80" 프록시를 사용합니다.
+       "foopy:80,bar,direct://"    -- 모든 URL에 "foopy:80" HTTP 프록시를 사용합니다.
+                                      문제가 발생하여 "foopy:80"를 사용할 수 없는 경우 "bar"를 대신 사용하여
+                                      장애를 복구하며 그 다음 문제가 생긴 경우 프록시를 사용하지 않습니다.
+       "socks4://foopy"            -- 모든 URL에 "foopy:1000" SOCKS v4 프록시를 사용합니다.
+       "http=foopy,socks5://bar.com -- http:// URL에 "foopy" HTTP 프록시를 사용합니다.
+                                       문제가 발생하여 "foopy"를 사용할 수 없는 경우 SOCKS5 "bar.com"
+                                       프록시를 대신 사용합니다.
+       "http=foopy,direct://       -- http:// URL에 "foopy" HTTP 프록시를 사용합니다.
+                                      그리고 문제가 발생하여 "foopy"를 사용할 수 없는 경우 프록시를 사용하지 않습니다.
+       "http=foopy;socks=foopy2   --  http:// URL에 "foopy" HTTP 프록시를 사용합니다.
+                                      그리고 "socks4://foopy2" 프록시를 다른 모든 URL에 사용합니다.
 ```
 
 ### `session.setDownloadPath(path)`
