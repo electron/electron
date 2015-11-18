@@ -54,10 +54,6 @@ class Session: public mate::TrackableObject<Session>,
   explicit Session(AtomBrowserContext* browser_context);
   ~Session();
 
-  // AtomCertVerifier::Delegate:
-  void RequestCertVerification(
-      const scoped_refptr<AtomCertVerifier::CertVerifyRequest>&) override;
-
   // content::DownloadManager::Observer:
   void OnDownloadCreated(content::DownloadManager* manager,
                          content::DownloadItem* item) override;

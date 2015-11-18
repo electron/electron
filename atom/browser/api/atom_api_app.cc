@@ -17,6 +17,7 @@
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/net_converter.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
+#include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/node_includes.h"
 #include "atom/common/options_switches.h"
 #include "base/command_line.h"
@@ -27,6 +28,7 @@
 #include "chrome/common/chrome_paths.h"
 #include "content/public/browser/client_certificate_delegate.h"
 #include "content/public/browser/gpu_data_manager.h"
+#include "content/public/browser/render_frame_host.h"
 #include "content/public/common/content_switches.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
@@ -216,28 +218,47 @@ void App::OnFinishLaunching() {
 }
 
 void App::OnLogin(LoginHandler* login_handler) {
-  // Convert the args explicitly since they will be passed for twice.
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
-  auto web_contents =
-      WebContents::CreateFrom(isolate(), login_handler->GetWebContents());
-  auto request = mate::ConvertToV8(isolate(), login_handler->request());
-  auto auth_info = mate::ConvertToV8(isolate(), login_handler->auth_info());
-  auto callback = mate::ConvertToV8(
-      isolate(),
+  bool prevent_default = Emit(
+      "login",
+      WebContents::CreateFrom(isolate(), login_handler->GetWebContents()),
+      login_handler->request(),
+      login_handler->auth_info(),
       base::Bind(&PassLoginInformation, make_scoped_refptr(login_handler)));
-
-  bool prevent_default =
-      Emit("login", web_contents, request, auth_info, callback);
-
-  // Also pass it to WebContents.
-  if (!prevent_default)
-    prevent_default =
-        web_contents->Emit("login", request, auth_info, callback);
 
   // Default behavior is to always cancel the auth.
   if (!prevent_default)
     login_handler->CancelAuth();
+}
+
+void App::AllowCertificateError(
+    int pid,
+    int fid,
+    int cert_error,
+    const net::SSLInfo& ssl_info,
+    const GURL& request_url,
+    content::ResourceType resource_type,
+    bool overridable,
+    bool strict_enforcement,
+    bool expired_previous_decision,
+    const base::Callback<void(bool)>& callback,
+    content::CertificateRequestResultType* request) {
+  auto rfh = content::RenderFrameHost::FromID(pid, fid);
+  auto web_contents = content::WebContents::FromRenderFrameHost(rfh);
+
+  v8::Locker locker(isolate());
+  v8::HandleScope handle_scope(isolate());
+  bool prevent_default = Emit("certificate-error",
+                              WebContents::CreateFrom(isolate(), web_contents),
+                              request_url,
+                              cert_error,
+                              ssl_info.cert,
+                              callback);
+
+  // Deny the certificate by default.
+  if (!prevent_default)
+    *request = content::CERTIFICATE_REQUEST_RESULT_TYPE_DENY;
 }
 
 void App::SelectClientCertificate(
@@ -248,7 +269,7 @@ void App::SelectClientCertificate(
       shared_delegate(delegate.release());
   bool prevent_default =
       Emit("select-client-certificate",
-           api::WebContents::CreateFrom(isolate(), web_contents),
+           WebContents::CreateFrom(isolate(), web_contents),
            cert_request_info->host_and_port.ToString(),
            cert_request_info->client_certs,
            base::Bind(&OnClientCertificateSelected,

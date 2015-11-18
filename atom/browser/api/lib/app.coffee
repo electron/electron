@@ -38,6 +38,12 @@ app.getAppPath = ->
 # Helpers.
 app.resolveProxy = (url, callback) -> @defaultSession.resolveProxy url, callback
 
+# Routes the events to webContents.
+for name in ['login', 'certificate-error', 'select-client-certificate']
+  do (name) ->
+    app.on name, (event, webContents, args...) ->
+      webContents.emit name, event, args...
+
 # Deprecated.
 {deprecate} = electron
 app.getHomeDir = deprecate 'app.getHomeDir', 'app.getPath', ->

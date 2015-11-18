@@ -207,6 +207,26 @@ content::QuotaPermissionContext*
   return new AtomQuotaPermissionContext;
 }
 
+void AtomBrowserClient::AllowCertificateError(
+    int render_process_id,
+    int render_frame_id,
+    int cert_error,
+    const net::SSLInfo& ssl_info,
+    const GURL& request_url,
+    content::ResourceType resource_type,
+    bool overridable,
+    bool strict_enforcement,
+    bool expired_previous_decision,
+    const base::Callback<void(bool)>& callback,
+    content::CertificateRequestResultType* request) {
+  if (delegate_) {
+    delegate_->AllowCertificateError(
+        render_process_id, render_frame_id, cert_error, ssl_info, request_url,
+        resource_type, overridable, strict_enforcement,
+        expired_previous_decision, callback, request);
+  }
+}
+
 void AtomBrowserClient::SelectClientCertificate(
     content::WebContents* web_contents,
     net::SSLCertRequestInfo* cert_request_info,

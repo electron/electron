@@ -51,6 +51,18 @@ class App : public AtomBrowserClient::Delegate,
   void OnLogin(LoginHandler* login_handler) override;
 
   // content::ContentBrowserClient:
+  void AllowCertificateError(
+      int render_process_id,
+      int render_frame_id,
+      int cert_error,
+      const net::SSLInfo& ssl_info,
+      const GURL& request_url,
+      content::ResourceType resource_type,
+      bool overridable,
+      bool strict_enforcement,
+      bool expired_previous_decision,
+      const base::Callback<void(bool)>& callback,
+      content::CertificateRequestResultType* request) override;
   void SelectClientCertificate(
       content::WebContents* web_contents,
       net::SSLCertRequestInfo* cert_request_info,

@@ -238,12 +238,6 @@ void SetProxyInIO(net::URLRequestContextGetter* getter,
   RunCallbackInUI(callback);
 }
 
-void PassVerificationResult(
-    scoped_refptr<AtomCertVerifier::CertVerifyRequest> request,
-    bool success) {
-  request->ContinueWithResult(success ? net::OK : net::ERR_FAILED);
-}
-
 }  // namespace
 
 Session::Session(AtomBrowserContext* browser_context)
@@ -260,19 +254,6 @@ Session::~Session() {
   content::BrowserContext::GetDownloadManager(browser_context())->
       RemoveObserver(this);
   Destroy();
-}
-
-void Session::RequestCertVerification(
-    const scoped_refptr<AtomCertVerifier::CertVerifyRequest>& request) {
-  bool prevent_default = Emit(
-      "untrusted-certificate",
-      request->args().hostname,
-      request->args().cert,
-      base::Bind(&PassVerificationResult, request));
-
-  if (!prevent_default)
-    // Tell the request to use the result of default verifier.
-    request->ContinueWithResult(net::ERR_IO_PENDING);
 }
 
 void Session::OnDownloadCreated(content::DownloadManager* manager,
