@@ -228,139 +228,133 @@ someWindow.on('app-command', function(e, cmd) {
 
 ### `BrowserWindow.getAllWindows()`
 
-Returns an array of all opened browser windows.
+열려있는 모든 브라우저 윈도우의 배열을 반환합니다.
 
 ### `BrowserWindow.getFocusedWindow()`
 
-Returns the window that is focused in this application.
+어플리케이션에서 포커스된 윈도우를 반환합니다.
 
 ### `BrowserWindow.fromWebContents(webContents)`
 
 * `webContents` [WebContents](web-contents.md)
 
-Find a window according to the `webContents` it owns.
+`webContents`를 소유하고 있는 윈도우를 찾습니다.
 
 ### `BrowserWindow.fromId(id)`
 
 * `id` Integer
 
-Find a window according to its ID.
+ID에 해당하는 윈도우를 찾습니다.
 
 ### `BrowserWindow.addDevToolsExtension(path)`
 
 * `path` String
 
-Adds DevTools extension located at `path`, and returns extension's name.
+`path`에 있는 개발자 도구 확장 기능을 추가합니다. 그리고 확장 기능의 이름을 반환합니다.
 
-The extension will be remembered so you only need to call this API once, this
-API is not for programming use.
+확장 기능은 기억됩니다. 따라서 API는 단 한 번만 호출되어야 합니다.
+이 API는 실제 프로그램 작성에 사용할 수 없습니다.
 
 ### `BrowserWindow.removeDevToolsExtension(name)`
 
 * `name` String
 
-Remove the DevTools extension whose name is `name`.
+`name`에 해당하는 개발자 도구 확장 기능을 제거합니다.
 
 ## Instance Properties
 
-Objects created with `new BrowserWindow` have the following properties:
+`new BrowserWindow`로 생성한 객체는 다음과 같은 속성을 가지고 있습니다:
 
 ```javascript
-// In this example `win` is our instance
+// `win`은 BrowserWindow의 인스턴스입니다
 var win = new BrowserWindow({ width: 800, height: 600 });
 ```
 
 ### `win.webContents`
 
-The `WebContents` object this window owns, all web page related events and
-operations will be done via it.
+윈도우의 `WebContents` 객체입니다. 모든 웹 페이지와 관련된 이벤트와 작업이 이 객체를 통해 수행됩니다.
 
-See the [`webContents` documentation](web-contents.md) for its methods and
-events.
+메서드나 이벤트에 대한 자세한 내용은 [`webContents` 문서](web-contents.md)를 참고하세요.
 
 ### `win.id`
 
-The unique ID of this window.
+윈도우의 유일 ID입니다.
 
 ## Instance Methods
 
-Objects created with `new BrowserWindow` have the following instance methods:
+`new BrowserWindow`로 생성한 객체는 다음과 같은 메서드들을 가지고 있습니다:
 
-**Note:** Some methods are only available on specific operating systems and are labeled as such.
+**참고:** 몇몇 메서드들은 라벨에서 특정한 운영체제 시스템에서만 작동합니다.
 
 ### `win.destroy()`
 
-Force closing the window, the `unload` and `beforeunload` event won't be emitted
-for the web page, and `close` event will also not be emitted
-for this window, but it guarantees the `closed` event will be emitted.
+윈도우를 강제로 닫습니다. 웹 페이지의 `unload` 와 `beforeunload` 이벤트는 일어나지 않습니다.
+또한 이 윈도우의 `close`도 일어나지 않습니다. 하지만 `closed` 이벤트는 반드시 발생함을 보장합니다.
 
-You should only use this method when the renderer process (web page) has
-crashed.
+이 메서드는 렌더러 프로세스가 예기치 않게 크래시가 일어났을 경우에만 사용해야 합니다.
 
 ### `win.close()`
 
-Try to close the window, this has the same effect with user manually clicking
-the close button of the window. The web page may cancel the close though, see
-the [close event](#event-close).
+윈도우의 종료를 시도합니다. 이 메서드는 사용자가 윈도우의 닫기 버튼을 클릭했을 때와 같은 효과를 냅니다.
+웹 페이지는 로드가 취소되고 종료됩니다. 자세한 내용은 [close 이벤트](#event-close)를 참고하세요.
 
 ### `win.focus()`
 
-Focus on the window.
+윈도우에 포커스를 맞춥니다.
 
 ### `win.isFocused()`
 
-Returns a boolean, whether the window is focused.
+윈도우가 포커스 되었는지 여부를 반환합니다.
 
 ### `win.show()`
 
-Shows and gives focus to the window.
+윈도우를 표시하고 포커스합니다.
 
 ### `win.showInactive()`
 
-Shows the window but doesn't focus on it.
+윈도우를 표시만 하고 포커스하지 않습니다.
 
 ### `win.hide()`
 
-Hides the window.
+윈도우를 숨깁니다.
 
 ### `win.isVisible()`
 
-Returns a boolean, whether the window is visible to the user.
+윈도우가 사용자에게 표시되고 있는지 여부를 반환합니다.
 
 ### `win.maximize()`
 
-Maximizes the window.
+윈도우를 최대화 시킵니다.
 
 ### `win.unmaximize()`
 
-Unmaximizes the window.
+윈도우 최대화를 취소합니다.
 
 ### `win.isMaximized()`
 
-Returns a boolean, whether the window is maximized.
+윈도우가 최대화 되어있는지 여부를 반환합니다.
 
 ### `win.minimize()`
 
-Minimizes the window. On some platforms the minimized window will be shown in
-the Dock.
+윈도우를 최소화 시킵니다. 어떤 플랫폼은 최소화된 윈도우가 Dock에 표시됩니다.
 
 ### `win.restore()`
 
-Restores the window from minimized state to its previous state.
+최소화된 윈도우를 이전 상태로 되돌립니다.
 
 ### `win.isMinimized()`
 
-Returns a boolean, whether the window is minimized.
+윈도우가 최소화 되었는지 여부를 반환합니다.
 
 ### `win.setFullScreen(flag)`
 
 * `flag` Boolean
 
-Sets whether the window should be in fullscreen mode.
+윈도우의 전체화면 상태를 지정합니다.
 
 ### `win.isFullScreen()`
 
-Returns a boolean, whether the window is in fullscreen mode.
+윈도우가 전체화면 모드 상태인지 여부를 반환합니다.
 
 ### `win.setAspectRatio(aspectRatio[, extraSize])` _OS X_
 

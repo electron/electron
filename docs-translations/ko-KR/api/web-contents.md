@@ -190,7 +190,7 @@ Returns:
 
 webContents에서 사용되는 `session`객체를 반환합니다.
 
-[session](session.md) 문서에서 이 객체의 메서드들을 확인할 수 있습니다.
+[session 문서](session.md)에서 이 객체의 메서드들을 확인할 수 있습니다.
 
 ### `webContents.loadURL(url[, options])`
 
@@ -283,7 +283,7 @@ var currentURL = win.webContents.getURL();
 
 ### `webContents.isCrashed()`
 
-렌더러 프로세스가 예기치 않게 종료되었는지 여부를 반환합니다.
+렌더러 프로세스가 예기치 않게 종료 되었는지 여부를 반환합니다.
 
 ### `webContents.setUserAgent(userAgent)`
 
