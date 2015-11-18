@@ -103,7 +103,7 @@ Registers a protocol of `scheme` that will send a `String` as a response. The
 
 Registers a protocol of `scheme` that will send an HTTP request as a response.
 The `callback` should be called with an object that has the `url`, `method`,
-`referer`, and `session` properties.
+`referrer`, and `session` properties.
 
 By default the HTTP request will reuse the current session. If you want the
 request to have a different session you should set `session` to `null`.
