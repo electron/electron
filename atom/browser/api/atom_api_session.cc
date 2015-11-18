@@ -357,10 +357,10 @@ void Session::DisableNetworkEmulation() {
                  base::Passed(&conditions)));
 }
 
-void Session::SetCertVerifyProc(v8::Local<v8::Value> val, mate::Arguments* args) {
+void Session::SetCertVerifyProc(v8::Local<v8::Value> val,
+                                mate::Arguments* args) {
   AtomCertVerifier::VerifyProc proc;
-  if (val.IsEmpty() ||
-      !(val->IsNull() || mate::ConvertFromV8(args->isolate(), val, &proc))) {
+  if (!(val->IsNull() || mate::ConvertFromV8(args->isolate(), val, &proc))) {
     args->ThrowError("Must pass null or function");
     return;
   }
