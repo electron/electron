@@ -472,19 +472,19 @@ height areas you have within the overall content view.
 
 ### `win.getPosition()`
 
-윈도우의 현재 위치를 배열로 반환합니다.
+윈도우의 위치를 배열로 반환합니다.
 
 ### `win.setTitle(title)`
 
 * `title` String
 
-Changes the title of native window to `title`.
+`title`을 네이티브 윈도우의 제목으로 지정합니다.
 
 ### `win.getTitle()`
 
-Returns the title of the native window.
+윈도우의 제목을 반환합니다.
 
-**Note:** The title of web page can be different from the title of the native
+**참고:** The title of web page can be different from the title of the native
 window.
 
 ### `win.flashFrame(flag)`
@@ -689,10 +689,10 @@ Returns whether the menu bar is visible.
 
 Sets whether the window should be visible on all workspaces.
 
-**Note:** This API does nothing on Windows.
+**참고:** 이 API는 Windows에서 아무 일도 하지 않습니다.
 
 ### `win.isVisibleOnAllWorkspaces()`
 
 Returns whether the window is visible on all workspaces.
 
-**Note:** This API always returns false on Windows.
+**참고:** 이 API는 Windows에서 언제나 false를 반환합니다.
