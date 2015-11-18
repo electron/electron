@@ -175,7 +175,8 @@ Sets the title displayed aside of the tray icon in the status bar.
 
 * `highlight` Boolean
 
-Sets whether the tray icon is highlighted when it is clicked.
+Sets whether the tray icon's background becomes highlighted (in blue)
+when the tray icon is clicked. Defaults to true.
 
 ### `Tray.displayBalloon(options)` _Windows_
 
