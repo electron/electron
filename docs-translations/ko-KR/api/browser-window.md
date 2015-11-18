@@ -43,7 +43,7 @@ win.show();
 * `alwaysOnTop` Boolean - 윈도우 창이 언제나 다른 창들 위에 유지되는지 여부.
 * `fullscreen` Boolean - 윈도우 창의 전체화면 활성화 여부.
   `false`로 지정했을 경우 OS X에선 전체화면 버튼이 숨겨지거나 비활성화됩니다.
-* `skipTaskbar` Boolean - 작업 표시줄 어플리케이션 아이콘 표시 여부.
+* `skipTaskbar` Boolean - 작업표시줄 어플리케이션 아이콘 표시 여부.
 * `kiosk` Boolean - Kiosk(키오스크) 모드.
 * `title` String - 기본 윈도우 창 제목.
 * `icon` [NativeImage](native-image.md) - 윈도우 아이콘, 생략하면 실행 파일의 아이콘이 대신 사용됩니다.
@@ -496,7 +496,7 @@ height areas you have within the overall content view.
 
 * `skip` Boolean
 
-어플리케이션 아이콘을 작업 표시줄에 보이지 않도록 설정합니다.
+어플리케이션 아이콘을 작업표시줄에 보이지 않도록 설정합니다.
 
 ### `win.setKiosk(flag)`
 
@@ -557,7 +557,7 @@ Windows 메시지 훅을 등록합니다. `callback`은 WndProc에서 메시지�
 
 ### `win.capturePage([rect, ]callback)`
 
-* `rect` Object (optional)- 캡쳐할 페이지의 영역. 사용할 수 있는 속성은 다음과 같습니다:
+* `rect` Object (optional) - 캡쳐할 페이지의 영역. 사용할 수 있는 속성은 다음과 같습니다:
   * `x` Integer
   * `y` Integer
   * `width` Integer
@@ -595,7 +595,7 @@ Windows 메시지 훅을 등록합니다. `callback`은 WndProc에서 메시지�
 
 * `progress` Double
 
-작업 표시줄에 표시되고 있는 어플리케이션 아이콘에 진행 상태를 표시합니다. [0, 1.0] 사이의 값을 지정할 수 있습니다.
+작업표시줄에 표시되고 있는 어플리케이션 아이콘에 진행 상태를 표시합니다. [0, 1.0] 사이의 값을 지정할 수 있습니다.
 
 진행 상태가 < 0 이 되면 진행 상태 표시를 제거합니다.
 진행 상태가 > 1 이 되면 불확정 상태 표시로 전환합니다.
@@ -606,45 +606,38 @@ Linux 플랫폼에선 Unity 데스크톱 환경만 지원합니다.
 
 ### `win.setOverlayIcon(overlay, description)` _Windows 7+_
 
-* `overlay` [NativeImage](native-image.md) - 작업 표시줄 아이콘의 우측 하단에 표시될 아이콘입니다.
+* `overlay` [NativeImage](native-image.md) - 작업표시줄 아이콘의 우측 하단에 표시될 아이콘입니다.
 `null`로 지정하면 빈 오버레이가 사용됩니다
 * `description` String - 접근성 설정에 의한 스크린 리더에 제공될 설명입니다
 
-현재 작업 표시줄 아이콘에 16px 크기의 오버레이를 지정합니다.
+현재 작업표시줄 아이콘에 16px 크기의 오버레이를 지정합니다.
 보통 이 기능은 어플리케이션의 여러 상태를 사용자에게 소극적으로 알리기 위한 방법으로 사용됩니다.
 
 ### `win.setThumbarButtons(buttons)` _Windows 7+_
 
-`buttons` `button` 객체의 배열:
+`buttons` - `button` 객체의 배열:
 
-`button` Object, properties:
+`button` 객체는 다음과 같은 속성을 가지고 있습니다:
 
-* `icon` [NativeImage](native-image.md) - The icon showing in thumbnail
-  toolbar.
-* `tooltip` String (optional) - The text of the button's tooltip.
-* `flags` Array (optional) - Control specific states and behaviors
-  of the button. By default, it uses `enabled`. It can include following
-  Strings:
-  * `enabled` - The button is active and available to the user.
-  * `disabled` - The button is disabled. It is present, but has a visual
-    state indicating it will not respond to user action.
-  * `dismissonclick` - When the button is clicked, the taskbar button's
-    flyout closes immediately.
-  * `nobackground` - Do not draw a button border, use only the image.
-  * `hidden` - The button is not shown to the user.
-  * `noninteractive` - The button is enabled but not interactive; no
-    pressed button state is drawn. This value is intended for instances
-    where the button is used in a notification.
+* `icon` [NativeImage](native-image.md) - 미리보기 툴바에 보여질 아이콘.
+* `tooltip` String (optional) - 버튼의 툴팁 텍스트.
+* `flags` Array (optional) - 버튼의 특정 동작 및 상태 제어. 기본적으로 `enabled`이 사용됩니다.
+  이 속성은 다음 문자열들을 포함할 수 있습니다:
+  * `enabled` - 사용자가 사용할 수 있도록 버튼이 활성화 됩니다.
+  * `disabled` - 버튼이 비활성화 됩니다. 버튼은 표시되지만 시각적인 상태는 사용자의 동작에 응답하지 않는
+  비활성화 상태로 표시됩니다.
+  * `dismissonclick` - 버튼이 클릭되면 작업표시줄 버튼의 미리보기(flyout)가 즉시 종료됩니다.
+  * `nobackground` - 버튼의 테두리를 표시하지 않습니다. 이미지에만 사용할 수 있습니다.
+  * `hidden` - 버튼을 사용자에게 표시되지 않도록 숨깁니다.
+  * `noninteractive` - 버튼은 활성화되어 있지만 반응이 제거되며 버튼을 눌러도 눌려지지 않은 상태를 유지합니다.
+  이 값은 버튼을 알림의 용도로 사용하기 위해 만들어졌습니다.
 * `click` - Function
 
-Add a thumbnail toolbar with a specified set of buttons to the thumbnail image
-of a window in a taskbar button layout. Returns a `Boolean` object indicates
-whether the thumbnail has been added successfully.
+윈도우 작업표시줄 버튼 레이아웃의 미리보기 이미지 영역에 미리보기 툴바와 버튼 세트를 지정합니다.
+반환되는 `Boolean` 값은 미리보기 툴바가 성공적으로 추가됬는지를 알려줍니다.
 
-The number of buttons in thumbnail toolbar should be no greater than 7 due to
-the limited room. Once you setup the thumbnail toolbar, the toolbar cannot be
-removed due to the platform's limitation. But you can call the API with an empty
-array to clean the buttons.
+미리보기 이미지 영역의 제한된 크기로 인해 미리보기 툴바에 추가될 수 있는 최대 버튼의 개수는 7개이며 이 이상 추가될 수 없습니다.
+플랫폼의 제약으로 인해 미리보기 툴바는 한 번 설정되면 삭제할 수 없습니다. 하지만 이 API에 빈 배열을 전달하여 버튼들을 제거할 수 있습니다.
 
 ### `win.showDefinitionForSelection()` _OS X_
 
@@ -681,12 +674,12 @@ array to clean the buttons.
 
 * `visible` Boolean
 
-윈도우가 모든 워크스페이스에서 보여질지 여부를 설정합니다.
+윈도우가 모든 워크스페이스에서 표시될지 여부를 설정합니다.
 
 **참고:** 이 API는 Windows에서 아무 일도 하지 않습니다.
 
 ### `win.isVisibleOnAllWorkspaces()`
 
-윈도우가 모든 워크스페이스에서 보여질지 여부를 반환합니다.
+윈도우가 모든 워크스페이스에서 표시될지 여부를 반환합니다.
 
 **참고:** 이 API는 Windows에서 언제나 false를 반환합니다.
