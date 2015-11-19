@@ -1,6 +1,6 @@
 ﻿# Selenium 과 WebDriver 사용하기
 
-[ChromeDriver - WebDriver for Chrome][chrome-driver]로 부터 인용:
+[ChromeDriver - WebDriver for Chrome][chrome-driver]로부터 인용:
 
 > WebDriver는 많은 브라우저에서 웹 앱을 자동적으로 테스트하는 툴입니다.
 > 이 툴킷은 웹 페이지를 자동으로 탐색하고 유저 폼을 사용하거나 자바스크립트를 실행하는

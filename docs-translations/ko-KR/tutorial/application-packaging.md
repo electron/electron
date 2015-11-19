@@ -25,7 +25,7 @@ $ asar pack your-app app.asar
 
 ## `asar` 아카이브 사용하기
 
-Electron은 Node.js로 부터 제공된 Node API와 Chromium으로부터 제공된 Web API 두 가지
+Electron은 Node.js로부터 제공된 Node API와 Chromium으로부터 제공된 Web API 두 가지
 API를 가지고 있습니다. 따라서 `asar` 아카이브는 두 API 모두 사용할 수 있도록
 지원합니다.
 
@@ -135,7 +135,7 @@ API가 원할하게 작동할 수 있도록 임시 경로에 해당되는 파일
 
 ### `fs.stat`의 잘못된 스테이터스 정보
 
-`fs.stat` 로 부터 반환되는 `Stats` 객체와 비슷한 API들은 `asar` 아카이브를 타겟으로
+`fs.stat` 로부터 반환되는 `Stats` 객체와 비슷한 API들은 `asar` 아카이브를 타겟으로
 할 경우 예측된 디렉터리 파일 정보를 가집니다. 왜냐하면 아카이브의 디렉터리 경로는 실제
 파일 시스템에 존재하지 않기 때문입니다. 그러한 이유로 파일 크기와
 파일 타입 등을 확인할 때 `Stats` 객체를 신뢰해선 안됩니다.

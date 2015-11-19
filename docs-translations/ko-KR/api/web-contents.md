@@ -1,8 +1,9 @@
 # webContents
 
-`webContents`는 [EventEmitter](http://nodejs.org/api/events.html#events_class_events_eventemitter)를 상속받았습니다.
-
-웹 페이지의 렌더링과 관리를 책임지며 [`BrowserWindow`](browser-window.md)의 속성입니다. 다음은 `webContents` 객체에 접근하는 예제입니다:
+`webContents`는 [EventEmitter](http://nodejs.org/api/events.html#events_class_events_eventemitter)를
+상속받았습니다. 웹 페이지의 렌더링과 관리를 책임지며
+[`BrowserWindow`](browser-window.md)의 속성입니다. 다음은 `webContents` 객체에
+접근하는 예제입니다:
 
 ```javascript
 const BrowserWindow = require('electron').BrowserWindow;
@@ -19,7 +20,8 @@ var webContents = win.webContents;
 
 ### Event: 'did-finish-load'
 
-탐색 작업이 끝났을 때 발생하는 이벤트입니다. 브라우저의 탭의 스피너가 멈추고 `onload` 이벤트가 발생했을 때를 말합니다.
+탐색 작업이 끝났을 때 발생하는 이벤트입니다. 브라우저의 탭의 스피너가 멈추고 `onload`
+이벤트가 발생했을 때를 말합니다.
 
 ### Event: 'did-fail-load'
 
@@ -30,8 +32,10 @@ Returns:
 * `errorDescription` String
 * `validatedURL` String
 
-이 이벤트는 `did-finish-load`와 비슷하나, 로드가 실패했거나 취소되었을 때 발생합니다. 예를 들면 `window.stop()`이 실행되었을 때 발생합니다.
-발생할 수 있는 전체 에러 코드의 목록과 설명은 [여기](https://code.google.com/p/chromium/codesearch#chromium/src/net/base/net_error_list.h)서 확인할 수 있습니다.
+이 이벤트는 `did-finish-load`와 비슷하나, 로드가 실패했거나 취소되었을 때 발생합니다.
+예를 들면 `window.stop()`이 실행되었을 때 발생합니다. 발생할 수 있는 전체 에러 코드의
+목록과 설명은 [여기](https://code.google.com/p/chromium/codesearch#chromium/src/net/base/net_error_list.h)서
+확인할 수 있습니다.
 
 ### Event: 'did-frame-finish-load'
 
@@ -126,8 +130,8 @@ Returns:
 사용자 또는 페이지가 새로운 페이지로 이동할 때 발생하는 이벤트입니다.
 `window.location` 객체가 변경되거나 사용자가 페이지의 링크를 클릭했을 때 발생합니다.
 
-이 이벤트는 `webContents.loadURL`과 `webContents.back` 같은 API를 이용하여 프로그램적으로
-시작된 탐색에 대해서는 발생하지 않습니다.
+이 이벤트는 `webContents.loadURL`과 `webContents.back` 같은 API를 이용하여
+프로그램적으로 시작된 탐색에 대해서는 발생하지 않습니다.
 
 `event.preventDefault()`를 호출하면 탐색을 방지할 수 있습니다.
 
@@ -200,8 +204,9 @@ webContents에서 사용되는 `session`객체를 반환합니다.
   * `userAgent` String - 요청을 시작한 유저 에이전트.
   * `extraHeaders` String - "\n"로 구분된 Extra 헤더들.
 
-윈도우에 웹 페이지 `url`을 로드합니다. `url`은 `http://` or `file://`과 같은 프로토콜 접두사를 가지고 있어야 합니다.
-만약 반드시 http 캐시를 사용하지 않고 로드해야 하는 경우 `pragma` 헤더를 사용할 수 있습니다.
+윈도우에 웹 페이지 `url`을 로드합니다. `url`은 `http://` or `file://`과 같은
+프로토콜 접두사를 가지고 있어야 합니다. 만약 반드시 http 캐시를 사용하지 않고 로드해야
+하는 경우 `pragma` 헤더를 사용할 수 있습니다.
 
 ```javascript
 const options = {"extraHeaders" : "pragma: no-cache\n"}
@@ -308,8 +313,9 @@ CSS 코드를 현재 웹 페이지에 삽입합니다.
 
 페이지에서 자바스크립트 코드를 실행합니다.
 
-기본적으로 `requestFullScreen`와 같은 몇몇 HTML API들은 사용자의 조작에 의해서만 호출될 수 있습니다.
-`userGesture`를 `true`로 설정하면 이러한 제약을 무시할 수 있습니다.
+기본적으로 `requestFullScreen`와 같은 몇몇 HTML API들은 사용자의 조작에 의해서만
+호출될 수 있습니다. `userGesture`를 `true`로 설정하면 이러한 제약을 무시할 수
+있습니다.
 
 ### `webContents.setAudioMuted(muted)`
 
@@ -373,14 +379,15 @@ CSS 코드를 현재 웹 페이지에 삽입합니다.
 
 * `callback` Function
 
-ServiceWorker가 등록되어있는지 확인하고 `callback`에 대한 응답으로 boolean 값을 반환합니다.
+ServiceWorker가 등록되어있는지 확인하고 `callback`에 대한 응답으로 boolean 값을
+반환합니다.
 
 ### `webContents.unregisterServiceWorker(callback)`
 
 * `callback` Function
 
-ServiceWorker가 존재하면 모두 등록을 해제하고 JS Promise가 만족될 때 `callback`에 대한
-응답으로 boolean을 반환하거나 JS Promise가 만족되지 않을 때 `false`를 반환합니다.
+ServiceWorker가 존재하면 모두 등록을 해제하고 JS Promise가 만족될 때 `callback`에
+대한 응답으로 boolean을 반환하거나 JS Promise가 만족되지 않을 때 `false`를 반환합니다.
 
 ### `webContents.print([options])`
 
@@ -390,14 +397,16 @@ ServiceWorker가 존재하면 모두 등록을 해제하고 JS Promise가 만족
 * `printBackground` Boolean - 웹 페이지의 배경 색과 이미지를 출력합니다. 기본값은
 	`false`입니다.
 
-윈도우의 웹 페이지를 프린트합니다. `silent`가 `false`로 지정되어있을 땐, Electron이 시스템의
-기본 프린터와 기본 프린터 설정을 가져옵니다.
+윈도우의 웹 페이지를 프린트합니다. `silent`가 `false`로 지정되어있을 땐, Electron이
+시스템의 기본 프린터와 기본 프린터 설정을 가져옵니다.
 
 웹 페이지에서 `window.print()`를 호출하는 것은
-`webContents.print({silent: false, printBackground: false})`를 호출하는 것과 같습니다.
+`webContents.print({silent: false, printBackground: false})`를 호출하는 것과
+같습니다.
 
-**Note:** Windows에서의 프린터 API는 `pdf.dll`에 의존합니다.
-어플리케이션이 print 기능을 사용하지 않는 경우 전체 바이너리 크기를 줄이기 위해 `pdf.dll`을 삭제해도 됩니다.
+**참고:** Windows에서의 프린터 API는 `pdf.dll`에 의존합니다. 따라서 어플리케이션이
+print기능을 사용하지 않는 경우 전체 바이너리 크기를 줄이기 위해 `pdf.dll`을 삭제해도
+됩니다.
 
 ### `webContents.printToPDF(options, callback)`
 
@@ -423,7 +432,8 @@ ServiceWorker가 존재하면 모두 등록을 해제하고 JS Promise가 만족
 * `error` Error
 * `data` Buffer - PDF 파일 내용.
 
-Chromium의 미리보기 프린팅 커스텀 설정을 이용하여 윈도우의 웹 페이지를 PDF로 프린트합니다.
+Chromium의 미리보기 프린팅 커스텀 설정을 이용하여 윈도우의 웹 페이지를 PDF로
+프린트합니다.
 
 기본으로 비어있는 `options`은 다음과 같이 여겨지게 됩니다:
 
@@ -507,8 +517,9 @@ win.webContents.on("did-finish-load", function() {
 * `channel` String
 * `arg` (optional)
 
-`channel`을 통하여 렌더러 프로세스에 비동기 메시지를 보냅ㄹ니다. 임의의 아규먼트를 보낼수도 있습니다.
-렌더러 프로세스는 `ipcRenderer` 모듈을 통하여 `channel`를 리슨하여 메시지를 처리할 수 있습니다.
+`channel`을 통하여 렌더러 프로세스에 비동기 메시지를 보냅니다. 임의의 인수를 보낼수도
+있습니다. 렌더러 프로세스는 `ipcRenderer` 모듈을 통하여 `channel`를 리슨하여 메시지를
+처리할 수 있습니다.
 
 메인 프로세스에서 렌더러 프로세스로 메시지를 보내는 예시 입니다:
 
@@ -545,42 +556,43 @@ app.on('ready', function() {
     (기본값: `desktop`)
   * `desktop`
   * `mobile`
-* `screenSize` Object - 에뮬레이트 화면의 크기를 지정합니다 (screenPosition == mobile)
+* `screenSize` Object - 에뮬레이트 화면의 크기를 지정합니다 (screenPosition ==
+  mobile)
   * `width` Integer - 에뮬레이트 화면의 너비를 지정합니다
   * `height` Integer - 에뮬레이트 화면의 높이를 지정합니다
-* `viewPosition` Object - 화면에서 뷰의 위치
-    (screenPosition == mobile) (기본값: `{x: 0, y: 0}`)
+* `viewPosition` Object - 화면에서 뷰의 위치 (screenPosition == mobile) (기본값:
+  `{x: 0, y: 0}`)
   * `x` Integer - 좌상단 모서리로부터의 x 축의 오프셋
   * `y` Integer - 좌상단 모서리로부터의 y 축의 오프셋
 * `deviceScaleFactor` Integer - 디바이스의 스케일 팩터(scale factor)를 지정합니다.
-	(0일 경우 기본 디바이스 스케일 팩터를 기본으로 사용합니다) (기본값: `0`)
-* `viewSize` Object - 에뮬레이트 된 뷰의 크기를 지정합니다 (빈 값은 오버라이드 하지 않는 다는
-	것을 의미합니다)
+	(0일 경우 기본 디바이스 스케일 팩터를 기본으로 사용합니다. 기본값: `0`)
+* `viewSize` Object - 에뮬레이트 된 뷰의 크기를 지정합니다 (빈 값은 덮어쓰지 않는
+  다는 것을 의미합니다)
   * `width` Integer - 에뮬레이트 된 뷰의 너비를 지정합니다
   * `height` Integer - 에뮬레이트 된 뷰의 높이를 지정합니다
-* `fitToView` Boolean - 에뮬레이트의 뷰가 사용 가능한 공간에 맞추어 스케일 다운 될지 여부를
+* `fitToView` Boolean - 에뮬레이트의 뷰가 사용 가능한 공간에 맞추어 스케일 다운될지를
 		지정합니다 (기본값: `false`)
-* `offset` Object - 사용 가능한 공간에서 에뮬레이트 된 뷰의 오프셋을 지정합니다
-		(fit to view 모드 외에서) (기본값: `{x: 0, y: 0}`)
+* `offset` Object - 사용 가능한 공간에서 에뮬레이트 된 뷰의 오프셋을 지정합니다 (fit
+  to view 모드 외에서) (기본값: `{x: 0, y: 0}`)
   * `x` Float - 좌상단 모서리에서 x 축의 오프셋을 지정합니다
   * `y` Float - 좌상단 모서리에서 y 축의 오프셋을 지정합니다
-* `scale` Float - 사용 가능한 공간에서 에뮬레이드 된 뷰의 스케일 (fit to view 모드 외에서)
-		(기본값: `1`)
+* `scale` Float - 사용 가능한 공간에서 에뮬레이드 된 뷰의 스케일 (fit to view 모드
+  외에서, 기본값: `1`)
 
-주어진 파라미터로 디바이스 에뮬레이션을 사용합니다.
+`parameters`로 디바이스 에뮬레이션을 사용합니다.
 
 ### `webContents.disableDeviceEmulation()`
 
-`webContents.enableDeviceEmulation`로 사용가능해진 디바이스 에뮬레이선을 비활성화 합니다.
+`webContents.enableDeviceEmulation`로 활성화된 디바이스 에뮬레이선을 비활성화 합니다.
 
 ### `webContents.sendInputEvent(event)`
 
 * `event` Object
-  * `type` String (**required**) - 이벤트의 타입. 다음 값들을 사용할 수 있습니다: `mouseDown`,
-    `mouseUp`, `mouseEnter`, `mouseLeave`, `contextMenu`, `mouseWheel`,
-    `mouseMove`, `keyDown`, `keyUp`, `char`.
-  * `modifiers` Array - 이벤트의 수정자(modifier)들에 대한 배열. 다음 값들을 포함 할 수
-		있습니다: `shift`, `control`, `alt`, `meta`, `isKeypad`, `isAutoRepeat`,
+  * `type` String (**required**) - 이벤트의 타입. 다음 값들을 사용할 수 있습니다:
+    `mouseDown`,     `mouseUp`, `mouseEnter`, `mouseLeave`, `contextMenu`,
+    `mouseWheel`, `mouseMove`, `keyDown`, `keyUp`, `char`.
+  * `modifiers` Array - 이벤트의 수정자(modifier)들에 대한 배열. 다음 값들을 포함
+    할 수 있습니다: `shift`, `control`, `alt`, `meta`, `isKeypad`, `isAutoRepeat`,
     `leftButtonDown`, `middleButtonDown`, `rightButtonDown`, `capsLock`,
     `numLock`, `left`, `right`.
 
@@ -588,10 +600,11 @@ Input `event`를 웹 페이지로 전송합니다.
 
 키보드 이벤트들에 대해서는 `event` 객체는 다음 속성들을 사용할 수 있습니다:
 
-* `keyCode` Char or String (**required**) - 키보드 이벤트로 보내지는 문자.
-  단일 UTF-8 문자를 사용할 수 있고 이벤트를 발생시키는 다음 키 중 하나를 포함할 수 있습니다:
-  `enter`, `backspace`, `delete`, `tab`, `escape`, `control`, `alt`, `shift`, `end`,
-  `home`, `insert`, `left`, `up`, `right`, `down`, `pageUp`, `pageDown`, `printScreen`
+* `keyCode` Char or String (**required**) - 키보드 이벤트로 보내지는 문자. 단일
+  UTF-8 문자를 사용할 수 있고 이벤트를 발생시키는 다음 키 중 하나를 포함할 수 있습니다:
+  `enter`, `backspace`, `delete`, `tab`, `escape`, `control`, `alt`, `shift`,
+  `end`, `home`, `insert`, `left`, `up`, `right`, `down`, `pageUp`, `pageDown`,
+  `printScreen`
 
 마우스 이벤트들에 대해서는 `event` 객체는 다음 속성들을 사용할 수 있습니다:
 
@@ -619,13 +632,14 @@ Input `event`를 웹 페이지로 전송합니다.
 
 * `callback` Function
 
-프레젠테이션 이벤트들과 캡쳐된 프레임들에 대한 구독을 시작하면 `callback`이 프레젠테이션 이벤트가
-발생할 때 `callback(frameBuffer)`과 같은 형식으로 호출됩니다.
+캡처된 프레임과 프레젠테이션 이벤트를 구독하기 시작합니다. `callback`은
+프레젠테이션 이벤트가 발생했을 때 `callback(frameBuffer)` 형태로 호출됩니다.
 
-`frameBuffer`는 raw 픽셀 데이터를 포함한 `Buffer`입니다. 대부분의 기계에서 픽셀 데이터는 32bit
-BGRA 포맷으로 효율적으로 저장됩니다. 하지만 실제 재프리젠테이션은 프로세서의 endianness에 의존성을
-가지고 있습니다(대부분의 현재 프로세스들은 little-endian입니다. big-endian 프로세서들를 가진
-기계들에서 data는 32bit ARGB format입니다).
+`frameBuffer`는 raw 픽셀 데이터를 가지고 있는 `Buffer` 객체입니다. 많은 장치에서
+32비트 BGRA 포맷을 사용하여 효율적으로 픽셀 데이터를 저장합니다. 하지만 실질적인
+데이터 저장 방식은 프로세서의 엔디안 방식에 따라서 달라집니다. (따라서 현대의 많은
+프로세서에선 little-endian 방식을 사용하므로 위의 포맷을 그대로 표현합니다. 하지만
+몇몇 프로세서는 big-endian 방식을 사용하는데, 이 경우 32비트 ARGB 포맷을 사용합니다)
 
 ### `webContents.endFrameSubscription()`
 
@@ -639,7 +653,8 @@ BGRA 포맷으로 효율적으로 저장됩니다. 하지만 실제 재프리젠
 
 이 `WebContents`에 대한 개발자 도구의 `WebContents`를 가져옵니다.
 
-**Note:** 사용자가 절대로 이 객체를 저장해서는 안 됩니다. 개발자 도구가 닫혔을 때, `null`이 반환될 수 있습니다.
+**참고:** 사용자가 절대로 이 객체를 저장해서는 안 됩니다. 개발자 도구가 닫혔을 때,
+`null`이 반환될 수 있습니다.
 
 ### `webContents.savePage(fullPath, saveType, callback)`
 

@@ -29,7 +29,7 @@ SRV*c:\code\symbols\*http://54.249.141.255:8086/atom-shell/symbols
 ```
 
 Windbg 메뉴 또는 `.sympath` 커맨드를 이용하여 환경에 `_NT_SYMBOL_PATH` 문자열을
-설정합니다. 만약 Microsoft의 심볼서버로 부터 심볼을 받아오려면 다음과 같이 리스팅을
+설정합니다. 만약 Microsoft의 심볼서버로부터 심볼을 받아오려면 다음과 같이 리스팅을
 먼저 해야합니다:
 
 ```
