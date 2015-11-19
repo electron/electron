@@ -139,7 +139,7 @@ Returns:
 
 새로운 [browserWindow](browser-window.md)가 생성되었을 때 발생하는 이벤트 입니다.
 
-### Event: 'select-certificate'
+### Event: 'select-client-certificate'
 
 Returns:
 
@@ -159,7 +159,7 @@ Returns:
 것을 막습니다.
 
 ```javascript
-app.on('select-certificate', function(event, host, url, list, callback) {
+app.on('select-client-certificate', function(event, webContents, url, list, callback) {
   event.preventDefault();
   callback(list[0]);
 })

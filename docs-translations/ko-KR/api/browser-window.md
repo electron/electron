@@ -85,9 +85,13 @@ win.show();
   다음과 같습니다:
   * `nodeIntegration` Boolean - node(node.js) 통합 여부. 기본값은 `true`입니다.
   * `preload` String - 스크립트를 지정하면 페이지 내의 다른 스크립트가 작동하기 전에
-    로드됩니다. 여기서 지정한 스크립트는 페이지의 node 통합 활성화 여부에 상관없이
-    언제나 모든 node API에 접근할 수 있습니다. 그리고 `preload` 스크립트의 경로는
-    절대 경로로 지정해야 합니다.
+    로드됩니다. 여기서 지정한 스크립트는 node 통합 활성화 여부에 상관없이 언제나 모든
+    node API에 접근할 수 있습니다. 이 속성의 스크립트 경로는 절대 경로로 지정해야
+    합니다.
+
+    note 통합이 비활성화되어있을 경우, preload 스크립트는 Node의 global 심볼들을
+    다시 global 스코프로 다시 포함 시킬 수 있습니다. [여기](process.md#event-loaded)
+    의 예제를 참고하세요.
   * `partition` String - 페이지에서 사용할 세션을 지정합니다. 만약 `partition`이
     `persist:`로 시작하면 페이지는 지속성 세션을 사용하며 다른 모든 앱 내의
     페이지에서 같은 `partition`을 사용할 수 있습니다. 만약 `persist:` 접두어로

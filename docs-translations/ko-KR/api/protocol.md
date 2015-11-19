@@ -97,7 +97,7 @@ protocol.registerBufferProtocol('atom', function(request, callback) {
 * `completion` Function (optional)
 
 `scheme`에 HTTP 요청을 응답으로 보내는 프로토콜을 등록합니다. 반드시 `url`,
-`method`, `referer`, `session` 속성을 포함하는 객체를 인자에 포함하여 `callback`을
+`method`, `referrer`, `session` 속성을 포함하는 객체를 인자에 포함하여 `callback`을
 호출해야 합니다.
 
 기본적으로 HTTP 요청은 현재 세션을 재사용합니다. 만약 서로 다른 세션에 요청을 보내고
