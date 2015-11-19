@@ -1,4 +1,4 @@
-electron = require 'electron'
+{deprecate, session, Menu} = require 'electron'
 {EventEmitter} = require 'events'
 
 bindings = process.atomBinding 'app'
@@ -8,10 +8,10 @@ app = bindings.app
 app.__proto__ = EventEmitter.prototype
 
 app.setApplicationMenu = (menu) ->
-  electron.Menu.setApplicationMenu menu
+  Menu.setApplicationMenu menu
 
 app.getApplicationMenu = ->
-  electron.Menu.getApplicationMenu()
+  Menu.getApplicationMenu()
 
 app.commandLine =
   appendSwitch: bindings.appendSwitch,
@@ -35,7 +35,8 @@ app.getAppPath = ->
   appPath
 
 # Helpers.
-app.resolveProxy = (url, callback) -> @defaultSession.resolveProxy url, callback
+app.resolveProxy = (url, callback) ->
+  session.defaultSession.resolveProxy url, callback
 
 # Routes the events to webContents.
 for name in ['login', 'certificate-error', 'select-client-certificate']
@@ -44,7 +45,6 @@ for name in ['login', 'certificate-error', 'select-client-certificate']
       webContents.emit name, event, args...
 
 # Deprecated.
-{deprecate} = electron
 app.getHomeDir = deprecate 'app.getHomeDir', 'app.getPath', ->
   @getPath 'home'
 app.getDataPath = deprecate 'app.getDataPath', 'app.getPath', ->
