@@ -55,8 +55,14 @@ contains documents describing how to build and contribute to Electron.
 
 ## Quick Start
 
-Clone and run the [`atom/electron-quick-start`](https://github.com/atom/electron-quick-start)
-repository to see a minimal Electron app in action.
+```bash
+# Clone the electron-quick-start repository
+$ git clone https://github.com/atom/electron-quick-start
+# Go into the repository
+$ cd electron-quick-start
+# Install dependencies and run the app
+$ npm install && npm start
+```
 
 ## Community
 
