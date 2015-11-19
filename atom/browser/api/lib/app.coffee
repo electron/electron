@@ -34,10 +34,6 @@ app.setAppPath = (path) ->
 app.getAppPath = ->
   appPath
 
-# Helpers.
-app.resolveProxy = (url, callback) ->
-  session.defaultSession.resolveProxy url, callback
-
 # Routes the events to webContents.
 for name in ['login', 'certificate-error', 'select-client-certificate']
   do (name) ->
@@ -51,6 +47,8 @@ app.getDataPath = deprecate 'app.getDataPath', 'app.getPath', ->
   @getPath 'userData'
 app.setDataPath = deprecate 'app.setDataPath', 'app.setPath', (path) ->
   @setPath 'userData', path
+app.resolveProxy = deprecate 'app.resolveProxy', 'session.defaultSession.resolveProxy', (url, callback) ->
+  session.defaultSession.resolveProxy url, callback
 deprecate.rename app, 'terminate', 'quit'
 deprecate.event app, 'finish-launching', 'ready', ->
   setImmediate => # give default app a chance to setup default menu.

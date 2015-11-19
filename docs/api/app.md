@@ -311,14 +311,6 @@ preferred over `name` by Electron.
 
 Returns the current application locale.
 
-### `app.resolveProxy(url, callback)`
-
-* `url` URL
-* `callback` Function
-
-Resolves the proxy information for `url`. The `callback` will be called with
-`callback(proxy)` when the request is performed.
-
 ### `app.addRecentDocument(path)` _OS X_ _Windows_
 
 * `path` String

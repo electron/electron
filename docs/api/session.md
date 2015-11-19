@@ -224,6 +224,14 @@ proxy-uri = [<proxy-scheme>"://"]<proxy-host>[":"<proxy-port>]
                                       URLs.
 ```
 
+### `ses.resolveProxy(url, callback)`
+
+* `url` URL
+* `callback` Function
+
+Resolves the proxy information for `url`. The `callback` will be called with
+`callback(proxy)` when the request is performed.
+
 #### `ses.setDownloadPath(path)`
 
 * `path` String - The download location
