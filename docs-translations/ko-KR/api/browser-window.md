@@ -43,7 +43,7 @@ win.show();
 * `alwaysOnTop` Boolean - 윈도우 창이 언제나 다른 창들 위에 유지되는지 여부.
 * `fullscreen` Boolean - 윈도우 창의 전체화면 활성화 여부.
   `false`로 지정했을 경우 OS X에선 전체화면 버튼이 숨겨지거나 비활성화됩니다.
-* `skipTaskbar` Boolean - 작업 표시줄 어플리케이션 아이콘 표시 여부.
+* `skipTaskbar` Boolean - 작업표시줄 어플리케이션 아이콘 표시 여부.
 * `kiosk` Boolean - Kiosk(키오스크) 모드.
 * `title` String - 기본 윈도우 창 제목.
 * `icon` [NativeImage](native-image.md) - 윈도우 아이콘, 생략하면 실행 파일의 아이콘이 대신 사용됩니다.
@@ -304,7 +304,7 @@ var win = new BrowserWindow({ width: 800, height: 600 });
 
 ### `win.isFocused()`
 
-윈도우가 포커스 되었는지 여부를 반환합니다.
+윈도우가 포커스되었는지 여부를 반환합니다.
 
 ### `win.show()`
 
@@ -344,7 +344,7 @@ var win = new BrowserWindow({ width: 800, height: 600 });
 
 ### `win.isMinimized()`
 
-윈도우가 최소화 되었는지 여부를 반환합니다.
+윈도우가 최소화되었는지 여부를 반환합니다.
 
 ### `win.setFullScreen(flag)`
 
@@ -358,26 +358,20 @@ var win = new BrowserWindow({ width: 800, height: 600 });
 
 ### `win.setAspectRatio(aspectRatio[, extraSize])` _OS X_
 
-* `aspectRatio` The aspect ratio we want to maintain for some portion of the
-content view.
-* `extraSize` Object (optional) - The extra size not to be included while
-maintaining the aspect ratio. Properties:
+* `aspectRatio` 유지하려 하는 컨텐츠 뷰 일부의 종횡비
+* `extraSize` Object (optional) - 종횡비를 유지하는 동안 포함되지 않을 엑스트라 크기. 사용 가능한 속성:
   * `width` Integer
   * `height` Integer
 
-This will have a window maintain an aspect ratio. The extra size allows a
-developer to have space, specified in pixels, not included within the aspect
-ratio calculations. This API already takes into account the difference between a
-window's size and its content size.
+이 메서드는 윈도우의 종횡비를 유지하는 기능을 수행합니다.
+엑스트라 크기는 개발자가 픽셀로 특정한 공간이 있을 때 종횡비 계산에서 제외됩니다.
+이 API는 윈도우의 크기와 컨텐츠 사이즈의 차이를 이미 고려하고 있습니다.
 
-Consider a normal window with an HD video player and associated controls.
-Perhaps there are 15 pixels of controls on the left edge, 25 pixels of controls
-on the right edge and 50 pixels of controls below the player. In order to
-maintain a 16:9 aspect ratio (standard aspect ratio for HD @1920x1080) within
-the player itself we would call this function with arguments of 16/9 and
-[ 40, 50 ]. The second argument doesn't care where the extra width and height
-are within the content view--only that they exist. Just sum any extra width and
-height areas you have within the overall content view.
+일반 윈도우에서 작동하는 HD 비디오 플레이어와 관련된 컨트롤을 고려합니다.
+만약 15 픽셀의 컨트롤이 왼쪽 가장자리에 있고 25 픽셀의 컨트롤이 오른쪽 가장자리에 있으며 50 픽셀의 컨트롤이 플레이어 밑에 있을 때
+플레이어 자체가 16:9 종횡비(HD의 표준 종횡비는 @1920x1080)를 유지하기 위해선 이 함수를 16/9, [ 40, 50 ] 인수와 함께 호출해야 합니다.
+두번째 인수 엑스트라 크기는 존재하는 크기만 관여하고 컨텐츠 뷰 내의 크기는 관여하지 않습니다.
+그저 전체 컨텐츠 뷰 내에 있는 모든 엑스트라 너비, 높이 영역이 합해집니다.
 
 ### `win.setBounds(options)`
 
@@ -484,76 +478,72 @@ height areas you have within the overall content view.
 
 윈도우의 제목을 반환합니다.
 
-**참고:** The title of web page can be different from the title of the native
-window.
+**참고:** 웹 페이지의 제목과 네이티브 윈도우의 제목은 서로 다를 수 있습니다.
 
 ### `win.flashFrame(flag)`
 
 * `flag` Boolean
 
-Starts or stops flashing the window to attract user's attention.
+사용자가 윈도우에 관심을 가질 수 있도록 창을 깜빡이거나 이를 중지합니다.
 
 ### `win.setSkipTaskbar(skip)`
 
 * `skip` Boolean
 
-Makes the window not show in the taskbar.
+어플리케이션 아이콘을 작업표시줄에 보이지 않도록 설정합니다.
 
 ### `win.setKiosk(flag)`
 
 * `flag` Boolean
 
-Enters or leaves the kiosk mode.
+Kiosk(키오스크) 모드를 설정합니다.
 
 ### `win.isKiosk()`
 
-Returns whether the window is in kiosk mode.
+현재 윈도우가 kiosk 모드인지 여부를 반환합니다.
 
-### `win.hookWindowMessage(message, callback)` _WINDOWS_
+### `win.hookWindowMessage(message, callback)` _Windows_
 
 * `message` Integer
 * `callback` Function
 
-Hooks a windows message. The `callback` is called when
-the message is received in the WndProc.
+Windows 메시지 훅을 등록합니다. `callback`은 WndProc에서 메시지를 받았을 때 호출됩니다.
 
-### `win.isWindowMessageHooked(message)` _WINDOWS_
-
-* `message` Integer
-
-Returns `true` or `false` depending on whether the message is hooked.
-
-### `win.unhookWindowMessage(message)` _WINDOWS_
+### `win.isWindowMessageHooked(message)` _Windows_
 
 * `message` Integer
 
-Unhook the window message.
+지정한 메시지가 후킹됬는지 여부를 반환합니다.
 
-### `win.unhookAllWindowMessages()` _WINDOWS_
+### `win.unhookWindowMessage(message)` _Windows_
 
-Unhooks all of the window messages.
+* `message` Integer
+
+지정한 메시지 훅을 등록 해제합니다.
+
+### `win.unhookAllWindowMessages()` _Windows_
+
+모든 메시지 훅을 등록 해제합니다.
 
 ### `win.setRepresentedFilename(filename)` _OS X_
 
 * `filename` String
 
-Sets the pathname of the file the window represents, and the icon of the file
-will show in window's title bar.
+윈도우 대표 파일의 경로명을 설정합니다. 파일의 아이콘이 윈도우 타이틀 바에 표시됩니다.
 
 ### `win.getRepresentedFilename()` _OS X_
 
-Returns the pathname of the file the window represents.
+윈도우 대표 파일의 경로명을 반환합니다.
 
 ### `win.setDocumentEdited(edited)` _OS X_
 
 * `edited` Boolean
 
-Specifies whether the window’s document has been edited, and the icon in title
-bar will become grey when set to `true`.
+윈도우의 문서가 변경되었는지 여부를 설정합니다. 그리고 `true`로 설정했을 때 타이틀 바의 아이콘이 회색으로 표시됩니다.
 
 ### `win.isDocumentEdited()` _OS X_
 
-Whether the window's document has been edited.
+윈도우의 문서가 변경되었는지 여부를 반환합니다.
 
 ### `win.focusOnWebView()`
 
@@ -561,138 +551,129 @@ Whether the window's document has been edited.
 
 ### `win.capturePage([rect, ]callback)`
 
-* `rect` Object (optional)- The area of page to be captured, properties:
+* `rect` Object (optional) - 캡쳐할 페이지의 영역. 사용할 수 있는 속성은 다음과 같습니다:
   * `x` Integer
   * `y` Integer
   * `width` Integer
   * `height` Integer
 * `callback` Function
 
-Captures a snapshot of the page within `rect`. Upon completion `callback` will
-be called with `callback(image)`. The `image` is an instance of
-[NativeImage](native-image.md) that stores data of the snapshot. Omitting
-`rect` will capture the whole visible page.
+페이지의 스크린샷을 `rect`에 설정한 만큼 캡처합니다.
+캡처가 완료되면 `callback`이 `callback(image)` 형식으로 호출됩니다.
+`image`는 [NativeImage](native-image.md)의 인스턴스이며 스크린샷 데이터를 담고있습니다.
+`rect`를 생략하면 페이지 전체를 캡처합니다.
 
 ### `win.print([options])`
 
-Same as `webContents.print([options])`
+`webContents.print([options])` API와 같습니다.
 
 ### `win.printToPDF(options, callback)`
 
-Same as `webContents.printToPDF(options, callback)`
+`webContents.printToPDF(options, callback)` API와 같습니다.
 
 ### `win.loadURL(url[, options])`
 
-Same as `webContents.loadURL(url[, options])`.
+`webContents.loadURL(url[, options])` API와 같습니다.
 
 ### `win.reload()`
 
-Same as `webContents.reload`.
+`webContents.reload` API와 같습니다.
 
 ### `win.setMenu(menu)` _Linux_ _Windows_
 
 * `menu` Menu
 
-Sets the `menu` as the window's menu bar, setting it to `null` will remove the
-menu bar.
+지정한 `menu`를 윈도우의 메뉴로 설정합니다 `null`을 설정하면 메뉴를 제거합니다.
 
 ### `win.setProgressBar(progress)`
 
 * `progress` Double
 
-Sets progress value in progress bar. Valid range is [0, 1.0].
+작업표시줄에 표시되고 있는 어플리케이션 아이콘에 진행 상태를 표시합니다. [0, 1.0] 사이의 값을 지정할 수 있습니다.
 
-Remove progress bar when progress < 0;
-Change to indeterminate mode when progress > 1.
+진행 상태가 < 0 이 되면 진행 상태 표시를 제거합니다.
+진행 상태가 > 1 이 되면 불확정 상태 표시로 전환합니다.
 
-On Linux platform, only supports Unity desktop environment, you need to specify
-the `*.desktop` file name to `desktopName` field in `package.json`. By default,
-it will assume `app.getName().desktop`.
+Linux 플랫폼에선 Unity 데스크톱 환경만 지원합니다.
+그리고 이 기능을 사용하려면 `*.desktop` 파일을 생성한 후 `package.json`의 `desktopName` 필드에 파일 이름을 지정해야 합니다.
+기본적으로 `app.getName().desktop`을 통해 접근합니다.
 
 ### `win.setOverlayIcon(overlay, description)` _Windows 7+_
 
-* `overlay` [NativeImage](native-image.md) - the icon to display on the bottom
-right corner of the taskbar icon. If this parameter is `null`, the overlay is
-cleared
-* `description` String - a description that will be provided to Accessibility
-screen readers
+* `overlay` [NativeImage](native-image.md) - 작업표시줄 아이콘의 우측 하단에 표시될 아이콘입니다.
+`null`로 지정하면 빈 오버레이가 사용됩니다
+* `description` String - 접근성 설정에 의한 스크린 리더에 제공될 설명입니다
 
-Sets a 16px overlay onto the current taskbar icon, usually used to convey some
-sort of application status or to passively notify the user.
-
+현재 작업표시줄 아이콘에 16px 크기의 오버레이를 지정합니다.
+보통 이 기능은 어플리케이션의 여러 상태를 사용자에게 소극적으로 알리기 위한 방법으로 사용됩니다.
 
 ### `win.setThumbarButtons(buttons)` _Windows 7+_
 
-`buttons` Array of `button` Objects:
+`buttons` - `button` 객체의 배열:
 
-`button` Object, properties:
+`button` 객체는 다음과 같은 속성을 가지고 있습니다:
 
-* `icon` [NativeImage](native-image.md) - The icon showing in thumbnail
-  toolbar.
-* `tooltip` String (optional) - The text of the button's tooltip.
-* `flags` Array (optional) - Control specific states and behaviors
-  of the button. By default, it uses `enabled`. It can include following
-  Strings:
-  * `enabled` - The button is active and available to the user.
-  * `disabled` - The button is disabled. It is present, but has a visual
-    state indicating it will not respond to user action.
-  * `dismissonclick` - When the button is clicked, the taskbar button's
-    flyout closes immediately.
-  * `nobackground` - Do not draw a button border, use only the image.
-  * `hidden` - The button is not shown to the user.
-  * `noninteractive` - The button is enabled but not interactive; no
-    pressed button state is drawn. This value is intended for instances
-    where the button is used in a notification.
+* `icon` [NativeImage](native-image.md) - 미리보기 툴바에 보여질 아이콘.
+* `tooltip` String (optional) - 버튼의 툴팁 텍스트.
+* `flags` Array (optional) - 버튼의 특정 동작 및 상태 제어. 기본적으로 `enabled`이 사용됩니다.
+  이 속성은 다음 문자열들을 포함할 수 있습니다:
+  * `enabled` - 사용자가 사용할 수 있도록 버튼이 활성화 됩니다.
+  * `disabled` - 버튼이 비활성화 됩니다. 버튼은 표시되지만 시각적인 상태는 사용자의 동작에 응답하지 않는
+  비활성화 상태로 표시됩니다.
+  * `dismissonclick` - 버튼이 클릭되면 작업표시줄 버튼의 미리보기(flyout)가 즉시 종료됩니다.
+  * `nobackground` - 버튼의 테두리를 표시하지 않습니다. 이미지에만 사용할 수 있습니다.
+  * `hidden` - 버튼을 사용자에게 표시되지 않도록 숨깁니다.
+  * `noninteractive` - 버튼은 활성화되어 있지만 반응이 제거되며 버튼을 눌러도 눌려지지 않은 상태를 유지합니다.
+  이 값은 버튼을 알림의 용도로 사용하기 위해 만들어졌습니다.
 * `click` - Function
 
-Add a thumbnail toolbar with a specified set of buttons to the thumbnail image
-of a window in a taskbar button layout. Returns a `Boolean` object indicates
-whether the thumbnail has been added successfully.
+윈도우 작업표시줄 버튼 레이아웃의 미리보기 이미지 영역에 미리보기 툴바와 버튼 세트를 지정합니다.
+반환되는 `Boolean` 값은 미리보기 툴바가 성공적으로 추가됬는지를 알려줍니다.
 
-The number of buttons in thumbnail toolbar should be no greater than 7 due to
-the limited room. Once you setup the thumbnail toolbar, the toolbar cannot be
-removed due to the platform's limitation. But you can call the API with an empty
-array to clean the buttons.
+미리보기 이미지 영역의 제한된 크기로 인해 미리보기 툴바에 추가될 수 있는 최대 버튼의 개수는 7개이며 이 이상 추가될 수 없습니다.
+플랫폼의 제약으로 인해 미리보기 툴바는 한 번 설정되면 삭제할 수 없습니다. 하지만 이 API에 빈 배열을 전달하여 버튼들을 제거할 수 있습니다.
 
 ### `win.showDefinitionForSelection()` _OS X_
 
-Shows pop-up dictionary that searches the selected word on the page.
+페이지의 선택된 단어에 대한 사전 검색 결과 팝업을 표시합니다.
 
 ### `win.setAutoHideMenuBar(hide)`
 
 * `hide` Boolean
 
-Sets whether the window menu bar should hide itself automatically. Once set the
-menu bar will only show when users press the single `Alt` key.
+메뉴 막대 자동 숨김 기능을 활성화 합니다.
+숨겨진 메뉴는 사용자가 `Alt` 키를 단일 입력했을 때만 표시됩니다.
 
-If the menu bar is already visible, calling `setAutoHideMenuBar(true)` won't
-hide it immediately.
+메뉴 막대가 이미 표시되고 있을 때 `setAutoHideMenuBar(true)`를 호출한다고 해서 메뉴가 즉시 숨겨지지는 않습니다.
 
 ### `win.isMenuBarAutoHide()`
 
-Returns whether menu bar automatically hides itself.
+메뉴 막대 자동 숨김 상태인지 여부를 반환합니다.
 
 ### `win.setMenuBarVisibility(visible)`
 
 * `visible` Boolean
 
-Sets whether the menu bar should be visible. If the menu bar is auto-hide, users
-can still bring up the menu bar by pressing the single `Alt` key.
+메뉴 막대의 표시 여부를 설정합니다.
+만약 메뉴 막대 자동 숨김 상태라면 여전히 사용자가 `Alt` 키를 입력하여 메뉴 막대를 표시되도록 할 수 있습니다.
+
+**역주:** 기본 메뉴 막대를 완전히 없애려면 `win.setMenu(null)`를 호출해야 합니다.
+단순히 이 API를 사용하면 여전히 메뉴에 등록된 핫 키가 작동합니다.
 
 ### `win.isMenuBarVisible()`
 
-Returns whether the menu bar is visible.
+메뉴 막대가 표시되고 있는지 여부를 반환합니다.
 
 ### `win.setVisibleOnAllWorkspaces(visible)`
 
 * `visible` Boolean
 
-Sets whether the window should be visible on all workspaces.
+윈도우가 모든 워크스페이스에서 표시될지 여부를 설정합니다.
 
 **참고:** 이 API는 Windows에서 아무 일도 하지 않습니다.
 
 ### `win.isVisibleOnAllWorkspaces()`
 
-Returns whether the window is visible on all workspaces.
+윈도우가 모든 워크스페이스에서 표시될지 여부를 반환합니다.
 
 **참고:** 이 API는 Windows에서 언제나 false를 반환합니다.

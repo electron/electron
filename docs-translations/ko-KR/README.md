@@ -32,7 +32,7 @@
 
 * [app](api/app.md)
 * [autoUpdater](api/auto-updater.md)
-* [BrowserWindow (50% 번역됨 - 작업중)](api/browser-window.md)
+* [BrowserWindow](api/browser-window.md)
 * [contentTracing](api/content-tracing.md)
 * [dialog](api/dialog.md)
 * [globalShortcut](api/global-shortcut.md)
