@@ -678,17 +678,6 @@ is in 32bit ARGB format).
 
 End subscribing for frame presentation events.
 
-## Instance Properties
-
-`WebContents` objects also have the following properties:
-
-### `webContents.devToolsWebContents`
-
-Get the `WebContents` of DevTools for this `WebContents`.
-
-**Note:** Users should never store this object because it may become `null`
-when the DevTools has been closed.
-
 ### `webContents.savePage(fullPath, saveType, callback)`
 
 * `fullPath` String - The full file path.
@@ -711,3 +700,14 @@ win.webContents.on('did-finish-load', function() {
   });
 });
 ```
+
+## Instance Properties
+
+`WebContents` objects also have the following properties:
+
+### `webContents.devToolsWebContents`
+
+Get the `WebContents` of DevTools for this `WebContents`.
+
+**Note:** Users should never store this object because it may become `null`
+when the DevTools has been closed.
