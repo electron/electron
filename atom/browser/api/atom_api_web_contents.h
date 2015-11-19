@@ -57,7 +57,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
   // mate::TrackableObject:
   void Destroy() override;
 
-  bool IsAlive() const;
   int GetID() const;
   bool Equal(const WebContents* web_contents) const;
   void LoadURL(const GURL& url, const mate::Dictionary& options);

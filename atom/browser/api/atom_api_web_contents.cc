@@ -604,10 +604,6 @@ void WebContents::Destroy() {
   }
 }
 
-bool WebContents::IsAlive() const {
-  return web_contents() != NULL;
-}
-
 int WebContents::GetID() const {
   return web_contents()->GetRenderProcessHost()->GetID();
 }
@@ -996,7 +992,7 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
   if (template_.IsEmpty())
     template_.Reset(isolate, mate::ObjectTemplateBuilder(isolate)
         .SetMethod("destroy", &WebContents::Destroy, true)
-        .SetMethod("isAlive", &WebContents::IsAlive, true)
+        .SetMethod("isDestroyed", &WebContents::IsDestroyed, true)
         .SetMethod("getId", &WebContents::GetID)
         .SetMethod("equal", &WebContents::Equal)
         .SetMethod("_loadURL", &WebContents::LoadURL)
@@ -1066,7 +1062,7 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
 }
 
 bool WebContents::IsDestroyed() const {
-  return !IsAlive();
+  return !web_contents();
 }
 
 AtomBrowserContext* WebContents::GetBrowserContext() const {

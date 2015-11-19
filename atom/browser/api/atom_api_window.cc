@@ -284,10 +284,6 @@ void Window::Close() {
   window_->Close();
 }
 
-bool Window::IsClosed() {
-  return window_->IsClosed();
-}
-
 void Window::Focus() {
   window_->Focus(true);
 }
@@ -622,8 +618,8 @@ void Window::BuildPrototype(v8::Isolate* isolate,
                             v8::Local<v8::ObjectTemplate> prototype) {
   mate::ObjectTemplateBuilder(isolate, prototype)
       .SetMethod("destroy", &Window::Destroy, true)
+      .SetMethod("isDestroyed", &Window::IsDestroyed, true)
       .SetMethod("close", &Window::Close)
-      .SetMethod("isClosed", &Window::IsClosed)
       .SetMethod("focus", &Window::Focus)
       .SetMethod("isFocused", &Window::IsFocused)
       .SetMethod("show", &Window::Show)

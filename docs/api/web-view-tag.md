@@ -262,7 +262,7 @@ Injects CSS into the guest page.
 * `code` String
 * `userGesture` Boolean - Default `false`.
 
-Evaluates `code` in page. If `userGesture` is set, it will the create user
+Evaluates `code` in page. If `userGesture` is set, it will create the user
 gesture context in the page. HTML APIs like `requestFullScreen`, which require
 user action, can take advantage of this option for automation.
 
