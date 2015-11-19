@@ -37,11 +37,10 @@ send arbitrary arguments. The main process handles it by listening for the
 * `arg` (optional)
 
 Send an event to the main process synchronously via a `channel`, you can also
-send arbitrary arguments. The main process handles it by listening for the
-`channel` event with `ipcMain`.
+send arbitrary arguments.
 
-The main process handles it by listening for the `channel` event with `ipc` and
-replies by setting the `event.returnValue`.
+The main process handles it by listening for the `channel` event with 
+`ipcMain` and replies by setting `event.returnValue`.
 
 __Note:__ Sending a synchronous message will block the whole renderer process,
 unless you know what you are doing you should never use it.
