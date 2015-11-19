@@ -225,12 +225,6 @@ The usage is the same with [the `login` event of `app`](app.md#event-login).
 
 The `webContents` object has the following instance methods:
 
-### `webContents.session`
-
-Returns the `session` object used by this webContents.
-
-See [session documentation](session.md) for this object's methods.
-
 ### `webContents.loadURL(url[, options])`
 
 * `url` URL
@@ -704,6 +698,10 @@ win.webContents.on('did-finish-load', function() {
 ## Instance Properties
 
 `WebContents` objects also have the following properties:
+
+### `webContents.session`
+
+Returns the [session](session.md) object used by this webContents.
 
 ### `webContents.devToolsWebContents`
 
