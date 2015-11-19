@@ -38,8 +38,8 @@ $ sudo yum install clang dbus-devel gtk2-devel libnotify-devel libgnome-keyring-
 
 ## 가상머신을 사용하여 빌드 하는 경우
 
-만약 Electron을 가상머신으로 빌드 할 계획이라면 해당 가상머신의 스토리지를
-최소 25GB 이상을 확보해 놓아야 합니다.
+만약 Electron을 가상머신으로 빌드 할 계획이라면 해당 가상머신의 스토리지를 최소 25GB
+이상 확보해 놓아야 합니다.
 
 ## 코드 가져오기
 
@@ -49,11 +49,10 @@ $ git clone https://github.com/atom/electron.git
 
 ## 부트 스트랩
 
-부트스트랩 스크립트는 필수적인 빌드 종속성 라이브러리들을 모두 다운로드하고
-프로젝트 파일을 생성합니다. 스크립트가 정상적으로 작동하기 위해선
-Python 2.7.x 버전이 필요합니다. 아마 다운로드 작업이 상당히 많은 시간을
-소요할 것입니다. 참고로 Electron은 빌드 툴체인으로 `ninja`를 사용하므로
-`Makefile`은 생성되지 않습니다.
+부트스트랩 스크립트는 필수적인 빌드 종속성 라이브러리들을 모두 다운로드하고 프로젝트
+파일을 생성합니다. 스크립트가 정상적으로 작동하기 위해선 Python 2.7.x 버전이
+필요합니다. 아마 다운로드 작업이 상당히 많은 시간을 소요할 것입니다. 참고로 Electron은
+`ninja`를 빌드 툴체인으로 사용하므로 `Makefile`은 생성되지 않습니다.
 
 ```bash
 $ cd electron
@@ -84,18 +83,18 @@ $ ./script/bootstrap.py -v --target_arch=arm
 $ ./script/build.py
 ```
 
-이 스크립트는 `out/R` 디렉터리에 크기가 매우 큰 Electron 실행 파일을 배치합니다.
-파일 크기는 1.3GB를 초과합니다. 이러한 문제가 발생하는 이유는 Release 타겟 바이너리가
-디버그 심볼을 포함하기 때문입니다. 파일 크기를 줄이려면
-`create-dist.py` 스크립트를 실행하세요:
+이 스크립트는 `out/R` 디렉터리에 크기가 매우 큰 Electron 실행 파일을 배치합니다. 파일
+크기는 1.3GB를 초과합니다. 이러한 문제가 발생하는 이유는 Release 타겟 바이너리가
+디버그 심볼을 포함하기 때문입니다. 파일 크기를 줄이려면 `create-dist.py` 스크립트를
+실행하세요:
 
 ```bash
 $ ./script/create-dist.py
 ```
 
-이 스크립트는 매우 작은 배포판을 `dist` 디렉터리에 생성합니다.
-create-dist.py 스크립트를 실행한 이후부턴 1.3GB를 초과하는 공간을 차지하는
-`out/R` 폴더의 바이너리는 삭제해도 됩니다.
+이 스크립트는 매우 작은 배포판을 `dist` 디렉터리에 생성합니다. create-dist.py
+스크립트를 실행한 이후부턴 1.3GB에 육박하는 공간을 차지하는 `out/R` 폴더의 바이너리는
+삭제해도 됩니다.
 
 또는 `Debug` 타겟만 빌드 할 수 있습니다:
 
@@ -119,8 +118,8 @@ $ ./script/clean.py
 
 ## libtinfo.so.5 동적 링크 라이브러리를 로드하는 도중 에러가 발생할 경우
 
-미리 빌드된 `clang`은 `libtinfo.so.5`로 링크를 시도합니다.
-따라서 플랫폼에 따라 적당한 `libncurses` symlink를 추가하세요:
+미리 빌드된 `clang`은 `libtinfo.so.5`로 링크를 시도합니다. 따라서 플랫폼에 따라
+적당한 `libncurses` symlink를 추가하세요:
 
 ```bash
 $ sudo ln -s /usr/lib/libncurses.so.5 /usr/lib/libtinfo.so.5

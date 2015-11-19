@@ -2,17 +2,17 @@
 
 __참고: Electron은 Atom Shell의 새로운 이름입니다.__
 
-NW.js 처럼 Electron은 JavaScript와 HTML 그리고 Node 통합 환경을 제공함으로써
-웹 페이지에서 저 수준 시스템에 접근할 수 있도록 하여 웹 기반 데스크탑 어플리케이션을
+NW.js 처럼 Electron은 JavaScript와 HTML 그리고 Node 통합 환경을 제공함으로써 웹
+페이지에서 저 수준 시스템에 접근할 수 있도록 하여 웹 기반 데스크탑 어플리케이션을
 작성할 수 있도록 하는 프레임워크 입니다.
 
 하지만 Electron과 NW.js는 근본적인 개발흐름의 차이도 있습니다:
 
 __1. 어플리케이션의 엔트리 포인트__
 
-NW.js에선 어플리케이션의 엔트리 포인트로 웹 페이지를 사용합니다.
-`package.json`내의 main 필드에 메인 웹 페이지(index.html) URL을 지정하면
-어플리케이션의 메인 윈도우로 열리게 됩니다.
+NW.js에선 어플리케이션의 엔트리 포인트로 웹 페이지를 사용합니다. `package.json`내의
+main 필드에 메인 웹 페이지(index.html) URL을 지정하면 어플리케이션의 메인 윈도우로
+열리게 됩니다.
 
 Electron에선 JavaScript를 엔트리 포인트로 사용합니다. URL을 직접 제공하는 대신 API를
 사용하여 직접 브라우저 창과 HTML 파일을 로드할 수 있습니다. 또한 윈도우의 종료시기를
@@ -31,11 +31,10 @@ Chromium Content 모듈과 종속성 라이브러리들을 포함합니다. 유�
 
 __3. Node 통합__
 
-NW.js는 웹 페이지에서 require를 사용할 수 있도록 Chromium을 패치했습니다.
-한편 Electron은 Chromium의 해킹을 방지하기 위해 libuv loop와 각 플랫폼의
-메시지 루프에 통합하는 다른 방법을 채택하였습니다.
-[`node_bindings`][node-bindings]의 코드를 보면 이 부분이 어떻게 구현됬는지를
-알 수 있습니다.
+NW.js는 웹 페이지에서 require를 사용할 수 있도록 Chromium을 패치했습니다. 한편
+Electron은 Chromium의 해킹을 방지하기 위해 libuv loop와 각 플랫폼의 메시지 루프에
+통합하는 다른 방법을 채택하였습니다. [`node_bindings`][node-bindings]의 코드를 보면
+이 부분이 어떻게 구현됬는지 알 수 있습니다.
 
 __4. 다중 컨텍스트__
 
