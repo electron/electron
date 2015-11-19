@@ -4,7 +4,7 @@ path   = require 'path'
 fs     = require 'fs'
 
 {ipcRenderer, remote} = require 'electron'
-{app, ipcMain, BrowserWindow} = remote.require 'electron'
+{app, ipcMain, session, BrowserWindow} = remote
 
 describe 'session module', ->
   @timeout 10000
@@ -35,9 +35,9 @@ describe 'session module', ->
           done('Can not find cookie')
 
   it 'should over-write the existent cookie', (done) ->
-    app.defaultSession.cookies.set {url: url, name: '1', value: '1'}, (error) ->
+    session.defaultSession.cookies.set {url: url, name: '1', value: '1'}, (error) ->
       return done(error) if error
-      app.defaultSession.cookies.get {url: url}, (error, list) ->
+      session.defaultSession.cookies.get {url: url}, (error, list) ->
         return done(error) if error
         for cookie in list when cookie.name is '1'
           if cookie.value is '1'
@@ -47,11 +47,11 @@ describe 'session module', ->
         done('Can not find cookie')
 
   it 'should remove cookies', (done) ->
-    app.defaultSession.cookies.set {url: url, name: '2', value: '2'}, (error) ->
+    session.defaultSession.cookies.set {url: url, name: '2', value: '2'}, (error) ->
       return done(error) if error
-      app.defaultSession.cookies.remove {url: url, name: '2'}, (error) ->
+      session.defaultSession.cookies.remove {url: url, name: '2'}, (error) ->
         return done(error) if error
-        app.defaultSession.cookies.get {url: url}, (error, list) ->
+        session.defaultSession.cookies.get {url: url}, (error, list) ->
           return done(error) if error
           for cookie in list when cookie.name is '2'
              return done('Cookie not deleted')
