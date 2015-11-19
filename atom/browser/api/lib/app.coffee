@@ -2,7 +2,6 @@ electron = require 'electron'
 {EventEmitter} = require 'events'
 
 bindings = process.atomBinding 'app'
-sessionBindings = process.atomBinding 'session'
 downloadItemBindings = process.atomBinding 'download_item'
 
 app = bindings.app
@@ -61,11 +60,6 @@ deprecate.event app, 'activate-with-no-open-windows', 'activate', (event, hasVis
 deprecate.event app, 'select-certificate', 'select-client-certificate'
 
 # Wrappers for native classes.
-wrapSession = (session) ->
-  # session is an EventEmitter.
-  session.__proto__ = EventEmitter.prototype
-sessionBindings._setWrapSession wrapSession
-
 wrapDownloadItem = (downloadItem) ->
   # downloadItem is an EventEmitter.
   downloadItem.__proto__ = EventEmitter.prototype
