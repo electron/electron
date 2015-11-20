@@ -355,3 +355,4 @@ exports.wrapFsWithAsar = (fs) ->
   overrideAPISync process, 'dlopen', 1
   overrideAPISync require('module')._extensions, '.node', 1
   overrideAPISync fs, 'openSync'
+  overrideAPISync child_process, 'execFileSync'
