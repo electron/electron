@@ -181,6 +181,11 @@ void URLRequestFetchJob::Kill() {
 bool URLRequestFetchJob::ReadRawData(net::IOBuffer* dest,
                                      int dest_size,
                                      int* bytes_read) {
+  if (GetResponseCode() == 204) {
+    *bytes_read = 0;
+    request()->set_received_response_content_length(prefilter_bytes_read());
+    return true;
+  }
   pending_buffer_ = dest;
   pending_buffer_size_ = dest_size;
   SetStatus(net::URLRequestStatus(net::URLRequestStatus::IO_PENDING, 0));
@@ -207,6 +212,14 @@ int URLRequestFetchJob::GetResponseCode() const {
 }
 
 void URLRequestFetchJob::OnURLFetchComplete(const net::URLFetcher* source) {
+  if (!response_info_) {
+    // Since we notify header completion only after first write there will be
+    // no response object constructed for http respones with no content 204.
+    // We notify header completion here.
+    HeadersCompleted();
+    return;
+  }
+
   pending_buffer_ = nullptr;
   pending_buffer_size_ = 0;
   NotifyDone(fetcher_->GetStatus());
