@@ -87,9 +87,6 @@ class App : public AtomBrowserClient::Delegate,
   bool MakeSingleInstance(
       const ProcessSingleton::NotificationCallback& callback);
   std::string GetLocale();
-  v8::Local<v8::Value> DefaultSession(v8::Isolate* isolate);
-
-  v8::Global<v8::Value> default_session_;
 
   scoped_ptr<ProcessSingleton> process_singleton_;
 

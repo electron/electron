@@ -1,18 +1,17 @@
-electron = require 'electron'
+{deprecate, session, Menu} = require 'electron'
 {EventEmitter} = require 'events'
 
 bindings = process.atomBinding 'app'
-sessionBindings = process.atomBinding 'session'
 downloadItemBindings = process.atomBinding 'download_item'
 
 app = bindings.app
 app.__proto__ = EventEmitter.prototype
 
 app.setApplicationMenu = (menu) ->
-  electron.Menu.setApplicationMenu menu
+  Menu.setApplicationMenu menu
 
 app.getApplicationMenu = ->
-  electron.Menu.getApplicationMenu()
+  Menu.getApplicationMenu()
 
 app.commandLine =
   appendSwitch: bindings.appendSwitch,
@@ -35,9 +34,6 @@ app.setAppPath = (path) ->
 app.getAppPath = ->
   appPath
 
-# Helpers.
-app.resolveProxy = (url, callback) -> @defaultSession.resolveProxy url, callback
-
 # Routes the events to webContents.
 for name in ['login', 'certificate-error', 'select-client-certificate']
   do (name) ->
@@ -45,13 +41,14 @@ for name in ['login', 'certificate-error', 'select-client-certificate']
       webContents.emit name, event, args...
 
 # Deprecated.
-{deprecate} = electron
 app.getHomeDir = deprecate 'app.getHomeDir', 'app.getPath', ->
   @getPath 'home'
 app.getDataPath = deprecate 'app.getDataPath', 'app.getPath', ->
   @getPath 'userData'
 app.setDataPath = deprecate 'app.setDataPath', 'app.setPath', (path) ->
   @setPath 'userData', path
+app.resolveProxy = deprecate 'app.resolveProxy', 'session.defaultSession.resolveProxy', (url, callback) ->
+  session.defaultSession.resolveProxy url, callback
 deprecate.rename app, 'terminate', 'quit'
 deprecate.event app, 'finish-launching', 'ready', ->
   setImmediate => # give default app a chance to setup default menu.
@@ -61,11 +58,6 @@ deprecate.event app, 'activate-with-no-open-windows', 'activate', (event, hasVis
 deprecate.event app, 'select-certificate', 'select-client-certificate'
 
 # Wrappers for native classes.
-wrapSession = (session) ->
-  # session is an EventEmitter.
-  session.__proto__ = EventEmitter.prototype
-sessionBindings._setWrapSession wrapSession
-
 wrapDownloadItem = (downloadItem) ->
   # downloadItem is an EventEmitter.
   downloadItem.__proto__ = EventEmitter.prototype

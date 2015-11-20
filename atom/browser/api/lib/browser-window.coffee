@@ -1,10 +1,12 @@
-{app, ipcMain, deprecate} = require 'electron'
+{ipcMain, deprecate} = require 'electron'
 {EventEmitter} = require 'events'
 
 {BrowserWindow} = process.atomBinding 'window'
 BrowserWindow::__proto__ = EventEmitter.prototype
 
 BrowserWindow::_init = ->
+  {app} = require 'electron'  # avoid recursive require.
+
   # Simulate the application menu on platforms other than OS X.
   if process.platform isnt 'darwin'
     menu = app.getApplicationMenu()

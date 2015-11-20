@@ -1,5 +1,5 @@
 {EventEmitter} = require 'events'
-{deprecate, ipcMain, NavigationController, Menu} = require 'electron'
+{deprecate, ipcMain, session, NavigationController, Menu} = require 'electron'
 
 binding = process.atomBinding 'web_contents'
 
