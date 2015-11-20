@@ -294,14 +294,6 @@ npm 모듈 규칙에 따라 대부분의 경우 `package.json`의 `name` 필드�
 현재 어플리케이션의 [로케일](https://ko.wikipedia.org/wiki/%EB%A1%9C%EC%BC%80%EC%9D%BC)을
 반환합니다.
 
-### `app.resolveProxy(url, callback)`
-
-* `url` URL
-* `callback` Function
-
-`url`의 프록시 정보를 해석합니다. `callback`은 요청이 수행되었을 때
-`callback(proxy)` 형태로 호출됩니다.
-
 ### `app.addRecentDocument(path)` _OS X_ _Windows_
 
 * `path` String

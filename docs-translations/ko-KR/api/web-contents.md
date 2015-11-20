@@ -190,12 +190,6 @@ Returns:
 
 `webContents`객체는 다음과 같은 인스턴스 메서드들을 가지고 있습니다.
 
-### `webContents.session`
-
-webContents에서 사용되는 `session`객체를 반환합니다.
-
-[session 문서](session.md)에서 이 객체의 메서드들을 확인할 수 있습니다.
-
 ### `webContents.loadURL(url[, options])`
 
 * `url` URL
@@ -645,17 +639,6 @@ Input `event`를 웹 페이지로 전송합니다.
 
 프레임 프레젠테이션 이벤트들에 대한 구독을 중지합니다.
 
-## Instance Properties
-
-`WebContents`객체들은 다음 속성들을 가지고 있습니다:
-
-### `webContents.devToolsWebContents`
-
-이 `WebContents`에 대한 개발자 도구의 `WebContents`를 가져옵니다.
-
-**참고:** 사용자가 절대로 이 객체를 저장해서는 안 됩니다. 개발자 도구가 닫혔을 때,
-`null`이 반환될 수 있습니다.
-
 ### `webContents.savePage(fullPath, saveType, callback)`
 
 * `fullPath` String - 전체 파일 경로.
@@ -678,3 +661,18 @@ win.webContents.on('did-finish-load', function() {
   });
 });
 ```
+
+## Instance Properties
+
+`WebContents`객체들은 다음 속성들을 가지고 있습니다:
+
+### `webContents.session`
+
+이 webContents에서 사용하는 [session](session.md) 객체를 반환합니다.
+
+### `webContents.devToolsWebContents`
+
+이 `WebContents`에 대한 개발자 도구의 `WebContents`를 가져옵니다.
+
+**참고:** 사용자가 절대로 이 객체를 저장해서는 안 됩니다. 개발자 도구가 닫혔을 때,
+`null`이 반환될 수 있습니다.
