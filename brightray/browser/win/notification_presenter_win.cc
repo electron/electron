@@ -42,8 +42,7 @@ void NotificationPresenterWin::ShowNotification(
     scoped_ptr<content::DesktopNotificationDelegate> delegate,
     base::Closure* cancel_callback) {
   // This class manages itself.
-  auto notification = new WindowsToastNotification(
-      GetApplicationName(), delegate.Pass());
+  auto notification = new WindowsToastNotification(delegate.Pass());
   notification->ShowNotification(data.title, data.body, data.icon.spec());
 
   if (cancel_callback) {

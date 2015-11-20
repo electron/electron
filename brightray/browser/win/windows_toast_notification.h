@@ -34,7 +34,6 @@ using DesktopToastFailedEventHandler =
 class WindowsToastNotification {
  public:
   WindowsToastNotification(
-      const std::string& app_name,
       scoped_ptr<content::DesktopNotificationDelegate> delegate);
   ~WindowsToastNotification();
 

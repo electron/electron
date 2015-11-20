@@ -5,6 +5,8 @@
 
 #include "browser/win/windows_toast_notification.h"
 
+#include <shlobj.h>
+
 #include "base/strings/utf_string_conversions.h"
 #include "browser/win/scoped_hstring.h"
 #include "content/public/browser/desktop_notification_delegate.h"
@@ -13,8 +15,21 @@ using namespace ABI::Windows::Data::Xml::Dom;
 
 namespace brightray {
 
+namespace {
+
+bool GetAppUserModelId(ScopedHString* app_id) {
+  PWSTR current_app_id;
+  if (FAILED(GetCurrentProcessExplicitAppUserModelID(&current_app_id)))
+    return false;
+
+  app_id->Set(current_app_id);
+  CoTaskMemFree(current_app_id);
+  return app_id->success();
+}
+
+}  // namespace
+
 WindowsToastNotification::WindowsToastNotification(
-    const std::string& app_name,
     scoped_ptr<content::DesktopNotificationDelegate> delegate)
     : delegate_(delegate.Pass()),
       weak_factory_(this) {
@@ -30,8 +45,8 @@ WindowsToastNotification::WindowsToastNotification(
   if (FAILED(hr))
     return;
 
-  ScopedHString app_id(base::UTF8ToUTF16(app_name).c_str());
-  if (!app_id.success())
+  ScopedHString app_id;
+  if (!GetAppUserModelId(&app_id))
     return;
 
   toast_manager_->CreateToastNotifierWithId(app_id, &toast_notifier_);
