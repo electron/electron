@@ -66,11 +66,16 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
 * `darkTheme` Boolean - Forces using dark theme for the window, only works on
   some GTK+3 desktop environments.
 * `transparent` Boolean - Makes the window [transparent](frameless-window.md).
-* `type` String - Specifies the type of the window, possible types are
-  `desktop`, `dock`, `toolbar`, `splash`, `notification`. This only works on
-  Linux.
-* `standardWindow` Boolean - Uses the OS X's standard window instead of the
-  textured window. Defaults to `true`.
+* `type` String - Specifies the type of the window, which applies
+  additional platform-specific properties.
+  * On Linux, possible types are `desktop`, `dock`, `toolbar`, `splash`,
+    `notification`.
+  * On OS X, possible types are `desktop`, `textured`. The `textured` type adds
+    metal gradient appearance (NSTexturedBackgroundWindowMask). The `desktop`
+    type places the window at the desktop background window level
+    (kCGDesktopWindowLevel - 1). Note that desktop window will not receive focus,
+    keyboard or mouse events, but you can use `globalShortcut` to receive input
+    sparingly.
 * `titleBarStyle` String, OS X - specifies the style of window title bar.
   This option is supported on OS X 10.10 Yosemite and newer. There are three
   possible values:
@@ -86,11 +91,11 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     is `true`.
   * `preload` String - Specifies a script that will be loaded before other
     scripts run in the page. This script will always have access to node APIs
-    no matter whether node integration is turned on or off. The value should 
+    no matter whether node integration is turned on or off. The value should
     be the absolute file path to the script.
 
-    When node integration is turned off, the preload script can reintroduce 
-    Node global symbols back to the global scope. See example 
+    When node integration is turned off, the preload script can reintroduce
+    Node global symbols back to the global scope. See example
     [here](process.md#event-loaded).
   * `partition` String - Sets the session used by the page. If `partition`
     starts with `persist:`, the page will use a persistent session available to
