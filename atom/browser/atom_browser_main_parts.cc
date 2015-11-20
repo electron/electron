@@ -62,17 +62,15 @@ void AtomBrowserMainParts::PreEarlyInitialization() {
 void AtomBrowserMainParts::PostEarlyInitialization() {
   brightray::BrowserMainParts::PostEarlyInitialization();
 
-  {
-    // Temporary set the bridge_task_runner_ as current thread's task runner,
-    // so we can fool gin::PerIsolateData to use it as its task runner, instead
-    // of getting current message loop's task runner, which is null for now.
-    bridge_task_runner_ = new BridgeTaskRunner;
-    base::ThreadTaskRunnerHandle handle(bridge_task_runner_);
+  // Temporary set the bridge_task_runner_ as current thread's task runner,
+  // so we can fool gin::PerIsolateData to use it as its task runner, instead
+  // of getting current message loop's task runner, which is null for now.
+  bridge_task_runner_ = new BridgeTaskRunner;
+  base::ThreadTaskRunnerHandle handle(bridge_task_runner_);
 
-    // The ProxyResolverV8 has setup a complete V8 environment, in order to
-    // avoid conflicts we only initialize our V8 environment after that.
-    js_env_.reset(new JavascriptEnvironment);
-  }
+  // The ProxyResolverV8 has setup a complete V8 environment, in order to
+  // avoid conflicts we only initialize our V8 environment after that.
+  js_env_.reset(new JavascriptEnvironment);
 
   node_bindings_->Initialize();
 
@@ -107,6 +105,7 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
                  1000));
 
   brightray::BrowserMainParts::PreMainMessageLoopRun();
+  BridgeTaskRunner::MessageLoopIsReady();
 
 #if defined(USE_X11)
   libgtk2ui::GtkInitFromCommandLine(*base::CommandLine::ForCurrentProcess());

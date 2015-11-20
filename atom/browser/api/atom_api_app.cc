@@ -111,6 +111,23 @@ int GetPathConstant(const std::string& name) {
     return -1;
 }
 
+bool NotificationCallbackWrapper(
+    const ProcessSingleton::NotificationCallback& callback,
+    const base::CommandLine::StringVector& cmd,
+    const base::FilePath& cwd) {
+  // Make sure the callback is called after app gets ready.
+  if (Browser::Get()->is_ready()) {
+    callback.Run(cmd, cwd);
+  } else {
+    scoped_refptr<base::SingleThreadTaskRunner> task_runner(
+        base::ThreadTaskRunnerHandle::Get());
+    task_runner->PostTask(
+        FROM_HERE, base::Bind(base::IgnoreResult(callback), cmd, cwd));
+  }
+  // ProcessSingleton needs to know whether current process is quiting.
+  return !Browser::Get()->is_shutting_down();
+}
+
 void OnClientCertificateSelected(
     v8::Isolate* isolate,
     std::shared_ptr<content::ClientCertificateDelegate> delegate,
@@ -160,6 +177,11 @@ void App::OnWindowAllClosed() {
 
 void App::OnQuit() {
   Emit("quit");
+
+  if (process_singleton_.get()) {
+    process_singleton_->Cleanup();
+    process_singleton_.reset();
+  }
 }
 
 void App::OnOpenFile(bool* prevent_default, const std::string& file_path) {
@@ -251,6 +273,12 @@ void App::SetAppUserModelId(const std::string& app_id) {
 #endif
 }
 
+void App::AllowNTLMCredentialsForAllDomains(bool should_allow) {
+  auto browser_context = static_cast<AtomBrowserContext*>(
+        AtomBrowserMainParts::Get()->browser_context());
+  browser_context->AllowNTLMCredentialsForAllDomains(should_allow);
+}
+
 std::string App::GetLocale() {
   return l10n_util::GetApplicationLocale("");
 }
@@ -260,6 +288,28 @@ v8::Local<v8::Value> App::DefaultSession(v8::Isolate* isolate) {
     return v8::Null(isolate);
   else
     return v8::Local<v8::Value>::New(isolate, default_session_);
+}
+
+bool App::MakeSingleInstance(
+    const ProcessSingleton::NotificationCallback& callback) {
+  if (process_singleton_.get())
+    return false;
+
+  base::FilePath user_dir;
+  PathService::Get(brightray::DIR_USER_DATA, &user_dir);
+  process_singleton_.reset(new ProcessSingleton(
+      user_dir, base::Bind(NotificationCallbackWrapper, callback)));
+
+  switch (process_singleton_->NotifyOtherProcessOrCreate()) {
+    case ProcessSingleton::NotifyResult::LOCK_ERROR:
+    case ProcessSingleton::NotifyResult::PROFILE_IN_USE:
+    case ProcessSingleton::NotifyResult::PROCESS_NOTIFIED:
+      process_singleton_.reset();
+      return true;
+    case ProcessSingleton::NotifyResult::PROCESS_NONE:
+    default:  // Shouldn't be needed, but VS warns if it is not there.
+      return false;
+  }
 }
 
 mate::ObjectTemplateBuilder App::GetObjectTemplateBuilder(
@@ -285,7 +335,10 @@ mate::ObjectTemplateBuilder App::GetObjectTemplateBuilder(
       .SetMethod("getPath", &App::GetPath)
       .SetMethod("setDesktopName", &App::SetDesktopName)
       .SetMethod("setAppUserModelId", &App::SetAppUserModelId)
+      .SetMethod("allowNTLMCredentialsForAllDomains",
+                 &App::AllowNTLMCredentialsForAllDomains)
       .SetMethod("getLocale", &App::GetLocale)
+      .SetMethod("makeSingleInstance", &App::MakeSingleInstance)
       .SetProperty("defaultSession", &App::DefaultSession);
 }
 

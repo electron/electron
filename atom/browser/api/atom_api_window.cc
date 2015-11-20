@@ -189,6 +189,14 @@ void Window::OnExecuteWindowsCommand(const std::string& command_name) {
   Emit("app-command", command_name);
 }
 
+#if defined(OS_WIN)
+void Window::OnWindowMessage(UINT message, WPARAM w_param, LPARAM l_param) {
+  if (IsWindowMessageHooked(message)) {
+    messages_callback_map_[message].Run(w_param, l_param);
+  }
+}
+#endif
+
 // static
 mate::Wrappable* Window::New(v8::Isolate* isolate,
                              const mate::Dictionary& options) {
@@ -385,6 +393,10 @@ bool Window::IsKiosk() {
   return window_->IsKiosk();
 }
 
+void Window::SetBackgroundColor(const std::string& color_name) {
+  window_->SetBackgroundColor(color_name);
+}
+
 void Window::FocusOnWebView() {
   window_->FocusOnWebView();
 }
@@ -488,6 +500,29 @@ bool Window::IsMenuBarVisible() {
   return window_->IsMenuBarVisible();
 }
 
+#if defined(OS_WIN)
+bool Window::HookWindowMessage(UINT message,
+                               const MessageCallback& callback) {
+  messages_callback_map_[message] = callback;
+  return true;
+}
+
+void Window::UnhookWindowMessage(UINT message) {
+  if (!ContainsKey(messages_callback_map_, message))
+    return;
+
+  messages_callback_map_.erase(message);
+}
+
+bool Window::IsWindowMessageHooked(UINT message) {
+  return ContainsKey(messages_callback_map_, message);
+}
+
+void Window::UnhookAllWindowMessages() {
+  messages_callback_map_.clear();
+}
+#endif
+
 #if defined(OS_MACOSX)
 void Window::ShowDefinitionForSelection() {
   window_->ShowDefinitionForSelection();
@@ -564,6 +599,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setSkipTaskbar", &Window::SetSkipTaskbar)
       .SetMethod("setKiosk", &Window::SetKiosk)
       .SetMethod("isKiosk", &Window::IsKiosk)
+      .SetMethod("setBackgroundColor", &Window::SetBackgroundColor)
       .SetMethod("setRepresentedFilename", &Window::SetRepresentedFilename)
       .SetMethod("getRepresentedFilename", &Window::GetRepresentedFilename)
       .SetMethod("setDocumentEdited", &Window::SetDocumentEdited)
@@ -585,6 +621,12 @@ void Window::BuildPrototype(v8::Isolate* isolate,
                  &Window::SetVisibleOnAllWorkspaces)
       .SetMethod("isVisibleOnAllWorkspaces",
                  &Window::IsVisibleOnAllWorkspaces)
+#if defined(OS_WIN)
+      .SetMethod("hookWindowMessage", &Window::HookWindowMessage)
+      .SetMethod("isWindowMessageHooked", &Window::IsWindowMessageHooked)
+      .SetMethod("unhookWindowMessage", &Window::UnhookWindowMessage)
+      .SetMethod("unhookAllWindowMessages", &Window::UnhookAllWindowMessages)
+#endif
 #if defined(OS_MACOSX)
       .SetMethod("showDefinitionForSelection",
                  &Window::ShowDefinitionForSelection)

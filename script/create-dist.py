@@ -176,7 +176,8 @@ def create_dist_zip():
   zip_file = os.path.join(SOURCE_ROOT, 'dist', dist_name)
 
   with scoped_cwd(DIST_DIR):
-    files = TARGET_BINARIES[PLATFORM] +  ['LICENSE', 'version']
+    files = TARGET_BINARIES[PLATFORM] +  ['LICENSE', 'LICENSES.chromium.html',
+                                          'version']
     if PLATFORM == 'linux':
       files += [lib for lib in SYSTEM_LIBRARIES if os.path.exists(lib)]
     dirs = TARGET_DIRECTORIES[PLATFORM]
@@ -189,7 +190,7 @@ def create_chrome_binary_zip(binary, version):
   zip_file = os.path.join(SOURCE_ROOT, 'dist', dist_name)
 
   with scoped_cwd(DIST_DIR):
-    files = ['LICENSE']
+    files = ['LICENSE', 'LICENSES.chromium.html']
     if PLATFORM == 'win32':
       files += [binary + '.exe']
     else:
@@ -205,7 +206,7 @@ def create_symbols_zip():
   zip_file = os.path.join(SOURCE_ROOT, 'dist', dist_name)
 
   with scoped_cwd(DIST_DIR):
-    files = ['LICENSE', 'version']
+    files = ['LICENSE', 'LICENSES.chromium.html', 'version']
     dirs = ['{0}.breakpad.syms'.format(PROJECT_NAME)]
     make_zip(zip_file, files, dirs)
 

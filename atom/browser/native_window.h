@@ -134,6 +134,7 @@ class NativeWindow : public base::SupportsUserData,
   virtual void SetSkipTaskbar(bool skip) = 0;
   virtual void SetKiosk(bool kiosk) = 0;
   virtual bool IsKiosk() = 0;
+  virtual void SetBackgroundColor(const std::string& color_name) = 0;
   virtual void SetRepresentedFilename(const std::string& filename);
   virtual std::string GetRepresentedFilename();
   virtual void SetDocumentEdited(bool edited);
@@ -209,6 +210,10 @@ class NativeWindow : public base::SupportsUserData,
   void NotifyWindowLeaveHtmlFullScreen();
   void NotifyWindowExecuteWindowsCommand(const std::string& command);
 
+  #if defined(OS_WIN)
+  void NotifyWindowMessage(UINT message, WPARAM w_param, LPARAM l_param);
+  #endif
+
   void AddObserver(NativeWindowObserver* obs) {
     observers_.AddObserver(obs);
   }
@@ -241,9 +246,18 @@ class NativeWindow : public base::SupportsUserData,
   NativeWindow(brightray::InspectableWebContents* inspectable_web_contents,
                const mate::Dictionary& options);
 
+  // Convert draggable regions in raw format to SkRegion format. Caller is
+  // responsible for deleting the returned SkRegion instance.
+  scoped_ptr<SkRegion> DraggableRegionsToSkRegion(
+      const std::vector<DraggableRegion>& regions);
+
   // Converts between content size to window size.
   virtual gfx::Size ContentSizeToWindowSize(const gfx::Size& size) = 0;
   virtual gfx::Size WindowSizeToContentSize(const gfx::Size& size) = 0;
+
+  // Called when the window needs to update its draggable region.
+  virtual void UpdateDraggableRegions(
+      const std::vector<DraggableRegion>& regions);
 
   // content::WebContentsObserver:
   void RenderViewCreated(content::RenderViewHost* render_view_host) override;
@@ -252,10 +266,6 @@ class NativeWindow : public base::SupportsUserData,
   bool OnMessageReceived(const IPC::Message& message) override;
 
  private:
-  // Called when the window needs to update its draggable region.
-  void UpdateDraggableRegions(
-      const std::vector<DraggableRegion>& regions);
-
   // Schedule a notification unresponsive event.
   void ScheduleUnresponsiveEvent(int ms);
 

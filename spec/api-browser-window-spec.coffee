@@ -303,13 +303,22 @@ describe 'browser-window module', ->
         done()
 
   describe 'save page', ->
-    savePagePath = path.join fixtures, 'save_page.html'
+    savePageDir = path.join fixtures, 'save_page'
+    savePageHtmlPath = path.join savePageDir, 'save_page.html'
+    savePageJsPath = path.join savePageDir, 'save_page_files', 'test.js'
+    savePageCssPath = path.join savePageDir, 'save_page_files', 'test.css'
     it 'should save page', (done) ->
       w.webContents.on 'did-finish-load', ->
-        w.webContents.savePage savePagePath, 'HTMLComplete', (error) ->
+        w.webContents.savePage savePageHtmlPath, 'HTMLComplete', (error) ->
           assert.equal error, null
-          assert fs.existsSync savePagePath
-          fs.unlinkSync savePagePath
+          assert fs.existsSync savePageHtmlPath
+          assert fs.existsSync savePageJsPath
+          assert fs.existsSync savePageCssPath
+          fs.unlinkSync savePageCssPath
+          fs.unlinkSync savePageJsPath
+          fs.unlinkSync savePageHtmlPath
+          fs.rmdirSync path.join savePageDir, 'save_page_files'
+          fs.rmdirSync savePageDir
           done()
 
-      w.loadUrl "file://#{fixtures}/api/blank.html"
+      w.loadUrl "file://#{fixtures}/pages/save_page/index.html"

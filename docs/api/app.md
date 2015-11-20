@@ -99,7 +99,7 @@ You should call `event.preventDefault()` if you want to handle this event.
 Returns:
 
 * `event` Event
-* `hasVisibleWindows` Bool
+* `hasVisibleWindows` Boolean
 
 Emitted when the application is activated, which usually happens when clicks on
 the applications's dock icon.
@@ -169,7 +169,7 @@ The `app` object has the following methods:
 
 ### `app.quit()`
 
-Try to close all windows. The `before-quit` event will emitted first. If all
+Try to close all windows. The `before-quit` event will be emitted first. If all
 windows are successfully closed, the `will-quit` event will be emitted and by
 default the application will terminate.
 
@@ -213,7 +213,7 @@ created by this method. On failure an `Error` is thrown.
 
 You can only override paths of a `name` defined in `app.getPath`.
 
-By default, web pages's cookies and caches will be stored under the `userData`
+By default, web pages' cookies and caches will be stored under the `userData`
 directory. If you want to change this location, you have to override the
 `userData` path before the `ready` event of the `app` module is emitted.
 
@@ -245,7 +245,7 @@ Returns the current application locale.
 Resolves the proxy information for `url`. The `callback` will be called with
 `callback(proxy)` when the request is performed.
 
-### `app.addRecentDocument(path)`
+### `app.addRecentDocument(path)` _OS X_ _Windows_
 
 * `path` String
 
@@ -254,7 +254,7 @@ Adds `path` to the recent documents list.
 This list is managed by the OS. On Windows you can visit the list from the task
 bar, and on OS X you can visit it from dock menu.
 
-### `app.clearRecentDocuments()`
+### `app.clearRecentDocuments()` _OS X_ _Windows_
 
 Clears the recent documents list.
 
@@ -264,7 +264,7 @@ Clears the recent documents list.
 
 Adds `tasks` to the [Tasks][tasks] category of the JumpList on Windows.
 
-`tasks` is an array of `Task` objects in following format:
+`tasks` is an array of `Task` objects in the following format:
 
 `Task` Object
 * `program` String - Path of the program to execute, usually you should
@@ -279,6 +279,70 @@ Adds `tasks` to the [Tasks][tasks] category of the JumpList on Windows.
 * `iconIndex` Integer - The icon index in the icon file. If an icon file
   consists of two or more icons, set this value to identify the icon. If an
   icon file consists of one icon, this value is 0.
+
+### `app.allowNTLMCredentialsForAllDomains(allow)`
+
+* `allow` Boolean
+
+Dynamically sets whether to always send credentials for HTTP NTLM or Negotiate
+authentication - normally, Electron will only send NTLM/Kerberos credentials for
+URLs that fall under "Local Intranet" sites (i.e. are in the same domain as you).
+However, this detection often fails when corporate networks are badly configured,
+so this lets you co-opt this behavior and enable it for all URLs.
+
+### `app.makeSingleInstance(callback)`
+
+* `callback` Function
+
+This method makes your application a Single Instance Application - instead of
+allowing multiple instances of your app to run, this will ensure that only a
+single instance of your app is running, and other instances signal this
+instance and exit.
+
+`callback` will be called with `callback(argv, workingDirectory)` when a second
+instance has been executed. `argv` is an Array of the second instance's command
+line arguments, and `workingDirectory` is its current working directory. Usually
+applications respond to this by making their primary window focused and
+non-minimized.
+
+The `callback` is guaranteed to be executed after the `ready` event of `app`
+gets emitted.
+
+This method returns `false` if your process is the primary instance of the
+application and your app should continue loading. And returns `true` if your
+process has sent its parameters to another instance, and you should immediately
+quit.
+
+On OS X the system enforces single instance automatically when users try to open
+a second instance of your app in Finder, and the `open-file` and `open-url`
+events will be emitted for that. However when users start your app in command
+line the system's single instance machanism will be bypassed and you have to
+use this method to ensure single instance.
+
+An example of activating the window of primary instance when a second instance
+starts:
+
+```js
+var myWindow = null;
+
+var shouldQuit = app.makeSingleInstance(function(commandLine, workingDirectory) {
+  // Someone tried to run a second instance, we should focus our window
+  if (myWindow) {
+    if (myWindow.isMinimized()) myWindow.restore();
+    myWindow.focus();
+  }
+  return true;
+});
+
+if (shouldQuit) {
+  app.quit();
+  return;
+}
+
+// Create myWindow, load the rest of the app, etc...
+app.on('ready', function() {
+});
+```
 
 ### `app.commandLine.appendSwitch(switch[, value])`
 

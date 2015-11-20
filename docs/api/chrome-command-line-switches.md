@@ -92,11 +92,17 @@ Enables net log events to be saved and writes them to `path`.
 Sets the minimum SSL/TLS version ("tls1", "tls1.1" or "tls1.2") that TLS
 fallback will accept.
 
+## --cipher-suite-blacklist=`cipher_suites`
+
+Specify comma-separated list of SSL cipher suites to disable.
+
 ## --enable-logging
 
 Prints Chromium's logging into console.
 
-This switch can not be used in `app.commandLine.appendSwitch` since it is parsed earlier than user's app is loaded.
+This switch can not be used in `app.commandLine.appendSwitch` since it is parsed
+earlier than user's app is loaded, but you can set the `ELECTRON_ENABLE_LOGGING`
+environment variable to achieve the same effect.
 
 ## --v=`log_level`
 

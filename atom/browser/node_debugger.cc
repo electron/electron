@@ -35,17 +35,14 @@ NodeDebugger::NodeDebugger(v8::Isolate* isolate)
       weak_factory_(this) {
   bool use_debug_agent = false;
   int port = 5858;
-  bool wait_for_connection = false;
 
   std::string port_str;
   base::CommandLine* cmd = base::CommandLine::ForCurrentProcess();
   if (cmd->HasSwitch("debug")) {
     use_debug_agent = true;
     port_str = cmd->GetSwitchValueASCII("debug");
-  }
-  if (cmd->HasSwitch("debug-brk")) {
+  } else if (cmd->HasSwitch("debug-brk")) {
     use_debug_agent = true;
-    wait_for_connection = true;
     port_str = cmd->GetSwitchValueASCII("debug-brk");
   }
 
@@ -55,9 +52,6 @@ NodeDebugger::NodeDebugger(v8::Isolate* isolate)
 
     isolate_->SetData(kIsolateSlot, this);
     v8::Debug::SetMessageHandler(DebugMessageHandler);
-
-    if (wait_for_connection)
-      v8::Debug::DebugBreak(isolate_);
 
     uv_async_init(uv_default_loop(), &weak_up_ui_handle_, ProcessMessageInUI);
 

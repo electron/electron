@@ -47,6 +47,7 @@ extern const char kTransparent[];
 extern const char kType[];
 extern const char kDisableAutoHideCursor[];
 extern const char kStandardWindow[];
+extern const char kBackgroundColor[];
 extern const char kClientCertificate[];
 
 extern const char kExperimentalFeatures[];
@@ -59,6 +60,7 @@ extern const char kPageVisibility[];
 extern const char kDisableHttpCache[];
 extern const char kRegisterStandardSchemes[];
 extern const char kSSLVersionFallbackMin[];
+extern const char kCipherSuiteBlacklist[];
 
 extern const char kAppUserModelId[];
 

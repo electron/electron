@@ -265,7 +265,7 @@ const CGFloat kVerticalTitleMargin = 2;
     NSArray* files = [pboard propertyListForType:NSFilenamesPboardType];
     for (NSString* file in files)
       dropFiles.push_back(base::SysNSStringToUTF8(file));
-    trayIcon_->NotfiyDropFiles(dropFiles);
+    trayIcon_->NotifyDropFiles(dropFiles);
     return YES;
   }
   return NO;

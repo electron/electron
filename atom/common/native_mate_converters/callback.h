@@ -70,10 +70,13 @@ struct V8FunctionInvoker<ReturnType(ArgTypes...)> {
     v8::Local<v8::Function> holder = function->NewHandle();
     v8::Local<v8::Context> context = holder->CreationContext();
     v8::Context::Scope context_scope(context);
-    ReturnType ret;
+    ReturnType ret = ReturnType();
     std::vector<v8::Local<v8::Value>> args = { ConvertToV8(isolate, raw)... };
-    v8::Local<v8::Value> val(holder->Call(holder, args.size(), &args.front()));
-    Converter<ReturnType>::FromV8(isolate, val, &ret);
+    v8::Local<v8::Value> result;
+    auto maybe_result =
+        holder->Call(context, holder, args.size(), &args.front());
+    if (maybe_result.ToLocal(&result))
+      Converter<ReturnType>::FromV8(isolate, result, &ret);
     return ret;
   }
 };

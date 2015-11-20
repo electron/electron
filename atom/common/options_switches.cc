@@ -93,6 +93,9 @@ const char kDisableAutoHideCursor[] = "disable-auto-hide-cursor";
 // Use the OS X's standard window instead of the textured window.
 const char kStandardWindow[] = "standard-window";
 
+// Default browser window background color.
+const char kBackgroundColor[] = "background-color";
+
 // Path to client certificate.
 const char kClientCertificate[] = "client-certificate";
 
@@ -115,6 +118,9 @@ const char kRegisterStandardSchemes[] = "register-standard-schemes";
 // The minimum SSL/TLS version ("tls1", "tls1.1", or "tls1.2") that
 // TLS fallback will accept.
 const char kSSLVersionFallbackMin[] = "ssl-version-fallback-min";
+
+// Comma-separated list of SSL cipher suites to disable.
+const char kCipherSuiteBlacklist[] = "cipher-suite-blacklist";
 
 // The browser process app model ID
 const char kAppUserModelId[] = "app-user-model-id";
