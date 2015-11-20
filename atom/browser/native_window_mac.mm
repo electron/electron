@@ -259,14 +259,12 @@ bool ScopedDisableResize::disable_resize_ = false;
   return [children filteredArrayUsingPredicate:predicate];
 }
 
-- (BOOL)canBecomeMainWindow
-{
-    return !self.disableKeyOrMainWindow;
+- (BOOL)canBecomeMainWindow {
+  return !self.disableKeyOrMainWindow;
 }
 
-- (BOOL)canBecomeKeyWindow
-{
-    return !self.disableKeyOrMainWindow;
+- (BOOL)canBecomeKeyWindow {
+  return !self.disableKeyOrMainWindow;
 }
 
 @end
@@ -394,7 +392,7 @@ NativeWindowMac::NativeWindowMac(
 
   if (windowType == "desktop") {
     [window_ setLevel:kCGDesktopWindowLevel - 1];
-    [window_ setDisableKeyOrMainWindow: YES];
+    [window_ setDisableKeyOrMainWindow:YES];
     [window_ setCollectionBehavior:
         (NSWindowCollectionBehaviorCanJoinAllSpaces |
          NSWindowCollectionBehaviorStationary |

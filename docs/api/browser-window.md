@@ -71,11 +71,11 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
   * On Linux, possible types are `desktop`, `dock`, `toolbar`, `splash`,
     `notification`.
   * On OS X, possible types are `desktop`, `textured`. The `textured` type adds
-    metal gradient appearance (NSTexturedBackgroundWindowMask). The `desktop`
+    metal gradient appearance (`NSTexturedBackgroundWindowMask`). The `desktop`
     type places the window at the desktop background window level
-    (kCGDesktopWindowLevel - 1). Note that desktop window will not receive focus,
-    keyboard or mouse events, but you can use `globalShortcut` to receive input
-    sparingly.
+    (`kCGDesktopWindowLevel - 1`). Note that desktop window will not receive
+    focus, keyboard or mouse events, but you can use `globalShortcut` to receive
+    input sparingly.
 * `titleBarStyle` String, OS X - specifies the style of window title bar.
   This option is supported on OS X 10.10 Yosemite and newer. There are three
   possible values:
