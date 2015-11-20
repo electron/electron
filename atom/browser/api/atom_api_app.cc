@@ -7,18 +7,17 @@
 #include <string>
 #include <vector>
 
-#if defined(OS_WIN)
-#include <shlobj.h>
-#endif
-
 #include "atom/browser/api/atom_api_menu.h"
 #include "atom/browser/api/atom_api_session.h"
+#include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/browser.h"
-#include "atom/browser/api/atom_api_web_contents.h"
+#include "atom/browser/login_handler.h"
 #include "atom/common/native_mate_converters/callback.h"
+#include "atom/common/native_mate_converters/net_converter.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
+#include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/node_includes.h"
 #include "atom/common/options_switches.h"
 #include "base/command_line.h"
@@ -26,8 +25,10 @@
 #include "base/files/file_path.h"
 #include "base/path_service.h"
 #include "brightray/browser/brightray_paths.h"
+#include "chrome/common/chrome_paths.h"
 #include "content/public/browser/client_certificate_delegate.h"
 #include "content/public/browser/gpu_data_manager.h"
+#include "content/public/browser/render_frame_host.h"
 #include "content/public/common/content_switches.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
@@ -63,21 +64,6 @@ struct Converter<Browser::UserTask> {
 };
 #endif
 
-template<>
-struct Converter<scoped_refptr<net::X509Certificate>> {
-  static v8::Local<v8::Value> ToV8(
-      v8::Isolate* isolate,
-      const scoped_refptr<net::X509Certificate>& val) {
-    mate::Dictionary dict(isolate, v8::Object::New(isolate));
-    std::string encoded_data;
-    net::X509Certificate::GetPEMEncoded(
-        val->os_cert_handle(), &encoded_data);
-    dict.Set("data", encoded_data);
-    dict.Set("issuerName", val->issuer().GetDisplayName());
-    return dict.GetHandle();
-  }
-};
-
 }  // namespace mate
 
 
@@ -101,12 +87,22 @@ int GetPathConstant(const std::string& name) {
     return base::DIR_HOME;
   else if (name == "temp")
     return base::DIR_TEMP;
-  else if (name == "userDesktop")
+  else if (name == "userDesktop" || name == "desktop")
     return base::DIR_USER_DESKTOP;
   else if (name == "exe")
     return base::FILE_EXE;
   else if (name == "module")
     return base::FILE_MODULE;
+  else if (name == "documents")
+    return chrome::DIR_USER_DOCUMENTS;
+  else if (name == "downloads")
+    return chrome::DIR_DEFAULT_DOWNLOADS;
+  else if (name == "music")
+    return chrome::DIR_USER_MUSIC;
+  else if (name == "pictures")
+    return chrome::DIR_USER_PICTURES;
+  else if (name == "videos")
+    return chrome::DIR_USER_VIDEOS;
   else
     return -1;
 }
@@ -132,8 +128,6 @@ void OnClientCertificateSelected(
     v8::Isolate* isolate,
     std::shared_ptr<content::ClientCertificateDelegate> delegate,
     mate::Arguments* args) {
-  v8::Locker locker(isolate);
-  v8::HandleScope handle_scope(isolate);
   mate::Dictionary cert_data;
   if (!(args->Length() == 1 && args->GetNext(&cert_data))) {
     args->ThrowError();
@@ -147,18 +141,29 @@ void OnClientCertificateSelected(
       net::X509Certificate::CreateCertificateListFromBytes(
           encoded_data.data(), encoded_data.size(),
           net::X509Certificate::FORMAT_AUTO);
-
   delegate->ContinueWithCertificate(certs[0].get());
+}
+
+void PassLoginInformation(scoped_refptr<LoginHandler> login_handler,
+                          mate::Arguments* args) {
+  base::string16 username, password;
+  if (args->GetNext(&username) && args->GetNext(&password))
+    login_handler->Login(username, password);
+  else
+    login_handler->CancelAuth();
 }
 
 }  // namespace
 
 App::App() {
+  static_cast<AtomBrowserClient*>(AtomBrowserClient::Get())->set_delegate(this);
   Browser::Get()->AddObserver(this);
   content::GpuDataManager::GetInstance()->AddObserver(this);
 }
 
 App::~App() {
+  static_cast<AtomBrowserClient*>(AtomBrowserClient::Get())->set_delegate(
+      nullptr);
   Browser::Get()->RemoveObserver(this);
   content::GpuDataManager::GetInstance()->RemoveObserver(this);
 }
@@ -201,26 +206,62 @@ void App::OnWillFinishLaunching() {
 }
 
 void App::OnFinishLaunching() {
-  // Create the defaultSession.
-  v8::Locker locker(isolate());
-  v8::HandleScope handle_scope(isolate());
-  auto browser_context = static_cast<AtomBrowserContext*>(
-      AtomBrowserMainParts::Get()->browser_context());
-  auto handle = Session::CreateFrom(isolate(), browser_context);
-  default_session_.Reset(isolate(), handle.ToV8());
-
   Emit("ready");
 }
 
-void App::OnSelectCertificate(
+void App::OnLogin(LoginHandler* login_handler) {
+  v8::Locker locker(isolate());
+  v8::HandleScope handle_scope(isolate());
+  bool prevent_default = Emit(
+      "login",
+      WebContents::CreateFrom(isolate(), login_handler->GetWebContents()),
+      login_handler->request(),
+      login_handler->auth_info(),
+      base::Bind(&PassLoginInformation, make_scoped_refptr(login_handler)));
+
+  // Default behavior is to always cancel the auth.
+  if (!prevent_default)
+    login_handler->CancelAuth();
+}
+
+void App::AllowCertificateError(
+    int pid,
+    int fid,
+    int cert_error,
+    const net::SSLInfo& ssl_info,
+    const GURL& request_url,
+    content::ResourceType resource_type,
+    bool overridable,
+    bool strict_enforcement,
+    bool expired_previous_decision,
+    const base::Callback<void(bool)>& callback,
+    content::CertificateRequestResultType* request) {
+  auto rfh = content::RenderFrameHost::FromID(pid, fid);
+  auto web_contents = content::WebContents::FromRenderFrameHost(rfh);
+
+  v8::Locker locker(isolate());
+  v8::HandleScope handle_scope(isolate());
+  bool prevent_default = Emit("certificate-error",
+                              WebContents::CreateFrom(isolate(), web_contents),
+                              request_url,
+                              net::ErrorToString(cert_error),
+                              ssl_info.cert,
+                              callback);
+
+  // Deny the certificate by default.
+  if (!prevent_default)
+    *request = content::CERTIFICATE_REQUEST_RESULT_TYPE_DENY;
+}
+
+void App::SelectClientCertificate(
     content::WebContents* web_contents,
     net::SSLCertRequestInfo* cert_request_info,
     scoped_ptr<content::ClientCertificateDelegate> delegate) {
   std::shared_ptr<content::ClientCertificateDelegate>
       shared_delegate(delegate.release());
   bool prevent_default =
-      Emit("select-certificate",
-           api::WebContents::CreateFrom(isolate(), web_contents),
+      Emit("select-client-certificate",
+           WebContents::CreateFrom(isolate(), web_contents),
            cert_request_info->host_and_port.ToString(),
            cert_request_info->client_certs,
            base::Bind(&OnClientCertificateSelected,
@@ -266,13 +307,6 @@ void App::SetDesktopName(const std::string& desktop_name) {
 #endif
 }
 
-void App::SetAppUserModelId(const std::string& app_id) {
-#if defined(OS_WIN)
-  base::string16 app_id_utf16 = base::UTF8ToUTF16(app_id);
-  SetCurrentProcessExplicitAppUserModelID(app_id_utf16.c_str());
-#endif
-}
-
 void App::AllowNTLMCredentialsForAllDomains(bool should_allow) {
   auto browser_context = static_cast<AtomBrowserContext*>(
         AtomBrowserMainParts::Get()->browser_context());
@@ -281,13 +315,6 @@ void App::AllowNTLMCredentialsForAllDomains(bool should_allow) {
 
 std::string App::GetLocale() {
   return l10n_util::GetApplicationLocale("");
-}
-
-v8::Local<v8::Value> App::DefaultSession(v8::Isolate* isolate) {
-  if (default_session_.IsEmpty())
-    return v8::Null(isolate);
-  else
-    return v8::Local<v8::Value>::New(isolate, default_session_);
 }
 
 bool App::MakeSingleInstance(
@@ -317,6 +344,7 @@ mate::ObjectTemplateBuilder App::GetObjectTemplateBuilder(
   auto browser = base::Unretained(Browser::Get());
   return mate::ObjectTemplateBuilder(isolate)
       .SetMethod("quit", base::Bind(&Browser::Quit, browser))
+      .SetMethod("exit", base::Bind(&Browser::Exit, browser))
       .SetMethod("focus", base::Bind(&Browser::Focus, browser))
       .SetMethod("getVersion", base::Bind(&Browser::GetVersion, browser))
       .SetMethod("setVersion", base::Bind(&Browser::SetVersion, browser))
@@ -327,6 +355,8 @@ mate::ObjectTemplateBuilder App::GetObjectTemplateBuilder(
                  base::Bind(&Browser::AddRecentDocument, browser))
       .SetMethod("clearRecentDocuments",
                  base::Bind(&Browser::ClearRecentDocuments, browser))
+      .SetMethod("setAppUserModelId",
+                 base::Bind(&Browser::SetAppUserModelID, browser))
 #if defined(OS_WIN)
       .SetMethod("setUserTasks",
                  base::Bind(&Browser::SetUserTasks, browser))
@@ -334,12 +364,10 @@ mate::ObjectTemplateBuilder App::GetObjectTemplateBuilder(
       .SetMethod("setPath", &App::SetPath)
       .SetMethod("getPath", &App::GetPath)
       .SetMethod("setDesktopName", &App::SetDesktopName)
-      .SetMethod("setAppUserModelId", &App::SetAppUserModelId)
       .SetMethod("allowNTLMCredentialsForAllDomains",
                  &App::AllowNTLMCredentialsForAllDomains)
       .SetMethod("getLocale", &App::GetLocale)
-      .SetMethod("makeSingleInstance", &App::MakeSingleInstance)
-      .SetProperty("defaultSession", &App::DefaultSession);
+      .SetMethod("makeSingleInstance", &App::MakeSingleInstance);
 }
 
 // static

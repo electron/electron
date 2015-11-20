@@ -7,10 +7,10 @@
 
 #include <map>
 
+#include "atom/browser/api/trackable_object.h"
 #include "base/memory/scoped_ptr.h"
 #include "content/public/browser/power_save_blocker.h"
 #include "native_mate/handle.h"
-#include "native_mate/wrappable.h"
 
 namespace mate {
 class Dictionary;
@@ -20,13 +20,16 @@ namespace atom {
 
 namespace api {
 
-class PowerSaveBlocker : public mate::Wrappable {
+class PowerSaveBlocker : public mate::TrackableObject<PowerSaveBlocker> {
  public:
   static mate::Handle<PowerSaveBlocker> Create(v8::Isolate* isolate);
 
  protected:
   PowerSaveBlocker();
-  virtual ~PowerSaveBlocker();
+  ~PowerSaveBlocker() override;
+
+  // mate::TrackableObject:
+  void Destroy() override;
 
   // mate::Wrappable implementations:
   mate::ObjectTemplateBuilder GetObjectTemplateBuilder(
@@ -47,7 +50,6 @@ class PowerSaveBlocker : public mate::Wrappable {
   using PowerSaveBlockerTypeMap =
       std::map<int, content::PowerSaveBlocker::PowerSaveBlockerType>;
   PowerSaveBlockerTypeMap power_save_blocker_types_;
-
 
   DISALLOW_COPY_AND_ASSIGN(PowerSaveBlocker);
 };

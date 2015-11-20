@@ -31,6 +31,9 @@ class AtomBrowserMainParts : public brightray::BrowserMainParts {
 
   static AtomBrowserMainParts* Get();
 
+  // Sets the exit code, will fail if the the message loop is not ready.
+  bool SetExitCode(int code);
+
   // Register a callback that should be destroyed before JavaScript environment
   // gets destroyed.
   void RegisterDestructionCallback(const base::Closure& callback);
@@ -42,11 +45,11 @@ class AtomBrowserMainParts : public brightray::BrowserMainParts {
   void PreEarlyInitialization() override;
   void PostEarlyInitialization() override;
   void PreMainMessageLoopRun() override;
+  bool MainMessageLoopRun(int* result_code) override;
   void PostMainMessageLoopStart() override;
   void PostMainMessageLoopRun() override;
 #if defined(OS_MACOSX)
   void PreMainMessageLoopStart() override;
-  void PostDestroyThreads() override;
 #endif
 
  private:
@@ -56,12 +59,19 @@ class AtomBrowserMainParts : public brightray::BrowserMainParts {
   void HandleShutdownSignals();
 #endif
 
+#if defined(OS_MACOSX)
+  void FreeAppDelegate();
+#endif
+
   // A fake BrowserProcess object that used to feed the source code from chrome.
   scoped_ptr<BrowserProcess> fake_browser_process_;
 
   // The gin::PerIsolateData requires a task runner to create, so we feed it
   // with a task runner that will post all work to main loop.
   scoped_refptr<BridgeTaskRunner> bridge_task_runner_;
+
+  // Pointer to exit code.
+  int* exit_code_;
 
   scoped_ptr<Browser> browser_;
   scoped_ptr<JavascriptEnvironment> js_env_;

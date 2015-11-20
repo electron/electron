@@ -44,21 +44,21 @@ mate::Wrappable* Tray::New(v8::Isolate* isolate, const gfx::Image& image) {
 void Tray::OnClicked(const gfx::Rect& bounds, int modifiers) {
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
-  EmitCustomEvent("clicked",
+  EmitCustomEvent("click",
                   ModifiersToObject(isolate(), modifiers), bounds);
 }
 
 void Tray::OnDoubleClicked(const gfx::Rect& bounds, int modifiers) {
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
-  EmitCustomEvent("double-clicked",
+  EmitCustomEvent("double-click",
                   ModifiersToObject(isolate(), modifiers), bounds);
 }
 
 void Tray::OnRightClicked(const gfx::Rect& bounds, int modifiers) {
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
-  EmitCustomEvent("right-clicked",
+  EmitCustomEvent("right-click",
                   ModifiersToObject(isolate(), modifiers), bounds);
 }
 
@@ -67,15 +67,31 @@ void Tray::OnBalloonShow() {
 }
 
 void Tray::OnBalloonClicked() {
-  Emit("balloon-clicked");
+  Emit("balloon-click");
 }
 
 void Tray::OnBalloonClosed() {
   Emit("balloon-closed");
 }
 
+void Tray::OnDrop() {
+  Emit("drop");
+}
+
 void Tray::OnDropFiles(const std::vector<std::string>& files) {
   Emit("drop-files", files);
+}
+
+void Tray::OnDragEntered() {
+  Emit("drag-enter");
+}
+
+void Tray::OnDragExited() {
+  Emit("drag-leave");
+}
+
+void Tray::OnDragEnded() {
+  Emit("drag-end");
 }
 
 bool Tray::IsDestroyed() const {
@@ -145,6 +161,7 @@ void Tray::BuildPrototype(v8::Isolate* isolate,
                           v8::Local<v8::ObjectTemplate> prototype) {
   mate::ObjectTemplateBuilder(isolate, prototype)
       .SetMethod("destroy", &Tray::Destroy, true)
+      .SetMethod("isDestroyed", &Tray::IsDestroyed, true)
       .SetMethod("setImage", &Tray::SetImage)
       .SetMethod("setPressedImage", &Tray::SetPressedImage)
       .SetMethod("setToolTip", &Tray::SetToolTip)

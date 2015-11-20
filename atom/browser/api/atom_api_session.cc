@@ -9,12 +9,15 @@
 
 #include "atom/browser/api/atom_api_cookies.h"
 #include "atom/browser/api/atom_api_download_item.h"
-#include "atom/browser/atom_browser_context.h"
 #include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/browser/api/save_page_handler.h"
+#include "atom/browser/atom_browser_context.h"
+#include "atom/browser/atom_browser_main_parts.h"
+#include "atom/browser/net/atom_cert_verifier.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
+#include "atom/common/native_mate_converters/net_converter.h"
 #include "atom/common/node_includes.h"
 #include "base/files/file_path.h"
 #include "base/prefs/pref_service.h"
@@ -354,6 +357,17 @@ void Session::DisableNetworkEmulation() {
                  base::Passed(&conditions)));
 }
 
+void Session::SetCertVerifyProc(v8::Local<v8::Value> val,
+                                mate::Arguments* args) {
+  AtomCertVerifier::VerifyProc proc;
+  if (!(val->IsNull() || mate::ConvertFromV8(args->isolate(), val, &proc))) {
+    args->ThrowError("Must pass null or function");
+    return;
+  }
+
+  browser_context_->cert_verifier()->SetVerifyProc(proc);
+}
+
 v8::Local<v8::Value> Session::Cookies(v8::Isolate* isolate) {
   if (cookies_.IsEmpty()) {
     auto handle = atom::api::Cookies::Create(isolate, browser_context());
@@ -372,6 +386,7 @@ mate::ObjectTemplateBuilder Session::GetObjectTemplateBuilder(
       .SetMethod("setDownloadPath", &Session::SetDownloadPath)
       .SetMethod("enableNetworkEmulation", &Session::EnableNetworkEmulation)
       .SetMethod("disableNetworkEmulation", &Session::DisableNetworkEmulation)
+      .SetMethod("setCertificateVerifyProc", &Session::SetCertVerifyProc)
       .SetProperty("cookies", &Session::Cookies);
 }
 
@@ -395,12 +410,16 @@ mate::Handle<Session> Session::FromPartition(
                     static_cast<AtomBrowserContext*>(browser_context.get()));
 }
 
-void SetWrapSession(const WrapSessionCallback& callback) {
-  g_wrap_session = callback;
-}
-
 void ClearWrapSession() {
   g_wrap_session.Reset();
+}
+
+void SetWrapSession(const WrapSessionCallback& callback) {
+  g_wrap_session = callback;
+
+  // Cleanup the wrapper on exit.
+  atom::AtomBrowserMainParts::Get()->RegisterDestructionCallback(
+      base::Bind(ClearWrapSession));
 }
 
 }  // namespace api
@@ -415,7 +434,6 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   mate::Dictionary dict(isolate, exports);
   dict.SetMethod("fromPartition", &atom::api::Session::FromPartition);
   dict.SetMethod("_setWrapSession", &atom::api::SetWrapSession);
-  dict.SetMethod("_clearWrapSession", &atom::api::ClearWrapSession);
 }
 
 }  // namespace

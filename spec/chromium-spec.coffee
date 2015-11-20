@@ -3,8 +3,9 @@ http = require 'http'
 https = require 'https'
 path = require 'path'
 ws = require 'ws'
-remote = require 'remote'
-BrowserWindow = remote.require 'browser-window'
+
+{remote} = require 'electron'
+{BrowserWindow} = remote.require 'electron'
 
 describe 'chromium feature', ->
   fixtures = path.resolve __dirname, 'fixtures'
@@ -42,7 +43,7 @@ describe 'chromium feature', ->
       w.webContents.on 'ipc-message', (event, args) ->
         assert.deepEqual args, ['hidden', true]
         done()
-      w.loadUrl url
+      w.loadURL url
 
   describe 'navigator.webkitGetUserMedia', ->
     it 'calls its callbacks', (done) ->
@@ -70,7 +71,7 @@ describe 'chromium feature', ->
         b.close()
         done()
       window.addEventListener 'message', listener
-      b = window.open "file://#{fixtures}/pages/window-opener-node.html", '', 'node-integration=no,show=no'
+      b = window.open "file://#{fixtures}/pages/window-opener-node.html", '', 'nodeIntegration=no,show=no'
 
     it 'inherit options of parent window', (done) ->
       listener = (event) ->
@@ -95,7 +96,7 @@ describe 'chromium feature', ->
       w.webContents.on 'ipc-message', (event, args) ->
         assert.deepEqual args, ['opener', null]
         done()
-      w.loadUrl url
+      w.loadURL url
 
     it 'is not null for window opened by window.open', (done) ->
       listener = (event) ->

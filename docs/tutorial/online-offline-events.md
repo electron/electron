@@ -6,13 +6,14 @@ using standard HTML5 APIs, as shown in the following example.
 _main.js_
 
 ```javascript
-var app = require('app');
-var BrowserWindow = require('browser-window');
-var onlineStatusWindow;
+const electron = require('electron');
+const app = electron.app;
+const BrowserWindow = electron.BrowserWindow;
 
+var onlineStatusWindow;
 app.on('ready', function() {
   onlineStatusWindow = new BrowserWindow({ width: 0, height: 0, show: false });
-  onlineStatusWindow.loadUrl('file://' + __dirname + '/online-status.html');
+  onlineStatusWindow.loadURL('file://' + __dirname + '/online-status.html');
 });
 ```
 
@@ -21,18 +22,18 @@ _online-status.html_
 ```html
 <!DOCTYPE html>
 <html>
-  <body>
-    <script>
-      var alertOnlineStatus = function() {
-        window.alert(navigator.onLine ? 'online' : 'offline');
-      };
+<body>
+<script>
+  var alertOnlineStatus = function() {
+    window.alert(navigator.onLine ? 'online' : 'offline');
+  };
 
-      window.addEventListener('online',  alertOnlineStatus);
-      window.addEventListener('offline',  alertOnlineStatus);
+  window.addEventListener('online',  alertOnlineStatus);
+  window.addEventListener('offline',  alertOnlineStatus);
 
-      alertOnlineStatus();
-    </script>
-  </body>
+  alertOnlineStatus();
+</script>
+</body>
 </html>
 ```
 
@@ -45,17 +46,18 @@ to the main process and handled as needed, as shown in the following example.
 _main.js_
 
 ```javascript
-var app = require('app');
-var ipc = require('ipc');
-var BrowserWindow = require('browser-window');
-var onlineStatusWindow;
+const electron = require('electron');
+const app = electron.app;
+const ipcMain = electron.ipcMain;
+const BrowserWindow = electron.BrowserWindow;
 
+var onlineStatusWindow;
 app.on('ready', function() {
   onlineStatusWindow = new BrowserWindow({ width: 0, height: 0, show: false });
-  onlineStatusWindow.loadUrl('file://' + __dirname + '/online-status.html');
+  onlineStatusWindow.loadURL('file://' + __dirname + '/online-status.html');
 });
 
-ipc.on('online-status-changed', function(event, status) {
+ipcMain.on('online-status-changed', function(event, status) {
   console.log(status);
 });
 ```
@@ -65,18 +67,18 @@ _online-status.html_
 ```html
 <!DOCTYPE html>
 <html>
-  <body>
-    <script>
-      var ipc = require('ipc');
-      var updateOnlineStatus = function() {
-        ipc.send('online-status-changed', navigator.onLine ? 'online' : 'offline');
-      };
+<body>
+<script>
+  const ipcRenderer = require('electron').ipcRenderer;
+  var updateOnlineStatus = function() {
+    ipcRenderer.send('online-status-changed', navigator.onLine ? 'online' : 'offline');
+  };
 
-      window.addEventListener('online',  updateOnlineStatus);
-      window.addEventListener('offline',  updateOnlineStatus);
+  window.addEventListener('online',  updateOnlineStatus);
+  window.addEventListener('offline',  updateOnlineStatus);
 
-      updateOnlineStatus();
-    </script>
-  </body>
+  updateOnlineStatus();
+</script>
+</body>
 </html>
 ```

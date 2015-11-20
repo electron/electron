@@ -16,6 +16,7 @@
 #include "base/debug/stack_trace.h"
 #include "base/environment.h"
 #include "base/logging.h"
+#include "chrome/common/chrome_paths.h"
 #include "content/public/common/content_switches.h"
 #include "ui/base/resource/resource_bundle.h"
 
@@ -79,6 +80,8 @@ bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
   if (enable_stack_dumping)
     base::debug::EnableInProcessStackDumping();
 
+  chrome::RegisterPathProvider();
+
   return brightray::MainDelegate::BasicStartupComplete(exit_code);
 }
 
@@ -101,13 +104,6 @@ void AtomMainDelegate::PreSandboxStartup() {
   // Only append arguments for browser process.
   if (!IsBrowserProcess(command_line))
     return;
-
-#if defined(OS_WIN)
-  // Disable the LegacyRenderWidgetHostHWND, it made frameless windows unable
-  // to move and resize. We may consider enabling it again after upgraded to
-  // Chrome 38, which should have fixed the problem.
-  command_line->AppendSwitch(switches::kDisableLegacyIntermediateWindow);
-#endif
 
   // Disable renderer sandbox for most of node's functions.
   command_line->AppendSwitch(switches::kNoSandbox);

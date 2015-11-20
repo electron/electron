@@ -6,6 +6,7 @@
 
 #include <map>
 
+#include "atom/browser/atom_browser_main_parts.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
@@ -102,7 +103,7 @@ int64 DownloadItem::GetTotalBytes() {
   return download_item_->GetTotalBytes();
 }
 
-const GURL& DownloadItem::GetUrl() {
+const GURL& DownloadItem::GetURL() {
   return download_item_->GetURL();
 }
 
@@ -115,7 +116,7 @@ bool DownloadItem::HasUserGesture() {
 }
 
 std::string DownloadItem::GetFilename() {
-  return base::UTF16ToUTF8(net::GenerateFileName(GetUrl(),
+  return base::UTF16ToUTF8(net::GenerateFileName(GetURL(),
                            GetContentDisposition(),
                            std::string(),
                            download_item_->GetSuggestedFilename(),
@@ -151,20 +152,12 @@ mate::ObjectTemplateBuilder DownloadItem::GetObjectTemplateBuilder(
       .SetMethod("cancel", &DownloadItem::Cancel)
       .SetMethod("getReceivedBytes", &DownloadItem::GetReceivedBytes)
       .SetMethod("getTotalBytes", &DownloadItem::GetTotalBytes)
-      .SetMethod("getUrl", &DownloadItem::GetUrl)
+      .SetMethod("getURL", &DownloadItem::GetURL)
       .SetMethod("getMimeType", &DownloadItem::GetMimeType)
       .SetMethod("hasUserGesture", &DownloadItem::HasUserGesture)
       .SetMethod("getFilename", &DownloadItem::GetFilename)
       .SetMethod("getContentDisposition", &DownloadItem::GetContentDisposition)
       .SetMethod("setSavePath", &DownloadItem::SetSavePath);
-}
-
-void SetWrapDownloadItem(const WrapDownloadItemCallback& callback) {
-  g_wrap_download_item = callback;
-}
-
-void ClearWrapDownloadItem() {
-  g_wrap_download_item.Reset();
 }
 
 // static
@@ -182,6 +175,18 @@ void* DownloadItem::UserDataKey() {
   return &kDownloadItemSavePathKey;
 }
 
+void ClearWrapDownloadItem() {
+  g_wrap_download_item.Reset();
+}
+
+void SetWrapDownloadItem(const WrapDownloadItemCallback& callback) {
+  g_wrap_download_item = callback;
+
+  // Cleanup the wrapper on exit.
+  atom::AtomBrowserMainParts::Get()->RegisterDestructionCallback(
+      base::Bind(ClearWrapDownloadItem));
+}
+
 }  // namespace api
 
 }  // namespace atom
@@ -193,7 +198,6 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
   dict.SetMethod("_setWrapDownloadItem", &atom::api::SetWrapDownloadItem);
-  dict.SetMethod("_clearWrapDownloadItem", &atom::api::ClearWrapDownloadItem);
 }
 
 }  // namespace

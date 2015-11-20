@@ -3,7 +3,7 @@
 <script type="text/javascript" charset="utf-8">
 if (!window.test)
   window.test = 'window'
-require('ipc').send('answer', window.test);
+require('electron').ipcRenderer.send('answer', window.test);
 </script>
 </body>
 </html>

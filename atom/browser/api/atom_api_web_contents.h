@@ -57,7 +57,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
   // mate::TrackableObject:
   void Destroy() override;
 
-  bool IsAlive() const;
   int GetID() const;
   bool Equal(const WebContents* web_contents) const;
   void LoadURL(const GURL& url, const mate::Dictionary& options);
@@ -189,6 +188,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void ExitFullscreenModeForTab(content::WebContents* source) override;
   void RendererUnresponsive(content::WebContents* source) override;
   void RendererResponsive(content::WebContents* source) override;
+  bool HandleContextMenu(const content::ContextMenuParams& params) override;
 
   // content::WebContentsObserver:
   void BeforeUnloadFired(const base::TimeTicks& proceed_time) override;

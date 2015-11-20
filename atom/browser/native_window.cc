@@ -56,16 +56,16 @@ NativeWindow::NativeWindow(
       aspect_ratio_(0.0),
       inspectable_web_contents_(inspectable_web_contents),
       weak_factory_(this) {
-  options.Get(switches::kFrame, &has_frame_);
-  options.Get(switches::kTransparent, &transparent_);
-  options.Get(switches::kEnableLargerThanScreen, &enable_larger_than_screen_);
+  options.Get(options::kFrame, &has_frame_);
+  options.Get(options::kTransparent, &transparent_);
+  options.Get(options::kEnableLargerThanScreen, &enable_larger_than_screen_);
 
   // Tell the content module to initialize renderer widget with transparent
   // mode.
   ui::GpuSwitchingManager::SetTransparent(transparent_);
 
   // Read icon before window is created.
-  options.Get(switches::kIcon, &icon_);
+  options.Get(options::kIcon, &icon_);
 
   WindowList::AddWindow(this);
 }
@@ -91,25 +91,25 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
   // Setup window from options.
   int x = -1, y = -1;
   bool center;
-  if (options.Get(switches::kX, &x) && options.Get(switches::kY, &y)) {
+  if (options.Get(options::kX, &x) && options.Get(options::kY, &y)) {
     SetPosition(gfx::Point(x, y));
-  } else if (options.Get(switches::kCenter, &center) && center) {
+  } else if (options.Get(options::kCenter, &center) && center) {
     Center();
   }
   // On Linux and Window we may already have maximum size defined.
   extensions::SizeConstraints size_constraints(GetContentSizeConstraints());
   int min_height = 0, min_width = 0;
-  if (options.Get(switches::kMinHeight, &min_height) |
-      options.Get(switches::kMinWidth, &min_width)) {
+  if (options.Get(options::kMinHeight, &min_height) |
+      options.Get(options::kMinWidth, &min_width)) {
     size_constraints.set_minimum_size(gfx::Size(min_width, min_height));
   }
   int max_height = INT_MAX, max_width = INT_MAX;
-  if (options.Get(switches::kMaxHeight, &max_height) |
-      options.Get(switches::kMaxWidth, &max_width)) {
+  if (options.Get(options::kMaxHeight, &max_height) |
+      options.Get(options::kMaxWidth, &max_width)) {
     size_constraints.set_maximum_size(gfx::Size(max_width, max_height));
   }
   bool use_content_size = false;
-  options.Get(switches::kUseContentSize, &use_content_size);
+  options.Get(options::kUseContentSize, &use_content_size);
   if (use_content_size) {
     SetContentSizeConstraints(size_constraints);
   } else {
@@ -117,39 +117,39 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
   }
 #if defined(OS_WIN) || defined(USE_X11)
   bool resizable;
-  if (options.Get(switches::kResizable, &resizable)) {
+  if (options.Get(options::kResizable, &resizable)) {
     SetResizable(resizable);
   }
 #endif
   bool top;
-  if (options.Get(switches::kAlwaysOnTop, &top) && top) {
+  if (options.Get(options::kAlwaysOnTop, &top) && top) {
     SetAlwaysOnTop(true);
   }
 #if defined(OS_MACOSX) || defined(OS_WIN)
   bool fullscreen;
-  if (options.Get(switches::kFullscreen, &fullscreen) && fullscreen) {
+  if (options.Get(options::kFullscreen, &fullscreen) && fullscreen) {
     SetFullScreen(true);
   }
 #endif
   bool skip;
-  if (options.Get(switches::kSkipTaskbar, &skip) && skip) {
+  if (options.Get(options::kSkipTaskbar, &skip) && skip) {
     SetSkipTaskbar(skip);
   }
   bool kiosk;
-  if (options.Get(switches::kKiosk, &kiosk) && kiosk) {
+  if (options.Get(options::kKiosk, &kiosk) && kiosk) {
     SetKiosk(kiosk);
   }
   std::string color;
-  if (options.Get(switches::kBackgroundColor, &color)) {
+  if (options.Get(options::kBackgroundColor, &color)) {
     SetBackgroundColor(color);
   }
   std::string title("Electron");
-  options.Get(switches::kTitle, &title);
+  options.Get(options::kTitle, &title);
   SetTitle(title);
 
   // Then show it.
   bool show = true;
-  options.Get(switches::kShow, &show);
+  options.Get(options::kShow, &show);
   if (show)
     Show();
 }
@@ -465,8 +465,8 @@ void NativeWindow::NotifyWindowExecuteWindowsCommand(
 }
 
 #if defined(OS_WIN)
-void NativeWindow::NotifyWindowMessage(UINT message, WPARAM w_param,
-                                       LPARAM l_param) {
+void NativeWindow::NotifyWindowMessage(
+    UINT message, WPARAM w_param, LPARAM l_param) {
   FOR_EACH_OBSERVER(NativeWindowObserver, observers_,
                     OnWindowMessage(message, w_param, l_param));
 }
@@ -512,7 +512,7 @@ void NativeWindow::TitleWasSet(content::NavigationEntry* entry,
   FOR_EACH_OBSERVER(NativeWindowObserver,
                     observers_,
                     OnPageTitleUpdated(&prevent_default, text));
-  if (!prevent_default)
+  if (!prevent_default && !is_closed_)
     SetTitle(text);
 }
 

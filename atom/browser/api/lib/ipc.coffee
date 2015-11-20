@@ -1,3 +1,6 @@
-EventEmitter = require('events').EventEmitter
+{deprecate, ipcMain} = require 'electron'
 
-module.exports = new EventEmitter
+# This module is deprecated, we mirror everything from ipcMain.
+deprecate.warn 'ipc module', 'ipcMain module'
+
+module.exports = ipcMain

@@ -3,6 +3,9 @@ child_process = require 'child_process'
 fs            = require 'fs'
 path          = require 'path'
 
+{nativeImage, remote} = require 'electron'
+{ipcMain, BrowserWindow} = remote.require 'electron'
+
 describe 'asar package', ->
   fixtures = path.join __dirname, 'fixtures'
 
@@ -406,9 +409,6 @@ describe 'asar package', ->
 
   describe 'asar protocol', ->
     url = require 'url'
-    remote = require 'remote'
-    ipc = remote.require 'ipc'
-    BrowserWindow = remote.require 'browser-window'
 
     it 'can request a file in package', (done) ->
       p = path.resolve fixtures, 'asar', 'a.asar', 'file1'
@@ -445,26 +445,26 @@ describe 'asar package', ->
     it 'sets __dirname correctly', (done) ->
       after ->
         w.destroy()
-        ipc.removeAllListeners 'dirname'
+        ipcMain.removeAllListeners 'dirname'
 
       w = new BrowserWindow(show: false, width: 400, height: 400)
       p = path.resolve fixtures, 'asar', 'web.asar', 'index.html'
       u = url.format protocol: 'file', slashed: true, pathname: p
-      ipc.once 'dirname', (event, dirname) ->
+      ipcMain.once 'dirname', (event, dirname) ->
         assert.equal dirname, path.dirname(p)
         done()
-      w.loadUrl u
+      w.loadURL u
 
     it 'loads script tag in html', (done) ->
       after ->
         w.destroy()
-        ipc.removeAllListeners 'ping'
+        ipcMain.removeAllListeners 'ping'
 
       w = new BrowserWindow(show: false, width: 400, height: 400)
       p = path.resolve fixtures, 'asar', 'script.asar', 'index.html'
       u = url.format protocol: 'file', slashed: true, pathname: p
-      w.loadUrl u
-      ipc.once 'ping', (event, message) ->
+      w.loadURL u
+      ipcMain.once 'ping', (event, message) ->
         assert.equal message, 'pong'
         done()
 
@@ -496,10 +496,10 @@ describe 'asar package', ->
   describe 'native-image', ->
     it 'reads image from asar archive', ->
       p = path.join fixtures, 'asar', 'logo.asar', 'logo.png'
-      logo = require('native-image').createFromPath p
+      logo = nativeImage.createFromPath p
       assert.deepEqual logo.getSize(), {width: 55, height: 55}
 
     it 'reads image from asar archive with unpacked files', ->
       p = path.join fixtures, 'asar', 'unpack.asar', 'atom.png'
-      logo = require('native-image').createFromPath p
+      logo = nativeImage.createFromPath p
       assert.deepEqual logo.getSize(), {width: 1024, height: 1024}

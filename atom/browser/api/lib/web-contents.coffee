@@ -1,7 +1,7 @@
-EventEmitter = require('events').EventEmitter
-NavigationController = require './navigation-controller'
+{EventEmitter} = require 'events'
+{deprecate, ipcMain, session, NavigationController, Menu} = require 'electron'
+
 binding = process.atomBinding 'web_contents'
-ipc = require 'ipc'
 
 nextId = 0
 getNextId = -> ++nextId
@@ -45,7 +45,7 @@ wrapWebContents = (webContents) ->
   # Make sure webContents.executeJavaScript would run the code only when the
   # web contents has been loaded.
   webContents.executeJavaScript = (code, hasUserGesture=false) ->
-    if @getUrl() and not @isLoading()
+    if @getURL() and not @isLoading()
       @_executeJavaScript code, hasUserGesture
     else
       webContents.once 'did-finish-load', @_executeJavaScript.bind(this, code, hasUserGesture)
@@ -59,11 +59,20 @@ wrapWebContents = (webContents) ->
   # Dispatch IPC messages to the ipc module.
   webContents.on 'ipc-message', (event, packed) ->
     [channel, args...] = packed
-    ipc.emit channel, event, args...
+    ipcMain.emit channel, event, args...
   webContents.on 'ipc-message-sync', (event, packed) ->
     [channel, args...] = packed
     Object.defineProperty event, 'returnValue', set: (value) -> event.sendReply JSON.stringify(value)
-    ipc.emit channel, event, args...
+    ipcMain.emit channel, event, args...
+
+  # Handle context menu action request from pepper plugin.
+  webContents.on 'pepper-context-menu', (event, params) ->
+    menu = Menu.buildFromTemplate params.menu
+    menu.popup params.x, params.y
+
+  # Deprecated.
+  deprecate.rename webContents, 'loadUrl', 'loadURL'
+  deprecate.rename webContents, 'getUrl', 'getURL'
 
   webContents.printToPDF = (options, callback) ->
     printingSetting =
@@ -106,7 +115,6 @@ wrapWebContents = (webContents) ->
     @_printToPDF printingSetting, callback
 
 binding._setWrapWebContents wrapWebContents
-process.once 'exit', binding._clearWrapWebContents
 
 module.exports.create = (options={}) ->
   binding.create(options)

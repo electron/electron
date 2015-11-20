@@ -30,6 +30,7 @@ AtomBrowserMainParts* AtomBrowserMainParts::self_ = NULL;
 
 AtomBrowserMainParts::AtomBrowserMainParts()
     : fake_browser_process_(new BrowserProcess),
+      exit_code_(nullptr),
       browser_(new Browser),
       node_bindings_(NodeBindings::Create(true)),
       atom_bindings_(new AtomBindings),
@@ -45,6 +46,14 @@ AtomBrowserMainParts::~AtomBrowserMainParts() {
 AtomBrowserMainParts* AtomBrowserMainParts::Get() {
   DCHECK(self_);
   return self_;
+}
+
+bool AtomBrowserMainParts::SetExitCode(int code) {
+  if (!exit_code_)
+    return false;
+
+  *exit_code_ = code;
+  return true;
 }
 
 void AtomBrowserMainParts::RegisterDestructionCallback(
@@ -118,6 +127,11 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
 #endif
 }
 
+bool AtomBrowserMainParts::MainMessageLoopRun(int* result_code) {
+  exit_code_ = result_code;
+  return brightray::BrowserMainParts::MainMessageLoopRun(result_code);
+}
+
 void AtomBrowserMainParts::PostMainMessageLoopStart() {
   brightray::BrowserMainParts::PostMainMessageLoopStart();
 #if defined(OS_POSIX)
@@ -128,11 +142,23 @@ void AtomBrowserMainParts::PostMainMessageLoopStart() {
 void AtomBrowserMainParts::PostMainMessageLoopRun() {
   brightray::BrowserMainParts::PostMainMessageLoopRun();
 
+#if defined(OS_MACOSX)
+  FreeAppDelegate();
+#endif
+
   // Make sure destruction callbacks are called before message loop is
   // destroyed, otherwise some objects that need to be deleted on IO thread
   // won't be freed.
   for (const auto& callback : destruction_callbacks_)
     callback.Run();
+
+  // Destroy JavaScript environment immediately after running destruction
+  // callbacks.
+  gc_timer_.Stop();
+  node_debugger_.reset();
+  atom_bindings_.reset();
+  node_bindings_.reset();
+  js_env_.reset();
 }
 
 }  // namespace atom

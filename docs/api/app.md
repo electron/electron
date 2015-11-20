@@ -6,7 +6,7 @@ The following example shows how to quit the application when the last window is
 closed:
 
 ```javascript
-var app = require('app');
+const app = require('electron').app;
 app.on('window-all-closed', function() {
   app.quit();
 });
@@ -131,31 +131,91 @@ Returns:
 
 Emitted when a new [browserWindow](browser-window.md) is created.
 
-### Event: 'select-certificate'
-
-Emitted when a client certificate is requested.
+### Event: 'certificate-error'
 
 Returns:
 
 * `event` Event
-* `webContents` [WebContents](browser-window.md#class-webcontents)
-* `url` String
-* `certificateList` [Objects]
-  * `data` PEM encoded data
-  * `issuerName` Issuer's Common Name
+* `webContents` [WebContents](web-contents.md)
+* `url` URL
+* `error` String - The error code
+* `certificate` Object
+  * `data` Buffer - PEM encoded data
+  * `issuerName` String
 * `callback` Function
 
+Emitted when failed to verify the `certificate` for `url`, to trust the
+certificate you should prevent the default behavior with
+`event.preventDefault()` and call `callback(true)`.
+
 ```javascript
-app.on('select-certificate', function(event, host, url, list, callback) {
-  event.preventDefault();
-  callback(list[0]);
-})
+session.on('certificate-error', function(event, webContents, url, error, certificate, callback) {
+  if (url == "https://github.com") {
+    // Verification logic.
+    event.preventDefault();
+    callback(true);
+  } else {
+    callback(false);
+  }
+});
 ```
+
+### Event: 'select-client-certificate'
+
+Returns:
+
+* `event` Event
+* `webContents` [WebContents](web-contents.md)
+* `url` URL
+* `certificateList` [Objects]
+  * `data` Buffer - PEM encoded data
+  * `issuerName` String - Issuer's Common Name
+* `callback` Function
+
+Emitted when a client certificate is requested.
 
 The `url` corresponds to the navigation entry requesting the client certificate
 and `callback` needs to be called with an entry filtered from the list. Using
 `event.preventDefault()` prevents the application from using the first
 certificate from the store.
+
+```javascript
+app.on('select-client-certificate', function(event, webContents, url, list, callback) {
+  event.preventDefault();
+  callback(list[0]);
+})
+```
+
+### Event: 'login'
+
+Returns:
+
+* `event` Event
+* `webContents` [WebContents](web-contents.md)
+* `request` Object
+  * `method` String
+  * `url` URL
+  * `referrer` URL
+* `authInfo` Object
+  * `isProxy` Boolean
+  * `scheme` String
+  * `host` String
+  * `port` Integer
+  * `realm` String
+* `callback` Function
+
+Emitted when `webContents` wants to do basic auth.
+
+The default behavior is to cancel all authentications, to override this you
+should prevent the default behavior with `event.preventDefault()` and call
+`callback(username, password)` with the credentials.
+
+```javascript
+app.on('login', function(event, webContents, request, authInfo, callback) {
+  event.preventDefault();
+  callback('username', 'secret');
+})
+```
 
 ### Event: 'gpu-process-crashed'
 
@@ -176,6 +236,15 @@ default the application will terminate.
 This method guarantees that all `beforeunload` and `unload` event handlers are
 correctly executed. It is possible that a window cancels the quitting by
 returning `false` in the `beforeunload` event handler.
+
+### `app.exit(exitCode)`
+
+* `exitCode` Integer
+
+Exits immediately with `exitCode`.
+
+All windows will be closed immediately without asking user and the `before-quit`
+and `will-quit` events will not be emitted.
 
 ### `app.getAppPath()`
 
@@ -198,9 +267,14 @@ You can request the following paths by the name:
 * `userData` The directory for storing your app's configuration files, which by
   default it is the `appData` directory appended with your app's name.
 * `temp` Temporary directory.
-* `userDesktop` The current user's Desktop directory.
 * `exe` The current executable file.
 * `module` The `libchromiumcontent` library.
+* `desktop` The current user's Desktop directory.
+* `documents` Directory for a user's "My Documents".
+* `downloads` Directory for a user's downloads.
+* `music` Directory for a user's music.
+* `pictures` Directory for a user's pictures.
+* `videos` Directory for a user's videos.
 
 ### `app.setPath(name, path)`
 
@@ -236,14 +310,6 @@ preferred over `name` by Electron.
 ### `app.getLocale()`
 
 Returns the current application locale.
-
-### `app.resolveProxy(url, callback)`
-
-* `url` URL
-* `callback` Function
-
-Resolves the proxy information for `url`. The `callback` will be called with
-`callback(proxy)` when the request is performed.
 
 ### `app.addRecentDocument(path)` _OS X_ _Windows_
 
@@ -344,6 +410,12 @@ app.on('ready', function() {
 });
 ```
 
+### `app.setAppUserModelId(id)` _Windows_
+
+* `id` String
+
+Changes the [Application User Model ID][app-user-model-id] to `id`.
+
 ### `app.commandLine.appendSwitch(switch[, value])`
 
 Append a switch (with optional `value`) to Chromium's command line.
@@ -404,3 +476,4 @@ Sets the application's [dock menu][dock-menu].
 
 [dock-menu]:https://developer.apple.com/library/mac/documentation/Carbon/Conceptual/customizing_docktile/concepts/dockconcepts.html#//apple_ref/doc/uid/TP30000986-CH2-TPXREF103
 [tasks]:http://msdn.microsoft.com/en-us/library/windows/desktop/dd378460(v=vs.85).aspx#tasks
+[app-user-model-id]: https://msdn.microsoft.com/en-us/library/windows/desktop/dd378459(v=vs.85).aspx

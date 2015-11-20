@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import glob
 import os
 import re
 import shutil
@@ -168,6 +169,11 @@ def create_symbols():
   dump_symbols = os.path.join(SOURCE_ROOT, 'script', 'dump-symbols.py')
   execute([sys.executable, dump_symbols, destination])
 
+  if PLATFORM == 'darwin':
+    dsyms = glob.glob(os.path.join(OUT_DIR, '*.dSYM'))
+    for dsym in dsyms:
+      shutil.copytree(dsym, os.path.join(DIST_DIR, os.path.basename(dsym)))
+
 
 def create_dist_zip():
   dist_name = '{0}-{1}-{2}-{3}.zip'.format(PROJECT_NAME, ATOM_SHELL_VERSION,
@@ -203,12 +209,21 @@ def create_symbols_zip():
                                                    ATOM_SHELL_VERSION,
                                                    get_platform_key(),
                                                    get_target_arch())
-  zip_file = os.path.join(SOURCE_ROOT, 'dist', dist_name)
+  zip_file = os.path.join(DIST_DIR, dist_name)
+  licenses = ['LICENSE', 'LICENSES.chromium.html', 'version']
 
   with scoped_cwd(DIST_DIR):
-    files = ['LICENSE', 'LICENSES.chromium.html', 'version']
     dirs = ['{0}.breakpad.syms'.format(PROJECT_NAME)]
-    make_zip(zip_file, files, dirs)
+    make_zip(zip_file, licenses, dirs)
+
+  if PLATFORM == 'darwin':
+    dsym_name = '{0}-{1}-{2}-{3}-dsym.zip'.format(PROJECT_NAME,
+                                                  ATOM_SHELL_VERSION,
+                                                  get_platform_key(),
+                                                  get_target_arch())
+    with scoped_cwd(DIST_DIR):
+      dsyms = glob.glob('*.dSYM')
+      make_zip(os.path.join(DIST_DIR, dsym_name), licenses, dsyms)
 
 
 if __name__ == '__main__':

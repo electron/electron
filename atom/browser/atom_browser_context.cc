@@ -6,8 +6,9 @@
 
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/atom_download_manager_delegate.h"
-#include "atom/browser/atom_ssl_config_service.h"
 #include "atom/browser/browser.h"
+#include "atom/browser/net/atom_cert_verifier.h"
+#include "atom/browser/net/atom_ssl_config_service.h"
 #include "atom/browser/net/atom_url_request_job_factory.h"
 #include "atom/browser/net/asar/asar_protocol_handler.h"
 #include "atom/browser/net/http_protocol_handler.h"
@@ -60,6 +61,7 @@ std::string RemoveWhitespace(const std::string& str) {
 AtomBrowserContext::AtomBrowserContext(const std::string& partition,
                                        bool in_memory)
     : brightray::BrowserContext(partition, in_memory),
+      cert_verifier_(new AtomCertVerifier),
       job_factory_(new AtomURLRequestJobFactory),
       allow_ntlm_everywhere_(false) {
 }
@@ -156,6 +158,10 @@ content::BrowserPluginGuestManager* AtomBrowserContext::GetGuestManager() {
   if (!guest_manager_)
     guest_manager_.reset(new WebViewManager);
   return guest_manager_.get();
+}
+
+net::CertVerifier* AtomBrowserContext::CreateCertVerifier() {
+  return cert_verifier_;
 }
 
 net::SSLConfigService* AtomBrowserContext::CreateSSLConfigService() {

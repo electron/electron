@@ -211,6 +211,8 @@ bool ScopedDisableResize::disable_resize_ = false;
 }
 @property BOOL acceptsFirstMouse;
 @property BOOL disableAutoHideCursor;
+@property BOOL disableKeyOrMainWindow;
+
 - (void)setShell:(atom::NativeWindowMac*)shell;
 - (void)setEnableLargerThanScreen:(bool)enable;
 @end
@@ -255,6 +257,14 @@ bool ScopedDisableResize::disable_resize_ = false;
 
   NSArray *children = [super accessibilityAttributeValue:attribute];
   return [children filteredArrayUsingPredicate:predicate];
+}
+
+- (BOOL)canBecomeMainWindow {
+  return !self.disableKeyOrMainWindow;
+}
+
+- (BOOL)canBecomeKeyWindow {
+  return !self.disableKeyOrMainWindow;
 }
 
 @end
@@ -320,8 +330,8 @@ NativeWindowMac::NativeWindowMac(
       is_kiosk_(false),
       attention_request_id_(0) {
   int width = 800, height = 600;
-  options.Get(switches::kWidth, &width);
-  options.Get(switches::kHeight, &height);
+  options.Get(options::kWidth, &width);
+  options.Get(options::kHeight, &height);
 
   NSRect main_screen_rect = [[[NSScreen screens] objectAtIndex:0] frame];
   NSRect cocoa_bounds = NSMakeRect(
@@ -330,15 +340,24 @@ NativeWindowMac::NativeWindowMac(
       width,
       height);
 
-  bool useStandardWindow = true;
-  options.Get(switches::kStandardWindow, &useStandardWindow);
   bool resizable = true;
-  options.Get(switches::kResizable, &resizable);
+  options.Get(options::kResizable, &resizable);
 
   // New title bar styles are available in Yosemite or newer
   std::string titleBarStyle;
   if (base::mac::IsOSYosemiteOrLater())
-    options.Get(switches::kTitleBarStyle, &titleBarStyle);
+    options.Get(options::kTitleBarStyle, &titleBarStyle);
+
+  std::string windowType;
+  options.Get(options::kType, &windowType);
+
+  bool useStandardWindow = true;
+  // eventually deprecate separate "standardWindow" option in favor of
+  // standard / textured window types
+  options.Get(options::kStandardWindow, &useStandardWindow);
+  if (windowType == "textured") {
+    useStandardWindow = false;
+  }
 
   NSUInteger styleMask = NSTitledWindowMask | NSClosableWindowMask |
                          NSMiniaturizableWindowMask;
@@ -371,6 +390,15 @@ NativeWindowMac::NativeWindowMac(
     [window_ setBackgroundColor:[NSColor clearColor]];
   }
 
+  if (windowType == "desktop") {
+    [window_ setLevel:kCGDesktopWindowLevel - 1];
+    [window_ setDisableKeyOrMainWindow:YES];
+    [window_ setCollectionBehavior:
+        (NSWindowCollectionBehaviorCanJoinAllSpaces |
+         NSWindowCollectionBehaviorStationary |
+         NSWindowCollectionBehaviorIgnoresCycle)];
+  }
+
   // Remove non-transparent corners, see http://git.io/vfonD.
   if (!has_frame())
     [window_ setOpaque:NO];
@@ -394,23 +422,23 @@ NativeWindowMac::NativeWindowMac(
 
   // On OS X the initial window size doesn't include window frame.
   bool use_content_size = false;
-  options.Get(switches::kUseContentSize, &use_content_size);
+  options.Get(options::kUseContentSize, &use_content_size);
   if (!has_frame() || !use_content_size)
     SetSize(gfx::Size(width, height));
 
   // Enable the NSView to accept first mouse event.
   bool acceptsFirstMouse = false;
-  options.Get(switches::kAcceptFirstMouse, &acceptsFirstMouse);
+  options.Get(options::kAcceptFirstMouse, &acceptsFirstMouse);
   [window_ setAcceptsFirstMouse:acceptsFirstMouse];
 
   // Disable auto-hiding cursor.
   bool disableAutoHideCursor = false;
-  options.Get(switches::kDisableAutoHideCursor, &disableAutoHideCursor);
+  options.Get(options::kDisableAutoHideCursor, &disableAutoHideCursor);
   [window_ setDisableAutoHideCursor:disableAutoHideCursor];
 
   // Disable fullscreen button when 'fullscreen' is specified to false.
   bool fullscreen;
-  if (!(options.Get(switches::kFullscreen, &fullscreen) &&
+  if (!(options.Get(options::kFullscreen, &fullscreen) &&
         !fullscreen)) {
     NSUInteger collectionBehavior = [window_ collectionBehavior];
     collectionBehavior |= NSWindowCollectionBehaviorFullScreenPrimary;

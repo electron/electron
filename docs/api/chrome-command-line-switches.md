@@ -6,7 +6,7 @@ them in your app's main script before the [ready][ready] event of [app][app]
 module is emitted:
 
 ```javascript
-var app = require('app');
+const app = require('electron').app;
 app.commandLine.appendSwitch('remote-debugging-port', '8315');
 app.commandLine.appendSwitch('host-rules', 'MAP * 127.0.0.1');
 
@@ -31,10 +31,21 @@ Disables the disk cache for HTTP requests.
 
 Enables remote debugging over HTTP on the specified `port`.
 
+## --js-flags=`flags`
+
+Specifies the flags passed to JS engine. It has to be passed when starting
+Electron if you want to enable the `flags` in the main process.
+
+```bash
+$ electron --js-flags="--harmony_proxies --harmony_collections" your-app
+```
+
 ## --proxy-server=`address:port`
 
-Use a specified proxy server, which overrides the system setting. This switch only
-affects HTTP and HTTPS requests.
+Use a specified proxy server, which overrides the system setting. This switch
+only affects requests with HTTP protocol, including HTTPS and WebSocket
+requests. It is also noteworthy that not all proxy servers support HTTPS and
+WebSocket requests.
 
 ## --proxy-pac-url=`url`
 

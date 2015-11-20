@@ -4,27 +4,34 @@ This module provides an interface for the `Squirrel` auto-updater framework.
 
 ## Platform notices
 
-Though `autoUpdater` provides an uniform API for different platforms, there are
+Though `autoUpdater` provides a uniform API for different platforms, there are
 still some subtle differences on each platform.
 
 ### OS X
 
-On OS X the `autoUpdater` module is built upon [Squirrel.Mac][squirrel-mac], you
-don't need any special setup to make it work. For server-side requirements, you
-can read [Server Support][server-support].
+On OS X, the `autoUpdater` module is built upon [Squirrel.Mac][squirrel-mac],
+meaning you don't need any special setup to make it work. For server-side
+requirements, you can read [Server Support][server-support].
 
 ### Windows
 
-On Windows you have to install your app into user's machine before you can use
-the auto-updater, it is recommended to use [grunt-electron-installer][installer]
-module to generate a Windows installer.
+On Windows, you have to install your app into a user's machine before you can
+use the auto-updater, so it is recommended to use
+[grunt-electron-installer][installer] module to generate a Windows installer.
 
-The server-side setup is also different from OS X, you can read the documents of
+The installer generated with Squirrel will create a shortcut icon with an
+[Application User Model ID][app-user-model-id] in the format of
+`com.squirrel.PACKAGE_ID.YOUR_EXE_WITHOUT_DOT_EXE`, examples are
+`com.squirrel.slack.Slack` and `com.squirrel.code.Code`. You have to use the
+same ID for your app with `app.setAppUserModelId` API, otherwise Windows will
+not be able to pin your app properly in task bar.
+
+The server-side setup is also different from OS X. You can read the documents of
 [Squirrel.Windows][squirrel-windows] to get more details.
 
 ### Linux
 
-There is not built-in support for auto-updater on Linux, it is recommended to
+There is not built-in support for auto-updater on Linux, so it is recommended to
 use the distribution's package manager to update your app.
 
 ## Events
@@ -60,7 +67,7 @@ Returns:
 * `releaseNotes` String
 * `releaseName` String
 * `releaseDate` Date
-* `updateUrl` String
+* `updateURL` String
 
 Emitted when an update has been downloaded.
 
@@ -70,7 +77,7 @@ On Windows only `releaseName` is available.
 
 The `autoUpdater` object has the following methods:
 
-### `autoUpdater.setFeedUrl(url)`
+### `autoUpdater.setFeedURL(url)`
 
 * `url` String
 
@@ -79,15 +86,16 @@ once it is set.
 
 ### `autoUpdater.checkForUpdates()`
 
-Asks the server whether there is an update. You must call `setFeedUrl` before
+Asks the server whether there is an update. You must call `setFeedURL` before
 using this API.
 
-### `autoUpdater.quitAndUpdate()`
+### `autoUpdater.quitAndInstall()`
 
-Restarts the app and install the update after it has been downloaded. It should
-only be called after `update-downloaded` has been emitted.
+Restarts the app and installs the update after it has been downloaded. It
+should only be called after `update-downloaded` has been emitted.
 
 [squirrel-mac]: https://github.com/Squirrel/Squirrel.Mac
 [server-support]: https://github.com/Squirrel/Squirrel.Mac#server-support
 [squirrel-windows]: https://github.com/Squirrel/Squirrel.Windows
 [installer]: https://github.com/atom/grunt-electron-installer
+[app-user-model-id]: https://msdn.microsoft.com/en-us/library/windows/desktop/dd378459(v=vs.85).aspx

@@ -1,7 +1,11 @@
-ipc = require 'ipc'
 path = require 'path'
-objectsRegistry = require './objects-registry.js'
+
+electron = require 'electron'
+{ipcMain} = electron
+objectsRegistry = require './objects-registry'
+
 v8Util = process.atomBinding 'v8_util'
+{IDWeakMap} = process.atomBinding 'id_weak_map'
 
 # Convert a real value into meta data.
 valueToMeta = (sender, value, optimizeSimpleObject=false) ->
@@ -12,7 +16,7 @@ valueToMeta = (sender, value, optimizeSimpleObject=false) ->
   meta.type = 'array' if Array.isArray value
   meta.type = 'error' if value instanceof Error
   meta.type = 'date' if value instanceof Date
-  meta.type = 'promise' if value? and value.constructor.name is 'Promise'
+  meta.type = 'promise' if value?.constructor.name is 'Promise'
 
   # Treat simple objects as value.
   if optimizeSimpleObject and meta.type is 'object' and v8Util.getHiddenValue value, 'simple'
@@ -32,14 +36,13 @@ valueToMeta = (sender, value, optimizeSimpleObject=false) ->
     # it.
     meta.id = objectsRegistry.add sender.getId(), value
 
-    meta.members = []
-    meta.members.push {name: prop, type: typeof field} for prop, field of value
+    meta.members = ({name, type: typeof field} for name, field of value)
   else if meta.type is 'buffer'
     meta.value = Array::slice.call value, 0
   else if meta.type is 'promise'
-    meta.then = valueToMeta(sender, value.then.bind(value))
+    meta.then = valueToMeta sender, value.then.bind(value)
   else if meta.type is 'error'
-    meta.message = value.message
+    meta.members = plainObjectToMeta value
   else if meta.type is 'date'
     meta.value = value.getTime()
   else
@@ -47,6 +50,10 @@ valueToMeta = (sender, value, optimizeSimpleObject=false) ->
     meta.value = value
 
   meta
+
+# Convert object to meta by value.
+plainObjectToMeta = (obj) ->
+  Object.getOwnPropertyNames(obj).map (name) -> {name, value: obj[name]}
 
 # Convert Error into meta data.
 exceptionToMeta = (error) ->
@@ -70,6 +77,13 @@ unwrapArgs = (sender, args) ->
         returnValue = metaToValue meta.value
         -> returnValue
       when 'function'
+        # Cache the callbacks in renderer.
+        unless sender.callbacks
+          sender.callbacks = new IDWeakMap
+          sender.on 'render-view-deleted', ->
+            sender.callbacks.clear()
+        return sender.callbacks.get meta.id if sender.callbacks.has meta.id
+
         rendererReleased = false
         objectsRegistry.once "clear-#{sender.getId()}", ->
           rendererReleased = true
@@ -77,11 +91,13 @@ unwrapArgs = (sender, args) ->
         ret = ->
           if rendererReleased
             throw new Error("Attempting to call a function in a renderer window
-              that has been closed or released. Function provided here: #{meta.id}.")
+              that has been closed or released. Function provided here: #{meta.location}.")
           sender.send 'ATOM_RENDERER_CALLBACK', meta.id, valueToMeta(sender, arguments)
         v8Util.setDestructor ret, ->
           return if rendererReleased
+          sender.callbacks.remove meta.id
           sender.send 'ATOM_RENDERER_RELEASE_CALLBACK', meta.id
+        sender.callbacks.set meta.id, ret
         ret
       else throw new TypeError("Unknown type: #{meta.type}")
 
@@ -90,40 +106,58 @@ unwrapArgs = (sender, args) ->
 # Call a function and send reply asynchronously if it's a an asynchronous
 # style function and the caller didn't pass a callback.
 callFunction = (event, func, caller, args) ->
-  if v8Util.getHiddenValue(func, 'asynchronous') and typeof args[args.length - 1] isnt 'function'
-    args.push (ret) ->
+  funcMarkedAsync = v8Util.getHiddenValue(func, 'asynchronous')
+  funcPassedCallback = args[args.length - 1] is 'function'
+
+  try
+    if funcMarkedAsync and not funcPassedCallback
+      args.push (ret) ->
+        event.returnValue = valueToMeta event.sender, ret, true
+      func.apply caller, args
+    else
+      ret = func.apply caller, args
       event.returnValue = valueToMeta event.sender, ret, true
-    func.apply caller, args
-  else
-    ret = func.apply caller, args
-    event.returnValue = valueToMeta event.sender, ret, true
+  catch e
+    # Catch functions thrown further down in function invocation and wrap
+    # them with the function name so it's easier to trace things like
+    # `Error processing argument -1.`
+    funcName = func.name ? "anonymous"
+    throw new Error("Could not call remote function `#{funcName}`.
+                     Check that the function signature is correct.
+                     Underlying error: #{e.message}")
 
 # Send by BrowserWindow when its render view is deleted.
 process.on 'ATOM_BROWSER_RELEASE_RENDER_VIEW', (id) ->
   objectsRegistry.clear id
 
-ipc.on 'ATOM_BROWSER_REQUIRE', (event, module) ->
+ipcMain.on 'ATOM_BROWSER_REQUIRE', (event, module) ->
   try
     event.returnValue = valueToMeta event.sender, process.mainModule.require(module)
   catch e
     event.returnValue = exceptionToMeta e
 
-ipc.on 'ATOM_BROWSER_GLOBAL', (event, name) ->
+ipcMain.on 'ATOM_BROWSER_GET_BUILTIN', (event, module) ->
+  try
+    event.returnValue = valueToMeta event.sender, electron[module]
+  catch e
+    event.returnValue = exceptionToMeta e
+
+ipcMain.on 'ATOM_BROWSER_GLOBAL', (event, name) ->
   try
     event.returnValue = valueToMeta event.sender, global[name]
   catch e
     event.returnValue = exceptionToMeta e
 
-ipc.on 'ATOM_BROWSER_CURRENT_WINDOW', (event) ->
+ipcMain.on 'ATOM_BROWSER_CURRENT_WINDOW', (event) ->
   try
     event.returnValue = valueToMeta event.sender, event.sender.getOwnerBrowserWindow()
   catch e
     event.returnValue = exceptionToMeta e
 
-ipc.on 'ATOM_BROWSER_CURRENT_WEB_CONTENTS', (event) ->
+ipcMain.on 'ATOM_BROWSER_CURRENT_WEB_CONTENTS', (event) ->
   event.returnValue = valueToMeta event.sender, event.sender
 
-ipc.on 'ATOM_BROWSER_CONSTRUCTOR', (event, id, args) ->
+ipcMain.on 'ATOM_BROWSER_CONSTRUCTOR', (event, id, args) ->
   try
     args = unwrapArgs event.sender, args
     constructor = objectsRegistry.get id
@@ -134,7 +168,7 @@ ipc.on 'ATOM_BROWSER_CONSTRUCTOR', (event, id, args) ->
   catch e
     event.returnValue = exceptionToMeta e
 
-ipc.on 'ATOM_BROWSER_FUNCTION_CALL', (event, id, args) ->
+ipcMain.on 'ATOM_BROWSER_FUNCTION_CALL', (event, id, args) ->
   try
     args = unwrapArgs event.sender, args
     func = objectsRegistry.get id
@@ -142,7 +176,7 @@ ipc.on 'ATOM_BROWSER_FUNCTION_CALL', (event, id, args) ->
   catch e
     event.returnValue = exceptionToMeta e
 
-ipc.on 'ATOM_BROWSER_MEMBER_CONSTRUCTOR', (event, id, method, args) ->
+ipcMain.on 'ATOM_BROWSER_MEMBER_CONSTRUCTOR', (event, id, method, args) ->
   try
     args = unwrapArgs event.sender, args
     constructor = objectsRegistry.get(id)[method]
@@ -152,7 +186,7 @@ ipc.on 'ATOM_BROWSER_MEMBER_CONSTRUCTOR', (event, id, method, args) ->
   catch e
     event.returnValue = exceptionToMeta e
 
-ipc.on 'ATOM_BROWSER_MEMBER_CALL', (event, id, method, args) ->
+ipcMain.on 'ATOM_BROWSER_MEMBER_CALL', (event, id, method, args) ->
   try
     args = unwrapArgs event.sender, args
     obj = objectsRegistry.get id
@@ -160,7 +194,7 @@ ipc.on 'ATOM_BROWSER_MEMBER_CALL', (event, id, method, args) ->
   catch e
     event.returnValue = exceptionToMeta e
 
-ipc.on 'ATOM_BROWSER_MEMBER_SET', (event, id, name, value) ->
+ipcMain.on 'ATOM_BROWSER_MEMBER_SET', (event, id, name, value) ->
   try
     obj = objectsRegistry.get id
     obj[name] = value
@@ -168,19 +202,22 @@ ipc.on 'ATOM_BROWSER_MEMBER_SET', (event, id, name, value) ->
   catch e
     event.returnValue = exceptionToMeta e
 
-ipc.on 'ATOM_BROWSER_MEMBER_GET', (event, id, name) ->
+ipcMain.on 'ATOM_BROWSER_MEMBER_GET', (event, id, name) ->
   try
     obj = objectsRegistry.get id
     event.returnValue = valueToMeta event.sender, obj[name]
   catch e
     event.returnValue = exceptionToMeta e
 
-ipc.on 'ATOM_BROWSER_DEREFERENCE', (event, id) ->
+ipcMain.on 'ATOM_BROWSER_DEREFERENCE', (event, id) ->
   objectsRegistry.remove event.sender.getId(), id
 
-ipc.on 'ATOM_BROWSER_GUEST_WEB_CONTENTS', (event, guestInstanceId) ->
+ipcMain.on 'ATOM_BROWSER_GUEST_WEB_CONTENTS', (event, guestInstanceId) ->
   try
     guestViewManager = require './guest-view-manager'
     event.returnValue = valueToMeta event.sender, guestViewManager.getGuest(guestInstanceId)
   catch e
     event.returnValue = exceptionToMeta e
+
+ipcMain.on 'ATOM_BROWSER_LIST_MODULES', (event) ->
+  event.returnValue = (name for name of electron)

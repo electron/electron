@@ -2,12 +2,12 @@
 
 * [지원하는 플랫폼](tutorial/supported-platforms.md)
 * [어플리케이션 배포](tutorial/application-distribution.md)
-* [맥 앱스토어 제출 가이드 (0% 번역됨)](tutorial/mac-app-store-submission-guide.md)
+* [Mac 앱스토어 어플리케이션 제출 가이드](tutorial/mac-app-store-submission-guide.md)
 * [어플리케이션 패키징](tutorial/application-packaging.md)
 * [네이티브 Node 모듈 사용하기](tutorial/using-native-node-modules.md)
 * [메인 프로세스 디버깅하기](tutorial/debugging-main-process.md)
 * [Selenium 과 WebDriver 사용하기](tutorial/using-selenium-and-webdriver.md)
-* [개발자 콘솔 확장기능](tutorial/devtools-extension.md)
+* [개발자 도구 확장 기능](tutorial/devtools-extension.md)
 * [Pepper 플래시 플러그인 사용하기](tutorial/using-pepper-flash-plugin.md)
 
 ## 튜토리얼
@@ -31,32 +31,32 @@
 ### 메인 프로세스에서 사용할 수 있는 모듈:
 
 * [app](api/app.md)
-* [auto-updater](api/auto-updater.md)
-* [browser-window (0% 번역됨)](api/browser-window.md)
-* [content-tracing](api/content-tracing.md)
+* [autoUpdater](api/auto-updater.md)
+* [BrowserWindow](api/browser-window.md)
+* [contentTracing](api/content-tracing.md)
 * [dialog](api/dialog.md)
-* [global-shortcut](api/global-shortcut.md)
-* [ipc (main process)](api/ipc-main-process.md)
-* [menu](api/menu.md)
-* [menu-item](api/menu-item.md)
-* [power-monitor](api/power-monitor.md)
-* [power-save-blocker](api/power-save-blocker.md)
+* [globalShortcut](api/global-shortcut.md)
+* [ipcMain](api/ipc-main.md)
+* [Menu](api/menu.md)
+* [MenuItem](api/menu-item.md)
+* [powerMonitor](api/power-monitor.md)
+* [powerSaveBlocker](api/power-save-blocker.md)
 * [protocol](api/protocol.md)
 * [session](api/session.md)
-* [web-contents (0% 번역됨)](api/web-contents.md)
-* [tray](api/tray.md)
+* [webContents](api/web-contents.md)
+* [Tray](api/tray.md)
 
 ### 랜더러 프로세스에서 사용할 수 있는 모듈 (웹 페이지):
 
-* [ipc (renderer)](api/ipc-renderer.md)
+* [ipcRenderer](api/ipc-renderer.md)
 * [remote](api/remote.md)
-* [web-frame](api/web-frame.md)
+* [webFrame](api/web-frame.md)
 
 ### 두 프로세스 모두 사용할 수 있는 모듈:
 
 * [clipboard](api/clipboard.md)
-* [crash-reporter](api/crash-reporter.md)
-* [native-image](api/native-image.md)
+* [crashReporter](api/crash-reporter.md)
+* [nativeImage](api/native-image.md)
 * [screen](api/screen.md)
 * [shell](api/shell.md)
 

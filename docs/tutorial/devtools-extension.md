@@ -8,6 +8,8 @@ the `BrowserWindow.addDevToolsExtension` API to load them. The loaded extensions
 will be remembered so you don't need to call the API every time when creating
 a window.
 
+** NOTE: React DevTools does not work, follow the issue here https://github.com/atom/electron/issues/915 **
+
 For example, to use the [React DevTools Extension](https://github.com/facebook/react-devtools)
 , first you need to download its source code:
 
@@ -22,14 +24,15 @@ Then you can load the extension in Electron by opening DevTools in any window,
 and running the following code in the DevTools console:
 
 ```javascript
-require('remote').require('browser-window').addDevToolsExtension('/some-directory/react-devtools/shells/chrome');
+const BrowserWindow = require('electron').remote.BrowserWindow;
+BrowserWindow.addDevToolsExtension('/some-directory/react-devtools/shells/chrome');
 ```
 
 To unload the extension, you can call the `BrowserWindow.removeDevToolsExtension`
 API with its name and it will not load the next time you open the DevTools:
 
 ```javascript
-require('remote').require('browser-window').removeDevToolsExtension('React Developer Tools');
+BrowserWindow.removeDevToolsExtension('React Developer Tools');
 ```
 
 ## Format of DevTools Extension

@@ -13,10 +13,12 @@ require path.resolve(__dirname, '..', '..', 'common', 'lib', 'reset-search-paths
 # Import common settings.
 require path.resolve(__dirname, '..', '..', 'common', 'lib', 'init')
 
-# Add browser/api/lib to module search paths, which contains javascript part of
-# Electron's built-in libraries.
 globalPaths = Module.globalPaths
-globalPaths.push path.resolve(__dirname, '..', 'api', 'lib')
+unless process.env.ELECTRON_HIDE_INTERNAL_MODULES
+  globalPaths.push path.resolve(__dirname, '..', 'api', 'lib')
+
+# Expose public APIs.
+globalPaths.push path.resolve(__dirname, '..', 'api', 'lib', 'exports')
 
 if process.platform is 'win32'
   # Redirect node's console to use our own implementations, since node can not
@@ -44,14 +46,18 @@ process.on 'uncaughtException', (error) ->
     return
 
   # Show error in GUI.
+  {dialog} = require 'electron'
   stack = error.stack ? "#{error.name}: #{error.message}"
   message = "Uncaught Exception:\n#{stack}"
-  require('dialog').showErrorBox 'A JavaScript error occurred in the main process', message
+  dialog.showErrorBox 'A JavaScript error occurred in the main process', message
 
 # Emit 'exit' event on quit.
-app = require 'app'
+{app} = require 'electron'
 app.on 'quit', ->
   process.emit 'exit'
+
+# Map process.exit to app.exit, which quits gracefully.
+process.exit = app.exit
 
 # Load the RPC server.
 require './rpc-server'

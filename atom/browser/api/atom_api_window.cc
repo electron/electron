@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 #include "atom/browser/api/atom_api_window.h"
+#include "atom/common/native_mate_converters/value_converter.h"
 
 #include "atom/browser/api/atom_api_menu.h"
 #include "atom/browser/api/atom_api_web_contents.h"
@@ -60,22 +61,82 @@ void OnCapturePageDone(
   callback.Run(gfx::Image::CreateFrom1xBitmap(bitmap));
 }
 
+// Converts min-width to minWidth, returns false if no conversion is needed.
+bool TranslateOldKey(const std::string& key, std::string* new_key) {
+  if (key.find('-') == std::string::npos)
+    return false;
+  new_key->reserve(key.size());
+  bool next_upper_case = false;
+  for (char c : key) {
+    if (c == '-') {
+      next_upper_case = true;
+    } else if (next_upper_case) {
+      new_key->push_back(base::ToUpperASCII(c));
+      next_upper_case = false;
+    } else {
+      new_key->push_back(c);
+    }
+  }
+  return true;
+}
+
+// Converts min-width to minWidth recursively in the dictionary.
+void TranslateOldOptions(v8::Isolate* isolate, v8::Local<v8::Object> options) {
+  auto context = isolate->GetCurrentContext();
+  auto maybe_keys = options->GetOwnPropertyNames(context);
+  if (maybe_keys.IsEmpty())
+    return;
+  std::vector<std::string> keys;
+  if (!mate::ConvertFromV8(isolate, maybe_keys.ToLocalChecked(), &keys))
+    return;
+  mate::Dictionary dict(isolate, options);
+  for (const auto& key : keys) {
+    v8::Local<v8::Value> value;
+    if (!dict.Get(key, &value))  // Shouldn't happen, but guard it anyway.
+      continue;
+    // Go recursively.
+    v8::Local<v8::Object> sub_options;
+    if (mate::ConvertFromV8(isolate, value, &sub_options))
+      TranslateOldOptions(isolate, sub_options);
+    // Translate key.
+    std::string new_key;
+    if (TranslateOldKey(key, &new_key)) {
+      dict.Set(new_key, value);
+      dict.Delete(key);
+    }
+  }
+}
+
+#if defined(OS_WIN)
+// Converts binary data to Buffer.
+v8::Local<v8::Value> ToBuffer(v8::Isolate* isolate, void* val, int size) {
+  auto buffer = node::Buffer::New(isolate, static_cast<char*>(val), size);
+  if (buffer.IsEmpty())
+    return v8::Null(isolate);
+  else
+    return buffer.ToLocalChecked();
+}
+#endif
+
 }  // namespace
 
 
 Window::Window(v8::Isolate* isolate, const mate::Dictionary& options) {
-  // Use options['web-preferences'] to create WebContents.
+  // Be compatible with old style field names like min-width.
+  TranslateOldOptions(isolate, options.GetHandle());
+
+  // Use options.webPreferences to create WebContents.
   mate::Dictionary web_preferences = mate::Dictionary::CreateEmpty(isolate);
-  options.Get(switches::kWebPreferences, &web_preferences);
+  options.Get(options::kWebPreferences, &web_preferences);
 
   // Be compatible with old options which are now in web_preferences.
   v8::Local<v8::Value> value;
-  if (options.Get(switches::kNodeIntegration, &value))
-    web_preferences.Set(switches::kNodeIntegration, value);
-  if (options.Get(switches::kPreloadScript, &value))
-    web_preferences.Set(switches::kPreloadScript, value);
-  if (options.Get(switches::kZoomFactor, &value))
-    web_preferences.Set(switches::kZoomFactor, value);
+  if (options.Get(options::kNodeIntegration, &value))
+    web_preferences.Set(options::kNodeIntegration, value);
+  if (options.Get(options::kPreloadScript, &value))
+    web_preferences.Set(options::kPreloadScript, value);
+  if (options.Get(options::kZoomFactor, &value))
+    web_preferences.Set(options::kZoomFactor, value);
 
   // Creates the WebContents used by BrowserWindow.
   auto web_contents = WebContents::Create(isolate, web_preferences);
@@ -192,7 +253,9 @@ void Window::OnExecuteWindowsCommand(const std::string& command_name) {
 #if defined(OS_WIN)
 void Window::OnWindowMessage(UINT message, WPARAM w_param, LPARAM l_param) {
   if (IsWindowMessageHooked(message)) {
-    messages_callback_map_[message].Run(w_param, l_param);
+    messages_callback_map_[message].Run(
+        ToBuffer(isolate(), static_cast<void*>(&w_param), sizeof(WPARAM)),
+        ToBuffer(isolate(), static_cast<void*>(&l_param), sizeof(LPARAM)));
   }
 }
 #endif
@@ -219,10 +282,6 @@ void Window::Destroy() {
 
 void Window::Close() {
   window_->Close();
-}
-
-bool Window::IsClosed() {
-  return window_->IsClosed();
 }
 
 void Window::Focus() {
@@ -559,8 +618,8 @@ void Window::BuildPrototype(v8::Isolate* isolate,
                             v8::Local<v8::ObjectTemplate> prototype) {
   mate::ObjectTemplateBuilder(isolate, prototype)
       .SetMethod("destroy", &Window::Destroy, true)
+      .SetMethod("isDestroyed", &Window::IsDestroyed, true)
       .SetMethod("close", &Window::Close)
-      .SetMethod("isClosed", &Window::IsClosed)
       .SetMethod("focus", &Window::Focus)
       .SetMethod("isFocused", &Window::IsFocused)
       .SetMethod("show", &Window::Show)

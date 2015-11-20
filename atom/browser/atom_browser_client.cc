@@ -14,7 +14,6 @@
 #include "atom/browser/atom_quota_permission_context.h"
 #include "atom/browser/atom_resource_dispatcher_host_delegate.h"
 #include "atom/browser/atom_speech_recognition_manager_delegate.h"
-#include "atom/browser/browser.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/web_contents_preferences.h"
 #include "atom/browser/window_list.h"
@@ -88,7 +87,7 @@ void AtomBrowserClient::SetCustomSchemes(
   g_custom_schemes = JoinString(schemes, ',');
 }
 
-AtomBrowserClient::AtomBrowserClient() {
+AtomBrowserClient::AtomBrowserClient() : delegate_(nullptr) {
 }
 
 AtomBrowserClient::~AtomBrowserClient() {
@@ -208,6 +207,26 @@ content::QuotaPermissionContext*
   return new AtomQuotaPermissionContext;
 }
 
+void AtomBrowserClient::AllowCertificateError(
+    int render_process_id,
+    int render_frame_id,
+    int cert_error,
+    const net::SSLInfo& ssl_info,
+    const GURL& request_url,
+    content::ResourceType resource_type,
+    bool overridable,
+    bool strict_enforcement,
+    bool expired_previous_decision,
+    const base::Callback<void(bool)>& callback,
+    content::CertificateRequestResultType* request) {
+  if (delegate_) {
+    delegate_->AllowCertificateError(
+        render_process_id, render_frame_id, cert_error, ssl_info, request_url,
+        resource_type, overridable, strict_enforcement,
+        expired_previous_decision, callback, request);
+  }
+}
+
 void AtomBrowserClient::SelectClientCertificate(
     content::WebContents* web_contents,
     net::SSLCertRequestInfo* cert_request_info,
@@ -222,10 +241,10 @@ void AtomBrowserClient::SelectClientCertificate(
     return;
   }
 
-  if (!cert_request_info->client_certs.empty())
-    Browser::Get()->ClientCertificateSelector(web_contents,
-                                              cert_request_info,
-                                              delegate.Pass());
+  if (!cert_request_info->client_certs.empty() && delegate_) {
+    delegate_->SelectClientCertificate(
+        web_contents, cert_request_info, delegate.Pass());
+  }
 }
 
 void AtomBrowserClient::ResourceDispatcherHostCreated() {

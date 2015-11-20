@@ -7,11 +7,12 @@ An example of implementing a protocol that has the same effect as the
 `file://` protocol:
 
 ```javascript
-var app = require('app');
-var path = require('path');
+const electron = require('electron');
+const app = electron.app;
+const path = require('path');
 
 app.on('ready', function() {
-    var protocol = require('protocol');
+    var protocol = electron.protocol;
     protocol.registerFileProtocol('atom', function(request, callback) {
       var url = request.url.substr(7);
       callback({path: path.normalize(__dirname + '/' + url)});
@@ -102,7 +103,7 @@ Registers a protocol of `scheme` that will send a `String` as a response. The
 
 Registers a protocol of `scheme` that will send an HTTP request as a response.
 The `callback` should be called with an object that has the `url`, `method`,
-`referer`, and `session` properties.
+`referrer`, and `session` properties.
 
 By default the HTTP request will reuse the current session. If you want the
 request to have a different session you should set `session` to `null`.

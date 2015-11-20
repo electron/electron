@@ -4,7 +4,8 @@
 
 ## 플랫폼별 참고 사항
 
-`autoUpdater`는 기본적으로 모든 플랫폼에 대해 같은 API를 제공하지만, 여전히 플랫폼별로 약간씩 다른 점이 있습니다.
+`autoUpdater`는 기본적으로 모든 플랫폼에 대해 같은 API를 제공하지만, 여전히 플랫폼별로
+약간씩 다른 점이 있습니다.
 
 ### OS X
 
@@ -14,10 +15,18 @@ OS X에선 `auto-updater` 모듈이 [Squirrel.Mac][squirrel-mac]를 기반으로
 
 ### Windows
 
-Windows에선 `auto-updater` 모듈을 사용하기 전에 어플리케이션을 사용자의 장치에 설치해야 합니다.
-[grunt-electron-installer][installer]를 사용하여 어플리케이션 셋업을 만드는 것을 권장합니다.
+Windows에선 `auto-updater` 모듈을 사용하기 전에 어플리케이션을 사용자의 장치에
+설치해야 합니다. [grunt-electron-installer][installer]를 사용하여 어플리케이션
+인스톨러를 만드는 것을 권장합니다.
 
-서버 사이드 요구 사항 또한 OS X와 다르게 적용됩니다. 자세한 내용은 [Squirrel.Windows][squirrel-windows]를 참고하세요.
+Squirrel로 생성된 인스톨러는 [Application User Model ID][app-user-model-id]와 함께
+`com.squirrel.PACKAGE_ID.YOUR_EXE_WITHOUT_DOT_EXE`으로 형식화된 바로가기 아이콘을
+생성합니다. `com.squirrel.slack.Slack` 과 `com.squirrel.code.Code`가 그 예시입니다.
+`app.setAppUserModelId` API를 통해 어플리케이션 ID를 동일하게 유지해야 합니다. 그렇지
+않으면 Windows 작업 표시줄에 어플리케이션을 고정할 때 제대로 적용되지 않을 수 있습니다.
+
+서버 사이드 요구 사항 또한 OS X와 다르게 적용됩니다. 자세한 내용은
+[Squirrel.Windows][squirrel-windows]를 참고하세요.
 
 ### Linux
 
@@ -56,7 +65,7 @@ Returns:
 * `releaseNotes` String
 * `releaseName` String
 * `releaseDate` Date
-* `updateUrl` String
+* `updateURL` String
 
 업데이트의 다운로드가 완료되었을 때 발생하는 이벤트입니다.
 
@@ -64,7 +73,7 @@ Returns:
 
 `autoUpdater` 객체에서 사용할 수 있는 메서드입니다:
 
-### `autoUpdater.setFeedUrl(url)`
+### `autoUpdater.setFeedURL(url)`
 
 * `url` String
 
@@ -72,9 +81,10 @@ Returns:
 
 ### `autoUpdater.checkForUpdates()`
 
-서버에 새로운 업데이트가 있는지 요청을 보내 확인합니다. API를 사용하기 전에 `setFeedUrl`를 호출해야 합니다.
+서버에 새로운 업데이트가 있는지 요청을 보내 확인합니다. API를 사용하기 전에
+`setFeedURL`를 호출해야 합니다.
 
-### `autoUpdater.quitAndUpdate()`
+### `autoUpdater.quitAndInstall()`
 
 어플리케이션을 다시 시작하고 다운로드된 업데이트를 설치합니다.
 이 메서드는 `update-downloaded` 이벤트가 발생한 이후에만 사용할 수 있습니다.
@@ -83,3 +93,4 @@ Returns:
 [server-support]: https://github.com/Squirrel/Squirrel.Mac#server-support
 [squirrel-windows]: https://github.com/Squirrel/Squirrel.Windows
 [installer]: https://github.com/atom/grunt-electron-installer
+[app-user-model-id]: https://msdn.microsoft.com/en-us/library/windows/desktop/dd378459(v=vs.85).aspx

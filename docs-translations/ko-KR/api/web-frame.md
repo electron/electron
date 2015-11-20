@@ -1,11 +1,12 @@
 # webFrame
 
-`web-frame` 모듈은 현재 웹 페이지의 랜더링 상태를 설정 할 수 있도록 관련 유틸리티를 제공하는 모듈입니다.
+`web-frame` 모듈은 현재 웹 페이지의 랜더링 상태를 설정 할 수 있도록 관련 유틸리티를
+제공하는 모듈입니다.
 
 다음 예제는 현재 페이지를 200% 줌 합니다:
 
 ```javascript
-var webFrame = require('web-frame');
+var webFrame = require('electron').webFrame;
 
 webFrame.setZoomFactor(2);
 ```
@@ -18,7 +19,8 @@ webFrame.setZoomFactor(2);
 
 * `factor` Number - Zoom 값
 
-지정한 값으로 페이지를 줌 합니다. 줌 값은 퍼센트를 100으로 나눈 값입니다. (예시: 300% = 3.0)
+지정한 값으로 페이지를 줌 합니다. 줌 값은 퍼센트를 100으로 나눈 값입니다.
+(예시: 300% = 3.0)
 
 ### `webFrame.getZoomFactor()`
 
@@ -28,8 +30,9 @@ webFrame.setZoomFactor(2);
 
 * `level` Number - Zoom level
 
-지정한 레벨로 줌 레벨을 변경합니다. 0은 "기본 크기" 입니다.
-그리고 각각 레벨 값을 올리거나 내릴 때마다 20%씩 커지거나 작아지고 기본 크기의 50%부터 300%까지 조절 제한이 있습니다.
+지정한 레벨로 줌 레벨을 변경합니다. 0은 "기본 크기" 입니다. 그리고 각각 레벨 값을
+올리거나 내릴 때마다 20%씩 커지거나 작아지고 기본 크기의 50%부터 300%까지 조절 제한이
+있습니다.
 
 ### `webFrame.getZoomLevel()`
 
@@ -50,30 +53,38 @@ webFrame.setZoomFactor(2);
 
 Input field나 text area에 철자 검사(spell checking) 제공자를 설정합니다.
 
-`provider`는 반드시 전달된 단어의 철자가 맞았는지 검사하는 `spellCheck` 메소드를 가지고 있어야 합니다.
+`provider`는 반드시 전달된 단어의 철자가 맞았는지 검사하는 `spellCheck` 메소드를
+가지고 있어야 합니다.
 
 [node-spellchecker][spellchecker]를 철자 검사 제공자로 사용하는 예제입니다:
 
 ```javascript
-require('web-frame').setSpellCheckProvider("en-US", true, {
+webFrame.setSpellCheckProvider("en-US", true, {
   spellCheck: function(text) {
     return !(require('spellchecker').isMisspelled(text));
   }
 });
 ```
 
-### `webFrame.registerUrlSchemeAsSecure(scheme)`
+### `webFrame.registerURLSchemeAsSecure(scheme)`
 
 * `scheme` String
 
 지정한 `scheme`을 보안 스킴으로 등록합니다.
 
-보안 스킴은 혼합된 컨텐츠 경고를 발생시키지 않습니다. 예를 들어 `https` 와 `data`는 네트워크 공격자로부터 손상될 가능성이 없기 때문에 보안 스킴이라고 할 수 있습니다.
+보안 스킴은 혼합된 컨텐츠 경고를 발생시키지 않습니다. 예를 들어 `https` 와 `data`는
+네트워크 공격자로부터 손상될 가능성이 없기 때문에 보안 스킴이라고 할 수 있습니다.
 
-### `webFrame.registerUrlSchemeAsBypassingCsp(scheme)`
+### `webFrame.registerURLSchemeAsBypassingCSP(scheme)`
 
 * `scheme` String
 
-현재 페이지 컨텐츠의 보안 정책에 상관없이 이 `scheme`로부터 리소스가 로드됩니다.
+현재 페이지 컨텐츠의 보안 정책에 상관없이 `scheme`로부터 리소스가 로드됩니다.
+
+### `webFrame.registerURLSchemeAsPrivileged(scheme)`
+
+ * `scheme` String
+
+보안 `scheme`를 지정합니다. 리소스와 ServiceWorker 설정에 대해 보안 정책을 우회합니다.
 
 [spellchecker]: https://github.com/atom/node-spellchecker

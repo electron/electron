@@ -5,13 +5,13 @@ um runtime com APIs ricas e nativas. Você pode ver isso como uma variação do
 runtime do io.js que é focado em aplicações desktop em vez de web servers.
 
 Isso não significa que o Electron é uma ligação em JavaScript para blibliotécas
-de interface gráfica (GUI). Em vez disso, Electron usa páginas web como 
+de interface gráfica (GUI). Em vez disso, Electron usa páginas web como
 interface gráfica, então você pode ver isso também como um navegador Chromium
 mínimo, controlado por JavaScript.
 
 ### Processo Principal
 
-No Electron, o processo que executa o script principal (main) do `package.json` 
+No Electron, o processo que executa o script principal (main) do `package.json`
 é chamado __processo principal__. O script que roda no processo principal pode
 mostrar uma GUI criando páginas web.
 
@@ -38,7 +38,7 @@ correspondentes. Cada processo renderizador é isolado e toma conta de sua
 respectiva página web.
 
 Nas páginas web, chamar APIs nativas relacionadas à GUI não é permitido porque
-gerênciar recursos de GUI em páginas web é muito perigoso e torna fácil o vazamento de 
+gerênciar recursos de GUI em páginas web é muito perigoso e torna fácil o vazamento de
 recursos. Se você quer realizar operações com GUI em páginas web, o processo
 renderizador da página web deve se comunicar com o processo principal para requisitar
 que o processo principal realize estas operações.
@@ -71,7 +71,7 @@ com isso:
 }
 ```
 
-__Nota__: Se o campo `main` não estiver presente no `package.jso`, o Electron irá 
+__Nota__: Se o campo `main` não estiver presente no `package.jso`, o Electron irá
 tentar carregar um `index.js`
 
 O `main.js` deve criar as janelas e os manipuladores de eventos do sistema, um típico
@@ -85,7 +85,7 @@ var BrowserWindow = require('browser-window');  // Módulo para criar uma janela
 require('crash-reporter').start();
 
 // Mantenha uma referência global para o objeto window, se você não o fizer,
-// a janela será fechada automaticamente quando o objeto JavaScript for 
+// a janela será fechada automaticamente quando o objeto JavaScript for
 // coletado pelo garbage collector.
 var mainWindow = null;
 
@@ -106,7 +106,7 @@ app.on('ready', function() {
   mainWindow = new BrowserWindow({width: 800, height: 600});
 
   // e carrega o index.html do app.
-  mainWindow.loadUrl('file://' + __dirname + '/index.html');
+  mainWindow.loadURL('file://' + __dirname + '/index.html');
 
   // Abre os DevTools.
   mainWindow.openDevTools();
@@ -187,6 +187,6 @@ $ ./Electron.app/Contents/MacOS/Electron your-app/
 
 ### Executar como uma distribuição
 
-Depois de terminar seu app, você pode criar uma distribuição seguindo o guia 
+Depois de terminar seu app, você pode criar uma distribuição seguindo o guia
 [Application Distribution](./application-distribution.md) e então executar o app
 empacotado.

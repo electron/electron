@@ -254,7 +254,8 @@ exports.wrapFsWithAsar = (fs) ->
 
   openSync = fs.openSync
   readFileSync = fs.readFileSync
-  fs.readFileSync = (p, options) ->
+  fs.readFileSync = (p, opts) ->
+    options = opts # this allows v8 to optimize this function
     [isAsar, asarPath, filePath] = splitPath p
     return readFileSync.apply this, arguments unless isAsar
 
@@ -354,3 +355,4 @@ exports.wrapFsWithAsar = (fs) ->
   overrideAPISync process, 'dlopen', 1
   overrideAPISync require('module')._extensions, '.node', 1
   overrideAPISync fs, 'openSync'
+  overrideAPISync child_process, 'execFileSync'

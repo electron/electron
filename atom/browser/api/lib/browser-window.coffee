@@ -1,11 +1,12 @@
-EventEmitter = require('events').EventEmitter
-app = require 'app'
-ipc = require 'ipc'
+{ipcMain, deprecate} = require 'electron'
+{EventEmitter} = require 'events'
 
-BrowserWindow = process.atomBinding('window').BrowserWindow
+{BrowserWindow} = process.atomBinding 'window'
 BrowserWindow::__proto__ = EventEmitter.prototype
 
 BrowserWindow::_init = ->
+  {app} = require 'electron'  # avoid recursive require.
+
   # Simulate the application menu on platforms other than OS X.
   if process.platform isnt 'darwin'
     menu = app.getApplicationMenu()
@@ -14,7 +15,7 @@ BrowserWindow::_init = ->
   # Make new windows requested by links behave like "window.open"
   @webContents.on '-new-window', (event, url, frameName) ->
     options = show: true, width: 800, height: 600
-    ipc.emit 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_OPEN', event, url, frameName, options
+    ipcMain.emit 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_OPEN', event, url, frameName, options
 
   # window.resizeTo(...)
   # window.moveTo(...)
@@ -70,33 +71,35 @@ BrowserWindow.fromDevToolsWebContents = (webContents) ->
   return window for window in windows when window.devToolsWebContents?.equal webContents
 
 # Helpers.
-BrowserWindow::loadUrl = -> @webContents.loadUrl.apply @webContents, arguments
-BrowserWindow::send = -> @webContents.send.apply @webContents, arguments
-
-# Be compatible with old API.
-BrowserWindow::undo = -> @webContents.undo()
-BrowserWindow::redo = -> @webContents.redo()
-BrowserWindow::cut = -> @webContents.cut()
-BrowserWindow::copy = -> @webContents.copy()
-BrowserWindow::paste = -> @webContents.paste()
-BrowserWindow::selectAll = -> @webContents.selectAll()
-BrowserWindow::restart = -> @webContents.reload()
-BrowserWindow::getUrl = -> @webContents.getUrl()
+BrowserWindow::loadURL = -> @webContents.loadURL.apply @webContents, arguments
+BrowserWindow::getURL = -> @webContents.getURL()
 BrowserWindow::reload = -> @webContents.reload.apply @webContents, arguments
-BrowserWindow::reloadIgnoringCache = -> @webContents.reloadIgnoringCache.apply @webContents, arguments
-BrowserWindow::getPageTitle = -> @webContents.getTitle()
-BrowserWindow::isLoading = -> @webContents.isLoading()
-BrowserWindow::isWaitingForResponse = -> @webContents.isWaitingForResponse()
-BrowserWindow::stop = -> @webContents.stop()
-BrowserWindow::isCrashed = -> @webContents.isCrashed()
-BrowserWindow::executeJavaScriptInDevTools = (code) -> @devToolsWebContents?.executeJavaScript code
+BrowserWindow::send = -> @webContents.send.apply @webContents, arguments
 BrowserWindow::openDevTools = -> @webContents.openDevTools.apply @webContents, arguments
 BrowserWindow::closeDevTools = -> @webContents.closeDevTools()
 BrowserWindow::isDevToolsOpened = -> @webContents.isDevToolsOpened()
 BrowserWindow::toggleDevTools = -> @webContents.toggleDevTools()
 BrowserWindow::inspectElement = -> @webContents.inspectElement.apply @webContents, arguments
 BrowserWindow::inspectServiceWorker = -> @webContents.inspectServiceWorker()
-BrowserWindow::print = -> @webContents.print.apply @webContents, arguments
-BrowserWindow::printToPDF = -> @webContents.printToPDF.apply @webContents, arguments
+
+# Deprecated.
+deprecate.member BrowserWindow, 'undo', 'webContents'
+deprecate.member BrowserWindow, 'redo', 'webContents'
+deprecate.member BrowserWindow, 'cut', 'webContents'
+deprecate.member BrowserWindow, 'copy', 'webContents'
+deprecate.member BrowserWindow, 'paste', 'webContents'
+deprecate.member BrowserWindow, 'selectAll', 'webContents'
+deprecate.member BrowserWindow, 'reloadIgnoringCache', 'webContents'
+deprecate.member BrowserWindow, 'getPageTitle', 'webContents'
+deprecate.member BrowserWindow, 'isLoading', 'webContents'
+deprecate.member BrowserWindow, 'isWaitingForResponse', 'webContents'
+deprecate.member BrowserWindow, 'stop', 'webContents'
+deprecate.member BrowserWindow, 'isCrashed', 'webContents'
+deprecate.member BrowserWindow, 'executeJavaScriptInDevTools', 'webContents'
+deprecate.member BrowserWindow, 'print', 'webContents'
+deprecate.member BrowserWindow, 'printToPDF', 'webContents'
+deprecate.rename BrowserWindow, 'restart', 'reload'
+deprecate.rename BrowserWindow, 'loadUrl', 'loadURL'
+deprecate.rename BrowserWindow, 'getUrl', 'getURL'
 
 module.exports = BrowserWindow

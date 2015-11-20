@@ -18,6 +18,7 @@
 #include "atom/common/api/event_emitter_caller.h"
 #include "atom/common/native_mate_converters/blink_converter.h"
 #include "atom/common/native_mate_converters/callback.h"
+#include "atom/common/native_mate_converters/content_converter.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
@@ -46,6 +47,7 @@
 #include "content/public/browser/storage_partition.h"
 #include "content/public/browser/site_instance.h"
 #include "content/public/browser/web_contents.h"
+#include "content/public/common/context_menu_params.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 #include "net/http/http_response_headers.h"
@@ -169,11 +171,12 @@ struct Converter<content::SavePageType> {
     std::string save_type;
     if (!ConvertFromV8(isolate, val, &save_type))
       return false;
-    if (save_type == "HTMLOnly") {
+    save_type = base::StringToLowerASCII(save_type);
+    if (save_type == "htmlonly") {
       *out = content::SAVE_PAGE_TYPE_AS_ONLY_HTML;
-    } else if (save_type == "HTMLComplete") {
+    } else if (save_type == "htmlcomplete") {
       *out = content::SAVE_PAGE_TYPE_AS_COMPLETE_HTML;
-    } else if (save_type == "MHTML") {
+    } else if (save_type == "mhtml") {
       *out = content::SAVE_PAGE_TYPE_AS_MHTML;
     } else {
       return false;
@@ -266,9 +269,7 @@ WebContents::WebContents(v8::Isolate* isolate,
   managed_web_contents()->GetView()->SetDelegate(this);
 
   // Save the preferences in C++.
-  base::DictionaryValue web_preferences;
-  mate::ConvertFromV8(isolate, options.GetHandle(), &web_preferences);
-  new WebContentsPreferences(web_contents, &web_preferences);
+  new WebContentsPreferences(web_contents, options);
 
   web_contents->SetUserAgentOverride(GetBrowserContext()->GetUserAgent());
 
@@ -402,6 +403,15 @@ void WebContents::RendererResponsive(content::WebContents* source) {
   Emit("responsive");
   if (type_ == BROWSER_WINDOW)
     owner_window()->RendererResponsive(source);
+}
+
+bool WebContents::HandleContextMenu(const content::ContextMenuParams& params) {
+  if (!params.custom_context.is_pepper_menu)
+    return false;
+
+  Emit("pepper-context-menu", std::make_pair(params, web_contents()));
+  web_contents()->NotifyContextMenuClosed(params.custom_context);
+  return true;
 }
 
 void WebContents::BeforeUnloadFired(const base::TimeTicks& proceed_time) {
@@ -594,10 +604,6 @@ void WebContents::Destroy() {
   }
 }
 
-bool WebContents::IsAlive() const {
-  return web_contents() != NULL;
-}
-
 int WebContents::GetID() const {
   return web_contents()->GetRenderProcessHost()->GetID();
 }
@@ -646,10 +652,6 @@ bool WebContents::IsWaitingForResponse() const {
 
 void WebContents::Stop() {
   web_contents()->Stop();
-}
-
-void WebContents::ReloadIgnoringCache() {
-  web_contents()->GetController().ReloadIgnoringCache(false);
 }
 
 void WebContents::GoBack() {
@@ -990,16 +992,15 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
   if (template_.IsEmpty())
     template_.Reset(isolate, mate::ObjectTemplateBuilder(isolate)
         .SetMethod("destroy", &WebContents::Destroy, true)
-        .SetMethod("isAlive", &WebContents::IsAlive, true)
+        .SetMethod("isDestroyed", &WebContents::IsDestroyed, true)
         .SetMethod("getId", &WebContents::GetID)
         .SetMethod("equal", &WebContents::Equal)
-        .SetMethod("_loadUrl", &WebContents::LoadURL)
-        .SetMethod("_getUrl", &WebContents::GetURL)
+        .SetMethod("_loadURL", &WebContents::LoadURL)
+        .SetMethod("_getURL", &WebContents::GetURL)
         .SetMethod("getTitle", &WebContents::GetTitle)
         .SetMethod("isLoading", &WebContents::IsLoading)
         .SetMethod("isWaitingForResponse", &WebContents::IsWaitingForResponse)
         .SetMethod("_stop", &WebContents::Stop)
-        .SetMethod("_reloadIgnoringCache", &WebContents::ReloadIgnoringCache)
         .SetMethod("_goBack", &WebContents::GoBack)
         .SetMethod("_goForward", &WebContents::GoForward)
         .SetMethod("_goToOffset", &WebContents::GoToOffset)
@@ -1061,7 +1062,7 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
 }
 
 bool WebContents::IsDestroyed() const {
-  return !IsAlive();
+  return !web_contents();
 }
 
 AtomBrowserContext* WebContents::GetBrowserContext() const {
@@ -1112,12 +1113,16 @@ mate::Handle<WebContents> WebContents::Create(
   return handle;
 }
 
-void SetWrapWebContents(const WrapWebContentsCallback& callback) {
-  g_wrap_web_contents = callback;
-}
-
 void ClearWrapWebContents() {
   g_wrap_web_contents.Reset();
+}
+
+void SetWrapWebContents(const WrapWebContentsCallback& callback) {
+  g_wrap_web_contents = callback;
+
+  // Cleanup the wrapper on exit.
+  atom::AtomBrowserMainParts::Get()->RegisterDestructionCallback(
+      base::Bind(ClearWrapWebContents));
 }
 
 }  // namespace api
@@ -1133,7 +1138,6 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   mate::Dictionary dict(isolate, exports);
   dict.SetMethod("create", &atom::api::WebContents::Create);
   dict.SetMethod("_setWrapWebContents", &atom::api::SetWrapWebContents);
-  dict.SetMethod("_clearWrapWebContents", &atom::api::ClearWrapWebContents);
 }
 
 }  // namespace

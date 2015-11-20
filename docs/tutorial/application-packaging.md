@@ -51,14 +51,14 @@ $ asar list /path/to/example.asar
 Read a file in the `asar` archive:
 
 ```javascript
-var fs = require('fs');
+const fs = require('fs');
 fs.readFileSync('/path/to/example.asar/file.txt');
 ```
 
 List all files under the root of the archive:
 
 ```javascript
-var fs = require('fs');
+const fs = require('fs');
 fs.readdirSync('/path/to/example.asar');
 ```
 
@@ -71,9 +71,9 @@ require('/path/to/example.asar/dir/module.js');
 You can also display a web page in an `asar` archive with `BrowserWindow`:
 
 ```javascript
-var BrowserWindow = require('browser-window');
+const BrowserWindow = require('electron').BrowserWindow;
 var win = new BrowserWindow({width: 800, height: 600});
-win.loadUrl('file:///path/to/example.asar/static/index.html');
+win.loadURL('file:///path/to/example.asar/static/index.html');
 ```
 
 ### Web API

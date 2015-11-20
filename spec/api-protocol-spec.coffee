@@ -1,8 +1,9 @@
 assert   = require 'assert'
 http     = require 'http'
 path     = require 'path'
-remote   = require 'remote'
-protocol = remote.require 'protocol'
+
+{remote} = require 'electron'
+{protocol} = remote.require 'electron'
 
 describe 'protocol module', ->
   protocolName = 'sp'
@@ -23,9 +24,12 @@ describe 'protocol module', ->
 
     it 'does not crash when handler is called twice', (done) ->
       doubleHandler = (request, callback) ->
-        callback(text)
-        callback()
+        try
+          callback(text)
+          callback()
+        catch
       protocol.registerStringProtocol protocolName, doubleHandler, (error) ->
+        return done(error) if error
         $.ajax
           url: "#{protocolName}://fake-host"
           success: (data) ->
@@ -36,6 +40,7 @@ describe 'protocol module', ->
 
     it 'sends error when callback is called with nothing', (done) ->
       protocol.registerBufferProtocol protocolName, emptyHandler, (error) ->
+        return done(error) if error
         $.ajax
           url: "#{protocolName}://fake-host"
           success: (data) ->
@@ -48,6 +53,7 @@ describe 'protocol module', ->
       handler = (request, callback) ->
         setImmediate -> callback(text)
       protocol.registerStringProtocol protocolName, handler, (error) ->
+        return done(error) if error
         $.ajax
           url: "#{protocolName}://fake-host"
           success: (data) ->
@@ -66,6 +72,7 @@ describe 'protocol module', ->
     it 'sends string as response', (done) ->
       handler = (request, callback) -> callback(text)
       protocol.registerStringProtocol protocolName, handler, (error) ->
+        return done(error) if error
         $.ajax
           url: "#{protocolName}://fake-host"
           success: (data) ->
@@ -77,6 +84,7 @@ describe 'protocol module', ->
     it 'sends object as response', (done) ->
       handler = (request, callback) -> callback(data: text, mimeType: 'text/html')
       protocol.registerStringProtocol protocolName, handler, (error) ->
+        return done(error) if error
         $.ajax
           url: "#{protocolName}://fake-host"
           success: (data, statux, request) ->
@@ -88,6 +96,7 @@ describe 'protocol module', ->
     it 'fails when sending object other than string', (done) ->
       handler = (request, callback) -> callback(new Date)
       protocol.registerBufferProtocol protocolName, handler, (error) ->
+        return done(error) if error
         $.ajax
           url: "#{protocolName}://fake-host"
           success: (data) ->
@@ -102,6 +111,7 @@ describe 'protocol module', ->
     it 'sends Buffer as response', (done) ->
       handler = (request, callback) -> callback(buffer)
       protocol.registerBufferProtocol protocolName, handler, (error) ->
+        return done(error) if error
         $.ajax
           url: "#{protocolName}://fake-host"
           success: (data) ->
@@ -113,6 +123,7 @@ describe 'protocol module', ->
     it 'sends object as response', (done) ->
       handler = (request, callback) -> callback(data: buffer, mimeType: 'text/html')
       protocol.registerBufferProtocol protocolName, handler, (error) ->
+        return done(error) if error
         $.ajax
           url: "#{protocolName}://fake-host"
           success: (data, statux, request) ->
@@ -124,6 +135,7 @@ describe 'protocol module', ->
     it 'fails when sending string', (done) ->
       handler = (request, callback) -> callback(text)
       protocol.registerBufferProtocol protocolName, handler, (error) ->
+        return done(error) if error
         $.ajax
           url: "#{protocolName}://fake-host"
           success: (data) ->
@@ -142,6 +154,7 @@ describe 'protocol module', ->
     it 'sends file path as response', (done) ->
       handler = (request, callback) -> callback(filePath)
       protocol.registerFileProtocol protocolName, handler, (error) ->
+        return done(error) if error
         $.ajax
           url: "#{protocolName}://fake-host"
           success: (data) ->
@@ -153,6 +166,7 @@ describe 'protocol module', ->
     it 'sends object as response', (done) ->
       handler = (request, callback) -> callback(path: filePath)
       protocol.registerFileProtocol protocolName, handler, (error) ->
+        return done(error) if error
         $.ajax
           url: "#{protocolName}://fake-host"
           success: (data, statux, request) ->
@@ -164,6 +178,7 @@ describe 'protocol module', ->
     it 'can send normal file', (done) ->
       handler = (request, callback) -> callback(normalPath)
       protocol.registerFileProtocol protocolName, handler, (error) ->
+        return done(error) if error
         $.ajax
           url: "#{protocolName}://fake-host"
           success: (data) ->
@@ -176,6 +191,7 @@ describe 'protocol module', ->
       fakeFilePath = path.join __dirname, 'fixtures', 'asar', 'a.asar', 'not-exist'
       handler = (request, callback) -> callback(fakeFilePath)
       protocol.registerBufferProtocol protocolName, handler, (error) ->
+        return done(error) if error
         $.ajax
           url: "#{protocolName}://fake-host"
           success: (data) ->
@@ -187,6 +203,7 @@ describe 'protocol module', ->
     it 'fails when sending unsupported content', (done) ->
       handler = (request, callback) -> callback(new Date)
       protocol.registerBufferProtocol protocolName, handler, (error) ->
+        return done(error) if error
         $.ajax
           url: "#{protocolName}://fake-host"
           success: (data) ->
@@ -206,6 +223,7 @@ describe 'protocol module', ->
         url = "http://127.0.0.1:#{port}"
         handler = (request, callback) -> callback({url})
         protocol.registerHttpProtocol protocolName, handler, (error) ->
+          return done(error) if error
           $.ajax
             url: "#{protocolName}://fake-host"
             success: (data) ->
@@ -217,6 +235,7 @@ describe 'protocol module', ->
     it 'fails when sending invalid url', (done) ->
       handler = (request, callback) -> callback({url: 'url'})
       protocol.registerHttpProtocol protocolName, handler, (error) ->
+        return done(error) if error
         $.ajax
           url: "#{protocolName}://fake-host"
           success: (data) ->
@@ -228,6 +247,7 @@ describe 'protocol module', ->
     it 'fails when sending unsupported content', (done) ->
       handler = (request, callback) -> callback(new Date)
       protocol.registerHttpProtocol protocolName, handler, (error) ->
+        return done(error) if error
         $.ajax
           url: "#{protocolName}://fake-host"
           success: (data) ->
@@ -285,9 +305,12 @@ describe 'protocol module', ->
 
     it 'does not crash when handler is called twice', (done) ->
       doubleHandler = (request, callback) ->
-        callback(text)
-        callback()
+        try
+          callback(text)
+          callback()
+        catch
       protocol.interceptStringProtocol 'http', doubleHandler, (error) ->
+        return done(error) if error
         $.ajax
           url: 'http://fake-host'
           success: (data) ->
@@ -298,6 +321,7 @@ describe 'protocol module', ->
 
     it 'sends error when callback is called with nothing', (done) ->
       protocol.interceptBufferProtocol 'http', emptyHandler, (error) ->
+        return done(error) if error
         $.ajax
           url: 'http://fake-host'
           success: (data) ->
@@ -310,6 +334,7 @@ describe 'protocol module', ->
     it 'can intercept http protocol', (done) ->
       handler = (request, callback) -> callback(text)
       protocol.interceptStringProtocol 'http', handler, (error) ->
+        return done(error) if error
         $.ajax
           url: 'http://fake-host'
           success: (data) ->
@@ -322,6 +347,7 @@ describe 'protocol module', ->
       handler = (request, callback) ->
         callback({mimeType: 'application/json', data: '{"value": 1}'})
       protocol.interceptStringProtocol 'http', handler, (error) ->
+        return done(error) if error
         $.ajax
           url: 'http://fake-host'
           success: (data) ->
@@ -335,6 +361,7 @@ describe 'protocol module', ->
     it 'can intercept http protocol', (done) ->
       handler = (request, callback) -> callback(new Buffer(text))
       protocol.interceptBufferProtocol 'http', handler, (error) ->
+        return done(error) if error
         $.ajax
           url: 'http://fake-host'
           success: (data) ->

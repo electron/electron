@@ -69,9 +69,6 @@ void AtomBindings::BindTo(v8::Isolate* isolate,
   dict.SetMethod("activateUvLoop",
       base::Bind(&AtomBindings::ActivateUVLoop, base::Unretained(this)));
 
-  // Do not warn about deprecated APIs.
-  dict.Set("noDeprecation", true);
-
 #if defined(MAS_BUILD)
   dict.Set("mas", true);
 #endif

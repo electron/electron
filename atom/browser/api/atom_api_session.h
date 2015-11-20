@@ -72,6 +72,7 @@ class Session: public mate::TrackableObject<Session>,
   void SetDownloadPath(const base::FilePath& path);
   void EnableNetworkEmulation(const mate::Dictionary& options);
   void DisableNetworkEmulation();
+  void SetCertVerifyProc(v8::Local<v8::Value> proc, mate::Arguments* args);
   v8::Local<v8::Value> Cookies(v8::Isolate* isolate);
 
   // Cached object for cookies API.

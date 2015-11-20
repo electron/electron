@@ -7,7 +7,7 @@ limitations of the MAS build.
 ## How to Submit Your App
 
 The following steps introduce a simple way to submit your app to Mac App Store.
-However, these steps do not ensure sure your app will be approved by Apple; you
+However, these steps do not ensure your app will be approved by Apple; you
 still need to read Apple's [Submitting Your App][submitting-your-app] guide on
 how to meet the Mac App Store requirements.
 
@@ -77,10 +77,10 @@ codesign --deep -fs "$APP_KEY" --entitlements child.plist "$FRAMEWORKS_PATH/$APP
 codesign --deep -fs "$APP_KEY" --entitlements child.plist "$FRAMEWORKS_PATH/$APP Helper EH.app/"
 codesign --deep -fs "$APP_KEY" --entitlements child.plist "$FRAMEWORKS_PATH/$APP Helper NP.app/"
 codesign  -fs "$APP_KEY" --entitlements parent.plist "$APP_PATH"
-productbuild --component "$APP_PATH" /Applications --sign "$INSTALLER_KEY" "$APP_PATH"
+productbuild --component "$APP_PATH" /Applications --sign "$INSTALLER_KEY" "$RESULT_PATH"
 ```
 
-If you are new to app sandboxing under OS X, you should also read through 
+If you are new to app sandboxing under OS X, you should also read through
 Apple's [Enabling App Sandbox][enable-app-sandbox] to have a basic idea, then
 add keys for the permissions needed by your app to the entitlements files.
 

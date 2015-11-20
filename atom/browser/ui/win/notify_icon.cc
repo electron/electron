@@ -113,7 +113,7 @@ void NotifyIcon::SetToolTip(const std::string& tool_tip) {
   NOTIFYICONDATA icon_data;
   InitIconData(&icon_data);
   icon_data.uFlags |= NIF_TIP;
-  wcscpy_s(icon_data.szTip, base::UTF8ToUTF16(tool_tip).c_str());
+  wcsncpy_s(icon_data.szTip, base::UTF8ToUTF16(tool_tip).c_str(), _TRUNCATE);
   BOOL result = Shell_NotifyIcon(NIM_MODIFY, &icon_data);
   if (!result)
     LOG(WARNING) << "Unable to set tooltip for status tray icon";
@@ -126,8 +126,8 @@ void NotifyIcon::DisplayBalloon(const gfx::Image& icon,
   InitIconData(&icon_data);
   icon_data.uFlags |= NIF_INFO;
   icon_data.dwInfoFlags = NIIF_INFO;
-  wcscpy_s(icon_data.szInfoTitle, title.c_str());
-  wcscpy_s(icon_data.szInfo, contents.c_str());
+  wcsncpy_s(icon_data.szInfoTitle, title.c_str(), _TRUNCATE);
+  wcsncpy_s(icon_data.szInfo, contents.c_str(), _TRUNCATE);
   icon_data.uTimeout = 0;
 
   base::win::Version win_version = base::win::GetVersion();
