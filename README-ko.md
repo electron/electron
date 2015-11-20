@@ -8,8 +8,8 @@
 
 :zap: *프레임워크 이름이 Atom Shell에서 Electron으로 변경되었습니다* :zap:
 
-Electron 프레임워크는 JavaScript, HTML 그리고 CSS를 사용하여 Cross-Platform 데스크톱
-어플리케이션을 개발할 수 있도록 해주는 프레임워크입니다. 이 프레임워크는
+Electron 프레임워크는 JavaScript, HTML 그리고 CSS를 사용하여
+Cross-Platform 데스크톱 어플리케이션을 개발할 수 있도록 해주는 프레임워크입니다.
 [Node.js](https://nodejs.org/)와 [Chromium](http://www.chromium.org)을 기반으로
 만들어졌으며 [Atom Editor](https://github.com/atom/atom)에 사용되고 있습니다.
 
@@ -17,17 +17,17 @@ Electron에 대한 중요한 알림을 받고 싶다면 Twitter에서
 [@ElectronJS](https://twitter.com/electronjs)를 팔로우 하세요.
 
 이 프로젝트는 [기여자 규약 1.2](http://contributor-covenant.org/version/1/2/0/)을
-준수합니다. 따라서 이 프로젝트의 개발에 참여하려면 이 계약을 지켜야 합니다.
-받아들일 수 없는 행위를 발견했을 경우 atom@github.com로 보고 하십시오.
+준수합니다. 따라서 이 프로젝트의 개발에 참여하려면 이 계약을 지켜야 합니다. 받아들일 수
+없는 행위를 발견했을 경우 atom@github.com로 보고 하십시오.
 
 ## 다운로드
 
 Linux, Windows, OS X 용으로 미리 빌드된 Electron 바이너리와 디버그 심볼이 준비되어
-있습니다. [releases](https://github.com/atom/electron/releases) 페이지에서
-받아 볼 수 있습니다.
+있습니다. [releases](https://github.com/atom/electron/releases) 페이지에서 받아 볼
+수 있습니다.
 
-또한 [`npm`](https://docs.npmjs.com/)을 통해 미리 빌드된 Electron 바이너리를
-설치할 수도 있습니다:
+또한 [`npm`](https://docs.npmjs.com/)을 통해 미리 빌드된 Electron 바이너리를 설치할
+수도 있습니다:
 
 ```sh
 # $PATH에 `electron` 커맨드를 등록하고 전역에 설치합니다.
@@ -70,5 +70,5 @@ API 레퍼런스가 있습니다. Electron을 빌드 하는 방법과 프로젝�
 - Slack의 [`Atom`](http://atom-slack.herokuapp.com/) 채널
 
 [awesome-electron](https://github.com/sindresorhus/awesome-electron) 프로젝트에
-커뮤니티가 운영중인 유용한 예제 어플리케이션과 도구, 리소스가 있으니
-한번 참고해 보시기 바랍니다.
+커뮤니티가 운영중인 유용한 예제 어플리케이션과 도구, 리소스가 있으니 한번 참고해 보시기
+바랍니다.

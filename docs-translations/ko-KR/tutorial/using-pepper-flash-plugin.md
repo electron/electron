@@ -5,12 +5,14 @@ Pepper 플래시 플러그인을 사용하려면 Pepper 플래시 플러그인�
 
 ## 플래시 플러그인 준비하기
 
-크롬 브라우저의 `chrome://plugins` 페이지에 접속한 후 `세부정보`에서 플래시 플러그인의 위치와 버전을 찾을 수 있습니다.
-Electron에서 플래시 플러그인을 지원하기 위해선 이 두 가지를 복사해 와야 합니다.
+크롬 브라우저의 `chrome://plugins` 페이지에 접속한 후 `세부정보`에서 플래시
+플러그인의 위치와 버전을 찾을 수 있습니다. Electron에서 플래시 플러그인을 지원하기
+위해선 이 두 가지를 복사해 와야 합니다.
 
 ## Electron 스위치 추가
 
-플러그인을 사용하려면 Electron 커맨드 라인에 `--ppapi-flash-path` 와 `ppapi-flash-version` 플래그를 app의 ready 이벤트가 호출되기 전에 추가해야 합니다.
+플러그인을 사용하려면 Electron 커맨드 라인에 `--ppapi-flash-path` 와
+`ppapi-flash-version` 플래그를 app의 ready 이벤트가 호출되기 전에 추가해야 합니다.
 그리고 `browser-window`에 `plugins` 스위치도 추가해야합니다.
 
 ```javascript

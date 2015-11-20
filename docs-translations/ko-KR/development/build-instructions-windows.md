@@ -11,18 +11,18 @@
 * [Git](http://git-scm.com)
 
 현재 사용하고 있는 PC에 Windows를 설치하지 않았다면 [modern.ie](https://www.modern.ie/en-us/virtualization-tools#downloads)에서
-사용 기한이 정해져있는 무료 가상머신 버전의 Windows를 받아 Electron을
-빌드하는 방법도 있습니다.
+사용 기한이 정해져있는 무료 가상머신 버전의 Windows를 받아 Electron을 빌드하는 방법도
+있습니다.
 
-Electron은 모든 빌드를 command-line 스크립트를 통해 빌드합니다. 따라서 빌드에
-Visual Studio를 사용할 수 없습니다. 하지만 여전히 Electron을 개발할 땐 아무 에디터나
-사용할 수 있습니다. 빠른 시일내에 Visual Studio를 이용한 빌드도 지원할 계획입니다.
+Electron은 모든 빌드를 command-line 스크립트를 통해 빌드합니다. 따라서 빌드에 Visual
+Studio를 사용할 수 없습니다. 하지만 여전히 Electron을 개발할 땐 어떤 에디터든 사용이
+가능합니다. 그리고 빠른 시일내에 Visual Studio를 이용한 빌드도 지원할 계획입니다.
 
-**참고:** Visual Studio가 직접 빌드에 사용되지 않더라도 IDE와 같이 제공된
-빌드 툴체인이 빌드에 **반드시** 사용되므로 여전히 필요합니다.
+**참고:** Visual Studio가 직접 빌드에 사용되지 않더라도 IDE와 같이 제공된 빌드
+툴체인이 빌드에 **반드시** 사용되므로 여전히 필요합니다.
 
-**참고:** Visual Studio 2015는 사용할 수 없습니다.
-MSVS **2013** 을 사용하고 있는지 확인해주세요.
+**참고:** Visual Studio 2015는 사용할 수 없습니다 MSVS **2013** 을 사용하고 있는지
+확인해주세요.
 
 ## 코드 가져오기
 
@@ -32,9 +32,9 @@ $ git clone https://github.com/atom/electron.git
 
 ## 부트 스트랩
 
-부트스트랩 스크립트는 필수적인 빌드 종속성 라이브러리들을 모두 다운로드하고
-프로젝트 파일을 생성합니다. 참고로 Electron은 빌드 툴체인으로 `ninja`를 사용하므로
-Visual Studio 프로젝트는 생성되지 않습니다.
+부트스트랩 스크립트는 필수적인 빌드 종속성 라이브러리들을 모두 다운로드하고 프로젝트
+파일을 생성합니다. 참고로 Electron은 `ninja`를 빌드 툴체인으로 사용하므로 Visual
+Studio 프로젝트는 생성되지 않습니다.
 
 ```powershell
 $ cd electron
@@ -60,8 +60,8 @@ $ python script\build.py -c D
 
 ## 64비트 빌드
 
-64비트를 타겟으로 빌드 하려면 부트스트랩 스크립트를 실행할 때
-`--target_arch=x64` 인자를 같이 넘겨주면 됩니다:
+64비트를 타겟으로 빌드 하려면 부트스트랩 스크립트를 실행할 때 `--target_arch=x64`
+인자를 같이 넘겨주면 됩니다:
 
 ```powershell
 $ python script\bootstrap.py -v --target_arch=x64
@@ -83,8 +83,8 @@ $ python script\cpplint.py
 $ python script\test.py
 ```
 
-테스트 실행시 `runas`와 같은 네이티브 모듈을 포함하는데 이 모듈은 디버그 빌드에서
-같이 사용할 수 없습니다. 하지만 여전히 릴리즈 빌드에선 사용할 수 있습니다.
+테스트 실행시 `runas`와 같은 네이티브 모듈을 포함하는데 이 모듈은 디버그 빌드에서 같이
+사용할 수 없습니다. 하지만 여전히 릴리즈 빌드에선 사용할 수 있습니다.
 
 릴리즈 빌드로 테스트를 실행하려면 다음 커맨드를 사용하면 됩니다:
 
@@ -105,8 +105,8 @@ Visual Studio가 업데이트까지 완벽하게 설치된 최신버전인지 �
 
 ### Assertion failed: ((handle))->activecnt >= 0
 
-Cygwin에서 빌드 할 경우 `bootstrap.py` 스크립트가 다음의 에러와 함께 빌드에
-실패할 수 있습니다:
+Cygwin에서 빌드 할 경우 `bootstrap.py` 스크립트가 다음의 에러와 함께 빌드에 실패할 수
+있습니다:
 
 ```
 Assertion failed: ((handle))->activecnt >= 0, file src\win\pipe.c, line 1430
@@ -123,9 +123,9 @@ Traceback (most recent call last):
 subprocess.CalledProcessError: Command '['npm.cmd', 'install']' returned non-zero exit status 3
 ```
 
-이 버그는 Cygwin Python과 Win32 Node를 같이 사용할 때 발생합니다.
-부트스트랩 스크립트에서 Win32 Python을 사용함으로써 이 문제를 해결할 수 있습니다.
-`C:\Python27` 디렉터리에 Python이 설치되었다는 가정하에 다음 명령을 실행하면 됩니다:
+이 버그는 Cygwin Python과 Win32 Node를 같이 사용할 때 발생합니다. 부트스트랩
+스크립트에서 Win32 Python을 사용함으로써 이 문제를 해결할 수 있습니다. `C:\Python27`
+디렉터리에 Python이 설치되었다는 가정하에 다음 명령을 실행하면 됩니다:
 
 ```bash
 $ /cygdrive/c/Python27/python.exe script/bootstrap.py
