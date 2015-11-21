@@ -322,3 +322,11 @@ describe 'browser-window module', ->
           done()
 
       w.loadURL "file://#{fixtures}/pages/save_page/index.html"
+
+  describe 'BrowserWindow options argument is optional', ->
+    it 'should create a window with default size (800x600)', ->
+      w.destroy()
+      w = new BrowserWindow()
+      size = w.getSize()
+      assert.equal size[0], 800
+      assert.equal size[1], 600
