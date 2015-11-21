@@ -1,3 +1,10 @@
+Please make sure that you use the documents that match your Electron version.
+The version number should be a part of the URL. If it's not, you are probably
+using the documentation of a development branch which may contain API changes
+that are not compatible with your Electron version.
+When in doubt, run Electron without supplying an app path, and click on the 
+`docs` link.
+
 ## Guides
 
 * [Supported Platforms](tutorial/supported-platforms.md)
