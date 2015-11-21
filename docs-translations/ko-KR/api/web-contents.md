@@ -165,6 +165,39 @@ Returns:
 
 개발자 도구에 포커스가 가거나 개발자 도구가 열렸을 때 발생되는 이벤트입니다.
 
+### Event: 'certificate-error'
+
+Returns:
+
+* `event` Event
+* `url` URL
+* `error` String - 에러 코드
+* `certificate` Object
+  * `data` Buffer - PEM 인코딩된 데이터
+  * `issuerName` String
+* `callback` Function
+
+`url`에 대한 `certificate` 인증서의 유효성 검증에 실패했을 때 발생하는 이벤트입니다.
+
+사용법은 [`app`의 `certificate-error` 이벤트](app.md#event-certificate-error)와
+같습니다.
+
+### Event: 'select-client-certificate'
+
+Returns:
+
+* `event` Event
+* `url` URL
+* `certificateList` [Objects]
+  * `data` Buffer - PEM 인코딩된 데이터
+  * `issuerName` String - 인증서 발급자 이름
+* `callback` Function
+
+클라이언트 인증이 요청되었을 때 발생하는 이벤트 입니다.
+
+사용법은 [`app`의 `select-client-certificate` 이벤트](app.md#event-select-client-certificate)와
+같습니다.
+
 ### Event: 'login'
 
 Returns:
