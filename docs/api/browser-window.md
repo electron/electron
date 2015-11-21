@@ -25,17 +25,17 @@ You can also create a window without chrome by using
 
 It creates a new `BrowserWindow` with native properties as set by the `options`.
 
-### `new BrowserWindow(options)`
+### `new BrowserWindow([options])`
 
-`options` Object, properties:
+`options` Object (optional), properties:
 
-* `width` Integer - Window's width.
-* `height` Integer - Window's height.
+* `width` Integer - Window's width. Default is 800 pixels.
+* `height` Integer - Window's height. Default is 600 pixels.
 * `x` Integer - Window's left offset from screen.
 * `y` Integer - Window's top offset from screen.
 * `useContentSize` Boolean - The `width` and `height` would be used as web
    page's size, which means the actual window's size will include window
-   frame's size and be slightly larger.
+   frame's size and be slightly larger. Default is `false`.
 * `center` Boolean - Show window in the center of the screen.
 * `minWidth` Integer - Window's minimum width.
 * `minHeight` Integer - Window's minimum height.
@@ -51,7 +51,8 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
 * `title` String - Default window title.
 * `icon` [NativeImage](native-image.md) - The window icon, when omitted on
   Windows the executable's icon would be used as window icon.
-* `show` Boolean - Whether window should be shown when created.
+* `show` Boolean - Whether window should be shown when created. Default is
+`true`.
 * `frame` Boolean - Specify `false` to create a
 [Frameless Window](frameless-window.md).
 * `acceptFirstMouse` Boolean - Whether the web view accepts a single
