@@ -189,11 +189,11 @@ app.once('ready', function() {
         {
           label: 'Hide Others',
           accelerator: 'Command+Shift+H',
-          role: 'hideothers:'
+          role: 'hideothers'
         },
         {
           label: 'Show All',
-          role: 'unhide:'
+          role: 'unhide'
         },
         {
           type: 'separator'
