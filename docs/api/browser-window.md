@@ -32,9 +32,9 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
 * `width` Integer - Window's width in pixels. Default is `800`.
 * `height` Integer - Window's height in pixels. Default is `600`.
 * `x` Integer - Window's left offset from screen. Default is to center the
-window.
+  window.
 * `y` Integer - Window's top offset from screen. Default is to center the
-window.
+  window.
 * `useContentSize` Boolean - The `width` and `height` would be used as web
    page's size, which means the actual window's size will include window
    frame's size and be slightly larger. Default is `false`.
@@ -50,19 +50,19 @@ window.
   set to `false` the fullscreen button will be hidden or disabled on OS X.
   Default is `false`.
 * `skipTaskbar` Boolean - Whether to show the window in taskbar. Default is
-`false`.
+  `false`.
 * `kiosk` Boolean - The kiosk mode. Default is `false`.
 * `title` String - Default window title. Default is `"Electron"`.
 * `icon` [NativeImage](native-image.md) - The window icon, when omitted on
   Windows the executable's icon would be used as window icon.
 * `show` Boolean - Whether window should be shown when created. Default is
-`true`.
+  `true`.
 * `frame` Boolean - Specify `false` to create a
-[Frameless Window](frameless-window.md). Default is `true`.
+  [Frameless Window](frameless-window.md). Default is `true`.
 * `acceptFirstMouse` Boolean - Whether the web view accepts a single
   mouse-down event that simultaneously activates the window. Default is `false`.
 * `disableAutoHideCursor` Boolean - Whether to hide cursor when typing. Default
-is `false`.
+  is `false`.
 * `autoHideMenuBar` Boolean - Auto hide the menu bar unless the `Alt`
   key is pressed. Default is `false`.
 * `enableLargerThanScreen` Boolean - Enable the window to be resized larger
@@ -73,7 +73,7 @@ is `false`.
 * `darkTheme` Boolean - Forces using dark theme for the window, only works on
   some GTK+3 desktop environments. Default is `false`.
 * `transparent` Boolean - Makes the window [transparent](frameless-window.md).
-Default is `false`.
+  Default is `false`.
 * `type` String - Specifies the type of the window, which applies
   additional platform-specific properties. By default it's undefined and you'll
   get a regular app window. Supported values:
@@ -102,7 +102,6 @@ Default is `false`.
     scripts run in the page. This script will always have access to node APIs
     no matter whether node integration is turned on or off. The value should
     be the absolute file path to the script.
-
     When node integration is turned off, the preload script can reintroduce
     Node global symbols back to the global scope. See example
     [here](process.md#event-loaded).
@@ -126,18 +125,18 @@ Default is `false`.
   * `images` Boolean - Enables image support. Default is `true`.
   * `java` Boolean - Enables Java support. Default is `false`.
   * `textAreasAreResizable` Boolean - Make TextArea elements resizable. Default
-  is `true`.
+    is `true`.
   * `webgl` Boolean - Enables WebGL support. Default is `true`.
   * `webaudio` Boolean - Enables WebAudio support. Default is `true`.
   * `plugins` Boolean - Whether plugins should be enabled. Default is `false`.
   * `experimentalFeatures` Boolean - Enables Chromium's experimental features.
-  Default is `false`.
+    Default is `false`.
   * `experimentalCanvasFeatures` Boolean - Enables Chromium's experimental
-  canvas features. Default is `false`.
+    canvas features. Default is `false`.
   * `overlayScrollbars` Boolean - Enables overlay scrollbars. Default is
-  `false`.
+    `false`.
   * `overlayFullscreenVideo` Boolean - Enables overlay fullscreen video. Default
-  is `false`
+    is `false`
   * `sharedWorker` Boolean - Enables Shared Worker support. Default is `false`.
   * `directWrite` Boolean - Enables DirectWrite font rendering system on
      Windows. Default is `true`.

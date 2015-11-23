@@ -349,7 +349,7 @@ this limitation.
 
 ### `webContents.setAudioMuted(muted)`
 
-+ `muted` Boolean
+* `muted` Boolean
 
 Mute the audio on the current web page.
 
