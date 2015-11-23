@@ -225,7 +225,7 @@ will be set as each window's top menu.
 
 Sends the `action` to the first responder of application. This is used for
 emulating default Cocoa menu behaviors, usually you would just use the
-`selector` property of `MenuItem`.
+`role` property of `MenuItem`.
 
 ### `Menu.buildFromTemplate(template)`
 
