@@ -1,8 +1,9 @@
 # session
 
-`session` 객체는 [`BrowserWindow`](browser-window.md)의
-[`webContents`](web-contents.md)의 프로퍼티입니다. 다음과 같이 `BrowserWindow`
-인스턴스에서 접근할 수 있습니다:
+`session` 모듈은 새로운 `Session` 객체를 만드는데 사용할 수 있습니다.
+
+또한 존재하는 [`BrowserWindow`](browser-window.md)의
+[`webContents`](web-contents.md)에서 `session` 속성으로 접근할 수도 있습니다.
 
 ```javascript
 var BrowserWindow = require('browser-window');
@@ -10,12 +11,47 @@ var BrowserWindow = require('browser-window');
 var win = new BrowserWindow({ width: 800, height: 600 });
 win.loadURL("http://github.com");
 
-var session = win.webContents.session
+var ses = win.webContents.session
 ```
 
-## Events
+## Methods
 
-### Event: 'will-download'
+`session` 모듈은 다음과 같은 메서드를 가지고 있습니다:
+
+### session.fromPartition(partition)
+
+* `partition` String
+
+`partition` 문자열로 부터 새로운 `Session` 인스턴스를 만들어 반환합니다.
+
+`partition`이 `persist:`로 시작하면 페이지는 지속성 세션을 사용하며 다른 모든 앱 내의
+페이지에서 같은 `partition`을 사용할 수 있습니다. 만약 `persist:` 접두어로 시작하지
+않으면 페이지는 인-메모리 세션을 사용합니다. `partition`을 지정하지 않으면 어플리케이션의
+기본 세션이 반환됩니다.
+
+## Properties
+
+`session` 모듈은 다음과 같은 속성을 가지고 있습니다:
+
+### session.defaultSession
+
+어플리케이션의 기본 세션 객체를 반환합니다.
+
+## Class: Session
+
+`session` 모듈을 사용하여 `Session` 객체를 생성할 수 있습니다:
+
+```javascript
+const session = require('electron').session;
+
+var ses = session.fromPartition('persist:name');
+ ```
+
+### Instance Events
+
+`Session` 객체는 다음과 같은 이벤트를 가지고 있습니다:
+
+#### Event: 'will-download'
 
 * `event` Event
 * `item` [DownloadItem](download-item.md)
@@ -34,36 +70,11 @@ session.on('will-download', function(event, item, webContents) {
 });
 ```
 
-### Event: 'untrusted-certificate'
+### Instance Methods
 
-* `event` Event
-* `hostname` String
-* `certificate` Object
-  * `data` Buffer - PEM encoded data
-  * `issuerName` String
-* `callback` Function
+`Session` 객체는 다음과 같은 메서드와 속성을 가지고 있습니다:
 
-`hostname`에 대한 `certificate`의 유효성 검증이 실패했을 때 발생하는 이벤트 입니다.
-인증서를 신뢰한다면 `event.preventDefault()` 와 `callback(true)`를 호출하여 기본
-동작을 방지해야 합니다.
-
-```javascript
-session.on('verify-certificate', function(event, hostname, certificate, callback) {
-  if (hostname == "github.com") {
-    // verification logic.
-    event.preventDefault();
-    callback(true);
-  } else {
-    callback(false);
-  }
-});
-```
-
-## Methods
-
-`session` 객체는 다음과 같은 메서드와 속성을 가지고 있습니다:
-
-### `session.cookies`
+#### `ses.cookies`
 
 `cookies` 속성은 쿠키를 조작하는 방법을 제공합니다. 예를 들어 다음과 같이 할 수
 있습니다:
@@ -100,9 +111,9 @@ win.webContents.on('did-finish-load', function() {
 });
 ```
 
-### `session.cookies.get(details, callback)`
+#### `ses.cookies.get(details, callback)`
 
-`details` Object, properties:
+`details` Object
 
 * `url` String - `url`에 관련된 쿠키를 가져옵니다. 이 속성을 비워두면 모든 url의
   쿠키를 가져옵니다.
@@ -128,9 +139,9 @@ win.webContents.on('did-finish-load', function() {
   *  `expirationDate` Double - (Option) UNIX 시간으로 표시되는 쿠키의 만료일에
     대한 초 단위 시간. 세션 쿠키는 지원되지 않음.
 
-### `session.cookies.set(details, callback)`
+#### `ses.cookies.set(details, callback)`
 
-`details` Object, properties:
+`details` Object
 
 * `url` String - `url`에 관련된 쿠키를 가져옵니다.
 * `name` String - 쿠키의 이름입니다. 기본적으로 비워두면 생략됩니다.
@@ -147,7 +158,7 @@ win.webContents.on('did-finish-load', function() {
 * `callback` Function - function(error)
   * `error` Error
 
-### `session.cookies.remove(details, callback)`
+#### `ses.cookies.remove(details, callback)`
 
 * `details` Object, proprties:
   * `url` String - 쿠키와 관련된 URL입니다.
@@ -155,13 +166,13 @@ win.webContents.on('did-finish-load', function() {
 * `callback` Function - function(error)
   * `error` Error
 
-### `session.clearCache(callback)`
+#### `ses.clearCache(callback)`
 
 * `callback` Function - 작업이 완료되면 호출됩니다.
 
 세션의 HTTP 캐시를 비웁니다.
 
-### `session.clearStorageData([options, ]callback)`
+#### `ses.clearStorageData([options, ]callback)`
 
 * `options` Object (optional), proprties:
   * `origin` String - `scheme://host:port`와 같은 `window.location.origin` 규칙을
@@ -175,7 +186,7 @@ win.webContents.on('did-finish-load', function() {
 
 웹 스토리지의 데이터를 비웁니다.
 
-### `session.setProxy(config, callback)`
+#### `ses.setProxy(config, callback)`
 
 * `config` String
 * `callback` Function - 작업이 완료되면 호출됩니다.
@@ -216,14 +227,22 @@ proxy-uri = [<proxy-scheme>"://"]<proxy-host>[":"<proxy-port>]
                                       프록시를 다른 모든 URL에 사용합니다.
 ```
 
-### `session.setDownloadPath(path)`
+### `app.resolveProxy(url, callback)`
+
+* `url` URL
+* `callback` Function
+
+`url`의 프록시 정보를 해석합니다. `callback`은 요청이 수행되었을 때
+`callback(proxy)` 형태로 호출됩니다.
+
+#### `ses.setDownloadPath(path)`
 
 * `path` String - 다운로드 위치
 
 다운로드 저장 위치를 지정합니다. 기본 다운로드 위치는 각 어플리케이션 데이터 디렉터리의
 `Downloads` 폴더입니다.
 
-### `session.enableNetworkEmulation(options)`
+#### `ses.enableNetworkEmulation(options)`
 
 * `options` Object
   * `offline` Boolean - 네트워크의 오프라인 상태 여부
@@ -245,6 +264,26 @@ window.webContents.session.enableNetworkEmulation({
 window.webContents.session.enableNetworkEmulation({offline: true});
 ```
 
-### `session.disableNetworkEmulation`
+#### `ses.disableNetworkEmulation()`
 
 활성화된 `session`의 에뮬레이션을 비활성화합니다. 기본 네트워크 설정으로 돌아갑니다.
+
+#### `ses.setCertificateVerifyProc(proc)`
+
+ * `proc` Function
+
+`session`에 인증서의 유효성을 확인하는 프로세스(proc)를 등록합니다. `proc`은 서버
+인증서 유효성 검증 요청이 들어왔을 때 언제나 `proc(hostname, certificate, callback)`
+형식으로 호출됩니다. `callback(true)`을 호출하면 인증을 승인하고 `callback(false)`를
+호출하면 인증을 거부합니다.
+
+`setCertificateVerifyProc(null)`을 호출하면 기본 검증 프로세스로 되돌립니다.
+
+```javascript
+myWindow.webContents.session.setCertificateVerifyProc(function(hostname, cert, callback) {
+ if (hostname == 'github.com')
+   callback(true);
+ else
+   callback(false);
+});
+```

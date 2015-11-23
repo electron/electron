@@ -139,6 +139,35 @@ Returns:
 
 새로운 [browserWindow](browser-window.md)가 생성되었을 때 발생하는 이벤트 입니다.
 
+### Event: 'certificate-error'
+
+Returns:
+
+* `event` Event
+* `webContents` [WebContents](web-contents.md)
+* `url` URL
+* `error` String - 에러 코드
+* `certificate` Object
+  * `data` Buffer - PEM 인코딩된 데이터
+  * `issuerName` String
+* `callback` Function
+
+`url`에 대한 `certificate` 인증서의 유효성 검증에 실패했을 때 발생하는 이벤트입니다.
+인증서를 신뢰한다면 `event.preventDefault()` 와 `callback(true)`를 호출하여
+기본 동작을 방지하고 인증을 승인할 수 있습니다.
+
+```javascript
+session.on('certificate-error', function(event, webContents, url, error, certificate, callback) {
+  if (url == "https://github.com") {
+    // Verification logic.
+    event.preventDefault();
+    callback(true);
+  } else {
+    callback(false);
+  }
+});
+```
+
 ### Event: 'select-client-certificate'
 
 Returns:
@@ -151,7 +180,7 @@ Returns:
   * `issuerName` String - 발급자의 공통 이름
 * `callback` Function
 
-사용자 인증이 요청되었을 때 발생하는 이벤트 입니다.
+클라이언트 인증이 요청되었을 때 발생하는 이벤트 입니다.
 
 `url`은 클라이언트 인증서를 요청하는 탐색 항목에 해당합니다.
 그리고 `callback`은 목록에서 필터링된 항목과 함께 호출될 필요가 있습니다.
@@ -293,14 +322,6 @@ npm 모듈 규칙에 따라 대부분의 경우 `package.json`의 `name` 필드�
 
 현재 어플리케이션의 [로케일](https://ko.wikipedia.org/wiki/%EB%A1%9C%EC%BC%80%EC%9D%BC)을
 반환합니다.
-
-### `app.resolveProxy(url, callback)`
-
-* `url` URL
-* `callback` Function
-
-`url`의 프록시 정보를 해석합니다. `callback`은 요청이 수행되었을 때
-`callback(proxy)` 형태로 호출됩니다.
 
 ### `app.addRecentDocument(path)` _OS X_ _Windows_
 

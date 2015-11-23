@@ -68,9 +68,15 @@ win.show();
 * `darkTheme` Boolean - 설정에 상관 없이 무조건 어두운 윈도우 테마를 사용합니다.
   몇몇 GTK+3 데스크톱 환경에서만 작동합니다.
 * `transparent` Boolean - 윈도우 창을 [투명화](frameless-window.md)합니다.
-* `type` String - 윈도우 창 종류를 지정합니다.
-  사용할 수 있는 창 종류는 `desktop`, `dock`, `toolbar`, `splash`,
-  `notification`와 같습니다. 이 속성은 Linux에서만 작동합니다.
+* `type` String - 특정 플랫폼에만 적용되는 윈도우 창의 종류를 지정합니다. 사용할 수
+  있는 창의 종류는 다음과 같습니다:
+  * Linux의 경우: `desktop`, `dock`, `toolbar`, `splash`, `notification` 종류를
+    사용할 수 있습니다.
+  * OS X의 경우: `desktop`, `textured` 종류를 사용할 수 있습니다. `textured` 종류는
+    창을 그라디언트 형태로 표현합니다 (`NSTexturedBackgroundWindowMask`) `desktop`
+    종류는 데스크탑 배경 레벨에 윈도우를 배치합니다 (`kCGDesktopWindowLevel - 1`).
+    참고로 이렇게 만들어진 윈도우는 포커스, 키보드, 마우스 이벤트를 받을 수 없습니다.
+    하지만 편법으로 `globalShortcut`을 통해 키 입력을 받을 수 있습니다.
 * `standardWindow` Boolean - OS X의 표준 윈도우를 텍스쳐 윈도우 대신 사용합니다.
   기본 값은 `true`입니다.
 * `titleBarStyle` String, OS X - 윈도우 타이틀 바 스타일을 지정합니다. 이 속성은
