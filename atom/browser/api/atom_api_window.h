@@ -38,8 +38,7 @@ class WebContents;
 class Window : public mate::TrackableObject<Window>,
                public NativeWindowObserver {
  public:
-  static mate::Wrappable* New(v8::Isolate* isolate,
-                              const mate::Dictionary& options);
+  static mate::Wrappable* New(v8::Isolate* isolate, mate::Arguments* args);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::ObjectTemplate> prototype);

@@ -261,13 +261,23 @@ void Window::OnWindowMessage(UINT message, WPARAM w_param, LPARAM l_param) {
 #endif
 
 // static
-mate::Wrappable* Window::New(v8::Isolate* isolate,
-                             const mate::Dictionary& options) {
+mate::Wrappable* Window::New(v8::Isolate* isolate, mate::Arguments* args) {
   if (!Browser::Get()->is_ready()) {
     isolate->ThrowException(v8::Exception::Error(mate::StringToV8(
         isolate, "Cannot create BrowserWindow before app is ready")));
     return nullptr;
   }
+
+  if (args->Length() > 1) {
+    args->ThrowError();
+    return nullptr;
+  }
+
+  mate::Dictionary options;
+  if (!(args->Length() == 1 && args->GetNext(&options))) {
+    options = mate::Dictionary::CreateEmpty(isolate);
+  }
+
   return new Window(isolate, options);
 }
 
