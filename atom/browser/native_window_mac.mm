@@ -211,6 +211,8 @@ bool ScopedDisableResize::disable_resize_ = false;
 }
 @property BOOL acceptsFirstMouse;
 @property BOOL disableAutoHideCursor;
+@property BOOL disableKeyOrMainWindow;
+
 - (void)setShell:(atom::NativeWindowMac*)shell;
 - (void)setEnableLargerThanScreen:(bool)enable;
 @end
@@ -255,6 +257,14 @@ bool ScopedDisableResize::disable_resize_ = false;
 
   NSArray *children = [super accessibilityAttributeValue:attribute];
   return [children filteredArrayUsingPredicate:predicate];
+}
+
+- (BOOL)canBecomeMainWindow {
+  return !self.disableKeyOrMainWindow;
+}
+
+- (BOOL)canBecomeKeyWindow {
+  return !self.disableKeyOrMainWindow;
 }
 
 @end
@@ -330,8 +340,6 @@ NativeWindowMac::NativeWindowMac(
       width,
       height);
 
-  bool useStandardWindow = true;
-  options.Get(options::kStandardWindow, &useStandardWindow);
   bool resizable = true;
   options.Get(options::kResizable, &resizable);
 
@@ -339,6 +347,17 @@ NativeWindowMac::NativeWindowMac(
   std::string titleBarStyle;
   if (base::mac::IsOSYosemiteOrLater())
     options.Get(options::kTitleBarStyle, &titleBarStyle);
+
+  std::string windowType;
+  options.Get(options::kType, &windowType);
+
+  bool useStandardWindow = true;
+  // eventually deprecate separate "standardWindow" option in favor of
+  // standard / textured window types
+  options.Get(options::kStandardWindow, &useStandardWindow);
+  if (windowType == "textured") {
+    useStandardWindow = false;
+  }
 
   NSUInteger styleMask = NSTitledWindowMask | NSClosableWindowMask |
                          NSMiniaturizableWindowMask;
@@ -369,6 +388,15 @@ NativeWindowMac::NativeWindowMac(
     [window_ setOpaque:NO];
     [window_ setHasShadow:NO];
     [window_ setBackgroundColor:[NSColor clearColor]];
+  }
+
+  if (windowType == "desktop") {
+    [window_ setLevel:kCGDesktopWindowLevel - 1];
+    [window_ setDisableKeyOrMainWindow:YES];
+    [window_ setCollectionBehavior:
+        (NSWindowCollectionBehaviorCanJoinAllSpaces |
+         NSWindowCollectionBehaviorStationary |
+         NSWindowCollectionBehaviorIgnoresCycle)];
   }
 
   // Remove non-transparent corners, see http://git.io/vfonD.

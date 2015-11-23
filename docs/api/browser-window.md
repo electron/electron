@@ -25,56 +25,70 @@ You can also create a window without chrome by using
 
 It creates a new `BrowserWindow` with native properties as set by the `options`.
 
-### `new BrowserWindow(options)`
+### `new BrowserWindow([options])`
 
-`options` Object, properties:
+`options` Object (optional), properties:
 
-* `width` Integer - Window's width.
-* `height` Integer - Window's height.
-* `x` Integer - Window's left offset from screen.
-* `y` Integer - Window's top offset from screen.
+* `width` Integer - Window's width in pixels. Default is `800`.
+* `height` Integer - Window's height in pixels. Default is `600`.
+* `x` Integer - Window's left offset from screen. Default is to center the
+  window.
+* `y` Integer - Window's top offset from screen. Default is to center the
+  window.
 * `useContentSize` Boolean - The `width` and `height` would be used as web
    page's size, which means the actual window's size will include window
-   frame's size and be slightly larger.
+   frame's size and be slightly larger. Default is `false`.
 * `center` Boolean - Show window in the center of the screen.
-* `minWidth` Integer - Window's minimum width.
-* `minHeight` Integer - Window's minimum height.
-* `maxWidth` Integer - Window's maximum width.
-* `maxHeight` Integer - Window's maximum height.
-* `resizable` Boolean - Whether window is resizable.
+* `minWidth` Integer - Window's minimum width. Default is `0`.
+* `minHeight` Integer - Window's minimum height. Default is `0`.
+* `maxWidth` Integer - Window's maximum width. Default is no limit.
+* `maxHeight` Integer - Window's maximum height. Default is no limit.
+* `resizable` Boolean - Whether window is resizable. Default is `true`.
 * `alwaysOnTop` Boolean - Whether the window should always stay on top of
-   other windows.
+   other windows. Default is `false`.
 * `fullscreen` Boolean - Whether the window should show in fullscreen. When
   set to `false` the fullscreen button will be hidden or disabled on OS X.
-* `skipTaskbar` Boolean - Whether to show the window in taskbar.
-* `kiosk` Boolean - The kiosk mode.
-* `title` String - Default window title.
+  Default is `false`.
+* `skipTaskbar` Boolean - Whether to show the window in taskbar. Default is
+  `false`.
+* `kiosk` Boolean - The kiosk mode. Default is `false`.
+* `title` String - Default window title. Default is `"Electron"`.
 * `icon` [NativeImage](native-image.md) - The window icon, when omitted on
   Windows the executable's icon would be used as window icon.
-* `show` Boolean - Whether window should be shown when created.
+* `show` Boolean - Whether window should be shown when created. Default is
+  `true`.
 * `frame` Boolean - Specify `false` to create a
-[Frameless Window](frameless-window.md).
+  [Frameless Window](frameless-window.md). Default is `true`.
 * `acceptFirstMouse` Boolean - Whether the web view accepts a single
-  mouse-down event that simultaneously activates the window.
-* `disableAutoHideCursor` Boolean - Whether to hide cursor when typing.
+  mouse-down event that simultaneously activates the window. Default is `false`.
+* `disableAutoHideCursor` Boolean - Whether to hide cursor when typing. Default
+  is `false`.
 * `autoHideMenuBar` Boolean - Auto hide the menu bar unless the `Alt`
-  key is pressed.
+  key is pressed. Default is `false`.
 * `enableLargerThanScreen` Boolean - Enable the window to be resized larger
-  than screen.
+  than screen. Default is `false`.
 * `backgroundColor` String - Window's background color as Hexadecimal value,
   like `#66CD00` or `#FFF`. This is only implemented on Linux and Windows.
+  Default is `#000` (black).
 * `darkTheme` Boolean - Forces using dark theme for the window, only works on
-  some GTK+3 desktop environments.
+  some GTK+3 desktop environments. Default is `false`.
 * `transparent` Boolean - Makes the window [transparent](frameless-window.md).
-* `type` String - Specifies the type of the window, possible types are
-  `desktop`, `dock`, `toolbar`, `splash`, `notification`. This only works on
-  Linux.
-* `standardWindow` Boolean - Uses the OS X's standard window instead of the
-  textured window. Defaults to `true`.
+  Default is `false`.
+* `type` String - Specifies the type of the window, which applies
+  additional platform-specific properties. By default it's undefined and you'll
+  get a regular app window. Supported values:
+  * On Linux, possible types are `desktop`, `dock`, `toolbar`, `splash`,
+    `notification`.
+  * On OS X, possible types are `desktop`, `textured`. The `textured` type adds
+    metal gradient appearance (`NSTexturedBackgroundWindowMask`). The `desktop`
+    type places the window at the desktop background window level
+    (`kCGDesktopWindowLevel - 1`). Note that desktop window will not receive
+    focus, keyboard or mouse events, but you can use `globalShortcut` to receive
+    input sparingly.
 * `titleBarStyle` String, OS X - specifies the style of window title bar.
   This option is supported on OS X 10.10 Yosemite and newer. There are three
   possible values:
-  * `default` or not specified results in the standard gray opaque Mac title
+  * `default` or not specified, results in the standard gray opaque Mac title
   bar.
   * `hidden` results in a hidden title bar and a full size content window, yet
   the title bar still has the standard window controls ("traffic lights") in
@@ -86,11 +100,10 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     is `true`.
   * `preload` String - Specifies a script that will be loaded before other
     scripts run in the page. This script will always have access to node APIs
-    no matter whether node integration is turned on or off. The value should 
+    no matter whether node integration is turned on or off. The value should
     be the absolute file path to the script.
-
-    When node integration is turned off, the preload script can reintroduce 
-    Node global symbols back to the global scope. See example 
+    When node integration is turned off, the preload script can reintroduce
+    Node global symbols back to the global scope. See example
     [here](process.md#event-loaded).
   * `partition` String - Sets the session used by the page. If `partition`
     starts with `persist:`, the page will use a persistent session available to
@@ -99,33 +112,38 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     `partition`, multiple pages can share the same session. If the `partition`
     is unset then default session of the app will be used.
   * `zoomFactor` Number - The default zoom factor of the page, `3.0` represents
-    `300%`.
-  * `javascript` Boolean
+    `300%`. Default is `1.0`.
+  * `javascript` Boolean - Enables JavaScript support. Default is `true`.
   * `webSecurity` Boolean - When setting `false`, it will disable the
     same-origin policy (Usually using testing websites by people), and set
     `allowDisplayingInsecureContent` and `allowRunningInsecureContent` to
-    `true` if these two options are not set by user.
+    `true` if these two options are not set by user. Default is `true`.
   * `allowDisplayingInsecureContent` Boolean - Allow an https page to display
-    content like images from http URLs.
+    content like images from http URLs. Default is `false`.
   * `allowRunningInsecureContent` Boolean - Allow a https page to run
-    JavaScript, CSS or plugins from http URLs.
-  * `images` Boolean
-  * `java` Boolean
-  * `textAreasAreResizable` Boolean
-  * `webgl` Boolean
-  * `webaudio` Boolean
-  * `plugins` Boolean - Whether plugins should be enabled.
-  * `experimentalFeatures` Boolean
-  * `experimentalCanvasFeatures` Boolean
-  * `overlayScrollbars` Boolean
-  * `overlayFullscreenVideo` Boolean
-  * `sharedWorker` Boolean
-  * `directWrite` Boolean - Whether the DirectWrite font rendering system on
-     Windows is enabled.
+    JavaScript, CSS or plugins from http URLs. Default is `false`.
+  * `images` Boolean - Enables image support. Default is `true`.
+  * `java` Boolean - Enables Java support. Default is `false`.
+  * `textAreasAreResizable` Boolean - Make TextArea elements resizable. Default
+    is `true`.
+  * `webgl` Boolean - Enables WebGL support. Default is `true`.
+  * `webaudio` Boolean - Enables WebAudio support. Default is `true`.
+  * `plugins` Boolean - Whether plugins should be enabled. Default is `false`.
+  * `experimentalFeatures` Boolean - Enables Chromium's experimental features.
+    Default is `false`.
+  * `experimentalCanvasFeatures` Boolean - Enables Chromium's experimental
+    canvas features. Default is `false`.
+  * `overlayScrollbars` Boolean - Enables overlay scrollbars. Default is
+    `false`.
+  * `overlayFullscreenVideo` Boolean - Enables overlay fullscreen video. Default
+    is `false`
+  * `sharedWorker` Boolean - Enables Shared Worker support. Default is `false`.
+  * `directWrite` Boolean - Enables DirectWrite font rendering system on
+     Windows. Default is `true`.
   * `pageVisibility` Boolean - Page would be forced to be always in visible
      or hidden state once set, instead of reflecting current window's
      visibility. Users can set it to `true` to prevent throttling of DOM
-     timers.
+     timers. Default is `false`.
 
 ## Events
 

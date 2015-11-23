@@ -206,14 +206,6 @@ void App::OnWillFinishLaunching() {
 }
 
 void App::OnFinishLaunching() {
-  // Create the defaultSession.
-  v8::Locker locker(isolate());
-  v8::HandleScope handle_scope(isolate());
-  auto browser_context = static_cast<AtomBrowserContext*>(
-      AtomBrowserMainParts::Get()->browser_context());
-  auto handle = Session::CreateFrom(isolate(), browser_context);
-  default_session_.Reset(isolate(), handle.ToV8());
-
   Emit("ready");
 }
 
@@ -325,13 +317,6 @@ std::string App::GetLocale() {
   return l10n_util::GetApplicationLocale("");
 }
 
-v8::Local<v8::Value> App::DefaultSession(v8::Isolate* isolate) {
-  if (default_session_.IsEmpty())
-    return v8::Null(isolate);
-  else
-    return v8::Local<v8::Value>::New(isolate, default_session_);
-}
-
 bool App::MakeSingleInstance(
     const ProcessSingleton::NotificationCallback& callback) {
   if (process_singleton_.get())
@@ -382,8 +367,7 @@ mate::ObjectTemplateBuilder App::GetObjectTemplateBuilder(
       .SetMethod("allowNTLMCredentialsForAllDomains",
                  &App::AllowNTLMCredentialsForAllDomains)
       .SetMethod("getLocale", &App::GetLocale)
-      .SetMethod("makeSingleInstance", &App::MakeSingleInstance)
-      .SetProperty("defaultSession", &App::DefaultSession);
+      .SetMethod("makeSingleInstance", &App::MakeSingleInstance);
 }
 
 // static

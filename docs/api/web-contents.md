@@ -225,12 +225,6 @@ The usage is the same with [the `login` event of `app`](app.md#event-login).
 
 The `webContents` object has the following instance methods:
 
-### `webContents.session`
-
-Returns the `session` object used by this webContents.
-
-See [session documentation](session.md) for this object's methods.
-
 ### `webContents.loadURL(url[, options])`
 
 * `url` URL
@@ -355,7 +349,7 @@ this limitation.
 
 ### `webContents.setAudioMuted(muted)`
 
-+ `muted` Boolean
+* `muted` Boolean
 
 Mute the audio on the current web page.
 
@@ -678,17 +672,6 @@ is in 32bit ARGB format).
 
 End subscribing for frame presentation events.
 
-## Instance Properties
-
-`WebContents` objects also have the following properties:
-
-### `webContents.devToolsWebContents`
-
-Get the `WebContents` of DevTools for this `WebContents`.
-
-**Note:** Users should never store this object because it may become `null`
-when the DevTools has been closed.
-
 ### `webContents.savePage(fullPath, saveType, callback)`
 
 * `fullPath` String - The full file path.
@@ -711,3 +694,18 @@ win.webContents.on('did-finish-load', function() {
   });
 });
 ```
+
+## Instance Properties
+
+`WebContents` objects also have the following properties:
+
+### `webContents.session`
+
+Returns the [session](session.md) object used by this webContents.
+
+### `webContents.devToolsWebContents`
+
+Get the `WebContents` of DevTools for this `WebContents`.
+
+**Note:** Users should never store this object because it may become `null`
+when the DevTools has been closed.

@@ -42,6 +42,9 @@ Object.defineProperties module.exports,
   screen:
     enumerable: true
     get: -> require '../screen'
+  session:
+    enumerable: true
+    get: -> require '../session'
   Tray:
     enumerable: true
     get: -> require '../tray'

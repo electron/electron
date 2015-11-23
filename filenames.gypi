@@ -26,6 +26,7 @@
       'atom/browser/api/lib/power-monitor.coffee',
       'atom/browser/api/lib/power-save-blocker.coffee',
       'atom/browser/api/lib/protocol.coffee',
+      'atom/browser/api/lib/session.coffee',
       'atom/browser/api/lib/screen.coffee',
       'atom/browser/api/lib/tray.coffee',
       'atom/browser/api/lib/web-contents.coffee',
