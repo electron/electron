@@ -1,3 +1,12 @@
+Please make sure that you use the documents that match your Electron version.
+The version number should be a part of the page URL. If it's not, you are
+probably using the documentation of a development branch which may contain API
+changes that are not compatible with your Electron version. If that's the case,
+you can switch to a different version of the documentation at the
+[available versions](http://electron.atom.io/docs/) list on atom.io, or if
+you're using the GitHub interface, open the "Switch branches/tags" dropdown and
+select the tag that matches your version.
+
 ## Guides
 
 * [Supported Platforms](tutorial/supported-platforms.md)
