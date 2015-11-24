@@ -107,7 +107,7 @@ unwrapArgs = (sender, args) ->
 # style function and the caller didn't pass a callback.
 callFunction = (event, func, caller, args) ->
   funcMarkedAsync = v8Util.getHiddenValue(func, 'asynchronous')
-  funcPassedCallback = args[args.length - 1] is 'function'
+  funcPassedCallback = typeof args[args.length - 1] is 'function'
 
   try
     if funcMarkedAsync and not funcPassedCallback
