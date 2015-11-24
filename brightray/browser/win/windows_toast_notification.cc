@@ -9,6 +9,7 @@
 
 #include "base/strings/utf_string_conversions.h"
 #include "browser/win/scoped_hstring.h"
+#include "common/application_info.h"
 #include "content/public/browser/desktop_notification_delegate.h"
 
 using namespace ABI::Windows::Data::Xml::Dom;
@@ -19,37 +20,50 @@ namespace {
 
 bool GetAppUserModelId(ScopedHString* app_id) {
   PWSTR current_app_id;
-  if (FAILED(GetCurrentProcessExplicitAppUserModelID(&current_app_id)))
-    return false;
-
-  app_id->Set(current_app_id);
-  CoTaskMemFree(current_app_id);
+  if (SUCCEEDED(GetCurrentProcessExplicitAppUserModelID(&current_app_id))) {
+    app_id->Reset(current_app_id);
+    CoTaskMemFree(current_app_id);
+  } else {
+    app_id->Reset(base::UTF8ToUTF16(GetApplicationName()));
+  }
   return app_id->success();
 }
 
 }  // namespace
 
-WindowsToastNotification::WindowsToastNotification(
-    scoped_ptr<content::DesktopNotificationDelegate> delegate)
-    : delegate_(delegate.Pass()),
-      weak_factory_(this) {
-  // If it wasn't for Windows 7, we could do this statically
-  HRESULT init = Windows::Foundation::Initialize(RO_INIT_MULTITHREADED);
+// static
+ComPtr<ABI::Windows::UI::Notifications::IToastNotificationManagerStatics>
+    WindowsToastNotification::toast_manager_;
+
+// static
+ComPtr<ABI::Windows::UI::Notifications::IToastNotifier>
+    WindowsToastNotification::toast_notifier_;
+
+// static
+bool WindowsToastNotification::Initialize() {
+  // Just initialize, don't care if it fails or already initialized.
+  Windows::Foundation::Initialize(RO_INIT_MULTITHREADED);
 
   ScopedHString toast_manager_str(
       RuntimeClass_Windows_UI_Notifications_ToastNotificationManager);
   if (!toast_manager_str.success())
-    return;
-  HRESULT hr = Windows::Foundation::GetActivationFactory(
-      toast_manager_str, &toast_manager_);
-  if (FAILED(hr))
-    return;
+    return false;
+  if (FAILED(Windows::Foundation::GetActivationFactory(toast_manager_str,
+                                                       &toast_manager_)))
+    return false;
 
   ScopedHString app_id;
   if (!GetAppUserModelId(&app_id))
-    return;
+    return false;
 
-  toast_manager_->CreateToastNotifierWithId(app_id, &toast_notifier_);
+  return SUCCEEDED(
+      toast_manager_->CreateToastNotifierWithId(app_id, &toast_notifier_));
+}
+
+WindowsToastNotification::WindowsToastNotification(
+    scoped_ptr<content::DesktopNotificationDelegate> delegate)
+    : delegate_(delegate.Pass()),
+      weak_factory_(this) {
 }
 
 WindowsToastNotification::~WindowsToastNotification() {
@@ -217,7 +231,7 @@ bool WindowsToastNotification::GetTextNodeList(
     IXmlDocument* doc,
     IXmlNodeList** node_list,
     UINT32 req_length) {
-  tag->Set(L"text");
+  tag->Reset(L"text");
   if (!tag->success())
     return false;
 

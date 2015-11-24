@@ -7,7 +7,6 @@
 
 #include "base/win/windows_version.h"
 #include "browser/win/windows_toast_notification.h"
-#include "common/application_info.h"
 #include "content/public/browser/desktop_notification_delegate.h"
 #include "content/public/common/platform_notification_data.h"
 #include "third_party/skia/include/core/SkBitmap.h"
@@ -27,7 +26,10 @@ void RemoveNotification(base::WeakPtr<WindowsToastNotification> notification) {
 
 // static
 NotificationPresenter* NotificationPresenter::Create() {
-  return new NotificationPresenterWin;
+  if (WindowsToastNotification::Initialize())
+    return new NotificationPresenterWin;
+  else
+    return nullptr;
 }
 
 NotificationPresenterWin::NotificationPresenterWin() {
