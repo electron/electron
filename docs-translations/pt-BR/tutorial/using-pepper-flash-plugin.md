@@ -54,7 +54,7 @@ app.on('ready', function() {
       'plugins': true
     }
   });
-  mainWindow.loadUrl('file://' + __dirname + '/index.html');
+  mainWindow.loadURL('file://' + __dirname + '/index.html');
   // Algo mais
 });
 ```
