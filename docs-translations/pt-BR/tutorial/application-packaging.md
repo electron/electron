@@ -71,7 +71,7 @@ Você também pode renderizar uma página web apartir de um arquivo `asar` utili
 ```javascript
 var BrowserWindow = require('browser-window');
 var win = new BrowserWindow({width: 800, height: 600});
-win.loadUrl('file:///path/to/example.asar/static/index.html');
+win.loadURL('file:///path/to/example.asar/static/index.html');
 ```
 
 ### API Web
