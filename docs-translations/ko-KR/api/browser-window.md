@@ -27,49 +27,55 @@ win.show();
 `BrowserWindow`는 `options`를 통해 네이티브 속성을 포함한 새로운 윈도우 창을
 생성합니다.
 
-### `new BrowserWindow(options)`
+### `new BrowserWindow([options])`
 
-`options` 객체에서 사용할 수 있는 속성들:
+`options` 객체 (optional), 사용할 수 있는 속성들:
 
-* `width` Integer - 윈도우 창의 가로 너비.
-* `height` Integer - 윈도우 창의 세로 높이.
-* `x` Integer - 화면을 기준으로 창 좌측을 오프셋 한 위치.
-* `y` Integer - 화면을 기준으로 창 상단을 오프셋 한 위치.
+* `width` Integer - 윈도우 창의 가로 너비. 기본값은 `800`입니다.
+* `height` Integer - 윈도우 창의 세로 높이. 기본값은 `600`입니다.
+* `x` Integer - 화면을 기준으로 창 좌측을 오프셋 한 위치. 기본값은 화면 중앙입니다.
+* `y` Integer - 화면을 기준으로 창 상단을 오프셋 한 위치. 기본값은 화면 중앙입니다.
 * `useContentSize` Boolean - `width`와 `height`를 웹 페이지의 크기로 사용합니다.
   이 속성을 사용하면 웹 페이지의 크기에 윈도우 프레임 크기가 추가되므로 실제 창은 조금
-  더 커질 수 있습니다.
+  더 커질 수 있습니다. 기본값은 `false`입니다.
 * `center` Boolean - 윈도우 창을 화면 정 중앙에 위치시킵니다.
-* `minWidth` Integer - 윈도우 창의 최소 가로 너비.
-* `minHeight` Integer - 윈도우 창의 최소 세로 높이.
-* `maxWidth` Integer - 윈도우 창의 최대 가로 너비.
-* `maxHeight` Integer - 윈도우 창의 최대 세로 높이.
-* `resizable` Boolean - 윈도우 창의 크기를 재조정 할 수 있는지 여부.
+* `minWidth` Integer - 윈도우 창의 최소 가로 너비. 기본값은 `0`입니다.
+* `minHeight` Integer - 윈도우 창의 최소 세로 높이. 기본값은 `0`입니다.
+* `maxWidth` Integer - 윈도우 창의 최대 가로 너비. 기본값은 `제한없음`입니다.
+* `maxHeight` Integer - 윈도우 창의 최대 세로 높이. 기본값은 `제한없음`입니다.
+* `resizable` Boolean - 윈도우 창의 크기를 재조정 할 수 있는지 여부. 기본값은 `true`
+  입니다.
 * `alwaysOnTop` Boolean - 윈도우 창이 언제나 다른 창들 위에 유지되는지 여부.
-* `fullscreen` Boolean - 윈도우 창의 전체화면 활성화 여부.
+  기본값은 `false`입니다.
+* `fullscreen` Boolean - 윈도우 창의 전체화면 활성화 여부. 기본값은 `false` 입니다.
   `false`로 지정했을 경우 OS X에선 전체화면 버튼이 숨겨지거나 비활성화됩니다.
-* `skipTaskbar` Boolean - 작업표시줄 어플리케이션 아이콘 표시 여부.
-* `kiosk` Boolean - Kiosk(키오스크) 모드.
-* `title` String - 기본 윈도우 창 제목.
+* `skipTaskbar` Boolean - 작업표시줄 어플리케이션 아이콘 표시 스킵 여부. 기본값은
+  `false`입니다.
+* `kiosk` Boolean - Kiosk(키오스크) 모드. 기본값은 `false`입니다.
+* `title` String - 기본 윈도우 창 제목. 기본값은 `"Electron"`입니다.
 * `icon` [NativeImage](native-image.md) - 윈도우 아이콘, 생략하면 실행 파일의
   아이콘이 대신 사용됩니다.
-* `show` Boolean - 윈도우가 생성되면 보여줄지 여부.
+* `show` Boolean - 윈도우가 생성되면 보여줄지 여부. 기본값은 `true`입니다.
 * `frame` Boolean - `false`로 지정하면 창을 [Frameless Window](frameless-window.md)
-  형태로 생성합니다.
+  형태로 생성합니다. 기본값은 `true`입니다.
 * `acceptFirstMouse` Boolean - 윈도우가 비활성화 상태일 때 내부 컨텐츠 클릭 시
-  활성화 되는 동시에 단일 mouse-down 이벤트를 발생시킬지 여부.
-* `disableAutoHideCursor` Boolean - 파이핑중 자동으로 커서를 숨길지 여부.
+  활성화 되는 동시에 단일 mouse-down 이벤트를 발생시킬지 여부. 기본값은 `false`입니다.
+* `disableAutoHideCursor` Boolean - 파이핑중 자동으로 커서를 숨길지 여부. 기본값은
+  `false`입니다.
 * `autoHideMenuBar` Boolean - `Alt`를 누르지 않는 한 어플리케이션 메뉴바를 숨길지
-  여부.
+  여부. 기본값은 `false`입니다.
 * `enableLargerThanScreen` Boolean - 윈도우 창 크기가 화면 크기보다 크게 재조정 될
-  수 있는지 여부.
+  수 있는지 여부. 기본값은 `false`입니다.
 * `backgroundColor` String - 16진수로 표현된 윈도우의 배경 색. `#66CD00` 또는
-  `#FFF`가 사용될 수 있습니다.
-  이 속성은 Linux와 Windows에만 구현되어 있습니다.
+  `#FFF`가 사용될 수 있습니다. 이 속성은 Linux와 Windows에만 구현되어 있습니다.
+  기본값은 `#000`(검정)입니다.
 * `darkTheme` Boolean - 설정에 상관 없이 무조건 어두운 윈도우 테마를 사용합니다.
-  몇몇 GTK+3 데스크톱 환경에서만 작동합니다.
-* `transparent` Boolean - 윈도우 창을 [투명화](frameless-window.md)합니다.
-* `type` String - 특정 플랫폼에만 적용되는 윈도우 창의 종류를 지정합니다. 사용할 수
-  있는 창의 종류는 다음과 같습니다:
+  몇몇 GTK+3 데스크톱 환경에서만 작동합니다. 기본값은 `false`입니다.
+* `transparent` Boolean - 윈도우 창을 [투명화](frameless-window.md)합니다. 기본값은
+  `false`입니다.
+* `type` String - 특정 플랫폼에만 적용되는 윈도우 창의 종류를 지정합니다. 기본적으로
+  이 속성이 `undefined`일 경우 표준 윈도우가 사용됩니다. 사용할 수 있는 창의 종류는
+  다음과 같습니다:
   * Linux의 경우: `desktop`, `dock`, `toolbar`, `splash`, `notification` 종류를
     사용할 수 있습니다.
   * OS X의 경우: `desktop`, `textured` 종류를 사용할 수 있습니다. `textured` 종류는
@@ -93,11 +99,9 @@ win.show();
   * `preload` String - 스크립트를 지정하면 페이지 내의 다른 스크립트가 작동하기 전에
     로드됩니다. 여기서 지정한 스크립트는 node 통합 활성화 여부에 상관없이 언제나 모든
     node API에 접근할 수 있습니다. 이 속성의 스크립트 경로는 절대 경로로 지정해야
-    합니다.
-
-    note 통합이 비활성화되어있을 경우, preload 스크립트는 Node의 global 심볼들을
-    다시 global 스코프로 다시 포함 시킬 수 있습니다. [여기](process.md#event-loaded)
-    의 예제를 참고하세요.
+    합니다. node 통합이 비활성화되어있을 경우, preload 스크립트는 node의 global
+    심볼들을 다시 global 스코프로 다시 포함 시킬 수 있습니다.
+    [여기](process.md#event-loaded)의 예제를 참고하세요.
   * `partition` String - 페이지에서 사용할 세션을 지정합니다. 만약 `partition`이
     `persist:`로 시작하면 페이지는 지속성 세션을 사용하며 다른 모든 앱 내의
     페이지에서 같은 `partition`을 사용할 수 있습니다. 만약 `persist:` 접두어로
@@ -105,32 +109,40 @@ win.show();
     `partition`을 지정하면 같은 세션을 공유할 수 있습니다. `partition`을 지정하지
     않으면 어플리케이션의 기본 세션이 사용됩니다.
   * `zoomFactor` Number - 페이지의 기본 줌 값을 지정합니다. 예를 들어 `300%`를
-    표현하려면 `3.0`으로 지정합니다.
-  * `javascript` Boolean
+    표현하려면 `3.0`으로 지정합니다. 기본값은 `1.0`입니다.
+  * `javascript` Boolean - 자바스크립트를 활성화합니다. 기본값은 `false`입니다.
   * `webSecurity` Boolean - `false`로 지정하면 same-origin 정책을 비활성화합니다.
-    (이 속성은 보통 사람에 의해 웹 사이트를 테스트할 때 사용합니다) 그리고
-    `allowDisplayingInsecureContent`와 `allowRunningInsecureContent`이
-    사용자로부터 `true`로 지정되지 않은 경우 `true`로 지정합니다.
+    (이 속성은 보통 사람들에 의해 웹 사이트를 테스트할 때 사용합니다) 그리고
+    `allowDisplayingInsecureContent`와 `allowRunningInsecureContent` 두 속성을
+    사용자가 `true`로 지정되지 않은 경우 `true`로 지정합니다. 기본값은
+    `true`입니다.
   * `allowDisplayingInsecureContent` Boolean - https 페이지에서 http URL에서
-    로드한 이미지 같은 리소스를 표시할 수 있도록 허용합니다.
+    로드한 이미지 같은 리소스를 표시할 수 있도록 허용합니다. 기본값은 `false`입니다.
   * `allowRunningInsecureContent` Boolean - https 페이지에서 http URL에서 로드한
-    JavaScript와 CSS 또는 플러그인을 실행시킬 수 있도록 허용합니다.
-  * `images` Boolean
-  * `java` Boolean
-  * `textAreasAreResizable` Boolean
-  * `webgl` Boolean
-  * `webaudio` Boolean
-  * `plugins` Boolean - 어떤 플러그인이 활성화되어야 하는지 지정합니다.
-  * `experimentalFeatures` Boolean
-  * `experimentalCanvasFeatures` Boolean
-  * `overlayScrollbars` Boolean
-  * `overlayFullscreenVideo` Boolean
-  * `sharedWorker` Boolean
+    JavaScript와 CSS 또는 플러그인을 실행시킬 수 있도록 허용합니다. 기본값은
+    `false`입니다.
+  * `images` Boolean - 이미지 지원을 활성화합니다. 기본값은 `true`입니다.
+  * `java` Boolean - Java 지원을 활성화합니다. 기본값은 `false`입니다.
+  * `textAreasAreResizable` Boolean - HTML TextArea 요소의 크기를 재조정을
+    허용합니다. 기본값은 `true`입니다.
+  * `webgl` Boolean - WebGL 지원을 활성화합니다. 기본값은 `true`입니다.
+  * `webaudio` Boolean - WebAudio 지원을 활성화합니다. 기본값은 `true`입니다.
+  * `plugins` Boolean - 플러그인 활성화 여부를 지정합니다. 기본값은 `false`입니다.
+  * `experimentalFeatures` Boolean - Chrome의 실험적인 기능을 활성화합니다.
+    기본값은 `false`입니다.
+  * `experimentalCanvasFeatures` Boolean - Chrome의 실험적인 캔버스(canvas) 기능을
+    활성화합니다. 기본값은 `false`입니다.
+  * `overlayScrollbars` Boolean - 오버레이 스크롤바를 활성화합니다. 기본값은
+    `false`입니다.
+  * `overlayFullscreenVideo` Boolean - 오버레이 전체화면 비디오 기능을 활성화합니다.
+    기본값은 `false`입니다.
+  * `sharedWorker` Boolean - SharedWorker 기능을 활성화합니다. 기본값은
+    `false`입니다.
   * `directWrite` Boolean - Windows에서 폰트 랜더링을 위해 DirectWrite를
-    사용하는지를 지정합니다.
+    사용하는지를 지정합니다. 기본값은 `true`입니다.
   * `pageVisibility` Boolean - 현재 윈도우의 가시성을 반영하는 대신 페이지가
     visible 또는 hidden 중 지정된 상태를 계속 유지하도록 합니다. 이 속성을 `true`로
-    지정하면 DOM 타이머의 스로틀링을 방지할 수 있습니다.
+    지정하면 DOM 타이머의 스로틀링을 방지할 수 있습니다. 기본값은 `false`입니다.
 
 ## Events
 

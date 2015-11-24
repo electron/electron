@@ -346,7 +346,7 @@ CSS 코드를 현재 웹 페이지에 삽입합니다.
 
 ### `webContents.setAudioMuted(muted)`
 
-+ `muted` Boolean
+* `muted` Boolean
 
 현재 웹 페이지의 소리를 음소거합니다.
 
