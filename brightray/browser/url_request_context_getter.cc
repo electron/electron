@@ -26,6 +26,7 @@
 #include "net/http/http_server_properties_impl.h"
 #include "net/log/net_log.h"
 #include "net/proxy/dhcp_proxy_script_fetcher_factory.h"
+#include "net/proxy/proxy_config.h"
 #include "net/proxy/proxy_config_service.h"
 #include "net/proxy/proxy_script_fetcher_impl.h"
 #include "net/proxy/proxy_service.h"
@@ -78,6 +79,10 @@ const char kNoProxyServer[] = "no-proxy-server";
 // Uses a specified proxy server, overrides system settings. This switch only
 // affects HTTP and HTTPS requests.
 const char kProxyServer[] = "proxy-server";
+
+// Bypass specified proxy for the given semi-colon-separated list of hosts. This
+// flag has an effect only when --proxy-server is set.
+const char kProxyBypassList[] = "proxy-bypass-list";
 
 // Uses the pac script at the given URL.
 const char kProxyPacUrl[] = "proxy-pac-url";
@@ -255,8 +260,12 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     if (command_line.HasSwitch(kNoProxyServer)) {
       storage_->set_proxy_service(net::ProxyService::CreateDirect());
     } else if (command_line.HasSwitch(kProxyServer)) {
-      storage_->set_proxy_service(net::ProxyService::CreateFixed(
-          command_line.GetSwitchValueASCII(kProxyServer)));
+      net::ProxyConfig proxy_config;
+      proxy_config.proxy_rules().ParseFromString(
+          command_line.GetSwitchValueASCII(kProxyServer));
+      proxy_config.proxy_rules().bypass_rules.ParseFromString(
+          command_line.GetSwitchValueASCII(kProxyBypassList));
+      storage_->set_proxy_service(net::ProxyService::CreateFixed(proxy_config));
     } else if (command_line.HasSwitch(kProxyPacUrl)) {
       auto proxy_config = net::ProxyConfig::CreateFromCustomPacURL(
           GURL(command_line.GetSwitchValueASCII(kProxyPacUrl)));
