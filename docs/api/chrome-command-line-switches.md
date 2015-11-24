@@ -55,11 +55,13 @@ list of hosts. This flag has an effect only if used in tandem with
 
 For example:
 
-`app.commandLine.appendSwitch('proxy-bypass-list', '<local>;*.google.com;*foo.com;1.2.3.4:5678')`
+```javascript
+app.commandLine.appendSwitch('proxy-bypass-list', '<local>;*.google.com;*foo.com;1.2.3.4:5678')`
+```
 
-Will use the proxy server for all hosts except for local addresses (localhost,
-127.0.0.1 etc.), google.com subdomains, hosts that contain the suffix foo.com
-and anything at 1.2.3.4:5678.
+Will use the proxy server for all hosts except for local addresses (`localhost`,
+`127.0.0.1` etc.), `google.com` subdomains, hosts that contain the suffix
+`foo.com` and anything at `1.2.3.4:5678`.
 
 ## --proxy-pac-url=`url`
 
