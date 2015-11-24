@@ -22,7 +22,9 @@ class ScopedHString {
   ~ScopedHString();
 
   // Sets to |source|.
-  void Set(const wchar_t* source);
+  void Reset();
+  void Reset(const wchar_t* source);
+  void Reset(const std::wstring& source);
 
   // Returns string.
   operator HSTRING() const { return str_; }

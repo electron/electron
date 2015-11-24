@@ -9,6 +9,7 @@
 
 #include "base/strings/utf_string_conversions.h"
 #include "browser/win/scoped_hstring.h"
+#include "common/application_info.h"
 #include "content/public/browser/desktop_notification_delegate.h"
 
 using namespace ABI::Windows::Data::Xml::Dom;
@@ -19,11 +20,12 @@ namespace {
 
 bool GetAppUserModelId(ScopedHString* app_id) {
   PWSTR current_app_id;
-  if (FAILED(GetCurrentProcessExplicitAppUserModelID(&current_app_id)))
-    return false;
-
-  app_id->Set(current_app_id);
-  CoTaskMemFree(current_app_id);
+  if (SUCCEEDED(GetCurrentProcessExplicitAppUserModelID(&current_app_id))) {
+    app_id->Reset(current_app_id);
+    CoTaskMemFree(current_app_id);
+  } else {
+    app_id->Reset(base::UTF8ToUTF16(GetApplicationName()));
+  }
   return app_id->success();
 }
 
@@ -229,7 +231,7 @@ bool WindowsToastNotification::GetTextNodeList(
     IXmlDocument* doc,
     IXmlNodeList** node_list,
     UINT32 req_length) {
-  tag->Set(L"text");
+  tag->Reset(L"text");
   if (!tag->success())
     return false;
 
