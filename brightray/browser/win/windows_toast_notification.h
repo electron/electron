@@ -33,6 +33,9 @@ using DesktopToastFailedEventHandler =
 
 class WindowsToastNotification {
  public:
+  // Should be called before using this class.
+  static bool Initialize();
+
   WindowsToastNotification(
       scoped_ptr<content::DesktopNotificationDelegate> delegate);
   ~WindowsToastNotification();
@@ -74,10 +77,11 @@ class WindowsToastNotification {
                        const std::wstring& text);
   bool SetupCallbacks(ABI::Windows::UI::Notifications::IToastNotification* toast);
 
+  static ComPtr<ABI::Windows::UI::Notifications::IToastNotificationManagerStatics> toast_manager_;
+  static ComPtr<ABI::Windows::UI::Notifications::IToastNotifier> toast_notifier_;
+
   scoped_ptr<content::DesktopNotificationDelegate> delegate_;
   ComPtr<ToastEventHandler> event_handler_;
-  ComPtr<ABI::Windows::UI::Notifications::IToastNotificationManagerStatics> toast_manager_;
-  ComPtr<ABI::Windows::UI::Notifications::IToastNotifier> toast_notifier_;
   ComPtr<ABI::Windows::UI::Notifications::IToastNotification> toast_notification_;
 
   base::WeakPtrFactory<WindowsToastNotification> weak_factory_;

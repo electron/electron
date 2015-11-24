@@ -27,7 +27,10 @@ void RemoveNotification(base::WeakPtr<WindowsToastNotification> notification) {
 
 // static
 NotificationPresenter* NotificationPresenter::Create() {
-  return new NotificationPresenterWin;
+  if (WindowsToastNotification::Initialize())
+    return new NotificationPresenterWin;
+  else
+    return nullptr;
 }
 
 NotificationPresenterWin::NotificationPresenterWin() {
