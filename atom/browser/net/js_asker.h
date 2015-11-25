@@ -17,6 +17,7 @@
 #include "v8/include/v8.h"
 
 namespace atom {
+extern const std::string kCorsHeader;
 
 using JavaScriptHandler =
     base::Callback<void(const net::URLRequest*, v8::Local<v8::Value>)>;
