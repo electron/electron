@@ -34,4 +34,13 @@ void URLRequestAsyncAsarJob::StartAsync(scoped_ptr<base::Value> options) {
   }
 }
 
+
+void URLRequestAsyncAsarJob::GetResponseInfo(net::HttpResponseInfo* info) {
+  std::string status("HTTP/1.1 200 OK");
+  net::HttpResponseHeaders* headers = new net::HttpResponseHeaders(status);
+
+  headers->AddHeader(kCorsHeader);
+  info->headers = headers;
+}
+
 }  // namespace atom

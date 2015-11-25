@@ -18,6 +18,9 @@ class URLRequestAsyncAsarJob : public JsAsker<asar::URLRequestAsarJob> {
   // JsAsker:
   void StartAsync(scoped_ptr<base::Value> options) override;
 
+  // URLRequestJob:
+  void GetResponseInfo(net::HttpResponseInfo* info) override;
+
  private:
   DISALLOW_COPY_AND_ASSIGN(URLRequestAsyncAsarJob);
 };
