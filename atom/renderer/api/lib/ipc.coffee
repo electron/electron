@@ -2,7 +2,7 @@
 {EventEmitter} = require 'events'
 
 # This module is deprecated, we mirror everything from ipcRenderer.
-deprecate.warn 'ipc module', 'ipcRenderer module'
+deprecate.warn 'ipc module', 'require("electron").ipcRenderer'
 
 # Routes events of ipcRenderer.
 ipc = new EventEmitter
