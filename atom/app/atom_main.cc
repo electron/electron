@@ -5,7 +5,6 @@
 #include "atom/app/atom_main.h"
 
 #include <stdlib.h>
-#include <string.h>
 
 #if defined(OS_WIN)
 #include <stdio.h>
@@ -57,6 +56,12 @@ bool IsRunAsNode() {
 }
 
 #if defined(OS_WIN)
+bool IsCygwin() {
+  std::string os;
+  scoped_ptr<base::Environment> env(base::Environment::Create());
+  return env->GetVar("OS", &os) && os == "cygwin";
+}
+
 // Win8.1 supports monitor-specific DPI scaling.
 bool SetProcessDpiAwarenessWrapper(PROCESS_DPI_AWARENESS value) {
   typedef HRESULT(WINAPI *SetProcessDpiAwarenessPtr)(PROCESS_DPI_AWARENESS);
@@ -103,17 +108,13 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
   int argc = 0;
   wchar_t** wargv = ::CommandLineToArgvW(::GetCommandLineW(), &argc);
 
-  scoped_ptr<base::Environment> env(base::Environment::Create());
-
   // Make output work in console if we are not in cygiwn.
-  std::string os;
-  if (env->GetVar("OS", &os) && os != "cygwin") {
+  if (!IsCygwin() && !IsEnvSet("ELECTRON_NO_ATTACH_CONSOLE")) {
     AttachConsole(ATTACH_PARENT_PROCESS);
 
     FILE* dontcare;
     freopen_s(&dontcare, "CON", "w", stdout);
     freopen_s(&dontcare, "CON", "w", stderr);
-    freopen_s(&dontcare, "CON", "r", stdin);
   }
 
   // Convert argv to to UTF8

@@ -37,6 +37,10 @@ Shows Windows's crash dialog when Electron crashed.
 
 This environment variable will not work if `crashReporter` is started.
 
+## `ELECTRON_NO_ATTACH_CONSOLE` _Windows_
+
+Don't attach to current console session.
+
 ## `ELECTRON_FORCE_WINDOW_MENU_BAR` _Linux_
 
 Don't use global menu bar on Linux.
