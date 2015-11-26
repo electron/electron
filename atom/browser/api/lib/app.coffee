@@ -54,7 +54,7 @@ deprecate.event app, 'finish-launching', 'ready', ->
   setImmediate => # give default app a chance to setup default menu.
     @emit 'finish-launching'
 deprecate.event app, 'activate-with-no-open-windows', 'activate', (event, hasVisibleWindows) ->
-  @emit 'activate-with-no-open-windows' if not hasVisibleWindows
+  @emit 'activate-with-no-open-windows', event if not hasVisibleWindows
 deprecate.event app, 'select-certificate', 'select-client-certificate'
 
 # Wrappers for native classes.
