@@ -3,6 +3,20 @@
 Some behaviors of Electron are controlled by environment variables, because they
 are initialized earlier than command line and the app's code.
 
+Examples on POSIX shells:
+
+```bash
+$ export ELECTRON_ENABLE_LOGGING=true
+$ electron
+```
+
+on Windows console:
+
+```powershell
+> set ELECTRON_ENABLE_LOGGING=true
+> electron
+```
+
 ## `ELECTRON_RUN_AS_NODE`
 
 Starts the process as a normal Node.js process.
