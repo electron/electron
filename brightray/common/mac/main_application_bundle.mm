@@ -5,10 +5,10 @@
 
 #import "common/mac/main_application_bundle.h"
 
-#import "common/mac/foundation_util.h"
-
-#import "base/files/file_path.h"
-#import "base/path_service.h"
+#include "base/files/file_path.h"
+#include "base/mac/foundation_util.h"
+#include "base/path_service.h"
+#include "base/strings/string_util.h"
 
 namespace brightray {
 
@@ -18,7 +18,7 @@ base::FilePath MainApplicationBundlePath() {
   PathService::Get(base::FILE_EXE, &path);
 
   // Up to Contents.
-  if (base::mac::IsBackgroundOnlyProcess()) {
+  if (base::EndsWith(path.value(), " Helper", base::CompareCase::SENSITIVE)) {
     // The running executable is the helper. Go up five steps:
     // Contents/Frameworks/Helper.app/Contents/MacOS/Helper
     // ^ to here                                     ^ from here
