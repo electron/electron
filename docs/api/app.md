@@ -66,7 +66,7 @@ the `will-quit` and `window-all-closed` events.
 
 Emitted when the application is quitting.
 
-### Event: 'open-file'
+### Event: 'open-file' _OS X_
 
 Returns:
 
@@ -82,7 +82,9 @@ handle this case (even before the `ready` event is emitted).
 
 You should call `event.preventDefault()` if you want to handle this event.
 
-### Event: 'open-url'
+On Windows, you have to parse `process.argv` to get the filepath.
+
+### Event: 'open-url' _OS X_
 
 Returns:
 
