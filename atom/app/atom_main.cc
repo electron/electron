@@ -36,10 +36,27 @@
 #include "base/at_exit.h"
 #include "base/i18n/icu_util.h"
 
-#if defined(OS_WIN)
-
 namespace {
 
+const char* kRunAsNode = "ELECTRON_RUN_AS_NODE";
+const char* kOldRunAsNode = "ATOM_SHELL_INTERNAL_RUN_AS_NODE";
+
+bool IsEnvSet(const char* name) {
+#if defined(OS_WIN)
+  size_t required_size;
+  getenv_s(&required_size, nullptr, 0, name);
+  return required_size != 0;
+#else
+  char* indicator = getenv(name);
+  return indicator && indicator[0] != '\0';
+#endif
+}
+
+bool IsRunAsNode() {
+  return IsEnvSet(kRunAsNode) || IsEnvSet(kOldRunAsNode);
+}
+
+#if defined(OS_WIN)
 // Win8.1 supports monitor-specific DPI scaling.
 bool SetProcessDpiAwarenessWrapper(PROCESS_DPI_AWARENESS value) {
   typedef HRESULT(WINAPI *SetProcessDpiAwarenessPtr)(PROCESS_DPI_AWARENESS);
@@ -77,9 +94,11 @@ void EnableHighDPISupport() {
     SetProcessDPIAwareWrapper();
   }
 }
+#endif
 
 }  // namespace
 
+#if defined(OS_WIN)
 int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
   int argc = 0;
   wchar_t** wargv = ::CommandLineToArgvW(::GetCommandLineW(), &argc);
@@ -131,16 +150,12 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
     }
   }
 
-  std::string node_indicator, crash_service_indicator;
-  if (env->GetVar("ATOM_SHELL_INTERNAL_RUN_AS_NODE", &node_indicator) &&
-      node_indicator == "1") {
+  if (IsRunAsNode()) {
     // Now that argv conversion is done, we can finally start.
     base::AtExitManager atexit_manager;
     base::i18n::InitializeICU();
     return atom::NodeMain(argc, argv);
-  } else if (env->GetVar("ATOM_SHELL_INTERNAL_CRASH_SERVICE",
-                         &crash_service_indicator) &&
-      crash_service_indicator == "1") {
+  } else if (IsEnvSet("ATOM_SHELL_INTERNAL_CRASH_SERVICE")) {
     return crash_service::Main(cmd);
   }
 
@@ -164,8 +179,7 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
 #elif defined(OS_LINUX)  // defined(OS_WIN)
 
 int main(int argc, const char* argv[]) {
-  char* node_indicator = getenv("ATOM_SHELL_INTERNAL_RUN_AS_NODE");
-  if (node_indicator != NULL && strcmp(node_indicator, "1") == 0) {
+  if (IsRunAsNode()) {
     base::i18n::InitializeICU();
     base::AtExitManager atexit_manager;
     return atom::NodeMain(argc, const_cast<char**>(argv));
@@ -182,8 +196,7 @@ int main(int argc, const char* argv[]) {
 #else  // defined(OS_LINUX)
 
 int main(int argc, const char* argv[]) {
-  char* node_indicator = getenv("ATOM_SHELL_INTERNAL_RUN_AS_NODE");
-  if (node_indicator != NULL && strcmp(node_indicator, "1") == 0) {
+  if (IsRunAsNode()) {
     return AtomInitializeICUandStartNode(argc, const_cast<char**>(argv));
   }
 
