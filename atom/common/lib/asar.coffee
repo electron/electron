@@ -1,5 +1,6 @@
 asar = process.binding 'atom_common_asar'
 child_process = require 'child_process'
+fs = require 'fs'
 path = require 'path'
 util = require 'util'
 
@@ -83,6 +84,11 @@ overrideAPISync = (module, name, arg = 0) ->
     newPath = archive.copyFileOut filePath
     notFoundError asarPath, filePath unless newPath
 
+    stat = archive.stat filePath
+
+    if stat.executable
+      fs.chmodSync(newPath, 0o755)
+
     arguments[arg] = newPath
     old.apply this, arguments
 
@@ -101,6 +107,11 @@ overrideAPI = (module, name, arg = 0) ->
 
     newPath = archive.copyFileOut filePath
     return notFoundError asarPath, filePath, callback unless newPath
+
+    stat = archive.stat filePath
+
+    if stat.executable
+      fs.chmodSync(newPath, 0o755)
 
     arguments[arg] = newPath
     old.apply this, arguments
