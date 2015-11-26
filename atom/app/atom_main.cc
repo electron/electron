@@ -5,7 +5,6 @@
 #include "atom/app/atom_main.h"
 
 #include <stdlib.h>
-#include <string.h>
 
 #if defined(OS_WIN)
 #include <stdio.h>
@@ -36,9 +35,32 @@
 #include "base/at_exit.h"
 #include "base/i18n/icu_util.h"
 
-#if defined(OS_WIN)
-
 namespace {
+
+const char* kRunAsNode = "ELECTRON_RUN_AS_NODE";
+const char* kOldRunAsNode = "ATOM_SHELL_INTERNAL_RUN_AS_NODE";
+
+bool IsEnvSet(const char* name) {
+#if defined(OS_WIN)
+  size_t required_size;
+  getenv_s(&required_size, nullptr, 0, name);
+  return required_size != 0;
+#else
+  char* indicator = getenv(name);
+  return indicator && indicator[0] != '\0';
+#endif
+}
+
+bool IsRunAsNode() {
+  return IsEnvSet(kRunAsNode) || IsEnvSet(kOldRunAsNode);
+}
+
+#if defined(OS_WIN)
+bool IsCygwin() {
+  std::string os;
+  scoped_ptr<base::Environment> env(base::Environment::Create());
+  return env->GetVar("OS", &os) && os == "cygwin";
+}
 
 // Win8.1 supports monitor-specific DPI scaling.
 bool SetProcessDpiAwarenessWrapper(PROCESS_DPI_AWARENESS value) {
@@ -77,24 +99,22 @@ void EnableHighDPISupport() {
     SetProcessDPIAwareWrapper();
   }
 }
+#endif
 
 }  // namespace
 
+#if defined(OS_WIN)
 int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
   int argc = 0;
   wchar_t** wargv = ::CommandLineToArgvW(::GetCommandLineW(), &argc);
 
-  scoped_ptr<base::Environment> env(base::Environment::Create());
-
   // Make output work in console if we are not in cygiwn.
-  std::string os;
-  if (env->GetVar("OS", &os) && os != "cygwin") {
+  if (!IsCygwin() && !IsEnvSet("ELECTRON_NO_ATTACH_CONSOLE")) {
     AttachConsole(ATTACH_PARENT_PROCESS);
 
     FILE* dontcare;
     freopen_s(&dontcare, "CON", "w", stdout);
     freopen_s(&dontcare, "CON", "w", stderr);
-    freopen_s(&dontcare, "CON", "r", stdin);
   }
 
   // Convert argv to to UTF8
@@ -131,16 +151,12 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
     }
   }
 
-  std::string node_indicator, crash_service_indicator;
-  if (env->GetVar("ATOM_SHELL_INTERNAL_RUN_AS_NODE", &node_indicator) &&
-      node_indicator == "1") {
+  if (IsRunAsNode()) {
     // Now that argv conversion is done, we can finally start.
     base::AtExitManager atexit_manager;
     base::i18n::InitializeICU();
     return atom::NodeMain(argc, argv);
-  } else if (env->GetVar("ATOM_SHELL_INTERNAL_CRASH_SERVICE",
-                         &crash_service_indicator) &&
-      crash_service_indicator == "1") {
+  } else if (IsEnvSet("ATOM_SHELL_INTERNAL_CRASH_SERVICE")) {
     return crash_service::Main(cmd);
   }
 
@@ -164,8 +180,7 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
 #elif defined(OS_LINUX)  // defined(OS_WIN)
 
 int main(int argc, const char* argv[]) {
-  char* node_indicator = getenv("ATOM_SHELL_INTERNAL_RUN_AS_NODE");
-  if (node_indicator != NULL && strcmp(node_indicator, "1") == 0) {
+  if (IsRunAsNode()) {
     base::i18n::InitializeICU();
     base::AtExitManager atexit_manager;
     return atom::NodeMain(argc, const_cast<char**>(argv));
@@ -182,8 +197,7 @@ int main(int argc, const char* argv[]) {
 #else  // defined(OS_LINUX)
 
 int main(int argc, const char* argv[]) {
-  char* node_indicator = getenv("ATOM_SHELL_INTERNAL_RUN_AS_NODE");
-  if (node_indicator != NULL && strcmp(node_indicator, "1") == 0) {
+  if (IsRunAsNode()) {
     return AtomInitializeICUandStartNode(argc, const_cast<char**>(argv));
   }
 
