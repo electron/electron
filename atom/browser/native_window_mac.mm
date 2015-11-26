@@ -192,6 +192,11 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 - (void)windowWillClose:(NSNotification*)notification {
   shell_->NotifyWindowClosed();
+
+  // Clears the delegate when window is going to be closed, since EL Capitan it
+  // is possible that the methods of delegate would get called after the window
+  // has been closed.
+  [shell_->GetNativeWindow() setDelegate:nil];
 }
 
 - (BOOL)windowShouldClose:(id)window {
