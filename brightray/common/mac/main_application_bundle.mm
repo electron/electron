@@ -5,12 +5,22 @@
 
 #import "common/mac/main_application_bundle.h"
 
-#import "common/mac/foundation_util.h"
-
-#import "base/files/file_path.h"
-#import "base/path_service.h"
+#include "base/files/file_path.h"
+#include "base/mac/bundle_locations.h"
+#include "base/mac/foundation_util.h"
+#include "base/path_service.h"
+#include "base/strings/string_util.h"
 
 namespace brightray {
+
+namespace {
+
+bool HasMainProcessKey() {
+  NSDictionary* info_dictionary = [base::mac::MainBundle() infoDictionary];
+  return [[info_dictionary objectForKey:@"ElectronMainProcess"] boolValue] != NO;
+}
+
+}  // namespace
 
 base::FilePath MainApplicationBundlePath() {
   // Start out with the path to the running executable.
@@ -18,7 +28,8 @@ base::FilePath MainApplicationBundlePath() {
   PathService::Get(base::FILE_EXE, &path);
 
   // Up to Contents.
-  if (base::mac::IsBackgroundOnlyProcess()) {
+  if (!HasMainProcessKey() &&
+      base::EndsWith(path.value(), " Helper", base::CompareCase::SENSITIVE)) {
     // The running executable is the helper. Go up five steps:
     // Contents/Frameworks/Helper.app/Contents/MacOS/Helper
     // ^ to here                                     ^ from here
@@ -40,4 +51,4 @@ NSBundle* MainApplicationBundle() {
   return [NSBundle bundleWithPath:base::mac::FilePathToNSString(MainApplicationBundlePath())];
 }
 
-}
+}  // namespace brightray
