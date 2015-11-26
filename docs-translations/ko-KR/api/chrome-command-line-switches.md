@@ -49,6 +49,21 @@ $ electron --js-flags="--harmony_proxies --harmony_collections" your-app
 그리고 WebSocket 요청에만 적용됩니다. 그리고 모든 프록시 서버가 HTTPS가 WebSocket
 요청을 지원하지 않고 있을 수 있으므로 사용시 주의해야 합니다.
 
+## --proxy-bypass-list=`hosts`
+
+Electron이 세미콜론으로 구분된 호스트 리스트에서 지정한 프록시 서버를 건너뛰도록
+지시합니다.
+
+예시:
+
+```javascript
+app.commandLine.appendSwitch('proxy-bypass-list', '<local>;*.google.com;*foo.com;1.2.3.4:5678')`
+```
+
+위 예시는 로컬 주소(`localhost`, `127.0.0.1`, 등)와 `google.com`의 서브도메인,
+`foo.com`을 접미사로 가지는 호스트, `1.2.3.4:5678` 호스트를 제외한 모든 연결에서
+프록시 서버를 사용합니다.
+
 ## --proxy-pac-url=`url`
 
 지정한 `url`의 PAC 스크립트를 사용합니다.
