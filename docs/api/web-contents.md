@@ -499,7 +499,14 @@ win.webContents.on("did-finish-load", function() {
 
 * `path` String
 
-Adds the specified path to DevTools workspace.
+Adds the specified path to DevTools workspace. Must be used after DevTools
+creation:
+
+```javascript
+mainWindow.webContents.on('devtools-opened', function() {
+  mainWindow.webContents.addWorkSpace(__dirname);
+});
+```
 
 ### `webContents.removeWorkSpace(path)`
 
