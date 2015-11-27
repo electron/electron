@@ -107,6 +107,9 @@ bool FillFileInfoWithNode(Archive::FileInfo* info,
     return false;
   info->offset += header_size;
 
+  info->executable = false;
+  node->GetBoolean("executable", &info->executable);
+
   return true;
 }
 
