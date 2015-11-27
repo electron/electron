@@ -392,6 +392,22 @@ describe 'asar package', ->
           done()
         child.send file
 
+    describe 'child_process.execFile', ->
+      return unless process.platform is 'darwin'
+
+      {execFile, execFileSync} = require 'child_process'
+      echo = path.join fixtures, 'asar', 'echo.asar', 'echo'
+
+      it 'executes binaries', (done) ->
+        child = execFile echo, ['test'], (error, stdout) ->
+          assert.equal error, null
+          assert.equal stdout, 'test\n'
+          done()
+
+      it 'execFileSync executes binaries', ->
+        output = execFileSync echo, ['test']
+        assert.equal String(output), 'test\n'
+
     describe 'internalModuleReadFile', ->
       internalModuleReadFile = process.binding('fs').internalModuleReadFile
 
