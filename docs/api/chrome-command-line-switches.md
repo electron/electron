@@ -1,9 +1,9 @@
 # Supported Chrome command line switches
 
-This page lists the command line switches used by the Chrome browser that are also supported by
-Electron. You can use [app.commandLine.appendSwitch][append-switch] to append
-them in your app's main script before the [ready][ready] event of [app][app]
-module is emitted:
+This page lists the command line switches used by the Chrome browser that are
+also supported by Electron. You can use
+[app.commandLine.appendSwitch][append-switch] to append them in your app's main
+script before the [ready][ready] event of [app][app] module is emitted:
 
 ```javascript
 const app = require('electron').app;
@@ -46,6 +46,22 @@ Use a specified proxy server, which overrides the system setting. This switch
 only affects requests with HTTP protocol, including HTTPS and WebSocket
 requests. It is also noteworthy that not all proxy servers support HTTPS and
 WebSocket requests.
+
+## --proxy-bypass-list=`hosts`
+
+Instructs Electron to bypass the proxy server for the given semi-colon-separated
+list of hosts. This flag has an effect only if used in tandem with
+`--proxy-server`.
+
+For example:
+
+```javascript
+app.commandLine.appendSwitch('proxy-bypass-list', '<local>;*.google.com;*foo.com;1.2.3.4:5678')`
+```
+
+Will use the proxy server for all hosts except for local addresses (`localhost`,
+`127.0.0.1` etc.), `google.com` subdomains, hosts that contain the suffix
+`foo.com` and anything at `1.2.3.4:5678`.
 
 ## --proxy-pac-url=`url`
 

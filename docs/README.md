@@ -30,6 +30,7 @@ select the tag that matches your version.
 * [Synopsis](api/synopsis.md)
 * [Process Object](api/process.md)
 * [Supported Chrome Command Line Switches](api/chrome-command-line-switches.md)
+* [Environment Variables](api/environment-variables.md)
 
 ### Custom DOM Elements:
 

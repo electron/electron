@@ -70,7 +70,7 @@ También puedes mostrar una página web contenida en un `asar` utilizando `Brows
 ```javascript
 var BrowserWindow = require('browser-window');
 var win = new BrowserWindow({width: 800, height: 600});
-win.loadUrl('file:///path/to/example.asar/static/index.html');
+win.loadURL('file:///path/to/example.asar/static/index.html');
 ```
 
 ### API Web

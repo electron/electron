@@ -107,7 +107,7 @@ unwrapArgs = (sender, args) ->
 # style function and the caller didn't pass a callback.
 callFunction = (event, func, caller, args) ->
   funcMarkedAsync = v8Util.getHiddenValue(func, 'asynchronous')
-  funcPassedCallback = args[args.length - 1] is 'function'
+  funcPassedCallback = typeof args[args.length - 1] is 'function'
 
   try
     if funcMarkedAsync and not funcPassedCallback
@@ -221,3 +221,11 @@ ipcMain.on 'ATOM_BROWSER_GUEST_WEB_CONTENTS', (event, guestInstanceId) ->
 
 ipcMain.on 'ATOM_BROWSER_LIST_MODULES', (event) ->
   event.returnValue = (name for name of electron)
+
+ipcMain.on 'ATOM_BROWSER_ASYNC_CALL_TO_GUEST_VIEW', (event, guestInstanceId, method, args...) ->
+  try
+    guestViewManager = require './guest-view-manager'
+    guest = guestViewManager.getGuest(guestInstanceId)
+    guest[method].apply(guest, args)
+  catch e
+    event.returnValue = exceptionToMeta e
