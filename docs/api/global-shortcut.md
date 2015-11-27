@@ -46,7 +46,10 @@ The `global-shortcut` module has the following methods:
 * `callback` Function
 
 Registers a global shortcut of `accelerator`. The `callback` is called when
-the registered shortcut is pressed by the user.
+the registered shortcut is pressed by the user. Returns `true` if the shortcut
+`accelerator` was registered, `false` otherwise. For example, the specified
+`accelerator` has already been registered by another caller or other native
+applications.
 
 ### `globalShortcut.isRegistered(accelerator)`
 
