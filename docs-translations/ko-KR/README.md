@@ -34,6 +34,7 @@ GitHub 프로젝트내에서만 볼 수 있고 `master` 브랜치의 문서는 �
 * [개요](api/synopsis.md)
 * [Process 객체](api/process.md)
 * [크롬 명령줄 스위치 지원](api/chrome-command-line-switches.md)
+* [환경 변수](api/environment-variables.md)
 
 ### 커스텀 DOM elements:
 
