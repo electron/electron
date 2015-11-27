@@ -13,6 +13,7 @@
 
 #include "atom/common/asar/scoped_temporary_file.h"
 #include "base/files/file.h"
+#include "base/files/file_util.h"
 #include "base/logging.h"
 #include "base/pickle.h"
 #include "base/json/json_reader.h"
@@ -96,7 +97,6 @@ bool FillFileInfoWithNode(Archive::FileInfo* info,
     return false;
   info->size = static_cast<uint32>(size);
 
-  info->unpacked = false;
   if (node->GetBoolean("unpacked", &info->unpacked) && info->unpacked)
     return true;
 
@@ -107,7 +107,6 @@ bool FillFileInfoWithNode(Archive::FileInfo* info,
     return false;
   info->offset += header_size;
 
-  info->executable = false;
   node->GetBoolean("executable", &info->executable);
 
   return true;
@@ -275,6 +274,13 @@ bool Archive::CopyFileOut(const base::FilePath& path, base::FilePath* out) {
   scoped_ptr<ScopedTemporaryFile> temp_file(new ScopedTemporaryFile);
   if (!temp_file->InitFromFile(&file_, info.offset, info.size))
     return false;
+
+#if defined(OS_POSIX)
+  if (info.executable) {
+    // chmod a+x temp_file;
+    base::SetPosixFilePermissions(temp_file->path(), 0755);
+  }
+#endif
 
   *out = temp_file->path();
   external_files_.set(path, temp_file.Pass());
