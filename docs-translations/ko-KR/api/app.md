@@ -70,7 +70,7 @@ Returns:
 
 어플리케이션이 종료될 때 발생하는 이벤트입니다.
 
-### Event: 'open-file'
+### Event: 'open-file' _OS X_
 
 Returns:
 
@@ -87,7 +87,9 @@ Returns:
 
 이 이벤트를 처리할 땐 반드시 `event.preventDefault()`를 호출해야 합니다.
 
-### Event: 'open-url'
+Windows에선 `process.argv`를 통해 파일 경로를 얻을 수 있습니다.
+
+### Event: 'open-url' _OS X_
 
 Returns:
 
