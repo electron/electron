@@ -497,7 +497,14 @@ win.webContents.on("did-finish-load", function() {
 
 * `path` String
 
-특정 경로를 개발자 도구의 워크스페이스에 추가합니다.
+특정 경로를 개발자 도구의 워크스페이스에 추가합니다. 반드시 개발자 도구의 생성이 완료된
+이후에 사용해야 합니다.
+
+```javascript
+mainWindow.webContents.on('devtools-opened', function() {
+  mainWindow.webContents.addWorkSpace(__dirname);
+});
+```
 
 ### `webContents.removeWorkSpace(path)`
 

@@ -129,16 +129,29 @@ API가 원할하게 작동할 수 있도록 임시 경로에 해당되는 파일
 위 예외에 해당하는 API 메서드는 다음과 같습니다:
 
 * `child_process.execFile`
+* `child_process.execFileSync`
 * `fs.open`
 * `fs.openSync`
 * `process.dlopen` - Used by `require` on native modules
 
-### `fs.stat`의 잘못된 스테이터스 정보
+### `fs.stat`의 모조된(예측) 스테이터스 정보
 
 `fs.stat` 로부터 반환되는 `Stats` 객체와 비슷한 API들은 `asar` 아카이브를 타겟으로
 할 경우 예측된 디렉터리 파일 정보를 가집니다. 왜냐하면 아카이브의 디렉터리 경로는 실제
-파일 시스템에 존재하지 않기 때문입니다. 그러한 이유로 파일 크기와
-파일 타입 등을 확인할 때 `Stats` 객체를 신뢰해선 안됩니다.
+파일 시스템에 존재하지 않기 때문입니다. 그러한 이유로 파일 크기와 파일 타입 등을 확인할
+때 `Stats` 객체를 신뢰해선 안됩니다.
+
+### `asar` 아카이브 내부의 바이너리 실행
+
+Node API에는 `child_process.exec`, `child_process.spawn` 그리고
+`child_process.execFile`와 같은 바이너리를 실행시킬 수 있는 API가 있습니다. 하지만
+`asar` 아카이브 내에선 `execFile` API만 사용할 수 있습니다.
+
+이 한계가 존재하는 이유는 `exec`와 `spawn`은 `file` 대신 `command`를 인수로 허용하고
+있고 `command`는 shell에서 작동하기 때문입니다. Electron은 어떤 커맨드가 `asar`
+아카이브 내의 파일을 사용하는지 결정하는데 적절한 방법을 가지고 있지 않으며, 심지어
+그게 가능하다고 해도 부작용 없이 명령 경로를 대체할 수 있는지에 대해 확실히 알 수
+있는 방법이 없습니다.
 
 ## `asar` 아카이브에 미리 압축 해제된 파일 추가하기
 
