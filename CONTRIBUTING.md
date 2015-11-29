@@ -57,7 +57,7 @@ possible with your report. If you can, please include:
 * Use the imperative mood ("Move cursor to..." not "Moves cursor to...")
 * Limit the first line to 72 characters or less
 * Reference issues and pull requests liberally
-* When only changing documentation, include [ci skip] in the commit description
+* When only changing documentation, include `[ci skip]` in the commit description
 * Consider starting the commit message with an applicable emoji:
   * :art: `:art:` when improving the format/structure of the code
   * :racehorse: `:racehorse:` when improving performance
