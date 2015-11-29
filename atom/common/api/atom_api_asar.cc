@@ -54,7 +54,6 @@ class Archive : public mate::Wrappable {
     mate::Dictionary dict(isolate, v8::Object::New(isolate));
     dict.Set("size", stats.size);
     dict.Set("offset", stats.offset);
-    dict.Set("executable", stats.executable);
     dict.Set("isFile", stats.is_file);
     dict.Set("isDirectory", stats.is_directory);
     dict.Set("isLink", stats.is_link);
