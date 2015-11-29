@@ -16,6 +16,8 @@ how to meet the Mac App Store requirements.
 To submit your app to the Mac App Store, you first must get a certificate from
 Apple. You can follow these [existing guides][nwjs-guide] on web.
 
+> It will require enrolling into Apple Developer Program which costs $100 per year.
+
 ### Sign Your App
 
 After getting the certificate from Apple, you can package your app by following
