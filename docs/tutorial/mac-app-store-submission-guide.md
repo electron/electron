@@ -4,6 +4,8 @@ Since v0.34.0, Electron allows submitting packaged apps to the Mac App Store
 (MAS). This guide provides information on: how to submit your app and the
 limitations of the MAS build.
 
+> Distributing Mac apps in any way is not free (regardless of whether you use Electron) because of Gatekeeper, you have to have a [Developer ID](https://developer.apple.com/support/compare-memberships).
+
 ## How to Submit Your App
 
 The following steps introduce a simple way to submit your app to Mac App Store.
@@ -15,8 +17,6 @@ how to meet the Mac App Store requirements.
 
 To submit your app to the Mac App Store, you first must get a certificate from
 Apple. You can follow these [existing guides][nwjs-guide] on web.
-
-> It will require enrolling into Apple Developer Program which costs $100 per year.
 
 ### Sign Your App
 
