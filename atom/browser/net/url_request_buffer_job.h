@@ -12,8 +12,6 @@
 #include "net/http/http_status_code.h"
 #include "net/url_request/url_request_simple_job.h"
 
-const std::string kCorsHeader("Access-Control-Allow-Origin: *");
-
 namespace atom {
 
 class URLRequestBufferJob : public JsAsker<net::URLRequestSimpleJob> {
