@@ -10,7 +10,7 @@
     "cache-clean": "rm -rf ~/.electron && rm -rf dist",
     "postinstall": "node install.js",
     "pretest": "npm run cache-clean && node install.js",
-    "test": "tape test/*.js"
+    "test": "standard && tape test/*.js"
   },
   "bin": {
     "electron": "cli.js"
@@ -23,6 +23,7 @@
   "devDependencies": {
     "home-path": "^0.1.1",
     "path-exists": "^1.0.0",
+    "standard": "^5.4.1",
     "tape": "^3.0.1"
   },
   "author": "Mathias Buus",
