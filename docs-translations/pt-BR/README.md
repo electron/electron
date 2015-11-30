@@ -61,7 +61,7 @@ Módulos de ambos os processos:
 
 ## Desenvolvimento
 
-* [Estilo de código](../../docs/development/coding-style.md)
+* [Estilo de código](development/coding-style.md)
 * [Estrutura de diretórios padrão](../../docs/development/source-code-directory-structure.md)
 * [Diferenças técnicas do NW.js (antigo node-webkit)](../../docs/development/atom-shell-vs-node-webkit.md)
 * [Visão geral do build](../../docs/development/build-system-overview.md)
