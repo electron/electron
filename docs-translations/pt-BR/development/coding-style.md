@@ -2,28 +2,25 @@
 
 Estas são as diretrizes de estilo para codificar no Electron.
 
-## C++ and Python
+## C++ e Python
 
-Para C ++ e Python, seguimos os padrões do projeto Chromium [Estilo de Codificação](http://www.chromium.org/developers/coding-style). Há também um
+Para C++ e Python, seguimos o [Estilo de Codificação](http://www.chromium.org/developers/coding-style) do projeto Chromium. Há também um
 script `script/cpplint.py` para verificar se todos os arquivos estão em conformidade.
 
 A versão Python que estamos usando agora é a Python 2.7.
 
-O código C ++ usa do Chromium's um monte de tipos e abstrações, por isso é recomendada para se familiarizar com eles. Um bom lugar para começar com a documentação do Chromium's [Important Abstractions and Data Structures](https://www.chromium.org/developers/coding-style/important-abstractions-and-data-structures). O documento menciona alguns tipos especiais, com escopo tipos (que automaticamente libera sua memória quando sai do escopo), registrando mecanismos etc.
+O código C++ usa  várias abstrações e tipos do Chromium, por isso é recomendado familiarizar-se com eles. Um bom lugar para começar é com a documentação do Chromium [Important Abstractions and Data Structures](https://www.chromium.org/developers/coding-style/important-abstractions-and-data-structures). O documento menciona alguns tipos especiais, *scoped types* (que automaticamente liberam sua memória ao sair do escopo), mecanismos de *log* etc.
 
 ## CoffeeScript
 
-For CoffeeScript, we follow GitHub's [Style
-Guide](https://github.com/styleguide/javascript) and the following rules:
+Para CoffeeScript, seguimos o [Guia de Estilo] (https://github.com/styleguide/javascript) do GitHub com as seguintes regras:
 
-Para CoffeeScript, seguimos o estilo do GitHub [Guia de Estilo] (https://github.com/styleguide/javascript) com as seguintes regras:
+* Os arquivos **NÃO DEVEM** terminar com uma nova linha, porque queremos corresponder aos padrões de estilo Google.
 
-* Os arquivos devem **NÃO DEVEM** com nova linha no final, porque queremos corresponder aos padrões de estilo Google.
-
-* Os nomes dos arquivos devem ser concatenados com o `-` em vez de`_`, por exemplo, `file-name.coffee` em vez de`file_name.coffee`, porque no [github/atom](https://github.com/github/atom) os nomes dos módulos são geralmente em o formulário `module-name`. Esta regra só se aplica aos arquivos com extensão `.coffee`.
+* Os nomes dos arquivos devem ser concatenados com `-` em vez de `_`, por exemplo, `file-name.coffee` em vez de `file_name.coffee`, porque no [github/atom](https://github.com/github/atom) os nomes dos módulos são geralmente da forma `module-name`. Esta regra só se aplica aos arquivos com extensão `.coffee`.
 * 
-## API Names
+## Nomes de APIs
 
-Ao criar uma nova API, devemos preferencialmente utilizar métodos getters e setters em vez de
-estilo de uma função do jQuery. Por exemplo, `.getText()` e `.setText(text)` utilize `.text([text])`. Existe uma
+Ao criar uma nova API, devemos preferencialmente utilizar métodos getters e setters em vez do
+estilo de uma função única do jQuery. Por exemplo, `.getText()` e `.setText(text)` são preferenciais a `.text([text])`. Existe uma
 [discussão](https://github.com/atom/electron/issues/46) sobre este assunto.
