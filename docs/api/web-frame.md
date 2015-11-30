@@ -6,10 +6,12 @@ web page.
 An example of zooming current page to 200%.
 
 ```javascript
-var webFrame = require('electron').webFrame;
+var webFrame = require('web-frame');
 
 webFrame.setZoomFactor(2);
 ```
+
+You need to execute that from the renderer process.
 
 ## Methods
 
