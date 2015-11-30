@@ -1,41 +1,25 @@
-app = require 'app'
+{app} = require 'electron'
+
 throw new Error('Can not initialize protocol module before app is ready') unless app.isReady()
 
-protocol = process.atomBinding('protocol').protocol
-EventEmitter = require('events').EventEmitter
+{protocol} = process.atomBinding 'protocol'
 
-protocol.__proto__ = EventEmitter.prototype
-
-protocol.RequestStringJob =
-class RequestStringJob
-  constructor: ({mimeType, charset, data}) ->
-    if typeof data isnt 'string' and not data instanceof Buffer
-      throw new TypeError('Data should be string or Buffer')
-
-    @mimeType = mimeType ? 'text/plain'
-    @charset = charset ? 'UTF-8'
-    @data = String data
-
-protocol.RequestBufferJob =
-class RequestBufferJob
-  constructor: ({mimeType, encoding, data}) ->
-    if not data instanceof Buffer
-      throw new TypeError('Data should be Buffer')
-
-    @mimeType = mimeType ? 'application/octet-stream'
-    @encoding = encoding ? 'utf8'
-    @data = new Buffer(data)
-
-protocol.RequestFileJob =
-class RequestFileJob
-  constructor: (@path) ->
-
-protocol.RequestErrorJob =
-class RequestErrorJob
-  constructor: (@error) ->
-
-protocol.RequestHttpJob =
-class RequestHttpJob
-  constructor: ({@url, @method, @referrer}) ->
+# Warn about removed APIs.
+logAndThrow = (callback, message) ->
+  console.error message
+  if callback then callback(new Error(message)) else throw new Error(message)
+protocol.registerProtocol = (scheme, handler, callback) ->
+  logAndThrow callback,
+              'registerProtocol API has been replaced by the
+               register[File/Http/Buffer/String]Protocol API family, please
+               switch to the new APIs.'
+protocol.isHandledProtocol = (scheme, callback) ->
+  logAndThrow callback,
+              'isHandledProtocol API has been replaced by isProtocolHandled.'
+protocol.interceptProtocol = (scheme, handler, callback) ->
+  logAndThrow callback,
+              'interceptProtocol API has been replaced by the
+               intercept[File/Http/Buffer/String]Protocol API family, please
+               switch to the new APIs.'
 
 module.exports = protocol

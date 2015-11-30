@@ -14,7 +14,8 @@ namespace mate {
 
 v8::Local<v8::Value> Converter<gfx::Point>::ToV8(v8::Isolate* isolate,
                                                   const gfx::Point& val) {
-  mate::Dictionary dict(isolate, v8::Object::New(isolate));
+  mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
+  dict.SetHidden("simple", true);
   dict.Set("x", val.x());
   dict.Set("y", val.y());
   return dict.GetHandle();
@@ -35,7 +36,8 @@ bool Converter<gfx::Point>::FromV8(v8::Isolate* isolate,
 
 v8::Local<v8::Value> Converter<gfx::Size>::ToV8(v8::Isolate* isolate,
                                                   const gfx::Size& val) {
-  mate::Dictionary dict(isolate, v8::Object::New(isolate));
+  mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
+  dict.SetHidden("simple", true);
   dict.Set("width", val.width());
   dict.Set("height", val.height());
   return dict.GetHandle();
@@ -56,7 +58,8 @@ bool Converter<gfx::Size>::FromV8(v8::Isolate* isolate,
 
 v8::Local<v8::Value> Converter<gfx::Rect>::ToV8(v8::Isolate* isolate,
                                                  const gfx::Rect& val) {
-  mate::Dictionary dict(isolate, v8::Object::New(isolate));
+  mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
+  dict.SetHidden("simple", true);
   dict.Set("x", val.x());
   dict.Set("y", val.y());
   dict.Set("width", val.width());
@@ -95,7 +98,8 @@ struct Converter<gfx::Display::TouchSupport> {
 
 v8::Local<v8::Value> Converter<gfx::Display>::ToV8(v8::Isolate* isolate,
                                                     const gfx::Display& val) {
-  mate::Dictionary dict(isolate, v8::Object::New(isolate));
+  mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
+  dict.SetHidden("simple", true);
   dict.Set("id", val.id());
   dict.Set("bounds", val.bounds());
   dict.Set("workArea", val.work_area());

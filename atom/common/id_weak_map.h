@@ -19,6 +19,9 @@ class IDWeakMap {
   IDWeakMap();
   ~IDWeakMap();
 
+  // Sets the object to WeakMap with the given |id|.
+  void Set(v8::Isolate* isolate, int32_t id, v8::Local<v8::Object> object);
+
   // Adds |object| to WeakMap and returns its allocated |id|.
   int32_t Add(v8::Isolate* isolate, v8::Local<v8::Object> object);
 
@@ -43,9 +46,6 @@ class IDWeakMap {
  private:
   // Returns next available ID.
   int32_t GetNextID();
-
-  static void WeakCallback(
-      const v8::WeakCallbackData<v8::Object, IDWeakMap>& data);
 
   // ID of next stored object.
   int32_t next_id_;

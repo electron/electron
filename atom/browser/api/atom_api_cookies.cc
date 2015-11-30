@@ -4,13 +4,14 @@
 
 #include "atom/browser/api/atom_api_cookies.h"
 
+#include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "base/bind.h"
 #include "base/time/time.h"
+#include "base/values.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/browser_thread.h"
-#include "native_mate/callback.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 #include "net/cookies/cookie_monster.h"
@@ -18,8 +19,6 @@
 #include "net/cookies/cookie_util.h"
 #include "net/url_request/url_request_context.h"
 #include "net/url_request/url_request_context_getter.h"
-
-#include "atom/common/node_includes.h"
 
 using atom::api::Cookies;
 using content::BrowserThread;
@@ -179,8 +178,8 @@ namespace atom {
 
 namespace api {
 
-Cookies::Cookies(content::BrowserContext* browser_context) :
-    browser_context_(browser_context) {
+Cookies::Cookies(content::BrowserContext* browser_context)
+    : request_context_getter_(browser_context->GetRequestContext()) {
 }
 
 Cookies::~Cookies() {
@@ -198,16 +197,14 @@ void Cookies::Get(const base::DictionaryValue& options,
 
 void Cookies::GetCookiesOnIOThread(scoped_ptr<base::DictionaryValue> filter,
                                    const CookiesCallback& callback) {
-  net::CookieStore* cookie_store = browser_context_->GetRequestContext()
-      ->GetURLRequestContext()->cookie_store();
   std::string url;
   filter->GetString("url", &url);
-  if (!GetCookieListFromStore(cookie_store, url,
+  if (!GetCookieListFromStore(GetCookieStore(), url,
           base::Bind(&Cookies::OnGetCookies, base::Unretained(this),
               Passed(&filter), callback))) {
     BrowserThread::PostTask(BrowserThread::UI, FROM_HERE,
         base::Bind(&RunGetCookiesCallbackOnUIThread, isolate(),
-                   "Url is not valid", net::CookieList(), callback));
+                   "URL is not valid", net::CookieList(), callback));
   }
 }
 
@@ -232,7 +229,7 @@ void Cookies::Remove(const mate::Dictionary& details,
     error_message = "Details(url, name) of removing cookie are required.";
   }
   if (error_message.empty() && !url.is_valid()) {
-    error_message = "Url is not valid.";
+    error_message = "URL is not valid.";
   }
   if (!error_message.empty()) {
      RunRemoveCookiesCallbackOnUIThread(isolate(), error_message, callback);
@@ -245,9 +242,7 @@ void Cookies::Remove(const mate::Dictionary& details,
 
 void Cookies::RemoveCookiesOnIOThread(const GURL& url, const std::string& name,
                                       const CookiesCallback& callback) {
-  net::CookieStore* cookie_store = browser_context_->GetRequestContext()
-      ->GetURLRequestContext()->cookie_store();
-  cookie_store->DeleteCookieAsync(url, name,
+  GetCookieStore()->DeleteCookieAsync(url, name,
       base::Bind(&Cookies::OnRemoveCookies, base::Unretained(this), callback));
 }
 
@@ -266,7 +261,7 @@ void Cookies::Set(const base::DictionaryValue& options,
 
   GURL gurl(url);
   if (error_message.empty() && !gurl.is_valid()) {
-    error_message = "Url is not valid.";
+    error_message = "URL is not valid.";
   }
 
   if (!error_message.empty()) {
@@ -286,8 +281,6 @@ void Cookies::SetCookiesOnIOThread(scoped_ptr<base::DictionaryValue> details,
                                    const GURL& url,
                                    const CookiesCallback& callback) {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
-  net::CookieStore* cookie_store = browser_context_->GetRequestContext()
-      ->GetURLRequestContext()->cookie_store();
 
   std::string name, value, domain, path;
   bool secure = false;
@@ -308,7 +301,7 @@ void Cookies::SetCookiesOnIOThread(scoped_ptr<base::DictionaryValue> details,
         base::Time::FromDoubleT(expiration_date);
   }
 
-  cookie_store->GetCookieMonster()->SetCookieWithDetailsAsync(
+  GetCookieStore()->GetCookieMonster()->SetCookieWithDetailsAsync(
       url,
       name,
       value,
@@ -335,6 +328,10 @@ mate::ObjectTemplateBuilder Cookies::GetObjectTemplateBuilder(
       .SetMethod("get", &Cookies::Get)
       .SetMethod("remove", &Cookies::Remove)
       .SetMethod("set", &Cookies::Set);
+}
+
+net::CookieStore* Cookies::GetCookieStore() {
+  return request_context_getter_->GetURLRequestContext()->cookie_store();
 }
 
 // static

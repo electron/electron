@@ -6,8 +6,9 @@
 #define ATOM_BROWSER_API_ATOM_API_TRAY_H_
 
 #include <string>
+#include <vector>
 
-#include "atom/browser/api/event_emitter.h"
+#include "atom/browser/api/trackable_object.h"
 #include "atom/browser/ui/tray_icon_observer.h"
 #include "base/memory/scoped_ptr.h"
 
@@ -28,7 +29,7 @@ namespace api {
 
 class Menu;
 
-class Tray : public mate::EventEmitter,
+class Tray : public mate::TrackableObject<Tray>,
              public TrayIconObserver {
  public:
   static mate::Wrappable* New(v8::Isolate* isolate, const gfx::Image& image);
@@ -38,26 +39,38 @@ class Tray : public mate::EventEmitter,
 
  protected:
   explicit Tray(const gfx::Image& image);
-  virtual ~Tray();
+  ~Tray() override;
 
   // TrayIconObserver:
-  void OnClicked(const gfx::Rect&) override;
-  void OnDoubleClicked() override;
+  void OnClicked(const gfx::Rect& bounds, int modifiers) override;
+  void OnDoubleClicked(const gfx::Rect& bounds, int modifiers) override;
+  void OnRightClicked(const gfx::Rect& bounds, int modifiers) override;
   void OnBalloonShow() override;
   void OnBalloonClicked() override;
   void OnBalloonClosed() override;
+  void OnDrop() override;
+  void OnDropFiles(const std::vector<std::string>& files) override;
+  void OnDragEntered() override;
+  void OnDragExited() override;
+  void OnDragEnded() override;
 
-  void Destroy();
+  // mate::Wrappable:
+  bool IsDestroyed() const override;
+
+  // mate::TrackableObject:
+  void Destroy() override;
+
   void SetImage(mate::Arguments* args, const gfx::Image& image);
   void SetPressedImage(mate::Arguments* args, const gfx::Image& image);
   void SetToolTip(mate::Arguments* args, const std::string& tool_tip);
   void SetTitle(mate::Arguments* args, const std::string& title);
   void SetHighlightMode(mate::Arguments* args, bool highlight);
   void DisplayBalloon(mate::Arguments* args, const mate::Dictionary& options);
+  void PopUpContextMenu(mate::Arguments* args);
   void SetContextMenu(mate::Arguments* args, Menu* menu);
 
  private:
-  bool CheckTrayLife(mate::Arguments* args);
+  v8::Local<v8::Object> ModifiersToObject(v8::Isolate* isolate, int modifiers);
 
   scoped_ptr<TrayIcon> tray_icon_;
 

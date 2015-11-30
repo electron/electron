@@ -4,41 +4,47 @@
 
 #include "atom/app/node_main.h"
 
+#include "atom/app/uv_task_runner.h"
 #include "atom/browser/javascript_environment.h"
+#include "atom/browser/node_debugger.h"
+#include "base/command_line.h"
 #include "atom/common/node_includes.h"
+#include "base/thread_task_runner_handle.h"
 #include "gin/array_buffer.h"
 #include "gin/public/isolate_holder.h"
+#include "gin/v8_initializer.h"
 
 namespace atom {
 
 int NodeMain(int argc, char *argv[]) {
-  argv = uv_setup_args(argc, argv);
-  int exec_argc;
-  const char** exec_argv;
-  node::Init(&argc, const_cast<const char**>(argv), &exec_argc, &exec_argv);
+  base::CommandLine::Init(argc, argv);
 
   int exit_code = 1;
   {
-    gin::IsolateHolder::LoadV8Snapshot();
-    gin::IsolateHolder::Initialize(
-        gin::IsolateHolder::kNonStrictMode,
-        gin::ArrayBufferAllocator::SharedInstance());
+    // Feed gin::PerIsolateData with a task runner.
+    argv = uv_setup_args(argc, argv);
+    uv_loop_t* loop = uv_default_loop();
+    scoped_refptr<UvTaskRunner> uv_task_runner(new UvTaskRunner(loop));
+    base::ThreadTaskRunnerHandle handle(uv_task_runner);
 
+    gin::V8Initializer::LoadV8Snapshot();
+    gin::V8Initializer::LoadV8Natives();
     JavascriptEnvironment gin_env;
+
+    int exec_argc;
+    const char** exec_argv;
+    node::Init(&argc, const_cast<const char**>(argv), &exec_argc, &exec_argv);
+
     node::Environment* env = node::CreateEnvironment(
-        gin_env.isolate(), uv_default_loop(), gin_env.context(), argc, argv,
+        gin_env.isolate(), loop, gin_env.context(), argc, argv,
         exec_argc, exec_argv);
 
-    // Start debugger.
-    node::node_isolate = gin_env.isolate();
-    if (node::use_debug_agent)
-      node::StartDebug(env, node::debug_wait_connect);
+    // Start our custom debugger implementation.
+    NodeDebugger node_debugger(gin_env.isolate());
+    if (node_debugger.IsRunning())
+      env->AssignToContext(v8::Debug::GetDebugContext());
 
     node::LoadEnvironment(env);
-
-    // Enable debugger.
-    if (node::use_debug_agent)
-      node::EnableDebug(env);
 
     bool more;
     do {

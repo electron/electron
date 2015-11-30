@@ -1,8 +1,7 @@
-BrowserWindow = require 'browser-window'
-EventEmitter = require('events').EventEmitter
-MenuItem = require 'menu-item'
-v8Util = process.atomBinding 'v8_util'
+{BrowserWindow, MenuItem} = require 'electron'
+{EventEmitter} = require 'events'
 
+v8Util = process.atomBinding 'v8_util'
 bindings = process.atomBinding 'menu'
 
 # Automatically generated radio menu item's group id.
@@ -67,7 +66,8 @@ Menu::_init = ->
     isCommandIdVisible: (commandId) => @commandsMap[commandId]?.visible
     getAcceleratorForCommandId: (commandId) => @commandsMap[commandId]?.accelerator
     getIconForCommandId: (commandId) => @commandsMap[commandId]?.icon
-    executeCommand: (commandId) => @commandsMap[commandId]?.click()
+    executeCommand: (commandId) =>
+      @commandsMap[commandId]?.click BrowserWindow.getFocusedWindow()
     menuWillShow: =>
       # Make sure radio groups have at least one menu item seleted.
       for id, group of @groupsMap
@@ -78,7 +78,11 @@ Menu::_init = ->
         v8Util.setHiddenValue group[0], 'checked', true unless checked
 
 Menu::popup = (window, x, y) ->
-  throw new TypeError('Invalid window') unless window?.constructor is BrowserWindow
+  unless window?.constructor is BrowserWindow
+    # Shift.
+    y = x
+    x = window
+    window = BrowserWindow.getFocusedWindow()
   if x? and y?
     @_popupAt(window, x, y)
   else
@@ -115,6 +119,7 @@ Menu::insert = (pos, item) ->
 
   @setSublabel pos, item.sublabel if item.sublabel?
   @setIcon pos, item.icon if item.icon?
+  @setRole pos, item.role if item.role?
 
   # Make menu accessable to items.
   item.overrideReadOnlyProperty 'menu', this

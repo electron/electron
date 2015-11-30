@@ -47,7 +47,6 @@ class AtomDownloadManagerDelegate : public content::DownloadManagerDelegate {
 
  private:
   content::DownloadManager* download_manager_;
-  base::FilePath default_download_path_;
   base::WeakPtrFactory<AtomDownloadManagerDelegate> weak_ptr_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomDownloadManagerDelegate);

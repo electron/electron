@@ -6,11 +6,14 @@
   'variables': {
     # Required by breakpad.
     'os_bsd': 0,
+    'chromeos': 0,
     # Reflects node's config.gypi.
     'component%': 'static_library',
     'python': 'python',
     'openssl_fips': '',
     'openssl_no_asm': 1,
+    'node_release_urlbase': 'https://atom.io/download/atom-shell',
+    'node_byteorder': '<!(python -c "import sys; print sys.byteorder")',
     'node_target_type': 'shared_library',
     'node_install_npm': 'false',
     'node_prefix': '',
@@ -32,8 +35,6 @@
     'V8_BASE': '',
     'v8_postmortem_support': 'false',
     'v8_enable_i18n_support': 'false',
-    # Required by Linux (empty for now, should support it in future).
-    'sysroot': '',
   },
   # Settings to compile node under Windows.
   'target_defaults': {
@@ -74,6 +75,7 @@
         'xcode_settings': {
           'GCC_TREAT_WARNINGS_AS_ERRORS': 'NO',
           'WARNING_CFLAGS': [
+            '-Wno-unknown-warning-option',
             '-Wno-parentheses-equality',
             '-Wno-unused-function',
             '-Wno-sometimes-uninitialized',
@@ -84,6 +86,7 @@
             '-Wno-deprecated-declarations',
             '-Wno-return-type',
             '-Wno-gnu-folding-constant',
+            '-Wno-shift-negative-value',
           ],
         },
         'conditions': [
@@ -98,6 +101,7 @@
               '-Wno-unused-value',
               '-Wno-deprecated-declarations',
               '-Wno-return-type',
+              '-Wno-shift-negative-value',
               # Required when building as shared library.
               '-fPIC',
             ],

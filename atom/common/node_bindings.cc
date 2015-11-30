@@ -7,20 +7,21 @@
 #include <string>
 #include <vector>
 
+#include "atom/common/api/event_emitter_caller.h"
+#include "atom/common/api/locker.h"
 #include "atom/common/atom_command_line.h"
-#include "atom/common/event_emitter_caller.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
+#include "atom/common/node_includes.h"
 #include "base/command_line.h"
 #include "base/base_paths.h"
+#include "base/environment.h"
 #include "base/files/file_path.h"
 #include "base/message_loop/message_loop.h"
 #include "base/path_service.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/common/content_paths.h"
-#include "native_mate/locker.h"
 #include "native_mate/dictionary.h"
-
-#include "atom/common/node_includes.h"
+#include "third_party/WebKit/public/web/WebScopedMicrotaskSuppression.h"
 
 using content::BrowserThread;
 
@@ -34,11 +35,13 @@ REFERENCE_MODULE(atom_browser_app);
 REFERENCE_MODULE(atom_browser_auto_updater);
 REFERENCE_MODULE(atom_browser_content_tracing);
 REFERENCE_MODULE(atom_browser_dialog);
+REFERENCE_MODULE(atom_browser_download_item);
 REFERENCE_MODULE(atom_browser_menu);
 REFERENCE_MODULE(atom_browser_power_monitor);
 REFERENCE_MODULE(atom_browser_power_save_blocker);
 REFERENCE_MODULE(atom_browser_protocol);
 REFERENCE_MODULE(atom_browser_global_shortcut);
+REFERENCE_MODULE(atom_browser_session);
 REFERENCE_MODULE(atom_browser_tray);
 REFERENCE_MODULE(atom_browser_web_contents);
 REFERENCE_MODULE(atom_browser_web_view_manager);
@@ -136,14 +139,17 @@ void NodeBindings::Initialize() {
     AtomCommandLine::InitializeFromCommandLine();
 #endif
 
-  // Parse the debug args.
-  auto args = AtomCommandLine::argv();
-  for (const std::string& arg : args)
-    node::ParseDebugOpt(arg.c_str());
-
   // Init node.
   // (we assume node::Init would not modify the parameters under embedded mode).
   node::Init(nullptr, nullptr, nullptr, nullptr);
+
+#if defined(OS_WIN)
+  // uv_init overrides error mode to suppress the default crash dialog, bring
+  // it back if user wants to show it.
+  scoped_ptr<base::Environment> env(base::Environment::Create());
+  if (env->HasVar("ELECTRON_DEFAULT_ERROR_MODE"))
+    SetErrorMode(0);
+#endif
 }
 
 node::Environment* NodeBindings::CreateEnvironment(
@@ -178,15 +184,7 @@ node::Environment* NodeBindings::CreateEnvironment(
 }
 
 void NodeBindings::LoadEnvironment(node::Environment* env) {
-  node::node_isolate = env->isolate();
-  if (node::use_debug_agent)
-    node::StartDebug(env, node::debug_wait_connect);
-
   node::LoadEnvironment(env);
-
-  if (node::use_debug_agent)
-    node::EnableDebug(env);
-
   mate::EmitEvent(env->isolate(), env->process_object(), "loaded");
 }
 
@@ -226,6 +224,10 @@ void NodeBindings::UvRunOnce() {
 
   // Enter node context while dealing with uv events.
   v8::Context::Scope context_scope(env->context());
+
+  // Perform microtask checkpoint after running JavaScript.
+  scoped_ptr<blink::WebScopedRunV8Script> script_scope(
+      is_browser_ ? nullptr : new blink::WebScopedRunV8Script(env->isolate()));
 
   // Deal with uv events.
   int r = uv_run(uv_loop_, UV_RUN_NOWAIT);

@@ -6,11 +6,14 @@
 
 #include <string>
 
+#include "atom/common/api/api_messages.h"
 #include "atom/common/api/atom_bindings.h"
 #include "atom/common/node_bindings.h"
+#include "atom/common/node_includes.h"
 #include "atom/common/options_switches.h"
 #include "atom/renderer/atom_render_view_observer.h"
 #include "atom/renderer/guest_view_container.h"
+#include "atom/renderer/node_array_buffer_bridge.h"
 #include "base/command_line.h"
 #include "chrome/renderer/pepper/pepper_helper.h"
 #include "chrome/renderer/printing/print_web_view_helper.h"
@@ -19,33 +22,25 @@
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_frame_observer.h"
 #include "content/public/renderer/render_thread.h"
+#include "ipc/ipc_message_macros.h"
 #include "third_party/WebKit/public/web/WebCustomElement.h"
 #include "third_party/WebKit/public/web/WebLocalFrame.h"
 #include "third_party/WebKit/public/web/WebPluginParams.h"
 #include "third_party/WebKit/public/web/WebKit.h"
 #include "third_party/WebKit/public/web/WebRuntimeFeatures.h"
+#include "third_party/WebKit/public/web/WebView.h"
 
-#include "atom/common/node_includes.h"
+#if defined(OS_WIN)
+#include <shlobj.h>
+#endif
 
 namespace atom {
 
 namespace {
 
 bool IsSwitchEnabled(base::CommandLine* command_line,
-                     const char* switch_string,
-                     bool* enabled) {
-  std::string value = command_line->GetSwitchValueASCII(switch_string);
-  if (value == "true")
-    *enabled = true;
-  else if (value == "false")
-    *enabled = false;
-  else
-    return false;
-  return true;
-}
-
-bool IsGuestFrame(blink::WebFrame* frame) {
-  return frame->uniqueName().utf8() == "ATOM_SHELL_GUEST_WEB_VIEW";
+                     const char* switch_string) {
+  return command_line->GetSwitchValueASCII(switch_string) == "true";
 }
 
 // Helper class to forward the messages to the client.
@@ -64,6 +59,22 @@ class AtomRenderFrameObserver : public content::RenderFrameObserver {
         render_frame()->GetWebFrame(), context);
   }
 
+  bool OnMessageReceived(const IPC::Message& message) {
+    bool handled = true;
+    IPC_BEGIN_MESSAGE_MAP(AtomRenderFrameObserver, message)
+      IPC_MESSAGE_HANDLER(AtomViewMsg_SetZoomLevel, OnSetZoomLevel)
+      IPC_MESSAGE_UNHANDLED(handled = false)
+    IPC_END_MESSAGE_MAP()
+
+    return handled;
+  }
+
+  void OnSetZoomLevel(double level) {
+    auto view = render_frame()->GetWebFrame()->view();
+    if (view)
+      view->setZoomLevel(level);
+  }
+
  private:
   AtomRendererClient* renderer_client_;
 
@@ -74,8 +85,7 @@ class AtomRenderFrameObserver : public content::RenderFrameObserver {
 
 AtomRendererClient::AtomRendererClient()
     : node_bindings_(NodeBindings::Create(false)),
-      atom_bindings_(new AtomBindings),
-      main_frame_(nullptr) {
+      atom_bindings_(new AtomBindings) {
 }
 
 AtomRendererClient::~AtomRendererClient() {
@@ -86,6 +96,8 @@ void AtomRendererClient::WebKitInitialized() {
 
   blink::WebCustomElement::addEmbedderCustomElementName("webview");
   blink::WebCustomElement::addEmbedderCustomElementName("browserplugin");
+
+  OverrideNodeArrayBuffer();
 
   node_bindings_->Initialize();
   node_bindings_->PrepareMessageLoop();
@@ -102,6 +114,15 @@ void AtomRendererClient::WebKitInitialized() {
 
 void AtomRendererClient::RenderThreadStarted() {
   content::RenderThread::Get()->AddObserver(this);
+
+#if defined(OS_WIN)
+  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
+  base::string16 app_id =
+      command_line->GetSwitchValueNative(switches::kAppUserModelId);
+  if (!app_id.empty()) {
+    SetCurrentProcessExplicitAppUserModelID(app_id.c_str());
+  }
+#endif
 }
 
 void AtomRendererClient::RenderFrameCreated(
@@ -137,14 +158,9 @@ bool AtomRendererClient::OverrideCreatePlugin(
 void AtomRendererClient::DidCreateScriptContext(
     blink::WebFrame* frame,
     v8::Handle<v8::Context> context) {
-  // Only attach node bindings in main frame or guest frame.
-  if (!IsGuestFrame(frame)) {
-    if (main_frame_)
-      return;
-
-    // The first web frame is the main frame.
-    main_frame_ = frame;
-  }
+  // Only insert node integration for the main frame.
+  if (frame->parent())
+    return;
 
   // Give the node loop a run to make sure everything is ready.
   node_bindings_->RunMessageLoop();
@@ -163,20 +179,17 @@ void AtomRendererClient::DidCreateScriptContext(
   node_bindings_->LoadEnvironment(env);
 }
 
-bool AtomRendererClient::ShouldFork(blink::WebFrame* frame,
+bool AtomRendererClient::ShouldFork(blink::WebLocalFrame* frame,
                                     const GURL& url,
                                     const std::string& http_method,
                                     bool is_initial_navigation,
                                     bool is_server_redirect,
                                     bool* send_referrer) {
-  // Never fork renderer process for guests.
-  if (IsGuestFrame(frame))
-    return false;
-
   // Handle all the navigations and reloads in browser.
   // FIXME We only support GET here because http method will be ignored when
   // the OpenURLFromTab is triggered, which means form posting would not work,
   // we should solve this by patching Chromium in future.
+  *send_referrer = true;
   return http_method == "GET";
 }
 
@@ -195,10 +208,8 @@ bool AtomRendererClient::ShouldOverridePageVisibilityState(
     const content::RenderFrame* render_frame,
     blink::WebPageVisibilityState* override_state) {
   base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
-  bool b;
 
-  if (IsSwitchEnabled(command_line, switches::kPageVisibility, &b)
-      && b) {
+  if (IsSwitchEnabled(command_line, switches::kPageVisibility)) {
     *override_state = blink::WebPageVisibilityStateVisible;
     return true;
   }
@@ -208,19 +219,17 @@ bool AtomRendererClient::ShouldOverridePageVisibilityState(
 
 void AtomRendererClient::EnableWebRuntimeFeatures() {
   base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
-  bool b;
-  if (IsSwitchEnabled(command_line, switches::kExperimentalFeatures, &b))
-    blink::WebRuntimeFeatures::enableExperimentalFeatures(b);
-  if (IsSwitchEnabled(command_line, switches::kExperimentalCanvasFeatures, &b))
-    blink::WebRuntimeFeatures::enableExperimentalCanvasFeatures(b);
-  if (IsSwitchEnabled(command_line, switches::kSubpixelFontScaling, &b))
-    blink::WebRuntimeFeatures::enableSubpixelFontScaling(b);
-  if (IsSwitchEnabled(command_line, switches::kOverlayScrollbars, &b))
-    blink::WebRuntimeFeatures::enableOverlayScrollbars(b);
-  if (IsSwitchEnabled(command_line, switches::kOverlayFullscreenVideo, &b))
-    blink::WebRuntimeFeatures::enableOverlayFullscreenVideo(b);
-  if (IsSwitchEnabled(command_line, switches::kSharedWorker, &b))
-    blink::WebRuntimeFeatures::enableSharedWorker(b);
+
+  if (IsSwitchEnabled(command_line, switches::kExperimentalFeatures))
+    blink::WebRuntimeFeatures::enableExperimentalFeatures(true);
+  if (IsSwitchEnabled(command_line, switches::kExperimentalCanvasFeatures))
+    blink::WebRuntimeFeatures::enableExperimentalCanvasFeatures(true);
+  if (IsSwitchEnabled(command_line, switches::kOverlayScrollbars))
+    blink::WebRuntimeFeatures::enableOverlayScrollbars(true);
+  if (IsSwitchEnabled(command_line, switches::kOverlayFullscreenVideo))
+    blink::WebRuntimeFeatures::enableOverlayFullscreenVideo(true);
+  if (IsSwitchEnabled(command_line, switches::kSharedWorker))
+    blink::WebRuntimeFeatures::enableSharedWorker(true);
 }
 
 }  // namespace atom

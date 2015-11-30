@@ -9,15 +9,17 @@
 
 #include <string>
 
+#include "atom/browser/ui/atom_menu_model.h"
 #include "atom/browser/ui/tray_icon.h"
 #include "base/mac/scoped_nsobject.h"
 
 @class AtomMenuController;
-@class StatusItemController;
+@class StatusItemView;
 
 namespace atom {
 
-class TrayIconCocoa : public TrayIcon {
+class TrayIconCocoa : public TrayIcon,
+                      public AtomMenuModel::Observer {
  public:
   TrayIconCocoa();
   virtual ~TrayIconCocoa();
@@ -27,15 +29,22 @@ class TrayIconCocoa : public TrayIcon {
   void SetToolTip(const std::string& tool_tip) override;
   void SetTitle(const std::string& title) override;
   void SetHighlightMode(bool highlight) override;
+  void PopUpContextMenu(const gfx::Point& pos) override;
   void SetContextMenu(ui::SimpleMenuModel* menu_model) override;
 
- private:
-  base::scoped_nsobject<NSStatusItem> item_;
+ protected:
+  // AtomMenuModel::Observer:
+  void MenuClosed() override;
 
-  base::scoped_nsobject<StatusItemController> controller_;
+ private:
+  // Atom custom view for NSStatusItem.
+  base::scoped_nsobject<StatusItemView> status_item_view_;
 
   // Status menu shown when right-clicking the system icon.
   base::scoped_nsobject<AtomMenuController> menu_;
+
+  // Used for unregistering observer.
+  AtomMenuModel* menu_model_;  // weak ref.
 
   DISALLOW_COPY_AND_ASSIGN(TrayIconCocoa);
 };

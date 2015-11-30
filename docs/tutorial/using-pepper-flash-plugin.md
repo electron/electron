@@ -1,36 +1,27 @@
 # Using Pepper Flash Plugin
 
-Pepper flash plugin is now supported. To use pepper flash plugin in Electron, you should manually specify the location of pepper flash plugin and then enable it in your application.
+Electron now supports the Pepper Flash plugin. To use the Pepper Flash plugin in
+Electron, you should manually specify the location of the Pepper Flash plugin
+and then enable it in your application.
 
-## Prepare a copy of flash plugin
+## Prepare a Copy of Flash Plugin
 
-On OS X and Linux, the detail of pepper flash plugin can be found by navigating `chrome://plugins` in Chrome browser. Its location and version are useful for electron's pepper flash support. You can also copy it to anywhere else.
+On OS X and Linux, the details of the Pepper Flash plugin can be found by
+navigating to `chrome://plugins` in the Chrome browser. Its location and version
+are useful for Electron's Pepper Flash support. You can also copy it to another
+location.
 
-## Add Electron switch
+## Add Electron Switch
 
-You can directly add `--ppapi-flash-path` and `ppapi-flash-version` to electron commandline or by `app.commandLine.appendSwitch` method before app ready event. Also, add the `plugins` switch of `browser-window`. For example,
+You can directly add `--ppapi-flash-path` and `ppapi-flash-version` to the
+Electron command line or by using the `app.commandLine.appendSwitch` method
+before the app ready event. Also, add the `plugins` switch of `browser-window`.
+For example:
 
 ```javascript
-var app = require('app');
-var BrowserWindow = require('browser-window');
-
-// Report crashes to our server.
-require('crash-reporter').start();
-
-// Keep a global reference of the window object, if you don't, the window will
-// be closed automatically when the javascript object is GCed.
-var mainWindow = null;
-
-// Quit when all windows are closed.
-app.on('window-all-closed', function() {
-  if (process.platform != 'darwin') {
-    app.quit();
-  }
-});
-
 // Specify flash path.
 // On Windows, it might be /path/to/pepflashplayer.dll
-// On Mac, /path/to/PepperFlashPlayer.plugin
+// On OS X, /path/to/PepperFlashPlayer.plugin
 // On Linux, /path/to/libpepflashplayer.so
 app.commandLine.appendSwitch('ppapi-flash-path', '/path/to/libpepflashplayer.so');
 
@@ -45,13 +36,15 @@ app.on('ready', function() {
       'plugins': true
     }
   });
-  mainWindow.loadUrl('file://' + __dirname + '/index.html');
+  mainWindow.loadURL('file://' + __dirname + '/index.html');
   // Something else
 });
 ```
 
-## Enable flash plugin in a `<webview>` tag
+## Enable Flash Plugin in a `<webview>` Tag
+
 Add `plugins` attribute to `<webview>` tag.
+
 ```html
 <webview src="http://www.adobe.com/software/flash/about/" plugins></webview>
 ```

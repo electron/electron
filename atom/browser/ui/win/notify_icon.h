@@ -33,7 +33,10 @@ class NotifyIcon : public TrayIcon {
   // Handles a click event from the user - if |left_button_click| is true and
   // there is a registered observer, passes the click event to the observer,
   // otherwise displays the context menu if there is one.
-  void HandleClickEvent(const gfx::Point& cursor_pos, bool left_button_click);
+  void HandleClickEvent(const gfx::Point& cursor_pos,
+                        int modifiers,
+                        bool left_button_click,
+                        bool double_button_click);
 
   // Re-creates the status tray icon now after the taskbar has been created.
   void ResetIcon();
@@ -49,6 +52,7 @@ class NotifyIcon : public TrayIcon {
   void DisplayBalloon(const gfx::Image& icon,
                       const base::string16& title,
                       const base::string16& contents) override;
+  void PopUpContextMenu(const gfx::Point& pos) override;
   void SetContextMenu(ui::SimpleMenuModel* menu_model) override;
 
  private:

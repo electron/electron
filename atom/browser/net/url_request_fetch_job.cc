@@ -7,13 +7,14 @@
 #include <algorithm>
 #include <string>
 
-#include "atom/browser/atom_browser_context.h"
 #include "base/strings/string_util.h"
+#include "base/thread_task_runner_handle.h"
 #include "net/base/io_buffer.h"
 #include "net/base/net_errors.h"
 #include "net/http/http_response_headers.h"
 #include "net/url_request/url_fetcher.h"
 #include "net/url_request/url_fetcher_response_writer.h"
+#include "net/url_request/url_request_context_builder.h"
 #include "net/url_request/url_request_status.h"
 
 namespace atom {
@@ -22,7 +23,7 @@ namespace {
 
 // Convert string to RequestType.
 net::URLFetcher::RequestType GetRequestType(const std::string& raw) {
-  std::string method = StringToUpperASCII(raw);
+  std::string method = base::StringToUpperASCII(raw);
   if (method.empty() || method == "GET")
     return net::URLFetcher::GET;
   else if (method == "POST")
@@ -74,37 +75,73 @@ class ResponsePiper : public net::URLFetcherResponseWriter {
 }  // namespace
 
 URLRequestFetchJob::URLRequestFetchJob(
-    AtomBrowserContext* browser_context,
-    net::URLRequest* request,
-    net::NetworkDelegate* network_delegate,
-    const GURL& url,
-    const std::string& method,
-    const std::string& referrer)
-    : net::URLRequestJob(request, network_delegate),
+    net::URLRequest* request, net::NetworkDelegate* network_delegate)
+    : JsAsker<net::URLRequestJob>(request, network_delegate),
       pending_buffer_size_(0) {
+}
+
+void URLRequestFetchJob::StartAsync(scoped_ptr<base::Value> options) {
+  if (!options->IsType(base::Value::TYPE_DICTIONARY)) {
+    NotifyStartError(net::URLRequestStatus(
+          net::URLRequestStatus::FAILED, net::ERR_NOT_IMPLEMENTED));
+    return;
+  }
+
+  std::string url, method, referrer;
+  base::Value* session = nullptr;
+  base::DictionaryValue* dict =
+      static_cast<base::DictionaryValue*>(options.get());
+  dict->GetString("url", &url);
+  dict->GetString("method", &method);
+  dict->GetString("referrer", &referrer);
+  dict->Get("session", &session);
+
+  // Check if URL is valid.
+  GURL formated_url(url);
+  if (!formated_url.is_valid()) {
+    NotifyStartError(net::URLRequestStatus(
+          net::URLRequestStatus::FAILED, net::ERR_INVALID_URL));
+    return;
+  }
+
   // Use |request|'s method if |method| is not specified.
   net::URLFetcher::RequestType request_type;
   if (method.empty())
-    request_type = GetRequestType(request->method());
+    request_type = GetRequestType(request()->method());
   else
     request_type = GetRequestType(method);
 
-  fetcher_.reset(net::URLFetcher::Create(url, request_type, this));
-  fetcher_->SetRequestContext(browser_context->url_request_context_getter());
+  fetcher_ = net::URLFetcher::Create(formated_url, request_type, this);
   fetcher_->SaveResponseWithWriter(make_scoped_ptr(new ResponsePiper(this)));
 
+  // When |session| is set to |null| we use a new request context for fetch job.
+  if (session && session->IsType(base::Value::TYPE_NULL))
+    fetcher_->SetRequestContext(CreateRequestContext());
+  else
+    fetcher_->SetRequestContext(request_context_getter());
+
   // Use |request|'s referrer if |referrer| is not specified.
-  if (referrer.empty()) {
-    fetcher_->SetReferrer(request->referrer());
-  } else {
+  if (referrer.empty())
+    fetcher_->SetReferrer(request()->referrer());
+  else
     fetcher_->SetReferrer(referrer);
-  }
 
   // Use |request|'s headers.
-  net::HttpRequestHeaders headers;
-  if (request->GetFullRequestHeaders(&headers)) {
-    fetcher_->SetExtraRequestHeaders(headers.ToString());
+  fetcher_->SetExtraRequestHeaders(
+      request()->extra_request_headers().ToString());
+
+  fetcher_->Start();
+}
+
+net::URLRequestContextGetter* URLRequestFetchJob::CreateRequestContext() {
+  if (!url_request_context_getter_.get()) {
+    auto task_runner = base::ThreadTaskRunnerHandle::Get();
+    net::URLRequestContextBuilder builder;
+    builder.set_proxy_service(net::ProxyService::CreateDirect());
+    url_request_context_getter_ =
+        new net::TrivialURLRequestContextGetter(builder.Build(), task_runner);
   }
+  return url_request_context_getter_.get();
 }
 
 void URLRequestFetchJob::HeadersCompleted() {
@@ -136,18 +173,19 @@ int URLRequestFetchJob::DataAvailable(net::IOBuffer* buffer, int num_bytes) {
   return bytes_read;
 }
 
-void URLRequestFetchJob::Start() {
-  fetcher_->Start();
-}
-
 void URLRequestFetchJob::Kill() {
-  URLRequestJob::Kill();
+  JsAsker<URLRequestJob>::Kill();
   fetcher_.reset();
 }
 
 bool URLRequestFetchJob::ReadRawData(net::IOBuffer* dest,
                                      int dest_size,
                                      int* bytes_read) {
+  if (GetResponseCode() == 204) {
+    *bytes_read = 0;
+    request()->set_received_response_content_length(prefilter_bytes_read());
+    return true;
+  }
   pending_buffer_ = dest;
   pending_buffer_size_ = dest_size;
   SetStatus(net::URLRequestStatus(net::URLRequestStatus::IO_PENDING, 0));
@@ -174,6 +212,14 @@ int URLRequestFetchJob::GetResponseCode() const {
 }
 
 void URLRequestFetchJob::OnURLFetchComplete(const net::URLFetcher* source) {
+  if (!response_info_) {
+    // Since we notify header completion only after first write there will be
+    // no response object constructed for http respones with no content 204.
+    // We notify header completion here.
+    HeadersCompleted();
+    return;
+  }
+
   pending_buffer_ = nullptr;
   pending_buffer_size_ = 0;
   NotifyDone(fetcher_->GetStatus());

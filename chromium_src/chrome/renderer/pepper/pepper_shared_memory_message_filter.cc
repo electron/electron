@@ -56,17 +56,9 @@ void PepperSharedMemoryMessageFilter::OnHostMsgCreateSharedMemory(
           ->GetVarTracker()
           ->TrackSharedMemoryHandle(instance, host_shm_handle, size);
 
-  base::PlatformFile host_handle =
-#if defined(OS_WIN)
-      host_shm_handle;
-#elif defined(OS_POSIX)
-      host_shm_handle.fd;
-#else
-#error Not implemented.
-#endif
   // We set auto_close to false since we need our file descriptor to
   // actually be duplicated on linux. The shared memory destructor will
   // close the original handle for us.
-  plugin_handle->set_shmem(host_->ShareHandleWithRemote(host_handle, false),
-                           size);
+  plugin_handle->set_shmem(
+      host_->ShareSharedMemoryHandleWithRemote(host_shm_handle), size);
 }

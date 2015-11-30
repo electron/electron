@@ -14,22 +14,25 @@
   process.throwDeprecation = true;
 
   // Check if we are running in CI.
-  var argv = require('remote').process.argv;
+  var electron = require ('electron');
+  var remote = electron.remote;
+  var ipcRenderer = electron.ipcRenderer;
+
+  var argv = remote.process.argv;
   var isCi = argv[2] == '--ci';
 
   if (!isCi) {
-    var win = require('remote').getCurrentWindow();
+    var win = remote.getCurrentWindow();
     win.show();
     win.focus();
   }
 
   // Show DevTools.
   document.oncontextmenu = function(e) {
-    require('remote').getCurrentWindow().inspectElement(e.clientX, e.clientY);
+    remote.getCurrentWindow().inspectElement(e.clientX, e.clientY);
   }
 
   require('coffee-script/register');  // Supports .coffee tests.
-  var ipc = require('ipc');
 
   // Rediret all output to browser.
   if (isCi) {
@@ -37,11 +40,11 @@
       return {
         log: function() {
           args = Array.prototype.slice.call(arguments);
-          ipc.send('console.log', args);
+          ipcRenderer.send('console.log', args);
         },
         error: function() {
           args = Array.prototype.slice.call(arguments);
-          ipc.send('console.error', args);
+          ipcRenderer.send('console.error', args);
         },
       }
     });
@@ -70,7 +73,7 @@
     var runner = mocha.run(function() {
       Mocha.utils.highlightTags('code');
       if (isCi)
-        ipc.send('process.exit', runner.failures);
+        ipcRenderer.send('process.exit', runner.failures);
     });
   });
 })();

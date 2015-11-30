@@ -13,6 +13,7 @@
 
 #include "atom/common/asar/scoped_temporary_file.h"
 #include "base/files/file.h"
+#include "base/files/file_util.h"
 #include "base/logging.h"
 #include "base/pickle.h"
 #include "base/json/json_reader.h"
@@ -54,6 +55,11 @@ bool GetChildNode(const base::DictionaryValue* root,
                   const std::string& name,
                   const base::DictionaryValue* dir,
                   const base::DictionaryValue** out) {
+  if (name == "") {
+    *out = root;
+    return true;
+  }
+
   const base::DictionaryValue* files = NULL;
   return GetFilesNode(root, dir, &files) &&
          files->GetDictionaryWithoutPathExpansion(name, out);
@@ -91,7 +97,6 @@ bool FillFileInfoWithNode(Archive::FileInfo* info,
     return false;
   info->size = static_cast<uint32>(size);
 
-  info->unpacked = false;
   if (node->GetBoolean("unpacked", &info->unpacked) && info->unpacked)
     return true;
 
@@ -102,6 +107,8 @@ bool FillFileInfoWithNode(Archive::FileInfo* info,
     return false;
   info->offset += header_size;
 
+  node->GetBoolean("executable", &info->executable);
+
   return true;
 }
 
@@ -110,6 +117,14 @@ bool FillFileInfoWithNode(Archive::FileInfo* info,
 Archive::Archive(const base::FilePath& path)
     : path_(path),
       file_(path_, base::File::FLAG_OPEN | base::File::FLAG_READ),
+#if defined(OS_WIN)
+      fd_(_open_osfhandle(
+              reinterpret_cast<intptr_t>(file_.GetPlatformFile()), 0)),
+#elif defined(OS_POSIX)
+      fd_(file_.GetPlatformFile()),
+#else
+      fd_(-1),
+#endif
       header_size_(0) {
 }
 
@@ -131,7 +146,8 @@ bool Archive::Init() {
   }
 
   uint32 size;
-  if (!PickleIterator(Pickle(buf.data(), buf.size())).ReadUInt32(&size)) {
+  if (!base::PickleIterator(base::Pickle(buf.data(), buf.size())).ReadUInt32(
+          &size)) {
     LOG(ERROR) << "Failed to parse header size from " << path_.value();
     return false;
   }
@@ -144,7 +160,8 @@ bool Archive::Init() {
   }
 
   std::string header;
-  if (!PickleIterator(Pickle(buf.data(), buf.size())).ReadString(&header)) {
+  if (!base::PickleIterator(base::Pickle(buf.data(), buf.size())).ReadString(
+        &header)) {
     LOG(ERROR) << "Failed to parse header from " << path_.value();
     return false;
   }
@@ -258,23 +275,20 @@ bool Archive::CopyFileOut(const base::FilePath& path, base::FilePath* out) {
   if (!temp_file->InitFromFile(&file_, info.offset, info.size))
     return false;
 
+#if defined(OS_POSIX)
+  if (info.executable) {
+    // chmod a+x temp_file;
+    base::SetPosixFilePermissions(temp_file->path(), 0755);
+  }
+#endif
+
   *out = temp_file->path();
   external_files_.set(path, temp_file.Pass());
   return true;
 }
 
 int Archive::GetFD() const {
-  if (!file_.IsValid())
-    return -1;
-
-#if defined(OS_WIN)
-  return
-    _open_osfhandle(reinterpret_cast<intptr_t>(file_.GetPlatformFile()), 0);
-#elif defined(OS_POSIX)
-  return file_.GetPlatformFile();
-#else
-  return -1;
-#endif
+  return fd_;
 }
 
 }  // namespace asar

@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import glob
 import os
 import re
 import shutil
@@ -8,9 +9,10 @@ import sys
 import stat
 
 from lib.config import LIBCHROMIUMCONTENT_COMMIT, BASE_URL, PLATFORM, \
-                       get_target_arch
+                       get_target_arch, get_chromedriver_version, \
+                       get_platform_key
 from lib.util import scoped_cwd, rm_rf, get_atom_shell_version, make_zip, \
-                     execute, get_chromedriver_version, atom_gyp
+                     execute, atom_gyp
 
 
 ATOM_SHELL_VERSION = get_atom_shell_version()
@@ -31,7 +33,6 @@ TARGET_BINARIES = {
     '{0}.exe'.format(PROJECT_NAME),  # 'electron.exe'
     'content_shell.pak',
     'd3dcompiler_47.dll',
-    'ffmpegsumo.dll',
     'icudtl.dat',
     'libEGL.dll',
     'libGLESv2.dll',
@@ -50,7 +51,6 @@ TARGET_BINARIES = {
     PROJECT_NAME,  # 'electron'
     'content_shell.pak',
     'icudtl.dat',
-    'libffmpegsumo.so',
     'libnode.so',
     'natives_blob.bin',
     'snapshot_blob.bin',
@@ -80,6 +80,8 @@ def main():
   rm_rf(DIST_DIR)
   os.makedirs(DIST_DIR)
 
+  target_arch = get_target_arch()
+
   force_build()
   create_symbols()
   copy_binaries()
@@ -89,7 +91,8 @@ def main():
 
   if PLATFORM == 'linux':
     strip_binaries()
-    copy_system_libraries()
+    if target_arch != 'arm':
+      copy_system_libraries()
 
   create_version()
   create_dist_zip()
@@ -125,13 +128,19 @@ def copy_chrome_binary(binary):
 
 
 def copy_license():
+  shutil.copy2(os.path.join(CHROMIUM_DIR, '..', 'LICENSES.chromium.html'),
+               DIST_DIR)
   shutil.copy2(os.path.join(SOURCE_ROOT, 'LICENSE'), DIST_DIR)
 
 
 def strip_binaries():
+  if get_target_arch() == 'arm':
+    strip = 'arm-linux-gnueabihf-strip'
+  else:
+    strip = 'strip'
   for binary in TARGET_BINARIES[PLATFORM]:
     if binary.endswith('.so') or '.' not in binary:
-      execute(['strip', os.path.join(DIST_DIR, binary)])
+      execute([strip, os.path.join(DIST_DIR, binary)])
 
 
 def copy_system_libraries():
@@ -160,14 +169,21 @@ def create_symbols():
   dump_symbols = os.path.join(SOURCE_ROOT, 'script', 'dump-symbols.py')
   execute([sys.executable, dump_symbols, destination])
 
+  if PLATFORM == 'darwin':
+    dsyms = glob.glob(os.path.join(OUT_DIR, '*.dSYM'))
+    for dsym in dsyms:
+      shutil.copytree(dsym, os.path.join(DIST_DIR, os.path.basename(dsym)))
+
 
 def create_dist_zip():
   dist_name = '{0}-{1}-{2}-{3}.zip'.format(PROJECT_NAME, ATOM_SHELL_VERSION,
-                                           PLATFORM, get_target_arch())
+                                           get_platform_key(),
+                                           get_target_arch())
   zip_file = os.path.join(SOURCE_ROOT, 'dist', dist_name)
 
   with scoped_cwd(DIST_DIR):
-    files = TARGET_BINARIES[PLATFORM] +  ['LICENSE', 'version']
+    files = TARGET_BINARIES[PLATFORM] +  ['LICENSE', 'LICENSES.chromium.html',
+                                          'version']
     if PLATFORM == 'linux':
       files += [lib for lib in SYSTEM_LIBRARIES if os.path.exists(lib)]
     dirs = TARGET_DIRECTORIES[PLATFORM]
@@ -175,12 +191,12 @@ def create_dist_zip():
 
 
 def create_chrome_binary_zip(binary, version):
-  dist_name = '{0}-{1}-{2}-{3}.zip'.format(binary, version, PLATFORM,
+  dist_name = '{0}-{1}-{2}-{3}.zip'.format(binary, version, get_platform_key(),
                                            get_target_arch())
   zip_file = os.path.join(SOURCE_ROOT, 'dist', dist_name)
 
   with scoped_cwd(DIST_DIR):
-    files = ['LICENSE']
+    files = ['LICENSE', 'LICENSES.chromium.html']
     if PLATFORM == 'win32':
       files += [binary + '.exe']
     else:
@@ -191,14 +207,23 @@ def create_chrome_binary_zip(binary, version):
 def create_symbols_zip():
   dist_name = '{0}-{1}-{2}-{3}-symbols.zip'.format(PROJECT_NAME,
                                                    ATOM_SHELL_VERSION,
-                                                   PLATFORM,
+                                                   get_platform_key(),
                                                    get_target_arch())
-  zip_file = os.path.join(SOURCE_ROOT, 'dist', dist_name)
+  zip_file = os.path.join(DIST_DIR, dist_name)
+  licenses = ['LICENSE', 'LICENSES.chromium.html', 'version']
 
   with scoped_cwd(DIST_DIR):
-    files = ['LICENSE', 'version']
     dirs = ['{0}.breakpad.syms'.format(PROJECT_NAME)]
-    make_zip(zip_file, files, dirs)
+    make_zip(zip_file, licenses, dirs)
+
+  if PLATFORM == 'darwin':
+    dsym_name = '{0}-{1}-{2}-{3}-dsym.zip'.format(PROJECT_NAME,
+                                                  ATOM_SHELL_VERSION,
+                                                  get_platform_key(),
+                                                  get_target_arch())
+    with scoped_cwd(DIST_DIR):
+      dsyms = glob.glob('*.dSYM')
+      make_zip(os.path.join(DIST_DIR, dsym_name), licenses, dsyms)
 
 
 if __name__ == '__main__':

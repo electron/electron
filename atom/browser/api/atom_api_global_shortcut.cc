@@ -7,8 +7,8 @@
 #include <string>
 
 #include "atom/common/native_mate_converters/accelerator_converter.h"
+#include "atom/common/native_mate_converters/callback.h"
 #include "base/stl_util.h"
-#include "native_mate/callback.h"
 #include "native_mate/dictionary.h"
 
 #include "atom/common/node_includes.h"
@@ -23,6 +23,9 @@ GlobalShortcut::GlobalShortcut() {
 }
 
 GlobalShortcut::~GlobalShortcut() {
+}
+
+void GlobalShortcut::Destroy() {
   UnregisterAll();
 }
 

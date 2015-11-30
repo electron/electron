@@ -4,43 +4,21 @@
 
 #include "atom/renderer/api/atom_api_web_frame.h"
 
-// This defines are required by SchemeRegistry.h.
-#define ALWAYS_INLINE inline
-#define OS(WTF_FEATURE) (defined WTF_OS_##WTF_FEATURE  && WTF_OS_##WTF_FEATURE)  // NOLINT
-#define USE(WTF_FEATURE) (defined WTF_USE_##WTF_FEATURE  && WTF_USE_##WTF_FEATURE)  // NOLINT
-#define ENABLE(WTF_FEATURE) (defined ENABLE_##WTF_FEATURE  && ENABLE_##WTF_FEATURE)  // NOLINT
-
+#include "atom/common/api/api_messages.h"
+#include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/renderer/api/atom_api_spell_check_client.h"
 #include "content/public/renderer/render_frame.h"
-#include "native_mate/callback.h"
+#include "content/public/renderer/render_view.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 #include "third_party/WebKit/public/web/WebDocument.h"
 #include "third_party/WebKit/public/web/WebLocalFrame.h"
+#include "third_party/WebKit/public/web/WebSecurityPolicy.h"
 #include "third_party/WebKit/public/web/WebView.h"
-#include "third_party/WebKit/Source/platform/weborigin/SchemeRegistry.h"
 
 #include "atom/common/node_includes.h"
-
-namespace mate {
-
-template<>
-struct Converter<WTF::String> {
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Local<v8::Value> val,
-                     WTF::String* out) {
-    if (!val->IsString())
-      return false;
-
-    v8::String::Value s(val);
-    *out = WTF::String(reinterpret_cast<const base::char16*>(*s), s.length());
-    return true;
-  }
-};
-
-}  // namespace mate
 
 namespace atom {
 
@@ -58,6 +36,10 @@ void WebFrame::SetName(const std::string& name) {
 }
 
 double WebFrame::SetZoomLevel(double level) {
+  auto render_view = content::RenderView::FromWebView(web_frame_->view());
+  // Notify guests if any for zoom level change.
+  render_view->Send(
+      new AtomViewHostMsg_ZoomLevelChanged(MSG_ROUTING_NONE, level));
   return web_frame_->view()->setZoomLevel(level);
 }
 
@@ -72,6 +54,10 @@ double WebFrame::SetZoomFactor(double factor) {
 
 double WebFrame::GetZoomFactor() const {
   return blink::WebView::zoomLevelToZoomFactor(GetZoomLevel());
+}
+
+void WebFrame::SetZoomLevelLimits(double min_level, double max_level) {
+  web_frame_->view()->setDefaultPageScaleLimits(min_level, max_level);
 }
 
 v8::Local<v8::Value> WebFrame::RegisterEmbedderCustomElement(
@@ -106,6 +92,28 @@ void WebFrame::SetSpellCheckProvider(mate::Arguments* args,
   web_frame_->view()->setSpellCheckClient(spell_check_client_.get());
 }
 
+void WebFrame::RegisterURLSchemeAsSecure(const std::string& scheme) {
+  // Register scheme to secure list (https, wss, data).
+  blink::WebSecurityPolicy::registerURLSchemeAsSecure(
+      blink::WebString::fromUTF8(scheme));
+}
+
+void WebFrame::RegisterURLSchemeAsBypassingCSP(const std::string& scheme) {
+  // Register scheme to bypass pages's Content Security Policy.
+  blink::WebSecurityPolicy::registerURLSchemeAsBypassingContentSecurityPolicy(
+      blink::WebString::fromUTF8(scheme));
+}
+
+void WebFrame::RegisterURLSchemeAsPrivileged(const std::string& scheme) {
+  // Register scheme to privileged list (https, wss, data, chrome-extension)
+  blink::WebString privileged_scheme(blink::WebString::fromUTF8(scheme));
+  blink::WebSecurityPolicy::registerURLSchemeAsSecure(privileged_scheme);
+  blink::WebSecurityPolicy::registerURLSchemeAsBypassingContentSecurityPolicy(
+      privileged_scheme);
+  blink::WebSecurityPolicy::registerURLSchemeAsAllowingServiceWorkers(
+      privileged_scheme);
+}
+
 mate::ObjectTemplateBuilder WebFrame::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
   return mate::ObjectTemplateBuilder(isolate)
@@ -114,14 +122,19 @@ mate::ObjectTemplateBuilder WebFrame::GetObjectTemplateBuilder(
       .SetMethod("getZoomLevel", &WebFrame::GetZoomLevel)
       .SetMethod("setZoomFactor", &WebFrame::SetZoomFactor)
       .SetMethod("getZoomFactor", &WebFrame::GetZoomFactor)
+      .SetMethod("setZoomLevelLimits", &WebFrame::SetZoomLevelLimits)
       .SetMethod("registerEmbedderCustomElement",
                  &WebFrame::RegisterEmbedderCustomElement)
       .SetMethod("registerElementResizeCallback",
                  &WebFrame::RegisterElementResizeCallback)
       .SetMethod("attachGuest", &WebFrame::AttachGuest)
       .SetMethod("setSpellCheckProvider", &WebFrame::SetSpellCheckProvider)
-      .SetMethod("registerUrlSchemeAsSecure",
-                 &blink::SchemeRegistry::registerURLSchemeAsSecure);
+      .SetMethod("registerURLSchemeAsSecure",
+                 &WebFrame::RegisterURLSchemeAsSecure)
+      .SetMethod("registerURLSchemeAsBypassingCSP",
+                 &WebFrame::RegisterURLSchemeAsBypassingCSP)
+      .SetMethod("registerURLSchemeAsPrivileged",
+                 &WebFrame::RegisterURLSchemeAsPrivileged);
 }
 
 // static

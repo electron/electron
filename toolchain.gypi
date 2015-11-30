@@ -5,7 +5,13 @@
     # Set this to true when building with Clang.
     'clang%': 1,
 
+    # Path to sysroot dir.
+    'sysroot%': '',
+
     'variables': {
+      # The minimum OS X SDK version to use.
+      'mac_sdk_min%': '10.10',
+
       # Set ARM architecture version.
       'arm_version%': 7,
 
@@ -14,6 +20,7 @@
     },
 
     # Copy conditionally-set variables out one scope.
+    'mac_sdk_min%': '<(mac_sdk_min)',
     'arm_version%': '<(arm_version)',
     'arm_neon%': '<(arm_neon)',
 
@@ -26,6 +33,16 @@
       ['OS=="win"', {
         'clang%': 0,
       }],  # OS=="win"
+
+      # Define the abosulte version of <(DEPTH).
+      ['OS!="win"', {
+        'source_root': '<!(cd <(DEPTH) && pwd -P)',
+      }],  # OS!="win"
+
+      # Search for the available version of SDK.
+      ['OS=="mac"', {
+        'mac_sdk%': '<!(python <(DEPTH)/tools/mac/find_sdk.py <(mac_sdk_min))',
+      }],
 
       # Set default compiler flags depending on ARM version.
       ['arm_version==6', {
@@ -51,6 +68,7 @@
     ],
   },
   'conditions': [
+    # Setup building with clang.
     ['clang==1', {
       'make_global_settings': [
         ['CC', '<(make_clang_dir)/bin/clang'],
@@ -85,6 +103,45 @@
       },
     }],  # clang==1
 
+    # Specify the SDKROOT.
+    ['OS=="mac"', {
+      'target_defaults': {
+        'xcode_settings': {
+          'SDKROOT': 'macosx<(mac_sdk)',  # -isysroot
+        },
+      },
+    }],
+
+    # Setup sysroot environment.
+    ['OS=="linux" and target_arch in ["arm", "ia32"]', {
+      'variables': {
+        'conditions': [
+          ['target_arch=="arm"', {
+            # sysroot needs to be an absolute path otherwise it generates
+            # incorrect results when passed to pkg-config
+            'sysroot': '<(source_root)/vendor/debian_wheezy_arm-sysroot',
+          }],
+          ['target_arch=="ia32"', {
+            'sysroot': '<(source_root)/vendor/debian_wheezy_i386-sysroot',
+          }],
+        ],
+      },
+      'target_defaults': {
+        'target_conditions': [
+          ['_toolset=="target"', {
+            'cflags': [
+              '--sysroot=<(sysroot)',
+            ],
+            'ldflags': [
+              '--sysroot=<(sysroot)',
+              '<!(<(source_root)/tools/linux/sysroot_ld_path.sh <(sysroot))',
+            ],
+          }]
+        ],
+      },
+    }],  # target_arch==arm
+
+    # Setup cross-compilation on Linux.
     ['OS=="linux"', {
       'target_defaults': {
         'target_conditions': [
@@ -136,11 +193,6 @@
                       '-march=<(arm_arch)',
                     ],
                   }],
-                ],
-              }],
-              ['clang==1', {
-                'cflags': [
-                  '-no-integrated-as',
                 ],
               }],
               ['arm_tune!=""', {

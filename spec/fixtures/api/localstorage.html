@@ -1,0 +1,11 @@
+<html>
+<body>
+<script type="text/javascript" charset="utf-8">
+window.localStorage.setItem('test', 'test');
+var ipcRenderer = require('electron').ipcRenderer;
+ipcRenderer.on('getcount', function() {
+  ipcRenderer.send('count', window.localStorage.length);
+})
+</script>
+</body>
+</html>

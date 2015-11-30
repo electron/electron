@@ -220,64 +220,6 @@ PrintedDocument* PrintJob::document() const {
   return document_.get();
 }
 
-void PrintJob::UpdatePrintedDocument(PrintedDocument* new_document) {
-  if (document_.get() == new_document)
-    return;
-
-  document_ = new_document;
-
-  if (document_.get()) {
-    settings_ = document_->settings();
-  }
-
-  if (worker_) {
-    DCHECK(!is_job_pending_);
-    // Sync the document with the worker.
-    worker_->PostTask(FROM_HERE,
-                      base::Bind(&HoldRefCallback,
-                                 make_scoped_refptr(this),
-                                 base::Bind(&PrintJobWorker::OnDocumentChanged,
-                                            base::Unretained(worker_.get()),
-                                            document_)));
-  }
-}
-
-void PrintJob::OnNotifyPrintJobEvent(const JobEventDetails& event_details) {
-  switch (event_details.type()) {
-    case JobEventDetails::FAILED: {
-      settings_.Clear();
-      // No need to cancel since the worker already canceled itself.
-      Stop();
-      break;
-    }
-    case JobEventDetails::USER_INIT_DONE:
-    case JobEventDetails::DEFAULT_INIT_DONE:
-    case JobEventDetails::USER_INIT_CANCELED: {
-      DCHECK_EQ(event_details.document(), document_.get());
-      break;
-    }
-    case JobEventDetails::NEW_DOC:
-    case JobEventDetails::NEW_PAGE:
-    case JobEventDetails::JOB_DONE:
-    case JobEventDetails::ALL_PAGES_REQUESTED: {
-      // Don't care.
-      break;
-    }
-    case JobEventDetails::DOC_DONE: {
-      // This will call Stop() and broadcast a JOB_DONE message.
-      base::MessageLoop::current()->PostTask(
-          FROM_HERE, base::Bind(&PrintJob::OnDocumentDone, this));
-      break;
-    }
-    case JobEventDetails::PAGE_DONE:
-      break;
-    default: {
-      NOTREACHED();
-      break;
-    }
-  }
-}
-
 #if defined(OS_WIN)
 
 class PrintJob::PdfToEmfState {
@@ -374,6 +316,68 @@ void PrintJob::OnPdfToEmfPageConverted(int page_number,
 }
 
 #endif  // OS_WIN
+
+void PrintJob::UpdatePrintedDocument(PrintedDocument* new_document) {
+  if (document_.get() == new_document)
+    return;
+
+  document_ = new_document;
+
+  if (document_.get()) {
+    settings_ = document_->settings();
+  }
+
+  if (worker_) {
+    DCHECK(!is_job_pending_);
+    // Sync the document with the worker.
+    worker_->PostTask(FROM_HERE,
+                      base::Bind(&HoldRefCallback,
+                                 make_scoped_refptr(this),
+                                 base::Bind(&PrintJobWorker::OnDocumentChanged,
+                                            base::Unretained(worker_.get()),
+                                            document_)));
+  }
+}
+
+void PrintJob::OnNotifyPrintJobEvent(const JobEventDetails& event_details) {
+  switch (event_details.type()) {
+    case JobEventDetails::FAILED: {
+      settings_.Clear();
+      // No need to cancel since the worker already canceled itself.
+      Stop();
+      break;
+    }
+    case JobEventDetails::USER_INIT_DONE:
+    case JobEventDetails::DEFAULT_INIT_DONE:
+    case JobEventDetails::USER_INIT_CANCELED: {
+      DCHECK_EQ(event_details.document(), document_.get());
+      break;
+    }
+    case JobEventDetails::NEW_DOC:
+    case JobEventDetails::NEW_PAGE:
+    case JobEventDetails::JOB_DONE:
+    case JobEventDetails::ALL_PAGES_REQUESTED: {
+      // Don't care.
+      break;
+    }
+    case JobEventDetails::DOC_DONE: {
+      // This will call Stop() and broadcast a JOB_DONE message.
+      base::MessageLoop::current()->PostTask(
+          FROM_HERE, base::Bind(&PrintJob::OnDocumentDone, this));
+      break;
+    }
+    case JobEventDetails::PAGE_DONE:
+#if defined(OS_WIN)
+      ptd_to_emf_state_->OnPageProcessed(
+          base::Bind(&PrintJob::OnPdfToEmfPageConverted, this));
+#endif  // OS_WIN
+      break;
+    default: {
+      NOTREACHED();
+      break;
+    }
+  }
+}
 
 void PrintJob::OnDocumentDone() {
   // Be sure to live long enough. The instance could be destroyed by the

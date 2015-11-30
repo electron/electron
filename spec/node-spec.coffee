@@ -3,7 +3,8 @@ child_process = require 'child_process'
 fs            = require 'fs'
 path          = require 'path'
 os            = require 'os'
-remote        = require 'remote'
+
+{remote} = require 'electron'
 
 describe 'node feature', ->
   fixtures = path.join __dirname, 'fixtures'
@@ -56,8 +57,16 @@ describe 'node feature', ->
           done()
         child.send 'message'
 
+      it 'has setImmediate working in script', (done) ->
+        child = child_process.fork path.join(fixtures, 'module', 'set-immediate.js')
+        child.on 'message', (msg) ->
+          assert.equal msg, 'ok'
+          done()
+        child.send 'message'
+
   describe 'contexts', ->
     describe 'setTimeout in fs callback', ->
+      return if process.env.TRAVIS is 'true'
       it 'does not crash', (done) ->
         fs.readFile __filename, ->
           setTimeout done, 0
@@ -133,3 +142,15 @@ describe 'node feature', ->
       b = new Buffer(p.innerText)
       assert.equal b.toString(), 'Jøhänñéß'
       assert.equal Buffer.byteLength(p.innerText), 13
+
+  describe 'process.stdout', ->
+    it 'should not throw exception', ->
+      process.stdout
+
+    # Not reliable on some machines
+    xit 'should have isTTY defined', ->
+      assert.equal typeof(process.stdout.isTTY), 'boolean'
+
+  describe 'vm.createContext', ->
+    it 'should not crash', ->
+      require('vm').runInNewContext('')

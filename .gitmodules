@@ -16,3 +16,9 @@
 [submodule "vendor/crashpad"]
 	path = vendor/crashpad
 	url = https://github.com/atom/crashpad.git
+[submodule "vendor/requests"]
+	path = vendor/requests
+	url = https://github.com/kennethreitz/requests
+[submodule "vendor/boto"]
+	path = vendor/boto
+	url = https://github.com/boto/boto.git

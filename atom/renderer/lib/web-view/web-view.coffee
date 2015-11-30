@@ -1,8 +1,8 @@
+{deprecate, webFrame, remote, ipcRenderer} = require 'electron'
 v8Util = process.atomBinding 'v8_util'
+
 guestViewInternal = require './guest-view-internal'
 webViewConstants = require './web-view-constants'
-webFrame = require 'web-frame'
-remote = require 'remote'
 
 # ID generator.
 nextId = 0
@@ -46,6 +46,7 @@ class WebViewImpl
     # that we don't end up allocating a second guest.
     if @guestInstanceId
       guestViewInternal.destroyGuest @guestInstanceId
+      @webContents = null
       @guestInstanceId = undefined
       @beforeFirstNavigation = true
       @attributes[webViewConstants.ATTRIBUTE_PARTITION].validPartitionId = true
@@ -123,11 +124,9 @@ class WebViewImpl
       # changed.
       @dispatchEvent webViewEvent
 
-  onElementResize: (oldSize, newSize) ->
+  onElementResize: (newSize) ->
     # Dispatch the 'resize' event.
     resizeEvent = new Event('resize', bubbles: true)
-    resizeEvent.oldWidth = oldSize.width
-    resizeEvent.oldHeight = oldSize.height
     resizeEvent.newWidth = newSize.width
     resizeEvent.newHeight = newSize.height
     @dispatchEvent resizeEvent
@@ -136,7 +135,7 @@ class WebViewImpl
       guestViewInternal.setSize @guestInstanceId, normal: newSize
 
   createGuest: ->
-    guestViewInternal.createGuest @buildParams(), (guestInstanceId) =>
+    guestViewInternal.createGuest @buildParams(), (event, guestInstanceId) =>
       @attachWindow guestInstanceId
 
   dispatchEvent: (webViewEvent) ->
@@ -157,10 +156,10 @@ class WebViewImpl
       enumerable: true
 
   # Updates state upon loadcommit.
-  onLoadCommit: (@baseUrlForDataUrl, @currentEntryIndex, @entryCount, @processId, url, isTopLevel) ->
+  onLoadCommit: (webViewEvent) ->
     oldValue = @webviewNode.getAttribute webViewConstants.ATTRIBUTE_SRC
-    newValue = url
-    if isTopLevel and (oldValue != newValue)
+    newValue = webViewEvent.url
+    if webViewEvent.isMainFrame and (oldValue != newValue)
       # Touching the src attribute triggers a navigation. To avoid
       # triggering a page reload on every guest-initiated navigation,
       # we do not handle this mutation
@@ -190,6 +189,7 @@ class WebViewImpl
 
   attachWindow: (guestInstanceId) ->
     @guestInstanceId = guestInstanceId
+    @webContents = remote.getGuestWebContents @guestInstanceId
     return true unless @internalInstanceId
 
     guestViewInternal.attachGuest @internalInstanceId, @guestInstanceId, @buildParams()
@@ -252,55 +252,70 @@ registerWebViewElement = ->
 
   # Public-facing API methods.
   methods = [
-    "getUrl"
-    "getTitle"
-    "isLoading"
-    "isWaitingForResponse"
-    "stop"
-    "reload"
-    "reloadIgnoringCache"
-    "canGoBack"
-    "canGoForward"
-    "canGoToOffset"
-    "clearHistory"
-    "goBack"
-    "goForward"
-    "goToIndex"
-    "goToOffset"
-    "isCrashed"
-    "setUserAgent"
-    "executeJavaScript"
-    "insertCSS"
-    "openDevTools"
-    "closeDevTools"
-    "isDevToolsOpened"
-    "inspectElement"
-    "setAudioMuted"
-    "isAudioMuted"
-    "undo"
-    "redo"
-    "cut"
-    "copy"
-    "paste"
-    "pasteAndMatchStyle"
-    "delete"
-    "selectAll"
-    "unselect"
-    "replace"
-    "replaceMisspelling"
-    "send"
-    "getId"
-    "inspectServiceWorker"
-    "print"
-    "printToPDF"
+    'getURL'
+    'getTitle'
+    'isLoading'
+    'isWaitingForResponse'
+    'stop'
+    'reload'
+    'reloadIgnoringCache'
+    'canGoBack'
+    'canGoForward'
+    'canGoToOffset'
+    'clearHistory'
+    'goBack'
+    'goForward'
+    'goToIndex'
+    'goToOffset'
+    'isCrashed'
+    'setUserAgent'
+    'getUserAgent'
+    'openDevTools'
+    'closeDevTools'
+    'isDevToolsOpened'
+    'inspectElement'
+    'setAudioMuted'
+    'isAudioMuted'
+    'undo'
+    'redo'
+    'cut'
+    'copy'
+    'paste'
+    'pasteAndMatchStyle'
+    'delete'
+    'selectAll'
+    'unselect'
+    'replace'
+    'replaceMisspelling'
+    'getId'
+    'inspectServiceWorker'
+    'print'
+    'printToPDF'
+  ]
+
+  nonblockMethods = [
+    'send',
+    'sendInputEvent',
+    'executeJavaScript',
+    'insertCSS'
   ]
 
   # Forward proto.foo* method calls to WebViewImpl.foo*.
-  createHandler = (m) ->
+  createBlockHandler = (m) ->
     (args...) ->
       internal = v8Util.getHiddenValue this, 'internal'
-      remote.getGuestWebContents(internal.guestInstanceId)[m]  args...
-  proto[m] = createHandler m for m in methods
+      internal.webContents[m] args...
+  proto[m] = createBlockHandler m for m in methods
+
+  createNonBlockHandler = (m) ->
+    (args...) ->
+      internal = v8Util.getHiddenValue this, 'internal'
+      ipcRenderer.send('ATOM_BROWSER_ASYNC_CALL_TO_GUEST_VIEW', internal.guestInstanceId, m, args...)
+
+  proto[m] = createNonBlockHandler m for m in nonblockMethods
+
+  # Deprecated.
+  deprecate.rename proto, 'getUrl', 'getURL'
 
   window.WebView = webFrame.registerEmbedderCustomElement 'webview',
     prototype: proto

@@ -12,11 +12,11 @@
 #include "atom/common/native_mate_converters/gfx_converter.h"
 #include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
+#include "atom/common/node_includes.h"
 #include "native_mate/constructor.h"
 #include "native_mate/dictionary.h"
+#include "ui/events/event_constants.h"
 #include "ui/gfx/image/image.h"
-
-#include "atom/common/node_includes.h"
 
 namespace atom {
 
@@ -34,18 +34,32 @@ Tray::~Tray() {
 // static
 mate::Wrappable* Tray::New(v8::Isolate* isolate, const gfx::Image& image) {
   if (!Browser::Get()->is_ready()) {
-    node::ThrowError(isolate, "Cannot create Tray before app is ready");
+    isolate->ThrowException(v8::Exception::Error(mate::StringToV8(
+        isolate, "Cannot create Tray before app is ready")));
     return nullptr;
   }
   return new Tray(image);
 }
 
-void Tray::OnClicked(const gfx::Rect& bounds) {
-  Emit("clicked", bounds);
+void Tray::OnClicked(const gfx::Rect& bounds, int modifiers) {
+  v8::Locker locker(isolate());
+  v8::HandleScope handle_scope(isolate());
+  EmitCustomEvent("click",
+                  ModifiersToObject(isolate(), modifiers), bounds);
 }
 
-void Tray::OnDoubleClicked() {
-  Emit("double-clicked");
+void Tray::OnDoubleClicked(const gfx::Rect& bounds, int modifiers) {
+  v8::Locker locker(isolate());
+  v8::HandleScope handle_scope(isolate());
+  EmitCustomEvent("double-click",
+                  ModifiersToObject(isolate(), modifiers), bounds);
+}
+
+void Tray::OnRightClicked(const gfx::Rect& bounds, int modifiers) {
+  v8::Locker locker(isolate());
+  v8::HandleScope handle_scope(isolate());
+  EmitCustomEvent("right-click",
+                  ModifiersToObject(isolate(), modifiers), bounds);
 }
 
 void Tray::OnBalloonShow() {
@@ -53,11 +67,35 @@ void Tray::OnBalloonShow() {
 }
 
 void Tray::OnBalloonClicked() {
-  Emit("balloon-clicked");
+  Emit("balloon-click");
 }
 
 void Tray::OnBalloonClosed() {
   Emit("balloon-closed");
+}
+
+void Tray::OnDrop() {
+  Emit("drop");
+}
+
+void Tray::OnDropFiles(const std::vector<std::string>& files) {
+  Emit("drop-files", files);
+}
+
+void Tray::OnDragEntered() {
+  Emit("drag-enter");
+}
+
+void Tray::OnDragExited() {
+  Emit("drag-leave");
+}
+
+void Tray::OnDragEnded() {
+  Emit("drag-end");
+}
+
+bool Tray::IsDestroyed() const {
+  return !tray_icon_;
 }
 
 void Tray::Destroy() {
@@ -65,40 +103,27 @@ void Tray::Destroy() {
 }
 
 void Tray::SetImage(mate::Arguments* args, const gfx::Image& image) {
-  if (!CheckTrayLife(args))
-    return;
   tray_icon_->SetImage(image);
 }
 
 void Tray::SetPressedImage(mate::Arguments* args, const gfx::Image& image) {
-  if (!CheckTrayLife(args))
-    return;
   tray_icon_->SetPressedImage(image);
 }
 
 void Tray::SetToolTip(mate::Arguments* args, const std::string& tool_tip) {
-  if (!CheckTrayLife(args))
-    return;
   tray_icon_->SetToolTip(tool_tip);
 }
 
 void Tray::SetTitle(mate::Arguments* args, const std::string& title) {
-  if (!CheckTrayLife(args))
-    return;
   tray_icon_->SetTitle(title);
 }
 
 void Tray::SetHighlightMode(mate::Arguments* args, bool highlight) {
-  if (!CheckTrayLife(args))
-    return;
   tray_icon_->SetHighlightMode(highlight);
 }
 
 void Tray::DisplayBalloon(mate::Arguments* args,
                           const mate::Dictionary& options) {
-  if (!CheckTrayLife(args))
-    return;
-
   gfx::Image icon;
   options.Get("icon", &icon);
   base::string16 title, content;
@@ -111,32 +136,39 @@ void Tray::DisplayBalloon(mate::Arguments* args,
   tray_icon_->DisplayBalloon(icon, title, content);
 }
 
+void Tray::PopUpContextMenu(mate::Arguments* args) {
+  gfx::Point pos;
+  args->GetNext(&pos);
+  tray_icon_->PopUpContextMenu(pos);
+}
+
 void Tray::SetContextMenu(mate::Arguments* args, Menu* menu) {
-  if (!CheckTrayLife(args))
-    return;
   tray_icon_->SetContextMenu(menu->model());
 }
 
-bool Tray::CheckTrayLife(mate::Arguments* args) {
-  if (!tray_icon_) {
-    args->ThrowError("Tray is already destroyed");
-    return false;
-  } else {
-    return true;
-  }
+v8::Local<v8::Object> Tray::ModifiersToObject(v8::Isolate* isolate,
+                                              int modifiers) {
+  mate::Dictionary obj(isolate, v8::Object::New(isolate));
+  obj.Set("shiftKey", static_cast<bool>(modifiers & ui::EF_SHIFT_DOWN));
+  obj.Set("ctrlKey", static_cast<bool>(modifiers & ui::EF_CONTROL_DOWN));
+  obj.Set("altKey", static_cast<bool>(modifiers & ui::EF_ALT_DOWN));
+  obj.Set("metaKey", static_cast<bool>(modifiers & ui::EF_COMMAND_DOWN));
+  return obj.GetHandle();
 }
 
 // static
 void Tray::BuildPrototype(v8::Isolate* isolate,
                           v8::Local<v8::ObjectTemplate> prototype) {
   mate::ObjectTemplateBuilder(isolate, prototype)
-      .SetMethod("destroy", &Tray::Destroy)
+      .SetMethod("destroy", &Tray::Destroy, true)
+      .SetMethod("isDestroyed", &Tray::IsDestroyed, true)
       .SetMethod("setImage", &Tray::SetImage)
       .SetMethod("setPressedImage", &Tray::SetPressedImage)
       .SetMethod("setToolTip", &Tray::SetToolTip)
       .SetMethod("setTitle", &Tray::SetTitle)
       .SetMethod("setHighlightMode", &Tray::SetHighlightMode)
       .SetMethod("displayBalloon", &Tray::DisplayBalloon)
+      .SetMethod("popUpContextMenu", &Tray::PopUpContextMenu)
       .SetMethod("_setContextMenu", &Tray::SetContextMenu);
 }
 

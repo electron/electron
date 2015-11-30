@@ -1,7 +1,7 @@
+{app, BrowserWindow} = require 'electron'
+
 binding = process.atomBinding 'dialog'
 v8Util = process.atomBinding 'v8_util'
-app = require 'app'
-BrowserWindow = require 'browser-window'
 
 fileDialogProperties =
   openFile:        1 << 0
@@ -9,7 +9,10 @@ fileDialogProperties =
   multiSelections: 1 << 2
   createDirectory: 1 << 3
 
-messageBoxTypes = ['none', 'info', 'warning']
+messageBoxTypes = ['none', 'info', 'warning', 'error', 'question']
+
+messageBoxOptions =
+  noLink: 1 << 0
 
 parseArgs = (window, options, callback) ->
   unless window is null or window?.constructor is BrowserWindow
@@ -93,9 +96,23 @@ module.exports =
     options.detail ?= ''
     options.icon ?= null
 
+    # Choose a default button to get selected when dialog is cancelled.
+    unless options.cancelId?
+      options.cancelId = 0
+      for text, i in options.buttons
+        if text.toLowerCase() in ['cancel', 'no']
+          options.cancelId = i
+          break
+
+    flags = if options.noLink then messageBoxOptions.noLink else 0
+
     binding.showMessageBox messageBoxType,
                            options.buttons,
-                           [options.title, options.message, options.detail],
+                           options.cancelId,
+                           flags,
+                           options.title,
+                           options.message,
+                           options.detail,
                            options.icon,
                            window,
                            callback
@@ -104,4 +121,5 @@ module.exports =
     binding.showErrorBox args...
 
 # Mark standard asynchronous functions.
-v8Util.setHiddenValue f, 'asynchronous', true for k, f of module.exports
+for api in ['showMessageBox', 'showOpenDialog', 'showSaveDialog']
+  v8Util.setHiddenValue module.exports[api], 'asynchronous', true

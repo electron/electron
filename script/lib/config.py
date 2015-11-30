@@ -6,8 +6,9 @@ import platform
 import sys
 
 
-BASE_URL = 'http://gh-contractor-zcbenz.s3.amazonaws.com/libchromiumcontent'
-LIBCHROMIUMCONTENT_COMMIT = '3bfdfa28d2361c2242b89603b98f2509d3ebb859'
+BASE_URL = os.getenv('LIBCHROMIUMCONTENT_MIRROR') or \
+    'http://gh-contractor-zcbenz.s3.amazonaws.com/libchromiumcontent'
+LIBCHROMIUMCONTENT_COMMIT = '17a4337f7948a45b5ea4b8f391df152ba8db5979'
 
 PLATFORM = {
   'cygwin': 'win32',
@@ -17,6 +18,13 @@ PLATFORM = {
 }[sys.platform]
 
 verbose_mode = False
+
+
+def get_platform_key():
+  if os.environ.has_key('MAS_BUILD'):
+    return 'mas'
+  else:
+    return PLATFORM
 
 
 def get_target_arch():
@@ -34,6 +42,10 @@ def get_target_arch():
     return 'ia32'
   else:
     return 'x64'
+
+
+def get_chromedriver_version():
+  return 'v2.15'
 
 
 def s3_config():

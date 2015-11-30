@@ -1,11 +1,12 @@
 WebViewImpl = require './web-view'
 guestViewInternal = require './guest-view-internal'
 webViewConstants = require './web-view-constants'
-remote = require 'remote'
+
+{remote} = require 'electron'
 
 # Helper function to resolve url set in attribute.
 a = document.createElement 'a'
-resolveUrl = (url) ->
+resolveURL = (url) ->
   a.href = url
   a.href
 
@@ -115,12 +116,12 @@ class SrcAttribute extends WebViewAttribute
 
   getValue: ->
     if @webViewImpl.webviewNode.hasAttribute @name
-      resolveUrl @webViewImpl.webviewNode.getAttribute(@name)
+      resolveURL @webViewImpl.webviewNode.getAttribute(@name)
     else
       ''
 
   setValueIgnoreMutation: (value) ->
-    WebViewAttribute::setValueIgnoreMutation value
+    WebViewAttribute::setValueIgnoreMutation.call(this, value)
     # takeRecords() is needed to clear queued up src mutations. Without it, it
     # is possible for this change to get picked up asyncronously by src's
     # mutation observer |observer|, and then get handled even though we do not
@@ -177,7 +178,7 @@ class SrcAttribute extends WebViewAttribute
     if useragent then opts.userAgent = useragent
 
     guestContents = remote.getGuestWebContents(@webViewImpl.guestInstanceId)
-    guestContents.loadUrl @getValue(), opts
+    guestContents.loadURL @getValue(), opts
 
 # Attribute specifies HTTP referrer.
 class HttpReferrerAttribute extends WebViewAttribute
@@ -196,7 +197,7 @@ class PreloadAttribute extends WebViewAttribute
 
   getValue: ->
     return '' unless @webViewImpl.webviewNode.hasAttribute @name
-    preload = resolveUrl @webViewImpl.webviewNode.getAttribute(@name)
+    preload = resolveURL @webViewImpl.webviewNode.getAttribute(@name)
     protocol = preload.substr 0, 5
     unless protocol is 'file:'
       console.error webViewConstants.ERROR_MSG_INVALID_PRELOAD_ATTRIBUTE
@@ -216,6 +217,7 @@ WebViewImpl::setupWebViewAttributes = ->
   @attributes[webViewConstants.ATTRIBUTE_NODEINTEGRATION] = new BooleanAttribute(webViewConstants.ATTRIBUTE_NODEINTEGRATION, this)
   @attributes[webViewConstants.ATTRIBUTE_PLUGINS] = new BooleanAttribute(webViewConstants.ATTRIBUTE_PLUGINS, this)
   @attributes[webViewConstants.ATTRIBUTE_DISABLEWEBSECURITY] = new BooleanAttribute(webViewConstants.ATTRIBUTE_DISABLEWEBSECURITY, this)
+  @attributes[webViewConstants.ATTRIBUTE_ALLOWPOPUPS] = new BooleanAttribute(webViewConstants.ATTRIBUTE_ALLOWPOPUPS, this)
   @attributes[webViewConstants.ATTRIBUTE_PRELOAD] = new PreloadAttribute(this)
 
   autosizeAttributes = [

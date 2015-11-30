@@ -20,8 +20,6 @@ class WinFrameView : public FramelessView {
   int NonClientHitTest(const gfx::Point& point) override;
 
   // views::View:
-  gfx::Size GetMinimumSize() const override;
-  gfx::Size GetMaximumSize() const override;
   const char* GetClassName() const override;
 
  private:

@@ -1,11 +1,9 @@
 window.onload = ->
-  inspectorFrame = document.getElementById('inspector-app-iframe').contentWindow
-
   # Use menu API to show context menu.
-  inspectorFrame.eval 'InspectorFrontendHost.showContextMenuAtPoint = parent.createMenu'
+  InspectorFrontendHost.showContextMenuAtPoint = createMenu
 
   # Use dialog API to override file chooser dialog.
-  inspectorFrame.eval 'WebInspector.createFileSelectorElement = parent.createFileSelectorElement'
+  WebInspector.createFileSelectorElement = createFileSelectorElement
 
 convertToMenuTemplate = (items) ->
   template = []
@@ -34,8 +32,8 @@ convertToMenuTemplate = (items) ->
   template
 
 createMenu = (x, y, items, document) ->
-  remote = require 'remote'
-  Menu = remote.require 'menu'
+  {remote} = require 'electron'
+  {Menu} = remote
 
   menu = Menu.buildFromTemplate convertToMenuTemplate(items)
   # The menu is expected to show asynchronously.
@@ -44,9 +42,9 @@ createMenu = (x, y, items, document) ->
     DevToolsAPI.contextMenuCleared()
 
 showFileChooserDialog = (callback) ->
-  remote = require 'remote'
-  dialog = remote.require 'dialog'
-  files = dialog.showOpenDialog remote.getCurrentWindow(), null
+  {remote} = require 'electron'
+  {dialog} = remote
+  files = dialog.showOpenDialog {}
   callback pathToHtml5FileObject files[0] if files?
 
 pathToHtml5FileObject = (path) ->
@@ -60,7 +58,3 @@ createFileSelectorElement = (callback) ->
   fileSelectorElement.style.display = 'none'
   fileSelectorElement.click = showFileChooserDialog.bind this, callback
   return fileSelectorElement
-
-# Exposed for iframe.
-window.createMenu = createMenu
-window.createFileSelectorElement = createFileSelectorElement

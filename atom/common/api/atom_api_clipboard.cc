@@ -7,6 +7,7 @@
 
 #include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
+#include "base/strings/utf_string_conversions.h"
 #include "native_mate/arguments.h"
 #include "native_mate/dictionary.h"
 #include "third_party/skia/include/core/SkBitmap.h"
@@ -50,9 +51,35 @@ std::string Read(const std::string& format_string,
   return data;
 }
 
+void Write(const mate::Dictionary& data,
+           mate::Arguments* args) {
+  ui::ScopedClipboardWriter writer(GetClipboardType(args));
+  base::string16 text, html;
+  gfx::Image image;
+
+  if (data.Get("text", &text))
+    writer.WriteText(text);
+
+  if (data.Get("html", &html))
+    writer.WriteHTML(html, std::string());
+
+  if (data.Get("image", &image))
+    writer.WriteImage(image.AsBitmap());
+}
+
 base::string16 ReadText(mate::Arguments* args) {
   base::string16 data;
-  ui::Clipboard::GetForCurrentThread()->ReadText(GetClipboardType(args), &data);
+  ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
+  auto type = GetClipboardType(args);
+  if (clipboard->IsFormatAvailable(
+      ui::Clipboard::GetPlainTextWFormatType(), type)) {
+    clipboard->ReadText(type, &data);
+  } else if (clipboard->IsFormatAvailable(
+             ui::Clipboard::GetPlainTextFormatType(), type)) {
+    std::string result;
+    clipboard->ReadAsciiText(type, &result);
+    data = base::ASCIIToUTF16(result);
+  }
   return data;
 }
 
@@ -99,6 +126,7 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   dict.SetMethod("availableFormats", &AvailableFormats);
   dict.SetMethod("has", &Has);
   dict.SetMethod("read", &Read);
+  dict.SetMethod("write", &Write);
   dict.SetMethod("readText", &ReadText);
   dict.SetMethod("writeText", &WriteText);
   dict.SetMethod("readHtml", &ReadHtml);
