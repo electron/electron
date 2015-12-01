@@ -423,6 +423,41 @@ describe 'asar package', ->
         p = path.join fixtures, 'asar', 'unpack.asar', 'a.txt'
         assert.equal internalModuleReadFile(p).toString().trim(), 'a'
 
+    describe 'process.noAsar', ->
+      beforeEach ->
+        process.noAsar = true
+      afterEach ->
+        process.noAsar = false
+
+      it 'disables asar support in sync API', ->
+        file = path.join fixtures, 'asar', 'a.asar', 'file1'
+        dir = path.join fixtures, 'asar', 'a.asar', 'dir1'
+        assert.throws (-> fs.readFileSync file), /ENOTDIR/
+        assert.throws (-> fs.lstatSync file), /ENOTDIR/
+        assert.throws (-> fs.realpathSync file), /ENOTDIR/
+        assert.throws (-> fs.readdirSync dir), /ENOTDIR/
+
+      it 'disables asar support in async API', (done) ->
+        file = path.join fixtures, 'asar', 'a.asar', 'file1'
+        dir = path.join fixtures, 'asar', 'a.asar', 'dir1'
+        fs.readFile file, (error) ->
+          assert.equal error.code, 'ENOTDIR'
+          fs.lstat file, (error) ->
+            assert.equal error.code, 'ENOTDIR'
+            fs.realpath file, (error) ->
+              assert.equal error.code, 'ENOTDIR'
+              fs.readdir dir, (error) ->
+                assert.equal error.code, 'ENOTDIR'
+                done()
+
+      it 'treats *.asar as normal file', ->
+        originalFs = require 'original-fs'
+        asar = path.join fixtures, 'asar', 'a.asar'
+        content1 = fs.readFileSync asar
+        content2 = originalFs.readFileSync asar
+        assert.equal content1.compare(content2), 0
+        assert.throws (-> fs.readdirSync asar), /ENOTDIR/
+
   describe 'asar protocol', ->
     url = require 'url'
 
