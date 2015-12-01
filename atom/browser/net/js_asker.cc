@@ -11,8 +11,6 @@
 
 namespace atom {
 
-const std::string kCorsHeader("Access-Control-Allow-Origin: *");
-
 namespace internal {
 
 namespace {

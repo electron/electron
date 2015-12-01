@@ -5,8 +5,6 @@
 #ifndef ATOM_BROWSER_NET_JS_ASKER_H_
 #define ATOM_BROWSER_NET_JS_ASKER_H_
 
-#include <string>
-
 #include "base/callback.h"
 #include "base/memory/ref_counted.h"
 #include "base/memory/weak_ptr.h"
@@ -19,7 +17,6 @@
 #include "v8/include/v8.h"
 
 namespace atom {
-extern const std::string kCorsHeader;
 
 using JavaScriptHandler =
     base::Callback<void(const net::URLRequest*, v8::Local<v8::Value>)>;
