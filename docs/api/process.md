@@ -31,11 +31,18 @@ process.once('loaded', function() {
 });
 ```
 
+## Properties
+
+### `process.noAsar`
+
+Setting this to `true` can disable the support for `asar` archives in Node's
+built-in modules.
+
 ## Methods
 
 The `process` object has the following method:
 
-### `process.hang`
+### `process.hang()`
 
 Causes the main thread of the current process hang.
 

@@ -103,6 +103,14 @@ var originalFs = require('original-fs');
 originalFs.readFileSync('/path/to/example.asar');
 ```
 
+You can also set `process.noAsar` to `true` to disable the support for `asar` in
+the `fs` module:
+
+```javascript
+process.noAsar = true;
+fs.readFileSync('/path/to/example.asar');
+```
+
 ## Limitations on Node API
 
 Even though we tried hard to make `asar` archives in the Node API work like
