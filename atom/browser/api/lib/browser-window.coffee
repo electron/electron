@@ -32,7 +32,7 @@ BrowserWindow::_init = ->
     @emit 'crashed'
 
   # Change window title to page title.
-  @webContents.on 'page-title-set', (event, title, explicitSet) =>
+  @webContents.on 'page-title-updated', (event, title, explicitSet) =>
     @emit 'page-title-updated', event, title
     @setTitle title unless event.defaultPrevented
 
