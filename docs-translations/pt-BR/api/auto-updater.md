@@ -2,7 +2,7 @@
 
 Este módulo oferece uma interface para o framework de atualização automática `Squirrel`.
 
-## Notificações de Plataforma
+## Avisos sobre Plataformas
 
 Embora o `autoUpdater` ofereça uma API uniforme para diferentes plataformas, existem diferenças sutis em cada plataforma.
 
