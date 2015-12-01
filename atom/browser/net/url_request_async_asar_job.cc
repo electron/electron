@@ -4,6 +4,8 @@
 
 #include "atom/browser/net/url_request_async_asar_job.h"
 
+#include <string>
+
 namespace atom {
 
 URLRequestAsyncAsarJob::URLRequestAsyncAsarJob(
