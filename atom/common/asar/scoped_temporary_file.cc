@@ -28,20 +28,28 @@ ScopedTemporaryFile::~ScopedTemporaryFile() {
   }
 }
 
-bool ScopedTemporaryFile::Init() {
+bool ScopedTemporaryFile::Init(const base::FilePath::StringType ext) {
   if (!path_.empty())
     return true;
 
   base::ThreadRestrictions::ScopedAllowIO allow_io;
-  return base::CreateTemporaryFile(&path_);
+
+  base::FilePath temporaryPath_;
+  if (!base::CreateTemporaryFile(&temporaryPath_)) {
+    return false;
+  }
+
+  path_ = temporaryPath_.AddExtension(ext);
+  return base::Move(temporaryPath_, path_);
 }
 
 bool ScopedTemporaryFile::InitFromFile(base::File* src,
+                                       const base::FilePath::StringType ext,
                                        uint64 offset, uint64 size) {
   if (!src->IsValid())
     return false;
 
-  if (!Init())
+  if (!Init(ext))
     return false;
 
   std::vector<char> buf(size);
