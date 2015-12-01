@@ -76,6 +76,10 @@ wrapWebContents = (webContents) ->
     # until next tick.
     setImmediate => @emit 'did-fail-load', args...
 
+  # Delays the page-title-set event to next tick.
+  webContents.on '-page-title-set', (args...) ->
+    setImmediate => @emit 'page-title-set', args...
+
   # Deprecated.
   deprecate.rename webContents, 'loadUrl', 'loadURL'
   deprecate.rename webContents, 'getUrl', 'getURL'
