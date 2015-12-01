@@ -7,8 +7,11 @@
 #include <string>
 
 #include "atom/common/node_includes.h"
+#include "atom/common/native_mate_converters/gurl_converter.h"
+#include "atom/common/native_mate_converters/value_converter.h"
 #include "native_mate/dictionary.h"
 #include "net/cert/x509_certificate.h"
+#include "net/http/http_response_headers.h"
 #include "net/url_request/url_request.h"
 
 namespace mate {
@@ -48,6 +51,40 @@ v8::Local<v8::Value> Converter<scoped_refptr<net::X509Certificate>>::ToV8(
   dict.Set("data", buffer);
   dict.Set("issuerName", val->issuer().GetDisplayName());
   return dict.GetHandle();
+}
+
+// static
+bool Converter<atom::AtomNetworkDelegate::BlockingResponse>::FromV8(
+    v8::Isolate* isolate, v8::Local<v8::Value> val,
+    atom::AtomNetworkDelegate::BlockingResponse* out) {
+  mate::Dictionary dict;
+  if (!ConvertFromV8(isolate, val, &dict))
+    return false;
+  if (!dict.Get("cancel", &(out->cancel)))
+    return false;
+  dict.Get("redirectURL", &(out->redirectURL));
+  base::DictionaryValue request_headers;
+  if (dict.Get("requestHeaders", &request_headers)) {
+    for (base::DictionaryValue::Iterator it(request_headers);
+         !it.IsAtEnd();
+         it.Advance()) {
+      std::string value;
+      CHECK(it.value().GetAsString(&value));
+      out->requestHeaders.SetHeader(it.key(), value);
+    }
+  }
+  base::DictionaryValue response_headers;
+  if (dict.Get("responseHeaders", &response_headers)) {
+    out->responseHeaders = new net::HttpResponseHeaders("");
+    for (base::DictionaryValue::Iterator it(response_headers);
+         !it.IsAtEnd();
+         it.Advance()) {
+      std::string value;
+      CHECK(it.value().GetAsString(&value));
+      out->responseHeaders->AddHeader(it.key() + " : " + value);
+    }
+  }
+  return true;
 }
 
 }  // namespace mate
