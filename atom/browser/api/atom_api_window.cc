@@ -161,11 +161,6 @@ Window::~Window() {
     Destroy();
 }
 
-void Window::OnPageTitleUpdated(bool* prevent_default,
-                                const std::string& title) {
-  *prevent_default = Emit("page-title-updated", title);
-}
-
 void Window::WillCloseWindow(bool* prevent_default) {
   *prevent_default = Emit("close");
 }

@@ -21,10 +21,6 @@ class NativeWindowObserver {
  public:
   virtual ~NativeWindowObserver() {}
 
-  // Called when the web page of the window has updated it's document title.
-  virtual void OnPageTitleUpdated(bool* prevent_default,
-                                  const std::string& title) {}
-
   // Called when the web page in window wants to create a popup window.
   virtual void WillCreatePopupWindow(const base::string16& frame_name,
                                      const GURL& target_url,

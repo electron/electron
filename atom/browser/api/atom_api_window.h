@@ -54,8 +54,6 @@ class Window : public mate::TrackableObject<Window>,
   virtual ~Window();
 
   // NativeWindowObserver:
-  void OnPageTitleUpdated(bool* prevent_default,
-                          const std::string& title) override;
   void WillCloseWindow(bool* prevent_default) override;
   void OnWindowClosed() override;
   void OnWindowBlur() override;
