@@ -50,6 +50,8 @@ void URLRequestBufferJob::GetResponseInfo(net::HttpResponseInfo* info) {
   status.append("\0\0", 2);
   net::HttpResponseHeaders* headers = new net::HttpResponseHeaders(status);
 
+  headers->AddHeader(kCorsHeader);
+
   if (!mime_type_.empty()) {
     std::string content_type_header(net::HttpRequestHeaders::kContentType);
     content_type_header.append(": ");

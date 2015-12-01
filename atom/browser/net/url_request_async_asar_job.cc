@@ -4,6 +4,8 @@
 
 #include "atom/browser/net/url_request_async_asar_job.h"
 
+#include <string>
+
 namespace atom {
 
 URLRequestAsyncAsarJob::URLRequestAsyncAsarJob(
@@ -32,6 +34,15 @@ void URLRequestAsyncAsarJob::StartAsync(scoped_ptr<base::Value> options) {
         base::FilePath(file_path));
     asar::URLRequestAsarJob::Start();
   }
+}
+
+
+void URLRequestAsyncAsarJob::GetResponseInfo(net::HttpResponseInfo* info) {
+  std::string status("HTTP/1.1 200 OK");
+  net::HttpResponseHeaders* headers = new net::HttpResponseHeaders(status);
+
+  headers->AddHeader(kCorsHeader);
+  info->headers = headers;
 }
 
 }  // namespace atom

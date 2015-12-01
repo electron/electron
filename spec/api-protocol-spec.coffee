@@ -81,6 +81,21 @@ describe 'protocol module', ->
           error: (xhr, errorType, error) ->
             done(error)
 
+    it 'sets Access-Control-Allow-Origin', (done) ->
+      handler = (request, callback) -> callback(text)
+      protocol.registerStringProtocol protocolName, handler, (error) ->
+        return done(error) if error
+        $.ajax
+          url: "#{protocolName}://fake-host"
+          success: (data, status, request) ->
+            assert.equal data, text
+            assert.equal(
+              request.getResponseHeader('Access-Control-Allow-Origin'),
+              '*')
+            done()
+          error: (xhr, errorType, error) ->
+            done(error)
+
     it 'sends object as response', (done) ->
       handler = (request, callback) -> callback(data: text, mimeType: 'text/html')
       protocol.registerStringProtocol protocolName, handler, (error) ->
@@ -116,6 +131,21 @@ describe 'protocol module', ->
           url: "#{protocolName}://fake-host"
           success: (data) ->
             assert.equal data, text
+            done()
+          error: (xhr, errorType, error) ->
+            done(error)
+
+    it 'sets Access-Control-Allow-Origin', (done) ->
+      handler = (request, callback) -> callback(buffer)
+      protocol.registerBufferProtocol protocolName, handler, (error) ->
+        return done(error) if error
+        $.ajax
+          url: "#{protocolName}://fake-host"
+          success: (data, status, request) ->
+            assert.equal data, text
+            assert.equal(
+              request.getResponseHeader('Access-Control-Allow-Origin'),
+              '*')
             done()
           error: (xhr, errorType, error) ->
             done(error)
@@ -159,6 +189,21 @@ describe 'protocol module', ->
           url: "#{protocolName}://fake-host"
           success: (data) ->
             assert.equal data, String(fileContent)
+            done()
+          error: (xhr, errorType, error) ->
+            done(error)
+
+    it 'sets Access-Control-Allow-Origin', (done) ->
+      handler = (request, callback) -> callback(filePath)
+      protocol.registerFileProtocol protocolName, handler, (error) ->
+        return done(error) if error
+        $.ajax
+          url: "#{protocolName}://fake-host"
+          success: (data, status, request) ->
+            assert.equal data, String(fileContent)
+            assert.equal(
+              request.getResponseHeader('Access-Control-Allow-Origin'),
+              '*')
             done()
           error: (xhr, errorType, error) ->
             done(error)
