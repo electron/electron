@@ -31,6 +31,11 @@ BrowserWindow::_init = ->
   @webContents.on 'crashed', =>
     @emit 'crashed'
 
+  # Change window title to page title.
+  @webContents.on 'page-title-updated', (event, title, explicitSet) =>
+    @emit 'page-title-updated', event, title
+    @setTitle title unless event.defaultPrevented
+
   # Sometimes the webContents doesn't get focus when window is shown, so we have
   # to force focusing on webContents in this case. The safest way is to focus it
   # when we first start to load URL, if we do it earlier it won't have effect,

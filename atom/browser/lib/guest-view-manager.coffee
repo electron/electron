@@ -19,7 +19,7 @@ supportedWebViewEvents = [
   'gpu-crashed'
   'plugin-crashed'
   'destroyed'
-  'page-title-set'
+  'page-title-updated'
   'page-favicon-updated'
   'enter-html-full-screen'
   'leave-html-full-screen'

@@ -76,9 +76,15 @@ wrapWebContents = (webContents) ->
     # until next tick.
     setImmediate => @emit 'did-fail-load', args...
 
+  # Delays the page-title-updated event to next tick.
+  webContents.on '-page-title-updated', (args...) ->
+    setImmediate => @emit 'page-title-updated', args...
+
   # Deprecated.
   deprecate.rename webContents, 'loadUrl', 'loadURL'
   deprecate.rename webContents, 'getUrl', 'getURL'
+  deprecate.event webContents, 'page-title-set', 'page-title-updated', (args...) ->
+    @emit 'page-title-set', args...
 
   webContents.printToPDF = (options, callback) ->
     printingSetting =

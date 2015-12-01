@@ -519,9 +519,10 @@ void WebContents::DidNavigateMainFrame(
 
 void WebContents::TitleWasSet(content::NavigationEntry* entry,
                               bool explicit_set) {
-  // Back/Forward navigation may have pruned entries.
   if (entry)
-    Emit("page-title-set", entry->GetTitle(), explicit_set);
+    Emit("-page-title-updated", entry->GetTitle(), explicit_set);
+  else
+    Emit("-page-title-updated", "", explicit_set);
 }
 
 void WebContents::DidUpdateFaviconURL(

@@ -452,15 +452,15 @@ Fired when a redirect was received while requesting a resource.
 
 Fired when document in the given frame is loaded.
 
-### Event: 'page-title-set'
+### Event: 'page-title-updated'
 
 Returns:
 
 * `title` String
 * `explicitSet` Boolean
 
-Fired when page title is set during navigation. `explicitSet` is false when title is synthesised from file
-url.
+Fired when page title is set during navigation. `explicitSet` is false when
+title is synthesised from file url.
 
 ### Event: 'page-favicon-updated'
 
