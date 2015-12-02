@@ -19,7 +19,7 @@ Like `--debug` but pauses the script on the first line.
 
 ## Use node-inspector for Debugging
 
-__Note:__ Electron uses node v0.11.13, which currently doesn't work very well
+__Note:__ Electron doesn't currently work very well
 with node-inspector, and the main process will crash if you inspect the
 `process` object under node-inspector's console.
 
