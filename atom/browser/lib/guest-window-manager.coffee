@@ -5,7 +5,7 @@ frameToGuest = {}
 
 # Copy attribute of |parent| to |child| if it is not defined in |child|.
 mergeOptions = (child, parent) ->
-  for own key, value of parent when key not in child
+  for own key, value of parent when key not in Object.keys child
     if typeof value is 'object'
       child[key] = mergeOptions {}, value
     else
