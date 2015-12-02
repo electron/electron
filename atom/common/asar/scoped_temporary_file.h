@@ -23,11 +23,11 @@ class ScopedTemporaryFile {
   virtual ~ScopedTemporaryFile();
 
   // Init an empty temporary file with a certain extension.
-  bool Init(const base::FilePath::StringType ext);
+  bool Init(const base::FilePath::StringType& ext);
 
   // Init an temporary file and fill it with content of |path|.
   bool InitFromFile(base::File* src,
-                    const base::FilePath::StringType ext,
+                    const base::FilePath::StringType& ext,
                     uint64 offset, uint64 size);
 
   base::FilePath path() const { return path_; }

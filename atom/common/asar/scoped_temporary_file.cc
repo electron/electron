@@ -28,23 +28,26 @@ ScopedTemporaryFile::~ScopedTemporaryFile() {
   }
 }
 
-bool ScopedTemporaryFile::Init(const base::FilePath::StringType ext) {
+bool ScopedTemporaryFile::Init(const base::FilePath::StringType& ext) {
   if (!path_.empty())
     return true;
 
   base::ThreadRestrictions::ScopedAllowIO allow_io;
 
-  base::FilePath temporaryPath_;
-  if (!base::CreateTemporaryFile(&temporaryPath_)) {
+  base::FilePath temp_path;
+  if (!base::CreateTemporaryFile(&temp_path))
     return false;
-  }
 
-  path_ = temporaryPath_.AddExtension(ext);
-  return base::Move(temporaryPath_, path_);
+  if (ext.empty())
+    return true;
+
+  // Keep the original extension.
+  path_ = temp_path.AddExtension(ext);
+  return base::Move(temp_path, path_);
 }
 
 bool ScopedTemporaryFile::InitFromFile(base::File* src,
-                                       const base::FilePath::StringType ext,
+                                       const base::FilePath::StringType& ext,
                                        uint64 offset, uint64 size) {
   if (!src->IsValid())
     return false;
