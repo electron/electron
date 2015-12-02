@@ -242,6 +242,13 @@ const options = {"extraHeaders" : "pragma: no-cache\n"}
 webContents.loadURL(url, options)
 ```
 
+### `webContents.downloadURL(url)`
+
+* `url` URL
+
+Initiates a download of the resource at `url` without navigating. The
+`will-download` event of `session` will be triggered.
+
 ### `webContents.getURL()`
 
 Returns URL of the current web page.
