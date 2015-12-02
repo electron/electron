@@ -30,6 +30,13 @@ process.once('loaded', function() {
 });
 ```
 
+## Properties
+
+### `process.noAsar`
+
+이 속성을 `true`로 지정하면 Node 빌트인 모듈의 `asar` 아카이브 지원을 비활성화 시킬
+수 있습니다.
+
 ## Methods
 
 `process` 객체는 다음과 같은 메서드를 가지고 있습니다:
