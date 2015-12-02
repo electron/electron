@@ -33,17 +33,20 @@ bool ScopedTemporaryFile::Init(const base::FilePath::StringType& ext) {
     return true;
 
   base::ThreadRestrictions::ScopedAllowIO allow_io;
-
-  base::FilePath temp_path;
-  if (!base::CreateTemporaryFile(&temp_path))
+  if (!base::CreateTemporaryFile(&path_))
     return false;
 
-  if (ext.empty())
-    return true;
-
+#if defined(OS_WIN)
   // Keep the original extension.
-  path_ = temp_path.AddExtension(ext);
-  return base::Move(temp_path, path_);
+  if (!ext.empty()) {
+    base::FilePath new_path = path_.AddExtension(ext);
+    if (!base::Move(path_, new_path))
+      return false;
+    path_ = new_path;
+  }
+#endif
+
+  return true;
 }
 
 bool ScopedTemporaryFile::InitFromFile(base::File* src,
