@@ -338,7 +338,8 @@ void TrayIconCocoa::SetHighlightMode(bool highlight) {
   [status_item_view_ setHighlight:highlight];
 }
 
-void TrayIconCocoa::PopUpContextMenu(const gfx::Point& pos) {
+void TrayIconCocoa::PopUpContextMenu(const gfx::Point& pos,
+                                     ui::SimpleMenuModel* menu_model) {
   [status_item_view_ popUpContextMenu];
 }
 

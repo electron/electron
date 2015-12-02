@@ -187,11 +187,15 @@ when the tray icon is clicked. Defaults to true.
 
 Displays a tray balloon.
 
-### `Tray.popUpContextMenu([position])` _OS X_ _Windows_
+### `Tray.popUpContextMenu([menu, position])` _OS X_ _Windows_
 
-* `position` Object (optional)- The pop up position.
+* `menu` Menu (optional)
+* `position` Object (optional) - The pop up position.
   * `x` Integer
   * `y` Integer
+
+Popups the context menu of tray icon. When `menu` is passed, the `menu` will
+showed instead of the tray's context menu.
 
 The `position` is only available on Windows, and it is (0, 0) by default.
 

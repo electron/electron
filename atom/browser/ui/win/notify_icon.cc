@@ -66,7 +66,7 @@ void NotifyIcon::HandleClickEvent(const gfx::Point& cursor_pos,
     return;
   } else if (!double_button_click) {  // single right click
     if (menu_model_)
-      PopUpContextMenu(cursor_pos);
+      PopUpContextMenu(cursor_pos, menu_model_);
     else
       NotifyRightClicked(gfx::Rect(rect), modifiers);
   }
@@ -142,7 +142,8 @@ void NotifyIcon::DisplayBalloon(const gfx::Image& icon,
     LOG(WARNING) << "Unable to create status tray balloon.";
 }
 
-void NotifyIcon::PopUpContextMenu(const gfx::Point& pos) {
+void NotifyIcon::PopUpContextMenu(const gfx::Point& pos,
+                                  ui::SimpleMenuModel* menu_model) {
   // Returns if context menu isn't set.
   if (!menu_model_)
     return;
