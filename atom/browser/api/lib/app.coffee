@@ -65,7 +65,6 @@ wrapDownloadItem = (downloadItem) ->
   deprecate.property downloadItem, 'url', 'getURL'
   deprecate.property downloadItem, 'filename', 'getFilename'
   deprecate.property downloadItem, 'mimeType', 'getMimeType'
-  deprecate.property downloadItem, 'hasUserGesture', 'hasUserGesture'
   deprecate.rename downloadItem, 'getUrl', 'getURL'
 downloadItemBindings._setWrapDownloadItem wrapDownloadItem
 
