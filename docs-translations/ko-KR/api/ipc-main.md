@@ -32,7 +32,7 @@ ipcMain.on('synchronous-message', function(event, arg) {
 
 ```javascript
 // 랜더러 프로세스 (웹 페이지)
-const ipcRenderer = require('electron').ipcRenderer;
+const ipcRenderer = require('ipc-renderer');
 console.log(ipc.sendSync('synchronous-message', 'ping')); // "pong" 출력
 
 ipcRenderer.on('asynchronous-reply', function(arg) {
