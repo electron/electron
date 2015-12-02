@@ -75,8 +75,8 @@ describe 'chromium feature', ->
 
     it 'inherit options of parent window', (done) ->
       listener = (event) ->
-        size = remote.getCurrentWindow().getSize()
-        assert.equal event.data, "size: #{size.width} #{size.height}"
+        [width, height] = remote.getCurrentWindow().getSize()
+        assert.equal event.data, "size: #{width} #{height}"
         b.close()
         done()
       window.addEventListener 'message', listener
