@@ -543,7 +543,7 @@ webview.send('ping');
 
 ```javascript
 // In guest page.
-var ipcRenderer = require('electron').ipcRenderer;
+var ipcRenderer = require('ipc-renderer');
 ipcRenderer.on('ping', function() {
   ipcRenderer.sendToHost('pong');
 });

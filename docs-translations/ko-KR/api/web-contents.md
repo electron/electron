@@ -574,7 +574,7 @@ app.on('ready', function() {
 <html>
 <body>
   <script>
-    require('electron').ipcRenderer.on('ping', function(event, message) {
+    require('ipc-renderer').on('ping', function(event, message) {
       console.log(message);  // Prints "whoooooooh!"
     });
   </script>
