@@ -15,7 +15,6 @@
 #include "base/win/win_util.h"
 #include "base/win/wrapped_window_proc.h"
 #include "ui/events/event_constants.h"
-#include "ui/gfx/screen.h"
 #include "ui/gfx/win/hwnd_util.h"
 
 namespace atom {
@@ -172,10 +171,7 @@ LRESULT CALLBACK NotifyIconHost::WndProc(HWND hwnd,
       case WM_CONTEXTMENU:
         // Walk our icons, find which one was clicked on, and invoke its
         // HandleClickEvent() method.
-        gfx::Point cursor_pos(
-            gfx::Screen::GetNativeScreen()->GetCursorScreenPoint());
         win_icon->HandleClickEvent(
-            cursor_pos,
             GetKeyboardModifers(),
             (lparam == WM_LBUTTONDOWN || lparam == WM_LBUTTONDBLCLK),
             (lparam == WM_LBUTTONDBLCLK || lparam == WM_RBUTTONDBLCLK));
