@@ -1,11 +1,11 @@
 # shell
 
-O módulo `shell` fornece funções relacionadas intereções com o OS do usuário.
+O módulo `shell` fornece funções relacionadas à integração com o desktop.
 
 Um exemplo para abrir uma URL no browser padrão do usuário:
 
 ```javascript
-var shell = require('shell');
+const shell = require('shell');
 shell.openExternal('https://github.com');
 ```
 
@@ -17,26 +17,26 @@ O módulo `shell` tem os seguintes métodos:
 
 * `fullPath` String
 
-Exibe o arquivo no gerenciador de arquivos padrão do sistema. Se possivel, seleciona o arquivo automaticamente.
+Exibe o arquivo num gerenciador de arquivos. Se possivel, seleciona o arquivo.
 
 ### `shell.openItem(fullPath)`
 
 * `fullPath` String
 
-Abre o arquivo em seu programa padrão.
+Abre o arquivo de maneira padrão do desktop.
 
 ### `shell.openExternal(url)`
 
 * `url` String
 
-Abre o arquivo seguido de um protocol em seu programa padrão. (Por
-exemplo, mailto:foo@bar.com.)
+Abre a URL de protocolo externo de maneira padrão do desktop. (Por
+exemplo, mailto: URLs no programa de email padrão do usuário)
 
 ### `shell.moveItemToTrash(fullPath)`
 
 * `fullPath` String
 
-Move o arquivo para a lixeira e retorna um boolean com o resultado da operação.
+Move o arquivo para a lixeira e retorna um status boolean com o resultado da operação.
 
 ### `shell.beep()`
 
