@@ -18,6 +18,7 @@ process.on 'exit', ->
 
 # Separate asar package's path from full path.
 splitPath = (p) ->
+  return [false] if process.noAsar  # shortcut to disable asar.
   return [false] if typeof p isnt 'string'
   return [true, p, ''] if p.substr(-5) is '.asar'
   p = path.normalize p

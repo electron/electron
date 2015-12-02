@@ -137,9 +137,11 @@ void Tray::DisplayBalloon(mate::Arguments* args,
 }
 
 void Tray::PopUpContextMenu(mate::Arguments* args) {
+  mate::Handle<Menu> menu;
+  args->GetNext(&menu);
   gfx::Point pos;
   args->GetNext(&pos);
-  tray_icon_->PopUpContextMenu(pos);
+  tray_icon_->PopUpContextMenu(pos, menu.IsEmpty() ? nullptr : menu->model());
 }
 
 void Tray::SetContextMenu(mate::Arguments* args, Menu* menu) {

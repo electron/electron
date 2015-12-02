@@ -6,6 +6,7 @@
 
 #include <string>
 
+#include "atom/common/atom_constants.h"
 #include "base/strings/string_number_conversions.h"
 #include "net/base/net_errors.h"
 
@@ -49,6 +50,8 @@ void URLRequestBufferJob::GetResponseInfo(net::HttpResponseInfo* info) {
   status.append(net::GetHttpReasonPhrase(status_code_));
   status.append("\0\0", 2);
   net::HttpResponseHeaders* headers = new net::HttpResponseHeaders(status);
+
+  headers->AddHeader(kCORSHeader);
 
   if (!mime_type_.empty()) {
     std::string content_type_header(net::HttpRequestHeaders::kContentType);

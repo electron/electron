@@ -8,11 +8,6 @@
 
 namespace atom {
 
-// static
-std::vector<BridgeTaskRunner::TaskPair> BridgeTaskRunner::tasks_;
-std::vector<BridgeTaskRunner::TaskPair> BridgeTaskRunner::non_nestable_tasks_;
-
-// static
 void BridgeTaskRunner::MessageLoopIsReady() {
   auto message_loop = base::MessageLoop::current();
   CHECK(message_loop);

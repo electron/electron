@@ -4,6 +4,9 @@ Since v0.34.0, Electron allows submitting packaged apps to the Mac App Store
 (MAS). This guide provides information on: how to submit your app and the
 limitations of the MAS build.
 
+__Note:__ Submitting an app to Mac App Store requires enrolling [Apple Developer
+Program][developer-program], which costs money.
+
 ## How to Submit Your App
 
 The following steps introduce a simple way to submit your app to Mac App Store.
@@ -108,6 +111,7 @@ Also, due to the usage of app sandboxing, the resources which can be accessed by
  the app are strictly limited; you can read [App Sandboxing][app-sandboxing] for
  more information.
 
+[developer-program]: https://developer.apple.com/support/compare-memberships/
 [submitting-your-app]: https://developer.apple.com/library/mac/documentation/IDEs/Conceptual/AppDistributionGuide/SubmittingYourApp/SubmittingYourApp.html
 [nwjs-guide]: https://github.com/nwjs/nw.js/wiki/Mac-App-Store-%28MAS%29-Submission-Guideline#first-steps
 [enable-app-sandbox]: https://developer.apple.com/library/ios/documentation/Miscellaneous/Reference/EntitlementKeyReference/Chapters/EnablingAppSandbox.html

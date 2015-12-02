@@ -20,7 +20,7 @@ class BridgeTaskRunner : public base::SingleThreadTaskRunner {
   ~BridgeTaskRunner() override {}
 
   // Called when message loop is ready.
-  static void MessageLoopIsReady();
+  void MessageLoopIsReady();
 
   // base::SingleThreadTaskRunner:
   bool PostDelayedTask(const tracked_objects::Location& from_here,
@@ -35,8 +35,8 @@ class BridgeTaskRunner : public base::SingleThreadTaskRunner {
  private:
   using TaskPair = base::Tuple<
       tracked_objects::Location, base::Closure, base::TimeDelta>;
-  static std::vector<TaskPair> tasks_;
-  static std::vector<TaskPair> non_nestable_tasks_;
+  std::vector<TaskPair> tasks_;
+  std::vector<TaskPair> non_nestable_tasks_;
 
   DISALLOW_COPY_AND_ASSIGN(BridgeTaskRunner);
 };

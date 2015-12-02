@@ -505,17 +505,6 @@ void NativeWindow::BeforeUnloadDialogCancelled() {
   window_unresposive_closure_.Cancel();
 }
 
-void NativeWindow::TitleWasSet(content::NavigationEntry* entry,
-                               bool explicit_set) {
-  bool prevent_default = false;
-  std::string text = entry ? base::UTF16ToUTF8(entry->GetTitle()) : "";
-  FOR_EACH_OBSERVER(NativeWindowObserver,
-                    observers_,
-                    OnPageTitleUpdated(&prevent_default, text));
-  if (!prevent_default && !is_closed_)
-    SetTitle(text);
-}
-
 bool NativeWindow::OnMessageReceived(const IPC::Message& message) {
   bool handled = true;
   IPC_BEGIN_MESSAGE_MAP(NativeWindow, message)

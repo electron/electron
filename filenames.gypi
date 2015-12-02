@@ -286,6 +286,8 @@
       'atom/common/asar/scoped_temporary_file.h',
       'atom/common/atom_command_line.cc',
       'atom/common/atom_command_line.h',
+      'atom/common/atom_constants.cc',
+      'atom/common/atom_constants.h',
       'atom/common/common_message_generator.cc',
       'atom/common/common_message_generator.h',
       'atom/common/crash_reporter/crash_reporter.cc',

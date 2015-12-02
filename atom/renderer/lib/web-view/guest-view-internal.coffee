@@ -21,23 +21,27 @@ WEB_VIEW_EVENTS =
   'gpu-crashed': []
   'plugin-crashed': ['name', 'version']
   'destroyed': []
-  'page-title-set': ['title', 'explicitSet']
+  'page-title-updated': ['title', 'explicitSet']
   'page-favicon-updated': ['favicons']
   'enter-html-full-screen': []
   'leave-html-full-screen': []
 
-dispatchEvent = (webView, event, args...) ->
-  throw new Error("Unknown event #{event}") unless WEB_VIEW_EVENTS[event]?
-  domEvent = new Event(event)
-  for f, i in WEB_VIEW_EVENTS[event]
+DEPRECATED_EVENTS =
+  'page-title-updated': 'page-title-set'
+
+dispatchEvent = (webView, eventName, eventKey, args...) ->
+  if DEPRECATED_EVENTS[eventName]?
+    dispatchEvent webView, DEPRECATED_EVENTS[eventName], eventKey, args...
+  domEvent = new Event(eventName)
+  for f, i in WEB_VIEW_EVENTS[eventKey]
     domEvent[f] = args[i]
   webView.dispatchEvent domEvent
-  webView.onLoadCommit domEvent if event == 'load-commit'
+  webView.onLoadCommit domEvent if eventName is 'load-commit'
 
 module.exports =
   registerEvents: (webView, viewInstanceId) ->
-    ipcRenderer.on "ATOM_SHELL_GUEST_VIEW_INTERNAL_DISPATCH_EVENT-#{viewInstanceId}", (event, domEvent, args...) ->
-      dispatchEvent webView, domEvent, args...
+    ipcRenderer.on "ATOM_SHELL_GUEST_VIEW_INTERNAL_DISPATCH_EVENT-#{viewInstanceId}", (event, eventName, args...) ->
+      dispatchEvent webView, eventName, eventName, args...
 
     ipcRenderer.on "ATOM_SHELL_GUEST_VIEW_INTERNAL_IPC_MESSAGE-#{viewInstanceId}", (event, channel, args...) ->
       domEvent = new Event('ipc-message')

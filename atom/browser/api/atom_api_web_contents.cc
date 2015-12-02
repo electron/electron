@@ -460,14 +460,13 @@ void WebContents::DidFinishLoad(content::RenderFrameHost* render_frame_host,
     Emit("did-finish-load");
 }
 
-// this error occurs when host could not be found
 void WebContents::DidFailProvisionalLoad(
     content::RenderFrameHost* render_frame_host,
-    const GURL& validated_url,
+    const GURL& url,
     int error_code,
     const base::string16& error_description,
     bool was_ignored_by_handler) {
-  Emit("did-fail-load", error_code, error_description, validated_url);
+  Emit("did-fail-provisional-load", error_code, error_description, url);
 }
 
 void WebContents::DidFailLoad(content::RenderFrameHost* render_frame_host,
@@ -520,9 +519,10 @@ void WebContents::DidNavigateMainFrame(
 
 void WebContents::TitleWasSet(content::NavigationEntry* entry,
                               bool explicit_set) {
-  // Back/Forward navigation may have pruned entries.
   if (entry)
-    Emit("page-title-set", entry->GetTitle(), explicit_set);
+    Emit("-page-title-updated", entry->GetTitle(), explicit_set);
+  else
+    Emit("-page-title-updated", "", explicit_set);
 }
 
 void WebContents::DidUpdateFaviconURL(
