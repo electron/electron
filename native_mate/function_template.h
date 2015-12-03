@@ -15,27 +15,20 @@ namespace mate {
 
 enum CreateFunctionTemplateFlags {
   HolderIsFirstArgument = 1 << 0,
-  SafeAfterDestroyed = 1 << 1,
 };
 
 namespace internal {
 
-// Check if the class has been destroyed.
-template<typename T, typename Enable = void>
-struct DestroyedChecker {
-  static bool IsDestroyed(Arguments* args) {
-    return false;
+struct Destroyable {
+  static void Destroy(Arguments* args) {
+    v8::Local<v8::Object> holder = args->GetHolder();
+    delete static_cast<Wrappable*>(holder->GetAlignedPointerFromInternalField(0));
+    holder->SetAlignedPointerInInternalField(0, nullptr);
   }
-};
-template<typename T>
-struct DestroyedChecker<T*, typename enable_if<
-                              is_convertible<T*, Wrappable*>::value>::type> {
   static bool IsDestroyed(Arguments* args) {
-    T* object;
-    if (args->GetHolder(&object))
-      return static_cast<Wrappable*>(object)->IsDestroyed();
-    else
-      return false;
+    v8::Local<v8::Object> holder = args->GetHolder();
+    return holder->InternalFieldCount() == 0 ||
+           holder->GetAlignedPointerFromInternalField(0) == nullptr;
   }
 };
 
@@ -149,8 +142,7 @@ struct ArgumentHolder {
       : ok(false) {
     if (index == 0 &&
         (create_flags & HolderIsFirstArgument) &&
-        !(create_flags & SafeAfterDestroyed) &&
-        DestroyedChecker<ArgLocalType>::IsDestroyed(args)) {
+        Destroyable::IsDestroyed(args)) {
       args->ThrowError("Object has been destroyed");
       return;
     }

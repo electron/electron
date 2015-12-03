@@ -20,6 +20,10 @@ class Arguments {
   explicit Arguments(const MATE_METHOD_ARGS_TYPE& info);
   ~Arguments();
 
+  v8::Local<v8::Object> GetHolder() const {
+    return info_->Holder();
+  }
+
   template<typename T>
   bool GetHolder(T* out) {
     return ConvertFromV8(isolate_, info_->Holder(), out);

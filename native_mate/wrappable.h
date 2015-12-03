@@ -13,6 +13,8 @@ namespace mate {
 
 namespace internal {
 
+struct Destroyable;
+
 void* FromV8Impl(v8::Isolate* isolate, v8::Local<v8::Value> val);
 
 }  // namespace internal
@@ -54,10 +56,6 @@ class Wrappable {
   // object constructed by GetObjectTemplateBuilder.
   v8::Local<v8::Object> GetWrapper(v8::Isolate* isolate);
 
-  // Returns whether this class has been destroyed, users should override this
-  // method to indicate the native type's state.
-  virtual bool IsDestroyed() const;
-
   // Returns the Isolate this object is created in.
   v8::Isolate* isolate() const { return isolate_; }
 
@@ -79,6 +77,8 @@ class Wrappable {
   virtual void AfterInit(v8::Isolate* isolate) {}
 
  private:
+  friend struct internal::Destroyable;
+
   static void FirstWeakCallback(const v8::WeakCallbackInfo<Wrappable>& data);
   static void SecondWeakCallback(const v8::WeakCallbackInfo<Wrappable>& data);
 
