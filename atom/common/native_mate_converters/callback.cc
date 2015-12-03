@@ -4,7 +4,9 @@
 
 #include "atom/common/native_mate_converters/callback.h"
 
-#include "atom/browser/atom_browser_main_parts.h"
+#include "content/public/browser/browser_thread.h"
+
+using content::BrowserThread;
 
 namespace mate {
 
@@ -56,31 +58,59 @@ v8::Local<v8::Value> BindFunctionWith(v8::Isolate* isolate,
 
 }  // namespace
 
+// Destroy the class on UI thread when possible.
+struct DeleteOnUIThread {
+  template<typename T>
+  static void Destruct(const T* x) {
+    if (Locker::IsBrowserProcess() &&
+        !BrowserThread::CurrentlyOn(BrowserThread::UI)) {
+      BrowserThread::DeleteSoon(BrowserThread::UI, FROM_HERE, x);
+    } else {
+      delete x;
+    }
+  }
+};
+
+// Like v8::Global, but ref-counted.
+template<typename T>
+class RefCountedGlobal : public base::RefCountedThreadSafe<RefCountedGlobal<T>,
+                                                           DeleteOnUIThread> {
+ public:
+  RefCountedGlobal(v8::Isolate* isolate, v8::Local<v8::Value> value)
+      : handle_(isolate, v8::Local<T>::Cast(value)) {
+  }
+
+  bool IsAlive() const {
+    return !handle_.IsEmpty();
+  }
+
+  v8::Local<T> NewHandle(v8::Isolate* isolate) const {
+    return v8::Local<T>::New(isolate, handle_);
+  }
+
+ private:
+  v8::Global<T> handle_;
+
+  DISALLOW_COPY_AND_ASSIGN(RefCountedGlobal);
+};
+
 SafeV8Function::SafeV8Function(v8::Isolate* isolate, v8::Local<v8::Value> value)
-    : v8_function_(new RefCountedPersistent<v8::Function>(isolate, value)),
-      weak_factory_(this) {
-  Init();
+    : v8_function_(new RefCountedGlobal<v8::Function>(isolate, value)) {
 }
 
 SafeV8Function::SafeV8Function(const SafeV8Function& other)
-    : v8_function_(other.v8_function_),
-      weak_factory_(this) {
-  Init();
+    : v8_function_(other.v8_function_) {
 }
 
-v8::Local<v8::Function> SafeV8Function::NewHandle() const {
-  return v8_function_->NewHandle();
+SafeV8Function::~SafeV8Function() {
 }
 
-void SafeV8Function::Init() {
-  if (Locker::IsBrowserProcess() && atom::AtomBrowserMainParts::Get())
-    atom::AtomBrowserMainParts::Get()->RegisterDestructionCallback(
-        base::Bind(&SafeV8Function::FreeHandle, weak_factory_.GetWeakPtr()));
+bool SafeV8Function::IsAlive() const {
+  return v8_function_.get() && v8_function_->IsAlive();
 }
 
-void SafeV8Function::FreeHandle() {
-  Locker locker(v8_function_->isolate());
-  v8_function_ = nullptr;
+v8::Local<v8::Function> SafeV8Function::NewHandle(v8::Isolate* isolate) const {
+  return v8_function_->NewHandle(isolate);
 }
 
 v8::Local<v8::Value> CreateFunctionFromTranslater(

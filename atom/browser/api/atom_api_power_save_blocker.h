@@ -28,9 +28,6 @@ class PowerSaveBlocker : public mate::TrackableObject<PowerSaveBlocker> {
   PowerSaveBlocker();
   ~PowerSaveBlocker() override;
 
-  // mate::TrackableObject:
-  void Destroy() override;
-
   // mate::Wrappable implementations:
   mate::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;

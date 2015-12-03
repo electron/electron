@@ -39,11 +39,12 @@ createGuest = (embedder, url, frameName, options) ->
   # When |embedder| is destroyed we should also destroy attached guest, and if
   # guest is closed by user then we should prevent |embedder| from double
   # closing guest.
+  guestId = guest.id
   closedByEmbedder = ->
     guest.removeListener 'closed', closedByUser
     guest.destroy()
   closedByUser = ->
-    embedder.send 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_CLOSED', guest.id
+    embedder.send 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_CLOSED', guestId
     embedder.removeListener 'render-view-deleted', closedByEmbedder
   embedder.once 'render-view-deleted', closedByEmbedder
   guest.once 'closed', closedByUser

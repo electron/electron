@@ -77,13 +77,7 @@ class Window : public mate::TrackableObject<Window>,
   void OnWindowMessage(UINT message, WPARAM w_param, LPARAM l_param) override;
   #endif
 
-  // mate::Wrappable:
-  bool IsDestroyed() const override;
-
  private:
-  // mate::TrackableObject:
-  void Destroy() override;
-
   // APIs for NativeWindow.
   void Close();
   void Focus();

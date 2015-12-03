@@ -94,14 +94,6 @@ void Tray::OnDragEnded() {
   Emit("drag-end");
 }
 
-bool Tray::IsDestroyed() const {
-  return !tray_icon_;
-}
-
-void Tray::Destroy() {
-  tray_icon_.reset();
-}
-
 void Tray::SetImage(mate::Arguments* args, const gfx::Image& image) {
   tray_icon_->SetImage(image);
 }
@@ -162,8 +154,7 @@ v8::Local<v8::Object> Tray::ModifiersToObject(v8::Isolate* isolate,
 void Tray::BuildPrototype(v8::Isolate* isolate,
                           v8::Local<v8::ObjectTemplate> prototype) {
   mate::ObjectTemplateBuilder(isolate, prototype)
-      .SetMethod("destroy", &Tray::Destroy, true)
-      .SetMethod("isDestroyed", &Tray::IsDestroyed, true)
+      .MakeDestroyable()
       .SetMethod("setImage", &Tray::SetImage)
       .SetMethod("setPressedImage", &Tray::SetPressedImage)
       .SetMethod("setToolTip", &Tray::SetToolTip)
