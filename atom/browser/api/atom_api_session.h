@@ -48,6 +48,10 @@ class Session: public mate::TrackableObject<Session>,
 
   AtomBrowserContext* browser_context() const { return browser_context_.get(); }
 
+  // mate::TrackableObject:
+  static void BuildPrototype(v8::Isolate* isolate,
+                             v8::Local<v8::ObjectTemplate> prototype);
+
  protected:
   explicit Session(AtomBrowserContext* browser_context);
   ~Session();
@@ -55,10 +59,6 @@ class Session: public mate::TrackableObject<Session>,
   // content::DownloadManager::Observer:
   void OnDownloadCreated(content::DownloadManager* manager,
                          content::DownloadItem* item) override;
-
-  // mate::Wrappable:
-  mate::ObjectTemplateBuilder GetObjectTemplateBuilder(
-      v8::Isolate* isolate) override;
 
  private:
   void ResolveProxy(const GURL& url, ResolveProxyCallback callback);

@@ -135,9 +135,10 @@ void DownloadItem::Cancel() {
   download_item_->Cancel(true);
 }
 
-mate::ObjectTemplateBuilder DownloadItem::GetObjectTemplateBuilder(
-    v8::Isolate* isolate) {
-  return mate::ObjectTemplateBuilder(isolate)
+// static
+void DownloadItem::BuildPrototype(v8::Isolate* isolate,
+                                  v8::Local<v8::ObjectTemplate> prototype) {
+  mate::ObjectTemplateBuilder(isolate, prototype)
       .MakeDestroyable()
       .SetMethod("pause", &DownloadItem::Pause)
       .SetMethod("resume", &DownloadItem::Resume)

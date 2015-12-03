@@ -141,14 +141,14 @@ class WebContents : public mate::TrackableObject<WebContents>,
   v8::Local<v8::Value> Session(v8::Isolate* isolate);
   v8::Local<v8::Value> DevToolsWebContents(v8::Isolate* isolate);
 
+  // mate::TrackableObject:
+  static void BuildPrototype(v8::Isolate* isolate,
+                             v8::Local<v8::ObjectTemplate> prototype);
+
  protected:
   explicit WebContents(content::WebContents* web_contents);
   WebContents(v8::Isolate* isolate, const mate::Dictionary& options);
   ~WebContents();
-
-  // mate::Wrappable:
-  mate::ObjectTemplateBuilder GetObjectTemplateBuilder(
-      v8::Isolate* isolate) override;
 
   // content::WebContentsDelegate:
   bool AddMessageToConsole(content::WebContents* source,

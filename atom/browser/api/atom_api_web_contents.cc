@@ -194,8 +194,6 @@ namespace api {
 
 namespace {
 
-v8::Persistent<v8::ObjectTemplate> template_;
-
 // The wrapWebContents function which is implemented in JavaScript
 using WrapWebContentsCallback = base::Callback<void(v8::Local<v8::Value>)>;
 WrapWebContentsCallback g_wrap_web_contents;
@@ -982,76 +980,72 @@ v8::Local<v8::Value> WebContents::DevToolsWebContents(v8::Isolate* isolate) {
     return v8::Local<v8::Value>::New(isolate, devtools_web_contents_);
 }
 
-mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
-    v8::Isolate* isolate) {
-  if (template_.IsEmpty())
-    template_.Reset(isolate, mate::ObjectTemplateBuilder(isolate)
-        .MakeDestroyable()
-        .SetMethod("getId", &WebContents::GetID)
-        .SetMethod("equal", &WebContents::Equal)
-        .SetMethod("_loadURL", &WebContents::LoadURL)
-        .SetMethod("_getURL", &WebContents::GetURL)
-        .SetMethod("getTitle", &WebContents::GetTitle)
-        .SetMethod("isLoading", &WebContents::IsLoading)
-        .SetMethod("isWaitingForResponse", &WebContents::IsWaitingForResponse)
-        .SetMethod("_stop", &WebContents::Stop)
-        .SetMethod("_goBack", &WebContents::GoBack)
-        .SetMethod("_goForward", &WebContents::GoForward)
-        .SetMethod("_goToOffset", &WebContents::GoToOffset)
-        .SetMethod("isCrashed", &WebContents::IsCrashed)
-        .SetMethod("setUserAgent", &WebContents::SetUserAgent)
-        .SetMethod("getUserAgent", &WebContents::GetUserAgent)
-        .SetMethod("insertCSS", &WebContents::InsertCSS)
-        .SetMethod("savePage", &WebContents::SavePage)
-        .SetMethod("_executeJavaScript", &WebContents::ExecuteJavaScript)
-        .SetMethod("openDevTools", &WebContents::OpenDevTools)
-        .SetMethod("closeDevTools", &WebContents::CloseDevTools)
-        .SetMethod("isDevToolsOpened", &WebContents::IsDevToolsOpened)
-        .SetMethod("enableDeviceEmulation",
-                   &WebContents::EnableDeviceEmulation)
-        .SetMethod("disableDeviceEmulation",
-                   &WebContents::DisableDeviceEmulation)
-        .SetMethod("toggleDevTools", &WebContents::ToggleDevTools)
-        .SetMethod("inspectElement", &WebContents::InspectElement)
-        .SetMethod("setAudioMuted", &WebContents::SetAudioMuted)
-        .SetMethod("isAudioMuted", &WebContents::IsAudioMuted)
-        .SetMethod("undo", &WebContents::Undo)
-        .SetMethod("redo", &WebContents::Redo)
-        .SetMethod("cut", &WebContents::Cut)
-        .SetMethod("copy", &WebContents::Copy)
-        .SetMethod("paste", &WebContents::Paste)
-        .SetMethod("pasteAndMatchStyle", &WebContents::PasteAndMatchStyle)
-        .SetMethod("delete", &WebContents::Delete)
-        .SetMethod("selectAll", &WebContents::SelectAll)
-        .SetMethod("unselect", &WebContents::Unselect)
-        .SetMethod("replace", &WebContents::Replace)
-        .SetMethod("replaceMisspelling", &WebContents::ReplaceMisspelling)
-        .SetMethod("focus", &WebContents::Focus)
-        .SetMethod("tabTraverse", &WebContents::TabTraverse)
-        .SetMethod("_send", &WebContents::SendIPCMessage)
-        .SetMethod("sendInputEvent", &WebContents::SendInputEvent)
-        .SetMethod("beginFrameSubscription",
-                   &WebContents::BeginFrameSubscription)
-        .SetMethod("endFrameSubscription", &WebContents::EndFrameSubscription)
-        .SetMethod("setSize", &WebContents::SetSize)
-        .SetMethod("setAllowTransparency", &WebContents::SetAllowTransparency)
-        .SetMethod("isGuest", &WebContents::IsGuest)
-        .SetMethod("getWebPreferences", &WebContents::GetWebPreferences)
-        .SetMethod("getOwnerBrowserWindow", &WebContents::GetOwnerBrowserWindow)
-        .SetMethod("hasServiceWorker", &WebContents::HasServiceWorker)
-        .SetMethod("unregisterServiceWorker",
-                   &WebContents::UnregisterServiceWorker)
-        .SetMethod("inspectServiceWorker", &WebContents::InspectServiceWorker)
-        .SetMethod("print", &WebContents::Print)
-        .SetMethod("_printToPDF", &WebContents::PrintToPDF)
-        .SetMethod("addWorkSpace", &WebContents::AddWorkSpace)
-        .SetMethod("removeWorkSpace", &WebContents::RemoveWorkSpace)
-        .SetProperty("session", &WebContents::Session)
-        .SetProperty("devToolsWebContents", &WebContents::DevToolsWebContents)
-        .Build());
-
-  return mate::ObjectTemplateBuilder(
-      isolate, v8::Local<v8::ObjectTemplate>::New(isolate, template_));
+// static
+void WebContents::BuildPrototype(v8::Isolate* isolate,
+                                 v8::Local<v8::ObjectTemplate> prototype) {
+  mate::ObjectTemplateBuilder(isolate, prototype)
+      .MakeDestroyable()
+      .SetMethod("getId", &WebContents::GetID)
+      .SetMethod("equal", &WebContents::Equal)
+      .SetMethod("_loadURL", &WebContents::LoadURL)
+      .SetMethod("_getURL", &WebContents::GetURL)
+      .SetMethod("getTitle", &WebContents::GetTitle)
+      .SetMethod("isLoading", &WebContents::IsLoading)
+      .SetMethod("isWaitingForResponse", &WebContents::IsWaitingForResponse)
+      .SetMethod("_stop", &WebContents::Stop)
+      .SetMethod("_goBack", &WebContents::GoBack)
+      .SetMethod("_goForward", &WebContents::GoForward)
+      .SetMethod("_goToOffset", &WebContents::GoToOffset)
+      .SetMethod("isCrashed", &WebContents::IsCrashed)
+      .SetMethod("setUserAgent", &WebContents::SetUserAgent)
+      .SetMethod("getUserAgent", &WebContents::GetUserAgent)
+      .SetMethod("insertCSS", &WebContents::InsertCSS)
+      .SetMethod("savePage", &WebContents::SavePage)
+      .SetMethod("_executeJavaScript", &WebContents::ExecuteJavaScript)
+      .SetMethod("openDevTools", &WebContents::OpenDevTools)
+      .SetMethod("closeDevTools", &WebContents::CloseDevTools)
+      .SetMethod("isDevToolsOpened", &WebContents::IsDevToolsOpened)
+      .SetMethod("enableDeviceEmulation",
+                 &WebContents::EnableDeviceEmulation)
+      .SetMethod("disableDeviceEmulation",
+                 &WebContents::DisableDeviceEmulation)
+      .SetMethod("toggleDevTools", &WebContents::ToggleDevTools)
+      .SetMethod("inspectElement", &WebContents::InspectElement)
+      .SetMethod("setAudioMuted", &WebContents::SetAudioMuted)
+      .SetMethod("isAudioMuted", &WebContents::IsAudioMuted)
+      .SetMethod("undo", &WebContents::Undo)
+      .SetMethod("redo", &WebContents::Redo)
+      .SetMethod("cut", &WebContents::Cut)
+      .SetMethod("copy", &WebContents::Copy)
+      .SetMethod("paste", &WebContents::Paste)
+      .SetMethod("pasteAndMatchStyle", &WebContents::PasteAndMatchStyle)
+      .SetMethod("delete", &WebContents::Delete)
+      .SetMethod("selectAll", &WebContents::SelectAll)
+      .SetMethod("unselect", &WebContents::Unselect)
+      .SetMethod("replace", &WebContents::Replace)
+      .SetMethod("replaceMisspelling", &WebContents::ReplaceMisspelling)
+      .SetMethod("focus", &WebContents::Focus)
+      .SetMethod("tabTraverse", &WebContents::TabTraverse)
+      .SetMethod("_send", &WebContents::SendIPCMessage)
+      .SetMethod("sendInputEvent", &WebContents::SendInputEvent)
+      .SetMethod("beginFrameSubscription",
+                 &WebContents::BeginFrameSubscription)
+      .SetMethod("endFrameSubscription", &WebContents::EndFrameSubscription)
+      .SetMethod("setSize", &WebContents::SetSize)
+      .SetMethod("setAllowTransparency", &WebContents::SetAllowTransparency)
+      .SetMethod("isGuest", &WebContents::IsGuest)
+      .SetMethod("getWebPreferences", &WebContents::GetWebPreferences)
+      .SetMethod("getOwnerBrowserWindow", &WebContents::GetOwnerBrowserWindow)
+      .SetMethod("hasServiceWorker", &WebContents::HasServiceWorker)
+      .SetMethod("unregisterServiceWorker",
+                 &WebContents::UnregisterServiceWorker)
+      .SetMethod("inspectServiceWorker", &WebContents::InspectServiceWorker)
+      .SetMethod("print", &WebContents::Print)
+      .SetMethod("_printToPDF", &WebContents::PrintToPDF)
+      .SetMethod("addWorkSpace", &WebContents::AddWorkSpace)
+      .SetMethod("removeWorkSpace", &WebContents::RemoveWorkSpace)
+      .SetProperty("session", &WebContents::Session)
+      .SetProperty("devToolsWebContents", &WebContents::DevToolsWebContents);
 }
 
 AtomBrowserContext* WebContents::GetBrowserContext() const {

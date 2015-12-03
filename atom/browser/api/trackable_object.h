@@ -12,6 +12,7 @@
 #include "base/bind.h"
 #include "base/memory/scoped_ptr.h"
 #include "base/memory/weak_ptr.h"
+#include "native_mate/object_template_builder.h"
 
 namespace base {
 class SupportsUserData;
@@ -120,15 +121,32 @@ class TrackableObject : public TrackableObjectBase {
   }
 
  private:
+  // mate::Wrappable:
+  mate::ObjectTemplateBuilder GetObjectTemplateBuilder(
+      v8::Isolate* isolate) override {
+    if (template_.IsEmpty()) {
+      auto templ = v8::ObjectTemplate::New(isolate);
+      T::BuildPrototype(isolate, templ);
+      template_.Reset(isolate, templ);
+    }
+
+    return ObjectTemplateBuilder(
+        isolate, v8::Local<v8::ObjectTemplate>::New(isolate, template_));
+  }
+
   // Releases all weak references in weak map, called when app is terminating.
   static void ReleaseAllWeakReferences() {
     weak_map_.reset();
   }
 
+  static v8::Persistent<v8::ObjectTemplate> template_;
   static scoped_ptr<atom::IDWeakMap> weak_map_;
 
   DISALLOW_COPY_AND_ASSIGN(TrackableObject);
 };
+
+template<typename T>
+v8::Persistent<v8::ObjectTemplate> TrackableObject<T>::template_;
 
 template<typename T>
 scoped_ptr<atom::IDWeakMap> TrackableObject<T>::weak_map_;
