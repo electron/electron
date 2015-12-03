@@ -4,7 +4,6 @@
 
 #include "atom/common/native_mate_converters/callback.h"
 
-#include "atom/browser/atom_browser_main_parts.h"
 #include "content/public/browser/browser_thread.h"
 
 using content::BrowserThread;
@@ -78,15 +77,7 @@ class RefCountedGlobal : public base::RefCountedThreadSafe<RefCountedGlobal<T>,
                                                            DeleteOnUIThread> {
  public:
   RefCountedGlobal(v8::Isolate* isolate, v8::Local<v8::Value> value)
-      : handle_(isolate, v8::Local<T>::Cast(value)),
-        weak_factory_(this) {
-    // In browser process, we need to ensure the V8 handle is destroyed before
-    // the JavaScript env gets destroyed.
-    if (Locker::IsBrowserProcess() && atom::AtomBrowserMainParts::Get()) {
-      atom::AtomBrowserMainParts::Get()->RegisterDestructionCallback(
-          base::Bind(&RefCountedGlobal<T>::FreeHandle,
-                     weak_factory_.GetWeakPtr()));
-    }
+      : handle_(isolate, v8::Local<T>::Cast(value)) {
   }
 
   bool IsAlive() const {
@@ -98,12 +89,7 @@ class RefCountedGlobal : public base::RefCountedThreadSafe<RefCountedGlobal<T>,
   }
 
  private:
-  void FreeHandle() {
-    handle_.Reset();
-  }
-
   v8::Global<T> handle_;
-  base::WeakPtrFactory<RefCountedGlobal<T>> weak_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(RefCountedGlobal);
 };
