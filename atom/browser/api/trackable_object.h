@@ -48,7 +48,7 @@ class TrackableObjectBase : public mate::EventEmitter {
 
   // Register a callback that should be destroyed before JavaScript environment
   // gets destroyed.
-  static void RegisterDestructionCallback(const base::Closure& closure);
+  static base::Closure RegisterDestructionCallback(const base::Closure& c);
 
   int32_t weak_map_id_;
   base::SupportsUserData* wrapped_;
@@ -56,6 +56,7 @@ class TrackableObjectBase : public mate::EventEmitter {
  private:
   void Destroy();
 
+  base::Closure cleanup_;
   base::WeakPtrFactory<TrackableObjectBase> weak_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(TrackableObjectBase);
