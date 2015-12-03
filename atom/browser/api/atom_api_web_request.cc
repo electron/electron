@@ -45,35 +45,6 @@ void WebRequest::SetListener(mate::Arguments* args) {
                                      type, filter, callback));
 }
 
-mate::ObjectTemplateBuilder WebRequest::GetObjectTemplateBuilder(
-    v8::Isolate* isolate) {
-  return mate::ObjectTemplateBuilder(isolate)
-      .SetMethod("onBeforeRequest",
-                 &WebRequest::SetListener<
-                    AtomNetworkDelegate::kOnBeforeRequest>)
-      .SetMethod("onBeforeSendHeaders",
-                 &WebRequest::SetListener<
-                    AtomNetworkDelegate::kOnBeforeSendHeaders>)
-      .SetMethod("onSendHeaders",
-                 &WebRequest::SetListener<
-                    AtomNetworkDelegate::kOnSendHeaders>)
-      .SetMethod("onHeadersReceived",
-                 &WebRequest::SetListener<
-                    AtomNetworkDelegate::kOnHeadersReceived>)
-      .SetMethod("onBeforeRedirect",
-                 &WebRequest::SetListener<
-                    AtomNetworkDelegate::kOnBeforeRedirect>)
-      .SetMethod("onResponseStarted",
-                 &WebRequest::SetListener<
-                    AtomNetworkDelegate::kOnResponseStarted>)
-      .SetMethod("onCompleted",
-                 &WebRequest::SetListener<
-                    AtomNetworkDelegate::kOnCompleted>)
-      .SetMethod("onErrorOccurred",
-                 &WebRequest::SetListener<
-                    AtomNetworkDelegate::kOnErrorOccurred>);
-}
-
 // static
 mate::Handle<WebRequest> WebRequest::Create(
     v8::Isolate* isolate,

@@ -4,12 +4,9 @@
 
 #include "atom/browser/net/atom_network_delegate.h"
 
-#include <map>
-
 #include "atom/common/native_mate_converters/net_converter.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/resource_request_info.h"
-#include "net/base/net_errors.h"
 #include "net/url_request/url_request.h"
 
 using content::BrowserThread;
@@ -17,6 +14,40 @@ using content::BrowserThread;
 namespace atom {
 
 namespace {
+
+std::string ResourceTypeToString(content::ResourceType type) {
+  switch (type) {
+    case content::RESOURCE_TYPE_MAIN_FRAME:
+      return "main_frame";
+    case content::RESOURCE_TYPE_SUB_FRAME:
+      return "sub_frame";
+    case content::RESOURCE_TYPE_STYLESHEET:
+      return "stylesheet";
+    case content::RESOURCE_TYPE_SCRIPT:
+      return "script";
+    case content::RESOURCE_TYPE_IMAGE:
+      return "image";
+    case content::RESOURCE_TYPE_OBJECT:
+      return "object";
+    case content::RESOURCE_TYPE_XHR:
+      return "xmlhttprequest";
+    default:
+      return "other";
+  }
+}
+
+bool MatchesFilterCondition(
+    net::URLRequest* request,
+    const AtomNetworkDelegate::ListenerInfo& info) {
+  if (!info.url_patterns.empty()) {
+    auto url = request->url();
+    for (auto& pattern : info.url_patterns)
+      if (pattern.MatchesURL(url))
+        return true;
+  }
+
+  return false;
+}
 
 base::DictionaryValue* ExtractRequestInfo(net::URLRequest* request) {
   base::DictionaryValue* dict = new base::DictionaryValue();
@@ -27,7 +58,7 @@ base::DictionaryValue* ExtractRequestInfo(net::URLRequest* request) {
   auto info = content::ResourceRequestInfo::ForRequest(request);
   if (info)
     resourceType = info->GetResourceType();
-  dict->SetInteger("resourceType", resourceType);
+  dict->SetString("resourceType", ResourceTypeToString(resourceType));
   dict->SetDouble("timestamp", base::Time::Now().ToDoubleT() * 1000);
 
   return dict;
@@ -61,7 +92,7 @@ void OnBeforeURLRequestResponse(
     const AtomNetworkDelegate::BlockingResponse& result) {
   if (!result.redirectURL.is_empty())
     *new_url = result.redirectURL;
-  callback.Run(result.cancel);
+  callback.Run(result.Cancel());
 }
 
 void OnBeforeSendHeadersResponse(
@@ -70,7 +101,7 @@ void OnBeforeSendHeadersResponse(
     const AtomNetworkDelegate::BlockingResponse& result) {
   if (!result.requestHeaders.IsEmpty())
     *headers = result.requestHeaders;
-  callback.Run(result.cancel);
+  callback.Run(result.Cancel());
 }
 
 void OnHeadersReceivedResponse(
@@ -79,7 +110,7 @@ void OnHeadersReceivedResponse(
     const AtomNetworkDelegate::BlockingResponse& result) {
   if (result.responseHeaders.get())
     *override_response_headers = result.responseHeaders;
-  callback.Run(result.cancel);
+  callback.Run(result.Cancel());
 }
 
 }  // namespace
@@ -100,6 +131,19 @@ void AtomNetworkDelegate::SetListenerInIO(
     const Listener& callback) {
   ListenerInfo info;
   info.callback = callback;
+
+  const base::ListValue* url_list = nullptr;
+  if (filter->GetList("urls", &url_list)) {
+    for (size_t i = 0; i < url_list->GetSize(); ++i) {
+      std::string url;
+      extensions::URLPattern pattern;
+      if (url_list->GetString(i, &url) &&
+          pattern.Parse(url) == extensions::URLPattern::PARSE_SUCCESS) {
+        info.url_patterns.insert(pattern);
+      }
+    }
+  }
+
   event_listener_map_[type] = info;
 }
 
@@ -110,7 +154,11 @@ int AtomNetworkDelegate::OnBeforeURLRequest(
   brightray::NetworkDelegate::OnBeforeURLRequest(request, callback, new_url);
 
   auto listener_info = event_listener_map_[kOnBeforeRequest];
-  if (!event_listener_map_.empty() && !listener_info.callback.is_null()) {
+
+  if (!MatchesFilterCondition(request, listener_info))
+    return net::OK;
+
+  if (!listener_info.callback.is_null()) {
     auto wrapped_callback = listener_info.callback;
     auto details = ExtractRequestInfo(request);
 
@@ -130,7 +178,11 @@ int AtomNetworkDelegate::OnBeforeSendHeaders(
     const net::CompletionCallback& callback,
     net::HttpRequestHeaders* headers) {
   auto listener_info = event_listener_map_[kOnBeforeSendHeaders];
-  if (!event_listener_map_.empty() && !listener_info.callback.is_null()) {
+
+  if (!MatchesFilterCondition(request, listener_info))
+    return net::OK;
+
+  if (!listener_info.callback.is_null()) {
     auto wrapped_callback = listener_info.callback;
     auto details = ExtractRequestInfo(request);
     details->Set("requestHeaders", GetRequestHeadersDict(*headers));
@@ -150,7 +202,11 @@ void AtomNetworkDelegate::OnSendHeaders(
     net::URLRequest* request,
     const net::HttpRequestHeaders& headers) {
   auto listener_info = event_listener_map_[kOnSendHeaders];
-  if (!event_listener_map_.empty() && !listener_info.callback.is_null()) {
+
+  if (!MatchesFilterCondition(request, listener_info))
+    return;
+
+  if (!listener_info.callback.is_null()) {
     auto wrapped_callback = listener_info.callback;
     auto details = ExtractRequestInfo(request);
     details->Set("requestHeaders", GetRequestHeadersDict(headers));
@@ -168,9 +224,17 @@ int AtomNetworkDelegate::OnHeadersReceived(
     scoped_refptr<net::HttpResponseHeaders>* override_response_headers,
     GURL* allowed_unsafe_redirect_url) {
   auto listener_info = event_listener_map_[kOnHeadersReceived];
-  if (!event_listener_map_.empty() && !listener_info.callback.is_null()) {
+
+  if (!MatchesFilterCondition(request, listener_info))
+    return net::OK;
+
+  if (!listener_info.callback.is_null()) {
     auto wrapped_callback = listener_info.callback;
     auto details = ExtractRequestInfo(request);
+    details->SetString("statusLine",
+                       original_response_headers->GetStatusLine());
+    details->SetInteger("statusCode",
+                        original_response_headers->response_code());
     details->Set("responseHeaders",
                  GetResponseHeadersDict(original_response_headers));
 
@@ -189,10 +253,19 @@ int AtomNetworkDelegate::OnHeadersReceived(
 void AtomNetworkDelegate::OnBeforeRedirect(net::URLRequest* request,
                                             const GURL& new_location) {
   auto listener_info = event_listener_map_[kOnBeforeRedirect];
-  if (!event_listener_map_.empty() && !listener_info.callback.is_null()) {
+
+  if (!MatchesFilterCondition(request, listener_info))
+    return;
+
+  if (!listener_info.callback.is_null()) {
     auto wrapped_callback = listener_info.callback;
     auto details = ExtractRequestInfo(request);
     details->SetString("redirectURL", new_location.spec());
+    details->SetInteger("statusCode", request->GetResponseCode());
+    auto ip = request->GetSocketAddress().host();
+    if (!ip.empty())
+      details->SetString("ip", ip);
+    details->SetBoolean("fromCache", request->was_cached());
 
     BrowserThread::PostTask(BrowserThread::UI, FROM_HERE,
                             base::Bind(base::IgnoreResult(wrapped_callback),
@@ -201,12 +274,23 @@ void AtomNetworkDelegate::OnBeforeRedirect(net::URLRequest* request,
 }
 
 void AtomNetworkDelegate::OnResponseStarted(net::URLRequest* request) {
+  if (request->status().status() != net::URLRequestStatus::SUCCESS)
+    return;
+
   auto listener_info = event_listener_map_[kOnResponseStarted];
-  if (!event_listener_map_.empty() && !listener_info.callback.is_null()) {
+
+  if (!MatchesFilterCondition(request, listener_info))
+    return;
+
+  if (!listener_info.callback.is_null()) {
     auto wrapped_callback = listener_info.callback;
     auto details = ExtractRequestInfo(request);
     details->Set("responseHeaders",
                  GetResponseHeadersDict(request->response_headers()));
+    details->SetBoolean("fromCache", request->was_cached());
+    details->SetInteger("statusCode",
+                        request->response_headers() ?
+                            request->response_headers()->response_code() : 200);
 
     BrowserThread::PostTask(BrowserThread::UI, FROM_HERE,
                             base::Bind(base::IgnoreResult(wrapped_callback),
@@ -215,6 +299,55 @@ void AtomNetworkDelegate::OnResponseStarted(net::URLRequest* request) {
 }
 
 void AtomNetworkDelegate::OnCompleted(net::URLRequest* request, bool started) {
+  if (request->status().status() == net::URLRequestStatus::FAILED ||
+      request->status().status() == net::URLRequestStatus::CANCELED) {
+    OnErrorOccurred(request);
+    return;
+  } else {
+    bool is_redirect = request->response_headers() &&
+        net::HttpResponseHeaders::IsRedirectResponseCode(
+            request->response_headers()->response_code());
+    if (is_redirect)
+      return;
+  }
+
+  auto listener_info = event_listener_map_[kOnCompleted];
+
+  if (!MatchesFilterCondition(request, listener_info))
+    return;
+
+  if (!listener_info.callback.is_null()) {
+    auto wrapped_callback = listener_info.callback;
+    auto details = ExtractRequestInfo(request);
+    details->Set("responseHeaders",
+                 GetResponseHeadersDict(request->response_headers()));
+    details->SetBoolean("fromCache", request->was_cached());
+    details->SetInteger("statusCode",
+                        request->response_headers() ?
+                            request->response_headers()->response_code() : 200);
+
+    BrowserThread::PostTask(BrowserThread::UI, FROM_HERE,
+                            base::Bind(base::IgnoreResult(wrapped_callback),
+                                       details));
+  }
+}
+
+void AtomNetworkDelegate::OnErrorOccurred(net::URLRequest* request) {
+  auto listener_info = event_listener_map_[kOnErrorOccurred];
+
+  if (!MatchesFilterCondition(request, listener_info))
+    return;
+
+  if (!listener_info.callback.is_null()) {
+    auto wrapped_callback = listener_info.callback;
+    auto details = ExtractRequestInfo(request);
+    details->SetBoolean("fromCache", request->was_cached());
+    details->SetString("error", net::ErrorToString(request->status().error()));
+
+    BrowserThread::PostTask(BrowserThread::UI, FROM_HERE,
+                            base::Bind(base::IgnoreResult(wrapped_callback),
+                                       details));
+  }
 }
 
 }  // namespace atom

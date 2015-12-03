@@ -6,18 +6,29 @@
 #define ATOM_BROWSER_NET_ATOM_NETWORK_DELEGATE_H_
 
 #include <map>
+#include <set>
 #include <string>
 
 #include "brightray/browser/network_delegate.h"
 #include "base/callback.h"
 #include "base/values.h"
+#include "extensions/common/url_pattern.h"
+#include "net/base/net_errors.h"
 #include "net/http/http_request_headers.h"
 #include "net/http/http_response_headers.h"
+
+namespace extensions {
+class URLPattern;
+}
 
 namespace atom {
 
 class AtomNetworkDelegate : public brightray::NetworkDelegate {
  public:
+  struct BlockingResponse;
+  using Listener =
+      base::Callback<BlockingResponse(const base::DictionaryValue*)>;
+
   enum EventTypes {
     kInvalidEvent = 0,
     kOnBeforeRequest = 1 << 0,
@@ -26,22 +37,31 @@ class AtomNetworkDelegate : public brightray::NetworkDelegate {
     kOnHeadersReceived = 1 << 3,
     kOnBeforeRedirect = 1 << 4,
     kOnResponseStarted = 1 << 5,
-    kOnErrorOccurred = 1 << 6,
-    kOnCompleted = 1 << 7,
+    kOnCompleted = 1 << 6,
+    kOnErrorOccurred = 1 << 7,
+  };
+
+  struct ListenerInfo {
+    ListenerInfo() {}
+    ~ListenerInfo() {}
+
+    std::set<extensions::URLPattern> url_patterns;
+    AtomNetworkDelegate::Listener callback;
   };
 
   struct BlockingResponse {
     BlockingResponse() {}
     ~BlockingResponse() {}
 
+    int Cancel() const {
+      return cancel ? net::ERR_BLOCKED_BY_CLIENT : net::OK;
+    }
+
     bool cancel;
     GURL redirectURL;
     net::HttpRequestHeaders requestHeaders;
     scoped_refptr<net::HttpResponseHeaders> responseHeaders;
   };
-
-  using Listener =
-      base::Callback<BlockingResponse(const base::DictionaryValue*)>;
 
   AtomNetworkDelegate();
   ~AtomNetworkDelegate() override;
@@ -71,14 +91,9 @@ class AtomNetworkDelegate : public brightray::NetworkDelegate {
   void OnResponseStarted(net::URLRequest* request) override;
   void OnCompleted(net::URLRequest* request, bool started) override;
 
+  void OnErrorOccurred(net::URLRequest* request);
+
  private:
-  struct ListenerInfo {
-    ListenerInfo() {}
-    ~ListenerInfo() {}
-
-    AtomNetworkDelegate::Listener callback;
-  };
-
   static std::map<EventTypes, ListenerInfo> event_listener_map_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomNetworkDelegate);
