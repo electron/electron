@@ -164,6 +164,7 @@ The `webview` tag has the following methods:
 **Note:** The webview element must be loaded before using the methods.
 
 **Example**
+
 ```javascript
 webview.addEventListener("dom-ready", function() {
   webview.openDevTools();
