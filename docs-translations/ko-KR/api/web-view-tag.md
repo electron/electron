@@ -441,7 +441,7 @@ Returns:
 
 프레임 문서의 로드가 끝나면 발생하는 이벤트입니다.
 
-### Event: 'page-title-set'
+### Event: 'page-title-updated'
 
 Returns:
 
@@ -449,7 +449,7 @@ Returns:
 * `explicitSet` Boolean
 
 탐색하는 동안에 페이지의 제목이 설정되면 발생하는 이벤트입니다. `explicitSet`는 파일
-URL에서 종합(synthesised)된 제목인 경우 false로 표시됩니다.
+URL에서 합성(synthesised)된 제목인 경우 false로 표시됩니다.
 
 ### Event: 'page-favicon-updated'
 

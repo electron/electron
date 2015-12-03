@@ -54,12 +54,6 @@ class Tray : public mate::TrackableObject<Tray>,
   void OnDragExited() override;
   void OnDragEnded() override;
 
-  // mate::Wrappable:
-  bool IsDestroyed() const override;
-
-  // mate::TrackableObject:
-  void Destroy() override;
-
   void SetImage(mate::Arguments* args, const gfx::Image& image);
   void SetPressedImage(mate::Arguments* args, const gfx::Image& image);
   void SetToolTip(mate::Arguments* args, const std::string& tool_tip);

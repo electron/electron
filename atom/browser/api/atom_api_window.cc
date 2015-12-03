@@ -157,8 +157,8 @@ Window::Window(v8::Isolate* isolate, const mate::Dictionary& options) {
 }
 
 Window::~Window() {
-  if (window_)
-    Destroy();
+  if (!window_->IsClosed())
+    window_->CloseContents(nullptr);
 }
 
 void Window::WillCloseWindow(bool* prevent_default) {
@@ -166,19 +166,19 @@ void Window::WillCloseWindow(bool* prevent_default) {
 }
 
 void Window::OnWindowClosed() {
-  if (api_web_contents_) {
-    api_web_contents_->DestroyWebContents();
-    api_web_contents_ = nullptr;
-    web_contents_.Reset();
-  }
+  api_web_contents_->DestroyWebContents();
 
   RemoveFromWeakMap();
   window_->RemoveObserver(this);
 
+  // We can not call Destroy here because we need to call Emit first, but we
+  // also do not want any method to be used, so just mark as destroyed here.
+  MarkDestroyed();
+
   Emit("closed");
 
-  // Clean up the resources after window has been closed.
-  base::MessageLoop::current()->DeleteSoon(FROM_HERE, window_.release());
+  // Destroy the native class when window is closed.
+  base::MessageLoop::current()->PostTask(FROM_HERE, GetDestroyClosure());
 }
 
 void Window::OnWindowBlur() {
@@ -274,15 +274,6 @@ mate::Wrappable* Window::New(v8::Isolate* isolate, mate::Arguments* args) {
   }
 
   return new Window(isolate, options);
-}
-
-bool Window::IsDestroyed() const {
-  return !window_ || window_->IsClosed();
-}
-
-void Window::Destroy() {
-  if (window_)
-    window_->CloseContents(nullptr);
 }
 
 void Window::Close() {
@@ -622,8 +613,7 @@ v8::Local<v8::Value> Window::WebContents(v8::Isolate* isolate) {
 void Window::BuildPrototype(v8::Isolate* isolate,
                             v8::Local<v8::ObjectTemplate> prototype) {
   mate::ObjectTemplateBuilder(isolate, prototype)
-      .SetMethod("destroy", &Window::Destroy, true)
-      .SetMethod("isDestroyed", &Window::IsDestroyed, true)
+      .MakeDestroyable()
       .SetMethod("close", &Window::Close)
       .SetMethod("focus", &Window::Focus)
       .SetMethod("isFocused", &Window::IsFocused)
@@ -695,8 +685,8 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("showDefinitionForSelection",
                  &Window::ShowDefinitionForSelection)
 #endif
-      .SetProperty("id", &Window::ID, true)
-      .SetProperty("webContents", &Window::WebContents, true);
+      .SetProperty("id", &Window::ID)
+      .SetProperty("webContents", &Window::WebContents);
 }
 
 // static

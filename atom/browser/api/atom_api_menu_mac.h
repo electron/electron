@@ -19,7 +19,6 @@ class MenuMac : public Menu {
  protected:
   MenuMac();
 
-  void Destroy() override;
   void Popup(Window* window) override;
   void PopupAt(Window* window, int x, int y) override;
 

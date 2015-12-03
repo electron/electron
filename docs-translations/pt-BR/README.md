@@ -40,8 +40,8 @@ selecione a *tag* que corresponde à sua versão.
 
 ### Módulos para o Processo Principal:
 
-* [app](../../docs/api/app.md)
-* [autoUpdater](../../docs/api/auto-updater.md)
+* [app](api/app.md)
+* [autoUpdater](api/auto-updater.md)
 * [BrowserWindow](../../docs/api/browser-window.md)
 * [contentTracing](../../docs/api/content-tracing.md)
 * [dialog](../../docs/api/dialog.md)

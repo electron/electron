@@ -23,9 +23,6 @@ GlobalShortcut::GlobalShortcut() {
 }
 
 GlobalShortcut::~GlobalShortcut() {
-}
-
-void GlobalShortcut::Destroy() {
   UnregisterAll();
 }
 

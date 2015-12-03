@@ -103,6 +103,14 @@ var originalFs = require('original-fs');
 originalFs.readFileSync('/path/to/example.asar');
 ```
 
+또한 `process.noAsar`를 `true`로 지정하면 `fs` 모듈의 `asar` 지원을 비활성화 시킬 수
+있습니다.
+
+```javascript
+process.noAsar = true;
+fs.readFileSync('/path/to/example.asar');
+```
+
 ## Node API의 한계
 
 `asar` 아카이브를 Node API가 최대한 디렉터리 구조로 작동하도록 노력해왔지만 여전히

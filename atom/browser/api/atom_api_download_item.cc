@@ -70,29 +70,20 @@ DownloadItem::DownloadItem(content::DownloadItem* download_item) :
 }
 
 DownloadItem::~DownloadItem() {
-  Destroy();
-}
-
-void DownloadItem::Destroy() {
-  if (download_item_) {
-    download_item_->RemoveObserver(this);
-    auto iter = g_download_item_objects.find(download_item_->GetId());
-    if (iter != g_download_item_objects.end())
-      g_download_item_objects.erase(iter);
-    download_item_ = nullptr;
-  }
-}
-
-bool DownloadItem::IsDestroyed() const {
-  return download_item_ == nullptr;
+  if (download_item_)
+    OnDownloadDestroyed(download_item_);
 }
 
 void DownloadItem::OnDownloadUpdated(content::DownloadItem* item) {
   download_item_->IsDone() ? Emit("done", item->GetState()) : Emit("updated");
 }
 
-void DownloadItem::OnDownloadDestroyed(content::DownloadItem* download) {
-  Destroy();
+void DownloadItem::OnDownloadDestroyed(content::DownloadItem* download_item) {
+  download_item_->RemoveObserver(this);
+  auto iter = g_download_item_objects.find(download_item_->GetId());
+  if (iter != g_download_item_objects.end())
+    g_download_item_objects.erase(iter);
+  download_item_ = nullptr;
 }
 
 int64 DownloadItem::GetReceivedBytes() {
@@ -144,9 +135,11 @@ void DownloadItem::Cancel() {
   download_item_->Cancel(true);
 }
 
-mate::ObjectTemplateBuilder DownloadItem::GetObjectTemplateBuilder(
-    v8::Isolate* isolate) {
-  return mate::ObjectTemplateBuilder(isolate)
+// static
+void DownloadItem::BuildPrototype(v8::Isolate* isolate,
+                                  v8::Local<v8::ObjectTemplate> prototype) {
+  mate::ObjectTemplateBuilder(isolate, prototype)
+      .MakeDestroyable()
       .SetMethod("pause", &DownloadItem::Pause)
       .SetMethod("resume", &DownloadItem::Resume)
       .SetMethod("cancel", &DownloadItem::Cancel)
