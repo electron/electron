@@ -98,11 +98,6 @@ class TrackableObject : public TrackableObjectBase {
       return std::vector<v8::Local<v8::Object>>();
   }
 
-  TrackableObject() {
-    RegisterDestructionCallback(
-        base::Bind(&TrackableObject<T>::ReleaseAllWeakReferences));
-  }
-
   // Removes this instance from the weak map.
   void RemoveFromWeakMap() {
     if (weak_map_ && weak_map_->Has(weak_map_id()))
@@ -110,13 +105,17 @@ class TrackableObject : public TrackableObjectBase {
   }
 
  protected:
+  TrackableObject() {}
   ~TrackableObject() override {
     RemoveFromWeakMap();
   }
 
   void AfterInit(v8::Isolate* isolate) override {
-    if (!weak_map_)
+    if (!weak_map_) {
       weak_map_.reset(new atom::IDWeakMap);
+      RegisterDestructionCallback(
+          base::Bind(&TrackableObject<T>::ReleaseAllWeakReferences));
+    }
     weak_map_id_ = weak_map_->Add(isolate, GetWrapper(isolate));
     TrackableObjectBase::AfterInit(isolate);
   }
