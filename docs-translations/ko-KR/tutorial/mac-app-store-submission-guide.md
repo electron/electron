@@ -4,6 +4,10 @@ Electron은 v0.34.0 버전부터 앱 패키지를 Mac App Store(MAS)에 제출�
 되었습니다. 이 가이드는 어플리케이션을 앱 스토어에 등록하는 방법과 빌드의 한계에 대한
 설명을 제공합니다.
 
+__참고:__ Mac App Store에 어플리케이션을 등록하려면
+[Apple Developer Program][developer-program]에 등록되어 있어야 하며 비용이 발생할
+수 있습니다.
+
 ## 앱 스토어에 어플리케이션을 등록하는 방법
 
 다음 몇 가지 간단한 절차에 따라 앱 스토어에 어플리케이션을 등록하는 방법을 알아봅니다.
@@ -109,6 +113,7 @@ productbuild --component "$APP_PATH" /Applications --sign "$INSTALLER_KEY" "$RES
 
 **역주:** [Mac 앱 배포 가이드 공식 문서](https://developer.apple.com/osx/distribution/kr/)
 
+[developer-program]: https://developer.apple.com/support/compare-memberships/
 [submitting-your-app]: https://developer.apple.com/library/mac/documentation/IDEs/Conceptual/AppDistributionGuide/SubmittingYourApp/SubmittingYourApp.html
 [nwjs-guide]: https://github.com/nwjs/nw.js/wiki/Mac-App-Store-%28MAS%29-Submission-Guideline#first-steps
 [enable-app-sandbox]: https://developer.apple.com/library/ios/documentation/Miscellaneous/Reference/EntitlementKeyReference/Chapters/EnablingAppSandbox.html

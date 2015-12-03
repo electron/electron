@@ -184,11 +184,15 @@ __주의:__ `bounds`는 OS X 와 Windows에서만 작동합니다.
 
 트레이에 풍선 팝업을 생성합니다.
 
-### `Tray.popContextMenu([position])` _OS X_ _Windows_
+### `Tray.popUpContextMenu([menu, position])` _OS X_ _Windows_
 
-* `position` Object (optional) - 팝업 메뉴 위치
+* `menu` Menu (optional)
+* `position` Object (optional) - 팝업 메뉴의 위치
   * `x` Integer
   * `y` Integer
+
+트레이 아이콘의 컨텍스트 메뉴를 팝업시킵니다. `menu`가 전달되면, `menu`가 트레이
+메뉴의 컨텍스트 메뉴 대신 표시됩니다.
 
 `position`은 Windows에서만 사용할 수 있으며 기본값은 (0, 0)입니다.
 
