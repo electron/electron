@@ -54,9 +54,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
   static mate::Handle<WebContents> Create(
       v8::Isolate* isolate, const mate::Dictionary& options);
 
-  // mate::TrackableObject:
-  void Destroy() override;
-
   int GetID() const;
   bool Equal(const WebContents* web_contents) const;
   void LoadURL(const GURL& url, const mate::Dictionary& options);
@@ -152,7 +149,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
   // mate::Wrappable:
   mate::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
-  bool IsDestroyed() const override;
 
   // content::WebContentsDelegate:
   bool AddMessageToConsole(content::WebContents* source,

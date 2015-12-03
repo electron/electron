@@ -59,12 +59,8 @@ class Session: public mate::TrackableObject<Session>,
   // mate::Wrappable:
   mate::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
-  bool IsDestroyed() const override;
 
  private:
-  // mate::TrackableObject:
-  void Destroy() override;
-
   void ResolveProxy(const GURL& url, ResolveProxyCallback callback);
   void ClearCache(const net::CompletionCallback& callback);
   void ClearStorageData(mate::Arguments* args);

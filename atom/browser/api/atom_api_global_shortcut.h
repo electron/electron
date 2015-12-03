@@ -27,9 +27,6 @@ class GlobalShortcut : public extensions::GlobalShortcutListener::Observer,
   GlobalShortcut();
   ~GlobalShortcut() override;
 
-  // mate::TrackableObject:
-  void Destroy() override;
-
   // mate::Wrappable implementations:
   mate::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;

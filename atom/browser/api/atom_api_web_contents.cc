@@ -290,7 +290,15 @@ WebContents::WebContents(v8::Isolate* isolate,
 }
 
 WebContents::~WebContents() {
-  Destroy();
+  if (type_ == WEB_VIEW && managed_web_contents()) {
+    // When force destroying the "destroyed" event is not emitted.
+    WebContentsDestroyed();
+
+    guest_delegate_->Destroy();
+
+    Observe(nullptr);
+    DestroyWebContents();
+  }
 }
 
 bool WebContents::AddMessageToConsole(content::WebContents* source,
@@ -589,19 +597,6 @@ void WebContents::NavigationEntryCommitted(
     const content::LoadCommittedDetails& details) {
   Emit("navigation-entry-commited", details.entry->GetURL(),
        details.is_in_page, details.did_replace_entry);
-}
-
-void WebContents::Destroy() {
-  session_.Reset();
-  if (type_ == WEB_VIEW && managed_web_contents()) {
-    // When force destroying the "destroyed" event is not emitted.
-    WebContentsDestroyed();
-
-    guest_delegate_->Destroy();
-
-    Observe(nullptr);
-    DestroyWebContents();
-  }
 }
 
 int WebContents::GetID() const {
@@ -991,8 +986,7 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
   if (template_.IsEmpty())
     template_.Reset(isolate, mate::ObjectTemplateBuilder(isolate)
-        .SetMethod("destroy", &WebContents::Destroy, true)
-        .SetMethod("isDestroyed", &WebContents::IsDestroyed, true)
+        .MakeDestroyable()
         .SetMethod("getId", &WebContents::GetID)
         .SetMethod("equal", &WebContents::Equal)
         .SetMethod("_loadURL", &WebContents::LoadURL)
@@ -1034,7 +1028,7 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
         .SetMethod("replaceMisspelling", &WebContents::ReplaceMisspelling)
         .SetMethod("focus", &WebContents::Focus)
         .SetMethod("tabTraverse", &WebContents::TabTraverse)
-        .SetMethod("_send", &WebContents::SendIPCMessage, true)
+        .SetMethod("_send", &WebContents::SendIPCMessage)
         .SetMethod("sendInputEvent", &WebContents::SendInputEvent)
         .SetMethod("beginFrameSubscription",
                    &WebContents::BeginFrameSubscription)
@@ -1052,17 +1046,12 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
         .SetMethod("_printToPDF", &WebContents::PrintToPDF)
         .SetMethod("addWorkSpace", &WebContents::AddWorkSpace)
         .SetMethod("removeWorkSpace", &WebContents::RemoveWorkSpace)
-        .SetProperty("session", &WebContents::Session, true)
-        .SetProperty("devToolsWebContents",
-                     &WebContents::DevToolsWebContents, true)
+        .SetProperty("session", &WebContents::Session)
+        .SetProperty("devToolsWebContents", &WebContents::DevToolsWebContents)
         .Build());
 
   return mate::ObjectTemplateBuilder(
       isolate, v8::Local<v8::ObjectTemplate>::New(isolate, template_));
-}
-
-bool WebContents::IsDestroyed() const {
-  return !web_contents();
 }
 
 AtomBrowserContext* WebContents::GetBrowserContext() const {

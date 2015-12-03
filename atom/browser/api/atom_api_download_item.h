@@ -56,9 +56,6 @@ class DownloadItem : public mate::EventEmitter,
   // mate::Wrappable:
   mate::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
-  bool IsDestroyed() const override;
-
-  void Destroy();
 
   content::DownloadItem* download_item_;
 

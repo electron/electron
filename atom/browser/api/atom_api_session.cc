@@ -253,7 +253,6 @@ Session::Session(AtomBrowserContext* browser_context)
 Session::~Session() {
   content::BrowserContext::GetDownloadManager(browser_context())->
       RemoveObserver(this);
-  Destroy();
 }
 
 void Session::OnDownloadCreated(content::DownloadManager* manager,
@@ -269,14 +268,6 @@ void Session::OnDownloadCreated(content::DownloadManager* manager,
     item->Cancel(true);
     item->Remove();
   }
-}
-
-bool Session::IsDestroyed() const {
-  return !browser_context_;
-}
-
-void Session::Destroy() {
-  browser_context_ = nullptr;
 }
 
 void Session::ResolveProxy(const GURL& url, ResolveProxyCallback callback) {
@@ -379,6 +370,7 @@ v8::Local<v8::Value> Session::Cookies(v8::Isolate* isolate) {
 mate::ObjectTemplateBuilder Session::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
   return mate::ObjectTemplateBuilder(isolate)
+      .MakeDestroyable()
       .SetMethod("resolveProxy", &Session::ResolveProxy)
       .SetMethod("clearCache", &Session::ClearCache)
       .SetMethod("clearStorageData", &Session::ClearStorageData)
