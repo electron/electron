@@ -288,6 +288,7 @@ registerWebViewElement = ->
     'replace'
     'replaceMisspelling'
     'getId'
+    'downloadURL'
     'inspectServiceWorker'
     'print'
     'printToPDF'
