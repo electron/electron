@@ -16,9 +16,7 @@ Cross-Platform 데스크톱 어플리케이션을 개발할 수 있도록 해주
 Electron에 대한 중요한 알림을 받고 싶다면 Twitter에서
 [@ElectronJS](https://twitter.com/electronjs)를 팔로우 하세요.
 
-이 프로젝트는 [기여자 규약 1.2](http://contributor-covenant.org/version/1/2/0/)을
-준수합니다. 따라서 이 프로젝트의 개발에 참여하려면 이 계약을 지켜야 합니다. 받아들일 수
-없는 행위를 발견했을 경우 atom@github.com로 보고 하십시오.
+[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
 
 ## 다운로드
 
