@@ -309,7 +309,7 @@ myWindow.webContents.session.webRequest.onBeforeSendHeaders(filter, function(det
 
 * `filter` Object
   * `urls` Array - A list of URLs or URL patterns. Request that cannot match any of the URLs
-                          will be filtered out.
+                   will be filtered out.
 * `listener` Function
   * `details` Object
     * `id` String - Request id.
@@ -320,7 +320,7 @@ myWindow.webContents.session.webRequest.onBeforeSendHeaders(filter, function(det
 * `blockingResponse` Object
   * `cancel` Boolean - Whether to continue or block the request.
   * `redirectURL` String **optional** - The original request is prevented from being sent or
-                                                         completed, and is instead redirected to the given URL.
+                                        completed, and is instead redirected to the given URL.
 
 Fired when a request is about to occur. Should return a `blockingResponse`.
 
@@ -328,7 +328,7 @@ Fired when a request is about to occur. Should return a `blockingResponse`.
 
 * `filter` Object
   * `urls` Array - A list of URLs or URL patterns. Request that cannot match any of the URLs
-                          will be filtered out.
+                   will be filtered out.
 * `listener` Function
   * `details` Object
     * `id` String - Request id.
@@ -340,7 +340,7 @@ Fired when a request is about to occur. Should return a `blockingResponse`.
 * `blockingResponse` Object
   * `cancel` Boolean - Whether to continue or block the request.
   * `requestHeaders` Object **optional** - When provided, request will be made with these
-                                                                    headers.
+                                           headers.
 
 Fired before sending an HTTP request, once the request headers are available. This may
 occur after a TCP connection is made to the server, but before any http data is sent.
@@ -350,7 +350,7 @@ Should return a `blockingResponse`.
 
 * `filter` Object
   * `urls` Array - A list of URLs or URL patterns. Request that cannot match any of the URLs
-                          will be filtered out.
+                   will be filtered out.
 * `listener` Function
   * `details` Object
     * `id` String - Request id.
@@ -381,7 +381,7 @@ Fired just before a request is going to be sent to the server, modifications of 
 * `blockingResponse` Object
   * `cancel` Boolean - Whether to continue or block the request.
   * `responseHeaders` Object **optional** - When provided, the server is assumed to have
-                                                                      responded with these headers.
+                                            responded with these headers.
 
 Fired when HTTP response headers of a request have been received. Should return a
 `blockingResponse`.
@@ -430,7 +430,7 @@ Fired when a server initiated redirect is about to occur.
 
 * `filter` Object
   * `urls` Array - A list of URLs or URL patterns. Request that cannot match any of the URLs
-                          will be filtered out.
+                   will be filtered out.
 * `listener` Function
   * `details` Object
     * `id` String - Request id.
@@ -449,7 +449,7 @@ Fired when a request is completed.
 
 * `filter` Object
   * `urls` Array - A list of URLs or URL patterns. Request that cannot match any of the URLs
-                          will be filtered out.
+                   will be filtered out.
 * `listener` Function
   * `details` Object
     * `id` String - Request id.

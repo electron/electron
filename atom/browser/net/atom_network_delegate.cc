@@ -44,9 +44,10 @@ bool MatchesFilterCondition(
     for (auto& pattern : info.url_patterns)
       if (pattern.MatchesURL(url))
         return true;
+    return false;
   }
 
-  return false;
+  return true;
 }
 
 base::DictionaryValue* ExtractRequestInfo(net::URLRequest* request) {
@@ -106,10 +107,20 @@ void OnBeforeSendHeadersResponse(
 
 void OnHeadersReceivedResponse(
     const net::CompletionCallback& callback,
+    const net::HttpResponseHeaders* original_response_headers,
     scoped_refptr<net::HttpResponseHeaders>* override_response_headers,
     const AtomNetworkDelegate::BlockingResponse& result) {
-  if (result.responseHeaders.get())
-    *override_response_headers = result.responseHeaders;
+  if (result.responseHeaders.get()) {
+    *override_response_headers = new net::HttpResponseHeaders(
+        original_response_headers->raw_headers());
+    void* iter = nullptr;
+    std::string key;
+    std::string value;
+    while (result.responseHeaders->EnumerateHeaderLines(&iter, &key, &value)) {
+      (*override_response_headers)->RemoveHeader(key);
+      (*override_response_headers)->AddHeader(key + ": " + value);
+    }
+  }
   callback.Run(result.Cancel());
 }
 
@@ -242,6 +253,7 @@ int AtomNetworkDelegate::OnHeadersReceived(
         base::Bind(wrapped_callback, details),
         base::Bind(&OnHeadersReceivedResponse,
                    callback,
+                   original_response_headers,
                    override_response_headers));
 
     return net::ERR_IO_PENDING;
@@ -290,12 +302,14 @@ void AtomNetworkDelegate::OnResponseStarted(net::URLRequest* request) {
     details->Set("responseHeaders",
                  GetResponseHeadersDict(request->response_headers()));
     details->SetBoolean("fromCache", request->was_cached());
+
+    auto response_headers = request->response_headers();
     details->SetInteger("statusCode",
-                        request->response_headers() ?
-                            request->response_headers()->response_code() : 200);
+                        response_headers ?
+                            response_headers->response_code() : 200);
     details->SetString("statusLine",
-                       request->response_headers() ?
-                          request->response_headers()->GetStatusLine() : std::string());
+                       response_headers ?
+                          response_headers->GetStatusLine() : std::string());
 
     BrowserThread::PostTask(BrowserThread::UI, FROM_HERE,
                             base::Bind(base::IgnoreResult(wrapped_callback),
@@ -327,12 +341,14 @@ void AtomNetworkDelegate::OnCompleted(net::URLRequest* request, bool started) {
     details->Set("responseHeaders",
                  GetResponseHeadersDict(request->response_headers()));
     details->SetBoolean("fromCache", request->was_cached());
+
+    auto response_headers = request->response_headers();
     details->SetInteger("statusCode",
-                        request->response_headers() ?
-                            request->response_headers()->response_code() : 200);
+                        response_headers ?
+                            response_headers->response_code() : 200);
     details->SetString("statusLine",
-                       request->response_headers() ?
-                          request->response_headers()->GetStatusLine() : std::string());
+                       response_headers ?
+                          response_headers->GetStatusLine() : std::string());
 
     BrowserThread::PostTask(BrowserThread::UI, FROM_HERE,
                             base::Bind(base::IgnoreResult(wrapped_callback),
