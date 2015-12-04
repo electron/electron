@@ -2,7 +2,7 @@
 <body>
 <script type="text/javascript" charset="utf-8">
   var size = require('electron').remote.getCurrentWindow().getSize();
-  window.opener.postMessage('size: ' + size.width + ' ' + size.height, '*')
+  window.opener.postMessage('size: ' + size[0] + ' ' + size[1], '*')
 </script>
 </body>
 </html>
