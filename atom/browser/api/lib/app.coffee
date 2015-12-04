@@ -1,4 +1,4 @@
-{deprecate, session, Menu} = require 'electron'
+{deprecate, session, Menu, BrowserWindow} = require 'electron'
 {EventEmitter} = require 'events'
 
 bindings = process.atomBinding 'app'
@@ -33,6 +33,27 @@ app.setAppPath = (path) ->
 
 app.getAppPath = ->
   appPath
+
+app.hide = ->
+  if process.platform is 'darwin'
+    Menu.sendActionToFirstResponder('hide:')
+  else
+    BrowserWindow.getAllWindows().forEach window ->
+      window._wasMinimized = window.isMinimized()
+      window._wasFocused = window.isFocused()
+
+      window.hide()
+
+app.show = (focus = false) ->
+  if process.platform is 'darwin'
+    action = focus ? 'activateIgnoringOtherApps:' : 'unhide:'
+    Menu.sendActionToFirstResponder(action)
+  else
+    BrowserWindow.getAllWindows().forEach window ->
+      if focus and window._wasFocused
+        window.focus()
+      else if not _wasMinimized
+        window.show()
 
 # Routes the events to webContents.
 for name in ['login', 'certificate-error', 'select-client-certificate']
