@@ -286,3 +286,178 @@ myWindow.webContents.session.setCertificateVerifyProc(function(hostname, cert, c
     callback(false);
 });
 ```
+
+#### `ses.webRequest`
+
+The `webRequest` api allows to intercept and modify contents of a request at various
+stages of its lifetime.
+
+```javascript
+// Modify the user agent for all requests to the following urls.
+
+var filter = {
+  urls: ["https://*.github.com/*", "*://electron.github.io"]
+}
+
+myWindow.webContents.session.webRequest.onBeforeSendHeaders(filter, function(details) {
+  details.requestHeaders['User-Agent'] = "MyAgent";
+  return {cancel: false, requestHeaders: details.requestHeaders};
+})
+```
+
+#### `ses.webRequest.onBeforeRequest([filter,] listener)`
+
+* `filter` Object
+  * `urls` Array - A list of URLs or URL patterns. Request that cannot match any of the URLs
+                          will be filtered out.
+* `listener` Function
+  * `details` Object
+    * `id` String - Request id.
+    * `url` String
+    * `method` String
+    * `resourceType` String
+    * `timestamp` Double
+* `blockingResponse` Object
+  * `cancel` Boolean - Whether to continue or block the request.
+  * `redirectURL` String **optional** - The original request is prevented from being sent or
+                                                         completed, and is instead redirected to the given URL.
+
+Fired when a request is about to occur. Should return a `blockingResponse`.
+
+#### `ses.webRequest.onBeforeSendHeaders([filter,] listener)`
+
+* `filter` Object
+  * `urls` Array - A list of URLs or URL patterns. Request that cannot match any of the URLs
+                          will be filtered out.
+* `listener` Function
+  * `details` Object
+    * `id` String - Request id.
+    * `url` String
+    * `method` String
+    * `resourceType` String
+    * `timestamp` Double
+    * `requestHeaders` Object
+* `blockingResponse` Object
+  * `cancel` Boolean - Whether to continue or block the request.
+  * `requestHeaders` Object **optional** - When provided, request will be made with these
+                                                                    headers.
+
+Fired before sending an HTTP request, once the request headers are available. This may
+occur after a TCP connection is made to the server, but before any http data is sent.
+Should return a `blockingResponse`.
+
+#### `ses.webRequest.onSendHeaders([filter,] listener)`
+
+* `filter` Object
+  * `urls` Array - A list of URLs or URL patterns. Request that cannot match any of the URLs
+                          will be filtered out.
+* `listener` Function
+  * `details` Object
+    * `id` String - Request id.
+    * `url` String
+    * `method` String
+    * `resourceType` String
+    * `timestamp` Double
+    * `requestHeaders` Object
+
+Fired just before a request is going to be sent to the server, modifications of previous
+`onBeforeSendHeaders` response are visible by the time this listener is fired.
+
+#### `ses.webRequest.onHeadersReceived([filter,] listener)`
+
+* `filter` Object
+  * `urls` Array - A list of URLs or URL patterns. Request that cannot match any of the URLs
+                          will be filtered out.
+* `listener` Function
+  * `details` Object
+    * `id` String - Request id.
+    * `url` String
+    * `method` String
+    * `resourceType` String
+    * `timestamp` Double
+    * `statusLine` String
+    * `statusCode` Integer
+    * `responseHeaders` Object
+* `blockingResponse` Object
+  * `cancel` Boolean - Whether to continue or block the request.
+  * `responseHeaders` Object **optional** - When provided, the server is assumed to have
+                                                                      responded with these headers.
+
+Fired when HTTP response headers of a request have been received. Should return a
+`blockingResponse`.
+
+#### `ses.webRequest.onResponseStarted([filter,] listener)`
+
+* `filter` Object
+  * `urls` Array - A list of URLs or URL patterns. Request that cannot match any of the URLs
+                          will be filtered out.
+* `listener` Function
+  * `details` Object
+    * `id` String - Request id.
+    * `url` String
+    * `method` String
+    * `resourceType` String
+    * `timestamp` Double
+    * `responseHeaders` Object
+    * `fromCache` Boolean
+    * `statusCode` Integer
+    * `statusLine` String
+
+Fired when first byte of the response body is received. For HTTP requests, this means that the
+status line and response headers are available.
+
+#### `ses.webRequest.onBeforeRedirect([filter,] listener)`
+
+* `filter` Object
+  * `urls` Array - A list of URLs or URL patterns. Request that cannot match any of the URLs
+                          will be filtered out.
+* `listener` Function
+  * `details` Object
+    * `id` String - Request id.
+    * `url` String
+    * `method` String
+    * `resourceType` String
+    * `timestamp` Double
+    * `redirectURL` String
+    * `statusCode` Integer
+    * `ip` String - The server IP address that the request was actually sent to.
+    * `fromCache` Boolean
+    * `responseHeaders` Object
+
+Fired when a server initiated redirect is about to occur.
+
+#### `ses.webRequest.onCompleted([filter,] listener)`
+
+* `filter` Object
+  * `urls` Array - A list of URLs or URL patterns. Request that cannot match any of the URLs
+                          will be filtered out.
+* `listener` Function
+  * `details` Object
+    * `id` String - Request id.
+    * `url` String
+    * `method` String
+    * `resourceType` String
+    * `timestamp` Double
+    * `responseHeaders` Object
+    * `fromCache` Boolean - Indicates whether the response was fetched from disk cache.
+    * `statusCode` Integer
+    * `statusLine` String
+
+Fired when a request is completed.
+
+#### `ses.webRequest.onErrorOccurred([filter,] listener)`
+
+* `filter` Object
+  * `urls` Array - A list of URLs or URL patterns. Request that cannot match any of the URLs
+                          will be filtered out.
+* `listener` Function
+  * `details` Object
+    * `id` String - Request id.
+    * `url` String
+    * `method` String
+    * `resourceType` String
+    * `timestamp` Double
+    * `fromCache` Boolean - Indicates whether the response was fetched from disk cache.
+    * `error` String - The error description.
+
+Fired when an error occurs.

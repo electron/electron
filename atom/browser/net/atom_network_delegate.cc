@@ -266,6 +266,8 @@ void AtomNetworkDelegate::OnBeforeRedirect(net::URLRequest* request,
     if (!ip.empty())
       details->SetString("ip", ip);
     details->SetBoolean("fromCache", request->was_cached());
+    details->Set("responseHeaders",
+                 GetResponseHeadersDict(request->response_headers()));
 
     BrowserThread::PostTask(BrowserThread::UI, FROM_HERE,
                             base::Bind(base::IgnoreResult(wrapped_callback),
@@ -291,6 +293,9 @@ void AtomNetworkDelegate::OnResponseStarted(net::URLRequest* request) {
     details->SetInteger("statusCode",
                         request->response_headers() ?
                             request->response_headers()->response_code() : 200);
+    details->SetString("statusLine",
+                       request->response_headers() ?
+                          request->response_headers()->GetStatusLine() : std::string());
 
     BrowserThread::PostTask(BrowserThread::UI, FROM_HERE,
                             base::Bind(base::IgnoreResult(wrapped_callback),
@@ -325,6 +330,9 @@ void AtomNetworkDelegate::OnCompleted(net::URLRequest* request, bool started) {
     details->SetInteger("statusCode",
                         request->response_headers() ?
                             request->response_headers()->response_code() : 200);
+    details->SetString("statusLine",
+                       request->response_headers() ?
+                          request->response_headers()->GetStatusLine() : std::string());
 
     BrowserThread::PostTask(BrowserThread::UI, FROM_HERE,
                             base::Bind(base::IgnoreResult(wrapped_callback),
