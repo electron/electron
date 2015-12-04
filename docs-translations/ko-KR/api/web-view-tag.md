@@ -158,6 +158,7 @@ API를 사용할 수 있습니다. 이를 지정하면 내부에서 로우레벨
 **참고:** <webview> 태그 객체의 메서드는 페이지 로드가 끝난 뒤에만 사용할 수 있습니다.
 
 **예제**
+
 ```javascript
 webview.addEventListener("dom-ready", function() {
   webview.openDevTools();

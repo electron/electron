@@ -240,6 +240,13 @@ const options = {"extraHeaders" : "pragma: no-cache\n"}
 webContents.loadURL(url, options)
 ```
 
+### `webContents.downloadURL(url)`
+
+* `url` URL
+
+`url`의 리소스를 탐색 없이 다운로드를 시작합니다. `session`의 `will-download`
+이벤트가 발생합니다.
+
 ### `webContents.getURL()`
 
 현재 웹 페이지의 URL을 반환합니다.
