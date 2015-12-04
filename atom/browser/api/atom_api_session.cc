@@ -253,7 +253,6 @@ Session::Session(AtomBrowserContext* browser_context)
 Session::~Session() {
   content::BrowserContext::GetDownloadManager(browser_context())->
       RemoveObserver(this);
-  Destroy();
 }
 
 void Session::OnDownloadCreated(content::DownloadManager* manager,
@@ -269,14 +268,6 @@ void Session::OnDownloadCreated(content::DownloadManager* manager,
     item->Cancel(true);
     item->Remove();
   }
-}
-
-bool Session::IsDestroyed() const {
-  return !browser_context_;
-}
-
-void Session::Destroy() {
-  browser_context_ = nullptr;
 }
 
 void Session::ResolveProxy(const GURL& url, ResolveProxyCallback callback) {
@@ -376,20 +367,6 @@ v8::Local<v8::Value> Session::Cookies(v8::Isolate* isolate) {
   return v8::Local<v8::Value>::New(isolate, cookies_);
 }
 
-mate::ObjectTemplateBuilder Session::GetObjectTemplateBuilder(
-    v8::Isolate* isolate) {
-  return mate::ObjectTemplateBuilder(isolate)
-      .SetMethod("resolveProxy", &Session::ResolveProxy)
-      .SetMethod("clearCache", &Session::ClearCache)
-      .SetMethod("clearStorageData", &Session::ClearStorageData)
-      .SetMethod("setProxy", &Session::SetProxy)
-      .SetMethod("setDownloadPath", &Session::SetDownloadPath)
-      .SetMethod("enableNetworkEmulation", &Session::EnableNetworkEmulation)
-      .SetMethod("disableNetworkEmulation", &Session::DisableNetworkEmulation)
-      .SetMethod("setCertificateVerifyProc", &Session::SetCertVerifyProc)
-      .SetProperty("cookies", &Session::Cookies);
-}
-
 // static
 mate::Handle<Session> Session::CreateFrom(
     v8::Isolate* isolate, AtomBrowserContext* browser_context) {
@@ -408,6 +385,22 @@ mate::Handle<Session> Session::FromPartition(
   auto browser_context = brightray::BrowserContext::From(partition, in_memory);
   return CreateFrom(isolate,
                     static_cast<AtomBrowserContext*>(browser_context.get()));
+}
+
+// static
+void Session::BuildPrototype(v8::Isolate* isolate,
+                             v8::Local<v8::ObjectTemplate> prototype) {
+  mate::ObjectTemplateBuilder(isolate, prototype)
+      .MakeDestroyable()
+      .SetMethod("resolveProxy", &Session::ResolveProxy)
+      .SetMethod("clearCache", &Session::ClearCache)
+      .SetMethod("clearStorageData", &Session::ClearStorageData)
+      .SetMethod("setProxy", &Session::SetProxy)
+      .SetMethod("setDownloadPath", &Session::SetDownloadPath)
+      .SetMethod("enableNetworkEmulation", &Session::EnableNetworkEmulation)
+      .SetMethod("disableNetworkEmulation", &Session::DisableNetworkEmulation)
+      .SetMethod("setCertificateVerifyProc", &Session::SetCertVerifyProc)
+      .SetProperty("cookies", &Session::Cookies);
 }
 
 void ClearWrapSession() {

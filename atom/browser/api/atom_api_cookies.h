@@ -7,8 +7,8 @@
 
 #include <string>
 
+#include "atom/browser/api/trackable_object.h"
 #include "base/callback.h"
-#include "native_mate/wrappable.h"
 #include "native_mate/handle.h"
 #include "net/cookies/canonical_cookie.h"
 
@@ -33,7 +33,7 @@ namespace atom {
 
 namespace api {
 
-class Cookies : public mate::Wrappable {
+class Cookies : public mate::TrackableObject<Cookies> {
  public:
   // node.js style callback function(error, result)
   typedef base::Callback<void(v8::Local<v8::Value>, v8::Local<v8::Value>)>
@@ -41,6 +41,10 @@ class Cookies : public mate::Wrappable {
 
   static mate::Handle<Cookies> Create(v8::Isolate* isolate,
                                       content::BrowserContext* browser_context);
+
+  // mate::TrackableObject:
+  static void BuildPrototype(v8::Isolate* isolate,
+                             v8::Local<v8::ObjectTemplate> prototype);
 
  protected:
   explicit Cookies(content::BrowserContext* browser_context);
@@ -69,10 +73,6 @@ class Cookies : public mate::Wrappable {
                             const CookiesCallback& callback);
   void OnSetCookies(const CookiesCallback& callback,
                     bool set_success);
-
-  // mate::Wrappable:
-  mate::ObjectTemplateBuilder GetObjectTemplateBuilder(
-      v8::Isolate* isolate) override;
 
  private:
   // Must be called on IO thread.

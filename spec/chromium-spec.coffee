@@ -75,12 +75,21 @@ describe 'chromium feature', ->
 
     it 'inherit options of parent window', (done) ->
       listener = (event) ->
-        size = remote.getCurrentWindow().getSize()
-        assert.equal event.data, "size: #{size.width} #{size.height}"
+        [width, height] = remote.getCurrentWindow().getSize()
+        assert.equal event.data, "size: #{width} #{height}"
         b.close()
         done()
       window.addEventListener 'message', listener
       b = window.open "file://#{fixtures}/pages/window-open-size.html", '', 'show=no'
+
+    it 'does not override child options', (done) ->
+      size = {width: 350, height: 450}
+      listener = (event) ->
+        assert.equal event.data, "size: #{size.width} #{size.height}"
+        b.close()
+        done()
+      window.addEventListener 'message', listener
+      b = window.open "file://#{fixtures}/pages/window-open-size.html", '', "show=no,width=#{size.width},height=#{size.height}"
 
   describe 'window.opener', ->
     @timeout 10000

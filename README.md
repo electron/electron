@@ -14,9 +14,9 @@ editor](https://github.com/atom/atom).
 Follow [@ElectronJS](https://twitter.com/electronjs) on Twitter for important
 announcements.
 
-This project adheres to the [Contributor Covenant 1.2](http://contributor-covenant.org/version/1/2/0/).
-By participating, you are expected to uphold this code. Please report
-unacceptable behavior to atom@github.com.
+This project adheres to the Contributor Covenant [code of conduct](CODE_OF_CONDUCT.md).
+By participating, you are expected to uphold this code. Please report unacceptable
+behavior to atom@github.com.
 
 ## Downloads
 
@@ -67,6 +67,7 @@ locations:
 forums
 - `#atom-shell` channel on Freenode
 - [`Atom`](http://atom-slack.herokuapp.com/) channel on Slack
+- [`electron-br`](https://electron-br.slack.com) *(Brazilian Portuguese)*
 
 Check out [awesome-electron](https://github.com/sindresorhus/awesome-electron)
 for a community maintained list of useful example apps, tools and resources.

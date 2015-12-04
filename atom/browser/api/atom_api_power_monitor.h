@@ -23,9 +23,6 @@ class PowerMonitor : public mate::TrackableObject<PowerMonitor>,
   PowerMonitor();
   ~PowerMonitor() override;
 
-  // mate::TrackableObject:
-  void Destroy() override;
-
   // base::PowerObserver implementations:
   void OnPowerStateChange(bool on_battery_power) override;
   void OnSuspend() override;

@@ -18,6 +18,8 @@
 
 namespace {
 
+v8::Persistent<v8::ObjectTemplate> template_;
+
 class Archive : public mate::Wrappable {
  public:
   static v8::Local<v8::Value> Create(v8::Isolate* isolate,
@@ -101,15 +103,20 @@ class Archive : public mate::Wrappable {
 
   // mate::Wrappable:
   mate::ObjectTemplateBuilder GetObjectTemplateBuilder(v8::Isolate* isolate) {
-    return mate::ObjectTemplateBuilder(isolate)
-        .SetValue("path", archive_->path())
-        .SetMethod("getFileInfo", &Archive::GetFileInfo)
-        .SetMethod("stat", &Archive::Stat)
-        .SetMethod("readdir", &Archive::Readdir)
-        .SetMethod("realpath", &Archive::Realpath)
-        .SetMethod("copyFileOut", &Archive::CopyFileOut)
-        .SetMethod("getFd", &Archive::GetFD)
-        .SetMethod("destroy", &Archive::Destroy);
+    if (template_.IsEmpty())
+      template_.Reset(isolate, mate::ObjectTemplateBuilder(isolate)
+          .SetValue("path", archive_->path())
+          .SetMethod("getFileInfo", &Archive::GetFileInfo)
+          .SetMethod("stat", &Archive::Stat)
+          .SetMethod("readdir", &Archive::Readdir)
+          .SetMethod("realpath", &Archive::Realpath)
+          .SetMethod("copyFileOut", &Archive::CopyFileOut)
+          .SetMethod("getFd", &Archive::GetFD)
+          .SetMethod("destroy", &Archive::Destroy)
+          .Build());
+
+    return mate::ObjectTemplateBuilder(
+        isolate, v8::Local<v8::ObjectTemplate>::New(isolate, template_));
   }
 
  private:
