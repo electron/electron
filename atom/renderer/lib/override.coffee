@@ -10,9 +10,8 @@ resolveURL = (url) ->
 class BrowserWindowProxy
   constructor: (@guestId) ->
     @closed = false
-    ipcRenderer.on 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_CLOSED', (event, guestId) =>
-      if guestId is @guestId
-        @closed = true
+    ipcRenderer.once "ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_CLOSED_#{@guestId}", =>
+      @closed = true
 
   close: ->
     ipcRenderer.send 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_CLOSE', @guestId

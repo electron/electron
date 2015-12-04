@@ -159,6 +159,10 @@ Window::Window(v8::Isolate* isolate, const mate::Dictionary& options) {
 Window::~Window() {
   if (!window_->IsClosed())
     window_->CloseContents(nullptr);
+
+  // Destroy the native window in next tick because the native code might be
+  // iterating all windows.
+  base::MessageLoop::current()->DeleteSoon(FROM_HERE, window_.release());
 }
 
 void Window::WillCloseWindow(bool* prevent_default) {
