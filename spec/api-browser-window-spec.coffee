@@ -262,6 +262,7 @@ describe 'browser-window module', ->
       w.loadURL "file://#{fixtures}/pages/window-open.html"
 
     it 'emits when link with target is called', (done) ->
+      @timeout 10000
       w.webContents.once 'new-window', (e, url, frameName) ->
         e.preventDefault()
         assert.equal url, 'http://host/'

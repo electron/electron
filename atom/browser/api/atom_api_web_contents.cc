@@ -627,6 +627,15 @@ void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
   web_contents()->GetController().LoadURLWithParams(params);
 }
 
+void WebContents::DownloadURL(const GURL& url) {
+  auto browser_context = web_contents()->GetBrowserContext();
+  auto download_manager =
+    content::BrowserContext::GetDownloadManager(browser_context);
+
+  download_manager->DownloadUrl(
+    content::DownloadUrlParameters::FromWebContents(web_contents(), url));
+}
+
 GURL WebContents::GetURL() const {
   return web_contents()->GetURL();
 }
@@ -988,6 +997,7 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("getId", &WebContents::GetID)
       .SetMethod("equal", &WebContents::Equal)
       .SetMethod("_loadURL", &WebContents::LoadURL)
+      .SetMethod("downloadURL", &WebContents::DownloadURL)
       .SetMethod("_getURL", &WebContents::GetURL)
       .SetMethod("getTitle", &WebContents::GetTitle)
       .SetMethod("isLoading", &WebContents::IsLoading)
