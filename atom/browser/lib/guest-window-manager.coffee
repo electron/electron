@@ -44,7 +44,7 @@ createGuest = (embedder, url, frameName, options) ->
     guest.removeListener 'closed', closedByUser
     guest.destroy()
   closedByUser = ->
-    embedder.send 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_CLOSED', guestId
+    embedder.send "ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_CLOSED_#{guestId}"
     embedder.removeListener 'render-view-deleted', closedByEmbedder
   embedder.once 'render-view-deleted', closedByEmbedder
   guest.once 'closed', closedByUser
