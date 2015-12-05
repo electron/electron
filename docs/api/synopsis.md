@@ -11,7 +11,7 @@ both processes.
 
 The basic rule is: if a module is [GUI][gui] or low-level system related, then
 it should be only available in the main process. You need to be familiar with
-the concept of [main process vs. renderer process][mai-process] scripts to be
+the concept of [main process vs. renderer process][main-process] scripts to be
 able to use those modules.
 
 The main process script is just like a normal Node.js script:
