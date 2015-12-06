@@ -245,6 +245,9 @@ bool NativeWindow::IsDocumentEdited() {
   return false;
 }
 
+void NativeWindow::SetIgnoreMouseEvents(bool ignore) {
+}
+
 void NativeWindow::SetMenu(ui::MenuModel* menu) {
 }
 

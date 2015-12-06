@@ -687,6 +687,10 @@ bool NativeWindowMac::IsDocumentEdited() {
   return [window_ isDocumentEdited];
 }
 
+void NativeWindowMac::SetIgnoreMouseEvents(bool ignore) {
+  [window_ setIgnoresMouseEvents:ignore];
+}
+
 bool NativeWindowMac::HasModalDialog() {
   return [window_ attachedSheet] != nil;
 }
