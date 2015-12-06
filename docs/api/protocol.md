@@ -103,10 +103,15 @@ Registers a protocol of `scheme` that will send a `String` as a response. The
 
 Registers a protocol of `scheme` that will send an HTTP request as a response.
 The `callback` should be called with an object that has the `url`, `method`,
-`referrer`, and `session` properties.
+`referrer`, `uploadData` and `session` properties.
 
 By default the HTTP request will reuse the current session. If you want the
 request to have a different session you should set `session` to `null`.
+
+POST request should provide an `uploadData` object.
+* `uploadData` object
+  * `contentType` String - MIME type of the content.
+  *  `data` String - Content to be sent.
 
 ### `protocol.unregisterProtocol(scheme[, completion])`
 

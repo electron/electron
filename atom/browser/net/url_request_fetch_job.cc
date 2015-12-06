@@ -90,12 +90,14 @@ void URLRequestFetchJob::StartAsync(scoped_ptr<base::Value> options) {
 
   std::string url, method, referrer;
   base::Value* session = nullptr;
+  base::DictionaryValue* upload_data = nullptr;
   base::DictionaryValue* dict =
       static_cast<base::DictionaryValue*>(options.get());
   dict->GetString("url", &url);
   dict->GetString("method", &method);
   dict->GetString("referrer", &referrer);
   dict->Get("session", &session);
+  dict->GetDictionary("uploadData", &upload_data);
 
   // Check if URL is valid.
   GURL formated_url(url);
@@ -126,6 +128,14 @@ void URLRequestFetchJob::StartAsync(scoped_ptr<base::Value> options) {
     fetcher_->SetReferrer(request()->referrer());
   else
     fetcher_->SetReferrer(referrer);
+
+  // Set the data needed for POSTs.
+  if (upload_data && request_type == net::URLFetcher::POST) {
+    std::string content_type, data;
+    upload_data->GetString("contentType", &content_type);
+    upload_data->GetString("data", &data);
+    fetcher_->SetUploadData(content_type, data);
+  }
 
   // Use |request|'s headers.
   fetcher_->SetExtraRequestHeaders(
