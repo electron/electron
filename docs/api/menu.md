@@ -25,6 +25,8 @@ menu.append(new MenuItem({ label: 'MenuItem1', click: function() { console.log('
 menu.append(new MenuItem({ type: 'separator' }));
 menu.append(new MenuItem({ label: 'MenuItem2', type: 'checkbox', checked: true }));
 
+Menu.setApplicationMenu(menu);
+
 window.addEventListener('contextmenu', function (e) {
   e.preventDefault();
   menu.popup(remote.getCurrentWindow());
