@@ -3,6 +3,7 @@ const app           = electron.app;
 const ipcMain       = electron.ipcMain;
 const dialog        = electron.dialog;
 const BrowserWindow = electron.BrowserWindow;
+const Menu          = electron.Menu;
 
 const path = require('path');
 
@@ -100,4 +101,10 @@ app.on('ready', function() {
         });
     event.returnValue = "done";
   });
+
+  // Verify Menu.buildFromTemplate does not modify the specified template
+  ipcMain.on('menu-build-from-template', function(event, template) {
+    Menu.buildFromTemplate(template);
+    event.returnValue = template;
+  })
 });
