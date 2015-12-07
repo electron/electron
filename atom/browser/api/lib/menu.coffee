@@ -170,7 +170,7 @@ Menu.buildFromTemplate = (template) ->
     throw new TypeError('Invalid template for MenuItem') unless typeof item is 'object'
 
     menuItem = new MenuItem(item)
-    menuItem[key] = value for key, value of item when not menuItem[key]?
+    menuItem[key] ?= value for key, value of item
     menu.append menuItem
 
   menu
