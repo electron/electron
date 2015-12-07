@@ -24,13 +24,10 @@ class MenuItem
   constructor: (options) ->
     {Menu} = require 'electron'
 
-    {click, @selector, @type, @role, @label, @sublabel, @accelerator, @icon, @enabled, @visible, @checked} = options
+    {click, @selector, @type, @role, @label, @sublabel, @accelerator, @icon, @enabled, @visible, @checked, @submenu} = options
 
-    if options.submenu?
-      if options.submenu.constructor is Menu
-        @submenu = options.submenu
-      else
-        @submenu = Menu.buildFromTemplate options.submenu
+    if @submenu? and @submenu.constructor isnt Menu
+      @submenu = Menu.buildFromTemplate @submenu
     @type = 'submenu' if not @type? and @submenu?
     throw new Error('Invalid submenu') if @type is 'submenu' and @submenu?.constructor isnt Menu
 
