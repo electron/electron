@@ -118,7 +118,7 @@ HWND g_top_window = NULL;
 bool CreateTopWindow(HINSTANCE instance,
                      const base::string16& application_name,
                      bool visible) {
-  base::string16 class_name = ReplaceStringPlaceholders(
+  base::string16 class_name = base::ReplaceStringPlaceholders(
       kClassNameFormat, application_name, NULL);
 
   WNDCLASSEXW wcx = {0};
@@ -309,7 +309,7 @@ bool CrashService::Initialize(const base::string16& application_name,
 
   // Create or open an event to signal the browser process that the crash
   // service is initialized.
-  base::string16 wait_name = ReplaceStringPlaceholders(
+  base::string16 wait_name = base::ReplaceStringPlaceholders(
       kWaitEventFormat, application_name, NULL);
   HANDLE wait_event = ::CreateEventW(NULL, TRUE, TRUE, wait_name.c_str());
   ::SetEvent(wait_event);
@@ -524,4 +524,3 @@ PSECURITY_DESCRIPTOR CrashService::GetSecurityDescriptorForLowIntegrity() {
 }
 
 }  // namespace breakpad
-

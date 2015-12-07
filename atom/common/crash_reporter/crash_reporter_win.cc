@@ -153,9 +153,9 @@ void CrashReporterWin::InitBreakpad(const std::string& product_name,
     return;
   }
 
-  base::string16 pipe_name = ReplaceStringPlaceholders(
+  base::string16 pipe_name = base::ReplaceStringPlaceholders(
       kPipeNameFormat, base::UTF8ToUTF16(product_name), NULL);
-  base::string16 wait_name = ReplaceStringPlaceholders(
+  base::string16 wait_name = base::ReplaceStringPlaceholders(
       kWaitEventFormat, base::UTF8ToUTF16(product_name), NULL);
 
   // Wait until the crash service is started.
