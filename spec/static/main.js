@@ -43,6 +43,12 @@ ipcMain.on('echo', function(event, msg) {
   event.returnValue = msg;
 });
 
+// Verify Menu.buildFromTemplate does not modify the specified template
+ipcMain.on('menu-build-from-template', function(event, template) {
+  Menu.buildFromTemplate(template);
+  event.returnValue = template;
+})
+
 if (process.argv[2] == '--ci') {
   process.removeAllListeners('uncaughtException');
   process.on('uncaughtException', function(error) {
@@ -101,10 +107,4 @@ app.on('ready', function() {
         });
     event.returnValue = "done";
   });
-
-  // Verify Menu.buildFromTemplate does not modify the specified template
-  ipcMain.on('menu-build-from-template', function(event, template) {
-    Menu.buildFromTemplate(template);
-    event.returnValue = template;
-  })
 });
