@@ -86,7 +86,8 @@ std::string AtomBrowserContext::GetUserAgent() {
   return content::BuildUserAgentFromProduct(user_agent);
 }
 
-scoped_ptr<net::URLRequestJobFactory> AtomBrowserContext::CreateURLRequestJobFactory(
+scoped_ptr<net::URLRequestJobFactory>
+AtomBrowserContext::CreateURLRequestJobFactory(
     content::ProtocolHandlerMap* handlers,
     content::URLRequestInterceptorScopedVector* interceptors) {
   scoped_ptr<AtomURLRequestJobFactory> job_factory(job_factory_);
