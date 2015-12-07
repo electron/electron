@@ -26,7 +26,9 @@ Create a new `MenuItem` with the following method:
   * `visible` Boolean
   * `checked` Boolean
   * `submenu` Menu - Should be specified for `submenu` type menu item, when
-     it's specified the `type: 'submenu'` can be omitted for the menu item
+     it's specified the `type: 'submenu'` can be omitted for the menu item.
+     If the value is not a `Menu` then it will be automatically converted to one
+     using `Menu.buildFromTemplate`.
   * `id` String - Unique within a single menu. If defined then it can be used
      as a reference to this item by the position attribute.
   * `position` String - This field allows fine-grained definition of the
