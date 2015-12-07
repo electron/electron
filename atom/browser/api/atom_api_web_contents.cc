@@ -148,7 +148,7 @@ struct Converter<net::HttpResponseHeaders*> {
       std::string key;
       std::string value;
       while (headers->EnumerateHeaderLines(&iter, &key, &value)) {
-        key = base::StringToLowerASCII(key);
+        key = base::ToLowerASCII(key);
         if (response_headers.HasKey(key)) {
           base::ListValue* values = nullptr;
           if (response_headers.GetList(key, &values))
@@ -171,7 +171,7 @@ struct Converter<content::SavePageType> {
     std::string save_type;
     if (!ConvertFromV8(isolate, val, &save_type))
       return false;
-    save_type = base::StringToLowerASCII(save_type);
+    save_type = base::ToLowerASCII(save_type);
     if (save_type == "htmlonly") {
       *out = content::SAVE_PAGE_TYPE_AS_ONLY_HTML;
     } else if (save_type == "htmlcomplete") {

@@ -200,8 +200,6 @@
       'atom/browser/ui/atom_menu_model.h',
       'atom/browser/ui/cocoa/atom_menu_controller.h',
       'atom/browser/ui/cocoa/atom_menu_controller.mm',
-      'atom/browser/ui/cocoa/event_processing_window.h',
-      'atom/browser/ui/cocoa/event_processing_window.mm',
       'atom/browser/ui/file_dialog.h',
       'atom/browser/ui/file_dialog_gtk.cc',
       'atom/browser/ui/file_dialog_mac.mm',

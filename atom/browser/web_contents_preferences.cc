@@ -36,8 +36,6 @@ FeaturePair kWebRuntimeFeatures[] = {
     switches::kExperimentalCanvasFeatures },
   { options::kOverlayScrollbars,
     switches::kOverlayScrollbars },
-  { options::kOverlayFullscreenVideo,
-    switches::kOverlayFullscreenVideo },
   { options::kSharedWorker,
     switches::kSharedWorker },
   { options::kPageVisibility,
@@ -148,8 +146,6 @@ void WebContentsPreferences::OverrideWebkitPrefs(
     prefs->javascript_enabled = b;
   if (self->web_preferences_.GetBoolean("images", &b))
     prefs->images_enabled = b;
-  if (self->web_preferences_.GetBoolean("java", &b))
-    prefs->java_enabled = b;
   if (self->web_preferences_.GetBoolean("textAreasAreResizable", &b))
     prefs->text_areas_are_resizable = b;
   if (self->web_preferences_.GetBoolean("webgl", &b))

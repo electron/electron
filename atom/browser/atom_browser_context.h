@@ -23,12 +23,12 @@ class AtomBrowserContext : public brightray::BrowserContext {
 
   // brightray::URLRequestContextGetter::Delegate:
   std::string GetUserAgent() override;
-  net::URLRequestJobFactory* CreateURLRequestJobFactory(
+  scoped_ptr<net::URLRequestJobFactory> CreateURLRequestJobFactory(
       content::ProtocolHandlerMap* handlers,
       content::URLRequestInterceptorScopedVector* interceptors) override;
   net::HttpCache::BackendFactory* CreateHttpCacheBackendFactory(
       const base::FilePath& base_path) override;
-  net::CertVerifier* CreateCertVerifier() override;
+  scoped_ptr<net::CertVerifier> CreateCertVerifier() override;
   net::SSLConfigService* CreateSSLConfigService() override;
   bool AllowNTLMCredentialsForDomain(const GURL& auth_origin) override;
 

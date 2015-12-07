@@ -259,7 +259,7 @@ google_breakpad::CustomClientInfo* CrashReporterWin::GetCustomInfo(
 
 // static
 CrashReporterWin* CrashReporterWin::GetInstance() {
-  return Singleton<CrashReporterWin>::get();
+  return base::Singleton<CrashReporterWin>::get();
 }
 
 // static

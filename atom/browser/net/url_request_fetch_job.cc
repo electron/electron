@@ -14,6 +14,7 @@
 #include "net/http/http_response_headers.h"
 #include "net/url_request/url_fetcher.h"
 #include "net/url_request/url_fetcher_response_writer.h"
+#include "net/url_request/url_request_context.h"
 #include "net/url_request/url_request_context_builder.h"
 #include "net/url_request/url_request_status.h"
 
@@ -23,7 +24,7 @@ namespace {
 
 // Convert string to RequestType.
 net::URLFetcher::RequestType GetRequestType(const std::string& raw) {
-  std::string method = base::StringToUpperASCII(raw);
+  std::string method = base::ToUpperASCII(raw);
   if (method.empty() || method == "GET")
     return net::URLFetcher::GET;
   else if (method == "POST")
@@ -138,8 +139,9 @@ net::URLRequestContextGetter* URLRequestFetchJob::CreateRequestContext() {
     auto task_runner = base::ThreadTaskRunnerHandle::Get();
     net::URLRequestContextBuilder builder;
     builder.set_proxy_service(net::ProxyService::CreateDirect());
-    url_request_context_getter_ =
-        new net::TrivialURLRequestContextGetter(builder.Build(), task_runner);
+    request_context_ = builder.Build();
+    url_request_context_getter_ = new net::TrivialURLRequestContextGetter(
+        request_context_.get(), task_runner);
   }
   return url_request_context_getter_.get();
 }

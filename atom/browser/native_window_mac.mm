@@ -6,7 +6,6 @@
 
 #include <string>
 
-#import "atom/browser/ui/cocoa/event_processing_window.h"
 #include "atom/common/draggable_region.h"
 #include "atom/common/options_switches.h"
 #include "base/mac/mac_util.h"
@@ -19,6 +18,7 @@
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/render_widget_host_view.h"
 #include "native_mate/dictionary.h"
+#import "ui/base/cocoa/command_dispatcher.h"
 #include "ui/gfx/skia_util.h"
 
 namespace {
@@ -209,10 +209,11 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 @end
 
-@interface AtomNSWindow : EventProcessingWindow {
+@interface AtomNSWindow : NSWindow<CommandDispatchingWindow> {
  @private
   atom::NativeWindowMac* shell_;
   bool enable_larger_than_screen_;
+  base::scoped_nsobject<CommandDispatcher> commandDispatcher_;
 }
 @property BOOL acceptsFirstMouse;
 @property BOOL disableAutoHideCursor;
@@ -226,11 +227,14 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 - (void)setShell:(atom::NativeWindowMac*)shell {
   shell_ = shell;
+  commandDispatcher_.reset([[CommandDispatcher alloc] initWithOwner:self]);
 }
 
 - (void)setEnableLargerThanScreen:(bool)enable {
   enable_larger_than_screen_ = enable;
 }
+
+// NSWindow overrides.
 
 - (NSRect)constrainFrameRect:(NSRect)frameRect toScreen:(NSScreen*)screen {
   // Resizing is disabled.
@@ -270,6 +274,25 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 - (BOOL)canBecomeKeyWindow {
   return !self.disableKeyOrMainWindow;
+}
+
+// CommandDispatchingWindow implementation.
+
+- (void)setCommandHandler:(id<UserInterfaceItemCommandHandler>)commandHandler {
+}
+
+- (BOOL)redispatchKeyEvent:(NSEvent*)event {
+  return [commandDispatcher_ redispatchKeyEvent:event];
+}
+
+- (BOOL)defaultPerformKeyEquivalent:(NSEvent*)event {
+  return [super performKeyEquivalent:event];
+}
+
+- (void)commandDispatch:(id)sender {
+}
+
+- (void)commandDispatchUsingKeyModifiers:(id)sender {
 }
 
 @end
@@ -766,20 +789,14 @@ void NativeWindowMac::HandleKeyboardEvent(
       event.type == content::NativeWebKeyboardEvent::Char)
     return;
 
-  if (event.os_event.window == window_.get()) {
-    EventProcessingWindow* event_window =
-        static_cast<EventProcessingWindow*>(window_);
-    DCHECK([event_window isKindOfClass:[EventProcessingWindow class]]);
-    [event_window redispatchKeyEvent:event.os_event];
-  } else {
+  BOOL handled = [[NSApp mainMenu] performKeyEquivalent:event.os_event];
+  if (!handled && event.os_event.window != window_.get()) {
     // The event comes from detached devtools view, and it has already been
-    // handled by the devtools itself, we now send it to application menu to
-    // make menu acclerators work.
-    BOOL handled = [[NSApp mainMenu] performKeyEquivalent:event.os_event];
-    // Handle the cmd+~ shortcut.
     if (!handled && (event.os_event.modifierFlags & NSCommandKeyMask) &&
-        (event.os_event.keyCode == 50  /* ~ key */))
+        (event.os_event.keyCode == 50  /* ~ key */)) {
+      // Handle the cmd+~ shortcut.
       Focus(true);
+    }
   }
 }
 

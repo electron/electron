@@ -410,7 +410,7 @@ bool PrintViewManagerBase::RunInnerMessageLoop() {
   // be CPU bound, the page overly complex/large or the system just
   // memory-bound.
   static const int kPrinterSettingsTimeout = 60000;
-  base::OneShotTimer<base::MessageLoop> quit_timer;
+  base::OneShotTimer quit_timer;
   quit_timer.Start(FROM_HERE,
                    TimeDelta::FromMilliseconds(kPrinterSettingsTimeout),
                    base::MessageLoop::current(), &base::MessageLoop::Quit);

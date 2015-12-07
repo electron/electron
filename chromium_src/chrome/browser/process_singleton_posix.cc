@@ -503,7 +503,7 @@ class ProcessSingleton::LinuxWatcher
     // reads.
     size_t bytes_read_;
 
-    base::OneShotTimer<SocketReader> timer_;
+    base::OneShotTimer timer_;
 
     DISALLOW_COPY_AND_ASSIGN(SocketReader);
   };

@@ -48,11 +48,11 @@ CrashReporter::GetUploadedReports(const std::string& path) {
   std::vector<CrashReporter::UploadReportResult> result;
   if (base::ReadFileToString(base::FilePath::FromUTF8Unsafe(path),
         &file_content)) {
-    std::vector<std::string> reports;
-    base::SplitString(file_content, '\n', &reports);
+    std::vector<std::string> reports = base::SplitString(
+        file_content, "\n", base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY);
     for (const std::string& report : reports) {
-      std::vector<std::string> report_item;
-      base::SplitString(report, ',', &report_item);
+      std::vector<std::string> report_item = base::SplitString(
+          report, ",", base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY);
       int report_time = 0;
       if (report_item.size() >= 2 && base::StringToInt(report_item[0],
             &report_time)) {

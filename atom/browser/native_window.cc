@@ -291,10 +291,10 @@ void NativeWindow::CapturePage(const gfx::Rect& rect,
   const float scale =
       screen->GetDisplayNearestWindow(native_view).device_scale_factor();
   if (scale > 1.0f)
-    bitmap_size = gfx::ToCeiledSize(gfx::ScaleSize(view_size, scale));
+    bitmap_size = gfx::ScaleToCeiledSize(view_size, scale);
 
   host->CopyFromBackingStore(
-      rect.IsEmpty() ? gfx::Rect(view_size) : rect,
+      gfx::Rect(view_size),
       bitmap_size,
       base::Bind(&NativeWindow::OnCapturePageDone,
                  weak_factory_.GetWeakPtr(),
