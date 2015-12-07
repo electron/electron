@@ -119,7 +119,11 @@ metaToPlainObject = (meta) ->
 
 # Browser calls a callback in renderer.
 ipcRenderer.on 'ATOM_RENDERER_CALLBACK', (event, id, args) ->
-  callbacksRegistry.apply id, metaToValue(args)
+  # Delay the callback to next tick in case the browser is still in the middle
+  # of sending this message while the callback sends a sync message to browser,
+  # which can fail sometimes.
+  setImmediate ->
+    callbacksRegistry.apply id, metaToValue(args)
 
 # A callback in browser is released.
 ipcRenderer.on 'ATOM_RENDERER_RELEASE_CALLBACK', (event, id) ->
