@@ -3,7 +3,6 @@ const app           = electron.app;
 const ipcMain       = electron.ipcMain;
 const dialog        = electron.dialog;
 const BrowserWindow = electron.BrowserWindow;
-const Menu          = electron.Menu;
 
 const path = require('path');
 
@@ -42,12 +41,6 @@ ipcMain.on('eval', function(event, script) {
 ipcMain.on('echo', function(event, msg) {
   event.returnValue = msg;
 });
-
-// Verify Menu.buildFromTemplate does not modify the specified template
-ipcMain.on('menu-build-from-template', function(event, template) {
-  Menu.buildFromTemplate(template);
-  event.returnValue = template;
-})
 
 if (process.argv[2] == '--ci') {
   process.removeAllListeners('uncaughtException');

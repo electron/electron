@@ -10,9 +10,12 @@ describe 'menu module', ->
       assert.equal menu.items[0].extra, 'field'
 
     it 'does not modify the specified template', ->
-      template = [label: 'text', submenu: [label: 'sub']]
-      builtTemplate = ipcRenderer.sendSync('menu-build-from-template', template)
-      assert.deepStrictEqual builtTemplate, template
+      template = ipcRenderer.sendSync 'eval', """
+        var template = [{label: 'text', submenu: [{label: 'sub'}]}];
+        require('electron').Menu.buildFromTemplate(template);
+        template;
+      """
+      assert.deepStrictEqual template, [label: 'text', submenu: [label: 'sub']]
 
     describe 'Menu.buildFromTemplate should reorder based on item position specifiers', ->
       it 'should position before existing item', ->
