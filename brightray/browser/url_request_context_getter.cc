@@ -111,19 +111,24 @@ std::string URLRequestContextGetter::Delegate::GetUserAgent() {
   return base::EmptyString();
 }
 
-net::URLRequestJobFactory* URLRequestContextGetter::Delegate::CreateURLRequestJobFactory(
+scoped_ptr<net::URLRequestJobFactory>
+URLRequestContextGetter::Delegate::CreateURLRequestJobFactory(
     content::ProtocolHandlerMap* protocol_handlers,
     content::URLRequestInterceptorScopedVector* protocol_interceptors) {
   scoped_ptr<net::URLRequestJobFactoryImpl> job_factory(new net::URLRequestJobFactoryImpl);
 
   for (auto it = protocol_handlers->begin(); it != protocol_handlers->end(); ++it)
-    job_factory->SetProtocolHandler(it->first, it->second.release());
+    job_factory->SetProtocolHandler(
+        it->first, make_scoped_ptr(it->second.release()));
   protocol_handlers->clear();
 
-  job_factory->SetProtocolHandler(url::kDataScheme, new net::DataProtocolHandler);
-  job_factory->SetProtocolHandler(url::kFileScheme, new net::FileProtocolHandler(
-      BrowserThread::GetBlockingPool()->GetTaskRunnerWithShutdownBehavior(
-          base::SequencedWorkerPool::SKIP_ON_SHUTDOWN)));
+  job_factory->SetProtocolHandler(
+      url::kDataScheme, make_scoped_ptr(new net::DataProtocolHandler));
+  job_factory->SetProtocolHandler(
+      url::kFileScheme,
+      make_scoped_ptr(new net::FileProtocolHandler(
+          BrowserThread::GetBlockingPool()->GetTaskRunnerWithShutdownBehavior(
+              base::SequencedWorkerPool::SKIP_ON_SHUTDOWN))));
 
   // Set up interceptors in the reverse order.
   scoped_ptr<net::URLRequestJobFactory> top_job_factory = job_factory.Pass();
@@ -133,7 +138,7 @@ net::URLRequestJobFactory* URLRequestContextGetter::Delegate::CreateURLRequestJo
         top_job_factory.Pass(), make_scoped_ptr(*i)));
   protocol_interceptors->weak_clear();
 
-  return top_job_factory.release();
+  return top_job_factory.Pass();
 }
 
 net::HttpCache::BackendFactory*
@@ -147,7 +152,8 @@ URLRequestContextGetter::Delegate::CreateHttpCacheBackendFactory(const base::Fil
       BrowserThread::GetMessageLoopProxyForThread(BrowserThread::CACHE));
 }
 
-net::CertVerifier* URLRequestContextGetter::Delegate::CreateCertVerifier() {
+scoped_ptr<net::CertVerifier>
+URLRequestContextGetter::Delegate::CreateCertVerifier() {
   return net::CertVerifier::CreateDefault();
 }
 
@@ -191,8 +197,8 @@ URLRequestContextGetter::URLRequestContextGetter(
   // We must create the proxy config service on the UI loop on Linux because it
   // must synchronously run on the glib message loop. This will be passed to
   // the URLRequestContextStorage on the IO thread in GetURLRequestContext().
-  proxy_config_service_.reset(net::ProxyService::CreateSystemProxyConfigService(
-      io_loop_->task_runner(), file_loop_->task_runner()));
+  proxy_config_service_ = net::ProxyService::CreateSystemProxyConfigService(
+      io_loop_->task_runner(), file_loop_->task_runner());
 }
 
 URLRequestContextGetter::~URLRequestContextGetter() {
@@ -241,8 +247,10 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
                                   base::WorkerPool::GetTaskRunner(true))));
 
     std::string accept_lang = l10n_util::GetApplicationLocale("");
-    storage_->set_http_user_agent_settings(new net::StaticHttpUserAgentSettings(
-        net::HttpUtil::GenerateAcceptLanguageHeader(accept_lang), delegate_->GetUserAgent()));
+    storage_->set_http_user_agent_settings(make_scoped_ptr(
+        new net::StaticHttpUserAgentSettings(
+            net::HttpUtil::GenerateAcceptLanguageHeader(accept_lang),
+            delegate_->GetUserAgent())));
 
     scoped_ptr<net::HostResolver> host_resolver(net::HostResolver::CreateDefaultResolver(nullptr));
 
@@ -275,7 +283,7 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     } else {
       storage_->set_proxy_service(
           net::CreateProxyServiceUsingV8ProxyResolver(
-              proxy_config_service_.release(),
+              proxy_config_service_.Pass(),
               new net::ProxyScriptFetcherImpl(url_request_context_.get()),
               dhcp_factory.Create(url_request_context_.get()),
               host_resolver.get(),
@@ -289,7 +297,7 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     schemes.push_back(std::string("ntlm"));
     schemes.push_back(std::string("negotiate"));
 
-    auto auth_handler_factory =
+    auto auth_handler_factory = make_scoped_ptr(
         net::HttpAuthHandlerRegistryFactory::Create(
             schemes,
             url_sec_mgr_.get(),
@@ -297,12 +305,13 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
             std::string(),  // gssapi_library_name
             std::string(),  // gssapi_library_nam
             false,          // auth_android_negotiate_account_type
-            true);          // negotiate_enable_port
+            true));         // negotiate_enable_port
 
     storage_->set_cert_verifier(delegate_->CreateCertVerifier());
-    storage_->set_transport_security_state(new net::TransportSecurityState);
+    storage_->set_transport_security_state(
+        make_scoped_ptr(new net::TransportSecurityState));
     storage_->set_ssl_config_service(delegate_->CreateSSLConfigService());
-    storage_->set_http_auth_handler_factory(auth_handler_factory);
+    storage_->set_http_auth_handler_factory(auth_handler_factory.Pass());
     scoped_ptr<net::HttpServerProperties> server_properties(
         new net::HttpServerPropertiesImpl);
     storage_->set_http_server_properties(server_properties.Pass());
@@ -344,10 +353,11 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     } else {
       backend = delegate_->CreateHttpCacheBackendFactory(base_path_);
     }
-    storage_->set_http_transaction_factory(new net::HttpCache(
-        new DevToolsNetworkTransactionFactory(controller_, session),
-        url_request_context_->net_log(),
-        backend));
+    storage_->set_http_transaction_factory(make_scoped_ptr(
+        new net::HttpCache(
+            new DevToolsNetworkTransactionFactory(controller_, session),
+            url_request_context_->net_log(),
+            backend)));
 
     storage_->set_job_factory(delegate_->CreateURLRequestJobFactory(
         &protocol_handlers_, &protocol_interceptors_));

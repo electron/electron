@@ -40,7 +40,7 @@ namespace {
 
 // Convert string to lower case and escape it.
 std::string MakePartitionName(const std::string& input) {
-  return net::EscapePath(base::StringToLowerASCII(input));
+  return net::EscapePath(base::ToLowerASCII(input));
 }
 
 }  // namespace

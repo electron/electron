@@ -20,7 +20,7 @@ const char kChromeUIDevToolsBundledHost[] = "devtools";
 
 // static
 WebUIControllerFactory* WebUIControllerFactory::GetInstance() {
-  return Singleton<WebUIControllerFactory>::get();
+  return base::Singleton<WebUIControllerFactory>::get();
 }
 
 WebUIControllerFactory::WebUIControllerFactory() {
