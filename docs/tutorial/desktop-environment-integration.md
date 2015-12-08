@@ -25,7 +25,7 @@ myNotification.onclick = function () {
 }
 ```
 
-While code and user experience across operating systems are similar, but there
+While code and user experience across operating systems are similar, there
 are fine differences.
 
 ### Windows
