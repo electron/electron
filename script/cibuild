@@ -17,6 +17,7 @@ LINUX_DEPS = [
   'libgtk2.0-dev',
   'libnotify-dev',
   'libnss3-dev',
+  'libxtst-dev',
   'gcc-multilib',
   'g++-multilib',
 ]
