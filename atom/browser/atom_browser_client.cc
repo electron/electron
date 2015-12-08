@@ -12,8 +12,8 @@
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/atom_quota_permission_context.h"
+#include "atom/browser/atom_resource_dispatcher_host_delegate.h"
 #include "atom/browser/atom_speech_recognition_manager_delegate.h"
-#include "atom/browser/browser.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/web_contents_preferences.h"
 #include "atom/browser/window_list.h"
@@ -30,6 +30,7 @@
 #include "content/public/browser/client_certificate_delegate.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
+#include "content/public/browser/resource_dispatcher_host.h"
 #include "content/public/browser/site_instance.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/common/web_preferences.h"
@@ -83,10 +84,10 @@ void AtomBrowserClient::SuppressRendererProcessRestartForOnce() {
 
 void AtomBrowserClient::SetCustomSchemes(
     const std::vector<std::string>& schemes) {
-  g_custom_schemes = JoinString(schemes, ',');
+  g_custom_schemes = base::JoinString(schemes, ",");
 }
 
-AtomBrowserClient::AtomBrowserClient() {
+AtomBrowserClient::AtomBrowserClient() : delegate_(nullptr) {
 }
 
 AtomBrowserClient::~AtomBrowserClient() {
@@ -115,7 +116,6 @@ void AtomBrowserClient::OverrideWebkitPrefs(
   prefs->javascript_can_open_windows_automatically = true;
   prefs->plugins_enabled = true;
   prefs->dom_paste_enabled = true;
-  prefs->java_enabled = false;
   prefs->allow_scripts_to_close_windows = true;
   prefs->javascript_can_access_clipboard = true;
   prefs->local_storage_enabled = true;
@@ -206,6 +206,26 @@ content::QuotaPermissionContext*
   return new AtomQuotaPermissionContext;
 }
 
+void AtomBrowserClient::AllowCertificateError(
+    int render_process_id,
+    int render_frame_id,
+    int cert_error,
+    const net::SSLInfo& ssl_info,
+    const GURL& request_url,
+    content::ResourceType resource_type,
+    bool overridable,
+    bool strict_enforcement,
+    bool expired_previous_decision,
+    const base::Callback<void(bool)>& callback,
+    content::CertificateRequestResultType* request) {
+  if (delegate_) {
+    delegate_->AllowCertificateError(
+        render_process_id, render_frame_id, cert_error, ssl_info, request_url,
+        resource_type, overridable, strict_enforcement,
+        expired_previous_decision, callback, request);
+  }
+}
+
 void AtomBrowserClient::SelectClientCertificate(
     content::WebContents* web_contents,
     net::SSLCertRequestInfo* cert_request_info,
@@ -220,10 +240,17 @@ void AtomBrowserClient::SelectClientCertificate(
     return;
   }
 
-  if (!cert_request_info->client_certs.empty())
-    Browser::Get()->ClientCertificateSelector(web_contents,
-                                              cert_request_info,
-                                              delegate.Pass());
+  if (!cert_request_info->client_certs.empty() && delegate_) {
+    delegate_->SelectClientCertificate(
+        web_contents, cert_request_info, delegate.Pass());
+  }
+}
+
+void AtomBrowserClient::ResourceDispatcherHostCreated() {
+  resource_dispatcher_host_delegate_.reset(
+      new AtomResourceDispatcherHostDelegate);
+  content::ResourceDispatcherHost::Get()->SetDelegate(
+      resource_dispatcher_host_delegate_.get());
 }
 
 brightray::BrowserMainParts* AtomBrowserClient::OverrideCreateBrowserMainParts(

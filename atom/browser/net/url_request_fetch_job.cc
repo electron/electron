@@ -14,6 +14,7 @@
 #include "net/http/http_response_headers.h"
 #include "net/url_request/url_fetcher.h"
 #include "net/url_request/url_fetcher_response_writer.h"
+#include "net/url_request/url_request_context.h"
 #include "net/url_request/url_request_context_builder.h"
 #include "net/url_request/url_request_status.h"
 
@@ -23,7 +24,7 @@ namespace {
 
 // Convert string to RequestType.
 net::URLFetcher::RequestType GetRequestType(const std::string& raw) {
-  std::string method = base::StringToUpperASCII(raw);
+  std::string method = base::ToUpperASCII(raw);
   if (method.empty() || method == "GET")
     return net::URLFetcher::GET;
   else if (method == "POST")
@@ -138,8 +139,9 @@ net::URLRequestContextGetter* URLRequestFetchJob::CreateRequestContext() {
     auto task_runner = base::ThreadTaskRunnerHandle::Get();
     net::URLRequestContextBuilder builder;
     builder.set_proxy_service(net::ProxyService::CreateDirect());
-    url_request_context_getter_ =
-        new net::TrivialURLRequestContextGetter(builder.Build(), task_runner);
+    request_context_ = builder.Build();
+    url_request_context_getter_ = new net::TrivialURLRequestContextGetter(
+        request_context_.get(), task_runner);
   }
   return url_request_context_getter_.get();
 }
@@ -181,6 +183,11 @@ void URLRequestFetchJob::Kill() {
 bool URLRequestFetchJob::ReadRawData(net::IOBuffer* dest,
                                      int dest_size,
                                      int* bytes_read) {
+  if (GetResponseCode() == 204) {
+    *bytes_read = 0;
+    request()->set_received_response_content_length(prefilter_bytes_read());
+    return true;
+  }
   pending_buffer_ = dest;
   pending_buffer_size_ = dest_size;
   SetStatus(net::URLRequestStatus(net::URLRequestStatus::IO_PENDING, 0));
@@ -207,6 +214,14 @@ int URLRequestFetchJob::GetResponseCode() const {
 }
 
 void URLRequestFetchJob::OnURLFetchComplete(const net::URLFetcher* source) {
+  if (!response_info_) {
+    // Since we notify header completion only after first write there will be
+    // no response object constructed for http respones with no content 204.
+    // We notify header completion here.
+    HeadersCompleted();
+    return;
+  }
+
   pending_buffer_ = nullptr;
   pending_buffer_size_ = 0;
   NotifyDone(fetcher_->GetStatus());

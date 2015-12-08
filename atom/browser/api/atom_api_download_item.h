@@ -17,7 +17,7 @@ namespace atom {
 
 namespace api {
 
-class DownloadItem : public mate::EventEmitter,
+class DownloadItem : public mate::TrackableObject<DownloadItem>,
                      public content::DownloadItem::Observer {
  public:
   class SavePathData : public base::SupportsUserData::Data {
@@ -31,6 +31,10 @@ class DownloadItem : public mate::EventEmitter,
   static mate::Handle<DownloadItem> Create(v8::Isolate* isolate,
                                            content::DownloadItem* item);
   static void* UserDataKey();
+
+  // mate::TrackableObject:
+  static void BuildPrototype(v8::Isolate* isolate,
+                             v8::Local<v8::ObjectTemplate> prototype);
 
  protected:
   explicit DownloadItem(content::DownloadItem* download_item);
@@ -49,17 +53,10 @@ class DownloadItem : public mate::EventEmitter,
   bool HasUserGesture();
   std::string GetFilename();
   std::string GetContentDisposition();
-  const GURL& GetUrl();
+  const GURL& GetURL();
   void SetSavePath(const base::FilePath& path);
 
  private:
-  // mate::Wrappable:
-  mate::ObjectTemplateBuilder GetObjectTemplateBuilder(
-      v8::Isolate* isolate) override;
-  bool IsDestroyed() const override;
-
-  void Destroy();
-
   content::DownloadItem* download_item_;
 
   DISALLOW_COPY_AND_ASSIGN(DownloadItem);

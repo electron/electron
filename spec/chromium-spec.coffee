@@ -3,10 +3,18 @@ http = require 'http'
 https = require 'https'
 path = require 'path'
 ws = require 'ws'
-remote = require 'remote'
+
+{remote} = require 'electron'
+{BrowserWindow} = remote.require 'electron'
 
 describe 'chromium feature', ->
   fixtures = path.resolve __dirname, 'fixtures'
+
+  listener = null
+  afterEach ->
+    if listener?
+      window.removeEventListener 'message', listener
+    listener = null
 
   xdescribe 'heap snapshot', ->
     it 'does not crash', ->
@@ -24,21 +32,18 @@ describe 'chromium feature', ->
         $.get "http://127.0.0.1:#{port}"
 
   describe 'document.hidden', ->
-    BrowserWindow = remote.require 'browser-window'
-    ipc = remote.require 'ipc'
     url = "file://#{fixtures}/pages/document-hidden.html"
     w = null
 
     afterEach ->
       w?.destroy()
-      ipc.removeAllListeners 'hidden'
 
     it 'is set correctly when window is not shown', (done) ->
-      ipc.once 'hidden', (event, hidden) ->
-        assert hidden
-        done()
       w = new BrowserWindow(show:false)
-      w.loadUrl url
+      w.webContents.on 'ipc-message', (event, args) ->
+        assert.deepEqual args, ['hidden', true]
+        done()
+      w.loadURL url
 
   describe 'navigator.webkitGetUserMedia', ->
     it 'calls its callbacks', (done) ->
@@ -62,46 +67,52 @@ describe 'chromium feature', ->
 
     it 'accepts "node-integration" as feature', (done) ->
       listener = (event) ->
-        window.removeEventListener 'message', listener
-        b.close()
         assert.equal event.data, 'undefined'
+        b.close()
         done()
       window.addEventListener 'message', listener
-      b = window.open "file://#{fixtures}/pages/window-opener-node.html", '', 'node-integration=no,show=no'
+      b = window.open "file://#{fixtures}/pages/window-opener-node.html", '', 'nodeIntegration=no,show=no'
 
     it 'inherit options of parent window', (done) ->
       listener = (event) ->
-        window.removeEventListener 'message', listener
+        [width, height] = remote.getCurrentWindow().getSize()
+        assert.equal event.data, "size: #{width} #{height}"
         b.close()
-        size = remote.getCurrentWindow().getSize()
-        assert.equal event.data, "size: #{size.width} #{size.height}"
         done()
       window.addEventListener 'message', listener
       b = window.open "file://#{fixtures}/pages/window-open-size.html", '', 'show=no'
 
+    it 'does not override child options', (done) ->
+      size = {width: 350, height: 450}
+      listener = (event) ->
+        assert.equal event.data, "size: #{size.width} #{size.height}"
+        b.close()
+        done()
+      window.addEventListener 'message', listener
+      b = window.open "file://#{fixtures}/pages/window-open-size.html", '', "show=no,width=#{size.width},height=#{size.height}"
+
   describe 'window.opener', ->
     @timeout 10000
 
-    ipc = remote.require 'ipc'
     url = "file://#{fixtures}/pages/window-opener.html"
     w = null
 
     afterEach ->
       w?.destroy()
-      ipc.removeAllListeners 'opener'
 
     it 'is null for main window', (done) ->
-      ipc.once 'opener', (event, opener) ->
-        assert.equal opener, null
-        done()
-      BrowserWindow = remote.require 'browser-window'
       w = new BrowserWindow(show: false)
-      w.loadUrl url
+      w.webContents.on 'ipc-message', (event, args) ->
+        assert.deepEqual args, ['opener', null]
+        done()
+      w.loadURL url
 
     it 'is not null for window opened by window.open', (done) ->
-      ipc.once 'opener', (event, opener) ->
+      listener = (event) ->
+        assert.equal event.data, 'object'
         b.close()
-        done(if opener isnt null then undefined else opener)
+        done()
+      window.addEventListener 'message', listener
       b = window.open url, '', 'show=no'
 
   describe 'window.opener.postMessage', ->

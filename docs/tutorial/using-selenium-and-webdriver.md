@@ -41,14 +41,17 @@ upstream, except that you have to manually specify how to connect chrome driver
 and where to find Electron's binary:
 
 ```javascript
-var webdriver = require('selenium-webdriver');
+const webdriver = require('selenium-webdriver');
 
 var driver = new webdriver.Builder()
   // The "9515" is the port opened by chrome driver.
   .usingServer('http://localhost:9515')
-  .withCapabilities({chromeOptions: {
-    // Here is the path to your Electron binary.
-    binary: '/Path-to-Your-App.app/Contents/MacOS/Atom'}})
+  .withCapabilities({
+    chromeOptions: {
+      // Here is the path to your Electron binary.
+      binary: '/Path-to-Your-App.app/Contents/MacOS/Atom',
+    }
+  })
   .forBrowser('electron')
   .build();
 
@@ -74,7 +77,7 @@ driver.
 First you need to download the `chromedriver` binary, and run it:
 
 ```bash
-$ chromedriver --url-base=/wd/hub --port=9515
+$ chromedriver --url-base=wd/hub --port=9515
 Starting ChromeDriver (v2.10.291558) on port 9515
 Only local connections are allowed.
 ```
@@ -90,13 +93,16 @@ $ npm install webdriverio
 ### 3. Connect to chrome driver
 
 ```javascript
-var webdriverio = require('webdriverio');
+const webdriverio = require('webdriverio');
 var options = {
     host: "localhost", // Use localhost as chrome driver server
     port: 9515,        // "9515" is the port opened by chrome driver.
     desiredCapabilities: {
         browserName: 'chrome',
-        chromeOptions: {binary: '/Path-to-Your-App.app/Electron'} // Path to your Electron binary.
+        chromeOptions: {
+          binary: '/Path-to-Your-App/electron', // Path to your Electron binary.
+          args: [/* cli arguments */]           // Optional, perhaps 'app=' + /path/to/your/app/
+        }
     }
 };
 
@@ -118,5 +124,9 @@ client
 To test your application without rebuilding Electron, simply
 [place](https://github.com/atom/electron/blob/master/docs/tutorial/application-distribution.md)
 your app source into Electron's resource directory.
+
+Alternatively, pass an argument to run with your electron binary that points to
+your app's folder. This eliminates the need to copy-paste your app into
+Electron's resource directory.
 
 [chrome-driver]: https://sites.google.com/a/chromium.org/chromedriver/

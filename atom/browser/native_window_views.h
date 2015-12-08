@@ -63,12 +63,9 @@ class NativeWindowViews : public NativeWindow,
   bool IsFullscreen() const override;
   void SetBounds(const gfx::Rect& bounds) override;
   gfx::Rect GetBounds() override;
-  void SetContentSize(const gfx::Size& size) override;
   gfx::Size GetContentSize() override;
-  void SetMinimumSize(const gfx::Size& size) override;
-  gfx::Size GetMinimumSize() override;
-  void SetMaximumSize(const gfx::Size& size) override;
-  gfx::Size GetMaximumSize() override;
+  void SetContentSizeConstraints(
+      const extensions::SizeConstraints& size_constraints) override;
   void SetResizable(bool resizable) override;
   bool IsResizable() override;
   void SetAlwaysOnTop(bool top) override;
@@ -80,6 +77,7 @@ class NativeWindowViews : public NativeWindow,
   void SetSkipTaskbar(bool skip) override;
   void SetKiosk(bool kiosk) override;
   bool IsKiosk() override;
+  void SetBackgroundColor(const std::string& color_name) override;
   void SetMenu(ui::MenuModel* menu_model) override;
   gfx::NativeWindow GetNativeWindow() override;
   void SetOverlayIcon(const gfx::Image& overlay,
@@ -131,33 +129,28 @@ class NativeWindowViews : public NativeWindow,
   bool ExecuteWindowsCommand(int command_id) override;
 #endif
 
-  // brightray::InspectableWebContentsViewDelegate:
-  gfx::ImageSkia GetDevToolsWindowIcon() override;
-#if defined(USE_X11)
-  void GetDevToolsWindowWMClass(
-      std::string* name, std::string* class_name) override;
-#endif
-
 #if defined(OS_WIN)
   // MessageHandlerDelegate:
   bool PreHandleMSG(
       UINT message, WPARAM w_param, LPARAM l_param, LRESULT* result) override;
+
+  void HandleSizeEvent(WPARAM w_param, LPARAM l_param);
 #endif
 
   // NativeWindow:
+  gfx::Size ContentSizeToWindowSize(const gfx::Size& size) override;
+  gfx::Size WindowSizeToContentSize(const gfx::Size& size) override;
   void HandleKeyboardEvent(
       content::WebContents*,
       const content::NativeWebKeyboardEvent& event) override;
 
   // views::View:
+  gfx::Size GetMinimumSize() override;
+  gfx::Size GetMaximumSize() override;
   bool AcceleratorPressed(const ui::Accelerator& accelerator) override;
 
   // Register accelerators supported by the menu model.
   void RegisterAccelerators(ui::MenuModel* menu_model);
-
-  // Converts between client area and window area, since we include the menu bar
-  // in client area we need to substract/add menu bar's height in convertions.
-  gfx::Rect ContentBoundsToWindowBounds(const gfx::Rect& content_bounds);
 
   // Returns the restore state for the window.
   ui::WindowShowState GetRestoredState();
@@ -175,12 +168,23 @@ class NativeWindowViews : public NativeWindow,
 
   // Handles window state events.
   scoped_ptr<WindowStateWatcher> window_state_watcher_;
+
+  // The "resizable" flag on Linux is implemented by setting size constraints,
+  // we need to make sure size constraints are restored when window becomes
+  // resizable again.
+  extensions::SizeConstraints old_size_constraints_;
 #elif defined(OS_WIN)
   // Weak ref.
   AtomDesktopWindowTreeHostWin* atom_desktop_window_tree_host_win_;
-  // Records window was whether restored from minimized state or maximized
-  // state.
-  bool is_minimized_;
+
+  ui::WindowShowState last_window_state_;
+
+  // There's an issue with restore on Windows, that sometimes causes the Window
+  // to receive the wrong size (#2498). To circumvent that, we keep tabs on the
+  // size of the window while in the normal state (not maximized, minimized or
+  // fullscreen), so we restore it correctly.
+  gfx::Size last_normal_size_;
+
   // In charge of running taskbar related APIs.
   TaskbarHost taskbar_host_;
 #endif
@@ -194,8 +198,6 @@ class NativeWindowViews : public NativeWindow,
   bool use_content_size_;
   bool resizable_;
   std::string title_;
-  gfx::Size minimum_size_;
-  gfx::Size maximum_size_;
   gfx::Size widget_size_;
 
   DISALLOW_COPY_AND_ASSIGN(NativeWindowViews);

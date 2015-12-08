@@ -9,21 +9,9 @@ process.atomBinding = (name) ->
   catch e
     process.binding "atom_common_#{name}" if /No such module/.test e.message
 
-# Global module search paths.
-globalPaths = Module.globalPaths
-
-# Don't lookup modules in user-defined search paths, see http://git.io/vf8sF.
-homeDir =
-  if process.platform is 'win32'
-    process.env.USERPROFILE
-  else
-    process.env.HOME
-if homeDir  # Node only add user-defined search paths when $HOME is defined.
-  userModulePath = path.resolve homeDir, '.node_modules'
-  globalPaths.splice globalPaths.indexOf(userModulePath), 2
-
-# Add common/api/lib to module search paths.
-globalPaths.push path.resolve(__dirname, '..', 'api', 'lib')
+unless process.env.ELECTRON_HIDE_INTERNAL_MODULES
+  # Add common/api/lib to module search paths.
+  Module.globalPaths.push path.resolve(__dirname, '..', 'api', 'lib')
 
 # setImmediate and process.nextTick makes use of uv_check and uv_prepare to
 # run the callbacks, however since we only run uv loop on requests, the

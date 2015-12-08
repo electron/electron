@@ -18,6 +18,7 @@ process.on 'exit', ->
 
 # Separate asar package's path from full path.
 splitPath = (p) ->
+  return [false] if process.noAsar  # shortcut to disable asar.
   return [false] if typeof p isnt 'string'
   return [true, p, ''] if p.substr(-5) is '.asar'
   p = path.normalize p
@@ -254,7 +255,8 @@ exports.wrapFsWithAsar = (fs) ->
 
   openSync = fs.openSync
   readFileSync = fs.readFileSync
-  fs.readFileSync = (p, options) ->
+  fs.readFileSync = (p, opts) ->
+    options = opts # this allows v8 to optimize this function
     [isAsar, asarPath, filePath] = splitPath p
     return readFileSync.apply this, arguments unless isAsar
 
@@ -263,7 +265,9 @@ exports.wrapFsWithAsar = (fs) ->
 
     info = archive.getFileInfo filePath
     notFoundError asarPath, filePath unless info
-    return new Buffer(0) if info.size is 0
+
+    if info.size is 0
+      return if options then '' else new Buffer(0)
 
     if info.unpacked
       realPath = archive.copyFileOut filePath
@@ -352,3 +356,4 @@ exports.wrapFsWithAsar = (fs) ->
   overrideAPISync process, 'dlopen', 1
   overrideAPISync require('module')._extensions, '.node', 1
   overrideAPISync fs, 'openSync'
+  overrideAPISync child_process, 'execFileSync'

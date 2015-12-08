@@ -7,20 +7,20 @@
 :zap: *Formerly known as Atom Shell* :zap:
 
 The Electron framework lets you write cross-platform desktop applications
-using JavaScript, HTML and CSS. It is based on [io.js](http://iojs.org) and
+using JavaScript, HTML and CSS. It is based on [Node.js](https://nodejs.org/) and
 [Chromium](http://www.chromium.org) and is used in the [Atom
 editor](https://github.com/atom/atom).
 
 Follow [@ElectronJS](https://twitter.com/electronjs) on Twitter for important
 announcements.
 
-This project adheres to the [Contributor Covenant 1.2](http://contributor-covenant.org/version/1/2/0).
-By participating, you are expected to uphold this code. Please report 
-unacceptable behavior to atom@github.com.
+This project adheres to the Contributor Covenant [code of conduct](CODE_OF_CONDUCT.md).
+By participating, you are expected to uphold this code. Please report unacceptable
+behavior to atom@github.com.
 
 ## Downloads
 
-Prebuilt binaries and debug symbols of Electron for Linux, Windows and Mac can
+Prebuilt binaries and debug symbols of Electron for Linux, Windows and OS X can
 be found on the [releases](https://github.com/atom/electron/releases) page.
 
 You can also use [`npm`](https://docs.npmjs.com/) to install prebuilt electron
@@ -52,15 +52,22 @@ contains documents describing how to build and contribute to Electron.
 - [Spanish](https://github.com/atom/electron/tree/master/docs-translations/es)
 - [Simplified Chinese](https://github.com/atom/electron/tree/master/docs-translations/zh-CN)
 - [Traditional Chinese](https://github.com/atom/electron/tree/master/docs-translations/zh-TW)
+- [Russian](https://github.com/atom/electron/tree/master/docs-translations/ru-RU)
+
+## Quick Start
+
+Clone and run the [`atom/electron-quick-start`](https://github.com/atom/electron-quick-start)
+repository to see a minimal Electron app in action.
 
 ## Community
 
-You can ask questions and interact with the community in the following 
+You can ask questions and interact with the community in the following
 locations:
-- [`electron`](http://discuss.atom.io/category/electron) category on the Atom 
+- [`electron`](http://discuss.atom.io/c/electron) category on the Atom
 forums
 - `#atom-shell` channel on Freenode
 - [`Atom`](http://atom-slack.herokuapp.com/) channel on Slack
+- [`electron-br`](https://electron-br.slack.com) *(Brazilian Portuguese)*
 
-Check out [awesome-electron](https://github.com/sindresorhus/awesome-electron) 
+Check out [awesome-electron](https://github.com/sindresorhus/awesome-electron)
 for a community maintained list of useful example apps, tools and resources.

@@ -1,9 +1,11 @@
-var app = require('app');
-var dialog = require('dialog');
+const electron = require('electron');
+const app      = electron.app;
+const dialog   = electron.dialog;
+const shell    = electron.shell;
+const Menu     = electron.Menu;
+
 var fs = require('fs');
 var path = require('path');
-var Menu = require('menu');
-var BrowserWindow = require('browser-window');
 
 // Quit when all windows are closed and no other one is listening to this.
 app.on('window-all-closed', function() {
@@ -13,16 +15,22 @@ app.on('window-all-closed', function() {
 
 // Parse command line options.
 var argv = process.argv.slice(1);
-var option = { file: null, help: null, version: null, webdriver: null };
-for (var i in argv) {
+var option = { file: null, help: null, version: null, webdriver: null, modules: [] };
+for (var i = 0; i < argv.length; i++) {
   if (argv[i] == '--version' || argv[i] == '-v') {
     option.version = true;
+    break;
+  } else if (argv[i].match(/^--app=/)) {
+    option.file = argv[i].split('=')[1];
     break;
   } else if (argv[i] == '--help' || argv[i] == '-h') {
     option.help = true;
     break;
   } else if (argv[i] == '--test-type=webdriver') {
     option.webdriver = true;
+  } else if (argv[i] == '--require' || argv[i] == '-r') {
+    option.modules.push(argv[++i]);
+    continue;
   } else if (argv[i][0] == '-') {
     continue;
   } else {
@@ -136,19 +144,23 @@ app.once('ready', function() {
       submenu: [
         {
           label: 'Learn More',
-          click: function() { require('shell').openExternal('http://electron.atom.io') }
+          click: function() { shell.openExternal('http://electron.atom.io') }
         },
         {
           label: 'Documentation',
-          click: function() { require('shell').openExternal('https://github.com/atom/electron/tree/master/docs#readme') }
+          click: function() {
+            shell.openExternal(
+              `https://github.com/atom/electron/tree/v${process.versions.electron}/docs#readme`
+            )
+          }
         },
         {
           label: 'Community Discussions',
-          click: function() { require('shell').openExternal('https://discuss.atom.io/c/electron') }
+          click: function() { shell.openExternal('https://discuss.atom.io/c/electron') }
         },
         {
           label: 'Search Issues',
-          click: function() { require('shell').openExternal('https://github.com/atom/electron/issues') }
+          click: function() { shell.openExternal('https://github.com/atom/electron/issues') }
         }
       ]
     },
@@ -181,11 +193,11 @@ app.once('ready', function() {
         {
           label: 'Hide Others',
           accelerator: 'Command+Shift+H',
-          role: 'hideothers:'
+          role: 'hideothers'
         },
         {
           label: 'Show All',
-          role: 'unhide:'
+          role: 'unhide'
         },
         {
           type: 'separator'
@@ -212,6 +224,10 @@ app.once('ready', function() {
   Menu.setApplicationMenu(menu);
 });
 
+if (option.modules.length > 0) {
+  require('module')._preloadModules(option.modules);
+}
+
 // Start the specified app if there is one specified in command line, otherwise
 // start the default app.
 if (option.file && !option.webdriver) {
@@ -237,7 +253,11 @@ if (option.file && !option.webdriver) {
   } catch(e) {
     if (e.code == 'MODULE_NOT_FOUND') {
       app.focus();
-      dialog.showErrorBox('Error opening app', 'The app provided is not a valid electron app, please read the docs on how to write one:\nhttps://github.com/atom/electron/tree/master/docs\n\n' + e.toString());
+      dialog.showErrorBox(
+        'Error opening app',
+        'The app provided is not a valid Electron app, please read the docs on how to write one:\n' +
+        `https://github.com/atom/electron/tree/v${process.versions.electron}/docs\n\n${e.toString()}`
+      );
       process.exit(1);
     } else {
       console.error('App threw an error when running', e);
@@ -253,10 +273,11 @@ if (option.file && !option.webdriver) {
   helpMessage    += "A path to an Electron application may be specified. The path must be to \n";
   helpMessage    += "an index.js file or to a folder containing a package.json or index.js file.\n\n";
   helpMessage    += "Options:\n";
+  helpMessage    += "  -r, --require         Module to preload (option can be repeated)\n";
   helpMessage    += "  -h, --help            Print this usage message.\n";
   helpMessage    += "  -v, --version         Print the version.";
   console.log(helpMessage);
   process.exit(0);
 } else {
-  require('./default_app.js');
+  require('./default_app');
 }

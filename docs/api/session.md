@@ -1,27 +1,64 @@
 # session
 
-The `session` object is a property of [`webContents`](web-contents.md) which is
-a property of [`BrowserWindow`](browser-window.md). You can access it through an
-instance of `BrowserWindow`. For example:
+The `session` module can be used to create new `Session` objects.
+
+You can also access the `session` of existing pages by using the `session`
+property of [`webContents`](web-contents.md) which is a property of
+[`BrowserWindow`](browser-window.md).
 
 ```javascript
-var BrowserWindow = require('browser-window');
+const BrowserWindow = require('electron').BrowserWindow;
 
 var win = new BrowserWindow({ width: 800, height: 600 });
-win.loadUrl("http://github.com");
+win.loadURL("http://github.com");
 
-var session = win.webContents.session
+var ses = win.webContents.session
 ```
 
-## Events
+## Methods
 
-### Event: 'will-download'
+The `session` module has the following methods:
+
+### session.fromPartition(partition)
+
+* `partition` String
+
+Returns a new `Session` instance from `partition` string.
+
+If `partition` starts with `persist:`, the page will use a persistent session
+available to all pages in the app with the same `partition`. if there is no
+`persist:` prefix, the page will use an in-memory session. If the `partition` is
+empty then default session of the app will be returned.
+
+## Properties
+
+The `session` module has the following properties:
+
+### session.defaultSession
+
+Returns the default session object of the app.
+
+## Class: Session
+
+You can create a `Session` object in the `session` module:
+
+```javascript
+const session = require('electron').session;
+
+var ses = session.fromPartition('persist:name');
+```
+
+### Instance Events
+
+The following events are available on instances of `Session`:
+
+#### Event: 'will-download'
 
 * `event` Event
 * `item` [DownloadItem](download-item.md)
 * `webContents` [WebContents](web-contents.md)
 
-Fired when Electron is about to download `item` in `webContents`.
+Emitted when Electron is about to download `item` in `webContents`.
 
 Calling `event.preventDefault()` will cancel the download.
 
@@ -34,20 +71,20 @@ session.on('will-download', function(event, item, webContents) {
 });
 ```
 
-## Methods
+### Instance Methods
 
-The `session` object has the following methods:
+The following methods are available on instances of `Session`:
 
-### `session.cookies`
+#### `ses.cookies`
 
 The `cookies` gives you ability to query and modify cookies. For example:
 
 ```javascript
-var BrowserWindow = require('browser-window');
+const BrowserWindow = require('electron').BrowserWindow;
 
 var win = new BrowserWindow({ width: 800, height: 600 });
 
-win.loadUrl('https://github.com');
+win.loadURL('https://github.com');
 
 win.webContents.on('did-finish-load', function() {
   // Query all cookies.
@@ -74,7 +111,7 @@ win.webContents.on('did-finish-load', function() {
 });
 ```
 
-### `session.cookies.get(details, callback)`
+#### `ses.cookies.get(details, callback)`
 
 `details` Object, properties:
 
@@ -102,7 +139,7 @@ win.webContents.on('did-finish-load', function() {
      the number of seconds since the UNIX epoch. Not provided for session
      cookies.
 
-### `session.cookies.set(details, callback)`
+#### `ses.cookies.set(details, callback)`
 
 `details` Object, properties:
 
@@ -121,23 +158,23 @@ win.webContents.on('did-finish-load', function() {
 * `callback` Function - function(error)
   * `error` Error
 
-### `session.cookies.remove(details, callback)`
+#### `ses.cookies.remove(details, callback)`
 
-* `details` Object, proprties:
+* `details` Object
   * `url` String - The URL associated with the cookie
   * `name` String - The name of cookie to remove
 * `callback` Function - function(error)
   * `error` Error
 
-### `session.clearCache(callback)`
+#### `ses.clearCache(callback)`
 
 * `callback` Function - Called when operation is done
 
 Clears the session’s HTTP cache.
 
-### `session.clearStorageData([options, ]callback)`
+#### `ses.clearStorageData([options, ]callback)`
 
-* `options` Object (optional), proprties:
+* `options` Object (optional)
   * `origin` String - Should follow `window.location.origin`’s representation
     `scheme://host:port`.
   * `storages` Array - The types of storages to clear, can contain:
@@ -149,12 +186,14 @@ Clears the session’s HTTP cache.
 
 Clears the data of web storages.
 
-### `session.setProxy(config, callback)`
+#### `ses.setProxy(config, callback)`
 
 * `config` String
 * `callback` Function - Called when operation is done.
 
-Parses the `config` indicating which proxies to use for the session.
+If `config` is a PAC url, it is used directly otherwise
+`config` is parsed based on the following rules indicating which
+proxies to use for the session.
 
 ```
 config = scheme-proxies[";"<scheme-proxies>]
@@ -185,9 +224,65 @@ proxy-uri = [<proxy-scheme>"://"]<proxy-host>[":"<proxy-port>]
                                       URLs.
 ```
 
-### `session.setDownloadPath(path)`
+### `ses.resolveProxy(url, callback)`
+
+* `url` URL
+* `callback` Function
+
+Resolves the proxy information for `url`. The `callback` will be called with
+`callback(proxy)` when the request is performed.
+
+#### `ses.setDownloadPath(path)`
 
 * `path` String - The download location
 
 Sets download saving directory. By default, the download directory will be the
 `Downloads` under the respective app folder.
+
+#### `ses.enableNetworkEmulation(options)`
+
+* `options` Object
+  * `offline` Boolean - Whether to emulate network outage.
+  * `latency` Double - RTT in ms
+  * `downloadThroughput` Double - Download rate in Bps
+  * `uploadThroughput` Double - Upload rate in Bps
+
+Emulates network with the given configuration for the `session`.
+
+```javascript
+// To emulate a GPRS connection with 50kbps throughput and 500 ms latency.
+window.webContents.session.enableNetworkEmulation({
+    latency: 500,
+    downloadThroughput: 6400,
+    uploadThroughput: 6400
+});
+
+// To emulate a network outage.
+window.webContents.session.enableNetworkEmulation({offline: true});
+```
+
+#### `ses.disableNetworkEmulation()`
+
+Disables any network emulation already active for the `session`. Resets to
+the original network configuration.
+
+#### `ses.setCertificateVerifyProc(proc)`
+
+* `proc` Function
+
+Sets the certificate verify proc for `session`, the `proc` will be called with
+`proc(hostname, certificate, callback)` whenever a server certificate
+verification is requested. Calling `callback(true)` accepts the certificate,
+calling `callback(false)` rejects it.
+
+Calling `setCertificateVerifyProc(null)` will revert back to default certificate
+verify proc.
+
+```javascript
+myWindow.webContents.session.setCertificateVerifyProc(function(hostname, cert, callback) {
+  if (hostname == 'github.com')
+    callback(true);
+  else
+    callback(false);
+});
+```

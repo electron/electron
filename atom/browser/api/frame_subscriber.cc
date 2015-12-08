@@ -24,12 +24,11 @@ bool FrameSubscriber::ShouldCaptureFrame(
     base::TimeTicks present_time,
     scoped_refptr<media::VideoFrame>* storage,
     DeliverFrameCallback* callback) {
-  *storage = media::VideoFrame::CreateFrame(media::VideoFrame::YV12, size_,
-                                            gfx::Rect(size_), size_,
-                                            base::TimeDelta());
+  *storage = media::VideoFrame::CreateFrame(
+      media::PIXEL_FORMAT_YV12,
+      size_, gfx::Rect(size_), size_, base::TimeDelta());
   *callback = base::Bind(&FrameSubscriber::OnFrameDelivered,
-                         base::Unretained(this),
-                         *storage);
+                         base::Unretained(this), *storage);
   return true;
 }
 
@@ -37,6 +36,9 @@ void FrameSubscriber::OnFrameDelivered(
     scoped_refptr<media::VideoFrame> frame, base::TimeTicks, bool result) {
   if (!result)
     return;
+
+  v8::Locker locker(isolate_);
+  v8::HandleScope handle_scope(isolate_);
 
   gfx::Rect rect = frame->visible_rect();
   size_t rgb_arr_size = rect.width() * rect.height() * 4;
@@ -56,8 +58,6 @@ void FrameSubscriber::OnFrameDelivered(
                            rect.width() * 4,
                            media::YV12);
 
-  v8::Locker locker(isolate_);
-  v8::HandleScope handle_scope(isolate_);
   callback_.Run(buffer.ToLocalChecked());
 }
 

@@ -1,11 +1,13 @@
 {
   "name": "electron",
   "devDependencies": {
-    "asar": "0.8.x",
+    "asar": "^0.8.0",
     "coffee-script": "^1.9.2",
     "coffeelint": "^1.9.4",
-    "request": "*",
-    "runas": "3.x"
+    "request": "*"
+  },
+  "optionalDependencies": {
+    "runas": "^3.0.0"
   },
   "private": true,
   "scripts": {

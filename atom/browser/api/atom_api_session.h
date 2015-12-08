@@ -20,6 +20,11 @@ class FilePath;
 
 namespace mate {
 class Arguments;
+class Dictionary;
+}
+
+namespace net {
+class ProxyConfig;
 }
 
 namespace atom {
@@ -43,6 +48,10 @@ class Session: public mate::TrackableObject<Session>,
 
   AtomBrowserContext* browser_context() const { return browser_context_.get(); }
 
+  // mate::TrackableObject:
+  static void BuildPrototype(v8::Isolate* isolate,
+                             v8::Local<v8::ObjectTemplate> prototype);
+
  protected:
   explicit Session(AtomBrowserContext* browser_context);
   ~Session();
@@ -51,20 +60,15 @@ class Session: public mate::TrackableObject<Session>,
   void OnDownloadCreated(content::DownloadManager* manager,
                          content::DownloadItem* item) override;
 
-  // mate::Wrappable:
-  mate::ObjectTemplateBuilder GetObjectTemplateBuilder(
-      v8::Isolate* isolate) override;
-  bool IsDestroyed() const override;
-
  private:
-  // mate::TrackableObject:
-  void Destroy() override;
-
   void ResolveProxy(const GURL& url, ResolveProxyCallback callback);
   void ClearCache(const net::CompletionCallback& callback);
   void ClearStorageData(mate::Arguments* args);
-  void SetProxy(const std::string& proxy, const base::Closure& callback);
+  void SetProxy(const net::ProxyConfig& config, const base::Closure& callback);
   void SetDownloadPath(const base::FilePath& path);
+  void EnableNetworkEmulation(const mate::Dictionary& options);
+  void DisableNetworkEmulation();
+  void SetCertVerifyProc(v8::Local<v8::Value> proc, mate::Arguments* args);
   v8::Local<v8::Value> Cookies(v8::Isolate* isolate);
 
   // Cached object for cookies API.

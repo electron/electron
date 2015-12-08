@@ -51,7 +51,7 @@ void ConvertFilters(const Filters& filters,
     std::vector<std::string> extensions(filter.second);
     for (size_t j = 0; j < extensions.size(); ++j)
       extensions[j].insert(0, "*.");
-    buffer->push_back(base::UTF8ToWide(JoinString(extensions, ";")));
+    buffer->push_back(base::UTF8ToWide(base::JoinString(extensions, ";")));
     spec.pszSpec = buffer->back().c_str();
 
     filterspec->push_back(spec);
@@ -78,6 +78,26 @@ class FileDialog {
 
     if (!title.empty())
       GetPtr()->SetTitle(base::UTF8ToUTF16(title).c_str());
+
+    // By default, *.* will be added to the file name if file type is "*.*". In
+    // Electron, we disable it to make a better experience.
+    //
+    // From MSDN: https://msdn.microsoft.com/en-us/library/windows/desktop/
+    // bb775970(v=vs.85).aspx
+    //
+    // If SetDefaultExtension is not called, the dialog will not update
+    // automatically when user choose a new file type in the file dialog.
+    //
+    // We set file extension to the first none-wildcard extension to make
+    // sure the dialog will update file extension automatically.
+    for (size_t i = 0; i < filterspec.size(); ++i) {
+      if (std::wstring(filterspec[i].pszSpec) != L"*.*") {
+        // SetFileTypeIndex is regarded as one-based index.
+        GetPtr()->SetFileTypeIndex(i+1);
+        GetPtr()->SetDefaultExtension(filterspec[i].pszSpec);
+        break;
+      }
+    }
 
     SetDefaultFolder(default_path);
   }
@@ -252,7 +272,10 @@ bool ShowSaveDialog(atom::NativeWindow* parent_window,
 
     bool matched = false;
     for (size_t i = 0; i < filter.second.size(); ++i) {
-      if (base::EndsWith(file_name, filter.second[i], false)) {
+      if (filter.second[i] == "*" ||
+          base::EndsWith(
+            file_name, filter.second[i],
+            base::CompareCase::INSENSITIVE_ASCII)) {
         matched = true;
         break;;
       }

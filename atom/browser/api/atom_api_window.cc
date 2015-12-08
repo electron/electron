@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 #include "atom/browser/api/atom_api_window.h"
+#include "atom/common/native_mate_converters/value_converter.h"
 
 #include "atom/browser/api/atom_api_menu.h"
 #include "atom/browser/api/atom_api_web_contents.h"
@@ -60,22 +61,82 @@ void OnCapturePageDone(
   callback.Run(gfx::Image::CreateFrom1xBitmap(bitmap));
 }
 
+// Converts min-width to minWidth, returns false if no conversion is needed.
+bool TranslateOldKey(const std::string& key, std::string* new_key) {
+  if (key.find('-') == std::string::npos)
+    return false;
+  new_key->reserve(key.size());
+  bool next_upper_case = false;
+  for (char c : key) {
+    if (c == '-') {
+      next_upper_case = true;
+    } else if (next_upper_case) {
+      new_key->push_back(base::ToUpperASCII(c));
+      next_upper_case = false;
+    } else {
+      new_key->push_back(c);
+    }
+  }
+  return true;
+}
+
+// Converts min-width to minWidth recursively in the dictionary.
+void TranslateOldOptions(v8::Isolate* isolate, v8::Local<v8::Object> options) {
+  auto context = isolate->GetCurrentContext();
+  auto maybe_keys = options->GetOwnPropertyNames(context);
+  if (maybe_keys.IsEmpty())
+    return;
+  std::vector<std::string> keys;
+  if (!mate::ConvertFromV8(isolate, maybe_keys.ToLocalChecked(), &keys))
+    return;
+  mate::Dictionary dict(isolate, options);
+  for (const auto& key : keys) {
+    v8::Local<v8::Value> value;
+    if (!dict.Get(key, &value))  // Shouldn't happen, but guard it anyway.
+      continue;
+    // Go recursively.
+    v8::Local<v8::Object> sub_options;
+    if (mate::ConvertFromV8(isolate, value, &sub_options))
+      TranslateOldOptions(isolate, sub_options);
+    // Translate key.
+    std::string new_key;
+    if (TranslateOldKey(key, &new_key)) {
+      dict.Set(new_key, value);
+      dict.Delete(key);
+    }
+  }
+}
+
+#if defined(OS_WIN)
+// Converts binary data to Buffer.
+v8::Local<v8::Value> ToBuffer(v8::Isolate* isolate, void* val, int size) {
+  auto buffer = node::Buffer::New(isolate, static_cast<char*>(val), size);
+  if (buffer.IsEmpty())
+    return v8::Null(isolate);
+  else
+    return buffer.ToLocalChecked();
+}
+#endif
+
 }  // namespace
 
 
 Window::Window(v8::Isolate* isolate, const mate::Dictionary& options) {
-  // Use options['web-preferences'] to create WebContents.
+  // Be compatible with old style field names like min-width.
+  TranslateOldOptions(isolate, options.GetHandle());
+
+  // Use options.webPreferences to create WebContents.
   mate::Dictionary web_preferences = mate::Dictionary::CreateEmpty(isolate);
-  options.Get(switches::kWebPreferences, &web_preferences);
+  options.Get(options::kWebPreferences, &web_preferences);
 
   // Be compatible with old options which are now in web_preferences.
   v8::Local<v8::Value> value;
-  if (options.Get(switches::kNodeIntegration, &value))
-    web_preferences.Set(switches::kNodeIntegration, value);
-  if (options.Get(switches::kPreloadScript, &value))
-    web_preferences.Set(switches::kPreloadScript, value);
-  if (options.Get(switches::kZoomFactor, &value))
-    web_preferences.Set(switches::kZoomFactor, value);
+  if (options.Get(options::kNodeIntegration, &value))
+    web_preferences.Set(options::kNodeIntegration, value);
+  if (options.Get(options::kPreloadScript, &value))
+    web_preferences.Set(options::kPreloadScript, value);
+  if (options.Get(options::kZoomFactor, &value))
+    web_preferences.Set(options::kZoomFactor, value);
 
   // Creates the WebContents used by BrowserWindow.
   auto web_contents = WebContents::Create(isolate, web_preferences);
@@ -92,16 +153,16 @@ Window::Window(v8::Isolate* isolate, const mate::Dictionary& options) {
   web_contents->SetOwnerWindow(window_.get());
   window_->InitFromOptions(options);
   window_->AddObserver(this);
+  AttachAsUserData(window_.get());
 }
 
 Window::~Window() {
-  if (window_)
-    Destroy();
-}
+  if (!window_->IsClosed())
+    window_->CloseContents(nullptr);
 
-void Window::OnPageTitleUpdated(bool* prevent_default,
-                                const std::string& title) {
-  *prevent_default = Emit("page-title-updated", title);
+  // Destroy the native window in next tick because the native code might be
+  // iterating all windows.
+  base::MessageLoop::current()->DeleteSoon(FROM_HERE, window_.release());
 }
 
 void Window::WillCloseWindow(bool* prevent_default) {
@@ -109,19 +170,19 @@ void Window::WillCloseWindow(bool* prevent_default) {
 }
 
 void Window::OnWindowClosed() {
-  if (api_web_contents_) {
-    api_web_contents_->DestroyWebContents();
-    api_web_contents_ = nullptr;
-    web_contents_.Reset();
-  }
+  api_web_contents_->DestroyWebContents();
 
   RemoveFromWeakMap();
   window_->RemoveObserver(this);
 
+  // We can not call Destroy here because we need to call Emit first, but we
+  // also do not want any method to be used, so just mark as destroyed here.
+  MarkDestroyed();
+
   Emit("closed");
 
-  // Clean up the resources after window has been closed.
-  base::MessageLoop::current()->DeleteSoon(FROM_HERE, window_.release());
+  // Destroy the native class when window is closed.
+  base::MessageLoop::current()->PostTask(FROM_HERE, GetDestroyClosure());
 }
 
 void Window::OnWindowBlur() {
@@ -184,58 +245,43 @@ void Window::OnRendererResponsive() {
   Emit("responsive");
 }
 
-void Window::OnDevToolsFocus() {
-  Emit("devtools-focused");
-}
-
-void Window::OnDevToolsOpened() {
-  v8::Locker locker(isolate());
-  v8::HandleScope handle_scope(isolate());
-  auto handle = WebContents::CreateFrom(
-      isolate(), api_web_contents_->GetDevToolsWebContents());
-  devtools_web_contents_.Reset(isolate(), handle.ToV8());
-
-  Emit("devtools-opened");
-}
-
-void Window::OnDevToolsClosed() {
-  v8::Locker locker(isolate());
-  v8::HandleScope handle_scope(isolate());
-  devtools_web_contents_.Reset();
-
-  Emit("devtools-closed");
-}
-
 void Window::OnExecuteWindowsCommand(const std::string& command_name) {
   Emit("app-command", command_name);
 }
 
+#if defined(OS_WIN)
+void Window::OnWindowMessage(UINT message, WPARAM w_param, LPARAM l_param) {
+  if (IsWindowMessageHooked(message)) {
+    messages_callback_map_[message].Run(
+        ToBuffer(isolate(), static_cast<void*>(&w_param), sizeof(WPARAM)),
+        ToBuffer(isolate(), static_cast<void*>(&l_param), sizeof(LPARAM)));
+  }
+}
+#endif
+
 // static
-mate::Wrappable* Window::New(v8::Isolate* isolate,
-                             const mate::Dictionary& options) {
+mate::Wrappable* Window::New(v8::Isolate* isolate, mate::Arguments* args) {
   if (!Browser::Get()->is_ready()) {
     isolate->ThrowException(v8::Exception::Error(mate::StringToV8(
         isolate, "Cannot create BrowserWindow before app is ready")));
     return nullptr;
   }
+
+  if (args->Length() > 1) {
+    args->ThrowError();
+    return nullptr;
+  }
+
+  mate::Dictionary options;
+  if (!(args->Length() == 1 && args->GetNext(&options))) {
+    options = mate::Dictionary::CreateEmpty(isolate);
+  }
+
   return new Window(isolate, options);
-}
-
-bool Window::IsDestroyed() const {
-  return !window_ || window_->IsClosed();
-}
-
-void Window::Destroy() {
-  if (window_)
-    window_->CloseContents(nullptr);
 }
 
 void Window::Close() {
   window_->Close();
-}
-
-bool Window::IsClosed() {
-  return window_->IsClosed();
 }
 
 void Window::Focus() {
@@ -406,6 +452,10 @@ bool Window::IsKiosk() {
   return window_->IsKiosk();
 }
 
+void Window::SetBackgroundColor(const std::string& color_name) {
+  window_->SetBackgroundColor(color_name);
+}
+
 void Window::FocusOnWebView() {
   window_->FocusOnWebView();
 }
@@ -509,6 +559,29 @@ bool Window::IsMenuBarVisible() {
   return window_->IsMenuBarVisible();
 }
 
+#if defined(OS_WIN)
+bool Window::HookWindowMessage(UINT message,
+                               const MessageCallback& callback) {
+  messages_callback_map_[message] = callback;
+  return true;
+}
+
+void Window::UnhookWindowMessage(UINT message) {
+  if (!ContainsKey(messages_callback_map_, message))
+    return;
+
+  messages_callback_map_.erase(message);
+}
+
+bool Window::IsWindowMessageHooked(UINT message) {
+  return ContainsKey(messages_callback_map_, message);
+}
+
+void Window::UnhookAllWindowMessages() {
+  messages_callback_map_.clear();
+}
+#endif
+
 #if defined(OS_MACOSX)
 void Window::ShowDefinitionForSelection() {
   window_->ShowDefinitionForSelection();
@@ -540,20 +613,12 @@ v8::Local<v8::Value> Window::WebContents(v8::Isolate* isolate) {
     return v8::Local<v8::Value>::New(isolate, web_contents_);
 }
 
-v8::Local<v8::Value> Window::DevToolsWebContents(v8::Isolate* isolate) {
-  if (devtools_web_contents_.IsEmpty())
-    return v8::Null(isolate);
-  else
-    return v8::Local<v8::Value>::New(isolate, devtools_web_contents_);
-}
-
 // static
 void Window::BuildPrototype(v8::Isolate* isolate,
                             v8::Local<v8::ObjectTemplate> prototype) {
   mate::ObjectTemplateBuilder(isolate, prototype)
-      .SetMethod("destroy", &Window::Destroy, true)
+      .MakeDestroyable()
       .SetMethod("close", &Window::Close)
-      .SetMethod("isClosed", &Window::IsClosed)
       .SetMethod("focus", &Window::Focus)
       .SetMethod("isFocused", &Window::IsFocused)
       .SetMethod("show", &Window::Show)
@@ -592,6 +657,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setSkipTaskbar", &Window::SetSkipTaskbar)
       .SetMethod("setKiosk", &Window::SetKiosk)
       .SetMethod("isKiosk", &Window::IsKiosk)
+      .SetMethod("setBackgroundColor", &Window::SetBackgroundColor)
       .SetMethod("setRepresentedFilename", &Window::SetRepresentedFilename)
       .SetMethod("getRepresentedFilename", &Window::GetRepresentedFilename)
       .SetMethod("setDocumentEdited", &Window::SetDocumentEdited)
@@ -613,13 +679,28 @@ void Window::BuildPrototype(v8::Isolate* isolate,
                  &Window::SetVisibleOnAllWorkspaces)
       .SetMethod("isVisibleOnAllWorkspaces",
                  &Window::IsVisibleOnAllWorkspaces)
+#if defined(OS_WIN)
+      .SetMethod("hookWindowMessage", &Window::HookWindowMessage)
+      .SetMethod("isWindowMessageHooked", &Window::IsWindowMessageHooked)
+      .SetMethod("unhookWindowMessage", &Window::UnhookWindowMessage)
+      .SetMethod("unhookAllWindowMessages", &Window::UnhookAllWindowMessages)
+#endif
 #if defined(OS_MACOSX)
       .SetMethod("showDefinitionForSelection",
                  &Window::ShowDefinitionForSelection)
 #endif
-      .SetProperty("id", &Window::ID, true)
-      .SetProperty("webContents", &Window::WebContents, true)
-      .SetProperty("devToolsWebContents", &Window::DevToolsWebContents, true);
+      .SetProperty("id", &Window::ID)
+      .SetProperty("webContents", &Window::WebContents);
+}
+
+// static
+v8::Local<v8::Value> Window::From(v8::Isolate* isolate,
+                                  NativeWindow* native_window) {
+  auto existing = TrackableObject::FromWrappedClass(isolate, native_window);
+  if (existing)
+    return existing->GetWrapper(isolate);
+  else
+    return v8::Null(isolate);
 }
 
 }  // namespace api

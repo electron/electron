@@ -5,7 +5,6 @@
 #include "atom/browser/ui/views/win_frame_view.h"
 
 #include "atom/browser/native_window_views.h"
-#include "ui/gfx/win/dpi.h"
 #include "ui/views/widget/widget.h"
 #include "ui/views/win/hwnd_util.h"
 
@@ -37,16 +36,6 @@ int WinFrameView::NonClientHitTest(const gfx::Point& point) {
     return frame_->client_view()->NonClientHitTest(point);
   else
     return FramelessView::NonClientHitTest(point);
-}
-
-gfx::Size WinFrameView::GetMinimumSize() const {
-  gfx::Size size = FramelessView::GetMinimumSize();
-  return gfx::win::DIPToScreenSize(size);
-}
-
-gfx::Size WinFrameView::GetMaximumSize() const {
-  gfx::Size size = FramelessView::GetMaximumSize();
-  return gfx::win::DIPToScreenSize(size);
 }
 
 const char* WinFrameView::GetClassName() const {

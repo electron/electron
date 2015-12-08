@@ -1,7 +1,9 @@
 ## 導引
 
+* [支援平台](tutorial/supported-platforms.md)
 * [應用程式發布](tutorial/application-distribution.md)
 * [應用程式打包](tutorial/application-packaging.md)
+* [Mac App Store 上架指引](tutorial/mac-app-store-submission-guide.md)
 * [使用原生 node 模組](tutorial/using-native-node-modules.md)
 * [主行程 Debug](tutorial/debugging-main-process.md)
 * [使用 Selenium 和 WebDriver](tutorial/using-selenium-and-webdriver.md)
@@ -64,7 +66,7 @@
 * [源碼目錄結構](development/source-code-directory-structure.md)
 * [與 NW.js (原名node-webkit) 在技術上的差異](development/atom-shell-vs-node-webkit.md)
 * [構建系統概況](development/build-system-overview.md)
-* [構建步驟 (Mac)](development/build-instructions-mac.md)
+* [構建步驟 (OS X)](development/build-instructions-osx.md)
 * [構建步驟 (Windows)](development/build-instructions-windows.md)
 * [構建步驟 (Linux)](development/build-instructions-linux.md)
 * [在 debugger 中使用 symbol server](development/setting-up-symbol-server.md)

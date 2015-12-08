@@ -4,9 +4,10 @@ A `Tray` represents an icon in an operating system's notification area, it is
 usually attached with a context menu.
 
 ```javascript
-var app = require('app');
-var Menu = require('menu');
-var Tray = require('tray');
+const electron = require('electron');
+const app = electron.app;
+const Menu = electron.Menu;
+const Tray = electron.Tray;
 
 var appIcon = null;
 app.on('ready', function(){
@@ -30,10 +31,10 @@ __Platform limitations:__
 * On Linux distributions that only have app indicator support, you have to
   install `libappindicator1` to make the tray icon work.
 * App indicator will only be shown when it has a context menu.
-* When app indicator is used on Linux, the `clicked` event is ignored.
+* When app indicator is used on Linux, the `click` event is ignored.
 
 If you want to keep exact same behaviors on all platforms, you should not
-rely on the `clicked` event and always attach a context menu to the tray icon.
+rely on the `click` event and always attach a context menu to the tray icon.
 
 ## Class: Tray
 
@@ -52,7 +53,7 @@ The `Tray` module emits the following events:
 **Note:** Some events are only available on specific operating systems and are
 labeled as such.
 
-### Event: 'clicked'
+### Event: 'click'
 
 * `event` Event
   * `altKey` Boolean
@@ -69,7 +70,7 @@ Emitted when the tray icon is clicked.
 
 __Note:__ The `bounds` payload is only implemented on OS X and Windows.
 
-### Event: 'right-clicked' _OS X_ _Windows_
+### Event: 'right-click' _OS X_ _Windows_
 
 * `event` Event
   * `altKey` Boolean
@@ -84,7 +85,7 @@ __Note:__ The `bounds` payload is only implemented on OS X and Windows.
 
 Emitted when the tray icon is right clicked.
 
-### Event: 'double-clicked' _OS X_ _Windows_
+### Event: 'double-click' _OS X_ _Windows_
 
 * `event` Event
   * `altKey` Boolean
@@ -103,7 +104,7 @@ Emitted when the tray icon is double clicked.
 
 Emitted when the tray balloon shows.
 
-### Event: 'balloon-clicked' _Windows_
+### Event: 'balloon-click' _Windows_
 
 Emitted when the tray balloon is clicked.
 
@@ -112,12 +113,28 @@ Emitted when the tray balloon is clicked.
 Emitted when the tray balloon is closed because of timeout or user manually
 closes it.
 
+### Event: 'drop' _OS X_
+
+Emitted when any dragged items are dropped on the tray icon.
+
 ### Event: 'drop-files' _OS X_
 
 * `event`
 * `files` Array - the file path of dropped files.
 
 Emitted when dragged files are dropped in the tray icon.
+
+### Event: 'drag-enter' _OS X_
+
+Emitted when a drag operation enters the tray icon.
+
+### Event: 'drag-leave' _OS X_
+
+Emitted when a drag operation exits the tray icon.
+
+### Event: 'drag-end' _OS X_
+
+Emitted when a drag operation ends on the tray or ends at another location.
 
 ## Methods
 
@@ -158,7 +175,8 @@ Sets the title displayed aside of the tray icon in the status bar.
 
 * `highlight` Boolean
 
-Sets whether the tray icon is highlighted when it is clicked.
+Sets whether the tray icon's background becomes highlighted (in blue)
+when the tray icon is clicked. Defaults to true.
 
 ### `Tray.displayBalloon(options)` _Windows_
 
@@ -169,11 +187,15 @@ Sets whether the tray icon is highlighted when it is clicked.
 
 Displays a tray balloon.
 
-### `Tray.popUpContextMenu([position])` _OS X_ _Windows_
+### `Tray.popUpContextMenu([menu, position])` _OS X_ _Windows_
 
-* `position` Object (optional)- The pop up position.
+* `menu` Menu (optional)
+* `position` Object (optional) - The pop up position.
   * `x` Integer
   * `y` Integer
+
+Popups the context menu of tray icon. When `menu` is passed, the `menu` will
+showed instead of the tray's context menu.
 
 The `position` is only available on Windows, and it is (0, 0) by default.
 

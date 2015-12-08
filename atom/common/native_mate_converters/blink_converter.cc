@@ -9,6 +9,7 @@
 
 #include "atom/common/keyboad_util.h"
 #include "base/strings/string_util.h"
+#include "base/strings/utf_string_conversions.h"
 #include "content/public/browser/native_web_keyboard_event.h"
 #include "native_mate/dictionary.h"
 #include "third_party/WebKit/public/web/WebDeviceEmulationParams.h"
@@ -29,10 +30,10 @@ int VectorToBitArray(const std::vector<T>& vec) {
 namespace mate {
 
 template<>
-struct Converter<char> {
+struct Converter<base::char16> {
   static bool FromV8(v8::Isolate* isolate, v8::Handle<v8::Value> val,
-                     char* out) {
-    std::string code = base::StringToLowerASCII(V8ToString(val));
+                     base::char16* out) {
+    base::string16 code = base::UTF8ToUTF16(V8ToString(val));
     if (code.length() != 1)
       return false;
     *out = code[0];
@@ -44,7 +45,7 @@ template<>
 struct Converter<blink::WebInputEvent::Type> {
   static bool FromV8(v8::Isolate* isolate, v8::Handle<v8::Value> val,
                      blink::WebInputEvent::Type* out) {
-    std::string type = base::StringToLowerASCII(V8ToString(val));
+    std::string type = base::ToLowerASCII(V8ToString(val));
     if (type == "mousedown")
       *out = blink::WebInputEvent::MouseDown;
     else if (type == "mouseup")
@@ -60,7 +61,7 @@ struct Converter<blink::WebInputEvent::Type> {
     else if (type == "mousewheel")
       *out = blink::WebInputEvent::MouseWheel;
     else if (type == "keydown")
-      *out = blink::WebInputEvent::KeyDown;
+      *out = blink::WebInputEvent::RawKeyDown;
     else if (type == "keyup")
       *out = blink::WebInputEvent::KeyUp;
     else if (type == "char")
@@ -78,10 +79,25 @@ struct Converter<blink::WebInputEvent::Type> {
 };
 
 template<>
+struct Converter<blink::WebMouseEvent::Button> {
+  static bool FromV8(v8::Isolate* isolate, v8::Handle<v8::Value> val,
+                     blink::WebMouseEvent::Button* out) {
+    std::string button = base::ToLowerASCII(V8ToString(val));
+    if (button == "left")
+      *out = blink::WebMouseEvent::Button::ButtonLeft;
+    else if (button == "middle")
+      *out = blink::WebMouseEvent::Button::ButtonMiddle;
+    else if (button == "right")
+      *out = blink::WebMouseEvent::Button::ButtonRight;
+    return true;
+  }
+};
+
+template<>
 struct Converter<blink::WebInputEvent::Modifiers> {
   static bool FromV8(v8::Isolate* isolate, v8::Handle<v8::Value> val,
                      blink::WebInputEvent::Modifiers* out) {
-    std::string modifier = base::StringToLowerASCII(V8ToString(val));
+    std::string modifier = base::ToLowerASCII(V8ToString(val));
     if (modifier == "shift")
       *out = blink::WebInputEvent::ShiftKey;
     else if (modifier == "control" || modifier == "ctrl")
@@ -142,16 +158,26 @@ bool Converter<blink::WebKeyboardEvent>::FromV8(
     return false;
   if (!ConvertFromV8(isolate, val, static_cast<blink::WebInputEvent*>(out)))
     return false;
-  char code;
-  if (!dict.Get("keyCode", &code))
-    return false;
+  base::char16 code;
+  std::string identifier;
   bool shifted = false;
-  out->windowsKeyCode = atom::KeyboardCodeFromCharCode(code, &shifted);
-  if (out->windowsKeyCode == ui::VKEY_UNKNOWN)
+
+  if (dict.Get("keyCode", &code))
+    out->windowsKeyCode = atom::KeyboardCodeFromCharCode(code, &shifted);
+  else if (dict.Get("keyCode", &identifier))
+    out->windowsKeyCode = atom::KeyboardCodeFromKeyIdentifier(
+      base::ToLowerASCII(identifier));
+  else
     return false;
+
   if (shifted)
     out->modifiers |= blink::WebInputEvent::ShiftKey;
   out->setKeyIdentifierFromWindowsKeyCode();
+  if (out->type == blink::WebInputEvent::Char ||
+      out->type == blink::WebInputEvent::RawKeyDown) {
+    out->text[0] = code;
+    out->unmodifiedText[0] = code;
+  }
   return true;
 }
 
@@ -176,6 +202,7 @@ bool Converter<blink::WebMouseEvent>::FromV8(
     return false;
   if (!dict.Get("x", &out->x) || !dict.Get("y", &out->y))
     return false;
+  dict.Get("button", &out->button);
   dict.Get("globalX", &out->globalX);
   dict.Get("globalY", &out->globalY);
   dict.Get("movementX", &out->movementX);
@@ -236,7 +263,7 @@ bool Converter<blink::WebDeviceEmulationParams>::FromV8(
 
   std::string screen_position;
   if (dict.Get("screenPosition", &screen_position)) {
-    screen_position = base::StringToLowerASCII(screen_position);
+    screen_position = base::ToLowerASCII(screen_position);
     if (screen_position == "mobile")
       out->screenPosition = blink::WebDeviceEmulationParams::Mobile;
     else if (screen_position == "desktop")

@@ -164,13 +164,14 @@ The `webview` tag has the following methods:
 **Note:** The webview element must be loaded before using the methods.
 
 **Example**
+
 ```javascript
 webview.addEventListener("dom-ready", function() {
   webview.openDevTools();
 });
 ```
 
-### `<webview>.getUrl()`
+### `<webview>.getURL()`
 
 Returns URL of guest page.
 
@@ -262,7 +263,7 @@ Injects CSS into the guest page.
 * `code` String
 * `userGesture` Boolean - Default `false`.
 
-Evaluates `code` in page. If `userGesture` is set, it will the create user
+Evaluates `code` in page. If `userGesture` is set, it will create the user
 gesture context in the page. HTML APIs like `requestFullScreen`, which require
 user action, can take advantage of this option for automation.
 
@@ -355,15 +356,16 @@ Prints `webview`'s web page. Same with `webContents.print([options])`.
 
 Prints webview's web page as PDF, Same with `webContents.printToPDF(options, callback)`
 
-### `<webview>.send(channel[, args...])`
+### `<webview>.send(channel[, arg1][, arg2][, ...])`
 
 * `channel` String
 * `arg` (optional)
 
-Send `args..` to guest page via `channel` in asynchronous message, the guest
-page can handle it by listening to the `channel` event of `ipc` module.
+Send an asynchronous message to renderer process via `channel`, you can also
+send arbitrary arguments. The renderer process can handle the message by
+listening to the `channel` event with the `ipcRenderer` module.
 
-See [WebContents.send](web-contents.md#webcontentssendchannel-args) for
+See [webContents.send](web-contents.md#webcontentssendchannel-args) for
 examples.
 
 ### `<webview>.sendInputEvent(event)`
@@ -372,7 +374,7 @@ examples.
 
 Sends an input `event` to the page.
 
-See [WebContents.sendInputEvent](web-contents.md##webcontentssendinputeventevent)
+See [webContents.sendInputEvent](web-contents.md##webcontentssendinputeventevent)
 for detailed description of `event` object.
 
 ## DOM events
@@ -401,7 +403,7 @@ Returns:
 
 * `errorCode` Integer
 * `errorDescription` String
-* `validatedUrl` String
+* `validatedURL` String
 
 This event is like `did-finish-load`, but fired when the load failed or was
 cancelled, e.g. `window.stop()` is invoked.
@@ -427,8 +429,8 @@ Corresponds to the points in time when the spinner of the tab stops spinning.
 Returns:
 
 * `status` Boolean
-* `newUrl` String
-* `originalUrl` String
+* `newURL` String
+* `originalURL` String
 * `httpResponseCode` Integer
 * `requestMethod` String
 * `referrer` String
@@ -441,8 +443,8 @@ Fired when details regarding a requested resource is available.
 
 Returns:
 
-* `oldUrl` String
-* `newUrl` String
+* `oldURL` String
+* `newURL` String
 * `isMainFrame` Boolean
 
 Fired when a redirect was received while requesting a resource.
@@ -451,21 +453,21 @@ Fired when a redirect was received while requesting a resource.
 
 Fired when document in the given frame is loaded.
 
-### Event: 'page-title-set'
+### Event: 'page-title-updated'
 
 Returns:
 
 * `title` String
 * `explicitSet` Boolean
 
-Fired when page title is set during navigation. `explicitSet` is false when title is synthesised from file
-url.
+Fired when page title is set during navigation. `explicitSet` is false when
+title is synthesised from file url.
 
 ### Event: 'page-favicon-updated'
 
 Returns:
 
-* `favicons` Array - Array of Urls.
+* `favicons` Array - Array of URLs.
 
 Fired when page receives favicon urls.
 
@@ -514,7 +516,7 @@ The following example code opens the new url in system's default browser.
 
 ```javascript
 webview.addEventListener('new-window', function(e) {
-  require('shell').openExternal(e.url);
+  require('electron').shell.openExternal(e.url);
 });
 ```
 
@@ -554,9 +556,9 @@ webview.send('ping');
 
 ```javascript
 // In guest page.
-var ipc = require('ipc');
-ipc.on('ping', function() {
-  ipc.sendToHost('pong');
+var ipcRenderer = require('electron').ipcRenderer;
+ipcRenderer.on('ping', function() {
+  ipcRenderer.sendToHost('pong');
 });
 ```
 

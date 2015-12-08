@@ -5,11 +5,30 @@
 #include "atom/browser/api/atom_api_auto_updater.h"
 
 #include "base/time/time.h"
-#include "atom/browser/auto_updater.h"
 #include "atom/browser/browser.h"
+#include "atom/browser/native_window.h"
+#include "atom/browser/window_list.h"
+#include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/node_includes.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
+
+namespace mate {
+
+template<>
+struct Converter<base::Time> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const base::Time& val) {
+    v8::MaybeLocal<v8::Value> date = v8::Date::New(
+        isolate->GetCurrentContext(), val.ToJsTime());
+    if (date.IsEmpty())
+      return v8::Null(isolate);
+    else
+      return date.ToLocalChecked();
+  }
+};
+
+}  // namespace mate
 
 namespace atom {
 
@@ -20,11 +39,18 @@ AutoUpdater::AutoUpdater() {
 }
 
 AutoUpdater::~AutoUpdater() {
-  auto_updater::AutoUpdater::SetDelegate(NULL);
+  auto_updater::AutoUpdater::SetDelegate(nullptr);
 }
 
-void AutoUpdater::OnError(const std::string& error) {
-  Emit("error", error);
+void AutoUpdater::OnError(const std::string& message) {
+  v8::Locker locker(isolate());
+  v8::HandleScope handle_scope(isolate());
+  auto error = v8::Exception::Error(mate::StringToV8(isolate(), message));
+  EmitCustomEvent(
+      "error",
+      error->ToObject(isolate()->GetCurrentContext()).ToLocalChecked(),
+      // Message is also emitted to keep compatibility with old code.
+      message);
 }
 
 void AutoUpdater::OnCheckingForUpdate() {
@@ -42,26 +68,36 @@ void AutoUpdater::OnUpdateNotAvailable() {
 void AutoUpdater::OnUpdateDownloaded(const std::string& release_notes,
                                      const std::string& release_name,
                                      const base::Time& release_date,
-                                     const std::string& update_url,
-                                     const base::Closure& quit_and_install) {
-  quit_and_install_ = quit_and_install;
-  Emit("update-downloaded-raw", release_notes, release_name,
-       release_date.ToJsTime(), update_url);
+                                     const std::string& url) {
+  Emit("update-downloaded", release_notes, release_name, release_date, url,
+       // Keep compatibility with old APIs.
+       base::Bind(&AutoUpdater::QuitAndInstall, base::Unretained(this)));
+}
+
+void AutoUpdater::OnWindowAllClosed() {
+  QuitAndInstall();
 }
 
 mate::ObjectTemplateBuilder AutoUpdater::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
   return mate::ObjectTemplateBuilder(isolate)
-      .SetMethod("setFeedUrl", &auto_updater::AutoUpdater::SetFeedURL)
+      .SetMethod("setFeedURL", &auto_updater::AutoUpdater::SetFeedURL)
       .SetMethod("checkForUpdates", &auto_updater::AutoUpdater::CheckForUpdates)
-      .SetMethod("_quitAndInstall", &AutoUpdater::QuitAndInstall);
+      .SetMethod("quitAndInstall", &AutoUpdater::QuitAndInstall);
 }
 
 void AutoUpdater::QuitAndInstall() {
-  if (quit_and_install_.is_null())
-    Browser::Get()->Shutdown();
-  else
-    quit_and_install_.Run();
+  // If we don't have any window then quitAndInstall immediately.
+  WindowList* window_list = WindowList::GetInstance();
+  if (window_list->size() == 0) {
+    auto_updater::AutoUpdater::QuitAndInstall();
+    return;
+  }
+
+  // Otherwise do the restart after all windows have been closed.
+  window_list->AddObserver(this);
+  for (NativeWindow* window : *window_list)
+    window->Close();
 }
 
 // static

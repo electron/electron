@@ -1,8 +1,7 @@
-BrowserWindow = require 'browser-window'
-EventEmitter = require('events').EventEmitter
-MenuItem = require 'menu-item'
-v8Util = process.atomBinding 'v8_util'
+{BrowserWindow, MenuItem} = require 'electron'
+{EventEmitter} = require 'events'
 
+v8Util = process.atomBinding 'v8_util'
 bindings = process.atomBinding 'menu'
 
 # Automatically generated radio menu item's group id.
@@ -79,7 +78,11 @@ Menu::_init = ->
         v8Util.setHiddenValue group[0], 'checked', true unless checked
 
 Menu::popup = (window, x, y) ->
-  throw new TypeError('Invalid window') unless window?.constructor is BrowserWindow
+  unless window?.constructor is BrowserWindow
+    # Shift.
+    y = x
+    x = window
+    window = BrowserWindow.getFocusedWindow()
   if x? and y?
     @_popupAt(window, x, y)
   else

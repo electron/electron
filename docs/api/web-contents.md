@@ -8,10 +8,10 @@ the [`BrowserWindow`](browser-window.md) object. An example of accessing the
 `webContents` object:
 
 ```javascript
-var BrowserWindow = require('browser-window');
+const BrowserWindow = require('electron').BrowserWindow;
 
 var win = new BrowserWindow({width: 800, height: 1500});
-win.loadUrl("http://github.com");
+win.loadURL("http://github.com");
 
 var webContents = win.webContents;
 ```
@@ -32,10 +32,11 @@ Returns:
 * `event` Event
 * `errorCode` Integer
 * `errorDescription` String
-* `validatedUrl` String
+* `validatedURL` String
 
 This event is like `did-finish-load` but emitted when the load failed or was
 cancelled, e.g. `window.stop()` is invoked.
+The full list of error codes and their meaning is available [here](https://code.google.com/p/chromium/codesearch#chromium/src/net/base/net_error_list.h).
 
 ### Event: 'did-frame-finish-load'
 
@@ -60,8 +61,8 @@ Returns:
 
 * `event` Event
 * `status` Boolean
-* `newUrl` String
-* `originalUrl` String
+* `newURL` String
+* `originalURL` String
 * `httpResponseCode` Integer
 * `requestMethod` String
 * `referrer` String
@@ -75,8 +76,8 @@ Emitted when details regarding a requested resource are available.
 Returns:
 
 * `event` Event
-* `oldUrl` String
-* `newUrl` String
+* `oldURL` String
+* `newURL` String
 * `isMainFrame` Boolean
 * `httpResponseCode` Integer
 * `requestMethod` String
@@ -98,7 +99,7 @@ Emitted when the document in the given frame is loaded.
 Returns:
 
 * `event` Event
-* `favicons` Array - Array of Urls
+* `favicons` Array - Array of URLs
 
 Emitted when page receives favicon urls.
 
@@ -132,7 +133,7 @@ Emitted when a user or the page wants to start navigation. It can happen when th
 `window.location` object is changed or a user clicks a link in the page.
 
 This event will not emit when the navigation is started programmatically with
-APIs like `webContents.loadUrl` and `webContents.back`.
+APIs like `webContents.loadURL` and `webContents.back`.
 
 Calling `event.preventDefault()` will prevent the navigation.
 
@@ -154,38 +155,110 @@ Emitted when a plugin process has crashed.
 
 Emitted when `webContents` is destroyed.
 
+### Event: 'devtools-opened'
+
+Emitted when DevTools is opened.
+
+### Event: 'devtools-closed'
+
+Emitted when DevTools is closed.
+
+### Event: 'devtools-focused'
+
+Emitted when DevTools is focused / opened.
+
+### Event: 'certificate-error'
+
+Returns:
+
+* `event` Event
+* `url` URL
+* `error` String - The error code
+* `certificate` Object
+  * `data` Buffer - PEM encoded data
+  * `issuerName` String
+* `callback` Function
+
+Emitted when failed to verify the `certificate` for `url`.
+
+The usage is the same with [the `certificate-error` event of
+`app`](app.md#event-certificate-error).
+
+### Event: 'select-client-certificate'
+
+Returns:
+
+* `event` Event
+* `url` URL
+* `certificateList` [Objects]
+  * `data` Buffer - PEM encoded data
+  * `issuerName` String - Issuer's Common Name
+* `callback` Function
+
+Emitted when a client certificate is requested.
+
+The usage is the same with [the `select-client-certificate` event of
+`app`](app.md#event-select-client-certificate).
+
+### Event: 'login'
+
+Returns:
+
+* `event` Event
+* `request` Object
+  * `method` String
+  * `url` URL
+  * `referrer` URL
+* `authInfo` Object
+  * `isProxy` Boolean
+  * `scheme` String
+  * `host` String
+  * `port` Integer
+  * `realm` String
+* `callback` Function
+
+Emitted when `webContents` wants to do basic auth.
+
+The usage is the same with [the `login` event of `app`](app.md#event-login).
+
 ## Instance Methods
 
 The `webContents` object has the following instance methods:
 
-### `webContents.session`
-
-Returns the `session` object used by this webContents.
-
-See [session documentation](session.md) for this object's methods.
-
-### `webContents.loadUrl(url[, options])`
+### `webContents.loadURL(url[, options])`
 
 * `url` URL
 * `options` Object (optional), properties:
   * `httpReferrer` String - A HTTP Referrer url.
   * `userAgent` String - A user agent originating the request.
+  * `extraHeaders` String - Extra headers separated by "\n"
 
 Loads the `url` in the window, the `url` must contain the protocol prefix,
-e.g. the `http://` or `file://`.
-
-### `webContents.getUrl()`
+e.g. the `http://` or `file://`. If the load should bypass http cache then
+use the `pragma` header to achieve it.
 
 ```javascript
-var BrowserWindow = require('browser-window');
-
-var win = new BrowserWindow({width: 800, height: 600});
-win.loadUrl("http://github.com");
-
-var currentUrl = win.webContents.getUrl();
+const options = {"extraHeaders" : "pragma: no-cache\n"}
+webContents.loadURL(url, options)
 ```
 
+### `webContents.downloadURL(url)`
+
+* `url` URL
+
+Initiates a download of the resource at `url` without navigating. The
+`will-download` event of `session` will be triggered.
+
+### `webContents.getURL()`
+
 Returns URL of the current web page.
+
+```javascript
+var win = new BrowserWindow({width: 800, height: 600});
+win.loadURL("http://github.com");
+
+var currentURL = win.webContents.getURL();
+```
 
 ### `webContents.getTitle()`
 
@@ -283,7 +356,7 @@ this limitation.
 
 ### `webContents.setAudioMuted(muted)`
 
-+ `muted` Boolean
+* `muted` Boolean
 
 Mute the audio on the current web page.
 
@@ -410,11 +483,11 @@ By default, an empty `options` will be regarded as:
 ```
 
 ```javascript
-var BrowserWindow = require('browser-window');
-var fs = require('fs');
+const BrowserWindow = require('electron').BrowserWindow;
+const fs = require('fs');
 
 var win = new BrowserWindow({width: 800, height: 600});
-win.loadUrl("http://github.com");
+win.loadURL("http://github.com");
 
 win.webContents.on("did-finish-load", function() {
   // Use default printing options
@@ -433,7 +506,14 @@ win.webContents.on("did-finish-load", function() {
 
 * `path` String
 
-Adds the specified path to DevTools workspace.
+Adds the specified path to DevTools workspace. Must be used after DevTools
+creation:
+
+```javascript
+mainWindow.webContents.on('devtools-opened', function() {
+  mainWindow.webContents.addWorkSpace(__dirname);
+});
+```
 
 ### `webContents.removeWorkSpace(path)`
 
@@ -441,13 +521,48 @@ Adds the specified path to DevTools workspace.
 
 Removes the specified path from DevTools workspace.
 
-### `webContents.send(channel[, args...])`
+### `webContents.openDevTools([options])`
+
+* `options` Object (optional). Properties:
+  * `detach` Boolean - opens DevTools in a new window
+
+Opens the developer tools.
+
+### `webContents.closeDevTools()`
+
+Closes the developer tools.
+
+### `webContents.isDevToolsOpened()`
+
+Returns whether the developer tools are opened.
+
+### `webContents.toggleDevTools()`
+
+Toggles the developer tools.
+
+### `webContents.isDevToolsFocused()`
+
+Returns whether the developer tools is focused.
+
+### `webContents.inspectElement(x, y)`
+
+* `x` Integer
+* `y` Integer
+
+Starts inspecting element at position (`x`, `y`).
+
+### `webContents.inspectServiceWorker()`
+
+Opens the developer tools for the service worker context.
+
+### `webContents.send(channel[, arg1][, arg2][, ...])`
 
 * `channel` String
-* `args...` (optional)
+* `arg` (optional)
 
-Send `args...` to the web page via `channel` in an asynchronous message, the web
-page can handle it by listening to the `channel` event of the `ipc` module.
+Send an asynchronous message to renderer process via `channel`, you can also
+send arbitrary arguments. The renderer process can handle the message by
+listening to the `channel` event with the `ipcRenderer` module.
 
 An example of sending messages from the main process to the renderer process:
 
@@ -456,7 +571,7 @@ An example of sending messages from the main process to the renderer process:
 var window = null;
 app.on('ready', function() {
   window = new BrowserWindow({width: 800, height: 600});
-  window.loadUrl('file://' + __dirname + '/index.html');
+  window.loadURL('file://' + __dirname + '/index.html');
   window.webContents.on('did-finish-load', function() {
     window.webContents.send('ping', 'whoooooooh!');
   });
@@ -468,20 +583,13 @@ app.on('ready', function() {
 <html>
 <body>
   <script>
-    require('ipc').on('ping', function(message) {
+    require('electron').ipcRenderer.on('ping', function(event, message) {
       console.log(message);  // Prints "whoooooooh!"
     });
   </script>
 </body>
 </html>
 ```
-
-**Note:**
-
-1. The IPC message handler in web pages does not have an `event` parameter,
-   which is different from the handlers in the main process.
-2. There is no way to send synchronous messages from the main process to a
-   renderer process, because it would be very easy to cause dead locks.
 
 ### `webContents.enableDeviceEmulation(parameters)`
 
@@ -523,7 +631,7 @@ Disable device emulation enabled by `webContents.enableDeviceEmulation`.
 * `event` Object
   * `type` String (**required**) - The type of the event, can be `mouseDown`,
     `mouseUp`, `mouseEnter`, `mouseLeave`, `contextMenu`, `mouseWheel`,
-    `keyDown`, `keyUp`, `char`.
+    `mouseMove`, `keyDown`, `keyUp`, `char`.
   * `modifiers` Array - An array of modifiers of the event, can
     include `shift`, `control`, `alt`, `meta`, `isKeypad`, `isAutoRepeat`,
     `leftButtonDown`, `middleButtonDown`, `rightButtonDown`, `capsLock`,
@@ -533,14 +641,17 @@ Sends an input `event` to the page.
 
 For keyboard events, the `event` object also have following properties:
 
-* `keyCode` String (**required**) - A single character that will be sent as
-  keyboard event. Can be any ASCII character on the keyboard, like `a`, `1`
-  and `=`.
+* `keyCode` Char or String (**required**) - The character that will be sent
+  as the keyboard event. Can be a single UTF-8 character, or the name of the
+  key that generates the event. Accepted key names are `enter`, `backspace`,
+  `delete`, `tab`, `escape`, `control`, `alt`, `shift`, `end`, `home`, `insert`,
+  `left`, `up`, `right`, `down`, `pageUp`, `pageDown`, `printScreen`
 
 For mouse events, the `event` object also have following properties:
 
 * `x` Integer (**required**)
 * `y` Integer (**required**)
+* `button` String - The button pressed, can be `left`, `middle`, `right`
 * `globalX` Integer
 * `globalY` Integer
 * `movementX` Integer
@@ -565,9 +676,50 @@ For the `mouseWheel` event, the `event` object also have following properties:
 Begin subscribing for presentation events and captured frames, the `callback`
 will be called with `callback(frameBuffer)` when there is a presentation event.
 
-The `frameBuffer` is a `Buffer` that contains raw pixel data, in the format of
-32bit ARGB.
+The `frameBuffer` is a `Buffer` that contains raw pixel data. On most machines,
+the pixel data is effectively stored in 32bit BGRA format, but the actual
+representation depends on the endianness of the processor (most modern
+processors are little-endian, on machines with big-endian processors the data
+is in 32bit ARGB format).
 
 ### `webContents.endFrameSubscription()`
 
 End subscribing for frame presentation events.
+
+### `webContents.savePage(fullPath, saveType, callback)`
+
+* `fullPath` String - The full file path.
+* `saveType` String - Specify the save type.
+  * `HTMLOnly` - Save only the HTML of the page.
+  * `HTMLComplete` - Save complete-html page.
+  * `MHTML` - Save complete-html page as MHTML.
+* `callback` Function - `function(error) {}`.
+  * `error` Error
+
+Returns true if the process of saving page has been initiated successfully.
+
+```javascript
+win.loadURL('https://github.com');
+
+win.webContents.on('did-finish-load', function() {
+  win.webContents.savePage('/tmp/test.html', 'HTMLComplete', function(error) {
+    if (!error)
+      console.log("Save page successfully");
+  });
+});
+```
+
+## Instance Properties
+
+`WebContents` objects also have the following properties:
+
+### `webContents.session`
+
+Returns the [session](session.md) object used by this webContents.
+
+### `webContents.devToolsWebContents`
+
+Get the `WebContents` of DevTools for this `WebContents`.
+
+**Note:** Users should never store this object because it may become `null`
+when the DevTools has been closed.

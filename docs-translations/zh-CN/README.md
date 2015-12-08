@@ -1,5 +1,6 @@
 ## 向导
 
+* [支持平台](tutorial/supported-platforms.md)
 * [应用部署](tutorial/application-distribution.md)
 * [应用打包](tutorial/application-packaging.md)
 * [使用原生模块](tutorial/using-native-node-modules.md)
@@ -61,7 +62,7 @@
 ## 开发
 
 * [编码规范](development/coding-style.md)
-* [源码文件结构](development/source-code-directory-structure.md)
+* [源码目录结构](development/source-code-directory-structure.md)
 * [与 NW.js (原名 node-webkit) 在技术上的差异](development/atom-shell-vs-node-webkit.md)
 * [构建系统概况](development/build-system-overview.md)
 * [构建步骤 (Mac)](development/build-instructions-mac.md)

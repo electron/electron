@@ -1,16 +1,17 @@
 ﻿# clipboard
 
-`clipboard` 모듈은 복사/붙여넣기 작업을 수행하는 방법을 제공합니다. 다음 예제는 클립보드에 문자열을 씁니다:
+`clipboard` 모듈은 복사/붙여넣기 작업을 수행하는 방법을 제공합니다. 다음 예제는
+클립보드에 문자열을 씁니다:
 
 ```javascript
-var clipboard = require('clipboard');
+const clipboard = require('electron').clipboard;
 clipboard.writeText('Example String');
 ```
 
-X Window 시스템에선 selection 클립보드도 존재합니다. 이를 사용하려면 인자 뒤에 `selection` 문자열을 같이 지정해주어야 합니다:
+X Window 시스템에선 selection 클립보드도 존재합니다. 이를 사용하려면 인자 뒤에
+`selection` 문자열을 같이 지정해주어야 합니다:
 
 ```javascript
-var clipboard = require('clipboard');
 clipboard.writeText('Example String', 'selection');
 console.log(clipboard.readText('selection'));
 ```
@@ -19,7 +20,8 @@ console.log(clipboard.readText('selection'));
 
 `clipboard` 모듈은 다음과 같은 메서드를 가지고 있습니다:
 
-**참고:** Experimental 마크가 붙은 API는 실험적인 기능이며 차후 최신 버전에서 제거될 수 있습니다.
+**참고:** Experimental 마크가 붙은 API는 실험적인 기능이며 차후 최신 버전에서 제거될
+수 있습니다.
 
 ### `clipboard.readText([type])`
 
@@ -78,7 +80,6 @@ console.log(clipboard.readText('selection'));
 클립보드가 지정한 `data`의 형식을 지원하는지 확인합니다.
 
 ```javascript
-var clipboard = require('clipboard');
 console.log(clipboard.has('<p>selection</p>'));
 ```
 
@@ -98,7 +99,6 @@ console.log(clipboard.has('<p>selection</p>'));
 * `type` String (optional)
 
 ```javascript
-var clipboard = require('clipboard');
 clipboard.write({text: 'test', html: "<b>test</b>"});
 ```
 

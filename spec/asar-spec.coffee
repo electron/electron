@@ -3,6 +3,9 @@ child_process = require 'child_process'
 fs            = require 'fs'
 path          = require 'path'
 
+{nativeImage, remote} = require 'electron'
+{ipcMain, BrowserWindow} = remote.require 'electron'
+
 describe 'asar package', ->
   fixtures = path.join __dirname, 'fixtures'
 
@@ -389,6 +392,23 @@ describe 'asar package', ->
           done()
         child.send file
 
+    describe 'child_process.execFile', ->
+      return unless process.platform is 'darwin'
+
+      {execFile, execFileSync} = require 'child_process'
+      echo = path.join fixtures, 'asar', 'echo.asar', 'echo'
+
+      it 'executes binaries', (done) ->
+        child = execFile echo, ['test'], (error, stdout) ->
+          assert.equal error, null
+          assert.equal stdout, 'test\n'
+          done()
+
+      # execFileSync makes the test flaky after a refresh.
+      xit 'execFileSync executes binaries', ->
+        output = execFileSync echo, ['test']
+        assert.equal String(output), 'test\n'
+
     describe 'internalModuleReadFile', ->
       internalModuleReadFile = process.binding('fs').internalModuleReadFile
 
@@ -404,11 +424,45 @@ describe 'asar package', ->
         p = path.join fixtures, 'asar', 'unpack.asar', 'a.txt'
         assert.equal internalModuleReadFile(p).toString().trim(), 'a'
 
+    describe 'process.noAsar', ->
+      errorName = if process.platform is 'win32' then 'ENOENT' else 'ENOTDIR'
+
+      beforeEach ->
+        process.noAsar = true
+      afterEach ->
+        process.noAsar = false
+
+      it 'disables asar support in sync API', ->
+        file = path.join fixtures, 'asar', 'a.asar', 'file1'
+        dir = path.join fixtures, 'asar', 'a.asar', 'dir1'
+        assert.throws (-> fs.readFileSync file), new RegExp(errorName)
+        assert.throws (-> fs.lstatSync file), new RegExp(errorName)
+        assert.throws (-> fs.realpathSync file), new RegExp(errorName)
+        assert.throws (-> fs.readdirSync dir), new RegExp(errorName)
+
+      it 'disables asar support in async API', (done) ->
+        file = path.join fixtures, 'asar', 'a.asar', 'file1'
+        dir = path.join fixtures, 'asar', 'a.asar', 'dir1'
+        fs.readFile file, (error) ->
+          assert.equal error.code, errorName
+          fs.lstat file, (error) ->
+            assert.equal error.code, errorName
+            fs.realpath file, (error) ->
+              assert.equal error.code, errorName
+              fs.readdir dir, (error) ->
+                assert.equal error.code, errorName
+                done()
+
+      it 'treats *.asar as normal file', ->
+        originalFs = require 'original-fs'
+        asar = path.join fixtures, 'asar', 'a.asar'
+        content1 = fs.readFileSync asar
+        content2 = originalFs.readFileSync asar
+        assert.equal content1.compare(content2), 0
+        assert.throws (-> fs.readdirSync asar), /ENOTDIR/
+
   describe 'asar protocol', ->
     url = require 'url'
-    remote = require 'remote'
-    ipc = remote.require 'ipc'
-    BrowserWindow = remote.require 'browser-window'
 
     it 'can request a file in package', (done) ->
       p = path.resolve fixtures, 'asar', 'a.asar', 'file1'
@@ -445,26 +499,26 @@ describe 'asar package', ->
     it 'sets __dirname correctly', (done) ->
       after ->
         w.destroy()
-        ipc.removeAllListeners 'dirname'
+        ipcMain.removeAllListeners 'dirname'
 
       w = new BrowserWindow(show: false, width: 400, height: 400)
       p = path.resolve fixtures, 'asar', 'web.asar', 'index.html'
       u = url.format protocol: 'file', slashed: true, pathname: p
-      w.loadUrl u
-      ipc.once 'dirname', (event, dirname) ->
+      ipcMain.once 'dirname', (event, dirname) ->
         assert.equal dirname, path.dirname(p)
         done()
+      w.loadURL u
 
     it 'loads script tag in html', (done) ->
       after ->
         w.destroy()
-        ipc.removeAllListeners 'ping'
+        ipcMain.removeAllListeners 'ping'
 
       w = new BrowserWindow(show: false, width: 400, height: 400)
       p = path.resolve fixtures, 'asar', 'script.asar', 'index.html'
       u = url.format protocol: 'file', slashed: true, pathname: p
-      w.loadUrl u
-      ipc.once 'ping', (event, message) ->
+      w.loadURL u
+      ipcMain.once 'ping', (event, message) ->
         assert.equal message, 'pong'
         done()
 
@@ -496,10 +550,10 @@ describe 'asar package', ->
   describe 'native-image', ->
     it 'reads image from asar archive', ->
       p = path.join fixtures, 'asar', 'logo.asar', 'logo.png'
-      logo = require('native-image').createFromPath p
+      logo = nativeImage.createFromPath p
       assert.deepEqual logo.getSize(), {width: 55, height: 55}
 
     it 'reads image from asar archive with unpacked files', ->
       p = path.join fixtures, 'asar', 'unpack.asar', 'atom.png'
-      logo = require('native-image').createFromPath p
+      logo = nativeImage.createFromPath p
       assert.deepEqual logo.getSize(), {width: 1024, height: 1024}

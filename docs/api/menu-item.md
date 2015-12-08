@@ -1,6 +1,6 @@
 # MenuItem
 
-The `menu-item` module allows you to add items to an application or content
+The `menu-item` module allows you to add items to an application or context
 [`menu`](menu.md).
 
 See [`menu`](menu.md) for examples.

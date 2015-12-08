@@ -21,6 +21,14 @@
 #include "content/public/browser/render_view_host.h"
 #include "storage/browser/fileapi/isolated_context.h"
 
+#if defined(TOOLKIT_VIEWS)
+#include "atom/browser/native_window_views.h"
+#endif
+
+#if defined(USE_X11)
+#include "atom/browser/browser.h"
+#endif
+
 using content::BrowserThread;
 
 namespace atom {
@@ -128,7 +136,11 @@ void CommonWebContentsDelegate::InitWithWebContents(
 }
 
 void CommonWebContentsDelegate::SetOwnerWindow(NativeWindow* owner_window) {
-  content::WebContents* web_contents = GetWebContents();
+  SetOwnerWindow(GetWebContents(), owner_window);
+}
+
+void CommonWebContentsDelegate::SetOwnerWindow(
+    content::WebContents* web_contents, NativeWindow* owner_window) {
   owner_window_ = owner_window->GetWeakPtr();
   NativeWindowRelay* relay = new NativeWindowRelay(owner_window_);
   web_contents->SetUserData(relay->key, relay);
@@ -354,6 +366,23 @@ void CommonWebContentsDelegate::OnDevToolsAppendToFile(
   web_contents_->CallClientFunction(
       "DevToolsAPI.appendedToURL", &url_value, nullptr, nullptr);
 }
+
+#if defined(TOOLKIT_VIEWS)
+gfx::ImageSkia CommonWebContentsDelegate::GetDevToolsWindowIcon() {
+  if (!owner_window())
+    return gfx::ImageSkia();
+  return static_cast<views::WidgetDelegate*>(static_cast<NativeWindowViews*>(
+      owner_window()))->GetWindowAppIcon();
+}
+#endif
+
+#if defined(USE_X11)
+void CommonWebContentsDelegate::GetDevToolsWindowWMClass(
+    std::string* name, std::string* class_name) {
+  *class_name = Browser::Get()->GetName();
+  *name = base::ToLowerASCII(*class_name);
+}
+#endif
 
 void CommonWebContentsDelegate::SetHtmlApiFullscreen(bool enter_fullscreen) {
   // Window is already in fullscreen mode, save the state.

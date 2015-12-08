@@ -7,7 +7,7 @@
 
 namespace atom {
 
-namespace switches {
+namespace options {
 
 extern const char kTitle[];
 extern const char kIcon[];
@@ -27,41 +27,59 @@ extern const char kFullscreen[];
 extern const char kSkipTaskbar[];
 extern const char kKiosk[];
 extern const char kAlwaysOnTop[];
-extern const char kNodeIntegration[];
 extern const char kAcceptFirstMouse[];
 extern const char kUseContentSize[];
 extern const char kTitleBarStyle[];
-extern const char kWebPreferences[];
-extern const char kZoomFactor[];
 extern const char kAutoHideMenuBar[];
 extern const char kEnableLargerThanScreen[];
 extern const char kDarkTheme[];
-extern const char kDirectWrite[];
-extern const char kEnablePlugins[];
-extern const char kPpapiFlashPath[];
-extern const char kPpapiFlashVersion[];
-extern const char kGuestInstanceID[];
-extern const char kPreloadScript[];
-extern const char kPreloadUrl[];
 extern const char kTransparent[];
 extern const char kType[];
 extern const char kDisableAutoHideCursor[];
 extern const char kStandardWindow[];
-extern const char kClientCertificate[];
+extern const char kBackgroundColor[];
+extern const char kWebPreferences[];
 
+// WebPreferences.
+extern const char kDirectWrite[];
+extern const char kZoomFactor[];
+extern const char kPreloadScript[];
+extern const char kPreloadURL[];
+extern const char kNodeIntegration[];
+extern const char kGuestInstanceID[];
 extern const char kExperimentalFeatures[];
 extern const char kExperimentalCanvasFeatures[];
-extern const char kSubpixelFontScaling[];
 extern const char kOverlayScrollbars[];
-extern const char kOverlayFullscreenVideo[];
 extern const char kSharedWorker[];
 extern const char kPageVisibility[];
 
+}   // namespace options
+
+
+// Following are actually command line switches, should be moved to other files.
+
+namespace switches {
+
+extern const char kEnablePlugins[];
+extern const char kPpapiFlashPath[];
+extern const char kPpapiFlashVersion[];
+extern const char kClientCertificate[];
 extern const char kDisableHttpCache[];
 extern const char kRegisterStandardSchemes[];
 extern const char kSSLVersionFallbackMin[];
-
+extern const char kCipherSuiteBlacklist[];
 extern const char kAppUserModelId[];
+
+extern const char kZoomFactor[];
+extern const char kPreloadScript[];
+extern const char kPreloadURL[];
+extern const char kNodeIntegration[];
+extern const char kGuestInstanceID[];
+extern const char kExperimentalFeatures[];
+extern const char kExperimentalCanvasFeatures[];
+extern const char kOverlayScrollbars[];
+extern const char kSharedWorker[];
+extern const char kPageVisibility[];
 
 }  // namespace switches
 

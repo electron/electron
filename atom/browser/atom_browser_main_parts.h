@@ -31,25 +31,37 @@ class AtomBrowserMainParts : public brightray::BrowserMainParts {
 
   static AtomBrowserMainParts* Get();
 
+  // Sets the exit code, will fail if the the message loop is not ready.
+  bool SetExitCode(int code);
+
   // Register a callback that should be destroyed before JavaScript environment
   // gets destroyed.
-  void RegisterDestructionCallback(const base::Closure& callback);
+  // Returns a closure that can be used to remove |callback| from the list.
+  base::Closure RegisterDestructionCallback(const base::Closure& callback);
 
   Browser* browser() { return browser_.get(); }
 
  protected:
   // content::BrowserMainParts:
+  void PreEarlyInitialization() override;
   void PostEarlyInitialization() override;
   void PreMainMessageLoopRun() override;
+  bool MainMessageLoopRun(int* result_code) override;
+  void PostMainMessageLoopStart() override;
   void PostMainMessageLoopRun() override;
 #if defined(OS_MACOSX)
   void PreMainMessageLoopStart() override;
-  void PostDestroyThreads() override;
 #endif
 
  private:
-#if defined(USE_X11)
-  void SetDPIFromGSettings();
+#if defined(OS_POSIX)
+  // Set signal handlers.
+  void HandleSIGCHLD();
+  void HandleShutdownSignals();
+#endif
+
+#if defined(OS_MACOSX)
+  void FreeAppDelegate();
 #endif
 
   // A fake BrowserProcess object that used to feed the source code from chrome.
@@ -58,6 +70,9 @@ class AtomBrowserMainParts : public brightray::BrowserMainParts {
   // The gin::PerIsolateData requires a task runner to create, so we feed it
   // with a task runner that will post all work to main loop.
   scoped_refptr<BridgeTaskRunner> bridge_task_runner_;
+
+  // Pointer to exit code.
+  int* exit_code_;
 
   scoped_ptr<Browser> browser_;
   scoped_ptr<JavascriptEnvironment> js_env_;
@@ -68,7 +83,7 @@ class AtomBrowserMainParts : public brightray::BrowserMainParts {
   base::Timer gc_timer_;
 
   // List of callbacks should be executed before destroying JS env.
-  std::list<base::Closure> destruction_callbacks_;
+  std::list<base::Closure> destructors_;
 
   static AtomBrowserMainParts* self_;
 

@@ -2,7 +2,7 @@
 <body>
 <script src="../../static/jquery-2.0.3.min.js"></script>
 <script type="text/javascript" charset="utf-8">
-  var ipc = require('ipc');
+  var ipcRenderer = require('electron').ipcRenderer;
   var port = location.search.substr("?port=".length);
   $.ajax({
     type: "GET",
@@ -11,10 +11,10 @@
       "Authorization": "Basic " + btoa("test:test")
     },
     success: function(result) {
-      ipc.sendToHost(result);
+      ipcRenderer.sendToHost(result);
     },
     error: function(xhr, status, error) {
-      ipc.sendToHost(error);
+      ipcRenderer.sendToHost(error);
     },
   });
 </script>

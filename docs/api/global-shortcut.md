@@ -9,14 +9,15 @@ not have the keyboard focus. You should not use this module until the `ready`
 event of the app module is emitted.
 
 ```javascript
-var app = require('app');
-var globalShortcut = require('global-shortcut');
+const electron = require('electron');
+const app = electron.app;
+const globalShortcut = electron.globalShortcut;
 
 app.on('ready', function() {
   // Register a 'ctrl+x' shortcut listener.
   var ret = globalShortcut.register('ctrl+x', function() {
     console.log('ctrl+x is pressed');
-  })
+  });
 
   if (!ret) {
     console.log('registration failed');
@@ -45,7 +46,10 @@ The `global-shortcut` module has the following methods:
 * `callback` Function
 
 Registers a global shortcut of `accelerator`. The `callback` is called when
-the registered shortcut is pressed by the user.
+the registered shortcut is pressed by the user. Returns `true` if the shortcut
+`accelerator` was registered, `false` otherwise. For example, the specified
+`accelerator` has already been registered by another caller or other native
+applications.
 
 ### `globalShortcut.isRegistered(accelerator)`
 
@@ -62,4 +66,4 @@ Unregisters the global shortcut of `accelerator`.
 
 ### `globalShortcut.unregisterAll()`
 
-Unregisters all the global shortcuts.
+Unregisters all of the global shortcuts.

@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "atom/browser/api/frame_subscriber.h"
+#include "atom/browser/api/save_page_handler.h"
 #include "atom/browser/api/trackable_object.h"
 #include "atom/browser/common_web_contents_delegate.h"
 #include "content/public/browser/web_contents_observer.h"
@@ -53,13 +54,10 @@ class WebContents : public mate::TrackableObject<WebContents>,
   static mate::Handle<WebContents> Create(
       v8::Isolate* isolate, const mate::Dictionary& options);
 
-  // mate::TrackableObject:
-  void Destroy() override;
-
-  bool IsAlive() const;
   int GetID() const;
   bool Equal(const WebContents* web_contents) const;
   void LoadURL(const GURL& url, const mate::Dictionary& options);
+  void DownloadURL(const GURL& url);
   GURL GetURL() const;
   base::string16 GetTitle() const;
   bool IsLoading() const;
@@ -73,6 +71,9 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void SetUserAgent(const std::string& user_agent);
   std::string GetUserAgent();
   void InsertCSS(const std::string& css);
+  bool SavePage(const base::FilePath& full_file_path,
+                const content::SavePageType& save_type,
+                const SavePageHandler::SavePageCallback& callback);
   void ExecuteJavaScript(const base::string16& code,
                          bool has_user_gesture);
   void OpenDevTools(mate::Arguments* args);
@@ -83,7 +84,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void DisableDeviceEmulation();
   void InspectElement(int x, int y);
   void InspectServiceWorker();
-  v8::Local<v8::Value> Session(v8::Isolate* isolate);
   void HasServiceWorker(const base::Callback<void(bool)>&);
   void UnregisterServiceWorker(const base::Callback<void(bool)>&);
   void SetAudioMuted(bool muted);
@@ -135,15 +135,21 @@ class WebContents : public mate::TrackableObject<WebContents>,
   // Returns the web preferences of current WebContents.
   v8::Local<v8::Value> GetWebPreferences(v8::Isolate* isolate);
 
+  // Returns the owner window.
+  v8::Local<v8::Value> GetOwnerBrowserWindow();
+
+  // Properties.
+  v8::Local<v8::Value> Session(v8::Isolate* isolate);
+  v8::Local<v8::Value> DevToolsWebContents(v8::Isolate* isolate);
+
+  // mate::TrackableObject:
+  static void BuildPrototype(v8::Isolate* isolate,
+                             v8::Local<v8::ObjectTemplate> prototype);
+
  protected:
   explicit WebContents(content::WebContents* web_contents);
   WebContents(v8::Isolate* isolate, const mate::Dictionary& options);
   ~WebContents();
-
-  // mate::Wrappable:
-  mate::ObjectTemplateBuilder GetObjectTemplateBuilder(
-      v8::Isolate* isolate) override;
-  bool IsDestroyed() const override;
 
   // content::WebContentsDelegate:
   bool AddMessageToConsole(content::WebContents* source,
@@ -179,6 +185,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void ExitFullscreenModeForTab(content::WebContents* source) override;
   void RendererUnresponsive(content::WebContents* source) override;
   void RendererResponsive(content::WebContents* source) override;
+  bool HandleContextMenu(const content::ContextMenuParams& params) override;
 
   // content::WebContentsObserver:
   void BeforeUnloadFired(const base::TimeTicks& proceed_time) override;
@@ -218,6 +225,11 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void PluginCrashed(const base::FilePath& plugin_path,
                      base::ProcessId plugin_pid) override;
 
+  // brightray::InspectableWebContentsViewDelegate:
+  void DevToolsFocused() override;
+  void DevToolsOpened() override;
+  void DevToolsClosed() override;
+
  private:
   enum Type {
     BROWSER_WINDOW,  // Used by BrowserWindow.
@@ -236,7 +248,12 @@ class WebContents : public mate::TrackableObject<WebContents>,
                              const base::ListValue& args,
                              IPC::Message* message);
 
+  // Called when guests need to be notified of
+  // embedders' zoom level change.
+  void OnZoomLevelChanged(double level);
+
   v8::Global<v8::Value> session_;
+  v8::Global<v8::Value> devtools_web_contents_;
 
   scoped_ptr<WebViewGuestDelegate> guest_delegate_;
 

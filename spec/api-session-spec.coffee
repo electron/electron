@@ -1,10 +1,10 @@
 assert = require 'assert'
-remote = require 'remote'
 http   = require 'http'
 path   = require 'path'
 fs     = require 'fs'
-app    = remote.require 'app'
-BrowserWindow = remote.require 'browser-window'
+
+{ipcRenderer, remote} = require 'electron'
+{app, ipcMain, session, BrowserWindow} = remote
 
 describe 'session module', ->
   @timeout 10000
@@ -23,7 +23,7 @@ describe 'session module', ->
 
     server.listen 0, '127.0.0.1', ->
       {port} = server.address()
-      w.loadUrl "#{url}:#{port}"
+      w.loadURL "#{url}:#{port}"
       w.webContents.on 'did-finish-load', ->
         w.webContents.session.cookies.get {url: url}, (error, list) ->
           return done(error) if error
@@ -35,9 +35,9 @@ describe 'session module', ->
           done('Can not find cookie')
 
   it 'should over-write the existent cookie', (done) ->
-    app.defaultSession.cookies.set {url: url, name: '1', value: '1'}, (error) ->
+    session.defaultSession.cookies.set {url: url, name: '1', value: '1'}, (error) ->
       return done(error) if error
-      app.defaultSession.cookies.get {url: url}, (error, list) ->
+      session.defaultSession.cookies.get {url: url}, (error, list) ->
         return done(error) if error
         for cookie in list when cookie.name is '1'
           if cookie.value is '1'
@@ -47,11 +47,11 @@ describe 'session module', ->
         done('Can not find cookie')
 
   it 'should remove cookies', (done) ->
-    app.defaultSession.cookies.set {url: url, name: '2', value: '2'}, (error) ->
+    session.defaultSession.cookies.set {url: url, name: '2', value: '2'}, (error) ->
       return done(error) if error
-      app.defaultSession.cookies.remove {url: url, name: '2'}, (error) ->
+      session.defaultSession.cookies.remove {url: url, name: '2'}, (error) ->
         return done(error) if error
-        app.defaultSession.cookies.get {url: url}, (error, list) ->
+        session.defaultSession.cookies.get {url: url}, (error, list) ->
           return done(error) if error
           for cookie in list when cookie.name is '2'
              return done('Cookie not deleted')
@@ -60,12 +60,11 @@ describe 'session module', ->
   describe 'session.clearStorageData(options)', ->
     fixtures = path.resolve __dirname, 'fixtures'
     it 'clears localstorage data', (done) ->
-      ipc = remote.require('ipc')
-      ipc.on 'count', (event, count) ->
-        ipc.removeAllListeners 'count'
+      ipcMain.on 'count', (event, count) ->
+        ipcMain.removeAllListeners 'count'
         assert not count
         done()
-      w.loadUrl 'file://' + path.join(fixtures, 'api', 'localstorage.html')
+      w.loadURL 'file://' + path.join(fixtures, 'api', 'localstorage.html')
       w.webContents.on 'did-finish-load', ->
         options =
           origin: "file://",
@@ -78,7 +77,6 @@ describe 'session module', ->
     # A 5 MB mock pdf.
     mockPDF = new Buffer 1024 * 1024 * 5
     contentDisposition = 'inline; filename="mock.pdf"'
-    ipc = require 'ipc'
     downloadFilePath = path.join fixtures, 'mock.pdf'
     downloadServer = http.createServer (req, res) ->
       res.writeHead 200, {
@@ -89,31 +87,49 @@ describe 'session module', ->
       res.end mockPDF
       downloadServer.close()
 
-    it 'can download successfully', (done) ->
+    assertDownload = (event, state, url, mimeType, receivedBytes, totalBytes, disposition, filename, port) ->
+      assert.equal state, 'completed'
+      assert.equal filename, 'mock.pdf'
+      assert.equal url, "http://127.0.0.1:#{port}/"
+      assert.equal mimeType, 'application/pdf'
+      assert.equal receivedBytes, mockPDF.length
+      assert.equal totalBytes, mockPDF.length
+      assert.equal disposition, contentDisposition
+      assert fs.existsSync downloadFilePath
+      fs.unlinkSync downloadFilePath
+
+    it 'can download using BrowserWindow.loadURL', (done) ->
       downloadServer.listen 0, '127.0.0.1', ->
         {port} = downloadServer.address()
-        ipc.sendSync 'set-download-option', false
-        w.loadUrl "#{url}:#{port}"
-        ipc.once 'download-done', (state, url, mimeType, receivedBytes,
-            totalBytes, disposition, filename) ->
-          assert.equal state, 'completed'
-          assert.equal filename, 'mock.pdf'
-          assert.equal url, "http://127.0.0.1:#{port}/"
-          assert.equal mimeType, 'application/pdf'
-          assert.equal receivedBytes, mockPDF.length
-          assert.equal totalBytes, mockPDF.length
-          assert.equal disposition, contentDisposition
-          assert fs.existsSync downloadFilePath
-          fs.unlinkSync downloadFilePath
+        ipcRenderer.sendSync 'set-download-option', false
+        w.loadURL "#{url}:#{port}"
+        ipcRenderer.once 'download-done', (event, state, url, mimeType, receivedBytes, totalBytes, disposition, filename) ->
+          assertDownload event, state, url, mimeType, receivedBytes, totalBytes, disposition, filename, port
           done()
+
+    it 'can download using WebView.downloadURL', (done) ->
+      downloadServer.listen 0, '127.0.0.1', ->
+        {port} = downloadServer.address()
+        ipcRenderer.sendSync 'set-download-option', false
+
+        webview = new WebView
+        webview.src = "file://#{fixtures}/api/blank.html"
+        webview.addEventListener 'did-finish-load', ->
+          webview.downloadURL "#{url}:#{port}/"
+
+        ipcRenderer.once 'download-done', (event, state, url, mimeType, receivedBytes, totalBytes, disposition, filename) ->
+          assertDownload event, state, url, mimeType, receivedBytes, totalBytes, disposition, filename, port
+          document.body.removeChild(webview)
+          done()
+
+        document.body.appendChild webview
 
     it 'can cancel download', (done) ->
       downloadServer.listen 0, '127.0.0.1', ->
         {port} = downloadServer.address()
-        ipc.sendSync 'set-download-option', true
-        w.loadUrl "#{url}:#{port}/"
-        ipc.once 'download-done', (state, url, mimeType, receivedBytes,
-            totalBytes, disposition, filename) ->
+        ipcRenderer.sendSync 'set-download-option', true
+        w.loadURL "#{url}:#{port}/"
+        ipcRenderer.once 'download-done', (event, state, url, mimeType, receivedBytes, totalBytes, disposition, filename) ->
           assert.equal state, 'cancelled'
           assert.equal filename, 'mock.pdf'
           assert.equal mimeType, 'application/pdf'

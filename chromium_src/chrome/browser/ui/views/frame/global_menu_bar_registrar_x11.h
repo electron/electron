@@ -28,7 +28,7 @@ class GlobalMenuBarRegistrarX11 {
   void OnWindowUnmapped(unsigned long xid);
 
  private:
-  friend struct DefaultSingletonTraits<GlobalMenuBarRegistrarX11>;
+  friend struct base::DefaultSingletonTraits<GlobalMenuBarRegistrarX11>;
 
   GlobalMenuBarRegistrarX11();
   ~GlobalMenuBarRegistrarX11();

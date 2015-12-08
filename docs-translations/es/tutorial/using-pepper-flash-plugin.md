@@ -31,7 +31,7 @@ app.on('window-all-closed', function() {
 
 // Specify flash path.
 // On Windows, it might be /path/to/pepflashplayer.dll
-// On Mac, /path/to/PepperFlashPlayer.plugin
+// On OS X, /path/to/PepperFlashPlayer.plugin
 // On Linux, /path/to/libpepflashplayer.so
 app.commandLine.appendSwitch('ppapi-flash-path', '/path/to/libpepflashplayer.so');
 
@@ -46,7 +46,7 @@ app.on('ready', function() {
       'plugins': true
     }
   });
-  mainWindow.loadUrl('file://' + __dirname + '/index.html');
+  mainWindow.loadURL('file://' + __dirname + '/index.html');
   // Something else
 });
 ```

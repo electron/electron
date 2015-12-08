@@ -1,18 +1,23 @@
 ﻿# global-shortcut
 
-`global-shortcut` 모듈은 운영체제의 전역 키보드 단축키를 등록/해제 하는 방법을 제공합니다.
-이 모듈을 사용하여 사용자가 다양한 작업을 편하게 할 수 있도록 단축키를 정의 할 수 있습니다.
+`global-shortcut` 모듈은 운영체제의 전역 키보드 단축키를 등록/해제 하는 방법을
+제공합니다. 이 모듈을 사용하여 사용자가 다양한 작업을 편하게 할 수 있도록 단축키를
+정의 할 수 있습니다.
 
-**참고:** 등록된 단축키는 어플리케이션이 백그라운드로 작동(창이 포커스 되지 않음) 할 때도 계속해서 작동합니다.
-이 모듈은 `app` 모듈의 `ready` 이벤트 이전에 사용할 수 없습니다.
+**참고:** 등록된 단축키는 어플리케이션이 백그라운드로 작동(창이 포커스 되지 않음) 할
+때도 계속해서 작동합니다. 이 모듈은 `app` 모듈의 `ready` 이벤트 이전에 사용할 수
+없습니다.
 
 ```javascript
-var app = require('app');
-var globalShortcut = require('global-shortcut');
+const electron = require('electron');
+const app = electron.app;
+const globalShortcut = electron.globalShortcut;
 
 app.on('ready', function() {
   // 'ctrl+x' 단축키를 리스너에 등록합니다.
-  var ret = globalShortcut.register('ctrl+x', function() { console.log('ctrl+x is pressed'); })
+  var ret = globalShortcut.register('ctrl+x', function() {
+    console.log('ctrl+x is pressed');
+  });
 
   if (!ret) {
     console.log('registration failed');
@@ -40,13 +45,19 @@ app.on('will-quit', function() {
 * `accelerator` [Accelerator](accelerator.md)
 * `callback` Function
 
-`accelerator`로 표현된 전역 단축키를 등록합니다. 유저로부터 등록된 단축키가 눌렸을 경우 `callback` 함수가 호출됩니다.
+`accelerator`로 표현된 전역 단축키를 등록합니다. 유저로부터 등록된 단축키가 눌렸을
+경우 `callback` 함수가 호출됩니다. `accelerator` 단축키가 등록되었을 경우
+`true`를 반환합니다. 그 외엔 `false`를 반환합니다. 예를 들어 지정한
+`accelerator`가 이미 다른 호출자 또는 네이티브 어플리케이션에서 등록된 상태를
+생각할 수 있습니다.
+
 
 ### `globalShortcut.isRegistered(accelerator)`
 
 * `accelerator` [Accelerator](accelerator.md)
 
-지정된 `accelerator` 단축키가 등록되었는지 여부를 확인합니다. 반환값은 boolean(true, false) 입니다.
+지정된 `accelerator` 단축키가 등록되었는지 여부를 확인합니다. 반환값은 boolean값
+입니다.
 
 ### `globalShortcut.unregister(accelerator)`
 
@@ -56,4 +67,4 @@ app.on('will-quit', function() {
 
 ### `globalShortcut.unregisterAll()`
 
-모든 전역 단축키 등록을 해제합니다.
+모든 전역 단축키의 등록을 해제합니다.

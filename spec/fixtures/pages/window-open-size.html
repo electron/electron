@@ -1,8 +1,8 @@
 <html>
 <body>
 <script type="text/javascript" charset="utf-8">
-  var size = require('remote').getCurrentWindow().getSize();
-  window.opener.postMessage('size: ' + size.width + ' ' + size.height, '*')
+  var size = require('electron').remote.getCurrentWindow().getSize();
+  window.opener.postMessage('size: ' + size[0] + ' ' + size[1], '*')
 </script>
 </body>
 </html>

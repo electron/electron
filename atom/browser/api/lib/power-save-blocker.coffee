@@ -1,3 +1,3 @@
-bindings = process.atomBinding 'power_save_blocker'
+{powerSaveBlocker} = process.atomBinding 'power_save_blocker'
 
-module.exports = bindings.powerSaveBlocker
+module.exports = powerSaveBlocker

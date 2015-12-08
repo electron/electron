@@ -1,27 +1,60 @@
 # session
 
-`session` 객체는 [`BrowserWindow`](browser-window.md)의 [`webContents`](web-contents.md)의 프로퍼티입니다.
-다음과 같이 `BrowserWindow` 인스턴스에서 접근할 수 있습니다:
+`session` 모듈은 새로운 `Session` 객체를 만드는데 사용할 수 있습니다.
+
+또한 존재하는 [`BrowserWindow`](browser-window.md)의
+[`webContents`](web-contents.md)에서 `session` 속성으로 접근할 수도 있습니다.
 
 ```javascript
 var BrowserWindow = require('browser-window');
 
 var win = new BrowserWindow({ width: 800, height: 600 });
-win.loadUrl("http://github.com");
+win.loadURL("http://github.com");
 
-var session = win.webContents.session
+var ses = win.webContents.session
 ```
 
-## Events
+## Methods
 
-### Event: 'will-download'
+`session` 모듈은 다음과 같은 메서드를 가지고 있습니다:
+
+### session.fromPartition(partition)
+
+* `partition` String
+
+`partition` 문자열로 부터 새로운 `Session` 인스턴스를 만들어 반환합니다.
+
+`partition`이 `persist:`로 시작하면 페이지는 지속성 세션을 사용하며 다른 모든 앱 내의
+페이지에서 같은 `partition`을 사용할 수 있습니다. 만약 `persist:` 접두어로 시작하지
+않으면 페이지는 인-메모리 세션을 사용합니다. `partition`을 지정하지 않으면 어플리케이션의
+기본 세션이 반환됩니다.
+
+## Properties
+
+`session` 모듈은 다음과 같은 속성을 가지고 있습니다:
+
+### session.defaultSession
+
+어플리케이션의 기본 세션 객체를 반환합니다.
+
+## Class: Session
+
+`session` 모듈을 사용하여 `Session` 객체를 생성할 수 있습니다:
+
+```javascript
+const session = require('electron').session;
+
+var ses = session.fromPartition('persist:name');
+ ```
+
+### Instance Events
+
+`Session` 객체는 다음과 같은 이벤트를 가지고 있습니다:
+
+#### Event: 'will-download'
 
 * `event` Event
-* `item` Object
-  * `url` String
-  * `filename` String
-  * `mimeType` String
-  * `hasUserGesture` Boolean
+* `item` [DownloadItem](download-item.md)
 * `webContents` [WebContents](web-contents.md)
 
 Electron의 `webContents`에서 `item`을 다운로드할 때 발생하는 이벤트입니다.
@@ -31,26 +64,27 @@ Electron의 `webContents`에서 `item`을 다운로드할 때 발생하는 이�
 ```javascript
 session.on('will-download', function(event, item, webContents) {
   event.preventDefault();
-  require('request')(item.url, function(data) {
+  require('request')(item.getURL(), function(data) {
     require('fs').writeFileSync('/somewhere', data);
   });
 });
 ```
 
-## Methods
+### Instance Methods
 
-`session` 객체는 다음과 같은 메서드와 속성을 가지고 있습니다:
+`Session` 객체는 다음과 같은 메서드와 속성을 가지고 있습니다:
 
-### `session.cookies`
+#### `ses.cookies`
 
-`cookies` 속성은 쿠키를 조작하는 방법을 제공합니다. 예를 들어 다음과 같이 할 수 있습니다:
+`cookies` 속성은 쿠키를 조작하는 방법을 제공합니다. 예를 들어 다음과 같이 할 수
+있습니다:
 
 ```javascript
 var BrowserWindow = require('browser-window');
 
 var win = new BrowserWindow({ width: 800, height: 600 });
 
-win.loadUrl('https://github.com');
+win.loadURL('https://github.com');
 
 win.webContents.on('did-finish-load', function() {
   // 모든 쿠키를 가져옵니다.
@@ -77,11 +111,12 @@ win.webContents.on('did-finish-load', function() {
 });
 ```
 
-### `session.cookies.get(details, callback)`
+#### `ses.cookies.get(details, callback)`
 
-`details` Object, properties:
+`details` Object
 
-* `url` String - `url`에 관련된 쿠키를 가져옵니다. 이 속성을 비워두면 모든 url의 쿠키를 가져옵니다.
+* `url` String - `url`에 관련된 쿠키를 가져옵니다. 이 속성을 비워두면 모든 url의
+  쿠키를 가져옵니다.
 * `name` String - 이름을 기준으로 쿠키를 필터링합니다.
 * `domain` String - `domain`과 일치하는 도메인과 서브 도메인에 대한 쿠키를 가져옵니다.
 * `path` String - `path`와 일치하는 경로에 대한 쿠키를 가져옵니다.
@@ -96,28 +131,34 @@ win.webContents.on('did-finish-load', function() {
   *  `domain` String - 쿠키의 도메인.
   *  `host_only` String - 쿠키가 호스트 전용인가에 대한 여부.
   *  `path` String - 쿠키의 경로.
-  *  `secure` Boolean - 쿠키가 안전한 것으로 표시되는지에 대한 여부. (일반적으로 HTTPS)
+  *  `secure` Boolean - 쿠키가 안전한 것으로 표시되는지에 대한 여부. (일반적으로
+      HTTPS)
   *  `http_only` Boolean - 쿠키가 HttpOnly로 표시되는지에 대한 여부.
-  *  `session` Boolean - 쿠키가 세션 쿠키 또는 만료일이 있는 영구 쿠키인지에 대한 여부.
-  *  `expirationDate` Double - (Option) UNIX 시간으로 표시되는 쿠키의 만료일에 대한 초 단위 시간. 세션 쿠키는 지원되지 않음.
+  *  `session` Boolean - 쿠키가 세션 쿠키 또는 만료일이 있는 영구 쿠키인지에 대한
+    여부.
+  *  `expirationDate` Double - (Option) UNIX 시간으로 표시되는 쿠키의 만료일에
+    대한 초 단위 시간. 세션 쿠키는 지원되지 않음.
 
-### `session.cookies.set(details, callback)`
+#### `ses.cookies.set(details, callback)`
 
-`details` Object, properties:
+`details` Object
 
-* `url` String - `url`에 관련된 쿠키를 가져옵니다. 
+* `url` String - `url`에 관련된 쿠키를 가져옵니다.
 * `name` String - 쿠키의 이름입니다. 기본적으로 비워두면 생략됩니다.
 * `value` String - 쿠키의 값입니다. 기본적으로 비워두면 생략됩니다.
 * `domain` String - 쿠키의 도메인입니다. 기본적으로 비워두면 생략됩니다.
 * `path` String - 쿠키의 경로입니다. 기본적으로 비워두면 생략됩니다.
-* `secure` Boolean - 쿠키가 안전한 것으로 표시되는지에 대한 여부입니다. 기본값은 false입니다.
-* `session` Boolean - 쿠키가 HttpOnly로 표시되는지에 대한 여부입니다. 기본값은 false입니다.
-* `expirationDate` Double -	UNIX 시간으로 표시되는 쿠키의 만료일에 대한 초 단위 시간입니다. 생략하면 쿠키는 세션 쿠키가 됩니다.
+* `secure` Boolean - 쿠키가 안전한 것으로 표시되는지에 대한 여부입니다. 기본값은
+  false입니다.
+* `session` Boolean - 쿠키가 HttpOnly로 표시되는지에 대한 여부입니다. 기본값은
+  false입니다.
+* `expirationDate` Double -	UNIX 시간으로 표시되는 쿠키의 만료일에 대한 초 단위
+  시간입니다. 생략하면 쿠키는 세션 쿠키가 됩니다.
 
 * `callback` Function - function(error)
   * `error` Error
 
-### `session.cookies.remove(details, callback)`
+#### `ses.cookies.remove(details, callback)`
 
 * `details` Object, proprties:
   * `url` String - 쿠키와 관련된 URL입니다.
@@ -125,16 +166,17 @@ win.webContents.on('did-finish-load', function() {
 * `callback` Function - function(error)
   * `error` Error
 
-### `session.clearCache(callback)`
+#### `ses.clearCache(callback)`
 
 * `callback` Function - 작업이 완료되면 호출됩니다.
 
 세션의 HTTP 캐시를 비웁니다.
 
-### `session.clearStorageData([options, ]callback)`
+#### `ses.clearStorageData([options, ]callback)`
 
 * `options` Object (optional), proprties:
-  * `origin` String - `scheme://host:port`와 같은 `window.location.origin` 규칙을 따르는 origin 문자열.
+  * `origin` String - `scheme://host:port`와 같은 `window.location.origin` 규칙을
+    따르는 origin 문자열.
   * `storages` Array - 비우려는 스토리지의 종류, 다음과 같은 타입을 포함할 수 있습니다:
     `appcache`, `cookies`, `filesystem`, `indexdb`, `local storage`,
     `shadercache`, `websql`, `serviceworkers`
@@ -144,12 +186,15 @@ win.webContents.on('did-finish-load', function() {
 
 웹 스토리지의 데이터를 비웁니다.
 
-### `session.setProxy(config, callback)`
+#### `ses.setProxy(config, callback)`
 
 * `config` String
 * `callback` Function - 작업이 완료되면 호출됩니다.
 
 세션에 사용할 프록시 `config`를 분석하고 프록시를 적용합니다.
+
+세션에 사용할 프록시는 `config`가 PAC 주소일 경우 그대로 적용하고, 다른 형식일 경우
+다음 규칙에 따라 적용합니다.
 
 ```
 config = scheme-proxies[";"<scheme-proxies>]
@@ -159,29 +204,86 @@ proxy-uri-list = <proxy-uri>[","<proxy-uri-list>]
 proxy-uri = [<proxy-scheme>"://"]<proxy-host>[":"<proxy-port>]
 
   예시:
-       "http=foopy:80;ftp=foopy2"  -- use HTTP proxy "foopy:80" for http://
-                                      URLs, and HTTP proxy "foopy2:80" for
-                                      ftp:// URLs.
-       "foopy:80"                  -- use HTTP proxy "foopy:80" for all URLs.
-       "foopy:80,bar,direct://"    -- use HTTP proxy "foopy:80" for all URLs,
-                                      failing over to "bar" if "foopy:80" is
-                                      unavailable, and after that using no
-                                      proxy.
-       "socks4://foopy"            -- use SOCKS v4 proxy "foopy:1080" for all
-                                      URLs.
-       "http=foopy,socks5://bar.com -- use HTTP proxy "foopy" for http URLs,
-                                      and fail over to the SOCKS5 proxy
-                                      "bar.com" if "foopy" is unavailable.
-       "http=foopy,direct://       -- use HTTP proxy "foopy" for http URLs,
-                                      and use no proxy if "foopy" is
-                                      unavailable.
-       "http=foopy;socks=foopy2   --  use HTTP proxy "foopy" for http URLs,
-                                      and use socks4://foopy2 for all other
-                                      URLs.
+       "http=foopy:80;ftp=foopy2"  -- http:// URL에 "foopy:80" HTTP 프록시를
+                                      사용합니다. "foopy2:80" 는 ftp:// URL에
+                                      사용됩니다.
+       "foopy:80"                  -- 모든 URL에 "foopy:80" 프록시를 사용합니다.
+       "foopy:80,bar,direct://"    -- 모든 URL에 "foopy:80" HTTP 프록시를
+                                      사용합니다. 문제가 발생하여 "foopy:80"를
+                                      사용할 수 없는 경우 "bar"를 대신 사용하여
+                                      장애를 복구하며 그 다음 문제가 생긴 경우
+                                      프록시를 사용하지 않습니다.
+       "socks4://foopy"            -- 모든 URL에 "foopy:1000" SOCKS v4 프록시를
+                                      사용합니다.
+       "http=foopy,socks5://bar.com -- http:// URL에 "foopy" HTTP 프록시를
+                                       사용합니다. 문제가 발생하여 "foopy"를
+                                       사용할 수 없는 경우 SOCKS5 "bar.com"
+                                       프록시를 대신 사용합니다.
+       "http=foopy,direct://       -- http:// URL에 "foopy" HTTP 프록시를
+                                      사용합니다. 그리고 문제가 발생하여 "foopy"를
+                                      사용할 수 없는 경우 프록시를 사용하지 않습니다.
+       "http=foopy;socks=foopy2   --  http:// URL에 "foopy" HTTP 프록시를
+                                      사용합니다. 그리고 "socks4://foopy2"
+                                      프록시를 다른 모든 URL에 사용합니다.
 ```
 
-### `session.setDownloadPath(path)`
+### `app.resolveProxy(url, callback)`
+
+* `url` URL
+* `callback` Function
+
+`url`의 프록시 정보를 해석합니다. `callback`은 요청이 수행되었을 때
+`callback(proxy)` 형태로 호출됩니다.
+
+#### `ses.setDownloadPath(path)`
 
 * `path` String - 다운로드 위치
 
-다운로드 저장 위치를 지정합니다. 기본 다운로드 위치는 각 어플리케이션 데이터 디렉터리의 `Downloads` 폴더입니다.
+다운로드 저장 위치를 지정합니다. 기본 다운로드 위치는 각 어플리케이션 데이터 디렉터리의
+`Downloads` 폴더입니다.
+
+#### `ses.enableNetworkEmulation(options)`
+
+* `options` Object
+  * `offline` Boolean - 네트워크의 오프라인 상태 여부
+  * `latency` Double - 밀리세컨드 단위의 RTT
+  * `downloadThroughput` Double - Bps 단위의 다운로드 주기
+  * `uploadThroughput` Double - Bps 단위의 업로드 주기
+
+제공된 설정으로 `session`의 네트워크를 에뮬레이트합니다.
+
+```javascript
+// 50kbps의 처리량과 함께 500ms의 레이턴시로 GPRS 연결을 에뮬레이트합니다.
+window.webContents.session.enableNetworkEmulation({
+    latency: 500,
+    downloadThroughput: 6400,
+    uploadThroughput: 6400
+});
+
+// 네트워크가 끊긴 상태를 에뮬레이트합니다.
+window.webContents.session.enableNetworkEmulation({offline: true});
+```
+
+#### `ses.disableNetworkEmulation()`
+
+활성화된 `session`의 에뮬레이션을 비활성화합니다. 기본 네트워크 설정으로 돌아갑니다.
+
+#### `ses.setCertificateVerifyProc(proc)`
+
+ * `proc` Function
+
+`session`에 인증서의 유효성을 확인하는 프로세스(proc)를 등록합니다. `proc`은 서버
+인증서 유효성 검증 요청이 들어왔을 때 언제나 `proc(hostname, certificate, callback)`
+형식으로 호출됩니다. `callback(true)`을 호출하면 인증을 승인하고 `callback(false)`를
+호출하면 인증을 거부합니다.
+
+`setCertificateVerifyProc(null)`을 호출하면 기본 검증 프로세스로 되돌립니다.
+
+```javascript
+myWindow.webContents.session.setCertificateVerifyProc(function(hostname, cert, callback) {
+ if (hostname == 'github.com')
+   callback(true);
+ else
+   callback(false);
+});
+```

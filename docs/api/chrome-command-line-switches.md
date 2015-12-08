@@ -1,12 +1,12 @@
 # Supported Chrome command line switches
 
-This page lists the command line switches used by the Chrome browser that are also supported by
-Electron. You can use [app.commandLine.appendSwitch][append-switch] to append
-them in your app's main script before the [ready][ready] event of [app][app]
-module is emitted:
+This page lists the command line switches used by the Chrome browser that are
+also supported by Electron. You can use
+[app.commandLine.appendSwitch][append-switch] to append them in your app's main
+script before the [ready][ready] event of [app][app] module is emitted:
 
 ```javascript
-var app = require('app');
+const app = require('electron').app;
 app.commandLine.appendSwitch('remote-debugging-port', '8315');
 app.commandLine.appendSwitch('host-rules', 'MAP * 127.0.0.1');
 
@@ -31,10 +31,37 @@ Disables the disk cache for HTTP requests.
 
 Enables remote debugging over HTTP on the specified `port`.
 
+## --js-flags=`flags`
+
+Specifies the flags passed to JS engine. It has to be passed when starting
+Electron if you want to enable the `flags` in the main process.
+
+```bash
+$ electron --js-flags="--harmony_proxies --harmony_collections" your-app
+```
+
 ## --proxy-server=`address:port`
 
-Use a specified proxy server, which overrides the system setting. This switch only
-affects HTTP and HTTPS requests.
+Use a specified proxy server, which overrides the system setting. This switch
+only affects requests with HTTP protocol, including HTTPS and WebSocket
+requests. It is also noteworthy that not all proxy servers support HTTPS and
+WebSocket requests.
+
+## --proxy-bypass-list=`hosts`
+
+Instructs Electron to bypass the proxy server for the given semi-colon-separated
+list of hosts. This flag has an effect only if used in tandem with
+`--proxy-server`.
+
+For example:
+
+```javascript
+app.commandLine.appendSwitch('proxy-bypass-list', '<local>;*.google.com;*foo.com;1.2.3.4:5678')`
+```
+
+Will use the proxy server for all hosts except for local addresses (`localhost`,
+`127.0.0.1` etc.), `google.com` subdomains, hosts that contain the suffix
+`foo.com` and anything at `1.2.3.4:5678`.
 
 ## --proxy-pac-url=`url`
 
@@ -89,15 +116,27 @@ Enables net log events to be saved and writes them to `path`.
 
 ## --ssl-version-fallback-min=`version`
 
-Set the minimum SSL/TLS version ("tls1", "tls1.1" or "tls1.2") that TLS
+Sets the minimum SSL/TLS version ("tls1", "tls1.1" or "tls1.2") that TLS
 fallback will accept.
+
+## --cipher-suite-blacklist=`cipher_suites`
+
+Specify comma-separated list of SSL cipher suites to disable.
+
+## --enable-logging
+
+Prints Chromium's logging into console.
+
+This switch can not be used in `app.commandLine.appendSwitch` since it is parsed
+earlier than user's app is loaded, but you can set the `ELECTRON_ENABLE_LOGGING`
+environment variable to achieve the same effect.
 
 ## --v=`log_level`
 
 Gives the default maximal active V-logging level; 0 is the default. Normally
 positive values are used for V-logging levels.
 
-Passing `--v=-1` will disable logging.
+This switch only works when `--enable-logging` is also passed.
 
 ## --vmodule=`pattern`
 
@@ -109,10 +148,4 @@ Any pattern containing a forward or backward slash will be tested against the
 whole pathname and not just the module. E.g. `*/foo/bar/*=2` would change the
 logging level for all code in the source files under a `foo/bar` directory.
 
-To disable all chromium related logs and only enable your application logs you
-can do:
-
-```javascript
-app.commandLine.appendSwitch('v', -1);
-app.commandLine.appendSwitch('vmodule', 'console=0');
-```
+This switch only works when `--enable-logging` is also passed.

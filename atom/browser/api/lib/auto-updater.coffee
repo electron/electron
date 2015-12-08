@@ -1,24 +1,12 @@
-autoUpdater = process.atomBinding('auto_updater').autoUpdater
-EventEmitter = require('events').EventEmitter
+{deprecate} = require 'electron'
 
-autoUpdater.__proto__ = EventEmitter.prototype
+autoUpdater =
+  if process.platform is 'win32'
+    require './auto-updater/auto-updater-win'
+  else
+    require './auto-updater/auto-updater-native'
 
-autoUpdater.on 'update-downloaded-raw', (args...) ->
-  args[3] = new Date(args[3])  # releaseDate
-  @emit 'update-downloaded', args..., => @quitAndInstall()
-
-autoUpdater.quitAndInstall = ->
-  # If we don't have any window then quitAndInstall immediately.
-  BrowserWindow = require 'browser-window'
-  windows = BrowserWindow.getAllWindows()
-  if windows.length is 0
-    @_quitAndInstall()
-    return
-
-  # Do the restart after all windows have been closed.
-  app = require 'app'
-  app.removeAllListeners 'window-all-closed'
-  app.once 'window-all-closed', @_quitAndInstall.bind(this)
-  win.close() for win in windows
+# Deprecated.
+deprecate.rename autoUpdater, 'setFeedUrl', 'setFeedURL'
 
 module.exports = autoUpdater

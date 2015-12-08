@@ -204,7 +204,7 @@ void Cookies::GetCookiesOnIOThread(scoped_ptr<base::DictionaryValue> filter,
               Passed(&filter), callback))) {
     BrowserThread::PostTask(BrowserThread::UI, FROM_HERE,
         base::Bind(&RunGetCookiesCallbackOnUIThread, isolate(),
-                   "Url is not valid", net::CookieList(), callback));
+                   "URL is not valid", net::CookieList(), callback));
   }
 }
 
@@ -229,7 +229,7 @@ void Cookies::Remove(const mate::Dictionary& details,
     error_message = "Details(url, name) of removing cookie are required.";
   }
   if (error_message.empty() && !url.is_valid()) {
-    error_message = "Url is not valid.";
+    error_message = "URL is not valid.";
   }
   if (!error_message.empty()) {
      RunRemoveCookiesCallbackOnUIThread(isolate(), error_message, callback);
@@ -261,7 +261,7 @@ void Cookies::Set(const base::DictionaryValue& options,
 
   GURL gurl(url);
   if (error_message.empty() && !gurl.is_valid()) {
-    error_message = "Url is not valid.";
+    error_message = "URL is not valid.";
   }
 
   if (!error_message.empty()) {
@@ -322,14 +322,6 @@ void Cookies::OnSetCookies(const CookiesCallback& callback,
                  callback));
 }
 
-mate::ObjectTemplateBuilder Cookies::GetObjectTemplateBuilder(
-    v8::Isolate* isolate) {
-  return mate::ObjectTemplateBuilder(isolate)
-      .SetMethod("get", &Cookies::Get)
-      .SetMethod("remove", &Cookies::Remove)
-      .SetMethod("set", &Cookies::Set);
-}
-
 net::CookieStore* Cookies::GetCookieStore() {
   return request_context_getter_->GetURLRequestContext()->cookie_store();
 }
@@ -339,6 +331,15 @@ mate::Handle<Cookies> Cookies::Create(
     v8::Isolate* isolate,
     content::BrowserContext* browser_context) {
   return mate::CreateHandle(isolate, new Cookies(browser_context));
+}
+
+// static
+void Cookies::BuildPrototype(v8::Isolate* isolate,
+                             v8::Local<v8::ObjectTemplate> prototype) {
+  mate::ObjectTemplateBuilder(isolate, prototype)
+      .SetMethod("get", &Cookies::Get)
+      .SetMethod("remove", &Cookies::Remove)
+      .SetMethod("set", &Cookies::Set);
 }
 
 }  // namespace api

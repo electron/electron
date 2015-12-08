@@ -1,6 +1,17 @@
+Please make sure that you use the documents that match your Electron version.
+The version number should be a part of the page URL. If it's not, you are
+probably using the documentation of a development branch which may contain API
+changes that are not compatible with your Electron version. If that's the case,
+you can switch to a different version of the documentation at the
+[available versions](http://electron.atom.io/docs/) list on atom.io, or if
+you're using the GitHub interface, open the "Switch branches/tags" dropdown and
+select the tag that matches your version.
+
 ## Guides
 
+* [Supported Platforms](tutorial/supported-platforms.md)
 * [Application Distribution](tutorial/application-distribution.md)
+* [Mac App Store Submission Guide](tutorial/mac-app-store-submission-guide.md)
 * [Application Packaging](tutorial/application-packaging.md)
 * [Using Native Node Modules](tutorial/using-native-node-modules.md)
 * [Debugging Main Process](tutorial/debugging-main-process.md)
@@ -19,6 +30,7 @@
 * [Synopsis](api/synopsis.md)
 * [Process Object](api/process.md)
 * [Supported Chrome Command Line Switches](api/chrome-command-line-switches.md)
+* [Environment Variables](api/environment-variables.md)
 
 ### Custom DOM Elements:
 
@@ -29,33 +41,33 @@
 ### Modules for the Main Process:
 
 * [app](api/app.md)
-* [auto-updater](api/auto-updater.md)
-* [browser-window](api/browser-window.md)
-* [content-tracing](api/content-tracing.md)
+* [autoUpdater](api/auto-updater.md)
+* [BrowserWindow](api/browser-window.md)
+* [contentTracing](api/content-tracing.md)
 * [dialog](api/dialog.md)
-* [global-shortcut](api/global-shortcut.md)
-* [ipc (main process)](api/ipc-main-process.md)
-* [menu](api/menu.md)
-* [menu-item](api/menu-item.md)
-* [power-monitor](api/power-monitor.md)
-* [power-save-blocker](api/power-save-blocker.md)
+* [globalShortcut](api/global-shortcut.md)
+* [ipcMain](api/ipc-main.md)
+* [Menu](api/menu.md)
+* [MenuItem](api/menu-item.md)
+* [powerMonitor](api/power-monitor.md)
+* [powerSaveBlocker](api/power-save-blocker.md)
 * [protocol](api/protocol.md)
 * [session](api/session.md)
-* [web-contents](api/web-contents.md)
-* [tray](api/tray.md)
+* [webContents](api/web-contents.md)
+* [Tray](api/tray.md)
 
 ### Modules for the Renderer Process (Web Page):
 
-* [desktop-capturer](api/desktop-capturer.md)
-* [ipc (renderer)](api/ipc-renderer.md)
+* [desktopCapturer](api/desktop-capturer.md)
+* [ipcRenderer](api/ipc-renderer.md)
 * [remote](api/remote.md)
-* [web-frame](api/web-frame.md)
+* [webFrame](api/web-frame.md)
 
 ### Modules for Both Processes:
 
 * [clipboard](api/clipboard.md)
-* [crash-reporter](api/crash-reporter.md)
-* [native-image](api/native-image.md)
+* [crashReporter](api/crash-reporter.md)
+* [nativeImage](api/native-image.md)
 * [screen](api/screen.md)
 * [shell](api/shell.md)
 
@@ -65,7 +77,7 @@
 * [Source Code Directory Structure](development/source-code-directory-structure.md)
 * [Technical Differences to NW.js (formerly node-webkit)](development/atom-shell-vs-node-webkit.md)
 * [Build System Overview](development/build-system-overview.md)
-* [Build Instructions (Mac)](development/build-instructions-osx.md)
+* [Build Instructions (OS X)](development/build-instructions-osx.md)
 * [Build Instructions (Windows)](development/build-instructions-windows.md)
 * [Build Instructions (Linux)](development/build-instructions-linux.md)
 * [Setting Up Symbol Server in debugger](development/setting-up-symbol-server.md)

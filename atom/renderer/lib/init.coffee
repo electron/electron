@@ -7,16 +7,18 @@ Module = require 'module'
 # atom-renderer.js, we need to restore it here.
 process.argv.splice 1, 1
 
-# Add renderer/api/lib to require's search paths, which contains javascript part
-# of Atom's built-in libraries.
-globalPaths = Module.globalPaths
-globalPaths.push path.resolve(__dirname, '..', 'api', 'lib')
-# And also app.
-globalPaths.push path.join(process.resourcesPath, 'app')
-globalPaths.push path.join(process.resourcesPath, 'app.asar')
+# Clear search paths.
+require path.resolve(__dirname, '..', '..', 'common', 'lib', 'reset-search-paths')
 
 # Import common settings.
 require path.resolve(__dirname, '..', '..', 'common', 'lib', 'init')
+
+globalPaths = Module.globalPaths
+unless process.env.ELECTRON_HIDE_INTERNAL_MODULES
+  globalPaths.push path.resolve(__dirname, '..', 'api', 'lib')
+
+# Expose public APIs.
+globalPaths.push path.resolve(__dirname, '..', 'api', 'lib', 'exports')
 
 # The global variable will be used by ipc for event dispatching
 v8Util = process.atomBinding 'v8_util'

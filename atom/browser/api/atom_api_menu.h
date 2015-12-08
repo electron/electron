@@ -8,16 +8,16 @@
 #include <string>
 
 #include "atom/browser/api/atom_api_window.h"
+#include "atom/browser/api/trackable_object.h"
 #include "atom/browser/ui/atom_menu_model.h"
 #include "base/callback.h"
 #include "base/memory/scoped_ptr.h"
-#include "native_mate/wrappable.h"
 
 namespace atom {
 
 namespace api {
 
-class Menu : public mate::Wrappable,
+class Menu : public mate::TrackableObject<Menu>,
              public AtomMenuModel::Delegate {
  public:
   static mate::Wrappable* Create();
@@ -37,7 +37,7 @@ class Menu : public mate::Wrappable,
 
  protected:
   Menu();
-  virtual ~Menu();
+  ~Menu() override;
 
   // mate::Wrappable:
   void AfterInit(v8::Isolate* isolate) override;

@@ -55,11 +55,17 @@ def run_gyp(target_arch, component):
   # Avoid using the old gyp lib in system.
   env['PYTHONPATH'] = os.path.pathsep.join([gyp_pylib,
                                             env.get('PYTHONPATH', '')])
+  # Whether to build for Mac App Store.
+  if os.environ.has_key('MAS_BUILD'):
+    mas_build = 1
+  else:
+    mas_build = 0
   defines = [
     '-Dlibchromiumcontent_component={0}'.format(component),
     '-Dtarget_arch={0}'.format(target_arch),
     '-Dhost_arch={0}'.format(get_host_arch()),
     '-Dlibrary=static_library',
+    '-Dmas_build={0}'.format(mas_build),
   ]
   return subprocess.call([python, gyp, '-f', 'ninja', '--depth', '.',
                           'atom.gyp', '-Icommon.gypi'] + defines, env=env)

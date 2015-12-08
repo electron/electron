@@ -1,30 +1,17 @@
-EventEmitter = require('events').EventEmitter
+{deprecate, session, Menu} = require 'electron'
+{EventEmitter} = require 'events'
 
 bindings = process.atomBinding 'app'
-sessionBindings = process.atomBinding 'session'
 downloadItemBindings = process.atomBinding 'download_item'
 
 app = bindings.app
 app.__proto__ = EventEmitter.prototype
 
-wrapSession = (session) ->
-  # session is an Event Emitter.
-  session.__proto__ = EventEmitter.prototype
-
-wrapDownloadItem = (download_item) ->
-  # download_item is an Event Emitter.
-  download_item.__proto__ = EventEmitter.prototype
-  # Be compatible with old APIs.
-  download_item.url = download_item.getUrl()
-  download_item.filename = download_item.getFilename()
-  download_item.mimeType = download_item.getMimeType()
-  download_item.hasUserGesture = download_item.hasUserGesture()
-
 app.setApplicationMenu = (menu) ->
-  require('menu').setApplicationMenu menu
+  Menu.setApplicationMenu menu
 
 app.getApplicationMenu = ->
-  require('menu').getApplicationMenu()
+  Menu.getApplicationMenu()
 
 app.commandLine =
   appendSwitch: bindings.appendSwitch,
@@ -47,22 +34,39 @@ app.setAppPath = (path) ->
 app.getAppPath = ->
   appPath
 
-# Be compatible with old API.
-app.once 'ready', -> @emit 'finish-launching'
-app.terminate = app.quit
-app.exit = process.exit
-app.getHomeDir = -> @getPath 'home'
-app.getDataPath = -> @getPath 'userData'
-app.setDataPath = (path) -> @setPath 'userData', path
-app.resolveProxy = -> @defaultSession.resolveProxy.apply @defaultSession, arguments
-app.on 'activate', (event, hasVisibleWindows) -> @emit 'activate-with-no-open-windows' if not hasVisibleWindows
+# Routes the events to webContents.
+for name in ['login', 'certificate-error', 'select-client-certificate']
+  do (name) ->
+    app.on name, (event, webContents, args...) ->
+      webContents.emit name, event, args...
 
-# Session wrapper.
-sessionBindings._setWrapSession wrapSession
-process.once 'exit', sessionBindings._clearWrapSession
+# Deprecated.
+app.getHomeDir = deprecate 'app.getHomeDir', 'app.getPath', ->
+  @getPath 'home'
+app.getDataPath = deprecate 'app.getDataPath', 'app.getPath', ->
+  @getPath 'userData'
+app.setDataPath = deprecate 'app.setDataPath', 'app.setPath', (path) ->
+  @setPath 'userData', path
+app.resolveProxy = deprecate 'app.resolveProxy', 'session.defaultSession.resolveProxy', (url, callback) ->
+  session.defaultSession.resolveProxy url, callback
+deprecate.rename app, 'terminate', 'quit'
+deprecate.event app, 'finish-launching', 'ready', ->
+  setImmediate => # give default app a chance to setup default menu.
+    @emit 'finish-launching'
+deprecate.event app, 'activate-with-no-open-windows', 'activate', (event, hasVisibleWindows) ->
+  @emit 'activate-with-no-open-windows', event if not hasVisibleWindows
+deprecate.event app, 'select-certificate', 'select-client-certificate'
 
+# Wrappers for native classes.
+wrapDownloadItem = (downloadItem) ->
+  # downloadItem is an EventEmitter.
+  downloadItem.__proto__ = EventEmitter.prototype
+  # Deprecated.
+  deprecate.property downloadItem, 'url', 'getURL'
+  deprecate.property downloadItem, 'filename', 'getFilename'
+  deprecate.property downloadItem, 'mimeType', 'getMimeType'
+  deprecate.rename downloadItem, 'getUrl', 'getURL'
 downloadItemBindings._setWrapDownloadItem wrapDownloadItem
-process.once 'exit', downloadItemBindings._clearWrapDownloadItem
 
 # Only one App object pemitted.
 module.exports = app

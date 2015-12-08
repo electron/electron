@@ -6,6 +6,7 @@
 
 #include <X11/Xatom.h>
 
+#include "base/environment.h"
 #include "base/strings/string_util.h"
 #include "dbus/bus.h"
 #include "dbus/object_proxy.h"
@@ -41,7 +42,7 @@ void SetWindowType(::Window xwindow, const std::string& type) {
   XDisplay* xdisplay = gfx::GetXDisplay();
   std::string type_prefix = "_NET_WM_WINDOW_TYPE_";
   ::Atom window_type = XInternAtom(
-      xdisplay, (type_prefix + base::StringToUpperASCII(type)).c_str(), False);
+      xdisplay, (type_prefix + base::ToUpperASCII(type)).c_str(), False);
   XChangeProperty(xdisplay, xwindow,
                   XInternAtom(xdisplay, "_NET_WM_WINDOW_TYPE", False),
                   XA_ATOM,
@@ -50,6 +51,10 @@ void SetWindowType(::Window xwindow, const std::string& type) {
 }
 
 bool ShouldUseGlobalMenuBar() {
+  scoped_ptr<base::Environment> env(base::Environment::Create());
+  if (env->HasVar("ELECTRON_FORCE_WINDOW_MENU_BAR"))
+    return false;
+
   dbus::Bus::Options options;
   scoped_refptr<dbus::Bus> bus(new dbus::Bus(options));
 

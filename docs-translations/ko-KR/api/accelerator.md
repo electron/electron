@@ -10,8 +10,9 @@ Accelerator는 키보드 단축키를 표현하는 문자열입니다, 여러 �
 
 ## 플랫폼에 관련하여 주의할 점
 
-Linux와 Windows에서는 `Command`키가 없으므로 작동하지 않습니다. 대신에 `CommandOrControl`을
-사용하면 OS X의 `Command`와 Linux, Windows의 `Control` 모두 지원할 수 있습니다.
+Linux와 Windows에서는 `Command`키가 없으므로 작동하지 않습니다. 대신에
+`CommandOrControl`을 사용하면 OS X의 `Command`와 Linux, Windows의 `Control` 모두
+지원할 수 있습니다.
 
 `Super`키는 Windows와 Linux 에서는 `윈도우`키를, OS X에서는 `Cmd`키로 맵핑됩니다.
 

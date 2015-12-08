@@ -1,7 +1,7 @@
+{app, BrowserWindow} = require 'electron'
+
 binding = process.atomBinding 'dialog'
 v8Util = process.atomBinding 'v8_util'
-app = require 'app'
-BrowserWindow = require 'browser-window'
 
 fileDialogProperties =
   openFile:        1 << 0
