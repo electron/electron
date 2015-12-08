@@ -18,7 +18,6 @@
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/render_widget_host_view.h"
 #include "native_mate/dictionary.h"
-#import "ui/base/cocoa/command_dispatcher.h"
 #include "ui/gfx/skia_util.h"
 
 namespace {
@@ -209,11 +208,10 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 @end
 
-@interface AtomNSWindow : NSWindow<CommandDispatchingWindow> {
+@interface AtomNSWindow : NSWindow {
  @private
   atom::NativeWindowMac* shell_;
   bool enable_larger_than_screen_;
-  base::scoped_nsobject<CommandDispatcher> commandDispatcher_;
 }
 @property BOOL acceptsFirstMouse;
 @property BOOL disableAutoHideCursor;
@@ -227,7 +225,6 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 - (void)setShell:(atom::NativeWindowMac*)shell {
   shell_ = shell;
-  commandDispatcher_.reset([[CommandDispatcher alloc] initWithOwner:self]);
 }
 
 - (void)setEnableLargerThanScreen:(bool)enable {
@@ -274,25 +271,6 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 - (BOOL)canBecomeKeyWindow {
   return !self.disableKeyOrMainWindow;
-}
-
-// CommandDispatchingWindow implementation.
-
-- (void)setCommandHandler:(id<UserInterfaceItemCommandHandler>)commandHandler {
-}
-
-- (BOOL)redispatchKeyEvent:(NSEvent*)event {
-  return [commandDispatcher_ redispatchKeyEvent:event];
-}
-
-- (BOOL)defaultPerformKeyEquivalent:(NSEvent*)event {
-  return [super performKeyEquivalent:event];
-}
-
-- (void)commandDispatch:(id)sender {
-}
-
-- (void)commandDispatchUsingKeyModifiers:(id)sender {
 }
 
 @end
