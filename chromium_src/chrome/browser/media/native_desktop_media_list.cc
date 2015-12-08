@@ -10,6 +10,7 @@
 
 #include "base/hash.h"
 #include "base/logging.h"
+#include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/threading/sequenced_worker_pool.h"
 #include "chrome/browser/media/desktop_media_list_observer.h"

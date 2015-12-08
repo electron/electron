@@ -1,15 +1,13 @@
-ipc = require 'ipc'
+{ipcMain} = require 'electron'
+{desktopCapturer} = process.atomBinding 'desktop_capturer'
 
-# The browser module manages all desktop-capturer moduels in renderer process.
-desktopCapturer = process.atomBinding('desktop_capturer').desktopCapturer
-
-isOptionsEqual = (opt1, opt2) ->
+deepEqual = (opt1, opt2) ->
   return JSON.stringify(opt1) is JSON.stringify(opt2)
 
 # A queue for holding all requests from renderer process.
 requestsQueue = []
 
-ipc.on 'ATOM_BROWSER_DESKTOP_CAPTURER_GET_SOURCES', (event, options, id) ->
+ipcMain.on 'ATOM_BROWSER_DESKTOP_CAPTURER_GET_SOURCES', (event, options, id) ->
   request = { id: id, options: options, webContents: event.sender }
   requestsQueue.push request
   desktopCapturer.startHandling options if requestsQueue.length is 1
@@ -29,7 +27,7 @@ desktopCapturer.emit = (event_name, event, error_message, sources) ->
   # it for reducing redunplicated `desktopCaptuer.startHandling` calls.
   unhandledRequestsQueue = []
   for request in requestsQueue
-    if isOptionsEqual handledRequest.options, request.options
+    if deepEqual handledRequest.options, request.options
       request.webContents?.send "ATOM_RENDERER_DESKTOP_CAPTURER_RESULT_#{request.id}", error_message, result
     else
       unhandledRequestsQueue.push request

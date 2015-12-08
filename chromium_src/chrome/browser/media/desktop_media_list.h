@@ -6,6 +6,7 @@
 #define CHROME_BROWSER_MEDIA_DESKTOP_MEDIA_LIST_H_
 
 #include "base/basictypes.h"
+#include "base/strings/string16.h"
 #include "base/time/time.h"
 #include "content/public/browser/desktop_media_id.h"
 #include "ui/gfx/image/image_skia.h"
