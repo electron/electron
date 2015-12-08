@@ -282,6 +282,10 @@ const DesktopMediaList::Source& NativeDesktopMediaList::GetSource(
   return sources_[index];
 }
 
+std::vector<DesktopMediaList::Source> NativeDesktopMediaList::GetSources() const {
+  return sources_;
+}
+
 void NativeDesktopMediaList::Refresh() {
   capture_task_runner_->PostTask(
       FROM_HERE, base::Bind(&Worker::Refresh, base::Unretained(worker_.get()),

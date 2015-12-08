@@ -56,6 +56,7 @@ class DesktopMediaList {
 
   virtual int GetSourceCount() const = 0;
   virtual const Source& GetSource(int index) const = 0;
+  virtual std::vector<Source> GetSources() const = 0;
 };
 
 #endif  // CHROME_BROWSER_MEDIA_DESKTOP_MEDIA_LIST_H_

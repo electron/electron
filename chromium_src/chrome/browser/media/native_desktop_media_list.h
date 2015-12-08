@@ -36,6 +36,7 @@ class NativeDesktopMediaList : public DesktopMediaList {
   void StartUpdating(DesktopMediaListObserver* observer) override;
   int GetSourceCount() const override;
   const Source& GetSource(int index) const override;
+  std::vector<Source> GetSources() const override;
   void SetViewDialogWindowId(content::DesktopMediaID::Id dialog_id) override;
 
  private:

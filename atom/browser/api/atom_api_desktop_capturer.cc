@@ -10,7 +10,6 @@
 #include "base/strings/utf_string_conversions.h"
 #include "chrome/browser/media/desktop_media_list.h"
 #include "native_mate/dictionary.h"
-#include "native_mate/handle.h"
 #include "third_party/webrtc/modules/desktop_capture/desktop_capture_options.h"
 #include "third_party/webrtc/modules/desktop_capture/screen_capturer.h"
 #include "third_party/webrtc/modules/desktop_capture/window_capturer.h"
@@ -38,45 +37,15 @@ namespace atom {
 
 namespace api {
 
-namespace {
-const int kThumbnailWidth = 150;
-const int kThumbnailHeight = 150;
-
-bool GetCapturerTypes(const mate::Dictionary& args,
-                      bool* show_windows,
-                      bool* show_screens) {
-  *show_windows = false;
-  *show_screens = false;
-  std::vector<std::string> sources;
-  if (!args.Get("types", &sources))
-    return false;
-  for (const auto& source_type : sources) {
-    if (source_type == "screen")
-      *show_screens = true;
-    else if (source_type == "window")
-      *show_windows = true;
-  }
-  return !show_windows && !show_screens ? false : true;
-}
-
-}  // namespace
-
 DesktopCapturer::DesktopCapturer() {
 }
 
 DesktopCapturer::~DesktopCapturer() {
 }
 
-void DesktopCapturer::StartHandling(const mate::Dictionary& args) {
-  bool show_screens = false;
-  bool show_windows = false;
-  if (!GetCapturerTypes(args, &show_windows, &show_screens)) {
-    Emit("handling-finished",
-         "Invalid options.",
-         std::vector<DesktopMediaList::Source>());
-    return;
-  }
-
+void DesktopCapturer::StartHandling(bool capture_window,
+                                    bool capture_screen,
+                                    const gfx::Size& thumbnail_size) {
   webrtc::DesktopCaptureOptions options =
       webrtc::DesktopCaptureOptions::CreateDefault();
 
@@ -91,14 +60,11 @@ void DesktopCapturer::StartHandling(const mate::Dictionary& args) {
 #endif
 
   scoped_ptr<webrtc::ScreenCapturer> screen_capturer(
-      show_screens ? webrtc::ScreenCapturer::Create(options) : nullptr);
+      capture_screen ? webrtc::ScreenCapturer::Create(options) : nullptr);
   scoped_ptr<webrtc::WindowCapturer> window_capturer(
-      show_windows ? webrtc::WindowCapturer::Create(options) : nullptr);
+      capture_window ? webrtc::WindowCapturer::Create(options) : nullptr);
   media_list_.reset(new NativeDesktopMediaList(screen_capturer.Pass(),
       window_capturer.Pass()));
-
-  gfx::Size thumbnail_size(kThumbnailWidth, kThumbnailHeight);
-  args.Get("thumbnailSize", &thumbnail_size);
 
   media_list_->SetThumbnailSize(thumbnail_size);
   media_list_->StartUpdating(this);
@@ -120,11 +86,8 @@ void DesktopCapturer::OnSourceThumbnailChanged(int index) {
 }
 
 bool DesktopCapturer::OnRefreshFinished() {
-  std::vector<DesktopMediaList::Source> sources;
-  for (int i = 0; i < media_list_->GetSourceCount(); ++i)
-    sources.push_back(media_list_->GetSource(i));
+  Emit("finished", media_list_->GetSources());
   media_list_.reset();
-  Emit("handling-finished", "", sources);
   return false;
 }
 
