@@ -113,6 +113,13 @@
                 ],
               },
             }],
+            ['target_arch=="arm"', {
+              'link_settings': {
+                'libraries!': [
+                  '<(libchromiumcontent_dir)/libdesktop_capture_differ_sse2.a',
+                ],
+              },
+            }],
           ],
         }],  # OS=="linux"
         ['OS=="mac"', {
