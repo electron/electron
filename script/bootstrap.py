@@ -196,7 +196,7 @@ def create_chrome_version_h():
 def touch_config_gypi():
   config_gypi = os.path.join(SOURCE_ROOT, 'vendor', 'node', 'config.gypi')
   with open(config_gypi, 'w+') as f:
-    content = '\n{}'
+    content = "\n{'variables':{}}"
     if f.read() != content:
       f.write(content)
 
