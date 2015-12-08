@@ -380,7 +380,7 @@ gfx::ImageSkia CommonWebContentsDelegate::GetDevToolsWindowIcon() {
 void CommonWebContentsDelegate::GetDevToolsWindowWMClass(
     std::string* name, std::string* class_name) {
   *class_name = Browser::Get()->GetName();
-  *name = base::StringToLowerASCII(*class_name);
+  *name = base::ToLowerASCII(*class_name);
 }
 #endif
 

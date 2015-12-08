@@ -126,7 +126,7 @@ CrashReporterMac::GetUploadedReports(const std::string& path) {
 
 // static
 CrashReporterMac* CrashReporterMac::GetInstance() {
-  return Singleton<CrashReporterMac>::get();
+  return base::Singleton<CrashReporterMac>::get();
 }
 
 // static

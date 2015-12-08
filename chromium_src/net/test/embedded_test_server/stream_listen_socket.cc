@@ -228,7 +228,7 @@ void StreamListenSocket::CloseSocket() {
 void StreamListenSocket::WatchSocket(WaitState state) {
 #if defined(OS_WIN)
   WSAEventSelect(socket_, socket_event_, FD_ACCEPT | FD_CLOSE | FD_READ);
-  watcher_.StartWatching(socket_event_, this);
+  watcher_.StartWatchingOnce(socket_event_, this);
 #elif defined(OS_POSIX)
   // Implicitly calls StartWatchingFileDescriptor().
   base::MessageLoopForIO::current()->WatchFileDescriptor(
@@ -264,7 +264,7 @@ void StreamListenSocket::OnObjectSignaled(HANDLE object) {
     return;
   }
   // The object was reset by WSAEnumNetworkEvents.  Watch for the next signal.
-  watcher_.StartWatching(object, this);
+  watcher_.StartWatchingOnce(object, this);
 
   if (ev.lNetworkEvents == 0) {
     // Occasionally the event is set even though there is no new data.

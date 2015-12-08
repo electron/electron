@@ -95,7 +95,6 @@ const char kDirectWrite[] = "directWrite";
 const char kExperimentalFeatures[]       = "experimentalFeatures";
 const char kExperimentalCanvasFeatures[] = "experimentalCanvasFeatures";
 const char kOverlayScrollbars[]          = "overlayScrollbars";
-const char kOverlayFullscreenVideo[]     = "overlayFullscreenVideo";
 const char kSharedWorker[]               = "sharedWorker";
 
 }  // namespace options
@@ -139,7 +138,6 @@ const char kGuestInstanceID[]            = "guest-instance-id";
 const char kExperimentalFeatures[]       = "experimental-features";
 const char kExperimentalCanvasFeatures[] = "experimental-canvas-features";
 const char kOverlayScrollbars[]          = "overlay-scrollbars";
-const char kOverlayFullscreenVideo[]     = "overlay-fullscreen-video";
 const char kSharedWorker[]               = "shared-worker";
 const char kPageVisibility[]             = "page-visiblity";
 

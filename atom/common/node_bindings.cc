@@ -227,7 +227,7 @@ void NodeBindings::UvRunOnce() {
 
   // Perform microtask checkpoint after running JavaScript.
   scoped_ptr<blink::WebScopedRunV8Script> script_scope(
-      is_browser_ ? nullptr : new blink::WebScopedRunV8Script(env->isolate()));
+      is_browser_ ? nullptr : new blink::WebScopedRunV8Script);
 
   // Deal with uv events.
   int r = uv_run(uv_loop_, UV_RUN_NOWAIT);

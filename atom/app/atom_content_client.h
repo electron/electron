@@ -22,7 +22,7 @@ class AtomContentClient : public brightray::ContentClient {
   std::string GetProduct() const override;
   std::string GetUserAgent() const override;
   void AddAdditionalSchemes(
-      std::vector<std::string>* standard_schemes,
+      std::vector<url::SchemeWithType>* standard_schemes,
       std::vector<std::string>* savable_schemes) override;
   void AddPepperPlugins(
       std::vector<content::PepperPluginInfo>* plugins) override;

@@ -174,11 +174,10 @@ def create_or_get_release_draft(github, releases, tag, tag_exists):
 
 
 def create_release_draft(github, tag):
+  name = '{0} {1}'.format(PROJECT_NAME, tag)
   if os.environ.has_key('CI'):
-    name = '{0} pending draft'.format(PROJECT_NAME)
     body = '(placeholder)'
   else:
-    name = '{0} {1}'.format(PROJECT_NAME, tag)
     body = get_text_with_editor(name)
   if body == '':
     sys.stderr.write('Quit due to empty release note.\n')

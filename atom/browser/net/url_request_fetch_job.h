@@ -45,6 +45,7 @@ class URLRequestFetchJob : public JsAsker<net::URLRequestJob>,
   // Create a independent request context.
   net::URLRequestContextGetter* CreateRequestContext();
 
+  scoped_ptr<net::URLRequestContext> request_context_;
   scoped_refptr<net::URLRequestContextGetter> url_request_context_getter_;
   scoped_ptr<net::URLFetcher> fetcher_;
   scoped_refptr<net::IOBuffer> pending_buffer_;

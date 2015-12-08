@@ -180,7 +180,7 @@ NativeWindowViews::NativeWindowViews(
   // Set WM_WINDOW_ROLE.
   params.wm_role_name = "browser-window";
   // Set WM_CLASS.
-  params.wm_class_name = base::StringToLowerASCII(name);
+  params.wm_class_name = base::ToLowerASCII(name);
   params.wm_class_class = name;
 #endif
 
