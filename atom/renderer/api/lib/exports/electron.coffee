@@ -3,6 +3,9 @@ module.exports = require '../../../../common/api/lib/exports/electron'
 
 Object.defineProperties module.exports,
   # Renderer side modules, please sort with alphabet order.
+  desktopCapturer:
+    enumerable: true
+    get: -> require '../desktop-capturer'
   ipcRenderer:
     enumerable: true
     get: -> require '../ipc-renderer'
