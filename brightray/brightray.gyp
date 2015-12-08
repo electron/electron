@@ -126,7 +126,9 @@
           'link_settings': {
             'libraries': [
               '$(SDKROOT)/System/Library/Frameworks/AppKit.framework',
+              # Required by webrtc:
               '$(SDKROOT)/System/Library/Frameworks/OpenGL.framework',
+              '$(SDKROOT)/System/Library/Frameworks/IOKit.framework',
             ],
           },
           'conditions':  [
@@ -163,7 +165,6 @@
                   '$(SDKROOT)/System/Library/Frameworks/CoreAudio.framework',
                   '$(SDKROOT)/System/Library/Frameworks/CoreMIDI.framework',
                   '$(SDKROOT)/System/Library/Frameworks/CoreVideo.framework',
-                  '$(SDKROOT)/System/Library/Frameworks/OpenGL.framework',
                   # surface.gyp:
                   '$(SDKROOT)/System/Library/Frameworks/IOSurface.framework',
                   # content_common.gypi:
@@ -172,7 +173,6 @@
                   '$(SDKROOT)/System/Library/Frameworks/ApplicationServices.framework',
                   '$(SDKROOT)/System/Library/Frameworks/Carbon.framework',
                   '$(SDKROOT)/System/Library/Frameworks/CoreFoundation.framework',
-                  '$(SDKROOT)/System/Library/Frameworks/IOKit.framework',
                   # content_browser.gypi:
                   '-lbsm',
                   # content_common.gypi:
