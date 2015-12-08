@@ -108,6 +108,9 @@ app.setAppPath packagePath
 # Load the chrome extension support.
 require './chrome-extension'
 
+# Load internal desktop-capturer module.
+require './desktop-capturer'
+
 # Set main startup script of the app.
 mainStartupScript = packageJson.main or 'index.js'
 

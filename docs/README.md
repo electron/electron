@@ -58,6 +58,7 @@ select the tag that matches your version.
 
 ### Modules for the Renderer Process (Web Page):
 
+* [desktopCapturer](api/desktop-capturer.md)
 * [ipcRenderer](api/ipc-renderer.md)
 * [remote](api/remote.md)
 * [webFrame](api/web-frame.md)
