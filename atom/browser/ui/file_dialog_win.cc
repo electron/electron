@@ -51,7 +51,7 @@ void ConvertFilters(const Filters& filters,
     std::vector<std::string> extensions(filter.second);
     for (size_t j = 0; j < extensions.size(); ++j)
       extensions[j].insert(0, "*.");
-    buffer->push_back(base::UTF8ToWide(JoinString(extensions, ";")));
+    buffer->push_back(base::UTF8ToWide(base::JoinString(extensions, ";")));
     spec.pszSpec = buffer->back().c_str();
 
     filterspec->push_back(spec);
@@ -273,7 +273,9 @@ bool ShowSaveDialog(atom::NativeWindow* parent_window,
     bool matched = false;
     for (size_t i = 0; i < filter.second.size(); ++i) {
       if (filter.second[i] == "*" ||
-          base::EndsWith(file_name, filter.second[i], false)) {
+          base::EndsWith(
+            file_name, filter.second[i],
+            base::CompareCase::INSENSITIVE_ASCII)) {
         matched = true;
         break;;
       }

@@ -127,7 +127,7 @@ void Browser::SetUserTasks(const std::vector<UserTask>& tasks) {
 
 PCWSTR Browser::GetAppUserModelID() {
   if (app_user_model_id_.empty()) {
-    SetAppUserModelID(ReplaceStringPlaceholders(
+    SetAppUserModelID(base::ReplaceStringPlaceholders(
         kAppUserModelIDFormat, base::UTF8ToUTF16(GetName()), nullptr));
   }
 
