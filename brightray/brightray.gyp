@@ -131,6 +131,7 @@
                   '<(libchromiumcontent_dir)/libdevtools_http_handler.a',
                   '<(libchromiumcontent_dir)/libhttp_server.a',
                   '<(libchromiumcontent_dir)/libdesktop_capture.a',
+                  '<(libchromiumcontent_dir)/libdesktop_capture_differ_sse2.a',
                   '<(libchromiumcontent_dir)/librtc_base.a',
                   '<(libchromiumcontent_dir)/librtc_base_approved.a',
                   '<(libchromiumcontent_dir)/libsystem_wrappers.a',
