@@ -26,7 +26,8 @@ NetworkDelegate::NetworkDelegate() {
   auto command_line = base::CommandLine::ForCurrentProcess();
   if (command_line->HasSwitch(kIgnoreConnectionsLimit)) {
     std::string value = command_line->GetSwitchValueASCII(kIgnoreConnectionsLimit);
-    base::SplitString(value, ',', &ignore_connections_limit_domains_);
+    ignore_connections_limit_domains_ = base::SplitString(
+        value, ",", base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY);
   }
 }
 
@@ -38,7 +39,7 @@ int NetworkDelegate::OnBeforeURLRequest(
     const net::CompletionCallback& callback,
     GURL* new_url) {
   for (const auto& domain : ignore_connections_limit_domains_) {
-    if (request->url().DomainIs(domain.c_str(), domain.size())) {
+    if (request->url().DomainIs(domain)) {
       // Allow unlimited concurrent connections.
       request->SetPriority(net::MAXIMUM_PRIORITY);
       request->SetLoadFlags(request->load_flags() | net::LOAD_IGNORE_LIMITS);
@@ -91,8 +92,15 @@ void NetworkDelegate::OnBeforeRedirect(net::URLRequest* request,
 void NetworkDelegate::OnResponseStarted(net::URLRequest* request) {
 }
 
-void NetworkDelegate::OnRawBytesRead(const net::URLRequest& request,
-                                          int bytes_read) {
+void NetworkDelegate::OnURLRequestJobOrphaned(net::URLRequest* request) {
+}
+
+void NetworkDelegate::OnNetworkBytesReceived(const net::URLRequest& request,
+                                             int64_t bytes_read) {
+}
+
+void NetworkDelegate::OnNetworkBytesSent(const net::URLRequest& request,
+                                         int64_t bytes_sent) {
 }
 
 void NetworkDelegate::OnCompleted(net::URLRequest* request, bool started) {

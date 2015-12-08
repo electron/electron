@@ -64,7 +64,7 @@ class MediaCaptureDevicesDispatcher : public content::MediaObserver {
                              int render_view_id) override;
 
  private:
-  friend struct DefaultSingletonTraits<MediaCaptureDevicesDispatcher>;
+  friend struct base::DefaultSingletonTraits<MediaCaptureDevicesDispatcher>;
 
   MediaCaptureDevicesDispatcher();
   virtual ~MediaCaptureDevicesDispatcher();

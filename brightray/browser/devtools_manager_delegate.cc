@@ -99,6 +99,8 @@ class DevToolsDelegate :
   std::string GetDiscoveryPageHTML() override;
   std::string GetFrontendResource(const std::string& path) override;
   std::string GetPageThumbnailData(const GURL& url) override;
+  content::DevToolsExternalAgentProxyDelegate* HandleWebSocketConnection(
+      const std::string& path) override;
 
  private:
   DISALLOW_COPY_AND_ASSIGN(DevToolsDelegate);
@@ -123,6 +125,11 @@ std::string DevToolsDelegate::GetFrontendResource(
 
 std::string DevToolsDelegate::GetPageThumbnailData(const GURL& url) {
   return std::string();
+}
+
+content::DevToolsExternalAgentProxyDelegate*
+DevToolsDelegate::HandleWebSocketConnection(const std::string& path) {
+  return nullptr;
 }
 
 }  // namespace

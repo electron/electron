@@ -151,6 +151,10 @@ int64_t DevToolsNetworkTransaction::GetTotalReceivedBytes() const {
   return transaction_->GetTotalReceivedBytes();
 }
 
+int64_t DevToolsNetworkTransaction::GetTotalSentBytes() const {
+  return transaction_->GetTotalSentBytes();
+}
+
 void DevToolsNetworkTransaction::DoneReading() {
   transaction_->DoneReading();
 }
@@ -176,6 +180,11 @@ void DevToolsNetworkTransaction::SetQuicServerInfo(
 bool DevToolsNetworkTransaction::GetLoadTimingInfo(
     net::LoadTimingInfo* info) const {
   return transaction_->GetLoadTimingInfo(info);
+}
+
+bool DevToolsNetworkTransaction::GetRemoteEndpoint(
+    net::IPEndPoint* endpoint) const {
+  return transaction_->GetRemoteEndpoint(endpoint);
 }
 
 void DevToolsNetworkTransaction::SetPriority(net::RequestPriority priority) {

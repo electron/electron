@@ -153,6 +153,8 @@
                   '$(SDKROOT)/System/Library/Frameworks/IOKit.framework',
                   # content_browser.gypi:
                   '-lbsm',
+                  # content_common.gypi:
+                  '-lsandbox',
                   # bluetooth.gyp:
                   '$(SDKROOT)/System/Library/Frameworks/IOBluetooth.framework',
                 ],

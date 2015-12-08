@@ -68,7 +68,7 @@ class DevToolsNetworkInterceptor {
   // Transactions waiting certain amount of transfer to be accounted.
   std::vector<DevToolsNetworkTransaction*> throttled_transactions_;
 
-  base::OneShotTimer<DevToolsNetworkInterceptor> timer_;
+  base::OneShotTimer timer_;
   base::TimeTicks offset_;
   base::TimeDelta tick_length_;
   base::TimeDelta latency_length_;

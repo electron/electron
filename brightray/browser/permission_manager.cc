@@ -18,10 +18,9 @@ PermissionManager::PermissionManager() {
 PermissionManager::~PermissionManager() {
 }
 
-void PermissionManager::RequestPermission(
+int PermissionManager::RequestPermission(
     content::PermissionType permission,
     content::RenderFrameHost* render_frame_host,
-    int request_id,
     const GURL& requesting_origin,
     bool user_gesture,
     const base::Callback<void(content::PermissionStatus)>& callback) {
@@ -30,13 +29,10 @@ void PermissionManager::RequestPermission(
         GrantSendMidiSysExMessage(render_frame_host->GetProcess()->GetID());
   }
   callback.Run(content::PERMISSION_STATUS_GRANTED);
+  return kNoPendingOperation;
 }
 
-void PermissionManager::CancelPermissionRequest(
-    content::PermissionType permission,
-    content::RenderFrameHost* render_frame_host,
-    int request_id,
-    const GURL& requesting_origin) {
+void PermissionManager::CancelPermissionRequest(int request_id) {
 }
 
 void PermissionManager::ResetPermission(

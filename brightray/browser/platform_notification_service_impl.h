@@ -22,7 +22,7 @@ class PlatformNotificationServiceImpl
   NotificationPresenter* notification_presenter();
 
  private:
-  friend struct DefaultSingletonTraits<PlatformNotificationServiceImpl>;
+  friend struct base::DefaultSingletonTraits<PlatformNotificationServiceImpl>;
 
   PlatformNotificationServiceImpl();
   ~PlatformNotificationServiceImpl() override;
