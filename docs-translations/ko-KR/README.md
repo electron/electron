@@ -62,6 +62,7 @@ GitHub 프로젝트내에서만 볼 수 있고 `master` 브랜치의 문서는 �
 
 ### 랜더러 프로세스에서 사용할 수 있는 모듈 (웹 페이지):
 
+* [desktopCapturer](api/desktop-capturer.md)
 * [ipcRenderer](api/ipc-renderer.md)
 * [remote](api/remote.md)
 * [webFrame](api/web-frame.md)
