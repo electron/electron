@@ -9,6 +9,13 @@ var path = require('path')
 var extract = require('extract-zip')
 var download = require('electron-download')
 
+var installedVersion = null
+try {
+  installedVersion = fs.readFileSync(path.join(__dirname, 'dist', 'version'), 'utf-8').replace(/^v/, '')
+} catch (err) {
+  // do nothing
+}
+
 var platform = os.platform()
 
 function onerror (err) {
@@ -22,6 +29,10 @@ var paths = {
 }
 
 if (!paths[platform]) throw new Error('Unknown platform: ' + platform)
+
+if (installedVersion === version && fs.existsSync(paths[platform])) {
+  return
+}
 
 // downloads if not cached
 download({version: version, arch: process.env.npm_config_arch}, extractFile)
