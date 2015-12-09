@@ -51,7 +51,7 @@ struct V8FunctionInvoker<v8::Local<v8::Value>(ArgTypes...)> {
       return v8::Null(isolate);
     scoped_ptr<blink::WebScopedRunV8Script> script_scope(
         Locker::IsBrowserProcess() ?
-        nullptr : new blink::WebScopedRunV8Script(isolate));
+        nullptr : new blink::WebScopedRunV8Script);
     v8::Local<v8::Function> holder = function.NewHandle(isolate);
     v8::Local<v8::Context> context = holder->CreationContext();
     v8::Context::Scope context_scope(context);
@@ -72,7 +72,7 @@ struct V8FunctionInvoker<void(ArgTypes...)> {
       return;
     scoped_ptr<blink::WebScopedRunV8Script> script_scope(
         Locker::IsBrowserProcess() ?
-        nullptr : new blink::WebScopedRunV8Script(isolate));
+        nullptr : new blink::WebScopedRunV8Script);
     v8::Local<v8::Function> holder = function.NewHandle(isolate);
     v8::Local<v8::Context> context = holder->CreationContext();
     v8::Context::Scope context_scope(context);
@@ -93,7 +93,7 @@ struct V8FunctionInvoker<ReturnType(ArgTypes...)> {
       return ret;
     scoped_ptr<blink::WebScopedRunV8Script> script_scope(
         Locker::IsBrowserProcess() ?
-        nullptr : new blink::WebScopedRunV8Script(isolate));
+        nullptr : new blink::WebScopedRunV8Script);
     v8::Local<v8::Function> holder = function.NewHandle(isolate);
     v8::Local<v8::Context> context = holder->CreationContext();
     v8::Context::Scope context_scope(context);

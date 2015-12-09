@@ -26,6 +26,8 @@ class MenuItem
 
     {click, @selector, @type, @role, @label, @sublabel, @accelerator, @icon, @enabled, @visible, @checked, @submenu} = options
 
+    if @submenu? and @submenu.constructor isnt Menu
+      @submenu = Menu.buildFromTemplate @submenu
     @type = 'submenu' if not @type? and @submenu?
     throw new Error('Invalid submenu') if @type is 'submenu' and @submenu?.constructor isnt Menu
 

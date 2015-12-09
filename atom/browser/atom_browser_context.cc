@@ -61,7 +61,7 @@ std::string RemoveWhitespace(const std::string& str) {
 AtomBrowserContext::AtomBrowserContext(const std::string& partition,
                                        bool in_memory)
     : brightray::BrowserContext(partition, in_memory),
-      cert_verifier_(new AtomCertVerifier),
+      cert_verifier_(nullptr),
       job_factory_(new AtomURLRequestJobFactory),
       allow_ntlm_everywhere_(false) {
 }
@@ -86,7 +86,8 @@ std::string AtomBrowserContext::GetUserAgent() {
   return content::BuildUserAgentFromProduct(user_agent);
 }
 
-net::URLRequestJobFactory* AtomBrowserContext::CreateURLRequestJobFactory(
+scoped_ptr<net::URLRequestJobFactory>
+AtomBrowserContext::CreateURLRequestJobFactory(
     content::ProtocolHandlerMap* handlers,
     content::URLRequestInterceptorScopedVector* interceptors) {
   scoped_ptr<AtomURLRequestJobFactory> job_factory(job_factory_);
@@ -131,7 +132,7 @@ net::URLRequestJobFactory* AtomBrowserContext::CreateURLRequestJobFactory(
         top_job_factory.Pass(), make_scoped_ptr(*it)));
   interceptors->weak_clear();
 
-  return top_job_factory.release();
+  return top_job_factory.Pass();
 }
 
 net::HttpCache::BackendFactory*
@@ -160,8 +161,10 @@ content::BrowserPluginGuestManager* AtomBrowserContext::GetGuestManager() {
   return guest_manager_.get();
 }
 
-net::CertVerifier* AtomBrowserContext::CreateCertVerifier() {
-  return cert_verifier_;
+scoped_ptr<net::CertVerifier> AtomBrowserContext::CreateCertVerifier() {
+  DCHECK(!cert_verifier_);
+  cert_verifier_ = new AtomCertVerifier;
+  return make_scoped_ptr(cert_verifier_);
 }
 
 net::SSLConfigService* AtomBrowserContext::CreateSSLConfigService() {

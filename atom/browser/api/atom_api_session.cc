@@ -51,7 +51,7 @@ struct ClearStorageDataOptions {
 uint32 GetStorageMask(const std::vector<std::string>& storage_types) {
   uint32 storage_mask = 0;
   for (const auto& it : storage_types) {
-    auto type = base::StringToLowerASCII(it);
+    auto type = base::ToLowerASCII(it);
     if (type == "appcache")
       storage_mask |= StoragePartition::REMOVE_DATA_MASK_APPCACHE;
     else if (type == "cookies")
@@ -75,7 +75,7 @@ uint32 GetStorageMask(const std::vector<std::string>& storage_types) {
 uint32 GetQuotaMask(const std::vector<std::string>& quota_types) {
   uint32 quota_mask = 0;
   for (const auto& it : quota_types) {
-    auto type = base::StringToLowerASCII(it);
+    auto type = base::ToLowerASCII(it);
     if (type == "temporary")
       quota_mask |= StoragePartition::QUOTA_MANAGED_STORAGE_MASK_TEMPORARY;
     else if (type == "persistent")
@@ -233,7 +233,8 @@ void SetProxyInIO(net::URLRequestContextGetter* getter,
                   const net::ProxyConfig& config,
                   const base::Closure& callback) {
   auto proxy_service = getter->GetURLRequestContext()->proxy_service();
-  proxy_service->ResetConfigService(new net::ProxyConfigServiceFixed(config));
+  proxy_service->ResetConfigService(make_scoped_ptr(
+      new net::ProxyConfigServiceFixed(config)));
   // Refetches and applies the new pac script if provided.
   proxy_service->ForceReloadProxyConfig();
   RunCallbackInUI(callback);

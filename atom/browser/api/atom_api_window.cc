@@ -159,6 +159,10 @@ Window::Window(v8::Isolate* isolate, const mate::Dictionary& options) {
 Window::~Window() {
   if (!window_->IsClosed())
     window_->CloseContents(nullptr);
+
+  // Destroy the native window in next tick because the native code might be
+  // iterating all windows.
+  base::MessageLoop::current()->DeleteSoon(FROM_HERE, window_.release());
 }
 
 void Window::WillCloseWindow(bool* prevent_default) {
@@ -484,6 +488,10 @@ bool Window::IsDocumentEdited() {
   return window_->IsDocumentEdited();
 }
 
+void Window::SetIgnoreMouseEvents(bool ignore) {
+  return window_->SetIgnoreMouseEvents(ignore);
+}
+
 void Window::CapturePage(mate::Arguments* args) {
   gfx::Rect rect;
   base::Callback<void(const gfx::Image&)> callback;
@@ -658,6 +666,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("getRepresentedFilename", &Window::GetRepresentedFilename)
       .SetMethod("setDocumentEdited", &Window::SetDocumentEdited)
       .SetMethod("isDocumentEdited", &Window::IsDocumentEdited)
+      .SetMethod("setIgnoreMouseEvents", &Window::SetIgnoreMouseEvents)
       .SetMethod("focusOnWebView", &Window::FocusOnWebView)
       .SetMethod("blurWebView", &Window::BlurWebView)
       .SetMethod("isWebViewFocused", &Window::IsWebViewFocused)

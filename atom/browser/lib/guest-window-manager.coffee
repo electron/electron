@@ -5,7 +5,7 @@ frameToGuest = {}
 
 # Copy attribute of |parent| to |child| if it is not defined in |child|.
 mergeOptions = (child, parent) ->
-  for own key, value of parent when key not in Object.keys child
+  for own key, value of parent when key not of child
     if typeof value is 'object'
       child[key] = mergeOptions {}, value
     else
@@ -44,7 +44,7 @@ createGuest = (embedder, url, frameName, options) ->
     guest.removeListener 'closed', closedByUser
     guest.destroy()
   closedByUser = ->
-    embedder.send 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_CLOSED', guestId
+    embedder.send "ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_CLOSED_#{guestId}"
     embedder.removeListener 'render-view-deleted', closedByEmbedder
   embedder.once 'render-view-deleted', closedByEmbedder
   guest.once 'closed', closedByUser

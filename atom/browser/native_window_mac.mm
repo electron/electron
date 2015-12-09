@@ -6,7 +6,6 @@
 
 #include <string>
 
-#import "atom/browser/ui/cocoa/event_processing_window.h"
 #include "atom/common/draggable_region.h"
 #include "atom/common/options_switches.h"
 #include "base/mac/mac_util.h"
@@ -209,7 +208,7 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 @end
 
-@interface AtomNSWindow : EventProcessingWindow {
+@interface AtomNSWindow : NSWindow {
  @private
   atom::NativeWindowMac* shell_;
   bool enable_larger_than_screen_;
@@ -231,6 +230,8 @@ bool ScopedDisableResize::disable_resize_ = false;
 - (void)setEnableLargerThanScreen:(bool)enable {
   enable_larger_than_screen_ = enable;
 }
+
+// NSWindow overrides.
 
 - (NSRect)constrainFrameRect:(NSRect)frameRect toScreen:(NSScreen*)screen {
   // Resizing is disabled.
@@ -687,6 +688,10 @@ bool NativeWindowMac::IsDocumentEdited() {
   return [window_ isDocumentEdited];
 }
 
+void NativeWindowMac::SetIgnoreMouseEvents(bool ignore) {
+  [window_ setIgnoresMouseEvents:ignore];
+}
+
 bool NativeWindowMac::HasModalDialog() {
   return [window_ attachedSheet] != nil;
 }
@@ -766,20 +771,14 @@ void NativeWindowMac::HandleKeyboardEvent(
       event.type == content::NativeWebKeyboardEvent::Char)
     return;
 
-  if (event.os_event.window == window_.get()) {
-    EventProcessingWindow* event_window =
-        static_cast<EventProcessingWindow*>(window_);
-    DCHECK([event_window isKindOfClass:[EventProcessingWindow class]]);
-    [event_window redispatchKeyEvent:event.os_event];
-  } else {
+  BOOL handled = [[NSApp mainMenu] performKeyEquivalent:event.os_event];
+  if (!handled && event.os_event.window != window_.get()) {
     // The event comes from detached devtools view, and it has already been
-    // handled by the devtools itself, we now send it to application menu to
-    // make menu acclerators work.
-    BOOL handled = [[NSApp mainMenu] performKeyEquivalent:event.os_event];
-    // Handle the cmd+~ shortcut.
     if (!handled && (event.os_event.modifierFlags & NSCommandKeyMask) &&
-        (event.os_event.keyCode == 50  /* ~ key */))
+        (event.os_event.keyCode == 50  /* ~ key */)) {
+      // Handle the cmd+~ shortcut.
       Focus(true);
+    }
   }
 }
 

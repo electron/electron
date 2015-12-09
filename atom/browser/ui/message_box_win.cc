@@ -34,7 +34,7 @@ struct CommonButtonID {
   int id;
 };
 CommonButtonID GetCommonID(const base::string16& button) {
-  base::string16 lower = base::StringToLowerASCII(button);
+  base::string16 lower = base::ToLowerASCII(button);
   if (lower == L"ok")
     return { TDCBF_OK_BUTTON, IDOK };
   else if (lower == L"yes")

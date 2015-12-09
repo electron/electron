@@ -226,8 +226,6 @@ void AtomRendererClient::EnableWebRuntimeFeatures() {
     blink::WebRuntimeFeatures::enableExperimentalCanvasFeatures(true);
   if (IsSwitchEnabled(command_line, switches::kOverlayScrollbars))
     blink::WebRuntimeFeatures::enableOverlayScrollbars(true);
-  if (IsSwitchEnabled(command_line, switches::kOverlayFullscreenVideo))
-    blink::WebRuntimeFeatures::enableOverlayFullscreenVideo(true);
   if (IsSwitchEnabled(command_line, switches::kSharedWorker))
     blink::WebRuntimeFeatures::enableSharedWorker(true);
 }
