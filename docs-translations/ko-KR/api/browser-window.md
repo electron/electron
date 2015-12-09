@@ -737,3 +737,9 @@ Linux 플랫폼에선 Unity 데스크톱 환경만 지원합니다. 그리고 �
 윈도우가 모든 워크스페이스에서 표시될지 여부를 반환합니다.
 
 **참고:** 이 API는 Windows에서 언제나 false를 반환합니다.
+
+### `win.setIgnoreMouseEvents(ignore)` _OS X_
+
+* `ignore` Boolean
+
+윈도우에서 일어나는 모든 마우스 이벤트를 무시합니다.

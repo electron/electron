@@ -66,4 +66,4 @@ ipcRenderer.send('asynchronous-message', 'ping');
 비동기로 메시지를 전달할 수 있습니다. 자세한 내용은
 [webContents.send][webcontents-send]를 참고하세요.
 
-[webcontents-send]: web-contents.md#webcontentssendchannel-args
+[webcontents-send]: web-contents.md#webcontentssendchannel-arg1-arg2-
