@@ -122,7 +122,6 @@ win.show();
     JavaScript와 CSS 또는 플러그인을 실행시킬 수 있도록 허용합니다. 기본값은
     `false`입니다.
   * `images` Boolean - 이미지 지원을 활성화합니다. 기본값은 `true`입니다.
-  * `java` Boolean - Java 지원을 활성화합니다. 기본값은 `false`입니다.
   * `textAreasAreResizable` Boolean - HTML TextArea 요소의 크기를 재조정을
     허용합니다. 기본값은 `true`입니다.
   * `webgl` Boolean - WebGL 지원을 활성화합니다. 기본값은 `true`입니다.
@@ -134,8 +133,6 @@ win.show();
     활성화합니다. 기본값은 `false`입니다.
   * `overlayScrollbars` Boolean - 오버레이 스크롤바를 활성화합니다. 기본값은
     `false`입니다.
-  * `overlayFullscreenVideo` Boolean - 오버레이 전체화면 비디오 기능을 활성화합니다.
-    기본값은 `false`입니다.
   * `sharedWorker` Boolean - SharedWorker 기능을 활성화합니다. 기본값은
     `false`입니다.
   * `directWrite` Boolean - Windows에서 폰트 랜더링을 위해 DirectWrite를
