@@ -367,7 +367,7 @@ Fired just before a request is going to be sent to the server, modifications of 
 
 * `filter` Object
   * `urls` Array - A list of URLs or URL patterns. Request that cannot match any of the URLs
-                          will be filtered out.
+                   will be filtered out.
 * `listener` Function
   * `details` Object
     * `id` String - Request id.
@@ -390,7 +390,7 @@ Fired when HTTP response headers of a request have been received. Should return 
 
 * `filter` Object
   * `urls` Array - A list of URLs or URL patterns. Request that cannot match any of the URLs
-                          will be filtered out.
+                   will be filtered out.
 * `listener` Function
   * `details` Object
     * `id` String - Request id.
@@ -410,7 +410,7 @@ status line and response headers are available.
 
 * `filter` Object
   * `urls` Array - A list of URLs or URL patterns. Request that cannot match any of the URLs
-                          will be filtered out.
+                   will be filtered out.
 * `listener` Function
   * `details` Object
     * `id` String - Request id.
@@ -420,7 +420,7 @@ status line and response headers are available.
     * `timestamp` Double
     * `redirectURL` String
     * `statusCode` Integer
-    * `ip` String - The server IP address that the request was actually sent to.
+    * `ip` String **optional** - The server IP address that the request was actually sent to.
     * `fromCache` Boolean
     * `responseHeaders` Object
 

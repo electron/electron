@@ -24,12 +24,6 @@ struct Converter<base::DictionaryValue> {
 };
 
 template<>
-struct Converter<const base::DictionaryValue*> {
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   const base::DictionaryValue* val);
-};
-
-template<>
 struct Converter<base::ListValue> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,

@@ -30,8 +30,8 @@ template<AtomNetworkDelegate::EventTypes type>
 void WebRequest::SetListener(mate::Arguments* args) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
 
-  base::DictionaryValue* filter = new base::DictionaryValue();
-  args->GetNext(filter);
+  scoped_ptr<base::DictionaryValue> filter(new base::DictionaryValue());
+  args->GetNext(filter.get());
   AtomNetworkDelegate::Listener callback;
   if (!args->GetNext(&callback)) {
     args->ThrowError("Must pass null or a function");
@@ -42,7 +42,7 @@ void WebRequest::SetListener(mate::Arguments* args) {
   BrowserThread::PostTask(BrowserThread::IO, FROM_HERE,
                           base::Bind(&AtomNetworkDelegate::SetListenerInIO,
                                      base::Unretained(delegate),
-                                     type, filter, callback));
+                                     type, base::Passed(&filter), callback));
 }
 
 // static
@@ -54,7 +54,7 @@ mate::Handle<WebRequest> WebRequest::Create(
 
 // static
 void WebRequest::BuildPrototype(v8::Isolate* isolate,
-                             v8::Local<v8::ObjectTemplate> prototype) {
+                                v8::Local<v8::ObjectTemplate> prototype) {
   mate::ObjectTemplateBuilder(isolate, prototype)
       .SetMethod("onBeforeRequest",
                  &WebRequest::SetListener<

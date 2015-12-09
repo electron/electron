@@ -62,7 +62,7 @@ bool Converter<atom::AtomNetworkDelegate::BlockingResponse>::FromV8(
     return false;
   if (!dict.Get("cancel", &(out->cancel)))
     return false;
-  dict.Get("redirectURL", &(out->redirectURL));
+  dict.Get("redirectURL", &(out->redirect_url));
   base::DictionaryValue request_headers;
   if (dict.Get("requestHeaders", &request_headers)) {
     for (base::DictionaryValue::Iterator it(request_headers);
@@ -70,18 +70,18 @@ bool Converter<atom::AtomNetworkDelegate::BlockingResponse>::FromV8(
          it.Advance()) {
       std::string value;
       CHECK(it.value().GetAsString(&value));
-      out->requestHeaders.SetHeader(it.key(), value);
+      out->request_headers.SetHeader(it.key(), value);
     }
   }
   base::DictionaryValue response_headers;
   if (dict.Get("responseHeaders", &response_headers)) {
-    out->responseHeaders = new net::HttpResponseHeaders("");
+    out->response_headers = new net::HttpResponseHeaders("");
     for (base::DictionaryValue::Iterator it(response_headers);
          !it.IsAtEnd();
          it.Advance()) {
       std::string value;
       CHECK(it.value().GetAsString(&value));
-      out->responseHeaders->AddHeader(it.key() + " : " + value);
+      out->response_headers->AddHeader(it.key() + " : " + value);
     }
   }
   return true;

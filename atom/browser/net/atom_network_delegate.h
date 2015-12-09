@@ -27,7 +27,7 @@ class AtomNetworkDelegate : public brightray::NetworkDelegate {
  public:
   struct BlockingResponse;
   using Listener =
-      base::Callback<BlockingResponse(const base::DictionaryValue*)>;
+      base::Callback<BlockingResponse(const base::DictionaryValue&)>;
 
   enum EventTypes {
     kInvalidEvent = 0,
@@ -42,35 +42,34 @@ class AtomNetworkDelegate : public brightray::NetworkDelegate {
   };
 
   struct ListenerInfo {
-    ListenerInfo() {}
-    ~ListenerInfo() {}
-
     std::set<extensions::URLPattern> url_patterns;
     AtomNetworkDelegate::Listener callback;
   };
 
   struct BlockingResponse {
-    BlockingResponse() {}
+    BlockingResponse() : cancel(false) {}
     ~BlockingResponse() {}
 
-    int Cancel() const {
+    int Code() const {
       return cancel ? net::ERR_BLOCKED_BY_CLIENT : net::OK;
     }
 
     bool cancel;
-    GURL redirectURL;
-    net::HttpRequestHeaders requestHeaders;
-    scoped_refptr<net::HttpResponseHeaders> responseHeaders;
+    GURL redirect_url;
+    net::HttpRequestHeaders request_headers;
+    scoped_refptr<net::HttpResponseHeaders> response_headers;
   };
 
   AtomNetworkDelegate();
   ~AtomNetworkDelegate() override;
 
   void SetListenerInIO(EventTypes type,
-                       const base::DictionaryValue* filter,
+                       scoped_ptr<base::DictionaryValue> filter,
                        const Listener& callback);
 
  protected:
+  void OnErrorOccurred(net::URLRequest* request);
+
   // net::NetworkDelegate:
   int OnBeforeURLRequest(net::URLRequest* request,
                          const net::CompletionCallback& callback,
@@ -91,10 +90,8 @@ class AtomNetworkDelegate : public brightray::NetworkDelegate {
   void OnResponseStarted(net::URLRequest* request) override;
   void OnCompleted(net::URLRequest* request, bool started) override;
 
-  void OnErrorOccurred(net::URLRequest* request);
-
  private:
-  static std::map<EventTypes, ListenerInfo> event_listener_map_;
+  std::map<EventTypes, ListenerInfo> event_listener_map_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomNetworkDelegate);
 };

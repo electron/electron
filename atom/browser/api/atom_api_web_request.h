@@ -9,7 +9,6 @@
 
 #include "atom/browser/api/trackable_object.h"
 #include "atom/browser/net/atom_network_delegate.h"
-#include "base/callback.h"
 #include "native_mate/arguments.h"
 #include "native_mate/handle.h"
 
@@ -22,7 +21,7 @@ namespace api {
 class WebRequest : public mate::TrackableObject<WebRequest> {
  public:
   static mate::Handle<WebRequest> Create(v8::Isolate* isolate,
-                                      AtomBrowserContext* browser_context);
+                                         AtomBrowserContext* browser_context);
 
   // mate::TrackableObject:
   static void BuildPrototype(v8::Isolate* isolate,
