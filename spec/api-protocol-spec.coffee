@@ -1,6 +1,7 @@
 assert   = require 'assert'
 http     = require 'http'
 path     = require 'path'
+qs        = require 'querystring'
 
 {remote} = require 'electron'
 {protocol} = remote.require 'electron'
@@ -8,6 +9,9 @@ path     = require 'path'
 describe 'protocol module', ->
   protocolName = 'sp'
   text = 'valar morghulis'
+  postData =
+    name: 'post test'
+    type: 'string'
 
   afterEach (done) ->
     protocol.unregisterProtocol protocolName, ->
@@ -405,6 +409,22 @@ describe 'protocol module', ->
           error: (xhr, errorType, error) ->
             done(error)
 
+    it 'can receive post data', (done) ->
+      handler = (request, callback) ->
+        uploadData = request.uploadData[0].bytes.toString()
+        callback({data: uploadData})
+      protocol.interceptStringProtocol 'http', handler, (error) ->
+        return done(error) if error
+        $.ajax
+          url: "http://fake-host"
+          type: "POST"
+          data: postData
+          success: (data) ->
+            assert.deepEqual qs.parse(data), postData
+            done()
+          error: (xhr, errorType, error) ->
+            done(error)
+
   describe 'protocol.interceptBufferProtocol', ->
     it 'can intercept http protocol', (done) ->
       handler = (request, callback) -> callback(new Buffer(text))
@@ -417,6 +437,55 @@ describe 'protocol module', ->
             done()
           error: (xhr, errorType, error) ->
             done(error)
+
+    it 'can receive post data', (done) ->
+      handler = (request, callback) ->
+        uploadData = request.uploadData[0].bytes
+        callback(uploadData)
+      protocol.interceptBufferProtocol 'http', handler, (error) ->
+        return done(error) if error
+        $.ajax
+          url: "http://fake-host"
+          type: "POST"
+          data: postData
+          success: (data) ->
+            assert.equal data, $.param postData
+            done()
+          error: (xhr, errorType, error) ->
+            done(error)
+
+  describe 'protocol.interceptHttpProtocol', ->
+    it 'can send POST request', (done) ->
+      server = http.createServer (req, res) ->
+        body = ''
+        req.on 'data', (chunk) ->
+          body += chunk
+        req.on 'end', ->
+          res.end body
+        server.close()
+      server.listen 0, '127.0.0.1', ->
+        {port} = server.address()
+        url = "http://127.0.0.1:#{port}"
+        handler = (request, callback) ->
+          data =
+            url: url
+            method: 'POST'
+            uploadData:
+              contentType: 'application/x-www-form-urlencoded'
+              data: request.uploadData[0].bytes.toString()
+            session: null
+          callback(data)
+        protocol.interceptHttpProtocol 'http', handler, (error) ->
+          return done(error) if error
+          $.ajax
+            url: "http://fake-host"
+            type: "POST"
+            data: postData
+            success: (data) ->
+              assert.deepEqual qs.parse(data), postData
+              done()
+            error: (xhr, errorType, error) ->
+              done(error)
 
   describe 'protocol.uninterceptProtocol', ->
     it 'returns error when scheme does not exist', (done) ->
