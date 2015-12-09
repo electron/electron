@@ -31,7 +31,7 @@ var paths = {
 if (!paths[platform]) throw new Error('Unknown platform: ' + platform)
 
 if (installedVersion === version && fs.existsSync(paths[platform])) {
-  return
+  process.exit(0)
 }
 
 // downloads if not cached
