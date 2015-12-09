@@ -126,6 +126,7 @@ class Window : public mate::TrackableObject<Window>,
   std::string GetRepresentedFilename();
   void SetDocumentEdited(bool edited);
   bool IsDocumentEdited();
+  void SetIgnoreMouseEvents(bool ignore);
   void CapturePage(mate::Arguments* args);
   void SetProgressBar(double progress);
   void SetOverlayIcon(const gfx::Image& overlay,
