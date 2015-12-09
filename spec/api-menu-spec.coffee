@@ -1,6 +1,6 @@
 assert = require 'assert'
 
-{remote} = require 'electron'
+{remote, ipcRenderer} = require 'electron'
 {Menu, MenuItem} = remote.require 'electron'
 
 describe 'menu module', ->
@@ -8,6 +8,14 @@ describe 'menu module', ->
     it 'should be able to attach extra fields', ->
       menu = Menu.buildFromTemplate [label: 'text', extra: 'field']
       assert.equal menu.items[0].extra, 'field'
+
+    it 'does not modify the specified template', ->
+      template = ipcRenderer.sendSync 'eval', """
+        var template = [{label: 'text', submenu: [{label: 'sub'}]}];
+        require('electron').Menu.buildFromTemplate(template);
+        template;
+      """
+      assert.deepStrictEqual template, [label: 'text', submenu: [label: 'sub']]
 
     describe 'Menu.buildFromTemplate should reorder based on item position specifiers', ->
       it 'should position before existing item', ->
