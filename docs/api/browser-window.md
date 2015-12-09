@@ -747,3 +747,9 @@ Sets whether the window should be visible on all workspaces.
 Returns whether the window is visible on all workspaces.
 
 **Note:** This API always returns false on Windows.
+
+### `win.setIgnoreMouseEvents(ignore)` _OS X_
+
+* `ignore` Boolean
+
+Ignore all moused events that happened in the window.
