@@ -42,7 +42,7 @@ class App : public AtomBrowserClient::Delegate,
   void OnBeforeQuit(bool* prevent_default) override;
   void OnWillQuit(bool* prevent_default) override;
   void OnWindowAllClosed() override;
-  void OnQuit(int code) override;
+  void OnQuit() override;
   void OnOpenFile(bool* prevent_default, const std::string& file_path) override;
   void OnOpenURL(const std::string& url) override;
   void OnActivate(bool has_visible_windows) override;

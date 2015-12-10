@@ -180,8 +180,9 @@ void App::OnWindowAllClosed() {
   Emit("window-all-closed");
 }
 
-void App::OnQuit(const int code) {
-  Emit("quit", code);
+void App::OnQuit() {
+  int exitCode = AtomBrowserMainParts::Get()->GetExitCode();
+  Emit("quit", exitCode);
 
   if (process_singleton_.get()) {
     process_singleton_->Cleanup();
