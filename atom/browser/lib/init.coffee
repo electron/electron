@@ -51,7 +51,7 @@ process.on 'uncaughtException', (error) ->
   message = "Uncaught Exception:\n#{stack}"
   dialog.showErrorBox 'A JavaScript error occurred in the main process', message
 
-# Emit a process 'exit' event on app quit.
+# Emit 'exit' event on quit.
 {app} = require 'electron'
 app.on 'quit', (event, exitCode) ->
   process.emit 'exit', exitCode
