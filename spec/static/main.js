@@ -42,7 +42,8 @@ ipcMain.on('echo', function(event, msg) {
   event.returnValue = msg;
 });
 
-if (process.argv[2] == '--ci') {
+global.isCi = !!argv.ci;
+if (global.isCi) {
   process.removeAllListeners('uncaughtException');
   process.on('uncaughtException', function(error) {
     console.error(error, error.stack);
