@@ -1,7 +1,10 @@
 var app = require('electron').app
 
 app.on('ready', function () {
-  app.exit(123)
+  // This setImmediate call gets the spec passing on Linux
+  setImmediate(function () {
+    app.exit(123)
+  })
 })
 
 process.on('exit', function (code) {
