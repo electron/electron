@@ -119,6 +119,9 @@ const char kDisableHttpCache[] = "disable-http-cache";
 // Register schemes to standard.
 const char kRegisterStandardSchemes[] = "register-standard-schemes";
 
+// Register schemes to handle service worker.
+const char kRegisterServiceWorkerSchemes[] = "register-service-worker-schemes";
+
 // The minimum SSL/TLS version ("tls1", "tls1.1", or "tls1.2") that
 // TLS fallback will accept.
 const char kSSLVersionFallbackMin[] = "ssl-version-fallback-min";

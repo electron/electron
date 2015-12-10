@@ -92,6 +92,9 @@ class Protocol : public mate::Wrappable {
   // Register schemes to standard scheme list.
   void RegisterStandardSchemes(const std::vector<std::string>& schemes);
 
+  // Register schemes that can handle service worker.
+  void RegisterServiceWorkerSchemes(const std::vector<std::string>& schemes);
+
   // Register the protocol with certain request job.
   template<typename RequestJob>
   void RegisterProtocol(const std::string& scheme,

@@ -66,6 +66,7 @@ extern const char kPpapiFlashVersion[];
 extern const char kClientCertificate[];
 extern const char kDisableHttpCache[];
 extern const char kRegisterStandardSchemes[];
+extern const char kRegisterServiceWorkerSchemes[];
 extern const char kSSLVersionFallbackMin[];
 extern const char kCipherSuiteBlacklist[];
 extern const char kAppUserModelId[];

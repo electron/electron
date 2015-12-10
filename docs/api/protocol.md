@@ -38,6 +38,10 @@ A standard `scheme` adheres to what RFC 3986 calls
 [generic URI syntax](https://tools.ietf.org/html/rfc3986#section-3). This
 includes `file:` and `filesystem:`.
 
+### `protocol.registerServiceWorkerSchemes(schemes)`
+
+* `schemes` Array - Custom schemes to be registered to handle service workers.
+
 ### `protocol.registerFileProtocol(scheme, handler[, completion])`
 
 * `scheme` String
