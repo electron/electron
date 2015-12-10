@@ -17,6 +17,7 @@
 #include "content/public/common/pepper_plugin_info.h"
 #include "content/public/common/user_agent.h"
 #include "ppapi/shared_impl/ppapi_permissions.h"
+#include "url/url_constants.h"
 
 namespace atom {
 
@@ -62,6 +63,17 @@ content::PepperPluginInfo CreatePepperFlashInfo(const base::FilePath& path,
   return plugin;
 }
 
+void ConvertStringWithSeparatorToVector(std::vector<std::string>* vec,
+                                        const char* separator,
+                                        const char* cmd_switch) {
+  auto command_line = base::CommandLine::ForCurrentProcess();
+  auto string_with_separator = command_line->GetSwitchValueASCII(cmd_switch);
+  if (!string_with_separator.empty())
+    *vec = base::SplitString(string_with_separator, separator,
+                             base::TRIM_WHITESPACE,
+                             base::SPLIT_WANT_NONEMPTY);
+}
+
 }  // namespace
 
 AtomContentClient::AtomContentClient() {
@@ -83,12 +95,10 @@ std::string AtomContentClient::GetUserAgent() const {
 void AtomContentClient::AddAdditionalSchemes(
     std::vector<url::SchemeWithType>* standard_schemes,
     std::vector<std::string>* savable_schemes) {
-  auto command_line = base::CommandLine::ForCurrentProcess();
-  auto custom_schemes = command_line->GetSwitchValueASCII(
-      switches::kRegisterStandardSchemes);
-  if (!custom_schemes.empty()) {
-    std::vector<std::string> schemes = base::SplitString(
-        custom_schemes, ",", base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY);
+  std::vector<std::string> schemes;
+  ConvertStringWithSeparatorToVector(&schemes, ",",
+                                     switches::kRegisterStandardSchemes);
+  if (!schemes.empty()) {
     for (const std::string& scheme : schemes)
       standard_schemes->push_back({scheme.c_str(), url::SCHEME_WITHOUT_PORT});
   }
@@ -108,6 +118,18 @@ void AtomContentClient::AddPepperPlugins(
 
   plugins->push_back(
       CreatePepperFlashInfo(flash_path, flash_version));
+}
+
+void AtomContentClient::AddServiceWorkerSchemes(
+    std::set<std::string>* service_worker_schemes) {
+  std::vector<std::string> schemes;
+  ConvertStringWithSeparatorToVector(&schemes, ",",
+                                     switches::kRegisterServiceWorkerSchemes);
+  if (!schemes.empty()) {
+    for (const std::string& scheme : schemes)
+      service_worker_schemes->insert(scheme);
+  }
+  service_worker_schemes->insert(url::kFileScheme);
 }
 
 }  // namespace atom

@@ -64,6 +64,11 @@ the `will-quit` and `window-all-closed` events.
 
 ### Event: 'quit'
 
+Returns:
+
+* `event` Event
+* `exitCode` Integer
+
 Emitted when the application is quitting.
 
 ### Event: 'open-file' _OS X_

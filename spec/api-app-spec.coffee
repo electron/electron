@@ -1,4 +1,6 @@
 assert = require 'assert'
+ChildProcess = require 'child_process'
+path = require 'path'
 {remote} = require 'electron'
 {app, BrowserWindow} = remote.require 'electron'
 
@@ -28,6 +30,23 @@ describe 'app module', ->
   describe 'app.getLocale()', ->
     it 'should not be empty', ->
       assert.notEqual app.getLocale(), ''
+
+  describe 'app.exit(exitCode)', ->
+    appProcess = null
+    afterEach ->
+      appProcess?.kill()
+
+    it 'emits a process exit event with the code', (done) ->
+      appPath = path.join(__dirname, 'fixtures', 'api', 'quit-app')
+      electronPath = remote.getGlobal('process').execPath
+      appProcess = ChildProcess.spawn(electronPath, [appPath])
+
+      output = ''
+      appProcess.stdout.on 'data', (data) -> output += data
+      appProcess.on 'close', (code) ->
+        assert.notEqual output.indexOf('Exit event with code: 123'), -1
+        assert.equal code, 123
+        done()
 
   describe 'BrowserWindow events', ->
     w = null

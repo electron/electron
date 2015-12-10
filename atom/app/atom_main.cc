@@ -7,10 +7,6 @@
 #include <stdlib.h>
 
 #if defined(OS_WIN)
-#include <stdio.h>
-#include <io.h>
-#include <fcntl.h>
-
 #include <windows.h>
 #include <shellscalingapi.h>
 #include <tchar.h>
@@ -56,12 +52,6 @@ bool IsRunAsNode() {
 }
 
 #if defined(OS_WIN)
-bool IsCygwin() {
-  std::string os;
-  scoped_ptr<base::Environment> env(base::Environment::Create());
-  return env->GetVar("OS", &os) && os == "cygwin";
-}
-
 // Win8.1 supports monitor-specific DPI scaling.
 bool SetProcessDpiAwarenessWrapper(PROCESS_DPI_AWARENESS value) {
   typedef HRESULT(WINAPI *SetProcessDpiAwarenessPtr)(PROCESS_DPI_AWARENESS);
@@ -109,7 +99,7 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
   wchar_t** wargv = ::CommandLineToArgvW(::GetCommandLineW(), &argc);
 
   // Make output work in console if we are not in cygiwn.
-  if (!IsCygwin() && !IsEnvSet("ELECTRON_NO_ATTACH_CONSOLE")) {
+  if (!IsEnvSet("TERM") && !IsEnvSet("ELECTRON_NO_ATTACH_CONSOLE")) {
     AttachConsole(ATTACH_PARENT_PROCESS);
 
     FILE* dontcare;

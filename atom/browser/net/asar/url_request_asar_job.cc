@@ -7,13 +7,14 @@
 #include <string>
 #include <vector>
 
+#include "atom/common/asar/archive.h"
+#include "atom/common/asar/asar_util.h"
+#include "atom/common/atom_constants.h"
 #include "base/bind.h"
 #include "base/files/file_util.h"
 #include "base/strings/string_util.h"
 #include "base/synchronization/lock.h"
 #include "base/task_runner.h"
-#include "atom/common/asar/archive.h"
-#include "atom/common/asar/asar_util.h"
 #include "net/base/file_stream.h"
 #include "net/base/filename_util.h"
 #include "net/base/io_buffer.h"
@@ -225,6 +226,19 @@ void URLRequestAsarJob::SetExtraRequestHeaders(
       }
     }
   }
+}
+
+int URLRequestAsarJob::GetResponseCode() const {
+  // Request Job gets created only if path exists.
+  return 200;
+}
+
+void URLRequestAsarJob::GetResponseInfo(net::HttpResponseInfo* info) {
+  std::string status("HTTP/1.1 200 OK");
+  net::HttpResponseHeaders* headers = new net::HttpResponseHeaders(status);
+
+  headers->AddHeader(atom::kCORSHeader);
+  info->headers = headers;
 }
 
 void URLRequestAsarJob::FetchMetaInfo(const base::FilePath& file_path,

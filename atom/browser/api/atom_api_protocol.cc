@@ -32,6 +32,8 @@ mate::ObjectTemplateBuilder Protocol::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
   return mate::ObjectTemplateBuilder(isolate)
       .SetMethod("registerStandardSchemes", &Protocol::RegisterStandardSchemes)
+      .SetMethod("registerServiceWorkerSchemes",
+                 &Protocol::RegisterServiceWorkerSchemes)
       .SetMethod("registerStringProtocol",
                  &Protocol::RegisterProtocol<URLRequestStringJob>)
       .SetMethod("registerBufferProtocol",
@@ -56,6 +58,11 @@ mate::ObjectTemplateBuilder Protocol::GetObjectTemplateBuilder(
 void Protocol::RegisterStandardSchemes(
     const std::vector<std::string>& schemes) {
   atom::AtomBrowserClient::SetCustomSchemes(schemes);
+}
+
+void Protocol::RegisterServiceWorkerSchemes(
+    const std::vector<std::string>& schemes) {
+  atom::AtomBrowserClient::SetCustomServiceWorkerSchemes(schemes);
 }
 
 void Protocol::UnregisterProtocol(
