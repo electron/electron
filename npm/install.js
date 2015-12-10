@@ -23,14 +23,14 @@ function onerror (err) {
 }
 
 var paths = {
-  darwin: path.join(__dirname, './dist/Electron.app/Contents/MacOS/Electron'),
-  linux: path.join(__dirname, './dist/electron'),
-  win32: path.join(__dirname, './dist/electron.exe')
+  darwin: 'dist/Electron.app/Contents/MacOS/Electron',
+  linux: 'dist/electron',
+  win32: 'dist/electron.exe'
 }
 
 if (!paths[platform]) throw new Error('Unknown platform: ' + platform)
 
-if (installedVersion === version && fs.existsSync(paths[platform])) {
+if (installedVersion === version && fs.existsSync(path.join(__dirname, paths[platform]))) {
   process.exit(0)
 }
 
