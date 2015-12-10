@@ -7,7 +7,7 @@ init:
 
 environment:
   matrix:
-    - nodejs_version: '4'
+    - nodejs_version: '0.12.7'
 
 platform:
   - x86
