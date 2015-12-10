@@ -17,8 +17,7 @@ install:
   - ps: Update-NodeJsInstallation (Get-NodeJsLatestBuild $env:nodejs_version)
   - cmd: SET PATH=C:\Program Files (x86)\MSBuild\12.0\bin\;%PATH%
   - cmd: SET PATH=C:\python27;%PATH%
-  - cmd: python script/bootstrap.py --dev
-  - cmd: python script/build.py -c D
+  - cmd: python script/cibuild
 
 test_script:
   - node --version
