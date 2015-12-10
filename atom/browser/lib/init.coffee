@@ -51,7 +51,13 @@ process.on 'uncaughtException', (error) ->
   message = "Uncaught Exception:\n#{stack}"
   dialog.showErrorBox 'A JavaScript error occurred in the main process', message
 
+# Emit a process 'exit' event on app quit.
 {app} = require 'electron'
+app.on 'quit', (event, exitCode) ->
+  process.emit 'exit', exitCode
+
+# Map process.exit to app.exit, which quits gracefully.
+process.exit = app.exit
 
 # Load the RPC server.
 require './rpc-server'
