@@ -10,6 +10,7 @@ const url  = require('url');
 var argv = require('yargs')
   .boolean('ci')
   .string('g').alias('g', 'grep')
+  .boolean('i').alias('i', 'invert')
   .argv;
 
 var window = null;
@@ -78,7 +79,8 @@ app.on('ready', function() {
     pathname: __dirname + '/index.html',
     protocol: 'file',
     query: {
-      grep: argv.grep
+      grep: argv.grep,
+      invert: argv.invert ? 'true': ''
     }
   }));
   window.on('unresponsive', function() {
