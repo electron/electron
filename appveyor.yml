@@ -14,6 +14,10 @@ install:
   - cmd: SET PATH=C:\python27;%PATH%
   - cmd: python script/cibuild
 
+branches:
+  only:
+    - master
+
 # disable build and test pahses
 build: off
 test: off
