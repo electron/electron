@@ -1,0 +1,29 @@
+# appveyor file
+# http://www.appveyor.com/docs/appveyor-yml
+version: "{build}"
+
+init:
+  - git config --global core.autocrlf input
+
+environment:
+  matrix:
+    - nodejs_version: '4'
+
+platform:
+  - x86
+  - x64
+
+install:
+  - ps: Update-NodeJsInstallation (Get-NodeJsLatestBuild $env:nodejs_version)
+  - cmd: SET PATH=C:\Program Files (x86)\MSBuild\12.0\bin\;%PATH%
+  - cmd: SET PATH=C:\python27;%PATH%
+  - cmd: python script/bootstrap.py --dev
+  - cmd: python script/build.py -c D
+
+test_script:
+  - node --version
+  - npm --version
+  - cmd: python script/cpplint.py
+  - cmd: python script/coffeelint.py
+
+build: off
