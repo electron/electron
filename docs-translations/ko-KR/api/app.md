@@ -68,6 +68,11 @@ Returns:
 
 ### Event: 'quit'
 
+Returns:
+
+* `event` Event
+* `exitCode` Integer
+
 어플리케이션이 종료될 때 발생하는 이벤트입니다.
 
 ### Event: 'open-file' _OS X_
