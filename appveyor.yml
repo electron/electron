@@ -13,3 +13,5 @@ install:
   - cmd: SET PATH=C:\Program Files (x86)\MSBuild\12.0\bin\;%PATH%
   - cmd: SET PATH=C:\python27;%PATH%
   - cmd: python script/cibuild
+
+build: off
