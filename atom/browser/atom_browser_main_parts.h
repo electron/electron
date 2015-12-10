@@ -34,6 +34,9 @@ class AtomBrowserMainParts : public brightray::BrowserMainParts {
   // Sets the exit code, will fail if the the message loop is not ready.
   bool SetExitCode(int code);
 
+  // Gets the exit code
+  int GetExitCode();
+
   // Register a callback that should be destroyed before JavaScript environment
   // gets destroyed.
   // Returns a closure that can be used to remove |callback| from the list.

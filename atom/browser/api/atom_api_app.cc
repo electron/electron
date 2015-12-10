@@ -181,7 +181,8 @@ void App::OnWindowAllClosed() {
 }
 
 void App::OnQuit() {
-  Emit("quit");
+  int exitCode = AtomBrowserMainParts::Get()->GetExitCode();
+  Emit("quit", exitCode);
 
   if (process_singleton_.get()) {
     process_singleton_->Cleanup();
