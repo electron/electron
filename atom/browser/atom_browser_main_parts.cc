@@ -61,6 +61,10 @@ bool AtomBrowserMainParts::SetExitCode(int code) {
   return true;
 }
 
+int AtomBrowserMainParts::GetExitCode() {
+  return exit_code_ != nullptr ? *exit_code_ : 0;
+}
+
 base::Closure AtomBrowserMainParts::RegisterDestructionCallback(
     const base::Closure& callback) {
   auto iter = destructors_.insert(destructors_.end(), callback);

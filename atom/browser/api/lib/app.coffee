@@ -34,17 +34,12 @@ app.setAppPath = (path) ->
 app.getAppPath = ->
   appPath
 
-appExitCode = undefined
-app.exit = (exitCode) ->
-  appExitCode = exitCode
-  app._exit(exitCode)
-
 # Map process.exit to app.exit, which quits gracefully.
 process.exit = app.exit
 
 # Emit a process 'exit' event on app quit.
-app.on 'quit', ->
-  process.emit 'exit', appExitCode
+app.on 'quit', (event, exitCode) ->
+  process.emit 'exit', exitCode
 
 # Routes the events to webContents.
 for name in ['login', 'certificate-error', 'select-client-certificate']

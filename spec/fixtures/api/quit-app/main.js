@@ -5,5 +5,5 @@ app.on('ready', function () {
 })
 
 process.on('exit', function (code) {
-  console.log('Exit event with code: ' + code)
+  console.log('Exit event with code: ' + JSON.stringify(code, null, 2))
 })

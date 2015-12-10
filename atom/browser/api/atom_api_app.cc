@@ -180,8 +180,8 @@ void App::OnWindowAllClosed() {
   Emit("window-all-closed");
 }
 
-void App::OnQuit() {
-  Emit("quit");
+void App::OnQuit(const int code) {
+  Emit("quit", code);
 
   if (process_singleton_.get()) {
     process_singleton_->Cleanup();
@@ -344,7 +344,7 @@ mate::ObjectTemplateBuilder App::GetObjectTemplateBuilder(
   auto browser = base::Unretained(Browser::Get());
   return mate::ObjectTemplateBuilder(isolate)
       .SetMethod("quit", base::Bind(&Browser::Quit, browser))
-      .SetMethod("_exit", base::Bind(&Browser::Exit, browser))
+      .SetMethod("exit", base::Bind(&Browser::Exit, browser))
       .SetMethod("focus", base::Bind(&Browser::Focus, browser))
       .SetMethod("getVersion", base::Bind(&Browser::GetVersion, browser))
       .SetMethod("setVersion", base::Bind(&Browser::SetVersion, browser))

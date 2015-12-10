@@ -72,7 +72,8 @@ void Browser::Shutdown() {
   is_shutdown_ = true;
   is_quiting_ = true;
 
-  FOR_EACH_OBSERVER(BrowserObserver, observers_, OnQuit());
+  int exitCode = AtomBrowserMainParts::Get()->GetExitCode();
+  FOR_EACH_OBSERVER(BrowserObserver, observers_, OnQuit(exitCode));
 
   if (base::MessageLoop::current()) {
     base::MessageLoop::current()->PostTask(

@@ -44,6 +44,7 @@ describe 'app module', ->
       output = ''
       appProcess.stdout.on 'data', (data) -> output += data
       appProcess.on 'close', (code) ->
+        console.log output
         assert.notEqual output.indexOf('Exit event with code: 123'), -1
         assert.equal code, 123
         done()
