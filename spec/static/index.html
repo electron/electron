@@ -56,7 +56,6 @@
   mocha.ui('bdd').reporter(isCi ? 'tap' : 'html');
 
   var query = Mocha.utils.parseQuery(window.location.search || '');
-  query.grep = 'app.exit'
   if (query.grep) mocha.grep(query.grep);
   if (query.invert) mocha.invert();
 
