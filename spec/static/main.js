@@ -5,6 +5,12 @@ const dialog        = electron.dialog;
 const BrowserWindow = electron.BrowserWindow;
 
 const path = require('path');
+const url  = require('url');
+
+var argv = require('yargs')
+  .boolean('ci')
+  .string('g').alias('g', 'grep')
+  .argv;
 
 var window = null;
 process.port = 0;  // will be used by crash-reporter spec.
@@ -68,7 +74,13 @@ app.on('ready', function() {
       javascript: true  // Test whether web-preferences crashes.
     },
   });
-  window.loadURL('file://' + __dirname + '/index.html');
+  window.loadURL(url.format({
+    pathname: __dirname + '/index.html',
+    protocol: 'file',
+    query: {
+      grep: argv.grep
+    }
+  }));
   window.on('unresponsive', function() {
     var chosen = dialog.showMessageBox(window, {
       type: 'warning',
