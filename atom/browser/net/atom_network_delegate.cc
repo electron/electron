@@ -201,7 +201,7 @@ int AtomNetworkDelegate::OnBeforeSendHeaders(
 
     auto wrapped_callback = listener_info->second.callback;
     auto details = ExtractRequestInfo(request);
-    details->Set("requestHeaders", GetRequestHeadersDict(*headers).release());
+    details->Set("requestHeaders", GetRequestHeadersDict(*headers).get());
 
     BrowserThread::PostTaskAndReplyWithResult(BrowserThread::UI, FROM_HERE,
         base::Bind(&RunListener, wrapped_callback, base::Passed(&details)),
@@ -226,7 +226,7 @@ void AtomNetworkDelegate::OnSendHeaders(
 
     auto wrapped_callback = listener_info->second.callback;
     auto details = ExtractRequestInfo(request);
-    details->Set("requestHeaders", GetRequestHeadersDict(headers).release());
+    details->Set("requestHeaders", GetRequestHeadersDict(headers).get());
 
     BrowserThread::PostTask(BrowserThread::UI, FROM_HERE,
                             base::Bind(base::IgnoreResult(&RunListener),
@@ -255,7 +255,7 @@ int AtomNetworkDelegate::OnHeadersReceived(
     details->SetInteger("statusCode",
                         original_response_headers->response_code());
     details->Set("responseHeaders",
-                 GetResponseHeadersDict(original_response_headers).release());
+                 GetResponseHeadersDict(original_response_headers).get());
 
     BrowserThread::PostTaskAndReplyWithResult(BrowserThread::UI, FROM_HERE,
         base::Bind(&RunListener, wrapped_callback, base::Passed(&details)),
@@ -288,7 +288,7 @@ void AtomNetworkDelegate::OnBeforeRedirect(net::URLRequest* request,
       details->SetString("ip", ip);
     details->SetBoolean("fromCache", request->was_cached());
     details->Set("responseHeaders",
-                 GetResponseHeadersDict(request->response_headers()).release());
+                 GetResponseHeadersDict(request->response_headers()).get());
 
     BrowserThread::PostTask(BrowserThread::UI, FROM_HERE,
                             base::Bind(base::IgnoreResult(&RunListener),
@@ -311,7 +311,7 @@ void AtomNetworkDelegate::OnResponseStarted(net::URLRequest* request) {
     auto wrapped_callback = listener_info->second.callback;
     auto details = ExtractRequestInfo(request);
     details->Set("responseHeaders",
-                 GetResponseHeadersDict(request->response_headers()).release());
+                 GetResponseHeadersDict(request->response_headers()).get());
     details->SetBoolean("fromCache", request->was_cached());
 
     auto response_headers = request->response_headers();
@@ -352,7 +352,7 @@ void AtomNetworkDelegate::OnCompleted(net::URLRequest* request, bool started) {
     auto wrapped_callback = listener_info->second.callback;
     auto details = ExtractRequestInfo(request);
     details->Set("responseHeaders",
-                 GetResponseHeadersDict(request->response_headers()).release());
+                 GetResponseHeadersDict(request->response_headers()).get());
     details->SetBoolean("fromCache", request->was_cached());
 
     auto response_headers = request->response_headers();
