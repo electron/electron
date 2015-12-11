@@ -5,6 +5,7 @@
 #include "atom/browser/net/atom_network_delegate.h"
 
 #include "atom/common/native_mate_converters/net_converter.h"
+#include "base/strings/string_util.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/resource_request_info.h"
 #include "net/url_request/url_request.h"
@@ -15,7 +16,7 @@ namespace atom {
 
 namespace {
 
-std::string ResourceTypeToString(content::ResourceType type) {
+const char* ResourceTypeToString(content::ResourceType type) {
   switch (type) {
     case content::RESOURCE_TYPE_MAIN_FRAME:
       return "mainFrame";
@@ -56,41 +57,70 @@ bool MatchesFilterCondition(
   return true;
 }
 
-scoped_ptr<base::DictionaryValue> ExtractRequestInfo(net::URLRequest* request) {
-  scoped_ptr<base::DictionaryValue> dict(new base::DictionaryValue());
-  dict->SetInteger("id", request->identifier());
-  dict->SetString("url", request->url().spec());
-  dict->SetString("method", request->method());
-  content::ResourceType resourceType = content::RESOURCE_TYPE_LAST_TYPE;
+void FillDetailsObject(base::DictionaryValue* details,
+                       net::URLRequest* request) {
+  details->SetInteger("id", request->identifier());
+  details->SetString("url", request->url().spec());
+  details->SetString("method", request->method());
+  details->SetDouble("timestamp", base::Time::Now().ToDoubleT() * 1000);
   auto info = content::ResourceRequestInfo::ForRequest(request);
-  if (info)
-    resourceType = info->GetResourceType();
-  dict->SetString("resourceType", ResourceTypeToString(resourceType));
-  dict->SetDouble("timestamp", base::Time::Now().ToDoubleT() * 1000);
-
-  return dict.Pass();
+  details->SetString("resourceType",
+                     info ? ResourceTypeToString(info->GetResourceType())
+                          : "other");
 }
 
-scoped_ptr<base::DictionaryValue> GetRequestHeadersDict(
-    const net::HttpRequestHeaders& headers) {
-  scoped_ptr<base::DictionaryValue> header_dict(new base::DictionaryValue());
+void FillDetailsObject(base::DictionaryValue* details,
+                       const net::HttpRequestHeaders& headers) {
+  scoped_ptr<base::DictionaryValue> dict(new base::DictionaryValue);
   net::HttpRequestHeaders::Iterator it(headers);
   while (it.GetNext())
-    header_dict->SetString(it.name(), it.value());
-  return header_dict.Pass();
+    dict->SetString(it.name(), it.value());
+  details->Set("requestHeaders", dict.Pass());
 }
 
-scoped_ptr<base::DictionaryValue> GetResponseHeadersDict(
-    const net::HttpResponseHeaders* headers) {
-  scoped_ptr<base::DictionaryValue> header_dict(new base::DictionaryValue());
-  if (headers) {
-    void* iter = nullptr;
-    std::string key;
-    std::string value;
-    while (headers->EnumerateHeaderLines(&iter, &key, &value))
-      header_dict->SetString(key, value);
+void FillDetailsObject(base::DictionaryValue* details,
+                       net::HttpResponseHeaders* headers) {
+  if (!headers)
+    return;
+
+  scoped_ptr<base::DictionaryValue> dict(new base::DictionaryValue);
+  void* iter = nullptr;
+  std::string key;
+  std::string value;
+  while (headers->EnumerateHeaderLines(&iter, &key, &value)) {
+    key = base::ToLowerASCII(key);
+    if (dict->HasKey(key)) {
+      base::ListValue* values = nullptr;
+      if (dict->GetList(key, &values))
+        values->AppendString(value);
+    } else {
+      scoped_ptr<base::ListValue> values(new base::ListValue);
+      values->AppendString(value);
+      dict->Set(key, values.Pass());
+    }
   }
-  return header_dict.Pass();
+  details->Set("responseHeaders", dict.Pass());
+  details->SetString("statusLine", headers->GetStatusLine());
+  details->SetInteger("statusCode", headers->response_code());
+}
+
+void FillDetailsObject(base::DictionaryValue* details, const GURL& location) {
+  details->SetString("redirectURL", location.spec());
+}
+
+void FillDetailsObject(base::DictionaryValue* details,
+                       const net::HostPortPair& host_port) {
+  if (host_port.host().empty())
+    details->SetString("ip", host_port.host());
+}
+
+void FillDetailsObject(base::DictionaryValue* details, bool from_cache) {
+  details->SetBoolean("fromCache", from_cache);
+}
+
+void FillDetailsObject(base::DictionaryValue* details,
+                       const net::URLRequestStatus& status) {
+  details->SetString("error", net::ErrorToString(status.error()));
 }
 
 void OnBeforeURLRequestResponse(
@@ -174,9 +204,10 @@ int AtomNetworkDelegate::OnBeforeURLRequest(
     if (!MatchesFilterCondition(request, listener_info->second))
       return net::OK;
 
-    auto wrapped_callback = listener_info->second.callback;
-    auto details = ExtractRequestInfo(request);
+    scoped_ptr<base::DictionaryValue> details(new base::DictionaryValue);
+    FillDetailsObject(details.get(), request);
 
+    auto wrapped_callback = listener_info->second.callback;
     BrowserThread::PostTaskAndReplyWithResult(BrowserThread::UI, FROM_HERE,
         base::Bind(&RunListener, wrapped_callback, base::Passed(&details)),
         base::Bind(&OnBeforeURLRequestResponse,
@@ -199,10 +230,11 @@ int AtomNetworkDelegate::OnBeforeSendHeaders(
     if (!MatchesFilterCondition(request, listener_info->second))
       return net::OK;
 
-    auto wrapped_callback = listener_info->second.callback;
-    auto details = ExtractRequestInfo(request);
-    details->Set("requestHeaders", GetRequestHeadersDict(*headers).get());
+    scoped_ptr<base::DictionaryValue> details(new base::DictionaryValue);
+    FillDetailsObject(details.get(), request);
+    FillDetailsObject(details.get(), *headers);
 
+    auto wrapped_callback = listener_info->second.callback;
     BrowserThread::PostTaskAndReplyWithResult(BrowserThread::UI, FROM_HERE,
         base::Bind(&RunListener, wrapped_callback, base::Passed(&details)),
         base::Bind(&OnBeforeSendHeadersResponse,
@@ -224,10 +256,11 @@ void AtomNetworkDelegate::OnSendHeaders(
     if (!MatchesFilterCondition(request, listener_info->second))
       return;
 
-    auto wrapped_callback = listener_info->second.callback;
-    auto details = ExtractRequestInfo(request);
-    details->Set("requestHeaders", GetRequestHeadersDict(headers).get());
+    scoped_ptr<base::DictionaryValue> details(new base::DictionaryValue);
+    FillDetailsObject(details.get(), request);
+    FillDetailsObject(details.get(), headers);
 
+    auto wrapped_callback = listener_info->second.callback;
     BrowserThread::PostTask(BrowserThread::UI, FROM_HERE,
                             base::Bind(base::IgnoreResult(&RunListener),
                                        wrapped_callback,
@@ -248,15 +281,11 @@ int AtomNetworkDelegate::OnHeadersReceived(
     if (!MatchesFilterCondition(request, listener_info->second))
       return net::OK;
 
-    auto wrapped_callback = listener_info->second.callback;
-    auto details = ExtractRequestInfo(request);
-    details->SetString("statusLine",
-                       original_response_headers->GetStatusLine());
-    details->SetInteger("statusCode",
-                        original_response_headers->response_code());
-    details->Set("responseHeaders",
-                 GetResponseHeadersDict(original_response_headers).get());
+    scoped_ptr<base::DictionaryValue> details(new base::DictionaryValue);
+    FillDetailsObject(details.get(), request);
+    FillDetailsObject(details.get(), original_response_headers);
 
+    auto wrapped_callback = listener_info->second.callback;
     BrowserThread::PostTaskAndReplyWithResult(BrowserThread::UI, FROM_HERE,
         base::Bind(&RunListener, wrapped_callback, base::Passed(&details)),
         base::Bind(&OnHeadersReceivedResponse,
@@ -273,23 +302,20 @@ int AtomNetworkDelegate::OnHeadersReceived(
 }
 
 void AtomNetworkDelegate::OnBeforeRedirect(net::URLRequest* request,
-                                            const GURL& new_location) {
+                                           const GURL& new_location) {
   auto listener_info = event_listener_map_.find(kOnBeforeRedirect);
   if (listener_info != event_listener_map_.end()) {
     if (!MatchesFilterCondition(request, listener_info->second))
       return;
 
-    auto wrapped_callback = listener_info->second.callback;
-    auto details = ExtractRequestInfo(request);
-    details->SetString("redirectURL", new_location.spec());
-    details->SetInteger("statusCode", request->GetResponseCode());
-    auto ip = request->GetSocketAddress().host();
-    if (!ip.empty())
-      details->SetString("ip", ip);
-    details->SetBoolean("fromCache", request->was_cached());
-    details->Set("responseHeaders",
-                 GetResponseHeadersDict(request->response_headers()).get());
+    scoped_ptr<base::DictionaryValue> details(new base::DictionaryValue);
+    FillDetailsObject(details.get(), request);
+    FillDetailsObject(details.get(), new_location);
+    FillDetailsObject(details.get(), request->response_headers());
+    FillDetailsObject(details.get(), request->GetSocketAddress());
+    FillDetailsObject(details.get(), request->was_cached());
 
+    auto wrapped_callback = listener_info->second.callback;
     BrowserThread::PostTask(BrowserThread::UI, FROM_HERE,
                             base::Bind(base::IgnoreResult(&RunListener),
                                        wrapped_callback,
@@ -308,20 +334,12 @@ void AtomNetworkDelegate::OnResponseStarted(net::URLRequest* request) {
     if (!MatchesFilterCondition(request, listener_info->second))
       return;
 
+    scoped_ptr<base::DictionaryValue> details(new base::DictionaryValue);
+    FillDetailsObject(details.get(), request);
+    FillDetailsObject(details.get(), request->response_headers());
+    FillDetailsObject(details.get(), request->was_cached());
+
     auto wrapped_callback = listener_info->second.callback;
-    auto details = ExtractRequestInfo(request);
-    details->Set("responseHeaders",
-                 GetResponseHeadersDict(request->response_headers()).get());
-    details->SetBoolean("fromCache", request->was_cached());
-
-    auto response_headers = request->response_headers();
-    details->SetInteger("statusCode",
-                        response_headers ?
-                            response_headers->response_code() : 200);
-    details->SetString("statusLine",
-                       response_headers ?
-                          response_headers->GetStatusLine() : std::string());
-
     BrowserThread::PostTask(BrowserThread::UI, FROM_HERE,
                             base::Bind(base::IgnoreResult(&RunListener),
                                        wrapped_callback,
@@ -349,20 +367,12 @@ void AtomNetworkDelegate::OnCompleted(net::URLRequest* request, bool started) {
     if (!MatchesFilterCondition(request, listener_info->second))
       return;
 
+    scoped_ptr<base::DictionaryValue> details(new base::DictionaryValue);
+    FillDetailsObject(details.get(), request);
+    FillDetailsObject(details.get(), request->response_headers());
+    FillDetailsObject(details.get(), request->was_cached());
+
     auto wrapped_callback = listener_info->second.callback;
-    auto details = ExtractRequestInfo(request);
-    details->Set("responseHeaders",
-                 GetResponseHeadersDict(request->response_headers()).get());
-    details->SetBoolean("fromCache", request->was_cached());
-
-    auto response_headers = request->response_headers();
-    details->SetInteger("statusCode",
-                        response_headers ?
-                            response_headers->response_code() : 200);
-    details->SetString("statusLine",
-                       response_headers ?
-                          response_headers->GetStatusLine() : std::string());
-
     BrowserThread::PostTask(BrowserThread::UI, FROM_HERE,
                             base::Bind(base::IgnoreResult(&RunListener),
                                        wrapped_callback,
@@ -378,11 +388,12 @@ void AtomNetworkDelegate::OnErrorOccurred(net::URLRequest* request) {
     if (!MatchesFilterCondition(request, listener_info->second))
       return;
 
-    auto wrapped_callback = listener_info->second.callback;
-    auto details = ExtractRequestInfo(request);
-    details->SetBoolean("fromCache", request->was_cached());
-    details->SetString("error", net::ErrorToString(request->status().error()));
+    scoped_ptr<base::DictionaryValue> details(new base::DictionaryValue);
+    FillDetailsObject(details.get(), request);
+    FillDetailsObject(details.get(), request->was_cached());
+    FillDetailsObject(details.get(), request->status());
 
+    auto wrapped_callback = listener_info->second.callback;
     BrowserThread::PostTask(BrowserThread::UI, FROM_HERE,
                             base::Bind(base::IgnoreResult(&RunListener),
                                        wrapped_callback,
