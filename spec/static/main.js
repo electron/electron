@@ -5,6 +5,13 @@ const dialog        = electron.dialog;
 const BrowserWindow = electron.BrowserWindow;
 
 const path = require('path');
+const url  = require('url');
+
+var argv = require('yargs')
+  .boolean('ci')
+  .string('g').alias('g', 'grep')
+  .boolean('i').alias('i', 'invert')
+  .argv;
 
 var window = null;
 process.port = 0;  // will be used by crash-reporter spec.
@@ -42,7 +49,8 @@ ipcMain.on('echo', function(event, msg) {
   event.returnValue = msg;
 });
 
-if (process.argv[2] == '--ci') {
+global.isCi = !!argv.ci;
+if (global.isCi) {
   process.removeAllListeners('uncaughtException');
   process.on('uncaughtException', function(error) {
     console.error(error, error.stack);
@@ -67,7 +75,14 @@ app.on('ready', function() {
       javascript: true  // Test whether web-preferences crashes.
     },
   });
-  window.loadURL('file://' + __dirname + '/index.html');
+  window.loadURL(url.format({
+    pathname: __dirname + '/index.html',
+    protocol: 'file',
+    query: {
+      grep: argv.grep,
+      invert: argv.invert ? 'true': ''
+    }
+  }));
   window.on('unresponsive', function() {
     var chosen = dialog.showMessageBox(window, {
       type: 'warning',

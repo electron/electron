@@ -18,8 +18,7 @@
   var remote = electron.remote;
   var ipcRenderer = electron.ipcRenderer;
 
-  var argv = remote.process.argv;
-  var isCi = argv[2] == '--ci';
+  var isCi = remote.getGlobal('isCi')
 
   if (!isCi) {
     var win = remote.getCurrentWindow();

@@ -18,7 +18,7 @@ describe 'crash-reporter module', ->
   return if process.mas
 
   # The crash-reporter test is not reliable on CI machine.
-  isCI = remote.process.argv[2] == '--ci'
+  isCI = remote.getGlobal('isCi')
   return if isCI
 
   it 'should send minidump when renderer crashes', (done) ->

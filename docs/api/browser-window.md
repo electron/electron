@@ -4,7 +4,11 @@ The `BrowserWindow` class gives you the ability to create a browser window. For
 example:
 
 ```javascript
+// In the main process.
 const BrowserWindow = require('electron').BrowserWindow;
+
+// Or in the renderer process.
+const BrowserWindow = require('electron').remote.BrowserWindow;
 
 var win = new BrowserWindow({ width: 800, height: 600, show: false });
 win.on('closed', function() {
