@@ -120,7 +120,7 @@ describe 'chromium feature', ->
       listener = (event) ->
         window.removeEventListener 'message', listener
         b.close()
-        assert.equal event.source.guestId, b.guestId
+        assert.equal event.source, b
         assert.equal event.origin, 'file://'
         done()
       window.addEventListener 'message', listener
