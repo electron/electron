@@ -4,6 +4,8 @@
 
 #include "atom/browser/net/atom_network_delegate.h"
 
+#include <string>
+
 #include "atom/common/native_mate_converters/net_converter.h"
 #include "base/stl_util.h"
 #include "base/strings/string_util.h"
@@ -38,12 +40,19 @@ const char* ResourceTypeToString(content::ResourceType type) {
   }
 }
 
-AtomNetworkDelegate::BlockingResponse RunListener(
-    const AtomNetworkDelegate::Listener& callback,
-    scoped_ptr<base::DictionaryValue> details) {
-  return callback.Run(*(details.get()));
+void RunSimpleListener(const AtomNetworkDelegate::SimpleListener& listener,
+                       scoped_ptr<base::DictionaryValue> details) {
+  return listener.Run(*(details.get()));
 }
 
+void RunResponseListener(
+    const AtomNetworkDelegate::ResponseListener& listener,
+    scoped_ptr<base::DictionaryValue> details,
+    const AtomNetworkDelegate::ResponseCallback& callback) {
+  return listener.Run(*(details.get()), callback);
+}
+
+// Test whether the URL of |request| matches |patterns|.
 bool MatchesFilterCondition(net::URLRequest* request,
                             const URLPatterns& patterns) {
   if (patterns.empty())
@@ -56,6 +65,7 @@ bool MatchesFilterCondition(net::URLRequest* request,
   return false;
 }
 
+// Overloaded by multiple types to fill the |details| object.
 void FillDetailsObject(base::DictionaryValue* details,
                        net::URLRequest* request) {
   details->SetInteger("id", request->identifier());
@@ -122,41 +132,65 @@ void FillDetailsObject(base::DictionaryValue* details,
   details->SetString("error", net::ErrorToString(status.error()));
 }
 
-void OnBeforeURLRequestResponse(
-    const net::CompletionCallback& callback,
-    GURL* new_url,
-    const AtomNetworkDelegate::BlockingResponse& result) {
-  if (!result.redirect_url.is_empty())
-    *new_url = result.redirect_url;
-  callback.Run(result.code());
+// Fill the native types with the result from the response object.
+void ReadFromResponseObject(const base::DictionaryValue& response,
+                            GURL* new_location) {
+  std::string url;
+  if (response.GetString("redirectURL", &url))
+    *new_location = GURL(url);
 }
 
-void OnBeforeSendHeadersResponse(
-    const net::CompletionCallback& callback,
-    net::HttpRequestHeaders* headers,
-    const AtomNetworkDelegate::BlockingResponse& result) {
-  if (!result.request_headers.IsEmpty())
-    *headers = result.request_headers;
-  callback.Run(result.code());
-}
-
-void OnHeadersReceivedResponse(
-    const net::CompletionCallback& callback,
-    const net::HttpResponseHeaders* original_response_headers,
-    scoped_refptr<net::HttpResponseHeaders>* override_response_headers,
-    const AtomNetworkDelegate::BlockingResponse& result) {
-  if (result.response_headers.get()) {
-    *override_response_headers = new net::HttpResponseHeaders(
-        original_response_headers->raw_headers());
-    void* iter = nullptr;
-    std::string key;
-    std::string value;
-    while (result.response_headers->EnumerateHeaderLines(&iter, &key, &value)) {
-      (*override_response_headers)->RemoveHeader(key);
-      (*override_response_headers)->AddHeader(key + ": " + value);
+void ReadFromResponseObject(const base::DictionaryValue& response,
+                            net::HttpRequestHeaders* headers) {
+  const base::DictionaryValue* dict;
+  if (response.GetDictionary("requestHeaders", &dict)) {
+    for (base::DictionaryValue::Iterator it(*dict);
+         !it.IsAtEnd();
+         it.Advance()) {
+      std::string value;
+      if (it.value().GetAsString(&value))
+        headers->SetHeader(it.key(), value);
     }
   }
-  callback.Run(result.code());
+}
+
+void ReadFromResponseObject(const base::DictionaryValue& response,
+                            scoped_refptr<net::HttpResponseHeaders>* headers) {
+  const base::DictionaryValue* dict;
+  if (response.GetDictionary("responseHeaders", &dict)) {
+    *headers = new net::HttpResponseHeaders("");
+    for (base::DictionaryValue::Iterator it(*dict);
+         !it.IsAtEnd();
+         it.Advance()) {
+      std::string value;
+      if (it.value().GetAsString(&value)) {
+        (*headers)->RemoveHeader(it.key());
+        (*headers)->AddHeader(it.key() + " : " + value);
+      }
+    }
+  }
+}
+
+// Deal with the results of Listener.
+template<typename T>
+void OnListenerResultInIO(const net::CompletionCallback& callback,
+                          T out,
+                          scoped_ptr<base::DictionaryValue> response) {
+  ReadFromResponseObject(*response.get(), out);
+
+  bool cancel = false;
+  response->GetBoolean("cancel", &cancel);
+  callback.Run(cancel ? net::ERR_BLOCKED_BY_CLIENT : net::OK);
+}
+
+template<typename T>
+void OnListenerResultInUI(const net::CompletionCallback& callback,
+                          T out,
+                          const base::DictionaryValue& response) {
+  scoped_ptr<base::DictionaryValue> copy = response.CreateDeepCopy();
+  BrowserThread::PostTask(
+      BrowserThread::IO, FROM_HERE,
+      base::Bind(OnListenerResultInIO<T>, callback, out, base::Passed(&copy)));
 }
 
 }  // namespace
@@ -167,36 +201,47 @@ AtomNetworkDelegate::AtomNetworkDelegate() {
 AtomNetworkDelegate::~AtomNetworkDelegate() {
 }
 
-void AtomNetworkDelegate::SetListenerInIO(EventType type,
-                                          const URLPatterns& patterns,
-                                          const Listener& callback) {
-  if (callback.is_null()) {
-    event_listener_map_.erase(type);
-    return;
-  }
+void AtomNetworkDelegate::SetSimpleListenerInIO(
+    SimpleEvent type,
+    const URLPatterns& patterns,
+    const SimpleListener& callback) {
+  if (callback.is_null())
+    simple_listeners_.erase(type);
+  else
+    simple_listeners_[type] = { patterns, callback };
+}
 
-  event_listener_map_[type] = { patterns, callback };
+void AtomNetworkDelegate::SetResponseListenerInIO(
+    ResponseEvent type,
+    const URLPatterns& patterns,
+    const ResponseListener& callback) {
+  if (callback.is_null())
+    response_listeners_.erase(type);
+  else
+    response_listeners_[type] = { patterns, callback };
 }
 
 int AtomNetworkDelegate::OnBeforeURLRequest(
     net::URLRequest* request,
     const net::CompletionCallback& callback,
     GURL* new_url) {
-  if (!ContainsKey(event_listener_map_, kOnBeforeRequest))
+  if (!ContainsKey(response_listeners_, kOnBeforeRequest))
     return brightray::NetworkDelegate::OnBeforeURLRequest(
         request, callback, new_url);
 
-  const ListenerInfo& info = event_listener_map_[kOnBeforeRequest];
+  const auto& info = response_listeners_[kOnBeforeRequest];
   if (!MatchesFilterCondition(request, info.url_patterns))
     return net::OK;
 
   scoped_ptr<base::DictionaryValue> details(new base::DictionaryValue);
   FillDetailsObject(details.get(), request);
 
-  BrowserThread::PostTaskAndReplyWithResult(BrowserThread::UI, FROM_HERE,
-      base::Bind(&RunListener, info.callback, base::Passed(&details)),
-      base::Bind(&OnBeforeURLRequestResponse,
-                 callback, new_url));
+  ResponseCallback response =
+      base::Bind(OnListenerResultInUI<GURL*>, callback, new_url);
+  BrowserThread::PostTask(
+      BrowserThread::UI, FROM_HERE,
+      base::Bind(RunResponseListener, info.listener, base::Passed(&details),
+                 response));
   return net::ERR_IO_PENDING;
 }
 
@@ -204,11 +249,11 @@ int AtomNetworkDelegate::OnBeforeSendHeaders(
     net::URLRequest* request,
     const net::CompletionCallback& callback,
     net::HttpRequestHeaders* headers) {
-  if (!ContainsKey(event_listener_map_, kOnBeforeSendHeaders))
+  if (!ContainsKey(response_listeners_, kOnBeforeSendHeaders))
     return brightray::NetworkDelegate::OnBeforeSendHeaders(
         request, callback, headers);
 
-  const ListenerInfo& info = event_listener_map_[kOnBeforeSendHeaders];
+  const auto& info = response_listeners_[kOnBeforeSendHeaders];
   if (!MatchesFilterCondition(request, info.url_patterns))
     return net::OK;
 
@@ -216,22 +261,25 @@ int AtomNetworkDelegate::OnBeforeSendHeaders(
   FillDetailsObject(details.get(), request);
   FillDetailsObject(details.get(), *headers);
 
-  BrowserThread::PostTaskAndReplyWithResult(BrowserThread::UI, FROM_HERE,
-      base::Bind(&RunListener, info.callback, base::Passed(&details)),
-      base::Bind(&OnBeforeSendHeadersResponse,
-                 callback, headers));
+  ResponseCallback response =
+      base::Bind(OnListenerResultInUI<net::HttpRequestHeaders*>,
+                 callback, headers);
+  BrowserThread::PostTask(
+      BrowserThread::UI, FROM_HERE,
+      base::Bind(RunResponseListener, info.listener, base::Passed(&details),
+                 response));
   return net::ERR_IO_PENDING;
 }
 
 void AtomNetworkDelegate::OnSendHeaders(
     net::URLRequest* request,
     const net::HttpRequestHeaders& headers) {
-  if (!ContainsKey(event_listener_map_, kOnSendHeaders)) {
+  if (!ContainsKey(simple_listeners_, kOnSendHeaders)) {
     brightray::NetworkDelegate::OnSendHeaders(request, headers);
     return;
   }
 
-  const ListenerInfo& info = event_listener_map_[kOnSendHeaders];
+  const auto& info = simple_listeners_[kOnSendHeaders];
   if (!MatchesFilterCondition(request, info.url_patterns))
     return;
 
@@ -239,10 +287,9 @@ void AtomNetworkDelegate::OnSendHeaders(
   FillDetailsObject(details.get(), request);
   FillDetailsObject(details.get(), headers);
 
-  BrowserThread::PostTask(BrowserThread::UI, FROM_HERE,
-                          base::Bind(base::IgnoreResult(&RunListener),
-                                     info.callback,
-                                     base::Passed(&details)));
+  BrowserThread::PostTask(
+      BrowserThread::UI, FROM_HERE,
+      base::Bind(&RunSimpleListener, info.listener, base::Passed(&details)));
 }
 
 int AtomNetworkDelegate::OnHeadersReceived(
@@ -251,12 +298,12 @@ int AtomNetworkDelegate::OnHeadersReceived(
     const net::HttpResponseHeaders* original_response_headers,
     scoped_refptr<net::HttpResponseHeaders>* override_response_headers,
     GURL* allowed_unsafe_redirect_url) {
-  if (!ContainsKey(event_listener_map_, kOnHeadersReceived))
+  if (!ContainsKey(response_listeners_, kOnHeadersReceived))
     return brightray::NetworkDelegate::OnHeadersReceived(
         request, callback, original_response_headers, override_response_headers,
         allowed_unsafe_redirect_url);
 
-  const ListenerInfo& info = event_listener_map_[kOnHeadersReceived];
+  const auto& info = response_listeners_[kOnHeadersReceived];
   if (!MatchesFilterCondition(request, info.url_patterns))
     return net::OK;
 
@@ -264,23 +311,24 @@ int AtomNetworkDelegate::OnHeadersReceived(
   FillDetailsObject(details.get(), request);
   FillDetailsObject(details.get(), original_response_headers);
 
-  BrowserThread::PostTaskAndReplyWithResult(BrowserThread::UI, FROM_HERE,
-      base::Bind(&RunListener, info.callback, base::Passed(&details)),
-      base::Bind(&OnHeadersReceivedResponse,
-                 callback,
-                 original_response_headers,
-                 override_response_headers));
+  ResponseCallback response =
+      base::Bind(OnListenerResultInUI<scoped_refptr<net::HttpResponseHeaders>*>,
+                 callback, override_response_headers);
+  BrowserThread::PostTask(
+      BrowserThread::UI, FROM_HERE,
+      base::Bind(RunResponseListener, info.listener, base::Passed(&details),
+                 response));
   return net::ERR_IO_PENDING;
 }
 
 void AtomNetworkDelegate::OnBeforeRedirect(net::URLRequest* request,
                                            const GURL& new_location) {
-  if (!ContainsKey(event_listener_map_, kOnBeforeRedirect)) {
+  if (!ContainsKey(simple_listeners_, kOnBeforeRedirect)) {
     brightray::NetworkDelegate::OnBeforeRedirect(request, new_location);
     return;
   }
 
-  const ListenerInfo& info = event_listener_map_[kOnBeforeRedirect];
+  const auto& info = simple_listeners_[kOnBeforeRedirect];
   if (!MatchesFilterCondition(request, info.url_patterns))
     return;
 
@@ -291,14 +339,13 @@ void AtomNetworkDelegate::OnBeforeRedirect(net::URLRequest* request,
   FillDetailsObject(details.get(), request->GetSocketAddress());
   FillDetailsObject(details.get(), request->was_cached());
 
-  BrowserThread::PostTask(BrowserThread::UI, FROM_HERE,
-                          base::Bind(base::IgnoreResult(&RunListener),
-                                     info.callback,
-                                     base::Passed(&details)));
+  BrowserThread::PostTask(
+      BrowserThread::UI, FROM_HERE,
+      base::Bind(&RunSimpleListener, info.listener, base::Passed(&details)));
 }
 
 void AtomNetworkDelegate::OnResponseStarted(net::URLRequest* request) {
-  if (!ContainsKey(event_listener_map_, kOnResponseStarted)) {
+  if (!ContainsKey(simple_listeners_, kOnResponseStarted)) {
     brightray::NetworkDelegate::OnResponseStarted(request);
     return;
   }
@@ -306,7 +353,7 @@ void AtomNetworkDelegate::OnResponseStarted(net::URLRequest* request) {
   if (request->status().status() != net::URLRequestStatus::SUCCESS)
     return;
 
-  const ListenerInfo& info = event_listener_map_[kOnResponseStarted];
+  const auto& info = simple_listeners_[kOnResponseStarted];
   if (!MatchesFilterCondition(request, info.url_patterns))
     return;
 
@@ -315,17 +362,16 @@ void AtomNetworkDelegate::OnResponseStarted(net::URLRequest* request) {
   FillDetailsObject(details.get(), request->response_headers());
   FillDetailsObject(details.get(), request->was_cached());
 
-  BrowserThread::PostTask(BrowserThread::UI, FROM_HERE,
-                          base::Bind(base::IgnoreResult(&RunListener),
-                                     info.callback,
-                                     base::Passed(&details)));
+  BrowserThread::PostTask(
+      BrowserThread::UI, FROM_HERE,
+      base::Bind(RunSimpleListener, info.listener, base::Passed(&details)));
 }
 
 void AtomNetworkDelegate::OnCompleted(net::URLRequest* request, bool started) {
   if (request->status().status() == net::URLRequestStatus::FAILED ||
       request->status().status() == net::URLRequestStatus::CANCELED) {
     // Error event.
-    if (ContainsKey(event_listener_map_, kOnErrorOccurred))
+    if (ContainsKey(simple_listeners_, kOnErrorOccurred))
       OnErrorOccurred(request);
     else
       brightray::NetworkDelegate::OnCompleted(request, started);
@@ -338,12 +384,12 @@ void AtomNetworkDelegate::OnCompleted(net::URLRequest* request, bool started) {
     return;
   }
 
-  if (!ContainsKey(event_listener_map_, kOnCompleted)) {
+  if (!ContainsKey(simple_listeners_, kOnCompleted)) {
     brightray::NetworkDelegate::OnCompleted(request, started);
     return;
   }
 
-  const ListenerInfo& info = event_listener_map_[kOnCompleted];
+  const auto& info = simple_listeners_[kOnCompleted];
   if (!MatchesFilterCondition(request, info.url_patterns))
     return;
 
@@ -352,15 +398,13 @@ void AtomNetworkDelegate::OnCompleted(net::URLRequest* request, bool started) {
   FillDetailsObject(details.get(), request->response_headers());
   FillDetailsObject(details.get(), request->was_cached());
 
-  BrowserThread::PostTask(BrowserThread::UI, FROM_HERE,
-                          base::Bind(base::IgnoreResult(&RunListener),
-                                     info.callback,
-                                     base::Passed(&details)));
+  BrowserThread::PostTask(
+      BrowserThread::UI, FROM_HERE,
+      base::Bind(RunSimpleListener, info.listener, base::Passed(&details)));
 }
 
 void AtomNetworkDelegate::OnErrorOccurred(net::URLRequest* request) {
-
-  const ListenerInfo& info = event_listener_map_[kOnErrorOccurred];
+  const auto& info = simple_listeners_[kOnErrorOccurred];
   if (!MatchesFilterCondition(request, info.url_patterns))
     return;
 
@@ -369,10 +413,9 @@ void AtomNetworkDelegate::OnErrorOccurred(net::URLRequest* request) {
   FillDetailsObject(details.get(), request->was_cached());
   FillDetailsObject(details.get(), request->status());
 
-  BrowserThread::PostTask(BrowserThread::UI, FROM_HERE,
-                          base::Bind(base::IgnoreResult(&RunListener),
-                                     info.callback,
-                                     base::Passed(&details)));
+  BrowserThread::PostTask(
+      BrowserThread::UI, FROM_HERE,
+      base::Bind(RunSimpleListener, info.listener, base::Passed(&details)));
 }
 
 }  // namespace atom

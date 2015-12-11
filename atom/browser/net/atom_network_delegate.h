@@ -26,46 +26,44 @@ using URLPatterns = std::set<extensions::URLPattern>;
 
 class AtomNetworkDelegate : public brightray::NetworkDelegate {
  public:
-  struct BlockingResponse;
-  using Listener =
-      base::Callback<BlockingResponse(const base::DictionaryValue&)>;
+  using ResponseCallback = base::Callback<void(const base::DictionaryValue&)>;
+  using SimpleListener = base::Callback<void(const base::DictionaryValue&)>;
+  using ResponseListener = base::Callback<void(const base::DictionaryValue&,
+                                               const ResponseCallback&)>;
 
-  enum EventType {
-    kOnBeforeRequest,
-    kOnBeforeSendHeaders,
+  enum SimpleEvent {
     kOnSendHeaders,
-    kOnHeadersReceived,
     kOnBeforeRedirect,
     kOnResponseStarted,
     kOnCompleted,
     kOnErrorOccurred,
   };
 
-  struct ListenerInfo {
-    URLPatterns url_patterns;
-    AtomNetworkDelegate::Listener callback;
+  enum ResponseEvent {
+    kOnBeforeRequest,
+    kOnBeforeSendHeaders,
+    kOnHeadersReceived,
   };
 
-  struct BlockingResponse {
-    BlockingResponse() : cancel(false) {}
-    ~BlockingResponse() {}
+  struct SimpleListenerInfo {
+    URLPatterns url_patterns;
+    SimpleListener listener;
+  };
 
-    int code() const {
-      return cancel ? net::ERR_BLOCKED_BY_CLIENT : net::OK;
-    }
-
-    bool cancel;
-    GURL redirect_url;
-    net::HttpRequestHeaders request_headers;
-    scoped_refptr<net::HttpResponseHeaders> response_headers;
+  struct ResponseListenerInfo {
+    URLPatterns url_patterns;
+    ResponseListener listener;
   };
 
   AtomNetworkDelegate();
   ~AtomNetworkDelegate() override;
 
-  void SetListenerInIO(EventType type,
-                       const URLPatterns& patterns,
-                       const Listener& callback);
+  void SetSimpleListenerInIO(SimpleEvent type,
+                             const URLPatterns& patterns,
+                             const SimpleListener& callback);
+  void SetResponseListenerInIO(ResponseEvent type,
+                               const URLPatterns& patterns,
+                               const ResponseListener& callback);
 
  protected:
   // net::NetworkDelegate:
@@ -91,7 +89,8 @@ class AtomNetworkDelegate : public brightray::NetworkDelegate {
   void OnErrorOccurred(net::URLRequest* request);
 
  private:
-  std::map<EventType, ListenerInfo> event_listener_map_;
+  std::map<SimpleEvent, SimpleListenerInfo> simple_listeners_;
+  std::map<ResponseEvent, ResponseListenerInfo> response_listeners_;;
 
   DISALLOW_COPY_AND_ASSIGN(AtomNetworkDelegate);
 };

@@ -5,7 +5,6 @@
 #ifndef ATOM_COMMON_NATIVE_MATE_CONVERTERS_NET_CONVERTER_H_
 #define ATOM_COMMON_NATIVE_MATE_CONVERTERS_NET_CONVERTER_H_
 
-#include "atom/browser/net/atom_network_delegate.h"
 #include "base/memory/ref_counted.h"
 #include "native_mate/converter.h"
 
@@ -33,13 +32,6 @@ template<>
 struct Converter<scoped_refptr<net::X509Certificate>> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
       const scoped_refptr<net::X509Certificate>& val);
-};
-
-template<>
-struct Converter<atom::AtomNetworkDelegate::BlockingResponse> {
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Local<v8::Value> val,
-                     atom::AtomNetworkDelegate::BlockingResponse* out);
 };
 
 }  // namespace mate
