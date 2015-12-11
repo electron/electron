@@ -112,6 +112,19 @@ def update_info_plist(version):
   with open(info_plist, 'w') as f:
     f.write(''.join(lines))
 
+def update_package_json(version):
+    package_json = 'package.json'
+    with open(package_json, 'r') as f:
+        lines = f.readlines()
+
+    for i in range(0, len(lines)):
+        line = lines[i];
+        if 'version' in line:
+            lines[i] = '  "version": "{0}",\n'.format(version)
+            break
+
+    with open(package_json, 'r') as f:
+        f.write(''.join(lines))
 
 def tag_version(version):
   execute(['git', 'commit', '-a', '-m', 'Bump v{0}'.format(version)])
