@@ -31,15 +31,14 @@ class AtomNetworkDelegate : public brightray::NetworkDelegate {
       base::Callback<BlockingResponse(const base::DictionaryValue&)>;
 
   enum EventType {
-    kInvalidEvent = 0,
-    kOnBeforeRequest = 1 << 0,
-    kOnBeforeSendHeaders = 1 << 1,
-    kOnSendHeaders = 1 << 2,
-    kOnHeadersReceived = 1 << 3,
-    kOnBeforeRedirect = 1 << 4,
-    kOnResponseStarted = 1 << 5,
-    kOnCompleted = 1 << 6,
-    kOnErrorOccurred = 1 << 7,
+    kOnBeforeRequest,
+    kOnBeforeSendHeaders,
+    kOnSendHeaders,
+    kOnHeadersReceived,
+    kOnBeforeRedirect,
+    kOnResponseStarted,
+    kOnCompleted,
+    kOnErrorOccurred,
   };
 
   struct ListenerInfo {
@@ -69,8 +68,6 @@ class AtomNetworkDelegate : public brightray::NetworkDelegate {
                        const Listener& callback);
 
  protected:
-  void OnErrorOccurred(net::URLRequest* request);
-
   // net::NetworkDelegate:
   int OnBeforeURLRequest(net::URLRequest* request,
                          const net::CompletionCallback& callback,
@@ -90,6 +87,8 @@ class AtomNetworkDelegate : public brightray::NetworkDelegate {
                         const GURL& new_location) override;
   void OnResponseStarted(net::URLRequest* request) override;
   void OnCompleted(net::URLRequest* request, bool started) override;
+
+  void OnErrorOccurred(net::URLRequest* request);
 
  private:
   std::map<EventType, ListenerInfo> event_listener_map_;
