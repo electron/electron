@@ -29,7 +29,7 @@ class WebRequest : public mate::TrackableObject<WebRequest> {
   explicit WebRequest(AtomBrowserContext* browser_context);
   ~WebRequest();
 
-  template<AtomNetworkDelegate::EventTypes Event>
+  template<AtomNetworkDelegate::EventType Event>
   void SetListener(mate::Arguments* args);
 
  private:

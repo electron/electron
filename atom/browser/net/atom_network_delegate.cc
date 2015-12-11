@@ -139,7 +139,7 @@ AtomNetworkDelegate::~AtomNetworkDelegate() {
 }
 
 void AtomNetworkDelegate::SetListenerInIO(
-    EventTypes type,
+    EventType type,
     scoped_ptr<base::DictionaryValue> filter,
     const Listener& callback) {
   if (callback.is_null()) {

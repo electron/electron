@@ -26,7 +26,7 @@ WebRequest::WebRequest(AtomBrowserContext* browser_context)
 WebRequest::~WebRequest() {
 }
 
-template<AtomNetworkDelegate::EventTypes type>
+template<AtomNetworkDelegate::EventType type>
 void WebRequest::SetListener(mate::Arguments* args) {
   scoped_ptr<base::DictionaryValue> filter(new base::DictionaryValue);
   args->GetNext(filter.get());

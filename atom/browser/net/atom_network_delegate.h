@@ -28,7 +28,7 @@ class AtomNetworkDelegate : public brightray::NetworkDelegate {
   using Listener =
       base::Callback<BlockingResponse(const base::DictionaryValue&)>;
 
-  enum EventTypes {
+  enum EventType {
     kInvalidEvent = 0,
     kOnBeforeRequest = 1 << 0,
     kOnBeforeSendHeaders = 1 << 1,
@@ -62,7 +62,7 @@ class AtomNetworkDelegate : public brightray::NetworkDelegate {
   AtomNetworkDelegate();
   ~AtomNetworkDelegate() override;
 
-  void SetListenerInIO(EventTypes type,
+  void SetListenerInIO(EventType type,
                        scoped_ptr<base::DictionaryValue> filter,
                        const Listener& callback);
 
@@ -90,7 +90,7 @@ class AtomNetworkDelegate : public brightray::NetworkDelegate {
   void OnCompleted(net::URLRequest* request, bool started) override;
 
  private:
-  std::map<EventTypes, ListenerInfo> event_listener_map_;
+  std::map<EventType, ListenerInfo> event_listener_map_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomNetworkDelegate);
 };
