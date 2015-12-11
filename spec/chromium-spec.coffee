@@ -115,6 +115,19 @@ describe 'chromium feature', ->
       window.addEventListener 'message', listener
       b = window.open url, '', 'show=no'
 
+  describe 'window.postMessage', ->
+    it 'sets the origin correctly', (done) ->
+      listener = (event) ->
+        window.removeEventListener 'message', listener
+        b.close()
+        assert.equal event.data, 'file://testing'
+        assert.equal event.origin, 'file://'
+        done()
+      window.addEventListener 'message', listener
+      b = window.open "file://#{fixtures}/pages/window-open-postMessage.html", '', 'show=no'
+      BrowserWindow.fromId(b.guestId).webContents.once 'did-finish-load', ->
+        b.postMessage('testing', '*')
+
   describe 'window.opener.postMessage', ->
     it 'sets source and origin correctly', (done) ->
       listener = (event) ->
