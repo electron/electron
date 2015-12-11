@@ -230,7 +230,7 @@ struct Converter<std::set<T> > {
     typename std::set<T>::const_iterator it;
     int i;
     for (i = 0, it = val.begin(); it != val.end(); ++it, ++i)
-         result->Set(i, Converter<T>::ToV8(isolate, *it));
+      result->Set(i, Converter<T>::ToV8(isolate, *it));
     return result;
   }
 
@@ -247,7 +247,7 @@ struct Converter<std::set<T> > {
       T item;
       if (!Converter<T>::FromV8(isolate, array->Get(i), &item))
         return false;
-      result.push_back(item);
+      result.insert(item);
     }
 
     out->swap(result);
