@@ -210,7 +210,7 @@ describe 'chromium feature', ->
       setImmediate ->
         called = false
         Promise.resolve().then ->
-          done(if called then undefined else new Error('wrong sequnce'))
+          done(if called then undefined else new Error('wrong sequence'))
         document.createElement 'x-element'
         called = true
 
@@ -224,6 +224,6 @@ describe 'chromium feature', ->
       remote.getGlobal('setImmediate') ->
         called = false
         Promise.resolve().then ->
-          done(if called then undefined else new Error('wrong sequnce'))
+          done(if called then undefined else new Error('wrong sequence'))
         document.createElement 'y-element'
         called = true
