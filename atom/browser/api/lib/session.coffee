@@ -14,7 +14,7 @@ exports.fromPartition = (partition='') ->
 # Returns the default session.
 Object.defineProperty exports, 'defaultSession',
   enumerable: true
-  get: -> exports.fromPartition ''
+  get: -> exports.fromPartition 'persist:'
 
 wrapSession = (session) ->
   # session is an EventEmitter.

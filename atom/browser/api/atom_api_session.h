@@ -70,9 +70,11 @@ class Session: public mate::TrackableObject<Session>,
   void DisableNetworkEmulation();
   void SetCertVerifyProc(v8::Local<v8::Value> proc, mate::Arguments* args);
   v8::Local<v8::Value> Cookies(v8::Isolate* isolate);
+  v8::Local<v8::Value> WebRequest(v8::Isolate* isolate);
 
-  // Cached object for cookies API.
+  // Cached object.
   v8::Global<v8::Value> cookies_;
+  v8::Global<v8::Value> web_request_;
 
   scoped_refptr<AtomBrowserContext> browser_context_;
 
