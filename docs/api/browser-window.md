@@ -8,7 +8,7 @@ example:
 const BrowserWindow = require('electron').BrowserWindow;
 
 //outside of the main process
-const BrowserWindow = require('remote').require('browser-window');
+const BrowserWindow = require('electron').remote.BrowserWindow;
 
 var win = new BrowserWindow({ width: 800, height: 600, show: false });
 win.on('closed', function() {
