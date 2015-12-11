@@ -51,7 +51,7 @@ class AtomNetworkDelegate : public brightray::NetworkDelegate {
     BlockingResponse() : cancel(false) {}
     ~BlockingResponse() {}
 
-    int Code() const {
+    int code() const {
       return cancel ? net::ERR_BLOCKED_BY_CLIENT : net::OK;
     }
 

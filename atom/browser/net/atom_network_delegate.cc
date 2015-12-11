@@ -128,7 +128,7 @@ void OnBeforeURLRequestResponse(
     const AtomNetworkDelegate::BlockingResponse& result) {
   if (!result.redirect_url.is_empty())
     *new_url = result.redirect_url;
-  callback.Run(result.Code());
+  callback.Run(result.code());
 }
 
 void OnBeforeSendHeadersResponse(
@@ -137,7 +137,7 @@ void OnBeforeSendHeadersResponse(
     const AtomNetworkDelegate::BlockingResponse& result) {
   if (!result.request_headers.IsEmpty())
     *headers = result.request_headers;
-  callback.Run(result.Code());
+  callback.Run(result.code());
 }
 
 void OnHeadersReceivedResponse(
@@ -156,7 +156,7 @@ void OnHeadersReceivedResponse(
       (*override_response_headers)->AddHeader(key + ": " + value);
     }
   }
-  callback.Run(result.Code());
+  callback.Run(result.code());
 }
 
 }  // namespace
