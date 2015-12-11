@@ -22,6 +22,8 @@ class URLPattern;
 
 namespace atom {
 
+using URLPatterns = std::set<extensions::URLPattern>;
+
 class AtomNetworkDelegate : public brightray::NetworkDelegate {
  public:
   struct BlockingResponse;
@@ -41,7 +43,7 @@ class AtomNetworkDelegate : public brightray::NetworkDelegate {
   };
 
   struct ListenerInfo {
-    std::set<extensions::URLPattern> url_patterns;
+    URLPatterns url_patterns;
     AtomNetworkDelegate::Listener callback;
   };
 
