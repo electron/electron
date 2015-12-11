@@ -15,6 +15,21 @@
 
 using content::BrowserThread;
 
+namespace mate {
+
+template<>
+struct Converter<extensions::URLPattern> {
+  static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
+                     extensions::URLPattern* out) {
+    std::string pattern;
+    if (!ConvertFromV8(isolate, val, &pattern))
+      return false;
+    return out->Parse(pattern) == extensions::URLPattern::PARSE_SUCCESS;
+  }
+};
+
+}  // namespace mate
+
 namespace atom {
 
 namespace api {
@@ -28,9 +43,12 @@ WebRequest::~WebRequest() {
 
 template<AtomNetworkDelegate::EventType type>
 void WebRequest::SetListener(mate::Arguments* args) {
-  scoped_ptr<base::DictionaryValue> filter(new base::DictionaryValue);
-  args->GetNext(filter.get());
+  // { urls }.
+  URLPatterns patterns;
+  mate::Dictionary dict;
+  args->GetNext(&dict) && dict.Get("urls", &patterns);
 
+  // Function or null.
   v8::Local<v8::Value> value;
   AtomNetworkDelegate::Listener callback;
   if (!args->GetNext(&callback) &&
@@ -43,7 +61,7 @@ void WebRequest::SetListener(mate::Arguments* args) {
   BrowserThread::PostTask(BrowserThread::IO, FROM_HERE,
                           base::Bind(&AtomNetworkDelegate::SetListenerInIO,
                                      base::Unretained(delegate),
-                                     type, base::Passed(&filter), callback));
+                                     type, patterns, callback));
 }
 
 // static

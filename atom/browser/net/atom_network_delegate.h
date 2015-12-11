@@ -65,7 +65,7 @@ class AtomNetworkDelegate : public brightray::NetworkDelegate {
   ~AtomNetworkDelegate() override;
 
   void SetListenerInIO(EventType type,
-                       scoped_ptr<base::DictionaryValue> filter,
+                       const URLPatterns& patterns,
                        const Listener& callback);
 
  protected:

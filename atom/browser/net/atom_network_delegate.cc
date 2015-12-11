@@ -167,31 +167,15 @@ AtomNetworkDelegate::AtomNetworkDelegate() {
 AtomNetworkDelegate::~AtomNetworkDelegate() {
 }
 
-void AtomNetworkDelegate::SetListenerInIO(
-    EventType type,
-    scoped_ptr<base::DictionaryValue> filter,
-    const Listener& callback) {
+void AtomNetworkDelegate::SetListenerInIO(EventType type,
+                                          const URLPatterns& patterns,
+                                          const Listener& callback) {
   if (callback.is_null()) {
     event_listener_map_.erase(type);
     return;
   }
 
-  ListenerInfo info;
-  info.callback = callback;
-
-  const base::ListValue* url_list = nullptr;
-  if (filter->GetList("urls", &url_list)) {
-    for (size_t i = 0; i < url_list->GetSize(); ++i) {
-      std::string url;
-      extensions::URLPattern pattern;
-      if (url_list->GetString(i, &url) &&
-          pattern.Parse(url) == extensions::URLPattern::PARSE_SUCCESS) {
-        info.url_patterns.insert(pattern);
-      }
-    }
-  }
-
-  event_listener_map_[type] = info;
+  event_listener_map_[type] = { patterns, callback };
 }
 
 int AtomNetworkDelegate::OnBeforeURLRequest(
