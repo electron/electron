@@ -28,13 +28,14 @@ WebRequest::~WebRequest() {
 
 template<AtomNetworkDelegate::EventTypes type>
 void WebRequest::SetListener(mate::Arguments* args) {
-  DCHECK_CURRENTLY_ON(BrowserThread::UI);
-
-  scoped_ptr<base::DictionaryValue> filter(new base::DictionaryValue());
+  scoped_ptr<base::DictionaryValue> filter(new base::DictionaryValue);
   args->GetNext(filter.get());
+
+  v8::Local<v8::Value> value;
   AtomNetworkDelegate::Listener callback;
-  if (!args->GetNext(&callback)) {
-    args->ThrowError("Must pass null or a function");
+  if (!args->GetNext(&callback) &&
+      !(args->GetNext(&value) && value->IsNull())) {
+    args->ThrowError("Must pass null or a Function");
     return;
   }
 

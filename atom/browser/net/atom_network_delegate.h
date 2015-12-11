@@ -7,7 +7,6 @@
 
 #include <map>
 #include <set>
-#include <string>
 
 #include "brightray/browser/network_delegate.h"
 #include "base/callback.h"
