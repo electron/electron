@@ -13,13 +13,13 @@ class BrowserWindowProxy
   @getOrCreate: (guestId) ->
     @proxies[guestId] ?= new BrowserWindowProxy(guestId)
 
-  @removeWindow: (guestId) ->
+  @remove: (guestId) ->
     delete @proxies[guestId]
 
   constructor: (@guestId) ->
     @closed = false
     ipcRenderer.once "ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_CLOSED_#{@guestId}", =>
-      BrowserWindowProxy.removeWindow(@guestId)
+      BrowserWindowProxy.remove(@guestId)
       @closed = true
 
   close: ->
