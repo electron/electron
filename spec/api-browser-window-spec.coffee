@@ -8,7 +8,7 @@ os     = require 'os'
 {remote, screen} = require 'electron'
 {ipcMain, BrowserWindow} = remote.require 'electron'
 
-isCI = remote.process.argv[2] == '--ci'
+isCI = remote.getGlobal('isCi')
 
 describe 'browser-window module', ->
   fixtures = path.resolve __dirname, 'fixtures'
