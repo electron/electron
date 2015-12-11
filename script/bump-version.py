@@ -31,6 +31,7 @@ def main():
     update_win_rc(version, versions)
     update_version_h(versions)
     update_info_plist(version)
+    update_package_json(version)
     tag_version(version)
 
 
@@ -123,7 +124,7 @@ def update_package_json(version):
             lines[i] = '  "version": "{0}",\n'.format(version)
             break
 
-    with open(package_json, 'r') as f:
+    with open(package_json, 'w') as f:
         f.write(''.join(lines))
 
 def tag_version(version):
