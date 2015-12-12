@@ -5,8 +5,6 @@
 #ifndef ATOM_BROWSER_API_ATOM_API_WEB_REQUEST_H_
 #define ATOM_BROWSER_API_ATOM_API_WEB_REQUEST_H_
 
-#include <string>
-
 #include "atom/browser/api/trackable_object.h"
 #include "atom/browser/net/atom_network_delegate.h"
 #include "native_mate/arguments.h"
@@ -31,8 +29,13 @@ class WebRequest : public mate::TrackableObject<WebRequest> {
   explicit WebRequest(AtomBrowserContext* browser_context);
   ~WebRequest();
 
-  template<AtomNetworkDelegate::EventTypes Event>
-  void SetListener(mate::Arguments* args);
+  // C++ can not distinguish overloaded member function.
+  template<AtomNetworkDelegate::SimpleEvent type>
+  void SetSimpleListener(mate::Arguments* args);
+  template<AtomNetworkDelegate::ResponseEvent type>
+  void SetResponseListener(mate::Arguments* args);
+  template<typename Listener, typename Method, typename Event>
+  void SetListener(Method method, Event type, mate::Arguments* args);
 
  private:
   scoped_refptr<AtomBrowserContext> browser_context_;

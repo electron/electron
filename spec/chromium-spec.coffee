@@ -45,7 +45,7 @@ describe 'chromium feature', ->
         done()
       w.loadURL url
 
-  describe 'navigator.webkitGetUserMedia', ->
+  xdescribe 'navigator.webkitGetUserMedia', ->
     it 'calls its callbacks', (done) ->
       @timeout 5000
       navigator.webkitGetUserMedia audio: true, video: false,

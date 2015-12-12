@@ -82,38 +82,4 @@ v8::Local<v8::Value> Converter<scoped_refptr<net::X509Certificate>>::ToV8(
   return dict.GetHandle();
 }
 
-// static
-bool Converter<atom::AtomNetworkDelegate::BlockingResponse>::FromV8(
-    v8::Isolate* isolate, v8::Local<v8::Value> val,
-    atom::AtomNetworkDelegate::BlockingResponse* out) {
-  mate::Dictionary dict;
-  if (!ConvertFromV8(isolate, val, &dict))
-    return false;
-  if (!dict.Get("cancel", &(out->cancel)))
-    return false;
-  dict.Get("redirectURL", &(out->redirect_url));
-  base::DictionaryValue request_headers;
-  if (dict.Get("requestHeaders", &request_headers)) {
-    for (base::DictionaryValue::Iterator it(request_headers);
-         !it.IsAtEnd();
-         it.Advance()) {
-      std::string value;
-      CHECK(it.value().GetAsString(&value));
-      out->request_headers.SetHeader(it.key(), value);
-    }
-  }
-  base::DictionaryValue response_headers;
-  if (dict.Get("responseHeaders", &response_headers)) {
-    out->response_headers = new net::HttpResponseHeaders("");
-    for (base::DictionaryValue::Iterator it(response_headers);
-         !it.IsAtEnd();
-         it.Advance()) {
-      std::string value;
-      CHECK(it.value().GetAsString(&value));
-      out->response_headers->AddHeader(it.key() + " : " + value);
-    }
-  }
-  return true;
-}
-
 }  // namespace mate
