@@ -11,7 +11,7 @@ var BrowserWindow = require('browser-window');
 var win = new BrowserWindow({ width: 800, height: 600 });
 win.loadURL("http://github.com");
 
-var ses = win.webContents.session
+var ses = win.webContents.session;
 ```
 
 ## Methods
@@ -62,7 +62,7 @@ Electron의 `webContents`에서 `item`을 다운로드할 때 발생하는 이�
 `event.preventDefault()` 메서드를 호출하면 다운로드를 취소합니다.
 
 ```javascript
-session.on('will-download', function(event, item, webContents) {
+session.defaultSession.on('will-download', function(event, item, webContents) {
   event.preventDefault();
   require('request')(item.getURL(), function(data) {
     require('fs').writeFileSync('/somewhere', data);
@@ -80,60 +80,51 @@ session.on('will-download', function(event, item, webContents) {
 있습니다:
 
 ```javascript
-var BrowserWindow = require('browser-window');
+// 모든 쿠키를 요청합니다.
+session.defaultSession.cookies.get({}, function(error, cookies) {
+  console.log(cookies);
+});
 
-var win = new BrowserWindow({ width: 800, height: 600 });
+// url에 관련된 쿠키를 모두 가져옵니다.
+session.defaultSession.cookies.get({ url : "http://www.github.com" }, function(error, cookies) {
+  console.log(cookies);
+});
 
-win.loadURL('https://github.com');
-
-win.webContents.on('did-finish-load', function() {
-  // 모든 쿠키를 가져옵니다.
-  win.webContents.session.cookies.get({}, function(error, cookies) {
-    if (error) throw error;
-    console.log(cookies);
-  });
-
-  // Url에 관련된 쿠키를 모두 가져옵니다.
-  win.webContents.session.cookies.get({ url : "http://www.github.com" },
-      function(error, cookies) {
-        if (error) throw error;
-        console.log(cookies);
-  });
-
-  // 지정한 쿠키 데이터를 설정합니다.
-  // 동일한 쿠키가 있으면 해당 쿠키를 덮어씁니다.
-  win.webContents.session.cookies.set(
-    { url : "http://www.github.com", name : "dummy_name", value : "dummy"},
-    function(error, cookies) {
-      if (error) throw error;
-      console.log(cookies);
-  });
+// 지정한 쿠키 데이터를 설정합니다.
+// 동일한 쿠키가 있으면 해당 쿠키를 덮어씁니다.
+var cookie = { url : "http://www.github.com", name : "dummy_name", value : "dummy" };
+session.defaultSession.cookies.set(cookie, function(error) {
+  if (error)
+    console.error(error);
 });
 ```
 
-#### `ses.cookies.get(details, callback)`
+#### `ses.cookies.get(filter, callback)`
 
-`details` Object
+* `filter` Object
+  * `url` String __optional__ - `url`에 해당하는 쿠키를 취득합니다. 이 속성을
+  생략하면 모든 url에서 찾습니다.
+  * `name` String __optional__ - 쿠키의 이름입니다.
+  * `domain` String __optional__ - 도메인 또는 서브 도메인에 일치하는 쿠키를
+  취득합니다.
+  * `path` String __optional__ - `path`에 일치하는 쿠키를 취득합니다.
+  * `secure` Boolean __optional__ - 보안 속성에 따라 쿠키를 필터링합니다.
+  * `session` Boolean __optional__ - 세션 또는 지속성 쿠키를 필터링합니다.
+* `callback` Function
 
-* `url` String - `url`에 관련된 쿠키를 가져옵니다. 이 속성을 비워두면 모든 url의
-  쿠키를 가져옵니다.
-* `name` String - 이름을 기준으로 쿠키를 필터링합니다.
-* `domain` String - `domain`과 일치하는 도메인과 서브 도메인에 대한 쿠키를 가져옵니다.
-* `path` String - `path`와 일치하는 경로에 대한 쿠키를 가져옵니다.
-* `secure` Boolean - 보안 속성을 기준으로 쿠키를 필터링합니다.
-* `session` Boolean - 세션 또는 영구 쿠키를 필터링합니다.
+`details` 객체에서 묘사한 모든 쿠키를 요청합니다. 모든 작업이 끝나면 `callback`이
+`callback(error, cookies)` 형태로 호출됩니다.
 
-* `callback` Function - function(error, cookies)
-* `error` Error
-* `cookies` Array - `cookie` 객체의 배열, 속성은 다음과 같습니다:
+`cookies`는 `cookie` 객체의 배열입니다.
+
+* `cookie` Object
   *  `name` String - 쿠키의 이름.
   *  `value` String - 쿠키의 값.
   *  `domain` String - 쿠키의 도메인.
-  *  `host_only` String - 쿠키가 호스트 전용인가에 대한 여부.
+  *  `hostOnly` String - 쿠키가 호스트 전용인가에 대한 여부.
   *  `path` String - 쿠키의 경로.
-  *  `secure` Boolean - 쿠키가 안전한 것으로 표시되는지에 대한 여부. (일반적으로
-      HTTPS)
-  *  `http_only` Boolean - 쿠키가 HttpOnly로 표시되는지에 대한 여부.
+  *  `secure` Boolean - 쿠키가 안전한 것으로 표시되는지에 대한 여부.
+  *  `httpOnly` Boolean - 쿠키가 HTTP로만 표시되는지에 대한 여부.
   *  `session` Boolean - 쿠키가 세션 쿠키 또는 만료일이 있는 영구 쿠키인지에 대한
     여부.
   *  `expirationDate` Double - (Option) UNIX 시간으로 표시되는 쿠키의 만료일에
@@ -141,30 +132,31 @@ win.webContents.on('did-finish-load', function() {
 
 #### `ses.cookies.set(details, callback)`
 
-`details` Object
+* `details` Object
+  * `url` String - `url`에 관련된 쿠키를 가져옵니다.
+  * `name` String - 쿠키의 이름입니다. 기본적으로 비워두면 생략됩니다.
+  * `value` String - 쿠키의 값입니다. 기본적으로 비워두면 생략됩니다.
+  * `domain` String - 쿠키의 도메인입니다. 기본적으로 비워두면 생략됩니다.
+  * `path` String - 쿠키의 경로입니다. 기본적으로 비워두면 생략됩니다.
+  * `secure` Boolean - 쿠키가 안전한 것으로 표시되는지에 대한 여부입니다. 기본값은
+    false입니다.
+  * `session` Boolean - 쿠키가 HttpOnly로 표시되는지에 대한 여부입니다. 기본값은
+    false입니다.
+  * `expirationDate` Double __optional__ -	UNIX 시간으로 표시되는 쿠키의 만료일에
+    대한 초 단위 시간입니다. 세션 쿠키에 제공되지 않습니다.
+* `callback` Function
 
-* `url` String - `url`에 관련된 쿠키를 가져옵니다.
-* `name` String - 쿠키의 이름입니다. 기본적으로 비워두면 생략됩니다.
-* `value` String - 쿠키의 값입니다. 기본적으로 비워두면 생략됩니다.
-* `domain` String - 쿠키의 도메인입니다. 기본적으로 비워두면 생략됩니다.
-* `path` String - 쿠키의 경로입니다. 기본적으로 비워두면 생략됩니다.
-* `secure` Boolean - 쿠키가 안전한 것으로 표시되는지에 대한 여부입니다. 기본값은
-  false입니다.
-* `session` Boolean - 쿠키가 HttpOnly로 표시되는지에 대한 여부입니다. 기본값은
-  false입니다.
-* `expirationDate` Double -	UNIX 시간으로 표시되는 쿠키의 만료일에 대한 초 단위
-  시간입니다. 생략하면 쿠키는 세션 쿠키가 됩니다.
+`details` 객체에 따라 쿠키를 설정합니다. 작업이 완료되면 `callback`이
+`callback(error)` 형태로 호출됩니다.
 
-* `callback` Function - function(error)
-  * `error` Error
+#### `ses.cookies.remove(url, name, callback)`
 
-#### `ses.cookies.remove(details, callback)`
+* `url` String - 쿠키와 관련된 URL입니다.
+* `name` String - 지울 쿠키의 이름입니다.
+* `callback` Function
 
-* `details` Object, proprties:
-  * `url` String - 쿠키와 관련된 URL입니다.
-  * `name` String - 지울 쿠키의 이름입니다.
-* `callback` Function - function(error)
-  * `error` Error
+`url`과 `name`에 일치하는 쿠키를 삭제합니다. 작업이 완료되면 `callback`이
+`callback()` 형식으로 호출됩니다.
 
 #### `ses.clearCache(callback)`
 
@@ -287,3 +279,191 @@ myWindow.webContents.session.setCertificateVerifyProc(function(hostname, cert, c
    callback(false);
 });
 ```
+
+#### `ses.webRequest`
+
+`webRequest` API는 생명주기의 다양한 단계에 맞춰 요청 컨텐츠를 가로채거나 변경할 수
+있도록 합니다.
+
+각 API는 `filter`와 `listener`를 선택적으로 받을 수 있습니다. `listener`는 API의
+이벤트가 발생했을 때 `listener(details)` 형태로 호출되며 `defails`는 요청을 묘사하는
+객체입니다. `listener`에 `null`을 전달하면 이벤트 수신을 중지합니다.
+
+`filter`는 `urls` 속성을 가진 객체입니다. 이 속성은 URL 규칙의 배열이며 URL 규칙에
+일치하지 않는 요청을 모두 거르는데 사용됩니다. 만약 `filter`가 생략되면 모든 요청을
+여과 없이 통과시킵니다.
+
+어떤 `listener`의 이벤트들은 `callback`을 같이 전달하는데, 이벤트 처리시
+`listener`의 작업을 완료한 후 `response` 객체를 포함하여 호출해야 합니다.
+
+```javascript
+// 다음 url에 대한 User Agent를 조작합니다.
+var filter = {
+  urls: ["https://*.github.com/*", "*://electron.github.io"]
+};
+
+session.defaultSession.webRequest.onBeforeSendHeaders(filter, function(details, callback) {
+  details.requestHeaders['User-Agent'] = "MyAgent";
+  callback({cancel: false, requestHeaders: details.requestHeaders});
+});
+```
+
+#### `ses.webRequest.onBeforeRequest([filter, ]listener)`
+
+* `filter` Object
+* `listener` Function
+
+요청이 발생하면 `listener`가 `listener(details, callback)` 형태로 호출됩니다.
+
+* `details` Object
+  * `id` Integer
+  * `url` String
+  * `method` String
+  * `resourceType` String
+  * `timestamp` Double
+
+`callback`은 `response` 객체와 함께 호출되어야 합니다:
+
+* `response` Object
+  * `cancel` Boolean __optional__
+  * `redirectURL` String __optional__ - 원래 요청은 전송과 완료가 방지되지만 이
+    속성을 지정하면 해당 URL로 리다이렉트됩니다.
+
+#### `ses.webRequest.onBeforeSendHeaders([filter, ]listener)`
+
+* `filter` Object
+* `listener` Function
+
+HTTP 요청을 보내기 전 요청 헤더를 사용할 수 있을 때 `listener`가
+`listener(details, callback)` 형태로 호출됩니다. 이 이벤트는 서버와의 TCP 연결이
+완료된 후에 발생할 수도 있지만 http 데이터가 전송되기 전에 발생합니다.
+
+* `details` Object
+  * `id` Integer
+  * `url` String
+  * `method` String
+  * `resourceType` String
+  * `timestamp` Double
+  * `requestHeaders` Object
+
+`callback`은 `response` 객체와 함께 호출되어야 합니다:
+
+* `response` Object
+  * `cancel` Boolean __optional__
+  * `requestHeaders` Object __optional__ - 이 속성이 제공되면, 요청은 이 헤더로
+    만들어 집니다.
+
+#### `ses.webRequest.onSendHeaders([filter, ]listener)`
+
+* `filter` Object
+* `listener` Function
+
+서버에 요청이 전송되기 바로 전에 `listener`가 `listener(details)` 형태로 호출됩니다.
+이전 `onBeforeSendHeaders`의 response와 다른점은 리스너가 호출되는 시간으로 볼 수
+있습니다.
+
+* `details` Object
+  * `id` Integer
+  * `url` String
+  * `method` String
+  * `resourceType` String
+  * `timestamp` Double
+  * `requestHeaders` Object
+
+#### `ses.webRequest.onHeadersReceived([filter,] listener)`
+
+* `filter` Object
+* `listener` Function
+
+요청의 HTTP 응답 헤더를 받았을 때 `listener`가 `listener(details, callback)` 형태로
+호출됩니다.
+
+* `details` Object
+  * `id` String
+  * `url` String
+  * `method` String
+  * `resourceType` String
+  * `timestamp` Double
+  * `statusLine` String
+  * `statusCode` Integer
+  * `responseHeaders` Object
+
+`callback`은 `response` 객체와 함께 호출되어야 합니다:
+
+* `response` Object
+  * `cancel` Boolean
+  * `responseHeaders` Object __optional__ - 이 속성이 제공되면 서버는 이 헤더와
+    함께 응답합니다.
+
+#### `ses.webRequest.onResponseStarted([filter, ]listener)`
+
+* `filter` Object
+* `listener` Function
+
+요청 본문의 첫 번째 바이트를 받았을 때 `listener`가 `listener(details)` 형태로
+호출됩니다. 이는 HTTP 요청에서 상태 줄과 요청 헤더가 사용 가능한 상태를 의미합니다.
+
+* `details` Object
+  * `id` Integer
+  * `url` String
+  * `method` String
+  * `resourceType` String
+  * `timestamp` Double
+  * `responseHeaders` Object
+  * `fromCache` Boolean  - 응답을 디스크 캐시에서 가져올지에 대한 여부.
+  * `statusCode` Integer
+  * `statusLine` String
+
+#### `ses.webRequest.onBeforeRedirect([filter, ]listener)`
+
+* `filter` Object
+* `listener` Function
+
+서버에서 시작된 리다이렉트가 발생했을 때 `listener`가 `listener(details)` 형태로
+호출됩니다.
+
+* `details` Object
+  * `id` String
+  * `url` String
+  * `method` String
+  * `resourceType` String
+  * `timestamp` Double
+  * `redirectURL` String
+  * `statusCode` Integer
+  * `ip` String __optional__ - 요청이 실질적으로 전송될 서버 아이피 주소.
+  * `fromCache` Boolean
+  * `responseHeaders` Object
+
+#### `ses.webRequest.onCompleted([filter, ]listener)`
+
+* `filter` Object
+* `listener` Function
+
+요청이 완료되면 `listener`가 `listener(details)` 형태로 호출됩니다.
+
+* `details` Object
+  * `id` Integer
+  * `url` String
+  * `method` String
+  * `resourceType` String
+  * `timestamp` Double
+  * `responseHeaders` Object
+  * `fromCache` Boolean
+  * `statusCode` Integer
+  * `statusLine` String
+
+#### `ses.webRequest.onErrorOccurred([filter, ]listener)`
+
+* `filter` Object
+* `listener` Function
+
+에러가 발생하면 `listener`가 `listener(details)` 형태로 호출됩니다.
+
+* `details` Object
+  * `id` Integer
+  * `url` String
+  * `method` String
+  * `resourceType` String
+  * `timestamp` Double
+  * `fromCache` Boolean
+  * `error` String - 에러 설명.
