@@ -24,6 +24,7 @@ function onerror (err) {
 
 var paths = {
   darwin: 'dist/Electron.app/Contents/MacOS/Electron',
+  freebsd: 'dist/electron',
   linux: 'dist/electron',
   win32: 'dist/electron.exe'
 }
