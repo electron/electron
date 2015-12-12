@@ -38,7 +38,7 @@ namespace {
 // A hack here:
 // Copy from grit/shell_resources.h of chromium repository
 // since libcontentchromium doesn't expose content_shell resources.
-const int kIDR_CONTENT_SHELL_DEVTOOLS_DISCOVERY_PAGE = 25500;
+const int kIDR_CONTENT_SHELL_DEVTOOLS_DISCOVERY_PAGE = 25150;
 
 class TCPServerSocketFactory
     : public devtools_http_handler::DevToolsHttpHandler::ServerSocketFactory {
