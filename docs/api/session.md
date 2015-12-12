@@ -326,7 +326,7 @@ The `listener` will be called with `listener(details)` when a request is about
 to occur.
 
 * `details` Object
-  * `id` String - Request ID.
+  * `id` Integer
   * `url` String
   * `method` String
   * `resourceType` String
@@ -335,7 +335,7 @@ to occur.
 The `listener` has to return an `response` object:
 
 * `response` Object
-  * `cancel` Boolean
+  * `cancel` Boolean __optional__
   * `redirectURL` String __optional__ - The original request is prevented from
     being sent or completed, and is instead redirected to the given URL.
 
@@ -349,7 +349,7 @@ request, once the request headers are available. This may occur after a TCP
 connection is made to the server, but before any http data is sent.
 
 * `details` Object
-  * `id` String - Request ID.
+  * `id` Integer
   * `url` String
   * `method` String
   * `resourceType` String
@@ -359,7 +359,7 @@ connection is made to the server, but before any http data is sent.
 The `listener` has to return an `response` object:
 
 * `response` Object
-  * `cancel` Boolean
+  * `cancel` Boolean __optional__
   * `requestHeaders` Object __optional__ - When provided, request will be made
     with these headers.
 
@@ -373,7 +373,7 @@ going to be sent to the server, modifications of previous `onBeforeSendHeaders`
 response are visible by the time this listener is fired.
 
 * `details` Object
-  * `id` String - Request ID.
+  * `id` Integer
   * `url` String
   * `method` String
   * `resourceType` String
@@ -389,7 +389,7 @@ The `listener` will be called with `listener(details)` when HTTP response
 headers of a request have been received.
 
 * `details` Object
-  * `id` String - Request ID.
+  * `id` String
   * `url` String
   * `method` String
   * `resourceType` String
@@ -415,7 +415,7 @@ response body is received. For HTTP requests, this means that the status line
 and response headers are available.
 
 * `details` Object
-  * `id` String - Request ID.
+  * `id` Integer
   * `url` String
   * `method` String
   * `resourceType` String
@@ -435,7 +435,7 @@ The `listener` will be called with `listener(details)` when a server initiated
 redirect is about to occur.
 
 * `details` Object
-  * `id` String - Request ID.
+  * `id` String
   * `url` String
   * `method` String
   * `resourceType` String
@@ -456,7 +456,7 @@ The `listener` will be called with `listener(details)` when a request is
 completed.
 
 * `details` Object
-  * `id` String - Request ID.
+  * `id` Integer
   * `url` String
   * `method` String
   * `resourceType` String
@@ -474,7 +474,7 @@ completed.
 The `listener` will be called with `listener(details)` when an error occurs.
 
 * `details` Object
-  * `id` String - Request ID.
+  * `id` Integer
   * `url` String
   * `method` String
   * `resourceType` String

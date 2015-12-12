@@ -88,7 +88,7 @@ void FillDetailsObject(base::DictionaryValue* details,
 }
 
 void FillDetailsObject(base::DictionaryValue* details,
-                       net::HttpResponseHeaders* headers) {
+                       const net::HttpResponseHeaders* headers) {
   if (!headers)
     return;
 
@@ -97,7 +97,6 @@ void FillDetailsObject(base::DictionaryValue* details,
   std::string key;
   std::string value;
   while (headers->EnumerateHeaderLines(&iter, &key, &value)) {
-    key = base::ToLowerASCII(key);
     if (dict->HasKey(key)) {
       base::ListValue* values = nullptr;
       if (dict->GetList(key, &values))
@@ -162,10 +161,14 @@ void ReadFromResponseObject(const base::DictionaryValue& response,
     for (base::DictionaryValue::Iterator it(*dict);
          !it.IsAtEnd();
          it.Advance()) {
-      std::string value;
-      if (it.value().GetAsString(&value)) {
+      const base::ListValue* list;
+      if (it.value().GetAsList(&list)) {
         (*headers)->RemoveHeader(it.key());
-        (*headers)->AddHeader(it.key() + " : " + value);
+        for (size_t i = 0; i < list->GetSize(); ++i) {
+          std::string value;
+          if (list->GetString(i, &value))
+            (*headers)->AddHeader(it.key() + " : " + value);
+        }
       }
     }
   }
