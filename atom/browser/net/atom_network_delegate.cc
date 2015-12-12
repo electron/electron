@@ -66,8 +66,7 @@ bool MatchesFilterCondition(net::URLRequest* request,
 }
 
 // Overloaded by multiple types to fill the |details| object.
-void FillDetailsObject(base::DictionaryValue* details,
-                       net::URLRequest* request) {
+void ToDictionary(base::DictionaryValue* details, net::URLRequest* request) {
   details->SetInteger("id", request->identifier());
   details->SetString("url", request->url().spec());
   details->SetString("method", request->method());
@@ -78,8 +77,8 @@ void FillDetailsObject(base::DictionaryValue* details,
                           : "other");
 }
 
-void FillDetailsObject(base::DictionaryValue* details,
-                       const net::HttpRequestHeaders& headers) {
+void ToDictionary(base::DictionaryValue* details,
+                  const net::HttpRequestHeaders& headers) {
   scoped_ptr<base::DictionaryValue> dict(new base::DictionaryValue);
   net::HttpRequestHeaders::Iterator it(headers);
   while (it.GetNext())
@@ -87,8 +86,8 @@ void FillDetailsObject(base::DictionaryValue* details,
   details->Set("requestHeaders", dict.Pass());
 }
 
-void FillDetailsObject(base::DictionaryValue* details,
-                       const net::HttpResponseHeaders* headers) {
+void ToDictionary(base::DictionaryValue* details,
+                  const net::HttpResponseHeaders* headers) {
   if (!headers)
     return;
 
@@ -112,23 +111,35 @@ void FillDetailsObject(base::DictionaryValue* details,
   details->SetInteger("statusCode", headers->response_code());
 }
 
-void FillDetailsObject(base::DictionaryValue* details, const GURL& location) {
+void ToDictionary(base::DictionaryValue* details, const GURL& location) {
   details->SetString("redirectURL", location.spec());
 }
 
-void FillDetailsObject(base::DictionaryValue* details,
-                       const net::HostPortPair& host_port) {
+void ToDictionary(base::DictionaryValue* details,
+                  const net::HostPortPair& host_port) {
   if (host_port.host().empty())
     details->SetString("ip", host_port.host());
 }
 
-void FillDetailsObject(base::DictionaryValue* details, bool from_cache) {
+void ToDictionary(base::DictionaryValue* details, bool from_cache) {
   details->SetBoolean("fromCache", from_cache);
 }
 
-void FillDetailsObject(base::DictionaryValue* details,
-                       const net::URLRequestStatus& status) {
+void ToDictionary(base::DictionaryValue* details,
+                  const net::URLRequestStatus& status) {
   details->SetString("error", net::ErrorToString(status.error()));
+}
+
+// Helper function to fill |details| with arbitrary |args|.
+template<typename Arg>
+void FillDetailsObject(base::DictionaryValue* details, Arg arg) {
+  ToDictionary(details, arg);
+}
+
+template<typename Arg, typename... Args>
+void FillDetailsObject(base::DictionaryValue* details, Arg arg, Args... args) {
+  ToDictionary(details, arg);
+  FillDetailsObject(details, args...);
 }
 
 // Fill the native types with the result from the response object.
@@ -261,8 +272,7 @@ int AtomNetworkDelegate::OnBeforeSendHeaders(
     return net::OK;
 
   scoped_ptr<base::DictionaryValue> details(new base::DictionaryValue);
-  FillDetailsObject(details.get(), request);
-  FillDetailsObject(details.get(), *headers);
+  FillDetailsObject(details.get(), request, *headers);
 
   ResponseCallback response =
       base::Bind(OnListenerResultInUI<net::HttpRequestHeaders*>,
@@ -287,8 +297,7 @@ void AtomNetworkDelegate::OnSendHeaders(
     return;
 
   scoped_ptr<base::DictionaryValue> details(new base::DictionaryValue);
-  FillDetailsObject(details.get(), request);
-  FillDetailsObject(details.get(), headers);
+  FillDetailsObject(details.get(), request, headers);
 
   BrowserThread::PostTask(
       BrowserThread::UI, FROM_HERE,
@@ -311,8 +320,7 @@ int AtomNetworkDelegate::OnHeadersReceived(
     return net::OK;
 
   scoped_ptr<base::DictionaryValue> details(new base::DictionaryValue);
-  FillDetailsObject(details.get(), request);
-  FillDetailsObject(details.get(), original_response_headers);
+  FillDetailsObject(details.get(), request, original_response_headers);
 
   ResponseCallback response =
       base::Bind(OnListenerResultInUI<scoped_refptr<net::HttpResponseHeaders>*>,
@@ -336,11 +344,9 @@ void AtomNetworkDelegate::OnBeforeRedirect(net::URLRequest* request,
     return;
 
   scoped_ptr<base::DictionaryValue> details(new base::DictionaryValue);
-  FillDetailsObject(details.get(), request);
-  FillDetailsObject(details.get(), new_location);
-  FillDetailsObject(details.get(), request->response_headers());
-  FillDetailsObject(details.get(), request->GetSocketAddress());
-  FillDetailsObject(details.get(), request->was_cached());
+  FillDetailsObject(details.get(), request, new_location,
+                    request->response_headers(), request->GetSocketAddress(),
+                    request->was_cached());
 
   BrowserThread::PostTask(
       BrowserThread::UI, FROM_HERE,
@@ -361,9 +367,8 @@ void AtomNetworkDelegate::OnResponseStarted(net::URLRequest* request) {
     return;
 
   scoped_ptr<base::DictionaryValue> details(new base::DictionaryValue);
-  FillDetailsObject(details.get(), request);
-  FillDetailsObject(details.get(), request->response_headers());
-  FillDetailsObject(details.get(), request->was_cached());
+  FillDetailsObject(details.get(), request, request->response_headers(),
+                    request->was_cached());
 
   BrowserThread::PostTask(
       BrowserThread::UI, FROM_HERE,
@@ -397,9 +402,8 @@ void AtomNetworkDelegate::OnCompleted(net::URLRequest* request, bool started) {
     return;
 
   scoped_ptr<base::DictionaryValue> details(new base::DictionaryValue);
-  FillDetailsObject(details.get(), request);
-  FillDetailsObject(details.get(), request->response_headers());
-  FillDetailsObject(details.get(), request->was_cached());
+  FillDetailsObject(details.get(), request, request->response_headers(),
+                    request->was_cached());
 
   BrowserThread::PostTask(
       BrowserThread::UI, FROM_HERE,
@@ -412,9 +416,8 @@ void AtomNetworkDelegate::OnErrorOccurred(net::URLRequest* request) {
     return;
 
   scoped_ptr<base::DictionaryValue> details(new base::DictionaryValue);
-  FillDetailsObject(details.get(), request);
-  FillDetailsObject(details.get(), request->was_cached());
-  FillDetailsObject(details.get(), request->status());
+  FillDetailsObject(details.get(), request, request->was_cached(),
+                    request->status());
 
   BrowserThread::PostTask(
       BrowserThread::UI, FROM_HERE,
