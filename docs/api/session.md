@@ -294,9 +294,8 @@ The `filter` is an object that has an `urls` property, which is an Array of URL
 patterns that will be used to filter out the requests that do not match the URL
 patterns. If the `filter` is omitted then all requests will be matched.
 
-For certain events the `listener` is required to return an object that describes
-how to handle the request, users can specify the `cancel` property to `true` to
-cancel the request.
+For certain events the `listener` is passed with a `callback`, which should be
+called with an `response` object when `listener` has done its work.
 
 ```javascript
 // Modify the user agent for all requests to the following urls.
@@ -304,9 +303,9 @@ var filter = {
   urls: ["https://*.github.com/*", "*://electron.github.io"]
 };
 
-session.defaultSession.webRequest.onBeforeSendHeaders(filter, function(details) {
+session.defaultSession.webRequest.onBeforeSendHeaders(filter, function(details, callback) {
   details.requestHeaders['User-Agent'] = "MyAgent";
-  return {cancel: false, requestHeaders: details.requestHeaders};
+  callback({cancel: false, requestHeaders: details.requestHeaders});
 });
 ```
 
@@ -315,8 +314,8 @@ session.defaultSession.webRequest.onBeforeSendHeaders(filter, function(details) 
 * `filter` Object
 * `listener` Function
 
-The `listener` will be called with `listener(details)` when a request is about
-to occur.
+The `listener` will be called with `listener(details, callback)` when a request
+is about to occur.
 
 * `details` Object
   * `id` Integer
@@ -325,7 +324,7 @@ to occur.
   * `resourceType` String
   * `timestamp` Double
 
-The `listener` has to return an `response` object:
+The `callback` has to be called with an `response` object:
 
 * `response` Object
   * `cancel` Boolean __optional__
@@ -337,9 +336,9 @@ The `listener` has to return an `response` object:
 * `filter` Object
 * `listener` Function
 
-The `listener` will be called with `listener(details)` before sending an HTTP
-request, once the request headers are available. This may occur after a TCP
-connection is made to the server, but before any http data is sent.
+The `listener` will be called with `listener(details, callback)` before sending
+an HTTP request, once the request headers are available. This may occur after a
+TCP connection is made to the server, but before any http data is sent.
 
 * `details` Object
   * `id` Integer
@@ -349,7 +348,7 @@ connection is made to the server, but before any http data is sent.
   * `timestamp` Double
   * `requestHeaders` Object
 
-The `listener` has to return an `response` object:
+The `callback` has to be called with an `response` object:
 
 * `response` Object
   * `cancel` Boolean __optional__
@@ -378,8 +377,8 @@ response are visible by the time this listener is fired.
 * `filter` Object
 * `listener` Function
 
-The `listener` will be called with `listener(details)` when HTTP response
-headers of a request have been received.
+The `listener` will be called with `listener(details, callback)` when HTTP
+response headers of a request have been received.
 
 * `details` Object
   * `id` String
@@ -391,7 +390,7 @@ headers of a request have been received.
   * `statusCode` Integer
   * `responseHeaders` Object
 
-The `listener` has to return an `response` object:
+The `callback` has to be called with an `response` object:
 
 * `response` Object
   * `cancel` Boolean
