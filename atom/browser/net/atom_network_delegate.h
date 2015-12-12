@@ -89,6 +89,17 @@ class AtomNetworkDelegate : public brightray::NetworkDelegate {
   void OnErrorOccurred(net::URLRequest* request);
 
  private:
+  template<typename...Args>
+  void HandleSimpleEvent(SimpleEvent type,
+                         net::URLRequest* request,
+                         Args... args);
+  template<typename Out, typename... Args>
+  int HandleResponseEvent(ResponseEvent type,
+                          net::URLRequest* request,
+                          const net::CompletionCallback& callback,
+                          Out out,
+                          Args... args);
+
   std::map<SimpleEvent, SimpleListenerInfo> simple_listeners_;
   std::map<ResponseEvent, ResponseListenerInfo> response_listeners_;;
 
