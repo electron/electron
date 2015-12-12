@@ -6,6 +6,7 @@ PERSIST_PERFIX = 'persist:'
 
 # Returns the Session from |partition| string.
 exports.fromPartition = (partition='') ->
+  return exports.defaultSession if partition is ''
   if partition.startsWith PERSIST_PERFIX
     bindings.fromPartition partition.substr(PERSIST_PERFIX.length), false
   else
@@ -14,7 +15,7 @@ exports.fromPartition = (partition='') ->
 # Returns the default session.
 Object.defineProperty exports, 'defaultSession',
   enumerable: true
-  get: -> exports.fromPartition 'persist:'
+  get: -> bindings.fromPartition '', false
 
 wrapSession = (session) ->
   # session is an EventEmitter.
