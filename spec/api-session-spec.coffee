@@ -49,12 +49,11 @@ describe 'session module', ->
   it 'should remove cookies', (done) ->
     session.defaultSession.cookies.set {url: url, name: '2', value: '2'}, (error) ->
       return done(error) if error
-      session.defaultSession.cookies.remove {url: url, name: '2'}, (error) ->
-        return done(error) if error
+      session.defaultSession.cookies.remove url, '2', ->
         session.defaultSession.cookies.get {url: url}, (error, list) ->
           return done(error) if error
           for cookie in list when cookie.name is '2'
-             return done('Cookie not deleted')
+            return done('Cookie not deleted')
           done()
 
   describe 'session.clearStorageData(options)', ->
