@@ -72,7 +72,7 @@ var template = [
         label: 'Select All',
         accelerator: 'CmdOrCtrl+A',
         role: 'selectall'
-      },
+      }
     ]
   },
   {
@@ -111,7 +111,7 @@ var template = [
           if (focusedWindow)
             focusedWindow.toggleDevTools();
         }
-      },
+      }
     ]
   },
   {
@@ -127,7 +127,7 @@ var template = [
         label: 'Close',
         accelerator: 'CmdOrCtrl+W',
         role: 'close'
-      },
+      }
     ]
   },
   {
@@ -137,7 +137,7 @@ var template = [
       {
         label: 'Learn More',
         click: function() { require('electron').shell.openExternal('http://electron.atom.io') }
-      },
+      }
     ]
   },
 ];
@@ -183,7 +183,7 @@ if (process.platform == 'darwin') {
         label: 'Quit',
         accelerator: 'Command+Q',
         click: function() { app.quit(); }
-      },
+      }
     ]
   });
   // Window menu.
