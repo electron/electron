@@ -8,12 +8,15 @@
 #include <vector>
 
 #include "atom/common/node_includes.h"
+#include "atom/common/native_mate_converters/gurl_converter.h"
+#include "atom/common/native_mate_converters/value_converter.h"
 #include "native_mate/dictionary.h"
 #include "net/base/upload_bytes_element_reader.h"
 #include "net/base/upload_data_stream.h"
 #include "net/base/upload_element_reader.h"
 #include "net/base/upload_file_element_reader.h"
 #include "net/cert/x509_certificate.h"
+#include "net/http/http_response_headers.h"
 #include "net/url_request/url_request.h"
 
 namespace mate {

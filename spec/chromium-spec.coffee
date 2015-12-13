@@ -45,7 +45,7 @@ describe 'chromium feature', ->
         done()
       w.loadURL url
 
-  describe 'navigator.webkitGetUserMedia', ->
+  xdescribe 'navigator.webkitGetUserMedia', ->
     it 'calls its callbacks', (done) ->
       @timeout 5000
       navigator.webkitGetUserMedia audio: true, video: false,
@@ -115,12 +115,25 @@ describe 'chromium feature', ->
       window.addEventListener 'message', listener
       b = window.open url, '', 'show=no'
 
+  describe 'window.postMessage', ->
+    it 'sets the origin correctly', (done) ->
+      listener = (event) ->
+        window.removeEventListener 'message', listener
+        b.close()
+        assert.equal event.data, 'file://testing'
+        assert.equal event.origin, 'file://'
+        done()
+      window.addEventListener 'message', listener
+      b = window.open "file://#{fixtures}/pages/window-open-postMessage.html", '', 'show=no'
+      BrowserWindow.fromId(b.guestId).webContents.once 'did-finish-load', ->
+        b.postMessage('testing', '*')
+
   describe 'window.opener.postMessage', ->
     it 'sets source and origin correctly', (done) ->
       listener = (event) ->
         window.removeEventListener 'message', listener
         b.close()
-        assert.equal event.source.guestId, b.guestId
+        assert.equal event.source, b
         assert.equal event.origin, 'file://'
         done()
       window.addEventListener 'message', listener
@@ -210,7 +223,7 @@ describe 'chromium feature', ->
       setImmediate ->
         called = false
         Promise.resolve().then ->
-          done(if called then undefined else new Error('wrong sequnce'))
+          done(if called then undefined else new Error('wrong sequence'))
         document.createElement 'x-element'
         called = true
 
@@ -224,6 +237,6 @@ describe 'chromium feature', ->
       remote.getGlobal('setImmediate') ->
         called = false
         Promise.resolve().then ->
-          done(if called then undefined else new Error('wrong sequnce'))
+          done(if called then undefined else new Error('wrong sequence'))
         document.createElement 'y-element'
         called = true

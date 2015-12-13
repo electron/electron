@@ -8,9 +8,18 @@ resolveURL = (url) ->
 
 # Window object returned by "window.open".
 class BrowserWindowProxy
+  @proxies: {}
+
+  @getOrCreate: (guestId) ->
+    @proxies[guestId] ?= new BrowserWindowProxy(guestId)
+
+  @remove: (guestId) ->
+    delete @proxies[guestId]
+
   constructor: (@guestId) ->
     @closed = false
     ipcRenderer.once "ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_CLOSED_#{@guestId}", =>
+      BrowserWindowProxy.remove(@guestId)
       @closed = true
 
   close: ->
@@ -23,7 +32,7 @@ class BrowserWindowProxy
     ipcRenderer.send 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_METHOD', @guestId, 'blur'
 
   postMessage: (message, targetOrigin='*') ->
-    ipcRenderer.send 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_POSTMESSAGE', @guestId, message, targetOrigin
+    ipcRenderer.send 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_POSTMESSAGE', @guestId, message, targetOrigin, location.origin
 
   eval: (args...) ->
     ipcRenderer.send 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WEB_CONTENTS_METHOD', @guestId, 'executeJavaScript', args...
@@ -60,7 +69,7 @@ window.open = (url, frameName='', features='') ->
 
   guestId = ipcRenderer.sendSync 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_OPEN', url, frameName, options
   if guestId
-    new BrowserWindowProxy(guestId)
+    BrowserWindowProxy.getOrCreate(guestId)
   else
     null
 
@@ -96,7 +105,7 @@ ipcRenderer.on 'ATOM_SHELL_GUEST_WINDOW_POSTMESSAGE', (event, guestId, message, 
   event.initEvent 'message', false, false
   event.data = message
   event.origin = sourceOrigin
-  event.source = new BrowserWindowProxy(guestId)
+  event.source = BrowserWindowProxy.getOrCreate(guestId)
   window.dispatchEvent event
 
 # Forward history operations to browser.

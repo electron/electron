@@ -10,6 +10,7 @@
 #include "atom/browser/api/atom_api_cookies.h"
 #include "atom/browser/api/atom_api_download_item.h"
 #include "atom/browser/api/atom_api_web_contents.h"
+#include "atom/browser/api/atom_api_web_request.h"
 #include "atom/browser/api/save_page_handler.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
@@ -368,6 +369,14 @@ v8::Local<v8::Value> Session::Cookies(v8::Isolate* isolate) {
   return v8::Local<v8::Value>::New(isolate, cookies_);
 }
 
+v8::Local<v8::Value> Session::WebRequest(v8::Isolate* isolate) {
+  if (web_request_.IsEmpty()) {
+    auto handle = atom::api::WebRequest::Create(isolate, browser_context());
+    web_request_.Reset(isolate, handle.ToV8());
+  }
+  return v8::Local<v8::Value>::New(isolate, web_request_);
+}
+
 // static
 mate::Handle<Session> Session::CreateFrom(
     v8::Isolate* isolate, AtomBrowserContext* browser_context) {
@@ -401,7 +410,8 @@ void Session::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("enableNetworkEmulation", &Session::EnableNetworkEmulation)
       .SetMethod("disableNetworkEmulation", &Session::DisableNetworkEmulation)
       .SetMethod("setCertificateVerifyProc", &Session::SetCertVerifyProc)
-      .SetProperty("cookies", &Session::Cookies);
+      .SetProperty("cookies", &Session::Cookies)
+      .SetProperty("webRequest", &Session::WebRequest);
 }
 
 void ClearWrapSession() {

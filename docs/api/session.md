@@ -12,7 +12,7 @@ const BrowserWindow = require('electron').BrowserWindow;
 var win = new BrowserWindow({ width: 800, height: 600 });
 win.loadURL("http://github.com");
 
-var ses = win.webContents.session
+var ses = win.webContents.session;
 ```
 
 ## Methods
@@ -63,7 +63,7 @@ Emitted when Electron is about to download `item` in `webContents`.
 Calling `event.preventDefault()` will cancel the download.
 
 ```javascript
-session.on('will-download', function(event, item, webContents) {
+session.defaultSession.on('will-download', function(event, item, webContents) {
   event.preventDefault();
   require('request')(item.getURL(), function(data) {
     require('fs').writeFileSync('/somewhere', data);
@@ -80,91 +80,84 @@ The following methods are available on instances of `Session`:
 The `cookies` gives you ability to query and modify cookies. For example:
 
 ```javascript
-const BrowserWindow = require('electron').BrowserWindow;
+// Query all cookies.
+session.defaultSession.cookies.get({}, function(error, cookies) {
+  console.log(cookies);
+});
 
-var win = new BrowserWindow({ width: 800, height: 600 });
+// Query all cookies associated with a specific url.
+session.defaultSession.cookies.get({ url : "http://www.github.com" }, function(error, cookies) {
+  console.log(cookies);
+});
 
-win.loadURL('https://github.com');
-
-win.webContents.on('did-finish-load', function() {
-  // Query all cookies.
-  win.webContents.session.cookies.get({}, function(error, cookies) {
-    if (error) throw error;
-    console.log(cookies);
-  });
-
-  // Query all cookies associated with a specific url.
-  win.webContents.session.cookies.get({ url : "http://www.github.com" },
-      function(error, cookies) {
-        if (error) throw error;
-        console.log(cookies);
-  });
-
-  // Set a cookie with the given cookie data;
-  // may overwrite equivalent cookies if they exist.
-  win.webContents.session.cookies.set(
-    { url : "http://www.github.com", name : "dummy_name", value : "dummy"},
-    function(error, cookies) {
-      if (error) throw error;
-      console.log(cookies);
-  });
+// Set a cookie with the given cookie data;
+// may overwrite equivalent cookies if they exist.
+var cookie = { url : "http://www.github.com", name : "dummy_name", value : "dummy" };
+session.defaultSession.cookies.set(cookie, function(error) {
+  if (error)
+    console.error(error);
 });
 ```
 
-#### `ses.cookies.get(details, callback)`
+#### `ses.cookies.get(filter, callback)`
 
-`details` Object, properties:
+* `filter` Object
+  * `url` String __optional__ - Retrieves cookies which are associated with
+    `url`. Empty implies retrieving cookies of all urls.
+  * `name` String __optional__ - Filters cookies by name.
+  * `domain` String __optional__ - Retrieves cookies whose domains match or are
+    subdomains of `domains`
+  * `path` String __optional__ - Retrieves cookies whose path matches `path`.
+  * `secure` Boolean __optional__ - Filters cookies by their Secure property.
+  * `session` Boolean __optional__ - Filters out session or persistent cookies.
+* `callback` Function
 
-* `url` String - Retrieves cookies which are associated with `url`.
-  Empty implies retrieving cookies of all urls.
-* `name` String - Filters cookies by name
-* `domain` String - Retrieves cookies whose domains match or are subdomains of
-  `domains`
-* `path` String - Retrieves cookies whose path matches `path`
-* `secure` Boolean - Filters cookies by their Secure property
-* `session` Boolean - Filters out session or persistent cookies.
-* `callback` Function - function(error, cookies)
-* `error` Error
-* `cookies` Array - array of `cookie` objects, properties:
+Sends a request to get all cookies matching `details`, `callback` will be called
+with `callback(error, cookies)` on complete.
+
+`cookies` is an Array of `cookie` objects.
+
+* `cookie` Object
   *  `name` String - The name of the cookie.
   *  `value` String - The value of the cookie.
   *  `domain` String - The domain of the cookie.
-  *  `host_only` String - Whether the cookie is a host-only cookie.
+  *  `hostOnly` String - Whether the cookie is a host-only cookie.
   *  `path` String - The path of the cookie.
-  *  `secure` Boolean - Whether the cookie is marked as Secure (typically HTTPS).
-  *  `http_only` Boolean - Whether the cookie is marked as HttpOnly.
+  *  `secure` Boolean - Whether the cookie is marked as secure.
+  *  `httpOnly` Boolean - Whether the cookie is marked as HTTP only.
   *  `session` Boolean - Whether the cookie is a session cookie or a persistent
      cookie with an expiration date.
-  *  `expirationDate` Double - (Option) The expiration date of the cookie as
+  *  `expirationDate` Double __optional__ - The expiration date of the cookie as
      the number of seconds since the UNIX epoch. Not provided for session
      cookies.
 
 #### `ses.cookies.set(details, callback)`
 
-`details` Object, properties:
-
-* `url` String - Retrieves cookies which are associated with `url`
-* `name` String - The name of the cookie. Empty by default if omitted.
-* `value` String - The value of the cookie. Empty by default if omitted.
-* `domain` String - The domain of the cookie. Empty by default if omitted.
-* `path` String - The path of the cookie. Empty by default if omitted.
-* `secure` Boolean - Whether the cookie should be marked as Secure. Defaults to
-  false.
-* `session` Boolean - Whether the cookie should be marked as HttpOnly. Defaults
-  to false.
-* `expirationDate` Double -	The expiration date of the cookie as the number of
-  seconds since the UNIX epoch. If omitted, the cookie becomes a session cookie.
-
-* `callback` Function - function(error)
-  * `error` Error
-
-#### `ses.cookies.remove(details, callback)`
-
 * `details` Object
-  * `url` String - The URL associated with the cookie
-  * `name` String - The name of cookie to remove
-* `callback` Function - function(error)
-  * `error` Error
+  * `url` String - Retrieves cookies which are associated with `url`
+  * `name` String - The name of the cookie. Empty by default if omitted.
+  * `value` String - The value of the cookie. Empty by default if omitted.
+  * `domain` String - The domain of the cookie. Empty by default if omitted.
+  * `path` String - The path of the cookie. Empty by default if omitted.
+  * `secure` Boolean - Whether the cookie should be marked as Secure. Defaults to
+    false.
+  * `session` Boolean - Whether the cookie should be marked as HttpOnly. Defaults
+    to false.
+  * `expirationDate` Double -	The expiration date of the cookie as the number of
+    seconds since the UNIX epoch. If omitted, the cookie becomes a session cookie.
+* `callback` Function
+
+Sets the cookie with `details`, `callback` will be called with `callback(error)`
+on complete.
+
+#### `ses.cookies.remove(url, name, callback)`
+
+* `url` String - The URL associated with the cookie.
+* `name` String - The name of cookie to remove.
+* `callback` Function
+
+Removes the cookies matching `url` and `name`, `callback` will called with
+`callback()` on complete.
 
 #### `ses.clearCache(callback)`
 
@@ -286,3 +279,197 @@ myWindow.webContents.session.setCertificateVerifyProc(function(hostname, cert, c
     callback(false);
 });
 ```
+
+#### `ses.webRequest`
+
+The `webRequest` API set allows to intercept and modify contents of a request at
+various stages of its lifetime.
+
+Each API accepts an optional `filter` and a `listener`, the `listener` will be
+called with `listener(details)` when the API's event has happened, the `details`
+is an object that describes the request. Passing `null` as `listener` will
+unsubscribe from the event.
+
+The `filter` is an object that has an `urls` property, which is an Array of URL
+patterns that will be used to filter out the requests that do not match the URL
+patterns. If the `filter` is omitted then all requests will be matched.
+
+For certain events the `listener` is passed with a `callback`, which should be
+called with an `response` object when `listener` has done its work.
+
+```javascript
+// Modify the user agent for all requests to the following urls.
+var filter = {
+  urls: ["https://*.github.com/*", "*://electron.github.io"]
+};
+
+session.defaultSession.webRequest.onBeforeSendHeaders(filter, function(details, callback) {
+  details.requestHeaders['User-Agent'] = "MyAgent";
+  callback({cancel: false, requestHeaders: details.requestHeaders});
+});
+```
+
+#### `ses.webRequest.onBeforeRequest([filter, ]listener)`
+
+* `filter` Object
+* `listener` Function
+
+The `listener` will be called with `listener(details, callback)` when a request
+is about to occur.
+
+* `details` Object
+  * `id` Integer
+  * `url` String
+  * `method` String
+  * `resourceType` String
+  * `timestamp` Double
+
+The `callback` has to be called with an `response` object:
+
+* `response` Object
+  * `cancel` Boolean __optional__
+  * `redirectURL` String __optional__ - The original request is prevented from
+    being sent or completed, and is instead redirected to the given URL.
+
+#### `ses.webRequest.onBeforeSendHeaders([filter, ]listener)`
+
+* `filter` Object
+* `listener` Function
+
+The `listener` will be called with `listener(details, callback)` before sending
+an HTTP request, once the request headers are available. This may occur after a
+TCP connection is made to the server, but before any http data is sent.
+
+* `details` Object
+  * `id` Integer
+  * `url` String
+  * `method` String
+  * `resourceType` String
+  * `timestamp` Double
+  * `requestHeaders` Object
+
+The `callback` has to be called with an `response` object:
+
+* `response` Object
+  * `cancel` Boolean __optional__
+  * `requestHeaders` Object __optional__ - When provided, request will be made
+    with these headers.
+
+#### `ses.webRequest.onSendHeaders([filter, ]listener)`
+
+* `filter` Object
+* `listener` Function
+
+The `listener` will be called with `listener(details)` just before a request is
+going to be sent to the server, modifications of previous `onBeforeSendHeaders`
+response are visible by the time this listener is fired.
+
+* `details` Object
+  * `id` Integer
+  * `url` String
+  * `method` String
+  * `resourceType` String
+  * `timestamp` Double
+  * `requestHeaders` Object
+
+#### `ses.webRequest.onHeadersReceived([filter,] listener)`
+
+* `filter` Object
+* `listener` Function
+
+The `listener` will be called with `listener(details, callback)` when HTTP
+response headers of a request have been received.
+
+* `details` Object
+  * `id` String
+  * `url` String
+  * `method` String
+  * `resourceType` String
+  * `timestamp` Double
+  * `statusLine` String
+  * `statusCode` Integer
+  * `responseHeaders` Object
+
+The `callback` has to be called with an `response` object:
+
+* `response` Object
+  * `cancel` Boolean
+  * `responseHeaders` Object __optional__ - When provided, the server is assumed
+    to have responded with these headers.
+
+#### `ses.webRequest.onResponseStarted([filter, ]listener)`
+
+* `filter` Object
+* `listener` Function
+
+The `listener` will be called with `listener(details)` when first byte of the
+response body is received. For HTTP requests, this means that the status line
+and response headers are available.
+
+* `details` Object
+  * `id` Integer
+  * `url` String
+  * `method` String
+  * `resourceType` String
+  * `timestamp` Double
+  * `responseHeaders` Object
+  * `fromCache` Boolean  - Indicates whether the response was fetched from disk
+    cache.
+  * `statusCode` Integer
+  * `statusLine` String
+
+#### `ses.webRequest.onBeforeRedirect([filter, ]listener)`
+
+* `filter` Object
+* `listener` Function
+
+The `listener` will be called with `listener(details)` when a server initiated
+redirect is about to occur.
+
+* `details` Object
+  * `id` String
+  * `url` String
+  * `method` String
+  * `resourceType` String
+  * `timestamp` Double
+  * `redirectURL` String
+  * `statusCode` Integer
+  * `ip` String __optional__ - The server IP address that the request was
+    actually sent to.
+  * `fromCache` Boolean
+  * `responseHeaders` Object
+
+#### `ses.webRequest.onCompleted([filter, ]listener)`
+
+* `filter` Object
+* `listener` Function
+
+The `listener` will be called with `listener(details)` when a request is
+completed.
+
+* `details` Object
+  * `id` Integer
+  * `url` String
+  * `method` String
+  * `resourceType` String
+  * `timestamp` Double
+  * `responseHeaders` Object
+  * `fromCache` Boolean
+  * `statusCode` Integer
+  * `statusLine` String
+
+#### `ses.webRequest.onErrorOccurred([filter, ]listener)`
+
+* `filter` Object
+* `listener` Function
+
+The `listener` will be called with `listener(details)` when an error occurs.
+
+* `details` Object
+  * `id` Integer
+  * `url` String
+  * `method` String
+  * `resourceType` String
+  * `timestamp` Double
+  * `fromCache` Boolean
+  * `error` String - The error description.

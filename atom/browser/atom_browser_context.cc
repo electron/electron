@@ -8,6 +8,7 @@
 #include "atom/browser/atom_download_manager_delegate.h"
 #include "atom/browser/browser.h"
 #include "atom/browser/net/atom_cert_verifier.h"
+#include "atom/browser/net/atom_network_delegate.h"
 #include "atom/browser/net/atom_ssl_config_service.h"
 #include "atom/browser/net/atom_url_request_job_factory.h"
 #include "atom/browser/net/asar/asar_protocol_handler.h"
@@ -63,10 +64,15 @@ AtomBrowserContext::AtomBrowserContext(const std::string& partition,
     : brightray::BrowserContext(partition, in_memory),
       cert_verifier_(nullptr),
       job_factory_(new AtomURLRequestJobFactory),
+      network_delegate_(new AtomNetworkDelegate),
       allow_ntlm_everywhere_(false) {
 }
 
 AtomBrowserContext::~AtomBrowserContext() {
+}
+
+net::NetworkDelegate* AtomBrowserContext::CreateNetworkDelegate() {
+  return network_delegate_;
 }
 
 std::string AtomBrowserContext::GetUserAgent() {

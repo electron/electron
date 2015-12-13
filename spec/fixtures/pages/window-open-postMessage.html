@@ -1,0 +1,9 @@
+<html>
+<body>
+<script type="text/javascript" charset="utf-8">
+  window.addEventListener('message', function (e) {
+    window.opener.postMessage(e.origin + e.data, '*');
+  });
+</script>
+</body>
+</html>

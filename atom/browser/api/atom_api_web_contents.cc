@@ -5,6 +5,7 @@
 #include "atom/browser/api/atom_api_web_contents.h"
 
 #include <set>
+#include <string>
 
 #include "atom/browser/api/atom_api_session.h"
 #include "atom/browser/api/atom_api_window.h"
