@@ -5,7 +5,11 @@
 다음 예제는 윈도우 창을 생성합니다:
 
 ```javascript
+// 메인 프로세스에서
 const BrowserWindow = require('electron').BrowserWindow;
+
+// 또는 랜더러 프로세스에서
+const BrowserWindow = require('electron').remote.BrowserWindow;
 
 var win = new BrowserWindow({ width: 800, height: 600, show: false });
 win.on('closed', function() {
