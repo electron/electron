@@ -152,7 +152,7 @@ def main():
   print 'Downloading %s' % url
   sys.stdout.flush()
   sys.stderr.flush()
-  subprocess.check_call(['curl', '--fail', '-L', url, '-o', tarball])
+  subprocess.check_call(['curl', 'retry', 90, '--fail', '-L', url, '-o', tarball])
   sha1sum = GetSha1(tarball)
   if sha1sum != tarball_sha1sum:
     print 'Tarball sha1sum is wrong.'

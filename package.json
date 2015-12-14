@@ -16,6 +16,7 @@
     "lint": "python ./script/eslint.py && python ./script/cpplint.py",
     "preinstall": "node -e 'process.exit(0)'",
     "start": "python ./script/start.py",
+    "cibuild-windows": "rm -Rf node_mdules && python ./script/cibuild --target_arch=x64",
     "test": "python ./script/test.py"
   }
 }
