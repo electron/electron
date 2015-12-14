@@ -17,6 +17,7 @@
     "preinstall": "node -e 'process.exit(0)'",
     "repl": "python ./script/start.py --interactive",
     "start": "python ./script/start.py",
+    "cibuild-windows": "rm -Rf node_mdules && python ./script/cibuild --target_arch=x64",
     "test": "python ./script/test.py"
   }
 }
