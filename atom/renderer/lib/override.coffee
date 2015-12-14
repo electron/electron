@@ -91,10 +91,10 @@ window.confirm = (message, title='') ->
 window.prompt = ->
   throw new Error('prompt() is and will not be supported.')
 
-# Implement window.postMessage if current window is a guest window.
 guestId = ipcRenderer.sendSync 'ATOM_SHELL_GUEST_WINDOW_MANAGER_GET_GUEST_ID'
 if guestId?
   window.opener = BrowserWindowProxy.getOrCreate(guestId)
+  # Remove BrowserWindowProxy API and give it a custom postMessage method
   Object.setPrototypeOf(window.opener, null)
   window.opener.postMessage = (message, targetOrigin='*') ->
     ipcRenderer.send 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_OPENER_POSTMESSAGE', guestId, message, targetOrigin, location.origin
