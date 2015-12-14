@@ -94,9 +94,10 @@ window.prompt = ->
 # Implement window.postMessage if current window is a guest window.
 guestId = ipcRenderer.sendSync 'ATOM_SHELL_GUEST_WINDOW_MANAGER_GET_GUEST_ID'
 if guestId?
-  window.opener =
-    postMessage: (message, targetOrigin='*') ->
-      ipcRenderer.send 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_OPENER_POSTMESSAGE', guestId, message, targetOrigin, location.origin
+  window.opener = BrowserWindowProxy.getOrCreate(guestId)
+  Object.setPrototypeOf(window.opener, null)
+  window.opener.postMessage = (message, targetOrigin='*') ->
+    ipcRenderer.send 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_OPENER_POSTMESSAGE', guestId, message, targetOrigin, location.origin
 
 ipcRenderer.on 'ATOM_SHELL_GUEST_WINDOW_POSTMESSAGE', (event, guestId, message, sourceOrigin) ->
   # Manually dispatch event instead of using postMessage because we also need to

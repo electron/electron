@@ -2,7 +2,12 @@
 <body>
 <script type="text/javascript" charset="utf-8">
   window.addEventListener('message', function (e) {
-    window.opener.postMessage(e.origin + e.data, '*');
+    var reply = JSON.stringify({
+      origin: e.origin,
+      data: e.data,
+      sourceEqualsOpener: e.source === window.opener
+    })
+    window.opener.postMessage(reply, '*');
   });
 </script>
 </body>
