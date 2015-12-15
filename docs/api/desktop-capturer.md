@@ -38,6 +38,15 @@ function getUserMediaError(e) {
 }
 ```
 
+When creating a constraints object for the `navigator.webkitGetUserMedia` call,
+if you are using a source from `desktopCapturer` your `chromeMediaSource` must
+be set to `"desktop"` and your `audio` must be set to `false`. 
+
+If you wish to
+capture the audio and video from the entire desktop you can set
+`chromeMediaSource` to `"screen"` and `audio` to `true`. When using this method
+you cannot specify a `chromeMediaSourceId`.
+
 ## Methods
 
 The `desktopCapturer` module has the following methods:
