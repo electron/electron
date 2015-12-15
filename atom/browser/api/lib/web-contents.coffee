@@ -7,6 +7,11 @@ nextId = 0
 getNextId = -> ++nextId
 
 PDFPageSize =
+  A5:
+    custom_display_name: "A5"
+    height_microns: 210000
+    name: "ISO_A5"
+    width_microns: 148000
   A4:
     custom_display_name: "A4"
     height_microns: 297000
