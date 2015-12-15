@@ -451,6 +451,7 @@ print기능을 사용하지 않는 경우 전체 바이너리 크기를 줄이�
   * 1 - none
   * 2 - minimum
 * `pageSize` String - 생성되는 PDF의 페이지 크기를 지정합니다.
+  * `A5`
   * `A4`
   * `A3`
   * `Legal`
