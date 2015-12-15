@@ -116,7 +116,7 @@ describe 'chromium feature', ->
       b = window.open url, '', 'show=no'
 
   describe 'window.postMessage', ->
-    it 'sets the origin correctly', (done) ->
+    it 'sets the source and origin correctly', (done) ->
       sourceId = remote.getCurrentWindow().id
       listener = (event) ->
         window.removeEventListener 'message', listener
