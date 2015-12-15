@@ -117,6 +117,7 @@ describe 'chromium feature', ->
 
   describe 'window.postMessage', ->
     it 'sets the origin correctly', (done) ->
+      sourceId = remote.getCurrentWindow().id
       listener = (event) ->
         window.removeEventListener 'message', listener
         b.close()
@@ -124,6 +125,7 @@ describe 'chromium feature', ->
         assert.equal message.data, 'testing'
         assert.equal message.origin, 'file://'
         assert.equal message.sourceEqualsOpener, true
+        assert.equal message.sourceId, sourceId
         assert.equal event.origin, 'file://'
         done()
       window.addEventListener 'message', listener

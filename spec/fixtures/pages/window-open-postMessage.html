@@ -5,7 +5,8 @@
     var reply = JSON.stringify({
       origin: e.origin,
       data: e.data,
-      sourceEqualsOpener: e.source === window.opener
+      sourceEqualsOpener: e.source === window.opener,
+      sourceId: e.source.guestId
     })
     window.opener.postMessage(reply, '*');
   });
