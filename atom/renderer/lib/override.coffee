@@ -92,10 +92,7 @@ window.prompt = ->
   throw new Error('prompt() is and will not be supported.')
 
 openerId = ipcRenderer.sendSync 'ATOM_SHELL_GUEST_WINDOW_MANAGER_GET_OPENER_ID'
-if openerId?
-  window.opener = BrowserWindowProxy.getOrCreate(openerId)
-  window.opener.postMessage = (message, targetOrigin='*') ->
-    ipcRenderer.send 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_OPENER_POSTMESSAGE', message, targetOrigin, location.origin
+window.opener = BrowserWindowProxy.getOrCreate(openerId) if openerId?
 
 ipcRenderer.on 'ATOM_SHELL_GUEST_WINDOW_POSTMESSAGE', (event, sourceId, message, sourceOrigin) ->
   # Manually dispatch event instead of using postMessage because we also need to
