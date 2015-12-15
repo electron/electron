@@ -19,7 +19,12 @@ void Browser::Focus() {
 }
 
 void Browser::AddRecentDocument(const base::FilePath& path) {
-  NSURL* u = [NSURL fileURLWithPath:base::mac::FilePathToNSString(path)];
+  NSString* path_string = base::mac::FilePathToNSString(path);
+  if (!path_string)
+    return;
+  NSURL* u = [NSURL fileURLWithPath:path_string];
+  if (!u)
+    return;
   [[NSDocumentController sharedDocumentController] noteNewRecentDocumentURL:u];
 }
 
