@@ -116,11 +116,16 @@ describe 'chromium feature', ->
       b = window.open url, '', 'show=no'
 
   describe 'window.postMessage', ->
-    it 'sets the origin correctly', (done) ->
+    it 'sets the source and origin correctly', (done) ->
+      sourceId = remote.getCurrentWindow().id
       listener = (event) ->
         window.removeEventListener 'message', listener
         b.close()
-        assert.equal event.data, 'file://testing'
+        message = JSON.parse(event.data)
+        assert.equal message.data, 'testing'
+        assert.equal message.origin, 'file://'
+        assert.equal message.sourceEqualsOpener, true
+        assert.equal message.sourceId, sourceId
         assert.equal event.origin, 'file://'
         done()
       window.addEventListener 'message', listener
