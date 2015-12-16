@@ -61,6 +61,6 @@ describe 'crash-reporter module', ->
       w.loadURL url
 
   describe ".start(options)", ->
-    it 'requires that the companyName and submitURL option fields be specified', ->
+    it 'requires that the companyName and submitURL options be specified', ->
       assert.throws(-> crashReporter.start({companyName: 'Missing submitURL'}))
       assert.throws(-> crashReporter.start({submitURL: 'Missing companyName'}))
