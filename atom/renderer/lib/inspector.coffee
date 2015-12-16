@@ -27,7 +27,9 @@ convertToMenuTemplate = (items) ->
           label: item.label
           enabled: item.enabled
       if item.id?
-        transformed.click = -> DevToolsAPI.contextMenuItemSelected item.id
+        transformed.click = ->
+          DevToolsAPI.contextMenuItemSelected item.id
+          DevToolsAPI.contextMenuCleared()
       template.push transformed
   template
 
@@ -37,9 +39,7 @@ createMenu = (x, y, items, document) ->
 
   menu = Menu.buildFromTemplate convertToMenuTemplate(items)
   # The menu is expected to show asynchronously.
-  setImmediate ->
-    menu.popup remote.getCurrentWindow()
-    DevToolsAPI.contextMenuCleared()
+  setTimeout -> menu.popup remote.getCurrentWindow()
 
 showFileChooserDialog = (callback) ->
   {remote} = require 'electron'
