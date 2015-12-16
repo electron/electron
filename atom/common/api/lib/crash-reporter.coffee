@@ -40,9 +40,7 @@ class CrashReporter
       env = ATOM_SHELL_INTERNAL_CRASH_SERVICE: 1
 
       spawn process.execPath, args, {env, detached: true}
-      start()
-    else
-      start()
+    start()
 
   getLastCrashReport: ->
     reports = this.getUploadedReports()
