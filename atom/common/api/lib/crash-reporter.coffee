@@ -19,8 +19,6 @@ class CrashReporter
     {app} = if process.type is 'browser' then electron else electron.remote
 
     @productName ?= app.getName()
-    companyName ?= 'GitHub, Inc'
-    submitURL ?= 'http://54.249.141.255:1127/post'
     autoSubmit ?= true
     ignoreSystemCrashHandler ?= false
     extra ?= {}
@@ -28,6 +26,14 @@ class CrashReporter
     extra._productName ?= @productName
     extra._companyName ?= companyName
     extra._version ?= app.getVersion()
+
+    unless companyName?
+      deprecate.log('companyName is now a required option to CrashReporter::start')
+      return
+
+    unless submitURL?
+      deprecate.log('submitURL is now a required option to CrashReporter::start')
+      return
 
     start = => binding.start @productName, companyName, submitURL, autoSubmit, ignoreSystemCrashHandler, extra
 
@@ -58,7 +64,6 @@ class CrashReporter
       else
         path.join tmpdir, "#{@productName} Crashes", 'uploads.log'
     binding._getUploadedReports log
-
 
 crashRepoter = new CrashReporter
 module.exports = crashRepoter

@@ -54,12 +54,16 @@ deprecate.event = (emitter, oldName, newName, fn) ->
 
 # Print deprecate warning.
 deprecate.warn = (oldName, newName) ->
-  message = "#{oldName} is deprecated. Use #{newName} instead."
+  deprecate.log("#{oldName} is deprecated. Use #{newName} instead.")
+
+# Print deprecation message
+deprecate.log = (message) ->
   if process.throwDeprecation
     throw new Error(message)
   else if process.traceDeprecation
     console.trace message
   else
     console.warn "(electron) #{message}"
+
 
 module.exports = deprecate
