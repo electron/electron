@@ -81,9 +81,6 @@ exemplo:
 var app = require('app');  // Módulo para controlar o ciclo de vida do app.
 var BrowserWindow = require('browser-window');  // Módulo para criar uma janela nativa do browser.
 
-// Relate falhas para nossos servidores.
-require('crash-reporter').start();
-
 // Mantenha uma referência global para o objeto window, se você não o fizer,
 // a janela será fechada automaticamente quando o objeto JavaScript for
 // coletado pelo garbage collector.

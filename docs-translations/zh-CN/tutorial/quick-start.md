@@ -45,9 +45,6 @@ your-app/
 var app = require('app');  // 控制应用生命周期的模块。
 var BrowserWindow = require('browser-window');  // 创建原生浏览器窗口的模块
 
-// 给我们的服务器发送异常报告。
-require('crash-reporter').start();
-
 // 保持一个对于 window 对象的全局引用，不然，当 JavaScript 被 GC，
 // window 会被自动地关闭
 var mainWindow = null;
