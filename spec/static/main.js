@@ -1,11 +1,11 @@
+// Disable use of deprecated functions.
+process.throwDeprecation = true;
+
 const electron      = require('electron');
 const app           = electron.app;
 const ipcMain       = electron.ipcMain;
 const dialog        = electron.dialog;
 const BrowserWindow = electron.BrowserWindow;
-
-// Disable use of deprecated functions.
-process.throwDeprecation = true;
 
 const path = require('path');
 const url  = require('url');
