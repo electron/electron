@@ -70,9 +70,6 @@ El `main.js` debería crear las ventanas y gestionar los eventos del sistema, un
 var app = require('app');  // Módulo para controlar el ciclo de vida de la aplicación.
 var BrowserWindow = require('browser-window');  // Módulo para crear uan ventana de navegador.
 
-// Reportar crashes a nuestro servidor.
-require('crash-reporter').start();
-
 // Mantener una referencia global al objeto window, si no lo haces, esta ventana
 // se cerrará automáticamente cuando el objeto JavaScript sea recolectado (garbage collected):
 var mainWindow = null;
