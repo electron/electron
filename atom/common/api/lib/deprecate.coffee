@@ -54,7 +54,7 @@ deprecate.event = (emitter, oldName, newName, fn) ->
 
 # Print deprecation warning.
 deprecate.warn = (oldName, newName) ->
-  deprecate.log("#{oldName} is deprecated. Use #{newName} instead.")
+  deprecate.log "#{oldName} is deprecated. Use #{newName} instead."
 
 # Print deprecation message
 deprecate.log = (message) ->
