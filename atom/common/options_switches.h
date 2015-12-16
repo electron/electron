@@ -84,6 +84,9 @@ extern const char kSharedWorker[];
 extern const char kPageVisibility[];
 extern const char kOpenerID[];
 
+extern const char kWidevineCdmPath[];
+extern const char kWidevineCdmVersion[];
+
 }  // namespace switches
 
 }  // namespace atom
