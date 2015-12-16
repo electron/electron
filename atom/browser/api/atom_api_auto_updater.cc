@@ -87,6 +87,10 @@ mate::ObjectTemplateBuilder AutoUpdater::GetObjectTemplateBuilder(
 }
 
 void AutoUpdater::QuitAndInstall() {
+  bool should_quit = Browser::Get()->HandleBeforeQuit();
+  if (!should_quit)
+    return;
+
   // If we don't have any window then quitAndInstall immediately.
   WindowList* window_list = WindowList::GetInstance();
   if (window_list->size() == 0) {
