@@ -144,6 +144,12 @@ const char kOverlayScrollbars[]          = "overlay-scrollbars";
 const char kSharedWorker[]               = "shared-worker";
 const char kPageVisibility[]             = "page-visiblity";
 
+// Widevine options
+// Path to Widevine CDM binaries.
+const char kWidevineCdmPath[] = "widevine-cdm-path";
+// Widevine CDM version.
+const char kWidevineCdmVersion[] = "widevine-cdm-version";
+
 }  // namespace switches
 
 }  // namespace atom
