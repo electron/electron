@@ -28,11 +28,11 @@ class CrashReporter
     extra._version ?= app.getVersion()
 
     unless companyName?
-      deprecate.log('companyName is now a required option to CrashReporter::start')
+      deprecate.log('companyName is now a required option to crashReporter.start')
       return
 
     unless submitURL?
-      deprecate.log('submitURL is now a required option to CrashReporter::start')
+      deprecate.log('submitURL is now a required option to crashReporter.start')
       return
 
     start = => binding.start @productName, companyName, submitURL, autoSubmit, ignoreSystemCrashHandler, extra
