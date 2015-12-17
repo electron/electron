@@ -6,6 +6,7 @@
 #define ATOM_COMMON_NATIVE_MATE_CONVERTERS_BLINK_CONVERTER_H_
 
 #include "native_mate/converter.h"
+#include "third_party/WebKit/public/web/WebFindOptions.h"
 
 namespace blink {
 class WebInputEvent;
@@ -78,6 +79,12 @@ template<>
 struct Converter<blink::WebDeviceEmulationParams> {
   static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
                      blink::WebDeviceEmulationParams* out);
+};
+
+template<>
+struct Converter<blink::WebFindOptions> {
+  static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
+                     blink::WebFindOptions* out);
 };
 
 }  // namespace mate

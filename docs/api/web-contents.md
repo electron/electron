@@ -229,6 +229,20 @@ Emitted when media starts playing.
 
 Emitted when media is paused or done playing.
 
+### Event: 'find-in-page-response'
+
+Returns:
+
+* `event` Event
+* `result` Object
+  * `requestId` Integer
+  * `matches` Integer __Optional__ - Number of Matches.
+  * `selectionArea` Object __Optional__ - Coordinates of first match region.
+  * `finalUpdate` Boolean - Indicates if more responses are to follow.
+
+Emitted when a result is available for
+[`webContents.findInPage`](web-contents.md#webcontentsfindinpage) request.
+
 ## Instance Methods
 
 The `webContents` object has the following instance methods:
@@ -420,6 +434,39 @@ Executes the editing command `replace` in web page.
 
 Executes the editing command `replaceMisspelling` in web page.
 
+### `webContents.findInPage(id, text[, options])`
+
+* `id` Integer
+* `text` String - Content to be searched, must not be empty.
+* `options` Object __Optional__
+  * `forward` Boolean - Whether to search forward or backward.
+  * `findNext` Boolean - Whether the operation is first request or a follow up.
+  * `matchCase` Boolean - Whether search should be case-sensitive.
+  * `wordStart` Boolean - Whether to look only at the start of words.
+  * ` medialCapitalAsWordStart` Boolean - When combined with `wordStart`,
+    accepts a match in the middle of a word if the match begins with an
+    uppercase letter followed by a lowercase or non-letter.
+    Accepts several other intra-word matches
+
+Finds all matches for the `text` in the web page.
+
+### `webContents.stopFindInPage(action)`
+
+* `action` String - Should be called with either `clearSelection` or `keepSelection`.
+                    By default it keeps the last selection.
+
+Stops any `findInPage` request for the `webContents`
+with the provided `action`.
+
+```javascript
+webContents.on('find-in-page-response', function(event, result) {
+  if (result.finalUpdate)
+    webContents.stopFindInPage("clearSelection");
+});
+
+webContents.findInPage(1, "api");
+```.
+
 ### `webContents.hasServiceWorker(callback)`
 
 * `callback` Function
@@ -462,7 +509,7 @@ size.
   * 1 - none
   * 2 - minimum
 * `pageSize` String - Specify page size of the generated PDF.
-  * `A5` 
+  * `A5`
   * `A4`
   * `A3`
   * `Legal`

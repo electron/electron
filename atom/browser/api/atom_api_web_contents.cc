@@ -49,6 +49,7 @@
 #include "content/public/browser/site_instance.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/common/context_menu_params.h"
+#include "native_mate/converter.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 #include "net/http/http_response_headers.h"
@@ -424,6 +425,29 @@ bool WebContents::HandleContextMenu(const content::ContextMenuParams& params) {
 bool WebContents::OnGoToEntryOffset(int offset) {
   GoToOffset(offset);
   return false;
+}
+
+void WebContents::FindReply(content::WebContents* web_contents,
+                            int request_id,
+                            int number_of_matches,
+                            const gfx::Rect& selection_rect,
+                            int active_match_ordinal,
+                            bool final_update) {
+  v8::Locker locker(isolate());
+  v8::HandleScope handle_scope(isolate());
+
+  mate::Dictionary result = mate::Dictionary::CreateEmpty(isolate());
+  if (number_of_matches == -1) {
+    result.Set("requestId", request_id);
+    result.Set("selectionArea", selection_rect);
+    result.Set("finalUpdate", final_update);
+    Emit("find-in-page-response", result);
+  } else if (final_update) {
+    result.Set("requestId", request_id);
+    result.Set("matches", number_of_matches);
+    result.Set("finalUpdate", final_update);
+    Emit("find-in-page-response", result);
+  }
 }
 
 void WebContents::BeforeUnloadFired(const base::TimeTicks& proceed_time) {
@@ -902,6 +926,31 @@ void WebContents::ReplaceMisspelling(const base::string16& word) {
   web_contents()->ReplaceMisspelling(word);
 }
 
+void WebContents::FindInPage(mate::Arguments* args) {
+  int request_id;
+  base::string16 search_text;
+  blink::WebFindOptions options;
+  if (!args->GetNext(&request_id)) {
+    args->ThrowError("Must provide a request id");
+    return;
+  }
+
+  if (!args->GetNext(&search_text)) {
+    args->ThrowError("Must provide a non-empty search content");
+    return;
+  }
+
+  args->GetNext(&options);
+
+  web_contents()->Find(request_id, search_text, options);
+  web_contents()->GetMainFrame()
+                ->ActivateFindInPageResultForAccessibility(request_id);
+}
+
+void WebContents::StopFindInPage(content::StopFindAction action) {
+  web_contents()->StopFinding(action);
+}
+
 void WebContents::Focus() {
   web_contents()->Focus();
 }
@@ -1048,6 +1097,8 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("unselect", &WebContents::Unselect)
       .SetMethod("replace", &WebContents::Replace)
       .SetMethod("replaceMisspelling", &WebContents::ReplaceMisspelling)
+      .SetMethod("findInPage", &WebContents::FindInPage)
+      .SetMethod("stopFindInPage", &WebContents::StopFindInPage)
       .SetMethod("focus", &WebContents::Focus)
       .SetMethod("tabTraverse", &WebContents::TabTraverse)
       .SetMethod("_send", &WebContents::SendIPCMessage)

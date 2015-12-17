@@ -282,4 +282,20 @@ bool Converter<blink::WebDeviceEmulationParams>::FromV8(
   return true;
 }
 
+bool Converter<blink::WebFindOptions>::FromV8(
+    v8::Isolate* isolate,
+    v8::Local<v8::Value> val,
+    blink::WebFindOptions* out) {
+  mate::Dictionary dict;
+  if (!ConvertFromV8(isolate, val, &dict))
+    return false;
+
+  dict.Get("forward", &out->forward);
+  dict.Get("matchCase", &out->matchCase);
+  dict.Get("findNext", &out->findNext);
+  dict.Get("wordStart", &out->wordStart);
+  dict.Get("medialCapitalAsWordStart", &out->medialCapitalAsWordStart);
+  return true;
+}
+
 }  // namespace mate
