@@ -91,6 +91,9 @@ const char kPageVisibility[] = "pageVisibility";
 // Enable DirectWrite on Windows.
 const char kDirectWrite[] = "directWrite";
 
+// Opener window's ID.
+const char kOpenerID[] = "openerId";
+
 // Web runtime features.
 const char kExperimentalFeatures[]       = "experimentalFeatures";
 const char kExperimentalCanvasFeatures[] = "experimentalCanvasFeatures";
@@ -143,6 +146,7 @@ const char kExperimentalCanvasFeatures[] = "experimental-canvas-features";
 const char kOverlayScrollbars[]          = "overlay-scrollbars";
 const char kSharedWorker[]               = "shared-worker";
 const char kPageVisibility[]             = "page-visiblity";
+const char kOpenerID[]                   = "opener-id";
 
 }  // namespace switches
 

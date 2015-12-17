@@ -30,11 +30,12 @@ createGuest = (embedder, url, frameName, options) ->
     guest.loadURL url
     return guest.id
 
+  # Remember the embedder window's id.
+  options.webPreferences ?= {}
+  options.webPreferences.openerId = BrowserWindow.fromWebContents(embedder)?.id
+
   guest = new BrowserWindow(options)
   guest.loadURL url
-
-  # Remember the embedder, will be used by window.opener methods.
-  v8Util.setHiddenValue guest.webContents, 'embedder', embedder
 
   # When |embedder| is destroyed we should also destroy attached guest, and if
   # guest is closed by user then we should prevent |embedder| from double
@@ -83,10 +84,3 @@ ipcMain.on 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_POSTMESSAGE', (event, guestId
 
 ipcMain.on 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WEB_CONTENTS_METHOD', (event, guestId, method, args...) ->
   BrowserWindow.fromId(guestId)?.webContents?[method] args...
-
-ipcMain.on 'ATOM_SHELL_GUEST_WINDOW_MANAGER_GET_OPENER_ID', (event) ->
-  embedder = v8Util.getHiddenValue event.sender, 'embedder'
-  openerId = null
-  if embedder?
-    openerId = BrowserWindow.fromWebContents(embedder)?.id
-  event.returnValue = openerId

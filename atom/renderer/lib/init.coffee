@@ -30,6 +30,9 @@ for arg in process.argv
   if arg.indexOf('--guest-instance-id=') == 0
     # This is a guest web view.
     process.guestInstanceId = parseInt arg.substr(arg.indexOf('=') + 1)
+  else if arg.indexOf('--opener-id=') == 0
+    # This is a guest BrowserWindow.
+    process.openerId = parseInt arg.substr(arg.indexOf('=') + 1)
   else if arg.indexOf('--node-integration=') == 0
     nodeIntegration = arg.substr arg.indexOf('=') + 1
   else if arg.indexOf('--preload=') == 0
