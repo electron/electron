@@ -1,7 +1,9 @@
-# Import common modules.
-module.exports = require '../../../../common/api/lib/exports/electron'
+common = require '../../../../common/api/lib/exports/electron'
 
-Object.defineProperties module.exports,
+# Import common modules.
+common.defineProperties exports
+
+Object.defineProperties exports,
   # Renderer side modules, please sort with alphabet order.
   desktopCapturer:
     enumerable: true
