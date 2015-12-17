@@ -8,7 +8,7 @@ An example of showing a dialog to select multiple files and directories:
 
 ```javascript
 var win = ...;  // BrowserWindow in which to show the dialog
-const dialog = require('electron').dialog;
+const dialog = require('electron').remote.dialog;
 console.log(dialog.showOpenDialog({ properties: [ 'openFile', 'openDirectory', 'multiSelections' ]}));
 ```
 
