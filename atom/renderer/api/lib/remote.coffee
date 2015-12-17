@@ -126,9 +126,9 @@ ipcRenderer.on 'ATOM_RENDERER_RELEASE_CALLBACK', (event, id) ->
   callbacksRegistry.remove id
 
 # List all built-in modules in browser process.
-browserModules = ipcRenderer.sendSync 'ATOM_BROWSER_LIST_MODULES'
+browserModules = require '../../../browser/api/lib/exports/electron'
 # And add a helper receiver for each one.
-for name in browserModules
+for name of browserModules
   do (name) ->
     Object.defineProperty exports, name, get: -> exports.getBuiltin name
 

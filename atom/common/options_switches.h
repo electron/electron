@@ -52,6 +52,7 @@ extern const char kExperimentalCanvasFeatures[];
 extern const char kOverlayScrollbars[];
 extern const char kSharedWorker[];
 extern const char kPageVisibility[];
+extern const char kOpenerID[];
 
 }   // namespace options
 
@@ -81,6 +82,7 @@ extern const char kExperimentalCanvasFeatures[];
 extern const char kOverlayScrollbars[];
 extern const char kSharedWorker[];
 extern const char kPageVisibility[];
+extern const char kOpenerID[];
 
 }  // namespace switches
 

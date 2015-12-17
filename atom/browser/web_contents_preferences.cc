@@ -132,6 +132,12 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
   if (web_preferences.GetInteger(options::kGuestInstanceID, &guest_instance_id))
       command_line->AppendSwitchASCII(switches::kGuestInstanceID,
                                       base::IntToString(guest_instance_id));
+
+  // Pass the opener's window id.
+  int opener_id;
+  if (web_preferences.GetInteger(options::kOpenerID, &opener_id))
+      command_line->AppendSwitchASCII(switches::kOpenerID,
+                                      base::IntToString(opener_id));
 }
 
 // static

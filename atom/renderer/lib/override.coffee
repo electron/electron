@@ -91,8 +91,8 @@ window.confirm = (message, title='') ->
 window.prompt = ->
   throw new Error('prompt() is and will not be supported.')
 
-openerId = ipcRenderer.sendSync 'ATOM_SHELL_GUEST_WINDOW_MANAGER_GET_OPENER_ID'
-window.opener = BrowserWindowProxy.getOrCreate(openerId) if openerId?
+if process.openerId?
+  window.opener = BrowserWindowProxy.getOrCreate process.openerId
 
 ipcRenderer.on 'ATOM_SHELL_GUEST_WINDOW_POSTMESSAGE', (event, sourceId, message, sourceOrigin) ->
   # Manually dispatch event instead of using postMessage because we also need to
