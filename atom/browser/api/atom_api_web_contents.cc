@@ -225,7 +225,8 @@ WebContents::WebContents(content::WebContents* web_contents)
 }
 
 WebContents::WebContents(v8::Isolate* isolate,
-                         const mate::Dictionary& options) {
+                         const mate::Dictionary& options)
+    : request_id_(0) {
   // Whether it is a guest WebContents.
   bool is_guest = false;
   options.Get("isGuest", &is_guest);
@@ -441,12 +442,12 @@ void WebContents::FindReply(content::WebContents* web_contents,
     result.Set("requestId", request_id);
     result.Set("selectionArea", selection_rect);
     result.Set("finalUpdate", final_update);
-    Emit("find-in-page-response", result);
+    Emit("found-in-page", result);
   } else if (final_update) {
     result.Set("requestId", request_id);
     result.Set("matches", number_of_matches);
     result.Set("finalUpdate", final_update);
-    Emit("find-in-page-response", result);
+    Emit("found-in-page", result);
   }
 }
 
@@ -926,25 +927,19 @@ void WebContents::ReplaceMisspelling(const base::string16& word) {
   web_contents()->ReplaceMisspelling(word);
 }
 
-void WebContents::FindInPage(mate::Arguments* args) {
-  int request_id;
+uint32 WebContents::FindInPage(mate::Arguments* args) {
+  uint32 request_id = GetNextRequestId();
   base::string16 search_text;
   blink::WebFindOptions options;
-  if (!args->GetNext(&request_id)) {
-    args->ThrowError("Must provide a request id");
-    return;
-  }
-
-  if (!args->GetNext(&search_text)) {
+  if (!args->GetNext(&search_text) || search_text.empty()) {
     args->ThrowError("Must provide a non-empty search content");
-    return;
+    return 0;
   }
 
   args->GetNext(&options);
 
   web_contents()->Find(request_id, search_text, options);
-  web_contents()->GetMainFrame()
-                ->ActivateFindInPageResultForAccessibility(request_id);
+  return request_id;
 }
 
 void WebContents::StopFindInPage(content::StopFindAction action) {

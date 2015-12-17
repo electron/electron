@@ -111,8 +111,10 @@ bool Converter<content::StopFindAction>::FromV8(
     *out = content::STOP_FIND_ACTION_CLEAR_SELECTION;
   else if (action == "keepSelection")
     *out = content::STOP_FIND_ACTION_KEEP_SELECTION;
-  else
+  else if (action == "activateSelection")
     *out = content::STOP_FIND_ACTION_ACTIVATE_SELECTION;
+  else
+    return false;
 
   return true;
 }

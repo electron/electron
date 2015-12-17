@@ -229,16 +229,16 @@ Emitted when media starts playing.
 
 Emitted when media is paused or done playing.
 
-### Event: 'find-in-page-response'
+### Event: 'found-in-page'
 
 Returns:
 
 * `event` Event
 * `result` Object
   * `requestId` Integer
-  * `matches` Integer __Optional__ - Number of Matches.
-  * `selectionArea` Object __Optional__ - Coordinates of first match region.
   * `finalUpdate` Boolean - Indicates if more responses are to follow.
+  * `matches` Integer (Optional) - Number of Matches.
+  * `selectionArea` Object (Optional) - Coordinates of first match region.
 
 Emitted when a result is available for
 [`webContents.findInPage`](web-contents.md#webcontentsfindinpage) request.
@@ -434,38 +434,44 @@ Executes the editing command `replace` in web page.
 
 Executes the editing command `replaceMisspelling` in web page.
 
-### `webContents.findInPage(id, text[, options])`
+### `webContents.findInPage(text[, options])`
 
-* `id` Integer
 * `text` String - Content to be searched, must not be empty.
-* `options` Object __Optional__
-  * `forward` Boolean - Whether to search forward or backward.
-  * `findNext` Boolean - Whether the operation is first request or a follow up.
-  * `matchCase` Boolean - Whether search should be case-sensitive.
+* `options` Object (Optional)
+  * `forward` Boolean - Whether to search forward or backward, defaults to `true`.
+  * `findNext` Boolean - Whether the operation is first request or a follow up,
+    defaults to `false`.
+  * `matchCase` Boolean - Whether search should be case-sensitive,
+    defaults to `false`.
   * `wordStart` Boolean - Whether to look only at the start of words.
-  * ` medialCapitalAsWordStart` Boolean - When combined with `wordStart`,
+    defaults to `false`.
+  * `medialCapitalAsWordStart` Boolean - When combined with `wordStart`,
     accepts a match in the middle of a word if the match begins with an
     uppercase letter followed by a lowercase or non-letter.
-    Accepts several other intra-word matches
+    Accepts several other intra-word matches, defaults to `false`.
 
-Finds all matches for the `text` in the web page.
+Starts a request to find all matches for the `text` in the web page and returns an `Integer`
+representing the request id used for the request. The result of the request can be
+obtained by subscribing to [`found-in-page`](web-contents.md#event-found-in-page) event.
 
 ### `webContents.stopFindInPage(action)`
 
-* `action` String - Should be called with either `clearSelection` or `keepSelection`.
-                    By default it keeps the last selection.
+* `action` String - Specifies the action to take place when ending
+  [`webContents.findInPage `](web-contents.md#webcontentfindinpage) request.
+  * `clearSelection` - Translate the selection into a normal selection.
+  * `keepSelection` - Clear the selection.
+  * `activateSelection` - Focus and click the selection node.
 
-Stops any `findInPage` request for the `webContents`
-with the provided `action`.
+Stops any `findInPage` request for the `webContents` with the provided `action`.
 
 ```javascript
-webContents.on('find-in-page-response', function(event, result) {
+webContents.on('found-in-page', function(event, result) {
   if (result.finalUpdate)
     webContents.stopFindInPage("clearSelection");
 });
 
-webContents.findInPage(1, "api");
-```.
+const requestId = webContents.findInPage("api");
+```
 
 ### `webContents.hasServiceWorker(callback)`
 

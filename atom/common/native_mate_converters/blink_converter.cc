@@ -13,6 +13,7 @@
 #include "content/public/browser/native_web_keyboard_event.h"
 #include "native_mate/dictionary.h"
 #include "third_party/WebKit/public/web/WebDeviceEmulationParams.h"
+#include "third_party/WebKit/public/web/WebFindOptions.h"
 #include "third_party/WebKit/public/web/WebInputEvent.h"
 
 namespace {

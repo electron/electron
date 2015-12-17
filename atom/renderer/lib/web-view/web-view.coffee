@@ -287,6 +287,8 @@ registerWebViewElement = ->
     'unselect'
     'replace'
     'replaceMisspelling'
+    'findInPage'
+    'stopFindInPage'
     'getId'
     'downloadURL'
     'inspectServiceWorker'

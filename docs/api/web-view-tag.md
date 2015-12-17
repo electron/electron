@@ -348,6 +348,36 @@ Executes editing command `replace` in page.
 
 Executes editing command `replaceMisspelling` in page.
 
+### `<webview>.findInPage(text[, options])`
+
+* `text` String - Content to be searched, must not be empty.
+* `options` Object (Optional)
+  * `forward` Boolean - Whether to search forward or backward, defaults to `true`.
+  * `findNext` Boolean - Whether the operation is first request or a follow up,
+    defaults to `false`.
+  * `matchCase` Boolean - Whether search should be case-sensitive,
+    defaults to `false`.
+  * `wordStart` Boolean - Whether to look only at the start of words.
+    defaults to `false`.
+  * `medialCapitalAsWordStart` Boolean - When combined with `wordStart`,
+    accepts a match in the middle of a word if the match begins with an
+    uppercase letter followed by a lowercase or non-letter.
+    Accepts several other intra-word matches, defaults to `false`.
+
+Starts a request to find all matches for the `text` in the web page and returns an `Integer`
+representing the request id used for the request. The result of the request can be
+obtained by subscribing to [`found-in-page`](web-view-tag.md#event-found-in-page) event.
+
+### `<webview>.stopFindInPage(action)`
+
+* `action` String - Specifies the action to take place when ending
+  [`<webview>.findInPage `](web-view-tag.md#webviewtagfindinpage) request.
+  * `clearSelection` - Translate the selection into a normal selection.
+  * `keepSelection` - Clear the selection.
+  * `activateSelection` - Focus and click the selection node.
+
+Stops any `findInPage` request for the `webview` with the provided `action`.
+
 ### `<webview>.print([options])`
 
 Prints `webview`'s web page. Same with `webContents.print([options])`.
@@ -497,6 +527,28 @@ without regard for log level or other properties.
 webview.addEventListener('console-message', function(e) {
   console.log('Guest page logged a message:', e.message);
 });
+```
+
+### Event: 'found-in-page'
+
+Returns:
+
+* `result` Object
+  * `requestId` Integer
+  * `finalUpdate` Boolean - Indicates if more responses are to follow.
+  * `matches` Integer (Optional) - Number of Matches.
+  * `selectionArea` Object (Optional) - Coordinates of first match region.
+
+Fired when a result is available for
+[`webview.findInPage`](web-view-tag.md#webviewtagfindinpage) request.
+
+```javascript
+webview.addEventListener('found-in-page', function(e) {
+  if (e.result.finalUpdate)
+    webview.stopFindInPage("keepSelection");
+});
+
+const rquestId = webview.findInPage("test");
 ```
 
 ### Event: 'new-window'

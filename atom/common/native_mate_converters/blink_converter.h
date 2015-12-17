@@ -6,7 +6,6 @@
 #define ATOM_COMMON_NATIVE_MATE_CONVERTERS_BLINK_CONVERTER_H_
 
 #include "native_mate/converter.h"
-#include "third_party/WebKit/public/web/WebFindOptions.h"
 
 namespace blink {
 class WebInputEvent;
@@ -14,6 +13,7 @@ class WebMouseEvent;
 class WebMouseWheelEvent;
 class WebKeyboardEvent;
 struct WebDeviceEmulationParams;
+struct WebFindOptions;
 struct WebFloatPoint;
 struct WebPoint;
 struct WebSize;
