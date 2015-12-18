@@ -102,14 +102,14 @@ session.defaultSession.cookies.set(cookie, function(error) {
 #### `ses.cookies.get(filter, callback)`
 
 * `filter` Object
-  * `url` String __optional__ - `url`에 해당하는 쿠키를 취득합니다. 이 속성을
+  * `url` String (optional) - `url`에 해당하는 쿠키를 취득합니다. 이 속성을
   생략하면 모든 url에서 찾습니다.
-  * `name` String __optional__ - 쿠키의 이름입니다.
-  * `domain` String __optional__ - 도메인 또는 서브 도메인에 일치하는 쿠키를
+  * `name` String (optional) - 쿠키의 이름입니다.
+  * `domain` String (optional) - 도메인 또는 서브 도메인에 일치하는 쿠키를
   취득합니다.
-  * `path` String __optional__ - `path`에 일치하는 쿠키를 취득합니다.
-  * `secure` Boolean __optional__ - 보안 속성에 따라 쿠키를 필터링합니다.
-  * `session` Boolean __optional__ - 세션 또는 지속성 쿠키를 필터링합니다.
+  * `path` String (optional) - `path`에 일치하는 쿠키를 취득합니다.
+  * `secure` Boolean (optional) - 보안 속성에 따라 쿠키를 필터링합니다.
+  * `session` Boolean (optional) - 세션 또는 지속성 쿠키를 필터링합니다.
 * `callback` Function
 
 `details` 객체에서 묘사한 모든 쿠키를 요청합니다. 모든 작업이 끝나면 `callback`이
@@ -142,7 +142,7 @@ session.defaultSession.cookies.set(cookie, function(error) {
     false입니다.
   * `session` Boolean - 쿠키가 HttpOnly로 표시되는지에 대한 여부입니다. 기본값은
     false입니다.
-  * `expirationDate` Double __optional__ -	UNIX 시간으로 표시되는 쿠키의 만료일에
+  * `expirationDate` Double (optional) -	UNIX 시간으로 표시되는 쿠키의 만료일에
     대한 초 단위 시간입니다. 세션 쿠키에 제공되지 않습니다.
 * `callback` Function
 
@@ -325,8 +325,8 @@ session.defaultSession.webRequest.onBeforeSendHeaders(filter, function(details, 
 `callback`은 `response` 객체와 함께 호출되어야 합니다:
 
 * `response` Object
-  * `cancel` Boolean __optional__
-  * `redirectURL` String __optional__ - 원래 요청은 전송과 완료가 방지되지만 이
+  * `cancel` Boolean (optional)
+  * `redirectURL` String (optional) - 원래 요청은 전송과 완료가 방지되지만 이
     속성을 지정하면 해당 URL로 리다이렉트됩니다.
 
 #### `ses.webRequest.onBeforeSendHeaders([filter, ]listener)`
@@ -349,8 +349,8 @@ HTTP 요청을 보내기 전 요청 헤더를 사용할 수 있을 때 `listener
 `callback`은 `response` 객체와 함께 호출되어야 합니다:
 
 * `response` Object
-  * `cancel` Boolean __optional__
-  * `requestHeaders` Object __optional__ - 이 속성이 제공되면, 요청은 이 헤더로
+  * `cancel` Boolean (optional)
+  * `requestHeaders` Object (optional) - 이 속성이 제공되면, 요청은 이 헤더로
     만들어 집니다.
 
 #### `ses.webRequest.onSendHeaders([filter, ]listener)`
@@ -392,7 +392,7 @@ HTTP 요청을 보내기 전 요청 헤더를 사용할 수 있을 때 `listener
 
 * `response` Object
   * `cancel` Boolean
-  * `responseHeaders` Object __optional__ - 이 속성이 제공되면 서버는 이 헤더와
+  * `responseHeaders` Object (optional) - 이 속성이 제공되면 서버는 이 헤더와
     함께 응답합니다.
 
 #### `ses.webRequest.onResponseStarted([filter, ]listener)`
@@ -430,7 +430,7 @@ HTTP 요청을 보내기 전 요청 헤더를 사용할 수 있을 때 `listener
   * `timestamp` Double
   * `redirectURL` String
   * `statusCode` Integer
-  * `ip` String __optional__ - 요청이 실질적으로 전송될 서버 아이피 주소.
+  * `ip` String (optional) - 요청이 실질적으로 전송될 서버 아이피 주소.
   * `fromCache` Boolean
   * `responseHeaders` Object
 
