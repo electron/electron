@@ -282,22 +282,22 @@ void NativeWindow::CapturePage(const gfx::Rect& rect,
   }
 
   // Capture full page if user doesn't specify a |rect|.
-  const gfx::Size view_size = rect.IsEmpty() ? view->GetViewBounds().size() :
-                                               rect.size();
+  const gfx::Rect view_rect = rect.IsEmpty() ? view->GetViewBounds() :
+                                               rect;
 
   // By default, the requested bitmap size is the view size in screen
   // coordinates.  However, if there's more pixel detail available on the
   // current system, increase the requested bitmap size to capture it all.
-  gfx::Size bitmap_size = view_size;
+  gfx::Size bitmap_size = view_rect.size();
   const gfx::NativeView native_view = view->GetNativeView();
   gfx::Screen* const screen = gfx::Screen::GetScreenFor(native_view);
   const float scale =
       screen->GetDisplayNearestWindow(native_view).device_scale_factor();
   if (scale > 1.0f)
-    bitmap_size = gfx::ScaleToCeiledSize(view_size, scale);
+    bitmap_size = gfx::ScaleToCeiledSize(view_rect.size(), scale);
 
   host->CopyFromBackingStore(
-      gfx::Rect(view_size),
+      view_rect,
       bitmap_size,
       base::Bind(&NativeWindow::OnCapturePageDone,
                  weak_factory_.GetWeakPtr(),

@@ -30,11 +30,12 @@ createGuest = (embedder, url, frameName, options) ->
     guest.loadURL url
     return guest.id
 
+  # Remember the embedder window's id.
+  options.webPreferences ?= {}
+  options.webPreferences.openerId = BrowserWindow.fromWebContents(embedder)?.id
+
   guest = new BrowserWindow(options)
   guest.loadURL url
-
-  # Remember the embedder, will be used by window.opener methods.
-  v8Util.setHiddenValue guest.webContents, 'embedder', embedder
 
   # When |embedder| is destroyed we should also destroy attached guest, and if
   # guest is closed by user then we should prevent |embedder| from double
@@ -74,23 +75,12 @@ ipcMain.on 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_METHOD', (event, guestId, met
   BrowserWindow.fromId(guestId)?[method] args...
 
 ipcMain.on 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_POSTMESSAGE', (event, guestId, message, targetOrigin, sourceOrigin) ->
+  sourceId = BrowserWindow.fromWebContents(event.sender)?.id
+  return unless sourceId?
+
   guestContents = BrowserWindow.fromId(guestId)?.webContents
   if guestContents?.getURL().indexOf(targetOrigin) is 0 or targetOrigin is '*'
-    guestContents?.send 'ATOM_SHELL_GUEST_WINDOW_POSTMESSAGE', guestId, message, sourceOrigin
-
-ipcMain.on 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_OPENER_POSTMESSAGE', (event, guestId, message, targetOrigin, sourceOrigin) ->
-  embedder = v8Util.getHiddenValue event.sender, 'embedder'
-  if embedder?.getURL().indexOf(targetOrigin) is 0 or targetOrigin is '*'
-    embedder?.send 'ATOM_SHELL_GUEST_WINDOW_POSTMESSAGE', guestId, message, sourceOrigin
+    guestContents?.send 'ATOM_SHELL_GUEST_WINDOW_POSTMESSAGE', sourceId, message, sourceOrigin
 
 ipcMain.on 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WEB_CONTENTS_METHOD', (event, guestId, method, args...) ->
   BrowserWindow.fromId(guestId)?.webContents?[method] args...
-
-ipcMain.on 'ATOM_SHELL_GUEST_WINDOW_MANAGER_GET_GUEST_ID', (event) ->
-  embedder = v8Util.getHiddenValue event.sender, 'embedder'
-  if embedder?
-    guest = BrowserWindow.fromWebContents event.sender
-    if guest?
-      event.returnValue = guest.id
-      return
-  event.returnValue = null

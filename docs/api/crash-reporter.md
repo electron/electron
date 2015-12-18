@@ -25,8 +25,8 @@ The `crash-reporter` module has the following methods:
 `options` Object, properties:
 
 * `productName` String, default: Electron.
-* `companyName` String, default: GitHub, Inc.
-* `submitURL` String, default: http://54.249.141.255:1127/post.
+* `companyName` String (**required**)
+* `submitURL` String, (**required**)
   * URL that crash reports will be sent to as POST.
 * `autoSubmit` Boolean, default: `true`.
   * Send the crash report without user interaction.

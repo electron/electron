@@ -31,7 +31,7 @@ The server-side setup is also different from OS X. You can read the documents of
 
 ### Linux
 
-There is not built-in support for auto-updater on Linux, so it is recommended to
+There is no built-in support for auto-updater on Linux, so it is recommended to
 use the distribution's package manager to update your app.
 
 ## Events

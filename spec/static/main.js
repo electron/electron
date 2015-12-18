@@ -1,3 +1,6 @@
+// Disable use of deprecated functions.
+process.throwDeprecation = true;
+
 const electron      = require('electron');
 const app           = electron.app;
 const ipcMain       = electron.ipcMain;

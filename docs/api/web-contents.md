@@ -454,6 +454,7 @@ size.
   * 1 - none
   * 2 - minimum
 * `pageSize` String - Specify page size of the generated PDF.
+  * `A5` 
   * `A4`
   * `A3`
   * `Legal`

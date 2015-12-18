@@ -20,10 +20,10 @@ parameter.
 
 The `dialog` module has the following methods:
 
-### `dialog.showOpenDialog([browserWindow][, options][, callback])`
+### `dialog.showOpenDialog([browserWindow, ]options[, callback])`
 
 * `browserWindow` BrowserWindow (optional)
-* `options` Object (optional)
+* `options` Object
   * `title` String
   * `defaultPath` String
   * `filters` Array
@@ -61,10 +61,10 @@ and a directory selector, so if you set `properties` to
 `['openFile', 'openDirectory']` on these platforms, a directory selector will be
 shown.
 
-### `dialog.showSaveDialog([browserWindow][, options][, callback])`
+### `dialog.showSaveDialog([browserWindow, ]options[, callback])`
 
 * `browserWindow` BrowserWindow (optional)
-* `options` Object (optional)
+* `options` Object
   * `title` String
   * `defaultPath` String
   * `filters` Array
@@ -79,10 +79,10 @@ The `filters` specifies an array of file types that can be displayed, see
 If a `callback` is passed, the API call will be asynchronous and the result
 will be passed via `callback(filename)`
 
-### `dialog.showMessageBox([browserWindow][, options][, callback])`
+### `dialog.showMessageBox([browserWindow, ]options[, callback])`
 
 * `browserWindow` BrowserWindow (optional)
-* `options` Object (optional)
+* `options` Object
   * `type` String - Can be `"none"`, `"info"`, `"error"`, `"question"` or
   `"warning"`. On Windows, "question" displays the same icon as "info", unless
   you set an icon using the "icon" option.
