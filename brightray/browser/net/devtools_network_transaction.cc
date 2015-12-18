@@ -15,12 +15,10 @@
 
 namespace brightray {
 
-namespace {
-
-const char kDevToolsEmulateNetworkConditionsClientId[] =
-    "X-DevTools-Emulate-Network-Conditions-Client-Id";
-
-}  // namespace
+// static
+const char
+    DevToolsNetworkTransaction::kDevToolsEmulateNetworkConditionsClientId[] =
+        "X-DevTools-Emulate-Network-Conditions-Client-Id";
 
 DevToolsNetworkTransaction::DevToolsNetworkTransaction(
     DevToolsNetworkController* controller,
