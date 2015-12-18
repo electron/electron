@@ -57,7 +57,7 @@ Electron 문서 구조를 이해하는 데 참고할 수 있는 유용한 도움
 
 `methodName(required[, optional]))`
 
-* `require` String, **필수**
+* `require` String (**required**)
 * `optional` Integer
 
 ---
