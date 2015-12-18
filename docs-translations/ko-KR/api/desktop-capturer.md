@@ -38,6 +38,15 @@ function getUserMediaError(e) {
 }
 ```
 
+`navigator.webkitGetUserMedia` 호출에 대해 제약된 객체를 생성할 때
+`desktopCapturer`에서 소스를 사용한다면 `chromeMediaSource`은 반드시
+`"desktop"`으로 지정되어야 하며, `audio` 도 반드시 `false`로 지정되어야 합니다.
+
+만약 전체 데스크탑에서 오디오와 비디오 모두 캡쳐를 하고 싶을 땐 `chromeMediaSource`를
+`"screen"` 그리고 `audio`를 `true`로 지정할 수 있습니다. 이 방법을 사용하면
+`chromeMediaSourceId`를 지정할 수 없습니다.
+
+
 ## Methods
 
 `desktopCapturer` 모듈은 다음과 같은 메서드를 가지고 있습니다:

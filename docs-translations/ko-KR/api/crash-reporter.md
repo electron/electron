@@ -25,8 +25,8 @@ crashReporter.start({
 * `options` Object, properties:
 
 * `productName` String, 기본값: Electron
-* `companyName` String, 기본값: GitHub, Inc
-* `submitURL` String, 기본값: http://54.249.141.255:1127/post
+* `companyName` String (**필수항목**)
+* `submitURL` String, (**필수항목**)
   * 크래시 리포트는 POST 방식으로 이 URL로 전송됩니다.
 * `autoSubmit` Boolean, 기본값: true
   * true로 지정할 경우 유저의 승인 없이 자동으로 오류를 보고합니다.
