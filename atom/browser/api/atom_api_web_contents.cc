@@ -452,6 +452,14 @@ void WebContents::PluginCrashed(const base::FilePath& plugin_path,
   Emit("plugin-crashed", info.name, info.version);
 }
 
+void WebContents::MediaStartedPlaying() {
+  Emit("media-started-playing");
+}
+
+void WebContents::MediaPaused() {
+  Emit("media-paused");
+}
+
 void WebContents::DocumentLoadedInFrame(
     content::RenderFrameHost* render_frame_host) {
   if (!render_frame_host->GetParent())

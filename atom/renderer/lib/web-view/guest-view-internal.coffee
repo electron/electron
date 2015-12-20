@@ -20,6 +20,8 @@ WEB_VIEW_EVENTS =
   'crashed': []
   'gpu-crashed': []
   'plugin-crashed': ['name', 'version']
+  'media-started-playing': []
+  'media-paused': []
   'destroyed': []
   'page-title-updated': ['title', 'explicitSet']
   'page-favicon-updated': ['favicons']

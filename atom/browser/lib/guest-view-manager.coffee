@@ -22,7 +22,9 @@ supportedWebViewEvents = [
   'page-title-updated'
   'page-favicon-updated'
   'enter-html-full-screen'
-  'leave-html-full-screen'
+  'leave-html-full-screen',
+  'media-started-playing',
+  'media-paused',
 ]
 
 nextInstanceId = 0
