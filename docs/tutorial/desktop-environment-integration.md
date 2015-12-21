@@ -49,7 +49,7 @@ new Notification('Title', {
 });
 ```
 
-Keep furthermore in mind that the maximum length for the body is 250 characters,
+Furthermore, keep in mind that the maximum length for the body is 250 characters,
 with the Windows team recommending that notifications should be kept to 200
 characters.
 
