@@ -186,6 +186,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void RendererUnresponsive(content::WebContents* source) override;
   void RendererResponsive(content::WebContents* source) override;
   bool HandleContextMenu(const content::ContextMenuParams& params) override;
+  bool OnGoToEntryOffset(int offset) override;
 
   // content::WebContentsObserver:
   void BeforeUnloadFired(const base::TimeTicks& proceed_time) override;
@@ -224,6 +225,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
       const std::vector<content::FaviconURL>& urls) override;
   void PluginCrashed(const base::FilePath& plugin_path,
                      base::ProcessId plugin_pid) override;
+  void MediaStartedPlaying() override;
+  void MediaPaused() override;
 
   // brightray::InspectableWebContentsViewDelegate:
   void DevToolsFocused() override;

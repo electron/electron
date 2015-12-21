@@ -55,7 +55,7 @@ documentation:
 
 `methodName(required[, optional]))`
 
-* `require` String, **required**
+* `require` String (**required**)
 * `optional` Integer
 
 ---

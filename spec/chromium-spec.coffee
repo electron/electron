@@ -5,7 +5,7 @@ path = require 'path'
 ws = require 'ws'
 
 {remote} = require 'electron'
-{BrowserWindow} = remote.require 'electron'
+{BrowserWindow, session} = remote.require 'electron'
 
 describe 'chromium feature', ->
   fixtures = path.resolve __dirname, 'fixtures'
@@ -55,6 +55,26 @@ describe 'chromium feature', ->
   describe 'navigator.language', ->
     it 'should not be empty', ->
       assert.notEqual navigator.language, ''
+
+  describe 'navigator.serviceWorker', ->
+    url = "file://#{fixtures}/pages/service-worker/index.html"
+    w = null
+
+    afterEach ->
+      w?.destroy()
+
+    it 'should register for file scheme', (done) ->
+      w = new BrowserWindow(show:false)
+      w.webContents.on 'ipc-message', (event, args) ->
+        if args[0] == 'reload'
+          w.webContents.reload()
+        else if args[0] == 'error'
+          done('unexpected error : ' + args[1])
+        else if args[0] == 'response'
+          assert.equal args[1], 'Hello from serviceWorker!'
+          session.defaultSession.clearStorageData {storages: ['serviceworkers']}, ->
+            done()
+      w.loadURL url
 
   describe 'window.open', ->
     @timeout 10000

@@ -379,3 +379,14 @@ describe '<webview> tag', ->
       webview.src = "file://#{fixtures}/pages/onmouseup.html"
       webview.setAttribute 'nodeintegration', 'on'
       document.body.appendChild webview
+
+  describe 'media-started-playing media-paused events', ->
+    it 'emits when audio starts and stops playing', (done) ->
+      audioPlayed = false
+      webview.addEventListener 'media-started-playing', ->
+        audioPlayed = true
+      webview.addEventListener 'media-paused', ->
+        assert audioPlayed
+        done()
+      webview.src = "file://#{fixtures}/pages/audio.html"
+      document.body.appendChild webview

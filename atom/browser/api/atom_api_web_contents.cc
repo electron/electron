@@ -421,6 +421,11 @@ bool WebContents::HandleContextMenu(const content::ContextMenuParams& params) {
   return true;
 }
 
+bool WebContents::OnGoToEntryOffset(int offset) {
+  GoToOffset(offset);
+  return false;
+}
+
 void WebContents::BeforeUnloadFired(const base::TimeTicks& proceed_time) {
   // Do nothing, we override this method just to avoid compilation error since
   // there are two virtual functions named BeforeUnloadFired.
@@ -450,6 +455,14 @@ void WebContents::PluginCrashed(const base::FilePath& plugin_path,
   auto plugin_service = content::PluginService::GetInstance();
   plugin_service->GetPluginInfoByPath(plugin_path, &info);
   Emit("plugin-crashed", info.name, info.version);
+}
+
+void WebContents::MediaStartedPlaying() {
+  Emit("media-started-playing");
+}
+
+void WebContents::MediaPaused() {
+  Emit("media-paused");
 }
 
 void WebContents::DocumentLoadedInFrame(

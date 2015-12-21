@@ -221,6 +221,14 @@ Emitted when `webContents` wants to do basic auth.
 
 The usage is the same with [the `login` event of `app`](app.md#event-login).
 
+### Event: 'media-started-playing'
+
+Emitted when media starts playing.
+
+### Event: 'media-paused'
+
+Emitted when media is paused or done playing.
+
 ## Instance Methods
 
 The `webContents` object has the following instance methods:

@@ -102,14 +102,14 @@ session.defaultSession.cookies.set(cookie, function(error) {
 #### `ses.cookies.get(filter, callback)`
 
 * `filter` Object
-  * `url` String __optional__ - Retrieves cookies which are associated with
+  * `url` String (optional) - Retrieves cookies which are associated with
     `url`. Empty implies retrieving cookies of all urls.
-  * `name` String __optional__ - Filters cookies by name.
-  * `domain` String __optional__ - Retrieves cookies whose domains match or are
+  * `name` String (optional) - Filters cookies by name.
+  * `domain` String (optional) - Retrieves cookies whose domains match or are
     subdomains of `domains`
-  * `path` String __optional__ - Retrieves cookies whose path matches `path`.
-  * `secure` Boolean __optional__ - Filters cookies by their Secure property.
-  * `session` Boolean __optional__ - Filters out session or persistent cookies.
+  * `path` String (optional) - Retrieves cookies whose path matches `path`.
+  * `secure` Boolean (optional) - Filters cookies by their Secure property.
+  * `session` Boolean (optional) - Filters out session or persistent cookies.
 * `callback` Function
 
 Sends a request to get all cookies matching `details`, `callback` will be called
@@ -127,7 +127,7 @@ with `callback(error, cookies)` on complete.
   *  `httpOnly` Boolean - Whether the cookie is marked as HTTP only.
   *  `session` Boolean - Whether the cookie is a session cookie or a persistent
      cookie with an expiration date.
-  *  `expirationDate` Double __optional__ - The expiration date of the cookie as
+  *  `expirationDate` Double (optional) - The expiration date of the cookie as
      the number of seconds since the UNIX epoch. Not provided for session
      cookies.
 
@@ -327,8 +327,8 @@ is about to occur.
 The `callback` has to be called with an `response` object:
 
 * `response` Object
-  * `cancel` Boolean __optional__
-  * `redirectURL` String __optional__ - The original request is prevented from
+  * `cancel` Boolean (optional)
+  * `redirectURL` String (optional) - The original request is prevented from
     being sent or completed, and is instead redirected to the given URL.
 
 #### `ses.webRequest.onBeforeSendHeaders([filter, ]listener)`
@@ -351,8 +351,8 @@ TCP connection is made to the server, but before any http data is sent.
 The `callback` has to be called with an `response` object:
 
 * `response` Object
-  * `cancel` Boolean __optional__
-  * `requestHeaders` Object __optional__ - When provided, request will be made
+  * `cancel` Boolean (optional)
+  * `requestHeaders` Object (optional) - When provided, request will be made
     with these headers.
 
 #### `ses.webRequest.onSendHeaders([filter, ]listener)`
@@ -394,7 +394,7 @@ The `callback` has to be called with an `response` object:
 
 * `response` Object
   * `cancel` Boolean
-  * `responseHeaders` Object __optional__ - When provided, the server is assumed
+  * `responseHeaders` Object (optional) - When provided, the server is assumed
     to have responded with these headers.
 
 #### `ses.webRequest.onResponseStarted([filter, ]listener)`
@@ -434,7 +434,7 @@ redirect is about to occur.
   * `timestamp` Double
   * `redirectURL` String
   * `statusCode` Integer
-  * `ip` String __optional__ - The server IP address that the request was
+  * `ip` String (optional) - The server IP address that the request was
     actually sent to.
   * `fromCache` Boolean
   * `responseHeaders` Object
