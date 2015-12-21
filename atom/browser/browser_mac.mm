@@ -70,8 +70,21 @@ void Browser::DockHide() {
 }
 
 void Browser::DockShow() {
+  BOOL active = [[NSRunningApplication currentApplication] isActive];
   ProcessSerialNumber psn = { 0, kCurrentProcess };
-  TransformProcessType(&psn, kProcessTransformToForegroundApplication);
+  if (active) {
+    // Workaround buggy behavior of TransformProcessType
+    for (NSRunningApplication * app in [NSRunningApplication runningApplicationsWithBundleIdentifier:@"com.apple.dock"]) {
+      [app activateWithOptions:NSApplicationActivateIgnoringOtherApps];
+      break;
+    }
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 0.001 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
+      TransformProcessType(&psn, kProcessTransformToForegroundApplication);
+      [[NSRunningApplication currentApplication] activateWithOptions:NSApplicationActivateIgnoringOtherApps];
+    });
+  } else {
+    TransformProcessType(&psn, kProcessTransformToForegroundApplication);
+  }
 }
 
 void Browser::DockSetMenu(ui::MenuModel* model) {
