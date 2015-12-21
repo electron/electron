@@ -43,7 +43,8 @@ std::string Browser::GetExecutableFileProductName() const {
 }
 
 int Browser::DockBounce(BounceType type) {
-  return [[AtomApplication sharedApplication] requestUserAttention:(NSRequestUserAttentionType)type];
+  return [[AtomApplication sharedApplication]
+      requestUserAttention:(NSRequestUserAttentionType)type];
 }
 
 void Browser::DockCancelBounce(int rid) {
@@ -73,14 +74,22 @@ void Browser::DockShow() {
   BOOL active = [[NSRunningApplication currentApplication] isActive];
   ProcessSerialNumber psn = { 0, kCurrentProcess };
   if (active) {
-    // Workaround buggy behavior of TransformProcessType
-    for (NSRunningApplication * app in [NSRunningApplication runningApplicationsWithBundleIdentifier:@"com.apple.dock"]) {
+    // Workaround buggy behavior of TransformProcessType.
+    // http://stackoverflow.com/questions/7596643/
+    NSArray* runningApps = [NSRunningApplication
+        runningApplicationsWithBundleIdentifier:@"com.apple.dock"];
+    for (NSRunningApplication* app in runningApps) {
       [app activateWithOptions:NSApplicationActivateIgnoringOtherApps];
       break;
     }
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 0.001 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
+    dispatch_time_t one_ms = dispatch_time(DISPATCH_TIME_NOW, USEC_PER_SEC);
+    dispatch_after(one_ms, dispatch_get_main_queue(), ^{
       TransformProcessType(&psn, kProcessTransformToForegroundApplication);
-      [[NSRunningApplication currentApplication] activateWithOptions:NSApplicationActivateIgnoringOtherApps];
+      dispatch_time_t one_ms = dispatch_time(DISPATCH_TIME_NOW, USEC_PER_SEC);
+      dispatch_after(one_ms, dispatch_get_main_queue(), ^{
+        [[NSRunningApplication currentApplication]
+            activateWithOptions:NSApplicationActivateIgnoringOtherApps];
+      });
     });
   } else {
     TransformProcessType(&psn, kProcessTransformToForegroundApplication);
