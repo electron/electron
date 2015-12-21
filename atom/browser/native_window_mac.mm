@@ -177,10 +177,25 @@ bool ScopedDisableResize::disable_resize_ = false;
 }
 
 - (void)windowDidEnterFullScreen:(NSNotification*)notification {
+  if (shell_->ShouldHideNativeToolbarInFullscreen()) {
+    NSWindow* window = shell_->GetNativeWindow();
+    [window setToolbar:nil];
+  }
+
   shell_->NotifyWindowEnterFullScreen();
 }
 
 - (void)windowDidExitFullScreen:(NSNotification*)notification {
+
+  // Restore the native toolbar for styling if needed
+  if (shell_->ShouldHideNativeToolbarInFullscreen()) {
+    NSWindow* window = shell_->GetNativeWindow();
+    base::scoped_nsobject<NSToolbar> toolbar(
+        [[NSToolbar alloc] initWithIdentifier:@"titlebarStylingToolbar"]);
+    [toolbar setShowsBaselineSeparator:NO];
+    [window setToolbar:toolbar];
+  }
+
   if (!shell_->has_frame()) {
     NSWindow* window = shell_->GetNativeWindow();
     [[window standardWindowButton:NSWindowFullScreenButton] setHidden:YES];
@@ -376,6 +391,15 @@ NativeWindowMac::NativeWindowMac(
   if ((titleBarStyle == "hidden") || (titleBarStyle == "hidden-inset")) {
     styleMask |= NSFullSizeContentViewWindowMask;
     styleMask |= NSUnifiedTitleAndToolbarWindowMask;
+  }
+
+  // We capture this because we need to access the option later when entering/exiting fullscreen
+  // and since the options dict is only passed to the constructor but not stored,
+  // let’s store this option this way.
+  if (titleBarStyle == "hidden-inset") {
+    should_hide_native_toolbar_in_fullscreen_ = true;
+  } else {
+    should_hide_native_toolbar_in_fullscreen_ = false;
   }
 
   window_.reset([[AtomNSWindow alloc]

@@ -78,6 +78,10 @@ class NativeWindowMac : public NativeWindow {
     UpdateDraggableRegionViews(draggable_regions_);
   }
 
+  bool ShouldHideNativeToolbarInFullscreen() const {
+    return should_hide_native_toolbar_in_fullscreen_;
+  }
+
  protected:
   // NativeWindow:
   void HandleKeyboardEvent(
@@ -117,6 +121,8 @@ class NativeWindowMac : public NativeWindow {
 
   // The presentation options before entering kiosk mode.
   NSApplicationPresentationOptions kiosk_options_;
+
+  bool should_hide_native_toolbar_in_fullscreen_;
 
   DISALLOW_COPY_AND_ASSIGN(NativeWindowMac);
 };
