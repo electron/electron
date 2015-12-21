@@ -219,6 +219,14 @@ Returns:
 
 [`app`의 `login`이벤트](app.md#event-login)와 사용 방법은 같습니다.
 
+### Event: 'media-started-playing'
+
+미디어가 재생되기 시작할 때 발생하는 이벤트입니다.
+
+### Event: 'media-paused'
+
+미디어가 중지되거나 재생이 완료되었을 때 발생하는 이벤트입니다.
+
 ## Instance Methods
 
 `webContents`객체는 다음과 같은 인스턴스 메서드들을 가지고 있습니다.
