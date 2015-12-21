@@ -39,7 +39,7 @@ however, that it does not need to be pinned to the Start screen.
 
 To use an image in your notification, pass a local image file (preferably `png`)
 in the `icon` property of your notification's options. The notification will
-still display if you submit and incorrect or `http/https`-based URL, but the
+still display if you submit an incorrect or `http/https`-based URL, but the
 image will not be displayed.
 
 ```javascript
