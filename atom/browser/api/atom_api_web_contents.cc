@@ -421,6 +421,11 @@ bool WebContents::HandleContextMenu(const content::ContextMenuParams& params) {
   return true;
 }
 
+bool WebContents::OnGoToEntryOffset(int offset) {
+  GoToOffset(offset);
+  return false;
+}
+
 void WebContents::BeforeUnloadFired(const base::TimeTicks& proceed_time) {
   // Do nothing, we override this method just to avoid compilation error since
   // there are two virtual functions named BeforeUnloadFired.
