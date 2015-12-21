@@ -17,7 +17,7 @@ struct WebFindOptions;
 struct WebFloatPoint;
 struct WebPoint;
 struct WebSize;
-}
+}  // namespace blink
 
 namespace content {
 struct NativeWebKeyboardEvent;

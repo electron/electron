@@ -457,7 +457,7 @@ obtained by subscribing to [`found-in-page`](web-contents.md#event-found-in-page
 ### `webContents.stopFindInPage(action)`
 
 * `action` String - Specifies the action to take place when ending
-  [`webContents.findInPage `](web-contents.md#webcontentfindinpage) request.
+  [`webContents.findInPage`](web-contents.md#webcontentfindinpage) request.
   * `clearSelection` - Translate the selection into a normal selection.
   * `keepSelection` - Clear the selection.
   * `activateSelection` - Focus and click the selection node.

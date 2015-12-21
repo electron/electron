@@ -371,7 +371,7 @@ obtained by subscribing to [`found-in-page`](web-view-tag.md#event-found-in-page
 ### `<webview>.stopFindInPage(action)`
 
 * `action` String - Specifies the action to take place when ending
-  [`<webview>.findInPage `](web-view-tag.md#webviewtagfindinpage) request.
+  [`<webview>.findInPage`](web-view-tag.md#webviewtagfindinpage) request.
   * `clearSelection` - Translate the selection into a normal selection.
   * `keepSelection` - Clear the selection.
   * `activateSelection` - Focus and click the selection node.
