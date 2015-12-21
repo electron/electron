@@ -225,6 +225,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
       const std::vector<content::FaviconURL>& urls) override;
   void PluginCrashed(const base::FilePath& plugin_path,
                      base::ProcessId plugin_pid) override;
+  void MediaStartedPlaying() override;
+  void MediaPaused() override;
 
   // brightray::InspectableWebContentsViewDelegate:
   void DevToolsFocused() override;
