@@ -22,6 +22,8 @@ class DevToolsNetworkInterceptor;
 
 class DevToolsNetworkTransaction : public net::HttpTransaction {
  public:
+  static const char kDevToolsEmulateNetworkConditionsClientId[];
+
   DevToolsNetworkTransaction(
       DevToolsNetworkController* controller,
       scoped_ptr<net::HttpTransaction> network_transaction);
