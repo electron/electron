@@ -122,7 +122,7 @@ Object.defineProperty window.history, 'length',
 Object.defineProperty document, 'hidden',
   get: ->
     currentWindow = remote.getCurrentWindow()
-    !currentWindow.isFocused() || !currentWindow.isVisible()
+    currentWindow.isMinimized() || !currentWindow.isVisible()
 
 Object.defineProperty document, 'visibilityState',
   get: ->
