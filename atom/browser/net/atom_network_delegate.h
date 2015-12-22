@@ -9,7 +9,7 @@
 #include <set>
 
 #include "brightray/browser/network_delegate.h"
-#include "base/cancelable_callback.h"
+#include "base/callback.h"
 #include "base/values.h"
 #include "extensions/common/url_pattern.h"
 #include "net/base/net_errors.h"
@@ -101,9 +101,17 @@ class AtomNetworkDelegate : public brightray::NetworkDelegate {
                           Out out,
                           Args... args);
 
+  // Deal with the results of Listener.
+  template<typename T>
+  void OnListenerResultInIO(
+      uint64_t id, T out, scoped_ptr<base::DictionaryValue> response);
+  template<typename T>
+  void OnListenerResultInUI(
+      uint64_t id, T out, const base::DictionaryValue& response);
+
   std::map<SimpleEvent, SimpleListenerInfo> simple_listeners_;
   std::map<ResponseEvent, ResponseListenerInfo> response_listeners_;
-  std::map<uint64_t, base::CancelableCallback<void(int)>> callbacks_;
+  std::map<uint64_t, net::CompletionCallback> callbacks_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomNetworkDelegate);
 };
