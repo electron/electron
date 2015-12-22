@@ -339,7 +339,8 @@ Adds `tasks` to the [Tasks][tasks] category of the JumpList on Windows.
 
 `tasks` is an array of `Task` objects in the following format:
 
-`Task` Object
+`Task` Object:
+
 * `program` String - Path of the program to execute, usually you should
   specify `process.execPath` which opens the current program.
 * `arguments` String - The command line arguments when `program` is
