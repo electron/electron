@@ -490,13 +490,11 @@ void WebContents::MediaPaused() {
 }
 
 void WebContents::DidChangeThemeColor(SkColor theme_color) {
-  char themeColor[8] = { 0 };
-  snprintf(themeColor, sizeof(themeColor),
-      "#%02X%02X%02X",
-      SkColorGetR(theme_color),
-      SkColorGetG(theme_color),
-      SkColorGetB(theme_color));
-  Emit("did-change-theme-color", themeColor);
+  std::string hex_theme_color = base::StringPrintf("#%02X%02X%02X",
+    SkColorGetR(theme_color),
+    SkColorGetG(theme_color),
+    SkColorGetB(theme_color));
+  Emit("did-change-theme-color", hex_theme_color);
 }
 
 void WebContents::DocumentLoadedInFrame(

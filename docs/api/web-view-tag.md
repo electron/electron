@@ -647,4 +647,6 @@ Emitted when media is paused or done playing.
 
 Emitted when a page's theme color changes. This is usually due to encountering a meta tag:
 
-    <meta name='theme-color' content='#ff0000'>
+```html
+<meta name='theme-color' content='#ff0000'>
+```

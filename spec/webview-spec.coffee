@@ -406,3 +406,10 @@ describe '<webview> tag', ->
       webview.addEventListener 'did-finish-load', listener2
       webview.src = "file://#{fixtures}/pages/content.html"
       document.body.appendChild webview
+
+  describe 'did-change-theme-color event', ->
+    it 'emits when theme color changes', (done) ->
+      webview.addEventListener 'did-change-theme-color', (e) ->
+        done()
+      webview.src = "file://#{fixtures}/pages/theme-color.html"
+      document.body.appendChild webview
