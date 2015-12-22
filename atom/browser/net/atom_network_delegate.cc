@@ -190,6 +190,10 @@ template<typename T>
 void OnListenerResultInIO(const net::CompletionCallback& callback,
                           T out,
                           scoped_ptr<base::DictionaryValue> response) {
+  // The request has been destroyed.
+  if (callback.is_null())
+    return;
+
   ReadFromResponseObject(*response.get(), out);
 
   bool cancel = false;
@@ -312,10 +316,7 @@ void AtomNetworkDelegate::OnCompleted(net::URLRequest* request, bool started) {
   if (request->status().status() == net::URLRequestStatus::FAILED ||
       request->status().status() == net::URLRequestStatus::CANCELED) {
     // Error event.
-    if (ContainsKey(simple_listeners_, kOnErrorOccurred))
-      OnErrorOccurred(request);
-    else
-      brightray::NetworkDelegate::OnCompleted(request, started);
+    OnErrorOccurred(request, started);
     return;
   } else if (request->response_headers() &&
              net::HttpResponseHeaders::IsRedirectResponseCode(
@@ -334,7 +335,17 @@ void AtomNetworkDelegate::OnCompleted(net::URLRequest* request, bool started) {
                     request->was_cached());
 }
 
-void AtomNetworkDelegate::OnErrorOccurred(net::URLRequest* request) {
+void AtomNetworkDelegate::OnURLRequestDestroyed(net::URLRequest* request) {
+  callbacks_.erase(request->identifier());
+}
+
+void AtomNetworkDelegate::OnErrorOccurred(
+    net::URLRequest* request, bool started) {
+  if (!ContainsKey(simple_listeners_, kOnErrorOccurred)) {
+    brightray::NetworkDelegate::OnCompleted(request, started);
+    return;
+  }
+
   HandleSimpleEvent(kOnErrorOccurred, request, request->was_cached(),
                     request->status());
 }
@@ -353,8 +364,12 @@ int AtomNetworkDelegate::HandleResponseEvent(
   scoped_ptr<base::DictionaryValue> details(new base::DictionaryValue);
   FillDetailsObject(details.get(), request, args...);
 
+  // The |request| could be destroyed before the |callback| is called.
+  callbacks_[request->identifier()].Reset(callback);
+  const auto& cancelable = callbacks_[request->identifier()].callback();
+
   ResponseCallback response =
-      base::Bind(OnListenerResultInUI<Out>, callback, out);
+      base::Bind(OnListenerResultInUI<Out>, cancelable, out);
   BrowserThread::PostTask(
       BrowserThread::UI, FROM_HERE,
       base::Bind(RunResponseListener, info.listener, base::Passed(&details),

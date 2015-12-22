@@ -9,7 +9,7 @@
 #include <set>
 
 #include "brightray/browser/network_delegate.h"
-#include "base/callback.h"
+#include "base/cancelable_callback.h"
 #include "base/values.h"
 #include "extensions/common/url_pattern.h"
 #include "net/base/net_errors.h"
@@ -85,10 +85,11 @@ class AtomNetworkDelegate : public brightray::NetworkDelegate {
                         const GURL& new_location) override;
   void OnResponseStarted(net::URLRequest* request) override;
   void OnCompleted(net::URLRequest* request, bool started) override;
-
-  void OnErrorOccurred(net::URLRequest* request);
+  void OnURLRequestDestroyed(net::URLRequest* request) override;
 
  private:
+  void OnErrorOccurred(net::URLRequest* request, bool started);
+
   template<typename...Args>
   void HandleSimpleEvent(SimpleEvent type,
                          net::URLRequest* request,
@@ -101,7 +102,8 @@ class AtomNetworkDelegate : public brightray::NetworkDelegate {
                           Args... args);
 
   std::map<SimpleEvent, SimpleListenerInfo> simple_listeners_;
-  std::map<ResponseEvent, ResponseListenerInfo> response_listeners_;;
+  std::map<ResponseEvent, ResponseListenerInfo> response_listeners_;
+  std::map<uint64_t, base::CancelableCallback<void(int)>> callbacks_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomNetworkDelegate);
 };
