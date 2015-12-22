@@ -224,7 +224,8 @@ WebContents::WebContents(content::WebContents* web_contents)
 }
 
 WebContents::WebContents(v8::Isolate* isolate,
-                         const mate::Dictionary& options) {
+                         const mate::Dictionary& options)
+    : request_id_(0) {
   // Whether it is a guest WebContents.
   bool is_guest = false;
   options.Get("isGuest", &is_guest);
@@ -424,6 +425,29 @@ bool WebContents::HandleContextMenu(const content::ContextMenuParams& params) {
 bool WebContents::OnGoToEntryOffset(int offset) {
   GoToOffset(offset);
   return false;
+}
+
+void WebContents::FindReply(content::WebContents* web_contents,
+                            int request_id,
+                            int number_of_matches,
+                            const gfx::Rect& selection_rect,
+                            int active_match_ordinal,
+                            bool final_update) {
+  v8::Locker locker(isolate());
+  v8::HandleScope handle_scope(isolate());
+
+  mate::Dictionary result = mate::Dictionary::CreateEmpty(isolate());
+  if (number_of_matches == -1) {
+    result.Set("requestId", request_id);
+    result.Set("selectionArea", selection_rect);
+    result.Set("finalUpdate", final_update);
+    Emit("found-in-page", result);
+  } else if (final_update) {
+    result.Set("requestId", request_id);
+    result.Set("matches", number_of_matches);
+    result.Set("finalUpdate", final_update);
+    Emit("found-in-page", result);
+  }
 }
 
 void WebContents::BeforeUnloadFired(const base::TimeTicks& proceed_time) {
@@ -902,6 +926,25 @@ void WebContents::ReplaceMisspelling(const base::string16& word) {
   web_contents()->ReplaceMisspelling(word);
 }
 
+uint32 WebContents::FindInPage(mate::Arguments* args) {
+  uint32 request_id = GetNextRequestId();
+  base::string16 search_text;
+  blink::WebFindOptions options;
+  if (!args->GetNext(&search_text) || search_text.empty()) {
+    args->ThrowError("Must provide a non-empty search content");
+    return 0;
+  }
+
+  args->GetNext(&options);
+
+  web_contents()->Find(request_id, search_text, options);
+  return request_id;
+}
+
+void WebContents::StopFindInPage(content::StopFindAction action) {
+  web_contents()->StopFinding(action);
+}
+
 void WebContents::Focus() {
   web_contents()->Focus();
 }
@@ -1048,6 +1091,8 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("unselect", &WebContents::Unselect)
       .SetMethod("replace", &WebContents::Replace)
       .SetMethod("replaceMisspelling", &WebContents::ReplaceMisspelling)
+      .SetMethod("findInPage", &WebContents::FindInPage)
+      .SetMethod("stopFindInPage", &WebContents::StopFindInPage)
       .SetMethod("focus", &WebContents::Focus)
       .SetMethod("tabTraverse", &WebContents::TabTraverse)
       .SetMethod("_send", &WebContents::SendIPCMessage)

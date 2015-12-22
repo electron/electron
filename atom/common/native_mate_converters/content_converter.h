@@ -8,6 +8,7 @@
 #include <utility>
 
 #include "content/public/common/menu_item.h"
+#include "content/public/common/stop_find_action.h"
 #include "native_mate/converter.h"
 
 namespace content {
@@ -30,6 +31,12 @@ template<>
 struct Converter<ContextMenuParamsWithWebContents> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    const ContextMenuParamsWithWebContents& val);
+};
+
+template<>
+struct Converter<content::StopFindAction> {
+  static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
+                     content::StopFindAction* out);
 };
 
 }  // namespace mate

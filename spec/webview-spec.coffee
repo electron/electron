@@ -390,3 +390,19 @@ describe '<webview> tag', ->
         done()
       webview.src = "file://#{fixtures}/pages/audio.html"
       document.body.appendChild webview
+
+  describe 'found-in-page event', ->
+    it 'emits when a request is made', (done) ->
+      requestId = null
+      listener = (e) ->
+        assert.equal e.result.requestId, requestId
+        if e.result.finalUpdate
+          assert.equal e.result.matches, 3
+          webview.stopFindInPage "clearSelection"
+          done()
+      listener2 = (e) ->
+        requestId = webview.findInPage "virtual"
+      webview.addEventListener 'found-in-page', listener
+      webview.addEventListener 'did-finish-load', listener2
+      webview.src = "file://#{fixtures}/pages/content.html"
+      document.body.appendChild webview

@@ -13,6 +13,7 @@
 #include "content/public/browser/native_web_keyboard_event.h"
 #include "native_mate/dictionary.h"
 #include "third_party/WebKit/public/web/WebDeviceEmulationParams.h"
+#include "third_party/WebKit/public/web/WebFindOptions.h"
 #include "third_party/WebKit/public/web/WebInputEvent.h"
 
 namespace {
@@ -279,6 +280,22 @@ bool Converter<blink::WebDeviceEmulationParams>::FromV8(
   dict.Get("fitToView", &out->fitToView);
   dict.Get("offset", &out->offset);
   dict.Get("scale", &out->scale);
+  return true;
+}
+
+bool Converter<blink::WebFindOptions>::FromV8(
+    v8::Isolate* isolate,
+    v8::Local<v8::Value> val,
+    blink::WebFindOptions* out) {
+  mate::Dictionary dict;
+  if (!ConvertFromV8(isolate, val, &dict))
+    return false;
+
+  dict.Get("forward", &out->forward);
+  dict.Get("matchCase", &out->matchCase);
+  dict.Get("findNext", &out->findNext);
+  dict.Get("wordStart", &out->wordStart);
+  dict.Get("medialCapitalAsWordStart", &out->medialCapitalAsWordStart);
   return true;
 }
 

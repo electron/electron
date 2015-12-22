@@ -110,6 +110,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void Unselect();
   void Replace(const base::string16& word);
   void ReplaceMisspelling(const base::string16& word);
+  uint32 FindInPage(mate::Arguments* args);
+  void StopFindInPage(content::StopFindAction action);
 
   // Focus.
   void Focus();
@@ -187,6 +189,12 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void RendererResponsive(content::WebContents* source) override;
   bool HandleContextMenu(const content::ContextMenuParams& params) override;
   bool OnGoToEntryOffset(int offset) override;
+  void FindReply(content::WebContents* web_contents,
+                 int request_id,
+                 int number_of_matches,
+                 const gfx::Rect& selection_rect,
+                 int active_match_ordinal,
+                 bool final_update) override;
 
   // content::WebContentsObserver:
   void BeforeUnloadFired(const base::TimeTicks& proceed_time) override;
@@ -242,6 +250,10 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   AtomBrowserContext* GetBrowserContext() const;
 
+  uint32 GetNextRequestId() {
+    return ++request_id_;
+  }
+
   // Called when received a message from renderer.
   void OnRendererMessage(const base::string16& channel,
                          const base::ListValue& args);
@@ -262,6 +274,9 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   // The type of current WebContents.
   Type type_;
+
+  // Request id used for findInPage request.
+  uint32 request_id_;
 
   DISALLOW_COPY_AND_ASSIGN(WebContents);
 };
