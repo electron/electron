@@ -26,6 +26,7 @@ supportedWebViewEvents = [
   'media-started-playing'
   'media-paused'
   'found-in-page'
+  'did-change-theme-color'
 ]
 
 nextInstanceId = 0
