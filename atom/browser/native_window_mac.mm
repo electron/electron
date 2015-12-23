@@ -176,26 +176,30 @@ bool ScopedDisableResize::disable_resize_ = false;
   return YES;
 }
 
-- (void)windowDidEnterFullScreen:(NSNotification*)notification {
-  if (shell_->ShouldHideNativeToolbarInFullscreen()) {
+- (void)windowWillEnterFullScreen:(NSNotification*)notification {
+  // Hide the native toolbar before entering fullscreen, so there is no visual
+  // artifacts.
+  if (shell_->should_hide_native_toolbar_in_fullscreen()) {
     NSWindow* window = shell_->GetNativeWindow();
     [window setToolbar:nil];
   }
-
-  shell_->NotifyWindowEnterFullScreen();
 }
 
-- (void)windowDidExitFullScreen:(NSNotification*)notification {
+- (void)windowDidEnterFullScreen:(NSNotification*)notification {
+  shell_->NotifyWindowEnterFullScreen();
 
-  // Restore the native toolbar for styling if needed
-  if (shell_->ShouldHideNativeToolbarInFullscreen()) {
+  // Restore the native toolbar immediately after entering fullscreen, if we do
+  // this before leaving fullscreen, traffic light buttons will be jumping.
+  if (shell_->should_hide_native_toolbar_in_fullscreen()) {
     NSWindow* window = shell_->GetNativeWindow();
     base::scoped_nsobject<NSToolbar> toolbar(
         [[NSToolbar alloc] initWithIdentifier:@"titlebarStylingToolbar"]);
     [toolbar setShowsBaselineSeparator:NO];
     [window setToolbar:toolbar];
   }
+}
 
+- (void)windowDidExitFullScreen:(NSNotification*)notification {
   if (!shell_->has_frame()) {
     NSWindow* window = shell_->GetNativeWindow();
     [[window standardWindowButton:NSWindowFullScreenButton] setHidden:YES];
@@ -349,7 +353,8 @@ NativeWindowMac::NativeWindowMac(
     const mate::Dictionary& options)
     : NativeWindow(web_contents, options),
       is_kiosk_(false),
-      attention_request_id_(0) {
+      attention_request_id_(0),
+      should_hide_native_toolbar_in_fullscreen_(false) {
   int width = 800, height = 600;
   options.Get(options::kWidth, &width);
   options.Get(options::kHeight, &height);
@@ -392,14 +397,11 @@ NativeWindowMac::NativeWindowMac(
     styleMask |= NSFullSizeContentViewWindowMask;
     styleMask |= NSUnifiedTitleAndToolbarWindowMask;
   }
-
-  // We capture this because we need to access the option later when entering/exiting fullscreen
-  // and since the options dict is only passed to the constructor but not stored,
-  // let’s store this option this way.
+  // We capture this because we need to access the option later when
+  // entering/exiting fullscreen and since the options dict is only passed to
+  // the constructor but not stored, let’s store this option this way.
   if (titleBarStyle == "hidden-inset") {
     should_hide_native_toolbar_in_fullscreen_ = true;
-  } else {
-    should_hide_native_toolbar_in_fullscreen_ = false;
   }
 
   window_.reset([[AtomNSWindow alloc]

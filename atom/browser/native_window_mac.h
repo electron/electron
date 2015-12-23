@@ -78,7 +78,7 @@ class NativeWindowMac : public NativeWindow {
     UpdateDraggableRegionViews(draggable_regions_);
   }
 
-  bool ShouldHideNativeToolbarInFullscreen() const {
+  bool should_hide_native_toolbar_in_fullscreen() const {
     return should_hide_native_toolbar_in_fullscreen_;
   }
 
