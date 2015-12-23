@@ -18,6 +18,9 @@ Consider using [NAN](https://github.com/nodejs/nan/) for your own modules, since
 it makes it easier to support multiple versions of Node. It's also helpful for
 porting old modules to newer versions of Node so they can work with Electron.
 
+**Note:** Electron needs Visual Studio 2013 with Update 5 ([download VS 2013 Community Edition for
+  free](https://www.visualstudio.com/downloads/download-visual-studio-vs)) in order to build native modules on Windows. (Visual Studio 2015 won't work)
+  
 ## How to Install Native Modules
 
 Three ways to install native modules:
