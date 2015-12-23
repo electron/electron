@@ -185,28 +185,6 @@ void ReadFromResponseObject(const base::DictionaryValue& response,
   }
 }
 
-// Deal with the results of Listener.
-template<typename T>
-void OnListenerResultInIO(const net::CompletionCallback& callback,
-                          T out,
-                          scoped_ptr<base::DictionaryValue> response) {
-  ReadFromResponseObject(*response.get(), out);
-
-  bool cancel = false;
-  response->GetBoolean("cancel", &cancel);
-  callback.Run(cancel ? net::ERR_BLOCKED_BY_CLIENT : net::OK);
-}
-
-template<typename T>
-void OnListenerResultInUI(const net::CompletionCallback& callback,
-                          T out,
-                          const base::DictionaryValue& response) {
-  scoped_ptr<base::DictionaryValue> copy = response.CreateDeepCopy();
-  BrowserThread::PostTask(
-      BrowserThread::IO, FROM_HERE,
-      base::Bind(OnListenerResultInIO<T>, callback, out, base::Passed(&copy)));
-}
-
 }  // namespace
 
 AtomNetworkDelegate::AtomNetworkDelegate() {
@@ -309,13 +287,13 @@ void AtomNetworkDelegate::OnResponseStarted(net::URLRequest* request) {
 }
 
 void AtomNetworkDelegate::OnCompleted(net::URLRequest* request, bool started) {
+  // OnCompleted may happen before other events.
+  callbacks_.erase(request->identifier());
+
   if (request->status().status() == net::URLRequestStatus::FAILED ||
       request->status().status() == net::URLRequestStatus::CANCELED) {
     // Error event.
-    if (ContainsKey(simple_listeners_, kOnErrorOccurred))
-      OnErrorOccurred(request);
-    else
-      brightray::NetworkDelegate::OnCompleted(request, started);
+    OnErrorOccurred(request, started);
     return;
   } else if (request->response_headers() &&
              net::HttpResponseHeaders::IsRedirectResponseCode(
@@ -334,7 +312,17 @@ void AtomNetworkDelegate::OnCompleted(net::URLRequest* request, bool started) {
                     request->was_cached());
 }
 
-void AtomNetworkDelegate::OnErrorOccurred(net::URLRequest* request) {
+void AtomNetworkDelegate::OnURLRequestDestroyed(net::URLRequest* request) {
+  callbacks_.erase(request->identifier());
+}
+
+void AtomNetworkDelegate::OnErrorOccurred(
+    net::URLRequest* request, bool started) {
+  if (!ContainsKey(simple_listeners_, kOnErrorOccurred)) {
+    brightray::NetworkDelegate::OnCompleted(request, started);
+    return;
+  }
+
   HandleSimpleEvent(kOnErrorOccurred, request, request->was_cached(),
                     request->status());
 }
@@ -353,8 +341,12 @@ int AtomNetworkDelegate::HandleResponseEvent(
   scoped_ptr<base::DictionaryValue> details(new base::DictionaryValue);
   FillDetailsObject(details.get(), request, args...);
 
+  // The |request| could be destroyed before the |callback| is called.
+  callbacks_[request->identifier()] = callback;
+
   ResponseCallback response =
-      base::Bind(OnListenerResultInUI<Out>, callback, out);
+      base::Bind(&AtomNetworkDelegate::OnListenerResultInUI<Out>,
+                 base::Unretained(this), request->identifier(), out);
   BrowserThread::PostTask(
       BrowserThread::UI, FROM_HERE,
       base::Bind(RunResponseListener, info.listener, base::Passed(&details),
@@ -375,6 +367,30 @@ void AtomNetworkDelegate::HandleSimpleEvent(
   BrowserThread::PostTask(
       BrowserThread::UI, FROM_HERE,
       base::Bind(RunSimpleListener, info.listener, base::Passed(&details)));
+}
+
+template<typename T>
+void AtomNetworkDelegate::OnListenerResultInIO(
+    uint64_t id, T out, scoped_ptr<base::DictionaryValue> response) {
+  // The request has been destroyed.
+  if (!ContainsKey(callbacks_, id))
+    return;
+
+  ReadFromResponseObject(*response.get(), out);
+
+  bool cancel = false;
+  response->GetBoolean("cancel", &cancel);
+  callbacks_[id].Run(cancel ? net::ERR_BLOCKED_BY_CLIENT : net::OK);
+}
+
+template<typename T>
+void AtomNetworkDelegate::OnListenerResultInUI(
+    uint64_t id, T out, const base::DictionaryValue& response) {
+  scoped_ptr<base::DictionaryValue> copy = response.CreateDeepCopy();
+  BrowserThread::PostTask(
+      BrowserThread::IO, FROM_HERE,
+      base::Bind(&AtomNetworkDelegate::OnListenerResultInIO<T>,
+                 base::Unretained(this),  id, out, base::Passed(&copy)));
 }
 
 }  // namespace atom
