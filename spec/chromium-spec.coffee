@@ -85,7 +85,7 @@ describe 'chromium feature', ->
       w.loadURL url
 
   describe 'window.open', ->
-    @timeout 10000
+    @timeout 20000
 
     it 'returns a BrowserWindowProxy object', ->
       b = window.open 'about:blank', '', 'show=no'
