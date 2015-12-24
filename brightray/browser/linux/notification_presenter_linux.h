@@ -6,11 +6,10 @@
 #ifndef BRIGHTRAY_BROWSER_NOTIFICATION_PRESENTER_LINUX_H_
 #define BRIGHTRAY_BROWSER_NOTIFICATION_PRESENTER_LINUX_H_
 
-#include <libnotify/notify.h>
-
 #include <map>
 
 #include "base/compiler_specific.h"
+#include "browser/linux/libnotify_loader.h"
 #include "browser/notification_presenter.h"
 #include "ui/base/glib/glib_signal.h"
 
@@ -21,6 +20,7 @@ class NotificationPresenterLinux : public NotificationPresenter {
   NotificationPresenterLinux();
   ~NotificationPresenterLinux();
 
+  bool Init();
   void RemoveNotification(NotifyNotification *notification);
 
  private:
@@ -37,6 +37,8 @@ class NotificationPresenterLinux : public NotificationPresenter {
   CHROMEG_CALLBACK_0(NotificationPresenterLinux, void, OnNotificationClosed, NotifyNotification*);
   CHROMEG_CALLBACK_1(NotificationPresenterLinux, void, OnNotificationView, NotifyNotification*,
                      char*);
+
+  LibNotifyLoader libnotify_loader_;
 
   // A list of all open NotifyNotification objects.
   // We do lookups here both by NotifyNotification object (when the user
