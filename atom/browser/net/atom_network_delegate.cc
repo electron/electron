@@ -154,6 +154,7 @@ void ReadFromResponseObject(const base::DictionaryValue& response,
                             net::HttpRequestHeaders* headers) {
   const base::DictionaryValue* dict;
   if (response.GetDictionary("requestHeaders", &dict)) {
+    headers->Clear();
     for (base::DictionaryValue::Iterator it(*dict);
          !it.IsAtEnd();
          it.Advance()) {
