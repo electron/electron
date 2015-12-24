@@ -72,7 +72,7 @@ WindowsToastNotification::~WindowsToastNotification() {
 void WindowsToastNotification::ShowNotification(
     const std::wstring& title,
     const std::wstring& msg,
-    std::string icon_path) {
+    const std::wstring& icon_path) {
   ComPtr<IXmlDocument> toast_xml;
   if(FAILED(GetToastXml(toast_manager_.Get(), title, msg, icon_path, &toast_xml)))
     return;
@@ -122,7 +122,7 @@ bool WindowsToastNotification::GetToastXml(
     ABI::Windows::UI::Notifications::IToastNotificationManagerStatics* toastManager,
     const std::wstring& title,
     const std::wstring& msg,
-    std::string icon_path,
+    const std::wstring& icon_path,
     IXmlDocument** toast_xml) {
   ABI::Windows::UI::Notifications::ToastTemplateType template_type;
   if (title.empty() || msg.empty()) {
@@ -185,7 +185,7 @@ bool WindowsToastNotification::SetXmlText(
 }
 
 bool WindowsToastNotification::SetXmlImage(
-    IXmlDocument* doc, std::string icon_path) {
+    IXmlDocument* doc, const std::wstring& icon_path) {
   ScopedHString tag(L"image");
   if (!tag.success())
     return false;
@@ -210,7 +210,7 @@ bool WindowsToastNotification::SetXmlImage(
   if (FAILED(attrs->GetNamedItem(src, &src_attr)))
     return false;
 
-  ScopedHString img_path(base::UTF8ToUTF16(icon_path).c_str());
+  ScopedHString img_path(icon_path.c_str());
   if (!img_path.success())
     return false;
 

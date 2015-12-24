@@ -42,7 +42,7 @@ class WindowsToastNotification {
 
   void ShowNotification(const std::wstring& title,
                         const std::wstring& msg,
-                        std::string icon_path);
+                        const std::wstring& icon_path);
   void DismissNotification();
 
   base::WeakPtr<WindowsToastNotification> GetWeakPtr() {
@@ -59,7 +59,7 @@ class WindowsToastNotification {
   bool GetToastXml(ABI::Windows::UI::Notifications::IToastNotificationManagerStatics* toastManager,
                    const std::wstring& title,
                    const std::wstring& msg,
-                   std::string icon_path,
+                   const std::wstring& icon_path,
                    ABI::Windows::Data::Xml::Dom::IXmlDocument** toastXml);
   bool SetXmlText(ABI::Windows::Data::Xml::Dom::IXmlDocument* doc,
                   const std::wstring& text);
@@ -67,7 +67,7 @@ class WindowsToastNotification {
                   const std::wstring& title,
                   const std::wstring& body);
   bool SetXmlImage(ABI::Windows::Data::Xml::Dom::IXmlDocument* doc,
-                   std::string icon_path);
+                   const std::wstring& icon_path);
   bool GetTextNodeList(ScopedHString* tag,
                        ABI::Windows::Data::Xml::Dom::IXmlDocument* doc,
                        ABI::Windows::Data::Xml::Dom::IXmlNodeList** nodeList,
