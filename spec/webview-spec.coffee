@@ -407,7 +407,7 @@ describe '<webview> tag', ->
       webview.src = "file://#{fixtures}/pages/content.html"
       document.body.appendChild webview
 
-  describe 'did-change-theme-color event', ->
+  xdescribe 'did-change-theme-color event', ->
     it 'emits when theme color changes', (done) ->
       webview.addEventListener 'did-change-theme-color', (e) ->
         done()
