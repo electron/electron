@@ -103,12 +103,23 @@ describe 'webRequest module', ->
           done()
         error: (xhr, errorType, error) -> done(errorType)
 
+    it 'resets the whole headers', (done) ->
+      requestHeaders = Test: 'header'
+      ses.webRequest.onBeforeSendHeaders (details, callback) ->
+        callback({requestHeaders})
+      ses.webRequest.onSendHeaders (details) ->
+        assert.deepEqual details.requestHeaders, requestHeaders
+        done()
+      $.ajax
+        url: defaultURL
+        error: (xhr, errorType, error) -> done(errorType)
+
   describe 'webRequest.onSendHeaders', ->
     afterEach ->
       ses.webRequest.onSendHeaders null
 
     it 'receives details object', (done) ->
-      ses.webRequest.onSendHeaders (details, callback) ->
+      ses.webRequest.onSendHeaders (details) ->
         assert.equal typeof details.requestHeaders, 'object'
       $.ajax
         url: defaultURL
