@@ -13,7 +13,7 @@ namespace brightray {
 
 namespace {
 
-void RemoveNotification(base::WeakPtr<CocoaNotification> notification) {
+void RemoveNotification(base::WeakPtr<Notification> notification) {
   if (notification)
     notification->DismissNotification();
 }

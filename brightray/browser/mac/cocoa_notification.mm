@@ -40,8 +40,7 @@ void CocoaNotification::Cleanup() {
 
 CocoaNotification::CocoaNotification(
     scoped_ptr<content::DesktopNotificationDelegate> delegate)
-    : delegate_(delegate.Pass()),
-      weak_factory_(this) {
+    : delegate_(delegate.Pass()) {
   if (!notification_delegate_) {
     notification_delegate_.reset([[NotificationDelegate alloc] init]);
     NSUserNotificationCenter.defaultUserNotificationCenter.delegate =

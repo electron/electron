@@ -61,6 +61,7 @@
       'browser/network_delegate.cc',
       'browser/network_delegate.h',
       'browser/notification_presenter.h',
+      'browser/notification.h',
       'browser/permission_manager.cc',
       'browser/permission_manager.h',
       'browser/platform_notification_service_impl.cc',

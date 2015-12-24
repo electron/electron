@@ -10,16 +10,15 @@
 #import <Foundation/Foundation.h>
 
 #include "base/mac/scoped_nsobject.h"
-#include "base/memory/weak_ptr.h"
-#include "base/strings/string16.h"
+#include "base/memory/scoped_ptr.h"
+#include "browser/notification.h"
 #include "content/public/browser/desktop_notification_delegate.h"
 
 @class NotificationDelegate;
-class SkBitmap;
 
 namespace brightray {
 
-class CocoaNotification {
+class CocoaNotification : public Notification {
  public:
   static CocoaNotification* FromNSNotification(
       NSUserNotification* notification);
@@ -30,23 +29,17 @@ class CocoaNotification {
 
   void ShowNotification(const base::string16& title,
                         const base::string16& msg,
-                        const SkBitmap& icon);
-  void DismissNotification();
+                        const SkBitmap& icon) override;
+  void DismissNotification() override;
 
   void NotifyDisplayed();
   void NotifyClick();
-
-  base::WeakPtr<CocoaNotification> GetWeakPtr() {
-    return weak_factory_.GetWeakPtr();
-  }
 
  private:
   static void Cleanup();
 
   scoped_ptr<content::DesktopNotificationDelegate> delegate_;
   base::scoped_nsobject<NSUserNotification> notification_;
-
-  base::WeakPtrFactory<CocoaNotification> weak_factory_;
 
   static base::scoped_nsobject<NotificationDelegate> notification_delegate_;
   static std::set<CocoaNotification*> notifications_;
