@@ -57,7 +57,7 @@ Electron이 세미콜론으로 구분된 호스트 리스트에서 지정한 프
 예시:
 
 ```javascript
-app.commandLine.appendSwitch('proxy-bypass-list', '<local>;*.google.com;*foo.com;1.2.3.4:5678')`
+app.commandLine.appendSwitch('proxy-bypass-list', '<local>;*.google.com;*foo.com;1.2.3.4:5678');
 ```
 
 위 예시는 로컬 주소(`localhost`, `127.0.0.1`, 등)와 `google.com`의 서브도메인,

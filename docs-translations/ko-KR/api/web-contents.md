@@ -219,6 +219,20 @@ Returns:
 
 [`app`의 `login`이벤트](app.md#event-login)와 사용 방법은 같습니다.
 
+### Event: 'found-in-page'
+
+Returns:
+
+* `event` Event
+* `result` Object
+  * `requestId` Integer
+  * `finalUpdate` Boolean - 더 많은 응답이 따르는 경우를 표시합니다.
+  * `matches` Integer (Optional) - 일치하는 개수.
+  * `selectionArea` Object (Optional) - 첫 일치 부위의 좌표.
+
+[`webContents.findInPage`](web-contents.md#webcontentsfindinpage) 요청의 결과를
+사용할 수 있을 때 발생하는 이벤트입니다.
+
 ### Event: 'media-started-playing'
 
 미디어가 재생되기 시작할 때 발생하는 이벤트입니다.
@@ -226,6 +240,15 @@ Returns:
 ### Event: 'media-paused'
 
 미디어가 중지되거나 재생이 완료되었을 때 발생하는 이벤트입니다.
+
+### Event: 'did-change-theme-color'
+
+페이지의 테마 색이 변경될 때 발생하는 이벤트입니다. 이 이벤트는 보통 meta 태그에
+의해서 발생합니다:
+
+```html
+<meta name='theme-color' content='#ff0000'>
+```
 
 ## Instance Methods
 
@@ -416,6 +439,46 @@ CSS 코드를 현재 웹 페이지에 삽입합니다.
 * `text` String
 
 웹 페이지에서 `replaceMisspelling` 편집 커맨드를 실행합니다.
+
+### `webContents.findInPage(text[, options])`
+
+* `text` String - 찾을 컨텐츠, 반드시 공백이 아니여야 합니다.
+* `options` Object (Optional)
+  * `forward` Boolean - 앞에서부터 검색할지 뒤에서부터 검색할지 여부입니다. 기본값은
+    `true`입니다.
+  * `findNext` Boolean - 작업을 계속 처리할지 첫 요청만 처리할지 여부입니다. 기본값은
+    `false`입니다.
+  * `matchCase` Boolean - 검색이 대소문자를 구분할지 여부입니다. 기본값은
+    `false`입니다.
+  * `wordStart` Boolean - 단어의 시작 부분만 볼 지 여부입니다. 기본값은
+    `false`입니다.
+  * `medialCapitalAsWordStart` Boolean - `wordStart`와 합쳐질 때, 소문자 또는
+    비문자가 따라붙은 대문자로 일치가 시작하는 경우 단어 중간의 일치를 허용합니다.
+    여러가지 다른 단어 내의 일치를 허용합니다. 기본값은 `false`입니다.
+
+웹 페이지에서 `text`에 일치하는 모든 대상을 찾는 요청을 시작하고 요청에 사용된 요청을
+표현하는 `정수(integer)`를 반환합니다. 요청의 결과는
+[`found-in-page`](web-contents.md#event-found-in-page) 이벤트를 통해 취득할 수
+있습니다.
+
+### `webContents.stopFindInPage(action)`
+
+* `action` String - [`webContents.findInPage`](web-contents.md#webcontentfindinpage)
+  요청이 종료되었을 때 일어날 수 있는 작업을 지정합니다.
+  * `clearSelection` - 선택을 일반 선택으로 변경합니다.
+  * `keepSelection` - 선택을 취소합니다.
+  * `activateSelection` - 포커스한 후 선택된 노드를 클릭합니다.
+
+제공된 `action`에 대한 `webContents`의 모든 `findInPage` 요청을 중지합니다.
+
+```javascript
+webContents.on('found-in-page', function(event, result) {
+  if (result.finalUpdate)
+    webContents.stopFindInPage("clearSelection");
+});
+
+const requestId = webContents.findInPage("api");
+```
 
 ### `webContents.hasServiceWorker(callback)`
 

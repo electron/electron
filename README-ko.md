@@ -49,12 +49,14 @@ API 레퍼런스가 있습니다. Electron을 빌드 하는 방법과 프로젝�
 
 ## 참조 문서 (번역)
 
-- [브라질 포르투칼어](https://github.com/atom/electron/tree/master/docs-translations/pt-BR)
+- [브라질 포르투갈어](https://github.com/atom/electron/tree/master/docs-translations/pt-BR)
 - [한국어](https://github.com/atom/electron/tree/master/docs-translations/ko-KR)
 - [일본어](https://github.com/atom/electron/tree/master/docs-translations/jp)
 - [스페인어](https://github.com/atom/electron/tree/master/docs-translations/es)
 - [중국어 간체](https://github.com/atom/electron/tree/master/docs-translations/zh-CN)
 - [중국어 번체](https://github.com/atom/electron/tree/master/docs-translations/zh-TW)
+- [우크라이나어](https://github.com/atom/electron/tree/master/docs-translations/uk-UA)
+- [러시아어](https://github.com/atom/electron/tree/master/docs-translations/ru-RU)
 
 ## 시작하기
 
@@ -68,6 +70,7 @@ API 레퍼런스가 있습니다. Electron을 빌드 하는 방법과 프로젝�
 - Atom 포럼의 [`electron`](http://discuss.atom.io/c/electron) 카테고리
 - Freenode 채팅의 `#atom-shell` 채널
 - Slack의 [`Atom`](http://atom-slack.herokuapp.com/) 채널
+- [`electron-br`](https://electron-br.slack.com) *(브라질 포르투갈어)*
 
 [awesome-electron](https://github.com/sindresorhus/awesome-electron) 프로젝트에
 커뮤니티가 운영중인 유용한 예제 어플리케이션과 도구, 리소스가 있으니 한번 참고해 보시기
