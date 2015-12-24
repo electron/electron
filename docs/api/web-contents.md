@@ -221,14 +221,6 @@ Emitted when `webContents` wants to do basic auth.
 
 The usage is the same with [the `login` event of `app`](app.md#event-login).
 
-### Event: 'media-started-playing'
-
-Emitted when media starts playing.
-
-### Event: 'media-paused'
-
-Emitted when media is paused or done playing.
-
 ### Event: 'found-in-page'
 
 Returns:
@@ -242,6 +234,22 @@ Returns:
 
 Emitted when a result is available for
 [`webContents.findInPage`](web-contents.md#webcontentsfindinpage) request.
+
+### Event: 'media-started-playing'
+
+Emitted when media starts playing.
+
+### Event: 'media-paused'
+
+Emitted when media is paused or done playing.
+
+### Event: 'did-change-theme-color'
+
+Emitted when a page's theme color changes. This is usually due to encountering a meta tag:
+
+```html
+<meta name='theme-color' content='#ff0000'>
+```
 
 ## Instance Methods
 

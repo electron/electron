@@ -489,6 +489,14 @@ void WebContents::MediaPaused() {
   Emit("media-paused");
 }
 
+void WebContents::DidChangeThemeColor(SkColor theme_color) {
+  std::string hex_theme_color = base::StringPrintf("#%02X%02X%02X",
+    SkColorGetR(theme_color),
+    SkColorGetG(theme_color),
+    SkColorGetB(theme_color));
+  Emit("did-change-theme-color", hex_theme_color);
+}
+
 void WebContents::DocumentLoadedInFrame(
     content::RenderFrameHost* render_frame_host) {
   if (!render_frame_host->GetParent())

@@ -56,7 +56,7 @@ list of hosts. This flag has an effect only if used in tandem with
 For example:
 
 ```javascript
-app.commandLine.appendSwitch('proxy-bypass-list', '<local>;*.google.com;*foo.com;1.2.3.4:5678')`
+app.commandLine.appendSwitch('proxy-bypass-list', '<local>;*.google.com;*foo.com;1.2.3.4:5678')
 ```
 
 Will use the proxy server for all hosts except for local addresses (`localhost`,

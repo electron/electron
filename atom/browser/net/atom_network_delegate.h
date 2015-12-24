@@ -85,10 +85,11 @@ class AtomNetworkDelegate : public brightray::NetworkDelegate {
                         const GURL& new_location) override;
   void OnResponseStarted(net::URLRequest* request) override;
   void OnCompleted(net::URLRequest* request, bool started) override;
-
-  void OnErrorOccurred(net::URLRequest* request);
+  void OnURLRequestDestroyed(net::URLRequest* request) override;
 
  private:
+  void OnErrorOccurred(net::URLRequest* request, bool started);
+
   template<typename...Args>
   void HandleSimpleEvent(SimpleEvent type,
                          net::URLRequest* request,
@@ -100,8 +101,17 @@ class AtomNetworkDelegate : public brightray::NetworkDelegate {
                           Out out,
                           Args... args);
 
+  // Deal with the results of Listener.
+  template<typename T>
+  void OnListenerResultInIO(
+      uint64_t id, T out, scoped_ptr<base::DictionaryValue> response);
+  template<typename T>
+  void OnListenerResultInUI(
+      uint64_t id, T out, const base::DictionaryValue& response);
+
   std::map<SimpleEvent, SimpleListenerInfo> simple_listeners_;
-  std::map<ResponseEvent, ResponseListenerInfo> response_listeners_;;
+  std::map<ResponseEvent, ResponseListenerInfo> response_listeners_;
+  std::map<uint64_t, net::CompletionCallback> callbacks_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomNetworkDelegate);
 };

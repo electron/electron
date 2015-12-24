@@ -72,7 +72,6 @@ TARGET_DIRECTORIES = {
 
 SYSTEM_LIBRARIES = [
   'libgcrypt.so',
-  'libnotify.so',
 ]
 
 
