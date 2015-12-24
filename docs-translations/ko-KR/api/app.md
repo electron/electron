@@ -135,7 +135,7 @@ Returns:
 
 [browserWindow](browser-window.md)에 대한 포커스가 발생했을 때 발생하는 이벤트 입니다.
 
-**역주:** _포커스_는 창을 클릭해서 활성화 시켰을 때를 말합니다.
+**역주:** _포커스_ 는 창을 클릭해서 활성화 시켰을 때를 말합니다.
 
 ### Event: 'browser-window-created'
 
@@ -351,7 +351,7 @@ Windows에서 사용할 수 있는 JumpList의 [Tasks][tasks] 카테고리에 `t
 
 `tasks`는 다음과 같은 구조를 가지는 `Task` 객체의 배열입니다:
 
-`Task` Object
+`Task` Object:
 * `program` String - 실행할 프로그램의 경로.
   보통 현재 작동중인 어플리케이션의 경로인 `process.execPath`를 지정합니다.
 * `arguments` String - `program`이 실행될 때 사용될 명령줄 인자.
@@ -378,7 +378,7 @@ Windows에서 사용할 수 있는 JumpList의 [Tasks][tasks] 카테고리에 `t
 
 * `callback` Function
 
-현재 어플리케이션을 **Single Instance Application**으로 만들어줍니다.
+현재 어플리케이션을 **Single Instance Application** 으로 만들어줍니다.
 이 메서드는 어플리케이션이 여러 번 실행됐을 때 다중 인스턴스가 생성되는 대신 한 개의
 주 인스턴스만 유지되도록 만들 수 있습니다. 이때 중복 생성된 인스턴스는 주 인스턴스에
 신호를 보내고 종료됩니다.
@@ -397,7 +397,7 @@ Windows에서 사용할 수 있는 JumpList의 [Tasks][tasks] 카테고리에 `t
 중복 생성된 인스턴스는 즉시 종료시켜야 합니다.
 
 OS X에선 사용자가 Finder에서 어플리케이션의 두 번째 인스턴스를 열려고 했을 때 자동으로
-**Single Instance**화 하고 `open-file`과 `open-url` 이벤트를 발생시킵니다. 그러나
+**Single Instance** 화 하고 `open-file`과 `open-url` 이벤트를 발생시킵니다. 그러나
 사용자가 어플리케이션을 CLI 터미널에서 실행하면 운영체제 시스템의 싱글 인스턴스
 메커니즘이 무시되며 그대로 중복 실행됩니다. 따라서 OS X에서도 이 메서드를 통해 확실히
 중복 실행을 방지하는 것이 좋습니다.
