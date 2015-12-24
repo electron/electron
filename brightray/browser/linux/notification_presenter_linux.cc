@@ -10,11 +10,10 @@
 #include "base/files/file_enumerator.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
-#include "chrome/browser/ui/libgtk2ui/skia_utils_gtk2.h"
+#include "common/application_info.h"
 #include "content/public/browser/desktop_notification_delegate.h"
 #include "content/public/common/platform_notification_data.h"
-#include "common/application_info.h"
-#include <stdlib.h>
+#include "chrome/browser/ui/libgtk2ui/skia_utils_gtk2.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 
 namespace brightray {
@@ -65,10 +64,12 @@ content::DesktopNotificationDelegate* GetDelegateFromNotification(
 
 // static
 NotificationPresenter* NotificationPresenter::Create() {
-  if (!notify_is_initted()) {
-    notify_init(GetApplicationName().c_str());
-  }
-  return new NotificationPresenterLinux;
+  scoped_ptr<NotificationPresenterLinux> presenter(
+      new NotificationPresenterLinux);
+  if (presenter->Init())
+    return presenter.release();
+  else
+    return nullptr;
 }
 
 NotificationPresenterLinux::NotificationPresenterLinux()
@@ -81,6 +82,19 @@ NotificationPresenterLinux::~NotificationPresenterLinux() {
     g_list_free_full(notifications_, g_object_unref);
 }
 
+bool NotificationPresenterLinux::Init() {
+  if (!libnotify_loader_.Load("libnotify.so.4") &&
+      !libnotify_loader_.Load("libnotify.so.1") &&
+      !libnotify_loader_.Load("libnotify.so")) {
+    return false;
+  }
+  if (!libnotify_loader_.notify_is_initted() &&
+      !libnotify_loader_.notify_init(GetApplicationName().c_str())) {
+    return false;
+  }
+  return true;
+}
+
 void NotificationPresenterLinux::ShowNotification(
     const content::PlatformNotificationData& data,
     const SkBitmap& icon,
@@ -88,7 +102,8 @@ void NotificationPresenterLinux::ShowNotification(
     base::Closure* cancel_callback) {
   std::string title = base::UTF16ToUTF8(data.title);
   std::string body = base::UTF16ToUTF8(data.body);
-  NotifyNotification* notification = notify_notification_new(title.c_str(), body.c_str(), nullptr);
+  NotifyNotification* notification = libnotify_loader_.notify_notification_new(
+      title.c_str(), body.c_str(), nullptr);
 
   content::DesktopNotificationDelegate* delegate = delegate_ptr.release();
 
@@ -100,19 +115,21 @@ void NotificationPresenterLinux::ShowNotification(
   // Zen Nature" is difficult, we will test for the presence of the indicate
   // dbus service
   if (!UnityIsRunning()) {
-    notify_notification_add_action(
+    libnotify_loader_.notify_notification_add_action(
         notification, "default", "View", OnNotificationViewThunk, this, nullptr);
   }
 
   if (!icon.drawsNothing()) {
     GdkPixbuf* pixbuf = libgtk2ui::GdkPixbufFromSkBitmap(icon);
-    notify_notification_set_image_from_pixbuf(notification, pixbuf);
-    notify_notification_set_timeout(notification, NOTIFY_EXPIRES_DEFAULT);
+    libnotify_loader_.notify_notification_set_image_from_pixbuf(
+        notification, pixbuf);
+    libnotify_loader_.notify_notification_set_timeout(
+        notification, NOTIFY_EXPIRES_DEFAULT);
     g_object_unref(pixbuf);
   }
 
   GError* error = nullptr;
-  notify_notification_show(notification, &error);
+  libnotify_loader_.notify_notification_show(notification, &error);
   if (error) {
     log_and_clear_error(error, "notify_notification_show");
     g_object_unref(notification);
@@ -131,7 +148,7 @@ void NotificationPresenterLinux::ShowNotification(
 
 void NotificationPresenterLinux::CancelNotification(NotifyNotification* notification) {
   GError* error = nullptr;
-  notify_notification_close(notification, &error);
+  libnotify_loader_.notify_notification_close(notification, &error);
   if (error)
     log_and_clear_error(error, "notify_notification_close");
 

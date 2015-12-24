@@ -61,6 +61,8 @@
       'browser/permission_manager.h',
       'browser/platform_notification_service_impl.cc',
       'browser/platform_notification_service_impl.h',
+      'browser/linux/libnotify_loader.h',
+      'browser/linux/libnotify_loader.cc',
       'browser/linux/notification_presenter_linux.h',
       'browser/linux/notification_presenter_linux.cc',
       'browser/win/notification_presenter_win.h',
