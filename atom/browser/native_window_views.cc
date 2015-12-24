@@ -60,12 +60,7 @@ const int kMenuBarHeight = 25;
 #endif
 
 bool IsAltKey(const content::NativeWebKeyboardEvent& event) {
-#if defined(USE_X11)
-  // 164 and 165 represent VK_LALT and VK_RALT.
-  return event.windowsKeyCode == 164 || event.windowsKeyCode == 165;
-#else
   return event.windowsKeyCode == ui::VKEY_MENU;
-#endif
 }
 
 bool IsAltModifier(const content::NativeWebKeyboardEvent& event) {
