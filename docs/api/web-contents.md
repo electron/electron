@@ -229,6 +229,20 @@ Emitted when media starts playing.
 
 Emitted when media is paused or done playing.
 
+### Event: 'found-in-page'
+
+Returns:
+
+* `event` Event
+* `result` Object
+  * `requestId` Integer
+  * `finalUpdate` Boolean - Indicates if more responses are to follow.
+  * `matches` Integer (Optional) - Number of Matches.
+  * `selectionArea` Object (Optional) - Coordinates of first match region.
+
+Emitted when a result is available for
+[`webContents.findInPage`](web-contents.md#webcontentsfindinpage) request.
+
 ## Instance Methods
 
 The `webContents` object has the following instance methods:
@@ -420,6 +434,45 @@ Executes the editing command `replace` in web page.
 
 Executes the editing command `replaceMisspelling` in web page.
 
+### `webContents.findInPage(text[, options])`
+
+* `text` String - Content to be searched, must not be empty.
+* `options` Object (Optional)
+  * `forward` Boolean - Whether to search forward or backward, defaults to `true`.
+  * `findNext` Boolean - Whether the operation is first request or a follow up,
+    defaults to `false`.
+  * `matchCase` Boolean - Whether search should be case-sensitive,
+    defaults to `false`.
+  * `wordStart` Boolean - Whether to look only at the start of words.
+    defaults to `false`.
+  * `medialCapitalAsWordStart` Boolean - When combined with `wordStart`,
+    accepts a match in the middle of a word if the match begins with an
+    uppercase letter followed by a lowercase or non-letter.
+    Accepts several other intra-word matches, defaults to `false`.
+
+Starts a request to find all matches for the `text` in the web page and returns an `Integer`
+representing the request id used for the request. The result of the request can be
+obtained by subscribing to [`found-in-page`](web-contents.md#event-found-in-page) event.
+
+### `webContents.stopFindInPage(action)`
+
+* `action` String - Specifies the action to take place when ending
+  [`webContents.findInPage`](web-contents.md#webcontentfindinpage) request.
+  * `clearSelection` - Translate the selection into a normal selection.
+  * `keepSelection` - Clear the selection.
+  * `activateSelection` - Focus and click the selection node.
+
+Stops any `findInPage` request for the `webContents` with the provided `action`.
+
+```javascript
+webContents.on('found-in-page', function(event, result) {
+  if (result.finalUpdate)
+    webContents.stopFindInPage("clearSelection");
+});
+
+const requestId = webContents.findInPage("api");
+```
+
 ### `webContents.hasServiceWorker(callback)`
 
 * `callback` Function
@@ -462,7 +515,7 @@ size.
   * 1 - none
   * 2 - minimum
 * `pageSize` String - Specify page size of the generated PDF.
-  * `A5` 
+  * `A5`
   * `A4`
   * `A3`
   * `Legal`

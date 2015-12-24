@@ -27,6 +27,7 @@ WEB_VIEW_EVENTS =
   'page-favicon-updated': ['favicons']
   'enter-html-full-screen': []
   'leave-html-full-screen': []
+  'found-in-page': ['result']
 
 DEPRECATED_EVENTS =
   'page-title-updated': 'page-title-set'

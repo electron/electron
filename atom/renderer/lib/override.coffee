@@ -118,6 +118,12 @@ Object.defineProperty window.history, 'length',
   get: ->
     getHistoryOperation 'length'
 
-# Make document.hidden return the correct value.
+# Make document.hidden and document.visibilityState return the correct value.
 Object.defineProperty document, 'hidden',
-  get: -> !remote.getCurrentWindow().isVisible()
+  get: ->
+    currentWindow = remote.getCurrentWindow()
+    currentWindow.isMinimized() || !currentWindow.isVisible()
+
+Object.defineProperty document, 'visibilityState',
+  get: ->
+    if document.hidden then "hidden" else "visible"

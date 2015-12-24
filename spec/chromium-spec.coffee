@@ -45,6 +45,14 @@ describe 'chromium feature', ->
         done()
       w.loadURL url
 
+    it 'is set correctly when window is inactive', (done) ->
+      w = new BrowserWindow(show:false)
+      w.webContents.on 'ipc-message', (event, args) ->
+        assert.deepEqual args, ['hidden', false]
+        done()
+      w.showInactive()
+      w.loadURL url
+
   xdescribe 'navigator.webkitGetUserMedia', ->
     it 'calls its callbacks', (done) ->
       @timeout 5000
