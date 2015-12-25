@@ -13,6 +13,9 @@ class NotificationDelegate : public content::DesktopNotificationDelegate {
  public:
   // The native Notification object is destroyed.
   virtual void NotificationDestroyed() {}
+
+  // Failed to send the notification.
+  virtual void NotificationFailed() {}
 };
 
 }  // namespace brightray

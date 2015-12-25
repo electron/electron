@@ -74,9 +74,11 @@ WindowsToastNotification::WindowsToastNotification(
 }
 
 WindowsToastNotification::~WindowsToastNotification() {
-  // Remove the notification on exit, regardless whether it succeeds.
-  RemoveCallbacks(toast_notification_.Get());
-  Dismiss();
+  // Remove the notification on exit.
+  if (toast_notification_) {
+    RemoveCallbacks(toast_notification_.Get());
+    Dismiss();
+  }
 }
 
 void WindowsToastNotification::Show(
@@ -88,28 +90,40 @@ void WindowsToastNotification::Show(
   std::wstring icon_path = presenter_win->SaveIconToFilesystem(icon, icon_url);
 
   ComPtr<IXmlDocument> toast_xml;
-  if(FAILED(GetToastXml(toast_manager_.Get(), title, msg, icon_path, &toast_xml)))
+  if(FAILED(GetToastXml(toast_manager_.Get(), title, msg, icon_path, &toast_xml))) {
+    NotificationFailed();
     return;
+  }
 
   ScopedHString toast_str(
       RuntimeClass_Windows_UI_Notifications_ToastNotification);
-  if (!toast_str.success())
+  if (!toast_str.success()) {
+    NotificationFailed();
     return;
+  }
 
   ComPtr<ABI::Windows::UI::Notifications::IToastNotificationFactory> toast_factory;
   if (FAILED(Windows::Foundation::GetActivationFactory(toast_str,
-                                                       &toast_factory)))
+                                                       &toast_factory))) {
+    NotificationFailed();
     return;
+  }
 
   if (FAILED(toast_factory->CreateToastNotification(toast_xml.Get(),
-                                                    &toast_notification_)))
+                                                    &toast_notification_))) {
+    NotificationFailed();
     return;
+  }
 
-  if (FAILED(SetupCallbacks(toast_notification_.Get())))
+  if (FAILED(SetupCallbacks(toast_notification_.Get()))) {
+    NotificationFailed();
     return;
+  }
 
-  if (FAILED(toast_notifier_->Show(toast_notification_.Get())))
+  if (FAILED(toast_notifier_->Show(toast_notification_.Get()))) {
+    NotificationFailed();
     return;
+  }
 
   delegate()->NotificationDisplayed();
 }
@@ -129,6 +143,7 @@ void WindowsToastNotification::NotificationDismissed() {
 }
 
 void WindowsToastNotification::NotificationFailed() {
+  delegate()->NotificationFailed();
   Destroy();
 }
 
