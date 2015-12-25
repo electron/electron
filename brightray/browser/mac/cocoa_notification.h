@@ -19,8 +19,10 @@ class CocoaNotification : public Notification {
                     NotificationPresenter* presenter);
   ~CocoaNotification();
 
+  // Notification:
   void Show(const base::string16& title,
             const base::string16& msg,
+            const GURL& icon_url,
             const SkBitmap& icon) override;
   void Dismiss() override;
 

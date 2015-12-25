@@ -16,12 +16,12 @@
 #ifndef BRIGHTRAY_BROWSER_WIN_NOTIFICATION_PRESENTER_WIN_H_
 #define BRIGHTRAY_BROWSER_WIN_NOTIFICATION_PRESENTER_WIN_H_
 
-#include <string>
-
 #include "base/files/scoped_temp_dir.h"
+#include "base/strings/string16.h"
 #include "browser/notification_presenter.h"
 
 class GURL;
+class SkBitmap;
 
 namespace brightray {
 
@@ -32,15 +32,9 @@ class NotificationPresenterWin : public NotificationPresenter {
 
   bool Init();
 
-  void ShowNotification(
-      const content::PlatformNotificationData&,
-      const SkBitmap& icon,
-      scoped_ptr<content::DesktopNotificationDelegate> delegate,
-      base::Closure* cancel_callback) override;
+  base::string16 SaveIconToFilesystem(const SkBitmap& icon, const GURL& origin);
 
  private:
-  std::wstring SaveIconToFilesystem(const SkBitmap& icon, const GURL& origin);
-
   base::ScopedTempDir temp_dir_;
 
   DISALLOW_COPY_AND_ASSIGN(NotificationPresenterWin);

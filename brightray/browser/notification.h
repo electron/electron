@@ -8,6 +8,7 @@
 #include "base/memory/weak_ptr.h"
 #include "base/strings/string16.h"
 
+class GURL;
 class SkBitmap;
 
 namespace brightray {
@@ -20,6 +21,7 @@ class Notification {
   // Shows the notification.
   virtual void Show(const base::string16& title,
                     const base::string16& msg,
+                    const GURL& icon_url,
                     const SkBitmap& icon) = 0;
   // Closes the notification, this instance will be destroyed after the
   // notification gets closed.

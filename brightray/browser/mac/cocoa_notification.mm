@@ -32,6 +32,7 @@ CocoaNotification::~CocoaNotification() {
 
 void CocoaNotification::Show(const base::string16& title,
                              const base::string16& body,
+                             const GURL& icon_url,
                              const SkBitmap& icon) {
   notification_.reset([[NSUserNotification alloc] init]);
   [notification_ setTitle:base::SysUTF16ToNSString(title)];

@@ -8,9 +8,10 @@
 #include <shlobj.h>
 
 #include "base/strings/utf_string_conversions.h"
+#include "browser/notification_delegate.h"
 #include "browser/win/scoped_hstring.h"
+#include "browser/win/notification_presenter_win.h"
 #include "common/application_info.h"
-#include "content/public/browser/desktop_notification_delegate.h"
 
 using namespace ABI::Windows::Data::Xml::Dom;
 
@@ -30,6 +31,12 @@ bool GetAppUserModelId(ScopedHString* app_id) {
 }
 
 }  // namespace
+
+// static
+Notification* Notification::Create(NotificationDelegate* delegate,
+                                   NotificationPresenter* presenter) {
+  return new WindowsToastNotification(delegate, presenter);
+}
 
 // static
 ComPtr<ABI::Windows::UI::Notifications::IToastNotificationManagerStatics>
@@ -61,18 +68,25 @@ bool WindowsToastNotification::Initialize() {
 }
 
 WindowsToastNotification::WindowsToastNotification(
-    scoped_ptr<content::DesktopNotificationDelegate> delegate)
-    : delegate_(delegate.Pass()),
-      weak_factory_(this) {
+    NotificationDelegate* delegate,
+    NotificationPresenter* presenter)
+    : Notification(delegate, presenter) {
 }
 
 WindowsToastNotification::~WindowsToastNotification() {
+  // Remove the notification on exit, regardless whether it succeeds.
+  RemoveCallbacks(toast_notification_.Get());
+  Dismiss();
 }
 
-void WindowsToastNotification::ShowNotification(
-    const std::wstring& title,
-    const std::wstring& msg,
-    const std::wstring& icon_path) {
+void WindowsToastNotification::Show(
+    const base::string16& title,
+    const base::string16& msg,
+    const GURL& icon_url,
+    const SkBitmap& icon) {
+  auto presenter_win = static_cast<NotificationPresenterWin*>(presenter());
+  std::wstring icon_path = presenter_win->SaveIconToFilesystem(icon, icon_url);
+
   ComPtr<IXmlDocument> toast_xml;
   if(FAILED(GetToastXml(toast_manager_.Get(), title, msg, icon_path, &toast_xml)))
     return;
@@ -97,25 +111,25 @@ void WindowsToastNotification::ShowNotification(
   if (FAILED(toast_notifier_->Show(toast_notification_.Get())))
     return;
 
-  delegate_->NotificationDisplayed();
+  delegate()->NotificationDisplayed();
 }
 
-void WindowsToastNotification::DismissNotification() {
+void WindowsToastNotification::Dismiss() {
   toast_notifier_->Hide(toast_notification_.Get());
 }
 
 void WindowsToastNotification::NotificationClicked() {
-  delegate_->NotificationClick();
-  delete this;
+  delegate()->NotificationClick();
+  Destroy();
 }
 
 void WindowsToastNotification::NotificationDismissed() {
-  delegate_->NotificationClosed();
-  delete this;
+  delegate()->NotificationClosed();
+  Destroy();
 }
 
 void WindowsToastNotification::NotificationFailed() {
-  delete this;
+  Destroy();
 }
 
 bool WindowsToastNotification::GetToastXml(
@@ -263,16 +277,27 @@ bool WindowsToastNotification::AppendTextToXml(
   return SUCCEEDED(node->AppendChild(text_node.Get(), &append_node));
 }
 
-bool WindowsToastNotification::SetupCallbacks(ABI::Windows::UI::Notifications::IToastNotification* toast) {
-  EventRegistrationToken activatedToken, dismissedToken, failedToken;
+bool WindowsToastNotification::SetupCallbacks(
+    ABI::Windows::UI::Notifications::IToastNotification* toast) {
   event_handler_ = Make<ToastEventHandler>(this);
-  if (FAILED(toast->add_Activated(event_handler_.Get(), &activatedToken)))
+  if (FAILED(toast->add_Activated(event_handler_.Get(), &activated_token_)))
     return false;
 
-  if (FAILED(toast->add_Dismissed(event_handler_.Get(), &dismissedToken)))
+  if (FAILED(toast->add_Dismissed(event_handler_.Get(), &dismissed_token_)))
     return false;
 
-  return SUCCEEDED(toast->add_Failed(event_handler_.Get(), &failedToken));
+  return SUCCEEDED(toast->add_Failed(event_handler_.Get(), &failed_token_));
+}
+
+bool WindowsToastNotification::RemoveCallbacks(
+    ABI::Windows::UI::Notifications::IToastNotification* toast) {
+  if (FAILED(toast->remove_Activated(activated_token_)))
+    return false;
+
+  if (FAILED(toast->remove_Dismissed(dismissed_token_)))
+    return false;
+
+  return SUCCEEDED(toast->remove_Failed(failed_token_));
 }
 
 /*
