@@ -32,7 +32,6 @@ class CocoaNotification : public Notification {
   NSUserNotification* notification() const { return notification_; }
 
  private:
-  NotificationDelegate* delegate_;
   base::scoped_nsobject<NSUserNotification> notification_;
 
   DISALLOW_COPY_AND_ASSIGN(CocoaNotification);

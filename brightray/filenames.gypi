@@ -73,6 +73,8 @@
       'browser/platform_notification_service.h',
       'browser/linux/libnotify_loader.h',
       'browser/linux/libnotify_loader.cc',
+      'browser/linux/libnotify_notification.h',
+      'browser/linux/libnotify_notification.cc',
       'browser/linux/notification_presenter_linux.h',
       'browser/linux/notification_presenter_linux.cc',
       'browser/win/notification_presenter_win.h',
