@@ -1,29 +1,41 @@
+// Copyright (c) 2015 GitHub, Inc.
+// Use of this source code is governed by the MIT license that can be
+// found in the LICENSE file.
+
 #ifndef BRIGHTRAY_BROWSER_NOTIFICATION_PRESENTER_H_
 #define BRIGHTRAY_BROWSER_NOTIFICATION_PRESENTER_H_
 
-#include "base/callback_forward.h"
-#include "base/memory/scoped_ptr.h"
+#include <set>
 
-class SkBitmap;
-
-namespace content {
-class DesktopNotificationDelegate;
-struct PlatformNotificationData;
-}
+#include "base/memory/weak_ptr.h"
 
 namespace brightray {
 
+class Notification;
+class NotificationDelegate;
+
 class NotificationPresenter {
  public:
-  virtual ~NotificationPresenter() {}
-
   static NotificationPresenter* Create();
 
-  virtual void ShowNotification(
-      const content::PlatformNotificationData&,
-      const SkBitmap& icon,
-      scoped_ptr<content::DesktopNotificationDelegate> delegate,
-      base::Closure* cancel_callback) = 0;
+  virtual ~NotificationPresenter();
+
+  base::WeakPtr<Notification> CreateNotification(
+      NotificationDelegate* delegate);
+
+  std::set<Notification*> notifications() const { return notifications_; }
+
+ protected:
+  NotificationPresenter();
+
+ private:
+  friend class Notification;
+
+  void RemoveNotification(Notification* notification);
+
+  std::set<Notification*> notifications_;
+
+  DISALLOW_COPY_AND_ASSIGN(NotificationPresenter);
 };
 
 }  // namespace brightray

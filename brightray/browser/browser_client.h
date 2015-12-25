@@ -13,6 +13,8 @@ namespace brightray {
 class BrowserContext;
 class BrowserMainParts;
 class NetLog;
+class NotificationPresenter;
+class PlatformNotificationService;
 
 class BrowserClient : public content::ContentBrowserClient {
  public:
@@ -23,6 +25,8 @@ class BrowserClient : public content::ContentBrowserClient {
 
   BrowserContext* browser_context();
   BrowserMainParts* browser_main_parts() { return browser_main_parts_; }
+
+  NotificationPresenter* GetNotificationPresenter();
 
  protected:
   // Subclasses should override this to provide their own BrowserMainParts
@@ -51,6 +55,9 @@ class BrowserClient : public content::ContentBrowserClient {
   NetLog net_log_;
 
  private:
+  scoped_ptr<PlatformNotificationService> notification_service_;
+  scoped_ptr<NotificationPresenter> notification_presenter_;
+
   DISALLOW_COPY_AND_ASSIGN(BrowserClient);
 };
 

@@ -4,14 +4,18 @@
 
 #include "browser/browser_client.h"
 
+#include "base/path_service.h"
 #include "browser/browser_context.h"
 #include "browser/browser_main_parts.h"
 #include "browser/devtools_manager_delegate.h"
 #include "browser/media/media_capture_devices_dispatcher.h"
-#include "browser/platform_notification_service_impl.h"
-
-#include "base/path_service.h"
+#include "browser/notification_presenter.h"
+#include "browser/platform_notification_service.h"
 #include "content/public/common/url_constants.h"
+
+#if defined(OS_WIN)
+#include "base/win/windows_version.h"
+#endif
 
 namespace brightray {
 
@@ -36,6 +40,20 @@ BrowserClient::~BrowserClient() {
 
 BrowserContext* BrowserClient::browser_context() {
   return browser_main_parts_->browser_context();
+}
+
+NotificationPresenter* BrowserClient::GetNotificationPresenter() {
+  #if defined(OS_WIN)
+  // Bail out if on Windows 7 or even lower, no operating will follow
+  if (base::win::GetVersion() < base::win::VERSION_WIN8)
+    return nullptr;
+  #endif
+
+  if (!notification_presenter_) {
+    // Create a new presenter if on OS X, Linux, or Windows 8+
+    notification_presenter_.reset(NotificationPresenter::Create());
+  }
+  return notification_presenter_.get();
 }
 
 BrowserMainParts* BrowserClient::OverrideCreateBrowserMainParts(
@@ -65,7 +83,9 @@ content::MediaObserver* BrowserClient::GetMediaObserver() {
 }
 
 content::PlatformNotificationService* BrowserClient::GetPlatformNotificationService() {
-  return PlatformNotificationServiceImpl::GetInstance();
+  if (!notification_service_)
+    notification_service_.reset(new PlatformNotificationService(this));
+  return notification_service_.get();
 }
 
 void BrowserClient::GetAdditionalAllowedSchemesForFileSystem(

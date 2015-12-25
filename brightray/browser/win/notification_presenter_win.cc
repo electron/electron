@@ -31,11 +31,6 @@ bool SaveIconToPath(const SkBitmap& bitmap, const base::FilePath& path) {
   return base::WriteFile(path, data, size) == size;
 }
 
-void RemoveNotification(base::WeakPtr<WindowsToastNotification> notification) {
-  if (notification)
-    notification->DismissNotification();
-}
-
 }  // namespace
 
 // static
@@ -58,23 +53,7 @@ bool NotificationPresenterWin::Init() {
   return temp_dir_.CreateUniqueTempDir();
 }
 
-void NotificationPresenterWin::ShowNotification(
-    const content::PlatformNotificationData& data,
-    const SkBitmap& icon,
-    scoped_ptr<content::DesktopNotificationDelegate> delegate,
-    base::Closure* cancel_callback) {
-  // This class manages itself.
-  auto notification = new WindowsToastNotification(delegate.Pass());
-  notification->ShowNotification(
-      data.title, data.body, SaveIconToFilesystem(icon, data.icon));
-
-  if (cancel_callback) {
-    *cancel_callback = base::Bind(
-        &RemoveNotification, notification->GetWeakPtr());
-  }
-}
-
-std::wstring NotificationPresenterWin::SaveIconToFilesystem(
+base::string16 NotificationPresenterWin::SaveIconToFilesystem(
     const SkBitmap& icon, const GURL& origin) {
   std::string filename = base::MD5String(origin.spec()) + ".png";
   base::FilePath path = temp_dir_.path().Append(base::UTF8ToUTF16(filename));

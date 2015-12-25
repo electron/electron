@@ -2,31 +2,22 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#ifndef BROWSER_PLATFORM_NOTIFICATION_SERVICE_IMPL_H_
-#define BROWSER_PLATFORM_NOTIFICATION_SERVICE_IMPL_H_
+#ifndef BROWSER_PLATFORM_NOTIFICATION_SERVICE_H_
+#define BROWSER_PLATFORM_NOTIFICATION_SERVICE_H_
 
-#include "base/memory/singleton.h"
 #include "content/public/browser/platform_notification_service.h"
 
 namespace brightray {
 
-class NotificationPresenter;
+class BrowserClient;
 
-class PlatformNotificationServiceImpl
+class PlatformNotificationService
     : public content::PlatformNotificationService {
  public:
-  // Returns the active instance of the service in the browser process. Safe to
-  // be called from any thread.
-  static PlatformNotificationServiceImpl* GetInstance();
+  explicit PlatformNotificationService(BrowserClient* browser_client);
+  ~PlatformNotificationService() override;
 
-  NotificationPresenter* notification_presenter();
-
- private:
-  friend struct base::DefaultSingletonTraits<PlatformNotificationServiceImpl>;
-
-  PlatformNotificationServiceImpl();
-  ~PlatformNotificationServiceImpl() override;
-
+ protected:
   // content::PlatformNotificationService:
   blink::WebNotificationPermission CheckPermissionOnUIThread(
       content::BrowserContext* browser_context,
@@ -56,11 +47,12 @@ class PlatformNotificationServiceImpl
       content::BrowserContext* browser_context,
       std::set<std::string>* displayed_notifications) override;
 
-  scoped_ptr<NotificationPresenter> notification_presenter_;
+ private:
+  BrowserClient* browser_client_;
 
-  DISALLOW_COPY_AND_ASSIGN(PlatformNotificationServiceImpl);
+  DISALLOW_COPY_AND_ASSIGN(PlatformNotificationService);
 };
 
 }  // namespace brightray
 
-#endif  // BROWSER_PLATFORM_NOTIFICATION_SERVICE_IMPL_H_
+#endif  // BROWSER_PLATFORM_NOTIFICATION_SERVICE_H_
