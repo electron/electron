@@ -12,23 +12,45 @@ class SkBitmap;
 
 namespace brightray {
 
+class NotificationDelegate;
+class NotificationPresenter;
+
 class Notification {
  public:
-  Notification() : weak_factory_(this) {}
-
-  virtual void ShowNotification(const base::string16& title,
-                                const base::string16& msg,
-                                const SkBitmap& icon) = 0;
-  virtual void DismissNotification() = 0;
+  // Shows the notification.
+  virtual void Show(const base::string16& title,
+                    const base::string16& msg,
+                    const SkBitmap& icon) = 0;
+  // Closes the notification, this instance will be destroyed after the
+  // notification gets closed.
+  virtual void Dismiss() = 0;
 
   base::WeakPtr<Notification> GetWeakPtr() {
     return weak_factory_.GetWeakPtr();
   }
 
+  NotificationDelegate* delegate() const { return delegate_; }
+  NotificationPresenter* presenter() const { return presenter_; }
+
  protected:
-  virtual ~Notification() {}
+  Notification(NotificationDelegate* delegate,
+               NotificationPresenter* presenter);
+  virtual ~Notification();
+
+  // delete this.
+  void Destroy();
 
  private:
+  friend class NotificationPresenter;
+
+  // Can only be called by NotificationPresenter, the caller is responsible of
+  // freeing the returned instance.
+  static Notification* Create(NotificationDelegate* delegate,
+                              NotificationPresenter* presenter);
+
+  NotificationDelegate* delegate_;
+  NotificationPresenter* presenter_;
+
   base::WeakPtrFactory<Notification> weak_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(Notification);

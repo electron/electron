@@ -4,62 +4,35 @@
 
 #include "browser/mac/cocoa_notification.h"
 
-#include "base/at_exit.h"
-#include "base/bind.h"
 #include "base/mac/mac_util.h"
-#include "base/stl_util.h"
 #include "base/strings/sys_string_conversions.h"
-#include "browser/mac/notification_delegate.h"
+#include "browser/notification_delegate.h"
+#include "browser/notification_presenter.h"
 #include "skia/ext/skia_utils_mac.h"
 
 namespace brightray {
 
 // static
-base::scoped_nsobject<NotificationDelegate>
-CocoaNotification::notification_delegate_;
-
-// static
-std::set<CocoaNotification*> CocoaNotification::notifications_;
-
-// static
-CocoaNotification* CocoaNotification::FromNSNotification(
-    NSUserNotification* ns_notification) {
-  for (CocoaNotification* notification : notifications_) {
-    if ([notification->notification_ isEqual:ns_notification])
-      return notification;
-  }
-  return nullptr;
+Notification* Notification::Create(NotificationDelegate* delegate,
+                                   NotificationPresenter* presenter) {
+  return new CocoaNotification(delegate, presenter);
 }
 
-// static
-void CocoaNotification::Cleanup() {
-  NSUserNotificationCenter.defaultUserNotificationCenter.delegate = nil;
-  notification_delegate_.reset();
-  STLDeleteElements(&notifications_);
-}
-
-CocoaNotification::CocoaNotification(
-    scoped_ptr<content::DesktopNotificationDelegate> delegate)
-    : delegate_(delegate.Pass()) {
-  if (!notification_delegate_) {
-    notification_delegate_.reset([[NotificationDelegate alloc] init]);
-    NSUserNotificationCenter.defaultUserNotificationCenter.delegate =
-        notification_delegate_;
-    base::AtExitManager::RegisterTask(base::Bind(Cleanup));
-  }
-
-  notifications_.insert(this);
+CocoaNotification::CocoaNotification(NotificationDelegate* delegate,
+                                     NotificationPresenter* presenter)
+    : Notification(delegate, presenter) {
 }
 
 CocoaNotification::~CocoaNotification() {
-  [NSUserNotificationCenter.defaultUserNotificationCenter
-      removeDeliveredNotification:notification_];
-  notifications_.erase(this);
+  if (notification_) {
+    [NSUserNotificationCenter.defaultUserNotificationCenter
+        removeDeliveredNotification:notification_];
+  }
 }
 
-void CocoaNotification::ShowNotification(const base::string16& title,
-                                         const base::string16& body,
-                                         const SkBitmap& icon) {
+void CocoaNotification::Show(const base::string16& title,
+                             const base::string16& body,
+                             const SkBitmap& icon) {
   notification_.reset([[NSUserNotification alloc] init]);
   [notification_ setTitle:base::SysUTF16ToNSString(title)];
   [notification_ setInformativeText:base::SysUTF16ToNSString(body)];
@@ -75,17 +48,17 @@ void CocoaNotification::ShowNotification(const base::string16& title,
       deliverNotification:notification_];
 }
 
-void CocoaNotification::DismissNotification() {
-  delete this;
+void CocoaNotification::Dismiss() {
+  Destroy();
 }
 
 void CocoaNotification::NotifyDisplayed() {
-  delegate_->NotificationDisplayed();
+  delegate()->NotificationDisplayed();
 }
 
 void CocoaNotification::NotifyClick() {
-  delegate_->NotificationClick();
-  delete this;
+  delegate()->NotificationClick();
+  Destroy();
 }
 
 }  // namespace brightray

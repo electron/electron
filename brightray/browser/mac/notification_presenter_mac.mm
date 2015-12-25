@@ -1,48 +1,38 @@
-// Copyright (c) 2012 The Chromium Authors. All rights reserved.
-// Copyright (c) 2013 Adam Roben <adam@roben.org>. All rights reserved.
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE-CHROMIUM file.
+// Copyright (c) 2015 GitHub, Inc.
+// Use of this source code is governed by the MIT license that can be
+// found in the LICENSE file.
 
-#import "browser/mac/notification_presenter_mac.h"
+#include "browser/mac/notification_presenter_mac.h"
 
-#include "base/bind.h"
 #include "browser/mac/cocoa_notification.h"
-#include "content/public/common/platform_notification_data.h"
+#include "browser/mac/notification_center_delegate.h"
 
 namespace brightray {
 
-namespace {
-
-void RemoveNotification(base::WeakPtr<Notification> notification) {
-  if (notification)
-    notification->DismissNotification();
-}
-
-}  // namespace
-
+// static
 NotificationPresenter* NotificationPresenter::Create() {
   return new NotificationPresenterMac;
 }
 
-NotificationPresenterMac::NotificationPresenterMac() {
+CocoaNotification* NotificationPresenterMac::GetNotification(
+    NSUserNotification* ns_notification) {
+  for (Notification* notification : notifications()) {
+    auto native_notification = static_cast<CocoaNotification*>(notification);
+    if ([native_notification->notification() isEqual:ns_notification])
+      return native_notification;
+  }
+  return nullptr;
+}
+
+NotificationPresenterMac::NotificationPresenterMac()
+    : notification_center_delegate_(
+          [[NotificationCenterDelegate alloc] initWithPresenter:this]) {
+  NSUserNotificationCenter.defaultUserNotificationCenter.delegate =
+      notification_center_delegate_;
 }
 
 NotificationPresenterMac::~NotificationPresenterMac() {
-}
-
-void NotificationPresenterMac::ShowNotification(
-    const content::PlatformNotificationData& data,
-    const SkBitmap& icon,
-    scoped_ptr<content::DesktopNotificationDelegate> delegate,
-    base::Closure* cancel_callback) {
-  // This class manages itself.
-  auto notification = new CocoaNotification(delegate.Pass());
-  notification->ShowNotification(data.title, data.body, icon);
-
-  if (cancel_callback) {
-    *cancel_callback = base::Bind(
-        &RemoveNotification, notification->GetWeakPtr());
-  }
+  NSUserNotificationCenter.defaultUserNotificationCenter.delegate = nil;
 }
 
 }  // namespace brightray
