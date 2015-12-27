@@ -7,7 +7,7 @@ a renderer will be emitted to this module.
 ## Sending Messages
 
 It is also possible to send messages from the main process to the renderer
-process, see [webContents.send][webcontents-send] for more information.
+process, see [webContents.send](web-contents.md#webcontentssendchannel-arg1-arg2-) for more information.
 
 * When sending a message, the event name is the `channel`.
 * To reply a synchronous message, you need to set `event.returnValue`.
@@ -66,6 +66,4 @@ Set this to the value to be returned in a synchronous message.
 
 Returns the `webContents` that sent the message, you can call
 `event.sender.send` to reply to the asynchronous message, see
-[webContents.send][webcontents-send] for more information.
-
-[webcontents-send]: web-contents.md#webcontentssendchannel-arg1-arg2-
+[webContents.send](web-contents.md#webcontentssendchannel-arg1-arg2-) for more information.
