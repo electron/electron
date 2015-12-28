@@ -10,14 +10,16 @@
 namespace {
 
 v8::Local<v8::Object> CreateObjectWithName(v8::Isolate* isolate,
-                                            v8::Local<v8::String> name) {
+                                           const std::string& name) {
+  if (name == "Object")
+    return v8::Object::New(isolate);
   v8::Local<v8::FunctionTemplate> t = v8::FunctionTemplate::New(isolate);
-  t->SetClassName(name);
+  t->SetClassName(mate::StringToV8(isolate, name));
   return t->GetFunction()->NewInstance();
 }
 
 v8::Local<v8::Value> GetHiddenValue(v8::Local<v8::Object> object,
-                                     v8::Local<v8::String> key) {
+                                    v8::Local<v8::String> key) {
   return object->GetHiddenValue(key);
 }
 
