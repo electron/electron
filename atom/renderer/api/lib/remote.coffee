@@ -65,8 +65,8 @@ metaToValue = (meta) ->
               return metaToValue obj
             else
               # Function call.
-              ret = ipcRenderer.sendSync 'ATOM_BROWSER_FUNCTION_CALL', meta.id, wrapArgs(arguments)
-              return metaToValue ret
+              obj = ipcRenderer.sendSync 'ATOM_BROWSER_FUNCTION_CALL', meta.id, wrapArgs(arguments)
+              return metaToValue obj
       else
         ret = v8Util.createObjectWithName meta.name
 
