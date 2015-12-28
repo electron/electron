@@ -72,20 +72,10 @@ metaToValue = (meta) ->
 
       # Polulate delegate members.
       for member in meta.members
-        do (member) ->
-          if member.type is 'function'
-            ret[member.name] =
-            class RemoteMemberFunction
-              constructor: ->
-                if @constructor is RemoteMemberFunction
-                  # Constructor call.
-                  obj = ipcRenderer.sendSync 'ATOM_BROWSER_MEMBER_CONSTRUCTOR', meta.id, member.name, wrapArgs(arguments)
-                  return metaToValue obj
-                else
-                  # Call member function.
-                  ret = ipcRenderer.sendSync 'ATOM_BROWSER_MEMBER_CALL', meta.id, member.name, wrapArgs(arguments)
-                  return metaToValue ret
-          else
+        if member.type is 'function'
+          ret[member.name] = createRemoteMemberFunction meta.id, member.name
+        else
+          do (member) ->
             Object.defineProperty ret, member.name,
               enumerable: true,
               configurable: false,
@@ -93,11 +83,10 @@ metaToValue = (meta) ->
                 # Set member data.
                 ipcRenderer.sendSync 'ATOM_BROWSER_MEMBER_SET', meta.id, member.name, value
                 value
-
               get: ->
                 # Get member data.
-                ret = ipcRenderer.sendSync 'ATOM_BROWSER_MEMBER_GET', meta.id, member.name
-                metaToValue ret
+                val = ipcRenderer.sendSync 'ATOM_BROWSER_MEMBER_GET', meta.id, member.name
+                metaToValue val
 
       # Track delegate object's life time, and tell the browser to clean up
       # when the object is GCed.
@@ -116,6 +105,21 @@ metaToPlainObject = (meta) ->
     else {}
   obj[name] = value for {name, value} in meta.members
   obj
+
+# Create a RemoteMemberFunction instance.
+# This function's content should not be inlined into metaToValue, otherwise V8
+# may consider it circular reference.
+createRemoteMemberFunction = (metaId, name) ->
+  class RemoteMemberFunction
+    constructor: ->
+      if @constructor is RemoteMemberFunction
+        # Constructor call.
+        ret = ipcRenderer.sendSync 'ATOM_BROWSER_MEMBER_CONSTRUCTOR', metaId, name, wrapArgs(arguments)
+        return metaToValue ret
+      else
+        # Call member function.
+        ret = ipcRenderer.sendSync 'ATOM_BROWSER_MEMBER_CALL', metaId, name, wrapArgs(arguments)
+        return metaToValue ret
 
 # Browser calls a callback in renderer.
 ipcRenderer.on 'ATOM_RENDERER_CALLBACK', (event, id, args) ->
