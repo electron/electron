@@ -87,7 +87,7 @@ Content Security Policy.
 
 * `scheme` String
 
-Registers the `scheme` as secure, bypasses content security policy for resources and
-allows registering ServiceWorker.
+Registers the `scheme` as secure, bypasses content security policy for resources,
+allows registering ServiceWorker and supports fetch API.
 
 [spellchecker]: https://github.com/atom/node-spellchecker
