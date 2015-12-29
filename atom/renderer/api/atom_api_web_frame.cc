@@ -112,6 +112,8 @@ void WebFrame::RegisterURLSchemeAsPrivileged(const std::string& scheme) {
       privileged_scheme);
   blink::WebSecurityPolicy::registerURLSchemeAsAllowingServiceWorkers(
       privileged_scheme);
+  blink::WebSecurityPolicy::registerURLSchemeAsSupportingFetchAPI(
+      privileged_scheme);
 }
 
 mate::ObjectTemplateBuilder WebFrame::GetObjectTemplateBuilder(
