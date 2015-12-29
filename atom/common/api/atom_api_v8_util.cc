@@ -2,19 +2,35 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+#include <map>
+#include <string>
+
 #include "atom/common/api/object_life_monitor.h"
 #include "atom/common/node_includes.h"
+#include "base/stl_util.h"
 #include "native_mate/dictionary.h"
 #include "v8/include/v8-profiler.h"
 
 namespace {
 
+using FunctionTemplateHandle =
+    v8::CopyablePersistentTraits<v8::FunctionTemplate>::CopyablePersistent;
+
+// The handles are leaked on purpose.
+std::map<std::string, FunctionTemplateHandle> function_templates_;
+
 v8::Local<v8::Object> CreateObjectWithName(v8::Isolate* isolate,
                                            const std::string& name) {
   if (name == "Object")
     return v8::Object::New(isolate);
+
+  if (ContainsKey(function_templates_, name))
+    return v8::Local<v8::FunctionTemplate>::New(
+        isolate, function_templates_[name])->GetFunction()->NewInstance();
+
   v8::Local<v8::FunctionTemplate> t = v8::FunctionTemplate::New(isolate);
   t->SetClassName(mate::StringToV8(isolate, name));
+  function_templates_[name] = FunctionTemplateHandle(isolate, t);
   return t->GetFunction()->NewInstance();
 }
 
