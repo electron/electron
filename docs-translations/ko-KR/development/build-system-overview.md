@@ -48,7 +48,7 @@ $ ./script/bootstrap.py --dev
 $ ./script/build.py -c D
 ```
 
-## 프로젝트 생성 (two-phrase)
+## 두 절차에 따른 프로젝트 생성
 
 Electron은 `Release`와 `Debug` 빌드가 서로 다른 라이브러리 링크 방식을 사용합니다.
 하지만 `gyp`는 따로 빌드 설정을 분리하여 라이브러리 링크 방식을 정의하는 방법을

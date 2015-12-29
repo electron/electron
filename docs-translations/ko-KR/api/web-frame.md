@@ -70,7 +70,7 @@ webFrame.setSpellCheckProvider("en-US", true, {
 
 * `scheme` String
 
-지정한 `scheme`을 보안 스킴으로 등록합니다.
+`scheme`을 보안 스킴으로 등록합니다.
 
 보안 스킴은 혼합된 컨텐츠 경고를 발생시키지 않습니다. 예를 들어 `https` 와 `data`는
 네트워크 공격자로부터 손상될 가능성이 없기 때문에 보안 스킴이라고 할 수 있습니다.
@@ -85,6 +85,7 @@ webFrame.setSpellCheckProvider("en-US", true, {
 
  * `scheme` String
 
-보안 `scheme`를 지정합니다. 리소스와 ServiceWorker 설정에 대해 보안 정책을 우회합니다.
+`scheme`를 보안된 스킴으로 등록합니다. 리소스에 대해 보안 정책을 우회하며,
+ServiceWorker의 등록과 fetch API를 사용할 수 있도록 지원합니다.
 
 [spellchecker]: https://github.com/atom/node-spellchecker
