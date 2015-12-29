@@ -269,11 +269,6 @@
         'include_dirs': [
           '.',
         ],
-        'ldflags': [
-          '-Wl,--whole-archive',
-          '<@(libchromiumcontent_libraries)',
-          '-Wl,--no-whole-archive',
-        ],
       },
       'export_dependent_settings': [
         'vendor/brightray/brightray.gyp:brightray',
@@ -497,16 +492,6 @@
                 '-change',
                 '@loader_path/libffmpeg.dylib',
                 '@rpath/libffmpeg.dylib',
-                '${BUILT_PRODUCTS_DIR}/<(product_name) Framework.framework/Versions/A/<(product_name) Framework',
-              ],
-            },
-            {
-              'postbuild_name': 'Fix path of libwidevinecdm',
-              'action': [
-                'install_name_tool',
-                '-change',
-                '@loader_path/libwidevinecdm.dylib',
-                '@rpath/libwidevinecdm.dylib',
                 '${BUILT_PRODUCTS_DIR}/<(product_name) Framework.framework/Versions/A/<(product_name) Framework',
               ],
             },
