@@ -281,14 +281,14 @@ const CGFloat kVerticalTitleMargin = 2;
 
 - (void)draggingEnded:(id <NSDraggingInfo>)sender {
   trayIcon_->NotifyDragEnded();
+
+  if (NSPointInRect([sender draggingLocation], self.frame)) {
+    trayIcon_->NotifyDrop();
+    [self handleDrop:sender];
+  }
 }
 
-- (BOOL)prepareForDragOperation:(id <NSDraggingInfo>)sender {
-  trayIcon_->NotifyDrop();
-  return YES;
-}
-
-- (BOOL)performDragOperation:(id <NSDraggingInfo>)sender {
+- (BOOL)handleDrop:(id <NSDraggingInfo>)sender {
   NSPasteboard* pboard = [sender draggingPasteboard];
 
   if ([[pboard types] containsObject:NSFilenamesPboardType]) {
@@ -300,6 +300,14 @@ const CGFloat kVerticalTitleMargin = 2;
     return YES;
   }
   return NO;
+}
+
+- (BOOL)prepareForDragOperation:(id <NSDraggingInfo>)sender {
+  return YES;
+}
+
+- (BOOL)performDragOperation:(id <NSDraggingInfo>)sender {
+  return YES;
 }
 
 - (BOOL)shouldHighlight {
