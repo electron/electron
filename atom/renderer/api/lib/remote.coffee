@@ -75,18 +75,7 @@ metaToValue = (meta) ->
         if member.type is 'function'
           ret[member.name] = createRemoteMemberFunction meta.id, member.name
         else
-          do (member) ->
-            Object.defineProperty ret, member.name,
-              enumerable: true,
-              configurable: false,
-              set: (value) ->
-                # Set member data.
-                ipcRenderer.sendSync 'ATOM_BROWSER_MEMBER_SET', meta.id, member.name, value
-                value
-              get: ->
-                # Get member data.
-                val = ipcRenderer.sendSync 'ATOM_BROWSER_MEMBER_GET', meta.id, member.name
-                metaToValue val
+          Object.defineProperty ret, member.name, createRemoteMemberProperty(meta.id, member.name)
 
       # Track delegate object's life time, and tell the browser to clean up
       # when the object is GCed.
@@ -120,6 +109,20 @@ createRemoteMemberFunction = (metaId, name) ->
         # Call member function.
         ret = ipcRenderer.sendSync 'ATOM_BROWSER_MEMBER_CALL', metaId, name, wrapArgs(arguments)
         return metaToValue ret
+
+# Create configuration for defineProperty.
+# This function's content should not be inlined into metaToValue, otherwise V8
+# may consider it circular reference.
+createRemoteMemberProperty = (metaId, name) ->
+  enumerable: true,
+  configurable: false,
+  set: (value) ->
+    # Set member data.
+    ipcRenderer.sendSync 'ATOM_BROWSER_MEMBER_SET', metaId, name, value
+    value
+  get: ->
+    # Get member data.
+    metaToValue ipcRenderer.sendSync('ATOM_BROWSER_MEMBER_GET', metaId, name)
 
 # Browser calls a callback in renderer.
 ipcRenderer.on 'ATOM_RENDERER_CALLBACK', (event, id, args) ->
