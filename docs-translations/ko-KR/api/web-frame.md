@@ -79,12 +79,13 @@ webFrame.setSpellCheckProvider("en-US", true, {
 
 * `scheme` String
 
-현재 페이지 컨텐츠의 보안 정책에 상관없이 `scheme`로부터 리소스가 로드됩니다.
+현재 페이지의 컨텐츠 보안 정책에 상관없이 `scheme`로부터 리소스가 로드됩니다.
 
 ### `webFrame.registerURLSchemeAsPrivileged(scheme)`
 
  * `scheme` String
 
-보안 `scheme`를 지정합니다. 리소스와 ServiceWorker 설정에 대해 보안 정책을 우회합니다.
+지정한 `scheme`을 보안 스킴으로 등록하고, 컨텐츠 보안 정책도 우회하도록 합니다.
+ServiceWorker 등록을 허용하고 fetch API도 지원합니다.
 
 [spellchecker]: https://github.com/atom/node-spellchecker
