@@ -13,10 +13,21 @@
 
 namespace {
 
-using FunctionTemplateHandle =
-    v8::CopyablePersistentTraits<v8::FunctionTemplate>::CopyablePersistent;
+// A Persistent that can be copied and will not free itself.
+template<class T>
+struct LeakedPersistentTraits {
+  typedef v8::Persistent<T, LeakedPersistentTraits<T> > LeakedPersistent;
+  static const bool kResetInDestructor = false;
+  template<class S, class M>
+  static V8_INLINE void Copy(const v8::Persistent<S, M>& source,
+                             LeakedPersistent* dest) {
+    // do nothing, just allow copy
+  }
+};
 
 // The handles are leaked on purpose.
+using FunctionTemplateHandle =
+    LeakedPersistentTraits<v8::FunctionTemplate>::LeakedPersistent;
 std::map<std::string, FunctionTemplateHandle> function_templates_;
 
 v8::Local<v8::Object> CreateObjectWithName(v8::Isolate* isolate,
