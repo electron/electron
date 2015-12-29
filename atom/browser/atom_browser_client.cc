@@ -107,7 +107,7 @@ void AtomBrowserClient::RenderProcessWillLaunch(
   host->AddFilter(new printing::PrintingMessageFilter(process_id));
   host->AddFilter(new TtsMessageFilter(process_id, host->GetBrowserContext()));
   host->AddFilter(
-    new WidevineCdmMessageFilter(process_id, host->GetBrowserContext()));
+      new WidevineCdmMessageFilter(process_id, host->GetBrowserContext()));
 }
 
 content::SpeechRecognitionManagerDelegate*

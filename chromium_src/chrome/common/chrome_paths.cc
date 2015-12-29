@@ -16,6 +16,7 @@
 #include "chrome/common/chrome_constants.h"
 #include "chrome/common/chrome_paths_internal.h"
 #include "chrome/common/widevine_cdm_constants.h"
+#include "third_party/widevine/cdm/stub/widevine_cdm_version.h"
 
 #if defined(OS_ANDROID)
 #include "base/android/path_utils.h"
@@ -31,8 +32,6 @@
 #if defined(OS_WIN)
 #include "base/win/registry.h"
 #endif
-
-#include "third_party/widevine/cdm/stub/widevine_cdm_version.h"
 
 namespace {
 

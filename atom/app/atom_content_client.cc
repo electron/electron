@@ -19,13 +19,10 @@
 #include "content/public/common/pepper_plugin_info.h"
 #include "content/public/common/user_agent.h"
 #include "ppapi/shared_impl/ppapi_permissions.h"
+#include "third_party/widevine/cdm/stub/widevine_cdm_version.h"
 #include "url/url_constants.h"
 
-#include "third_party/widevine/cdm/stub/widevine_cdm_version.h"
-
-// The following must be after widevine_cdm_version.h.
 #if defined(WIDEVINE_CDM_AVAILABLE) && defined(ENABLE_PEPPER_CDMS)
-// && !defined(WIDEVINE_CDM_IS_COMPONENT)
 #include "chrome/common/widevine_cdm_constants.h"
 #endif
 
@@ -73,10 +70,7 @@ content::PepperPluginInfo CreatePepperFlashInfo(const base::FilePath& path,
   return plugin;
 }
 
-
 #if defined(WIDEVINE_CDM_AVAILABLE) && defined(ENABLE_PEPPER_CDMS)
-//&& !defined(WIDEVINE_CDM_IS_COMPONENT)
-
 content::PepperPluginInfo CreateWidevineCdmInfo(const base::FilePath& path,
                                                 const std::string& version) {
   content::PepperPluginInfo widevine_cdm;
@@ -113,11 +107,7 @@ content::PepperPluginInfo CreateWidevineCdmInfo(const base::FilePath& path,
 
   return widevine_cdm;
 }
-
 #endif
-// defined(WIDEVINE_CDM_AVAILABLE) && defined(ENABLE_PEPPER_CDMS) &&
-// !defined(WIDEVINE_CDM_IS_COMPONENT)
-
 
 void ConvertStringWithSeparatorToVector(std::vector<std::string>* vec,
                                         const char* separator,
@@ -148,12 +138,11 @@ void AddPepperFlashFromCommandLine(
 }
 
 #if defined(WIDEVINE_CDM_AVAILABLE) && defined(ENABLE_PEPPER_CDMS)
-//&& !defined(WIDEVINE_CDM_IS_COMPONENT)
 void AddWidevineCdmFromCommandLine(
     std::vector<content::PepperPluginInfo>* plugins) {
   auto command_line = base::CommandLine::ForCurrentProcess();
   auto widevine_cdm_path = command_line->GetSwitchValueNative(
-    switches::kWidevineCdmPath);
+      switches::kWidevineCdmPath);
   if (widevine_cdm_path.empty())
     return;
 
@@ -161,19 +150,14 @@ void AddWidevineCdmFromCommandLine(
     return;
 
   auto widevine_cdm_version = command_line->GetSwitchValueASCII(
-    switches::kWidevineCdmVersion);
+      switches::kWidevineCdmVersion);
   if (widevine_cdm_version.empty())
     return;
 
-  plugins->push_back(
-      CreateWidevineCdmInfo(base::FilePath(widevine_cdm_path),
-                            widevine_cdm_version));
+  plugins->push_back(CreateWidevineCdmInfo(base::FilePath(widevine_cdm_path),
+                                           widevine_cdm_version));
 }
 #endif
-// defined(WIDEVINE_CDM_AVAILABLE) && defined(ENABLE_PEPPER_CDMS) &&
-// !defined(WIDEVINE_CDM_IS_COMPONENT)
-
-
 
 AtomContentClient::AtomContentClient() {
 }
@@ -207,11 +191,9 @@ void AtomContentClient::AddAdditionalSchemes(
 void AtomContentClient::AddPepperPlugins(
     std::vector<content::PepperPluginInfo>* plugins) {
   AddPepperFlashFromCommandLine(plugins);
-
-  #if defined(WIDEVINE_CDM_AVAILABLE) && defined(ENABLE_PEPPER_CDMS)
-  //&& !defined(WIDEVINE_CDM_IS_COMPONENT)
+#if defined(WIDEVINE_CDM_AVAILABLE) && defined(ENABLE_PEPPER_CDMS)
   AddWidevineCdmFromCommandLine(plugins);
-  #endif
+#endif
 }
 
 void AtomContentClient::AddServiceWorkerSchemes(

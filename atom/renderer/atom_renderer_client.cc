@@ -237,7 +237,7 @@ void AtomRendererClient::EnableWebRuntimeFeatures() {
 }
 
 void AtomRendererClient::AddKeySystems(
-  std::vector<media::KeySystemInfo>* key_systems) {
+    std::vector<media::KeySystemInfo>* key_systems) {
   AddChromeKeySystems(key_systems);
 }
 

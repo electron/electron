@@ -60,6 +60,7 @@ class AtomRendererClient : public content::ContentRendererClient,
       const content::RenderFrame* render_frame,
       blink::WebPageVisibilityState* override_state) override;
   void AddKeySystems(std::vector<media::KeySystemInfo>* key_systems) override;
+
   void EnableWebRuntimeFeatures();
 
   scoped_ptr<NodeBindings> node_bindings_;

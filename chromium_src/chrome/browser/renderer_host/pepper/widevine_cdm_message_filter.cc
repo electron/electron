@@ -9,6 +9,7 @@
 #include "content/public/browser/render_process_host.h"
 #include "content/public/common/webplugininfo.h"
 #include "content/public/browser/plugin_service.h"
+
 using content::PluginService;
 using content::WebPluginInfo;
 using content::BrowserThread;
@@ -39,7 +40,6 @@ void WidevineCdmMessageFilter::OnIsInternalPluginAvailableForMimeType(
     bool* is_available,
     std::vector<base::string16>* additional_param_names,
     std::vector<base::string16>* additional_param_values) {
-
   std::vector<WebPluginInfo> plugins;
   PluginService::GetInstance()->GetInternalPlugins(&plugins);
 
