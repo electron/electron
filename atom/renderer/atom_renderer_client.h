@@ -6,6 +6,7 @@
 #define ATOM_RENDERER_ATOM_RENDERER_CLIENT_H_
 
 #include <string>
+#include <vector>
 
 #include "content/public/renderer/content_renderer_client.h"
 #include "content/public/renderer/render_process_observer.h"
@@ -58,6 +59,7 @@ class AtomRendererClient : public content::ContentRendererClient,
   bool ShouldOverridePageVisibilityState(
       const content::RenderFrame* render_frame,
       blink::WebPageVisibilityState* override_state) override;
+  void AddKeySystems(std::vector<media::KeySystemInfo>* key_systems) override;
 
   void EnableWebRuntimeFeatures();
 
