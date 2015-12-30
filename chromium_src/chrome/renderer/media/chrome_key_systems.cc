@@ -38,7 +38,6 @@ static bool IsPepperCdmAvailable(
     const std::string& pepper_type,
     std::vector<base::string16>* additional_param_names,
     std::vector<base::string16>* additional_param_values) {
-
   bool is_available = false;
   content::RenderThread::Get()->Send(
       new ChromeViewHostMsg_IsInternalPluginAvailableForMimeType(
@@ -81,9 +80,7 @@ void GetSupportedCodecsForPepperCdm(
 
 static void AddPepperBasedWidevine(
     std::vector<KeySystemInfo>* concrete_key_systems) {
-
 #if defined(WIDEVINE_CDM_MIN_GLIBC_VERSION)
-
   Version glibc_version(gnu_get_libc_version());
   DCHECK(glibc_version.IsValid());
   if (glibc_version.IsOlderThan(WIDEVINE_CDM_MIN_GLIBC_VERSION))
@@ -95,8 +92,7 @@ static void AddPepperBasedWidevine(
   if (!IsPepperCdmAvailable(kWidevineCdmPluginMimeType,
                             &additional_param_names,
                             &additional_param_values)) {
-    // DVLOG(1) << "Widevine CDM is not currently available.";
-
+    DVLOG(1) << "Widevine CDM is not currently available.";
     return;
   }
 
@@ -112,23 +108,18 @@ static void AddPepperBasedWidevine(
   // as those may offer a higher level of protection.
   supported_codecs |= media::EME_CODEC_WEBM_OPUS;
   supported_codecs |= media::EME_CODEC_WEBM_VORBIS;
-
 #if defined(USE_PROPRIETARY_CODECS)
   supported_codecs |= media::EME_CODEC_MP4_AAC;
-
 #endif  // defined(USE_PROPRIETARY_CODECS)
 
   for (size_t i = 0; i < codecs.size(); ++i) {
     if (codecs[i] == kCdmSupportedCodecVp8)
       supported_codecs |= media::EME_CODEC_WEBM_VP8;
-
     if (codecs[i] == kCdmSupportedCodecVp9)
       supported_codecs |= media::EME_CODEC_WEBM_VP9;
-
 #if defined(USE_PROPRIETARY_CODECS)
     if (codecs[i] == kCdmSupportedCodecAvc1)
       supported_codecs |= media::EME_CODEC_MP4_AVC1;
-
 #endif  // defined(USE_PROPRIETARY_CODECS)
   }
 
@@ -158,16 +149,9 @@ static void AddPepperBasedWidevine(
 #endif  // defined(ENABLE_PEPPER_CDMS)
 
 void AddChromeKeySystems(std::vector<KeySystemInfo>* key_systems_info) {
-
 #if defined(ENABLE_PEPPER_CDMS)
 #if defined(WIDEVINE_CDM_AVAILABLE)
-
   AddPepperBasedWidevine(key_systems_info);
-
 #endif  // defined(WIDEVINE_CDM_AVAILABLE)
 #endif  // defined(ENABLE_PEPPER_CDMS)
-
-#if defined(OS_ANDROID)
-  cdm::AddAndroidWidevine(key_systems_info);
-#endif  // defined(OS_ANDROID)
 }
