@@ -48,7 +48,9 @@ void MainDelegate::InitializeResourceBundle() {
   path = pak_dir.Append(FILE_PATH_LITERAL("content_shell.pak"));
 #endif
 
-  ui::ResourceBundle::InitSharedInstanceWithPakPath(path);
+  ui::ResourceBundle::InitSharedInstanceWithLocale("", NULL,
+      ui::ResourceBundle::DO_NOT_LOAD_COMMON_RESOURCES);
+  ui::ResourceBundle::GetSharedInstance().AddDataPackFromPath(path, ui::SCALE_FACTOR_100P);
   AddDataPackFromPath(&ui::ResourceBundle::GetSharedInstance(), path.DirName());
 }
 
