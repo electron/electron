@@ -18,6 +18,7 @@ select the tag that matches your version.
 * [Using Selenium and WebDriver](tutorial/using-selenium-and-webdriver.md)
 * [DevTools Extension](tutorial/devtools-extension.md)
 * [Using Pepper Flash Plugin](tutorial/using-pepper-flash-plugin.md)
+* [Using Widevine CDM Plugin](tutorial/using-widevine-cdm-plugin.md)
 
 ## Tutorials
 
