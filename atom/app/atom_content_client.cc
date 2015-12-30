@@ -20,6 +20,7 @@
 #include "content/public/common/user_agent.h"
 #include "ppapi/shared_impl/ppapi_permissions.h"
 #include "third_party/widevine/cdm/stub/widevine_cdm_version.h"
+#include "ui/base/l10n/l10n_util.h"
 #include "url/url_constants.h"
 
 #if defined(WIDEVINE_CDM_AVAILABLE) && defined(ENABLE_PEPPER_CDMS)
@@ -173,6 +174,10 @@ std::string AtomContentClient::GetUserAgent() const {
   return content::BuildUserAgentFromProduct(
       "Chrome/" CHROME_VERSION_STRING " "
       ATOM_PRODUCT_NAME "/" ATOM_VERSION_STRING);
+}
+
+base::string16 AtomContentClient::GetLocalizedString(int message_id) const {
+  return l10n_util::GetStringUTF16(message_id);
 }
 
 void AtomContentClient::AddAdditionalSchemes(
