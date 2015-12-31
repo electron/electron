@@ -53,10 +53,18 @@ describe 'ipc module', ->
       assert.equal obj.test, 'test'
 
   describe 'remote value in browser', ->
+    print = path.join(fixtures, 'module', 'print_name.js')
+
     it 'keeps its constructor name for objects', ->
       buf = new Buffer('test')
-      print_name = remote.require path.join(fixtures, 'module', 'print_name.js')
+      print_name = remote.require print
       assert.equal print_name.print(buf), 'Buffer'
+
+    it 'supports instanceof Date', ->
+      now = new Date()
+      print_name = remote.require print
+      assert.equal print_name.print(now), 'Date'
+      assert.deepEqual print_name.echo(now), now
 
   describe 'remote promise', ->
     it 'can be used as promise in each side', (done) ->
