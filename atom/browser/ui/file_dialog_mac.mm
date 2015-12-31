@@ -35,11 +35,12 @@ void SetAllowedFileTypes(NSSavePanel* dialog, const Filters& filters) {
     }
   }
 
+  // Passing empty array to setAllowedFileTypes will cause exception.
   NSArray* file_types = nil;
   if ([file_type_set count])
     file_types = [file_type_set allObjects];
 
-  [dialog setAllowedFileTypes: file_types];
+  [dialog setAllowedFileTypes:file_types];
 }
 
 void SetupDialog(NSSavePanel* dialog,
