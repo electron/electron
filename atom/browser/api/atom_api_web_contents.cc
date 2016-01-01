@@ -780,6 +780,13 @@ bool WebContents::IsDevToolsOpened() {
   return managed_web_contents()->IsDevToolsViewShowing();
 }
 
+bool WebContents::IsDevToolsFocused() {
+  if (type_ == REMOTE)
+    return false;
+    
+  return managed_web_contents()->GetView()->IsDevToolsViewFocused();
+}
+
 void WebContents::EnableDeviceEmulation(
     const blink::WebDeviceEmulationParams& params) {
   if (type_ == REMOTE)
@@ -1080,6 +1087,7 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("openDevTools", &WebContents::OpenDevTools)
       .SetMethod("closeDevTools", &WebContents::CloseDevTools)
       .SetMethod("isDevToolsOpened", &WebContents::IsDevToolsOpened)
+      .SetMethod("isDevToolsFocused", &WebContents::IsDevToolsFocused)
       .SetMethod("enableDeviceEmulation",
                  &WebContents::EnableDeviceEmulation)
       .SetMethod("disableDeviceEmulation",

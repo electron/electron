@@ -79,6 +79,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void OpenDevTools(mate::Arguments* args);
   void CloseDevTools();
   bool IsDevToolsOpened();
+  bool IsDevToolsFocused();
   void ToggleDevTools();
   void EnableDeviceEmulation(const blink::WebDeviceEmulationParams& params);
   void DisableDeviceEmulation();
