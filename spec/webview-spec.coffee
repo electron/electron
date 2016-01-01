@@ -279,6 +279,52 @@ describe '<webview> tag', ->
       webview.src = "file://#{fixtures}/pages/close.html"
       document.body.appendChild webview
 
+  describe 'devtools-opened event', ->
+    it 'should fire when webview.openDevTools() is called', (done) ->
+      listener = ->
+        webview.removeEventListener 'devtools-opened', listener
+        webview.closeDevTools()
+        done()
+
+      webview.addEventListener 'devtools-opened', listener
+      webview.addEventListener 'dom-ready', ->
+        webview.openDevTools()
+
+      webview.src = "file://#{fixtures}/pages/base-page.html"
+      document.body.appendChild webview
+
+  describe 'devtools-closed event', ->
+    it 'should fire when webview.closeDevTools() is called', (done) ->
+      listener2 = ->
+        webview.removeEventListener 'devtools-closed', listener2
+        done()
+
+      listener = ->
+        webview.removeEventListener 'devtools-opened', listener
+        webview.closeDevTools()
+
+      webview.addEventListener 'devtools-opened', listener
+      webview.addEventListener 'devtools-closed', listener2
+      webview.addEventListener 'dom-ready', ->
+        webview.openDevTools()
+
+      webview.src = "file://#{fixtures}/pages/base-page.html"
+      document.body.appendChild webview
+
+  describe 'devtools-focused event', ->
+    it 'should fire when webview.openDevTools() is called', (done) ->
+      listener = ->
+        webview.removeEventListener 'devtools-focused', listener
+        webview.closeDevTools()
+        done()
+
+      webview.addEventListener 'devtools-focused', listener
+      webview.addEventListener 'dom-ready', ->
+        webview.openDevTools()
+
+      webview.src = "file://#{fixtures}/pages/base-page.html"
+      document.body.appendChild webview
+
   describe '<webview>.reload()', ->
     it 'should emit beforeunload handler', (done) ->
       listener = (e) ->
