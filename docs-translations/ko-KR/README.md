@@ -22,6 +22,7 @@ GitHub 프로젝트내에서만 볼 수 있고 `master` 브랜치의 문서는 �
 * [Selenium 과 WebDriver 사용하기](tutorial/using-selenium-and-webdriver.md)
 * [개발자 도구 확장 기능](tutorial/devtools-extension.md)
 * [Pepper 플래시 플러그인 사용하기](tutorial/using-pepper-flash-plugin.md)
+* [Widevine CDM 플러그인 사용하기](tutorial/using-widevine-cdm-plugin.md)
 
 ## 튜토리얼
 

@@ -7,7 +7,7 @@
 ## 메시지 전송
 
 물론 메시지를 받는 것 말고도 메인 프로세스에서 랜더러 프로세스로 보내는 것도 가능합니다.
-자세한 내용은 [webContents.send](web-contents.md#webcontentssendchannel-args)를
+자세한 내용은 [webContents.send](web-contents.md#webcontentssendchannel-arg1-arg2-)를
 참고하세요.
 
 * 메시지를 전송할 때 이벤트 이름은 `channel`이 됩니다.
@@ -64,6 +64,5 @@ ipcRenderer.send('asynchronous-message', 'ping');
 
 메시지를 보낸 `webContents` 객체를 반환합니다. `event.sender.send` 메서드를 통해
 비동기로 메시지를 전달할 수 있습니다. 자세한 내용은
-[webContents.send][webcontents-send]를 참고하세요.
-
-[webcontents-send]: web-contents.md#webcontentssendchannel-arg1-arg2-
+[webContents.send](web-contents.md#webcontentssendchannel-arg1-arg2-)를
+참고하세요.
