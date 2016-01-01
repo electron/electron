@@ -650,3 +650,15 @@ Emitted when a page's theme color changes. This is usually due to encountering a
 ```html
 <meta name='theme-color' content='#ff0000'>
 ```
+
+### Event: 'devtools-opened'
+
+Emitted when DevTools is opened.
+
+### Event: 'devtools-closed'
+
+Emitted when DevTools is closed.
+
+### Event: 'devtools-focused'
+
+Emitted when DevTools is focused / opened.

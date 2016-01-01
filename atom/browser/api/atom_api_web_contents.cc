@@ -783,7 +783,7 @@ bool WebContents::IsDevToolsOpened() {
 bool WebContents::IsDevToolsFocused() {
   if (type_ == REMOTE)
     return false;
-    
+
   return managed_web_contents()->GetView()->IsDevToolsViewFocused();
 }
 
