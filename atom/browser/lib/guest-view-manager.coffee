@@ -16,6 +16,7 @@ supportedWebViewEvents = [
   'new-window'
   'will-navigate'
   'did-navigate-to-different-page'
+  'did-navigate-in-page'
   'close'
   'crashed'
   'gpu-crashed'
