@@ -29,6 +29,7 @@ void Browser::AddRecentDocument(const base::FilePath& path) {
 }
 
 void Browser::ClearRecentDocuments() {
+  [[NSDocumentController sharedDocumentController] clearRecentDocuments:nil];
 }
 
 void Browser::SetAppUserModelID(const base::string16& name) {

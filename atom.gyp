@@ -235,6 +235,8 @@
         # Defined in Chromium but not exposed in its gyp file.
         'V8_USE_EXTERNAL_STARTUP_DATA',
         'ENABLE_PLUGINS',
+        'ENABLE_PEPPER_CDMS',
+        'USE_PROPRIETARY_CODECS',
       ],
       'sources': [
         '<@(lib_sources)',
@@ -260,6 +262,8 @@
         '<(libchromiumcontent_src_dir)/third_party/libyuv/include',
         # The 'third_party/webrtc/modules/desktop_capture/desktop_frame.h' is using 'webrtc/base/scoped_ptr.h'.
         '<(libchromiumcontent_src_dir)/third_party/',
+        '<(libchromiumcontent_src_dir)/components/cdm',
+        '<(libchromiumcontent_src_dir)/third_party/widevine',
       ],
       'direct_dependent_settings': {
         'include_dirs': [
