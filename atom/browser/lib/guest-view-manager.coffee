@@ -14,6 +14,8 @@ supportedWebViewEvents = [
   'dom-ready'
   'console-message'
   'new-window'
+  'will-navigate'
+  'did-navigate-to-different-page'
   'close'
   'crashed'
   'gpu-crashed'

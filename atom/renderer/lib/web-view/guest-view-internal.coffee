@@ -16,6 +16,8 @@ WEB_VIEW_EVENTS =
   'dom-ready': []
   'console-message': ['level', 'message', 'line', 'sourceId']
   'new-window': ['url', 'frameName', 'disposition', 'options']
+  'will-navigate': ['url']
+  'did-navigate-to-different-page': []
   'close': []
   'crashed': []
   'gpu-crashed': []
