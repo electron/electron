@@ -135,7 +135,21 @@ Emitted when a user or the page wants to start navigation. It can happen when th
 This event will not emit when the navigation is started programmatically with
 APIs like `webContents.loadURL` and `webContents.back`.
 
+It is also not emitted during in-page navigation, such as clicking anchor links
+or updating the `window.location.hash`. Use `did-navigate-in-page` for this purpose.
+
 Calling `event.preventDefault()` will prevent the navigation.
+
+### Event: 'did-navigate-to-different-page'
+
+Emitted when the new page that was navigated to is different from the previous
+page.
+
+### Event: 'did-navigate-in-page'
+
+Emitted when the page url changes but does not cause navigation outside of the page.
+Examples of this occurring are when anchor links are clicked or when the
+DOM `hashchange` event is triggered.
 
 ### Event: 'crashed'
 
