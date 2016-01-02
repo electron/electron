@@ -301,6 +301,23 @@ describe '<webview> tag', ->
       webview.src = page_url
       document.body.appendChild webview
 
+    it 'emits when window.history.replaceState is called', (done) ->
+      webview.addEventListener 'did-navigate-in-page', (e) ->
+        assert.equal e.url, "http://host/"
+        done()
+
+      webview.src = "file://#{fixtures}/pages/webview-did-navigate-in-page-with-history.html"
+      document.body.appendChild webview
+
+    it 'emits when window.location.hash is changed', (done) ->
+      page_url = "file://#{fixtures}/pages/webview-did-navigate-in-page-with-hash.html"
+      webview.addEventListener 'did-navigate-in-page', (e) ->
+        assert.equal e.url, "#{page_url}#test"
+        done()
+
+      webview.src = page_url
+      document.body.appendChild webview
+
   describe 'close event', ->
     it 'should fire when interior page calls window.close', (done) ->
       webview.addEventListener 'close', ->
