@@ -579,24 +579,44 @@ webview.addEventListener('new-window', function(e) {
 ### Event: 'will-navigate'
 
 Returns:
+
 * `url` String
 
-Emitted when a user or the page wants to start navigation. It can happen when the
-`window.location` object is changed or a user clicks a link in the page. It not
-emitted during in-page navigation such as clicking anchor links or updating the
-`window.location.hash`. Use `did-navigate-in-page` for this purpose.
+Emitted when a user or the page wants to start navigation. It can happen when
+the `window.location` object is changed or a user clicks a link in the page.
 
+This event will not emit when the navigation is started programmatically with
+APIs like `<webview>.loadURL` and `<webview>.back`.
 
-### Event: 'did-navigate-to-different-page'
+It is also not emitted during in-page navigation, such as clicking anchor links
+or updating the `window.location.hash`. Use `did-navigate-in-page` event for
+this purpose.
 
-Emitted when the new page that was navigated to is different from the previous
-page.
+Calling `event.preventDefault()` does __NOT__ have any effect.
+
+### Event: 'did-navigate'
+
+Returns:
+
+* `url` String
+
+Emitted when a navigation is done.
+
+This event is not emitted for in-page navigations, such as clicking anchor links
+or updating the `window.location.hash`. Use `did-navigate-in-page` event for
+this purpose.
 
 ### Event: 'did-navigate-in-page'
 
-Emitted when the page url changes but does not cause navigation outside of the page.
-Examples of this occurring are when anchor links are clicked or when the
-DOM `hashchange` event is triggered.
+Returns:
+
+* `url` String
+
+Emitted when an in-page navigation happened.
+
+When in-page navigation happens, the page URL changes but does not cause
+navigation outside of the page. Examples of this occurring are when anchor links
+are clicked or when the DOM `hashchange` event is triggered.
 
 ### Event: 'close'
 

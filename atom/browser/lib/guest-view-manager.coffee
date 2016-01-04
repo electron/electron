@@ -18,7 +18,7 @@ supportedWebViewEvents = [
   'devtools-focused'
   'new-window'
   'will-navigate'
-  'did-navigate-to-different-page'
+  'did-navigate'
   'did-navigate-in-page'
   'close'
   'crashed'
@@ -57,7 +57,7 @@ createGuest = (embedder, params) ->
   guestInstances[id] = {guest, embedder}
 
   # Destroy guest when the embedder is gone or navigated.
-  destroyEvents = ['destroyed', 'crashed', 'did-navigate-to-different-page']
+  destroyEvents = ['destroyed', 'crashed', 'did-navigate']
   destroy = ->
     destroyGuest embedder, id if guestInstances[id]?
   for event in destroyEvents
