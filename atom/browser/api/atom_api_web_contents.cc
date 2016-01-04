@@ -566,7 +566,9 @@ void WebContents::DidNavigateMainFrame(
     const content::LoadCommittedDetails& details,
     const content::FrameNavigateParams& params) {
   if (details.is_navigation_to_different_page())
-    Emit("did-navigate-to-different-page");
+    Emit("did-navigate-to-different-page", params.url);
+  else if (details.is_in_page)
+    Emit("did-navigate-in-page", params.url);
 }
 
 void WebContents::TitleWasSet(content::NavigationEntry* entry,

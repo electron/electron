@@ -271,6 +271,53 @@ describe '<webview> tag', ->
       webview.src = "file://#{fixtures}/pages/a.html"
       document.body.appendChild webview
 
+  describe 'will-navigate event', ->
+    it 'emits when a url that leads to oustide of the page is clicked', (done) ->
+      webview.addEventListener 'will-navigate', (e) ->
+        assert.equal e.url, "http://host/"
+        done()
+
+      webview.src = "file://#{fixtures}/pages/webview-will-navigate.html"
+      document.body.appendChild webview
+
+  describe 'did-navigate-to-different-page event', ->
+    page_url = "file://#{fixtures}/pages/webview-will-navigate.html"
+
+    it 'emits when a url that leads to outside of the page is clicked', (done) ->
+      webview.addEventListener 'did-navigate-to-different-page', (e) ->
+        assert.equal e.url, page_url
+        done()
+
+      webview.src = page_url
+      document.body.appendChild webview
+
+  describe 'did-navigate-in-page event', ->
+    it 'emits when an anchor link is clicked', (done) ->
+      page_url = "file://#{fixtures}/pages/webview-did-navigate-in-page.html"
+      webview.addEventListener 'did-navigate-in-page', (e) ->
+        assert.equal e.url, "#{page_url}#test_content"
+        done()
+
+      webview.src = page_url
+      document.body.appendChild webview
+
+    it 'emits when window.history.replaceState is called', (done) ->
+      webview.addEventListener 'did-navigate-in-page', (e) ->
+        assert.equal e.url, "http://host/"
+        done()
+
+      webview.src = "file://#{fixtures}/pages/webview-did-navigate-in-page-with-history.html"
+      document.body.appendChild webview
+
+    it 'emits when window.location.hash is changed', (done) ->
+      page_url = "file://#{fixtures}/pages/webview-did-navigate-in-page-with-hash.html"
+      webview.addEventListener 'did-navigate-in-page', (e) ->
+        assert.equal e.url, "#{page_url}#test"
+        done()
+
+      webview.src = page_url
+      document.body.appendChild webview
+
   describe 'close event', ->
     it 'should fire when interior page calls window.close', (done) ->
       webview.addEventListener 'close', ->
