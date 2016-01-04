@@ -32,10 +32,10 @@
 #include "ipc/ipc_message_macros.h"
 #include "native_mate/dictionary.h"
 #include "ui/gfx/codec/png_codec.h"
-#include "ui/gfx/geometry/size_conversions.h"
 #include "ui/gfx/geometry/point.h"
 #include "ui/gfx/geometry/rect.h"
 #include "ui/gfx/geometry/size.h"
+#include "ui/gfx/geometry/size_conversions.h"
 #include "ui/gfx/screen.h"
 #include "ui/gl/gpu_switching_manager.h"
 
@@ -293,7 +293,7 @@ void NativeWindow::CapturePage(const gfx::Rect& rect,
     bitmap_size = gfx::ScaleToCeiledSize(view_size, scale);
 
   host->CopyFromBackingStore(
-      gfx::Rect(view_size),
+      gfx::Rect(rect.origin(), view_size),
       bitmap_size,
       base::Bind(&NativeWindow::OnCapturePageDone,
                  weak_factory_.GetWeakPtr(),
