@@ -83,6 +83,7 @@ BrowserWindow::send = -> @webContents.send.apply @webContents, arguments
 BrowserWindow::openDevTools = -> @webContents.openDevTools.apply @webContents, arguments
 BrowserWindow::closeDevTools = -> @webContents.closeDevTools()
 BrowserWindow::isDevToolsOpened = -> @webContents.isDevToolsOpened()
+BrowserWindow::isDevToolsFocused = -> @webContents.isDevToolsFocused()
 BrowserWindow::toggleDevTools = -> @webContents.toggleDevTools()
 BrowserWindow::inspectElement = -> @webContents.inspectElement.apply @webContents, arguments
 BrowserWindow::inspectServiceWorker = -> @webContents.inspectServiceWorker()
