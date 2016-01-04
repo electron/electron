@@ -20,7 +20,7 @@ WEB_VIEW_EVENTS =
   'devtools-focused': []
   'new-window': ['url', 'frameName', 'disposition', 'options']
   'will-navigate': ['url']
-  'did-navigate-to-different-page': ['url']
+  'did-navigate': ['url']
   'did-navigate-in-page': ['url']
   'close': []
   'crashed': []
