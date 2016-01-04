@@ -22,6 +22,7 @@ class AtomContentClient : public brightray::ContentClient {
   // content::ContentClient:
   std::string GetProduct() const override;
   std::string GetUserAgent() const override;
+  base::string16 GetLocalizedString(int message_id) const override;
   void AddAdditionalSchemes(
       std::vector<url::SchemeWithType>* standard_schemes,
       std::vector<std::string>* savable_schemes) override;

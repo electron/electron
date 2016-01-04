@@ -121,10 +121,6 @@
               ],
             }],
           ],
-        }, {  # OS=="mac"
-          'dependencies': [
-            'make_locale_paks',
-          ],
         }],  # OS!="mac"
         ['OS=="win"', {
           'include_dirs': [
@@ -155,6 +151,7 @@
               'destination': '<(PRODUCT_DIR)',
               'files': [
                 '<@(copied_libraries)',
+                '<(libchromiumcontent_dir)/locales',
                 '<(libchromiumcontent_dir)/libEGL.dll',
                 '<(libchromiumcontent_dir)/libGLESv2.dll',
                 '<(libchromiumcontent_dir)/icudtl.dat',
@@ -203,6 +200,7 @@
               'destination': '<(PRODUCT_DIR)',
               'files': [
                 '<@(copied_libraries)',
+                '<(libchromiumcontent_dir)/locales',
                 '<(libchromiumcontent_dir)/icudtl.dat',
                 '<(libchromiumcontent_dir)/content_shell.pak',
                 '<(libchromiumcontent_dir)/natives_blob.bin',
@@ -434,6 +432,7 @@
           'mac_bundle': 1,
           'mac_bundle_resources': [
             'atom/common/resources/mac/MainMenu.xib',
+            '<(libchromiumcontent_dir)/locales',
             '<(libchromiumcontent_dir)/content_shell.pak',
             '<(libchromiumcontent_dir)/icudtl.dat',
             '<(libchromiumcontent_dir)/natives_blob.bin',
@@ -545,31 +544,6 @@
             ],
           },
         },  # target helper
-      ],
-    }, {  # OS=="mac"
-      'targets': [
-        {
-          'target_name': 'make_locale_paks',
-          'type': 'none',
-          'actions': [
-            {
-              'action_name': 'Make Empty Paks',
-              'inputs': [
-                'tools/make_locale_paks.py',
-              ],
-              'outputs': [
-                '<(PRODUCT_DIR)/locales'
-              ],
-              'action': [
-                'python',
-                'tools/make_locale_paks.py',
-                '<(PRODUCT_DIR)',
-                '<@(locales)',
-              ],
-              'msvs_cygwin_shell': 0,
-            },
-          ],
-        },
       ],
     }],  # OS!="mac"
   ],
