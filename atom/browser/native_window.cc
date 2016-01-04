@@ -268,10 +268,6 @@ bool NativeWindow::IsWebViewFocused() {
   return host_view && host_view->HasFocus();
 }
 
-bool NativeWindow::IsDevToolsFocused() {
-  return inspectable_web_contents_->GetView()->IsDevToolsViewFocused();
-}
-
 void NativeWindow::CapturePage(const gfx::Rect& rect,
                                const CapturePageCallback& callback) {
   const auto view = web_contents()->GetRenderWidgetHostView();

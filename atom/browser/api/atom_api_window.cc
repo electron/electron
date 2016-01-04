@@ -468,10 +468,6 @@ bool Window::IsWebViewFocused() {
   return window_->IsWebViewFocused();
 }
 
-bool Window::IsDevToolsFocused() {
-  return window_->IsDevToolsFocused();
-}
-
 void Window::SetRepresentedFilename(const std::string& filename) {
   window_->SetRepresentedFilename(filename);
 }
@@ -670,7 +666,6 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("focusOnWebView", &Window::FocusOnWebView)
       .SetMethod("blurWebView", &Window::BlurWebView)
       .SetMethod("isWebViewFocused", &Window::IsWebViewFocused)
-      .SetMethod("isDevToolsFocused", &Window::IsDevToolsFocused)
       .SetMethod("capturePage", &Window::CapturePage)
       .SetMethod("setProgressBar", &Window::SetProgressBar)
       .SetMethod("setOverlayIcon", &Window::SetOverlayIcon)

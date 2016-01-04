@@ -596,15 +596,19 @@ Removes the specified path from DevTools workspace.
 * `options` Object (optional). Properties:
   * `detach` Boolean - opens DevTools in a new window
 
-Opens the developer tools.
+Opens the devtools.
 
 ### `webContents.closeDevTools()`
 
-Closes the developer tools.
+Closes the devtools.
 
 ### `webContents.isDevToolsOpened()`
 
-Returns whether the developer tools are opened.
+Returns whether the devtools is opened.
+
+### `webContents.isDevToolsFocused()`
+
+Returns whether the devtools view is focused .
 
 ### `webContents.toggleDevTools()`
 

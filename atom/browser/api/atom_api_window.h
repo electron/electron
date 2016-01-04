@@ -121,7 +121,6 @@ class Window : public mate::TrackableObject<Window>,
   void FocusOnWebView();
   void BlurWebView();
   bool IsWebViewFocused();
-  bool IsDevToolsFocused();
   void SetRepresentedFilename(const std::string& filename);
   std::string GetRepresentedFilename();
   void SetDocumentEdited(bool edited);

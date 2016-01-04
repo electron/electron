@@ -279,6 +279,10 @@ Closes the DevTools window of guest page.
 
 Returns a boolean whether guest page has a DevTools window attached.
 
+### `<webview>.isDevToolsFocused()`
+
+Returns a boolean whether DevTools window of guest page is focused.
+
 ### `<webview>.inspectElement(x, y)`
 
 * `x` Integer
