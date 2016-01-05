@@ -277,6 +277,10 @@ webview.addEventListener("dom-ready", function() {
 
 페이지에 대한 개발자 도구가 열려있는지 확인합니다. 불린 값을 반환합니다.
 
+### `<webview>.isDevToolsFocused()`
+
+페이지의 개발자 도구에 포커스 되어있는지 여부를 반화합니다.
+
 ### `<webview>.inspectElement(x, y)`
 
 * `x` Integer
@@ -561,6 +565,46 @@ webview.addEventListener('new-window', function(e) {
 });
 ```
 
+### Event: 'will-navigate'
+
+Returns:
+
+* `url` String
+
+사용자 또는 페이지가 새로운 페이지로 이동할 때 발생하는 이벤트입니다.
+`window.location` 객체가 변경되거나 사용자가 페이지의 링크를 클릭했을 때 발생합니다.
+
+이 이벤트는 `<webview>.loadURL`과 `<webview>.back` 같은 API를 이용한
+프로그램적으로 시작된 탐색에 대해서는 발생하지 않습니다.
+
+이 이벤트는 앵커 링크를 클릭하거나 `window.location.hash`의 값을 변경하는 등의 페이지
+내 탐색시엔 발생하지 않습니다. 대신 `did-navigate-in-page` 이벤트를 사용해야 합니다.
+
+`event.preventDefault()`를 호출하는 것은 __아무__ 효과도 내지 않습니다.
+
+### Event: 'did-navigate'
+
+Returns:
+
+* `url` String
+
+탐색이 완료되면 발생하는 이벤트입니다.
+
+이 이벤트는 앵커 링크를 클릭하거나 `window.location.hash`의 값을 변경하는 등의 페이지
+내 탐색시엔 발생하지 않습니다. 대신 `did-navigate-in-page` 이벤트를 사용해야 합니다.
+
+### Event: 'did-navigate-in-page'
+
+Returns:
+
+* `url` String
+
+페이지 내의 탐색이 완료되면 발생하는 이벤트입니다.
+
+페이지 내의 탐색이 발생하면 페이지 URL이 변경되지만 페이지 밖으로의 탐색은 일어나지
+않습니다. 예를 들어 앵커 링크를 클릭했을 때, 또는 DOM `hashchange` 이벤트가 발생했을
+때로 볼 수 있습니다.
+
 ### Event: 'close'
 
 페이지가 자체적으로 닫힐 때 발생하는 이벤트입니다.
@@ -640,3 +684,14 @@ WebContents가 파괴될 때 발생하는 이벤트입니다.
 ```html
 <meta name='theme-color' content='#ff0000'>
 ```
+### Event: 'devtools-opened'
+
+개발자 도구가 열렸을 때 발생하는 이벤트입니다.
+
+### Event: 'devtools-closed'
+
+개발자 도구가 닫혔을 때 발생하는 이벤트입니다.
+
+### Event: 'devtools-focused'
+
+개발자 도구가 포커스되거나 열렸을 때 발생하는 이벤트입니다.

@@ -130,10 +130,38 @@ Returns:
 사용자 또는 페이지가 새로운 페이지로 이동할 때 발생하는 이벤트입니다.
 `window.location` 객체가 변경되거나 사용자가 페이지의 링크를 클릭했을 때 발생합니다.
 
-이 이벤트는 `webContents.loadURL`과 `webContents.back` 같은 API를 이용하여
+이 이벤트는 `webContents.loadURL`과 `webContents.back` 같은 API를 이용한
 프로그램적으로 시작된 탐색에 대해서는 발생하지 않습니다.
 
+이 이벤트는 앵커 링크를 클릭하거나 `window.location.hash`의 값을 변경하는 등의 페이지
+내 탐색시엔 발생하지 않습니다. 대신 `did-navigate-in-page` 이벤트를 사용해야 합니다.
+
 `event.preventDefault()`를 호출하면 탐색을 방지할 수 있습니다.
+
+### Event: 'did-navigate'
+
+Returns:
+
+* `event` Event
+* `url` String
+
+탐색이 완료되면 발생하는 이벤트입니다.
+
+이 이벤트는 앵커 링크를 클릭하거나 `window.location.hash`의 값을 변경하는 등의 페이지
+내 탐색시엔 발생하지 않습니다. 대신 `did-navigate-in-page` 이벤트를 사용해야 합니다.
+
+### Event: 'did-navigate-in-page'
+
+Returns:
+
+* `event` Event
+* `url` String
+
+페이지 내의 탐색이 완료되면 발생하는 이벤트입니다.
+
+페이지 내의 탐색이 발생하면 페이지 URL이 변경되지만 페이지 밖으로의 탐색은 일어나지
+않습니다. 예를 들어 앵커 링크를 클릭했을 때, 또는 DOM `hashchange` 이벤트가 발생했을
+때로 볼 수 있습니다.
 
 ### Event: 'crashed'
 
@@ -612,7 +640,7 @@ mainWindow.webContents.on('devtools-opened', function() {
 
 ### `webContents.isDevToolsFocused()`
 
-개발자 도구에 포커스가 가있는지 여부를 반화합니다.
+개발자 도구에 포커스 되어있는지 여부를 반환합니다.
 
 ### `webContents.inspectElement(x, y)`
 
