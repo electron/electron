@@ -134,16 +134,6 @@ bool MenuBar::GetMenuButtonFromScreenPoint(const gfx::Point& point,
   return false;
 }
 
-void MenuBar::RunMenu(views::MenuButton* button) {
-  int id = button->tag();
-  ui::MenuModel::ItemType type = menu_model_->GetTypeAt(id);
-  if (type != ui::MenuModel::TYPE_SUBMENU)
-    return;
-
-  MenuDelegate menu_delegate(this);
-  menu_delegate.RunMenu(menu_model_->GetSubmenuModelAt(id), button);
-}
-
 const char* MenuBar::GetClassName() const {
   return kViewClassName;
 }
@@ -160,7 +150,13 @@ void MenuBar::OnMenuButtonClicked(views::View* source,
     return;
 
   views::MenuButton* button = static_cast<views::MenuButton*>(source);
-  RunMenu(button);
+  int id = button->tag();
+  ui::MenuModel::ItemType type = menu_model_->GetTypeAt(id);
+  if (type != ui::MenuModel::TYPE_SUBMENU)
+    return;
+
+  MenuDelegate menu_delegate(this);
+  menu_delegate.RunMenu(menu_model_->GetSubmenuModelAt(id), button);
 }
 
 }  // namespace atom

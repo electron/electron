@@ -49,9 +49,6 @@ class MenuBar : public views::View,
                                     ui::MenuModel** menu_model,
                                     views::MenuButton** button);
 
-  // Shows the menu with |button|.
-  void RunMenu(views::MenuButton* button);
-
  protected:
   // views::View:
   const char* GetClassName() const override;

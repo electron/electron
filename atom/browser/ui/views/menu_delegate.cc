@@ -121,7 +121,8 @@ void MenuDelegate::SwitchToSiblingMenu(views::MenuButton* button) {
   // nested message loop.
   content::BrowserThread::PostTask(
       content::BrowserThread::UI, FROM_HERE,
-      base::Bind(&MenuBar::RunMenu, base::Unretained(menu_bar_), button));
+      base::Bind(base::IgnoreResult(&views::MenuButton::Activate),
+                 base::Unretained(button)));
 }
 
 }  // namespace atom
