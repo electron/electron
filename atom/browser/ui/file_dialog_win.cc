@@ -262,30 +262,7 @@ bool ShowSaveDialog(atom::NativeWindow* parent_window,
   if (FAILED(hr))
     return false;
 
-  std::string file_name = base::WideToUTF8(std::wstring(buffer));
-
-  // Append extension according to selected filter.
-  if (!filters.empty()) {
-    UINT filter_index = 1;
-    save_dialog.GetPtr()->GetFileTypeIndex(&filter_index);
-    const Filter& filter = filters[filter_index - 1];
-
-    bool matched = false;
-    for (size_t i = 0; i < filter.second.size(); ++i) {
-      if (filter.second[i] == "*" ||
-          base::EndsWith(
-            file_name, filter.second[i],
-            base::CompareCase::INSENSITIVE_ASCII)) {
-        matched = true;
-        break;;
-      }
-    }
-
-    if (!matched && !filter.second.empty())
-      file_name += ("." + filter.second[0]);
-  }
-
-  *path = base::FilePath(base::UTF8ToUTF16(file_name));
+  *path = base::FilePath(buffer);
   return true;
 }
 

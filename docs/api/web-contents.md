@@ -129,13 +129,43 @@ Returns:
 * `event` Event
 * `url` String
 
-Emitted when a user or the page wants to start navigation. It can happen when the
-`window.location` object is changed or a user clicks a link in the page.
+Emitted when a user or the page wants to start navigation. It can happen when
+the `window.location` object is changed or a user clicks a link in the page.
 
 This event will not emit when the navigation is started programmatically with
 APIs like `webContents.loadURL` and `webContents.back`.
 
+It is also not emitted for in-page navigations, such as clicking anchor links
+or updating the `window.location.hash`. Use `did-navigate-in-page` event for
+this purpose.
+
 Calling `event.preventDefault()` will prevent the navigation.
+
+### Event: 'did-navigate'
+
+Returns:
+
+* `event` Event
+* `url` String
+
+Emitted when a navigation is done.
+
+This event is not emitted for in-page navigations, such as clicking anchor links
+or updating the `window.location.hash`. Use `did-navigate-in-page` event for
+this purpose.
+
+### Event: 'did-navigate-in-page'
+
+Returns:
+
+* `event` Event
+* `url` String
+
+Emitted when an in-page navigation happened.
+
+When in-page navigation happens, the page URL changes but does not cause
+navigation outside of the page. Examples of this occurring are when anchor links
+are clicked or when the DOM `hashchange` event is triggered.
 
 ### Event: 'crashed'
 
@@ -596,15 +626,19 @@ Removes the specified path from DevTools workspace.
 * `options` Object (optional). Properties:
   * `detach` Boolean - opens DevTools in a new window
 
-Opens the developer tools.
+Opens the devtools.
 
 ### `webContents.closeDevTools()`
 
-Closes the developer tools.
+Closes the devtools.
 
 ### `webContents.isDevToolsOpened()`
 
-Returns whether the developer tools are opened.
+Returns whether the devtools is opened.
+
+### `webContents.isDevToolsFocused()`
+
+Returns whether the devtools view is focused .
 
 ### `webContents.toggleDevTools()`
 

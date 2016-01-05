@@ -271,12 +271,105 @@ describe '<webview> tag', ->
       webview.src = "file://#{fixtures}/pages/a.html"
       document.body.appendChild webview
 
+  describe 'will-navigate event', ->
+    it 'emits when a url that leads to oustide of the page is clicked', (done) ->
+      webview.addEventListener 'will-navigate', (e) ->
+        assert.equal e.url, "http://host/"
+        done()
+
+      webview.src = "file://#{fixtures}/pages/webview-will-navigate.html"
+      document.body.appendChild webview
+
+  describe 'did-navigate event', ->
+    pageUrl = "file://#{fixtures}/pages/webview-will-navigate.html"
+
+    it 'emits when a url that leads to outside of the page is clicked', (done) ->
+      webview.addEventListener 'did-navigate', (e) ->
+        assert.equal e.url, pageUrl
+        done()
+
+      webview.src = pageUrl
+      document.body.appendChild webview
+
+  describe 'did-navigate-in-page event', ->
+    it 'emits when an anchor link is clicked', (done) ->
+      pageUrl = "file://#{fixtures}/pages/webview-did-navigate-in-page.html"
+      webview.addEventListener 'did-navigate-in-page', (e) ->
+        assert.equal e.url, "#{pageUrl}#test_content"
+        done()
+
+      webview.src = pageUrl
+      document.body.appendChild webview
+
+    it 'emits when window.history.replaceState is called', (done) ->
+      webview.addEventListener 'did-navigate-in-page', (e) ->
+        assert.equal e.url, "http://host/"
+        done()
+
+      webview.src = "file://#{fixtures}/pages/webview-did-navigate-in-page-with-history.html"
+      document.body.appendChild webview
+
+    it 'emits when window.location.hash is changed', (done) ->
+      pageUrl = "file://#{fixtures}/pages/webview-did-navigate-in-page-with-hash.html"
+      webview.addEventListener 'did-navigate-in-page', (e) ->
+        assert.equal e.url, "#{pageUrl}#test"
+        done()
+
+      webview.src = pageUrl
+      document.body.appendChild webview
+
   describe 'close event', ->
     it 'should fire when interior page calls window.close', (done) ->
       webview.addEventListener 'close', ->
         done()
 
       webview.src = "file://#{fixtures}/pages/close.html"
+      document.body.appendChild webview
+
+  describe 'devtools-opened event', ->
+    it 'should fire when webview.openDevTools() is called', (done) ->
+      listener = ->
+        webview.removeEventListener 'devtools-opened', listener
+        webview.closeDevTools()
+        done()
+
+      webview.addEventListener 'devtools-opened', listener
+      webview.addEventListener 'dom-ready', ->
+        webview.openDevTools()
+
+      webview.src = "file://#{fixtures}/pages/base-page.html"
+      document.body.appendChild webview
+
+  describe 'devtools-closed event', ->
+    it 'should fire when webview.closeDevTools() is called', (done) ->
+      listener2 = ->
+        webview.removeEventListener 'devtools-closed', listener2
+        done()
+
+      listener = ->
+        webview.removeEventListener 'devtools-opened', listener
+        webview.closeDevTools()
+
+      webview.addEventListener 'devtools-opened', listener
+      webview.addEventListener 'devtools-closed', listener2
+      webview.addEventListener 'dom-ready', ->
+        webview.openDevTools()
+
+      webview.src = "file://#{fixtures}/pages/base-page.html"
+      document.body.appendChild webview
+
+  describe 'devtools-focused event', ->
+    it 'should fire when webview.openDevTools() is called', (done) ->
+      listener = ->
+        webview.removeEventListener 'devtools-focused', listener
+        webview.closeDevTools()
+        done()
+
+      webview.addEventListener 'devtools-focused', listener
+      webview.addEventListener 'dom-ready', ->
+        webview.openDevTools()
+
+      webview.src = "file://#{fixtures}/pages/base-page.html"
       document.body.appendChild webview
 
   describe '<webview>.reload()', ->

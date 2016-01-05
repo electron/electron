@@ -279,6 +279,10 @@ Closes the DevTools window of guest page.
 
 Returns a boolean whether guest page has a DevTools window attached.
 
+### `<webview>.isDevToolsFocused()`
+
+Returns a boolean whether DevTools window of guest page is focused.
+
 ### `<webview>.inspectElement(x, y)`
 
 * `x` Integer
@@ -572,6 +576,48 @@ webview.addEventListener('new-window', function(e) {
 });
 ```
 
+### Event: 'will-navigate'
+
+Returns:
+
+* `url` String
+
+Emitted when a user or the page wants to start navigation. It can happen when
+the `window.location` object is changed or a user clicks a link in the page.
+
+This event will not emit when the navigation is started programmatically with
+APIs like `<webview>.loadURL` and `<webview>.back`.
+
+It is also not emitted during in-page navigation, such as clicking anchor links
+or updating the `window.location.hash`. Use `did-navigate-in-page` event for
+this purpose.
+
+Calling `event.preventDefault()` does __NOT__ have any effect.
+
+### Event: 'did-navigate'
+
+Returns:
+
+* `url` String
+
+Emitted when a navigation is done.
+
+This event is not emitted for in-page navigations, such as clicking anchor links
+or updating the `window.location.hash`. Use `did-navigate-in-page` event for
+this purpose.
+
+### Event: 'did-navigate-in-page'
+
+Returns:
+
+* `url` String
+
+Emitted when an in-page navigation happened.
+
+When in-page navigation happens, the page URL changes but does not cause
+navigation outside of the page. Examples of this occurring are when anchor links
+are clicked or when the DOM `hashchange` event is triggered.
+
 ### Event: 'close'
 
 Fired when the guest page attempts to close itself.
@@ -650,3 +696,15 @@ Emitted when a page's theme color changes. This is usually due to encountering a
 ```html
 <meta name='theme-color' content='#ff0000'>
 ```
+
+### Event: 'devtools-opened'
+
+Emitted when DevTools is opened.
+
+### Event: 'devtools-closed'
+
+Emitted when DevTools is closed.
+
+### Event: 'devtools-focused'
+
+Emitted when DevTools is focused / opened.

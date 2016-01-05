@@ -273,6 +273,7 @@ registerWebViewElement = ->
     'openDevTools'
     'closeDevTools'
     'isDevToolsOpened'
+    'isDevToolsFocused'
     'inspectElement'
     'setAudioMuted'
     'isAudioMuted'

@@ -157,7 +157,6 @@ class NativeWindow : public base::SupportsUserData,
   virtual void FocusOnWebView();
   virtual void BlurWebView();
   virtual bool IsWebViewFocused();
-  virtual bool IsDevToolsFocused();
 
   // Captures the page with |rect|, |callback| would be called when capturing is
   // done.
