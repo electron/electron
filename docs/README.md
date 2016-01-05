@@ -7,6 +7,13 @@ you can switch to a different version of the documentation at the
 you're using the GitHub interface, open the "Switch branches/tags" dropdown and
 select the tag that matches your version.
 
+## FAQ
+
+There are questions that are asked quite often, check this out before creating
+an issue:
+
+* [Electron FAQ](faq/api-faq.md)
+
 ## Guides
 
 * [Supported Platforms](tutorial/supported-platforms.md)
