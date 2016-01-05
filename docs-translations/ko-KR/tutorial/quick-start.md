@@ -100,7 +100,7 @@ app.on('ready', function() {
   mainWindow = new BrowserWindow({width: 800, height: 600});
 
   // 그리고 현재 디렉터리의 index.html을 로드합니다.
-  mainWindow.loadURL('file://' + __dirname + '/index.html');
+  mainWindow.loadURL('file://' + app.getAppPath() + '/index.html');
 
   // 개발자 도구를 엽니다.
   mainWindow.webContents.openDevTools();

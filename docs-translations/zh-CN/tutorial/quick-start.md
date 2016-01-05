@@ -65,7 +65,7 @@ app.on('ready', function() {
   mainWindow = new BrowserWindow({width: 800, height: 600});
 
   // 加载应用的 index.html
-  mainWindow.loadURL('file://' + __dirname + '/index.html');
+  mainWindow.loadURL('file://' + app.getAppPath() + '/index.html');
 
   // 打开开发工具
   mainWindow.openDevTools();

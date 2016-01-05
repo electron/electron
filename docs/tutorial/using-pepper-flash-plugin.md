@@ -36,7 +36,7 @@ app.on('ready', function() {
       'plugins': true
     }
   });
-  mainWindow.loadURL('file://' + __dirname + '/index.html');
+  mainWindow.loadURL('file://' + app.getAppPath() + '/index.html');
   // Something else
 });
 ```
