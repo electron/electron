@@ -91,7 +91,7 @@ app.on('ready', function() {
   mainWindow = new BrowserWindow({width: 800, height: 600});
 
   // cargar el index.html de nuestra aplicación.
-  mainWindow.loadURL('file://' + __dirname + '/index.html');
+  mainWindow.loadURL('file://' + app.getAppPath() + '/index.html');
 
   // Desplegar devtools.
   mainWindow.openDevTools();

@@ -675,7 +675,7 @@ An example of sending messages from the main process to the renderer process:
 var window = null;
 app.on('ready', function() {
   window = new BrowserWindow({width: 800, height: 600});
-  window.loadURL('file://' + __dirname + '/index.html');
+  window.loadURL('file://' + app.getAppPath() + '/index.html');
   window.webContents.on('did-finish-load', function() {
     window.webContents.send('ping', 'whoooooooh!');
   });
