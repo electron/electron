@@ -155,8 +155,8 @@ void MenuBar::OnMenuButtonClicked(views::View* source,
   if (type != ui::MenuModel::TYPE_SUBMENU)
     return;
 
-  menu_delegate_.reset(new MenuDelegate(this));
-  menu_delegate_->RunMenu(menu_model_->GetSubmenuModelAt(id), button);
+  MenuDelegate menu_delegate(this);
+  menu_delegate.RunMenu(menu_model_->GetSubmenuModelAt(id), button);
 }
 
 }  // namespace atom

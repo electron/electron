@@ -5,12 +5,11 @@
 #ifndef ATOM_BROWSER_UI_VIEWS_MENU_DELEGATE_H_
 #define ATOM_BROWSER_UI_VIEWS_MENU_DELEGATE_H_
 
-#include <vector>
-
+#include "base/memory/scoped_ptr.h"
 #include "ui/views/controls/menu/menu_delegate.h"
 
 namespace views {
-class MenuModelAdapter;
+class MenuRunner;
 }
 
 namespace ui {
@@ -51,20 +50,13 @@ class MenuDelegate : public views::MenuDelegate {
       views::MenuButton** button) override;
 
  private:
-  // Gets the cached menu item view from the model.
-  views::MenuItemView* BuildMenu(ui::MenuModel* model);
-
-  // Returns delegate for current item.
-  views::MenuDelegate* delegate() const { return delegates_[id_]; }
+  // Close this menu and run the menu of |button|.
+  void SwitchToSiblingMenu(views::MenuButton* button);
 
   MenuBar* menu_bar_;
-
-  // Current item's id.
   int id_;
-  // Cached menu items, managed by MenuRunner.
-  std::vector<views::MenuItemView*> items_;
-  // Cached menu delegates for each menu item, managed by us.
-  std::vector<views::MenuDelegate*> delegates_;
+  scoped_ptr<views::MenuDelegate> adapter_;
+  scoped_ptr<views::MenuRunner> menu_runner_;
 
   DISALLOW_COPY_AND_ASSIGN(MenuDelegate);
 };
