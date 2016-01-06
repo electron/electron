@@ -28,13 +28,13 @@ with node-inspector, and the main process will crash if you inspect the
 ### 2. Install [node-inspector][node-inspector]
 
 ```bash
-$ npm i node-inspector
+$ npm install node-inspector
 ```
 
 ### 3. Install a patched version of `node-pre-gyp`
 
 ```bash
-$ npm i git+https://git@github.com/enlight/node-pre-gyp.git#detect-electron-runtime-in-find
+$ npm install git+https://git@github.com/enlight/node-pre-gyp.git#detect-electron-runtime-in-find
 ```
 
 ### 4. Recompile the `node-inspector` `v8` modules for electron (change the target to your electron version number)
@@ -63,7 +63,7 @@ $ electron --debug-brk=5858 your/app
 ### 5. Start the [node-inspector][node-inspector] server using electron
 
 ```bash
-$ ATOM_SHELL_INTERNAL_RUN_AS_NODE=1 path/to/electron.exe node_modules/node-inspector/bin/inspector.js
+$ ELECTRON_RUN_AS_NODE=true path/to/electron.exe node_modules/node-inspector/bin/inspector.js
 ```
 
 ### 6. Load the debugger UI
