@@ -374,6 +374,18 @@ describe 'asar package', ->
           assert.equal err.code, 'ENOENT'
           done()
 
+    describe 'fs.mkdir', ->
+      it 'throws error when calling inside asar archive', (done) ->
+        p = path.join fixtures, 'asar', 'a.asar', 'not-exist'
+        fs.mkdir p, (err) ->
+          assert.equal err.code, 'ENOTDIR'
+          done()
+
+    describe 'fs.mkdirSync', ->
+      it 'throws error when calling inside asar archive', ->
+        p = path.join fixtures, 'asar', 'a.asar', 'not-exist'
+        assert.throws (-> fs.mkdirSync p), new RegExp('ENOTDIR')
+
     describe 'child_process.fork', ->
       child_process = require 'child_process'
 
@@ -546,6 +558,13 @@ describe 'asar package', ->
 
     it 'does not touch global fs object', ->
       assert.notEqual fs.readdir, gfs.readdir
+
+  describe 'mkdirp module', ->
+    mkdirp = require 'mkdirp'
+
+    it 'throws error when calling inside asar archive', ->
+      p = path.join fixtures, 'asar', 'a.asar', 'not-exist'
+      assert.throws (-> mkdirp.sync p), new RegExp('ENOTDIR')
 
   describe 'native-image', ->
     it 'reads image from asar archive', ->
