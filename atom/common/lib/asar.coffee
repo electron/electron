@@ -63,6 +63,15 @@ notFoundError = (asarPath, filePath, callback) ->
     throw error
   process.nextTick -> callback error
 
+# Create a ENOTDIR error.
+notDirError = (callback) ->
+  error = new Error('ENOTDIR, not a directory')
+  error.code = 'ENOTDIR'
+  error.errno = -20
+  unless typeof callback is 'function'
+    throw error
+  process.nextTick -> callback error
+
 # Create invalid archive error.
 invalidArchiveError = (asarPath, callback) ->
   error = new Error("Invalid package #{asarPath}")
@@ -350,6 +359,24 @@ exports.wrapFsWithAsar = (fs) ->
     return -34 unless stats  # -ENOENT
 
     if stats.isDirectory then return 1 else return 0
+
+  # Calling mkdir for directory inside asar archive should throw ENOTDIR
+  # error, but on Windows it throws ENOENT.
+  # This is to work around the recursive looping bug of mkdirp since it is
+  # widely used.
+  if process.platform is 'win32'
+    mkdir = fs.mkdir
+    fs.mkdir = (p, mode, callback) ->
+      callback = mode if typeof mode is 'function'
+      [isAsar, asarPath, filePath] = splitPath p
+      return notDirError callback if isAsar and filePath.length
+      mkdir p, mode, callback
+
+    mkdirSync = fs.mkdirSync
+    fs.mkdirSync = (p, mode) ->
+      [isAsar, asarPath, filePath] = splitPath p
+      notDirError() if isAsar and filePath.length
+      mkdirSync p, mode
 
   overrideAPI fs, 'open'
   overrideAPI child_process, 'execFile'

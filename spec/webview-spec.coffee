@@ -1,6 +1,7 @@
 assert = require 'assert'
 path   = require 'path'
 http   = require 'http'
+url    = require 'url'
 
 describe '<webview> tag', ->
   @timeout 10000
@@ -261,12 +262,12 @@ describe '<webview> tag', ->
     it 'emits when favicon urls are received', (done) ->
       webview.addEventListener 'page-favicon-updated', (e) ->
         assert.equal e.favicons.length, 2
-        url =
+        pageUrl =
           if process.platform is 'win32'
             'file:///C:/favicon.png'
           else
             'file:///favicon.png'
-        assert.equal e.favicons[0], url
+        assert.equal e.favicons[0], pageUrl
         done()
       webview.src = "file://#{fixtures}/pages/a.html"
       document.body.appendChild webview
@@ -281,7 +282,9 @@ describe '<webview> tag', ->
       document.body.appendChild webview
 
   describe 'did-navigate event', ->
-    pageUrl = "file://#{fixtures}/pages/webview-will-navigate.html"
+    p = path.join fixtures, 'pages', 'webview-will-navigate.html'
+    p = p.replace /\\/g, '/'
+    pageUrl = url.format protocol: 'file', slashes: true, pathname: p
 
     it 'emits when a url that leads to outside of the page is clicked', (done) ->
       webview.addEventListener 'did-navigate', (e) ->
@@ -293,7 +296,10 @@ describe '<webview> tag', ->
 
   describe 'did-navigate-in-page event', ->
     it 'emits when an anchor link is clicked', (done) ->
-      pageUrl = "file://#{fixtures}/pages/webview-did-navigate-in-page.html"
+      p = path.join fixtures, 'pages', 'webview-did-navigate-in-page.html'
+      p = p.replace /\\/g, '/'
+      pageUrl = url.format protocol: 'file', slashes: true, pathname: p
+
       webview.addEventListener 'did-navigate-in-page', (e) ->
         assert.equal e.url, "#{pageUrl}#test_content"
         done()
@@ -310,7 +316,10 @@ describe '<webview> tag', ->
       document.body.appendChild webview
 
     it 'emits when window.location.hash is changed', (done) ->
-      pageUrl = "file://#{fixtures}/pages/webview-did-navigate-in-page-with-hash.html"
+      p = path.join fixtures, 'pages', 'webview-did-navigate-in-page-with-hash.html'
+      p = p.replace /\\/g, '/'
+      pageUrl = url.format protocol: 'file', slashes: true, pathname: p
+
       webview.addEventListener 'did-navigate-in-page', (e) ->
         assert.equal e.url, "#{pageUrl}#test"
         done()
