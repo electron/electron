@@ -205,7 +205,7 @@ bool URLRequestFetchJob::ReadRawData(net::IOBuffer* dest,
 }
 
 bool URLRequestFetchJob::GetMimeType(std::string* mime_type) const {
-  if (!response_info_)
+  if (!response_info_ || !response_info_->headers)
     return false;
 
   return response_info_->headers->GetMimeType(mime_type);
@@ -217,7 +217,7 @@ void URLRequestFetchJob::GetResponseInfo(net::HttpResponseInfo* info) {
 }
 
 int URLRequestFetchJob::GetResponseCode() const {
-  if (!response_info_)
+  if (!response_info_ || !response_info_->headers)
     return -1;
 
   return response_info_->headers->response_code();
