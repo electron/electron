@@ -63,7 +63,7 @@ $ electron --debug-brk=5858 your/app
 ### 5. Start the [node-inspector][node-inspector] server using electron
 
 ```bash
-$ ATOM_SHELL_INTERNAL_RUN_AS_NODE=1 path/to/electron.exe node_modules/node-inspector/bin/inspector.js
+$ ELECTRON_RUN_AS_NODE=1 path/to/electron.exe node_modules/node-inspector/bin/inspector.js
 ```
 
 ### 6. Load the debugger UI
