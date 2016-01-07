@@ -50,6 +50,7 @@ extern const char kGuestInstanceID[];
 extern const char kExperimentalFeatures[];
 extern const char kExperimentalCanvasFeatures[];
 extern const char kOpenerID[];
+extern const char kBlinkFeatures[];
 
 }   // namespace options
 

@@ -138,6 +138,10 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     canvas features. Default is `false`.
   * `directWrite` Boolean - Enables DirectWrite font rendering system on
      Windows. Default is `true`.
+  * `blinkFeatures` String - A list of feature strings separated by `,`, like
+    `CSSVariables,KeyboardEventKey`. The full list of supported feature strings
+    can be found in the [setFeatureEnabledFromString][blink-feature-string]
+    function.
 
 ## Events
 
@@ -750,3 +754,5 @@ Returns whether the window is visible on all workspaces.
 * `ignore` Boolean
 
 Ignore all moused events that happened in the window.
+
+[blink-feature-string]: https://code.google.com/p/chromium/codesearch#chromium/src/out/Debug/gen/blink/platform/RuntimeEnabledFeatures.cpp&sq=package:chromium&type=cs&l=527

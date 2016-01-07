@@ -88,12 +88,15 @@ const char kGuestInstanceID[] = "guestInstanceId";
 // Enable DirectWrite on Windows.
 const char kDirectWrite[] = "directWrite";
 
-// Opener window's ID.
-const char kOpenerID[] = "openerId";
-
 // Web runtime features.
 const char kExperimentalFeatures[]       = "experimentalFeatures";
 const char kExperimentalCanvasFeatures[] = "experimentalCanvasFeatures";
+
+// Opener window's ID.
+const char kOpenerID[] = "openerId";
+
+// Enable blink features.
+const char kBlinkFeatures[] = "blinkFeatures";
 
 }  // namespace options
 

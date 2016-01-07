@@ -116,6 +116,12 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
   if (web_preferences.GetInteger(options::kOpenerID, &opener_id))
       command_line->AppendSwitchASCII(switches::kOpenerID,
                                       base::IntToString(opener_id));
+
+  // Enable blink features.
+  std::string blink_features;
+  if (web_preferences.GetString(options::kBlinkFeatures, &blink_features))
+      command_line->AppendSwitchASCII(::switches::kEnableBlinkFeatures,
+                                      blink_features);
 }
 
 // static
