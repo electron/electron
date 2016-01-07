@@ -469,11 +469,16 @@ NativeWindowMac::NativeWindowMac(
   [window_ setDisableAutoHideCursor:disableAutoHideCursor];
 
   // Disable fullscreen button when 'fullscreen' is specified to false.
-  bool fullscreen;
+  bool fullscreen = false;
   if (!(options.Get(options::kFullscreen, &fullscreen) &&
         !fullscreen)) {
     NSUInteger collectionBehavior = [window_ collectionBehavior];
     collectionBehavior |= NSWindowCollectionBehaviorFullScreenPrimary;
+    [window_ setCollectionBehavior:collectionBehavior];
+  } else if (base::mac::IsOSElCapitanOrLater()) {
+    // On EL Capitan this flag is required to hide fullscreen button.
+    NSUInteger collectionBehavior = [window_ collectionBehavior];
+    collectionBehavior |= NSWindowCollectionBehaviorFullScreenAuxiliary;
     [window_ setCollectionBehavior:collectionBehavior];
   }
 
