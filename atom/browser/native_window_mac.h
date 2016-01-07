@@ -65,6 +65,7 @@ class NativeWindowMac : public NativeWindow {
   void SetIgnoreMouseEvents(bool ignore) override;
   bool HasModalDialog() override;
   gfx::NativeWindow GetNativeWindow() override;
+  gfx::AcceleratedWidget GetAcceleratedWidget() override;
   void SetProgressBar(double progress) override;
   void SetOverlayIcon(const gfx::Image& overlay,
                       const std::string& description) override;

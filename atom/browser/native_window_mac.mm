@@ -731,6 +731,10 @@ gfx::NativeWindow NativeWindowMac::GetNativeWindow() {
   return window_;
 }
 
+gfx::AcceleratedWidget NativeWindowMac::GetAcceleratedWidget() {
+  return window_;
+}
+
 void NativeWindowMac::SetProgressBar(double progress) {
   NSDockTile* dock_tile = [NSApp dockTile];
 

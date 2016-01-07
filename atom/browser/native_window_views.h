@@ -90,7 +90,7 @@ class NativeWindowViews : public NativeWindow,
   void SetVisibleOnAllWorkspaces(bool visible) override;
   bool IsVisibleOnAllWorkspaces() override;
 
-  gfx::AcceleratedWidget GetAcceleratedWidget();
+  gfx::AcceleratedWidget GetAcceleratedWidget() override;
 
   views::Widget* widget() const { return window_.get(); }
 
