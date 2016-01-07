@@ -571,6 +571,10 @@ Enters or leaves the kiosk mode.
 
 Returns whether the window is in kiosk mode.
 
+### `win.getNativeWindowHandle()`
+
+Returns the OS window handle in a buffer.
+
 ### `win.hookWindowMessage(message, callback)` _Windows_
 
 * `message` Integer
