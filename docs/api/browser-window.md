@@ -136,9 +136,6 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     Default is `false`.
   * `experimentalCanvasFeatures` Boolean - Enables Chromium's experimental
     canvas features. Default is `false`.
-  * `overlayScrollbars` Boolean - Enables overlay scrollbars. Default is
-    `false`.
-  * `sharedWorker` Boolean - Enables Shared Worker support. Default is `false`.
   * `directWrite` Boolean - Enables DirectWrite font rendering system on
      Windows. Default is `true`.
   * `pageVisibility` Boolean - Page would be forced to be always in visible

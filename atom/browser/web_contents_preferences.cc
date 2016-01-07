@@ -34,10 +34,6 @@ FeaturePair kWebRuntimeFeatures[] = {
     switches::kExperimentalFeatures },
   { options::kExperimentalCanvasFeatures,
     switches::kExperimentalCanvasFeatures },
-  { options::kOverlayScrollbars,
-    switches::kOverlayScrollbars },
-  { options::kSharedWorker,
-    switches::kSharedWorker },
   { options::kPageVisibility,
     switches::kPageVisibility },
 };

@@ -97,8 +97,6 @@ const char kOpenerID[] = "openerId";
 // Web runtime features.
 const char kExperimentalFeatures[]       = "experimentalFeatures";
 const char kExperimentalCanvasFeatures[] = "experimentalCanvasFeatures";
-const char kOverlayScrollbars[]          = "overlayScrollbars";
-const char kSharedWorker[]               = "sharedWorker";
 
 }  // namespace options
 
@@ -143,8 +141,6 @@ const char kNodeIntegration[]            = "node-integration";
 const char kGuestInstanceID[]            = "guest-instance-id";
 const char kExperimentalFeatures[]       = "experimental-features";
 const char kExperimentalCanvasFeatures[] = "experimental-canvas-features";
-const char kOverlayScrollbars[]          = "overlay-scrollbars";
-const char kSharedWorker[]               = "shared-worker";
 const char kPageVisibility[]             = "page-visiblity";
 const char kOpenerID[]                   = "opener-id";
 

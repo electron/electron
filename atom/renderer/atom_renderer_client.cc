@@ -230,10 +230,6 @@ void AtomRendererClient::EnableWebRuntimeFeatures() {
     blink::WebRuntimeFeatures::enableExperimentalFeatures(true);
   if (IsSwitchEnabled(command_line, switches::kExperimentalCanvasFeatures))
     blink::WebRuntimeFeatures::enableExperimentalCanvasFeatures(true);
-  if (IsSwitchEnabled(command_line, switches::kOverlayScrollbars))
-    blink::WebRuntimeFeatures::enableOverlayScrollbars(true);
-  if (IsSwitchEnabled(command_line, switches::kSharedWorker))
-    blink::WebRuntimeFeatures::enableSharedWorker(true);
 }
 
 void AtomRendererClient::AddKeySystems(
