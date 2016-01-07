@@ -85,9 +85,6 @@ const char kNodeIntegration[] = "nodeIntegration";
 // Instancd ID of guest WebContents.
 const char kGuestInstanceID[] = "guestInstanceId";
 
-// Set page visiblity to always visible.
-const char kPageVisibility[] = "pageVisibility";
-
 // Enable DirectWrite on Windows.
 const char kDirectWrite[] = "directWrite";
 
@@ -141,7 +138,6 @@ const char kNodeIntegration[]            = "node-integration";
 const char kGuestInstanceID[]            = "guest-instance-id";
 const char kExperimentalFeatures[]       = "experimental-features";
 const char kExperimentalCanvasFeatures[] = "experimental-canvas-features";
-const char kPageVisibility[]             = "page-visiblity";
 const char kOpenerID[]                   = "opener-id";
 
 // Widevine options

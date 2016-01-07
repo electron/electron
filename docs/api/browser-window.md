@@ -138,10 +138,6 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     canvas features. Default is `false`.
   * `directWrite` Boolean - Enables DirectWrite font rendering system on
      Windows. Default is `true`.
-  * `pageVisibility` Boolean - Page would be forced to be always in visible
-     or hidden state once set, instead of reflecting current window's
-     visibility. Users can set it to `true` to prevent throttling of DOM
-     timers. Default is `false`.
 
 ## Events
 

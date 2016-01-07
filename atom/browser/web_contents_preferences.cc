@@ -34,8 +34,6 @@ FeaturePair kWebRuntimeFeatures[] = {
     switches::kExperimentalFeatures },
   { options::kExperimentalCanvasFeatures,
     switches::kExperimentalCanvasFeatures },
-  { options::kPageVisibility,
-    switches::kPageVisibility },
 };
 
 }  // namespace
