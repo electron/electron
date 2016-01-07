@@ -732,7 +732,7 @@ gfx::NativeWindow NativeWindowMac::GetNativeWindow() {
 }
 
 gfx::AcceleratedWidget NativeWindowMac::GetAcceleratedWidget() {
-  return window_;
+  return inspectable_web_contents()->GetView()->GetNativeView();
 }
 
 void NativeWindowMac::SetProgressBar(double progress) {
