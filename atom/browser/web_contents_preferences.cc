@@ -10,6 +10,7 @@
 #include "atom/common/options_switches.h"
 #include "base/command_line.h"
 #include "base/strings/string_number_conversions.h"
+#include "content/public/common/content_switches.h"
 #include "content/public/common/web_preferences.h"
 #include "native_mate/dictionary.h"
 #include "net/base/filename_util.h"
@@ -21,28 +22,6 @@
 DEFINE_WEB_CONTENTS_USER_DATA_KEY(atom::WebContentsPreferences);
 
 namespace atom {
-
-namespace {
-
-// Array of available web runtime features.
-struct FeaturePair {
-  const char* name;
-  const char* cmd;
-};
-FeaturePair kWebRuntimeFeatures[] = {
-  { options::kExperimentalFeatures,
-    switches::kExperimentalFeatures },
-  { options::kExperimentalCanvasFeatures,
-    switches::kExperimentalCanvasFeatures },
-  { options::kOverlayScrollbars,
-    switches::kOverlayScrollbars },
-  { options::kSharedWorker,
-    switches::kSharedWorker },
-  { options::kPageVisibility,
-    switches::kPageVisibility },
-};
-
-}  // namespace
 
 WebContentsPreferences::WebContentsPreferences(
     content::WebContents* web_contents,
@@ -85,13 +64,12 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
   if (web_preferences.GetBoolean("plugins", &b) && b)
     command_line->AppendSwitch(switches::kEnablePlugins);
 
-  // This set of options are not availabe in WebPreferences, so we have to pass
-  // them via command line and enable them in renderer procss.
-  for (size_t i = 0; i < arraysize(kWebRuntimeFeatures); ++i) {
-    const auto& feature = kWebRuntimeFeatures[i];
-    if (web_preferences.GetBoolean(feature.name, &b))
-      command_line->AppendSwitchASCII(feature.cmd, b ? "true" : "false");
-  }
+  // Experimental flags.
+  if (web_preferences.GetBoolean(options::kExperimentalFeatures, &b) && b)
+    command_line->AppendSwitch(
+        ::switches::kEnableExperimentalWebPlatformFeatures);
+  if (web_preferences.GetBoolean(options::kExperimentalCanvasFeatures, &b) && b)
+    command_line->AppendSwitch(::switches::kEnableExperimentalCanvasFeatures);
 
   // Check if we have node integration specified.
   bool node_integration = true;
@@ -138,6 +116,12 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
   if (web_preferences.GetInteger(options::kOpenerID, &opener_id))
       command_line->AppendSwitchASCII(switches::kOpenerID,
                                       base::IntToString(opener_id));
+
+  // Enable blink features.
+  std::string blink_features;
+  if (web_preferences.GetString(options::kBlinkFeatures, &blink_features))
+      command_line->AppendSwitchASCII(::switches::kEnableBlinkFeatures,
+                                      blink_features);
 }
 
 // static

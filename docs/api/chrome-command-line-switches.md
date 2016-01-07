@@ -94,10 +94,6 @@ connection, and the endpoint host in a `SOCKS` proxy connection).
 
 Like `--host-rules` but these `rules` only apply to the host resolver.
 
-[app]: app.md
-[append-switch]: app.md#appcommandlineappendswitchswitch-value
-[ready]: app.md#event-ready
-
 ## --ignore-certificate-errors
 
 Ignores certificate related errors.
@@ -121,7 +117,16 @@ fallback will accept.
 
 ## --cipher-suite-blacklist=`cipher_suites`
 
-Specify comma-separated list of SSL cipher suites to disable.
+Specifies comma-separated list of SSL cipher suites to disable.
+
+## --disable-renderer-backgrounding
+
+Prevents Chromium from lowering the priority of invisible pages' renderer
+processes.
+
+This flag is global to all renderer processes, if you only want to disable
+throttling in one window, you can take the hack of
+[playing silent audio][play-silent-audio].
 
 ## --enable-logging
 
@@ -149,3 +154,8 @@ whole pathname and not just the module. E.g. `*/foo/bar/*=2` would change the
 logging level for all code in the source files under a `foo/bar` directory.
 
 This switch only works when `--enable-logging` is also passed.
+
+[app]: app.md
+[append-switch]: app.md#appcommandlineappendswitchswitch-value
+[ready]: app.md#event-ready
+[play-silent-audio]: https://github.com/atom/atom/pull/9485/files
