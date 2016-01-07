@@ -136,8 +136,6 @@ const char kPreloadScript[]              = "preload";
 const char kPreloadURL[]                 = "preload-url";
 const char kNodeIntegration[]            = "node-integration";
 const char kGuestInstanceID[]            = "guest-instance-id";
-const char kExperimentalFeatures[]       = "experimental-features";
-const char kExperimentalCanvasFeatures[] = "experimental-canvas-features";
 const char kOpenerID[]                   = "opener-id";
 
 // Widevine options

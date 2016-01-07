@@ -74,8 +74,6 @@ extern const char kPreloadScript[];
 extern const char kPreloadURL[];
 extern const char kNodeIntegration[];
 extern const char kGuestInstanceID[];
-extern const char kExperimentalFeatures[];
-extern const char kExperimentalCanvasFeatures[];
 extern const char kOpenerID[];
 
 extern const char kWidevineCdmPath[];
