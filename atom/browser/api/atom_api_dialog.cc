@@ -41,6 +41,7 @@ namespace {
 
 void ShowMessageBox(int type,
                     const std::vector<std::string>& buttons,
+                    int default_button_index,
                     int cancel_id,
                     int options,
                     const std::string& title,
@@ -54,11 +55,11 @@ void ShowMessageBox(int type,
   if (mate::Converter<atom::MessageBoxCallback>::FromV8(args->isolate(),
                                                         peek,
                                                         &callback)) {
-    atom::ShowMessageBox(window, (atom::MessageBoxType)type, buttons, cancel_id,
-                         options, title, message, detail, icon, callback);
+    atom::ShowMessageBox(window, (atom::MessageBoxType)type, buttons, default_button_index,
+                         cancel_id, options, title, message, detail, icon, callback);
   } else {
     int chosen = atom::ShowMessageBox(window, (atom::MessageBoxType)type,
-                                      buttons, cancel_id, options, title,
+                                      buttons, default_button_index, cancel_id, options, title,
                                       message, detail, icon);
     args->Return(chosen);
   }

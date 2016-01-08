@@ -91,10 +91,11 @@ module.exports =
 
     throw new TypeError('Buttons need to be array') unless Array.isArray options.buttons
 
-    options.title ?= ''
-    options.message ?= ''
-    options.detail ?= ''
-    options.icon ?= null
+    options.title              ?= ''
+    options.message            ?= ''
+    options.detail             ?= ''
+    options.icon               ?= null
+    options.defaultButtonIndex ?= -1
 
     # Choose a default button to get selected when dialog is cancelled.
     unless options.cancelId?
@@ -108,6 +109,7 @@ module.exports =
 
     binding.showMessageBox messageBoxType,
                            options.buttons,
+                           options.defaultButtonIndex,
                            options.cancelId,
                            flags,
                            options.title,
