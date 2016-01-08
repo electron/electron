@@ -432,7 +432,6 @@
           'mac_bundle': 1,
           'mac_bundle_resources': [
             'atom/common/resources/mac/MainMenu.xib',
-            '<(libchromiumcontent_dir)/locales',
             '<(libchromiumcontent_dir)/content_shell.pak',
             '<(libchromiumcontent_dir)/icudtl.dat',
             '<(libchromiumcontent_dir)/natives_blob.bin',
@@ -499,6 +498,16 @@
                 'tools/mac/create-framework-subdir-symlinks.sh',
                 '<(product_name) Framework',
                 'Libraries',
+              ],
+            },
+            {
+              'postbuild_name': 'Copy locales',
+              'action': [
+                'tools/mac/copy-locales.py',
+                '-d',
+                '<(libchromiumcontent_dir)/locales',
+                '${BUILT_PRODUCTS_DIR}/<(product_name) Framework.framework/Resources',
+                '<@(locales)',
               ],
             },
           ],
