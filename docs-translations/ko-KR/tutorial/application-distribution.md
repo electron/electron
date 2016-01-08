@@ -106,14 +106,6 @@ MyApp.app/Contents
 아이콘은 [.desktop](https://developer.gnome.org/integration-guide/stable/desktop-files.html.en)
 파일을 사용하여 지정할 수 있습니다.
 
-### 역주-자동화
-
-어플리케이션 배포시 Electron의 리소스를 일일이 수정하는 것은 매우 반복적이고 복잡합니다.
-하지만 이 작업을 자동화 시킬 수 있는 몇가지 방법이 있습니다:
-
-* [electron-builder](https://github.com/loopline-systems/electron-builder)
-* [electron-packager](https://github.com/maxogden/electron-packager)
-
 ## Electron 소스코드를 다시 빌드하여 리소스 수정하기
 
 또한 Electron 소스코드를 다시 빌드할 때 어플리케이션 이름을 변경할 수 있습니다.
@@ -146,3 +138,11 @@ Electron의 소스코드를 수정하고 다시 빌드하는 작업은 상당히
 
 이 툴을 사용하면 자동으로 `.gyp`파일을 수정하고 다시 빌드합니다. 그리고 어플리케이션의
 네이티브 Node 모듈 또한 새로운 실행파일 이름으로 일치시킵니다.
+
+## 패키징 툴
+
+어플리케이션을 일일이 수동으로 패키지로 만드는 대신, 서드 파티 패키징 툴을 사용하며
+이러한 작업을 자동화 시킬 수 있습니다:
+
+* [electron-packager](https://github.com/maxogden/electron-packager)
+* [electron-builder](https://github.com/loopline-systems/electron-builder)
