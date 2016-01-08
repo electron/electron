@@ -43,6 +43,8 @@ valueToMeta = (sender, value, optimizeSimpleObject=false) ->
     meta.then = valueToMeta sender, value.then.bind(value)
   else if meta.type is 'error'
     meta.members = plainObjectToMeta value
+    # Error.name is not part of own properties.
+    meta.members.push {name: 'name', value: value.name}
   else if meta.type is 'date'
     meta.value = value.getTime()
   else

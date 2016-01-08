@@ -92,7 +92,7 @@ const CGFloat kVerticalTitleMargin = 2;
 
   // Make use of NSImageView to draw the image, which can correctly draw
   // template image under dark menu bar.
-  if (highlight && alternateImage_ &&
+  if (inMouseEventSequence_ && alternateImage_ &&
       [image_view_ image] != alternateImage_.get()) {
     [image_view_ setImage:alternateImage_];
   } else if ([image_view_ image] != image_.get()) {

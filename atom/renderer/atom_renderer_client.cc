@@ -41,11 +41,6 @@ namespace atom {
 
 namespace {
 
-bool IsSwitchEnabled(base::CommandLine* command_line,
-                     const char* switch_string) {
-  return command_line->GetSwitchValueASCII(switch_string) == "true";
-}
-
 // Helper class to forward the messages to the client.
 class AtomRenderFrameObserver : public content::RenderFrameObserver {
  public:
@@ -95,8 +90,6 @@ AtomRendererClient::~AtomRendererClient() {
 }
 
 void AtomRendererClient::WebKitInitialized() {
-  EnableWebRuntimeFeatures();
-
   blink::WebCustomElement::addEmbedderCustomElementName("webview");
   blink::WebCustomElement::addEmbedderCustomElementName("browserplugin");
 
@@ -208,32 +201,6 @@ content::BrowserPluginDelegate* AtomRendererClient::CreateBrowserPluginDelegate(
   } else {
     return nullptr;
   }
-}
-
-bool AtomRendererClient::ShouldOverridePageVisibilityState(
-    const content::RenderFrame* render_frame,
-    blink::WebPageVisibilityState* override_state) {
-  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
-
-  if (IsSwitchEnabled(command_line, switches::kPageVisibility)) {
-    *override_state = blink::WebPageVisibilityStateVisible;
-    return true;
-  }
-
-  return false;
-}
-
-void AtomRendererClient::EnableWebRuntimeFeatures() {
-  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
-
-  if (IsSwitchEnabled(command_line, switches::kExperimentalFeatures))
-    blink::WebRuntimeFeatures::enableExperimentalFeatures(true);
-  if (IsSwitchEnabled(command_line, switches::kExperimentalCanvasFeatures))
-    blink::WebRuntimeFeatures::enableExperimentalCanvasFeatures(true);
-  if (IsSwitchEnabled(command_line, switches::kOverlayScrollbars))
-    blink::WebRuntimeFeatures::enableOverlayScrollbars(true);
-  if (IsSwitchEnabled(command_line, switches::kSharedWorker))
-    blink::WebRuntimeFeatures::enableSharedWorker(true);
 }
 
 void AtomRendererClient::AddKeySystems(

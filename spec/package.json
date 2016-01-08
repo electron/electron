@@ -7,6 +7,7 @@
     "basic-auth": "^1.0.0",
     "graceful-fs": "3.0.5",
     "mocha": "2.1.0",
+    "mkdirp": "0.5.1",
     "multiparty": "4.1.2",
     "q": "0.9.7",
     "temp": "0.8.1",
