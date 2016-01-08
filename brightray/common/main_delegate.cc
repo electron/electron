@@ -10,6 +10,7 @@
 #include "base/command_line.h"
 #include "base/path_service.h"
 #include "content/public/common/content_switches.h"
+#include "ui/base/l10n/l10n_util.h"
 #include "ui/base/resource/resource_bundle.h"
 
 namespace brightray {
@@ -35,6 +36,9 @@ bool MainDelegate::BasicStartupComplete(int* exit_code) {
 }
 
 void MainDelegate::PreSandboxStartup() {
+#if defined(OS_MACOSX)
+  l10n_util::OverrideLocaleWithCocoaLocale();
+#endif
   InitializeResourceBundle();
 }
 
