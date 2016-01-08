@@ -77,73 +77,78 @@ win.show();
   몇몇 GTK+3 데스크톱 환경에서만 작동합니다. 기본값은 `false`입니다.
 * `transparent` Boolean - 윈도우 창을 [투명화](frameless-window.md)합니다. 기본값은
   `false`입니다.
-* `type` String - 특정 플랫폼에만 적용되는 윈도우 창의 종류를 지정합니다. 기본적으로
-  이 속성이 `undefined`일 경우 표준 윈도우가 사용됩니다. 사용할 수 있는 창의 종류는
-  다음과 같습니다:
-  * Linux의 경우: `desktop`, `dock`, `toolbar`, `splash`, `notification` 종류를
-    사용할 수 있습니다.
-  * OS X의 경우: `desktop`, `textured` 종류를 사용할 수 있습니다. `textured` 종류는
-    창을 그라디언트 형태로 표현합니다 (`NSTexturedBackgroundWindowMask`) `desktop`
-    종류는 데스크탑 배경 레벨에 윈도우를 배치합니다 (`kCGDesktopWindowLevel - 1`).
-    참고로 이렇게 만들어진 윈도우는 포커스, 키보드, 마우스 이벤트를 받을 수 없습니다.
-    하지만 편법으로 `globalShortcut`을 통해 키 입력을 받을 수 있습니다.
+* `type` String - 특정 플랫폼에만 적용되는 윈도우 창의 종류를 지정합니다. 기본값은
+  일반 윈도우 입니다. 사용할 수 있는 창의 종류는 아래를 참고하세요.
 * `standardWindow` Boolean - OS X의 표준 윈도우를 텍스쳐 윈도우 대신 사용합니다.
   기본 값은 `true`입니다.
-* `titleBarStyle` String, OS X - 윈도우 타이틀 바 스타일을 지정합니다. 이 속성은
-  OS X 10.10 Yosemite 이후 버전만 지원합니다. 다음 3가지 종류의 값을 사용할 수
-  있습니다:
-  * `default` 또는 미지정: 표준 Mac 회색 불투명 스타일을 사용합니다.
-  * `hidden`: 타이틀 바를 숨기고 컨텐츠 전체를 윈도우 크기에 맞춥니다.
-    타이틀 바는 없어지지만 표준 창 컨트롤 ("신호등 버튼")은 왼쪽 상단에 유지됩니다.
-  * `hidden-inset`: `hidden` 타이틀 바 속성과 함께 신호등 버튼이 윈도우 모서리로부터
-    약간 더 안쪽으로 들어가도록합니다.
+* `titleBarStyle` String, OS X - 윈도우 타이틀 바 스타일을 지정합니다. 자세한 사항은
+  아래를 참고하세요.
 * `webPreferences` Object - 웹 페이지 기능을 설정합니다. 사용할 수 있는 속성은
-  다음과 같습니다:
-  * `nodeIntegration` Boolean - node(node.js) 통합 여부. 기본값은 `true`입니다.
-  * `preload` String - 스크립트를 지정하면 페이지 내의 다른 스크립트가 작동하기 전에
-    로드됩니다. 여기서 지정한 스크립트는 node 통합 활성화 여부에 상관없이 언제나 모든
-    node API에 접근할 수 있습니다. 이 속성의 스크립트 경로는 절대 경로로 지정해야
-    합니다. node 통합이 비활성화되어있을 경우, preload 스크립트는 node의 global
-    심볼들을 다시 global 스코프로 다시 포함 시킬 수 있습니다.
-    [여기](process.md#event-loaded)의 예제를 참고하세요.
-  * `partition` String - 페이지에서 사용할 세션을 지정합니다. 만약 `partition`이
-    `persist:`로 시작하면 페이지는 지속성 세션을 사용하며 다른 모든 앱 내의
-    페이지에서 같은 `partition`을 사용할 수 있습니다. 만약 `persist:` 접두어로
-    시작하지 않으면 페이지는 인-메모리 세션을 사용합니다. 여러 페이지에서 같은
-    `partition`을 지정하면 같은 세션을 공유할 수 있습니다. `partition`을 지정하지
-    않으면 어플리케이션의 기본 세션이 사용됩니다.
-  * `zoomFactor` Number - 페이지의 기본 줌 값을 지정합니다. 예를 들어 `300%`를
-    표현하려면 `3.0`으로 지정합니다. 기본값은 `1.0`입니다.
-  * `javascript` Boolean - 자바스크립트를 활성화합니다. 기본값은 `false`입니다.
-  * `webSecurity` Boolean - `false`로 지정하면 same-origin 정책을 비활성화합니다.
-    (이 속성은 보통 사람들에 의해 웹 사이트를 테스트할 때 사용합니다) 그리고
-    `allowDisplayingInsecureContent`와 `allowRunningInsecureContent` 두 속성을
-    사용자가 `true`로 지정되지 않은 경우 `true`로 지정합니다. 기본값은
-    `true`입니다.
-  * `allowDisplayingInsecureContent` Boolean - https 페이지에서 http URL에서
-    로드한 이미지 같은 리소스를 표시할 수 있도록 허용합니다. 기본값은 `false`입니다.
-  * `allowRunningInsecureContent` Boolean - https 페이지에서 http URL에서 로드한
-    JavaScript와 CSS 또는 플러그인을 실행시킬 수 있도록 허용합니다. 기본값은
-    `false`입니다.
-  * `images` Boolean - 이미지 지원을 활성화합니다. 기본값은 `true`입니다.
-  * `textAreasAreResizable` Boolean - HTML TextArea 요소의 크기를 재조정을
-    허용합니다. 기본값은 `true`입니다.
-  * `webgl` Boolean - WebGL 지원을 활성화합니다. 기본값은 `true`입니다.
-  * `webaudio` Boolean - WebAudio 지원을 활성화합니다. 기본값은 `true`입니다.
-  * `plugins` Boolean - 플러그인 활성화 여부를 지정합니다. 기본값은 `false`입니다.
-  * `experimentalFeatures` Boolean - Chrome의 실험적인 기능을 활성화합니다.
-    기본값은 `false`입니다.
-  * `experimentalCanvasFeatures` Boolean - Chrome의 실험적인 캔버스(canvas) 기능을
-    활성화합니다. 기본값은 `false`입니다.
-  * `overlayScrollbars` Boolean - 오버레이 스크롤바를 활성화합니다. 기본값은
-    `false`입니다.
-  * `sharedWorker` Boolean - SharedWorker 기능을 활성화합니다. 기본값은
-    `false`입니다.
-  * `directWrite` Boolean - Windows에서 폰트 랜더링을 위해 DirectWrite를
-    사용하는지를 지정합니다. 기본값은 `true`입니다.
-  * `pageVisibility` Boolean - 현재 윈도우의 가시성을 반영하는 대신 페이지가
-    visible 또는 hidden 중 지정된 상태를 계속 유지하도록 합니다. 이 속성을 `true`로
-    지정하면 DOM 타이머의 스로틀링을 방지할 수 있습니다. 기본값은 `false`입니다.
+  아래를 참고하세요.
+
+`type` 속성에서 사용할 수 있는 값과 동작은 다음과 같으며, 플랫폼에 따라 다릅니다:
+
+* Linux의 경우, `desktop`, `dock`, `toolbar`, `splash`, `notification` 종류를
+  사용할 수 있습니다.
+* OS X의 경우, `desktop`, `textured` 종류를 사용할 수 있습니다.
+  * `textured`는 창에 메탈 그라디언트 외관(`NSTexturedBackgroundWindowMask`)을
+    설정합니다.
+  * `desktop`은 데스크탑 배경 레벨(`kCGDesktopWindowLevel - 1`)에 윈도우를
+    배치합니다. 참고로 이렇게 만들어진 윈도우는 포커스, 키보드, 마우스 이벤트를 받을
+    수 없습니다. 하지만 편법으로 `globalShortcut`을 통해 키 입력을 받을 수 있습니다.
+
+`titleBarStyle` 속성은 OS X 10.10 Yosemite 이후 버전만 지원하며, 다음 3가지 종류의
+값을 사용할 수 있습니다:
+
+* `default` 또는 미지정: 표준 Mac 회색 불투명 스타일을 사용합니다.
+* `hidden`: 타이틀 바를 숨기고 컨텐츠 전체를 윈도우 크기에 맞춥니다.
+  타이틀 바는 없어지지만 표준 창 컨트롤 ("신호등 버튼")은 왼쪽 상단에 유지됩니다.
+* `hidden-inset`: `hidden` 타이틀 바 속성과 함께 신호등 버튼이 윈도우 모서리로부터
+  약간 더 안쪽으로 들어가도록합니다.
+
+`webPreferences` 속성은 다음과 같은 속성을 가질 수 있습니다:
+
+* `nodeIntegration` Boolean - node(node.js) 통합 여부. 기본값은 `true`입니다.
+* `preload` String - 스크립트를 지정하면 페이지 내의 다른 스크립트가 작동하기 전에
+  로드됩니다. 여기서 지정한 스크립트는 node 통합 활성화 여부에 상관없이 언제나 모든
+  node API에 접근할 수 있습니다. 이 속성의 스크립트 경로는 절대 경로로 지정해야
+  합니다. node 통합이 비활성화되어있을 경우, preload 스크립트는 node의 global
+  심볼들을 다시 global 스코프로 다시 포함 시킬 수 있습니다.
+  [여기](process.md#event-loaded)의 예제를 참고하세요.
+* `partition` String - 페이지에서 사용할 세션을 지정합니다. 만약 `partition`이
+  `persist:`로 시작하면 페이지는 지속성 세션을 사용하며 다른 모든 앱 내의
+  페이지에서 같은 `partition`을 사용할 수 있습니다. 만약 `persist:` 접두어로
+  시작하지 않으면 페이지는 인-메모리 세션을 사용합니다. 여러 페이지에서 같은
+  `partition`을 지정하면 같은 세션을 공유할 수 있습니다. `partition`을 지정하지
+  않으면 어플리케이션의 기본 세션이 사용됩니다.
+* `zoomFactor` Number - 페이지의 기본 줌 값을 지정합니다. 예를 들어 `300%`를
+  표현하려면 `3.0`으로 지정합니다. 기본값은 `1.0`입니다.
+* `javascript` Boolean - 자바스크립트를 활성화합니다. 기본값은 `false`입니다.
+* `webSecurity` Boolean - `false`로 지정하면 same-origin 정책을 비활성화합니다.
+  (이 속성은 보통 사람들에 의해 웹 사이트를 테스트할 때 사용합니다) 그리고
+  `allowDisplayingInsecureContent`와 `allowRunningInsecureContent` 두 속성을
+  사용자가 `true`로 지정되지 않은 경우 `true`로 지정합니다. 기본값은
+  `true`입니다.
+* `allowDisplayingInsecureContent` Boolean - https 페이지에서 http URL에서
+  로드한 이미지 같은 리소스를 표시할 수 있도록 허용합니다. 기본값은 `false`입니다.
+* `allowRunningInsecureContent` Boolean - https 페이지에서 http URL에서 로드한
+  JavaScript와 CSS 또는 플러그인을 실행시킬 수 있도록 허용합니다. 기본값은
+  `false`입니다.
+* `images` Boolean - 이미지 지원을 활성화합니다. 기본값은 `true`입니다.
+* `textAreasAreResizable` Boolean - HTML TextArea 요소의 크기를 재조정을
+  허용합니다. 기본값은 `true`입니다.
+* `webgl` Boolean - WebGL 지원을 활성화합니다. 기본값은 `true`입니다.
+* `webaudio` Boolean - WebAudio 지원을 활성화합니다. 기본값은 `true`입니다.
+* `plugins` Boolean - 플러그인 활성화 여부를 지정합니다. 기본값은 `false`입니다.
+* `experimentalFeatures` Boolean - Chrome의 실험적인 기능을 활성화합니다.
+  기본값은 `false`입니다.
+* `experimentalCanvasFeatures` Boolean - Chrome의 실험적인 캔버스(canvas) 기능을
+  활성화합니다. 기본값은 `false`입니다.
+* `directWrite` Boolean - Windows에서 폰트 랜더링을 위해 DirectWrite를
+  사용하는지를 지정합니다. 기본값은 `true`입니다.
+* `blinkFeatures` String - `CSSVariables,KeyboardEventKey`같은 `,`로 구분된
+  기능 문자열들의 리스트입니다. 지원하는 전체 기능 문자열들은
+  [setFeatureEnabledFromString][blink-feature-string] 함수에서 찾을 수 있습니다.
 
 ## Events
 
@@ -747,3 +752,5 @@ Linux 플랫폼에선 Unity 데스크톱 환경만 지원합니다. 그리고 �
 * `ignore` Boolean
 
 윈도우에서 일어나는 모든 마우스 이벤트를 무시합니다.
+
+[blink-feature-string]: https://code.google.com/p/chromium/codesearch#chromium/src/out/Debug/gen/blink/platform/RuntimeEnabledFeatures.cpp&sq=package:chromium&type=cs&l=527

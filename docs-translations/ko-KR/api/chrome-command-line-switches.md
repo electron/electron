@@ -119,6 +119,14 @@ TLS fallback에서 사용할 SSL/TLS 최소 버전을 지정합니다. ("tls1", 
 
 SSL 암호화를 비활성화할 대상 목록을 지정합니다. (`,`로 구분)
 
+## --disable-renderer-backgrounding
+
+Chromium이 랜더러 프로세스의 보이지 않는 페이지의 우선순위를 낮추는 것을 방지합니다.
+
+이 플래그는 전역적이며 모든 랜더러 프로세스에 적용됩니다. 만약 하나의 윈도우창에만
+스로틀링을 비활성화하고 싶다면 [조용한 오디오를 재생하는][play-silent-audio] 핵을 사용할
+수 있습니다.
+
 ## --enable-logging
 
 Chromium의 로그를 콘솔에 출력합니다.
@@ -149,3 +157,4 @@ Chromium의 로그를 콘솔에 출력합니다.
 [app]: app.md
 [append-switch]: app.md#appcommandlineappendswitchswitch-value
 [ready]: app.md#event-ready
+[play-silent-audio]: https://github.com/atom/atom/pull/9485/files

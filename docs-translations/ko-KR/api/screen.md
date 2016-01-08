@@ -54,6 +54,24 @@ app.on('ready', function() {
 });
 ```
 
+## `Display` 객체
+
+`Display` 객체는 시스템에 연결된 물리적인 디스플레이를 표현합니다. 헤드레스(headless)
+시스템에선 가짜 `Display` 객체가 보여지거나 리모트(remote), 가상 디스플레이에
+해당하게 됩니다.
+
+* `display` object
+  * `id` Integer - 디스플레이에 관련된 유일 식별자.
+  * `rotation` Integer - 값은 0, 1, 2, 3이 될 수 있고, 각 값은 시계 방향을 기준으로
+    0, 90, 180, 270도의 화면 회전 상태로 표현됩니다.
+  * `scaleFactor` Number - 기기의 픽셀 스케일 크기.
+  * `touchSupport` String - 터치 스크린의 여부, `available`, `unavailable`,
+    `unknown` 값으로 반환됩니다.
+  * `bounds` Object
+  * `size` Object
+  * `workArea` Object
+  * `workAreaSize` Object
+
 ## Events
 
 `screen` 모듈은 다음과 같은 이벤트를 가지고 있습니다:
