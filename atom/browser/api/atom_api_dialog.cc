@@ -55,12 +55,13 @@ void ShowMessageBox(int type,
   if (mate::Converter<atom::MessageBoxCallback>::FromV8(args->isolate(),
                                                         peek,
                                                         &callback)) {
-    atom::ShowMessageBox(window, (atom::MessageBoxType)type, buttons, default_button_index,
-                         cancel_id, options, title, message, detail, icon, callback);
+    atom::ShowMessageBox(window, (atom::MessageBoxType)type, buttons,
+                         default_button_index, cancel_id, options, title,
+                        message, detail, icon, callback);
   } else {
     int chosen = atom::ShowMessageBox(window, (atom::MessageBoxType)type,
-                                      buttons, default_button_index, cancel_id, options, title,
-                                      message, detail, icon);
+                                      buttons, default_button_index, cancel_id,
+                                      options, title, message, detail, icon);
     args->Return(chosen);
   }
 }

@@ -176,8 +176,8 @@ int ShowMessageBox(NativeWindow* parent,
                    const std::string& message,
                    const std::string& detail,
                    const gfx::ImageSkia& icon) {
-  return GtkMessageBox(parent, type, buttons, default_button_index, cancel_id, title, message, detail,
-                       icon).RunSynchronous();
+  return GtkMessageBox(parent, type, buttons, default_button_index, cancel_id,
+                      title, message, detail, icon).RunSynchronous();
 }
 
 void ShowMessageBox(NativeWindow* parent,
@@ -191,8 +191,8 @@ void ShowMessageBox(NativeWindow* parent,
                     const std::string& detail,
                     const gfx::ImageSkia& icon,
                     const MessageBoxCallback& callback) {
-  (new GtkMessageBox(parent, type, buttons, default_button_index, cancel_id, title, message, detail,
-                     icon))->RunAsynchronous(callback);
+  (new GtkMessageBox(parent, type, buttons, default_button_index, cancel_id,
+                    title, message, detail, icon))->RunAsynchronous(callback);
 }
 
 void ShowErrorBox(const base::string16& title, const base::string16& content) {
