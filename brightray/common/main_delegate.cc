@@ -10,10 +10,69 @@
 #include "base/command_line.h"
 #include "base/path_service.h"
 #include "content/public/common/content_switches.h"
-#include "ui/base/l10n/l10n_util.h"
 #include "ui/base/resource/resource_bundle.h"
+#include "ui/base/ui_base_switches.h"
 
 namespace brightray {
+
+namespace {
+
+// Returns true if this subprocess type needs the ResourceBundle initialized
+// and resources loaded.
+bool SubprocessNeedsResourceBundle(const std::string& process_type) {
+  return
+#if defined(OS_WIN) || defined(OS_MACOSX)
+      // Windows needs resources for the default/null plugin.
+      // Mac needs them for the plugin process name.
+      process_type == switches::kPluginProcess ||
+#endif
+#if defined(OS_POSIX) && !defined(OS_MACOSX)
+      // The zygote process opens the resources for the renderers.
+      process_type == switches::kZygoteProcess ||
+#endif
+#if defined(OS_MACOSX)
+      // Mac needs them too for scrollbar related images and for sandbox
+      // profiles.
+#if !defined(DISABLE_NACL)
+      process_type == switches::kNaClLoaderProcess ||
+#endif
+      process_type == switches::kPpapiPluginProcess ||
+      process_type == switches::kPpapiBrokerProcess ||
+      process_type == switches::kGpuProcess ||
+#endif
+      process_type == switches::kRendererProcess ||
+      process_type == switches::kUtilityProcess;
+}
+
+}  // namespace
+
+void InitializeResourceBundle(const std::string& locale) {
+  // Load locales.
+  ui::ResourceBundle::InitSharedInstanceWithLocale(
+      locale, nullptr, ui::ResourceBundle::DO_NOT_LOAD_COMMON_RESOURCES);
+
+  // Load other resource files.
+  base::FilePath path;
+#if defined(OS_MACOSX)
+  path = GetResourcesPakFilePath();
+#else
+  base::FilePath pak_dir;
+  PathService::Get(base::DIR_MODULE, &pak_dir);
+  path = pak_dir.Append(FILE_PATH_LITERAL("content_shell.pak"));
+#endif
+
+  ui::ResourceBundle& bundle = ui::ResourceBundle::GetSharedInstance();
+  bundle.AddDataPackFromPath(path, ui::GetSupportedScaleFactors()[0]);
+#if defined(OS_WIN)
+  bundle.AddDataPackFromPath(
+      pak_dir.Append(FILE_PATH_LITERAL("ui_resources_200_percent.pak")),
+      ui::SCALE_FACTOR_200P);
+  bundle.AddDataPackFromPath(
+      pak_dir.Append(FILE_PATH_LITERAL("content_resources_200_percent.pak")),
+      ui::SCALE_FACTOR_200P);
+#endif
+}
+
 
 MainDelegate::MainDelegate() {
 }
@@ -36,27 +95,16 @@ bool MainDelegate::BasicStartupComplete(int* exit_code) {
 }
 
 void MainDelegate::PreSandboxStartup() {
-#if defined(OS_MACOSX)
-  l10n_util::OverrideLocaleWithCocoaLocale();
-#endif
-  InitializeResourceBundle();
-}
+  auto cmd = *base::CommandLine::ForCurrentProcess();
+  std::string process_type = cmd.GetSwitchValueASCII(switches::kProcessType);
 
-void MainDelegate::InitializeResourceBundle() {
-  base::FilePath path;
-#if defined(OS_MACOSX)
-  path = GetResourcesPakFilePath();
-#else
-  base::FilePath pak_dir;
-  PathService::Get(base::DIR_MODULE, &pak_dir);
-  path = pak_dir.Append(FILE_PATH_LITERAL("content_shell.pak"));
-#endif
-
-  ui::ResourceBundle::InitSharedInstanceWithLocale("", nullptr,
-      ui::ResourceBundle::DO_NOT_LOAD_COMMON_RESOURCES);
-  ui::ResourceBundle::GetSharedInstance().AddDataPackFromPath(
-      path, ui::GetSupportedScaleFactors()[0]);
-  AddDataPackFromPath(&ui::ResourceBundle::GetSharedInstance(), path.DirName());
+  // Initialize ResourceBundle which handles files loaded from external
+  // sources. The language should have been passed in to us from the
+  // browser process as a command line flag.
+  if (SubprocessNeedsResourceBundle(process_type)) {
+    std::string locale = cmd.GetSwitchValueASCII(switches::kLang);
+    InitializeResourceBundle(locale);
+  }
 }
 
 content::ContentBrowserClient* MainDelegate::CreateContentBrowserClient() {

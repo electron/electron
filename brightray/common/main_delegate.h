@@ -22,6 +22,9 @@ namespace brightray {
 class BrowserClient;
 class ContentClient;
 
+void InitializeResourceBundle(const std::string& locale);
+base::FilePath GetResourcesPakFilePath();
+
 class MainDelegate : public content::ContentMainDelegate {
  public:
   MainDelegate();
@@ -36,15 +39,9 @@ class MainDelegate : public content::ContentMainDelegate {
   // implementation.
   virtual scoped_ptr<BrowserClient> CreateBrowserClient();
 
-  // Subclasses can override this to provide additional .pak files to be
-  // included in the ui::ResourceBundle.
-  virtual void AddDataPackFromPath(
-      ui::ResourceBundle* bundle, const base::FilePath& pak_dir) {}
-
 #if defined(OS_MACOSX)
   // Subclasses can override this to custom the paths of child process and
   // framework bundle.
-  virtual base::FilePath GetResourcesPakFilePath();
   virtual void OverrideChildProcessPath();
   virtual void OverrideFrameworkBundlePath();
 #endif
@@ -54,8 +51,6 @@ class MainDelegate : public content::ContentMainDelegate {
 
  private:
   content::ContentBrowserClient* CreateContentBrowserClient() override;
-
-  void InitializeResourceBundle();
 
   scoped_ptr<ContentClient> content_client_;
   scoped_ptr<BrowserClient> browser_client_;

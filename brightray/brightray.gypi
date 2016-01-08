@@ -131,6 +131,8 @@
           'SK_SUPPORT_LEGACY_SETCONFIG',
           'SK_IGNORE_ETC1_SUPPORT',
           'SK_IGNORE_GPU_DITHER',
+          # NACL is not enabled:
+          'DISABLE_NACL',
         ],
         'conditions': [
           ['OS!="mac"', {
