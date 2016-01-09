@@ -19,17 +19,34 @@ Like `--debug` but pauses the script on the first line.
 
 ## Use node-inspector for Debugging
 
-__Note:__ Electron uses node v0.11.13, which currently doesn't work very well
+__Note:__ Electron doesn't currently work very well
 with node-inspector, and the main process will crash if you inspect the
 `process` object under node-inspector's console.
 
-### 1. Start the [node-inspector][node-inspector] server
+### 1. Make sure you have [node-gyp required tools][node-gyp-required-tools] installed
+
+### 2. Install [node-inspector][node-inspector]
 
 ```bash
-$ node-inspector
+$ npm install node-inspector
 ```
 
-### 2. Enable debug mode for Electron
+### 3. Install a patched version of `node-pre-gyp`
+
+```bash
+$ npm install git+https://git@github.com/enlight/node-pre-gyp.git#detect-electron-runtime-in-find
+```
+
+### 4. Recompile the `node-inspector` `v8` modules for electron (change the target to your electron version number)
+
+```bash
+$ node_modules/.bin/node-pre-gyp --target=0.36.2 --runtime=electron --fallback-to-build --directory node_modules/v8-debug/ --dist-url=https://atom.io/download/atom-shell reinstall
+$ node_modules/.bin/node-pre-gyp --target=0.36.2 --runtime=electron --fallback-to-build --directory node_modules/v8-profiler/ --dist-url=https://atom.io/download/atom-shell reinstall
+```
+
+See also [How to install native modules](how-to-install-native-modules).
+
+### 5. Enable debug mode for Electron
 
 You can either start Electron with a debug flag like:
 
@@ -43,8 +60,17 @@ or, to pause your script on the first line:
 $ electron --debug-brk=5858 your/app
 ```
 
-### 3. Load the debugger UI
+### 5. Start the [node-inspector][node-inspector] server using electron
 
-Open http://127.0.0.1:8080/debug?ws=127.0.0.1:8080&port=5858 in the Chrome browser.
+```bash
+$ ELECTRON_RUN_AS_NODE=true path/to/electron.exe node_modules/node-inspector/bin/inspector.js
+```
+
+### 6. Load the debugger UI
+
+Open http://127.0.0.1:8080/debug?ws=127.0.0.1:8080&port=5858 in the Chrome browser. You may have to click pause if starting with debug-brk to see the entry line.
 
 [node-inspector]: https://github.com/node-inspector/node-inspector
+[node-gyp-required-tools]: https://github.com/nodejs/node-gyp#installation
+[how-to-install-native-modules]: using-native-node-modules.md#how-to-install-native-modules
+

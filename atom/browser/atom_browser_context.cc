@@ -8,6 +8,7 @@
 #include "atom/browser/atom_download_manager_delegate.h"
 #include "atom/browser/browser.h"
 #include "atom/browser/net/atom_cert_verifier.h"
+#include "atom/browser/net/atom_network_delegate.h"
 #include "atom/browser/net/atom_ssl_config_service.h"
 #include "atom/browser/net/atom_url_request_job_factory.h"
 #include "atom/browser/net/asar/asar_protocol_handler.h"
@@ -61,12 +62,17 @@ std::string RemoveWhitespace(const std::string& str) {
 AtomBrowserContext::AtomBrowserContext(const std::string& partition,
                                        bool in_memory)
     : brightray::BrowserContext(partition, in_memory),
-      cert_verifier_(new AtomCertVerifier),
+      cert_verifier_(nullptr),
       job_factory_(new AtomURLRequestJobFactory),
+      network_delegate_(new AtomNetworkDelegate),
       allow_ntlm_everywhere_(false) {
 }
 
 AtomBrowserContext::~AtomBrowserContext() {
+}
+
+net::NetworkDelegate* AtomBrowserContext::CreateNetworkDelegate() {
+  return network_delegate_;
 }
 
 std::string AtomBrowserContext::GetUserAgent() {
@@ -86,7 +92,8 @@ std::string AtomBrowserContext::GetUserAgent() {
   return content::BuildUserAgentFromProduct(user_agent);
 }
 
-net::URLRequestJobFactory* AtomBrowserContext::CreateURLRequestJobFactory(
+scoped_ptr<net::URLRequestJobFactory>
+AtomBrowserContext::CreateURLRequestJobFactory(
     content::ProtocolHandlerMap* handlers,
     content::URLRequestInterceptorScopedVector* interceptors) {
   scoped_ptr<AtomURLRequestJobFactory> job_factory(job_factory_);
@@ -131,7 +138,7 @@ net::URLRequestJobFactory* AtomBrowserContext::CreateURLRequestJobFactory(
         top_job_factory.Pass(), make_scoped_ptr(*it)));
   interceptors->weak_clear();
 
-  return top_job_factory.release();
+  return top_job_factory.Pass();
 }
 
 net::HttpCache::BackendFactory*
@@ -160,8 +167,10 @@ content::BrowserPluginGuestManager* AtomBrowserContext::GetGuestManager() {
   return guest_manager_.get();
 }
 
-net::CertVerifier* AtomBrowserContext::CreateCertVerifier() {
-  return cert_verifier_;
+scoped_ptr<net::CertVerifier> AtomBrowserContext::CreateCertVerifier() {
+  DCHECK(!cert_verifier_);
+  cert_verifier_ = new AtomCertVerifier;
+  return make_scoped_ptr(cert_verifier_);
 }
 
 net::SSLConfigService* AtomBrowserContext::CreateSSLConfigService() {

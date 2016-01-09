@@ -42,7 +42,7 @@ void SetWindowType(::Window xwindow, const std::string& type) {
   XDisplay* xdisplay = gfx::GetXDisplay();
   std::string type_prefix = "_NET_WM_WINDOW_TYPE_";
   ::Atom window_type = XInternAtom(
-      xdisplay, (type_prefix + base::StringToUpperASCII(type)).c_str(), False);
+      xdisplay, (type_prefix + base::ToUpperASCII(type)).c_str(), False);
   XChangeProperty(xdisplay, xwindow,
                   XInternAtom(xdisplay, "_NET_WM_WINDOW_TYPE", False),
                   XA_ATOM,

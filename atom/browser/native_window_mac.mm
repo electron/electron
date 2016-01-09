@@ -6,7 +6,6 @@
 
 #include <string>
 
-#import "atom/browser/ui/cocoa/event_processing_window.h"
 #include "atom/common/draggable_region.h"
 #include "atom/common/options_switches.h"
 #include "base/mac/mac_util.h"
@@ -177,8 +176,27 @@ bool ScopedDisableResize::disable_resize_ = false;
   return YES;
 }
 
+- (void)windowWillEnterFullScreen:(NSNotification*)notification {
+  // Hide the native toolbar before entering fullscreen, so there is no visual
+  // artifacts.
+  if (shell_->should_hide_native_toolbar_in_fullscreen()) {
+    NSWindow* window = shell_->GetNativeWindow();
+    [window setToolbar:nil];
+  }
+}
+
 - (void)windowDidEnterFullScreen:(NSNotification*)notification {
   shell_->NotifyWindowEnterFullScreen();
+
+  // Restore the native toolbar immediately after entering fullscreen, if we do
+  // this before leaving fullscreen, traffic light buttons will be jumping.
+  if (shell_->should_hide_native_toolbar_in_fullscreen()) {
+    NSWindow* window = shell_->GetNativeWindow();
+    base::scoped_nsobject<NSToolbar> toolbar(
+        [[NSToolbar alloc] initWithIdentifier:@"titlebarStylingToolbar"]);
+    [toolbar setShowsBaselineSeparator:NO];
+    [window setToolbar:toolbar];
+  }
 }
 
 - (void)windowDidExitFullScreen:(NSNotification*)notification {
@@ -192,6 +210,11 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 - (void)windowWillClose:(NSNotification*)notification {
   shell_->NotifyWindowClosed();
+
+  // Clears the delegate when window is going to be closed, since EL Capitan it
+  // is possible that the methods of delegate would get called after the window
+  // has been closed.
+  [shell_->GetNativeWindow() setDelegate:nil];
 }
 
 - (BOOL)windowShouldClose:(id)window {
@@ -204,7 +227,7 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 @end
 
-@interface AtomNSWindow : EventProcessingWindow {
+@interface AtomNSWindow : NSWindow {
  @private
   atom::NativeWindowMac* shell_;
   bool enable_larger_than_screen_;
@@ -226,6 +249,8 @@ bool ScopedDisableResize::disable_resize_ = false;
 - (void)setEnableLargerThanScreen:(bool)enable {
   enable_larger_than_screen_ = enable;
 }
+
+// NSWindow overrides.
 
 - (NSRect)constrainFrameRect:(NSRect)frameRect toScreen:(NSScreen*)screen {
   // Resizing is disabled.
@@ -328,7 +353,8 @@ NativeWindowMac::NativeWindowMac(
     const mate::Dictionary& options)
     : NativeWindow(web_contents, options),
       is_kiosk_(false),
-      attention_request_id_(0) {
+      attention_request_id_(0),
+      should_hide_native_toolbar_in_fullscreen_(false) {
   int width = 800, height = 600;
   options.Get(options::kWidth, &width);
   options.Get(options::kHeight, &height);
@@ -370,6 +396,12 @@ NativeWindowMac::NativeWindowMac(
   if ((titleBarStyle == "hidden") || (titleBarStyle == "hidden-inset")) {
     styleMask |= NSFullSizeContentViewWindowMask;
     styleMask |= NSUnifiedTitleAndToolbarWindowMask;
+  }
+  // We capture this because we need to access the option later when
+  // entering/exiting fullscreen and since the options dict is only passed to
+  // the constructor but not stored, let’s store this option this way.
+  if (titleBarStyle == "hidden-inset") {
+    should_hide_native_toolbar_in_fullscreen_ = true;
   }
 
   window_.reset([[AtomNSWindow alloc]
@@ -437,11 +469,16 @@ NativeWindowMac::NativeWindowMac(
   [window_ setDisableAutoHideCursor:disableAutoHideCursor];
 
   // Disable fullscreen button when 'fullscreen' is specified to false.
-  bool fullscreen;
+  bool fullscreen = false;
   if (!(options.Get(options::kFullscreen, &fullscreen) &&
         !fullscreen)) {
     NSUInteger collectionBehavior = [window_ collectionBehavior];
     collectionBehavior |= NSWindowCollectionBehaviorFullScreenPrimary;
+    [window_ setCollectionBehavior:collectionBehavior];
+  } else if (base::mac::IsOSElCapitanOrLater()) {
+    // On EL Capitan this flag is required to hide fullscreen button.
+    NSUInteger collectionBehavior = [window_ collectionBehavior];
+    collectionBehavior |= NSWindowCollectionBehaviorFullScreenAuxiliary;
     [window_ setCollectionBehavior:collectionBehavior];
   }
 
@@ -682,6 +719,10 @@ bool NativeWindowMac::IsDocumentEdited() {
   return [window_ isDocumentEdited];
 }
 
+void NativeWindowMac::SetIgnoreMouseEvents(bool ignore) {
+  [window_ setIgnoresMouseEvents:ignore];
+}
+
 bool NativeWindowMac::HasModalDialog() {
   return [window_ attachedSheet] != nil;
 }
@@ -761,20 +802,14 @@ void NativeWindowMac::HandleKeyboardEvent(
       event.type == content::NativeWebKeyboardEvent::Char)
     return;
 
-  if (event.os_event.window == window_.get()) {
-    EventProcessingWindow* event_window =
-        static_cast<EventProcessingWindow*>(window_);
-    DCHECK([event_window isKindOfClass:[EventProcessingWindow class]]);
-    [event_window redispatchKeyEvent:event.os_event];
-  } else {
+  BOOL handled = [[NSApp mainMenu] performKeyEquivalent:event.os_event];
+  if (!handled && event.os_event.window != window_.get()) {
     // The event comes from detached devtools view, and it has already been
-    // handled by the devtools itself, we now send it to application menu to
-    // make menu acclerators work.
-    BOOL handled = [[NSApp mainMenu] performKeyEquivalent:event.os_event];
-    // Handle the cmd+~ shortcut.
     if (!handled && (event.os_event.modifierFlags & NSCommandKeyMask) &&
-        (event.os_event.keyCode == 50  /* ~ key */))
+        (event.os_event.keyCode == 50  /* ~ key */)) {
+      // Handle the cmd+~ shortcut.
       Focus(true);
+    }
   }
 }
 

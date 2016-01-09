@@ -23,6 +23,7 @@ const CGFloat kVerticalTitleMargin = 2;
   atom::TrayIconCocoa* trayIcon_; // weak
   AtomMenuController* menuController_; // weak
   BOOL isHighlightEnable_;
+  BOOL forceHighlight_;
   BOOL inMouseEventSequence_;
   base::scoped_nsobject<NSImage> image_;
   base::scoped_nsobject<NSImage> alternateImage_;
@@ -39,6 +40,8 @@ const CGFloat kVerticalTitleMargin = 2;
   image_.reset([image copy]);
   trayIcon_ = icon;
   isHighlightEnable_ = YES;
+  forceHighlight_ = NO;
+  inMouseEventSequence_ = NO;
 
   if ((self = [super initWithFrame: CGRectZero])) {
     // Setup the image view.
@@ -89,7 +92,7 @@ const CGFloat kVerticalTitleMargin = 2;
 
   // Make use of NSImageView to draw the image, which can correctly draw
   // template image under dark menu bar.
-  if (highlight && alternateImage_ &&
+  if (inMouseEventSequence_ && alternateImage_ &&
       [image_view_ image] != alternateImage_.get()) {
     [image_view_ setImage:alternateImage_];
   } else if ([image_view_ image] != image_.get()) {
@@ -238,7 +241,19 @@ const CGFloat kVerticalTitleMargin = 2;
   [self setNeedsDisplay:YES];
 }
 
-- (void)popUpContextMenu {
+- (void)popUpContextMenu:(ui::SimpleMenuModel*)menu_model {
+  // Show a custom menu.
+  if (menu_model) {
+    base::scoped_nsobject<AtomMenuController> menuController(
+        [[AtomMenuController alloc] initWithModel:menu_model]);
+    forceHighlight_ = YES;  // Should highlight when showing menu.
+    [self setNeedsDisplay:YES];
+    [statusItem_ popUpStatusItemMenu:[menuController menu]];
+    forceHighlight_ = NO;
+    [self setNeedsDisplay:YES];
+    return;
+  }
+
   if (menuController_ && ![menuController_ isMenuOpen]) {
     // Redraw the dray icon to show highlight if it is enabled.
     [self setNeedsDisplay:YES];
@@ -266,14 +281,14 @@ const CGFloat kVerticalTitleMargin = 2;
 
 - (void)draggingEnded:(id <NSDraggingInfo>)sender {
   trayIcon_->NotifyDragEnded();
+
+  if (NSPointInRect([sender draggingLocation], self.frame)) {
+    trayIcon_->NotifyDrop();
+    [self handleDrop:sender];
+  }
 }
 
-- (BOOL)prepareForDragOperation:(id <NSDraggingInfo>)sender {
-  trayIcon_->NotifyDrop();
-  return YES;
-}
-
-- (BOOL)performDragOperation:(id <NSDraggingInfo>)sender {
+- (BOOL)handleDrop:(id <NSDraggingInfo>)sender {
   NSPasteboard* pboard = [sender draggingPasteboard];
 
   if ([[pboard types] containsObject:NSFilenamesPboardType]) {
@@ -287,7 +302,17 @@ const CGFloat kVerticalTitleMargin = 2;
   return NO;
 }
 
+- (BOOL)prepareForDragOperation:(id <NSDraggingInfo>)sender {
+  return YES;
+}
+
+- (BOOL)performDragOperation:(id <NSDraggingInfo>)sender {
+  return YES;
+}
+
 - (BOOL)shouldHighlight {
+  if (isHighlightEnable_ && forceHighlight_)
+    return true;
   BOOL isMenuOpen = menuController_ && [menuController_ isMenuOpen];
   return isHighlightEnable_ && (inMouseEventSequence_ || isMenuOpen);
 }
@@ -338,8 +363,9 @@ void TrayIconCocoa::SetHighlightMode(bool highlight) {
   [status_item_view_ setHighlight:highlight];
 }
 
-void TrayIconCocoa::PopUpContextMenu(const gfx::Point& pos) {
-  [status_item_view_ popUpContextMenu];
+void TrayIconCocoa::PopUpContextMenu(const gfx::Point& pos,
+                                     ui::SimpleMenuModel* menu_model) {
+  [status_item_view_ popUpContextMenu:menu_model];
 }
 
 void TrayIconCocoa::SetContextMenu(ui::SimpleMenuModel* menu_model) {

@@ -4,6 +4,7 @@
 
 #include "atom/common/native_mate_converters/content_converter.h"
 
+#include <string>
 #include <vector>
 
 #include "atom/common/native_mate_converters/callback.h"
@@ -95,6 +96,27 @@ v8::Local<v8::Value> Converter<ContextMenuParamsWithWebContents>::ToV8(
     dict.Set("menu", MenuToV8(isolate, val.second, params.custom_context,
                               params.custom_items));
   return mate::ConvertToV8(isolate, dict);
+}
+
+// static
+bool Converter<content::StopFindAction>::FromV8(
+    v8::Isolate* isolate,
+    v8::Local<v8::Value> val,
+    content::StopFindAction* out) {
+  std::string action;
+  if (!ConvertFromV8(isolate, val, &action))
+    return false;
+
+  if (action == "clearSelection")
+    *out = content::STOP_FIND_ACTION_CLEAR_SELECTION;
+  else if (action == "keepSelection")
+    *out = content::STOP_FIND_ACTION_KEEP_SELECTION;
+  else if (action == "activateSelection")
+    *out = content::STOP_FIND_ACTION_ACTIVATE_SELECTION;
+  else
+    return false;
+
+  return true;
 }
 
 }  // namespace mate

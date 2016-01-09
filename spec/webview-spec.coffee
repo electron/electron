@@ -1,6 +1,7 @@
 assert = require 'assert'
 path   = require 'path'
 http   = require 'http'
+url    = require 'url'
 
 describe '<webview> tag', ->
   @timeout 10000
@@ -261,14 +262,69 @@ describe '<webview> tag', ->
     it 'emits when favicon urls are received', (done) ->
       webview.addEventListener 'page-favicon-updated', (e) ->
         assert.equal e.favicons.length, 2
-        url =
+        pageUrl =
           if process.platform is 'win32'
             'file:///C:/favicon.png'
           else
             'file:///favicon.png'
-        assert.equal e.favicons[0], url
+        assert.equal e.favicons[0], pageUrl
         done()
       webview.src = "file://#{fixtures}/pages/a.html"
+      document.body.appendChild webview
+
+  describe 'will-navigate event', ->
+    it 'emits when a url that leads to oustide of the page is clicked', (done) ->
+      webview.addEventListener 'will-navigate', (e) ->
+        assert.equal e.url, "http://host/"
+        done()
+
+      webview.src = "file://#{fixtures}/pages/webview-will-navigate.html"
+      document.body.appendChild webview
+
+  describe 'did-navigate event', ->
+    p = path.join fixtures, 'pages', 'webview-will-navigate.html'
+    p = p.replace /\\/g, '/'
+    pageUrl = url.format protocol: 'file', slashes: true, pathname: p
+
+    it 'emits when a url that leads to outside of the page is clicked', (done) ->
+      webview.addEventListener 'did-navigate', (e) ->
+        assert.equal e.url, pageUrl
+        done()
+
+      webview.src = pageUrl
+      document.body.appendChild webview
+
+  describe 'did-navigate-in-page event', ->
+    it 'emits when an anchor link is clicked', (done) ->
+      p = path.join fixtures, 'pages', 'webview-did-navigate-in-page.html'
+      p = p.replace /\\/g, '/'
+      pageUrl = url.format protocol: 'file', slashes: true, pathname: p
+
+      webview.addEventListener 'did-navigate-in-page', (e) ->
+        assert.equal e.url, "#{pageUrl}#test_content"
+        done()
+
+      webview.src = pageUrl
+      document.body.appendChild webview
+
+    it 'emits when window.history.replaceState is called', (done) ->
+      webview.addEventListener 'did-navigate-in-page', (e) ->
+        assert.equal e.url, "http://host/"
+        done()
+
+      webview.src = "file://#{fixtures}/pages/webview-did-navigate-in-page-with-history.html"
+      document.body.appendChild webview
+
+    it 'emits when window.location.hash is changed', (done) ->
+      p = path.join fixtures, 'pages', 'webview-did-navigate-in-page-with-hash.html'
+      p = p.replace /\\/g, '/'
+      pageUrl = url.format protocol: 'file', slashes: true, pathname: p
+
+      webview.addEventListener 'did-navigate-in-page', (e) ->
+        assert.equal e.url, "#{pageUrl}#test"
+        done()
+
+      webview.src = pageUrl
       document.body.appendChild webview
 
   describe 'close event', ->
@@ -277,6 +333,52 @@ describe '<webview> tag', ->
         done()
 
       webview.src = "file://#{fixtures}/pages/close.html"
+      document.body.appendChild webview
+
+  describe 'devtools-opened event', ->
+    it 'should fire when webview.openDevTools() is called', (done) ->
+      listener = ->
+        webview.removeEventListener 'devtools-opened', listener
+        webview.closeDevTools()
+        done()
+
+      webview.addEventListener 'devtools-opened', listener
+      webview.addEventListener 'dom-ready', ->
+        webview.openDevTools()
+
+      webview.src = "file://#{fixtures}/pages/base-page.html"
+      document.body.appendChild webview
+
+  describe 'devtools-closed event', ->
+    it 'should fire when webview.closeDevTools() is called', (done) ->
+      listener2 = ->
+        webview.removeEventListener 'devtools-closed', listener2
+        done()
+
+      listener = ->
+        webview.removeEventListener 'devtools-opened', listener
+        webview.closeDevTools()
+
+      webview.addEventListener 'devtools-opened', listener
+      webview.addEventListener 'devtools-closed', listener2
+      webview.addEventListener 'dom-ready', ->
+        webview.openDevTools()
+
+      webview.src = "file://#{fixtures}/pages/base-page.html"
+      document.body.appendChild webview
+
+  describe 'devtools-focused event', ->
+    it 'should fire when webview.openDevTools() is called', (done) ->
+      listener = ->
+        webview.removeEventListener 'devtools-focused', listener
+        webview.closeDevTools()
+        done()
+
+      webview.addEventListener 'devtools-focused', listener
+      webview.addEventListener 'dom-ready', ->
+        webview.openDevTools()
+
+      webview.src = "file://#{fixtures}/pages/base-page.html"
       document.body.appendChild webview
 
   describe '<webview>.reload()', ->
@@ -378,4 +480,38 @@ describe '<webview> tag', ->
         webview.sendInputEvent type: 'mouseup', modifiers: ['ctrl'], x: 10, y: 20
       webview.src = "file://#{fixtures}/pages/onmouseup.html"
       webview.setAttribute 'nodeintegration', 'on'
+      document.body.appendChild webview
+
+  describe 'media-started-playing media-paused events', ->
+    it 'emits when audio starts and stops playing', (done) ->
+      audioPlayed = false
+      webview.addEventListener 'media-started-playing', ->
+        audioPlayed = true
+      webview.addEventListener 'media-paused', ->
+        assert audioPlayed
+        done()
+      webview.src = "file://#{fixtures}/pages/audio.html"
+      document.body.appendChild webview
+
+  describe 'found-in-page event', ->
+    it 'emits when a request is made', (done) ->
+      requestId = null
+      listener = (e) ->
+        assert.equal e.result.requestId, requestId
+        if e.result.finalUpdate
+          assert.equal e.result.matches, 3
+          webview.stopFindInPage "clearSelection"
+          done()
+      listener2 = (e) ->
+        requestId = webview.findInPage "virtual"
+      webview.addEventListener 'found-in-page', listener
+      webview.addEventListener 'did-finish-load', listener2
+      webview.src = "file://#{fixtures}/pages/content.html"
+      document.body.appendChild webview
+
+  xdescribe 'did-change-theme-color event', ->
+    it 'emits when theme color changes', (done) ->
+      webview.addEventListener 'did-change-theme-color', (e) ->
+        done()
+      webview.src = "file://#{fixtures}/pages/theme-color.html"
       document.body.appendChild webview

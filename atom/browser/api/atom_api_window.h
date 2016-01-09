@@ -38,8 +38,7 @@ class WebContents;
 class Window : public mate::TrackableObject<Window>,
                public NativeWindowObserver {
  public:
-  static mate::Wrappable* New(v8::Isolate* isolate,
-                              const mate::Dictionary& options);
+  static mate::Wrappable* New(v8::Isolate* isolate, mate::Arguments* args);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::ObjectTemplate> prototype);
@@ -55,8 +54,6 @@ class Window : public mate::TrackableObject<Window>,
   virtual ~Window();
 
   // NativeWindowObserver:
-  void OnPageTitleUpdated(bool* prevent_default,
-                          const std::string& title) override;
   void WillCloseWindow(bool* prevent_default) override;
   void OnWindowClosed() override;
   void OnWindowBlur() override;
@@ -80,13 +77,7 @@ class Window : public mate::TrackableObject<Window>,
   void OnWindowMessage(UINT message, WPARAM w_param, LPARAM l_param) override;
   #endif
 
-  // mate::Wrappable:
-  bool IsDestroyed() const override;
-
  private:
-  // mate::TrackableObject:
-  void Destroy() override;
-
   // APIs for NativeWindow.
   void Close();
   void Focus();
@@ -130,11 +121,11 @@ class Window : public mate::TrackableObject<Window>,
   void FocusOnWebView();
   void BlurWebView();
   bool IsWebViewFocused();
-  bool IsDevToolsFocused();
   void SetRepresentedFilename(const std::string& filename);
   std::string GetRepresentedFilename();
   void SetDocumentEdited(bool edited);
   bool IsDocumentEdited();
+  void SetIgnoreMouseEvents(bool ignore);
   void CapturePage(mate::Arguments* args);
   void SetProgressBar(double progress);
   void SetOverlayIcon(const gfx::Image& overlay,

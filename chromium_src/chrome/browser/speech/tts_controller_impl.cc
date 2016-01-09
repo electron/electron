@@ -111,7 +111,7 @@ TtsController* TtsController::GetInstance() {
 
 // static
 TtsControllerImpl* TtsControllerImpl::GetInstance() {
-  return Singleton<TtsControllerImpl>::get();
+  return base::Singleton<TtsControllerImpl>::get();
 }
 
 TtsControllerImpl::TtsControllerImpl()

@@ -46,7 +46,11 @@ app.on('will-quit', function() {
 * `callback` Function
 
 `accelerator`로 표현된 전역 단축키를 등록합니다. 유저로부터 등록된 단축키가 눌렸을
-경우 `callback` 함수가 호출됩니다.
+경우 `callback` 함수가 호출됩니다. `accelerator` 단축키가 등록되었을 경우
+`true`를 반환합니다. 그 외엔 `false`를 반환합니다. 예를 들어 지정한
+`accelerator`가 이미 다른 호출자 또는 네이티브 어플리케이션에서 등록된 상태를
+생각할 수 있습니다.
+
 
 ### `globalShortcut.isRegistered(accelerator)`
 

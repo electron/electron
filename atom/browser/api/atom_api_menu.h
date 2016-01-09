@@ -39,11 +39,7 @@ class Menu : public mate::TrackableObject<Menu>,
   Menu();
   ~Menu() override;
 
-  // mate::TrackableObject:
-  void Destroy() override;
-
   // mate::Wrappable:
-  bool IsDestroyed() const override;
   void AfterInit(v8::Isolate* isolate) override;
 
   // ui::SimpleMenuModel::Delegate:

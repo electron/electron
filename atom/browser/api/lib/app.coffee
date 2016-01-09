@@ -54,7 +54,7 @@ deprecate.event app, 'finish-launching', 'ready', ->
   setImmediate => # give default app a chance to setup default menu.
     @emit 'finish-launching'
 deprecate.event app, 'activate-with-no-open-windows', 'activate', (event, hasVisibleWindows) ->
-  @emit 'activate-with-no-open-windows' if not hasVisibleWindows
+  @emit 'activate-with-no-open-windows', event if not hasVisibleWindows
 deprecate.event app, 'select-certificate', 'select-client-certificate'
 
 # Wrappers for native classes.
@@ -65,7 +65,6 @@ wrapDownloadItem = (downloadItem) ->
   deprecate.property downloadItem, 'url', 'getURL'
   deprecate.property downloadItem, 'filename', 'getFilename'
   deprecate.property downloadItem, 'mimeType', 'getMimeType'
-  deprecate.property downloadItem, 'hasUserGesture', 'hasUserGesture'
   deprecate.rename downloadItem, 'getUrl', 'getURL'
 downloadItemBindings._setWrapDownloadItem wrapDownloadItem
 

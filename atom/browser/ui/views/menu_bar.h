@@ -71,7 +71,6 @@ class MenuBar : public views::View,
 #endif
 
   ui::MenuModel* menu_model_;
-  scoped_ptr<MenuDelegate> menu_delegate_;
 
   DISALLOW_COPY_AND_ASSIGN(MenuBar);
 };

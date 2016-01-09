@@ -129,13 +129,43 @@ Returns:
 * `event` Event
 * `url` String
 
-Emitted when a user or the page wants to start navigation. It can happen when the
-`window.location` object is changed or a user clicks a link in the page.
+Emitted when a user or the page wants to start navigation. It can happen when
+the `window.location` object is changed or a user clicks a link in the page.
 
 This event will not emit when the navigation is started programmatically with
 APIs like `webContents.loadURL` and `webContents.back`.
 
+It is also not emitted for in-page navigations, such as clicking anchor links
+or updating the `window.location.hash`. Use `did-navigate-in-page` event for
+this purpose.
+
 Calling `event.preventDefault()` will prevent the navigation.
+
+### Event: 'did-navigate'
+
+Returns:
+
+* `event` Event
+* `url` String
+
+Emitted when a navigation is done.
+
+This event is not emitted for in-page navigations, such as clicking anchor links
+or updating the `window.location.hash`. Use `did-navigate-in-page` event for
+this purpose.
+
+### Event: 'did-navigate-in-page'
+
+Returns:
+
+* `event` Event
+* `url` String
+
+Emitted when an in-page navigation happened.
+
+When in-page navigation happens, the page URL changes but does not cause
+navigation outside of the page. Examples of this occurring are when anchor links
+are clicked or when the DOM `hashchange` event is triggered.
 
 ### Event: 'crashed'
 
@@ -221,6 +251,36 @@ Emitted when `webContents` wants to do basic auth.
 
 The usage is the same with [the `login` event of `app`](app.md#event-login).
 
+### Event: 'found-in-page'
+
+Returns:
+
+* `event` Event
+* `result` Object
+  * `requestId` Integer
+  * `finalUpdate` Boolean - Indicates if more responses are to follow.
+  * `matches` Integer (Optional) - Number of Matches.
+  * `selectionArea` Object (Optional) - Coordinates of first match region.
+
+Emitted when a result is available for
+[`webContents.findInPage`](web-contents.md#webcontentsfindinpage) request.
+
+### Event: 'media-started-playing'
+
+Emitted when media starts playing.
+
+### Event: 'media-paused'
+
+Emitted when media is paused or done playing.
+
+### Event: 'did-change-theme-color'
+
+Emitted when a page's theme color changes. This is usually due to encountering a meta tag:
+
+```html
+<meta name='theme-color' content='#ff0000'>
+```
+
 ## Instance Methods
 
 The `webContents` object has the following instance methods:
@@ -241,6 +301,13 @@ use the `pragma` header to achieve it.
 const options = {"extraHeaders" : "pragma: no-cache\n"}
 webContents.loadURL(url, options)
 ```
+
+### `webContents.downloadURL(url)`
+
+* `url` URL
+
+Initiates a download of the resource at `url` without navigating. The
+`will-download` event of `session` will be triggered.
 
 ### `webContents.getURL()`
 
@@ -349,7 +416,7 @@ this limitation.
 
 ### `webContents.setAudioMuted(muted)`
 
-+ `muted` Boolean
+* `muted` Boolean
 
 Mute the audio on the current web page.
 
@@ -405,6 +472,45 @@ Executes the editing command `replace` in web page.
 
 Executes the editing command `replaceMisspelling` in web page.
 
+### `webContents.findInPage(text[, options])`
+
+* `text` String - Content to be searched, must not be empty.
+* `options` Object (Optional)
+  * `forward` Boolean - Whether to search forward or backward, defaults to `true`.
+  * `findNext` Boolean - Whether the operation is first request or a follow up,
+    defaults to `false`.
+  * `matchCase` Boolean - Whether search should be case-sensitive,
+    defaults to `false`.
+  * `wordStart` Boolean - Whether to look only at the start of words.
+    defaults to `false`.
+  * `medialCapitalAsWordStart` Boolean - When combined with `wordStart`,
+    accepts a match in the middle of a word if the match begins with an
+    uppercase letter followed by a lowercase or non-letter.
+    Accepts several other intra-word matches, defaults to `false`.
+
+Starts a request to find all matches for the `text` in the web page and returns an `Integer`
+representing the request id used for the request. The result of the request can be
+obtained by subscribing to [`found-in-page`](web-contents.md#event-found-in-page) event.
+
+### `webContents.stopFindInPage(action)`
+
+* `action` String - Specifies the action to take place when ending
+  [`webContents.findInPage`](web-contents.md#webcontentfindinpage) request.
+  * `clearSelection` - Translate the selection into a normal selection.
+  * `keepSelection` - Clear the selection.
+  * `activateSelection` - Focus and click the selection node.
+
+Stops any `findInPage` request for the `webContents` with the provided `action`.
+
+```javascript
+webContents.on('found-in-page', function(event, result) {
+  if (result.finalUpdate)
+    webContents.stopFindInPage("clearSelection");
+});
+
+const requestId = webContents.findInPage("api");
+```
+
 ### `webContents.hasServiceWorker(callback)`
 
 * `callback` Function
@@ -447,6 +553,7 @@ size.
   * 1 - none
   * 2 - minimum
 * `pageSize` String - Specify page size of the generated PDF.
+  * `A5`
   * `A4`
   * `A3`
   * `Legal`
@@ -499,7 +606,14 @@ win.webContents.on("did-finish-load", function() {
 
 * `path` String
 
-Adds the specified path to DevTools workspace.
+Adds the specified path to DevTools workspace. Must be used after DevTools
+creation:
+
+```javascript
+mainWindow.webContents.on('devtools-opened', function() {
+  mainWindow.webContents.addWorkSpace(__dirname);
+});
+```
 
 ### `webContents.removeWorkSpace(path)`
 
@@ -512,15 +626,19 @@ Removes the specified path from DevTools workspace.
 * `options` Object (optional). Properties:
   * `detach` Boolean - opens DevTools in a new window
 
-Opens the developer tools.
+Opens the devtools.
 
 ### `webContents.closeDevTools()`
 
-Closes the developer tools.
+Closes the devtools.
 
 ### `webContents.isDevToolsOpened()`
 
-Returns whether the developer tools are opened.
+Returns whether the devtools is opened.
+
+### `webContents.isDevToolsFocused()`
+
+Returns whether the devtools view is focused .
 
 ### `webContents.toggleDevTools()`
 

@@ -60,12 +60,7 @@ const int kMenuBarHeight = 25;
 #endif
 
 bool IsAltKey(const content::NativeWebKeyboardEvent& event) {
-#if defined(USE_X11)
-  // 164 and 165 represent VK_LALT and VK_RALT.
-  return event.windowsKeyCode == 164 || event.windowsKeyCode == 165;
-#else
   return event.windowsKeyCode == ui::VKEY_MENU;
-#endif
 }
 
 bool IsAltModifier(const content::NativeWebKeyboardEvent& event) {
@@ -180,7 +175,7 @@ NativeWindowViews::NativeWindowViews(
   // Set WM_WINDOW_ROLE.
   params.wm_role_name = "browser-window";
   // Set WM_CLASS.
-  params.wm_class_name = base::StringToLowerASCII(name);
+  params.wm_class_name = base::ToLowerASCII(name);
   params.wm_class_class = name;
 #endif
 
@@ -429,12 +424,14 @@ void NativeWindowViews::SetResizable(bool resizable) {
   // WS_MAXIMIZEBOX => Maximize button
   // WS_MINIMIZEBOX => Minimize button
   // WS_THICKFRAME => Resize handle
-  DWORD style = ::GetWindowLong(GetAcceleratedWidget(), GWL_STYLE);
-  if (resizable)
-    style |= WS_MAXIMIZEBOX | WS_MINIMIZEBOX | WS_THICKFRAME;
-  else
-    style = (style & ~(WS_MAXIMIZEBOX | WS_THICKFRAME)) | WS_MINIMIZEBOX;
-  ::SetWindowLong(GetAcceleratedWidget(), GWL_STYLE, style);
+  if (!transparent()) {
+    DWORD style = ::GetWindowLong(GetAcceleratedWidget(), GWL_STYLE);
+    if (resizable)
+      style |= WS_MAXIMIZEBOX | WS_MINIMIZEBOX | WS_THICKFRAME;
+    else
+      style = (style & ~(WS_MAXIMIZEBOX | WS_THICKFRAME)) | WS_MINIMIZEBOX;
+    ::SetWindowLong(GetAcceleratedWidget(), GWL_STYLE, style);
+  }
 #elif defined(USE_X11)
   if (resizable != resizable_) {
     // On Linux there is no "resizable" property of a window, we have to set

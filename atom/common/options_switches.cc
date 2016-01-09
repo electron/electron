@@ -85,18 +85,18 @@ const char kNodeIntegration[] = "nodeIntegration";
 // Instancd ID of guest WebContents.
 const char kGuestInstanceID[] = "guestInstanceId";
 
-// Set page visiblity to always visible.
-const char kPageVisibility[] = "pageVisibility";
-
 // Enable DirectWrite on Windows.
 const char kDirectWrite[] = "directWrite";
 
 // Web runtime features.
 const char kExperimentalFeatures[]       = "experimentalFeatures";
 const char kExperimentalCanvasFeatures[] = "experimentalCanvasFeatures";
-const char kOverlayScrollbars[]          = "overlayScrollbars";
-const char kOverlayFullscreenVideo[]     = "overlayFullscreenVideo";
-const char kSharedWorker[]               = "sharedWorker";
+
+// Opener window's ID.
+const char kOpenerID[] = "openerId";
+
+// Enable blink features.
+const char kBlinkFeatures[] = "blinkFeatures";
 
 }  // namespace options
 
@@ -120,6 +120,9 @@ const char kDisableHttpCache[] = "disable-http-cache";
 // Register schemes to standard.
 const char kRegisterStandardSchemes[] = "register-standard-schemes";
 
+// Register schemes to handle service worker.
+const char kRegisterServiceWorkerSchemes[] = "register-service-worker-schemes";
+
 // The minimum SSL/TLS version ("tls1", "tls1.1", or "tls1.2") that
 // TLS fallback will accept.
 const char kSSLVersionFallbackMin[] = "ssl-version-fallback-min";
@@ -136,12 +139,13 @@ const char kPreloadScript[]              = "preload";
 const char kPreloadURL[]                 = "preload-url";
 const char kNodeIntegration[]            = "node-integration";
 const char kGuestInstanceID[]            = "guest-instance-id";
-const char kExperimentalFeatures[]       = "experimental-features";
-const char kExperimentalCanvasFeatures[] = "experimental-canvas-features";
-const char kOverlayScrollbars[]          = "overlay-scrollbars";
-const char kOverlayFullscreenVideo[]     = "overlay-fullscreen-video";
-const char kSharedWorker[]               = "shared-worker";
-const char kPageVisibility[]             = "page-visiblity";
+const char kOpenerID[]                   = "opener-id";
+
+// Widevine options
+// Path to Widevine CDM binaries.
+const char kWidevineCdmPath[] = "widevine-cdm-path";
+// Widevine CDM version.
+const char kWidevineCdmVersion[] = "widevine-cdm-version";
 
 }  // namespace switches
 

@@ -13,6 +13,7 @@
 #include "content/public/browser/native_web_keyboard_event.h"
 #include "native_mate/dictionary.h"
 #include "third_party/WebKit/public/web/WebDeviceEmulationParams.h"
+#include "third_party/WebKit/public/web/WebFindOptions.h"
 #include "third_party/WebKit/public/web/WebInputEvent.h"
 
 namespace {
@@ -45,7 +46,7 @@ template<>
 struct Converter<blink::WebInputEvent::Type> {
   static bool FromV8(v8::Isolate* isolate, v8::Handle<v8::Value> val,
                      blink::WebInputEvent::Type* out) {
-    std::string type = base::StringToLowerASCII(V8ToString(val));
+    std::string type = base::ToLowerASCII(V8ToString(val));
     if (type == "mousedown")
       *out = blink::WebInputEvent::MouseDown;
     else if (type == "mouseup")
@@ -82,7 +83,7 @@ template<>
 struct Converter<blink::WebMouseEvent::Button> {
   static bool FromV8(v8::Isolate* isolate, v8::Handle<v8::Value> val,
                      blink::WebMouseEvent::Button* out) {
-    std::string button = base::StringToLowerASCII(V8ToString(val));
+    std::string button = base::ToLowerASCII(V8ToString(val));
     if (button == "left")
       *out = blink::WebMouseEvent::Button::ButtonLeft;
     else if (button == "middle")
@@ -97,7 +98,7 @@ template<>
 struct Converter<blink::WebInputEvent::Modifiers> {
   static bool FromV8(v8::Isolate* isolate, v8::Handle<v8::Value> val,
                      blink::WebInputEvent::Modifiers* out) {
-    std::string modifier = base::StringToLowerASCII(V8ToString(val));
+    std::string modifier = base::ToLowerASCII(V8ToString(val));
     if (modifier == "shift")
       *out = blink::WebInputEvent::ShiftKey;
     else if (modifier == "control" || modifier == "ctrl")
@@ -166,7 +167,7 @@ bool Converter<blink::WebKeyboardEvent>::FromV8(
     out->windowsKeyCode = atom::KeyboardCodeFromCharCode(code, &shifted);
   else if (dict.Get("keyCode", &identifier))
     out->windowsKeyCode = atom::KeyboardCodeFromKeyIdentifier(
-      base::StringToLowerASCII(identifier));
+      base::ToLowerASCII(identifier));
   else
     return false;
 
@@ -263,7 +264,7 @@ bool Converter<blink::WebDeviceEmulationParams>::FromV8(
 
   std::string screen_position;
   if (dict.Get("screenPosition", &screen_position)) {
-    screen_position = base::StringToLowerASCII(screen_position);
+    screen_position = base::ToLowerASCII(screen_position);
     if (screen_position == "mobile")
       out->screenPosition = blink::WebDeviceEmulationParams::Mobile;
     else if (screen_position == "desktop")
@@ -279,6 +280,22 @@ bool Converter<blink::WebDeviceEmulationParams>::FromV8(
   dict.Get("fitToView", &out->fitToView);
   dict.Get("offset", &out->offset);
   dict.Get("scale", &out->scale);
+  return true;
+}
+
+bool Converter<blink::WebFindOptions>::FromV8(
+    v8::Isolate* isolate,
+    v8::Local<v8::Value> val,
+    blink::WebFindOptions* out) {
+  mate::Dictionary dict;
+  if (!ConvertFromV8(isolate, val, &dict))
+    return false;
+
+  dict.Get("forward", &out->forward);
+  dict.Get("matchCase", &out->matchCase);
+  dict.Get("findNext", &out->findNext);
+  dict.Get("wordStart", &out->wordStart);
+  dict.Get("medialCapitalAsWordStart", &out->medialCapitalAsWordStart);
   return true;
 }
 

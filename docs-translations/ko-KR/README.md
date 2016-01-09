@@ -1,4 +1,17 @@
-﻿## 개발 가이드
+﻿반드시 사용하는 Electron 버전과 문서 버전을 일치시켜야 합니다. 버전 숫자는 문서 페이지
+URL에 포함되어 있습니다. 만약 그렇지 않다면, 아마 현재 보고 있는 문서는 개발 중인
+브랜치의 문서를 보고 있을 가능성이 있으며 해당 문서는 추후 API의 변경 가능성이 있고
+현재 사용하고 있는 Electron의 버전과 호환되지 않을 수 있습니다. 이 경우 atom.io의
+[사용할 수 있는 버전](http://electron.atom.io/docs/) 목록에서 다른 버전으로 변경할
+수 있습니다. 또한 GitHub 인터페이스의 "Switch branches/tags" 드롭다운 메뉴에서도
+사용 중인 Electron 버전으로 변경할 수 있습니다.
+
+**역주:** 한국어 번역 문서는 atom.io에 반영이 되어있지 않습니다. 따라서 번역 문서는
+GitHub 프로젝트내에서만 볼 수 있고 `master` 브랜치의 문서는 현재 개발중인 프로젝트의
+문서입니다. 한국어 번역 문서는 현재 `upstream` 원본 문서의 변경에 따라 최대한 문서의
+버전을 맞추려고 노력하고 있지만 가끔 누락된 번역이 존재할 수 있습니다.
+
+## 개발 가이드
 
 * [지원하는 플랫폼](tutorial/supported-platforms.md)
 * [어플리케이션 배포](tutorial/application-distribution.md)
@@ -9,6 +22,7 @@
 * [Selenium 과 WebDriver 사용하기](tutorial/using-selenium-and-webdriver.md)
 * [개발자 도구 확장 기능](tutorial/devtools-extension.md)
 * [Pepper 플래시 플러그인 사용하기](tutorial/using-pepper-flash-plugin.md)
+* [Widevine CDM 플러그인 사용하기](tutorial/using-widevine-cdm-plugin.md)
 
 ## 튜토리얼
 
@@ -21,6 +35,7 @@
 * [개요](api/synopsis.md)
 * [Process 객체](api/process.md)
 * [크롬 명령줄 스위치 지원](api/chrome-command-line-switches.md)
+* [환경 변수](api/environment-variables.md)
 
 ### 커스텀 DOM elements:
 
@@ -48,6 +63,7 @@
 
 ### 랜더러 프로세스에서 사용할 수 있는 모듈 (웹 페이지):
 
+* [desktopCapturer](api/desktop-capturer.md)
 * [ipcRenderer](api/ipc-renderer.md)
 * [remote](api/remote.md)
 * [webFrame](api/web-frame.md)

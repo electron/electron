@@ -18,6 +18,7 @@
 #include "base/logging.h"
 #include "chrome/common/chrome_paths.h"
 #include "content/public/common/content_switches.h"
+#include "ui/base/l10n/l10n_util.h"
 #include "ui/base/resource/resource_bundle.h"
 
 namespace atom {
@@ -135,18 +136,6 @@ content::ContentUtilityClient* AtomMainDelegate::CreateContentUtilityClient() {
 
 scoped_ptr<brightray::ContentClient> AtomMainDelegate::CreateContentClient() {
   return scoped_ptr<brightray::ContentClient>(new AtomContentClient).Pass();
-}
-
-void AtomMainDelegate::AddDataPackFromPath(
-    ui::ResourceBundle* bundle, const base::FilePath& pak_dir) {
-#if defined(OS_WIN)
-  bundle->AddDataPackFromPath(
-      pak_dir.Append(FILE_PATH_LITERAL("ui_resources_200_percent.pak")),
-      ui::SCALE_FACTOR_200P);
-  bundle->AddDataPackFromPath(
-      pak_dir.Append(FILE_PATH_LITERAL("content_resources_200_percent.pak")),
-      ui::SCALE_FACTOR_200P);
-#endif
 }
 
 }  // namespace atom

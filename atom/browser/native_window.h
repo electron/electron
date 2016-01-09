@@ -139,6 +139,7 @@ class NativeWindow : public base::SupportsUserData,
   virtual std::string GetRepresentedFilename();
   virtual void SetDocumentEdited(bool edited);
   virtual bool IsDocumentEdited();
+  virtual void SetIgnoreMouseEvents(bool ignore);
   virtual void SetMenu(ui::MenuModel* menu);
   virtual bool HasModalDialog();
   virtual gfx::NativeWindow GetNativeWindow() = 0;
@@ -156,7 +157,6 @@ class NativeWindow : public base::SupportsUserData,
   virtual void FocusOnWebView();
   virtual void BlurWebView();
   virtual bool IsWebViewFocused();
-  virtual bool IsDevToolsFocused();
 
   // Captures the page with |rect|, |callback| would be called when capturing is
   // done.
@@ -262,7 +262,6 @@ class NativeWindow : public base::SupportsUserData,
   // content::WebContentsObserver:
   void RenderViewCreated(content::RenderViewHost* render_view_host) override;
   void BeforeUnloadDialogCancelled() override;
-  void TitleWasSet(content::NavigationEntry* entry, bool explicit_set) override;
   bool OnMessageReceived(const IPC::Message& message) override;
 
  private:

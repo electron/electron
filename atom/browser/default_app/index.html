@@ -76,7 +76,11 @@
     };
   </script>
 
-  <h2 style="-webkit-app-region: drag">Welcome to Electron</h2>
+  <h2>
+    <script>
+      document.write(`Welcome to Electron (v${process.versions.electron})`)
+    </script>
+  </h2>
 
   <p>
   To run your app with Electron, execute the following command under your
@@ -87,8 +91,18 @@
 
   <p>
   The <code>path-to-your-app</code> should be the path to your own Electron
-  app, you can read the <a href='https://github.com/atom/electron/blob/master/docs/tutorial/quick-start.md'>quick start</a>
-  guide in Electron's <a href='https://github.com/atom/electron/blob/master/docs'>docs</a>
+  app, you can read the
+  <script>
+    document.write(
+      `<a href='https://github.com/atom/electron/blob/v${process.versions.electron}/docs/tutorial/quick-start.md'>quick start</a>`
+    );
+  </script>
+  guide in Electron's
+  <script>
+    document.write(
+      `<a href='https://github.com/atom/electron/tree/v${process.versions.electron}/docs#readme'>docs</a>`
+    );
+  </script>
   on how to write one.
   </p>
 

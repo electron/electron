@@ -43,6 +43,8 @@ valueToMeta = (sender, value, optimizeSimpleObject=false) ->
     meta.then = valueToMeta sender, value.then.bind(value)
   else if meta.type is 'error'
     meta.members = plainObjectToMeta value
+    # Error.name is not part of own properties.
+    meta.members.push {name: 'name', value: value.name}
   else if meta.type is 'date'
     meta.value = value.getTime()
   else
@@ -67,6 +69,7 @@ unwrapArgs = (sender, args) ->
       when 'remote-object' then objectsRegistry.get meta.id
       when 'array' then unwrapArgs sender, meta.value
       when 'buffer' then new Buffer(meta.value)
+      when 'date' then new Date(meta.value)
       when 'promise' then Promise.resolve(then: metaToValue(meta.then))
       when 'object'
         ret = v8Util.createObjectWithName meta.name
@@ -107,7 +110,7 @@ unwrapArgs = (sender, args) ->
 # style function and the caller didn't pass a callback.
 callFunction = (event, func, caller, args) ->
   funcMarkedAsync = v8Util.getHiddenValue(func, 'asynchronous')
-  funcPassedCallback = args[args.length - 1] is 'function'
+  funcPassedCallback = typeof args[args.length - 1] is 'function'
 
   try
     if funcMarkedAsync and not funcPassedCallback
@@ -219,5 +222,10 @@ ipcMain.on 'ATOM_BROWSER_GUEST_WEB_CONTENTS', (event, guestInstanceId) ->
   catch e
     event.returnValue = exceptionToMeta e
 
-ipcMain.on 'ATOM_BROWSER_LIST_MODULES', (event) ->
-  event.returnValue = (name for name of electron)
+ipcMain.on 'ATOM_BROWSER_ASYNC_CALL_TO_GUEST_VIEW', (event, guestInstanceId, method, args...) ->
+  try
+    guestViewManager = require './guest-view-manager'
+    guest = guestViewManager.getGuest(guestInstanceId)
+    guest[method].apply(guest, args)
+  catch e
+    event.returnValue = exceptionToMeta e

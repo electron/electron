@@ -1,9 +1,9 @@
 # Supported Chrome command line switches
 
-This page lists the command line switches used by the Chrome browser that are also supported by
-Electron. You can use [app.commandLine.appendSwitch][append-switch] to append
-them in your app's main script before the [ready][ready] event of [app][app]
-module is emitted:
+This page lists the command line switches used by the Chrome browser that are
+also supported by Electron. You can use
+[app.commandLine.appendSwitch][append-switch] to append them in your app's main
+script before the [ready][ready] event of [app][app] module is emitted:
 
 ```javascript
 const app = require('electron').app;
@@ -47,6 +47,22 @@ only affects requests with HTTP protocol, including HTTPS and WebSocket
 requests. It is also noteworthy that not all proxy servers support HTTPS and
 WebSocket requests.
 
+## --proxy-bypass-list=`hosts`
+
+Instructs Electron to bypass the proxy server for the given semi-colon-separated
+list of hosts. This flag has an effect only if used in tandem with
+`--proxy-server`.
+
+For example:
+
+```javascript
+app.commandLine.appendSwitch('proxy-bypass-list', '<local>;*.google.com;*foo.com;1.2.3.4:5678')
+```
+
+Will use the proxy server for all hosts except for local addresses (`localhost`,
+`127.0.0.1` etc.), `google.com` subdomains, hosts that contain the suffix
+`foo.com` and anything at `1.2.3.4:5678`.
+
 ## --proxy-pac-url=`url`
 
 Uses the PAC script at the specified `url`.
@@ -78,10 +94,6 @@ connection, and the endpoint host in a `SOCKS` proxy connection).
 
 Like `--host-rules` but these `rules` only apply to the host resolver.
 
-[app]: app.md
-[append-switch]: app.md#appcommandlineappendswitchswitch-value
-[ready]: app.md#event-ready
-
 ## --ignore-certificate-errors
 
 Ignores certificate related errors.
@@ -105,7 +117,16 @@ fallback will accept.
 
 ## --cipher-suite-blacklist=`cipher_suites`
 
-Specify comma-separated list of SSL cipher suites to disable.
+Specifies comma-separated list of SSL cipher suites to disable.
+
+## --disable-renderer-backgrounding
+
+Prevents Chromium from lowering the priority of invisible pages' renderer
+processes.
+
+This flag is global to all renderer processes, if you only want to disable
+throttling in one window, you can take the hack of
+[playing silent audio][play-silent-audio].
 
 ## --enable-logging
 
@@ -133,3 +154,8 @@ whole pathname and not just the module. E.g. `*/foo/bar/*=2` would change the
 logging level for all code in the source files under a `foo/bar` directory.
 
 This switch only works when `--enable-logging` is also passed.
+
+[app]: app.md
+[append-switch]: app.md#appcommandlineappendswitchswitch-value
+[ready]: app.md#event-ready
+[play-silent-audio]: https://github.com/atom/atom/pull/9485/files

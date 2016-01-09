@@ -51,7 +51,7 @@ void ConvertFilters(const Filters& filters,
     std::vector<std::string> extensions(filter.second);
     for (size_t j = 0; j < extensions.size(); ++j)
       extensions[j].insert(0, "*.");
-    buffer->push_back(base::UTF8ToWide(JoinString(extensions, ";")));
+    buffer->push_back(base::UTF8ToWide(base::JoinString(extensions, ";")));
     spec.pszSpec = buffer->back().c_str();
 
     filterspec->push_back(spec);
@@ -262,28 +262,7 @@ bool ShowSaveDialog(atom::NativeWindow* parent_window,
   if (FAILED(hr))
     return false;
 
-  std::string file_name = base::WideToUTF8(std::wstring(buffer));
-
-  // Append extension according to selected filter.
-  if (!filters.empty()) {
-    UINT filter_index = 1;
-    save_dialog.GetPtr()->GetFileTypeIndex(&filter_index);
-    const Filter& filter = filters[filter_index - 1];
-
-    bool matched = false;
-    for (size_t i = 0; i < filter.second.size(); ++i) {
-      if (filter.second[i] == "*" ||
-          base::EndsWith(file_name, filter.second[i], false)) {
-        matched = true;
-        break;;
-      }
-    }
-
-    if (!matched && !filter.second.empty())
-      file_name += ("." + filter.second[0]);
-  }
-
-  *path = base::FilePath(base::UTF8ToUTF16(file_name));
+  *path = base::FilePath(buffer);
   return true;
 }
 

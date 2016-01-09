@@ -70,16 +70,15 @@ your-app/
 __알림__: 만약 `main` 필드가 `package.json`에 설정되어 있지 않으면 Electron은
 자동으로 같은 디렉터리의 `index.js`를 로드합니다.
 
-반드시 `main.js`에서 창을 만들고 시스템 이밴트를 처리해야합니다. 대표적인 예제로
+반드시 `main.js`에서 창을 만들고 시스템 이벤트를 처리해야 합니다. 대표적인 예제로
 다음과 같이 작성할 수 있습니다:
 
 ```javascript
+'use strict';
+
 const electron = require('electron');
 const app = electron.app;  // 어플리케이션 기반을 조작 하는 모듈.
 const BrowserWindow = electron.BrowserWindow;  // 네이티브 브라우저 창을 만드는 모듈.
-
-// Electron 개발자에게 crash-report를 보냄.
-electron.crashReporter.start();
 
 // 윈도우 객체를 전역에 유지합니다. 만약 이렇게 하지 않으면
 // 자바스크립트 GC가 일어날 때 창이 멋대로 닫혀버립니다.

@@ -24,10 +24,10 @@ bool StringToAccelerator(const std::string& description,
     LOG(ERROR) << "The accelerator string can only contain ASCII characters";
     return false;
   }
-  std::string shortcut(base::StringToLowerASCII(description));
+  std::string shortcut(base::ToLowerASCII(description));
 
-  std::vector<std::string> tokens;
-  base::SplitString(shortcut, '+', &tokens);
+  std::vector<std::string> tokens = base::SplitString(
+     shortcut, "+", base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY);
 
   // Now, parse it into an accelerator.
   int modifiers = ui::EF_NONE;

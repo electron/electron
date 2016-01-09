@@ -25,6 +25,7 @@
 #include "base/strings/string_number_conversions.h"
 #include "chrome/browser/printing/printing_message_filter.h"
 #include "chrome/browser/renderer_host/pepper/chrome_browser_pepper_host_factory.h"
+#include "chrome/browser/renderer_host/pepper/widevine_cdm_message_filter.h"
 #include "chrome/browser/speech/tts_message_filter.h"
 #include "content/public/browser/browser_ppapi_host.h"
 #include "content/public/browser/client_certificate_delegate.h"
@@ -54,6 +55,8 @@ bool g_suppress_renderer_process_restart = false;
 
 // Custom schemes to be registered to standard.
 std::string g_custom_schemes = "";
+// Custom schemes to be registered to handle service worker.
+std::string g_custom_service_worker_schemes = "";
 
 scoped_refptr<net::X509Certificate> ImportCertFromFile(
     const base::FilePath& path) {
@@ -84,7 +87,12 @@ void AtomBrowserClient::SuppressRendererProcessRestartForOnce() {
 
 void AtomBrowserClient::SetCustomSchemes(
     const std::vector<std::string>& schemes) {
-  g_custom_schemes = JoinString(schemes, ',');
+  g_custom_schemes = base::JoinString(schemes, ",");
+}
+
+void AtomBrowserClient::SetCustomServiceWorkerSchemes(
+    const std::vector<std::string>& schemes) {
+  g_custom_service_worker_schemes = base::JoinString(schemes, ",");
 }
 
 AtomBrowserClient::AtomBrowserClient() : delegate_(nullptr) {
@@ -98,6 +106,8 @@ void AtomBrowserClient::RenderProcessWillLaunch(
   int process_id = host->GetID();
   host->AddFilter(new printing::PrintingMessageFilter(process_id));
   host->AddFilter(new TtsMessageFilter(process_id, host->GetBrowserContext()));
+  host->AddFilter(
+      new WidevineCdmMessageFilter(process_id, host->GetBrowserContext()));
 }
 
 content::SpeechRecognitionManagerDelegate*
@@ -116,7 +126,6 @@ void AtomBrowserClient::OverrideWebkitPrefs(
   prefs->javascript_can_open_windows_automatically = true;
   prefs->plugins_enabled = true;
   prefs->dom_paste_enabled = true;
-  prefs->java_enabled = false;
   prefs->allow_scripts_to_close_windows = true;
   prefs->javascript_can_access_clipboard = true;
   prefs->local_storage_enabled = true;
@@ -173,6 +182,11 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
     command_line->AppendSwitchASCII(switches::kRegisterStandardSchemes,
                                     g_custom_schemes);
 
+  // The registered service worker schemes.
+  if (!g_custom_service_worker_schemes.empty())
+    command_line->AppendSwitchASCII(switches::kRegisterServiceWorkerSchemes,
+                                    g_custom_service_worker_schemes);
+
 #if defined(OS_WIN)
   // Append --app-user-model-id.
   PWSTR current_app_id;
@@ -186,9 +200,16 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
   if (ContainsKey(pending_processes_, process_id))
     process_id = pending_processes_[process_id];
 
+
+  // Certain render process will be created with no associated render view,
+  // for example: ServiceWorker.
+  auto rvh = content::RenderViewHost::FromID(process_id, kDefaultRoutingID);
+  if (!rvh)
+    return;
+
   // Get the WebContents of the render process.
-  content::WebContents* web_contents = content::WebContents::FromRenderViewHost(
-      content::RenderViewHost::FromID(process_id, kDefaultRoutingID));
+  content::WebContents* web_contents =
+      content::WebContents::FromRenderViewHost(rvh);
   if (!web_contents)
     return;
 

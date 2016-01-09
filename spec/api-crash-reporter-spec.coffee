@@ -18,7 +18,7 @@ describe 'crash-reporter module', ->
   return if process.mas
 
   # The crash-reporter test is not reliable on CI machine.
-  isCI = remote.process.argv[2] == '--ci'
+  isCI = remote.getGlobal('isCi')
   return if isCI
 
   it 'should send minidump when renderer crashes', (done) ->
@@ -55,5 +55,12 @@ describe 'crash-reporter module', ->
         pathname: path.join fixtures, 'api', 'crash.html'
         search: "?port=#{port}"
       if process.platform is 'darwin'
-        crashReporter.start {'submitURL': 'http://127.0.0.1:' + port}
+        crashReporter.start
+          companyName: 'Umbrella Corporation'
+          submitURL: "http://127.0.0.1:#{port}"
       w.loadURL url
+
+  describe ".start(options)", ->
+    it 'requires that the companyName and submitURL options be specified', ->
+      assert.throws(-> crashReporter.start({companyName: 'Missing submitURL'}))
+      assert.throws(-> crashReporter.start({submitURL: 'Missing companyName'}))

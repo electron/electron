@@ -15,9 +15,6 @@ También puedes agregar la opción `plugins` de `browser-window`. Por ejemplo,
 var app = require('app');
 var BrowserWindow = require('browser-window');
 
-// Report crashes to our server.
-require('crash-reporter').start();
-
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the javascript object is GCed.
 var mainWindow = null;
@@ -46,7 +43,7 @@ app.on('ready', function() {
       'plugins': true
     }
   });
-  mainWindow.loadUrl('file://' + __dirname + '/index.html');
+  mainWindow.loadURL('file://' + __dirname + '/index.html');
   // Something else
 });
 ```

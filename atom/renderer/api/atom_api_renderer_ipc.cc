@@ -54,8 +54,6 @@ base::string16 SendSync(mate::Arguments* args,
 
   IPC::SyncMessage* message = new AtomViewHostMsg_Message_Sync(
       render_view->GetRoutingID(), channel, arguments, &json);
-  // Enable the UI thread in browser to receive messages.
-  message->EnableMessagePumping();
   bool success = render_view->Send(message);
 
   if (!success)

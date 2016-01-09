@@ -13,6 +13,7 @@
 #include "ui/gfx/image/image.h"
 #include "ui/gfx/geometry/point.h"
 #include "ui/gfx/geometry/rect.h"
+#include "ui/gfx/screen.h"
 #include "ui/views/controls/menu/menu_runner.h"
 
 namespace atom {
@@ -45,8 +46,7 @@ NotifyIcon::~NotifyIcon() {
   Shell_NotifyIcon(NIM_DELETE, &icon_data);
 }
 
-void NotifyIcon::HandleClickEvent(const gfx::Point& cursor_pos,
-                                  int modifiers,
+void NotifyIcon::HandleClickEvent(int modifiers,
                                   bool left_mouse_click,
                                   bool double_button_click) {
   NOTIFYICONIDENTIFIER icon_id;
@@ -66,7 +66,7 @@ void NotifyIcon::HandleClickEvent(const gfx::Point& cursor_pos,
     return;
   } else if (!double_button_click) {  // single right click
     if (menu_model_)
-      PopUpContextMenu(cursor_pos);
+      PopUpContextMenu(gfx::Point(), menu_model_);
     else
       NotifyRightClicked(gfx::Rect(rect), modifiers);
   }
@@ -142,24 +142,26 @@ void NotifyIcon::DisplayBalloon(const gfx::Image& icon,
     LOG(WARNING) << "Unable to create status tray balloon.";
 }
 
-void NotifyIcon::PopUpContextMenu(const gfx::Point& pos) {
+void NotifyIcon::PopUpContextMenu(const gfx::Point& pos,
+                                  ui::SimpleMenuModel* menu_model) {
   // Returns if context menu isn't set.
-  if (!menu_model_)
+  if (!menu_model)
     return;
   // Set our window as the foreground window, so the context menu closes when
   // we click away from it.
   if (!SetForegroundWindow(window_))
     return;
 
+  // Show menu at mouse's position by default.
+  gfx::Rect rect(pos, gfx::Size());
+  if (pos.IsOrigin())
+    rect.set_origin(gfx::Screen::GetNativeScreen()->GetCursorScreenPoint());
+
   views::MenuRunner menu_runner(
-      menu_model_,
+      menu_model,
       views::MenuRunner::CONTEXT_MENU | views::MenuRunner::HAS_MNEMONICS);
   ignore_result(menu_runner.RunMenuAt(
-      NULL,
-      NULL,
-      gfx::Rect(pos, gfx::Size()),
-      views::MENU_ANCHOR_TOPLEFT,
-      ui::MENU_SOURCE_MOUSE));
+      NULL, NULL, rect, views::MENU_ANCHOR_TOPLEFT, ui::MENU_SOURCE_MOUSE));
 }
 
 void NotifyIcon::SetContextMenu(ui::SimpleMenuModel* menu_model) {

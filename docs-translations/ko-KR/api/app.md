@@ -68,9 +68,14 @@ Returns:
 
 ### Event: 'quit'
 
+Returns:
+
+* `event` Event
+* `exitCode` Integer
+
 어플리케이션이 종료될 때 발생하는 이벤트입니다.
 
-### Event: 'open-file'
+### Event: 'open-file' _OS X_
 
 Returns:
 
@@ -87,7 +92,9 @@ Returns:
 
 이 이벤트를 처리할 땐 반드시 `event.preventDefault()`를 호출해야 합니다.
 
-### Event: 'open-url'
+Windows에선 `process.argv`를 통해 파일 경로를 얻을 수 있습니다.
+
+### Event: 'open-url' _OS X_
 
 Returns:
 
@@ -128,7 +135,7 @@ Returns:
 
 [browserWindow](browser-window.md)에 대한 포커스가 발생했을 때 발생하는 이벤트 입니다.
 
-**역주:** _포커스_는 창을 클릭해서 활성화 시켰을 때를 말합니다.
+**역주:** _포커스_ 는 창을 클릭해서 활성화 시켰을 때를 말합니다.
 
 ### Event: 'browser-window-created'
 
@@ -138,6 +145,35 @@ Returns:
 * `window` BrowserWindow
 
 새로운 [browserWindow](browser-window.md)가 생성되었을 때 발생하는 이벤트 입니다.
+
+### Event: 'certificate-error'
+
+Returns:
+
+* `event` Event
+* `webContents` [WebContents](web-contents.md)
+* `url` URL
+* `error` String - 에러 코드
+* `certificate` Object
+  * `data` Buffer - PEM 인코딩된 데이터
+  * `issuerName` String
+* `callback` Function
+
+`url`에 대한 `certificate` 인증서의 유효성 검증에 실패했을 때 발생하는 이벤트입니다.
+인증서를 신뢰한다면 `event.preventDefault()` 와 `callback(true)`를 호출하여
+기본 동작을 방지하고 인증을 승인할 수 있습니다.
+
+```javascript
+session.on('certificate-error', function(event, webContents, url, error, certificate, callback) {
+  if (url == "https://github.com") {
+    // Verification logic.
+    event.preventDefault();
+    callback(true);
+  } else {
+    callback(false);
+  }
+});
+```
 
 ### Event: 'select-client-certificate'
 
@@ -151,7 +187,7 @@ Returns:
   * `issuerName` String - 발급자의 공통 이름
 * `callback` Function
 
-사용자 인증이 요청되었을 때 발생하는 이벤트 입니다.
+클라이언트 인증이 요청되었을 때 발생하는 이벤트 입니다.
 
 `url`은 클라이언트 인증서를 요청하는 탐색 항목에 해당합니다.
 그리고 `callback`은 목록에서 필터링된 항목과 함께 호출될 필요가 있습니다.
@@ -294,14 +330,6 @@ npm 모듈 규칙에 따라 대부분의 경우 `package.json`의 `name` 필드�
 현재 어플리케이션의 [로케일](https://ko.wikipedia.org/wiki/%EB%A1%9C%EC%BC%80%EC%9D%BC)을
 반환합니다.
 
-### `app.resolveProxy(url, callback)`
-
-* `url` URL
-* `callback` Function
-
-`url`의 프록시 정보를 해석합니다. `callback`은 요청이 수행되었을 때
-`callback(proxy)` 형태로 호출됩니다.
-
 ### `app.addRecentDocument(path)` _OS X_ _Windows_
 
 * `path` String
@@ -323,7 +351,7 @@ Windows에서 사용할 수 있는 JumpList의 [Tasks][tasks] 카테고리에 `t
 
 `tasks`는 다음과 같은 구조를 가지는 `Task` 객체의 배열입니다:
 
-`Task` Object
+`Task` Object:
 * `program` String - 실행할 프로그램의 경로.
   보통 현재 작동중인 어플리케이션의 경로인 `process.execPath`를 지정합니다.
 * `arguments` String - `program`이 실행될 때 사용될 명령줄 인자.
@@ -350,7 +378,7 @@ Windows에서 사용할 수 있는 JumpList의 [Tasks][tasks] 카테고리에 `t
 
 * `callback` Function
 
-현재 어플리케이션을 **Single Instance Application**으로 만들어줍니다.
+현재 어플리케이션을 **Single Instance Application** 으로 만들어줍니다.
 이 메서드는 어플리케이션이 여러 번 실행됐을 때 다중 인스턴스가 생성되는 대신 한 개의
 주 인스턴스만 유지되도록 만들 수 있습니다. 이때 중복 생성된 인스턴스는 주 인스턴스에
 신호를 보내고 종료됩니다.
@@ -369,7 +397,7 @@ Windows에서 사용할 수 있는 JumpList의 [Tasks][tasks] 카테고리에 `t
 중복 생성된 인스턴스는 즉시 종료시켜야 합니다.
 
 OS X에선 사용자가 Finder에서 어플리케이션의 두 번째 인스턴스를 열려고 했을 때 자동으로
-**Single Instance**화 하고 `open-file`과 `open-url` 이벤트를 발생시킵니다. 그러나
+**Single Instance** 화 하고 `open-file`과 `open-url` 이벤트를 발생시킵니다. 그러나
 사용자가 어플리케이션을 CLI 터미널에서 실행하면 운영체제 시스템의 싱글 인스턴스
 메커니즘이 무시되며 그대로 중복 실행됩니다. 따라서 OS X에서도 이 메서드를 통해 확실히
 중복 실행을 방지하는 것이 좋습니다.

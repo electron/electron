@@ -12,6 +12,7 @@
 #include "base/bind.h"
 #include "base/memory/scoped_ptr.h"
 #include "base/memory/weak_ptr.h"
+#include "native_mate/object_template_builder.h"
 
 namespace base {
 class SupportsUserData;
@@ -30,26 +31,32 @@ class TrackableObjectBase : public mate::EventEmitter {
   // Wrap TrackableObject into a class that SupportsUserData.
   void AttachAsUserData(base::SupportsUserData* wrapped);
 
-  // Subclasses should implement this to destroy their native types.
-  virtual void Destroy() = 0;
-
  protected:
   ~TrackableObjectBase() override;
 
   // mate::Wrappable:
   void AfterInit(v8::Isolate* isolate) override;
 
+  // Mark the JS object as destroyed.
+  void MarkDestroyed();
+
+  // Returns a closure that can destroy the native class.
+  base::Closure GetDestroyClosure();
+
   // Get the weak_map_id from SupportsUserData.
   static int32_t GetIDFromWrappedClass(base::SupportsUserData* wrapped);
 
   // Register a callback that should be destroyed before JavaScript environment
   // gets destroyed.
-  static void RegisterDestructionCallback(const base::Closure& closure);
+  static base::Closure RegisterDestructionCallback(const base::Closure& c);
 
   int32_t weak_map_id_;
   base::SupportsUserData* wrapped_;
 
  private:
+  void Destroy();
+
+  base::Closure cleanup_;
   base::WeakPtrFactory<TrackableObjectBase> weak_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(TrackableObjectBase);
@@ -91,11 +98,6 @@ class TrackableObject : public TrackableObjectBase {
       return std::vector<v8::Local<v8::Object>>();
   }
 
-  TrackableObject() {
-    RegisterDestructionCallback(
-        base::Bind(&TrackableObject<T>::ReleaseAllWeakReferences));
-  }
-
   // Removes this instance from the weak map.
   void RemoveFromWeakMap() {
     if (weak_map_ && weak_map_->Has(weak_map_id()))
@@ -103,27 +105,48 @@ class TrackableObject : public TrackableObjectBase {
   }
 
  protected:
+  TrackableObject() {}
   ~TrackableObject() override {
     RemoveFromWeakMap();
   }
 
   void AfterInit(v8::Isolate* isolate) override {
-    if (!weak_map_)
+    if (!weak_map_) {
       weak_map_.reset(new atom::IDWeakMap);
+      RegisterDestructionCallback(
+          base::Bind(&TrackableObject<T>::ReleaseAllWeakReferences));
+    }
     weak_map_id_ = weak_map_->Add(isolate, GetWrapper(isolate));
     TrackableObjectBase::AfterInit(isolate);
   }
 
  private:
+  // mate::Wrappable:
+  mate::ObjectTemplateBuilder GetObjectTemplateBuilder(
+      v8::Isolate* isolate) override {
+    if (template_.IsEmpty()) {
+      auto templ = v8::ObjectTemplate::New(isolate);
+      T::BuildPrototype(isolate, templ);
+      template_.Reset(isolate, templ);
+    }
+
+    return ObjectTemplateBuilder(
+        isolate, v8::Local<v8::ObjectTemplate>::New(isolate, template_));
+  }
+
   // Releases all weak references in weak map, called when app is terminating.
   static void ReleaseAllWeakReferences() {
     weak_map_.reset();
   }
 
+  static v8::Persistent<v8::ObjectTemplate> template_;
   static scoped_ptr<atom::IDWeakMap> weak_map_;
 
   DISALLOW_COPY_AND_ASSIGN(TrackableObject);
 };
+
+template<typename T>
+v8::Persistent<v8::ObjectTemplate> TrackableObject<T>::template_;
 
 template<typename T>
 scoped_ptr<atom::IDWeakMap> TrackableObject<T>::weak_map_;

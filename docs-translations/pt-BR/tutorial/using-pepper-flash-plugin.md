@@ -23,9 +23,6 @@ Por exemplo:
 var app = require('app');
 var BrowserWindow = require('browser-window');
 
-// Informa os erros ao ao servidor.
-require('crash-reporter').start();
-
 // Mantém uma referência global da janela, se não manter, a janela irá fechar
 // automaticamente quando o objeto javascript for GCed.
 var mainWindow = null;
@@ -54,7 +51,7 @@ app.on('ready', function() {
       'plugins': true
     }
   });
-  mainWindow.loadUrl('file://' + __dirname + '/index.html');
+  mainWindow.loadURL('file://' + __dirname + '/index.html');
   // Algo mais
 });
 ```

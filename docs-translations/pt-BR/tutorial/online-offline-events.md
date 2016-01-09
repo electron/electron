@@ -13,7 +13,7 @@ var onlineStatusWindow;
 
 app.on('ready', function() {
   onlineStatusWindow = new BrowserWindow({ width: 0, height: 0, show: false });
-  onlineStatusWindow.loadUrl('file://' + __dirname + '/online-status.html');
+  onlineStatusWindow.loadURL('file://' + __dirname + '/online-status.html');
 });
 ```
 
@@ -53,7 +53,7 @@ var onlineStatusWindow;
 
 app.on('ready', function() {
   onlineStatusWindow = new BrowserWindow({ width: 0, height: 0, show: false });
-  onlineStatusWindow.loadUrl('file://' + __dirname + '/online-status.html');
+  onlineStatusWindow.loadURL('file://' + __dirname + '/online-status.html');
 });
 
 ipc.on('online-status-changed', function(event, status) {

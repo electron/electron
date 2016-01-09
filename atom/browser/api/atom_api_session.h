@@ -48,6 +48,10 @@ class Session: public mate::TrackableObject<Session>,
 
   AtomBrowserContext* browser_context() const { return browser_context_.get(); }
 
+  // mate::TrackableObject:
+  static void BuildPrototype(v8::Isolate* isolate,
+                             v8::Local<v8::ObjectTemplate> prototype);
+
  protected:
   explicit Session(AtomBrowserContext* browser_context);
   ~Session();
@@ -56,15 +60,7 @@ class Session: public mate::TrackableObject<Session>,
   void OnDownloadCreated(content::DownloadManager* manager,
                          content::DownloadItem* item) override;
 
-  // mate::Wrappable:
-  mate::ObjectTemplateBuilder GetObjectTemplateBuilder(
-      v8::Isolate* isolate) override;
-  bool IsDestroyed() const override;
-
  private:
-  // mate::TrackableObject:
-  void Destroy() override;
-
   void ResolveProxy(const GURL& url, ResolveProxyCallback callback);
   void ClearCache(const net::CompletionCallback& callback);
   void ClearStorageData(mate::Arguments* args);
@@ -74,9 +70,11 @@ class Session: public mate::TrackableObject<Session>,
   void DisableNetworkEmulation();
   void SetCertVerifyProc(v8::Local<v8::Value> proc, mate::Arguments* args);
   v8::Local<v8::Value> Cookies(v8::Isolate* isolate);
+  v8::Local<v8::Value> WebRequest(v8::Isolate* isolate);
 
-  // Cached object for cookies API.
+  // Cached object.
   v8::Global<v8::Value> cookies_;
+  v8::Global<v8::Value> web_request_;
 
   scoped_refptr<AtomBrowserContext> browser_context_;
 

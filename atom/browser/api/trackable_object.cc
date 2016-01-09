@@ -30,16 +30,28 @@ class IDUserData : public base::SupportsUserData::Data {
 
 TrackableObjectBase::TrackableObjectBase()
     : weak_map_id_(0), wrapped_(nullptr), weak_factory_(this) {
-  RegisterDestructionCallback(
-      base::Bind(&TrackableObjectBase::Destroy, weak_factory_.GetWeakPtr()));
+  cleanup_ = RegisterDestructionCallback(GetDestroyClosure());
 }
 
 TrackableObjectBase::~TrackableObjectBase() {
+  cleanup_.Run();
 }
 
 void TrackableObjectBase::AfterInit(v8::Isolate* isolate) {
   if (wrapped_)
     AttachAsUserData(wrapped_);
+}
+
+void TrackableObjectBase::MarkDestroyed() {
+  GetWrapper(isolate())->SetAlignedPointerInInternalField(0, nullptr);
+}
+
+base::Closure TrackableObjectBase::GetDestroyClosure() {
+  return base::Bind(&TrackableObjectBase::Destroy, weak_factory_.GetWeakPtr());
+}
+
+void TrackableObjectBase::Destroy() {
+  delete this;
 }
 
 void TrackableObjectBase::AttachAsUserData(base::SupportsUserData* wrapped) {
@@ -63,9 +75,9 @@ int32_t TrackableObjectBase::GetIDFromWrappedClass(base::SupportsUserData* w) {
 }
 
 // static
-void TrackableObjectBase::RegisterDestructionCallback(
-    const base::Closure& closure) {
-  atom::AtomBrowserMainParts::Get()->RegisterDestructionCallback(closure);
+base::Closure TrackableObjectBase::RegisterDestructionCallback(
+    const base::Closure& c) {
+  return atom::AtomBrowserMainParts::Get()->RegisterDestructionCallback(c);
 }
 
 }  // namespace mate

@@ -27,14 +27,6 @@ Menu::Menu()
 Menu::~Menu() {
 }
 
-void Menu::Destroy() {
-  model_.reset();
-}
-
-bool Menu::IsDestroyed() const {
-  return !model_;
-}
-
 void Menu::AfterInit(v8::Isolate* isolate) {
   mate::Dictionary wrappable(isolate, GetWrapper(isolate));
   mate::Dictionary delegate;
@@ -159,6 +151,7 @@ bool Menu::IsVisibleAt(int index) const {
 void Menu::BuildPrototype(v8::Isolate* isolate,
                           v8::Local<v8::ObjectTemplate> prototype) {
   mate::ObjectTemplateBuilder(isolate, prototype)
+      .MakeDestroyable()
       .SetMethod("insertItem", &Menu::InsertItemAt)
       .SetMethod("insertCheckItem", &Menu::InsertCheckItemAt)
       .SetMethod("insertRadioItem", &Menu::InsertRadioItemAt)

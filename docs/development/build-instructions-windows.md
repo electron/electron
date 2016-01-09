@@ -5,7 +5,7 @@ Follow the guidelines below for building Electron on Windows.
 ## Prerequisites
 
 * Windows 7 / Server 2008 R2 or higher
-* Visual Studio 2013 - [download VS 2013 Community Edition for
+* Visual Studio 2013 with Update 5 - [download VS 2013 Community Edition for
   free](https://www.visualstudio.com/downloads/download-visual-studio-vs).
 * [Python 2.7](http://www.python.org/download/releases/2.7/)
 * [Node.js](http://nodejs.org/download/)

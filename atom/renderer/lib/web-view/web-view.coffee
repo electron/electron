@@ -1,4 +1,4 @@
-{deprecate, webFrame, remote} = require 'electron'
+{deprecate, webFrame, remote, ipcRenderer} = require 'electron'
 v8Util = process.atomBinding 'v8_util'
 
 guestViewInternal = require './guest-view-internal'
@@ -270,11 +270,10 @@ registerWebViewElement = ->
     'isCrashed'
     'setUserAgent'
     'getUserAgent'
-    'executeJavaScript'
-    'insertCSS'
     'openDevTools'
     'closeDevTools'
     'isDevToolsOpened'
+    'isDevToolsFocused'
     'inspectElement'
     'setAudioMuted'
     'isAudioMuted'
@@ -289,20 +288,35 @@ registerWebViewElement = ->
     'unselect'
     'replace'
     'replaceMisspelling'
-    'send'
+    'findInPage'
+    'stopFindInPage'
     'getId'
+    'downloadURL'
     'inspectServiceWorker'
     'print'
     'printToPDF'
-    'sendInputEvent'
+  ]
+
+  nonblockMethods = [
+    'send',
+    'sendInputEvent',
+    'executeJavaScript',
+    'insertCSS'
   ]
 
   # Forward proto.foo* method calls to WebViewImpl.foo*.
-  createHandler = (m) ->
+  createBlockHandler = (m) ->
     (args...) ->
       internal = v8Util.getHiddenValue this, 'internal'
       internal.webContents[m] args...
-  proto[m] = createHandler m for m in methods
+  proto[m] = createBlockHandler m for m in methods
+
+  createNonBlockHandler = (m) ->
+    (args...) ->
+      internal = v8Util.getHiddenValue this, 'internal'
+      ipcRenderer.send('ATOM_BROWSER_ASYNC_CALL_TO_GUEST_VIEW', internal.guestInstanceId, m, args...)
+
+  proto[m] = createNonBlockHandler m for m in nonblockMethods
 
   # Deprecated.
   deprecate.rename proto, 'getUrl', 'getURL'

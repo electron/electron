@@ -164,6 +164,7 @@ The `webview` tag has the following methods:
 **Note:** The webview element must be loaded before using the methods.
 
 **Example**
+
 ```javascript
 webview.addEventListener("dom-ready", function() {
   webview.openDevTools();
@@ -278,6 +279,10 @@ Closes the DevTools window of guest page.
 
 Returns a boolean whether guest page has a DevTools window attached.
 
+### `<webview>.isDevToolsFocused()`
+
+Returns a boolean whether DevTools window of guest page is focused.
+
 ### `<webview>.inspectElement(x, y)`
 
 * `x` Integer
@@ -346,6 +351,36 @@ Executes editing command `replace` in page.
 * `text` String
 
 Executes editing command `replaceMisspelling` in page.
+
+### `<webview>.findInPage(text[, options])`
+
+* `text` String - Content to be searched, must not be empty.
+* `options` Object (Optional)
+  * `forward` Boolean - Whether to search forward or backward, defaults to `true`.
+  * `findNext` Boolean - Whether the operation is first request or a follow up,
+    defaults to `false`.
+  * `matchCase` Boolean - Whether search should be case-sensitive,
+    defaults to `false`.
+  * `wordStart` Boolean - Whether to look only at the start of words.
+    defaults to `false`.
+  * `medialCapitalAsWordStart` Boolean - When combined with `wordStart`,
+    accepts a match in the middle of a word if the match begins with an
+    uppercase letter followed by a lowercase or non-letter.
+    Accepts several other intra-word matches, defaults to `false`.
+
+Starts a request to find all matches for the `text` in the web page and returns an `Integer`
+representing the request id used for the request. The result of the request can be
+obtained by subscribing to [`found-in-page`](web-view-tag.md#event-found-in-page) event.
+
+### `<webview>.stopFindInPage(action)`
+
+* `action` String - Specifies the action to take place when ending
+  [`<webview>.findInPage`](web-view-tag.md#webviewtagfindinpage) request.
+  * `clearSelection` - Translate the selection into a normal selection.
+  * `keepSelection` - Clear the selection.
+  * `activateSelection` - Focus and click the selection node.
+
+Stops any `findInPage` request for the `webview` with the provided `action`.
 
 ### `<webview>.print([options])`
 
@@ -452,15 +487,15 @@ Fired when a redirect was received while requesting a resource.
 
 Fired when document in the given frame is loaded.
 
-### Event: 'page-title-set'
+### Event: 'page-title-updated'
 
 Returns:
 
 * `title` String
 * `explicitSet` Boolean
 
-Fired when page title is set during navigation. `explicitSet` is false when title is synthesised from file
-url.
+Fired when page title is set during navigation. `explicitSet` is false when
+title is synthesised from file url.
 
 ### Event: 'page-favicon-updated'
 
@@ -498,6 +533,28 @@ webview.addEventListener('console-message', function(e) {
 });
 ```
 
+### Event: 'found-in-page'
+
+Returns:
+
+* `result` Object
+  * `requestId` Integer
+  * `finalUpdate` Boolean - Indicates if more responses are to follow.
+  * `matches` Integer (Optional) - Number of Matches.
+  * `selectionArea` Object (Optional) - Coordinates of first match region.
+
+Fired when a result is available for
+[`webview.findInPage`](web-view-tag.md#webviewtagfindinpage) request.
+
+```javascript
+webview.addEventListener('found-in-page', function(e) {
+  if (e.result.finalUpdate)
+    webview.stopFindInPage("keepSelection");
+});
+
+const rquestId = webview.findInPage("test");
+```
+
 ### Event: 'new-window'
 
 Returns:
@@ -518,6 +575,48 @@ webview.addEventListener('new-window', function(e) {
   require('electron').shell.openExternal(e.url);
 });
 ```
+
+### Event: 'will-navigate'
+
+Returns:
+
+* `url` String
+
+Emitted when a user or the page wants to start navigation. It can happen when
+the `window.location` object is changed or a user clicks a link in the page.
+
+This event will not emit when the navigation is started programmatically with
+APIs like `<webview>.loadURL` and `<webview>.back`.
+
+It is also not emitted during in-page navigation, such as clicking anchor links
+or updating the `window.location.hash`. Use `did-navigate-in-page` event for
+this purpose.
+
+Calling `event.preventDefault()` does __NOT__ have any effect.
+
+### Event: 'did-navigate'
+
+Returns:
+
+* `url` String
+
+Emitted when a navigation is done.
+
+This event is not emitted for in-page navigations, such as clicking anchor links
+or updating the `window.location.hash`. Use `did-navigate-in-page` event for
+this purpose.
+
+### Event: 'did-navigate-in-page'
+
+Returns:
+
+* `url` String
+
+Emitted when an in-page navigation happened.
+
+When in-page navigation happens, the page URL changes but does not cause
+navigation outside of the page. Examples of this occurring are when anchor links
+are clicked or when the DOM `hashchange` event is triggered.
 
 ### Event: 'close'
 
@@ -581,3 +680,31 @@ Fired when a plugin process is crashed.
 ### Event: 'destroyed'
 
 Fired when the WebContents is destroyed.
+
+### Event: 'media-started-playing'
+
+Emitted when media starts playing.
+
+### Event: 'media-paused'
+
+Emitted when media is paused or done playing.
+
+### Event: 'did-change-theme-color'
+
+Emitted when a page's theme color changes. This is usually due to encountering a meta tag:
+
+```html
+<meta name='theme-color' content='#ff0000'>
+```
+
+### Event: 'devtools-opened'
+
+Emitted when DevTools is opened.
+
+### Event: 'devtools-closed'
+
+Emitted when DevTools is closed.
+
+### Event: 'devtools-focused'
+
+Emitted when DevTools is focused / opened.

@@ -169,9 +169,8 @@ Menu.buildFromTemplate = (template) ->
   for item in positionedTemplate
     throw new TypeError('Invalid template for MenuItem') unless typeof item is 'object'
 
-    item.submenu = Menu.buildFromTemplate item.submenu if item.submenu?
     menuItem = new MenuItem(item)
-    menuItem[key] = value for key, value of item when not menuItem[key]?
+    menuItem[key] ?= value for key, value of item
     menu.append menuItem
 
   menu

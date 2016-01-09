@@ -1,3 +1,5 @@
+{EventEmitter} = require 'events'
+
 binding = process.atomBinding 'ipc'
 v8Util  = process.atomBinding 'v8_util'
 

@@ -31,22 +31,19 @@ your-app/
 └── index.html
 ````
 `package.json `的格式和 Node 的完全一致，并且那个被 `main` 字段声明的脚本文件是你的应用的启动脚本，它运行在主进程上。你应用里的 `package.json` 看起来应该像：
-````
+```json
 {
   "name"    : "your-app",
   "version" : "0.1.0",
   "main"    : "main.js"
 }
-````
+```
 **注意**：如果 `main` 字段没有在 `package.json` 声明，Electron会优先加载 `index.js`。
 
 `main.js` 应该用于创建窗口和处理系统时间，一个典型的例子如下：
-````
+```javascript
 var app = require('app');  // 控制应用生命周期的模块。
 var BrowserWindow = require('browser-window');  // 创建原生浏览器窗口的模块
-
-// 给我们的服务器发送异常报告。
-require('crash-reporter').start();
 
 // 保持一个对于 window 对象的全局引用，不然，当 JavaScript 被 GC，
 // window 会被自动地关闭
@@ -81,9 +78,9 @@ app.on('ready', function() {
     mainWindow = null;
   });
 });
-````
+```
 最后，你想展示的 `index.html` ：
-````
+```html
 <!DOCTYPE html>
 <html>
   <head>
@@ -95,35 +92,35 @@ app.on('ready', function() {
     and Electron <script>document.write(process.versions['electron'])</script>.
   </body>
 </html>
-````
+```
 
 # 运行你的应用
 一旦你创建了最初的 `main.js`， `index.html` 和 `package.json` 这几个文件，你可能会想尝试在本地运行并测试，看看是不是和期望的那样正常运行。
 
 ## electron-prebuild
 如果你已经用 `npm` 全局安装了 `electron-prebuilt`，你只需要按照如下方式直接运行你的应用：
-````
+```bash
 electron .
-````
+```
 如果你是局部安装，那运行：
-````
+```bash
 ./node_modules/.bin/electron .
-````
+```
 
 ## 手工下载 Electron 二进制文件
 如果你手工下载了 Electron 的二进制文件，你也可以直接使用其中的二进制文件直接运行你的应用。
 ### Windows
-````
+```bash
 $ .\electron\electron.exe your-app\
-````
+```
 ### Linux
-````
+```bash
 $ ./electron/electron your-app/
-````
+```
 ### OS X
-````
+```bash
 $ ./Electron.app/Contents/MacOS/Electron your-app/
-````
+```
 `Electron.app` 里面是 Electron 发布包，你可以在[这里][3]下载到。
 
 # 以发行版本运行

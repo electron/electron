@@ -53,10 +53,18 @@ describe 'ipc module', ->
       assert.equal obj.test, 'test'
 
   describe 'remote value in browser', ->
+    print = path.join(fixtures, 'module', 'print_name.js')
+
     it 'keeps its constructor name for objects', ->
       buf = new Buffer('test')
-      print_name = remote.require path.join(fixtures, 'module', 'print_name.js')
+      print_name = remote.require print
       assert.equal print_name.print(buf), 'Buffer'
+
+    it 'supports instanceof Date', ->
+      now = new Date()
+      print_name = remote.require print
+      assert.equal print_name.print(now), 'Date'
+      assert.deepEqual print_name.echo(now), now
 
   describe 'remote promise', ->
     it 'can be used as promise in each side', (done) ->
@@ -89,14 +97,14 @@ describe 'ipc module', ->
       w.loadURL 'file://' + path.join(fixtures, 'api', 'send-sync-message.html')
 
   describe 'remote listeners', ->
-    it 'can be added and removed correctly', ->
-      count = 0
-      w = new BrowserWindow(show: false)
-      listener = () ->
-        count += 1
-        w.removeListener 'blur', listener
-      w.on 'blur', listener
-      w.emit 'blur'
-      w.emit 'blur'
-      assert.equal count, 1
+    w = null
+    afterEach ->
       w.destroy()
+
+    it 'can be added and removed correctly', ->
+      w = new BrowserWindow(show: false)
+      listener = ->
+      w.on 'test', listener
+      assert.equal w.listenerCount('test'), 1
+      w.removeListener 'test', listener
+      assert.equal w.listenerCount('test'), 0

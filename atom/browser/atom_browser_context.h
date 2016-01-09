@@ -13,6 +13,7 @@ namespace atom {
 
 class AtomDownloadManagerDelegate;
 class AtomCertVerifier;
+class AtomNetworkDelegate;
 class AtomURLRequestJobFactory;
 class WebViewManager;
 
@@ -22,13 +23,14 @@ class AtomBrowserContext : public brightray::BrowserContext {
   ~AtomBrowserContext() override;
 
   // brightray::URLRequestContextGetter::Delegate:
+  net::NetworkDelegate* CreateNetworkDelegate() override;
   std::string GetUserAgent() override;
-  net::URLRequestJobFactory* CreateURLRequestJobFactory(
+  scoped_ptr<net::URLRequestJobFactory> CreateURLRequestJobFactory(
       content::ProtocolHandlerMap* handlers,
       content::URLRequestInterceptorScopedVector* interceptors) override;
   net::HttpCache::BackendFactory* CreateHttpCacheBackendFactory(
       const base::FilePath& base_path) override;
-  net::CertVerifier* CreateCertVerifier() override;
+  scoped_ptr<net::CertVerifier> CreateCertVerifier() override;
   net::SSLConfigService* CreateSSLConfigService() override;
   bool AllowNTLMCredentialsForDomain(const GURL& auth_origin) override;
 
@@ -45,6 +47,8 @@ class AtomBrowserContext : public brightray::BrowserContext {
 
   AtomURLRequestJobFactory* job_factory() const { return job_factory_; }
 
+  AtomNetworkDelegate* network_delegate() const { return network_delegate_; }
+
  private:
   scoped_ptr<AtomDownloadManagerDelegate> download_manager_delegate_;
   scoped_ptr<WebViewManager> guest_manager_;
@@ -52,6 +56,7 @@ class AtomBrowserContext : public brightray::BrowserContext {
   // Managed by brightray::BrowserContext.
   AtomCertVerifier* cert_verifier_;
   AtomURLRequestJobFactory* job_factory_;
+  AtomNetworkDelegate* network_delegate_;
 
   bool allow_ntlm_everywhere_;
 

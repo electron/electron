@@ -32,10 +32,10 @@
 #include "ipc/ipc_message_macros.h"
 #include "native_mate/dictionary.h"
 #include "ui/gfx/codec/png_codec.h"
-#include "ui/gfx/geometry/size_conversions.h"
 #include "ui/gfx/geometry/point.h"
 #include "ui/gfx/geometry/rect.h"
 #include "ui/gfx/geometry/size.h"
+#include "ui/gfx/geometry/size_conversions.h"
 #include "ui/gfx/screen.h"
 #include "ui/gl/gpu_switching_manager.h"
 
@@ -245,6 +245,9 @@ bool NativeWindow::IsDocumentEdited() {
   return false;
 }
 
+void NativeWindow::SetIgnoreMouseEvents(bool ignore) {
+}
+
 void NativeWindow::SetMenu(ui::MenuModel* menu) {
 }
 
@@ -263,10 +266,6 @@ void NativeWindow::BlurWebView() {
 bool NativeWindow::IsWebViewFocused() {
   auto host_view = web_contents()->GetRenderViewHost()->GetView();
   return host_view && host_view->HasFocus();
-}
-
-bool NativeWindow::IsDevToolsFocused() {
-  return inspectable_web_contents_->GetView()->IsDevToolsViewFocused();
 }
 
 void NativeWindow::CapturePage(const gfx::Rect& rect,
@@ -291,10 +290,10 @@ void NativeWindow::CapturePage(const gfx::Rect& rect,
   const float scale =
       screen->GetDisplayNearestWindow(native_view).device_scale_factor();
   if (scale > 1.0f)
-    bitmap_size = gfx::ToCeiledSize(gfx::ScaleSize(view_size, scale));
+    bitmap_size = gfx::ScaleToCeiledSize(view_size, scale);
 
   host->CopyFromBackingStore(
-      rect.IsEmpty() ? gfx::Rect(view_size) : rect,
+      gfx::Rect(rect.origin(), view_size),
       bitmap_size,
       base::Bind(&NativeWindow::OnCapturePageDone,
                  weak_factory_.GetWeakPtr(),
@@ -503,17 +502,6 @@ void NativeWindow::BeforeUnloadDialogCancelled() {
 
   // Cancel unresponsive event when window close is cancelled.
   window_unresposive_closure_.Cancel();
-}
-
-void NativeWindow::TitleWasSet(content::NavigationEntry* entry,
-                               bool explicit_set) {
-  bool prevent_default = false;
-  std::string text = entry ? base::UTF16ToUTF8(entry->GetTitle()) : "";
-  FOR_EACH_OBSERVER(NativeWindowObserver,
-                    observers_,
-                    OnPageTitleUpdated(&prevent_default, text));
-  if (!prevent_default && !is_closed_)
-    SetTitle(text);
 }
 
 bool NativeWindow::OnMessageReceived(const IPC::Message& message) {

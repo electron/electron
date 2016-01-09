@@ -61,6 +61,8 @@ class URLRequestAsarJob : public net::URLRequestJob {
   net::Filter* SetupFilter() const override;
   bool GetMimeType(std::string* mime_type) const override;
   void SetExtraRequestHeaders(const net::HttpRequestHeaders& headers) override;
+  int GetResponseCode() const override;
+  void GetResponseInfo(net::HttpResponseInfo* info) override;
 
  private:
   // Meta information about the file. It's used as a member in the

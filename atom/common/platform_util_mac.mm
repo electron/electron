@@ -12,6 +12,7 @@
 #include "base/mac/mac_logging.h"
 #include "base/mac/scoped_aedesc.h"
 #include "base/strings/sys_string_conversions.h"
+#include "net/base/mac/url_conversions.h"
 #include "url/gurl.h"
 
 namespace platform_util {
@@ -120,8 +121,7 @@ void OpenItem(const base::FilePath& full_path) {
 
 bool OpenExternal(const GURL& url) {
   DCHECK([NSThread isMainThread]);
-  NSString* url_string = base::SysUTF8ToNSString(url.spec());
-  NSURL* ns_url = [NSURL URLWithString:url_string];
+  NSURL* ns_url = net::NSURLWithGURL(url);
   if (!ns_url) {
     return false;
   }

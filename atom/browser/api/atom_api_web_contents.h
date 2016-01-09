@@ -54,12 +54,10 @@ class WebContents : public mate::TrackableObject<WebContents>,
   static mate::Handle<WebContents> Create(
       v8::Isolate* isolate, const mate::Dictionary& options);
 
-  // mate::TrackableObject:
-  void Destroy() override;
-
   int GetID() const;
   bool Equal(const WebContents* web_contents) const;
   void LoadURL(const GURL& url, const mate::Dictionary& options);
+  void DownloadURL(const GURL& url);
   GURL GetURL() const;
   base::string16 GetTitle() const;
   bool IsLoading() const;
@@ -81,6 +79,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void OpenDevTools(mate::Arguments* args);
   void CloseDevTools();
   bool IsDevToolsOpened();
+  bool IsDevToolsFocused();
   void ToggleDevTools();
   void EnableDeviceEmulation(const blink::WebDeviceEmulationParams& params);
   void DisableDeviceEmulation();
@@ -112,6 +111,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void Unselect();
   void Replace(const base::string16& word);
   void ReplaceMisspelling(const base::string16& word);
+  uint32 FindInPage(mate::Arguments* args);
+  void StopFindInPage(content::StopFindAction action);
 
   // Focus.
   void Focus();
@@ -144,15 +145,14 @@ class WebContents : public mate::TrackableObject<WebContents>,
   v8::Local<v8::Value> Session(v8::Isolate* isolate);
   v8::Local<v8::Value> DevToolsWebContents(v8::Isolate* isolate);
 
+  // mate::TrackableObject:
+  static void BuildPrototype(v8::Isolate* isolate,
+                             v8::Local<v8::ObjectTemplate> prototype);
+
  protected:
   explicit WebContents(content::WebContents* web_contents);
   WebContents(v8::Isolate* isolate, const mate::Dictionary& options);
   ~WebContents();
-
-  // mate::Wrappable:
-  mate::ObjectTemplateBuilder GetObjectTemplateBuilder(
-      v8::Isolate* isolate) override;
-  bool IsDestroyed() const override;
 
   // content::WebContentsDelegate:
   bool AddMessageToConsole(content::WebContents* source,
@@ -189,6 +189,13 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void RendererUnresponsive(content::WebContents* source) override;
   void RendererResponsive(content::WebContents* source) override;
   bool HandleContextMenu(const content::ContextMenuParams& params) override;
+  bool OnGoToEntryOffset(int offset) override;
+  void FindReply(content::WebContents* web_contents,
+                 int request_id,
+                 int number_of_matches,
+                 const gfx::Rect& selection_rect,
+                 int active_match_ordinal,
+                 bool final_update) override;
 
   // content::WebContentsObserver:
   void BeforeUnloadFired(const base::TimeTicks& proceed_time) override;
@@ -227,6 +234,9 @@ class WebContents : public mate::TrackableObject<WebContents>,
       const std::vector<content::FaviconURL>& urls) override;
   void PluginCrashed(const base::FilePath& plugin_path,
                      base::ProcessId plugin_pid) override;
+  void MediaStartedPlaying() override;
+  void MediaPaused() override;
+  void DidChangeThemeColor(SkColor theme_color) override;
 
   // brightray::InspectableWebContentsViewDelegate:
   void DevToolsFocused() override;
@@ -241,6 +251,10 @@ class WebContents : public mate::TrackableObject<WebContents>,
   };
 
   AtomBrowserContext* GetBrowserContext() const;
+
+  uint32 GetNextRequestId() {
+    return ++request_id_;
+  }
 
   // Called when received a message from renderer.
   void OnRendererMessage(const base::string16& channel,
@@ -262,6 +276,9 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   // The type of current WebContents.
   Type type_;
+
+  // Request id used for findInPage request.
+  uint32 request_id_;
 
   DISALLOW_COPY_AND_ASSIGN(WebContents);
 };

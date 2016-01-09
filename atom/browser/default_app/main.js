@@ -148,7 +148,11 @@ app.once('ready', function() {
         },
         {
           label: 'Documentation',
-          click: function() { shell.openExternal('https://github.com/atom/electron/tree/master/docs#readme') }
+          click: function() {
+            shell.openExternal(
+              `https://github.com/atom/electron/tree/v${process.versions.electron}/docs#readme`
+            )
+          }
         },
         {
           label: 'Community Discussions',
@@ -189,11 +193,11 @@ app.once('ready', function() {
         {
           label: 'Hide Others',
           accelerator: 'Command+Shift+H',
-          role: 'hideothers:'
+          role: 'hideothers'
         },
         {
           label: 'Show All',
-          role: 'unhide:'
+          role: 'unhide'
         },
         {
           type: 'separator'
@@ -249,7 +253,11 @@ if (option.file && !option.webdriver) {
   } catch(e) {
     if (e.code == 'MODULE_NOT_FOUND') {
       app.focus();
-      dialog.showErrorBox('Error opening app', 'The app provided is not a valid electron app, please read the docs on how to write one:\nhttps://github.com/atom/electron/tree/master/docs\n\n' + e.toString());
+      dialog.showErrorBox(
+        'Error opening app',
+        'The app provided is not a valid Electron app, please read the docs on how to write one:\n' +
+        `https://github.com/atom/electron/tree/v${process.versions.electron}/docs\n\n${e.toString()}`
+      );
       process.exit(1);
     } else {
       console.error('App threw an error when running', e);

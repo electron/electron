@@ -544,7 +544,6 @@ void PrepareFrameAndViewForPrint::CopySelection(
   // on the page).
   WebPreferences prefs = preferences;
   prefs.javascript_enabled = false;
-  prefs.java_enabled = false;
 
   blink::WebView* web_view = blink::WebView::create(this);
   owns_web_view_ = true;

@@ -374,6 +374,18 @@ describe 'asar package', ->
           assert.equal err.code, 'ENOENT'
           done()
 
+    describe 'fs.mkdir', ->
+      it 'throws error when calling inside asar archive', (done) ->
+        p = path.join fixtures, 'asar', 'a.asar', 'not-exist'
+        fs.mkdir p, (err) ->
+          assert.equal err.code, 'ENOTDIR'
+          done()
+
+    describe 'fs.mkdirSync', ->
+      it 'throws error when calling inside asar archive', ->
+        p = path.join fixtures, 'asar', 'a.asar', 'not-exist'
+        assert.throws (-> fs.mkdirSync p), new RegExp('ENOTDIR')
+
     describe 'child_process.fork', ->
       child_process = require 'child_process'
 
@@ -392,6 +404,23 @@ describe 'asar package', ->
           done()
         child.send file
 
+    describe 'child_process.execFile', ->
+      return unless process.platform is 'darwin'
+
+      {execFile, execFileSync} = require 'child_process'
+      echo = path.join fixtures, 'asar', 'echo.asar', 'echo'
+
+      it 'executes binaries', (done) ->
+        child = execFile echo, ['test'], (error, stdout) ->
+          assert.equal error, null
+          assert.equal stdout, 'test\n'
+          done()
+
+      # execFileSync makes the test flaky after a refresh.
+      xit 'execFileSync executes binaries', ->
+        output = execFileSync echo, ['test']
+        assert.equal String(output), 'test\n'
+
     describe 'internalModuleReadFile', ->
       internalModuleReadFile = process.binding('fs').internalModuleReadFile
 
@@ -406,6 +435,43 @@ describe 'asar package', ->
       it 'reads a normal file with unpacked files', ->
         p = path.join fixtures, 'asar', 'unpack.asar', 'a.txt'
         assert.equal internalModuleReadFile(p).toString().trim(), 'a'
+
+    describe 'process.noAsar', ->
+      errorName = if process.platform is 'win32' then 'ENOENT' else 'ENOTDIR'
+
+      beforeEach ->
+        process.noAsar = true
+      afterEach ->
+        process.noAsar = false
+
+      it 'disables asar support in sync API', ->
+        file = path.join fixtures, 'asar', 'a.asar', 'file1'
+        dir = path.join fixtures, 'asar', 'a.asar', 'dir1'
+        assert.throws (-> fs.readFileSync file), new RegExp(errorName)
+        assert.throws (-> fs.lstatSync file), new RegExp(errorName)
+        assert.throws (-> fs.realpathSync file), new RegExp(errorName)
+        assert.throws (-> fs.readdirSync dir), new RegExp(errorName)
+
+      it 'disables asar support in async API', (done) ->
+        file = path.join fixtures, 'asar', 'a.asar', 'file1'
+        dir = path.join fixtures, 'asar', 'a.asar', 'dir1'
+        fs.readFile file, (error) ->
+          assert.equal error.code, errorName
+          fs.lstat file, (error) ->
+            assert.equal error.code, errorName
+            fs.realpath file, (error) ->
+              assert.equal error.code, errorName
+              fs.readdir dir, (error) ->
+                assert.equal error.code, errorName
+                done()
+
+      it 'treats *.asar as normal file', ->
+        originalFs = require 'original-fs'
+        asar = path.join fixtures, 'asar', 'a.asar'
+        content1 = fs.readFileSync asar
+        content2 = originalFs.readFileSync asar
+        assert.equal content1.compare(content2), 0
+        assert.throws (-> fs.readdirSync asar), /ENOTDIR/
 
   describe 'asar protocol', ->
     url = require 'url'
@@ -492,6 +558,13 @@ describe 'asar package', ->
 
     it 'does not touch global fs object', ->
       assert.notEqual fs.readdir, gfs.readdir
+
+  describe 'mkdirp module', ->
+    mkdirp = require 'mkdirp'
+
+    it 'throws error when calling inside asar archive', ->
+      p = path.join fixtures, 'asar', 'a.asar', 'not-exist'
+      assert.throws (-> mkdirp.sync p), new RegExp('ENOTDIR')
 
   describe 'native-image', ->
     it 'reads image from asar archive', ->

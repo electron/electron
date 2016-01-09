@@ -340,13 +340,26 @@ bool MoveItemToTrash(const base::FilePath& path) {
 
   // Elevation prompt enabled for UAC protected files.  This overrides the
   // SILENT, NO_UI and NOERRORUI flags.
-  if (FAILED(pfo->SetOperationFlags(FOF_NO_UI |
-                                    FOF_ALLOWUNDO |
-                                    FOF_NOERRORUI |
-                                    FOF_SILENT |
-                                    FOFX_SHOWELEVATIONPROMPT |
-                                    FOFX_RECYCLEONDELETE)))
-    return false;
+
+  if (base::win::GetVersion() >= base::win::VERSION_WIN8) {
+    // Windows 8 introduces the flag RECYCLEONDELETE and deprecates the
+    // ALLOWUNDO in favor of ADDUNDORECORD.
+    if (FAILED(pfo->SetOperationFlags(FOF_NO_UI |
+                                      FOFX_ADDUNDORECORD |
+                                      FOF_NOERRORUI |
+                                      FOF_SILENT |
+                                      FOFX_SHOWELEVATIONPROMPT |
+                                      FOFX_RECYCLEONDELETE)))
+      return false;
+  } else {
+    // For Windows 7 and Vista, RecycleOnDelete is the default behavior.
+    if (FAILED(pfo->SetOperationFlags(FOF_NO_UI |
+                                      FOF_ALLOWUNDO |
+                                      FOF_NOERRORUI |
+                                      FOF_SILENT |
+                                      FOFX_SHOWELEVATIONPROMPT)))
+      return false;
+  }
 
   // Create an IShellItem from the supplied source path.
   base::win::ScopedComPtr<IShellItem> delete_item;

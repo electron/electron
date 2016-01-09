@@ -25,8 +25,9 @@ class ScopedTemporaryFile;
 class Archive {
  public:
   struct FileInfo {
-    FileInfo() : size(0), offset(0) {}
+    FileInfo() : unpacked(false), executable(false), size(0), offset(0) {}
     bool unpacked;
+    bool executable;
     uint32 size;
     uint64 offset;
   };

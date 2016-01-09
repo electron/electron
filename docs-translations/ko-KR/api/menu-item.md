@@ -17,7 +17,8 @@
   * `role` String - 메뉴 아이템의 액션을 정의합니다. 이 속성을 지정하면 `click`
     속성이 무시됩니다.
   * `type` String - `MenuItem`의 타입 `normal`, `separator`, `submenu`,
-    `checkbox` 또는 `radio` 사용가능
+    `checkbox` 또는 `radio`를 사용할 수 있습니다. 만약 값이 `Menu`가 아니면
+    `Menu.buildFromTemplate`를 통해 자동으로 변환됩니다.
   * `label` String
   * `sublabel` String
   * `accelerator` [Accelerator](accelerator.md)

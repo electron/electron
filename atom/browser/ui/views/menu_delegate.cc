@@ -5,7 +5,7 @@
 #include "atom/browser/ui/views/menu_delegate.h"
 
 #include "atom/browser/ui/views/menu_bar.h"
-#include "base/stl_util.h"
+#include "content/public/browser/browser_thread.h"
 #include "ui/views/controls/button/menu_button.h"
 #include "ui/views/controls/menu/menu_item_view.h"
 #include "ui/views/controls/menu/menu_model_adapter.h"
@@ -16,13 +16,10 @@ namespace atom {
 
 MenuDelegate::MenuDelegate(MenuBar* menu_bar)
     : menu_bar_(menu_bar),
-      id_(-1),
-      items_(menu_bar_->GetItemCount()),
-      delegates_(menu_bar_->GetItemCount()) {
+      id_(-1) {
 }
 
 MenuDelegate::~MenuDelegate() {
-  STLDeleteElements(&delegates_);
 }
 
 void MenuDelegate::RunMenu(ui::MenuModel* model, views::MenuButton* button) {
@@ -33,12 +30,15 @@ void MenuDelegate::RunMenu(ui::MenuModel* model, views::MenuButton* button) {
                    button->height() - 1);
 
   id_ = button->tag();
-  views::MenuItemView* item = BuildMenu(model);
+  adapter_.reset(new views::MenuModelAdapter(model));
 
-  views::MenuRunner menu_runner(
+  views::MenuItemView* item = new views::MenuItemView(this);
+  static_cast<views::MenuModelAdapter*>(adapter_.get())->BuildMenu(item);
+
+  menu_runner_.reset(new views::MenuRunner(
       item,
-      views::MenuRunner::CONTEXT_MENU | views::MenuRunner::HAS_MNEMONICS);
-  ignore_result(menu_runner.RunMenuAt(
+      views::MenuRunner::CONTEXT_MENU | views::MenuRunner::HAS_MNEMONICS));
+  ignore_result(menu_runner_->RunMenuAt(
       button->GetWidget()->GetTopLevelWidget(),
       button,
       bounds,
@@ -46,68 +46,53 @@ void MenuDelegate::RunMenu(ui::MenuModel* model, views::MenuButton* button) {
       ui::MENU_SOURCE_MOUSE));
 }
 
-views::MenuItemView* MenuDelegate::BuildMenu(ui::MenuModel* model) {
-  DCHECK_GE(id_, 0);
-
-  if (!items_[id_]) {
-    views::MenuModelAdapter* delegate = new views::MenuModelAdapter(model);
-    delegates_[id_] = delegate;
-
-    views::MenuItemView* item = new views::MenuItemView(this);
-    delegate->BuildMenu(item);
-    items_[id_] = item;
-  }
-
-  return items_[id_];
-}
-
 void MenuDelegate::ExecuteCommand(int id) {
-  delegate()->ExecuteCommand(id);
+  adapter_->ExecuteCommand(id);
 }
 
 void MenuDelegate::ExecuteCommand(int id, int mouse_event_flags) {
-  delegate()->ExecuteCommand(id, mouse_event_flags);
+  adapter_->ExecuteCommand(id, mouse_event_flags);
 }
 
 bool MenuDelegate::IsTriggerableEvent(views::MenuItemView* source,
                                       const ui::Event& e) {
-  return delegate()->IsTriggerableEvent(source, e);
+  return adapter_->IsTriggerableEvent(source, e);
 }
 
 bool MenuDelegate::GetAccelerator(int id, ui::Accelerator* accelerator) const {
-  return delegate()->GetAccelerator(id, accelerator);
+  return adapter_->GetAccelerator(id, accelerator);
 }
 
 base::string16 MenuDelegate::GetLabel(int id) const {
-  return delegate()->GetLabel(id);
+  return adapter_->GetLabel(id);
 }
 
 const gfx::FontList* MenuDelegate::GetLabelFontList(int id) const {
-  return delegate()->GetLabelFontList(id);
+  return adapter_->GetLabelFontList(id);
 }
 
 bool MenuDelegate::IsCommandEnabled(int id) const {
-  return delegate()->IsCommandEnabled(id);
+  return adapter_->IsCommandEnabled(id);
 }
 
 bool MenuDelegate::IsCommandVisible(int id) const {
-  return delegate()->IsCommandVisible(id);
+  return adapter_->IsCommandVisible(id);
 }
 
 bool MenuDelegate::IsItemChecked(int id) const {
-  return delegate()->IsItemChecked(id);
+  return adapter_->IsItemChecked(id);
 }
 
 void MenuDelegate::SelectionChanged(views::MenuItemView* menu) {
-  delegate()->SelectionChanged(menu);
+  adapter_->SelectionChanged(menu);
 }
 
 void MenuDelegate::WillShowMenu(views::MenuItemView* menu) {
-  delegate()->WillShowMenu(menu);
+  adapter_->WillShowMenu(menu);
 }
 
 void MenuDelegate::WillHideMenu(views::MenuItemView* menu) {
-  delegate()->WillHideMenu(menu);
+  adapter_->WillHideMenu(menu);
 }
 
 views::MenuItemView* MenuDelegate::GetSiblingMenu(
@@ -115,16 +100,29 @@ views::MenuItemView* MenuDelegate::GetSiblingMenu(
     const gfx::Point& screen_point,
     views::MenuAnchorPosition* anchor,
     bool* has_mnemonics,
-    views::MenuButton** button) {
+    views::MenuButton**) {
+  views::MenuButton* button;
   ui::MenuModel* model;
-  if (!menu_bar_->GetMenuButtonFromScreenPoint(screen_point, &model, button))
-    return NULL;
+  if (menu_bar_->GetMenuButtonFromScreenPoint(screen_point, &model, &button) &&
+      button->tag() != id_) {
+    // Switch to sibling menu on next tick, otherwise crash may happen.
+    content::BrowserThread::PostTask(
+        content::BrowserThread::UI, FROM_HERE,
+        base::Bind(&MenuDelegate::SwitchToSiblingMenu,
+                   base::Unretained(this), button));
+  }
 
-  *anchor = views::MENU_ANCHOR_TOPLEFT;
-  *has_mnemonics = true;
+  return nullptr;
+}
 
-  id_ = (*button)->tag();
-  return BuildMenu(model);
+void MenuDelegate::SwitchToSiblingMenu(views::MenuButton* button) {
+  menu_runner_->Cancel();
+  // After canceling the menu, we need to wait until next tick so we are out of
+  // nested message loop.
+  content::BrowserThread::PostTask(
+      content::BrowserThread::UI, FROM_HERE,
+      base::Bind(base::IgnoreResult(&views::MenuButton::Activate),
+                 base::Unretained(button)));
 }
 
 }  // namespace atom

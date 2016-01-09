@@ -49,12 +49,11 @@ describe 'session module', ->
   it 'should remove cookies', (done) ->
     session.defaultSession.cookies.set {url: url, name: '2', value: '2'}, (error) ->
       return done(error) if error
-      session.defaultSession.cookies.remove {url: url, name: '2'}, (error) ->
-        return done(error) if error
+      session.defaultSession.cookies.remove url, '2', ->
         session.defaultSession.cookies.get {url: url}, (error, list) ->
           return done(error) if error
           for cookie in list when cookie.name is '2'
-             return done('Cookie not deleted')
+            return done('Cookie not deleted')
           done()
 
   describe 'session.clearStorageData(options)', ->
@@ -87,22 +86,42 @@ describe 'session module', ->
       res.end mockPDF
       downloadServer.close()
 
-    it 'can download successfully', (done) ->
+    assertDownload = (event, state, url, mimeType, receivedBytes, totalBytes, disposition, filename, port) ->
+      assert.equal state, 'completed'
+      assert.equal filename, 'mock.pdf'
+      assert.equal url, "http://127.0.0.1:#{port}/"
+      assert.equal mimeType, 'application/pdf'
+      assert.equal receivedBytes, mockPDF.length
+      assert.equal totalBytes, mockPDF.length
+      assert.equal disposition, contentDisposition
+      assert fs.existsSync downloadFilePath
+      fs.unlinkSync downloadFilePath
+
+    it 'can download using BrowserWindow.loadURL', (done) ->
       downloadServer.listen 0, '127.0.0.1', ->
         {port} = downloadServer.address()
         ipcRenderer.sendSync 'set-download-option', false
         w.loadURL "#{url}:#{port}"
         ipcRenderer.once 'download-done', (event, state, url, mimeType, receivedBytes, totalBytes, disposition, filename) ->
-          assert.equal state, 'completed'
-          assert.equal filename, 'mock.pdf'
-          assert.equal url, "http://127.0.0.1:#{port}/"
-          assert.equal mimeType, 'application/pdf'
-          assert.equal receivedBytes, mockPDF.length
-          assert.equal totalBytes, mockPDF.length
-          assert.equal disposition, contentDisposition
-          assert fs.existsSync downloadFilePath
-          fs.unlinkSync downloadFilePath
+          assertDownload event, state, url, mimeType, receivedBytes, totalBytes, disposition, filename, port
           done()
+
+    it 'can download using WebView.downloadURL', (done) ->
+      downloadServer.listen 0, '127.0.0.1', ->
+        {port} = downloadServer.address()
+        ipcRenderer.sendSync 'set-download-option', false
+
+        webview = new WebView
+        webview.src = "file://#{fixtures}/api/blank.html"
+        webview.addEventListener 'did-finish-load', ->
+          webview.downloadURL "#{url}:#{port}/"
+
+        ipcRenderer.once 'download-done', (event, state, url, mimeType, receivedBytes, totalBytes, disposition, filename) ->
+          assertDownload event, state, url, mimeType, receivedBytes, totalBytes, disposition, filename, port
+          document.body.removeChild(webview)
+          done()
+
+        document.body.appendChild webview
 
     it 'can cancel download', (done) ->
       downloadServer.listen 0, '127.0.0.1', ->

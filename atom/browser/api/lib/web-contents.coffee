@@ -7,6 +7,11 @@ nextId = 0
 getNextId = -> ++nextId
 
 PDFPageSize =
+  A5:
+    custom_display_name: "A5"
+    height_microns: 210000
+    name: "ISO_A5"
+    width_microns: 148000
   A4:
     custom_display_name: "A4"
     height_microns: 297000
@@ -70,9 +75,21 @@ wrapWebContents = (webContents) ->
     menu = Menu.buildFromTemplate params.menu
     menu.popup params.x, params.y
 
+  # This error occurs when host could not be found.
+  webContents.on 'did-fail-provisional-load', (args...) ->
+    # Calling loadURL during this event might cause crash, so delay the event
+    # until next tick.
+    setImmediate => @emit 'did-fail-load', args...
+
+  # Delays the page-title-updated event to next tick.
+  webContents.on '-page-title-updated', (args...) ->
+    setImmediate => @emit 'page-title-updated', args...
+
   # Deprecated.
   deprecate.rename webContents, 'loadUrl', 'loadURL'
   deprecate.rename webContents, 'getUrl', 'getURL'
+  deprecate.event webContents, 'page-title-set', 'page-title-updated', (args...) ->
+    @emit 'page-title-set', args...
 
   webContents.printToPDF = (options, callback) ->
     printingSetting =

@@ -31,6 +31,11 @@ BrowserWindow::_init = ->
   @webContents.on 'crashed', =>
     @emit 'crashed'
 
+  # Change window title to page title.
+  @webContents.on 'page-title-updated', (event, title, explicitSet) =>
+    @emit 'page-title-updated', event, title
+    @setTitle title unless event.defaultPrevented
+
   # Sometimes the webContents doesn't get focus when window is shown, so we have
   # to force focusing on webContents in this case. The safest way is to focus it
   # when we first start to load URL, if we do it earlier it won't have effect,
@@ -78,6 +83,7 @@ BrowserWindow::send = -> @webContents.send.apply @webContents, arguments
 BrowserWindow::openDevTools = -> @webContents.openDevTools.apply @webContents, arguments
 BrowserWindow::closeDevTools = -> @webContents.closeDevTools()
 BrowserWindow::isDevToolsOpened = -> @webContents.isDevToolsOpened()
+BrowserWindow::isDevToolsFocused = -> @webContents.isDevToolsFocused()
 BrowserWindow::toggleDevTools = -> @webContents.toggleDevTools()
 BrowserWindow::inspectElement = -> @webContents.inspectElement.apply @webContents, arguments
 BrowserWindow::inspectServiceWorker = -> @webContents.inspectServiceWorker()
@@ -90,16 +96,18 @@ deprecate.member BrowserWindow, 'copy', 'webContents'
 deprecate.member BrowserWindow, 'paste', 'webContents'
 deprecate.member BrowserWindow, 'selectAll', 'webContents'
 deprecate.member BrowserWindow, 'reloadIgnoringCache', 'webContents'
-deprecate.member BrowserWindow, 'getPageTitle', 'webContents'
 deprecate.member BrowserWindow, 'isLoading', 'webContents'
 deprecate.member BrowserWindow, 'isWaitingForResponse', 'webContents'
 deprecate.member BrowserWindow, 'stop', 'webContents'
 deprecate.member BrowserWindow, 'isCrashed', 'webContents'
-deprecate.member BrowserWindow, 'executeJavaScriptInDevTools', 'webContents'
 deprecate.member BrowserWindow, 'print', 'webContents'
 deprecate.member BrowserWindow, 'printToPDF', 'webContents'
 deprecate.rename BrowserWindow, 'restart', 'reload'
 deprecate.rename BrowserWindow, 'loadUrl', 'loadURL'
 deprecate.rename BrowserWindow, 'getUrl', 'getURL'
+BrowserWindow::executeJavaScriptInDevTools = deprecate 'executeJavaScriptInDevTools', 'devToolsWebContents.executeJavaScript', (code) ->
+  @devToolsWebContents?.executeJavaScript code
+BrowserWindow::getPageTitle = deprecate 'getPageTitle', 'webContents.getTitle', ->
+  @webContents?.getTitle()
 
 module.exports = BrowserWindow

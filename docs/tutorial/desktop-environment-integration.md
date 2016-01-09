@@ -25,7 +25,7 @@ myNotification.onclick = function () {
 }
 ```
 
-While code and user experience across operating systems are similar, but there
+While code and user experience across operating systems are similar, there
 are fine differences.
 
 ### Windows
@@ -39,7 +39,7 @@ however, that it does not need to be pinned to the Start screen.
 
 To use an image in your notification, pass a local image file (preferably `png`)
 in the `icon` property of your notification's options. The notification will
-still display if you submit and incorrect or `http/https`-based URL, but the
+still display if you submit an incorrect or `http/https`-based URL, but the
 image will not be displayed.
 
 ```javascript
@@ -49,7 +49,7 @@ new Notification('Title', {
 });
 ```
 
-Keep furthermore in mind that the maximum length for the body is 250 characters,
+Furthermore, keep in mind that the maximum length for the body is 250 characters,
 with the Windows team recommending that notifications should be kept to 200
 characters.
 

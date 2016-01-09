@@ -5,13 +5,15 @@
   "version": "0.1.0",
   "devDependencies": {
     "basic-auth": "^1.0.0",
-    "multiparty": "4.1.2",
     "graceful-fs": "3.0.5",
     "mocha": "2.1.0",
+    "mkdirp": "0.5.1",
+    "multiparty": "4.1.2",
     "q": "0.9.7",
     "temp": "0.8.1",
     "walkdir": "0.0.7",
-    "ws": "0.7.2"
+    "ws": "0.7.2",
+    "yargs": "^3.31.0"
   },
   "optionalDependencies": {
     "ffi": "2.0.0",

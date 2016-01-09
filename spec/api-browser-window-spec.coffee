@@ -8,7 +8,7 @@ os     = require 'os'
 {remote, screen} = require 'electron'
 {ipcMain, BrowserWindow} = remote.require 'electron'
 
-isCI = remote.process.argv[2] == '--ci'
+isCI = remote.getGlobal('isCi')
 
 describe 'browser-window module', ->
   fixtures = path.resolve __dirname, 'fixtures'
@@ -262,6 +262,7 @@ describe 'browser-window module', ->
       w.loadURL "file://#{fixtures}/pages/window-open.html"
 
     it 'emits when link with target is called', (done) ->
+      @timeout 10000
       w.webContents.once 'new-window', (e, url, frameName) ->
         e.preventDefault()
         assert.equal url, 'http://host/'
@@ -322,3 +323,11 @@ describe 'browser-window module', ->
           done()
 
       w.loadURL "file://#{fixtures}/pages/save_page/index.html"
+
+  describe 'BrowserWindow options argument is optional', ->
+    it 'should create a window with default size (800x600)', ->
+      w.destroy()
+      w = new BrowserWindow()
+      size = w.getSize()
+      assert.equal size[0], 800
+      assert.equal size[1], 600
