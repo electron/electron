@@ -244,6 +244,15 @@ This method guarantees that all `beforeunload` and `unload` event handlers are
 correctly executed. It is possible that a window cancels the quitting by
 returning `false` in the `beforeunload` event handler.
 
+### `app.restart(secondsTimeout)`
+
+* `secondsTimeout` Integer
+
+Cleanup everything, shutdown the application gracefully and then restart. Waits
+ `secondsTimeout` seconds for the application to quit, so that it can be
+ relaunched. If the application does not quit before `secondsTimeout` seconds,
+ no attempt to relaunch is made. Acceptable values are 1 - 300.
+
 ### `app.exit(exitCode)`
 
 * `exitCode` Integer
