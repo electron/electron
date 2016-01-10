@@ -6,8 +6,13 @@
 
 #include <string>
 #include <stdlib.h>
+#if defined(OS_WIN)
+#include <windows.h>
+#include <Processthreadsapi.h>
+#else
 #include <sys/types.h>
 #include <unistd.h>
+#endif
 
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/native_window.h"
@@ -88,8 +93,14 @@ void Browser::Shutdown() {
 
 void Browser::Restart(const std::string& exec_path,
   const int& seconds_timeout) {
+  #if defined(OS_WIN)
+  DWORD process_id = GetCurrentProcessId();
+  #else
+  pid_t process_id = getpid();
+  #endif
+
   std::string cmd = std::string("script/restart.py ")
-    .append(std::to_string(getpid())).append(" ")
+    .append(std::to_string(process_id)).append(" ")
     .append(std::to_string(seconds_timeout)).append(" ")
     .append(exec_path).append(" &");
 
