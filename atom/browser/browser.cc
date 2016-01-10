@@ -5,6 +5,9 @@
 #include "atom/browser/browser.h"
 
 #include <string>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/native_window.h"
@@ -81,6 +84,17 @@ void Browser::Shutdown() {
     // There is no message loop available so we are in early stage.
     exit(0);
   }
+}
+
+void Browser::Restart(const std::string& exec_path,
+  const int& seconds_timeout) {
+  std::string cmd = std::string("script/restart.py ")
+    .append(std::to_string(getpid())).append(" ")
+    .append(std::to_string(seconds_timeout)).append(" ")
+    .append(exec_path).append(" &");
+
+  system(cmd.c_str());
+  Shutdown();
 }
 
 std::string Browser::GetVersion() const {

@@ -48,6 +48,9 @@ class Browser : public WindowListObserver {
   // Cleanup everything and shutdown the application gracefully.
   void Shutdown();
 
+  // Shutdown, then start again
+  void Restart(const std::string& exec_path, const int& seconds_timeout);
+
   // Focus the application.
   void Focus();
 

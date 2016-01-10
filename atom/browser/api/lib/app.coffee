@@ -13,6 +13,9 @@ app.setApplicationMenu = (menu) ->
 app.getApplicationMenu = ->
   Menu.getApplicationMenu()
 
+app.restart = (secondsTimeout) ->
+  @_restart process.execPath, secondsTimeout
+
 app.commandLine =
   appendSwitch: bindings.appendSwitch,
   appendArgument: bindings.appendArgument
