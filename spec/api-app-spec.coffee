@@ -44,7 +44,10 @@ describe 'app module', ->
       output = ''
       appProcess.stdout.on 'data', (data) -> output += data
       appProcess.on 'close', (code) ->
-        assert.notEqual output.indexOf('Exit event with code: 123'), -1
+        # We skip the following assert on Windows, since we can't currently get
+        # stdout from a spawned electron process on Windows
+        if process.platform isnt 'win32'
+            assert.notEqual output.indexOf('Exit event with code: 123'), -1
         assert.equal code, 123
         done()
 
