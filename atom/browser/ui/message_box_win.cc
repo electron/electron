@@ -84,10 +84,11 @@ int ShowMessageBoxUTF16(HWND parent,
       TDF_ALLOW_DIALOG_CANCELLATION;  // Allow canceling the dialog.
 
   TASKDIALOGCONFIG config = { 0 };
-  config.cbSize     = sizeof(config);
-  config.hwndParent = parent;
-  config.hInstance  = GetModuleHandle(NULL);
-  config.dwFlags    = flags;
+  config.cbSize           = sizeof(config);
+  config.hwndParent       = parent;
+  config.hInstance        = GetModuleHandle(NULL);
+  config.dwFlags          = flags;
+  config.nDefaultButton   = default_id ? (kIDStart + default_id) : 0;
 
   // TaskDialogIndirect doesn't allow empty name, if we set empty title it
   // will show "electron.exe" in title.
