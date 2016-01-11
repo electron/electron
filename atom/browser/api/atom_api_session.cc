@@ -114,14 +114,27 @@ struct Converter<net::ProxyConfig> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      net::ProxyConfig* out) {
-    std::string proxy;
-    if (!ConvertFromV8(isolate, val, &proxy))
-      return false;
-    auto pac_url = GURL(proxy);
-    if (pac_url.is_valid()) {
+    mate::Dictionary options;
+    if (!ConvertFromV8(isolate, val, &options)) {
+      // Fallback to previous api (https://git.io/vuhjj).
+      std::string proxy;
+      if (!ConvertFromV8(isolate, val, &proxy))
+        return false;
+      auto pac_url = GURL(proxy);
+      if (pac_url.is_valid()) {
+        out->set_pac_url(pac_url);
+      } else {
+        out->proxy_rules().ParseFromString(proxy);
+      }
+      return true;
+    }
+
+    GURL pac_url;
+    std::string rules;
+    if (options.Get("pacScript", &pac_url)) {
       out->set_pac_url(pac_url);
-    } else {
-      out->proxy_rules().ParseFromString(proxy);
+    } else if (options.Get("proxyRules", &rules)) {
+      out->proxy_rules().ParseFromString(rules);
     }
     return true;
   }

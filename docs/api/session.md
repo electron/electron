@@ -181,15 +181,16 @@ Clears the data of web storages.
 
 #### `ses.setProxy(config, callback)`
 
-* `config` String
+* `config` Object
+  * `pacScript` String - The URL associated with the PAC file.
+  * `proxyRules` String - Rules indicating which proxies to use.
 * `callback` Function - Called when operation is done.
 
-If `config` is a PAC url, it is used directly otherwise
-`config` is parsed based on the following rules indicating which
-proxies to use for the session.
+When `pacScript` and `proxyRules` are provided together, the `proxyRules`
+option is ignored and `pacScript` configuration is applied.
 
 ```
-config = scheme-proxies[";"<scheme-proxies>]
+proxyRules = scheme-proxies[";"<scheme-proxies>]
 scheme-proxies = [<url-scheme>"="]<proxy-uri-list>
 url-scheme = "http" | "https" | "ftp" | "socks"
 proxy-uri-list = <proxy-uri>[","<proxy-uri-list>]
