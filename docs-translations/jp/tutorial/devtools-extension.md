@@ -1,4 +1,4 @@
-# DevTools 拡張
+# DevTools エクステンション
 
 簡単にデバッグをするために、Electronは[Chrome DevTools Extension][devtools-extension]に基本的な対応しています。
 

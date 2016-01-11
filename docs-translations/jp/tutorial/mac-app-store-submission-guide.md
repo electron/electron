@@ -1,4 +1,4 @@
-# Mac App Store Submission Guide
+# Mac App Store 提出ガイド
 
 v0.34.0から、ElectronはMac App Store (MAS)にパッケージ化したアプリを登録することができます。このガイドでは、MASビルド用の制限とアプリを登録する方法についての情報を提供します。
 
