@@ -289,7 +289,7 @@ Returns an array of all opened browser windows.
 
 ### `BrowserWindow.getFocusedWindow()`
 
-Returns the window that is focused in this application.
+Returns the window that is focused in this application, otherwise returns `null`.
 
 ### `BrowserWindow.fromWebContents(webContents)`
 
