@@ -95,6 +95,7 @@ module.exports =
     options.message ?= ''
     options.detail ?= ''
     options.icon ?= null
+    options.defaultId ?= -1
 
     # Choose a default button to get selected when dialog is cancelled.
     unless options.cancelId?
@@ -108,6 +109,7 @@ module.exports =
 
     binding.showMessageBox messageBoxType,
                            options.buttons,
+                           options.defaultId,
                            options.cancelId,
                            flags,
                            options.title,

@@ -54,6 +54,7 @@ namespace {
 NSAlert* CreateNSAlert(NativeWindow* parent_window,
                        MessageBoxType type,
                        const std::vector<std::string>& buttons,
+                       int default_id,
                        const std::string& title,
                        const std::string& message,
                        const std::string& detail) {
@@ -78,8 +79,17 @@ NSAlert* CreateNSAlert(NativeWindow* parent_window,
     // An empty title causes crash on OS X.
     if (buttons[i].empty())
       title = @"(empty)";
+
     NSButton* button = [alert addButtonWithTitle:title];
     [button setTag:i];
+
+    if (i == (size_t)default_id) {
+      // Focus the button at default_id if the user opted to do so.
+      // The first button added gets set as the default selected.
+      // So remove that default, and make the requested button the default.
+      [[[alert buttons] objectAtIndex:0] setKeyEquivalent:@""];
+      [button setKeyEquivalent:@"\r"];
+    }
   }
 
   return alert;
@@ -94,6 +104,7 @@ void SetReturnCode(int* ret_code, int result) {
 int ShowMessageBox(NativeWindow* parent_window,
                    MessageBoxType type,
                    const std::vector<std::string>& buttons,
+                   int default_id,
                    int cancel_id,
                    int options,
                    const std::string& title,
@@ -101,7 +112,8 @@ int ShowMessageBox(NativeWindow* parent_window,
                    const std::string& detail,
                    const gfx::ImageSkia& icon) {
   NSAlert* alert = CreateNSAlert(
-      parent_window, type, buttons, title, message, detail);
+      parent_window, type, buttons, default_id, title, message,
+      detail);
 
   // Use runModal for synchronous alert without parent, since we don't have a
   // window to wait for.
@@ -127,6 +139,7 @@ int ShowMessageBox(NativeWindow* parent_window,
 void ShowMessageBox(NativeWindow* parent_window,
                     MessageBoxType type,
                     const std::vector<std::string>& buttons,
+                    int default_id,
                     int cancel_id,
                     int options,
                     const std::string& title,
@@ -135,7 +148,8 @@ void ShowMessageBox(NativeWindow* parent_window,
                     const gfx::ImageSkia& icon,
                     const MessageBoxCallback& callback) {
   NSAlert* alert = CreateNSAlert(
-      parent_window, type, buttons, title, message, detail);
+      parent_window, type, buttons, default_id, title, message,
+      detail);
   ModalDelegate* delegate = [[ModalDelegate alloc] initWithCallback:callback
                                                            andAlert:alert
                                                        callEndModal:false];
