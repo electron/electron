@@ -1,34 +1,32 @@
 # クイックスタート
 
-## 導入
+Electron ではリッチなネイティブ API を持ったランタイムを提供することによってピュアな JavaScript でデスクトップアプリケーションをつくることができます。ウェブサーバーの代わりにデスクトップアプリケーションに焦点をあてた Node.js ランタイムであるといえばわかりやすいかもしれません。
 
-ElectronではリッチなネイティブAPIを持ったランタイムを提供することによってピュアなJavaScriptでデスクトップアプリケーションをつくることができます。ウェブサーバーの代わりにデスクトップアプリケーションに焦点をあてたio.jsランタイムであるといえばわかりやすいかもしれません。
-
-ElectronはJavaScriptをGUIライブラリにバインディングしません。その代わりに、ElectronはウェブページをGUIとして使用します。なのでElectronはJavaScriptによってコントロールされる最小のChromiumブラウザでもあるともいえます。
+Electron は JavaScript を GUI ライブラリにバインディングしません。その代わりに、Electron はウェブページを GUI として使用します。なので Electron は JavaScript によってコントロールされる最小のChromium ブラウザでもあるともいえます。
 
 ### メインプロセス
 
-Electronでは、`package.json` の `main`で実行されるプロセスを __メインプロセス__ と呼びます。メインスクリプトではGUIにウェブページを表示することができるプロセスを実行します。
+Electron では、`package.json` の `main` スクリプトで実行されるプロセスを __メインプロセス__ と呼びます。メインプロセスで実行されるスクリプトがウェブページを作ることによって GUI を表示することができます。
 
 ### レンダラープロセス
 
-Electronはウェブページを表示させるためにChromiumを使用しているので、Chromiumのマルチプロセスアーキテクチャが使用されることになります。Electronで実行されるウェブページはそれぞれ自身のプロセスで実行されます。それを __レンダラープロセス__ と呼びます。
+Electron はウェブページを表示させるために Chromium を使用しているので、Chromium のマルチプロセスアーキテクチャも使用されることになります。Electron で実行されるウェブページはそれぞれ自身のプロセスで実行されます。それを __レンダラープロセス__ と呼びます。
 
-通常、ブラウザのウェブページはサンドボックス環境で実行されネイティブなリソースへのアクセスができません。Electronではウェブページからio.jsのAPIを使って、ネイティブリソースへの権限が与えられます。そのおかげでウェブページの中からJavaScriptを使って低レベルなオペレーティングシステムとのインタラクションが可能になります。
+通常のブラウザでは、ウェブページはサンドボックス環境で実行されネイティブなリソースへのアクセスができません。Electron ではウェブページから Node.js の API を使えるためオペレーティングシステムと低レベルなやりとりが可能です。
 
 ### メインプロセスとレンダラープロセスの違い
 
-メインプロセスは `BrowserWindow` インスタンスを作ることによってウェブページをつくります。それぞれの `BrowserWindow` インスタンスはそれ自身の レンダラープロセス上でウェブページを実行します。`BrowserWindow` インスタンスが破棄されると、対応するレンダラープロセスも終了されます。
+メインプロセスは `BrowserWindow` インスタンスを作ることによってウェブページをつくります。それぞれの `BrowserWindow` インスタンスはそれ自身のレンダラープロセス上でウェブページを実行します。`BrowserWindow` インスタンスが破棄されると、対応するレンダラープロセスも終了されます。
 
-メインプロセスはすべてのウェブページとそれに対応するレンダラープロセスを管理しています。それぞれのレンダラープロセスは分離しているのでウェブページで実行されていることだけを気に留めておいてください。
+メインプロセスはすべてのウェブページとそれに対応するレンダラープロセスを管理しています。それぞれのレンダラープロセスは隔離されているので、自身の中で実行されているウェブページの面倒だけをみます。
 
-ウェブページでは、GUI関連のAPIを呼ぶことはできません。なぜならば、ウェブページで管理しているネイティブのGUIリソースは非常に危険で簡単にリークしてしまうからです。もしウェブページ内でGUIを操作したい場合には、メインプロセスと通信をする必要があります。
+ウェブページでは、GUI 関連の API を呼ぶことはできません。なぜならば、ウェブページからネイティブ GUI リソースを扱うことは非常に危険であり、簡単にリソースをリークしてしまうからです。もしウェブページ内でGUI を操作したい場合には、ウェブページのレンダラープロセスはメインプロセスにそれらの操作をするように伝える必要があります。
 
-Electronでは、メインプロセスとレンダラープロセスとのコミュニケーションをするために[ipc](../api/ipc-renderer.md)モジュールを提供しています。またそれと、RPC形式の通信を行う[remote](../api/remote.md)モジュールもあります。
+Electron では、メインプロセスとレンダラープロセスとのコミュニケーションをするために [ipc](../api/ipc-renderer.md) モジュールを提供しています。またそれと、RPC 形式の通信を行う [remote](../api/remote.md) モジュールもあります。
 
 ## Electronアプリを作成する
 
-一般的に  Electronアプリの構成は次のようになります：
+一般的に Electron アプリの構成は次のようになります：
 
 ```text
 your-app/
@@ -37,7 +35,7 @@ your-app/
 └── index.html
 ```
 
-`package.json`の形式はNodeモジュールとまったく同じです。 `main`　フィールドでアプリを起動するためのスクリプトを特定し、メインプロセスで実行します。 `package.json`の例は次のようになります：
+`package.json` の形式は Node モジュールとまったく同じです。 `main` フィールドで指定するスクリプトはアプリの起動スクリプトであり、メインプロセスを実行します。 `package.json` の例は次のようになります：
 
 ```json
 {
@@ -47,25 +45,32 @@ your-app/
 }
 ```
 
+__注記__： `package.json` に `main` が存在しない場合、Electron は `index.js` のロードを試みます。
+
 `main.js` ではウィンドウを作成してシステムイベントを管理します。典型的な例は次のようになります：
 
 ```javascript
-var app = require('app');  // Module to control application life.
-var BrowserWindow = require('browser-window');  // Module to create native browser window.
+'use strict';
+
+const electron = require('electron');
+const app = electron.app;  // Module to control application life.
+const BrowserWindow = electron.BrowserWindow;  // Module to create native browser window.
 
 // Keep a global reference of the window object, if you don't, the window will
-// be closed automatically when the javascript object is GCed.
+// be closed automatically when the JavaScript object is garbage collected.
 var mainWindow = null;
 
 // Quit when all windows are closed.
 app.on('window-all-closed', function() {
+  // On OS X it is common for applications and their menu bar
+  // to stay active until the user quits explicitly with Cmd + Q
   if (process.platform != 'darwin') {
     app.quit();
   }
 });
 
-// This method will be called when Electron has done everything
-// initialization and ready for creating browser windows.
+// This method will be called when Electron has finished
+// initialization and is ready to create browser windows.
 app.on('ready', function() {
   // Create the browser window.
   mainWindow = new BrowserWindow({width: 800, height: 600});
@@ -73,8 +78,8 @@ app.on('ready', function() {
   // and load the index.html of the app.
   mainWindow.loadURL('file://' + __dirname + '/index.html');
 
-  // Open the devtools.
-  mainWindow.openDevTools();
+  // Open the DevTools.
+  mainWindow.webContents.openDevTools();
 
   // Emitted when the window is closed.
   mainWindow.on('closed', function() {
@@ -86,43 +91,81 @@ app.on('ready', function() {
 });
 ```
 
-最後に表示するウェブページ`index.html`は次のようになります：
-
+最後に表示するウェブページ `index.html` は次のようになります：
 
 ```html
 <!DOCTYPE html>
 <html>
   <head>
+    <meta charset="UTF-8">
     <title>Hello World!</title>
   </head>
   <body>
     <h1>Hello World!</h1>
-    We are using io.js <script>document.write(process.version)</script>
-    and Electron <script>document.write(process.versions['electron'])</script>.
+    We are using node <script>document.write(process.versions.node)</script>,
+    Chrome <script>document.write(process.versions.chrome)</script>,
+    and Electron <script>document.write(process.versions.electron)</script>.
   </body>
 </html>
 ```
 
 ## アプリを実行する
 
-アプリケーションを作り終えたら、[Application distribution](./application-distribution.md)ガイドにしたがってディストリビューションを作成します、そしてパッケージされたアプリケーションとして配布することが可能です。またダウンロードしたElectronのバイナリをアプリケーション・ディレクトリを実行するために利用することもできます。
+最初の `main.js`、`index.html`、`package.json` を作ったら、手元でアプリを実行し、思った通りに動くのを確認したいでしょう。
 
-Windowsの場合：
+### electron-prebuilt
+
+`electron-prebuilt` を `npm` でグローバルインストールしているなら、アプリのソースディレクトリ内で以下を実行するだけで済みます：
+
+```bash
+electron .
+```
+
+ローカルにインストールしているなら以下を実行してください：
+
+```bash
+./node_modules/.bin/electron .
+```
+
+### 手動ダウンロードした Electron バイナリを使う場合
+
+もしも Electron を手動ダウンロードしているなら、同梱されているバイナリであなたのアプリを直接実行できます。
+
+#### Windows
 
 ```bash
 $ .\electron\electron.exe your-app\
 ```
 
-Linuxの場合：
+#### Linux
 
 ```bash
 $ ./electron/electron your-app/
 ```
 
-OS Xの場合：
+#### OS X
 
 ```bash
 $ ./Electron.app/Contents/MacOS/Electron your-app/
 ```
 
-`Electron.app` はElectronのリリースパッケージに含まれており、[ここ](https://github.com/atom/electron/releases) からダウンロードできます。
+`Electron.app` は Electron のリリースパッケージの一部で、[ここ](https://github.com/atom/electron/releases) からダウンロードできます。
+
+### Run as a distribution
+
+アプリケーションを作り終えたら、[Application distribution](./application-distribution.md) ガイドにしたがってディストリビューションを作成し、そしてパッケージされたアプリケーションとして実行することが可能です。
+
+### 試してみよう
+
+このチュートリアルのコードは [`atom/electron-quick-start`](https://github.com/atom/electron-quick-start) リポジトリから clone して実行できます。
+
+**注記**：例を試すには、[Git](https://git-scm.com) と [Node.js](https://nodejs.org/en/download/) ([npm](https://npmjs.org) もこれに含まれています) が必要です。
+
+```bash
+# Clone the repository
+$ git clone https://github.com/atom/electron-quick-start
+# Go into the repository
+$ cd electron-quick-start
+# Install dependencies and run the app
+$ npm install && npm start
+```

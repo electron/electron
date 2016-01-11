@@ -1,6 +1,6 @@
 {
   "name": "electron",
-  "version": "0.36.2",
+  "version": "0.36.3",
   "devDependencies": {
     "asar": "^0.9.0",
     "coffee-script": "^1.9.2",
