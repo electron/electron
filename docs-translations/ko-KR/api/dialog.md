@@ -78,7 +78,8 @@ console.log(dialog.showOpenDialog({ properties: [ 'openFile', 'openDirectory', '
 `filters`를 지정하면 유저가 저장 가능한 파일 형식을 지정할 수 있습니다. 사용 방법은
 `dialog.showOpenDialog`의 `filters` 속성과 같습니다.
 
-`callback`이 전달되면 메서드가 비동기로 작동되며 결과는 `callback(filename)`을 통해 전달됩니다.
+`callback`이 전달되면 메서드가 비동기로 작동되며 결과는 `callback(filename)`을 통해
+전달됩니다.
 
 ### `dialog.showMessageBox([browserWindow, ]options[, callback])`
 
@@ -88,6 +89,8 @@ console.log(dialog.showOpenDialog({ properties: [ 'openFile', 'openDirectory', '
     하나를 사용할 수 있습니다. Windows에선 따로 `icon`을 설정하지 않은 이상
     "question"과 "info"는 같은 아이콘으로 표시됩니다.
   * `buttons` Array - 버튼들의 라벨을 포함한 배열입니다.
+  * `defaultId` Integer - 메시지 박스가 열렸을 때 기본적으로 선택될 버튼 배열의
+    버튼 인덱스입니다.
   * `title` String - 대화 상자의 제목입니다. 몇몇 플랫폼에선 보이지 않을 수 있습니다.
   * `message` String - 대화 상자의 본문 내용입니다.
   * `detail` String - 메시지의 추가 정보입니다.

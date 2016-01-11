@@ -34,6 +34,9 @@ win.loadURL('https://github.com');
 않습니다. 대신에 이 `BrowserWindow` 객체는 메인 프로세스에서 생성되며 랜더러
 프로세스에 `win` 객체와 같이 이에 대응하는 remote 객체를 반환합니다.
 
+참고로 remote를 통해선 [enumerable 속성](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Enumerability_and_ownership_of_properties)을
+가진 프로퍼티에만 접근할 수 있습니다.
+
 ## Remote 객체의 생명 주기
 
 Electron은 랜더러 프로세스의 remote 객체가 살아있는 한(다시 말해서 GC(garbage

@@ -64,7 +64,7 @@ win.show();
   형태로 생성합니다. 기본값은 `true`입니다.
 * `acceptFirstMouse` Boolean - 윈도우가 비활성화 상태일 때 내부 컨텐츠 클릭 시
   활성화 되는 동시에 단일 mouse-down 이벤트를 발생시킬지 여부. 기본값은 `false`입니다.
-* `disableAutoHideCursor` Boolean - 파이핑중 자동으로 커서를 숨길지 여부. 기본값은
+* `disableAutoHideCursor` Boolean - 타이핑중 자동으로 커서를 숨길지 여부. 기본값은
   `false`입니다.
 * `autoHideMenuBar` Boolean - `Alt`를 누르지 않는 한 어플리케이션 메뉴바를 숨길지
   여부. 기본값은 `false`입니다.
@@ -115,12 +115,16 @@ win.show();
   합니다. node 통합이 비활성화되어있을 경우, preload 스크립트는 node의 global
   심볼들을 다시 global 스코프로 다시 포함 시킬 수 있습니다.
   [여기](process.md#event-loaded)의 예제를 참고하세요.
-* `partition` String - 페이지에서 사용할 세션을 지정합니다. 만약 `partition`이
-  `persist:`로 시작하면 페이지는 지속성 세션을 사용하며 다른 모든 앱 내의
-  페이지에서 같은 `partition`을 사용할 수 있습니다. 만약 `persist:` 접두어로
-  시작하지 않으면 페이지는 인-메모리 세션을 사용합니다. 여러 페이지에서 같은
-  `partition`을 지정하면 같은 세션을 공유할 수 있습니다. `partition`을 지정하지
-  않으면 어플리케이션의 기본 세션이 사용됩니다.
+* `session` [Session](session.md#class-session) - 페이지에서 사용할 세션을
+  지정합니다. Session 객체를 직접적으로 전달하는 대신, 파티션 문자열을 받는
+  `partition` 옵션을 사용할 수도 있습니다. `session`과 `partition`이 같이
+  제공되었을 경우 `session`이 사용됩니다. 기본값은 기본 세션입니다.
+  * `partition` String - 페이지에서 사용할 세션을 지정합니다. 만약 `partition`이
+    `persist:`로 시작하면 페이지는 지속성 세션을 사용하며 다른 모든 앱 내의
+    페이지에서 같은 `partition`을 사용할 수 있습니다. 만약 `persist:` 접두어로
+    시작하지 않으면 페이지는 인-메모리 세션을 사용합니다. 여러 페이지에서 같은
+    `partition`을 지정하면 같은 세션을 공유할 수 있습니다. `partition`을 지정하지
+    않으면 어플리케이션의 기본 세션이 사용됩니다.
 * `zoomFactor` Number - 페이지의 기본 줌 값을 지정합니다. 예를 들어 `300%`를
   표현하려면 `3.0`으로 지정합니다. 기본값은 `1.0`입니다.
 * `javascript` Boolean - 자바스크립트를 활성화합니다. 기본값은 `false`입니다.
@@ -287,7 +291,8 @@ someWindow.on('app-command', function(e, cmd) {
 
 ### `BrowserWindow.getFocusedWindow()`
 
-어플리케이션에서 포커스된 윈도우를 반환합니다.
+어플리케이션에서 포커스된 윈도우를 반환합니다. 포커스된 윈도우가 없을 경우 `null`을
+반환합니다.
 
 ### `BrowserWindow.fromWebContents(webContents)`
 
@@ -564,12 +569,20 @@ Kiosk(키오스크) 모드를 설정합니다.
 
 현재 윈도우가 kiosk 모드인지 여부를 반환합니다.
 
+### `win.getNativeWindowHandle()`
+
+`Buffer` 상의 플랫폼에 따른 윈도우 핸들을 반환합니다.
+
+핸들의 타입에 따라 적절히 캐스팅됩니다. Windows의 `HWND`, OS X의 `NSView*`, Linux의
+`Window` (`unsigned long`)를 예로 들 수 있습니다.
+
 ### `win.hookWindowMessage(message, callback)` _Windows_
 
 * `message` Integer
 * `callback` Function
 
-Windows 메시지 훅을 등록합니다. `callback`은 WndProc에서 메시지를 받았을 때 호출됩니다.
+Windows 메시지 훅을 등록합니다. `callback`은 WndProc에서 메시지를 받았을 때
+호출됩니다.
 
 ### `win.isWindowMessageHooked(message)` _Windows_
 

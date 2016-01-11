@@ -340,6 +340,12 @@ Service worker에 대한 개발자 도구를 엽니다.
 
 페이지에서 `replaceMisspelling` 커맨드를 실행합니다.
 
+### `<webview>.insertText(text)`
+
+* `text` String
+
+포커스된 요소에 `text`를 삽입합니다.
+
 ### `webContents.findInPage(text[, options])`
 
 * `text` String - 찾을 컨텐츠, 반드시 공백이 아니여야 합니다.
