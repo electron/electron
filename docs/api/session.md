@@ -186,6 +186,9 @@ Clears the data of web storages.
   * `proxyRules` String - Rules indicating which proxies to use.
 * `callback` Function - Called when operation is done.
 
+When `pacScript` and `proxyRules` are provided together, the `proxyRules`
+option is ignored and `pacScript` configuration is applied.
+
 ```
 proxyRules = scheme-proxies[";"<scheme-proxies>]
 scheme-proxies = [<url-scheme>"="]<proxy-uri-list>
