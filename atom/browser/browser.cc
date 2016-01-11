@@ -100,7 +100,7 @@ void Browser::Restart(const std::string& exec_path,
   pid_t process_id = getpid();
   #endif
 
-  std::string cmd = std::string("script/restart.py ")
+  std::string cmd = std::string("node script/restart.js ")
     .append(std::to_string(process_id)).append(" ")
     .append(std::to_string(seconds_timeout)).append(" ")
     .append(exec_path).append(" &");
