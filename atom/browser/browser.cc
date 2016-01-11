@@ -4,7 +4,6 @@
 
 #include "atom/browser/browser.h"
 
-#include <string>
 #include <stdlib.h>
 #if defined(OS_WIN)
 #include <windows.h>
@@ -13,6 +12,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 #endif
+
+#include <string>
 
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/native_window.h"
