@@ -107,7 +107,6 @@ void TranslateOldOptions(v8::Isolate* isolate, v8::Local<v8::Object> options) {
   }
 }
 
-#if defined(OS_WIN)
 // Converts binary data to Buffer.
 v8::Local<v8::Value> ToBuffer(v8::Isolate* isolate, void* val, int size) {
   auto buffer = node::Buffer::New(isolate, static_cast<char*>(val), size);
@@ -116,7 +115,6 @@ v8::Local<v8::Value> ToBuffer(v8::Isolate* isolate, void* val, int size) {
   else
     return buffer.ToLocalChecked();
 }
-#endif
 
 }  // namespace
 
@@ -594,6 +592,13 @@ void Window::SetAspectRatio(double aspect_ratio, mate::Arguments* args) {
   window_->SetAspectRatio(aspect_ratio, extra_size);
 }
 
+v8::Local<v8::Value> Window::GetNativeWindowHandle() {
+  gfx::AcceleratedWidget handle = window_->GetAcceleratedWidget();
+  return ToBuffer(isolate(),
+    static_cast<void*>(&handle),
+    sizeof(gfx::AcceleratedWidget));
+}
+
 void Window::SetVisibleOnAllWorkspaces(bool visible) {
   return window_->SetVisibleOnAllWorkspaces(visible);
 }
@@ -634,6 +639,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setFullScreen", &Window::SetFullScreen)
       .SetMethod("isFullScreen", &Window::IsFullscreen)
       .SetMethod("setAspectRatio", &Window::SetAspectRatio)
+      .SetMethod("getNativeWindowHandle", &Window::GetNativeWindowHandle)
       .SetMethod("getBounds", &Window::GetBounds)
       .SetMethod("setBounds", &Window::SetBounds)
       .SetMethod("getSize", &Window::GetSize)

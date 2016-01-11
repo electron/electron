@@ -143,6 +143,7 @@ class NativeWindow : public base::SupportsUserData,
   virtual void SetMenu(ui::MenuModel* menu);
   virtual bool HasModalDialog();
   virtual gfx::NativeWindow GetNativeWindow() = 0;
+  virtual gfx::AcceleratedWidget GetAcceleratedWidget() = 0;
 
   // Taskbar/Dock APIs.
   virtual void SetProgressBar(double progress) = 0;
