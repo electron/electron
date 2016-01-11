@@ -114,27 +114,25 @@ struct Converter<net::ProxyConfig> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      net::ProxyConfig* out) {
+    std::string proxy_rules;
+    GURL pac_url;
     mate::Dictionary options;
-    if (!ConvertFromV8(isolate, val, &options)) {
-      // Fallback to previous api (https://git.io/vuhjj).
-      std::string proxy;
-      if (!ConvertFromV8(isolate, val, &proxy))
-        return false;
-      auto pac_url = GURL(proxy);
-      if (pac_url.is_valid()) {
-        out->set_pac_url(pac_url);
-      } else {
-        out->proxy_rules().ParseFromString(proxy);
-      }
-      return true;
+    // Fallback to previous API when passed String.
+    // https://git.io/vuhjj
+    if (ConvertFromV8(isolate, val, &proxy_rules)) {
+      pac_url = GURL(proxy_rules);  // Assume it is PAC script if it is URL.
+    } else if (ConvertFromV8(isolate, val, &options)) {
+      options.Get("pacScript", &pac_url);
+      options.Get("proxyRules", &proxy_rules);
+    } else {
+      return false;
     }
 
-    GURL pac_url;
-    std::string rules;
-    if (options.Get("pacScript", &pac_url)) {
+    // pacScript takes precedence over proxyRules.
+    if (!pac_url.is_empty() && pac_url.is_valid()) {
       out->set_pac_url(pac_url);
-    } else if (options.Get("proxyRules", &rules)) {
-      out->proxy_rules().ParseFromString(rules);
+    } else {
+      out->proxy_rules().ParseFromString(proxy_rules);
     }
     return true;
   }
