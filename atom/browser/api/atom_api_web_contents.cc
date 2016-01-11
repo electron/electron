@@ -992,7 +992,7 @@ void WebContents::SendInputEvent(v8::Isolate* isolate,
       return;
     }
   } else if (blink::WebInputEvent::isKeyboardEventType(type)) {
-    content::NativeWebKeyboardEvent keyboard_event;;
+    content::NativeWebKeyboardEvent keyboard_event;
     if (mate::ConvertFromV8(isolate, input_event, &keyboard_event)) {
       host->ForwardKeyboardEvent(keyboard_event);
       return;

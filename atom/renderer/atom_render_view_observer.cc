@@ -88,7 +88,7 @@ void AtomRenderViewObserver::DidCreateDocumentElement(
 
   // Read --zoom-factor from command line.
   std::string zoom_factor_str = base::CommandLine::ForCurrentProcess()->
-      GetSwitchValueASCII(switches::kZoomFactor);;
+      GetSwitchValueASCII(switches::kZoomFactor);
   if (zoom_factor_str.empty())
     return;
   double zoom_factor;
