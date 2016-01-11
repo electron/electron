@@ -63,9 +63,10 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
   * `frame` Boolean - Specify `false` to create a
     [Frameless Window](frameless-window.md). Default is `true`.
   * `acceptFirstMouse` Boolean - Whether the web view accepts a single
-    mouse-down event that simultaneously activates the window. Default is `false`.
-  * `disableAutoHideCursor` Boolean - Whether to hide cursor when typing. Default
-    is `false`.
+    mouse-down event that simultaneously activates the window. Default is
+    `false`.
+  * `disableAutoHideCursor` Boolean - Whether to hide cursor when typing.
+    Default is `false`.
   * `autoHideMenuBar` Boolean - Auto hide the menu bar unless the `Alt`
     key is pressed. Default is `false`.
   * `enableLargerThanScreen` Boolean - Enable the window to be resized larger
@@ -157,7 +158,8 @@ The `webPreferences` option is an object that can have following properties:
 
 The `BrowserWindow` object emits the following events:
 
-**Note:** Some events are only available on specific operating systems and are labeled as such.
+**Note:** Some events are only available on specific operating systems and are
+labeled as such.
 
 ### Event: 'page-title-updated'
 
@@ -341,7 +343,8 @@ The unique ID of this window.
 
 Objects created with `new BrowserWindow` have the following instance methods:
 
-**Note:** Some methods are only available on specific operating systems and are labeled as such.
+**Note:** Some methods are only available on specific operating systems and are
+labeled as such.
 
 ### `win.destroy()`
 
@@ -573,9 +576,10 @@ Returns whether the window is in kiosk mode.
 
 ### `win.getNativeWindowHandle()`
 
-Returns the platform-specific handle of the window in a buffer.
-Cast it to the appropriate type, such as HWND for Windows, NSView* for OS X or unsigned long for Linux.
-Used for OS's Native API's for windows.
+Returns the platform-specific handle of the window as `Buffer`.
+
+The native type of the handle is `HWND` on Windows, `NSView*` on OS X, and
+`Window` (`unsigned long`) on Linux.
 
 ### `win.hookWindowMessage(message, callback)` _Windows_
 

@@ -594,9 +594,8 @@ void Window::SetAspectRatio(double aspect_ratio, mate::Arguments* args) {
 
 v8::Local<v8::Value> Window::GetNativeWindowHandle() {
   gfx::AcceleratedWidget handle = window_->GetAcceleratedWidget();
-  return ToBuffer(isolate(),
-    static_cast<void*>(&handle),
-    sizeof(gfx::AcceleratedWidget));
+  return ToBuffer(
+      isolate(), static_cast<void*>(&handle), sizeof(gfx::AcceleratedWidget));
 }
 
 void Window::SetVisibleOnAllWorkspaces(bool visible) {
