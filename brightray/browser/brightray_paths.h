@@ -20,7 +20,7 @@
 namespace brightray {
 
 enum {
-  PATH_START = 1000,
+  PATH_START = 11000,
 
   DIR_USER_DATA = PATH_START,  // Directory where user data can be written.
   DIR_USER_CACHE,  // Directory where user cache can be written.
