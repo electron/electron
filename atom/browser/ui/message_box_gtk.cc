@@ -61,16 +61,10 @@ class GtkMessageBox {
 
     // Add buttons.
     for (size_t i = 0; i < buttons.size(); ++i) {
-      if (i == (size_t)default_id) {
-        GtkWidget* button = gtk_dialog_add_button(GTK_DIALOG(dialog_),
-                              TranslateToStock(i, buttons[i]),
-                              i);
+      GtkWidget* button = gtk_dialog_add_button(
+          GTK_DIALOG(dialog_), TranslateToStock(i, buttons[i]), i);
+      if (static_cast<int>(i) == default_id)
         gtk_widget_grab_focus(button);
-      } else {
-          gtk_dialog_add_button(GTK_DIALOG(dialog_),
-                            TranslateToStock(i, buttons[i]),
-                            i);
-      }
     }
 
     // Parent window.
@@ -177,7 +171,7 @@ int ShowMessageBox(NativeWindow* parent,
                    const std::string& detail,
                    const gfx::ImageSkia& icon) {
   return GtkMessageBox(parent, type, buttons, default_id, cancel_id,
-                      title, message, detail, icon).RunSynchronous();
+                       title, message, detail, icon).RunSynchronous();
 }
 
 void ShowMessageBox(NativeWindow* parent,
@@ -192,7 +186,7 @@ void ShowMessageBox(NativeWindow* parent,
                     const gfx::ImageSkia& icon,
                     const MessageBoxCallback& callback) {
   (new GtkMessageBox(parent, type, buttons, default_id, cancel_id,
-                    title, message, detail, icon))->RunAsynchronous(callback);
+                     title, message, detail, icon))->RunAsynchronous(callback);
 }
 
 void ShowErrorBox(const base::string16& title, const base::string16& content) {

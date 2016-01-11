@@ -57,7 +57,7 @@ void ShowMessageBox(int type,
                                                         &callback)) {
     atom::ShowMessageBox(window, (atom::MessageBoxType)type, buttons,
                          default_id, cancel_id, options, title,
-                        message, detail, icon, callback);
+                         message, detail, icon, callback);
   } else {
     int chosen = atom::ShowMessageBox(window, (atom::MessageBoxType)type,
                                       buttons, default_id, cancel_id,

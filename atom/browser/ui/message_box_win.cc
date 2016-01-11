@@ -84,11 +84,13 @@ int ShowMessageBoxUTF16(HWND parent,
       TDF_ALLOW_DIALOG_CANCELLATION;  // Allow canceling the dialog.
 
   TASKDIALOGCONFIG config = { 0 };
-  config.cbSize           = sizeof(config);
-  config.hwndParent       = parent;
-  config.hInstance        = GetModuleHandle(NULL);
-  config.dwFlags          = flags;
-  config.nDefaultButton   = default_id ? (kIDStart + default_id) : 0;
+  config.cbSize     = sizeof(config);
+  config.hwndParent = parent;
+  config.hInstance  = GetModuleHandle(NULL);
+  config.dwFlags    = flags;
+
+  if (default_id > 0)
+    config.nDefaultButton = kIDStart + default_id;
 
   // TaskDialogIndirect doesn't allow empty name, if we set empty title it
   // will show "electron.exe" in title.
@@ -230,13 +232,13 @@ void ShowMessageBox(NativeWindow* parent,
   unretained->message_loop()->PostTask(
       FROM_HERE,
       base::Bind(&RunMessageBoxInNewThread, base::Unretained(unretained),
-                 parent, type, buttons, default_id,
-                 cancel_id, options, title, message, detail, icon, callback));
+                 parent, type, buttons, default_id, cancel_id, options, title,
+                 message, detail, icon, callback));
 }
 
 void ShowErrorBox(const base::string16& title, const base::string16& content) {
   ShowMessageBoxUTF16(NULL, MESSAGE_BOX_TYPE_ERROR, {}, -1, 0, 0, L"Error",
-                                        title, content, gfx::ImageSkia());
+                      title, content, gfx::ImageSkia());
 }
 
 }  // namespace atom

@@ -79,17 +79,17 @@ NSAlert* CreateNSAlert(NativeWindow* parent_window,
     // An empty title causes crash on OS X.
     if (buttons[i].empty())
       title = @"(empty)";
-
     NSButton* button = [alert addButtonWithTitle:title];
     [button setTag:i];
+  }
 
-    if (i == (size_t)default_id) {
-      // Focus the button at default_id if the user opted to do so.
-      // The first button added gets set as the default selected.
-      // So remove that default, and make the requested button the default.
-      [[[alert buttons] objectAtIndex:0] setKeyEquivalent:@""];
-      [button setKeyEquivalent:@"\r"];
-    }
+  NSArray* ns_buttons = [alert buttons];
+  if (default_id >= 0 && default_id < static_cast<int>([ns_buttons count])) {
+    // Focus the button at default_id if the user opted to do so.
+    // The first button added gets set as the default selected.
+    // So remove that default, and make the requested button the default.
+    [[ns_buttons objectAtIndex:0] setKeyEquivalent:@""];
+    [[ns_buttons objectAtIndex:default_id] setKeyEquivalent:@"\r"];
   }
 
   return alert;
