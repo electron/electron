@@ -37,7 +37,7 @@ bool UvTaskRunner::PostNonNestableDelayedTask(
     const tracked_objects::Location& from_here,
     const base::Closure& task,
     base::TimeDelta delay) {
-  return PostDelayedTask(from_here, task, delay);;
+  return PostDelayedTask(from_here, task, delay);
 }
 
 // static
