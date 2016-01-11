@@ -66,6 +66,7 @@ BrowserWindow::_init = ->
 BrowserWindow.getFocusedWindow = ->
   windows = BrowserWindow.getAllWindows()
   return window for window in windows when window.isFocused()
+  null
 
 BrowserWindow.fromWebContents = (webContents) ->
   windows = BrowserWindow.getAllWindows()
