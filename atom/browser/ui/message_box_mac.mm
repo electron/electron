@@ -84,9 +84,9 @@ NSAlert* CreateNSAlert(NativeWindow* parent_window,
     [button setTag:i];
 
     if (i == (size_t)default_id) {
-      // focus the button at default_id if the user opted to do so.
+      // Focus the button at default_id if the user opted to do so.
       // The first button added gets set as the default selected.
-      // So remove that default, and make the requested button the default
+      // So remove that default, and make the requested button the default.
       [[[alert buttons] objectAtIndex:0] setKeyEquivalent:@""];
       [button setKeyEquivalent:@"\r"];
     }
