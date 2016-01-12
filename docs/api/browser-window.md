@@ -120,12 +120,17 @@ The `webPreferences` option is an object that can have following properties:
   When node integration is turned off, the preload script can reintroduce
   Node global symbols back to the global scope. See example
   [here](process.md#event-loaded).
-* `partition` String - Sets the session used by the page. If `partition`
-  starts with `persist:`, the page will use a persistent session available to
-  all pages in the app with the same `partition`. if there is no `persist:`
-  prefix, the page will use an in-memory session. By assigning the same
-  `partition`, multiple pages can share the same session. If the `partition`
-  is unset then default session of the app will be used.
+* `session` [Session](session.md#class-session) - Sets the session used by the
+  page. Instead of passing the Session object directly, you can also choose to
+  use the `partition` option instead, which accepts a partition string. When
+  both `session` and `partition` are provided, `session` would be preferred.
+  Default is the default session.
+* `partition` String - Sets the session used by the page according to the
+  session's partition string. If `partition` starts with `persist:`, the page
+  will use a persistent session available to all pages in the app with the
+  same `partition`. if there is no `persist:` prefix, the page will use an
+  in-memory session. By assigning the same `partition`, multiple pages can share
+  the same session. Default is the default session.
 * `zoomFactor` Number - The default zoom factor of the page, `3.0` represents
   `300%`. Default is `1.0`.
 * `javascript` Boolean - Enables JavaScript support. Default is `true`.
