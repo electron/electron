@@ -21,13 +21,13 @@ electron/resources/app
 └── index.html
 ```
 
-`Electron.app` (または Linux上では、`electron`、Windows上では、 `electron.exe`)を実行すると、Electronはアプリケーションを開始します。The `electron` ディレクトリを最終的なユーザーに提供するために配布します。
+`Electron.app` (または Linux上では、`electron`、Windows上では、 `electron.exe`)を実行すると、Electronはアプリケーションを開始します。`electron` ディレクトリを最終的なユーザーに提供するために配布します。
 
 ## ファイルにアプリケーションをパッケージングする
 
 すべてのソースコードをコピーすることでアプリケーションを提供する方法とは別に、アプリケーションのソースコードをユーザーに見えるのを避けるために、[asar](https://github.com/atom/asar) にアーカイブしてアプリケーションをパッケージ化することができます。
 
-`asar`アーカイブを使用するために、`app`フォルダーと置き換え、アーカイブファイルを`app.asar`という名前に変更する必要があり、Electronのリソースディレクトリの下に置くと、Electronはアーカイブを読み込もうとし、それを開始します。
+`app` フォルダの代わりに `asar` アーカイブを使用するためには、アーカイブファイルを `app.asar` という名前に変更し、Electron のリソースディレクトリに以下のように配置する必要があります。すると、Electron はアーカイブを読み込もうとし、それを開始します。
 
 OS X:
 
@@ -45,7 +45,7 @@ electron/resources/
 
 [Application packaging](application-packaging.md)で、詳細を確認できます。
 
-## ダウンローするバイナリのブランド名の変更
+## ダウンロードするバイナリのブランド名の変更
 
 Electronにバンドルした後、ユーザーに配布する前に、 Electron名を変更したいでしょう。
 
@@ -56,14 +56,14 @@ Electronにバンドルした後、ユーザーに配布する前に、 Electron
 
 ### OS X
 
- `Electron.app` を任意の名前に変更でき、次のファイルの `CFBundleDisplayName`と `CFBundleIdentifier`、 `CFBundleName`のフィールドの名前を変更する必要があります。
+`Electron.app` を任意の名前に変更でき、次のファイルの `CFBundleDisplayName`と `CFBundleIdentifier`、 `CFBundleName`のフィールドの名前を変更する必要があります。
 
 * `Electron.app/Contents/Info.plist`
 * `Electron.app/Contents/Frameworks/Electron Helper.app/Contents/Info.plist`
 
-Activity Monitorで、`Electron Helper`と表示されるのを避けるために、helper appの名前を変更でき、 helper appの実行ファイルの名前を確認します。
+ヘルパーアプリケーションの名前を変更して、アクティビティモニタに `Electron Helper` と表示されないようにすることもできますが、その際はヘルパーアプリケーションの実行可能ファイルの名前を変更したことを確認してください。
 
-次のようなappの変更する名前の構造
+名前変更後のアプリケーションの構成は以下の通りです：
 
 ```
 MyApp.app/Contents
@@ -95,14 +95,14 @@ MyApp.app/Contents
 
 ### grunt-build-atom-shell
 
-マニュアルでは、Electronのコードをダウンロードし、リビルドさせます。一方で、面倒なタスクはこれで自動化できます:
+Electron のコードを手動チェックアウトして再構築するのには複雑な手順が必要ですが、これを自動的に扱うための Grunt タスクが作られています：
 [grunt-build-atom-shell](https://github.com/paulcbetts/grunt-build-atom-shell).
 
-This task will automatically handle editing the 自動処理を管理するのに、`.gyp`ファイルを編集し、ソースからビルドし、新しい実行名に一致したときにはNativeのNodeモジュールをリビルドするようにできます。
+このタスクは自動的に `.gyp` ファイルの編集、ソースからのビルド、そして新しい実行可能ファイル名に一致するようにネイティブの Node モジュールを再構築します。
 
 ## パッケージングツール
 
-マニュアルでパッケージ化するのとは別に、サードパーティのパッケジングツールを選ぶこともできます。
+手動でアプリケーションをパッケージ化する以外の方法として、サードパーティのパッケジングツールを選ぶこともできます。
 
 * [electron-packager](https://github.com/maxogden/electron-packager)
 * [electron-builder](https://github.com/loopline-systems/electron-builder)
