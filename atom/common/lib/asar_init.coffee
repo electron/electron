@@ -1,13 +1,13 @@
 return (process, require, asarSource) ->
   {createArchive} = process.binding 'atom_common_asar'
 
-  # Make asar.coffee accessible via "require".
+  ### Make asar.coffee accessible via "require". ###
   process.binding('natives').ATOM_SHELL_ASAR = asarSource
 
-  # Monkey-patch the fs module.
+  ### Monkey-patch the fs module. ###
   require('ATOM_SHELL_ASAR').wrapFsWithAsar require('fs')
 
-  # Make graceful-fs work with asar.
+  ### Make graceful-fs work with asar. ###
   source = process.binding 'natives'
   source['original-fs'] = source.fs
   source['fs'] = """

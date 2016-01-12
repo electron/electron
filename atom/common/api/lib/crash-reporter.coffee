@@ -10,7 +10,7 @@ class CrashReporter
   start: (options={}) ->
     {@productName, companyName, submitURL, autoSubmit, ignoreSystemCrashHandler, extra} = options
 
-    # Deprecated.
+    ### Deprecated. ###
     {deprecate} = electron
     if options.submitUrl
       submitURL ?= options.submitUrl

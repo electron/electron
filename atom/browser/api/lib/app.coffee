@@ -34,13 +34,13 @@ app.setAppPath = (path) ->
 app.getAppPath = ->
   appPath
 
-# Routes the events to webContents.
+### Routes the events to webContents. ###
 for name in ['login', 'certificate-error', 'select-client-certificate']
   do (name) ->
     app.on name, (event, webContents, args...) ->
       webContents.emit name, event, args...
 
-# Deprecated.
+### Deprecated. ###
 app.getHomeDir = deprecate 'app.getHomeDir', 'app.getPath', ->
   @getPath 'home'
 app.getDataPath = deprecate 'app.getDataPath', 'app.getPath', ->
@@ -51,22 +51,23 @@ app.resolveProxy = deprecate 'app.resolveProxy', 'session.defaultSession.resolve
   session.defaultSession.resolveProxy url, callback
 deprecate.rename app, 'terminate', 'quit'
 deprecate.event app, 'finish-launching', 'ready', ->
-  setImmediate => # give default app a chance to setup default menu.
+  ### give default app a chance to setup default menu. ###
+  setImmediate =>
     @emit 'finish-launching'
 deprecate.event app, 'activate-with-no-open-windows', 'activate', (event, hasVisibleWindows) ->
   @emit 'activate-with-no-open-windows', event if not hasVisibleWindows
 deprecate.event app, 'select-certificate', 'select-client-certificate'
 
-# Wrappers for native classes.
+### Wrappers for native classes. ###
 wrapDownloadItem = (downloadItem) ->
-  # downloadItem is an EventEmitter.
+  ### downloadItem is an EventEmitter. ###
   downloadItem.__proto__ = EventEmitter.prototype
-  # Deprecated.
+  ### Deprecated. ###
   deprecate.property downloadItem, 'url', 'getURL'
   deprecate.property downloadItem, 'filename', 'getFilename'
   deprecate.property downloadItem, 'mimeType', 'getMimeType'
   deprecate.rename downloadItem, 'getUrl', 'getURL'
 downloadItemBindings._setWrapDownloadItem wrapDownloadItem
 
-# Only one App object pemitted.
+### Only one App object pemitted. ###
 module.exports = app

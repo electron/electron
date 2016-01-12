@@ -1,6 +1,7 @@
 {ipcMain, webContents} = require 'electron'
 
-webViewManager = null  # Doesn't exist in early initialization.
+### Doesn't exist in early initialization. ###
+webViewManager = null
 
 supportedWebViewEvents = [
   'load-commit'
@@ -40,15 +41,15 @@ guestInstances = {}
 embedderElementsMap = {}
 reverseEmbedderElementsMap = {}
 
-# Moves the last element of array to the first one.
+### Moves the last element of array to the first one. ###
 moveLastToFirst = (list) ->
   list.unshift list.pop()
 
-# Generate guestInstanceId.
+### Generate guestInstanceId. ###
 getNextInstanceId = (webContents) ->
   ++nextInstanceId
 
-# Create a new guest instance.
+### Create a new guest instance. ###
 createGuest = (embedder, params) ->
   webViewManager ?= process.atomBinding 'web_view_manager'
 
@@ -56,21 +57,23 @@ createGuest = (embedder, params) ->
   guest = webContents.create {isGuest: true, partition: params.partition, embedder}
   guestInstances[id] = {guest, embedder}
 
-  # Destroy guest when the embedder is gone or navigated.
+  ### Destroy guest when the embedder is gone or navigated. ###
   destroyEvents = ['destroyed', 'crashed', 'did-navigate']
   destroy = ->
     destroyGuest embedder, id if guestInstances[id]?
   for event in destroyEvents
     embedder.once event, destroy
-    # Users might also listen to the crashed event, so We must ensure the guest
-    # is destroyed before users' listener gets called. It is done by moving our
-    # listener to the first one in queue.
+    ###
+      Users might also listen to the crashed event, so We must ensure the guest
+      is destroyed before users' listener gets called. It is done by moving our
+      listener to the first one in queue.
+    ###
     listeners = embedder._events[event]
     moveLastToFirst listeners if Array.isArray listeners
   guest.once 'destroyed', ->
     embedder.removeListener event, destroy for event in destroyEvents
 
-  # Init guest web view after attached.
+  ### Init guest web view after attached. ###
   guest.once 'did-attach', ->
     params = @attachParams
     delete @attachParams
@@ -96,32 +99,32 @@ createGuest = (embedder, params) ->
 
     guest.allowPopups = params.allowpopups
 
-  # Dispatch events to embedder.
+  ### Dispatch events to embedder. ###
   for event in supportedWebViewEvents
     do (event) ->
       guest.on event, (_, args...) ->
         embedder.send "ATOM_SHELL_GUEST_VIEW_INTERNAL_DISPATCH_EVENT-#{guest.viewInstanceId}", event, args...
 
-  # Dispatch guest's IPC messages to embedder.
+  ### Dispatch guest's IPC messages to embedder. ###
   guest.on 'ipc-message-host', (_, packed) ->
     [channel, args...] = packed
     embedder.send "ATOM_SHELL_GUEST_VIEW_INTERNAL_IPC_MESSAGE-#{guest.viewInstanceId}", channel, args...
 
-  # Autosize.
+  ### Autosize. ###
   guest.on 'size-changed', (_, args...) ->
     embedder.send "ATOM_SHELL_GUEST_VIEW_INTERNAL_SIZE_CHANGED-#{guest.viewInstanceId}", args...
 
   id
 
-# Attach the guest to an element of embedder.
+### Attach the guest to an element of embedder. ###
 attachGuest = (embedder, elementInstanceId, guestInstanceId, params) ->
   guest = guestInstances[guestInstanceId].guest
 
-  # Destroy the old guest when attaching.
+  ### Destroy the old guest when attaching. ###
   key = "#{embedder.getId()}-#{elementInstanceId}"
   oldGuestInstanceId = embedderElementsMap[key]
   if oldGuestInstanceId?
-    # Reattachment to the same guest is not currently supported.
+    ### Reattachment to the same guest is not currently supported. ###
     return unless oldGuestInstanceId != guestInstanceId
 
     return unless guestInstances[oldGuestInstanceId]?
@@ -139,7 +142,7 @@ attachGuest = (embedder, elementInstanceId, guestInstanceId, params) ->
   embedderElementsMap[key] = guestInstanceId
   reverseEmbedderElementsMap[guestInstanceId] = key
 
-# Destroy an existing guest instance.
+### Destroy an existing guest instance. ###
 destroyGuest = (embedder, id) ->
   webViewManager.removeGuest embedder, id
   guestInstances[id].guest.destroy()
@@ -165,10 +168,10 @@ ipcMain.on 'ATOM_SHELL_GUEST_VIEW_MANAGER_SET_SIZE', (event, id, params) ->
 ipcMain.on 'ATOM_SHELL_GUEST_VIEW_MANAGER_SET_ALLOW_TRANSPARENCY', (event, id, allowtransparency) ->
   guestInstances[id]?.guest.setAllowTransparency allowtransparency
 
-# Returns WebContents from its guest id.
+### Returns WebContents from its guest id. ###
 exports.getGuest = (id) ->
   guestInstances[id]?.guest
 
-# Returns the embedder of the guest.
+### Returns the embedder of the guest. ###
 exports.getEmbedder = (id) ->
   guestInstances[id]?.embedder

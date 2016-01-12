@@ -5,7 +5,7 @@
 Tray::__proto__ = EventEmitter.prototype
 
 Tray::_init = ->
-  # Deprecated.
+  ### Deprecated. ###
   deprecate.rename this, 'popContextMenu', 'popUpContextMenu'
   deprecate.event this, 'clicked', 'click'
   deprecate.event this, 'double-clicked', 'double-click'
@@ -14,6 +14,7 @@ Tray::_init = ->
 
 Tray::setContextMenu = (menu) ->
   @_setContextMenu menu
-  @menu = menu  # Keep a strong reference of menu.
+  ### Keep a strong reference of menu. ###
+  @menu = menu
 
 module.exports = Tray

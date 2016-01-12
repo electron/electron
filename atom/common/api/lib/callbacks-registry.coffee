@@ -7,14 +7,16 @@ class CallbacksRegistry
     @callbacks = {}
 
   add: (callback) ->
-    # The callback is already added.
+    ### The callback is already added. ###
     id = v8Util.getHiddenValue callback, 'callbackId'
     return id if id?
 
     id = ++@nextId
 
-    # Capture the location of the function and put it in the ID string,
-    # so that release errors can be tracked down easily.
+    ###
+      Capture the location of the function and put it in the ID string,
+      so that release errors can be tracked down easily.
+    ###
     regexp = /at (.*)/gi
     stackString = (new Error).stack
 

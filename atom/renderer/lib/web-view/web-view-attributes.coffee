@@ -4,14 +4,16 @@ webViewConstants = require './web-view-constants'
 
 {remote} = require 'electron'
 
-# Helper function to resolve url set in attribute.
+### Helper function to resolve url set in attribute. ###
 a = document.createElement 'a'
 resolveURL = (url) ->
   a.href = url
   a.href
 
-# Attribute objects.
-# Default implementation of a WebView attribute.
+###
+  Attribute objects.
+  Default implementation of a WebView attribute.
+###
 class WebViewAttribute
   constructor: (name, webViewImpl) ->
     @name = name
@@ -20,29 +22,29 @@ class WebViewAttribute
 
     @defineProperty()
 
-  # Retrieves and returns the attribute's value.
+  ### Retrieves and returns the attribute's value. ###
   getValue: -> @webViewImpl.webviewNode.getAttribute(@name) || ''
 
-  # Sets the attribute's value.
+  ### Sets the attribute's value. ###
   setValue: (value) -> @webViewImpl.webviewNode.setAttribute(@name, value || '')
 
-  # Changes the attribute's value without triggering its mutation handler.
+  ### Changes the attribute's value without triggering its mutation handler. ###
   setValueIgnoreMutation: (value) ->
     @ignoreMutation = true
     @setValue value
     @ignoreMutation = false
 
-  # Defines this attribute as a property on the webview node.
+  ### Defines this attribute as a property on the webview node. ###
   defineProperty: ->
     Object.defineProperty @webViewImpl.webviewNode, @name,
       get: => @getValue()
       set: (value) => @setValue value
       enumerable: true
 
-  # Called when the attribute's value changes.
+  ### Called when the attribute's value changes. ###
   handleMutation: ->
 
-# An attribute that is treated as a Boolean.
+### An attribute that is treated as a Boolean. ###
 class BooleanAttribute extends WebViewAttribute
   constructor: (name, webViewImpl) ->
     super name, webViewImpl
@@ -55,7 +57,7 @@ class BooleanAttribute extends WebViewAttribute
     else
       @webViewImpl.webviewNode.setAttribute @name, ''
 
-# Attribute that specifies whether transparency is allowed in the webview.
+### Attribute that specifies whether transparency is allowed in the webview. ###
 class AllowTransparencyAttribute extends BooleanAttribute
   constructor: (webViewImpl) ->
     super webViewConstants.ATTRIBUTE_ALLOWTRANSPARENCY, webViewImpl
@@ -64,7 +66,7 @@ class AllowTransparencyAttribute extends BooleanAttribute
     return unless @webViewImpl.guestInstanceId
     guestViewInternal.setAllowTransparency @webViewImpl.guestInstanceId, @getValue()
 
-# Attribute used to define the demension limits of autosizing.
+### Attribute used to define the demension limits of autosizing. ###
 class AutosizeDimensionAttribute extends WebViewAttribute
   constructor: (name, webViewImpl) ->
     super name, webViewImpl
@@ -82,14 +84,14 @@ class AutosizeDimensionAttribute extends WebViewAttribute
         width: parseInt @webViewImpl.attributes[webViewConstants.ATTRIBUTE_MAXWIDTH].getValue() || 0
         height: parseInt @webViewImpl.attributes[webViewConstants.ATTRIBUTE_MAXHEIGHT].getValue() || 0
 
-# Attribute that specifies whether the webview should be autosized.
+### Attribute that specifies whether the webview should be autosized. ###
 class AutosizeAttribute extends BooleanAttribute
   constructor: (webViewImpl) ->
     super webViewConstants.ATTRIBUTE_AUTOSIZE, webViewImpl
 
   handleMutation: AutosizeDimensionAttribute::handleMutation
 
-# Attribute representing the state of the storage partition.
+### Attribute representing the state of the storage partition. ###
 class PartitionAttribute extends WebViewAttribute
   constructor: (webViewImpl) ->
     super webViewConstants.ATTRIBUTE_PARTITION, webViewImpl
@@ -98,7 +100,7 @@ class PartitionAttribute extends WebViewAttribute
   handleMutation: (oldValue, newValue) ->
     newValue = newValue || ''
 
-    # The partition cannot change if the webview has already navigated.
+    ### The partition cannot change if the webview has already navigated. ###
     unless @webViewImpl.beforeFirstNavigation
       window.console.error webViewConstants.ERROR_MSG_ALREADY_NAVIGATED
       @setValueIgnoreMutation oldValue
@@ -108,7 +110,7 @@ class PartitionAttribute extends WebViewAttribute
       @validPartitionId = false
       window.console.error webViewConstants.ERROR_MSG_INVALID_PARTITION_ATTRIBUTE
 
-# Attribute that handles the location and navigation of the webview.
+### Attribute that handles the location and navigation of the webview. ###
 class SrcAttribute extends WebViewAttribute
   constructor: (webViewImpl) ->
     super webViewConstants.ATTRIBUTE_SRC, webViewImpl
@@ -122,28 +124,36 @@ class SrcAttribute extends WebViewAttribute
 
   setValueIgnoreMutation: (value) ->
     WebViewAttribute::setValueIgnoreMutation.call(this, value)
-    # takeRecords() is needed to clear queued up src mutations. Without it, it
-    # is possible for this change to get picked up asyncronously by src's
-    # mutation observer |observer|, and then get handled even though we do not
-    # want to handle this mutation.
+    ###
+      takeRecords() is needed to clear queued up src mutations. Without it, it
+      is possible for this change to get picked up asyncronously by src's
+      mutation observer |observer|, and then get handled even though we do not
+      want to handle this mutation.
+    ###
     @observer.takeRecords()
 
   handleMutation: (oldValue, newValue) ->
-    # Once we have navigated, we don't allow clearing the src attribute.
-    # Once <webview> enters a navigated state, it cannot return to a
-    # placeholder state.
+    ###
+      Once we have navigated, we don't allow clearing the src attribute.
+      Once <webview> enters a navigated state, it cannot return to a
+      placeholder state.
+    ###
     if not newValue and oldValue
-      # src attribute changes normally initiate a navigation. We suppress
-      # the next src attribute handler call to avoid reloading the page
-      # on every guest-initiated navigation.
+      ###
+        src attribute changes normally initiate a navigation. We suppress
+        the next src attribute handler call to avoid reloading the page
+        on every guest-initiated navigation.
+      ###
       @setValueIgnoreMutation oldValue
       return
     @parse()
 
-  # The purpose of this mutation observer is to catch assignment to the src
-  # attribute without any changes to its value. This is useful in the case
-  # where the webview guest has crashed and navigating to the same address
-  # spawns off a new process.
+  ###
+    The purpose of this mutation observer is to catch assignment to the src
+    attribute without any changes to its value. This is useful in the case
+    where the webview guest has crashed and navigating to the same address
+    spawns off a new process.
+  ###
   setupMutationObserver: ->
     @observer = new MutationObserver (mutations) =>
       for mutation in mutations
@@ -169,7 +179,7 @@ class SrcAttribute extends WebViewAttribute
         @webViewImpl.createGuest()
       return
 
-    # Navigate to |this.src|.
+    ### Navigate to |this.src|. ###
     opts = {}
     httpreferrer = @webViewImpl.attributes[webViewConstants.ATTRIBUTE_HTTPREFERRER].getValue()
     if httpreferrer then opts.httpReferrer = httpreferrer
@@ -180,17 +190,17 @@ class SrcAttribute extends WebViewAttribute
     guestContents = remote.getGuestWebContents(@webViewImpl.guestInstanceId)
     guestContents.loadURL @getValue(), opts
 
-# Attribute specifies HTTP referrer.
+### Attribute specifies HTTP referrer. ###
 class HttpReferrerAttribute extends WebViewAttribute
   constructor: (webViewImpl) ->
     super webViewConstants.ATTRIBUTE_HTTPREFERRER, webViewImpl
 
-# Attribute specifies user agent
+### Attribute specifies user agent ###
 class UserAgentAttribute extends WebViewAttribute
   constructor: (webViewImpl) ->
     super webViewConstants.ATTRIBUTE_USERAGENT, webViewImpl
 
-# Attribute that set preload script.
+### Attribute that set preload script. ###
 class PreloadAttribute extends WebViewAttribute
   constructor: (webViewImpl) ->
     super webViewConstants.ATTRIBUTE_PRELOAD, webViewImpl
@@ -204,7 +214,7 @@ class PreloadAttribute extends WebViewAttribute
       preload = ''
     preload
 
-# Sets up all of the webview attributes.
+### Sets up all of the webview attributes. ###
 WebViewImpl::setupWebViewAttributes = ->
   @attributes = {}
 

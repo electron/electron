@@ -16,12 +16,12 @@ messageBoxOptions =
 
 parseArgs = (window, options, callback) ->
   unless window is null or window?.constructor is BrowserWindow
-    # Shift.
+    ### Shift. ###
     callback = options
     options = window
     window = null
   if not callback? and typeof options is 'function'
-    # Shift.
+    ### Shift. ###
     callback = options
     options = null
   [window, options, callback]
@@ -97,7 +97,7 @@ module.exports =
     options.icon ?= null
     options.defaultId ?= -1
 
-    # Choose a default button to get selected when dialog is cancelled.
+    ### Choose a default button to get selected when dialog is cancelled. ###
     unless options.cancelId?
       options.cancelId = 0
       for text, i in options.buttons
@@ -122,6 +122,6 @@ module.exports =
   showErrorBox: (args...) ->
     binding.showErrorBox args...
 
-# Mark standard asynchronous functions.
+### Mark standard asynchronous functions. ###
 for api in ['showMessageBox', 'showOpenDialog', 'showSaveDialog']
   v8Util.setHiddenValue module.exports[api], 'asynchronous', true

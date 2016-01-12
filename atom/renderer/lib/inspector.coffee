@@ -1,8 +1,8 @@
 window.onload = ->
-  # Use menu API to show context menu.
+  ### Use menu API to show context menu. ###
   InspectorFrontendHost.showContextMenuAtPoint = createMenu
 
-  # Use dialog API to override file chooser dialog.
+  ### Use dialog API to override file chooser dialog. ###
   WebInspector.createFileSelectorElement = createFileSelectorElement
 
 convertToMenuTemplate = (items) ->
@@ -38,7 +38,7 @@ createMenu = (x, y, items, document) ->
   {Menu} = remote
 
   menu = Menu.buildFromTemplate convertToMenuTemplate(items)
-  # The menu is expected to show asynchronously.
+  ### The menu is expected to show asynchronously. ###
   setTimeout -> menu.popup remote.getCurrentWindow()
 
 showFileChooserDialog = (callback) ->

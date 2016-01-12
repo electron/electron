@@ -1,4 +1,4 @@
-# Deprecate a method.
+### Deprecate a method. ###
 deprecate = (oldName, newName, fn) ->
   warned = false
   ->
@@ -7,7 +7,7 @@ deprecate = (oldName, newName, fn) ->
       deprecate.warn oldName, newName
     fn.apply this, arguments
 
-# The method is renamed.
+### The method is renamed. ###
 deprecate.rename = (object, oldName, newName) ->
   warned = false
   newMethod = ->
@@ -20,7 +20,7 @@ deprecate.rename = (object, oldName, newName) ->
   else
     object[oldName] = newMethod
 
-# Forward the method to member.
+### Forward the method to member. ###
 deprecate.member = (object, method, member) ->
   warned = false
   object.prototype[method] = ->
@@ -29,7 +29,7 @@ deprecate.member = (object, method, member) ->
       deprecate.warn method, "#{member}.#{method}"
     this[member][method].apply this[member], arguments
 
-# Deprecate a property.
+### Deprecate a property. ###
 deprecate.property = (object, property, method) ->
   Object.defineProperty object, property,
     get: ->
@@ -39,11 +39,12 @@ deprecate.property = (object, property, method) ->
         deprecate.warn "#{property} property", "#{method} method"
       this[method]()
 
-# Deprecate an event.
+### Deprecate an event. ###
 deprecate.event = (emitter, oldName, newName, fn) ->
   warned = false
   emitter.on newName, (args...) ->
-    if @listenerCount(oldName) > 0  # there is listeners for old API.
+    ### there is listeners for old API. ###
+    if @listenerCount(oldName) > 0
       unless warned or process.noDeprecation
         warned = true
         deprecate.warn "'#{oldName}' event", "'#{newName}' event"
@@ -52,11 +53,11 @@ deprecate.event = (emitter, oldName, newName, fn) ->
       else
         @emit oldName, args...
 
-# Print deprecation warning.
+### Print deprecation warning. ###
 deprecate.warn = (oldName, newName) ->
   deprecate.log "#{oldName} is deprecated. Use #{newName} instead."
 
-# Print deprecation message.
+### Print deprecation message. ###
 deprecate.log = (message) ->
   if process.throwDeprecation
     throw new Error(message)

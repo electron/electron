@@ -4,7 +4,7 @@ throw new Error('Can not initialize protocol module before app is ready') unless
 
 {protocol} = process.atomBinding 'protocol'
 
-# Warn about removed APIs.
+### Warn about removed APIs. ###
 logAndThrow = (callback, message) ->
   console.error message
   if callback then callback(new Error(message)) else throw new Error(message)

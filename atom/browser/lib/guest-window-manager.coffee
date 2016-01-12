@@ -3,7 +3,7 @@ v8Util = process.atomBinding 'v8_util'
 
 frameToGuest = {}
 
-# Copy attribute of |parent| to |child| if it is not defined in |child|.
+### Copy attribute of |parent| to |child| if it is not defined in |child|. ###
 mergeOptions = (child, parent) ->
   for own key, value of parent when key not of child
     if typeof value is 'object'
@@ -12,34 +12,36 @@ mergeOptions = (child, parent) ->
       child[key] = value
   child
 
-# Merge |options| with the |embedder|'s window's options.
+### Merge |options| with the |embedder|'s window's options. ###
 mergeBrowserWindowOptions = (embedder, options) ->
   if embedder.browserWindowOptions?
-    # Inherit the original options if it is a BrowserWindow.
+    ### Inherit the original options if it is a BrowserWindow. ###
     mergeOptions options, embedder.browserWindowOptions
   else
-    # Or only inherit web-preferences if it is a webview.
+    ### Or only inherit web-preferences if it is a webview. ###
     options.webPreferences ?= {}
     mergeOptions options.webPreferences, embedder.getWebPreferences()
   options
 
-# Create a new guest created by |embedder| with |options|.
+### Create a new guest created by |embedder| with |options|. ###
 createGuest = (embedder, url, frameName, options) ->
   guest = frameToGuest[frameName]
   if frameName and guest?
     guest.loadURL url
     return guest.id
 
-  # Remember the embedder window's id.
+  ### Remember the embedder window's id. ###
   options.webPreferences ?= {}
   options.webPreferences.openerId = BrowserWindow.fromWebContents(embedder)?.id
 
   guest = new BrowserWindow(options)
   guest.loadURL url
 
-  # When |embedder| is destroyed we should also destroy attached guest, and if
-  # guest is closed by user then we should prevent |embedder| from double
-  # closing guest.
+  ###
+    When |embedder| is destroyed we should also destroy attached guest, and if
+    guest is closed by user then we should prevent |embedder| from double
+    closing guest.
+  ###
   guestId = guest.id
   closedByEmbedder = ->
     guest.removeListener 'closed', closedByUser
@@ -58,7 +60,7 @@ createGuest = (embedder, url, frameName, options) ->
 
   guest.id
 
-# Routed window.open messages.
+### Routed window.open messages. ###
 ipcMain.on 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_OPEN', (event, args...) ->
   [url, frameName, options] = args
   options = mergeBrowserWindowOptions event.sender, options

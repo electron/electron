@@ -3,7 +3,7 @@
 nextId = 0
 getNextId = -> ++nextId
 
-# |options.type| can not be empty and has to include 'window' or 'screen'.
+### |options.type| can not be empty and has to include 'window' or 'screen'. ###
 isValid = (options) ->
   return options?.types? and Array.isArray options.types
 

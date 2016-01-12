@@ -4,11 +4,11 @@
 v8Util = process.atomBinding 'v8_util'
 bindings = process.atomBinding 'menu'
 
-# Automatically generated radio menu item's group id.
+### Automatically generated radio menu item's group id. ###
 nextGroupId = 0
 
-# Search between seperators to find a radio menu item and return its group id,
-# otherwise generate a group id.
+### Search between seperators to find a radio menu item and return its group id, ###
+### otherwise generate a group id. ###
 generateGroupId = (items, pos) ->
   if pos > 0
     for i in [pos - 1..0]
@@ -22,12 +22,12 @@ generateGroupId = (items, pos) ->
       break if item.type is 'separator'
   ++nextGroupId
 
-# Returns the index of item according to |id|.
+### Returns the index of item according to |id|. ###
 indexOfItemById = (items, id) ->
   return i for item, i in items when item.id is id
   -1
 
-# Returns the index of where to insert the item according to |position|.
+### Returns the index of where to insert the item according to |position|. ###
 indexToInsertByPosition = (items, position) ->
   return items.length unless position
 
@@ -41,12 +41,12 @@ indexToInsertByPosition = (items, position) ->
     when 'after'
       insertIndex++
     when 'endof'
-      # If the |id| doesn't exist, then create a new group with the |id|.
+      ### If the |id| doesn't exist, then create a new group with the |id|. ###
       if insertIndex is -1
         items.push id: id, type: 'separator'
         insertIndex = items.length - 1
 
-      # Find the end of the group.
+      ### Find the end of the group. ###
       insertIndex++
       while insertIndex < items.length and items[insertIndex].type isnt 'separator'
         insertIndex++
@@ -69,7 +69,7 @@ Menu::_init = ->
     executeCommand: (commandId) =>
       @commandsMap[commandId]?.click BrowserWindow.getFocusedWindow()
     menuWillShow: =>
-      # Make sure radio groups have at least one menu item seleted.
+      ### Make sure radio groups have at least one menu item seleted. ###
       for id, group of @groupsMap
         checked = false
         for radioItem in group when radioItem.checked
@@ -79,7 +79,7 @@ Menu::_init = ->
 
 Menu::popup = (window, x, y) ->
   unless window?.constructor is BrowserWindow
-    # Shift.
+    ### Shift. ###
     y = x
     x = window
     window = BrowserWindow.getFocusedWindow()
@@ -100,12 +100,12 @@ Menu::insert = (pos, item) ->
     when 'separator' then @insertSeparator pos
     when 'submenu' then @insertSubMenu pos, item.commandId, item.label, item.submenu
     when 'radio'
-      # Grouping radio menu items.
+      ### Grouping radio menu items. ###
       item.overrideReadOnlyProperty 'groupId', generateGroupId(@items, pos)
       @groupsMap[item.groupId] ?= []
       @groupsMap[item.groupId].push item
 
-      # Setting a radio menu item should flip other items in the group.
+      ### Setting a radio menu item should flip other items in the group. ###
       v8Util.setHiddenValue item, 'checked', item.checked
       Object.defineProperty item, 'checked',
         enumerable: true
@@ -121,14 +121,14 @@ Menu::insert = (pos, item) ->
   @setIcon pos, item.icon if item.icon?
   @setRole pos, item.role if item.role?
 
-  # Make menu accessable to items.
+  ### Make menu accessable to items. ###
   item.overrideReadOnlyProperty 'menu', this
 
-  # Remember the items.
+  ### Remember the items. ###
   @items.splice pos, 0, item
   @commandsMap[item.commandId] = item
 
-# Force menuWillShow to be called
+### Force menuWillShow to be called ###
 Menu::_callMenuWillShow = ->
   @delegate?.menuWillShow()
   item.submenu._callMenuWillShow() for item in @items when item.submenu?
@@ -136,7 +136,8 @@ Menu::_callMenuWillShow = ->
 applicationMenu = null
 Menu.setApplicationMenu = (menu) ->
   throw new TypeError('Invalid menu') unless menu is null or menu.constructor is Menu
-  applicationMenu = menu  # Keep a reference.
+  ### Keep a reference. ###
+  applicationMenu = menu
 
   if process.platform is 'darwin'
     return if menu is null
@@ -160,7 +161,7 @@ Menu.buildFromTemplate = (template) ->
     if item.position
       insertIndex = indexToInsertByPosition positionedTemplate, item.position
     else
-      # If no |position| is specified, insert after last item.
+      ### If no |position| is specified, insert after last item. ###
       insertIndex++
     positionedTemplate.splice insertIndex, 0, item
 

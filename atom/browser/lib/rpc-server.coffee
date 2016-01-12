@@ -7,7 +7,7 @@ objectsRegistry = require './objects-registry'
 v8Util = process.atomBinding 'v8_util'
 {IDWeakMap} = process.atomBinding 'id_weak_map'
 
-# Convert a real value into meta data.
+### Convert a real value into meta data. ###
 valueToMeta = (sender, value, optimizeSimpleObject=false) ->
   meta = type: typeof value
 
@@ -18,11 +18,11 @@ valueToMeta = (sender, value, optimizeSimpleObject=false) ->
   meta.type = 'date' if value instanceof Date
   meta.type = 'promise' if value?.constructor.name is 'Promise'
 
-  # Treat simple objects as value.
+  ### Treat simple objects as value. ###
   if optimizeSimpleObject and meta.type is 'object' and v8Util.getHiddenValue value, 'simple'
     meta.type = 'value'
 
-  # Treat the arguments object as array.
+  ### Treat the arguments object as array. ###
   meta.type = 'array' if meta.type is 'object' and value.callee? and value.length?
 
   if meta.type is 'array'
@@ -31,9 +31,11 @@ valueToMeta = (sender, value, optimizeSimpleObject=false) ->
   else if meta.type is 'object' or meta.type is 'function'
     meta.name = value.constructor.name
 
-    # Reference the original value if it's an object, because when it's
-    # passed to renderer we would assume the renderer keeps a reference of
-    # it.
+    ###
+      Reference the original value if it's an object, because when it's
+      passed to renderer we would assume the renderer keeps a reference of
+      it.
+    ###
     meta.id = objectsRegistry.add sender.getId(), value
 
     meta.members = ({name, type: typeof field} for name, field of value)
@@ -43,7 +45,7 @@ valueToMeta = (sender, value, optimizeSimpleObject=false) ->
     meta.then = valueToMeta sender, value.then.bind(value)
   else if meta.type is 'error'
     meta.members = plainObjectToMeta value
-    # Error.name is not part of own properties.
+    ### Error.name is not part of own properties. ###
     meta.members.push {name: 'name', value: value.name}
   else if meta.type is 'date'
     meta.value = value.getTime()
@@ -53,15 +55,15 @@ valueToMeta = (sender, value, optimizeSimpleObject=false) ->
 
   meta
 
-# Convert object to meta by value.
+### Convert object to meta by value. ###
 plainObjectToMeta = (obj) ->
   Object.getOwnPropertyNames(obj).map (name) -> {name, value: obj[name]}
 
-# Convert Error into meta data.
+### Convert Error into meta data. ###
 exceptionToMeta = (error) ->
   type: 'exception', message: error.message, stack: (error.stack || error)
 
-# Convert array of meta data from renderer into array of real values.
+### Convert array of meta data from renderer into array of real values. ###
 unwrapArgs = (sender, args) ->
   metaToValue = (meta) ->
     switch meta.type
@@ -80,7 +82,7 @@ unwrapArgs = (sender, args) ->
         returnValue = metaToValue meta.value
         -> returnValue
       when 'function'
-        # Cache the callbacks in renderer.
+        ### Cache the callbacks in renderer. ###
         unless sender.callbacks
           sender.callbacks = new IDWeakMap
           sender.on 'render-view-deleted', ->
@@ -106,8 +108,10 @@ unwrapArgs = (sender, args) ->
 
   args.map metaToValue
 
-# Call a function and send reply asynchronously if it's a an asynchronous
-# style function and the caller didn't pass a callback.
+###
+  Call a function and send reply asynchronously if it's a an asynchronous
+  style function and the caller didn't pass a callback.
+###
 callFunction = (event, func, caller, args) ->
   funcMarkedAsync = v8Util.getHiddenValue(func, 'asynchronous')
   funcPassedCallback = typeof args[args.length - 1] is 'function'
@@ -121,15 +125,17 @@ callFunction = (event, func, caller, args) ->
       ret = func.apply caller, args
       event.returnValue = valueToMeta event.sender, ret, true
   catch e
-    # Catch functions thrown further down in function invocation and wrap
-    # them with the function name so it's easier to trace things like
-    # `Error processing argument -1.`
+    ###
+      Catch functions thrown further down in function invocation and wrap
+      them with the function name so it's easier to trace things like
+      `Error processing argument -1.`
+    ###
     funcName = func.name ? "anonymous"
     throw new Error("Could not call remote function `#{funcName}`.
                      Check that the function signature is correct.
                      Underlying error: #{e.message}")
 
-# Send by BrowserWindow when its render view is deleted.
+### Send by BrowserWindow when its render view is deleted. ###
 process.on 'ATOM_BROWSER_RELEASE_RENDER_VIEW', (id) ->
   objectsRegistry.clear id
 
@@ -164,8 +170,10 @@ ipcMain.on 'ATOM_BROWSER_CONSTRUCTOR', (event, id, args) ->
   try
     args = unwrapArgs event.sender, args
     constructor = objectsRegistry.get id
-    # Call new with array of arguments.
-    # http://stackoverflow.com/questions/1606797/use-of-apply-with-new-operator-is-this-possible
+    ###
+      Call new with array of arguments.
+      http://stackoverflow.com/questions/1606797/use-of-apply-with-new-operator-is-this-possible
+    ###
     obj = new (Function::bind.apply(constructor, [null].concat(args)))
     event.returnValue = valueToMeta event.sender, obj
   catch e
@@ -183,7 +191,7 @@ ipcMain.on 'ATOM_BROWSER_MEMBER_CONSTRUCTOR', (event, id, method, args) ->
   try
     args = unwrapArgs event.sender, args
     constructor = objectsRegistry.get(id)[method]
-    # Call new with array of arguments.
+    ### Call new with array of arguments. ###
     obj = new (Function::bind.apply(constructor, [null].concat(args)))
     event.returnValue = valueToMeta event.sender, obj
   catch e

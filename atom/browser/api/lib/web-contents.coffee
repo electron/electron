@@ -40,28 +40,30 @@ PDFPageSize =
     custom_display_name: "Tabloid"
 
 wrapWebContents = (webContents) ->
-  # webContents is an EventEmitter.
+  ### webContents is an EventEmitter. ###
   webContents.__proto__ = EventEmitter.prototype
 
-  # WebContents::send(channel, args..)
+  ### WebContents::send(channel, args..) ###
   webContents.send = (channel, args...) ->
     @_send channel, [args...]
 
-  # Make sure webContents.executeJavaScript would run the code only when the
-  # web contents has been loaded.
+  ###
+    Make sure webContents.executeJavaScript would run the code only when the
+    web contents has been loaded.
+  ###
   webContents.executeJavaScript = (code, hasUserGesture=false) ->
     if @getURL() and not @isLoading()
       @_executeJavaScript code, hasUserGesture
     else
       webContents.once 'did-finish-load', @_executeJavaScript.bind(this, code, hasUserGesture)
 
-  # The navigation controller.
+  ### The navigation controller. ###
   controller = new NavigationController(webContents)
   for name, method of NavigationController.prototype when method instanceof Function
     do (name, method) ->
       webContents[name] = -> method.apply controller, arguments
 
-  # Dispatch IPC messages to the ipc module.
+  ### Dispatch IPC messages to the ipc module. ###
   webContents.on 'ipc-message', (event, packed) ->
     [channel, args...] = packed
     ipcMain.emit channel, event, args...
@@ -70,22 +72,24 @@ wrapWebContents = (webContents) ->
     Object.defineProperty event, 'returnValue', set: (value) -> event.sendReply JSON.stringify(value)
     ipcMain.emit channel, event, args...
 
-  # Handle context menu action request from pepper plugin.
+  ### Handle context menu action request from pepper plugin. ###
   webContents.on 'pepper-context-menu', (event, params) ->
     menu = Menu.buildFromTemplate params.menu
     menu.popup params.x, params.y
 
-  # This error occurs when host could not be found.
+  ### This error occurs when host could not be found. ###
   webContents.on 'did-fail-provisional-load', (args...) ->
-    # Calling loadURL during this event might cause crash, so delay the event
-    # until next tick.
+    ###
+      Calling loadURL during this event might cause crash, so delay the event
+      until next tick.
+    ###
     setImmediate => @emit 'did-fail-load', args...
 
-  # Delays the page-title-updated event to next tick.
+  ### Delays the page-title-updated event to next tick. ###
   webContents.on '-page-title-updated', (args...) ->
     setImmediate => @emit 'page-title-updated', args...
 
-  # Deprecated.
+  ### Deprecated. ###
   deprecate.rename webContents, 'loadUrl', 'loadURL'
   deprecate.rename webContents, 'getUrl', 'getURL'
   deprecate.event webContents, 'page-title-set', 'page-title-updated', (args...) ->

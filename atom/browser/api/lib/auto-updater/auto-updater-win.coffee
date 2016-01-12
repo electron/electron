@@ -28,14 +28,16 @@ class AutoUpdater extends EventEmitter
         return @emitError error if error?
 
         {releaseNotes, version} = update
-        # Following information is not available on Windows, so fake them.
+        ### Following information is not available on Windows, so fake them. ###
         date = new Date
         url = @updateURL
 
         @emit 'update-downloaded', {}, releaseNotes, version, date, url, => @quitAndInstall()
 
-  # Private: Emit both error object and message, this is to keep compatibility
-  # with Old APIs.
+  ###
+    Private: Emit both error object and message, this is to keep compatibility
+    with Old APIs.
+  ###
   emitError: (message) ->
     @emit 'error', new Error(message), message
 

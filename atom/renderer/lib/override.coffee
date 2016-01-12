@@ -1,12 +1,12 @@
 {ipcRenderer, remote} = require 'electron'
 
-# Helper function to resolve relative url.
+### Helper function to resolve relative url. ###
 a = window.top.document.createElement 'a'
 resolveURL = (url) ->
   a.href = url
   a.href
 
-# Window object returned by "window.open".
+### Window object returned by "window.open". ###
 class BrowserWindowProxy
   @proxies: {}
 
@@ -38,15 +38,15 @@ class BrowserWindowProxy
     ipcRenderer.send 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WEB_CONTENTS_METHOD', @guestId, 'executeJavaScript', args...
 
 unless process.guestInstanceId?
-  # Override default window.close.
+  ### Override default window.close. ###
   window.close = ->
     remote.getCurrentWindow().close()
 
-# Make the browser window or guest view emit "new-window" event.
+### Make the browser window or guest view emit "new-window" event. ###
 window.open = (url, frameName='', features='') ->
   options = {}
   ints = [ 'x', 'y', 'width', 'height', 'min-width', 'max-width', 'min-height', 'max-height', 'zoom-factor' ]
-  # Make sure to get rid of excessive whitespace in the property name
+  ### Make sure to get rid of excessive whitespace in the property name ###
   for feature in features.split /,\s*/
     [name, value] = feature.split /\s*=/
     options[name] =
@@ -62,7 +62,7 @@ window.open = (url, frameName='', features='') ->
   options.width ?= 800
   options.height ?= 600
 
-  # Resolve relative urls.
+  ### Resolve relative urls. ###
   url = resolveURL url
 
   (options[name] = parseInt(options[name], 10) if options[name]?) for name in ints
@@ -73,21 +73,21 @@ window.open = (url, frameName='', features='') ->
   else
     null
 
-# Use the dialog API to implement alert().
+### Use the dialog API to implement alert(). ###
 window.alert = (message, title='') ->
   buttons = ['OK']
   message = message.toString()
   remote.dialog.showMessageBox remote.getCurrentWindow(), {message, title, buttons}
-  # Alert should always return undefined.
+  ### Alert should always return undefined. ###
   return
 
-# And the confirm().
+### And the confirm(). ###
 window.confirm = (message, title='') ->
   buttons = ['OK', 'Cancel']
   cancelId = 1
   not remote.dialog.showMessageBox remote.getCurrentWindow(), {message, title, buttons, cancelId}
 
-# But we do not support prompt().
+### But we do not support prompt(). ###
 window.prompt = ->
   throw new Error('prompt() is and will not be supported.')
 
@@ -95,8 +95,8 @@ if process.openerId?
   window.opener = BrowserWindowProxy.getOrCreate process.openerId
 
 ipcRenderer.on 'ATOM_SHELL_GUEST_WINDOW_POSTMESSAGE', (event, sourceId, message, sourceOrigin) ->
-  # Manually dispatch event instead of using postMessage because we also need to
-  # set event.source.
+  ### Manually dispatch event instead of using postMessage because we also need to ###
+  ### set event.source. ###
   event = document.createEvent 'Event'
   event.initEvent 'message', false, false
   event.data = message
@@ -104,7 +104,7 @@ ipcRenderer.on 'ATOM_SHELL_GUEST_WINDOW_POSTMESSAGE', (event, sourceId, message,
   event.source = BrowserWindowProxy.getOrCreate(sourceId)
   window.dispatchEvent event
 
-# Forward history operations to browser.
+### Forward history operations to browser. ###
 sendHistoryOperation = (args...) ->
   ipcRenderer.send 'ATOM_SHELL_NAVIGATION_CONTROLLER', args...
 
@@ -118,7 +118,7 @@ Object.defineProperty window.history, 'length',
   get: ->
     getHistoryOperation 'length'
 
-# Make document.hidden and document.visibilityState return the correct value.
+### Make document.hidden and document.visibilityState return the correct value. ###
 Object.defineProperty document, 'hidden',
   get: ->
     currentWindow = remote.getCurrentWindow()

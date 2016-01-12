@@ -1,21 +1,21 @@
 path   = require 'path'
 Module = require 'module'
 
-# Clear Node's global search paths.
+### Clear Node's global search paths. ###
 Module.globalPaths.length = 0
 
-# Clear current and parent(init.coffee)'s search paths.
+### Clear current and parent(init.coffee)'s search paths. ###
 module.paths = []
 module.parent.paths = []
 
-# Prevent Node from adding paths outside this app to search paths.
+### Prevent Node from adding paths outside this app to search paths. ###
 Module._nodeModulePaths = (from) ->
   from = path.resolve from
 
-  # If "from" is outside the app then we do nothing.
+  ### If "from" is outside the app then we do nothing. ###
   skipOutsidePaths = from.startsWith process.resourcesPath
 
-  # Following logoic is copied from module.js.
+  ### Following logoic is copied from module.js. ###
   splitRe = if process.platform is 'win32' then /[\/\\]/ else /\//
   paths = []
 

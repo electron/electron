@@ -6,7 +6,7 @@ autoUpdater =
   else
     require './auto-updater/auto-updater-native'
 
-# Deprecated.
+### Deprecated. ###
 deprecate.rename autoUpdater, 'setFeedUrl', 'setFeedURL'
 
 module.exports = autoUpdater

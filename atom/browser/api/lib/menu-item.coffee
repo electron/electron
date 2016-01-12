@@ -2,7 +2,7 @@ v8Util = process.atomBinding 'v8_util'
 
 nextCommandId = 0
 
-# Maps role to methods of webContents
+### Maps role to methods of webContents ###
 rolesMap =
   undo: 'undo'
   redo: 'redo'
@@ -13,7 +13,7 @@ rolesMap =
   minimize: 'minimize'
   close: 'close'
 
-# Maps methods that should be called directly on the BrowserWindow instance
+### Maps methods that should be called directly on the BrowserWindow instance ###
 methodInBrowserWindow =
   minimize: true
   close: true
@@ -46,7 +46,7 @@ class MenuItem
 
     @commandId = ++nextCommandId
     @click = (focusedWindow) =>
-      # Manually flip the checked flags when clicked.
+      ### Manually flip the checked flags when clicked. ###
       @checked = !@checked if @type in ['checkbox', 'radio']
 
       if @role and rolesMap[@role] and process.platform isnt 'darwin' and focusedWindow?

@@ -1,10 +1,10 @@
 common = require '../../../../common/api/lib/exports/electron'
 
-# Import common modules.
+### Import common modules. ###
 common.defineProperties exports
 
 Object.defineProperties exports,
-  # Browser side modules, please sort with alphabet order.
+  ### Browser side modules, please sort with alphabet order. ###
   app:
     enumerable: true
     get: -> require '../app'
@@ -50,7 +50,7 @@ Object.defineProperties exports,
   Tray:
     enumerable: true
     get: -> require '../tray'
-  # The internal modules, invisible unless you know their names.
+  ### The internal modules, invisible unless you know their names. ###
   NavigationController:
     get: -> require '../navigation-controller'
   webContents:

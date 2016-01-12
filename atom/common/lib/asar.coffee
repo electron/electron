@@ -3,7 +3,7 @@ child_process = require 'child_process'
 path = require 'path'
 util = require 'util'
 
-# Cache asar archive objects.
+### Cache asar archive objects. ###
 cachedArchives = {}
 getOrCreateArchive = (p) ->
   archive = cachedArchives[p]
@@ -12,13 +12,15 @@ getOrCreateArchive = (p) ->
   return false unless archive
   cachedArchives[p] = archive
 
-# Clean cache on quit.
+### Clean cache on quit. ###
 process.on 'exit', ->
   archive.destroy() for own p, archive of cachedArchives
 
-# Separate asar package's path from full path.
+### Separate asar package's path from full path. ###
 splitPath = (p) ->
-  return [false] if process.noAsar  # shortcut to disable asar.
+  ### shortcut to disable asar. ###
+  return [false] if process.noAsar
+
   return [false] if typeof p isnt 'string'
   return [true, p, ''] if p.substr(-5) is '.asar'
   p = path.normalize p
@@ -26,7 +28,7 @@ splitPath = (p) ->
   return [false] if index is -1
   [true, p.substr(0, index + 5), p.substr(index + 6)]
 
-# Convert asar archive's Stats object to fs's Stats object.
+### Convert asar archive's Stats object to fs's Stats object. ###
 nextInode = 0
 uid = if process.getuid? then process.getuid() else 0
 gid = if process.getgid? then process.getgid() else 0
@@ -54,7 +56,7 @@ asarStatsToFsStats = (stats) ->
     isSocket: -> false
   }
 
-# Create a ENOENT error.
+### Create a ENOENT error. ###
 notFoundError = (asarPath, filePath, callback) ->
   error = new Error("ENOENT, #{filePath} not found in #{asarPath}")
   error.code = "ENOENT"
@@ -63,7 +65,7 @@ notFoundError = (asarPath, filePath, callback) ->
     throw error
   process.nextTick -> callback error
 
-# Create a ENOTDIR error.
+### Create a ENOTDIR error. ###
 notDirError = (callback) ->
   error = new Error('ENOTDIR, not a directory')
   error.code = 'ENOTDIR'
@@ -72,14 +74,14 @@ notDirError = (callback) ->
     throw error
   process.nextTick -> callback error
 
-# Create invalid archive error.
+### Create invalid archive error. ###
 invalidArchiveError = (asarPath, callback) ->
   error = new Error("Invalid package #{asarPath}")
   unless typeof callback is 'function'
     throw error
   process.nextTick -> callback error
 
-# Override APIs that rely on passing file path instead of content to C++.
+### Override APIs that rely on passing file path instead of content to C++. ###
 overrideAPISync = (module, name, arg = 0) ->
   old = module[name]
   module[name] = ->
@@ -115,7 +117,7 @@ overrideAPI = (module, name, arg = 0) ->
     arguments[arg] = newPath
     old.apply this, arguments
 
-# Override fs APIs.
+### Override fs APIs. ###
 exports.wrapFsWithAsar = (fs) ->
   lstatSync = fs.lstatSync
   fs.lstatSync = (p) ->
@@ -148,7 +150,7 @@ exports.wrapFsWithAsar = (fs) ->
     [isAsar, asarPath, filePath] = splitPath p
     return statSync p unless isAsar
 
-    # Do not distinguish links for now.
+    ### Do not distinguish links for now. ###
     fs.lstatSync p
 
   stat = fs.stat
@@ -156,7 +158,7 @@ exports.wrapFsWithAsar = (fs) ->
     [isAsar, asarPath, filePath] = splitPath p
     return stat p, callback unless isAsar
 
-    # Do not distinguish links for now.
+    ### Do not distinguish links for now. ###
     process.nextTick -> fs.lstat p, callback
 
   statSyncNoException = fs.statSyncNoException
@@ -265,7 +267,9 @@ exports.wrapFsWithAsar = (fs) ->
   openSync = fs.openSync
   readFileSync = fs.readFileSync
   fs.readFileSync = (p, opts) ->
-    options = opts # this allows v8 to optimize this function
+    ### this allows v8 to optimize this function ###
+    options = opts
+
     [isAsar, asarPath, filePath] = splitPath p
     return readFileSync.apply this, arguments unless isAsar
 
@@ -353,17 +357,21 @@ exports.wrapFsWithAsar = (fs) ->
     return internalModuleStat p unless isAsar
 
     archive = getOrCreateArchive asarPath
-    return -34 unless archive  # -ENOENT
+    ### -ENOENT ###
+    return -34 unless archive
 
     stats = archive.stat filePath
-    return -34 unless stats  # -ENOENT
+    ### -ENOENT ###
+    return -34 unless stats
 
     if stats.isDirectory then return 1 else return 0
 
-  # Calling mkdir for directory inside asar archive should throw ENOTDIR
-  # error, but on Windows it throws ENOENT.
-  # This is to work around the recursive looping bug of mkdirp since it is
-  # widely used.
+  ###
+    Calling mkdir for directory inside asar archive should throw ENOTDIR
+    error, but on Windows it throws ENOENT.
+    This is to work around the recursive looping bug of mkdirp since it is
+    widely used.
+  ###
   if process.platform is 'win32'
     mkdir = fs.mkdir
     fs.mkdir = (p, mode, callback) ->
