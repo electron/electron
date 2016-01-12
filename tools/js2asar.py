@@ -12,25 +12,10 @@ SOURCE_ROOT = os.path.dirname(os.path.dirname(__file__))
 
 def main():
   archive = sys.argv[1]
-  coffee_source_files = sys.argv[2:]
 
   output_dir = tempfile.mkdtemp()
-  compile_coffee(coffee_source_files, output_dir)
   call_asar(archive, output_dir)
   shutil.rmtree(output_dir)
-
-
-def compile_coffee(coffee_source_files, output_dir):
-  for source_file in coffee_source_files:
-    output_filename = os.path.splitext(source_file)[0] + '.js'
-    output_path = os.path.join(output_dir, output_filename)
-    call_compile_coffee(source_file, output_path)
-
-
-def call_compile_coffee(source_file, output_filename):
-  compile_coffee = os.path.join(SOURCE_ROOT, 'tools', 'compile-coffee.py')
-  subprocess.check_call([sys.executable, compile_coffee, source_file,
-                         output_filename])
 
 
 def call_asar(archive, output_dir):
