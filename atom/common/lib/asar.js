@@ -1,3 +1,4 @@
+(function () {
 var asar, asarStatsToFsStats, cachedArchives, child_process, fakeTime, getOrCreateArchive, gid, invalidArchiveError, nextInode, notDirError, notFoundError, overrideAPI, overrideAPISync, path, splitPath, uid, util,
   hasProp = {}.hasOwnProperty;
 
@@ -606,3 +607,4 @@ exports.wrapFsWithAsar = function(fs) {
   overrideAPISync(fs, 'openSync');
   return overrideAPISync(child_process, 'execFileSync');
 };
+})()
