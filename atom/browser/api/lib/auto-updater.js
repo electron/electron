@@ -9,4 +9,6 @@ autoUpdater = process.platform === 'win32' ? require('./auto-updater/auto-update
 
 deprecate.rename(autoUpdater, 'setFeedUrl', 'setFeedURL');
 
+
+
 module.exports = autoUpdater;
