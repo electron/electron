@@ -55,6 +55,12 @@ describe 'browser-window module', ->
         done()
       w.loadURL 'file://' + path.join(fixtures, 'api', 'close-beforeunload-false.html')
 
+  describe 'BrowserWindow.destroy()', ->
+    it 'prevents users to access methods of webContents', ->
+      webContents = w.webContents
+      w.destroy()
+      assert.throws (-> webContents.getId()), /Object has been destroyed/
+
   describe 'BrowserWindow.loadURL(url)', ->
     it 'should emit did-start-loading event', (done) ->
       w.webContents.on 'did-start-loading', ->
