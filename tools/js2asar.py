@@ -19,12 +19,14 @@ def main():
   call_asar(archive, output_dir)
   shutil.rmtree(output_dir)
 
+
 def copy_js(js_source_files, output_dir):
   for source_file in js_source_files:
     output_filename = os.path.splitext(source_file)[0] + '.js'
     output_path = os.path.join(output_dir, output_filename)
     safe_mkdir(os.path.dirname(output_path))
     shutil.copy2(source_file, output_path)
+
 
 def call_asar(archive, output_dir):
   js_dir = os.path.join(output_dir, 'atom')
@@ -44,6 +46,7 @@ def find_node():
       if os.path.exists(full_path):
         return full_path
   return 'node'
+
 
 def safe_mkdir(path):
   try:
