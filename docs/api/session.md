@@ -179,6 +179,10 @@ Clears the session’s HTTP cache.
 
 Clears the data of web storages.
 
+#### `ses.flushStorageData()`
+
+Writes any unwritten DOMStorage data to disk.
+
 #### `ses.setProxy(config, callback)`
 
 * `config` Object

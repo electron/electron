@@ -64,6 +64,7 @@ class Session: public mate::TrackableObject<Session>,
   void ResolveProxy(const GURL& url, ResolveProxyCallback callback);
   void ClearCache(const net::CompletionCallback& callback);
   void ClearStorageData(mate::Arguments* args);
+  void FlushStorageData();
   void SetProxy(const net::ProxyConfig& config, const base::Closure& callback);
   void SetDownloadPath(const base::FilePath& path);
   void EnableNetworkEmulation(const mate::Dictionary& options);
