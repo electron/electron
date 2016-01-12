@@ -635,8 +635,16 @@ bool WebContents::OnMessageReceived(const IPC::Message& message) {
 void WebContents::WebContentsDestroyed() {
   // The RenderViewDeleted was not called when the WebContents is destroyed.
   RenderViewDeleted(web_contents()->GetRenderViewHost());
-  Emit("destroyed");
   RemoveFromWeakMap();
+
+  // We can not call Destroy here because we need to call Emit first, but we
+  // also do not want any method to be used, so just mark as destroyed here.
+  MarkDestroyed();
+
+  Emit("destroyed");
+
+  // Destroy the native class in next tick.
+  base::MessageLoop::current()->PostTask(FROM_HERE, GetDestroyClosure());
 }
 
 void WebContents::NavigationEntryCommitted(
