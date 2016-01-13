@@ -251,15 +251,19 @@ void ShowItemInFolder(const base::FilePath& full_path) {
   hr = desktop->ParseDisplayName(NULL, NULL,
                                  const_cast<wchar_t *>(dir.value().c_str()),
                                  NULL, &dir_item, NULL);
-  if (FAILED(hr))
+  if (FAILED(hr)) {
+    ShellExecute(NULL, L"open", dir.value().c_str(), NULL, NULL, SW_SHOW);
     return;
+  }
 
   base::win::ScopedCoMem<ITEMIDLIST> file_item;
   hr = desktop->ParseDisplayName(NULL, NULL,
       const_cast<wchar_t *>(full_path.value().c_str()),
       NULL, &file_item, NULL);
-  if (FAILED(hr))
+  if (FAILED(hr)) {
+    ShellExecute(NULL, L"open", dir.value().c_str(), NULL, NULL, SW_SHOW);
     return;
+  }
 
   const ITEMIDLIST* highlight[] = { file_item };
 
@@ -284,6 +288,8 @@ void ShowItemInFolder(const base::FilePath& full_path) {
                    << " " << reinterpret_cast<LPTSTR>(&message);
       if (message)
         LocalFree(message);
+
+      ShellExecute(NULL, L"open", dir.value().c_str(), NULL, NULL, SW_SHOW);
     }
   }
 }
