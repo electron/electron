@@ -70,6 +70,10 @@ let wrapWebContents = function(webContents) {
   var controller, method, name, ref1;
   webContents.__proto__ = EventEmitter.prototype;
 
+  // Every remote callback from renderer process would add a listenter to the
+  // render-view-deleted event, so ignore the listenters warning.
+  webContents.setMaxListeners(0);
+
   // WebContents::send(channel, args..)
   webContents.send = function() {
     var args, channel;
