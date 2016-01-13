@@ -455,31 +455,39 @@ describe('browser-window module', function() {
       });
     });
   });
-  describe('save page', function() {
-    var savePageCssPath, savePageDir, savePageHtmlPath, savePageJsPath;
-    savePageDir = path.join(fixtures, 'save_page');
-    savePageHtmlPath = path.join(savePageDir, 'save_page.html');
-    savePageJsPath = path.join(savePageDir, 'save_page_files', 'test.js');
-    savePageCssPath = path.join(savePageDir, 'save_page_files', 'test.css');
-    return it('should save page', function(done) {
+
+  describe('savePage method', function() {
+    const savePageDir = path.join(fixtures, 'save_page');
+    const savePageHtmlPath = path.join(savePageDir, 'save_page.html');
+    const savePageJsPath = path.join(savePageDir, 'save_page_files', 'test.js');
+    const savePageCssPath = path.join(savePageDir, 'save_page_files', 'test.css');
+
+    after(function() {
+      try {
+        fs.unlinkSync(savePageCssPath);
+        fs.unlinkSync(savePageJsPath);
+        fs.unlinkSync(savePageHtmlPath);
+        fs.rmdirSync(path.join(savePageDir, 'save_page_files'));
+        fs.rmdirSync(savePageDir);
+      } catch (e) {
+      }
+    });
+
+    it('should save page to disk', function(done) {
       w.webContents.on('did-finish-load', function() {
-        return w.webContents.savePage(savePageHtmlPath, 'HTMLComplete', function(error) {
+        w.webContents.savePage(savePageHtmlPath, 'HTMLComplete', function(error) {
           assert.equal(error, null);
           assert(fs.existsSync(savePageHtmlPath));
           assert(fs.existsSync(savePageJsPath));
           assert(fs.existsSync(savePageCssPath));
-          fs.unlinkSync(savePageCssPath);
-          fs.unlinkSync(savePageJsPath);
-          fs.unlinkSync(savePageHtmlPath);
-          fs.rmdirSync(path.join(savePageDir, 'save_page_files'));
-          fs.rmdirSync(savePageDir);
-          return done();
+          done();
         });
       });
-      return w.loadURL("file://" + fixtures + "/pages/save_page/index.html");
+      w.loadURL("file://" + fixtures + "/pages/save_page/index.html");
     });
   });
-  return describe('BrowserWindow options argument is optional', function() {
+
+  describe('BrowserWindow options argument is optional', function() {
     return it('should create a window with default size (800x600)', function() {
       var size;
       w.destroy();
