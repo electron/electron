@@ -35,7 +35,7 @@ are fine differences.
 Model ID][app-user-model-id], must be installed to the Start screen. Note,
 however, that it does not need to be pinned to the Start screen.
 * On Windows 7 and below, notifications are not supported. You can however send
-"balloon notifications" using the [Tray API](tray-balloon).
+"balloon notifications" using the [Tray API][tray-balloon].
 
 Furthermore, the maximum length for the notification body is 250 characters,
 with the Windows team recommending that notifications should be kept to 200
