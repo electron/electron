@@ -195,7 +195,7 @@ if (process.platform == 'darwin') {
   );
 }
 
-menu = Menu.buildFromTemplate(template);
+var menu = Menu.buildFromTemplate(template);
 Menu.setApplicationMenu(menu);
 ```
 
