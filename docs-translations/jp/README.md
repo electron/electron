@@ -27,3 +27,7 @@
 * [クイックスタート](tutorial/quick-start.md)
 * [デスクトップ環境の統合](tutorial/desktop-environment-integration.md)
 * [オンライン/オフライン イベントの検知](tutorial/online-offline-events.md)
+
+## API リファレンス
+
+* [概要](api/synopsis.md)

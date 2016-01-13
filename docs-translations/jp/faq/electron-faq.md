@@ -8,21 +8,20 @@ ElectronのChromeバージョンは、通常、新しいChromeのstabeleバー�
 
 ## Electronは、いつ最新のNode.jsにアップグレードされますか?
 
-Node.jsの新しいバージョンがリリースされたとき、とても頻繁に発生している新しいNode.jsバージョンで取り込まれたバグによる影響を避けるために、ElectronのNode.jsをアップグレードする前に、通常、約1カ月待ちます。
+Node.js の新しいバージョンがリリースされたとき、私たちは Electron の Node.js を更新するのを通常約1か月待ちます。そのようにして、とても頻繁に発生している、新しい Node.js バージョンによって取り込まれたバグによる影響を避けることができます。
 
-通常、Node.jsの新しい機能はV8のアップグレードによってもたらされ、 ElectronはChromeブラウザーに搭載されているV8を使用しているので、
-新しいNode.jsの重要な新しいJavaScript機能はElectronでは、すでに導入されています。
+通常、Node.js の新しい機能は V8 のアップグレードによってもたらされますが、Electron は Chrome ブラウザーに搭載されている V8 を使用しているので、新しい Node.js に入ったばかりのピカピカに新しい JavaScript 機能は Electron ではたいてい既に導入されています。
 
-## 数分後、アプリのWindow/trayが表示されなくなります
+## 何分か経つと、アプリの Window/tray が消えてしまいます
 
-これは、Window/trayを格納するのに使用している変数がガベージ コレクションされたときに発生します。
+これは、Window/trayを格納するのに使用している変数がガベージコレクトされたときに発生します。
 
 この問題に遭遇した時には、次のドキュメントを読むことをお勧めします。
 
 * [Memory Management][memory-management]
 * [Variable Scope][variable-scope]
 
-もし簡単に修正したい場合は、グローバル変数を作成し、コードを変更します。
+もし簡単に修正したい場合は、コードを以下のように修正して変数をグローバルにすると良いでしょう：
 
 変更前：
 
@@ -43,7 +42,8 @@ app.on('ready', function() {
 
 ## ElectronでjQuery/RequireJS/Meteor/AngularJSを使用できません
 
-Electronに組み込まれているNode.jsの影響で, `module`, `exports`, `require`のようなシンボルがDOMに追加されています。いくつかのライブラリで、追加しようとしているシンボルと同じ名前があり、これが原因で問題が発生します。
+Electronに組み込まれているNode.jsの影響で, `module`, `exports`, `require`のようなシンボルがDOMに追加されています。このため、いくつかのライブラリでは同名のシンボルを追加しようとして問題が発生することがあります。
+
 これを解決するために、Electronに組み込まれているnodeを無効にすることができます。
 
 ```javascript
