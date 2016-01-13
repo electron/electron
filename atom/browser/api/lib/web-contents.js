@@ -100,10 +100,6 @@ wrapWebContents = function(webContents) {
   // webContents has been loaded.
   const executeJavaScript = webContents.executeJavaScript;
   webContents.executeJavaScript = function(code, hasUserGesture) {
-    // TODO(zcbenz): Use default parameter after Chrome 49.
-    if (hasUserGesture === undefined)
-      hasUserGesture = false;
-
     if (this.getURL() && !this.isLoading())
       return executeJavaScript.call(this, code, hasUserGesture);
     else

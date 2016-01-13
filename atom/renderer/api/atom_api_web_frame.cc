@@ -122,9 +122,12 @@ void WebFrame::InsertText(const std::string& text) {
   web_frame_->insertText(blink::WebString::fromUTF8(text));
 }
 
-void WebFrame::ExecuteJavaScript(const base::string16& code, bool by_user) {
+void WebFrame::ExecuteJavaScript(const base::string16& code,
+                                 mate::Arguments* args) {
+  bool has_user_gesture = false;
+  args->GetNext(&has_user_gesture);
   scoped_ptr<blink::WebScopedUserGesture> gesture(
-      by_user ? new blink::WebScopedUserGesture : nullptr);
+      has_user_gesture ? new blink::WebScopedUserGesture : nullptr);
   web_frame_->executeScriptAndReturnValue(blink::WebScriptSource(code));
 }
 

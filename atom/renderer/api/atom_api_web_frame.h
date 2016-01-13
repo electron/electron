@@ -64,7 +64,7 @@ class WebFrame : public mate::Wrappable {
   void InsertText(const std::string& text);
 
   // Excecuting scripts.
-  void ExecuteJavaScript(const base::string16& code, bool by_user);
+  void ExecuteJavaScript(const base::string16& code, mate::Arguments* args);
 
   // mate::Wrappable:
   virtual mate::ObjectTemplateBuilder GetObjectTemplateBuilder(
