@@ -116,6 +116,10 @@ void WebFrame::RegisterURLSchemeAsPrivileged(const std::string& scheme) {
       privileged_scheme);
 }
 
+void WebFrame::InsertText(const std::string& text) {
+  web_frame_->insertText(blink::WebString::fromUTF8(text));
+}
+
 mate::ObjectTemplateBuilder WebFrame::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
   return mate::ObjectTemplateBuilder(isolate)
@@ -136,7 +140,8 @@ mate::ObjectTemplateBuilder WebFrame::GetObjectTemplateBuilder(
       .SetMethod("registerURLSchemeAsBypassingCSP",
                  &WebFrame::RegisterURLSchemeAsBypassingCSP)
       .SetMethod("registerURLSchemeAsPrivileged",
-                 &WebFrame::RegisterURLSchemeAsPrivileged);
+                 &WebFrame::RegisterURLSchemeAsPrivileged)
+      .SetMethod("insertText", &WebFrame::InsertText);
 }
 
 // static

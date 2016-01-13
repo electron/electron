@@ -90,4 +90,10 @@ Content Security Policy.
 Registers the `scheme` as secure, bypasses content security policy for resources,
 allows registering ServiceWorker and supports fetch API.
 
+### `webFrame.insertText(text)`
+
+* `text` String
+
+* Inserts `text` to the focused element.
+
 [spellchecker]: https://github.com/atom/node-spellchecker
