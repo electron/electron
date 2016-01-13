@@ -1,16 +1,19 @@
-var deprecate, webFrame;
+'use strict';
 
-deprecate = require('electron').deprecate;
+const deprecate = require('electron').deprecate;
+const EventEmitter = require('events').EventEmitter;
 
-webFrame = process.atomBinding('web_frame').webFrame;
+const webFrame = process.atomBinding('web_frame').webFrame;
 
+// webFrame is an EventEmitter.
+webFrame.__proto__ = EventEmitter.prototype;
 
-/* Deprecated. */
+// Lots of webview would subscribe to webFrame's events.
+webFrame.setMaxListeners(0);
 
+// Deprecated.
 deprecate.rename(webFrame, 'registerUrlSchemeAsSecure', 'registerURLSchemeAsSecure');
-
 deprecate.rename(webFrame, 'registerUrlSchemeAsBypassingCSP', 'registerURLSchemeAsBypassingCSP');
-
 deprecate.rename(webFrame, 'registerUrlSchemeAsPrivileged', 'registerURLSchemeAsPrivileged');
 
 module.exports = webFrame;

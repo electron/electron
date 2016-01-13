@@ -33,7 +33,6 @@
 #include "chrome/browser/printing/print_view_manager_basic.h"
 #include "chrome/browser/printing/print_preview_message_handler.h"
 #include "content/common/view_messages.h"
-#include "content/public/browser/browser_plugin_guest_manager.h"
 #include "content/public/browser/favicon_status.h"
 #include "content/public/browser/native_web_keyboard_event.h"
 #include "content/public/browser/navigation_details.h"
@@ -73,15 +72,6 @@ void SetUserAgentInIO(scoped_refptr<net::URLRequestContextGetter> getter,
       new net::StaticHttpUserAgentSettings(
           net::HttpUtil::GenerateAcceptLanguageHeader(accept_lang),
           user_agent));
-}
-
-bool NotifyZoomLevelChanged(
-    double level, content::WebContents* guest_web_contents) {
-  guest_web_contents->SendToAllFrames(
-      new AtomViewMsg_SetZoomLevel(MSG_ROUTING_NONE, level));
-
-  // Return false to iterate over all guests.
-  return false;
 }
 
 }  // namespace
@@ -290,15 +280,11 @@ WebContents::WebContents(v8::Isolate* isolate,
 }
 
 WebContents::~WebContents() {
-  if (type_ == WEB_VIEW && managed_web_contents()) {
-    // When force destroying the "destroyed" event is not emitted.
+  // The webview's lifetime is completely controlled by GuestViewManager, so
+  // it is always destroyed by calling webview.destroy(), we need to make
+  // sure the "destroyed" event is emitted manually.
+  if (type_ == WEB_VIEW && managed_web_contents())
     WebContentsDestroyed();
-
-    guest_delegate_->Destroy();
-
-    Observe(nullptr);
-    DestroyWebContents();
-  }
 }
 
 bool WebContents::AddMessageToConsole(content::WebContents* source,
@@ -625,7 +611,6 @@ bool WebContents::OnMessageReceived(const IPC::Message& message) {
     IPC_MESSAGE_HANDLER(AtomViewHostMsg_Message, OnRendererMessage)
     IPC_MESSAGE_HANDLER_DELAY_REPLY(AtomViewHostMsg_Message_Sync,
                                     OnRendererMessageSync)
-    IPC_MESSAGE_HANDLER(AtomViewHostMsg_ZoomLevelChanged, OnZoomLevelChanged)
     IPC_MESSAGE_UNHANDLED(handled = false)
   IPC_END_MESSAGE_MAP()
 
@@ -635,7 +620,15 @@ bool WebContents::OnMessageReceived(const IPC::Message& message) {
 void WebContents::WebContentsDestroyed() {
   // The RenderViewDeleted was not called when the WebContents is destroyed.
   RenderViewDeleted(web_contents()->GetRenderViewHost());
+
+  // This event is only for internal use, which is emitted when WebContents is
+  // being destroyed.
+  Emit("will-destroy");
+
+  // Cleanup relationships with other parts.
   RemoveFromWeakMap();
+  if (type_ == WEB_VIEW)
+    guest_delegate_->Destroy();
 
   // We can not call Destroy here because we need to call Emit first, but we
   // also do not want any method to be used, so just mark as destroyed here.
@@ -754,11 +747,6 @@ bool WebContents::SavePage(const base::FilePath& full_file_path,
                            const SavePageHandler::SavePageCallback& callback) {
   auto handler = new SavePageHandler(web_contents(), callback);
   return handler->Handle(full_file_path, save_type);
-}
-
-void WebContents::ExecuteJavaScript(const base::string16& code,
-                                    bool has_user_gesture) {
-  Send(new AtomViewMsg_ExecuteJavaScript(routing_id(), code, has_user_gesture));
 }
 
 void WebContents::OpenDevTools(mate::Arguments* args) {
@@ -1093,7 +1081,6 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("getUserAgent", &WebContents::GetUserAgent)
       .SetMethod("insertCSS", &WebContents::InsertCSS)
       .SetMethod("savePage", &WebContents::SavePage)
-      .SetMethod("_executeJavaScript", &WebContents::ExecuteJavaScript)
       .SetMethod("openDevTools", &WebContents::OpenDevTools)
       .SetMethod("closeDevTools", &WebContents::CloseDevTools)
       .SetMethod("isDevToolsOpened", &WebContents::IsDevToolsOpened)
@@ -1158,15 +1145,6 @@ void WebContents::OnRendererMessageSync(const base::string16& channel,
                                         IPC::Message* message) {
   // webContents.emit(channel, new Event(sender, message), args...);
   EmitWithSender(base::UTF16ToUTF8(channel), web_contents(), message, args);
-}
-
-void WebContents::OnZoomLevelChanged(double level) {
-  auto manager = web_contents()->GetBrowserContext()->GetGuestManager();
-  if (!manager)
-    return;
-  manager->ForEachGuest(web_contents(),
-                        base::Bind(&NotifyZoomLevelChanged,
-                                   level));
 }
 
 // static

@@ -1,3 +1,5 @@
+'user strict';
+
 var WebViewImpl, deprecate, getNextId, guestViewInternal, ipcRenderer, listener, nextId, ref, registerBrowserPluginElement, registerWebViewElement, remote, useCapture, v8Util, webFrame, webViewConstants,
   hasProp = {}.hasOwnProperty,
   slice = [].slice;
@@ -39,6 +41,12 @@ WebViewImpl = (function() {
     this.setupFocusPropagation();
     this.viewInstanceId = getNextId();
     shadowRoot.appendChild(this.browserPluginNode);
+
+    // Subscribe to host's zoom level changes.
+    this.onZoomLevelChanged = (zoomLevel) => {
+      this.webviewNode.setZoomLevel(zoomLevel);
+    }
+    webFrame.on('zoom-level-changed', this.onZoomLevelChanged);
   }
 
   WebViewImpl.prototype.createBrowserPluginNode = function() {
@@ -57,6 +65,8 @@ WebViewImpl = (function() {
   /* Resets some state upon reattaching <webview> element to the DOM. */
 
   WebViewImpl.prototype.reset = function() {
+    // Unlisten the zoom-level-changed event.
+    webFrame.removeListener('zoom-level-changed', this.onZoomLevelChanged);
 
     /*
       If guestInstanceId is defined then the <webview> has navigated and has
@@ -376,7 +386,16 @@ registerWebViewElement = function() {
 
   /* Public-facing API methods. */
   methods = ['getURL', 'getTitle', 'isLoading', 'isWaitingForResponse', 'stop', 'reload', 'reloadIgnoringCache', 'canGoBack', 'canGoForward', 'canGoToOffset', 'clearHistory', 'goBack', 'goForward', 'goToIndex', 'goToOffset', 'isCrashed', 'setUserAgent', 'getUserAgent', 'openDevTools', 'closeDevTools', 'isDevToolsOpened', 'isDevToolsFocused', 'inspectElement', 'setAudioMuted', 'isAudioMuted', 'undo', 'redo', 'cut', 'copy', 'paste', 'pasteAndMatchStyle', 'delete', 'selectAll', 'unselect', 'replace', 'replaceMisspelling', 'findInPage', 'stopFindInPage', 'getId', 'downloadURL', 'inspectServiceWorker', 'print', 'printToPDF'];
-  nonblockMethods = ['send', 'sendInputEvent', 'executeJavaScript', 'insertCSS'];
+  nonblockMethods = [
+    'executeJavaScript',
+    'insertCSS',
+    'insertText',
+    'send',
+    'sendInputEvent',
+    'setZoomFactor',
+    'setZoomLevel',
+    'setZoomLevelLimits',
+  ];
 
   /* Forward proto.foo* method calls to WebViewImpl.foo*. */
   createBlockHandler = function(m) {

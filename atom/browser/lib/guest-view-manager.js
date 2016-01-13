@@ -52,7 +52,7 @@ createGuest = function(embedder, params) {
   };
 
   /* Destroy guest when the embedder is gone or navigated. */
-  destroyEvents = ['destroyed', 'crashed', 'did-navigate'];
+  destroyEvents = ['will-destroy', 'crashed', 'did-navigate'];
   destroy = function() {
     if (guestInstances[id] != null) {
       return destroyGuest(embedder, id);

@@ -1,3 +1,5 @@
+'use strict';
+
 var EventEmitter, Menu, NavigationController, PDFPageSize, binding, deprecate, getNextId, ipcMain, nextId, ref, session, wrapWebContents,
   slice = [].slice;
 
@@ -53,6 +55,15 @@ PDFPageSize = {
   }
 };
 
+// Following methods are mapped to webFrame.
+const webFrameMethods = [
+  'executeJavaScript',
+  'insertText',
+  'setZoomFactor',
+  'setZoomLevel',
+  'setZoomLevelLimits',
+];
+
 wrapWebContents = function(webContents) {
 
   /* webContents is an EventEmitter. */
@@ -64,21 +75,6 @@ wrapWebContents = function(webContents) {
     var args, channel;
     channel = arguments[0], args = 2 <= arguments.length ? slice.call(arguments, 1) : [];
     return this._send(channel, slice.call(args));
-  };
-
-  /*
-    Make sure webContents.executeJavaScript would run the code only when the
-    web contents has been loaded.
-   */
-  webContents.executeJavaScript = function(code, hasUserGesture) {
-    if (hasUserGesture == null) {
-      hasUserGesture = false;
-    }
-    if (this.getURL() && !this.isLoading()) {
-      return this._executeJavaScript(code, hasUserGesture);
-    } else {
-      return webContents.once('did-finish-load', this._executeJavaScript.bind(this, code, hasUserGesture));
-    }
   };
 
   /* The navigation controller. */
@@ -94,6 +90,24 @@ wrapWebContents = function(webContents) {
       })(name, method);
     }
   }
+
+  // Mapping webFrame methods.
+  for (let method of webFrameMethods) {
+    webContents[method] = function() {
+      let args = Array.prototype.slice.call(arguments);
+      this.send('ELECTRON_INTERNAL_RENDERER_WEB_FRAME_METHOD', method, args);
+    };
+  }
+
+  // Make sure webContents.executeJavaScript would run the code only when the
+  // webContents has been loaded.
+  const executeJavaScript = webContents.executeJavaScript;
+  webContents.executeJavaScript = function(code, hasUserGesture) {
+    if (this.getURL() && !this.isLoading())
+      return executeJavaScript.call(this, code, hasUserGesture);
+    else
+      return this.once('did-finish-load', executeJavaScript.bind(this, code, hasUserGesture));
+  };
 
   /* Dispatch IPC messages to the ipc module. */
   webContents.on('ipc-message', function(event, packed) {

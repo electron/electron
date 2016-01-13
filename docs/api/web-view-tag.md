@@ -352,6 +352,12 @@ Executes editing command `replace` in page.
 
 Executes editing command `replaceMisspelling` in page.
 
+### `<webview>.insertText(text)`
+
+* `text` String
+
+Inserts `text` to the focused element.
+
 ### `<webview>.findInPage(text[, options])`
 
 * `text` String - Content to be searched, must not be empty.
