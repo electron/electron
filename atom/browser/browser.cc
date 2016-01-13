@@ -4,6 +4,15 @@
 
 #include "atom/browser/browser.h"
 
+#include <stdlib.h>
+#if defined(OS_WIN)
+#include <windows.h>
+#include <Processthreadsapi.h>
+#else
+#include <sys/types.h>
+#include <unistd.h>
+#endif
+
 #include <string>
 
 #include "atom/browser/atom_browser_main_parts.h"
@@ -81,6 +90,23 @@ void Browser::Shutdown() {
     // There is no message loop available so we are in early stage.
     exit(0);
   }
+}
+
+void Browser::Restart(const std::string& exec_path,
+  const int& seconds_timeout) {
+  #if defined(OS_WIN)
+  DWORD process_id = GetCurrentProcessId();
+  #else
+  pid_t process_id = getpid();
+  #endif
+
+  std::string cmd = std::string("node script/restart.js ")
+    .append(std::to_string(process_id)).append(" ")
+    .append(std::to_string(seconds_timeout)).append(" ")
+    .append(exec_path).append(" &");
+
+  system(cmd.c_str());
+  Shutdown();
 }
 
 std::string Browser::GetVersion() const {
