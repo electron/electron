@@ -96,4 +96,15 @@ allows registering ServiceWorker and supports fetch API.
 
 Inserts `text` to the focused element.
 
+### `webFrame.executeJavaScript(code[, userGesture])`
+
+* `code` String
+* `userGesture` Boolean (optional) - Default is `false`.
+
+Evaluates `code` in page.
+
+In the browser window some HTML APIs like `requestFullScreen` can only be
+invoked by a gesture from the user. Setting `userGesture` to `true` will remove
+this limitation.
+
 [spellchecker]: https://github.com/atom/node-spellchecker
