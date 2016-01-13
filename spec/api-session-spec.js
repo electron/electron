@@ -28,80 +28,51 @@ describe('session module', function() {
   afterEach(function() {
     return w.destroy();
   });
-  it('should get cookies', function(done) {
-    var server;
-    server = http.createServer(function(req, res) {
-      res.setHeader('Set-Cookie', ['0=0']);
-      res.end('finished');
-      return server.close();
-    });
-    return server.listen(0, '127.0.0.1', function() {
-      var port;
-      port = server.address().port;
-      w.loadURL(url + ":" + port);
-      return w.webContents.on('did-finish-load', function() {
-        return w.webContents.session.cookies.get({
-          url: url
-        }, function(error, list) {
-          var cookie, i, len;
-          if (error) {
-            return done(error);
-          }
-          for (i = 0, len = list.length; i < len; i++) {
-            cookie = list[i];
-            if (cookie.name === '0') {
-              if (cookie.value === '0') {
-                return done();
-              } else {
-                return done("cookie value is " + cookie.value + " while expecting 0");
+
+  describe('session.cookies', function() {
+    it('should get cookies', function(done) {
+      var server;
+      server = http.createServer(function(req, res) {
+        res.setHeader('Set-Cookie', ['0=0']);
+        res.end('finished');
+        return server.close();
+      });
+      return server.listen(0, '127.0.0.1', function() {
+        var port;
+        port = server.address().port;
+        w.loadURL(url + ":" + port);
+        return w.webContents.on('did-finish-load', function() {
+          return w.webContents.session.cookies.get({
+            url: url
+          }, function(error, list) {
+            var cookie, i, len;
+            if (error) {
+              return done(error);
+            }
+            for (i = 0, len = list.length; i < len; i++) {
+              cookie = list[i];
+              if (cookie.name === '0') {
+                if (cookie.value === '0') {
+                  return done();
+                } else {
+                  return done("cookie value is " + cookie.value + " while expecting 0");
+                }
               }
             }
-          }
-          return done('Can not find cookie');
+            return done('Can not find cookie');
+          });
         });
       });
     });
-  });
-  it('should over-write the existent cookie', function(done) {
-    return session.defaultSession.cookies.set({
-      url: url,
-      name: '1',
-      value: '1'
-    }, function(error) {
-      if (error) {
-        return done(error);
-      }
-      return session.defaultSession.cookies.get({
-        url: url
-      }, function(error, list) {
-        var cookie, i, len;
+    it('should over-write the existent cookie', function(done) {
+      return session.defaultSession.cookies.set({
+        url: url,
+        name: '1',
+        value: '1'
+      }, function(error) {
         if (error) {
           return done(error);
         }
-        for (i = 0, len = list.length; i < len; i++) {
-          cookie = list[i];
-          if (cookie.name === '1') {
-            if (cookie.value === '1') {
-              return done();
-            } else {
-              return done("cookie value is " + cookie.value + " while expecting 1");
-            }
-          }
-        }
-        return done('Can not find cookie');
-      });
-    });
-  });
-  it('should remove cookies', function(done) {
-    return session.defaultSession.cookies.set({
-      url: url,
-      name: '2',
-      value: '2'
-    }, function(error) {
-      if (error) {
-        return done(error);
-      }
-      return session.defaultSession.cookies.remove(url, '2', function() {
         return session.defaultSession.cookies.get({
           url: url
         }, function(error, list) {
@@ -111,15 +82,48 @@ describe('session module', function() {
           }
           for (i = 0, len = list.length; i < len; i++) {
             cookie = list[i];
-            if (cookie.name === '2') {
-              return done('Cookie not deleted');
+            if (cookie.name === '1') {
+              if (cookie.value === '1') {
+                return done();
+              } else {
+                return done("cookie value is " + cookie.value + " while expecting 1");
+              }
             }
           }
-          return done();
+          return done('Can not find cookie');
+        });
+      });
+    });
+    it('should remove cookies', function(done) {
+      return session.defaultSession.cookies.set({
+        url: url,
+        name: '2',
+        value: '2'
+      }, function(error) {
+        if (error) {
+          return done(error);
+        }
+        return session.defaultSession.cookies.remove(url, '2', function() {
+          return session.defaultSession.cookies.get({
+            url: url
+          }, function(error, list) {
+            var cookie, i, len;
+            if (error) {
+              return done(error);
+            }
+            for (i = 0, len = list.length; i < len; i++) {
+              cookie = list[i];
+              if (cookie.name === '2') {
+                return done('Cookie not deleted');
+              }
+            }
+            return done();
+          });
         });
       });
     });
   });
+
   describe('session.clearStorageData(options)', function() {
     fixtures = path.resolve(__dirname, 'fixtures');
     return it('clears localstorage data', function(done) {
