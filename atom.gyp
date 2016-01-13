@@ -28,7 +28,7 @@
       'target_name': '<(project_name)',
       'type': 'executable',
       'dependencies': [
-        'compile_coffee',
+        'js2asar',
         '<(project_name)_lib',
       ],
       'sources': [
@@ -221,7 +221,7 @@
       'target_name': '<(project_name)_lib',
       'type': 'static_library',
       'dependencies': [
-        'atom_coffee2c',
+        'atom_js2c',
         'vendor/brightray/brightray.gyp:brightray',
         'vendor/node/node.gyp:node',
       ],
@@ -351,11 +351,11 @@
       ],
     },  # target <(product_name)_lib
     {
-      'target_name': 'compile_coffee',
+      'target_name': 'js2asar',
       'type': 'none',
       'actions': [
         {
-          'action_name': 'compile_coffee',
+          'action_name': 'js2asar',
           'variables': {
             'conditions': [
               ['OS=="mac"', {
@@ -366,41 +366,41 @@
             ],
           },
           'inputs': [
-            '<@(coffee_sources)',
+            '<@(js_sources)',
           ],
           'outputs': [
             '<(resources_path)/atom.asar',
           ],
           'action': [
             'python',
-            'tools/coffee2asar.py',
+            'tools/js2asar.py',
             '<@(_outputs)',
             '<@(_inputs)',
           ],
         }
       ],
-    },  # target compile_coffee
+    },  # target js2asar
     {
-      'target_name': 'atom_coffee2c',
+      'target_name': 'atom_js2c',
       'type': 'none',
       'actions': [
         {
-          'action_name': 'atom_coffee2c',
+          'action_name': 'atom_js2c',
           'inputs': [
-            '<@(coffee2c_sources)',
+            '<@(js2c_sources)',
           ],
           'outputs': [
             '<(SHARED_INTERMEDIATE_DIR)/atom_natives.h',
           ],
           'action': [
             'python',
-            'tools/coffee2c.py',
+            'tools/js2c.py',
             '<@(_outputs)',
             '<@(_inputs)',
           ],
         }
       ],
-    },  # target atom_coffee2c
+    },  # target atom_js2c
   ],
   'conditions': [
     ['OS=="mac"', {
