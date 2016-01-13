@@ -15,6 +15,8 @@
 #include "native_mate/object_template_builder.h"
 #include "third_party/WebKit/public/web/WebDocument.h"
 #include "third_party/WebKit/public/web/WebLocalFrame.h"
+#include "third_party/WebKit/public/web/WebScopedUserGesture.h"
+#include "third_party/WebKit/public/web/WebScriptSource.h"
 #include "third_party/WebKit/public/web/WebSecurityPolicy.h"
 #include "third_party/WebKit/public/web/WebView.h"
 
@@ -120,6 +122,12 @@ void WebFrame::InsertText(const std::string& text) {
   web_frame_->insertText(blink::WebString::fromUTF8(text));
 }
 
+void WebFrame::ExecuteJavaScript(const base::string16& code, bool by_user) {
+  scoped_ptr<blink::WebScopedUserGesture> gesture(
+      by_user ? new blink::WebScopedUserGesture : nullptr);
+  web_frame_->executeScriptAndReturnValue(blink::WebScriptSource(code));
+}
+
 mate::ObjectTemplateBuilder WebFrame::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
   return mate::ObjectTemplateBuilder(isolate)
@@ -141,7 +149,8 @@ mate::ObjectTemplateBuilder WebFrame::GetObjectTemplateBuilder(
                  &WebFrame::RegisterURLSchemeAsBypassingCSP)
       .SetMethod("registerURLSchemeAsPrivileged",
                  &WebFrame::RegisterURLSchemeAsPrivileged)
-      .SetMethod("insertText", &WebFrame::InsertText);
+      .SetMethod("insertText", &WebFrame::InsertText)
+      .SetMethod("executeJavaScript", &WebFrame::ExecuteJavaScript);
 }
 
 // static

@@ -756,11 +756,6 @@ bool WebContents::SavePage(const base::FilePath& full_file_path,
   return handler->Handle(full_file_path, save_type);
 }
 
-void WebContents::ExecuteJavaScript(const base::string16& code,
-                                    bool has_user_gesture) {
-  Send(new AtomViewMsg_ExecuteJavaScript(routing_id(), code, has_user_gesture));
-}
-
 void WebContents::OpenDevTools(mate::Arguments* args) {
   if (type_ == REMOTE)
     return;
@@ -1093,7 +1088,6 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("getUserAgent", &WebContents::GetUserAgent)
       .SetMethod("insertCSS", &WebContents::InsertCSS)
       .SetMethod("savePage", &WebContents::SavePage)
-      .SetMethod("_executeJavaScript", &WebContents::ExecuteJavaScript)
       .SetMethod("openDevTools", &WebContents::OpenDevTools)
       .SetMethod("closeDevTools", &WebContents::CloseDevTools)
       .SetMethod("isDevToolsOpened", &WebContents::IsDevToolsOpened)

@@ -74,8 +74,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
   bool SavePage(const base::FilePath& full_file_path,
                 const content::SavePageType& save_type,
                 const SavePageHandler::SavePageCallback& callback);
-  void ExecuteJavaScript(const base::string16& code,
-                         bool has_user_gesture);
   void OpenDevTools(mate::Arguments* args);
   void CloseDevTools();
   bool IsDevToolsOpened();
