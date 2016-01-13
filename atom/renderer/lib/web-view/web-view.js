@@ -43,9 +43,10 @@ WebViewImpl = (function() {
     shadowRoot.appendChild(this.browserPluginNode);
 
     // Subscribe to host's zoom level changes.
-    webFrame.on('zoom-level-changed', (zoomLevel) => {
+    this.onZoomLevelChanged = (zoomLevel) => {
       this.webviewNode.setZoomLevel(zoomLevel);
-    });
+    }
+    webFrame.on('zoom-level-changed', this.onZoomLevelChanged);
   }
 
   WebViewImpl.prototype.createBrowserPluginNode = function() {
@@ -64,6 +65,8 @@ WebViewImpl = (function() {
   /* Resets some state upon reattaching <webview> element to the DOM. */
 
   WebViewImpl.prototype.reset = function() {
+    // Unlisten the zoom-level-changed event.
+    webFrame.removeListener('zoom-level-changed', this.onZoomLevelChanged);
 
     /*
       If guestInstanceId is defined then the <webview> has navigated and has
