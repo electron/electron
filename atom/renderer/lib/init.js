@@ -1,3 +1,5 @@
+'user strict';
+
 var Module, arg, error, error1, events, globalPaths, i, len, nodeIntegration, path, pathname, preloadScript, ref, url, v8Util;
 
 events = require('events');
@@ -44,6 +46,13 @@ v8Util = process.atomBinding('v8_util');
 
 v8Util.setHiddenValue(global, 'ipc', new events.EventEmitter);
 
+// Use electron module after everything is ready.
+const electron = require('electron');
+
+// Call webFrame method.
+electron.ipcRenderer.on('ELECTRON_INTERNAL_RENDERER_WEB_FRAME_METHOD', (event, method, args) => {
+  electron.webFrame[method].apply(electron.webFrame, args);
+});
 
 /* Process command line arguments. */
 

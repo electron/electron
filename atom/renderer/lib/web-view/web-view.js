@@ -376,7 +376,13 @@ registerWebViewElement = function() {
 
   /* Public-facing API methods. */
   methods = ['getURL', 'getTitle', 'isLoading', 'isWaitingForResponse', 'stop', 'reload', 'reloadIgnoringCache', 'canGoBack', 'canGoForward', 'canGoToOffset', 'clearHistory', 'goBack', 'goForward', 'goToIndex', 'goToOffset', 'isCrashed', 'setUserAgent', 'getUserAgent', 'openDevTools', 'closeDevTools', 'isDevToolsOpened', 'isDevToolsFocused', 'inspectElement', 'setAudioMuted', 'isAudioMuted', 'undo', 'redo', 'cut', 'copy', 'paste', 'pasteAndMatchStyle', 'delete', 'selectAll', 'unselect', 'replace', 'replaceMisspelling', 'findInPage', 'stopFindInPage', 'getId', 'downloadURL', 'inspectServiceWorker', 'print', 'printToPDF'];
-  nonblockMethods = ['send', 'sendInputEvent', 'executeJavaScript', 'insertCSS'];
+  nonblockMethods = [
+    'executeJavaScript',
+    'insertCSS',
+    'insertText',
+    'send',
+    'sendInputEvent',
+  ];
 
   /* Forward proto.foo* method calls to WebViewImpl.foo*. */
   createBlockHandler = function(m) {

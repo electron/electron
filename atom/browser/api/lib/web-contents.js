@@ -1,3 +1,5 @@
+'use strict';
+
 var EventEmitter, Menu, NavigationController, PDFPageSize, binding, deprecate, getNextId, ipcMain, nextId, ref, session, wrapWebContents,
   slice = [].slice;
 
@@ -53,6 +55,11 @@ PDFPageSize = {
   }
 };
 
+// Following methods are mapped to webFrame.
+const webFrameMethods = [
+  'insertText',
+];
+
 wrapWebContents = function(webContents) {
 
   /* webContents is an EventEmitter. */
@@ -93,6 +100,14 @@ wrapWebContents = function(webContents) {
         };
       })(name, method);
     }
+  }
+
+  // Mapping webFrame methods.
+  for (let method of webFrameMethods) {
+    webContents[method] = function() {
+      let args = Array.prototype.slice.call(arguments);
+      this.send('ELECTRON_INTERNAL_RENDERER_WEB_FRAME_METHOD', method, args);
+    };
   }
 
   /* Dispatch IPC messages to the ipc module. */

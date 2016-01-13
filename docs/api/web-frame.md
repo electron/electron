@@ -94,6 +94,6 @@ allows registering ServiceWorker and supports fetch API.
 
 * `text` String
 
-* Inserts `text` to the focused element.
+Inserts `text` to the focused element.
 
 [spellchecker]: https://github.com/atom/node-spellchecker
