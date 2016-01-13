@@ -280,15 +280,11 @@ WebContents::WebContents(v8::Isolate* isolate,
 }
 
 WebContents::~WebContents() {
-  if (type_ == WEB_VIEW && managed_web_contents()) {
-    // When force destroying the "destroyed" event is not emitted.
+  // The webview's lifetime is completely controlled by GuestViewManager, so
+  // it is always destroyed by calling webview.destroy(), we need to make
+  // sure the "destroyed" event is emitted manually.
+  if (type_ == WEB_VIEW && managed_web_contents())
     WebContentsDestroyed();
-
-    guest_delegate_->Destroy();
-
-    Observe(nullptr);
-    DestroyWebContents();
-  }
 }
 
 bool WebContents::AddMessageToConsole(content::WebContents* source,
@@ -624,7 +620,15 @@ bool WebContents::OnMessageReceived(const IPC::Message& message) {
 void WebContents::WebContentsDestroyed() {
   // The RenderViewDeleted was not called when the WebContents is destroyed.
   RenderViewDeleted(web_contents()->GetRenderViewHost());
+
+  // This event is only for internal use, which is emitted when WebContents is
+  // being destroyed.
+  Emit("will-destroy");
+
+  // Cleanup relationships with other parts.
   RemoveFromWeakMap();
+  if (type_ == WEB_VIEW)
+    guest_delegate_->Destroy();
 
   // We can not call Destroy here because we need to call Emit first, but we
   // also do not want any method to be used, so just mark as destroyed here.
