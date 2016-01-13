@@ -59,6 +59,9 @@ PDFPageSize = {
 const webFrameMethods = [
   'executeJavaScript',
   'insertText',
+  'setZoomFactor',
+  'setZoomLevel',
+  'setZoomLevelLimits',
 ];
 
 wrapWebContents = function(webContents) {

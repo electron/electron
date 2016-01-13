@@ -1,3 +1,5 @@
+'user strict';
+
 var WebViewImpl, deprecate, getNextId, guestViewInternal, ipcRenderer, listener, nextId, ref, registerBrowserPluginElement, registerWebViewElement, remote, useCapture, v8Util, webFrame, webViewConstants,
   hasProp = {}.hasOwnProperty,
   slice = [].slice;
@@ -39,6 +41,11 @@ WebViewImpl = (function() {
     this.setupFocusPropagation();
     this.viewInstanceId = getNextId();
     shadowRoot.appendChild(this.browserPluginNode);
+
+    // Subscribe to host's zoom level changes.
+    webFrame.on('zoom-level-changed', (zoomLevel) => {
+      this.webviewNode.setZoomLevel(zoomLevel);
+    });
   }
 
   WebViewImpl.prototype.createBrowserPluginNode = function() {
@@ -382,6 +389,9 @@ registerWebViewElement = function() {
     'insertText',
     'send',
     'sendInputEvent',
+    'setZoomFactor',
+    'setZoomLevel',
+    'setZoomLevelLimits',
   ];
 
   /* Forward proto.foo* method calls to WebViewImpl.foo*. */

@@ -263,10 +263,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
                              const base::ListValue& args,
                              IPC::Message* message);
 
-  // Called when guests need to be notified of
-  // embedders' zoom level change.
-  void OnZoomLevelChanged(double level);
-
   v8::Global<v8::Value> session_;
   v8::Global<v8::Value> devtools_web_contents_;
 

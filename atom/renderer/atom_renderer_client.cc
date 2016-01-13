@@ -57,22 +57,6 @@ class AtomRenderFrameObserver : public content::RenderFrameObserver {
         render_frame()->GetWebFrame(), context);
   }
 
-  bool OnMessageReceived(const IPC::Message& message) {
-    bool handled = true;
-    IPC_BEGIN_MESSAGE_MAP(AtomRenderFrameObserver, message)
-      IPC_MESSAGE_HANDLER(AtomViewMsg_SetZoomLevel, OnSetZoomLevel)
-      IPC_MESSAGE_UNHANDLED(handled = false)
-    IPC_END_MESSAGE_MAP()
-
-    return handled;
-  }
-
-  void OnSetZoomLevel(double level) {
-    auto view = render_frame()->GetWebFrame()->view();
-    if (view)
-      view->setZoomLevel(level);
-  }
-
  private:
   AtomRendererClient* renderer_client_;
 

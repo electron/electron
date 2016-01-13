@@ -33,7 +33,6 @@
 #include "chrome/browser/printing/print_view_manager_basic.h"
 #include "chrome/browser/printing/print_preview_message_handler.h"
 #include "content/common/view_messages.h"
-#include "content/public/browser/browser_plugin_guest_manager.h"
 #include "content/public/browser/favicon_status.h"
 #include "content/public/browser/native_web_keyboard_event.h"
 #include "content/public/browser/navigation_details.h"
@@ -73,15 +72,6 @@ void SetUserAgentInIO(scoped_refptr<net::URLRequestContextGetter> getter,
       new net::StaticHttpUserAgentSettings(
           net::HttpUtil::GenerateAcceptLanguageHeader(accept_lang),
           user_agent));
-}
-
-bool NotifyZoomLevelChanged(
-    double level, content::WebContents* guest_web_contents) {
-  guest_web_contents->SendToAllFrames(
-      new AtomViewMsg_SetZoomLevel(MSG_ROUTING_NONE, level));
-
-  // Return false to iterate over all guests.
-  return false;
 }
 
 }  // namespace
@@ -625,7 +615,6 @@ bool WebContents::OnMessageReceived(const IPC::Message& message) {
     IPC_MESSAGE_HANDLER(AtomViewHostMsg_Message, OnRendererMessage)
     IPC_MESSAGE_HANDLER_DELAY_REPLY(AtomViewHostMsg_Message_Sync,
                                     OnRendererMessageSync)
-    IPC_MESSAGE_HANDLER(AtomViewHostMsg_ZoomLevelChanged, OnZoomLevelChanged)
     IPC_MESSAGE_UNHANDLED(handled = false)
   IPC_END_MESSAGE_MAP()
 
@@ -1152,15 +1141,6 @@ void WebContents::OnRendererMessageSync(const base::string16& channel,
                                         IPC::Message* message) {
   // webContents.emit(channel, new Event(sender, message), args...);
   EmitWithSender(base::UTF16ToUTF8(channel), web_contents(), message, args);
-}
-
-void WebContents::OnZoomLevelChanged(double level) {
-  auto manager = web_contents()->GetBrowserContext()->GetGuestManager();
-  if (!manager)
-    return;
-  manager->ForEachGuest(web_contents(),
-                        base::Bind(&NotifyZoomLevelChanged,
-                                   level));
 }
 
 // static
