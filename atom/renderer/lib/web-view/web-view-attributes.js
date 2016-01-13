@@ -29,6 +29,7 @@ resolveURL = function(url) {
 WebViewAttribute = (function() {
   function WebViewAttribute(name, webViewImpl) {
     this.name = name;
+    this.value = webViewImpl.webviewNode[name] || '';
     this.webViewImpl = webViewImpl;
     this.ignoreMutation = false;
     this.defineProperty();
@@ -38,7 +39,7 @@ WebViewAttribute = (function() {
   /* Retrieves and returns the attribute's value. */
 
   WebViewAttribute.prototype.getValue = function() {
-    return this.webViewImpl.webviewNode.getAttribute(this.name) || '';
+    return this.webViewImpl.webviewNode.getAttribute(this.name) || this.value;
   };
 
 
@@ -228,7 +229,7 @@ SrcAttribute = (function(superClass) {
     if (this.webViewImpl.webviewNode.hasAttribute(this.name)) {
       return resolveURL(this.webViewImpl.webviewNode.getAttribute(this.name));
     } else {
-      return '';
+      return this.value;
     }
   };
 
@@ -368,7 +369,7 @@ PreloadAttribute = (function(superClass) {
   PreloadAttribute.prototype.getValue = function() {
     var preload, protocol;
     if (!this.webViewImpl.webviewNode.hasAttribute(this.name)) {
-      return '';
+      return this.value;
     }
     preload = resolveURL(this.webViewImpl.webviewNode.getAttribute(this.name));
     protocol = preload.substr(0, 5);
