@@ -312,6 +312,12 @@ void Session::ClearStorageData(mate::Arguments* args) {
       base::Time(), base::Time::Max(), callback);
 }
 
+void Session::FlushStorageData() {
+  auto storage_partition =
+      content::BrowserContext::GetStoragePartition(browser_context(), nullptr);
+  storage_partition->Flush();
+}
+
 void Session::SetProxy(const net::ProxyConfig& config,
                        const base::Closure& callback) {
   auto getter = browser_context_->GetRequestContext();
@@ -416,6 +422,7 @@ void Session::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("resolveProxy", &Session::ResolveProxy)
       .SetMethod("clearCache", &Session::ClearCache)
       .SetMethod("clearStorageData", &Session::ClearStorageData)
+      .SetMethod("flushStorageData", &Session::FlushStorageData)
       .SetMethod("setProxy", &Session::SetProxy)
       .SetMethod("setDownloadPath", &Session::SetDownloadPath)
       .SetMethod("enableNetworkEmulation", &Session::EnableNetworkEmulation)
