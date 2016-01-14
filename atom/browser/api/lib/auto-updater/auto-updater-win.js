@@ -62,11 +62,8 @@ AutoUpdater = (function(superClass) {
   };
 
 
-  /*
-    Private: Emit both error object and message, this is to keep compatibility
-    with Old APIs.
-   */
-
+  // Private: Emit both error object and message, this is to keep compatibility
+  // with Old APIs.
   AutoUpdater.prototype.emitError = function(message) {
     return this.emit('error', new Error(message), message);
   };

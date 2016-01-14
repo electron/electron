@@ -65,11 +65,9 @@ createGuest = function(embedder, url, frameName, options) {
   guest = new BrowserWindow(options);
   guest.loadURL(url);
 
-  /*
-    When |embedder| is destroyed we should also destroy attached guest, and if
-    guest is closed by user then we should prevent |embedder| from double
-    closing guest.
-   */
+  // When |embedder| is destroyed we should also destroy attached guest, and if
+  // guest is closed by user then we should prevent |embedder| from double
+  // closing guest.
   guestId = guest.id;
   closedByEmbedder = function() {
     guest.removeListener('closed', closedByUser);

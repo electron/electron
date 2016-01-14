@@ -33,10 +33,8 @@ BrowserWindow.prototype._init = function() {
     return ipcMain.emit('ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_OPEN', event, url, frameName, options);
   });
 
-  /*
-    window.resizeTo(...)
-    window.moveTo(...)
-   */
+  // window.resizeTo(...)
+  // window.moveTo(...)
   this.webContents.on('move', (function(_this) {
     return function(event, size) {
       return _this.setBounds(size);
@@ -69,14 +67,12 @@ BrowserWindow.prototype._init = function() {
     };
   })(this));
 
-  /*
-    Sometimes the webContents doesn't get focus when window is shown, so we have
-    to force focusing on webContents in this case. The safest way is to focus it
-    when we first start to load URL, if we do it earlier it won't have effect,
-    if we do it later we might move focus in the page.
-    Though this hack is only needed on OS X when the app is launched from
-    Finder, we still do it on all platforms in case of other bugs we don't know.
-   */
+  // Sometimes the webContents doesn't get focus when window is shown, so we have
+  // to force focusing on webContents in this case. The safest way is to focus it
+  // when we first start to load URL, if we do it earlier it won't have effect,
+  // if we do it later we might move focus in the page.
+  // Though this hack is only needed on OS X when the app is launched from
+  // Finder, we still do it on all platforms in case of other bugs we don't know.
   this.webContents.once('load-url', function() {
     return this.focus();
   });

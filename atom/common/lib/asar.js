@@ -571,12 +571,10 @@ exports.wrapFsWithAsar = function(fs) {
     }
   };
 
-  /*
-    Calling mkdir for directory inside asar archive should throw ENOTDIR
-    error, but on Windows it throws ENOENT.
-    This is to work around the recursive looping bug of mkdirp since it is
-    widely used.
-   */
+  // Calling mkdir for directory inside asar archive should throw ENOTDIR
+  // error, but on Windows it throws ENOENT.
+  // This is to work around the recursive looping bug of mkdirp since it is
+  // widely used.
   if (process.platform === 'win32') {
     mkdir = fs.mkdir;
     fs.mkdir = function(p, mode, callback) {

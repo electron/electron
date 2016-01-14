@@ -138,10 +138,8 @@ wrapWebContents = function(webContents) {
     var args;
     args = 1 <= arguments.length ? slice.call(arguments, 0) : [];
 
-    /*
-      Calling loadURL during this event might cause crash, so delay the event
-      until next tick.
-     */
+    // Calling loadURL during this event might cause crash, so delay the event
+    // until next tick.
     return setImmediate((function(_this) {
       return function() {
         return _this.emit.apply(_this, ['did-fail-load'].concat(slice.call(args)));

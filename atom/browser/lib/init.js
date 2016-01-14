@@ -17,14 +17,10 @@ Module = require('module');
 
 process.argv.splice(1, 1);
 
-
 // Clear search paths.
-
 require(path.resolve(__dirname, '..', '..', 'common', 'lib', 'reset-search-paths'));
 
-
 // Import common settings.
-
 require(path.resolve(__dirname, '..', '..', 'common', 'lib', 'init'));
 
 globalPaths = Module.globalPaths;
@@ -33,17 +29,12 @@ if (!process.env.ELECTRON_HIDE_INTERNAL_MODULES) {
   globalPaths.push(path.resolve(__dirname, '..', 'api', 'lib'));
 }
 
-
 // Expose public APIs.
-
 globalPaths.push(path.resolve(__dirname, '..', 'api', 'lib', 'exports'));
 
 if (process.platform === 'win32') {
-
-  /*
-    Redirect node's console to use our own implementations, since node can not
-    handle console output when running as GUI program.
-   */
+  // Redirect node's console to use our own implementations, since node can not
+  // handle console output when running as GUI program.
   consoleLog = function() {
     var args;
     args = 1 <= arguments.length ? slice.call(arguments, 0) : [];

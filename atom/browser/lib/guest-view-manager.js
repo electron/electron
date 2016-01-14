@@ -62,11 +62,9 @@ createGuest = function(embedder, params) {
     event = destroyEvents[i];
     embedder.once(event, destroy);
 
-    /*
-      Users might also listen to the crashed event, so We must ensure the guest
-      is destroyed before users' listener gets called. It is done by moving our
-      listener to the first one in queue.
-     */
+    // Users might also listen to the crashed event, so We must ensure the guest
+    // is destroyed before users' listener gets called. It is done by moving our
+    // listener to the first one in queue.
     listeners = embedder._events[event];
     if (Array.isArray(listeners)) {
       moveLastToFirst(listeners);

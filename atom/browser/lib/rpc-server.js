@@ -61,11 +61,9 @@ valueToMeta = function(sender, value, optimizeSimpleObject) {
   } else if (meta.type === 'object' || meta.type === 'function') {
     meta.name = value.constructor.name;
 
-    /*
-      Reference the original value if it's an object, because when it's
-      passed to renderer we would assume the renderer keeps a reference of
-      it.
-     */
+    // Reference the original value if it's an object, because when it's
+    // passed to renderer we would assume the renderer keeps a reference of
+    // it.
     meta.id = objectsRegistry.add(sender.getId(), value);
     meta.members = (function() {
       var results;
@@ -196,12 +194,8 @@ unwrapArgs = function(sender, args) {
   return args.map(metaToValue);
 };
 
-
-/*
-  Call a function and send reply asynchronously if it's a an asynchronous
-  style function and the caller didn't pass a callback.
- */
-
+// Call a function and send reply asynchronously if it's a an asynchronous
+// style function and the caller didn't pass a callback.
 callFunction = function(event, func, caller, args) {
   var e, error1, funcMarkedAsync, funcName, funcPassedCallback, ref, ret;
   funcMarkedAsync = v8Util.getHiddenValue(func, 'asynchronous');
@@ -219,11 +213,9 @@ callFunction = function(event, func, caller, args) {
   } catch (error1) {
     e = error1;
 
-    /*
-      Catch functions thrown further down in function invocation and wrap
-      them with the function name so it's easier to trace things like
-      `Error processing argument -1.`
-     */
+    // Catch functions thrown further down in function invocation and wrap
+    // them with the function name so it's easier to trace things like
+    // `Error processing argument -1.`
     funcName = (ref = func.name) != null ? ref : "anonymous";
     throw new Error("Could not call remote function `" + funcName + "`. Check that the function signature is correct. Underlying error: " + e.message);
   }
@@ -231,7 +223,6 @@ callFunction = function(event, func, caller, args) {
 
 
 // Send by BrowserWindow when its render view is deleted.
-
 process.on('ATOM_BROWSER_RELEASE_RENDER_VIEW', function(id) {
   return objectsRegistry.clear(id);
 });
@@ -286,10 +277,8 @@ ipcMain.on('ATOM_BROWSER_CONSTRUCTOR', function(event, id, args) {
     args = unwrapArgs(event.sender, args);
     constructor = objectsRegistry.get(id);
 
-    /*
-      Call new with array of arguments.
-      http://stackoverflow.com/questions/1606797/use-of-apply-with-new-operator-is-this-possible
-     */
+    // Call new with array of arguments.
+    // http://stackoverflow.com/questions/1606797/use-of-apply-with-new-operator-is-this-possible
     obj = new (Function.prototype.bind.apply(constructor, [null].concat(args)));
     return event.returnValue = valueToMeta(event.sender, obj);
   } catch (error1) {

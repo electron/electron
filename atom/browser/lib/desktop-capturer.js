@@ -29,10 +29,8 @@ ipcMain.on('ATOM_BROWSER_DESKTOP_CAPTURER_GET_SOURCES', function(event, captureW
     desktopCapturer.startHandling(captureWindow, captureScreen, thumbnailSize);
   }
 
-  /*
-    If the WebContents is destroyed before receiving result, just remove the
-    reference from requestsQueue to make the module not send the result to it.
-   */
+  // If the WebContents is destroyed before receiving result, just remove the
+  // reference from requestsQueue to make the module not send the result to it.
   return event.sender.once('destroyed', function() {
     return request.webContents = null;
   });
@@ -60,10 +58,8 @@ desktopCapturer.emit = function(event, name, sources) {
     ref.send("ATOM_RENDERER_DESKTOP_CAPTURER_RESULT_" + handledRequest.id, result);
   }
 
-  /*
-    Check the queue to see whether there is other same request. If has, handle
-    it for reducing redunplicated `desktopCaptuer.startHandling` calls.
-   */
+  // Check the queue to see whether there is other same request. If has, handle
+  // it for reducing redunplicated `desktopCaptuer.startHandling` calls.
   unhandledRequestsQueue = [];
   for (i = 0, len = requestsQueue.length; i < len; i++) {
     request = requestsQueue[i];

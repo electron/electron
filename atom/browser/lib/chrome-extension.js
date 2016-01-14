@@ -36,10 +36,8 @@ getExtensionInfoFromPath = function(srcDirectory) {
   manifest = JSON.parse(fs.readFileSync(path.join(srcDirectory, 'manifest.json')));
   if (extensionInfoMap[manifest.name] == null) {
 
-    /*
-      We can not use 'file://' directly because all resources in the extension
-      will be treated as relative to the root in Chrome.
-     */
+    // We can not use 'file://' directly because all resources in the extension
+    // will be treated as relative to the root in Chrome.
     page = url.format({
       protocol: 'chrome-extension',
       slashes: true,

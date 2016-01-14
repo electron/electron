@@ -18,15 +18,11 @@ ipcMain.on('ATOM_SHELL_SYNC_NAVIGATION_CONTROLLER', function() {
   return event.returnValue = (ref = event.sender)[method].apply(ref, args);
 });
 
-
-/*
-  JavaScript implementation of Chromium's NavigationController.
-  Instead of relying on Chromium for history control, we compeletely do history
-  control on user land, and only rely on WebContents.loadURL for navigation.
-  This helps us avoid Chromium's various optimizations so we can ensure renderer
-  process is restarted everytime.
- */
-
+// JavaScript implementation of Chromium's NavigationController.
+// Instead of relying on Chromium for history control, we compeletely do history
+// control on user land, and only rely on WebContents.loadURL for navigation.
+// This helps us avoid Chromium's various optimizations so we can ensure renderer
+// process is restarted everytime.
 NavigationController = (function() {
   function NavigationController(webContents) {
     this.webContents = webContents;

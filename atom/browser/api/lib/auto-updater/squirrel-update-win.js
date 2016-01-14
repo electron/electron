@@ -6,24 +6,16 @@ path = require('path');
 
 spawn = require('child_process').spawn;
 
-
 // i.e. my-app/app-0.1.13/
-
 appFolder = path.dirname(process.execPath);
 
-
 // i.e. my-app/Update.exe
-
 updateExe = path.resolve(appFolder, '..', 'Update.exe');
 
 exeName = path.basename(process.execPath);
 
-
-/*
-  Spawn a command and invoke the callback when it completes with an error
-  and the output from standard out.
- */
-
+// Spawn a command and invoke the callback when it completes with an error
+// and the output from standard out.
 spawnUpdate = function(args, detached, callback) {
   var error, error1, errorEmitted, spawnedProcess, stderr, stdout;
   try {
