@@ -53,12 +53,8 @@ The `ipcMain` module has the following method to listen for events:
 * `channel` String - The event name.
 * `callback` Function
 
-When the event occurs the `callback` is called with an `event` object and a
-message, `arg`.
-
-Once done listening for messages, if you longer want to activate this callback
-and for whatever reason can't merely stop sending messages on the channel, you
-can use:
+When the event occurs the `callback` is called with an `event` object and
+arbitrary arguments.
 
 ### `ipcMain.removeListener(channel, callback)`
 
@@ -66,17 +62,21 @@ can use:
 * `callback` Function - The reference to the same function that you used for
   `ipcMain.on(channel, callback)`
 
-Alternatively, if you don't have access to the same callback, you can use:
+Once done listening for messages, if you no longer want to activate this
+callback and for whatever reason can't merely stop sending messages on the
+channel, this function will remove the callback handler for the specified
+channel.
 
 ### `ipcMain.removeAllListeners(channel)`
 
 * `channel` String - The event name.
 
-This has the expected effect of removing *all* handlers to this ipc channel.
+This removes *all* handlers to this ipc channel.
 
-Because of this class' inheritance from the `EventEmitter` node class, you can
-also use `ipcMain.once(channel, callback)` to fire handlers meant to occur only
-once, as in, they won't be activated after one call of `callback`
+### `ipcMain.once(channel, callback)`
+
+Use this in place of `ipcMain.on()` to fire handlers meant to occur only once,
+as in, they won't be activated after one call of `callback`
 
 ## IPC Event
 
