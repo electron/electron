@@ -159,6 +159,13 @@ on complete.
 Removes the cookies matching `url` and `name`, `callback` will called with
 `callback()` on complete.
 
+#### `ses.getCacheSize(callback)`
+
+* `callback` Function
+  * `size` Integer - Cache size used in bytes.
+
+Returns the session's current cache size.
+
 #### `ses.clearCache(callback)`
 
 * `callback` Function - Called when operation is done
