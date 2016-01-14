@@ -9,14 +9,6 @@ const app = bindings.app;
 
 var slice = [].slice;
 
-var appPath;
-var fn;
-var i;
-var len;
-var name;
-var ref1;
-var wrapDownloadItem;
-
 app.__proto__ = EventEmitter.prototype;
 
 app.setApplicationMenu = function(menu) {
@@ -49,7 +41,7 @@ if (process.platform === 'darwin') {
   };
 }
 
-appPath = null;
+var appPath = null;
 
 app.setAppPath = function(path) {
   return appPath = path;
@@ -60,16 +52,17 @@ app.getAppPath = function() {
 };
 
 // Routes the events to webContents.
-ref1 = ['login', 'certificate-error', 'select-client-certificate'];
-fn = function(name) {
+var ref1 = ['login', 'certificate-error', 'select-client-certificate'];
+var fn = function(name) {
   return app.on(name, function() {
     var args, event, webContents;
     event = arguments[0], webContents = arguments[1], args = 3 <= arguments.length ? slice.call(arguments, 2) : [];
     return webContents.emit.apply(webContents, [name, event].concat(slice.call(args)));
   });
 };
+var i, len;
 for (i = 0, len = ref1.length; i < len; i++) {
-  name = ref1[i];
+  var name = ref1[i];
   fn(name);
 }
 
@@ -112,7 +105,7 @@ deprecate.event(app, 'activate-with-no-open-windows', 'activate', function(event
 deprecate.event(app, 'select-certificate', 'select-client-certificate');
 
 // Wrappers for native classes.
-wrapDownloadItem = function(downloadItem) {
+var wrapDownloadItem = function(downloadItem) {
 
   // downloadItem is an EventEmitter.
   downloadItem.__proto__ = EventEmitter.prototype;
