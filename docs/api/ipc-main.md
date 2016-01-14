@@ -1,8 +1,10 @@
 # ipcMain
 
-The `ipcMain` module, when used in the main process, handles asynchronous and
-synchronous messages sent from a renderer process (web page). Messages sent from
-a renderer will be emitted to this module.
+The `ipcMain` module is an instance of the
+[EventEmitter](https://nodejs.org/api/events.html) class. When used in the main
+process, it handles asynchronous and synchronous messages sent from a renderer
+process (web page). Messages sent from a renderer will be emitted to this
+module.
 
 ## Sending Messages
 
@@ -53,6 +55,28 @@ The `ipcMain` module has the following method to listen for events:
 
 When the event occurs the `callback` is called with an `event` object and a
 message, `arg`.
+
+Once done listening for messages, if you longer want to activate this callback
+and for whatever reason can't merely stop sending messages on the channel, you
+can use:
+
+### `ipcMain.removeListener(channel, callback)`
+
+* `channel` String - The event name.
+* `callback` Function - The reference to the same function that you used for
+  `ipcMain.on(channel, callback)`
+
+Alternatively, if you don't have access to the same callback, you can use:
+
+### `ipcMain.removeAllListeners(channel)`
+
+* `channel` String - The event name.
+
+This has the expected effect of removing *all* handlers to this ipc channel.
+
+Because of this class' inheritance from the `EventEmitter` node class, you can
+also use `ipcMain.once(channel, callback)` to fire handlers meant to occur only
+once, as in, they won't be activated after one call of `callback`
 
 ## IPC Event
 
