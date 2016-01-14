@@ -1,12 +1,10 @@
-var EventEmitter, ObjectsRegistry, v8Util,
-  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-  hasProp = {}.hasOwnProperty;
+const EventEmitter = require('events').EventEmitter;
+const v8Util = process.atomBinding('v8_util');
 
-EventEmitter = require('events').EventEmitter;
+var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+var hasProp = {}.hasOwnProperty;
 
-v8Util = process.atomBinding('v8_util');
-
-ObjectsRegistry = (function(superClass) {
+var ObjectsRegistry = (function(superClass) {
   extend(ObjectsRegistry, superClass);
 
   function ObjectsRegistry() {

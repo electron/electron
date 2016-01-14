@@ -1,19 +1,15 @@
 (function () {
-var asar, asarStatsToFsStats, cachedArchives, child_process, fakeTime, getOrCreateArchive, gid, invalidArchiveError, nextInode, notDirError, notFoundError, overrideAPI, overrideAPISync, path, splitPath, uid, util,
-  hasProp = {}.hasOwnProperty;
+const asar = process.binding('atom_common_asar');
+const child_process = require('child_process');
+const path = require('path');
+const util = require('util');
 
-asar = process.binding('atom_common_asar');
-
-child_process = require('child_process');
-
-path = require('path');
-
-util = require('util');
+var hasProp = {}.hasOwnProperty;
 
 // Cache asar archive objects.
-cachedArchives = {};
+var cachedArchives = {};
 
-getOrCreateArchive = function(p) {
+var getOrCreateArchive = function(p) {
   var archive;
   archive = cachedArchives[p];
   if (archive != null) {
@@ -39,13 +35,14 @@ process.on('exit', function() {
 });
 
 // Separate asar package's path from full path.
-splitPath = function(p) {
+var splitPath = function(p) {
+  var index;
 
   // shortcut to disable asar.
-  var index;
   if (process.noAsar) {
     return [false];
   }
+
   if (typeof p !== 'string') {
     return [false];
   }
@@ -61,15 +58,15 @@ splitPath = function(p) {
 };
 
 // Convert asar archive's Stats object to fs's Stats object.
-nextInode = 0;
+var nextInode = 0;
 
-uid = process.getuid != null ? process.getuid() : 0;
+var uid = process.getuid != null ? process.getuid() : 0;
 
-gid = process.getgid != null ? process.getgid() : 0;
+var gid = process.getgid != null ? process.getgid() : 0;
 
-fakeTime = new Date();
+var fakeTime = new Date();
 
-asarStatsToFsStats = function(stats) {
+var asarStatsToFsStats = function(stats) {
   return {
     dev: 1,
     ino: ++nextInode,
@@ -108,7 +105,7 @@ asarStatsToFsStats = function(stats) {
 };
 
 // Create a ENOENT error.
-notFoundError = function(asarPath, filePath, callback) {
+var notFoundError = function(asarPath, filePath, callback) {
   var error;
   error = new Error("ENOENT, " + filePath + " not found in " + asarPath);
   error.code = "ENOENT";
@@ -122,7 +119,7 @@ notFoundError = function(asarPath, filePath, callback) {
 };
 
 // Create a ENOTDIR error.
-notDirError = function(callback) {
+var notDirError = function(callback) {
   var error;
   error = new Error('ENOTDIR, not a directory');
   error.code = 'ENOTDIR';
@@ -136,7 +133,7 @@ notDirError = function(callback) {
 };
 
 // Create invalid archive error.
-invalidArchiveError = function(asarPath, callback) {
+var invalidArchiveError = function(asarPath, callback) {
   var error;
   error = new Error("Invalid package " + asarPath);
   if (typeof callback !== 'function') {
@@ -148,7 +145,7 @@ invalidArchiveError = function(asarPath, callback) {
 };
 
 // Override APIs that rely on passing file path instead of content to C++.
-overrideAPISync = function(module, name, arg) {
+var overrideAPISync = function(module, name, arg) {
   var old;
   if (arg == null) {
     arg = 0;
@@ -174,7 +171,7 @@ overrideAPISync = function(module, name, arg) {
   };
 };
 
-overrideAPI = function(module, name, arg) {
+var overrideAPI = function(module, name, arg) {
   var old;
   if (arg == null) {
     arg = 0;

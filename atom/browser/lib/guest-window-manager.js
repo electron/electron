@@ -1,15 +1,14 @@
-var BrowserWindow, createGuest, frameToGuest, ipcMain, mergeBrowserWindowOptions, mergeOptions, ref, v8Util,
-  hasProp = {}.hasOwnProperty,
-  slice = [].slice;
+const ipcMain = require('electron').ipcMain;
+const BrowserWindow = require('electron').BrowserWindow;
 
-ref = require('electron'), ipcMain = ref.ipcMain, BrowserWindow = ref.BrowserWindow;
+const v8Util = process.atomBinding('v8_util');
 
-v8Util = process.atomBinding('v8_util');
-
-frameToGuest = {};
+var hasProp = {}.hasOwnProperty;
+var slice = [].slice;
+var frameToGuest = {};
 
 // Copy attribute of |parent| to |child| if it is not defined in |child|.
-mergeOptions = function(child, parent) {
+var mergeOptions = function(child, parent) {
   var key, value;
   for (key in parent) {
     if (!hasProp.call(parent, key)) continue;
@@ -26,7 +25,7 @@ mergeOptions = function(child, parent) {
 };
 
 // Merge |options| with the |embedder|'s window's options.
-mergeBrowserWindowOptions = function(embedder, options) {
+var mergeBrowserWindowOptions = function(embedder, options) {
   if (embedder.browserWindowOptions != null) {
 
     // Inherit the original options if it is a BrowserWindow.
@@ -43,7 +42,7 @@ mergeBrowserWindowOptions = function(embedder, options) {
 };
 
 // Create a new guest created by |embedder| with |options|.
-createGuest = function(embedder, url, frameName, options) {
+var createGuest = function(embedder, url, frameName, options) {
   var closedByEmbedder, closedByUser, guest, guestId, ref1;
   guest = frameToGuest[frameName];
   if (frameName && (guest != null)) {

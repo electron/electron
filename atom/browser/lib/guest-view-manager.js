@@ -1,33 +1,30 @@
-var attachGuest, createGuest, destroyGuest, embedderElementsMap, getNextInstanceId, guestInstances, ipcMain, moveLastToFirst, nextInstanceId, ref, reverseEmbedderElementsMap, supportedWebViewEvents, webContents, webViewManager,
-  slice = [].slice;
+const ipcMain = require('electron').ipcMain;
+const webContents = require('electron').webContents;
 
-ref = require('electron'), ipcMain = ref.ipcMain, webContents = ref.webContents;
+var slice = [].slice;
 
 // Doesn't exist in early initialization.
-webViewManager = null;
+var webViewManager = null;
 
-supportedWebViewEvents = ['load-commit', 'did-finish-load', 'did-fail-load', 'did-frame-finish-load', 'did-start-loading', 'did-stop-loading', 'did-get-response-details', 'did-get-redirect-request', 'dom-ready', 'console-message', 'devtools-opened', 'devtools-closed', 'devtools-focused', 'new-window', 'will-navigate', 'did-navigate', 'did-navigate-in-page', 'close', 'crashed', 'gpu-crashed', 'plugin-crashed', 'destroyed', 'page-title-updated', 'page-favicon-updated', 'enter-html-full-screen', 'leave-html-full-screen', 'media-started-playing', 'media-paused', 'found-in-page', 'did-change-theme-color'];
+var supportedWebViewEvents = ['load-commit', 'did-finish-load', 'did-fail-load', 'did-frame-finish-load', 'did-start-loading', 'did-stop-loading', 'did-get-response-details', 'did-get-redirect-request', 'dom-ready', 'console-message', 'devtools-opened', 'devtools-closed', 'devtools-focused', 'new-window', 'will-navigate', 'did-navigate', 'did-navigate-in-page', 'close', 'crashed', 'gpu-crashed', 'plugin-crashed', 'destroyed', 'page-title-updated', 'page-favicon-updated', 'enter-html-full-screen', 'leave-html-full-screen', 'media-started-playing', 'media-paused', 'found-in-page', 'did-change-theme-color'];
 
-nextInstanceId = 0;
-
-guestInstances = {};
-
-embedderElementsMap = {};
-
-reverseEmbedderElementsMap = {};
+var nextInstanceId = 0;
+var guestInstances = {};
+var embedderElementsMap = {};
+var reverseEmbedderElementsMap = {};
 
 // Moves the last element of array to the first one.
-moveLastToFirst = function(list) {
+var moveLastToFirst = function(list) {
   return list.unshift(list.pop());
 };
 
 // Generate guestInstanceId.
-getNextInstanceId = function(webContents) {
+var getNextInstanceId = function(webContents) {
   return ++nextInstanceId;
 };
 
 // Create a new guest instance.
-createGuest = function(embedder, params) {
+var createGuest = function(embedder, params) {
   var destroy, destroyEvents, event, fn, guest, i, id, j, len, len1, listeners;
   if (webViewManager == null) {
     webViewManager = process.atomBinding('web_view_manager');
@@ -139,7 +136,7 @@ createGuest = function(embedder, params) {
 };
 
 // Attach the guest to an element of embedder.
-attachGuest = function(embedder, elementInstanceId, guestInstanceId, params) {
+var attachGuest = function(embedder, elementInstanceId, guestInstanceId, params) {
   var guest, key, oldGuestInstanceId, ref1, webPreferences;
   guest = guestInstances[guestInstanceId].guest;
 
@@ -173,7 +170,7 @@ attachGuest = function(embedder, elementInstanceId, guestInstanceId, params) {
 };
 
 // Destroy an existing guest instance.
-destroyGuest = function(embedder, id) {
+var destroyGuest = function(embedder, id) {
   var key;
   webViewManager.removeGuest(embedder, id);
   guestInstances[id].guest.destroy();
