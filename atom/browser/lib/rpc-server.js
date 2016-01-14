@@ -13,9 +13,7 @@ v8Util = process.atomBinding('v8_util');
 
 IDWeakMap = process.atomBinding('id_weak_map').IDWeakMap;
 
-
-/* Convert a real value into meta data. */
-
+// Convert a real value into meta data.
 valueToMeta = function(sender, value, optimizeSimpleObject) {
   var el, field, i, len, meta, name;
   if (optimizeSimpleObject == null) {
@@ -43,12 +41,12 @@ valueToMeta = function(sender, value, optimizeSimpleObject) {
     meta.type = 'promise';
   }
 
-  /* Treat simple objects as value. */
+  // Treat simple objects as value.
   if (optimizeSimpleObject && meta.type === 'object' && v8Util.getHiddenValue(value, 'simple')) {
     meta.type = 'value';
   }
 
-  /* Treat the arguments object as array. */
+  // Treat the arguments object as array.
   if (meta.type === 'object' && (value.callee != null) && (value.length != null)) {
     meta.type = 'array';
   }
@@ -61,11 +59,9 @@ valueToMeta = function(sender, value, optimizeSimpleObject) {
   } else if (meta.type === 'object' || meta.type === 'function') {
     meta.name = value.constructor.name;
 
-    /*
-      Reference the original value if it's an object, because when it's
-      passed to renderer we would assume the renderer keeps a reference of
-      it.
-     */
+    // Reference the original value if it's an object, because when it's
+    // passed to renderer we would assume the renderer keeps a reference of
+    // it.
     meta.id = objectsRegistry.add(sender.getId(), value);
     meta.members = (function() {
       var results;
@@ -86,7 +82,7 @@ valueToMeta = function(sender, value, optimizeSimpleObject) {
   } else if (meta.type === 'error') {
     meta.members = plainObjectToMeta(value);
 
-    /* Error.name is not part of own properties. */
+    // Error.name is not part of own properties.
     meta.members.push({
       name: 'name',
       value: value.name
@@ -100,9 +96,7 @@ valueToMeta = function(sender, value, optimizeSimpleObject) {
   return meta;
 };
 
-
-/* Convert object to meta by value. */
-
+// Convert object to meta by value.
 plainObjectToMeta = function(obj) {
   return Object.getOwnPropertyNames(obj).map(function(name) {
     return {
@@ -112,9 +106,7 @@ plainObjectToMeta = function(obj) {
   });
 };
 
-
-/* Convert Error into meta data. */
-
+// Convert Error into meta data.
 exceptionToMeta = function(error) {
   return {
     type: 'exception',
@@ -123,9 +115,7 @@ exceptionToMeta = function(error) {
   };
 };
 
-
-/* Convert array of meta data from renderer into array of real values. */
-
+// Convert array of meta data from renderer into array of real values.
 unwrapArgs = function(sender, args) {
   var metaToValue;
   metaToValue = function(meta) {
@@ -159,8 +149,7 @@ unwrapArgs = function(sender, args) {
           return returnValue;
         };
       case 'function':
-
-        /* Cache the callbacks in renderer. */
+        // Cache the callbacks in renderer.
         if (!sender.callbacks) {
           sender.callbacks = new IDWeakMap;
           sender.on('render-view-deleted', function() {
@@ -196,12 +185,8 @@ unwrapArgs = function(sender, args) {
   return args.map(metaToValue);
 };
 
-
-/*
-  Call a function and send reply asynchronously if it's a an asynchronous
-  style function and the caller didn't pass a callback.
- */
-
+// Call a function and send reply asynchronously if it's a an asynchronous
+// style function and the caller didn't pass a callback.
 callFunction = function(event, func, caller, args) {
   var e, error1, funcMarkedAsync, funcName, funcPassedCallback, ref, ret;
   funcMarkedAsync = v8Util.getHiddenValue(func, 'asynchronous');
@@ -219,19 +204,15 @@ callFunction = function(event, func, caller, args) {
   } catch (error1) {
     e = error1;
 
-    /*
-      Catch functions thrown further down in function invocation and wrap
-      them with the function name so it's easier to trace things like
-      `Error processing argument -1.`
-     */
+    // Catch functions thrown further down in function invocation and wrap
+    // them with the function name so it's easier to trace things like
+    // `Error processing argument -1.`
     funcName = (ref = func.name) != null ? ref : "anonymous";
     throw new Error("Could not call remote function `" + funcName + "`. Check that the function signature is correct. Underlying error: " + e.message);
   }
 };
 
-
-/* Send by BrowserWindow when its render view is deleted. */
-
+// Send by BrowserWindow when its render view is deleted.
 process.on('ATOM_BROWSER_RELEASE_RENDER_VIEW', function(id) {
   return objectsRegistry.clear(id);
 });
@@ -286,10 +267,8 @@ ipcMain.on('ATOM_BROWSER_CONSTRUCTOR', function(event, id, args) {
     args = unwrapArgs(event.sender, args);
     constructor = objectsRegistry.get(id);
 
-    /*
-      Call new with array of arguments.
-      http://stackoverflow.com/questions/1606797/use-of-apply-with-new-operator-is-this-possible
-     */
+    // Call new with array of arguments.
+    // http://stackoverflow.com/questions/1606797/use-of-apply-with-new-operator-is-this-possible
     obj = new (Function.prototype.bind.apply(constructor, [null].concat(args)));
     return event.returnValue = valueToMeta(event.sender, obj);
   } catch (error1) {
@@ -316,7 +295,7 @@ ipcMain.on('ATOM_BROWSER_MEMBER_CONSTRUCTOR', function(event, id, method, args) 
     args = unwrapArgs(event.sender, args);
     constructor = objectsRegistry.get(id)[method];
 
-    /* Call new with array of arguments. */
+    // Call new with array of arguments.
     obj = new (Function.prototype.bind.apply(constructor, [null].concat(args)));
     return event.returnValue = valueToMeta(event.sender, obj);
   } catch (error1) {

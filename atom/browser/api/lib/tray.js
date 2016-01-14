@@ -9,8 +9,7 @@ Tray = process.atomBinding('tray').Tray;
 Tray.prototype.__proto__ = EventEmitter.prototype;
 
 Tray.prototype._init = function() {
-
-  /* Deprecated. */
+  // Deprecated.
   deprecate.rename(this, 'popContextMenu', 'popUpContextMenu');
   deprecate.event(this, 'clicked', 'click');
   deprecate.event(this, 'double-clicked', 'double-click');
@@ -21,7 +20,7 @@ Tray.prototype._init = function() {
 Tray.prototype.setContextMenu = function(menu) {
   this._setContextMenu(menu);
 
-  /* Keep a strong reference of menu. */
+  // Keep a strong reference of menu.
   return this.menu = menu;
 };
 

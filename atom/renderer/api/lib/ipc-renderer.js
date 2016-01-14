@@ -7,9 +7,7 @@ binding = process.atomBinding('ipc');
 
 v8Util = process.atomBinding('v8_util');
 
-
-/* Created by init.coffee. */
-
+// Created by init.coffee.
 ipcRenderer = v8Util.getHiddenValue(global, 'ipc');
 
 ipcRenderer.send = function() {

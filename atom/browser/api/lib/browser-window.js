@@ -10,11 +10,11 @@ BrowserWindow.prototype.__proto__ = EventEmitter.prototype;
 
 BrowserWindow.prototype._init = function() {
 
-  /* avoid recursive require. */
+  // avoid recursive require.
   var app, menu;
   app = require('electron').app;
 
-  /* Simulate the application menu on platforms other than OS X. */
+  // Simulate the application menu on platforms other than OS X.
   if (process.platform !== 'darwin') {
     menu = app.getApplicationMenu();
     if (menu != null) {
@@ -22,7 +22,7 @@ BrowserWindow.prototype._init = function() {
     }
   }
 
-  /* Make new windows requested by links behave like "window.open" */
+  // Make new windows requested by links behave like "window.open"
   this.webContents.on('-new-window', function(event, url, frameName) {
     var options;
     options = {
@@ -33,17 +33,15 @@ BrowserWindow.prototype._init = function() {
     return ipcMain.emit('ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_OPEN', event, url, frameName, options);
   });
 
-  /*
-    window.resizeTo(...)
-    window.moveTo(...)
-   */
+  // window.resizeTo(...)
+  // window.moveTo(...)
   this.webContents.on('move', (function(_this) {
     return function(event, size) {
       return _this.setBounds(size);
     };
   })(this));
 
-  /* Hide the auto-hide menu when webContents is focused. */
+  // Hide the auto-hide menu when webContents is focused.
   this.webContents.on('activate', (function(_this) {
     return function() {
       if (process.platform !== 'darwin' && _this.isMenuBarAutoHide() && _this.isMenuBarVisible()) {
@@ -52,14 +50,14 @@ BrowserWindow.prototype._init = function() {
     };
   })(this));
 
-  /* Forward the crashed event. */
+  // Forward the crashed event.
   this.webContents.on('crashed', (function(_this) {
     return function() {
       return _this.emit('crashed');
     };
   })(this));
 
-  /* Change window title to page title. */
+  // Change window title to page title.
   this.webContents.on('page-title-updated', (function(_this) {
     return function(event, title, explicitSet) {
       _this.emit('page-title-updated', event, title);
@@ -69,19 +67,17 @@ BrowserWindow.prototype._init = function() {
     };
   })(this));
 
-  /*
-    Sometimes the webContents doesn't get focus when window is shown, so we have
-    to force focusing on webContents in this case. The safest way is to focus it
-    when we first start to load URL, if we do it earlier it won't have effect,
-    if we do it later we might move focus in the page.
-    Though this hack is only needed on OS X when the app is launched from
-    Finder, we still do it on all platforms in case of other bugs we don't know.
-   */
+  // Sometimes the webContents doesn't get focus when window is shown, so we have
+  // to force focusing on webContents in this case. The safest way is to focus it
+  // when we first start to load URL, if we do it earlier it won't have effect,
+  // if we do it later we might move focus in the page.
+  // Though this hack is only needed on OS X when the app is launched from
+  // Finder, we still do it on all platforms in case of other bugs we don't know.
   this.webContents.once('load-url', function() {
     return this.focus();
   });
 
-  /* Redirect focus/blur event to app instance too. */
+  // Redirect focus/blur event to app instance too.
   this.on('blur', (function(_this) {
     return function(event) {
       return app.emit('browser-window-blur', event, _this);
@@ -93,10 +89,10 @@ BrowserWindow.prototype._init = function() {
     };
   })(this));
 
-  /* Notify the creation of the window. */
+  // Notify the creation of the window.
   app.emit('browser-window-created', {}, this);
 
-  /* Be compatible with old APIs. */
+  // Be compatible with old APIs.
   this.webContents.on('devtools-focused', (function(_this) {
     return function() {
       return _this.emit('devtools-focused');
@@ -155,8 +151,7 @@ BrowserWindow.fromDevToolsWebContents = function(webContents) {
   }
 };
 
-
-/* Helpers. */
+// Helpers.
 
 BrowserWindow.prototype.loadURL = function() {
   return this.webContents.loadURL.apply(this.webContents, arguments);
@@ -202,8 +197,7 @@ BrowserWindow.prototype.inspectServiceWorker = function() {
   return this.webContents.inspectServiceWorker();
 };
 
-
-/* Deprecated. */
+// Deprecated.
 
 deprecate.member(BrowserWindow, 'undo', 'webContents');
 

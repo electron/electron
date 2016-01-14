@@ -10,8 +10,7 @@ module.exports = CallbacksRegistry = (function() {
   }
 
   CallbacksRegistry.prototype.add = function(callback) {
-
-    /* The callback is already added. */
+    // The callback is already added.
     var filenameAndLine, id, location, match, ref, regexp, stackString, x;
     id = v8Util.getHiddenValue(callback, 'callbackId');
     if (id != null) {
@@ -19,10 +18,8 @@ module.exports = CallbacksRegistry = (function() {
     }
     id = ++this.nextId;
 
-    /*
-      Capture the location of the function and put it in the ID string,
-      so that release errors can be tracked down easily.
-     */
+    // Capture the location of the function and put it in the ID string,
+    // so that release errors can be tracked down easily.
     regexp = /at (.*)/gi;
     stackString = (new Error).stack;
     while ((match = regexp.exec(stackString)) !== null) {

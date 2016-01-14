@@ -1,5 +1,4 @@
-
-/* Deprecate a method. */
+// Deprecate a method.
 var deprecate,
   slice = [].slice;
 
@@ -15,9 +14,7 @@ deprecate = function(oldName, newName, fn) {
   };
 };
 
-
-/* The method is renamed. */
-
+// The method is renamed.
 deprecate.rename = function(object, oldName, newName) {
   var newMethod, warned;
   warned = false;
@@ -35,9 +32,7 @@ deprecate.rename = function(object, oldName, newName) {
   }
 };
 
-
-/* Forward the method to member. */
-
+// Forward the method to member.
 deprecate.member = function(object, method, member) {
   var warned;
   warned = false;
@@ -50,9 +45,7 @@ deprecate.member = function(object, method, member) {
   };
 };
 
-
-/* Deprecate a property. */
-
+// Deprecate a property.
 deprecate.property = function(object, property, method) {
   return Object.defineProperty(object, property, {
     get: function() {
@@ -67,9 +60,7 @@ deprecate.property = function(object, property, method) {
   });
 };
 
-
-/* Deprecate an event. */
-
+// Deprecate an event.
 deprecate.event = function(emitter, oldName, newName, fn) {
   var warned;
   warned = false;
@@ -77,7 +68,7 @@ deprecate.event = function(emitter, oldName, newName, fn) {
     var args;
     args = 1 <= arguments.length ? slice.call(arguments, 0) : [];
 
-    /* there is listeners for old API. */
+    // there is listeners for old API.
     if (this.listenerCount(oldName) > 0) {
       if (!(warned || process.noDeprecation)) {
         warned = true;
@@ -92,16 +83,12 @@ deprecate.event = function(emitter, oldName, newName, fn) {
   });
 };
 
-
-/* Print deprecation warning. */
-
+// Print deprecation warning.
 deprecate.warn = function(oldName, newName) {
   return deprecate.log(oldName + " is deprecated. Use " + newName + " instead.");
 };
 
-
-/* Print deprecation message. */
-
+// Print deprecation message.
 deprecate.log = function(message) {
   if (process.throwDeprecation) {
     throw new Error(message);

@@ -6,24 +6,16 @@ path = require('path');
 
 spawn = require('child_process').spawn;
 
-
-/* i.e. my-app/app-0.1.13/ */
-
+// i.e. my-app/app-0.1.13/
 appFolder = path.dirname(process.execPath);
 
-
-/* i.e. my-app/Update.exe */
-
+// i.e. my-app/Update.exe
 updateExe = path.resolve(appFolder, '..', 'Update.exe');
 
 exeName = path.basename(process.execPath);
 
-
-/*
-  Spawn a command and invoke the callback when it completes with an error
-  and the output from standard out.
- */
-
+// Spawn a command and invoke the callback when it completes with an error
+// and the output from standard out.
 spawnUpdate = function(args, detached, callback) {
   var error, error1, errorEmitted, spawnedProcess, stderr, stdout;
   try {
@@ -33,7 +25,7 @@ spawnUpdate = function(args, detached, callback) {
   } catch (error1) {
     error = error1;
 
-    /* Shouldn't happen, but still guard it. */
+    // Shouldn't happen, but still guard it.
     process.nextTick(function() {
       return callback(error);
     });
@@ -54,31 +46,27 @@ spawnUpdate = function(args, detached, callback) {
   });
   return spawnedProcess.on('exit', function(code, signal) {
 
-    /* We may have already emitted an error. */
+    // We may have already emitted an error.
     if (errorEmitted) {
       return;
     }
 
-    /* Process terminated with error. */
+    // Process terminated with error.
     if (code !== 0) {
       return callback("Command failed: " + (signal != null ? signal : code) + "\n" + stderr);
     }
 
-    /* Success. */
+    // Success.
     return callback(null, stdout);
   });
 };
 
-
-/* Start an instance of the installed app. */
-
+// Start an instance of the installed app.
 exports.processStart = function(callback) {
   return spawnUpdate(['--processStart', exeName], true, function() {});
 };
 
-
-/* Download the releases specified by the URL and write new results to stdout. */
-
+// Download the releases specified by the URL and write new results to stdout.
 exports.download = function(updateURL, callback) {
   return spawnUpdate(['--download', updateURL], false, function(error, stdout) {
     var error1, json, ref, ref1, update;
@@ -87,7 +75,7 @@ exports.download = function(updateURL, callback) {
     }
     try {
 
-      /* Last line of output is the JSON details about the releases */
+      // Last line of output is the JSON details about the releases
       json = stdout.trim().split('\n').pop();
       update = (ref = JSON.parse(json)) != null ? (ref1 = ref.releasesToApply) != null ? typeof ref1.pop === "function" ? ref1.pop() : void 0 : void 0 : void 0;
     } catch (error1) {
@@ -98,15 +86,13 @@ exports.download = function(updateURL, callback) {
 };
 
 
-/* Update the application to the latest remote version specified by URL. */
-
+// Update the application to the latest remote version specified by URL.
 exports.update = function(updateURL, callback) {
   return spawnUpdate(['--update', updateURL], false, callback);
 };
 
 
-/* Is the Update.exe installed with the current application? */
-
+// Is the Update.exe installed with the current application?
 exports.supported = function() {
   var error1;
   try {

@@ -9,9 +9,7 @@ getNextId = function() {
   return ++nextId;
 };
 
-
-/* |options.type| can not be empty and has to include 'window' or 'screen'. */
-
+// |options.type| can not be empty and has to include 'window' or 'screen'.
 isValid = function(options) {
   return ((options != null ? options.types : void 0) != null) && Array.isArray(options.types);
 };

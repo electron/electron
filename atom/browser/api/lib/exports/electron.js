@@ -3,13 +3,12 @@ var common;
 common = require('../../../../common/api/lib/exports/electron');
 
 
-/* Import common modules. */
-
+// Import common modules.
 common.defineProperties(exports);
 
 Object.defineProperties(exports, {
 
-  /* Browser side modules, please sort with alphabet order. */
+  // Browser side modules, please sort with alphabet order.
   app: {
     enumerable: true,
     get: function() {
@@ -101,7 +100,7 @@ Object.defineProperties(exports, {
     }
   },
 
-  /* The internal modules, invisible unless you know their names. */
+  // The internal modules, invisible unless you know their names.
   NavigationController: {
     get: function() {
       return require('../navigation-controller');

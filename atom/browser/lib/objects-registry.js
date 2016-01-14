@@ -13,30 +13,22 @@ ObjectsRegistry = (function(superClass) {
     this.setMaxListeners(Number.MAX_VALUE);
     this.nextId = 0;
 
-    /*
-      Stores all objects by ref-counting.
-      (id) => {object, count}
-     */
+    // Stores all objects by ref-counting.
+    // (id) => {object, count}
     this.storage = {};
 
-    /*
-      Stores the IDs of objects referenced by WebContents.
-      (webContentsId) => {(id) => (count)}
-     */
+    // Stores the IDs of objects referenced by WebContents.
+    // (webContentsId) => {(id) => (count)}
     this.owners = {};
   }
 
-
-  /*
-    Register a new object, the object would be kept referenced until you release
-    it explicitly.
-   */
-
+  // Register a new object, the object would be kept referenced until you release
+  // it explicitly.
   ObjectsRegistry.prototype.add = function(webContentsId, obj) {
     var base, base1, id;
     id = this.saveToStorage(obj);
 
-    /* Remember the owner. */
+    // Remember the owner.
     if ((base = this.owners)[webContentsId] == null) {
       base[webContentsId] = {};
     }
@@ -45,26 +37,24 @@ ObjectsRegistry = (function(superClass) {
     }
     this.owners[webContentsId][id]++;
 
-    /* Returns object's id */
+    // Returns object's id
     return id;
   };
 
 
-  /* Get an object according to its ID. */
-
+  // Get an object according to its ID.
   ObjectsRegistry.prototype.get = function(id) {
     var ref;
     return (ref = this.storage[id]) != null ? ref.object : void 0;
   };
 
 
-  /* Dereference an object according to its ID. */
-
+  // Dereference an object according to its ID.
   ObjectsRegistry.prototype.remove = function(webContentsId, id) {
     var pointer;
     this.dereference(id, 1);
 
-    /* Also reduce the count in owner. */
+    // Also reduce the count in owner.
     pointer = this.owners[webContentsId];
     if (pointer == null) {
       return;
@@ -75,9 +65,7 @@ ObjectsRegistry = (function(superClass) {
     }
   };
 
-
-  /* Clear all references to objects refrenced by the WebContents. */
-
+  // Clear all references to objects refrenced by the WebContents.
   ObjectsRegistry.prototype.clear = function(webContentsId) {
     var count, id, ref;
     this.emit("clear-" + webContentsId);
@@ -92,9 +80,7 @@ ObjectsRegistry = (function(superClass) {
     return delete this.owners[webContentsId];
   };
 
-
-  /* Private: Saves the object into storage and assigns an ID for it. */
-
+  // Private: Saves the object into storage and assigns an ID for it.
   ObjectsRegistry.prototype.saveToStorage = function(object) {
     var id;
     id = v8Util.getHiddenValue(object, 'atomId');
@@ -110,9 +96,7 @@ ObjectsRegistry = (function(superClass) {
     return id;
   };
 
-
-  /* Private: Dereference the object from store. */
-
+  // Private: Dereference the object from store.
   ObjectsRegistry.prototype.dereference = function(id, count) {
     var pointer;
     pointer = this.storage[id];

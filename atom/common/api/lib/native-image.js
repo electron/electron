@@ -4,9 +4,7 @@ deprecate = require('electron').deprecate;
 
 nativeImage = process.atomBinding('native_image');
 
-
-/* Deprecated. */
-
+// Deprecated.
 deprecate.rename(nativeImage, 'createFromDataUrl', 'createFromDataURL');
 
 module.exports = nativeImage;

@@ -2,14 +2,11 @@ var common;
 
 common = require('../../../../common/api/lib/exports/electron');
 
-
-/* Import common modules. */
-
+// Import common modules.
 common.defineProperties(exports);
 
 Object.defineProperties(exports, {
-
-  /* Renderer side modules, please sort with alphabet order. */
+  // Renderer side modules, please sort with alphabet order.
   desktopCapturer: {
     enumerable: true,
     get: function() {

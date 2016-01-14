@@ -6,9 +6,7 @@ bindings = process.atomBinding('session');
 
 PERSIST_PERFIX = 'persist:';
 
-
-/* Returns the Session from |partition| string. */
-
+// Returns the Session from |partition| string.
 exports.fromPartition = function(partition) {
   if (partition == null) {
     partition = '';
@@ -23,9 +21,7 @@ exports.fromPartition = function(partition) {
   }
 };
 
-
-/* Returns the default session. */
-
+// Returns the default session.
 Object.defineProperty(exports, 'defaultSession', {
   enumerable: true,
   get: function() {
@@ -34,8 +30,7 @@ Object.defineProperty(exports, 'defaultSession', {
 });
 
 wrapSession = function(session) {
-
-  /* session is an EventEmitter. */
+  // session is an EventEmitter.
   return session.__proto__ = EventEmitter.prototype;
 };
 

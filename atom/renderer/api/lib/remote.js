@@ -7,9 +7,7 @@ v8Util = process.atomBinding('v8_util');
 
 callbacksRegistry = new CallbacksRegistry;
 
-
-/* Check for circular reference. */
-
+// Check for circular reference.
 isCircular = function(field, visited) {
   if (typeof field === 'object') {
     if (indexOf.call(visited, field) >= 0) {
@@ -20,9 +18,7 @@ isCircular = function(field, visited) {
   return false;
 };
 
-
-/* Convert the arguments object into an array of meta data. */
-
+// Convert the arguments object into an array of meta data.
 wrapArgs = function(args, visited) {
   var valueToMeta;
   if (visited == null) {
@@ -90,9 +86,7 @@ wrapArgs = function(args, visited) {
   return Array.prototype.slice.call(args).map(valueToMeta);
 };
 
-
-/* Convert meta data from browser into real value. */
-
+// Convert meta data from browser into real value.
 metaToValue = function(meta) {
   var RemoteFunction, el, i, j, len, len1, member, ref1, ref2, results, ret;
   switch (meta.type) {
@@ -121,14 +115,13 @@ metaToValue = function(meta) {
       break;
     default:
       if (meta.type === 'function') {
-
-        /* A shadow class to represent the remote function object. */
+        // A shadow class to represent the remote function object.
         ret = RemoteFunction = (function() {
           function RemoteFunction() {
             var obj;
             if (this.constructor === RemoteFunction) {
 
-              /* Constructor call. */
+              // Constructor call.
               obj = ipcRenderer.sendSync('ATOM_BROWSER_CONSTRUCTOR', meta.id, wrapArgs(arguments));
 
               /*
@@ -139,7 +132,7 @@ metaToValue = function(meta) {
               return metaToValue(obj);
             } else {
 
-              /* Function call. */
+              // Function call.
               obj = ipcRenderer.sendSync('ATOM_BROWSER_FUNCTION_CALL', meta.id, wrapArgs(arguments));
               return metaToValue(obj);
             }
@@ -152,7 +145,7 @@ metaToValue = function(meta) {
         ret = v8Util.createObjectWithName(meta.name);
       }
 
-      /* Polulate delegate members. */
+      // Polulate delegate members.
       ref2 = meta.members;
       for (j = 0, len1 = ref2.length; j < len1; j++) {
         member = ref2[j];
@@ -163,23 +156,19 @@ metaToValue = function(meta) {
         }
       }
 
-      /*
-        Track delegate object's life time, and tell the browser to clean up
-        when the object is GCed.
-       */
+      // Track delegate object's life time, and tell the browser to clean up
+      // when the object is GCed.
       v8Util.setDestructor(ret, function() {
         return ipcRenderer.send('ATOM_BROWSER_DEREFERENCE', meta.id);
       });
 
-      /* Remember object's id. */
+      // Remember object's id.
       v8Util.setHiddenValue(ret, 'atomId', meta.id);
       return ret;
   }
 };
 
-
-/* Construct a plain object from the meta. */
-
+// Construct a plain object from the meta.
 metaToPlainObject = function(meta) {
   var i, len, name, obj, ref1, ref2, value;
   obj = (function() {
@@ -198,13 +187,9 @@ metaToPlainObject = function(meta) {
   return obj;
 };
 
-
-/*
-  Create a RemoteMemberFunction instance.
-  This function's content should not be inlined into metaToValue, otherwise V8
-  may consider it circular reference.
- */
-
+// Create a RemoteMemberFunction instance.
+// This function's content should not be inlined into metaToValue, otherwise V8
+// may consider it circular reference.
 createRemoteMemberFunction = function(metaId, name) {
   var RemoteMemberFunction;
   return RemoteMemberFunction = (function() {
@@ -212,12 +197,12 @@ createRemoteMemberFunction = function(metaId, name) {
       var ret;
       if (this.constructor === RemoteMemberFunction) {
 
-        /* Constructor call. */
+        // Constructor call.
         ret = ipcRenderer.sendSync('ATOM_BROWSER_MEMBER_CONSTRUCTOR', metaId, name, wrapArgs(arguments));
         return metaToValue(ret);
       } else {
 
-        /* Call member function. */
+        // Call member function.
         ret = ipcRenderer.sendSync('ATOM_BROWSER_MEMBER_CALL', metaId, name, wrapArgs(arguments));
         return metaToValue(ret);
       }
@@ -228,53 +213,41 @@ createRemoteMemberFunction = function(metaId, name) {
   })();
 };
 
-
-/*
-  Create configuration for defineProperty.
-  This function's content should not be inlined into metaToValue, otherwise V8
-  may consider it circular reference.
- */
-
+// Create configuration for defineProperty.
+// This function's content should not be inlined into metaToValue, otherwise V8
+// may consider it circular reference.
 createRemoteMemberProperty = function(metaId, name) {
   return {
     enumerable: true,
     configurable: false,
     set: function(value) {
 
-      /* Set member data. */
+      // Set member data.
       ipcRenderer.sendSync('ATOM_BROWSER_MEMBER_SET', metaId, name, value);
       return value;
     },
     get: function() {
 
-      /* Get member data. */
+      // Get member data.
       return metaToValue(ipcRenderer.sendSync('ATOM_BROWSER_MEMBER_GET', metaId, name));
     }
   };
 };
 
-
-/* Browser calls a callback in renderer. */
-
+// Browser calls a callback in renderer.
 ipcRenderer.on('ATOM_RENDERER_CALLBACK', function(event, id, args) {
   return callbacksRegistry.apply(id, metaToValue(args));
 });
 
-
-/* A callback in browser is released. */
-
+// A callback in browser is released.
 ipcRenderer.on('ATOM_RENDERER_RELEASE_CALLBACK', function(event, id) {
   return callbacksRegistry.remove(id);
 });
 
-
-/* List all built-in modules in browser process. */
-
+// List all built-in modules in browser process.
 browserModules = require('../../../browser/api/lib/exports/electron');
 
-
-/* And add a helper receiver for each one. */
-
+// And add a helper receiver for each one.
 fn = function(name) {
   return Object.defineProperty(exports, name, {
     get: function() {
@@ -287,12 +260,9 @@ for (name in browserModules) {
 }
 
 
-/*
-  Get remote module.
-  (Just like node's require, the modules are cached permanently, note that this
-  is safe leak since the object is not expected to get freed in browser)
- */
-
+// Get remote module.
+// (Just like node's require, the modules are cached permanently, note that this
+// is safe leak since the object is not expected to get freed in browser)
 moduleCache = {};
 
 exports.require = function(module) {
@@ -305,13 +275,11 @@ exports.require = function(module) {
 };
 
 
-/* Optimize require('electron'). */
-
+// Optimize require('electron').
 moduleCache.electron = exports;
 
 
-/* Alias to remote.require('electron').xxx. */
-
+// Alias to remote.require('electron').xxx.
 builtinCache = {};
 
 exports.getBuiltin = function(module) {
@@ -323,9 +291,7 @@ exports.getBuiltin = function(module) {
   return builtinCache[module] = metaToValue(meta);
 };
 
-
-/* Get current BrowserWindow object. */
-
+// Get current BrowserWindow object.
 windowCache = null;
 
 exports.getCurrentWindow = function() {
@@ -337,9 +303,7 @@ exports.getCurrentWindow = function() {
   return windowCache = metaToValue(meta);
 };
 
-
-/* Get current WebContents object. */
-
+// Get current WebContents object.
 webContentsCache = null;
 
 exports.getCurrentWebContents = function() {
@@ -351,18 +315,14 @@ exports.getCurrentWebContents = function() {
   return webContentsCache = metaToValue(meta);
 };
 
-
-/* Get a global object in browser. */
-
+// Get a global object in browser.
 exports.getGlobal = function(name) {
   var meta;
   meta = ipcRenderer.sendSync('ATOM_BROWSER_GLOBAL', name);
   return metaToValue(meta);
 };
 
-
-/* Get the process object in browser. */
-
+// Get the process object in browser.
 processCache = null;
 
 exports.__defineGetter__('process', function() {
@@ -372,9 +332,7 @@ exports.__defineGetter__('process', function() {
   return processCache;
 });
 
-
-/* Create a funtion that will return the specifed value when called in browser. */
-
+// Create a funtion that will return the specifed value when called in browser.
 exports.createFunctionWithReturnValue = function(returnValue) {
   var func;
   func = function() {
@@ -384,9 +342,7 @@ exports.createFunctionWithReturnValue = function(returnValue) {
   return func;
 };
 
-
-/* Get the guest WebContents from guestInstanceId. */
-
+// Get the guest WebContents from guestInstanceId.
 exports.getGuestWebContents = function(guestInstanceId) {
   var meta;
   meta = ipcRenderer.sendSync('ATOM_BROWSER_GUEST_WEB_CONTENTS', guestInstanceId);

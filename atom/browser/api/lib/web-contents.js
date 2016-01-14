@@ -65,19 +65,18 @@ const webFrameMethods = [
 ];
 
 wrapWebContents = function(webContents) {
-
-  /* webContents is an EventEmitter. */
+  // webContents is an EventEmitter.
   var controller, method, name, ref1;
   webContents.__proto__ = EventEmitter.prototype;
 
-  /* WebContents::send(channel, args..) */
+  // WebContents::send(channel, args..)
   webContents.send = function() {
     var args, channel;
     channel = arguments[0], args = 2 <= arguments.length ? slice.call(arguments, 1) : [];
     return this._send(channel, slice.call(args));
   };
 
-  /* The navigation controller. */
+  // The navigation controller.
   controller = new NavigationController(webContents);
   ref1 = NavigationController.prototype;
   for (name in ref1) {
@@ -109,7 +108,7 @@ wrapWebContents = function(webContents) {
       return this.once('did-finish-load', executeJavaScript.bind(this, code, hasUserGesture));
   };
 
-  /* Dispatch IPC messages to the ipc module. */
+  // Dispatch IPC messages to the ipc module.
   webContents.on('ipc-message', function(event, packed) {
     var args, channel;
     channel = packed[0], args = 2 <= packed.length ? slice.call(packed, 1) : [];
@@ -126,22 +125,20 @@ wrapWebContents = function(webContents) {
     return ipcMain.emit.apply(ipcMain, [channel, event].concat(slice.call(args)));
   });
 
-  /* Handle context menu action request from pepper plugin. */
+  // Handle context menu action request from pepper plugin.
   webContents.on('pepper-context-menu', function(event, params) {
     var menu;
     menu = Menu.buildFromTemplate(params.menu);
     return menu.popup(params.x, params.y);
   });
 
-  /* This error occurs when host could not be found. */
+  // This error occurs when host could not be found.
   webContents.on('did-fail-provisional-load', function() {
     var args;
     args = 1 <= arguments.length ? slice.call(arguments, 0) : [];
 
-    /*
-      Calling loadURL during this event might cause crash, so delay the event
-      until next tick.
-     */
+    // Calling loadURL during this event might cause crash, so delay the event
+    // until next tick.
     return setImmediate((function(_this) {
       return function() {
         return _this.emit.apply(_this, ['did-fail-load'].concat(slice.call(args)));
@@ -149,7 +146,7 @@ wrapWebContents = function(webContents) {
     })(this));
   });
 
-  /* Delays the page-title-updated event to next tick. */
+  // Delays the page-title-updated event to next tick.
   webContents.on('-page-title-updated', function() {
     var args;
     args = 1 <= arguments.length ? slice.call(arguments, 0) : [];
@@ -160,7 +157,7 @@ wrapWebContents = function(webContents) {
     })(this));
   });
 
-  /* Deprecated. */
+  // Deprecated.
   deprecate.rename(webContents, 'loadUrl', 'loadURL');
   deprecate.rename(webContents, 'getUrl', 'getURL');
   deprecate.event(webContents, 'page-title-set', 'page-title-updated', function() {

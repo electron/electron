@@ -10,9 +10,7 @@ path = require('path');
 
 util = require('util');
 
-
-/* Cache asar archive objects. */
-
+// Cache asar archive objects.
 cachedArchives = {};
 
 getOrCreateArchive = function(p) {
@@ -28,9 +26,7 @@ getOrCreateArchive = function(p) {
   return cachedArchives[p] = archive;
 };
 
-
-/* Clean cache on quit. */
-
+// Clean cache on quit.
 process.on('exit', function() {
   var archive, p, results;
   results = [];
@@ -42,12 +38,10 @@ process.on('exit', function() {
   return results;
 });
 
-
-/* Separate asar package's path from full path. */
-
+// Separate asar package's path from full path.
 splitPath = function(p) {
 
-  /* shortcut to disable asar. */
+  // shortcut to disable asar.
   var index;
   if (process.noAsar) {
     return [false];
@@ -66,9 +60,7 @@ splitPath = function(p) {
   return [true, p.substr(0, index + 5), p.substr(index + 6)];
 };
 
-
-/* Convert asar archive's Stats object to fs's Stats object. */
-
+// Convert asar archive's Stats object to fs's Stats object.
 nextInode = 0;
 
 uid = process.getuid != null ? process.getuid() : 0;
@@ -115,9 +107,7 @@ asarStatsToFsStats = function(stats) {
   };
 };
 
-
-/* Create a ENOENT error. */
-
+// Create a ENOENT error.
 notFoundError = function(asarPath, filePath, callback) {
   var error;
   error = new Error("ENOENT, " + filePath + " not found in " + asarPath);
@@ -131,9 +121,7 @@ notFoundError = function(asarPath, filePath, callback) {
   });
 };
 
-
-/* Create a ENOTDIR error. */
-
+// Create a ENOTDIR error.
 notDirError = function(callback) {
   var error;
   error = new Error('ENOTDIR, not a directory');
@@ -147,9 +135,7 @@ notDirError = function(callback) {
   });
 };
 
-
-/* Create invalid archive error. */
-
+// Create invalid archive error.
 invalidArchiveError = function(asarPath, callback) {
   var error;
   error = new Error("Invalid package " + asarPath);
@@ -161,9 +147,7 @@ invalidArchiveError = function(asarPath, callback) {
   });
 };
 
-
-/* Override APIs that rely on passing file path instead of content to C++. */
-
+// Override APIs that rely on passing file path instead of content to C++.
 overrideAPISync = function(module, name, arg) {
   var old;
   if (arg == null) {
@@ -220,9 +204,7 @@ overrideAPI = function(module, name, arg) {
   };
 };
 
-
-/* Override fs APIs. */
-
+// Override fs APIs.
 exports.wrapFsWithAsar = function(fs) {
   var exists, existsSync, internalModuleReadFile, internalModuleStat, lstat, lstatSync, mkdir, mkdirSync, open, openSync, readFile, readFileSync, readdir, readdirSync, realpath, realpathSync, stat, statSync, statSyncNoException;
   lstatSync = fs.lstatSync;
@@ -269,7 +251,7 @@ exports.wrapFsWithAsar = function(fs) {
       return statSync(p);
     }
 
-    /* Do not distinguish links for now. */
+    // Do not distinguish links for now.
     return fs.lstatSync(p);
   };
   stat = fs.stat;
@@ -280,7 +262,7 @@ exports.wrapFsWithAsar = function(fs) {
       return stat(p, callback);
     }
 
-    /* Do not distinguish links for now. */
+    // Do not distinguish links for now.
     return process.nextTick(function() {
       return fs.lstat(p, callback);
     });
@@ -427,7 +409,7 @@ exports.wrapFsWithAsar = function(fs) {
   readFileSync = fs.readFileSync;
   fs.readFileSync = function(p, opts) {
 
-    /* this allows v8 to optimize this function */
+    // this allows v8 to optimize this function
     var archive, asarPath, buffer, encoding, fd, filePath, info, isAsar, options, realPath, ref;
     options = opts;
     ref = splitPath(p), isAsar = ref[0], asarPath = ref[1], filePath = ref[2];
@@ -554,13 +536,13 @@ exports.wrapFsWithAsar = function(fs) {
     }
     archive = getOrCreateArchive(asarPath);
 
-    /* -ENOENT */
+    // -ENOENT
     if (!archive) {
       return -34;
     }
     stats = archive.stat(filePath);
 
-    /* -ENOENT */
+    // -ENOENT
     if (!stats) {
       return -34;
     }
@@ -571,12 +553,10 @@ exports.wrapFsWithAsar = function(fs) {
     }
   };
 
-  /*
-    Calling mkdir for directory inside asar archive should throw ENOTDIR
-    error, but on Windows it throws ENOENT.
-    This is to work around the recursive looping bug of mkdirp since it is
-    widely used.
-   */
+  // Calling mkdir for directory inside asar archive should throw ENOTDIR
+  // error, but on Windows it throws ENOENT.
+  // This is to work around the recursive looping bug of mkdirp since it is
+  // widely used.
   if (process.platform === 'win32') {
     mkdir = fs.mkdir;
     fs.mkdir = function(p, mode, callback) {
