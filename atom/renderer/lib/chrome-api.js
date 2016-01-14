@@ -1,8 +1,5 @@
-var chrome, url;
-
-url = require('url');
-
-chrome = window.chrome = window.chrome || {};
+const url = require('url');
+const chrome = window.chrome = window.chrome || {};
 
 chrome.extension = {
   getURL: function(path) {

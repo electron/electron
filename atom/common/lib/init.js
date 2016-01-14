@@ -1,12 +1,7 @@
-var Module, fs, path, timers, wrapWithActivateUvLoop;
-
-fs = require('fs');
-
-path = require('path');
-
-timers = require('timers');
-
-Module = require('module');
+const fs = require('fs');
+const path = require('path');
+const timers = require('timers');
+const Module = require('module');
 
 process.atomBinding = function(name) {
   var e, error;
@@ -32,7 +27,7 @@ if (!process.env.ELECTRON_HIDE_INTERNAL_MODULES) {
 // which would delay the callbacks for arbitrary long time. So we should
 // initiatively activate the uv loop once setImmediate and process.nextTick is
 // called.
-wrapWithActivateUvLoop = function(func) {
+var wrapWithActivateUvLoop = function(func) {
   return function() {
     process.activateUvLoop();
     return func.apply(this, arguments);

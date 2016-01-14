@@ -1,5 +1,3 @@
-var convertToMenuTemplate, createFileSelectorElement, createMenu, pathToHtml5FileObject, showFileChooserDialog;
-
 window.onload = function() {
   // Use menu API to show context menu.
   InspectorFrontendHost.showContextMenuAtPoint = createMenu;
@@ -8,7 +6,7 @@ window.onload = function() {
   return WebInspector.createFileSelectorElement = createFileSelectorElement;
 };
 
-convertToMenuTemplate = function(items) {
+var convertToMenuTemplate = function(items) {
   var fn, i, item, len, template;
   template = [];
   fn = function(item) {
@@ -45,11 +43,10 @@ convertToMenuTemplate = function(items) {
   return template;
 };
 
-createMenu = function(x, y, items, document) {
-  var Menu, menu, remote;
-  remote = require('electron').remote;
-  Menu = remote.Menu;
-  menu = Menu.buildFromTemplate(convertToMenuTemplate(items));
+var createMenu = function(x, y, items, document) {
+  const remote = require('electron').remote;
+  const Menu = remote.Menu;
+  const menu = Menu.buildFromTemplate(convertToMenuTemplate(items));
 
   // The menu is expected to show asynchronously.
   return setTimeout(function() {
@@ -57,7 +54,7 @@ createMenu = function(x, y, items, document) {
   });
 };
 
-showFileChooserDialog = function(callback) {
+var showFileChooserDialog = function(callback) {
   var dialog, files, remote;
   remote = require('electron').remote;
   dialog = remote.dialog;
@@ -67,7 +64,7 @@ showFileChooserDialog = function(callback) {
   }
 };
 
-pathToHtml5FileObject = function(path) {
+var pathToHtml5FileObject = function(path) {
   var blob, fs;
   fs = require('fs');
   blob = new Blob([fs.readFileSync(path)]);
@@ -75,7 +72,7 @@ pathToHtml5FileObject = function(path) {
   return blob;
 };
 
-createFileSelectorElement = function(callback) {
+var createFileSelectorElement = function(callback) {
   var fileSelectorElement;
   fileSelectorElement = document.createElement('span');
   fileSelectorElement.style.display = 'none';
