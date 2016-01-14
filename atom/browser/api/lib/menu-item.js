@@ -26,8 +26,8 @@ MenuItem = (function() {
   MenuItem.types = ['normal', 'separator', 'submenu', 'checkbox', 'radio'];
 
   function MenuItem(options) {
-    var Menu, click, ref;
-    Menu = require('electron').Menu;
+    var click, ref;
+    const Menu = require('electron').Menu;
     click = options.click, this.selector = options.selector, this.type = options.type, this.role = options.role, this.label = options.label, this.sublabel = options.sublabel, this.accelerator = options.accelerator, this.icon = options.icon, this.enabled = options.enabled, this.visible = options.visible, this.checked = options.checked, this.submenu = options.submenu;
     if ((this.submenu != null) && this.submenu.constructor !== Menu) {
       this.submenu = Menu.buildFromTemplate(this.submenu);

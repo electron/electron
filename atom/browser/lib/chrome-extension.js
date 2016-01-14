@@ -1,33 +1,28 @@
-var app, electron, extensionInfoMap, fs, getExtensionInfoFromPath, getHostForPath, getPathForHost, hostPathMap, hostPathMapNextKey, loadedExtensions, loadedExtensionsPath, path, url;
-
-electron = require('electron');
-
-fs = require('fs');
-
-path = require('path');
-
-url = require('url');
+const electron = require('electron');
+const app = electron.app;
+const fs = require('fs');
+const path = require('path');
+const url = require('url');
 
 // Mapping between hostname and file path.
-hostPathMap = {};
+var hostPathMap = {};
+var hostPathMapNextKey = 0;
 
-hostPathMapNextKey = 0;
-
-getHostForPath = function(path) {
+var getHostForPath = function(path) {
   var key;
   key = "extension-" + (++hostPathMapNextKey);
   hostPathMap[key] = path;
   return key;
 };
 
-getPathForHost = function(host) {
+var getPathForHost = function(host) {
   return hostPathMap[host];
 };
 
 // Cache extensionInfo.
-extensionInfoMap = {};
+var extensionInfoMap = {};
 
-getExtensionInfoFromPath = function(srcDirectory) {
+var getExtensionInfoFromPath = function(srcDirectory) {
   var manifest, page;
   manifest = JSON.parse(fs.readFileSync(path.join(srcDirectory, 'manifest.json')));
   if (extensionInfoMap[manifest.name] == null) {
@@ -51,11 +46,8 @@ getExtensionInfoFromPath = function(srcDirectory) {
 };
 
 // The loaded extensions cache and its persistent path.
-loadedExtensions = null;
-loadedExtensionsPath = null;
-
-// Persistent loaded extensions.
-app = electron.app;
+var loadedExtensions = null;
+var loadedExtensionsPath = null;
 
 app.on('will-quit', function() {
   var e, error1, error2;

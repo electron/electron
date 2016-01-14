@@ -1,7 +1,6 @@
-var NavigationController, ipcMain,
-  slice = [].slice;
+const ipcMain = require('electron').ipcMain;
 
-ipcMain = require('electron').ipcMain;
+var slice = [].slice;
 
 // The history operation in renderer is redirected to browser.
 ipcMain.on('ATOM_SHELL_NAVIGATION_CONTROLLER', function() {
@@ -21,7 +20,7 @@ ipcMain.on('ATOM_SHELL_SYNC_NAVIGATION_CONTROLLER', function() {
 // control on user land, and only rely on WebContents.loadURL for navigation.
 // This helps us avoid Chromium's various optimizations so we can ensure renderer
 // process is restarted everytime.
-NavigationController = (function() {
+var NavigationController = (function() {
   function NavigationController(webContents) {
     this.webContents = webContents;
     this.clearHistory();

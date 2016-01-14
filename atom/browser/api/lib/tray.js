@@ -1,10 +1,6 @@
-var EventEmitter, Tray, deprecate;
-
-deprecate = require('electron').deprecate;
-
-EventEmitter = require('events').EventEmitter;
-
-Tray = process.atomBinding('tray').Tray;
+const deprecate = require('electron').deprecate;
+const EventEmitter = require('events').EventEmitter;
+const Tray = process.atomBinding('tray').Tray;
 
 Tray.prototype.__proto__ = EventEmitter.prototype;
 
