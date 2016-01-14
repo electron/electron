@@ -1,15 +1,21 @@
-var EventEmitter, Menu, app, appPath, bindings, deprecate, downloadItemBindings, fn, i, len, name, ref, ref1, session, wrapDownloadItem,
-  slice = [].slice;
+const deprecate = require('electron').deprecate;
+const session = require('electron').session;
+const Menu = require('electron').Menu;
+const EventEmitter = require('events').EventEmitter;
 
-ref = require('electron'), deprecate = ref.deprecate, session = ref.session, Menu = ref.Menu;
+const bindings = process.atomBinding('app');
+const downloadItemBindings = process.atomBinding('download_item');
+const app = bindings.app;
 
-EventEmitter = require('events').EventEmitter;
+var slice = [].slice;
 
-bindings = process.atomBinding('app');
-
-downloadItemBindings = process.atomBinding('download_item');
-
-app = bindings.app;
+var appPath;
+var fn;
+var i;
+var len;
+var name;
+var ref1;
+var wrapDownloadItem;
 
 app.__proto__ = EventEmitter.prototype;
 

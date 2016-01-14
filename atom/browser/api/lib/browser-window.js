@@ -1,10 +1,7 @@
-var BrowserWindow, EventEmitter, deprecate, ipcMain, ref;
-
-ref = require('electron'), ipcMain = ref.ipcMain, deprecate = ref.deprecate;
-
-EventEmitter = require('events').EventEmitter;
-
-BrowserWindow = process.atomBinding('window').BrowserWindow;
+const ipcMain = require('electron').ipcMain;
+const deprecate = require('electron').deprecate;
+const EventEmitter = require('events').EventEmitter;
+const BrowserWindow = process.atomBinding('window').BrowserWindow;
 
 BrowserWindow.prototype.__proto__ = EventEmitter.prototype;
 
