@@ -24,14 +24,14 @@ messageBoxOptions = {
 parseArgs = function(window, options, callback) {
   if (!(window === null || (window != null ? window.constructor : void 0) === BrowserWindow)) {
 
-    /* Shift. */
+    // Shift.
     callback = options;
     options = window;
     window = null;
   }
   if ((callback == null) && typeof options === 'function') {
 
-    /* Shift. */
+    // Shift.
     callback = options;
     options = null;
   }
@@ -143,7 +143,7 @@ module.exports = {
       options.defaultId = -1;
     }
 
-    /* Choose a default button to get selected when dialog is cancelled. */
+    // Choose a default button to get selected when dialog is cancelled.
     if (options.cancelId == null) {
       options.cancelId = 0;
       ref2 = options.buttons;
@@ -166,7 +166,7 @@ module.exports = {
 };
 
 
-/* Mark standard asynchronous functions. */
+// Mark standard asynchronous functions.
 
 ref1 = ['showMessageBox', 'showOpenDialog', 'showSaveDialog'];
 for (j = 0, len = ref1.length; j < len; j++) {

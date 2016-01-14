@@ -36,7 +36,7 @@ ObjectsRegistry = (function(superClass) {
     var base, base1, id;
     id = this.saveToStorage(obj);
 
-    /* Remember the owner. */
+    // Remember the owner.
     if ((base = this.owners)[webContentsId] == null) {
       base[webContentsId] = {};
     }
@@ -45,12 +45,12 @@ ObjectsRegistry = (function(superClass) {
     }
     this.owners[webContentsId][id]++;
 
-    /* Returns object's id */
+    // Returns object's id
     return id;
   };
 
 
-  /* Get an object according to its ID. */
+  // Get an object according to its ID.
 
   ObjectsRegistry.prototype.get = function(id) {
     var ref;
@@ -58,13 +58,13 @@ ObjectsRegistry = (function(superClass) {
   };
 
 
-  /* Dereference an object according to its ID. */
+  // Dereference an object according to its ID.
 
   ObjectsRegistry.prototype.remove = function(webContentsId, id) {
     var pointer;
     this.dereference(id, 1);
 
-    /* Also reduce the count in owner. */
+    // Also reduce the count in owner.
     pointer = this.owners[webContentsId];
     if (pointer == null) {
       return;
@@ -76,7 +76,7 @@ ObjectsRegistry = (function(superClass) {
   };
 
 
-  /* Clear all references to objects refrenced by the WebContents. */
+  // Clear all references to objects refrenced by the WebContents.
 
   ObjectsRegistry.prototype.clear = function(webContentsId) {
     var count, id, ref;
@@ -93,7 +93,7 @@ ObjectsRegistry = (function(superClass) {
   };
 
 
-  /* Private: Saves the object into storage and assigns an ID for it. */
+  // Private: Saves the object into storage and assigns an ID for it.
 
   ObjectsRegistry.prototype.saveToStorage = function(object) {
     var id;
@@ -111,7 +111,7 @@ ObjectsRegistry = (function(superClass) {
   };
 
 
-  /* Private: Dereference the object from store. */
+  // Private: Dereference the object from store.
 
   ObjectsRegistry.prototype.dereference = function(id, count) {
     var pointer;

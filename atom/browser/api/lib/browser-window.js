@@ -10,11 +10,11 @@ BrowserWindow.prototype.__proto__ = EventEmitter.prototype;
 
 BrowserWindow.prototype._init = function() {
 
-  /* avoid recursive require. */
+  // avoid recursive require.
   var app, menu;
   app = require('electron').app;
 
-  /* Simulate the application menu on platforms other than OS X. */
+  // Simulate the application menu on platforms other than OS X.
   if (process.platform !== 'darwin') {
     menu = app.getApplicationMenu();
     if (menu != null) {
@@ -22,7 +22,7 @@ BrowserWindow.prototype._init = function() {
     }
   }
 
-  /* Make new windows requested by links behave like "window.open" */
+  // Make new windows requested by links behave like "window.open"
   this.webContents.on('-new-window', function(event, url, frameName) {
     var options;
     options = {
@@ -43,7 +43,7 @@ BrowserWindow.prototype._init = function() {
     };
   })(this));
 
-  /* Hide the auto-hide menu when webContents is focused. */
+  // Hide the auto-hide menu when webContents is focused.
   this.webContents.on('activate', (function(_this) {
     return function() {
       if (process.platform !== 'darwin' && _this.isMenuBarAutoHide() && _this.isMenuBarVisible()) {
@@ -52,14 +52,14 @@ BrowserWindow.prototype._init = function() {
     };
   })(this));
 
-  /* Forward the crashed event. */
+  // Forward the crashed event.
   this.webContents.on('crashed', (function(_this) {
     return function() {
       return _this.emit('crashed');
     };
   })(this));
 
-  /* Change window title to page title. */
+  // Change window title to page title.
   this.webContents.on('page-title-updated', (function(_this) {
     return function(event, title, explicitSet) {
       _this.emit('page-title-updated', event, title);
@@ -81,7 +81,7 @@ BrowserWindow.prototype._init = function() {
     return this.focus();
   });
 
-  /* Redirect focus/blur event to app instance too. */
+  // Redirect focus/blur event to app instance too.
   this.on('blur', (function(_this) {
     return function(event) {
       return app.emit('browser-window-blur', event, _this);
@@ -93,10 +93,10 @@ BrowserWindow.prototype._init = function() {
     };
   })(this));
 
-  /* Notify the creation of the window. */
+  // Notify the creation of the window.
   app.emit('browser-window-created', {}, this);
 
-  /* Be compatible with old APIs. */
+  // Be compatible with old APIs.
   this.webContents.on('devtools-focused', (function(_this) {
     return function() {
       return _this.emit('devtools-focused');
@@ -156,7 +156,7 @@ BrowserWindow.fromDevToolsWebContents = function(webContents) {
 };
 
 
-/* Helpers. */
+// Helpers.
 
 BrowserWindow.prototype.loadURL = function() {
   return this.webContents.loadURL.apply(this.webContents, arguments);
@@ -203,7 +203,7 @@ BrowserWindow.prototype.inspectServiceWorker = function() {
 };
 
 
-/* Deprecated. */
+// Deprecated.
 
 deprecate.member(BrowserWindow, 'undo', 'webContents');
 

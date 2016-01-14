@@ -4,7 +4,7 @@ var attachGuest, createGuest, destroyGuest, embedderElementsMap, getNextInstance
 ref = require('electron'), ipcMain = ref.ipcMain, webContents = ref.webContents;
 
 
-/* Doesn't exist in early initialization. */
+// Doesn't exist in early initialization.
 
 webViewManager = null;
 
@@ -19,21 +19,21 @@ embedderElementsMap = {};
 reverseEmbedderElementsMap = {};
 
 
-/* Moves the last element of array to the first one. */
+// Moves the last element of array to the first one.
 
 moveLastToFirst = function(list) {
   return list.unshift(list.pop());
 };
 
 
-/* Generate guestInstanceId. */
+// Generate guestInstanceId.
 
 getNextInstanceId = function(webContents) {
   return ++nextInstanceId;
 };
 
 
-/* Create a new guest instance. */
+// Create a new guest instance.
 
 createGuest = function(embedder, params) {
   var destroy, destroyEvents, event, fn, guest, i, id, j, len, len1, listeners;
@@ -51,7 +51,7 @@ createGuest = function(embedder, params) {
     embedder: embedder
   };
 
-  /* Destroy guest when the embedder is gone or navigated. */
+  // Destroy guest when the embedder is gone or navigated.
   destroyEvents = ['will-destroy', 'crashed', 'did-navigate'];
   destroy = function() {
     if (guestInstances[id] != null) {
@@ -82,7 +82,7 @@ createGuest = function(embedder, params) {
     return results;
   });
 
-  /* Init guest web view after attached. */
+  // Init guest web view after attached.
   guest.once('did-attach', function() {
     var opts;
     params = this.attachParams;
@@ -119,7 +119,7 @@ createGuest = function(embedder, params) {
     return guest.allowPopups = params.allowpopups;
   });
 
-  /* Dispatch events to embedder. */
+  // Dispatch events to embedder.
   fn = function(event) {
     return guest.on(event, function() {
       var _, args;
@@ -132,14 +132,14 @@ createGuest = function(embedder, params) {
     fn(event);
   }
 
-  /* Dispatch guest's IPC messages to embedder. */
+  // Dispatch guest's IPC messages to embedder.
   guest.on('ipc-message-host', function(_, packed) {
     var args, channel;
     channel = packed[0], args = 2 <= packed.length ? slice.call(packed, 1) : [];
     return embedder.send.apply(embedder, ["ATOM_SHELL_GUEST_VIEW_INTERNAL_IPC_MESSAGE-" + guest.viewInstanceId, channel].concat(slice.call(args)));
   });
 
-  /* Autosize. */
+  // Autosize.
   guest.on('size-changed', function() {
     var _, args;
     _ = arguments[0], args = 2 <= arguments.length ? slice.call(arguments, 1) : [];
@@ -149,18 +149,18 @@ createGuest = function(embedder, params) {
 };
 
 
-/* Attach the guest to an element of embedder. */
+// Attach the guest to an element of embedder.
 
 attachGuest = function(embedder, elementInstanceId, guestInstanceId, params) {
   var guest, key, oldGuestInstanceId, ref1, webPreferences;
   guest = guestInstances[guestInstanceId].guest;
 
-  /* Destroy the old guest when attaching. */
+  // Destroy the old guest when attaching.
   key = (embedder.getId()) + "-" + elementInstanceId;
   oldGuestInstanceId = embedderElementsMap[key];
   if (oldGuestInstanceId != null) {
 
-    /* Reattachment to the same guest is not currently supported. */
+    // Reattachment to the same guest is not currently supported.
     if (oldGuestInstanceId === guestInstanceId) {
       return;
     }
@@ -185,7 +185,7 @@ attachGuest = function(embedder, elementInstanceId, guestInstanceId, params) {
 };
 
 
-/* Destroy an existing guest instance. */
+// Destroy an existing guest instance.
 
 destroyGuest = function(embedder, id) {
   var key;
@@ -222,7 +222,7 @@ ipcMain.on('ATOM_SHELL_GUEST_VIEW_MANAGER_SET_ALLOW_TRANSPARENCY', function(even
 });
 
 
-/* Returns WebContents from its guest id. */
+// Returns WebContents from its guest id.
 
 exports.getGuest = function(id) {
   var ref1;
@@ -230,7 +230,7 @@ exports.getGuest = function(id) {
 };
 
 
-/* Returns the embedder of the guest. */
+// Returns the embedder of the guest.
 
 exports.getEmbedder = function(id) {
   var ref1;

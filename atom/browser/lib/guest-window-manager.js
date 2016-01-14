@@ -9,7 +9,7 @@ v8Util = process.atomBinding('v8_util');
 frameToGuest = {};
 
 
-/* Copy attribute of |parent| to |child| if it is not defined in |child|. */
+// Copy attribute of |parent| to |child| if it is not defined in |child|.
 
 mergeOptions = function(child, parent) {
   var key, value;
@@ -28,16 +28,16 @@ mergeOptions = function(child, parent) {
 };
 
 
-/* Merge |options| with the |embedder|'s window's options. */
+// Merge |options| with the |embedder|'s window's options.
 
 mergeBrowserWindowOptions = function(embedder, options) {
   if (embedder.browserWindowOptions != null) {
 
-    /* Inherit the original options if it is a BrowserWindow. */
+    // Inherit the original options if it is a BrowserWindow.
     mergeOptions(options, embedder.browserWindowOptions);
   } else {
 
-    /* Or only inherit web-preferences if it is a webview. */
+    // Or only inherit web-preferences if it is a webview.
     if (options.webPreferences == null) {
       options.webPreferences = {};
     }
@@ -47,7 +47,7 @@ mergeBrowserWindowOptions = function(embedder, options) {
 };
 
 
-/* Create a new guest created by |embedder| with |options|. */
+// Create a new guest created by |embedder| with |options|.
 
 createGuest = function(embedder, url, frameName, options) {
   var closedByEmbedder, closedByUser, guest, guestId, ref1;
@@ -57,7 +57,7 @@ createGuest = function(embedder, url, frameName, options) {
     return guest.id;
   }
 
-  /* Remember the embedder window's id. */
+  // Remember the embedder window's id.
   if (options.webPreferences == null) {
     options.webPreferences = {};
   }
@@ -92,7 +92,7 @@ createGuest = function(embedder, url, frameName, options) {
 };
 
 
-/* Routed window.open messages. */
+// Routed window.open messages.
 
 ipcMain.on('ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_OPEN', function() {
   var args, event, frameName, options, url;

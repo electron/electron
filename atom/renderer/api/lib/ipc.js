@@ -6,12 +6,12 @@ ref = require('electron'), ipcRenderer = ref.ipcRenderer, deprecate = ref.deprec
 EventEmitter = require('events').EventEmitter;
 
 
-/* This module is deprecated, we mirror everything from ipcRenderer. */
+// This module is deprecated, we mirror everything from ipcRenderer.
 
 deprecate.warn('ipc module', 'require("electron").ipcRenderer');
 
 
-/* Routes events of ipcRenderer. */
+// Routes events of ipcRenderer.
 
 ipc = new EventEmitter;
 
@@ -23,7 +23,7 @@ ipcRenderer.emit = function() {
 };
 
 
-/* Deprecated. */
+// Deprecated.
 
 for (method in ipcRenderer) {
   if (method.startsWith('send')) {

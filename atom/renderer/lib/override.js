@@ -4,7 +4,7 @@ var BrowserWindowProxy, a, getHistoryOperation, ipcRenderer, ref, remote, resolv
 ref = require('electron'), ipcRenderer = ref.ipcRenderer, remote = ref.remote;
 
 
-/* Helper function to resolve relative url. */
+// Helper function to resolve relative url.
 
 a = window.top.document.createElement('a');
 
@@ -14,7 +14,7 @@ resolveURL = function(url) {
 };
 
 
-/* Window object returned by "window.open". */
+// Window object returned by "window.open".
 
 BrowserWindowProxy = (function() {
   BrowserWindowProxy.proxies = {};
@@ -70,14 +70,14 @@ BrowserWindowProxy = (function() {
 
 if (process.guestInstanceId == null) {
 
-  /* Override default window.close. */
+  // Override default window.close.
   window.close = function() {
     return remote.getCurrentWindow().close();
   };
 }
 
 
-/* Make the browser window or guest view emit "new-window" event. */
+// Make the browser window or guest view emit "new-window" event.
 
 window.open = function(url, frameName, features) {
   var feature, guestId, i, ints, j, len, len1, name, options, ref1, ref2, value;
@@ -90,7 +90,7 @@ window.open = function(url, frameName, features) {
   options = {};
   ints = ['x', 'y', 'width', 'height', 'min-width', 'max-width', 'min-height', 'max-height', 'zoom-factor'];
 
-  /* Make sure to get rid of excessive whitespace in the property name */
+  // Make sure to get rid of excessive whitespace in the property name
   ref1 = features.split(/,\s*/);
   for (i = 0, len = ref1.length; i < len; i++) {
     feature = ref1[i];
@@ -117,7 +117,7 @@ window.open = function(url, frameName, features) {
     options.height = 600;
   }
 
-  /* Resolve relative urls. */
+  // Resolve relative urls.
   url = resolveURL(url);
   for (j = 0, len1 = ints.length; j < len1; j++) {
     name = ints[j];
@@ -134,7 +134,7 @@ window.open = function(url, frameName, features) {
 };
 
 
-/* Use the dialog API to implement alert(). */
+// Use the dialog API to implement alert().
 
 window.alert = function(message, title) {
   var buttons;
@@ -149,11 +149,11 @@ window.alert = function(message, title) {
     buttons: buttons
   });
 
-  /* Alert should always return undefined. */
+  // Alert should always return undefined.
 };
 
 
-/* And the confirm(). */
+// And the confirm().
 
 window.confirm = function(message, title) {
   var buttons, cancelId;
@@ -171,7 +171,7 @@ window.confirm = function(message, title) {
 };
 
 
-/* But we do not support prompt(). */
+// But we do not support prompt().
 
 window.prompt = function() {
   throw new Error('prompt() is and will not be supported.');
@@ -183,9 +183,9 @@ if (process.openerId != null) {
 
 ipcRenderer.on('ATOM_SHELL_GUEST_WINDOW_POSTMESSAGE', function(event, sourceId, message, sourceOrigin) {
 
-  /* Manually dispatch event instead of using postMessage because we also need to */
+  // Manually dispatch event instead of using postMessage because we also need to
 
-  /* set event.source. */
+  // set event.source.
   event = document.createEvent('Event');
   event.initEvent('message', false, false);
   event.data = message;
@@ -195,7 +195,7 @@ ipcRenderer.on('ATOM_SHELL_GUEST_WINDOW_POSTMESSAGE', function(event, sourceId, 
 });
 
 
-/* Forward history operations to browser. */
+// Forward history operations to browser.
 
 sendHistoryOperation = function() {
   var args;
@@ -228,7 +228,7 @@ Object.defineProperty(window.history, 'length', {
 });
 
 
-/* Make document.hidden and document.visibilityState return the correct value. */
+// Make document.hidden and document.visibilityState return the correct value.
 
 Object.defineProperty(document, 'hidden', {
   get: function() {

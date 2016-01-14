@@ -22,7 +22,7 @@ CrashReporter = (function() {
     }
     this.productName = options.productName, companyName = options.companyName, submitURL = options.submitURL, autoSubmit = options.autoSubmit, ignoreSystemCrashHandler = options.ignoreSystemCrashHandler, extra = options.extra;
 
-    /* Deprecated. */
+    // Deprecated.
     deprecate = electron.deprecate;
     if (options.submitUrl) {
       if (submitURL == null) {

@@ -5,7 +5,7 @@ v8Util = process.atomBinding('v8_util');
 nextCommandId = 0;
 
 
-/* Maps role to methods of webContents */
+// Maps role to methods of webContents
 
 rolesMap = {
   undo: 'undo',
@@ -19,7 +19,7 @@ rolesMap = {
 };
 
 
-/* Maps methods that should be called directly on the BrowserWindow instance */
+// Maps methods that should be called directly on the BrowserWindow instance
 
 methodInBrowserWindow = {
   minimize: true,
@@ -59,7 +59,7 @@ MenuItem = (function() {
     this.click = (function(_this) {
       return function(focusedWindow) {
 
-        /* Manually flip the checked flags when clicked. */
+        // Manually flip the checked flags when clicked.
         var methodName, ref1, ref2;
         if ((ref1 = _this.type) === 'checkbox' || ref1 === 'radio') {
           _this.checked = !_this.checked;

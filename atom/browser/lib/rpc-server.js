@@ -14,7 +14,7 @@ v8Util = process.atomBinding('v8_util');
 IDWeakMap = process.atomBinding('id_weak_map').IDWeakMap;
 
 
-/* Convert a real value into meta data. */
+// Convert a real value into meta data.
 
 valueToMeta = function(sender, value, optimizeSimpleObject) {
   var el, field, i, len, meta, name;
@@ -43,12 +43,12 @@ valueToMeta = function(sender, value, optimizeSimpleObject) {
     meta.type = 'promise';
   }
 
-  /* Treat simple objects as value. */
+  // Treat simple objects as value.
   if (optimizeSimpleObject && meta.type === 'object' && v8Util.getHiddenValue(value, 'simple')) {
     meta.type = 'value';
   }
 
-  /* Treat the arguments object as array. */
+  // Treat the arguments object as array.
   if (meta.type === 'object' && (value.callee != null) && (value.length != null)) {
     meta.type = 'array';
   }
@@ -86,7 +86,7 @@ valueToMeta = function(sender, value, optimizeSimpleObject) {
   } else if (meta.type === 'error') {
     meta.members = plainObjectToMeta(value);
 
-    /* Error.name is not part of own properties. */
+    // Error.name is not part of own properties.
     meta.members.push({
       name: 'name',
       value: value.name
@@ -101,7 +101,7 @@ valueToMeta = function(sender, value, optimizeSimpleObject) {
 };
 
 
-/* Convert object to meta by value. */
+// Convert object to meta by value.
 
 plainObjectToMeta = function(obj) {
   return Object.getOwnPropertyNames(obj).map(function(name) {
@@ -113,7 +113,7 @@ plainObjectToMeta = function(obj) {
 };
 
 
-/* Convert Error into meta data. */
+// Convert Error into meta data.
 
 exceptionToMeta = function(error) {
   return {
@@ -124,7 +124,7 @@ exceptionToMeta = function(error) {
 };
 
 
-/* Convert array of meta data from renderer into array of real values. */
+// Convert array of meta data from renderer into array of real values.
 
 unwrapArgs = function(sender, args) {
   var metaToValue;
@@ -160,7 +160,7 @@ unwrapArgs = function(sender, args) {
         };
       case 'function':
 
-        /* Cache the callbacks in renderer. */
+        // Cache the callbacks in renderer.
         if (!sender.callbacks) {
           sender.callbacks = new IDWeakMap;
           sender.on('render-view-deleted', function() {
@@ -230,7 +230,7 @@ callFunction = function(event, func, caller, args) {
 };
 
 
-/* Send by BrowserWindow when its render view is deleted. */
+// Send by BrowserWindow when its render view is deleted.
 
 process.on('ATOM_BROWSER_RELEASE_RENDER_VIEW', function(id) {
   return objectsRegistry.clear(id);
@@ -316,7 +316,7 @@ ipcMain.on('ATOM_BROWSER_MEMBER_CONSTRUCTOR', function(event, id, method, args) 
     args = unwrapArgs(event.sender, args);
     constructor = objectsRegistry.get(id)[method];
 
-    /* Call new with array of arguments. */
+    // Call new with array of arguments.
     obj = new (Function.prototype.bind.apply(constructor, [null].concat(args)));
     return event.returnValue = valueToMeta(event.sender, obj);
   } catch (error1) {

@@ -13,7 +13,7 @@ guestViewInternal = require('./guest-view-internal');
 webViewConstants = require('./web-view-constants');
 
 
-/* ID generator. */
+// ID generator.
 
 nextId = 0;
 
@@ -22,7 +22,7 @@ getNextId = function() {
 };
 
 
-/* Represents the internal state of the WebView node. */
+// Represents the internal state of the WebView node.
 
 WebViewImpl = (function() {
   function WebViewImpl(webviewNode) {
@@ -33,7 +33,7 @@ WebViewImpl = (function() {
     this.elementAttached = false;
     this.beforeFirstNavigation = true;
 
-    /* on* Event handlers. */
+    // on* Event handlers.
     this.on = {};
     this.browserPluginNode = this.createBrowserPluginNode();
     shadowRoot = this.webviewNode.createShadowRoot();
@@ -62,7 +62,7 @@ WebViewImpl = (function() {
   };
 
 
-  /* Resets some state upon reattaching <webview> element to the DOM. */
+  // Resets some state upon reattaching <webview> element to the DOM.
 
   WebViewImpl.prototype.reset = function() {
     // Unlisten the zoom-level-changed event.
@@ -87,7 +87,7 @@ WebViewImpl = (function() {
   };
 
 
-  /* Sets the <webview>.request property. */
+  // Sets the <webview>.request property.
 
   WebViewImpl.prototype.setRequestPropertyOnWebViewNode = function(request) {
     return Object.defineProperty(this.webviewNode, 'request', {
@@ -110,14 +110,14 @@ WebViewImpl = (function() {
     this.webviewNode.addEventListener('focus', (function(_this) {
       return function(e) {
 
-        /* Focus the BrowserPlugin when the <webview> takes focus. */
+        // Focus the BrowserPlugin when the <webview> takes focus.
         return _this.browserPluginNode.focus();
       };
     })(this));
     return this.webviewNode.addEventListener('blur', (function(_this) {
       return function(e) {
 
-        /* Blur the BrowserPlugin when the <webview> loses focus. */
+        // Blur the BrowserPlugin when the <webview> loses focus.
         return _this.browserPluginNode.blur();
       };
     })(this));
@@ -137,7 +137,7 @@ WebViewImpl = (function() {
       return;
     }
 
-    /* Let the changed attribute handle its own mutation; */
+    // Let the changed attribute handle its own mutation;
     return this.attributes[attributeName].handleMutation(oldValue, newValue);
   };
 
@@ -146,7 +146,7 @@ WebViewImpl = (function() {
       this.browserPluginNode.removeAttribute(webViewConstants.ATTRIBUTE_INTERNALINSTANCEID);
       this.internalInstanceId = parseInt(newValue);
 
-      /* Track when the element resizes using the element resize callback. */
+      // Track when the element resizes using the element resize callback.
       webFrame.registerElementResizeCallback(this.internalInstanceId, this.onElementResize.bind(this));
       if (!this.guestInstanceId) {
         return;
@@ -163,9 +163,9 @@ WebViewImpl = (function() {
     width = node.offsetWidth;
     height = node.offsetHeight;
 
-    /* Check the current bounds to make sure we do not resize <webview> */
+    // Check the current bounds to make sure we do not resize <webview>
 
-    /* outside of current constraints. */
+    // outside of current constraints.
     maxWidth = this.attributes[webViewConstants.ATTRIBUTE_MAXWIDTH].getValue() | width;
     maxHeight = this.attributes[webViewConstants.ATTRIBUTE_MAXHEIGHT].getValue() | width;
     minWidth = this.attributes[webViewConstants.ATTRIBUTE_MINWIDTH].getValue() | width;
@@ -186,7 +186,7 @@ WebViewImpl = (function() {
 
   WebViewImpl.prototype.onElementResize = function(newSize) {
 
-    /* Dispatch the 'resize' event. */
+    // Dispatch the 'resize' event.
     var resizeEvent;
     resizeEvent = new Event('resize', {
       bubbles: true
@@ -214,10 +214,10 @@ WebViewImpl = (function() {
   };
 
 
-  /* Adds an 'on<event>' property on the webview, which can be used to set/unset */
+  // Adds an 'on<event>' property on the webview, which can be used to set/unset
 
 
-  /* an event handler. */
+  // an event handler.
 
   WebViewImpl.prototype.setupEventProperty = function(eventName) {
     var propertyName;
@@ -244,7 +244,7 @@ WebViewImpl = (function() {
   };
 
 
-  /* Updates state upon loadcommit. */
+  // Updates state upon loadcommit.
 
   WebViewImpl.prototype.onLoadCommit = function(webViewEvent) {
     var newValue, oldValue;
@@ -306,7 +306,7 @@ WebViewImpl = (function() {
 })();
 
 
-/* Registers browser plugin <object> custom element. */
+// Registers browser plugin <object> custom element.
 
 registerBrowserPluginElement = function() {
   var proto;
@@ -315,7 +315,7 @@ registerBrowserPluginElement = function() {
     this.setAttribute('type', 'application/browser-plugin');
     this.setAttribute('id', 'browser-plugin-' + getNextId());
 
-    /* The <object> node fills in the <webview> container. */
+    // The <object> node fills in the <webview> container.
     this.style.display = 'block';
     this.style.width = '100%';
     return this.style.height = '100%';
@@ -330,7 +330,7 @@ registerBrowserPluginElement = function() {
   };
   proto.attachedCallback = function() {
 
-    /* Load the plugin immediately. */
+    // Load the plugin immediately.
     var unused;
     return unused = this.nonExistentAttribute;
   };
@@ -345,7 +345,7 @@ registerBrowserPluginElement = function() {
 };
 
 
-/* Registers <webview> custom element. */
+// Registers <webview> custom element.
 
 registerWebViewElement = function() {
   var createBlockHandler, createNonBlockHandler, i, j, len, len1, m, methods, nonblockMethods, proto;
@@ -384,7 +384,7 @@ registerWebViewElement = function() {
     }
   };
 
-  /* Public-facing API methods. */
+  // Public-facing API methods.
   methods = ['getURL', 'getTitle', 'isLoading', 'isWaitingForResponse', 'stop', 'reload', 'reloadIgnoringCache', 'canGoBack', 'canGoForward', 'canGoToOffset', 'clearHistory', 'goBack', 'goForward', 'goToIndex', 'goToOffset', 'isCrashed', 'setUserAgent', 'getUserAgent', 'openDevTools', 'closeDevTools', 'isDevToolsOpened', 'isDevToolsFocused', 'inspectElement', 'setAudioMuted', 'isAudioMuted', 'undo', 'redo', 'cut', 'copy', 'paste', 'pasteAndMatchStyle', 'delete', 'selectAll', 'unselect', 'replace', 'replaceMisspelling', 'findInPage', 'stopFindInPage', 'getId', 'downloadURL', 'inspectServiceWorker', 'print', 'printToPDF'];
   nonblockMethods = [
     'executeJavaScript',
@@ -397,7 +397,7 @@ registerWebViewElement = function() {
     'setZoomLevelLimits',
   ];
 
-  /* Forward proto.foo* method calls to WebViewImpl.foo*. */
+  // Forward proto.foo* method calls to WebViewImpl.foo*.
   createBlockHandler = function(m) {
     return function() {
       var args, internal, ref1;
@@ -423,15 +423,16 @@ registerWebViewElement = function() {
     proto[m] = createNonBlockHandler(m);
   }
 
-  /* Deprecated. */
+  // Deprecated.
   deprecate.rename(proto, 'getUrl', 'getURL');
   window.WebView = webFrame.registerEmbedderCustomElement('webview', {
     prototype: proto
   });
 
-  /* Delete the callbacks so developers cannot call them and produce unexpected */
-
-  /* behavior. */
+  /*
+    Delete the callbacks so developers cannot call them and produce unexpected
+    behavior.
+   */
   delete proto.createdCallback;
   delete proto.attachedCallback;
   delete proto.detachedCallback;

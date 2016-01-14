@@ -11,7 +11,7 @@ module.exports = CallbacksRegistry = (function() {
 
   CallbacksRegistry.prototype.add = function(callback) {
 
-    /* The callback is already added. */
+    // The callback is already added.
     var filenameAndLine, id, location, match, ref, regexp, stackString, x;
     id = v8Util.getHiddenValue(callback, 'callbackId');
     if (id != null) {

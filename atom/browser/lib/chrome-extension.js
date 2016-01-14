@@ -9,7 +9,7 @@ path = require('path');
 url = require('url');
 
 
-/* Mapping between hostname and file path. */
+// Mapping between hostname and file path.
 
 hostPathMap = {};
 
@@ -27,7 +27,7 @@ getPathForHost = function(host) {
 };
 
 
-/* Cache extensionInfo. */
+// Cache extensionInfo.
 
 extensionInfoMap = {};
 
@@ -57,14 +57,14 @@ getExtensionInfoFromPath = function(srcDirectory) {
 };
 
 
-/* The loaded extensions cache and its persistent path. */
+// The loaded extensions cache and its persistent path.
 
 loadedExtensions = null;
 
 loadedExtensionsPath = null;
 
 
-/* Persistent loaded extensions. */
+// Persistent loaded extensions.
 
 app = electron.app;
 
@@ -86,13 +86,13 @@ app.on('will-quit', function() {
 });
 
 
-/* We can not use protocol or BrowserWindow until app is ready. */
+// We can not use protocol or BrowserWindow until app is ready.
 
 app.once('ready', function() {
   var BrowserWindow, chromeExtensionHandler, e, error1, i, init, len, protocol, srcDirectory;
   protocol = electron.protocol, BrowserWindow = electron.BrowserWindow;
 
-  /* Load persistented extensions. */
+  // Load persistented extensions.
   loadedExtensionsPath = path.join(app.getPath('userData'), 'DevTools Extensions');
   try {
     loadedExtensions = JSON.parse(fs.readFileSync(loadedExtensionsPath));
@@ -100,7 +100,7 @@ app.once('ready', function() {
       loadedExtensions = [];
     }
 
-    /* Preheat the extensionInfo cache. */
+    // Preheat the extensionInfo cache.
     for (i = 0, len = loadedExtensions.length; i < len; i++) {
       srcDirectory = loadedExtensions[i];
       getExtensionInfoFromPath(srcDirectory);
@@ -109,7 +109,7 @@ app.once('ready', function() {
     e = error1;
   }
 
-  /* The chrome-extension: can map a extension URL request to real file path. */
+  // The chrome-extension: can map a extension URL request to real file path.
   chromeExtensionHandler = function(request, callback) {
     var directory, parsed;
     parsed = url.parse(request.url);
@@ -150,7 +150,7 @@ app.once('ready', function() {
     return delete extensionInfoMap[name];
   };
 
-  /* Load persistented extensions when devtools is opened. */
+  // Load persistented extensions when devtools is opened.
   init = BrowserWindow.prototype._init;
   return BrowserWindow.prototype._init = function() {
     init.call(this);

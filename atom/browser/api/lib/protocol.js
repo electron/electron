@@ -9,7 +9,7 @@ if (!app.isReady()) {
 protocol = process.atomBinding('protocol').protocol;
 
 
-/* Warn about removed APIs. */
+// Warn about removed APIs.
 
 logAndThrow = function(callback, message) {
   console.error(message);

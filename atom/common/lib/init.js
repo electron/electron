@@ -22,7 +22,7 @@ process.atomBinding = function(name) {
 
 if (!process.env.ELECTRON_HIDE_INTERNAL_MODULES) {
 
-  /* Add common/api/lib to module search paths. */
+  // Add common/api/lib to module search paths.
   Module.globalPaths.push(path.resolve(__dirname, '..', 'api', 'lib'));
 }
 

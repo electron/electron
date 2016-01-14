@@ -2,10 +2,10 @@ var convertToMenuTemplate, createFileSelectorElement, createMenu, pathToHtml5Fil
 
 window.onload = function() {
 
-  /* Use menu API to show context menu. */
+  // Use menu API to show context menu.
   InspectorFrontendHost.showContextMenuAtPoint = createMenu;
 
-  /* Use dialog API to override file chooser dialog. */
+  // Use dialog API to override file chooser dialog.
   return WebInspector.createFileSelectorElement = createFileSelectorElement;
 };
 
@@ -52,7 +52,7 @@ createMenu = function(x, y, items, document) {
   Menu = remote.Menu;
   menu = Menu.buildFromTemplate(convertToMenuTemplate(items));
 
-  /* The menu is expected to show asynchronously. */
+  // The menu is expected to show asynchronously.
   return setTimeout(function() {
     return menu.popup(remote.getCurrentWindow());
   });

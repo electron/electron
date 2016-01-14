@@ -11,7 +11,7 @@ path = require('path');
 util = require('util');
 
 
-/* Cache asar archive objects. */
+// Cache asar archive objects.
 
 cachedArchives = {};
 
@@ -29,7 +29,7 @@ getOrCreateArchive = function(p) {
 };
 
 
-/* Clean cache on quit. */
+// Clean cache on quit.
 
 process.on('exit', function() {
   var archive, p, results;
@@ -43,11 +43,11 @@ process.on('exit', function() {
 });
 
 
-/* Separate asar package's path from full path. */
+// Separate asar package's path from full path.
 
 splitPath = function(p) {
 
-  /* shortcut to disable asar. */
+  // shortcut to disable asar.
   var index;
   if (process.noAsar) {
     return [false];
@@ -67,7 +67,7 @@ splitPath = function(p) {
 };
 
 
-/* Convert asar archive's Stats object to fs's Stats object. */
+// Convert asar archive's Stats object to fs's Stats object.
 
 nextInode = 0;
 
@@ -116,7 +116,7 @@ asarStatsToFsStats = function(stats) {
 };
 
 
-/* Create a ENOENT error. */
+// Create a ENOENT error.
 
 notFoundError = function(asarPath, filePath, callback) {
   var error;
@@ -132,7 +132,7 @@ notFoundError = function(asarPath, filePath, callback) {
 };
 
 
-/* Create a ENOTDIR error. */
+// Create a ENOTDIR error.
 
 notDirError = function(callback) {
   var error;
@@ -148,7 +148,7 @@ notDirError = function(callback) {
 };
 
 
-/* Create invalid archive error. */
+// Create invalid archive error.
 
 invalidArchiveError = function(asarPath, callback) {
   var error;
@@ -162,7 +162,7 @@ invalidArchiveError = function(asarPath, callback) {
 };
 
 
-/* Override APIs that rely on passing file path instead of content to C++. */
+// Override APIs that rely on passing file path instead of content to C++.
 
 overrideAPISync = function(module, name, arg) {
   var old;
@@ -221,7 +221,7 @@ overrideAPI = function(module, name, arg) {
 };
 
 
-/* Override fs APIs. */
+// Override fs APIs.
 
 exports.wrapFsWithAsar = function(fs) {
   var exists, existsSync, internalModuleReadFile, internalModuleStat, lstat, lstatSync, mkdir, mkdirSync, open, openSync, readFile, readFileSync, readdir, readdirSync, realpath, realpathSync, stat, statSync, statSyncNoException;
@@ -269,7 +269,7 @@ exports.wrapFsWithAsar = function(fs) {
       return statSync(p);
     }
 
-    /* Do not distinguish links for now. */
+    // Do not distinguish links for now.
     return fs.lstatSync(p);
   };
   stat = fs.stat;
@@ -280,7 +280,7 @@ exports.wrapFsWithAsar = function(fs) {
       return stat(p, callback);
     }
 
-    /* Do not distinguish links for now. */
+    // Do not distinguish links for now.
     return process.nextTick(function() {
       return fs.lstat(p, callback);
     });
@@ -427,7 +427,7 @@ exports.wrapFsWithAsar = function(fs) {
   readFileSync = fs.readFileSync;
   fs.readFileSync = function(p, opts) {
 
-    /* this allows v8 to optimize this function */
+    // this allows v8 to optimize this function
     var archive, asarPath, buffer, encoding, fd, filePath, info, isAsar, options, realPath, ref;
     options = opts;
     ref = splitPath(p), isAsar = ref[0], asarPath = ref[1], filePath = ref[2];
@@ -554,13 +554,13 @@ exports.wrapFsWithAsar = function(fs) {
     }
     archive = getOrCreateArchive(asarPath);
 
-    /* -ENOENT */
+    // -ENOENT
     if (!archive) {
       return -34;
     }
     stats = archive.stat(filePath);
 
-    /* -ENOENT */
+    // -ENOENT
     if (!stats) {
       return -34;
     }

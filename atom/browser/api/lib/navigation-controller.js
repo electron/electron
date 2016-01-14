@@ -4,7 +4,7 @@ var NavigationController, ipcMain,
 ipcMain = require('electron').ipcMain;
 
 
-/* The history operation in renderer is redirected to browser. */
+// The history operation in renderer is redirected to browser.
 
 ipcMain.on('ATOM_SHELL_NAVIGATION_CONTROLLER', function() {
   var args, event, method, ref;
@@ -32,7 +32,7 @@ NavigationController = (function() {
     this.webContents = webContents;
     this.clearHistory();
 
-    /* webContents may have already navigated to a page. */
+    // webContents may have already navigated to a page.
     if (this.webContents._getURL()) {
       this.currentIndex++;
       this.history.push(this.webContents._getURL());
@@ -42,26 +42,26 @@ NavigationController = (function() {
         var currentEntry;
         if (_this.inPageIndex > -1 && !inPage) {
 
-          /* Navigated to a new page, clear in-page mark. */
+          // Navigated to a new page, clear in-page mark.
           _this.inPageIndex = -1;
         } else if (_this.inPageIndex === -1 && inPage) {
 
-          /* Started in-page navigations. */
+          // Started in-page navigations.
           _this.inPageIndex = _this.currentIndex;
         }
         if (_this.pendingIndex >= 0) {
 
-          /* Go to index. */
+          // Go to index.
           _this.currentIndex = _this.pendingIndex;
           _this.pendingIndex = -1;
           return _this.history[_this.currentIndex] = url;
         } else if (replaceEntry) {
 
-          /* Non-user initialized navigation. */
+          // Non-user initialized navigation.
           return _this.history[_this.currentIndex] = url;
         } else {
 
-          /* Normal navigation. Clear history. */
+          // Normal navigation. Clear history.
           _this.history = _this.history.slice(0, _this.currentIndex + 1);
           currentEntry = _this.history[_this.currentIndex];
           if ((currentEntry != null ? currentEntry.url : void 0) !== url) {

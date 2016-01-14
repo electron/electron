@@ -9,7 +9,7 @@ deepEqual = function(opt1, opt2) {
 };
 
 
-/* A queue for holding all requests from renderer process. */
+// A queue for holding all requests from renderer process.
 
 requestsQueue = [];
 
@@ -40,7 +40,7 @@ ipcMain.on('ATOM_BROWSER_DESKTOP_CAPTURER_GET_SOURCES', function(event, captureW
 
 desktopCapturer.emit = function(event, name, sources) {
 
-  /* Receiving sources result from main process, now send them back to renderer. */
+  // Receiving sources result from main process, now send them back to renderer.
   var captureScreen, captureWindow, handledRequest, i, len, ref, ref1, ref2, request, result, source, thumbnailSize, unhandledRequestsQueue;
   handledRequest = requestsQueue.shift(0);
   result = (function() {
@@ -77,7 +77,7 @@ desktopCapturer.emit = function(event, name, sources) {
   }
   requestsQueue = unhandledRequestsQueue;
 
-  /* If the requestsQueue is not empty, start a new request handling. */
+  // If the requestsQueue is not empty, start a new request handling.
   if (requestsQueue.length > 0) {
     ref2 = requestsQueue[0].options, captureWindow = ref2.captureWindow, captureScreen = ref2.captureScreen, thumbnailSize = ref2.thumbnailSize;
     return desktopCapturer.startHandling(captureWindow, captureScreen, thumbnailSize);

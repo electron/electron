@@ -54,7 +54,7 @@ app.getAppPath = function() {
 };
 
 
-/* Routes the events to webContents. */
+// Routes the events to webContents.
 
 ref1 = ['login', 'certificate-error', 'select-client-certificate'];
 fn = function(name) {
@@ -70,7 +70,7 @@ for (i = 0, len = ref1.length; i < len; i++) {
 }
 
 
-/* Deprecated. */
+// Deprecated.
 
 app.getHomeDir = deprecate('app.getHomeDir', 'app.getPath', function() {
   return this.getPath('home');
@@ -92,7 +92,7 @@ deprecate.rename(app, 'terminate', 'quit');
 
 deprecate.event(app, 'finish-launching', 'ready', function() {
 
-  /* give default app a chance to setup default menu. */
+  // give default app a chance to setup default menu.
   return setImmediate((function(_this) {
     return function() {
       return _this.emit('finish-launching');
@@ -109,14 +109,14 @@ deprecate.event(app, 'activate-with-no-open-windows', 'activate', function(event
 deprecate.event(app, 'select-certificate', 'select-client-certificate');
 
 
-/* Wrappers for native classes. */
+// Wrappers for native classes.
 
 wrapDownloadItem = function(downloadItem) {
 
-  /* downloadItem is an EventEmitter. */
+  // downloadItem is an EventEmitter.
   downloadItem.__proto__ = EventEmitter.prototype;
 
-  /* Deprecated. */
+  // Deprecated.
   deprecate.property(downloadItem, 'url', 'getURL');
   deprecate.property(downloadItem, 'filename', 'getFilename');
   deprecate.property(downloadItem, 'mimeType', 'getMimeType');
@@ -126,6 +126,6 @@ wrapDownloadItem = function(downloadItem) {
 downloadItemBindings._setWrapDownloadItem(wrapDownloadItem);
 
 
-/* Only one App object pemitted. */
+// Only one App object pemitted.
 
 module.exports = app;
