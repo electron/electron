@@ -8,9 +8,7 @@ path = require('path');
 
 url = require('url');
 
-
 // Mapping between hostname and file path.
-
 hostPathMap = {};
 
 hostPathMapNextKey = 0;
@@ -26,9 +24,7 @@ getPathForHost = function(host) {
   return hostPathMap[host];
 };
 
-
 // Cache extensionInfo.
-
 extensionInfoMap = {};
 
 getExtensionInfoFromPath = function(srcDirectory) {
@@ -54,16 +50,11 @@ getExtensionInfoFromPath = function(srcDirectory) {
   }
 };
 
-
 // The loaded extensions cache and its persistent path.
-
 loadedExtensions = null;
-
 loadedExtensionsPath = null;
 
-
 // Persistent loaded extensions.
-
 app = electron.app;
 
 app.on('will-quit', function() {
@@ -83,9 +74,7 @@ app.on('will-quit', function() {
   }
 });
 
-
 // We can not use protocol or BrowserWindow until app is ready.
-
 app.once('ready', function() {
   var BrowserWindow, chromeExtensionHandler, e, error1, i, init, len, protocol, srcDirectory;
   protocol = electron.protocol, BrowserWindow = electron.BrowserWindow;

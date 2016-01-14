@@ -1,7 +1,6 @@
 var convertToMenuTemplate, createFileSelectorElement, createMenu, pathToHtml5FileObject, showFileChooserDialog;
 
 window.onload = function() {
-
   // Use menu API to show context menu.
   InspectorFrontendHost.showContextMenuAtPoint = createMenu;
 

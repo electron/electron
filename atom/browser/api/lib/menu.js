@@ -8,17 +8,11 @@ v8Util = process.atomBinding('v8_util');
 
 bindings = process.atomBinding('menu');
 
-
 // Automatically generated radio menu item's group id.
-
 nextGroupId = 0;
 
-
 // Search between seperators to find a radio menu item and return its group id,
-
-
 // otherwise generate a group id.
-
 generateGroupId = function(items, pos) {
   var i, item, j, k, ref1, ref2, ref3;
   if (pos > 0) {
@@ -45,9 +39,7 @@ generateGroupId = function(items, pos) {
   return ++nextGroupId;
 };
 
-
 // Returns the index of item according to |id|.
-
 indexOfItemById = function(items, id) {
   var i, item, j, len;
   for (i = j = 0, len = items.length; j < len; i = ++j) {
@@ -59,9 +51,7 @@ indexOfItemById = function(items, id) {
   return -1;
 };
 
-
 // Returns the index of where to insert the item according to |position|.
-
 indexToInsertByPosition = function(items, position) {
   var id, insertIndex, query, ref1;
   if (!position) {
@@ -174,7 +164,6 @@ Menu.prototype._init = function() {
 
 Menu.prototype.popup = function(window, x, y) {
   if ((window != null ? window.constructor : void 0) !== BrowserWindow) {
-
     // Shift.
     y = x;
     x = window;
@@ -210,7 +199,6 @@ Menu.prototype.insert = function(pos, item) {
       this.insertSubMenu(pos, item.commandId, item.label, item.submenu);
       break;
     case 'radio':
-
       // Grouping radio menu items.
       item.overrideReadOnlyProperty('groupId', generateGroupId(this.items, pos));
       if ((base = this.groupsMap)[name = item.groupId] == null) {
@@ -261,7 +249,6 @@ Menu.prototype.insert = function(pos, item) {
 
 
 // Force menuWillShow to be called
-
 Menu.prototype._callMenuWillShow = function() {
   var item, j, len, ref1, ref2, results;
   if ((ref1 = this.delegate) != null) {
@@ -323,7 +310,6 @@ Menu.buildFromTemplate = function(template) {
     if (item.position) {
       insertIndex = indexToInsertByPosition(positionedTemplate, item.position);
     } else {
-
       // If no |position| is specified, insert after last item.
       insertIndex++;
     }

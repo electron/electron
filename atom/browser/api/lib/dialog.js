@@ -23,14 +23,12 @@ messageBoxOptions = {
 
 parseArgs = function(window, options, callback) {
   if (!(window === null || (window != null ? window.constructor : void 0) === BrowserWindow)) {
-
     // Shift.
     callback = options;
     options = window;
     window = null;
   }
   if ((callback == null) && typeof options === 'function') {
-
     // Shift.
     callback = options;
     options = null;
@@ -165,9 +163,7 @@ module.exports = {
   }
 };
 
-
 // Mark standard asynchronous functions.
-
 ref1 = ['showMessageBox', 'showOpenDialog', 'showSaveDialog'];
 for (j = 0, len = ref1.length; j < len; j++) {
   api = ref1[j];

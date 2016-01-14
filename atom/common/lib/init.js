@@ -21,7 +21,6 @@ process.atomBinding = function(name) {
 };
 
 if (!process.env.ELECTRON_HIDE_INTERNAL_MODULES) {
-
   // Add common/api/lib to module search paths.
   Module.globalPaths.push(path.resolve(__dirname, '..', 'api', 'lib'));
 }
@@ -47,7 +46,6 @@ global.setImmediate = wrapWithActivateUvLoop(timers.setImmediate);
 global.clearImmediate = timers.clearImmediate;
 
 if (process.type === 'browser') {
-
   // setTimeout needs to update the polling timeout of the event loop, when
   // called under Chromium's event loop the node's event loop won't get a chance
   // to update the timeout, so we have to force the node's event loop to

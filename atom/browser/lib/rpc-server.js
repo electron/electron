@@ -13,9 +13,7 @@ v8Util = process.atomBinding('v8_util');
 
 IDWeakMap = process.atomBinding('id_weak_map').IDWeakMap;
 
-
 // Convert a real value into meta data.
-
 valueToMeta = function(sender, value, optimizeSimpleObject) {
   var el, field, i, len, meta, name;
   if (optimizeSimpleObject == null) {
@@ -98,9 +96,7 @@ valueToMeta = function(sender, value, optimizeSimpleObject) {
   return meta;
 };
 
-
 // Convert object to meta by value.
-
 plainObjectToMeta = function(obj) {
   return Object.getOwnPropertyNames(obj).map(function(name) {
     return {
@@ -110,9 +106,7 @@ plainObjectToMeta = function(obj) {
   });
 };
 
-
 // Convert Error into meta data.
-
 exceptionToMeta = function(error) {
   return {
     type: 'exception',
@@ -121,9 +115,7 @@ exceptionToMeta = function(error) {
   };
 };
 
-
 // Convert array of meta data from renderer into array of real values.
-
 unwrapArgs = function(sender, args) {
   var metaToValue;
   metaToValue = function(meta) {
@@ -157,7 +149,6 @@ unwrapArgs = function(sender, args) {
           return returnValue;
         };
       case 'function':
-
         // Cache the callbacks in renderer.
         if (!sender.callbacks) {
           sender.callbacks = new IDWeakMap;
@@ -220,7 +211,6 @@ callFunction = function(event, func, caller, args) {
     throw new Error("Could not call remote function `" + funcName + "`. Check that the function signature is correct. Underlying error: " + e.message);
   }
 };
-
 
 // Send by BrowserWindow when its render view is deleted.
 process.on('ATOM_BROWSER_RELEASE_RENDER_VIEW', function(id) {

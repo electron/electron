@@ -1,4 +1,3 @@
-
 // Do not expose the internal modules to `require`.
 exports.hideInternalModules = function() {
   var globalPaths;
@@ -10,9 +9,7 @@ exports.hideInternalModules = function() {
   }
 };
 
-
 // Attaches properties to |exports|.
-
 exports.defineProperties = function(exports) {
   return Object.defineProperties(exports, {
 

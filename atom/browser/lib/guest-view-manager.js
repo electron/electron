@@ -3,9 +3,7 @@ var attachGuest, createGuest, destroyGuest, embedderElementsMap, getNextInstance
 
 ref = require('electron'), ipcMain = ref.ipcMain, webContents = ref.webContents;
 
-
 // Doesn't exist in early initialization.
-
 webViewManager = null;
 
 supportedWebViewEvents = ['load-commit', 'did-finish-load', 'did-fail-load', 'did-frame-finish-load', 'did-start-loading', 'did-stop-loading', 'did-get-response-details', 'did-get-redirect-request', 'dom-ready', 'console-message', 'devtools-opened', 'devtools-closed', 'devtools-focused', 'new-window', 'will-navigate', 'did-navigate', 'did-navigate-in-page', 'close', 'crashed', 'gpu-crashed', 'plugin-crashed', 'destroyed', 'page-title-updated', 'page-favicon-updated', 'enter-html-full-screen', 'leave-html-full-screen', 'media-started-playing', 'media-paused', 'found-in-page', 'did-change-theme-color'];
@@ -18,23 +16,17 @@ embedderElementsMap = {};
 
 reverseEmbedderElementsMap = {};
 
-
 // Moves the last element of array to the first one.
-
 moveLastToFirst = function(list) {
   return list.unshift(list.pop());
 };
 
-
 // Generate guestInstanceId.
-
 getNextInstanceId = function(webContents) {
   return ++nextInstanceId;
 };
 
-
 // Create a new guest instance.
-
 createGuest = function(embedder, params) {
   var destroy, destroyEvents, event, fn, guest, i, id, j, len, len1, listeners;
   if (webViewManager == null) {
@@ -146,9 +138,7 @@ createGuest = function(embedder, params) {
   return id;
 };
 
-
 // Attach the guest to an element of embedder.
-
 attachGuest = function(embedder, elementInstanceId, guestInstanceId, params) {
   var guest, key, oldGuestInstanceId, ref1, webPreferences;
   guest = guestInstances[guestInstanceId].guest;
@@ -182,9 +172,7 @@ attachGuest = function(embedder, elementInstanceId, guestInstanceId, params) {
   return reverseEmbedderElementsMap[guestInstanceId] = key;
 };
 
-
 // Destroy an existing guest instance.
-
 destroyGuest = function(embedder, id) {
   var key;
   webViewManager.removeGuest(embedder, id);
@@ -219,17 +207,13 @@ ipcMain.on('ATOM_SHELL_GUEST_VIEW_MANAGER_SET_ALLOW_TRANSPARENCY', function(even
   return (ref1 = guestInstances[id]) != null ? ref1.guest.setAllowTransparency(allowtransparency) : void 0;
 });
 
-
 // Returns WebContents from its guest id.
-
 exports.getGuest = function(id) {
   var ref1;
   return (ref1 = guestInstances[id]) != null ? ref1.guest : void 0;
 };
 
-
 // Returns the embedder of the guest.
-
 exports.getEmbedder = function(id) {
   var ref1;
   return (ref1 = guestInstances[id]) != null ? ref1.embedder : void 0;

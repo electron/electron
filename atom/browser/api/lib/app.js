@@ -53,9 +53,7 @@ app.getAppPath = function() {
   return appPath;
 };
 
-
 // Routes the events to webContents.
-
 ref1 = ['login', 'certificate-error', 'select-client-certificate'];
 fn = function(name) {
   return app.on(name, function() {
@@ -68,7 +66,6 @@ for (i = 0, len = ref1.length; i < len; i++) {
   name = ref1[i];
   fn(name);
 }
-
 
 // Deprecated.
 
@@ -108,9 +105,7 @@ deprecate.event(app, 'activate-with-no-open-windows', 'activate', function(event
 
 deprecate.event(app, 'select-certificate', 'select-client-certificate');
 
-
 // Wrappers for native classes.
-
 wrapDownloadItem = function(downloadItem) {
 
   // downloadItem is an EventEmitter.
@@ -125,7 +120,5 @@ wrapDownloadItem = function(downloadItem) {
 
 downloadItemBindings._setWrapDownloadItem(wrapDownloadItem);
 
-
 // Only one App object pemitted.
-
 module.exports = app;

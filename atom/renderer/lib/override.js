@@ -3,9 +3,7 @@ var BrowserWindowProxy, a, getHistoryOperation, ipcRenderer, ref, remote, resolv
 
 ref = require('electron'), ipcRenderer = ref.ipcRenderer, remote = ref.remote;
 
-
 // Helper function to resolve relative url.
-
 a = window.top.document.createElement('a');
 
 resolveURL = function(url) {
@@ -13,9 +11,7 @@ resolveURL = function(url) {
   return a.href;
 };
 
-
 // Window object returned by "window.open".
-
 BrowserWindowProxy = (function() {
   BrowserWindowProxy.proxies = {};
 
@@ -69,16 +65,13 @@ BrowserWindowProxy = (function() {
 })();
 
 if (process.guestInstanceId == null) {
-
   // Override default window.close.
   window.close = function() {
     return remote.getCurrentWindow().close();
   };
 }
 
-
 // Make the browser window or guest view emit "new-window" event.
-
 window.open = function(url, frameName, features) {
   var feature, guestId, i, ints, j, len, len1, name, options, ref1, ref2, value;
   if (frameName == null) {
@@ -133,9 +126,7 @@ window.open = function(url, frameName, features) {
   }
 };
 
-
 // Use the dialog API to implement alert().
-
 window.alert = function(message, title) {
   var buttons;
   if (title == null) {
@@ -152,9 +143,7 @@ window.alert = function(message, title) {
   // Alert should always return undefined.
 };
 
-
 // And the confirm().
-
 window.confirm = function(message, title) {
   var buttons, cancelId;
   if (title == null) {
@@ -170,9 +159,7 @@ window.confirm = function(message, title) {
   });
 };
 
-
 // But we do not support prompt().
-
 window.prompt = function() {
   throw new Error('prompt() is and will not be supported.');
 };
@@ -182,9 +169,7 @@ if (process.openerId != null) {
 }
 
 ipcRenderer.on('ATOM_SHELL_GUEST_WINDOW_POSTMESSAGE', function(event, sourceId, message, sourceOrigin) {
-
   // Manually dispatch event instead of using postMessage because we also need to
-
   // set event.source.
   event = document.createEvent('Event');
   event.initEvent('message', false, false);
@@ -194,9 +179,7 @@ ipcRenderer.on('ATOM_SHELL_GUEST_WINDOW_POSTMESSAGE', function(event, sourceId, 
   return window.dispatchEvent(event);
 });
 
-
 // Forward history operations to browser.
-
 sendHistoryOperation = function() {
   var args;
   args = 1 <= arguments.length ? slice.call(arguments, 0) : [];
@@ -227,9 +210,7 @@ Object.defineProperty(window.history, 'length', {
   }
 });
 
-
 // Make document.hidden and document.visibilityState return the correct value.
-
 Object.defineProperty(document, 'hidden', {
   get: function() {
     var currentWindow;

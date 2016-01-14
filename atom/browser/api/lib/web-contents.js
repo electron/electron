@@ -65,7 +65,6 @@ const webFrameMethods = [
 ];
 
 wrapWebContents = function(webContents) {
-
   // webContents is an EventEmitter.
   var controller, method, name, ref1;
   webContents.__proto__ = EventEmitter.prototype;

@@ -8,9 +8,7 @@ deepEqual = function(opt1, opt2) {
   return JSON.stringify(opt1) === JSON.stringify(opt2);
 };
 
-
 // A queue for holding all requests from renderer process.
-
 requestsQueue = [];
 
 ipcMain.on('ATOM_BROWSER_DESKTOP_CAPTURER_GET_SOURCES', function(event, captureWindow, captureScreen, thumbnailSize, id) {
@@ -37,7 +35,6 @@ ipcMain.on('ATOM_BROWSER_DESKTOP_CAPTURER_GET_SOURCES', function(event, captureW
 });
 
 desktopCapturer.emit = function(event, name, sources) {
-
   // Receiving sources result from main process, now send them back to renderer.
   var captureScreen, captureWindow, handledRequest, i, len, ref, ref1, ref2, request, result, source, thumbnailSize, unhandledRequestsQueue;
   handledRequest = requestsQueue.shift(0);

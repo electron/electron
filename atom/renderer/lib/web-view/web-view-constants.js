@@ -1,5 +1,4 @@
 module.exports = {
-
   // Attributes.
   ATTRIBUTE_ALLOWTRANSPARENCY: 'allowtransparency',
   ATTRIBUTE_AUTOSIZE: 'autosize',

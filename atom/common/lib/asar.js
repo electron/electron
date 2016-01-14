@@ -10,9 +10,7 @@ path = require('path');
 
 util = require('util');
 
-
 // Cache asar archive objects.
-
 cachedArchives = {};
 
 getOrCreateArchive = function(p) {
@@ -28,9 +26,7 @@ getOrCreateArchive = function(p) {
   return cachedArchives[p] = archive;
 };
 
-
 // Clean cache on quit.
-
 process.on('exit', function() {
   var archive, p, results;
   results = [];
@@ -42,9 +38,7 @@ process.on('exit', function() {
   return results;
 });
 
-
 // Separate asar package's path from full path.
-
 splitPath = function(p) {
 
   // shortcut to disable asar.
@@ -66,9 +60,7 @@ splitPath = function(p) {
   return [true, p.substr(0, index + 5), p.substr(index + 6)];
 };
 
-
 // Convert asar archive's Stats object to fs's Stats object.
-
 nextInode = 0;
 
 uid = process.getuid != null ? process.getuid() : 0;
@@ -115,9 +107,7 @@ asarStatsToFsStats = function(stats) {
   };
 };
 
-
 // Create a ENOENT error.
-
 notFoundError = function(asarPath, filePath, callback) {
   var error;
   error = new Error("ENOENT, " + filePath + " not found in " + asarPath);
@@ -131,9 +121,7 @@ notFoundError = function(asarPath, filePath, callback) {
   });
 };
 
-
 // Create a ENOTDIR error.
-
 notDirError = function(callback) {
   var error;
   error = new Error('ENOTDIR, not a directory');
@@ -147,9 +135,7 @@ notDirError = function(callback) {
   });
 };
 
-
 // Create invalid archive error.
-
 invalidArchiveError = function(asarPath, callback) {
   var error;
   error = new Error("Invalid package " + asarPath);
@@ -161,9 +147,7 @@ invalidArchiveError = function(asarPath, callback) {
   });
 };
 
-
 // Override APIs that rely on passing file path instead of content to C++.
-
 overrideAPISync = function(module, name, arg) {
   var old;
   if (arg == null) {
@@ -220,9 +204,7 @@ overrideAPI = function(module, name, arg) {
   };
 };
 
-
 // Override fs APIs.
-
 exports.wrapFsWithAsar = function(fs) {
   var exists, existsSync, internalModuleReadFile, internalModuleStat, lstat, lstatSync, mkdir, mkdirSync, open, openSync, readFile, readFileSync, readdir, readdirSync, realpath, realpathSync, stat, statSync, statSyncNoException;
   lstatSync = fs.lstatSync;

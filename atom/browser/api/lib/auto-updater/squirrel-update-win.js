@@ -61,16 +61,12 @@ spawnUpdate = function(args, detached, callback) {
   });
 };
 
-
 // Start an instance of the installed app.
-
 exports.processStart = function(callback) {
   return spawnUpdate(['--processStart', exeName], true, function() {});
 };
 
-
 // Download the releases specified by the URL and write new results to stdout.
-
 exports.download = function(updateURL, callback) {
   return spawnUpdate(['--download', updateURL], false, function(error, stdout) {
     var error1, json, ref, ref1, update;
@@ -91,14 +87,12 @@ exports.download = function(updateURL, callback) {
 
 
 // Update the application to the latest remote version specified by URL.
-
 exports.update = function(updateURL, callback) {
   return spawnUpdate(['--update', updateURL], false, callback);
 };
 
 
 // Is the Update.exe installed with the current application?
-
 exports.supported = function() {
   var error1;
   try {

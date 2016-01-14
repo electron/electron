@@ -11,21 +11,16 @@ url = require('url');
 Module = require('module');
 
 
-/*
-  We modified the original process.argv to let node.js load the
-  atom-renderer.js, we need to restore it here.
- */
-
+// We modified the original process.argv to let node.js load the
+// atom-renderer.js, we need to restore it here.
 process.argv.splice(1, 1);
 
 
 // Clear search paths.
-
 require(path.resolve(__dirname, '..', '..', 'common', 'lib', 'reset-search-paths'));
 
 
 // Import common settings.
-
 require(path.resolve(__dirname, '..', '..', 'common', 'lib', 'init'));
 
 globalPaths = Module.globalPaths;
@@ -34,14 +29,10 @@ if (!process.env.ELECTRON_HIDE_INTERNAL_MODULES) {
   globalPaths.push(path.resolve(__dirname, '..', 'api', 'lib'));
 }
 
-
 // Expose public APIs.
-
 globalPaths.push(path.resolve(__dirname, '..', 'api', 'lib', 'exports'));
 
-
 // The global variable will be used by ipc for event dispatching
-
 v8Util = process.atomBinding('v8_util');
 
 v8Util.setHiddenValue(global, 'ipc', new events.EventEmitter);
@@ -55,18 +46,15 @@ electron.ipcRenderer.on('ELECTRON_INTERNAL_RENDERER_WEB_FRAME_METHOD', (event, m
 });
 
 // Process command line arguments.
-
 nodeIntegration = 'false';
 
 ref = process.argv;
 for (i = 0, len = ref.length; i < len; i++) {
   arg = ref[i];
   if (arg.indexOf('--guest-instance-id=') === 0) {
-
     // This is a guest web view.
     process.guestInstanceId = parseInt(arg.substr(arg.indexOf('=') + 1));
   } else if (arg.indexOf('--opener-id=') === 0) {
-
     // This is a guest BrowserWindow.
     process.openerId = parseInt(arg.substr(arg.indexOf('=') + 1));
   } else if (arg.indexOf('--node-integration=') === 0) {
@@ -77,17 +65,14 @@ for (i = 0, len = ref.length; i < len; i++) {
 }
 
 if (location.protocol === 'chrome-devtools:') {
-
   // Override some inspector APIs.
   require('./inspector');
   nodeIntegration = 'true';
 } else if (location.protocol === 'chrome-extension:') {
-
   // Add implementations of chrome API.
   require('./chrome-api');
   nodeIntegration = 'true';
 } else {
-
   // Override default web functions.
   require('./override');
 
@@ -99,7 +84,6 @@ if (location.protocol === 'chrome-devtools:') {
 }
 
 if (nodeIntegration === 'true' || nodeIntegration === 'all' || nodeIntegration === 'except-iframe' || nodeIntegration === 'manual-enable-iframe') {
-
   // Export node bindings to global.
   global.require = require;
   global.module = module;
@@ -135,7 +119,6 @@ if (nodeIntegration === 'true' || nodeIntegration === 'all' || nodeIntegration =
     return process.emit('exit');
   });
 } else {
-
   // Delete Node's symbols after the Environment has been loaded.
   process.once('loaded', function() {
     delete global.process;
@@ -145,9 +128,7 @@ if (nodeIntegration === 'true' || nodeIntegration === 'all' || nodeIntegration =
   });
 }
 
-
 // Load the script specfied by the "preload" attribute.
-
 if (preloadScript) {
   try {
     require(preloadScript);

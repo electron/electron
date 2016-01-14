@@ -3,9 +3,7 @@ var NavigationController, ipcMain,
 
 ipcMain = require('electron').ipcMain;
 
-
 // The history operation in renderer is redirected to browser.
-
 ipcMain.on('ATOM_SHELL_NAVIGATION_CONTROLLER', function() {
   var args, event, method, ref;
   event = arguments[0], method = arguments[1], args = 3 <= arguments.length ? slice.call(arguments, 2) : [];

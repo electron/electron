@@ -4,9 +4,7 @@ v8Util = process.atomBinding('v8_util');
 
 nextCommandId = 0;
 
-
 // Maps role to methods of webContents
-
 rolesMap = {
   undo: 'undo',
   redo: 'redo',
@@ -18,9 +16,7 @@ rolesMap = {
   close: 'close'
 };
 
-
 // Maps methods that should be called directly on the BrowserWindow instance
-
 methodInBrowserWindow = {
   minimize: true,
   close: true

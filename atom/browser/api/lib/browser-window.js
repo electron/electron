@@ -151,7 +151,6 @@ BrowserWindow.fromDevToolsWebContents = function(webContents) {
   }
 };
 
-
 // Helpers.
 
 BrowserWindow.prototype.loadURL = function() {
@@ -197,7 +196,6 @@ BrowserWindow.prototype.inspectElement = function() {
 BrowserWindow.prototype.inspectServiceWorker = function() {
   return this.webContents.inspectServiceWorker();
 };
-
 
 // Deprecated.
 

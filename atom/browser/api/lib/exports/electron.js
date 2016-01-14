@@ -4,7 +4,6 @@ common = require('../../../../common/api/lib/exports/electron');
 
 
 // Import common modules.
-
 common.defineProperties(exports);
 
 Object.defineProperties(exports, {

@@ -1,4 +1,3 @@
-
 // Deprecate a method.
 var deprecate,
   slice = [].slice;
@@ -15,9 +14,7 @@ deprecate = function(oldName, newName, fn) {
   };
 };
 
-
 // The method is renamed.
-
 deprecate.rename = function(object, oldName, newName) {
   var newMethod, warned;
   warned = false;
@@ -35,9 +32,7 @@ deprecate.rename = function(object, oldName, newName) {
   }
 };
 
-
 // Forward the method to member.
-
 deprecate.member = function(object, method, member) {
   var warned;
   warned = false;
@@ -50,9 +45,7 @@ deprecate.member = function(object, method, member) {
   };
 };
 
-
 // Deprecate a property.
-
 deprecate.property = function(object, property, method) {
   return Object.defineProperty(object, property, {
     get: function() {
@@ -67,9 +60,7 @@ deprecate.property = function(object, property, method) {
   });
 };
 
-
 // Deprecate an event.
-
 deprecate.event = function(emitter, oldName, newName, fn) {
   var warned;
   warned = false;
@@ -92,16 +83,12 @@ deprecate.event = function(emitter, oldName, newName, fn) {
   });
 };
 
-
 // Print deprecation warning.
-
 deprecate.warn = function(oldName, newName) {
   return deprecate.log(oldName + " is deprecated. Use " + newName + " instead.");
 };
 
-
 // Print deprecation message.
-
 deprecate.log = function(message) {
   if (process.throwDeprecation) {
     throw new Error(message);

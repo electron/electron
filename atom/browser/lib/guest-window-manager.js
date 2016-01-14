@@ -8,9 +8,7 @@ v8Util = process.atomBinding('v8_util');
 
 frameToGuest = {};
 
-
 // Copy attribute of |parent| to |child| if it is not defined in |child|.
-
 mergeOptions = function(child, parent) {
   var key, value;
   for (key in parent) {
@@ -27,9 +25,7 @@ mergeOptions = function(child, parent) {
   return child;
 };
 
-
 // Merge |options| with the |embedder|'s window's options.
-
 mergeBrowserWindowOptions = function(embedder, options) {
   if (embedder.browserWindowOptions != null) {
 
@@ -46,9 +42,7 @@ mergeBrowserWindowOptions = function(embedder, options) {
   return options;
 };
 
-
 // Create a new guest created by |embedder| with |options|.
-
 createGuest = function(embedder, url, frameName, options) {
   var closedByEmbedder, closedByUser, guest, guestId, ref1;
   guest = frameToGuest[frameName];
@@ -89,9 +83,7 @@ createGuest = function(embedder, url, frameName, options) {
   return guest.id;
 };
 
-
 // Routed window.open messages.
-
 ipcMain.on('ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_OPEN', function() {
   var args, event, frameName, options, url;
   event = arguments[0], args = 2 <= arguments.length ? slice.call(arguments, 1) : [];

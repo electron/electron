@@ -4,21 +4,15 @@ path = require('path');
 
 Module = require('module');
 
-
 // Clear Node's global search paths.
-
 Module.globalPaths.length = 0;
 
-
 // Clear current and parent(init.coffee)'s search paths.
-
 module.paths = [];
 
 module.parent.paths = [];
 
-
 // Prevent Node from adding paths outside this app to search paths.
-
 Module._nodeModulePaths = function(from) {
   var dir, i, part, parts, paths, skipOutsidePaths, splitRe, tip;
   from = path.resolve(from);

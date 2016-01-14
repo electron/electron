@@ -65,7 +65,6 @@ ObjectsRegistry = (function(superClass) {
     }
   };
 
-
   // Clear all references to objects refrenced by the WebContents.
   ObjectsRegistry.prototype.clear = function(webContentsId) {
     var count, id, ref;
@@ -80,7 +79,6 @@ ObjectsRegistry = (function(superClass) {
     }
     return delete this.owners[webContentsId];
   };
-
 
   // Private: Saves the object into storage and assigns an ID for it.
   ObjectsRegistry.prototype.saveToStorage = function(object) {
@@ -97,7 +95,6 @@ ObjectsRegistry = (function(superClass) {
     ++this.storage[id].count;
     return id;
   };
-
 
   // Private: Dereference the object from store.
   ObjectsRegistry.prototype.dereference = function(id, count) {

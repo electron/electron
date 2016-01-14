@@ -9,7 +9,6 @@ Tray = process.atomBinding('tray').Tray;
 Tray.prototype.__proto__ = EventEmitter.prototype;
 
 Tray.prototype._init = function() {
-
   // Deprecated.
   deprecate.rename(this, 'popContextMenu', 'popUpContextMenu');
   deprecate.event(this, 'clicked', 'click');
