@@ -1,26 +1,23 @@
-var AllowTransparencyAttribute, AutosizeAttribute, AutosizeDimensionAttribute, BooleanAttribute, HttpReferrerAttribute, PartitionAttribute, PreloadAttribute, SrcAttribute, UserAgentAttribute, WebViewAttribute, WebViewImpl, a, guestViewInternal, remote, resolveURL, webViewConstants,
-  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-  hasProp = {}.hasOwnProperty;
+const WebViewImpl = require('./web-view');
+const guestViewInternal = require('./guest-view-internal');
+const webViewConstants = require('./web-view-constants');
+const remote = require('electron').remote;
 
-WebViewImpl = require('./web-view');
+var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-guestViewInternal = require('./guest-view-internal');
-
-webViewConstants = require('./web-view-constants');
-
-remote = require('electron').remote;
+var hasProp = {}.hasOwnProperty;
 
 // Helper function to resolve url set in attribute.
-a = document.createElement('a');
+var a = document.createElement('a');
 
-resolveURL = function(url) {
+var resolveURL = function(url) {
   a.href = url;
   return a.href;
 };
 
 // Attribute objects.
 // Default implementation of a WebView attribute.
-WebViewAttribute = (function() {
+var WebViewAttribute = (function() {
   function WebViewAttribute(name, webViewImpl) {
     this.name = name;
     this.value = webViewImpl.webviewNode[name] || '';
@@ -71,7 +68,7 @@ WebViewAttribute = (function() {
 })();
 
 // An attribute that is treated as a Boolean.
-BooleanAttribute = (function(superClass) {
+var BooleanAttribute = (function(superClass) {
   extend(BooleanAttribute, superClass);
 
   function BooleanAttribute(name, webViewImpl) {
@@ -95,7 +92,7 @@ BooleanAttribute = (function(superClass) {
 })(WebViewAttribute);
 
 // Attribute that specifies whether transparency is allowed in the webview.
-AllowTransparencyAttribute = (function(superClass) {
+var AllowTransparencyAttribute = (function(superClass) {
   extend(AllowTransparencyAttribute, superClass);
 
   function AllowTransparencyAttribute(webViewImpl) {
@@ -114,7 +111,7 @@ AllowTransparencyAttribute = (function(superClass) {
 })(BooleanAttribute);
 
 // Attribute used to define the demension limits of autosizing.
-AutosizeDimensionAttribute = (function(superClass) {
+var AutosizeDimensionAttribute = (function(superClass) {
   extend(AutosizeDimensionAttribute, superClass);
 
   function AutosizeDimensionAttribute(name, webViewImpl) {
@@ -147,7 +144,7 @@ AutosizeDimensionAttribute = (function(superClass) {
 })(WebViewAttribute);
 
 // Attribute that specifies whether the webview should be autosized.
-AutosizeAttribute = (function(superClass) {
+var AutosizeAttribute = (function(superClass) {
   extend(AutosizeAttribute, superClass);
 
   function AutosizeAttribute(webViewImpl) {
@@ -161,7 +158,7 @@ AutosizeAttribute = (function(superClass) {
 })(BooleanAttribute);
 
 // Attribute representing the state of the storage partition.
-PartitionAttribute = (function(superClass) {
+var PartitionAttribute = (function(superClass) {
   extend(PartitionAttribute, superClass);
 
   function PartitionAttribute(webViewImpl) {
@@ -189,7 +186,7 @@ PartitionAttribute = (function(superClass) {
 })(WebViewAttribute);
 
 // Attribute that handles the location and navigation of the webview.
-SrcAttribute = (function(superClass) {
+var SrcAttribute = (function(superClass) {
   extend(SrcAttribute, superClass);
 
   function SrcAttribute(webViewImpl) {
@@ -292,7 +289,7 @@ SrcAttribute = (function(superClass) {
 })(WebViewAttribute);
 
 // Attribute specifies HTTP referrer.
-HttpReferrerAttribute = (function(superClass) {
+var HttpReferrerAttribute = (function(superClass) {
   extend(HttpReferrerAttribute, superClass);
 
   function HttpReferrerAttribute(webViewImpl) {
@@ -304,7 +301,7 @@ HttpReferrerAttribute = (function(superClass) {
 })(WebViewAttribute);
 
 // Attribute specifies user agent
-UserAgentAttribute = (function(superClass) {
+var UserAgentAttribute = (function(superClass) {
   extend(UserAgentAttribute, superClass);
 
   function UserAgentAttribute(webViewImpl) {
@@ -316,7 +313,7 @@ UserAgentAttribute = (function(superClass) {
 })(WebViewAttribute);
 
 // Attribute that set preload script.
-PreloadAttribute = (function(superClass) {
+var PreloadAttribute = (function(superClass) {
   extend(PreloadAttribute, superClass);
 
   function PreloadAttribute(webViewImpl) {

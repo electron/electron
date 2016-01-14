@@ -1,14 +1,13 @@
-var CallbacksRegistry, browserModules, builtinCache, callbacksRegistry, createRemoteMemberFunction, createRemoteMemberProperty, fn, ipcRenderer, isCircular, metaToPlainObject, metaToValue, moduleCache, name, processCache, ref, v8Util, webContentsCache, windowCache, wrapArgs,
-  indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
+const ipcRenderer = require('electron').ipcRenderer;
+const CallbacksRegistry = require('electron').CallbacksRegistry;
+const v8Util = process.atomBinding('v8_util');
 
-ref = require('electron'), ipcRenderer = ref.ipcRenderer, CallbacksRegistry = ref.CallbacksRegistry;
+const callbacksRegistry = new CallbacksRegistry;
 
-v8Util = process.atomBinding('v8_util');
-
-callbacksRegistry = new CallbacksRegistry;
+var indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
 // Check for circular reference.
-isCircular = function(field, visited) {
+var isCircular = function(field, visited) {
   if (typeof field === 'object') {
     if (indexOf.call(visited, field) >= 0) {
       return true;
@@ -19,7 +18,7 @@ isCircular = function(field, visited) {
 };
 
 // Convert the arguments object into an array of meta data.
-wrapArgs = function(args, visited) {
+var wrapArgs = function(args, visited) {
   var valueToMeta;
   if (visited == null) {
     visited = [];
@@ -87,7 +86,7 @@ wrapArgs = function(args, visited) {
 };
 
 // Convert meta data from browser into real value.
-metaToValue = function(meta) {
+var metaToValue = function(meta) {
   var RemoteFunction, el, i, j, len, len1, member, ref1, ref2, results, ret;
   switch (meta.type) {
     case 'value':
@@ -169,7 +168,7 @@ metaToValue = function(meta) {
 };
 
 // Construct a plain object from the meta.
-metaToPlainObject = function(meta) {
+var metaToPlainObject = function(meta) {
   var i, len, name, obj, ref1, ref2, value;
   obj = (function() {
     switch (meta.type) {
@@ -190,7 +189,7 @@ metaToPlainObject = function(meta) {
 // Create a RemoteMemberFunction instance.
 // This function's content should not be inlined into metaToValue, otherwise V8
 // may consider it circular reference.
-createRemoteMemberFunction = function(metaId, name) {
+var createRemoteMemberFunction = function(metaId, name) {
   var RemoteMemberFunction;
   return RemoteMemberFunction = (function() {
     function RemoteMemberFunction() {
@@ -216,7 +215,7 @@ createRemoteMemberFunction = function(metaId, name) {
 // Create configuration for defineProperty.
 // This function's content should not be inlined into metaToValue, otherwise V8
 // may consider it circular reference.
-createRemoteMemberProperty = function(metaId, name) {
+var createRemoteMemberProperty = function(metaId, name) {
   return {
     enumerable: true,
     configurable: false,
@@ -245,25 +244,24 @@ ipcRenderer.on('ATOM_RENDERER_RELEASE_CALLBACK', function(event, id) {
 });
 
 // List all built-in modules in browser process.
-browserModules = require('../../../browser/api/lib/exports/electron');
+const browserModules = require('../../../browser/api/lib/exports/electron');
 
 // And add a helper receiver for each one.
-fn = function(name) {
+var fn = function(name) {
   return Object.defineProperty(exports, name, {
     get: function() {
       return exports.getBuiltin(name);
     }
   });
 };
-for (name in browserModules) {
+for (var name in browserModules) {
   fn(name);
 }
-
 
 // Get remote module.
 // (Just like node's require, the modules are cached permanently, note that this
 // is safe leak since the object is not expected to get freed in browser)
-moduleCache = {};
+var moduleCache = {};
 
 exports.require = function(module) {
   var meta;
@@ -274,13 +272,11 @@ exports.require = function(module) {
   return moduleCache[module] = metaToValue(meta);
 };
 
-
 // Optimize require('electron').
 moduleCache.electron = exports;
 
-
 // Alias to remote.require('electron').xxx.
-builtinCache = {};
+var builtinCache = {};
 
 exports.getBuiltin = function(module) {
   var meta;
@@ -292,7 +288,7 @@ exports.getBuiltin = function(module) {
 };
 
 // Get current BrowserWindow object.
-windowCache = null;
+var windowCache = null;
 
 exports.getCurrentWindow = function() {
   var meta;
@@ -304,7 +300,7 @@ exports.getCurrentWindow = function() {
 };
 
 // Get current WebContents object.
-webContentsCache = null;
+var webContentsCache = null;
 
 exports.getCurrentWebContents = function() {
   var meta;
@@ -323,7 +319,7 @@ exports.getGlobal = function(name) {
 };
 
 // Get the process object in browser.
-processCache = null;
+var processCache = null;
 
 exports.__defineGetter__('process', function() {
   if (processCache == null) {

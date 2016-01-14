@@ -1,11 +1,10 @@
-var DEPRECATED_EVENTS, WEB_VIEW_EVENTS, dispatchEvent, ipcRenderer, ref, requestId, webFrame,
-  slice = [].slice;
+const ipcRenderer = require('electron').ipcRenderer;
+const webFrame = require('electron').webFrame;
 
-ref = require('electron'), ipcRenderer = ref.ipcRenderer, webFrame = ref.webFrame;
+var slice = [].slice;
+var requestId = 0;
 
-requestId = 0;
-
-WEB_VIEW_EVENTS = {
+var WEB_VIEW_EVENTS = {
   'load-commit': ['url', 'isMainFrame'],
   'did-finish-load': [],
   'did-fail-load': ['errorCode', 'errorDescription', 'validatedURL'],
@@ -38,11 +37,11 @@ WEB_VIEW_EVENTS = {
   'found-in-page': ['result']
 };
 
-DEPRECATED_EVENTS = {
+var DEPRECATED_EVENTS = {
   'page-title-updated': 'page-title-set'
 };
 
-dispatchEvent = function() {
+var dispatchEvent = function() {
   var args, domEvent, eventKey, eventName, f, i, j, len, ref1, webView;
   webView = arguments[0], eventName = arguments[1], eventKey = arguments[2], args = 4 <= arguments.length ? slice.call(arguments, 3) : [];
   if (DEPRECATED_EVENTS[eventName] != null) {
