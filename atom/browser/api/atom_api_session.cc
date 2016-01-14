@@ -239,7 +239,7 @@ void OnGetBackend(disk_cache::Backend** backend_ptr,
   }
 }
 
-void GetHttpCacheInIO(
+void DoCacheActionInIO(
     const scoped_refptr<net::URLRequestContextGetter>& context_getter,
     Session::CacheAction action,
     const net::CompletionCallback& callback) {
@@ -307,7 +307,7 @@ void Session::ResolveProxy(const GURL& url, ResolveProxyCallback callback) {
 template<Session::CacheAction action>
 void Session::DoCacheAction(const net::CompletionCallback& callback) {
   BrowserThread::PostTask(BrowserThread::IO, FROM_HERE,
-      base::Bind(&GetHttpCacheInIO,
+      base::Bind(&DoCacheActionInIO,
                  make_scoped_refptr(browser_context_->GetRequestContext()),
                  action,
                  callback));
