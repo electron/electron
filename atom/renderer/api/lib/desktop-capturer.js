@@ -2,7 +2,7 @@ const ipcRenderer = require('electron').ipcRenderer;
 const nativeImage = require('electron').nativeImage;
 
 var nextId = 0;
-var indexOf = [].indexOf;
+var includes = [].includes;
 
 var getNextId = function() {
   return ++nextId;
@@ -18,8 +18,8 @@ exports.getSources = function(options, callback) {
   if (!isValid(options)) {
     return callback(new Error('Invalid options'));
   }
-  captureWindow = indexOf.call(options.types, 'window') >= 0;
-  captureScreen = indexOf.call(options.types, 'screen') >= 0;
+  captureWindow = includes.call(options.types, 'window');
+  captureScreen = includes.call(options.types, 'screen');
   if (options.thumbnailSize == null) {
     options.thumbnailSize = {
       width: 150,

@@ -4,6 +4,7 @@ const binding = process.atomBinding('dialog');
 const v8Util = process.atomBinding('v8_util');
 
 var slice = [].slice;
+var includes = [].includes;
 var indexOf = [].indexOf;
 
 var fileDialogProperties = {
@@ -61,7 +62,7 @@ module.exports = {
     properties = 0;
     for (prop in fileDialogProperties) {
       value = fileDialogProperties[prop];
-      if (indexOf.call(options.properties, prop) >= 0) {
+      if (includes.call(options.properties, prop)) {
         properties |= value;
       }
     }
