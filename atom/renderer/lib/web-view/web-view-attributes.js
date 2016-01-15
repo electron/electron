@@ -2,7 +2,7 @@ const WebViewImpl = require('./web-view');
 const guestViewInternal = require('./guest-view-internal');
 const webViewConstants = require('./web-view-constants');
 const remote = require('electron').remote;
-var util = require('util');
+const util = require('util');
 
 // Helper function to resolve url set in attribute.
 var a = document.createElement('a');
