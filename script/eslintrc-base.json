@@ -1,14 +1,14 @@
 {
   "rules": {
     "indent": [
-      2,
+      0,
       2,
       {
         "SwitchCase": 1
       }
     ],
     "quotes": [
-      2,
+      0,
       "single"
     ],
     "linebreak-style": [
@@ -16,17 +16,14 @@
       "unix"
     ],
     "semi": [
-      2,
+      0,
       "always"
     ],
     "comma-dangle": 0,
-    "indent": 0,
     "no-console": 0,
     "no-undef": 0,
     "no-unreachable": 0,
-    "no-unused-vars": 0,
-    "quotes": 0,
-    "semi": 0
+    "no-unused-vars": 0
   },
   "env": {
     "es6": true,
