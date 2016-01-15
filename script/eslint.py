@@ -18,7 +18,7 @@ def main():
     eslint += '.cmd'
   settings = ['--quiet', '--config']
 
-  sourceConfig = os.path.join('script', 'eslintrc-src.json')
+  sourceConfig = os.path.join('script', 'eslintrc-base.json')
   sourceFiles = glob.glob('atom/**/*.js')
   execute([eslint] + settings + [sourceConfig] + sourceFiles)
 

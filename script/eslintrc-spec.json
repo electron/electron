@@ -6,5 +6,5 @@
     "jquery": true,
     "mocha": true
   },
-  "extends": "./eslintrc-src.json"
+  "extends": "./eslintrc-base.json"
 }
