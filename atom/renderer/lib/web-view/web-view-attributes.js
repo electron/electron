@@ -122,7 +122,7 @@ AutosizeDimensionAttribute.prototype.handleMutation = function(oldValue, newValu
 
 // Attribute that specifies whether the webview should be autosized.
 function AutosizeAttribute(webViewImpl) {
-  AutosizeAttribute.super_.constructor.call(this, webViewConstants.ATTRIBUTE_AUTOSIZE, webViewImpl);
+  AutosizeAttribute.super_.call(this, webViewConstants.ATTRIBUTE_AUTOSIZE, webViewImpl);
 }
 
 util.inherits(AutosizeAttribute, BooleanAttribute);
@@ -131,7 +131,7 @@ AutosizeAttribute.prototype.handleMutation = AutosizeDimensionAttribute.prototyp
 
 // Attribute representing the state of the storage partition.
 function PartitionAttribute(webViewImpl) {
-  PartitionAttribute.super_.constructor.call(this, webViewConstants.ATTRIBUTE_PARTITION, webViewImpl);
+  PartitionAttribute.super_.call(this, webViewConstants.ATTRIBUTE_PARTITION, webViewImpl);
   this.validPartitionId = true;
 }
 
@@ -154,7 +154,7 @@ PartitionAttribute.prototype.handleMutation = function(oldValue, newValue) {
 
 // Attribute that handles the location and navigation of the webview.
 function SrcAttribute(webViewImpl) {
-  SrcAttribute.super_.constructor.call(this, webViewConstants.ATTRIBUTE_SRC, webViewImpl);
+  SrcAttribute.super_.call(this, webViewConstants.ATTRIBUTE_SRC, webViewImpl);
   this.setupMutationObserver();
 }
 
@@ -251,21 +251,21 @@ SrcAttribute.prototype.parse = function() {
 
 // Attribute specifies HTTP referrer.
 function HttpReferrerAttribute(webViewImpl) {
-  HttpReferrerAttribute.super_.constructor.call(this, webViewConstants.ATTRIBUTE_HTTPREFERRER, webViewImpl);
+  HttpReferrerAttribute.super_.call(this, webViewConstants.ATTRIBUTE_HTTPREFERRER, webViewImpl);
 }
 
 util.inherits(HttpReferrerAttribute, WebViewAttribute);
 
 // Attribute specifies user agent
 function UserAgentAttribute(webViewImpl) {
-  UserAgentAttribute.super_.constructor.call(this, webViewConstants.ATTRIBUTE_USERAGENT, webViewImpl);
+  UserAgentAttribute.super_.call(this, webViewConstants.ATTRIBUTE_USERAGENT, webViewImpl);
 }
 
 util.inherits(UserAgentAttribute, WebViewAttribute);
 
 // Attribute that set preload script.
 function PreloadAttribute(webViewImpl) {
-  PreloadAttribute.super_.constructor.call(this, webViewConstants.ATTRIBUTE_PRELOAD, webViewImpl);
+  PreloadAttribute.super_.call(this, webViewConstants.ATTRIBUTE_PRELOAD, webViewImpl);
 }
 
 util.inherits(PreloadAttribute, WebViewAttribute);
