@@ -16,9 +16,15 @@ def main():
   eslint = os.path.join(SOURCE_ROOT, 'node_modules', '.bin', 'eslint')
   if sys.platform in ['win32', 'cygwin']:
     eslint += '.cmd'
-  settings = ['--quiet', '--config', os.path.join('script', 'eslintrc.json')]
+  settings = ['--quiet', '--config']
 
-  execute([eslint] + settings + ['atom'])
+  sourceConfig = os.path.join('script', 'eslintrc-src.json')
+  sourceFiles = glob.glob('atom/**/*.js')
+  execute([eslint] + settings + [sourceConfig] + sourceFiles)
+
+  specConfig = os.path.join('script', 'eslintrc-spec.json')
+  specFiles = glob.glob('spec/*.js')
+  execute([eslint] + settings + [specConfig] + specFiles)
 
 
 if __name__ == '__main__':
