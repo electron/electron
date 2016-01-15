@@ -92,7 +92,7 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
   int x = -1, y = -1;
   bool center;
   if (options.Get(options::kX, &x) && options.Get(options::kY, &y)) {
-    SetPosition(gfx::Point(x, y));
+    SetPosition(gfx::Point(x, y), false);
   } else if (options.Get(options::kCenter, &center) && center) {
     Center();
   }
@@ -154,24 +154,24 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
     Show();
 }
 
-void NativeWindow::SetSize(const gfx::Size& size) {
-  SetBounds(gfx::Rect(GetPosition(), size));
+void NativeWindow::SetSize(const gfx::Size& size, bool animate) {
+  SetBounds(gfx::Rect(GetPosition(), size), animate);
 }
 
 gfx::Size NativeWindow::GetSize() {
   return GetBounds().size();
 }
 
-void NativeWindow::SetPosition(const gfx::Point& position) {
-  SetBounds(gfx::Rect(position, GetSize()));
+void NativeWindow::SetPosition(const gfx::Point& position, bool animate) {
+  SetBounds(gfx::Rect(position, GetSize()), animate);
 }
 
 gfx::Point NativeWindow::GetPosition() {
   return GetBounds().origin();
 }
 
-void NativeWindow::SetContentSize(const gfx::Size& size) {
-  SetSize(ContentSizeToWindowSize(size));
+void NativeWindow::SetContentSize(const gfx::Size& size, bool animate) {
+  SetSize(ContentSizeToWindowSize(size), animate);
 }
 
 gfx::Size NativeWindow::GetContentSize() {

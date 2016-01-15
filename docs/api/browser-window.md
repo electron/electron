@@ -448,7 +448,7 @@ the player itself we would call this function with arguments of 16/9 and
 are within the content view--only that they exist. Just sum any extra width and
 height areas you have within the overall content view.
 
-### `win.setBounds(options)`
+### `win.setBounds(options[, animate])`
 
 `options` Object, properties:
 
@@ -456,6 +456,7 @@ height areas you have within the overall content view.
 * `y` Integer
 * `width` Integer
 * `height` Integer
+* `animate` Boolean (optional) _OS X_
 
 Resizes and moves the window to `width`, `height`, `x`, `y`.
 
@@ -463,10 +464,11 @@ Resizes and moves the window to `width`, `height`, `x`, `y`.
 
 Returns an object that contains window's width, height, x and y values.
 
-### `win.setSize(width, height)`
+### `win.setSize(width, height[, animate])`
 
 * `width` Integer
 * `height` Integer
+* `animate` Boolean (optional) _OS X_
 
 Resizes the window to `width` and `height`.
 
@@ -474,10 +476,11 @@ Resizes the window to `width` and `height`.
 
 Returns an array that contains window's width and height.
 
-### `win.setContentSize(width, height)`
+### `win.setContentSize(width, height[, animate])`
 
 * `width` Integer
 * `height` Integer
+* `animate` Boolean (optional) _OS X_
 
 Resizes the window's client area (e.g. the web page) to `width` and `height`.
 
@@ -533,10 +536,11 @@ Returns whether the window is always on top of other windows.
 
 Moves window to the center of the screen.
 
-### `win.setPosition(x, y)`
+### `win.setPosition(x, y[, animate])`
 
 * `x` Integer
 * `y` Integer
+* `animate` Boolean (optional) _OS X_
 
 Moves window to `x` and `y`.
 

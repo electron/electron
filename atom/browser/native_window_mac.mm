@@ -456,7 +456,7 @@ NativeWindowMac::NativeWindowMac(
   bool use_content_size = false;
   options.Get(options::kUseContentSize, &use_content_size);
   if (!has_frame() || !use_content_size)
-    SetSize(gfx::Size(width, height));
+    SetSize(gfx::Size(width, height), false);
 
   // Enable the NSView to accept first mouse event.
   bool acceptsFirstMouse = false;
@@ -576,7 +576,7 @@ bool NativeWindowMac::IsFullscreen() const {
   return [window_ styleMask] & NSFullScreenWindowMask;
 }
 
-void NativeWindowMac::SetBounds(const gfx::Rect& bounds) {
+void NativeWindowMac::SetBounds(const gfx::Rect& bounds, bool animate) {
   NSRect cocoa_bounds = NSMakeRect(bounds.x(), 0,
                                    bounds.width(),
                                    bounds.height());
@@ -585,7 +585,7 @@ void NativeWindowMac::SetBounds(const gfx::Rect& bounds) {
   cocoa_bounds.origin.y =
       NSHeight([screen frame]) - bounds.height() - bounds.y();
 
-  [window_ setFrame:cocoa_bounds display:YES];
+  [window_ setFrame:cocoa_bounds display:YES animate:animate];
 }
 
 gfx::Rect NativeWindowMac::GetBounds() {
