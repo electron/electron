@@ -92,7 +92,7 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
   int x = -1, y = -1;
   bool center;
   if (options.Get(options::kX, &x) && options.Get(options::kY, &y)) {
-    SetPosition(gfx::Point(x, y), false);
+    SetPosition(gfx::Point(x, y));
   } else if (options.Get(options::kCenter, &center) && center) {
     Center();
   }

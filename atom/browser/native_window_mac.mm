@@ -456,7 +456,7 @@ NativeWindowMac::NativeWindowMac(
   bool use_content_size = false;
   options.Get(options::kUseContentSize, &use_content_size);
   if (!has_frame() || !use_content_size)
-    SetSize(gfx::Size(width, height), false);
+    SetSize(gfx::Size(width, height));
 
   // Enable the NSView to accept first mouse event.
   bool acceptsFirstMouse = false;

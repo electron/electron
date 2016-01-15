@@ -338,29 +338,19 @@ bool Window::IsFullscreen() {
   return window_->IsFullscreen();
 }
 
-void Window::SetBounds(mate::Arguments* args) {
-  gfx::Rect rect;
+void Window::SetBounds(const gfx::Rect& bounds, mate::Arguments* args) {
   bool animate = false;
-  if (!args->GetNext(&rect) ||
-      (args->Length() == 2 && !args->GetNext(&animate))) {
-    args->ThrowError();
-    return;
-  }
-  window_->SetBounds(rect, animate);
+  args->GetNext(&animate);
+  window_->SetBounds(bounds, animate);
 }
 
 gfx::Rect Window::GetBounds() {
   return window_->GetBounds();
 }
 
-void Window::SetSize(mate::Arguments* args) {
-  int width = 0, height = 0;
+void Window::SetSize(int width, int height, mate::Arguments* args) {
   bool animate = false;
-  if (!args->GetNext(&width) || !args->GetNext(&height) ||
-      (args->Length() == 3 && !args->GetNext(&animate))) {
-    args->ThrowError();
-    return;
-  }
+  args->GetNext(&animate);
   window_->SetSize(gfx::Size(width, height), animate);
 }
 
@@ -372,14 +362,9 @@ std::vector<int> Window::GetSize() {
   return result;
 }
 
-void Window::SetContentSize(mate::Arguments* args) {
-  int width = 0, height = 0;
+void Window::SetContentSize(int width, int height, mate::Arguments* args) {
   bool animate = false;
-  if (!args->GetNext(&width) || !args->GetNext(&height) ||
-      (args->Length() == 3 && !args->GetNext(&animate))) {
-    args->ThrowError();
-    return;
-  }
+  args->GetNext(&animate);
   window_->SetContentSize(gfx::Size(width, height), animate);
 }
 
@@ -435,14 +420,9 @@ void Window::Center() {
   window_->Center();
 }
 
-void Window::SetPosition(mate::Arguments* args) {
-  int x = 0, y = 0;
+void Window::SetPosition(int x, int y, mate::Arguments* args) {
   bool animate = false;
-  if (!args->GetNext(&x) || !args->GetNext(&y) ||
-      (args->Length() == 3 && !args->GetNext(&animate))) {
-    args->ThrowError();
-    return;
-  }
+  args->GetNext(&animate);
   window_->SetPosition(gfx::Point(x, y), animate);
 }
 

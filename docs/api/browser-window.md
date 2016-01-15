@@ -450,14 +450,14 @@ height areas you have within the overall content view.
 
 ### `win.setBounds(options[, animate])`
 
-`options` Object, properties:
+* `options` Object, properties:
 
-* `x` Integer
-* `y` Integer
-* `width` Integer
-* `height` Integer
+  * `x` Integer
+  * `y` Integer
+  * `width` Integer
+  * `height` Integer
 
-`animate` Boolean (optional) _OS X_
+* `animate` Boolean (optional) _OS X_
 
 Resizes and moves the window to `width`, `height`, `x`, `y`.
 
