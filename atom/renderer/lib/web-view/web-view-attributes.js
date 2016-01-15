@@ -56,7 +56,7 @@ class WebViewAttribute {
       })(this),
       enumerable: true
     });
-  };
+  }
 
   // Called when the attribute's value changes.
   handleMutation() {}
