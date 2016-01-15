@@ -47,6 +47,7 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
   * `maxWidth` Integer - Window's maximum width. Default is no limit.
   * `maxHeight` Integer - Window's maximum height. Default is no limit.
   * `resizable` Boolean - Whether window is resizable. Default is `true`.
+  * `movable` Boolean - Whether window is movable. Default is `true`.
   * `alwaysOnTop` Boolean - Whether the window should always stay on top of
     other windows. Default is `false`.
   * `fullscreen` Boolean - Whether the window should show in fullscreen. When
