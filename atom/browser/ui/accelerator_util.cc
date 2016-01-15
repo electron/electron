@@ -59,7 +59,6 @@ bool StringToAccelerator(const std::string& description,
     } else if (tokens[i] == "shift") {
       modifiers |= ui::EF_SHIFT_DOWN;
     } else if (tokens[i] == "plus") {
-      modifiers |= ui::EF_SHIFT_DOWN;
       key = ui::VKEY_OEM_PLUS;
     } else if (tokens[i] == "tab") {
       key = ui::VKEY_TAB;
