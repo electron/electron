@@ -2,7 +2,7 @@ const ipcRenderer = require('electron').ipcRenderer;
 const nativeImage = require('electron').nativeImage;
 
 var nextId = 0;
-var indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
+var indexOf = [].indexOf;
 
 var getNextId = function() {
   return ++nextId;
