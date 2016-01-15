@@ -452,6 +452,11 @@ NativeWindowMac::NativeWindowMac(
     set_force_using_draggable_region(true);
   }
 
+  bool movable;
+  if (options.Get(options::kMovable, &movable)) {
+    [window_ setMovable:movable];
+  }
+
   // On OS X the initial window size doesn't include window frame.
   bool use_content_size = false;
   options.Get(options::kUseContentSize, &use_content_size);
