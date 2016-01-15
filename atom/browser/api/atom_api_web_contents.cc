@@ -280,11 +280,18 @@ WebContents::WebContents(v8::Isolate* isolate,
 }
 
 WebContents::~WebContents() {
-  // The webview's lifetime is completely controlled by GuestViewManager, so
-  // it is always destroyed by calling webview.destroy(), we need to make
-  // sure the "destroyed" event is emitted manually.
-  if (type_ == WEB_VIEW && managed_web_contents())
+  // The destroy() is called.
+  if (managed_web_contents()) {
+    // For webview we need to tell content module to do some cleanup work before
+    // destroying it.
+    if (type_ == WEB_VIEW)
+      guest_delegate_->Destroy();
+
+    // The WebContentsDestroyed will not be called automatically because we
+    // unsubscribe from webContents before destroying it. So we have to manually
+    // call it here to make sure "destroyed" event is emitted.
     WebContentsDestroyed();
+  }
 }
 
 bool WebContents::AddMessageToConsole(content::WebContents* source,
@@ -617,6 +624,18 @@ bool WebContents::OnMessageReceived(const IPC::Message& message) {
   return handled;
 }
 
+// There are three ways of destroying a webContents:
+// 1. call webContents.destory();
+// 2. garbage collection;
+// 3. user closes the window of webContents;
+// For webview only #1 will happen, for BrowserWindow both #1 and #3 may
+// happen. The #2 should never happen for webContents, because webview is
+// managed by GuestViewManager, and BrowserWindow's webContents is managed
+// by api::Window.
+// For #1, the destructor will do the cleanup work and we only need to make
+// sure "destroyed" event is emitted. For #3, the content::WebContents will
+// be destroyed on close, and WebContentsDestroyed would be called for it, so
+// we need to make sure the api::WebContents is also deleted.
 void WebContents::WebContentsDestroyed() {
   // The RenderViewDeleted was not called when the WebContents is destroyed.
   RenderViewDeleted(web_contents()->GetRenderViewHost());
@@ -627,8 +646,6 @@ void WebContents::WebContentsDestroyed() {
 
   // Cleanup relationships with other parts.
   RemoveFromWeakMap();
-  if (type_ == WEB_VIEW)
-    guest_delegate_->Destroy();
 
   // We can not call Destroy here because we need to call Emit first, but we
   // also do not want any method to be used, so just mark as destroyed here.

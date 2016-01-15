@@ -1,3 +1,5 @@
+'use strict';
+
 const path = require('path');
 const electron = require('electron');
 const ipcMain = electron.ipcMain;
@@ -41,7 +43,7 @@ var valueToMeta = function(sender, value, optimizeSimpleObject) {
   }
 
   // Treat the arguments object as array.
-  if (meta.type === 'object' && (value.callee != null) && (value.length != null)) {
+  if (meta.type === 'object' && (value.hasOwnProperty('callee')) && (value.length != null)) {
     meta.type = 'array';
   }
   if (meta.type === 'array') {
@@ -113,7 +115,7 @@ var exceptionToMeta = function(error) {
 var unwrapArgs = function(sender, args) {
   var metaToValue;
   metaToValue = function(meta) {
-    var i, len, member, ref, rendererReleased, ret, returnValue;
+    var i, len, member, ref, rendererReleased, returnValue;
     switch (meta.type) {
       case 'value':
         return meta.value;
@@ -130,7 +132,7 @@ var unwrapArgs = function(sender, args) {
           then: metaToValue(meta.then)
         });
       case 'object':
-        ret = v8Util.createObjectWithName(meta.name);
+        let ret = v8Util.createObjectWithName(meta.name);
         ref = meta.members;
         for (i = 0, len = ref.length; i < len; i++) {
           member = ref[i];
@@ -147,31 +149,30 @@ var unwrapArgs = function(sender, args) {
         if (!sender.callbacks) {
           sender.callbacks = new IDWeakMap;
           sender.on('render-view-deleted', function() {
-            return sender.callbacks.clear();
+            return this.callbacks.clear();
           });
         }
-        if (sender.callbacks.has(meta.id)) {
+
+        if (sender.callbacks.has(meta.id))
           return sender.callbacks.get(meta.id);
-        }
+
+        // Prevent the callback from being called when its page is gone.
         rendererReleased = false;
-        objectsRegistry.once("clear-" + (sender.getId()), function() {
-          return rendererReleased = true;
+        sender.once('render-view-deleted', function() {
+          rendererReleased = true;
         });
-        ret = function() {
-          if (rendererReleased) {
-            throw new Error("Attempting to call a function in a renderer window that has been closed or released. Function provided here: " + meta.location + ".");
-          }
-          return sender.send('ATOM_RENDERER_CALLBACK', meta.id, valueToMeta(sender, arguments));
+
+        let callIntoRenderer = function(...args) {
+          if (rendererReleased)
+            throw new Error(`Attempting to call a function in a renderer window that has been closed or released. Function provided here: ${meta.location}.`);
+          sender.send('ATOM_RENDERER_CALLBACK', meta.id, valueToMeta(sender, args));
         };
-        v8Util.setDestructor(ret, function() {
-          if (rendererReleased) {
-            return;
-          }
-          sender.callbacks.remove(meta.id);
-          return sender.send('ATOM_RENDERER_RELEASE_CALLBACK', meta.id);
+        v8Util.setDestructor(callIntoRenderer, function() {
+          if (!rendererReleased)
+            sender.send('ATOM_RENDERER_RELEASE_CALLBACK', meta.id);
         });
-        sender.callbacks.set(meta.id, ret);
-        return ret;
+        sender.callbacks.set(meta.id, callIntoRenderer);
+        return callIntoRenderer;
       default:
         throw new TypeError("Unknown type: " + meta.type);
     }
