@@ -268,7 +268,7 @@ class UserAgentAttribute extends WebViewAttribute {
 }
 
 // Attribute that set preload script.
-class PreloadAttribute extends WebViewAttribute
+class PreloadAttribute extends WebViewAttribute {
   constructor(webViewImpl) {
     super(webViewConstants.ATTRIBUTE_PRELOAD, webViewImpl);
   }
