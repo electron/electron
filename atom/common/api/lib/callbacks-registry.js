@@ -1,15 +1,16 @@
-var CallbacksRegistry;
+'use strict';
+
 var slice = [].slice;
 
 const v8Util = process.atomBinding('v8_util');
 
-module.exports = CallbacksRegistry = (function() {
-  function CallbacksRegistry() {
+class CallbacksRegistry {
+  constructor() {
     this.nextId = 0;
     this.callbacks = {};
   }
 
-  CallbacksRegistry.prototype.add = function(callback) {
+  add(callback) {
     // The callback is already added.
     var filenameAndLine, id, location, match, ref, regexp, stackString, x;
     id = v8Util.getHiddenValue(callback, 'callbackId');
@@ -37,29 +38,28 @@ module.exports = CallbacksRegistry = (function() {
     v8Util.setHiddenValue(callback, 'callbackId', id);
     v8Util.setHiddenValue(callback, 'location', filenameAndLine);
     return id;
-  };
+  }
 
-  CallbacksRegistry.prototype.get = function(id) {
+  get(id) {
     var ref;
     return (ref = this.callbacks[id]) != null ? ref : function() {};
-  };
+  }
 
-  CallbacksRegistry.prototype.call = function() {
+  call() {
     var args, id, ref;
     id = arguments[0], args = 2 <= arguments.length ? slice.call(arguments, 1) : [];
     return (ref = this.get(id)).call.apply(ref, [global].concat(slice.call(args)));
-  };
+  }
 
-  CallbacksRegistry.prototype.apply = function() {
+  apply() {
     var args, id, ref;
     id = arguments[0], args = 2 <= arguments.length ? slice.call(arguments, 1) : [];
     return (ref = this.get(id)).apply.apply(ref, [global].concat(slice.call(args)));
-  };
+  }
 
-  CallbacksRegistry.prototype.remove = function(id) {
+  remove(id) {
     return delete this.callbacks[id];
-  };
+  }
+}
 
-  return CallbacksRegistry;
-
-})();
+modules.exports = CallbacksRegistry
