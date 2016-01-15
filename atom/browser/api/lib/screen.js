@@ -1,8 +1,5 @@
-var EventEmitter, screen;
-
-EventEmitter = require('events').EventEmitter;
-
-screen = process.atomBinding('screen').screen;
+const EventEmitter = require('events').EventEmitter;
+const screen = process.atomBinding('screen').screen;
 
 screen.__proto__ = EventEmitter.prototype;
 

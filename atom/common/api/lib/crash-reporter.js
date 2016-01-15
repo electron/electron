@@ -1,18 +1,11 @@
-var CrashReporter, binding, crashRepoter, electron, fs, os, path, spawn;
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
+const spawn = require('child_process').spawn;
+const electron = require('electron');
+const binding = process.atomBinding('crash_reporter');
 
-fs = require('fs');
-
-os = require('os');
-
-path = require('path');
-
-spawn = require('child_process').spawn;
-
-electron = require('electron');
-
-binding = process.atomBinding('crash_reporter');
-
-CrashReporter = (function() {
+var CrashReporter = (function() {
   function CrashReporter() {}
 
   CrashReporter.prototype.start = function(options) {
@@ -99,6 +92,4 @@ CrashReporter = (function() {
 
 })();
 
-crashRepoter = new CrashReporter;
-
-module.exports = crashRepoter;
+module.exports = new CrashReporter;

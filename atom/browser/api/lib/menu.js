@@ -1,19 +1,15 @@
-var BrowserWindow, EventEmitter, Menu, MenuItem, applicationMenu, bindings, generateGroupId, indexOfItemById, indexToInsertByPosition, nextGroupId, ref, v8Util;
-
-ref = require('electron'), BrowserWindow = ref.BrowserWindow, MenuItem = ref.MenuItem;
-
-EventEmitter = require('events').EventEmitter;
-
-v8Util = process.atomBinding('v8_util');
-
-bindings = process.atomBinding('menu');
+const BrowserWindow = require('electron').BrowserWindow;
+const MenuItem = require('electron').MenuItem;
+const EventEmitter = require('events').EventEmitter;
+const v8Util = process.atomBinding('v8_util');
+const bindings = process.atomBinding('menu');
 
 // Automatically generated radio menu item's group id.
-nextGroupId = 0;
+var nextGroupId = 0;
 
 // Search between seperators to find a radio menu item and return its group id,
 // otherwise generate a group id.
-generateGroupId = function(items, pos) {
+var generateGroupId = function(items, pos) {
   var i, item, j, k, ref1, ref2, ref3;
   if (pos > 0) {
     for (i = j = ref1 = pos - 1; ref1 <= 0 ? j <= 0 : j >= 0; i = ref1 <= 0 ? ++j : --j) {
@@ -40,7 +36,7 @@ generateGroupId = function(items, pos) {
 };
 
 // Returns the index of item according to |id|.
-indexOfItemById = function(items, id) {
+var indexOfItemById = function(items, id) {
   var i, item, j, len;
   for (i = j = 0, len = items.length; j < len; i = ++j) {
     item = items[i];
@@ -52,7 +48,7 @@ indexOfItemById = function(items, id) {
 };
 
 // Returns the index of where to insert the item according to |position|.
-indexToInsertByPosition = function(items, position) {
+var indexToInsertByPosition = function(items, position) {
   var id, insertIndex, query, ref1;
   if (!position) {
     return items.length;
@@ -87,7 +83,7 @@ indexToInsertByPosition = function(items, position) {
   return insertIndex;
 };
 
-Menu = bindings.Menu;
+const Menu = bindings.Menu;
 
 Menu.prototype.__proto__ = EventEmitter.prototype;
 
@@ -265,7 +261,7 @@ Menu.prototype._callMenuWillShow = function() {
   return results;
 };
 
-applicationMenu = null;
+var applicationMenu = null;
 
 Menu.setApplicationMenu = function(menu) {
   var j, len, results, w, windows;

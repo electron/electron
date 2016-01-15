@@ -1,15 +1,13 @@
-var app, logAndThrow, protocol;
-
-app = require('electron').app;
+const app = require('electron').app;
 
 if (!app.isReady()) {
   throw new Error('Can not initialize protocol module before app is ready');
 }
 
-protocol = process.atomBinding('protocol').protocol;
+const protocol = process.atomBinding('protocol').protocol;
 
 // Warn about removed APIs.
-logAndThrow = function(callback, message) {
+var logAndThrow = function(callback, message) {
   console.error(message);
   if (callback) {
     return callback(new Error(message));

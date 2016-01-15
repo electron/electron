@@ -1,15 +1,13 @@
-var EventEmitter, Menu, app, appPath, bindings, deprecate, downloadItemBindings, fn, i, len, name, ref, ref1, session, wrapDownloadItem,
-  slice = [].slice;
+const deprecate = require('electron').deprecate;
+const session = require('electron').session;
+const Menu = require('electron').Menu;
+const EventEmitter = require('events').EventEmitter;
 
-ref = require('electron'), deprecate = ref.deprecate, session = ref.session, Menu = ref.Menu;
+const bindings = process.atomBinding('app');
+const downloadItemBindings = process.atomBinding('download_item');
+const app = bindings.app;
 
-EventEmitter = require('events').EventEmitter;
-
-bindings = process.atomBinding('app');
-
-downloadItemBindings = process.atomBinding('download_item');
-
-app = bindings.app;
+var slice = [].slice;
 
 app.__proto__ = EventEmitter.prototype;
 
@@ -43,7 +41,7 @@ if (process.platform === 'darwin') {
   };
 }
 
-appPath = null;
+var appPath = null;
 
 app.setAppPath = function(path) {
   return appPath = path;
@@ -54,17 +52,18 @@ app.getAppPath = function() {
 };
 
 // Routes the events to webContents.
-ref1 = ['login', 'certificate-error', 'select-client-certificate'];
-fn = function(name) {
+var ref1 = ['login', 'certificate-error', 'select-client-certificate'];
+var fn = function(name) {
   return app.on(name, function() {
     var args, event, webContents;
     event = arguments[0], webContents = arguments[1], args = 3 <= arguments.length ? slice.call(arguments, 2) : [];
     return webContents.emit.apply(webContents, [name, event].concat(slice.call(args)));
   });
 };
+var i, len, name;
 for (i = 0, len = ref1.length; i < len; i++) {
   name = ref1[i];
-  fn(name);
+  fn(ref1[i]);
 }
 
 // Deprecated.
@@ -106,7 +105,7 @@ deprecate.event(app, 'activate-with-no-open-windows', 'activate', function(event
 deprecate.event(app, 'select-certificate', 'select-client-certificate');
 
 // Wrappers for native classes.
-wrapDownloadItem = function(downloadItem) {
+var wrapDownloadItem = function(downloadItem) {
 
   // downloadItem is an EventEmitter.
   downloadItem.__proto__ = EventEmitter.prototype;

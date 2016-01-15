@@ -1,6 +1,4 @@
-var common;
-
-common = require('../../../../common/api/lib/exports/electron');
+const common = require('../../../../common/api/lib/exports/electron');
 
 // Import common modules.
 common.defineProperties(exports);

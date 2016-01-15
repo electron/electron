@@ -1,14 +1,9 @@
 'user strict';
 
-var Module, arg, error, error1, events, globalPaths, i, len, nodeIntegration, path, pathname, preloadScript, ref, url, v8Util;
-
-events = require('events');
-
-path = require('path');
-
-url = require('url');
-
-Module = require('module');
+const events = require('events');
+const path = require('path');
+const url = require('url');
+const Module = require('module');
 
 
 // We modified the original process.argv to let node.js load the
@@ -23,7 +18,7 @@ require(path.resolve(__dirname, '..', '..', 'common', 'lib', 'reset-search-paths
 // Import common settings.
 require(path.resolve(__dirname, '..', '..', 'common', 'lib', 'init'));
 
-globalPaths = Module.globalPaths;
+var globalPaths = Module.globalPaths;
 
 if (!process.env.ELECTRON_HIDE_INTERNAL_MODULES) {
   globalPaths.push(path.resolve(__dirname, '..', 'api', 'lib'));
@@ -33,7 +28,7 @@ if (!process.env.ELECTRON_HIDE_INTERNAL_MODULES) {
 globalPaths.push(path.resolve(__dirname, '..', 'api', 'lib', 'exports'));
 
 // The global variable will be used by ipc for event dispatching
-v8Util = process.atomBinding('v8_util');
+var v8Util = process.atomBinding('v8_util');
 
 v8Util.setHiddenValue(global, 'ipc', new events.EventEmitter);
 
@@ -46,9 +41,11 @@ electron.ipcRenderer.on('ELECTRON_INTERNAL_RENDERER_WEB_FRAME_METHOD', (event, m
 });
 
 // Process command line arguments.
-nodeIntegration = 'false';
+var nodeIntegration = 'false';
+var preloadScript = null;
 
-ref = process.argv;
+var ref = process.argv;
+var i, len, arg;
 for (i = 0, len = ref.length; i < len; i++) {
   arg = ref[i];
   if (arg.indexOf('--guest-instance-id=') === 0) {
@@ -90,7 +87,7 @@ if (nodeIntegration === 'true' || nodeIntegration === 'all' || nodeIntegration =
 
   // Set the __filename to the path of html file if it is file: protocol.
   if (window.location.protocol === 'file:') {
-    pathname = process.platform === 'win32' && window.location.pathname[0] === '/' ? window.location.pathname.substr(1) : window.location.pathname;
+    var pathname = process.platform === 'win32' && window.location.pathname[0] === '/' ? window.location.pathname.substr(1) : window.location.pathname;
     global.__filename = path.normalize(decodeURIComponent(pathname));
     global.__dirname = path.dirname(global.__filename);
 
@@ -132,8 +129,7 @@ if (nodeIntegration === 'true' || nodeIntegration === 'all' || nodeIntegration =
 if (preloadScript) {
   try {
     require(preloadScript);
-  } catch (error1) {
-    error = error1;
+  } catch (error) {
     if (error.code === 'MODULE_NOT_FOUND') {
       console.error("Unable to load preload script " + preloadScript);
     } else {

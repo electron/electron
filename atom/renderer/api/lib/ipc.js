@@ -1,15 +1,14 @@
-var EventEmitter, deprecate, ipc, ipcRenderer, method, ref,
-  slice = [].slice;
+const ipcRenderer = require('electron').ipcRenderer;
+const deprecate = require('electron').deprecate;
+const EventEmitter = require('events').EventEmitter;
 
-ref = require('electron'), ipcRenderer = ref.ipcRenderer, deprecate = ref.deprecate;
-
-EventEmitter = require('events').EventEmitter;
+var slice = [].slice;
 
 // This module is deprecated, we mirror everything from ipcRenderer.
 deprecate.warn('ipc module', 'require("electron").ipcRenderer');
 
 // Routes events of ipcRenderer.
-ipc = new EventEmitter;
+var ipc = new EventEmitter;
 
 ipcRenderer.emit = function() {
   var args, channel, event;
@@ -19,7 +18,7 @@ ipcRenderer.emit = function() {
 };
 
 // Deprecated.
-for (method in ipcRenderer) {
+for (var method in ipcRenderer) {
   if (method.startsWith('send')) {
     ipc[method] = ipcRenderer[method];
   }

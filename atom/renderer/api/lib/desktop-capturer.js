@@ -1,16 +1,15 @@
-var getNextId, ipcRenderer, isValid, nativeImage, nextId, ref,
-  indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
+const ipcRenderer = require('electron').ipcRenderer;
+const nativeImage = require('electron').nativeImage;
 
-ref = require('electron'), ipcRenderer = ref.ipcRenderer, nativeImage = ref.nativeImage;
+var nextId = 0;
+var indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
-nextId = 0;
-
-getNextId = function() {
+var getNextId = function() {
   return ++nextId;
 };
 
 // |options.type| can not be empty and has to include 'window' or 'screen'.
-isValid = function(options) {
+var isValid = function(options) {
   return ((options != null ? options.types : void 0) != null) && Array.isArray(options.types);
 };
 

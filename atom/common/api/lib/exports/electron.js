@@ -1,7 +1,6 @@
 // Do not expose the internal modules to `require`.
 exports.hideInternalModules = function() {
-  var globalPaths;
-  globalPaths = require('module').globalPaths;
+  var globalPaths = require('module').globalPaths;
   if (globalPaths.length === 3) {
 
     // Remove the "common/api/lib" and "browser-or-renderer/api/lib".

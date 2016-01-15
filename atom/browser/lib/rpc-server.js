@@ -1,20 +1,14 @@
-var IDWeakMap, callFunction, electron, exceptionToMeta, ipcMain, objectsRegistry, path, plainObjectToMeta, unwrapArgs, v8Util, valueToMeta,
-  slice = [].slice;
+const path = require('path');
+const electron = require('electron');
+const ipcMain = electron.ipcMain;
+const objectsRegistry = require('./objects-registry');
+const v8Util = process.atomBinding('v8_util');
+const IDWeakMap = process.atomBinding('id_weak_map').IDWeakMap;
 
-path = require('path');
-
-electron = require('electron');
-
-ipcMain = electron.ipcMain;
-
-objectsRegistry = require('./objects-registry');
-
-v8Util = process.atomBinding('v8_util');
-
-IDWeakMap = process.atomBinding('id_weak_map').IDWeakMap;
+var slice = [].slice;
 
 // Convert a real value into meta data.
-valueToMeta = function(sender, value, optimizeSimpleObject) {
+var valueToMeta = function(sender, value, optimizeSimpleObject) {
   var el, field, i, len, meta, name;
   if (optimizeSimpleObject == null) {
     optimizeSimpleObject = false;
@@ -97,7 +91,7 @@ valueToMeta = function(sender, value, optimizeSimpleObject) {
 };
 
 // Convert object to meta by value.
-plainObjectToMeta = function(obj) {
+var plainObjectToMeta = function(obj) {
   return Object.getOwnPropertyNames(obj).map(function(name) {
     return {
       name: name,
@@ -107,7 +101,7 @@ plainObjectToMeta = function(obj) {
 };
 
 // Convert Error into meta data.
-exceptionToMeta = function(error) {
+var exceptionToMeta = function(error) {
   return {
     type: 'exception',
     message: error.message,
@@ -116,7 +110,7 @@ exceptionToMeta = function(error) {
 };
 
 // Convert array of meta data from renderer into array of real values.
-unwrapArgs = function(sender, args) {
+var unwrapArgs = function(sender, args) {
   var metaToValue;
   metaToValue = function(meta) {
     var i, len, member, ref, rendererReleased, ret, returnValue;
@@ -187,7 +181,7 @@ unwrapArgs = function(sender, args) {
 
 // Call a function and send reply asynchronously if it's a an asynchronous
 // style function and the caller didn't pass a callback.
-callFunction = function(event, func, caller, args) {
+var callFunction = function(event, func, caller, args) {
   var e, error1, funcMarkedAsync, funcName, funcPassedCallback, ref, ret;
   funcMarkedAsync = v8Util.getHiddenValue(func, 'asynchronous');
   funcPassedCallback = typeof args[args.length - 1] === 'function';

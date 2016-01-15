@@ -1,18 +1,18 @@
-var BrowserWindowProxy, a, getHistoryOperation, ipcRenderer, ref, remote, resolveURL, sendHistoryOperation,
-  slice = [].slice;
+const ipcRenderer = require('electron').ipcRenderer;
+const remote = require('electron').remote;
 
-ref = require('electron'), ipcRenderer = ref.ipcRenderer, remote = ref.remote;
+var slice = [].slice;
 
 // Helper function to resolve relative url.
-a = window.top.document.createElement('a');
+var a = window.top.document.createElement('a');
 
-resolveURL = function(url) {
+var resolveURL = function(url) {
   a.href = url;
   return a.href;
 };
 
 // Window object returned by "window.open".
-BrowserWindowProxy = (function() {
+var BrowserWindowProxy = (function() {
   BrowserWindowProxy.proxies = {};
 
   BrowserWindowProxy.getOrCreate = function(guestId) {
@@ -180,13 +180,13 @@ ipcRenderer.on('ATOM_SHELL_GUEST_WINDOW_POSTMESSAGE', function(event, sourceId, 
 });
 
 // Forward history operations to browser.
-sendHistoryOperation = function() {
+var sendHistoryOperation = function() {
   var args;
   args = 1 <= arguments.length ? slice.call(arguments, 0) : [];
   return ipcRenderer.send.apply(ipcRenderer, ['ATOM_SHELL_NAVIGATION_CONTROLLER'].concat(slice.call(args)));
 };
 
-getHistoryOperation = function() {
+var getHistoryOperation = function() {
   var args;
   args = 1 <= arguments.length ? slice.call(arguments, 0) : [];
   return ipcRenderer.sendSync.apply(ipcRenderer, ['ATOM_SHELL_SYNC_NAVIGATION_CONTROLLER'].concat(slice.call(args)));

@@ -1,15 +1,12 @@
-var deepEqual, desktopCapturer, ipcMain, requestsQueue;
+const ipcMain = require('electron').ipcMain;
+const desktopCapturer = process.atomBinding('desktop_capturer').desktopCapturer;
 
-ipcMain = require('electron').ipcMain;
-
-desktopCapturer = process.atomBinding('desktop_capturer').desktopCapturer;
-
-deepEqual = function(opt1, opt2) {
+var deepEqual = function(opt1, opt2) {
   return JSON.stringify(opt1) === JSON.stringify(opt2);
 };
 
 // A queue for holding all requests from renderer process.
-requestsQueue = [];
+var requestsQueue = [];
 
 ipcMain.on('ATOM_BROWSER_DESKTOP_CAPTURER_GET_SOURCES', function(event, captureWindow, captureScreen, thumbnailSize, id) {
   var request;

@@ -1,16 +1,12 @@
-var AutoUpdater, EventEmitter, app, squirrelUpdate, url,
-  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-  hasProp = {}.hasOwnProperty;
+const app = require('electron').app;
+const EventEmitter = require('events').EventEmitter;
+const url = require('url');
+const squirrelUpdate = require('./squirrel-update-win');
 
-app = require('electron').app;
+var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+hasProp = {}.hasOwnProperty;
 
-EventEmitter = require('events').EventEmitter;
-
-url = require('url');
-
-squirrelUpdate = require('./squirrel-update-win');
-
-AutoUpdater = (function(superClass) {
+var AutoUpdater = (function(superClass) {
   extend(AutoUpdater, superClass);
 
   function AutoUpdater() {

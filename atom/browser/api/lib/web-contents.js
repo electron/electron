@@ -1,21 +1,22 @@
 'use strict';
 
-var EventEmitter, Menu, NavigationController, PDFPageSize, binding, deprecate, getNextId, ipcMain, nextId, ref, session, wrapWebContents,
-  slice = [].slice;
+const EventEmitter = require('events').EventEmitter;
+const deprecate = require('electron').deprecate;
+const ipcMain = require('electron').ipcMain;
+const session = require('electron').session;
+const NavigationController = require('electron').NavigationController;
+const Menu = require('electron').Menu;
 
-EventEmitter = require('events').EventEmitter;
+const binding = process.atomBinding('web_contents');
 
-ref = require('electron'), deprecate = ref.deprecate, ipcMain = ref.ipcMain, session = ref.session, NavigationController = ref.NavigationController, Menu = ref.Menu;
+let  slice = [].slice;
+let nextId = 0;
 
-binding = process.atomBinding('web_contents');
-
-nextId = 0;
-
-getNextId = function() {
+let getNextId = function() {
   return ++nextId;
 };
 
-PDFPageSize = {
+let PDFPageSize = {
   A5: {
     custom_display_name: "A5",
     height_microns: 210000,
@@ -64,7 +65,7 @@ const webFrameMethods = [
   'setZoomLevelLimits',
 ];
 
-wrapWebContents = function(webContents) {
+let wrapWebContents = function(webContents) {
   // webContents is an EventEmitter.
   var controller, method, name, ref1;
   webContents.__proto__ = EventEmitter.prototype;

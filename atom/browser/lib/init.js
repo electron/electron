@@ -1,13 +1,9 @@
-var Module, Readable, app, consoleLog, e, error1, fs, globalPaths, i, len, mainStartupScript, packageJson, packagePath, path, searchPaths, stdin, streamWrite, util,
-  slice = [].slice;
+const fs = require('fs');
+const path = require('path');
+const util = require('util');
+const Module = require('module');
 
-fs = require('fs');
-
-path = require('path');
-
-util = require('util');
-
-Module = require('module');
+var slice = [].slice;
 
 // We modified the original process.argv to let node.js load the atom.js,
 // we need to restore it here.
@@ -19,7 +15,7 @@ require(path.resolve(__dirname, '..', '..', 'common', 'lib', 'reset-search-paths
 // Import common settings.
 require(path.resolve(__dirname, '..', '..', 'common', 'lib', 'init'));
 
-globalPaths = Module.globalPaths;
+var globalPaths = Module.globalPaths;
 
 if (!process.env.ELECTRON_HIDE_INTERNAL_MODULES) {
   globalPaths.push(path.resolve(__dirname, '..', 'api', 'lib'));
@@ -31,12 +27,12 @@ globalPaths.push(path.resolve(__dirname, '..', 'api', 'lib', 'exports'));
 if (process.platform === 'win32') {
   // Redirect node's console to use our own implementations, since node can not
   // handle console output when running as GUI program.
-  consoleLog = function() {
+  var consoleLog = function() {
     var args;
     args = 1 <= arguments.length ? slice.call(arguments, 0) : [];
     return process.log(util.format.apply(util, args) + "\n");
   };
-  streamWrite = function(chunk, encoding, callback) {
+  var streamWrite = function(chunk, encoding, callback) {
     if (Buffer.isBuffer(chunk)) {
       chunk = chunk.toString(encoding);
     }
@@ -50,8 +46,8 @@ if (process.platform === 'win32') {
   process.stdout.write = process.stderr.write = streamWrite;
 
   // Always returns EOF for stdin stream.
-  Readable = require('stream').Readable;
-  stdin = new Readable;
+  var Readable = require('stream').Readable;
+  var stdin = new Readable;
   stdin.push(null);
   process.__defineGetter__('stdin', function() {
     return stdin;
@@ -75,7 +71,7 @@ process.on('uncaughtException', function(error) {
 });
 
 // Emit 'exit' event on quit.
-app = require('electron').app;
+var app = require('electron').app;
 
 app.on('quit', function(event, exitCode) {
   return process.emit('exit', exitCode);
@@ -92,20 +88,17 @@ require('./guest-view-manager');
 
 require('./guest-window-manager');
 
-
 // Now we try to load app's package.json.
-packageJson = null;
-
-searchPaths = ['app', 'app.asar', 'default_app'];
-
+var packageJson = null;
+var searchPaths = ['app', 'app.asar', 'default_app'];
+var i, len, packagePath;
 for (i = 0, len = searchPaths.length; i < len; i++) {
   packagePath = searchPaths[i];
   try {
     packagePath = path.join(process.resourcesPath, packagePath);
     packageJson = JSON.parse(fs.readFileSync(path.join(packagePath, 'package.json')));
     break;
-  } catch (error1) {
-    e = error1;
+  } catch (error) {
     continue;
   }
 }
@@ -153,7 +146,7 @@ require('./chrome-extension');
 require('./desktop-capturer');
 
 // Set main startup script of the app.
-mainStartupScript = packageJson.main || 'index.js';
+var mainStartupScript = packageJson.main || 'index.js';
 
 // Finally load app's main.js and transfer control to C++.
 Module._load(path.join(packagePath, mainStartupScript), Module, true);

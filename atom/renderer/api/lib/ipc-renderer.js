@@ -1,14 +1,11 @@
-var EventEmitter, binding, ipcRenderer, v8Util,
-  slice = [].slice;
+const EventEmitter = require('events').EventEmitter;
+const binding = process.atomBinding('ipc');
+const v8Util = process.atomBinding('v8_util');
 
-EventEmitter = require('events').EventEmitter;
-
-binding = process.atomBinding('ipc');
-
-v8Util = process.atomBinding('v8_util');
+var slice = [].slice;
 
 // Created by init.coffee.
-ipcRenderer = v8Util.getHiddenValue(global, 'ipc');
+const ipcRenderer = v8Util.getHiddenValue(global, 'ipc');
 
 ipcRenderer.send = function() {
   var args;

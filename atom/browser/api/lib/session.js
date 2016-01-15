@@ -1,10 +1,6 @@
-var EventEmitter, PERSIST_PERFIX, bindings, wrapSession;
-
-EventEmitter = require('events').EventEmitter;
-
-bindings = process.atomBinding('session');
-
-PERSIST_PERFIX = 'persist:';
+const EventEmitter = require('events').EventEmitter;
+const bindings = process.atomBinding('session');
+const PERSIST_PERFIX = 'persist:';
 
 // Returns the Session from |partition| string.
 exports.fromPartition = function(partition) {
@@ -29,7 +25,7 @@ Object.defineProperty(exports, 'defaultSession', {
   }
 });
 
-wrapSession = function(session) {
+var wrapSession = function(session) {
   // session is an EventEmitter.
   return session.__proto__ = EventEmitter.prototype;
 };

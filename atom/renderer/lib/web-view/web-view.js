@@ -1,26 +1,26 @@
 'user strict';
 
-var WebViewImpl, deprecate, getNextId, guestViewInternal, ipcRenderer, listener, nextId, ref, registerBrowserPluginElement, registerWebViewElement, remote, useCapture, v8Util, webFrame, webViewConstants,
-  hasProp = {}.hasOwnProperty,
-  slice = [].slice;
+const deprecate = require('electron').deprecate;
+const webFrame = require('electron').webFrame;
+const remote = require('electron').remote;
+const ipcRenderer = require('electron').ipcRenderer;
 
-ref = require('electron'), deprecate = ref.deprecate, webFrame = ref.webFrame, remote = ref.remote, ipcRenderer = ref.ipcRenderer;
+const v8Util = process.atomBinding('v8_util');
+const guestViewInternal = require('./guest-view-internal');
+const webViewConstants = require('./web-view-constants');
 
-v8Util = process.atomBinding('v8_util');
-
-guestViewInternal = require('./guest-view-internal');
-
-webViewConstants = require('./web-view-constants');
+var hasProp = {}.hasOwnProperty;
+var slice = [].slice;
 
 // ID generator.
-nextId = 0;
+var nextId = 0;
 
-getNextId = function() {
+var getNextId = function() {
   return ++nextId;
 };
 
 // Represents the internal state of the WebView node.
-WebViewImpl = (function() {
+var WebViewImpl = (function() {
   function WebViewImpl(webviewNode) {
     var shadowRoot;
     this.webviewNode = webviewNode;
@@ -274,7 +274,7 @@ WebViewImpl = (function() {
 })();
 
 // Registers browser plugin <object> custom element.
-registerBrowserPluginElement = function() {
+var registerBrowserPluginElement = function() {
   var proto;
   proto = Object.create(HTMLObjectElement.prototype);
   proto.createdCallback = function() {
@@ -310,7 +310,7 @@ registerBrowserPluginElement = function() {
 };
 
 // Registers <webview> custom element.
-registerWebViewElement = function() {
+var registerWebViewElement = function() {
   var createBlockHandler, createNonBlockHandler, i, j, len, len1, m, methods, nonblockMethods, proto;
   proto = Object.create(HTMLObjectElement.prototype);
   proto.createdCallback = function() {
@@ -444,9 +444,9 @@ registerWebViewElement = function() {
   return delete proto.attributeChangedCallback;
 };
 
-useCapture = true;
+var useCapture = true;
 
-listener = function(event) {
+var listener = function(event) {
   if (document.readyState === 'loading') {
     return;
   }

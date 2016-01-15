@@ -1,8 +1,5 @@
-var Module, path;
-
-path = require('path');
-
-Module = require('module');
+const path = require('path');
+const Module = require('module');
 
 // Clear Node's global search paths.
 Module.globalPaths.length = 0;
