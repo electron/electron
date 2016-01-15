@@ -1,7 +1,7 @@
-var CallbacksRegistry, v8Util,
-  slice = [].slice;
+var CallbacksRegistry;
+var slice = [].slice;
 
-v8Util = process.atomBinding('v8_util');
+const v8Util = process.atomBinding('v8_util');
 
 module.exports = CallbacksRegistry = (function() {
   function CallbacksRegistry() {
