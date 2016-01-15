@@ -1,0 +1,37 @@
+{
+  "rules": {
+    "indent": [
+      2,
+      2,
+      {
+        "SwitchCase": 1
+      }
+    ],
+    "quotes": [
+      2,
+      "single"
+    ],
+    "linebreak-style": [
+      2,
+      "unix"
+    ],
+    "semi": [
+      2,
+      "always"
+    ],
+    "comma-dangle": 0,
+    "indent": 0,
+    "no-console": 0,
+    "no-undef": 0,
+    "no-unreachable": 0,
+    "no-unused-vars": 0,
+    "quotes": 0,
+    "semi": 0
+  },
+  "env": {
+    "es6": true,
+    "node": true,
+    "browser": true
+  },
+  "extends": "eslint:recommended"
+}
