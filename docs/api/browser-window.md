@@ -81,11 +81,11 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
   * `transparent` Boolean - Makes the window [transparent](frameless-window.md).
     Default is `false`.
   * `type` String - The type of window, default is normal window. See more about
-    this bellow.
+    this below.
   * `titleBarStyle` String - The style of window title bar. See more about this
-    bellow.
+    below.
   * `webPreferences` Object - Settings of web page's features. See more about
-    this bellow.
+    this below.
 
 The possible values and behaviors of `type` option are platform dependent,
 supported values are:
