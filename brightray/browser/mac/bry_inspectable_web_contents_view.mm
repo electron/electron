@@ -6,7 +6,7 @@
 
 #include "content/public/browser/render_widget_host_view.h"
 #import "ui/base/cocoa/underlay_opengl_hosting_window.h"
-#include "ui/gfx/mac/scoped_ns_disable_screen_updates.h"
+#include "ui/gfx/mac/scoped_cocoa_disable_screen_updates.h"
 
 using namespace brightray;
 
@@ -89,7 +89,7 @@ using namespace brightray;
       // Focus on web view.
       devToolsWebContents->RestoreFocus();
     } else {
-      gfx::ScopedNSDisableScreenUpdates disabler;
+      gfx::ScopedCocoaDisableScreenUpdates disabler;
       [devToolsView removeFromSuperview];
       [self adjustSubviews];
     }

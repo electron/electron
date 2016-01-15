@@ -10,10 +10,7 @@
 #include <windows.ui.notifications.h>
 #include <wrl/implements.h>
 
-#include "base/bind.h"
-#include "base/memory/weak_ptr.h"
-#include "content/public/browser/desktop_notification_delegate.h"
-#include "content/public/common/platform_notification_data.h"
+#include "browser/notification.h"
 
 using namespace Microsoft::WRL;
 
@@ -31,20 +28,22 @@ using DesktopToastFailedEventHandler =
     ABI::Windows::Foundation::ITypedEventHandler<ABI::Windows::UI::Notifications::ToastNotification*,
     ABI::Windows::UI::Notifications::ToastFailedEventArgs*>;
 
-class WindowsToastNotification {
+class WindowsToastNotification : public Notification {
  public:
-  WindowsToastNotification(
-      scoped_ptr<content::DesktopNotificationDelegate> delegate);
+  // Should only be called by NotificationPresenterWin.
+  static bool Initialize();
+
+  WindowsToastNotification(NotificationDelegate* delegate,
+                           NotificationPresenter* presenter);
   ~WindowsToastNotification();
 
-  void ShowNotification(const std::wstring& title,
-                        const std::wstring& msg,
-                        std::string icon_path);
-  void DismissNotification();
-
-  base::WeakPtr<WindowsToastNotification> GetWeakPtr() {
-    return weak_factory_.GetWeakPtr();
-  }
+ protected:
+  // Notification:
+  void Show(const base::string16& title,
+            const base::string16& msg,
+            const GURL& icon_url,
+            const SkBitmap& icon) override;
+  void Dismiss() override;
 
  private:
   friend class ToastEventHandler;
@@ -56,7 +55,7 @@ class WindowsToastNotification {
   bool GetToastXml(ABI::Windows::UI::Notifications::IToastNotificationManagerStatics* toastManager,
                    const std::wstring& title,
                    const std::wstring& msg,
-                   std::string icon_path,
+                   const std::wstring& icon_path,
                    ABI::Windows::Data::Xml::Dom::IXmlDocument** toastXml);
   bool SetXmlText(ABI::Windows::Data::Xml::Dom::IXmlDocument* doc,
                   const std::wstring& text);
@@ -64,7 +63,7 @@ class WindowsToastNotification {
                   const std::wstring& title,
                   const std::wstring& body);
   bool SetXmlImage(ABI::Windows::Data::Xml::Dom::IXmlDocument* doc,
-                   std::string icon_path);
+                   const std::wstring& icon_path);
   bool GetTextNodeList(ScopedHString* tag,
                        ABI::Windows::Data::Xml::Dom::IXmlDocument* doc,
                        ABI::Windows::Data::Xml::Dom::IXmlNodeList** nodeList,
@@ -73,14 +72,17 @@ class WindowsToastNotification {
                        ABI::Windows::Data::Xml::Dom::IXmlNode* node,
                        const std::wstring& text);
   bool SetupCallbacks(ABI::Windows::UI::Notifications::IToastNotification* toast);
+  bool RemoveCallbacks(ABI::Windows::UI::Notifications::IToastNotification* toast);
 
-  scoped_ptr<content::DesktopNotificationDelegate> delegate_;
+  static ComPtr<ABI::Windows::UI::Notifications::IToastNotificationManagerStatics> toast_manager_;
+  static ComPtr<ABI::Windows::UI::Notifications::IToastNotifier> toast_notifier_;
+
+  EventRegistrationToken activated_token_;
+  EventRegistrationToken dismissed_token_;
+  EventRegistrationToken failed_token_;
+
   ComPtr<ToastEventHandler> event_handler_;
-  ComPtr<ABI::Windows::UI::Notifications::IToastNotificationManagerStatics> toast_manager_;
-  ComPtr<ABI::Windows::UI::Notifications::IToastNotifier> toast_notifier_;
   ComPtr<ABI::Windows::UI::Notifications::IToastNotification> toast_notification_;
-
-  base::WeakPtrFactory<WindowsToastNotification> weak_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(WindowsToastNotification);
 };

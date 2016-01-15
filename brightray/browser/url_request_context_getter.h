@@ -39,12 +39,12 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
 
     virtual net::NetworkDelegate* CreateNetworkDelegate() { return NULL; }
     virtual std::string GetUserAgent();
-    virtual net::URLRequestJobFactory* CreateURLRequestJobFactory(
+    virtual scoped_ptr<net::URLRequestJobFactory> CreateURLRequestJobFactory(
         content::ProtocolHandlerMap* protocol_handlers,
         content::URLRequestInterceptorScopedVector* protocol_interceptors);
     virtual net::HttpCache::BackendFactory* CreateHttpCacheBackendFactory(
         const base::FilePath& base_path);
-    virtual net::CertVerifier* CreateCertVerifier();
+    virtual scoped_ptr<net::CertVerifier> CreateCertVerifier();
     virtual net::SSLConfigService* CreateSSLConfigService();
     virtual bool AllowNTLMCredentialsForDomain(const GURL& auth_origin);
     virtual bool CanDelegateURLSecurity(const GURL& auth_origin);

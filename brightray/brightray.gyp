@@ -1,7 +1,7 @@
 {
   'variables': {
     # The libraries brightray will be compiled to.
-    'linux_system_libraries': 'gtk+-2.0 libnotify dbus-1 x11 xi xrandr xext gconf-2.0 gmodule-2.0 nss'
+    'linux_system_libraries': 'gtk+-2.0 libnotify dbus-1 x11 xi xcursor xdamage xrandr xcomposite xext xfixes xrender xtst gconf-2.0 gmodule-2.0 nss'
   },
   'includes': [
     'filenames.gypi',
@@ -87,6 +87,14 @@
                   '<(libchromiumcontent_dir)/libdevtools_discovery.a',
                   '<(libchromiumcontent_dir)/libdevtools_http_handler.a',
                   '<(libchromiumcontent_dir)/libhttp_server.a',
+                  '<(libchromiumcontent_dir)/libdesktop_capture.a',
+                  '<(libchromiumcontent_dir)/libdesktop_capture_differ_sse2.a',
+                  '<(libchromiumcontent_dir)/libsystem_wrappers.a',
+                  '<(libchromiumcontent_dir)/librtc_base.a',
+                  '<(libchromiumcontent_dir)/librtc_base_approved.a',
+                  '<(libchromiumcontent_dir)/libwebrtc_common.a',
+                  '<(libchromiumcontent_dir)/libyuv.a',
+                  '<(libchromiumcontent_dir)/libcdm_renderer.a',
                 ],
               },
             }, {
@@ -101,8 +109,17 @@
                   '-lresolv',
                   '-lfontconfig',
                   '-lfreetype',
-                  '-lX11 -lXcursor -lXext -lXfixes -lXrender -lXcomposite -lXdamage -lXtst -lXrandr',
                   '-lexpat',
+                ],
+              },
+            }],
+            ['target_arch=="arm"', {
+              'link_settings': {
+                'libraries': [
+                  '<(libchromiumcontent_dir)/libyuv_neon.a',
+                ],
+                'libraries!': [
+                  '<(libchromiumcontent_dir)/libdesktop_capture_differ_sse2.a',
                 ],
               },
             }],
@@ -112,6 +129,9 @@
           'link_settings': {
             'libraries': [
               '$(SDKROOT)/System/Library/Frameworks/AppKit.framework',
+              # Required by webrtc:
+              '$(SDKROOT)/System/Library/Frameworks/OpenGL.framework',
+              '$(SDKROOT)/System/Library/Frameworks/IOKit.framework',
             ],
           },
           'conditions':  [
@@ -122,6 +142,14 @@
                   '<(libchromiumcontent_dir)/libdevtools_discovery.a',
                   '<(libchromiumcontent_dir)/libdevtools_http_handler.a',
                   '<(libchromiumcontent_dir)/libhttp_server.a',
+                  '<(libchromiumcontent_dir)/libdesktop_capture.a',
+                  '<(libchromiumcontent_dir)/libdesktop_capture_differ_sse2.a',
+                  '<(libchromiumcontent_dir)/librtc_base.a',
+                  '<(libchromiumcontent_dir)/librtc_base_approved.a',
+                  '<(libchromiumcontent_dir)/libsystem_wrappers.a',
+                  '<(libchromiumcontent_dir)/libwebrtc_common.a',
+                  '<(libchromiumcontent_dir)/libyuv.a',
+                  '<(libchromiumcontent_dir)/libcdm_renderer.a',
                 ],
               },
             }, {
@@ -141,7 +169,6 @@
                   '$(SDKROOT)/System/Library/Frameworks/CoreAudio.framework',
                   '$(SDKROOT)/System/Library/Frameworks/CoreMIDI.framework',
                   '$(SDKROOT)/System/Library/Frameworks/CoreVideo.framework',
-                  '$(SDKROOT)/System/Library/Frameworks/OpenGL.framework',
                   # surface.gyp:
                   '$(SDKROOT)/System/Library/Frameworks/IOSurface.framework',
                   # content_common.gypi:
@@ -150,9 +177,10 @@
                   '$(SDKROOT)/System/Library/Frameworks/ApplicationServices.framework',
                   '$(SDKROOT)/System/Library/Frameworks/Carbon.framework',
                   '$(SDKROOT)/System/Library/Frameworks/CoreFoundation.framework',
-                  '$(SDKROOT)/System/Library/Frameworks/IOKit.framework',
                   # content_browser.gypi:
                   '-lbsm',
+                  # content_common.gypi:
+                  '-lsandbox',
                   # bluetooth.gyp:
                   '$(SDKROOT)/System/Library/Frameworks/IOBluetooth.framework',
                 ],
@@ -172,6 +200,14 @@
                   '<(libchromiumcontent_dir)/devtools_discovery.lib',
                   '<(libchromiumcontent_dir)/devtools_http_handler.lib',
                   '<(libchromiumcontent_dir)/http_server.lib',
+                  '<(libchromiumcontent_dir)/desktop_capture.lib',
+                  '<(libchromiumcontent_dir)/desktop_capture_differ_sse2.lib',
+                  '<(libchromiumcontent_dir)/rtc_base.lib',
+                  '<(libchromiumcontent_dir)/rtc_base_approved.lib',
+                  '<(libchromiumcontent_dir)/system_wrappers.lib',
+                  '<(libchromiumcontent_dir)/webrtc_common.lib',
+                  '<(libchromiumcontent_dir)/libyuv.lib',
+                  '<(libchromiumcontent_dir)/cdm_renderer.lib',
                 ],
               },
             }, {

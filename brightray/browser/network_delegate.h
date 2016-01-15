@@ -43,8 +43,11 @@ class NetworkDelegate : public net::NetworkDelegate {
   void OnBeforeRedirect(net::URLRequest* request,
                         const GURL& new_location) override;
   void OnResponseStarted(net::URLRequest* request) override;
-  void OnRawBytesRead(const net::URLRequest& request,
-                      int bytes_read) override;
+  void OnURLRequestJobOrphaned(net::URLRequest* request) override;
+  void OnNetworkBytesReceived(const net::URLRequest& request,
+                              int64_t bytes_read) override;
+  void OnNetworkBytesSent(const net::URLRequest& request,
+                          int64_t bytes_sent) override;
   void OnCompleted(net::URLRequest* request, bool started) override;
   void OnURLRequestDestroyed(net::URLRequest* request) override;
   void OnPACScriptError(int line_number,

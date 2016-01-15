@@ -6,13 +6,7 @@
 #ifndef BRIGHTRAY_BROWSER_NOTIFICATION_PRESENTER_LINUX_H_
 #define BRIGHTRAY_BROWSER_NOTIFICATION_PRESENTER_LINUX_H_
 
-#include <libnotify/notify.h>
-
-#include <map>
-
-#include "base/compiler_specific.h"
 #include "browser/notification_presenter.h"
-#include "ui/base/glib/glib_signal.h"
 
 namespace brightray {
 
@@ -21,31 +15,8 @@ class NotificationPresenterLinux : public NotificationPresenter {
   NotificationPresenterLinux();
   ~NotificationPresenterLinux();
 
-  void RemoveNotification(NotifyNotification *notification);
-
  private:
-  // NotificationPresenter:
-  void ShowNotification(
-      const content::PlatformNotificationData&,
-      const SkBitmap& icon,
-      scoped_ptr<content::DesktopNotificationDelegate> delegate,
-      base::Closure* cancel_callback) override;
-
-  void CancelNotification(NotifyNotification* notification);
-  void DeleteNotification(NotifyNotification* notification);
-
-  CHROMEG_CALLBACK_0(NotificationPresenterLinux, void, OnNotificationClosed, NotifyNotification*);
-  CHROMEG_CALLBACK_1(NotificationPresenterLinux, void, OnNotificationView, NotifyNotification*,
-                     char*);
-
-  // A list of all open NotifyNotification objects.
-  // We do lookups here both by NotifyNotification object (when the user
-  // clicks a notification) and by the <process,view,notification> ID
-  // tuple (when the browser asks to dismiss a notification).  So it's not
-  // a map.
-  // Entries in this list count as refs, so removal from this list should
-  // always go with g_object_unref().
-  GList* notifications_;
+  DISALLOW_COPY_AND_ASSIGN(NotificationPresenterLinux);
 };
 
 }  // namespace brightray

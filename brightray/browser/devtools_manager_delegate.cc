@@ -18,6 +18,7 @@
 #include "components/devtools_discovery/basic_target_descriptor.h"
 #include "components/devtools_discovery/devtools_discovery_manager.h"
 #include "components/devtools_http_handler/devtools_http_handler.h"
+#include "content/grit/shell_resources.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/devtools_frontend_host.h"
 #include "content/public/browser/favicon_status.h"
@@ -34,11 +35,6 @@
 namespace brightray {
 
 namespace {
-
-// A hack here:
-// Copy from grit/shell_resources.h of chromium repository
-// since libcontentchromium doesn't expose content_shell resources.
-const int kIDR_CONTENT_SHELL_DEVTOOLS_DISCOVERY_PAGE = 25500;
 
 class TCPServerSocketFactory
     : public devtools_http_handler::DevToolsHttpHandler::ServerSocketFactory {
@@ -99,6 +95,8 @@ class DevToolsDelegate :
   std::string GetDiscoveryPageHTML() override;
   std::string GetFrontendResource(const std::string& path) override;
   std::string GetPageThumbnailData(const GURL& url) override;
+  content::DevToolsExternalAgentProxyDelegate* HandleWebSocketConnection(
+      const std::string& path) override;
 
  private:
   DISALLOW_COPY_AND_ASSIGN(DevToolsDelegate);
@@ -111,8 +109,9 @@ DevToolsDelegate::~DevToolsDelegate() {
 }
 
 std::string DevToolsDelegate::GetDiscoveryPageHTML() {
+  LOG(WARNING) << IDR_CONTENT_SHELL_DEVTOOLS_DISCOVERY_PAGE;
   return ResourceBundle::GetSharedInstance().GetRawDataResource(
-      kIDR_CONTENT_SHELL_DEVTOOLS_DISCOVERY_PAGE).as_string();
+      IDR_CONTENT_SHELL_DEVTOOLS_DISCOVERY_PAGE).as_string();
 }
 
 
@@ -123,6 +122,11 @@ std::string DevToolsDelegate::GetFrontendResource(
 
 std::string DevToolsDelegate::GetPageThumbnailData(const GURL& url) {
   return std::string();
+}
+
+content::DevToolsExternalAgentProxyDelegate*
+DevToolsDelegate::HandleWebSocketConnection(const std::string& path) {
+  return nullptr;
 }
 
 }  // namespace

@@ -37,7 +37,7 @@ const MediaStreamDevices& EmptyDevices() {
 }  // namespace
 
 MediaCaptureDevicesDispatcher* MediaCaptureDevicesDispatcher::GetInstance() {
-  return Singleton<MediaCaptureDevicesDispatcher>::get();
+  return base::Singleton<MediaCaptureDevicesDispatcher>::get();
 }
 
 MediaCaptureDevicesDispatcher::MediaCaptureDevicesDispatcher()

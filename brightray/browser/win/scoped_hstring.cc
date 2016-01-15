@@ -8,26 +8,34 @@
 
 ScopedHString::ScopedHString(const wchar_t* source)
     : str_(nullptr) {
-  Set(source);
+  Reset(source);
 }
 
 ScopedHString::ScopedHString(const std::wstring& source)
     : str_(nullptr) {
-  WindowsCreateString(source.c_str(), source.length(), &str_);
+  Reset(source);
 }
 
 ScopedHString::ScopedHString() : str_(nullptr) {
 }
 
 ScopedHString::~ScopedHString() {
-  if (str_)
-    WindowsDeleteString(str_);
+  Reset();
 }
 
-void ScopedHString::Set(const wchar_t* source) {
+void ScopedHString::Reset() {
   if (str_) {
     WindowsDeleteString(str_);
     str_ = nullptr;
   }
+}
+
+void ScopedHString::Reset(const wchar_t* source) {
+  Reset();
   WindowsCreateString(source, wcslen(source), &str_);
+}
+
+void ScopedHString::Reset(const std::wstring& source) {
+  Reset();
+  WindowsCreateString(source.c_str(), source.length(), &str_);
 }

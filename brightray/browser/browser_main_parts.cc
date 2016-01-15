@@ -7,6 +7,7 @@
 #include "browser/browser_context.h"
 #include "browser/devtools_manager_delegate.h"
 #include "browser/web_ui_controller_factory.h"
+#include "common/main_delegate.h"
 
 #include "base/command_line.h"
 #include "base/strings/string_number_conversions.h"
@@ -14,6 +15,7 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/common/content_switches.h"
 #include "net/proxy/proxy_resolver_v8.h"
+#include "ui/base/l10n/l10n_util.h"
 
 #if defined(USE_AURA)
 #include "ui/gfx/screen.h"
@@ -39,7 +41,6 @@
 
 #if defined(OS_WIN)
 #include "ui/base/cursor/cursor_loader_win.h"
-#include "ui/base/l10n/l10n_util.h"
 #include "ui/base/l10n/l10n_util_win.h"
 #include "ui/gfx/platform_font_win.h"
 #endif
@@ -169,6 +170,10 @@ void BrowserMainParts::ToolkitInitialized() {
 }
 
 void BrowserMainParts::PreMainMessageLoopStart() {
+#if defined(OS_MACOSX)
+  l10n_util::OverrideLocaleWithCocoaLocale();
+#endif
+  InitializeResourceBundle("");
 #if defined(OS_MACOSX)
   InitializeMainNib();
 #endif

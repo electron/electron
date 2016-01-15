@@ -9,7 +9,9 @@
 #include "content/public/browser/web_ui.h"
 #include "content/public/browser/web_ui_controller_factory.h"
 
+namespace base {
 template <typename T> struct DefaultSingletonTraits;
+}
 
 namespace brightray {
 
@@ -33,7 +35,7 @@ class WebUIControllerFactory : public content::WebUIControllerFactory {
       const GURL& url) const override;
 
  private:
-  friend struct DefaultSingletonTraits<WebUIControllerFactory>;
+  friend struct base::DefaultSingletonTraits<WebUIControllerFactory>;
 
   DISALLOW_COPY_AND_ASSIGN(WebUIControllerFactory);
 };
