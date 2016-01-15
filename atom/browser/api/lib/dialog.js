@@ -163,8 +163,8 @@ module.exports = {
 
 // Mark standard asynchronous functions.
 var ref1 = ['showMessageBox', 'showOpenDialog', 'showSaveDialog'];
-var j, len
+var j, len, api;
 for (j = 0, len = ref1.length; j < len; j++) {
-  var api = ref1[j];
+  api = ref1[j];
   v8Util.setHiddenValue(module.exports[api], 'asynchronous', true);
 }

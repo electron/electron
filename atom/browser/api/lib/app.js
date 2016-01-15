@@ -60,10 +60,10 @@ var fn = function(name) {
     return webContents.emit.apply(webContents, [name, event].concat(slice.call(args)));
   });
 };
-var i, len;
+var i, len, name;
 for (i = 0, len = ref1.length; i < len; i++) {
-  var name = ref1[i];
-  fn(name);
+  name = ref1[i];
+  fn(ref1[i]);
 }
 
 // Deprecated.

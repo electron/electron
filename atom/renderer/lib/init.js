@@ -45,9 +45,9 @@ var nodeIntegration = 'false';
 var preloadScript = null;
 
 var ref = process.argv;
-var i, len;
+var i, len, arg;
 for (i = 0, len = ref.length; i < len; i++) {
-  var arg = ref[i];
+  arg = ref[i];
   if (arg.indexOf('--guest-instance-id=') === 0) {
     // This is a guest web view.
     process.guestInstanceId = parseInt(arg.substr(arg.indexOf('=') + 1));

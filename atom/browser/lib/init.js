@@ -91,9 +91,9 @@ require('./guest-window-manager');
 // Now we try to load app's package.json.
 var packageJson = null;
 var searchPaths = ['app', 'app.asar', 'default_app'];
-var i, len;
+var i, len, packagePath;
 for (i = 0, len = searchPaths.length; i < len; i++) {
-  var packagePath = searchPaths[i];
+  packagePath = searchPaths[i];
   try {
     packagePath = path.join(process.resourcesPath, packagePath);
     packageJson = JSON.parse(fs.readFileSync(path.join(packagePath, 'package.json')));
