@@ -130,7 +130,7 @@ Archive::Archive(const base::FilePath& path)
 
 Archive::~Archive() {
 #if defined(OS_WIN)
-   _close(fd_)
+  _close(fd_);
 #endif
 }
 
