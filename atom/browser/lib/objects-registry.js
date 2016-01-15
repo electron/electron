@@ -1,6 +1,7 @@
 'use strict';
 
 const EventEmitter = require('events').EventEmitter;
+const v8Util = process.atomBinding('v8_util');
 
 class ObjectsRegistry extends EventEmitter {
   constructor() {
