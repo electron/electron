@@ -159,6 +159,13 @@ on complete.
 Removes the cookies matching `url` and `name`, `callback` will called with
 `callback()` on complete.
 
+#### `ses.getCacheSize(callback)`
+
+* `callback` Function
+  * `size` Integer - Cache size used in bytes.
+
+Returns the session's current cache size.
+
 #### `ses.clearCache(callback)`
 
 * `callback` Function - Called when operation is done
@@ -179,43 +186,45 @@ Clears the session’s HTTP cache.
 
 Clears the data of web storages.
 
+#### `ses.flushStorageData()`
+
+Writes any unwritten DOMStorage data to disk.
+
 #### `ses.setProxy(config, callback)`
 
-* `config` String
+* `config` Object
+  * `pacScript` String - The URL associated with the PAC file.
+  * `proxyRules` String - Rules indicating which proxies to use.
 * `callback` Function - Called when operation is done.
 
-If `config` is a PAC url, it is used directly otherwise
-`config` is parsed based on the following rules indicating which
-proxies to use for the session.
+Sets the proxy settings.
+
+When `pacScript` and `proxyRules` are provided together, the `proxyRules`
+option is ignored and `pacScript` configuration is applied.
+
+The `proxyRules` has to follow the rules bellow:
 
 ```
-config = scheme-proxies[";"<scheme-proxies>]
-scheme-proxies = [<url-scheme>"="]<proxy-uri-list>
-url-scheme = "http" | "https" | "ftp" | "socks"
-proxy-uri-list = <proxy-uri>[","<proxy-uri-list>]
-proxy-uri = [<proxy-scheme>"://"]<proxy-host>[":"<proxy-port>]
-
-  For example:
-       "http=foopy:80;ftp=foopy2"  -- use HTTP proxy "foopy:80" for http://
-                                      URLs, and HTTP proxy "foopy2:80" for
-                                      ftp:// URLs.
-       "foopy:80"                  -- use HTTP proxy "foopy:80" for all URLs.
-       "foopy:80,bar,direct://"    -- use HTTP proxy "foopy:80" for all URLs,
-                                      failing over to "bar" if "foopy:80" is
-                                      unavailable, and after that using no
-                                      proxy.
-       "socks4://foopy"            -- use SOCKS v4 proxy "foopy:1080" for all
-                                      URLs.
-       "http=foopy,socks5://bar.com -- use HTTP proxy "foopy" for http URLs,
-                                      and fail over to the SOCKS5 proxy
-                                      "bar.com" if "foopy" is unavailable.
-       "http=foopy,direct://       -- use HTTP proxy "foopy" for http URLs,
-                                      and use no proxy if "foopy" is
-                                      unavailable.
-       "http=foopy;socks=foopy2   --  use HTTP proxy "foopy" for http URLs,
-                                      and use socks4://foopy2 for all other
-                                      URLs.
+proxyRules = schemeProxies[";"<schemeProxies>]
+schemeProxies = [<urlScheme>"="]<proxyURIList>
+urlScheme = "http" | "https" | "ftp" | "socks"
+proxyURIList = <proxyURL>[","<proxyURIList>]
+proxyURL = [<proxyScheme>"://"]<proxyHost>[":"<proxyPort>]
 ```
+
+For example:
+* `http=foopy:80;ftp=foopy2` - Use HTTP proxy `foopy:80` for `http://` URLs, and
+  HTTP proxy `foopy2:80` for `ftp://` URLs.
+* `foopy:80` - Use HTTP proxy `foopy:80` for all URLs.
+* `foopy:80,bar,direct://` - Use HTTP proxy `foopy:80` for all URLs, failing
+  over to `bar` if `foopy:80` is unavailable, and after that using no proxy.
+* `socks4://foopy` - Use SOCKS v4 proxy `foopy:1080` for all URLs.
+* `http=foopy,socks5://bar.com` - Use HTTP proxy `foopy` for http URLs, and fail
+  over to the SOCKS5 proxy `bar.com` if `foopy` is unavailable.
+* `http=foopy,direct://` - Use HTTP proxy `foopy` for http URLs, and use no
+  proxy if `foopy` is unavailable.
+* `http=foopy;socks=foopy2` -  Use HTTP proxy `foopy` for http URLs, and use
+  `socks4://foopy2` for all other URLs.
 
 ### `ses.resolveProxy(url, callback)`
 

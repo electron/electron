@@ -17,7 +17,7 @@ class FilePath;
 namespace chrome {
 
 enum {
-  PATH_START = 2000,
+  PATH_START = 1000,
 
   DIR_APP = PATH_START,         // Directory where dlls and data reside.
   DIR_LOGS,                     // Directory where logs should be written.

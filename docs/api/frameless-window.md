@@ -38,8 +38,7 @@ var win = new BrowserWindow({ transparent: true, frame: false });
 ### Limitations
 
 * You can not click through the transparent area. We are going to introduce an
-  API to set window shape to solve this, but currently blocked at an
-  [upstream bug](https://code.google.com/p/chromium/issues/detail?id=387234).
+  API to set window shape to solve this, see [our issue](https://github.com/atom/electron/issues/1335) for details.
 * Transparent windows are not resizable. Setting `resizable` to `true` may make
   a transparent window stop working on some platforms.
 * The `blur` filter only applies to the web page, so there is no way to apply

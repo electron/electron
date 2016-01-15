@@ -88,4 +88,20 @@ webFrame.setSpellCheckProvider("en-US", true, {
 `scheme`를 보안된 스킴으로 등록합니다. 리소스에 대해 보안 정책을 우회하며,
 ServiceWorker의 등록과 fetch API를 사용할 수 있도록 지원합니다.
 
+### `webFrame.insertText(text)`
+
+* `text` String
+
+포커스된 요소에 `text`를 삽입합니다.
+
+### `webFrame.executeJavaScript(code[, userGesture])`
+
+* `code` String
+* `userGesture` Boolean (optional) - 기본값은 `false` 입니다.
+
+페이지에서 `code`를 실행합니다.
+
+브라우저 윈도우에서 어떤 `requestFullScreen` 같은 HTML API는 사용자의 승인이
+필요합니다. `userGesture`를 `true`로 설정하면 이러한 제약을 제거할 수 있습니다.
+
 [spellchecker]: https://github.com/atom/node-spellchecker

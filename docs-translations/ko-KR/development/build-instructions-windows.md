@@ -5,7 +5,7 @@
 ## 빌드전 요구 사항
 
 * Windows 7 / Server 2008 R2 또는 최신 버전
-* Visual Studio 2013 Update 5 - [VS 2013 커뮤니티 에디션 무료 다운로드](http://www.visualstudio.com/products/visual-studio-community-vs)
+* Visual Studio 2013 Update 4 - [VS 2013 커뮤니티 에디션 무료 다운로드](https://www.visualstudio.com/news/vs2013-community-vs)
 * [Python 2.7](http://www.python.org/download/releases/2.7/)
 * [Node.js](http://nodejs.org/download/)
 * [Git](http://git-scm.com)

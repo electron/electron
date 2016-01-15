@@ -60,6 +60,12 @@ class WebFrame : public mate::Wrappable {
   void RegisterURLSchemeAsBypassingCSP(const std::string& scheme);
   void RegisterURLSchemeAsPrivileged(const std::string& scheme);
 
+  // Editing.
+  void InsertText(const std::string& text);
+
+  // Excecuting scripts.
+  void ExecuteJavaScript(const base::string16& code, mate::Arguments* args);
+
   // mate::Wrappable:
   virtual mate::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate);

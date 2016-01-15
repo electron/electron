@@ -472,6 +472,12 @@ Executes the editing command `replace` in web page.
 
 Executes the editing command `replaceMisspelling` in web page.
 
+### `webContents.insertText(text)`
+
+* `text` String
+
+Inserts `text` to the focused element.
+
 ### `webContents.findInPage(text[, options])`
 
 * `text` String - Content to be searched, must not be empty.

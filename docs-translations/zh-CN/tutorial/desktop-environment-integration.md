@@ -31,7 +31,7 @@ app.clearRecentDocuments();
 ## 自定义的鱼眼菜单(OS X)
 OS X 可以让开发者定制自己的菜单，通常会包含一些常用特性的快捷方式。
 ### 菜单中的终端
-[Dock menu of Terminal.app][6]
+![Dock menu of Terminal.app][6]
 
 使用 `app.dock.setMenu` API 来设置你的菜单，这仅在 OS X 上可行：
 ```javascript

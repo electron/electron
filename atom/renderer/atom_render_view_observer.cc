@@ -27,8 +27,6 @@
 #include "third_party/WebKit/public/web/WebFrame.h"
 #include "third_party/WebKit/public/web/WebLocalFrame.h"
 #include "third_party/WebKit/public/web/WebKit.h"
-#include "third_party/WebKit/public/web/WebScopedUserGesture.h"
-#include "third_party/WebKit/public/web/WebScriptSource.h"
 #include "third_party/WebKit/public/web/WebView.h"
 #include "ui/base/resource/resource_bundle.h"
 #include "native_mate/dictionary.h"
@@ -88,7 +86,7 @@ void AtomRenderViewObserver::DidCreateDocumentElement(
 
   // Read --zoom-factor from command line.
   std::string zoom_factor_str = base::CommandLine::ForCurrentProcess()->
-      GetSwitchValueASCII(switches::kZoomFactor);;
+      GetSwitchValueASCII(switches::kZoomFactor);
   if (zoom_factor_str.empty())
     return;
   double zoom_factor;
@@ -115,8 +113,6 @@ bool AtomRenderViewObserver::OnMessageReceived(const IPC::Message& message) {
   bool handled = true;
   IPC_BEGIN_MESSAGE_MAP(AtomRenderViewObserver, message)
     IPC_MESSAGE_HANDLER(AtomViewMsg_Message, OnBrowserMessage)
-    IPC_MESSAGE_HANDLER(AtomViewMsg_ExecuteJavaScript,
-                        OnJavaScriptExecuteRequest)
     IPC_MESSAGE_UNHANDLED(handled = false)
   IPC_END_MESSAGE_MAP()
 
@@ -150,24 +146,6 @@ void AtomRenderViewObserver::OnBrowserMessage(const base::string16& channel,
     args_vector.insert(args_vector.begin(), event.GetHandle());
     mate::EmitEvent(isolate, ipc, channel, args_vector);
   }
-}
-
-void AtomRenderViewObserver::OnJavaScriptExecuteRequest(
-    const base::string16& code, bool has_user_gesture) {
-  if (!document_created_)
-    return;
-
-  if (!render_view()->GetWebView())
-    return;
-
-  scoped_ptr<blink::WebScopedUserGesture> gesture(
-      has_user_gesture ? new blink::WebScopedUserGesture : nullptr);
-
-  v8::Isolate* isolate = blink::mainThreadIsolate();
-  v8::HandleScope handle_scope(isolate);
-
-  blink::WebFrame* frame = render_view()->GetWebView()->mainFrame();
-  frame->executeScriptAndReturnValue(blink::WebScriptSource(code));
 }
 
 }  // namespace atom

@@ -33,7 +33,6 @@
 #include "chrome/browser/printing/print_view_manager_basic.h"
 #include "chrome/browser/printing/print_preview_message_handler.h"
 #include "content/common/view_messages.h"
-#include "content/public/browser/browser_plugin_guest_manager.h"
 #include "content/public/browser/favicon_status.h"
 #include "content/public/browser/native_web_keyboard_event.h"
 #include "content/public/browser/navigation_details.h"
@@ -73,15 +72,6 @@ void SetUserAgentInIO(scoped_refptr<net::URLRequestContextGetter> getter,
       new net::StaticHttpUserAgentSettings(
           net::HttpUtil::GenerateAcceptLanguageHeader(accept_lang),
           user_agent));
-}
-
-bool NotifyZoomLevelChanged(
-    double level, content::WebContents* guest_web_contents) {
-  guest_web_contents->SendToAllFrames(
-      new AtomViewMsg_SetZoomLevel(MSG_ROUTING_NONE, level));
-
-  // Return false to iterate over all guests.
-  return false;
 }
 
 }  // namespace
@@ -290,14 +280,17 @@ WebContents::WebContents(v8::Isolate* isolate,
 }
 
 WebContents::~WebContents() {
-  if (type_ == WEB_VIEW && managed_web_contents()) {
-    // When force destroying the "destroyed" event is not emitted.
+  // The destroy() is called.
+  if (managed_web_contents()) {
+    // For webview we need to tell content module to do some cleanup work before
+    // destroying it.
+    if (type_ == WEB_VIEW)
+      guest_delegate_->Destroy();
+
+    // The WebContentsDestroyed will not be called automatically because we
+    // unsubscribe from webContents before destroying it. So we have to manually
+    // call it here to make sure "destroyed" event is emitted.
     WebContentsDestroyed();
-
-    guest_delegate_->Destroy();
-
-    Observe(nullptr);
-    DestroyWebContents();
   }
 }
 
@@ -625,18 +618,43 @@ bool WebContents::OnMessageReceived(const IPC::Message& message) {
     IPC_MESSAGE_HANDLER(AtomViewHostMsg_Message, OnRendererMessage)
     IPC_MESSAGE_HANDLER_DELAY_REPLY(AtomViewHostMsg_Message_Sync,
                                     OnRendererMessageSync)
-    IPC_MESSAGE_HANDLER(AtomViewHostMsg_ZoomLevelChanged, OnZoomLevelChanged)
     IPC_MESSAGE_UNHANDLED(handled = false)
   IPC_END_MESSAGE_MAP()
 
   return handled;
 }
 
+// There are three ways of destroying a webContents:
+// 1. call webContents.destory();
+// 2. garbage collection;
+// 3. user closes the window of webContents;
+// For webview only #1 will happen, for BrowserWindow both #1 and #3 may
+// happen. The #2 should never happen for webContents, because webview is
+// managed by GuestViewManager, and BrowserWindow's webContents is managed
+// by api::Window.
+// For #1, the destructor will do the cleanup work and we only need to make
+// sure "destroyed" event is emitted. For #3, the content::WebContents will
+// be destroyed on close, and WebContentsDestroyed would be called for it, so
+// we need to make sure the api::WebContents is also deleted.
 void WebContents::WebContentsDestroyed() {
   // The RenderViewDeleted was not called when the WebContents is destroyed.
   RenderViewDeleted(web_contents()->GetRenderViewHost());
-  Emit("destroyed");
+
+  // This event is only for internal use, which is emitted when WebContents is
+  // being destroyed.
+  Emit("will-destroy");
+
+  // Cleanup relationships with other parts.
   RemoveFromWeakMap();
+
+  // We can not call Destroy here because we need to call Emit first, but we
+  // also do not want any method to be used, so just mark as destroyed here.
+  MarkDestroyed();
+
+  Emit("destroyed");
+
+  // Destroy the native class in next tick.
+  base::MessageLoop::current()->PostTask(FROM_HERE, GetDestroyClosure());
 }
 
 void WebContents::NavigationEntryCommitted(
@@ -746,11 +764,6 @@ bool WebContents::SavePage(const base::FilePath& full_file_path,
                            const SavePageHandler::SavePageCallback& callback) {
   auto handler = new SavePageHandler(web_contents(), callback);
   return handler->Handle(full_file_path, save_type);
-}
-
-void WebContents::ExecuteJavaScript(const base::string16& code,
-                                    bool has_user_gesture) {
-  Send(new AtomViewMsg_ExecuteJavaScript(routing_id(), code, has_user_gesture));
 }
 
 void WebContents::OpenDevTools(mate::Arguments* args) {
@@ -992,7 +1005,7 @@ void WebContents::SendInputEvent(v8::Isolate* isolate,
       return;
     }
   } else if (blink::WebInputEvent::isKeyboardEventType(type)) {
-    content::NativeWebKeyboardEvent keyboard_event;;
+    content::NativeWebKeyboardEvent keyboard_event;
     if (mate::ConvertFromV8(isolate, input_event, &keyboard_event)) {
       host->ForwardKeyboardEvent(keyboard_event);
       return;
@@ -1085,7 +1098,6 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("getUserAgent", &WebContents::GetUserAgent)
       .SetMethod("insertCSS", &WebContents::InsertCSS)
       .SetMethod("savePage", &WebContents::SavePage)
-      .SetMethod("_executeJavaScript", &WebContents::ExecuteJavaScript)
       .SetMethod("openDevTools", &WebContents::OpenDevTools)
       .SetMethod("closeDevTools", &WebContents::CloseDevTools)
       .SetMethod("isDevToolsOpened", &WebContents::IsDevToolsOpened)
@@ -1150,15 +1162,6 @@ void WebContents::OnRendererMessageSync(const base::string16& channel,
                                         IPC::Message* message) {
   // webContents.emit(channel, new Event(sender, message), args...);
   EmitWithSender(base::UTF16ToUTF8(channel), web_contents(), message, args);
-}
-
-void WebContents::OnZoomLevelChanged(double level) {
-  auto manager = web_contents()->GetBrowserContext()->GetGuestManager();
-  if (!manager)
-    return;
-  manager->ForEachGuest(web_contents(),
-                        base::Bind(&NotifyZoomLevelChanged,
-                                   level));
 }
 
 // static

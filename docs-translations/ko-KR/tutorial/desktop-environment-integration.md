@@ -34,21 +34,10 @@ myNotification.onclick = function () {
   만들어 놔야 합니다. 이 바로가기는 반드시 시작 화면에 설치되어 있어야 합니다. 참고로
   반드시 시작 화면에 고정 할 필요는 없습니다.
 * Windows 7과 그 이하 버전은 데스크톱 알림을 지원하지 않습니다.
-  혹시 "풍선 팝업 알림" 기능을 찾는다면 [Tray API](tray-balloon)를 사용하세요.
+  혹시 "풍선 팝업 알림" 기능을 찾는다면 [Tray API][tray-balloon]를 사용하세요.
 
-이미지를 데스크톱 알림에 사용하려면 알림 옵션의 `icon` 속성에 로컬 이미지 파일
-(`png` 권장)을 지정하면 됩니다. 데스크톱 알림은 잘못된 경로를 지정하거나 `http/https`
-기반의 URL을 지정해도 이미지가 보이지 않을 뿐 정상 작동합니다.
-
-```javascript
-new Notification('Title', {
-  body: 'Notification with icon',
-  icon: 'file:///C:/Users/feriese/Desktop/icon.png'
-});
-```
-
-또한 본문의 최대 길이는 250자 입니다. Windows 개발팀에선 알림 문자열을 200자 이하로
-유지하는 것을 권장합니다.
+또한 알림 본문의 최대 길이는 250자 입니다. Windows 개발팀에선 알림 문자열을 200자
+이하로 유지하는 것을 권장합니다.
 
 ### Linux
 

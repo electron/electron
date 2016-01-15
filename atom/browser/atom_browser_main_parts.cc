@@ -21,6 +21,7 @@
 
 #if defined(USE_X11)
 #include "chrome/browser/ui/libgtk2ui/gtk2_util.h"
+#include "ui/events/devices/x11/touch_factory_x11.h"
 #endif
 
 namespace atom {
@@ -115,6 +116,10 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
   // a chance to setup everything.
   node_bindings_->PrepareMessageLoop();
   node_bindings_->RunMessageLoop();
+
+#if defined(USE_X11)
+  ui::TouchFactory::SetTouchDeviceListFromCommandLine();
+#endif
 
   // Start idle gc.
   gc_timer_.Start(
