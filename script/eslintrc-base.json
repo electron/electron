@@ -11,15 +11,12 @@
       0,
       "single"
     ],
-    "linebreak-style": [
-      2,
-      "unix"
-    ],
     "semi": [
       0,
       "always"
     ],
     "comma-dangle": 0,
+    "linebreak-style": 0,
     "no-console": 0,
     "no-undef": 0,
     "no-unreachable": 0,
