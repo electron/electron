@@ -456,7 +456,8 @@ height areas you have within the overall content view.
 * `y` Integer
 * `width` Integer
 * `height` Integer
-* `animate` Boolean (optional) _OS X_
+
+`animate` Boolean (optional) _OS X_
 
 Resizes and moves the window to `width`, `height`, `x`, `y`.
 
