@@ -581,7 +581,7 @@ bool NativeWindowMac::IsFullscreen() const {
   return [window_ styleMask] & NSFullScreenWindowMask;
 }
 
-void NativeWindowMac::SetBounds(const gfx::Rect& bounds) {
+void NativeWindowMac::SetBounds(const gfx::Rect& bounds, bool animate) {
   NSRect cocoa_bounds = NSMakeRect(bounds.x(), 0,
                                    bounds.width(),
                                    bounds.height());
@@ -590,7 +590,7 @@ void NativeWindowMac::SetBounds(const gfx::Rect& bounds) {
   cocoa_bounds.origin.y =
       NSHeight([screen frame]) - bounds.height() - bounds.y();
 
-  [window_ setFrame:cocoa_bounds display:YES];
+  [window_ setFrame:cocoa_bounds display:YES animate:animate];
 }
 
 gfx::Rect NativeWindowMac::GetBounds() {
