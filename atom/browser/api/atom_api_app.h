@@ -88,6 +88,10 @@ class App : public AtomBrowserClient::Delegate,
       const ProcessSingleton::NotificationCallback& callback);
   std::string GetLocale();
 
+#if defined(OS_WIN)
+  bool IsAeroGlassEnabled();
+#endif
+
   scoped_ptr<ProcessSingleton> process_singleton_;
 
   DISALLOW_COPY_AND_ASSIGN(App);
