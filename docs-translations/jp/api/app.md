@@ -353,6 +353,32 @@ app.on('ready', function() {
 
 [Application User Model ID][app-user-model-id] を `id`に変更します。
 
+### `app.isAeroGlassEnabled()` _Windows_
+
+[DWM composition](https://msdn.microsoft.com/en-us/library/windows/desktop/aa969540.aspx)(Aero Glass) が有効なら、このメソッドは`true`を戻し、有効でなければ`false`を戻します。透明なウィンドウを作成する必要があるか、またはできないとき（DWM compositionが無効なとき用明なウィンドウは正しく動作しません）、このAPIを使うことができます。
+
+使用例:
+
+```js
+let browserOptions = {width: 1000, height: 800};
+
+// Make the window transparent only if the platform supports it.
+if (process.platform !== 'win32' || app.isAeroGlassEnabled()) {
+  browserOptions.transparent = true;
+  browserOptions.frame = false;
+}
+
+// Create the window.
+win = new BrowserWindow(browserOptions);
+
+// Navigate.
+if (browserOptions.transparent) {
+  win.loadURL('file://' + __dirname + '/index.html');
+} else {
+  // No transparency, so we load a fallback that uses basic styles.
+  win.loadURL('file://' + __dirname + '/fallback.html');
+}
+
 ### `app.commandLine.appendSwitch(switch[, value])`
 
 Chromiumのコマンドラインにスイッチ（ `value`をオプションにし）を追加します。
