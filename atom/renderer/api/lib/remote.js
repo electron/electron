@@ -4,12 +4,12 @@ const v8Util = process.atomBinding('v8_util');
 
 const callbacksRegistry = new CallbacksRegistry;
 
-var indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
+var includes = [].includes;
 
 // Check for circular reference.
 var isCircular = function(field, visited) {
   if (typeof field === 'object') {
-    if (indexOf.call(visited, field) >= 0) {
+    if (includes.call(visited, field)) {
       return true;
     }
     visited.push(field);

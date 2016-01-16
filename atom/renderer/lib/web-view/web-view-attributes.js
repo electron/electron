@@ -1,11 +1,9 @@
+'use strict';
+
 const WebViewImpl = require('./web-view');
 const guestViewInternal = require('./guest-view-internal');
 const webViewConstants = require('./web-view-constants');
 const remote = require('electron').remote;
-
-var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
-
-var hasProp = {}.hasOwnProperty;
 
 // Helper function to resolve url set in attribute.
 var a = document.createElement('a');
@@ -17,8 +15,8 @@ var resolveURL = function(url) {
 
 // Attribute objects.
 // Default implementation of a WebView attribute.
-var WebViewAttribute = (function() {
-  function WebViewAttribute(name, webViewImpl) {
+class WebViewAttribute {
+  constructor(name, webViewImpl) {
     this.name = name;
     this.value = webViewImpl.webviewNode[name] || '';
     this.webViewImpl = webViewImpl;
@@ -27,24 +25,24 @@ var WebViewAttribute = (function() {
   }
 
   // Retrieves and returns the attribute's value.
-  WebViewAttribute.prototype.getValue = function() {
+  getValue() {
     return this.webViewImpl.webviewNode.getAttribute(this.name) || this.value;
-  };
+  }
 
   // Sets the attribute's value.
-  WebViewAttribute.prototype.setValue = function(value) {
+  setValue(value) {
     return this.webViewImpl.webviewNode.setAttribute(this.name, value || '');
-  };
+  }
 
   // Changes the attribute's value without triggering its mutation handler.
-  WebViewAttribute.prototype.setValueIgnoreMutation = function(value) {
+  setValueIgnoreMutation(value) {
     this.ignoreMutation = true;
     this.setValue(value);
     return this.ignoreMutation = false;
-  };
+  }
 
   // Defines this attribute as a property on the webview node.
-  WebViewAttribute.prototype.defineProperty = function() {
+  defineProperty() {
     return Object.defineProperty(this.webViewImpl.webviewNode, this.name, {
       get: (function(_this) {
         return function() {
@@ -58,71 +56,56 @@ var WebViewAttribute = (function() {
       })(this),
       enumerable: true
     });
-  };
-
-  // Called when the attribute's value changes.
-  WebViewAttribute.prototype.handleMutation = function() {};
-
-  return WebViewAttribute;
-
-})();
-
-// An attribute that is treated as a Boolean.
-var BooleanAttribute = (function(superClass) {
-  extend(BooleanAttribute, superClass);
-
-  function BooleanAttribute(name, webViewImpl) {
-    BooleanAttribute.__super__.constructor.call(this, name, webViewImpl);
   }
 
-  BooleanAttribute.prototype.getValue = function() {
-    return this.webViewImpl.webviewNode.hasAttribute(this.name);
-  };
+  // Called when the attribute's value changes.
+  handleMutation() {}
+}
 
-  BooleanAttribute.prototype.setValue = function(value) {
+// An attribute that is treated as a Boolean.
+class BooleanAttribute extends WebViewAttribute {
+  constructor(name, webViewImpl) {
+    super(name, webViewImpl);
+  }
+
+  getValue() {
+    return this.webViewImpl.webviewNode.hasAttribute(this.name);
+  }
+
+  setValue(value) {
     if (!value) {
       return this.webViewImpl.webviewNode.removeAttribute(this.name);
     } else {
       return this.webViewImpl.webviewNode.setAttribute(this.name, '');
     }
-  };
-
-  return BooleanAttribute;
-
-})(WebViewAttribute);
+  }
+}
 
 // Attribute that specifies whether transparency is allowed in the webview.
-var AllowTransparencyAttribute = (function(superClass) {
-  extend(AllowTransparencyAttribute, superClass);
-
-  function AllowTransparencyAttribute(webViewImpl) {
-    AllowTransparencyAttribute.__super__.constructor.call(this, webViewConstants.ATTRIBUTE_ALLOWTRANSPARENCY, webViewImpl);
+class AllowTransparencyAttribute extends BooleanAttribute {
+  constructor(webViewImpl) {
+    super(webViewConstants.ATTRIBUTE_ALLOWTRANSPARENCY, webViewImpl);
   }
 
-  AllowTransparencyAttribute.prototype.handleMutation = function(oldValue, newValue) {
+  handleMutation(oldValue, newValue) {
     if (!this.webViewImpl.guestInstanceId) {
       return;
     }
     return guestViewInternal.setAllowTransparency(this.webViewImpl.guestInstanceId, this.getValue());
-  };
-
-  return AllowTransparencyAttribute;
-
-})(BooleanAttribute);
+  }
+}
 
 // Attribute used to define the demension limits of autosizing.
-var AutosizeDimensionAttribute = (function(superClass) {
-  extend(AutosizeDimensionAttribute, superClass);
-
-  function AutosizeDimensionAttribute(name, webViewImpl) {
-    AutosizeDimensionAttribute.__super__.constructor.call(this, name, webViewImpl);
+class AutosizeDimensionAttribute extends WebViewAttribute {
+  constructor(name, webViewImpl) {
+    super(name, webViewImpl);
   }
 
-  AutosizeDimensionAttribute.prototype.getValue = function() {
+  getValue() {
     return parseInt(this.webViewImpl.webviewNode.getAttribute(this.name)) || 0;
-  };
+  }
 
-  AutosizeDimensionAttribute.prototype.handleMutation = function(oldValue, newValue) {
+  handleMutation(oldValue, newValue) {
     if (!this.webViewImpl.guestInstanceId) {
       return;
     }
@@ -137,36 +120,27 @@ var AutosizeDimensionAttribute = (function(superClass) {
         height: parseInt(this.webViewImpl.attributes[webViewConstants.ATTRIBUTE_MAXHEIGHT].getValue() || 0)
       }
     });
-  };
+  }
+}
 
-  return AutosizeDimensionAttribute;
-
-})(WebViewAttribute);
 
 // Attribute that specifies whether the webview should be autosized.
-var AutosizeAttribute = (function(superClass) {
-  extend(AutosizeAttribute, superClass);
-
-  function AutosizeAttribute(webViewImpl) {
-    AutosizeAttribute.__super__.constructor.call(this, webViewConstants.ATTRIBUTE_AUTOSIZE, webViewImpl);
+class AutosizeAttribute extends BooleanAttribute {
+  constructor(webViewImpl) {
+    super(webViewConstants.ATTRIBUTE_AUTOSIZE, webViewImpl);
   }
+}
 
-  AutosizeAttribute.prototype.handleMutation = AutosizeDimensionAttribute.prototype.handleMutation;
-
-  return AutosizeAttribute;
-
-})(BooleanAttribute);
+AutosizeAttribute.prototype.handleMutation = AutosizeDimensionAttribute.prototype.handleMutation;
 
 // Attribute representing the state of the storage partition.
-var PartitionAttribute = (function(superClass) {
-  extend(PartitionAttribute, superClass);
-
-  function PartitionAttribute(webViewImpl) {
-    PartitionAttribute.__super__.constructor.call(this, webViewConstants.ATTRIBUTE_PARTITION, webViewImpl);
+class PartitionAttribute extends WebViewAttribute {
+  constructor(webViewImpl) {
+    super(webViewConstants.ATTRIBUTE_PARTITION, webViewImpl);
     this.validPartitionId = true;
   }
 
-  PartitionAttribute.prototype.handleMutation = function(oldValue, newValue) {
+  handleMutation(oldValue, newValue) {
     newValue = newValue || '';
 
     // The partition cannot change if the webview has already navigated.
@@ -179,40 +153,35 @@ var PartitionAttribute = (function(superClass) {
       this.validPartitionId = false;
       return window.console.error(webViewConstants.ERROR_MSG_INVALID_PARTITION_ATTRIBUTE);
     }
-  };
-
-  return PartitionAttribute;
-
-})(WebViewAttribute);
+  }
+}
 
 // Attribute that handles the location and navigation of the webview.
-var SrcAttribute = (function(superClass) {
-  extend(SrcAttribute, superClass);
-
-  function SrcAttribute(webViewImpl) {
-    SrcAttribute.__super__.constructor.call(this, webViewConstants.ATTRIBUTE_SRC, webViewImpl);
+class SrcAttribute extends WebViewAttribute {
+  constructor(webViewImpl) {
+    super(webViewConstants.ATTRIBUTE_SRC, webViewImpl);
     this.setupMutationObserver();
   }
 
-  SrcAttribute.prototype.getValue = function() {
+  getValue() {
     if (this.webViewImpl.webviewNode.hasAttribute(this.name)) {
       return resolveURL(this.webViewImpl.webviewNode.getAttribute(this.name));
     } else {
       return this.value;
     }
-  };
+  }
 
-  SrcAttribute.prototype.setValueIgnoreMutation = function(value) {
-    WebViewAttribute.prototype.setValueIgnoreMutation.call(this, value);
+  setValueIgnoreMutation(value) {
+    super.setValueIgnoreMutation(value);
 
     // takeRecords() is needed to clear queued up src mutations. Without it, it
     // is possible for this change to get picked up asyncronously by src's
     // mutation observer |observer|, and then get handled even though we do not
     // want to handle this mutation.
     return this.observer.takeRecords();
-  };
+  }
 
-  SrcAttribute.prototype.handleMutation = function(oldValue, newValue) {
+  handleMutation(oldValue, newValue) {
 
     // Once we have navigated, we don't allow clearing the src attribute.
     // Once <webview> enters a navigated state, it cannot return to a
@@ -226,14 +195,13 @@ var SrcAttribute = (function(superClass) {
       return;
     }
     return this.parse();
-  };
-
+  }
 
   // The purpose of this mutation observer is to catch assignment to the src
   // attribute without any changes to its value. This is useful in the case
   // where the webview guest has crashed and navigating to the same address
   // spawns off a new process.
-  SrcAttribute.prototype.setupMutationObserver = function() {
+  setupMutationObserver() {
     var params;
     this.observer = new MutationObserver((function(_this) {
       return function(mutations) {
@@ -255,9 +223,9 @@ var SrcAttribute = (function(superClass) {
       attributeFilter: [this.name]
     };
     return this.observer.observe(this.webViewImpl.webviewNode, params);
-  };
+  }
 
-  SrcAttribute.prototype.parse = function() {
+  parse() {
     var guestContents, httpreferrer, opts, useragent;
     if (!this.webViewImpl.elementAttached || !this.webViewImpl.attributes[webViewConstants.ATTRIBUTE_PARTITION].validPartitionId || !this.getValue()) {
       return;
@@ -282,45 +250,30 @@ var SrcAttribute = (function(superClass) {
     }
     guestContents = remote.getGuestWebContents(this.webViewImpl.guestInstanceId);
     return guestContents.loadURL(this.getValue(), opts);
-  };
-
-  return SrcAttribute;
-
-})(WebViewAttribute);
+  }
+}
 
 // Attribute specifies HTTP referrer.
-var HttpReferrerAttribute = (function(superClass) {
-  extend(HttpReferrerAttribute, superClass);
-
-  function HttpReferrerAttribute(webViewImpl) {
-    HttpReferrerAttribute.__super__.constructor.call(this, webViewConstants.ATTRIBUTE_HTTPREFERRER, webViewImpl);
+class HttpReferrerAttribute extends WebViewAttribute {
+  constructor(webViewImpl) {
+    super(webViewConstants.ATTRIBUTE_HTTPREFERRER, webViewImpl);
   }
-
-  return HttpReferrerAttribute;
-
-})(WebViewAttribute);
+}
 
 // Attribute specifies user agent
-var UserAgentAttribute = (function(superClass) {
-  extend(UserAgentAttribute, superClass);
-
-  function UserAgentAttribute(webViewImpl) {
-    UserAgentAttribute.__super__.constructor.call(this, webViewConstants.ATTRIBUTE_USERAGENT, webViewImpl);
+class UserAgentAttribute extends WebViewAttribute {
+  constructor(webViewImpl) {
+    super(webViewConstants.ATTRIBUTE_USERAGENT, webViewImpl);
   }
-
-  return UserAgentAttribute;
-
-})(WebViewAttribute);
+}
 
 // Attribute that set preload script.
-var PreloadAttribute = (function(superClass) {
-  extend(PreloadAttribute, superClass);
-
-  function PreloadAttribute(webViewImpl) {
-    PreloadAttribute.__super__.constructor.call(this, webViewConstants.ATTRIBUTE_PRELOAD, webViewImpl);
+class PreloadAttribute extends WebViewAttribute {
+  constructor(webViewImpl) {
+    super(webViewConstants.ATTRIBUTE_PRELOAD, webViewImpl);
   }
 
-  PreloadAttribute.prototype.getValue = function() {
+  getValue() {
     var preload, protocol;
     if (!this.webViewImpl.webviewNode.hasAttribute(this.name)) {
       return this.value;
@@ -332,11 +285,8 @@ var PreloadAttribute = (function(superClass) {
       preload = '';
     }
     return preload;
-  };
-
-  return PreloadAttribute;
-
-})(WebViewAttribute);
+  }
+}
 
 // Sets up all of the webview attributes.
 WebViewImpl.prototype.setupWebViewAttributes = function() {

@@ -1,13 +1,12 @@
+'use strict';
+
 const EventEmitter = require('events').EventEmitter;
 const v8Util = process.atomBinding('v8_util');
 
-var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
-var hasProp = {}.hasOwnProperty;
+class ObjectsRegistry extends EventEmitter {
+  constructor() {
+    super();
 
-var ObjectsRegistry = (function(superClass) {
-  extend(ObjectsRegistry, superClass);
-
-  function ObjectsRegistry() {
     this.setMaxListeners(Number.MAX_VALUE);
     this.nextId = 0;
 
@@ -22,7 +21,7 @@ var ObjectsRegistry = (function(superClass) {
 
   // Register a new object, the object would be kept referenced until you release
   // it explicitly.
-  ObjectsRegistry.prototype.add = function(webContentsId, obj) {
+  add(webContentsId, obj) {
     var base, base1, id;
     id = this.saveToStorage(obj);
 
@@ -37,18 +36,16 @@ var ObjectsRegistry = (function(superClass) {
 
     // Returns object's id
     return id;
-  };
-
+  }
 
   // Get an object according to its ID.
-  ObjectsRegistry.prototype.get = function(id) {
+  get(id) {
     var ref;
     return (ref = this.storage[id]) != null ? ref.object : void 0;
-  };
-
+  }
 
   // Dereference an object according to its ID.
-  ObjectsRegistry.prototype.remove = function(webContentsId, id) {
+  remove(webContentsId, id) {
     var pointer;
     this.dereference(id, 1);
 
@@ -61,10 +58,10 @@ var ObjectsRegistry = (function(superClass) {
     if (pointer[id] === 0) {
       return delete pointer[id];
     }
-  };
+  }
 
   // Clear all references to objects refrenced by the WebContents.
-  ObjectsRegistry.prototype.clear = function(webContentsId) {
+  clear(webContentsId) {
     var count, id, ref;
     this.emit("clear-" + webContentsId);
     if (this.owners[webContentsId] == null) {
@@ -76,10 +73,10 @@ var ObjectsRegistry = (function(superClass) {
       this.dereference(id, count);
     }
     return delete this.owners[webContentsId];
-  };
+  }
 
   // Private: Saves the object into storage and assigns an ID for it.
-  ObjectsRegistry.prototype.saveToStorage = function(object) {
+  saveToStorage(object) {
     var id;
     id = v8Util.getHiddenValue(object, 'atomId');
     if (!id) {
@@ -92,10 +89,10 @@ var ObjectsRegistry = (function(superClass) {
     }
     ++this.storage[id].count;
     return id;
-  };
+  }
 
   // Private: Dereference the object from store.
-  ObjectsRegistry.prototype.dereference = function(id, count) {
+  dereference(id, count) {
     var pointer;
     pointer = this.storage[id];
     if (pointer == null) {
@@ -106,10 +103,7 @@ var ObjectsRegistry = (function(superClass) {
       v8Util.deleteHiddenValue(pointer.object, 'atomId');
       return delete this.storage[id];
     }
-  };
-
-  return ObjectsRegistry;
-
-})(EventEmitter);
+  }
+}
 
 module.exports = new ObjectsRegistry;

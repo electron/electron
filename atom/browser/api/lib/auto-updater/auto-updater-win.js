@@ -1,28 +1,25 @@
+'use strict';
+
 const app = require('electron').app;
 const EventEmitter = require('events').EventEmitter;
 const url = require('url');
 const squirrelUpdate = require('./squirrel-update-win');
 
-var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-hasProp = {}.hasOwnProperty;
-
-var AutoUpdater = (function(superClass) {
-  extend(AutoUpdater, superClass);
-
-  function AutoUpdater() {
-    return AutoUpdater.__super__.constructor.apply(this, arguments);
+class AutoUpdater extends EventEmitter {
+  constructor() {
+    super();
   }
 
-  AutoUpdater.prototype.quitAndInstall = function() {
+  quitAndInstall() {
     squirrelUpdate.processStart();
     return app.quit();
-  };
+  }
 
-  AutoUpdater.prototype.setFeedURL = function(updateURL) {
+  setFeedURL(updateURL) {
     return this.updateURL = updateURL;
-  };
+  }
 
-  AutoUpdater.prototype.checkForUpdates = function() {
+  checkForUpdates() {
     if (!this.updateURL) {
       return this.emitError('Update URL is not set');
     }
@@ -55,17 +52,13 @@ var AutoUpdater = (function(superClass) {
         });
       };
     })(this));
-  };
-
+  }
 
   // Private: Emit both error object and message, this is to keep compatibility
   // with Old APIs.
-  AutoUpdater.prototype.emitError = function(message) {
+  emitError(message) {
     return this.emit('error', new Error(message), message);
-  };
-
-  return AutoUpdater;
-
-})(EventEmitter);
+  }
+}
 
 module.exports = new AutoUpdater;
