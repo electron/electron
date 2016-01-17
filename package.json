@@ -12,6 +12,7 @@
   "private": true,
   "scripts": {
     "preinstall": "node -e 'process.exit(0)'",
+    "start": "python ./script/start.py",
     "test": "python ./script/test.py"
   }
 }
