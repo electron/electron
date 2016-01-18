@@ -125,6 +125,12 @@ class NativeWindow : public base::SupportsUserData,
   virtual gfx::Size GetMaximumSize();
   virtual void SetResizable(bool resizable) = 0;
   virtual bool IsResizable() = 0;
+  virtual void SetMovable(bool movable) = 0;
+  virtual bool IsMovable() = 0;
+  virtual void SetMinimizable(bool minimizable) = 0;
+  virtual bool IsMinimizable() = 0;
+  virtual void SetClosable(bool closable) = 0;
+  virtual bool IsClosable() = 0;
   virtual void SetAlwaysOnTop(bool top) = 0;
   virtual bool IsAlwaysOnTop() = 0;
   virtual void Center() = 0;

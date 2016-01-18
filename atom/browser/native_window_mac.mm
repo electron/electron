@@ -369,6 +369,12 @@ NativeWindowMac::NativeWindowMac(
   bool resizable = true;
   options.Get(options::kResizable, &resizable);
 
+  bool minimizable = true;
+  options.Get(options::kMinimizable, &minimizable);
+
+  bool closable = true;
+  options.Get(options::kClosable, &closable);
+
   // New title bar styles are available in Yosemite or newer
   std::string titleBarStyle;
   if (base::mac::IsOSYosemiteOrLater())
@@ -385,8 +391,13 @@ NativeWindowMac::NativeWindowMac(
     useStandardWindow = false;
   }
 
-  NSUInteger styleMask = NSTitledWindowMask | NSClosableWindowMask |
-                         NSMiniaturizableWindowMask;
+  NSUInteger styleMask = NSTitledWindowMask | NSClosableWindowMask;
+  if (minimizable) {
+    styleMask |= NSMiniaturizableWindowMask;
+  }
+  if (!closable) {
+    styleMask &= ~NSClosableWindowMask;
+  }
   if (!useStandardWindow || transparent() || !has_frame()) {
     styleMask |= NSTexturedBackgroundWindowMask;
   }
@@ -485,6 +496,11 @@ NativeWindowMac::NativeWindowMac(
     NSUInteger collectionBehavior = [window_ collectionBehavior];
     collectionBehavior |= NSWindowCollectionBehaviorFullScreenAuxiliary;
     [window_ setCollectionBehavior:collectionBehavior];
+  }
+
+  // Disable zoom button if window is not resizable
+  if (!resizable) {
+    [[window_ standardWindowButton:NSWindowZoomButton] setEnabled:NO];
   }
 
   NSView* view = inspectable_web_contents()->GetView()->GetNativeView();
@@ -635,8 +651,10 @@ void NativeWindowMac::SetResizable(bool resizable) {
     [[window_ standardWindowButton:NSWindowZoomButton] setEnabled:YES];
     [window_ setStyleMask:[window_ styleMask] | NSResizableWindowMask];
   } else {
-    [[window_ standardWindowButton:NSWindowZoomButton] setEnabled:NO];
+    // If we disable the button before changing the styleMask, button is not
+    // disabled. Looks like a bug in Cocoa (OS X 10.10.5)
     [window_ setStyleMask:[window_ styleMask] & (~NSResizableWindowMask)];
+    [[window_ standardWindowButton:NSWindowZoomButton] setEnabled:NO];
   }
 }
 
@@ -644,8 +662,54 @@ bool NativeWindowMac::IsResizable() {
   return [window_ styleMask] & NSResizableWindowMask;
 }
 
+void NativeWindowMac::SetMovable(bool movable) {
+  [window_ setMovable:movable];
+}
+
+bool NativeWindowMac::IsMovable() {
+  return [window_ isMovable];
+}
+
+void NativeWindowMac::SetMinimizable(bool minimizable) {
+  if (minimizable) {
+    [window_ setStyleMask:[window_ styleMask] | NSMiniaturizableWindowMask];
+  } else {
+    [window_ setStyleMask:[window_ styleMask] & (~NSMiniaturizableWindowMask)];
+  }
+  FixZoomButton();
+}
+
+bool NativeWindowMac::IsMinimizable() {
+  return [window_ styleMask] & NSMiniaturizableWindowMask;
+}
+
+void NativeWindowMac::SetClosable(bool closable) {
+  if (closable) {
+    [window_ setStyleMask:[window_ styleMask] | NSClosableWindowMask];
+  } else {
+    [window_ setStyleMask:[window_ styleMask] & (~NSClosableWindowMask)];
+  }
+  FixZoomButton();
+}
+
+bool NativeWindowMac::IsClosable() {
+  return [window_ styleMask] & NSClosableWindowMask;
+}
+
 void NativeWindowMac::SetAlwaysOnTop(bool top) {
   [window_ setLevel:(top ? NSFloatingWindowLevel : NSNormalWindowLevel)];
+}
+
+void NativeWindowMac::FixZoomButton() {
+  // If fullscreen has not been disabled via `fullscreen: false` (i.e. when
+  // collectionBehavior has NSWindowCollectionBehaviorFullScreenPrimary mask),
+  // zoom button is reset to it's default (enabled) state when window's
+  // styleMask has been changed. So if the button was disabled, we have to
+  // disable it again. I think it's a bug in Cocoa.
+  if ([window_ collectionBehavior] & NSWindowCollectionBehaviorFullScreenPrimary
+      && !([window_ styleMask] & NSResizableWindowMask)) {
+    [[window_ standardWindowButton:NSWindowZoomButton] setEnabled:NO];
+  }
 }
 
 bool NativeWindowMac::IsAlwaysOnTop() {

@@ -106,6 +106,12 @@ class Window : public mate::TrackableObject<Window>,
   std::vector<int> GetMaximumSize();
   void SetResizable(bool resizable);
   bool IsResizable();
+  void SetMovable(bool movable);
+  bool IsMovable();
+  void SetMinimizable(bool minimizable);
+  bool IsMinimizable();
+  void SetClosable(bool closable);
+  bool IsClosable();
   void SetAlwaysOnTop(bool top);
   bool IsAlwaysOnTop();
   void Center();

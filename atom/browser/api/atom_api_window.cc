@@ -408,6 +408,30 @@ bool Window::IsResizable() {
   return window_->IsResizable();
 }
 
+void Window::SetMovable(bool movable) {
+  window_->SetMovable(movable);
+}
+
+bool Window::IsMovable() {
+  return window_->IsMovable();
+}
+
+void Window::SetMinimizable(bool minimizable) {
+  window_->SetMinimizable(minimizable);
+}
+
+bool Window::IsMinimizable() {
+  return window_->IsMinimizable();
+}
+
+void Window::SetClosable(bool closable) {
+  window_->SetClosable(closable);
+}
+
+bool Window::IsClosable() {
+  return window_->IsClosable();
+}
+
 void Window::SetAlwaysOnTop(bool top) {
   window_->SetAlwaysOnTop(top);
 }
@@ -659,6 +683,12 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("getMaximumSize", &Window::GetMaximumSize)
       .SetMethod("setResizable", &Window::SetResizable)
       .SetMethod("isResizable", &Window::IsResizable)
+      .SetMethod("setMovable", &Window::SetMovable)
+      .SetMethod("isMovable", &Window::IsMovable)
+      .SetMethod("setMinimizable", &Window::SetMinimizable)
+      .SetMethod("isMinimizable", &Window::IsMinimizable)
+      .SetMethod("setClosable", &Window::SetClosable)
+      .SetMethod("isClosable", &Window::IsClosable)
       .SetMethod("setAlwaysOnTop", &Window::SetAlwaysOnTop)
       .SetMethod("isAlwaysOnTop", &Window::IsAlwaysOnTop)
       .SetMethod("center", &Window::Center)

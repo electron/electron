@@ -126,7 +126,10 @@ NativeWindowViews::NativeWindowViews(
       menu_bar_alt_pressed_(false),
       keyboard_event_handler_(new views::UnhandledKeyboardEventHandler),
       use_content_size_(false),
-      resizable_(true) {
+      resizable_(true),
+      maximizable_(true),
+      movable_(true),
+      minimizable_(true) {
   options.Get(options::kTitle, &title_);
   options.Get(options::kAutoHideMenuBar, &menu_bar_autohide_);
 
@@ -134,6 +137,8 @@ NativeWindowViews::NativeWindowViews(
   // On Windows we rely on the CanResize() to indicate whether window can be
   // resized, and it should be set before window is created.
   options.Get(options::kResizable, &resizable_);
+  options.Get(options::kMovable, &movable_);
+  options.Get(options::kMinimizable, &minimizable_);
 #endif
 
   if (enable_larger_than_screen())
@@ -182,7 +187,9 @@ NativeWindowViews::NativeWindowViews(
   window_->Init(params);
 
   bool fullscreen = false;
-  options.Get(options::kFullscreen, &fullscreen);
+  if (options.Get(options::kFullscreen, &fullscreen) && !fullscreen) {
+    maximizable_ = false;
+  }
 
 #if defined(USE_X11)
   // Start monitoring window states.
@@ -236,22 +243,27 @@ NativeWindowViews::NativeWindowViews(
 
   last_normal_size_ = gfx::Size(widget_size_);
 
-  if (!has_frame()) {
-    // Set Window style so that we get a minimize and maximize animation when
-    // frameless.
-    DWORD frame_style = WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX |
-                        WS_CAPTION;
-    // We should not show a frame for transparent window.
-    if (transparent())
-      frame_style &= ~(WS_THICKFRAME | WS_CAPTION);
-    ::SetWindowLong(GetAcceleratedWidget(), GWL_STYLE, frame_style);
+  DWORD style = ::GetWindowLong(GetAcceleratedWidget(), GWL_STYLE);
+  style |= WS_THICKFRAME | WS_CAPTION | WS_MINIMIZEBOX;
+  if (!maximizable_) {
+    style &= (~WS_MAXIMIZEBOX);
+  } else {
+    style |= WS_MAXIMIZEBOX;
   }
 
   if (transparent()) {
-    // Transparent window on Windows has to have WS_EX_COMPOSITED style.
-    LONG ex_style = ::GetWindowLong(GetAcceleratedWidget(), GWL_EXSTYLE);
+    DWORD ex_style = ::GetWindowLong(GetAcceleratedWidget(), GWL_EXSTYLE);
     ex_style |= WS_EX_COMPOSITED;
     ::SetWindowLong(GetAcceleratedWidget(), GWL_EXSTYLE, ex_style);
+
+    if (!has_frame()) {
+      // We should not show a frame for transparent window.
+      style &= ~(WS_THICKFRAME | WS_CAPTION);
+    }
+  }
+
+  if (!transparent() || !has_frame()) {
+    ::SetWindowLong(GetAcceleratedWidget(), GWL_STYLE, style);
   }
 #endif
 
@@ -427,10 +439,12 @@ void NativeWindowViews::SetResizable(bool resizable) {
   // WS_THICKFRAME => Resize handle
   if (!transparent()) {
     DWORD style = ::GetWindowLong(GetAcceleratedWidget(), GWL_STYLE);
-    if (resizable)
-      style |= WS_MAXIMIZEBOX | WS_MINIMIZEBOX | WS_THICKFRAME;
-    else
-      style = (style & ~(WS_MAXIMIZEBOX | WS_THICKFRAME)) | WS_MINIMIZEBOX;
+    if (resizable) {
+      style |= WS_THICKFRAME;
+      if (maximizable_) style |= WS_MAXIMIZEBOX;
+    } else {
+      style &= ~(WS_THICKFRAME | WS_MAXIMIZEBOX);
+    }
     ::SetWindowLong(GetAcceleratedWidget(), GWL_STYLE, style);
   }
 #elif defined(USE_X11)
@@ -454,6 +468,64 @@ void NativeWindowViews::SetResizable(bool resizable) {
 
 bool NativeWindowViews::IsResizable() {
   return resizable_;
+}
+
+void NativeWindowViews::SetMovable(bool movable) {
+  movable_ = movable;
+}
+
+bool NativeWindowViews::IsMovable() {
+  return movable_;
+}
+
+void NativeWindowViews::SetMinimizable(bool minimizable) {
+#if defined(OS_WIN)
+  if (!transparent()) {
+    DWORD style = ::GetWindowLong(GetAcceleratedWidget(), GWL_STYLE);
+    if (minimizable)
+      style |= WS_MINIMIZEBOX;
+    else
+      style &= (~WS_MINIMIZEBOX);
+    ::SetWindowLong(GetAcceleratedWidget(), GWL_STYLE, style);
+  }
+#endif
+
+  minimizable_ = minimizable;
+}
+
+bool NativeWindowViews::IsMinimizable() {
+#if defined(OS_WIN)
+  return ::GetWindowLong(GetAcceleratedWidget(), GWL_STYLE) & WS_MINIMIZEBOX;
+#elif defined(USE_X11)
+  return true;
+#endif
+}
+
+void NativeWindowViews::SetClosable(bool closable) {
+#if defined(OS_WIN)
+  HMENU menu = GetSystemMenu(GetAcceleratedWidget(), false);
+  if (closable) {
+    EnableMenuItem(menu, SC_CLOSE, MF_BYCOMMAND | MF_ENABLED);
+  } else {
+    EnableMenuItem(menu, SC_CLOSE, MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
+  }
+#endif
+}
+
+bool NativeWindowViews::IsClosable() {
+#if defined(OS_WIN)
+  HMENU menu = GetSystemMenu(GetAcceleratedWidget(), false);
+  MENUITEMINFO info;
+  memset(&info, 0, sizeof(info));
+  info.cbSize = sizeof(info);
+  info.fMask = MIIM_STATE;
+  if (!GetMenuItemInfo(menu, SC_CLOSE, false, &info)) {
+    return false;
+  }
+  return !(info.fState & MFS_DISABLED);
+#elif defined(USE_X11)
+  return true;
+#endif
 }
 
 void NativeWindowViews::SetAlwaysOnTop(bool top) {
@@ -717,7 +789,11 @@ bool NativeWindowViews::CanMaximize() const {
 }
 
 bool NativeWindowViews::CanMinimize() const {
+#ifdef (OS_WIN)
+  return minimizable_;
+#elif defined(USE_X11)
   return true;
+#endif
 }
 
 base::string16 NativeWindowViews::GetWindowTitle() const {

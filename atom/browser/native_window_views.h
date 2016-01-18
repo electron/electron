@@ -68,6 +68,12 @@ class NativeWindowViews : public NativeWindow,
       const extensions::SizeConstraints& size_constraints) override;
   void SetResizable(bool resizable) override;
   bool IsResizable() override;
+  void SetMovable(bool movable) override;
+  bool IsMovable() override;
+  void SetMinimizable(bool minimizable) override;
+  bool IsMinimizable() override;
+  void SetClosable(bool closable) override;
+  bool IsClosable() override;
   void SetAlwaysOnTop(bool top) override;
   bool IsAlwaysOnTop() override;
   void Center() override;
@@ -197,6 +203,9 @@ class NativeWindowViews : public NativeWindow,
 
   bool use_content_size_;
   bool resizable_;
+  bool maximizable_;
+  bool movable_;
+  bool minimizable_;
   std::string title_;
   gfx::Size widget_size_;
 
