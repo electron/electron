@@ -210,7 +210,7 @@ Menu.prototype.insert = function(pos, item) {
           return v8Util.getHiddenValue(item, 'checked');
         },
         set: (function(_this) {
-          return function(val) {
+          return function() {
             var j, len, otherItem, ref1;
             ref1 = _this.groupsMap[item.groupId];
             for (j = 0, len = ref1.length; j < len; j++) {

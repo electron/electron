@@ -62,21 +62,21 @@ var dispatchEvent = function() {
 module.exports = {
   registerEvents: function(webView, viewInstanceId) {
     ipcRenderer.on("ATOM_SHELL_GUEST_VIEW_INTERNAL_DISPATCH_EVENT-" + viewInstanceId, function() {
-      var args, event, eventName;
-      event = arguments[0], eventName = arguments[1], args = 3 <= arguments.length ? slice.call(arguments, 2) : [];
+      var eventName = arguments[1];
+      var args = 3 <= arguments.length ? slice.call(arguments, 2) : [];
       return dispatchEvent.apply(null, [webView, eventName, eventName].concat(slice.call(args)));
     });
     ipcRenderer.on("ATOM_SHELL_GUEST_VIEW_INTERNAL_IPC_MESSAGE-" + viewInstanceId, function() {
-      var args, channel, domEvent, event;
-      event = arguments[0], channel = arguments[1], args = 3 <= arguments.length ? slice.call(arguments, 2) : [];
-      domEvent = new Event('ipc-message');
+      var channel = arguments[1];
+      var args = 3 <= arguments.length ? slice.call(arguments, 2) : [];
+      var domEvent = new Event('ipc-message');
       domEvent.channel = channel;
       domEvent.args = slice.call(args);
       return webView.dispatchEvent(domEvent);
     });
     return ipcRenderer.on("ATOM_SHELL_GUEST_VIEW_INTERNAL_SIZE_CHANGED-" + viewInstanceId, function() {
-      var args, domEvent, event, f, i, j, len, ref1;
-      event = arguments[0], args = 2 <= arguments.length ? slice.call(arguments, 1) : [];
+      var args, domEvent, f, i, j, len, ref1;
+      args = 2 <= arguments.length ? slice.call(arguments, 1) : [];
       domEvent = new Event('size-changed');
       ref1 = ['oldWidth', 'oldHeight', 'newWidth', 'newHeight'];
       for (i = j = 0, len = ref1.length; j < len; i = ++j) {

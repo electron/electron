@@ -31,8 +31,7 @@ describe('<webview> tag', function() {
       return document.body.appendChild(webview);
     });
     return it('navigates to new page when changed', function(done) {
-      var listener;
-      listener = function(e) {
+      var listener = function() {
         webview.src = "file://" + fixtures + "/pages/b.html";
         webview.addEventListener('console-message', function(e) {
           assert.equal(e.message, 'b');
@@ -74,11 +73,9 @@ describe('<webview> tag', function() {
     });
     if (process.platform !== 'win32' || process.execPath.toLowerCase().indexOf('\\out\\d\\') === -1) {
       return it('loads native modules when navigation happens', function(done) {
-        var listener;
-        listener = function(e) {
-          var listener2;
+        var listener = function() {
           webview.removeEventListener('did-finish-load', listener);
-          listener2 = function(e) {
+          var listener2 = function(e) {
             assert.equal(e.message, 'function');
             return done();
           };
@@ -123,7 +120,7 @@ describe('<webview> tag', function() {
         webview.removeEventListener('ipc-message', listener);
         return done();
       };
-      listener2 = function(e) {
+      listener2 = function() {
         webview.send('ping', message);
         return webview.removeEventListener('did-finish-load', listener2);
       };
@@ -459,7 +456,7 @@ describe('<webview> tag', function() {
         webview.removeEventListener('ipc-message', listener);
         return done();
       };
-      listener2 = function(e) {
+      listener2 = function() {
         webview.reload();
         return webview.removeEventListener('did-finish-load', listener2);
       };
@@ -520,7 +517,7 @@ describe('<webview> tag', function() {
   describe('dom-ready event', function() {
     return it('emits when document is loaded', function(done) {
       var server;
-      server = http.createServer(function(req) {});
+      server = http.createServer(function() {});
       return server.listen(0, '127.0.0.1', function() {
         var port;
         port = server.address().port;
@@ -538,11 +535,11 @@ describe('<webview> tag', function() {
     }
     return it('should support user gesture', function(done) {
       var listener, listener2;
-      listener = function(e) {
+      listener = function() {
         webview.removeEventListener('enter-html-full-screen', listener);
         return done();
       };
-      listener2 = function(e) {
+      listener2 = function() {
         var jsScript;
         jsScript = 'document.getElementsByTagName("video")[0].webkitRequestFullScreen()';
         webview.executeJavaScript(jsScript, true);
@@ -618,7 +615,7 @@ describe('<webview> tag', function() {
           return done();
         }
       };
-      listener2 = function(e) {
+      listener2 = function() {
         return requestId = webview.findInPage("virtual");
       };
       webview.addEventListener('found-in-page', listener);
@@ -629,7 +626,7 @@ describe('<webview> tag', function() {
   });
   return xdescribe('did-change-theme-color event', function() {
     return it('emits when theme color changes', function(done) {
-      webview.addEventListener('did-change-theme-color', function(e) {
+      webview.addEventListener('did-change-theme-color', function() {
         return done();
       });
       webview.src = "file://" + fixtures + "/pages/theme-color.html";

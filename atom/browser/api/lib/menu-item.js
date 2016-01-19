@@ -1,6 +1,4 @@
-var MenuItem, methodInBrowserWindow, nextCommandId, rolesMap, v8Util;
-
-v8Util = process.atomBinding('v8_util');
+var MenuItem, methodInBrowserWindow, nextCommandId, rolesMap;
 
 nextCommandId = 0;
 

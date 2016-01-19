@@ -13,7 +13,7 @@ const exeName = path.basename(process.execPath);
 // Spawn a command and invoke the callback when it completes with an error
 // and the output from standard out.
 var spawnUpdate = function(args, detached, callback) {
-  var error, error1, errorEmitted, spawnedProcess, stderr, stdout;
+  var error, errorEmitted, spawnedProcess, stderr, stdout;
   try {
     spawnedProcess = spawn(updateExe, args, {
       detached: detached
@@ -58,23 +58,22 @@ var spawnUpdate = function(args, detached, callback) {
 };
 
 // Start an instance of the installed app.
-exports.processStart = function(callback) {
+exports.processStart = function() {
   return spawnUpdate(['--processStart', exeName], true, function() {});
 };
 
 // Download the releases specified by the URL and write new results to stdout.
 exports.download = function(updateURL, callback) {
   return spawnUpdate(['--download', updateURL], false, function(error, stdout) {
-    var error1, json, ref, ref1, update;
+    var json, ref, ref1, update;
     if (error != null) {
       return callback(error);
     }
     try {
-
       // Last line of output is the JSON details about the releases
       json = stdout.trim().split('\n').pop();
       update = (ref = JSON.parse(json)) != null ? (ref1 = ref.releasesToApply) != null ? typeof ref1.pop === "function" ? ref1.pop() : void 0 : void 0 : void 0;
-    } catch (error1) {
+    } catch (jsonError) {
       return callback("Invalid result:\n" + stdout);
     }
     return callback(null, update);
@@ -90,11 +89,10 @@ exports.update = function(updateURL, callback) {
 
 // Is the Update.exe installed with the current application?
 exports.supported = function() {
-  var error1;
   try {
     fs.accessSync(updateExe, fs.R_OK);
     return true;
-  } catch (error1) {
+  } catch (error) {
     return false;
   }
 };

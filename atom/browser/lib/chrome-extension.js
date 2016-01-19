@@ -50,25 +50,24 @@ var loadedExtensions = null;
 var loadedExtensionsPath = null;
 
 app.on('will-quit', function() {
-  var e, error1, error2;
   try {
     loadedExtensions = Object.keys(extensionInfoMap).map(function(key) {
       return extensionInfoMap[key].srcDirectory;
     });
     try {
       fs.mkdirSync(path.dirname(loadedExtensionsPath));
-    } catch (error1) {
-      e = error1;
+    } catch (error) {
+      // Ignore error
     }
     return fs.writeFileSync(loadedExtensionsPath, JSON.stringify(loadedExtensions));
-  } catch (error2) {
-    e = error2;
+  } catch (error) {
+    // Ignore error
   }
 });
 
 // We can not use protocol or BrowserWindow until app is ready.
 app.once('ready', function() {
-  var BrowserWindow, chromeExtensionHandler, e, error1, i, init, len, protocol, srcDirectory;
+  var BrowserWindow, chromeExtensionHandler, i, init, len, protocol, srcDirectory;
   protocol = electron.protocol, BrowserWindow = electron.BrowserWindow;
 
   // Load persistented extensions.
@@ -84,8 +83,8 @@ app.once('ready', function() {
       srcDirectory = loadedExtensions[i];
       getExtensionInfoFromPath(srcDirectory);
     }
-  } catch (error1) {
-    e = error1;
+  } catch (error) {
+    // Ignore error
   }
 
   // The chrome-extension: can map a extension URL request to real file path.

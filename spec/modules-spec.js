@@ -1,12 +1,6 @@
-var assert, fs, path, temp;
-
-assert = require('assert');
-
-fs = require('fs');
-
-path = require('path');
-
-temp = require('temp');
+const assert = require('assert');
+const path = require('path');
+const temp = require('temp');
 
 describe('third-party module', function() {
   var fixtures;

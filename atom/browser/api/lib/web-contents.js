@@ -3,7 +3,6 @@
 const EventEmitter = require('events').EventEmitter;
 const deprecate = require('electron').deprecate;
 const ipcMain = require('electron').ipcMain;
-const session = require('electron').session;
 const NavigationController = require('electron').NavigationController;
 const Menu = require('electron').Menu;
 
@@ -62,7 +61,7 @@ const webFrameMethods = [
   'insertText',
   'setZoomFactor',
   'setZoomLevel',
-  'setZoomLevelLimits',
+  'setZoomLevelLimits'
 ];
 
 let wrapWebContents = function(webContents) {

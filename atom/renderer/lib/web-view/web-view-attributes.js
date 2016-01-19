@@ -87,7 +87,7 @@ class AllowTransparencyAttribute extends BooleanAttribute {
     super(webViewConstants.ATTRIBUTE_ALLOWTRANSPARENCY, webViewImpl);
   }
 
-  handleMutation(oldValue, newValue) {
+  handleMutation() {
     if (!this.webViewImpl.guestInstanceId) {
       return;
     }
@@ -105,7 +105,7 @@ class AutosizeDimensionAttribute extends WebViewAttribute {
     return parseInt(this.webViewImpl.webviewNode.getAttribute(this.name)) || 0;
   }
 
-  handleMutation(oldValue, newValue) {
+  handleMutation() {
     if (!this.webViewImpl.guestInstanceId) {
       return;
     }

@@ -203,7 +203,7 @@
 
   // Override fs APIs.
   exports.wrapFsWithAsar = function(fs) {
-    var exists, existsSync, internalModuleReadFile, internalModuleStat, lstat, lstatSync, mkdir, mkdirSync, open, openSync, readFile, readFileSync, readdir, readdirSync, realpath, realpathSync, stat, statSync, statSyncNoException;
+    var exists, existsSync, internalModuleReadFile, internalModuleStat, lstat, lstatSync, mkdir, mkdirSync, readFile, readFileSync, readdir, readdirSync, realpath, realpathSync, stat, statSync, statSyncNoException;
     lstatSync = fs.lstatSync;
     fs.lstatSync = function(p) {
       var archive, asarPath, filePath, isAsar, ref, stats;
@@ -242,8 +242,7 @@
     };
     statSync = fs.statSync;
     fs.statSync = function(p) {
-      var asarPath, filePath, isAsar, ref;
-      ref = splitPath(p), isAsar = ref[0], asarPath = ref[1], filePath = ref[2];
+      var isAsar = splitPath(p)[0];
       if (!isAsar) {
         return statSync(p);
       }
@@ -253,8 +252,7 @@
     };
     stat = fs.stat;
     fs.stat = function(p, callback) {
-      var asarPath, filePath, isAsar, ref;
-      ref = splitPath(p), isAsar = ref[0], asarPath = ref[1], filePath = ref[2];
+      var isAsar = splitPath(p)[0];
       if (!isAsar) {
         return stat(p, callback);
       }
@@ -352,7 +350,6 @@
       }
       return archive.stat(filePath) !== false;
     };
-    open = fs.open;
     readFile = fs.readFile;
     fs.readFile = function(p, options, callback) {
       var archive, asarPath, buffer, encoding, fd, filePath, info, isAsar, realPath, ref;
@@ -402,10 +399,8 @@
         return callback(error, encoding ? buffer.toString(encoding) : buffer);
       });
     };
-    openSync = fs.openSync;
     readFileSync = fs.readFileSync;
     fs.readFileSync = function(p, opts) {
-
       // this allows v8 to optimize this function
       var archive, asarPath, buffer, encoding, fd, filePath, info, isAsar, options, realPath, ref;
       options = opts;
@@ -557,11 +552,11 @@
     if (process.platform === 'win32') {
       mkdir = fs.mkdir;
       fs.mkdir = function(p, mode, callback) {
-        var asarPath, filePath, isAsar, ref;
+        var filePath, isAsar, ref;
         if (typeof mode === 'function') {
           callback = mode;
         }
-        ref = splitPath(p), isAsar = ref[0], asarPath = ref[1], filePath = ref[2];
+        ref = splitPath(p), isAsar = ref[0], filePath = ref[2];
         if (isAsar && filePath.length) {
           return notDirError(callback);
         }
@@ -569,8 +564,8 @@
       };
       mkdirSync = fs.mkdirSync;
       fs.mkdirSync = function(p, mode) {
-        var asarPath, filePath, isAsar, ref;
-        ref = splitPath(p), isAsar = ref[0], asarPath = ref[1], filePath = ref[2];
+        var filePath, isAsar, ref;
+        ref = splitPath(p), isAsar = ref[0], filePath = ref[2];
         if (isAsar && filePath.length) {
           notDirError();
         }

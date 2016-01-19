@@ -84,12 +84,10 @@ describe('ipc module', function() {
     return it('can be used as promise in each side', function(done) {
       var promise;
       promise = remote.require(path.join(fixtures, 'module', 'promise.js'));
-      return promise.twicePromise(Promise.resolve(1234)).then((function(_this) {
-        return function(value) {
-          assert.equal(value, 2468);
-          return done();
-        };
-      })(this));
+      return promise.twicePromise(Promise.resolve(1234)).then(function(value) {
+        assert.equal(value, 2468);
+        return done();
+      });
     });
   });
   describe('ipc.sender.send', function() {

@@ -60,9 +60,8 @@ var fn = function(name) {
     return webContents.emit.apply(webContents, [name, event].concat(slice.call(args)));
   });
 };
-var i, len, name;
+var i, len;
 for (i = 0, len = ref1.length; i < len; i++) {
-  name = ref1[i];
   fn(ref1[i]);
 }
 

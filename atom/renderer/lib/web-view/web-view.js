@@ -93,15 +93,13 @@ var WebViewImpl = (function() {
       this.webviewNode.setAttribute('tabIndex', -1);
     }
     this.webviewNode.addEventListener('focus', (function(_this) {
-      return function(e) {
-
+      return function() {
         // Focus the BrowserPlugin when the <webview> takes focus.
         return _this.browserPluginNode.focus();
       };
     })(this));
     return this.webviewNode.addEventListener('blur', (function(_this) {
-      return function(e) {
-
+      return function() {
         // Blur the BrowserPlugin when the <webview> loses focus.
         return _this.browserPluginNode.blur();
       };
@@ -138,12 +136,11 @@ var WebViewImpl = (function() {
   };
 
   WebViewImpl.prototype.onSizeChanged = function(webViewEvent) {
-    var height, maxHeight, maxWidth, minHeight, minWidth, newHeight, newWidth, node, width;
+    var maxHeight, maxWidth, minHeight, minWidth, newHeight, newWidth, node, width;
     newWidth = webViewEvent.newWidth;
     newHeight = webViewEvent.newHeight;
     node = this.webviewNode;
     width = node.offsetWidth;
-    height = node.offsetHeight;
 
     // Check the current bounds to make sure we do not resize <webview>
     // outside of current constraints.
@@ -296,8 +293,7 @@ var registerBrowserPluginElement = function() {
   };
   proto.attachedCallback = function() {
     // Load the plugin immediately.
-    var unused;
-    return unused = this.nonExistentAttribute;
+    return this.nonExistentAttribute;
   };
   WebViewImpl.BrowserPlugin = webFrame.registerEmbedderCustomElement('browserplugin', {
     "extends": 'object',

@@ -1,16 +1,14 @@
-var BrowserWindow, app, assert, fs, http, ipcMain, ipcRenderer, path, ref, remote, session;
+const assert = require('assert');
+const http = require('http');
+const path = require('path');
+const fs = require('fs');
 
-assert = require('assert');
+const ipcRenderer = require('electron').ipcRenderer;
+const remote = require('electron').remote;
 
-http = require('http');
-
-path = require('path');
-
-fs = require('fs');
-
-ref = require('electron'), ipcRenderer = ref.ipcRenderer, remote = ref.remote;
-
-app = remote.app, ipcMain = remote.ipcMain, session = remote.session, BrowserWindow = remote.BrowserWindow;
+const ipcMain = remote.ipcMain;
+const session = remote.session;
+const BrowserWindow = remote.BrowserWindow;
 
 describe('session module', function() {
   var fixtures, url, w;

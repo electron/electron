@@ -1,14 +1,11 @@
-const fs = require('fs');
 const path = require('path');
 const timers = require('timers');
 const Module = require('module');
 
 process.atomBinding = function(name) {
-  var e, error;
   try {
     return process.binding("atom_" + process.type + "_" + name);
   } catch (error) {
-    e = error;
     if (/No such module/.test(e.message)) {
       return process.binding("atom_common_" + name);
     }

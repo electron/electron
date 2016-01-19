@@ -1,18 +1,11 @@
-var BrowserWindow, assert, http, https, path, ref, remote, session, ws;
+const assert = require('assert');
+const http = require('http');
+const path = require('path');
+const ws = require('ws');
+const remote = require('electron').remote;
 
-assert = require('assert');
-
-http = require('http');
-
-https = require('https');
-
-path = require('path');
-
-ws = require('ws');
-
-remote = require('electron').remote;
-
-ref = remote.require('electron'), BrowserWindow = ref.BrowserWindow, session = ref.session;
+const BrowserWindow = remote.require('electron').BrowserWindow;
+const session = remote.require('electron').session;
 
 describe('chromium feature', function() {
   var fixtures, listener;
@@ -310,8 +303,7 @@ describe('chromium feature', function() {
     return it('has user agent', function(done) {
       server = http.createServer();
       return server.listen(0, '127.0.0.1', function() {
-        var port, websocket;
-        port = server.address().port;
+        var port = server.address().port;
         wss = new WebSocketServer({
           server: server
         });
@@ -323,7 +315,7 @@ describe('chromium feature', function() {
             return done('user agent is empty');
           }
         });
-        return websocket = new WebSocket("ws://127.0.0.1:" + port);
+        new WebSocket("ws://127.0.0.1:" + port);
       });
     });
   });

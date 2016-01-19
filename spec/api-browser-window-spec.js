@@ -1,22 +1,15 @@
-var BrowserWindow, assert, fs, http, ipcMain, isCI, os, path, ref, ref1, remote, screen, url;
+const assert = require('assert');
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
 
-assert = require('assert');
+const remote = require('electron').remote;
+const screen = require('electron').screen;
 
-fs = require('fs');
+const ipcMain = remote.require('electron').ipcMain;
+const BrowserWindow = remote.require('electron').BrowserWindow;
 
-path = require('path');
-
-http = require('http');
-
-url = require('url');
-
-os = require('os');
-
-ref = require('electron'), remote = ref.remote, screen = ref.screen;
-
-ref1 = remote.require('electron'), ipcMain = ref1.ipcMain, BrowserWindow = ref1.BrowserWindow;
-
-isCI = remote.getGlobal('isCi');
+const isCI = remote.getGlobal('isCi');
 
 describe('browser-window module', function() {
   var fixtures, w;

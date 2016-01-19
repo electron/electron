@@ -5,7 +5,6 @@ const v8Util = process.atomBinding('v8_util');
 
 var slice = [].slice;
 var includes = [].includes;
-var indexOf = [].indexOf;
 
 var fileDialogProperties = {
   openFile: 1 << 0,
