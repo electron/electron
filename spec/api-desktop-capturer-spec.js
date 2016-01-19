@@ -12,7 +12,7 @@ describe('desktopCapturer', function() {
     });
   });
 
-  it('does not throw an error when called twice (regression)', function(done) {
+  it('does not throw an error when called more than once (regression)', function(done) {
     var callCount = 0;
     var callback = function (error, sources) {
       callCount++;
