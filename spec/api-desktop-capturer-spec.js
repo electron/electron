@@ -14,7 +14,7 @@ describe('desktopCapturer', function() {
 
   it('does not throw an error when called twice (regression)', function(done) {
     var callCount = 0;
-    var callback = function(error, sources) {
+    var callback = function (error, sources) {
       callCount++;
       assert.equal(error, null);
       assert.notEqual(sources.length, 0);

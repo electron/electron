@@ -59,7 +59,7 @@ desktopCapturer.emit = function(event, name, sources) {
     request = requestsQueue[i];
     if (deepEqual(handledRequest.options, request.options)) {
       if ((ref1 = request.webContents) != null) {
-        ref1.send("ATOM_RENDERER_DESKTOP_CAPTURER_RESULT_" + request.id, errorMessage, result);
+        ref1.send("ATOM_RENDERER_DESKTOP_CAPTURER_RESULT_" + request.id, result);
       }
     } else {
       unhandledRequestsQueue.push(request);
