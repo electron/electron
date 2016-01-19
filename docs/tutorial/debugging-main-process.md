@@ -60,13 +60,13 @@ or, to pause your script on the first line:
 $ electron --debug-brk=5858 your/app
 ```
 
-### 5. Start the [node-inspector][node-inspector] server using electron
+### 6. Start the [node-inspector][node-inspector] server using electron
 
 ```bash
 $ ELECTRON_RUN_AS_NODE=true path/to/electron.exe node_modules/node-inspector/bin/inspector.js
 ```
 
-### 6. Load the debugger UI
+### 7. Load the debugger UI
 
 Open http://127.0.0.1:8080/debug?ws=127.0.0.1:8080&port=5858 in the Chrome browser. You may have to click pause if starting with debug-brk to see the entry line.
 
