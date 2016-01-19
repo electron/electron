@@ -12,7 +12,7 @@
       "single"
     ],
     "semi": [
-      0,
+      2,
       "always"
     ],
     "comma-dangle": 0,

@@ -41,7 +41,7 @@ var WebViewImpl = (function() {
     // Subscribe to host's zoom level changes.
     this.onZoomLevelChanged = (zoomLevel) => {
       this.webviewNode.setZoomLevel(zoomLevel);
-    }
+    };
     webFrame.on('zoom-level-changed', this.onZoomLevelChanged);
   }
 

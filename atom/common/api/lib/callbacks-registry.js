@@ -63,4 +63,4 @@ class CallbacksRegistry {
   }
 }
 
-module.exports = CallbacksRegistry
+module.exports = CallbacksRegistry;

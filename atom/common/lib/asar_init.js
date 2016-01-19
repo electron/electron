@@ -11,4 +11,4 @@
     source['original-fs'] = source.fs;
     return source['fs'] = "var src = '(function (exports, require, module, __filename, __dirname) { ' +\n          process.binding('natives')['original-fs'] +\n          ' });';\nvar vm = require('vm');\nvar fn = vm.runInThisContext(src, { filename: 'fs.js' });\nfn(exports, require, module);\nvar asar = require('ATOM_SHELL_ASAR');\nasar.wrapFsWithAsar(exports);";
   };
-})()
+})();

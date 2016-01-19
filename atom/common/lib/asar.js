@@ -579,4 +579,4 @@
     overrideAPISync(fs, 'openSync');
     return overrideAPISync(child_process, 'execFileSync');
   };
-})()
+})();
