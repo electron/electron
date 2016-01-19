@@ -200,7 +200,7 @@ var callFunction = function(event, func, caller, args) {
     // them with the function name so it's easier to trace things like
     // `Error processing argument -1.`
     funcName = (ref = func.name) != null ? ref : "anonymous";
-    throw new Error("Could not call remote function `" + funcName + "`. Check that the function signature is correct. Underlying error: " + e.message);
+    throw new Error("Could not call remote function `" + funcName + "`. Check that the function signature is correct. Underlying error: " + error.message);
   }
 };
 

@@ -6,7 +6,7 @@ process.atomBinding = function(name) {
   try {
     return process.binding("atom_" + process.type + "_" + name);
   } catch (error) {
-    if (/No such module/.test(e.message)) {
+    if (/No such module/.test(error.message)) {
       return process.binding("atom_common_" + name);
     }
   }
