@@ -151,6 +151,28 @@ void WebContentsPreferences::OverrideWebkitPrefs(
     prefs->allow_displaying_insecure_content = b;
   if (self->web_preferences_.GetBoolean("allowRunningInsecureContent", &b))
     prefs->allow_running_insecure_content = b;
+  const base::DictionaryValue* fonts = nullptr;
+  if (self->web_preferences_.GetDictionary("defaultFontFamily", &fonts)) {
+    base::string16 font;
+    if (fonts->GetString("standard", &font))
+      prefs->standard_font_family_map[content::kCommonScript] = font;
+    if (fonts->GetString("serif", &font))
+      prefs->serif_font_family_map[content::kCommonScript] = font;
+    if (fonts->GetString("sansSerif", &font))
+      prefs->sans_serif_font_family_map[content::kCommonScript] = font;
+    if (fonts->GetString("monospace", &font))
+      prefs->fixed_font_family_map[content::kCommonScript] = font;
+  }
+  int size;
+  if (self->web_preferences_.GetInteger("defaultFontSize", &size))
+    prefs->default_font_size = size;
+  if (self->web_preferences_.GetInteger("defaultMonospaceFontSize", &size))
+    prefs->default_fixed_font_size = size;
+  if (self->web_preferences_.GetInteger("minimumFontSize", &size))
+    prefs->minimum_font_size = size;
+  std::string encoding;
+  if (self->web_preferences_.GetString("defaultEncoding", &encoding))
+    prefs->default_encoding = encoding;
 }
 
 }  // namespace atom
