@@ -475,7 +475,11 @@ void NativeWindowViews::SetMovable(bool movable) {
 }
 
 bool NativeWindowViews::IsMovable() {
+#if defined(OS_WIN)
   return movable_;
+#elif defined(USE_X11)
+  return true;
+#endif
 }
 
 void NativeWindowViews::SetMinimizable(bool minimizable) {
