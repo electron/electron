@@ -470,6 +470,7 @@ describe('browser-window module', function() {
         fs.rmdirSync(path.join(savePageDir, 'save_page_files'));
         fs.rmdirSync(savePageDir);
       } catch (e) {
+        // Ignore error
       }
     });
 

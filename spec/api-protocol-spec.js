@@ -49,7 +49,7 @@ describe('protocol module', function() {
           callback(text);
           return callback();
         } catch (error1) {
-
+          // Ignore error
         }
       };
       return protocol.registerStringProtocol(protocolName, doubleHandler, function(error) {
@@ -589,7 +589,7 @@ describe('protocol module', function() {
           callback(text);
           return callback();
         } catch (error1) {
-
+          // Ignore error
         }
       };
       return protocol.interceptStringProtocol('http', doubleHandler, function(error) {

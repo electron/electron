@@ -1,7 +1,4 @@
 {
-  "rules": {
-    "no-empty": 0
-  },
   "env": {
     "jquery": true,
     "mocha": true
