@@ -789,7 +789,7 @@ bool NativeWindowViews::CanMaximize() const {
 }
 
 bool NativeWindowViews::CanMinimize() const {
-#ifdef (OS_WIN)
+#ifdef(OS_WIN)
   return minimizable_;
 #elif defined(USE_X11)
   return true;
