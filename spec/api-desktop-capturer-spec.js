@@ -11,4 +11,17 @@ describe('desktopCapturer', function() {
       done();
     });
   });
+
+  it('does not throw an error when called twice (regression)', function(done) {
+    var callCount = 0;
+    var callback = function(error, sources) {
+      callCount++;
+      assert.equal(error, null);
+      assert.notEqual(sources.length, 0);
+      if (callCount === 2) done();
+    }
+
+    desktopCapturer.getSources({types: ['window', 'screen']}, callback);
+    desktopCapturer.getSources({types: ['window', 'screen']}, callback);
+  })
 });
