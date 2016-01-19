@@ -418,7 +418,7 @@ NativeWindowMac::NativeWindowMac(
   if (transparent()) {
     // Make window has transparent background.
     [window_ setOpaque:NO];
-    [window_ setHasShadow:NO];
+    // Setting the background color to clear will also hide the shadow.
     [window_ setBackgroundColor:[NSColor clearColor]];
   }
 
@@ -706,6 +706,12 @@ bool NativeWindowMac::IsKiosk() {
 }
 
 void NativeWindowMac::SetBackgroundColor(const std::string& color_name) {
+  SkColor background_color = NativeWindow::ParseHexColor(color_name);
+  NSColor *color = [NSColor colorWithCalibratedRed:SkColorGetR(background_color)
+    green:SkColorGetG(background_color)
+    blue:SkColorGetB(background_color)
+    alpha:1.0];
+  [window_ setBackgroundColor:color];
 }
 
 void NativeWindowMac::SetRepresentedFilename(const std::string& filename) {

@@ -265,6 +265,9 @@ class NativeWindow : public base::SupportsUserData,
   void BeforeUnloadDialogCancelled() override;
   bool OnMessageReceived(const IPC::Message& message) override;
 
+  // Parse hex color like "#FFF" or "#EFEFEF"
+  SkColor ParseHexColor(const std::string& name);
+
  private:
   // Schedule a notification unresponsive event.
   void ScheduleUnresponsiveEvent(int ms);
