@@ -111,7 +111,6 @@ var metaToValue = function(meta) {
       return new Date(meta.value);
     case 'exception':
       throw new Error(meta.message + "\n" + meta.stack);
-      break;
     default:
       if (meta.type === 'function') {
         // A shadow class to represent the remote function object.
