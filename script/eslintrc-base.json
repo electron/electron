@@ -18,7 +18,7 @@
     "comma-dangle": 0,
     "linebreak-style": 0,
     "no-console": 0,
-    "no-undef": 0,
+    "no-undef": 2,
     "no-unused-vars": 2
   },
   "env": {
