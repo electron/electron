@@ -30,6 +30,7 @@
   "globals": {
     "DevToolsAPI": false,
     "InspectorFrontendHost": false,
-    "WebInspector": false
+    "WebInspector": false,
+    "WebView": false
   }
 }
