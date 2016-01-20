@@ -19,9 +19,9 @@ describe('desktopCapturer', function() {
       assert.equal(error, null);
       assert.notEqual(sources.length, 0);
       if (callCount === 2) done();
-    }
+    };
 
     desktopCapturer.getSources({types: ['window', 'screen']}, callback);
     desktopCapturer.getSources({types: ['window', 'screen']}, callback);
-  })
+  });
 });
