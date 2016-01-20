@@ -26,5 +26,10 @@
     "node": true,
     "browser": true
   },
-  "extends": "eslint:recommended"
+  "extends": "eslint:recommended",
+  "globals": {
+    "DevToolsAPI": false,
+    "InspectorFrontendHost": false,
+    "WebInspector": false
+  }
 }
