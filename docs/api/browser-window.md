@@ -359,9 +359,6 @@ Force closing the window, the `unload` and `beforeunload` event won't be emitted
 for the web page, and `close` event will also not be emitted
 for this window, but it guarantees the `closed` event will be emitted.
 
-You should only use this method when the renderer process (web page) has
-crashed.
-
 ### `win.close()`
 
 Try to close the window, this has the same effect with user manually clicking
