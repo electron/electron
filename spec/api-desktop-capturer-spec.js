@@ -1,17 +1,27 @@
-var assert, desktopCapturer;
-
-assert = require('assert');
-
-desktopCapturer = require('electron').desktopCapturer;
+const assert = require('assert');
+const desktopCapturer = require('electron').desktopCapturer;
 
 describe('desktopCapturer', function() {
-  return it('should return a non-empty array of sources', function(done) {
-    return desktopCapturer.getSources({
+  it('should return a non-empty array of sources', function(done) {
+    desktopCapturer.getSources({
       types: ['window', 'screen']
     }, function(error, sources) {
       assert.equal(error, null);
       assert.notEqual(sources.length, 0);
-      return done();
+      done();
     });
   });
+
+  it('does not throw an error when called more than once (regression)', function(done) {
+    var callCount = 0;
+    var callback = function (error, sources) {
+      callCount++;
+      assert.equal(error, null);
+      assert.notEqual(sources.length, 0);
+      if (callCount === 2) done();
+    }
+
+    desktopCapturer.getSources({types: ['window', 'screen']}, callback);
+    desktopCapturer.getSources({types: ['window', 'screen']}, callback);
+  })
 });
