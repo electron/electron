@@ -29,7 +29,7 @@ SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 
 def main():
   os.chdir(SOURCE_ROOT)
-  files = list_files(['app', 'browser', 'common', 'renderer'],
+  files = list_files(['app', 'browser', 'common', 'renderer', 'utility'],
                      ['*.cc', '*.h'])
   call_cpplint(list(set(files) - set(IGNORE_FILES)))
 
