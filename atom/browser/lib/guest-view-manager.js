@@ -156,7 +156,8 @@ var attachGuest = function(embedder, elementInstanceId, guestInstanceId, params)
     guestInstanceId: guestInstanceId,
     nodeIntegration: (ref1 = params.nodeintegration) != null ? ref1 : false,
     plugins: params.plugins,
-    webSecurity: !params.disablewebsecurity
+    webSecurity: !params.disablewebsecurity,
+    blinkFeatures: params.blinkfeatures
   };
   if (params.preload) {
     webPreferences.preloadURL = params.preload;
