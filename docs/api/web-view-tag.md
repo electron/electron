@@ -171,6 +171,17 @@ webview.addEventListener("dom-ready", function() {
 });
 ```
 
+### `<webview>.loadURL(url[, options])`
+
+* `url` URL
+* `options` Object (optional), properties:
+  * `httpReferrer` String - A HTTP Referrer url.
+  * `userAgent` String - A user agent originating the request.
+  * `extraHeaders` String - Extra headers separated by "\n"
+
+Loads the `url` in the webview, the `url` must contain the protocol prefix,
+e.g. the `http://` or `file://`.
+
 ### `<webview>.getURL()`
 
 Returns URL of guest page.

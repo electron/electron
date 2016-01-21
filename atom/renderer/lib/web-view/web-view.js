@@ -346,6 +346,7 @@ var registerWebViewElement = function() {
   // Public-facing API methods.
   methods = [
     'getURL',
+    'loadURL',
     'getTitle',
     'isLoading',
     'isWaitingForResponse',
