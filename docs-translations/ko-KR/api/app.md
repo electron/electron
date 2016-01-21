@@ -422,7 +422,7 @@ if (shouldQuit) {
   return;
 }
 
-// 윈도우 창을 생성하고 각종 리소스를 로드하고 작업합니다..
+// 윈도우 창을 생성하고 각종 리소스를 로드하고 작업합니다.
 app.on('ready', function() {
 });
 ```
@@ -432,6 +432,36 @@ app.on('ready', function() {
 * `id` String
 
 [Application User Model ID][app-user-model-id]를 `id`로 변경합니다.
+
+### `app.isAeroGlassEnabled()` _Windows_
+
+이 메서드는 [DWM 컴포지션](https://msdn.microsoft.com/en-us/library/windows/desktop/aa969540.aspx)
+(Aero Glass)가 활성화 되어있을 때 `true`를 반환합니다. 아닌 경우 `false`를 반환합니다.
+이 메서드는 투명한 윈도우를 만들기 위해 사용 가능 여부를 확인할 때 사용할 수 있습니다.
+(투명한 윈도우는 DWM 컴포지션이 비활성화되어있을 시 작동하지 않습니다)
+
+사용 예시:
+
+```js
+let browserOptions = {width: 1000, height: 800};
+
+// 플랫폼이 지원하는 경우에만 투명 윈도우를 생성
+if (process.platform !== 'win32' || app.isAeroGlassEnabled()) {
+  browserOptions.transparent = true;
+  browserOptions.frame = false;
+}
+
+// 원도우 생성
+win = new BrowserWindow(browserOptions);
+
+// 페이지 로드
+if (browserOptions.transparent) {
+  win.loadURL('file://' + __dirname + '/index.html');
+} else {
+  // 투명 윈도우 상태가 아니라면, 기본적인 폴백 스타일 사용
+  win.loadURL('file://' + __dirname + '/fallback.html');
+}
+```
 
 ### `app.commandLine.appendSwitch(switch[, value])`
 

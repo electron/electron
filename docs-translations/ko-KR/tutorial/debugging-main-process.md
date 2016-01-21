@@ -60,13 +60,13 @@ $ electron --debug=5858 your/app
 $ electron --debug-brk=5858 your/app
 ```
 
-### 5. Electron을 사용하는 [node-inspector][node-inspector] 시작
+### 6. Electron을 사용하는 [node-inspector][node-inspector] 시작
 
 ```bash
 $ ELECTRON_RUN_AS_NODE=true path/to/electron.exe node_modules/node-inspector/bin/inspector.js
 ```
 
-### 6. 디버거 UI 로드
+### 7. 디버거 UI 로드
 
 Chrome 브라우저에서 http://127.0.0.1:8080/debug?ws=127.0.0.1:8080&port=5858 주소에
 접속합니다. (기본 포트 또는 지정한 포트로 접속) 엔트리의 라인이 debug-brk로 시작하는
