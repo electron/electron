@@ -22,7 +22,8 @@ class Notification {
   virtual void Show(const base::string16& title,
                     const base::string16& msg,
                     const GURL& icon_url,
-                    const SkBitmap& icon) = 0;
+                    const SkBitmap& icon,
+                    const bool silent) = 0;
   // Closes the notification, this instance will be destroyed after the
   // notification gets closed.
   virtual void Dismiss() = 0;

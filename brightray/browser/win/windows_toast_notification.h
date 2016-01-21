@@ -42,7 +42,8 @@ class WindowsToastNotification : public Notification {
   void Show(const base::string16& title,
             const base::string16& msg,
             const GURL& icon_url,
-            const SkBitmap& icon) override;
+            const SkBitmap& icon,
+            const bool silent) override;
   void Dismiss() override;
 
  private:
@@ -56,7 +57,9 @@ class WindowsToastNotification : public Notification {
                    const std::wstring& title,
                    const std::wstring& msg,
                    const std::wstring& icon_path,
+                   const bool silent,
                    ABI::Windows::Data::Xml::Dom::IXmlDocument** toastXml);
+  bool SetXmlAudioSilent(ABI::Windows::Data::Xml::Dom::IXmlDocument* doc);
   bool SetXmlText(ABI::Windows::Data::Xml::Dom::IXmlDocument* doc,
                   const std::wstring& text);
   bool SetXmlText(ABI::Windows::Data::Xml::Dom::IXmlDocument* doc,

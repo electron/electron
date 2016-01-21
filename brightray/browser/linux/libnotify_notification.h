@@ -23,7 +23,8 @@ class LibnotifyNotification : public Notification {
   void Show(const base::string16& title,
             const base::string16& msg,
             const GURL& icon_url,
-            const SkBitmap& icon) override;
+            const SkBitmap& icon,
+            const bool silent) override;
   void Dismiss() override;
 
  private:

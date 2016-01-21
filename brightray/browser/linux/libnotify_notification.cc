@@ -89,7 +89,8 @@ LibnotifyNotification::~LibnotifyNotification() {
 void LibnotifyNotification::Show(const base::string16& title,
                                  const base::string16& body,
                                  const GURL& icon_url,
-                                 const SkBitmap& icon) {
+                                 const SkBitmap& icon,
+                                 const bool silent) {
   notification_ = libnotify_loader_.notify_notification_new(
       base::UTF16ToUTF8(title).c_str(),
       base::UTF16ToUTF8(body).c_str(),

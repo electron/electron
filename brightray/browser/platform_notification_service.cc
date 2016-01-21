@@ -57,7 +57,7 @@ void PlatformNotificationService::DisplayNotification(
   auto notification = presenter->CreateNotification(adapter.get());
   if (notification) {
     ignore_result(adapter.release());  // it will release itself automatically.
-    notification->Show(data.title, data.body, data.icon, icon);
+    notification->Show(data.title, data.body, data.icon, icon, data.silent);
     *cancel_callback = base::Bind(&RemoveNotification, notification);
   }
 }
