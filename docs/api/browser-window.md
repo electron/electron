@@ -160,6 +160,15 @@ The `webPreferences` option is an object that can have following properties:
   `CSSVariables,KeyboardEventKey`. The full list of supported feature strings
   can be found in the [setFeatureEnabledFromString][blink-feature-string]
   function.
+* `defaultFontFamily` Object - Sets the default font for the font-family.
+  * `standard` String - Defaults to `Times New Roman`.
+  * `serif` String - Defaults to `Times New Roman`.
+  * `sansSerif` String - Defaults to `Arial`.
+  * `monospace` String - Defaults to `Courier New`.
+* `defaultFontSize` Integer - Defaults to `16`.
+* `defaultMonospaceFontSize` Integer - Defaults to `13`.
+* `minimumFontSize` Integer - Defaults to `0`.
+* `defaultEncoding` String - Defaults to `ISO-8859-1`.
 
 ## Events
 
