@@ -83,6 +83,8 @@
       'atom/browser/api/atom_api_content_tracing.cc',
       'atom/browser/api/atom_api_cookies.cc',
       'atom/browser/api/atom_api_cookies.h',
+      'atom/browser/api/atom_api_debugger.cc',
+      'atom/browser/api/atom_api_debugger.h',
       'atom/browser/api/atom_api_desktop_capturer.cc',
       'atom/browser/api/atom_api_desktop_capturer.h',
       'atom/browser/api/atom_api_download_item.cc',

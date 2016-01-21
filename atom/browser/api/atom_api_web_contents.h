@@ -142,6 +142,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   // Properties.
   v8::Local<v8::Value> Session(v8::Isolate* isolate);
   v8::Local<v8::Value> DevToolsWebContents(v8::Isolate* isolate);
+  v8::Local<v8::Value> Debugger(v8::Isolate* isolate);
 
   // mate::TrackableObject:
   static void BuildPrototype(v8::Isolate* isolate,
@@ -265,6 +266,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   v8::Global<v8::Value> session_;
   v8::Global<v8::Value> devtools_web_contents_;
+  v8::Global<v8::Value> debugger_;
 
   scoped_ptr<WebViewGuestDelegate> guest_delegate_;
 

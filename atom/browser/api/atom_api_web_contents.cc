@@ -7,6 +7,7 @@
 #include <set>
 #include <string>
 
+#include "atom/browser/api/atom_api_debugger.h"
 #include "atom/browser/api/atom_api_session.h"
 #include "atom/browser/api/atom_api_window.h"
 #include "atom/browser/atom_browser_client.h"
@@ -1076,6 +1077,14 @@ v8::Local<v8::Value> WebContents::DevToolsWebContents(v8::Isolate* isolate) {
     return v8::Local<v8::Value>::New(isolate, devtools_web_contents_);
 }
 
+v8::Local<v8::Value> WebContents::Debugger(v8::Isolate* isolate) {
+  if (debugger_.IsEmpty()) {
+    auto handle = atom::api::Debugger::Create(isolate, web_contents());
+    debugger_.Reset(isolate, handle.ToV8());
+  }
+  return v8::Local<v8::Value>::New(isolate, debugger_);
+}
+
 // static
 void WebContents::BuildPrototype(v8::Isolate* isolate,
                                  v8::Local<v8::ObjectTemplate> prototype) {
@@ -1144,7 +1153,8 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("addWorkSpace", &WebContents::AddWorkSpace)
       .SetMethod("removeWorkSpace", &WebContents::RemoveWorkSpace)
       .SetProperty("session", &WebContents::Session)
-      .SetProperty("devToolsWebContents", &WebContents::DevToolsWebContents);
+      .SetProperty("devToolsWebContents", &WebContents::DevToolsWebContents)
+      .SetProperty("debugger", &WebContents::Debugger);
 }
 
 AtomBrowserContext* WebContents::GetBrowserContext() const {

@@ -1,0 +1,152 @@
+// Copyright (c) 2015 GitHub, Inc.
+// Use of this source code is governed by the MIT license that can be
+// found in the LICENSE file.
+
+#include "atom/browser/api/atom_api_debugger.h"
+
+#include <string>
+
+#include "atom/common/native_mate_converters/callback.h"
+#include "atom/common/native_mate_converters/value_converter.h"
+#include "base/json/json_reader.h"
+#include "base/json/json_writer.h"
+#include "content/public/browser/devtools_agent_host.h"
+#include "content/public/browser/web_contents.h"
+#include "native_mate/object_template_builder.h"
+
+using content::DevToolsAgentHost;
+
+namespace atom {
+
+namespace api {
+
+Debugger::Debugger(content::WebContents* web_contents)
+    : web_contents_(web_contents),
+      previous_request_id_(0) {
+}
+
+Debugger::~Debugger() {
+}
+
+void Debugger::AgentHostClosed(DevToolsAgentHost* agent_host,
+                               bool replaced_with_another_client) {
+  std::string detach_reason = "target closed";
+  if (replaced_with_another_client)
+    detach_reason = "replaced with devtools";
+  if (!detach_callback_.is_null())
+    detach_callback_.Run(detach_reason);
+}
+
+void Debugger::DispatchProtocolMessage(DevToolsAgentHost* agent_host,
+                                       const std::string& message) {
+  DCHECK(agent_host == agent_host_.get());
+
+  scoped_ptr<base::Value> parsed_message(base::JSONReader::Read(message));
+  if (!parsed_message->IsType(base::Value::TYPE_DICTIONARY))
+    return;
+
+  base::DictionaryValue* dict =
+      static_cast<base::DictionaryValue*>(parsed_message.get());
+  int id;
+  if (!dict->GetInteger("id", &id)) {
+    std::string method;
+    if (!dict->GetString("method", &method))
+      return;
+    base::DictionaryValue* params = nullptr;
+    dict->GetDictionary("params", &params);
+    if (!response_callback_.is_null())
+      response_callback_.Run(method, *params);
+  } else {
+    auto send_command_callback = pending_requests_[id];
+    pending_requests_.erase(id);
+    if (send_command_callback.is_null())
+      return;
+    base::DictionaryValue* result = nullptr;
+    dict->GetDictionary("result", &result);
+    send_command_callback.Run(*result);
+  }
+}
+
+void Debugger::Attach(mate::Arguments* args) {
+  std::string protocol_version;
+  args->GetNext(&protocol_version);
+
+  if (!protocol_version.empty() &&
+      !DevToolsAgentHost::IsSupportedProtocolVersion(protocol_version)) {
+    args->ThrowError("Requested protocol version is not supported");
+    return;
+  }
+  agent_host_ = DevToolsAgentHost::GetOrCreateFor(web_contents_);
+  if (!agent_host_.get()) {
+    args->ThrowError("No target available");
+    return;
+  }
+  if (agent_host_->IsAttached()) {
+    args->ThrowError("Another debugger is already attached to this target");
+    return;
+  }
+
+  agent_host_->AttachClient(this);
+}
+
+void Debugger::Detach() {
+  agent_host_->DetachClient();
+  agent_host_ = nullptr;
+}
+
+void Debugger::SendCommand(mate::Arguments* args) {
+  if (!agent_host_.get())
+    args->ThrowError("Debugger is not attached to a target");
+
+  std::string method;
+  if (!args->GetNext(&method)) {
+    args->ThrowError();
+    return;
+  }
+  base::DictionaryValue command_params;
+  args->GetNext(&command_params);
+  SendCommandCallback callback;
+  args->GetNext(&callback);
+
+  base::DictionaryValue request;
+  int request_id = ++previous_request_id_;
+  pending_requests_[request_id] = callback;
+  request.SetInteger("id", request_id);
+  request.SetString("method", method);
+  if (!command_params.empty())
+    request.Set("params", command_params.DeepCopy());
+
+  std::string json_args;
+  base::JSONWriter::Write(request, &json_args);
+  agent_host_->DispatchProtocolMessage(json_args);
+}
+
+void Debugger::OnDetach(const DetachCallback& callback) {
+  detach_callback_ = callback;
+}
+
+void Debugger::OnEvent(const ResponseCallback& callback) {
+  response_callback_ = callback;
+}
+
+// static
+mate::Handle<Debugger> Debugger::Create(
+    v8::Isolate* isolate,
+    content::WebContents* web_contents) {
+  return mate::CreateHandle(isolate, new Debugger(web_contents));
+}
+
+// static
+void Debugger::BuildPrototype(v8::Isolate* isolate,
+                              v8::Local<v8::ObjectTemplate> prototype) {
+  mate::ObjectTemplateBuilder(isolate, prototype)
+      .SetMethod("attach", &Debugger::Attach)
+      .SetMethod("detach", &Debugger::Detach)
+      .SetMethod("sendCommand", &Debugger::SendCommand)
+      .SetMethod("onDetach", &Debugger::OnDetach)
+      .SetMethod("onEvent", &Debugger::OnEvent);
+}
+
+}  // namespace api
+
+}  // namespace atom
