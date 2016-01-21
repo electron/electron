@@ -1,6 +1,5 @@
 'use strict';
 
-const path = require('path');
 const electron = require('electron');
 const ipcMain = electron.ipcMain;
 const objectsRegistry = require('./objects-registry');
@@ -183,7 +182,7 @@ var unwrapArgs = function(sender, args) {
 // Call a function and send reply asynchronously if it's a an asynchronous
 // style function and the caller didn't pass a callback.
 var callFunction = function(event, func, caller, args) {
-  var e, error1, funcMarkedAsync, funcName, funcPassedCallback, ref, ret;
+  var funcMarkedAsync, funcName, funcPassedCallback, ref, ret;
   funcMarkedAsync = v8Util.getHiddenValue(func, 'asynchronous');
   funcPassedCallback = typeof args[args.length - 1] === 'function';
   try {
@@ -196,14 +195,12 @@ var callFunction = function(event, func, caller, args) {
       ret = func.apply(caller, args);
       return event.returnValue = valueToMeta(event.sender, ret, true);
     }
-  } catch (error1) {
-    e = error1;
-
+  } catch (error) {
     // Catch functions thrown further down in function invocation and wrap
     // them with the function name so it's easier to trace things like
     // `Error processing argument -1.`
     funcName = (ref = func.name) != null ? ref : "anonymous";
-    throw new Error("Could not call remote function `" + funcName + "`. Check that the function signature is correct. Underlying error: " + e.message);
+    throw new Error("Could not call remote function `" + funcName + "`. Check that the function signature is correct. Underlying error: " + error.message);
   }
 };
 
@@ -213,42 +210,34 @@ process.on('ATOM_BROWSER_RELEASE_RENDER_VIEW', function(id) {
 });
 
 ipcMain.on('ATOM_BROWSER_REQUIRE', function(event, module) {
-  var e, error1;
   try {
     return event.returnValue = valueToMeta(event.sender, process.mainModule.require(module));
-  } catch (error1) {
-    e = error1;
-    return event.returnValue = exceptionToMeta(e);
+  } catch (error) {
+    return event.returnValue = exceptionToMeta(error);
   }
 });
 
 ipcMain.on('ATOM_BROWSER_GET_BUILTIN', function(event, module) {
-  var e, error1;
   try {
     return event.returnValue = valueToMeta(event.sender, electron[module]);
-  } catch (error1) {
-    e = error1;
-    return event.returnValue = exceptionToMeta(e);
+  } catch (error) {
+    return event.returnValue = exceptionToMeta(error);
   }
 });
 
 ipcMain.on('ATOM_BROWSER_GLOBAL', function(event, name) {
-  var e, error1;
   try {
     return event.returnValue = valueToMeta(event.sender, global[name]);
-  } catch (error1) {
-    e = error1;
-    return event.returnValue = exceptionToMeta(e);
+  } catch (error) {
+    return event.returnValue = exceptionToMeta(error);
   }
 });
 
 ipcMain.on('ATOM_BROWSER_CURRENT_WINDOW', function(event) {
-  var e, error1;
   try {
     return event.returnValue = valueToMeta(event.sender, event.sender.getOwnerBrowserWindow());
-  } catch (error1) {
-    e = error1;
-    return event.returnValue = exceptionToMeta(e);
+  } catch (error) {
+    return event.returnValue = exceptionToMeta(error);
   }
 });
 
@@ -257,7 +246,7 @@ ipcMain.on('ATOM_BROWSER_CURRENT_WEB_CONTENTS', function(event) {
 });
 
 ipcMain.on('ATOM_BROWSER_CONSTRUCTOR', function(event, id, args) {
-  var constructor, e, error1, obj;
+  var constructor, obj;
   try {
     args = unwrapArgs(event.sender, args);
     constructor = objectsRegistry.get(id);
@@ -266,26 +255,24 @@ ipcMain.on('ATOM_BROWSER_CONSTRUCTOR', function(event, id, args) {
     // http://stackoverflow.com/questions/1606797/use-of-apply-with-new-operator-is-this-possible
     obj = new (Function.prototype.bind.apply(constructor, [null].concat(args)));
     return event.returnValue = valueToMeta(event.sender, obj);
-  } catch (error1) {
-    e = error1;
-    return event.returnValue = exceptionToMeta(e);
+  } catch (error) {
+    return event.returnValue = exceptionToMeta(error);
   }
 });
 
 ipcMain.on('ATOM_BROWSER_FUNCTION_CALL', function(event, id, args) {
-  var e, error1, func;
+  var func;
   try {
     args = unwrapArgs(event.sender, args);
     func = objectsRegistry.get(id);
     return callFunction(event, func, global, args);
-  } catch (error1) {
-    e = error1;
-    return event.returnValue = exceptionToMeta(e);
+  } catch (error) {
+    return event.returnValue = exceptionToMeta(error);
   }
 });
 
 ipcMain.on('ATOM_BROWSER_MEMBER_CONSTRUCTOR', function(event, id, method, args) {
-  var constructor, e, error1, obj;
+  var constructor, obj;
   try {
     args = unwrapArgs(event.sender, args);
     constructor = objectsRegistry.get(id)[method];
@@ -293,44 +280,40 @@ ipcMain.on('ATOM_BROWSER_MEMBER_CONSTRUCTOR', function(event, id, method, args) 
     // Call new with array of arguments.
     obj = new (Function.prototype.bind.apply(constructor, [null].concat(args)));
     return event.returnValue = valueToMeta(event.sender, obj);
-  } catch (error1) {
-    e = error1;
-    return event.returnValue = exceptionToMeta(e);
+  } catch (error) {
+    return event.returnValue = exceptionToMeta(error);
   }
 });
 
 ipcMain.on('ATOM_BROWSER_MEMBER_CALL', function(event, id, method, args) {
-  var e, error1, obj;
+  var obj;
   try {
     args = unwrapArgs(event.sender, args);
     obj = objectsRegistry.get(id);
     return callFunction(event, obj[method], obj, args);
-  } catch (error1) {
-    e = error1;
-    return event.returnValue = exceptionToMeta(e);
+  } catch (error) {
+    return event.returnValue = exceptionToMeta(error);
   }
 });
 
 ipcMain.on('ATOM_BROWSER_MEMBER_SET', function(event, id, name, value) {
-  var e, error1, obj;
+  var obj;
   try {
     obj = objectsRegistry.get(id);
     obj[name] = value;
     return event.returnValue = null;
-  } catch (error1) {
-    e = error1;
-    return event.returnValue = exceptionToMeta(e);
+  } catch (error) {
+    return event.returnValue = exceptionToMeta(error);
   }
 });
 
 ipcMain.on('ATOM_BROWSER_MEMBER_GET', function(event, id, name) {
-  var e, error1, obj;
+  var obj;
   try {
     obj = objectsRegistry.get(id);
     return event.returnValue = valueToMeta(event.sender, obj[name]);
-  } catch (error1) {
-    e = error1;
-    return event.returnValue = exceptionToMeta(e);
+  } catch (error) {
+    return event.returnValue = exceptionToMeta(error);
   }
 });
 
@@ -339,25 +322,23 @@ ipcMain.on('ATOM_BROWSER_DEREFERENCE', function(event, id) {
 });
 
 ipcMain.on('ATOM_BROWSER_GUEST_WEB_CONTENTS', function(event, guestInstanceId) {
-  var e, error1, guestViewManager;
+  var guestViewManager;
   try {
     guestViewManager = require('./guest-view-manager');
     return event.returnValue = valueToMeta(event.sender, guestViewManager.getGuest(guestInstanceId));
-  } catch (error1) {
-    e = error1;
-    return event.returnValue = exceptionToMeta(e);
+  } catch (error) {
+    return event.returnValue = exceptionToMeta(error);
   }
 });
 
 ipcMain.on('ATOM_BROWSER_ASYNC_CALL_TO_GUEST_VIEW', function() {
-  var args, e, error1, event, guest, guestInstanceId, guestViewManager, method;
+  var args, event, guest, guestInstanceId, guestViewManager, method;
   event = arguments[0], guestInstanceId = arguments[1], method = arguments[2], args = 4 <= arguments.length ? slice.call(arguments, 3) : [];
   try {
     guestViewManager = require('./guest-view-manager');
     guest = guestViewManager.getGuest(guestInstanceId);
     return guest[method].apply(guest, args);
-  } catch (error1) {
-    e = error1;
-    return event.returnValue = exceptionToMeta(e);
+  } catch (error) {
+    return event.returnValue = exceptionToMeta(error);
   }
 });

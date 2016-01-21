@@ -144,23 +144,29 @@ app.once('ready', function() {
       submenu: [
         {
           label: 'Learn More',
-          click: function() { shell.openExternal('http://electron.atom.io') }
+          click: function() {
+            shell.openExternal('http://electron.atom.io');
+          }
         },
         {
           label: 'Documentation',
           click: function() {
             shell.openExternal(
               `https://github.com/atom/electron/tree/v${process.versions.electron}/docs#readme`
-            )
+            );
           }
         },
         {
           label: 'Community Discussions',
-          click: function() { shell.openExternal('https://discuss.atom.io/c/electron') }
+          click: function() {
+            shell.openExternal('https://discuss.atom.io/c/electron');
+          }
         },
         {
           label: 'Search Issues',
-          click: function() { shell.openExternal('https://github.com/atom/electron/issues') }
+          click: function() {
+            shell.openExternal('https://github.com/atom/electron/issues');
+          }
         }
       ]
     },

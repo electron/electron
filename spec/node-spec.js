@@ -1,16 +1,9 @@
-var assert, child_process, fs, os, path, remote;
-
-assert = require('assert');
-
-child_process = require('child_process');
-
-fs = require('fs');
-
-path = require('path');
-
-os = require('os');
-
-remote = require('electron').remote;
+const assert = require('assert');
+const child_process = require('child_process');
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
+const remote = require('electron').remote;
 
 describe('node feature', function() {
   var fixtures;
@@ -103,7 +96,7 @@ describe('node feature', function() {
         error = new Error('boo!');
         lsts = process.listeners('uncaughtException');
         process.removeAllListeners('uncaughtException');
-        process.on('uncaughtException', function(err) {
+        process.on('uncaughtException', function() {
           var i, len, lst;
           process.removeAllListeners('uncaughtException');
           for (i = 0, len = lsts.length; i < len; i++) {

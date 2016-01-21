@@ -19,7 +19,7 @@ var moveLastToFirst = function(list) {
 };
 
 // Generate guestInstanceId.
-var getNextInstanceId = function(webContents) {
+var getNextInstanceId = function() {
   return ++nextInstanceId;
 };
 
@@ -109,8 +109,7 @@ var createGuest = function(embedder, params) {
   // Dispatch events to embedder.
   fn = function(event) {
     return guest.on(event, function() {
-      var _, args;
-      _ = arguments[0], args = 2 <= arguments.length ? slice.call(arguments, 1) : [];
+      var args = 2 <= arguments.length ? slice.call(arguments, 1) : [];
       return embedder.send.apply(embedder, ["ATOM_SHELL_GUEST_VIEW_INTERNAL_DISPATCH_EVENT-" + guest.viewInstanceId, event].concat(slice.call(args)));
     });
   };
@@ -128,8 +127,7 @@ var createGuest = function(embedder, params) {
 
   // Autosize.
   guest.on('size-changed', function() {
-    var _, args;
-    _ = arguments[0], args = 2 <= arguments.length ? slice.call(arguments, 1) : [];
+    var args = 2 <= arguments.length ? slice.call(arguments, 1) : [];
     return embedder.send.apply(embedder, ["ATOM_SHELL_GUEST_VIEW_INTERNAL_SIZE_CHANGED-" + guest.viewInstanceId].concat(slice.call(args)));
   });
   return id;

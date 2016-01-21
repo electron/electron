@@ -12,7 +12,7 @@ class CallbacksRegistry {
 
   add(callback) {
     // The callback is already added.
-    var filenameAndLine, id, location, match, ref, regexp, stackString, x;
+    var filenameAndLine, id, location, match, ref, regexp, stackString;
     id = v8Util.getHiddenValue(callback, 'callbackId');
     if (id != null) {
       return id;
@@ -24,14 +24,15 @@ class CallbacksRegistry {
     regexp = /at (.*)/gi;
     stackString = (new Error).stack;
     while ((match = regexp.exec(stackString)) !== null) {
-      x = match[0], location = match[1];
+      location = match[1];
       if (location.indexOf('(native)') !== -1) {
         continue;
       }
       if (location.indexOf('atom.asar') !== -1) {
         continue;
       }
-      ref = /([^\/^\)]*)\)?$/gi.exec(location), x = ref[0], filenameAndLine = ref[1];
+      ref = /([^\/^\)]*)\)?$/gi.exec(location);
+      filenameAndLine = ref[1];
       break;
     }
     this.callbacks[id] = callback;
@@ -62,4 +63,4 @@ class CallbacksRegistry {
   }
 }
 
-module.exports = CallbacksRegistry
+module.exports = CallbacksRegistry;

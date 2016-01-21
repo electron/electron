@@ -43,7 +43,7 @@ var convertToMenuTemplate = function(items) {
   return template;
 };
 
-var createMenu = function(x, y, items, document) {
+var createMenu = function(x, y, items) {
   const remote = require('electron').remote;
   const Menu = remote.Menu;
   const menu = Menu.buildFromTemplate(convertToMenuTemplate(items));

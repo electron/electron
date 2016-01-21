@@ -1,16 +1,9 @@
-var assert, http, path, protocol, qs, remote;
-
-assert = require('assert');
-
-http = require('http');
-
-path = require('path');
-
-qs = require('querystring');
-
-remote = require('electron').remote;
-
-protocol = remote.require('electron').protocol;
+const assert = require('assert');
+const http = require('http');
+const path = require('path');
+const qs = require('querystring');
+const remote = require('electron').remote;
+const protocol = remote.require('electron').protocol;
 
 describe('protocol module', function() {
   var postData, protocolName, text;
@@ -44,12 +37,11 @@ describe('protocol module', function() {
     it('does not crash when handler is called twice', function(done) {
       var doubleHandler;
       doubleHandler = function(request, callback) {
-        var error1;
         try {
           callback(text);
           return callback();
-        } catch (error1) {
-
+        } catch (error) {
+          // Ignore error
         }
       };
       return protocol.registerStringProtocol(protocolName, doubleHandler, function(error) {
@@ -75,10 +67,10 @@ describe('protocol module', function() {
         }
         return $.ajax({
           url: protocolName + "://fake-host",
-          success: function(data) {
+          success: function() {
             return done('request succeeded but it should not');
           },
-          error: function(xhr, errorType, error) {
+          error: function(xhr, errorType) {
             assert.equal(errorType, 'error');
             return done();
           }
@@ -175,7 +167,7 @@ describe('protocol module', function() {
         }
         return $.ajax({
           url: protocolName + "://fake-host",
-          success: function(data, statux, request) {
+          success: function(data) {
             assert.equal(data, text);
             return done();
           },
@@ -196,10 +188,10 @@ describe('protocol module', function() {
         }
         return $.ajax({
           url: protocolName + "://fake-host",
-          success: function(data) {
+          success: function() {
             return done('request succeeded but it should not');
           },
-          error: function(xhr, errorType, error) {
+          error: function(xhr, errorType) {
             assert.equal(errorType, 'error');
             return done();
           }
@@ -267,7 +259,7 @@ describe('protocol module', function() {
         }
         return $.ajax({
           url: protocolName + "://fake-host",
-          success: function(data, statux, request) {
+          success: function(data) {
             assert.equal(data, text);
             return done();
           },
@@ -288,10 +280,10 @@ describe('protocol module', function() {
         }
         return $.ajax({
           url: protocolName + "://fake-host",
-          success: function(data) {
+          success: function() {
             return done('request succeeded but it should not');
           },
-          error: function(xhr, errorType, error) {
+          error: function(xhr, errorType) {
             assert.equal(errorType, 'error');
             return done();
           }
@@ -361,7 +353,7 @@ describe('protocol module', function() {
         }
         return $.ajax({
           url: protocolName + "://fake-host",
-          success: function(data, statux, request) {
+          success: function(data) {
             assert.equal(data, String(fileContent));
             return done();
           },
@@ -404,10 +396,10 @@ describe('protocol module', function() {
         }
         return $.ajax({
           url: protocolName + "://fake-host",
-          success: function(data) {
+          success: function() {
             return done('request succeeded but it should not');
           },
-          error: function(xhr, errorType, error) {
+          error: function(xhr, errorType) {
             assert.equal(errorType, 'error');
             return done();
           }
@@ -425,10 +417,10 @@ describe('protocol module', function() {
         }
         return $.ajax({
           url: protocolName + "://fake-host",
-          success: function(data) {
+          success: function() {
             return done('request succeeded but it should not');
           },
-          error: function(xhr, errorType, error) {
+          error: function(xhr, errorType) {
             assert.equal(errorType, 'error');
             return done();
           }
@@ -483,10 +475,10 @@ describe('protocol module', function() {
         }
         return $.ajax({
           url: protocolName + "://fake-host",
-          success: function(data) {
+          success: function() {
             return done('request succeeded but it should not');
           },
-          error: function(xhr, errorType, error) {
+          error: function(xhr, errorType) {
             assert.equal(errorType, 'error');
             return done();
           }
@@ -504,10 +496,10 @@ describe('protocol module', function() {
         }
         return $.ajax({
           url: protocolName + "://fake-host",
-          success: function(data) {
+          success: function() {
             return done('request succeeded but it should not');
           },
-          error: function(xhr, errorType, error) {
+          error: function(xhr, errorType) {
             assert.equal(errorType, 'error');
             return done();
           }
@@ -584,12 +576,11 @@ describe('protocol module', function() {
     it('does not crash when handler is called twice', function(done) {
       var doubleHandler;
       doubleHandler = function(request, callback) {
-        var error1;
         try {
           callback(text);
           return callback();
-        } catch (error1) {
-
+        } catch (error) {
+          // Ignore error
         }
       };
       return protocol.interceptStringProtocol('http', doubleHandler, function(error) {
@@ -618,10 +609,10 @@ describe('protocol module', function() {
         }
         return $.ajax({
           url: 'http://fake-host',
-          success: function(data) {
+          success: function() {
             return done('request succeeded but it should not');
           },
-          error: function(xhr, errorType, error) {
+          error: function(xhr, errorType) {
             assert.equal(errorType, 'error');
             return done();
           }

@@ -1,12 +1,7 @@
-var assert, http, remote, session;
-
-assert = require('assert');
-
-http = require('http');
-
-remote = require('electron').remote;
-
-session = remote.session;
+const assert = require('assert');
+const http = require('http');
+const remote = require('electron').remote;
+const session = remote.session;
 
 describe('webRequest module', function() {
   var defaultURL, server, ses;
@@ -44,10 +39,10 @@ describe('webRequest module', function() {
       });
       return $.ajax({
         url: defaultURL,
-        success: function(data) {
+        success: function() {
           return done('unexpected success');
         },
-        error: function(xhr, errorType, error) {
+        error: function() {
           return done();
         }
       });
@@ -68,15 +63,15 @@ describe('webRequest module', function() {
           assert.equal(data, '/nofilter/test');
           return $.ajax({
             url: defaultURL + "filter/test",
-            success: function(data) {
+            success: function() {
               return done('unexpected success');
             },
-            error: function(xhr, errorType, error) {
+            error: function() {
               return done();
             }
           });
         },
-        error: function(xhr, errorType, error) {
+        error: function(xhr, errorType) {
           return done(errorType);
         }
       });
@@ -96,7 +91,7 @@ describe('webRequest module', function() {
           assert.equal(data, '/');
           return done();
         },
-        error: function(xhr, errorType, error) {
+        error: function(xhr, errorType) {
           return done(errorType);
         }
       });
@@ -117,7 +112,7 @@ describe('webRequest module', function() {
           assert.equal(data, '/redirect');
           return done();
         },
-        error: function(xhr, errorType, error) {
+        error: function(xhr, errorType) {
           return done(errorType);
         }
       });
@@ -138,7 +133,7 @@ describe('webRequest module', function() {
           assert.equal(data, '/');
           return done();
         },
-        error: function(xhr, errorType, error) {
+        error: function(xhr, errorType) {
           return done(errorType);
         }
       });
@@ -154,11 +149,11 @@ describe('webRequest module', function() {
       });
       return $.ajax({
         url: defaultURL,
-        success: function(data, textStatus, request) {
+        success: function(data) {
           assert.equal(data, '/header/received');
           return done();
         },
-        error: function(xhr, errorType, error) {
+        error: function(xhr, errorType) {
           return done(errorType);
         }
       });
@@ -179,7 +174,7 @@ describe('webRequest module', function() {
       });
       return $.ajax({
         url: defaultURL,
-        error: function(xhr, errorType, error) {
+        error: function(xhr, errorType) {
           return done(errorType);
         }
       });
@@ -199,7 +194,7 @@ describe('webRequest module', function() {
           assert.equal(data, '/');
           return done();
         },
-        error: function(xhr, errorType, error) {
+        error: function(xhr, errorType) {
           return done(errorType);
         }
       });
@@ -222,7 +217,7 @@ describe('webRequest module', function() {
           assert.equal(data, '/');
           return done();
         },
-        error: function(xhr, errorType, error) {
+        error: function(xhr, errorType) {
           return done(errorType);
         }
       });
@@ -243,7 +238,7 @@ describe('webRequest module', function() {
           assert.equal(data, '/');
           return done();
         },
-        error: function(xhr, errorType, error) {
+        error: function(xhr, errorType) {
           return done(errorType);
         }
       });
@@ -259,7 +254,7 @@ describe('webRequest module', function() {
           assert.equal(data, '/');
           return done();
         },
-        error: function(xhr, errorType, error) {
+        error: function(xhr, errorType) {
           return done(errorType);
         }
       });
@@ -283,7 +278,7 @@ describe('webRequest module', function() {
           assert.equal(data, '/');
           return done();
         },
-        error: function(xhr, errorType, error) {
+        error: function(xhr, errorType) {
           return done(errorType);
         }
       });
@@ -314,11 +309,11 @@ describe('webRequest module', function() {
       });
       return $.ajax({
         url: defaultURL,
-        success: function(data, status, xhr) {
+        success: function(data) {
           assert.equal(data, '/redirect');
           return done();
         },
-        error: function(xhr, errorType, error) {
+        error: function(xhr, errorType) {
           return done(errorType);
         }
       });
@@ -336,11 +331,11 @@ describe('webRequest module', function() {
       });
       return $.ajax({
         url: defaultURL,
-        success: function(data, status, xhr) {
+        success: function(data) {
           assert.equal(data, '/');
           return done();
         },
-        error: function(xhr, errorType, error) {
+        error: function(xhr, errorType) {
           return done(errorType);
         }
       });
@@ -363,7 +358,7 @@ describe('webRequest module', function() {
       });
       return $.ajax({
         url: defaultURL,
-        success: function(data) {
+        success: function() {
           return done('unexpected success');
         }
       });

@@ -1,4 +1,3 @@
-const EventEmitter = require('events').EventEmitter;
 const binding = process.atomBinding('ipc');
 const v8Util = process.atomBinding('v8_util');
 

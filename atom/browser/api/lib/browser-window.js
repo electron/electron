@@ -56,7 +56,7 @@ BrowserWindow.prototype._init = function() {
 
   // Change window title to page title.
   this.webContents.on('page-title-updated', (function(_this) {
-    return function(event, title, explicitSet) {
+    return function(event, title) {
       _this.emit('page-title-updated', event, title);
       if (!event.defaultPrevented) {
         return _this.setTitle(title);

@@ -1,8 +1,6 @@
 const ipcMain = require('electron').ipcMain;
 const BrowserWindow = require('electron').BrowserWindow;
 
-const v8Util = process.atomBinding('v8_util');
-
 var hasProp = {}.hasOwnProperty;
 var slice = [].slice;
 var frameToGuest = {};
@@ -102,8 +100,8 @@ ipcMain.on('ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_CLOSE', function(event, guest
 });
 
 ipcMain.on('ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_METHOD', function() {
-  var args, event, guestId, method, ref1;
-  event = arguments[0], guestId = arguments[1], method = arguments[2], args = 4 <= arguments.length ? slice.call(arguments, 3) : [];
+  var args, guestId, method, ref1;
+  guestId = arguments[1], method = arguments[2], args = 4 <= arguments.length ? slice.call(arguments, 3) : [];
   return (ref1 = BrowserWindow.fromId(guestId)) != null ? ref1[method].apply(ref1, args) : void 0;
 });
 
@@ -120,7 +118,7 @@ ipcMain.on('ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_POSTMESSAGE', function(event,
 });
 
 ipcMain.on('ATOM_SHELL_GUEST_WINDOW_MANAGER_WEB_CONTENTS_METHOD', function() {
-  var args, event, guestId, method, ref1, ref2;
-  event = arguments[0], guestId = arguments[1], method = arguments[2], args = 4 <= arguments.length ? slice.call(arguments, 3) : [];
+  var args, guestId, method, ref1, ref2;
+  guestId = arguments[1], method = arguments[2], args = 4 <= arguments.length ? slice.call(arguments, 3) : [];
   return (ref1 = BrowserWindow.fromId(guestId)) != null ? (ref2 = ref1.webContents) != null ? ref2[method].apply(ref2, args) : void 0 : void 0;
 });

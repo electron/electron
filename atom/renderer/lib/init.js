@@ -2,18 +2,14 @@
 
 const events = require('events');
 const path = require('path');
-const url = require('url');
 const Module = require('module');
-
 
 // We modified the original process.argv to let node.js load the
 // atom-renderer.js, we need to restore it here.
 process.argv.splice(1, 1);
 
-
 // Clear search paths.
 require(path.resolve(__dirname, '..', '..', 'common', 'lib', 'reset-search-paths'));
-
 
 // Import common settings.
 require(path.resolve(__dirname, '..', '..', 'common', 'lib', 'init'));

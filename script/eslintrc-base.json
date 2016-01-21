@@ -1,7 +1,7 @@
 {
   "rules": {
     "indent": [
-      0,
+      2,
       2,
       {
         "SwitchCase": 1
@@ -12,20 +12,25 @@
       "single"
     ],
     "semi": [
-      0,
+      2,
       "always"
     ],
     "comma-dangle": 0,
     "linebreak-style": 0,
     "no-console": 0,
-    "no-undef": 0,
-    "no-unreachable": 0,
-    "no-unused-vars": 0
+    "no-undef": 2,
+    "no-unused-vars": 2
   },
   "env": {
     "es6": true,
     "node": true,
     "browser": true
   },
-  "extends": "eslint:recommended"
+  "extends": "eslint:recommended",
+  "globals": {
+    "DevToolsAPI": false,
+    "InspectorFrontendHost": false,
+    "WebInspector": false,
+    "WebView": false
+  }
 }

@@ -11,8 +11,8 @@ deprecate.warn('ipc module', 'require("electron").ipcRenderer');
 var ipc = new EventEmitter;
 
 ipcRenderer.emit = function() {
-  var args, channel, event;
-  channel = arguments[0], event = arguments[1], args = 3 <= arguments.length ? slice.call(arguments, 2) : [];
+  var channel = arguments[0];
+  var args = 3 <= arguments.length ? slice.call(arguments, 2) : [];
   ipc.emit.apply(ipc, [channel].concat(slice.call(args)));
   return EventEmitter.prototype.emit.apply(ipcRenderer, arguments);
 };

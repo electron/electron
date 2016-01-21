@@ -87,7 +87,7 @@ var wrapArgs = function(args, visited) {
 
 // Convert meta data from browser into real value.
 var metaToValue = function(meta) {
-  var RemoteFunction, el, i, j, len, len1, member, ref1, ref2, results, ret;
+  var el, i, j, len, len1, member, ref1, ref2, results, ret;
   switch (meta.type) {
     case 'value':
       return meta.value;
@@ -111,11 +111,10 @@ var metaToValue = function(meta) {
       return new Date(meta.value);
     case 'exception':
       throw new Error(meta.message + "\n" + meta.stack);
-      break;
     default:
       if (meta.type === 'function') {
         // A shadow class to represent the remote function object.
-        ret = RemoteFunction = (function() {
+        ret = (function() {
           function RemoteFunction() {
             var obj;
             if (this.constructor === RemoteFunction) {
@@ -190,8 +189,7 @@ var metaToPlainObject = function(meta) {
 // This function's content should not be inlined into metaToValue, otherwise V8
 // may consider it circular reference.
 var createRemoteMemberFunction = function(metaId, name) {
-  var RemoteMemberFunction;
-  return RemoteMemberFunction = (function() {
+  return (function() {
     function RemoteMemberFunction() {
       var ret;
       if (this.constructor === RemoteMemberFunction) {
