@@ -158,6 +158,13 @@ session.defaultSession.cookies.set(cookie, function(error) {
 `url`과 `name`에 일치하는 쿠키를 삭제합니다. 작업이 완료되면 `callback`이
 `callback()` 형식으로 호출됩니다.
 
+#### `ses.getCacheSize(callback)`
+
+* `callback` Function
+  * `size` Integer - 바이트로 표현된 캐시 크기
+
+세션의 현재 캐시 크기를 반환합니다.
+
 #### `ses.clearCache(callback)`
 
 * `callback` Function - 작업이 완료되면 호출됩니다.

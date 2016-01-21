@@ -78,6 +78,5 @@ require('electron').hideInternalModules()
 ```
 
 [gui]: https://en.wikipedia.org/wiki/Graphical_user_interface
-[main-process]: ../tutorial/quick-start.md#메인-프로세스
 [desctructuring-assignment]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Destructuring_assignment
 [issue-387]: https://github.com/atom/electron/issues/387

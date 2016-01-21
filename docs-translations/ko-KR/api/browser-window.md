@@ -49,6 +49,8 @@ win.show();
 * `maxHeight` Integer - 윈도우 창의 최대 세로 높이. 기본값은 `제한없음`입니다.
 * `resizable` Boolean - 윈도우 창의 크기를 재조정 할 수 있는지 여부. 기본값은 `true`
   입니다.
+* `movable` Boolean - 윈도우를 이동시킬 수 있는지 여부. 이 기능은 현재 OSX에만
+  구현되어 있습니다. 기본값은 `true`
 * `alwaysOnTop` Boolean - 윈도우 창이 언제나 다른 창들 위에 유지되는지 여부.
   기본값은 `false`입니다.
 * `fullscreen` Boolean - 윈도우 창의 전체화면 활성화 여부. 기본값은 `false` 입니다.
@@ -354,8 +356,6 @@ var win = new BrowserWindow({ width: 800, height: 600 });
 않습니다. 또한 이 윈도우의 `close`도 일어나지 않습니다. 하지만 `closed` 이벤트는
 반드시 발생함을 보장합니다.
 
-이 메서드는 렌더러 프로세스가 예기치 않게 크래시가 일어났을 경우에만 사용해야 합니다.
-
 ### `win.close()`
 
 윈도우의 종료를 시도합니다. 이 메서드는 사용자가 윈도우의 닫기 버튼을 클릭했을 때와
@@ -440,14 +440,16 @@ var win = new BrowserWindow({ width: 800, height: 600 });
 크기는 관여하지 않습니다. 그저 전체 컨텐츠 뷰 내에 있는 모든 엑스트라 너비, 높이 영역이
 합해집니다.
 
-### `win.setBounds(options)`
+### `win.setBounds(options[, animate])`
 
-`options` Object, properties:
+* `options` Object, properties:
 
-* `x` Integer
-* `y` Integer
-* `width` Integer
-* `height` Integer
+  * `x` Integer
+  * `y` Integer
+  * `width` Integer
+  * `height` Integer
+
+* `animate` Boolean (optional) _OS X_
 
 윈도우를 지정한 `width`, `height`, `x`, `y`로 크기 재조정 및 이동합니다.
 
@@ -455,10 +457,11 @@ var win = new BrowserWindow({ width: 800, height: 600 });
 
 윈도우의 width, height, x, y 값을 가지는 객체를 반환합니다.
 
-### `win.setSize(width, height)`
+### `win.setSize(width, height[, animate])`
 
 * `width` Integer
 * `height` Integer
+* `animate` Boolean (optional) _OS X_
 
 `width`와 `height` 값으로 윈도우 크기를 재조정합니다. (너비, 높이)
 
@@ -466,10 +469,11 @@ var win = new BrowserWindow({ width: 800, height: 600 });
 
 윈도우의 너비, 높이값을 가지는 배열을 반환합니다.
 
-### `win.setContentSize(width, height)`
+### `win.setContentSize(width, height[, animate])`
 
 * `width` Integer
 * `height` Integer
+* `animate` Boolean (optional) _OS X_
 
 윈도우 클라이언트 영역(웹 페이지)의 크기를 `width`, `height`로 재조정합니다.
 
@@ -524,10 +528,11 @@ var win = new BrowserWindow({ width: 800, height: 600 });
 
 윈도우를 화면 정 중앙으로 이동합니다.
 
-### `win.setPosition(x, y)`
+### `win.setPosition(x, y[, animate])`
 
 * `x` Integer
 * `y` Integer
+* `animate` Boolean (optional) _OS X_
 
 윈도우의 위치를 `x`, `y`로 이동합니다.
 

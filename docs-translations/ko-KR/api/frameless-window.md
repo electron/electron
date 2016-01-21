@@ -19,11 +19,11 @@ var win = new BrowserWindow({ width: 800, height: 600, frame: false });
 
 OS X 10.10 Yosemite 이후의 최신 버전부터는 테두리가 없는 창을 만들 때 새로운 방법을
 사용할 수 있습니다. `frame` 옵션을 `false`로 지정하여 제목과 창 구성 요소를 모두
-비활성화하는 대신 새로운 `title-bar-style` 옵션을 통해 제목만 숨기고 창 구성 요소
+비활성화하는 대신 새로운 `titleBarStyle` 옵션을 통해 제목만 숨기고 창 구성 요소
 ("흔히 신호등으로 알고 있는")의 기능과 창 크기를 그대로 유지할 수 있습니다:
 
 ```javascript
-var win = new BrowserWindow({ 'title-bar-style': 'hidden' });
+var win = new BrowserWindow({ 'titleBarStyle': 'hidden' });
 ```
 
 ## 투명한 창 만들기
