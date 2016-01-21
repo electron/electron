@@ -85,12 +85,13 @@ void WindowsToastNotification::Show(
     const base::string16& title,
     const base::string16& msg,
     const GURL& icon_url,
-    const SkBitmap& icon) {
+    const SkBitmap& icon,
+    const bool silent) {
   auto presenter_win = static_cast<NotificationPresenterWin*>(presenter());
   std::wstring icon_path = presenter_win->SaveIconToFilesystem(icon, icon_url);
 
   ComPtr<IXmlDocument> toast_xml;
-  if(FAILED(GetToastXml(toast_manager_.Get(), title, msg, icon_path, &toast_xml))) {
+  if(FAILED(GetToastXml(toast_manager_.Get(), title, msg, icon_path, silent, &toast_xml))) {
     NotificationFailed();
     return;
   }
@@ -152,6 +153,7 @@ bool WindowsToastNotification::GetToastXml(
     const std::wstring& title,
     const std::wstring& msg,
     const std::wstring& icon_path,
+    const bool silent,
     IXmlDocument** toast_xml) {
   ABI::Windows::UI::Notifications::ToastTemplateType template_type;
   if (title.empty() || msg.empty()) {
@@ -171,12 +173,81 @@ bool WindowsToastNotification::GetToastXml(
     if (!SetXmlText(*toast_xml, title, msg))
       return false;
   }
+  
+  // Configure the toast's notification sound
+  if (silent) {
+    if (FAILED(SetXmlAudioSilent(*toast_xml))) 
+      return false;
+  }
 
-  // Toast has image
+  // Configure the toast's image
   if (!icon_path.empty())
     return SetXmlImage(*toast_xml, icon_path);
 
   return true;
+}
+
+bool WindowsToastNotification::SetXmlAudioSilent(
+  IXmlDocument* doc) {
+    ScopedHString tag(L"toast");
+  if (!tag.success())
+    return false;
+
+  ComPtr<IXmlNodeList> node_list;
+  if (FAILED(doc->GetElementsByTagName(tag, &node_list)))
+    return false;
+
+  ComPtr<IXmlNode> root;
+  if (FAILED(node_list->Item(0, &root)))
+    return false;
+  
+  ComPtr<IXmlElement> audio_element;
+  ScopedHString audio_str(L"audio");
+  if (FAILED(doc->CreateElement(audio_str, &audio_element)))
+    return false;
+  
+  ComPtr<IXmlNode> audio_node_tmp;
+  if (FAILED(audio_element.As(&audio_node_tmp)))
+    return false;
+  
+  // Append audio node to toast xml
+  ComPtr<IXmlNode> audio_node;
+  if (FAILED(root->AppendChild(audio_node_tmp.Get(), &audio_node)))
+    return false;
+  
+  // Create silent attribute
+  ComPtr<IXmlNamedNodeMap> attributes;
+  if (FAILED(audio_node->get_Attributes(&attributes)))
+    return false;
+    
+  ComPtr<IXmlAttribute> silent_attribute;
+  ScopedHString silent_str(L"silent");
+  if (FAILED(doc->CreateAttribute(silent_str, &silent_attribute)))
+    return false;
+  
+  ComPtr<IXmlNode> silent_attribute_node;
+  if (FAILED(silent_attribute.As(&silent_attribute_node)))
+    return false;
+  
+  // Set silent attribute to true
+  ScopedHString silent_value(L"true");
+  if (!silent_value.success())
+    return false;
+  
+  ComPtr<IXmlText> silent_text;
+  if (FAILED(doc->CreateTextNode(silent_value, &silent_text)))
+    return false;
+
+  ComPtr<IXmlNode> silent_node;
+  if (FAILED(silent_text.As(&silent_node)))
+    return false;
+    
+  ComPtr<IXmlNode> child_node;
+  if (FAILED(silent_attribute_node->AppendChild(silent_node.Get(), &child_node)))
+    return false;
+  
+  ComPtr<IXmlNode> silent_attribute_pnode;
+  return SUCCEEDED(attributes.Get()->SetNamedItem(silent_attribute_node.Get(), &silent_attribute_pnode));
 }
 
 bool WindowsToastNotification::SetXmlText(

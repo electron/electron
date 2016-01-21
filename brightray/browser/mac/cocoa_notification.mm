@@ -31,7 +31,8 @@ CocoaNotification::~CocoaNotification() {
 void CocoaNotification::Show(const base::string16& title,
                              const base::string16& body,
                              const GURL& icon_url,
-                             const SkBitmap& icon) {
+                             const SkBitmap& icon,
+                             const bool silent) {
   notification_.reset([[NSUserNotification alloc] init]);
   [notification_ setTitle:base::SysUTF16ToNSString(title)];
   [notification_ setInformativeText:base::SysUTF16ToNSString(body)];
@@ -41,6 +42,12 @@ void CocoaNotification::Show(const base::string16& title,
     NSImage* image = gfx::SkBitmapToNSImageWithColorSpace(
         icon, base::mac::GetGenericRGBColorSpace());
     [notification_ setContentImage:image];
+  }
+  
+  if (silent) {
+    [notification_ setSoundName:nil];
+  } else {
+    [notification_ setSoundName:NSUserNotificationDefaultSoundName];
   }
 
   [NSUserNotificationCenter.defaultUserNotificationCenter
