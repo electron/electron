@@ -25,6 +25,12 @@ Starts the process as a normal Node.js process.
 
 Prints Chrome's internal logging to console.
 
+## `ELECTRON_LOG_ASAR_READS`
+
+When Electron reads from an ASAR file, log the read offset and file path to
+the system `tmpdir`. The resulting file can be provided to the ASAR module
+to optimize file ordering.
+
 ## `ELECTRON_ENABLE_STACK_DUMPING`
 
 When Electron crashed, prints the stack trace to console.

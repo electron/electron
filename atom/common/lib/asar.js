@@ -203,7 +203,24 @@
 
   // Override fs APIs.
   exports.wrapFsWithAsar = function(fs) {
-    var exists, existsSync, internalModuleReadFile, internalModuleStat, lstat, lstatSync, mkdir, mkdirSync, readFile, readFileSync, readdir, readdirSync, realpath, realpathSync, stat, statSync, statSyncNoException;
+    var exists, existsSync, internalModuleReadFile, internalModuleStat, lstat, lstatSync, mkdir, mkdirSync, readFile, readFileSync, readdir, readdirSync, realpath, realpathSync, stat, statSync, statSyncNoException, logFDs, logASARAccess;
+
+    logFDs = {};
+    logASARAccess = function(asarPath, filePath, offset) {
+      if (!process.env.ELECTRON_LOG_ASAR_READS) {
+        return;
+      }
+      if (!logFDs[asarPath]) {
+        var logFilename, logPath;
+        const path = require('path');
+        logFilename = path.basename(asarPath, '.asar') + '-access-log.txt';
+        logPath = path.join(require('os').tmpdir(), logFilename);
+        logFDs[asarPath] = fs.openSync(logPath, 'a');
+        console.log('Logging ' + asarPath + ' access to ' + logPath);
+      }
+      fs.writeSync(logFDs[asarPath], offset + ': ' + filePath + '\n');
+    };
+
     lstatSync = fs.lstatSync;
     fs.lstatSync = function(p) {
       var archive, asarPath, filePath, isAsar, ref, stats;
@@ -395,6 +412,7 @@
       if (!(fd >= 0)) {
         return notFoundError(asarPath, filePath, callback);
       }
+      logASARAccess(asarPath, filePath, info.offset);
       return fs.read(fd, buffer, 0, info.size, info.offset, function(error) {
         return callback(error, encoding ? buffer.toString(encoding) : buffer);
       });
@@ -444,6 +462,7 @@
       if (!(fd >= 0)) {
         notFoundError(asarPath, filePath);
       }
+      logASARAccess(asarPath, filePath, info.offset);
       fs.readSync(fd, buffer, 0, info.size, info.offset);
       if (encoding) {
         return buffer.toString(encoding);
@@ -516,6 +535,7 @@
       if (!(fd >= 0)) {
         return void 0;
       }
+      logASARAccess(asarPath, filePath, info.offset);
       fs.readSync(fd, buffer, 0, info.size, info.offset);
       return buffer.toString('utf8');
     };
