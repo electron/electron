@@ -490,6 +490,25 @@ NativeWindowMac::NativeWindowMac(
   NSView* view = inspectable_web_contents()->GetView()->GetNativeView();
   [view setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
 
+  BOOL __block down = NO;
+  [NSEvent addLocalMonitorForEventsMatchingMask:NSScrollWheelMask handler:^NSEvent * _Nullable(NSEvent * event) {
+    if (![window_ isKeyWindow])
+      return event;
+
+    if (!web_contents)
+      return event;
+
+    if (!down && (([event phase] == NSEventPhaseMayBegin) || ([event phase] == NSEventPhaseBegan))) {
+      this->NotifyWindowScrollTouchDown();
+      down = YES;
+    }
+    if (down && (([event phase] == NSEventPhaseEnded) || ([event phase] == NSEventPhaseCancelled))) {
+      this->NotifyWindowScrollTouchUp();
+      down = NO;
+    }
+    return event;
+  }];
+
   InstallView();
 }
 
