@@ -27,8 +27,8 @@ Prints Chrome's internal logging to console.
 
 ## `ELECTRON_LOG_ASAR_READS`
 
-When Electron reads from an ASAR file, log the the read offset and file path
-to the system `tmpdir`. Th resulting file can be provided to the ASAR module
+When Electron reads from an ASAR file, log the read offset and file path to
+the system `tmpdir`. The resulting file can be provided to the ASAR module
 to optimize file ordering.
 
 ## `ELECTRON_ENABLE_STACK_DUMPING`
