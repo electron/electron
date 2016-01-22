@@ -50,7 +50,7 @@ void MenuMac::Popup(Window* window) {
                    forView:web_contents->GetContentNativeView()];
 }
 
-void MenuMac::PopupAt(Window* window, int x, int y) {
+void MenuMac::PopupAt(Window* window, int x, int y, int positioningItem) {
   NativeWindow* native_window = window->window();
   if (!native_window)
     return;
@@ -64,7 +64,13 @@ void MenuMac::PopupAt(Window* window, int x, int y) {
   NSView* view = web_contents->GetContentNativeView();
 
   // Show the menu.
-  [menu popUpMenuPositioningItem:[menu itemAtIndex:0]
+  if (positioningItem >= [menu numberOfItems]) {
+    positioningItem = [menu numberOfItems] - 1;
+  }
+  if (positioningItem < 0) {
+    positioningItem = 0;
+  }
+  [menu popUpMenuPositioningItem:[menu itemAtIndex:positioningItem]
                       atLocation:NSMakePoint(x, [view frame].size.height - y)
                           inView:view];
 }

@@ -158,7 +158,7 @@ Menu.prototype._init = function() {
   };
 };
 
-Menu.prototype.popup = function(window, x, y) {
+Menu.prototype.popup = function(window, x, y, positioningItem) {
   if ((window != null ? window.constructor : void 0) !== BrowserWindow) {
     // Shift.
     y = x;
@@ -166,7 +166,7 @@ Menu.prototype.popup = function(window, x, y) {
     window = BrowserWindow.getFocusedWindow();
   }
   if ((x != null) && (y != null)) {
-    return this._popupAt(window, x, y);
+    return this._popupAt(window, x, y, positioningItem || 0);
   } else {
     return this._popup(window);
   }
