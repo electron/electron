@@ -65,8 +65,8 @@ class Window : public mate::TrackableObject<Window>,
   void OnWindowResize() override;
   void OnWindowMove() override;
   void OnWindowMoved() override;
-  void OnWindowScrollTouchUp() override;
-  void OnWindowScrollTouchDown() override;
+  void OnWindowScrollTouchBegin() override;
+  void OnWindowScrollTouchEnd() override;
   void OnWindowEnterFullScreen() override;
   void OnWindowLeaveFullScreen() override;
   void OnWindowEnterHtmlFullScreen() override;

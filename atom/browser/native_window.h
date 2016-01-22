@@ -205,8 +205,8 @@ class NativeWindow : public base::SupportsUserData,
   void NotifyWindowMove();
   void NotifyWindowResize();
   void NotifyWindowMoved();
-  void NotifyWindowScrollTouchUp();
-  void NotifyWindowScrollTouchDown();
+  void NotifyWindowScrollTouchBegin();
+  void NotifyWindowScrollTouchEnd();
   void NotifyWindowEnterFullScreen();
   void NotifyWindowLeaveFullScreen();
   void NotifyWindowEnterHtmlFullScreen();

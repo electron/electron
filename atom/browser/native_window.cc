@@ -442,14 +442,14 @@ void NativeWindow::NotifyWindowEnterFullScreen() {
                     OnWindowEnterFullScreen());
 }
 
-void NativeWindow::NotifyWindowScrollTouchUp() {
+void NativeWindow::NotifyWindowScrollTouchBegin() {
   FOR_EACH_OBSERVER(NativeWindowObserver, observers_,
-                    OnWindowScrollTouchUp());
+                    OnWindowScrollTouchBegin());
 }
 
-void NativeWindow::NotifyWindowScrollTouchDown() {
+void NativeWindow::NotifyWindowScrollTouchEnd() {
   FOR_EACH_OBSERVER(NativeWindowObserver, observers_,
-                    OnWindowScrollTouchDown());
+                    OnWindowScrollTouchEnd());
 }
 
 void NativeWindow::NotifyWindowLeaveFullScreen() {
