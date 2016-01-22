@@ -861,9 +861,13 @@ win.webContents.debugger.sendCommand("Network.enable");
 
 #### `webContents.debugger.attach([protocolVersion])`
 
-* `protocolVersion` String - Requested debugging protocol version.
+* `protocolVersion` String (optional) - Requested debugging protocol version.
 
 Attaches the debugger to the `webContents`.
+
+#### `webContents.debugger.isAttached()`
+
+Returns a boolean indicating whether a debugger is attached to the `webContents`.
 
 #### `webContents.debugger.detach()`
 
@@ -873,8 +877,9 @@ Detaches the debugger from the `webContents`.
 
 * `method` String - Method name, should be one of the methods defined by the
    remote debugging protocol.
-* `commandParams` Object - JSON object with request parameters.
-* `callback` Function - Response
+* `commandParams` Object (optional) - JSON object with request parameters.
+* `callback` Function (optional) - Response
+  * `error` Object - Error message indicating the failure of the command.
   * `result` Object - Response defined by the 'returns' attribute of
      the command description in the remote debugging protocol.
 

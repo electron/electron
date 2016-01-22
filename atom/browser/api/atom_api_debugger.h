@@ -31,7 +31,8 @@ class Debugger: public mate::TrackableObject<Debugger>,
                 public content::DevToolsAgentHostClient {
  public:
   using SendCommandCallback =
-      base::Callback<void(const base::DictionaryValue&)>;
+      base::Callback<void(const base::DictionaryValue&,
+                          const base::DictionaryValue&)>;
 
   static mate::Handle<Debugger> Create(
       v8::Isolate* isolate, content::WebContents* web_contents);
@@ -54,6 +55,7 @@ class Debugger: public mate::TrackableObject<Debugger>,
   using PendingRequestMap = std::map<int, SendCommandCallback>;
 
   void Attach(mate::Arguments* args);
+  bool IsAttached();
   void Detach();
   void SendCommand(mate::Arguments* args);
 

@@ -51,17 +51,26 @@ void Debugger::DispatchProtocolMessage(DevToolsAgentHost* agent_host,
     std::string method;
     if (!dict->GetString("method", &method))
       return;
-    base::DictionaryValue* params = nullptr;
-    dict->GetDictionary("params", &params);
-    Emit("message", method, *params);
+    base::DictionaryValue* params_value = nullptr;
+    base::DictionaryValue params;
+    if (dict->GetDictionary("params", &params_value))
+      params.Swap(params_value);
+    Emit("message", method, params);
   } else {
     auto send_command_callback = pending_requests_[id];
     pending_requests_.erase(id);
     if (send_command_callback.is_null())
       return;
-    base::DictionaryValue* result = nullptr;
-    dict->GetDictionary("result", &result);
-    send_command_callback.Run(*result);
+    base::DictionaryValue* error_body = nullptr;
+    base::DictionaryValue error;
+    if (dict->GetDictionary("error", &error_body))
+      error.Swap(error_body);
+
+    base::DictionaryValue* result_body = nullptr;
+    base::DictionaryValue result;
+    if (dict->GetDictionary("result", &result_body))
+      result.Swap(result_body);
+    send_command_callback.Run(error, result);
   }
 }
 
@@ -87,6 +96,10 @@ void Debugger::Attach(mate::Arguments* args) {
   agent_host_->AttachClient(this);
 }
 
+bool Debugger::IsAttached() {
+  return agent_host_.get() ? agent_host_->IsAttached() : false;
+}
+
 void Debugger::Detach() {
   if (!agent_host_.get())
     return;
@@ -97,7 +110,7 @@ void Debugger::Detach() {
 
 void Debugger::SendCommand(mate::Arguments* args) {
   if (!agent_host_.get())
-    args->ThrowError("Debugger is not attached to a target");
+    return;
 
   std::string method;
   if (!args->GetNext(&method)) {
@@ -134,6 +147,7 @@ void Debugger::BuildPrototype(v8::Isolate* isolate,
                               v8::Local<v8::ObjectTemplate> prototype) {
   mate::ObjectTemplateBuilder(isolate, prototype)
       .SetMethod("attach", &Debugger::Attach)
+      .SetMethod("isAttached", &Debugger::IsAttached)
       .SetMethod("detach", &Debugger::Detach)
       .SetMethod("sendCommand", &Debugger::SendCommand);
 }
