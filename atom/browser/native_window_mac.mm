@@ -494,7 +494,7 @@ NativeWindowMac::NativeWindowMac(
   event_monitor_.reset([[NSEvent
     addLocalMonitorForEventsMatchingMask:NSScrollWheelMask
     handler:^NSEvent * _Nullable(NSEvent * event) {
-      if (![window_ isKeyWindow])
+      if ([[event window] windowNumber] != [window_ windowNumber])
         return event;
 
       if (!web_contents)
