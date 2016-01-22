@@ -159,17 +159,20 @@ Menu.prototype._init = function() {
 };
 
 Menu.prototype.popup = function(window, x, y, positioningItem) {
-  if ((window != null ? window.constructor : void 0) !== BrowserWindow) {
+  if (typeof window != 'object' || window.constructor !== BrowserWindow) {
     // Shift.
+    positioningItem = y;
     y = x;
     x = window;
     window = BrowserWindow.getFocusedWindow();
   }
-  if ((x != null) && (y != null)) {
-    return this._popupAt(window, x, y, positioningItem || 0);
-  } else {
-    return this._popup(window);
-  }
+
+  // Default parameters.
+  if (typeof x !== 'number') x = -1;
+  if (typeof y !== 'number') y = -1;
+  if (typeof positioningItem !== 'number') positioningItem = 0;
+
+  this.popupAt(window, x, y, positioningItem);
 };
 
 Menu.prototype.append = function(item) {

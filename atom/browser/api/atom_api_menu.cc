@@ -169,8 +169,7 @@ void Menu::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("isItemCheckedAt", &Menu::IsItemCheckedAt)
       .SetMethod("isEnabledAt", &Menu::IsEnabledAt)
       .SetMethod("isVisibleAt", &Menu::IsVisibleAt)
-      .SetMethod("_popup", &Menu::Popup)
-      .SetMethod("_popupAt", &Menu::PopupAt);
+      .SetMethod("popupAt", &Menu::PopupAt);
 }
 
 }  // namespace api
