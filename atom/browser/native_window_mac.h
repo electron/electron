@@ -52,6 +52,10 @@ class NativeWindowMac : public NativeWindow {
   bool IsMovable() override;
   void SetMinimizable(bool minimizable) override;
   bool IsMinimizable() override;
+  void SetMaximizable(bool maximizable) override;
+  bool IsMaximizable() override;
+  void SetFullscreenable(bool fullscreenable) override;
+  bool IsFullscreenable() override;
   void SetClosable(bool closable) override;
   bool IsClosable() override;
   void SetAlwaysOnTop(bool top) override;
@@ -106,7 +110,6 @@ class NativeWindowMac : public NativeWindow {
   gfx::Size WindowSizeToContentSize(const gfx::Size& size) override;
   void UpdateDraggableRegions(
       const std::vector<DraggableRegion>& regions) override;
-  void FixZoomButton();
 
   void InstallView();
   void UninstallView();

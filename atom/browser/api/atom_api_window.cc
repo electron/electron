@@ -424,6 +424,22 @@ bool Window::IsMinimizable() {
   return window_->IsMinimizable();
 }
 
+void Window::SetMaximizable(bool maximizable) {
+  window_->SetMaximizable(maximizable);
+}
+
+bool Window::IsMaximizable() {
+  return window_->IsMaximizable();
+}
+
+void Window::SetFullscreenable(bool fullscreenable) {
+  window_->SetFullscreenable(fullscreenable);
+}
+
+bool Window::IsFullscreenable() {
+  return window_->IsFullscreenable();
+}
+
 void Window::SetClosable(bool closable) {
   window_->SetClosable(closable);
 }
@@ -687,6 +703,10 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("isMovable", &Window::IsMovable)
       .SetMethod("setMinimizable", &Window::SetMinimizable)
       .SetMethod("isMinimizable", &Window::IsMinimizable)
+      .SetMethod("setMaximizable", &Window::SetMaximizable)
+      .SetMethod("isMaximizable", &Window::IsMaximizable)
+      .SetMethod("setFullscreenable", &Window::SetFullscreenable)
+      .SetMethod("isFullscreenable", &Window::IsFullscreenable)
       .SetMethod("setClosable", &Window::SetClosable)
       .SetMethod("isClosable", &Window::IsClosable)
       .SetMethod("setAlwaysOnTop", &Window::SetAlwaysOnTop)

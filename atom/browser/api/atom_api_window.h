@@ -110,6 +110,10 @@ class Window : public mate::TrackableObject<Window>,
   bool IsMovable();
   void SetMinimizable(bool minimizable);
   bool IsMinimizable();
+  void SetMaximizable(bool maximizable);
+  bool IsMaximizable();
+  void SetFullscreenable(bool fullscreenable);
+  bool IsFullscreenable();
   void SetClosable(bool closable);
   bool IsClosable();
   void SetAlwaysOnTop(bool top);

@@ -139,6 +139,7 @@ NativeWindowViews::NativeWindowViews(
   options.Get(options::kResizable, &resizable_);
   options.Get(options::kMovable, &movable_);
   options.Get(options::kMinimizable, &minimizable_);
+  options.Get(options::kMaximizable, &maximizable_);
 #endif
 
   if (enable_larger_than_screen())
@@ -187,9 +188,7 @@ NativeWindowViews::NativeWindowViews(
   window_->Init(params);
 
   bool fullscreen = false;
-  if (options.Get(options::kFullscreen, &fullscreen) && !fullscreen) {
-    maximizable_ = false;
-  }
+  options.Get(options::kFullscreen, &fullscreen);
 
 #if defined(USE_X11)
   // Start monitoring window states.
@@ -245,11 +244,6 @@ NativeWindowViews::NativeWindowViews(
 
   DWORD style = ::GetWindowLong(GetAcceleratedWidget(), GWL_STYLE);
   style |= WS_THICKFRAME | WS_CAPTION | WS_MINIMIZEBOX;
-  if (!maximizable_) {
-    style &= (~WS_MAXIMIZEBOX);
-  } else {
-    style |= WS_MAXIMIZEBOX;
-  }
 
   if (transparent()) {
     DWORD ex_style = ::GetWindowLong(GetAcceleratedWidget(), GWL_EXSTYLE);
@@ -441,9 +435,8 @@ void NativeWindowViews::SetResizable(bool resizable) {
     DWORD style = ::GetWindowLong(GetAcceleratedWidget(), GWL_STYLE);
     if (resizable) {
       style |= WS_THICKFRAME;
-      if (maximizable_) style |= WS_MAXIMIZEBOX;
     } else {
-      style &= ~(WS_THICKFRAME | WS_MAXIMIZEBOX);
+      style &= ~(WS_THICKFRAME);
     }
     ::SetWindowLong(GetAcceleratedWidget(), GWL_STYLE, style);
   }
@@ -503,6 +496,33 @@ bool NativeWindowViews::IsMinimizable() {
 #elif defined(USE_X11)
   return true;
 #endif
+}
+
+void NativeWindowViews::SetMaximizable(bool maximizable) {
+#if defined(OS_WIN)
+  DWORD style = ::GetWindowLong(GetAcceleratedWidget(), GWL_STYLE);
+  if (maximizable) {
+    style |= WS_MAXIMIZEBOX;
+  } else {
+    style &= (~WS_MAXIMIZEBOX);
+  }
+  ::SetWindowLong(GetAcceleratedWidget(), GWL_STYLE, style);
+#endif
+}
+
+bool NativeWindowViews::IsMaximizable() {
+#if defined(OS_WIN)
+  return ::GetWindowLong(GetAcceleratedWidget(), GWL_STYLE) & WS_MAXIMIZEBOX;
+#elif defined(USE_X11)
+  return true;
+#endif
+}
+
+void NativeWindowViews::SetFullscreenable(bool maximizable) {
+}
+
+bool NativeWindowViews::IsFullscreenable() {
+  return true;
 }
 
 void NativeWindowViews::SetClosable(bool closable) {
