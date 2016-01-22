@@ -31,8 +31,6 @@
     remote.getCurrentWindow().inspectElement(e.clientX, e.clientY);
   }
 
-  require('coffee-script/register');  // Supports .coffee tests.
-
   // Rediret all output to browser.
   if (isCi) {
     global.__defineGetter__('console', function() {
@@ -64,7 +62,7 @@
   });
 
   walker.on('file', function(file) {
-    if (/-spec.coffee$/.test(file))
+    if (/-spec\.js$/.test(file))
       mocha.addFile(file);
   });
 

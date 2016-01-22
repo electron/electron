@@ -157,6 +157,16 @@ value will fail with a DOM exception.
 
 If "on", the guest page will be allowed to open new windows.
 
+### `blinkfeatures`
+
+```html
+<webview src="https://www.github.com/" blinkfeatures="PreciseMemoryInfo, CSSVariables"></webview>
+```
+
+A list of strings which specifies the blink features to be enabled separated by `,`.
+The full list of supported feature strings can be found in the
+[setFeatureEnabledFromString][blink-feature-string] function.
+
 ## Methods
 
 The `webview` tag has the following methods:
@@ -170,6 +180,17 @@ webview.addEventListener("dom-ready", function() {
   webview.openDevTools();
 });
 ```
+
+### `<webview>.loadURL(url[, options])`
+
+* `url` URL
+* `options` Object (optional), properties:
+  * `httpReferrer` String - A HTTP Referrer url.
+  * `userAgent` String - A user agent originating the request.
+  * `extraHeaders` String - Extra headers separated by "\n"
+
+Loads the `url` in the webview, the `url` must contain the protocol prefix,
+e.g. the `http://` or `file://`.
 
 ### `<webview>.getURL()`
 
@@ -351,6 +372,12 @@ Executes editing command `replace` in page.
 * `text` String
 
 Executes editing command `replaceMisspelling` in page.
+
+### `<webview>.insertText(text)`
+
+* `text` String
+
+Inserts `text` to the focused element.
 
 ### `<webview>.findInPage(text[, options])`
 
@@ -708,3 +735,5 @@ Emitted when DevTools is closed.
 ### Event: 'devtools-focused'
 
 Emitted when DevTools is focused / opened.
+
+[blink-feature-string]: https://code.google.com/p/chromium/codesearch#chromium/src/out/Debug/gen/blink/platform/RuntimeEnabledFeatures.cpp&sq=package:chromium&type=cs&l=527

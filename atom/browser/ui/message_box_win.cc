@@ -72,6 +72,7 @@ void MapToCommonID(const std::vector<base::string16>& buttons,
 int ShowMessageBoxUTF16(HWND parent,
                         MessageBoxType type,
                         const std::vector<base::string16>& buttons,
+                        int default_id,
                         int cancel_id,
                         int options,
                         const base::string16& title,
@@ -87,6 +88,9 @@ int ShowMessageBoxUTF16(HWND parent,
   config.hwndParent = parent;
   config.hInstance  = GetModuleHandle(NULL);
   config.dwFlags    = flags;
+
+  if (default_id > 0)
+    config.nDefaultButton = kIDStart + default_id;
 
   // TaskDialogIndirect doesn't allow empty name, if we set empty title it
   // will show "electron.exe" in title.
@@ -156,6 +160,7 @@ void RunMessageBoxInNewThread(base::Thread* thread,
                               NativeWindow* parent,
                               MessageBoxType type,
                               const std::vector<std::string>& buttons,
+                              int default_id,
                               int cancel_id,
                               int options,
                               const std::string& title,
@@ -163,8 +168,8 @@ void RunMessageBoxInNewThread(base::Thread* thread,
                               const std::string& detail,
                               const gfx::ImageSkia& icon,
                               const MessageBoxCallback& callback) {
-  int result = ShowMessageBox(parent, type, buttons, cancel_id, options, title,
-                              message, detail, icon);
+  int result = ShowMessageBox(parent, type, buttons, default_id,
+                              cancel_id, options, title, message, detail, icon);
   content::BrowserThread::PostTask(
       content::BrowserThread::UI, FROM_HERE, base::Bind(callback, result));
   content::BrowserThread::DeleteSoon(
@@ -176,6 +181,7 @@ void RunMessageBoxInNewThread(base::Thread* thread,
 int ShowMessageBox(NativeWindow* parent,
                    MessageBoxType type,
                    const std::vector<std::string>& buttons,
+                   int default_id,
                    int cancel_id,
                    int options,
                    const std::string& title,
@@ -194,6 +200,7 @@ int ShowMessageBox(NativeWindow* parent,
   return ShowMessageBoxUTF16(hwnd_parent,
                              type,
                              utf16_buttons,
+                             default_id,
                              cancel_id,
                              options,
                              base::UTF8ToUTF16(title),
@@ -205,6 +212,7 @@ int ShowMessageBox(NativeWindow* parent,
 void ShowMessageBox(NativeWindow* parent,
                     MessageBoxType type,
                     const std::vector<std::string>& buttons,
+                    int default_id,
                     int cancel_id,
                     int options,
                     const std::string& title,
@@ -224,13 +232,13 @@ void ShowMessageBox(NativeWindow* parent,
   unretained->message_loop()->PostTask(
       FROM_HERE,
       base::Bind(&RunMessageBoxInNewThread, base::Unretained(unretained),
-                 parent, type, buttons, cancel_id, options, title, message,
-                 detail, icon, callback));
+                 parent, type, buttons, default_id, cancel_id, options, title,
+                 message, detail, icon, callback));
 }
 
 void ShowErrorBox(const base::string16& title, const base::string16& content) {
-  ShowMessageBoxUTF16(NULL, MESSAGE_BOX_TYPE_ERROR, {}, 0, 0, L"Error", title,
-                      content, gfx::ImageSkia());
+  ShowMessageBoxUTF16(NULL, MESSAGE_BOX_TYPE_ERROR, {}, -1, 0, 0, L"Error",
+                      title, content, gfx::ImageSkia());
 }
 
 }  // namespace atom

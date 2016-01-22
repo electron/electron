@@ -129,6 +129,10 @@ Archive::Archive(const base::FilePath& path)
 }
 
 Archive::~Archive() {
+#if defined(OS_WIN)
+  file_.Close();
+  _close(fd_);
+#endif
 }
 
 bool Archive::Init() {

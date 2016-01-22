@@ -22,6 +22,7 @@ const char kMinHeight[]  = "minHeight";
 const char kMaxWidth[]   = "maxWidth";
 const char kMaxHeight[]  = "maxHeight";
 const char kResizable[]  = "resizable";
+const char kMovable[]    = "movable";
 const char kFullscreen[] = "fullscreen";
 
 // Whether the window should show in taskbar.

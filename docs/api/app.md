@@ -400,7 +400,7 @@ starts:
 var myWindow = null;
 
 var shouldQuit = app.makeSingleInstance(function(commandLine, workingDirectory) {
-  // Someone tried to run a second instance, we should focus our window
+  // Someone tried to run a second instance, we should focus our window.
   if (myWindow) {
     if (myWindow.isMinimized()) myWindow.restore();
     myWindow.focus();
@@ -423,6 +423,36 @@ app.on('ready', function() {
 * `id` String
 
 Changes the [Application User Model ID][app-user-model-id] to `id`.
+
+### `app.isAeroGlassEnabled()` _Windows_
+
+This method returns `true` if [DWM composition](https://msdn.microsoft.com/en-us/library/windows/desktop/aa969540.aspx)
+(Aero Glass) is enabled, and `false` otherwise. You can use it to determine if
+you should create a transparent window or not (transparent windows won't work
+correctly when DWM composition is disabled).
+
+Usage example:
+
+```js
+let browserOptions = {width: 1000, height: 800};
+
+// Make the window transparent only if the platform supports it.
+if (process.platform !== 'win32' || app.isAeroGlassEnabled()) {
+  browserOptions.transparent = true;
+  browserOptions.frame = false;
+}
+
+// Create the window.
+win = new BrowserWindow(browserOptions);
+
+// Navigate.
+if (browserOptions.transparent) {
+  win.loadURL('file://' + __dirname + '/index.html');
+} else {
+  // No transparency, so we load a fallback that uses basic styles.
+  win.loadURL('file://' + __dirname + '/fallback.html');
+}
+```
 
 ### `app.commandLine.appendSwitch(switch[, value])`
 

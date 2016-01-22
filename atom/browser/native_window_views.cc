@@ -73,29 +73,6 @@ bool IsAltModifier(const content::NativeWebKeyboardEvent& event) {
          (modifiers == (Modifiers::AltKey | Modifiers::IsRight));
 }
 
-SkColor ParseHexColor(const std::string& name) {
-  SkColor result = 0xFF000000;
-  unsigned value = 0;
-  auto color = name.substr(1);
-  unsigned length = color.size();
-  if (length != 3 && length != 6)
-    return result;
-  for (unsigned i = 0; i < length; ++i) {
-    if (!base::IsHexDigit(color[i]))
-      return result;
-    value <<= 4;
-    value |= (color[i] < 'A' ? color[i] - '0' : (color[i] - 'A' + 10) & 0xF);
-  }
-  if (length == 6) {
-    result |= value;
-    return result;
-  }
-  result |= (value & 0xF00) << 12 | (value & 0xF00) << 8
-      | (value & 0xF0) << 8 | (value & 0xF0) << 4
-      | (value & 0xF) << 4 | (value & 0xF);
-  return result;
-}
-
 class NativeWindowClientView : public views::ClientView {
  public:
   NativeWindowClientView(views::Widget* widget,
@@ -375,7 +352,8 @@ bool NativeWindowViews::IsFullscreen() const {
   return window_->IsFullscreen();
 }
 
-void NativeWindowViews::SetBounds(const gfx::Rect& bounds) {
+void NativeWindowViews::SetBounds(const gfx::Rect& bounds,
+    bool animate = false) {
 #if defined(USE_X11)
   // On Linux the minimum and maximum size should be updated with window size
   // when window is not resizable.
@@ -519,7 +497,7 @@ bool NativeWindowViews::IsKiosk() {
 
 void NativeWindowViews::SetBackgroundColor(const std::string& color_name) {
   // web views' background color.
-  SkColor background_color = ParseHexColor(color_name);
+  SkColor background_color = NativeWindow::ParseHexColor(color_name);
   set_background(views::Background::CreateSolidBackground(background_color));
 
 #if defined(OS_WIN)

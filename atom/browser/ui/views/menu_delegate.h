@@ -50,9 +50,6 @@ class MenuDelegate : public views::MenuDelegate {
       views::MenuButton** button) override;
 
  private:
-  // Close this menu and run the menu of |button|.
-  void SwitchToSiblingMenu(views::MenuButton* button);
-
   MenuBar* menu_bar_;
   int id_;
   scoped_ptr<views::MenuDelegate> adapter_;

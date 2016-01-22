@@ -4,7 +4,7 @@
 
 #include "atom/renderer/api/atom_api_web_frame.h"
 
-#include "atom/common/api/api_messages.h"
+#include "atom/common/api/event_emitter_caller.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
@@ -15,6 +15,8 @@
 #include "native_mate/object_template_builder.h"
 #include "third_party/WebKit/public/web/WebDocument.h"
 #include "third_party/WebKit/public/web/WebLocalFrame.h"
+#include "third_party/WebKit/public/web/WebScopedUserGesture.h"
+#include "third_party/WebKit/public/web/WebScriptSource.h"
 #include "third_party/WebKit/public/web/WebSecurityPolicy.h"
 #include "third_party/WebKit/public/web/WebView.h"
 
@@ -36,11 +38,9 @@ void WebFrame::SetName(const std::string& name) {
 }
 
 double WebFrame::SetZoomLevel(double level) {
-  auto render_view = content::RenderView::FromWebView(web_frame_->view());
-  // Notify guests if any for zoom level change.
-  render_view->Send(
-      new AtomViewHostMsg_ZoomLevelChanged(MSG_ROUTING_NONE, level));
-  return web_frame_->view()->setZoomLevel(level);
+  double ret = web_frame_->view()->setZoomLevel(level);
+  mate::EmitEvent(isolate(), GetWrapper(isolate()), "zoom-level-changed", ret);
+  return ret;
 }
 
 double WebFrame::GetZoomLevel() const {
@@ -116,6 +116,19 @@ void WebFrame::RegisterURLSchemeAsPrivileged(const std::string& scheme) {
       privileged_scheme);
 }
 
+void WebFrame::InsertText(const std::string& text) {
+  web_frame_->insertText(blink::WebString::fromUTF8(text));
+}
+
+void WebFrame::ExecuteJavaScript(const base::string16& code,
+                                 mate::Arguments* args) {
+  bool has_user_gesture = false;
+  args->GetNext(&has_user_gesture);
+  scoped_ptr<blink::WebScopedUserGesture> gesture(
+      has_user_gesture ? new blink::WebScopedUserGesture : nullptr);
+  web_frame_->executeScriptAndReturnValue(blink::WebScriptSource(code));
+}
+
 mate::ObjectTemplateBuilder WebFrame::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
   return mate::ObjectTemplateBuilder(isolate)
@@ -136,7 +149,9 @@ mate::ObjectTemplateBuilder WebFrame::GetObjectTemplateBuilder(
       .SetMethod("registerURLSchemeAsBypassingCSP",
                  &WebFrame::RegisterURLSchemeAsBypassingCSP)
       .SetMethod("registerURLSchemeAsPrivileged",
-                 &WebFrame::RegisterURLSchemeAsPrivileged);
+                 &WebFrame::RegisterURLSchemeAsPrivileged)
+      .SetMethod("insertText", &WebFrame::InsertText)
+      .SetMethod("executeJavaScript", &WebFrame::ExecuteJavaScript);
 }
 
 // static

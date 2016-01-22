@@ -418,7 +418,7 @@ NativeWindowMac::NativeWindowMac(
   if (transparent()) {
     // Make window has transparent background.
     [window_ setOpaque:NO];
-    [window_ setHasShadow:NO];
+    // Setting the background color to clear will also hide the shadow.
     [window_ setBackgroundColor:[NSColor clearColor]];
   }
 
@@ -450,6 +450,11 @@ NativeWindowMac::NativeWindowMac(
     }
     // We should be aware of draggable regions when using hidden titlebar.
     set_force_using_draggable_region(true);
+  }
+
+  bool movable;
+  if (options.Get(options::kMovable, &movable)) {
+    [window_ setMovable:movable];
   }
 
   // On OS X the initial window size doesn't include window frame.
@@ -576,7 +581,7 @@ bool NativeWindowMac::IsFullscreen() const {
   return [window_ styleMask] & NSFullScreenWindowMask;
 }
 
-void NativeWindowMac::SetBounds(const gfx::Rect& bounds) {
+void NativeWindowMac::SetBounds(const gfx::Rect& bounds, bool animate) {
   NSRect cocoa_bounds = NSMakeRect(bounds.x(), 0,
                                    bounds.width(),
                                    bounds.height());
@@ -585,7 +590,7 @@ void NativeWindowMac::SetBounds(const gfx::Rect& bounds) {
   cocoa_bounds.origin.y =
       NSHeight([screen frame]) - bounds.height() - bounds.y();
 
-  [window_ setFrame:cocoa_bounds display:YES];
+  [window_ setFrame:cocoa_bounds display:YES animate:animate];
 }
 
 gfx::Rect NativeWindowMac::GetBounds() {
@@ -701,6 +706,12 @@ bool NativeWindowMac::IsKiosk() {
 }
 
 void NativeWindowMac::SetBackgroundColor(const std::string& color_name) {
+  SkColor background_color = NativeWindow::ParseHexColor(color_name);
+  NSColor *color = [NSColor colorWithCalibratedRed:SkColorGetR(background_color)
+    green:SkColorGetG(background_color)
+    blue:SkColorGetB(background_color)
+    alpha:1.0];
+  [window_ setBackgroundColor:color];
 }
 
 void NativeWindowMac::SetRepresentedFilename(const std::string& filename) {
@@ -729,6 +740,10 @@ bool NativeWindowMac::HasModalDialog() {
 
 gfx::NativeWindow NativeWindowMac::GetNativeWindow() {
   return window_;
+}
+
+gfx::AcceleratedWidget NativeWindowMac::GetAcceleratedWidget() {
+  return inspectable_web_contents()->GetView()->GetNativeView();
 }
 
 void NativeWindowMac::SetProgressBar(double progress) {

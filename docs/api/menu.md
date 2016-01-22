@@ -169,7 +169,7 @@ if (process.platform == 'darwin') {
       },
       {
         label: 'Hide Others',
-        accelerator: 'Command+Shift+H',
+        accelerator: 'Command+Alt+H',
         role: 'hideothers'
       },
       {
@@ -198,7 +198,7 @@ if (process.platform == 'darwin') {
   );
 }
 
-menu = Menu.buildFromTemplate(template);
+var menu = Menu.buildFromTemplate(template);
 Menu.setApplicationMenu(menu);
 ```
 

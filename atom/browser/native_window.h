@@ -105,13 +105,13 @@ class NativeWindow : public base::SupportsUserData,
   virtual bool IsMinimized() = 0;
   virtual void SetFullScreen(bool fullscreen) = 0;
   virtual bool IsFullscreen() const = 0;
-  virtual void SetBounds(const gfx::Rect& bounds) = 0;
+  virtual void SetBounds(const gfx::Rect& bounds, bool animate = false) = 0;
   virtual gfx::Rect GetBounds() = 0;
-  virtual void SetSize(const gfx::Size& size);
+  virtual void SetSize(const gfx::Size& size, bool animate = false);
   virtual gfx::Size GetSize();
-  virtual void SetPosition(const gfx::Point& position);
+  virtual void SetPosition(const gfx::Point& position, bool animate = false);
   virtual gfx::Point GetPosition();
-  virtual void SetContentSize(const gfx::Size& size);
+  virtual void SetContentSize(const gfx::Size& size, bool animate = false);
   virtual gfx::Size GetContentSize();
   virtual void SetSizeConstraints(
       const extensions::SizeConstraints& size_constraints);
@@ -143,6 +143,7 @@ class NativeWindow : public base::SupportsUserData,
   virtual void SetMenu(ui::MenuModel* menu);
   virtual bool HasModalDialog();
   virtual gfx::NativeWindow GetNativeWindow() = 0;
+  virtual gfx::AcceleratedWidget GetAcceleratedWidget() = 0;
 
   // Taskbar/Dock APIs.
   virtual void SetProgressBar(double progress) = 0;
@@ -263,6 +264,9 @@ class NativeWindow : public base::SupportsUserData,
   void RenderViewCreated(content::RenderViewHost* render_view_host) override;
   void BeforeUnloadDialogCancelled() override;
   bool OnMessageReceived(const IPC::Message& message) override;
+
+  // Parse hex color like "#FFF" or "#EFEFEF"
+  SkColor ParseHexColor(const std::string& name);
 
  private:
   // Schedule a notification unresponsive event.

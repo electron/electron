@@ -154,24 +154,24 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
     Show();
 }
 
-void NativeWindow::SetSize(const gfx::Size& size) {
-  SetBounds(gfx::Rect(GetPosition(), size));
+void NativeWindow::SetSize(const gfx::Size& size, bool animate) {
+  SetBounds(gfx::Rect(GetPosition(), size), animate);
 }
 
 gfx::Size NativeWindow::GetSize() {
   return GetBounds().size();
 }
 
-void NativeWindow::SetPosition(const gfx::Point& position) {
-  SetBounds(gfx::Rect(position, GetSize()));
+void NativeWindow::SetPosition(const gfx::Point& position, bool animate) {
+  SetBounds(gfx::Rect(position, GetSize()), animate);
 }
 
 gfx::Point NativeWindow::GetPosition() {
   return GetBounds().origin();
 }
 
-void NativeWindow::SetContentSize(const gfx::Size& size) {
-  SetSize(ContentSizeToWindowSize(size));
+void NativeWindow::SetContentSize(const gfx::Size& size, bool animate) {
+  SetSize(ContentSizeToWindowSize(size), animate);
 }
 
 gfx::Size NativeWindow::GetContentSize() {
@@ -549,6 +549,29 @@ void NativeWindow::OnCapturePageDone(const CapturePageCallback& callback,
                                      const SkBitmap& bitmap,
                                      content::ReadbackResponse response) {
   callback.Run(bitmap);
+}
+
+SkColor NativeWindow::ParseHexColor(const std::string& name) {
+  SkColor result = 0xFF000000;
+  unsigned value = 0;
+  auto color = name.substr(1);
+  unsigned length = color.size();
+  if (length != 3 && length != 6)
+    return result;
+  for (unsigned i = 0; i < length; ++i) {
+    if (!base::IsHexDigit(color[i]))
+      return result;
+    value <<= 4;
+    value |= (color[i] < 'A' ? color[i] - '0' : (color[i] - 'A' + 10) & 0xF);
+  }
+  if (length == 6) {
+    result |= value;
+    return result;
+  }
+  result |= (value & 0xF00) << 12 | (value & 0xF00) << 8
+      | (value & 0xF0) << 8 | (value & 0xF0) << 4
+      | (value & 0xF) << 4 | (value & 0xF);
+  return result;
 }
 
 }  // namespace atom

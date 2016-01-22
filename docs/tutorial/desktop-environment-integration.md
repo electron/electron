@@ -35,21 +35,9 @@ are fine differences.
 Model ID][app-user-model-id], must be installed to the Start screen. Note,
 however, that it does not need to be pinned to the Start screen.
 * On Windows 7 and below, notifications are not supported. You can however send
-"balloon notifications" using the [Tray API](tray-balloon).
+"balloon notifications" using the [Tray API][tray-balloon].
 
-To use an image in your notification, pass a local image file (preferably `png`)
-in the `icon` property of your notification's options. The notification will
-still display if you submit an incorrect or `http/https`-based URL, but the
-image will not be displayed.
-
-```javascript
-new Notification('Title', {
-  body: 'Notification with icon',
-  icon: 'file:///C:/Users/feriese/Desktop/icon.png'
-});
-```
-
-Furthermore, keep in mind that the maximum length for the body is 250 characters,
+Furthermore, the maximum length for the notification body is 250 characters,
 with the Windows team recommending that notifications should be kept to 200
 characters.
 

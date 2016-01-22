@@ -105,24 +105,17 @@ views::MenuItemView* MenuDelegate::GetSiblingMenu(
   ui::MenuModel* model;
   if (menu_bar_->GetMenuButtonFromScreenPoint(screen_point, &model, &button) &&
       button->tag() != id_) {
-    // Switch to sibling menu on next tick, otherwise crash may happen.
+    DCHECK(menu_runner_->IsRunning());
+    menu_runner_->Cancel();
+    // After canceling the menu, we need to wait until next tick
+    // so we are out of nested message loop.
     content::BrowserThread::PostTask(
         content::BrowserThread::UI, FROM_HERE,
-        base::Bind(&MenuDelegate::SwitchToSiblingMenu,
-                   base::Unretained(this), button));
+        base::Bind(base::IgnoreResult(&views::MenuButton::Activate),
+                   base::Unretained(button)));
   }
 
   return nullptr;
-}
-
-void MenuDelegate::SwitchToSiblingMenu(views::MenuButton* button) {
-  menu_runner_->Cancel();
-  // After canceling the menu, we need to wait until next tick so we are out of
-  // nested message loop.
-  content::BrowserThread::PostTask(
-      content::BrowserThread::UI, FROM_HERE,
-      base::Bind(base::IgnoreResult(&views::MenuButton::Activate),
-                 base::Unretained(button)));
 }
 
 }  // namespace atom

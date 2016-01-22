@@ -23,6 +23,7 @@ extern const char kMinHeight[];
 extern const char kMaxWidth[];
 extern const char kMaxHeight[];
 extern const char kResizable[];
+extern const char kMovable[];
 extern const char kFullscreen[];
 extern const char kSkipTaskbar[];
 extern const char kKiosk[];

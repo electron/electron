@@ -55,4 +55,4 @@ class AtomContentUtilityClient : public content::ContentUtilityClient {
 
 }  // namespace atom
 
-#endif  // ATOM_UTILITY_ATOM_CONTENT_UTILITY_CLIENT_H_ 
+#endif  // ATOM_UTILITY_ATOM_CONTENT_UTILITY_CLIENT_H_

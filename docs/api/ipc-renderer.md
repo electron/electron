@@ -1,8 +1,10 @@
 # ipcRenderer
 
-The `ipcRenderer` module provides a few methods so you can send synchronous and
-asynchronous messages from the render process (web page) to the main process.
-You can also receive replies from the main process.
+The `ipcRenderer` module is an instance of the
+[EventEmitter](https://nodejs.org/api/events.html) class. It provides a few
+methods so you can send synchronous and asynchronous messages from the render
+process (web page) to the main process.  You can also receive replies from the
+main process.
 
 See [ipcMain](ipc-main.md) for code examples.
 
@@ -17,6 +19,28 @@ The `ipcRenderer` module has the following method to listen for events:
 
 When the event occurs the `callback` is called with an `event` object and
 arbitrary arguments.
+
+### `ipcRenderer.removeListener(channel, callback)`
+
+* `channel` String - The event name.
+* `callback` Function - The reference to the same function that you used for
+  `ipcRenderer.on(channel, callback)`
+
+Once done listening for messages, if you no longer want to activate this
+callback and for whatever reason can't merely stop sending messages on the
+channel, this function will remove the callback handler for the specified
+channel.
+
+### `ipcRenderer.removeAllListeners(channel)`
+
+* `channel` String - The event name.
+
+This removes *all* handlers to this ipc channel.
+
+### `ipcMain.once(channel, callback)`
+
+Use this in place of `ipcMain.on()` to fire handlers meant to occur only once,
+as in, they won't be activated after one call of `callback`
 
 ## Sending Messages
 

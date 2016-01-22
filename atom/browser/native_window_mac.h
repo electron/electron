@@ -42,7 +42,7 @@ class NativeWindowMac : public NativeWindow {
   bool IsMinimized() override;
   void SetFullScreen(bool fullscreen) override;
   bool IsFullscreen() const override;
-  void SetBounds(const gfx::Rect& bounds) override;
+  void SetBounds(const gfx::Rect& bounds, bool animate = false) override;
   gfx::Rect GetBounds() override;
   void SetContentSizeConstraints(
       const extensions::SizeConstraints& size_constraints) override;
@@ -65,6 +65,7 @@ class NativeWindowMac : public NativeWindow {
   void SetIgnoreMouseEvents(bool ignore) override;
   bool HasModalDialog() override;
   gfx::NativeWindow GetNativeWindow() override;
+  gfx::AcceleratedWidget GetAcceleratedWidget() override;
   void SetProgressBar(double progress) override;
   void SetOverlayIcon(const gfx::Image& overlay,
                       const std::string& description) override;

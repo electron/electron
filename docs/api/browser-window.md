@@ -47,6 +47,8 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
   * `maxWidth` Integer - Window's maximum width. Default is no limit.
   * `maxHeight` Integer - Window's maximum height. Default is no limit.
   * `resizable` Boolean - Whether window is resizable. Default is `true`.
+  * `movable` Boolean - Whether window is movable. This is only implemented
+    on OS X. Default is `true`.
   * `alwaysOnTop` Boolean - Whether the window should always stay on top of
     other windows. Default is `false`.
   * `fullscreen` Boolean - Whether the window should show in fullscreen. When
@@ -63,26 +65,27 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
   * `frame` Boolean - Specify `false` to create a
     [Frameless Window](frameless-window.md). Default is `true`.
   * `acceptFirstMouse` Boolean - Whether the web view accepts a single
-    mouse-down event that simultaneously activates the window. Default is `false`.
-  * `disableAutoHideCursor` Boolean - Whether to hide cursor when typing. Default
-    is `false`.
+    mouse-down event that simultaneously activates the window. Default is
+    `false`.
+  * `disableAutoHideCursor` Boolean - Whether to hide cursor when typing.
+    Default is `false`.
   * `autoHideMenuBar` Boolean - Auto hide the menu bar unless the `Alt`
     key is pressed. Default is `false`.
   * `enableLargerThanScreen` Boolean - Enable the window to be resized larger
     than screen. Default is `false`.
   * `backgroundColor` String - Window's background color as Hexadecimal value,
-    like `#66CD00` or `#FFF`. This is only implemented on Linux and Windows.
-    Default is `#000` (black).
+    like `#66CD00` or `#FFF`. Default is `#000` (black) for Linux and Windows,
+    `#FFF` for Mac (or clear if transparent).
   * `darkTheme` Boolean - Forces using dark theme for the window, only works on
     some GTK+3 desktop environments. Default is `false`.
   * `transparent` Boolean - Makes the window [transparent](frameless-window.md).
     Default is `false`.
   * `type` String - The type of window, default is normal window. See more about
-    this bellow.
+    this below.
   * `titleBarStyle` String - The style of window title bar. See more about this
-    bellow.
+    below.
   * `webPreferences` Object - Settings of web page's features. See more about
-    this bellow.
+    this below.
 
 The possible values and behaviors of `type` option are platform dependent,
 supported values are:
@@ -119,12 +122,17 @@ The `webPreferences` option is an object that can have following properties:
   When node integration is turned off, the preload script can reintroduce
   Node global symbols back to the global scope. See example
   [here](process.md#event-loaded).
-* `partition` String - Sets the session used by the page. If `partition`
-  starts with `persist:`, the page will use a persistent session available to
-  all pages in the app with the same `partition`. if there is no `persist:`
-  prefix, the page will use an in-memory session. By assigning the same
-  `partition`, multiple pages can share the same session. If the `partition`
-  is unset then default session of the app will be used.
+* `session` [Session](session.md#class-session) - Sets the session used by the
+  page. Instead of passing the Session object directly, you can also choose to
+  use the `partition` option instead, which accepts a partition string. When
+  both `session` and `partition` are provided, `session` would be preferred.
+  Default is the default session.
+* `partition` String - Sets the session used by the page according to the
+  session's partition string. If `partition` starts with `persist:`, the page
+  will use a persistent session available to all pages in the app with the
+  same `partition`. if there is no `persist:` prefix, the page will use an
+  in-memory session. By assigning the same `partition`, multiple pages can share
+  the same session. Default is the default session.
 * `zoomFactor` Number - The default zoom factor of the page, `3.0` represents
   `300%`. Default is `1.0`.
 * `javascript` Boolean - Enables JavaScript support. Default is `true`.
@@ -152,12 +160,22 @@ The `webPreferences` option is an object that can have following properties:
   `CSSVariables,KeyboardEventKey`. The full list of supported feature strings
   can be found in the [setFeatureEnabledFromString][blink-feature-string]
   function.
+* `defaultFontFamily` Object - Sets the default font for the font-family.
+  * `standard` String - Defaults to `Times New Roman`.
+  * `serif` String - Defaults to `Times New Roman`.
+  * `sansSerif` String - Defaults to `Arial`.
+  * `monospace` String - Defaults to `Courier New`.
+* `defaultFontSize` Integer - Defaults to `16`.
+* `defaultMonospaceFontSize` Integer - Defaults to `13`.
+* `minimumFontSize` Integer - Defaults to `0`.
+* `defaultEncoding` String - Defaults to `ISO-8859-1`.
 
 ## Events
 
 The `BrowserWindow` object emits the following events:
 
-**Note:** Some events are only available on specific operating systems and are labeled as such.
+**Note:** Some events are only available on specific operating systems and are
+labeled as such.
 
 ### Event: 'page-title-updated'
 
@@ -287,7 +305,7 @@ Returns an array of all opened browser windows.
 
 ### `BrowserWindow.getFocusedWindow()`
 
-Returns the window that is focused in this application.
+Returns the window that is focused in this application, otherwise returns `null`.
 
 ### `BrowserWindow.fromWebContents(webContents)`
 
@@ -341,16 +359,14 @@ The unique ID of this window.
 
 Objects created with `new BrowserWindow` have the following instance methods:
 
-**Note:** Some methods are only available on specific operating systems and are labeled as such.
+**Note:** Some methods are only available on specific operating systems and are
+labeled as such.
 
 ### `win.destroy()`
 
 Force closing the window, the `unload` and `beforeunload` event won't be emitted
 for the web page, and `close` event will also not be emitted
 for this window, but it guarantees the `closed` event will be emitted.
-
-You should only use this method when the renderer process (web page) has
-crashed.
 
 ### `win.close()`
 
@@ -440,14 +456,16 @@ the player itself we would call this function with arguments of 16/9 and
 are within the content view--only that they exist. Just sum any extra width and
 height areas you have within the overall content view.
 
-### `win.setBounds(options)`
+### `win.setBounds(options[, animate])`
 
-`options` Object, properties:
+* `options` Object, properties:
 
-* `x` Integer
-* `y` Integer
-* `width` Integer
-* `height` Integer
+  * `x` Integer
+  * `y` Integer
+  * `width` Integer
+  * `height` Integer
+
+* `animate` Boolean (optional) _OS X_
 
 Resizes and moves the window to `width`, `height`, `x`, `y`.
 
@@ -455,10 +473,11 @@ Resizes and moves the window to `width`, `height`, `x`, `y`.
 
 Returns an object that contains window's width, height, x and y values.
 
-### `win.setSize(width, height)`
+### `win.setSize(width, height[, animate])`
 
 * `width` Integer
 * `height` Integer
+* `animate` Boolean (optional) _OS X_
 
 Resizes the window to `width` and `height`.
 
@@ -466,10 +485,11 @@ Resizes the window to `width` and `height`.
 
 Returns an array that contains window's width and height.
 
-### `win.setContentSize(width, height)`
+### `win.setContentSize(width, height[, animate])`
 
 * `width` Integer
 * `height` Integer
+* `animate` Boolean (optional) _OS X_
 
 Resizes the window's client area (e.g. the web page) to `width` and `height`.
 
@@ -525,10 +545,11 @@ Returns whether the window is always on top of other windows.
 
 Moves window to the center of the screen.
 
-### `win.setPosition(x, y)`
+### `win.setPosition(x, y[, animate])`
 
 * `x` Integer
 * `y` Integer
+* `animate` Boolean (optional) _OS X_
 
 Moves window to `x` and `y`.
 
@@ -570,6 +591,13 @@ Enters or leaves the kiosk mode.
 ### `win.isKiosk()`
 
 Returns whether the window is in kiosk mode.
+
+### `win.getNativeWindowHandle()`
+
+Returns the platform-specific handle of the window as `Buffer`.
+
+The native type of the handle is `HWND` on Windows, `NSView*` on OS X, and
+`Window` (`unsigned long`) on Linux.
 
 ### `win.hookWindowMessage(message, callback)` _Windows_
 

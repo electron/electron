@@ -61,7 +61,7 @@ class NativeWindowViews : public NativeWindow,
   bool IsMinimized() override;
   void SetFullScreen(bool fullscreen) override;
   bool IsFullscreen() const override;
-  void SetBounds(const gfx::Rect& bounds) override;
+  void SetBounds(const gfx::Rect& bounds, bool animate) override;
   gfx::Rect GetBounds() override;
   gfx::Size GetContentSize() override;
   void SetContentSizeConstraints(
@@ -90,7 +90,7 @@ class NativeWindowViews : public NativeWindow,
   void SetVisibleOnAllWorkspaces(bool visible) override;
   bool IsVisibleOnAllWorkspaces() override;
 
-  gfx::AcceleratedWidget GetAcceleratedWidget();
+  gfx::AcceleratedWidget GetAcceleratedWidget() override;
 
   views::Widget* widget() const { return window_.get(); }
 
