@@ -20,7 +20,7 @@ void MenuViews::Popup(Window* window) {
   PopupAtPoint(window, gfx::Screen::GetNativeScreen()->GetCursorScreenPoint());
 }
 
-void MenuViews::PopupAt(Window* window, int x, int y, int positioningItem) {
+void MenuViews::PopupAt(Window* window, int x, int y, int positioning_item) {
   NativeWindow* native_window = static_cast<NativeWindow*>(window->window());
   if (!native_window)
     return;
