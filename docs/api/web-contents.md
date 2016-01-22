@@ -836,7 +836,7 @@ when the DevTools has been closed.
 
 ### `webContents.debugger`
 
-Debugger API serves as an alternate transport for remote debugging protocol.
+Debugger API serves as an alternate transport for [remote debugging protocol][rdp].
 
 ```javascript
 try {
@@ -845,11 +845,11 @@ try {
   console.log("Debugger attach failed : ", err);
 };
 
-win.webContents.debugger.onDetach(function(reason) {
+win.webContents.debugger.on('detach', function(event, reason) {
   console.log("Debugger detached due to : ", reason);
 });
 
-win.webContents.debugger.onEvent(function(method, params) {
+win.webContents.debugger.on('message', function(event, method, params) {
   if (method == "Network.requestWillBeSent") {
     if (params.request.url == "https://www.github.com")
       win.webContents.debugger.detach();
@@ -861,7 +861,7 @@ win.webContents.debugger.sendCommand("Network.enable");
 
 #### `webContents.debugger.attach([protocolVersion])`
 
-* `protocolVersion` String - Required debugging protocol version.
+* `protocolVersion` String - Requested debugging protocol version.
 
 Attaches the debugger to the `webContents`.
 
@@ -880,19 +880,21 @@ Detaches the debugger from the `webContents`.
 
 Send given command to the debugging target.
 
-#### `webContents.debugger.onDetach(callback)`
+#### Event: 'detach'
 
-* `callback` Function
-  * `reason` String - Reason for detaching debugger.
+* `event` Event
+* `reason` String - Reason for detaching debugger.
 
-`callback` is fired when debugging session is terminated. This happens either when
+Emitted when debugging session is terminated. This happens either when
 `webContents` is closed or devtools is invoked for the attached `webContents`.
 
-#### `webContents.debugger.onEvent(callback)`
+#### Event: 'message'
 
-* `callback` Function
-  * `method` String - Method name.
-  * `params` Object - Event parameters defined by the 'parameters'
-     attribute in the remote debugging protocol.
+* `event` Event
+* `method` String - Method name.
+* `params` Object - Event parameters defined by the 'parameters'
+   attribute in the remote debugging protocol.
 
-`callback` is fired whenever debugging target issues instrumentation event.
+Emitted whenever debugging target issues instrumentation event.
+
+[rdp]: https://developer.chrome.com/devtools/docs/debugger-protocol

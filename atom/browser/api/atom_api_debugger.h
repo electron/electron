@@ -1,4 +1,4 @@
-// Copyright (c) 2015 GitHub, Inc.
+// Copyright (c) 2016 GitHub, Inc.
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
@@ -30,11 +30,8 @@ namespace api {
 class Debugger: public mate::TrackableObject<Debugger>,
                 public content::DevToolsAgentHostClient {
  public:
-  using ResponseCallback =
-      base::Callback<void(const std::string&, const base::DictionaryValue&)>;
   using SendCommandCallback =
       base::Callback<void(const base::DictionaryValue&)>;
-  using DetachCallback = base::Callback<void(const std::string&)>;
 
   static mate::Handle<Debugger> Create(
       v8::Isolate* isolate, content::WebContents* web_contents);
@@ -59,14 +56,9 @@ class Debugger: public mate::TrackableObject<Debugger>,
   void Attach(mate::Arguments* args);
   void Detach();
   void SendCommand(mate::Arguments* args);
-  void OnDetach(const DetachCallback& callback);
-  void OnEvent(const ResponseCallback& callback);
 
   content::WebContents* web_contents_;  // Weak Reference.
   scoped_refptr<content::DevToolsAgentHost> agent_host_;
-
-  DetachCallback detach_callback_;
-  ResponseCallback response_callback_;
 
   PendingRequestMap pending_requests_;
   int previous_request_id_;

@@ -1,4 +1,4 @@
-// Copyright (c) 2015 GitHub, Inc.
+// Copyright (c) 2016 GitHub, Inc.
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
@@ -33,8 +33,7 @@ void Debugger::AgentHostClosed(DevToolsAgentHost* agent_host,
   std::string detach_reason = "target closed";
   if (replaced_with_another_client)
     detach_reason = "replaced with devtools";
-  if (!detach_callback_.is_null())
-    detach_callback_.Run(detach_reason);
+  Emit("detach", detach_reason);
 }
 
 void Debugger::DispatchProtocolMessage(DevToolsAgentHost* agent_host,
@@ -54,8 +53,7 @@ void Debugger::DispatchProtocolMessage(DevToolsAgentHost* agent_host,
       return;
     base::DictionaryValue* params = nullptr;
     dict->GetDictionary("params", &params);
-    if (!response_callback_.is_null())
-      response_callback_.Run(method, *params);
+    Emit("message", method, *params);
   } else {
     auto send_command_callback = pending_requests_[id];
     pending_requests_.erase(id);
@@ -90,7 +88,10 @@ void Debugger::Attach(mate::Arguments* args) {
 }
 
 void Debugger::Detach() {
+  if (!agent_host_.get())
+    return;
   agent_host_->DetachClient();
+  AgentHostClosed(agent_host_.get(), false);
   agent_host_ = nullptr;
 }
 
@@ -121,14 +122,6 @@ void Debugger::SendCommand(mate::Arguments* args) {
   agent_host_->DispatchProtocolMessage(json_args);
 }
 
-void Debugger::OnDetach(const DetachCallback& callback) {
-  detach_callback_ = callback;
-}
-
-void Debugger::OnEvent(const ResponseCallback& callback) {
-  response_callback_ = callback;
-}
-
 // static
 mate::Handle<Debugger> Debugger::Create(
     v8::Isolate* isolate,
@@ -142,9 +135,7 @@ void Debugger::BuildPrototype(v8::Isolate* isolate,
   mate::ObjectTemplateBuilder(isolate, prototype)
       .SetMethod("attach", &Debugger::Attach)
       .SetMethod("detach", &Debugger::Detach)
-      .SetMethod("sendCommand", &Debugger::SendCommand)
-      .SetMethod("onDetach", &Debugger::OnDetach)
-      .SetMethod("onEvent", &Debugger::OnEvent);
+      .SetMethod("sendCommand", &Debugger::SendCommand);
 }
 
 }  // namespace api
