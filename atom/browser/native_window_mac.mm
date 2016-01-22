@@ -649,13 +649,17 @@ void NativeWindowMac::SetContentSizeConstraints(
 }
 
 void NativeWindowMac::SetResizable(bool resizable) {
+  bool maximizable = IsMaximizable();
   // Change styleMask for frameless causes the window to change size, so we have
   // to explicitly disables that.
   ScopedDisableResize disable_resize;
   if (resizable) {
     [window_ setStyleMask:[window_ styleMask] | NSResizableWindowMask];
   } else {
-    [[window_ standardWindowButton:NSWindowZoomButton] setEnabled:NO];
+    [window_ setStyleMask:[window_ styleMask] & (~NSResizableWindowMask)];
+  }
+  if (!maximizable) {
+    SetMaximizable(false);
   }
 }
 
