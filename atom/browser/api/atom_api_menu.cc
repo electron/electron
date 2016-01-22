@@ -69,6 +69,10 @@ void Menu::MenuWillShow(ui::SimpleMenuModel* source) {
   menu_will_show_.Run();
 }
 
+void Menu::Popup(Window* window) {
+  PopupAt(window);
+}
+
 void Menu::InsertItemAt(
     int index, int command_id, const base::string16& label) {
   model_->InsertItemAt(index, command_id, label);

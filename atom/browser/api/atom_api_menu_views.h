@@ -17,7 +17,6 @@ class MenuViews : public Menu {
   MenuViews();
 
  protected:
-  void Popup(Window* window) override;
   void PopupAt(Window* window, int x, int y, int positioning_item = 0) override;
 
  private:

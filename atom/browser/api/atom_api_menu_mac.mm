@@ -18,10 +18,6 @@ namespace api {
 MenuMac::MenuMac() {
 }
 
-void MenuMac::Popup(Window* window) {
-  PopupAt(window, -1, -1, 0);
-}
-
 void MenuMac::PopupAt(Window* window, int x, int y, int positioning_item) {
   NativeWindow* native_window = window->window();
   if (!native_window)
