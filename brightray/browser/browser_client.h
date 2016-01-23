@@ -28,6 +28,12 @@ class BrowserClient : public content::ContentBrowserClient {
 
   NotificationPresenter* GetNotificationPresenter();
 
+  // Subclasses should override this to enable or disable WebNotification.
+  virtual void WebNotificationAllowed(int render_process_id,
+                                      const base::Callback<void(bool)>& callback) {
+    callback.Run(true);
+  }
+
  protected:
   // Subclasses should override this to provide their own BrowserMainParts
   // implementation. The lifetime of the returned instance is managed by the
