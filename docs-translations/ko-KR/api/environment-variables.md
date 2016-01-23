@@ -1,6 +1,7 @@
 # 환경 변수
 
-Electron의 몇몇 동작은 명령 줄과 어플리케이션의 코드보다 먼저 초기화되어야 하므로 환경 변수에 의해 작동합니다.
+Electron의 몇몇 동작은 명령 줄과 어플리케이션의 코드보다 먼저 초기화되어야 하므로 환경
+변수에 의해 작동합니다.
 
 POSIX 쉘의 예시입니다:
 
@@ -23,6 +24,11 @@ Windows 콘솔의 예시입니다:
 ## `ELECTRON_ENABLE_LOGGING`
 
 Chrome의 내부 로그를 콘솔에 출력합니다.
+
+## `ELECTRON_LOG_ASAR_READS`
+
+Electron이 ASAR 파일을 읽을 때, 읽기 오프셋의 로그를 남기고 시스템 `tmpdir`에 파일로
+저장합니다. 결과 파일은 ASAR 모듈의 파일 순서를 최적화 하는데 사용할 수 있습니다.
 
 ## `ELECTRON_ENABLE_STACK_DUMPING`
 
