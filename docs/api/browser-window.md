@@ -180,6 +180,7 @@ The `webPreferences` option is an object that can have following properties:
 * `defaultMonospaceFontSize` Integer - Defaults to `13`.
 * `minimumFontSize` Integer - Defaults to `0`.
 * `defaultEncoding` String - Defaults to `ISO-8859-1`.
+* `webNotification` Boolean - Enable web notifications. Defaults to `true`.
 
 ## Events
 
