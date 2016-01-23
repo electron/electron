@@ -116,23 +116,15 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
     SetSizeConstraints(size_constraints);
   }
 #if defined(OS_WIN) || defined(USE_X11)
-  bool resizable;
-  if (options.Get(options::kResizable, &resizable)) {
-    SetResizable(resizable);
-  }
-  bool minimizable;
-  if (options.Get(options::kMinimizable, &minimizable)) {
-    SetMinimizable(minimizable);
-  }
   bool closable;
   if (options.Get(options::kClosable, &closable)) {
     SetClosable(closable);
   }
-  bool maximizable;
-  if (options.Get(options::kMaximizable, &maximizable)) {
-    SetMaximizable(maximizable);
-  }
 #endif
+  bool movable;
+  if (options.Get(options::kMovable, &movable) && movable) {
+    SetMovable(movable);
+  }
   bool top;
   if (options.Get(options::kAlwaysOnTop, &top) && top) {
     SetAlwaysOnTop(true);

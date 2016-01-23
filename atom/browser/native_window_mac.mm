@@ -394,12 +394,12 @@ NativeWindowMac::NativeWindowMac(
     useStandardWindow = false;
   }
 
-  NSUInteger styleMask = NSTitledWindowMask | NSClosableWindowMask;
+  NSUInteger styleMask = NSTitledWindowMask;
   if (minimizable) {
     styleMask |= NSMiniaturizableWindowMask;
   }
-  if (!closable) {
-    styleMask &= ~NSClosableWindowMask;
+  if (closable) {
+    styleMask |= NSClosableWindowMask;
   }
   if (!useStandardWindow || transparent() || !has_frame()) {
     styleMask |= NSTexturedBackgroundWindowMask;
@@ -470,11 +470,6 @@ NativeWindowMac::NativeWindowMac(
     }
     // We should be aware of draggable regions when using hidden titlebar.
     set_force_using_draggable_region(true);
-  }
-
-  bool movable;
-  if (options.Get(options::kMovable, &movable)) {
-    [window_ setMovable:movable];
   }
 
   // On OS X the initial window size doesn't include window frame.

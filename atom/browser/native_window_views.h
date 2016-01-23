@@ -206,9 +206,9 @@ class NativeWindowViews : public NativeWindow,
   accelerator_util::AcceleratorTable accelerator_table_;
 
   bool use_content_size_;
+  bool movable_;
   bool resizable_;
   bool maximizable_;
-  bool movable_;
   bool minimizable_;
   std::string title_;
   gfx::Size widget_size_;
