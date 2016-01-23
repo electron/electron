@@ -120,6 +120,10 @@ class NativeWindowMac : public NativeWindow {
   // whehter we can drag.
   void UpdateDraggableRegionViews(const std::vector<DraggableRegion>& regions);
 
+  // Set the attribute of NSWindow while work around a bug of zo0m button.
+  void SetStyleMask(bool on, NSUInteger flag);
+  void SetCollectionBehavior(bool on, NSUInteger flag);
+
   base::scoped_nsobject<AtomNSWindow> window_;
   base::scoped_nsobject<AtomNSWindowDelegate> window_delegate_;
 

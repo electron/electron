@@ -639,18 +639,10 @@ void NativeWindowMac::SetContentSizeConstraints(
 }
 
 void NativeWindowMac::SetResizable(bool resizable) {
-  bool maximizable = IsMaximizable();
   // Change styleMask for frameless causes the window to change size, so we have
   // to explicitly disables that.
   ScopedDisableResize disable_resize;
-  if (resizable) {
-    [window_ setStyleMask:[window_ styleMask] | NSResizableWindowMask];
-  } else {
-    [window_ setStyleMask:[window_ styleMask] & (~NSResizableWindowMask)];
-  }
-  if (!maximizable) {
-    SetMaximizable(false);
-  }
+  SetStyleMask(resizable, NSResizableWindowMask);
 }
 
 bool NativeWindowMac::IsResizable() {
@@ -666,20 +658,7 @@ bool NativeWindowMac::IsMovable() {
 }
 
 void NativeWindowMac::SetMinimizable(bool minimizable) {
-  bool maximizable = IsMaximizable();
-  if (minimizable) {
-    [window_ setStyleMask:[window_ styleMask] | NSMiniaturizableWindowMask];
-  } else {
-    [window_ setStyleMask:[window_ styleMask] & (~NSMiniaturizableWindowMask)];
-  }
-  // If fullscreen has not been disabled via `fullscreenable: false` (i.e. when
-  // collectionBehavior has NSWindowCollectionBehaviorFullScreenPrimary mask),
-  // zoom button is reset to it's default (enabled) state when window's
-  // styleMask has been changed. So if the button was disabled, we have to
-  // disable it again. I think it's a bug in Cocoa.
-  if (!maximizable) {
-    SetMaximizable(false);
-  }
+  SetStyleMask(minimizable, NSMiniaturizableWindowMask);
 }
 
 bool NativeWindowMac::IsMinimizable() {
@@ -695,35 +674,20 @@ bool NativeWindowMac::IsMaximizable() {
 }
 
 void NativeWindowMac::SetFullScreenable(bool fullscreenable) {
-  bool maximizable = IsMaximizable();
-  NSUInteger collectionBehavior = [window_ collectionBehavior];
-  if (fullscreenable) {
-    collectionBehavior |= NSWindowCollectionBehaviorFullScreenPrimary;
-  } else {
-    collectionBehavior &= (~NSWindowCollectionBehaviorFullScreenPrimary);
-    // On EL Capitan this flag is required to hide fullscreen button.
-    collectionBehavior |= NSWindowCollectionBehaviorFullScreenAuxiliary;
-  }
-  [window_ setCollectionBehavior:collectionBehavior];
-  if (!maximizable) {
-    SetMaximizable(false);
-  }
+  SetCollectionBehavior(
+      fullscreenable, NSWindowCollectionBehaviorFullScreenPrimary);
+  // On EL Capitan this flag is required to hide fullscreen button.
+  SetCollectionBehavior(
+      !fullscreenable, NSWindowCollectionBehaviorFullScreenAuxiliary);
 }
 
 bool NativeWindowMac::IsFullScreenable() {
-  return [window_ collectionBehavior] & NSWindowCollectionBehaviorFullScreenPrimary;
+  NSUInteger collectionBehavior = [window_ collectionBehavior];
+  return collectionBehavior & NSWindowCollectionBehaviorFullScreenPrimary;
 }
 
 void NativeWindowMac::SetClosable(bool closable) {
-  bool maximizable = IsMaximizable();
-  if (closable) {
-    [window_ setStyleMask:[window_ styleMask] | NSClosableWindowMask];
-  } else {
-    [window_ setStyleMask:[window_ styleMask] & (~NSClosableWindowMask)];
-  }
-  if (!maximizable) {
-    SetMaximizable(false);
-  }
+  SetStyleMask(closable, NSClosableWindowMask);
 }
 
 bool NativeWindowMac::IsClosable() {
@@ -890,13 +854,7 @@ void NativeWindowMac::ShowDefinitionForSelection() {
 }
 
 void NativeWindowMac::SetVisibleOnAllWorkspaces(bool visible) {
-  NSUInteger collectionBehavior = [window_ collectionBehavior];
-  if (visible) {
-    collectionBehavior |= NSWindowCollectionBehaviorCanJoinAllSpaces;
-  } else {
-    collectionBehavior &= ~NSWindowCollectionBehaviorCanJoinAllSpaces;
-  }
-  [window_ setCollectionBehavior:collectionBehavior];
+  SetCollectionBehavior(visible, NSWindowCollectionBehaviorCanJoinAllSpaces);
 }
 
 bool NativeWindowMac::IsVisibleOnAllWorkspaces() {
@@ -1051,6 +1009,30 @@ void NativeWindowMac::UpdateDraggableRegionViews(
   // Calling the below seems to be an effective solution.
   [window_ setMovableByWindowBackground:NO];
   [window_ setMovableByWindowBackground:YES];
+}
+
+void NativeWindowMac::SetStyleMask(bool on, NSUInteger flag) {
+  bool zoom_button_enabled = IsMaximizable();
+  if (on)
+    [window_ setStyleMask:[window_ styleMask] | flag];
+  else
+    [window_ setStyleMask:[window_ styleMask] & (~flag)];
+  // Change style mask will make the zoom button revert to default, probably
+  // a bug of Cocoa or OS X.
+  if (!zoom_button_enabled)
+    SetMaximizable(false);
+}
+
+void NativeWindowMac::SetCollectionBehavior(bool on, NSUInteger flag) {
+  bool zoom_button_enabled = IsMaximizable();
+  if (on)
+    [window_ setCollectionBehavior:[window_ collectionBehavior] | flag];
+  else
+    [window_ setCollectionBehavior:[window_ collectionBehavior] & (~flag)];
+  // Change collectionBehavior will make the zoom button revert to default,
+  // probably a bug of Cocoa or OS X.
+  if (!zoom_button_enabled)
+    SetMaximizable(false);
 }
 
 // static
