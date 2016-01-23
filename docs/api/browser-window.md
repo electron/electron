@@ -74,8 +74,9 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
   * `enableLargerThanScreen` Boolean - Enable the window to be resized larger
     than screen. Default is `false`.
   * `backgroundColor` String - Window's background color as Hexadecimal value,
-    like `#66CD00` or `#FFF`. Default is `#000` (black) for Linux and Windows,
-    `#FFF` for Mac (or clear if transparent).
+    like `#66CD00` or `#FFF` or `#80FFFFFF` (alpha is supported). Default is
+    `#000` (black) for Linux and Windows, `#FFF` for Mac (or clear if
+    transparent).
   * `darkTheme` Boolean - Forces using dark theme for the window, only works on
     some GTK+3 desktop environments. Default is `false`.
   * `transparent` Boolean - Makes the window [transparent](frameless-window.md).
