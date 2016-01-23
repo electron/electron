@@ -122,7 +122,7 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
   }
 #endif
   bool movable;
-  if (options.Get(options::kMovable, &movable) && movable) {
+  if (options.Get(options::kMovable, &movable)) {
     SetMovable(movable);
   }
   bool has_shadow;

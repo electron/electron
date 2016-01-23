@@ -465,9 +465,9 @@ void NativeWindowViews::SetMinimizable(bool minimizable) {
 
 bool NativeWindowViews::IsMinimizable() {
 #if defined(OS_WIN)
-  return CanMinimize();
+  return ::GetWindowLong(GetAcceleratedWidget(), GWL_STYLE) & WS_MINIMIZEBOX;
 #else
-  return true;  // CanMinimize() Not implemented on Linux.
+  return true;  // Not implemented on Linux.
 #endif
 }
 
@@ -480,9 +480,9 @@ void NativeWindowViews::SetMaximizable(bool maximizable) {
 
 bool NativeWindowViews::IsMaximizable() {
 #if defined(OS_WIN)
-  return CanMaximize();
+  return ::GetWindowLong(GetAcceleratedWidget(), GWL_STYLE) & WS_MAXIMIZEBOX;
 #else
-  return true;  // CanMaximize() Not implemented on Linux.
+  return true;  // Not implemented on Linux.
 #endif
 }
 

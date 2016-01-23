@@ -489,9 +489,7 @@ NativeWindowMac::NativeWindowMac(
   bool fullscreen = false;
   if (options.Get(options::kFullscreen, &fullscreen) && !fullscreen)
     fullscreenable = false;
-  if (!fullscreenable) {
-    SetFullScreenable(false);
-  }
+  SetFullScreenable(fullscreenable);
 
   // Disable zoom button if window is not resizable
   if (!maximizable) {
