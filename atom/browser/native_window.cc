@@ -551,6 +551,13 @@ void NativeWindow::OnCapturePageDone(const CapturePageCallback& callback,
   callback.Run(bitmap);
 }
 
+void NativeWindow::SetHasShadow(bool has_shadow) {
+}
+
+bool NativeWindow::HasShadow() {
+  return true;
+}
+
 SkColor NativeWindow::ParseHexColor(const std::string& name) {
   SkColor result = 0xFF000000;
   unsigned value = 0;

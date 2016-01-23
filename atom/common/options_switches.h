@@ -39,6 +39,7 @@ extern const char kType[];
 extern const char kDisableAutoHideCursor[];
 extern const char kStandardWindow[];
 extern const char kBackgroundColor[];
+extern const char kHasShadow[];
 extern const char kWebPreferences[];
 
 // WebPreferences.

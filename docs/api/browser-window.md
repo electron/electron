@@ -76,6 +76,8 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
   * `backgroundColor` String - Window's background color as Hexadecimal value,
     like `#66CD00` or `#FFF`. Default is `#000` (black) for Linux and Windows,
     `#FFF` for Mac (or clear if transparent).
+  * `hasShadow` Boolean - Whether window should have a shadow. This is only
+    implemented on OS X.
   * `darkTheme` Boolean - Forces using dark theme for the window, only works on
     some GTK+3 desktop environments. Default is `false`.
   * `transparent` Boolean - Makes the window [transparent](frameless-window.md).
@@ -710,6 +712,17 @@ screen readers
 Sets a 16px overlay onto the current taskbar icon, usually used to convey some
 sort of application status or to passively notify the user.
 
+### `win.setHasShadow(hasShadow)` _OS X_
+
+* `hasShadow` (Boolean)
+
+Sets whether the window should have a shadow. On Windows and Linux does
+nothing.
+
+### `win.hasShadow()` _OS X_
+
+Returns whether the window has a shadow. On Windows and Linux always returns
+`true`.
 
 ### `win.setThumbarButtons(buttons)` _Windows 7+_
 

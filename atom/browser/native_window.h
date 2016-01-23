@@ -135,6 +135,8 @@ class NativeWindow : public base::SupportsUserData,
   virtual void SetKiosk(bool kiosk) = 0;
   virtual bool IsKiosk() = 0;
   virtual void SetBackgroundColor(const std::string& color_name) = 0;
+  virtual void SetHasShadow(bool has_shadow);
+  virtual bool HasShadow();
   virtual void SetRepresentedFilename(const std::string& filename);
   virtual std::string GetRepresentedFilename();
   virtual void SetDocumentEdited(bool edited);

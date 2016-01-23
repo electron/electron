@@ -68,6 +68,9 @@ const char kStandardWindow[] = "standardWindow";
 // Default browser window background color.
 const char kBackgroundColor[] = "backgroundColor";
 
+// Whether the window should have a shadow.
+const char kHasShadow[] = "hasShadow";
+
 // The WebPreferences.
 const char kWebPreferences[] = "webPreferences";
 

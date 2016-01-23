@@ -435,6 +435,12 @@ NativeWindowMac::NativeWindowMac(
   if (!has_frame())
     [window_ setOpaque:NO];
 
+  bool has_shadow = true;
+  options.Get(options::kHasShadow, &has_shadow);
+  if (!has_shadow) {
+    SetHasShadow(false);
+  }
+
   // We will manage window's lifetime ourselves.
   [window_ setReleasedWhenClosed:NO];
 
@@ -712,6 +718,14 @@ void NativeWindowMac::SetBackgroundColor(const std::string& color_name) {
     blue:SkColorGetB(background_color)
     alpha:1.0];
   [window_ setBackgroundColor:color];
+}
+
+void NativeWindowMac::SetHasShadow(bool has_shadow) {
+  [window_ setHasShadow:has_shadow];
+}
+
+bool NativeWindowMac::HasShadow() {
+  return [window_ hasShadow];
 }
 
 void NativeWindowMac::SetRepresentedFilename(const std::string& filename) {
