@@ -93,7 +93,7 @@ app.on('ready', function() {
       message: 'Window is not responsing',
       detail: 'The window is not responding. Would you like to force close it or just keep waiting?'
     });
-    if (chosen == 0) window.destroy();
+    if (chosen === 0) window.destroy();
   });
 
   // For session's download test, listen 'will-download' event in browser, and

@@ -106,6 +106,16 @@ class Window : public mate::TrackableObject<Window>,
   std::vector<int> GetMaximumSize();
   void SetResizable(bool resizable);
   bool IsResizable();
+  void SetMovable(bool movable);
+  bool IsMovable();
+  void SetMinimizable(bool minimizable);
+  bool IsMinimizable();
+  void SetMaximizable(bool maximizable);
+  bool IsMaximizable();
+  void SetFullscreenable(bool fullscreenable);
+  bool IsFullscreenable();
+  void SetClosable(bool closable);
+  bool IsClosable();
   void SetAlwaysOnTop(bool top);
   bool IsAlwaysOnTop();
   void Center();
@@ -118,6 +128,8 @@ class Window : public mate::TrackableObject<Window>,
   void SetKiosk(bool kiosk);
   bool IsKiosk();
   void SetBackgroundColor(const std::string& color_name);
+  void SetHasShadow(bool has_shadow);
+  bool HasShadow();
   void FocusOnWebView();
   void BlurWebView();
   bool IsWebViewFocused();

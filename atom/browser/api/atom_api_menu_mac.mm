@@ -18,39 +18,7 @@ namespace api {
 MenuMac::MenuMac() {
 }
 
-void MenuMac::Popup(Window* window) {
-  NativeWindow* native_window = window->window();
-  if (!native_window)
-    return;
-  content::WebContents* web_contents = native_window->web_contents();
-  if (!web_contents)
-    return;
-
-  NSWindow* nswindow = native_window->GetNativeWindow();
-  base::scoped_nsobject<AtomMenuController> menu_controller(
-      [[AtomMenuController alloc] initWithModel:model_.get()]);
-
-  // Fake out a context menu event.
-  NSEvent* currentEvent = [NSApp currentEvent];
-  NSPoint position = [nswindow mouseLocationOutsideOfEventStream];
-  NSTimeInterval eventTime = [currentEvent timestamp];
-  NSEvent* clickEvent = [NSEvent mouseEventWithType:NSRightMouseDown
-                                           location:position
-                                      modifierFlags:NSRightMouseDownMask
-                                          timestamp:eventTime
-                                       windowNumber:[nswindow windowNumber]
-                                            context:nil
-                                        eventNumber:0
-                                         clickCount:1
-                                           pressure:1.0];
-
-  // Show the menu.
-  [NSMenu popUpContextMenu:[menu_controller menu]
-                 withEvent:clickEvent
-                   forView:web_contents->GetContentNativeView()];
-}
-
-void MenuMac::PopupAt(Window* window, int x, int y) {
+void MenuMac::PopupAt(Window* window, int x, int y, int positioning_item) {
   NativeWindow* native_window = window->window();
   if (!native_window)
     return;
@@ -63,10 +31,23 @@ void MenuMac::PopupAt(Window* window, int x, int y) {
   NSMenu* menu = [menu_controller menu];
   NSView* view = web_contents->GetContentNativeView();
 
+  // Which menu item to show.
+  NSMenuItem* item = nil;
+  if (positioning_item < [menu numberOfItems] && positioning_item >= 0)
+    item = [menu itemAtIndex:positioning_item];
+
+  // (-1, -1) means showing on mouse location.
+  NSPoint position;
+  if (x == -1 || y == -1) {
+    NSWindow* nswindow = native_window->GetNativeWindow();
+    position = [view convertPoint:[nswindow mouseLocationOutsideOfEventStream]
+                         fromView:nil];
+  } else {
+    position = NSMakePoint(x, [view frame].size.height - y);
+  }
+
   // Show the menu.
-  [menu popUpMenuPositioningItem:[menu itemAtIndex:0]
-                      atLocation:NSMakePoint(x, [view frame].size.height - y)
-                          inView:view];
+  [menu popUpMenuPositioningItem:item atLocation:position inView:view];
 }
 
 // static
