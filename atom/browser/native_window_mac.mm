@@ -369,6 +369,18 @@ NativeWindowMac::NativeWindowMac(
   bool resizable = true;
   options.Get(options::kResizable, &resizable);
 
+  bool minimizable = true;
+  options.Get(options::kMinimizable, &minimizable);
+  
+  bool maximizable = true;
+  options.Get(options::kMaximizable, &maximizable);
+
+  bool fullscreenable = true;
+  options.Get(options::kFullscreenable, &fullscreenable);
+
+  bool closable = true;
+  options.Get(options::kClosable, &closable);
+
   // New title bar styles are available in Yosemite or newer
   std::string titleBarStyle;
   if (base::mac::IsOSYosemiteOrLater())
@@ -385,8 +397,13 @@ NativeWindowMac::NativeWindowMac(
     useStandardWindow = false;
   }
 
-  NSUInteger styleMask = NSTitledWindowMask | NSClosableWindowMask |
-                         NSMiniaturizableWindowMask;
+  NSUInteger styleMask = NSTitledWindowMask | NSClosableWindowMask;
+  if (minimizable) {
+    styleMask |= NSMiniaturizableWindowMask;
+  }
+  if (!closable) {
+    styleMask &= ~NSClosableWindowMask;
+  }
   if (!useStandardWindow || transparent() || !has_frame()) {
     styleMask |= NSTexturedBackgroundWindowMask;
   }
@@ -475,16 +492,20 @@ NativeWindowMac::NativeWindowMac(
 
   // Disable fullscreen button when 'fullscreen' is specified to false.
   bool fullscreen = false;
-  if (!(options.Get(options::kFullscreen, &fullscreen) &&
-        !fullscreen)) {
-    NSUInteger collectionBehavior = [window_ collectionBehavior];
-    collectionBehavior |= NSWindowCollectionBehaviorFullScreenPrimary;
-    [window_ setCollectionBehavior:collectionBehavior];
+  options.Get(options::kFullscreen, &fullscreen);
+
+  if (fullscreenable) {
+    SetFullscreenable(true);
   } else if (base::mac::IsOSElCapitanOrLater()) {
     // On EL Capitan this flag is required to hide fullscreen button.
     NSUInteger collectionBehavior = [window_ collectionBehavior];
     collectionBehavior |= NSWindowCollectionBehaviorFullScreenAuxiliary;
     [window_ setCollectionBehavior:collectionBehavior];
+  }
+
+  // Disable zoom button if window is not resizable
+  if (!maximizable) {
+    SetMaximizable(false);
   }
 
   NSView* view = inspectable_web_contents()->GetView()->GetNativeView();
@@ -628,20 +649,93 @@ void NativeWindowMac::SetContentSizeConstraints(
 }
 
 void NativeWindowMac::SetResizable(bool resizable) {
+  bool maximizable = IsMaximizable();
   // Change styleMask for frameless causes the window to change size, so we have
   // to explicitly disables that.
   ScopedDisableResize disable_resize;
   if (resizable) {
-    [[window_ standardWindowButton:NSWindowZoomButton] setEnabled:YES];
     [window_ setStyleMask:[window_ styleMask] | NSResizableWindowMask];
   } else {
-    [[window_ standardWindowButton:NSWindowZoomButton] setEnabled:NO];
     [window_ setStyleMask:[window_ styleMask] & (~NSResizableWindowMask)];
+  }
+  if (!maximizable) {
+    SetMaximizable(false);
   }
 }
 
 bool NativeWindowMac::IsResizable() {
   return [window_ styleMask] & NSResizableWindowMask;
+}
+
+void NativeWindowMac::SetMovable(bool movable) {
+  [window_ setMovable:movable];
+}
+
+bool NativeWindowMac::IsMovable() {
+  return [window_ isMovable];
+}
+
+void NativeWindowMac::SetMinimizable(bool minimizable) {
+  bool maximizable = IsMaximizable();
+  if (minimizable) {
+    [window_ setStyleMask:[window_ styleMask] | NSMiniaturizableWindowMask];
+  } else {
+    [window_ setStyleMask:[window_ styleMask] & (~NSMiniaturizableWindowMask)];
+  }
+  // If fullscreen has not been disabled via `fullscreenable: false` (i.e. when
+  // collectionBehavior has NSWindowCollectionBehaviorFullScreenPrimary mask),
+  // zoom button is reset to it's default (enabled) state when window's
+  // styleMask has been changed. So if the button was disabled, we have to
+  // disable it again. I think it's a bug in Cocoa.
+  if (!maximizable) {
+    SetMaximizable(false);
+  }
+}
+
+bool NativeWindowMac::IsMinimizable() {
+  return [window_ styleMask] & NSMiniaturizableWindowMask;
+}
+
+void NativeWindowMac::SetMaximizable(bool maximizable) {
+  [[window_ standardWindowButton:NSWindowZoomButton] setEnabled:maximizable];
+}
+
+bool NativeWindowMac::IsMaximizable() {
+  return [[window_ standardWindowButton:NSWindowZoomButton] isEnabled];
+}
+
+void NativeWindowMac::SetFullscreenable(bool fullscreenable) {
+  bool maximizable = IsMaximizable();
+  NSUInteger collectionBehavior = [window_ collectionBehavior];
+  if (fullscreenable) {
+    collectionBehavior |= NSWindowCollectionBehaviorFullScreenPrimary;
+  } else {
+    collectionBehavior &= (~NSWindowCollectionBehaviorFullScreenPrimary);
+  }
+  [window_ setCollectionBehavior:collectionBehavior];
+  if (!maximizable) {
+    SetMaximizable(false);
+  }
+}
+
+bool NativeWindowMac::IsFullscreenable() {
+  return [window_ collectionBehavior] & NSWindowCollectionBehaviorFullScreenPrimary;
+}
+
+void NativeWindowMac::SetClosable(bool closable) {
+  bool maximizable = IsMaximizable();
+  if (closable) {
+    [window_ setStyleMask:[window_ styleMask] | NSClosableWindowMask];
+  } else {
+    [window_ setStyleMask:[window_ styleMask] & (~NSClosableWindowMask)];
+  }
+  if (!maximizable) {
+    SetMaximizable(false);
+  }
+}
+
+bool NativeWindowMac::IsClosable() {
+  return [window_ styleMask] & NSClosableWindowMask;
 }
 
 void NativeWindowMac::SetAlwaysOnTop(bool top) {

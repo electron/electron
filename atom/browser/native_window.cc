@@ -120,6 +120,18 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
   if (options.Get(options::kResizable, &resizable)) {
     SetResizable(resizable);
   }
+  bool minimizable;
+  if (options.Get(options::kMinimizable, &minimizable)) {
+    SetMinimizable(minimizable);
+  }
+  bool closable;
+  if (options.Get(options::kClosable, &closable)) {
+    SetClosable(closable);
+  }
+  bool maximizable;
+  if (options.Get(options::kMaximizable, &maximizable)) {
+    SetMaximizable(maximizable);
+  }
 #endif
   bool top;
   if (options.Get(options::kAlwaysOnTop, &top) && top) {

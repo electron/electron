@@ -48,6 +48,16 @@ class NativeWindowMac : public NativeWindow {
       const extensions::SizeConstraints& size_constraints) override;
   void SetResizable(bool resizable) override;
   bool IsResizable() override;
+  void SetMovable(bool movable) override;
+  bool IsMovable() override;
+  void SetMinimizable(bool minimizable) override;
+  bool IsMinimizable() override;
+  void SetMaximizable(bool maximizable) override;
+  bool IsMaximizable() override;
+  void SetFullscreenable(bool fullscreenable) override;
+  bool IsFullscreenable() override;
+  void SetClosable(bool closable) override;
+  bool IsClosable() override;
   void SetAlwaysOnTop(bool top) override;
   bool IsAlwaysOnTop() override;
   void Center() override;

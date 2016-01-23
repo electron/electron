@@ -47,13 +47,22 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
   * `maxWidth` Integer - Window's maximum width. Default is no limit.
   * `maxHeight` Integer - Window's maximum height. Default is no limit.
   * `resizable` Boolean - Whether window is resizable. Default is `true`.
-  * `movable` Boolean - Whether window is movable. This is only implemented
-    on OS X. Default is `true`.
+  * `movable` Boolean - Whether window is movable. This is not implemented
+    on Linux. Default is `true`.
+  * `minimizable` Boolean - Whether window is minimizable. This is not
+    implemented on Linux. Default is `true`.
+  * `maximizable` Boolean - Whether window is maximizable. This is not
+    implemented on Linux. Default is `true`.
+  * `closable` Boolean - Whether window is closable. This is not implemented
+    on Linux. Default is `true`.
   * `alwaysOnTop` Boolean - Whether the window should always stay on top of
     other windows. Default is `false`.
   * `fullscreen` Boolean - Whether the window should show in fullscreen. When
-    set to `false` the fullscreen button will be hidden or disabled on OS X.
-    Default is `false`.
+    explicity set to `false` the fullscreen button will be hidden or disabled
+    on OS X, or the maximize button will be disabled on Windows. Default is
+    `false`.
+  * `fullscreenable` Boolean - Whether the maximize/zoom button on OS X should
+    toggle full screen mode or maximize window. Default is `true`.
   * `skipTaskbar` Boolean - Whether to show the window in taskbar. Default is
     `false`.
   * `kiosk` Boolean - The kiosk mode. Default is `false`.
@@ -528,6 +537,64 @@ Sets whether the window can be manually resized by user.
 ### `win.isResizable()`
 
 Returns whether the window can be manually resized by user.
+
+### `win.setMovable(movable)` _OS X_ _Windows_
+
+* `movable` Boolean
+
+Sets whether the window can be moved by user. On Linux does nothing.
+
+### `win.isMovable()` _OS X_ _Windows_
+
+Returns whether the window can be moved by user. On Linux always returns
+`true`.
+
+### `win.setMinimizable(minimizable)` _OS X_ _Windows_
+
+* `minimizable` Boolean
+
+Sets whether the window can be manually minimized by user. On Linux does
+nothing.
+
+### `win.isMinimizable()` _OS X_ _Windows_
+
+Returns whether the window can be manually minimized by user. On Linux always
+returns `true`.
+
+### `win.setMaximizable(maximizable)` _OS X_ _Windows_
+
+* `maximizable` Boolean
+
+Sets whether the window can be manually maximized by user. On Linux does
+nothing.
+
+### `win.isMaximizable()` _OS X_ _Windows_
+
+Returns whether the window can be manually maximized by user. On Linux always
+returns `true`.
+
+### `win.setFullscreenable(fullscreenable)` _OS X_
+
+* `fullscreenable` Boolean
+
+Sets whether the maximize/zoom window button toggles fullscreen mode or
+maximizes the window. On Windows and Linux does nothing.
+
+### `win.isFullscreenable()` _OS X_
+
+Returns whether the maximize/zoom window button toggles fullscreen mode or
+maximizes the window. On Windows and Linux always returns `true`.
+
+### `win.setClosable(closable)` _OS X_ _Windows_
+
+* `closable` Boolean
+
+Sets whether the window can be manually closed by user. On Linux does nothing.
+
+### `win.isClosable()` _OS X_ _Windows_
+
+Returns whether the window can be manually closed by user. On Linux always
+returns `true`.
 
 ### `win.setAlwaysOnTop(flag)`
 
