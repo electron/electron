@@ -18,6 +18,7 @@
 #include "atom/common/native_mate_converters/net_converter.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
+#include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/node_includes.h"
 #include "atom/common/options_switches.h"
 #include "base/command_line.h"
@@ -34,6 +35,7 @@
 #include "native_mate/object_template_builder.h"
 #include "net/ssl/ssl_cert_request_info.h"
 #include "ui/base/l10n/l10n_util.h"
+#include "ui/gfx/image/image.h"
 
 #if defined(OS_WIN)
 #include "base/strings/utf_string_conversions.h"
@@ -448,6 +450,7 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   dict.SetMethod("dockHide", base::Bind(&Browser::DockHide, browser));
   dict.SetMethod("dockShow", base::Bind(&Browser::DockShow, browser));
   dict.SetMethod("dockSetMenu", &DockSetMenu);
+  dict.SetMethod("dockSetIcon", base::Bind(&Browser::DockSetIcon, browser));
 #endif
 }
 

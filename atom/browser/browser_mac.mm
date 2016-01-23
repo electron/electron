@@ -102,4 +102,9 @@ void Browser::DockSetMenu(ui::MenuModel* model) {
   [delegate setApplicationDockMenu:model];
 }
 
+void Browser::DockSetIcon(const gfx::Image& image) {
+  [[NSApplication sharedApplication]
+      setApplicationIconImage:image.AsNSImage()];
+}
+
 }  // namespace atom
