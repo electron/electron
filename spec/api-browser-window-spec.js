@@ -595,5 +595,21 @@ describe('browser-window module', function() {
         assert.equal(w.isResizable(), true);
       });
     });
+
+    describe('hasShadow state', function() {
+      it('can be changed with hasShadow option', function() {
+        w.destroy();
+        w = new BrowserWindow({show: false, hasShadow: false});
+        assert.equal(w.hasShadow(), false);
+      });
+
+      it('can be changed with setHasShadow method', function() {
+        assert.equal(w.hasShadow(), true);
+        w.setHasShadow(false);
+        assert.equal(w.hasShadow(), false);
+        w.setHasShadow(true);
+        assert.equal(w.hasShadow(), true);
+      });
+    });
   });
 });
