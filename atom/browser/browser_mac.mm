@@ -48,8 +48,8 @@ int Browser::DockBounce(BounceType type) {
       requestUserAttention:(NSRequestUserAttentionType)type];
 }
 
-void Browser::DockCancelBounce(int rid) {
-  [[AtomApplication sharedApplication] cancelUserAttentionRequest:rid];
+void Browser::DockCancelBounce(int request_id) {
+  [[AtomApplication sharedApplication] cancelUserAttentionRequest:request_id];
 }
 
 void Browser::DockSetBadgeText(const std::string& label) {
