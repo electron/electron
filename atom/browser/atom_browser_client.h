@@ -81,6 +81,8 @@ class AtomBrowserClient : public brightray::BrowserClient,
   // brightray::BrowserClient:
   brightray::BrowserMainParts* OverrideCreateBrowserMainParts(
       const content::MainFunctionParams&) override;
+  void WebNotificationAllowed(int render_process_id,
+                              const base::Closure& callback) override;
 
   // content::RenderProcessHostObserver:
   void RenderProcessHostDestroyed(content::RenderProcessHost* host) override;

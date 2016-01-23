@@ -14,6 +14,7 @@
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/native_window.h"
+#include "atom/browser/web_contents_permission_helper.h"
 #include "atom/browser/web_contents_preferences.h"
 #include "atom/browser/web_view_guest_delegate.h"
 #include "atom/common/api/api_messages.h"
@@ -262,6 +263,9 @@ WebContents::WebContents(v8::Isolate* isolate,
   // Save the preferences in C++.
   new WebContentsPreferences(web_contents, options);
 
+  // Initialze permission helper.
+  new WebContentsPermissionHelper(web_contents, this);
+
   web_contents->SetUserAgentOverride(GetBrowserContext()->GetUserAgent());
 
   if (is_guest) {
@@ -442,6 +446,15 @@ void WebContents::FindReply(content::WebContents* web_contents,
     result.Set("finalUpdate", final_update);
     Emit("found-in-page", result);
   }
+}
+
+void WebContents::RequestMediaAccessPermission(
+    content::WebContents* web_contents,
+    const content::MediaStreamRequest& request,
+    const content::MediaResponseCallback& callback) {
+  auto permission_helper =
+      WebContentsPermissionHelper::FromWebContents(web_contents);
+  permission_helper->RequestMediaAccessPermission(request, callback);
 }
 
 void WebContents::BeforeUnloadFired(const base::TimeTicks& proceed_time) {

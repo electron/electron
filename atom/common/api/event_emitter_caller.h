@@ -7,6 +7,7 @@
 
 #include <vector>
 
+#include "atom/common/native_mate_converters/callback.h"
 #include "native_mate/converter.h"
 
 namespace mate {

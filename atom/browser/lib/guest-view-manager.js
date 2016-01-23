@@ -6,10 +6,12 @@ var slice = [].slice;
 // Doesn't exist in early initialization.
 var webViewManager = null;
 
-var supportedWebViewEvents = ['load-commit', 'did-finish-load', 'did-fail-load', 'did-frame-finish-load', 'did-start-loading', 'did-stop-loading', 'did-get-response-details', 'did-get-redirect-request', 'dom-ready', 'console-message', 'devtools-opened', 'devtools-closed', 'devtools-focused', 'new-window', 'will-navigate', 'did-navigate', 'did-navigate-in-page', 'close', 'crashed', 'gpu-crashed', 'plugin-crashed', 'destroyed', 'page-title-updated', 'page-favicon-updated', 'enter-html-full-screen', 'leave-html-full-screen', 'media-started-playing', 'media-paused', 'found-in-page', 'did-change-theme-color'];
+var supportedWebViewEvents = ['load-commit', 'did-finish-load', 'did-fail-load', 'did-frame-finish-load', 'did-start-loading', 'did-stop-loading', 'did-get-response-details', 'did-get-redirect-request', 'dom-ready', 'console-message', 'devtools-opened', 'devtools-closed', 'devtools-focused', 'new-window', 'will-navigate', 'did-navigate', 'did-navigate-in-page', 'close', 'crashed', 'gpu-crashed', 'plugin-crashed', 'destroyed', 'page-title-updated', 'page-favicon-updated', 'enter-html-full-screen', 'leave-html-full-screen', 'media-started-playing', 'media-paused', 'found-in-page', 'did-change-theme-color', 'permission-request'];
 
 var nextInstanceId = 0;
+var permissionRequests;
 var guestInstances = {};
+var guestPermissionRequestsMap = {};
 var embedderElementsMap = {};
 var reverseEmbedderElementsMap = {};
 
@@ -110,6 +112,13 @@ var createGuest = function(embedder, params) {
   fn = function(event) {
     return guest.on(event, function() {
       var args = 2 <= arguments.length ? slice.call(arguments, 1) : [];
+      if (event === 'permission-request') {
+        if (!guestPermissionRequestsMap[guest.viewInstanceId])
+          guestPermissionRequestsMap[guest.viewInstanceId] = {};
+        var permission = args[0];
+        guestPermissionRequestsMap[guest.viewInstanceId][permission] = args[1];
+        args.pop();
+      }
       return embedder.send.apply(embedder, ["ATOM_SHELL_GUEST_VIEW_INTERNAL_DISPATCH_EVENT-" + guest.viewInstanceId, event].concat(slice.call(args)));
     });
   };
@@ -157,7 +166,8 @@ var attachGuest = function(embedder, elementInstanceId, guestInstanceId, params)
     nodeIntegration: (ref1 = params.nodeintegration) != null ? ref1 : false,
     plugins: params.plugins,
     webSecurity: !params.disablewebsecurity,
-    blinkFeatures: params.blinkfeatures
+    blinkFeatures: params.blinkfeatures,
+    webNotification: !params.disablewebnotification,
   };
   if (params.preload) {
     webPreferences.preloadURL = params.preload;
@@ -174,6 +184,7 @@ var destroyGuest = function(embedder, id) {
   webViewManager.removeGuest(embedder, id);
   guestInstances[id].guest.destroy();
   delete guestInstances[id];
+  delete permissionRequests[id];
   key = reverseEmbedderElementsMap[id];
   if (key != null) {
     delete reverseEmbedderElementsMap[id];
@@ -191,6 +202,13 @@ ipcMain.on('ATOM_SHELL_GUEST_VIEW_MANAGER_ATTACH_GUEST', function(event, element
 
 ipcMain.on('ATOM_SHELL_GUEST_VIEW_MANAGER_DESTROY_GUEST', function(event, id) {
   return destroyGuest(event.sender, id);
+});
+
+ipcMain.on('ATOM_SHELL_GUEST_VIEW_MANAGER_SET_PERMISSION_RESPONSE', function(event, viewInstanceId, permission, allowed) {
+  permissionRequests = guestPermissionRequestsMap[viewInstanceId];
+  if (permissionRequests && permissionRequests[permission] !== null) {
+    permissionRequests[permission].apply(null, [allowed]);
+  }
 });
 
 ipcMain.on('ATOM_SHELL_GUEST_VIEW_MANAGER_SET_SIZE', function(event, id, params) {
