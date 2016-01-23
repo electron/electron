@@ -8,6 +8,7 @@ const NavigationController = require('electron').NavigationController;
 const Menu = require('electron').Menu;
 
 const binding = process.atomBinding('web_contents');
+const debuggerBinding = process.atomBinding('debugger');
 
 let  slice = [].slice;
 let nextId = 0;
@@ -69,9 +70,6 @@ let wrapWebContents = function(webContents) {
   // webContents is an EventEmitter.
   var controller, method, name, ref1;
   webContents.__proto__ = EventEmitter.prototype;
-
-  // webContents.debugger is an EventEmitter.
-  webContents.debugger.__proto__ = EventEmitter.prototype;
 
   // Every remote callback from renderer process would add a listenter to the
   // render-view-deleted event, so ignore the listenters warning.
@@ -219,7 +217,14 @@ let wrapWebContents = function(webContents) {
   };
 };
 
+// Wrapper for native class.
+let wrapDebugger = function(webContentsDebugger) {
+  // debugger is an EventEmitter.
+  webContentsDebugger.__proto__ = EventEmitter.prototype;
+};
+
 binding._setWrapWebContents(wrapWebContents);
+debuggerBinding._setWrapDebugger(wrapDebugger);
 
 module.exports.create = function(options) {
   if (options == null) {

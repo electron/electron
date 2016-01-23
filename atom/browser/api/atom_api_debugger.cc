@@ -6,12 +6,15 @@
 
 #include <string>
 
+#include "atom/browser/atom_browser_main_parts.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/value_converter.h"
+#include "atom/common/node_includes.h"
 #include "base/json/json_reader.h"
 #include "base/json/json_writer.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/web_contents.h"
+#include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 
 using content::DevToolsAgentHost;
@@ -19,6 +22,14 @@ using content::DevToolsAgentHost;
 namespace atom {
 
 namespace api {
+
+namespace {
+
+// The wrapDebugger funtion which is implemented in JavaScript.
+using WrapDebuggerCallback = base::Callback<void(v8::Local<v8::Value>)>;
+WrapDebuggerCallback g_wrap_debugger;
+
+}  // namespace
 
 Debugger::Debugger(content::WebContents* web_contents)
     : web_contents_(web_contents),
@@ -139,7 +150,9 @@ void Debugger::SendCommand(mate::Arguments* args) {
 mate::Handle<Debugger> Debugger::Create(
     v8::Isolate* isolate,
     content::WebContents* web_contents) {
-  return mate::CreateHandle(isolate, new Debugger(web_contents));
+  auto handle = mate::CreateHandle(isolate, new Debugger(web_contents));
+  g_wrap_debugger.Run(handle.ToV8());
+  return handle;
 }
 
 // static
@@ -152,6 +165,31 @@ void Debugger::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("sendCommand", &Debugger::SendCommand);
 }
 
+void ClearWrapDebugger() {
+  g_wrap_debugger.Reset();
+}
+
+void SetWrapDebugger(const WrapDebuggerCallback& callback) {
+  g_wrap_debugger = callback;
+
+  // Cleanup the wrapper on exit.
+  atom::AtomBrowserMainParts::Get()->RegisterDestructionCallback(
+      base::Bind(ClearWrapDebugger));
+}
+
 }  // namespace api
 
 }  // namespace atom
+
+namespace {
+
+void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
+                v8::Local<v8::Context> context, void* priv) {
+  v8::Isolate* isolate = context->GetIsolate();
+  mate::Dictionary dict(isolate, exports);
+  dict.SetMethod("_setWrapDebugger", &atom::api::SetWrapDebugger);
+}
+
+}  // namespace
+
+NODE_MODULE_CONTEXT_AWARE_BUILTIN(atom_browser_debugger, Initialize);
