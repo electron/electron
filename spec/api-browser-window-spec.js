@@ -194,19 +194,6 @@ describe('browser-window module', function() {
       return assert.equal(w.id, BrowserWindow.fromId(w.id).id);
     });
   });
-  describe('BrowserWindow.setResizable(resizable)', function() {
-    return it('does not change window size for frameless window', function() {
-      var s;
-      w.destroy();
-      w = new BrowserWindow({
-        show: true,
-        frame: false
-      });
-      s = w.getSize();
-      w.setResizable(!w.isResizable());
-      return assert.deepEqual(s, w.getSize());
-    });
-  });
   describe('"useContentSize" option', function() {
     it('make window created with content size when used', function() {
       var contentSize;
@@ -578,10 +565,6 @@ describe('browser-window module', function() {
     });
 
     describe('closable state', function() {
-      // Only implemented on OS X.
-      if (process.platform != 'darwin')
-        return;
-
       it('can be changed with closable option', function() {
         w.destroy();
         w = new BrowserWindow({show: false, closable: false});
@@ -597,5 +580,20 @@ describe('browser-window module', function() {
       });
     });
 
+    describe('resizable state', function() {
+      it('can be changed with resizable option', function() {
+        w.destroy();
+        w = new BrowserWindow({show: false, resizable: false});
+        assert.equal(w.isResizable(), false);
+      });
+
+      it('can be changed with setResizable method', function() {
+        assert.equal(w.isResizable(), true);
+        w.setResizable(false);
+        assert.equal(w.isResizable(), false);
+        w.setResizable(true);
+        assert.equal(w.isResizable(), true);
+      });
+    });
   });
 });
