@@ -502,6 +502,14 @@ void Window::SetBackgroundColor(const std::string& color_name) {
   window_->SetBackgroundColor(color_name);
 }
 
+void Window::SetHasShadow(bool has_shadow) {
+  window_->SetHasShadow(has_shadow);
+}
+
+bool Window::HasShadow() {
+  return window_->HasShadow();
+}
+
 void Window::FocusOnWebView() {
   window_->FocusOnWebView();
 }
@@ -721,6 +729,8 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setKiosk", &Window::SetKiosk)
       .SetMethod("isKiosk", &Window::IsKiosk)
       .SetMethod("setBackgroundColor", &Window::SetBackgroundColor)
+      .SetMethod("setHasShadow", &Window::SetHasShadow)
+      .SetMethod("hasShadow", &Window::HasShadow)
       .SetMethod("setRepresentedFilename", &Window::SetRepresentedFilename)
       .SetMethod("getRepresentedFilename", &Window::GetRepresentedFilename)
       .SetMethod("setDocumentEdited", &Window::SetDocumentEdited)

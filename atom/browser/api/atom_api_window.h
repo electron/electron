@@ -128,6 +128,8 @@ class Window : public mate::TrackableObject<Window>,
   void SetKiosk(bool kiosk);
   bool IsKiosk();
   void SetBackgroundColor(const std::string& color_name);
+  void SetHasShadow(bool has_shadow);
+  bool HasShadow();
   void FocusOnWebView();
   void BlurWebView();
   bool IsWebViewFocused();
