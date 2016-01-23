@@ -131,8 +131,8 @@ class NativeWindow : public base::SupportsUserData,
   virtual bool IsMinimizable() = 0;
   virtual void SetMaximizable(bool maximizable) = 0;
   virtual bool IsMaximizable() = 0;
-  virtual void SetFullscreenable(bool fullscreenable) = 0;
-  virtual bool IsFullscreenable() = 0;
+  virtual void SetFullScreenable(bool fullscreenable) = 0;
+  virtual bool IsFullScreenable() = 0;
   virtual void SetClosable(bool closable) = 0;
   virtual bool IsClosable() = 0;
   virtual void SetAlwaysOnTop(bool top) = 0;

@@ -495,10 +495,10 @@ bool NativeWindowViews::IsMaximizable() {
 #endif
 }
 
-void NativeWindowViews::SetFullscreenable(bool maximizable) {
+void NativeWindowViews::SetFullScreenable(bool maximizable) {
 }
 
-bool NativeWindowViews::IsFullscreenable() {
+bool NativeWindowViews::IsFullScreenable() {
   return true;
 }
 

@@ -575,14 +575,14 @@ nothing.
 Returns whether the window can be manually maximized by user. On Linux always
 returns `true`.
 
-### `win.setFullscreenable(fullscreenable)` _OS X_
+### `win.setFullScreenable(fullscreenable)` _OS X_
 
 * `fullscreenable` Boolean
 
 Sets whether the maximize/zoom window button toggles fullscreen mode or
 maximizes the window. On Windows and Linux does nothing.
 
-### `win.isFullscreenable()` _OS X_
+### `win.isFullScreenable()` _OS X_
 
 Returns whether the maximize/zoom window button toggles fullscreen mode or
 maximizes the window. On Windows and Linux always returns `true`.

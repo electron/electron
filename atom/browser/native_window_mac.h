@@ -54,8 +54,8 @@ class NativeWindowMac : public NativeWindow {
   bool IsMinimizable() override;
   void SetMaximizable(bool maximizable) override;
   bool IsMaximizable() override;
-  void SetFullscreenable(bool fullscreenable) override;
-  bool IsFullscreenable() override;
+  void SetFullScreenable(bool fullscreenable) override;
+  bool IsFullScreenable() override;
   void SetClosable(bool closable) override;
   bool IsClosable() override;
   void SetAlwaysOnTop(bool top) override;
