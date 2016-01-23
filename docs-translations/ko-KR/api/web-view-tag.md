@@ -151,6 +151,16 @@ API를 사용할 수 있습니다. 이를 지정하면 내부에서 로우레벨
 
 "on"으로 지정하면 페이지에서 새로운 창을 열 수 있도록 허용합니다.
 
+### `blinkfeatures`
+
+```html
+<webview src="https://www.github.com/" blinkfeatures="PreciseMemoryInfo, CSSVariables"></webview>
+```
+
+활성화할 blink 기능을 지정한 `,`로 구분된 문자열의 리스트입니다. 지원하는 기능 문자열의
+전체 목록은 [setFeatureEnabledFromString][blink-feature-string] 함수에서 찾을 수
+있습니다.
+
 ## Methods
 
 `webview` 태그는 다음과 같은 메서드를 가지고 있습니다:
@@ -164,6 +174,17 @@ webview.addEventListener("dom-ready", function() {
   webview.openDevTools();
 });
 ```
+
+### `<webview>.loadURL(url[, options])`
+
+* `url` URL
+* `options` Object (optional), 속성들:
+  * `httpReferrer` String - HTTP 레퍼러 url.
+  * `userAgent` String - 요청을 시작한 유저 에이전트.
+  * `extraHeaders` String - "\n"로 구분된 Extra 헤더들.
+
+Webview에 웹 페이지 `url`을 로드합니다. `url`은 `http://`, `file://`과 같은
+프로토콜 접두사를 가지고 있어야 합니다.
 
 ### `<webview>.getURL()`
 
@@ -701,3 +722,5 @@ WebContents가 파괴될 때 발생하는 이벤트입니다.
 ### Event: 'devtools-focused'
 
 개발자 도구가 포커스되거나 열렸을 때 발생하는 이벤트입니다.
+
+[blink-feature-string]: https://code.google.com/p/chromium/codesearch#chromium/src/out/Debug/gen/blink/platform/RuntimeEnabledFeatures.cpp&sq=package:chromium&type=cs&l=527

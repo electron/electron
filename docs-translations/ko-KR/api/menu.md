@@ -166,7 +166,7 @@ if (process.platform == 'darwin') {
       },
       {
         label: 'Hide Others',
-        accelerator: 'Command+Shift+H',
+        accelerator: 'Command+Alt+H',
         role: 'hideothers'
       },
       {
@@ -235,14 +235,18 @@ Linux에선 각 창의 상단에 표시됩니다.
 또한 `template`에는 다른 속성도 추가할 수 있으며 메뉴가 만들어질 때 해당 메뉴 아이템의
 프로퍼티로 변환됩니다.
 
-### `Menu.popup([browserWindow, x, y])`
+### `Menu.popup([browserWindow, x, y, positioningItem])`
 
-* `browserWindow` BrowserWindow (optional)
-* `x` Number (optional)
-* `y` Number (만약 `x`를 지정했을 경우 반드시 `y`도 지정해야 합니다)
+* `browserWindow` BrowserWindow (optional) - 기본값은 `null`입니다.
+* `x` Number (optional) - 기본값은 -1입니다.
+* `y` Number (만약 `x`를 지정한 경우 **필수 항목**) - 기본값은 -1입니다.
+* `positioningItem` Number (optional) _OS X_ - 메뉴 팝업 시 마우스 커서에 바로
+  위치시킬 메뉴 아이템의 인덱스. 기본값은 -1입니다.
 
 메뉴를 `browserWindow` 내부 팝업으로 표시합니다. 옵션으로 메뉴를 표시할 `(x,y)`
 좌표를 지정할 수 있습니다. 따로 좌표를 지정하지 않은 경우 마우스 커서 위치에 표시됩니다.
+`positioningItem` 속성은 메뉴 팝업 시 마우스 커서에 바로 위치시킬 메뉴 아이템의
+인덱스입니다. (OS X에서만 지원합니다)
 
 ### `Menu.append(menuItem)`
 

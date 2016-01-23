@@ -286,11 +286,11 @@ Returns:
 
 * `url` URL
 * `options` Object (optional), 속성들:
-  * `httpReferrer` String - HTTP Referrer url.
+  * `httpReferrer` String - HTTP 레퍼러 url.
   * `userAgent` String - 요청을 시작한 유저 에이전트.
   * `extraHeaders` String - "\n"로 구분된 Extra 헤더들.
 
-윈도우에 웹 페이지 `url`을 로드합니다. `url`은 `http://` or `file://`과 같은
+윈도우에 웹 페이지 `url`을 로드합니다. `url`은 `http://`, `file://`과 같은
 프로토콜 접두사를 가지고 있어야 합니다. 만약 반드시 http 캐시를 사용하지 않고 로드해야
 하는 경우 `pragma` 헤더를 사용할 수 있습니다.
 
