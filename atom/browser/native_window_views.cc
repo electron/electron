@@ -158,7 +158,7 @@ NativeWindowViews::NativeWindowViews(
   // The given window is most likely not rectangular since it uses
   // transparency and has no standard frame, don't show a shadow for it.
   if (transparent() && !has_frame())
-    params.shadow_type = Widget::InitParams::SHADOW_TYPE_NONE;
+    params.shadow_type = views::Widget::InitParams::SHADOW_TYPE_NONE;
 
 #if defined(OS_WIN)
   params.native_widget =
@@ -441,7 +441,11 @@ void NativeWindowViews::SetResizable(bool resizable) {
 }
 
 bool NativeWindowViews::IsResizable() {
+#if defined(OS_WIN)
+  return ::GetWindowLong(GetAcceleratedWidget(), GWL_STYLE) & WS_THICKFRAME;
+#else
   return CanResize();
+#endif
 }
 
 void NativeWindowViews::SetMovable(bool movable) {
@@ -598,7 +602,9 @@ void NativeWindowViews::SetBackgroundColor(const std::string& color_name) {
 }
 
 void NativeWindowViews::SetHasShadow(bool has_shadow) {
-  wm::SetShadowType(GetNativeWindow(), wm::SHADOW_TYPE_NONE);
+  wm::SetShadowType(
+      GetNativeWindow(),
+      has_shadow ? wm::SHADOW_TYPE_RECTANGULAR : wm::SHADOW_TYPE_NONE);
 }
 
 bool NativeWindowViews::HasShadow() {

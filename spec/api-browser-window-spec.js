@@ -597,13 +597,19 @@ describe('browser-window module', function() {
     });
 
     describe('hasShadow state', function() {
+      // On Window there is no shadow by default and it can not be changed
+      // dynamically.
       it('can be changed with hasShadow option', function() {
         w.destroy();
-        w = new BrowserWindow({show: false, hasShadow: false});
-        assert.equal(w.hasShadow(), false);
+        let hasShadow = process.platform == 'darwin' ? false : true;
+        w = new BrowserWindow({show: false, hasShadow: hasShadow});
+        assert.equal(w.hasShadow(), hasShadow);
       });
 
       it('can be changed with setHasShadow method', function() {
+        if (process.platform != 'darwin')
+          return;
+
         assert.equal(w.hasShadow(), true);
         w.setHasShadow(false);
         assert.equal(w.hasShadow(), false);
