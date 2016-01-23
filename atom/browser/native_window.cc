@@ -125,6 +125,10 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
   if (options.Get(options::kMovable, &movable) && movable) {
     SetMovable(movable);
   }
+  bool has_shadow;
+  if (options.Get(options::kHasShadow, &has_shadow)) {
+    SetHasShadow(has_shadow);
+  }
   bool top;
   if (options.Get(options::kAlwaysOnTop, &top) && top) {
     SetAlwaysOnTop(true);
@@ -553,13 +557,6 @@ void NativeWindow::OnCapturePageDone(const CapturePageCallback& callback,
                                      const SkBitmap& bitmap,
                                      content::ReadbackResponse response) {
   callback.Run(bitmap);
-}
-
-void NativeWindow::SetHasShadow(bool has_shadow) {
-}
-
-bool NativeWindow::HasShadow() {
-  return true;
 }
 
 SkColor NativeWindow::ParseHexColor(const std::string& name) {

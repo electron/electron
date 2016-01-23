@@ -155,6 +155,11 @@ NativeWindowViews::NativeWindowViews(
   if (transparent())
     params.opacity = views::Widget::InitParams::TRANSLUCENT_WINDOW;
 
+  // The given window is most likely not rectangular since it uses
+  // transparency and has no standard frame, don't show a shadow for it.
+  if (transparent() && !has_frame())
+    params.shadow_type = Widget::InitParams::SHADOW_TYPE_NONE;
+
 #if defined(OS_WIN)
   params.native_widget =
       new views::DesktopNativeWidgetAura(window_.get());
@@ -258,11 +263,6 @@ NativeWindowViews::NativeWindowViews(
     window_->set_frame_type(views::Widget::FrameType::FRAME_TYPE_FORCE_NATIVE);
     window_->FrameTypeChanged();
   }
-
-  // The given window is most likely not rectangular since it uses
-  // transparency and has no standard frame, don't show a shadow for it.
-  if (transparent() && !has_frame())
-    wm::SetShadowType(GetNativeWindow(), wm::SHADOW_TYPE_NONE);
 
   gfx::Size size = bounds.size();
   if (has_frame() &&
@@ -595,6 +595,14 @@ void NativeWindowViews::SetBackgroundColor(const std::string& color_name) {
   if (previous_brush)
     DeleteObject((HBRUSH)previous_brush);
 #endif
+}
+
+void NativeWindowViews::SetHasShadow(bool has_shadow) {
+  wm::SetShadowType(GetNativeWindow(), wm::SHADOW_TYPE_NONE);
+}
+
+bool NativeWindowViews::HasShadow() {
+  return wm::GetShadowType(GetNativeWindow()) != wm::SHADOW_TYPE_NONE;
 }
 
 void NativeWindowViews::SetMenu(ui::MenuModel* menu_model) {

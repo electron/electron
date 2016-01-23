@@ -449,12 +449,6 @@ NativeWindowMac::NativeWindowMac(
   if (!has_frame())
     [window_ setOpaque:NO];
 
-  bool has_shadow = true;
-  options.Get(options::kHasShadow, &has_shadow);
-  if (!has_shadow) {
-    SetHasShadow(false);
-  }
-
   // We will manage window's lifetime ourselves.
   [window_ setReleasedWhenClosed:NO];
 
