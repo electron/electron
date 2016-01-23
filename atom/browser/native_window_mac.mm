@@ -371,12 +371,9 @@ NativeWindowMac::NativeWindowMac(
 
   bool minimizable = true;
   options.Get(options::kMinimizable, &minimizable);
-  
+
   bool maximizable = true;
   options.Get(options::kMaximizable, &maximizable);
-
-  bool fullscreenable = true;
-  options.Get(options::kFullScreenable, &fullscreenable);
 
   bool closable = true;
   options.Get(options::kClosable, &closable);
@@ -496,17 +493,15 @@ NativeWindowMac::NativeWindowMac(
   options.Get(options::kDisableAutoHideCursor, &disableAutoHideCursor);
   [window_ setDisableAutoHideCursor:disableAutoHideCursor];
 
-  // Disable fullscreen button when 'fullscreen' is specified to false.
+  // Disable fullscreen button when 'fullscreenable' is false or 'fullscreen'
+  // is specified to false.
+  bool fullscreenable = true;
+  options.Get(options::kFullScreenable, &fullscreenable);
   bool fullscreen = false;
-  options.Get(options::kFullscreen, &fullscreen);
-
-  if (fullscreenable) {
-    SetFullScreenable(true);
-  } else if (base::mac::IsOSElCapitanOrLater()) {
-    // On EL Capitan this flag is required to hide fullscreen button.
-    NSUInteger collectionBehavior = [window_ collectionBehavior];
-    collectionBehavior |= NSWindowCollectionBehaviorFullScreenAuxiliary;
-    [window_ setCollectionBehavior:collectionBehavior];
+  if (options.Get(options::kFullscreen, &fullscreen) && !fullscreen)
+    fullscreenable = false;
+  if (!fullscreenable) {
+    SetFullScreenable(false);
   }
 
   // Disable zoom button if window is not resizable
@@ -717,6 +712,8 @@ void NativeWindowMac::SetFullScreenable(bool fullscreenable) {
     collectionBehavior |= NSWindowCollectionBehaviorFullScreenPrimary;
   } else {
     collectionBehavior &= (~NSWindowCollectionBehaviorFullScreenPrimary);
+    // On EL Capitan this flag is required to hide fullscreen button.
+    collectionBehavior |= NSWindowCollectionBehaviorFullScreenAuxiliary;
   }
   [window_ setCollectionBehavior:collectionBehavior];
   if (!maximizable) {
