@@ -77,7 +77,7 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     like `#66CD00` or `#FFF`. Default is `#000` (black) for Linux and Windows,
     `#FFF` for Mac (or clear if transparent).
   * `hasShadow` Boolean - Whether window should have a shadow. This is only
-    implemented on OS X.
+    implemented on OS X. Default is `true`.
   * `darkTheme` Boolean - Forces using dark theme for the window, only works on
     some GTK+3 desktop environments. Default is `false`.
   * `transparent` Boolean - Makes the window [transparent](frameless-window.md).
