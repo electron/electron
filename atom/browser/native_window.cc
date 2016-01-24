@@ -560,11 +560,11 @@ void NativeWindow::OnCapturePageDone(const CapturePageCallback& callback,
 }
 
 SkColor NativeWindow::ParseHexColor(const std::string& name) {
-  SkColor result = 0xFF000000;
-  unsigned value = 0;
   auto color = name.substr(1);
   unsigned length = color.size();
-  if (length != 3 && length != 6)
+  SkColor result = (length != 8 ? 0xFF000000 : 0x00000000);
+  unsigned value = 0;
+  if (length != 3 && length != 6 && length != 8)
     return result;
   for (unsigned i = 0; i < length; ++i) {
     if (!base::IsHexDigit(color[i]))
@@ -572,7 +572,7 @@ SkColor NativeWindow::ParseHexColor(const std::string& name) {
     value <<= 4;
     value |= (color[i] < 'A' ? color[i] - '0' : (color[i] - 'A' + 10) & 0xF);
   }
-  if (length == 6) {
+  if (length == 6 || length == 8) {
     result |= value;
     return result;
   }

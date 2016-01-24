@@ -758,7 +758,7 @@ void NativeWindowMac::SetBackgroundColor(const std::string& color_name) {
   NSColor *color = [NSColor colorWithCalibratedRed:SkColorGetR(background_color)
     green:SkColorGetG(background_color)
     blue:SkColorGetB(background_color)
-    alpha:1.0];
+    alpha:SkColorGetA(background_color)/255.0f];
   [window_ setBackgroundColor:color];
 }
 
