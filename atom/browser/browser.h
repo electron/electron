@@ -27,6 +27,10 @@ namespace ui {
 class MenuModel;
 }
 
+namespace gfx {
+class Image;
+}
+
 namespace atom {
 
 class LoginHandler;
@@ -91,6 +95,9 @@ class Browser : public WindowListObserver {
 
   // Set docks' menu.
   void DockSetMenu(ui::MenuModel* model);
+
+  // Set docks' icon.
+  void DockSetIcon(const gfx::Image& image);
 #endif  // defined(OS_MACOSX)
 
 #if defined(OS_WIN)
