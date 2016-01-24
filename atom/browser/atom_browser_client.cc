@@ -281,6 +281,20 @@ brightray::BrowserMainParts* AtomBrowserClient::OverrideCreateBrowserMainParts(
   return new AtomBrowserMainParts;
 }
 
+bool AtomBrowserClient::WebNotificationAllowed(int render_process_id) {
+  content::WebContents* web_contents = content::WebContents::FromRenderViewHost(
+      content::RenderViewHost::FromID(render_process_id, kDefaultRoutingID));
+  if (!web_contents)
+    return true;
+  auto pref = WebContentsPreferences::FromWebContents(web_contents);
+  if (!pref)
+    return true;
+  bool b;
+  if (pref->web_preferences()->GetBoolean("webNotification", &b))
+    return b;
+  return true;
+}
+
 void AtomBrowserClient::RenderProcessHostDestroyed(
     content::RenderProcessHost* host) {
   int process_id = host->GetID();
