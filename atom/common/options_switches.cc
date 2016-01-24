@@ -25,7 +25,7 @@ const char kResizable[]      = "resizable";
 const char kMovable[]        = "movable";
 const char kMinimizable[]    = "minimizable";
 const char kMaximizable[]    = "maximizable";
-const char kFullscreenable[] = "fullscreenable";
+const char kFullScreenable[] = "fullscreenable";
 const char kClosable[]       = "closable";
 const char kFullscreen[]     = "fullscreen";
 

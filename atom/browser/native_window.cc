@@ -116,23 +116,19 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
     SetSizeConstraints(size_constraints);
   }
 #if defined(OS_WIN) || defined(USE_X11)
-  bool resizable;
-  if (options.Get(options::kResizable, &resizable)) {
-    SetResizable(resizable);
-  }
-  bool minimizable;
-  if (options.Get(options::kMinimizable, &minimizable)) {
-    SetMinimizable(minimizable);
-  }
   bool closable;
   if (options.Get(options::kClosable, &closable)) {
     SetClosable(closable);
   }
-  bool maximizable;
-  if (options.Get(options::kMaximizable, &maximizable)) {
-    SetMaximizable(maximizable);
-  }
 #endif
+  bool movable;
+  if (options.Get(options::kMovable, &movable)) {
+    SetMovable(movable);
+  }
+  bool has_shadow;
+  if (options.Get(options::kHasShadow, &has_shadow)) {
+    SetHasShadow(has_shadow);
+  }
   bool top;
   if (options.Get(options::kAlwaysOnTop, &top) && top) {
     SetAlwaysOnTop(true);
@@ -561,13 +557,6 @@ void NativeWindow::OnCapturePageDone(const CapturePageCallback& callback,
                                      const SkBitmap& bitmap,
                                      content::ReadbackResponse response) {
   callback.Run(bitmap);
-}
-
-void NativeWindow::SetHasShadow(bool has_shadow) {
-}
-
-bool NativeWindow::HasShadow() {
-  return true;
 }
 
 SkColor NativeWindow::ParseHexColor(const std::string& name) {

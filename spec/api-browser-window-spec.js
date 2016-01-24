@@ -1,3 +1,5 @@
+'use strict';
+
 const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
@@ -192,19 +194,6 @@ describe('browser-window module', function() {
       return assert.equal(w.id, BrowserWindow.fromId(w.id).id);
     });
   });
-  describe('BrowserWindow.setResizable(resizable)', function() {
-    return it('does not change window size for frameless window', function() {
-      var s;
-      w.destroy();
-      w = new BrowserWindow({
-        show: true,
-        frame: false
-      });
-      s = w.getSize();
-      w.setResizable(!w.isResizable());
-      return assert.deepEqual(s, w.getSize());
-    });
-  });
   describe('"useContentSize" option', function() {
     it('make window created with content size when used', function() {
       var contentSize;
@@ -306,6 +295,7 @@ describe('browser-window module', function() {
       return assert.equal(after[1], size.height);
     });
   });
+
   describe('"web-preferences" option', function() {
     afterEach(function() {
       return ipcMain.removeAllListeners('answer');
@@ -489,6 +479,143 @@ describe('browser-window module', function() {
       size = w.getSize();
       assert.equal(size[0], 800);
       return assert.equal(size[1], 600);
+    });
+  });
+
+  describe('window states', function() {
+    // Not implemented on Linux.
+    if (process.platform == 'linux')
+      return;
+
+    describe('movable state', function() {
+      it('can be changed with movable option', function() {
+        w.destroy();
+        w = new BrowserWindow({show: false, movable: false});
+        assert.equal(w.isMovable(), false);
+      });
+
+      it('can be changed with setMovable method', function() {
+        assert.equal(w.isMovable(), true);
+        w.setMovable(false);
+        assert.equal(w.isMovable(), false);
+        w.setMovable(true);
+        assert.equal(w.isMovable(), true);
+      });
+    });
+
+    describe('minimizable state', function() {
+      it('can be changed with minimizable option', function() {
+        w.destroy();
+        w = new BrowserWindow({show: false, minimizable: false});
+        assert.equal(w.isMinimizable(), false);
+      });
+
+      it('can be changed with setMinimizable method', function() {
+        assert.equal(w.isMinimizable(), true);
+        w.setMinimizable(false);
+        assert.equal(w.isMinimizable(), false);
+        w.setMinimizable(true);
+        assert.equal(w.isMinimizable(), true);
+      });
+    });
+
+    describe('maximizable state', function() {
+      it('can be changed with maximizable option', function() {
+        w.destroy();
+        w = new BrowserWindow({show: false, maximizable: false});
+        assert.equal(w.isMaximizable(), false);
+      });
+
+      it('can be changed with setMaximizable method', function() {
+        assert.equal(w.isMaximizable(), true);
+        w.setMaximizable(false);
+        assert.equal(w.isMaximizable(), false);
+        w.setMaximizable(true);
+        assert.equal(w.isMaximizable(), true);
+      });
+
+      it('is not affected when changing other states', function() {
+        w.setMaximizable(false);
+        assert.equal(w.isMaximizable(), false);
+        w.setMinimizable(false);
+        assert.equal(w.isMaximizable(), false);
+        w.setClosable(false);
+        assert.equal(w.isMaximizable(), false);
+      });
+    });
+
+    describe('fullscreenable state', function() {
+      // Only implemented on OS X.
+      if (process.platform != 'darwin')
+        return;
+
+      it('can be changed with fullscreenable option', function() {
+        w.destroy();
+        w = new BrowserWindow({show: false, fullscreenable: false});
+        assert.equal(w.isFullScreenable(), false);
+      });
+
+      it('can be changed with setFullScreenable method', function() {
+        assert.equal(w.isFullScreenable(), true);
+        w.setFullScreenable(false);
+        assert.equal(w.isFullScreenable(), false);
+        w.setFullScreenable(true);
+        assert.equal(w.isFullScreenable(), true);
+      });
+    });
+
+    describe('closable state', function() {
+      it('can be changed with closable option', function() {
+        w.destroy();
+        w = new BrowserWindow({show: false, closable: false});
+        assert.equal(w.isClosable(), false);
+      });
+
+      it('can be changed with setClosable method', function() {
+        assert.equal(w.isClosable(), true);
+        w.setClosable(false);
+        assert.equal(w.isClosable(), false);
+        w.setClosable(true);
+        assert.equal(w.isClosable(), true);
+      });
+    });
+
+    describe('resizable state', function() {
+      it('can be changed with resizable option', function() {
+        w.destroy();
+        w = new BrowserWindow({show: false, resizable: false});
+        assert.equal(w.isResizable(), false);
+      });
+
+      it('can be changed with setResizable method', function() {
+        assert.equal(w.isResizable(), true);
+        w.setResizable(false);
+        assert.equal(w.isResizable(), false);
+        w.setResizable(true);
+        assert.equal(w.isResizable(), true);
+      });
+    });
+
+    describe('hasShadow state', function() {
+      // On Window there is no shadow by default and it can not be changed
+      // dynamically.
+      it('can be changed with hasShadow option', function() {
+        w.destroy();
+        let hasShadow = process.platform == 'darwin' ? false : true;
+        w = new BrowserWindow({show: false, hasShadow: hasShadow});
+        assert.equal(w.hasShadow(), hasShadow);
+      });
+
+      it('can be changed with setHasShadow method', function() {
+        if (process.platform != 'darwin')
+          return;
+
+        assert.equal(w.hasShadow(), true);
+        w.setHasShadow(false);
+        assert.equal(w.hasShadow(), false);
+        w.setHasShadow(true);
+        assert.equal(w.hasShadow(), true);
+      });
     });
   });
 });
