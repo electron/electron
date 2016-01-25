@@ -227,6 +227,14 @@ void Window::OnWindowLeaveFullScreen() {
   Emit("leave-full-screen");
 }
 
+void Window::OnWindowScrollTouchBegin() {
+  Emit("scroll-touch-begin");
+}
+
+void Window::OnWindowScrollTouchEnd() {
+  Emit("scroll-touch-end");
+}
+
 void Window::OnWindowEnterHtmlFullScreen() {
   Emit("enter-html-full-screen");
 }

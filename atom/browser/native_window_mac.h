@@ -126,6 +126,7 @@ class NativeWindowMac : public NativeWindow {
 
   base::scoped_nsobject<AtomNSWindow> window_;
   base::scoped_nsobject<AtomNSWindowDelegate> window_delegate_;
+  base::scoped_nsobject<id> event_monitor_;
 
   // The view that will fill the whole frameless window.
   base::scoped_nsobject<FullSizeContentView> content_view_;
