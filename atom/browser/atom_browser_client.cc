@@ -282,18 +282,19 @@ brightray::BrowserMainParts* AtomBrowserClient::OverrideCreateBrowserMainParts(
   return new AtomBrowserMainParts;
 }
 
-void AtomBrowserClient::WebNotificationAllowed(int render_process_id,
-                                               const base::Closure& callback) {
+void AtomBrowserClient::WebNotificationAllowed(
+    int render_process_id,
+    const base::Callback<void(bool)>& callback) {
   content::WebContents* web_contents = content::WebContents::FromRenderViewHost(
       content::RenderViewHost::FromID(render_process_id, kDefaultRoutingID));
   if (!web_contents) {
-    callback.Run();
+    callback.Run(true);
     return;
   }
   auto permission_helper =
       WebContentsPermissionHelper::FromWebContents(web_contents);
   if (!permission_helper) {
-    callback.Run();
+    callback.Run(true);
     return;
   }
   permission_helper->RequestWebNotificationPermission(callback);

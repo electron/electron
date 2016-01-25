@@ -311,7 +311,6 @@ WebViewImpl.prototype.setupWebViewAttributes = function() {
   this.attributes[webViewConstants.ATTRIBUTE_ALLOWPOPUPS] = new BooleanAttribute(webViewConstants.ATTRIBUTE_ALLOWPOPUPS, this);
   this.attributes[webViewConstants.ATTRIBUTE_PRELOAD] = new PreloadAttribute(this);
   this.attributes[webViewConstants.ATTRIBUTE_BLINKFEATURES] = new BlinkFeaturesAttribute(this);
-  this.attributes[webViewConstants.ATTRIBUTE_DISABLEWEBNOTIFICATION] = new BooleanAttribute(webViewConstants.ATTRIBUTE_DISABLEWEBNOTIFICATION, this);
   autosizeAttributes = [webViewConstants.ATTRIBUTE_MAXHEIGHT, webViewConstants.ATTRIBUTE_MAXWIDTH, webViewConstants.ATTRIBUTE_MINHEIGHT, webViewConstants.ATTRIBUTE_MINWIDTH];
   results = [];
   for (i = 0, len = autosizeAttributes.length; i < len; i++) {

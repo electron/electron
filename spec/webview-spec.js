@@ -624,13 +624,30 @@ describe('<webview> tag', function() {
       return document.body.appendChild(webview);
     });
   });
-  return xdescribe('did-change-theme-color event', function() {
+  xdescribe('did-change-theme-color event', function() {
     return it('emits when theme color changes', function(done) {
       webview.addEventListener('did-change-theme-color', function() {
         return done();
       });
       webview.src = "file://" + fixtures + "/pages/theme-color.html";
       return document.body.appendChild(webview);
+    });
+  });
+  describe('permission-request event', function() {
+    it ('emits when using navigator.getUserMedia api', function(done) {
+      webview.addEventListener('ipc-message', function(e) {
+        assert(e.channel, 'message');
+        assert(e.args, ['PermissionDeniedError']);
+        done();
+      });
+      webview.addEventListener('permission-request', function(e) {
+        if (e.permission === 'media') {
+          e.deny();
+        }
+      });
+      webview.src = "file://" + fixtures + "/pages/permission-request.html";
+      webview.setAttribute('nodeintegration', 'on');
+      document.body.appendChild(webview);
     });
   });
 });

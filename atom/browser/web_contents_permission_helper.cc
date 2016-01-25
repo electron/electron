@@ -28,7 +28,15 @@ const content::MediaStreamDevice* FindDeviceWithId(
 
 void MediaAccessAllowed(
     const content::MediaStreamRequest& request,
-    const content::MediaResponseCallback& callback) {
+    const content::MediaResponseCallback& callback,
+    bool allowed) {
+  if (!allowed) {
+    callback.Run(content::MediaStreamDevices(),
+                 content::MEDIA_DEVICE_PERMISSION_DENIED,
+                 scoped_ptr<content::MediaStreamUI>());
+    return;
+  }
+
   content::MediaStreamDevices devices;
   content::MediaStreamRequestResult result = content::MEDIA_DEVICE_NO_HARDWARE;
 
@@ -83,11 +91,11 @@ void WebContentsPermissionHelper::RequestMediaAccessPermission(
                    base::Unretained(this), permission));
     return;
   }
-  MediaAccessAllowed(request, callback);
+  MediaAccessAllowed(request, callback, true);
 }
 
 void WebContentsPermissionHelper::RequestWebNotificationPermission(
-    const base::Closure& callback) {
+    const base::Callback<void(bool)>& callback) {
   if (api_web_contents_->IsGuest()) {
     const std::string& permission = "webNotification";
     permission_map_[permission] = callback;
@@ -98,15 +106,14 @@ void WebContentsPermissionHelper::RequestWebNotificationPermission(
                    base::Unretained(this), permission));
     return;
   }
-  callback.Run();
+  callback.Run(true);
 }
 
 void WebContentsPermissionHelper::OnPermissionResponse(
     const std::string& permission, bool allowed) {
   auto it = permission_map_.find(permission);
   if (it != permission_map_.end()) {
-    if (allowed)
-      it->second.Run();
+    it->second.Run(allowed);
     permission_map_.erase(permission);
   }
 }

@@ -167,14 +167,6 @@ A list of strings which specifies the blink features to be enabled separated by 
 The full list of supported feature strings can be found in the
 [setFeatureEnabledFromString][blink-feature-string] function.
 
-### `disablewebnotification`
-
-```html
-<webview src="https://www.github.com/" disablewebnotification></webview>
-```
-
-If "on", the guest page will have web notifications disabled.
-
 ## Methods
 
 The `webview` tag has the following methods:

@@ -29,14 +29,15 @@ class WebContentsPermissionHelper
   void RequestMediaAccessPermission(
       const content::MediaStreamRequest& request,
       const content::MediaResponseCallback& callback);
-  void RequestWebNotificationPermission(const base::Closure& callback);
+  void RequestWebNotificationPermission(
+      const base::Callback<void(bool)>& callback);
 
   void OnPermissionResponse(const std::string& permission, bool allowed);
 
  private:
   friend class content::WebContentsUserData<WebContentsPermissionHelper>;
 
-  std::map<std::string, base::Closure> permission_map_;
+  std::map<std::string, base::Callback<void(bool)>> permission_map_;
 
   api::WebContents* api_web_contents_;  // Weak reference
 
