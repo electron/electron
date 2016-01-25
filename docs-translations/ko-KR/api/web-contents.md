@@ -823,3 +823,73 @@ win.webContents.on('did-finish-load', function() {
 
 **참고:** 사용자가 절대로 이 객체를 저장해서는 안 됩니다. 개발자 도구가 닫혔을 때,
 `null`이 반환될 수 있습니다.
+
+### `webContents.debugger`
+
+디버거 API는 [원격 디버깅 프로토콜][rdp]에 대한 대체 수송자 역할을 합니다.
+
+```javascript
+try {
+  win.webContents.debugger.attach("1.1");
+} catch(err) {
+  console.log("Debugger attach failed : ", err);
+};
+
+win.webContents.debugger.on('detach', function(event, reason) {
+  console.log("Debugger detached due to : ", reason);
+});
+
+win.webContents.debugger.on('message', function(event, method, params) {
+  if (method == "Network.requestWillBeSent") {
+    if (params.request.url == "https://www.github.com")
+      win.webContents.debugger.detach();
+  }
+})
+
+win.webContents.debugger.sendCommand("Network.enable");
+```
+
+#### `webContents.debugger.attach([protocolVersion])`
+
+* `protocolVersion` String (optional) - 요쳥할 디버깅 프로토콜의 버전.
+
+`webContents`에 디버거를 부착합니다.
+
+#### `webContents.debugger.isAttached()`
+
+디버거가 `webContents`에 부착되어 있는지 여부를 반환합니다.
+
+#### `webContents.debugger.detach()`
+
+`webContents`로부터 디버거를 분리시킵니다.
+
+#### `webContents.debugger.sendCommand(method[, commandParams, callback])`
+
+* `method` String - 메서드 이름, 반드시 원격 디버깅 프로토콜에 의해 정의된 메서드중
+  하나가 됩니다.
+* `commandParams` Object (optional) - 요청 매개변수를 표현한 JSON 객체.
+* `callback` Function (optional) - 응답
+  * `error` Object -  커맨드의 실패를 표시하는 에러 메시지.
+  * `result` Object - 원격 디버깅 프로토콜에서 커맨드 설명의 'returns' 속성에 의해
+    정의된 응답
+
+지정한 커맨드를 디버깅 대상에게 전송합니다.
+
+#### Event: 'detach'
+
+* `event` Event
+* `reason` String - 디버거 분리 사유.
+
+디버깅 세션이 종료될 때 발생하는 이벤트입니다. `webContents`가 닫히거나 개발자 도구가
+부착된 `webContents`에 대해 호출될 때 발생합니다.
+
+#### Event: 'message'
+
+* `event` Event
+* `method` String - 메서드 이름.
+* `params` Object - 원격 디버깅 프로토콜의 'parameters' 속성에서 정의된 이벤트
+  매개변수
+
+디버깅 타겟이 관련 이벤트를 발생시킬 때 마다 발생하는 이벤트입니다.
+
+[rdp]: https://developer.chrome.com/devtools/docs/debugger-protocol

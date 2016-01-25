@@ -80,9 +80,9 @@ win.show();
   여부. 기본값은 `false`입니다.
 * `enableLargerThanScreen` Boolean - 윈도우 크기가 화면 크기보다 크게 재조정 될
   수 있는지 여부. 기본값은 `false`입니다.
-* `backgroundColor` String - `#66CD00` 와 `#FFF` 같이 16진수로 표현된 윈도우의
-  배경 색. 기본값은 Linux와 Windows에선 `#000` (검정)이며, Mac에선 `#FFF` (또는,
-  만약 transparent(투명)일 경우 clear(색 없음)로 설정)
+* `backgroundColor` String - `#66CD00` 와 `#FFF`, `#80FFFFFF` (알파 지원됨) 같이
+  16진수로 표현된 윈도우의 배경 색. 기본값은 Linux와 Windows에선 `#000` (검정)이며,
+  Mac에선 `#FFF` (또는, transparent(투명)일 경우 clear(색 없음)로 설정)
 * `hasShadow` Boolean - 윈도우가 그림자를 가질지 여부를 지정합니다. 이 속성은
   OS X에서만 구현되어 있습니다. 기본값은 `true`입니다.
 * `darkTheme` Boolean - 설정에 상관 없이 무조건 어두운 윈도우 테마를 사용합니다.
@@ -301,6 +301,14 @@ someWindow.on('app-command', function(e, cmd) {
   }
 });
 ```
+
+### Event: 'scroll-touch-begin' _OS X_
+
+스크롤 휠 이벤트가 동작하기 시작했을 때 발생하는 이벤트입니다.
+
+### Event: 'scroll-touch-end' _OS X_
+
+스크롤 휠 이벤트가 동작을 멈췄을 때 발생하는 이벤트입니다.
 
 ## Methods
 
@@ -568,14 +576,14 @@ var win = new BrowserWindow({ width: 800, height: 600 });
 사용자에 의해 윈도우를 최대화시킬 수 있는지 여부를 반환합니다. Linux에선 항상 `true`를
 반환합니다.
 
-### `win.setFullscreenable(fullscreenable)` _OS X_
+### `win.setFullScreenable(fullscreenable)` _OS X_
 
 * `fullscreenable` Boolean
 
 최대화/줌 버튼이 전체화면 모드 또는 윈도우 최대화를 토글할 수 있게 할지 여부를
 지정합니다. Windows와 Linux에선 아무 일도 일어나지 않습니다.
 
-### `win.isFullscreenable()` _OS X_
+### `win.isFullScreenable()` _OS X_
 
 최대화/줌 버튼이 전체화면 모드 또는 윈도우 최대화를 토글할 수 있게 할지 여부를
 반환합니다. Windows와 Linux에선 항상 `true`를 반환합니다.
