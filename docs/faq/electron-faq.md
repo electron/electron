@@ -79,5 +79,18 @@ delete window.module;
 </head>
 ```
 
+## `require('electron').xxx` is undefined.
+
+When using Electron's built-in module you might encounter an error like this:
+
+```
+> require('electron').webFrame.setZoomFactor(1.0);
+Uncaught TypeError: Cannot read property 'setZoomLevel' of undefined
+```
+
+This is because you have the npm `electron` module installed either locally or
+globally, which overrides Electron's built-in module. You can to either remove
+the module, or rename it.
+
 [memory-management]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Memory_Management
 [variable-scope]: https://msdn.microsoft.com/library/bzt2dkta(v=vs.94).aspx
