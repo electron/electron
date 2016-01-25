@@ -102,6 +102,42 @@ AtomBrowserClient::AtomBrowserClient() : delegate_(nullptr) {
 AtomBrowserClient::~AtomBrowserClient() {
 }
 
+bool AtomBrowserClient::CanCreateWindow(const GURL& opener_url,
+                                      const GURL& opener_top_level_frame_url,
+                                      const GURL& source_origin,
+                                      WindowContainerType container_type,
+                                      const GURL& target_url,
+                                      const content::Referrer& referrer,
+                                      WindowOpenDisposition disposition,
+                                      const blink::WebWindowFeatures& features,
+                                      bool user_gesture,
+                                      bool opener_suppressed,
+                                      content::ResourceContext* context,
+                                      int render_process_id,
+                                      int opener_render_view_id,
+                                      int opener_render_frame_id,
+                                      bool* no_javascript_access) {
+  if (delegate_) {
+    return delegate_->CanCreateWindow(opener_url,
+                                opener_top_level_frame_url,
+                                source_origin,
+                                container_type,
+                                target_url,
+                                referrer,
+                                disposition,
+                                features,
+                                user_gesture,
+                                opener_suppressed,
+                                context,
+                                render_process_id,
+                                opener_render_view_id,
+                                opener_render_frame_id,
+                                no_javascript_access);
+  } else {
+    return true;
+  }
+}
+
 void AtomBrowserClient::RenderProcessWillLaunch(
     content::RenderProcessHost* host) {
   int process_id = host->GetID();

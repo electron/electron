@@ -3,14 +3,19 @@
 // found in the LICENSE file.
 
 #include "atom/browser/web_view_guest_delegate.h"
-
+#include "atom/browser/web_contents_preferences.h"
 #include "atom/browser/api/atom_api_web_contents.h"
+#include "atom/browser/api/event.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
+#include "atom/common/node_includes.h"
+#include "content/public/browser/browser_thread.h"
 #include "content/public/browser/guest_host.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/render_widget_host.h"
 #include "content/public/browser/render_widget_host_view.h"
+#include "native_mate/dictionary.h"
+
 
 namespace atom {
 
@@ -41,6 +46,52 @@ void WebViewGuestDelegate::Destroy() {
   // Give the content module an opportunity to perform some cleanup.
   guest_host_->WillDestroy();
   guest_host_ = nullptr;
+}
+
+content::WebContents* WebViewGuestDelegate::CreateNewGuestWindow(
+                            const content::WebContents::CreateParams& params) {
+  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+
+  auto isolate = api_web_contents_->isolate();
+  v8::Locker locker(isolate);
+  v8::HandleScope handle_scope(isolate);
+
+  // window options will come from features that needs to be passed through
+  mate::Dictionary options = mate::Dictionary::CreateEmpty(isolate);
+  options.Set("isGuest", true);
+
+  // get the next guest id and assign it to options and webPreferences
+  node::Environment* env = node::Environment::GetCurrent(isolate);
+  auto next_instance_id_event = v8::Local<v8::Object>::Cast(
+                                          mate::Event::Create(isolate).ToV8());
+  mate::EmitEvent(isolate,
+                  env->process_object(),
+                  "ATOM_SHELL_GUEST_VIEW_MANAGER_NEXT_INSTANCE_ID",
+                  next_instance_id_event);
+  int guest_instance_id = next_instance_id_event->Get(
+                      mate::StringToV8(isolate, "returnValue"))->NumberValue();
+  options.Set(options::kGuestInstanceID, guest_instance_id);
+
+  if (params.site_instance) {
+    options.Set("session", api_web_contents_->Session(isolate));
+  }
+
+  // get the underlying contents::WebContents object
+  mate::Handle<api::WebContents> new_api_web_contents =
+          api::WebContents::CreateWithParams(isolate, options, params);
+  content::WebContents* web_contents = new_api_web_contents->GetWebContents();
+
+  // register the guest so we can find it in the new window
+  auto add_guest_event =
+            v8::Local<v8::Object>::Cast(mate::Event::Create(isolate).ToV8());
+  mate::EmitEvent(isolate,
+                  env->process_object(),
+                  "ATOM_SHELL_GUEST_VIEW_MANAGER_REGISTER_GUEST",
+                  add_guest_event,
+                  new_api_web_contents,
+                  guest_instance_id);
+
+  return web_contents;
 }
 
 void WebViewGuestDelegate::SetSize(const SetSizeParams& params) {
@@ -140,7 +191,7 @@ void WebViewGuestDelegate::DidCommitProvisionalLoadForFrame(
 }
 
 void WebViewGuestDelegate::DidAttach(int guest_proxy_routing_id) {
-  api_web_contents_->Emit("did-attach");
+  api_web_contents_->Emit("did-attach", guest_proxy_routing_id);
 }
 
 content::WebContents* WebViewGuestDelegate::GetOwnerWebContents() const {
