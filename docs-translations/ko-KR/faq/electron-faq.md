@@ -77,5 +77,18 @@ delete window.module;
 </head>
 ```
 
+## `require('electron').xxx`가 undefined를 반환합니다.
+
+Electron의 빌트인 모듈을 사용할 때, 다음과 같은 오류가 발생할 수 있습니다:
+
+```
+> require('electron').webFrame.setZoomFactor(1.0);
+Uncaught TypeError: Cannot read property 'setZoomLevel' of undefined
+```
+
+이러한 문제가 발생하는 이유는 npm의 `electron` 모듈이 로컬 또는 전역 중 한 곳에
+설치되어, Electron의 빌트인 모듈을 덮어씌우는 바람에 빌트인 모듈을 사용할 수 없기
+때문입니다. 설치된 모듈을 지우거나 이름을 변경하여 문제를 해결할 수 있습니다.
+
 [memory-management]: https://developer.mozilla.org/ko/docs/Web/JavaScript/Memory_Management
 [variable-scope]: https://msdn.microsoft.com/library/bzt2dkta(v=vs.94).aspx
