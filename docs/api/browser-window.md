@@ -307,6 +307,14 @@ someWindow.on('app-command', function(e, cmd) {
 });
 ```
 
+### Event: 'scroll-touch-begin' _OS X_
+
+Emitted when scroll wheel event phase has begun.
+
+### Event: 'scroll-touch-end' _OS X_
+
+Emitted when scroll wheel event phase has ended.
+
 ## Methods
 
 The `BrowserWindow` object has the following methods:

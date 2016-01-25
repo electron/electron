@@ -499,32 +499,34 @@ NativeWindowMac::NativeWindowMac(
   NSView* view = inspectable_web_contents()->GetView()->GetNativeView();
   [view setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
 
-  BOOL __block down = NO;
-  event_monitor_.reset([[NSEvent
+  // Use an NSEvent monitor to listen for the wheel event.
+  BOOL __block began = NO;
+  wheel_event_monitor_ = [NSEvent
     addLocalMonitorForEventsMatchingMask:NSScrollWheelMask
-    handler:^NSEvent * _Nullable(NSEvent * event) {
+    handler:^(NSEvent* event) {
       if ([[event window] windowNumber] != [window_ windowNumber])
         return event;
 
       if (!web_contents)
         return event;
 
-      if (!down && (([event phase] == NSEventPhaseMayBegin) || ([event phase] == NSEventPhaseBegan))) {
+      if (!began && (([event phase] == NSEventPhaseMayBegin) ||
+                     ([event phase] == NSEventPhaseBegan))) {
         this->NotifyWindowScrollTouchBegin();
-        down = YES;
-      }
-      if (down && (([event phase] == NSEventPhaseEnded) || ([event phase] == NSEventPhaseCancelled))) {
+        began = YES;
+      } else if (began && (([event phase] == NSEventPhaseEnded) ||
+                           ([event phase] == NSEventPhaseCancelled))) {
         this->NotifyWindowScrollTouchEnd();
-        down = NO;
+        began = NO;
       }
       return event;
-  }] retain]);
+  }];
 
   InstallView();
 }
 
 NativeWindowMac::~NativeWindowMac() {
-  [NSEvent removeMonitor: event_monitor_.get()];
+  [NSEvent removeMonitor:wheel_event_monitor_];
   Observe(nullptr);
 }
 
