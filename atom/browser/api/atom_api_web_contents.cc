@@ -802,6 +802,10 @@ bool WebContents::Equal(const WebContents* web_contents) const {
   return GetID() == web_contents->GetID();
 }
 
+void WebContents::Reload(bool ignore_cache) {
+  web_contents()->ReloadFocusedFrame(ignore_cache);
+}
+
 void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
   if (delayed_load_url_) {
     if (delayed_load_url_params_.get()) {
@@ -1255,6 +1259,7 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("getId", &WebContents::GetID)
       .SetMethod("equal", &WebContents::Equal)
       .SetMethod("_loadURL", &WebContents::LoadURL)
+      .SetMethod("_reload", &WebContents::Reload)
       .SetMethod("downloadURL", &WebContents::DownloadURL)
       .SetMethod("_getURL", &WebContents::GetURL)
       .SetMethod("getTitle", &WebContents::GetTitle)
