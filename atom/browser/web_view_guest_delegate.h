@@ -5,8 +5,10 @@
 #ifndef ATOM_BROWSER_WEB_VIEW_GUEST_DELEGATE_H_
 #define ATOM_BROWSER_WEB_VIEW_GUEST_DELEGATE_H_
 
+#include "content/public/browser/web_contents.h"
 #include "content/public/browser/browser_plugin_guest_delegate.h"
 #include "content/public/browser/web_contents_observer.h"
+
 
 namespace content {
 struct NativeWebKeyboardEvent;
@@ -39,6 +41,9 @@ class WebViewGuestDelegate : public content::BrowserPluginGuestDelegate,
  public:
   WebViewGuestDelegate();
   ~WebViewGuestDelegate() override;
+
+  content::WebContents* CreateNewGuestWindow(
+      const content::WebContents::CreateParams& create_params) override;
 
   void Initialize(api::WebContents* api_web_contents);
 

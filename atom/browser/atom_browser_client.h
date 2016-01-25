@@ -11,6 +11,7 @@
 
 #include "brightray/browser/browser_client.h"
 #include "content/public/browser/render_process_host_observer.h"
+#include "brightray/vendor/download/libchromiumcontent/src/third_party/WebKit/public/web/WebWindowFeatures.h"
 
 namespace content {
 class QuotaPermissionContext;
@@ -41,6 +42,22 @@ class AtomBrowserClient : public brightray::BrowserClient,
   // Custom schemes to be registered to handle service worker.
   static void SetCustomServiceWorkerSchemes(
       const std::vector<std::string>& schemes);
+
+  bool CanCreateWindow(const GURL& opener_url,
+                               const GURL& opener_top_level_frame_url,
+                               const GURL& source_origin,
+                               WindowContainerType container_type,
+                               const GURL& target_url,
+                               const content::Referrer& referrer,
+                               WindowOpenDisposition disposition,
+                               const blink::WebWindowFeatures& features,
+                               bool user_gesture,
+                               bool opener_suppressed,
+                               content::ResourceContext* context,
+                               int render_process_id,
+                               int opener_render_view_id,
+                               int opener_render_frame_id,
+                               bool* no_javascript_access) override;
 
  protected:
   // content::ContentBrowserClient:
