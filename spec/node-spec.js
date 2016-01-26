@@ -190,17 +190,24 @@ describe('node feature', function() {
       return assert.equal(Buffer.byteLength(p.innerText), 13);
     });
   });
+
   describe('process.stdout', function() {
     it('should not throw exception', function() {
-      return process.stdout;
+      process.stdout;
     });
-    return xit('should have isTTY defined', function() {
-      return assert.equal(typeof process.stdout.isTTY, 'boolean');
+
+    it('should not throw exception when calling write()', function() {
+      process.stdout.write('test');
+    });
+
+    xit('should have isTTY defined', function() {
+      assert.equal(typeof process.stdout.isTTY, 'boolean');
     });
   });
-  return describe('vm.createContext', function() {
-    return it('should not crash', function() {
-      return require('vm').runInNewContext('');
+
+  describe('vm.createContext', function() {
+    it('should not crash', function() {
+      require('vm').runInNewContext('');
     });
   });
 });
