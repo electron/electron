@@ -332,6 +332,9 @@ is about to occur.
   * `method` String
   * `resourceType` String
   * `timestamp` Double
+  * `uploadData` Array (optional)
+    * `bytes` Buffer - Content being sent.
+    * `file` String - Path of file being uploaded.
 
 The `callback` has to be called with an `response` object:
 
