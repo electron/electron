@@ -2,7 +2,6 @@
 
 const app = require('electron').app;
 const EventEmitter = require('events').EventEmitter;
-const url = require('url');
 const squirrelUpdate = require('./squirrel-update-win');
 
 class AutoUpdater extends EventEmitter {
