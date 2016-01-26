@@ -185,7 +185,17 @@ bool AtomRendererClient::ShouldFork(blink::WebLocalFrame* frame,
                                     bool is_initial_navigation,
                                     bool is_server_redirect,
                                     bool* send_referrer) {
-  return false;
+  // Returning false causes a memory leak in DidCreateScriptContext
+  // because a new node env is created and attempting to dispose
+  // the old env doesn't solve the problem.
+  //
+  // Re-using the same env doesn't run the the preload script after
+  // the first page.
+  //
+  // Ideally we should find a way to keep the same
+  // node env and find a different way to run the preload script
+  // (possibly also sandboxing the scripts with node vm)
+  return http_method == "GET" && !is_server_redirect && frame->opener() == NULL;
 }
 
 content::BrowserPluginDelegate* AtomRendererClient::CreateBrowserPluginDelegate(
