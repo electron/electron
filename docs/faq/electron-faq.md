@@ -88,9 +88,35 @@ When using Electron's built-in module you might encounter an error like this:
 Uncaught TypeError: Cannot read property 'setZoomLevel' of undefined
 ```
 
-This is because you have the npm `electron` module installed either locally or
-globally, which overrides Electron's built-in module. You can to either remove
-the module, or rename it.
+This is because you have the [npm `electron` module][electron-module] installed
+either locally or globally, which overrides Electron's built-in module.
+
+To verify whether you are using the correct built-in module, you can print the
+path of the `electron` module:
+
+```javascript
+console.log(require.resolve('electron'));
+```
+
+and then check if it is in the following form:
+
+```
+"/path/to/Electron.app/Contents/Resources/atom.asar/renderer/api/lib/exports/electron.js"
+```
+
+If it is something like `node_modules/electron/index.js`, then you have to
+either remove the npm `electron` module, or rename it.
+
+```bash
+npm uninstall electron
+npm uninstall -g electron
+```
+
+However if your are using the built-in module but still getting this error, it
+is very likely you are using the module in wrong process. For example
+`electron.app` can only be used in the main process, while `electron.webFrame`
+is only available in renderer processes.
 
 [memory-management]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Memory_Management
 [variable-scope]: https://msdn.microsoft.com/library/bzt2dkta(v=vs.94).aspx
+[electron-module]: https://www.npmjs.com/package/electron
