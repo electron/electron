@@ -45,8 +45,7 @@ class AutoUpdater extends EventEmitter {
 
           // Following information is not available on Windows, so fake them.
           date = new Date;
-          url = _this.updateURL;
-          return _this.emit('update-downloaded', {}, releaseNotes, version, date, url, function() {
+          return _this.emit('update-downloaded', {}, releaseNotes, version, date, _this.updateURL, function() {
             return _this.quitAndInstall();
           });
         });
