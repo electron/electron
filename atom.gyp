@@ -1,9 +1,9 @@
 {
   'variables': {
-    'project_name%': 'electron',
-    'product_name%': 'Electron',
-    'company_name%': 'GitHub, Inc',
-    'company_abbr%': 'github',
+    'project_name%': 'brave',
+    'product_name%': 'Brave',
+    'company_name%': 'Brave Software',
+    'company_abbr%': 'brave',
     'version%': '0.37.0',
   },
   'includes': [
