@@ -86,9 +86,36 @@ Electron의 빌트인 모듈을 사용할 때, 다음과 같은 오류가 발생
 Uncaught TypeError: Cannot read property 'setZoomLevel' of undefined
 ```
 
-이러한 문제가 발생하는 이유는 npm의 `electron` 모듈이 로컬 또는 전역 중 한 곳에
-설치되어, Electron의 빌트인 모듈을 덮어씌우는 바람에 빌트인 모듈을 사용할 수 없기
-때문입니다. 설치된 모듈을 지우거나 이름을 변경하여 문제를 해결할 수 있습니다.
+이러한 문제가 발생하는 이유는 [npm의 `electron` 모듈][electron-module]이 로컬 또는
+전역 중 한 곳에 설치되어, Electron의 빌트인 모듈을 덮어씌우는 바람에 빌트인 모듈을
+사용할 수 없기 때문입니다.
+
+올바른 빌트인 모듈을 사용하고 있는지 확인하고 싶다면, `electron` 모듈의 경로를
+출력하는 방법이 있습니다:
+
+```javascript
+console.log(require.resolve('electron'));
+```
+
+그리고 다음과 같은 경로를 가지는지 점검하면 됩니다:
+
+```
+"/path/to/Electron.app/Contents/Resources/atom.asar/renderer/api/lib/exports/electron.js"
+```
+
+하지만 `node_modules/electron/index.js`와 같은 경로로 되어있을 경우, `electron`
+모듈을 지우거나 이름을 바꿔야만 합니다.
+
+```bash
+npm uninstall electron
+npm uninstall -g electron
+```
+
+그런데 여전히 빌트인 모듈이 계속해서 문제를 발생시키는 경우, 아마 모듈을 잘못 사용하고
+있을 가능성이 큽니다. 예를 들면 `electron.app`은 메인 프로세스에서만 사용할 수 있는
+모듈이며, 반면 `electron.webFrame` 모듈은 랜더러 프로세스에서만 사용할 수 있는
+모듈입니다.
 
 [memory-management]: https://developer.mozilla.org/ko/docs/Web/JavaScript/Memory_Management
 [variable-scope]: https://msdn.microsoft.com/library/bzt2dkta(v=vs.94).aspx
+[electron-module]: https://www.npmjs.com/package/electron
