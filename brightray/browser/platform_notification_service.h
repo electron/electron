@@ -48,8 +48,8 @@ class PlatformNotificationService
       std::set<std::string>* displayed_notifications) override;
 
  private:
-  int render_process_id_;
   BrowserClient* browser_client_;
+  int render_process_id_;
 
   DISALLOW_COPY_AND_ASSIGN(PlatformNotificationService);
 };

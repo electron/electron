@@ -47,7 +47,7 @@ void OnWebNotificationAllowed(
 PlatformNotificationService::PlatformNotificationService(
     BrowserClient* browser_client)
     : browser_client_(browser_client),
-      render_process_id_(0) {
+      render_process_id_(-1) {
 }
 
 PlatformNotificationService::~PlatformNotificationService() {}
