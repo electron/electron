@@ -2,7 +2,6 @@
 
 const app = require('electron').app;
 const EventEmitter = require('events').EventEmitter;
-const url = require('url');
 const squirrelUpdate = require('./squirrel-update-win');
 
 class AutoUpdater extends EventEmitter {
@@ -45,8 +44,7 @@ class AutoUpdater extends EventEmitter {
 
           // Following information is not available on Windows, so fake them.
           date = new Date;
-          url = _this.updateURL;
-          return _this.emit('update-downloaded', {}, releaseNotes, version, date, url, function() {
+          return _this.emit('update-downloaded', {}, releaseNotes, version, date, _this.updateURL, function() {
             return _this.quitAndInstall();
           });
         });
