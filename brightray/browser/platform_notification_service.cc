@@ -9,6 +9,7 @@
 #include "browser/notification_delegate_adapter.h"
 #include "browser/notification_presenter.h"
 #include "content/public/common/platform_notification_data.h"
+#include "third_party/skia/include/core/SkBitmap.h"
 
 namespace brightray {
 
@@ -19,11 +20,34 @@ void RemoveNotification(base::WeakPtr<Notification> notification) {
     notification->Dismiss();
 }
 
+void OnWebNotificationAllowed(
+    brightray::BrowserClient* browser_client,
+    const SkBitmap& icon,
+    const content::PlatformNotificationData& data,
+    scoped_ptr<content::DesktopNotificationDelegate> delegate,
+    base::Closure* cancel_callback,
+    bool allowed) {
+  if (!allowed)
+    return;
+  auto presenter = browser_client->GetNotificationPresenter();
+  if (!presenter)
+    return;
+  scoped_ptr<NotificationDelegateAdapter> adapter(
+      new NotificationDelegateAdapter(delegate.Pass()));
+  auto notification = presenter->CreateNotification(adapter.get());
+  if (notification) {
+    ignore_result(adapter.release());  // it will release itself automatically.
+    notification->Show(data.title, data.body, data.icon, icon, data.silent);
+    *cancel_callback = base::Bind(&RemoveNotification, notification);
+  }
+}
+
 }  // namespace
 
 PlatformNotificationService::PlatformNotificationService(
     BrowserClient* browser_client)
-    : browser_client_(browser_client) {
+    : browser_client_(browser_client),
+      render_process_id_(0) {
 }
 
 PlatformNotificationService::~PlatformNotificationService() {}
@@ -32,6 +56,7 @@ blink::WebNotificationPermission PlatformNotificationService::CheckPermissionOnU
     content::BrowserContext* browser_context,
     const GURL& origin,
     int render_process_id) {
+  render_process_id_ = render_process_id;
   return blink::WebNotificationPermissionAllowed;
 }
 
@@ -49,17 +74,12 @@ void PlatformNotificationService::DisplayNotification(
     const content::PlatformNotificationData& data,
     scoped_ptr<content::DesktopNotificationDelegate> delegate,
     base::Closure* cancel_callback) {
-  auto presenter = browser_client_->GetNotificationPresenter();
-  if (!presenter)
-    return;
-  scoped_ptr<NotificationDelegateAdapter> adapter(
-      new NotificationDelegateAdapter(delegate.Pass()));
-  auto notification = presenter->CreateNotification(adapter.get());
-  if (notification) {
-    ignore_result(adapter.release());  // it will release itself automatically.
-    notification->Show(data.title, data.body, data.icon, icon, data.silent);
-    *cancel_callback = base::Bind(&RemoveNotification, notification);
-  }
+  browser_client_->WebNotificationAllowed(
+      render_process_id_,
+      base::Bind(&OnWebNotificationAllowed,
+                 browser_client_, icon, data,
+                 base::Passed(&delegate),
+                 cancel_callback));
 }
 
 void PlatformNotificationService::DisplayPersistentNotification(
