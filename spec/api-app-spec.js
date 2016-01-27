@@ -10,6 +10,21 @@ remote = require('electron').remote;
 
 ref = remote.require('electron'), app = ref.app, BrowserWindow = ref.BrowserWindow;
 
+describe('electron module', function() {
+  it ('can prevent exposing internal modules to require', function(done) {
+    const electron = require('electron');
+    const clipboard = require('clipboard');
+    assert.equal(typeof clipboard, 'object');
+    electron.hideInternalModules();
+    try {
+      require('clipboard');
+    } catch(err) {
+      assert.equal(err.message, 'Cannot find module \'clipboard\'');
+      done();
+    }
+  });
+});
+
 describe('app module', function() {
   describe('app.getVersion()', function() {
     return it('returns the version field of package.json', function() {

@@ -1,5 +1,5 @@
 // Do not expose the internal modules to `require`.
-exports.hideInternalModules = function() {
+const hideInternalModules = function() {
   var globalPaths = require('module').globalPaths;
   if (globalPaths.length === 3) {
 
@@ -11,6 +11,10 @@ exports.hideInternalModules = function() {
 // Attaches properties to |exports|.
 exports.defineProperties = function(exports) {
   return Object.defineProperties(exports, {
+    hideInternalModules: {
+      enumerable: true,
+      value: hideInternalModules
+    },
 
     // Common modules, please sort with alphabet order.
     clipboard: {
