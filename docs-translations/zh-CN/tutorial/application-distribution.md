@@ -103,7 +103,7 @@ MyApp.app/Contents
 
 ### grunt打包脚本
 
-手动的检查 Electron 代码并重编译是很复杂晦涩的，因此有一个 Grunt任务可以自动自动的处理
+手动检查 Electron 代码并重编译是很复杂晦涩的，因此有一个Grunt任务可以自动的处理
 这些内容 [grunt-build-atom-shell](https://github.com/paulcbetts/grunt-build-atom-shell).
 
 这个任务会自动的处理编辑 `.gyp` 文件，从源代码进行编译，然后重编译你的应用程序的本地 Node 模块以匹配这个新的可执行文件的名称。
