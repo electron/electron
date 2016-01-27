@@ -238,7 +238,7 @@ void ShowItemInFolder(const base::FilePath& full_path) {
             (GetProcAddress(shell32_base, "SHOpenFolderAndSelectItems"));
   }
   if (!open_folder_and_select_itemsPtr) {
-    ShellExecute(NULL, L"open", dir.value().c_str(), NULL, NULL, SW_SHOW);
+    ui::win::OpenFolderViaShell(dir);
     return;
   }
 
@@ -252,7 +252,7 @@ void ShowItemInFolder(const base::FilePath& full_path) {
                                  const_cast<wchar_t *>(dir.value().c_str()),
                                  NULL, &dir_item, NULL);
   if (FAILED(hr)) {
-    ShellExecute(NULL, L"open", dir.value().c_str(), NULL, NULL, SW_SHOW);
+    ui::win::OpenFolderViaShell(dir);
     return;
   }
 
@@ -261,7 +261,7 @@ void ShowItemInFolder(const base::FilePath& full_path) {
       const_cast<wchar_t *>(full_path.value().c_str()),
       NULL, &file_item, NULL);
   if (FAILED(hr)) {
-    ShellExecute(NULL, L"open", dir.value().c_str(), NULL, NULL, SW_SHOW);
+    ui::win::OpenFolderViaShell(dir);
     return;
   }
 
@@ -275,7 +275,7 @@ void ShowItemInFolder(const base::FilePath& full_path) {
     // found" even though the file is there.  In these cases, ShellExecute()
     // seems to work as a fallback (although it won't select the file).
     if (hr == ERROR_FILE_NOT_FOUND) {
-      ShellExecute(NULL, L"open", dir.value().c_str(), NULL, NULL, SW_SHOW);
+      ui::win::OpenFolderViaShell(dir);
     } else {
       LPTSTR message = NULL;
       DWORD message_length = FormatMessage(
@@ -289,7 +289,7 @@ void ShowItemInFolder(const base::FilePath& full_path) {
       if (message)
         LocalFree(message);
 
-      ShellExecute(NULL, L"open", dir.value().c_str(), NULL, NULL, SW_SHOW);
+      ui::win::OpenFolderViaShell(dir);
     }
   }
 }
