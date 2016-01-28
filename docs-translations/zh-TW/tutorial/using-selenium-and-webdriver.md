@@ -1,6 +1,6 @@
-# Using Selenium and WebDriver
+# 使用 Selenium 和 WebDriver
 
-From [ChromeDriver - WebDriver for Chrome][chrome-driver]:
+根據 [ChromeDriver - WebDriver for Chrome][chrome-driver]：
 
 > WebDriver is an open source tool for automated testing of web apps across many
 > browsers. It provides capabilities for navigating to web pages, user input,
@@ -8,17 +8,15 @@ From [ChromeDriver - WebDriver for Chrome][chrome-driver]:
 > implements WebDriver's wire protocol for Chromium. It is being developed by
 > members of the Chromium and WebDriver teams.
 
-In order to use `chromedriver` with Electron you have to tell it where to
-find Electron and make it think Electron is the Chrome browser.
+為了與 Electron 一起使用 `chromedriver`，你需要告訴 `chromedriver` 去哪找 Electron 並讓他知道 Electron 是 Chrome 瀏覽器。
 
-## Setting up with WebDriverJs
+## 透過 WebDriverJs 設定
 
-[WebDriverJs](https://code.google.com/p/selenium/wiki/WebDriverJs) provides
-a Node package for testing with web driver, we will use it as an example.
+[WebDriverJs](https://code.google.com/p/selenium/wiki/WebDriverJs) 提供一個 Node 套件來透過 web driver 做測試，我們將使用它作為例子。
 
-### 1. Start ChromeDriver
+### 1. 啟動 ChromeDriver
 
-First you need to download the `chromedriver` binary, and run it:
+首先你需要下載 `chromedriver` 執行檔，然後執行它：
 
 ```bash
 $ ./chromedriver
@@ -26,19 +24,17 @@ Starting ChromeDriver (v2.10.291558) on port 9515
 Only local connections are allowed.
 ```
 
-Remember the port number `9515`, which will be used later
+記住埠號(port number) `9515`，等等會使用到它
 
-### 2. Install WebDriverJS
+### 2. 安裝 WebDriverJS 
 
 ```bash
 $ npm install selenium-webdriver
 ```
 
-### 3. Connect to ChromeDriver
+### 3. 連接到 ChromeDriver
 
-The usage of `selenium-webdriver` with Electron is basically the same with
-upstream, except that you have to manually specify how to connect chrome driver
-and where to find Electron's binary:
+與 Electron 一起使用 `selenium-webdriver` 的方法基本上與 upstream 相同，除了你需要手動指定如何連接 chrome driver 和去哪找 Electron 的執行檔：
 
 ```javascript
 const webdriver = require('selenium-webdriver');
@@ -67,14 +63,13 @@ driver.wait(function() {
 driver.quit();
 ```
 
-## Setting up with WebdriverIO
+## 透過 WebdriverIO 設定
 
-[WebdriverIO](http://webdriver.io/) provides a Node package for testing with web
-driver.
+[WebdriverIO](http://webdriver.io/) 提供一個 Node 套件來透過 web driver 做測試。
 
-### 1. Start ChromeDriver
+### 1. 啟動 ChromeDriver
 
-First you need to download the `chromedriver` binary, and run it:
+首先你需要下載 `chromedriver` 執行檔，然後執行它：
 
 ```bash
 $ chromedriver --url-base=wd/hub --port=9515
@@ -82,15 +77,15 @@ Starting ChromeDriver (v2.10.291558) on port 9515
 Only local connections are allowed.
 ```
 
-Remember the port number `9515`, which will be used later
+記住埠號(port number)  `9515`，等等會用到它
 
-### 2. Install WebdriverIO
+### 2. 安裝 WebdriverIO
 
 ```bash
 $ npm install webdriverio
 ```
 
-### 3. Connect to chrome driver
+### 3. 連接到 chrome driver
 
 ```javascript
 const webdriverio = require('webdriverio');
@@ -119,14 +114,10 @@ client
     .end();
 ```
 
-## Workflow
+## 運作流程
 
-To test your application without rebuilding Electron, simply
-[place](https://github.com/atom/electron/blob/master/docs/tutorial/application-distribution.md)
-your app source into Electron's resource directory.
+要在不重新建置 Electron 的情況下測試你的應用程式，只需要 [放置](https://github.com/atom/electron/blob/master/docs/tutorial/application-distribution.md) 你的應用程式到 Electron 的資源目錄中即可。
 
-Alternatively, pass an argument to run with your electron binary that points to
-your app's folder. This eliminates the need to copy-paste your app into
-Electron's resource directory.
+或者，傳遞一個指向你應用程式資料夾的參數來透過你的 Electron 執行檔運行，這會減少複製你應用程式到 Electron 資源資料夾的需求。
 
 [chrome-driver]: https://sites.google.com/a/chromium.org/chromedriver/
