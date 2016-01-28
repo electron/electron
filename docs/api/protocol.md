@@ -132,7 +132,7 @@ should be called with a `redirectRequest` object that has the `url`, `method`,
   * `url` String
   * `method` String
   * `session` Object (optional)
-  * `uploadData` Object
+  * `uploadData` Object (optional)
 
 By default the HTTP request will reuse the current session. If you want the
 request to have a different session you should set `session` to `null`.
