@@ -130,14 +130,16 @@ Archive::Archive(const base::FilePath& path)
 
 Archive::~Archive() {
 #if defined(OS_WIN)
-  file_.Close();
-  _close(fd_);
+  if (fd_ != -1)
+    _close(fd_);
 #endif
 }
 
 bool Archive::Init() {
-  if (!file_.IsValid())
+  if (!file_.IsValid()) {
+    LOG(ERROR) << base::File::ErrorToString(file_.error_details());
     return false;
+  }
 
   std::vector<char> buf;
   int len;
