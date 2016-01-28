@@ -8,7 +8,7 @@
 * [主行程 Debug](tutorial/debugging-main-process.md)
 * [使用 Selenium 和 WebDriver](tutorial/using-selenium-and-webdriver.md)
 * [DevTools 擴充](tutorial/devtools-extension.md)
-* [使用 Pepper Flash 套件](tutorial/using-pepper-flash-plugin.md)
+* [使用 Pepper Flash 外掛](tutorial/using-pepper-flash-plugin.md)
 
 ## 教學
 
