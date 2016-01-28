@@ -1,74 +1,69 @@
-# Debugging the Main Process
+# 主行程 Debug
 
-The browser window DevTools can only debug the renderer process scripts (i.e.
-the web pages). In order to provide a way to debug the scripts from the main
-process, Electron has provided the `--debug` and `--debug-brk` switches.
+瀏覽器視窗開發工具 DevTools 只可以用來幫渲染器的行程腳本(renderer process script，網頁畫面)除錯(debug)，為了提供一個方法在主行程中除錯，Electron 有提供 `--debug` 和 `--debug-brk` 開關。
 
-## Command Line Switches
+## 命令列開關
 
-Use the following command line switches to debug Electron's main process:
+使用以下命令列切換來為 Electron 的主行程除錯：
 
 ### `--debug=[port]`
 
-When this switch is used Electron will listen for V8 debugger protocol
-messages on `port`. The default `port` is `5858`.
+當這個開關被使用，Electron 將會透過 `port` 來監聽 V8 的除錯協定訊息，預設的 `port` 是 `5858`。
 
 ### `--debug-brk=[port]`
 
-Like `--debug` but pauses the script on the first line.
+同 `--debug` 但暫停在腳本的第一行。
 
-## Use node-inspector for Debugging
+## 使用 node-inspector 來除錯
 
-__Note:__ Electron doesn't currently work very well
-with node-inspector, and the main process will crash if you inspect the
-`process` object under node-inspector's console.
+__Note:__ Electron 近期沒有跟 node-inspector 處的很好，而且如果你透過 node-inspector's console 查看 `process` 物件，主行程將會爆掉。
 
-### 1. Make sure you have [node-gyp required tools][node-gyp-required-tools] installed
+### 1. 確保你有安裝 [node-gyp required tools][node-gyp-required-tools]
 
-### 2. Install [node-inspector][node-inspector]
+### 2. 安裝 [node-inspector][node-inspector]
 
 ```bash
 $ npm install node-inspector
 ```
 
-### 3. Install a patched version of `node-pre-gyp`
+### 3. 安裝一個修補過版本的 `node-pre-gyp`
 
 ```bash
 $ npm install git+https://git@github.com/enlight/node-pre-gyp.git#detect-electron-runtime-in-find
 ```
 
-### 4. Recompile the `node-inspector` `v8` modules for electron (change the target to your electron version number)
+### 4. 除心編譯 `node-inspector` `v8` 模組給 Electron (變更 target 為你的 Electron 編號)
 
 ```bash
 $ node_modules/.bin/node-pre-gyp --target=0.36.2 --runtime=electron --fallback-to-build --directory node_modules/v8-debug/ --dist-url=https://atom.io/download/atom-shell reinstall
 $ node_modules/.bin/node-pre-gyp --target=0.36.2 --runtime=electron --fallback-to-build --directory node_modules/v8-profiler/ --dist-url=https://atom.io/download/atom-shell reinstall
 ```
 
-See also [How to install native modules](how-to-install-native-modules).
+參閱 [如何安裝原生模組](how-to-install-native-modules).
 
-### 5. Enable debug mode for Electron
+### 5. 給 Electron 啟用除錯模式
 
-You can either start Electron with a debug flag like:
+你可以啟動 Electron 並帶有一個除錯 flag ，例如:
 
 ```bash
 $ electron --debug=5858 your/app
 ```
 
-or, to pause your script on the first line:
+或者，讓你的腳本暫停在第一行：
 
 ```bash
 $ electron --debug-brk=5858 your/app
 ```
 
-### 6. Start the [node-inspector][node-inspector] server using electron
+### 6. 使用啟動 [node-inspector][node-inspector] 伺服器
 
 ```bash
 $ ELECTRON_RUN_AS_NODE=true path/to/electron.exe node_modules/node-inspector/bin/inspector.js
 ```
 
-### 7. Load the debugger UI
+### 7. 載入除錯介面
 
-Open http://127.0.0.1:8080/debug?ws=127.0.0.1:8080&port=5858 in the Chrome browser. You may have to click pause if starting with debug-brk to see the entry line.
+在你的 Chrome 瀏覽器打開 http://127.0.0.1:8080/debug?ws=127.0.0.1:8080&port=5858，你可能需要點擊暫停假如你是透過使用 debug-brk 啟動並停在進入行(entry line)的話。
 
 [node-inspector]: https://github.com/node-inspector/node-inspector
 [node-gyp-required-tools]: https://github.com/nodejs/node-gyp#installation
