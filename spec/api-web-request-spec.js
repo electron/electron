@@ -1,5 +1,6 @@
 const assert = require('assert');
 const http = require('http');
+const qs = require('querystring');
 const remote = require('electron').remote;
 const session = remote.session;
 
@@ -83,6 +84,7 @@ describe('webRequest module', function() {
         assert.equal(details.url, defaultURL);
         assert.equal(details.method, 'GET');
         assert.equal(details.resourceType, 'xhr');
+        assert(!details.uploadData);
         return callback({});
       });
       return $.ajax({
@@ -93,6 +95,33 @@ describe('webRequest module', function() {
         },
         error: function(xhr, errorType) {
           return done(errorType);
+        }
+      });
+    });
+    it('receives post data in details object', function(done) {
+      var postData = {
+        name: 'post test',
+        type: 'string'
+      };
+      ses.webRequest.onBeforeRequest(function(details, callback) {
+        var data;
+        assert.equal(details.url, defaultURL);
+        assert.equal(details.method, 'POST');
+        assert.equal(details.uploadData.length, 1);
+        data = qs.parse(details.uploadData[0].bytes.toString());
+        assert.deepEqual(data, postData);
+        return callback({
+          cancel: true
+        });
+      });
+      return $.ajax({
+        url: defaultURL,
+        type: 'POST',
+        data: postData,
+        success: function() {
+        },
+        error: function() {
+          done();
         }
       });
     });

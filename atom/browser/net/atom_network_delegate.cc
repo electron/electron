@@ -75,6 +75,10 @@ void ToDictionary(base::DictionaryValue* details, net::URLRequest* request) {
   details->SetString("resourceType",
                      info ? ResourceTypeToString(info->GetResourceType())
                           : "other");
+  scoped_ptr<base::ListValue> list(new base::ListValue);
+  GetUploadData(list.get(), request);
+  if (!list->empty())
+    details->Set("uploadData", list.Pass());
 }
 
 void ToDictionary(base::DictionaryValue* details,
