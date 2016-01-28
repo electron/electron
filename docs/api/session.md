@@ -333,8 +333,13 @@ is about to occur.
   * `resourceType` String
   * `timestamp` Double
   * `uploadData` Array (optional)
-    * `bytes` Buffer - Content being sent.
-    * `file` String - Path of file being uploaded.
+* `callback` Function
+
+The `uploadData` is an array of `data` objects:
+
+* `data` Object
+  * `bytes` Buffer - Content being sent.
+  * `file` String - Path of file being uploaded.
 
 The `callback` has to be called with an `response` object:
 
@@ -359,6 +364,7 @@ TCP connection is made to the server, but before any http data is sent.
   * `resourceType` String
   * `timestamp` Double
   * `requestHeaders` Object
+* `callback` Function
 
 The `callback` has to be called with an `response` object:
 
@@ -401,6 +407,7 @@ response headers of a request have been received.
   * `statusLine` String
   * `statusCode` Integer
   * `responseHeaders` Object
+* `callback` Function
 
 The `callback` has to be called with an `response` object:
 
