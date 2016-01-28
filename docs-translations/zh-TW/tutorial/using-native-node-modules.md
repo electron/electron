@@ -1,47 +1,34 @@
-# Using Native Node Modules
+# 使用原生 node 模組
 
-The native Node modules are supported by Electron, but since Electron is
-using a different V8 version from official Node, you have to manually specify
-the location of Electron's headers when building native modules.
+原生的 Node 模組 Electron 都有支援，但自從 Electron 使用了與 Node 官方不同的 V8 版本後，當你要建置原生模組的時候，你需要手動指定 Electron 標頭的位置。
 
-## Native Node Module Compatibility
+## 原生 Node 模組的相容性
 
-Native modules might break when Node starts using a new version of V8.
-To make sure the module you're interested in will work with Electron, you should
-check if it supports the internal Node version used by Electron.
-You can check what version of Node is used in Electron by looking it up in
-the [releases](https://github.com/atom/electron/releases) page or by using
-`process.version` (see [Quick Start](https://github.com/atom/electron/blob/master/docs/tutorial/quick-start.md)
-for example).
+原生模組可能在 Node 開始使用一個新版本的 V8 時毀損，為了確保你想要用的模組能正確與 Electron 一起運行，你應該檢查是否支援 Electron 內部 Node 版本，你可以查看 [releases](https://github.com/atom/electron/releases) 或是使用 `process.version` (範例請見 [Quick Start](https://github.com/atom/electron/blob/master/docs/tutorial/quick-start.md)) 來檢查哪個 Node 版本是現在的 Electron 使用的。
 
-Consider using [NAN](https://github.com/nodejs/nan/) for your own modules, since
-it makes it easier to support multiple versions of Node. It's also helpful for
-porting old modules to newer versions of Node so they can work with Electron.
+你可以考慮給你自己的模組使用 [NAN](https://github.com/nodejs/nan/)，因為它可以較輕易的支援多種版本的 Node，它對於移植舊的模組到新版本的 Node 以便與 Electron 一起運作也是很有用的。
 
-## How to Install Native Modules
+## 如何安裝原生模組
 
-Three ways to install native modules:
+三種安裝原生模組的方式：
 
-### The Easy Way
+### 簡單的方法
 
-The most straightforward way to rebuild native modules is via the
-[`electron-rebuild`](https://github.com/paulcbetts/electron-rebuild) package,
-which handles the manual steps of downloading headers and building native modules:
+最直接重新建置原生模組的方法是透過 [`electron-rebuild`](https://github.com/paulcbetts/electron-rebuild) 套件，這個套件處理了手動下載標頭和建制原生模組的步驟：
 
 ```sh
 npm install --save-dev electron-rebuild
 
-# Every time you run "npm install", run this
+# 每次你執行 "npm install", 執行這句
 ./node_modules/.bin/electron-rebuild
 
-# On Windows if you have trouble, try:
+# 在 Windows 上如果你有狀況，試試看：
 .\node_modules\.bin\electron-rebuild.cmd
 ```
 
-### The npm Way
+### 使用 npm
 
-You can also use `npm` to install modules. The steps are exactly the same with
-Node modules, except that you need to setup some environment variables:
+你也可以使用 `npm` 安裝模組，步驟與 Node 模組的安裝相同，除了你需要設定一些環境變數：
 
 ```bash
 export npm_config_disturl=https://atom.io/download/atom-shell
@@ -51,17 +38,13 @@ export npm_config_runtime=electron
 HOME=~/.electron-gyp npm install module-name
 ```
 
-### The node-gyp Way
+### 使用 node-gyp 
 
-To build Node modules with headers of Electron, you need to tell `node-gyp`
-where to download headers and which version to use:
+要把 Node 模組與 Eletron 的標頭一起建置，你需要告訴 `node-gyp` 下載標頭到哪裡，以及要使用哪個版本：
 
 ```bash
 $ cd /path-to-module/
 $ HOME=~/.electron-gyp node-gyp rebuild --target=0.29.1 --arch=x64 --dist-url=https://atom.io/download/atom-shell
 ```
 
-The `HOME=~/.electron-gyp` changes where to find development headers. The
-`--target=0.29.1` is version of Electron. The `--dist-url=...` specifies
-where to download the headers. The `--arch=x64` says the module is built for
-64bit system.
+`HOME=~/.electron-gyp` 改變了尋找開發標頭的地方，`--target=0.29.1` 是 Eletron 的版本， `--dist-url=...` 指定了下載標頭到哪， `--arch=x64` 指出模組要建置在 64 位元系統。
