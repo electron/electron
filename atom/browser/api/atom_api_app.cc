@@ -356,6 +356,7 @@ mate::ObjectTemplateBuilder App::GetObjectTemplateBuilder(
       .SetMethod("quit", base::Bind(&Browser::Quit, browser))
       .SetMethod("exit", base::Bind(&Browser::Exit, browser))
       .SetMethod("focus", base::Bind(&Browser::Focus, browser))
+      .SetMethod("hide", base::Bind(&Browser::Hide, browser))
       .SetMethod("getVersion", base::Bind(&Browser::GetVersion, browser))
       .SetMethod("setVersion", base::Bind(&Browser::SetVersion, browser))
       .SetMethod("getName", base::Bind(&Browser::GetName, browser))
