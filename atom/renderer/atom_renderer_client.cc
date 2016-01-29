@@ -173,7 +173,7 @@ bool AtomRendererClient::ShouldFork(blink::WebLocalFrame* frame,
   // the OpenURLFromTab is triggered, which means form posting would not work,
   // we should solve this by patching Chromium in future.
   *send_referrer = true;
-  return http_method == "GET" && !is_server_redirect;
+  return http_method == "GET";
 }
 
 content::BrowserPluginDelegate* AtomRendererClient::CreateBrowserPluginDelegate(
