@@ -55,9 +55,6 @@ class Browser : public WindowListObserver {
   // Focus the application.
   void Focus();
 
-  // Focus the application.
-  void Hide();
-
   // Returns the version of the executable (or bundle).
   std::string GetVersion() const;
 
@@ -80,6 +77,9 @@ class Browser : public WindowListObserver {
   void SetAppUserModelID(const base::string16& name);
 
 #if defined(OS_MACOSX)
+  // Hide the application.
+  void Hide();
+
   // Bounce the dock icon.
   enum BounceType {
     BOUNCE_CRITICAL = 0,
