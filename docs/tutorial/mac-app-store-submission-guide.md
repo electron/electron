@@ -4,6 +4,10 @@ Since v0.34.0, Electron allows submitting packaged apps to the Mac App Store
 (MAS). This guide provides information on: how to submit your app and the
 limitations of the MAS build.
 
+__Note:__ From v0.36.0 there was a bug preventing GPU process to start after
+the app being sandboxed, so it is recommended to use v0.35.x before this bug
+gets fixed. You can find more about this in [issue #3871][issue-3871].
+
 __Note:__ Submitting an app to Mac App Store requires enrolling [Apple Developer
 Program][developer-program], which costs money.
 
@@ -73,13 +77,18 @@ INSTALLER_KEY="3rd Party Mac Developer Installer: Company Name (APPIDENTITY)"
 
 FRAMEWORKS_PATH="$APP_PATH/Contents/Frameworks"
 
-codesign --deep -fs "$APP_KEY" --entitlements child.plist "$FRAMEWORKS_PATH/Electron Framework.framework/Libraries/libnode.dylib"
-codesign --deep -fs "$APP_KEY" --entitlements child.plist "$FRAMEWORKS_PATH/Electron Framework.framework/Electron Framework"
-codesign --deep -fs "$APP_KEY" --entitlements child.plist "$FRAMEWORKS_PATH/Electron Framework.framework/"
+codesign --deep -fs "$APP_KEY" --entitlements child.plist "$FRAMEWORKS_PATH/Electron Framework.framework/Versions/A"
 codesign --deep -fs "$APP_KEY" --entitlements child.plist "$FRAMEWORKS_PATH/$APP Helper.app/"
 codesign --deep -fs "$APP_KEY" --entitlements child.plist "$FRAMEWORKS_PATH/$APP Helper EH.app/"
 codesign --deep -fs "$APP_KEY" --entitlements child.plist "$FRAMEWORKS_PATH/$APP Helper NP.app/"
-codesign  -fs "$APP_KEY" --entitlements parent.plist "$APP_PATH"
+if [ -d "$FRAMEWORKS_PATH/Squirrel.framework/Versions/A" ]; then
+  # Signing a non-MAS build.
+  codesign --deep -fs "$APP_KEY" --entitlements child.plist "$FRAMEWORKS_PATH/Mantle.framework/Versions/A"
+  codesign --deep -fs "$APP_KEY" --entitlements child.plist "$FRAMEWORKS_PATH/ReactiveCocoa.framework/Versions/A"
+  codesign --deep -fs "$APP_KEY" --entitlements child.plist "$FRAMEWORKS_PATH/Squirrel.framework/Versions/A"
+fi
+codesign -fs "$APP_KEY" --entitlements parent.plist "$APP_PATH"
+
 productbuild --component "$APP_PATH" /Applications --sign "$INSTALLER_KEY" "$RESULT_PATH"
 ```
 
@@ -98,8 +107,8 @@ before uploading. Then you can [submit your app for review][submit-for-review].
 In order to satisfy all requirements for app sandboxing, the following modules
 have been disabled in the MAS build:
 
-* `crash-reporter`
-* `auto-updater`
+* `crashReporter`
+* `autoUpdater`
 
 and the following behaviors have been changed:
 
@@ -108,8 +117,44 @@ and the following behaviors have been changed:
 * Apps will not be aware of DNS changes.
 
 Also, due to the usage of app sandboxing, the resources which can be accessed by
- the app are strictly limited; you can read [App Sandboxing][app-sandboxing] for
- more information.
+the app are strictly limited; you can read [App Sandboxing][app-sandboxing] for
+more information.
+
+## Cryptographic Algorithms Used by Electron
+
+Depending on the country and region you are located, Mac App Store may require
+documenting the cryptographic algorithms used in your app, and even ask you to
+submit a copy of U.S. Encryption Registration (ERN) approval.
+
+Electron uses following cryptographic algorithms:
+
+* AES - [NIST SP 800-38A](http://csrc.nist.gov/publications/nistpubs/800-38a/sp800-38a.pdf), [NIST SP 800-38D](http://csrc.nist.gov/publications/nistpubs/800-38D/SP-800-38D.pdf), [RFC 3394](http://www.ietf.org/rfc/rfc3394.txt)
+* HMAC - [FIPS 198-1](http://csrc.nist.gov/publications/fips/fips198-1/FIPS-198-1_final.pdf)
+* ECDSA - ANS X9.62–2005
+* ECDH - ANS X9.63–2001
+* HKDF - [NIST SP 800-56C](http://csrc.nist.gov/publications/nistpubs/800-56C/SP-800-56C.pdf)
+* PBKDF2 - [RFC 2898](https://tools.ietf.org/html/rfc2898)
+* RSA - [RFC 3447](http://www.ietf.org/rfc/rfc3447)
+* SHA - [FIPS 180-4](http://csrc.nist.gov/publications/fips/fips180-4/fips-180-4.pdf)
+* Blowfish - https://www.schneier.com/cryptography/blowfish/
+* CAST - [RFC 2144](https://tools.ietf.org/html/rfc2144), [RFC 2612](https://tools.ietf.org/html/rfc2612)
+* DES - [FIPS 46-3](http://csrc.nist.gov/publications/fips/fips46-3/fips46-3.pdf)
+* DH - [RFC 2631](https://tools.ietf.org/html/rfc2631)
+* DSA - [ANSI X9.30](http://webstore.ansi.org/RecordDetail.aspx?sku=ANSI+X9.30-1%3A1997)
+* EC - [SEC 1](http://www.secg.org/sec1-v2.pdf)
+* IDEA - "On the Design and Security of Block Ciphers" book by X. Lai
+* MD2 - [RFC 1319](http://tools.ietf.org/html/rfc1319)
+* MD4 - [RFC 6150](https://tools.ietf.org/html/rfc6150)
+* MD5 - [RFC 1321](https://tools.ietf.org/html/rfc1321)
+* MDC2 - [ISO/IEC 10118-2](https://www.openssl.org/docs/manmaster/crypto/mdc2.html)
+* RC2 - [RFC 2268](https://tools.ietf.org/html/rfc2268)
+* RC4 - [RFC 4345](https://tools.ietf.org/html/rfc4345)
+* RC5 - http://people.csail.mit.edu/rivest/Rivest-rc5rev.pdf
+* RIPEMD - [ISO/IEC 10118-3](http://webstore.ansi.org/RecordDetail.aspx?sku=ISO%2FIEC%2010118-3:2004)
+
+On how to get the ERN approval, you can reference the article: [How to legally
+submit an app to Apple’s App Store when it uses encryption (or how to obtain an
+ERN)][ern-tutorial].
 
 [developer-program]: https://developer.apple.com/support/compare-memberships/
 [submitting-your-app]: https://developer.apple.com/library/mac/documentation/IDEs/Conceptual/AppDistributionGuide/SubmittingYourApp/SubmittingYourApp.html
@@ -118,3 +163,5 @@ Also, due to the usage of app sandboxing, the resources which can be accessed by
 [create-record]: https://developer.apple.com/library/ios/documentation/LanguagesUtilities/Conceptual/iTunesConnect_Guide/Chapters/CreatingiTunesConnectRecord.html
 [submit-for-review]: https://developer.apple.com/library/ios/documentation/LanguagesUtilities/Conceptual/iTunesConnect_Guide/Chapters/SubmittingTheApp.html
 [app-sandboxing]: https://developer.apple.com/app-sandboxing/
+[issue-3871]: https://github.com/atom/electron/issues/3871
+[ern-tutorial]: https://carouselapps.com/2015/12/15/legally-submit-app-apples-app-store-uses-encryption-obtain-ern/
