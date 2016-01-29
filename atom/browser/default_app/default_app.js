@@ -1,5 +1,6 @@
-var app = require('app');
-var BrowserWindow = require('browser-window');
+const electron = require('electron');
+const app = electron.app;
+const BrowserWindow = electron.BrowserWindow;
 
 var mainWindow = null;
 
@@ -12,9 +13,9 @@ app.on('ready', function() {
   mainWindow = new BrowserWindow({
     width: 800,
     height: 600,
-    'auto-hide-menu-bar': true,
-    'use-content-size': true,
+    autoHideMenuBar: true,
+    useContentSize: true,
   });
-  mainWindow.loadUrl('file://' + __dirname + '/index.html');
+  mainWindow.loadURL('file://' + __dirname + '/index.html');
   mainWindow.focus();
 });

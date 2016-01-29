@@ -3,13 +3,14 @@
 // found in the LICENSE file.
 
 #include "atom/browser/api/atom_api_web_contents.h"
+#include "atom/browser/web_contents_preferences.h"
 #include "atom/browser/web_view_manager.h"
-#include "atom/common/native_mate_converters/gurl_converter.h"
+#include "atom/common/native_mate_converters/value_converter.h"
+#include "atom/common/node_includes.h"
 #include "content/public/browser/browser_context.h"
 #include "native_mate/dictionary.h"
-#include "net/base/filename_util.h"
 
-#include "atom/common/node_includes.h"
+using atom::WebContentsPreferences;
 
 namespace mate {
 
@@ -22,28 +23,6 @@ struct Converter<content::WebContents*> {
       return false;
     *out = contents->web_contents();
     return true;
-  }
-};
-
-template<>
-struct Converter<atom::WebViewManager::WebViewInfo> {
-  static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
-                     atom::WebViewManager::WebViewInfo* out) {
-    Dictionary options;
-    if (!ConvertFromV8(isolate, val, &options))
-      return false;
-
-    GURL preload_url;
-    if (!options.Get("preloadUrl", &preload_url))
-      return false;
-
-    if (!preload_url.is_empty() &&
-        !net::FileURLToFilePath(preload_url, &(out->preload_script)))
-      return false;
-
-    return options.Get("nodeIntegration", &(out->node_integration)) &&
-           options.Get("plugins", &(out->plugins)) &&
-           options.Get("disableWebSecurity", &(out->disable_web_security));
   }
 };
 
@@ -65,14 +44,13 @@ void AddGuest(int guest_instance_id,
               int element_instance_id,
               content::WebContents* embedder,
               content::WebContents* guest_web_contents,
-              atom::WebViewManager::WebViewInfo info) {
+              const base::DictionaryValue& options) {
   auto manager = GetWebViewManager(embedder);
-  if (manager) {
-    info.guest_instance_id = guest_instance_id;
-    info.embedder = embedder;
+  if (manager)
     manager->AddGuest(guest_instance_id, element_instance_id, embedder,
-                      guest_web_contents, info);
-  }
+                      guest_web_contents);
+
+  WebContentsPreferences::FromWebContents(guest_web_contents)->Merge(options);
 }
 
 void RemoveGuest(content::WebContents* embedder, int guest_instance_id) {

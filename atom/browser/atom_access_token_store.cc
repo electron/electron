@@ -9,6 +9,7 @@
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/common/google_api_key.h"
+#include "content/public/browser/geolocation_provider.h"
 
 namespace atom {
 
@@ -17,13 +18,14 @@ namespace {
 // Notice that we just combined the api key with the url together here, because
 // if we use the standard {url: key} format Chromium would override our key with
 // the predefined one in common.gypi of libchromiumcontent, which is empty.
-const char* kGeolocationProviderUrl =
+const char* kGeolocationProviderURL =
     "https://www.googleapis.com/geolocation/v1/geolocate?key="
     GOOGLEAPIS_API_KEY;
 
 }  // namespace
 
 AtomAccessTokenStore::AtomAccessTokenStore() {
+  content::GeolocationProvider::GetInstance()->UserDidOptIntoLocationServices();
 }
 
 AtomAccessTokenStore::~AtomAccessTokenStore() {
@@ -33,11 +35,11 @@ void AtomAccessTokenStore::LoadAccessTokens(
     const LoadAccessTokensCallbackType& callback) {
   AccessTokenSet access_token_set;
 
-  // Equivelent to access_token_set[kGeolocationProviderUrl].
+  // Equivelent to access_token_set[kGeolocationProviderURL].
   // Somehow base::string16 is causing compilation errors when used in a pair
   // of std::map on Linux, this can work around it.
   std::pair<GURL, base::string16> token_pair;
-  token_pair.first = GURL(kGeolocationProviderUrl);
+  token_pair.first = GURL(kGeolocationProviderURL);
   access_token_set.insert(token_pair);
 
   auto browser_context = AtomBrowserMainParts::Get()->browser_context();

@@ -47,7 +47,9 @@ class TrayIcon {
                               const base::string16& title,
                               const base::string16& contents);
 
-  virtual void PopUpContextMenu(const gfx::Point& pos);
+  // Popups the menu.
+  virtual void PopUpContextMenu(const gfx::Point& pos,
+                                ui::SimpleMenuModel* menu_model);
 
   // Set the context menu for this icon.
   virtual void SetContextMenu(ui::SimpleMenuModel* menu_model) = 0;
@@ -61,13 +63,17 @@ class TrayIcon {
   void NotifyBalloonClosed();
   void NotifyRightClicked(const gfx::Rect& bounds = gfx::Rect(),
                           int modifiers = 0);
-  void NotfiyDropFiles(const std::vector<std::string>& files);
+  void NotifyDrop();
+  void NotifyDropFiles(const std::vector<std::string>& files);
+  void NotifyDragEntered();
+  void NotifyDragExited();
+  void NotifyDragEnded();
 
  protected:
   TrayIcon();
 
  private:
-  ObserverList<TrayIconObserver> observers_;
+  base::ObserverList<TrayIconObserver> observers_;
 
   DISALLOW_COPY_AND_ASSIGN(TrayIcon);
 };

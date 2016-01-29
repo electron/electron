@@ -12,7 +12,9 @@
 #include "base/compiler_specific.h"
 #include "base/memory/scoped_ptr.h"
 
+namespace base {
 template <typename T> struct DefaultSingletonTraits;
+}
 
 namespace google_breakpad {
 class ExceptionHandler;
@@ -34,7 +36,7 @@ class CrashReporterLinux : public CrashReporter {
   void SetUploadParameters() override;
 
  private:
-  friend struct DefaultSingletonTraits<CrashReporterLinux>;
+  friend struct base::DefaultSingletonTraits<CrashReporterLinux>;
 
   CrashReporterLinux();
   virtual ~CrashReporterLinux();

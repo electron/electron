@@ -23,6 +23,7 @@ const CGFloat kVerticalTitleMargin = 2;
   atom::TrayIconCocoa* trayIcon_; // weak
   AtomMenuController* menuController_; // weak
   BOOL isHighlightEnable_;
+  BOOL forceHighlight_;
   BOOL inMouseEventSequence_;
   base::scoped_nsobject<NSImage> image_;
   base::scoped_nsobject<NSImage> alternateImage_;
@@ -39,16 +40,12 @@ const CGFloat kVerticalTitleMargin = 2;
   image_.reset([image copy]);
   trayIcon_ = icon;
   isHighlightEnable_ = YES;
+  forceHighlight_ = NO;
+  inMouseEventSequence_ = NO;
 
-  // Get the initial size.
-  NSStatusBar* statusBar = [NSStatusBar systemStatusBar];
-  NSRect frame = NSMakeRect(0, 0, [self fullWidth], [statusBar thickness]);
-
-  if ((self = [super initWithFrame:frame])) {
+  if ((self = [super initWithFrame: CGRectZero])) {
     // Setup the image view.
-    NSRect iconFrame = frame;
-    iconFrame.size.width = [self iconWidth];
-    image_view_.reset([[NSImageView alloc] initWithFrame:iconFrame]);
+    image_view_.reset([[NSImageView alloc] initWithFrame: CGRectZero]);
     [image_view_ setImageScaling:NSImageScaleNone];
     [image_view_ setImageAlignment:NSImageAlignCenter];
     [self addSubview:image_view_];
@@ -56,15 +53,25 @@ const CGFloat kVerticalTitleMargin = 2;
     // Unregister image_view_ as a dragged destination, allows its parent view
     // (StatusItemView) handle dragging events.
     [image_view_ unregisterDraggedTypes];
-    NSArray* types = [NSArray arrayWithObjects:NSFilenamesPboardType, nil];
-    [self registerForDraggedTypes:types];
+    [self registerForDraggedTypes: @[NSFilenamesPboardType]];
 
     // Create the status item.
-    statusItem_.reset([[[NSStatusBar systemStatusBar]
-                        statusItemWithLength:NSWidth(frame)] retain]);
+    NSStatusItem * item = [[NSStatusBar systemStatusBar]
+                            statusItemWithLength:NSVariableStatusItemLength];
+    statusItem_.reset([item retain]);
     [statusItem_ setView:self];
+
+    // Finalize setup by sizing our views
+    [self updateDimensions];
   }
   return self;
+}
+
+- (void)updateDimensions {
+  NSStatusBar * bar = [NSStatusBar systemStatusBar];
+  [image_view_ setFrame: NSMakeRect(0, 0, [self iconWidth], [bar thickness])];
+  [self setFrame: NSMakeRect(0, 0, [self fullWidth], [bar thickness])];
+  [self setNeedsDisplay:YES];
 }
 
 - (void)removeItem {
@@ -81,13 +88,11 @@ const CGFloat kVerticalTitleMargin = 2;
   // Draw background.
   BOOL highlight = [self shouldHighlight];
   CGFloat thickness = [[statusItem_ statusBar] thickness];
-  NSRect statusItemBounds = NSMakeRect(0, 0, [statusItem_ length], thickness);
-  [statusItem_ drawStatusBarBackgroundInRect:statusItemBounds
-                               withHighlight:highlight];
+  [statusItem_ drawStatusBarBackgroundInRect:self.bounds withHighlight:highlight];
 
   // Make use of NSImageView to draw the image, which can correctly draw
   // template image under dark menu bar.
-  if (highlight && alternateImage_ &&
+  if (inMouseEventSequence_ && alternateImage_ &&
       [image_view_ image] != alternateImage_.get()) {
     [image_view_ setImage:alternateImage_];
   } else if ([image_view_ image] != image_.get()) {
@@ -157,10 +162,10 @@ const CGFloat kVerticalTitleMargin = 2;
   NSColor* foregroundColor = highlight ?
       [NSColor whiteColor] :
       [NSColor colorWithRed:0.265625 green:0.25390625 blue:0.234375 alpha:1.0];
-  return [NSDictionary dictionaryWithObjectsAndKeys:
-             font, NSFontAttributeName,
-             foregroundColor, NSForegroundColorAttributeName,
-             nil];
+  return @{
+    NSFontAttributeName: font,
+    NSForegroundColorAttributeName: foregroundColor
+  };
 }
 
 - (NSDictionary*)titleAttributes {
@@ -169,7 +174,7 @@ const CGFloat kVerticalTitleMargin = 2;
 
 - (void)setImage:(NSImage*)image {
   image_.reset([image copy]);
-  [self setNeedsDisplay:YES];
+  [self updateDimensions];
 }
 
 - (void)setAlternateImage:(NSImage*)image {
@@ -181,12 +186,12 @@ const CGFloat kVerticalTitleMargin = 2;
 }
 
 - (void)setTitle:(NSString*)title {
-  if (title.length > 0)
+  if (title.length > 0) {
     title_.reset([title copy]);
-  else
+  } else {
     title_.reset();
-  [statusItem_ setLength:[self fullWidth]];
-  [self setNeedsDisplay:YES];
+  }
+  [self updateDimensions];
 }
 
 - (void)setMenuController:(AtomMenuController*)menu {
@@ -207,8 +212,14 @@ const CGFloat kVerticalTitleMargin = 2;
   }
   inMouseEventSequence_ = NO;
 
-  // Show menu when single clicked on the icon.
-  if (event.clickCount == 1 && menuController_)
+  // Show menu when there is a context menu.
+  // NB(hokein): Make tray's behavior more like official one's.
+  // When the tray icon gets clicked quickly multiple times, the
+  // event.clickCount doesn't always return 1. Instead, it returns a value that
+  // counts the clicked times.
+  // So we don't check the clickCount here, just pop up the menu for each click
+  // event.
+  if (menuController_)
     [statusItem_ popUpStatusItemMenu:[menuController_ menu]];
 
   // Don't emit click events when menu is showing.
@@ -230,7 +241,19 @@ const CGFloat kVerticalTitleMargin = 2;
   [self setNeedsDisplay:YES];
 }
 
-- (void)popUpContextMenu {
+- (void)popUpContextMenu:(ui::SimpleMenuModel*)menu_model {
+  // Show a custom menu.
+  if (menu_model) {
+    base::scoped_nsobject<AtomMenuController> menuController(
+        [[AtomMenuController alloc] initWithModel:menu_model]);
+    forceHighlight_ = YES;  // Should highlight when showing menu.
+    [self setNeedsDisplay:YES];
+    [statusItem_ popUpStatusItemMenu:[menuController menu]];
+    forceHighlight_ = NO;
+    [self setNeedsDisplay:YES];
+    return;
+  }
+
   if (menuController_ && ![menuController_ isMenuOpen]) {
     // Redraw the dray icon to show highlight if it is enabled.
     [self setNeedsDisplay:YES];
@@ -248,10 +271,24 @@ const CGFloat kVerticalTitleMargin = 2;
 }
 
 - (NSDragOperation)draggingEntered:(id <NSDraggingInfo>)sender {
+  trayIcon_->NotifyDragEntered();
   return NSDragOperationCopy;
 }
 
-- (BOOL)performDragOperation:(id <NSDraggingInfo>)sender {
+- (void)draggingExited:(id <NSDraggingInfo>)sender {
+  trayIcon_->NotifyDragExited();
+}
+
+- (void)draggingEnded:(id <NSDraggingInfo>)sender {
+  trayIcon_->NotifyDragEnded();
+
+  if (NSPointInRect([sender draggingLocation], self.frame)) {
+    trayIcon_->NotifyDrop();
+    [self handleDrop:sender];
+  }
+}
+
+- (BOOL)handleDrop:(id <NSDraggingInfo>)sender {
   NSPasteboard* pboard = [sender draggingPasteboard];
 
   if ([[pboard types] containsObject:NSFilenamesPboardType]) {
@@ -259,13 +296,23 @@ const CGFloat kVerticalTitleMargin = 2;
     NSArray* files = [pboard propertyListForType:NSFilenamesPboardType];
     for (NSString* file in files)
       dropFiles.push_back(base::SysNSStringToUTF8(file));
-    trayIcon_->NotfiyDropFiles(dropFiles);
+    trayIcon_->NotifyDropFiles(dropFiles);
     return YES;
   }
   return NO;
 }
 
+- (BOOL)prepareForDragOperation:(id <NSDraggingInfo>)sender {
+  return YES;
+}
+
+- (BOOL)performDragOperation:(id <NSDraggingInfo>)sender {
+  return YES;
+}
+
 - (BOOL)shouldHighlight {
+  if (isHighlightEnable_ && forceHighlight_)
+    return true;
   BOOL isMenuOpen = menuController_ && [menuController_ isMenuOpen];
   return isHighlightEnable_ && (inMouseEventSequence_ || isMenuOpen);
 }
@@ -316,8 +363,9 @@ void TrayIconCocoa::SetHighlightMode(bool highlight) {
   [status_item_view_ setHighlight:highlight];
 }
 
-void TrayIconCocoa::PopUpContextMenu(const gfx::Point& pos) {
-  [status_item_view_ popUpContextMenu];
+void TrayIconCocoa::PopUpContextMenu(const gfx::Point& pos,
+                                     ui::SimpleMenuModel* menu_model) {
+  [status_item_view_ popUpContextMenu:menu_model];
 }
 
 void TrayIconCocoa::SetContextMenu(ui::SimpleMenuModel* menu_model) {

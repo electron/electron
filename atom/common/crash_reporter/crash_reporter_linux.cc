@@ -130,7 +130,7 @@ bool CrashReporterLinux::CrashDone(const MinidumpDescriptor& minidump,
 
 // static
 CrashReporterLinux* CrashReporterLinux::GetInstance() {
-  return Singleton<CrashReporterLinux>::get();
+  return base::Singleton<CrashReporterLinux>::get();
 }
 
 // static

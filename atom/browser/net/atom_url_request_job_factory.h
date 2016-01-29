@@ -10,8 +10,7 @@
 #include <string>
 #include <vector>
 
-#include "base/basictypes.h"
-#include "base/compiler_specific.h"
+#include "base/memory/scoped_ptr.h"
 #include "base/synchronization/lock.h"
 #include "net/url_request/url_request_job_factory.h"
 
@@ -25,13 +24,13 @@ class AtomURLRequestJobFactory : public net::URLRequestJobFactory {
   // Sets the ProtocolHandler for a scheme. Returns true on success, false on
   // failure (a ProtocolHandler already exists for |scheme|). On success,
   // URLRequestJobFactory takes ownership of |protocol_handler|.
-  bool SetProtocolHandler(const std::string& scheme,
-                          ProtocolHandler* protocol_handler);
+  bool SetProtocolHandler(
+      const std::string& scheme, scoped_ptr<ProtocolHandler> protocol_handler);
 
   // Intercepts the ProtocolHandler for a scheme. Returns the original protocol
   // handler on success, otherwise returns NULL.
-  ProtocolHandler* ReplaceProtocol(const std::string& scheme,
-                                     ProtocolHandler* protocol_handler);
+  scoped_ptr<ProtocolHandler> ReplaceProtocol(
+      const std::string& scheme, scoped_ptr<ProtocolHandler> protocol_handler);
 
   // Returns the protocol handler registered with scheme.
   ProtocolHandler* GetProtocolHandler(const std::string& scheme) const;

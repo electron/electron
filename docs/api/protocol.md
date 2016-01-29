@@ -1,141 +1,204 @@
 # protocol
 
-The `protocol` module can register a new protocol or intercept an existing
-protocol, so you can customize the response to the requests for various protocols.
+The `protocol` module can register a custom protocol or intercept an existing
+protocol.
 
-An example of implementing a protocol that has the same effect with the
+An example of implementing a protocol that has the same effect as the
 `file://` protocol:
 
 ```javascript
-var app = require('app');
-var path = require('path');
+const electron = require('electron');
+const app = electron.app;
+const path = require('path');
 
 app.on('ready', function() {
-    var protocol = require('protocol');
-    protocol.registerProtocol('atom', function(request) {
-      var url = request.url.substr(7)
-      return new protocol.RequestFileJob(path.normalize(__dirname + '/' + url));
-    }, function (error, scheme) {
-      if (!error)
-        console.log(scheme, ' registered successfully')
+    var protocol = electron.protocol;
+    protocol.registerFileProtocol('atom', function(request, callback) {
+      var url = request.url.substr(7);
+      callback({path: path.normalize(__dirname + '/' + url)});
+    }, function (error) {
+      if (error)
+        console.error('Failed to register protocol')
     });
 });
 ```
 
-**Note:** This module can only be used after the `ready` event
-was emitted.
+**Note:** This module can only be used after the `ready` event in the `app`
+module is emitted.
 
-## protocol.registerProtocol(scheme, handler, callback)
+## Methods
 
-* `scheme` String
-* `handler` Function
-* `callback` Function
+The `protocol` module has the following methods:
 
-Registers a custom protocol of `scheme`, the `handler` would be called with
-`handler(request)` when the a request with registered `scheme` is made.
+### `protocol.registerStandardSchemes(schemes)`
 
-You need to return a request job in the `handler` to specify which type of
-response you would like to send.
+* `schemes` Array - Custom schemes to be registered as standard schemes.
 
-By default the scheme is treated like `http:`, which is parsed differently
-from protocols that follows "generic URI syntax" like `file:`, so you probably
-want to call `protocol.registerStandardSchemes` to make your scheme treated as
-standard scheme.
-
-## protocol.unregisterProtocol(scheme, callback)
-
-* `scheme` String
-* `callback` Function
-
-Unregisters the custom protocol of `scheme`.
-
-## protocol.registerStandardSchemes(value)
-
-* `value` Array
-
-`value` is an array of custom schemes to be registered as standard schemes.
-
-A standard scheme adheres to what RFC 3986 calls
+A standard `scheme` adheres to what RFC 3986 calls
 [generic URI syntax](https://tools.ietf.org/html/rfc3986#section-3). This
 includes `file:` and `filesystem:`.
 
-## protocol.isHandledProtocol(scheme, callback)
+### `protocol.registerServiceWorkerSchemes(schemes)`
 
-* `scheme` String
-* `callback` Function
+* `schemes` Array - Custom schemes to be registered to handle service workers.
 
-`callback` returns a boolean whether the `scheme` can be handled already.
-
-## protocol.interceptProtocol(scheme, handler, callback)
+### `protocol.registerFileProtocol(scheme, handler[, completion])`
 
 * `scheme` String
 * `handler` Function
+* `completion` Function (optional)
+
+Registers a protocol of `scheme` that will send the file as a response. The
+`handler` will be called with `handler(request, callback)` when a `request` is
+going to be created with `scheme`. `completion` will be called with
+`completion(null)` when `scheme` is successfully registered or
+`completion(error)` when failed.
+
+* `request` Object
+  * `url` String
+  * `referrer` String
+  * `method` String
+  * `uploadData` Array (optional)
 * `callback` Function
 
-Intercepts an existing protocol with `scheme`, returning `null` or `undefined`
-in `handler` would use the original protocol handler to handle the request.
+The `uploadData` is an array of `data` objects:
 
-## protocol.uninterceptProtocol(scheme, callback)
+* `data` Object
+  * `bytes` Buffer - Content being sent.
+  * `file` String - Path of file being uploaded.
+
+To handle the `request`, the `callback` should be called with either the file's
+path or an object that has a `path` property, e.g. `callback(filePath)` or
+`callback({path: filePath})`.
+
+When `callback` is called with nothing, a number, or an object that has an
+`error` property, the `request` will fail with the `error` number you
+specified. For the available error numbers you can use, please see the
+[net error list][net-error].
+
+By default the `scheme` is treated like `http:`, which is parsed differently
+than protocols that follow the "generic URI syntax" like `file:`, so you
+probably want to call `protocol.registerStandardSchemes` to have your scheme
+treated as a standard scheme.
+
+### `protocol.registerBufferProtocol(scheme, handler[, completion])`
+
+* `scheme` String
+* `handler` Function
+* `completion` Function (optional)
+
+Registers a protocol of `scheme` that will send a `Buffer` as a response.
+
+The usage is the same with `registerFileProtocol`, except that the `callback`
+should be called with either a `Buffer` object or an object that has the `data`,
+`mimeType`, and `charset` properties.
+
+Example:
+
+```javascript
+protocol.registerBufferProtocol('atom', function(request, callback) {
+  callback({mimeType: 'text/html', data: new Buffer('<h5>Response</h5>')});
+}, function (error) {
+  if (error)
+    console.error('Failed to register protocol')
+});
+```
+
+### `protocol.registerStringProtocol(scheme, handler[, completion])`
+
+* `scheme` String
+* `handler` Function
+* `completion` Function (optional)
+
+Registers a protocol of `scheme` that will send a `String` as a response.
+
+The usage is the same with `registerFileProtocol`, except that the `callback`
+should be called with either a `String` or an object that has the `data`,
+`mimeType`, and `charset` properties.
+
+### `protocol.registerHttpProtocol(scheme, handler[, completion])`
+
+* `scheme` String
+* `handler` Function
+* `completion` Function (optional)
+
+Registers a protocol of `scheme` that will send an HTTP request as a response.
+
+The usage is the same with `registerFileProtocol`, except that the `callback`
+should be called with a `redirectRequest` object that has the `url`, `method`,
+`referrer`, `uploadData` and `session` properties.
+
+* `redirectRequest` Object
+  * `url` String
+  * `method` String
+  * `session` Object (optional)
+  * `uploadData` Object (optional)
+
+By default the HTTP request will reuse the current session. If you want the
+request to have a different session you should set `session` to `null`.
+
+For POST requests the `uploadData` object must be provided.
+
+* `uploadData` object
+  * `contentType` String - MIME type of the content.
+  * `data` String - Content to be sent.
+
+### `protocol.unregisterProtocol(scheme[, completion])`
+
+* `scheme` String
+* `completion` Function (optional)
+
+Unregisters the custom protocol of `scheme`.
+
+### `protocol.isProtocolHandled(scheme, callback)`
 
 * `scheme` String
 * `callback` Function
 
-Unintercepts a protocol.
+The `callback` will be called with a boolean that indicates whether there is
+already a handler for `scheme`.
 
-## Class: protocol.RequestFileJob(path)
+### `protocol.interceptFileProtocol(scheme, handler[, completion])`
 
-* `path` String
+* `scheme` String
+* `handler` Function
+* `completion` Function (optional)
 
-Create a request job which would query a file of `path` and set corresponding
-mime types.
+Intercepts `scheme` protocol and uses `handler` as the protocol's new handler
+which sends a file as a response.
 
-## Class: protocol.RequestStringJob(options)
+### `protocol.interceptStringProtocol(scheme, handler[, completion])`
 
-* `options` Object
-  * `mimeType` String - Default is `text/plain`
-  * `charset` String - Default is `UTF-8`
-  * `data` String
+* `scheme` String
+* `handler` Function
+* `completion` Function (optional)
 
-Create a request job which sends a string as response.
+Intercepts `scheme` protocol and uses `handler` as the protocol's new handler
+which sends a `String` as a response.
 
-## Class: protocol.RequestBufferJob(options)
+### `protocol.interceptBufferProtocol(scheme, handler[, completion])`
 
-* `options` Object
-  * `mimeType` String - Default is `application/octet-stream`
-  * `encoding` String - Default is `UTF-8`
-  * `data` Buffer
+* `scheme` String
+* `handler` Function
+* `completion` Function (optional)
 
-Create a request job which sends a buffer as response.
+Intercepts `scheme` protocol and uses `handler` as the protocol's new handler
+which sends a `Buffer` as a response.
 
-## Class: protocol.RequestHttpJob(options)
+### `protocol.interceptHttpProtocol(scheme, handler[, completion])`
 
-* `options` Object
-  * `session` [Session](browser-window.md#class-session) - By default it is
-    the app's default session, setting it to `null` will create a new session
-    for the requests
-  * `url` String
-  * `method` String - Default is `GET`
-  * `referrer` String
+* `scheme` String
+* `handler` Function
+* `completion` Function (optional)
 
-Send a request to `url` and pipe the response back.
+Intercepts `scheme` protocol and uses `handler` as the protocol's new handler
+which sends a new HTTP request as a response.
 
-## Class: protocol.RequestErrorJob(code)
+### `protocol.uninterceptProtocol(scheme[, completion])`
 
-* `code` Integer
+* `scheme` String
+* `completion` Function
 
-Create a request job which sets appropriate network error message to console.
-Default message is `net::ERR_NOT_IMPLEMENTED`. Code should be in the following
-range.
+Remove the interceptor installed for `scheme` and restore its original handler.
 
-* Ranges:
-  * 0- 99 System related errors
-  * 100-199 Connection related errors
-  * 200-299 Certificate errors
-  * 300-399 HTTP errors
-  * 400-499 Cache errors
-  * 500-599 ?
-  * 600-699 FTP errors
-  * 700-799 Certificate manager errors
-  * 800-899 DNS resolver errors
-
-Check the [network error list](https://code.google.com/p/chromium/codesearch#chromium/src/net/base/net_error_list.h) for code and message relations.
+[net-error]: https://code.google.com/p/chromium/codesearch#chromium/src/net/base/net_error_list.h

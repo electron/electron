@@ -1,28 +1,28 @@
 # remote
 
 The `remote` module provides a simple way to do inter-process communication
-between the renderer process and the main process.
+(IPC) between the renderer process (web page) and the main process.
 
-In Electron, only GUI-unrelated modules are available in the renderer process.
-Without the `remote` module, users who wanted to call a main process API in
-the renderer process would have to explicitly send inter-process messages
-to the main process. With the `remote` module, users can invoke methods of
-main process object without explicitly sending inter-process messages,
-similar to Java's
-[RMI](http://en.wikipedia.org/wiki/Java_remote_method_invocation).
-
-An example of creating a browser window in renderer process:
+In Electron, GUI-related modules (such as `dialog`, `menu` etc.) are only
+available in the main process, not in the renderer process. In order to use them
+from the renderer process, the `ipc` module is necessary to send inter-process
+messages to the main process. With the `remote` module, you can invoke methods
+of the main process object without explicitly sending inter-process messages,
+similar to Java's [RMI][rmi]. An example of creating a browser window from a
+renderer process:
 
 ```javascript
-var remote = require('remote');
-var BrowserWindow = remote.require('browser-window');
+const remote = require('electron').remote;
+const BrowserWindow = remote.BrowserWindow;
+
 var win = new BrowserWindow({ width: 800, height: 600 });
-win.loadUrl('https://github.com');
+win.loadURL('https://github.com');
 ```
 
-Note: for the reverse (access renderer process from main process), you can use [webContents.executeJavascript](https://github.com/atom/electron/blob/master/docs/api/browser-window.md#browserwindowwebcontents).
+**Note:** for the reverse (access the renderer process from the main process),
+you can use [webContents.executeJavascript](web-contents.md#webcontentsexecutejavascriptcode-usergesture).
 
-## Remote objects
+## Remote Objects
 
 Each object (including functions) returned by the `remote` module represents an
 object in the main process (we call it a remote object or remote function).
@@ -31,129 +31,133 @@ a new object with the remote constructor (function), you are actually sending
 synchronous inter-process messages.
 
 In the example above, both `BrowserWindow` and `win` were remote objects and
-`new BrowserWindow` didn't create a `BrowserWindow` object in the renderer process.
-Instead, it created a `BrowserWindow` object in the main process and returned the
-corresponding remote object in the renderer process, namely the `win` object.
+`new BrowserWindow` didn't create a `BrowserWindow` object in the renderer
+process. Instead, it created a `BrowserWindow` object in the main process and
+returned the corresponding remote object in the renderer process, namely the
+`win` object.
 
-## Lifetime of remote objects
+Please note that only [enumerable properties](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Enumerability_and_ownership_of_properties) are accessible via remote.
+
+## Lifetime of Remote Objects
 
 Electron makes sure that as long as the remote object in the renderer process
 lives (in other words, has not been garbage collected), the corresponding object
-in the main process would never be released. When the remote object has been
-garbage collected, the corresponding object in the main process would be
+in the main process will not be released. When the remote object has been
+garbage collected, the corresponding object in the main process will be
 dereferenced.
 
-If the remote object is leaked in renderer process (e.g. stored in a map but never
-freed), the corresponding object in the main process would also be leaked,
+If the remote object is leaked in the renderer process (e.g. stored in a map but
+never freed), the corresponding object in the main process will also be leaked,
 so you should be very careful not to leak remote objects.
 
 Primary value types like strings and numbers, however, are sent by copy.
 
 ## Passing callbacks to the main process
 
-Some APIs in the main process accept callbacks, and it would be tempting to
-pass callbacks when calling a remote function. The `remote` module does support
-doing this, but you should also be extremely careful with this.
+Code in the main process can accept callbacks from the renderer - for instance
+the `remote` module - but you should be extremely careful when using this
+feature.
 
 First, in order to avoid deadlocks, the callbacks passed to the main process
-are called asynchronously, so you should not expect the main process to
+are called asynchronously. You should not expect the main process to
 get the return value of the passed callbacks.
 
-Second, the callbacks passed to the main process will not get released
-automatically after they are called. Instead, they will persistent until the
+For instance you can't use a function from the renderer process in an
+`Array.map` called in the main process:
+
+```javascript
+// main process mapNumbers.js
+exports.withRendererCallback = function(mapper) {
+  return [1,2,3].map(mapper);
+}
+
+exports.withLocalCallback = function() {
+  return exports.mapNumbers(function(x) {
+    return x + 1;
+  });
+}
+```
+
+```javascript
+// renderer process
+var mapNumbers = require("remote").require("./mapNumbers");
+
+var withRendererCb = mapNumbers.withRendererCallback(function(x) {
+  return x + 1;
+})
+
+var withLocalCb = mapNumbers.withLocalCallback()
+
+console.log(withRendererCb, withLocalCb) // [true, true, true], [2, 3, 4]
+```
+
+As you can see, the renderer callback's synchronous return value was not as
+expected, and didn't match the return value of an identical callback that lives
+in the main process.
+
+Second, the callbacks passed to the main process will persist until the
 main process garbage-collects them.
 
 For example, the following code seems innocent at first glance. It installs a
 callback for the `close` event on a remote object:
 
 ```javascript
-var remote = require('remote');
 remote.getCurrentWindow().on('close', function() {
   // blabla...
 });
 ```
 
-The problem is that the callback would be stored in the main process until you
-explicitly uninstall it! So each time you reload your window, the callback would
-be installed again and previous callbacks would just leak. To make things
-worse, since the context of previously installed callbacks have been released,
-when the `close` event was emitted, exceptions would be raised in the main process.
+But remember the callback is referenced by the main process until you
+explicitly uninstall it. If you do not, each time you reload your window the
+callback will be installed again, leaking one callback for each restart.
 
-Generally, unless you are clear what you are doing, you should always avoid
-passing callbacks to the main process.
+To make things worse, since the context of previously installed callbacks has
+been released, exceptions will be raised in the main process when the `close`
+event is emitted.
 
-## Remote buffer
+To avoid this problem, ensure you clean up any references to renderer callbacks
+passed to the main process. This involves cleaning up event handlers, or
+ensuring the main process is explicitly told to deference callbacks that came
+from a renderer process that is exiting.
 
-An instance of node's `Buffer` is an object, so when you get a `Buffer` from
-the main process, what you get is indeed a remote object (let's call it remote
-buffer), and everything would just follow the rules of remote objects.
+## Accessing built-in modules in the main process
 
-However you should remember that although a remote buffer behaves like the real
-`Buffer`, it's not a `Buffer` at all. If you pass a remote buffer to node APIs
-that accept a `Buffer`, you should assume the remote buffer would be treated
-like a normal object, instead of a `Buffer`.
-
-For example, you can call `BrowserWindow.capturePage` in the renderer process, which
-returns a `Buffer` by calling the passed callback:
+The built-in modules in the main process are added as getters in the `remote`
+module, so you can use them directly like the `electron` module.
 
 ```javascript
-var remote = require('remote');
-var fs = require('fs');
-remote.getCurrentWindow().capturePage(function(image) {
-  var buf = image.toPng();
-  fs.writeFile('/tmp/screenshot.png', buf, function(err) {
-    console.log(err);
-  });
-});
+const app = remote.app;
 ```
 
-But you may be surprised to find that the file written was corrupted. This is
-because when you called `fs.writeFile`, thinking that `buf` was a `Buffer` when
-in fact it was a remote buffer, and it was converted to string before it was
-written to the file. Since `buf` contained binary data and could not be represented
-by a UTF-8 encoded string, the written file was corrupted.
+## Methods
 
-The work-around is to write the `buf` in the main process, where it is a real
-`Buffer`:
+The `remote` module has the following methods:
 
-```javascript
-var remote = require('remote');
-remote.getCurrentWindow().capturePage(function(image) {
-  var buf = image.toPng();
-  remote.require('fs').writeFile('/tmp/screenshot.png', buf, function(err) {
-    console.log(err);
-  });
-});
-```
-
-The same thing could happen for all native types, but usually it would just
-throw a type error. The `Buffer` deserves your special attention because it
-might be converted to string, and APIs accepting `Buffer` usually accept string
-too, and data corruption could happen when it contains binary data.
-
-## remote.require(module)
+### `remote.require(module)`
 
 * `module` String
 
 Returns the object returned by `require(module)` in the main process.
 
-## remote.getCurrentWindow()
+### `remote.getCurrentWindow()`
 
-Returns the [BrowserWindow](browser-window.md) object which this web page
-belongs to.
+Returns the [`BrowserWindow`](browser-window.md) object to which this web page
+belongs.
 
-## remote.getCurrentWebContents()
+### `remote.getCurrentWebContents()`
 
-Returns the WebContents object of this web page.
+Returns the [`WebContents`](web-contents.md) object of this web page.
 
-## remote.getGlobal(name)
+### `remote.getGlobal(name)`
 
 * `name` String
 
 Returns the global variable of `name` (e.g. `global[name]`) in the main
 process.
 
-## remote.process
+### `remote.process`
 
 Returns the `process` object in the main process. This is the same as
-`remote.getGlobal('process')`, but gets cached.
+`remote.getGlobal('process')` but is cached.
+
+[rmi]: http://en.wikipedia.org/wiki/Java_remote_method_invocation

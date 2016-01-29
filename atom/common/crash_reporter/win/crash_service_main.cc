@@ -68,7 +68,7 @@ int Main(const wchar_t* cmd) {
   VLOG(1) << "Session start. cmdline is [" << cmd << "]";
 
   // Setting the crash reporter.
-  base::string16 pipe_name = ReplaceStringPlaceholders(kPipeNameFormat,
+  base::string16 pipe_name = base::ReplaceStringPlaceholders(kPipeNameFormat,
                                                  application_name,
                                                  NULL);
   cmd_line.AppendSwitch("no-window");

@@ -11,23 +11,21 @@
 #include "ui/base/window_open_disposition.h"
 #include "url/gurl.h"
 
+#if defined(OS_WIN)
+#include <windows.h>
+#endif
+
 namespace atom {
 
 class NativeWindowObserver {
  public:
   virtual ~NativeWindowObserver() {}
 
-  // Called when the web page of the window has updated it's document title.
-  virtual void OnPageTitleUpdated(bool* prevent_default,
-                                  const std::string& title) {}
-
   // Called when the web page in window wants to create a popup window.
   virtual void WillCreatePopupWindow(const base::string16& frame_name,
                                      const GURL& target_url,
                                      const std::string& partition_id,
                                      WindowOpenDisposition disposition) {}
-
-  virtual void OnFrameRendered(scoped_ptr<uint8[]> rgb, const int size) {}
 
   // Called when user is starting an navigation in web page.
   virtual void WillNavigate(bool* prevent_default, const GURL& url) {}
@@ -52,15 +50,17 @@ class NativeWindowObserver {
   virtual void OnWindowResize() {}
   virtual void OnWindowMove() {}
   virtual void OnWindowMoved() {}
+  virtual void OnWindowScrollTouchBegin() {}
+  virtual void OnWindowScrollTouchEnd() {}
   virtual void OnWindowEnterFullScreen() {}
   virtual void OnWindowLeaveFullScreen() {}
   virtual void OnWindowEnterHtmlFullScreen() {}
   virtual void OnWindowLeaveHtmlFullScreen() {}
 
-  // Redirect devtools events.
-  virtual void OnDevToolsFocus() {}
-  virtual void OnDevToolsOpened() {}
-  virtual void OnDevToolsClosed() {}
+  // Called when window message received
+  #if defined(OS_WIN)
+  virtual void OnWindowMessage(UINT message, WPARAM w_param, LPARAM l_param) {}
+  #endif
 
   // Called when renderer is hung.
   virtual void OnRendererUnresponsive() {}

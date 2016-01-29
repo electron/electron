@@ -8,6 +8,7 @@
 #include "chrome/browser/renderer_host/pepper/pepper_broker_message_filter.h"
 #include "chrome/browser/renderer_host/pepper/pepper_flash_browser_host.h"
 #include "chrome/browser/renderer_host/pepper/pepper_flash_clipboard_message_filter.h"
+#include "chrome/browser/renderer_host/pepper/pepper_flash_drm_host.h"
 #include "chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.h"
 #include "content/public/browser/browser_ppapi_host.h"
 #include "ppapi/host/message_filter_host.h"
@@ -65,6 +66,9 @@ scoped_ptr<ResourceHost> ChromeBrowserPepperHostFactory::CreateResourceHost(
         return scoped_ptr<ResourceHost>(new MessageFilterHost(
             host_->GetPpapiHost(), instance, resource, clipboard_filter));
       }
+      case PpapiHostMsg_FlashDRM_Create::ID:
+        return scoped_ptr<ResourceHost>(
+            new chrome::PepperFlashDRMHost(host_, instance, resource));
     }
   }
 

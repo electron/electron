@@ -1,0 +1,7 @@
+{
+  "env": {
+    "jquery": true,
+    "mocha": true
+  },
+  "extends": "./eslintrc-base.json"
+}

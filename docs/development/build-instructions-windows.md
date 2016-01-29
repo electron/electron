@@ -1,41 +1,44 @@
-# Build instructions (Windows)
+# Build Instructions (Windows)
+
+Follow the guidelines below for building Electron on Windows.
 
 ## Prerequisites
 
 * Windows 7 / Server 2008 R2 or higher
-* Visual Studio 2013 - [download VS 2013 Community Edition for
-  free](http://www.visualstudio.com/products/visual-studio-community-vs)
+* Visual Studio 2013 with Update 4 - [download VS 2013 Community Edition for
+  free](https://www.visualstudio.com/news/vs2013-community-vs).
 * [Python 2.7](http://www.python.org/download/releases/2.7/)
 * [Node.js](http://nodejs.org/download/)
-* [git](http://git-scm.com)
+* [Git](http://git-scm.com)
 
-If you don't have a Windows installation at the moment,
-[modern.ie](https://www.modern.ie/en-us/virtualization-tools#downloads) has
-timebombed versions of Windows that you can use to build Electron.
+If you don't currently have a Windows installation, [modern.ie](https://www.modern.ie/en-us/virtualization-tools#downloads)
+has timebombed versions of Windows that you can use to build Electron.
 
-The building of Electron is done entirely with command-line scripts, so you
-can use any editor you like to develop Electron, but it also means you can
-not use Visual Studio for the development. Support of building with Visual
-Studio will come in the future.
+Building Electron is done entirely with command-line scripts and cannot be done
+with Visual Studio. You can develop Electron with any editor but support for
+building with Visual Studio will come in the future.
 
 **Note:** Even though Visual Studio is not used for building, it's still
 **required** because we need the build toolchains it provides.
 
-## Getting the code
+**Note:** Visual Studio 2015 will not work. Please make sure to get MSVS
+**2013**.
+
+## Getting the Code
 
 ```powershell
-git clone https://github.com/atom/electron.git
+$ git clone https://github.com/atom/electron.git
 ```
 
 ## Bootstrapping
 
 The bootstrap script will download all necessary build dependencies and create
-build project files. Notice that we're using `ninja` to build Electron so
+the build project files. Notice that we're using `ninja` to build Electron so
 there is no Visual Studio project generated.
 
 ```powershell
-cd electron
-python script\bootstrap.py -v
+$ cd electron
+$ python script\bootstrap.py -v
 ```
 
 ## Building
@@ -43,40 +46,51 @@ python script\bootstrap.py -v
 Build both Release and Debug targets:
 
 ```powershell
-python script\build.py
+$ python script\build.py
 ```
 
 You can also only build the Debug target:
 
 ```powershell
-python script\build.py -c D
+$ python script\build.py -c D
 ```
 
-After building is done, you can find `atom.exe` under `out\D`.
+After building is done, you can find `electron.exe` under `out\D` (debug
+target) or under `out\R` (release target).
 
-## 64bit build
+## 64bit Build
 
 To build for the 64bit target, you need to pass `--target_arch=x64` when running
 the bootstrap script:
 
 ```powershell
-python script\bootstrap.py -v --target_arch=x64
+$ python script\bootstrap.py -v --target_arch=x64
 ```
 
 The other building steps are exactly the same.
 
 ## Tests
 
-Test your changes confirm to the project coding style using:
+Test your changes conform to the project coding style using:
 
 ```powershell
-python script\cpplint.py
+$ python script\cpplint.py
 ```
 
 Test functionality using:
 
 ```powershell
-python script\test.py
+$ python script\test.py
+```
+
+Tests that include native modules (e.g. `runas`) can't be executed with the
+debug build (see [#2558](https://github.com/atom/electron/issues/2558) for
+details), but they will work with the release build.
+
+To run the tests with the release build use:
+
+```powershell
+$ python script\test.py -R
 ```
 
 ## Troubleshooting
@@ -110,24 +124,24 @@ Traceback (most recent call last):
 subprocess.CalledProcessError: Command '['npm.cmd', 'install']' returned non-zero exit status 3
 ```
 
-This is caused by a bug when using Cygwin python and Win32 node together. The
-solution is to use the Win32 python to execute the bootstrap script (supposing
-you have installed python under `C:\Python27`):
+This is caused by a bug when using Cygwin Python and Win32 Node together. The
+solution is to use the Win32 Python to execute the bootstrap script (assuming
+you have installed Python under `C:\Python27`):
 
-```bash
-/cygdrive/c/Python27/python.exe script/bootstrap.py
+```powershell
+$ /cygdrive/c/Python27/python.exe script/bootstrap.py
 ```
 
 ### LNK1181: cannot open input file 'kernel32.lib'
 
-Try reinstalling 32bit node.js.
+Try reinstalling 32bit Node.js.
 
 ### Error: ENOENT, stat 'C:\Users\USERNAME\AppData\Roaming\npm'
 
 Simply making that directory [should fix the problem](http://stackoverflow.com/a/25095327/102704):
 
 ```powershell
-mkdir ~\AppData\Roaming\npm
+$ mkdir ~\AppData\Roaming\npm
 ```
 
 ### node-gyp is not recognized as an internal or external command

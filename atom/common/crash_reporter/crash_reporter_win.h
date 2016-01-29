@@ -13,7 +13,9 @@
 #include "base/memory/scoped_ptr.h"
 #include "vendor/breakpad/src/client/windows/handler/exception_handler.h"
 
+namespace base {
 template <typename T> struct DefaultSingletonTraits;
+}
 
 namespace crash_reporter {
 
@@ -29,8 +31,11 @@ class CrashReporterWin : public CrashReporter {
                     bool skip_system_crash_handler) override;
   void SetUploadParameters() override;
 
+  // Crashes the process after generating a dump for the provided exception.
+  int CrashForException(EXCEPTION_POINTERS* info);
+
  private:
-  friend struct DefaultSingletonTraits<CrashReporterWin>;
+  friend struct base::DefaultSingletonTraits<CrashReporterWin>;
 
   CrashReporterWin();
   virtual ~CrashReporterWin();

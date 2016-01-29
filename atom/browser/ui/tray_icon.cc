@@ -26,7 +26,8 @@ void TrayIcon::DisplayBalloon(const gfx::Image& icon,
                               const base::string16& contents) {
 }
 
-void TrayIcon::PopUpContextMenu(const gfx::Point& pos) {
+void TrayIcon::PopUpContextMenu(const gfx::Point& pos,
+                                ui::SimpleMenuModel* menu_model) {
 }
 
 void TrayIcon::NotifyClicked(const gfx::Rect& bounds, int modifiers) {
@@ -55,8 +56,24 @@ void TrayIcon::NotifyRightClicked(const gfx::Rect& bounds, int modifiers) {
                     OnRightClicked(bounds, modifiers));
 }
 
-void TrayIcon::NotfiyDropFiles(const std::vector<std::string>& files) {
+void TrayIcon::NotifyDrop() {
+  FOR_EACH_OBSERVER(TrayIconObserver, observers_, OnDrop());
+}
+
+void TrayIcon::NotifyDropFiles(const std::vector<std::string>& files) {
   FOR_EACH_OBSERVER(TrayIconObserver, observers_, OnDropFiles(files));
+}
+
+void TrayIcon::NotifyDragEntered() {
+  FOR_EACH_OBSERVER(TrayIconObserver, observers_, OnDragEntered());
+}
+
+void TrayIcon::NotifyDragExited() {
+  FOR_EACH_OBSERVER(TrayIconObserver, observers_, OnDragExited());
+}
+
+void TrayIcon::NotifyDragEnded() {
+  FOR_EACH_OBSERVER(TrayIconObserver, observers_, OnDragEnded());
 }
 
 }  // namespace atom

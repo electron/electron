@@ -107,6 +107,10 @@ void Menu::SetSublabel(int index, const base::string16& sublabel) {
   model_->SetSublabel(index, sublabel);
 }
 
+void Menu::SetRole(int index, const base::string16& role) {
+  model_->SetRole(index, role);
+}
+
 void Menu::Clear() {
   model_->Clear();
 }
@@ -147,6 +151,7 @@ bool Menu::IsVisibleAt(int index) const {
 void Menu::BuildPrototype(v8::Isolate* isolate,
                           v8::Local<v8::ObjectTemplate> prototype) {
   mate::ObjectTemplateBuilder(isolate, prototype)
+      .MakeDestroyable()
       .SetMethod("insertItem", &Menu::InsertItemAt)
       .SetMethod("insertCheckItem", &Menu::InsertCheckItemAt)
       .SetMethod("insertRadioItem", &Menu::InsertRadioItemAt)
@@ -154,6 +159,7 @@ void Menu::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("insertSubMenu", &Menu::InsertSubMenuAt)
       .SetMethod("setIcon", &Menu::SetIcon)
       .SetMethod("setSublabel", &Menu::SetSublabel)
+      .SetMethod("setRole", &Menu::SetRole)
       .SetMethod("clear", &Menu::Clear)
       .SetMethod("getIndexOfCommandId", &Menu::GetIndexOfCommandId)
       .SetMethod("getItemCount", &Menu::GetItemCount)
@@ -163,8 +169,7 @@ void Menu::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("isItemCheckedAt", &Menu::IsItemCheckedAt)
       .SetMethod("isEnabledAt", &Menu::IsEnabledAt)
       .SetMethod("isVisibleAt", &Menu::IsVisibleAt)
-      .SetMethod("_popup", &Menu::Popup)
-      .SetMethod("_popupAt", &Menu::PopupAt);
+      .SetMethod("popupAt", &Menu::PopupAt);
 }
 
 }  // namespace api

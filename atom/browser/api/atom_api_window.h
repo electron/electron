@@ -5,6 +5,7 @@
 #ifndef ATOM_BROWSER_API_ATOM_API_WINDOW_H_
 #define ATOM_BROWSER_API_ATOM_API_WINDOW_H_
 
+#include <map>
 #include <string>
 #include <vector>
 
@@ -37,11 +38,14 @@ class WebContents;
 class Window : public mate::TrackableObject<Window>,
                public NativeWindowObserver {
  public:
-  static mate::Wrappable* New(v8::Isolate* isolate,
-                              const mate::Dictionary& options);
+  static mate::Wrappable* New(v8::Isolate* isolate, mate::Arguments* args);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::ObjectTemplate> prototype);
+
+  // Returns the BrowserWindow object from |native_window|.
+  static v8::Local<v8::Value> From(v8::Isolate* isolate,
+                                   NativeWindow* native_window);
 
   NativeWindow* window() const { return window_.get(); }
 
@@ -50,10 +54,7 @@ class Window : public mate::TrackableObject<Window>,
   virtual ~Window();
 
   // NativeWindowObserver:
-  void OnPageTitleUpdated(bool* prevent_default,
-                          const std::string& title) override;
   void WillCloseWindow(bool* prevent_default) override;
-  void OnFrameRendered(scoped_ptr<uint8[]> rgb, const int size) override;
   void OnWindowClosed() override;
   void OnWindowBlur() override;
   void OnWindowFocus() override;
@@ -64,25 +65,23 @@ class Window : public mate::TrackableObject<Window>,
   void OnWindowResize() override;
   void OnWindowMove() override;
   void OnWindowMoved() override;
+  void OnWindowScrollTouchBegin() override;
+  void OnWindowScrollTouchEnd() override;
   void OnWindowEnterFullScreen() override;
   void OnWindowLeaveFullScreen() override;
   void OnWindowEnterHtmlFullScreen() override;
   void OnWindowLeaveHtmlFullScreen() override;
   void OnRendererUnresponsive() override;
   void OnRendererResponsive() override;
-  void OnDevToolsFocus() override;
-  void OnDevToolsOpened() override;
-  void OnDevToolsClosed() override;
   void OnExecuteWindowsCommand(const std::string& command_name) override;
 
-  // mate::Wrappable:
-  bool IsDestroyed() const override;
+  #if defined(OS_WIN)
+  void OnWindowMessage(UINT message, WPARAM w_param, LPARAM l_param) override;
+  #endif
 
  private:
   // APIs for NativeWindow.
-  void Destroy();
   void Close();
-  bool IsClosed();
   void Focus();
   bool IsFocused();
   void Show();
@@ -97,11 +96,11 @@ class Window : public mate::TrackableObject<Window>,
   bool IsMinimized();
   void SetFullScreen(bool fullscreen);
   bool IsFullscreen();
-  void SetBounds(const gfx::Rect& bounds);
+  void SetBounds(const gfx::Rect& bounds, mate::Arguments* args);
   gfx::Rect GetBounds();
-  void SetSize(int width, int height);
+  void SetSize(int width, int height, mate::Arguments* args);
   std::vector<int> GetSize();
-  void SetContentSize(int width, int height);
+  void SetContentSize(int width, int height, mate::Arguments* args);
   std::vector<int> GetContentSize();
   void SetMinimumSize(int width, int height);
   std::vector<int> GetMinimumSize();
@@ -109,10 +108,20 @@ class Window : public mate::TrackableObject<Window>,
   std::vector<int> GetMaximumSize();
   void SetResizable(bool resizable);
   bool IsResizable();
+  void SetMovable(bool movable);
+  bool IsMovable();
+  void SetMinimizable(bool minimizable);
+  bool IsMinimizable();
+  void SetMaximizable(bool maximizable);
+  bool IsMaximizable();
+  void SetFullScreenable(bool fullscreenable);
+  bool IsFullScreenable();
+  void SetClosable(bool closable);
+  bool IsClosable();
   void SetAlwaysOnTop(bool top);
   bool IsAlwaysOnTop();
   void Center();
-  void SetPosition(int x, int y);
+  void SetPosition(int x, int y, mate::Arguments* args);
   std::vector<int> GetPosition();
   void SetTitle(const std::string& title);
   std::string GetTitle();
@@ -120,6 +129,9 @@ class Window : public mate::TrackableObject<Window>,
   void SetSkipTaskbar(bool skip);
   void SetKiosk(bool kiosk);
   bool IsKiosk();
+  void SetBackgroundColor(const std::string& color_name);
+  void SetHasShadow(bool has_shadow);
+  bool HasShadow();
   void FocusOnWebView();
   void BlurWebView();
   bool IsWebViewFocused();
@@ -127,6 +139,7 @@ class Window : public mate::TrackableObject<Window>,
   std::string GetRepresentedFilename();
   void SetDocumentEdited(bool edited);
   bool IsDocumentEdited();
+  void SetIgnoreMouseEvents(bool ignore);
   void CapturePage(mate::Arguments* args);
   void SetProgressBar(double progress);
   void SetOverlayIcon(const gfx::Image& overlay,
@@ -138,11 +151,17 @@ class Window : public mate::TrackableObject<Window>,
   void SetMenuBarVisibility(bool visible);
   bool IsMenuBarVisible();
   void SetAspectRatio(double aspect_ratio, mate::Arguments* args);
+  v8::Local<v8::Value> GetNativeWindowHandle();
 
-  void SendKeyboardEvent(v8::Isolate* isolate, const mate::Dictionary& data);
-  void SendMouseEvent(v8::Isolate* isolate, const mate::Dictionary& data);
-  void BeginFrameSubscription();
-  void EndFrameSubscription();
+#if defined(OS_WIN)
+  typedef base::Callback<void(v8::Local<v8::Value>,
+                              v8::Local<v8::Value>)> MessageCallback;
+
+  bool HookWindowMessage(UINT message, const MessageCallback& callback);
+  bool IsWindowMessageHooked(UINT message);
+  void UnhookWindowMessage(UINT message);
+  void UnhookAllWindowMessages();
+#endif
 
 #if defined(OS_MACOSX)
   void ShowDefinitionForSelection();
@@ -153,10 +172,13 @@ class Window : public mate::TrackableObject<Window>,
 
   int32_t ID() const;
   v8::Local<v8::Value> WebContents(v8::Isolate* isolate);
-  v8::Local<v8::Value> DevToolsWebContents(v8::Isolate* isolate);
+
+#if defined(OS_WIN)
+  typedef std::map<UINT, MessageCallback> MessageCallbackMap;
+  MessageCallbackMap messages_callback_map_;
+#endif
 
   v8::Global<v8::Value> web_contents_;
-  v8::Global<v8::Value> devtools_web_contents_;
   v8::Global<v8::Value> menu_;
 
   api::WebContents* api_web_contents_;

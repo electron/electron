@@ -14,7 +14,9 @@
 #include "base/strings/string_piece.h"
 #include "vendor/crashpad/client/simple_string_dictionary.h"
 
+namespace base {
 template <typename T> struct DefaultSingletonTraits;
+}
 
 namespace crash_reporter {
 
@@ -31,7 +33,7 @@ class CrashReporterMac : public CrashReporter {
   void SetUploadParameters() override;
 
  private:
-  friend struct DefaultSingletonTraits<CrashReporterMac>;
+  friend struct base::DefaultSingletonTraits<CrashReporterMac>;
 
   CrashReporterMac();
   virtual ~CrashReporterMac();

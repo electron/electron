@@ -427,9 +427,10 @@ class PrepareFrameAndViewForPrint : public blink::WebViewClient,
   // blink::WebFrameClient override:
   virtual blink::WebFrame* createChildFrame(
       blink::WebLocalFrame* parent,
+      blink::WebTreeScopeType scope,
       const blink::WebString& name,
       blink::WebSandboxFlags sandboxFlags);
-  virtual void frameDetached(blink::WebFrame* frame);
+  virtual void frameDetached(blink::WebFrame* frame, DetachType type);
 
  private:
   void CallOnReady();
@@ -543,12 +544,12 @@ void PrepareFrameAndViewForPrint::CopySelection(
   // on the page).
   WebPreferences prefs = preferences;
   prefs.javascript_enabled = false;
-  prefs.java_enabled = false;
 
   blink::WebView* web_view = blink::WebView::create(this);
   owns_web_view_ = true;
   content::RenderView::ApplyWebPreferences(prefs, web_view);
-  web_view->setMainFrame(blink::WebLocalFrame::create(this));
+  web_view->setMainFrame(
+      blink::WebLocalFrame::create(blink::WebTreeScopeType::Document, this));
   frame_.Reset(web_view->mainFrame()->toWebLocalFrame());
   node_to_print_.reset();
 
@@ -573,14 +574,17 @@ void PrepareFrameAndViewForPrint::didStopLoading() {
 
 blink::WebFrame* PrepareFrameAndViewForPrint::createChildFrame(
     blink::WebLocalFrame* parent,
+    blink::WebTreeScopeType scope,
     const blink::WebString& name,
     blink::WebSandboxFlags sandboxFlags) {
-  blink::WebFrame* frame = blink::WebLocalFrame::create(this);
+  blink::WebFrame* frame = blink::WebLocalFrame::create(scope, this);
   parent->appendChild(frame);
   return frame;
 }
 
-void PrepareFrameAndViewForPrint::frameDetached(blink::WebFrame* frame) {
+void PrepareFrameAndViewForPrint::frameDetached(blink::WebFrame* frame,
+                                                DetachType type) {
+  DCHECK(type == DetachType::Remove);
   if (frame->parent())
     frame->parent()->removeChild(frame);
   frame->close();

@@ -1,4 +1,6 @@
 .DS_Store
+.tags*
+/.idea/
 /build/
 /dist/
 /external_binaries/

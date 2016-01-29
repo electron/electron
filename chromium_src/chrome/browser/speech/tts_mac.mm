@@ -91,7 +91,7 @@ class TtsPlatformImplMac : public TtsPlatformImpl {
   int last_char_index_;
   bool paused_;
 
-  friend struct DefaultSingletonTraits<TtsPlatformImplMac>;
+  friend struct base::DefaultSingletonTraits<TtsPlatformImplMac>;
 
   DISALLOW_COPY_AND_ASSIGN(TtsPlatformImplMac);
 };
@@ -291,7 +291,7 @@ TtsPlatformImplMac::~TtsPlatformImplMac() {
 
 // static
 TtsPlatformImplMac* TtsPlatformImplMac::GetInstance() {
-  return Singleton<TtsPlatformImplMac>::get();
+  return base::Singleton<TtsPlatformImplMac>::get();
 }
 
 @implementation ChromeTtsDelegate

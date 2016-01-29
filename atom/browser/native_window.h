@@ -9,29 +9,21 @@
 #include <string>
 #include <vector>
 
-#include "media/base/video_frame.h"
-#include "content/public/browser/render_widget_host_view_frame_subscriber.h"
-#include "content/public/browser/native_web_keyboard_event.h"
-#include "third_party/WebKit/public/web/WebInputEvent.h"
 #include "atom/browser/native_window_observer.h"
 #include "atom/browser/ui/accelerator_util.h"
 #include "base/cancelable_callback.h"
 #include "base/memory/scoped_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
-#include "brightray/browser/inspectable_web_contents_view_delegate.h"
+#include "base/supports_user_data.h"
 #include "content/public/browser/readback_types.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "content/public/browser/web_contents_user_data.h"
-#include "native_mate/persistent_dictionary.h"
+#include "extensions/browser/app_window/size_constraints.h"
 #include "ui/gfx/image/image.h"
 #include "ui/gfx/image/image_skia.h"
 
 class SkRegion;
-
-namespace base {
-class CommandLine;
-}
 
 namespace brightray {
 class InspectableWebContents;
@@ -39,7 +31,6 @@ class InspectableWebContents;
 
 namespace content {
 struct NativeWebKeyboardEvent;
-struct WebPreferences;
 }
 
 namespace gfx {
@@ -60,8 +51,8 @@ namespace atom {
 
 struct DraggableRegion;
 
-class NativeWindow : public content::WebContentsObserver,
-                     public brightray::InspectableWebContentsViewDelegate {
+class NativeWindow : public base::SupportsUserData,
+                     public content::WebContentsObserver {
  public:
   using CapturePageCallback = base::Callback<void(const SkBitmap& bitmap)>;
 
@@ -114,20 +105,36 @@ class NativeWindow : public content::WebContentsObserver,
   virtual bool IsMinimized() = 0;
   virtual void SetFullScreen(bool fullscreen) = 0;
   virtual bool IsFullscreen() const = 0;
-  virtual void SetBounds(const gfx::Rect& bounds) = 0;
+  virtual void SetBounds(const gfx::Rect& bounds, bool animate = false) = 0;
   virtual gfx::Rect GetBounds() = 0;
-  virtual void SetSize(const gfx::Size& size);
+  virtual void SetSize(const gfx::Size& size, bool animate = false);
   virtual gfx::Size GetSize();
-  virtual void SetPosition(const gfx::Point& position);
+  virtual void SetPosition(const gfx::Point& position, bool animate = false);
   virtual gfx::Point GetPosition();
-  virtual void SetContentSize(const gfx::Size& size) = 0;
-  virtual gfx::Size GetContentSize() = 0;
-  virtual void SetMinimumSize(const gfx::Size& size) = 0;
-  virtual gfx::Size GetMinimumSize() = 0;
-  virtual void SetMaximumSize(const gfx::Size& size) = 0;
-  virtual gfx::Size GetMaximumSize() = 0;
+  virtual void SetContentSize(const gfx::Size& size, bool animate = false);
+  virtual gfx::Size GetContentSize();
+  virtual void SetSizeConstraints(
+      const extensions::SizeConstraints& size_constraints);
+  virtual extensions::SizeConstraints GetSizeConstraints();
+  virtual void SetContentSizeConstraints(
+      const extensions::SizeConstraints& size_constraints);
+  virtual extensions::SizeConstraints GetContentSizeConstraints();
+  virtual void SetMinimumSize(const gfx::Size& size);
+  virtual gfx::Size GetMinimumSize();
+  virtual void SetMaximumSize(const gfx::Size& size);
+  virtual gfx::Size GetMaximumSize();
   virtual void SetResizable(bool resizable) = 0;
   virtual bool IsResizable() = 0;
+  virtual void SetMovable(bool movable) = 0;
+  virtual bool IsMovable() = 0;
+  virtual void SetMinimizable(bool minimizable) = 0;
+  virtual bool IsMinimizable() = 0;
+  virtual void SetMaximizable(bool maximizable) = 0;
+  virtual bool IsMaximizable() = 0;
+  virtual void SetFullScreenable(bool fullscreenable) = 0;
+  virtual bool IsFullScreenable() = 0;
+  virtual void SetClosable(bool closable) = 0;
+  virtual bool IsClosable() = 0;
   virtual void SetAlwaysOnTop(bool top) = 0;
   virtual bool IsAlwaysOnTop() = 0;
   virtual void Center() = 0;
@@ -137,13 +144,18 @@ class NativeWindow : public content::WebContentsObserver,
   virtual void SetSkipTaskbar(bool skip) = 0;
   virtual void SetKiosk(bool kiosk) = 0;
   virtual bool IsKiosk() = 0;
+  virtual void SetBackgroundColor(const std::string& color_name) = 0;
+  virtual void SetHasShadow(bool has_shadow) = 0;
+  virtual bool HasShadow() = 0;
   virtual void SetRepresentedFilename(const std::string& filename);
   virtual std::string GetRepresentedFilename();
   virtual void SetDocumentEdited(bool edited);
   virtual bool IsDocumentEdited();
+  virtual void SetIgnoreMouseEvents(bool ignore);
   virtual void SetMenu(ui::MenuModel* menu);
   virtual bool HasModalDialog();
   virtual gfx::NativeWindow GetNativeWindow() = 0;
+  virtual gfx::AcceleratedWidget GetAcceleratedWidget() = 0;
 
   // Taskbar/Dock APIs.
   virtual void SetProgressBar(double progress) = 0;
@@ -193,10 +205,6 @@ class NativeWindow : public content::WebContentsObserver,
       content::WebContents*,
       const content::NativeWebKeyboardEvent& event) {}
 
-  // Called when renderer process is going to be started.
-  void AppendExtraCommandLineSwitches(base::CommandLine* command_line);
-  void OverrideWebkitPrefs(content::WebPreferences* prefs);
-
   // Public API used by platform-dependent delegates and observers to send UI
   // related notifications.
   void NotifyWindowClosed();
@@ -209,11 +217,17 @@ class NativeWindow : public content::WebContentsObserver,
   void NotifyWindowMove();
   void NotifyWindowResize();
   void NotifyWindowMoved();
+  void NotifyWindowScrollTouchBegin();
+  void NotifyWindowScrollTouchEnd();
   void NotifyWindowEnterFullScreen();
   void NotifyWindowLeaveFullScreen();
   void NotifyWindowEnterHtmlFullScreen();
   void NotifyWindowLeaveHtmlFullScreen();
   void NotifyWindowExecuteWindowsCommand(const std::string& command);
+
+  #if defined(OS_WIN)
+  void NotifyWindowMessage(UINT message, WPARAM w_param, LPARAM l_param);
+  #endif
 
   void AddObserver(NativeWindowObserver* obs) {
     observers_.AddObserver(obs);
@@ -232,39 +246,43 @@ class NativeWindow : public content::WebContentsObserver,
   bool enable_larger_than_screen() const { return enable_larger_than_screen_; }
   gfx::ImageSkia icon() const { return icon_; }
 
+  bool force_using_draggable_region() const {
+    return force_using_draggable_region_;
+  }
+  void set_force_using_draggable_region(bool force) {
+    force_using_draggable_region_ = true;
+  }
+
   void set_has_dialog_attached(bool has_dialog_attached) {
     has_dialog_attached_ = has_dialog_attached;
   }
-
-  void OnFrameReceived(bool result, scoped_refptr<media::VideoFrame> frame);
-
-  void SendKeyboardEvent(blink::WebInputEvent::Type type, int modifiers, int keycode, int nativeKeycode);
-  void SendMouseEvent(blink::WebInputEvent::Type type, int modifiers, blink::WebMouseEvent::Button button, int x, int y, int movementX, int movementY, int clickCount);
-  void SendMouseWheelEvent(int modifiers, int x, int y, bool clickCount);
-
-  void SetFrameSubscription(bool isOffscreen);
 
  protected:
   NativeWindow(brightray::InspectableWebContents* inspectable_web_contents,
                const mate::Dictionary& options);
 
-  // brightray::InspectableWebContentsViewDelegate:
-  void DevToolsFocused() override;
-  void DevToolsOpened() override;
-  void DevToolsClosed() override;
+  // Convert draggable regions in raw format to SkRegion format. Caller is
+  // responsible for deleting the returned SkRegion instance.
+  scoped_ptr<SkRegion> DraggableRegionsToSkRegion(
+      const std::vector<DraggableRegion>& regions);
+
+  // Converts between content size to window size.
+  virtual gfx::Size ContentSizeToWindowSize(const gfx::Size& size) = 0;
+  virtual gfx::Size WindowSizeToContentSize(const gfx::Size& size) = 0;
+
+  // Called when the window needs to update its draggable region.
+  virtual void UpdateDraggableRegions(
+      const std::vector<DraggableRegion>& regions);
 
   // content::WebContentsObserver:
   void RenderViewCreated(content::RenderViewHost* render_view_host) override;
-  void DidFinishLoad(content::RenderFrameHost* render_frame_host, const GURL& validated_url) override;
   void BeforeUnloadDialogCancelled() override;
-  void TitleWasSet(content::NavigationEntry* entry, bool explicit_set) override;
   bool OnMessageReceived(const IPC::Message& message) override;
 
- private:
-  // Called when the window needs to update its draggable region.
-  void UpdateDraggableRegions(
-      const std::vector<DraggableRegion>& regions);
+  // Parse hex color like "#FFF" or "#EFEFEF"
+  SkColor ParseHexColor(const std::string& name);
 
+ private:
   // Schedule a notification unresponsive event.
   void ScheduleUnresponsiveEvent(int ms);
 
@@ -276,10 +294,11 @@ class NativeWindow : public content::WebContentsObserver,
                          const SkBitmap& bitmap,
                          content::ReadbackResponse response);
 
-  bool offscreen_;
-
   // Whether window has standard frame.
   bool has_frame_;
+
+  // Force the window to be aware of draggable regions.
+  bool force_using_draggable_region_;
 
   // Whether window is transparent.
   bool transparent_;
@@ -287,6 +306,9 @@ class NativeWindow : public content::WebContentsObserver,
   // For custom drag, the whole window is non-draggable and the draggable region
   // has to been explicitly provided.
   scoped_ptr<SkRegion> draggable_region_;  // used in custom drag.
+
+  // Minimum and maximum size, stored as content size.
+  extensions::SizeConstraints size_constraints_;
 
   // Whether window can be resized larger than screen.
   bool enable_larger_than_screen_;
@@ -297,24 +319,12 @@ class NativeWindow : public content::WebContentsObserver,
   // The windows has been closed.
   bool is_closed_;
 
-  // Whether node integration is enabled.
-  bool node_integration_;
-
   // There is a dialog that has been attached to window.
   bool has_dialog_attached_;
 
   // Closure that would be called when window is unresponsive when closing,
   // it should be cancelled when we can prove that the window is responsive.
   base::CancelableClosure window_unresposive_closure_;
-
-  // Web preferences.
-  mate::PersistentDictionary web_preferences_;
-
-  // The script to load before page's JavaScript starts to run.
-  base::FilePath preload_script_;
-
-  // Page's default zoom factor.
-  double zoom_factor_;
 
   // Used to maintain the aspect ratio of a view which is inside of the
   // content view.
@@ -325,36 +335,11 @@ class NativeWindow : public content::WebContentsObserver,
   brightray::InspectableWebContents* inspectable_web_contents_;
 
   // Observers of this window.
-  ObserverList<NativeWindowObserver> observers_;
+  base::ObserverList<NativeWindowObserver> observers_;
 
   base::WeakPtrFactory<NativeWindow> weak_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(NativeWindow);
-};
-
-//This class provides a way to listen to frame renders and to use the rendered frames for offscreen rendering
-class RenderSubscriber : public content::RenderWidgetHostViewFrameSubscriber {
- public:
-  RenderSubscriber(gfx::Size size, base::Callback<void(bool, scoped_refptr<media::VideoFrame>)> callback) : size_(size), callback_(callback) {}
-
-  bool ShouldCaptureFrame(const gfx::Rect& damage_rect,
-                          base::TimeTicks present_time,
-                          scoped_refptr<media::VideoFrame>* storage,
-                          DeliverFrameCallback* callback) override;
-
-  base::TimeTicks last_present_time() const { return last_present_time_; }
-
-  static void CallbackMethod(base::Callback<void(bool, scoped_refptr<media::VideoFrame>)> callback,
-                             scoped_refptr<media::VideoFrame> frame,
-                             base::TimeTicks present_time,
-                             bool success) {
-    callback.Run(success, frame);
-  }
-
- private:
-  gfx::Size size_;
-  base::Callback<void(bool, scoped_refptr<media::VideoFrame>)> callback_;
-  base::TimeTicks last_present_time_;
 };
 
 // This class provides a hook to get a NativeWindow from a WebContents.

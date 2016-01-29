@@ -7,39 +7,30 @@
 
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
+#include "atom/common/node_includes.h"
 #include "base/bind.h"
 #include "base/files/file_util.h"
 #include "content/public/browser/tracing_controller.h"
 #include "native_mate/dictionary.h"
-
-#include "atom/common/node_includes.h"
 
 using content::TracingController;
 
 namespace mate {
 
 template<>
-struct Converter<base::trace_event::CategoryFilter> {
+struct Converter<base::trace_event::TraceConfig> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
-                     base::trace_event::CategoryFilter* out) {
-    std::string filter;
-    if (!ConvertFromV8(isolate, val, &filter))
-      return false;
-    *out = base::trace_event::CategoryFilter(filter);
-    return true;
-  }
-};
-
-template<>
-struct Converter<base::trace_event::TraceOptions> {
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Local<v8::Value> val,
-                     base::trace_event::TraceOptions* out) {
-    std::string options;
+                     base::trace_event::TraceConfig* out) {
+    Dictionary options;
     if (!ConvertFromV8(isolate, val, &options))
       return false;
-    return out->SetFromString(options);
+    std::string category_filter, trace_options;
+    if (!options.Get("categoryFilter", &category_filter) ||
+        !options.Get("traceOptions", &trace_options))
+      return false;
+    *out = base::trace_event::TraceConfig(category_filter, trace_options);
+    return true;
   }
 };
 

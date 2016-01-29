@@ -125,8 +125,8 @@ void PrintPreviewMessageHandler::RunPrintToPDFCallback(
   v8::Locker locker(isolate);
   v8::HandleScope handle_scope(isolate);
   if (data) {
-    v8::Local<v8::Value> buffer = node::Buffer::Use(isolate,
-        data, static_cast<size_t>(data_size));
+    v8::Local<v8::Value> buffer = node::Buffer::New(isolate,
+        data, static_cast<size_t>(data_size)).ToLocalChecked();
     print_to_pdf_callback_map_[request_id].Run(v8::Null(isolate), buffer);
   } else {
     v8::Local<v8::String> error_message = v8::String::NewFromUtf8(isolate,

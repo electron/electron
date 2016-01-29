@@ -21,6 +21,9 @@
 }
 
 - (void)applicationWillFinishLaunching:(NSNotification*)notify {
+  // Don't add the "Enter Full Screen" menu item automatically.
+  [[NSUserDefaults standardUserDefaults] setBool:NO forKey:@"NSFullScreenMenuItemEverywhere"];
+
   atom::Browser::Get()->WillFinishLaunching();
 }
 
@@ -52,12 +55,8 @@
 - (BOOL)applicationShouldHandleReopen:(NSApplication*)theApplication
                     hasVisibleWindows:(BOOL)flag {
   atom::Browser* browser = atom::Browser::Get();
-  if (flag) {
-    return YES;
-  } else {
-    browser->ActivateWithNoOpenWindows();
-    return NO;
-  }
+  browser->Activate(static_cast<bool>(flag));
+  return flag;
 }
 
 @end

@@ -8,16 +8,36 @@
 #include "atom/browser/ui/atom_menu_model.h"
 #include "base/logging.h"
 #include "base/strings/sys_string_conversions.h"
+#include "base/strings/utf_string_conversions.h"
 #include "ui/base/accelerators/accelerator.h"
 #include "ui/base/accelerators/platform_accelerator_cocoa.h"
 #include "ui/base/l10n/l10n_util_mac.h"
 #include "ui/events/cocoa/cocoa_event_utils.h"
 #include "ui/gfx/image/image.h"
 
-@interface AtomMenuController (Private)
-- (void)addSeparatorToMenu:(NSMenu*)menu
-                   atIndex:(int)index;
-@end
+namespace {
+
+struct Role {
+  SEL selector;
+  const char* role;
+};
+Role kRolesMap[] = {
+  { @selector(orderFrontStandardAboutPanel:), "about" },
+  { @selector(hide:), "hide" },
+  { @selector(hideOtherApplications:), "hideothers" },
+  { @selector(unhideAllApplications:), "unhide" },
+  { @selector(arrangeInFront:), "front" },
+  { @selector(undo:), "undo" },
+  { @selector(redo:), "redo" },
+  { @selector(cut:), "cut" },
+  { @selector(copy:), "copy" },
+  { @selector(paste:), "paste" },
+  { @selector(selectAll:), "selectall" },
+  { @selector(performMiniaturize:), "minimize" },
+  { @selector(performClose:), "close" },
+};
+
+}  // namespace
 
 @implementation AtomMenuController
 
@@ -101,7 +121,9 @@
 // associated with the entry in the model identified by |modelIndex|.
 - (void)addItemToMenu:(NSMenu*)menu
               atIndex:(NSInteger)index
-            fromModel:(ui::MenuModel*)model {
+            fromModel:(ui::MenuModel*)ui_model {
+  atom::AtomMenuModel* model = static_cast<atom::AtomMenuModel*>(ui_model);
+
   base::string16 label16 = model->GetLabelAt(index);
   NSString* label = l10n_util::FixUpWindowsStyleLabel(label16);
   base::scoped_nsobject<NSMenuItem> item(
@@ -124,13 +146,14 @@
     [submenu setTitle:[item title]];
     [item setSubmenu:submenu];
 
-    // Hack to set window and help menu.
-    if ([[item title] isEqualToString:@"Window"] && [submenu numberOfItems] > 0)
+    // Set submenu's role.
+    base::string16 role = model->GetRoleAt(index);
+    if (role == base::ASCIIToUTF16("window") && [submenu numberOfItems])
       [NSApp setWindowsMenu:submenu];
-    else if ([[item title] isEqualToString:@"Help"])
+    else if (role == base::ASCIIToUTF16("help"))
       [NSApp setHelpMenu:submenu];
-    if ([[item title] isEqualToString:@"Services"] &&
-        [submenu numberOfItems] == 0)
+
+    if (role == base::ASCIIToUTF16("services"))
       [NSApp setServicesMenu:submenu];
   } else {
     // The MenuModel works on indexes so we can't just set the command id as the
@@ -139,7 +162,6 @@
     // model. Setting the target to |self| allows this class to participate
     // in validation of the menu items.
     [item setTag:index];
-    [item setTarget:self];
     NSValue* modelObject = [NSValue valueWithPointer:model];
     [item setRepresentedObject:modelObject];  // Retains |modelObject|.
     ui::Accelerator accelerator;
@@ -151,6 +173,19 @@
         [item setKeyEquivalent:platformAccelerator->characters()];
         [item setKeyEquivalentModifierMask:
             platformAccelerator->modifier_mask()];
+      }
+    }
+
+    // Set menu item's role.
+    base::string16 role = model->GetRoleAt(index);
+    if (role.empty()) {
+      [item setTarget:self];
+    } else {
+      for (const Role& pair : kRolesMap) {
+        if (role == base::ASCIIToUTF16(pair.role)) {
+          [item setAction:pair.selector];
+          break;
+        }
       }
     }
   }

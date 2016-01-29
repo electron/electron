@@ -3,31 +3,28 @@
 // found in the LICENSE file.
 
 #include "atom/browser/api/atom_api_window.h"
+#include "atom/common/native_mate_converters/value_converter.h"
 
 #include "atom/browser/api/atom_api_menu.h"
 #include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/browser/browser.h"
 #include "atom/browser/native_window.h"
-#include "atom/common/node_includes.h"
-#include "atom/common/options_switches.h"
-#include "atom/common/event_types.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
+#include "atom/common/node_includes.h"
+#include "atom/common/options_switches.h"
 #include "content/public/browser/render_process_host.h"
 #include "native_mate/constructor.h"
 #include "native_mate/dictionary.h"
 #include "ui/gfx/geometry/rect.h"
-#include "v8/include/v8.h"
 
 #if defined(OS_WIN)
 #include "atom/browser/native_window_views.h"
 #include "atom/browser/ui/win/taskbar_host.h"
 #endif
-
-#include "atom/common/node_includes.h"
 
 #if defined(OS_WIN)
 namespace mate {
@@ -64,15 +61,89 @@ void OnCapturePageDone(
   callback.Run(gfx::Image::CreateFrom1xBitmap(bitmap));
 }
 
+// Converts min-width to minWidth, returns false if no conversion is needed.
+bool TranslateOldKey(const std::string& key, std::string* new_key) {
+  if (key.find('-') == std::string::npos)
+    return false;
+  new_key->reserve(key.size());
+  bool next_upper_case = false;
+  for (char c : key) {
+    if (c == '-') {
+      next_upper_case = true;
+    } else if (next_upper_case) {
+      new_key->push_back(base::ToUpperASCII(c));
+      next_upper_case = false;
+    } else {
+      new_key->push_back(c);
+    }
+  }
+  return true;
+}
+
+// Converts min-width to minWidth recursively in the dictionary.
+void TranslateOldOptions(v8::Isolate* isolate, v8::Local<v8::Object> options) {
+  auto context = isolate->GetCurrentContext();
+  auto maybe_keys = options->GetOwnPropertyNames(context);
+  if (maybe_keys.IsEmpty())
+    return;
+  std::vector<std::string> keys;
+  if (!mate::ConvertFromV8(isolate, maybe_keys.ToLocalChecked(), &keys))
+    return;
+  mate::Dictionary dict(isolate, options);
+  for (const auto& key : keys) {
+    v8::Local<v8::Value> value;
+    if (!dict.Get(key, &value))  // Shouldn't happen, but guard it anyway.
+      continue;
+    // Go recursively.
+    v8::Local<v8::Object> sub_options;
+    if (mate::ConvertFromV8(isolate, value, &sub_options))
+      TranslateOldOptions(isolate, sub_options);
+    // Translate key.
+    std::string new_key;
+    if (TranslateOldKey(key, &new_key)) {
+      dict.Set(new_key, value);
+      dict.Delete(key);
+    }
+  }
+}
+
+// Converts binary data to Buffer.
+v8::Local<v8::Value> ToBuffer(v8::Isolate* isolate, void* val, int size) {
+  auto buffer = node::Buffer::New(isolate, static_cast<char*>(val), size);
+  if (buffer.IsEmpty())
+    return v8::Null(isolate);
+  else
+    return buffer.ToLocalChecked();
+}
+
 }  // namespace
 
 
 Window::Window(v8::Isolate* isolate, const mate::Dictionary& options) {
+  // Be compatible with old style field names like min-width.
+  TranslateOldOptions(isolate, options.GetHandle());
+
+  // Use options.webPreferences to create WebContents.
+  mate::Dictionary web_preferences = mate::Dictionary::CreateEmpty(isolate);
+  options.Get(options::kWebPreferences, &web_preferences);
+
+  // Be compatible with old options which are now in web_preferences.
+  v8::Local<v8::Value> value;
+  if (options.Get(options::kNodeIntegration, &value))
+    web_preferences.Set(options::kNodeIntegration, value);
+  if (options.Get(options::kPreloadScript, &value))
+    web_preferences.Set(options::kPreloadScript, value);
+  if (options.Get(options::kZoomFactor, &value))
+    web_preferences.Set(options::kZoomFactor, value);
+
   // Creates the WebContents used by BrowserWindow.
-  mate::Dictionary web_contents_options(isolate, v8::Object::New(isolate));
-  auto web_contents = WebContents::Create(isolate, web_contents_options);
+  auto web_contents = WebContents::Create(isolate, web_preferences);
   web_contents_.Reset(isolate, web_contents.ToV8());
   api_web_contents_ = web_contents.get();
+
+  // Keep a copy of the options for later use.
+  mate::Dictionary(isolate, web_contents->GetWrapper(isolate)).Set(
+      "browserWindowOptions", options);
 
   // Creates BrowserWindow.
   window_.reset(NativeWindow::Create(web_contents->managed_web_contents(),
@@ -80,42 +151,36 @@ Window::Window(v8::Isolate* isolate, const mate::Dictionary& options) {
   web_contents->SetOwnerWindow(window_.get());
   window_->InitFromOptions(options);
   window_->AddObserver(this);
+  AttachAsUserData(window_.get());
 }
 
 Window::~Window() {
-  if (window_)
-    Destroy();
-}
+  if (!window_->IsClosed())
+    window_->CloseContents(nullptr);
 
-void Window::OnPageTitleUpdated(bool* prevent_default,
-                                const std::string& title) {
-  *prevent_default = Emit("page-title-updated", title);
+  // Destroy the native window in next tick because the native code might be
+  // iterating all windows.
+  base::MessageLoop::current()->DeleteSoon(FROM_HERE, window_.release());
 }
 
 void Window::WillCloseWindow(bool* prevent_default) {
   *prevent_default = Emit("close");
 }
 
-void Window::OnFrameRendered(scoped_ptr<uint8[]> rgb, const int size) {
-  v8::Locker locker(isolate());
-  v8::HandleScope handle_scope(isolate());
-
-  auto data = node::Buffer::New(isolate(), reinterpret_cast<const char*>(rgb.get()), static_cast<size_t>(size));
-
-  Emit("frame-rendered", data, size);
-}
-
 void Window::OnWindowClosed() {
-  if (api_web_contents_) {
-    api_web_contents_->DestroyWebContents();
-    api_web_contents_ = nullptr;
-    web_contents_.Reset();
-  }
+  api_web_contents_->DestroyWebContents();
 
   RemoveFromWeakMap();
   window_->RemoveObserver(this);
 
+  // We can not call Destroy here because we need to call Emit first, but we
+  // also do not want any method to be used, so just mark as destroyed here.
+  MarkDestroyed();
+
   Emit("closed");
+
+  // Destroy the native class when window is closed.
+  base::MessageLoop::current()->PostTask(FROM_HERE, GetDestroyClosure());
 }
 
 void Window::OnWindowBlur() {
@@ -162,6 +227,14 @@ void Window::OnWindowLeaveFullScreen() {
   Emit("leave-full-screen");
 }
 
+void Window::OnWindowScrollTouchBegin() {
+  Emit("scroll-touch-begin");
+}
+
+void Window::OnWindowScrollTouchEnd() {
+  Emit("scroll-touch-end");
+}
+
 void Window::OnWindowEnterHtmlFullScreen() {
   Emit("enter-html-full-screen");
 }
@@ -178,57 +251,43 @@ void Window::OnRendererResponsive() {
   Emit("responsive");
 }
 
-void Window::OnDevToolsFocus() {
-  Emit("devtools-focused");
-}
-
-void Window::OnDevToolsOpened() {
-  Emit("devtools-opened");
-
-  v8::Locker locker(isolate());
-  v8::HandleScope handle_scope(isolate());
-  auto handle = WebContents::CreateFrom(
-      isolate(), api_web_contents_->GetDevToolsWebContents());
-  devtools_web_contents_.Reset(isolate(), handle.ToV8());
-}
-
-void Window::OnDevToolsClosed() {
-  Emit("devtools-closed");
-
-  v8::Locker locker(isolate());
-  v8::HandleScope handle_scope(isolate());
-  devtools_web_contents_.Reset();
-}
-
 void Window::OnExecuteWindowsCommand(const std::string& command_name) {
   Emit("app-command", command_name);
 }
 
+#if defined(OS_WIN)
+void Window::OnWindowMessage(UINT message, WPARAM w_param, LPARAM l_param) {
+  if (IsWindowMessageHooked(message)) {
+    messages_callback_map_[message].Run(
+        ToBuffer(isolate(), static_cast<void*>(&w_param), sizeof(WPARAM)),
+        ToBuffer(isolate(), static_cast<void*>(&l_param), sizeof(LPARAM)));
+  }
+}
+#endif
+
 // static
-mate::Wrappable* Window::New(v8::Isolate* isolate,
-                             const mate::Dictionary& options) {
+mate::Wrappable* Window::New(v8::Isolate* isolate, mate::Arguments* args) {
   if (!Browser::Get()->is_ready()) {
-    node::ThrowError(isolate,
-                     "Cannot create BrowserWindow before app is ready");
+    isolate->ThrowException(v8::Exception::Error(mate::StringToV8(
+        isolate, "Cannot create BrowserWindow before app is ready")));
     return nullptr;
   }
+
+  if (args->Length() > 1) {
+    args->ThrowError();
+    return nullptr;
+  }
+
+  mate::Dictionary options;
+  if (!(args->Length() == 1 && args->GetNext(&options))) {
+    options = mate::Dictionary::CreateEmpty(isolate);
+  }
+
   return new Window(isolate, options);
-}
-
-bool Window::IsDestroyed() const {
-  return !window_ || window_->IsClosed();
-}
-
-void Window::Destroy() {
-  window_->CloseContents(nullptr);
 }
 
 void Window::Close() {
   window_->Close();
-}
-
-bool Window::IsClosed() {
-  return window_->IsClosed();
 }
 
 void Window::Focus() {
@@ -287,16 +346,20 @@ bool Window::IsFullscreen() {
   return window_->IsFullscreen();
 }
 
-void Window::SetBounds(const gfx::Rect& bounds) {
-  window_->SetBounds(bounds);
+void Window::SetBounds(const gfx::Rect& bounds, mate::Arguments* args) {
+  bool animate = false;
+  args->GetNext(&animate);
+  window_->SetBounds(bounds, animate);
 }
 
 gfx::Rect Window::GetBounds() {
   return window_->GetBounds();
 }
 
-void Window::SetSize(int width, int height) {
-  window_->SetSize(gfx::Size(width, height));
+void Window::SetSize(int width, int height, mate::Arguments* args) {
+  bool animate = false;
+  args->GetNext(&animate);
+  window_->SetSize(gfx::Size(width, height), animate);
 }
 
 std::vector<int> Window::GetSize() {
@@ -307,8 +370,10 @@ std::vector<int> Window::GetSize() {
   return result;
 }
 
-void Window::SetContentSize(int width, int height) {
-  window_->SetContentSize(gfx::Size(width, height));
+void Window::SetContentSize(int width, int height, mate::Arguments* args) {
+  bool animate = false;
+  args->GetNext(&animate);
+  window_->SetContentSize(gfx::Size(width, height), animate);
 }
 
 std::vector<int> Window::GetContentSize() {
@@ -351,6 +416,46 @@ bool Window::IsResizable() {
   return window_->IsResizable();
 }
 
+void Window::SetMovable(bool movable) {
+  window_->SetMovable(movable);
+}
+
+bool Window::IsMovable() {
+  return window_->IsMovable();
+}
+
+void Window::SetMinimizable(bool minimizable) {
+  window_->SetMinimizable(minimizable);
+}
+
+bool Window::IsMinimizable() {
+  return window_->IsMinimizable();
+}
+
+void Window::SetMaximizable(bool maximizable) {
+  window_->SetMaximizable(maximizable);
+}
+
+bool Window::IsMaximizable() {
+  return window_->IsMaximizable();
+}
+
+void Window::SetFullScreenable(bool fullscreenable) {
+  window_->SetFullScreenable(fullscreenable);
+}
+
+bool Window::IsFullScreenable() {
+  return window_->IsFullScreenable();
+}
+
+void Window::SetClosable(bool closable) {
+  window_->SetClosable(closable);
+}
+
+bool Window::IsClosable() {
+  return window_->IsClosable();
+}
+
 void Window::SetAlwaysOnTop(bool top) {
   window_->SetAlwaysOnTop(top);
 }
@@ -363,8 +468,10 @@ void Window::Center() {
   window_->Center();
 }
 
-void Window::SetPosition(int x, int y) {
-  window_->SetPosition(gfx::Point(x, y));
+void Window::SetPosition(int x, int y, mate::Arguments* args) {
+  bool animate = false;
+  args->GetNext(&animate);
+  window_->SetPosition(gfx::Point(x, y), animate);
 }
 
 std::vector<int> Window::GetPosition() {
@@ -399,6 +506,18 @@ bool Window::IsKiosk() {
   return window_->IsKiosk();
 }
 
+void Window::SetBackgroundColor(const std::string& color_name) {
+  window_->SetBackgroundColor(color_name);
+}
+
+void Window::SetHasShadow(bool has_shadow) {
+  window_->SetHasShadow(has_shadow);
+}
+
+bool Window::HasShadow() {
+  return window_->HasShadow();
+}
+
 void Window::FocusOnWebView() {
   window_->FocusOnWebView();
 }
@@ -427,6 +546,10 @@ bool Window::IsDocumentEdited() {
   return window_->IsDocumentEdited();
 }
 
+void Window::SetIgnoreMouseEvents(bool ignore) {
+  return window_->SetIgnoreMouseEvents(ignore);
+}
+
 void Window::CapturePage(mate::Arguments* args) {
   gfx::Rect rect;
   base::Callback<void(const gfx::Image&)> callback;
@@ -440,14 +563,6 @@ void Window::CapturePage(mate::Arguments* args) {
 
   window_->CapturePage(
       rect, base::Bind(&OnCapturePageDone, args->isolate(), callback));
-}
-
-void Window::BeginFrameSubscription() {
-  window_->SetFrameSubscription(true);
-}
-
-void Window::EndFrameSubscription() {
-  window_->SetFrameSubscription(false);
 }
 
 void Window::SetProgressBar(double progress) {
@@ -506,6 +621,29 @@ bool Window::IsMenuBarVisible() {
   return window_->IsMenuBarVisible();
 }
 
+#if defined(OS_WIN)
+bool Window::HookWindowMessage(UINT message,
+                               const MessageCallback& callback) {
+  messages_callback_map_[message] = callback;
+  return true;
+}
+
+void Window::UnhookWindowMessage(UINT message) {
+  if (!ContainsKey(messages_callback_map_, message))
+    return;
+
+  messages_callback_map_.erase(message);
+}
+
+bool Window::IsWindowMessageHooked(UINT message) {
+  return ContainsKey(messages_callback_map_, message);
+}
+
+void Window::UnhookAllWindowMessages() {
+  messages_callback_map_.clear();
+}
+#endif
+
 #if defined(OS_MACOSX)
 void Window::ShowDefinitionForSelection() {
   window_->ShowDefinitionForSelection();
@@ -518,133 +656,18 @@ void Window::SetAspectRatio(double aspect_ratio, mate::Arguments* args) {
   window_->SetAspectRatio(aspect_ratio, extra_size);
 }
 
+v8::Local<v8::Value> Window::GetNativeWindowHandle() {
+  gfx::AcceleratedWidget handle = window_->GetAcceleratedWidget();
+  return ToBuffer(
+      isolate(), static_cast<void*>(&handle), sizeof(gfx::AcceleratedWidget));
+}
+
 void Window::SetVisibleOnAllWorkspaces(bool visible) {
   return window_->SetVisibleOnAllWorkspaces(visible);
 }
 
 bool Window::IsVisibleOnAllWorkspaces() {
   return window_->IsVisibleOnAllWorkspaces();
-}
-
-void Window::SendKeyboardEvent(v8::Isolate* isolate, const mate::Dictionary& data){
-  auto type = blink::WebInputEvent::Type::Char;
-  int modifiers = 0;
-  int keycode = 0;
-  int native = 0;
-  std::string type_str = "";
-  mate::Dictionary modifier_list = mate::Dictionary::CreateEmpty(isolate);
-
-  data.Get(switches::kEventType, &type_str);
-  data.Get(switches::kModifiers, &modifier_list);
-  data.Get(switches::kKeyCode, &keycode);
-  data.Get(switches::kNativeKeyCode, &native);
-
-  if(type_str.compare(event_types::kKeyDown) == 0){
-    type = blink::WebInputEvent::Type::KeyDown;
-  }else if(type_str.compare(event_types::kKeyUp) == 0){
-    type = blink::WebInputEvent::Type::KeyUp;
-  }else if(type_str.compare(event_types::kChar) == 0){
-    type = blink::WebInputEvent::Type::Char;
-  }
-
-  std::map<std::string, bool> modifier_types;
-  modifier_types[event_types::kModifierIsKeyPad] = false;
-  modifier_types[event_types::kModifierIsAutoRepeat] = false;
-  modifier_types[event_types::kModifierIsLeft] = false;
-  modifier_types[event_types::kModifierIsRight] = false;
-  modifier_types[event_types::kModifierShiftKey] = false;
-  modifier_types[event_types::kModifierControlKey] = false;
-  modifier_types[event_types::kModifierAltKey] = false;
-  modifier_types[event_types::kModifierMetaKey] = false;
-  modifier_types[event_types::kModifierCapsLockOn] = false;
-  modifier_types[event_types::kModifierNumLockOn] = false;
-
-  for(std::map<std::string, bool>::iterator it = modifier_types.begin(); it != modifier_types.end(); ++it){
-    modifier_list.Get(it->first,&(it->second));
-
-    if(it->second) modifiers = modifiers & event_types::modifierStrToWebModifier(it->first);
-  }
-
-  window_->SendKeyboardEvent(type, modifiers, keycode, native);
-}
-
-void Window::SendMouseEvent(v8::Isolate* isolate, const mate::Dictionary& data){
-  int x, y, movementX, movementY, clickCount;
-  std::string type_str = "";
-  std::string button_str = "";
-  mate::Dictionary modifier_list = mate::Dictionary::CreateEmpty(isolate);
-
-  blink::WebInputEvent::Type type = blink::WebInputEvent::Type::MouseMove;
-  blink::WebMouseEvent::Button button = blink::WebMouseEvent::Button::ButtonNone;
-  int modifiers = 0;
-
-  data.Get(switches::kEventType, &type_str);
-  data.Get(switches::kMouseEventButton, &button_str);
-  data.Get(switches::kModifiers, &modifier_list);
-
-  if(type_str.compare(event_types::kMouseDown) == 0){
-    type = blink::WebInputEvent::Type::MouseDown;
-  }else if(type_str.compare(event_types::kMouseUp) == 0){
-    type = blink::WebInputEvent::Type::MouseUp;
-  }else if(type_str.compare(event_types::kMouseMove) == 0){
-    type = blink::WebInputEvent::Type::MouseMove;
-  }else if(type_str.compare(event_types::kMouseEnter) == 0){
-    type = blink::WebInputEvent::Type::MouseEnter;
-  }else if(type_str.compare(event_types::kMouseLeave) == 0){
-    type = blink::WebInputEvent::Type::MouseLeave;
-  }else if(type_str.compare(event_types::kContextMenu) == 0){
-    type = blink::WebInputEvent::Type::ContextMenu;
-  }else if(type_str.compare(event_types::kMouseWheel) == 0){
-    type = blink::WebInputEvent::Type::MouseWheel;
-  }
-
-  std::map<std::string, bool> modifier_types;
-  modifier_types[event_types::kMouseLeftButton] = false;
-  modifier_types[event_types::kMouseRightButton] = false;
-  modifier_types[event_types::kMouseMiddleButton] = false;
-  modifier_types[event_types::kModifierLeftButtonDown] = false;
-  modifier_types[event_types::kModifierMiddleButtonDown] = false;
-  modifier_types[event_types::kModifierRightButtonDown] = false;
-  modifier_types[event_types::kModifierShiftKey] = false;
-  modifier_types[event_types::kModifierControlKey] = false;
-  modifier_types[event_types::kModifierAltKey] = false;
-  modifier_types[event_types::kModifierMetaKey] = false;
-  modifier_types[event_types::kModifierCapsLockOn] = false;
-  modifier_types[event_types::kModifierNumLockOn] = false;
-
-  for(std::map<std::string, bool>::iterator it = modifier_types.begin(); it != modifier_types.end(); ++it){
-    modifier_list.Get(it->first,&(it->second));
-
-    if(it->second) modifiers = modifiers & event_types::modifierStrToWebModifier(it->first);
-  }
-
-  if(type == blink::WebInputEvent::Type::MouseWheel){
-    bool precise = true;
-
-    x = 0;
-    y = 0;
-    data.Get(switches::kX, &x);
-    data.Get(switches::kY, &y);
-    data.Get(switches::kMouseWheelPrecise, &precise);
-
-    window_->SendMouseWheelEvent(modifiers, x, y, precise);
-  }else{
-    if (data.Get(switches::kX, &x) && data.Get(switches::kY, &y)) {
-      if(!data.Get(switches::kMovementX, &movementX)){
-        movementX = 0;
-      }
-
-      if(!data.Get(switches::kMovementY, &movementY)){
-        movementY = 0;
-      }
-
-      if(!data.Get(switches::kClickCount, &clickCount)){
-        clickCount = 0;
-      }
-
-      window_->SendMouseEvent(type, modifiers, button, x, y, movementX, movementY, clickCount);
-    }
-  }
 }
 
 int32_t Window::ID() const {
@@ -658,20 +681,12 @@ v8::Local<v8::Value> Window::WebContents(v8::Isolate* isolate) {
     return v8::Local<v8::Value>::New(isolate, web_contents_);
 }
 
-v8::Local<v8::Value> Window::DevToolsWebContents(v8::Isolate* isolate) {
-  if (devtools_web_contents_.IsEmpty())
-    return v8::Null(isolate);
-  else
-    return v8::Local<v8::Value>::New(isolate, devtools_web_contents_);
-}
-
 // static
 void Window::BuildPrototype(v8::Isolate* isolate,
                             v8::Local<v8::ObjectTemplate> prototype) {
   mate::ObjectTemplateBuilder(isolate, prototype)
-      .SetMethod("destroy", &Window::Destroy, true)
+      .MakeDestroyable()
       .SetMethod("close", &Window::Close)
-      .SetMethod("isClosed", &Window::IsClosed)
       .SetMethod("focus", &Window::Focus)
       .SetMethod("isFocused", &Window::IsFocused)
       .SetMethod("show", &Window::Show)
@@ -687,6 +702,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setFullScreen", &Window::SetFullScreen)
       .SetMethod("isFullScreen", &Window::IsFullscreen)
       .SetMethod("setAspectRatio", &Window::SetAspectRatio)
+      .SetMethod("getNativeWindowHandle", &Window::GetNativeWindowHandle)
       .SetMethod("getBounds", &Window::GetBounds)
       .SetMethod("setBounds", &Window::SetBounds)
       .SetMethod("getSize", &Window::GetSize)
@@ -699,6 +715,16 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("getMaximumSize", &Window::GetMaximumSize)
       .SetMethod("setResizable", &Window::SetResizable)
       .SetMethod("isResizable", &Window::IsResizable)
+      .SetMethod("setMovable", &Window::SetMovable)
+      .SetMethod("isMovable", &Window::IsMovable)
+      .SetMethod("setMinimizable", &Window::SetMinimizable)
+      .SetMethod("isMinimizable", &Window::IsMinimizable)
+      .SetMethod("setMaximizable", &Window::SetMaximizable)
+      .SetMethod("isMaximizable", &Window::IsMaximizable)
+      .SetMethod("setFullScreenable", &Window::SetFullScreenable)
+      .SetMethod("isFullScreenable", &Window::IsFullScreenable)
+      .SetMethod("setClosable", &Window::SetClosable)
+      .SetMethod("isClosable", &Window::IsClosable)
       .SetMethod("setAlwaysOnTop", &Window::SetAlwaysOnTop)
       .SetMethod("isAlwaysOnTop", &Window::IsAlwaysOnTop)
       .SetMethod("center", &Window::Center)
@@ -710,10 +736,14 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setSkipTaskbar", &Window::SetSkipTaskbar)
       .SetMethod("setKiosk", &Window::SetKiosk)
       .SetMethod("isKiosk", &Window::IsKiosk)
+      .SetMethod("setBackgroundColor", &Window::SetBackgroundColor)
+      .SetMethod("setHasShadow", &Window::SetHasShadow)
+      .SetMethod("hasShadow", &Window::HasShadow)
       .SetMethod("setRepresentedFilename", &Window::SetRepresentedFilename)
       .SetMethod("getRepresentedFilename", &Window::GetRepresentedFilename)
       .SetMethod("setDocumentEdited", &Window::SetDocumentEdited)
       .SetMethod("isDocumentEdited", &Window::IsDocumentEdited)
+      .SetMethod("setIgnoreMouseEvents", &Window::SetIgnoreMouseEvents)
       .SetMethod("focusOnWebView", &Window::FocusOnWebView)
       .SetMethod("blurWebView", &Window::BlurWebView)
       .SetMethod("isWebViewFocused", &Window::IsWebViewFocused)
@@ -730,17 +760,28 @@ void Window::BuildPrototype(v8::Isolate* isolate,
                  &Window::SetVisibleOnAllWorkspaces)
       .SetMethod("isVisibleOnAllWorkspaces",
                  &Window::IsVisibleOnAllWorkspaces)
-      .SetMethod("sendMouseEvent", &Window::SendMouseEvent)
-      .SetMethod("sendKeyboardEvent", &Window::SendKeyboardEvent)
-      .SetMethod("beginFrameSubscription", &Window::BeginFrameSubscription)
-      .SetMethod("endFrameSubscription", &Window::EndFrameSubscription)
+#if defined(OS_WIN)
+      .SetMethod("hookWindowMessage", &Window::HookWindowMessage)
+      .SetMethod("isWindowMessageHooked", &Window::IsWindowMessageHooked)
+      .SetMethod("unhookWindowMessage", &Window::UnhookWindowMessage)
+      .SetMethod("unhookAllWindowMessages", &Window::UnhookAllWindowMessages)
+#endif
 #if defined(OS_MACOSX)
       .SetMethod("showDefinitionForSelection",
                  &Window::ShowDefinitionForSelection)
 #endif
-      .SetProperty("id", &Window::ID, true)
-      .SetProperty("webContents", &Window::WebContents, true)
-      .SetProperty("devToolsWebContents", &Window::DevToolsWebContents, true);
+      .SetProperty("id", &Window::ID)
+      .SetProperty("webContents", &Window::WebContents);
+}
+
+// static
+v8::Local<v8::Value> Window::From(v8::Isolate* isolate,
+                                  NativeWindow* native_window) {
+  auto existing = TrackableObject::FromWrappedClass(isolate, native_window);
+  if (existing)
+    return existing->GetWrapper(isolate);
+  else
+    return v8::Null(isolate);
 }
 
 }  // namespace api

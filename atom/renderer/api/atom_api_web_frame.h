@@ -41,6 +41,8 @@ class WebFrame : public mate::Wrappable {
   double SetZoomFactor(double factor);
   double GetZoomFactor() const;
 
+  void SetZoomLevelLimits(double min_level, double max_level);
+
   v8::Local<v8::Value> RegisterEmbedderCustomElement(
       const base::string16& name, v8::Local<v8::Object> options);
   void RegisterElementResizeCallback(
@@ -55,7 +57,14 @@ class WebFrame : public mate::Wrappable {
                              v8::Local<v8::Object> provider);
 
   void RegisterURLSchemeAsSecure(const std::string& scheme);
-  void RegisterURLSchemeAsBypassingCsp(const std::string& scheme);
+  void RegisterURLSchemeAsBypassingCSP(const std::string& scheme);
+  void RegisterURLSchemeAsPrivileged(const std::string& scheme);
+
+  // Editing.
+  void InsertText(const std::string& text);
+
+  // Excecuting scripts.
+  void ExecuteJavaScript(const base::string16& code, mate::Arguments* args);
 
   // mate::Wrappable:
   virtual mate::ObjectTemplateBuilder GetObjectTemplateBuilder(

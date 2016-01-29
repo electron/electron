@@ -2,8 +2,9 @@
 
 :+1::tada: First off, thanks for taking the time to contribute! :tada::+1:
 
-This project adheres to the [Contributor Covenant 1.2](http://contributor-covenant.org/version/1/2/0).
-By participating, you are expected to uphold this code. Please report unacceptable behavior to atom@github.com.
+This project adheres to the Contributor Covenant [code of conduct](CODE_OF_CONDUCT.md).
+By participating, you are expected to uphold this code. Please report unacceptable
+behavior to atom@github.com.
 
 The following is a set of guidelines for contributing to Electron.
 These are just guidelines, not rules, use your best judgment and feel free to
@@ -29,7 +30,8 @@ possible with your report. If you can, please include:
 * Include screenshots and animated GIFs in your pull request whenever possible.
 * Follow the CoffeeScript, JavaScript, C++ and Python [coding style defined in docs](/docs/development/coding-style.md).
 * Write documentation in [Markdown](https://daringfireball.net/projects/markdown).
-* Use short, present tense commit messages. See [Commit Message Styleguide](#git-commit-messages-styleguide).
+  See the [Documentation Styleguide](/docs/styleguide.md).
+* Use short, present tense commit messages. See [Commit Message Styleguide](#git-commit-messages).
 
 ## Styleguides
 
@@ -56,6 +58,7 @@ possible with your report. If you can, please include:
 * Use the imperative mood ("Move cursor to..." not "Moves cursor to...")
 * Limit the first line to 72 characters or less
 * Reference issues and pull requests liberally
+* When only changing documentation, include `[ci skip]` in the commit description
 * Consider starting the commit message with an applicable emoji:
   * :art: `:art:` when improving the format/structure of the code
   * :racehorse: `:racehorse:` when improving performance

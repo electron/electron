@@ -1,38 +1,38 @@
-// Copyright (c) 2013 GitHub, Inc.
-// Copyright (c) 2012 Intel Corp. All rights reserved.
+// Copyright (c) 2015 GitHub, Inc.
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
 #ifndef ATOM_COMMON_API_ATOM_API_ID_WEAK_MAP_H_
 #define ATOM_COMMON_API_ATOM_API_ID_WEAK_MAP_H_
 
-#include <vector>
-
 #include "atom/common/id_weak_map.h"
-#include "native_mate/wrappable.h"
+#include "native_mate/object_template_builder.h"
+#include "native_mate/handle.h"
 
 namespace atom {
 
 namespace api {
 
-// Like ES6's WeakMap, but the key is Integer and the value is Weak Pointer.
 class IDWeakMap : public mate::Wrappable {
  public:
-  IDWeakMap();
+  static mate::Wrappable* Create(v8::Isolate* isolate);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::ObjectTemplate> prototype);
 
+ protected:
+  IDWeakMap();
+  ~IDWeakMap();
+
  private:
-  virtual ~IDWeakMap();
+  // Api for IDWeakMap.
+  void Set(v8::Isolate* isolate, int32_t id, v8::Local<v8::Object> object);
+  v8::Local<v8::Object> Get(v8::Isolate* isolate, int32_t id);
+  bool Has(int32_t id);
+  void Remove(int32_t id);
+  void Clear();
 
-  int32_t Add(v8::Isolate* isolate, v8::Local<v8::Object> object);
-  v8::Local<v8::Value> Get(v8::Isolate* isolate, int32_t key);
-  bool Has(int32_t key) const;
-  std::vector<int32_t> Keys() const;
-  void Remove(int32_t key);
-
-  atom::IDWeakMap map_;
+  atom::IDWeakMap id_weak_map_;
 
   DISALLOW_COPY_AND_ASSIGN(IDWeakMap);
 };

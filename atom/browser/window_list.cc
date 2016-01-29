@@ -13,7 +13,7 @@
 namespace atom {
 
 // static
-base::LazyInstance<ObserverList<WindowListObserver>>::Leaky
+base::LazyInstance<base::ObserverList<WindowListObserver>>::Leaky
     WindowList::observers_ = LAZY_INSTANCE_INITIALIZER;
 
 // static

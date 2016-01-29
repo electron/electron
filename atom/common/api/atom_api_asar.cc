@@ -10,14 +10,15 @@
 #include "atom/common/asar/archive.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
+#include "atom/common/node_includes.h"
 #include "native_mate/arguments.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 #include "native_mate/wrappable.h"
 
-#include "atom/common/node_includes.h"
-
 namespace {
+
+v8::Persistent<v8::ObjectTemplate> template_;
 
 class Archive : public mate::Wrappable {
  public:
@@ -102,15 +103,20 @@ class Archive : public mate::Wrappable {
 
   // mate::Wrappable:
   mate::ObjectTemplateBuilder GetObjectTemplateBuilder(v8::Isolate* isolate) {
-    return mate::ObjectTemplateBuilder(isolate)
-        .SetValue("path", archive_->path())
-        .SetMethod("getFileInfo", &Archive::GetFileInfo)
-        .SetMethod("stat", &Archive::Stat)
-        .SetMethod("readdir", &Archive::Readdir)
-        .SetMethod("realpath", &Archive::Realpath)
-        .SetMethod("copyFileOut", &Archive::CopyFileOut)
-        .SetMethod("getFd", &Archive::GetFD)
-        .SetMethod("destroy", &Archive::Destroy);
+    if (template_.IsEmpty())
+      template_.Reset(isolate, mate::ObjectTemplateBuilder(isolate)
+          .SetValue("path", archive_->path())
+          .SetMethod("getFileInfo", &Archive::GetFileInfo)
+          .SetMethod("stat", &Archive::Stat)
+          .SetMethod("readdir", &Archive::Readdir)
+          .SetMethod("realpath", &Archive::Realpath)
+          .SetMethod("copyFileOut", &Archive::CopyFileOut)
+          .SetMethod("getFd", &Archive::GetFD)
+          .SetMethod("destroy", &Archive::Destroy)
+          .Build());
+
+    return mate::ObjectTemplateBuilder(
+        isolate, v8::Local<v8::ObjectTemplate>::New(isolate, template_));
   }
 
  private:

@@ -41,7 +41,7 @@ std::vector<std::string> MetricsToArray(uint32_t metrics) {
   if (metrics & gfx::DisplayObserver::DISPLAY_METRIC_DEVICE_SCALE_FACTOR)
     array.push_back("scaleFactor");
   if (metrics & gfx::DisplayObserver::DISPLAY_METRIC_ROTATION)
-    array.push_back("rotaion");
+    array.push_back("rotation");
   return array;
 }
 
@@ -113,14 +113,16 @@ mate::ObjectTemplateBuilder Screen::GetObjectTemplateBuilder(
 // static
 v8::Local<v8::Value> Screen::Create(v8::Isolate* isolate) {
   if (!Browser::Get()->is_ready()) {
-    node::ThrowError(isolate,
-                     "Cannot initialize \"screen\" module before app is ready");
+    isolate->ThrowException(v8::Exception::Error(mate::StringToV8(
+        isolate,
+        "Cannot initialize \"screen\" module before app is ready")));
     return v8::Null(isolate);
   }
 
   gfx::Screen* screen = gfx::Screen::GetNativeScreen();
   if (!screen) {
-    node::ThrowError(isolate, "Failed to get screen information");
+    isolate->ThrowException(v8::Exception::Error(mate::StringToV8(
+        isolate, "Failed to get screen information")));
     return v8::Null(isolate);
   }
 

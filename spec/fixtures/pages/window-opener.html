@@ -1,7 +1,10 @@
 <html>
 <body>
 <script type="text/javascript" charset="utf-8">
-  require('ipc').send('opener', window.opener);
+  if (window.opener !== null)
+    window.opener.postMessage(typeof window.opener, '*');
+  else
+    require('electron').ipcRenderer.send('opener', window.opener);
 </script>
 </body>
 </html>

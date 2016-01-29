@@ -8,12 +8,18 @@
 #include <string>
 #include <vector>
 
+#include "atom/browser/api/frame_subscriber.h"
+#include "atom/browser/api/save_page_handler.h"
 #include "atom/browser/api/trackable_object.h"
 #include "atom/browser/common_web_contents_delegate.h"
-#include "content/public/common/favicon_url.h"
 #include "content/public/browser/web_contents_observer.h"
+#include "content/public/common/favicon_url.h"
 #include "native_mate/handle.h"
 #include "ui/gfx/image/image.h"
+
+namespace blink {
+struct WebDeviceEmulationParams;
+}
 
 namespace brightray {
 class InspectableWebContents;
@@ -48,11 +54,11 @@ class WebContents : public mate::TrackableObject<WebContents>,
   static mate::Handle<WebContents> Create(
       v8::Isolate* isolate, const mate::Dictionary& options);
 
-  void Destroy();
-  bool IsAlive() const;
   int GetID() const;
   bool Equal(const WebContents* web_contents) const;
   void LoadURL(const GURL& url, const mate::Dictionary& options);
+  void DownloadURL(const GURL& url);
+  GURL GetURL() const;
   base::string16 GetTitle() const;
   bool IsLoading() const;
   bool IsWaitingForResponse() const;
@@ -65,15 +71,18 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void SetUserAgent(const std::string& user_agent);
   std::string GetUserAgent();
   void InsertCSS(const std::string& css);
-  void ExecuteJavaScript(const base::string16& code,
-                         bool has_user_gesture);
+  bool SavePage(const base::FilePath& full_file_path,
+                const content::SavePageType& save_type,
+                const SavePageHandler::SavePageCallback& callback);
   void OpenDevTools(mate::Arguments* args);
   void CloseDevTools();
   bool IsDevToolsOpened();
+  bool IsDevToolsFocused();
   void ToggleDevTools();
+  void EnableDeviceEmulation(const blink::WebDeviceEmulationParams& params);
+  void DisableDeviceEmulation();
   void InspectElement(int x, int y);
   void InspectServiceWorker();
-  v8::Local<v8::Value> Session(v8::Isolate* isolate);
   void HasServiceWorker(const base::Callback<void(bool)>&);
   void UnregisterServiceWorker(const base::Callback<void(bool)>&);
   void SetAudioMuted(bool muted);
@@ -85,8 +94,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
                   const PrintToPDFCallback& callback);
 
   // DevTools workspace api.
-  void AddWorkSpace(const base::FilePath& path);
-  void RemoveWorkSpace(const base::FilePath& path);
+  void AddWorkSpace(mate::Arguments* args, const base::FilePath& path);
+  void RemoveWorkSpace(mate::Arguments* args, const base::FilePath& path);
 
   // Editing commands.
   void Undo();
@@ -100,29 +109,49 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void Unselect();
   void Replace(const base::string16& word);
   void ReplaceMisspelling(const base::string16& word);
+  uint32 FindInPage(mate::Arguments* args);
+  void StopFindInPage(content::StopFindAction action);
 
   // Focus.
   void Focus();
   void TabTraverse(bool reverse);
 
-  // Sending messages to browser.
+  // Send messages to browser.
   bool SendIPCMessage(const base::string16& channel,
                       const base::ListValue& args);
+
+  // Send WebInputEvent to the page.
+  void SendInputEvent(v8::Isolate* isolate, v8::Local<v8::Value> input_event);
+
+  // Subscribe to the frame updates.
+  void BeginFrameSubscription(
+      const FrameSubscriber::FrameCaptureCallback& callback);
+  void EndFrameSubscription();
 
   // Methods for creating <webview>.
   void SetSize(const SetSizeParams& params);
   void SetAllowTransparency(bool allow);
   bool IsGuest() const;
 
+  // Returns the web preferences of current WebContents.
+  v8::Local<v8::Value> GetWebPreferences(v8::Isolate* isolate);
+
+  // Returns the owner window.
+  v8::Local<v8::Value> GetOwnerBrowserWindow();
+
+  // Properties.
+  v8::Local<v8::Value> Session(v8::Isolate* isolate);
+  v8::Local<v8::Value> DevToolsWebContents(v8::Isolate* isolate);
+  v8::Local<v8::Value> Debugger(v8::Isolate* isolate);
+
+  // mate::TrackableObject:
+  static void BuildPrototype(v8::Isolate* isolate,
+                             v8::Local<v8::ObjectTemplate> prototype);
+
  protected:
   explicit WebContents(content::WebContents* web_contents);
-  explicit WebContents(const mate::Dictionary& options);
+  WebContents(v8::Isolate* isolate, const mate::Dictionary& options);
   ~WebContents();
-
-  // mate::Wrappable:
-  mate::ObjectTemplateBuilder GetObjectTemplateBuilder(
-      v8::Isolate* isolate) override;
-  bool IsDestroyed() const override;
 
   // content::WebContentsDelegate:
   bool AddMessageToConsole(content::WebContents* source,
@@ -135,7 +164,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
       int route_id,
       int main_frame_route_id,
       WindowContainerType window_container_type,
-      const base::string16& frame_name,
+      const std::string& frame_name,
       const GURL& target_url,
       const std::string& partition_id,
       content::SessionStorageNamespace* session_storage_namespace) override;
@@ -158,6 +187,14 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void ExitFullscreenModeForTab(content::WebContents* source) override;
   void RendererUnresponsive(content::WebContents* source) override;
   void RendererResponsive(content::WebContents* source) override;
+  bool HandleContextMenu(const content::ContextMenuParams& params) override;
+  bool OnGoToEntryOffset(int offset) override;
+  void FindReply(content::WebContents* web_contents,
+                 int request_id,
+                 int number_of_matches,
+                 const gfx::Rect& selection_rect,
+                 int active_match_ordinal,
+                 bool final_update) override;
 
   // content::WebContentsObserver:
   void BeforeUnloadFired(const base::TimeTicks& proceed_time) override;
@@ -170,11 +207,13 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void DidFailLoad(content::RenderFrameHost* render_frame_host,
                    const GURL& validated_url,
                    int error_code,
-                   const base::string16& error_description) override;
+                   const base::string16& error_description,
+                   bool was_ignored_by_handler) override;
   void DidFailProvisionalLoad(content::RenderFrameHost* render_frame_host,
                               const GURL& validated_url,
                               int error_code,
-                              const base::string16& error_description) override;
+                              const base::string16& error_description,
+                              bool was_ignored_by_handler) override;
   void DidStartLoading() override;
   void DidStopLoading() override;
   void DidGetResourceResponseStart(
@@ -194,6 +233,14 @@ class WebContents : public mate::TrackableObject<WebContents>,
       const std::vector<content::FaviconURL>& urls) override;
   void PluginCrashed(const base::FilePath& plugin_path,
                      base::ProcessId plugin_pid) override;
+  void MediaStartedPlaying() override;
+  void MediaPaused() override;
+  void DidChangeThemeColor(SkColor theme_color) override;
+
+  // brightray::InspectableWebContentsViewDelegate:
+  void DevToolsFocused() override;
+  void DevToolsOpened() override;
+  void DevToolsClosed() override;
 
  private:
   enum Type {
@@ -203,6 +250,10 @@ class WebContents : public mate::TrackableObject<WebContents>,
   };
 
   AtomBrowserContext* GetBrowserContext() const;
+
+  uint32 GetNextRequestId() {
+    return ++request_id_;
+  }
 
   // Called when received a message from renderer.
   void OnRendererMessage(const base::string16& channel,
@@ -214,11 +265,16 @@ class WebContents : public mate::TrackableObject<WebContents>,
                              IPC::Message* message);
 
   v8::Global<v8::Value> session_;
+  v8::Global<v8::Value> devtools_web_contents_;
+  v8::Global<v8::Value> debugger_;
 
   scoped_ptr<WebViewGuestDelegate> guest_delegate_;
 
   // The type of current WebContents.
   Type type_;
+
+  // Request id used for findInPage request.
+  uint32 request_id_;
 
   DISALLOW_COPY_AND_ASSIGN(WebContents);
 };

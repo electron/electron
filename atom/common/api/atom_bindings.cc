@@ -6,11 +6,13 @@
 
 #include <algorithm>
 #include <string>
+#include <iostream>
 
 #include "atom/common/atom_version.h"
 #include "atom/common/chrome_version.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "base/logging.h"
+#include "base/process/process_metrics.h"
 #include "native_mate/dictionary.h"
 
 #include "atom/common/node_includes.h"
@@ -39,7 +41,7 @@ void FatalErrorCallback(const char* location, const char* message) {
 }
 
 void Log(const base::string16& message) {
-  logging::LogMessage("CONSOLE", 0, 0).stream() << message;
+  std::cout << message << std::flush;
 }
 
 }  // namespace
@@ -61,11 +63,15 @@ void AtomBindings::BindTo(v8::Isolate* isolate,
   dict.SetMethod("crash", &Crash);
   dict.SetMethod("hang", &Hang);
   dict.SetMethod("log", &Log);
+#if defined(OS_POSIX)
+  dict.SetMethod("setFdLimit", &base::SetFdLimit);
+#endif
   dict.SetMethod("activateUvLoop",
       base::Bind(&AtomBindings::ActivateUVLoop, base::Unretained(this)));
 
-  // Do not warn about deprecated APIs.
-  dict.Set("noDeprecation", true);
+#if defined(MAS_BUILD)
+  dict.Set("mas", true);
+#endif
 
   mate::Dictionary versions;
   if (dict.Get("versions", &versions)) {

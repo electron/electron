@@ -1,18 +1,19 @@
-# Application packaging
+# Application Packaging
 
-To mitigate [issues](https://github.com/joyent/node/issues/6960) around long path names on Windows, slightly speed up `require` and conceal your source code from cursory inspection you can choose
-to package your app into an [asar][asar] archive with little changes to your
-source code.
+To mitigate [issues](https://github.com/joyent/node/issues/6960) around long
+path names on Windows, slightly speed up `require` and conceal your source code
+from cursory inspection, you can choose to package your app into an [asar][asar]
+archive with little changes to your source code.
 
-## Generating `asar` archive
+## Generating `asar` Archive
 
 An [asar][asar] archive is a simple tar-like format that concatenates files
-into a single file, Electron can read arbitrary files from it without unpacking
+into a single file. Electron can read arbitrary files from it without unpacking
 the whole file.
 
-Following is the steps to package your app into an `asar` archive:
+Steps to package your app into an `asar` archive:
 
-### 1. Install the asar utility
+### 1. Install the asar Utility
 
 ```bash
 $ npm install -g asar
@@ -24,9 +25,9 @@ $ npm install -g asar
 $ asar pack your-app app.asar
 ```
 
-## Using `asar` archives
+## Using `asar` Archives
 
-In Electron there are two sets of APIs: Node APIs provided by Node.js, and Web
+In Electron there are two sets of APIs: Node APIs provided by Node.js and Web
 APIs provided by Chromium. Both APIs support reading files from `asar` archives.
 
 ### Node API
@@ -50,14 +51,14 @@ $ asar list /path/to/example.asar
 Read a file in the `asar` archive:
 
 ```javascript
-var fs = require('fs');
+const fs = require('fs');
 fs.readFileSync('/path/to/example.asar/file.txt');
 ```
 
 List all files under the root of the archive:
 
 ```javascript
-var fs = require('fs');
+const fs = require('fs');
 fs.readdirSync('/path/to/example.asar');
 ```
 
@@ -70,15 +71,15 @@ require('/path/to/example.asar/dir/module.js');
 You can also display a web page in an `asar` archive with `BrowserWindow`:
 
 ```javascript
-var BrowserWindow = require('browser-window');
+const BrowserWindow = require('electron').BrowserWindow;
 var win = new BrowserWindow({width: 800, height: 600});
-win.loadUrl('file:///path/to/example.asar/static/index.html');
+win.loadURL('file:///path/to/example.asar/static/index.html');
 ```
 
 ### Web API
 
-In a web page, files in archive can be requested with the `file:` protocol. Like
-the Node API, `asar` archives are treated as directories.
+In a web page, files in an archive can be requested with the `file:` protocol.
+Like the Node API, `asar` archives are treated as directories.
 
 For example, to get a file with `$.get`:
 
@@ -91,7 +92,7 @@ $.get('file:///path/to/example.asar/file.txt', function(data) {
 </script>
 ```
 
-### Treating `asar` archive as normal file
+### Treating an `asar` Archive as a Normal File
 
 For some cases like verifying the `asar` archive's checksum, we need to read the
 content of `asar` archive as file. For this purpose you can use the built-in
@@ -102,27 +103,35 @@ var originalFs = require('original-fs');
 originalFs.readFileSync('/path/to/example.asar');
 ```
 
+You can also set `process.noAsar` to `true` to disable the support for `asar` in
+the `fs` module:
+
+```javascript
+process.noAsar = true;
+fs.readFileSync('/path/to/example.asar');
+```
+
 ## Limitations on Node API
 
 Even though we tried hard to make `asar` archives in the Node API work like
 directories as much as possible, there are still limitations due to the
 low-level nature of the Node API.
 
-### Archives are read only
+### Archives Are Read-only
 
 The archives can not be modified so all Node APIs that can modify files will not
 work with `asar` archives.
 
-### Working directory can not be set to directories in archive
+### Working Directory Can Not Be Set to Directories in Archive
 
 Though `asar` archives are treated as directories, there are no actual
 directories in the filesystem, so you can never set the working directory to
-directories in `asar` archives, passing them to `cwd` option of some APIs will
-also cause errors.
+directories in `asar` archives. Passing them as the `cwd` option of some APIs
+will also cause errors.
 
-### Extra unpacking on some APIs
+### Extra Unpacking on Some APIs
 
-Most `fs` APIs can read file or get file's information from `asar` archives
+Most `fs` APIs can read a file or get a file's information from `asar` archives
 without unpacking, but for some APIs that rely on passing the real file path to
 underlying system calls, Electron will extract the needed file into a
 temporary file and pass the path of the temporary file to the APIs to make them
@@ -131,18 +140,30 @@ work. This adds a little overhead for those APIs.
 APIs that requires extra unpacking are:
 
 * `child_process.execFile`
+* `child_process.execFileSync`
 * `fs.open`
 * `fs.openSync`
 * `process.dlopen` - Used by `require` on native modules
 
-### Fake stat information of `fs.stat`
+### Fake Stat Information of `fs.stat`
 
 The `Stats` object returned by `fs.stat` and its friends on files in `asar`
 archives is generated by guessing, because those files do not exist on the
 filesystem. So you should not trust the `Stats` object except for getting file
 size and checking file type.
 
-## Adding unpacked files in `asar` archive
+### Executing Binaries Inside `asar` Archive
+
+There are Node APIs that can execute binaries like `child_process.exec`,
+`child_process.spawn` and `child_process.execFile`, but only `execFile` is
+supported to execute binaries inside `asar` archive.
+
+This is because `exec` and `spawn` accept `command` instead of `file` as input,
+and `command`s are executed under shell. There is no reliable way to determine
+whether a command uses a file in asar archive, and even if we do, we can not be
+sure whether we can replace the path in command without side effects.
+
+## Adding Unpacked Files in `asar` Archive
 
 As stated above, some Node APIs will unpack the file to filesystem when
 calling, apart from the performance issues, it could also lead to false alerts
@@ -161,4 +182,3 @@ After running the command, apart from the `app.asar`, there is also an
 should copy it together with `app.asar` when shipping it to users.
 
 [asar]: https://github.com/atom/asar
-

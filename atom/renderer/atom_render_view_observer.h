@@ -32,8 +32,6 @@ class AtomRenderViewObserver : public content::RenderViewObserver {
 
   void OnBrowserMessage(const base::string16& channel,
                         const base::ListValue& args);
-  void OnJavaScriptExecuteRequest(const base::string16& code,
-                                  bool has_user_gesture);
 
   // Weak reference to renderer client.
   AtomRendererClient* renderer_client_;

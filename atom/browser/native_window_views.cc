@@ -42,6 +42,7 @@
 #elif defined(OS_WIN)
 #include "atom/browser/ui/views/win_frame_view.h"
 #include "atom/browser/ui/win/atom_desktop_window_tree_host_win.h"
+#include "skia/ext/skia_utils_win.h"
 #include "ui/base/win/shell.h"
 #include "ui/gfx/win/dpi.h"
 #include "ui/views/widget/desktop_aura/desktop_native_widget_aura.h"
@@ -58,13 +59,19 @@ const int kMenuBarHeight = 20;
 const int kMenuBarHeight = 25;
 #endif
 
-bool IsAltKey(const content::NativeWebKeyboardEvent& event) {
-#if defined(USE_X11)
-  // 164 and 165 represent VK_LALT and VK_RALT.
-  return event.windowsKeyCode == 164 || event.windowsKeyCode == 165;
-#else
-  return event.windowsKeyCode == ui::VKEY_MENU;
+#if defined(OS_WIN)
+void FlipWindowStyle(HWND handle, bool on, DWORD flag) {
+  DWORD style = ::GetWindowLong(handle, GWL_STYLE);
+  if (on)
+    style |= flag;
+  else
+    style &= ~flag;
+  ::SetWindowLong(handle, GWL_STYLE, style);
+}
 #endif
+
+bool IsAltKey(const content::NativeWebKeyboardEvent& event) {
+  return event.windowsKeyCode == ui::VKEY_MENU;
 }
 
 bool IsAltModifier(const content::NativeWebKeyboardEvent& event) {
@@ -76,70 +83,6 @@ bool IsAltModifier(const content::NativeWebKeyboardEvent& event) {
          (modifiers == (Modifiers::AltKey | Modifiers::IsLeft)) ||
          (modifiers == (Modifiers::AltKey | Modifiers::IsRight));
 }
-
-#if defined(OS_WIN)
-// Convert Win32 WM_APPCOMMANDS to strings.
-const char* AppCommandToString(int command_id) {
-  switch (command_id) {
-    case APPCOMMAND_BROWSER_BACKWARD       : return "browser-backward";
-    case APPCOMMAND_BROWSER_FORWARD        : return "browser-forward";
-    case APPCOMMAND_BROWSER_REFRESH        : return "browser-refresh";
-    case APPCOMMAND_BROWSER_STOP           : return "browser-stop";
-    case APPCOMMAND_BROWSER_SEARCH         : return "browser-search";
-    case APPCOMMAND_BROWSER_FAVORITES      : return "browser-favorites";
-    case APPCOMMAND_BROWSER_HOME           : return "browser-home";
-    case APPCOMMAND_VOLUME_MUTE            : return "volume-mute";
-    case APPCOMMAND_VOLUME_DOWN            : return "volume-down";
-    case APPCOMMAND_VOLUME_UP              : return "volume-up";
-    case APPCOMMAND_MEDIA_NEXTTRACK        : return "media-nexttrack";
-    case APPCOMMAND_MEDIA_PREVIOUSTRACK    : return "media-previoustrack";
-    case APPCOMMAND_MEDIA_STOP             : return "media-stop";
-    case APPCOMMAND_MEDIA_PLAY_PAUSE       : return "media-play_pause";
-    case APPCOMMAND_LAUNCH_MAIL            : return "launch-mail";
-    case APPCOMMAND_LAUNCH_MEDIA_SELECT    : return "launch-media-select";
-    case APPCOMMAND_LAUNCH_APP1            : return "launch-app1";
-    case APPCOMMAND_LAUNCH_APP2            : return "launch-app2";
-    case APPCOMMAND_BASS_DOWN              : return "bass-down";
-    case APPCOMMAND_BASS_BOOST             : return "bass-boost";
-    case APPCOMMAND_BASS_UP                : return "bass-up";
-    case APPCOMMAND_TREBLE_DOWN            : return "treble-down";
-    case APPCOMMAND_TREBLE_UP              : return "treble-up";
-    case APPCOMMAND_MICROPHONE_VOLUME_MUTE : return "microphone-volume-mute";
-    case APPCOMMAND_MICROPHONE_VOLUME_DOWN : return "microphone-volume-down";
-    case APPCOMMAND_MICROPHONE_VOLUME_UP   : return "microphone-volume-up";
-    case APPCOMMAND_HELP                   : return "help";
-    case APPCOMMAND_FIND                   : return "find";
-    case APPCOMMAND_NEW                    : return "new";
-    case APPCOMMAND_OPEN                   : return "open";
-    case APPCOMMAND_CLOSE                  : return "close";
-    case APPCOMMAND_SAVE                   : return "save";
-    case APPCOMMAND_PRINT                  : return "print";
-    case APPCOMMAND_UNDO                   : return "undo";
-    case APPCOMMAND_REDO                   : return "redo";
-    case APPCOMMAND_COPY                   : return "copy";
-    case APPCOMMAND_CUT                    : return "cut";
-    case APPCOMMAND_PASTE                  : return "paste";
-    case APPCOMMAND_REPLY_TO_MAIL          : return "reply-to-mail";
-    case APPCOMMAND_FORWARD_MAIL           : return "forward-mail";
-    case APPCOMMAND_SEND_MAIL              : return "send-mail";
-    case APPCOMMAND_SPELL_CHECK            : return "spell-check";
-    case APPCOMMAND_MIC_ON_OFF_TOGGLE      : return "mic-on-off-toggle";
-    case APPCOMMAND_CORRECTION_LIST        : return "correction-list";
-    case APPCOMMAND_MEDIA_PLAY             : return "media-play";
-    case APPCOMMAND_MEDIA_PAUSE            : return "media-pause";
-    case APPCOMMAND_MEDIA_RECORD           : return "media-record";
-    case APPCOMMAND_MEDIA_FAST_FORWARD     : return "media-fast-forward";
-    case APPCOMMAND_MEDIA_REWIND           : return "media-rewind";
-    case APPCOMMAND_MEDIA_CHANNEL_UP       : return "media-channel-up";
-    case APPCOMMAND_MEDIA_CHANNEL_DOWN     : return "media-channel-down";
-    case APPCOMMAND_DELETE                 : return "delete";
-    case APPCOMMAND_DICTATE_OR_COMMAND_CONTROL_TOGGLE:
-      return "dictate-or-command-control-toggle";
-    default:
-      return "unknown";
-  }
-}
-#endif
 
 class NativeWindowClientView : public views::ClientView {
  public:
@@ -169,19 +112,21 @@ NativeWindowViews::NativeWindowViews(
       menu_bar_autohide_(false),
       menu_bar_visible_(false),
       menu_bar_alt_pressed_(false),
-#if defined(OS_WIN)
-      is_minimized_(false),
-#endif
       keyboard_event_handler_(new views::UnhandledKeyboardEventHandler),
       use_content_size_(false),
-      resizable_(true) {
-  options.Get(switches::kTitle, &title_);
-  options.Get(switches::kAutoHideMenuBar, &menu_bar_autohide_);
+      movable_(true),
+      resizable_(true),
+      maximizable_(true),
+      minimizable_(true) {
+  options.Get(options::kTitle, &title_);
+  options.Get(options::kAutoHideMenuBar, &menu_bar_autohide_);
 
 #if defined(OS_WIN)
   // On Windows we rely on the CanResize() to indicate whether window can be
   // resized, and it should be set before window is created.
-  options.Get(switches::kResizable, &resizable_);
+  options.Get(options::kResizable, &resizable_);
+  options.Get(options::kMinimizable, &minimizable_);
+  options.Get(options::kMaximizable, &maximizable_);
 #endif
 
   if (enable_larger_than_screen())
@@ -189,11 +134,12 @@ NativeWindowViews::NativeWindowViews(
     // will not allow us to resize the window larger than scree.
     // Setting directly to INT_MAX somehow doesn't work, so we just devide
     // by 10, which should still be large enough.
-    maximum_size_.SetSize(INT_MAX / 10, INT_MAX / 10);
+    SetContentSizeConstraints(extensions::SizeConstraints(
+        gfx::Size(), gfx::Size(INT_MAX / 10, INT_MAX / 10)));
 
   int width = 800, height = 600;
-  options.Get(switches::kWidth, &width);
-  options.Get(switches::kHeight, &height);
+  options.Get(options::kWidth, &width);
+  options.Get(options::kHeight, &height);
   gfx::Rect bounds(0, 0, width, height);
   widget_size_ = bounds.size();
 
@@ -209,6 +155,11 @@ NativeWindowViews::NativeWindowViews(
   if (transparent())
     params.opacity = views::Widget::InitParams::TRANSLUCENT_WINDOW;
 
+  // The given window is most likely not rectangular since it uses
+  // transparency and has no standard frame, don't show a shadow for it.
+  if (transparent() && !has_frame())
+    params.shadow_type = views::Widget::InitParams::SHADOW_TYPE_NONE;
+
 #if defined(OS_WIN)
   params.native_widget =
       new views::DesktopNativeWidgetAura(window_.get());
@@ -222,11 +173,14 @@ NativeWindowViews::NativeWindowViews(
   // Set WM_WINDOW_ROLE.
   params.wm_role_name = "browser-window";
   // Set WM_CLASS.
-  params.wm_class_name = base::StringToLowerASCII(name);
+  params.wm_class_name = base::ToLowerASCII(name);
   params.wm_class_class = name;
 #endif
 
   window_->Init(params);
+
+  bool fullscreen = false;
+  options.Get(options::kFullscreen, &fullscreen);
 
 #if defined(USE_X11)
   // Start monitoring window states.
@@ -234,7 +188,7 @@ NativeWindowViews::NativeWindowViews(
 
   // Set _GTK_THEME_VARIANT to dark if we have "dark-theme" option set.
   bool use_dark_theme = false;
-  if (options.Get(switches::kDarkTheme, &use_dark_theme) && use_dark_theme) {
+  if (options.Get(options::kDarkTheme, &use_dark_theme) && use_dark_theme) {
     XDisplay* xdisplay = gfx::GetXDisplay();
     XChangeProperty(xdisplay, GetAcceleratedWidget(),
                     XInternAtom(xdisplay, "_GTK_THEME_VARIANT", False),
@@ -248,13 +202,12 @@ NativeWindowViews::NativeWindowViews(
   // to manually set the _NET_WM_STATE.
   std::vector<::Atom> state_atom_list;
   bool skip_taskbar = false;
-  if (options.Get(switches::kSkipTaskbar, &skip_taskbar) && skip_taskbar) {
+  if (options.Get(options::kSkipTaskbar, &skip_taskbar) && skip_taskbar) {
     state_atom_list.push_back(GetAtom("_NET_WM_STATE_SKIP_TASKBAR"));
   }
 
   // Before the window is mapped, there is no SHOW_FULLSCREEN_STATE.
-  bool fullscreen = false;
-  if (options.Get(switches::kFullscreen, & fullscreen) && fullscreen) {
+  if (fullscreen) {
     state_atom_list.push_back(GetAtom("_NET_WM_STATE_FULLSCREEN"));
   }
 
@@ -263,26 +216,33 @@ NativeWindowViews::NativeWindowViews(
 
   // Set the _NET_WM_WINDOW_TYPE.
   std::string window_type;
-  if (options.Get(switches::kType, &window_type))
+  if (options.Get(options::kType, &window_type))
     SetWindowType(GetAcceleratedWidget(), window_type);
 #endif
 
   // Add web view.
   SetLayoutManager(new MenuLayout(this, kMenuBarHeight));
-  set_background(views::Background::CreateStandardPanelBackground());
+
   AddChildView(web_view_);
 
-  if (has_frame() &&
-      options.Get(switches::kUseContentSize, &use_content_size_) &&
-      use_content_size_)
-    bounds = ContentBoundsToWindowBounds(bounds);
-
 #if defined(OS_WIN)
+  // Save initial window state.
+  if (fullscreen)
+    last_window_state_ = ui::SHOW_STATE_FULLSCREEN;
+  else
+    last_window_state_ = ui::SHOW_STATE_NORMAL;
+  last_normal_size_ = gfx::Size(widget_size_);
+
   if (!has_frame()) {
     // Set Window style so that we get a minimize and maximize animation when
     // frameless.
-    DWORD frame_style = WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX |
-                        WS_CAPTION;
+    DWORD frame_style = WS_CAPTION;
+    if (resizable_)
+      frame_style |= WS_THICKFRAME;
+    if (minimizable_)
+      frame_style |= WS_MINIMIZEBOX;
+    if (maximizable_)
+      frame_style |= WS_MAXIMIZEBOX;
     // We should not show a frame for transparent window.
     if (transparent())
       frame_style &= ~(WS_THICKFRAME | WS_CAPTION);
@@ -304,13 +264,14 @@ NativeWindowViews::NativeWindowViews(
     window_->FrameTypeChanged();
   }
 
-  // The given window is most likely not rectangular since it uses
-  // transparency and has no standard frame, don't show a shadow for it.
-  if (transparent() && !has_frame())
-    wm::SetShadowType(GetNativeWindow(), wm::SHADOW_TYPE_NONE);
+  gfx::Size size = bounds.size();
+  if (has_frame() &&
+      options.Get(options::kUseContentSize, &use_content_size_) &&
+      use_content_size_)
+    size = ContentSizeToWindowSize(size);
 
   window_->UpdateWindowIcon();
-  window_->CenterWindow(bounds.size());
+  window_->CenterWindow(size);
   Layout();
 }
 
@@ -388,11 +349,16 @@ bool NativeWindowViews::IsMinimized() {
 void NativeWindowViews::SetFullScreen(bool fullscreen) {
 #if defined(OS_WIN)
   // There is no native fullscreen state on Windows.
-  window_->SetFullscreen(fullscreen);
-  if (fullscreen)
+  if (fullscreen) {
+    last_window_state_ = ui::SHOW_STATE_FULLSCREEN;
     NotifyWindowEnterFullScreen();
-  else
+  } else {
+    last_window_state_ = ui::SHOW_STATE_NORMAL;
     NotifyWindowLeaveFullScreen();
+  }
+  // We set the new value after notifying, so we can handle the size event
+  // correctly.
+  window_->SetFullscreen(fullscreen);
 #else
   if (IsVisible())
     window_->SetFullscreen(fullscreen);
@@ -406,7 +372,8 @@ bool NativeWindowViews::IsFullscreen() const {
   return window_->IsFullscreen();
 }
 
-void NativeWindowViews::SetBounds(const gfx::Rect& bounds) {
+void NativeWindowViews::SetBounds(const gfx::Rect& bounds,
+    bool animate = false) {
 #if defined(USE_X11)
   // On Linux the minimum and maximum size should be updated with window size
   // when window is not resizable.
@@ -428,65 +395,44 @@ gfx::Rect NativeWindowViews::GetBounds() {
   return window_->GetWindowBoundsInScreen();
 }
 
-void NativeWindowViews::SetContentSize(const gfx::Size& size) {
-  if (!has_frame()) {
-    NativeWindow::SetSize(size);
-    return;
-  }
-
-  gfx::Rect bounds = window_->GetWindowBoundsInScreen();
-  bounds.set_size(size);
-  SetBounds(ContentBoundsToWindowBounds(bounds));
-}
-
 gfx::Size NativeWindowViews::GetContentSize() {
-  if (!has_frame())
-    return GetSize();
+#if defined(OS_WIN)
+  if (IsMinimized())
+    return NativeWindow::GetContentSize();
+#endif
 
-  gfx::Size content_size =
-      window_->non_client_view()->frame_view()->GetBoundsForClientView().size();
-  if (menu_bar_ && menu_bar_visible_)
-    content_size.set_height(content_size.height() - kMenuBarHeight);
-  return content_size;
+  return web_view_->size();
 }
 
-void NativeWindowViews::SetMinimumSize(const gfx::Size& size) {
-  minimum_size_ = size;
-}
-
-gfx::Size NativeWindowViews::GetMinimumSize() {
-  return minimum_size_;
-}
-
-void NativeWindowViews::SetMaximumSize(const gfx::Size& size) {
-  maximum_size_ = size;
-}
-
-gfx::Size NativeWindowViews::GetMaximumSize() {
-  return maximum_size_;
+void NativeWindowViews::SetContentSizeConstraints(
+    const extensions::SizeConstraints& size_constraints) {
+  NativeWindow::SetContentSizeConstraints(size_constraints);
+  // widget_delegate() is only available after Init() is called, we make use of
+  // this to determine whether native widget has initialized.
+  if (window_ && window_->widget_delegate())
+    window_->OnSizeConstraintsChanged();
+#if defined(USE_X11)
+  if (resizable_)
+    old_size_constraints_ = size_constraints;
+#endif
 }
 
 void NativeWindowViews::SetResizable(bool resizable) {
 #if defined(OS_WIN)
-  // WS_MAXIMIZEBOX => Maximize button
-  // WS_MINIMIZEBOX => Minimize button
-  // WS_THICKFRAME => Resize handle
-  DWORD style = ::GetWindowLong(GetAcceleratedWidget(), GWL_STYLE);
-  if (resizable)
-    style |= WS_MAXIMIZEBOX | WS_MINIMIZEBOX | WS_THICKFRAME;
-  else
-    style = (style & ~(WS_MAXIMIZEBOX | WS_THICKFRAME)) | WS_MINIMIZEBOX;
-  ::SetWindowLong(GetAcceleratedWidget(), GWL_STYLE, style);
+  if (!transparent())
+    FlipWindowStyle(GetAcceleratedWidget(), resizable, WS_THICKFRAME);
 #elif defined(USE_X11)
   if (resizable != resizable_) {
     // On Linux there is no "resizable" property of a window, we have to set
     // both the minimum and maximum size to the window size to achieve it.
     if (resizable) {
-      SetMaximumSize(gfx::Size());
-      SetMinimumSize(gfx::Size());
+      SetContentSizeConstraints(old_size_constraints_);
     } else {
-      SetMaximumSize(GetSize());
-      SetMinimumSize(GetSize());
+      old_size_constraints_ = GetContentSizeConstraints();
+      resizable_ = false;
+      gfx::Size content_size = GetContentSize();
+      SetContentSizeConstraints(
+          extensions::SizeConstraints(content_size, content_size));
     }
   }
 #endif
@@ -495,7 +441,87 @@ void NativeWindowViews::SetResizable(bool resizable) {
 }
 
 bool NativeWindowViews::IsResizable() {
-  return resizable_;
+#if defined(OS_WIN)
+  return ::GetWindowLong(GetAcceleratedWidget(), GWL_STYLE) & WS_THICKFRAME;
+#else
+  return CanResize();
+#endif
+}
+
+void NativeWindowViews::SetMovable(bool movable) {
+  movable_ = movable;
+}
+
+bool NativeWindowViews::IsMovable() {
+#if defined(OS_WIN)
+  return movable_;
+#else
+  return true;  // Not implemented on Linux.
+#endif
+}
+
+void NativeWindowViews::SetMinimizable(bool minimizable) {
+#if defined(OS_WIN)
+  FlipWindowStyle(GetAcceleratedWidget(), minimizable, WS_MINIMIZEBOX);
+#endif
+  minimizable_ = minimizable;
+}
+
+bool NativeWindowViews::IsMinimizable() {
+#if defined(OS_WIN)
+  return ::GetWindowLong(GetAcceleratedWidget(), GWL_STYLE) & WS_MINIMIZEBOX;
+#else
+  return true;  // Not implemented on Linux.
+#endif
+}
+
+void NativeWindowViews::SetMaximizable(bool maximizable) {
+#if defined(OS_WIN)
+  FlipWindowStyle(GetAcceleratedWidget(), maximizable, WS_MAXIMIZEBOX);
+#endif
+  maximizable_ = maximizable;
+}
+
+bool NativeWindowViews::IsMaximizable() {
+#if defined(OS_WIN)
+  return ::GetWindowLong(GetAcceleratedWidget(), GWL_STYLE) & WS_MAXIMIZEBOX;
+#else
+  return true;  // Not implemented on Linux.
+#endif
+}
+
+void NativeWindowViews::SetFullScreenable(bool maximizable) {
+}
+
+bool NativeWindowViews::IsFullScreenable() {
+  return true;
+}
+
+void NativeWindowViews::SetClosable(bool closable) {
+#if defined(OS_WIN)
+  HMENU menu = GetSystemMenu(GetAcceleratedWidget(), false);
+  if (closable) {
+    EnableMenuItem(menu, SC_CLOSE, MF_BYCOMMAND | MF_ENABLED);
+  } else {
+    EnableMenuItem(menu, SC_CLOSE, MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
+  }
+#endif
+}
+
+bool NativeWindowViews::IsClosable() {
+#if defined(OS_WIN)
+  HMENU menu = GetSystemMenu(GetAcceleratedWidget(), false);
+  MENUITEMINFO info;
+  memset(&info, 0, sizeof(info));
+  info.cbSize = sizeof(info);
+  info.fMask = MIIM_STATE;
+  if (!GetMenuItemInfo(menu, SC_CLOSE, false, &info)) {
+    return false;
+  }
+  return !(info.fState & MFS_DISABLED);
+#elif defined(USE_X11)
+  return true;
+#endif
 }
 
 void NativeWindowViews::SetAlwaysOnTop(bool top) {
@@ -560,6 +586,31 @@ bool NativeWindowViews::IsKiosk() {
   return IsFullscreen();
 }
 
+void NativeWindowViews::SetBackgroundColor(const std::string& color_name) {
+  // web views' background color.
+  SkColor background_color = NativeWindow::ParseHexColor(color_name);
+  set_background(views::Background::CreateSolidBackground(background_color));
+
+#if defined(OS_WIN)
+  // Set the background color of native window.
+  HBRUSH brush = CreateSolidBrush(skia::SkColorToCOLORREF(background_color));
+  ULONG_PTR previous_brush = SetClassLongPtr(
+      GetAcceleratedWidget(), GCLP_HBRBACKGROUND, (LONG)brush);
+  if (previous_brush)
+    DeleteObject((HBRUSH)previous_brush);
+#endif
+}
+
+void NativeWindowViews::SetHasShadow(bool has_shadow) {
+  wm::SetShadowType(
+      GetNativeWindow(),
+      has_shadow ? wm::SHADOW_TYPE_RECTANGULAR : wm::SHADOW_TYPE_NONE);
+}
+
+bool NativeWindowViews::HasShadow() {
+  return wm::GetShadowType(GetNativeWindow()) != wm::SHADOW_TYPE_NONE;
+}
+
 void NativeWindowViews::SetMenu(ui::MenuModel* menu_model) {
   if (menu_model == nullptr) {
     // Remove accelerators
@@ -598,8 +649,24 @@ void NativeWindowViews::SetMenu(ui::MenuModel* menu_model) {
 
     if (!menu_bar_autohide_) {
       SetMenuBarVisibility(true);
-      if (use_content_size_)
+      if (use_content_size_) {
+        // Enlarge the size constraints for the menu.
+        extensions::SizeConstraints constraints = GetContentSizeConstraints();
+        if (constraints.HasMinimumSize()) {
+          gfx::Size min_size = constraints.GetMinimumSize();
+          min_size.set_height(min_size.height() + kMenuBarHeight);
+          constraints.set_minimum_size(min_size);
+        }
+        if (constraints.HasMaximumSize()) {
+          gfx::Size max_size = constraints.GetMaximumSize();
+          max_size.set_height(max_size.height() + kMenuBarHeight);
+          constraints.set_maximum_size(max_size);
+        }
+        SetContentSizeConstraints(constraints);
+
+        // Resize the window to make sure content size is not changed.
         SetContentSize(content_size);
+      }
     }
   }
 
@@ -724,11 +791,15 @@ bool NativeWindowViews::CanResize() const {
 }
 
 bool NativeWindowViews::CanMaximize() const {
-  return resizable_;
+  return resizable_ && maximizable_;
 }
 
 bool NativeWindowViews::CanMinimize() const {
+#if defined(OS_WIN)
+  return minimizable_;
+#elif defined(USE_X11)
   return true;
+#endif
 }
 
 base::string16 NativeWindowViews::GetWindowTitle() const {
@@ -802,52 +873,46 @@ void NativeWindowViews::OnWidgetMove() {
   NotifyWindowMove();
 }
 
+gfx::Size NativeWindowViews::ContentSizeToWindowSize(const gfx::Size& size) {
+  if (!has_frame())
+    return size;
+
+  gfx::Size window_size(size);
 #if defined(OS_WIN)
-bool NativeWindowViews::ExecuteWindowsCommand(int command_id) {
-  // Windows uses the 4 lower order bits of |command_id| for type-specific
-  // information so we must exclude this when comparing.
-  static const int sc_mask = 0xFFF0;
-  if ((command_id & sc_mask) == SC_MINIMIZE) {
-    NotifyWindowMinimize();
-    is_minimized_ = true;
-  } else if ((command_id & sc_mask) == SC_RESTORE) {
-    if (is_minimized_)
-      NotifyWindowRestore();
-    else
-      NotifyWindowUnmaximize();
-    is_minimized_ = false;
-  } else if ((command_id & sc_mask) == SC_MAXIMIZE) {
-    NotifyWindowMaximize();
-  } else {
-    std::string command = AppCommandToString(command_id);
-    NotifyWindowExecuteWindowsCommand(command);
-  }
-  return false;
-}
+  gfx::Rect dpi_bounds =
+      gfx::Rect(gfx::Point(), gfx::win::DIPToScreenSize(size));
+  gfx::Rect window_bounds = gfx::win::ScreenToDIPRect(
+      window_->non_client_view()->GetWindowBoundsForClientBounds(dpi_bounds));
+  window_size = window_bounds.size();
 #endif
 
-gfx::ImageSkia NativeWindowViews::GetDevToolsWindowIcon() {
-  return GetWindowAppIcon();
+  if (menu_bar_ && menu_bar_visible_)
+    window_size.set_height(window_size.height() + kMenuBarHeight);
+  return window_size;
 }
 
-#if defined(USE_X11)
-void NativeWindowViews::GetDevToolsWindowWMClass(
-    std::string* name, std::string* class_name) {
-  *class_name = Browser::Get()->GetName();
-  *name = base::StringToLowerASCII(*class_name);
-}
-#endif
+gfx::Size NativeWindowViews::WindowSizeToContentSize(const gfx::Size& size) {
+  if (!has_frame())
+    return size;
 
+  gfx::Size content_size(size);
 #if defined(OS_WIN)
-bool NativeWindowViews::PreHandleMSG(
-    UINT message, WPARAM w_param, LPARAM l_param, LRESULT* result) {
-  // Handle thumbar button click message.
-  if (message == WM_COMMAND && HIWORD(w_param) == THBN_CLICKED)
-    return taskbar_host_.HandleThumbarButtonEvent(LOWORD(w_param));
-  else
-    return false;
-}
+  content_size = gfx::win::DIPToScreenSize(content_size);
+  RECT rect;
+  SetRectEmpty(&rect);
+  HWND hwnd = GetAcceleratedWidget();
+  DWORD style = ::GetWindowLong(hwnd, GWL_STYLE);
+  DWORD ex_style = ::GetWindowLong(hwnd, GWL_EXSTYLE);
+  AdjustWindowRectEx(&rect, style, FALSE, ex_style);
+  content_size.set_width(content_size.width() - (rect.right - rect.left));
+  content_size.set_height(content_size.height() - (rect.bottom - rect.top));
+  content_size = gfx::win::ScreenToDIPSize(content_size);
 #endif
+
+  if (menu_bar_ && menu_bar_visible_)
+    content_size.set_height(content_size.height() - kMenuBarHeight);
+  return content_size;
+}
 
 void NativeWindowViews::HandleKeyboardEvent(
     content::WebContents*,
@@ -880,9 +945,6 @@ void NativeWindowViews::HandleKeyboardEvent(
     // When a single Alt is pressed:
     menu_bar_alt_pressed_ = true;
   } else if (event.type == blink::WebInputEvent::KeyUp && IsAltKey(event) &&
-#if defined(USE_X11)
-             event.modifiers == 0 &&
-#endif
              menu_bar_alt_pressed_) {
     // When a single Alt is released right after a Alt is pressed:
     menu_bar_alt_pressed_ = false;
@@ -891,6 +953,14 @@ void NativeWindowViews::HandleKeyboardEvent(
     // When any other keys except single Alt have been pressed/released:
     menu_bar_alt_pressed_ = false;
   }
+}
+
+gfx::Size NativeWindowViews::GetMinimumSize() {
+  return NativeWindow::GetMinimumSize();
+}
+
+gfx::Size NativeWindowViews::GetMaximumSize() {
+  return NativeWindow::GetMaximumSize();
 }
 
 bool NativeWindowViews::AcceleratorPressed(const ui::Accelerator& accelerator) {
@@ -913,26 +983,6 @@ void NativeWindowViews::RegisterAccelerators(ui::MenuModel* menu_model) {
     focus_manager->RegisterAccelerator(
         iter->first, ui::AcceleratorManager::kNormalPriority, this);
   }
-}
-
-gfx::Rect NativeWindowViews::ContentBoundsToWindowBounds(
-    const gfx::Rect& bounds) {
-  gfx::Point origin = bounds.origin();
-#if defined(OS_WIN)
-  gfx::Rect dpi_bounds = gfx::win::DIPToScreenRect(bounds);
-  gfx::Rect window_bounds = gfx::win::ScreenToDIPRect(
-      window_->non_client_view()->GetWindowBoundsForClientBounds(dpi_bounds));
-#else
-  gfx::Rect window_bounds =
-      window_->non_client_view()->GetWindowBoundsForClientBounds(bounds);
-#endif
-  // The window's position would also be changed, but we only want to change
-  // the size.
-  window_bounds.set_origin(origin);
-
-  if (menu_bar_ && menu_bar_visible_)
-    window_bounds.set_height(window_bounds.height() + kMenuBarHeight);
-  return window_bounds;
 }
 
 ui::WindowShowState NativeWindowViews::GetRestoredState() {
