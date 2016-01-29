@@ -22,11 +22,13 @@
 #include "chrome/renderer/printing/print_web_view_helper.h"
 #include "chrome/renderer/tts_dispatcher.h"
 #include "content/public/common/content_constants.h"
+#include "content/public/common/url_constants.h"
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_frame_observer.h"
 #include "content/public/renderer/render_thread.h"
 #include "ipc/ipc_message_macros.h"
 #include "third_party/WebKit/public/web/WebCustomElement.h"
+#include "third_party/WebKit/public/web/WebDocument.h"
 #include "third_party/WebKit/public/web/WebLocalFrame.h"
 #include "third_party/WebKit/public/web/WebPluginParams.h"
 #include "third_party/WebKit/public/web/WebKit.h"
@@ -58,13 +60,15 @@ class AtomRenderFrameObserver : public content::RenderFrameObserver {
     if (world_id_ != -1 && world_id_ != world_id)
       return;
     world_id_ = world_id;
-    renderer_client_->DidCreateScriptContext(context);
+    renderer_client_->DidCreateScriptContext(
+		render_frame()->GetWebFrame(), context);
   }
   void WillReleaseScriptContext(v8::Local<v8::Context> context,
                                 int world_id) override {
     if (world_id_ != world_id)
       return;
-    renderer_client_->WillReleaseScriptContext(context);
+    renderer_client_->WillReleaseScriptContext(
+		render_frame()->GetWebFrame(), context);
   }
 
  private:
@@ -155,7 +159,15 @@ bool AtomRendererClient::OverrideCreatePlugin(
 }
 
 void AtomRendererClient::DidCreateScriptContext(
+    blink::WebFrame* frame,
     v8::Handle<v8::Context> context) {
+
+  GURL url(frame->document().url());
+
+  // Only insert node integration for the main frame.
+  if (frame->parent() || url == GURL(content::kSwappedOutURL))
+    return;
+
   // Give the node loop a run to make sure everything is ready.
   node_bindings_->RunMessageLoop();
 
@@ -176,7 +188,10 @@ void AtomRendererClient::DidCreateScriptContext(
 void AtomRendererClient::WillReleaseScriptContext(
     v8::Handle<v8::Context> context) {
   node::Environment* env = node::Environment::GetCurrent(context);
-  mate::EmitEvent(env->isolate(), env->process_object(), "exit");
+  if (env != nullptr && env == node_bindings_->uv_env()) {
+    node_bindings_->set_uv_env(nullptr);
+    mate::EmitEvent(env->isolate(), env->process_object(), "exit");
+  }
 }
 
 bool AtomRendererClient::ShouldFork(blink::WebLocalFrame* frame,
@@ -185,17 +200,30 @@ bool AtomRendererClient::ShouldFork(blink::WebLocalFrame* frame,
                                     bool is_initial_navigation,
                                     bool is_server_redirect,
                                     bool* send_referrer) {
-  // Returning false causes a memory leak in DidCreateScriptContext
-  // because a new node env is created and attempting to dispose
-  // the old env doesn't solve the problem.
-  //
-  // Re-using the same env doesn't run the the preload script after
-  // the first page.
-  //
-  // Ideally we should find a way to keep the same
-  // node env and find a different way to run the preload script
-  // (possibly also sandboxing the scripts with node vm)
-  return http_method == "GET" && !is_server_redirect && frame->opener() == NULL;
+
+  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
+  if (command_line->HasSwitch(switches::kNodeIntegration) &&
+      command_line->GetSwitchValueASCII(switches::kNodeIntegration) == "true") {
+    *send_referrer = true;
+    return http_method == "GET" && !is_server_redirect;
+  }
+
+  if (is_server_redirect)
+    return false;
+
+  // don't fork if we need scriptable access from the opener
+  if (frame->opener() != NULL) {
+    return false;
+  }
+
+  // override and fork here because even renderers without
+  // node integration still start node for the preload script
+  // and running more than one in a single process causes some issues
+  if (http_method == "GET") {
+    return true;
+  }
+
+  return false;
 }
 
 content::BrowserPluginDelegate* AtomRendererClient::CreateBrowserPluginDelegate(
