@@ -329,6 +329,14 @@ session.defaultSession.webRequest.onBeforeSendHeaders(filter, function(details, 
   * `method` String
   * `resourceType` String
   * `timestamp` Double
+  * `uploadData` Array (optional)
+* `callback` Function
+
+`uploadData`는 `data` 객체의 배열입니다:
+
+* `data` Object
+  * `bytes` Buffer - 전송될 컨텐츠.
+  * `file` String - 업로드될 파일의 경로.
 
 `callback`은 `response` 객체와 함께 호출되어야 합니다:
 
@@ -353,6 +361,7 @@ HTTP 요청을 보내기 전 요청 헤더를 사용할 수 있을 때 `listener
   * `resourceType` String
   * `timestamp` Double
   * `requestHeaders` Object
+* `callback` Function
 
 `callback`은 `response` 객체와 함께 호출되어야 합니다:
 
@@ -395,6 +404,7 @@ HTTP 요청을 보내기 전 요청 헤더를 사용할 수 있을 때 `listener
   * `statusLine` String
   * `statusCode` Integer
   * `responseHeaders` Object
+* `callback` Function
 
 `callback`은 `response` 객체와 함께 호출되어야 합니다:
 
