@@ -345,7 +345,7 @@ void WebContents::WebContentsCreated(content::WebContents* source_contents,
                                               blink::WebReferrerPolicyAlways);
     load_url_params.transition_type = ui::PAGE_TRANSITION_LINK;
     load_url_params.should_replace_current_entry = true;
-    load_url_params.is_renderer_initiated = true;
+    load_url_params.is_renderer_initiated = false;
     load_url_params.should_clear_history_list = true;
     load_url_params.frame_name = frame_name;
     CreateFrom(isolate(), new_contents)->delayed_load_url_params_.reset(
@@ -373,18 +373,19 @@ void WebContents::AddNewContents(content::WebContents* source,
 
   if (disposition == NEW_FOREGROUND_TAB || disposition == NEW_BACKGROUND_TAB) {
     // fire off the tab open event
-    auto window_open_event =
-      v8::Local<v8::Object>::Cast(mate::Event::Create(isolate()).ToV8());
-    mate::Dictionary(isolate(), window_open_event).Set("sender",
+    auto new_tab_event = v8::Local<v8::Object>::Cast(
+                                        mate::Event::Create(isolate()).ToV8());
+    mate::Dictionary(isolate(), new_tab_event).Set("sender",
                                                         GetWrapper(isolate()));
     node::Environment* env = node::Environment::GetCurrent(isolate());
     // the url will be set in ResumeLoadingCreatedWebContents
     mate::EmitEvent(isolate(),
                   env->process_object(),
                   "ATOM_SHELL_GUEST_VIEW_MANAGER_TAB_OPEN",
-                  window_open_event,
+                  new_tab_event,
                   "about:blank",
-                  new_contents->GetMainFrame()->GetFrameName(),
+                  delayed_load_url_params_.get()
+                    ? new_contents->GetMainFrame()->GetFrameName() : "",
                   disposition,
                   *options);
     return;
@@ -407,11 +408,13 @@ void WebContents::AddNewContents(content::WebContents* source,
                                               "sender", GetWrapper(isolate()));
     node::Environment* env = node::Environment::GetCurrent(isolate());
     // the url will be set in ResumeLoadingCreatedWebContents
-    mate::EmitEvent(isolate(), env->process_object(),
+    mate::EmitEvent(isolate(),
+                  env->process_object(),
                   "ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_OPEN",
                   window_open_event,
                   "about:blank",
-                  new_contents->GetMainFrame()->GetFrameName(),
+                  delayed_load_url_params_.get()
+                    ? new_contents->GetMainFrame()->GetFrameName() : "",
                   *options);
     return;
   }
