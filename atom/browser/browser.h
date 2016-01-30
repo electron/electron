@@ -80,6 +80,9 @@ class Browser : public WindowListObserver {
   // Hide the application.
   void Hide();
 
+  // Show the application.
+  void Show();
+
   // Bounce the dock icon.
   enum BounceType {
     BOUNCE_CRITICAL = 0,

@@ -248,6 +248,10 @@ returning `false` in the `beforeunload` event handler.
 
 Hides all application windows without minimising them.
 
+### `app.show()` _OS X_
+
+Shows application windows after they were hidden. Does not automatically focus them.
+
 ### `app.exit(exitCode)`
 
 * `exitCode` Integer
