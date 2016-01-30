@@ -130,8 +130,11 @@ Archive::Archive(const base::FilePath& path)
 
 Archive::~Archive() {
 #if defined(OS_WIN)
-  if (fd_ != -1)
+  if (fd_ != -1) {
     _close(fd_);
+    // Don't close the handle since we already closed the fd.
+    file_.TakePlatformFile();
+  }
 #endif
 }
 
