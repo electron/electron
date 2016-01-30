@@ -140,7 +140,10 @@ Archive::~Archive() {
 
 bool Archive::Init() {
   if (!file_.IsValid()) {
-    LOG(ERROR) << base::File::ErrorToString(file_.error_details());
+    if (file_.error_details() != base::File::FILE_ERROR_NOT_FOUND) {
+      LOG(WARNING) << "Opening " << path_.value()
+                   << ": " << base::File::ErrorToString(file_.error_details());
+    }
     return false;
   }
 
