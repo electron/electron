@@ -4,6 +4,7 @@
 
 #include "atom/browser/atom_permission_manager.h"
 
+#include "content/public/browser/child_process_security_policy.h"
 #include "content/public/browser/permission_type.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
@@ -53,8 +54,14 @@ int AtomPermissionManager::RequestPermission(
     const GURL& requesting_origin,
     bool user_gesture,
     const ResponseCallback& callback) {
-  auto request_handler =
-      request_handler_map_.find(render_frame_host->GetProcess()->GetID());
+  int process_id = render_frame_host->GetProcess()->GetID();
+  auto request_handler = request_handler_map_.find(process_id);
+
+  if (permission == content::PermissionType::MIDI_SYSEX) {
+    content::ChildProcessSecurityPolicy::GetInstance()->
+        GrantSendMidiSysExMessage(process_id);
+  }
+
   if (request_handler != request_handler_map_.end()) {
     pending_requests_[++request_id_] = callback;
     request_handler->second.Run(permission, callback);
@@ -83,7 +90,7 @@ content::PermissionStatus AtomPermissionManager::GetPermissionStatus(
     content::PermissionType permission,
     const GURL& requesting_origin,
     const GURL& embedding_origin) {
-  return content::PERMISSION_STATUS_DENIED;
+  return content::PERMISSION_STATUS_GRANTED;
 }
 
 void AtomPermissionManager::RegisterPermissionUsage(

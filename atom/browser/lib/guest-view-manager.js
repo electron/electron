@@ -136,7 +136,9 @@ var createGuest = function(embedder, params) {
       this.setAllowTransparency(params.allowtransparency);
     }
     guest.allowPopups = params.allowpopups;
-    this.setPermissionRequestHandler((permission, callback) => {
+
+    // Dispatches permission request event.
+    this._setPermissionRequestHandler((permission, callback) => {
       if (!pendingRequestsMap[this.viewInstanceId])
         pendingRequestsMap[this.viewInstanceId] = {};
       pendingRequestsMap[this.viewInstanceId][permission] = callback;

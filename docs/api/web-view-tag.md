@@ -740,7 +740,7 @@ Emitted when DevTools is focused / opened.
 
 Returns:
 
-* `permission` String - The type of permission being requested. Enum of 'media', 'webNotification'.
+* `permission` String - The type of permission being requested. Enum of 'media', 'notifications', 'midiSysex', 'geolocation'.
 * `allow` Function - Allows the permission.
 * `deny` Function - Deny the permission. This is the default behaviour if `allow` is not called.
 

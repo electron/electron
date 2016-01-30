@@ -24,7 +24,9 @@ class AtomPermissionManager : public content::PermissionManager {
       base::Callback<void(content::PermissionType,
                           const ResponseCallback&)>;
 
+  // Handler to dispatch permission requests in JS.
   void SetPermissionRequestHandler(int id, const RequestHandler& handler);
+
   void RequestPermission(
       content::PermissionType permission,
       content::RenderFrameHost* render_frame_host,

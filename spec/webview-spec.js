@@ -645,7 +645,39 @@ describe('<webview> tag', function() {
           e.deny();
         }
       });
-      webview.src = "file://" + fixtures + "/pages/permission-request.html";
+      webview.src = "file://" + fixtures + "/pages/permissions/media.html";
+      webview.setAttribute('nodeintegration', 'on');
+      document.body.appendChild(webview);
+    });
+
+    it ('emits when using navigator.geolocation api', function(done) {
+      webview.addEventListener('ipc-message', function(e) {
+        assert(e.channel, 'message');
+        assert(e.args, ['ERROR(1): User denied Geolocation']);
+        done();
+      });
+      webview.addEventListener('permission-request', function(e) {
+        if (e.permission === 'geolocation') {
+          e.deny();
+        }
+      });
+      webview.src = "file://" + fixtures + "/pages/permissions/geolocation.html";
+      webview.setAttribute('nodeintegration', 'on');
+      document.body.appendChild(webview);
+    });
+
+    it ('emits when using navigator.requestMIDIAccess api', function(done) {
+      webview.addEventListener('ipc-message', function(e) {
+        assert(e.channel, 'message');
+        assert(e.args, ['SecurityError']);
+        done();
+      });
+      webview.addEventListener('permission-request', function(e) {
+        if (e.permission === 'midiSysex') {
+          e.deny();
+        }
+      });
+      webview.src = "file://" + fixtures + "/pages/permissions/midi.html";
       webview.setAttribute('nodeintegration', 'on');
       document.body.appendChild(webview);
     });

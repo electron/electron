@@ -6,7 +6,6 @@
 #define ATOM_BROWSER_WEB_CONTENTS_PERMISSION_HELPER_H_
 
 #include "atom/browser/atom_browser_context.h"
-#include "base/callback.h"
 #include "content/public/browser/permission_type.h"
 #include "content/public/browser/web_contents_user_data.h"
 #include "content/public/common/media_stream_request.h"

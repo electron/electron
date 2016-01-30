@@ -1177,7 +1177,7 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("_printToPDF", &WebContents::PrintToPDF)
       .SetMethod("addWorkSpace", &WebContents::AddWorkSpace)
       .SetMethod("removeWorkSpace", &WebContents::RemoveWorkSpace)
-      .SetMethod("setPermissionRequestHandler",
+      .SetMethod("_setPermissionRequestHandler",
                  &WebContents::SetPermissionRequestHandler)
       .SetProperty("session", &WebContents::Session)
       .SetProperty("devToolsWebContents", &WebContents::DevToolsWebContents)
