@@ -14,6 +14,7 @@
 #include "atom/browser/common_web_contents_delegate.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "content/public/common/favicon_url.h"
+#include "content/common/cursors/webcursor.h"
 #include "native_mate/handle.h"
 #include "ui/gfx/image/image.h"
 
@@ -254,6 +255,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
   uint32 GetNextRequestId() {
     return ++request_id_;
   }
+
+  void OnCursorChange(const content::WebCursor& cursor);
 
   // Called when received a message from renderer.
   void OnRendererMessage(const base::string16& channel,

@@ -371,6 +371,8 @@
       'atom/renderer/node_array_buffer_bridge.h',
       'atom/utility/atom_content_utility_client.cc',
       'atom/utility/atom_content_utility_client.h',
+      'mw/cursor/cursor_event_filter.cc',
+      'mw/cursor/cursor_event_filter.h',      
       'chromium_src/chrome/browser/browser_process.cc',
       'chromium_src/chrome/browser/browser_process.h',
       'chromium_src/chrome/browser/chrome_process_finder_win.cc',

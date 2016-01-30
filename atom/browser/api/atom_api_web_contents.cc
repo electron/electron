@@ -56,8 +56,11 @@
 #include "net/url_request/url_request_context.h"
 #include "third_party/WebKit/public/web/WebInputEvent.h"
 #include "ui/base/l10n/l10n_util.h"
+#include "mw/cursor/cursor_event_filter.h"
 
 #include "atom/common/node_includes.h"
+
+#include <iostream>
 
 namespace {
 
@@ -619,6 +622,8 @@ bool WebContents::OnMessageReceived(const IPC::Message& message) {
     IPC_MESSAGE_HANDLER(AtomViewHostMsg_Message, OnRendererMessage)
     IPC_MESSAGE_HANDLER_DELAY_REPLY(AtomViewHostMsg_Message_Sync,
                                     OnRendererMessageSync)
+    IPC_MESSAGE_HANDLER_CODE(ViewHostMsg_SetCursor, OnCursorChange,
+      handled = false)
     IPC_MESSAGE_UNHANDLED(handled = false)
   IPC_END_MESSAGE_MAP()
 
@@ -1037,6 +1042,10 @@ void WebContents::EndFrameSubscription() {
   const auto view = web_contents()->GetRenderWidgetHostView();
   if (view)
     view->EndFrameSubscription();
+}
+
+void WebContents::OnCursorChange(const content::WebCursor& cursor) {
+  Emit("cursor-changed", CursorChangeEvent::toString(cursor));
 }
 
 void WebContents::SetSize(const SetSizeParams& params) {
