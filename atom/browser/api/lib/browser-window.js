@@ -55,14 +55,16 @@ BrowserWindow.prototype._init = function() {
   })(this));
 
   // Change window title to page title.
-  this.webContents.on('page-title-updated', (function(_this) {
-    return function(event, title) {
-      _this.emit('page-title-updated', event, title);
-      if (!event.defaultPrevented) {
-        return _this.setTitle(title);
-      }
-    };
-  })(this));
+  this.webContents.on('page-title-updated', (event, title) => {
+    // The page-title-updated event is not emitted immediately (see #3645), so
+    // when the callback is called the BrowserWindow might have been closed.
+    if (this.isDestroyed())
+      return;
+    // Route the event to BrowserWindow.
+    this.emit('page-title-updated', event, title);
+    if (!event.defaultPrevented)
+      this.setTitle(title);
+  });
 
   // Sometimes the webContents doesn't get focus when window is shown, so we have
   // to force focusing on webContents in this case. The safest way is to focus it
