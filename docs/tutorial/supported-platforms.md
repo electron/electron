@@ -5,7 +5,7 @@ Following platforms are supported by Electron:
 ### OS X
 
 Only 64bit binaries are provided for OS X, and the minimum OS X version
-supported is OS X 10.8.
+supported is OS X 10.9.
 
 ### Windows
 
