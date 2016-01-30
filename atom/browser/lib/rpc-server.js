@@ -162,12 +162,12 @@ var unwrapArgs = function(sender, args) {
         });
 
         let callIntoRenderer = function(...args) {
-          if (rendererReleased)
+          if (rendererReleased || sender.isDestroyed())
             throw new Error(`Attempting to call a function in a renderer window that has been closed or released. Function provided here: ${meta.location}.`);
           sender.send('ATOM_RENDERER_CALLBACK', meta.id, valueToMeta(sender, args));
         };
         v8Util.setDestructor(callIntoRenderer, function() {
-          if (!rendererReleased)
+          if (!rendererReleased && !sender.isDestroyed())
             sender.send('ATOM_RENDERER_RELEASE_CALLBACK', meta.id);
         });
         sender.callbacks.set(meta.id, callIntoRenderer);
