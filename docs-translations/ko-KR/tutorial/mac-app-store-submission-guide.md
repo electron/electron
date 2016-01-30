@@ -4,6 +4,10 @@ Electron은 v0.34.0 버전부터 앱 패키지를 Mac App Store(MAS)에 제출�
 되었습니다. 이 가이드는 어플리케이션을 앱 스토어에 등록하는 방법과 빌드의 한계에 대한
 설명을 제공합니다.
 
+__참고:__ v0.36.0 버전부터 어플리케이션이 샌드박스화 된 상태로 실행되면 GPU 작동을
+방지하는 버그가 있었습니다. 따라서 이 버그가 고쳐지기 전까진 v0.35.x 버전을 사용하는
+것을 권장합니다. 이 버그에 관한 자세한 사항은 [issue #3871][issue-3871]를 참고하세요.
+
 __참고:__ Mac App Store에 어플리케이션을 등록하려면
 [Apple Developer Program][developer-program]에 등록되어 있어야 하며 비용이 발생할
 수 있습니다.
@@ -73,13 +77,18 @@ INSTALLER_KEY="3rd Party Mac Developer Installer: Company Name (APPIDENTITY)"
 
 FRAMEWORKS_PATH="$APP_PATH/Contents/Frameworks"
 
-codesign --deep -fs "$APP_KEY" --entitlements child.plist "$FRAMEWORKS_PATH/Electron Framework.framework/Libraries/libnode.dylib"
-codesign --deep -fs "$APP_KEY" --entitlements child.plist "$FRAMEWORKS_PATH/Electron Framework.framework/Electron Framework"
-codesign --deep -fs "$APP_KEY" --entitlements child.plist "$FRAMEWORKS_PATH/Electron Framework.framework/"
+codesign --deep -fs "$APP_KEY" --entitlements child.plist "$FRAMEWORKS_PATH/Electron Framework.framework/Versions/A"
 codesign --deep -fs "$APP_KEY" --entitlements child.plist "$FRAMEWORKS_PATH/$APP Helper.app/"
 codesign --deep -fs "$APP_KEY" --entitlements child.plist "$FRAMEWORKS_PATH/$APP Helper EH.app/"
 codesign --deep -fs "$APP_KEY" --entitlements child.plist "$FRAMEWORKS_PATH/$APP Helper NP.app/"
-codesign  -fs "$APP_KEY" --entitlements parent.plist "$APP_PATH"
+if [ -d "$FRAMEWORKS_PATH/Squirrel.framework/Versions/A" ]; then
+  # non-MAS 빌드 서명
+  codesign --deep -fs "$APP_KEY" --entitlements child.plist "$FRAMEWORKS_PATH/Mantle.framework/Versions/A"
+  codesign --deep -fs "$APP_KEY" --entitlements child.plist "$FRAMEWORKS_PATH/ReactiveCocoa.framework/Versions/A"
+  codesign --deep -fs "$APP_KEY" --entitlements child.plist "$FRAMEWORKS_PATH/Squirrel.framework/Versions/A"
+fi
+codesign -fs "$APP_KEY" --entitlements parent.plist "$APP_PATH"
+
 productbuild --component "$APP_PATH" /Applications --sign "$INSTALLER_KEY" "$RESULT_PATH"
 ```
 
@@ -98,8 +107,8 @@ productbuild --component "$APP_PATH" /Applications --sign "$INSTALLER_KEY" "$RES
 모든 어플리케이션 샌드박스에 대한 요구 사항을 충족시키기 위해, 다음 모듈들은 MAS
 빌드에서 비활성화됩니다:
 
-* `crash-reporter`
-* `auto-updater`
+* `crashReporter`
+* `autoUpdater`
 
 그리고 다음 동작으로 대체됩니다:
 
@@ -111,7 +120,42 @@ productbuild --component "$APP_PATH" /Applications --sign "$INSTALLER_KEY" "$RES
 엄격하게 제한되어 있습니다. 자세한 내용은 [App Sandboxing][app-sandboxing] 문서를
 참고하세요.
 
-**역주:** [Mac 앱 배포 가이드 공식 문서](https://developer.apple.com/osx/distribution/kr/)
+## Electron에서 사용하는 암호화 알고리즘
+
+국가와 살고 있는 지역에 따라, 맥 앱스토어는 제출한 어플리케이션에서 사용하는 암호화
+알고리즘의 문서를 요구할 수 있습니다. 심지어 U.S. Encryption Registration (ERN)의
+승인 사본을 제출하라고 할 수도 있습니다.
+
+Electron은 다음과 같은 암호화 알고리즘을 사용합니다:
+
+* AES - [NIST SP 800-38A](http://csrc.nist.gov/publications/nistpubs/800-38a/sp800-38a.pdf), [NIST SP 800-38D](http://csrc.nist.gov/publications/nistpubs/800-38D/SP-800-38D.pdf), [RFC 3394](http://www.ietf.org/rfc/rfc3394.txt)
+* HMAC - [FIPS 198-1](http://csrc.nist.gov/publications/fips/fips198-1/FIPS-198-1_final.pdf)
+* ECDSA - ANS X9.62–2005
+* ECDH - ANS X9.63–2001
+* HKDF - [NIST SP 800-56C](http://csrc.nist.gov/publications/nistpubs/800-56C/SP-800-56C.pdf)
+* PBKDF2 - [RFC 2898](https://tools.ietf.org/html/rfc2898)
+* RSA - [RFC 3447](http://www.ietf.org/rfc/rfc3447)
+* SHA - [FIPS 180-4](http://csrc.nist.gov/publications/fips/fips180-4/fips-180-4.pdf)
+* Blowfish - https://www.schneier.com/cryptography/blowfish/
+* CAST - [RFC 2144](https://tools.ietf.org/html/rfc2144), [RFC 2612](https://tools.ietf.org/html/rfc2612)
+* DES - [FIPS 46-3](http://csrc.nist.gov/publications/fips/fips46-3/fips46-3.pdf)
+* DH - [RFC 2631](https://tools.ietf.org/html/rfc2631)
+* DSA - [ANSI X9.30](http://webstore.ansi.org/RecordDetail.aspx?sku=ANSI+X9.30-1%3A1997)
+* EC - [SEC 1](http://www.secg.org/sec1-v2.pdf)
+* IDEA - "On the Design and Security of Block Ciphers" book by X. Lai
+* MD2 - [RFC 1319](http://tools.ietf.org/html/rfc1319)
+* MD4 - [RFC 6150](https://tools.ietf.org/html/rfc6150)
+* MD5 - [RFC 1321](https://tools.ietf.org/html/rfc1321)
+* MDC2 - [ISO/IEC 10118-2](https://www.openssl.org/docs/manmaster/crypto/mdc2.html)
+* RC2 - [RFC 2268](https://tools.ietf.org/html/rfc2268)
+* RC4 - [RFC 4345](https://tools.ietf.org/html/rfc4345)
+* RC5 - http://people.csail.mit.edu/rivest/Rivest-rc5rev.pdf
+* RIPEMD - [ISO/IEC 10118-3](http://webstore.ansi.org/RecordDetail.aspx?sku=ISO%2FIEC%2010118-3:2004)
+
+ERN의 승인을 얻는 방법은, 다음 글을 참고하는 것이 좋습니다:
+[어플리케이션이 암호화를 사용할 때, 합법적으로 Apple의 앱 스토어에 제출하는 방법 (또는 ERN의 승인을 얻는 방법)][ern-tutorial].
+
+**역주:** [Mac 앱 배포 가이드 공식 한국어 문서](https://developer.apple.com/osx/distribution/kr/)
 
 [developer-program]: https://developer.apple.com/support/compare-memberships/
 [submitting-your-app]: https://developer.apple.com/library/mac/documentation/IDEs/Conceptual/AppDistributionGuide/SubmittingYourApp/SubmittingYourApp.html
@@ -120,3 +164,5 @@ productbuild --component "$APP_PATH" /Applications --sign "$INSTALLER_KEY" "$RES
 [create-record]: https://developer.apple.com/library/ios/documentation/LanguagesUtilities/Conceptual/iTunesConnect_Guide/Chapters/CreatingiTunesConnectRecord.html
 [submit-for-review]: https://developer.apple.com/library/ios/documentation/LanguagesUtilities/Conceptual/iTunesConnect_Guide/Chapters/SubmittingTheApp.html
 [app-sandboxing]: https://developer.apple.com/app-sandboxing/
+[issue-3871]: https://github.com/atom/electron/issues/3871
+[ern-tutorial]: https://carouselapps.com/2015/12/15/legally-submit-app-apples-app-store-uses-encryption-obtain-ern/
