@@ -67,10 +67,10 @@ module.exports = {
       var args = 3 <= arguments.length ? slice.call(arguments, 2) : [];
       if (eventName === 'permission-request') {
         var allow = function allow() {
-          ipcRenderer.send("ATOM_SHELL_GUEST_VIEW_MANAGER_SET_PERMISSION_RESPONSE", viewInstanceId, args[0], true);
+          ipcRenderer.send("ATOM_SHELL_GUEST_VIEW_MANAGER_SET_PERMISSION_RESPONSE", viewInstanceId, args[0], "granted");
         };
         var deny = function deny() {
-          ipcRenderer.send("ATOM_SHELL_GUEST_VIEW_MANAGER_SET_PERMISSION_RESPONSE", viewInstanceId, args[0], false);
+          ipcRenderer.send("ATOM_SHELL_GUEST_VIEW_MANAGER_SET_PERMISSION_RESPONSE", viewInstanceId, args[0], "denied");
         };
         args = args.concat([allow, deny]);
       }

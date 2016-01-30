@@ -288,13 +288,13 @@ void AtomBrowserClient::WebNotificationAllowed(
   content::WebContents* web_contents = content::WebContents::FromRenderViewHost(
       content::RenderViewHost::FromID(render_process_id, kDefaultRoutingID));
   if (!web_contents) {
-    callback.Run(true);
+    callback.Run(false);
     return;
   }
   auto permission_helper =
       WebContentsPermissionHelper::FromWebContents(web_contents);
   if (!permission_helper) {
-    callback.Run(true);
+    callback.Run(false);
     return;
   }
   permission_helper->RequestWebNotificationPermission(callback);

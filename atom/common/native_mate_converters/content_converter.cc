@@ -99,6 +99,50 @@ v8::Local<v8::Value> Converter<ContextMenuParamsWithWebContents>::ToV8(
 }
 
 // static
+bool Converter<content::PermissionStatus>::FromV8(
+    v8::Isolate* isolate,
+    v8::Local<v8::Value> val,
+    content::PermissionStatus* out) {
+  std::string status;
+  if (!ConvertFromV8(isolate, val, &status))
+    return false;
+
+  if (status == "granted")
+    *out = content::PERMISSION_STATUS_GRANTED;
+  else if (status == "denied" || status.empty())
+    *out = content::PERMISSION_STATUS_DENIED;
+  else
+    return false;
+
+  return true;
+}
+
+// static
+v8::Local<v8::Value> Converter<content::PermissionType>::ToV8(
+    v8::Isolate* isolate, const content::PermissionType& val) {
+  switch (val) {
+    case content::PermissionType::MIDI_SYSEX:
+      return StringToV8(isolate, "midiSysex");
+    case content::PermissionType::PUSH_MESSAGING:
+      return StringToV8(isolate, "pushMessaging");
+    case content::PermissionType::NOTIFICATIONS:
+      return StringToV8(isolate, "notifications");
+    case content::PermissionType::GEOLOCATION:
+      return StringToV8(isolate, "geolocation");
+    case content::PermissionType::AUDIO_CAPTURE:
+    case content::PermissionType::VIDEO_CAPTURE:
+      return StringToV8(isolate, "media");
+    case content::PermissionType::PROTECTED_MEDIA_IDENTIFIER:
+      return StringToV8(isolate, "mediaKeySystem");
+    case content::PermissionType::MIDI:
+      return StringToV8(isolate, "midi");
+    case content::PermissionType::DURABLE_STORAGE:
+    default:
+      return StringToV8(isolate, "unknown");
+  }
+}
+
+// static
 bool Converter<content::StopFindAction>::FromV8(
     v8::Isolate* isolate,
     v8::Local<v8::Value> val,

@@ -5,25 +5,18 @@
 #ifndef ATOM_BROWSER_WEB_CONTENTS_PERMISSION_HELPER_H_
 #define ATOM_BROWSER_WEB_CONTENTS_PERMISSION_HELPER_H_
 
-#include <map>
-#include <string>
-
+#include "atom/browser/atom_browser_context.h"
 #include "base/callback.h"
+#include "content/public/browser/permission_type.h"
 #include "content/public/browser/web_contents_user_data.h"
 #include "content/public/common/media_stream_request.h"
 
 namespace atom {
 
-namespace api {
-class WebContents;
-}
-
 // Applies the permission requested for WebContents.
 class WebContentsPermissionHelper
     : public content::WebContentsUserData<WebContentsPermissionHelper> {
  public:
-  WebContentsPermissionHelper(content::WebContents* web_contents,
-                              api::WebContents* api_web_contents);
   ~WebContentsPermissionHelper() override;
 
   void RequestMediaAccessPermission(
@@ -32,14 +25,19 @@ class WebContentsPermissionHelper
   void RequestWebNotificationPermission(
       const base::Callback<void(bool)>& callback);
 
-  void OnPermissionResponse(const std::string& permission, bool allowed);
+  AtomBrowserContext* browser_context() const {
+    return static_cast<AtomBrowserContext*>(web_contents_->GetBrowserContext());
+  }
 
  private:
+  explicit WebContentsPermissionHelper(content::WebContents* web_contents);
   friend class content::WebContentsUserData<WebContentsPermissionHelper>;
 
-  std::map<std::string, base::Callback<void(bool)>> permission_map_;
+  void RequestPermission(
+      content::PermissionType permission,
+      const base::Callback<void(bool)>& callback);
 
-  api::WebContents* api_web_contents_;  // Weak reference
+  content::WebContents* web_contents_;
 
   DISALLOW_COPY_AND_ASSIGN(WebContentsPermissionHelper);
 };

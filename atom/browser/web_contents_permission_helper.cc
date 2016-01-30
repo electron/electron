@@ -6,8 +6,9 @@
 
 #include <string>
 
-#include "atom/browser/api/atom_api_web_contents.h"
+#include "atom/browser/atom_permission_manager.h"
 #include "content/public/browser/media_capture_devices.h"
+#include "content/public/browser/render_process_host.h"
 
 DEFINE_WEB_CONTENTS_USER_DATA_KEY(atom::WebContentsPermissionHelper);
 
@@ -67,55 +68,32 @@ void MediaAccessAllowed(
 }  // namespace
 
 WebContentsPermissionHelper::WebContentsPermissionHelper(
-    content::WebContents* web_contents,
-    api::WebContents* api_web_contents)
-    : api_web_contents_(api_web_contents) {
-  web_contents->SetUserData(UserDataKey(), this);
+    content::WebContents* web_contents)
+    : web_contents_(web_contents) {
 }
 
 WebContentsPermissionHelper::~WebContentsPermissionHelper() {
 }
 
+void WebContentsPermissionHelper::RequestPermission(
+    content::PermissionType permission,
+    const base::Callback<void(bool)>& callback) {
+  auto rfh = web_contents_->GetMainFrame();
+  auto permission_manager = browser_context()->permission_manager();
+  auto origin = web_contents_->GetLastCommittedURL();
+  permission_manager->RequestPermission(permission, rfh, origin, callback);
+}
+
 void WebContentsPermissionHelper::RequestMediaAccessPermission(
     const content::MediaStreamRequest& request,
-    const content::MediaResponseCallback& callback) {
-  if (api_web_contents_->IsGuest()) {
-    const std::string& permission = "media";
-    permission_map_[permission] = base::Bind(&MediaAccessAllowed,
-                                             request,
-                                             callback);
-    api_web_contents_->Emit(
-        "permission-request",
-        permission,
-        base::Bind(&WebContentsPermissionHelper::OnPermissionResponse,
-                   base::Unretained(this), permission));
-    return;
-  }
-  MediaAccessAllowed(request, callback, true);
+    const content::MediaResponseCallback& response_callback) {
+  auto callback = base::Bind(&MediaAccessAllowed, request, response_callback);
+  RequestPermission(content::PermissionType::AUDIO_CAPTURE, callback);
 }
 
 void WebContentsPermissionHelper::RequestWebNotificationPermission(
     const base::Callback<void(bool)>& callback) {
-  if (api_web_contents_->IsGuest()) {
-    const std::string& permission = "webNotification";
-    permission_map_[permission] = callback;
-    api_web_contents_->Emit(
-        "permission-request",
-        permission,
-        base::Bind(&WebContentsPermissionHelper::OnPermissionResponse,
-                   base::Unretained(this), permission));
-    return;
-  }
-  callback.Run(true);
-}
-
-void WebContentsPermissionHelper::OnPermissionResponse(
-    const std::string& permission, bool allowed) {
-  auto it = permission_map_.find(permission);
-  if (it != permission_map_.end()) {
-    it->second.Run(allowed);
-    permission_map_.erase(permission);
-  }
+  RequestPermission(content::PermissionType::NOTIFICATIONS, callback);
 }
 
 }  // namespace atom

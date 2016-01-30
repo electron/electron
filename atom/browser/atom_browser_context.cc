@@ -13,6 +13,7 @@
 #include "atom/browser/net/atom_url_request_job_factory.h"
 #include "atom/browser/net/asar/asar_protocol_handler.h"
 #include "atom/browser/net/http_protocol_handler.h"
+#include "atom/browser/atom_permission_manager.h"
 #include "atom/browser/web_view_manager.h"
 #include "atom/common/atom_version.h"
 #include "atom/common/chrome_version.h"
@@ -67,6 +68,7 @@ AtomBrowserContext::AtomBrowserContext(const std::string& partition,
       cert_verifier_(nullptr),
       job_factory_(new AtomURLRequestJobFactory),
       network_delegate_(new AtomNetworkDelegate),
+      permission_manager_(new AtomPermissionManager),
       allow_ntlm_everywhere_(false) {
 }
 
@@ -167,6 +169,10 @@ content::BrowserPluginGuestManager* AtomBrowserContext::GetGuestManager() {
   if (!guest_manager_)
     guest_manager_.reset(new WebViewManager);
   return guest_manager_.get();
+}
+
+content::PermissionManager* AtomBrowserContext::GetPermissionManager() {
+  return permission_manager_.get();
 }
 
 scoped_ptr<net::CertVerifier> AtomBrowserContext::CreateCertVerifier() {

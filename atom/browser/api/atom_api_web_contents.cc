@@ -13,6 +13,7 @@
 #include "atom/browser/atom_browser_client.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
+#include "atom/browser/atom_permission_manager.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/web_contents_permission_helper.h"
 #include "atom/browser/web_contents_preferences.h"
@@ -263,8 +264,8 @@ WebContents::WebContents(v8::Isolate* isolate,
   // Save the preferences in C++.
   new WebContentsPreferences(web_contents, options);
 
-  // Initialze permission helper.
-  new WebContentsPermissionHelper(web_contents, this);
+  // Intialize permission helper.
+  WebContentsPermissionHelper::CreateForWebContents(web_contents);
 
   web_contents->SetUserAgentOverride(GetBrowserContext()->GetUserAgent());
 
@@ -1066,6 +1067,17 @@ bool WebContents::IsGuest() const {
   return type_ == WEB_VIEW;
 }
 
+void WebContents::SetPermissionRequestHandler(v8::Local<v8::Value> val,
+                                              mate::Arguments* args) {
+  AtomPermissionManager::RequestHandler handler;
+  if (!(val->IsNull() || mate::ConvertFromV8(args->isolate(), val, &handler))) {
+    args->ThrowError("Must pass null or function");
+    return;
+  }
+  GetBrowserContext()->permission_manager()
+                     ->SetPermissionRequestHandler(GetID(), handler);
+}
+
 v8::Local<v8::Value> WebContents::GetWebPreferences(v8::Isolate* isolate) {
   WebContentsPreferences* web_preferences =
       WebContentsPreferences::FromWebContents(web_contents());
@@ -1165,6 +1177,8 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("_printToPDF", &WebContents::PrintToPDF)
       .SetMethod("addWorkSpace", &WebContents::AddWorkSpace)
       .SetMethod("removeWorkSpace", &WebContents::RemoveWorkSpace)
+      .SetMethod("setPermissionRequestHandler",
+                 &WebContents::SetPermissionRequestHandler)
       .SetProperty("session", &WebContents::Session)
       .SetProperty("devToolsWebContents", &WebContents::DevToolsWebContents)
       .SetProperty("debugger", &WebContents::Debugger);

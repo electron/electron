@@ -133,6 +133,10 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void SetAllowTransparency(bool allow);
   bool IsGuest() const;
 
+  // Handler for permission requests.
+  void SetPermissionRequestHandler(v8::Local<v8::Value> val,
+                                   mate::Arguments* args);
+
   // Returns the web preferences of current WebContents.
   v8::Local<v8::Value> GetWebPreferences(v8::Isolate* isolate);
 

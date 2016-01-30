@@ -36,15 +36,13 @@ var supportedWebViewEvents = [
   'media-started-playing',
   'media-paused',
   'found-in-page',
-  'did-change-theme-color',
-  'permission-request'
+  'did-change-theme-color'
 ];
 
 var nextInstanceId = 0;
-var permissionRequests;
 var guestInstances = {};
-var guestPermissionRequestsMap = {};
 var embedderElementsMap = {};
+var pendingRequestsMap = {};
 var reverseEmbedderElementsMap = {};
 
 // Moves the last element of array to the first one.
@@ -137,20 +135,19 @@ var createGuest = function(embedder, params) {
     if (params.allowtransparency != null) {
       this.setAllowTransparency(params.allowtransparency);
     }
-    return guest.allowPopups = params.allowpopups;
+    guest.allowPopups = params.allowpopups;
+    this.setPermissionRequestHandler((permission, callback) => {
+      if (!pendingRequestsMap[this.viewInstanceId])
+        pendingRequestsMap[this.viewInstanceId] = {};
+      pendingRequestsMap[this.viewInstanceId][permission] = callback;
+      embedder.send.apply(embedder, ["ATOM_SHELL_GUEST_VIEW_INTERNAL_DISPATCH_EVENT-" + this.viewInstanceId, "permission-request", permission]);
+    });
   });
 
   // Dispatch events to embedder.
   fn = function(event) {
     return guest.on(event, function() {
       var args = 2 <= arguments.length ? slice.call(arguments, 1) : [];
-      if (event === 'permission-request') {
-        if (!guestPermissionRequestsMap[guest.viewInstanceId])
-          guestPermissionRequestsMap[guest.viewInstanceId] = {};
-        var permission = args[0];
-        guestPermissionRequestsMap[guest.viewInstanceId][permission] = args[1];
-        args.pop();
-      }
       return embedder.send.apply(embedder, ["ATOM_SHELL_GUEST_VIEW_INTERNAL_DISPATCH_EVENT-" + guest.viewInstanceId, event].concat(slice.call(args)));
     });
   };
@@ -171,6 +168,7 @@ var createGuest = function(embedder, params) {
     var args = 2 <= arguments.length ? slice.call(arguments, 1) : [];
     return embedder.send.apply(embedder, ["ATOM_SHELL_GUEST_VIEW_INTERNAL_SIZE_CHANGED-" + guest.viewInstanceId].concat(slice.call(args)));
   });
+
   return id;
 };
 
@@ -216,7 +214,7 @@ var destroyGuest = function(embedder, id) {
   webViewManager.removeGuest(embedder, id);
   guestInstances[id].guest.destroy();
   delete guestInstances[id];
-  delete guestPermissionRequestsMap[id];
+  delete pendingRequestsMap[id];
   key = reverseEmbedderElementsMap[id];
   if (key != null) {
     delete reverseEmbedderElementsMap[id];
@@ -236,13 +234,6 @@ ipcMain.on('ATOM_SHELL_GUEST_VIEW_MANAGER_DESTROY_GUEST', function(event, id) {
   return destroyGuest(event.sender, id);
 });
 
-ipcMain.on('ATOM_SHELL_GUEST_VIEW_MANAGER_SET_PERMISSION_RESPONSE', function(event, viewInstanceId, permission, allowed) {
-  permissionRequests = guestPermissionRequestsMap[viewInstanceId];
-  if (permissionRequests && permissionRequests[permission] !== null) {
-    permissionRequests[permission].apply(null, [allowed]);
-  }
-});
-
 ipcMain.on('ATOM_SHELL_GUEST_VIEW_MANAGER_SET_SIZE', function(event, id, params) {
   var ref1;
   return (ref1 = guestInstances[id]) != null ? ref1.guest.setSize(params) : void 0;
@@ -251,6 +242,13 @@ ipcMain.on('ATOM_SHELL_GUEST_VIEW_MANAGER_SET_SIZE', function(event, id, params)
 ipcMain.on('ATOM_SHELL_GUEST_VIEW_MANAGER_SET_ALLOW_TRANSPARENCY', function(event, id, allowtransparency) {
   var ref1;
   return (ref1 = guestInstances[id]) != null ? ref1.guest.setAllowTransparency(allowtransparency) : void 0;
+});
+
+ipcMain.on('ATOM_SHELL_GUEST_VIEW_MANAGER_SET_PERMISSION_RESPONSE', function(event, id, permission, allowed) {
+  if (pendingRequestsMap[id] != null) {
+    const callback = pendingRequestsMap[id][permission];
+    callback.apply(null, [allowed]);
+  }
 });
 
 // Returns WebContents from its guest id.
