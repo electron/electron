@@ -384,7 +384,8 @@ void WebContents::AddNewContents(content::WebContents* source,
                   "ATOM_SHELL_GUEST_VIEW_MANAGER_TAB_OPEN",
                   new_tab_event,
                   "about:blank",
-                  delayed_load_url_params_.get() ? new_contents->GetMainFrame()->GetFrameName() : "",
+                  delayed_load_url_params_.get()
+                    ? new_contents->GetMainFrame()->GetFrameName() : "",
                   disposition,
                   *options);
     return;
@@ -412,7 +413,8 @@ void WebContents::AddNewContents(content::WebContents* source,
                   "ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_OPEN",
                   window_open_event,
                   "about:blank",
-                  delayed_load_url_params_.get() ? new_contents->GetMainFrame()->GetFrameName() : "",
+                  delayed_load_url_params_.get()
+                    ? new_contents->GetMainFrame()->GetFrameName() : "",
                   *options);
     return;
   }

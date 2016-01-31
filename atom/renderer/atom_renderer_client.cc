@@ -200,7 +200,6 @@ bool AtomRendererClient::ShouldFork(blink::WebLocalFrame* frame,
                                     bool is_initial_navigation,
                                     bool is_server_redirect,
                                     bool* send_referrer) {
-
   base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
   if (command_line->HasSwitch(switches::kNodeIntegration) &&
       command_line->GetSwitchValueASCII(switches::kNodeIntegration) == "true") {

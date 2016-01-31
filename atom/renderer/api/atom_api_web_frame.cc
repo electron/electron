@@ -111,9 +111,11 @@ void WebFrame::AttachGuest(int id) {
   // This results in the BrowserPluginGuest trying to access the native
   // window before it's actually ready. This hack works around that
   // by always delaying the access
-  content::BrowserPluginManager::Get()->GetBrowserPlugin(id)->updateVisibility(false);
+  content::BrowserPluginManager::Get()
+    ->GetBrowserPlugin(id)->updateVisibility(false);
   content::RenderFrame::FromWebFrame(web_frame_)->AttachGuest(id);
-  content::BrowserPluginManager::Get()->GetBrowserPlugin(id)->updateVisibility(true);
+  content::BrowserPluginManager::Get()
+    ->GetBrowserPlugin(id)->updateVisibility(true);
 }
 
 void WebFrame::SetSpellCheckProvider(mate::Arguments* args,
