@@ -27,6 +27,7 @@
 #include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
+#include "atom/common/mouse_util.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "brightray/browser/inspectable_web_contents.h"
@@ -56,11 +57,8 @@
 #include "net/url_request/url_request_context.h"
 #include "third_party/WebKit/public/web/WebInputEvent.h"
 #include "ui/base/l10n/l10n_util.h"
-#include "mw/cursor/cursor_event_filter.h"
 
 #include "atom/common/node_includes.h"
-
-#include <iostream>
 
 namespace {
 
@@ -1045,7 +1043,7 @@ void WebContents::EndFrameSubscription() {
 }
 
 void WebContents::OnCursorChange(const content::WebCursor& cursor) {
-  Emit("cursor-changed", CursorChangeEvent::toString(cursor));
+  Emit("cursor-changed", CursorTypeToString(cursor));
 }
 
 void WebContents::SetSize(const SetSizeParams& params) {

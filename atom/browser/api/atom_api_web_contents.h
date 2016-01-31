@@ -256,6 +256,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
     return ++request_id_;
   }
 
+  // Called when we receive a CursorChange message from chromium.
   void OnCursorChange(const content::WebCursor& cursor);
 
   // Called when received a message from renderer.

@@ -281,6 +281,24 @@ Emitted when a page's theme color changes. This is usually due to encountering a
 <meta name='theme-color' content='#ff0000'>
 ```
 
+### Event: 'cursor-changed'
+
+Returns:
+
+* `event` Event
+* `type` String
+
+Emitted when the cursor's type changes. The `type` parameter can be `pointer`,
+`cross`, `hand`, `i-beam`, `wait`, `help`, `east-resize`, `north-resize`,
+`north-east-resize`, `north-west-resize`, `south-resize`, `south-east-resize`,
+`south-west-resize`, `west-resize`, `north-south-resize`, `east-west-resize`,
+`north-east-south-west-resize`, `north-west-south-east-resize`, `column-resize`,
+`row-resize`, `middle-panning`, `east-panning`, `north-panning`,
+`north-east-panning`, `north-west-panning`, `south-panning`,
+`south-east-panning`, `south-west-panning`, `west-panning`, `move`,
+`vertical-text`, `cell`, `context-menu`, `alias`, `progress`, `nodrop`, `copy`,
+`none`, `not-allowed`, `zoom-in`, `zoom-out`, `grab`, `grabbing`, `custom`.
+
 ## Instance Methods
 
 The `webContents` object has the following instance methods:
