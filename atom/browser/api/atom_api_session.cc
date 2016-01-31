@@ -14,8 +14,10 @@
 #include "atom/browser/api/save_page_handler.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
+#include "atom/browser/atom_permission_manager.h"
 #include "atom/browser/net/atom_cert_verifier.h"
 #include "atom/common/native_mate_converters/callback.h"
+#include "atom/common/native_mate_converters/content_converter.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/net_converter.h"
@@ -397,6 +399,18 @@ void Session::SetCertVerifyProc(v8::Local<v8::Value> val,
   browser_context_->cert_verifier()->SetVerifyProc(proc);
 }
 
+void Session::SetPermissionRequestHandler(v8::Local<v8::Value> val,
+                                              mate::Arguments* args) {
+  AtomPermissionManager::RequestHandler handler;
+  if (!(val->IsNull() || mate::ConvertFromV8(args->isolate(), val, &handler))) {
+    args->ThrowError("Must pass null or function");
+    return;
+  }
+  auto permission_manager = static_cast<AtomPermissionManager*>(
+      browser_context()->GetPermissionManager());
+  permission_manager->SetPermissionRequestHandler(handler);
+}
+
 v8::Local<v8::Value> Session::Cookies(v8::Isolate* isolate) {
   if (cookies_.IsEmpty()) {
     auto handle = atom::api::Cookies::Create(isolate, browser_context());
@@ -448,6 +462,8 @@ void Session::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("enableNetworkEmulation", &Session::EnableNetworkEmulation)
       .SetMethod("disableNetworkEmulation", &Session::DisableNetworkEmulation)
       .SetMethod("setCertificateVerifyProc", &Session::SetCertVerifyProc)
+      .SetMethod("setPermissionRequestHandler",
+                 &Session::SetPermissionRequestHandler)
       .SetProperty("cookies", &Session::Cookies)
       .SetProperty("webRequest", &Session::WebRequest);
 }

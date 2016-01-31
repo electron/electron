@@ -8,6 +8,7 @@
 #include "content/public/browser/permission_type.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
+#include "content/public/browser/web_contents.h"
 
 namespace atom {
 
@@ -19,33 +20,13 @@ AtomPermissionManager::~AtomPermissionManager() {
 }
 
 void AtomPermissionManager::SetPermissionRequestHandler(
-    int id,
     const RequestHandler& handler) {
-  if (handler.is_null()) {
-    request_handler_map_.erase(id);
-    return;
+  if (handler.is_null() && !pending_requests_.empty()) {
+    for (const auto& request : pending_requests_)
+      request.second.Run(content::PERMISSION_STATUS_DENIED);
+    pending_requests_.clear();
   }
-  request_handler_map_[id] = handler;
-}
-
-void AtomPermissionManager::RequestPermission(
-    content::PermissionType permission,
-    content::RenderFrameHost* render_frame_host,
-    const GURL& origin,
-    const base::Callback<void(bool)>& callback) {
-  bool user_gesture = false;
-  RequestPermission(permission, render_frame_host, origin, user_gesture,
-                    base::Bind(&AtomPermissionManager::OnPermissionResponse,
-                               base::Unretained(this), callback));
-}
-
-void AtomPermissionManager::OnPermissionResponse(
-    const base::Callback<void(bool)>& callback,
-    content::PermissionStatus status) {
-  if (status == content::PERMISSION_STATUS_GRANTED)
-    callback.Run(true);
-  else
-    callback.Run(false);
+  request_handler_ = handler;
 }
 
 int AtomPermissionManager::RequestPermission(
@@ -53,23 +34,37 @@ int AtomPermissionManager::RequestPermission(
     content::RenderFrameHost* render_frame_host,
     const GURL& requesting_origin,
     bool user_gesture,
-    const ResponseCallback& callback) {
-  int process_id = render_frame_host->GetProcess()->GetID();
-  auto request_handler = request_handler_map_.find(process_id);
-
+    const ResponseCallback& response_callback) {
   if (permission == content::PermissionType::MIDI_SYSEX) {
     content::ChildProcessSecurityPolicy::GetInstance()->
-        GrantSendMidiSysExMessage(process_id);
+        GrantSendMidiSysExMessage(render_frame_host->GetProcess()->GetID());
   }
 
-  if (request_handler != request_handler_map_.end()) {
-    pending_requests_[++request_id_] = callback;
-    request_handler->second.Run(permission, callback);
+  if (!request_handler_.is_null()) {
+    auto web_contents =
+        content::WebContents::FromRenderFrameHost(render_frame_host);
+    ++request_id_;
+    auto callback = base::Bind(&AtomPermissionManager::OnPermissionResponse,
+                               base::Unretained(this),
+                               request_id_,
+                               requesting_origin,
+                               response_callback);
+    pending_requests_[request_id_] = callback;
+    request_handler_.Run(web_contents, permission, callback);
     return request_id_;
   }
 
-  callback.Run(content::PERMISSION_STATUS_GRANTED);
+  response_callback.Run(content::PERMISSION_STATUS_GRANTED);
   return kNoPendingOperation;
+}
+
+void AtomPermissionManager::OnPermissionResponse(
+    int request_id,
+    const GURL& origin,
+    const ResponseCallback& callback,
+    content::PermissionStatus status) {
+  callback.Run(status);
+  pending_requests_.erase(request_id);
 }
 
 void AtomPermissionManager::CancelPermissionRequest(int request_id) {

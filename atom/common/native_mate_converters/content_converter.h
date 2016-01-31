@@ -53,6 +53,12 @@ struct Converter<content::StopFindAction> {
                      content::StopFindAction* out);
 };
 
+template<>
+struct Converter<content::WebContents*> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   content::WebContents* val);
+};
+
 }  // namespace mate
 
 #endif  // ATOM_COMMON_NATIVE_MATE_CONVERTERS_CONTENT_CONVERTER_H_

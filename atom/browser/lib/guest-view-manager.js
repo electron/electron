@@ -42,7 +42,6 @@ var supportedWebViewEvents = [
 var nextInstanceId = 0;
 var guestInstances = {};
 var embedderElementsMap = {};
-var pendingRequestsMap = {};
 var reverseEmbedderElementsMap = {};
 
 // Moves the last element of array to the first one.
@@ -135,15 +134,7 @@ var createGuest = function(embedder, params) {
     if (params.allowtransparency != null) {
       this.setAllowTransparency(params.allowtransparency);
     }
-    guest.allowPopups = params.allowpopups;
-
-    // Dispatches permission request event.
-    this._setPermissionRequestHandler((permission, callback) => {
-      if (!pendingRequestsMap[this.viewInstanceId])
-        pendingRequestsMap[this.viewInstanceId] = {};
-      pendingRequestsMap[this.viewInstanceId][permission] = callback;
-      embedder.send.apply(embedder, ["ATOM_SHELL_GUEST_VIEW_INTERNAL_DISPATCH_EVENT-" + this.viewInstanceId, "permission-request", permission]);
-    });
+    return guest.allowPopups = params.allowpopups;
   });
 
   // Dispatch events to embedder.
@@ -170,7 +161,6 @@ var createGuest = function(embedder, params) {
     var args = 2 <= arguments.length ? slice.call(arguments, 1) : [];
     return embedder.send.apply(embedder, ["ATOM_SHELL_GUEST_VIEW_INTERNAL_SIZE_CHANGED-" + guest.viewInstanceId].concat(slice.call(args)));
   });
-
   return id;
 };
 
@@ -198,8 +188,7 @@ var attachGuest = function(embedder, elementInstanceId, guestInstanceId, params)
     nodeIntegration: (ref1 = params.nodeintegration) != null ? ref1 : false,
     plugins: params.plugins,
     webSecurity: !params.disablewebsecurity,
-    blinkFeatures: params.blinkfeatures,
-    webNotification: !params.disablewebnotification,
+    blinkFeatures: params.blinkfeatures
   };
   if (params.preload) {
     webPreferences.preloadURL = params.preload;
@@ -216,7 +205,6 @@ var destroyGuest = function(embedder, id) {
   webViewManager.removeGuest(embedder, id);
   guestInstances[id].guest.destroy();
   delete guestInstances[id];
-  delete pendingRequestsMap[id];
   key = reverseEmbedderElementsMap[id];
   if (key != null) {
     delete reverseEmbedderElementsMap[id];
@@ -244,13 +232,6 @@ ipcMain.on('ATOM_SHELL_GUEST_VIEW_MANAGER_SET_SIZE', function(event, id, params)
 ipcMain.on('ATOM_SHELL_GUEST_VIEW_MANAGER_SET_ALLOW_TRANSPARENCY', function(event, id, allowtransparency) {
   var ref1;
   return (ref1 = guestInstances[id]) != null ? ref1.guest.setAllowTransparency(allowtransparency) : void 0;
-});
-
-ipcMain.on('ATOM_SHELL_GUEST_VIEW_MANAGER_SET_PERMISSION_RESPONSE', function(event, id, permission, allowed) {
-  if (pendingRequestsMap[id] != null) {
-    const callback = pendingRequestsMap[id][permission];
-    callback.apply(null, [allowed]);
-  }
 });
 
 // Returns WebContents from its guest id.

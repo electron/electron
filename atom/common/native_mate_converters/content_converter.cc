@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 
+#include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "content/public/browser/web_contents.h"
@@ -161,6 +162,12 @@ bool Converter<content::StopFindAction>::FromV8(
     return false;
 
   return true;
+}
+
+// static
+v8::Local<v8::Value> Converter<content::WebContents*>::ToV8(
+    v8::Isolate* isolate, content::WebContents* val) {
+  return atom::api::WebContents::CreateFrom(isolate, val).ToV8();
 }
 
 }  // namespace mate

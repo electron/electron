@@ -66,6 +66,14 @@ void MediaAccessAllowed(
   callback.Run(devices, result, scoped_ptr<content::MediaStreamUI>());
 }
 
+void OnPermissionResponse(const base::Callback<void(bool)>& callback,
+                          content::PermissionStatus status) {
+  if (status == content::PERMISSION_STATUS_GRANTED)
+    callback.Run(true);
+  else
+    callback.Run(false);
+}
+
 }  // namespace
 
 WebContentsPermissionHelper::WebContentsPermissionHelper(
@@ -83,13 +91,18 @@ void WebContentsPermissionHelper::RequestPermission(
   auto permission_manager = static_cast<AtomPermissionManager*>(
       web_contents_->GetBrowserContext()->GetPermissionManager());
   auto origin = web_contents_->GetLastCommittedURL();
-  permission_manager->RequestPermission(permission, rfh, origin, callback);
+  bool user_gesture = false;
+  permission_manager->RequestPermission(
+      permission, rfh, origin, user_gesture,
+      base::Bind(&OnPermissionResponse, callback));
 }
 
 void WebContentsPermissionHelper::RequestMediaAccessPermission(
     const content::MediaStreamRequest& request,
     const content::MediaResponseCallback& response_callback) {
   auto callback = base::Bind(&MediaAccessAllowed, request, response_callback);
+  // The permission type doesn't matter here, AUDIO_CAPTURE/VIDEO_CAPTURE
+  // are presented as same type in content_converter.h.
   RequestPermission(content::PermissionType::AUDIO_CAPTURE, callback);
 }
 

@@ -34,8 +34,7 @@ var WEB_VIEW_EVENTS = {
   'page-favicon-updated': ['favicons'],
   'enter-html-full-screen': [],
   'leave-html-full-screen': [],
-  'found-in-page': ['result'],
-  'permission-request': ['permission', 'allow', 'deny']
+  'found-in-page': ['result']
 };
 
 var DEPRECATED_EVENTS = {
@@ -65,15 +64,6 @@ module.exports = {
     ipcRenderer.on("ATOM_SHELL_GUEST_VIEW_INTERNAL_DISPATCH_EVENT-" + viewInstanceId, function() {
       var eventName = arguments[1];
       var args = 3 <= arguments.length ? slice.call(arguments, 2) : [];
-      if (eventName === 'permission-request') {
-        var allow = function allow() {
-          ipcRenderer.send("ATOM_SHELL_GUEST_VIEW_MANAGER_SET_PERMISSION_RESPONSE", viewInstanceId, args[0], "granted");
-        };
-        var deny = function deny() {
-          ipcRenderer.send("ATOM_SHELL_GUEST_VIEW_MANAGER_SET_PERMISSION_RESPONSE", viewInstanceId, args[0], "denied");
-        };
-        args = args.concat([allow, deny]);
-      }
       return dispatchEvent.apply(null, [webView, eventName, eventName].concat(slice.call(args)));
     });
     ipcRenderer.on("ATOM_SHELL_GUEST_VIEW_INTERNAL_IPC_MESSAGE-" + viewInstanceId, function() {

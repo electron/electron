@@ -7,9 +7,12 @@
 
 #include <map>
 
-#include "base/callback_forward.h"
-#include "base/macros.h"
+#include "base/callback.h"
 #include "content/public/browser/permission_manager.h"
+
+namespace content {
+class WebContents;
+}
 
 namespace atom {
 
@@ -21,22 +24,13 @@ class AtomPermissionManager : public content::PermissionManager {
   using ResponseCallback =
       base::Callback<void(content::PermissionStatus)>;
   using RequestHandler =
-      base::Callback<void(content::PermissionType,
+      base::Callback<void(content::WebContents*,
+                          content::PermissionType,
                           const ResponseCallback&)>;
 
   // Handler to dispatch permission requests in JS.
-  void SetPermissionRequestHandler(int id, const RequestHandler& handler);
+  void SetPermissionRequestHandler(const RequestHandler& handler);
 
-  void RequestPermission(
-      content::PermissionType permission,
-      content::RenderFrameHost* render_frame_host,
-      const GURL& origin,
-      const base::Callback<void(bool)>& callback);
-  void OnPermissionResponse(
-      const base::Callback<void(bool)>& callback,
-      content::PermissionStatus status);
-
- protected:
   // content::PermissionManager:
   int RequestPermission(
       content::PermissionType permission,
@@ -44,6 +38,14 @@ class AtomPermissionManager : public content::PermissionManager {
       const GURL& requesting_origin,
       bool user_gesture,
       const ResponseCallback& callback) override;
+
+ protected:
+  void OnPermissionResponse(int request_id,
+                            const GURL& url,
+                            const ResponseCallback& callback,
+                            content::PermissionStatus status);
+
+  // content::PermissionManager:
   void CancelPermissionRequest(int request_id) override;
   void ResetPermission(content::PermissionType permission,
                        const GURL& requesting_origin,
@@ -63,7 +65,7 @@ class AtomPermissionManager : public content::PermissionManager {
   void UnsubscribePermissionStatusChange(int subscription_id) override;
 
  private:
-  std::map<int, RequestHandler> request_handler_map_;
+  RequestHandler request_handler_;
 
   std::map<int, ResponseCallback> pending_requests_;
 

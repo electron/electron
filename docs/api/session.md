@@ -289,6 +289,29 @@ myWindow.webContents.session.setCertificateVerifyProc(function(hostname, cert, c
 });
 ```
 
+#### `ses.setPermissionRequestHandler(handler)`
+
+* `handler` Function
+  * `webContents` Object - [WebContents](web-contents.md) requesting the permission.
+  * `permission`  String - Enum of 'media', 'geolocation', 'notifications', 'midiSysex'.
+  * `callback`  Function - Allow or deny the permission.
+
+Sets the handler which can be used to respond to permission requests for the `session`.
+Calling `callback('granted')` will allow the permission and `callback('denied')` will reject it.
+
+```javascript
+session.fromPartition(partition).setPermissionRequestHandler(function(webContents, permission, callback) {
+  if (webContents.getURL() === host) {
+    if (permission == "notifications") {
+      callback(); // denied.
+      return;
+    }
+  }
+
+  callback('granted');
+});
+```
+
 #### `ses.webRequest`
 
 The `webRequest` API set allows to intercept and modify contents of a request at

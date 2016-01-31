@@ -634,19 +634,27 @@ describe('<webview> tag', function() {
     });
   });
   describe('permission-request event', function() {
+    function setUpRequestHandler(webview, requested_permission) {
+      const session = require('electron').remote.session;
+      var listener = function(webContents, permission, callback) {
+        if (webContents.getId() === webview.getId() ) {
+          assert.equal(permission, requested_permission);
+          callback("denied");
+        }
+      };
+      session.fromPartition(webview.partition).setPermissionRequestHandler(listener);
+    }
+
     it ('emits when using navigator.getUserMedia api', function(done) {
       webview.addEventListener('ipc-message', function(e) {
         assert(e.channel, 'message');
         assert(e.args, ['PermissionDeniedError']);
         done();
       });
-      webview.addEventListener('permission-request', function(e) {
-        if (e.permission === 'media') {
-          e.deny();
-        }
-      });
       webview.src = "file://" + fixtures + "/pages/permissions/media.html";
+      webview.partition = "permissionTest";
       webview.setAttribute('nodeintegration', 'on');
+      setUpRequestHandler(webview, "media");
       document.body.appendChild(webview);
     });
 
@@ -656,13 +664,10 @@ describe('<webview> tag', function() {
         assert(e.args, ['ERROR(1): User denied Geolocation']);
         done();
       });
-      webview.addEventListener('permission-request', function(e) {
-        if (e.permission === 'geolocation') {
-          e.deny();
-        }
-      });
       webview.src = "file://" + fixtures + "/pages/permissions/geolocation.html";
+      webview.partition = "permissionTest";
       webview.setAttribute('nodeintegration', 'on');
+      setUpRequestHandler(webview, "geolocation");
       document.body.appendChild(webview);
     });
 
@@ -672,13 +677,10 @@ describe('<webview> tag', function() {
         assert(e.args, ['SecurityError']);
         done();
       });
-      webview.addEventListener('permission-request', function(e) {
-        if (e.permission === 'midiSysex') {
-          e.deny();
-        }
-      });
       webview.src = "file://" + fixtures + "/pages/permissions/midi.html";
+      webview.partition = "permissionTest";
       webview.setAttribute('nodeintegration', 'on');
+      setUpRequestHandler(webview, "midiSysex");
       document.body.appendChild(webview);
     });
   });

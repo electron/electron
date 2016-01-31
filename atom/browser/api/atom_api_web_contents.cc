@@ -13,7 +13,6 @@
 #include "atom/browser/atom_browser_client.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
-#include "atom/browser/atom_permission_manager.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/web_contents_permission_helper.h"
 #include "atom/browser/web_contents_preferences.h"
@@ -1067,18 +1066,6 @@ bool WebContents::IsGuest() const {
   return type_ == WEB_VIEW;
 }
 
-void WebContents::SetPermissionRequestHandler(v8::Local<v8::Value> val,
-                                              mate::Arguments* args) {
-  AtomPermissionManager::RequestHandler handler;
-  if (!(val->IsNull() || mate::ConvertFromV8(args->isolate(), val, &handler))) {
-    args->ThrowError("Must pass null or function");
-    return;
-  }
-  auto permission_manager = static_cast<AtomPermissionManager*>(
-      web_contents()->GetBrowserContext()->GetPermissionManager());
-  permission_manager->SetPermissionRequestHandler(GetID(), handler);
-}
-
 v8::Local<v8::Value> WebContents::GetWebPreferences(v8::Isolate* isolate) {
   WebContentsPreferences* web_preferences =
       WebContentsPreferences::FromWebContents(web_contents());
@@ -1178,8 +1165,6 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("_printToPDF", &WebContents::PrintToPDF)
       .SetMethod("addWorkSpace", &WebContents::AddWorkSpace)
       .SetMethod("removeWorkSpace", &WebContents::RemoveWorkSpace)
-      .SetMethod("_setPermissionRequestHandler",
-                 &WebContents::SetPermissionRequestHandler)
       .SetProperty("session", &WebContents::Session)
       .SetProperty("devToolsWebContents", &WebContents::DevToolsWebContents)
       .SetProperty("debugger", &WebContents::Debugger);

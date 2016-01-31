@@ -736,22 +736,4 @@ Emitted when DevTools is closed.
 
 Emitted when DevTools is focused / opened.
 
-### Event: 'permission-request'
-
-Returns:
-
-* `permission` String - The type of permission being requested. Enum of 'media', 'notifications', 'midiSysex', 'geolocation'.
-* `allow` Function - Allows the permission.
-* `deny` Function - Deny the permission. This is the default behaviour if `allow` is not called.
-
-Emitted when guest page requires special permission.
-
-```javascript
-// This will deny guest page access to the webkitGetUserMedia API.
-webview.addEventListener('permission-request', function(e) {
-  if (e.permission === 'media')
-    e.deny();
-});
-```
-
 [blink-feature-string]: https://code.google.com/p/chromium/codesearch#chromium/src/out/Debug/gen/blink/platform/RuntimeEnabledFeatures.cpp&sq=package:chromium&type=cs&l=527
