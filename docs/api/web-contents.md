@@ -287,17 +287,21 @@ Returns:
 
 * `event` Event
 * `type` String
+* `image` NativeImage
+* `scale` Float
 
-Emitted when the cursor's type changes. The `type` parameter can be `pointer`,
-`cross`, `hand`, `i-beam`, `wait`, `help`, `east-resize`, `north-resize`,
-`north-east-resize`, `north-west-resize`, `south-resize`, `south-east-resize`,
-`south-west-resize`, `west-resize`, `north-south-resize`, `east-west-resize`,
-`north-east-south-west-resize`, `north-west-south-east-resize`, `column-resize`,
-`row-resize`, `middle-panning`, `east-panning`, `north-panning`,
-`north-east-panning`, `north-west-panning`, `south-panning`,
-`south-east-panning`, `south-west-panning`, `west-panning`, `move`,
-`vertical-text`, `cell`, `context-menu`, `alias`, `progress`, `nodrop`, `copy`,
-`none`, `not-allowed`, `zoom-in`, `zoom-out`, `grab`, `grabbing`, `custom`.
+Emitted when the cursor's type changes. The `type` parameter can be `default`,
+`crosshair`, `pointer`, `text`, `wait`, `help`, `e-resize`, `n-resize`,
+`ne-resize`, `nw-resize`, `s-resize`, `se-resize`, `sw-resize`, `w-resize`,
+`ns-resize`, `ew-resize`, `nesw-resize`, `nwse-resize`, `col-resize`,
+`row-resize`, `m-panning`, `e-panning`, `n-panning`, `ne-panning`, `nw-panning`,
+`s-panning`, `se-panning`, `sw-panning`, `w-panning`, `move`, `vertical-text`,
+`cell`, `context-menu`, `alias`, `progress`, `nodrop`, `copy`, `none`,
+`not-allowed`, `zoom-in`, `zoom-out`, `grab`, `grabbing`, `custom`.
+
+If the `type` parameter is `custom`, the `image` parameter will hold the custom
+cursor image in a `NativeImage`, and the `scale` will hold scaling information
+for the image.
 
 ## Instance Methods
 
