@@ -1074,8 +1074,9 @@ void WebContents::SetPermissionRequestHandler(v8::Local<v8::Value> val,
     args->ThrowError("Must pass null or function");
     return;
   }
-  GetBrowserContext()->permission_manager()
-                     ->SetPermissionRequestHandler(GetID(), handler);
+  auto permission_manager = static_cast<AtomPermissionManager*>(
+      web_contents()->GetBrowserContext()->GetPermissionManager());
+  permission_manager->SetPermissionRequestHandler(GetID(), handler);
 }
 
 v8::Local<v8::Value> WebContents::GetWebPreferences(v8::Isolate* isolate) {

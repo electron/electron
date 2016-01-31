@@ -51,10 +51,6 @@ class AtomBrowserContext : public brightray::BrowserContext {
 
   AtomNetworkDelegate* network_delegate() const { return network_delegate_; }
 
-  AtomPermissionManager* permission_manager() const {
-    return permission_manager_.get();
-  }
-
  private:
   scoped_ptr<AtomDownloadManagerDelegate> download_manager_delegate_;
   scoped_ptr<WebViewManager> guest_manager_;

@@ -5,7 +5,6 @@
 #ifndef ATOM_BROWSER_WEB_CONTENTS_PERMISSION_HELPER_H_
 #define ATOM_BROWSER_WEB_CONTENTS_PERMISSION_HELPER_H_
 
-#include "atom/browser/atom_browser_context.h"
 #include "content/public/browser/permission_type.h"
 #include "content/public/browser/web_contents_user_data.h"
 #include "content/public/common/media_stream_request.h"
@@ -23,10 +22,6 @@ class WebContentsPermissionHelper
       const content::MediaResponseCallback& callback);
   void RequestWebNotificationPermission(
       const base::Callback<void(bool)>& callback);
-
-  AtomBrowserContext* browser_context() const {
-    return static_cast<AtomBrowserContext*>(web_contents_->GetBrowserContext());
-  }
 
  private:
   explicit WebContentsPermissionHelper(content::WebContents* web_contents);

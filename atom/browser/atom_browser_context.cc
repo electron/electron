@@ -65,7 +65,6 @@ std::string RemoveWhitespace(const std::string& str) {
 AtomBrowserContext::AtomBrowserContext(const std::string& partition,
                                        bool in_memory)
     : brightray::BrowserContext(partition, in_memory),
-      permission_manager_(new AtomPermissionManager),
       cert_verifier_(nullptr),
       job_factory_(new AtomURLRequestJobFactory),
       network_delegate_(new AtomNetworkDelegate),
@@ -172,6 +171,8 @@ content::BrowserPluginGuestManager* AtomBrowserContext::GetGuestManager() {
 }
 
 content::PermissionManager* AtomBrowserContext::GetPermissionManager() {
+  if (!permission_manager_.get())
+    permission_manager_.reset(new AtomPermissionManager);
   return permission_manager_.get();
 }
 

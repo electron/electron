@@ -7,6 +7,7 @@
 #include <string>
 
 #include "atom/browser/atom_permission_manager.h"
+#include "content/public/browser/browser_context.h"
 #include "content/public/browser/media_capture_devices.h"
 #include "content/public/browser/render_process_host.h"
 
@@ -79,7 +80,8 @@ void WebContentsPermissionHelper::RequestPermission(
     content::PermissionType permission,
     const base::Callback<void(bool)>& callback) {
   auto rfh = web_contents_->GetMainFrame();
-  auto permission_manager = browser_context()->permission_manager();
+  auto permission_manager = static_cast<AtomPermissionManager*>(
+      web_contents_->GetBrowserContext()->GetPermissionManager());
   auto origin = web_contents_->GetLastCommittedURL();
   permission_manager->RequestPermission(permission, rfh, origin, callback);
 }
