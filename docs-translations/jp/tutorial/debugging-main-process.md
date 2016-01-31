@@ -55,13 +55,13 @@ $ electron --debug=5858 your/app
 $ electron --debug-brk=5858 your/app
 ```
 
-### 5. Electronを使用して、[node-inspector][node-inspector] サーバーを開始する
+### 6. Electronを使用して、[node-inspector][node-inspector] サーバーを開始する
 
 ```bash
 $ ELECTRON_RUN_AS_NODE=true path/to/electron.exe node_modules/node-inspector/bin/inspector.js
 ```
 
-### 6. デバッグUIを読み込みます
+### 7. デバッグUIを読み込みます
 
 Chromeブラウザで、 http://127.0.0.1:8080/debug?ws=127.0.0.1:8080&port=5858 を開きます。エントリーラインを見るために、debug-brkを始めるには、ポーズをクリックします。
 
