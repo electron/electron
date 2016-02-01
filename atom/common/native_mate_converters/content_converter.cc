@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "atom/browser/api/atom_api_web_contents.h"
+#include "atom/browser/web_contents_permission_helper.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "content/public/browser/web_contents.h"
@@ -104,16 +105,14 @@ bool Converter<content::PermissionStatus>::FromV8(
     v8::Isolate* isolate,
     v8::Local<v8::Value> val,
     content::PermissionStatus* out) {
-  std::string status;
-  if (!ConvertFromV8(isolate, val, &status))
+  bool result;
+  if (!ConvertFromV8(isolate, val, &result))
     return false;
 
-  if (status == "granted")
+  if (result)
     *out = content::PERMISSION_STATUS_GRANTED;
-  else if (status == "denied" || status.empty())
-    *out = content::PERMISSION_STATUS_DENIED;
   else
-    return false;
+    *out = content::PERMISSION_STATUS_DENIED;
 
   return true;
 }
@@ -121,6 +120,7 @@ bool Converter<content::PermissionStatus>::FromV8(
 // static
 v8::Local<v8::Value> Converter<content::PermissionType>::ToV8(
     v8::Isolate* isolate, const content::PermissionType& val) {
+  using PermissionType = atom::WebContentsPermissionHelper::PermissionType;
   switch (val) {
     case content::PermissionType::MIDI_SYSEX:
       return StringToV8(isolate, "midiSysex");
@@ -137,10 +137,16 @@ v8::Local<v8::Value> Converter<content::PermissionType>::ToV8(
       return StringToV8(isolate, "mediaKeySystem");
     case content::PermissionType::MIDI:
       return StringToV8(isolate, "midi");
-    case content::PermissionType::DURABLE_STORAGE:
     default:
-      return StringToV8(isolate, "unknown");
+      break;
   }
+
+  if (val == (content::PermissionType)(PermissionType::POINTER_LOCK))
+    return StringToV8(isolate, "pointerLock");
+  else if (val == (content::PermissionType)(PermissionType::FULLSCREEN))
+    return StringToV8(isolate, "fullscreen");
+
+  return StringToV8(isolate, "unknown");
 }
 
 // static

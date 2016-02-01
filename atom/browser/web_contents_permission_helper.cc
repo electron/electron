@@ -66,6 +66,11 @@ void MediaAccessAllowed(
   callback.Run(devices, result, scoped_ptr<content::MediaStreamUI>());
 }
 
+void OnPointerLockResponse(content::WebContents* web_contents, bool allowed) {
+  if (web_contents)
+    web_contents->GotResponseToLockMouseRequest(allowed);
+}
+
 void OnPermissionResponse(const base::Callback<void(bool)>& callback,
                           content::PermissionStatus status) {
   if (status == content::PERMISSION_STATUS_GRANTED)
@@ -86,12 +91,12 @@ WebContentsPermissionHelper::~WebContentsPermissionHelper() {
 
 void WebContentsPermissionHelper::RequestPermission(
     content::PermissionType permission,
-    const base::Callback<void(bool)>& callback) {
+    const base::Callback<void(bool)>& callback,
+    bool user_gesture) {
   auto rfh = web_contents_->GetMainFrame();
   auto permission_manager = static_cast<AtomPermissionManager*>(
       web_contents_->GetBrowserContext()->GetPermissionManager());
   auto origin = web_contents_->GetLastCommittedURL();
-  bool user_gesture = false;
   permission_manager->RequestPermission(
       permission, rfh, origin, user_gesture,
       base::Bind(&OnPermissionResponse, callback));
@@ -109,6 +114,13 @@ void WebContentsPermissionHelper::RequestMediaAccessPermission(
 void WebContentsPermissionHelper::RequestWebNotificationPermission(
     const base::Callback<void(bool)>& callback) {
   RequestPermission(content::PermissionType::NOTIFICATIONS, callback);
+}
+
+void WebContentsPermissionHelper::RequestPointerLockPermission(
+    bool user_gesture) {
+  RequestPermission((content::PermissionType)(PermissionType::POINTER_LOCK),
+                    base::Bind(&OnPointerLockResponse, web_contents_),
+                    user_gesture);
 }
 
 }  // namespace atom

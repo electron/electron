@@ -457,6 +457,15 @@ void WebContents::RequestMediaAccessPermission(
   permission_helper->RequestMediaAccessPermission(request, callback);
 }
 
+void WebContents::RequestToLockMouse(
+    content::WebContents* web_contents,
+    bool user_gesture,
+    bool last_unlocked_by_target) {
+  auto permission_helper =
+      WebContentsPermissionHelper::FromWebContents(web_contents);
+  permission_helper->RequestPointerLockPermission(user_gesture);
+}
+
 void WebContents::BeforeUnloadFired(const base::TimeTicks& proceed_time) {
   // Do nothing, we override this method just to avoid compilation error since
   // there are two virtual functions named BeforeUnloadFired.

@@ -65,9 +65,14 @@ class AtomPermissionManager : public content::PermissionManager {
   void UnsubscribePermissionStatusChange(int subscription_id) override;
 
  private:
+  struct RequestInfo {
+    int render_process_id;
+    ResponseCallback callback;
+  };
+
   RequestHandler request_handler_;
 
-  std::map<int, ResponseCallback> pending_requests_;
+  std::map<int, RequestInfo> pending_requests_;
 
   int request_id_;
 

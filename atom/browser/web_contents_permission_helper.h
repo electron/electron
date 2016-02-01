@@ -17,11 +17,17 @@ class WebContentsPermissionHelper
  public:
   ~WebContentsPermissionHelper() override;
 
+  enum class PermissionType {
+    POINTER_LOCK = static_cast<int>(content::PermissionType::NUM) + 1,
+    FULLSCREEN
+  };
+
   void RequestMediaAccessPermission(
       const content::MediaStreamRequest& request,
       const content::MediaResponseCallback& callback);
   void RequestWebNotificationPermission(
       const base::Callback<void(bool)>& callback);
+  void RequestPointerLockPermission(bool user_gesture);
 
  private:
   explicit WebContentsPermissionHelper(content::WebContents* web_contents);
@@ -29,7 +35,8 @@ class WebContentsPermissionHelper
 
   void RequestPermission(
       content::PermissionType permission,
-      const base::Callback<void(bool)>& callback);
+      const base::Callback<void(bool)>& callback,
+      bool user_gesture = false);
 
   content::WebContents* web_contents_;
 
