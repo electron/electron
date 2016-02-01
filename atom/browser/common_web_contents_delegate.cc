@@ -181,13 +181,6 @@ content::WebContents* CommonWebContentsDelegate::OpenURLFromTab(
   return source;
 }
 
-void CommonWebContentsDelegate::RequestToLockMouse(
-    content::WebContents* web_contents,
-    bool user_gesture,
-    bool last_unlocked_by_target) {
-  GetWebContents()->GotResponseToLockMouseRequest(true);
-}
-
 bool CommonWebContentsDelegate::CanOverscrollContent() const {
   return false;
 }
