@@ -212,6 +212,7 @@ proxyURL = [<proxyScheme>"://"]<proxyHost>[":"<proxyPort>]
 ```
 
 예시:
+
 * `http=foopy:80;ftp=foopy2` - http:// URL에 `foopy:80` HTTP 프록시를 사용합니다.
   `foopy2:80` 는 ftp:// URL에 사용됩니다.
 * `foopy:80` - 모든 URL에 `foopy:80` 프록시를 사용합니다.
