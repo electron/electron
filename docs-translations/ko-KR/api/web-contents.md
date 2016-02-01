@@ -278,6 +278,28 @@ Returns:
 <meta name='theme-color' content='#ff0000'>
 ```
 
+### Event: 'cursor-changed'
+
+Returns:
+
+* `event` Event
+* `type` String
+* `image` NativeImage (optional)
+* `scale` Float (optional)
+
+커서 타입이 변경될 때 발생하는 이벤트입니다. `type` 매개변수는 다음 값이 될 수 있습니다:
+`default`, `crosshair`, `pointer`, `text`, `wait`, `help`, `e-resize`, `n-resize`,
+`ne-resize`, `nw-resize`, `s-resize`, `se-resize`, `sw-resize`, `w-resize`,
+`ns-resize`, `ew-resize`, `nesw-resize`, `nwse-resize`, `col-resize`,
+`row-resize`, `m-panning`, `e-panning`, `n-panning`, `ne-panning`, `nw-panning`,
+`s-panning`, `se-panning`, `sw-panning`, `w-panning`, `move`, `vertical-text`,
+`cell`, `context-menu`, `alias`, `progress`, `nodrop`, `copy`, `none`,
+`not-allowed`, `zoom-in`, `zoom-out`, `grab`, `grabbing`, `custom`.
+
+만약 `type` 매개변수가 `custom` 이고 `image` 매개변수가 `NativeImage`를 통한 커스텀
+커서를 지정했을 때, 해당 이미지로 커서가 변경됩니다. 또한 `scale` 매개변수는 이미지의
+크기를 조정합니다.
+
 ## Instance Methods
 
 `webContents`객체는 다음과 같은 인스턴스 메서드들을 가지고 있습니다.

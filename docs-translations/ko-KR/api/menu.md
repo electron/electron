@@ -293,6 +293,11 @@ OS X에선 지정한 어플리케이션 메뉴에 상관없이 메뉴의 첫번�
 이름이 됩니다. 어플리케이션 이름을 변경하려면 앱 번들내의 `Info.plist` 파일을 수정해야
 합니다. 자세한 내용은 [About Information Property List Files][AboutInformationPropertyListFiles] 문서를 참고하세요.
 
+## 지정한 브라우저 윈도우에 메뉴 설정 (*Linux* *Windows*)
+
+브라우저 윈도우의 [`setMenu` 메서드][setMenu]는 어떤 브라우저 윈도우의 메뉴를 설정할
+수 있습니다.
+
 ## 메뉴 아이템 위치
 
 `Menu.buildFromTemplate`로 메뉴를 만들 때 `position`과 `id`를 사용해서 아이템의
@@ -367,3 +372,4 @@ OS X에선 지정한 어플리케이션 메뉴에 상관없이 메뉴의 첫번�
 ```
 
 [AboutInformationPropertyListFiles]: https://developer.apple.com/library/ios/documentation/general/Reference/InfoPlistKeyReference/Articles/AboutInformationPropertyListFiles.html
+[setMenu]: https://github.com/atom/electron/blob/master/docs/api/browser-window.md#winsetmenumenu-linux-windows
