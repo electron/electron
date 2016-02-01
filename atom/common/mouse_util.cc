@@ -9,8 +9,8 @@ using Cursor = blink::WebCursorInfo::Type;
 
 namespace atom {
 
-std::string CursorTypeToString(const content::WebCursor::CursorInfo* info) {
-  switch (info->type) {
+std::string CursorTypeToString(const content::WebCursor::CursorInfo& info) {
+  switch (info.type) {
     case Cursor::TypePointer: return "default";
     case Cursor::TypeCross: return "crosshair";
     case Cursor::TypeHand: return "pointer";

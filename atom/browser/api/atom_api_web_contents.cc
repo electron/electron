@@ -1043,13 +1043,13 @@ void WebContents::EndFrameSubscription() {
 }
 
 void WebContents::OnCursorChange(const content::WebCursor& cursor) {
-  content::WebCursor::CursorInfo* info = new content::WebCursor::CursorInfo();
-  cursor.GetCursorInfo(info);
+  content::WebCursor::CursorInfo info;
+  cursor.GetCursorInfo(&info);
 
   if (cursor.IsCustom()) {
     Emit("cursor-changed", CursorTypeToString(info),
-      gfx::Image::CreateFrom1xBitmap(info->custom_image),
-      info->image_scale_factor);
+      gfx::Image::CreateFrom1xBitmap(info.custom_image),
+      info.image_scale_factor);
   } else {
     Emit("cursor-changed", CursorTypeToString(info));
   }

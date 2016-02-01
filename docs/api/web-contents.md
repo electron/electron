@@ -287,8 +287,8 @@ Returns:
 
 * `event` Event
 * `type` String
-* `image` NativeImage
-* `scale` Float
+* `image` NativeImage (optional)
+* `scale` Float (optional)
 
 Emitted when the cursor's type changes. The `type` parameter can be `default`,
 `crosshair`, `pointer`, `text`, `wait`, `help`, `e-resize`, `n-resize`,
