@@ -103,7 +103,7 @@ void Browser::DockSetMenu(ui::MenuModel* model) {
 }
 
 void Browser::DockSetIcon(const gfx::Image& image) {
-  [[NSApplication sharedApplication]
+  [[AtomApplication sharedApplication]
       setApplicationIconImage:image.AsNSImage()];
 }
 
