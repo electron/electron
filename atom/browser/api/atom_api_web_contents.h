@@ -134,6 +134,11 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void SetAllowTransparency(bool allow);
   bool IsGuest() const;
 
+  // Callback triggered on permission response.
+  void OnEnterFullscreenModeForTab(content::WebContents* source,
+                                   const GURL& origin,
+                                   bool allowed);
+
   // Returns the web preferences of current WebContents.
   v8::Local<v8::Value> GetWebPreferences(v8::Isolate* isolate);
 
@@ -196,6 +201,14 @@ class WebContents : public mate::TrackableObject<WebContents>,
                  const gfx::Rect& selection_rect,
                  int active_match_ordinal,
                  bool final_update) override;
+  void RequestMediaAccessPermission(
+      content::WebContents* web_contents,
+      const content::MediaStreamRequest& request,
+      const content::MediaResponseCallback& callback) override;
+  void RequestToLockMouse(
+      content::WebContents* web_contents,
+      bool user_gesture,
+      bool last_unlocked_by_target) override;
 
   // content::WebContentsObserver:
   void BeforeUnloadFired(const base::TimeTicks& proceed_time) override;
