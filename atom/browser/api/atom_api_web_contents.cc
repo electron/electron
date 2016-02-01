@@ -27,6 +27,7 @@
 #include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
+#include "atom/common/mouse_util.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "brightray/browser/inspectable_web_contents.h"
@@ -619,6 +620,8 @@ bool WebContents::OnMessageReceived(const IPC::Message& message) {
     IPC_MESSAGE_HANDLER(AtomViewHostMsg_Message, OnRendererMessage)
     IPC_MESSAGE_HANDLER_DELAY_REPLY(AtomViewHostMsg_Message_Sync,
                                     OnRendererMessageSync)
+    IPC_MESSAGE_HANDLER_CODE(ViewHostMsg_SetCursor, OnCursorChange,
+      handled = false)
     IPC_MESSAGE_UNHANDLED(handled = false)
   IPC_END_MESSAGE_MAP()
 
@@ -1037,6 +1040,19 @@ void WebContents::EndFrameSubscription() {
   const auto view = web_contents()->GetRenderWidgetHostView();
   if (view)
     view->EndFrameSubscription();
+}
+
+void WebContents::OnCursorChange(const content::WebCursor& cursor) {
+  content::WebCursor::CursorInfo info;
+  cursor.GetCursorInfo(&info);
+
+  if (cursor.IsCustom()) {
+    Emit("cursor-changed", CursorTypeToString(info),
+      gfx::Image::CreateFrom1xBitmap(info.custom_image),
+      info.image_scale_factor);
+  } else {
+    Emit("cursor-changed", CursorTypeToString(info));
+  }
 }
 
 void WebContents::SetSize(const SetSizeParams& params) {
