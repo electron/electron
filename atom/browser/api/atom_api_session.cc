@@ -296,10 +296,8 @@ void Session::OnDownloadCreated(content::DownloadManager* manager,
       "will-download",
       DownloadItem::Create(isolate(), item),
       api::WebContents::CreateFrom(isolate(), web_contents));
-  if (prevent_default) {
+  if (prevent_default)
     item->Cancel(true);
-    item->Remove();
-  }
 }
 
 void Session::ResolveProxy(const GURL& url, ResolveProxyCallback callback) {
