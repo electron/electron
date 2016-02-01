@@ -244,6 +244,14 @@ This method guarantees that all `beforeunload` and `unload` event handlers are
 correctly executed. It is possible that a window cancels the quitting by
 returning `false` in the `beforeunload` event handler.
 
+### `app.hide()` _OS X_
+
+Hides all application windows without minimising them.
+
+### `app.show()` _OS X_
+
+Shows application windows after they were hidden. Does not automatically focus them.
+
 ### `app.exit(exitCode)`
 
 * `exitCode` Integer

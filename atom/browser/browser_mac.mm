@@ -18,6 +18,14 @@ void Browser::Focus() {
   [[AtomApplication sharedApplication] activateIgnoringOtherApps:YES];
 }
 
+void Browser::Hide() {
+  [[AtomApplication sharedApplication] hide:nil];
+}
+
+void Browser::Show() {
+  [[AtomApplication sharedApplication] unhide:nil];
+}
+
 void Browser::AddRecentDocument(const base::FilePath& path) {
   NSString* path_string = base::mac::FilePathToNSString(path);
   if (!path_string)
