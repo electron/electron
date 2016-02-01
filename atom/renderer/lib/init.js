@@ -1,4 +1,4 @@
-'user strict';
+'use strict';
 
 const events = require('events');
 const path = require('path');

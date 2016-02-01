@@ -1,4 +1,4 @@
-'user strict';
+'use strict';
 
 const deprecate = require('electron').deprecate;
 const webFrame = require('electron').webFrame;
