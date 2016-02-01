@@ -7,8 +7,8 @@
 #include <string>
 
 #include "atom/browser/atom_permission_manager.h"
+#include "brightray/browser/media/media_stream_devices_controller.h"
 #include "content/public/browser/browser_context.h"
-#include "content/public/browser/media_capture_devices.h"
 #include "content/public/browser/render_process_host.h"
 
 DEFINE_WEB_CONTENTS_USER_DATA_KEY(atom::WebContentsPermissionHelper);
@@ -17,53 +17,15 @@ namespace atom {
 
 namespace {
 
-const content::MediaStreamDevice* FindDeviceWithId(
-    const content::MediaStreamDevices& devices,
-    const std::string& device_id) {
-  if (device_id.empty())
-    return &(*devices.begin());
-  for (const auto& iter : devices)
-    if (iter.id == device_id)
-      return &(iter);
-  return nullptr;
-}
-
 void MediaAccessAllowed(
     const content::MediaStreamRequest& request,
     const content::MediaResponseCallback& callback,
     bool allowed) {
-  if (!allowed) {
-    callback.Run(content::MediaStreamDevices(),
-                 content::MEDIA_DEVICE_PERMISSION_DENIED,
-                 scoped_ptr<content::MediaStreamUI>());
-    return;
-  }
-
-  content::MediaStreamDevices devices;
-  content::MediaStreamRequestResult result = content::MEDIA_DEVICE_NO_HARDWARE;
-
-  if (request.audio_type == content::MEDIA_DEVICE_AUDIO_CAPTURE) {
-    const content::MediaStreamDevices& audio_devices =
-        content::MediaCaptureDevices::GetInstance()->GetAudioCaptureDevices();
-    const content::MediaStreamDevice* audio_device =
-        FindDeviceWithId(audio_devices, request.requested_audio_device_id);
-    if (audio_device)
-      devices.push_back(*audio_device);
-  }
-
-  if (request.video_type == content::MEDIA_DEVICE_VIDEO_CAPTURE) {
-    const content::MediaStreamDevices& video_devices =
-        content::MediaCaptureDevices::GetInstance()->GetVideoCaptureDevices();
-    const content::MediaStreamDevice* video_device =
-        FindDeviceWithId(video_devices, request.requested_video_device_id);
-    if (video_device)
-      devices.push_back(*video_device);
-  }
-
-  if (!devices.empty())
-    result = content::MEDIA_DEVICE_OK;
-
-  callback.Run(devices, result, scoped_ptr<content::MediaStreamUI>());
+  brightray::MediaStreamDevicesController controller(request, callback);
+  if (allowed)
+    controller.Accept();
+  else
+    controller.Deny(content::MEDIA_DEVICE_PERMISSION_DENIED);
 }
 
 void OnPointerLockResponse(content::WebContents* web_contents, bool allowed) {

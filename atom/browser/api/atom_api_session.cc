@@ -400,7 +400,7 @@ void Session::SetCertVerifyProc(v8::Local<v8::Value> val,
 }
 
 void Session::SetPermissionRequestHandler(v8::Local<v8::Value> val,
-                                              mate::Arguments* args) {
+                                          mate::Arguments* args) {
   AtomPermissionManager::RequestHandler handler;
   if (!(val->IsNull() || mate::ConvertFromV8(args->isolate(), val, &handler))) {
     args->ThrowError("Must pass null or function");
