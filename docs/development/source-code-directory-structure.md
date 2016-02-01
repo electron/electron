@@ -58,6 +58,6 @@ Electron
 * **node_modules** - Third party node modules used for building.
 * **out** - Temporary output directory of `ninja`.
 * **dist** - Temporary directory created by `script/create-dist.py` script
-  when creating an distribution.
+  when creating a distribution.
 * **external_binaries** - Downloaded binaries of third-party frameworks which
   do not support building with `gyp`.
