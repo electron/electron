@@ -390,6 +390,18 @@ void WebContents::HandleKeyboardEvent(
 
 void WebContents::EnterFullscreenModeForTab(content::WebContents* source,
                                             const GURL& origin) {
+  auto permission_helper =
+      WebContentsPermissionHelper::FromWebContents(source);
+  auto callback = base::Bind(&WebContents::OnEnterFullscreenModeForTab,
+                             base::Unretained(this), source, origin);
+  permission_helper->RequestFullscreenPermission(callback);
+}
+
+void WebContents::OnEnterFullscreenModeForTab(content::WebContents* source,
+                                              const GURL& origin,
+                                              bool allowed) {
+  if (!allowed)
+    return;
   CommonWebContentsDelegate::EnterFullscreenModeForTab(source, origin);
   Emit("enter-html-full-screen");
 }

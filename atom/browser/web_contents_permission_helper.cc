@@ -102,6 +102,12 @@ void WebContentsPermissionHelper::RequestPermission(
       base::Bind(&OnPermissionResponse, callback));
 }
 
+void WebContentsPermissionHelper::RequestFullscreenPermission(
+    const base::Callback<void(bool)>& callback) {
+  RequestPermission((content::PermissionType)(PermissionType::FULLSCREEN),
+                    callback);
+}
+
 void WebContentsPermissionHelper::RequestMediaAccessPermission(
     const content::MediaStreamRequest& request,
     const content::MediaResponseCallback& response_callback) {

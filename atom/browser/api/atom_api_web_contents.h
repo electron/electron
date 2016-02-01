@@ -133,6 +133,11 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void SetAllowTransparency(bool allow);
   bool IsGuest() const;
 
+  // Callback triggered on permission response.
+  void OnEnterFullscreenModeForTab(content::WebContents* source,
+                                   const GURL& origin,
+                                   bool allowed);
+
   // Returns the web preferences of current WebContents.
   v8::Local<v8::Value> GetWebPreferences(v8::Isolate* isolate);
 

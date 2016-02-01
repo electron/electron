@@ -293,22 +293,22 @@ myWindow.webContents.session.setCertificateVerifyProc(function(hostname, cert, c
 
 * `handler` Function
   * `webContents` Object - [WebContents](web-contents.md) requesting the permission.
-  * `permission`  String - Enum of 'media', 'geolocation', 'notifications', 'midiSysex'.
+  * `permission`  String - Enum of 'media', 'geolocation', 'notifications', 'midiSysex', 'pointerLock', 'fullscreen'.
   * `callback`  Function - Allow or deny the permission.
 
 Sets the handler which can be used to respond to permission requests for the `session`.
-Calling `callback('granted')` will allow the permission and `callback('denied')` will reject it.
+Calling `callback(true)` will allow the permission and `callback(false)` will reject it.
 
 ```javascript
 session.fromPartition(partition).setPermissionRequestHandler(function(webContents, permission, callback) {
   if (webContents.getURL() === host) {
     if (permission == "notifications") {
-      callback(); // denied.
+      callback(false); // denied.
       return;
     }
   }
 
-  callback('granted');
+  callback(true);
 });
 ```
 

@@ -639,7 +639,7 @@ describe('<webview> tag', function() {
       var listener = function(webContents, permission, callback) {
         if (webContents.getId() === webview.getId() ) {
           assert.equal(permission, requested_permission);
-          callback("denied");
+          callback(false);
         }
       };
       session.fromPartition(webview.partition).setPermissionRequestHandler(listener);

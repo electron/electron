@@ -22,6 +22,8 @@ class WebContentsPermissionHelper
     FULLSCREEN
   };
 
+  void RequestFullscreenPermission(
+      const base::Callback<void(bool)>& callback);
   void RequestMediaAccessPermission(
       const content::MediaStreamRequest& request,
       const content::MediaResponseCallback& callback);
