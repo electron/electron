@@ -12,6 +12,7 @@
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/node_includes.h"
 #include "base/memory/linked_ptr.h"
+#include "base/message_loop/message_loop.h"
 #include "base/strings/utf_string_conversions.h"
 #include "native_mate/dictionary.h"
 #include "net/base/filename_util.h"
@@ -64,12 +65,14 @@ const base::FilePath& DownloadItem::SavePathData::path() {
   return path_;
 }
 
-DownloadItem::DownloadItem(content::DownloadItem* download_item) :
-    download_item_(download_item) {
+DownloadItem::DownloadItem(content::DownloadItem* download_item)
+    : download_item_(download_item) {
   download_item_->AddObserver(this);
+  AttachAsUserData(download_item);
 }
 
 DownloadItem::~DownloadItem() {
+  LOG(ERROR) << "~DownloadItem";
 }
 
 void DownloadItem::OnDownloadUpdated(content::DownloadItem* item) {
@@ -82,8 +85,8 @@ void DownloadItem::OnDownloadDestroyed(content::DownloadItem* download_item) {
   if (iter != g_download_item_objects.end())
     g_download_item_objects.erase(iter);
 
-  // Destroy the wrapper once the download_item is destroyed.
-  delete this;
+  // Destroy the native class in next tick.
+  base::MessageLoop::current()->PostTask(FROM_HERE, GetDestroyClosure());
 }
 
 int64 DownloadItem::GetReceivedBytes() {
@@ -132,7 +135,9 @@ void DownloadItem::Resume() {
 }
 
 void DownloadItem::Cancel() {
+  MarkDestroyed();
   download_item_->Cancel(true);
+  download_item_->Remove();
 }
 
 // static
@@ -156,6 +161,10 @@ void DownloadItem::BuildPrototype(v8::Isolate* isolate,
 // static
 mate::Handle<DownloadItem> DownloadItem::Create(
     v8::Isolate* isolate, content::DownloadItem* item) {
+  auto existing = TrackableObject::FromWrappedClass(isolate, item);
+  if (existing)
+    return mate::CreateHandle(isolate, static_cast<DownloadItem*>(existing));
+
   auto handle = mate::CreateHandle(isolate, new DownloadItem(item));
   g_wrap_download_item.Run(handle.ToV8());
   g_download_item_objects[item->GetId()] = make_linked_ptr(
