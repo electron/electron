@@ -52,9 +52,14 @@ class AtomRenderFrameObserver : public content::RenderFrameObserver {
   // content::RenderFrameObserver:
   void DidCreateScriptContext(v8::Handle<v8::Context> context,
                               int extension_group,
-                              int world_id) {
+                              int world_id) override {
     renderer_client_->DidCreateScriptContext(
         render_frame()->GetWebFrame(), context);
+  }
+
+  void WillReleaseScriptContext(v8::Local<v8::Context> context,
+                                int world_id) override {
+    renderer_client_->WillReleaseScriptContext(context);
   }
 
  private:
@@ -160,6 +165,10 @@ void AtomRendererClient::DidCreateScriptContext(
 
   // Load everything.
   node_bindings_->LoadEnvironment(env);
+}
+
+void AtomRendererClient::WillReleaseScriptContext(
+    v8::Handle<v8::Context> context) {
 }
 
 bool AtomRendererClient::ShouldFork(blink::WebLocalFrame* frame,
