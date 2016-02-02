@@ -313,6 +313,12 @@ session.fromPartition(partition).setPermissionRequestHandler(function(webContent
 });
 ```
 
+#### `ses.clearHostResolverCache([callback])`
+
+* `callback` Function (optional) - 작업이 완료되면 호출됩니다.
+
+호스트 리소버(resolver) 캐시를 지웁니다.
+
 #### `ses.webRequest`
 
 `webRequest` API는 생명주기의 다양한 단계에 맞춰 요청 컨텐츠를 가로채거나 변경할 수
