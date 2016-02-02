@@ -8,6 +8,10 @@
 #include "base/memory/ref_counted.h"
 #include "native_mate/converter.h"
 
+namespace base {
+class ListValue;
+}
+
 namespace net {
 class AuthChallengeInfo;
 class URLRequest;
@@ -35,5 +39,12 @@ struct Converter<scoped_refptr<net::X509Certificate>> {
 };
 
 }  // namespace mate
+
+namespace atom {
+
+void GetUploadData(base::ListValue* upload_data_list,
+                   const net::URLRequest* request);
+
+}  // namespace atom
 
 #endif  // ATOM_COMMON_NATIVE_MATE_CONVERTERS_NET_CONVERTER_H_

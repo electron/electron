@@ -624,13 +624,64 @@ describe('<webview> tag', function() {
       return document.body.appendChild(webview);
     });
   });
-  return xdescribe('did-change-theme-color event', function() {
+  xdescribe('did-change-theme-color event', function() {
     return it('emits when theme color changes', function(done) {
       webview.addEventListener('did-change-theme-color', function() {
         return done();
       });
       webview.src = "file://" + fixtures + "/pages/theme-color.html";
       return document.body.appendChild(webview);
+    });
+  });
+  describe('permission-request event', function() {
+    function setUpRequestHandler(webview, requested_permission) {
+      const session = require('electron').remote.session;
+      var listener = function(webContents, permission, callback) {
+        if (webContents.getId() === webview.getId() ) {
+          assert.equal(permission, requested_permission);
+          callback(false);
+        }
+      };
+      session.fromPartition(webview.partition).setPermissionRequestHandler(listener);
+    }
+
+    it ('emits when using navigator.getUserMedia api', function(done) {
+      webview.addEventListener('ipc-message', function(e) {
+        assert(e.channel, 'message');
+        assert(e.args, ['PermissionDeniedError']);
+        done();
+      });
+      webview.src = "file://" + fixtures + "/pages/permissions/media.html";
+      webview.partition = "permissionTest";
+      webview.setAttribute('nodeintegration', 'on');
+      setUpRequestHandler(webview, "media");
+      document.body.appendChild(webview);
+    });
+
+    it ('emits when using navigator.geolocation api', function(done) {
+      webview.addEventListener('ipc-message', function(e) {
+        assert(e.channel, 'message');
+        assert(e.args, ['ERROR(1): User denied Geolocation']);
+        done();
+      });
+      webview.src = "file://" + fixtures + "/pages/permissions/geolocation.html";
+      webview.partition = "permissionTest";
+      webview.setAttribute('nodeintegration', 'on');
+      setUpRequestHandler(webview, "geolocation");
+      document.body.appendChild(webview);
+    });
+
+    it ('emits when using navigator.requestMIDIAccess api', function(done) {
+      webview.addEventListener('ipc-message', function(e) {
+        assert(e.channel, 'message');
+        assert(e.args, ['SecurityError']);
+        done();
+      });
+      webview.src = "file://" + fixtures + "/pages/permissions/midi.html";
+      webview.partition = "permissionTest";
+      webview.setAttribute('nodeintegration', 'on');
+      setUpRequestHandler(webview, "midiSysex");
+      document.body.appendChild(webview);
     });
   });
 });

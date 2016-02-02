@@ -7,6 +7,7 @@ const NavigationController = require('electron').NavigationController;
 const Menu = require('electron').Menu;
 
 const binding = process.atomBinding('web_contents');
+const debuggerBinding = process.atomBinding('debugger');
 
 let  slice = [].slice;
 let nextId = 0;
@@ -215,7 +216,14 @@ let wrapWebContents = function(webContents) {
   };
 };
 
+// Wrapper for native class.
+let wrapDebugger = function(webContentsDebugger) {
+  // debugger is an EventEmitter.
+  webContentsDebugger.__proto__ = EventEmitter.prototype;
+};
+
 binding._setWrapWebContents(wrapWebContents);
+debuggerBinding._setWrapDebugger(wrapDebugger);
 
 module.exports.create = function(options) {
   if (options == null) {

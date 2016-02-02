@@ -7,12 +7,14 @@
 #include <set>
 #include <string>
 
+#include "atom/browser/api/atom_api_debugger.h"
 #include "atom/browser/api/atom_api_session.h"
 #include "atom/browser/api/atom_api_window.h"
 #include "atom/browser/atom_browser_client.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/native_window.h"
+#include "atom/browser/web_contents_permission_helper.h"
 #include "atom/browser/web_contents_preferences.h"
 #include "atom/browser/web_view_guest_delegate.h"
 #include "atom/common/api/api_messages.h"
@@ -26,6 +28,7 @@
 #include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
+#include "atom/common/mouse_util.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "brightray/browser/inspectable_web_contents.h"
@@ -261,6 +264,9 @@ WebContents::WebContents(v8::Isolate* isolate,
   // Save the preferences in C++.
   new WebContentsPreferences(web_contents, options);
 
+  // Intialize permission helper.
+  WebContentsPermissionHelper::CreateForWebContents(web_contents);
+
   web_contents->SetUserAgentOverride(GetBrowserContext()->GetUserAgent());
 
   if (is_guest) {
@@ -385,6 +391,18 @@ void WebContents::HandleKeyboardEvent(
 
 void WebContents::EnterFullscreenModeForTab(content::WebContents* source,
                                             const GURL& origin) {
+  auto permission_helper =
+      WebContentsPermissionHelper::FromWebContents(source);
+  auto callback = base::Bind(&WebContents::OnEnterFullscreenModeForTab,
+                             base::Unretained(this), source, origin);
+  permission_helper->RequestFullscreenPermission(callback);
+}
+
+void WebContents::OnEnterFullscreenModeForTab(content::WebContents* source,
+                                              const GURL& origin,
+                                              bool allowed) {
+  if (!allowed)
+    return;
   CommonWebContentsDelegate::EnterFullscreenModeForTab(source, origin);
   Emit("enter-html-full-screen");
 }
@@ -441,6 +459,24 @@ void WebContents::FindReply(content::WebContents* web_contents,
     result.Set("finalUpdate", final_update);
     Emit("found-in-page", result);
   }
+}
+
+void WebContents::RequestMediaAccessPermission(
+    content::WebContents* web_contents,
+    const content::MediaStreamRequest& request,
+    const content::MediaResponseCallback& callback) {
+  auto permission_helper =
+      WebContentsPermissionHelper::FromWebContents(web_contents);
+  permission_helper->RequestMediaAccessPermission(request, callback);
+}
+
+void WebContents::RequestToLockMouse(
+    content::WebContents* web_contents,
+    bool user_gesture,
+    bool last_unlocked_by_target) {
+  auto permission_helper =
+      WebContentsPermissionHelper::FromWebContents(web_contents);
+  permission_helper->RequestPointerLockPermission(user_gesture);
 }
 
 void WebContents::BeforeUnloadFired(const base::TimeTicks& proceed_time) {
@@ -618,6 +654,8 @@ bool WebContents::OnMessageReceived(const IPC::Message& message) {
     IPC_MESSAGE_HANDLER(AtomViewHostMsg_Message, OnRendererMessage)
     IPC_MESSAGE_HANDLER_DELAY_REPLY(AtomViewHostMsg_Message_Sync,
                                     OnRendererMessageSync)
+    IPC_MESSAGE_HANDLER_CODE(ViewHostMsg_SetCursor, OnCursorChange,
+      handled = false)
     IPC_MESSAGE_UNHANDLED(handled = false)
   IPC_END_MESSAGE_MAP()
 
@@ -1038,6 +1076,19 @@ void WebContents::EndFrameSubscription() {
     view->EndFrameSubscription();
 }
 
+void WebContents::OnCursorChange(const content::WebCursor& cursor) {
+  content::WebCursor::CursorInfo info;
+  cursor.GetCursorInfo(&info);
+
+  if (cursor.IsCustom()) {
+    Emit("cursor-changed", CursorTypeToString(info),
+      gfx::Image::CreateFrom1xBitmap(info.custom_image),
+      info.image_scale_factor);
+  } else {
+    Emit("cursor-changed", CursorTypeToString(info));
+  }
+}
+
 void WebContents::SetSize(const SetSizeParams& params) {
   if (guest_delegate_)
     guest_delegate_->SetSize(params);
@@ -1074,6 +1125,14 @@ v8::Local<v8::Value> WebContents::DevToolsWebContents(v8::Isolate* isolate) {
     return v8::Null(isolate);
   else
     return v8::Local<v8::Value>::New(isolate, devtools_web_contents_);
+}
+
+v8::Local<v8::Value> WebContents::Debugger(v8::Isolate* isolate) {
+  if (debugger_.IsEmpty()) {
+    auto handle = atom::api::Debugger::Create(isolate, web_contents());
+    debugger_.Reset(isolate, handle.ToV8());
+  }
+  return v8::Local<v8::Value>::New(isolate, debugger_);
 }
 
 // static
@@ -1144,7 +1203,8 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("addWorkSpace", &WebContents::AddWorkSpace)
       .SetMethod("removeWorkSpace", &WebContents::RemoveWorkSpace)
       .SetProperty("session", &WebContents::Session)
-      .SetProperty("devToolsWebContents", &WebContents::DevToolsWebContents);
+      .SetProperty("devToolsWebContents", &WebContents::DevToolsWebContents)
+      .SetProperty("debugger", &WebContents::Debugger);
 }
 
 AtomBrowserContext* WebContents::GetBrowserContext() const {

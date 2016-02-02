@@ -83,8 +83,9 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
   * `enableLargerThanScreen` Boolean - Enable the window to be resized larger
     than screen. Default is `false`.
   * `backgroundColor` String - Window's background color as Hexadecimal value,
-    like `#66CD00` or `#FFF`. Default is `#000` (black) for Linux and Windows,
-    `#FFF` for Mac (or clear if transparent).
+    like `#66CD00` or `#FFF` or `#80FFFFFF` (alpha is supported). Default is
+    `#000` (black) for Linux and Windows, `#FFF` for Mac (or clear if
+    transparent).
   * `hasShadow` Boolean - Whether window should have a shadow. This is only
     implemented on OS X. Default is `true`.
   * `darkTheme` Boolean - Forces using dark theme for the window, only works on
@@ -305,6 +306,14 @@ someWindow.on('app-command', function(e, cmd) {
   }
 });
 ```
+
+### Event: 'scroll-touch-begin' _OS X_
+
+Emitted when scroll wheel event phase has begun.
+
+### Event: 'scroll-touch-end' _OS X_
+
+Emitted when scroll wheel event phase has ended.
 
 ## Methods
 
@@ -575,14 +584,14 @@ nothing.
 Returns whether the window can be manually maximized by user. On Linux always
 returns `true`.
 
-### `win.setFullscreenable(fullscreenable)` _OS X_
+### `win.setFullScreenable(fullscreenable)` _OS X_
 
 * `fullscreenable` Boolean
 
 Sets whether the maximize/zoom window button toggles fullscreen mode or
 maximizes the window. On Windows and Linux does nothing.
 
-### `win.isFullscreenable()` _OS X_
+### `win.isFullScreenable()` _OS X_
 
 Returns whether the maximize/zoom window button toggles fullscreen mode or
 maximizes the window. On Windows and Linux always returns `true`.

@@ -25,16 +25,7 @@ myNotification.onclick = function () {
 * Windows 10では、通知はすぐに動作します。
 * Windows 8.1 と Windows 8では、[Application User
 Model ID][app-user-model-id]で、アプリへのショートカットはスタートメニューにインストールされます。しかし、スタートメニューにピン止めをする必要がありません。
-* Windows 7以前は、通知はサポートされていません。 しかし、[Tray API](tray-balloon)を使用してバルーンヒントを送信することができます。
-
-通知にイメージを使うために、通知オプションの `icon` プロパティにローカルのイメージファイル（`png`が望ましい）を設定します。 正しくない、または`http/https`の URLを設定した場合でも、通知は表示されますが、イメージは表示されません。
-
-```javascript
-new Notification('Title', {
-  body: 'Notification with icon',
-  icon: 'file:///C:/Users/feriese/Desktop/icon.png'
-});
-```
+* Windows 7以前は、通知はサポートされていません。 しかし、[Tray API][tray-balloon]を使用してバルーンヒントを送信することができます。
 
 その上で、bodyの最大サイズは250文字であることに留意してください。Windowsチームは、通知は200文字にすることを推奨しています。
 

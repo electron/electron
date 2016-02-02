@@ -58,7 +58,7 @@ Mais detalhes podem ser encontrados em [Empacotamento da aplicação](../../../d
 Depois de empacotar seu aplicativo Electron, você vai querer renomear a marca Electron
 antes de distribuí-lo aos usuários.
 
-### Janelas
+### Windows
 
 Você pode renomear `electron.exe` para o nome que desejar e editar o seu ícone e outras
 informações com ferramentas como [rcedit](https://github.com/atom/rcedit) ou

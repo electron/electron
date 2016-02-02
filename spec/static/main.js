@@ -28,6 +28,9 @@ app.commandLine.appendSwitch('disable-renderer-backgrounding');
 // sure we can reproduce it in renderer process.
 process.stdout;
 
+// Access console to reproduce #3482.
+console;
+
 ipcMain.on('message', function(event, arg) {
   event.sender.send('message', arg);
 });

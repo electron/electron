@@ -14,6 +14,7 @@
 #include "atom/browser/common_web_contents_delegate.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "content/public/common/favicon_url.h"
+#include "content/common/cursors/webcursor.h"
 #include "native_mate/handle.h"
 #include "ui/gfx/image/image.h"
 
@@ -133,6 +134,11 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void SetAllowTransparency(bool allow);
   bool IsGuest() const;
 
+  // Callback triggered on permission response.
+  void OnEnterFullscreenModeForTab(content::WebContents* source,
+                                   const GURL& origin,
+                                   bool allowed);
+
   // Returns the web preferences of current WebContents.
   v8::Local<v8::Value> GetWebPreferences(v8::Isolate* isolate);
 
@@ -142,6 +148,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   // Properties.
   v8::Local<v8::Value> Session(v8::Isolate* isolate);
   v8::Local<v8::Value> DevToolsWebContents(v8::Isolate* isolate);
+  v8::Local<v8::Value> Debugger(v8::Isolate* isolate);
 
   // mate::TrackableObject:
   static void BuildPrototype(v8::Isolate* isolate,
@@ -194,6 +201,14 @@ class WebContents : public mate::TrackableObject<WebContents>,
                  const gfx::Rect& selection_rect,
                  int active_match_ordinal,
                  bool final_update) override;
+  void RequestMediaAccessPermission(
+      content::WebContents* web_contents,
+      const content::MediaStreamRequest& request,
+      const content::MediaResponseCallback& callback) override;
+  void RequestToLockMouse(
+      content::WebContents* web_contents,
+      bool user_gesture,
+      bool last_unlocked_by_target) override;
 
   // content::WebContentsObserver:
   void BeforeUnloadFired(const base::TimeTicks& proceed_time) override;
@@ -254,6 +269,9 @@ class WebContents : public mate::TrackableObject<WebContents>,
     return ++request_id_;
   }
 
+  // Called when we receive a CursorChange message from chromium.
+  void OnCursorChange(const content::WebCursor& cursor);
+
   // Called when received a message from renderer.
   void OnRendererMessage(const base::string16& channel,
                          const base::ListValue& args);
@@ -265,6 +283,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   v8::Global<v8::Value> session_;
   v8::Global<v8::Value> devtools_web_contents_;
+  v8::Global<v8::Value> debugger_;
 
   scoped_ptr<WebViewGuestDelegate> guest_delegate_;
 

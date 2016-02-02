@@ -54,8 +54,8 @@ class NativeWindowMac : public NativeWindow {
   bool IsMinimizable() override;
   void SetMaximizable(bool maximizable) override;
   bool IsMaximizable() override;
-  void SetFullscreenable(bool fullscreenable) override;
-  bool IsFullscreenable() override;
+  void SetFullScreenable(bool fullscreenable) override;
+  bool IsFullScreenable() override;
   void SetClosable(bool closable) override;
   bool IsClosable() override;
   void SetAlwaysOnTop(bool top) override;
@@ -120,8 +120,15 @@ class NativeWindowMac : public NativeWindow {
   // whehter we can drag.
   void UpdateDraggableRegionViews(const std::vector<DraggableRegion>& regions);
 
+  // Set the attribute of NSWindow while work around a bug of zo0m button.
+  void SetStyleMask(bool on, NSUInteger flag);
+  void SetCollectionBehavior(bool on, NSUInteger flag);
+
   base::scoped_nsobject<AtomNSWindow> window_;
   base::scoped_nsobject<AtomNSWindowDelegate> window_delegate_;
+
+  // Event monitor for scroll wheel event.
+  id wheel_event_monitor_;
 
   // The view that will fill the whole frameless window.
   base::scoped_nsobject<FullSizeContentView> content_view_;

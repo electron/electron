@@ -74,8 +74,8 @@ class NativeWindowViews : public NativeWindow,
   bool IsMinimizable() override;
   void SetMaximizable(bool maximizable) override;
   bool IsMaximizable() override;
-  void SetFullscreenable(bool fullscreenable) override;
-  bool IsFullscreenable() override;
+  void SetFullScreenable(bool fullscreenable) override;
+  bool IsFullScreenable() override;
   void SetClosable(bool closable) override;
   bool IsClosable() override;
   void SetAlwaysOnTop(bool top) override;
@@ -88,6 +88,8 @@ class NativeWindowViews : public NativeWindow,
   void SetKiosk(bool kiosk) override;
   bool IsKiosk() override;
   void SetBackgroundColor(const std::string& color_name) override;
+  void SetHasShadow(bool has_shadow) override;
+  bool HasShadow() override;
   void SetMenu(ui::MenuModel* menu_model) override;
   gfx::NativeWindow GetNativeWindow() override;
   void SetOverlayIcon(const gfx::Image& overlay,
@@ -206,9 +208,9 @@ class NativeWindowViews : public NativeWindow,
   accelerator_util::AcceleratorTable accelerator_table_;
 
   bool use_content_size_;
+  bool movable_;
   bool resizable_;
   bool maximizable_;
-  bool movable_;
   bool minimizable_;
   std::string title_;
   gfx::Size widget_size_;

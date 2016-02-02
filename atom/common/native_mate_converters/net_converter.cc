@@ -10,6 +10,7 @@
 #include "atom/common/node_includes.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
+#include "base/values.h"
 #include "native_mate/dictionary.h"
 #include "net/base/upload_bytes_element_reader.h"
 #include "net/base/upload_data_stream.h"
@@ -24,35 +25,15 @@ namespace mate {
 // static
 v8::Local<v8::Value> Converter<const net::URLRequest*>::ToV8(
     v8::Isolate* isolate, const net::URLRequest* val) {
-  mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
-  dict.Set("method", val->method());
-  dict.Set("url", val->url().spec());
-  dict.Set("referrer", val->referrer());
-  const net::UploadDataStream* upload_data = val->get_upload();
-  if (upload_data) {
-    const ScopedVector<net::UploadElementReader>* readers =
-        upload_data->GetElementReaders();
-    std::vector<mate::Dictionary> upload_data_list;
-    upload_data_list.reserve(readers->size());
-    for (const auto& reader : *readers) {
-      auto upload_data_dict = mate::Dictionary::CreateEmpty(isolate);
-      if (reader->AsBytesReader()) {
-        const net::UploadBytesElementReader* bytes_reader =
-            reader->AsBytesReader();
-        auto bytes =
-            node::Buffer::Copy(isolate, bytes_reader->bytes(),
-                               bytes_reader->length()).ToLocalChecked();
-        upload_data_dict.Set("bytes", bytes);
-      } else if (reader->AsFileReader()) {
-        const net::UploadFileElementReader* file_reader =
-            reader->AsFileReader();
-        upload_data_dict.Set("file", file_reader->path().AsUTF8Unsafe());
-      }
-      upload_data_list.push_back(upload_data_dict);
-    }
-    dict.Set("uploadData", upload_data_list);
-  }
-  return mate::ConvertToV8(isolate, dict);
+  scoped_ptr<base::DictionaryValue> dict(new base::DictionaryValue);
+  dict->SetString("method", val->method());
+  dict->SetStringWithoutPathExpansion("url", val->url().spec());
+  dict->SetString("referrer", val->referrer());
+  scoped_ptr<base::ListValue> list(new base::ListValue);
+  atom::GetUploadData(list.get(), val);
+  if (!list->empty())
+    dict->Set("uploadData", list.Pass());
+  return mate::ConvertToV8(isolate, *(dict.get()));
 }
 
 // static
@@ -83,3 +64,34 @@ v8::Local<v8::Value> Converter<scoped_refptr<net::X509Certificate>>::ToV8(
 }
 
 }  // namespace mate
+
+namespace atom {
+
+void GetUploadData(base::ListValue* upload_data_list,
+                   const net::URLRequest* request) {
+  const net::UploadDataStream* upload_data = request->get_upload();
+  if (!upload_data)
+    return;
+  const ScopedVector<net::UploadElementReader>* readers =
+      upload_data->GetElementReaders();
+  for (const auto& reader : *readers) {
+    scoped_ptr<base::DictionaryValue> upload_data_dict(
+        new base::DictionaryValue);
+    if (reader->AsBytesReader()) {
+      const net::UploadBytesElementReader* bytes_reader =
+          reader->AsBytesReader();
+      scoped_ptr<base::Value> bytes(
+          base::BinaryValue::CreateWithCopiedBuffer(bytes_reader->bytes(),
+                                                    bytes_reader->length()));
+      upload_data_dict->Set("bytes", bytes.Pass());
+    } else if (reader->AsFileReader()) {
+      const net::UploadFileElementReader* file_reader =
+          reader->AsFileReader();
+      auto file_path = file_reader->path().AsUTF8Unsafe();
+      upload_data_dict->SetStringWithoutPathExpansion("file", file_path);
+    }
+    upload_data_list->Append(upload_data_dict.Pass());
+  }
+}
+
+}  // namespace atom

@@ -16,9 +16,6 @@ PRODUCT_NAME = atom_gyp()['product_name%']
 def main():
   os.chdir(SOURCE_ROOT)
 
-  # Disable old APIs
-  os.environ['ELECTRON_HIDE_INTERNAL_MODULES'] = 'true'
-
   config = 'D'
   if len(sys.argv) == 2 and sys.argv[1] == '-R':
     config = 'R'

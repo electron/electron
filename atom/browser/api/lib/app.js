@@ -37,7 +37,8 @@ if (process.platform === 'darwin') {
     getBadge: bindings.dockGetBadgeText,
     hide: bindings.dockHide,
     show: bindings.dockShow,
-    setMenu: bindings.dockSetMenu
+    setMenu: bindings.dockSetMenu,
+    setIcon: bindings.dockSetIcon
   };
 }
 

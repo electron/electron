@@ -26,7 +26,7 @@ extern const char kResizable[];
 extern const char kMovable[];
 extern const char kMinimizable[];
 extern const char kMaximizable[];
-extern const char kFullscreenable[];
+extern const char kFullScreenable[];
 extern const char kClosable[];
 extern const char kFullscreen[];
 extern const char kSkipTaskbar[];

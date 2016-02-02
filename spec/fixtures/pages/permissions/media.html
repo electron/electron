@@ -1,0 +1,7 @@
+<script>
+  navigator.webkitGetUserMedia({ audio: true, video: true }, function(mediaStream) {
+
+  }, function(err) {
+    require('electron').ipcRenderer.sendToHost('message', err.name);
+  });
+</script>

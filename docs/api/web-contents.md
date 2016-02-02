@@ -281,6 +281,28 @@ Emitted when a page's theme color changes. This is usually due to encountering a
 <meta name='theme-color' content='#ff0000'>
 ```
 
+### Event: 'cursor-changed'
+
+Returns:
+
+* `event` Event
+* `type` String
+* `image` NativeImage (optional)
+* `scale` Float (optional)
+
+Emitted when the cursor's type changes. The `type` parameter can be `default`,
+`crosshair`, `pointer`, `text`, `wait`, `help`, `e-resize`, `n-resize`,
+`ne-resize`, `nw-resize`, `s-resize`, `se-resize`, `sw-resize`, `w-resize`,
+`ns-resize`, `ew-resize`, `nesw-resize`, `nwse-resize`, `col-resize`,
+`row-resize`, `m-panning`, `e-panning`, `n-panning`, `ne-panning`, `nw-panning`,
+`s-panning`, `se-panning`, `sw-panning`, `w-panning`, `move`, `vertical-text`,
+`cell`, `context-menu`, `alias`, `progress`, `nodrop`, `copy`, `none`,
+`not-allowed`, `zoom-in`, `zoom-out`, `grab`, `grabbing`, `custom`.
+
+If the `type` parameter is `custom`, the `image` parameter will hold the custom
+cursor image in a `NativeImage`, and the `scale` will hold scaling information
+for the image.
+
 ## Instance Methods
 
 The `webContents` object has the following instance methods:
@@ -833,3 +855,73 @@ Get the `WebContents` of DevTools for this `WebContents`.
 
 **Note:** Users should never store this object because it may become `null`
 when the DevTools has been closed.
+
+### `webContents.debugger`
+
+Debugger API serves as an alternate transport for [remote debugging protocol][rdp].
+
+```javascript
+try {
+  win.webContents.debugger.attach("1.1");
+} catch(err) {
+  console.log("Debugger attach failed : ", err);
+};
+
+win.webContents.debugger.on('detach', function(event, reason) {
+  console.log("Debugger detached due to : ", reason);
+});
+
+win.webContents.debugger.on('message', function(event, method, params) {
+  if (method == "Network.requestWillBeSent") {
+    if (params.request.url == "https://www.github.com")
+      win.webContents.debugger.detach();
+  }
+})
+
+win.webContents.debugger.sendCommand("Network.enable");
+```
+
+#### `webContents.debugger.attach([protocolVersion])`
+
+* `protocolVersion` String (optional) - Requested debugging protocol version.
+
+Attaches the debugger to the `webContents`.
+
+#### `webContents.debugger.isAttached()`
+
+Returns a boolean indicating whether a debugger is attached to the `webContents`.
+
+#### `webContents.debugger.detach()`
+
+Detaches the debugger from the `webContents`.
+
+#### `webContents.debugger.sendCommand(method[, commandParams, callback])`
+
+* `method` String - Method name, should be one of the methods defined by the
+   remote debugging protocol.
+* `commandParams` Object (optional) - JSON object with request parameters.
+* `callback` Function (optional) - Response
+  * `error` Object - Error message indicating the failure of the command.
+  * `result` Object - Response defined by the 'returns' attribute of
+     the command description in the remote debugging protocol.
+
+Send given command to the debugging target.
+
+#### Event: 'detach'
+
+* `event` Event
+* `reason` String - Reason for detaching debugger.
+
+Emitted when debugging session is terminated. This happens either when
+`webContents` is closed or devtools is invoked for the attached `webContents`.
+
+#### Event: 'message'
+
+* `event` Event
+* `method` String - Method name.
+* `params` Object - Event parameters defined by the 'parameters'
+   attribute in the remote debugging protocol.
+
+Emitted whenever debugging target issues instrumentation event.
+
+[rdp]: https://developer.chrome.com/devtools/docs/debugger-protocol

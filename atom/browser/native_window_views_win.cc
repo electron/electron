@@ -96,9 +96,8 @@ bool NativeWindowViews::PreHandleMSG(
       return false;
 
     case WM_MOVING: {
-      if (!movable_) {
+      if (!movable_)
         ::GetWindowRect(GetAcceleratedWidget(), (LPRECT)l_param);
-      }
       return false;
     }
 

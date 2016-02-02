@@ -69,5 +69,38 @@ delete window.module;
 </head>
 ```
 
+## `require('electron').xxx` は定義されていません。
+
+Electronの組み込みモジュールを使うとに、次のようなエラーに遭遇するかもしれません。
+
+```
+> require('electron').webFrame.setZoomFactor(1.0);
+Uncaught TypeError: Cannot read property 'setZoomLevel' of undefined
+```
+
+これは、ローカルまたはグローバルのどちらかで [npm `electron` module][electron-module] をインストールしたことが原因で、Electronの組み込みモジュールを上書きしてしまいます。
+
+正しい組み込みモジュールを使用しているかを確認するために、`electron`モジュールのパスを出力します。
+
+```javascript
+console.log(require.resolve('electron'));
+```
+
+そして、次の形式かどうかを確認します。
+
+```
+"/path/to/Electron.app/Contents/Resources/atom.asar/renderer/api/lib/exports/electron.js"
+```
+
+If it is something like もし、`node_modules/electron/index.js`　のような形式の場合は、npm `electron` モジュールを削除するか、それをリネームします。
+
+```bash
+npm uninstall electron
+npm uninstall -g electron
+```
+
+しかし、組み込みモジュールを使用しているのに、まだこのエラーが出る場合、不適切なプロセスでモジュールを使用しようとしている可能性が高いです。例えば、`electron.app`はメインプロセスのみで使え、一方で`electron.webFrame`はレンダラープロセスのみに提供されています。
+
 [memory-management]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Memory_Management
 [variable-scope]: https://msdn.microsoft.com/library/bzt2dkta(v=vs.94).aspx
+[electron-module]: https://www.npmjs.com/package/electron

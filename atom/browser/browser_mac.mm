@@ -18,6 +18,14 @@ void Browser::Focus() {
   [[AtomApplication sharedApplication] activateIgnoringOtherApps:YES];
 }
 
+void Browser::Hide() {
+  [[AtomApplication sharedApplication] hide:nil];
+}
+
+void Browser::Show() {
+  [[AtomApplication sharedApplication] unhide:nil];
+}
+
 void Browser::AddRecentDocument(const base::FilePath& path) {
   NSString* path_string = base::mac::FilePathToNSString(path);
   if (!path_string)
@@ -48,8 +56,8 @@ int Browser::DockBounce(BounceType type) {
       requestUserAttention:(NSRequestUserAttentionType)type];
 }
 
-void Browser::DockCancelBounce(int rid) {
-  [[AtomApplication sharedApplication] cancelUserAttentionRequest:rid];
+void Browser::DockCancelBounce(int request_id) {
+  [[AtomApplication sharedApplication] cancelUserAttentionRequest:request_id];
 }
 
 void Browser::DockSetBadgeText(const std::string& label) {
@@ -100,6 +108,11 @@ void Browser::DockShow() {
 void Browser::DockSetMenu(ui::MenuModel* model) {
   AtomApplicationDelegate* delegate = (AtomApplicationDelegate*)[NSApp delegate];
   [delegate setApplicationDockMenu:model];
+}
+
+void Browser::DockSetIcon(const gfx::Image& image) {
+  [[AtomApplication sharedApplication]
+      setApplicationIconImage:image.AsNSImage()];
 }
 
 }  // namespace atom
