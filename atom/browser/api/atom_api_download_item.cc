@@ -48,6 +48,7 @@ namespace atom {
 namespace api {
 
 namespace {
+
 // The wrapDownloadItem funtion which is implemented in JavaScript
 using WrapDownloadItemCallback = base::Callback<void(v8::Local<v8::Value>)>;
 WrapDownloadItemCallback g_wrap_download_item;
@@ -55,6 +56,7 @@ WrapDownloadItemCallback g_wrap_download_item;
 char kDownloadItemSavePathKey[] = "DownloadItemSavePathKey";
 
 std::map<uint32, linked_ptr<v8::Global<v8::Value>>> g_download_item_objects;
+
 }  // namespace
 
 DownloadItem::SavePathData::SavePathData(const base::FilePath& path) :
@@ -73,6 +75,16 @@ DownloadItem::DownloadItem(content::DownloadItem* download_item)
 
 DownloadItem::~DownloadItem() {
   LOG(ERROR) << "~DownloadItem";
+  if (download_item_) {
+    // Destroyed by either garbage collection or destroy().
+    download_item_->RemoveObserver(this);
+    download_item_->Remove();
+  }
+
+  // Remove from the global map.
+  auto iter = g_download_item_objects.find(weak_map_id());
+  if (iter != g_download_item_objects.end())
+    g_download_item_objects.erase(iter);
 }
 
 void DownloadItem::OnDownloadUpdated(content::DownloadItem* item) {
@@ -80,13 +92,9 @@ void DownloadItem::OnDownloadUpdated(content::DownloadItem* item) {
 }
 
 void DownloadItem::OnDownloadDestroyed(content::DownloadItem* download_item) {
-  download_item->RemoveObserver(this);
-  auto iter = g_download_item_objects.find(download_item->GetId());
-  if (iter != g_download_item_objects.end())
-    g_download_item_objects.erase(iter);
-
-  // Destroy the native class in next tick.
-  base::MessageLoop::current()->PostTask(FROM_HERE, GetDestroyClosure());
+  download_item_ = nullptr;
+  // Destroy the native class immediately when downloadItem is destroyed.
+  delete this;
 }
 
 int64 DownloadItem::GetReceivedBytes() {
@@ -135,7 +143,6 @@ void DownloadItem::Resume() {
 }
 
 void DownloadItem::Cancel() {
-  MarkDestroyed();
   download_item_->Cancel(true);
   download_item_->Remove();
 }
@@ -167,7 +174,9 @@ mate::Handle<DownloadItem> DownloadItem::Create(
 
   auto handle = mate::CreateHandle(isolate, new DownloadItem(item));
   g_wrap_download_item.Run(handle.ToV8());
-  g_download_item_objects[item->GetId()] = make_linked_ptr(
+
+  // Reference this object in case it got garbage collected.
+  g_download_item_objects[handle->weak_map_id()] = make_linked_ptr(
       new v8::Global<v8::Value>(isolate, handle.ToV8()));
   return handle;
 }
