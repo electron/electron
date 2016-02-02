@@ -55,7 +55,7 @@ class AtomRenderFrameObserver : public content::RenderFrameObserver {
   void DidCreateScriptContext(v8::Handle<v8::Context> context,
                               int extension_group,
                               int world_id) override {
-    if (world_id_ != -1)
+    if (world_id_ != -1 && world_id_ != world_id)
       return;
     world_id_ = world_id;
     renderer_client_->DidCreateScriptContext(context);
@@ -88,9 +88,6 @@ void AtomRendererClient::WebKitInitialized() {
   blink::WebCustomElement::addEmbedderCustomElementName("webview");
   blink::WebCustomElement::addEmbedderCustomElementName("browserplugin");
 
-  // Allow file scheme to handle service worker by default.
-  blink::WebSecurityPolicy::registerURLSchemeAsAllowingServiceWorkers("file");
-
   OverrideNodeArrayBuffer();
 
   node_bindings_->Initialize();
@@ -122,6 +119,9 @@ void AtomRendererClient::RenderThreadStarted() {
 void AtomRendererClient::RenderFrameCreated(
     content::RenderFrame* render_frame) {
   new PepperHelper(render_frame);
+
+  // Allow file scheme to handle service worker by default.
+  blink::WebSecurityPolicy::registerURLSchemeAsAllowingServiceWorkers("file");
 
   // Only insert node integration for the main frame.
   if (!render_frame->IsMainFrame())
