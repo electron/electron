@@ -27,6 +27,7 @@ class AtomRendererClient : public content::ContentRendererClient,
   void DidCreateScriptContext(blink::WebFrame* frame,
                               v8::Handle<v8::Context> context);
 
+  bool run_node() const { return run_node_; }
  private:
   enum NodeIntegration {
     ALL,
@@ -62,6 +63,8 @@ class AtomRendererClient : public content::ContentRendererClient,
 
   scoped_ptr<NodeBindings> node_bindings_;
   scoped_ptr<AtomBindings> atom_bindings_;
+
+  bool run_node_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomRendererClient);
 };
