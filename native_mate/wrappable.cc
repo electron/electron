@@ -14,6 +14,8 @@ Wrappable::Wrappable() : isolate_(NULL) {
 }
 
 Wrappable::~Wrappable() {
+  if (!wrapper_.IsEmpty())
+    GetWrapper(isolate())->SetAlignedPointerInInternalField(0, nullptr);
   wrapper_.Reset();
 }
 
