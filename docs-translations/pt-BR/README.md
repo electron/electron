@@ -9,11 +9,11 @@ selecione a *tag* que corresponde à sua versão.
 ## FAQ
 
 Existem muitas perguntas comuns que são feitas, verifique antes de criar uma issue.
-* [Electron FAQ](faq/electron-faq.md)
+* [Electron FAQ](../../docs/faq/electron-faq.md)
 
 ## Guias
 
-* [Platformas Suportadas](tutorial/supported-platforms.md)
+* [Platformas Suportadas](../../docs/tutorial/supported-platforms.md)
 * [Distribuição de Aplicações](tutorial/application-distribution.md)
 * [Guia de Submissão da Mac App Store](../../tutorial/mac-app-store-submission-guide.md)
 * [Empacotamento da Aplicação](tutorial/application-packaging.md)
@@ -22,7 +22,7 @@ Existem muitas perguntas comuns que são feitas, verifique antes de criar uma is
 * [Usando Selenium e WebDriver](../../docs/tutorial/using-selenium-and-webdriver.md)
 * [Extensão DevTools](../../docs/tutorial/devtools-extension.md)
 * [Usando o Plugin Pepper Flash](tutorial/using-pepper-flash-plugin.md)
-* [Usando
+* [Usando o Plugin Widevine CDM](../../tutorial/using-widevine-cdm-plugin.md)
 
 ## Tutoriais
 
@@ -64,6 +64,7 @@ Existem muitas perguntas comuns que são feitas, verifique antes de criar uma is
 
 ### Módulos para o Processo Renderizador:
 
+* [DesktopCapturer](../../docs/api/desktop-capturer)
 * [ipcRenderer](../../docs/api/ipc-renderer.md)
 * [remote](../../docs/api/remote.md)
 * [webFrame](../../docs/api/web-frame.md)
