@@ -9,6 +9,23 @@
 
 namespace mate {
 
+namespace {
+
+std::string V8TypeAsString(v8::Local<v8::Value> value) {
+  if (value.IsEmpty())
+    return "<empty handle>";
+  if (value->IsUndefined())
+    return "undefined";
+  if (value->IsNull())
+    return "null";
+  std::string result;
+  if (!ConvertFromV8(NULL, value, &result))
+    return std::string();
+  return result;
+}
+
+}  // namespace
+
 Arguments::Arguments()
     : isolate_(NULL),
       info_(NULL),
@@ -37,7 +54,8 @@ v8::Local<v8::Value> Arguments::ThrowError() const {
     return ThrowTypeError("Insufficient number of arguments.");
 
   return ThrowTypeError(base::StringPrintf(
-      "Error processing argument %d.", next_ - 1));
+      "Error processing argument at index %d, conversion failure from %s",
+      next_, V8TypeAsString((*info_)[next_]).c_str()));
 }
 
 v8::Local<v8::Value> Arguments::ThrowError(const std::string& message) const {
