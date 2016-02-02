@@ -17,6 +17,6 @@ Binario pré-construido `ia32`(`i686`) e binario `x64`(`amd64`) são construidas
 Se o pré-compilador poderá ser executado por uma distribuição, depende se a distruibuicão inclui as blibliotecas que o Eletron está vinculando na plataforma de construcão, por este motivo apenas Ubuntu 12.04 é garantido para funcionar corretamente, mas as seguintes distribuições foram verificado como pre-compilador:
 
 
-* Ubuntu 12.04 and superior
+* Ubuntu 12.04 ou superior
 * Fedora 21
 * Debian 8
