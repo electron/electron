@@ -13,7 +13,7 @@ Existem muitas perguntas comuns que são feitas, verifique antes de criar uma is
 
 ## Guias
 
-* [Platformas Suportadas](../../docs/tutorial/supported-platforms.md)
+* [Platformas Suportadas](docs/tutorial/supported-platforms.md)
 * [Distribuição de Aplicações](tutorial/application-distribution.md)
 * [Guia de Submissão da Mac App Store](../../tutorial/mac-app-store-submission-guide.md)
 * [Empacotamento da Aplicação](tutorial/application-packaging.md)
