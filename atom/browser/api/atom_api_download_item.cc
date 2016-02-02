@@ -88,7 +88,14 @@ DownloadItem::~DownloadItem() {
 }
 
 void DownloadItem::OnDownloadUpdated(content::DownloadItem* item) {
-  download_item_->IsDone() ? Emit("done", item->GetState()) : Emit("updated");
+  if (download_item_->IsDone()) {
+    Emit("done", item->GetState());
+
+    // Destroy the item once item is downloaded.
+    base::MessageLoop::current()->PostTask(FROM_HERE, GetDestroyClosure());
+  } else {
+    Emit("updated");
+  }
 }
 
 void DownloadItem::OnDownloadDestroyed(content::DownloadItem* download_item) {
