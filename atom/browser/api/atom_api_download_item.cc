@@ -12,6 +12,7 @@
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/node_includes.h"
 #include "base/memory/linked_ptr.h"
+#include "base/message_loop/message_loop.h"
 #include "base/strings/utf_string_conversions.h"
 #include "native_mate/dictionary.h"
 #include "net/base/filename_util.h"
@@ -70,8 +71,17 @@ DownloadItem::DownloadItem(content::DownloadItem* download_item) :
 }
 
 DownloadItem::~DownloadItem() {
-  if (download_item_)
-    OnDownloadDestroyed(download_item_);
+  Destroy(download_item_);
+}
+
+void DownloadItem::Destroy(content::DownloadItem* item) {
+  if (item) {
+    OnDownloadDestroyed(item);
+    MarkDestroyed();
+
+    // Destroy the native class in next tick.
+    base::MessageLoop::current()->PostTask(FROM_HERE, GetDestroyClosure());
+  }
 }
 
 void DownloadItem::OnDownloadUpdated(content::DownloadItem* item) {
@@ -79,8 +89,8 @@ void DownloadItem::OnDownloadUpdated(content::DownloadItem* item) {
 }
 
 void DownloadItem::OnDownloadDestroyed(content::DownloadItem* download_item) {
-  download_item_->RemoveObserver(this);
-  auto iter = g_download_item_objects.find(download_item_->GetId());
+  download_item->RemoveObserver(this);
+  auto iter = g_download_item_objects.find(download_item->GetId());
   if (iter != g_download_item_objects.end())
     g_download_item_objects.erase(iter);
   download_item_ = nullptr;

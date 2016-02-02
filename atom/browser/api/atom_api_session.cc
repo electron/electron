@@ -292,12 +292,16 @@ void Session::OnDownloadCreated(content::DownloadManager* manager,
   auto web_contents = item->GetWebContents();
   if (SavePageHandler::IsSavePageTypes(item->GetMimeType()))
     return;
+  auto download_item_handle = DownloadItem::Create(isolate(), item);
   bool prevent_default = Emit(
       "will-download",
-      DownloadItem::Create(isolate(), item),
+      download_item_handle,
       api::WebContents::CreateFrom(isolate(), web_contents));
-  if (prevent_default)
+  if (prevent_default) {
     item->Cancel(true);
+    download_item_handle->Destroy(item);
+    item->Remove();
+  }
 }
 
 void Session::ResolveProxy(const GURL& url, ResolveProxyCallback callback) {

@@ -36,6 +36,8 @@ class DownloadItem : public mate::TrackableObject<DownloadItem>,
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::ObjectTemplate> prototype);
 
+  void Destroy(content::DownloadItem* download_item);
+
  protected:
   explicit DownloadItem(content::DownloadItem* download_item);
   ~DownloadItem();
