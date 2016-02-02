@@ -15,6 +15,7 @@
 #include "atom/browser/atom_resource_dispatcher_host_delegate.h"
 #include "atom/browser/atom_speech_recognition_manager_delegate.h"
 #include "atom/browser/native_window.h"
+#include "atom/browser/web_contents_permission_helper.h"
 #include "atom/browser/web_contents_preferences.h"
 #include "atom/browser/window_list.h"
 #include "atom/common/options_switches.h"
@@ -279,6 +280,24 @@ brightray::BrowserMainParts* AtomBrowserClient::OverrideCreateBrowserMainParts(
     const content::MainFunctionParams&) {
   v8::V8::Initialize();  // Init V8 before creating main parts.
   return new AtomBrowserMainParts;
+}
+
+void AtomBrowserClient::WebNotificationAllowed(
+    int render_process_id,
+    const base::Callback<void(bool)>& callback) {
+  content::WebContents* web_contents = content::WebContents::FromRenderViewHost(
+      content::RenderViewHost::FromID(render_process_id, kDefaultRoutingID));
+  if (!web_contents) {
+    callback.Run(false);
+    return;
+  }
+  auto permission_helper =
+      WebContentsPermissionHelper::FromWebContents(web_contents);
+  if (!permission_helper) {
+    callback.Run(false);
+    return;
+  }
+  permission_helper->RequestWebNotificationPermission(callback);
 }
 
 void AtomBrowserClient::RenderProcessHostDestroyed(

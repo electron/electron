@@ -361,7 +361,7 @@ Executes editing command `selectAll` in page.
 
 Executes editing command `unselect` in page.
 
-### `<webview.replace(text)`
+### `<webview>.replace(text)`
 
 * `text` String
 

@@ -197,6 +197,7 @@ proxyURL = [<proxyScheme>"://"]<proxyHost>[":"<proxyPort>]
 ```
 
 具体例:
+
 * `http=foopy:80;ftp=foopy2` - `http://`URLは`foopy:80`HTTPプロキシを使用し、`ftp://`URLは`foopy2:80` HTTPプロキシを使用します。
 * `foopy:80` - 全てのURLで`foopy:80`を使用します。
 * `foopy:80,bar,direct://` - 全てのURLで`foopy:80`HTTPプロキシを使用し、`foopy:80`が提供されていなければ`bar`を使用し、さらに使えない場合はプロキシを使いません。
@@ -296,6 +297,14 @@ session.defaultSession.webRequest.onBeforeSendHeaders(filter, function(details, 
   * `method` String
   * `resourceType` String
   * `timestamp` Double
+  * `uploadData` Array (オプション)
+  * `callback` Function
+
+`uploadData`は `data`オブジェクトの配列です。
+
+* `data` Object
+  * `bytes` Buffer - 送信されるコンテンツ
+  * `file` String - アップロードされるファイルパス
 
 `callback`は`response`オブジェクトでコールされる必要があります:
 
@@ -317,6 +326,7 @@ session.defaultSession.webRequest.onBeforeSendHeaders(filter, function(details, 
   * `resourceType` String
   * `timestamp` Double
   * `requestHeaders` Object
+* `callback` Function
 
 The `callback` has to be called with an `response` object:
 
@@ -355,6 +365,7 @@ The `callback` has to be called with an `response` object:
   * `statusLine` String
   * `statusCode` Integer
   * `responseHeaders` Object
+* `callback` Function
 
 `callback`は`response`オブジェクトでコールされる必要があります:
 

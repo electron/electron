@@ -281,6 +281,28 @@ Emitted when a page's theme color changes. This is usually due to encountering a
 <meta name='theme-color' content='#ff0000'>
 ```
 
+### Event: 'cursor-changed'
+
+Returns:
+
+* `event` Event
+* `type` String
+* `image` NativeImage (optional)
+* `scale` Float (optional)
+
+Emitted when the cursor's type changes. The `type` parameter can be `default`,
+`crosshair`, `pointer`, `text`, `wait`, `help`, `e-resize`, `n-resize`,
+`ne-resize`, `nw-resize`, `s-resize`, `se-resize`, `sw-resize`, `w-resize`,
+`ns-resize`, `ew-resize`, `nesw-resize`, `nwse-resize`, `col-resize`,
+`row-resize`, `m-panning`, `e-panning`, `n-panning`, `ne-panning`, `nw-panning`,
+`s-panning`, `se-panning`, `sw-panning`, `w-panning`, `move`, `vertical-text`,
+`cell`, `context-menu`, `alias`, `progress`, `nodrop`, `copy`, `none`,
+`not-allowed`, `zoom-in`, `zoom-out`, `grab`, `grabbing`, `custom`.
+
+If the `type` parameter is `custom`, the `image` parameter will hold the custom
+cursor image in a `NativeImage`, and the `scale` will hold scaling information
+for the image.
+
 ## Instance Methods
 
 The `webContents` object has the following instance methods:

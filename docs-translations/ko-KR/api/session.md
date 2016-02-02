@@ -212,6 +212,7 @@ proxyURL = [<proxyScheme>"://"]<proxyHost>[":"<proxyPort>]
 ```
 
 예시:
+
 * `http=foopy:80;ftp=foopy2` - http:// URL에 `foopy:80` HTTP 프록시를 사용합니다.
   `foopy2:80` 는 ftp:// URL에 사용됩니다.
 * `foopy:80` - 모든 URL에 `foopy:80` 프록시를 사용합니다.
@@ -287,6 +288,30 @@ myWindow.webContents.session.setCertificateVerifyProc(function(hostname, cert, c
    callback(false);
 });
 ```
+#### `ses.setPermissionRequestHandler(handler)`
+
+* `handler` Function
+  * `webContents` Object - [WebContents](web-contents.md) 권한을 요청.
+  * `permission`  String - 'media', 'geolocation', 'notifications',
+    'midiSysex'의 나열.
+  * `callback`  Function - 권한 허용 및 거부.
+
+`session`의 권한 요청에 응답을 하는데 사용하는 핸들러를 설정합니다.
+`callback('granted')`를 호출하면 권한 제공을 허용하고 `callback('denied')`를
+호출하면 권한 제공을 거부합니다.
+
+```javascript
+session.fromPartition(partition).setPermissionRequestHandler(function(webContents, permission, callback) {
+  if (webContents.getURL() === host) {
+    if (permission == "notifications") {
+      callback(); // 거부됨.
+      return;
+    }
+  }
+
+  callback('granted');
+});
+```
 
 #### `ses.webRequest`
 
@@ -329,6 +354,14 @@ session.defaultSession.webRequest.onBeforeSendHeaders(filter, function(details, 
   * `method` String
   * `resourceType` String
   * `timestamp` Double
+  * `uploadData` Array (optional)
+* `callback` Function
+
+`uploadData`는 `data` 객체의 배열입니다:
+
+* `data` Object
+  * `bytes` Buffer - 전송될 컨텐츠.
+  * `file` String - 업로드될 파일의 경로.
 
 `callback`은 `response` 객체와 함께 호출되어야 합니다:
 
@@ -353,6 +386,7 @@ HTTP 요청을 보내기 전 요청 헤더를 사용할 수 있을 때 `listener
   * `resourceType` String
   * `timestamp` Double
   * `requestHeaders` Object
+* `callback` Function
 
 `callback`은 `response` 객체와 함께 호출되어야 합니다:
 
@@ -395,6 +429,7 @@ HTTP 요청을 보내기 전 요청 헤더를 사용할 수 있을 때 `listener
   * `statusLine` String
   * `statusCode` Integer
   * `responseHeaders` Object
+* `callback` Function
 
 `callback`은 `response` 객체와 함께 호출되어야 합니다:
 

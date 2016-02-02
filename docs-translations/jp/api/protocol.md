@@ -45,9 +45,22 @@ app.on('ready', function() {
 
 レスポンスとしてファイルを送信する`scheme`のプロトコルを登録します。`scheme`で`request`が生成された時、`handler`は`handler(request, callback)`で呼び出されます。`scheme` 登録が成功したり、`completion(error)`が失敗したときに、`completion` は`completion(null)`で呼び出されます。
 
+* `request` Object
+  * `url` String
+  * `referrer` String
+  * `method` String
+  * `uploadData` Array (オプション)
+* `callback` Function
+
+`uploadData` は `data` オブジェクトの配列です:
+
+* `data` Object
+  * `bytes` Buffer - 送信するコンテンツ
+  * `file` String - アップロードするファイルパス
+
 `request`をハンドルするために、`callback`はファイルパスまたは`path`プロパティを持つオブジェクトで呼び出すべきです。例えば、`callback(filePath)` または`callback({path: filePath})`です。
 
-何もなし、数字、`error`プロパティを持つオブジェクトで、`callback`が呼び出された時、 `request`は指定した`error`番号で失敗します。使用できる提供されているエラー番号は、[net error list](https://code.google.com/p/chromium/codesearch#chromium/src/net/base/net_error_list.h)を参照してください。
+何もなし、数字、`error`プロパティを持つオブジェクトで、`callback`が呼び出された時、 `request`は指定した`error`番号で失敗します。使用できる提供されているエラー番号は、[net error list][net-error]を参照してください。
 
 既定では、`scheme`は、`file:`のような一般的なURIの構文に続くプロトコルと違う解析がされ、`http:`のように扱われます。なので、恐らく標準的なスキーマーのように扱われるスキーマーを持つために、`protocol.registerStandardSchemes` を呼び出したくなります。
 
@@ -57,7 +70,9 @@ app.on('ready', function() {
 * `handler` Function
 * `completion` Function (optional)
 
-レスポンスとして`Buffer`を送信する`scheme`プロトコルを登録します。`callback`は、`Buffer`オブジェクトまたは`data`と `mimeType`、`chart`プロパティを持つオブジェクトを呼び出す必要があります。
+レスポンスとして`Buffer`を送信する`scheme`プロトコルを登録します。
+
+ `callback`は、`Buffer`オブジェクトまたは、`data`と`mimeType`、 `charset`プロパティを持つオブジェクトのどちらかで呼ばれる必要があることを除いて、この使用方法は、`registerFileProtocol`と同じです。
 
 例:
 
@@ -76,7 +91,9 @@ protocol.registerBufferProtocol('atom', function(request, callback) {
 * `handler` Function
 * `completion` Function (optional)
 
-レスポンスとして`String`を送信する`scheme`プロトコルを登録します。`callback`は、`String`または`data`と `mimeType`、`chart`プロパティを持つオブジェクトを呼び出す必要があります。
+レスポンスとして`String`を送信する`scheme`プロトコルを登録します。
+
+`callback`は、`String`または`data`と `mimeType`、`chart`プロパティを持つオブジェクトを呼び出す必要があることを除いて、使用方法は`registerFileProtocol`と同じです。
 
 ### `protocol.registerHttpProtocol(scheme, handler[, completion])`
 
@@ -84,14 +101,22 @@ protocol.registerBufferProtocol('atom', function(request, callback) {
 * `handler` Function
 * `completion` Function (optional)
 
-レスポンスとしてHTTPリクエストを送信する`scheme`プロトコルを登録します。`callback`は、`url`と`method`、`referrer`、`uploadData`、`session`プロパティを持つオブジェクトを呼び出す必要があります。
+レスポンスとしてHTTPリクエストを送信する`scheme`プロトコルを登録します。
+
+`callback`は、`url`と`method`、`referrer`、`uploadData`、`session`プロパティを持つオブジェクトを呼び出す必要があることを除いて、使用方法は`registerFileProtocol`と同じです。
+
+* `redirectRequest` Object
+  * `url` String
+  * `method` String
+  * `session` Object (オプション)
+  * `uploadData` Object (オプション)
 
 既定では、HTTPリクエストは現在のセッションを再利用します。別のセッションでリクエストをしたい場合、`session` に `null`を設定する必要があります。
 
 POSTリクエストは`uploadData`オブジェクトを提供する必要があります。
 * `uploadData` object
   * `contentType` String - コンテンツのMIMEタイプ
-  *  `data` String - 送信されるコンテンツ
+  * `data` String - 送信されるコンテンツ
 
 ### `protocol.unregisterProtocol(scheme[, completion])`
 
@@ -139,12 +164,12 @@ POSTリクエストは`uploadData`オブジェクトを提供する必要があ�
 
 `scheme`プロトコルをインターセプタ―し、レスポンスとして新しいHTTPリクエストを送信するプロトコルの新しいハンドラーとして`handler`を使います。
 
-Intercepts `scheme` protocol and uses `handler` as the protocol's new handler
-which sends a new HTTP request as a response.
-
 ### `protocol.uninterceptProtocol(scheme[, completion])`
 
 * `scheme` String
 * `completion` Function
 
 インターセプタ―したインストールされた`scheme`を削除し、オリジナルハンドラーをリストアします。
+
+
+[net-error]: https://code.google.com/p/chromium/codesearch#chromium/src/net/base/net_error_list.h

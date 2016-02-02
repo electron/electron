@@ -367,6 +367,10 @@ mate::ObjectTemplateBuilder App::GetObjectTemplateBuilder(
                  base::Bind(&Browser::ClearRecentDocuments, browser))
       .SetMethod("setAppUserModelId",
                  base::Bind(&Browser::SetAppUserModelID, browser))
+#if defined(OS_MACOSX)
+      .SetMethod("hide", base::Bind(&Browser::Hide, browser))
+      .SetMethod("show", base::Bind(&Browser::Show, browser))
+#endif
 #if defined(OS_WIN)
       .SetMethod("setUserTasks",
                  base::Bind(&Browser::SetUserTasks, browser))

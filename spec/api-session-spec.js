@@ -144,6 +144,50 @@ describe('session module', function() {
       });
     });
   });
+
+  describe('session will-download event', function() {
+    var w = null;
+
+    beforeEach(function() {
+      w = new BrowserWindow({
+        show: false,
+        width: 400,
+        height: 400
+      });
+    });
+    afterEach(function() {
+      return w.destroy();
+    });
+
+    it('can cancel default download behavior', function(done) {
+      const mockFile = new Buffer(1024);
+      const contentDisposition = 'inline; filename="mockFile.txt"';
+      const downloadServer = http.createServer(function(req, res) {
+        res.writeHead(200, {
+          'Content-Length': mockFile.length,
+          'Content-Type': 'application/plain',
+          'Content-Disposition': contentDisposition
+        });
+        res.end(mockFile);
+        downloadServer.close();
+      });
+
+      downloadServer.listen(0, '127.0.0.1', function() {
+        const port = downloadServer.address().port;
+        const url = "http://127.0.0.1:" + port + '/';
+
+        ipcRenderer.sendSync('set-download-option', false, true);
+        w.loadURL(url);
+        ipcRenderer.once('download-error', function(event, downloadUrl, filename, error) {
+          assert.equal(downloadUrl, url);
+          assert.equal(filename, 'mockFile.txt');
+          assert.equal(error, 'Object has been destroyed');
+          done();
+        });
+      });
+    });
+  });
+
   return describe('DownloadItem', function() {
     var assertDownload, contentDisposition, downloadFilePath, downloadServer, mockPDF;
     mockPDF = new Buffer(1024 * 1024 * 5);
@@ -173,7 +217,7 @@ describe('session module', function() {
       return downloadServer.listen(0, '127.0.0.1', function() {
         var port;
         port = downloadServer.address().port;
-        ipcRenderer.sendSync('set-download-option', false);
+        ipcRenderer.sendSync('set-download-option', false, false);
         w.loadURL(url + ":" + port);
         return ipcRenderer.once('download-done', function(event, state, url, mimeType, receivedBytes, totalBytes, disposition, filename) {
           assertDownload(event, state, url, mimeType, receivedBytes, totalBytes, disposition, filename, port);
@@ -185,7 +229,7 @@ describe('session module', function() {
       return downloadServer.listen(0, '127.0.0.1', function() {
         var port, webview;
         port = downloadServer.address().port;
-        ipcRenderer.sendSync('set-download-option', false);
+        ipcRenderer.sendSync('set-download-option', false, false);
         webview = new WebView;
         webview.src = "file://" + fixtures + "/api/blank.html";
         webview.addEventListener('did-finish-load', function() {
@@ -199,11 +243,11 @@ describe('session module', function() {
         return document.body.appendChild(webview);
       });
     });
-    return it('can cancel download', function(done) {
+    it('can cancel download', function(done) {
       return downloadServer.listen(0, '127.0.0.1', function() {
         var port;
         port = downloadServer.address().port;
-        ipcRenderer.sendSync('set-download-option', true);
+        ipcRenderer.sendSync('set-download-option', true, false);
         w.loadURL(url + ":" + port + "/");
         return ipcRenderer.once('download-done', function(event, state, url, mimeType, receivedBytes, totalBytes, disposition, filename) {
           assert.equal(state, 'cancelled');

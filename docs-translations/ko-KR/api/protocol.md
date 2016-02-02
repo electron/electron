@@ -50,14 +50,26 @@ app.on('ready', function() {
 `completion` 콜백은 `scheme`가 성공적으로 등록되었을 때 `completion(null)` 형식으로
 호출되고, 등록에 실패했을 땐 `completion(error)` 형식으로 에러 내용을 담아 호출됩니다.
 
+* `request` Object
+  * `url` String
+  * `referrer` String
+  * `method` String
+  * `uploadData` Array (optional)
+* `callback` Function
+
+The `uploadData` is an array of `data` objects:
+
+* `data` Object
+  * `bytes` Buffer - Content being sent.
+  * `file` String - Path of file being uploaded.
+
 `request`를 처리할 때 반드시 파일 경로 또는 `path` 속성을 포함하는 객체를 인자에
 포함하여 `callback`을 호출해야 합니다. 예: `callback(filePath)` 또는
 `callback({path: filePath})`.
 
 만약 `callback`이 아무 인자도 없이 호출되거나 숫자나 `error` 프로퍼티를 가진 객체가
 인자로 전달될 경우 `request`는 지정한 `error` 코드(숫자)를 출력합니다. 사용할 수 있는
-에러 코드는 [네트워크 에러 목록](https://code.google.com/p/chromium/codesearch#chromium/src/net/base/net_error_list.h)에서
-확인할 수 있습니다.
+에러 코드는 [네트워크 에러 목록][net-error]에서 확인할 수 있습니다.
 
 기본적으로 `scheme`은 `http:`와 같이 처리됩니다. `file:`과 같이 "일반적인 URI 문법"
 과는 다르게 인식되는 프로토콜은 `protocol.registerStandardSchemes`을 사용하여 표준
@@ -69,9 +81,11 @@ app.on('ready', function() {
 * `handler` Function
 * `completion` Function (optional)
 
-`scheme`에 `Buffer`를 응답으로 보내는 프로토콜을 등록합니다. 반드시 `Buffer` 또는
-`data`, `mimeType`, `chart` 속성을 포함한 객체 중 하나를 인자에 포함하여
-`callback`을 호출해야 합니다.
+`Buffer`를 응답으로 전송하는 `scheme`의 프로토콜을 등록합니다.
+
+사용법은 `callback`이 반드시 `Buffer` 객체 또는 `data`, `mimeType`, `charset`
+속성을 포함하는 객체와 함께 호출되어야 한다는 점을 제외하면 `registerFileProtocol`과
+사용법이 같습니다.
 
 예제:
 
@@ -90,9 +104,11 @@ protocol.registerBufferProtocol('atom', function(request, callback) {
 * `handler` Function
 * `completion` Function (optional)
 
-`scheme`에 `문자열`을 응답으로 보내는 프로토콜을 등록합니다. 반드시 `문자열` 또는
-`data`, `mimeType`, `chart` 속성을 포함한 객체 중 하나를 인자에 포함하여
-`callback`을 호출해야 합니다.
+`String`을 응답으로 전송할 `scheme`의 프로토콜을 등록합니다.
+
+사용법은 `callback`이 반드시 `String` 또는 `data`, `mimeType`, `charset` 속성을
+포함하는 객체와 함께 호출되어야 한다는 점을 제외하면 `registerFileProtocol`과
+사용법이 같습니다.
 
 ### `protocol.registerHttpProtocol(scheme, handler[, completion])`
 
@@ -100,17 +116,26 @@ protocol.registerBufferProtocol('atom', function(request, callback) {
 * `handler` Function
 * `completion` Function (optional)
 
-`scheme`에 HTTP 요청을 응답으로 보내는 프로토콜을 등록합니다. 반드시 `url`,
-`method`, `referrer`, `uploadData` 그리고 `session` 속성을 포함하는 객체를 인자에
-포함하여 `callback`을 호출해야 합니다.
+HTTP 요청을 응답으로 전송할 `scheme`의 프로토콜을 등록합니다.
+
+사용법은 `callback`이 반드시 `url`, `method`, `referrer`, `uploadData`와
+`session` 속성을 포함하는 `redirectRequest` 객체와 함께 호출되어야 한다는 점을
+제외하면 `registerFileProtocol`과 사용법이 같습니다.
+
+* `redirectRequest` Object
+  * `url` String
+  * `method` String
+  * `session` Object (optional)
+  * `uploadData` Object (optional)
 
 기본적으로 HTTP 요청은 현재 세션을 재사용합니다. 만약 서로 다른 세션에 요청을 보내고
 싶으면 `session`을 `null`로 지정해야 합니다.
 
-POST 요청은 반드시 `uploadData` 객체가 제공되어야 합니다.
+POST 요청에는 반드시 `uploadData` 객체가 제공되어야 합니다.
+
 * `uploadData` object
   * `contentType` String - 컨텐츠의 MIME 타입.
-  *  `data` String - 전송할 컨텐츠.
+  * `data` String - 전송할 컨텐츠.
 
 ### `protocol.unregisterProtocol(scheme[, completion])`
 
@@ -167,3 +192,5 @@ POST 요청은 반드시 `uploadData` 객체가 제공되어야 합니다.
 * `completion` Function (optional)
 
 가로챈 `scheme`를 삭제하고 기본 핸들러로 복구합니다.
+
+[net-error]: https://code.google.com/p/chromium/codesearch#chromium/src/net/base/net_error_list.h

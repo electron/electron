@@ -14,8 +14,10 @@
 #include "atom/browser/api/save_page_handler.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
+#include "atom/browser/atom_permission_manager.h"
 #include "atom/browser/net/atom_cert_verifier.h"
 #include "atom/common/native_mate_converters/callback.h"
+#include "atom/common/native_mate_converters/content_converter.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/net_converter.h"
@@ -34,6 +36,7 @@
 #include "native_mate/object_template_builder.h"
 #include "net/base/load_flags.h"
 #include "net/disk_cache/disk_cache.h"
+#include "net/dns/host_cache.h"
 #include "net/proxy/proxy_service.h"
 #include "net/proxy/proxy_config_service_fixed.h"
 #include "net/url_request/url_request_context.h"
@@ -269,6 +272,19 @@ void SetProxyInIO(net::URLRequestContextGetter* getter,
   RunCallbackInUI(callback);
 }
 
+void ClearHostResolverCacheInIO(
+    const scoped_refptr<net::URLRequestContextGetter>& context_getter,
+    const base::Closure& callback) {
+  auto request_context = context_getter->GetURLRequestContext();
+  auto cache = request_context->host_resolver()->GetHostCache();
+  if (cache) {
+    cache->clear();
+    DCHECK_EQ(0u, cache->size());
+    if (!callback.is_null())
+      RunCallbackInUI(callback);
+  }
+}
+
 }  // namespace
 
 Session::Session(AtomBrowserContext* browser_context)
@@ -397,6 +413,28 @@ void Session::SetCertVerifyProc(v8::Local<v8::Value> val,
   browser_context_->cert_verifier()->SetVerifyProc(proc);
 }
 
+void Session::SetPermissionRequestHandler(v8::Local<v8::Value> val,
+                                          mate::Arguments* args) {
+  AtomPermissionManager::RequestHandler handler;
+  if (!(val->IsNull() || mate::ConvertFromV8(args->isolate(), val, &handler))) {
+    args->ThrowError("Must pass null or function");
+    return;
+  }
+  auto permission_manager = static_cast<AtomPermissionManager*>(
+      browser_context()->GetPermissionManager());
+  permission_manager->SetPermissionRequestHandler(handler);
+}
+
+void Session::ClearHostResolverCache(mate::Arguments* args) {
+  base::Closure callback;
+  args->GetNext(&callback);
+
+  BrowserThread::PostTask(BrowserThread::IO, FROM_HERE,
+      base::Bind(&ClearHostResolverCacheInIO,
+                 make_scoped_refptr(browser_context_->GetRequestContext()),
+                 callback));
+}
+
 v8::Local<v8::Value> Session::Cookies(v8::Isolate* isolate) {
   if (cookies_.IsEmpty()) {
     auto handle = atom::api::Cookies::Create(isolate, browser_context());
@@ -448,6 +486,9 @@ void Session::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("enableNetworkEmulation", &Session::EnableNetworkEmulation)
       .SetMethod("disableNetworkEmulation", &Session::DisableNetworkEmulation)
       .SetMethod("setCertificateVerifyProc", &Session::SetCertVerifyProc)
+      .SetMethod("setPermissionRequestHandler",
+                 &Session::SetPermissionRequestHandler)
+      .SetMethod("clearHostResolverCache", &Session::ClearHostResolverCache)
       .SetProperty("cookies", &Session::Cookies)
       .SetProperty("webRequest", &Session::WebRequest);
 }
