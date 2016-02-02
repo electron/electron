@@ -53,19 +53,9 @@ namespace {
 using WrapDownloadItemCallback = base::Callback<void(v8::Local<v8::Value>)>;
 WrapDownloadItemCallback g_wrap_download_item;
 
-char kDownloadItemSavePathKey[] = "DownloadItemSavePathKey";
-
 std::map<uint32, linked_ptr<v8::Global<v8::Value>>> g_download_item_objects;
 
 }  // namespace
-
-DownloadItem::SavePathData::SavePathData(const base::FilePath& path) :
-  path_(path) {
-}
-
-const base::FilePath& DownloadItem::SavePathData::path() {
-  return path_;
-}
 
 DownloadItem::DownloadItem(content::DownloadItem* download_item)
     : download_item_(download_item) {
@@ -74,7 +64,6 @@ DownloadItem::DownloadItem(content::DownloadItem* download_item)
 }
 
 DownloadItem::~DownloadItem() {
-  LOG(ERROR) << "~DownloadItem";
   if (download_item_) {
     // Destroyed by either garbage collection or destroy().
     download_item_->RemoveObserver(this);
@@ -104,43 +93,6 @@ void DownloadItem::OnDownloadDestroyed(content::DownloadItem* download_item) {
   delete this;
 }
 
-int64 DownloadItem::GetReceivedBytes() {
-  return download_item_->GetReceivedBytes();
-}
-
-int64 DownloadItem::GetTotalBytes() {
-  return download_item_->GetTotalBytes();
-}
-
-const GURL& DownloadItem::GetURL() {
-  return download_item_->GetURL();
-}
-
-std::string DownloadItem::GetMimeType() {
-  return download_item_->GetMimeType();
-}
-
-bool DownloadItem::HasUserGesture() {
-  return download_item_->HasUserGesture();
-}
-
-std::string DownloadItem::GetFilename() {
-  return base::UTF16ToUTF8(net::GenerateFileName(GetURL(),
-                           GetContentDisposition(),
-                           std::string(),
-                           download_item_->GetSuggestedFilename(),
-                           GetMimeType(),
-                           std::string()).LossyDisplayName());
-}
-
-std::string DownloadItem::GetContentDisposition() {
-  return download_item_->GetContentDisposition();
-}
-
-void DownloadItem::SetSavePath(const base::FilePath& path) {
-  download_item_->SetUserData(UserDataKey(), new SavePathData(path));
-}
-
 void DownloadItem::Pause() {
   download_item_->Pause();
 }
@@ -154,6 +106,47 @@ void DownloadItem::Cancel() {
   download_item_->Remove();
 }
 
+int64 DownloadItem::GetReceivedBytes() const {
+  return download_item_->GetReceivedBytes();
+}
+
+int64 DownloadItem::GetTotalBytes() const {
+  return download_item_->GetTotalBytes();
+}
+
+std::string DownloadItem::GetMimeType() const {
+  return download_item_->GetMimeType();
+}
+
+bool DownloadItem::HasUserGesture() const {
+  return download_item_->HasUserGesture();
+}
+
+std::string DownloadItem::GetFilename() const {
+  return base::UTF16ToUTF8(net::GenerateFileName(GetURL(),
+                           GetContentDisposition(),
+                           std::string(),
+                           download_item_->GetSuggestedFilename(),
+                           GetMimeType(),
+                           std::string()).LossyDisplayName());
+}
+
+std::string DownloadItem::GetContentDisposition() const {
+  return download_item_->GetContentDisposition();
+}
+
+const GURL& DownloadItem::GetURL() const {
+  return download_item_->GetURL();
+}
+
+void DownloadItem::SetSavePath(const base::FilePath& path) {
+  save_path_ = path;
+}
+
+base::FilePath DownloadItem::GetSavePath() const {
+  return save_path_;
+}
+
 // static
 void DownloadItem::BuildPrototype(v8::Isolate* isolate,
                                   v8::Local<v8::ObjectTemplate> prototype) {
@@ -164,12 +157,13 @@ void DownloadItem::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("cancel", &DownloadItem::Cancel)
       .SetMethod("getReceivedBytes", &DownloadItem::GetReceivedBytes)
       .SetMethod("getTotalBytes", &DownloadItem::GetTotalBytes)
-      .SetMethod("getURL", &DownloadItem::GetURL)
       .SetMethod("getMimeType", &DownloadItem::GetMimeType)
       .SetMethod("hasUserGesture", &DownloadItem::HasUserGesture)
       .SetMethod("getFilename", &DownloadItem::GetFilename)
       .SetMethod("getContentDisposition", &DownloadItem::GetContentDisposition)
-      .SetMethod("setSavePath", &DownloadItem::SetSavePath);
+      .SetMethod("getURL", &DownloadItem::GetURL)
+      .SetMethod("setSavePath", &DownloadItem::SetSavePath)
+      .SetMethod("getSavePath", &DownloadItem::GetSavePath);
 }
 
 // static
@@ -186,11 +180,6 @@ mate::Handle<DownloadItem> DownloadItem::Create(
   g_download_item_objects[handle->weak_map_id()] = make_linked_ptr(
       new v8::Global<v8::Value>(isolate, handle.ToV8()));
   return handle;
-}
-
-// static
-void* DownloadItem::UserDataKey() {
-  return &kDownloadItemSavePathKey;
 }
 
 void ClearWrapDownloadItem() {
