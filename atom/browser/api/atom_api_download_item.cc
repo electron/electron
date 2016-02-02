@@ -12,7 +12,6 @@
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/node_includes.h"
 #include "base/memory/linked_ptr.h"
-#include "base/message_loop/message_loop.h"
 #include "base/strings/utf_string_conversions.h"
 #include "native_mate/dictionary.h"
 #include "net/base/filename_util.h"
@@ -71,17 +70,6 @@ DownloadItem::DownloadItem(content::DownloadItem* download_item) :
 }
 
 DownloadItem::~DownloadItem() {
-  Destroy(download_item_);
-}
-
-void DownloadItem::Destroy(content::DownloadItem* item) {
-  if (item) {
-    OnDownloadDestroyed(item);
-    MarkDestroyed();
-
-    // Destroy the native class in next tick.
-    base::MessageLoop::current()->PostTask(FROM_HERE, GetDestroyClosure());
-  }
 }
 
 void DownloadItem::OnDownloadUpdated(content::DownloadItem* item) {
@@ -93,7 +81,9 @@ void DownloadItem::OnDownloadDestroyed(content::DownloadItem* download_item) {
   auto iter = g_download_item_objects.find(download_item->GetId());
   if (iter != g_download_item_objects.end())
     g_download_item_objects.erase(iter);
-  download_item_ = nullptr;
+
+  // Destroy the wrapper once the download_item is destroyed.
+  delete this;
 }
 
 int64 DownloadItem::GetReceivedBytes() {
