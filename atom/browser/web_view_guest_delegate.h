@@ -61,6 +61,10 @@ class WebViewGuestDelegate : public content::BrowserPluginGuestDelegate,
   void HandleKeyboardEvent(content::WebContents* source,
                            const content::NativeWebKeyboardEvent& event);
 
+  // Returns the routing ID of the guest proxy in the owner's renderer process.
+  // This value is only valid after attachment or first navigation.
+  int proxy_routing_id() const { return guest_proxy_routing_id_; }
+
  protected:
   // content::WebContentsObserver:
   void RenderViewReady() override;
@@ -122,6 +126,8 @@ class WebViewGuestDelegate : public content::BrowserPluginGuestDelegate,
   bool is_full_page_plugin_;
 
   api::WebContents* api_web_contents_;
+
+  int guest_proxy_routing_id_;
 
   DISALLOW_COPY_AND_ASSIGN(WebViewGuestDelegate);
 };

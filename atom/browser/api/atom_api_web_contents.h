@@ -117,6 +117,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void SetAudioMuted(bool muted);
   bool IsAudioMuted();
   void Print(mate::Arguments* args);
+  int GetContentWindowId();
 
   // Print current page as PDF.
   void PrintToPDF(const base::DictionaryValue& setting,

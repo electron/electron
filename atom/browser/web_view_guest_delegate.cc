@@ -191,7 +191,8 @@ void WebViewGuestDelegate::DidCommitProvisionalLoadForFrame(
 }
 
 void WebViewGuestDelegate::DidAttach(int guest_proxy_routing_id) {
-  api_web_contents_->Emit("did-attach");
+  guest_proxy_routing_id_ = guest_proxy_routing_id;
+  api_web_contents_->Emit("did-attach", guest_proxy_routing_id);
 }
 
 content::WebContents* WebViewGuestDelegate::GetOwnerWebContents() const {
