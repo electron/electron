@@ -313,6 +313,12 @@ session.fromPartition(partition).setPermissionRequestHandler(function(webContent
 });
 ```
 
+#### `ses.clearHostResolverCache([callback])`
+
+* `callback` Function (optional) - Called when operation is done.
+
+Clears the host resolver cache.
+
 #### `ses.webRequest`
 
 The `webRequest` API set allows to intercept and modify contents of a request at

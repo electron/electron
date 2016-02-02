@@ -78,6 +78,7 @@ class Session: public mate::TrackableObject<Session>,
   void SetCertVerifyProc(v8::Local<v8::Value> proc, mate::Arguments* args);
   void SetPermissionRequestHandler(v8::Local<v8::Value> val,
                                    mate::Arguments* args);
+  void ClearHostResolverCache(mate::Arguments* args);
   v8::Local<v8::Value> Cookies(v8::Isolate* isolate);
   v8::Local<v8::Value> WebRequest(v8::Isolate* isolate);
 
