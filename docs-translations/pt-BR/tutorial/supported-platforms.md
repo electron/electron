@@ -14,7 +14,7 @@ Suporte para Windows 7 ou superior, versões anteriores não são suportados (e 
 ### Linux
 Binario pré-construido `ia32`(`i686`) e binario `x64`(`amd64`) são construidas no Ubuntu 12.04, binario `arm` está construido contra ARM v7 com hard-float ABI e NEION para Debian Wheezy.
 
-Se o pré-compilador poderá ser executado por uma distribuição, depende se a distruibuicão inclui as blibliotecas que o Eletron está vinculando na plataforma de construcão, por este motivo apenas Ubuntu 12.04 é garantido para funcionar corretamente, mas as seguintes distribuições foram verificado como pre-compilador:
+Se o pré-compilador poderá ser executado por uma distribuição, depende se a distruibuicão inclui as blibliotecas que o Eletron está vinculando na plataforma de construcão, por este motivo apenas Ubuntu 12.04 é garantido para funcionar corretamente, mas as seguintes distribuições foram verificados com o pre-compilador:
 
 
 * Ubuntu 12.04 ou superior
