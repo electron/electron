@@ -5,7 +5,7 @@ const EventEmitter = require('events').EventEmitter;
 const squirrelUpdate = require('./squirrel-update-win');
 
 function AutoUpdater() {
-  EventEmitter.call(this)
+  EventEmitter.call(this);
 }
 
 require('util').inherits(AutoUpdater, EventEmitter);
@@ -13,11 +13,11 @@ require('util').inherits(AutoUpdater, EventEmitter);
 AutoUpdater.prototype.quitAndInstall = function() {
   squirrelUpdate.processStart();
   return app.quit();
-}
+};
 
 AutoUpdater.prototype.setFeedURL = function(updateURL) {
   return this.updateURL = updateURL;
-}
+};
 
 AutoUpdater.prototype.checkForUpdates = function() {
   if (!this.updateURL) {
@@ -51,12 +51,12 @@ AutoUpdater.prototype.checkForUpdates = function() {
       });
     };
   })(this));
-}
+};
 
 // Private: Emit both error object and message, this is to keep compatibility
 // with Old APIs.
-AutoUpdater.prototype.emitError = (message) {
+AutoUpdater.prototype.emitError = function(message) {
   return this.emit('error', new Error(message), message);
-}
+};
 
 module.exports = new AutoUpdater;
