@@ -26,12 +26,18 @@ Show the given file in a file manager. If possible, select the file.
 
 Open the given file in the desktop's default manner.
 
-### `shell.openExternal(url)`
+### `shell.openExternal(url[, options])`
 
 * `url` String
 
 Open the given external protocol URL in the desktop's default manner. (For
-example, mailto: URLs in the user's default mail agent.)
+example, mailto: URLs in the user's default mail agent.) Returns true if an
+application was available to open the URL, false otherwise.
+
+On Mac OS X, you can pass additional options to openExternal:
+
+- withoutActivation: Pass true to open the URL without bringing the
+  application into the foreground.
 
 ### `shell.moveItemToTrash(fullPath)`
 
