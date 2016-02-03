@@ -3,12 +3,13 @@
 const app = require('electron').app;
 const EventEmitter = require('events').EventEmitter;
 const squirrelUpdate = require('./squirrel-update-win');
+const util = require('util');
 
 function AutoUpdater() {
   EventEmitter.call(this);
 }
 
-require('util').inherits(AutoUpdater, EventEmitter);
+util.inherits(AutoUpdater, EventEmitter);
 
 AutoUpdater.prototype.quitAndInstall = function() {
   squirrelUpdate.processStart();
