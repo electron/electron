@@ -235,7 +235,7 @@ if (option.modules.length > 0) {
   require('module')._preloadModules(option.modules);
 }
 
-function loadPackagePath(packagePath) {
+function loadApplicationPackage(packagePath) {
   try {
     // Override app name and version.
     packagePath = path.resolve(packagePath);
@@ -286,7 +286,7 @@ if (option.file && !option.webdriver) {
   } else if (extension === '.html' || extension === '.htm') {
     loadApplicationByUrl('file://' + path.resolve(file));
   } else {
-    loadPackagePath(file);
+    loadApplicationPackage(file);
   }
 } else if (option.version) {
   console.log('v' + process.versions.electron);
