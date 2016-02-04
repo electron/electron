@@ -294,9 +294,14 @@ if (option.file && !option.webdriver) {
 } else if (option.help) {
   var helpMessage = "Electron v" + process.versions.electron + " - Cross Platform Desktop Application Shell\n\n";
   helpMessage    += "Usage: electron [options] [path]\n\n";
-  helpMessage    += "A path to an Electron application may be specified. The path must be to \n";
-  helpMessage    += "an index.js file or to a folder containing a package.json or index.js file.\n\n";
-  helpMessage    += "Options:\n";
+  helpMessage    += "A path to an Electron application may be specified.\n";
+  helpMessage    += "The path must be one of the following:\n\n";
+  helpMessage    += "  - index.js file.\n";
+  helpMessage    += "  - Folder containing a package.json file.\n";
+  helpMessage    += "  - Folder containing an index.js file.\n";
+  helpMessage    += "  - .html/.htm file.\n";
+  helpMessage    += "  - http://, https://, or file:// URL.\n";
+  helpMessage    += "\nOptions:\n";
   helpMessage    += "  -r, --require         Module to preload (option can be repeated)\n";
   helpMessage    += "  -h, --help            Print this usage message.\n";
   helpMessage    += "  -v, --version         Print the version.";
