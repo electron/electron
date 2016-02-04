@@ -70,7 +70,7 @@ app.once('ready', function() {
   var BrowserWindow, chromeExtensionHandler, i, init, len, protocol, srcDirectory;
   protocol = electron.protocol, BrowserWindow = electron.BrowserWindow;
 
-  // Load persistented extensions.
+  // Load persisted extensions.
   loadedExtensionsPath = path.join(app.getPath('userData'), 'DevTools Extensions');
   try {
     loadedExtensions = JSON.parse(fs.readFileSync(loadedExtensionsPath));
