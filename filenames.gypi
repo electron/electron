@@ -50,6 +50,7 @@
       'lib/renderer/chrome-api.js',
       'lib/renderer/init.js',
       'lib/renderer/inspector.js',
+      'lib/renderer/init-without-node.js',
       'lib/renderer/override.js',
       'lib/renderer/web-view/guest-view-internal.js',
       'lib/renderer/web-view/web-view.js',

@@ -1056,7 +1056,8 @@ void WebContents::PrintToPDF(const base::DictionaryValue& setting,
 int WebContents::GetContentWindowId() {
   if (guest_delegate_)
     return guest_delegate_->proxy_routing_id();
-  else return MSG_ROUTING_NONE;
+  else
+    return MSG_ROUTING_NONE;
 }
 
 void WebContents::AddWorkSpace(mate::Arguments* args,

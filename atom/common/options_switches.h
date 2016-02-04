@@ -57,6 +57,7 @@ extern const char kExperimentalFeatures[];
 extern const char kExperimentalCanvasFeatures[];
 extern const char kOpenerID[];
 extern const char kBlinkFeatures[];
+extern const char kContentScripts[];
 
 }   // namespace options
 
@@ -82,6 +83,7 @@ extern const char kPreloadURL[];
 extern const char kNodeIntegration[];
 extern const char kGuestInstanceID[];
 extern const char kOpenerID[];
+extern const char kContentScripts[];
 
 extern const char kWidevineCdmPath[];
 extern const char kWidevineCdmVersion[];

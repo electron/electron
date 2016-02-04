@@ -10,13 +10,16 @@
 #include "atom/common/api/api_messages.h"
 #include "atom/common/api/atom_bindings.h"
 #include "atom/common/api/event_emitter_caller.h"
+#include "atom/common/asar/asar_util.h"
 #include "atom/common/node_bindings.h"
 #include "atom/common/node_includes.h"
 #include "atom/common/options_switches.h"
 #include "atom/renderer/atom_render_view_observer.h"
 #include "atom/renderer/guest_view_container.h"
 #include "atom/renderer/node_array_buffer_bridge.h"
+#include "base/base_paths.h"
 #include "base/command_line.h"
+#include "base/path_service.h"
 #include "chrome/renderer/media/chrome_key_systems.h"
 #include "chrome/renderer/pepper/pepper_helper.h"
 #include "chrome/renderer/printing/print_web_view_helper.h"
@@ -26,7 +29,7 @@
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_frame_observer.h"
 #include "content/public/renderer/render_thread.h"
-#include "ipc/ipc_message_macros.h"
+#include "native_mate/dictionary.h"
 #include "third_party/WebKit/public/web/WebCustomElement.h"
 #include "third_party/WebKit/public/web/WebDocument.h"
 #include "third_party/WebKit/public/web/WebLocalFrame.h"
@@ -39,6 +42,82 @@
 #if defined(OS_WIN)
 #include <shlobj.h>
 #endif
+
+namespace {
+  // TODO(bridiver) This is mostly copied from node_bindings.cc
+  // and should be cleaned up
+  base::FilePath GetResourcesPath() {
+    auto command_line = base::CommandLine::ForCurrentProcess();
+    base::FilePath exec_path(command_line->GetProgram());
+    PathService::Get(base::FILE_EXE, &exec_path);
+
+    base::FilePath resources_path =
+  #if defined(OS_MACOSX)
+        exec_path.DirName().DirName().DirName().DirName().DirName()
+                .Append("Resources");
+  #else
+        exec_path.DirName().Append(FILE_PATH_LITERAL("resources"));
+  #endif
+    return resources_path;
+  }
+
+  // TODO(bridiver) create a separate file for script functions
+  std::string ExceptionToString(const v8::TryCatch& try_catch) {
+    std::string str;
+    v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
+    v8::String::Utf8Value exception(try_catch.Exception());
+    v8::Local<v8::Message> message(try_catch.Message());
+    if (message.IsEmpty()) {
+      str.append(base::StringPrintf("%s\n", *exception));
+    } else {
+      v8::String::Utf8Value filename(message->GetScriptOrigin().ResourceName());
+      int linenum = message->GetLineNumber();
+      int colnum = message->GetStartColumn();
+      str.append(base::StringPrintf(
+          "%s:%i:%i %s\n", *filename, linenum, colnum, *exception));
+      v8::String::Utf8Value sourceline(message->GetSourceLine());
+      str.append(base::StringPrintf("%s\n", *sourceline));
+    }
+    return str;
+  }
+
+  v8::Handle<v8::Value> ExecuteScriptFile(v8::Handle<v8::Context> context,
+                                              base::FilePath script_path) {
+    v8::Isolate* isolate = context->GetIsolate();
+    std::string script_source;
+    asar::ReadFileToString(script_path, &script_source);
+
+    v8::Local<v8::String> source =
+        v8::String::NewFromUtf8(isolate,
+                                script_source.data(),
+                                v8::String::kNormalString,
+                                script_source.size());
+
+    std::string script_name = script_path.AsUTF8Unsafe();
+    v8::Local<v8::String> name =
+        v8::String::NewFromUtf8(isolate,
+                                script_name.data(),
+                                v8::String::kNormalString,
+                                script_name.size());
+
+    v8::TryCatch try_catch;
+    v8::Local<v8::Script> script = v8::Script::Compile(source, name);
+    if (script.IsEmpty()) {
+      LOG(FATAL) << "Failed to parse script file " << script_name;
+      LOG(FATAL) << ExceptionToString(try_catch);
+      exit(3);
+    }
+
+    v8::Local<v8::Value> result = script->Run();
+    if (result.IsEmpty()) {
+      LOG(FATAL) << "Failed to execute script file " << script_name;
+      LOG(FATAL) << ExceptionToString(try_catch);
+      exit(4);
+    }
+
+    return result;
+  }
+}  // namespace
 
 namespace atom {
 
@@ -82,7 +161,17 @@ class AtomRenderFrameObserver : public content::RenderFrameObserver {
 
 AtomRendererClient::AtomRendererClient()
     : node_bindings_(NodeBindings::Create(false)),
-      atom_bindings_(new AtomBindings) {
+      atom_bindings_(new AtomBindings),
+      run_node_(true) {
+  base::CommandLine* cmd_line = base::CommandLine::ForCurrentProcess();
+  // if node integration is disabled and there is
+  // no preload script then don't start node
+  if ((!cmd_line->HasSwitch(switches::kNodeIntegration) ||
+       cmd_line->GetSwitchValueASCII(switches::kNodeIntegration) == "false") &&
+      !cmd_line->HasSwitch(switches::kPreloadScript) &&
+      !cmd_line->HasSwitch(switches::kPreloadURL)) {
+    run_node_ = false;
+  }
 }
 
 AtomRendererClient::~AtomRendererClient() {
@@ -91,6 +180,9 @@ AtomRendererClient::~AtomRendererClient() {
 void AtomRendererClient::WebKitInitialized() {
   blink::WebCustomElement::addEmbedderCustomElementName("webview");
   blink::WebCustomElement::addEmbedderCustomElementName("browserplugin");
+
+  if (!run_node_)
+    return;
 
   OverrideNodeArrayBuffer();
 
@@ -161,28 +253,91 @@ bool AtomRendererClient::OverrideCreatePlugin(
 void AtomRendererClient::DidCreateScriptContext(
     blink::WebFrame* frame,
     v8::Handle<v8::Context> context) {
-
   GURL url(frame->document().url());
 
-  // Only insert node integration for the main frame.
-  if (frame->parent() || url == GURL(content::kSwappedOutURL))
-    return;
+  if (url == GURL(content::kSwappedOutURL))
+      return;
 
-  // Give the node loop a run to make sure everything is ready.
-  node_bindings_->RunMessageLoop();
+  if (run_node_) {
+    // only load node in the main frame
+    if (frame->parent())
+      return;
 
-  // Setup node environment for each window.
-  node::Environment* env = node_bindings_->CreateEnvironment(context);
+    // Give the node loop a run to make sure everything is ready.
+    node_bindings_->RunMessageLoop();
 
-  // Add atom-shell extended APIs.
-  atom_bindings_->BindTo(env->isolate(), env->process_object());
+    // Setup node environment for each window.
+    node::Environment* env = node_bindings_->CreateEnvironment(context);
 
-  // Make uv loop being wrapped by window context.
-  if (node_bindings_->uv_env() == nullptr)
-    node_bindings_->set_uv_env(env);
+    // Add atom-shell extended APIs.
+    atom_bindings_->BindTo(env->isolate(), env->process_object());
 
-  // Load everything.
-  node_bindings_->LoadEnvironment(env);
+    // Make uv loop being wrapped by window context.
+    if (node_bindings_->uv_env() == nullptr)
+      node_bindings_->set_uv_env(env);
+
+    // Load everything.
+    node_bindings_->LoadEnvironment(env);
+  } else {
+    v8::Isolate* isolate = context->GetIsolate();
+    v8::HandleScope handle_scope(isolate);
+
+    // Create a process object
+    mate::Dictionary process(isolate, v8::Object::New(isolate));
+
+    // register native functions
+    mate::Dictionary binding(isolate, v8::Object::New(isolate));
+
+    // TODO(bridiver) create a method for these
+    v8::Local<v8::Value> unused = v8::Undefined(isolate);
+    v8::Local<v8::Object> v8_util = v8::Object::New(isolate);
+    auto mod = node::get_builtin_module("atom_common_v8_util");
+    mod->nm_context_register_func(v8_util, unused, context, nullptr);
+    binding.Set("v8_util", v8_util);
+
+    v8::Local<v8::Object> ipc = v8::Object::New(isolate);
+    mod = node::get_builtin_module("atom_renderer_ipc");
+    mod->nm_context_register_func(ipc, unused, context, nullptr);
+    binding.Set("ipc", ipc);
+
+    v8::Local<v8::Object> web_frame = v8::Object::New(isolate);
+    mod = node::get_builtin_module("atom_renderer_web_frame");
+    mod->nm_context_register_func(web_frame, unused, context, nullptr);
+    binding.Set("web_frame", web_frame);
+
+    process.Set("binding", binding);
+
+    // attach the atom bindings
+    atom_bindings_->BindTo(isolate, process.GetHandle());
+
+    // store in the global scope
+    v8::Local<v8::String> process_key = mate::StringToV8(isolate, "process");
+    context->Global()->Set(process_key, process.GetHandle());
+
+    // Load everything
+    base::FilePath resources_path = GetResourcesPath();
+    base::FilePath script_path =
+            resources_path.Append(FILE_PATH_LITERAL("atom.asar"))
+                          .Append(FILE_PATH_LITERAL("renderer"))
+                          .Append(FILE_PATH_LITERAL("lib"))
+                          .Append(FILE_PATH_LITERAL("init-without-node.js"));
+    ExecuteScriptFile(context, script_path);
+
+    // Run supplied contentScripts
+    base::CommandLine* cmd_line = base::CommandLine::ForCurrentProcess();
+    if (cmd_line->HasSwitch(switches::kContentScripts)) {
+      std::stringstream ss(cmd_line->
+                              GetSwitchValueASCII(switches::kContentScripts));
+      std::string name;
+      while (ss >> name) {
+        if (ss.peek() == ',' || ss.peek() == ' ')
+          ss.ignore();
+        ExecuteScriptFile(context, base::FilePath::FromUTF8Unsafe(name));
+      }
+    }
+    // remove process object from the global scope
+    context->Global()->Delete(process_key);
+  }
 }
 
 void AtomRendererClient::WillReleaseScriptContext(
@@ -200,26 +355,9 @@ bool AtomRendererClient::ShouldFork(blink::WebLocalFrame* frame,
                                     bool is_initial_navigation,
                                     bool is_server_redirect,
                                     bool* send_referrer) {
-  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
-  if (command_line->HasSwitch(switches::kNodeIntegration) &&
-      command_line->GetSwitchValueASCII(switches::kNodeIntegration) == "true") {
+  if (run_node_) {
     *send_referrer = true;
     return http_method == "GET" && !is_server_redirect;
-  }
-
-  if (is_server_redirect)
-    return false;
-
-  // don't fork if we need scriptable access from the opener
-  if (frame->opener() != NULL) {
-    return false;
-  }
-
-  // override and fork here because even renderers without
-  // node integration still start node for the preload script
-  // and running more than one in a single process causes some issues
-  if (http_method == "GET") {
-    return true;
   }
 
   return false;

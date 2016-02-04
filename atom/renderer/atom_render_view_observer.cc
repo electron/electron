@@ -65,6 +65,26 @@ base::StringPiece NetResourceProvider(int key) {
   return base::StringPiece();
 }
 
+// TODO(bridiver) create a separate file for script functions
+std::string ExceptionToString(const v8::TryCatch& try_catch) {
+  std::string str;
+  v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
+  v8::String::Utf8Value exception(try_catch.Exception());
+  v8::Local<v8::Message> message(try_catch.Message());
+  if (message.IsEmpty()) {
+    str.append(base::StringPrintf("%s\n", *exception));
+  } else {
+    v8::String::Utf8Value filename(message->GetScriptOrigin().ResourceName());
+    int linenum = message->GetLineNumber();
+    int colnum = message->GetStartColumn();
+    str.append(base::StringPrintf(
+        "%s:%i:%i %s\n", *filename, linenum, colnum, *exception));
+    v8::String::Utf8Value sourceline(message->GetSourceLine());
+    str.append(base::StringPrintf("%s\n", *sourceline));
+  }
+  return str;
+}
+
 }  // namespace
 
 AtomRenderViewObserver::AtomRenderViewObserver(
@@ -144,7 +164,28 @@ void AtomRenderViewObserver::OnBrowserMessage(const base::string16& channel,
     mate::Dictionary event = mate::Dictionary::CreateEmpty(isolate);
     event.Set("sender", ipc);
     args_vector.insert(args_vector.begin(), event.GetHandle());
-    mate::EmitEvent(isolate, ipc, channel, args_vector);
+    if (renderer_client_->run_node()) {
+      mate::EmitEvent(isolate, ipc, channel, args_vector);
+    } else {
+      // There might be a better way to do this,
+      // I just copied the code from event_emitter_caller.h
+      std::vector<v8::Local<v8::Value>> concatenated_args =
+        { mate::StringToV8(isolate, channel) };
+      concatenated_args.reserve(1 + args_vector.size());
+      concatenated_args.insert(concatenated_args.end(),
+                                args_vector.begin(), args_vector.end());
+
+      v8::Handle<v8::Value> emit = ipc->Get(mate::StringToV8(isolate, "emit"));
+      v8::Handle<v8::Function> fn = v8::Handle<v8::Function>::Cast(emit);
+
+      v8::TryCatch try_catch;
+      v8::Local<v8::Value> result = fn->Call(ipc, concatenated_args.size(),
+                                                  &concatenated_args.front());
+      if (result.IsEmpty()) {
+        LOG(WARNING) << "Failed to execute ipc emit for " << channel;
+        LOG(FATAL) << ExceptionToString(try_catch);
+      }
+    }
   }
 }
 
