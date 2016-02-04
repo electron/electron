@@ -234,12 +234,10 @@ if (option.modules.length > 0) {
   require('module')._preloadModules(option.modules);
 }
 
-// Start the specified app if there is one specified in command line, otherwise
-// start the default app.
-if (option.file && !option.webdriver) {
+function loadPackagePath(packagePath) {
   try {
     // Override app name and version.
-    var packagePath = path.resolve(option.file);
+    packagePath = path.resolve(packagePath);
     var packageJsonPath = path.join(packagePath, 'package.json');
     if (fs.existsSync(packageJsonPath)) {
       var packageJson = JSON.parse(fs.readFileSync(packageJsonPath));
@@ -270,6 +268,12 @@ if (option.file && !option.webdriver) {
       throw e;
     }
   }
+}
+
+// Start the specified app if there is one specified in command line, otherwise
+// start the default app.
+if (option.file && !option.webdriver) {
+  loadPackagePath(option.file);
 } else if (option.version) {
   console.log('v' + process.versions.electron);
   process.exit(0);
