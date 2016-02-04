@@ -8,6 +8,7 @@ const os = require('os');
 const remote = require('electron').remote;
 const screen = require('electron').screen;
 
+const app = remote.require('electron').app;
 const ipcMain = remote.require('electron').ipcMain;
 const BrowserWindow = remote.require('electron').BrowserWindow;
 
@@ -618,4 +619,20 @@ describe('browser-window module', function() {
       });
     });
   });
+
+  describe('dev tool extensions', function () {
+    it('serializes the registered extensions on quit', function () {
+      var extensionName = 'foo'
+      var extensionPath = path.join(__dirname, 'fixtures', 'devtools-extensions', extensionName);
+      var serializedPath = path.join(app.getPath('userData'), 'DevTools Extensions');
+
+      BrowserWindow.addDevToolsExtension(extensionPath);
+      app.emit('will-quit');
+      assert.deepEqual(JSON.parse(fs.readFileSync(serializedPath)), [extensionPath]);
+
+      BrowserWindow.removeDevToolsExtension(extensionName);
+      app.emit('will-quit');
+      assert.equal(fs.existsSync(serializedPath), false);
+    })
+  })
 });
