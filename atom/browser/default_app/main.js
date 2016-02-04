@@ -278,11 +278,15 @@ function loadApplicationByUrl(appUrl) {
 // Start the specified app if there is one specified in command line, otherwise
 // start the default app.
 if (option.file && !option.webdriver) {
-  var protocol = url.parse(option.file).protocol;
+  var file = option.file;
+  var protocol = url.parse(file).protocol;
+  var extension = path.extname(file);
   if (protocol === 'http:' || protocol === 'https:') {
-    loadApplicationByUrl(option.file);
+    loadApplicationByUrl(file);
+  } else if (extension === '.html' || extension === '.htm') {
+    loadApplicationByUrl('file://' + path.resolve(file));
   } else {
-    loadPackagePath(option.file);
+    loadPackagePath(file);
   }
 } else if (option.version) {
   console.log('v' + process.versions.electron);
