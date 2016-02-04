@@ -51,8 +51,7 @@ feature.
 are called asynchronously. You should not expect the main process to
 get the return value of the passed callbacks.
 
-比如，在渲染进程For instance you can't use a function from the renderer process in an
-`Array.map` called in the main process:
+比如，你不能主进程中给`Array.map`传递来自渲染进程的函数。
 
 ```javascript
 // 主进程 mapNumbers.js
@@ -80,15 +79,11 @@ var withLocalCb = mapNumbers.withLocalCallback()
 console.log(withRendererCb, withLocalCb) // [true, true, true], [2, 3, 4]
 ```
 
-As you can see, the renderer callback's synchronous return value was not as
-expected, and didn't match the return value of an identical callback that lives
-in the main process.
+如你所见，渲染器回调函数的同步返回值没有按预期产生，与主进程中的一模一样的回调函数的返回值不同。
 
-Second, the callbacks passed to the main process will persist until the
-main process garbage-collects them.
+其次，传递给主进程的函数会持续到主进程对他们进行垃圾回收。
 
-For example, the following code seems innocent at first glance. It installs a
-callback for the `close` event on a remote object:
+例如，下面的代码第一眼看上去毫无问题。给远程对象的`close`事件绑定了一个回调函数：
 
 ```javascript
 remote.getCurrentWindow().on('close', function() {
@@ -96,23 +91,15 @@ remote.getCurrentWindow().on('close', function() {
 });
 ```
 
-But remember the callback is referenced by the main process until you
-explicitly uninstall it. If you do not, each time you reload your window the
-callback will be installed again, leaking one callback for each restart.
+但记住主进程会一直保持对这个回调函数的引用，除非明确的卸载它。如果不卸载，每次重新载入窗口都会再次绑定，这样每次重启就会泄露一个回调函数。
 
-To make things worse, since the context of previously installed callbacks has
-been released, exceptions will be raised in the main process when the `close`
-event is emitted.
+更严重的是，由于前面安装了回调函数的上下文已经被释放，所以当主进程的 `close` 事件触发的时候，会抛出异常。
 
-To avoid this problem, ensure you clean up any references to renderer callbacks
-passed to the main process. This involves cleaning up event handlers, or
-ensuring the main process is explicitly told to deference callbacks that came
-from a renderer process that is exiting.
+为了避免这个问题，要确保对传递给主进程的渲染器的回调函数进行清理。可以清理事件处理器，或者明确告诉主进行取消来自已经退出的渲染器进程中的回调函数。
 
-## Accessing built-in modules in the main process
+## 访问主进程中的内置模块
 
-The built-in modules in the main process are added as getters in the `remote`
-module, so you can use them directly like the `electron` module.
+在主进程中的内置模块已经被添加为`remote`模块中的属性，所以可以直接像使用`electron`模块一样直接使用它们。
 
 ```javascript
 const app = remote.app;
