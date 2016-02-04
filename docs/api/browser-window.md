@@ -785,7 +785,7 @@ cleared
 * `description` String - a description that will be provided to Accessibility
 screen readers
 
-Sets a 16px overlay onto the current taskbar icon, usually used to convey some
+Sets a 16 x 16 pixel overlay onto the current taskbar icon, usually used to convey some
 sort of application status or to passively notify the user.
 
 ### `win.setHasShadow(hasShadow)` _OS X_
