@@ -54,12 +54,16 @@ app.on('will-quit', function() {
     loadedExtensions = Object.keys(extensionInfoMap).map(function(key) {
       return extensionInfoMap[key].srcDirectory;
     });
-    try {
-      fs.mkdirSync(path.dirname(loadedExtensionsPath));
-    } catch (error) {
-      // Ignore error
+    if (loadedExtensions.length > 0) {
+      try {
+        fs.mkdirSync(path.dirname(loadedExtensionsPath));
+      } catch (error) {
+        // Ignore error
+      }
+      return fs.writeFileSync(loadedExtensionsPath, JSON.stringify(loadedExtensions));
+    } else {
+      fs.unlinkSync(loadedExtensionsPath);
     }
-    return fs.writeFileSync(loadedExtensionsPath, JSON.stringify(loadedExtensions));
   } catch (error) {
     // Ignore error
   }
