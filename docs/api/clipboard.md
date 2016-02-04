@@ -61,6 +61,12 @@ Returns the content in the clipboard as a [NativeImage](native-image.md).
 
 Writes `image` to the clipboard.
 
+### `clipboard.writeRtf(text)`
+
+* `text` String
+
+Writes the `text` into the clipboard in RTF.
+
 ### `clipboard.clear([type])`
 
 * `type` String (optional)

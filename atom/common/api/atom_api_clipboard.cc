@@ -60,6 +60,11 @@ void Write(const mate::Dictionary& data,
   if (data.Get("text", &text))
     writer.WriteText(text);
 
+  if (data.Get("rtf", &text)) {
+    std::string rtf = base::UTF16ToUTF8(text);
+    writer.WriteRTF(rtf);
+  }
+
   if (data.Get("html", &html))
     writer.WriteHTML(html, std::string());
 
@@ -86,6 +91,11 @@ base::string16 ReadText(mate::Arguments* args) {
 void WriteText(const base::string16& text, mate::Arguments* args) {
   ui::ScopedClipboardWriter writer(GetClipboardType(args));
   writer.WriteText(text);
+}
+
+void WriteRtf(const std::string& text, mate::Arguments* args) {
+  ui::ScopedClipboardWriter writer(GetClipboardType(args));
+  writer.WriteRTF(text);
 }
 
 base::string16 ReadHtml(mate::Arguments* args) {
@@ -129,6 +139,7 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   dict.SetMethod("write", &Write);
   dict.SetMethod("readText", &ReadText);
   dict.SetMethod("writeText", &WriteText);
+  dict.SetMethod("writeRtf", &WriteRtf);
   dict.SetMethod("readHtml", &ReadHtml);
   dict.SetMethod("writeHtml", &WriteHtml);
   dict.SetMethod("readImage", &ReadImage);
