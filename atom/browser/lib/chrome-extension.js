@@ -60,7 +60,7 @@ app.on('will-quit', function() {
       } catch (error) {
         // Ignore error
       }
-      return fs.writeFileSync(loadedExtensionsPath, JSON.stringify(loadedExtensions));
+      fs.writeFileSync(loadedExtensionsPath, JSON.stringify(loadedExtensions));
     } else {
       fs.unlinkSync(loadedExtensionsPath);
     }
