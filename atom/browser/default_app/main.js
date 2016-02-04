@@ -4,8 +4,8 @@ const dialog   = electron.dialog;
 const shell    = electron.shell;
 const Menu     = electron.Menu;
 
-var fs = require('fs');
-var path = require('path');
+const fs = require('fs');
+const path = require('path');
 
 // Quit when all windows are closed and no other one is listening to this.
 app.on('window-all-closed', function() {
