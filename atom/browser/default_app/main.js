@@ -6,6 +6,7 @@ const Menu     = electron.Menu;
 
 const fs = require('fs');
 const path = require('path');
+const url = require('url');
 
 // Quit when all windows are closed and no other one is listening to this.
 app.on('window-all-closed', function() {
@@ -270,10 +271,19 @@ function loadPackagePath(packagePath) {
   }
 }
 
+function loadApplicationByUrl(appUrl) {
+  require('./default_app').load(appUrl);
+}
+
 // Start the specified app if there is one specified in command line, otherwise
 // start the default app.
 if (option.file && !option.webdriver) {
-  loadPackagePath(option.file);
+  var protocol = url.parse(option.file).protocol;
+  if (protocol === 'http:' || protocol === 'https:') {
+    loadApplicationByUrl(option.file);
+  } else {
+    loadPackagePath(option.file);
+  }
 } else if (option.version) {
   console.log('v' + process.versions.electron);
   process.exit(0);
@@ -289,5 +299,5 @@ if (option.file && !option.webdriver) {
   console.log(helpMessage);
   process.exit(0);
 } else {
-  require('./default_app');
+  loadApplicationByUrl('file://' + __dirname + '/index.html');
 }

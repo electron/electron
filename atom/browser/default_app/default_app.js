@@ -9,13 +9,15 @@ app.on('window-all-closed', function() {
   app.quit();
 });
 
-app.on('ready', function() {
-  mainWindow = new BrowserWindow({
-    width: 800,
-    height: 600,
-    autoHideMenuBar: true,
-    useContentSize: true,
+exports.load = function(appUrl) {
+  app.on('ready', function() {
+    mainWindow = new BrowserWindow({
+      width: 800,
+      height: 600,
+      autoHideMenuBar: true,
+      useContentSize: true,
+    });
+    mainWindow.loadURL(appUrl);
+    mainWindow.focus();
   });
-  mainWindow.loadURL('file://' + __dirname + '/index.html');
-  mainWindow.focus();
-});
+};
