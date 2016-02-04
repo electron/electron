@@ -281,7 +281,7 @@ if (option.file && !option.webdriver) {
   var file = option.file;
   var protocol = url.parse(file).protocol;
   var extension = path.extname(file);
-  if (protocol === 'http:' || protocol === 'https:') {
+  if (protocol === 'http:' || protocol === 'https:' || protocol === 'file:') {
     loadApplicationByUrl(file);
   } else if (extension === '.html' || extension === '.htm') {
     loadApplicationByUrl('file://' + path.resolve(file));
