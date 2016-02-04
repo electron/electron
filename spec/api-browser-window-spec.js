@@ -622,7 +622,7 @@ describe('browser-window module', function() {
 
   describe('dev tool extensions', function () {
     it('serializes the registered extensions on quit', function () {
-      var extensionName = 'foo'
+      var extensionName = 'foo';
       var extensionPath = path.join(__dirname, 'fixtures', 'devtools-extensions', extensionName);
       var serializedPath = path.join(app.getPath('userData'), 'DevTools Extensions');
 
@@ -633,6 +633,6 @@ describe('browser-window module', function() {
       BrowserWindow.removeDevToolsExtension(extensionName);
       app.emit('will-quit');
       assert.equal(fs.existsSync(serializedPath), false);
-    })
-  })
+    });
+  });
 });
