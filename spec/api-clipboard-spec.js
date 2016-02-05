@@ -35,20 +35,30 @@ describe('clipboard module', function() {
       return assert.equal(clipboard.readHtml(), markup);
     });
   });
+  describe('clipboard.readRtf', function() {
+    return it('returns rtf text correctly', function() {
+      var rtf = "{\\rtf1\\ansi{\\fonttbl\\f0\\fswiss Helvetica;}\\f0\\pard\nThis is some {\\b bold} text.\\par\n}";
+      clipboard.writeRtf(rtf);
+      return assert.equal(clipboard.readRtf(), rtf);
+    });
+  });
   return describe('clipboard.write()', function() {
     return it('returns data correctly', function() {
-      var i, markup, p, text;
+      var i, markup, p, text, rtf;
       text = 'test';
+      rtf = '{\\rtf1\\utf8 text}';
       p = path.join(fixtures, 'assets', 'logo.png');
       i = nativeImage.createFromPath(p);
       markup = process.platform === 'darwin' ? '<meta charset=\'utf-8\'><b>Hi</b>' : process.platform === 'linux' ? '<meta http-equiv="content-type" ' + 'content="text/html; charset=utf-8"><b>Hi</b>' : '<b>Hi</b>';
       clipboard.write({
         text: "test",
         html: '<b>Hi</b>',
+        rtf: '{\\rtf1\\utf8 text}',
         image: p
       });
       assert.equal(clipboard.readText(), text);
       assert.equal(clipboard.readHtml(), markup);
+      assert.equal(clipboard.readRtf(), rtf);
       return assert.equal(clipboard.readImage().toDataURL(), i.toDataURL());
     });
   });

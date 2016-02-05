@@ -93,6 +93,13 @@ void WriteText(const base::string16& text, mate::Arguments* args) {
   writer.WriteText(text);
 }
 
+base::string16 ReadRtf(mate::Arguments* args) {
+  std::string data;
+  ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
+  clipboard->ReadRTF(GetClipboardType(args), &data);
+  return base::UTF8ToUTF16(data);
+}
+
 void WriteRtf(const std::string& text, mate::Arguments* args) {
   ui::ScopedClipboardWriter writer(GetClipboardType(args));
   writer.WriteRTF(text);
@@ -139,6 +146,7 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   dict.SetMethod("write", &Write);
   dict.SetMethod("readText", &ReadText);
   dict.SetMethod("writeText", &WriteText);
+  dict.SetMethod("readRtf", &ReadRtf);
   dict.SetMethod("writeRtf", &WriteRtf);
   dict.SetMethod("readHtml", &ReadHtml);
   dict.SetMethod("writeHtml", &WriteHtml);
