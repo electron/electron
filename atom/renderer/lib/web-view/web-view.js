@@ -409,7 +409,7 @@ var registerWebViewElement = function() {
       if (internal.webContents) {
         return internal.webContents[m].apply(internal.webContents, args);
       } else {
-        throw new Error('Cannot call ' + m + ' before the dom-ready event is emitted')
+        throw new Error('Cannot call ' + m + ' before the dom-ready event is emitted');
       }
     };
   };
