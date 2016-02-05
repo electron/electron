@@ -570,7 +570,7 @@ describe('<webview> tag', function() {
         readyError = error;
       }
 
-      assert.equal(readyError.message, 'stop can only be called after the dom-ready event is emitted');
+      assert.equal(readyError.message, 'Cannot call stop before the dom-ready event is emitted');
     });
   });
 

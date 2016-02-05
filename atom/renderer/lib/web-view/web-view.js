@@ -404,10 +404,13 @@ var registerWebViewElement = function() {
   // Forward proto.foo* method calls to WebViewImpl.foo*.
   createBlockHandler = function(m) {
     return function() {
-      var args, internal, ref1;
-      args = 1 <= arguments.length ? slice.call(arguments, 0) : [];
-      internal = v8Util.getHiddenValue(this, 'internal');
-      return (ref1 = internal.webContents)[m].apply(ref1, args);
+      var args = 1 <= arguments.length ? slice.call(arguments, 0) : [];
+      var internal = v8Util.getHiddenValue(this, 'internal');
+      if (internal.webContents) {
+        return internal.webContents[m].apply(internal.webContents, args);
+      } else {
+        throw new Error('Cannot call ' + m + ' before the dom-ready event is emitted')
+      }
     };
   };
   for (i = 0, len = methods.length; i < len; i++) {
