@@ -561,6 +561,17 @@ describe('<webview> tag', function() {
         document.body.appendChild(webview);
       });
     });
+
+    it('throws a custom error when an API method is called before the event is emitted', function() {
+      var readyError = null;
+      try {
+        webview.stop();
+      } catch (error) {
+        readyError = error;
+      }
+
+      assert.equal(readyError.message, 'stop can only be called after the dom-ready event is emitted');
+    });
   });
 
   describe('executeJavaScript', function() {
