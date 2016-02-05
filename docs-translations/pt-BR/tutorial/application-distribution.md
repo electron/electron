@@ -1,7 +1,7 @@
 # Distribuição de aplicações
 
-Para distribuir sua aplicação com o Electron, você deve nomear o diretório que contém sua aplicação como 
-`app` e dentro deste diretório colocar os recursos que você está utilizando (no OSX 
+Para distribuir sua aplicação com o Electron, você deve nomear o diretório que contém sua aplicação como
+`app` e dentro deste diretório colocar os recursos que você está utilizando (no OSX
 `Electron.app/Contents/Resources/`,
 no Linux e no Windows é em `resources/`):
 
@@ -24,7 +24,7 @@ electron/resources/app
 ```
 
 Logo após execute `Electron.app` (ou `electron` no Linux e `electron.exe` no Windows),
-e o Electron iniciaria a aplicação. O diretório `electron` será utilizado para criar a distribuição para 
+e o Electron iniciaria a aplicação. O diretório `electron` será utilizado para criar a distribuição para
 usuários finais.
 
 ## Empacotando sua aplicação em um arquivo.
@@ -61,8 +61,7 @@ antes de distribuí-lo aos usuários.
 ### Windows
 
 Você pode renomear `electron.exe` para o nome que desejar e editar o seu ícone e outras
-informações com ferramentas como [rcedit](https://github.com/atom/rcedit) ou
-[ResEdit](http://www.resedit.net).
+informações com ferramentas como [rcedit](https://github.com/atom/rcedit).
 
 ### OS X
 
