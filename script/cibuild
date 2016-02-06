@@ -64,8 +64,6 @@ def main():
 
   run_script('cpplint.py')
   run_script('eslint.py')
-  if PLATFORM != 'win32':
-    run_script('pylint.py')
   if is_release:
     run_script('build.py', ['-c', 'R'])
     run_script('create-dist.py')
