@@ -11,9 +11,12 @@
 #include "atom/common/api/atom_bindings.h"
 #include "atom/common/api/event_emitter_caller.h"
 #include "atom/common/asar/asar_util.h"
+#include "atom/common/native_mate_converters/string16_converter.h"
+#include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/node_bindings.h"
 #include "atom/common/node_includes.h"
 #include "atom/common/options_switches.h"
+#include "atom/renderer/api/atom_api_web_frame.h"
 #include "atom/renderer/atom_render_view_observer.h"
 #include "atom/renderer/guest_view_container.h"
 #include "atom/renderer/node_array_buffer_bridge.h"
@@ -29,6 +32,7 @@
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_frame_observer.h"
 #include "content/public/renderer/render_thread.h"
+#include "content/public/renderer/render_view.h"
 #include "native_mate/dictionary.h"
 #include "third_party/WebKit/public/web/WebCustomElement.h"
 #include "third_party/WebKit/public/web/WebDocument.h"
@@ -44,6 +48,73 @@
 #endif
 
 namespace {
+  // TODO(bridiver) This is copied from atom_api_renderer_ipc.cc
+  // and atom_api_v8_util.cc and should be cleaned up
+  // using
+  // v8::Local<v8::Value> unused = v8::Undefined(isolate);
+  // v8::Local<v8::Object> v8_util = v8::Object::New(isolate);
+  // auto mod = node::get_builtin_module("atom_common_v8_util");
+  // mod->nm_context_register_func(v8_util, unused, context, nullptr);
+  // binding.Set("v8_util", v8_util);
+  // results in an unresolved external symbol error for get_builtin_module
+  // on windows
+  content::RenderView* GetCurrentRenderView() {
+    blink::WebLocalFrame* frame =
+      blink::WebLocalFrame::frameForCurrentContext();
+    if (!frame)
+      return NULL;
+
+    blink::WebView* view = frame->view();
+    if (!view)
+      return NULL;  // can happen during closing.
+
+    return content::RenderView::FromWebView(view);
+  }
+
+  void Send(mate::Arguments* args,
+            const base::string16& channel,
+            const base::ListValue& arguments) {
+    content::RenderView* render_view = GetCurrentRenderView();
+    if (render_view == NULL)
+      return;
+
+    bool success = render_view->Send(new AtomViewHostMsg_Message(
+        render_view->GetRoutingID(), channel, arguments));
+
+    if (!success)
+      args->ThrowError("Unable to send AtomViewHostMsg_Message");
+  }
+
+  base::string16 SendSync(mate::Arguments* args,
+                          const base::string16& channel,
+                          const base::ListValue& arguments) {
+    base::string16 json;
+
+    content::RenderView* render_view = GetCurrentRenderView();
+    if (render_view == NULL)
+      return json;
+
+    IPC::SyncMessage* message = new AtomViewHostMsg_Message_Sync(
+        render_view->GetRoutingID(), channel, arguments, &json);
+    bool success = render_view->Send(message);
+
+    if (!success)
+      args->ThrowError("Unable to send AtomViewHostMsg_Message_Sync");
+
+    return json;
+  }
+
+  v8::Local<v8::Value> GetHiddenValue(v8::Local<v8::Object> object,
+                                    v8::Local<v8::String> key) {
+    return object->GetHiddenValue(key);
+  }
+
+  void SetHiddenValue(v8::Local<v8::Object> object,
+                      v8::Local<v8::String> key,
+                      v8::Local<v8::Value> value) {
+    object->SetHiddenValue(key, value);
+  }
+
   // TODO(bridiver) This is mostly copied from node_bindings.cc
   // and should be cleaned up
   base::FilePath GetResourcesPath() {
@@ -285,24 +356,21 @@ void AtomRendererClient::DidCreateScriptContext(
     // Create a process object
     mate::Dictionary process(isolate, v8::Object::New(isolate));
 
-    // register native functions
+    // bind native functions
     mate::Dictionary binding(isolate, v8::Object::New(isolate));
 
-    // TODO(bridiver) create a method for these
-    v8::Local<v8::Value> unused = v8::Undefined(isolate);
-    v8::Local<v8::Object> v8_util = v8::Object::New(isolate);
-    auto mod = node::get_builtin_module("atom_common_v8_util");
-    mod->nm_context_register_func(v8_util, unused, context, nullptr);
-    binding.Set("v8_util", v8_util);
+    mate::Dictionary v8_util(isolate, v8::Object::New(isolate));
+    v8_util.SetMethod("setHiddenValue", &SetHiddenValue);
+    v8_util.SetMethod("getHiddenValue", &GetHiddenValue);
+    binding.Set("v8_util", v8_util.GetHandle());
 
-    v8::Local<v8::Object> ipc = v8::Object::New(isolate);
-    mod = node::get_builtin_module("atom_renderer_ipc");
-    mod->nm_context_register_func(ipc, unused, context, nullptr);
-    binding.Set("ipc", ipc);
+    mate::Dictionary ipc(isolate, v8::Object::New(isolate));
+    ipc.SetMethod("send", &Send);
+    ipc.SetMethod("sendSync", &SendSync);
+    binding.Set("ipc", ipc.GetHandle());
 
-    v8::Local<v8::Object> web_frame = v8::Object::New(isolate);
-    mod = node::get_builtin_module("atom_renderer_web_frame");
-    mod->nm_context_register_func(web_frame, unused, context, nullptr);
+    mate::Dictionary web_frame(isolate, v8::Object::New(isolate));
+    web_frame.Set("webFrame", api::WebFrame::Create(isolate));
     binding.Set("web_frame", web_frame);
 
     process.Set("binding", binding);

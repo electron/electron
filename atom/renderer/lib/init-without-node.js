@@ -203,8 +203,7 @@ if (typeof KeyEvent === 'undefined') {
 
   // web frame
   var webFrame = binding.web_frame.webFrame;
-  // webFrame is an EventEventEmitter.
-  webFrame.__proto__ = EventEmitter.prototype;
+
   ipcRenderer.on('ELECTRON_INTERNAL_RENDERER_WEB_FRAME_METHOD', function(event, method, args) {
     webFrame[method].apply(webFrame, args);
   });
