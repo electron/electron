@@ -382,6 +382,26 @@ void WebContents::HandleKeyboardEvent(
     // Escape exits tabbed fullscreen mode.
     ExitFullscreenModeForTab(source);
   } else if (type_ == BROWSER_WINDOW) {
+    // On OSX, if OS event is not existing (because it was forwarded with
+    // `sendInputEvent`) simulate basic operations: undo, redo, cut, copy,
+    // paste, select all.
+    #if defined(OS_MACOSX)
+      if (!event.os_event && (event.modifiers & blink::WebInputEvent::MetaKey)
+        && (event.type == blink::WebInputEvent::RawKeyDown)) {
+        switch (event.windowsKeyCode) {
+          case ui::VKEY_Z:
+            if (event.modifiers & blink::WebInputEvent::ShiftKey) Redo();
+            else
+              Undo();
+          break;
+          case ui::VKEY_X: Cut(); break;
+          case ui::VKEY_C: Copy(); break;
+          case ui::VKEY_V: Paste(); break;
+          case ui::VKEY_A: SelectAll(); break;
+        }
+      }
+    #endif
+
     owner_window()->HandleKeyboardEvent(source, event);
   } else if (type_ == WEB_VIEW && guest_delegate_) {
     // Send the unhandled keyboard events back to the embedder.
