@@ -68,7 +68,6 @@ void WebFrame::SetName(const std::string& name) {
 
 double WebFrame::SetZoomLevel(double level) {
   double ret = web_frame_->view()->setZoomLevel(level);
-  mate::EmitEvent(isolate(), GetWrapper(isolate()), "zoom-level-changed", ret);
   return ret;
 }
 
