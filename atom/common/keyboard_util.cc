@@ -80,6 +80,16 @@ ui::KeyboardCode KeyboardCodeFromKeyIdentifier(const std::string& chr) {
   if (chr == "tab")          return ui::VKEY_TAB;
   if (chr == "escape")       return ui::VKEY_ESCAPE;
   if (chr == "control")      return ui::VKEY_CONTROL;
+#if defined(OS_MACOSX)
+  if (chr == "command"
+    || chr == "cmd"
+    || chr == "meta")        return ui::VKEY_COMMAND;
+  if (chr == "option")       return ui::VKEY_MENU;
+#endif
+#if defined(OS_WIN)
+  if (chr == "meta")         return ui::VKEY_LWIN;
+  if (chr == "altgr")        return ui::VKEY_ALTGR;
+#endif
   if (chr == "alt")          return ui::VKEY_MENU;
   if (chr == "shift")        return ui::VKEY_SHIFT;
   if (chr == "end")          return ui::VKEY_END;
