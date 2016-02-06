@@ -18,6 +18,40 @@ New features of Node.js are usually brought by V8 upgrades, since Electron is
 using the V8 shipped by Chrome browser, the shiny new JavaScript feature of a
 new Node.js version is usually already in Electron.
 
+## What are the different techniques to share objects between web pages?
+
+To share objects between web pages (that is on the renderer side) the simplest
+and more natural technique is to use a web standard API already available in all
+browsers. A good candidate is the
+[Storage API](https://developer.mozilla.org/en-US/docs/Web/API/Storage),
+through either the
+[`window.localStorage`](https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage) property or the
+[`window.sessionStorage`](https://developer.mozilla.org/en-US/docs/Web/API/Window/sessionStorage) property.
+Note that the Storage API allows only to store strings, so objects must be
+serialized as JSON.
+Another candidate is
+[IndexedDB](https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API).
+
+Another technique, but this time specific to Electron, is to store objects in
+the main process as a global variable and then to access them from the renderers
+through the `remote` module:
+
+```javascript
+// In main.js of browser process
+global.sharedObject = {};
+```
+
+```javascript
+// js in page-1.html
+require('remote').getGlobal('sharedObject').someProperty = 'some value';
+```
+
+```javascript
+// js in page-2.html
+console.log(require('remote').getGlobal('sharedObject').someProperty);
+```
+
+
 ## My app's window/tray disappeared after a few minutes.
 
 This happens when the variable which is used to store the window/tray gets
