@@ -329,9 +329,7 @@ void AtomRendererClient::DidCreateScriptContext(
       std::stringstream ss(cmd_line->
                               GetSwitchValueASCII(switches::kContentScripts));
       std::string name;
-      while (ss >> name) {
-        if (ss.peek() == ',' || ss.peek() == ' ')
-          ss.ignore();
+      while (std::getline(ss, name, ',')) {
         ExecuteScriptFile(context, base::FilePath::FromUTF8Unsafe(name));
       }
     }
