@@ -34,6 +34,7 @@
 #include "content/public/renderer/render_thread.h"
 #include "content/public/renderer/render_view.h"
 #include "native_mate/dictionary.h"
+#include "net/base/filename_util.h"
 #include "third_party/WebKit/public/web/WebCustomElement.h"
 #include "third_party/WebKit/public/web/WebDocument.h"
 #include "third_party/WebKit/public/web/WebLocalFrame.h"
@@ -398,7 +399,9 @@ void AtomRendererClient::DidCreateScriptContext(
                               GetSwitchValueASCII(switches::kContentScripts));
       std::string name;
       while (std::getline(ss, name, ',')) {
-        ExecuteScriptFile(context, base::FilePath::FromUTF8Unsafe(name));
+        base::FilePath file_path;
+        net::FileURLToFilePath(GURL(name), &file_path);
+        ExecuteScriptFile(context, file_path);
       }
     }
     // remove process object from the global scope
