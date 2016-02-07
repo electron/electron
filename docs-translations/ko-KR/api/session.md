@@ -294,23 +294,23 @@ myWindow.webContents.session.setCertificateVerifyProc(function(hostname, cert, c
 * `handler` Function
   * `webContents` Object - [WebContents](web-contents.md) 권한을 요청.
   * `permission`  String - 'media', 'geolocation', 'notifications',
-    'midiSysex', 'pointerLock', 'fullscreen'의 나열.
+    'midiSysex'의 나열.
   * `callback`  Function - 권한 허용 및 거부.
 
 `session`의 권한 요청에 응답을 하는데 사용하는 핸들러를 설정합니다.
-`callback(true)`를 호출하면 권한 제공을 허용하고 `callback(false)`를
+`callback('granted')`를 호출하면 권한 제공을 허용하고 `callback('denied')`를
 호출하면 권한 제공을 거부합니다.
 
 ```javascript
 session.fromPartition(partition).setPermissionRequestHandler(function(webContents, permission, callback) {
   if (webContents.getURL() === host) {
     if (permission == "notifications") {
-      callback(false); // 거부됨.
+      callback(); // 거부됨.
       return;
     }
   }
 
-  callback(true);
+  callback('granted');
 });
 ```
 
