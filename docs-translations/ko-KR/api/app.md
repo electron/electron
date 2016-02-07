@@ -92,7 +92,7 @@ Returns:
 
 이 이벤트를 처리할 땐 반드시 `event.preventDefault()`를 호출해야 합니다.
 
-Windows에선 `process.argv`를 통해 파일 경로를 얻을 수 있습니다.
+Windows에선 `process.argv` (메인 프로세스에서)를 통해 파일 경로를 얻을 수 있습니다.
 
 ### Event: 'open-url' _OS X_
 
