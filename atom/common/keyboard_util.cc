@@ -82,8 +82,8 @@ ui::KeyboardCode KeyboardCodeFromKeyIdentifier(const std::string& chr) {
   if (chr == "control")      return ui::VKEY_CONTROL;
 #if defined(OS_MACOSX)
   if (chr == "command"
-   || chr == "cmd"
-   || chr == "meta")         return ui::VKEY_COMMAND;
+    || chr == "cmd"
+    || chr == "meta")        return ui::VKEY_COMMAND;
   if (chr == "option")       return ui::VKEY_MENU;
 #endif
 #if defined(OS_WIN)
