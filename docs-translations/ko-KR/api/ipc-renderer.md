@@ -17,7 +17,7 @@
 
 이벤트가 일어나면 `event` 객체와 임의의 인자와 함께 `callback` 함수가 호출됩니다.
 
-### `ipcMain.removeListener(channel, callback)`
+### `ipcRenderer.removeListener(channel, callback)`
 
 * `channel` String - 이벤트의 이름
 * `callback` Function - `ipcMain.on(channel, callback)`에서 사용한 함수의 레퍼런스
@@ -26,15 +26,15 @@
 메시지 전송을 멈출수 없을 때, 이 함수를 통해 지정한 채널에 대한 콜백을 삭제할 수
 있습니다.
 
-### `ipcMain.removeAllListeners(channel)`
+### `ipcRenderer.removeAllListeners(channel)`
 
 * `channel` String - 이벤트의 이름
 
 이 ipc 채널에 등록된 *모든* 핸들러들을 삭제합니다.
 
-### `ipcMain.once(channel, callback)`
+### `ipcRenderer.once(channel, callback)`
 
-`ipcMain.on()` 대신 이 함수를 사용할 경우 핸들러가 단 한 번만 호출됩니다.
+`ipcRenderer.on()` 대신 이 함수를 사용할 경우 핸들러가 단 한 번만 호출됩니다.
 `callback`이 한 번 호출된 이후 활성화되지 않습니다.
 
 ## 메시지 보내기
