@@ -20,21 +20,25 @@ namespace api {
 class DownloadItem : public mate::TrackableObject<DownloadItem>,
                      public content::DownloadItem::Observer {
  public:
-  class SavePathData : public base::SupportsUserData::Data {
-   public:
-    explicit SavePathData(const base::FilePath& path);
-    const base::FilePath& path();
-   private:
-    base::FilePath path_;
-  };
-
   static mate::Handle<DownloadItem> Create(v8::Isolate* isolate,
                                            content::DownloadItem* item);
-  static void* UserDataKey();
 
   // mate::TrackableObject:
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::ObjectTemplate> prototype);
+
+  void Pause();
+  void Resume();
+  void Cancel();
+  int64 GetReceivedBytes() const;
+  int64 GetTotalBytes() const;
+  std::string GetMimeType() const;
+  bool HasUserGesture() const;
+  std::string GetFilename() const;
+  std::string GetContentDisposition() const;
+  const GURL& GetURL() const;
+  void SetSavePath(const base::FilePath& path);
+  base::FilePath GetSavePath() const;
 
  protected:
   explicit DownloadItem(content::DownloadItem* download_item);
@@ -44,19 +48,8 @@ class DownloadItem : public mate::TrackableObject<DownloadItem>,
   void OnDownloadUpdated(content::DownloadItem* download) override;
   void OnDownloadDestroyed(content::DownloadItem* download) override;
 
-  void Pause();
-  void Resume();
-  void Cancel();
-  int64 GetReceivedBytes();
-  int64 GetTotalBytes();
-  std::string GetMimeType();
-  bool HasUserGesture();
-  std::string GetFilename();
-  std::string GetContentDisposition();
-  const GURL& GetURL();
-  void SetSavePath(const base::FilePath& path);
-
  private:
+  base::FilePath save_path_;
   content::DownloadItem* download_item_;
 
   DISALLOW_COPY_AND_ASSIGN(DownloadItem);

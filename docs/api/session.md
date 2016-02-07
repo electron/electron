@@ -60,7 +60,8 @@ The following events are available on instances of `Session`:
 
 Emitted when Electron is about to download `item` in `webContents`.
 
-Calling `event.preventDefault()` will cancel the download.
+Calling `event.preventDefault()` will cancel the download and `item` will not be
+available from next tick of the process.
 
 ```javascript
 session.defaultSession.on('will-download', function(event, item, webContents) {
@@ -312,6 +313,12 @@ session.fromPartition(partition).setPermissionRequestHandler(function(webContent
   callback(true);
 });
 ```
+
+#### `ses.clearHostResolverCache([callback])`
+
+* `callback` Function (optional) - Called when operation is done.
+
+Clears the host resolver cache.
 
 #### `ses.webRequest`
 

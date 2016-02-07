@@ -51,8 +51,8 @@ Electronにバンドルした後、ユーザーに配布する前に、 Electron
 
 ### Windows
 
-`electron.exe`を任意の名前に変更でき、[rcedit](https://github.com/atom/rcedit) または
-[ResEdit](http://www.resedit.net)のようなツールでアイコンやその他の情報を編集できます。
+`electron.exe`を任意の名前に変更でき、[rcedit](https://github.com/atom/rcedit)
+のようなツールでアイコンやその他の情報を編集できます。
 
 ### OS X
 

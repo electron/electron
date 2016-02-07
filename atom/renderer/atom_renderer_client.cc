@@ -9,6 +9,7 @@
 
 #include "atom/common/api/api_messages.h"
 #include "atom/common/api/atom_bindings.h"
+#include "atom/common/api/event_emitter_caller.h"
 #include "atom/common/node_bindings.h"
 #include "atom/common/node_includes.h"
 #include "atom/common/options_switches.h"
@@ -47,17 +48,27 @@ class AtomRenderFrameObserver : public content::RenderFrameObserver {
   AtomRenderFrameObserver(content::RenderFrame* frame,
                           AtomRendererClient* renderer_client)
       : content::RenderFrameObserver(frame),
+        world_id_(-1),
         renderer_client_(renderer_client) {}
 
   // content::RenderFrameObserver:
   void DidCreateScriptContext(v8::Handle<v8::Context> context,
                               int extension_group,
-                              int world_id) {
-    renderer_client_->DidCreateScriptContext(
-        render_frame()->GetWebFrame(), context);
+                              int world_id) override {
+    if (world_id_ != -1 && world_id_ != world_id)
+      return;
+    world_id_ = world_id;
+    renderer_client_->DidCreateScriptContext(context);
+  }
+  void WillReleaseScriptContext(v8::Local<v8::Context> context,
+                                int world_id) override {
+    if (world_id_ != world_id)
+      return;
+    renderer_client_->WillReleaseScriptContext(context);
   }
 
  private:
+  int world_id_;
   AtomRendererClient* renderer_client_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomRenderFrameObserver);
@@ -108,10 +119,15 @@ void AtomRendererClient::RenderThreadStarted() {
 void AtomRendererClient::RenderFrameCreated(
     content::RenderFrame* render_frame) {
   new PepperHelper(render_frame);
-  new AtomRenderFrameObserver(render_frame, this);
 
   // Allow file scheme to handle service worker by default.
   blink::WebSecurityPolicy::registerURLSchemeAsAllowingServiceWorkers("file");
+
+  // Only insert node integration for the main frame.
+  if (!render_frame->IsMainFrame())
+    return;
+
+  new AtomRenderFrameObserver(render_frame, this);
 }
 
 void AtomRendererClient::RenderViewCreated(content::RenderView* render_view) {
@@ -139,12 +155,7 @@ bool AtomRendererClient::OverrideCreatePlugin(
 }
 
 void AtomRendererClient::DidCreateScriptContext(
-    blink::WebFrame* frame,
     v8::Handle<v8::Context> context) {
-  // Only insert node integration for the main frame.
-  if (frame->parent())
-    return;
-
   // Give the node loop a run to make sure everything is ready.
   node_bindings_->RunMessageLoop();
 
@@ -160,6 +171,12 @@ void AtomRendererClient::DidCreateScriptContext(
 
   // Load everything.
   node_bindings_->LoadEnvironment(env);
+}
+
+void AtomRendererClient::WillReleaseScriptContext(
+    v8::Handle<v8::Context> context) {
+  node::Environment* env = node::Environment::GetCurrent(context);
+  mate::EmitEvent(env->isolate(), env->process_object(), "exit");
 }
 
 bool AtomRendererClient::ShouldFork(blink::WebLocalFrame* frame,

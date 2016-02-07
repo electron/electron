@@ -1,4 +1,4 @@
-'user strict';
+'use strict';
 
 const events = require('events');
 const path = require('path');
@@ -106,11 +106,6 @@ if (nodeIntegration === 'true' || nodeIntegration === 'all' || nodeIntegration =
       return false;
     }
   };
-
-  // Emit the 'exit' event when page is unloading.
-  window.addEventListener('unload', function() {
-    return process.emit('exit');
-  });
 } else {
   // Delete Node's symbols after the Environment has been loaded.
   process.once('loaded', function() {

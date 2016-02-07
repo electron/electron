@@ -50,8 +50,8 @@ electron/resources/
 
 ### Windows
 
-你可以重新命名 `electron.exe` 為任何你喜歡的名稱，然後透過像是 [rcedit](https://github.com/atom/rcedit) 或
-[ResEdit](http://www.resedit.net) 的工具來編輯它的圖示(icon)和其他資訊。
+你可以重新命名 `electron.exe` 為任何你喜歡的名稱，然後透過像是 [rcedit](https://github.com/atom/rcedit)
+的工具來編輯它的圖示(icon)和其他資訊。
 
 ### OS X
 
@@ -60,7 +60,7 @@ electron/resources/
 * `Electron.app/Contents/Info.plist`
 * `Electron.app/Contents/Frameworks/Electron Helper.app/Contents/Info.plist`
 
-你也可以重新命名 helper 應用程式來避免在活動監視器中秀出 `Electron Helper` 
+你也可以重新命名 helper 應用程式來避免在活動監視器中秀出 `Electron Helper`
 ，但請確認你有重新命名 helper 應用程式的可執行檔名稱。
 
 重新命名後的應用程式檔案結構可能長得相這樣：

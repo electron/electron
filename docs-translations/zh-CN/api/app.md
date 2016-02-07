@@ -58,10 +58,14 @@ app.on('window-all-closed', function() {
 和 `window-all-closed` 事件的区别。
 
 ### 事件： 'quit'
+返回：
+
+* `event` 事件
+* `exitCode` 整数
 
 当应用程序正在退出时触发。
 
-### 事件： 'open-file'
+### 事件： 'open-file' _OS X_
 
 返回：
 
@@ -73,8 +77,8 @@ app.on('window-all-closed', function() {
 请确认在应用启动的时候（甚至在 `ready` 事件被触发前）就对 `open-file` 事件进行监听，以处理这种情况。
 
 如果你想处理这个事件，你应该调用 `event.preventDefault()` 。
-
-### 事件： 'open-url'
+在 Windows系统中, 你需要通过解析 process.argv 来获取文件路径。
+### 事件： 'open-url' _OS X_
 
 返回：
 
@@ -121,32 +125,89 @@ app.on('window-all-closed', function() {
 
 当一个 [浏览器窗口](browser-window.md) 被创建的时候触发。
 
-### 事件： 'select-certificate'
-
-当一个客户端认证被请求的时候被触发。
+### 事件： 'certificate-error'
 
 返回：
 
 * `event` 事件
-* `webContents` [web组件](browser-window.md#class-webcontents)
+* `webContents` [web组件](web-contents.md)
 * `url` 字符串
 * `certificateList` 对象
   * `data` PEM 编码数据
   * `issuerName` 发行者的公有名称
 * `callback` 函数
 
+Emitted when failed to verify the `certificate` for `url`, to trust the
+certificate you should prevent the default behavior with
+`event.preventDefault()` and call `callback(true)`.
+
+```javascript
+session.on('certificate-error', function(event, webContents, url, error, certificate, callback) {
+  if (url == "https://github.com") {
+    // Verification logic.
+    event.preventDefault();
+    callback(true);
+  } else {
+    callback(false);
+  }
+});
+```
+
+### 事件： 'select-client-certificate'
+
+
+返回：
+
+* `event` 事件
+* `webContents` [web组件](web-contents.md)
+* `url` 字符串
+* `certificateList` 对象
+  * `data` PEM 编码数据
+  * `issuerName` 发行者的公有名称
+* `callback` 函数
+
+当一个客户端认证被请求的时候被触发。
+
+The `url` corresponds to the navigation entry requesting the client certificate
+and `callback` needs to be called with an entry filtered from the list. 
+Using `event.preventDefault()` prevents the application from using the first
+certificate from the store.
 ```javascript
 app.on('select-certificate', function(event, host, url, list, callback) {
   event.preventDefault();
   callback(list[0]);
 })
 ```
+### Event: 'login'
 
-The `url` corresponds to the navigation entry requesting the client certificate
-and `callback` needs to be called with an entry filtered from the list. 
-Using `event.preventDefault()` prevents the application from using the first
-certificate from the store.
+Returns:
 
+* `event` Event
+* `webContents` [Web组件](web-contents.md)
+* `request` Object
+  * `method` String
+  * `url` URL
+  * `referrer` URL
+* `authInfo` Object
+  * `isProxy` Boolean
+  * `scheme` String
+  * `host` String
+  * `port` Integer
+  * `realm` String
+* `callback` Function
+
+当 `webContents` 要做验证时被触发。
+
+The default behavior is to cancel all authentications, to override this you
+should prevent the default behavior with `event.preventDefault()` and call
+`callback(username, password)` with the credentials.
+
+```javascript
+app.on('login', function(event, webContents, request, authInfo, callback) {
+  event.preventDefault();
+  callback('username', 'secret');
+})
+```
 ### 事件： 'gpu-process-crashed'
 
 当GPU进程崩溃时触发。
@@ -163,6 +224,23 @@ certificate from the store.
 `will-quit` 事件将会被触发，默认下应用将会被关闭。
 
 这个方法保证了所有的 `beforeunload` 和 `unload` 事件处理器被正确执行。会存在一个窗口被 `beforeunload` 事件处理器返回 `false` 取消退出的可能性。
+
+### `app.hide()` _OS X_
+
+隐藏所有的应用窗口，不是最小化.
+
+### `app.show()` _OS X_
+
+隐藏后重新显示所有的窗口，不会自动选中他们。
+
+### `app.exit(exitCode)`
+
+* `exitCode` 整数
+
+带着`exitCode`退出应用.
+
+所有的窗口会被立刻关闭，不会询问用户。`before-quit` 和 `will-quit` 这2个事件不会被触发
+
 
 ### `app.getAppPath()`
 
@@ -182,15 +260,15 @@ certificate from the store.
   * `$XDG_CONFIG_HOME` or `~/.config` Linux 中
   * `~/Library/Application Support` OS X 中
 * `userData` 储存你应用程序设置文件的文件夹，默认是 `appData` 文件夹附加应用的名称。
-* `cache` 所有用户应用程序缓存的文件夹，默认对应：
-  * `%APPDATA%` Windows 中 (没有一个通用的缓存位置)
-  * `$XDG_CACHE_HOME` 或 `~/.cache` Linux 中
-  * `~/Library/Caches` OS X 中
-* `userCache` 用于存放应用程序缓存的文件夹，默认是 `cache` 文件夹附加应用的名称。
 * `temp` 临时文件夹。
-* `userDesktop` 当前用户的桌面文件夹。
-* `exe` 当前的可执行文件。
-* `module` `libchromiumcontent` 库。
+* `exe` 当前的可执行文件
+* `module`  `libchromiumcontent` 库.
+* `desktop` 当前用户的桌面文件夹。
+* `documents` "我的文件夹"的路径.
+* `downloads` 用户下载目录的路径.
+* `music` 用户音乐目录的路径.
+* `pictures` 用户图片目录的路径.
+* `videos` 用户视频目录的路径.
 
 ### `app.setPath(name, path)`
 
@@ -201,7 +279,7 @@ certificate from the store.
 如果这个路径指向的文件夹不存在，这个文件夹将会被这个方法创建。
 如果错误则抛出 `Error` 。
 
-你只可以指向 `app.getPath` 中定义过 `name` 的路径。You can only override paths of a `name` defined in `app.getPath`.
+你只可以指向 `app.getPath` 中定义过 `name` 的路径。
 
 默认情况下，网页的 cookie 和缓存都会储存在 `userData` 文件夹。
 如果你想要改变这个位置，你需要在 `app` 模块中的 `ready` 事件被触发之前重写 `userData` 的路径。
@@ -220,16 +298,11 @@ certificate from the store.
 
 ### `app.getLocale()`
 
-返回当前应用程序的位置。
+返回当前应用程序的语言种类。
 
-### `app.resolveProxy(url, callback)`
 
-* `url` URL
-* `callback` 函数
 
-为 `url` 解析代理信息。 `callback`  在请求被执行之后将会被 `callback(proxy)` 调用。
-
-### `app.addRecentDocument(path)`
+### `app.addRecentDocument(path)`  _OS X_ _Windows_
 
 * `path` 字符串
 
@@ -237,7 +310,7 @@ certificate from the store.
 
 这个列表由操作系统进行管理。在 Windows 中您可以通过任务条进行访问，在 OS X 中你可以通过dock 菜单进行访问。
 
-### `app.clearRecentDocuments()`
+### `app.clearRecentDocuments()` _OS X_ _Windows_
 
 清除最近访问的文档列表。
 
@@ -257,6 +330,103 @@ certificate from the store.
 * `iconPath` 字符串 - JumpList 中显示的 icon 的绝对路径，可以是一个任意包含一个icon的资源文件。你通常可以通过指明 `process.execPath` 来显示程序中的icon。
 * `iconIndex` 整数 - icon文件中的icon目录。如果一个icon文件包括了两个或多个icon，就需要设置这个值以确定icon。如果一个文件仅包含一个icon，那么这个值为0。
 
+### `app.allowNTLMCredentialsForAllDomains(allow)`
+
+* `allow` Boolean
+
+Dynamically sets whether to always send credentials for HTTP NTLM or Negotiate
+authentication - normally, Electron will only send NTLM/Kerberos credentials for
+URLs that fall under "Local Intranet" sites (i.e. are in the same domain as you).
+However, this detection often fails when corporate networks are badly configured,
+so this lets you co-opt this behavior and enable it for all URLs.
+### `app.makeSingleInstance(callback)`
+
+* `callback` Function
+
+This method makes your application a Single Instance Application - instead of
+allowing multiple instances of your app to run, this will ensure that only a
+single instance of your app is running, and other instances signal this
+instance and exit.
+
+`callback` will be called with `callback(argv, workingDirectory)` when a second
+instance has been executed. `argv` is an Array of the second instance's command
+line arguments, and `workingDirectory` is its current working directory. Usually
+applications respond to this by making their primary window focused and
+non-minimized.
+
+The `callback` is guaranteed to be executed after the `ready` event of `app`
+gets emitted.
+
+This method returns `false` if your process is the primary instance of the
+application and your app should continue loading. And returns `true` if your
+process has sent its parameters to another instance, and you should immediately
+quit.
+
+On OS X the system enforces single instance automatically when users try to open
+a second instance of your app in Finder, and the `open-file` and `open-url`
+events will be emitted for that. However when users start your app in command
+line the system's single instance machanism will be bypassed and you have to
+use this method to ensure single instance.
+
+An example of activating the window of primary instance when a second instance
+starts:
+
+```js
+var myWindow = null;
+
+var shouldQuit = app.makeSingleInstance(function(commandLine, workingDirectory) {
+  // Someone tried to run a second instance, we should focus our window.
+  if (myWindow) {
+    if (myWindow.isMinimized()) myWindow.restore();
+    myWindow.focus();
+  }
+  return true;
+});
+
+if (shouldQuit) {
+  app.quit();
+  return;
+}
+
+// Create myWindow, load the rest of the app, etc...
+app.on('ready', function() {
+});
+```
+### `app.setAppUserModelId(id)` _Windows_
+
+* `id` String
+
+改变 [Application User Model ID][app-user-model-id] 的 `id`.
+
+### `app.isAeroGlassEnabled()` _Windows_
+
+This method returns `true` if [DWM composition](https://msdn.microsoft.com/en-us/library/windows/desktop/aa969540.aspx)
+(Aero Glass) is enabled, and `false` otherwise. You can use it to determine if
+you should create a transparent window or not (transparent windows won't work
+correctly when DWM composition is disabled).
+
+Usage example:
+
+```js
+let browserOptions = {width: 1000, height: 800};
+
+// Make the window transparent only if the platform supports it.
+if (process.platform !== 'win32' || app.isAeroGlassEnabled()) {
+  browserOptions.transparent = true;
+  browserOptions.frame = false;
+}
+
+// Create the window.
+win = new BrowserWindow(browserOptions);
+
+// Navigate.
+if (browserOptions.transparent) {
+  win.loadURL('file://' + __dirname + '/index.html');
+} else {
+  // No transparency, so we load a fallback that uses basic styles.
+  win.loadURL('file://' + __dirname + '/fallback.html');
+}
+```
 ### `app.commandLine.appendSwitch(switch[, value])`
 
 通过可选的参数 `value` 给 Chromium 命令行中添加一个开关。
@@ -313,3 +483,4 @@ Append a switch (with optional `value`) to Chromium's command line.
 
 [dock-menu]:https://developer.apple.com/library/mac/documentation/Carbon/Conceptual/customizing_docktile/concepts/dockconcepts.html#//apple_ref/doc/uid/TP30000986-CH2-TPXREF103
 [tasks]:http://msdn.microsoft.com/en-us/library/windows/desktop/dd378460(v=vs.85).aspx#tasks
+[app-user-model-id]: https://msdn.microsoft.com/en-us/library/windows/desktop/dd378459(v=vs.85).aspx
