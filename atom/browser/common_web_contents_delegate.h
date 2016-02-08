@@ -9,10 +9,10 @@
 #include <string>
 #include <vector>
 
-#include "brightray/browser/default_web_contents_delegate.h"
 #include "brightray/browser/inspectable_web_contents_impl.h"
 #include "brightray/browser/inspectable_web_contents_delegate.h"
 #include "brightray/browser/inspectable_web_contents_view_delegate.h"
+#include "content/public/browser/web_contents_delegate.h"
 
 namespace atom {
 
@@ -21,7 +21,7 @@ class NativeWindow;
 class WebDialogHelper;
 
 class CommonWebContentsDelegate
-    : public brightray::DefaultWebContentsDelegate,
+    : public content::WebContentsDelegate,
       public brightray::InspectableWebContentsDelegate,
       public brightray::InspectableWebContentsViewDelegate {
  public:
@@ -59,9 +59,6 @@ class CommonWebContentsDelegate
   content::WebContents* OpenURLFromTab(
       content::WebContents* source,
       const content::OpenURLParams& params) override;
-  void RequestToLockMouse(content::WebContents* web_contents,
-                          bool user_gesture,
-                          bool last_unlocked_by_target) override;
   bool CanOverscrollContent() const override;
   content::JavaScriptDialogManager* GetJavaScriptDialogManager(
       content::WebContents* source) override;

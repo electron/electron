@@ -6,7 +6,38 @@ var slice = [].slice;
 // Doesn't exist in early initialization.
 var webViewManager = null;
 
-var supportedWebViewEvents = ['load-commit', 'did-finish-load', 'did-fail-load', 'did-frame-finish-load', 'did-start-loading', 'did-stop-loading', 'did-get-response-details', 'did-get-redirect-request', 'dom-ready', 'console-message', 'devtools-opened', 'devtools-closed', 'devtools-focused', 'new-window', 'will-navigate', 'did-navigate', 'did-navigate-in-page', 'close', 'crashed', 'gpu-crashed', 'plugin-crashed', 'destroyed', 'page-title-updated', 'page-favicon-updated', 'enter-html-full-screen', 'leave-html-full-screen', 'media-started-playing', 'media-paused', 'found-in-page', 'did-change-theme-color'];
+var supportedWebViewEvents = [
+  'load-commit',
+  'did-finish-load',
+  'did-fail-load',
+  'did-frame-finish-load',
+  'did-start-loading',
+  'did-stop-loading',
+  'did-get-response-details',
+  'did-get-redirect-request',
+  'dom-ready',
+  'console-message',
+  'devtools-opened',
+  'devtools-closed',
+  'devtools-focused',
+  'new-window',
+  'will-navigate',
+  'did-navigate',
+  'did-navigate-in-page',
+  'close',
+  'crashed',
+  'gpu-crashed',
+  'plugin-crashed',
+  'destroyed',
+  'page-title-updated',
+  'page-favicon-updated',
+  'enter-html-full-screen',
+  'leave-html-full-screen',
+  'media-started-playing',
+  'media-paused',
+  'found-in-page',
+  'did-change-theme-color'
+];
 
 var nextInstanceId = 0;
 var guestInstances = {};

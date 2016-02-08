@@ -60,7 +60,8 @@ The following events are available on instances of `Session`:
 
 Emitted when Electron is about to download `item` in `webContents`.
 
-Calling `event.preventDefault()` will cancel the download.
+Calling `event.preventDefault()` will cancel the download and `item` will not be
+available from next tick of the process.
 
 ```javascript
 session.defaultSession.on('will-download', function(event, item, webContents) {
@@ -289,6 +290,35 @@ myWindow.webContents.session.setCertificateVerifyProc(function(hostname, cert, c
     callback(false);
 });
 ```
+
+#### `ses.setPermissionRequestHandler(handler)`
+
+* `handler` Function
+  * `webContents` Object - [WebContents](web-contents.md) requesting the permission.
+  * `permission`  String - Enum of 'media', 'geolocation', 'notifications', 'midiSysex', 'pointerLock', 'fullscreen'.
+  * `callback`  Function - Allow or deny the permission.
+
+Sets the handler which can be used to respond to permission requests for the `session`.
+Calling `callback(true)` will allow the permission and `callback(false)` will reject it.
+
+```javascript
+session.fromPartition(partition).setPermissionRequestHandler(function(webContents, permission, callback) {
+  if (webContents.getURL() === host) {
+    if (permission == "notifications") {
+      callback(false); // denied.
+      return;
+    }
+  }
+
+  callback(true);
+});
+```
+
+#### `ses.clearHostResolverCache([callback])`
+
+* `callback` Function (optional) - Called when operation is done.
+
+Clears the host resolver cache.
 
 #### `ses.webRequest`
 

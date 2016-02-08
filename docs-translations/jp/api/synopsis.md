@@ -4,7 +4,7 @@ Electron では全ての [Node.js のビルトインモジュール](http://node
 
 Electron はネイティブのデスクトップアプリケーション開発のための幾つかの追加のビルトインモジュールも提供しています。メインプロセスでだけ使えるモジュールもあれば、レンダラプロセス(ウェブページ)でだけ使えるモジュール、あるいはメインプロセス、レンダラプロセスどちらでも使えるモジュールもあります。
 
-基本的なルールは：[GUI][gui]、または低レベルのシステムに関連するモジュールはメインモジュールでだけ利用できるべきです。これらのモジュールを使用できるようにするためには [メインプロセス対レンダラプロセス][main-process] スクリプトの概念を理解する必要があります。 
+基本的なルールは：[GUI][gui]、または低レベルのシステムに関連するモジュールはメインモジュールでだけ利用できるべきです。これらのモジュールを使用できるようにするためには [メインプロセス対レンダラプロセス](../tutorial/quick-start.md#メインプロセス)スクリプトの概念を理解する必要があります。
 
 メインプロセススクリプトは普通の Node.js スクリプトのようなものです：
 
@@ -64,6 +64,5 @@ require('electron').hideInternalModules()
 ```
 
 [gui]: https://en.wikipedia.org/wiki/Graphical_user_interface
-[main-process]: ../tutorial/quick-start.md#メインプロセス
 [desctructuring-assignment]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Destructuring_assignment
 [issue-387]: https://github.com/atom/electron/issues/387

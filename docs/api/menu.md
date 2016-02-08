@@ -296,6 +296,11 @@ no matter what label you set. To change it you have to change your app's name
 by modifying your app bundle's `Info.plist` file. See [About Information
 Property List Files][AboutInformationPropertyListFiles] for more information.
 
+## Setting Menu for Specific Browser Window (*Linux* *Windows*)
+
+The [`setMenu` method][setMenu] of browser windows can set the menu of certain
+browser window.
+
 ## Menu Item Position
 
 You can make use of `position` and `id` to control how the item will be placed
@@ -371,3 +376,5 @@ Menu:
 ```
 
 [AboutInformationPropertyListFiles]: https://developer.apple.com/library/ios/documentation/general/Reference/InfoPlistKeyReference/Articles/AboutInformationPropertyListFiles.html
+[setMenu]:
+https://github.com/atom/electron/blob/master/docs/api/browser-window.md#winsetmenumenu-linux-windows

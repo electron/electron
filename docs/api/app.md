@@ -87,7 +87,7 @@ handle this case (even before the `ready` event is emitted).
 
 You should call `event.preventDefault()` if you want to handle this event.
 
-On Windows, you have to parse `process.argv` to get the filepath.
+On Windows, you have to parse `process.argv` (in the main process) to get the filepath.
 
 ### Event: 'open-url' _OS X_
 
@@ -243,6 +243,14 @@ default the application will terminate.
 This method guarantees that all `beforeunload` and `unload` event handlers are
 correctly executed. It is possible that a window cancels the quitting by
 returning `false` in the `beforeunload` event handler.
+
+### `app.hide()` _OS X_
+
+Hides all application windows without minimising them.
+
+### `app.show()` _OS X_
+
+Shows application windows after they were hidden. Does not automatically focus them.
 
 ### `app.exit(exitCode)`
 

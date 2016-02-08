@@ -212,6 +212,7 @@ proxyURL = [<proxyScheme>"://"]<proxyHost>[":"<proxyPort>]
 ```
 
 예시:
+
 * `http=foopy:80;ftp=foopy2` - http:// URL에 `foopy:80` HTTP 프록시를 사용합니다.
   `foopy2:80` 는 ftp:// URL에 사용됩니다.
 * `foopy:80` - 모든 URL에 `foopy:80` 프록시를 사용합니다.
@@ -285,6 +286,30 @@ myWindow.webContents.session.setCertificateVerifyProc(function(hostname, cert, c
    callback(true);
  else
    callback(false);
+});
+```
+#### `ses.setPermissionRequestHandler(handler)`
+
+* `handler` Function
+  * `webContents` Object - [WebContents](web-contents.md) 권한을 요청.
+  * `permission`  String - 'media', 'geolocation', 'notifications',
+    'midiSysex'의 나열.
+  * `callback`  Function - 권한 허용 및 거부.
+
+`session`의 권한 요청에 응답을 하는데 사용하는 핸들러를 설정합니다.
+`callback('granted')`를 호출하면 권한 제공을 허용하고 `callback('denied')`를
+호출하면 권한 제공을 거부합니다.
+
+```javascript
+session.fromPartition(partition).setPermissionRequestHandler(function(webContents, permission, callback) {
+  if (webContents.getURL() === host) {
+    if (permission == "notifications") {
+      callback(); // 거부됨.
+      return;
+    }
+  }
+
+  callback('granted');
 });
 ```
 

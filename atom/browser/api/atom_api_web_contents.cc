@@ -14,6 +14,7 @@
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/native_window.h"
+#include "atom/browser/web_contents_permission_helper.h"
 #include "atom/browser/web_contents_preferences.h"
 #include "atom/browser/web_view_guest_delegate.h"
 #include "atom/common/api/api_messages.h"
@@ -263,6 +264,9 @@ WebContents::WebContents(v8::Isolate* isolate,
   // Save the preferences in C++.
   new WebContentsPreferences(web_contents, options);
 
+  // Intialize permission helper.
+  WebContentsPermissionHelper::CreateForWebContents(web_contents);
+
   web_contents->SetUserAgentOverride(GetBrowserContext()->GetUserAgent());
 
   if (is_guest) {
@@ -387,6 +391,18 @@ void WebContents::HandleKeyboardEvent(
 
 void WebContents::EnterFullscreenModeForTab(content::WebContents* source,
                                             const GURL& origin) {
+  auto permission_helper =
+      WebContentsPermissionHelper::FromWebContents(source);
+  auto callback = base::Bind(&WebContents::OnEnterFullscreenModeForTab,
+                             base::Unretained(this), source, origin);
+  permission_helper->RequestFullscreenPermission(callback);
+}
+
+void WebContents::OnEnterFullscreenModeForTab(content::WebContents* source,
+                                              const GURL& origin,
+                                              bool allowed) {
+  if (!allowed)
+    return;
   CommonWebContentsDelegate::EnterFullscreenModeForTab(source, origin);
   Emit("enter-html-full-screen");
 }
@@ -443,6 +459,24 @@ void WebContents::FindReply(content::WebContents* web_contents,
     result.Set("finalUpdate", final_update);
     Emit("found-in-page", result);
   }
+}
+
+void WebContents::RequestMediaAccessPermission(
+    content::WebContents* web_contents,
+    const content::MediaStreamRequest& request,
+    const content::MediaResponseCallback& callback) {
+  auto permission_helper =
+      WebContentsPermissionHelper::FromWebContents(web_contents);
+  permission_helper->RequestMediaAccessPermission(request, callback);
+}
+
+void WebContents::RequestToLockMouse(
+    content::WebContents* web_contents,
+    bool user_gesture,
+    bool last_unlocked_by_target) {
+  auto permission_helper =
+      WebContentsPermissionHelper::FromWebContents(web_contents);
+  permission_helper->RequestPointerLockPermission(user_gesture);
 }
 
 void WebContents::BeforeUnloadFired(const base::TimeTicks& proceed_time) {

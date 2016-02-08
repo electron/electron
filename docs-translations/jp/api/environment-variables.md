@@ -24,6 +24,11 @@ Windows コンソール上:
 
 Chromeのインターナルログをコンソールに出力します。
 
+
+## `ELECTRON_LOG_ASAR_READS`
+
+ASARファイルからElectronが読み込んだとき、システム`tmpdir`へ読み込みオフセットとファイルのパスを記録します。ファイルの順序を最適化するために、得られたファイルはASARモジュールに提供されます。
+
 ## `ELECTRON_ENABLE_STACK_DUMPING`
 
 Electronがクラッシュしたとき、コンソールにスタックとレースを出力します。

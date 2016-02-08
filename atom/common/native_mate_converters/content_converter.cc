@@ -7,6 +7,8 @@
 #include <string>
 #include <vector>
 
+#include "atom/browser/api/atom_api_web_contents.h"
+#include "atom/browser/web_contents_permission_helper.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "content/public/browser/web_contents.h"
@@ -99,6 +101,55 @@ v8::Local<v8::Value> Converter<ContextMenuParamsWithWebContents>::ToV8(
 }
 
 // static
+bool Converter<content::PermissionStatus>::FromV8(
+    v8::Isolate* isolate,
+    v8::Local<v8::Value> val,
+    content::PermissionStatus* out) {
+  bool result;
+  if (!ConvertFromV8(isolate, val, &result))
+    return false;
+
+  if (result)
+    *out = content::PERMISSION_STATUS_GRANTED;
+  else
+    *out = content::PERMISSION_STATUS_DENIED;
+
+  return true;
+}
+
+// static
+v8::Local<v8::Value> Converter<content::PermissionType>::ToV8(
+    v8::Isolate* isolate, const content::PermissionType& val) {
+  using PermissionType = atom::WebContentsPermissionHelper::PermissionType;
+  switch (val) {
+    case content::PermissionType::MIDI_SYSEX:
+      return StringToV8(isolate, "midiSysex");
+    case content::PermissionType::PUSH_MESSAGING:
+      return StringToV8(isolate, "pushMessaging");
+    case content::PermissionType::NOTIFICATIONS:
+      return StringToV8(isolate, "notifications");
+    case content::PermissionType::GEOLOCATION:
+      return StringToV8(isolate, "geolocation");
+    case content::PermissionType::AUDIO_CAPTURE:
+    case content::PermissionType::VIDEO_CAPTURE:
+      return StringToV8(isolate, "media");
+    case content::PermissionType::PROTECTED_MEDIA_IDENTIFIER:
+      return StringToV8(isolate, "mediaKeySystem");
+    case content::PermissionType::MIDI:
+      return StringToV8(isolate, "midi");
+    default:
+      break;
+  }
+
+  if (val == (content::PermissionType)(PermissionType::POINTER_LOCK))
+    return StringToV8(isolate, "pointerLock");
+  else if (val == (content::PermissionType)(PermissionType::FULLSCREEN))
+    return StringToV8(isolate, "fullscreen");
+
+  return StringToV8(isolate, "unknown");
+}
+
+// static
 bool Converter<content::StopFindAction>::FromV8(
     v8::Isolate* isolate,
     v8::Local<v8::Value> val,
@@ -117,6 +168,12 @@ bool Converter<content::StopFindAction>::FromV8(
     return false;
 
   return true;
+}
+
+// static
+v8::Local<v8::Value> Converter<content::WebContents*>::ToV8(
+    v8::Isolate* isolate, content::WebContents* val) {
+  return atom::api::WebContents::CreateFrom(isolate, val).ToV8();
 }
 
 }  // namespace mate

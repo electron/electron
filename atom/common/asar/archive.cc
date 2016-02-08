@@ -130,14 +130,20 @@ Archive::Archive(const base::FilePath& path)
 
 Archive::~Archive() {
 #if defined(OS_WIN)
-  if (fd_ != -1)
+  if (fd_ != -1) {
     _close(fd_);
+    // Don't close the handle since we already closed the fd.
+    file_.TakePlatformFile();
+  }
 #endif
 }
 
 bool Archive::Init() {
   if (!file_.IsValid()) {
-    LOG(ERROR) << base::File::ErrorToString(file_.error_details());
+    if (file_.error_details() != base::File::FILE_ERROR_NOT_FOUND) {
+      LOG(WARNING) << "Opening " << path_.value()
+                   << ": " << base::File::ErrorToString(file_.error_details());
+    }
     return false;
   }
 

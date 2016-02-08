@@ -77,6 +77,12 @@ class Browser : public WindowListObserver {
   void SetAppUserModelID(const base::string16& name);
 
 #if defined(OS_MACOSX)
+  // Hide the application.
+  void Hide();
+
+  // Show the application.
+  void Show();
+
   // Bounce the dock icon.
   enum BounceType {
     BOUNCE_CRITICAL = 0,
