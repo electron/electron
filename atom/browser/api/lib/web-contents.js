@@ -78,6 +78,9 @@ let wrapWebContents = function(webContents) {
   webContents.send = function() {
     var args = 2 <= arguments.length ? slice.call(arguments, 1) : [];
     var channel = arguments[0];
+    if (channel == null) {
+      throw new Error('channel must be specified');
+    }
     return this._send(channel, slice.call(args));
   };
 

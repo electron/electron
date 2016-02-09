@@ -664,6 +664,10 @@ describe('browser-window module', function() {
       assert.throws(function () {
         w.webContents.send();
       }, 'channel must be specified');
+
+      assert.throws(function () {
+        w.webContents.send(null);
+      }, 'channel must be specified');
     });
   });
 });
