@@ -409,7 +409,7 @@ var registerWebViewElement = function() {
       if (internal.webContents) {
         return internal.webContents[m].apply(internal.webContents, args);
       } else {
-        throw new Error(`Cannot call ${m} before the dom-ready event is emitted`);
+        throw new Error(`Cannot call ${m} because the webContents is unavailable. The WebView must be attached to the DOM and the dom-ready event emmitted before this method can be called.`);
       }
     };
   };

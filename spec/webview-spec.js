@@ -570,7 +570,7 @@ describe('<webview> tag', function() {
         readyError = error;
       }
 
-      assert.equal(readyError.message, 'Cannot call stop before the dom-ready event is emitted');
+      assert.equal(readyError.message, 'Cannot call stop because the webContents is unavailable. The WebView must be attached to the DOM and the dom-ready event emmitted before this method can be called.');
     });
   });
 
