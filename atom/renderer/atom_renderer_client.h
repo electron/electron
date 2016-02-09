@@ -8,6 +8,8 @@
 #include <string>
 #include <vector>
 
+#include "atom/common/options_switches.h"
+#include "base/command_line.h"
 #include "content/public/renderer/content_renderer_client.h"
 #include "content/public/renderer/render_process_observer.h"
 
@@ -15,6 +17,7 @@ namespace atom {
 
 class AtomBindings;
 class NodeBindings;
+class JavascriptBindings;
 
 class AtomRendererClient : public content::ContentRendererClient,
                            public content::RenderProcessObserver {
@@ -26,8 +29,7 @@ class AtomRendererClient : public content::ContentRendererClient,
                               v8::Handle<v8::Context> context);
   void DidCreateScriptContext(blink::WebFrame* frame,
                               v8::Handle<v8::Context> context);
-
-  bool run_node() const { return run_node_; }
+  static void PreSandboxStartup();
  private:
   enum NodeIntegration {
     ALL,
@@ -63,8 +65,7 @@ class AtomRendererClient : public content::ContentRendererClient,
 
   scoped_ptr<NodeBindings> node_bindings_;
   scoped_ptr<AtomBindings> atom_bindings_;
-
-  bool run_node_;
+  scoped_ptr<JavascriptBindings> javascript_bindings_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomRendererClient);
 };

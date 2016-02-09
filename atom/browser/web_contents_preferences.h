@@ -7,6 +7,8 @@
 
 #include <vector>
 
+#include "atom/common/options_switches.h"
+#include "base/command_line.h"
 #include "base/values.h"
 #include "content/public/browser/web_contents_user_data.h"
 
@@ -34,6 +36,19 @@ class WebContentsPreferences
   // Append command paramters according to |web_contents|'s preferences.
   static void AppendExtraCommandLineSwitches(
       content::WebContents* web_contents, base::CommandLine* command_line);
+
+  static bool run_node(base::CommandLine* cmd_line) {
+    // if node integration is disabled or there is
+    // preload script/url then start node
+    return
+      cmd_line->GetSwitchValueASCII(switches::kNodeIntegration) != "false" ||
+      cmd_line->HasSwitch(switches::kPreloadScript) ||
+      cmd_line->HasSwitch(switches::kPreloadURL);
+  }
+
+  static bool run_node() {
+    return run_node(base::CommandLine::ForCurrentProcess());
+  }
 
   // Modify the WebPreferences according to |web_contents|'s preferences.
   static void OverrideWebkitPrefs(

@@ -323,6 +323,8 @@
       'atom/common/google_api_key.h',
       'atom/common/id_weak_map.cc',
       'atom/common/id_weak_map.h',
+      'atom/common/javascript_bindings.cc',
+      'atom/common/javascript_bindings.h',
       'atom/common/keyboard_util.cc',
       'atom/common/keyboard_util.h',
       'atom/common/mouse_util.cc',
