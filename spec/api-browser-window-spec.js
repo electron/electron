@@ -658,4 +658,12 @@ describe('browser-window module', function() {
       });
     });
   });
+
+  describe('window.webContents.send(channel, args...)', function() {
+    it('throws an error when the channel is missing', function() {
+      assert.throws(function () {
+        w.webContents.send();
+      }, 'channel must be specified');
+    });
+  });
 });
