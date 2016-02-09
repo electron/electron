@@ -276,6 +276,11 @@ __Note__: On OS X this event is just an alias of `moved`.
 
 Emitted once when the window is moved to a new position.
 
+### Event: 'will-enter-full-screen'
+
+Emitted when the window is about to enter full screen state. Calling `event.preventDefault()`
+will cancel the state change.
+
 ### Event: 'enter-full-screen'
 
 Emitted when the window enters full screen state.
