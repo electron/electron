@@ -602,7 +602,7 @@ void NativeWindowMac::SetFullScreen(bool fullscreen) {
   if (fullscreen == IsFullscreen())
     return;
 
-  if (fullscreen && shell_->RequestEnterFullScreen())
+  if (fullscreen && RequestEnterFullScreen())
     return;
 
   if (!base::mac::IsOSLionOrLater()) {
