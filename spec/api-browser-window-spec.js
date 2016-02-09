@@ -663,11 +663,11 @@ describe('browser-window module', function() {
     it('throws an error when the channel is missing', function() {
       assert.throws(function() {
         w.webContents.send();
-      }, 'channel must be specified');
+      }, 'Missing required channel argument');
 
       assert.throws(function() {
         w.webContents.send(null);
-      }, 'channel must be specified');
+      }, 'Missing required channel argument');
     });
   });
 });
