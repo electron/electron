@@ -197,6 +197,9 @@ class NativeWindow : public base::SupportsUserData,
   // Requests the WebContents to close, can be cancelled by the page.
   virtual void RequestToClosePage();
 
+  // Request the WebContents to go fullscreen, can be cancelled by the page.
+  virtual bool RequestEnterFullScreen();
+
   // Methods called by the WebContents.
   virtual void CloseContents(content::WebContents* source);
   virtual void RendererUnresponsive(content::WebContents* source);

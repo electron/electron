@@ -219,6 +219,10 @@ void Window::OnWindowMoved() {
   Emit("moved");
 }
 
+void Window::OnWindowWillEnterFullScreen(bool* prevent_default) {
+  *prevent_default = Emit("will-enter-full-screen");
+}
+
 void Window::OnWindowEnterFullScreen() {
   Emit("enter-full-screen");
 }

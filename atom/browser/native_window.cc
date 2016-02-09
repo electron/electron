@@ -445,6 +445,13 @@ void NativeWindow::NotifyWindowMoved() {
   FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnWindowMoved());
 }
 
+bool NativeWindow::RequestEnterFullScreen() {
+  bool prevent_default = false;
+  FOR_EACH_OBSERVER(NativeWindowObserver, observers_,
+                    OnWindowWillEnterFullScreen(&prevent_default));
+  return prevent_default;
+}
+
 void NativeWindow::NotifyWindowEnterFullScreen() {
   FOR_EACH_OBSERVER(NativeWindowObserver, observers_,
                     OnWindowEnterFullScreen());
