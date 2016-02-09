@@ -564,7 +564,7 @@ describe('<webview> tag', function() {
 
     it('throws a custom error when an API method is called before the event is emitted', function() {
       assert.throws(function () {
-        webview.stop()
+        webview.stop();
       }, 'Cannot call stop because the webContents is unavailable. The WebView must be attached to the DOM and the dom-ready event emmitted before this method can be called.');
     });
   });
