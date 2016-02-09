@@ -10,6 +10,7 @@
 // Put this before event_emitter_caller.h to have string16 support.
 #include "atom/common/native_mate_converters/string16_converter.h"
 
+#include "atom/browser/web_contents_preferences.h"
 #include "atom/common/api/api_messages.h"
 #include "atom/common/api/event_emitter_caller.h"
 #include "atom/common/native_mate_converters/value_converter.h"
@@ -63,26 +64,6 @@ base::StringPiece NetResourceProvider(int key) {
     return html_data;
   }
   return base::StringPiece();
-}
-
-// TODO(bridiver) create a separate file for script functions
-std::string ExceptionToString(const v8::TryCatch& try_catch) {
-  std::string str;
-  v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
-  v8::String::Utf8Value exception(try_catch.Exception());
-  v8::Local<v8::Message> message(try_catch.Message());
-  if (message.IsEmpty()) {
-    str.append(base::StringPrintf("%s\n", *exception));
-  } else {
-    v8::String::Utf8Value filename(message->GetScriptOrigin().ResourceName());
-    int linenum = message->GetLineNumber();
-    int colnum = message->GetStartColumn();
-    str.append(base::StringPrintf(
-        "%s:%i:%i %s\n", *filename, linenum, colnum, *exception));
-    v8::String::Utf8Value sourceline(message->GetSourceLine());
-    str.append(base::StringPrintf("%s\n", *sourceline));
-  }
-  return str;
 }
 
 }  // namespace
@@ -164,7 +145,7 @@ void AtomRenderViewObserver::OnBrowserMessage(const base::string16& channel,
     mate::Dictionary event = mate::Dictionary::CreateEmpty(isolate);
     event.Set("sender", ipc);
     args_vector.insert(args_vector.begin(), event.GetHandle());
-    if (renderer_client_->run_node()) {
+    if (WebContentsPreferences::run_node()) {
       mate::EmitEvent(isolate, ipc, channel, args_vector);
     } else {
       // There might be a better way to do this,
@@ -178,13 +159,8 @@ void AtomRenderViewObserver::OnBrowserMessage(const base::string16& channel,
       v8::Handle<v8::Value> emit = ipc->Get(mate::StringToV8(isolate, "emit"));
       v8::Handle<v8::Function> fn = v8::Handle<v8::Function>::Cast(emit);
 
-      v8::TryCatch try_catch;
-      v8::Local<v8::Value> result = fn->Call(ipc, concatenated_args.size(),
+      fn->Call(ipc, concatenated_args.size(),
                                                   &concatenated_args.front());
-      if (result.IsEmpty()) {
-        LOG(WARNING) << "Failed to execute ipc emit for " << channel;
-        LOG(FATAL) << ExceptionToString(try_catch);
-      }
     }
   }
 }
