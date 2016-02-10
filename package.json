@@ -15,6 +15,7 @@
     "preinstall": "node -e 'process.exit(0)'",
     "start": "python ./script/start.py",
     "test": "python ./script/test.py",
-    "bootstrap": "python ./script/bootstrap.py"
+    "bootstrap": "python ./script/bootstrap.py",
+    "build": "python ./script/build.py -c D"
   }
 }
