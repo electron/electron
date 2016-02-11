@@ -219,7 +219,8 @@ void WebViewGuestDelegate::WillAttach(
   embedder_web_contents_ = embedder_web_contents;
   is_full_page_plugin_ = is_full_page_plugin;
   // update the owner window
-  api_web_contents_->SetOwnerWindow(NativeWindow::FromWebContents(embedder_web_contents_));
+  api_web_contents_->SetOwnerWindow(
+                        NativeWindow::FromWebContents(embedder_web_contents_));
   completion_callback.Run();
 }
 
