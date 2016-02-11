@@ -11,6 +11,7 @@
 #include "base/command_line.h"
 #include "base/values.h"
 #include "content/public/browser/web_contents_user_data.h"
+#include "content/public/common/content_switches.h"
 
 namespace base {
 class CommandLine;
@@ -38,12 +39,17 @@ class WebContentsPreferences
       content::WebContents* web_contents, base::CommandLine* command_line);
 
   static bool run_node(base::CommandLine* cmd_line) {
-    // if node integration is disabled or there is
-    // preload script/url then start node
-    return
-      cmd_line->GetSwitchValueASCII(switches::kNodeIntegration) != "false" ||
-      cmd_line->HasSwitch(switches::kPreloadScript) ||
-      cmd_line->HasSwitch(switches::kPreloadURL);
+    // don't run node if
+    return !(
+      // node integration is disabled
+      cmd_line->GetSwitchValueASCII(switches::kNodeIntegration) == "false" &&
+      // and there is no preload script
+      !cmd_line->HasSwitch(switches::kPreloadScript) &&
+      !cmd_line->HasSwitch(switches::kPreloadURL) &&
+      // and this is a guest renderer process
+      (cmd_line->GetSwitchValueASCII(::switches::kProcessType) ==
+                                                ::switches::kRendererProcess &&
+        cmd_line->HasSwitch(switches::kGuestInstanceID)));
   }
 
   static bool run_node() {
