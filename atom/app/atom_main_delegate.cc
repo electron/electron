@@ -110,6 +110,12 @@ void AtomMainDelegate::PreSandboxStartup() {
   if (!IsBrowserProcess(command_line))
     return;
 
+  #if defined(OS_LINUX)
+    // always disable the sandbox on linux for now
+    // https://github.com/brave/browser-laptop/issues/715
+    command_line->AppendSwitch(::switches::kNoSandbox);
+  #endif
+
   // Allow file:// URIs to read other file:// URIs by default.
   command_line->AppendSwitch(::switches::kAllowFileAccessFromFiles);
 
