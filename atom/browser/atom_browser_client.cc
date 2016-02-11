@@ -248,10 +248,12 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
   WebContentsPreferences::AppendExtraCommandLineSwitches(
       web_contents, command_line);
 
+#if !defined(OS_LINUX)
   if (WebContentsPreferences::run_node(command_line)) {
     // Disable renderer sandbox for most of node's functions.
     command_line->AppendSwitch(::switches::kNoSandbox);
   }
+#endif
 }
 
 void AtomBrowserClient::DidCreatePpapiPlugin(
