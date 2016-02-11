@@ -59,15 +59,40 @@ var valueToMeta = function(sender, value, optimizeSimpleObject) {
     // it.
     meta.id = objectsRegistry.add(sender.getId(), value);
     meta.members = (function() {
-      var results;
-      results = [];
-      for (name in value) {
+      var results, props, map, keys, obj, i, l;
+
+      props = [];
+      obj = value;
+      // iterate props in order of deepness in prototype chain
+      do {
+        props = Object.getOwnPropertyNames(obj).concat(props);
+        obj = Object.getPrototypeOf(obj);
+      } while (obj);
+
+      map = {};
+      for (name of props) {
         field = value[name];
-        results.push({
+        map[name] = {
           name: name,
           type: typeof field
-        });
+        };
       }
+
+      for (name in value) {
+        field = value[name];
+        map[name] = {
+          name: name,
+          type: typeof field
+        };
+      }
+
+      results = [];
+      keys = Object.keys(map);
+      for(i = 0, l = keys.length; i < l; ++i) {
+        map[keys[i]].enumerable = Object.propertyIsEnumerable(keys[i]);
+        results.push(map[keys[i]]);
+      }
+
       return results;
     })();
   } else if (meta.type === 'buffer') {
