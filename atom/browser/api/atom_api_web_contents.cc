@@ -809,7 +809,10 @@ bool WebContents::Equal(const WebContents* web_contents) const {
 }
 
 void WebContents::Reload(bool ignore_cache) {
-  web_contents()->ReloadFocusedFrame(ignore_cache);
+  if (ignore_cache)
+    web_contents()->GetController().ReloadIgnoringCache(true);
+  else
+    web_contents()->GetController().Reload(true);
 }
 
 void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
