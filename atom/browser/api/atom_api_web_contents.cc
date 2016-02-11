@@ -325,7 +325,13 @@ bool WebContents::ShouldCreateWebContents(
     const GURL& target_url,
     const std::string& partition_id,
     content::SessionStorageNamespace* session_storage_namespace) {
-  return true;
+  if (IsGuest()) {
+    return true;
+  } else {
+    Emit("-new-window", target_url, frame_name, NEW_FOREGROUND_TAB);
+  }
+
+  return false;
 }
 
 void WebContents::WebContentsCreated(content::WebContents* source_contents,
@@ -393,10 +399,7 @@ void WebContents::AddNewContents(content::WebContents* source,
                   "",
                   disposition,
                   *options);
-    return;
-  }
-
-  if (disposition == NEW_POPUP || disposition == NEW_WINDOW) {
+  } else if (disposition == NEW_POPUP || disposition == NEW_WINDOW) {
     // Set windowOptions
     scoped_ptr<base::DictionaryValue> browser_options(
                                                     new base::DictionaryValue);
@@ -420,7 +423,6 @@ void WebContents::AddNewContents(content::WebContents* source,
                   "about:blank",
                   "",
                   *options);
-    return;
   }
 }
 
