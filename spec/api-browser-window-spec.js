@@ -94,11 +94,20 @@ describe('browser-window module', function() {
       });
       return w.loadURL('about:blank');
     });
-    return it('should emit did-fail-load event', function(done) {
-      w.webContents.on('did-fail-load', function() {
-        return done();
+    it('should emit did-fail-load event for files that do not exist', function(done) {
+      w.webContents.on('did-fail-load', function(event, code) {
+        assert.equal(code, -6);
+        done();
       });
-      return w.loadURL('file://a.txt');
+      w.loadURL('file://a.txt');
+    });
+    it('should emit did-fail-load event for invalid URL', function(done) {
+      w.webContents.on('did-fail-load', function(event, code, desc) {
+        assert.equal(desc, 'ERR_INVALID_URL');
+        assert.equal(code, -300);
+        done();
+      });
+      w.loadURL('http://example:port');
     });
   });
   describe('BrowserWindow.show()', function() {
