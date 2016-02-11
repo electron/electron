@@ -368,6 +368,13 @@ void WebContents::AddNewContents(content::WebContents* source,
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
 
+  std::string target_url = "";
+  auto url_params = CreateFrom(isolate(), new_contents)->
+                                                delayed_load_url_params_.get();
+  if (url_params) {
+    target_url = url_params->url.spec();
+  }
+
   // was_blocked is null unless the opener is suppressed
   if (was_blocked) {
     *was_blocked = true;
@@ -382,6 +389,8 @@ void WebContents::AddNewContents(content::WebContents* source,
     WebContentsPreferences::FromWebContents(new_contents)->web_preferences();
   scoped_ptr<base::DictionaryValue> options(new base::DictionaryValue);
   options->Set(options::kWebPreferences, web_preferences->CreateDeepCopy());
+  if (target_url != "")
+    options->SetString("delayedLoadUrl", target_url);
 
   if (disposition == NEW_FOREGROUND_TAB || disposition == NEW_BACKGROUND_TAB) {
     // fire off the tab open event
