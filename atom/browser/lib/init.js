@@ -132,9 +132,9 @@ if (packageJson.desktopName != null) {
 // Chrome 42 disables NPAPI plugins by default, reenable them here
 app.commandLine.appendSwitch('enable-npapi');
 
-// Add othercommand line switches
+// Add other command line switches
 if (packageJson.commandLineSwitches) {
-  for (let i = 0; i < packageJson.commandLineSwitches.length; ++i) {
+  for (let i = 0; i < packageJson.commandLineSwitches.length; i++) {
     const option = packageJson.commandLineSwitches[i];
 
     if (typeof option === 'string') {
