@@ -6,6 +6,7 @@
 #include "atom/browser/web_contents_preferences.h"
 #include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/browser/api/event.h"
+#include "atom/browser/native_window.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/node_includes.h"
 #include "content/public/browser/browser_thread.h"
@@ -217,6 +218,8 @@ void WebViewGuestDelegate::WillAttach(
     const base::Closure& completion_callback) {
   embedder_web_contents_ = embedder_web_contents;
   is_full_page_plugin_ = is_full_page_plugin;
+  // update the owner window
+  api_web_contents_->SetOwnerWindow(NativeWindow::FromWebContents(embedder_web_contents_));
   completion_callback.Run();
 }
 
