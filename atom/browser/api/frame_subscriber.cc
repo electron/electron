@@ -64,7 +64,7 @@ void FrameSubscriber::OnFrameDelivered(
     scoped_refptr<media::VideoFrame> frame, base::TimeTicks, bool result) {
   pending_frames--;
 
-  if (!result || RequestDestruct())
+  if (RequestDestruct() || subscriber_ == NULL || !result)
     return;
 
   v8::Locker locker(isolate_);
