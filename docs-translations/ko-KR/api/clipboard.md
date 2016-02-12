@@ -62,6 +62,19 @@ console.log(clipboard.readText('selection'));
 
 클립보드에 `image`를 씁니다.
 
+### `clipboard.readRtf([type])`
+
+* `type` String (optional)
+
+클립보드로부터 RTF 형식으로 컨텐츠를 읽어옵니다.
+
+### `clipboard.writeRtf(text[, type])`
+
+* `text` String
+* `type` String (optional)
+
+클립보드에 `text`를 RTF 형식으로 씁니다.
+
 ### `clipboard.clear([type])`
 
 * `type` String (optional)
