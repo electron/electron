@@ -148,7 +148,16 @@ var metaToValue = function(meta) {
       for (j = 0, len1 = ref2.length; j < len1; j++) {
         member = ref2[j];
         if (member.type === 'function') {
-          ret[member.name] = createRemoteMemberFunction(meta.id, member.name);
+          if(member.enumerable != null && !member.enumerable){
+            Object.defineProperty(ret, member.name, {
+              enumerable: false,
+              configurable: true,
+              writable: true,
+              value: createRemoteMemberFunction(meta.id, member.name)
+            });
+          } else {
+            ret[member.name] = createRemoteMemberFunction(meta.id, member.name);
+          }
         } else {
           Object.defineProperty(ret, member.name, createRemoteMemberProperty(meta.id, member.name));
         }
