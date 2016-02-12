@@ -52,7 +52,7 @@ The `ipcRenderer` module has the following methods for sending messages:
 * `arg` (optional)
 
 Send an event to the main process asynchronously via a `channel`, you can also
-send arbitrary arguments. The main process handles it by listening for the
+send arbitrary arguments. Arguments will be serialized (json) and hence no functions or prototype chain will be included. The main process handles it by listening for the
 `channel` event with `ipcMain`.
 
 ### `ipcRenderer.sendSync(channel[, arg1][, arg2][, ...])`
