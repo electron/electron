@@ -271,6 +271,33 @@ var window = new BrowserWindow({...});
 window.setProgressBar(0.5);
 ```
 
+## Icon Overlays in Taskbar (Windows)
+
+On Windows a taskbar button can use a small overlay to display application
+status, as quoted from MSDN:
+
+> Icon overlays serve as a contextual notification of status, and are intended
+> to negate the need for a separate notification area status icon to communicate
+> that information to the user. For instance, the new mail status in Microsoft
+> Outlook, currently shown in the notification area, can now be indicated
+> through an overlay on the taskbar button. Again, you must decide during your
+> development cycle which method is best for your application. Overlay icons are
+> intended to supply important, long-standing status or notifications such as
+> network status, messenger status, or new mail. The user should not be
+> presented with constantly changing overlays or animations.
+
+__Overlay on taskbar button:__
+
+![Overlay on taskbar button](https://i-msdn.sec.s-msft.com/dynimg/IC420441.png)
+
+To set the overlay icon for a window, you can use the
+[BrowserWindow.setOverlayIcon][setoverlayicon] API:
+
+```javascript
+var window = new BrowserWindow({...});
+window.setOverlayIcon('path/to/overlay.png', 'Description for overlay');
+```
+
 ## Represented File of Window (OS X)
 
 On OS X a window can set its represented file, so the file's icon can show in
@@ -298,6 +325,7 @@ window.setDocumentEdited(true);
 [clearrecentdocuments]: ../api/app.md#appclearrecentdocuments
 [setusertaskstasks]: ../api/app.md#appsetusertaskstasks
 [setprogressbar]: ../api/browser-window.md#browserwindowsetprogressbarprogress
+[setoverlayicon]: ../api/browser-window.md#winsetoverlayiconoverlay-description-windows-7
 [setrepresentedfilename]: ../api/browser-window.md#browserwindowsetrepresentedfilenamefilename
 [setdocumentedited]: ../api/browser-window.md#browserwindowsetdocumenteditededited
 [app-registration]: http://msdn.microsoft.com/en-us/library/windows/desktop/ee872121(v=vs.85).aspx
