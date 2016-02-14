@@ -72,6 +72,11 @@ app.on('ready', function() {
   // Test if using protocol module would crash.
   electron.protocol.registerStringProtocol('test-if-crashes', function() {});
 
+  // Send auto updater errors to window to be verified in specs
+  electron.autoUpdater.on('error', function (error) {
+    window.send('auto-updater-error', error.message)
+  });
+
   window = new BrowserWindow({
     title: 'Electron Tests',
     show: false,

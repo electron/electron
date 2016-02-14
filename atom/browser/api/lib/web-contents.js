@@ -76,8 +76,11 @@ let wrapWebContents = function(webContents) {
 
   // WebContents::send(channel, args..)
   webContents.send = function() {
-    var args, channel;
-    channel = arguments[0], args = 2 <= arguments.length ? slice.call(arguments, 1) : [];
+    var args = 2 <= arguments.length ? slice.call(arguments, 1) : [];
+    var channel = arguments[0];
+    if (channel == null) {
+      throw new Error('Missing required channel argument');
+    }
     return this._send(channel, slice.call(args));
   };
 

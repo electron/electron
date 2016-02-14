@@ -87,7 +87,7 @@ handle this case (even before the `ready` event is emitted).
 
 You should call `event.preventDefault()` if you want to handle this event.
 
-On Windows, you have to parse `process.argv` to get the filepath.
+On Windows, you have to parse `process.argv` (in the main process) to get the filepath.
 
 ### Event: 'open-url' _OS X_
 
