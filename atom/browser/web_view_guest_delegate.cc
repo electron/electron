@@ -185,6 +185,15 @@ void WebViewGuestDelegate::RenderViewReady() {
     render_view_host_view->SetBackgroundColor(SK_ColorTRANSPARENT);
 }
 
+void WebViewGuestDelegate::DidStartProvisionalLoadForFrame(
+      content::RenderFrameHost* render_frame_host,
+      const GURL& url,
+      bool is_error_page,
+      bool is_iframe_srcdoc) {
+  api_web_contents_->Emit("load-start", url, !render_frame_host->GetParent(),
+                                              is_error_page, is_iframe_srcdoc);
+}
+
 void WebViewGuestDelegate::DidCommitProvisionalLoadForFrame(
     content::RenderFrameHost* render_frame_host,
     const GURL& url, ui::PageTransition transition_type) {
