@@ -246,7 +246,7 @@ returning `false` in the `beforeunload` event handler.
 
 ### `app.hide()` _OS X_
 
-Hides all application windows without minimising them.
+Hides all application windows without minimizing them.
 
 ### `app.show()` _OS X_
 
@@ -398,7 +398,7 @@ quit.
 On OS X the system enforces single instance automatically when users try to open
 a second instance of your app in Finder, and the `open-file` and `open-url`
 events will be emitted for that. However when users start your app in command
-line the system's single instance machanism will be bypassed and you have to
+line the system's single instance mechanism will be bypassed and you have to
 use this method to ensure single instance.
 
 An example of activating the window of primary instance when a second instance

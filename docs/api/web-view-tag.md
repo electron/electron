@@ -522,7 +522,7 @@ Returns:
 * `explicitSet` Boolean
 
 Fired when page title is set during navigation. `explicitSet` is false when
-title is synthesised from file url.
+title is synthesized from file url.
 
 ### Event: 'page-favicon-updated'
 
