@@ -2,6 +2,10 @@ const assert = require('assert');
 const autoUpdater = require('electron').remote.autoUpdater;
 const ipcRenderer = require('electron').ipcRenderer;
 
+// Skip autoUpdater tests in MAS build.
+if (process.mas)
+  return;
+
 describe('autoUpdater module', function() {
   describe('checkForUpdates', function() {
     it('emits an error on Windows when called the feed URL is not set', function (done) {
