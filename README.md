@@ -71,6 +71,7 @@ forums
 - [`Atom`](http://atom-slack.herokuapp.com/) channel on Slack
 - [`electron-br`](https://electron-br.slack.com) *(Brazilian Portuguese)*
 - [`electron-kr`](http://www.meetup.com/electron-kr/) *(Korean)*
+- [`electron-jp`](https://electron-jp-slackin.herokuapp.com/) *(Japanese)*
 
 Check out [awesome-electron](https://github.com/sindresorhus/awesome-electron)
 for a community maintained list of useful example apps, tools and resources.
