@@ -13,58 +13,28 @@ namespace atom {
 
 namespace api {
 
-using Subscriber = FrameSubscriber::Subscriber;
-
 FrameSubscriber::FrameSubscriber(v8::Isolate* isolate,
                                  const gfx::Size& size,
                                  const FrameCaptureCallback& callback)
-    : isolate_(isolate), size_(size), callback_(callback), pending_frames(0) {
-  subscriber_ = new Subscriber(this);
+    : isolate_(isolate), size_(size), callback_(callback), weak_factory_(this) {
 }
 
-Subscriber::Subscriber(
-  FrameSubscriber* frame_subscriber) : frame_subscriber_(frame_subscriber) {
-}
-
-Subscriber::~Subscriber() {
-  frame_subscriber_->subscriber_ = NULL;
-  frame_subscriber_->RequestDestruct();
-}
-
-bool Subscriber::ShouldCaptureFrame(
+bool FrameSubscriber::ShouldCaptureFrame(
     const gfx::Rect& damage_rect,
     base::TimeTicks present_time,
     scoped_refptr<media::VideoFrame>* storage,
     DeliverFrameCallback* callback) {
   *storage = media::VideoFrame::CreateFrame(
       media::PIXEL_FORMAT_YV12,
-      frame_subscriber_->size_, gfx::Rect(frame_subscriber_->size_),
-      frame_subscriber_->size_, base::TimeDelta());
+      size_, gfx::Rect(size_), size_, base::TimeDelta());
   *callback = base::Bind(&FrameSubscriber::OnFrameDelivered,
-                         base::Unretained(frame_subscriber_), *storage);
-  frame_subscriber_->pending_frames++;
+                         weak_factory_.GetWeakPtr(), *storage);
   return true;
-}
-
-Subscriber* FrameSubscriber::GetSubscriber() {
-  return subscriber_;
-}
-
-bool FrameSubscriber::RequestDestruct() {
-  bool deletable = (subscriber_ == NULL && pending_frames == 0);
-  // Destruct FrameSubscriber if we're not waiting for frames and the
-  // subscription has ended
-  if (deletable)
-    delete this;
-
-  return deletable;
 }
 
 void FrameSubscriber::OnFrameDelivered(
     scoped_refptr<media::VideoFrame> frame, base::TimeTicks, bool result) {
-  pending_frames--;
-
-  if (RequestDestruct() || subscriber_ == NULL || !result)
+  if (!result)
     return;
 
   v8::Locker locker(isolate_);
