@@ -54,6 +54,7 @@ contains documents describing how to build and contribute to Electron.
 - [Traditional Chinese](https://github.com/atom/electron/tree/master/docs-translations/zh-TW)
 - [Ukrainian](https://github.com/atom/electron/tree/master/docs-translations/uk-UA)
 - [Russian](https://github.com/atom/electron/tree/master/docs-translations/ru-RU)
+- [French](https://github.com/atom/electron/tree/master/docs-translations/fr-FR)
 
 ## Quick Start
 
