@@ -8,4 +8,4 @@ exports.setHandler = function (deprecationHandler) {
 
 exports.getHandler = function () {
   return deprecate.getHandler();
-}
+};

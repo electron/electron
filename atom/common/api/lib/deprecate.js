@@ -109,6 +109,6 @@ deprecate.setHandler = function(handler) {
 
 deprecate.getHandler = function() {
   return deprecationHandler;
-}
+};
 
 module.exports = deprecate;
