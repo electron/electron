@@ -517,7 +517,6 @@ describe('asar package', function() {
       });
     });
     describe('child_process.fork', function() {
-      child_process = require('child_process');
       it('opens a normal js file', function(done) {
         var child;
         child = child_process.fork(path.join(fixtures, 'asar', 'a.asar', 'ping.js'));

@@ -3,7 +3,7 @@ process.on('uncaughtException', function(error) {
   process.exit(1);
 });
 
-process.on('message', function(msg) {
+process.on('message', function() {
   setImmediate(function() {
     process.send('ok');
     process.exit(0);
