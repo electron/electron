@@ -451,7 +451,6 @@ var win = new BrowserWindow({ width: 800, height: 600 });
 
 * `aspectRatio` 유지하려 하는 컨텐츠 뷰 일부의 종횡비
 * `extraSize` Object (optional) - 종횡비를 유지하는 동안 포함되지 않을 엑스트라 크기.
-  사용 가능한 속성:
   * `width` Integer
   * `height` Integer
 
@@ -469,7 +468,7 @@ var win = new BrowserWindow({ width: 800, height: 600 });
 
 ### `win.setBounds(options[, animate])`
 
-* `options` Object, properties:
+* `options` Object
 
   * `x` Integer
   * `y` Integer
@@ -719,8 +718,7 @@ Windows 메시지 훅을 등록합니다. `callback`은 WndProc에서 메시지�
 
 ### `win.capturePage([rect, ]callback)`
 
-* `rect` Object (optional) - 캡쳐할 페이지의 영역.
-  사용할 수 있는 속성은 다음과 같습니다:
+* `rect` Object (optional) - 캡쳐할 페이지의 영역
   * `x` Integer
   * `y` Integer
   * `width` Integer
@@ -790,33 +788,33 @@ Linux 플랫폼에선 Unity 데스크톱 환경만 지원합니다. 그리고 �
 
 ### `win.setThumbarButtons(buttons)` _Windows 7+_
 
-`buttons` - `button` 객체의 배열
-
-`button` 객체는 다음과 같은 속성을 가지고 있습니다:
-
-* `icon` [NativeImage](native-image.md) - 미리보기 툴바에 보여질 아이콘.
-* `tooltip` String (optional) - 버튼의 툴팁 텍스트.
-* `flags` Array (optional) - 버튼의 특정 동작 및 상태 제어. 기본적으로 `enabled`이
-  사용됩니다. 이 속성은 다음 문자열들을 포함할 수 있습니다:
-  * `enabled` - 사용자가 사용할 수 있도록 버튼이 활성화 됩니다.
-  * `disabled` - 버튼이 비활성화 됩니다. 버튼은 표시되지만 시각적인 상태는 사용자의
-    동작에 응답하지 않는 비활성화 상태로 표시됩니다.
-  * `dismissonclick` - 버튼이 클릭되면 작업표시줄 버튼의 미리보기(flyout)가 즉시
-    종료됩니다.
-  * `nobackground` - 버튼의 테두리를 표시하지 않습니다. 이미지에만 사용할 수 있습니다.
-  * `hidden` - 버튼을 사용자에게 표시되지 않도록 숨깁니다.
-  * `noninteractive` - 버튼은 활성화되어 있지만 반응이 제거되며 버튼을 눌러도
-    눌려지지 않은 상태를 유지합니다. 이 값은 버튼을 알림의 용도로 사용하기 위해
-    만들어졌습니다.
-* `click` - Function
+* `buttons` - Array
 
 윈도우 작업표시줄 버튼 레이아웃의 미리보기 이미지 영역에 미리보기 툴바와 버튼 세트를
-지정합니다. 반환되는 `Boolean` 값은 미리보기 툴바가 성공적으로 추가됬는지를 알려줍니다.
+추가합니다. 반환되는 `Boolean` 값은 미리보기 툴바가 성공적으로 추가됬는지를 알려줍니다.
 
 미리보기 이미지 영역의 제한된 크기로 인해 미리보기 툴바에 추가될 수 있는 최대 버튼의
 개수는 7개이며 이 이상 추가될 수 없습니다. 플랫폼의 제약으로 인해 미리보기 툴바는 한 번
 설정되면 삭제할 수 없습니다. 하지만 이 API에 빈 배열을 전달하여 버튼들을 제거할 수
 있습니다.
+
+`buttons`는 `Button` 객체의 배열입니다:
+
+* `Button` 객체
+  * `icon` [NativeImage](native-image.md) - 미리보기 툴바에 보여질 아이콘.
+  * `tooltip` String (optional) - 버튼의 툴팁 텍스트.
+  * `flags` Array (optional) - 버튼의 특정 동작 및 상태 제어. 기본적으로 `enabled`이
+    사용됩니다. 이 속성은 다음 문자열들을 포함할 수 있습니다:
+    * `enabled` - 사용자가 사용할 수 있도록 버튼이 활성화 됩니다.
+    * `disabled` - 버튼이 비활성화 됩니다. 버튼은 표시되지만 시각적인 상태는 사용자의
+      동작에 응답하지 않는 비활성화 상태로 표시됩니다.
+    * `dismissonclick` - 버튼이 클릭되면 작업표시줄 버튼의 미리보기(flyout)가 즉시
+      종료됩니다.
+    * `nobackground` - 버튼의 테두리를 표시하지 않습니다. 이미지에만 사용할 수 있습니다.
+    * `hidden` - 버튼을 사용자에게 표시되지 않도록 숨깁니다.
+    * `noninteractive` - 버튼은 활성화되어 있지만 반응이 제거되며 버튼을 눌러도
+      눌려지지 않은 상태를 유지합니다. 이 값은 버튼을 알림의 용도로 사용하기 위해
+      만들어졌습니다.
 
 ### `win.showDefinitionForSelection()` _OS X_
 
