@@ -9,7 +9,7 @@ module.
 ## Sending Messages
 
 It is also possible to send messages from the main process to the renderer
-process, see [webContents.send](web-contents.md#webcontentssendchannel-arg1-arg2-) for more information.
+process, see [webContents.send][web-contents-send] for more information.
 
 * When sending a message, the event name is the `channel`.
 * To reply a synchronous message, you need to set `event.returnValue`.
@@ -48,37 +48,37 @@ ipcRenderer.send('asynchronous-message', 'ping');
 
 The `ipcMain` module has the following method to listen for events:
 
-### `ipcMain.on(channel, callback)`
+### `ipcMain.on(channel, listener)`
 
-* `channel` String - The event name.
-* `callback` Function
+* `channel` String
+* `listener` Function
 
-When the event occurs the `callback` is called with an `event` object and
-arbitrary arguments.
+Listens to `channel`, when a new message arrives `listener` would be called with
+`listener(event, args...)`.
 
-### `ipcMain.removeListener(channel, callback)`
+### `ipcMain.once(channel, listener)`
 
-* `channel` String - The event name.
-* `callback` Function - The reference to the same function that you used for
-  `ipcMain.on(channel, callback)`
+* `channel` String
+* `listener` Function
 
-Once done listening for messages, if you no longer want to activate this
-callback and for whatever reason can't merely stop sending messages on the
-channel, this function will remove the callback handler for the specified
-channel.
+Adds a one time `listener` function for the event. This `listener` is invoked
+only the next time a message is sent to `channel`, after which it is removed.
 
-### `ipcMain.removeAllListeners(channel)`
+### `ipcMain.removeListener(channel, listener)`
 
-* `channel` String - The event name.
+* `channel` String
+* `listener` Function
 
-This removes *all* handlers to this ipc channel.
+Removes the specified `listener` from the listener array for the specified
+`channel`.
 
-### `ipcMain.once(channel, callback)`
+### `ipcMain.removeAllListeners([channel])`
 
-Use this in place of `ipcMain.on()` to fire handlers meant to occur only once,
-as in, they won't be activated after one call of `callback`
+* `channel` String (optional)
 
-## IPC Event
+Removes all listeners, or those of the specified `channel`.
+
+## Event object
 
 The `event` object passed to the `callback` has the following methods:
 
@@ -90,4 +90,6 @@ Set this to the value to be returned in a synchronous message.
 
 Returns the `webContents` that sent the message, you can call
 `event.sender.send` to reply to the asynchronous message, see
-[webContents.send](web-contents.md#webcontentssendchannel-arg1-arg2-) for more information.
+[webContents.send][web-contents-send] for more information.
+
+[web-contents-send]: web-contents.md#webcontentssendchannel-arg1-arg2-

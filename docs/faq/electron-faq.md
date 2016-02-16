@@ -18,39 +18,33 @@ New features of Node.js are usually brought by V8 upgrades, since Electron is
 using the V8 shipped by Chrome browser, the shiny new JavaScript feature of a
 new Node.js version is usually already in Electron.
 
-## What are the different techniques to share objects between web pages?
+## How to share data between web pages?
 
-To share objects between web pages (that is on the renderer side) the simplest
-and more natural technique is to use a web standard API already available in all
-browsers. A good candidate is the
-[Storage API](https://developer.mozilla.org/en-US/docs/Web/API/Storage),
-through either the
-[`window.localStorage`](https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage) property or the
-[`window.sessionStorage`](https://developer.mozilla.org/en-US/docs/Web/API/Window/sessionStorage) property.
-Note that the Storage API allows only to store strings, so objects must be
-serialized as JSON.
-Another candidate is
-[IndexedDB](https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API).
+To share data between web pages (the renderer processes) the simplest way is to
+use HTML5 APIs which are already available in browsers. Good candidates are
+[Storage API][storage], [`localStorage`][local-storage],
+[`sessionStorage`][session-storage], and [IndexedDB][indexed-db].
 
-Another technique, but this time specific to Electron, is to store objects in
-the main process as a global variable and then to access them from the renderers
-through the `remote` module:
+Or you can use the IPC system, which are specific to Electron, to store objects
+in the main process as a global variable, and then to access them from the
+renderers through the `remote` module:
 
 ```javascript
-// In main.js of browser process
-global.sharedObject = {};
+// In the main process.
+global.sharedObject = {
+  someProperty: 'default value'
+};
 ```
 
 ```javascript
-// js in page-1.html
-require('remote').getGlobal('sharedObject').someProperty = 'some value';
+// In page 1.
+require('remote').getGlobal('sharedObject').someProperty = 'new value';
 ```
 
 ```javascript
-// js in page-2.html
+// In page 2.
 console.log(require('remote').getGlobal('sharedObject').someProperty);
 ```
-
 
 ## My app's window/tray disappeared after a few minutes.
 
@@ -154,3 +148,7 @@ is only available in renderer processes.
 [memory-management]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Memory_Management
 [variable-scope]: https://msdn.microsoft.com/library/bzt2dkta(v=vs.94).aspx
 [electron-module]: https://www.npmjs.com/package/electron
+[storage]: https://developer.mozilla.org/en-US/docs/Web/API/Storage
+[local-storage]: https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage
+[session-storage]: https://developer.mozilla.org/en-US/docs/Web/API/Window/sessionStorage
+[indexed-db]: https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API
