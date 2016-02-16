@@ -259,8 +259,8 @@ Returns:
 * `result` Object
   * `requestId` Integer
   * `finalUpdate` Boolean - Indicates if more responses are to follow.
-  * `matches` Integer (Optional) - Number of Matches.
-  * `selectionArea` Object (Optional) - Coordinates of first match region.
+  * `matches` Integer (optional) - Number of Matches.
+  * `selectionArea` Object (optional) - Coordinates of first match region.
 
 Emitted when a result is available for
 [`webContents.findInPage`](web-contents.md#webcontentsfindinpage) request.
@@ -503,7 +503,7 @@ Inserts `text` to the focused element.
 ### `webContents.findInPage(text[, options])`
 
 * `text` String - Content to be searched, must not be empty.
-* `options` Object (Optional)
+* `options` Object (optional)
   * `forward` Boolean - Whether to search forward or backward, defaults to `true`.
   * `findNext` Boolean - Whether the operation is first request or a follow up,
     defaults to `false`.
