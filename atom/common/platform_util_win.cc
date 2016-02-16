@@ -301,7 +301,7 @@ void OpenItem(const base::FilePath& full_path) {
     ui::win::OpenFileViaShell(full_path);
 }
 
-bool OpenExternal(const GURL& url) {
+bool OpenExternal(const GURL& url, const bool without_activation) {
   // Quote the input scheme to be sure that the command does not have
   // parameters unexpected by the external program. This url should already
   // have been escaped.
