@@ -480,6 +480,8 @@ describe('browser-window module', function() {
   });
 
   describe('beginFrameSubscription method', function() {
+    this.timeout(20000);
+
     it('subscribes frame updates', function(done) {
       let called = false;
       w.loadURL("file://" + fixtures + "/api/blank.html");
