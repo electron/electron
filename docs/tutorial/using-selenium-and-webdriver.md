@@ -1,7 +1,12 @@
 # Using Selenium and WebDriver
+
 From [ChromeDriver - WebDriver for Chrome][chrome-driver]:
 
-> WebDriver is an open source tool for automated testing of web apps across many browsers. It provides capabilities for navigating to web pages, user input, JavaScript execution, and more. ChromeDriver is a standalone server which implements WebDriver's wire protocol for Chromium. It is being developed by members of the Chromium and WebDriver teams.
+> WebDriver is an open source tool for automated testing of web apps across many
+> browsers. It provides capabilities for navigating to web pages, user input,
+> JavaScript execution, and more. ChromeDriver is a standalone server which
+> implements WebDriver's wire protocol for Chromium. It is being developed by
+> members of the Chromium and WebDriver teams.
 
 In order to use `chromedriver` with Electron you have to tell it where to find Electron and make it think Electron is the Chrome browser.
 
