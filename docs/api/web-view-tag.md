@@ -184,7 +184,7 @@ webview.addEventListener("dom-ready", function() {
 ### `<webview>.loadURL(url[, options])`
 
 * `url` URL
-* `options` Object (optional), properties:
+* `options` Object (optional)
   * `httpReferrer` String - A HTTP Referrer url.
   * `userAgent` String - A user agent originating the request.
   * `extraHeaders` String - Extra headers separated by "\n"

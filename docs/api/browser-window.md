@@ -458,7 +458,7 @@ Returns a boolean, whether the window is in fullscreen mode.
 * `aspectRatio` The aspect ratio we want to maintain for some portion of the
 content view.
 * `extraSize` Object (optional) - The extra size not to be included while
-maintaining the aspect ratio. Properties:
+maintaining the aspect ratio.
   * `width` Integer
   * `height` Integer
 
@@ -478,13 +478,11 @@ height areas you have within the overall content view.
 
 ### `win.setBounds(options[, animate])`
 
-* `options` Object, properties:
-
+* `options` Object
   * `x` Integer
   * `y` Integer
   * `width` Integer
   * `height` Integer
-
 * `animate` Boolean (optional) _OS X_
 
 Resizes and moves the window to `width`, `height`, `x`, `y`.
@@ -729,7 +727,7 @@ Whether the window's document has been edited.
 
 ### `win.capturePage([rect, ]callback)`
 
-* `rect` Object (optional)- The area of page to be captured, properties:
+* `rect` Object (optional) - The area of page to be captured
   * `x` Integer
   * `y` Integer
   * `width` Integer
@@ -802,27 +800,7 @@ Returns whether the window has a shadow. On Windows and Linux always returns
 
 ### `win.setThumbarButtons(buttons)` _Windows 7+_
 
-`buttons` Array of `button` Objects:
-
-`button` Object, properties:
-
-* `icon` [NativeImage](native-image.md) - The icon showing in thumbnail
-  toolbar.
-* `tooltip` String (optional) - The text of the button's tooltip.
-* `flags` Array (optional) - Control specific states and behaviors
-  of the button. By default, it uses `enabled`. It can include following
-  Strings:
-  * `enabled` - The button is active and available to the user.
-  * `disabled` - The button is disabled. It is present, but has a visual
-    state indicating it will not respond to user action.
-  * `dismissonclick` - When the button is clicked, the taskbar button's
-    flyout closes immediately.
-  * `nobackground` - Do not draw a button border, use only the image.
-  * `hidden` - The button is not shown to the user.
-  * `noninteractive` - The button is enabled but not interactive; no
-    pressed button state is drawn. This value is intended for instances
-    where the button is used in a notification.
-* `click` - Function
+* `buttons` Array
 
 Add a thumbnail toolbar with a specified set of buttons to the thumbnail image
 of a window in a taskbar button layout. Returns a `Boolean` object indicates
@@ -832,6 +810,29 @@ The number of buttons in thumbnail toolbar should be no greater than 7 due to
 the limited room. Once you setup the thumbnail toolbar, the toolbar cannot be
 removed due to the platform's limitation. But you can call the API with an empty
 array to clean the buttons.
+
+The `buttons` is an array of `Button` objects:
+
+* `Button` Object
+  * `icon` [NativeImage](native-image.md) - The icon showing in thumbnail
+    toolbar.
+  * `click` Function
+  * `tooltip` String (optional) - The text of the button's tooltip.
+  * `flags` Array (optional) - Control specific states and behaviors of the
+    button. By default, it is `['enabled']`.
+
+The `flags` is an array that can include following `String`s:
+
+* `enabled` - The button is active and available to the user.
+* `disabled` - The button is disabled. It is present, but has a visual state
+  indicating it will not respond to user action.
+* `dismissonclick` - When the button is clicked, the thumbnail window closes
+  immediately.
+* `nobackground` - Do not draw a button border, use only the image.
+* `hidden` - The button is not shown to the user.
+* `noninteractive` - The button is enabled but not interactive; no pressed
+  button state is drawn. This value is intended for instances where the button
+  is used in a notification.
 
 ### `win.showDefinitionForSelection()` _OS X_
 

@@ -22,19 +22,16 @@ The `crash-reporter` module has the following methods:
 
 ### `crashReporter.start(options)`
 
-`options` Object, properties:
-
-* `productName` String, default: Electron.
-* `companyName` String (**required**)
-* `submitURL` String, (**required**)
-  * URL that crash reports will be sent to as POST.
-* `autoSubmit` Boolean, default: `true`.
-  * Send the crash report without user interaction.
-* `ignoreSystemCrashHandler` Boolean, default: `false`.
-* `extra` Object
-  * An object you can define that will be sent along with the report.
-  * Only string properties are sent correctly.
-  * Nested objects are not supported.
+* `options` Object
+  * `companyName` String
+  * `submitURL` String - URL that crash reports will be sent to as POST.
+  * `productName` String (optional) - Default is `Electron`.
+  * `autoSubmit` Boolean - Send the crash report without user interaction.
+    Default is `true`.
+  * `ignoreSystemCrashHandler` Boolean - Default is `false`.
+  * `extra` Object - An object you can define that will be sent along with the
+    report. Only string properties are sent correctly, Nested objects are not
+    supported.
 
 You are required to call this method before using other `crashReporter`
 APIs.
