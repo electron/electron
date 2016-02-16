@@ -478,10 +478,16 @@ describe('browser-window module', function() {
     });
   });
 
-  xdescribe('beginFrameSubscription method', function() {
+  describe('beginFrameSubscription method', function() {
     it('subscribes frame updates', function(done) {
+      let called = false;
       w.loadURL("file://" + fixtures + "/api/blank.html");
       w.webContents.beginFrameSubscription(function(data) {
+        // This callback might be called twice.
+        if (called)
+          return;
+        called = true;
+
         assert.notEqual(data.length, 0);
         w.webContents.endFrameSubscription();
         done();
