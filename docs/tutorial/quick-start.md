@@ -47,6 +47,10 @@ In Electron, we have provided the [ipc](../api/ipc-renderer.md) module for
 communication between the main process and renderer process. There is also a
 [remote](../api/remote.md) module for RPC style communication.
 
+And finally there are different techniques [to share objects between web
+pages](../faq/electron-faq.md#what-are-the-different-techniques-to-share-objects-between-web-pages)
+of the same window or of different windows.
+
 ## Write your First Electron App
 
 Generally, an Electron app is structured like this:
