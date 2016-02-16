@@ -693,7 +693,7 @@ Opens the developer tools for the service worker context.
 * `arg` (optional)
 
 Send an asynchronous message to renderer process via `channel`, you can also
-send arbitrary arguments. The renderer process can handle the message by
+send arbitrary arguments. Arguments will be serialized (json) and hence no functions or prototype chain will be included. The renderer process can handle the message by
 listening to the `channel` event with the `ipcRenderer` module.
 
 An example of sending messages from the main process to the renderer process:
