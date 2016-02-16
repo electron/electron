@@ -58,7 +58,7 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
   * `alwaysOnTop` Boolean - Whether the window should always stay on top of
     other windows. Default is `false`.
   * `fullscreen` Boolean - Whether the window should show in fullscreen. When
-    explicity set to `false` the fullscreen button will be hidden or disabled
+    explicitly set to `false` the fullscreen button will be hidden or disabled
     on OS X, or the maximize button will be disabled on Windows. Default is
     `false`.
   * `fullscreenable` Boolean - Whether the maximize/zoom button on OS X should
@@ -715,7 +715,7 @@ Returns the pathname of the file the window represents.
 * `edited` Boolean
 
 Specifies whether the window’s document has been edited, and the icon in title
-bar will become grey when set to `true`.
+bar will become gray when set to `true`.
 
 ### `win.isDocumentEdited()` _OS X_
 

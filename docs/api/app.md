@@ -246,7 +246,7 @@ returning `false` in the `beforeunload` event handler.
 
 ### `app.hide()` _OS X_
 
-Hides all application windows without minimising them.
+Hides all application windows without minimizing them.
 
 ### `app.show()` _OS X_
 
