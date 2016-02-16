@@ -64,7 +64,7 @@ void OpenItem(const base::FilePath& full_path) {
   XDGOpen(full_path.value());
 }
 
-bool OpenExternal(const GURL& url, const bool without_activation) {
+bool OpenExternal(const GURL& url, bool activate) {
   if (url.SchemeIs("mailto"))
     return XDGEmail(url.spec());
   else

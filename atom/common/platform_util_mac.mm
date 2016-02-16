@@ -119,7 +119,7 @@ void OpenItem(const base::FilePath& full_path) {
   }
 }
 
-bool OpenExternal(const GURL& url, const bool without_activation) {
+bool OpenExternal(const GURL& url, bool activate) {
   DCHECK([NSThread isMainThread]);
   NSURL* ns_url = net::NSURLWithGURL(url);
   if (!ns_url) {
@@ -137,8 +137,8 @@ bool OpenExternal(const GURL& url, const bool without_activation) {
   CFRelease(openingApp);  // NOT A BUG; LSGetApplicationForURL retains for us
 
   NSUInteger launchOptions = NSWorkspaceLaunchDefault;
-  if (without_activation)
-    launchOptions = launchOptions | NSWorkspaceLaunchWithoutActivation;
+  if (!activate)
+    launchOptions |= NSWorkspaceLaunchWithoutActivation;
 
   return [[NSWorkspace sharedWorkspace] openURLs: @[ns_url]
                                         withAppBundleIdentifier: nil
