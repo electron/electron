@@ -263,6 +263,33 @@ var window = new BrowserWindow({...});
 window.setProgressBar(0.5);
 ```
 
+## 작업 표시줄의 아이콘 오버레이 (Windows)
+
+Windows에선 작업 표시줄 버튼에 어플리케이션의 상태를 표시하는 작은 오버레이를 사용할
+수 있습니다. MSDN에서 인용하자면 (영문):
+
+> Icon overlays serve as a contextual notification of status, and are intended
+> to negate the need for a separate notification area status icon to communicate
+> that information to the user. For instance, the new mail status in Microsoft
+> Outlook, currently shown in the notification area, can now be indicated
+> through an overlay on the taskbar button. Again, you must decide during your
+> development cycle which method is best for your application. Overlay icons are
+> intended to supply important, long-standing status or notifications such as
+> network status, messenger status, or new mail. The user should not be
+> presented with constantly changing overlays or animations.
+
+__작업 표시줄 버튼 위의 오버레이:__
+
+![작업 표시줄 버튼 위의 오버레이](https://i-msdn.sec.s-msft.com/dynimg/IC420441.png)
+
+윈도우에 오버레이 아이콘을 설정하려면 [BrowserWindow.setOverlayIcon][setoverlayicon]
+API를 사용할 수 있습니다:
+
+```javascript
+var window = new BrowserWindow({...});
+window.setOverlayIcon('path/to/overlay.png', 'Description for overlay');
+```
+
 ## 대표 파일 제시 (OS X)
 
 OS X는 창에서 대표 파일을 설정할 수 있습니다. 타이틀바에서 파일 아이콘이 있고, 사용자가
@@ -287,6 +314,7 @@ window.setDocumentEdited(true);
 [clearrecentdocuments]: ../api/app.md#appclearrecentdocuments-os-x-windows
 [setusertaskstasks]: ../api/app.md#appsetusertaskstasks-windows
 [setprogressbar]: ../api/browser-window.md#winsetprogressbarprogress
+[setoverlayicon]: ../api/browser-window.md#winsetoverlayiconoverlay-description-windows-7
 [setrepresentedfilename]: ../api/browser-window.md#winsetrepresentedfilenamefilename-os-x
 [setdocumentedited]: ../api/browser-window.md#winsetdocumenteditededited-os-x
 [app-registration]: http://msdn.microsoft.com/en-us/library/windows/desktop/ee872121(v=vs.85).aspx

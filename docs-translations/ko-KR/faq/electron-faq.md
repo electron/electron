@@ -18,6 +18,34 @@ Node.js의 새로운 기능은 보통 V8 업그레이드에서 가져옵니다. 
 브라우저에 탑재된 V8을 사용하고 있습니다. 눈부신 새로운 Node.js 버전의 자바스크립트
 기능은 보통 이미 Electron에 있습니다.
 
+## 어떻게 웹 페이지 간에 데이터를 공유할 수 있나요?
+
+두 웹페이지 간에 (랜더러 프로세스) 데이터를 공유하려면 간단히 이미 모든 브라우저에서
+사용할 수 있는 HTML5 API들을 사용하면 됩니다. 가장 좋은 후보는
+[Storage API][storage], [`localStorage`][local-storage],
+[`sessionStorage`][session-storage], 그리고 [IndexedDB][indexed-db]가 있습니다.
+
+또는 Electron에서만 사용할 수 있는 IPC 시스템을 사용하여 메인 프로세스의 global
+변수에 데이터를 저장한 후 다음과 같이 랜더러 프로세스에서 `remote` 모듈을 사용하여
+접근할 수 있습니다:
+
+```javascript
+// 메인 프로세스에서
+global.sharedObject = {
+  someProperty: 'default value'
+};
+```
+
+```javascript
+// 첫 번째 페이지에서
+require('remote').getGlobal('sharedObject').someProperty = 'new value';
+```
+
+```javascript
+// 두 번째 페이지에서
+console.log(require('remote').getGlobal('sharedObject').someProperty);
+```
+
 ## 제작한 어플리케이션의 윈도우/트레이가 몇 분 후에나 나타납니다.
 
 이러한 문제가 발생하는 이유는 보통 윈도우/트레이를 담은 변수에 가비지 컬렉션이 작동해서
@@ -119,3 +147,7 @@ npm uninstall -g electron
 [memory-management]: https://developer.mozilla.org/ko/docs/Web/JavaScript/Memory_Management
 [variable-scope]: https://msdn.microsoft.com/library/bzt2dkta(v=vs.94).aspx
 [electron-module]: https://www.npmjs.com/package/electron
+[storage]: https://developer.mozilla.org/en-US/docs/Web/API/Storage
+[local-storage]: https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage
+[session-storage]: https://developer.mozilla.org/en-US/docs/Web/API/Window/sessionStorage
+[indexed-db]: https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API

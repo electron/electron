@@ -22,19 +22,15 @@ crashReporter.start({
 
 ### `crashReporter.start(options)`
 
-* `options` Object, properties:
-
-* `productName` String, 기본값: Electron
-* `companyName` String (**필수항목**)
-* `submitURL` String, (**필수항목**)
-  * 크래시 리포트는 POST 방식으로 이 URL로 전송됩니다.
-* `autoSubmit` Boolean, 기본값: true
-  * true로 지정할 경우 유저의 승인 없이 자동으로 오류를 보고합니다.
-* `ignoreSystemCrashHandler` Boolean, 기본값: false
-* `extra` Object
-  * 크래시 리포트 시 같이 보낼 추가 정보를 지정하는 객체입니다.
-  * 문자열로 된 속성만 정상적으로 보내집니다.
-  * 중첩 객체는 지원되지 않습니다. (Nested objects are not supported)
+* `options` Object
+  * `companyName` String
+  * `submitURL` String - 크래시 리포트는 POST 방식으로 이 URL로 전송됩니다.
+  * `productName` String (optional) - 기본값은 `Electron` 입니다.
+  * `autoSubmit` Boolean - 유저의 승인 없이 자동으로 오류를 보고합니다. 기본값은
+    `true` 입니다.
+  * `ignoreSystemCrashHandler` Boolean - 기본값은 `false` 입니다.
+  * `extra` Object - 크래시 리포트 시 같이 보낼 추가 정보를 지정하는 객체입니다.
+    문자열로 된 속성만 정상적으로 보내집니다. 중첩된 객체는 지원되지 않습니다.
 
 다른 crashReporter API를 사용하기 전에 이 메서드를 먼저 호출해야 합니다.
 
