@@ -32,6 +32,12 @@ __Platform limitations:__
   install `libappindicator1` to make the tray icon work.
 * App indicator will only be shown when it has a context menu.
 * When app indicator is used on Linux, the `click` event is ignored.
+* On Linux in order for changes made to individual `MenuItem`s to take effect, you have to call `setContextMenu` again. For example:
+
+```javascript
+appIcon.menu.items[2].checked = false;
+appIcon.setContextMenu(trayIcon.menu);
+```
 
 If you want to keep exact same behaviors on all platforms, you should not
 rely on the `click` event and always attach a context menu to the tray icon.
