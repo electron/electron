@@ -27,7 +27,7 @@ bool AtomResourceDispatcherHostDelegate::HandleExternalProtocol(
   GURL escaped_url(net::EscapeExternalHandlerValue(url.spec()));
   BrowserThread::PostTask(BrowserThread::UI, FROM_HERE,
       base::Bind(
-          base::IgnoreResult(platform_util::OpenExternal), escaped_url, false));
+          base::IgnoreResult(platform_util::OpenExternal), escaped_url, true));
   return true;
 }
 
