@@ -271,7 +271,7 @@ describe('menu module', function() {
     });
 
     it('should assign groupId automatically', function() {
-      var groupId, i, j, k, l, m, menu, results, template;
+      var groupId, i, j, k, l, m, menu, template;
       template = [];
       for (i = j = 0; j <= 10; i = ++j) {
         template.push({
@@ -299,7 +299,7 @@ describe('menu module', function() {
     });
 
     it("setting 'checked' should flip other items' 'checked' property", function() {
-      var i, j, k, l, m, menu, n, o, p, q, results, template;
+      var i, j, k, l, m, menu, n, o, p, q, template;
       template = [];
       for (i = j = 0; j <= 10; i = ++j) {
         template.push({

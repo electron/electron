@@ -138,9 +138,8 @@ describe('asar package', function() {
       });
 
       it('returns information of a normal file', function() {
-        var file, j, len, p, ref2, results, stats;
+        var file, j, len, p, ref2, stats;
         ref2 = ['file1', 'file2', 'file3', path.join('dir1', 'file1'), path.join('link2', 'file1')];
-        results = [];
         for (j = 0, len = ref2.length; j < len; j++) {
           file = ref2[j];
           p = path.join(fixtures, 'asar', 'a.asar', file);
@@ -148,15 +147,13 @@ describe('asar package', function() {
           assert.equal(stats.isFile(), true);
           assert.equal(stats.isDirectory(), false);
           assert.equal(stats.isSymbolicLink(), false);
-          results.push(assert.equal(stats.size, 6));
+          assert.equal(stats.size, 6);
         }
-        results;
       });
 
       it('returns information of a normal directory', function() {
-        var file, j, len, p, ref2, results, stats;
+        var file, j, len, p, ref2, stats;
         ref2 = ['dir1', 'dir2', 'dir3'];
-        results = [];
         for (j = 0, len = ref2.length; j < len; j++) {
           file = ref2[j];
           p = path.join(fixtures, 'asar', 'a.asar', file);
@@ -164,15 +161,13 @@ describe('asar package', function() {
           assert.equal(stats.isFile(), false);
           assert.equal(stats.isDirectory(), true);
           assert.equal(stats.isSymbolicLink(), false);
-          results.push(assert.equal(stats.size, 0));
+          assert.equal(stats.size, 0);
         }
-        results;
       });
 
       it('returns information of a linked file', function() {
-        var file, j, len, p, ref2, results, stats;
+        var file, j, len, p, ref2, stats;
         ref2 = ['link1', path.join('dir1', 'link1'), path.join('link2', 'link2')];
-        results = [];
         for (j = 0, len = ref2.length; j < len; j++) {
           file = ref2[j];
           p = path.join(fixtures, 'asar', 'a.asar', file);
@@ -180,15 +175,13 @@ describe('asar package', function() {
           assert.equal(stats.isFile(), false);
           assert.equal(stats.isDirectory(), false);
           assert.equal(stats.isSymbolicLink(), true);
-          results.push(assert.equal(stats.size, 0));
+          assert.equal(stats.size, 0);
         }
-        results;
       });
 
       it('returns information of a linked directory', function() {
-        var file, j, len, p, ref2, results, stats;
+        var file, j, len, p, ref2, stats;
         ref2 = ['link2', path.join('dir1', 'link2'), path.join('link2', 'link2')];
-        results = [];
         for (j = 0, len = ref2.length; j < len; j++) {
           file = ref2[j];
           p = path.join(fixtures, 'asar', 'a.asar', file);
@@ -196,9 +189,8 @@ describe('asar package', function() {
           assert.equal(stats.isFile(), false);
           assert.equal(stats.isDirectory(), false);
           assert.equal(stats.isSymbolicLink(), true);
-          results.push(assert.equal(stats.size, 0));
+          assert.equal(stats.size, 0);
         }
-        results;
       });
 
       it('throws ENOENT error when can not find file', function() {
@@ -461,7 +453,7 @@ describe('asar package', function() {
 
     describe('fs.openSync', function() {
       it('opens a normal/linked/under-linked-directory file', function() {
-        var buffer, fd, file, j, len, p, ref2, results;
+        var buffer, fd, file, j, len, p, ref2;
         ref2 = ['file1', 'link1', path.join('link2', 'file1')];
         for (j = 0, len = ref2.length; j < len; j++) {
           file = ref2[j];

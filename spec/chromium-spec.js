@@ -119,7 +119,7 @@ describe('chromium feature', function() {
           });
         }
       });
-      sw.loadURL(url);
+      w.loadURL(url);
     });
   });
 
