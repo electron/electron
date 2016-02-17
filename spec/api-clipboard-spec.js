@@ -1,10 +1,8 @@
-var assert, clipboard, nativeImage, path, ref;
+const assert = require('assert');
+const path = require('path');
 
-assert = require('assert');
-
-path = require('path');
-
-ref = require('electron'), clipboard = ref.clipboard, nativeImage = ref.nativeImage;
+const clipboard = require('electron').clipboard;
+const nativeImage = require('electron').nativeImage;
 
 describe('clipboard module', function() {
   var fixtures;

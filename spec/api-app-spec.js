@@ -1,14 +1,10 @@
-var BrowserWindow, ChildProcess, app, assert, path, ref, remote;
+const assert = require('assert');
+const ChildProcess = require('child_process');
+const path = require('path');
+const remote = require('electron').remote;
 
-assert = require('assert');
-
-ChildProcess = require('child_process');
-
-path = require('path');
-
-remote = require('electron').remote;
-
-ref = remote.require('electron'), app = ref.app, BrowserWindow = ref.BrowserWindow;
+const app = remote.require('electron').app;
+const BrowserWindow = remote.require('electron').BrowserWindow;
 
 describe('electron module', function() {
   it ('can prevent exposing internal modules to require', function(done) {

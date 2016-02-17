@@ -1,10 +1,6 @@
-var assert, path, webFrame;
-
-assert = require('assert');
-
-path = require('path');
-
-webFrame = require('electron').webFrame;
+const assert = require('assert');
+const path = require('path');
+const webFrame = require('electron').webFrame;
 
 describe('webFrame module', function() {
   var fixtures;

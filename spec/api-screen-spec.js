@@ -1,8 +1,5 @@
-var assert, screen;
-
-assert = require('assert');
-
-screen = require('electron').screen;
+const assert = require('assert');
+const screen = require('electron').screen;
 
 describe('screen module', function() {
   describe('screen.getCursorScreenPoint()', function() {

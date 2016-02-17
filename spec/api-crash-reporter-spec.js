@@ -1,18 +1,13 @@
-var BrowserWindow, app, assert, crashReporter, http, multiparty, path, ref, remote, url;
+const assert = require('assert');
+const http = require('http');
+const multiparty = require('multiparty');
+const path = require('path');
+const url = require('url');
 
-assert = require('assert');
-
-path = require('path');
-
-http = require('http');
-
-url = require('url');
-
-multiparty = require('multiparty');
-
-remote = require('electron').remote;
-
-ref = remote.require('electron'), app = ref.app, crashReporter = ref.crashReporter, BrowserWindow = ref.BrowserWindow;
+const remote = require('electron').remote;
+const app = remote.require('electron').app;
+const crashReporter = remote.require('electron').crashReporter;
+const BrowserWindow = remote.require('electron').BrowserWindow;
 
 describe('crash-reporter module', function() {
   var fixtures, isCI, w;
@@ -63,7 +58,7 @@ describe('crash-reporter module', function() {
     return server.listen(port, '127.0.0.1', function() {
       port = server.address().port;
       remote.process.port = port;
-      url = url.format({
+      const crashUrl = url.format({
         protocol: 'file',
         pathname: path.join(fixtures, 'api', 'crash.html'),
         search: "?port=" + port
@@ -74,7 +69,7 @@ describe('crash-reporter module', function() {
           submitURL: "http://127.0.0.1:" + port
         });
       }
-      return w.loadURL(url);
+      return w.loadURL(crashUrl);
     });
   });
   return describe(".start(options)", function() {

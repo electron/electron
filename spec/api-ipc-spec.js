@@ -1,14 +1,13 @@
-var BrowserWindow, assert, comparePaths, ipcMain, ipcRenderer, path, ref, ref1, remote;
+const assert = require('assert');
+const path = require('path');
 
-assert = require('assert');
+const ipcRenderer = require('electron').ipcRenderer;
+const remote = require('electron').remote;
 
-path = require('path');
+const ipcMain = remote.require('electron').ipcMain;
+const BrowserWindow = remote.require('electron').BrowserWindow;
 
-ref = require('electron'), ipcRenderer = ref.ipcRenderer, remote = ref.remote;
-
-ref1 = remote.require('electron'), ipcMain = ref1.ipcMain, BrowserWindow = ref1.BrowserWindow;
-
-comparePaths = function(path1, path2) {
+const comparePaths = function(path1, path2) {
   if (process.platform === 'win32') {
     path1 = path1.toLowerCase();
     path2 = path2.toLowerCase();

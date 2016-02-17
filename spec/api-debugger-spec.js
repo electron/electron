@@ -1,12 +1,6 @@
-var assert, path, remote, BrowserWindow;
-
-assert = require('assert');
-
-path = require('path');
-
-remote = require('electron').remote;
-
-BrowserWindow = remote.BrowserWindow;
+const assert = require('assert');
+const path = require('path');
+const BrowserWindow = require('electron').remote.BrowserWindow;
 
 describe('debugger module', function() {
   var fixtures, w;
