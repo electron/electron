@@ -1,10 +1,13 @@
 const ipcRenderer = require('electron').ipcRenderer;
 const CallbacksRegistry = require('electron').CallbacksRegistry;
 const v8Util = process.atomBinding('v8_util');
+const IDWeakMap = process.atomBinding('id_weak_map').IDWeakMap;
 
 const callbacksRegistry = new CallbacksRegistry;
 
 var includes = [].includes;
+
+var remoteObjectCache = new IDWeakMap;
 
 // Check for circular reference.
 var isCircular = function(field, visited) {
@@ -154,6 +157,9 @@ var metaToValue = function(meta) {
         }
       }
 
+      if (remoteObjectCache.has(meta.id))
+        return remoteObjectCache.get(meta.id);
+
       // Track delegate object's life time, and tell the browser to clean up
       // when the object is GCed.
       v8Util.setDestructor(ret, function() {
@@ -162,6 +168,7 @@ var metaToValue = function(meta) {
 
       // Remember object's id.
       v8Util.setHiddenValue(ret, 'atomId', meta.id);
+      remoteObjectCache.set(meta.id, ret);
       return ret;
   }
 };
