@@ -6,13 +6,20 @@
       color: #45828E;
       background-color: #A5ECFA;
       font-family: 'Helvetica Neue', 'Open Sans', Helvetica, Arial, sans-serif;
-      padding: 30px;
+      padding: 0;
+      margin: 0;
+    }
+
+    .container {
+      padding: 15px 30px;
     }
 
     h2 {
+      background-color: #76C7D7;
+      color: #FAF7F3;
       font-weight: 400;
-      line-height: 1.1;
-      letter-spacing: -0.015em;
+      padding: 15px 30px;
+      margin: 0;
     }
 
     a {
@@ -89,36 +96,40 @@
     </script>
   </h2>
 
-  <p>
-  To run your app with Electron, execute the following command under your
-  Console (or Terminal):
-  </p>
+  <div class="container">
 
-  <script>document.write('<pre>' + command + '</pre>')</script>
+    <p>
+    To run your app with Electron, execute the following command under your
+    Console (or Terminal):
+    </p>
 
-  <p>
-  The <code>path-to-your-app</code> should be the path to your own Electron
-  app, you can read the
-  <script>
-    document.write(
-      `<a href='https://github.com/atom/electron/blob/v${process.versions.electron}/docs/tutorial/quick-start.md'>quick start</a>`
-    );
-  </script>
-  guide in Electron's
-  <script>
-    document.write(
-      `<a href='https://github.com/atom/electron/tree/v${process.versions.electron}/docs#readme'>docs</a>`
-    );
-  </script>
-  on how to write one.
-  </p>
+    <script>document.write('<pre>' + command + '</pre>')</script>
 
-  <p>
-  Or you can just drag your app here to run it:
-  </p>
+    <p>
+    The <code>path-to-your-app</code> should be the path to your own Electron
+    app, you can read the
+    <script>
+      document.write(
+        `<a href='https://github.com/atom/electron/blob/v${process.versions.electron}/docs/tutorial/quick-start.md'>quick start</a>`
+      );
+    </script>
+    guide in Electron's
+    <script>
+      document.write(
+        `<a href='https://github.com/atom/electron/tree/v${process.versions.electron}/docs#readme'>docs</a>`
+      );
+    </script>
+    on how to write one.
+    </p>
 
-  <div id="holder">
-    Drag your app here to run it
+    <p>
+    Or you can just drag your app here to run it:
+    </p>
+
+    <div id="holder">
+      Drag your app here to run it
+    </div>
+
   </div>
 
   <script>
