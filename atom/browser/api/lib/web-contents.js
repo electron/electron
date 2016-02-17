@@ -11,6 +11,7 @@ const debuggerBinding = process.atomBinding('debugger');
 
 let  slice = [].slice;
 let nextId = 0;
+let responseCallback = {};
 
 let getNextId = function() {
   return ++nextId;
@@ -109,12 +110,23 @@ let wrapWebContents = function(webContents) {
   // Make sure webContents.executeJavaScript would run the code only when the
   // webContents has been loaded.
   const executeJavaScript = webContents.executeJavaScript;
-  webContents.executeJavaScript = function(code, hasUserGesture) {
+  webContents.executeJavaScript = function(code, hasUserGesture, callback) {
+    if (typeof hasUserGesture === "function") {
+      callback = hasUserGesture;
+      hasUserGesture = false;
+    }
+    if (callback !== null)
+      responseCallback["executeJavaScript"] = callback;
     if (this.getURL() && !this.isLoading())
       return executeJavaScript.call(this, code, hasUserGesture);
     else
       return this.once('did-finish-load', executeJavaScript.bind(this, code, hasUserGesture));
   };
+
+  ipcMain.on('ELECTRON_INTERNAL_RENDERER_WEB_FRAME_RESPONSE', function(event, method, result) {
+    if (responseCallback[method])
+      responseCallback[method].apply(null, [result]);
+  });
 
   // Dispatch IPC messages to the ipc module.
   webContents.on('ipc-message', function(event, packed) {

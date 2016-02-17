@@ -32,7 +32,17 @@ v8Util.setHiddenValue(global, 'ipc', new events.EventEmitter);
 const electron = require('electron');
 
 // Call webFrame method.
+const asyncWebFrameMethods = [
+  'executeJavaScript'
+];
+
 electron.ipcRenderer.on('ELECTRON_INTERNAL_RENDERER_WEB_FRAME_METHOD', (event, method, args) => {
+  if (asyncWebFrameMethods.includes(method)) {
+    const responseCallback = function(result) {
+      event.sender.send('ELECTRON_INTERNAL_RENDERER_WEB_FRAME_RESPONSE', method, result);
+    };
+    args.push(responseCallback);
+  }
   electron.webFrame[method].apply(electron.webFrame, args);
 });
 

@@ -6,6 +6,7 @@
 #define ATOM_COMMON_NATIVE_MATE_CONVERTERS_BLINK_CONVERTER_H_
 
 #include "native_mate/converter.h"
+#include "third_party/WebKit/public/platform/WebVector.h"
 
 namespace blink {
 class WebInputEvent;
@@ -85,6 +86,19 @@ template<>
 struct Converter<blink::WebFindOptions> {
   static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
                      blink::WebFindOptions* out);
+};
+
+template<typename T>
+struct Converter<blink::WebVector<T> > {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const blink::WebVector<T>& val) {
+    v8::Local<v8::Array> result(
+        MATE_ARRAY_NEW(isolate, static_cast<int>(val.size())));
+    for (size_t i = 0; i < val.size(); ++i) {
+      result->Set(static_cast<int>(i), Converter<T>::ToV8(isolate, val[i]));
+    }
+    return result;
+  }
 };
 
 }  // namespace mate

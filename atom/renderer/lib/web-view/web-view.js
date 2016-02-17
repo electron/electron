@@ -307,7 +307,7 @@ var registerBrowserPluginElement = function() {
 
 // Registers <webview> custom element.
 var registerWebViewElement = function() {
-  var createBlockHandler, createNonBlockHandler, i, j, len, len1, m, methods, nonblockMethods, proto;
+  var createBlockHandler, createNonBlockHandler, i, j, len, len1, m, methods, nonblockMethods, webFrameMethods, proto;
   proto = Object.create(HTMLObjectElement.prototype);
   proto.createdCallback = function() {
     return new WebViewImpl(this);
@@ -391,14 +391,16 @@ var registerWebViewElement = function() {
     'printToPDF',
   ];
   nonblockMethods = [
-    'executeJavaScript',
     'insertCSS',
-    'insertText',
     'send',
-    'sendInputEvent',
+    'sendInputEvent'
+  ];
+  webFrameMethods = [
+    'executeJavaScript',
+    'insertText',
     'setZoomFactor',
     'setZoomLevel',
-    'setZoomLevelLimits',
+    'setZoomLevelLimits'
   ];
 
   // Forward proto.foo* method calls to WebViewImpl.foo*.
@@ -428,6 +430,11 @@ var registerWebViewElement = function() {
   for (j = 0, len1 = nonblockMethods.length; j < len1; j++) {
     m = nonblockMethods[j];
     proto[m] = createNonBlockHandler(m);
+  }
+
+  // Forward proto.foo* webframe method calls to WebFrame.foo*.
+  for (let method of webFrameMethods) {
+    proto[method] = webFrame[method].bind(webFrame);
   }
 
   // WebContents associated with this webview.
