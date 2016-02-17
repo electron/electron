@@ -20,9 +20,8 @@ describe('ipc module', function() {
 
   describe('remote.require', function() {
     it('should returns same object for the same module', function() {
-      var dialog1, dialog2;
-      dialog1 = remote.require('electron');
-      dialog2 = remote.require('electron');
+      var dialog1 = remote.require('electron');
+      var dialog2 = remote.require('electron');
       assert.equal(dialog1, dialog2);
     });
 
@@ -58,9 +57,8 @@ describe('ipc module', function() {
     });
 
     it('can construct an object from its member', function() {
-      var call, obj;
-      call = remote.require(path.join(fixtures, 'module', 'call.js'));
-      obj = new call.constructor;
+      var call = remote.require(path.join(fixtures, 'module', 'call.js'));
+      var obj = new call.constructor;
       assert.equal(obj.test, 'test');
     });
   });

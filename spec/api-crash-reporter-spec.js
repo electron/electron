@@ -37,9 +37,8 @@ describe('crash-reporter module', function() {
 
     var called = false;
     var server = http.createServer(function(req, res) {
-      var form;
       server.close();
-      form = new multiparty.Form();
+      var form = new multiparty.Form();
       form.parse(req, function(error, fields) {
         if (called) {
           return;

@@ -66,11 +66,10 @@ describe('app module', function() {
     });
 
     it('emits a process exit event with the code', function(done) {
-      var appPath, electronPath, output;
-      appPath = path.join(__dirname, 'fixtures', 'api', 'quit-app');
-      electronPath = remote.getGlobal('process').execPath;
+      var appPath = path.join(__dirname, 'fixtures', 'api', 'quit-app');
+      var electronPath = remote.getGlobal('process').execPath;
+      var output = '';
       appProcess = ChildProcess.spawn(electronPath, [appPath]);
-      output = '';
       appProcess.stdout.on('data', function(data) {
         output += data;
       });

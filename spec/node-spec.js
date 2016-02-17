@@ -11,8 +11,7 @@ describe('node feature', function() {
   describe('child_process', function() {
     describe('child_process.fork', function() {
       it('works in current process', function(done) {
-        var child;
-        child = child_process.fork(path.join(fixtures, 'module', 'ping.js'));
+        var child = child_process.fork(path.join(fixtures, 'module', 'ping.js'));
         child.on('message', function(msg) {
           assert.equal(msg, 'message');
           done();
@@ -51,9 +50,8 @@ describe('node feature', function() {
       });
 
       it('works in browser process', function(done) {
-        var child, fork;
-        fork = remote.require('child_process').fork;
-        child = fork(path.join(fixtures, 'module', 'ping.js'));
+        var fork = remote.require('child_process').fork;
+        var child = fork(path.join(fixtures, 'module', 'ping.js'));
         child.on('message', function(msg) {
           assert.equal(msg, 'message');
           done();
@@ -62,8 +60,7 @@ describe('node feature', function() {
       });
 
       it('has String::localeCompare working in script', function(done) {
-        var child;
-        child = child_process.fork(path.join(fixtures, 'module', 'locale-compare.js'));
+        var child = child_process.fork(path.join(fixtures, 'module', 'locale-compare.js'));
         child.on('message', function(msg) {
           assert.deepEqual(msg, [0, -1, 1]);
           done();
@@ -169,14 +166,12 @@ describe('node feature', function() {
     }
 
     it('emit error when connect to a socket path without listeners', function(done) {
-      var child, script, socketPath;
-      socketPath = path.join(os.tmpdir(), 'atom-shell-test.sock');
-      script = path.join(fixtures, 'module', 'create_socket.js');
-      child = child_process.fork(script, [socketPath]);
+      var socketPath = path.join(os.tmpdir(), 'atom-shell-test.sock');
+      var script = path.join(fixtures, 'module', 'create_socket.js');
+      var child = child_process.fork(script, [socketPath]);
       child.on('exit', function(code) {
-        var client;
         assert.equal(code, 0);
-        client = require('net').connect(socketPath);
+        var client = require('net').connect(socketPath);
         client.on('error', function(error) {
           assert.equal(error.code, 'ECONNREFUSED');
           done();
@@ -187,19 +182,17 @@ describe('node feature', function() {
 
   describe('Buffer', function() {
     it('can be created from WebKit external string', function() {
-      var b, p;
-      p = document.createElement('p');
+      var p = document.createElement('p');
       p.innerText = '闲云潭影日悠悠，物换星移几度秋';
-      b = new Buffer(p.innerText);
+      var b = new Buffer(p.innerText);
       assert.equal(b.toString(), '闲云潭影日悠悠，物换星移几度秋');
       assert.equal(Buffer.byteLength(p.innerText), 45);
     });
 
     it('correctly parses external one-byte UTF8 string', function() {
-      var b, p;
-      p = document.createElement('p');
+      var p = document.createElement('p');
       p.innerText = 'Jøhänñéß';
-      b = new Buffer(p.innerText);
+      var b = new Buffer(p.innerText);
       assert.equal(b.toString(), 'Jøhänñéß');
       assert.equal(Buffer.byteLength(p.innerText), 13);
     });

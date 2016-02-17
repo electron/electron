@@ -95,8 +95,7 @@ describe('<webview> tag', function() {
 
   describe('preload attribute', function() {
     it('loads the script before other scripts in window', function(done) {
-      var listener;
-      listener = function(e) {
+      var listener = function(e) {
         assert.equal(e.message, 'function object object');
         webview.removeEventListener('console-message', listener);
         done();
@@ -118,15 +117,14 @@ describe('<webview> tag', function() {
     });
 
     it('receives ipc message in preload script', function(done) {
-      var listener, listener2, message;
-      message = 'boom!';
-      listener = function(e) {
+      var message = 'boom!';
+      var listener = function(e) {
         assert.equal(e.channel, 'pong');
         assert.deepEqual(e.args, [message]);
         webview.removeEventListener('ipc-message', listener);
         done();
       };
-      listener2 = function() {
+      var listener2 = function() {
         webview.send('ping', message);
         webview.removeEventListener('did-finish-load', listener2);
       };
@@ -140,9 +138,8 @@ describe('<webview> tag', function() {
 
   describe('httpreferrer attribute', function() {
     it('sets the referrer url', function(done) {
-      var listener, referrer;
-      referrer = 'http://github.com/';
-      listener = function(e) {
+      var referrer = 'http://github.com/';
+      var listener = function(e) {
         assert.equal(e.message, referrer);
         webview.removeEventListener('console-message', listener);
         done();
@@ -156,9 +153,8 @@ describe('<webview> tag', function() {
 
   describe('useragent attribute', function() {
     it('sets the user agent', function(done) {
-      var listener, referrer;
-      referrer = 'Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; AS; rv:11.0) like Gecko';
-      listener = function(e) {
+      var referrer = 'Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; AS; rv:11.0) like Gecko';
+      var listener = function(e) {
         assert.equal(e.message, referrer);
         webview.removeEventListener('console-message', listener);
         done();
@@ -172,10 +168,9 @@ describe('<webview> tag', function() {
 
   describe('disablewebsecurity attribute', function() {
     it('does not disable web security when not set', function(done) {
-      var encoded, listener, src;
-      src = "<script src='file://" + __dirname + "/static/jquery-2.0.3.min.js'></script> <script>console.log('ok');</script>";
-      encoded = btoa(unescape(encodeURIComponent(src)));
-      listener = function(e) {
+      var src = "<script src='file://" + __dirname + "/static/jquery-2.0.3.min.js'></script> <script>console.log('ok');</script>";
+      var encoded = btoa(unescape(encodeURIComponent(src)));
+      var listener = function(e) {
         assert(/Not allowed to load local resource/.test(e.message));
         webview.removeEventListener('console-message', listener);
         done();
@@ -186,10 +181,9 @@ describe('<webview> tag', function() {
     });
 
     it('disables web security when set', function(done) {
-      var encoded, listener, src;
-      src = "<script src='file://" + __dirname + "/static/jquery-2.0.3.min.js'></script> <script>console.log('ok');</script>";
-      encoded = btoa(unescape(encodeURIComponent(src)));
-      listener = function(e) {
+      var src = "<script src='file://" + __dirname + "/static/jquery-2.0.3.min.js'></script> <script>console.log('ok');</script>";
+      var encoded = btoa(unescape(encodeURIComponent(src)));
+      var listener = function(e) {
         assert.equal(e.message, 'ok');
         webview.removeEventListener('console-message', listener);
         done();
@@ -223,8 +217,7 @@ describe('<webview> tag', function() {
     });
 
     it('isolates storage for different id', function(done) {
-      var listener;
-      listener = function(e) {
+      var listener = function(e) {
         assert.equal(e.message, " 0");
         webview.removeEventListener('console-message', listener);
         done();
@@ -237,8 +230,7 @@ describe('<webview> tag', function() {
     });
 
     it('uses current session storage when no id is provided', function(done) {
-      var listener;
-      listener = function(e) {
+      var listener = function(e) {
         assert.equal(e.message, "one 1");
         webview.removeEventListener('console-message', listener);
         done();
@@ -252,8 +244,7 @@ describe('<webview> tag', function() {
 
   describe('allowpopups attribute', function() {
     it('can not open new window when not set', function(done) {
-      var listener;
-      listener = function(e) {
+      var listener = function(e) {
         assert.equal(e.message, 'null');
         webview.removeEventListener('console-message', listener);
         done();
@@ -264,8 +255,7 @@ describe('<webview> tag', function() {
     });
 
     it('can open new window when set', function(done) {
-      var listener;
-      listener = function(e) {
+      var listener = function(e) {
         assert.equal(e.message, 'window');
         webview.removeEventListener('console-message', listener);
         done();
@@ -327,9 +317,8 @@ describe('<webview> tag', function() {
   describe('page-favicon-updated event', function() {
     it('emits when favicon urls are received', function(done) {
       webview.addEventListener('page-favicon-updated', function(e) {
-        var pageUrl;
         assert.equal(e.favicons.length, 2);
-        pageUrl = process.platform === 'win32' ? 'file:///C:/favicon.png' : 'file:///favicon.png';
+        var pageUrl = process.platform === 'win32' ? 'file:///C:/favicon.png' : 'file:///favicon.png';
         assert.equal(e.favicons[0], pageUrl);
         done();
       });
@@ -350,10 +339,9 @@ describe('<webview> tag', function() {
   });
 
   describe('did-navigate event', function() {
-    var p, pageUrl;
-    p = path.join(fixtures, 'pages', 'webview-will-navigate.html');
+    var p = path.join(fixtures, 'pages', 'webview-will-navigate.html');
     p = p.replace(/\\/g, '/');
-    pageUrl = url.format({
+    var pageUrl = url.format({
       protocol: 'file',
       slashes: true,
       pathname: p
@@ -370,10 +358,9 @@ describe('<webview> tag', function() {
   });
   describe('did-navigate-in-page event', function() {
     it('emits when an anchor link is clicked', function(done) {
-      var p, pageUrl;
-      p = path.join(fixtures, 'pages', 'webview-did-navigate-in-page.html');
+      var p = path.join(fixtures, 'pages', 'webview-did-navigate-in-page.html');
       p = p.replace(/\\/g, '/');
-      pageUrl = url.format({
+      var pageUrl = url.format({
         protocol: 'file',
         slashes: true,
         pathname: p
@@ -396,10 +383,9 @@ describe('<webview> tag', function() {
     });
 
     it('emits when window.location.hash is changed', function(done) {
-      var p, pageUrl;
-      p = path.join(fixtures, 'pages', 'webview-did-navigate-in-page-with-hash.html');
+      var p = path.join(fixtures, 'pages', 'webview-did-navigate-in-page-with-hash.html');
       p = p.replace(/\\/g, '/');
-      pageUrl = url.format({
+      var pageUrl = url.format({
         protocol: 'file',
         slashes: true,
         pathname: p
@@ -425,8 +411,7 @@ describe('<webview> tag', function() {
 
   describe('devtools-opened event', function() {
     it('should fire when webview.openDevTools() is called', function(done) {
-      var listener;
-      listener = function() {
+      var listener = function() {
         webview.removeEventListener('devtools-opened', listener);
         webview.closeDevTools();
         done();
@@ -442,12 +427,11 @@ describe('<webview> tag', function() {
 
   describe('devtools-closed event', function() {
     it('should fire when webview.closeDevTools() is called', function(done) {
-      var listener, listener2;
-      listener2 = function() {
+      var listener2 = function() {
         webview.removeEventListener('devtools-closed', listener2);
         done();
       };
-      listener = function() {
+      var listener = function() {
         webview.removeEventListener('devtools-opened', listener);
         webview.closeDevTools();
       };
@@ -463,8 +447,7 @@ describe('<webview> tag', function() {
 
   describe('devtools-focused event', function() {
     it('should fire when webview.openDevTools() is called', function(done) {
-      var listener;
-      listener = function() {
+      var listener = function() {
         webview.removeEventListener('devtools-focused', listener);
         webview.closeDevTools();
         done();
@@ -480,13 +463,12 @@ describe('<webview> tag', function() {
 
   describe('<webview>.reload()', function() {
     it('should emit beforeunload handler', function(done) {
-      var listener, listener2;
-      listener = function(e) {
+      var listener = function(e) {
         assert.equal(e.channel, 'onbeforeunload');
         webview.removeEventListener('ipc-message', listener);
         done();
       };
-      listener2 = function() {
+      var listener2 = function() {
         webview.reload();
         webview.removeEventListener('did-finish-load', listener2);
       };
@@ -500,8 +482,7 @@ describe('<webview> tag', function() {
 
   describe('<webview>.clearHistory()', function() {
     it('should clear the navigation history', function(done) {
-      var listener;
-      listener = function(e) {
+      var listener = function(e) {
         assert.equal(e.channel, 'history');
         assert.equal(e.args[0], 2);
         assert(webview.canGoBack());
@@ -518,14 +499,12 @@ describe('<webview> tag', function() {
   });
 
   describe('basic auth', function() {
-    var auth;
-    auth = require('basic-auth');
+    var auth = require('basic-auth');
+
     it('should authenticate with correct credentials', function(done) {
-      var message, server;
-      message = 'Authenticated';
-      server = http.createServer(function(req, res) {
-        var credentials;
-        credentials = auth(req);
+      var message = 'Authenticated';
+      var server = http.createServer(function(req, res) {
+        var credentials = auth(req);
         if (credentials.name === 'test' && credentials.pass === 'test') {
           res.end(message);
         } else {
@@ -534,8 +513,7 @@ describe('<webview> tag', function() {
         server.close();
       });
       server.listen(0, '127.0.0.1', function() {
-        var port;
-        port = server.address().port;
+        var port = server.address().port;
         webview.addEventListener('ipc-message', function(e) {
           assert.equal(e.channel, message);
           done();
@@ -549,11 +527,9 @@ describe('<webview> tag', function() {
 
   describe('dom-ready event', function() {
     it('emits when document is loaded', function(done) {
-      var server;
-      server = http.createServer(function() {});
+      var server = http.createServer(function() {});
       server.listen(0, '127.0.0.1', function() {
-        var port;
-        port = server.address().port;
+        var port = server.address().port;
         webview.addEventListener('dom-ready', function() {
           done();
         });
@@ -575,14 +551,12 @@ describe('<webview> tag', function() {
     }
 
     it('should support user gesture', function(done) {
-      var listener, listener2;
-      listener = function() {
+      var listener = function() {
         webview.removeEventListener('enter-html-full-screen', listener);
         done();
       };
-      listener2 = function() {
-        var jsScript;
-        jsScript = 'document.getElementsByTagName("video")[0].webkitRequestFullScreen()';
+      var listener2 = function() {
+        var jsScript = 'document.getElementsByTagName("video")[0].webkitRequestFullScreen()';
         webview.executeJavaScript(jsScript, true);
         webview.removeEventListener('did-finish-load', listener2);
       };
@@ -634,8 +608,7 @@ describe('<webview> tag', function() {
 
   describe('media-started-playing media-paused events', function() {
     it('emits when audio starts and stops playing', function(done) {
-      var audioPlayed;
-      audioPlayed = false;
+      var audioPlayed = false;
       webview.addEventListener('media-started-playing', function() {
         audioPlayed = true;
       });
@@ -650,9 +623,8 @@ describe('<webview> tag', function() {
 
   describe('found-in-page event', function() {
     it('emits when a request is made', function(done) {
-      var listener, listener2, requestId;
-      requestId = null;
-      listener = function(e) {
+      var requestId = null;
+      var listener = function(e) {
         assert.equal(e.result.requestId, requestId);
         if (e.result.finalUpdate) {
           assert.equal(e.result.matches, 3);
@@ -660,7 +632,7 @@ describe('<webview> tag', function() {
           done();
         }
       };
-      listener2 = function() {
+      var listener2 = function() {
         requestId = webview.findInPage("virtual");
       };
       webview.addEventListener('found-in-page', listener);

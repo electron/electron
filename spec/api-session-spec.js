@@ -31,15 +31,13 @@ describe('session module', function() {
 
   describe('session.cookies', function() {
     it('should get cookies', function(done) {
-      var server;
-      server = http.createServer(function(req, res) {
+      var server = http.createServer(function(req, res) {
         res.setHeader('Set-Cookie', ['0=0']);
         res.end('finished');
         server.close();
       });
       server.listen(0, '127.0.0.1', function() {
-        var port;
-        port = server.address().port;
+        var port = server.address().port;
         w.loadURL(url + ":" + port);
         w.webContents.on('did-finish-load', function() {
           w.webContents.session.cookies.get({
@@ -136,8 +134,7 @@ describe('session module', function() {
       });
       w.loadURL('file://' + path.join(fixtures, 'api', 'localstorage.html'));
       w.webContents.on('did-finish-load', function() {
-        var options;
-        options = {
+        var options = {
           origin: "file://",
           storages: ['localstorage'],
           quotas: ['persistent']

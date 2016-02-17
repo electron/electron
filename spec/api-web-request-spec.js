@@ -7,9 +7,8 @@ const session = remote.session;
 describe('webRequest module', function() {
   var ses = session.defaultSession;
   var server = http.createServer(function(req, res) {
-    var content;
     res.setHeader('Custom', ['Header']);
-    content = req.url;
+    var content = req.url;
     if (req.headers.accept === '*/*;test/header') {
       content += 'header/received';
     }
@@ -19,8 +18,7 @@ describe('webRequest module', function() {
 
   before(function(done) {
     server.listen(0, '127.0.0.1', function() {
-      var port;
-      port = server.address().port;
+      var port = server.address().port;
       defaultURL = "http://127.0.0.1:" + port + "/";
       done();
     });
@@ -109,11 +107,10 @@ describe('webRequest module', function() {
         type: 'string'
       };
       ses.webRequest.onBeforeRequest(function(details, callback) {
-        var data;
         assert.equal(details.url, defaultURL);
         assert.equal(details.method, 'POST');
         assert.equal(details.uploadData.length, 1);
-        data = qs.parse(details.uploadData[0].bytes.toString());
+        var data = qs.parse(details.uploadData[0].bytes.toString());
         assert.deepEqual(data, postData);
         callback({
           cancel: true
@@ -178,8 +175,7 @@ describe('webRequest module', function() {
 
     it('can change the request headers', function(done) {
       ses.webRequest.onBeforeSendHeaders(function(details, callback) {
-        var requestHeaders;
-        requestHeaders = details.requestHeaders;
+        var requestHeaders = details.requestHeaders;
         requestHeaders.Accept = '*/*;test/header';
         callback({
           requestHeaders: requestHeaders

@@ -211,10 +211,9 @@ describe('chromium feature', function() {
       var b, sourceId;
       sourceId = remote.getCurrentWindow().id;
       listener = function(event) {
-        var message;
         window.removeEventListener('message', listener);
         b.close();
-        message = JSON.parse(event.data);
+        var message = JSON.parse(event.data);
         assert.equal(message.data, 'testing');
         assert.equal(message.origin, 'file://');
         assert.equal(message.sourceEqualsOpener, true);
@@ -247,28 +246,25 @@ describe('chromium feature', function() {
 
   describe('creating a Uint8Array under browser side', function() {
     it('does not crash', function() {
-      var RUint8Array;
-      RUint8Array = remote.getGlobal('Uint8Array');
+      var RUint8Array = remote.getGlobal('Uint8Array');
       new RUint8Array;
     });
   });
 
   describe('webgl', function() {
     it('can be get as context in canvas', function() {
-      var webgl;
       if (process.platform === 'linux') {
         return;
       }
-      webgl = document.createElement('canvas').getContext('webgl');
+      var webgl = document.createElement('canvas').getContext('webgl');
       assert.notEqual(webgl, null);
     });
   });
 
   describe('web workers', function() {
     it('Worker can work', function(done) {
-      var message, worker;
-      worker = new Worker('../fixtures/workers/worker.js');
-      message = 'ping';
+      var worker = new Worker('../fixtures/workers/worker.js');
+      var message = 'ping';
       worker.onmessage = function(event) {
         assert.equal(event.data, message);
         worker.terminate();
@@ -278,9 +274,8 @@ describe('chromium feature', function() {
     });
 
     it('SharedWorker can work', function(done) {
-      var message, worker;
-      worker = new SharedWorker('../fixtures/workers/shared_worker.js');
-      message = 'ping';
+      var worker = new SharedWorker('../fixtures/workers/shared_worker.js');
+      var message = 'ping';
       worker.port.onmessage = function(event) {
         assert.equal(event.data, message);
         done();
@@ -377,8 +372,7 @@ describe('chromium feature', function() {
         })
       });
       remote.getGlobal('setImmediate')(function() {
-        var called;
-        called = false;
+        var called = false;
         Promise.resolve().then(function() {
           done(called ? void 0 : new Error('wrong sequence'));
         });

@@ -128,9 +128,8 @@ describe('asar package', function() {
       });
 
       it('returns information of root', function() {
-        var p, stats;
-        p = path.join(fixtures, 'asar', 'a.asar');
-        stats = fs.lstatSync(p);
+        var p = path.join(fixtures, 'asar', 'a.asar');
+        var stats = fs.lstatSync(p);
         assert.equal(stats.isFile(), false);
         assert.equal(stats.isDirectory(), true);
         assert.equal(stats.isSymbolicLink(), false);
@@ -607,9 +606,8 @@ describe('asar package', function() {
       });
 
       it('disables asar support in async API', function(done) {
-        var dir, file;
-        file = path.join(fixtures, 'asar', 'a.asar', 'file1');
-        dir = path.join(fixtures, 'asar', 'a.asar', 'dir1');
+        var file = path.join(fixtures, 'asar', 'a.asar', 'file1');
+        var dir = path.join(fixtures, 'asar', 'a.asar', 'dir1');
         fs.readFile(file, function(error) {
           assert.equal(error.code, errorName);
           fs.lstat(file, function(error) {
@@ -737,15 +735,13 @@ describe('asar package', function() {
     var originalFs = require('original-fs');
 
     it('treats .asar as file', function() {
-      var file, stats;
-      file = path.join(fixtures, 'asar', 'a.asar');
-      stats = originalFs.statSync(file);
+      var file = path.join(fixtures, 'asar', 'a.asar');
+      var stats = originalFs.statSync(file);
       assert(stats.isFile());
     });
 
     it('is available in forked scripts', function(done) {
-      var child;
-      child = child_process.fork(path.join(fixtures, 'module', 'original-fs.js'));
+      var child = child_process.fork(path.join(fixtures, 'module', 'original-fs.js'));
       child.on('message', function(msg) {
         assert.equal(msg, 'object');
         done();
