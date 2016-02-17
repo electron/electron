@@ -4,6 +4,7 @@
 
 #include "atom/common/native_mate_converters/v8_value_converter.h"
 
+#include <ctime>
 #include <map>
 #include <string>
 #include <utility>
@@ -19,6 +20,14 @@ namespace atom {
 namespace {
 
 const int kMaxRecursionDepth = 100;
+
+const double kMsPerDay = 24 * 60 * 60 * 1000;
+
+int TimeInDay(double time_ms) {
+  if (time_ms < 0) time_ms -= (kMsPerDay -1);
+  int days = static_cast<int>(time_ms / kMsPerDay);
+  return static_cast<int>(time_ms - days * kMsPerDay);
+}
 
 }  // namespace
 
@@ -76,14 +85,9 @@ class V8ValueConverter::FromV8ValueState {
 };
 
 V8ValueConverter::V8ValueConverter()
-    : date_allowed_(false),
-      reg_exp_allowed_(false),
+    : reg_exp_allowed_(false),
       function_allowed_(false),
       strip_null_from_objects_(false) {}
-
-void V8ValueConverter::SetDateAllowed(bool val) {
-  date_allowed_ = val;
-}
 
 void V8ValueConverter::SetRegExpAllowed(bool val) {
   reg_exp_allowed_ = val;
@@ -243,12 +247,21 @@ base::Value* V8ValueConverter::FromV8ValueImpl(
     return NULL;
 
   if (val->IsDate()) {
-    if (!date_allowed_)
-      // JSON.stringify would convert this to a string, but an object is more
-      // consistent within this class.
-      return FromV8Object(val->ToObject(), state, isolate);
     v8::Date* date = v8::Date::Cast(*val);
-    return new base::FundamentalValue(date->NumberValue() / 1000.0);
+    double const time_ms = date->NumberValue();
+    int const time_in_day_ms = TimeInDay(time_ms);
+    std::time_t time_s(time_ms / 1000.0);
+    char buf[128];
+    std::tm* gm_time = std::gmtime(&time_s);
+    int year = gm_time->tm_year + 1900;
+    int month  = gm_time->tm_mon + 1;
+    int ms = time_in_day_ms % 1000;
+    size_t length = snprintf(buf, sizeof buf,
+                             "%04d-%02d-%02dT%02d:%02d:%02d.%03dZ",
+                             year, month, gm_time->tm_mday,
+                             gm_time->tm_hour, gm_time->tm_min,
+                             gm_time->tm_sec, ms);
+    return new base::StringValue(std::string(buf, length));
   }
 
   if (val->IsRegExp()) {

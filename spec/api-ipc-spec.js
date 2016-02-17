@@ -102,6 +102,15 @@ describe('ipc module', function() {
       });
       ipcRenderer.send('message', obj);
     });
+
+    it('can send instance of Date', function(done) {
+      const currentDate = new Date();
+      ipcRenderer.once('message', function(event, value) {
+        assert.equal(value, currentDate.toISOString());
+        done();
+      });
+      ipcRenderer.send('message', currentDate);
+    });
   });
 
   describe('ipc.sendSync', function() {
