@@ -13,41 +13,41 @@ describe('webRequest module', function() {
     if (req.headers.accept === '*/*;test/header') {
       content += 'header/received';
     }
-    return res.end(content);
+    res.end(content);
   });
   var defaultURL = null;
 
   before(function(done) {
-    return server.listen(0, '127.0.0.1', function() {
+    server.listen(0, '127.0.0.1', function() {
       var port;
       port = server.address().port;
       defaultURL = "http://127.0.0.1:" + port + "/";
-      return done();
+      done();
     });
   });
 
   after(function() {
-    return server.close();
+    server.close();
   });
 
   describe('webRequest.onBeforeRequest', function() {
     afterEach(function() {
-      return ses.webRequest.onBeforeRequest(null);
+      ses.webRequest.onBeforeRequest(null);
     });
 
     it('can cancel the request', function(done) {
       ses.webRequest.onBeforeRequest(function(details, callback) {
-        return callback({
+        callback({
           cancel: true
         });
       });
-      return $.ajax({
+      $.ajax({
         url: defaultURL,
         success: function() {
-          return done('unexpected success');
+          done('unexpected success');
         },
         error: function() {
-          return done();
+          done();
         }
       });
     });
@@ -57,26 +57,26 @@ describe('webRequest module', function() {
         urls: [defaultURL + "filter/*"]
       };
       ses.webRequest.onBeforeRequest(filter, function(details, callback) {
-        return callback({
+        callback({
           cancel: true
         });
       });
-      return $.ajax({
+      $.ajax({
         url: defaultURL + "nofilter/test",
         success: function(data) {
           assert.equal(data, '/nofilter/test');
-          return $.ajax({
+          $.ajax({
             url: defaultURL + "filter/test",
             success: function() {
-              return done('unexpected success');
+              done('unexpected success');
             },
             error: function() {
-              return done();
+              done();
             }
           });
         },
         error: function(xhr, errorType) {
-          return done(errorType);
+          done(errorType);
         }
       });
     });
@@ -89,16 +89,16 @@ describe('webRequest module', function() {
         assert.equal(details.method, 'GET');
         assert.equal(details.resourceType, 'xhr');
         assert(!details.uploadData);
-        return callback({});
+        callback({});
       });
-      return $.ajax({
+      $.ajax({
         url: defaultURL,
         success: function(data) {
           assert.equal(data, '/');
-          return done();
+          done();
         },
         error: function(xhr, errorType) {
-          return done(errorType);
+          done(errorType);
         }
       });
     });
@@ -115,11 +115,11 @@ describe('webRequest module', function() {
         assert.equal(details.uploadData.length, 1);
         data = qs.parse(details.uploadData[0].bytes.toString());
         assert.deepEqual(data, postData);
-        return callback({
+        callback({
           cancel: true
         });
       });
-      return $.ajax({
+      $.ajax({
         url: defaultURL,
         type: 'POST',
         data: postData,
@@ -131,24 +131,24 @@ describe('webRequest module', function() {
       });
     });
 
-    return it('can redirect the request', function(done) {
+    it('can redirect the request', function(done) {
       ses.webRequest.onBeforeRequest(function(details, callback) {
         if (details.url === defaultURL) {
-          return callback({
+          callback({
             redirectURL: defaultURL + "redirect"
           });
         } else {
-          return callback({});
+          callback({});
         }
       });
-      return $.ajax({
+      $.ajax({
         url: defaultURL,
         success: function(data) {
           assert.equal(data, '/redirect');
-          return done();
+          done();
         },
         error: function(xhr, errorType) {
-          return done(errorType);
+          done(errorType);
         }
       });
     });
@@ -156,22 +156,22 @@ describe('webRequest module', function() {
 
   describe('webRequest.onBeforeSendHeaders', function() {
     afterEach(function() {
-      return ses.webRequest.onBeforeSendHeaders(null);
+      ses.webRequest.onBeforeSendHeaders(null);
     });
 
     it('receives details object', function(done) {
       ses.webRequest.onBeforeSendHeaders(function(details, callback) {
         assert.equal(typeof details.requestHeaders, 'object');
-        return callback({});
+        callback({});
       });
-      return $.ajax({
+      $.ajax({
         url: defaultURL,
         success: function(data) {
           assert.equal(data, '/');
-          return done();
+          done();
         },
         error: function(xhr, errorType) {
-          return done(errorType);
+          done(errorType);
         }
       });
     });
@@ -181,40 +181,39 @@ describe('webRequest module', function() {
         var requestHeaders;
         requestHeaders = details.requestHeaders;
         requestHeaders.Accept = '*/*;test/header';
-        return callback({
+        callback({
           requestHeaders: requestHeaders
         });
       });
-      return $.ajax({
+      $.ajax({
         url: defaultURL,
         success: function(data) {
           assert.equal(data, '/header/received');
-          return done();
+          done();
         },
         error: function(xhr, errorType) {
-          return done(errorType);
+          done(errorType);
         }
       });
     });
 
-    return it('resets the whole headers', function(done) {
-      var requestHeaders;
-      requestHeaders = {
+    it('resets the whole headers', function(done) {
+      var requestHeaders = {
         Test: 'header'
       };
       ses.webRequest.onBeforeSendHeaders(function(details, callback) {
-        return callback({
+        callback({
           requestHeaders: requestHeaders
         });
       });
       ses.webRequest.onSendHeaders(function(details) {
         assert.deepEqual(details.requestHeaders, requestHeaders);
-        return done();
+        done();
       });
-      return $.ajax({
+      $.ajax({
         url: defaultURL,
         error: function(xhr, errorType) {
-          return done(errorType);
+          done(errorType);
         }
       });
     });
@@ -222,21 +221,21 @@ describe('webRequest module', function() {
 
   describe('webRequest.onSendHeaders', function() {
     afterEach(function() {
-      return ses.webRequest.onSendHeaders(null);
+      ses.webRequest.onSendHeaders(null);
     });
 
-    return it('receives details object', function(done) {
+    it('receives details object', function(done) {
       ses.webRequest.onSendHeaders(function(details) {
-        return assert.equal(typeof details.requestHeaders, 'object');
+        assert.equal(typeof details.requestHeaders, 'object');
       });
-      return $.ajax({
+      $.ajax({
         url: defaultURL,
         success: function(data) {
           assert.equal(data, '/');
-          return done();
+          done();
         },
         error: function(xhr, errorType) {
-          return done(errorType);
+          done(errorType);
         }
       });
     });
@@ -244,7 +243,7 @@ describe('webRequest module', function() {
 
   describe('webRequest.onHeadersReceived', function() {
     afterEach(function() {
-      return ses.webRequest.onHeadersReceived(null);
+      ses.webRequest.onHeadersReceived(null);
     });
 
     it('receives details object', function(done) {
@@ -252,55 +251,54 @@ describe('webRequest module', function() {
         assert.equal(details.statusLine, 'HTTP/1.1 200 OK');
         assert.equal(details.statusCode, 200);
         assert.equal(details.responseHeaders['Custom'], 'Header');
-        return callback({});
+        callback({});
       });
-      return $.ajax({
+      $.ajax({
         url: defaultURL,
         success: function(data) {
           assert.equal(data, '/');
-          return done();
+          done();
         },
         error: function(xhr, errorType) {
-          return done(errorType);
+          done(errorType);
         }
       });
     });
 
     it('can change the response header', function(done) {
       ses.webRequest.onHeadersReceived(function(details, callback) {
-        var responseHeaders;
-        responseHeaders = details.responseHeaders;
+        var responseHeaders = details.responseHeaders;
         responseHeaders['Custom'] = ['Changed'];
-        return callback({
+        callback({
           responseHeaders: responseHeaders
         });
       });
-      return $.ajax({
+      $.ajax({
         url: defaultURL,
         success: function(data, status, xhr) {
           assert.equal(xhr.getResponseHeader('Custom'), 'Changed');
           assert.equal(data, '/');
-          return done();
+          done();
         },
         error: function(xhr, errorType) {
-          return done(errorType);
+          done(errorType);
         }
       });
     });
 
-    return it('does not change header by default', function(done) {
+    it('does not change header by default', function(done) {
       ses.webRequest.onHeadersReceived(function(details, callback) {
-        return callback({});
+        callback({});
       });
-      return $.ajax({
+      $.ajax({
         url: defaultURL,
         success: function(data, status, xhr) {
           assert.equal(xhr.getResponseHeader('Custom'), 'Header');
           assert.equal(data, '/');
-          return done();
+          done();
         },
         error: function(xhr, errorType) {
-          return done(errorType);
+          done(errorType);
         }
       });
     });
@@ -308,25 +306,25 @@ describe('webRequest module', function() {
 
   describe('webRequest.onResponseStarted', function() {
     afterEach(function() {
-      return ses.webRequest.onResponseStarted(null);
+      ses.webRequest.onResponseStarted(null);
     });
 
-    return it('receives details object', function(done) {
+    it('receives details object', function(done) {
       ses.webRequest.onResponseStarted(function(details) {
         assert.equal(typeof details.fromCache, 'boolean');
         assert.equal(details.statusLine, 'HTTP/1.1 200 OK');
         assert.equal(details.statusCode, 200);
-        return assert.equal(details.responseHeaders['Custom'], 'Header');
+        assert.equal(details.responseHeaders['Custom'], 'Header');
       });
-      return $.ajax({
+      $.ajax({
         url: defaultURL,
         success: function(data, status, xhr) {
           assert.equal(xhr.getResponseHeader('Custom'), 'Header');
           assert.equal(data, '/');
-          return done();
+          done();
         },
         error: function(xhr, errorType) {
-          return done(errorType);
+          done(errorType);
         }
       });
     });
@@ -335,35 +333,34 @@ describe('webRequest module', function() {
   describe('webRequest.onBeforeRedirect', function() {
     afterEach(function() {
       ses.webRequest.onBeforeRedirect(null);
-      return ses.webRequest.onBeforeRequest(null);
+      ses.webRequest.onBeforeRequest(null);
     });
 
-    return it('receives details object', function(done) {
-      var redirectURL;
-      redirectURL = defaultURL + "redirect";
+    it('receives details object', function(done) {
+      var redirectURL = defaultURL + "redirect";
       ses.webRequest.onBeforeRequest(function(details, callback) {
         if (details.url === defaultURL) {
-          return callback({
+          callback({
             redirectURL: redirectURL
           });
         } else {
-          return callback({});
+          callback({});
         }
       });
       ses.webRequest.onBeforeRedirect(function(details) {
         assert.equal(typeof details.fromCache, 'boolean');
         assert.equal(details.statusLine, 'HTTP/1.1 307 Internal Redirect');
         assert.equal(details.statusCode, 307);
-        return assert.equal(details.redirectURL, redirectURL);
+        assert.equal(details.redirectURL, redirectURL);
       });
-      return $.ajax({
+      $.ajax({
         url: defaultURL,
         success: function(data) {
           assert.equal(data, '/redirect');
-          return done();
+          done();
         },
         error: function(xhr, errorType) {
-          return done(errorType);
+          done(errorType);
         }
       });
     });
@@ -371,48 +368,48 @@ describe('webRequest module', function() {
 
   describe('webRequest.onCompleted', function() {
     afterEach(function() {
-      return ses.webRequest.onCompleted(null);
+      ses.webRequest.onCompleted(null);
     });
 
-    return it('receives details object', function(done) {
+    it('receives details object', function(done) {
       ses.webRequest.onCompleted(function(details) {
         assert.equal(typeof details.fromCache, 'boolean');
         assert.equal(details.statusLine, 'HTTP/1.1 200 OK');
-        return assert.equal(details.statusCode, 200);
+        assert.equal(details.statusCode, 200);
       });
-      return $.ajax({
+      $.ajax({
         url: defaultURL,
         success: function(data) {
           assert.equal(data, '/');
-          return done();
+          done();
         },
         error: function(xhr, errorType) {
-          return done(errorType);
+          done(errorType);
         }
       });
     });
   });
 
-  return describe('webRequest.onErrorOccurred', function() {
+  describe('webRequest.onErrorOccurred', function() {
     afterEach(function() {
       ses.webRequest.onErrorOccurred(null);
-      return ses.webRequest.onBeforeRequest(null);
+      ses.webRequest.onBeforeRequest(null);
     });
 
-    return it('receives details object', function(done) {
+    it('receives details object', function(done) {
       ses.webRequest.onBeforeRequest(function(details, callback) {
-        return callback({
+        callback({
           cancel: true
         });
       });
       ses.webRequest.onErrorOccurred(function(details) {
         assert.equal(details.error, 'net::ERR_BLOCKED_BY_CLIENT');
-        return done();
+        done();
       });
-      return $.ajax({
+      $.ajax({
         url: defaultURL,
         success: function() {
-          return done('unexpected success');
+          done('unexpected success');
         }
       });
     });

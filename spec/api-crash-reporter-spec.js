@@ -14,13 +14,13 @@ describe('crash-reporter module', function() {
   var w = null;
 
   beforeEach(function() {
-    return w = new BrowserWindow({
+    w = new BrowserWindow({
       show: false
     });
   });
 
   afterEach(function() {
-    return w.destroy();
+    w.destroy();
   });
 
   if (process.mas) {
@@ -40,7 +40,7 @@ describe('crash-reporter module', function() {
       var form;
       server.close();
       form = new multiparty.Form();
-      return form.parse(req, function(error, fields) {
+      form.parse(req, function(error, fields) {
         if (called) {
           return;
         }
@@ -55,11 +55,11 @@ describe('crash-reporter module', function() {
         assert.equal(fields['_companyName'], 'Umbrella Corporation');
         assert.equal(fields['_version'], app.getVersion());
         res.end('abc-123-def');
-        return done();
+        done();
       });
     });
     var port = remote.process.port;
-    return server.listen(port, '127.0.0.1', function() {
+    server.listen(port, '127.0.0.1', function() {
       port = server.address().port;
       remote.process.port = port;
       const crashUrl = url.format({
@@ -73,19 +73,19 @@ describe('crash-reporter module', function() {
           submitURL: "http://127.0.0.1:" + port
         });
       }
-      return w.loadURL(crashUrl);
+      w.loadURL(crashUrl);
     });
   });
 
-  return describe(".start(options)", function() {
-    return it('requires that the companyName and submitURL options be specified', function() {
+  describe(".start(options)", function() {
+    it('requires that the companyName and submitURL options be specified', function() {
       assert.throws(function() {
-        return crashReporter.start({
+        crashReporter.start({
           companyName: 'Missing submitURL'
         });
       });
-      return assert.throws(function() {
-        return crashReporter.start({
+      assert.throws(function() {
+        crashReporter.start({
           submitURL: 'Missing companyName'
         });
       });

@@ -14,24 +14,24 @@ describe('protocol module', function() {
   };
 
   afterEach(function(done) {
-    return protocol.unregisterProtocol(protocolName, function() {
-      return protocol.uninterceptProtocol('http', function() {
-        return done();
+    protocol.unregisterProtocol(protocolName, function() {
+      protocol.uninterceptProtocol('http', function() {
+        done();
       });
     });
   });
 
   describe('protocol.register(Any)Protocol', function() {
     var emptyHandler = function(request, callback) {
-      return callback();
+      callback();
     };
 
     it('throws error when scheme is already registered', function(done) {
-      return protocol.registerStringProtocol(protocolName, emptyHandler, function(error) {
+      protocol.registerStringProtocol(protocolName, emptyHandler, function(error) {
         assert.equal(error, null);
-        return protocol.registerBufferProtocol(protocolName, emptyHandler, function(error) {
+        protocol.registerBufferProtocol(protocolName, emptyHandler, function(error) {
           assert.notEqual(error, null);
-          return done();
+          done();
         });
       });
     });
@@ -40,34 +40,34 @@ describe('protocol module', function() {
       var doubleHandler = function(request, callback) {
         try {
           callback(text);
-          return callback();
+          callback();
         } catch (error) {
           // Ignore error
         }
       };
-      return protocol.registerStringProtocol(protocolName, doubleHandler, function(error) {
+      protocol.registerStringProtocol(protocolName, doubleHandler, function(error) {
         if (error) {
           return done(error);
         }
-        return $.ajax({
+        $.ajax({
           url: protocolName + "://fake-host",
           success: function(data) {
             assert.equal(data, text);
-            return done();
+            done();
           },
           error: function(xhr, errorType, error) {
-            return done(error);
+            done(error);
           }
         });
       });
     });
 
     it('sends error when callback is called with nothing', function(done) {
-      return protocol.registerBufferProtocol(protocolName, emptyHandler, function(error) {
+      protocol.registerBufferProtocol(protocolName, emptyHandler, function(error) {
         if (error) {
           return done(error);
         }
-        return $.ajax({
+        $.ajax({
           url: protocolName + "://fake-host",
           success: function() {
             return done('request succeeded but it should not');
@@ -80,24 +80,24 @@ describe('protocol module', function() {
       });
     });
 
-    return it('does not crash when callback is called in next tick', function(done) {
+    it('does not crash when callback is called in next tick', function(done) {
       var handler = function(request, callback) {
-        return setImmediate(function() {
-          return callback(text);
+        setImmediate(function() {
+          callback(text);
         });
       };
-      return protocol.registerStringProtocol(protocolName, handler, function(error) {
+      protocol.registerStringProtocol(protocolName, handler, function(error) {
         if (error) {
           return done(error);
         }
-        return $.ajax({
+        $.ajax({
           url: protocolName + "://fake-host",
           success: function(data) {
             assert.equal(data, text);
-            return done();
+            done();
           },
           error: function(xhr, errorType, error) {
-            return done(error);
+            done(error);
           }
         });
       });
@@ -105,10 +105,10 @@ describe('protocol module', function() {
   });
 
   describe('protocol.unregisterProtocol', function() {
-    return it('returns error when scheme does not exist', function(done) {
-      return protocol.unregisterProtocol('not-exist', function(error) {
+    it('returns error when scheme does not exist', function(done) {
+      protocol.unregisterProtocol('not-exist', function(error) {
         assert.notEqual(error, null);
-        return done();
+        done();
       });
     });
   });
@@ -116,9 +116,9 @@ describe('protocol module', function() {
   describe('protocol.registerStringProtocol', function() {
     it('sends string as response', function(done) {
       var handler = function(request, callback) {
-        return callback(text);
+        callback(text);
       };
-      return protocol.registerStringProtocol(protocolName, handler, function(error) {
+      protocol.registerStringProtocol(protocolName, handler, function(error) {
         if (error) {
           return done(error);
         }
@@ -126,10 +126,10 @@ describe('protocol module', function() {
           url: protocolName + "://fake-host",
           success: function(data) {
             assert.equal(data, text);
-            return done();
+            done();
           },
           error: function(xhr, errorType, error) {
-            return done(error);
+            done(error);
           }
         });
       });
@@ -137,21 +137,21 @@ describe('protocol module', function() {
 
     it('sets Access-Control-Allow-Origin', function(done) {
       var handler = function(request, callback) {
-        return callback(text);
+        callback(text);
       };
-      return protocol.registerStringProtocol(protocolName, handler, function(error) {
+      protocol.registerStringProtocol(protocolName, handler, function(error) {
         if (error) {
           return done(error);
         }
-        return $.ajax({
+        $.ajax({
           url: protocolName + "://fake-host",
           success: function(data, status, request) {
             assert.equal(data, text);
             assert.equal(request.getResponseHeader('Access-Control-Allow-Origin'), '*');
-            return done();
+            done();
           },
           error: function(xhr, errorType, error) {
-            return done(error);
+            done(error);
           }
         });
       });
@@ -159,44 +159,44 @@ describe('protocol module', function() {
 
     it('sends object as response', function(done) {
       var handler = function(request, callback) {
-        return callback({
+        callback({
           data: text,
           mimeType: 'text/html'
         });
       };
-      return protocol.registerStringProtocol(protocolName, handler, function(error) {
+      protocol.registerStringProtocol(protocolName, handler, function(error) {
         if (error) {
           return done(error);
         }
-        return $.ajax({
+        $.ajax({
           url: protocolName + "://fake-host",
           success: function(data) {
             assert.equal(data, text);
-            return done();
+            done();
           },
           error: function(xhr, errorType, error) {
-            return done(error);
+            done(error);
           }
         });
       });
     });
 
-    return it('fails when sending object other than string', function(done) {
+    it('fails when sending object other than string', function(done) {
       var handler = function(request, callback) {
-        return callback(new Date);
+        callback(new Date);
       };
-      return protocol.registerBufferProtocol(protocolName, handler, function(error) {
+      protocol.registerBufferProtocol(protocolName, handler, function(error) {
         if (error) {
           return done(error);
         }
-        return $.ajax({
+        $.ajax({
           url: protocolName + "://fake-host",
           success: function() {
-            return done('request succeeded but it should not');
+            done('request succeeded but it should not');
           },
           error: function(xhr, errorType) {
             assert.equal(errorType, 'error');
-            return done();
+            done();
           }
         });
       });
@@ -208,20 +208,20 @@ describe('protocol module', function() {
 
     it('sends Buffer as response', function(done) {
       var handler = function(request, callback) {
-        return callback(buffer);
+        callback(buffer);
       };
-      return protocol.registerBufferProtocol(protocolName, handler, function(error) {
+      protocol.registerBufferProtocol(protocolName, handler, function(error) {
         if (error) {
           return done(error);
         }
-        return $.ajax({
+        $.ajax({
           url: protocolName + "://fake-host",
           success: function(data) {
             assert.equal(data, text);
-            return done();
+            done();
           },
           error: function(xhr, errorType, error) {
-            return done(error);
+            done(error);
           }
         });
       });
@@ -229,22 +229,22 @@ describe('protocol module', function() {
 
     it('sets Access-Control-Allow-Origin', function(done) {
       var handler = function(request, callback) {
-        return callback(buffer);
+        callback(buffer);
       };
 
-      return protocol.registerBufferProtocol(protocolName, handler, function(error) {
+      protocol.registerBufferProtocol(protocolName, handler, function(error) {
         if (error) {
           return done(error);
         }
-        return $.ajax({
+        $.ajax({
           url: protocolName + "://fake-host",
           success: function(data, status, request) {
             assert.equal(data, text);
             assert.equal(request.getResponseHeader('Access-Control-Allow-Origin'), '*');
-            return done();
+            done();
           },
           error: function(xhr, errorType, error) {
-            return done(error);
+            done(error);
           }
         });
       });
@@ -252,44 +252,44 @@ describe('protocol module', function() {
 
     it('sends object as response', function(done) {
       var handler = function(request, callback) {
-        return callback({
+        callback({
           data: buffer,
           mimeType: 'text/html'
         });
       };
-      return protocol.registerBufferProtocol(protocolName, handler, function(error) {
+      protocol.registerBufferProtocol(protocolName, handler, function(error) {
         if (error) {
           return done(error);
         }
-        return $.ajax({
+        $.ajax({
           url: protocolName + "://fake-host",
           success: function(data) {
             assert.equal(data, text);
-            return done();
+            done();
           },
           error: function(xhr, errorType, error) {
-            return done(error);
+            done(error);
           }
         });
       });
     });
 
-    return it('fails when sending string', function(done) {
+    it('fails when sending string', function(done) {
       var handler = function(request, callback) {
-        return callback(text);
+        callback(text);
       };
-      return protocol.registerBufferProtocol(protocolName, handler, function(error) {
+      protocol.registerBufferProtocol(protocolName, handler, function(error) {
         if (error) {
           return done(error);
         }
-        return $.ajax({
+        $.ajax({
           url: protocolName + "://fake-host",
           success: function() {
-            return done('request succeeded but it should not');
+            done('request succeeded but it should not');
           },
           error: function(xhr, errorType) {
             assert.equal(errorType, 'error');
-            return done();
+            done();
           }
         });
       });
@@ -304,9 +304,9 @@ describe('protocol module', function() {
 
     it('sends file path as response', function(done) {
       var handler = function(request, callback) {
-        return callback(filePath);
+        callback(filePath);
       };
-      return protocol.registerFileProtocol(protocolName, handler, function(error) {
+      protocol.registerFileProtocol(protocolName, handler, function(error) {
         if (error) {
           return done(error);
         }
@@ -327,42 +327,41 @@ describe('protocol module', function() {
       var handler = function(request, callback) {
         return callback(filePath);
       };
-      return protocol.registerFileProtocol(protocolName, handler, function(error) {
+      protocol.registerFileProtocol(protocolName, handler, function(error) {
         if (error) {
           return done(error);
         }
-        return $.ajax({
+        $.ajax({
           url: protocolName + "://fake-host",
           success: function(data, status, request) {
             assert.equal(data, String(fileContent));
             assert.equal(request.getResponseHeader('Access-Control-Allow-Origin'), '*');
-            return done();
+            done();
           },
           error: function(xhr, errorType, error) {
-            return done(error);
+            done(error);
           }
         });
       });
     });
     it('sends object as response', function(done) {
-      var handler;
-      handler = function(request, callback) {
+      var handler = function(request, callback) {
         return callback({
           path: filePath
         });
       };
-      return protocol.registerFileProtocol(protocolName, handler, function(error) {
+      protocol.registerFileProtocol(protocolName, handler, function(error) {
         if (error) {
           return done(error);
         }
-        return $.ajax({
+        $.ajax({
           url: protocolName + "://fake-host",
           success: function(data) {
             assert.equal(data, String(fileContent));
-            return done();
+            done();
           },
           error: function(xhr, errorType, error) {
-            return done(error);
+            done(error);
           }
         });
       });
@@ -370,21 +369,21 @@ describe('protocol module', function() {
 
     it('can send normal file', function(done) {
       var handler = function(request, callback) {
-        return callback(normalPath);
+        callback(normalPath);
       };
 
-      return protocol.registerFileProtocol(protocolName, handler, function(error) {
+      protocol.registerFileProtocol(protocolName, handler, function(error) {
         if (error) {
           return done(error);
         }
-        return $.ajax({
+        $.ajax({
           url: protocolName + "://fake-host",
           success: function(data) {
             assert.equal(data, String(normalContent));
-            return done();
+            done();
           },
           error: function(xhr, errorType, error) {
-            return done(error);
+            done(error);
           }
         });
       });
@@ -393,41 +392,41 @@ describe('protocol module', function() {
     it('fails when sending unexist-file', function(done) {
       var fakeFilePath = path.join(__dirname, 'fixtures', 'asar', 'a.asar', 'not-exist');
       var handler = function(request, callback) {
-        return callback(fakeFilePath);
+        callback(fakeFilePath);
       };
-      return protocol.registerBufferProtocol(protocolName, handler, function(error) {
+      protocol.registerBufferProtocol(protocolName, handler, function(error) {
         if (error) {
           return done(error);
         }
-        return $.ajax({
+        $.ajax({
           url: protocolName + "://fake-host",
           success: function() {
-            return done('request succeeded but it should not');
+            done('request succeeded but it should not');
           },
           error: function(xhr, errorType) {
             assert.equal(errorType, 'error');
-            return done();
+            done();
           }
         });
       });
     });
 
-    return it('fails when sending unsupported content', function(done) {
+    it('fails when sending unsupported content', function(done) {
       var handler = function(request, callback) {
-        return callback(new Date);
+        callback(new Date);
       };
-      return protocol.registerBufferProtocol(protocolName, handler, function(error) {
+      protocol.registerBufferProtocol(protocolName, handler, function(error) {
         if (error) {
           return done(error);
         }
-        return $.ajax({
+        $.ajax({
           url: protocolName + "://fake-host",
           success: function() {
-            return done('request succeeded but it should not');
+            done('request succeeded but it should not');
           },
           error: function(xhr, errorType) {
             assert.equal(errorType, 'error');
-            return done();
+            done();
           }
         });
       });
@@ -439,29 +438,28 @@ describe('protocol module', function() {
       var server = http.createServer(function(req, res) {
         assert.notEqual(req.headers.accept, '');
         res.end(text);
-        return server.close();
+        server.close();
       });
       return server.listen(0, '127.0.0.1', function() {
-        var handler, port, url;
-        port = server.address().port;
-        url = "http://127.0.0.1:" + port;
-        handler = function(request, callback) {
-          return callback({
+        var port = server.address().port;
+        var url = "http://127.0.0.1:" + port;
+        var handler = function(request, callback) {
+          callback({
             url: url
           });
         };
-        return protocol.registerHttpProtocol(protocolName, handler, function(error) {
+        protocol.registerHttpProtocol(protocolName, handler, function(error) {
           if (error) {
             return done(error);
           }
-          return $.ajax({
+          $.ajax({
             url: protocolName + "://fake-host",
             success: function(data) {
               assert.equal(data, text);
-              return done();
+              done();
             },
             error: function(xhr, errorType, error) {
-              return done(error);
+              done(error);
             }
           });
         });
@@ -470,43 +468,43 @@ describe('protocol module', function() {
 
     it('fails when sending invalid url', function(done) {
       var handler = function(request, callback) {
-        return callback({
+        callback({
           url: 'url'
         });
       };
-      return protocol.registerHttpProtocol(protocolName, handler, function(error) {
+      protocol.registerHttpProtocol(protocolName, handler, function(error) {
         if (error) {
           return done(error);
         }
-        return $.ajax({
+        $.ajax({
           url: protocolName + "://fake-host",
           success: function() {
-            return done('request succeeded but it should not');
+            done('request succeeded but it should not');
           },
           error: function(xhr, errorType) {
             assert.equal(errorType, 'error');
-            return done();
+            done();
           }
         });
       });
     });
 
-    return it('fails when sending unsupported content', function(done) {
+    it('fails when sending unsupported content', function(done) {
       var handler = function(request, callback) {
-        return callback(new Date);
+        callback(new Date);
       };
-      return protocol.registerHttpProtocol(protocolName, handler, function(error) {
+      protocol.registerHttpProtocol(protocolName, handler, function(error) {
         if (error) {
           return done(error);
         }
-        return $.ajax({
+        $.ajax({
           url: protocolName + "://fake-host",
           success: function() {
-            return done('request succeeded but it should not');
+            done('request succeeded but it should not');
           },
           error: function(xhr, errorType) {
             assert.equal(errorType, 'error');
-            return done();
+            done();
           }
         });
       });
@@ -515,55 +513,55 @@ describe('protocol module', function() {
 
   describe('protocol.isProtocolHandled', function() {
     it('returns true for file:', function(done) {
-      return protocol.isProtocolHandled('file', function(result) {
+      protocol.isProtocolHandled('file', function(result) {
         assert.equal(result, true);
-        return done();
+        done();
       });
     });
 
     it('returns true for http:', function(done) {
-      return protocol.isProtocolHandled('http', function(result) {
+      protocol.isProtocolHandled('http', function(result) {
         assert.equal(result, true);
-        return done();
+        done();
       });
     });
 
     it('returns true for https:', function(done) {
-      return protocol.isProtocolHandled('https', function(result) {
+      protocol.isProtocolHandled('https', function(result) {
         assert.equal(result, true);
-        return done();
+        done();
       });
     });
 
     it('returns false when scheme is not registred', function(done) {
-      return protocol.isProtocolHandled('no-exist', function(result) {
+      protocol.isProtocolHandled('no-exist', function(result) {
         assert.equal(result, false);
-        return done();
+        done();
       });
     });
 
     it('returns true for custom protocol', function(done) {
       var emptyHandler = function(request, callback) {
-        return callback();
+        callback();
       };
-      return protocol.registerStringProtocol(protocolName, emptyHandler, function(error) {
+      protocol.registerStringProtocol(protocolName, emptyHandler, function(error) {
         assert.equal(error, null);
-        return protocol.isProtocolHandled(protocolName, function(result) {
+        protocol.isProtocolHandled(protocolName, function(result) {
           assert.equal(result, true);
-          return done();
+          done();
         });
       });
     });
 
-    return it('returns true for intercepted protocol', function(done) {
+    it('returns true for intercepted protocol', function(done) {
       var emptyHandler = function(request, callback) {
-        return callback();
+        callback();
       };
-      return protocol.interceptStringProtocol('http', emptyHandler, function(error) {
+      protocol.interceptStringProtocol('http', emptyHandler, function(error) {
         assert.equal(error, null);
-        return protocol.isProtocolHandled('http', function(result) {
+        protocol.isProtocolHandled('http', function(result) {
           assert.equal(result, true);
-          return done();
+          done();
         });
       });
     });
@@ -571,15 +569,15 @@ describe('protocol module', function() {
 
   describe('protocol.intercept(Any)Protocol', function() {
     var emptyHandler = function(request, callback) {
-      return callback();
+      callback();
     };
 
     it('throws error when scheme is already intercepted', function(done) {
-      return protocol.interceptStringProtocol('http', emptyHandler, function(error) {
+      protocol.interceptStringProtocol('http', emptyHandler, function(error) {
         assert.equal(error, null);
-        return protocol.interceptBufferProtocol('http', emptyHandler, function(error) {
+        protocol.interceptBufferProtocol('http', emptyHandler, function(error) {
           assert.notEqual(error, null);
-          return done();
+          done();
         });
       });
     });
@@ -593,39 +591,39 @@ describe('protocol module', function() {
           // Ignore error
         }
       };
-      return protocol.interceptStringProtocol('http', doubleHandler, function(error) {
+      protocol.interceptStringProtocol('http', doubleHandler, function(error) {
         if (error) {
           return done(error);
         }
-        return $.ajax({
+        $.ajax({
           url: 'http://fake-host',
           success: function(data) {
             assert.equal(data, text);
-            return done();
+            done();
           },
           error: function(xhr, errorType, error) {
-            return done(error);
+            done(error);
           }
         });
       });
     });
 
-    return it('sends error when callback is called with nothing', function(done) {
+    it('sends error when callback is called with nothing', function(done) {
       if (process.env.TRAVIS === 'true') {
         return done();
       }
-      return protocol.interceptBufferProtocol('http', emptyHandler, function(error) {
+      protocol.interceptBufferProtocol('http', emptyHandler, function(error) {
         if (error) {
           return done(error);
         }
-        return $.ajax({
+        $.ajax({
           url: 'http://fake-host',
           success: function() {
-            return done('request succeeded but it should not');
+            done('request succeeded but it should not');
           },
           error: function(xhr, errorType) {
             assert.equal(errorType, 'error');
-            return done();
+            done();
           }
         });
       });
@@ -635,20 +633,20 @@ describe('protocol module', function() {
   describe('protocol.interceptStringProtocol', function() {
     it('can intercept http protocol', function(done) {
       var handler = function(request, callback) {
-        return callback(text);
+        callback(text);
       };
-      return protocol.interceptStringProtocol('http', handler, function(error) {
+      protocol.interceptStringProtocol('http', handler, function(error) {
         if (error) {
           return done(error);
         }
-        return $.ajax({
+        $.ajax({
           url: 'http://fake-host',
           success: function(data) {
             assert.equal(data, text);
-            return done();
+            done();
           },
           error: function(xhr, errorType, error) {
-            return done(error);
+            done(error);
           }
         });
       });
@@ -656,51 +654,50 @@ describe('protocol module', function() {
 
     it('can set content-type', function(done) {
       var handler = function(request, callback) {
-        return callback({
+        callback({
           mimeType: 'application/json',
           data: '{"value": 1}'
         });
       };
-      return protocol.interceptStringProtocol('http', handler, function(error) {
+      protocol.interceptStringProtocol('http', handler, function(error) {
         if (error) {
           return done(error);
         }
-        return $.ajax({
+        $.ajax({
           url: 'http://fake-host',
           success: function(data) {
             assert.equal(typeof data, 'object');
             assert.equal(data.value, 1);
-            return done();
+            done();
           },
           error: function(xhr, errorType, error) {
-            return done(error);
+            done(error);
           }
         });
       });
     });
 
-    return it('can receive post data', function(done) {
+    it('can receive post data', function(done) {
       var handler = function(request, callback) {
-        var uploadData;
-        uploadData = request.uploadData[0].bytes.toString();
-        return callback({
+        var uploadData = request.uploadData[0].bytes.toString();
+        callback({
           data: uploadData
         });
       };
-      return protocol.interceptStringProtocol('http', handler, function(error) {
+      protocol.interceptStringProtocol('http', handler, function(error) {
         if (error) {
           return done(error);
         }
-        return $.ajax({
+        $.ajax({
           url: "http://fake-host",
           type: "POST",
           data: postData,
           success: function(data) {
             assert.deepEqual(qs.parse(data), postData);
-            return done();
+            done();
           },
           error: function(xhr, errorType, error) {
-            return done(error);
+            done(error);
           }
         });
       });
@@ -710,45 +707,44 @@ describe('protocol module', function() {
   describe('protocol.interceptBufferProtocol', function() {
     it('can intercept http protocol', function(done) {
       var handler = function(request, callback) {
-        return callback(new Buffer(text));
+        callback(new Buffer(text));
       };
-      return protocol.interceptBufferProtocol('http', handler, function(error) {
+      protocol.interceptBufferProtocol('http', handler, function(error) {
         if (error) {
           return done(error);
         }
-        return $.ajax({
+        $.ajax({
           url: 'http://fake-host',
           success: function(data) {
             assert.equal(data, text);
-            return done();
+            done();
           },
           error: function(xhr, errorType, error) {
-            return done(error);
+            done(error);
           }
         });
       });
     });
 
-    return it('can receive post data', function(done) {
+    it('can receive post data', function(done) {
       var handler = function(request, callback) {
-        var uploadData;
-        uploadData = request.uploadData[0].bytes;
-        return callback(uploadData);
+        var uploadData = request.uploadData[0].bytes;
+        callback(uploadData);
       };
-      return protocol.interceptBufferProtocol('http', handler, function(error) {
+      protocol.interceptBufferProtocol('http', handler, function(error) {
         if (error) {
           return done(error);
         }
-        return $.ajax({
+        $.ajax({
           url: "http://fake-host",
           type: "POST",
           data: postData,
           success: function(data) {
             assert.equal(data, $.param(postData));
-            return done();
+            done();
           },
           error: function(xhr, errorType, error) {
-            return done(error);
+            done(error);
           }
         });
       });
@@ -756,24 +752,22 @@ describe('protocol module', function() {
   });
 
   describe('protocol.interceptHttpProtocol', function() {
-    return it('can send POST request', function(done) {
+    it('can send POST request', function(done) {
       var server = http.createServer(function(req, res) {
-        var body;
-        body = '';
+        var body = '';
         req.on('data', function(chunk) {
-          return body += chunk;
+          body += chunk;
         });
         req.on('end', function() {
-          return res.end(body);
+          res.end(body);
         });
-        return server.close();
+        server.close();
       });
-      return server.listen(0, '127.0.0.1', function() {
+      server.listen(0, '127.0.0.1', function() {
         var port = server.address().port;
         var url = "http://127.0.0.1:" + port;
         var handler = function(request, callback) {
-          var data;
-          data = {
+          var data = {
             url: url,
             method: 'POST',
             uploadData: {
@@ -782,22 +776,22 @@ describe('protocol module', function() {
             },
             session: null
           };
-          return callback(data);
+          callback(data);
         };
-        return protocol.interceptHttpProtocol('http', handler, function(error) {
+        protocol.interceptHttpProtocol('http', handler, function(error) {
           if (error) {
             return done(error);
           }
-          return $.ajax({
+          $.ajax({
             url: "http://fake-host",
             type: "POST",
             data: postData,
             success: function(data) {
               assert.deepEqual(qs.parse(data), postData);
-              return done();
+              done();
             },
             error: function(xhr, errorType, error) {
-              return done(error);
+              done(error);
             }
           });
         });
@@ -805,18 +799,18 @@ describe('protocol module', function() {
     });
   });
 
-  return describe('protocol.uninterceptProtocol', function() {
+  describe('protocol.uninterceptProtocol', function() {
     it('returns error when scheme does not exist', function(done) {
-      return protocol.uninterceptProtocol('not-exist', function(error) {
+      protocol.uninterceptProtocol('not-exist', function(error) {
         assert.notEqual(error, null);
-        return done();
+        done();
       });
     });
 
-    return it('returns error when scheme is not intercepted', function(done) {
-      return protocol.uninterceptProtocol('http', function(error) {
+    it('returns error when scheme is not intercepted', function(done) {
+      protocol.uninterceptProtocol('http', function(error) {
         assert.notEqual(error, null);
-        return done();
+        done();
       });
     });
   });
