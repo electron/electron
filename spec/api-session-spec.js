@@ -11,11 +11,12 @@ const session = remote.session;
 const BrowserWindow = remote.BrowserWindow;
 
 describe('session module', function() {
-  var fixtures, url, w;
   this.timeout(10000);
-  fixtures = path.resolve(__dirname, 'fixtures');
-  w = null;
-  url = "http://127.0.0.1";
+
+  var fixtures = path.resolve(__dirname, 'fixtures');
+  var w = null;
+  var url = "http://127.0.0.1";
+
   beforeEach(function() {
     return w = new BrowserWindow({
       show: false,
@@ -23,6 +24,7 @@ describe('session module', function() {
       height: 400
     });
   });
+
   afterEach(function() {
     return w.destroy();
   });
@@ -62,6 +64,7 @@ describe('session module', function() {
         });
       });
     });
+
     it('should over-write the existent cookie', function(done) {
       return session.defaultSession.cookies.set({
         url: url,
@@ -92,6 +95,7 @@ describe('session module', function() {
         });
       });
     });
+
     it('should remove cookies', function(done) {
       return session.defaultSession.cookies.set({
         url: url,
@@ -155,6 +159,7 @@ describe('session module', function() {
         height: 400
       });
     });
+
     afterEach(function() {
       return w.destroy();
     });
@@ -213,6 +218,7 @@ describe('session module', function() {
       assert(fs.existsSync(downloadFilePath));
       return fs.unlinkSync(downloadFilePath);
     };
+
     it('can download using BrowserWindow.loadURL', function(done) {
       return downloadServer.listen(0, '127.0.0.1', function() {
         var port;
@@ -225,6 +231,7 @@ describe('session module', function() {
         });
       });
     });
+
     it('can download using WebView.downloadURL', function(done) {
       return downloadServer.listen(0, '127.0.0.1', function() {
         var port, webview;
@@ -243,6 +250,7 @@ describe('session module', function() {
         return document.body.appendChild(webview);
       });
     });
+
     it('can cancel download', function(done) {
       return downloadServer.listen(0, '127.0.0.1', function() {
         var port;

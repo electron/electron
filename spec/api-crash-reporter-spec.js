@@ -10,29 +10,33 @@ const crashReporter = remote.require('electron').crashReporter;
 const BrowserWindow = remote.require('electron').BrowserWindow;
 
 describe('crash-reporter module', function() {
-  var fixtures, isCI, w;
-  fixtures = path.resolve(__dirname, 'fixtures');
-  w = null;
+  var fixtures = path.resolve(__dirname, 'fixtures');
+  var w = null;
+
   beforeEach(function() {
     return w = new BrowserWindow({
       show: false
     });
   });
+
   afterEach(function() {
     return w.destroy();
   });
+
   if (process.mas) {
     return;
   }
-  isCI = remote.getGlobal('isCi');
+
+  var isCI = remote.getGlobal('isCi');
   if (isCI) {
     return;
   }
+
   it('should send minidump when renderer crashes', function(done) {
-    var called, port, server;
     this.timeout(120000);
-    called = false;
-    server = http.createServer(function(req, res) {
+
+    var called = false;
+    var server = http.createServer(function(req, res) {
       var form;
       server.close();
       form = new multiparty.Form();
@@ -54,7 +58,7 @@ describe('crash-reporter module', function() {
         return done();
       });
     });
-    port = remote.process.port;
+    var port = remote.process.port;
     return server.listen(port, '127.0.0.1', function() {
       port = server.address().port;
       remote.process.port = port;
@@ -72,6 +76,7 @@ describe('crash-reporter module', function() {
       return w.loadURL(crashUrl);
     });
   });
+
   return describe(".start(options)", function() {
     return it('requires that the companyName and submitURL options be specified', function() {
       assert.throws(function() {

@@ -8,20 +8,22 @@ const BrowserWindow = remote.require('electron').BrowserWindow;
 const session = remote.require('electron').session;
 
 describe('chromium feature', function() {
-  var fixtures, listener;
-  fixtures = path.resolve(__dirname, 'fixtures');
-  listener = null;
+  var fixtures = path.resolve(__dirname, 'fixtures');
+  var listener = null;
+
   afterEach(function() {
     if (listener != null) {
       window.removeEventListener('message', listener);
     }
     return listener = null;
   });
+
   xdescribe('heap snapshot', function() {
     return it('does not crash', function() {
       return process.atomBinding('v8_util').takeHeapSnapshot();
     });
   });
+
   describe('sending request of http protocol urls', function() {
     return it('does not crash', function(done) {
       var server;
@@ -38,13 +40,15 @@ describe('chromium feature', function() {
       });
     });
   });
+
   describe('document.hidden', function() {
-    var url, w;
-    url = "file://" + fixtures + "/pages/document-hidden.html";
-    w = null;
+    var url = "file://" + fixtures + "/pages/document-hidden.html";
+    var w = null;
+
     afterEach(function() {
       return w != null ? w.destroy() : void 0;
     });
+
     it('is set correctly when window is not shown', function(done) {
       w = new BrowserWindow({
         show: false
@@ -55,6 +59,7 @@ describe('chromium feature', function() {
       });
       return w.loadURL(url);
     });
+
     return it('is set correctly when window is inactive', function(done) {
       w = new BrowserWindow({
         show: false
@@ -67,6 +72,7 @@ describe('chromium feature', function() {
       return w.loadURL(url);
     });
   });
+
   xdescribe('navigator.webkitGetUserMedia', function() {
     return it('calls its callbacks', function(done) {
       this.timeout(5000);
@@ -80,18 +86,21 @@ describe('chromium feature', function() {
       });
     });
   });
+
   describe('navigator.language', function() {
     return it('should not be empty', function() {
       return assert.notEqual(navigator.language, '');
     });
   });
+
   describe('navigator.serviceWorker', function() {
-    var url, w;
-    url = "file://" + fixtures + "/pages/service-worker/index.html";
-    w = null;
+    var url = "file://" + fixtures + "/pages/service-worker/index.html";
+    var w = null;
+
     afterEach(function() {
       return w != null ? w.destroy() : void 0;
     });
+
     return it('should register for file scheme', function(done) {
       w = new BrowserWindow({
         show: false
@@ -113,8 +122,10 @@ describe('chromium feature', function() {
       return w.loadURL(url);
     });
   });
+
   describe('window.open', function() {
     this.timeout(20000);
+
     it('returns a BrowserWindowProxy object', function() {
       var b;
       b = window.open('about:blank', '', 'show=no');
@@ -122,6 +133,7 @@ describe('chromium feature', function() {
       assert.equal(b.constructor.name, 'BrowserWindowProxy');
       return b.close();
     });
+
     it('accepts "node-integration" as feature', function(done) {
       var b;
       listener = function(event) {
@@ -132,6 +144,7 @@ describe('chromium feature', function() {
       window.addEventListener('message', listener);
       return b = window.open("file://" + fixtures + "/pages/window-opener-node.html", '', 'nodeIntegration=no,show=no');
     });
+
     it('inherit options of parent window', function(done) {
       var b;
       listener = function(event) {
@@ -144,6 +157,7 @@ describe('chromium feature', function() {
       window.addEventListener('message', listener);
       return b = window.open("file://" + fixtures + "/pages/window-open-size.html", '', 'show=no');
     });
+
     return it('does not override child options', function(done) {
       var b, size;
       size = {
@@ -159,6 +173,7 @@ describe('chromium feature', function() {
       return b = window.open("file://" + fixtures + "/pages/window-open-size.html", '', "show=no,width=" + size.width + ",height=" + size.height);
     });
   });
+
   describe('window.opener', function() {
     var url, w;
     this.timeout(10000);
@@ -188,6 +203,7 @@ describe('chromium feature', function() {
       return b = window.open(url, '', 'show=no');
     });
   });
+
   describe('window.postMessage', function() {
     return it('sets the source and origin correctly', function(done) {
       var b, sourceId;
@@ -211,6 +227,7 @@ describe('chromium feature', function() {
       });
     });
   });
+
   describe('window.opener.postMessage', function() {
     return it('sets source and origin correctly', function(done) {
       var b;
@@ -225,6 +242,7 @@ describe('chromium feature', function() {
       return b = window.open("file://" + fixtures + "/pages/window-opener-postMessage.html", '', 'show=no');
     });
   });
+
   describe('creating a Uint8Array under browser side', function() {
     return it('does not crash', function() {
       var RUint8Array;
@@ -232,6 +250,7 @@ describe('chromium feature', function() {
       return new RUint8Array;
     });
   });
+
   describe('webgl', function() {
     return it('can be get as context in canvas', function() {
       var webgl;
@@ -242,6 +261,7 @@ describe('chromium feature', function() {
       return assert.notEqual(webgl, null);
     });
   });
+
   describe('web workers', function() {
     it('Worker can work', function(done) {
       var message, worker;
@@ -254,6 +274,7 @@ describe('chromium feature', function() {
       };
       return worker.postMessage(message);
     });
+
     return it('SharedWorker can work', function(done) {
       var message, worker;
       worker = new SharedWorker('../fixtures/workers/shared_worker.js');
@@ -265,15 +286,18 @@ describe('chromium feature', function() {
       return worker.port.postMessage(message);
     });
   });
+
   describe('iframe', function() {
-    var iframe;
-    iframe = null;
+    var iframe = null;
+
     beforeEach(function() {
       return iframe = document.createElement('iframe');
     });
+
     afterEach(function() {
       return document.body.removeChild(iframe);
     });
+
     return it('does not have node integration', function(done) {
       iframe.src = "file://" + fixtures + "/pages/set-global.html";
       document.body.appendChild(iframe);
@@ -283,6 +307,7 @@ describe('chromium feature', function() {
       };
     });
   });
+
   describe('storage', function() {
     return it('requesting persitent quota works', function(done) {
       return navigator.webkitPersistentStorage.requestQuota(1024 * 1024, function(grantedBytes) {
@@ -291,15 +316,17 @@ describe('chromium feature', function() {
       });
     });
   });
+
   describe('websockets', function() {
-    var WebSocketServer, server, wss;
-    wss = null;
-    server = null;
-    WebSocketServer = ws.Server;
+    var wss = null;
+    var server = null;
+    var WebSocketServer = ws.Server;
+
     afterEach(function() {
       wss.close();
       return server.close();
     });
+
     return it('has user agent', function(done) {
       server = http.createServer();
       return server.listen(0, '127.0.0.1', function() {
@@ -319,6 +346,7 @@ describe('chromium feature', function() {
       });
     });
   });
+
   return describe('Promise', function() {
     it('resolves correctly in Node.js calls', function(done) {
       document.registerElement('x-element', {
@@ -338,6 +366,7 @@ describe('chromium feature', function() {
         return called = true;
       });
     });
+
     return it('resolves correctly in Electron calls', function(done) {
       document.registerElement('y-element', {
         prototype: Object.create(HTMLElement.prototype, {

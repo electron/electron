@@ -27,6 +27,7 @@ describe('app module', function() {
       return assert.equal(app.getVersion(), '0.1.0');
     });
   });
+
   describe('app.setVersion(version)', function() {
     return it('overrides the version', function() {
       assert.equal(app.getVersion(), '0.1.0');
@@ -35,11 +36,13 @@ describe('app module', function() {
       return app.setVersion('0.1.0');
     });
   });
+
   describe('app.getName()', function() {
     return it('returns the name field of package.json', function() {
       return assert.equal(app.getName(), 'Electron Test');
     });
   });
+
   describe('app.setName(name)', function() {
     return it('overrides the name', function() {
       assert.equal(app.getName(), 'Electron Test');
@@ -48,17 +51,20 @@ describe('app module', function() {
       return app.setName('Electron Test');
     });
   });
+
   describe('app.getLocale()', function() {
     return it('should not be empty', function() {
       return assert.notEqual(app.getLocale(), '');
     });
   });
+
   describe('app.exit(exitCode)', function() {
-    var appProcess;
-    appProcess = null;
+    var appProcess = null;
+
     afterEach(function() {
       return appProcess != null ? appProcess.kill() : void 0;
     });
+
     return it('emits a process exit event with the code', function(done) {
       var appPath, electronPath, output;
       appPath = path.join(__dirname, 'fixtures', 'api', 'quit-app');
@@ -77,15 +83,17 @@ describe('app module', function() {
       });
     });
   });
+
   return describe('BrowserWindow events', function() {
-    var w;
-    w = null;
+    var w = null;
+
     afterEach(function() {
       if (w != null) {
         w.destroy();
       }
       return w = null;
     });
+
     it('should emit browser-window-focus event when window is focused', function(done) {
       app.once('browser-window-focus', function(e, window) {
         assert.equal(w.id, window.id);
@@ -96,6 +104,7 @@ describe('app module', function() {
       });
       return w.emit('focus');
     });
+
     it('should emit browser-window-blur event when window is blured', function(done) {
       app.once('browser-window-blur', function(e, window) {
         assert.equal(w.id, window.id);
@@ -106,6 +115,7 @@ describe('app module', function() {
       });
       return w.emit('blur');
     });
+
     return it('should emit browser-window-created event when window is created', function(done) {
       app.once('browser-window-created', function(e, window) {
         return setImmediate(function() {

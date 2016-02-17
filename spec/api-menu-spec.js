@@ -9,8 +9,7 @@ const MenuItem = remote.require('electron').MenuItem;
 describe('menu module', function() {
   describe('Menu.buildFromTemplate', function() {
     it('should be able to attach extra fields', function() {
-      var menu;
-      menu = Menu.buildFromTemplate([
+      var menu = Menu.buildFromTemplate([
         {
           label: 'text',
           extra: 'field'
@@ -18,9 +17,9 @@ describe('menu module', function() {
       ]);
       return assert.equal(menu.items[0].extra, 'field');
     });
+
     it('does not modify the specified template', function() {
-      var template;
-      template = ipcRenderer.sendSync('eval', "var template = [{label: 'text', submenu: [{label: 'sub'}]}];\nrequire('electron').Menu.buildFromTemplate(template);\ntemplate;");
+      var template = ipcRenderer.sendSync('eval', "var template = [{label: 'text', submenu: [{label: 'sub'}]}];\nrequire('electron').Menu.buildFromTemplate(template);\ntemplate;");
       return assert.deepStrictEqual(template, [
         {
           label: 'text',
@@ -32,10 +31,10 @@ describe('menu module', function() {
         }
       ]);
     });
+
     return describe('Menu.buildFromTemplate should reorder based on item position specifiers', function() {
       it('should position before existing item', function() {
-        var menu;
-        menu = Menu.buildFromTemplate([
+        var menu = Menu.buildFromTemplate([
           {
             label: '2',
             id: '2'
@@ -52,9 +51,9 @@ describe('menu module', function() {
         assert.equal(menu.items[1].label, '2');
         return assert.equal(menu.items[2].label, '3');
       });
+
       it('should position after existing item', function() {
-        var menu;
-        menu = Menu.buildFromTemplate([
+        var menu = Menu.buildFromTemplate([
           {
             label: '1',
             id: '1'
@@ -71,9 +70,9 @@ describe('menu module', function() {
         assert.equal(menu.items[1].label, '2');
         return assert.equal(menu.items[2].label, '3');
       });
+
       it('should position at endof existing separator groups', function() {
-        var menu;
-        menu = Menu.buildFromTemplate([
+        var menu = Menu.buildFromTemplate([
           {
             type: 'separator',
             id: 'numbers'
@@ -115,9 +114,9 @@ describe('menu module', function() {
         assert.equal(menu.items[6].label, 'b');
         return assert.equal(menu.items[7].label, 'c');
       });
+
       it('should create separator group if endof does not reference existing separator group', function() {
-        var menu;
-        menu = Menu.buildFromTemplate([
+        var menu = Menu.buildFromTemplate([
           {
             label: 'a',
             id: 'a',
@@ -153,9 +152,9 @@ describe('menu module', function() {
         assert.equal(menu.items[6].label, '2');
         return assert.equal(menu.items[7].label, '3');
       });
+
       return it('should continue inserting items at next index when no specifier is present', function() {
-        var menu;
-        menu = Menu.buildFromTemplate([
+        var menu = Menu.buildFromTemplate([
           {
             label: '4',
             id: '4'
@@ -182,10 +181,10 @@ describe('menu module', function() {
       });
     });
   });
+
   describe('Menu.insert', function() {
     return it('should store item in @items by its index', function() {
-      var item, menu;
-      menu = Menu.buildFromTemplate([
+      var menu = Menu.buildFromTemplate([
         {
           label: '1'
         }, {
@@ -194,7 +193,7 @@ describe('menu module', function() {
           label: '3'
         }
       ]);
-      item = new MenuItem({
+      var item = new MenuItem({
         label: 'inserted'
       });
       menu.insert(1, item);
@@ -204,10 +203,10 @@ describe('menu module', function() {
       return assert.equal(menu.items[3].label, '3');
     });
   });
+
   describe('MenuItem.click', function() {
     return it('should be called with the item object passed', function(done) {
-      var menu;
-      menu = Menu.buildFromTemplate([
+      var menu = Menu.buildFromTemplate([
         {
           label: 'text',
           click: function(item) {
@@ -220,10 +219,10 @@ describe('menu module', function() {
       return menu.delegate.executeCommand(menu.items[0].commandId);
     });
   });
+
   return describe('MenuItem with checked property', function() {
     it('clicking an checkbox item should flip the checked property', function() {
-      var menu;
-      menu = Menu.buildFromTemplate([
+      var menu = Menu.buildFromTemplate([
         {
           label: 'text',
           type: 'checkbox'
@@ -233,9 +232,9 @@ describe('menu module', function() {
       menu.delegate.executeCommand(menu.items[0].commandId);
       return assert.equal(menu.items[0].checked, true);
     });
+
     it('clicking an radio item should always make checked property true', function() {
-      var menu;
-      menu = Menu.buildFromTemplate([
+      var menu = Menu.buildFromTemplate([
         {
           label: 'text',
           type: 'radio'
@@ -246,6 +245,7 @@ describe('menu module', function() {
       menu.delegate.executeCommand(menu.items[0].commandId);
       return assert.equal(menu.items[0].checked, true);
     });
+
     it('at least have one item checked in each group', function() {
       var i, j, k, menu, template;
       template = [];
@@ -269,6 +269,7 @@ describe('menu module', function() {
       assert.equal(menu.items[0].checked, true);
       return assert.equal(menu.items[12].checked, true);
     });
+
     it('should assign groupId automatically', function() {
       var groupId, i, j, k, l, m, menu, results, template;
       template = [];
@@ -298,6 +299,7 @@ describe('menu module', function() {
       }
       return results;
     });
+
     return it("setting 'checked' should flip other items' 'checked' property", function() {
       var i, j, k, l, m, menu, n, o, p, q, results, template;
       template = [];

@@ -6,8 +6,8 @@ const os = require('os');
 const remote = require('electron').remote;
 
 describe('node feature', function() {
-  var fixtures;
-  fixtures = path.join(__dirname, 'fixtures');
+  var fixtures = path.join(__dirname, 'fixtures');
+
   describe('child_process', function() {
     return describe('child_process.fork', function() {
       it('works in current process', function(done) {
@@ -19,6 +19,7 @@ describe('node feature', function() {
         });
         return child.send('message');
       });
+
       it('preserves args', function(done) {
         var args, child;
         args = ['--expose_gc', '-test', '1'];
@@ -29,6 +30,7 @@ describe('node feature', function() {
         });
         return child.send('message');
       });
+
       it('works in forked process', function(done) {
         var child;
         child = child_process.fork(path.join(fixtures, 'module', 'fork_ping.js'));
@@ -38,6 +40,7 @@ describe('node feature', function() {
         });
         return child.send('message');
       });
+
       it('works in forked process when options.env is specifed', function(done) {
         var child;
         child = child_process.fork(path.join(fixtures, 'module', 'fork_ping.js'), [], {
@@ -49,6 +52,7 @@ describe('node feature', function() {
         });
         return child.send('message');
       });
+
       it('works in browser process', function(done) {
         var child, fork;
         fork = remote.require('child_process').fork;
@@ -59,6 +63,7 @@ describe('node feature', function() {
         });
         return child.send('message');
       });
+
       it('has String::localeCompare working in script', function(done) {
         var child;
         child = child_process.fork(path.join(fixtures, 'module', 'locale-compare.js'));
@@ -68,6 +73,7 @@ describe('node feature', function() {
         });
         return child.send('message');
       });
+
       return it('has setImmediate working in script', function(done) {
         var child;
         child = child_process.fork(path.join(fixtures, 'module', 'set-immediate.js'));
@@ -79,17 +85,20 @@ describe('node feature', function() {
       });
     });
   });
+
   describe('contexts', function() {
     describe('setTimeout in fs callback', function() {
       if (process.env.TRAVIS === 'true') {
         return;
       }
+
       return it('does not crash', function(done) {
         return fs.readFile(__filename, function() {
           return setTimeout(done, 0);
         });
       });
     });
+
     describe('throw error in node context', function() {
       return it('gets caught', function(done) {
         var error, lsts;
@@ -110,11 +119,13 @@ describe('node feature', function() {
         });
       });
     });
+
     describe('setTimeout called under Chromium event loop in browser process', function() {
       return it('can be scheduled in time', function(done) {
         return remote.getGlobal('setTimeout')(done, 0);
       });
     });
+
     return describe('setInterval called under Chromium event loop in browser process', function() {
       return it('can be scheduled in time', function(done) {
         var clear, interval;
@@ -126,11 +137,13 @@ describe('node feature', function() {
       });
     });
   });
+
   describe('message loop', function() {
     describe('process.nextTick', function() {
       it('emits the callback', function(done) {
         return process.nextTick(done);
       });
+
       return it('works in nested calls', function(done) {
         return process.nextTick(function() {
           return process.nextTick(function() {
@@ -139,10 +152,12 @@ describe('node feature', function() {
         });
       });
     });
+
     return describe('setImmediate', function() {
       it('emits the callback', function(done) {
         return setImmediate(done);
       });
+
       return it('works in nested calls', function(done) {
         return setImmediate(function() {
           return setImmediate(function() {
@@ -152,10 +167,12 @@ describe('node feature', function() {
       });
     });
   });
+
   describe('net.connect', function() {
     if (process.platform !== 'darwin') {
       return;
     }
+
     return it('emit error when connect to a socket path without listeners', function(done) {
       var child, script, socketPath;
       socketPath = path.join(os.tmpdir(), 'atom-shell-test.sock');
@@ -172,6 +189,7 @@ describe('node feature', function() {
       });
     });
   });
+
   describe('Buffer', function() {
     it('can be created from WebKit external string', function() {
       var b, p;
@@ -181,6 +199,7 @@ describe('node feature', function() {
       assert.equal(b.toString(), '闲云潭影日悠悠，物换星移几度秋');
       return assert.equal(Buffer.byteLength(p.innerText), 45);
     });
+
     return it('correctly parses external one-byte UTF8 string', function() {
       var b, p;
       p = document.createElement('p');

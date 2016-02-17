@@ -5,9 +5,8 @@ const remote = require('electron').remote;
 const session = remote.session;
 
 describe('webRequest module', function() {
-  var defaultURL, server, ses;
-  ses = session.defaultSession;
-  server = http.createServer(function(req, res) {
+  var ses = session.defaultSession;
+  var server = http.createServer(function(req, res) {
     var content;
     res.setHeader('Custom', ['Header']);
     content = req.url;
@@ -16,7 +15,8 @@ describe('webRequest module', function() {
     }
     return res.end(content);
   });
-  defaultURL = null;
+  var defaultURL = null;
+
   before(function(done) {
     return server.listen(0, '127.0.0.1', function() {
       var port;
@@ -25,13 +25,16 @@ describe('webRequest module', function() {
       return done();
     });
   });
+
   after(function() {
     return server.close();
   });
+
   describe('webRequest.onBeforeRequest', function() {
     afterEach(function() {
       return ses.webRequest.onBeforeRequest(null);
     });
+
     it('can cancel the request', function(done) {
       ses.webRequest.onBeforeRequest(function(details, callback) {
         return callback({
@@ -48,9 +51,9 @@ describe('webRequest module', function() {
         }
       });
     });
+
     it('can filter URLs', function(done) {
-      var filter;
-      filter = {
+      var filter = {
         urls: [defaultURL + "filter/*"]
       };
       ses.webRequest.onBeforeRequest(filter, function(details, callback) {
@@ -77,6 +80,7 @@ describe('webRequest module', function() {
         }
       });
     });
+
     it('receives details object', function(done) {
       ses.webRequest.onBeforeRequest(function(details, callback) {
         assert.equal(typeof details.id, 'number');
@@ -98,6 +102,7 @@ describe('webRequest module', function() {
         }
       });
     });
+
     it('receives post data in details object', function(done) {
       var postData = {
         name: 'post test',
@@ -125,6 +130,7 @@ describe('webRequest module', function() {
         }
       });
     });
+
     return it('can redirect the request', function(done) {
       ses.webRequest.onBeforeRequest(function(details, callback) {
         if (details.url === defaultURL) {
@@ -147,10 +153,12 @@ describe('webRequest module', function() {
       });
     });
   });
+
   describe('webRequest.onBeforeSendHeaders', function() {
     afterEach(function() {
       return ses.webRequest.onBeforeSendHeaders(null);
     });
+
     it('receives details object', function(done) {
       ses.webRequest.onBeforeSendHeaders(function(details, callback) {
         assert.equal(typeof details.requestHeaders, 'object');
@@ -167,6 +175,7 @@ describe('webRequest module', function() {
         }
       });
     });
+
     it('can change the request headers', function(done) {
       ses.webRequest.onBeforeSendHeaders(function(details, callback) {
         var requestHeaders;
@@ -187,6 +196,7 @@ describe('webRequest module', function() {
         }
       });
     });
+
     return it('resets the whole headers', function(done) {
       var requestHeaders;
       requestHeaders = {
@@ -209,10 +219,12 @@ describe('webRequest module', function() {
       });
     });
   });
+
   describe('webRequest.onSendHeaders', function() {
     afterEach(function() {
       return ses.webRequest.onSendHeaders(null);
     });
+
     return it('receives details object', function(done) {
       ses.webRequest.onSendHeaders(function(details) {
         return assert.equal(typeof details.requestHeaders, 'object');
@@ -229,10 +241,12 @@ describe('webRequest module', function() {
       });
     });
   });
+
   describe('webRequest.onHeadersReceived', function() {
     afterEach(function() {
       return ses.webRequest.onHeadersReceived(null);
     });
+
     it('receives details object', function(done) {
       ses.webRequest.onHeadersReceived(function(details, callback) {
         assert.equal(details.statusLine, 'HTTP/1.1 200 OK');
@@ -251,6 +265,7 @@ describe('webRequest module', function() {
         }
       });
     });
+
     it('can change the response header', function(done) {
       ses.webRequest.onHeadersReceived(function(details, callback) {
         var responseHeaders;
@@ -272,6 +287,7 @@ describe('webRequest module', function() {
         }
       });
     });
+
     return it('does not change header by default', function(done) {
       ses.webRequest.onHeadersReceived(function(details, callback) {
         return callback({});
@@ -289,10 +305,12 @@ describe('webRequest module', function() {
       });
     });
   });
+
   describe('webRequest.onResponseStarted', function() {
     afterEach(function() {
       return ses.webRequest.onResponseStarted(null);
     });
+
     return it('receives details object', function(done) {
       ses.webRequest.onResponseStarted(function(details) {
         assert.equal(typeof details.fromCache, 'boolean');
@@ -313,11 +331,13 @@ describe('webRequest module', function() {
       });
     });
   });
+
   describe('webRequest.onBeforeRedirect', function() {
     afterEach(function() {
       ses.webRequest.onBeforeRedirect(null);
       return ses.webRequest.onBeforeRequest(null);
     });
+
     return it('receives details object', function(done) {
       var redirectURL;
       redirectURL = defaultURL + "redirect";
@@ -348,10 +368,12 @@ describe('webRequest module', function() {
       });
     });
   });
+
   describe('webRequest.onCompleted', function() {
     afterEach(function() {
       return ses.webRequest.onCompleted(null);
     });
+
     return it('receives details object', function(done) {
       ses.webRequest.onCompleted(function(details) {
         assert.equal(typeof details.fromCache, 'boolean');
@@ -370,11 +392,13 @@ describe('webRequest module', function() {
       });
     });
   });
+
   return describe('webRequest.onErrorOccurred', function() {
     afterEach(function() {
       ses.webRequest.onErrorOccurred(null);
       return ses.webRequest.onBeforeRequest(null);
     });
+
     return it('receives details object', function(done) {
       ses.webRequest.onBeforeRequest(function(details, callback) {
         return callback({

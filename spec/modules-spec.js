@@ -3,14 +3,15 @@ const path = require('path');
 const temp = require('temp');
 
 describe('third-party module', function() {
-  var fixtures;
-  fixtures = path.join(__dirname, 'fixtures');
+  var fixtures = path.join(__dirname, 'fixtures');
   temp.track();
+
   if (process.platform !== 'win32' || process.execPath.toLowerCase().indexOf('\\out\\d\\') === -1) {
     describe('runas', function() {
       it('can be required in renderer', function() {
         return require('runas');
       });
+
       return it('can be required in node binary', function(done) {
         var child, runas;
         runas = path.join(fixtures, 'module', 'runas.js');
@@ -21,6 +22,7 @@ describe('third-party module', function() {
         });
       });
     });
+
     describe('ffi', function() {
       return it('does not crash', function() {
         var ffi, libm;
@@ -32,6 +34,7 @@ describe('third-party module', function() {
       });
     });
   }
+
   return describe('q', function() {
     var Q;
     Q = require('q');

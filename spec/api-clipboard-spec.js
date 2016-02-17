@@ -5,8 +5,8 @@ const clipboard = require('electron').clipboard;
 const nativeImage = require('electron').nativeImage;
 
 describe('clipboard module', function() {
-  var fixtures;
-  fixtures = path.resolve(__dirname, 'fixtures');
+  var fixtures = path.resolve(__dirname, 'fixtures');
+
   describe('clipboard.readImage()', function() {
     return it('returns NativeImage intance', function() {
       var i, p;
@@ -16,6 +16,7 @@ describe('clipboard module', function() {
       return assert.equal(clipboard.readImage().toDataURL(), i.toDataURL());
     });
   });
+
   describe('clipboard.readText()', function() {
     return it('returns unicode string correctly', function() {
       var text;
@@ -24,6 +25,7 @@ describe('clipboard module', function() {
       return assert.equal(clipboard.readText(), text);
     });
   });
+
   describe('clipboard.readHtml()', function() {
     return it('returns markup correctly', function() {
       var markup, text;
@@ -33,6 +35,7 @@ describe('clipboard module', function() {
       return assert.equal(clipboard.readHtml(), markup);
     });
   });
+
   describe('clipboard.readRtf', function() {
     return it('returns rtf text correctly', function() {
       var rtf = "{\\rtf1\\ansi{\\fonttbl\\f0\\fswiss Helvetica;}\\f0\\pard\nThis is some {\\b bold} text.\\par\n}";
@@ -40,6 +43,7 @@ describe('clipboard module', function() {
       return assert.equal(clipboard.readRtf(), rtf);
     });
   });
+
   return describe('clipboard.write()', function() {
     return it('returns data correctly', function() {
       var i, markup, p, text, rtf;
