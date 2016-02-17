@@ -36,7 +36,6 @@
 #include "brightray/browser/inspectable_web_contents_view.h"
 #include "chrome/browser/printing/print_view_manager_basic.h"
 #include "chrome/browser/printing/print_preview_message_handler.h"
-#include "content/common/view_messages.h"
 #include "content/public/browser/browser_plugin_guest_manager.h"
 #include "content/public/browser/favicon_status.h"
 #include "content/public/browser/native_web_keyboard_event.h"
@@ -83,14 +82,6 @@ void SetUserAgentInIO(scoped_refptr<net::URLRequestContextGetter> getter,
 }  // namespace
 
 namespace mate {
-
-template<>
-struct Converter<content::WebContents*> {
-  static v8::Local<v8::Value> ToV8(
-      v8::Isolate* isolate, content::WebContents* web_contents) {
-    return atom::api::WebContents::CreateFrom(isolate, web_contents).ToV8();
-  }
-};
 
 template<>
 struct Converter<atom::SetSizeParams> {
