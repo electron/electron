@@ -14,4 +14,4 @@ exports.openExternal = (url, options) => {
   }
 
   return bindings._openExternal(url, activate);
-}
+};
