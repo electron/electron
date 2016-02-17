@@ -710,6 +710,14 @@ bool WebContents::Equal(const WebContents* web_contents) const {
 }
 
 void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
+  if (!url.is_valid()) {
+    Emit("did-fail-load",
+         static_cast<int>(net::ERR_INVALID_URL),
+         net::ErrorToShortString(net::ERR_INVALID_URL),
+         url.possibly_invalid_spec());
+    return;
+  }
+
   content::NavigationController::LoadURLParams params(url);
 
   GURL http_referrer;

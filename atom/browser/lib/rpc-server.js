@@ -130,7 +130,7 @@ var unwrapArgs = function(sender, args) {
         return Promise.resolve({
           then: metaToValue(meta.then)
         });
-      case 'object':
+      case 'object': {
         let ret = v8Util.createObjectWithName(meta.name);
         ref = meta.members;
         for (i = 0, len = ref.length; i < len; i++) {
@@ -138,12 +138,13 @@ var unwrapArgs = function(sender, args) {
           ret[member.name] = metaToValue(member.value);
         }
         return ret;
+      }
       case 'function-with-return-value':
         returnValue = metaToValue(meta.value);
         return function() {
           return returnValue;
         };
-      case 'function':
+      case 'function': {
         // Cache the callbacks in renderer.
         if (!sender.callbacks) {
           sender.callbacks = new IDWeakMap;
@@ -172,6 +173,7 @@ var unwrapArgs = function(sender, args) {
         });
         sender.callbacks.set(meta.id, callIntoRenderer);
         return callIntoRenderer;
+      }
       default:
         throw new TypeError("Unknown type: " + meta.type);
     }

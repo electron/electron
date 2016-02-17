@@ -109,7 +109,7 @@ void TranslateOldOptions(v8::Isolate* isolate, v8::Local<v8::Object> options) {
 
 // Converts binary data to Buffer.
 v8::Local<v8::Value> ToBuffer(v8::Isolate* isolate, void* val, int size) {
-  auto buffer = node::Buffer::New(isolate, static_cast<char*>(val), size);
+  auto buffer = node::Buffer::Copy(isolate, static_cast<char*>(val), size);
   if (buffer.IsEmpty())
     return v8::Null(isolate);
   else

@@ -18,6 +18,34 @@ New features of Node.js are usually brought by V8 upgrades, since Electron is
 using the V8 shipped by Chrome browser, the shiny new JavaScript feature of a
 new Node.js version is usually already in Electron.
 
+## How to share data between web pages?
+
+To share data between web pages (the renderer processes) the simplest way is to
+use HTML5 APIs which are already available in browsers. Good candidates are
+[Storage API][storage], [`localStorage`][local-storage],
+[`sessionStorage`][session-storage], and [IndexedDB][indexed-db].
+
+Or you can use the IPC system, which are specific to Electron, to store objects
+in the main process as a global variable, and then to access them from the
+renderers through the `remote` module:
+
+```javascript
+// In the main process.
+global.sharedObject = {
+  someProperty: 'default value'
+};
+```
+
+```javascript
+// In page 1.
+require('remote').getGlobal('sharedObject').someProperty = 'new value';
+```
+
+```javascript
+// In page 2.
+console.log(require('remote').getGlobal('sharedObject').someProperty);
+```
+
 ## My app's window/tray disappeared after a few minutes.
 
 This happens when the variable which is used to store the window/tray gets
@@ -120,3 +148,7 @@ is only available in renderer processes.
 [memory-management]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Memory_Management
 [variable-scope]: https://msdn.microsoft.com/library/bzt2dkta(v=vs.94).aspx
 [electron-module]: https://www.npmjs.com/package/electron
+[storage]: https://developer.mozilla.org/en-US/docs/Web/API/Storage
+[local-storage]: https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage
+[session-storage]: https://developer.mozilla.org/en-US/docs/Web/API/Window/sessionStorage
+[indexed-db]: https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API

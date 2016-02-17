@@ -12,35 +12,35 @@ See [ipcMain](ipc-main.md) for code examples.
 
 The `ipcRenderer` module has the following method to listen for events:
 
-### `ipcRenderer.on(channel, callback)`
+### `ipcRenderer.on(channel, listener)`
 
-* `channel` String - The event name.
-* `callback` Function
+* `channel` String
+* `listener` Function
 
-When the event occurs the `callback` is called with an `event` object and
-arbitrary arguments.
+Listens to `channel`, when a new message arrives `listener` would be called with
+`listener(event, args...)`.
 
-### `ipcRenderer.removeListener(channel, callback)`
+### `ipcRenderer.once(channel, listener)`
 
-* `channel` String - The event name.
-* `callback` Function - The reference to the same function that you used for
-  `ipcRenderer.on(channel, callback)`
+* `channel` String
+* `listener` Function
 
-Once done listening for messages, if you no longer want to activate this
-callback and for whatever reason can't merely stop sending messages on the
-channel, this function will remove the callback handler for the specified
-channel.
+Adds a one time `listener` function for the event. This `listener` is invoked
+only the next time a message is sent to `channel`, after which it is removed.
 
-### `ipcRenderer.removeAllListeners(channel)`
+### `ipcRenderer.removeListener(channel, listener)`
 
-* `channel` String - The event name.
+* `channel` String
+* `listener` Function
 
-This removes *all* handlers to this ipc channel.
+Removes the specified `listener` from the listener array for the specified
+`channel`.
 
-### `ipcRenderer.once(channel, callback)`
+### `ipcRenderer.removeAllListeners([channel])`
 
-Use this in place of `ipcRenderer.on()` to fire handlers meant to occur only once,
-as in, they won't be activated after one call of `callback`
+* `channel` String (optional)
+
+Removes all listeners, or those of the specified `channel`.
 
 ## Sending Messages
 
@@ -48,30 +48,33 @@ The `ipcRenderer` module has the following methods for sending messages:
 
 ### `ipcRenderer.send(channel[, arg1][, arg2][, ...])`
 
-* `channel` String - The event name.
+* `channel` String
 * `arg` (optional)
 
-Send an event to the main process asynchronously via a `channel`, you can also
-send arbitrary arguments. The main process handles it by listening for the
-`channel` event with `ipcMain`.
+Send a message to the main process asynchronously via `channel`, you can also
+send arbitrary arguments. Arguments will be serialized in JSON internally and
+hence no functions or prototype chain will be included.
+
+The main process handles it by listening for `channel` with `ipcMain` module.
 
 ### `ipcRenderer.sendSync(channel[, arg1][, arg2][, ...])`
 
-* `channel` String - The event name.
+* `channel` String
 * `arg` (optional)
 
-Send an event to the main process synchronously via a `channel`, you can also
-send arbitrary arguments.
+Send a message to the main process synchronously via `channel`, you can also
+send arbitrary arguments. Arguments will be serialized in JSON internally and
+hence no functions or prototype chain will be included.
 
-The main process handles it by listening for the `channel` event with 
-`ipcMain` and replies by setting `event.returnValue`.
+The main process handles it by listening for `channel` with `ipcMain` module,
+and replies by setting `event.returnValue`.
 
 __Note:__ Sending a synchronous message will block the whole renderer process,
 unless you know what you are doing you should never use it.
 
 ### `ipcRenderer.sendToHost(channel[, arg1][, arg2][, ...])`
 
-* `channel` String - The event name.
+* `channel` String
 * `arg` (optional)
 
 Like `ipcRenderer.send` but the event will be sent to the `<webview>` element in

@@ -16,7 +16,7 @@ namespace api {
 FrameSubscriber::FrameSubscriber(v8::Isolate* isolate,
                                  const gfx::Size& size,
                                  const FrameCaptureCallback& callback)
-    : isolate_(isolate), size_(size), callback_(callback) {
+    : isolate_(isolate), size_(size), callback_(callback), weak_factory_(this) {
 }
 
 bool FrameSubscriber::ShouldCaptureFrame(
@@ -28,7 +28,7 @@ bool FrameSubscriber::ShouldCaptureFrame(
       media::PIXEL_FORMAT_YV12,
       size_, gfx::Rect(size_), size_, base::TimeDelta());
   *callback = base::Bind(&FrameSubscriber::OnFrameDelivered,
-                         base::Unretained(this), *storage);
+                         weak_factory_.GetWeakPtr(), *storage);
   return true;
 }
 
