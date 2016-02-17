@@ -18,7 +18,6 @@
 #include "atom/common/node_bindings.h"
 #include "atom/common/node_includes.h"
 #include "atom/common/options_switches.h"
-#include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/renderer/atom_render_view_observer.h"
 #include "atom/renderer/guest_view_container.h"
 #include "atom/renderer/node_array_buffer_bridge.h"
@@ -65,14 +64,14 @@ class AtomRenderFrameObserver : public content::RenderFrameObserver {
       return;
     world_id_ = world_id;
     renderer_client_->DidCreateScriptContext(
-		render_frame()->GetWebFrame(), context);
+        render_frame()->GetWebFrame(), context);
   }
   void WillReleaseScriptContext(v8::Local<v8::Context> context,
                                 int world_id) override {
     if (world_id_ != world_id)
       return;
     renderer_client_->WillReleaseScriptContext(
-		render_frame()->GetWebFrame(), context);
+        render_frame()->GetWebFrame(), context);
   }
 
  private:
@@ -139,10 +138,6 @@ void AtomRendererClient::RenderFrameCreated(
 
   // Allow file scheme to handle service worker by default.
   blink::WebSecurityPolicy::registerURLSchemeAsAllowingServiceWorkers("file");
-
-  // Only insert node integration for the main frame.
-  if (!render_frame->IsMainFrame())
-    return;
 
   new AtomRenderFrameObserver(render_frame, this);
 }
@@ -215,6 +210,7 @@ void AtomRendererClient::DidCreateScriptContext(
 }
 
 void AtomRendererClient::WillReleaseScriptContext(
+    blink::WebFrame* frame,
     v8::Handle<v8::Context> context) {
   node::Environment* env = node::Environment::GetCurrent(context);
   if (env != nullptr && env == node_bindings_->uv_env()) {
