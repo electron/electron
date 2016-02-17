@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const util = require('util');
 const Module = require('module');
+const v8 = require('v8');
 
 var slice = [].slice;
 
@@ -129,21 +130,13 @@ if (packageJson.desktopName != null) {
   app.setDesktopName((app.getName()) + ".desktop");
 }
 
+// Set v8 flags
+if (packageJson.v8Flags != null) {
+  v8.setFlagsFromString(packageJson.v8Flags);
+}
+
 // Chrome 42 disables NPAPI plugins by default, reenable them here
 app.commandLine.appendSwitch('enable-npapi');
-
-// Add other command line switches
-if (packageJson.commandLineSwitches) {
-  for (let i = 0; i < packageJson.commandLineSwitches.length; i++) {
-    const option = packageJson.commandLineSwitches[i];
-
-    if (typeof option === 'string') {
-      app.commandLine.appendSwitch(option);
-    } else {
-      app.commandLine.appendSwitch(option[0], option[1]);
-    }
-  }
-}
 
 // Set the user path according to application's name.
 app.setPath('userData', path.join(app.getPath('appData'), app.getName()));
