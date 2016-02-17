@@ -59,7 +59,8 @@ var ses = session.fromPartition('persist:name');
 
 Electron의 `webContents`에서 `item`을 다운로드할 때 발생하는 이벤트입니다.
 
-`event.preventDefault()` 메서드를 호출하면 다운로드를 취소합니다.
+`event.preventDefault()` 메서드를 호출하면 다운로드를 취소하고, 프로세스의 다음
+틱부터 `item`을 사용할 수 없게 됩니다.
 
 ```javascript
 session.defaultSession.on('will-download', function(event, item, webContents) {
@@ -312,6 +313,12 @@ session.fromPartition(partition).setPermissionRequestHandler(function(webContent
   callback(true);
 });
 ```
+
+#### `ses.clearHostResolverCache([callback])`
+
+* `callback` Function (optional) - 작업이 완료되면 호출됩니다.
+
+호스트 리소버(resolver) 캐시를 지웁니다.
 
 #### `ses.webRequest`
 
