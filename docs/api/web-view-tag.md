@@ -438,6 +438,10 @@ Sends an input `event` to the page.
 See [webContents.sendInputEvent](web-contents.md##webcontentssendinputeventevent)
 for detailed description of `event` object.
 
+### `<webview>.getWebContents()`
+
+Returns the [WebContents](web-contents.md) associated with this `webview`.
+
 ## DOM events
 
 The following DOM events are available to the `webview` tag:

@@ -218,7 +218,8 @@ WebContents::WebContents(content::WebContents* web_contents)
 
 WebContents::WebContents(v8::Isolate* isolate,
                          const mate::Dictionary& options)
-    : request_id_(0) {
+    : embedder_(nullptr),
+      request_id_(0) {
   // Whether it is a guest WebContents.
   bool is_guest = false;
   options.Get("isGuest", &is_guest);
@@ -273,10 +274,10 @@ WebContents::WebContents(v8::Isolate* isolate,
     guest_delegate_->Initialize(this);
 
     NativeWindow* owner_window = nullptr;
-    WebContents* embedder = nullptr;
-    if (options.Get("embedder", &embedder) && embedder) {
+    if (options.Get("embedder", &embedder_) && embedder_) {
       // New WebContents's owner_window is the embedder's owner_window.
-      auto relay = NativeWindowRelay::FromWebContents(embedder->web_contents());
+      auto relay =
+          NativeWindowRelay::FromWebContents(embedder_->web_contents());
       if (relay)
         owner_window = relay->window.get();
     }
@@ -1116,6 +1117,12 @@ v8::Local<v8::Value> WebContents::Session(v8::Isolate* isolate) {
   return v8::Local<v8::Value>::New(isolate, session_);
 }
 
+content::WebContents* WebContents::HostWebContents() {
+  if (!embedder_)
+    return nullptr;
+  return embedder_->web_contents();
+}
+
 v8::Local<v8::Value> WebContents::DevToolsWebContents(v8::Isolate* isolate) {
   if (devtools_web_contents_.IsEmpty())
     return v8::Null(isolate);
@@ -1199,6 +1206,7 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("addWorkSpace", &WebContents::AddWorkSpace)
       .SetMethod("removeWorkSpace", &WebContents::RemoveWorkSpace)
       .SetProperty("session", &WebContents::Session)
+      .SetProperty("hostWebContents", &WebContents::HostWebContents)
       .SetProperty("devToolsWebContents", &WebContents::DevToolsWebContents)
       .SetProperty("debugger", &WebContents::Debugger);
 }
