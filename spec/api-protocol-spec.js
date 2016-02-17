@@ -122,7 +122,7 @@ describe('protocol module', function() {
         if (error) {
           return done(error);
         }
-        return $.ajax({
+        $.ajax({
           url: protocolName + "://fake-host",
           success: function(data) {
             assert.equal(data, text);
@@ -310,7 +310,7 @@ describe('protocol module', function() {
         if (error) {
           return done(error);
         }
-        return $.ajax({
+        $.ajax({
           url: protocolName + "://fake-host",
           success: function(data) {
             assert.equal(data, String(fileContent));
@@ -325,7 +325,7 @@ describe('protocol module', function() {
 
     it('sets Access-Control-Allow-Origin', function(done) {
       var handler = function(request, callback) {
-        return callback(filePath);
+        callback(filePath);
       };
       protocol.registerFileProtocol(protocolName, handler, function(error) {
         if (error) {
@@ -346,7 +346,7 @@ describe('protocol module', function() {
     });
     it('sends object as response', function(done) {
       var handler = function(request, callback) {
-        return callback({
+        callback({
           path: filePath
         });
       };
@@ -440,7 +440,7 @@ describe('protocol module', function() {
         res.end(text);
         server.close();
       });
-      return server.listen(0, '127.0.0.1', function() {
+      server.listen(0, '127.0.0.1', function() {
         var port = server.address().port;
         var url = "http://127.0.0.1:" + port;
         var handler = function(request, callback) {
@@ -586,7 +586,7 @@ describe('protocol module', function() {
       var doubleHandler = function(request, callback) {
         try {
           callback(text);
-          return callback();
+          callback();
         } catch (error) {
           // Ignore error
         }
