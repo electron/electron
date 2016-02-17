@@ -100,6 +100,8 @@
             }, {
               'link_settings': {
                 'libraries': [
+                  # Link with ffmpeg.
+                  '<(libchromiumcontent_dir)/libffmpeg.so',
                   # Following libraries are required by libchromiumcontent:
                   '-lasound',
                   '-lcap',
@@ -155,6 +157,8 @@
             }, {
               'link_settings': {
                 'libraries': [
+                  # Link with ffmpeg.
+                  '<(libchromiumcontent_dir)/libffmpeg.dylib',
                   # Link with system frameworks.
                   # ui_base.gypi:
                   '$(SDKROOT)/System/Library/Frameworks/Accelerate.framework',
@@ -214,6 +218,8 @@
               # Link with system libraries.
               'link_settings': {
                 'libraries': [
+                  # Link with ffmpeg.
+                  '<(libchromiumcontent_dir)/ffmpeg.dll',
                   # content_browser.gypi:
                   '-lsensorsapi.lib',
                   '-lportabledeviceguids.lib',
