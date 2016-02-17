@@ -32,6 +32,13 @@ __플랫폼별 한계:__
   트레이 아이콘이 작동하도록 만들 수 있습니다.
 * 앱 알림 표시기는 컨텍스트 메뉴를 가지고 있을 때만 보입니다.
 * Linux에서 앱 표시기가 사용될 경우, `click` 이벤트는 무시됩니다.
+* Linux에서 각각 개별 `MenuItem`의 변경을 적용하려면 `setContextMenu`를 다시
+  호출해야 합니다. 예를 들면:
+
+```javascript
+contextMenu.items[2].checked = false;
+appIcon.setContextMenu(contextMenu);
+```
 
 이러한 이유로 Tray API가 모든 플랫폼에서 똑같이 작동하게 하고 싶다면 `click` 이벤트에
 의존해선 안되며 언제나 컨텍스트 메뉴를 포함해야 합니다.
