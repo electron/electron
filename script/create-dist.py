@@ -38,6 +38,7 @@ TARGET_BINARIES = {
     'libGLESv2.dll',
     'msvcp120.dll',
     'msvcr120.dll',
+    'ffmpeg.dll',
     'node.dll',
     'pdf.dll',
     'content_resources_200_percent.pak',
@@ -51,6 +52,7 @@ TARGET_BINARIES = {
     PROJECT_NAME,  # 'electron'
     'content_shell.pak',
     'icudtl.dat',
+    'libffmpeg.so',
     'libnode.so',
     'natives_blob.bin',
     'snapshot_blob.bin',
