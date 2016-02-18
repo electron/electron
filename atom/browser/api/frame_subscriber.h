@@ -6,7 +6,10 @@
 #define ATOM_BROWSER_API_FRAME_SUBSCRIBER_H_
 
 #include "base/callback.h"
+#include "content/public/browser/render_widget_host_view.h"
 #include "content/public/browser/render_widget_host_view_frame_subscriber.h"
+#include "content/public/browser/readback_types.h"
+#include "third_party/skia/include/core/SkBitmap.h"
 #include "ui/gfx/geometry/size.h"
 #include "v8/include/v8.h"
 
@@ -35,19 +38,20 @@ class FrameSubscriber {
   };
 
   FrameSubscriber(v8::Isolate* isolate,
-                  const gfx::Size& size,
+                  content::RenderWidgetHostView* view,
                   const FrameCaptureCallback& callback);
 
   Subscriber* GetSubscriber();
 
  private:
-  void OnFrameDelivered(
-      scoped_refptr<media::VideoFrame> frame, base::TimeTicks, bool);
+  void OnFrameDelivered(const FrameCaptureCallback& callback,
+    const SkBitmap& bitmap, content::ReadbackResponse response);
 
   bool RequestDestruct();
 
   v8::Isolate* isolate_;
   gfx::Size size_;
+  content::RenderWidgetHostView* view_;
   FrameCaptureCallback callback_;
   Subscriber* subscriber_;
   int pending_frames;

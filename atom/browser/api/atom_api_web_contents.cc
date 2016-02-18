@@ -1065,7 +1065,7 @@ void WebContents::BeginFrameSubscription(
   const auto view = web_contents()->GetRenderWidgetHostView();
   if (view) {
     FrameSubscriber* frame_subscriber = new FrameSubscriber(
-      isolate(), view->GetVisibleViewportSize(), callback);
+      isolate(), view, callback);
     scoped_ptr<FrameSubscriber::Subscriber> del_frame_subscriber(
       frame_subscriber->GetSubscriber());
     view->BeginFrameSubscription(del_frame_subscriber.Pass());

@@ -8,6 +8,8 @@
 #include "base/bind.h"
 #include "media/base/video_frame.h"
 #include "media/base/yuv_convert.h"
+#include "content/public/browser/render_widget_host.h"
+#include "ui/gfx/screen.h"
 
 namespace atom {
 
@@ -16,10 +18,11 @@ namespace api {
 using Subscriber = FrameSubscriber::Subscriber;
 
 FrameSubscriber::FrameSubscriber(v8::Isolate* isolate,
-                                 const gfx::Size& size,
+                                 content::RenderWidgetHostView* view,
                                  const FrameCaptureCallback& callback)
-    : isolate_(isolate), size_(size), callback_(callback), pending_frames(0) {
+    : isolate_(isolate), callback_(callback), pending_frames(0), view_(view) {
   subscriber_ = new Subscriber(this);
+  size_ = view->GetVisibleViewportSize();
 }
 
 Subscriber::Subscriber(
@@ -36,14 +39,32 @@ bool Subscriber::ShouldCaptureFrame(
     base::TimeTicks present_time,
     scoped_refptr<media::VideoFrame>* storage,
     DeliverFrameCallback* callback) {
-  *storage = media::VideoFrame::CreateFrame(
-      media::PIXEL_FORMAT_YV12,
-      frame_subscriber_->size_, gfx::Rect(frame_subscriber_->size_),
-      frame_subscriber_->size_, base::TimeDelta());
-  *callback = base::Bind(&FrameSubscriber::OnFrameDelivered,
-                         base::Unretained(frame_subscriber_), *storage);
+  const auto view = frame_subscriber_->view_;
+  const auto host = view ? view->GetRenderWidgetHost() : nullptr;
+  if (!view || !host) {
+    return false;
+  }
+
+  const gfx::Size view_size = view->GetViewBounds().size();
+
+  gfx::Size bitmap_size = view_size;
+  const gfx::NativeView native_view = view->GetNativeView();
+  gfx::Screen* const screen = gfx::Screen::GetScreenFor(native_view);
+  const float scale =
+      screen->GetDisplayNearestWindow(native_view).device_scale_factor();
+  if (scale > 1.0f)
+    bitmap_size = gfx::ScaleToCeiledSize(view_size, scale);
+
+  host->CopyFromBackingStore(
+      gfx::Rect(view_size),
+      bitmap_size,
+      base::Bind(&FrameSubscriber::OnFrameDelivered,
+                 base::Unretained(frame_subscriber_),
+                 frame_subscriber_->callback_),
+      kBGRA_8888_SkColorType);
+
   frame_subscriber_->pending_frames++;
-  return true;
+  return false;
 }
 
 Subscriber* FrameSubscriber::GetSubscriber() {
@@ -60,33 +81,25 @@ bool FrameSubscriber::RequestDestruct() {
   return deletable;
 }
 
-void FrameSubscriber::OnFrameDelivered(
-    scoped_refptr<media::VideoFrame> frame, base::TimeTicks, bool result) {
+void FrameSubscriber::OnFrameDelivered(const FrameCaptureCallback& callback,
+  const SkBitmap& bitmap, content::ReadbackResponse response){
   pending_frames--;
 
-  if (RequestDestruct() || subscriber_ == NULL || !result)
+  if (RequestDestruct() || subscriber_ == NULL || bitmap.computeSize64() == 0)
     return;
 
   v8::Locker locker(isolate_);
   v8::HandleScope handle_scope(isolate_);
 
-  gfx::Rect rect = frame->visible_rect();
-  size_t rgb_arr_size = rect.width() * rect.height() * 4;
+  size_t rgb_arr_size = bitmap.width() * bitmap.height() *
+    bitmap.bytesPerPixel();
   v8::MaybeLocal<v8::Object> buffer = node::Buffer::New(isolate_, rgb_arr_size);
   if (buffer.IsEmpty())
     return;
 
-  // Convert a frame of YUV to 32 bit ARGB.
-  media::ConvertYUVToRGB32(frame->data(media::VideoFrame::kYPlane),
-                           frame->data(media::VideoFrame::kUPlane),
-                           frame->data(media::VideoFrame::kVPlane),
-                           reinterpret_cast<uint8*>(
-                              node::Buffer::Data(buffer.ToLocalChecked())),
-                           rect.width(), rect.height(),
-                           frame->stride(media::VideoFrame::kYPlane),
-                           frame->stride(media::VideoFrame::kUVPlane),
-                           rect.width() * 4,
-                           media::YV12);
+  bitmap.copyPixelsTo(
+    reinterpret_cast<uint8*>(node::Buffer::Data(buffer.ToLocalChecked())),
+    rgb_arr_size);
 
   callback_.Run(buffer.ToLocalChecked());
 }
