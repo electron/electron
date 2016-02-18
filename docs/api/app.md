@@ -515,7 +515,7 @@ Shows the dock icon.
 
 ### `app.dock.setMenu(menu)` _OS X_
 
-* `menu` Menu
+* `menu` [Menu](menu.md)
 
 Sets the application's [dock menu][dock-menu].
 
