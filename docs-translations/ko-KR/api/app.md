@@ -523,7 +523,7 @@ dock 아이콘을 표시합니다.
 
 ### `app.dock.setMenu(menu)` _OS X_
 
-* `menu` Menu
+* `menu` [Menu](menu.md)
 
 어플리케이션의 [dock menu][dock-menu]를 설정합니다.
 
