@@ -1,17 +1,11 @@
-var assert, path, remote, BrowserWindow;
-
-assert = require('assert');
-
-path = require('path');
-
-remote = require('electron').remote;
-
-BrowserWindow = remote.BrowserWindow;
+const assert = require('assert');
+const path = require('path');
+const BrowserWindow = require('electron').remote.BrowserWindow;
 
 describe('debugger module', function() {
-  var fixtures, w;
-  fixtures = path.resolve(__dirname, 'fixtures');
-  w = null;
+  var fixtures = path.resolve(__dirname, 'fixtures');
+  var w = null;
+
   beforeEach(function() {
     if (w != null) {
       w.destroy();
@@ -22,6 +16,7 @@ describe('debugger module', function() {
       height: 400
     });
   });
+
   afterEach(function() {
     if (w != null) {
       w.destroy();
