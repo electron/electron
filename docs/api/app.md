@@ -156,7 +156,7 @@ certificate you should prevent the default behavior with
 `event.preventDefault()` and call `callback(true)`.
 
 ```javascript
-session.on('certificate-error', function(event, webContents, url, error, certificate, callback) {
+app.on('certificate-error', function(event, webContents, url, error, certificate, callback) {
   if (url == "https://github.com") {
     // Verification logic.
     event.preventDefault();
