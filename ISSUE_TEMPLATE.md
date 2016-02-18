@@ -4,8 +4,8 @@
 
 ### Description
 
-[Description of the bug or feature, for example, what you were doing when the issue arose and what you expected to happen]
-
 Electron version: 
 
 Operating system: 
+
+[Description of the bug or feature, for example, what you were doing when the issue arose and what you expected to happen]
