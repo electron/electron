@@ -95,7 +95,9 @@ describe('debugger module', function() {
     });
 
     it('fires message event', function(done) {
-      var url = 'file://' + path.join(fixtures, 'pages', 'a.html');
+      var url = process.platform != 'win32' ?
+        'file://' + path.join(fixtures, 'pages', 'a.html') :
+        'file:///' + path.join(fixtures, 'pages', 'a.html').replace(/\\/g, '/');
       w.webContents.loadURL(url);
       try {
         w.webContents.debugger.attach();
