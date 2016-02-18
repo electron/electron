@@ -41,9 +41,8 @@ bool Subscriber::ShouldCaptureFrame(
     DeliverFrameCallback* callback) {
   const auto view = frame_subscriber_->view_;
   const auto host = view ? view->GetRenderWidgetHost() : nullptr;
-  if (!view || !host) {
+  if (!view || !host)
     return false;
-  }
 
   const gfx::Size view_size = view->GetViewBounds().size();
 
@@ -82,7 +81,7 @@ bool FrameSubscriber::RequestDestruct() {
 }
 
 void FrameSubscriber::OnFrameDelivered(const FrameCaptureCallback& callback,
-  const SkBitmap& bitmap, content::ReadbackResponse response){
+  const SkBitmap& bitmap, content::ReadbackResponse response) {
   pending_frames--;
 
   if (RequestDestruct() || subscriber_ == NULL || bitmap.computeSize64() == 0)
