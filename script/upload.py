@@ -35,9 +35,6 @@ DSYM_NAME = '{0}-{1}-{2}-{3}-dsym.zip'.format(PROJECT_NAME,
                                               ATOM_SHELL_VERSION,
                                               get_platform_key(),
                                               get_target_arch())
-MKSNAPSHOT_NAME = 'mksnapshot-{0}-{1}-{2}.zip'.format(ATOM_SHELL_VERSION,
-                                                      get_platform_key(),
-                                                      get_target_arch())
 
 
 def main():
@@ -89,12 +86,19 @@ def main():
   if PLATFORM == 'darwin':
     upload_atom_shell(github, release, os.path.join(DIST_DIR, DSYM_NAME))
 
+  # Upload free version of ffmpeg.
+  ffmpeg = 'ffmpeg-{0}-{1}-{2}.zip'.format(
+      ATOM_SHELL_VERSION, get_platform_key(), get_target_arch())
+  upload_atom_shell(github, release, os.path.join(DIST_DIR, ffmpeg))
+
   # Upload chromedriver and mksnapshot for minor version update.
   if parse_version(args.version)[2] == '0':
     chromedriver = 'chromedriver-{0}-{1}-{2}.zip'.format(
         get_chromedriver_version(), get_platform_key(), get_target_arch())
     upload_atom_shell(github, release, os.path.join(DIST_DIR, chromedriver))
-    upload_atom_shell(github, release, os.path.join(DIST_DIR, MKSNAPSHOT_NAME))
+    mksnapshot = 'mksnapshot-{0}-{1}-{2}.zip'.format(
+        ATOM_SHELL_VERSION, get_platform_key(), get_target_arch())
+    upload_atom_shell(github, release, os.path.join(DIST_DIR, mksnapshot))
 
   if PLATFORM == 'win32' and not tag_exists:
     # Upload node headers.
