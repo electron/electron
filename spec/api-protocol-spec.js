@@ -5,6 +5,7 @@ const qs = require('querystring');
 const remote = require('electron').remote;
 const BrowserWindow = remote.require('electron').BrowserWindow;
 const protocol = remote.require('electron').protocol;
+const session = remote.require('electron').session;
 
 describe('protocol module', function() {
   var protocolName = 'sp';
@@ -818,7 +819,7 @@ describe('protocol module', function() {
 
   describe('protocol.fromPartition', function() {
     var partitionName = 'temp';
-    var tempProtocol = protocol.fromPartition(partitionName);
+    var tempProtocol = session.fromPartition(partitionName).protocol;
     var w = null;
 
     beforeEach(function() {
@@ -852,17 +853,18 @@ describe('protocol module', function() {
         if (error) {
           return done(error);
         }
+
         protocol.isProtocolHandled(protocolName, function(result) {
           assert.equal(result, false);
         });
         tempProtocol.isProtocolHandled(protocolName, function(result) {
           assert.equal(result, true);
+          w.webContents.on('did-finish-load', function() {
+            done();
+          });
+          w.loadURL(protocolName + "://fake-host");
         });
       });
-      w.webContents.on('did-finish-load', function() {
-        done();
-      });
-      w.loadURL(protocolName + "://fake-host");
     });
   });
 });
