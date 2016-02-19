@@ -8,6 +8,10 @@ Electron은 라이센스상의 문제로 Widevine CDM 플러그인을 직접 제
 따라서 플러그인을 얻으려면 먼저 사용할 Electron 빌드의 아키텍쳐와 버전에 맞춰 공식
 Chrome 브라우저를 설치해야 합니다.
 
+__참고:__ Chrome 브라우저의 메이저 버전은 Electron에서 사용하는 Chrome 버전과
+같습니다, 만약 그렇지 않다면 `navigator.plugins`가 로드됐더라도 정상적으로 작동하지
+않습니다.
+
 ### Windows & OS X
 
 Chrome 브라우저에서 `chrome://components/`를 열고 `WidevineCdm`을 찾은 후 확실히
