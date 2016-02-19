@@ -9,6 +9,7 @@
 #include <map>
 #include <vector>
 
+#include "atom/browser/api/trackable_object.h"
 #include "atom/browser/net/atom_url_request_job_factory.h"
 #include "base/callback.h"
 #include "base/containers/scoped_ptr_hash_map.h"
@@ -30,7 +31,7 @@ class AtomURLRequestJobFactory;
 
 namespace api {
 
-class Protocol : public mate::Wrappable {
+class Protocol : public mate::TrackableObject<Protocol> {
  public:
   using Handler =
       base::Callback<void(const net::URLRequest*, v8::Local<v8::Value>)>;
@@ -40,12 +41,12 @@ class Protocol : public mate::Wrappable {
   static mate::Handle<Protocol> Create(
       v8::Isolate* isolate, AtomBrowserContext* browser_context);
 
+  // mate::TrackableObject:
+  static void BuildPrototype(v8::Isolate* isolate,
+                             v8::Local<v8::ObjectTemplate> prototype);
+
  protected:
   explicit Protocol(AtomBrowserContext* browser_context);
-
-  // mate::Wrappable implementations:
-  virtual mate::ObjectTemplateBuilder GetObjectTemplateBuilder(
-      v8::Isolate* isolate);
 
  private:
   // Possible errors.
