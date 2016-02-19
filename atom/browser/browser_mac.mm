@@ -26,6 +26,11 @@ void Browser::Show() {
   [[AtomApplication sharedApplication] unhide:nil];
 }
 
+bool Browser::IsDarkModeEnabled() {
+  NSString *mode = CFBridgingRelease(CFPreferencesCopyValue((CFStringRef)@"AppleInterfaceStyle", kCFPreferencesAnyApplication, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost));
+  return [mode isEqualToString: @"Dark"];
+}
+
 void Browser::AddRecentDocument(const base::FilePath& path) {
   NSString* path_string = base::mac::FilePathToNSString(path);
   if (!path_string)

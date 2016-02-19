@@ -461,6 +461,10 @@ if (browserOptions.transparent) {
 }
 ```
 
+### `app.isDarkModeEnabled()` _OS X_
+
+This method returns `true` if Dark Mode is enabled, and `false` otherwise.
+
 ### `app.commandLine.appendSwitch(switch[, value])`
 
 Append a switch (with optional `value`) to Chromium's command line.
