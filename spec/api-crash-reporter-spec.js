@@ -1,47 +1,45 @@
-var BrowserWindow, app, assert, crashReporter, http, multiparty, path, ref, remote, url;
+const assert = require('assert');
+const http = require('http');
+const multiparty = require('multiparty');
+const path = require('path');
+const url = require('url');
 
-assert = require('assert');
-
-path = require('path');
-
-http = require('http');
-
-url = require('url');
-
-multiparty = require('multiparty');
-
-remote = require('electron').remote;
-
-ref = remote.require('electron'), app = ref.app, crashReporter = ref.crashReporter, BrowserWindow = ref.BrowserWindow;
+const remote = require('electron').remote;
+const app = remote.require('electron').app;
+const crashReporter = remote.require('electron').crashReporter;
+const BrowserWindow = remote.require('electron').BrowserWindow;
 
 describe('crash-reporter module', function() {
-  var fixtures, isCI, w;
-  fixtures = path.resolve(__dirname, 'fixtures');
-  w = null;
+  var fixtures = path.resolve(__dirname, 'fixtures');
+  var w = null;
+
   beforeEach(function() {
-    return w = new BrowserWindow({
+    w = new BrowserWindow({
       show: false
     });
   });
+
   afterEach(function() {
-    return w.destroy();
+    w.destroy();
   });
+
   if (process.mas) {
     return;
   }
-  isCI = remote.getGlobal('isCi');
+
+  var isCI = remote.getGlobal('isCi');
   if (isCI) {
     return;
   }
+
   it('should send minidump when renderer crashes', function(done) {
-    var called, port, server;
     this.timeout(120000);
-    called = false;
-    server = http.createServer(function(req, res) {
-      var form;
+
+    var called = false;
+    var server = http.createServer(function(req, res) {
       server.close();
-      form = new multiparty.Form();
-      return form.parse(req, function(error, fields) {
+      var form = new multiparty.Form();
+      form.parse(req, function(error, fields) {
         if (called) {
           return;
         }
@@ -56,14 +54,14 @@ describe('crash-reporter module', function() {
         assert.equal(fields['_companyName'], 'Umbrella Corporation');
         assert.equal(fields['_version'], app.getVersion());
         res.end('abc-123-def');
-        return done();
+        done();
       });
     });
-    port = remote.process.port;
-    return server.listen(port, '127.0.0.1', function() {
+    var port = remote.process.port;
+    server.listen(port, '127.0.0.1', function() {
       port = server.address().port;
       remote.process.port = port;
-      url = url.format({
+      const crashUrl = url.format({
         protocol: 'file',
         pathname: path.join(fixtures, 'api', 'crash.html'),
         search: "?port=" + port
@@ -74,18 +72,19 @@ describe('crash-reporter module', function() {
           submitURL: "http://127.0.0.1:" + port
         });
       }
-      return w.loadURL(url);
+      w.loadURL(crashUrl);
     });
   });
-  return describe(".start(options)", function() {
-    return it('requires that the companyName and submitURL options be specified', function() {
+
+  describe(".start(options)", function() {
+    it('requires that the companyName and submitURL options be specified', function() {
       assert.throws(function() {
-        return crashReporter.start({
+        crashReporter.start({
           companyName: 'Missing submitURL'
         });
       });
-      return assert.throws(function() {
-        return crashReporter.start({
+      assert.throws(function() {
+        crashReporter.start({
           submitURL: 'Missing companyName'
         });
       });

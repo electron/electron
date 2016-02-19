@@ -892,12 +892,25 @@ void NativeWindowMac::HandleKeyboardEvent(
     return;
 
   BOOL handled = [[NSApp mainMenu] performKeyEquivalent:event.os_event];
-  if (!handled && event.os_event.window != window_.get()) {
-    // The event comes from detached devtools view, and it has already been
-    if (!handled && (event.os_event.modifierFlags & NSCommandKeyMask) &&
-        (event.os_event.keyCode == 50  /* ~ key */)) {
-      // Handle the cmd+~ shortcut.
-      Focus(true);
+  if (!handled && event.os_event.window) {
+    // Handle the cmd+~ shortcut.
+    if ((event.os_event.modifierFlags & NSCommandKeyMask) /* cmd */ &&
+        (event.os_event.keyCode == 50  /* ~ */)) {
+      // Switch to next visible window.
+      NSArray* windows = [NSApp windows];
+      NSIndexSet* indexes = [windows indexesOfObjectsPassingTest:
+          ^BOOL(id window, NSUInteger idx, BOOL* stop) {
+            return [window isVisible];
+          }];
+      if ([indexes count] == 0)
+        return;
+      NSUInteger current = [windows indexOfObject:event.os_event.window];
+      if (current == NSNotFound)  // Some faked event.
+        return;
+      NSUInteger next = [indexes indexGreaterThanIndex:current];
+      if (next == NSNotFound)
+        next = [indexes firstIndex];
+      [[windows objectAtIndex:next] makeKeyAndOrderFront:nil];
     }
   }
 }
