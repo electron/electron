@@ -164,7 +164,7 @@ Returns:
 기본 동작을 방지하고 인증을 승인할 수 있습니다.
 
 ```javascript
-session.on('certificate-error', function(event, webContents, url, error, certificate, callback) {
+app.on('certificate-error', function(event, webContents, url, error, certificate, callback) {
   if (url == "https://github.com") {
     // Verification logic.
     event.preventDefault();
