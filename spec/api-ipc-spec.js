@@ -90,6 +90,14 @@ describe('ipc module', function() {
     });
   });
 
+  describe('remote webContents', function() {
+    it('can return same object with different getters', function() {
+      var contents1 = remote.getCurrentWindow().webContents;
+      var contents2 = remote.getCurrentWebContents();
+      assert(contents1 == contents2);
+    });
+  });
+
   describe('ipc.sender.send', function() {
     it('should work when sending an object containing id property', function(done) {
       var obj = {
