@@ -8,16 +8,12 @@ From [ChromeDriver - WebDriver for Chrome][chrome-driver]:
 > implements WebDriver's wire protocol for Chromium. It is being developed by
 > members of the Chromium and WebDriver teams.
 
-In order to use `chromedriver` with Electron you have to tell it where to
-find Electron and make it think Electron is the Chrome browser.
+In order to use `chromedriver` with Electron you have to tell it where to find Electron and make it think Electron is the Chrome browser.
 
 ## Setting up with WebDriverJs
-
-[WebDriverJs](https://code.google.com/p/selenium/wiki/WebDriverJs) provides
-a Node package for testing with web driver, we will use it as an example.
+[WebDriverJs](https://code.google.com/p/selenium/wiki/WebDriverJs) provides a Node package for testing with web driver, we will use it as an example.
 
 ### 1. Start ChromeDriver
-
 First you need to download the `chromedriver` binary, and run it:
 
 ```bash
@@ -35,10 +31,7 @@ $ npm install selenium-webdriver
 ```
 
 ### 3. Connect to ChromeDriver
-
-The usage of `selenium-webdriver` with Electron is basically the same with
-upstream, except that you have to manually specify how to connect chrome driver
-and where to find Electron's binary:
+The usage of `selenium-webdriver` with Electron is basically the same with upstream, except that you have to manually specify how to connect chrome driver and where to find Electron's binary:
 
 ```javascript
 const webdriver = require('selenium-webdriver');
@@ -48,8 +41,7 @@ var driver = new webdriver.Builder()
   .usingServer('http://localhost:9515')
   .withCapabilities({
     chromeOptions: {
-      // Here is the path to your Electron binary.
-      binary: '/Path-to-Your-App.app/Contents/MacOS/Electron',
+      binary: '/Path-to-Your-App.app/Contents/MacOS/Electron' // Path to your Electron binary.
     }
   })
   .forBrowser('electron')
@@ -68,12 +60,9 @@ driver.quit();
 ```
 
 ## Setting up with WebdriverIO
-
-[WebdriverIO](http://webdriver.io/) provides a Node package for testing with web
-driver.
+[WebdriverIO](http://webdriver.io/) provides a Node package for testing with web driver.
 
 ### 1. Start ChromeDriver
-
 First you need to download the `chromedriver` binary, and run it:
 
 ```bash
@@ -100,7 +89,7 @@ var options = {
     desiredCapabilities: {
         browserName: 'chrome',
         chromeOptions: {
-          binary: '/Path-to-Your-App/electron', // Path to your Electron binary.
+          binary: '/Path-to-Your-App.app/Contents/MacOS/Electron', // Path to your Electron binary.
           args: [/* cli arguments */]           // Optional, perhaps 'app=' + /path/to/your/app/
         }
     }
@@ -120,13 +109,8 @@ client
 ```
 
 ## Workflow
+To test your application without rebuilding Electron, simply [place](https://github.com/atom/electron/blob/master/docs/tutorial/application-distribution.md) your app source into Electron's resource directory.
 
-To test your application without rebuilding Electron, simply
-[place](https://github.com/atom/electron/blob/master/docs/tutorial/application-distribution.md)
-your app source into Electron's resource directory.
-
-Alternatively, pass an argument to run with your electron binary that points to
-your app's folder. This eliminates the need to copy-paste your app into
-Electron's resource directory.
+Alternatively, pass an argument to run with your electron binary that points to your app's folder. This eliminates the need to copy-paste your app into Electron's resource directory.
 
 [chrome-driver]: https://sites.google.com/a/chromium.org/chromedriver/
