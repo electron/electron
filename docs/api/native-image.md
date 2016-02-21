@@ -4,7 +4,7 @@ In Electron, for the APIs that take images, you can pass either file paths or
 `nativeImage` instances. An empty image will be used when `null` is passed.
 
 For example, when creating a tray or setting a window's icon, you can pass an
-image file path as a `String`:
+image file path as a `String`, note that the file path need to be normalized:
 
 ```javascript
 var appIcon = new Tray('/Users/somebody/images/icon.png');

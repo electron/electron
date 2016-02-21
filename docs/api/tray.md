@@ -11,7 +11,7 @@ const Tray = electron.Tray;
 
 var appIcon = null;
 app.on('ready', function(){
-  appIcon = new Tray('/path/to/my/icon');
+  appIcon = new Tray('/path/to/my/icon'); // path need to be normalized.
   var contextMenu = Menu.buildFromTemplate([
     { label: 'Item1', type: 'radio' },
     { label: 'Item2', type: 'radio' },
