@@ -296,6 +296,7 @@ WebContents::~WebContents() {
     // The WebContentsDestroyed will not be called automatically because we
     // unsubscribe from webContents before destroying it. So we have to manually
     // call it here to make sure "destroyed" event is emitted.
+    RenderViewDeleted(web_contents()->GetRenderViewHost());
     WebContentsDestroyed();
   }
 }
@@ -485,17 +486,7 @@ void WebContents::BeforeUnloadFired(const base::TimeTicks& proceed_time) {
 }
 
 void WebContents::RenderViewDeleted(content::RenderViewHost* render_view_host) {
-  int process_id = render_view_host->GetProcess()->GetID();
-  Emit("render-view-deleted", process_id);
-
-  // process.emit('ATOM_BROWSER_RELEASE_RENDER_VIEW', processId);
-  // Tell the rpc server that a render view has been deleted and we need to
-  // release all objects owned by it.
-  v8::Locker locker(isolate());
-  v8::HandleScope handle_scope(isolate());
-  node::Environment* env = node::Environment::GetCurrent(isolate());
-  mate::EmitEvent(isolate(), env->process_object(),
-                  "ATOM_BROWSER_RELEASE_RENDER_VIEW", process_id);
+  Emit("render-view-deleted", render_view_host->GetProcess()->GetID());
 }
 
 void WebContents::RenderProcessGone(base::TerminationStatus status) {
@@ -675,9 +666,6 @@ bool WebContents::OnMessageReceived(const IPC::Message& message) {
 // be destroyed on close, and WebContentsDestroyed would be called for it, so
 // we need to make sure the api::WebContents is also deleted.
 void WebContents::WebContentsDestroyed() {
-  // The RenderViewDeleted was not called when the WebContents is destroyed.
-  RenderViewDeleted(web_contents()->GetRenderViewHost());
-
   // This event is only for internal use, which is emitted when WebContents is
   // being destroyed.
   Emit("will-destroy");
