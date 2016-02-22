@@ -145,7 +145,7 @@ var exceptionToMeta = function(error) {
 var unwrapArgs = function(sender, args) {
   var metaToValue;
   metaToValue = function(meta) {
-    var i, len, member, ref, rendererReleased, returnValue;
+    var i, len, member, ref, returnValue;
     switch (meta.type) {
       case 'value':
         return meta.value;
