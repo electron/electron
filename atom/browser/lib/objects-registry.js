@@ -1,13 +1,9 @@
 'use strict';
 
-const EventEmitter = require('events').EventEmitter;
 const v8Util = process.atomBinding('v8_util');
 
-class ObjectsRegistry extends EventEmitter {
+class ObjectsRegistry {
   constructor() {
-    super();
-
-    this.setMaxListeners(Number.MAX_VALUE);
     this.nextId = 0;
 
     // Stores all objects by ref-counting.
@@ -53,8 +49,6 @@ class ObjectsRegistry extends EventEmitter {
 
   // Clear all references to objects refrenced by the WebContents.
   clear(webContentsId) {
-    this.emit(`clear-${webContentsId}`);
-
     let owner = this.owners[webContentsId];
     if (!owner)
       return;
