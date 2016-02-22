@@ -52,7 +52,6 @@ class NativeWindowObserver {
   virtual void OnWindowMoved() {}
   virtual void OnWindowScrollTouchBegin() {}
   virtual void OnWindowScrollTouchEnd() {}
-  virtual void OnWindowWillEnterFullScreen(bool* prevent_default) {}
   virtual void OnWindowEnterFullScreen() {}
   virtual void OnWindowLeaveFullScreen() {}
   virtual void OnWindowEnterHtmlFullScreen() {}

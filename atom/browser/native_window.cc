@@ -134,10 +134,16 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
     SetAlwaysOnTop(true);
   }
 #if defined(OS_MACOSX) || defined(OS_WIN)
-  bool fullscreen;
-  if (options.Get(options::kFullscreen, &fullscreen) && fullscreen) {
+  // Disable fullscreen button when 'fullscreenable' is false or 'fullscreen'
+  // is specified to false.
+  bool fullscreenable = true;
+  options.Get(options::kFullScreenable, &fullscreenable);
+  bool fullscreen = false;
+  if (options.Get(options::kFullscreen, &fullscreen) && !fullscreen)
+    fullscreenable = false;
+  SetFullScreenable(fullscreenable);
+  if (fullscreen)
     SetFullScreen(true);
-  }
 #endif
   bool skip;
   if (options.Get(options::kSkipTaskbar, &skip) && skip) {
@@ -443,13 +449,6 @@ void NativeWindow::NotifyWindowMove() {
 
 void NativeWindow::NotifyWindowMoved() {
   FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnWindowMoved());
-}
-
-bool NativeWindow::RequestEnterFullScreen() {
-  bool prevent_default = false;
-  FOR_EACH_OBSERVER(NativeWindowObserver, observers_,
-                    OnWindowWillEnterFullScreen(&prevent_default));
-  return prevent_default;
 }
 
 void NativeWindow::NotifyWindowEnterFullScreen() {

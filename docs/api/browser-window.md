@@ -276,11 +276,6 @@ __Note__: On OS X this event is just an alias of `moved`.
 
 Emitted once when the window is moved to a new position.
 
-### Event: 'will-enter-full-screen'
-
-Emitted when the window is about to enter full screen state. Calling `event.preventDefault()`
-will cancel the state change.
-
 ### Event: 'enter-full-screen'
 
 Emitted when the window enters full screen state.
@@ -589,17 +584,17 @@ nothing.
 Returns whether the window can be manually maximized by user. On Linux always
 returns `true`.
 
-### `win.setFullScreenable(fullscreenable)` _OS X_
+### `win.setFullScreenable(fullscreenable)`
 
 * `fullscreenable` Boolean
 
 Sets whether the maximize/zoom window button toggles fullscreen mode or
-maximizes the window. On Windows and Linux does nothing.
+maximizes the window.
 
-### `win.isFullScreenable()` _OS X_
+### `win.isFullScreenable()`
 
 Returns whether the maximize/zoom window button toggles fullscreen mode or
-maximizes the window. On Windows and Linux always returns `true`.
+maximizes the window.
 
 ### `win.setClosable(closable)` _OS X_ _Windows_
 
