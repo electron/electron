@@ -11,6 +11,10 @@ const FUNCTION_PROPERTIES = [
   'length', 'name', 'arguments', 'caller', 'prototype',
 ];
 
+// The remote functions in renderer processes.
+// (webContentsId) => {id: Function}
+let rendererFunctions = {};
+
 // Return the description of object's members:
 let getObjectMemebers = function(object) {
   let names = Object.getOwnPropertyNames(object);
@@ -177,32 +181,30 @@ var unwrapArgs = function(sender, args) {
         };
       case 'function': {
         // Cache the callbacks in renderer.
-        if (!sender.callbacks) {
-          sender.callbacks = new IDWeakMap;
-          sender.on('render-view-deleted', function() {
-            return this.callbacks.clear();
+        let webContentsId = sender.getId();
+        let callbacks = rendererFunctions[webContentsId];
+        if (!callbacks) {
+          callbacks = rendererFunctions[webContentsId] = new IDWeakMap;
+          sender.once('render-view-deleted', function(event, id) {
+            callbacks.clear();
+            delete rendererFunctions[id];
           });
         }
 
-        if (sender.callbacks.has(meta.id))
-          return sender.callbacks.get(meta.id);
-
-        // Prevent the callback from being called when its page is gone.
-        rendererReleased = false;
-        sender.once('render-view-deleted', function() {
-          rendererReleased = true;
-        });
+        if (callbacks.has(meta.id))
+          return callbacks.get(meta.id);
 
         let callIntoRenderer = function(...args) {
-          if (rendererReleased || sender.isDestroyed())
+          if ((webContentsId in rendererFunctions) && !sender.isDestroyed())
+            sender.send('ATOM_RENDERER_CALLBACK', meta.id, valueToMeta(sender, args));
+          else
             throw new Error(`Attempting to call a function in a renderer window that has been closed or released. Function provided here: ${meta.location}.`);
-          sender.send('ATOM_RENDERER_CALLBACK', meta.id, valueToMeta(sender, args));
         };
         v8Util.setDestructor(callIntoRenderer, function() {
-          if (!rendererReleased && !sender.isDestroyed())
+          if ((webContentsId in rendererFunctions) && !sender.isDestroyed())
             sender.send('ATOM_RENDERER_RELEASE_CALLBACK', meta.id);
         });
-        sender.callbacks.set(meta.id, callIntoRenderer);
+        callbacks.set(meta.id, callIntoRenderer);
         return callIntoRenderer;
       }
       default:
