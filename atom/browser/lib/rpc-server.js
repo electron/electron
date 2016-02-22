@@ -162,7 +162,9 @@ var unwrapArgs = function(sender, args) {
           then: metaToValue(meta.then)
         });
       case 'object': {
-        let ret = v8Util.createObjectWithName(meta.name);
+        let ret = {};
+        Object.defineProperty(ret.constructor, 'name', { value: meta.name });
+
         ref = meta.members;
         for (i = 0, len = ref.length; i < len; i++) {
           member = ref[i];
