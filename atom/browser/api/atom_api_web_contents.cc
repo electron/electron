@@ -485,17 +485,7 @@ void WebContents::BeforeUnloadFired(const base::TimeTicks& proceed_time) {
 }
 
 void WebContents::RenderViewDeleted(content::RenderViewHost* render_view_host) {
-  int process_id = render_view_host->GetProcess()->GetID();
-  Emit("render-view-deleted", process_id);
-
-  // process.emit('ATOM_BROWSER_RELEASE_RENDER_VIEW', processId);
-  // Tell the rpc server that a render view has been deleted and we need to
-  // release all objects owned by it.
-  v8::Locker locker(isolate());
-  v8::HandleScope handle_scope(isolate());
-  node::Environment* env = node::Environment::GetCurrent(isolate());
-  mate::EmitEvent(isolate(), env->process_object(),
-                  "ATOM_BROWSER_RELEASE_RENDER_VIEW", process_id);
+  Emit("render-view-deleted", render_view_host->GetProcess()->GetID());
 }
 
 void WebContents::RenderProcessGone(base::TerminationStatus status) {

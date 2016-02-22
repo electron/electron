@@ -100,7 +100,7 @@ var valueToMeta = function(sender, value, optimizeSimpleObject) {
     // Reference the original value if it's an object, because when it's
     // passed to renderer we would assume the renderer keeps a reference of
     // it.
-    meta.id = objectsRegistry.add(sender.getId(), value);
+    meta.id = objectsRegistry.add(sender, value);
     meta.members = getObjectMemebers(value);
     meta.proto = getObjectPrototype(value);
   } else if (meta.type === 'buffer') {
@@ -238,11 +238,6 @@ var callFunction = function(event, func, caller, args) {
     throw new Error("Could not call remote function `" + funcName + "`. Check that the function signature is correct. Underlying error: " + error.message);
   }
 };
-
-// Send by BrowserWindow when its render view is deleted.
-process.on('ATOM_BROWSER_RELEASE_RENDER_VIEW', function(id) {
-  return objectsRegistry.clear(id);
-});
 
 ipcMain.on('ATOM_BROWSER_REQUIRE', function(event, module) {
   try {

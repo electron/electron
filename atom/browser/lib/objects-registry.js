@@ -17,14 +17,20 @@ class ObjectsRegistry {
 
   // Register a new object and return its assigned ID. If the object is already
   // registered then the already assigned ID would be returned.
-  add(webContentsId, obj) {
+  add(webContents, obj) {
     // Get or assign an ID to the object.
     let id = this.saveToStorage(obj);
 
     // Add object to the set of referenced objects.
+    let webContentsId = webContents.getId();
     let owner = this.owners[webContentsId];
-    if (!owner)
+    if (!owner) {
       owner = this.owners[webContentsId] = new Set();
+      // Clear the storage when webContents is reloaded/navigated.
+      webContents.once('render-view-deleted', (event, id) => {
+        this.clear(id);
+      });
+    }
     if (!owner.has(id)) {
       owner.add(id);
       // Increase reference count if not referenced before.
