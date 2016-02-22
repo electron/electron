@@ -296,6 +296,7 @@ WebContents::~WebContents() {
     // The WebContentsDestroyed will not be called automatically because we
     // unsubscribe from webContents before destroying it. So we have to manually
     // call it here to make sure "destroyed" event is emitted.
+    RenderViewDeleted(web_contents()->GetRenderViewHost());
     WebContentsDestroyed();
   }
 }
@@ -665,9 +666,6 @@ bool WebContents::OnMessageReceived(const IPC::Message& message) {
 // be destroyed on close, and WebContentsDestroyed would be called for it, so
 // we need to make sure the api::WebContents is also deleted.
 void WebContents::WebContentsDestroyed() {
-  // The RenderViewDeleted was not called when the WebContents is destroyed.
-  RenderViewDeleted(web_contents()->GetRenderViewHost());
-
   // This event is only for internal use, which is emitted when WebContents is
   // being destroyed.
   Emit("will-destroy");
