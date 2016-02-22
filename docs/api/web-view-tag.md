@@ -284,7 +284,7 @@ Injects CSS into the guest page.
 * `code` String
 * `userGesture` Boolean - Default `false`.
 * `callback` Function (optional) - Called after script has been executed.
-  * `result` Array
+  * `result`
 
 Evaluates `code` in page. If `userGesture` is set, it will create the user
 gesture context in the page. HTML APIs like `requestFullScreen`, which require

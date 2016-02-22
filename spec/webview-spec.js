@@ -572,7 +572,7 @@ describe('<webview> tag', function() {
       var listener = function() {
         var jsScript = "'4'+2";
         webview.executeJavaScript(jsScript, false, function(result) {
-          assert.equal(result[0], '42');
+          assert.equal(result, '42');
           done();
         });
         webview.removeEventListener('did-finish-load', listener);

@@ -8,7 +8,6 @@
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
-#include "atom/common/native_mate_converters/blink_converter.h"
 #include "atom/renderer/api/atom_api_spell_check_client.h"
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_view.h"
@@ -33,7 +32,7 @@ class ScriptExecutionCallback : public blink::WebScriptExecutionCallback {
  public:
   using CompletionCallback =
       base::Callback<void(
-          const blink::WebVector<v8::Local<v8::Value>>& result)>;
+          const v8::Local<v8::Value>& result)>;
 
   explicit ScriptExecutionCallback(const CompletionCallback& callback)
       : callback_(callback) {}
@@ -42,7 +41,8 @@ class ScriptExecutionCallback : public blink::WebScriptExecutionCallback {
   void completed(
       const blink::WebVector<v8::Local<v8::Value>>& result) override {
     if (!callback_.is_null())
-      callback_.Run(result);
+      // Right now only single results per frame is supported.
+      callback_.Run(result[0]);
     delete this;
   }
 

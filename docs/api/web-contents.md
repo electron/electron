@@ -430,7 +430,7 @@ Injects CSS into the current web page.
 * `code` String
 * `userGesture` Boolean (optional)
 * `callback` Function (optional) - Called after script has been executed.
-  * `result` Array
+  * `result`
 
 Evaluates `code` in page.
 

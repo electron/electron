@@ -11,6 +11,8 @@ const debuggerBinding = process.atomBinding('debugger');
 
 let  slice = [].slice;
 let nextId = 0;
+
+// Map of requestId and response callback.
 let responseCallback = {};
 
 let getNextId = function() {
@@ -59,11 +61,14 @@ let PDFPageSize = {
 
 // Following methods are mapped to webFrame.
 const webFrameMethods = [
-  'executeJavaScript',
   'insertText',
   'setZoomFactor',
   'setZoomLevel',
   'setZoomLevelLimits'
+];
+
+const asyncWebFrameMethods = [
+  'executeJavaScript',
 ];
 
 let wrapWebContents = function(webContents) {
@@ -107,25 +112,35 @@ let wrapWebContents = function(webContents) {
     };
   }
 
+  for (let method of asyncWebFrameMethods) {
+    webContents[method] = function() {
+      let args = Array.prototype.slice.call(arguments);
+      this.send('ELECTRON_INTERNAL_RENDERER_ASYNC_WEB_FRAME_METHOD', method, args);
+    };
+  }
+
   // Make sure webContents.executeJavaScript would run the code only when the
   // webContents has been loaded.
   const executeJavaScript = webContents.executeJavaScript;
   webContents.executeJavaScript = function(code, hasUserGesture, callback) {
+    let requestId = getNextId();
     if (typeof hasUserGesture === "function") {
       callback = hasUserGesture;
       hasUserGesture = false;
     }
     if (callback !== null)
-      responseCallback["executeJavaScript"] = callback;
+      responseCallback[requestId] = callback;
     if (this.getURL() && !this.isLoading())
-      return executeJavaScript.call(this, code, hasUserGesture);
+      return executeJavaScript.call(this, requestId, code, hasUserGesture);
     else
-      return this.once('did-finish-load', executeJavaScript.bind(this, code, hasUserGesture));
+      return this.once('did-finish-load', executeJavaScript.bind(this, requestId, code, hasUserGesture));
   };
 
-  ipcMain.on('ELECTRON_INTERNAL_RENDERER_WEB_FRAME_RESPONSE', function(event, method, result) {
-    if (responseCallback[method])
-      responseCallback[method].apply(null, [result]);
+  ipcMain.on('ELECTRON_INTERNAL_RENDERER_ASYNC_WEB_FRAME_RESPONSE', function(event, id, result) {
+    if (responseCallback[id]) {
+      responseCallback[id].apply(null, [result]);
+      delete responseCallback[id];
+    }
   });
 
   // Dispatch IPC messages to the ipc module.

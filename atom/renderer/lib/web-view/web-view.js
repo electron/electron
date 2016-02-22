@@ -393,14 +393,14 @@ var registerWebViewElement = function() {
   nonblockMethods = [
     'insertCSS',
     'send',
-    'sendInputEvent'
+    'sendInputEvent',
   ];
   webFrameMethods = [
     'executeJavaScript',
     'insertText',
     'setZoomFactor',
     'setZoomLevel',
-    'setZoomLevelLimits'
+    'setZoomLevelLimits',
   ];
 
   // Forward proto.foo* method calls to WebViewImpl.foo*.
