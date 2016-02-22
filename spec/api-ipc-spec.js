@@ -1,3 +1,5 @@
+'use strict';
+
 const assert = require('assert');
 const path = require('path');
 
@@ -95,6 +97,41 @@ describe('ipc module', function() {
       var contents1 = remote.getCurrentWindow().webContents;
       var contents2 = remote.getCurrentWebContents();
       assert(contents1 == contents2);
+    });
+  });
+
+  describe('remote class', function() {
+    let cl = remote.require(path.join(fixtures, 'module', 'class.js'));
+    let base = cl.base;
+    let derived = cl.derived;
+
+    it('can get methods', function() {
+      assert.equal(base.method(), 'method');
+    });
+
+    it('can get properties', function() {
+      assert.equal(base.readonly, 'readonly');
+    });
+
+    it('can change properties', function() {
+      assert.equal(base.value, 'old');
+      base.value = 'new';
+      assert.equal(base.value, 'new');
+      base.value = 'old';
+    });
+
+    it('has unenumerable methods', function() {
+      assert(!base.hasOwnProperty('method'));
+      assert(Object.getPrototypeOf(base).hasOwnProperty('method'));
+    });
+
+    it('keeps prototype chain in derived class', function() {
+      assert.equal(derived.method(), 'method');
+      assert.equal(derived.readonly, 'readonly');
+      assert(!derived.hasOwnProperty('method'));
+      let proto = Object.getPrototypeOf(derived);
+      assert(!proto.hasOwnProperty('method'));
+      assert(Object.getPrototypeOf(proto).hasOwnProperty('method'));
     });
   });
 
