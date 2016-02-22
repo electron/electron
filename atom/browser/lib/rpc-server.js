@@ -6,11 +6,52 @@ const objectsRegistry = require('./objects-registry');
 const v8Util = process.atomBinding('v8_util');
 const IDWeakMap = process.atomBinding('id_weak_map').IDWeakMap;
 
+// The internal properties of Function.
+const FUNCTION_PROPERTIES = [
+  'length', 'name', 'arguments', 'caller', 'prototype',
+];
+
 var slice = [].slice;
+
+// Return the description of object's members:
+let getObjectMemebers = function(object) {
+  let names = Object.getOwnPropertyNames(object);
+  // For Function, we should not override following properties even though they
+  // are "own" properties.
+  if (typeof object === 'function') {
+    names = names.filter((name) => {
+      return !FUNCTION_PROPERTIES.includes(name);
+    });
+  }
+  // Map properties to descriptors.
+  return names.map((name) => {
+    let descriptor = Object.getOwnPropertyDescriptor(object, name);
+    let member = {name, enumerable: descriptor.enumerable, writable: false};
+    if (descriptor.get === undefined && typeof object[name] === 'function') {
+      member.type = 'method';
+    } else {
+      if (descriptor.set || descriptor.writable)
+        member.writable = true;
+      member.type = 'get';
+    }
+    return member;
+  });
+};
+
+// Return the description of object's prototype.
+let getObjectPrototype = function(object) {
+  let proto = Object.getPrototypeOf(object);
+  if (proto === null || proto === Object.prototype)
+    return null;
+  return {
+    members: getObjectMemebers(proto),
+    proto: getObjectPrototype(proto),
+  };
+};
 
 // Convert a real value into meta data.
 var valueToMeta = function(sender, value, optimizeSimpleObject) {
-  var el, field, i, len, meta, name;
+  var el, i, len, meta;
   if (optimizeSimpleObject == null) {
     optimizeSimpleObject = false;
   }
@@ -58,18 +99,8 @@ var valueToMeta = function(sender, value, optimizeSimpleObject) {
     // passed to renderer we would assume the renderer keeps a reference of
     // it.
     meta.id = objectsRegistry.add(sender.getId(), value);
-    meta.members = (function() {
-      var results;
-      results = [];
-      for (name in value) {
-        field = value[name];
-        results.push({
-          name: name,
-          type: typeof field
-        });
-      }
-      return results;
-    })();
+    meta.members = getObjectMemebers(value);
+    meta.proto = getObjectPrototype(value);
   } else if (meta.type === 'buffer') {
     meta.value = Array.prototype.slice.call(value, 0);
   } else if (meta.type === 'promise') {
