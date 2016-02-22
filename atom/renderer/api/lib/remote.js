@@ -141,7 +141,7 @@ let setObjectPrototype = function(object, metaId, descriptor) {
 };
 
 // Convert meta data from browser into real value.
-var metaToValue = function(meta) {
+let metaToValue = function(meta) {
   var el, i, len, ref1, results, ret;
   switch (meta.type) {
     case 'value':
@@ -257,73 +257,33 @@ for (var name in browserModules) {
 }
 
 // Get remote module.
-// (Just like node's require, the modules are cached permanently, note that this
-// is safe leak since the object is not expected to get freed in browser)
-var moduleCache = {};
-
 exports.require = function(module) {
-  var meta;
-  if (moduleCache[module] != null) {
-    return moduleCache[module];
-  }
-  meta = ipcRenderer.sendSync('ATOM_BROWSER_REQUIRE', module);
-  return moduleCache[module] = metaToValue(meta);
+  return metaToValue(ipcRenderer.sendSync('ATOM_BROWSER_REQUIRE', module));
 };
-
-// Optimize require('electron').
-moduleCache.electron = exports;
 
 // Alias to remote.require('electron').xxx.
-var builtinCache = {};
-
 exports.getBuiltin = function(module) {
-  var meta;
-  if (builtinCache[module] != null) {
-    return builtinCache[module];
-  }
-  meta = ipcRenderer.sendSync('ATOM_BROWSER_GET_BUILTIN', module);
-  return builtinCache[module] = metaToValue(meta);
+  return metaToValue(ipcRenderer.sendSync('ATOM_BROWSER_GET_BUILTIN', module));
 };
 
-// Get current BrowserWindow object.
-var windowCache = null;
-
+// Get current BrowserWindow.
 exports.getCurrentWindow = function() {
-  var meta;
-  if (windowCache != null) {
-    return windowCache;
-  }
-  meta = ipcRenderer.sendSync('ATOM_BROWSER_CURRENT_WINDOW');
-  return windowCache = metaToValue(meta);
+  return metaToValue(ipcRenderer.sendSync('ATOM_BROWSER_CURRENT_WINDOW'));
 };
 
 // Get current WebContents object.
-var webContentsCache = null;
-
 exports.getCurrentWebContents = function() {
-  var meta;
-  if (webContentsCache != null) {
-    return webContentsCache;
-  }
-  meta = ipcRenderer.sendSync('ATOM_BROWSER_CURRENT_WEB_CONTENTS');
-  return webContentsCache = metaToValue(meta);
+  return metaToValue(ipcRenderer.sendSync('ATOM_BROWSER_CURRENT_WEB_CONTENTS'));
 };
 
 // Get a global object in browser.
 exports.getGlobal = function(name) {
-  var meta;
-  meta = ipcRenderer.sendSync('ATOM_BROWSER_GLOBAL', name);
-  return metaToValue(meta);
+  return metaToValue(ipcRenderer.sendSync('ATOM_BROWSER_GLOBAL', name));
 };
 
 // Get the process object in browser.
-var processCache = null;
-
 exports.__defineGetter__('process', function() {
-  if (processCache == null) {
-    processCache = exports.getGlobal('process');
-  }
-  return processCache;
+  return exports.getGlobal('process');
 });
 
 // Create a funtion that will return the specifed value when called in browser.
