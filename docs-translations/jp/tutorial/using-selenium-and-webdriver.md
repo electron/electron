@@ -41,7 +41,7 @@ var driver = new webdriver.Builder()
   .withCapabilities({
     chromeOptions: {
       // Here is the path to your Electron binary.
-      binary: '/Path-to-Your-App.app/Contents/MacOS/Atom',
+      binary: '/Path-to-Your-App.app/Contents/MacOS/Electron',
     }
   })
   .forBrowser('electron')
