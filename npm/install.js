@@ -36,7 +36,7 @@ if (installedVersion === version && fs.existsSync(path.join(__dirname, paths[pla
 }
 
 // downloads if not cached
-download({version: version, arch: process.env.npm_config_arch, strictSSL: process.env.npm_config_strict_ssl}, extractFile)
+download({version: version, platform: process.env.npm_config_platform, arch: process.env.npm_config_arch, strictSSL: process.env.npm_config_strict_ssl}, extractFile)
 
 // unzips and makes path.txt point at the correct executable
 function extractFile (err, zipPath) {
