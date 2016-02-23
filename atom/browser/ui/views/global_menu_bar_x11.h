@@ -46,6 +46,10 @@ class GlobalMenuBarX11 {
   void SetMenu(ui::MenuModel* menu_model);
   bool IsServerStarted() const;
 
+  // Called by NativeWindow when it show/hides.
+  void OnWindowMapped();
+  void OnWindowUnmapped();
+
  private:
   // Creates a DbusmenuServer.
   void InitServer(gfx::AcceleratedWidget xid);
