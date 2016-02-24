@@ -4,10 +4,7 @@ if (!app.isReady()) {
   throw new Error('Can not initialize protocol module before app is ready');
 }
 
-const session = require('electron').session;
-
-// Returns the protocol property for default session.
-const protocol = session.defaultSession.protocol;
+const protocol = process.atomBinding('protocol').protocol;
 
 // Warn about removed APIs.
 var logAndThrow = function(callback, message) {
@@ -17,10 +14,6 @@ var logAndThrow = function(callback, message) {
   } else {
     throw new Error(message);
   }
-};
-
-protocol.fromPartition = function(partition) {
-  return session.fromPartition(partition).protocol;
 };
 
 protocol.registerProtocol = function(scheme, handler, callback) {
