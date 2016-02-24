@@ -36,10 +36,9 @@ electron.ipcRenderer.on('ELECTRON_INTERNAL_RENDERER_WEB_FRAME_METHOD', (event, m
   electron.webFrame[method].apply(electron.webFrame, args);
 });
 
-electron.ipcRenderer.on('ELECTRON_INTERNAL_RENDERER_ASYNC_WEB_FRAME_METHOD', (event, method, args) => {
-  let requestId = args.shift();
+electron.ipcRenderer.on('ELECTRON_INTERNAL_RENDERER_ASYNC_WEB_FRAME_METHOD', (event, requestId, method, args) => {
   const responseCallback = function(result) {
-    event.sender.send('ELECTRON_INTERNAL_RENDERER_ASYNC_WEB_FRAME_RESPONSE', requestId, result);
+    event.sender.send('ELECTRON_INTERNAL_RENDERER_ASYNC_WEB_FRAME_RESPONSE_' + requestId, result);
   };
   args.push(responseCallback);
   electron.webFrame[method].apply(electron.webFrame, args);

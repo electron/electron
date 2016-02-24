@@ -10,6 +10,7 @@ const screen = require('electron').screen;
 
 const app = remote.require('electron').app;
 const ipcMain = remote.require('electron').ipcMain;
+const ipcRenderer = require('electron').ipcRenderer;
 const BrowserWindow = remote.require('electron').BrowserWindow;
 
 const isCI = remote.getGlobal('isCi');
@@ -688,6 +689,24 @@ describe('browser-window module', function() {
       BrowserWindow.removeDevToolsExtension(extensionName);
       app.emit('will-quit');
       assert.equal(fs.existsSync(serializedPath), false);
+    });
+  });
+
+  describe('window.webContents.executeJavaScript', function() {
+    var expected = 'hello, world!';
+    var code = '(() => \"' + expected + '\")()';
+
+    it('doesnt throw when no calback is provided', function() {
+      const result = ipcRenderer.sendSync('executeJavaScript', code, false);
+      assert.equal(result, 'success');
+    });
+
+    it('returns result when calback is provided', function(done) {
+      ipcRenderer.send('executeJavaScript', code, true);
+      ipcRenderer.once('executeJavaScript-response', function(event, result) {
+        assert.equal(result, expected);
+        done();
+      });
     });
   });
 });

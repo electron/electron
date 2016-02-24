@@ -67,10 +67,6 @@ const webFrameMethods = [
   'setZoomLevelLimits'
 ];
 
-const asyncWebFrameMethods = [
-  'executeJavaScript',
-];
-
 let wrapWebContents = function(webContents) {
   // webContents is an EventEmitter.
   var controller, method, name, ref1;
@@ -112,36 +108,31 @@ let wrapWebContents = function(webContents) {
     };
   }
 
-  for (let method of asyncWebFrameMethods) {
-    webContents[method] = function() {
-      let args = Array.prototype.slice.call(arguments);
-      this.send('ELECTRON_INTERNAL_RENDERER_ASYNC_WEB_FRAME_METHOD', method, args);
-    };
-  }
+  const asyncWebFrameMethods = function(requestId, method, ...args) {
+    this.send('ELECTRON_INTERNAL_RENDERER_ASYNC_WEB_FRAME_METHOD', requestId, method, args);
+    ipcMain.once('ELECTRON_INTERNAL_RENDERER_ASYNC_WEB_FRAME_RESPONSE_' + requestId, function(event, result) {
+      if (responseCallback[requestId]) {
+        responseCallback[requestId](result);
+        delete responseCallback[requestId];
+      }
+    });
+  };
 
   // Make sure webContents.executeJavaScript would run the code only when the
   // webContents has been loaded.
-  const executeJavaScript = webContents.executeJavaScript;
   webContents.executeJavaScript = function(code, hasUserGesture, callback) {
     let requestId = getNextId();
     if (typeof hasUserGesture === "function") {
       callback = hasUserGesture;
       hasUserGesture = false;
     }
-    if (callback !== null)
+    if (callback != null)
       responseCallback[requestId] = callback;
     if (this.getURL() && !this.isLoading())
-      return executeJavaScript.call(this, requestId, code, hasUserGesture);
+      return asyncWebFrameMethods.call(this, requestId, "executeJavaScript", code, hasUserGesture);
     else
-      return this.once('did-finish-load', executeJavaScript.bind(this, requestId, code, hasUserGesture));
+      return this.once('did-finish-load', asyncWebFrameMethods.bind(this, requestId, "executeJavaScript", code, hasUserGesture));
   };
-
-  ipcMain.on('ELECTRON_INTERNAL_RENDERER_ASYNC_WEB_FRAME_RESPONSE', function(event, id, result) {
-    if (responseCallback[id]) {
-      responseCallback[id].apply(null, [result]);
-      delete responseCallback[id];
-    }
-  });
 
   // Dispatch IPC messages to the ipc module.
   webContents.on('ipc-message', function(event, packed) {
