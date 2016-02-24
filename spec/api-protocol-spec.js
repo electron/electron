@@ -3,9 +3,7 @@ const http = require('http');
 const path = require('path');
 const qs = require('querystring');
 const remote = require('electron').remote;
-const BrowserWindow = remote.require('electron').BrowserWindow;
 const protocol = remote.require('electron').protocol;
-const session = remote.require('electron').session;
 
 describe('protocol module', function() {
   var protocolName = 'sp';
@@ -813,57 +811,6 @@ describe('protocol module', function() {
       protocol.uninterceptProtocol('http', function(error) {
         assert.notEqual(error, null);
         done();
-      });
-    });
-  });
-
-  describe('protocol.fromPartition', function() {
-    var partitionName = 'temp';
-    var tempProtocol = session.fromPartition(partitionName).protocol;
-    var w = null;
-
-    beforeEach(function() {
-      if (w != null) {
-        w.destroy();
-      }
-      w = new BrowserWindow({
-        show: false,
-        width: 400,
-        height: 400,
-        webPreferences: {
-          partition: partitionName
-        }
-      });
-    });
-
-    afterEach(function() {
-      if (w != null) {
-        w.destroy();
-      }
-      w = null;
-    });
-
-    it('handles requests from a partition', function(done) {
-      var handler = function(error, callback) {
-        callback({
-          data: text
-        });
-      };
-      tempProtocol.registerStringProtocol(protocolName, handler, function(error) {
-        if (error) {
-          return done(error);
-        }
-
-        protocol.isProtocolHandled(protocolName, function(result) {
-          assert.equal(result, false);
-        });
-        tempProtocol.isProtocolHandled(protocolName, function(result) {
-          assert.equal(result, true);
-          w.webContents.on('did-finish-load', function() {
-            done();
-          });
-          w.loadURL(protocolName + "://fake-host");
-        });
       });
     });
   });
