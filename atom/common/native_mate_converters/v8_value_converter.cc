@@ -4,7 +4,6 @@
 
 #include "atom/common/native_mate_converters/v8_value_converter.h"
 
-#include <ctime>
 #include <map>
 #include <string>
 #include <utility>
@@ -20,14 +19,6 @@ namespace atom {
 namespace {
 
 const int kMaxRecursionDepth = 100;
-
-const double kMsPerDay = 24 * 60 * 60 * 1000;
-
-int TimeInDay(double time_ms) {
-  if (time_ms < 0) time_ms -= (kMsPerDay -1);
-  int days = static_cast<int>(time_ms / kMsPerDay);
-  return static_cast<int>(time_ms - days * kMsPerDay);
-}
 
 }  // namespace
 
@@ -248,20 +239,17 @@ base::Value* V8ValueConverter::FromV8ValueImpl(
 
   if (val->IsDate()) {
     v8::Date* date = v8::Date::Cast(*val);
-    double const time_ms = date->NumberValue();
-    int const time_in_day_ms = TimeInDay(time_ms);
-    std::time_t time_s(time_ms / 1000.0);
-    char buf[128];
-    std::tm* gm_time = std::gmtime(&time_s);
-    int year = gm_time->tm_year + 1900;
-    int month  = gm_time->tm_mon + 1;
-    int ms = time_in_day_ms % 1000;
-    size_t length = snprintf(buf, sizeof buf,
-                             "%04d-%02d-%02dT%02d:%02d:%02d.%03dZ",
-                             year, month, gm_time->tm_mday,
-                             gm_time->tm_hour, gm_time->tm_min,
-                             gm_time->tm_sec, ms);
-    return new base::StringValue(std::string(buf, length));
+    v8::Local<v8::Value> toISOString =
+        date->GetRealNamedPropertyInPrototypeChain(
+            v8::String::NewFromUtf8(isolate, "toISOString"));
+    if (toISOString->IsFunction()) {
+      v8::Local<v8::Value> result =
+          toISOString.As<v8::Function>()->Call(val, 0, nullptr);
+      if (!result.IsEmpty()) {
+        v8::String::Utf8Value utf8(result->ToString());
+        return new base::StringValue(std::string(*utf8, utf8.length()));
+      }
+    }
   }
 
   if (val->IsRegExp()) {
