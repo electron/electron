@@ -19,6 +19,10 @@ var logAndThrow = function(callback, message) {
   }
 };
 
+protocol.fromPartition = function(partition) {
+  return session.fromPartition(partition).protocol;
+};
+
 protocol.registerProtocol = function(scheme, handler, callback) {
   return logAndThrow(callback, 'registerProtocol API has been replaced by the register[File/Http/Buffer/String]Protocol API family, please switch to the new APIs.');
 };
