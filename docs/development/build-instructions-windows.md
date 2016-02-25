@@ -38,7 +38,7 @@ there is no Visual Studio project generated.
 
 ```powershell
 $ cd electron
-$ python script\bootstrap.py -v
+$ python script/bootstrap.py -v
 ```
 
 ## Building
@@ -46,13 +46,13 @@ $ python script\bootstrap.py -v
 Build both Release and Debug targets:
 
 ```powershell
-$ python script\build.py
+$ python script/build.py
 ```
 
 You can also only build the Debug target:
 
 ```powershell
-$ python script\build.py -c D
+$ python script/build.py -c D
 ```
 
 After building is done, you can find `electron.exe` under `out\D` (debug
@@ -64,7 +64,7 @@ To build for the 64bit target, you need to pass `--target_arch=x64` when running
 the bootstrap script:
 
 ```powershell
-$ python script\bootstrap.py -v --target_arch=x64
+$ python script/bootstrap.py -v --target_arch=x64
 ```
 
 The other building steps are exactly the same.
@@ -74,13 +74,13 @@ The other building steps are exactly the same.
 Test your changes conform to the project coding style using:
 
 ```powershell
-$ python script\cpplint.py
+$ python script/cpplint.py
 ```
 
 Test functionality using:
 
 ```powershell
-$ python script\test.py
+$ python script/test.py
 ```
 
 Tests that include native modules (e.g. `runas`) can't be executed with the
@@ -90,7 +90,7 @@ details), but they will work with the release build.
 To run the tests with the release build use:
 
 ```powershell
-$ python script\test.py -R
+$ python script/test.py -R
 ```
 
 ## Troubleshooting
