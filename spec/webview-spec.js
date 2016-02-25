@@ -703,4 +703,17 @@ describe('<webview> tag', function() {
       document.body.appendChild(webview);
     });
   });
+
+  describe('<webview>.getWebContents', function() {
+    it('can return the webcontents associated', function(done) {
+      webview.addEventListener('did-finish-load', function() {
+        const webviewContents = webview.getWebContents();
+        assert(webviewContents);
+        assert.equal(webviewContents.getURL(), 'about:blank');
+        done();
+      });
+      webview.src = "about:blank";
+      document.body.appendChild(webview);
+    });
+  });
 });

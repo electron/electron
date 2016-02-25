@@ -173,6 +173,8 @@ bool Converter<content::StopFindAction>::FromV8(
 // static
 v8::Local<v8::Value> Converter<content::WebContents*>::ToV8(
     v8::Isolate* isolate, content::WebContents* val) {
+  if (!val)
+    return v8::Null(isolate);
   return atom::api::WebContents::CreateFrom(isolate, val).ToV8();
 }
 

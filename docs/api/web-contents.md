@@ -842,6 +842,10 @@ win.webContents.on('did-finish-load', function() {
 
 Returns the [session](session.md) object used by this webContents.
 
+### `webContents.hostWebContents`
+
+Returns the `WebContents` that might own this `WebContents`.
+
 ### `webContents.devToolsWebContents`
 
 Get the `WebContents` of DevTools for this `WebContents`.
