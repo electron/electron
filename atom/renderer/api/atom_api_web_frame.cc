@@ -40,7 +40,7 @@ class ScriptExecutionCallback : public blink::WebScriptExecutionCallback {
 
   void completed(
       const blink::WebVector<v8::Local<v8::Value>>& result) override {
-    if (!callback_.is_null())
+    if (!callback_.is_null() && !result.isEmpty() && !result[0].IsEmpty())
       // Right now only single results per frame is supported.
       callback_.Run(result[0]);
     delete this;

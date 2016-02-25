@@ -12,9 +12,6 @@ const debuggerBinding = process.atomBinding('debugger');
 let  slice = [].slice;
 let nextId = 0;
 
-// Map of requestId and response callback.
-let responseCallback = {};
-
 let getNextId = function() {
   return ++nextId;
 };
@@ -108,13 +105,11 @@ let wrapWebContents = function(webContents) {
     };
   }
 
-  const asyncWebFrameMethods = function(requestId, method, ...args) {
+  const asyncWebFrameMethods = function(requestId, method, callback, ...args) {
     this.send('ELECTRON_INTERNAL_RENDERER_ASYNC_WEB_FRAME_METHOD', requestId, method, args);
-    ipcMain.once('ELECTRON_INTERNAL_RENDERER_ASYNC_WEB_FRAME_RESPONSE_' + requestId, function(event, result) {
-      if (responseCallback[requestId]) {
-        responseCallback[requestId](result);
-        delete responseCallback[requestId];
-      }
+    ipcMain.once(`ELECTRON_INTERNAL_BROWSER_ASYNC_WEB_FRAME_RESPONSE_${requestId}`, function(event, result) {
+      if (callback)
+        callback(result);
     });
   };
 
@@ -126,12 +121,10 @@ let wrapWebContents = function(webContents) {
       callback = hasUserGesture;
       hasUserGesture = false;
     }
-    if (callback != null)
-      responseCallback[requestId] = callback;
     if (this.getURL() && !this.isLoading())
-      return asyncWebFrameMethods.call(this, requestId, "executeJavaScript", code, hasUserGesture);
+      return asyncWebFrameMethods.call(this, requestId, "executeJavaScript", callback, code, hasUserGesture);
     else
-      return this.once('did-finish-load', asyncWebFrameMethods.bind(this, requestId, "executeJavaScript", code, hasUserGesture));
+      return this.once('did-finish-load', asyncWebFrameMethods.bind(this, requestId, "executeJavaScript", callback, code, hasUserGesture));
   };
 
   // Dispatch IPC messages to the ipc module.

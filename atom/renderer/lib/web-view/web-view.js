@@ -307,7 +307,7 @@ var registerBrowserPluginElement = function() {
 
 // Registers <webview> custom element.
 var registerWebViewElement = function() {
-  var createBlockHandler, createNonBlockHandler, i, j, len, len1, m, methods, nonblockMethods, webFrameMethods, proto;
+  var createBlockHandler, createNonBlockHandler, i, j, len, len1, m, methods, nonblockMethods, proto;
   proto = Object.create(HTMLObjectElement.prototype);
   proto.createdCallback = function() {
     return new WebViewImpl(this);
@@ -392,12 +392,9 @@ var registerWebViewElement = function() {
   ];
   nonblockMethods = [
     'insertCSS',
+    'insertText',
     'send',
     'sendInputEvent',
-  ];
-  webFrameMethods = [
-    'executeJavaScript',
-    'insertText',
     'setZoomFactor',
     'setZoomLevel',
     'setZoomLevelLimits',
@@ -424,7 +421,7 @@ var registerWebViewElement = function() {
       var args, internal;
       args = 1 <= arguments.length ? slice.call(arguments, 0) : [];
       internal = v8Util.getHiddenValue(this, 'internal');
-      return ipcRenderer.send.apply(ipcRenderer, ['ATOM_BROWSER_ASYNC_CALL_TO_GUEST_VIEW', internal.guestInstanceId, m].concat(slice.call(args)));
+      return ipcRenderer.send.apply(ipcRenderer, ['ATOM_BROWSER_ASYNC_CALL_TO_GUEST_VIEW', null, internal.guestInstanceId, m].concat(slice.call(args)));
     };
   };
   for (j = 0, len1 = nonblockMethods.length; j < len1; j++) {
@@ -432,10 +429,19 @@ var registerWebViewElement = function() {
     proto[m] = createNonBlockHandler(m);
   }
 
-  // Forward proto.foo* webframe method calls to WebFrame.foo*.
-  for (let method of webFrameMethods) {
-    proto[method] = webFrame[method].bind(webFrame);
-  }
+  proto.executeJavaScript = function(code, hasUserGesture, callback) {
+    var internal = v8Util.getHiddenValue(this, 'internal');
+    if (typeof hasUserGesture === "function") {
+      callback = hasUserGesture;
+      hasUserGesture = false;
+    }
+    let requestId = getNextId();
+    ipcRenderer.send('ATOM_BROWSER_ASYNC_CALL_TO_GUEST_VIEW', requestId, internal.guestInstanceId, "executeJavaScript", code, hasUserGesture);
+    ipcRenderer.once(`ATOM_RENDERER_ASYNC_CALL_TO_GUEST_VIEW_RESPONSE_${requestId}`, function(event, result) {
+      if (callback)
+        callback(result);
+    });
+  };
 
   // WebContents associated with this webview.
   proto.getWebContents = function() {
