@@ -240,8 +240,7 @@ base::Value* V8ValueConverter::FromV8ValueImpl(
   if (val->IsDate()) {
     v8::Date* date = v8::Date::Cast(*val);
     v8::Local<v8::Value> toISOString =
-        date->GetRealNamedPropertyInPrototypeChain(
-            v8::String::NewFromUtf8(isolate, "toISOString"));
+        date->Get(v8::String::NewFromUtf8(isolate, "toISOString"));
     if (toISOString->IsFunction()) {
       v8::Local<v8::Value> result =
           toISOString.As<v8::Function>()->Call(val, 0, nullptr);
