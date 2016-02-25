@@ -6,12 +6,13 @@
 #define ATOM_BROWSER_API_FRAME_SUBSCRIBER_H_
 
 #include "base/callback.h"
+#include "v8/include/v8.h"
+
 #include "content/public/browser/render_widget_host_view.h"
 #include "content/public/browser/render_widget_host_view_frame_subscriber.h"
 #include "content/public/browser/readback_types.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "ui/gfx/geometry/size.h"
-#include "v8/include/v8.h"
 
 namespace atom {
 
@@ -50,7 +51,6 @@ class FrameSubscriber {
   bool RequestDestruct();
 
   v8::Isolate* isolate_;
-  gfx::Size size_;
   content::RenderWidgetHostView* view_;
   FrameCaptureCallback callback_;
   Subscriber* subscriber_;

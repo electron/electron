@@ -4,12 +4,13 @@
 
 #include "atom/browser/api/frame_subscriber.h"
 
-#include "atom/common/node_includes.h"
 #include "base/bind.h"
+#include "atom/common/node_includes.h"
 #include "media/base/video_frame.h"
 #include "media/base/yuv_convert.h"
-#include "content/public/browser/render_widget_host.h"
 #include "ui/gfx/screen.h"
+
+#include "content/public/browser/render_widget_host.h"
 
 namespace atom {
 
@@ -22,7 +23,6 @@ FrameSubscriber::FrameSubscriber(v8::Isolate* isolate,
                                  const FrameCaptureCallback& callback)
     : isolate_(isolate), callback_(callback), pending_frames(0), view_(view) {
   subscriber_ = new Subscriber(this);
-  size_ = view->GetVisibleViewportSize();
 }
 
 Subscriber::Subscriber(
