@@ -25,12 +25,16 @@ shell.openExternal('https://github.com');
 
 지정한 파일을 데스크톱 기본 프로그램으로 엽니다.
 
-### `shell.openExternal(url)`
+### `shell.openExternal(url[, options])`
 
 * `url` String
+* `options` Object (optional) _OS X_
+  * `activate` Boolean - `true`로 설정하면 어플리케이션을 바로 활성화 상태로
+    실행합니다. 기본값은 `true`입니다.
 
 제공된 외부 프로토콜 URL을 기반으로 데스크톱의 기본 프로그램으로 엽니다. (예를 들어
-mailto: URL은 유저의 기본 이메일 에이전트로 URL을 엽니다.)
+mailto: URL은 유저의 기본 이메일 에이전트로 URL을 엽니다.) 어플리케이션이 해당 URL을
+열 수 있을 때 `true`를 반환합니다. 아니라면 `false`를 반환합니다.
 
 역주: 폴더는 'file:\\\\C:\\'와 같이 지정하여 열 수 있습니다. (Windows의 경우)
 

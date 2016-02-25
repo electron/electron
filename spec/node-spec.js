@@ -6,95 +6,96 @@ const os = require('os');
 const remote = require('electron').remote;
 
 describe('node feature', function() {
-  var fixtures;
-  fixtures = path.join(__dirname, 'fixtures');
+  var fixtures = path.join(__dirname, 'fixtures');
+
   describe('child_process', function() {
-    return describe('child_process.fork', function() {
+    describe('child_process.fork', function() {
       it('works in current process', function(done) {
-        var child;
-        child = child_process.fork(path.join(fixtures, 'module', 'ping.js'));
+        var child = child_process.fork(path.join(fixtures, 'module', 'ping.js'));
         child.on('message', function(msg) {
           assert.equal(msg, 'message');
-          return done();
+          done();
         });
-        return child.send('message');
+        child.send('message');
       });
+
       it('preserves args', function(done) {
-        var args, child;
-        args = ['--expose_gc', '-test', '1'];
-        child = child_process.fork(path.join(fixtures, 'module', 'process_args.js'), args);
+        var args = ['--expose_gc', '-test', '1'];
+        var child = child_process.fork(path.join(fixtures, 'module', 'process_args.js'), args);
         child.on('message', function(msg) {
           assert.deepEqual(args, msg.slice(2));
-          return done();
+          done();
         });
-        return child.send('message');
+        child.send('message');
       });
+
       it('works in forked process', function(done) {
-        var child;
-        child = child_process.fork(path.join(fixtures, 'module', 'fork_ping.js'));
+        var child = child_process.fork(path.join(fixtures, 'module', 'fork_ping.js'));
         child.on('message', function(msg) {
           assert.equal(msg, 'message');
-          return done();
+          done();
         });
-        return child.send('message');
+        child.send('message');
       });
+
       it('works in forked process when options.env is specifed', function(done) {
-        var child;
-        child = child_process.fork(path.join(fixtures, 'module', 'fork_ping.js'), [], {
+        var child = child_process.fork(path.join(fixtures, 'module', 'fork_ping.js'), [], {
           path: process.env['PATH']
         });
         child.on('message', function(msg) {
           assert.equal(msg, 'message');
-          return done();
+          done();
         });
-        return child.send('message');
+        child.send('message');
       });
+
       it('works in browser process', function(done) {
-        var child, fork;
-        fork = remote.require('child_process').fork;
-        child = fork(path.join(fixtures, 'module', 'ping.js'));
+        var fork = remote.require('child_process').fork;
+        var child = fork(path.join(fixtures, 'module', 'ping.js'));
         child.on('message', function(msg) {
           assert.equal(msg, 'message');
-          return done();
+          done();
         });
-        return child.send('message');
+        child.send('message');
       });
+
       it('has String::localeCompare working in script', function(done) {
-        var child;
-        child = child_process.fork(path.join(fixtures, 'module', 'locale-compare.js'));
+        var child = child_process.fork(path.join(fixtures, 'module', 'locale-compare.js'));
         child.on('message', function(msg) {
           assert.deepEqual(msg, [0, -1, 1]);
-          return done();
+          done();
         });
-        return child.send('message');
+        child.send('message');
       });
-      return it('has setImmediate working in script', function(done) {
-        var child;
-        child = child_process.fork(path.join(fixtures, 'module', 'set-immediate.js'));
+
+      it('has setImmediate working in script', function(done) {
+        var child = child_process.fork(path.join(fixtures, 'module', 'set-immediate.js'));
         child.on('message', function(msg) {
           assert.equal(msg, 'ok');
-          return done();
+          done();
         });
-        return child.send('message');
+        child.send('message');
       });
     });
   });
+
   describe('contexts', function() {
     describe('setTimeout in fs callback', function() {
       if (process.env.TRAVIS === 'true') {
         return;
       }
-      return it('does not crash', function(done) {
-        return fs.readFile(__filename, function() {
-          return setTimeout(done, 0);
+
+      it('does not crash', function(done) {
+        fs.readFile(__filename, function() {
+          setTimeout(done, 0);
         });
       });
     });
+
     describe('throw error in node context', function() {
-      return it('gets caught', function(done) {
-        var error, lsts;
-        error = new Error('boo!');
-        lsts = process.listeners('uncaughtException');
+      it('gets caught', function(done) {
+        var error = new Error('boo!');
+        var lsts = process.listeners('uncaughtException');
         process.removeAllListeners('uncaughtException');
         process.on('uncaughtException', function() {
           var i, len, lst;
@@ -103,91 +104,97 @@ describe('node feature', function() {
             lst = lsts[i];
             process.on('uncaughtException', lst);
           }
-          return done();
+          done();
         });
-        return fs.readFile(__filename, function() {
+        fs.readFile(__filename, function() {
           throw error;
         });
       });
     });
+
     describe('setTimeout called under Chromium event loop in browser process', function() {
-      return it('can be scheduled in time', function(done) {
-        return remote.getGlobal('setTimeout')(done, 0);
+      it('can be scheduled in time', function(done) {
+        remote.getGlobal('setTimeout')(done, 0);
       });
     });
-    return describe('setInterval called under Chromium event loop in browser process', function() {
-      return it('can be scheduled in time', function(done) {
+
+    describe('setInterval called under Chromium event loop in browser process', function() {
+      it('can be scheduled in time', function(done) {
         var clear, interval;
         clear = function() {
           remote.getGlobal('clearInterval')(interval);
-          return done();
+          done();
         };
-        return interval = remote.getGlobal('setInterval')(clear, 10);
+        interval = remote.getGlobal('setInterval')(clear, 10);
       });
     });
   });
+
   describe('message loop', function() {
     describe('process.nextTick', function() {
       it('emits the callback', function(done) {
-        return process.nextTick(done);
+        process.nextTick(done);
       });
-      return it('works in nested calls', function(done) {
-        return process.nextTick(function() {
-          return process.nextTick(function() {
-            return process.nextTick(done);
+
+      it('works in nested calls', function(done) {
+        process.nextTick(function() {
+          process.nextTick(function() {
+            process.nextTick(done);
           });
         });
       });
     });
-    return describe('setImmediate', function() {
+
+    describe('setImmediate', function() {
       it('emits the callback', function(done) {
-        return setImmediate(done);
+        setImmediate(done);
       });
-      return it('works in nested calls', function(done) {
-        return setImmediate(function() {
-          return setImmediate(function() {
-            return setImmediate(done);
+
+      it('works in nested calls', function(done) {
+        setImmediate(function() {
+          setImmediate(function() {
+            setImmediate(done);
           });
         });
       });
     });
   });
+
   describe('net.connect', function() {
     if (process.platform !== 'darwin') {
       return;
     }
-    return it('emit error when connect to a socket path without listeners', function(done) {
-      var child, script, socketPath;
-      socketPath = path.join(os.tmpdir(), 'atom-shell-test.sock');
-      script = path.join(fixtures, 'module', 'create_socket.js');
-      child = child_process.fork(script, [socketPath]);
-      return child.on('exit', function(code) {
-        var client;
+
+    it('emit error when connect to a socket path without listeners', function(done) {
+      var socketPath = path.join(os.tmpdir(), 'atom-shell-test.sock');
+      var script = path.join(fixtures, 'module', 'create_socket.js');
+      var child = child_process.fork(script, [socketPath]);
+      child.on('exit', function(code) {
         assert.equal(code, 0);
-        client = require('net').connect(socketPath);
-        return client.on('error', function(error) {
+        var client = require('net').connect(socketPath);
+        client.on('error', function(error) {
           assert.equal(error.code, 'ECONNREFUSED');
-          return done();
+          done();
         });
       });
     });
   });
+
   describe('Buffer', function() {
     it('can be created from WebKit external string', function() {
-      var b, p;
-      p = document.createElement('p');
+      var p = document.createElement('p');
       p.innerText = '闲云潭影日悠悠，物换星移几度秋';
-      b = new Buffer(p.innerText);
+      var b = new Buffer(p.innerText);
       assert.equal(b.toString(), '闲云潭影日悠悠，物换星移几度秋');
-      return assert.equal(Buffer.byteLength(p.innerText), 45);
+      assert.equal(Buffer.byteLength(p.innerText), 45);
     });
-    return it('correctly parses external one-byte UTF8 string', function() {
-      var b, p;
-      p = document.createElement('p');
+
+    it('correctly parses external one-byte UTF8 string', function() {
+      var p = document.createElement('p');
       p.innerText = 'Jøhänñéß';
-      b = new Buffer(p.innerText);
+      var b = new Buffer(p.innerText);
       assert.equal(b.toString(), 'Jøhänñéß');
-      return assert.equal(Buffer.byteLength(p.innerText), 13);
+      assert.equal(Buffer.byteLength(p.innerText), 13);
     });
   });
 

@@ -48,7 +48,7 @@ var driver = new webdriver.Builder()
   .withCapabilities({
     chromeOptions: {
       // 여기에 사용중인 Electron 바이너리의 경로를 지정하세요.
-      binary: '/Path-to-Your-App.app/Contents/MacOS/Atom',
+      binary: '/Path-to-Your-App.app/Contents/MacOS/Electron',
     }
   })
   .forBrowser('electron')

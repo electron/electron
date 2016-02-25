@@ -52,7 +52,7 @@
 * `channel` String - イベント名
 * `arg` (optional)
 
-`channel`経由でメインプロセスに非同期にイベントを送信し、任意の引数を送信できます。
+`channel`経由でメインプロセスに同期的にイベントを送信し、任意の引数を送信できます。
 
 メインプロセスは`ipcMain`で`channel`を受信することでハンドルし、 `event.returnValue`を設定してリプライします。
 

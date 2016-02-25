@@ -24,6 +24,8 @@ Electron はウェブページを表示させるために Chromium を使用し�
 
 Electron では、メインプロセスとレンダラープロセスとのコミュニケーションをするために [ipc](../api/ipc-renderer.md) モジュールを提供しています。またそれと、RPC 形式の通信を行う [remote](../api/remote.md) モジュールもあります。
 
+Electron では、メインプロセスとレンダラープロセスとのコミュニケーションをするには幾つかのほうほうがあります。メッセージを送信する[`ipcRenderer`](../api/ipc-renderer.md)モジュールと[`ipcMain`](../api/ipc-main.md)モジュールのように、RPC 形式の通信を行う[remote](../api/remote.md)モジュールです。[ウェブページ間のデータを共有する方法][share-data]にFAQエントリーがあります。
+
 ## Electronアプリを作成する
 
 一般的に Electron アプリの構成は次のようになります：
@@ -169,3 +171,5 @@ $ cd electron-quick-start
 # Install dependencies and run the app
 $ npm install && npm start
 ```
+
+[share-data]: ../faq/electron-faq.md#how-to-share-data-between-web-pages

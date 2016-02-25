@@ -1,10 +1,15 @@
+'use strict';
+
 const ipcRenderer = require('electron').ipcRenderer;
 const CallbacksRegistry = require('electron').CallbacksRegistry;
 const v8Util = process.atomBinding('v8_util');
+const IDWeakMap = process.atomBinding('id_weak_map').IDWeakMap;
 
 const callbacksRegistry = new CallbacksRegistry;
 
 var includes = [].includes;
+
+var remoteObjectCache = new IDWeakMap;
 
 // Check for circular reference.
 var isCircular = function(field, visited) {
@@ -85,9 +90,59 @@ var wrapArgs = function(args, visited) {
   return Array.prototype.slice.call(args).map(valueToMeta);
 };
 
+// Populate object's members from descriptors.
+// This matches |getObjectMemebers| in rpc-server.
+let setObjectMembers = function(object, metaId, members) {
+  for (let member of members) {
+    if (object.hasOwnProperty(member.name))
+      continue;
+
+    let descriptor = { enumerable: member.enumerable };
+    if (member.type === 'method') {
+      let remoteMemberFunction = function() {
+        if (this && this.constructor === remoteMemberFunction) {
+          // Constructor call.
+          let ret = ipcRenderer.sendSync('ATOM_BROWSER_MEMBER_CONSTRUCTOR', metaId, member.name, wrapArgs(arguments));
+          return metaToValue(ret);
+        } else {
+          // Call member function.
+          let ret = ipcRenderer.sendSync('ATOM_BROWSER_MEMBER_CALL', metaId, member.name, wrapArgs(arguments));
+          return metaToValue(ret);
+        }
+      };
+      descriptor.value = remoteMemberFunction;
+    } else if (member.type === 'get') {
+      descriptor.get = function() {
+        return metaToValue(ipcRenderer.sendSync('ATOM_BROWSER_MEMBER_GET', metaId, member.name));
+      };
+
+      // Only set setter when it is writable.
+      if (member.writable) {
+        descriptor.set = function(value) {
+          ipcRenderer.sendSync('ATOM_BROWSER_MEMBER_SET', metaId, member.name, value);
+          return value;
+        };
+      }
+    }
+
+    Object.defineProperty(object, member.name, descriptor);
+  }
+};
+
+// Populate object's prototype from descriptor.
+// This matches |getObjectPrototype| in rpc-server.
+let setObjectPrototype = function(object, metaId, descriptor) {
+  if (descriptor === null)
+    return;
+  let proto = {};
+  setObjectMembers(proto, metaId, descriptor.members);
+  setObjectPrototype(proto, metaId, descriptor.proto);
+  Object.setPrototypeOf(object, proto);
+};
+
 // Convert meta data from browser into real value.
-var metaToValue = function(meta) {
-  var el, i, j, len, len1, member, ref1, ref2, results, ret;
+let metaToValue = function(meta) {
+  var el, i, len, ref1, results, ret;
   switch (meta.type) {
     case 'value':
       return meta.value;
@@ -112,56 +167,47 @@ var metaToValue = function(meta) {
     case 'exception':
       throw new Error(meta.message + "\n" + meta.stack);
     default:
+      if (remoteObjectCache.has(meta.id))
+        return remoteObjectCache.get(meta.id);
+
       if (meta.type === 'function') {
         // A shadow class to represent the remote function object.
-        ret = (function() {
-          function RemoteFunction() {
-            var obj;
-            if (this.constructor === RemoteFunction) {
-
-              // Constructor call.
-              obj = ipcRenderer.sendSync('ATOM_BROWSER_CONSTRUCTOR', meta.id, wrapArgs(arguments));
-
-              /*
-                Returning object in constructor will replace constructed object
-                with the returned object.
-                http://stackoverflow.com/questions/1978049/what-values-can-a-constructor-return-to-avoid-returning-this
-               */
-              return metaToValue(obj);
-            } else {
-
-              // Function call.
-              obj = ipcRenderer.sendSync('ATOM_BROWSER_FUNCTION_CALL', meta.id, wrapArgs(arguments));
-              return metaToValue(obj);
-            }
+        let remoteFunction = function() {
+          if (this && this.constructor === remoteFunction) {
+            // Constructor call.
+            let obj = ipcRenderer.sendSync('ATOM_BROWSER_CONSTRUCTOR', meta.id, wrapArgs(arguments));
+            // Returning object in constructor will replace constructed object
+            // with the returned object.
+            // http://stackoverflow.com/questions/1978049/what-values-can-a-constructor-return-to-avoid-returning-this
+            return metaToValue(obj);
+          } else {
+            // Function call.
+            let obj = ipcRenderer.sendSync('ATOM_BROWSER_FUNCTION_CALL', meta.id, wrapArgs(arguments));
+            return metaToValue(obj);
           }
-
-          return RemoteFunction;
-
-        })();
+        };
+        ret = remoteFunction;
       } else {
-        ret = v8Util.createObjectWithName(meta.name);
+        ret = {};
       }
 
-      // Polulate delegate members.
-      ref2 = meta.members;
-      for (j = 0, len1 = ref2.length; j < len1; j++) {
-        member = ref2[j];
-        if (member.type === 'function') {
-          ret[member.name] = createRemoteMemberFunction(meta.id, member.name);
-        } else {
-          Object.defineProperty(ret, member.name, createRemoteMemberProperty(meta.id, member.name));
-        }
-      }
+      // Populate delegate members.
+      setObjectMembers(ret, meta.id, meta.members);
+      // Populate delegate prototype.
+      setObjectPrototype(ret, meta.id, meta.proto);
+
+      // Set constructor.name to object's name.
+      Object.defineProperty(ret.constructor, 'name', { value: meta.name });
 
       // Track delegate object's life time, and tell the browser to clean up
       // when the object is GCed.
       v8Util.setDestructor(ret, function() {
-        return ipcRenderer.send('ATOM_BROWSER_DEREFERENCE', meta.id);
+        ipcRenderer.send('ATOM_BROWSER_DEREFERENCE', meta.id);
       });
 
       // Remember object's id.
       v8Util.setHiddenValue(ret, 'atomId', meta.id);
+      remoteObjectCache.set(meta.id, ret);
       return ret;
   }
 };
@@ -183,52 +229,6 @@ var metaToPlainObject = function(meta) {
     obj[name] = value;
   }
   return obj;
-};
-
-// Create a RemoteMemberFunction instance.
-// This function's content should not be inlined into metaToValue, otherwise V8
-// may consider it circular reference.
-var createRemoteMemberFunction = function(metaId, name) {
-  return (function() {
-    function RemoteMemberFunction() {
-      var ret;
-      if (this.constructor === RemoteMemberFunction) {
-
-        // Constructor call.
-        ret = ipcRenderer.sendSync('ATOM_BROWSER_MEMBER_CONSTRUCTOR', metaId, name, wrapArgs(arguments));
-        return metaToValue(ret);
-      } else {
-
-        // Call member function.
-        ret = ipcRenderer.sendSync('ATOM_BROWSER_MEMBER_CALL', metaId, name, wrapArgs(arguments));
-        return metaToValue(ret);
-      }
-    }
-
-    return RemoteMemberFunction;
-
-  })();
-};
-
-// Create configuration for defineProperty.
-// This function's content should not be inlined into metaToValue, otherwise V8
-// may consider it circular reference.
-var createRemoteMemberProperty = function(metaId, name) {
-  return {
-    enumerable: true,
-    configurable: false,
-    set: function(value) {
-
-      // Set member data.
-      ipcRenderer.sendSync('ATOM_BROWSER_MEMBER_SET', metaId, name, value);
-      return value;
-    },
-    get: function() {
-
-      // Get member data.
-      return metaToValue(ipcRenderer.sendSync('ATOM_BROWSER_MEMBER_GET', metaId, name));
-    }
-  };
 };
 
 // Browser calls a callback in renderer.
@@ -257,73 +257,33 @@ for (var name in browserModules) {
 }
 
 // Get remote module.
-// (Just like node's require, the modules are cached permanently, note that this
-// is safe leak since the object is not expected to get freed in browser)
-var moduleCache = {};
-
 exports.require = function(module) {
-  var meta;
-  if (moduleCache[module] != null) {
-    return moduleCache[module];
-  }
-  meta = ipcRenderer.sendSync('ATOM_BROWSER_REQUIRE', module);
-  return moduleCache[module] = metaToValue(meta);
+  return metaToValue(ipcRenderer.sendSync('ATOM_BROWSER_REQUIRE', module));
 };
-
-// Optimize require('electron').
-moduleCache.electron = exports;
 
 // Alias to remote.require('electron').xxx.
-var builtinCache = {};
-
 exports.getBuiltin = function(module) {
-  var meta;
-  if (builtinCache[module] != null) {
-    return builtinCache[module];
-  }
-  meta = ipcRenderer.sendSync('ATOM_BROWSER_GET_BUILTIN', module);
-  return builtinCache[module] = metaToValue(meta);
+  return metaToValue(ipcRenderer.sendSync('ATOM_BROWSER_GET_BUILTIN', module));
 };
 
-// Get current BrowserWindow object.
-var windowCache = null;
-
+// Get current BrowserWindow.
 exports.getCurrentWindow = function() {
-  var meta;
-  if (windowCache != null) {
-    return windowCache;
-  }
-  meta = ipcRenderer.sendSync('ATOM_BROWSER_CURRENT_WINDOW');
-  return windowCache = metaToValue(meta);
+  return metaToValue(ipcRenderer.sendSync('ATOM_BROWSER_CURRENT_WINDOW'));
 };
 
 // Get current WebContents object.
-var webContentsCache = null;
-
 exports.getCurrentWebContents = function() {
-  var meta;
-  if (webContentsCache != null) {
-    return webContentsCache;
-  }
-  meta = ipcRenderer.sendSync('ATOM_BROWSER_CURRENT_WEB_CONTENTS');
-  return webContentsCache = metaToValue(meta);
+  return metaToValue(ipcRenderer.sendSync('ATOM_BROWSER_CURRENT_WEB_CONTENTS'));
 };
 
 // Get a global object in browser.
 exports.getGlobal = function(name) {
-  var meta;
-  meta = ipcRenderer.sendSync('ATOM_BROWSER_GLOBAL', name);
-  return metaToValue(meta);
+  return metaToValue(ipcRenderer.sendSync('ATOM_BROWSER_GLOBAL', name));
 };
 
 // Get the process object in browser.
-var processCache = null;
-
 exports.__defineGetter__('process', function() {
-  if (processCache == null) {
-    processCache = exports.getGlobal('process');
-  }
-  return processCache;
+  return exports.getGlobal('process');
 });
 
 // Create a funtion that will return the specifed value when called in browser.

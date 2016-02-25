@@ -1,13 +1,9 @@
 'use strict';
 
-const EventEmitter = require('events').EventEmitter;
 const v8Util = process.atomBinding('v8_util');
 
-class ObjectsRegistry extends EventEmitter {
+class ObjectsRegistry {
   constructor() {
-    super();
-
-    this.setMaxListeners(Number.MAX_VALUE);
     this.nextId = 0;
 
     // Stores all objects by ref-counting.
@@ -15,70 +11,61 @@ class ObjectsRegistry extends EventEmitter {
     this.storage = {};
 
     // Stores the IDs of objects referenced by WebContents.
-    // (webContentsId) => {(id) => (count)}
+    // (webContentsId) => [id]
     this.owners = {};
   }
 
-  // Register a new object, the object would be kept referenced until you release
-  // it explicitly.
-  add(webContentsId, obj) {
-    var base, base1, id;
-    id = this.saveToStorage(obj);
+  // Register a new object and return its assigned ID. If the object is already
+  // registered then the already assigned ID would be returned.
+  add(webContents, obj) {
+    // Get or assign an ID to the object.
+    let id = this.saveToStorage(obj);
 
-    // Remember the owner.
-    if ((base = this.owners)[webContentsId] == null) {
-      base[webContentsId] = {};
+    // Add object to the set of referenced objects.
+    let webContentsId = webContents.getId();
+    let owner = this.owners[webContentsId];
+    if (!owner) {
+      owner = this.owners[webContentsId] = new Set();
+      // Clear the storage when webContents is reloaded/navigated.
+      webContents.once('render-view-deleted', (event, id) => {
+        this.clear(id);
+      });
     }
-    if ((base1 = this.owners[webContentsId])[id] == null) {
-      base1[id] = 0;
+    if (!owner.has(id)) {
+      owner.add(id);
+      // Increase reference count if not referenced before.
+      this.storage[id].count++;
     }
-    this.owners[webContentsId][id]++;
-
-    // Returns object's id
     return id;
   }
 
   // Get an object according to its ID.
   get(id) {
-    var ref;
-    return (ref = this.storage[id]) != null ? ref.object : void 0;
+    return this.storage[id].object;
   }
 
   // Dereference an object according to its ID.
   remove(webContentsId, id) {
-    var pointer;
-    this.dereference(id, 1);
+    // Dereference from the storage.
+    this.dereference(id);
 
-    // Also reduce the count in owner.
-    pointer = this.owners[webContentsId];
-    if (pointer == null) {
-      return;
-    }
-    --pointer[id];
-    if (pointer[id] === 0) {
-      return delete pointer[id];
-    }
+    // Also remove the reference in owner.
+    this.owners[webContentsId].delete(id);
   }
 
   // Clear all references to objects refrenced by the WebContents.
   clear(webContentsId) {
-    var count, id, ref;
-    this.emit("clear-" + webContentsId);
-    if (this.owners[webContentsId] == null) {
+    let owner = this.owners[webContentsId];
+    if (!owner)
       return;
-    }
-    ref = this.owners[webContentsId];
-    for (id in ref) {
-      count = ref[id];
-      this.dereference(id, count);
-    }
-    return delete this.owners[webContentsId];
+    for (let id of owner)
+      this.dereference(id);
+    delete this.owners[webContentsId];
   }
 
   // Private: Saves the object into storage and assigns an ID for it.
   saveToStorage(object) {
-    var id;
-    id = v8Util.getHiddenValue(object, 'atomId');
+    let id = v8Util.getHiddenValue(object, 'atomId');
     if (!id) {
       id = ++this.nextId;
       this.storage[id] = {
@@ -87,18 +74,16 @@ class ObjectsRegistry extends EventEmitter {
       };
       v8Util.setHiddenValue(object, 'atomId', id);
     }
-    ++this.storage[id].count;
     return id;
   }
 
   // Private: Dereference the object from store.
-  dereference(id, count) {
-    var pointer;
-    pointer = this.storage[id];
+  dereference(id) {
+    let pointer = this.storage[id];
     if (pointer == null) {
       return;
     }
-    pointer.count -= count;
+    pointer.count -= 1;
     if (pointer.count === 0) {
       v8Util.deleteHiddenValue(pointer.object, 'atomId');
       return delete this.storage[id];

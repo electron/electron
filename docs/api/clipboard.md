@@ -67,7 +67,6 @@ Writes `image` to the clipboard.
 
 Returns the content in the clipboard as RTF.
 
-
 ### `clipboard.writeRtf(text[, type])`
 
 * `text` String

@@ -178,7 +178,7 @@ webview.addEventListener("dom-ready", function() {
 ### `<webview>.loadURL(url[, options])`
 
 * `url` URL
-* `options` Object (optional), 속성들:
+* `options` Object (optional)
   * `httpReferrer` String - HTTP 레퍼러 url.
   * `userAgent` String - 요청을 시작한 유저 에이전트.
   * `extraHeaders` String - "\n"로 구분된 Extra 헤더들.
@@ -370,7 +370,7 @@ Service worker에 대한 개발자 도구를 엽니다.
 ### `webContents.findInPage(text[, options])`
 
 * `text` String - 찾을 컨텐츠, 반드시 공백이 아니여야 합니다.
-* `options` Object (Optional)
+* `options` Object (optional)
   * `forward` Boolean - 앞에서부터 검색할지 뒤에서부터 검색할지 여부입니다. 기본값은
     `true`입니다.
   * `findNext` Boolean - 작업을 계속 처리할지 첫 요청만 처리할지 여부입니다. 기본값은
@@ -557,8 +557,8 @@ Returns:
 * `result` Object
   * `requestId` Integer
   * `finalUpdate` Boolean - 더 많은 응답이 따르는 경우를 표시합니다.
-  * `matches` Integer (Optional) - 일치하는 개수.
-  * `selectionArea` Object (Optional) - 첫 일치 부위의 좌표.
+  * `matches` Integer (optional) - 일치하는 개수.
+  * `selectionArea` Object (optional) - 첫 일치 부위의 좌표.
 
 [`webContents.findInPage`](web-contents.md#webcontentsfindinpage) 요청의 결과를
 사용할 수 있을 때 발생하는 이벤트입니다.

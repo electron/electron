@@ -6,11 +6,54 @@ const objectsRegistry = require('./objects-registry');
 const v8Util = process.atomBinding('v8_util');
 const IDWeakMap = process.atomBinding('id_weak_map').IDWeakMap;
 
-var slice = [].slice;
+// The internal properties of Function.
+const FUNCTION_PROPERTIES = [
+  'length', 'name', 'arguments', 'caller', 'prototype',
+];
+
+// The remote functions in renderer processes.
+// (webContentsId) => {id: Function}
+let rendererFunctions = {};
+
+// Return the description of object's members:
+let getObjectMemebers = function(object) {
+  let names = Object.getOwnPropertyNames(object);
+  // For Function, we should not override following properties even though they
+  // are "own" properties.
+  if (typeof object === 'function') {
+    names = names.filter((name) => {
+      return !FUNCTION_PROPERTIES.includes(name);
+    });
+  }
+  // Map properties to descriptors.
+  return names.map((name) => {
+    let descriptor = Object.getOwnPropertyDescriptor(object, name);
+    let member = {name, enumerable: descriptor.enumerable, writable: false};
+    if (descriptor.get === undefined && typeof object[name] === 'function') {
+      member.type = 'method';
+    } else {
+      if (descriptor.set || descriptor.writable)
+        member.writable = true;
+      member.type = 'get';
+    }
+    return member;
+  });
+};
+
+// Return the description of object's prototype.
+let getObjectPrototype = function(object) {
+  let proto = Object.getPrototypeOf(object);
+  if (proto === null || proto === Object.prototype)
+    return null;
+  return {
+    members: getObjectMemebers(proto),
+    proto: getObjectPrototype(proto),
+  };
+};
 
 // Convert a real value into meta data.
 var valueToMeta = function(sender, value, optimizeSimpleObject) {
-  var el, field, i, len, meta, name;
+  var el, i, len, meta;
   if (optimizeSimpleObject == null) {
     optimizeSimpleObject = false;
   }
@@ -57,19 +100,9 @@ var valueToMeta = function(sender, value, optimizeSimpleObject) {
     // Reference the original value if it's an object, because when it's
     // passed to renderer we would assume the renderer keeps a reference of
     // it.
-    meta.id = objectsRegistry.add(sender.getId(), value);
-    meta.members = (function() {
-      var results;
-      results = [];
-      for (name in value) {
-        field = value[name];
-        results.push({
-          name: name,
-          type: typeof field
-        });
-      }
-      return results;
-    })();
+    meta.id = objectsRegistry.add(sender, value);
+    meta.members = getObjectMemebers(value);
+    meta.proto = getObjectPrototype(value);
   } else if (meta.type === 'buffer') {
     meta.value = Array.prototype.slice.call(value, 0);
   } else if (meta.type === 'promise') {
@@ -114,7 +147,7 @@ var exceptionToMeta = function(error) {
 var unwrapArgs = function(sender, args) {
   var metaToValue;
   metaToValue = function(meta) {
-    var i, len, member, ref, rendererReleased, returnValue;
+    var i, len, member, ref, returnValue;
     switch (meta.type) {
       case 'value':
         return meta.value;
@@ -130,48 +163,50 @@ var unwrapArgs = function(sender, args) {
         return Promise.resolve({
           then: metaToValue(meta.then)
         });
-      case 'object':
-        let ret = v8Util.createObjectWithName(meta.name);
+      case 'object': {
+        let ret = {};
+        Object.defineProperty(ret.constructor, 'name', { value: meta.name });
+
         ref = meta.members;
         for (i = 0, len = ref.length; i < len; i++) {
           member = ref[i];
           ret[member.name] = metaToValue(member.value);
         }
         return ret;
+      }
       case 'function-with-return-value':
         returnValue = metaToValue(meta.value);
         return function() {
           return returnValue;
         };
-      case 'function':
+      case 'function': {
         // Cache the callbacks in renderer.
-        if (!sender.callbacks) {
-          sender.callbacks = new IDWeakMap;
-          sender.on('render-view-deleted', function() {
-            return this.callbacks.clear();
+        let webContentsId = sender.getId();
+        let callbacks = rendererFunctions[webContentsId];
+        if (!callbacks) {
+          callbacks = rendererFunctions[webContentsId] = new IDWeakMap;
+          sender.once('render-view-deleted', function(event, id) {
+            callbacks.clear();
+            delete rendererFunctions[id];
           });
         }
 
-        if (sender.callbacks.has(meta.id))
-          return sender.callbacks.get(meta.id);
-
-        // Prevent the callback from being called when its page is gone.
-        rendererReleased = false;
-        sender.once('render-view-deleted', function() {
-          rendererReleased = true;
-        });
+        if (callbacks.has(meta.id))
+          return callbacks.get(meta.id);
 
         let callIntoRenderer = function(...args) {
-          if (rendererReleased || sender.isDestroyed())
+          if ((webContentsId in rendererFunctions) && !sender.isDestroyed())
+            sender.send('ATOM_RENDERER_CALLBACK', meta.id, valueToMeta(sender, args));
+          else
             throw new Error(`Attempting to call a function in a renderer window that has been closed or released. Function provided here: ${meta.location}.`);
-          sender.send('ATOM_RENDERER_CALLBACK', meta.id, valueToMeta(sender, args));
         };
         v8Util.setDestructor(callIntoRenderer, function() {
-          if (!rendererReleased && !sender.isDestroyed())
+          if ((webContentsId in rendererFunctions) && !sender.isDestroyed())
             sender.send('ATOM_RENDERER_RELEASE_CALLBACK', meta.id);
         });
-        sender.callbacks.set(meta.id, callIntoRenderer);
+        callbacks.set(meta.id, callIntoRenderer);
         return callIntoRenderer;
+      }
       default:
         throw new TypeError("Unknown type: " + meta.type);
     }
@@ -203,11 +238,6 @@ var callFunction = function(event, func, caller, args) {
     throw new Error("Could not call remote function `" + funcName + "`. Check that the function signature is correct. Underlying error: " + error.message);
   }
 };
-
-// Send by BrowserWindow when its render view is deleted.
-process.on('ATOM_BROWSER_RELEASE_RENDER_VIEW', function(id) {
-  return objectsRegistry.clear(id);
-});
 
 ipcMain.on('ATOM_BROWSER_REQUIRE', function(event, module) {
   try {
@@ -246,14 +276,13 @@ ipcMain.on('ATOM_BROWSER_CURRENT_WEB_CONTENTS', function(event) {
 });
 
 ipcMain.on('ATOM_BROWSER_CONSTRUCTOR', function(event, id, args) {
-  var constructor, obj;
   try {
     args = unwrapArgs(event.sender, args);
-    constructor = objectsRegistry.get(id);
+    let constructor = objectsRegistry.get(id);
 
     // Call new with array of arguments.
     // http://stackoverflow.com/questions/1606797/use-of-apply-with-new-operator-is-this-possible
-    obj = new (Function.prototype.bind.apply(constructor, [null].concat(args)));
+    let obj = new (Function.prototype.bind.apply(constructor, [null].concat(args)));
     return event.returnValue = valueToMeta(event.sender, obj);
   } catch (error) {
     return event.returnValue = exceptionToMeta(error);
@@ -261,10 +290,9 @@ ipcMain.on('ATOM_BROWSER_CONSTRUCTOR', function(event, id, args) {
 });
 
 ipcMain.on('ATOM_BROWSER_FUNCTION_CALL', function(event, id, args) {
-  var func;
   try {
     args = unwrapArgs(event.sender, args);
-    func = objectsRegistry.get(id);
+    let func = objectsRegistry.get(id);
     return callFunction(event, func, global, args);
   } catch (error) {
     return event.returnValue = exceptionToMeta(error);
@@ -272,13 +300,12 @@ ipcMain.on('ATOM_BROWSER_FUNCTION_CALL', function(event, id, args) {
 });
 
 ipcMain.on('ATOM_BROWSER_MEMBER_CONSTRUCTOR', function(event, id, method, args) {
-  var constructor, obj;
   try {
     args = unwrapArgs(event.sender, args);
-    constructor = objectsRegistry.get(id)[method];
+    let constructor = objectsRegistry.get(id)[method];
 
     // Call new with array of arguments.
-    obj = new (Function.prototype.bind.apply(constructor, [null].concat(args)));
+    let obj = new (Function.prototype.bind.apply(constructor, [null].concat(args)));
     return event.returnValue = valueToMeta(event.sender, obj);
   } catch (error) {
     return event.returnValue = exceptionToMeta(error);
@@ -286,10 +313,9 @@ ipcMain.on('ATOM_BROWSER_MEMBER_CONSTRUCTOR', function(event, id, method, args) 
 });
 
 ipcMain.on('ATOM_BROWSER_MEMBER_CALL', function(event, id, method, args) {
-  var obj;
   try {
     args = unwrapArgs(event.sender, args);
-    obj = objectsRegistry.get(id);
+    let obj = objectsRegistry.get(id);
     return callFunction(event, obj[method], obj, args);
   } catch (error) {
     return event.returnValue = exceptionToMeta(error);
@@ -297,9 +323,8 @@ ipcMain.on('ATOM_BROWSER_MEMBER_CALL', function(event, id, method, args) {
 });
 
 ipcMain.on('ATOM_BROWSER_MEMBER_SET', function(event, id, name, value) {
-  var obj;
   try {
-    obj = objectsRegistry.get(id);
+    let obj = objectsRegistry.get(id);
     obj[name] = value;
     return event.returnValue = null;
   } catch (error) {
@@ -308,9 +333,8 @@ ipcMain.on('ATOM_BROWSER_MEMBER_SET', function(event, id, name, value) {
 });
 
 ipcMain.on('ATOM_BROWSER_MEMBER_GET', function(event, id, name) {
-  var obj;
   try {
-    obj = objectsRegistry.get(id);
+    let obj = objectsRegistry.get(id);
     return event.returnValue = valueToMeta(event.sender, obj[name]);
   } catch (error) {
     return event.returnValue = exceptionToMeta(error);
@@ -322,21 +346,18 @@ ipcMain.on('ATOM_BROWSER_DEREFERENCE', function(event, id) {
 });
 
 ipcMain.on('ATOM_BROWSER_GUEST_WEB_CONTENTS', function(event, guestInstanceId) {
-  var guestViewManager;
   try {
-    guestViewManager = require('./guest-view-manager');
+    let guestViewManager = require('./guest-view-manager');
     return event.returnValue = valueToMeta(event.sender, guestViewManager.getGuest(guestInstanceId));
   } catch (error) {
     return event.returnValue = exceptionToMeta(error);
   }
 });
 
-ipcMain.on('ATOM_BROWSER_ASYNC_CALL_TO_GUEST_VIEW', function() {
-  var args, event, guest, guestInstanceId, guestViewManager, method;
-  event = arguments[0], guestInstanceId = arguments[1], method = arguments[2], args = 4 <= arguments.length ? slice.call(arguments, 3) : [];
+ipcMain.on('ATOM_BROWSER_ASYNC_CALL_TO_GUEST_VIEW', function(event, guestInstanceId, method, ...args) {
   try {
-    guestViewManager = require('./guest-view-manager');
-    guest = guestViewManager.getGuest(guestInstanceId);
+    let guestViewManager = require('./guest-view-manager');
+    let guest = guestViewManager.getGuest(guestInstanceId);
     return guest[method].apply(guest, args);
   } catch (error) {
     return event.returnValue = exceptionToMeta(error);

@@ -57,6 +57,7 @@ API 레퍼런스가 있습니다. Electron을 빌드 하는 방법과 프로젝�
 - [중국어 번체](https://github.com/atom/electron/tree/master/docs-translations/zh-TW)
 - [우크라이나어](https://github.com/atom/electron/tree/master/docs-translations/uk-UA)
 - [러시아어](https://github.com/atom/electron/tree/master/docs-translations/ru-RU)
+- [프랑스어](https://github.com/atom/electron/tree/master/docs-translations/fr-FR)
 
 ## 시작하기
 

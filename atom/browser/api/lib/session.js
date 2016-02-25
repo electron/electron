@@ -1,6 +1,6 @@
 const EventEmitter = require('events').EventEmitter;
 const bindings = process.atomBinding('session');
-const PERSIST_PERFIX = 'persist:';
+const PERSIST_PREFIX = 'persist:';
 
 // Returns the Session from |partition| string.
 exports.fromPartition = function(partition) {
@@ -10,8 +10,8 @@ exports.fromPartition = function(partition) {
   if (partition === '') {
     return exports.defaultSession;
   }
-  if (partition.startsWith(PERSIST_PERFIX)) {
-    return bindings.fromPartition(partition.substr(PERSIST_PERFIX.length), false);
+  if (partition.startsWith(PERSIST_PREFIX)) {
+    return bindings.fromPartition(partition.substr(PERSIST_PREFIX.length), false);
   } else {
     return bindings.fromPartition(partition, true);
   }

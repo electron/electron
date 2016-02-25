@@ -4,7 +4,7 @@
     'product_name%': 'Electron',
     'company_name%': 'GitHub, Inc',
     'company_abbr%': 'github',
-    'version%': '0.36.7',
+    'version%': '0.36.8',
   },
   'includes': [
     'filenames.gypi',
@@ -144,6 +144,7 @@
                   }, {
                     'copied_libraries': [
                       '<(libchromiumcontent_dir)/pdf.dll',
+                      '<(libchromiumcontent_dir)/ffmpeg.dll',
                     ],
                   }],
                 ],
@@ -193,6 +194,7 @@
                   }, {
                     'copied_libraries': [
                       '<(PRODUCT_DIR)/lib/libnode.so',
+                      '<(libchromiumcontent_dir)/libffmpeg.so',
                     ],
                   }],
                 ],
@@ -461,6 +463,7 @@
                   }, {
                     'copied_libraries': [
                       '<(PRODUCT_DIR)/libnode.dylib',
+                      '<(libchromiumcontent_dir)/libffmpeg.dylib',
                     ],
                   }],
                 ],
