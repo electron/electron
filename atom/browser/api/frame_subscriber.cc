@@ -6,8 +6,6 @@
 
 #include "base/bind.h"
 #include "atom/common/node_includes.h"
-#include "ui/gfx/screen.h"
-
 #include "content/public/browser/render_widget_host.h"
 
 namespace atom {
