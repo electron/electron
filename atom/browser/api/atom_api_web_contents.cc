@@ -463,6 +463,13 @@ void WebContents::FindReply(content::WebContents* web_contents,
   }
 }
 
+bool WebContents::CheckMediaAccessPermission(
+    content::WebContents* web_contents,
+    const GURL& security_origin,
+    content::MediaStreamType type) {
+  return true;
+}
+
 void WebContents::RequestMediaAccessPermission(
     content::WebContents* web_contents,
     const content::MediaStreamRequest& request,
