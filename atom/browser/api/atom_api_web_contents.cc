@@ -1069,7 +1069,7 @@ void WebContents::BeginFrameSubscription(
   const auto view = web_contents()->GetRenderWidgetHostView();
   if (view) {
     scoped_ptr<FrameSubscriber> frame_subscriber(new FrameSubscriber(
-        isolate(), view->GetVisibleViewportSize(), callback));
+        isolate(), view, callback));
     view->BeginFrameSubscription(frame_subscriber.Pass());
   }
 }
