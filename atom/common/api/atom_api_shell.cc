@@ -12,12 +12,23 @@
 
 namespace {
 
+bool OpenExternal(const GURL& url, mate::Arguments* args) {
+  bool activate = true;
+  if (args->Length() == 2) {
+    mate::Dictionary options;
+    if (args->GetNext(&options)) {
+      options.Get("activate", &activate);
+    }
+  }
+  return platform_util::OpenExternal(url, activate);
+}
+
 void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
   mate::Dictionary dict(context->GetIsolate(), exports);
   dict.SetMethod("showItemInFolder", &platform_util::ShowItemInFolder);
   dict.SetMethod("openItem", &platform_util::OpenItem);
-  dict.SetMethod("openExternal", &platform_util::OpenExternal);
+  dict.SetMethod("openExternal", &OpenExternal);
   dict.SetMethod("moveItemToTrash", &platform_util::MoveItemToTrash);
   dict.SetMethod("beep", &platform_util::Beep);
 }

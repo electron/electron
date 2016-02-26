@@ -8,6 +8,7 @@ const os = require('os');
 const remote = require('electron').remote;
 const screen = require('electron').screen;
 
+const app = remote.require('electron').app;
 const ipcMain = remote.require('electron').ipcMain;
 const BrowserWindow = remote.require('electron').BrowserWindow;
 
@@ -41,9 +42,8 @@ describe('browser-window module', function() {
         w.close();
       });
       w.on('closed', function() {
-        var content, test;
-        test = path.join(fixtures, 'api', 'unload');
-        content = fs.readFileSync(test);
+        var test = path.join(fixtures, 'api', 'unload');
+        var content = fs.readFileSync(test);
         fs.unlinkSync(test);
         assert.equal(String(content), 'unload');
         done();
@@ -65,9 +65,8 @@ describe('browser-window module', function() {
   describe('window.close()', function() {
     it('should emit unload handler', function(done) {
       w.on('closed', function() {
-        var content, test;
-        test = path.join(fixtures, 'api', 'close');
-        content = fs.readFileSync(test);
+        var test = path.join(fixtures, 'api', 'close');
+        var content = fs.readFileSync(test);
         fs.unlinkSync(test);
         assert.equal(String(content), 'close');
         done();
@@ -85,8 +84,7 @@ describe('browser-window module', function() {
 
   describe('BrowserWindow.destroy()', function() {
     it('prevents users to access methods of webContents', function() {
-      var webContents;
-      webContents = w.webContents;
+      var webContents = w.webContents;
       w.destroy();
       assert.throws((function() {
         webContents.getId();
@@ -102,11 +100,21 @@ describe('browser-window module', function() {
       w.loadURL('about:blank');
     });
 
-    it('should emit did-fail-load event', function(done) {
-      w.webContents.on('did-fail-load', function() {
+    it('should emit did-fail-load event for files that do not exist', function(done) {
+      w.webContents.on('did-fail-load', function(event, code) {
+        assert.equal(code, -6);
         done();
       });
       w.loadURL('file://a.txt');
+    });
+
+    it('should emit did-fail-load event for invalid URL', function(done) {
+      w.webContents.on('did-fail-load', function(event, code, desc) {
+        assert.equal(desc, 'ERR_INVALID_URL');
+        assert.equal(code, -300);
+        done();
+      });
+      w.loadURL('http://example:port');
     });
   });
 
@@ -167,8 +175,7 @@ describe('browser-window module', function() {
     it('sets the window position', function(done) {
       var pos = [10, 10];
       w.once('move', function() {
-        var newPos;
-        newPos = w.getPosition();
+        var newPos = w.getPosition();
         assert.equal(newPos[0], pos[0]);
         assert.equal(newPos[1], pos[1]);
         done();
@@ -179,16 +186,14 @@ describe('browser-window module', function() {
 
   describe('BrowserWindow.setContentSize(width, height)', function() {
     it('sets the content size', function() {
-      var after, size;
-      size = [400, 400];
+      var size = [400, 400];
       w.setContentSize(size[0], size[1]);
-      after = w.getContentSize();
+      var after = w.getContentSize();
       assert.equal(after[0], size[0]);
       assert.equal(after[1], size[1]);
     });
 
     it('works for framless window', function() {
-      var after, size;
       w.destroy();
       w = new BrowserWindow({
         show: false,
@@ -196,9 +201,9 @@ describe('browser-window module', function() {
         width: 400,
         height: 400
       });
-      size = [400, 400];
+      var size = [400, 400];
       w.setContentSize(size[0], size[1]);
-      after = w.getContentSize();
+      var after = w.getContentSize();
       assert.equal(after[0], size[0]);
       assert.equal(after[1], size[1]);
     });
@@ -212,7 +217,6 @@ describe('browser-window module', function() {
 
   describe('"useContentSize" option', function() {
     it('make window created with content size when used', function() {
-      var contentSize;
       w.destroy();
       w = new BrowserWindow({
         show: false,
@@ -220,7 +224,7 @@ describe('browser-window module', function() {
         height: 400,
         useContentSize: true
       });
-      contentSize = w.getContentSize();
+      var contentSize = w.getContentSize();
       assert.equal(contentSize[0], 400);
       assert.equal(contentSize[1], 400);
     });
@@ -232,7 +236,6 @@ describe('browser-window module', function() {
     });
 
     it('works for framless window', function() {
-      var contentSize, size;
       w.destroy();
       w = new BrowserWindow({
         show: false,
@@ -241,10 +244,10 @@ describe('browser-window module', function() {
         height: 400,
         useContentSize: true
       });
-      contentSize = w.getContentSize();
+      var contentSize = w.getContentSize();
       assert.equal(contentSize[0], 400);
       assert.equal(contentSize[1], 400);
-      size = w.getSize();
+      var size = w.getSize();
       assert.equal(size[0], 400);
       assert.equal(size[1], 400);
     });
@@ -259,7 +262,6 @@ describe('browser-window module', function() {
     }
 
     it('creates browser window with hidden title bar', function() {
-      var contentSize;
       w.destroy();
       w = new BrowserWindow({
         show: false,
@@ -267,12 +269,11 @@ describe('browser-window module', function() {
         height: 400,
         titleBarStyle: 'hidden'
       });
-      contentSize = w.getContentSize();
+      var contentSize = w.getContentSize();
       assert.equal(contentSize[1], 400);
     });
 
     it('creates browser window with hidden inset title bar', function() {
-      var contentSize;
       w.destroy();
       w = new BrowserWindow({
         show: false,
@@ -280,7 +281,7 @@ describe('browser-window module', function() {
         height: 400,
         titleBarStyle: 'hidden-inset'
       });
-      contentSize = w.getContentSize();
+      var contentSize = w.getContentSize();
       assert.equal(contentSize[1], 400);
     });
   });
@@ -301,20 +302,18 @@ describe('browser-window module', function() {
     });
 
     it('can move the window out of screen', function() {
-      var after;
       w.setPosition(-10, -10);
-      after = w.getPosition();
+      var after = w.getPosition();
       assert.equal(after[0], -10);
       assert.equal(after[1], -10);
     });
 
     it('can set the window larger than screen', function() {
-      var after, size;
-      size = screen.getPrimaryDisplay().size;
+      var size = screen.getPrimaryDisplay().size;
       size.width += 100;
       size.height += 100;
       w.setSize(size.width, size.height);
-      after = w.getSize();
+      var after = w.getSize();
       assert.equal(after[0], size.width);
       assert.equal(after[1], size.height);
     });
@@ -327,8 +326,7 @@ describe('browser-window module', function() {
 
     describe('"preload" option', function() {
       it('loads the script before other scripts in window', function(done) {
-        var preload;
-        preload = path.join(fixtures, 'module', 'set-global.js');
+        var preload = path.join(fixtures, 'module', 'set-global.js');
         ipcMain.once('answer', function(event, test) {
           assert.equal(test, 'preload');
           done();
@@ -346,8 +344,7 @@ describe('browser-window module', function() {
 
     describe('"node-integration" option', function() {
       it('disables node integration when specified to false', function(done) {
-        var preload;
-        preload = path.join(fixtures, 'module', 'send-later.js');
+        var preload = path.join(fixtures, 'module', 'send-later.js');
         ipcMain.once('answer', function(event, test) {
           assert.equal(test, 'undefined');
           done();
@@ -468,10 +465,18 @@ describe('browser-window module', function() {
     });
   });
 
-  xdescribe('beginFrameSubscription method', function() {
+  describe('beginFrameSubscription method', function() {
+    this.timeout(20000);
+
     it('subscribes frame updates', function(done) {
+      let called = false;
       w.loadURL("file://" + fixtures + "/api/blank.html");
       w.webContents.beginFrameSubscription(function(data) {
+        // This callback might be called twice.
+        if (called)
+          return;
+        called = true;
+
         assert.notEqual(data.length, 0);
         w.webContents.endFrameSubscription();
         done();
@@ -513,10 +518,9 @@ describe('browser-window module', function() {
 
   describe('BrowserWindow options argument is optional', function() {
     it('should create a window with default size (800x600)', function() {
-      var size;
       w.destroy();
       w = new BrowserWindow();
-      size = w.getSize();
+      var size = w.getSize();
       assert.equal(size[0], 800);
       assert.equal(size[1], 600);
     });
@@ -668,6 +672,22 @@ describe('browser-window module', function() {
       assert.throws(function() {
         w.webContents.send(null);
       }, 'Missing required channel argument');
+    });
+  });
+
+  describe('dev tool extensions', function () {
+    it('serializes the registered extensions on quit', function () {
+      var extensionName = 'foo';
+      var extensionPath = path.join(__dirname, 'fixtures', 'devtools-extensions', extensionName);
+      var serializedPath = path.join(app.getPath('userData'), 'DevTools Extensions');
+
+      BrowserWindow.addDevToolsExtension(extensionPath);
+      app.emit('will-quit');
+      assert.deepEqual(JSON.parse(fs.readFileSync(serializedPath)), [extensionPath]);
+
+      BrowserWindow.removeDevToolsExtension(extensionName);
+      app.emit('will-quit');
+      assert.equal(fs.existsSync(serializedPath), false);
     });
   });
 });

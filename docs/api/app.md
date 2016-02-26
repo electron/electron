@@ -156,7 +156,7 @@ certificate you should prevent the default behavior with
 `event.preventDefault()` and call `callback(true)`.
 
 ```javascript
-session.on('certificate-error', function(event, webContents, url, error, certificate, callback) {
+app.on('certificate-error', function(event, webContents, url, error, certificate, callback) {
   if (url == "https://github.com") {
     // Verification logic.
     event.preventDefault();
@@ -246,7 +246,7 @@ returning `false` in the `beforeunload` event handler.
 
 ### `app.hide()` _OS X_
 
-Hides all application windows without minimising them.
+Hides all application windows without minimizing them.
 
 ### `app.show()` _OS X_
 
@@ -398,7 +398,7 @@ quit.
 On OS X the system enforces single instance automatically when users try to open
 a second instance of your app in Finder, and the `open-file` and `open-url`
 events will be emitted for that. However when users start your app in command
-line the system's single instance machanism will be bypassed and you have to
+line the system's single instance mechanism will be bypassed and you have to
 use this method to ensure single instance.
 
 An example of activating the window of primary instance when a second instance
@@ -413,7 +413,6 @@ var shouldQuit = app.makeSingleInstance(function(commandLine, workingDirectory) 
     if (myWindow.isMinimized()) myWindow.restore();
     myWindow.focus();
   }
-  return true;
 });
 
 if (shouldQuit) {
@@ -516,7 +515,7 @@ Shows the dock icon.
 
 ### `app.dock.setMenu(menu)` _OS X_
 
-* `menu` Menu
+* `menu` [Menu](menu.md)
 
 Sets the application's [dock menu][dock-menu].
 

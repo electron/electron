@@ -12,6 +12,27 @@ Node.js の新しいバージョンがリリースされたとき、私たちは
 
 通常、Node.js の新しい機能は V8 のアップグレードによってもたらされますが、Electron は Chrome ブラウザーに搭載されている V8 を使用しているので、新しい Node.js に入ったばかりのピカピカに新しい JavaScript 機能は Electron ではたいてい既に導入されています。
 
+## ウェブページ間のデータを共有する方法は?
+
+ウェブページ（レンダラープロセス）間のデータを共有するために最も単純な方法は、ブラウザで、すでに提供されているHTML5 APIを使用することです。もっとも良い方法は、[Storage API][storage]、[`localStorage`][local-storage]、[`sessionStorage`][session-storage]、[IndexedDB][indexed-db]です。
+
+```javascript
+// In the main process.
+global.sharedObject = {
+  someProperty: 'default value'
+};
+```
+
+```javascript
+// In page 1.
+require('remote').getGlobal('sharedObject').someProperty = 'new value';
+```
+
+```javascript
+// In page 2.
+console.log(require('remote').getGlobal('sharedObject').someProperty);
+```
+
 ## 何分か経つと、アプリの Window/tray が消えてしまいます
 
 これは、Window/trayを格納するのに使用している変数がガベージコレクトされたときに発生します。
@@ -104,3 +125,7 @@ npm uninstall -g electron
 [memory-management]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Memory_Management
 [variable-scope]: https://msdn.microsoft.com/library/bzt2dkta(v=vs.94).aspx
 [electron-module]: https://www.npmjs.com/package/electron
+[storage]: https://developer.mozilla.org/en-US/docs/Web/API/Storage
+[local-storage]: https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage
+[session-storage]: https://developer.mozilla.org/en-US/docs/Web/API/Window/sessionStorage
+[indexed-db]: https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API

@@ -210,6 +210,14 @@ void GlobalMenuBarX11::InitServer(gfx::AcceleratedWidget xid) {
   server_ = server_new(path.c_str());
 }
 
+void GlobalMenuBarX11::OnWindowMapped() {
+  GlobalMenuBarRegistrarX11::GetInstance()->OnWindowMapped(xid_);
+}
+
+void GlobalMenuBarX11::OnWindowUnmapped() {
+  GlobalMenuBarRegistrarX11::GetInstance()->OnWindowUnmapped(xid_);
+}
+
 void GlobalMenuBarX11::BuildMenuFromModel(ui::MenuModel* model,
                                           DbusmenuMenuitem* parent) {
   for (int i = 0; i < model->GetItemCount(); ++i) {

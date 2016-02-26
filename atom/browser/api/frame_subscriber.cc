@@ -6,8 +6,6 @@
 
 #include "base/bind.h"
 #include "atom/common/node_includes.h"
-#include "media/base/video_frame.h"
-#include "media/base/yuv_convert.h"
 #include "ui/gfx/screen.h"
 
 #include "content/public/browser/render_widget_host.h"
@@ -16,75 +14,36 @@ namespace atom {
 
 namespace api {
 
-using Subscriber = FrameSubscriber::Subscriber;
-
 FrameSubscriber::FrameSubscriber(v8::Isolate* isolate,
                                  content::RenderWidgetHostView* view,
                                  const FrameCaptureCallback& callback)
-    : isolate_(isolate), callback_(callback), pending_frames(0), view_(view) {
-  subscriber_ = new Subscriber(this);
+    : isolate_(isolate), view_(view), callback_(callback), weak_factory_(this) {
 }
 
-Subscriber::Subscriber(
-  FrameSubscriber* frame_subscriber) : frame_subscriber_(frame_subscriber) {
-}
-
-Subscriber::~Subscriber() {
-  frame_subscriber_->subscriber_ = NULL;
-  frame_subscriber_->RequestDestruct();
-}
-
-bool Subscriber::ShouldCaptureFrame(
+bool FrameSubscriber::ShouldCaptureFrame(
     const gfx::Rect& damage_rect,
     base::TimeTicks present_time,
     scoped_refptr<media::VideoFrame>* storage,
     DeliverFrameCallback* callback) {
-  const auto view = frame_subscriber_->view_;
-  const auto host = view ? view->GetRenderWidgetHost() : nullptr;
-  if (!view || !host)
+  const auto host = view_ ? view_->GetRenderWidgetHost() : nullptr;
+  if (!view_ || !host)
     return false;
 
-  const gfx::Size view_size = view->GetViewBounds().size();
-
-  gfx::Size bitmap_size = view_size;
-  const gfx::NativeView native_view = view->GetNativeView();
-  gfx::Screen* const screen = gfx::Screen::GetScreenFor(native_view);
-  const float scale =
-      screen->GetDisplayNearestWindow(native_view).device_scale_factor();
-  if (scale > 1.0f)
-    bitmap_size = gfx::ScaleToCeiledSize(view_size, scale);
+  const auto size = view_->GetVisibleViewportSize();
 
   host->CopyFromBackingStore(
-      gfx::Rect(view_size),
-      bitmap_size,
+      gfx::Rect(size),
+      size,
       base::Bind(&FrameSubscriber::OnFrameDelivered,
-                 base::Unretained(frame_subscriber_),
-                 frame_subscriber_->callback_),
+                 weak_factory_.GetWeakPtr(), callback_),
       kBGRA_8888_SkColorType);
 
-  frame_subscriber_->pending_frames++;
   return false;
-}
-
-Subscriber* FrameSubscriber::GetSubscriber() {
-  return subscriber_;
-}
-
-bool FrameSubscriber::RequestDestruct() {
-  bool deletable = (subscriber_ == NULL && pending_frames == 0);
-  // Destruct FrameSubscriber if we're not waiting for frames and the
-  // subscription has ended
-  if (deletable)
-    delete this;
-
-  return deletable;
 }
 
 void FrameSubscriber::OnFrameDelivered(const FrameCaptureCallback& callback,
   const SkBitmap& bitmap, content::ReadbackResponse response) {
-  pending_frames--;
-
-  if (RequestDestruct() || subscriber_ == NULL || bitmap.computeSize64() == 0)
+  if (bitmap.computeSize64() == 0)
     return;
 
   v8::Locker locker(isolate_);

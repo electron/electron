@@ -155,7 +155,7 @@ called.
 * `eventName` String
 * `callback` Function
 
-`callback` will will be called every time the given event occurs on any
+`callback` will be called every time the given event occurs on any
 process.
 
 ### `contentTracing.cancelWatchEvent()`

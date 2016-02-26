@@ -23,7 +23,7 @@ void MediaAccessAllowed(
     bool allowed) {
   brightray::MediaStreamDevicesController controller(request, callback);
   if (allowed)
-    controller.Accept();
+    controller.TakeAction();
   else
     controller.Deny(content::MEDIA_DEVICE_PERMISSION_DENIED);
 }

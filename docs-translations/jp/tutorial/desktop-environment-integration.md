@@ -210,6 +210,23 @@ var window = new BrowserWindow({...});
 window.setProgressBar(0.5);
 ```
 
+## タスクバーでアイコンをオーバーレイする (Windows)
+
+Windowsで、タスクバーボタンはアプリケーションステータスを表示するために小さなオーバーレイを使うことができます。MSDNから引用します。
+
+> アイコン オーバーレイは、状況に応じた状態通知として機能し、通知領域に状態アイコンを個別に表示する必要性をなくして、情報をユーザーに伝えることを目的としています。たとえば、現在、通知領域に表示される Microsoft Office Outlook の新着メールの通知は、タスク バー ボタンのオーバーレイとして表示できるようになります。ここでも、開発サイクルの間に、アプリケーションに最適な方法を決定する必要があります。アイコン オーバーレイは、重要で長期にわたる状態や通知 (ネットワークの状態、メッセンジャーの状態、新着メールなど) を提供することを目的としています。ユーザーに対して、絶えず変化するオーバーレイやアニメーションを表示しないようにしてください。
+
+__タスクバーボタンでのオーバーレイ:__
+
+![Overlay on taskbar button](https://i-msdn.sec.s-msft.com/dynimg/IC420441.png)
+
+ウィンドウでオーバーレイアイコンを設定するために、[BrowserWindow.setOverlayIcon][setoverlayicon] APIを使用できます。
+
+```javascript
+var window = new BrowserWindow({...});
+window.setOverlayIcon('path/to/overlay.png', 'Description for overlay');
+```
+
 ##  Windowのファイル表示 (OS X)
 
 OS Xでは、ウィンドウがrepresented fileを設定でき、タイトルバー上にファイルのアイコンを表示でき、タイトル上でCommand-クリックまたはControl-クリックをすると、パスがポップアップ表示されます。
@@ -228,15 +245,16 @@ window.setRepresentedFilename('/etc/passwd');
 window.setDocumentEdited(true);
 ```
 
-[addrecentdocument]: ../api/app.md#appaddrecentdocumentpath
-[clearrecentdocuments]: ../api/app.md#appclearrecentdocuments
-[setusertaskstasks]: ../api/app.md#appsetusertaskstasks
-[setprogressbar]: ../api/browser-window.md#browserwindowsetprogressbarprogress
-[setrepresentedfilename]: ../api/browser-window.md#browserwindowsetrepresentedfilenamefilename
-[setdocumentedited]: ../api/browser-window.md#browserwindowsetdocumenteditededited
+[addrecentdocument]: ../api/app.md#appaddrecentdocumentpath-os-x-windows
+[clearrecentdocuments]: ../api/app.md#appclearrecentdocuments-os-x-windows
+[setusertaskstasks]: ../api/app.md#appsetusertaskstasks-windows
+[setprogressbar]: ../api/browser-window.md#winsetprogressbarprogress
+[setoverlayicon]: ../api/browser-window.md#winsetoverlayiconoverlay-description-windows-7
+[setrepresentedfilename]: ../api/browser-window.md#winsetrepresentedfilenamefilename-os-x
+[setdocumentedited]: ../api/browser-window.md#winsetdocumenteditededited-os-x
 [app-registration]: http://msdn.microsoft.com/en-us/library/windows/desktop/ee872121(v=vs.85).aspx
 [unity-launcher]: https://help.ubuntu.com/community/UnityLaunchersAndDesktopFiles#Adding_shortcuts_to_a_launcher
-[setthumbarbuttons]: ../api/browser-window.md#browserwindowsetthumbarbuttonsbuttons
+[setthumbarbuttons]: ../api/browser-window.md#winsetthumbarbuttonsbuttons-windows-7
 [tray-balloon]: ../api/tray.md#traydisplayballoonoptions-windows
 [app-user-model-id]: https://msdn.microsoft.com/en-us/library/windows/desktop/dd378459(v=vs.85).aspx
 [notification-spec]: https://developer.gnome.org/notification-spec/

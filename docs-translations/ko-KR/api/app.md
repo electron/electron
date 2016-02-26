@@ -92,7 +92,7 @@ Returns:
 
 이 이벤트를 처리할 땐 반드시 `event.preventDefault()`를 호출해야 합니다.
 
-Windows에선 `process.argv`를 통해 파일 경로를 얻을 수 있습니다.
+Windows에선 `process.argv` (메인 프로세스에서)를 통해 파일 경로를 얻을 수 있습니다.
 
 ### Event: 'open-url' _OS X_
 
@@ -164,7 +164,7 @@ Returns:
 기본 동작을 방지하고 인증을 승인할 수 있습니다.
 
 ```javascript
-session.on('certificate-error', function(event, webContents, url, error, certificate, callback) {
+app.on('certificate-error', function(event, webContents, url, error, certificate, callback) {
   if (url == "https://github.com") {
     // Verification logic.
     event.preventDefault();
@@ -523,7 +523,7 @@ dock 아이콘을 표시합니다.
 
 ### `app.dock.setMenu(menu)` _OS X_
 
-* `menu` Menu
+* `menu` [Menu](menu.md)
 
 어플리케이션의 [dock menu][dock-menu]를 설정합니다.
 

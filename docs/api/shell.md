@@ -26,12 +26,16 @@ Show the given file in a file manager. If possible, select the file.
 
 Open the given file in the desktop's default manner.
 
-### `shell.openExternal(url)`
+### `shell.openExternal(url[, options])`
 
 * `url` String
+* `options` Object (optional) _OS X_
+  * `activate` Boolean - `true` to bring the opened application to the
+    foreground. The default is `true`.
 
 Open the given external protocol URL in the desktop's default manner. (For
-example, mailto: URLs in the user's default mail agent.)
+example, mailto: URLs in the user's default mail agent.) Returns true if an
+application was available to open the URL, false otherwise.
 
 ### `shell.moveItemToTrash(fullPath)`
 

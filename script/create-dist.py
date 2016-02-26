@@ -38,6 +38,7 @@ TARGET_BINARIES = {
     'libGLESv2.dll',
     'msvcp120.dll',
     'msvcr120.dll',
+    'ffmpeg.dll',
     'node.dll',
     'pdf.dll',
     'content_resources_200_percent.pak',
@@ -51,6 +52,7 @@ TARGET_BINARIES = {
     PROJECT_NAME,  # 'electron'
     'content_shell.pak',
     'icudtl.dat',
+    'libffmpeg.so',
     'libnode.so',
     'natives_blob.bin',
     'snapshot_blob.bin',
@@ -97,6 +99,7 @@ def main():
   create_dist_zip()
   create_chrome_binary_zip('chromedriver', get_chromedriver_version())
   create_chrome_binary_zip('mksnapshot', ATOM_SHELL_VERSION)
+  create_ffmpeg_zip()
   create_symbols_zip()
 
 
@@ -201,6 +204,24 @@ def create_chrome_binary_zip(binary, version):
     else:
       files += [binary]
     make_zip(zip_file, files, [])
+
+
+def create_ffmpeg_zip():
+  dist_name = 'ffmpeg-{0}-{1}-{2}.zip'.format(
+      ATOM_SHELL_VERSION, get_platform_key(), get_target_arch())
+  zip_file = os.path.join(SOURCE_ROOT, 'dist', dist_name)
+
+  if PLATFORM == 'darwin':
+    ffmpeg_name = 'libffmpeg.dylib'
+  elif PLATFORM == 'linux':
+    ffmpeg_name = 'libffmpeg.so'
+  elif PLATFORM == 'win32':
+    ffmpeg_name = 'ffmpeg.dll'
+
+  shutil.copy2(os.path.join(CHROMIUM_DIR, '..', 'ffmpeg', ffmpeg_name),
+               DIST_DIR)
+  with scoped_cwd(DIST_DIR):
+    make_zip(zip_file, [ffmpeg_name, 'LICENSE', 'LICENSES.chromium.html'], [])
 
 
 def create_symbols_zip():

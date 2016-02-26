@@ -388,7 +388,7 @@ var registerWebViewElement = function() {
     'downloadURL',
     'inspectServiceWorker',
     'print',
-    'printToPDF'
+    'printToPDF',
   ];
   nonblockMethods = [
     'executeJavaScript',
@@ -429,6 +429,12 @@ var registerWebViewElement = function() {
     m = nonblockMethods[j];
     proto[m] = createNonBlockHandler(m);
   }
+
+  // WebContents associated with this webview.
+  proto.getWebContents = function() {
+    var internal = v8Util.getHiddenValue(this, 'internal');
+    return internal.webContents;
+  };
 
   // Deprecated.
   deprecate.rename(proto, 'getUrl', 'getURL');

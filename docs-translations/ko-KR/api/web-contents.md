@@ -255,8 +255,8 @@ Returns:
 * `result` Object
   * `requestId` Integer
   * `finalUpdate` Boolean - 더 많은 응답이 따르는 경우를 표시합니다.
-  * `matches` Integer (Optional) - 일치하는 개수.
-  * `selectionArea` Object (Optional) - 첫 일치 부위의 좌표.
+  * `matches` Integer (optional) - 일치하는 개수.
+  * `selectionArea` Object (optional) - 첫 일치 부위의 좌표.
 
 [`webContents.findInPage`](web-contents.md#webcontentsfindinpage) 요청의 결과를
 사용할 수 있을 때 발생하는 이벤트입니다.
@@ -307,7 +307,7 @@ Returns:
 ### `webContents.loadURL(url[, options])`
 
 * `url` URL
-* `options` Object (optional), 속성들:
+* `options` Object (optional)
   * `httpReferrer` String - HTTP 레퍼러 url.
   * `userAgent` String - 요청을 시작한 유저 에이전트.
   * `extraHeaders` String - "\n"로 구분된 Extra 헤더들.
@@ -493,7 +493,7 @@ CSS 코드를 현재 웹 페이지에 삽입합니다.
 ### `webContents.findInPage(text[, options])`
 
 * `text` String - 찾을 컨텐츠, 반드시 공백이 아니여야 합니다.
-* `options` Object (Optional)
+* `options` Object (optional)
   * `forward` Boolean - 앞에서부터 검색할지 뒤에서부터 검색할지 여부입니다. 기본값은
     `true`입니다.
   * `findNext` Boolean - 작업을 계속 처리할지 첫 요청만 처리할지 여부입니다. 기본값은
@@ -546,11 +546,10 @@ ServiceWorker가 존재하면 모두 등록을 해제하고 JS Promise가 만족
 
 ### `webContents.print([options])`
 
-`options` Object (optional), properties:
-
-* `silent` Boolean - 사용자에게 프린트 설정을 묻지 않습니다. 기본값을 `false`입니다.
-* `printBackground` Boolean - 웹 페이지의 배경 색과 이미지를 출력합니다. 기본값은
-	`false`입니다.
+`options` Object (optional)
+  * `silent` Boolean - 사용자에게 프린트 설정을 묻지 않습니다. 기본값을 `false`입니다.
+  * `printBackground` Boolean - 웹 페이지의 배경 색과 이미지를 출력합니다. 기본값은
+  	`false`입니다.
 
 윈도우의 웹 페이지를 프린트합니다. `silent`가 `false`로 지정되어있을 땐, Electron이
 시스템의 기본 프린터와 기본 프린터 설정을 가져옵니다.
@@ -565,31 +564,22 @@ print기능을 사용하지 않는 경우 전체 바이너리 크기를 줄이�
 
 ### `webContents.printToPDF(options, callback)`
 
-`options` Object, properties:
-
-* `marginsType` Integer - 사용할 마진의 종류를 지정합니다.
-  * 0 - default
-  * 1 - none
-  * 2 - minimum
-* `pageSize` String - 생성되는 PDF의 페이지 크기를 지정합니다.
-  * `A5`
-  * `A4`
-  * `A3`
-  * `Legal`
-  * `Letter`
-  * `Tabloid`
-* `printBackground` Boolean - CSS 배경을 프린트할지 여부를 정합니다.
-* `printSelectionOnly` Boolean - 선택된 영역만 프린트할지 여부를 정합니다.
-* `landscape` Boolean - landscape을 위해선 `true`를, portrait를 위해선 `false`를
-	사용합니다.
-
-`callback` Function - `function(error, data) {}`
-
-* `error` Error
-* `data` Buffer - PDF 파일 내용.
+* `options` Object
+  * `marginsType` Integer - 사용할 마진의 종류를 지정합니다. 0 부터 2 사이 값을 사용할
+    수 있고 각각 기본 마진, 마진 없음, 최소 마진입니다.
+  * `pageSize` String - 생성되는 PDF의 페이지 크기를 지정합니다. 값은 `A3`, `A4`,
+    `A5`, `Legal`, `Letter` 와 `Tabloid`가 사용될 수 있습니다.
+  * `printBackground` Boolean - CSS 배경을 프린트할지 여부를 정합니다.
+  * `printSelectionOnly` Boolean - 선택된 영역만 프린트할지 여부를 정합니다.
+  * `landscape` Boolean - landscape을 위해선 `true`를, portrait를 위해선 `false`를
+  	사용합니다.
+* `callback` Function - `function(error, data) {}`
 
 Chromium의 미리보기 프린팅 커스텀 설정을 이용하여 윈도우의 웹 페이지를 PDF로
 프린트합니다.
+
+`callback`은 작업이 완료되면 `callback(error, data)` 형식으로 호출됩니다. `data`는
+생성된 PDF 데이터를 담고있는 `Buffer`입니다.
 
 기본으로 비어있는 `options`은 다음과 같이 여겨지게 됩니다:
 
@@ -643,7 +633,7 @@ mainWindow.webContents.on('devtools-opened', function() {
 
 ### `webContents.openDevTools([options])`
 
-* `options` Object (optional). Properties:
+* `options` Object (optional)
   * `detach` Boolean - 새 창에서 개발자 도구를 엽니다.
 
 개발자 도구를 엽니다.
@@ -681,8 +671,11 @@ mainWindow.webContents.on('devtools-opened', function() {
 * `arg` (optional)
 
 `channel`을 통하여 렌더러 프로세스에 비동기 메시지를 보냅니다. 임의의 인수를 보낼수도
-있습니다. 렌더러 프로세스는 `ipcRenderer` 모듈을 통하여 `channel`를 리슨하여 메시지를
-처리할 수 있습니다.
+있습니다. 인수들은 내부적으로 JSON 포맷으로 직렬화 되며, 이후 함수와 프로토타입 체인은
+포함되지 않게 됩니다.
+
+렌더러 프로세스는 `ipcRenderer` 모듈을 통하여 `channel`를 리스닝하여 메시지를 처리할
+수 있습니다.
 
 메인 프로세스에서 렌더러 프로세스로 메시지를 보내는 예시 입니다:
 

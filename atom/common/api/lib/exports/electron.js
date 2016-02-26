@@ -31,6 +31,12 @@ exports.defineProperties = function(exports) {
         return require('../crash-reporter');
       }
     },
+    deprecations: {
+      enumerable: true,
+      get: function() {
+        return require('../deprecations');
+      }
+    },
     nativeImage: {
       enumerable: true,
       get: function() {
