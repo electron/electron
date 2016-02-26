@@ -22,7 +22,6 @@ class V8ValueConverter {
  public:
   V8ValueConverter();
 
-  void SetDateAllowed(bool val);
   void SetRegExpAllowed(bool val);
   void SetFunctionAllowed(bool val);
   void SetStripNullFromObjects(bool val);
@@ -57,9 +56,6 @@ class V8ValueConverter {
   base::Value* FromV8Object(v8::Local<v8::Object> object,
                             FromV8ValueState* state,
                             v8::Isolate* isolate) const;
-
-  // If true, we will convert Date JavaScript objects to doubles.
-  bool date_allowed_;
 
   // If true, we will convert RegExp JavaScript objects to string.
   bool reg_exp_allowed_;
