@@ -425,10 +425,12 @@ Returns a `String` representing the user agent for this web page.
 
 Injects CSS into the current web page.
 
-### `webContents.executeJavaScript(code[, userGesture])`
+### `webContents.executeJavaScript(code[, userGesture, callback])`
 
 * `code` String
 * `userGesture` Boolean (optional)
+* `callback` Function (optional) - Called after script has been executed.
+  * `result`
 
 Evaluates `code` in page.
 

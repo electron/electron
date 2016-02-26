@@ -15,7 +15,7 @@
 #include "native_mate/object_template_builder.h"
 #include "third_party/WebKit/public/web/WebDocument.h"
 #include "third_party/WebKit/public/web/WebLocalFrame.h"
-#include "third_party/WebKit/public/web/WebScopedUserGesture.h"
+#include "third_party/WebKit/public/web/WebScriptExecutionCallback.h"
 #include "third_party/WebKit/public/web/WebScriptSource.h"
 #include "third_party/WebKit/public/web/WebSecurityPolicy.h"
 #include "third_party/WebKit/public/web/WebView.h"
@@ -25,6 +25,34 @@
 namespace atom {
 
 namespace api {
+
+namespace {
+
+class ScriptExecutionCallback : public blink::WebScriptExecutionCallback {
+ public:
+  using CompletionCallback =
+      base::Callback<void(
+          const v8::Local<v8::Value>& result)>;
+
+  explicit ScriptExecutionCallback(const CompletionCallback& callback)
+      : callback_(callback) {}
+  ~ScriptExecutionCallback() {}
+
+  void completed(
+      const blink::WebVector<v8::Local<v8::Value>>& result) override {
+    if (!callback_.is_null() && !result.isEmpty() && !result[0].IsEmpty())
+      // Right now only single results per frame is supported.
+      callback_.Run(result[0]);
+    delete this;
+  }
+
+ private:
+  CompletionCallback callback_;
+
+  DISALLOW_COPY_AND_ASSIGN(ScriptExecutionCallback);
+};
+
+}  // namespace
 
 WebFrame::WebFrame()
     : web_frame_(blink::WebLocalFrame::frameForCurrentContext()) {
@@ -124,9 +152,14 @@ void WebFrame::ExecuteJavaScript(const base::string16& code,
                                  mate::Arguments* args) {
   bool has_user_gesture = false;
   args->GetNext(&has_user_gesture);
-  scoped_ptr<blink::WebScopedUserGesture> gesture(
-      has_user_gesture ? new blink::WebScopedUserGesture : nullptr);
-  web_frame_->executeScriptAndReturnValue(blink::WebScriptSource(code));
+  ScriptExecutionCallback::CompletionCallback completion_callback;
+  args->GetNext(&completion_callback);
+  scoped_ptr<blink::WebScriptExecutionCallback> callback(
+      new ScriptExecutionCallback(completion_callback));
+  web_frame_->requestExecuteScriptAndReturnValue(
+      blink::WebScriptSource(code),
+      has_user_gesture,
+      callback.release());
 }
 
 mate::ObjectTemplateBuilder WebFrame::GetObjectTemplateBuilder(

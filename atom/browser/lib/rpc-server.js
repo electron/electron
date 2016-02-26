@@ -354,11 +354,17 @@ ipcMain.on('ATOM_BROWSER_GUEST_WEB_CONTENTS', function(event, guestInstanceId) {
   }
 });
 
-ipcMain.on('ATOM_BROWSER_ASYNC_CALL_TO_GUEST_VIEW', function(event, guestInstanceId, method, ...args) {
+ipcMain.on('ATOM_BROWSER_ASYNC_CALL_TO_GUEST_VIEW', function(event, requestId, guestInstanceId, method, ...args) {
   try {
     let guestViewManager = require('./guest-view-manager');
     let guest = guestViewManager.getGuest(guestInstanceId);
-    return guest[method].apply(guest, args);
+    if (requestId) {
+      const responseCallback = function(result) {
+        event.sender.send(`ATOM_RENDERER_ASYNC_CALL_TO_GUEST_VIEW_RESPONSE_${requestId}`, result);
+      };
+      args.push(responseCallback);
+    }
+    guest[method].apply(guest, args);
   } catch (error) {
     return event.returnValue = exceptionToMeta(error);
   }
