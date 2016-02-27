@@ -1,10 +1,10 @@
 {
   "name": "electron-prebuilt",
   "version": "0.36.9",
-  "description": "Install electron (formerly called atom-shell) prebuilt binaries for command-line use using npm",
+  "description": "Install electron prebuilt binaries for the command-line use using npm",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mafintosh/electron-prebuilt.git"
+    "url": "git+https://github.com/electron-userland/electron-prebuilt.git"
   },
   "scripts": {
     "cache-clean": "rm -rf ~/.electron && rm -rf dist",
@@ -29,9 +29,9 @@
   "author": "Mathias Buus",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/mafintosh/electron-prebuilt/issues"
+    "url": "https://github.com/electron-userland/electron-prebuilt/issues"
   },
-  "homepage": "https://github.com/mafintosh/electron-prebuilt",
+  "homepage": "https://github.com/electron-userland/electron-prebuilt",
   "directories": {
     "test": "test"
   },
