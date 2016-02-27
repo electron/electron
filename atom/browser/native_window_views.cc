@@ -379,7 +379,7 @@ void NativeWindowViews::SetFullScreen(bool fullscreen) {
   if (IsFullScreenable())
     window_->SetFullscreen(fullscreen);
 #else
-  if (!fullscreen || IsFullScreenable()) {
+  if (!fullscreen || (fullscreen && IsFullScreenable())) {
     if (IsVisible())
       window_->SetFullscreen(fullscreen);
     else
