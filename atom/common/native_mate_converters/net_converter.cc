@@ -27,7 +27,9 @@ v8::Local<v8::Value> Converter<const net::URLRequest*>::ToV8(
     v8::Isolate* isolate, const net::URLRequest* val) {
   scoped_ptr<base::DictionaryValue> dict(new base::DictionaryValue);
   dict->SetString("method", val->method());
-  dict->SetStringWithoutPathExpansion("url", val->url().spec());
+  std::string url;
+  if (!val->url_chain().empty()) url = val->url().spec();
+  dict->SetStringWithoutPathExpansion("url", url);
   dict->SetString("referrer", val->referrer());
   scoped_ptr<base::ListValue> list(new base::ListValue);
   atom::GetUploadData(list.get(), val);

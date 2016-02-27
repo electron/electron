@@ -88,15 +88,27 @@ deprecate.warn = function(oldName, newName) {
   return deprecate.log(oldName + " is deprecated. Use " + newName + " instead.");
 };
 
+var deprecationHandler = null;
+
 // Print deprecation message.
 deprecate.log = function(message) {
-  if (process.throwDeprecation) {
+  if (typeof deprecationHandler === 'function') {
+    deprecationHandler(message);
+  } else if (process.throwDeprecation) {
     throw new Error(message);
   } else if (process.traceDeprecation) {
     return console.trace(message);
   } else {
     return console.warn("(electron) " + message);
   }
+};
+
+deprecate.setHandler = function(handler) {
+  deprecationHandler = handler;
+};
+
+deprecate.getHandler = function() {
+  return deprecationHandler;
 };
 
 module.exports = deprecate;

@@ -11,36 +11,36 @@ const session = remote.session;
 const BrowserWindow = remote.BrowserWindow;
 
 describe('session module', function() {
-  var fixtures, url, w;
   this.timeout(10000);
-  fixtures = path.resolve(__dirname, 'fixtures');
-  w = null;
-  url = "http://127.0.0.1";
+
+  var fixtures = path.resolve(__dirname, 'fixtures');
+  var w = null;
+  var url = "http://127.0.0.1";
+
   beforeEach(function() {
-    return w = new BrowserWindow({
+    w = new BrowserWindow({
       show: false,
       width: 400,
       height: 400
     });
   });
+
   afterEach(function() {
-    return w.destroy();
+    w.destroy();
   });
 
   describe('session.cookies', function() {
     it('should get cookies', function(done) {
-      var server;
-      server = http.createServer(function(req, res) {
+      var server = http.createServer(function(req, res) {
         res.setHeader('Set-Cookie', ['0=0']);
         res.end('finished');
-        return server.close();
+        server.close();
       });
-      return server.listen(0, '127.0.0.1', function() {
-        var port;
-        port = server.address().port;
+      server.listen(0, '127.0.0.1', function() {
+        var port = server.address().port;
         w.loadURL(url + ":" + port);
-        return w.webContents.on('did-finish-load', function() {
-          return w.webContents.session.cookies.get({
+        w.webContents.on('did-finish-load', function() {
+          w.webContents.session.cookies.get({
             url: url
           }, function(error, list) {
             var cookie, i, len;
@@ -57,13 +57,14 @@ describe('session module', function() {
                 }
               }
             }
-            return done('Can not find cookie');
+            done('Can not find cookie');
           });
         });
       });
     });
+
     it('should over-write the existent cookie', function(done) {
-      return session.defaultSession.cookies.set({
+      session.defaultSession.cookies.set({
         url: url,
         name: '1',
         value: '1'
@@ -71,7 +72,7 @@ describe('session module', function() {
         if (error) {
           return done(error);
         }
-        return session.defaultSession.cookies.get({
+        session.defaultSession.cookies.get({
           url: url
         }, function(error, list) {
           var cookie, i, len;
@@ -88,12 +89,13 @@ describe('session module', function() {
               }
             }
           }
-          return done('Can not find cookie');
+          done('Can not find cookie');
         });
       });
     });
+
     it('should remove cookies', function(done) {
-      return session.defaultSession.cookies.set({
+      session.defaultSession.cookies.set({
         url: url,
         name: '2',
         value: '2'
@@ -101,8 +103,8 @@ describe('session module', function() {
         if (error) {
           return done(error);
         }
-        return session.defaultSession.cookies.remove(url, '2', function() {
-          return session.defaultSession.cookies.get({
+        session.defaultSession.cookies.remove(url, '2', function() {
+          session.defaultSession.cookies.get({
             url: url
           }, function(error, list) {
             var cookie, i, len;
@@ -115,7 +117,7 @@ describe('session module', function() {
                 return done('Cookie not deleted');
               }
             }
-            return done();
+            done();
           });
         });
       });
@@ -124,22 +126,21 @@ describe('session module', function() {
 
   describe('session.clearStorageData(options)', function() {
     fixtures = path.resolve(__dirname, 'fixtures');
-    return it('clears localstorage data', function(done) {
+    it('clears localstorage data', function(done) {
       ipcMain.on('count', function(event, count) {
         ipcMain.removeAllListeners('count');
         assert(!count);
-        return done();
+        done();
       });
       w.loadURL('file://' + path.join(fixtures, 'api', 'localstorage.html'));
-      return w.webContents.on('did-finish-load', function() {
-        var options;
-        options = {
+      w.webContents.on('did-finish-load', function() {
+        var options = {
           origin: "file://",
           storages: ['localstorage'],
           quotas: ['persistent']
         };
-        return w.webContents.session.clearStorageData(options, function() {
-          return w.webContents.send('getcount');
+        w.webContents.session.clearStorageData(options, function() {
+          w.webContents.send('getcount');
         });
       });
     });
@@ -155,8 +156,9 @@ describe('session module', function() {
         height: 400
       });
     });
+
     afterEach(function() {
-      return w.destroy();
+      w.destroy();
     });
 
     it('can cancel default download behavior', function(done) {
@@ -188,21 +190,20 @@ describe('session module', function() {
     });
   });
 
-  return describe('DownloadItem', function() {
-    var assertDownload, contentDisposition, downloadFilePath, downloadServer, mockPDF;
-    mockPDF = new Buffer(1024 * 1024 * 5);
-    contentDisposition = 'inline; filename="mock.pdf"';
-    downloadFilePath = path.join(fixtures, 'mock.pdf');
-    downloadServer = http.createServer(function(req, res) {
+  describe('DownloadItem', function() {
+    var mockPDF = new Buffer(1024 * 1024 * 5);
+    var contentDisposition = 'inline; filename="mock.pdf"';
+    var downloadFilePath = path.join(fixtures, 'mock.pdf');
+    var downloadServer = http.createServer(function(req, res) {
       res.writeHead(200, {
         'Content-Length': mockPDF.length,
         'Content-Type': 'application/pdf',
         'Content-Disposition': contentDisposition
       });
       res.end(mockPDF);
-      return downloadServer.close();
+      downloadServer.close();
     });
-    assertDownload = function(event, state, url, mimeType, receivedBytes, totalBytes, disposition, filename, port) {
+    var assertDownload = function(event, state, url, mimeType, receivedBytes, totalBytes, disposition, filename, port) {
       assert.equal(state, 'completed');
       assert.equal(filename, 'mock.pdf');
       assert.equal(url, "http://127.0.0.1:" + port + "/");
@@ -211,52 +212,52 @@ describe('session module', function() {
       assert.equal(totalBytes, mockPDF.length);
       assert.equal(disposition, contentDisposition);
       assert(fs.existsSync(downloadFilePath));
-      return fs.unlinkSync(downloadFilePath);
+      fs.unlinkSync(downloadFilePath);
     };
+
     it('can download using BrowserWindow.loadURL', function(done) {
-      return downloadServer.listen(0, '127.0.0.1', function() {
-        var port;
-        port = downloadServer.address().port;
+      downloadServer.listen(0, '127.0.0.1', function() {
+        var port = downloadServer.address().port;
         ipcRenderer.sendSync('set-download-option', false, false);
         w.loadURL(url + ":" + port);
-        return ipcRenderer.once('download-done', function(event, state, url, mimeType, receivedBytes, totalBytes, disposition, filename) {
+        ipcRenderer.once('download-done', function(event, state, url, mimeType, receivedBytes, totalBytes, disposition, filename) {
           assertDownload(event, state, url, mimeType, receivedBytes, totalBytes, disposition, filename, port);
-          return done();
+          done();
         });
       });
     });
+
     it('can download using WebView.downloadURL', function(done) {
-      return downloadServer.listen(0, '127.0.0.1', function() {
-        var port, webview;
-        port = downloadServer.address().port;
+      downloadServer.listen(0, '127.0.0.1', function() {
+        var port = downloadServer.address().port;
         ipcRenderer.sendSync('set-download-option', false, false);
-        webview = new WebView;
+        var webview = new WebView;
         webview.src = "file://" + fixtures + "/api/blank.html";
         webview.addEventListener('did-finish-load', function() {
-          return webview.downloadURL(url + ":" + port + "/");
+          webview.downloadURL(url + ":" + port + "/");
         });
         ipcRenderer.once('download-done', function(event, state, url, mimeType, receivedBytes, totalBytes, disposition, filename) {
           assertDownload(event, state, url, mimeType, receivedBytes, totalBytes, disposition, filename, port);
           document.body.removeChild(webview);
-          return done();
+          done();
         });
-        return document.body.appendChild(webview);
+        document.body.appendChild(webview);
       });
     });
+
     it('can cancel download', function(done) {
-      return downloadServer.listen(0, '127.0.0.1', function() {
-        var port;
-        port = downloadServer.address().port;
+      downloadServer.listen(0, '127.0.0.1', function() {
+        var port = downloadServer.address().port;
         ipcRenderer.sendSync('set-download-option', true, false);
         w.loadURL(url + ":" + port + "/");
-        return ipcRenderer.once('download-done', function(event, state, url, mimeType, receivedBytes, totalBytes, disposition, filename) {
+        ipcRenderer.once('download-done', function(event, state, url, mimeType, receivedBytes, totalBytes, disposition, filename) {
           assert.equal(state, 'cancelled');
           assert.equal(filename, 'mock.pdf');
           assert.equal(mimeType, 'application/pdf');
           assert.equal(receivedBytes, 0);
           assert.equal(totalBytes, mockPDF.length);
           assert.equal(disposition, contentDisposition);
-          return done();
+          done();
         });
       });
     });

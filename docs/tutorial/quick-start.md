@@ -34,8 +34,8 @@ The main process creates web pages by creating `BrowserWindow` instances. Each
 is also terminated.
 
 The main process manages all web pages and their corresponding renderer
-processes. Each renderer process is isolated and only cares
-about the web page running in it.
+processes. Each renderer process is isolated and only cares about the web page
+running in it.
 
 In web pages, calling native GUI related APIs is not allowed because managing
 native GUI resources in web pages is very dangerous and it is easy to leak
@@ -43,9 +43,11 @@ resources. If you want to perform GUI operations in a web page, the renderer
 process of the web page must communicate with the main process to request that
 the main process perform those operations.
 
-In Electron, we have provided the [ipc](../api/ipc-renderer.md) module for
-communication between the main process and renderer process. There is also a
-[remote](../api/remote.md) module for RPC style communication.
+In Electron, we have several ways to communicate between the main process and
+renderer processes. Like [`ipcRenderer`](../api/ipc-renderer.md) and
+[`ipcMain`](../api/ipc-main.md) modules for sending messages, and the
+[remote](../api/remote.md) module for RPC style communication. There is also
+an FAQ entry on [how to share data between web pages][share-data].
 
 ## Write your First Electron App
 
@@ -205,3 +207,5 @@ $ cd electron-quick-start
 # Install dependencies and run the app
 $ npm install && npm start
 ```
+
+[share-data]: ../faq/electron-faq.md#how-to-share-data-between-web-pages

@@ -41,6 +41,7 @@
       'atom/common/api/lib/clipboard.js',
       'atom/common/api/lib/crash-reporter.js',
       'atom/common/api/lib/deprecate.js',
+      'atom/common/api/lib/deprecations.js',
       'atom/common/api/lib/exports/electron.js',
       'atom/common/api/lib/native-image.js',
       'atom/common/api/lib/shell.js',

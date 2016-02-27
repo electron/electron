@@ -263,6 +263,33 @@ var window = new BrowserWindow({...});
 window.setProgressBar(0.5);
 ```
 
+## 작업 표시줄의 아이콘 오버레이 (Windows)
+
+Windows에선 작업 표시줄 버튼에 어플리케이션의 상태를 표시하는 작은 오버레이를 사용할
+수 있습니다. MSDN에서 인용하자면 (영문):
+
+> Icon overlays serve as a contextual notification of status, and are intended
+> to negate the need for a separate notification area status icon to communicate
+> that information to the user. For instance, the new mail status in Microsoft
+> Outlook, currently shown in the notification area, can now be indicated
+> through an overlay on the taskbar button. Again, you must decide during your
+> development cycle which method is best for your application. Overlay icons are
+> intended to supply important, long-standing status or notifications such as
+> network status, messenger status, or new mail. The user should not be
+> presented with constantly changing overlays or animations.
+
+__작업 표시줄 버튼 위의 오버레이:__
+
+![작업 표시줄 버튼 위의 오버레이](https://i-msdn.sec.s-msft.com/dynimg/IC420441.png)
+
+윈도우에 오버레이 아이콘을 설정하려면 [BrowserWindow.setOverlayIcon][setoverlayicon]
+API를 사용할 수 있습니다:
+
+```javascript
+var window = new BrowserWindow({...});
+window.setOverlayIcon('path/to/overlay.png', 'Description for overlay');
+```
+
 ## 대표 파일 제시 (OS X)
 
 OS X는 창에서 대표 파일을 설정할 수 있습니다. 타이틀바에서 파일 아이콘이 있고, 사용자가
@@ -283,13 +310,16 @@ window.setRepresentedFilename('/etc/passwd');
 window.setDocumentEdited(true);
 ```
 
-[addrecentdocument]: ../api/app.md#appaddrecentdocumentpath
-[clearrecentdocuments]: ../api/app.md#appclearrecentdocuments
-[setusertaskstasks]: ../api/app.md#appsetusertaskstasks
-[setprogressbar]: ../api/browser-window.md#browserwindowsetprogressbarprogress
-[setrepresentedfilename]: ../api/browser-window.md#browserwindowsetrepresentedfilenamefilename
-[setdocumentedited]: ../api/browser-window.md#browserwindowsetdocumenteditededited
+[addrecentdocument]: ../api/app.md#appaddrecentdocumentpath-os-x-windows
+[clearrecentdocuments]: ../api/app.md#appclearrecentdocuments-os-x-windows
+[setusertaskstasks]: ../api/app.md#appsetusertaskstasks-windows
+[setprogressbar]: ../api/browser-window.md#winsetprogressbarprogress
+[setoverlayicon]: ../api/browser-window.md#winsetoverlayiconoverlay-description-windows-7
+[setrepresentedfilename]: ../api/browser-window.md#winsetrepresentedfilenamefilename-os-x
+[setdocumentedited]: ../api/browser-window.md#winsetdocumenteditededited-os-x
 [app-registration]: http://msdn.microsoft.com/en-us/library/windows/desktop/ee872121(v=vs.85).aspx
 [unity-launcher]: https://help.ubuntu.com/community/UnityLaunchersAndDesktopFiles#Adding_shortcuts_to_a_launcher
-[setthumbarbuttons]: ../api/browser-window.md#browserwindowsetthumbarbuttonsbuttons
-[trayballoon]: ../api/tray.md#traydisplayballoonoptions-windows
+[setthumbarbuttons]: ../api/browser-window.md#winsetthumbarbuttonsbuttons-windows-7
+[tray-balloon]: ../api/tray.md#traydisplayballoonoptions-windows
+[app-user-model-id]: https://msdn.microsoft.com/en-us/library/windows/desktop/dd378459(v=vs.85).aspx
+[notification-spec]: https://developer.gnome.org/notification-spec/

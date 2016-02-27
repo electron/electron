@@ -1,9 +1,9 @@
 {
   "name": "electron",
-  "version": "0.36.7",
+  "version": "0.36.9",
   "devDependencies": {
-    "asar": "^0.9.0",
-    "eslint": "^1.10.3",
+    "asar": "^0.10.0",
+    "eslint": "^2.1.0",
     "request": "*"
   },
   "optionalDependencies": {
@@ -11,6 +11,8 @@
   },
   "private": true,
   "scripts": {
+    "bootstrap": "python ./script/bootstrap.py",
+    "build": "python ./script/build.py -c D",
     "lint": "python ./script/eslint.py && python ./script/cpplint.py",
     "preinstall": "node -e 'process.exit(0)'",
     "start": "python ./script/start.py",

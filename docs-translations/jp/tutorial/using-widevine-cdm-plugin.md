@@ -6,6 +6,8 @@ Electronで、Chromeブラウザーに同梱される Widevine CDMプラグイ�
 
 Electronは、ライセンス的な理由でWidevine CDMプラグインは同梱されません。Widevine CDMプラグインを取得するために、最初に、使用するElectronビルドのChromバージョンとアーキテクチャを合わせた公式のChromeブラウザーをインストールする必要があります。
 
+__Note:__ Chromeブラウザの主要バージョンは、Electronが使用するChromeバージョンと同じでなければなりません。そうでなければ、プラグインは、`navigator.plugins`経由でロードされて表示されるにも関わらず動作しません。
+
 ### Windows & OS X
 
 Chromeブラウザーで、`chrome://components/`を開き、 `WidevineCdm` を探し、それが最新であることを確認し、`APP_DATA/Google/Chrome/WidevineCDM/VERSION/_platform_specific/PLATFORM_ARCH/`ディレクトリからすべてのプラグインバイナリを探します。

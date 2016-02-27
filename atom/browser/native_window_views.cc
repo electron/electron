@@ -301,14 +301,29 @@ bool NativeWindowViews::IsFocused() {
 
 void NativeWindowViews::Show() {
   window_->native_widget_private()->ShowWithWindowState(GetRestoredState());
+
+#if defined(USE_X11)
+  if (global_menu_bar_)
+    global_menu_bar_->OnWindowMapped();
+#endif
 }
 
 void NativeWindowViews::ShowInactive() {
   window_->ShowInactive();
+
+#if defined(USE_X11)
+  if (global_menu_bar_)
+    global_menu_bar_->OnWindowMapped();
+#endif
 }
 
 void NativeWindowViews::Hide() {
   window_->Hide();
+
+#if defined(USE_X11)
+  if (global_menu_bar_)
+    global_menu_bar_->OnWindowUnmapped();
+#endif
 }
 
 bool NativeWindowViews::IsVisible() {

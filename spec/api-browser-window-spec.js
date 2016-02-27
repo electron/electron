@@ -8,173 +8,193 @@ const os = require('os');
 const remote = require('electron').remote;
 const screen = require('electron').screen;
 
+const app = remote.require('electron').app;
 const ipcMain = remote.require('electron').ipcMain;
+const ipcRenderer = require('electron').ipcRenderer;
 const BrowserWindow = remote.require('electron').BrowserWindow;
 
 const isCI = remote.getGlobal('isCi');
 
 describe('browser-window module', function() {
-  var fixtures, w;
-  fixtures = path.resolve(__dirname, 'fixtures');
-  w = null;
+  var fixtures = path.resolve(__dirname, 'fixtures');
+  var w = null;
+
   beforeEach(function() {
     if (w != null) {
       w.destroy();
     }
-    return w = new BrowserWindow({
+    w = new BrowserWindow({
       show: false,
       width: 400,
       height: 400
     });
   });
+
   afterEach(function() {
     if (w != null) {
       w.destroy();
     }
-    return w = null;
+    w = null;
   });
+
   describe('BrowserWindow.close()', function() {
     it('should emit unload handler', function(done) {
       w.webContents.on('did-finish-load', function() {
-        return w.close();
+        w.close();
       });
       w.on('closed', function() {
-        var content, test;
-        test = path.join(fixtures, 'api', 'unload');
-        content = fs.readFileSync(test);
+        var test = path.join(fixtures, 'api', 'unload');
+        var content = fs.readFileSync(test);
         fs.unlinkSync(test);
         assert.equal(String(content), 'unload');
-        return done();
+        done();
       });
-      return w.loadURL('file://' + path.join(fixtures, 'api', 'unload.html'));
+      w.loadURL('file://' + path.join(fixtures, 'api', 'unload.html'));
     });
-    return it('should emit beforeunload handler', function(done) {
+
+    it('should emit beforeunload handler', function(done) {
       w.on('onbeforeunload', function() {
-        return done();
+        done();
       });
       w.webContents.on('did-finish-load', function() {
-        return w.close();
+        w.close();
       });
-      return w.loadURL('file://' + path.join(fixtures, 'api', 'beforeunload-false.html'));
+      w.loadURL('file://' + path.join(fixtures, 'api', 'beforeunload-false.html'));
     });
   });
+
   describe('window.close()', function() {
     it('should emit unload handler', function(done) {
       w.on('closed', function() {
-        var content, test;
-        test = path.join(fixtures, 'api', 'close');
-        content = fs.readFileSync(test);
+        var test = path.join(fixtures, 'api', 'close');
+        var content = fs.readFileSync(test);
         fs.unlinkSync(test);
         assert.equal(String(content), 'close');
-        return done();
+        done();
       });
-      return w.loadURL('file://' + path.join(fixtures, 'api', 'close.html'));
+      w.loadURL('file://' + path.join(fixtures, 'api', 'close.html'));
     });
-    return it('should emit beforeunload handler', function(done) {
+
+    it('should emit beforeunload handler', function(done) {
       w.on('onbeforeunload', function() {
-        return done();
+        done();
       });
-      return w.loadURL('file://' + path.join(fixtures, 'api', 'close-beforeunload-false.html'));
+      w.loadURL('file://' + path.join(fixtures, 'api', 'close-beforeunload-false.html'));
     });
   });
+
   describe('BrowserWindow.destroy()', function() {
-    return it('prevents users to access methods of webContents', function() {
-      var webContents;
-      webContents = w.webContents;
+    it('prevents users to access methods of webContents', function() {
+      var webContents = w.webContents;
       w.destroy();
-      return assert.throws((function() {
-        return webContents.getId();
+      assert.throws((function() {
+        webContents.getId();
       }), /Object has been destroyed/);
     });
   });
+
   describe('BrowserWindow.loadURL(url)', function() {
     it('should emit did-start-loading event', function(done) {
       w.webContents.on('did-start-loading', function() {
-        return done();
+        done();
       });
-      return w.loadURL('about:blank');
+      w.loadURL('about:blank');
     });
-    return it('should emit did-fail-load event', function(done) {
-      w.webContents.on('did-fail-load', function() {
-        return done();
+
+    it('should emit did-fail-load event for files that do not exist', function(done) {
+      w.webContents.on('did-fail-load', function(event, code) {
+        assert.equal(code, -6);
+        done();
       });
-      return w.loadURL('file://a.txt');
+      w.loadURL('file://a.txt');
+    });
+
+    it('should emit did-fail-load event for invalid URL', function(done) {
+      w.webContents.on('did-fail-load', function(event, code, desc) {
+        assert.equal(desc, 'ERR_INVALID_URL');
+        assert.equal(code, -300);
+        done();
+      });
+      w.loadURL('http://example:port');
     });
   });
+
   describe('BrowserWindow.show()', function() {
-    return it('should focus on window', function() {
+    it('should focus on window', function() {
       if (isCI) {
         return;
       }
+
       w.show();
-      return assert(w.isFocused());
+      assert(w.isFocused());
     });
   });
+
   describe('BrowserWindow.showInactive()', function() {
-    return it('should not focus on window', function() {
+    it('should not focus on window', function() {
       w.showInactive();
-      return assert(!w.isFocused());
+      assert(!w.isFocused());
     });
   });
+
   describe('BrowserWindow.focus()', function() {
-    return it('does not make the window become visible', function() {
+    it('does not make the window become visible', function() {
       assert.equal(w.isVisible(), false);
       w.focus();
-      return assert.equal(w.isVisible(), false);
+      assert.equal(w.isVisible(), false);
     });
   });
+
   describe('BrowserWindow.capturePage(rect, callback)', function() {
-    return it('calls the callback with a Buffer', function(done) {
-      return w.capturePage({
+    it('calls the callback with a Buffer', function(done) {
+      w.capturePage({
         x: 0,
         y: 0,
         width: 100,
         height: 100
       }, function(image) {
         assert.equal(image.isEmpty(), true);
-        return done();
+        done();
       });
     });
   });
+
   describe('BrowserWindow.setSize(width, height)', function() {
-    return it('sets the window size', function(done) {
-      var size;
-      size = [300, 400];
+    it('sets the window size', function(done) {
+      var size = [300, 400];
       w.once('resize', function() {
-        var newSize;
-        newSize = w.getSize();
+        var newSize = w.getSize();
         assert.equal(newSize[0], size[0]);
         assert.equal(newSize[1], size[1]);
-        return done();
+        done();
       });
-      return w.setSize(size[0], size[1]);
+      w.setSize(size[0], size[1]);
     });
   });
+
   describe('BrowserWindow.setPosition(x, y)', function() {
-    return it('sets the window position', function(done) {
-      var pos;
-      pos = [10, 10];
+    it('sets the window position', function(done) {
+      var pos = [10, 10];
       w.once('move', function() {
-        var newPos;
-        newPos = w.getPosition();
+        var newPos = w.getPosition();
         assert.equal(newPos[0], pos[0]);
         assert.equal(newPos[1], pos[1]);
-        return done();
+        done();
       });
-      return w.setPosition(pos[0], pos[1]);
+      w.setPosition(pos[0], pos[1]);
     });
   });
+
   describe('BrowserWindow.setContentSize(width, height)', function() {
     it('sets the content size', function() {
-      var after, size;
-      size = [400, 400];
+      var size = [400, 400];
       w.setContentSize(size[0], size[1]);
-      after = w.getContentSize();
+      var after = w.getContentSize();
       assert.equal(after[0], size[0]);
-      return assert.equal(after[1], size[1]);
+      assert.equal(after[1], size[1]);
     });
-    return it('works for framless window', function() {
-      var after, size;
+
+    it('works for framless window', function() {
       w.destroy();
       w = new BrowserWindow({
         show: false,
@@ -182,21 +202,22 @@ describe('browser-window module', function() {
         width: 400,
         height: 400
       });
-      size = [400, 400];
+      var size = [400, 400];
       w.setContentSize(size[0], size[1]);
-      after = w.getContentSize();
+      var after = w.getContentSize();
       assert.equal(after[0], size[0]);
-      return assert.equal(after[1], size[1]);
+      assert.equal(after[1], size[1]);
     });
   });
+
   describe('BrowserWindow.fromId(id)', function() {
-    return it('returns the window with id', function() {
-      return assert.equal(w.id, BrowserWindow.fromId(w.id).id);
+    it('returns the window with id', function() {
+      assert.equal(w.id, BrowserWindow.fromId(w.id).id);
     });
   });
+
   describe('"useContentSize" option', function() {
     it('make window created with content size when used', function() {
-      var contentSize;
       w.destroy();
       w = new BrowserWindow({
         show: false,
@@ -204,18 +225,18 @@ describe('browser-window module', function() {
         height: 400,
         useContentSize: true
       });
-      contentSize = w.getContentSize();
+      var contentSize = w.getContentSize();
       assert.equal(contentSize[0], 400);
-      return assert.equal(contentSize[1], 400);
+      assert.equal(contentSize[1], 400);
     });
+
     it('make window created with window size when not used', function() {
-      var size;
-      size = w.getSize();
+      var size = w.getSize();
       assert.equal(size[0], 400);
-      return assert.equal(size[1], 400);
+      assert.equal(size[1], 400);
     });
-    return it('works for framless window', function() {
-      var contentSize, size;
+
+    it('works for framless window', function() {
       w.destroy();
       w = new BrowserWindow({
         show: false,
@@ -224,14 +245,15 @@ describe('browser-window module', function() {
         height: 400,
         useContentSize: true
       });
-      contentSize = w.getContentSize();
+      var contentSize = w.getContentSize();
       assert.equal(contentSize[0], 400);
       assert.equal(contentSize[1], 400);
-      size = w.getSize();
+      var size = w.getSize();
       assert.equal(size[0], 400);
-      return assert.equal(size[1], 400);
+      assert.equal(size[1], 400);
     });
   });
+
   describe('"title-bar-style" option', function() {
     if (process.platform !== 'darwin') {
       return;
@@ -239,8 +261,8 @@ describe('browser-window module', function() {
     if (parseInt(os.release().split('.')[0]) < 14) {
       return;
     }
+
     it('creates browser window with hidden title bar', function() {
-      var contentSize;
       w.destroy();
       w = new BrowserWindow({
         show: false,
@@ -248,11 +270,11 @@ describe('browser-window module', function() {
         height: 400,
         titleBarStyle: 'hidden'
       });
-      contentSize = w.getContentSize();
-      return assert.equal(contentSize[1], 400);
+      var contentSize = w.getContentSize();
+      assert.equal(contentSize[1], 400);
     });
-    return it('creates browser window with hidden inset title bar', function() {
-      var contentSize;
+
+    it('creates browser window with hidden inset title bar', function() {
       w.destroy();
       w = new BrowserWindow({
         show: false,
@@ -260,53 +282,55 @@ describe('browser-window module', function() {
         height: 400,
         titleBarStyle: 'hidden-inset'
       });
-      contentSize = w.getContentSize();
-      return assert.equal(contentSize[1], 400);
+      var contentSize = w.getContentSize();
+      assert.equal(contentSize[1], 400);
     });
   });
+
   describe('"enableLargerThanScreen" option', function() {
     if (process.platform === 'linux') {
       return;
     }
+
     beforeEach(function() {
       w.destroy();
-      return w = new BrowserWindow({
+      w = new BrowserWindow({
         show: true,
         width: 400,
         height: 400,
         enableLargerThanScreen: true
       });
     });
+
     it('can move the window out of screen', function() {
-      var after;
       w.setPosition(-10, -10);
-      after = w.getPosition();
+      var after = w.getPosition();
       assert.equal(after[0], -10);
-      return assert.equal(after[1], -10);
+      assert.equal(after[1], -10);
     });
-    return it('can set the window larger than screen', function() {
-      var after, size;
-      size = screen.getPrimaryDisplay().size;
+
+    it('can set the window larger than screen', function() {
+      var size = screen.getPrimaryDisplay().size;
       size.width += 100;
       size.height += 100;
       w.setSize(size.width, size.height);
-      after = w.getSize();
+      var after = w.getSize();
       assert.equal(after[0], size.width);
-      return assert.equal(after[1], size.height);
+      assert.equal(after[1], size.height);
     });
   });
 
   describe('"web-preferences" option', function() {
     afterEach(function() {
-      return ipcMain.removeAllListeners('answer');
+      ipcMain.removeAllListeners('answer');
     });
+
     describe('"preload" option', function() {
-      return it('loads the script before other scripts in window', function(done) {
-        var preload;
-        preload = path.join(fixtures, 'module', 'set-global.js');
+      it('loads the script before other scripts in window', function(done) {
+        var preload = path.join(fixtures, 'module', 'set-global.js');
         ipcMain.once('answer', function(event, test) {
           assert.equal(test, 'preload');
-          return done();
+          done();
         });
         w.destroy();
         w = new BrowserWindow({
@@ -315,16 +339,16 @@ describe('browser-window module', function() {
             preload: preload
           }
         });
-        return w.loadURL('file://' + path.join(fixtures, 'api', 'preload.html'));
+        w.loadURL('file://' + path.join(fixtures, 'api', 'preload.html'));
       });
     });
-    return describe('"node-integration" option', function() {
-      return it('disables node integration when specified to false', function(done) {
-        var preload;
-        preload = path.join(fixtures, 'module', 'send-later.js');
+
+    describe('"node-integration" option', function() {
+      it('disables node integration when specified to false', function(done) {
+        var preload = path.join(fixtures, 'module', 'send-later.js');
         ipcMain.once('answer', function(event, test) {
           assert.equal(test, 'undefined');
-          return done();
+          done();
         });
         w.destroy();
         w = new BrowserWindow({
@@ -334,107 +358,129 @@ describe('browser-window module', function() {
             nodeIntegration: false
           }
         });
-        return w.loadURL('file://' + path.join(fixtures, 'api', 'blank.html'));
+        w.loadURL('file://' + path.join(fixtures, 'api', 'blank.html'));
       });
     });
   });
+
   describe('beforeunload handler', function() {
     it('returning true would not prevent close', function(done) {
       w.on('closed', function() {
-        return done();
+        done();
       });
-      return w.loadURL('file://' + path.join(fixtures, 'api', 'close-beforeunload-true.html'));
+      w.loadURL('file://' + path.join(fixtures, 'api', 'close-beforeunload-true.html'));
     });
+
     it('returning non-empty string would not prevent close', function(done) {
       w.on('closed', function() {
-        return done();
+        done();
       });
-      return w.loadURL('file://' + path.join(fixtures, 'api', 'close-beforeunload-string.html'));
+      w.loadURL('file://' + path.join(fixtures, 'api', 'close-beforeunload-string.html'));
     });
+
     it('returning false would prevent close', function(done) {
       w.on('onbeforeunload', function() {
-        return done();
+        done();
       });
-      return w.loadURL('file://' + path.join(fixtures, 'api', 'close-beforeunload-false.html'));
+      w.loadURL('file://' + path.join(fixtures, 'api', 'close-beforeunload-false.html'));
     });
-    return it('returning empty string would prevent close', function(done) {
+
+    it('returning empty string would prevent close', function(done) {
       w.on('onbeforeunload', function() {
-        return done();
+        done();
       });
-      return w.loadURL('file://' + path.join(fixtures, 'api', 'close-beforeunload-empty-string.html'));
+      w.loadURL('file://' + path.join(fixtures, 'api', 'close-beforeunload-empty-string.html'));
     });
   });
+
   describe('new-window event', function() {
     if (isCI && process.platform === 'darwin') {
       return;
     }
+
     it('emits when window.open is called', function(done) {
       w.webContents.once('new-window', function(e, url, frameName) {
         e.preventDefault();
         assert.equal(url, 'http://host/');
         assert.equal(frameName, 'host');
-        return done();
+        done();
       });
-      return w.loadURL("file://" + fixtures + "/pages/window-open.html");
+      w.loadURL("file://" + fixtures + "/pages/window-open.html");
     });
-    return it('emits when link with target is called', function(done) {
+
+    it('emits when link with target is called', function(done) {
       this.timeout(10000);
       w.webContents.once('new-window', function(e, url, frameName) {
         e.preventDefault();
         assert.equal(url, 'http://host/');
         assert.equal(frameName, 'target');
-        return done();
+        done();
       });
-      return w.loadURL("file://" + fixtures + "/pages/target-name.html");
+      w.loadURL("file://" + fixtures + "/pages/target-name.html");
     });
   });
+
   describe('maximize event', function() {
     if (isCI) {
       return;
     }
-    return it('emits when window is maximized', function(done) {
+
+    it('emits when window is maximized', function(done) {
       this.timeout(10000);
       w.once('maximize', function() {
-        return done();
+        done();
       });
       w.show();
-      return w.maximize();
+      w.maximize();
     });
   });
+
   describe('unmaximize event', function() {
     if (isCI) {
       return;
     }
-    return it('emits when window is unmaximized', function(done) {
+
+    it('emits when window is unmaximized', function(done) {
       this.timeout(10000);
       w.once('unmaximize', function() {
-        return done();
+        done();
       });
       w.show();
       w.maximize();
-      return w.unmaximize();
+      w.unmaximize();
     });
   });
+
   describe('minimize event', function() {
     if (isCI) {
       return;
     }
-    return it('emits when window is minimized', function(done) {
+
+    it('emits when window is minimized', function(done) {
       this.timeout(10000);
       w.once('minimize', function() {
-        return done();
+        done();
       });
       w.show();
-      return w.minimize();
+      w.minimize();
     });
   });
-  xdescribe('beginFrameSubscription method', function() {
-    return it('subscribes frame updates', function(done) {
+
+  describe('beginFrameSubscription method', function() {
+    this.timeout(20000);
+
+    it('subscribes frame updates', function(done) {
+      let called = false;
       w.loadURL("file://" + fixtures + "/api/blank.html");
-      return w.webContents.beginFrameSubscription(function(data) {
+      w.webContents.beginFrameSubscription(function(data) {
+        // This callback might be called twice.
+        if (called)
+          return;
+        called = true;
+
         assert.notEqual(data.length, 0);
         w.webContents.endFrameSubscription();
-        return done();
+        done();
       });
     });
   });
@@ -472,13 +518,12 @@ describe('browser-window module', function() {
   });
 
   describe('BrowserWindow options argument is optional', function() {
-    return it('should create a window with default size (800x600)', function() {
-      var size;
+    it('should create a window with default size (800x600)', function() {
       w.destroy();
       w = new BrowserWindow();
-      size = w.getSize();
+      var size = w.getSize();
       assert.equal(size[0], 800);
-      return assert.equal(size[1], 600);
+      assert.equal(size[1], 600);
     });
   });
 
@@ -615,6 +660,52 @@ describe('browser-window module', function() {
         assert.equal(w.hasShadow(), false);
         w.setHasShadow(true);
         assert.equal(w.hasShadow(), true);
+      });
+    });
+  });
+
+  describe('window.webContents.send(channel, args...)', function() {
+    it('throws an error when the channel is missing', function() {
+      assert.throws(function() {
+        w.webContents.send();
+      }, 'Missing required channel argument');
+
+      assert.throws(function() {
+        w.webContents.send(null);
+      }, 'Missing required channel argument');
+    });
+  });
+
+  describe('dev tool extensions', function () {
+    it('serializes the registered extensions on quit', function () {
+      var extensionName = 'foo';
+      var extensionPath = path.join(__dirname, 'fixtures', 'devtools-extensions', extensionName);
+      var serializedPath = path.join(app.getPath('userData'), 'DevTools Extensions');
+
+      BrowserWindow.addDevToolsExtension(extensionPath);
+      app.emit('will-quit');
+      assert.deepEqual(JSON.parse(fs.readFileSync(serializedPath)), [extensionPath]);
+
+      BrowserWindow.removeDevToolsExtension(extensionName);
+      app.emit('will-quit');
+      assert.equal(fs.existsSync(serializedPath), false);
+    });
+  });
+
+  describe('window.webContents.executeJavaScript', function() {
+    var expected = 'hello, world!';
+    var code = '(() => \"' + expected + '\")()';
+
+    it('doesnt throw when no calback is provided', function() {
+      const result = ipcRenderer.sendSync('executeJavaScript', code, false);
+      assert.equal(result, 'success');
+    });
+
+    it('returns result when calback is provided', function(done) {
+      ipcRenderer.send('executeJavaScript', code, true);
+      ipcRenderer.once('executeJavaScript-response', function(event, result) {
+        assert.equal(result, expected);
+        done();
       });
     });
   });

@@ -388,10 +388,9 @@ var registerWebViewElement = function() {
     'downloadURL',
     'inspectServiceWorker',
     'print',
-    'printToPDF'
+    'printToPDF',
   ];
   nonblockMethods = [
-    'executeJavaScript',
     'insertCSS',
     'insertText',
     'send',
@@ -404,10 +403,13 @@ var registerWebViewElement = function() {
   // Forward proto.foo* method calls to WebViewImpl.foo*.
   createBlockHandler = function(m) {
     return function() {
-      var args, internal, ref1;
-      args = 1 <= arguments.length ? slice.call(arguments, 0) : [];
-      internal = v8Util.getHiddenValue(this, 'internal');
-      return (ref1 = internal.webContents)[m].apply(ref1, args);
+      var args = 1 <= arguments.length ? slice.call(arguments, 0) : [];
+      var internal = v8Util.getHiddenValue(this, 'internal');
+      if (internal.webContents) {
+        return internal.webContents[m].apply(internal.webContents, args);
+      } else {
+        throw new Error(`Cannot call ${m} because the webContents is unavailable. The WebView must be attached to the DOM and the dom-ready event emitted before this method can be called.`);
+      }
     };
   };
   for (i = 0, len = methods.length; i < len; i++) {
@@ -419,13 +421,33 @@ var registerWebViewElement = function() {
       var args, internal;
       args = 1 <= arguments.length ? slice.call(arguments, 0) : [];
       internal = v8Util.getHiddenValue(this, 'internal');
-      return ipcRenderer.send.apply(ipcRenderer, ['ATOM_BROWSER_ASYNC_CALL_TO_GUEST_VIEW', internal.guestInstanceId, m].concat(slice.call(args)));
+      return ipcRenderer.send.apply(ipcRenderer, ['ATOM_BROWSER_ASYNC_CALL_TO_GUEST_VIEW', null, internal.guestInstanceId, m].concat(slice.call(args)));
     };
   };
   for (j = 0, len1 = nonblockMethods.length; j < len1; j++) {
     m = nonblockMethods[j];
     proto[m] = createNonBlockHandler(m);
   }
+
+  proto.executeJavaScript = function(code, hasUserGesture, callback) {
+    var internal = v8Util.getHiddenValue(this, 'internal');
+    if (typeof hasUserGesture === "function") {
+      callback = hasUserGesture;
+      hasUserGesture = false;
+    }
+    let requestId = getNextId();
+    ipcRenderer.send('ATOM_BROWSER_ASYNC_CALL_TO_GUEST_VIEW', requestId, internal.guestInstanceId, "executeJavaScript", code, hasUserGesture);
+    ipcRenderer.once(`ATOM_RENDERER_ASYNC_CALL_TO_GUEST_VIEW_RESPONSE_${requestId}`, function(event, result) {
+      if (callback)
+        callback(result);
+    });
+  };
+
+  // WebContents associated with this webview.
+  proto.getWebContents = function() {
+    var internal = v8Util.getHiddenValue(this, 'internal');
+    return internal.webContents;
+  };
 
   // Deprecated.
   deprecate.rename(proto, 'getUrl', 'getURL');
