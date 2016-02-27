@@ -664,10 +664,6 @@ Returns whether the devtools view is focused .
 
 Toggles the developer tools.
 
-### `webContents.isDevToolsFocused()`
-
-Returns whether the developer tools is focused.
-
 ### `webContents.inspectElement(x, y)`
 
 * `x` Integer
