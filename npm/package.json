@@ -4,7 +4,7 @@
   "description": "Install electron (formerly called atom-shell) prebuilt binaries for command-line use using npm",
   "repository": {
     "type": "git",
-    "url": "https://github.com/mafintosh/electron-prebuilt"
+    "url": "git+https://github.com/mafintosh/electron-prebuilt.git"
   },
   "scripts": {
     "cache-clean": "rm -rf ~/.electron && rm -rf dist",
@@ -31,5 +31,9 @@
   "bugs": {
     "url": "https://github.com/mafintosh/electron-prebuilt/issues"
   },
-  "homepage": "https://github.com/mafintosh/electron-prebuilt"
+  "homepage": "https://github.com/mafintosh/electron-prebuilt",
+  "directories": {
+    "test": "test"
+  },
+  "keywords": []
 }

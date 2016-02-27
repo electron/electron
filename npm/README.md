@@ -1,6 +1,6 @@
 # electron-prebuilt
 
-[![build status](http://img.shields.io/travis/mafintosh/electron-prebuilt.svg?style=flat)](http://travis-ci.org/mafintosh/electron-prebuilt)
+[![build status](http://img.shields.io/travis/electron-userland/electron-prebuilt.svg?style=flat)](http://travis-ci.org/electron-userland/electron-prebuilt)
 [![dat](http://img.shields.io/badge/Development%20sponsored%20by-dat-green.svg?style=flat)](http://dat-data.com/)
 
 ![badge](https://nodei.co/npm/electron-prebuilt.png?downloads=true)
