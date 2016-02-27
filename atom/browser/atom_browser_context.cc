@@ -38,6 +38,27 @@
 #include "net/url_request/url_request_context.h"
 #include "url/url_constants.h"
 
+#if defined(ENABLE_EXTENSIONS)
+#include "atom/browser/extensions/atom_extension_system_factory.h"
+#include "atom/browser/extensions/atom_extensions_network_delegate.h"
+#include "base/prefs/json_pref_store.h"
+#include "base/prefs/pref_filter.h"
+#include "chrome/browser/chrome_notification_types.h"
+#include "components/keyed_service/content/browser_context_dependency_manager.h"
+#include "components/pref_registry/pref_registry_syncable.h"
+#include "components/syncable_prefs/pref_service_syncable.h"
+#include "components/syncable_prefs/pref_service_syncable_factory.h"
+#include "components/user_prefs/user_prefs.h"
+#include "content/public/browser/notification_service.h"
+#include "content/public/browser/notification_source.h"
+#include "extensions/browser/extension_pref_store.h"
+#include "extensions/browser/extension_pref_value_map_factory.h"
+#include "extensions/browser/extension_prefs.h"
+#include "extensions/browser/extension_protocols.h"
+#include "extensions/browser/extension_system.h"
+#include "extensions/browser/extensions_browser_client.h"
+#endif
+
 using content::BrowserThread;
 
 namespace atom {
@@ -65,13 +86,29 @@ std::string RemoveWhitespace(const std::string& str) {
 AtomBrowserContext::AtomBrowserContext(const std::string& partition,
                                        bool in_memory)
     : brightray::BrowserContext(partition, in_memory),
+#if defined(ENABLE_EXTENSIONS)
+      pref_registry_(new user_prefs::PrefRegistrySyncable),
+#endif
       cert_verifier_(nullptr),
       job_factory_(new AtomURLRequestJobFactory),
+#if defined(ENABLE_EXTENSIONS)
+      network_delegate_(new extensions::AtomExtensionsNetworkDelegate(this)),
+#else
       network_delegate_(new AtomNetworkDelegate),
+#endif
       allow_ntlm_everywhere_(false) {
 }
 
 AtomBrowserContext::~AtomBrowserContext() {
+#if defined(ENABLE_EXTENSIONS)
+  NotifyWillBeDestroyed(this);
+  content::NotificationService::current()->Notify(
+      chrome::NOTIFICATION_PROFILE_DESTROYED,
+      content::Source<AtomBrowserContext>(this),
+      content::NotificationService::NoDetails());
+  BrowserContextDependencyManager::GetInstance()->
+      DestroyBrowserContextServices(this);
+#endif
 }
 
 net::NetworkDelegate* AtomBrowserContext::CreateNetworkDelegate() {
@@ -125,6 +162,15 @@ AtomBrowserContext::CreateURLRequestJobFactory(
   job_factory->SetProtocolHandler(
       url::kWssScheme,
       make_scoped_ptr(new HttpProtocolHandler(url::kWssScheme)));
+#if defined(ENABLE_EXTENSIONS)
+  extensions::InfoMap* extension_info_map =
+      extensions::AtomExtensionSystemFactory::GetInstance()->
+        GetForBrowserContext(this)->info_map();
+  job_factory->SetProtocolHandler(
+      extensions::kExtensionScheme,
+      extensions::CreateExtensionProtocolHandler(IsOffTheRecord(),
+                                                 extension_info_map));
+#endif
 
   auto host_resolver =
       url_request_context_getter()->GetURLRequestContext()->host_resolver();
@@ -195,7 +241,61 @@ void AtomBrowserContext::RegisterPrefs(PrefRegistrySimple* pref_registry) {
   pref_registry->RegisterFilePathPref(prefs::kDownloadDefaultDirectory,
                                       download_dir);
   pref_registry->RegisterDictionaryPref(prefs::kDevToolsFileSystemPaths);
+#if defined(ENABLE_EXTENSIONS)
+  RegisterUserPrefs();
+#endif
 }
+
+#if defined(ENABLE_EXTENSIONS)
+void AtomBrowserContext::RegisterUserPrefs() {
+  auto registry = make_scoped_refptr(new user_prefs::PrefRegistrySyncable);
+  extensions::ExtensionPrefs::RegisterProfilePrefs(registry.get());
+
+  BrowserContextDependencyManager::GetInstance()->
+      RegisterProfilePrefsForServices(this, registry.get());
+
+  base::FilePath filepath = GetPath().AppendASCII("user_prefs.json");
+
+  syncable_prefs::PrefServiceSyncableFactory factory;
+  scoped_refptr<base::SequencedTaskRunner> task_runner =
+      JsonPrefStore::GetTaskRunnerForFile(
+          filepath, BrowserThread::GetBlockingPool());
+  scoped_refptr<JsonPrefStore> pref_store =
+      new JsonPrefStore(filepath, task_runner, scoped_ptr<PrefFilter>());
+
+  factory.set_async(true);
+  factory.set_user_prefs(pref_store);
+
+  if (extensions::ExtensionsBrowserClient::Get()) {
+    scoped_refptr<PrefStore> extension_prefs = new ExtensionPrefStore(
+        ExtensionPrefValueMapFactory::GetForBrowserContext(this),
+        IsOffTheRecord());
+    factory.set_extension_prefs(extension_prefs);
+  }
+
+  user_prefs_ = factory.CreateSyncable(registry.get());
+  user_prefs_->AddPrefInitObserver(base::Bind(
+        &AtomBrowserContext::OnPrefsLoaded, base::Unretained(this)));
+  user_prefs::UserPrefs::Set(this, user_prefs_.get());
+}
+
+void AtomBrowserContext::OnPrefsLoaded(bool success) {
+  if (!success)
+    return;
+
+  if (extensions::ExtensionsBrowserClient::Get()) {
+    extensions::ExtensionSystem::Get(this)->InitForRegularProfile(true);
+  }
+
+  BrowserContextDependencyManager::GetInstance()->
+      CreateBrowserContextServices(this);
+
+  content::NotificationService::current()->Notify(
+      chrome::NOTIFICATION_PROFILE_CREATED,
+      content::Source<AtomBrowserContext>(this),
+      content::NotificationService::NoDetails());
+}
+#endif
 
 bool AtomBrowserContext::AllowNTLMCredentialsForDomain(const GURL& origin) {
   if (allow_ntlm_everywhere_)

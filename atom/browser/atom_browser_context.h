@@ -7,7 +7,16 @@
 
 #include <string>
 
+#include "base/memory/weak_ptr.h"
 #include "brightray/browser/browser_context.h"
+
+namespace syncable_prefs {
+class PrefServiceSyncable;
+}
+
+namespace user_prefs {
+class PrefRegistrySyncable;
+}
 
 namespace atom {
 
@@ -52,6 +61,13 @@ class AtomBrowserContext : public brightray::BrowserContext {
   AtomNetworkDelegate* network_delegate() const { return network_delegate_; }
 
  private:
+#if defined(ENABLE_EXTENSIONS)
+  void RegisterUserPrefs();
+  void OnPrefsLoaded(bool success);
+  scoped_refptr<user_prefs::PrefRegistrySyncable> pref_registry_;
+  scoped_ptr<syncable_prefs::PrefServiceSyncable> user_prefs_;
+#endif
+
   scoped_ptr<AtomDownloadManagerDelegate> download_manager_delegate_;
   scoped_ptr<WebViewManager> guest_manager_;
   scoped_ptr<AtomPermissionManager> permission_manager_;

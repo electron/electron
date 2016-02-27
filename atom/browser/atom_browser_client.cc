@@ -43,6 +43,23 @@
 #include "ui/base/l10n/l10n_util.h"
 #include "v8/include/v8.h"
 
+#if defined(ENABLE_EXTENSIONS)
+#include "atom/browser/extensions/atom_browser_client_extensions_part.h"
+// fix for undefined symbol error from io_thread_extension_message_filter.h
+#include "components/web_modal/web_contents_modal_dialog_manager.h"
+namespace web_modal {
+SingleWebContentsDialogManager*
+WebContentsModalDialogManager::CreateNativeWebModalManager(
+    gfx::NativeWindow dialog,
+    SingleWebContentsDialogManagerDelegate* native_delegate) {
+  // TODO(bridiver): Investigate if we need to implement this.
+  NOTREACHED();
+  return NULL;
+}
+}  // namespace web_modal
+#endif
+
+
 namespace atom {
 
 namespace {
@@ -93,6 +110,9 @@ void AtomBrowserClient::SetCustomServiceWorkerSchemes(
 }
 
 AtomBrowserClient::AtomBrowserClient() : delegate_(nullptr) {
+#if defined(ENABLE_EXTENSIONS)
+  extensions_part_.reset(new extensions::AtomBrowserClientExtensionsPart);
+#endif
 }
 
 AtomBrowserClient::~AtomBrowserClient() {
@@ -102,6 +122,7 @@ bool AtomBrowserClient::CanCreateWindow(const GURL& opener_url,
                                       const GURL& opener_top_level_frame_url,
                                       const GURL& source_origin,
                                       WindowContainerType container_type,
+                                      const std::string& frame_name,
                                       const GURL& target_url,
                                       const content::Referrer& referrer,
                                       WindowOpenDisposition disposition,
@@ -118,6 +139,7 @@ bool AtomBrowserClient::CanCreateWindow(const GURL& opener_url,
                                 opener_top_level_frame_url,
                                 source_origin,
                                 container_type,
+                                frame_name,
                                 target_url,
                                 referrer,
                                 disposition,
@@ -137,10 +159,14 @@ bool AtomBrowserClient::CanCreateWindow(const GURL& opener_url,
 void AtomBrowserClient::RenderProcessWillLaunch(
     content::RenderProcessHost* host) {
   int process_id = host->GetID();
+  auto browser_context = host->GetBrowserContext();
   host->AddFilter(new printing::PrintingMessageFilter(process_id));
-  host->AddFilter(new TtsMessageFilter(process_id, host->GetBrowserContext()));
+  host->AddFilter(new TtsMessageFilter(process_id, browser_context));
   host->AddFilter(
-      new WidevineCdmMessageFilter(process_id, host->GetBrowserContext()));
+      new WidevineCdmMessageFilter(process_id, browser_context));
+#if defined(ENABLE_EXTENSIONS)
+  extensions_part_->RenderProcessWillLaunch(host);
+#endif
 }
 
 content::SpeechRecognitionManagerDelegate*
@@ -174,6 +200,14 @@ void AtomBrowserClient::OverrideWebkitPrefs(
   auto web_contents = content::WebContents::FromRenderViewHost(host);
   WebContentsPreferences::OverrideWebkitPrefs(web_contents, prefs);
 }
+
+void AtomBrowserClient::BrowserURLHandlerCreated(
+    content::BrowserURLHandler* handler) {
+#if defined(ENABLE_EXTENSIONS)
+  extensions_part_->BrowserURLHandlerCreated(handler);
+#endif
+}
+
 
 std::string AtomBrowserClient::GetApplicationLocale() {
   return l10n_util::GetApplicationLocale("");
@@ -242,6 +276,13 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
 
   WebContentsPreferences::AppendExtraCommandLineSwitches(
       web_contents, command_line);
+
+#if defined(ENABLE_EXTENSIONS)
+  content::RenderProcessHost* process =
+      content::RenderProcessHost::FromID(process_id);
+  extensions_part_->AppendExtraRendererCommandLineSwitches(
+        command_line, process, process->GetBrowserContext());
+#endif
 
 #if !defined(OS_LINUX)
   if (WebContentsPreferences::run_node(command_line)) {
@@ -342,5 +383,75 @@ void AtomBrowserClient::RenderProcessHostDestroyed(
     }
   }
 }
+
+void AtomBrowserClient::SiteInstanceGotProcess(
+    content::SiteInstance* site_instance) {
+  CHECK(site_instance->HasProcess());
+
+  auto browser_context = site_instance->GetBrowserContext();
+  if (!browser_context)
+    return;
+
+#if defined(ENABLE_EXTENSIONS)
+  extensions_part_->SiteInstanceGotProcess(site_instance);
+#endif
+}
+
+void AtomBrowserClient::SiteInstanceDeleting(
+    content::SiteInstance* site_instance) {
+  if (!site_instance->HasProcess())
+    return;
+
+#if defined(ENABLE_EXTENSIONS)
+  extensions_part_->SiteInstanceDeleting(site_instance);
+#endif
+}
+
+bool AtomBrowserClient::ShouldUseProcessPerSite(
+    content::BrowserContext* browser_context, const GURL& effective_url) {
+#if defined(ENABLE_EXTENSIONS)
+  return extensions::AtomBrowserClientExtensionsPart::ShouldUseProcessPerSite(
+      browser_context, effective_url);
+#else
+  return false;
+#endif
+}
+
+void AtomBrowserClient::GetAdditionalAllowedSchemesForFileSystem(
+        std::vector<std::string>* additional_allowed_schemes) {
+  #if defined(ENABLE_EXTENSIONS)
+    extensions_part_->
+        GetAdditionalAllowedSchemesForFileSystem(additional_allowed_schemes);
+  #endif
+}
+
+bool AtomBrowserClient::ShouldAllowOpenURL(
+    content::SiteInstance* site_instance, const GURL& url) {
+  GURL from_url = site_instance->GetSiteURL();
+
+#if defined(ENABLE_EXTENSIONS)
+  bool result;
+  if (extensions::AtomBrowserClientExtensionsPart::ShouldAllowOpenURL(
+      site_instance, from_url, url, &result))
+    return result;
+#endif
+
+  return true;
+}
+
+// TODO(bridiver) can OverrideSiteInstanceForNavigation be replaced with this?
+bool AtomBrowserClient::ShouldSwapBrowsingInstancesForNavigation(
+    content::SiteInstance* site_instance,
+    const GURL& current_url,
+    const GURL& new_url) {
+#if defined(ENABLE_EXTENSIONS)
+  return extensions::AtomBrowserClientExtensionsPart::
+      ShouldSwapBrowsingInstancesForNavigation(
+          site_instance, current_url, new_url);
+#else
+  return false;
+#endif
+}
+
 
 }  // namespace atom

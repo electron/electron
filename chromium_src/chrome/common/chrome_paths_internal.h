@@ -107,6 +107,12 @@ bool GetUserDataDirectoryForBrowserBundle(NSBundle* bundle,
 // Checks if the |process_type| has the rights to access the profile.
 bool ProcessNeedsProfileDir(const std::string& process_type);
 
+#if defined(OS_WIN)
+// Populates |crash_dir| with the default crash dump location regardless of
+// whether DIR_USER_DATA or DIR_CRASH_DUMPS has been overridden.
+bool GetDefaultCrashDumpLocation(base::FilePath* crash_dir);
+#endif
+
 }  // namespace chrome
 
 #endif  // CHROME_COMMON_CHROME_PATHS_INTERNAL_H_

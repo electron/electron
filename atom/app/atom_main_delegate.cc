@@ -6,6 +6,7 @@
 
 #include <string>
 #include <iostream>
+#include <vector>
 
 #include "atom/app/atom_content_client.h"
 #include "atom/browser/atom_browser_client.h"
@@ -20,6 +21,7 @@
 #include "content/public/common/content_switches.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/base/resource/resource_bundle.h"
+#include "ui/base/ui_base_switches.h"
 
 namespace atom {
 
@@ -86,9 +88,57 @@ bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
   return brightray::MainDelegate::BasicStartupComplete(exit_code);
 }
 
+void LoadExtensionResources() {
+  // create a shared resource bundle if one does not already exist
+  if (!ui::ResourceBundle::HasSharedInstance()) {
+    std::string locale = base::CommandLine::ForCurrentProcess()->
+                              GetSwitchValueASCII(::switches::kLang);
+    ui::ResourceBundle::InitSharedInstanceWithLocale(
+      locale, nullptr, ui::ResourceBundle::DO_NOT_LOAD_COMMON_RESOURCES);
+  }
+
+  std::vector<base::FilePath> pak_resource_paths;
+#if defined(OS_MACOSX)
+  pak_resource_paths.push_back(
+            GetResourcesPakFilePathByName("extensions_resources"));
+  pak_resource_paths.push_back(
+            GetResourcesPakFilePathByName("extensions_renderer_resources"));
+  pak_resource_paths.push_back(
+            GetResourcesPakFilePathByName("atom_resources"));
+  pak_resource_paths.push_back(
+            GetResourcesPakFilePathByName("extensions_api_resources"));
+#else
+  base::FilePath pak_dir;
+  PathService::Get(base::DIR_MODULE, &pak_dir);
+
+  // Append returns a new FilePath
+  pak_resource_paths.push_back(
+    pak_dir.Append(FILE_PATH_LITERAL("extensions_resources.pak"));
+  pak_resource_paths.push_back(
+    pak_dir.Append(FILE_PATH_LITERAL("extensions_renderer_resources.pak"));
+  pak_resource_paths.push_back(
+    pak_dir.Append(FILE_PATH_LITERAL("atom_resources.pak"));
+  pak_resource_paths.push_back(
+    pak_dir.Append(FILE_PATH_LITERAL("extensions_api_resources.pak"));
+
+#endif
+
+  ui::ResourceBundle& bundle = ui::ResourceBundle::GetSharedInstance();
+
+  for (std::vector<base::FilePath>::const_iterator
+      path = pak_resource_paths.begin();
+      path != pak_resource_paths.end();
+      ++path) {
+    bundle.AddDataPackFromPath(*path, ui::GetSupportedScaleFactors()[0]);
+  }
+}
+
 void AtomMainDelegate::PreSandboxStartup() {
   brightray::MainDelegate::PreSandboxStartup();
 
+#if defined(ENABLE_EXTENSIONS)
+  LoadExtensionResources();
+#endif
   // Set google API key.
   scoped_ptr<base::Environment> env(base::Environment::Create());
   if (!env->HasVar("GOOGLE_API_KEY"))
@@ -102,19 +152,15 @@ void AtomMainDelegate::PreSandboxStartup() {
     AtomContentUtilityClient::PreSandboxStartup();
   }
 
-  if (process_type == ::switches::kRendererProcess) {
-    AtomRendererClient::PreSandboxStartup();
-  }
-
   // Only append arguments for browser process.
   if (!IsBrowserProcess(command_line))
     return;
 
-  #if defined(OS_LINUX)
+#if defined(OS_LINUX)
     // always disable the sandbox on linux for now
     // https://github.com/brave/browser-laptop/issues/715
     command_line->AppendSwitch(::switches::kNoSandbox);
-  #endif
+#endif
 
   // Allow file:// URIs to read other file:// URIs by default.
   command_line->AppendSwitch(::switches::kAllowFileAccessFromFiles);
@@ -135,10 +181,6 @@ void AtomMainDelegate::ZygoteForked() {
 
   if (process_type == ::switches::kUtilityProcess) {
     AtomContentUtilityClient::PreSandboxStartup();
-  }
-
-  if (process_type == ::switches::kRendererProcess) {
-    AtomRendererClient::PreSandboxStartup();
   }
 }
 #endif

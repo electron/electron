@@ -2,6 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+#include "atom/browser/api/atom_api_session.h"
+#include "atom/browser/atom_browser_context.h"
 #include "atom/browser/web_view_guest_delegate.h"
 #include "atom/browser/web_contents_preferences.h"
 #include "atom/browser/api/atom_api_web_contents.h"
@@ -16,7 +18,6 @@
 #include "content/public/browser/render_widget_host.h"
 #include "content/public/browser/render_widget_host_view.h"
 #include "native_mate/dictionary.h"
-
 
 namespace atom {
 
@@ -73,7 +74,10 @@ content::WebContents* WebViewGuestDelegate::CreateNewGuestWindow(
   options.Set(options::kGuestInstanceID, guest_instance_id);
 
   if (params.site_instance) {
-    options.Set("session", api_web_contents_->Session(isolate));
+    auto session = atom::api::Session::CreateFrom(isolate,
+            static_cast<AtomBrowserContext*>(
+                params.site_instance->GetBrowserContext()));
+    options.Set("session", session);
   }
 
   // get the underlying contents::WebContents object
@@ -200,6 +204,14 @@ void WebViewGuestDelegate::WillAttach(
   api_web_contents_->SetOwnerWindow(
                         NativeWindow::FromWebContents(embedder_web_contents_));
   completion_callback.Run();
+}
+
+void WebViewGuestDelegate::RenderFrameHostChanged(
+                                      content::RenderFrameHost* old_host,
+                                      content::RenderFrameHost* new_host) {
+  if (GetOwnerWebContents())
+    api_web_contents_->SetOwnerWindow(
+                        NativeWindow::FromWebContents(GetOwnerWebContents()));
 }
 
 void WebViewGuestDelegate::GuestSizeChangedDueToAutoSize(

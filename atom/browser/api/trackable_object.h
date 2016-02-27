@@ -31,6 +31,9 @@ class TrackableObjectBase : public mate::EventEmitter {
   // Wrap TrackableObject into a class that SupportsUserData.
   void AttachAsUserData(base::SupportsUserData* wrapped);
 
+  // Get the weak_map_id from SupportsUserData.
+  static int32_t GetIDFromWrappedClass(base::SupportsUserData* wrapped);
+
  protected:
   ~TrackableObjectBase() override;
 
@@ -42,9 +45,6 @@ class TrackableObjectBase : public mate::EventEmitter {
 
   // Returns a closure that can destroy the native class.
   base::Closure GetDestroyClosure();
-
-  // Get the weak_map_id from SupportsUserData.
-  static int32_t GetIDFromWrappedClass(base::SupportsUserData* wrapped);
 
   // Register a callback that should be destroyed before JavaScript environment
   // gets destroyed.

@@ -153,11 +153,6 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
   if (web_preferences.GetString(options::kBlinkFeatures, &blink_features))
       command_line->AppendSwitchASCII(::switches::kEnableBlinkFeatures,
                                       blink_features);
-  // The contentScripts
-  base::FilePath::StringType contentScripts;
-  if (web_preferences.GetString(options::kContentScripts, &contentScripts)) {
-    command_line->AppendSwitchNative(switches::kContentScripts, contentScripts);
-  }
 }
 
 // static

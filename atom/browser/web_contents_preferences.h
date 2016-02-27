@@ -13,6 +13,10 @@
 #include "content/public/browser/web_contents_user_data.h"
 #include "content/public/common/content_switches.h"
 
+#if defined(ENABLE_EXTENSIONS)
+#include "extensions/common/switches.h"
+#endif
+
 namespace base {
 class CommandLine;
 }
@@ -38,8 +42,13 @@ class WebContentsPreferences
   static void AppendExtraCommandLineSwitches(
       content::WebContents* web_contents, base::CommandLine* command_line);
 
-  static bool run_node(base::CommandLine* cmd_line) {
+  static bool run_node(const base::CommandLine* cmd_line) {
     // don't run node if
+#if defined(ENABLE_EXTENSIONS)
+    if (cmd_line->
+        HasSwitch(::extensions::switches::kExtensionProcess))
+      return false;
+#endif
     return !(
       // node integration is disabled
       cmd_line->GetSwitchValueASCII(switches::kNodeIntegration) == "false" &&

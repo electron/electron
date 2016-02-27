@@ -16,13 +16,9 @@
 #include "net/http/http_request_headers.h"
 #include "net/http/http_response_headers.h"
 
-namespace extensions {
-class URLPattern;
-}
-
 namespace atom {
 
-using URLPatterns = std::set<extensions::URLPattern>;
+using URLPatterns = std::set<URLPattern>;
 
 class AtomNetworkDelegate : public brightray::NetworkDelegate {
  public:

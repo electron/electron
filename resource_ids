@@ -1,0 +1,6 @@
+{
+  "SRCDIR": ".",
+  "atom/atom_resources.grd": {
+    "includes": [60000],
+  }
+}

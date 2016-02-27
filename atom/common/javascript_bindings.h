@@ -5,22 +5,18 @@
 #ifndef ATOM_COMMON_JAVASCRIPT_BINDINGS_H_
 #define ATOM_COMMON_JAVASCRIPT_BINDINGS_H_
 
-#include "base/files/file_path.h"
+#include "extensions/renderer/object_backed_native_handler.h"
+#include "extensions/renderer/script_context.h"
 #include "v8/include/v8.h"
 
 namespace atom {
 
-class JavascriptBindings {
+class JavascriptBindings : public extensions::ObjectBackedNativeHandler {
  public:
-  JavascriptBindings();
+  explicit JavascriptBindings(extensions::ScriptContext* context);
   virtual ~JavascriptBindings();
 
-  static void PreSandboxStartup();
-
-  void BindTo(v8::Isolate* isolate, v8::Local<v8::Object> process);
-
- private:
-  DISALLOW_COPY_AND_ASSIGN(JavascriptBindings);
+  void GetBinding(const v8::FunctionCallbackInfo<v8::Value>& args);
 };
 
 }  // namespace atom

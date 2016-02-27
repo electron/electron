@@ -5,10 +5,13 @@
 #ifndef ATOM_APP_ATOM_MAIN_DELEGATE_H_
 #define ATOM_APP_ATOM_MAIN_DELEGATE_H_
 
+#include <string>
 #include "brightray/common/main_delegate.h"
 #include "brightray/common/content_client.h"
 
 namespace atom {
+
+base::FilePath GetResourcesPakFilePathByName(const std::string resource_name);
 
 class AtomMainDelegate : public brightray::MainDelegate {
  public:

@@ -9,7 +9,6 @@
 
 // Put this before event_emitter_caller.h to have string16 support.
 #include "atom/common/native_mate_converters/string16_converter.h"
-
 #include "atom/browser/web_contents_preferences.h"
 #include "atom/common/api/api_messages.h"
 #include "atom/common/api/event_emitter_caller.h"
@@ -31,6 +30,7 @@
 #include "third_party/WebKit/public/web/WebView.h"
 #include "ui/base/resource/resource_bundle.h"
 #include "native_mate/dictionary.h"
+
 
 namespace atom {
 
@@ -111,6 +111,10 @@ void AtomRenderViewObserver::DraggableRegionsChanged(blink::WebFrame* frame) {
 }
 
 bool AtomRenderViewObserver::OnMessageReceived(const IPC::Message& message) {
+  // only handle messages for node renderers and non-extension processes
+  if (!WebContentsPreferences::run_node())
+    return false;
+
   bool handled = true;
   IPC_BEGIN_MESSAGE_MAP(AtomRenderViewObserver, message)
     IPC_MESSAGE_HANDLER(AtomViewMsg_Message, OnBrowserMessage)
@@ -145,23 +149,7 @@ void AtomRenderViewObserver::OnBrowserMessage(const base::string16& channel,
     mate::Dictionary event = mate::Dictionary::CreateEmpty(isolate);
     event.Set("sender", ipc);
     args_vector.insert(args_vector.begin(), event.GetHandle());
-    if (WebContentsPreferences::run_node()) {
-      mate::EmitEvent(isolate, ipc, channel, args_vector);
-    } else {
-      // There might be a better way to do this,
-      // I just copied the code from event_emitter_caller.h
-      std::vector<v8::Local<v8::Value>> concatenated_args =
-        { mate::StringToV8(isolate, channel) };
-      concatenated_args.reserve(1 + args_vector.size());
-      concatenated_args.insert(concatenated_args.end(),
-                                args_vector.begin(), args_vector.end());
-
-      v8::Handle<v8::Value> emit = ipc->Get(mate::StringToV8(isolate, "emit"));
-      v8::Handle<v8::Function> fn = v8::Handle<v8::Function>::Cast(emit);
-
-      fn->Call(ipc, concatenated_args.size(),
-                                                  &concatenated_args.front());
-    }
+    mate::EmitEvent(isolate, ipc, channel, args_vector);
   }
 }
 

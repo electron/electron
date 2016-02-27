@@ -7,6 +7,7 @@
 #include "atom/browser/api/trackable_object.h"
 #include "atom/browser/atom_browser_client.h"
 #include "atom/browser/atom_browser_context.h"
+#include "atom/browser/browser_context_keyed_service_factories.h"
 #include "atom/browser/bridge_task_runner.h"
 #include "atom/browser/browser.h"
 #include "atom/browser/javascript_environment.h"
@@ -139,6 +140,8 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
       base::Bind(base::IgnoreResult(&v8::Isolate::IdleNotification),
                  base::Unretained(js_env_->isolate()),
                  1000));
+
+  EnsureBrowserContextKeyedServiceFactoriesBuilt();
 
   brightray::BrowserMainParts::PreMainMessageLoopRun();
   bridge_task_runner_->MessageLoopIsReady();

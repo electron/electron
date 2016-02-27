@@ -35,6 +35,15 @@
 #include "atom/browser/browser.h"
 #endif
 
+#if defined(ENABLE_EXTENSIONS)
+#include "atom/browser/api/atom_api_window.h"
+#include "atom/browser/extensions/tab_helper.h"
+#include "chrome/browser/chrome_notification_types.h"
+#include "content/public/browser/notification_service.h"
+#include "content/public/browser/notification_source.h"
+#include "extensions/browser/api/extensions_api_client.h"
+#endif
+
 using content::BrowserThread;
 
 namespace atom {
@@ -160,6 +169,11 @@ void CommonWebContentsDelegate::InitWithWebContents(
   // Create InspectableWebContents.
   web_contents_.reset(brightray::InspectableWebContents::Create(web_contents));
   web_contents_->SetDelegate(this);
+
+#if defined(ENABLE_EXTENSIONS)
+  extensions::ExtensionsAPIClient::Get()->
+      AttachWebContentsHelpers(web_contents);
+#endif
 }
 
 void CommonWebContentsDelegate::SetOwnerWindow(NativeWindow* owner_window) {
@@ -171,6 +185,22 @@ void CommonWebContentsDelegate::SetOwnerWindow(
   owner_window_ = owner_window->GetWeakPtr();
   NativeWindowRelay* relay = new NativeWindowRelay(owner_window_);
   web_contents->SetUserData(relay->key, relay);
+#if defined(ENABLE_EXTENSIONS)
+  auto tab_helper = extensions::TabHelper::FromWebContents(web_contents);
+  if (!tab_helper)
+    return;
+
+  int32_t id =
+      api::Window::TrackableObject::GetIDFromWrappedClass(owner_window);
+  if (id > 0) {
+    tab_helper->SetWindowId(id);
+
+    content::NotificationService::current()->Notify(
+      chrome::NOTIFICATION_TAB_PARENTED,
+      content::Source<content::WebContents>(web_contents),
+      content::NotificationService::NoDetails());
+  }
+#endif
 }
 
 void CommonWebContentsDelegate::DestroyWebContents() {

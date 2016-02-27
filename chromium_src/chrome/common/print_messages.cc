@@ -57,3 +57,25 @@ void PrintMsg_PrintPages_Params::Reset() {
   params.Reset();
   pages = std::vector<int>();
 }
+
+PrintHostMsg_RequestPrintPreview_Params::
+    PrintHostMsg_RequestPrintPreview_Params()
+    : is_modifiable(false),
+      webnode_only(false),
+      has_selection(false),
+      selection_only(false) {
+}
+
+PrintHostMsg_RequestPrintPreview_Params::
+    ~PrintHostMsg_RequestPrintPreview_Params() {}
+
+PrintHostMsg_SetOptionsFromDocument_Params::
+    PrintHostMsg_SetOptionsFromDocument_Params()
+    : is_scaling_disabled(false),
+      copies(0),
+      duplex(printing::UNKNOWN_DUPLEX_MODE) {
+}
+
+PrintHostMsg_SetOptionsFromDocument_Params::
+    ~PrintHostMsg_SetOptionsFromDocument_Params() {
+}

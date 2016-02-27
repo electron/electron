@@ -72,16 +72,19 @@ class WebViewGuestDelegate : public content::BrowserPluginGuestDelegate,
   void DidCommitProvisionalLoadForFrame(
       content::RenderFrameHost* render_frame_host,
       const GURL& url, ui::PageTransition transition_type) override;
+  void RenderFrameHostChanged(content::RenderFrameHost* old_host,
+                                  content::RenderFrameHost* new_host) override;
 
   // content::BrowserPluginGuestDelegate:
   void DidAttach(int guest_proxy_routing_id) final;
-  content::WebContents* GetOwnerWebContents() const final;
-  void GuestSizeChanged(const gfx::Size& new_size) final;
-  void SetGuestHost(content::GuestHost* guest_host) final;
   void WillAttach(content::WebContents* embedder_web_contents,
                   int element_instance_id,
                   bool is_full_page_plugin,
-                  const base::Closure& completion_callback) final;
+                  const base::Closure& completion_callback) override;
+  content::WebContents* GetOwnerWebContents() const final;
+  void GuestSizeChanged(const gfx::Size& new_size) final;
+  void SetGuestHost(content::GuestHost* guest_host) final;
+
 
  private:
   // This method is invoked when the contents auto-resized to give the container

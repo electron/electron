@@ -9,6 +9,7 @@
   'includes': [
     'filenames.gypi',
     'vendor/native_mate/native_mate_files.gypi',
+    'extensions.gypi',
   ],
   'target_defaults': {
     'defines': [
@@ -38,6 +39,9 @@
         '.',
       ],
       'conditions': [
+        ['enable_extensions==1', {
+          'dependencies': [ 'extensions.gyp:atom_resources' ]
+        }],
         ['OS=="mac"', {
           'product_name': '<(product_name)',
           'mac_bundle': 1,
@@ -272,6 +276,12 @@
         'vendor/brightray/brightray.gyp:brightray',
       ],
       'conditions': [
+        ['enable_extensions==1', {
+          'sources': [ '<@(extension_sources)' ],
+          'link_settings': {
+            'libraries': [ '<@(extension_libraries)' ],
+          },
+        }],
         ['libchromiumcontent_component', {
           'link_settings': {
             'libraries': [ '<@(libchromiumcontent_v8_libraries)' ],
@@ -513,6 +523,9 @@
             },
           ],
           'conditions': [
+            ['enable_extensions==1', {
+              'dependencies': [ 'extensions.gyp:atom_resources' ]
+            }],
             ['mas_build==0', {
               'link_settings': {
                 'libraries': [

@@ -63,6 +63,10 @@
 
 #include "atom/common/node_includes.h"
 
+#if defined(ENABLE_EXTENSIONS)
+#include "atom/browser/extensions/tab_helper.h"
+#endif
+
 namespace {
 
 struct PrintSettings {
@@ -205,9 +209,9 @@ WebContents::WebContents(content::WebContents* web_contents)
 WebContents::WebContents(v8::Isolate* isolate,
                          const mate::Dictionary& options,
                          const content::WebContents::CreateParams* params)
-                          : delayed_load_url_(false),
-                            embedder_(nullptr),
-                            request_id_(0) {
+    : embedder_(nullptr),
+      request_id_(0),
+      delayed_load_url_(false) {
   // Whether it is a guest WebContents.
   bool is_guest = false;
   options.Get("isGuest", &is_guest);
@@ -804,7 +808,11 @@ void WebContents::NavigationEntryCommitted(
 }
 
 int WebContents::GetID() const {
+#if defined(ENABLE_EXTENSIONS)
+  return extensions::TabHelper::IdForTab(web_contents());
+#else
   return web_contents()->GetRenderProcessHost()->GetID();
+#endif
 }
 
 bool WebContents::Equal(const WebContents* web_contents) const {
@@ -1151,6 +1159,16 @@ void WebContents::Focus() {
   web_contents()->Focus();
 }
 
+void WebContents::SetActive(bool active) {
+  if (Emit("set-active", active))
+    return;
+
+  if (active)
+    web_contents()->WasShown();
+  else
+    web_contents()->WasHidden();
+}
+
 void WebContents::TabTraverse(bool reverse) {
   web_contents()->FocusThroughTabTraversal(reverse);
 }
@@ -1338,6 +1356,7 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("addWorkSpace", &WebContents::AddWorkSpace)
       .SetMethod("removeWorkSpace", &WebContents::RemoveWorkSpace)
       .SetMethod("getContentWindowId", &WebContents::GetContentWindowId)
+      .SetMethod("setActive", &WebContents::SetActive)
       .SetProperty("session", &WebContents::Session)
       .SetProperty("hostWebContents", &WebContents::HostWebContents)
       .SetProperty("devToolsWebContents", &WebContents::DevToolsWebContents)

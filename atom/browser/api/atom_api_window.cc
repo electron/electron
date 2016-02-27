@@ -138,8 +138,6 @@ Window::Window(v8::Isolate* isolate, const mate::Dictionary& options) {
     web_preferences.Set(options::kNodeIntegration, value);
   if (options.Get(options::kPreloadScript, &value))
     web_preferences.Set(options::kPreloadScript, value);
-  if (options.Get(options::kContentScripts, &value))
-    web_preferences.Set(options::kContentScripts, value);
   if (options.Get(options::kZoomFactor, &value))
     web_preferences.Set(options::kZoomFactor, value);
 

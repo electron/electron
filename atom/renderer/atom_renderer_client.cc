@@ -26,6 +26,7 @@
 #include "chrome/renderer/printing/print_web_view_helper.h"
 #include "chrome/renderer/tts_dispatcher.h"
 #include "content/public/common/content_constants.h"
+#include "content/public/common/isolated_world_ids.h"
 #include "content/public/common/url_constants.h"
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_frame_observer.h"
@@ -42,6 +43,13 @@
 #include "third_party/WebKit/public/web/WebSecurityPolicy.h"
 #include "third_party/WebKit/public/web/WebRuntimeFeatures.h"
 #include "third_party/WebKit/public/web/WebView.h"
+
+#if defined(ENABLE_EXTENSIONS)
+#include "atom/renderer/extensions/atom_extensions_renderer_client.h"
+#include "atom/common/extensions/atom_extensions_client.h"
+#include "atom/renderer/extensions/atom_extensions_render_view_observer.h"
+#include "extensions/renderer/dispatcher.h"
+#endif
 
 #if defined(OS_WIN)
 #include <shlobj.h>
@@ -67,15 +75,13 @@ class AtomRenderFrameObserver : public content::RenderFrameObserver {
     if (world_id_ != -1 && world_id_ != world_id)
       return;
     world_id_ = world_id;
-    renderer_client_->DidCreateScriptContext(
-        render_frame()->GetWebFrame(), context);
+    renderer_client_->DidCreateScriptContext(context);
   }
   void WillReleaseScriptContext(v8::Local<v8::Context> context,
                                 int world_id) override {
     if (world_id_ != world_id)
       return;
-    renderer_client_->WillReleaseScriptContext(
-        render_frame()->GetWebFrame(), context);
+    renderer_client_->WillReleaseScriptContext(context);
   }
 
  private:
@@ -89,30 +95,36 @@ class AtomRenderFrameObserver : public content::RenderFrameObserver {
 
 AtomRendererClient::AtomRendererClient()
     : node_bindings_(NodeBindings::Create(false)),
-      atom_bindings_(new AtomBindings),
-      javascript_bindings_(new JavascriptBindings) {
+      atom_bindings_(new AtomBindings) {
+#if defined(ENABLE_EXTENSIONS)
+  extensions::ExtensionsClient::Set(
+      extensions::AtomExtensionsClient::GetInstance());
+  extensions::ExtensionsRendererClient::Set(
+      extensions::AtomExtensionsRendererClient::GetInstance());
+#endif
 }
 
 AtomRendererClient::~AtomRendererClient() {
 }
 
-// static
-void AtomRendererClient::PreSandboxStartup() {
-  JavascriptBindings::PreSandboxStartup();
-}
-
 void AtomRendererClient::WebKitInitialized() {
-  blink::WebCustomElement::addEmbedderCustomElementName("webview");
-  blink::WebCustomElement::addEmbedderCustomElementName("browserplugin");
-
   if (!WebContentsPreferences::run_node())
     return;
+
+  blink::WebCustomElement::addEmbedderCustomElementName("webview");
+  blink::WebCustomElement::addEmbedderCustomElementName("browserplugin");
 
   OverrideNodeArrayBuffer();
 }
 
 void AtomRendererClient::RenderThreadStarted() {
-  content::RenderThread::Get()->AddObserver(this);
+  content::RenderThread* thread = content::RenderThread::Get();
+  thread->AddObserver(this);
+
+#if defined(ENABLE_EXTENSIONS)
+  extensions::AtomExtensionsRendererClient::GetInstance()->
+      RenderThreadStarted();
+#endif
 
 #if defined(OS_WIN)
   base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
@@ -126,12 +138,21 @@ void AtomRendererClient::RenderThreadStarted() {
 
 void AtomRendererClient::RenderFrameCreated(
     content::RenderFrame* render_frame) {
+#if defined(ENABLE_EXTENSIONS)
+  extensions::AtomExtensionsRendererClient::GetInstance()->RenderFrameCreated(
+    render_frame);
+#endif
+
   new PepperHelper(render_frame);
 
   // Allow file scheme to handle service worker by default.
   blink::WebSecurityPolicy::registerURLSchemeAsAllowingServiceWorkers("file");
 
-  new AtomRenderFrameObserver(render_frame, this);
+  if (!render_frame->IsMainFrame())
+    return;
+
+  if (WebContentsPreferences::run_node())
+    new AtomRenderFrameObserver(render_frame, this);
 }
 
 void AtomRendererClient::RenderViewCreated(content::RenderView* render_view) {
@@ -140,6 +161,11 @@ void AtomRendererClient::RenderViewCreated(content::RenderView* render_view) {
 
   new printing::PrintWebViewHelper(render_view);
   new AtomRenderViewObserver(render_view, this);
+#if defined(ENABLE_EXTENSIONS)
+  extensions::AtomExtensionsRendererClient::GetInstance()->
+      RenderViewCreated(render_view);
+  new extensions::AtomExtensionsRenderViewObserver(render_view);
+#endif
 }
 
 blink::WebSpeechSynthesizer* AtomRendererClient::OverrideSpeechSynthesizer(
@@ -162,66 +188,50 @@ bool AtomRendererClient::OverrideCreatePlugin(
 }
 
 void AtomRendererClient::DidCreateScriptContext(
-    blink::WebFrame* frame,
     v8::Handle<v8::Context> context) {
-  GURL url(frame->document().url());
-
-  // Only insert node integration for the main frame.
-  if (url == GURL(content::kSwappedOutURL))
-    return;
   // Whether the node binding has been initialized.
   bool first_time = node_bindings_->uv_env() == nullptr;
 
-  if (WebContentsPreferences::run_node()) {
-    // only load node in the main frame
-    if (frame->parent())
-      return;
+  // Prepare the node bindings.
+  if (first_time) {
+    node_bindings_->Initialize();
+    node_bindings_->PrepareMessageLoop();
+  }
 
-    // Prepare the node bindings.
-    if (first_time) {
-      node_bindings_->Initialize();
-      node_bindings_->PrepareMessageLoop();
-    }
+  // Setup node environment for each window.
+  node::Environment* env = node_bindings_->CreateEnvironment(context);
 
-    // Setup node environment for each window.
-    node::Environment* env = node_bindings_->CreateEnvironment(context);
+  // Add atom-shell extended APIs.
+  atom_bindings_->BindTo(env->isolate(), env->process_object());
 
-    // Add atom-shell extended APIs.
-    atom_bindings_->BindTo(env->isolate(), env->process_object());
+  // Load everything.
+  node_bindings_->LoadEnvironment(env);
+
+  if (first_time) {
+    // Make uv loop being wrapped by window context.
+    node_bindings_->set_uv_env(env);
 
     // Load everything.
-    node_bindings_->LoadEnvironment(env);
-
-    if (first_time) {
-      // Make uv loop being wrapped by window context.
-      node_bindings_->set_uv_env(env);
-
-      // Give the node loop a run to make sure everything is ready.
-      node_bindings_->RunMessageLoop();
-    }
-  } else {
-    v8::Isolate* isolate = context->GetIsolate();
-    v8::HandleScope handle_scope(isolate);
-
-    // Create a process object
-    v8::Local<v8::Object> process = v8::Object::New(isolate);
-
-    // attach the atom bindings
-    atom_bindings_->BindTo(isolate, process);
-
-    // attach the native function bindings
-    javascript_bindings_->BindTo(isolate, process);
+    node_bindings_->RunMessageLoop();
   }
 }
 
 void AtomRendererClient::WillReleaseScriptContext(
-    blink::WebFrame* frame,
-    v8::Handle<v8::Context> context) {
+  v8::Handle<v8::Context> context) {
   node::Environment* env = node::Environment::GetCurrent(context);
-  if (env != nullptr && env == node_bindings_->uv_env()) {
-    node_bindings_->set_uv_env(nullptr);
-    mate::EmitEvent(env->isolate(), env->process_object(), "exit");
+  mate::EmitEvent(env->isolate(), env->process_object(), "exit");
+}
+
+bool AtomRendererClient::AllowPopup() {
+  if (WebContentsPreferences::run_node()) {
+    return false;  // TODO(bridiver) - should return setting for allow popups
   }
+
+#if defined(ENABLE_EXTENSIONS)
+  return extensions::AtomExtensionsRendererClient::GetInstance()->AllowPopup();
+#else
+  return false;
+#endif
 }
 
 bool AtomRendererClient::ShouldFork(blink::WebLocalFrame* frame,
@@ -253,5 +263,41 @@ void AtomRendererClient::AddKeySystems(
     std::vector<media::KeySystemInfo>* key_systems) {
   AddChromeKeySystems(key_systems);
 }
+
+bool AtomRendererClient::WillSendRequest(
+    blink::WebFrame* frame,
+    ui::PageTransition transition_type,
+    const GURL& url,
+    const GURL& first_party_for_cookies,
+    GURL* new_url) {
+  // Check whether the request should be allowed. If not allowed, we reset the
+  // URL to something invalid to prevent the request and cause an error.
+#if defined(ENABLE_EXTENSIONS)
+  if (extensions::AtomExtensionsRendererClient::GetInstance()->WillSendRequest(
+          frame, transition_type, url, new_url))
+    return true;
+#endif
+
+  return false;
+}
+
+void AtomRendererClient::DidInitializeServiceWorkerContextOnWorkerThread(
+    v8::Local<v8::Context> context,
+    const GURL& url) {
+#if defined(ENABLE_EXTENSIONS)
+  extensions::Dispatcher::DidInitializeServiceWorkerContextOnWorkerThread(
+      context, url);
+#endif
+}
+
+void AtomRendererClient::WillDestroyServiceWorkerContextOnWorkerThread(
+    v8::Local<v8::Context> context,
+    const GURL& url) {
+#if defined(ENABLE_EXTENSIONS)
+  extensions::Dispatcher::WillDestroyServiceWorkerContextOnWorkerThread(context,
+                                                                        url);
+#endif
+}
+
 
 }  // namespace atom

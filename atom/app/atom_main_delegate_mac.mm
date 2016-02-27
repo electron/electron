@@ -5,9 +5,11 @@
 #include "atom/app/atom_main_delegate.h"
 
 #include "base/mac/bundle_locations.h"
+#include "base/mac/foundation_util.h"
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
 #include "base/path_service.h"
+#include "base/strings/sys_string_conversions.h"
 #include "brightray/common/application_info.h"
 #include "brightray/common/mac/main_application_bundle.h"
 #include "content/public/common/content_paths.h"
@@ -34,6 +36,12 @@ base::FilePath GetHelperAppPath(const base::FilePath& frameworks_path,
 void AtomMainDelegate::OverrideFrameworkBundlePath() {
   base::mac::SetOverrideFrameworkBundlePath(
       GetFrameworksPath().Append(ATOM_PRODUCT_NAME " Framework.framework"));
+}
+
+base::FilePath GetResourcesPakFilePathByName(const std::string resource_name) {
+  NSString *mac_resource_name = base::SysUTF8ToNSString(resource_name);
+  auto path = [base::mac::FrameworkBundle() pathForResource:mac_resource_name ofType:@"pak"];
+  return base::mac::NSStringToFilePath(path);
 }
 
 void AtomMainDelegate::OverrideChildProcessPath() {

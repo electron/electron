@@ -11,7 +11,7 @@
 
 #include "brightray/browser/browser_client.h"
 #include "content/public/browser/render_process_host_observer.h"
-#include "brightray/vendor/download/libchromiumcontent/src/third_party/WebKit/public/web/WebWindowFeatures.h"
+#include "third_party/WebKit/public/web/WebWindowFeatures.h"
 
 namespace content {
 class QuotaPermissionContext;
@@ -21,6 +21,12 @@ class ClientCertificateDelegate;
 namespace net {
 class SSLCertRequestInfo;
 }
+
+#if defined(ENABLE_EXTENSIONS)
+namespace extensions {
+class AtomBrowserClientExtensionsPart;
+}
+#endif
 
 namespace atom {
 
@@ -47,6 +53,7 @@ class AtomBrowserClient : public brightray::BrowserClient,
                                const GURL& opener_top_level_frame_url,
                                const GURL& source_origin,
                                WindowContainerType container_type,
+                               const std::string& frame_name,
                                const GURL& target_url,
                                const content::Referrer& referrer,
                                WindowOpenDisposition disposition,
@@ -93,6 +100,22 @@ class AtomBrowserClient : public brightray::BrowserClient,
       net::SSLCertRequestInfo* cert_request_info,
       scoped_ptr<content::ClientCertificateDelegate> delegate) override;
   void ResourceDispatcherHostCreated() override;
+  bool ShouldUseProcessPerSite(content::BrowserContext* browser_context,
+                                       const GURL& effective_url) override;
+  void GetAdditionalAllowedSchemesForFileSystem(
+      std::vector<std::string>* additional_allowed_schemes) override;
+  bool ShouldAllowOpenURL(content::SiteInstance* site_instance,
+                                      const GURL& url) override;
+  void BrowserURLHandlerCreated(
+      content::BrowserURLHandler* handler) override;
+  void SiteInstanceGotProcess(
+    content::SiteInstance* site_instance) override;
+  void SiteInstanceDeleting(
+    content::SiteInstance* site_instance) override;
+  bool ShouldSwapBrowsingInstancesForNavigation(
+      content::SiteInstance* site_instance,
+      const GURL& current_url,
+      const GURL& new_url) override;
 
   // brightray::BrowserClient:
   brightray::BrowserMainParts* OverrideCreateBrowserMainParts(
@@ -112,6 +135,10 @@ class AtomBrowserClient : public brightray::BrowserClient,
       resource_dispatcher_host_delegate_;
 
   Delegate* delegate_;
+
+#if defined(ENABLE_EXTENSIONS)
+  scoped_ptr<extensions::AtomBrowserClientExtensionsPart> extensions_part_;
+#endif
 
   DISALLOW_COPY_AND_ASSIGN(AtomBrowserClient);
 };

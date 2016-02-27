@@ -145,6 +145,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   // Focus.
   void Focus();
   void TabTraverse(bool reverse);
+  void SetActive(bool active);
 
   // Send messages to browser.
   bool SendIPCMessage(const base::string16& channel,
@@ -333,12 +334,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
   v8::Global<v8::Value> devtools_web_contents_;
   v8::Global<v8::Value> debugger_;
 
-  // When a new tab is created asynchronously, stores the LoadURLParams
-  // needed to continue loading the page once the tab is ready.
-  scoped_ptr<content::NavigationController::LoadURLParams>
-    delayed_load_url_params_;
-  bool delayed_load_url_;
-
   scoped_ptr<WebViewGuestDelegate> guest_delegate_;
 
   // The host webcontents that may contain this webcontents.
@@ -349,6 +344,12 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   // Request id used for findInPage request.
   uint32_t request_id_;
+
+  // When a new tab is created asynchronously, stores the LoadURLParams
+  // needed to continue loading the page once the tab is ready.
+  scoped_ptr<content::NavigationController::LoadURLParams>
+    delayed_load_url_params_;
+  bool delayed_load_url_;
 
   DISALLOW_COPY_AND_ASSIGN(WebContents);
 };
