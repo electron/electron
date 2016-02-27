@@ -497,9 +497,6 @@ bool NativeWindowViews::IsMaximizable() {
 }
 
 void NativeWindowViews::SetFullScreenable(bool fullscreenable) {
-  #if defined(OS_WIN)
-    FlipWindowStyle(GetAcceleratedWidget(), false, WS_MAXIMIZEBOX);
-  #endif
   fullscreenable_ = fullscreenable;
 }
 
