@@ -36,13 +36,13 @@ _リンクになっていないリストは未翻訳のものです。_
 * [サポートしているChromeコマンドラインスイッチ](api/chrome-command-line-switches.md)
 * [環境変数](api/environment-variables.md)
 
-### Custom DOM Elements:
+### カスタムDOM要素:
 
 * [`File` Object](api/file-object.md)
 * `<webview>` Tag
 * [`window.open` 関数](api/window-open.md)
 
-### Modules for the Main Process:
+### Main Processのモジュール:
 
 * [app](api/app.md)
 * [autoUpdater](api/auto-updater.md)
@@ -61,14 +61,14 @@ _リンクになっていないリストは未翻訳のものです。_
 * webContents
 * [Tray](api/tray.md)
 
-### Modules for the Renderer Process (Web Page):
+### Renderer Processのモジュール (Web Page):
 
 * [desktopCapturer](api/desktop-capturer.md)
 * [ipcRenderer](api/ipc-renderer.md)
 * [remote](api/remote.md)
 * [webFrame](api/web-frame.md)
 
-### Modules for Both Processes:
+###  両方のProcessのモジュール :
 
 * [clipboard](api/clipboard.md)
 * [crashReporter](api/crash-reporter.md)
@@ -76,7 +76,7 @@ _リンクになっていないリストは未翻訳のものです。_
 * [screen](api/screen.md)
 * [shell](api/shell.md)
 
-## Development
+## 開発
 
 * Coding Style
 * Source Code Directory Structure
