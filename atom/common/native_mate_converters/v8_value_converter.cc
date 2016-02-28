@@ -76,14 +76,9 @@ class V8ValueConverter::FromV8ValueState {
 };
 
 V8ValueConverter::V8ValueConverter()
-    : date_allowed_(false),
-      reg_exp_allowed_(false),
+    : reg_exp_allowed_(false),
       function_allowed_(false),
       strip_null_from_objects_(false) {}
-
-void V8ValueConverter::SetDateAllowed(bool val) {
-  date_allowed_ = val;
-}
 
 void V8ValueConverter::SetRegExpAllowed(bool val) {
   reg_exp_allowed_ = val;
@@ -243,12 +238,17 @@ base::Value* V8ValueConverter::FromV8ValueImpl(
     return NULL;
 
   if (val->IsDate()) {
-    if (!date_allowed_)
-      // JSON.stringify would convert this to a string, but an object is more
-      // consistent within this class.
-      return FromV8Object(val->ToObject(), state, isolate);
     v8::Date* date = v8::Date::Cast(*val);
-    return new base::FundamentalValue(date->NumberValue() / 1000.0);
+    v8::Local<v8::Value> toISOString =
+        date->Get(v8::String::NewFromUtf8(isolate, "toISOString"));
+    if (toISOString->IsFunction()) {
+      v8::Local<v8::Value> result =
+          toISOString.As<v8::Function>()->Call(val, 0, nullptr);
+      if (!result.IsEmpty()) {
+        v8::String::Utf8Value utf8(result->ToString());
+        return new base::StringValue(std::string(*utf8, utf8.length()));
+      }
+    }
   }
 
   if (val->IsRegExp()) {

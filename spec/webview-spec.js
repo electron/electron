@@ -194,6 +194,7 @@ describe('<webview> tag', function() {
       document.body.appendChild(webview);
     });
   });
+
   describe('partition attribute', function() {
     it('inserts no node symbols when not set', function(done) {
       webview.addEventListener('console-message', function(e) {
@@ -356,6 +357,7 @@ describe('<webview> tag', function() {
       document.body.appendChild(webview);
     });
   });
+
   describe('did-navigate-in-page event', function() {
     it('emits when an anchor link is clicked', function(done) {
       var p = path.join(fixtures, 'pages', 'webview-did-navigate-in-page.html');
@@ -556,13 +558,27 @@ describe('<webview> tag', function() {
         done();
       };
       var listener2 = function() {
-        var jsScript = 'document.getElementsByTagName("video")[0].webkitRequestFullScreen()';
+        var jsScript = "document.querySelector('video').webkitRequestFullscreen()";
         webview.executeJavaScript(jsScript, true);
         webview.removeEventListener('did-finish-load', listener2);
       };
       webview.addEventListener('enter-html-full-screen', listener);
       webview.addEventListener('did-finish-load', listener2);
       webview.src = "file://" + fixtures + "/pages/fullscreen.html";
+      document.body.appendChild(webview);
+    });
+
+    it('can return the result of the executed script', function(done) {
+      var listener = function() {
+        var jsScript = "'4'+2";
+        webview.executeJavaScript(jsScript, false, function(result) {
+          assert.equal(result, '42');
+          done();
+        });
+        webview.removeEventListener('did-finish-load', listener);
+      };
+      webview.addEventListener('did-finish-load', listener);
+      webview.src = "about:blank";
       document.body.appendChild(webview);
     });
   });
@@ -700,6 +716,19 @@ describe('<webview> tag', function() {
       webview.partition = "permissionTest";
       webview.setAttribute('nodeintegration', 'on');
       setUpRequestHandler(webview, "midiSysex");
+      document.body.appendChild(webview);
+    });
+  });
+
+  describe('<webview>.getWebContents', function() {
+    it('can return the webcontents associated', function(done) {
+      webview.addEventListener('did-finish-load', function() {
+        const webviewContents = webview.getWebContents();
+        assert(webviewContents);
+        assert.equal(webviewContents.getURL(), 'about:blank');
+        done();
+      });
+      webview.src = "about:blank";
       document.body.appendChild(webview);
     });
   });

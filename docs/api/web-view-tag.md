@@ -279,10 +279,12 @@ Returns a `String` representing the user agent for guest page.
 
 Injects CSS into the guest page.
 
-### `<webview>.executeJavaScript(code, userGesture)`
+### `<webview>.executeJavaScript(code, userGesture, callback)`
 
 * `code` String
 * `userGesture` Boolean - Default `false`.
+* `callback` Function (optional) - Called after script has been executed.
+  * `result`
 
 Evaluates `code` in page. If `userGesture` is set, it will create the user
 gesture context in the page. HTML APIs like `requestFullScreen`, which require
@@ -437,6 +439,10 @@ Sends an input `event` to the page.
 
 See [webContents.sendInputEvent](web-contents.md##webcontentssendinputeventevent)
 for detailed description of `event` object.
+
+### `<webview>.getWebContents()`
+
+Returns the [WebContents](web-contents.md) associated with this `webview`.
 
 ## DOM events
 

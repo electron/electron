@@ -147,6 +147,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   // Properties.
   v8::Local<v8::Value> Session(v8::Isolate* isolate);
+  content::WebContents* HostWebContents();
   v8::Local<v8::Value> DevToolsWebContents(v8::Isolate* isolate);
   v8::Local<v8::Value> Debugger(v8::Isolate* isolate);
 
@@ -201,6 +202,10 @@ class WebContents : public mate::TrackableObject<WebContents>,
                  const gfx::Rect& selection_rect,
                  int active_match_ordinal,
                  bool final_update) override;
+  bool CheckMediaAccessPermission(
+      content::WebContents* web_contents,
+      const GURL& security_origin,
+      content::MediaStreamType type) override;
   void RequestMediaAccessPermission(
       content::WebContents* web_contents,
       const content::MediaStreamRequest& request,
@@ -286,6 +291,9 @@ class WebContents : public mate::TrackableObject<WebContents>,
   v8::Global<v8::Value> debugger_;
 
   scoped_ptr<WebViewGuestDelegate> guest_delegate_;
+
+  // The host webcontents that may contain this webcontents.
+  WebContents* embedder_;
 
   // The type of current WebContents.
   Type type_;

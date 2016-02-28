@@ -138,4 +138,15 @@ app.on('ready', function() {
     });
     event.returnValue = "done";
   });
+
+  ipcMain.on('executeJavaScript', function(event, code, hasCallback) {
+    if (hasCallback) {
+      window.webContents.executeJavaScript(code, (result) => {
+        window.webContents.send('executeJavaScript-response', result);
+      });
+    } else {
+      window.webContents.executeJavaScript(code);
+      event.returnValue = "success";
+    }
+  });
 });

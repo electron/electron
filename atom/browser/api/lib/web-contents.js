@@ -58,7 +58,6 @@ let PDFPageSize = {
 
 // Following methods are mapped to webFrame.
 const webFrameMethods = [
-  'executeJavaScript',
   'insertText',
   'setZoomFactor',
   'setZoomLevel',
@@ -106,14 +105,26 @@ let wrapWebContents = function(webContents) {
     };
   }
 
+  const asyncWebFrameMethods = function(requestId, method, callback, ...args) {
+    this.send('ELECTRON_INTERNAL_RENDERER_ASYNC_WEB_FRAME_METHOD', requestId, method, args);
+    ipcMain.once(`ELECTRON_INTERNAL_BROWSER_ASYNC_WEB_FRAME_RESPONSE_${requestId}`, function(event, result) {
+      if (callback)
+        callback(result);
+    });
+  };
+
   // Make sure webContents.executeJavaScript would run the code only when the
   // webContents has been loaded.
-  const executeJavaScript = webContents.executeJavaScript;
-  webContents.executeJavaScript = function(code, hasUserGesture) {
+  webContents.executeJavaScript = function(code, hasUserGesture, callback) {
+    let requestId = getNextId();
+    if (typeof hasUserGesture === "function") {
+      callback = hasUserGesture;
+      hasUserGesture = false;
+    }
     if (this.getURL() && !this.isLoading())
-      return executeJavaScript.call(this, code, hasUserGesture);
+      return asyncWebFrameMethods.call(this, requestId, "executeJavaScript", callback, code, hasUserGesture);
     else
-      return this.once('did-finish-load', executeJavaScript.bind(this, code, hasUserGesture));
+      return this.once('did-finish-load', asyncWebFrameMethods.bind(this, requestId, "executeJavaScript", callback, code, hasUserGesture));
   };
 
   // Dispatch IPC messages to the ipc module.

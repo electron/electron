@@ -218,7 +218,8 @@ WebContents::WebContents(content::WebContents* web_contents)
 
 WebContents::WebContents(v8::Isolate* isolate,
                          const mate::Dictionary& options)
-    : request_id_(0) {
+    : embedder_(nullptr),
+      request_id_(0) {
   // Whether it is a guest WebContents.
   bool is_guest = false;
   options.Get("isGuest", &is_guest);
@@ -273,10 +274,10 @@ WebContents::WebContents(v8::Isolate* isolate,
     guest_delegate_->Initialize(this);
 
     NativeWindow* owner_window = nullptr;
-    WebContents* embedder = nullptr;
-    if (options.Get("embedder", &embedder) && embedder) {
+    if (options.Get("embedder", &embedder_) && embedder_) {
       // New WebContents's owner_window is the embedder's owner_window.
-      auto relay = NativeWindowRelay::FromWebContents(embedder->web_contents());
+      auto relay =
+          NativeWindowRelay::FromWebContents(embedder_->web_contents());
       if (relay)
         owner_window = relay->window.get();
     }
@@ -296,6 +297,7 @@ WebContents::~WebContents() {
     // The WebContentsDestroyed will not be called automatically because we
     // unsubscribe from webContents before destroying it. So we have to manually
     // call it here to make sure "destroyed" event is emitted.
+    RenderViewDeleted(web_contents()->GetRenderViewHost());
     WebContentsDestroyed();
   }
 }
@@ -461,6 +463,13 @@ void WebContents::FindReply(content::WebContents* web_contents,
   }
 }
 
+bool WebContents::CheckMediaAccessPermission(
+    content::WebContents* web_contents,
+    const GURL& security_origin,
+    content::MediaStreamType type) {
+  return true;
+}
+
 void WebContents::RequestMediaAccessPermission(
     content::WebContents* web_contents,
     const content::MediaStreamRequest& request,
@@ -485,17 +494,7 @@ void WebContents::BeforeUnloadFired(const base::TimeTicks& proceed_time) {
 }
 
 void WebContents::RenderViewDeleted(content::RenderViewHost* render_view_host) {
-  int process_id = render_view_host->GetProcess()->GetID();
-  Emit("render-view-deleted", process_id);
-
-  // process.emit('ATOM_BROWSER_RELEASE_RENDER_VIEW', processId);
-  // Tell the rpc server that a render view has been deleted and we need to
-  // release all objects owned by it.
-  v8::Locker locker(isolate());
-  v8::HandleScope handle_scope(isolate());
-  node::Environment* env = node::Environment::GetCurrent(isolate());
-  mate::EmitEvent(isolate(), env->process_object(),
-                  "ATOM_BROWSER_RELEASE_RENDER_VIEW", process_id);
+  Emit("render-view-deleted", render_view_host->GetProcess()->GetID());
 }
 
 void WebContents::RenderProcessGone(base::TerminationStatus status) {
@@ -675,9 +674,6 @@ bool WebContents::OnMessageReceived(const IPC::Message& message) {
 // be destroyed on close, and WebContentsDestroyed would be called for it, so
 // we need to make sure the api::WebContents is also deleted.
 void WebContents::WebContentsDestroyed() {
-  // The RenderViewDeleted was not called when the WebContents is destroyed.
-  RenderViewDeleted(web_contents()->GetRenderViewHost());
-
   // This event is only for internal use, which is emitted when WebContents is
   // being destroyed.
   Emit("will-destroy");
@@ -1073,7 +1069,7 @@ void WebContents::BeginFrameSubscription(
   const auto view = web_contents()->GetRenderWidgetHostView();
   if (view) {
     scoped_ptr<FrameSubscriber> frame_subscriber(new FrameSubscriber(
-        isolate(), view->GetVisibleViewportSize(), callback));
+        isolate(), view, callback));
     view->BeginFrameSubscription(frame_subscriber.Pass());
   }
 }
@@ -1126,6 +1122,12 @@ v8::Local<v8::Value> WebContents::GetOwnerBrowserWindow() {
 
 v8::Local<v8::Value> WebContents::Session(v8::Isolate* isolate) {
   return v8::Local<v8::Value>::New(isolate, session_);
+}
+
+content::WebContents* WebContents::HostWebContents() {
+  if (!embedder_)
+    return nullptr;
+  return embedder_->web_contents();
 }
 
 v8::Local<v8::Value> WebContents::DevToolsWebContents(v8::Isolate* isolate) {
@@ -1211,6 +1213,7 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("addWorkSpace", &WebContents::AddWorkSpace)
       .SetMethod("removeWorkSpace", &WebContents::RemoveWorkSpace)
       .SetProperty("session", &WebContents::Session)
+      .SetProperty("hostWebContents", &WebContents::HostWebContents)
       .SetProperty("devToolsWebContents", &WebContents::DevToolsWebContents)
       .SetProperty("debugger", &WebContents::Debugger);
 }

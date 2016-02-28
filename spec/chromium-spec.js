@@ -87,6 +87,20 @@ describe('chromium feature', function() {
     });
   });
 
+  describe('navigator.mediaDevices', function() {
+    if (process.env.TRAVIS === 'true') {
+      return;
+    }
+
+    it('can return labels of enumerated devices', function(done) {
+      navigator.mediaDevices.enumerateDevices().then((devices) => {
+        const result = devices.some((device) => !!device.label);
+        if (result)
+          done();
+      });
+    });
+  });
+
   describe('navigator.language', function() {
     it('should not be empty', function() {
       assert.notEqual(navigator.language, '');
