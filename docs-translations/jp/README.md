@@ -33,21 +33,21 @@ _リンクになっていないリストは未翻訳のものです。_
 
 * [概要](api/synopsis.md)
 * [Process Object](api/process.md)
-* [Supported Chrome Command Line Switches](api/chrome-command-line-switches.md)
-* [Environment Variables](api/environment-variables.md)
+* [サポートしているChromeコマンドラインスイッチ](api/chrome-command-line-switches.md)
+* [環境変数](api/environment-variables.md)
 
 ### Custom DOM Elements:
 
 * [`File` Object](api/file-object.md)
 * `<webview>` Tag
-* [`window.open` Function](api/window-open.md)
+* [`window.open` 関数](api/window-open.md)
 
 ### Modules for the Main Process:
 
 * [app](api/app.md)
 * [autoUpdater](api/auto-updater.md)
 * BrowserWindow
-    * [frameless-window](frameless-window.md)
+    * [フレームの無いウィンドウ](api/frameless-window.md)
 * [contentTracing](api/content-tracing.md)
 * [dialog](api/dialog.md)
 * [globalShortcut](api/global-shortcut.md)
@@ -78,11 +78,11 @@ _リンクになっていないリストは未翻訳のものです。_
 
 ## Development
 
-* [Coding Style](development/coding-style.md)
-* [Source Code Directory Structure](development/source-code-directory-structure.md)
-* [Technical Differences to NW.js (formerly node-webkit)](development/atom-shell-vs-node-webkit.md)
-* [Build System Overview](development/build-system-overview.md)
-* [Build Instructions (OS X)](development/build-instructions-osx.md)
-* [Build Instructions (Windows)](development/build-instructions-windows.md)
-* [Build Instructions (Linux)](development/build-instructions-linux.md)
-* [Setting Up Symbol Server in debugger](development/setting-up-symbol-server.md)
+* Coding Style
+* Source Code Directory Structure
+* Technical Differences to NW.js (formerly node-webkit)
+* Build System Overview
+* Build Instructions (OS X)
+* Build Instructions (Windows)
+* Build Instructions (Linux)
+* Setting Up Symbol Server in debugger
