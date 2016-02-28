@@ -30,6 +30,7 @@ Electron에 대해 자주 묻는 질문이 있습니다. 이슈를 생성하기 
 * [개발자 도구 확장 기능](tutorial/devtools-extension.md)
 * [Pepper 플래시 플러그인 사용하기](tutorial/using-pepper-flash-plugin.md)
 * [Widevine CDM 플러그인 사용하기](tutorial/using-widevine-cdm-plugin.md)
+* [Headless CI 시스템에서 테스팅하기 (Travis, Jenkins)](tutorial/testing-on-headless-ci.md)
 
 ## 튜토리얼
 

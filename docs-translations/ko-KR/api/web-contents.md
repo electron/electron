@@ -421,10 +421,12 @@ var currentURL = win.webContents.getURL();
 
 CSS 코드를 현재 웹 페이지에 삽입합니다.
 
-### `webContents.executeJavaScript(code[, userGesture])`
+### `webContents.executeJavaScript(code[, userGesture, callback])`
 
 * `code` String
 * `userGesture` Boolean (optional)
+* `callback` Function (optional) - 스크립트의 실행이 완료되면 호출됩니다.
+  * `result`
 
 페이지에서 자바스크립트 코드를 실행합니다.
 
@@ -646,13 +648,13 @@ mainWindow.webContents.on('devtools-opened', function() {
 
 개발자 도구가 열려있는지 여부를 반환합니다.
 
-### `webContents.toggleDevTools()`
-
-개발자 도구를 토글합니다.
-
 ### `webContents.isDevToolsFocused()`
 
 개발자 도구에 포커스 되어있는지 여부를 반환합니다.
+
+### `webContents.toggleDevTools()`
+
+개발자 도구를 토글합니다.
 
 ### `webContents.inspectElement(x, y)`
 
@@ -758,9 +760,10 @@ Input `event`를 웹 페이지로 전송합니다.
 
 * `keyCode` Char or String (**required**) - 키보드 이벤트로 보내지는 문자. 단일
   UTF-8 문자를 사용할 수 있고 이벤트를 발생시키는 다음 키 중 하나를 포함할 수 있습니다:
-  `enter`, `backspace`, `delete`, `tab`, `escape`, `control`, `alt`, `shift`,
-  `end`, `home`, `insert`, `left`, `up`, `right`, `down`, `pageUp`, `pageDown`,
-  `printScreen`
+  `enter`, `backspace`, `delete`, `tab`, `escape`, `control`, `alt`, `altgr`
+  (Windows 전용), `shift`, `end`, `home`, `insert`, `left`, `up`, `right`,
+  `down`, `pageUp`, `pageDown`, `printScreen`, `meta`, `cmd` (OSX 전용),
+  `command` (OSX 전용), `option` (OSX 전용)
 
 마우스 이벤트들에 대해서는 `event` 객체는 다음 속성들을 사용할 수 있습니다:
 
@@ -831,6 +834,10 @@ win.webContents.on('did-finish-load', function() {
 ### `webContents.session`
 
 이 webContents에서 사용하는 [session](session.md) 객체를 반환합니다.
+
+### `webContents.hostWebContents`
+
+현재 `WebContents`를 소유하는 `WebContents`를 반환합니다.
 
 ### `webContents.devToolsWebContents`
 
