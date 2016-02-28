@@ -272,12 +272,14 @@ Webview에 웹 페이지 `url`을 로드합니다. `url`은 `http://`, `file://`
 
 페이지에 CSS를 삽입합니다.
 
-### `<webview>.executeJavaScript(code[, userGesture])`
+### `<webview>.executeJavaScript(code[, userGesture, callback])`
 
 * `code` String
 * `userGesture` Boolean
+* `callback` Function (optional) - 스크립트의 실행이 완료되면 호출됩니다.
+  * `result`
 
-페이지에서 자바스크립트 `code`를 실행합니다.
+페이지에서 자바스크립트 코드를 실행합니다.
 
 만약 `userGesture`가 `true`로 설정되어 있으면 페이지에 유저 제스쳐 컨텍스트를 만듭니다.
 이 옵션을 활성화 시키면 `requestFullScreen`와 같은 HTML API에서 유저의 승인을
@@ -426,6 +428,10 @@ Webview 페이지를 PDF 형식으로 인쇄합니다.
 
 `event` 객체에 대해 자세히 알아보려면 [webContents.sendInputEvent](web-contents.md##webcontentssendinputeventevent)를
 참고하세요.
+
+### `<webview>.getWebContents()`
+
+이 `webview`에 해당하는 [WebContents](web-contents.md)를 반환합니다.
 
 ## DOM 이벤트
 
