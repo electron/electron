@@ -378,6 +378,7 @@ if (browserOptions.transparent) {
   // No transparency, so we load a fallback that uses basic styles.
   win.loadURL('file://' + __dirname + '/fallback.html');
 }
+```
 
 ### `app.commandLine.appendSwitch(switch[, value])`
 
