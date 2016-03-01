@@ -145,6 +145,8 @@ class Browser : public WindowListObserver {
   // Request basic auth login.
   void RequestLogin(LoginHandler* login_handler);
 
+  void DarkModeChanged();
+
   void AddObserver(BrowserObserver* obs) {
     observers_.AddObserver(obs);
   }

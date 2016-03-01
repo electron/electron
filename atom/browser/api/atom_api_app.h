@@ -71,6 +71,10 @@ class App : public AtomBrowserClient::Delegate,
   // content::GpuDataManagerObserver:
   void OnGpuProcessCrashed(base::TerminationStatus exit_code) override;
 
+#if defined(OS_MACOSX)
+  void OnDarkModeChanged() override;
+#endif
+
   // mate::Wrappable:
   mate::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;

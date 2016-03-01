@@ -181,4 +181,8 @@ void Browser::OnWindowAllClosed() {
     FOR_EACH_OBSERVER(BrowserObserver, observers_, OnWindowAllClosed());
 }
 
+void Browser::DarkModeChanged() {
+  FOR_EACH_OBSERVER(BrowserObserver, observers_, OnDarkModeChanged());
+}
+
 }  // namespace atom
