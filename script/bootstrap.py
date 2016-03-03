@@ -43,8 +43,8 @@ def main():
                       args.libcc_source_path, args.libcc_shared_library_path,
                       args.libcc_static_library_path)
 
-  if args.target_arch in ['arm', 'ia32'] and PLATFORM == 'linux':
-    download_sysroot(args.target_arch)
+  if PLATFORM == 'linux':
+    download_sysroot(args.target_arch, args.sysroot_url, args.sysroot_sha1sum)
 
   create_chrome_version_h()
   touch_config_gypi()
@@ -79,6 +79,10 @@ def parse_args():
                       help='The shared library path of libchromiumcontent.')
   parser.add_argument('--libcc_static_library_path', required=False,
                       help='The static library path of libchromiumcontent.')
+  parser.add_argument('--sysroot_url', required=False,
+                      help='The URL to download sysroot image.')
+  parser.add_argument('--sysroot_sha1sum', required=False,
+                      help='SHA1 hash of the sysroot image tarball.')
   return parser.parse_args()
 
 
@@ -163,11 +167,22 @@ def update_clang():
   execute_stdout([os.path.join(SOURCE_ROOT, 'script', 'update-clang.sh')])
 
 
-def download_sysroot(target_arch):
-  if target_arch == 'ia32':
-    target_arch = 'i386'
-  execute_stdout([os.path.join(SOURCE_ROOT, 'script', 'install-sysroot.py'),
-                  '--arch', target_arch])
+def download_sysroot(target_arch, url, sha1sum):
+  if url or target_arch in ['ia32', 'arm']:
+    os.environ['USE_SYSROOT'] = '1'
+    sysroot_script = os.path.join(SOURCE_ROOT, 'script', 'install-sysroot.py')
+    if target_arch == 'ia32':
+      target_arch = 'i386'
+    if target_arch == 'x64':
+      target_arch = 'amd64'
+    args = [
+      '--arch', target_arch
+    ]
+    if url:
+      args += ['--url', url]
+    if sha1sum:
+      args += ['--revision', sha1sum]
+    execute_stdout([sysroot_script] + args)
 
 
 def create_chrome_version_h():
