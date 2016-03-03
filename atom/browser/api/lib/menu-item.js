@@ -67,7 +67,7 @@ MenuItem = (function() {
           }
         } else if (typeof click === 'function') {
           return click(_this, focusedWindow);
-        } else if (typeof _this.selector === 'string') {
+        } else if (typeof _this.selector === 'string' && process.platform === 'darwin') {
           return Menu.sendActionToFirstResponder(_this.selector);
         }
       };
