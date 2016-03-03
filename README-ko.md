@@ -71,8 +71,9 @@ API 레퍼런스가 있습니다. Electron을 빌드 하는 방법과 프로젝�
 - Atom 포럼의 [`electron`](http://discuss.atom.io/c/electron) 카테고리
 - Freenode 채팅의 `#atom-shell` 채널
 - Slack의 [`Atom`](http://atom-slack.herokuapp.com/) 채널
-- [`electron-br`](https://electron-br.slack.com) *(브라질 포르투갈어)* 커뮤니티
-- [`electron-kr`](http://www.meetup.com/electron-kr/) *(한국어)* 커뮤니티
+- [`electron-br`](https://electron-br.slack.com) *(브라질)* 커뮤니티
+- [`electron-kr`](http://www.meetup.com/electron-kr/) *(한국)* 커뮤니티
+- [`electron-jp`](https://electron-jp-slackin.herokuapp.com/) *(일본)* 커뮤니티
 
 [awesome-electron](https://github.com/sindresorhus/awesome-electron) 프로젝트에
 커뮤니티가 운영중인 유용한 예제 어플리케이션과 도구, 리소스가 있으니 한번 참고해 보시기
