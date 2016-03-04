@@ -94,10 +94,13 @@ describe('chromium feature', function() {
 
     it('can return labels of enumerated devices', function(done) {
       navigator.mediaDevices.enumerateDevices().then((devices) => {
-        const result = devices.some((device) => !!device.label);
-        if (result)
+        const labels = devices.map((device) => device.label);
+        const labelFound = labels.some((label) => !!label);
+        if (labelFound)
           done();
-      });
+        else
+          done('No device labels found: ' + JSON.stringify(labels));
+      }).catch(done);
     });
   });
 
