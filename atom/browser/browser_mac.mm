@@ -27,7 +27,7 @@ void Browser::Show() {
 }
 
 bool Browser::IsDarkModeEnabled() {
-  NSString *mode = CFBridgingRelease(CFPreferencesCopyValue((CFStringRef)@"AppleInterfaceStyle", kCFPreferencesAnyApplication, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost));
+  NSString *mode = [[NSUserDefaults standardUserDefaults] stringForKey:@"AppleInterfaceStyle"];
   return [mode isEqualToString: @"Dark"];
 }
 
