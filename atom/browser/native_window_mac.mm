@@ -896,21 +896,11 @@ void NativeWindowMac::HandleKeyboardEvent(
     // Handle the cmd+~ shortcut.
     if ((event.os_event.modifierFlags & NSCommandKeyMask) /* cmd */ &&
         (event.os_event.keyCode == 50  /* ~ */)) {
-      // Switch to next visible window.
-      NSArray* windows = [NSApp windows];
-      NSIndexSet* indexes = [windows indexesOfObjectsPassingTest:
-          ^BOOL(id window, NSUInteger idx, BOOL* stop) {
-            return [window isVisible];
-          }];
-      if ([indexes count] == 0)
-        return;
-      NSUInteger current = [windows indexOfObject:event.os_event.window];
-      if (current == NSNotFound)  // Some faked event.
-        return;
-      NSUInteger next = [indexes indexGreaterThanIndex:current];
-      if (next == NSNotFound)
-        next = [indexes firstIndex];
-      [[windows objectAtIndex:next] makeKeyAndOrderFront:nil];
+      if (event.os_event.modifierFlags & NSShiftKeyMask) {
+        [NSApp sendAction:@selector(_cycleWindowsReversed:) to:nil from:nil];
+      } else {
+        [NSApp sendAction:@selector(_cycleWindows:) to:nil from:nil];
+      }
     }
   }
 }
