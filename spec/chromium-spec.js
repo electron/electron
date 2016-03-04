@@ -7,6 +7,8 @@ const remote = require('electron').remote;
 const BrowserWindow = remote.require('electron').BrowserWindow;
 const session = remote.require('electron').session;
 
+const isCI = remote.getGlobal('isCi');
+
 describe('chromium feature', function() {
   var fixtures = path.resolve(__dirname, 'fixtures');
   var listener = null;
@@ -89,6 +91,9 @@ describe('chromium feature', function() {
 
   describe('navigator.mediaDevices', function() {
     if (process.env.TRAVIS === 'true') {
+      return;
+    }
+    if (isCI && process.platform === 'linux') {
       return;
     }
 
