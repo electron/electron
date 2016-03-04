@@ -64,7 +64,7 @@ describe('ipc module', function() {
       assert.equal(obj.test, 'test');
     });
 
-    it('can reassign its member functions', function() {
+    it('can reassign and delete its member functions', function() {
       var remoteFunctions = remote.require(path.join(fixtures, 'module', 'function.js'));
       assert.equal(remoteFunctions.aFunction(), 1127);
 
