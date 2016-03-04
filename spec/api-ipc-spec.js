@@ -63,6 +63,14 @@ describe('ipc module', function() {
       var obj = new call.constructor;
       assert.equal(obj.test, 'test');
     });
+
+    it('can reassign its member functions', function() {
+      var remoteFunctions = remote.require(path.join(fixtures, 'module', 'function.js'));
+      assert.equal(remoteFunctions.aFunction(), 1127);
+
+      remoteFunctions.aFunction = function () { return 1234; };
+      assert.equal(remoteFunctions.aFunction(), 1234);
+    });
   });
 
   describe('remote value in browser', function() {
