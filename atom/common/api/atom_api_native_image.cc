@@ -257,7 +257,7 @@ mate::Handle<NativeImage> NativeImage::CreateFromPath(
   gfx::ImageSkia image_skia;
 
   base::FilePath absolute_path = MakeAbsoluteFilePath(path);
-  // MakeAbsoluteFilePath returns an empty path on failures
+  // MakeAbsoluteFilePath returns an empty path on failures so use original path
   if (absolute_path.empty()) {
     absolute_path = path;
   }
