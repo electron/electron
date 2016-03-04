@@ -4,7 +4,7 @@ const path = require('path');
 
 describe('nativeImage module', function () {
   describe('createFromPath(path)', function () {
-    it('normalizes paths', function () {
+    it('normalizes the path', function () {
       const nonAbsolutePath = path.join(__dirname, 'fixtures', 'api') + path.sep + '..' + path.sep + path.join('assets', 'logo.png');
       const image = nativeImage.createFromPath(nonAbsolutePath);
       assert(!image.isEmpty());

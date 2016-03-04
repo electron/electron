@@ -13,6 +13,7 @@
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/node_includes.h"
 #include "base/base64.h"
+#include "base/files/file_util.h"
 #include "base/strings/string_util.h"
 #include "base/strings/pattern.h"
 #include "native_mate/dictionary.h"
@@ -254,17 +255,24 @@ mate::Handle<NativeImage> NativeImage::CreateFromJPEG(
 mate::Handle<NativeImage> NativeImage::CreateFromPath(
     v8::Isolate* isolate, const base::FilePath& path) {
   gfx::ImageSkia image_skia;
-  if (path.MatchesExtension(FILE_PATH_LITERAL(".ico"))) {
+
+  base::FilePath absolute_path = MakeAbsoluteFilePath(path);
+  // MakeAbsoluteFilePath returns an empty path on failures
+  if (absolute_path.empty()) {
+    absolute_path = path;
+  }
+
+  if (absolute_path.MatchesExtension(FILE_PATH_LITERAL(".ico"))) {
 #if defined(OS_WIN)
-    ReadImageSkiaFromICO(&image_skia, path);
+    ReadImageSkiaFromICO(&image_skia, absolute_path);
 #endif
   } else {
-    PopulateImageSkiaRepsFromPath(&image_skia, path);
+    PopulateImageSkiaRepsFromPath(&image_skia, absolute_path);
   }
   gfx::Image image(image_skia);
   mate::Handle<NativeImage> handle = Create(isolate, image);
 #if defined(OS_MACOSX)
-  if (IsTemplateFilename(path))
+  if (IsTemplateFilename(absolute_path))
     handle->SetTemplateImage(true);
 #endif
   return handle;
