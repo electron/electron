@@ -228,7 +228,7 @@ app.on('login', function(event, webContents, request, authInfo, callback) {
 
 Emitted when the gpu process crashes.
 
-### Event: 'dark-mode-changed' _OS X_
+### Event: 'platform-theme-changed' _OS X_
 
 Emitted when the system's Dark Mode theme is toggled.
 

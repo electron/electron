@@ -72,7 +72,7 @@ class App : public AtomBrowserClient::Delegate,
   void OnGpuProcessCrashed(base::TerminationStatus exit_code) override;
 
 #if defined(OS_MACOSX)
-  void OnDarkModeChanged() override;
+  void OnPlatformThemeChanged() override;
 #endif
 
   // mate::Wrappable:

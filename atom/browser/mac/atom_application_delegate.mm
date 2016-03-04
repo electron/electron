@@ -25,7 +25,7 @@
   [[NSUserDefaults standardUserDefaults] setBool:NO forKey:@"NSFullScreenMenuItemEverywhere"];
 
   // Add observer to monitor the system's Dark Mode theme.
-  [[NSDistributedNotificationCenter defaultCenter] addObserver:self selector:@selector(darkModeChanged:) name:@"AppleInterfaceThemeChangedNotification" object:nil];
+  [[NSDistributedNotificationCenter defaultCenter] addObserver:self selector:@selector(platformThemeChanged:) name:@"AppleInterfaceThemeChangedNotification" object:nil];
 
   atom::Browser::Get()->WillFinishLaunching();
 }
@@ -62,8 +62,8 @@
   return flag;
 }
 
-- (void)darkModeChanged:(NSNotification *)notify {
-  atom::Browser::Get()->DarkModeChanged();
+- (void)platformThemeChanged:(NSNotification *)notify {
+  atom::Browser::Get()->PlatformThemeChanged();
 }
 
 @end

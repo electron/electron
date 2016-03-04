@@ -45,7 +45,7 @@ class BrowserObserver {
   // The browser requests HTTP login.
   virtual void OnLogin(LoginHandler* login_handler) {}
 
-  virtual void OnDarkModeChanged() {}
+  virtual void OnPlatformThemeChanged() {}
 
  protected:
   virtual ~BrowserObserver() {}

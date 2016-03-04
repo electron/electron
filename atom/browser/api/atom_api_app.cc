@@ -283,8 +283,8 @@ void App::OnGpuProcessCrashed(base::TerminationStatus exit_code) {
 }
 
 #if defined(OS_MACOSX)
-void App::OnDarkModeChanged() {
-  Emit("dark-mode-changed");
+void App::OnPlatformThemeChanged() {
+  Emit("platform-theme-changed");
 }
 #endif
 
