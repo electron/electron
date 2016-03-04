@@ -70,6 +70,8 @@ describe('ipc module', function() {
 
       remoteFunctions.aFunction = function () { return 1234; };
       assert.equal(remoteFunctions.aFunction(), 1234);
+
+      assert.equal(delete remoteFunctions.aFunction, true);
     });
   });
 
