@@ -482,19 +482,9 @@ NativeWindowMac::NativeWindowMac(
   options.Get(options::kDisableAutoHideCursor, &disableAutoHideCursor);
   [window_ setDisableAutoHideCursor:disableAutoHideCursor];
 
-  // Disable fullscreen button when 'fullscreenable' is false or 'fullscreen'
-  // is specified to false.
-  bool fullscreenable = true;
-  options.Get(options::kFullScreenable, &fullscreenable);
-  bool fullscreen = false;
-  if (options.Get(options::kFullscreen, &fullscreen) && !fullscreen)
-    fullscreenable = false;
-  SetFullScreenable(fullscreenable);
-
-  // Disable zoom button if window is not resizable
-  if (!maximizable) {
+  // Disable zoom button if window is not resizable.
+  if (!maximizable)
     SetMaximizable(false);
-  }
 
   NSView* view = inspectable_web_contents()->GetView()->GetNativeView();
   [view setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
