@@ -543,7 +543,7 @@ describe('browser-window module', function() {
         assert.equal(w.isResizable(), true);
       });
     });
-  })
+  });
 
   describe('window states', function() {
     // Not implemented on Linux.
