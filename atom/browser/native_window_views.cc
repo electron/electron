@@ -363,29 +363,27 @@ bool NativeWindowViews::IsMinimized() {
 }
 
 void NativeWindowViews::SetFullScreen(bool fullscreen) {
+  if (!IsFullScreenable())
+    return;
+
 #if defined(OS_WIN)
   // There is no native fullscreen state on Windows.
   if (fullscreen) {
-    if (IsFullScreenable()) {
-      last_window_state_ = ui::SHOW_STATE_FULLSCREEN;
-      NotifyWindowEnterFullScreen();
-    }
+    last_window_state_ = ui::SHOW_STATE_FULLSCREEN;
+    NotifyWindowEnterFullScreen();
   } else {
     last_window_state_ = ui::SHOW_STATE_NORMAL;
     NotifyWindowLeaveFullScreen();
   }
   // We set the new value after notifying, so we can handle the size event
   // correctly.
-  if (IsFullScreenable())
-    window_->SetFullscreen(fullscreen);
+  window_->SetFullscreen(fullscreen);
 #else
-  if (!fullscreen || (fullscreen && IsFullScreenable())) {
-    if (IsVisible())
-      window_->SetFullscreen(fullscreen);
-    else
-      window_->native_widget_private()->ShowWithWindowState(
-          ui::SHOW_STATE_FULLSCREEN);
-  }
+  if (IsVisible())
+    window_->SetFullscreen(fullscreen);
+  else
+    window_->native_widget_private()->ShowWithWindowState(
+        ui::SHOW_STATE_FULLSCREEN);
 #endif
 }
 
