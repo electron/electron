@@ -117,7 +117,8 @@ NativeWindowViews::NativeWindowViews(
       movable_(true),
       resizable_(true),
       maximizable_(true),
-      minimizable_(true) {
+      minimizable_(true),
+      fullscreenable_(true) {
   options.Get(options::kTitle, &title_);
   options.Get(options::kAutoHideMenuBar, &menu_bar_autohide_);
 
@@ -365,21 +366,26 @@ void NativeWindowViews::SetFullScreen(bool fullscreen) {
 #if defined(OS_WIN)
   // There is no native fullscreen state on Windows.
   if (fullscreen) {
-    last_window_state_ = ui::SHOW_STATE_FULLSCREEN;
-    NotifyWindowEnterFullScreen();
+    if (IsFullScreenable()) {
+      last_window_state_ = ui::SHOW_STATE_FULLSCREEN;
+      NotifyWindowEnterFullScreen();
+    }
   } else {
     last_window_state_ = ui::SHOW_STATE_NORMAL;
     NotifyWindowLeaveFullScreen();
   }
   // We set the new value after notifying, so we can handle the size event
   // correctly.
-  window_->SetFullscreen(fullscreen);
-#else
-  if (IsVisible())
+  if (IsFullScreenable())
     window_->SetFullscreen(fullscreen);
-  else
-    window_->native_widget_private()->ShowWithWindowState(
-        ui::SHOW_STATE_FULLSCREEN);
+#else
+  if (!fullscreen || (fullscreen && IsFullScreenable())) {
+    if (IsVisible())
+      window_->SetFullscreen(fullscreen);
+    else
+      window_->native_widget_private()->ShowWithWindowState(
+          ui::SHOW_STATE_FULLSCREEN);
+  }
 #endif
 }
 
@@ -505,11 +511,12 @@ bool NativeWindowViews::IsMaximizable() {
 #endif
 }
 
-void NativeWindowViews::SetFullScreenable(bool maximizable) {
+void NativeWindowViews::SetFullScreenable(bool fullscreenable) {
+  fullscreenable_ = fullscreenable;
 }
 
 bool NativeWindowViews::IsFullScreenable() {
-  return true;
+  return fullscreenable_;
 }
 
 void NativeWindowViews::SetClosable(bool closable) {

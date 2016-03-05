@@ -58,9 +58,8 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
   * `alwaysOnTop` Boolean - Whether the window should always stay on top of
     other windows. Default is `false`.
   * `fullscreen` Boolean - Whether the window should show in fullscreen. When
-    explicitly set to `false` the fullscreen button will be hidden or disabled
-    on OS X, or the maximize button will be disabled on Windows. Default is
-    `false`.
+    explicity set to `false` the fullscreen button will be hidden or disabled
+    on OS X. Default is `false`.
   * `fullscreenable` Boolean - Whether the maximize/zoom button on OS X should
     toggle full screen mode or maximize window. Default is `true`.
   * `skipTaskbar` Boolean - Whether to show the window in taskbar. Default is
@@ -582,17 +581,17 @@ nothing.
 Returns whether the window can be manually maximized by user. On Linux always
 returns `true`.
 
-### `win.setFullScreenable(fullscreenable)` _OS X_
+### `win.setFullScreenable(fullscreenable)`
 
 * `fullscreenable` Boolean
 
 Sets whether the maximize/zoom window button toggles fullscreen mode or
-maximizes the window. On Windows and Linux does nothing.
+maximizes the window.
 
-### `win.isFullScreenable()` _OS X_
+### `win.isFullScreenable()`
 
 Returns whether the maximize/zoom window button toggles fullscreen mode or
-maximizes the window. On Windows and Linux always returns `true`.
+maximizes the window.
 
 ### `win.setClosable(closable)` _OS X_ _Windows_
 
