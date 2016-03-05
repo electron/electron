@@ -132,19 +132,20 @@ void OnClientCertificateSelected(
     std::shared_ptr<content::ClientCertificateDelegate> delegate,
     mate::Arguments* args) {
   mate::Dictionary cert_data;
-  if (!(args->Length() == 1 && args->GetNext(&cert_data))) {
+  if (!args->GetNext(&cert_data)) {
     args->ThrowError();
     return;
   }
 
-  std::string encoded_data;
-  cert_data.Get("data", &encoded_data);
+  v8::Local<v8::Object> data;
+  if (!cert_data.Get("data", &data))
+    return;
 
-  auto certs =
-      net::X509Certificate::CreateCertificateListFromBytes(
-          encoded_data.data(), encoded_data.size(),
-          net::X509Certificate::FORMAT_AUTO);
-  delegate->ContinueWithCertificate(certs[0].get());
+  auto certs = net::X509Certificate::CreateCertificateListFromBytes(
+      node::Buffer::Data(data), node::Buffer::Length(data),
+      net::X509Certificate::FORMAT_AUTO);
+  if (certs.size() > 0)
+    delegate->ContinueWithCertificate(certs[0].get());
 }
 
 void PassLoginInformation(scoped_refptr<LoginHandler> login_handler,
