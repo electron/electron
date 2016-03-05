@@ -583,7 +583,16 @@ void NativeWindowMac::Unmaximize() {
 }
 
 bool NativeWindowMac::IsMaximized() {
-  return [window_ isZoomed];
+  if (([window_ styleMask] & NSResizableWindowMask) != 0) {
+    return [window_ isZoomed];
+  } else {
+    NSRect rectScreen = [[NSScreen mainScreen] visibleFrame];
+    NSRect rectWindow = [window_ frame];
+    return (rectScreen.origin.x == rectWindow.origin.x &&
+            rectScreen.origin.y == rectWindow.origin.y &&
+            rectScreen.size.width == rectWindow.size.width &&
+            rectScreen.size.height == rectWindow.size.height);
+  }
 }
 
 void NativeWindowMac::Minimize() {
