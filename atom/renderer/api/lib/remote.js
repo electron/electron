@@ -110,6 +110,8 @@ let setObjectMembers = function(object, metaId, members) {
           return metaToValue(ret);
         }
       };
+      descriptor.writable = true;
+      descriptor.configurable = true;
       descriptor.value = remoteMemberFunction;
     } else if (member.type === 'get') {
       descriptor.get = function() {
