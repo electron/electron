@@ -26,7 +26,7 @@ void Browser::Show() {
   [[AtomApplication sharedApplication] unhide:nil];
 }
 
-bool Browser::IsDarkModeEnabled() {
+bool Browser::IsDarkMode() {
   NSString *mode = [[NSUserDefaults standardUserDefaults] stringForKey:@"AppleInterfaceStyle"];
   return [mode isEqualToString: @"Dark"];
 }

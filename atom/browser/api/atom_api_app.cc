@@ -376,8 +376,8 @@ mate::ObjectTemplateBuilder App::GetObjectTemplateBuilder(
 #if defined(OS_MACOSX)
       .SetMethod("hide", base::Bind(&Browser::Hide, browser))
       .SetMethod("show", base::Bind(&Browser::Show, browser))
-      .SetMethod("isDarkModeEnabled",
-                 base::Bind(&Browser::IsDarkModeEnabled, browser))
+      .SetMethod("isDarkMode",
+                 base::Bind(&Browser::IsDarkMode, browser))
 #endif
 #if defined(OS_WIN)
       .SetMethod("setUserTasks",

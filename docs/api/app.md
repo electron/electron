@@ -465,9 +465,9 @@ if (browserOptions.transparent) {
 }
 ```
 
-### `app.isDarkModeEnabled()` _OS X_
+### `app.isDarkMode()` _OS X_
 
-This method returns `true` if Dark Mode is enabled, and `false` otherwise.
+This method returns `true` if the system is in Dark Mode, and `false` otherwise.
 
 ### `app.commandLine.appendSwitch(switch[, value])`
 

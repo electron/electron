@@ -83,8 +83,8 @@ class Browser : public WindowListObserver {
   // Show the application.
   void Show();
 
-  // Check if Dark Mode enabled.
-  bool IsDarkModeEnabled();
+  // Check if the system is in Dark Mode.
+  bool IsDarkMode();
 
   // Bounce the dock icon.
   enum BounceType {
