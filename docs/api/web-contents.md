@@ -764,13 +764,9 @@ Sends an input `event` to the page.
 
 For keyboard events, the `event` object also have following properties:
 
-* `keyCode` Char or String (**required**) - The character that will be sent
-  as the keyboard event. Can be a single UTF-8 character, or the name of the
-  key that generates the event. Accepted key names are `enter`, `backspace`,
-  `delete`, `tab`, `escape`, `control`, `alt`, `altgr` (Windows only), `shift`,
-  `end`, `home`, `insert`, `left`, `up`, `right`, `down`, `pageUp`, `pageDown`,
-  `printScreen`, `meta`, `cmd` (OSX only), `command` (OSX only), `option`
-  (OSX only)
+* `keyCode` String (**required**) - The character that will be sent
+  as the keyboard event. Should only use the valid key codes in
+  [Accelerator](accelerator.md).
 
 For mouse events, the `event` object also have following properties:
 
