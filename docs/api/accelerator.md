@@ -23,6 +23,8 @@ The `Super` key is mapped to the `Windows` key on Windows and Linux and
 * `Control` (or `Ctrl` for short)
 * `CommandOrControl` (or `CmdOrCtrl` for short)
 * `Alt`
+* `Option`
+* `AltGr`
 * `Shift`
 * `Super`
 
@@ -44,3 +46,4 @@ The `Super` key is mapped to the `Windows` key on Windows and Linux and
 * `Escape` (or `Esc` for short)
 * `VolumeUp`, `VolumeDown` and `VolumeMute`
 * `MediaNextTrack`, `MediaPreviousTrack`, `MediaStop` and `MediaPlayPause`
+* `PrintScreen`
