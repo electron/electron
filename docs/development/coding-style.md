@@ -2,6 +2,9 @@
 
 These are the style guidelines for coding in Electron.
 
+You can run `npm run lint` to show all coding style issues detected by `cpplint`
+and `eslint`.
+
 ## C++ and Python
 
 For C++ and Python, we follow Chromium's [Coding
