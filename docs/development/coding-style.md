@@ -17,17 +17,23 @@ document. The document mentions some special types, scoped types (that
 automatically release their memory when going out of scope), logging mechanisms
 etc.
 
-## CoffeeScript
-
-For CoffeeScript, we follow GitHub's [Style
-Guide](https://github.com/styleguide/javascript) and the following rules:
+## JavaScript
 
 * Files should **NOT** end with new line, because we want to match Google's
   styles.
 * File names should be concatenated with `-` instead of `_`, e.g.
-  `file-name.coffee` rather than `file_name.coffee`, because in
+  `file-name.js` rather than `file_name.js`, because in
   [github/atom](https://github.com/github/atom) module names are usually in
-  the `module-name` form. This rule only applies to `.coffee` files.
+  the `module-name` form. This rule only applies to `.js` files.
+* Use newer ES6/ES2015 syntax where appropriate
+  * [`const`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/const)
+    for requires and other constants
+  * [`let`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/let)
+    for defining variables
+  * [Arrow functions](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/Arrow_functions)
+    instead of `function () { }`
+  * [Template literals](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Template_literals)
+    instead of string concatenation using `+`
 
 ## API Names
 
