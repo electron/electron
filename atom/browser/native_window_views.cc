@@ -218,6 +218,12 @@ NativeWindowViews::NativeWindowViews(
   std::string window_type;
   if (options.Get(options::kType, &window_type))
     SetWindowType(GetAcceleratedWidget(), window_type);
+
+  if (!resizable_) {
+    gfx::Size content_size = GetContentSize();
+    SetContentSizeConstraints(
+        extensions::SizeConstraints(content_size, content_size));
+  }
 #endif
 
   // Add web view.
