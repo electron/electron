@@ -269,19 +269,19 @@ mate::Handle<NativeImage> NativeImage::CreateFromJPEG(
 mate::Handle<NativeImage> NativeImage::CreateFromPath(
     v8::Isolate* isolate, const base::FilePath& path) {
   gfx::ImageSkia image_skia;
-  base::FilePath absolute_path = NormalizePath(path);
+  base::FilePath image_path = NormalizePath(path);
 
-  if (absolute_path.MatchesExtension(FILE_PATH_LITERAL(".ico"))) {
+  if (image_path.MatchesExtension(FILE_PATH_LITERAL(".ico"))) {
 #if defined(OS_WIN)
-    ReadImageSkiaFromICO(&image_skia, absolute_path);
+    ReadImageSkiaFromICO(&image_skia, image_path);
 #endif
   } else {
-    PopulateImageSkiaRepsFromPath(&image_skia, absolute_path);
+    PopulateImageSkiaRepsFromPath(&image_skia, image_path);
   }
   gfx::Image image(image_skia);
   mate::Handle<NativeImage> handle = Create(isolate, image);
 #if defined(OS_MACOSX)
-  if (IsTemplateFilename(absolute_path))
+  if (IsTemplateFilename(image_path))
     handle->SetTemplateImage(true);
 #endif
   return handle;
