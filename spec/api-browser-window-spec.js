@@ -545,7 +545,7 @@ describe('browser-window module', function() {
     });
   });
 
-  describe('window states', function() {
+  describe('window states (excluding Linux)', function() {
     // Not implemented on Linux.
     if (process.platform == 'linux')
       return;
