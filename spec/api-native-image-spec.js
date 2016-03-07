@@ -27,7 +27,7 @@ describe('nativeImage module', () => {
       assert.equal(image.getSize().width, 538);
     });
 
-    it('loads images from path with `..` segments', () => {
+    it('loads images from paths with `..` segments', () => {
       const imagePath = `${path.join(__dirname, 'fixtures', 'api')}${path.sep}..${path.sep}${path.join('assets', 'logo.png')}`;
       const image = nativeImage.createFromPath(imagePath);
       assert(!image.isEmpty());
