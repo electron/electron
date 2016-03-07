@@ -120,6 +120,20 @@ bool PopulateImageSkiaRepsFromPath(gfx::ImageSkia* image,
   return succeed;
 }
 
+base::FilePath MakePathAbsolute(const base::FilePath& path) {
+  if (!path.ReferencesParent()) {
+    return path;
+  }
+
+  base::FilePath absolute_path = MakeAbsoluteFilePath(path);
+  // MakeAbsoluteFilePath returns an empty path on failures so use original path
+  if (absolute_path.empty()) {
+    return path;
+  } else {
+    return absolute_path;
+  }
+}
+
 #if defined(OS_MACOSX)
 bool IsTemplateFilename(const base::FilePath& path) {
   return (base::MatchPattern(path.value(), "*Template.*") ||
@@ -255,12 +269,7 @@ mate::Handle<NativeImage> NativeImage::CreateFromJPEG(
 mate::Handle<NativeImage> NativeImage::CreateFromPath(
     v8::Isolate* isolate, const base::FilePath& path) {
   gfx::ImageSkia image_skia;
-
-  base::FilePath absolute_path = MakeAbsoluteFilePath(path);
-  // MakeAbsoluteFilePath returns an empty path on failures so use original path
-  if (absolute_path.empty()) {
-    absolute_path = path;
-  }
+  base::FilePath absolute_path = MakePathAbsolute(path);
 
   if (absolute_path.MatchesExtension(FILE_PATH_LITERAL(".ico"))) {
 #if defined(OS_WIN)
