@@ -385,7 +385,7 @@ describe('asar package', function() {
         });
       });
 
-      it('returns real path of an unpacked file', function() {
+      it('returns real path of an unpacked file', function(done) {
         var parent = fs.realpathSync(path.join(fixtures, 'asar'));
         var p = path.join('unpack.asar', 'a.txt');
         fs.realpath(path.join(parent, p), function(err, r) {
