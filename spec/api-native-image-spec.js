@@ -10,6 +10,8 @@ describe('nativeImage module', () => {
       const nonAbsolutePath = `${path.join(__dirname, 'fixtures', 'api')}${path.sep}..${path.sep}${path.join('assets', 'logo.png')}`;
       const image = nativeImage.createFromPath(nonAbsolutePath);
       assert(!image.isEmpty());
+      assert.equal(image.getSize().height, 190);
+      assert.equal(image.getSize().width, 538);
     });
   });
 });
