@@ -283,6 +283,12 @@ void App::OnGpuProcessCrashed(base::TerminationStatus exit_code) {
   Emit("gpu-process-crashed");
 }
 
+#if defined(OS_MACOSX)
+void App::OnPlatformThemeChanged() {
+  Emit("platform-theme-changed");
+}
+#endif
+
 base::FilePath App::GetPath(mate::Arguments* args, const std::string& name) {
   bool succeed = false;
   base::FilePath path;
@@ -371,6 +377,8 @@ mate::ObjectTemplateBuilder App::GetObjectTemplateBuilder(
 #if defined(OS_MACOSX)
       .SetMethod("hide", base::Bind(&Browser::Hide, browser))
       .SetMethod("show", base::Bind(&Browser::Show, browser))
+      .SetMethod("isDarkMode",
+                 base::Bind(&Browser::IsDarkMode, browser))
 #endif
 #if defined(OS_WIN)
       .SetMethod("setUserTasks",
