@@ -120,7 +120,6 @@ NativeWindowViews::NativeWindowViews(
       minimizable_(true) {
   options.Get(options::kTitle, &title_);
   options.Get(options::kAutoHideMenuBar, &menu_bar_autohide_);
-  options.Get(options::kResizable, &resizable_);
 
 #if defined(OS_WIN)
   // On Windows we rely on the CanResize() to indicate whether window can be
@@ -218,12 +217,6 @@ NativeWindowViews::NativeWindowViews(
   std::string window_type;
   if (options.Get(options::kType, &window_type))
     SetWindowType(GetAcceleratedWidget(), window_type);
-
-  if (!resizable_) {
-    gfx::Size content_size = GetContentSize();
-    SetContentSizeConstraints(
-        extensions::SizeConstraints(content_size, content_size));
-  }
 #endif
 
   // Add web view.
