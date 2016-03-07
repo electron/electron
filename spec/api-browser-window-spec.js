@@ -527,7 +527,7 @@ describe('browser-window module', function() {
     });
   });
 
-  describe('window states', function () {
+  describe('window states', function() {
     describe('resizable state', function() {
       it('can be changed with resizable option', function() {
         w.destroy();
