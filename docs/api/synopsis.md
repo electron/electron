@@ -49,7 +49,7 @@ To run your app, read [Run your app](../tutorial/quick-start.md#run-your-app).
 ## Destructuring assignment
 
 If you are using CoffeeScript or Babel, you can also use
-[destructuring assignment][desctructuring-assignment] to make it easier to use
+[destructuring assignment][destructuring-assignment] to make it easier to use
 built-in modules:
 
 ```javascript
@@ -79,5 +79,5 @@ require('electron').hideInternalModules()
 ```
 
 [gui]: https://en.wikipedia.org/wiki/Graphical_user_interface
-[desctructuring-assignment]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Destructuring_assignment
+[destructuring-assignment]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Destructuring_assignment
 [issue-387]: https://github.com/atom/electron/issues/387
