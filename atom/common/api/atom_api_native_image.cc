@@ -120,7 +120,7 @@ bool PopulateImageSkiaRepsFromPath(gfx::ImageSkia* image,
   return succeed;
 }
 
-base::FilePath MakePathAbsolute(const base::FilePath& path) {
+base::FilePath NormalizePath(const base::FilePath& path) {
   if (!path.ReferencesParent()) {
     return path;
   }
@@ -269,7 +269,7 @@ mate::Handle<NativeImage> NativeImage::CreateFromJPEG(
 mate::Handle<NativeImage> NativeImage::CreateFromPath(
     v8::Isolate* isolate, const base::FilePath& path) {
   gfx::ImageSkia image_skia;
-  base::FilePath absolute_path = MakePathAbsolute(path);
+  base::FilePath absolute_path = NormalizePath(path);
 
   if (absolute_path.MatchesExtension(FILE_PATH_LITERAL(".ico"))) {
 #if defined(OS_WIN)
