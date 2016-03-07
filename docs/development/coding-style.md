@@ -19,6 +19,8 @@ etc.
 
 ## JavaScript
 
+* Use a two space indent, no hard tabs.
+* End lines with a `;`
 * Files should **NOT** end with new line, because we want to match Google's
   styles.
 * File names should be concatenated with `-` instead of `_`, e.g.
