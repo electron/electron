@@ -124,6 +124,7 @@ NativeWindowViews::NativeWindowViews(
 #if defined(OS_WIN)
   // On Windows we rely on the CanResize() to indicate whether window can be
   // resized, and it should be set before window is created.
+  options.Get(options::kResizable, &resizable_);
   options.Get(options::kMinimizable, &minimizable_);
   options.Get(options::kMaximizable, &maximizable_);
 #endif
