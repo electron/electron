@@ -5,7 +5,7 @@
 #ifndef NATIVE_MATE_ARGUMENTS_H_
 #define NATIVE_MATE_ARGUMENTS_H_
 
-#include "base/basictypes.h"
+#include "base/macros.h"
 #include "native_mate/compat.h"
 #include "native_mate/converter.h"
 
