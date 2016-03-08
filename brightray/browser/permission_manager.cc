@@ -53,6 +53,7 @@ int PermissionManager::RequestPermissions(
   callback.Run(permissionStatuses);
   return kNoPendingOperation;
 }
+
 void PermissionManager::CancelPermissionRequest(int request_id) {
 }
 
