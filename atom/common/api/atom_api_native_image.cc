@@ -13,6 +13,7 @@
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/node_includes.h"
 #include "base/base64.h"
+#include "base/files/file_util.h"
 #include "base/strings/string_util.h"
 #include "base/strings/pattern.h"
 #include "native_mate/dictionary.h"
@@ -117,6 +118,20 @@ bool PopulateImageSkiaRepsFromPath(gfx::ImageSkia* image,
                                path.InsertBeforeExtensionASCII(pair.name),
                                pair.scale);
   return succeed;
+}
+
+base::FilePath NormalizePath(const base::FilePath& path) {
+  if (!path.ReferencesParent()) {
+    return path;
+  }
+
+  base::FilePath absolute_path = MakeAbsoluteFilePath(path);
+  // MakeAbsoluteFilePath returns an empty path on failures so use original path
+  if (absolute_path.empty()) {
+    return path;
+  } else {
+    return absolute_path;
+  }
 }
 
 #if defined(OS_MACOSX)
@@ -254,17 +269,19 @@ mate::Handle<NativeImage> NativeImage::CreateFromJPEG(
 mate::Handle<NativeImage> NativeImage::CreateFromPath(
     v8::Isolate* isolate, const base::FilePath& path) {
   gfx::ImageSkia image_skia;
-  if (path.MatchesExtension(FILE_PATH_LITERAL(".ico"))) {
+  base::FilePath image_path = NormalizePath(path);
+
+  if (image_path.MatchesExtension(FILE_PATH_LITERAL(".ico"))) {
 #if defined(OS_WIN)
-    ReadImageSkiaFromICO(&image_skia, path);
+    ReadImageSkiaFromICO(&image_skia, image_path);
 #endif
   } else {
-    PopulateImageSkiaRepsFromPath(&image_skia, path);
+    PopulateImageSkiaRepsFromPath(&image_skia, image_path);
   }
   gfx::Image image(image_skia);
   mate::Handle<NativeImage> handle = Create(isolate, image);
 #if defined(OS_MACOSX)
-  if (IsTemplateFilename(path))
+  if (IsTemplateFilename(image_path))
     handle->SetTemplateImage(true);
 #endif
   return handle;
