@@ -528,6 +528,24 @@ describe('browser-window module', function() {
   });
 
   describe('window states', function() {
+    describe('resizable state', function() {
+      it('can be changed with resizable option', function() {
+        w.destroy();
+        w = new BrowserWindow({show: false, resizable: false});
+        assert.equal(w.isResizable(), false);
+      });
+
+      it('can be changed with setResizable method', function() {
+        assert.equal(w.isResizable(), true);
+        w.setResizable(false);
+        assert.equal(w.isResizable(), false);
+        w.setResizable(true);
+        assert.equal(w.isResizable(), true);
+      });
+    });
+  });
+
+  describe('window states (excluding Linux)', function() {
     // Not implemented on Linux.
     if (process.platform == 'linux')
       return;
@@ -622,22 +640,6 @@ describe('browser-window module', function() {
         assert.equal(w.isClosable(), false);
         w.setClosable(true);
         assert.equal(w.isClosable(), true);
-      });
-    });
-
-    describe('resizable state', function() {
-      it('can be changed with resizable option', function() {
-        w.destroy();
-        w = new BrowserWindow({show: false, resizable: false});
-        assert.equal(w.isResizable(), false);
-      });
-
-      it('can be changed with setResizable method', function() {
-        assert.equal(w.isResizable(), true);
-        w.setResizable(false);
-        assert.equal(w.isResizable(), false);
-        w.setResizable(true);
-        assert.equal(w.isResizable(), true);
       });
     });
 
