@@ -79,6 +79,21 @@ bool ScopedDisableResize::disable_resize_ = false;
   return self;
 }
 
+- (void)windowDidChangeOcclusionState:(NSNotification *)notification {
+  // notification.object is the window that changed its state.
+  // It's safe to use self.window instead if you don't assign one delegate to many windows
+  NSWindow *window = notification.object;
+
+  // check occlusion binary flag
+  if (window.occlusionState & NSWindowOcclusionStateVisible)   {
+     // The app is visible
+     shell_->NotifyWindowShow();
+   } else {
+     // The app is not visible
+     shell_->NotifyWindowHide();
+   }
+}
+
 - (void)windowDidBecomeMain:(NSNotification*)notification {
   content::WebContents* web_contents = shell_->web_contents();
   if (!web_contents)

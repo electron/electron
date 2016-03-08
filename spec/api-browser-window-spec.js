@@ -120,13 +120,54 @@ describe('browser-window module', function() {
   });
 
   describe('BrowserWindow.show()', function() {
-    it('should focus on window', function() {
-      if (isCI) {
-        return;
-      }
+    if (isCI) {
+      return;
+    }
 
+    it('should focus on window', function() {
       w.show();
       assert(w.isFocused());
+    });
+
+    it('should make the window visible', function() {
+      w.show();
+      assert(w.isVisible());
+    });
+
+    it('emits when window is shown', function(done) {
+      this.timeout(10000);
+      w.once('show', function() {
+        assert.equal(w.isVisible(), true);
+        done();
+      });
+      w.show();
+    });
+  });
+
+  describe('BrowserWindow.hide()', function() {
+    if (isCI) {
+      return;
+    }
+
+    it('should defocus on window', function() {
+      w.hide();
+      assert(!w.isFocused());
+    });
+
+    it('should make the window not visible', function() {
+      w.show();
+      w.hide();
+      assert(!w.isVisible());
+    });
+
+    it('emits when window is hidden', function(done) {
+      this.timeout(10000);
+      w.show();
+      w.once('hide', function() {
+        assert.equal(w.isVisible(), false);
+        done();
+      });
+      w.hide();
     });
   });
 
