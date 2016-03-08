@@ -76,14 +76,14 @@ PrintJobManager::~PrintJobManager() {
 }
 
 scoped_refptr<PrintQueriesQueue> PrintJobManager::queue() {
-  DCHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::UI));
+  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   if (!queue_.get())
     queue_ = new PrintQueriesQueue();
   return queue_;
 }
 
 void PrintJobManager::Shutdown() {
-  DCHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::UI));
+  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   DCHECK(!is_shutdown_);
   is_shutdown_ = true;
   registrar_.RemoveAll();
@@ -94,7 +94,7 @@ void PrintJobManager::Shutdown() {
 }
 
 void PrintJobManager::StopJobs(bool wait_for_finish) {
-  DCHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::UI));
+  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   // Copy the array since it can be modified in transit.
   PrintJobs to_stop;
   to_stop.swap(current_jobs_);
@@ -111,7 +111,7 @@ void PrintJobManager::StopJobs(bool wait_for_finish) {
 void PrintJobManager::Observe(int type,
                               const content::NotificationSource& source,
                               const content::NotificationDetails& details) {
-  DCHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::UI));
+  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   switch (type) {
     case chrome::NOTIFICATION_PRINT_JOB_EVENT: {
       OnPrintJobEvent(content::Source<PrintJob>(source).ptr(),

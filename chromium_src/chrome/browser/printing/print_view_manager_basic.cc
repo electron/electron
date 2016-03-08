@@ -4,9 +4,10 @@
 
 #include "chrome/browser/printing/print_view_manager_basic.h"
 
+#include "build/build_config.h"
+
 #if defined(OS_ANDROID)
-#include "base/file_descriptor_posix.h"
-#include "chrome/common/print_messages.h"
+#include "base/bind.h"
 #include "printing/printing_context_android.h"
 #endif
 
@@ -16,33 +17,13 @@ namespace printing {
 
 PrintViewManagerBasic::PrintViewManagerBasic(content::WebContents* web_contents)
     : PrintViewManagerBase(web_contents) {
+#if defined(OS_ANDROID)
+  pdf_writing_done_callback_ =
+      base::Bind(&PrintingContextAndroid::PdfWritingDone);
+#endif
 }
 
 PrintViewManagerBasic::~PrintViewManagerBasic() {
 }
-
-#if defined(OS_ANDROID)
-void PrintViewManagerBasic::RenderProcessGone(base::TerminationStatus status) {
-  PrintingContextAndroid::PdfWritingDone(file_descriptor_.fd, false);
-  file_descriptor_ = base::FileDescriptor(-1, false);
-  PrintViewManagerBase::RenderProcessGone(status);
-}
-
-void PrintViewManagerBasic::OnPrintingFailed(int cookie) {
-  PrintingContextAndroid::PdfWritingDone(file_descriptor_.fd, false);
-  file_descriptor_ = base::FileDescriptor(-1, false);
-  PrintViewManagerBase::OnPrintingFailed(cookie);
-}
-
-bool PrintViewManagerBasic::OnMessageReceived(const IPC::Message& message) {
-  bool handled = true;
-  IPC_BEGIN_MESSAGE_MAP(PrintViewManagerBasic, message)
-    IPC_MESSAGE_HANDLER(PrintHostMsg_PrintingFailed, OnPrintingFailed)
-    IPC_MESSAGE_UNHANDLED(handled = false)
-  IPC_END_MESSAGE_MAP()
-
-  return handled ? true : PrintViewManagerBase::OnMessageReceived(message);
-}
-#endif
 
 }  // namespace printing

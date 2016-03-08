@@ -4,24 +4,35 @@
 
 #include "chrome/browser/speech/tts_message_filter.h"
 
+#include <stddef.h>
+
 #include "base/bind.h"
 #include "base/logging.h"
+#include "chrome/browser/chrome_notification_types.h"
+#include "chrome/browser/profiles/profile.h"
+#include "chrome/common/tts_messages.h"
 #include "content/public/browser/browser_context.h"
+#include "content/public/browser/notification_service.h"
 #include "content/public/browser/render_process_host.h"
 
 using content::BrowserThread;
 
-TtsMessageFilter::TtsMessageFilter(int render_process_id,
-                                   content::BrowserContext* browser_context)
+TtsMessageFilter::TtsMessageFilter(content::BrowserContext* browser_context)
     : BrowserMessageFilter(TtsMsgStart),
-      render_process_id_(render_process_id),
       browser_context_(browser_context),
-      weak_ptr_factory_(this) {
+      valid_(true) {
   CHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
   TtsController::GetInstance()->AddVoicesChangedDelegate(this);
 
+  // TODO(dmazzoni): make it so that we can listen for a BrowserContext
+  // being destroyed rather than a Profile.  http://crbug.com/444668
+  Profile* profile = Profile::FromBrowserContext(browser_context);
+  notification_registrar_.Add(this,
+                              chrome::NOTIFICATION_PROFILE_DESTROYED,
+                              content::Source<Profile>(profile));
+
   // Balanced in OnChannelClosingInUIThread() to keep the ref-count be non-zero
-  // until all WeakPtr's are invalidated.
+  // until all pointers to this class are invalidated.
   AddRef();
 }
 
@@ -52,17 +63,36 @@ bool TtsMessageFilter::OnMessageReceived(const IPC::Message& message) {
 }
 
 void TtsMessageFilter::OnChannelClosing() {
+  base::AutoLock lock(mutex_);
+  valid_ = false;
   BrowserThread::PostTask(
       BrowserThread::UI, FROM_HERE,
       base::Bind(&TtsMessageFilter::OnChannelClosingInUIThread, this));
 }
 
+bool TtsMessageFilter::Valid() {
+  base::AutoLock lock(mutex_);
+  return valid_;
+}
+
 void TtsMessageFilter::OnDestruct() const {
+  {
+    base::AutoLock lock(mutex_);
+    valid_ = false;
+  }
   BrowserThread::DeleteOnUIThread::Destruct(this);
+}
+
+TtsMessageFilter::~TtsMessageFilter() {
+  CHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
+  Cleanup();
 }
 
 void TtsMessageFilter::OnInitializeVoiceList() {
   CHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
+  if (!browser_context_)
+    return;
+
   TtsController* tts_controller = TtsController::GetInstance();
   std::vector<VoiceData> voices;
   tts_controller->GetVoices(browser_context_, &voices);
@@ -82,6 +112,8 @@ void TtsMessageFilter::OnInitializeVoiceList() {
 
 void TtsMessageFilter::OnSpeak(const TtsUtteranceRequest& request) {
   CHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
+  if (!browser_context_)
+    return;
 
   scoped_ptr<Utterance> utterance(new Utterance(browser_context_));
   utterance->set_src_id(request.id);
@@ -89,14 +121,11 @@ void TtsMessageFilter::OnSpeak(const TtsUtteranceRequest& request) {
   utterance->set_lang(request.lang);
   utterance->set_voice_name(request.voice);
   utterance->set_can_enqueue(true);
+  utterance->set_continuous_parameters(request.rate,
+                                       request.pitch,
+                                       request.volume);
 
-  UtteranceContinuousParameters params;
-  params.rate = request.rate;
-  params.pitch = request.pitch;
-  params.volume = request.volume;
-  utterance->set_continuous_parameters(params);
-
-  utterance->set_event_delegate(weak_ptr_factory_.GetWeakPtr());
+  utterance->set_event_delegate(this);
 
   TtsController::GetInstance()->SpeakOrEnqueue(utterance.release());
 }
@@ -120,6 +149,9 @@ void TtsMessageFilter::OnTtsEvent(Utterance* utterance,
                                   TtsEventType event_type,
                                   int char_index,
                                   const std::string& error_message) {
+  if (!Valid())
+    return;
+
   CHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
   switch (event_type) {
     case TTS_EVENT_START:
@@ -157,20 +189,28 @@ void TtsMessageFilter::OnTtsEvent(Utterance* utterance,
 }
 
 void TtsMessageFilter::OnVoicesChanged() {
+  if (!Valid())
+    return;
+
   CHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
   OnInitializeVoiceList();
 }
 
 void TtsMessageFilter::OnChannelClosingInUIThread() {
   CHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
-  TtsController::GetInstance()->RemoveVoicesChangedDelegate(this);
-
-  weak_ptr_factory_.InvalidateWeakPtrs();
+  Cleanup();
   Release();  // Balanced in TtsMessageFilter().
 }
 
-TtsMessageFilter::~TtsMessageFilter() {
-  CHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
-  DCHECK(!weak_ptr_factory_.HasWeakPtrs());
+void TtsMessageFilter::Cleanup() {
   TtsController::GetInstance()->RemoveVoicesChangedDelegate(this);
+  TtsController::GetInstance()->RemoveUtteranceEventDelegate(this);
+}
+
+void TtsMessageFilter::Observe(
+    int type,
+    const content::NotificationSource& source,
+    const content::NotificationDetails& details) {
+  browser_context_ = nullptr;
+  notification_registrar_.RemoveAll();
 }

@@ -4,16 +4,20 @@
 
 #include "chrome/browser/media/native_desktop_media_list.h"
 
+#include <stddef.h>
+#include <stdint.h>
 #include <map>
 #include <set>
 #include <sstream>
+#include <utility>
 
 #include "base/hash.h"
 #include "base/logging.h"
-#include "base/strings/string_number_conversions.h"
+#include "base/macros.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/threading/sequenced_worker_pool.h"
 #include "chrome/browser/media/desktop_media_list_observer.h"
+#include "chrome/grit/generated_resources.h"
 #include "content/public/browser/browser_thread.h"
 #include "media/base/video_util.h"
 #include "third_party/libyuv/include/libyuv/scale_argb.h"
@@ -34,7 +38,7 @@ const int kDefaultUpdatePeriod = 1000;
 
 // Returns a hash of a DesktopFrame content to detect when image for a desktop
 // media source has changed.
-uint32 GetFrameHash(webrtc::DesktopFrame* frame) {
+uint32_t GetFrameHash(webrtc::DesktopFrame* frame) {
   int data_size = frame->stride() * frame->size().height();
   return base::SuperFastHash(reinterpret_cast<char*>(frame->data()), data_size);
 }
@@ -49,7 +53,7 @@ gfx::ImageSkia ScaleDesktopFrame(scoped_ptr<webrtc::DesktopFrame> frame,
   result.allocN32Pixels(scaled_rect.width(), scaled_rect.height(), true);
   result.lockPixels();
 
-  uint8* pixels_data = reinterpret_cast<uint8*>(result.getPixels());
+  uint8_t* pixels_data = reinterpret_cast<uint8_t*>(result.getPixels());
   libyuv::ARGBScale(frame->data(), frame->stride(),
                     frame->size().width(), frame->size().height(),
                     pixels_data, result.rowBytes(),
@@ -94,7 +98,7 @@ class NativeDesktopMediaList::Worker
                content::DesktopMediaID::Id view_dialog_id);
 
  private:
-  typedef std::map<DesktopMediaID, uint32> ImageHashesMap;
+  typedef std::map<DesktopMediaID, uint32_t> ImageHashesMap;
 
   // webrtc::DesktopCapturer::Callback interface.
   webrtc::SharedMemory* CreateSharedMemory(size_t size) override;
@@ -117,8 +121,8 @@ NativeDesktopMediaList::Worker::Worker(
     scoped_ptr<webrtc::ScreenCapturer> screen_capturer,
     scoped_ptr<webrtc::WindowCapturer> window_capturer)
     : media_list_(media_list),
-      screen_capturer_(screen_capturer.Pass()),
-      window_capturer_(window_capturer.Pass()) {
+      screen_capturer_(std::move(screen_capturer)),
+      window_capturer_(std::move(window_capturer)) {
   if (screen_capturer_)
     screen_capturer_->Start(this);
   if (window_capturer_)
@@ -139,9 +143,12 @@ void NativeDesktopMediaList::Worker::Refresh(
       base::string16 title;
       for (size_t i = 0; i < screens.size(); ++i) {
         if (mutiple_screens) {
-          title = base::UTF8ToUTF16("Screen " + base::IntToString(i+1));
+          title = l10n_util::GetStringFUTF16Int(
+              IDS_DESKTOP_MEDIA_PICKER_MULTIPLE_SCREEN_NAME,
+              static_cast<int>(i + 1));
         } else {
-          title = base::UTF8ToUTF16("Entire screen");
+          title = l10n_util::GetStringUTF16(
+              IDS_DESKTOP_MEDIA_PICKER_SINGLE_SCREEN_NAME);
         }
         sources.push_back(SourceDescription(DesktopMediaID(
             DesktopMediaID::TYPE_SCREEN, screens[i].id), title));
@@ -195,14 +202,14 @@ void NativeDesktopMediaList::Worker::Refresh(
     // |current_frame_| may be NULL if capture failed (e.g. because window has
     // been closed).
     if (current_frame_) {
-      uint32 frame_hash = GetFrameHash(current_frame_.get());
+      uint32_t frame_hash = GetFrameHash(current_frame_.get());
       new_image_hashes[source.id] = frame_hash;
 
       // Scale the image only if it has changed.
       ImageHashesMap::iterator it = image_hashes_.find(source.id);
       if (it == image_hashes_.end() || it->second != frame_hash) {
         gfx::ImageSkia thumbnail =
-            ScaleDesktopFrame(current_frame_.Pass(), thumbnail_size);
+            ScaleDesktopFrame(std::move(current_frame_), thumbnail_size);
         BrowserThread::PostTask(
             BrowserThread::UI, FROM_HERE,
             base::Bind(&NativeDesktopMediaList::OnSourceThumbnail,
@@ -231,11 +238,11 @@ void NativeDesktopMediaList::Worker::OnCaptureCompleted(
 NativeDesktopMediaList::NativeDesktopMediaList(
     scoped_ptr<webrtc::ScreenCapturer> screen_capturer,
     scoped_ptr<webrtc::WindowCapturer> window_capturer)
-    : screen_capturer_(screen_capturer.Pass()),
-      window_capturer_(window_capturer.Pass()),
+    : screen_capturer_(std::move(screen_capturer)),
+      window_capturer_(std::move(window_capturer)),
       update_period_(base::TimeDelta::FromMilliseconds(kDefaultUpdatePeriod)),
       thumbnail_size_(100, 100),
-      view_dialog_id_(-1),
+      view_dialog_id_(content::DesktopMediaID::TYPE_NONE, -1),
       observer_(NULL),
       weak_factory_(this) {
   base::SequencedWorkerPool* worker_pool = BrowserThread::GetBlockingPool();
@@ -258,7 +265,7 @@ void NativeDesktopMediaList::SetThumbnailSize(
 }
 
 void NativeDesktopMediaList::SetViewDialogWindowId(
-    content::DesktopMediaID::Id dialog_id) {
+    content::DesktopMediaID dialog_id) {
   view_dialog_id_ = dialog_id;
 }
 
@@ -269,7 +276,8 @@ void NativeDesktopMediaList::StartUpdating(DesktopMediaListObserver* observer) {
   observer_ = observer;
 
   worker_.reset(new Worker(weak_factory_.GetWeakPtr(),
-                           screen_capturer_.Pass(), window_capturer_.Pass()));
+                           std::move(screen_capturer_),
+                           std::move(window_capturer_)));
   Refresh();
 }
 
@@ -282,14 +290,10 @@ const DesktopMediaList::Source& NativeDesktopMediaList::GetSource(
   return sources_[index];
 }
 
-std::vector<DesktopMediaList::Source> NativeDesktopMediaList::GetSources() const {
-  return sources_;
-}
-
 void NativeDesktopMediaList::Refresh() {
   capture_task_runner_->PostTask(
       FROM_HERE, base::Bind(&Worker::Refresh, base::Unretained(worker_.get()),
-                            thumbnail_size_, view_dialog_id_));
+                            thumbnail_size_, view_dialog_id_.id));
 }
 
 void NativeDesktopMediaList::OnSourcesList(
@@ -302,8 +306,8 @@ void NativeDesktopMediaList::OnSourcesList(
   // Iterate through the old sources to find the removed sources.
   for (size_t i = 0; i < sources_.size(); ++i) {
     if (new_source_set.find(sources_[i].id) == new_source_set.end()) {
-      observer_->OnSourceRemoved(i);
       sources_.erase(sources_.begin() + i);
+      observer_->OnSourceRemoved(i);
       --i;
     }
   }
@@ -363,13 +367,9 @@ void NativeDesktopMediaList::OnSourceThumbnail(
 }
 
 void NativeDesktopMediaList::OnRefreshFinished() {
-  // Give a chance to the observer to stop the refresh work.
-  bool is_continue = observer_->OnRefreshFinished();
-  if (is_continue) {
-    BrowserThread::PostDelayedTask(
-        BrowserThread::UI, FROM_HERE,
-        base::Bind(&NativeDesktopMediaList::Refresh,
-                   weak_factory_.GetWeakPtr()),
-        update_period_);
-  }
+  BrowserThread::PostDelayedTask(
+      BrowserThread::UI, FROM_HERE,
+      base::Bind(&NativeDesktopMediaList::Refresh,
+                 weak_factory_.GetWeakPtr()),
+      update_period_);
 }

@@ -5,9 +5,14 @@
 #ifndef CHROME_BROWSER_PRINTING_PRINTING_MESSAGE_FILTER_H_
 #define CHROME_BROWSER_PRINTING_PRINTING_MESSAGE_FILTER_H_
 
+#include <stdint.h>
+
 #include <string>
 
 #include "base/compiler_specific.h"
+#include "base/macros.h"
+#include "base/prefs/pref_member.h"
+#include "build/build_config.h"
 #include "content/public/browser/browser_message_filter.h"
 
 #if defined(OS_WIN)
@@ -37,16 +42,15 @@ class PrinterQuery;
 // renderer process on the IPC thread.
 class PrintingMessageFilter : public content::BrowserMessageFilter {
  public:
-  PrintingMessageFilter(int render_process_id);
+  PrintingMessageFilter(int render_process_id, Profile* profile);
 
   // content::BrowserMessageFilter methods.
-  void OverrideThreadForMessage(
-      const IPC::Message& message,
-      content::BrowserThread::ID* thread) override;
+  void OverrideThreadForMessage(const IPC::Message& message,
+                                content::BrowserThread::ID* thread) override;
   bool OnMessageReceived(const IPC::Message& message) override;
 
  private:
-  virtual ~PrintingMessageFilter();
+  ~PrintingMessageFilter() override;
 
 #if defined(OS_WIN)
   // Used to pass resulting EMF from renderer to browser in printing.
@@ -63,25 +67,20 @@ class PrintingMessageFilter : public content::BrowserMessageFilter {
   void OnTempFileForPrintingWritten(int render_view_id, int sequence_number);
 #endif
 
-#if defined(OS_CHROMEOS)
-  void CreatePrintDialogForFile(int render_view_id, const base::FilePath& path);
-#endif
-
 #if defined(OS_ANDROID)
   // Updates the file descriptor for the PrintViewManagerBasic of a given
   // render_view_id.
   void UpdateFileDescriptor(int render_view_id, int fd);
 #endif
 
-  // Given a render_view_id get the corresponding WebContents.
-  // Must be called on the UI thread.
-  content::WebContents* GetWebContentsForRenderView(int render_view_id);
-
   // GetPrintSettingsForRenderView must be called via PostTask and
   // base::Bind.  Collapse the settings-specific params into a
   // struct to avoid running into issues with too many params
   // to base::Bind.
   struct GetPrintSettingsForRenderViewParams;
+
+  // Checks if printing is enabled.
+  void OnIsPrintingEnabled(bool* is_enabled);
 
   // Get the default print setting.
   void OnGetDefaultPrintSettings(IPC::Message* reply_msg);
@@ -105,12 +104,15 @@ class PrintingMessageFilter : public content::BrowserMessageFilter {
   void OnUpdatePrintSettingsReply(scoped_refptr<PrinterQuery> printer_query,
                                   IPC::Message* reply_msg);
 
-#if defined(ENABLE_FULL_PRINTING)
+#if defined(ENABLE_PRINT_PREVIEW)
   // Check to see if print preview has been cancelled.
-  void OnCheckForCancel(int32 preview_ui_id,
+  void OnCheckForCancel(int32_t preview_ui_id,
                         int preview_request_id,
                         bool* cancel);
 #endif
+
+  scoped_ptr<BooleanPrefMember, content::BrowserThread::DeleteOnUIThread>
+      is_printing_enabled_;
 
   const int render_process_id_;
 

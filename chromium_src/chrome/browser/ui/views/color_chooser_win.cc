@@ -4,11 +4,14 @@
 
 #include <windows.h>
 
+#include "chrome/browser/platform_util.h"
 #include "chrome/browser/ui/browser_dialogs.h"
+#include "chrome/browser/ui/host_desktop.h"
 #include "chrome/browser/ui/views/color_chooser_aura.h"
 #include "chrome/browser/ui/views/color_chooser_dialog.h"
 #include "content/public/browser/color_chooser.h"
 #include "content/public/browser/render_view_host.h"
+#include "content/public/browser/render_widget_host.h"
 #include "content/public/browser/render_widget_host_view.h"
 #include "content/public/browser/web_contents.h"
 #include "ui/views/color_chooser/color_chooser_listener.h"
@@ -21,15 +24,15 @@ class ColorChooserWin : public content::ColorChooser,
 
   ColorChooserWin(content::WebContents* web_contents,
                   SkColor initial_color);
-  ~ColorChooserWin();
+  ~ColorChooserWin() override;
 
   // content::ColorChooser overrides:
-  virtual void End() override;
-  virtual void SetSelectedColor(SkColor color) override {}
+  void End() override;
+  void SetSelectedColor(SkColor color) override {}
 
   // views::ColorChooserListener overrides:
-  virtual void OnColorChosen(SkColor color);
-  virtual void OnColorChooserDialogClosed();
+  void OnColorChosen(SkColor color) override;
+  void OnColorChooserDialogClosed() override;
 
  private:
   static ColorChooserWin* current_color_chooser_;
@@ -55,9 +58,11 @@ ColorChooserWin* ColorChooserWin::Open(content::WebContents* web_contents,
 ColorChooserWin::ColorChooserWin(content::WebContents* web_contents,
                                  SkColor initial_color)
     : web_contents_(web_contents) {
-  gfx::NativeWindow owning_window = (gfx::NativeWindow)::GetAncestor(
-      (HWND)web_contents->GetRenderViewHost()->GetView()->GetNativeView(),
-      GA_ROOT);
+  gfx::NativeWindow owning_window =
+      platform_util::GetTopLevel(web_contents->GetRenderViewHost()
+                                     ->GetWidget()
+                                     ->GetView()
+                                     ->GetNativeView());
   color_chooser_dialog_ = new ColorChooserDialog(this,
                                                  initial_color,
                                                  owning_window);
@@ -65,7 +70,7 @@ ColorChooserWin::ColorChooserWin(content::WebContents* web_contents,
 
 ColorChooserWin::~ColorChooserWin() {
   // Always call End() before destroying.
-  DCHECK(!color_chooser_dialog_);
+  DCHECK(!color_chooser_dialog_.get());
 }
 
 void ColorChooserWin::End() {
@@ -98,6 +103,10 @@ namespace chrome {
 
 content::ColorChooser* ShowColorChooser(content::WebContents* web_contents,
                                         SkColor initial_color) {
+  gfx::NativeView native_view = web_contents->GetNativeView();
+  if (GetHostDesktopTypeForNativeView(native_view) == HOST_DESKTOP_TYPE_ASH)
+    return ColorChooserAura::Open(web_contents, initial_color);
+
   return ColorChooserWin::Open(web_contents, initial_color);
 }
 

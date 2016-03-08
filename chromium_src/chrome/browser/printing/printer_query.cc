@@ -68,21 +68,24 @@ void PrinterQuery::GetSettings(
     int expected_page_count,
     bool has_selection,
     MarginType margin_type,
+    bool is_scripted,
     const base::Closure& callback) {
   DCHECK(RunsTasksOnCurrentThread());
-  DCHECK(!is_print_dialog_box_shown_);
+  DCHECK(!is_print_dialog_box_shown_ || !is_scripted);
 
   StartWorker(callback);
 
   // Real work is done in PrintJobWorker::GetSettings().
-  is_print_dialog_box_shown_ = ask_user_for_settings == ASK_USER;
+  is_print_dialog_box_shown_ =
+      ask_user_for_settings == GetSettingsAskParam::ASK_USER;
   worker_->PostTask(FROM_HERE,
                     base::Bind(&PrintJobWorker::GetSettings,
                                base::Unretained(worker_.get()),
                                is_print_dialog_box_shown_,
                                expected_page_count,
                                has_selection,
-                               margin_type));
+                               margin_type,
+                               is_scripted));
 }
 
 void PrinterQuery::SetSettings(scoped_ptr<base::DictionaryValue> new_settings,

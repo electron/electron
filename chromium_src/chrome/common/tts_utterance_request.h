@@ -7,7 +7,6 @@
 
 #include <vector>
 
-#include "base/basictypes.h"
 #include "base/strings/string16.h"
 
 struct TtsUtteranceRequest {
@@ -32,13 +31,6 @@ struct TtsVoice {
   std::string lang;
   bool local_service;
   bool is_default;
-};
-
-struct TtsUtteranceResponse {
-  TtsUtteranceResponse();
-  ~TtsUtteranceResponse();
-
-  int id;
 };
 
 #endif  // CHROME_COMMON_TTS_UTTERANCE_REQUEST_H_

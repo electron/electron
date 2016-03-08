@@ -4,8 +4,6 @@
 
 #include "chrome/browser/renderer_host/pepper/pepper_flash_drm_host.h"
 
-#include <cmath>
-
 #if defined(OS_WIN)
 #include <Windows.h>
 #endif
@@ -14,14 +12,12 @@
 #include "base/compiler_specific.h"
 #include "base/logging.h"
 #include "base/memory/ref_counted.h"
-#include "base/strings/string_number_conversions.h"
 #include "build/build_config.h"
 #include "content/public/browser/browser_ppapi_host.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/child_process_security_policy.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/common/pepper_plugin_info.h"
-#include "net/base/net_util.h"
 #include "ppapi/c/pp_errors.h"
 #include "ppapi/host/dispatch_host_message.h"
 #include "ppapi/host/host_message_context.h"
@@ -42,30 +38,7 @@ using content::BrowserPpapiHost;
 namespace chrome {
 
 namespace {
-
 const char kVoucherFilename[] = "plugin.vch";
-
-#if defined(OS_WIN)
-bool GetSystemVolumeSerialNumber(std::string* number) {
-  // Find the system root path (e.g: C:\).
-  wchar_t system_path[MAX_PATH + 1];
-  if (!GetSystemDirectoryW(system_path, MAX_PATH))
-    return false;
-
-  wchar_t* first_slash = wcspbrk(system_path, L"\\/");
-  if (first_slash != NULL)
-    *(first_slash + 1) = 0;
-
-  DWORD number_local = 0;
-  if (!GetVolumeInformationW(system_path, NULL, 0, &number_local, NULL, NULL,
-                             NULL, 0))
-    return false;
-
-  *number = base::IntToString(std::abs(static_cast<int>(number_local)));
-  return true;
-}
-#endif
-
 }
 
 #if defined(OS_WIN)
@@ -154,6 +127,7 @@ PepperFlashDRMHost::PepperFlashDRMHost(BrowserPpapiHost* host,
   content::ChildProcessSecurityPolicy::GetInstance()->GrantReadFile(
       render_process_id, voucher_file);
 
+  fetcher_ = new DeviceIDFetcher(render_process_id);
   monitor_finder_ = new MonitorFinder(render_process_id, render_frame_id);
   monitor_finder_->GetMonitor();
 }
@@ -176,16 +150,12 @@ int32_t PepperFlashDRMHost::OnResourceMessageReceived(
 
 int32_t PepperFlashDRMHost::OnHostMsgGetDeviceID(
     ppapi::host::HostMessageContext* context) {
-  static std::string id;
-#if defined(OS_WIN)
-  if (id.empty() && !GetSystemVolumeSerialNumber(&id))
-    id = net::GetHostName();
-#else
-  if (id.empty())
-    id = net::GetHostName();
-#endif
-  context->reply_msg = PpapiPluginMsg_FlashDRM_GetDeviceIDReply(id);
-  return PP_OK;
+  if (!fetcher_->Start(base::Bind(&PepperFlashDRMHost::GotDeviceID,
+                                  weak_factory_.GetWeakPtr(),
+                                  context->MakeReplyMessageContext()))) {
+    return PP_ERROR_INPROGRESS;
+  }
+  return PP_OK_COMPLETIONPENDING;
 }
 
 int32_t PepperFlashDRMHost::OnHostMsgGetHmonitor(
@@ -212,6 +182,19 @@ int32_t PepperFlashDRMHost::OnHostMsgMonitorIsExternal(
   context->reply_msg =
       PpapiPluginMsg_FlashDRM_MonitorIsExternalReply(is_external);
   return PP_OK;
+}
+
+void PepperFlashDRMHost::GotDeviceID(
+    ppapi::host::ReplyMessageContext reply_context,
+    const std::string& id,
+    int32_t result) {
+  if (id.empty() && result == PP_OK) {
+    NOTREACHED();
+    result = PP_ERROR_FAILED;
+  }
+  reply_context.params.set_result(result);
+  host()->SendReply(reply_context,
+                    PpapiPluginMsg_FlashDRM_GetDeviceIDReply(id));
 }
 
 }  // namespace chrome

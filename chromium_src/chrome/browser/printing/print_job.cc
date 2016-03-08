@@ -6,10 +6,13 @@
 
 #include "base/bind.h"
 #include "base/bind_helpers.h"
+#include "base/location.h"
 #include "base/message_loop/message_loop.h"
+#include "base/single_thread_task_runner.h"
+#include "base/thread_task_runner_handle.h"
 #include "base/threading/thread_restrictions.h"
 #include "base/threading/worker_pool.h"
-#include "base/timer/timer.h"
+#include "build/build_config.h"
 #include "chrome/browser/chrome_notification_types.h"
 #include "chrome/browser/printing/print_job_worker.h"
 #include "content/public/browser/browser_thread.h"
@@ -21,7 +24,6 @@
 #include "chrome/browser/printing/pdf_to_emf_converter.h"
 #include "printing/pdf_render_settings.h"
 #endif
-
 
 using base::TimeDelta;
 
@@ -196,8 +198,9 @@ bool PrintJob::FlushJob(base::TimeDelta timeout) {
   // Make sure the object outlive this message loop.
   scoped_refptr<PrintJob> handle(this);
 
-  base::MessageLoop::current()->PostDelayedTask(FROM_HERE,
-      base::Bind(&PrintJob::Quit, quit_factory_.GetWeakPtr()), timeout);
+  base::ThreadTaskRunnerHandle::Get()->PostDelayedTask(
+      FROM_HERE, base::Bind(&PrintJob::Quit, quit_factory_.GetWeakPtr()),
+      timeout);
 
   base::MessageLoop::ScopedNestableTaskAllower allow(
       base::MessageLoop::current());
@@ -362,7 +365,7 @@ void PrintJob::OnNotifyPrintJobEvent(const JobEventDetails& event_details) {
     }
     case JobEventDetails::DOC_DONE: {
       // This will call Stop() and broadcast a JOB_DONE message.
-      base::MessageLoop::current()->PostTask(
+      base::ThreadTaskRunnerHandle::Get()->PostTask(
           FROM_HERE, base::Bind(&PrintJob::OnDocumentDone, this));
       break;
     }
@@ -441,7 +444,7 @@ void PrintJob::HoldUntilStopIsCalled() {
 }
 
 void PrintJob::Quit() {
-  base::MessageLoop::current()->Quit();
+  base::MessageLoop::current()->QuitWhenIdle();
 }
 
 // Takes settings_ ownership and will be deleted in the receiving thread.

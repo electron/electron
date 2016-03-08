@@ -5,6 +5,7 @@
 #ifndef CHROME_BROWSER_UI_VIEWS_COLOR_CHOOSER_DIALOG_H_
 #define CHROME_BROWSER_UI_VIEWS_COLOR_CHOOSER_DIALOG_H_
 
+#include "base/macros.h"
 #include "base/memory/ref_counted.h"
 #include "chrome/browser/ui/views/color_chooser_dialog.h"
 #include "third_party/skia/include/core/SkColor.h"
@@ -23,13 +24,15 @@ class ColorChooserDialog
   ColorChooserDialog(views::ColorChooserListener* listener,
                      SkColor initial_color,
                      gfx::NativeWindow owning_window);
-  virtual ~ColorChooserDialog();
 
   // BaseShellDialog:
-  virtual bool IsRunning(gfx::NativeWindow owning_window) const override;
-  virtual void ListenerDestroyed() override;
+  bool IsRunning(gfx::NativeWindow owning_window) const override;
+  void ListenerDestroyed() override;
 
  private:
+  friend class base::RefCountedThreadSafe<ColorChooserDialog>;
+  ~ColorChooserDialog() override;
+
   struct ExecuteOpenParams {
     ExecuteOpenParams(SkColor color, RunState run_state, HWND owner);
     SkColor color;

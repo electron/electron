@@ -19,3 +19,4 @@ class UtilityMessageHandler {
 };
 
 #endif  // CHROME_UTILITY_UTILITY_MESSAGE_HANDLER_H_
+

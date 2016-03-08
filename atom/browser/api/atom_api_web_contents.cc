@@ -303,9 +303,9 @@ WebContents::~WebContents() {
 }
 
 bool WebContents::AddMessageToConsole(content::WebContents* source,
-                                      int32 level,
+                                      int32_t level,
                                       const base::string16& message,
-                                      int32 line_no,
+                                      int32_t line_no,
                                       const base::string16& source_id) {
   if (type_ == BROWSER_WINDOW) {
     return false;
@@ -998,8 +998,8 @@ void WebContents::ReplaceMisspelling(const base::string16& word) {
   web_contents()->ReplaceMisspelling(word);
 }
 
-uint32 WebContents::FindInPage(mate::Arguments* args) {
-  uint32 request_id = GetNextRequestId();
+uint32_t WebContents::FindInPage(mate::Arguments* args) {
+  uint32_t request_id = GetNextRequestId();
   base::string16 search_text;
   blink::WebFindOptions options;
   if (!args->GetNext(&search_text) || search_text.empty()) {

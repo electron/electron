@@ -2,27 +2,45 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "chrome/renderer/printing/print_web_view_helper.h"
+#include "components/printing/renderer/print_web_view_helper.h"
 
 #import <AppKit/AppKit.h>
 
 #include "base/logging.h"
 #include "base/mac/scoped_nsautorelease_pool.h"
 #include "base/metrics/histogram.h"
-#include "chrome/common/print_messages.h"
+#include "components/printing/common/print_messages.h"
 #include "printing/metafile_skia_wrapper.h"
 #include "printing/page_size_margins.h"
-#include "skia/ext/platform_device.h"
+#include "skia/ext/platform_canvas.h"
 #include "third_party/WebKit/public/platform/WebCanvas.h"
 #include "third_party/WebKit/public/web/WebLocalFrame.h"
 
 namespace printing {
 
-using blink::WebFrame;
+#if defined(ENABLE_BASIC_PRINTING)
+bool PrintWebViewHelper::PrintPagesNative(blink::WebFrame* frame,
+                                          int page_count) {
+  const PrintMsg_PrintPages_Params& params = *print_pages_params_;
+  const PrintMsg_Print_Params& print_params = params.params;
+
+  std::vector<int> printed_pages = GetPrintedPages(params, page_count);
+  if (printed_pages.empty())
+    return false;
+
+  PrintMsg_PrintPage_Params page_params;
+  page_params.params = print_params;
+  for (int page_number : printed_pages) {
+    page_params.page_number = page_number;
+    PrintPageInternal(page_params, frame);
+  }
+  return true;
+}
+#endif  // defined(ENABLE_BASIC_PRINTING)
 
 void PrintWebViewHelper::PrintPageInternal(
     const PrintMsg_PrintPage_Params& params,
-    WebFrame* frame) {
+    blink::WebFrame* frame) {
   PdfMetafileSkia metafile;
   if (!metafile.Init())
     return;
@@ -42,14 +60,16 @@ void PrintWebViewHelper::PrintPageInternal(
   page_params.content_area = content_area_in_dpi;
 
   // Ask the browser to create the shared memory for us.
-  if (!CopyMetafileDataToSharedMem(&metafile,
+  if (!CopyMetafileDataToSharedMem(metafile,
                                    &(page_params.metafile_data_handle))) {
+    // TODO(thestig): Fail and return false instead.
     page_params.data_size = 0;
   }
 
   Send(new PrintHostMsg_DidPrintPage(routing_id(), page_params));
 }
 
+#if defined(ENABLE_PRINT_PREVIEW)
 bool PrintWebViewHelper::RenderPreviewPage(
     int page_number,
     const PrintMsg_Print_Params& print_params) {
@@ -90,10 +110,11 @@ bool PrintWebViewHelper::RenderPreviewPage(
   }
   return PreviewPageRendered(page_number, draft_metafile.get());
 }
+#endif  // defined(ENABLE_PRINT_PREVIEW)
 
 void PrintWebViewHelper::RenderPage(const PrintMsg_Print_Params& params,
                                     int page_number,
-                                    WebFrame* frame,
+                                    blink::WebFrame* frame,
                                     bool is_preview,
                                     PdfMetafileSkia* metafile,
                                     gfx::Size* page_size,
@@ -113,7 +134,8 @@ void PrintWebViewHelper::RenderPage(const PrintMsg_Print_Params& params,
 
   scale_factor *= webkit_shrink_factor;
 
-  gfx::Rect canvas_area = content_area;
+  gfx::Rect canvas_area =
+      params.display_header_footer ? gfx::Rect(*page_size) : content_area;
 
   {
     skia::PlatformCanvas* canvas = metafile->GetVectorCanvasForNewPage(
@@ -122,9 +144,15 @@ void PrintWebViewHelper::RenderPage(const PrintMsg_Print_Params& params,
       return;
 
     MetafileSkiaWrapper::SetMetafileOnCanvas(*canvas, metafile);
-    skia::SetIsDraftMode(*canvas, is_print_ready_metafile_sent_);
     skia::SetIsPreviewMetafile(*canvas, is_preview);
-
+#if defined(ENABLE_PRINT_PREVIEW)
+    if (params.display_header_footer) {
+      PrintHeaderAndFooter(static_cast<blink::WebCanvas*>(canvas),
+                           page_number + 1,
+                           print_preview_context_.total_page_count(), *frame,
+                           scale_factor, page_layout_in_points, params);
+    }
+#endif  // defined(ENABLE_PRINT_PREVIEW)
     RenderPageContent(frame, page_number, canvas_area, content_area,
                       scale_factor, static_cast<blink::WebCanvas*>(canvas));
   }

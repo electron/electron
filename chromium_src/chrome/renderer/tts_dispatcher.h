@@ -7,9 +7,9 @@
 
 #include <vector>
 
-#include "base/basictypes.h"
 #include "base/compiler_specific.h"
 #include "base/containers/hash_tables.h"
+#include "base/macros.h"
 #include "content/public/renderer/render_process_observer.h"
 #include "third_party/WebKit/public/platform/WebSpeechSynthesizer.h"
 #include "third_party/WebKit/public/platform/WebSpeechSynthesizerClient.h"
@@ -34,18 +34,17 @@ class TtsDispatcher
   explicit TtsDispatcher(blink::WebSpeechSynthesizerClient* client);
 
  private:
-  virtual ~TtsDispatcher();
+  ~TtsDispatcher() override;
 
   // RenderProcessObserver override.
-  virtual bool OnControlMessageReceived(const IPC::Message& message) override;
+  bool OnControlMessageReceived(const IPC::Message& message) override;
 
   // blink::WebSpeechSynthesizer implementation.
-  virtual void updateVoiceList() override;
-  virtual void speak(const blink::WebSpeechSynthesisUtterance& utterance)
-      override;
-  virtual void pause() override;
-  virtual void resume() override;
-  virtual void cancel() override;
+  void updateVoiceList() override;
+  void speak(const blink::WebSpeechSynthesisUtterance& utterance) override;
+  void pause() override;
+  void resume() override;
+  void cancel() override;
 
   blink::WebSpeechSynthesisUtterance FindUtterance(int utterance_id);
 

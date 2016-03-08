@@ -5,22 +5,33 @@
 #include "chrome/browser/process_singleton.h"
 
 #include <shellapi.h>
+#include <stddef.h>
 
 #include "base/base_paths.h"
 #include "base/bind.h"
 #include "base/command_line.h"
 #include "base/files/file_path.h"
+#include "base/macros.h"
 #include "base/process/process.h"
 #include "base/process/process_info.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/time/time.h"
-#include "base/win/metro.h"
 #include "base/win/registry.h"
 #include "base/win/scoped_handle.h"
 #include "base/win/windows_version.h"
+#include "chrome/browser/browser_process.h"
+#include "chrome/browser/browser_process_platform_part.h"
 #include "chrome/browser/chrome_process_finder_win.h"
+#include "chrome/browser/shell_integration.h"
+#include "chrome/browser/ui/simple_message_box.h"
+#include "chrome/common/chrome_constants.h"
+#include "chrome/common/chrome_paths.h"
+#include "chrome/common/chrome_paths_internal.h"
+#include "chrome/common/chrome_switches.h"
+#include "chrome/grit/chromium_strings.h"
+#include "chrome/installer/util/wmi.h"
 #include "content/public/common/result_codes.h"
 #include "net/base/escape.h"
 #include "ui/base/l10n/l10n_util.h"
@@ -77,21 +88,8 @@ BOOL CALLBACK BrowserWindowEnumeration(HWND window, LPARAM param) {
   return !*result;
 }
 
-// Convert Command line string to argv.
-base::CommandLine::StringVector CommandLineStringToArgv(
-    const std::wstring& command_line_string) {
-  int num_args = 0;
-  wchar_t** args = NULL;
-  args = ::CommandLineToArgvW(command_line_string.c_str(), &num_args);
-  base::CommandLine::StringVector argv;
-  for (int i = 0; i < num_args; ++i)
-    argv.push_back(std::wstring(args[i]));
-  LocalFree(args);
-  return argv;
-}
-
 bool ParseCommandLine(const COPYDATASTRUCT* cds,
-                      base::CommandLine::StringVector* parsed_command_line,
+                      base::CommandLine* parsed_command_line,
                       base::FilePath* current_directory) {
   // We should have enough room for the shortest command (min_message_size)
   // and also be a multiple of wchar_t bytes. The shortest command
@@ -144,7 +142,7 @@ bool ParseCommandLine(const COPYDATASTRUCT* cds,
     // Get command line.
     const std::wstring cmd_line =
         msg.substr(second_null + 1, third_null - second_null);
-    *parsed_command_line = CommandLineStringToArgv(cmd_line);
+    *parsed_command_line = base::CommandLine::FromString(cmd_line);
     return true;
   }
   return false;
@@ -162,7 +160,7 @@ bool ProcessLaunchNotification(
   // Handle the WM_COPYDATA message from another process.
   const COPYDATASTRUCT* cds = reinterpret_cast<COPYDATASTRUCT*>(lparam);
 
-  base::CommandLine::StringVector parsed_command_line;
+  base::CommandLine parsed_command_line(base::CommandLine::NO_PROGRAM);
   base::FilePath current_directory;
   if (!ParseCommandLine(cds, &parsed_command_line, &current_directory)) {
     *result = TRUE;
@@ -174,13 +172,46 @@ bool ProcessLaunchNotification(
   return true;
 }
 
-bool TerminateAppWithError() {
-  // TODO: This is called when the secondary process can't ping the primary
-  // process. Need to find out what to do here.
-  return false;
+bool DisplayShouldKillMessageBox() {
+  return chrome::ShowMessageBox(
+             NULL, l10n_util::GetStringUTF16(IDS_PRODUCT_NAME),
+             l10n_util::GetStringUTF16(IDS_BROWSER_HUNGBROWSER_MESSAGE),
+             chrome::MESSAGE_BOX_TYPE_QUESTION) !=
+         chrome::MESSAGE_BOX_RESULT_NO;
 }
 
 }  // namespace
+
+// Microsoft's Softricity virtualization breaks the sandbox processes.
+// So, if we detect the Softricity DLL we use WMI Win32_Process.Create to
+// break out of the virtualization environment.
+// http://code.google.com/p/chromium/issues/detail?id=43650
+bool ProcessSingleton::EscapeVirtualization(
+    const base::FilePath& user_data_dir) {
+  if (::GetModuleHandle(L"sftldr_wow64.dll") ||
+      ::GetModuleHandle(L"sftldr.dll")) {
+    int process_id;
+    if (!installer::WMIProcess::Launch(::GetCommandLineW(), &process_id))
+      return false;
+    is_virtualized_ = true;
+    // The new window was spawned from WMI, and won't be in the foreground.
+    // So, first we sleep while the new chrome.exe instance starts (because
+    // WaitForInputIdle doesn't work here). Then we poll for up to two more
+    // seconds and make the window foreground if we find it (or we give up).
+    HWND hwnd = 0;
+    ::Sleep(90);
+    for (int tries = 200; tries; --tries) {
+      hwnd = chrome::FindRunningChromeWindow(user_data_dir);
+      if (hwnd) {
+        ::SetForegroundWindow(hwnd);
+        break;
+      }
+      ::Sleep(10);
+    }
+    return true;
+  }
+  return false;
+}
 
 ProcessSingleton::ProcessSingleton(
     const base::FilePath& user_data_dir,
@@ -190,7 +221,7 @@ ProcessSingleton::ProcessSingleton(
       lock_file_(INVALID_HANDLE_VALUE),
       user_data_dir_(user_data_dir),
       should_kill_remote_process_callback_(
-          base::Bind(&TerminateAppWithError)) {
+          base::Bind(&DisplayShouldKillMessageBox)) {
 }
 
 ProcessSingleton::~ProcessSingleton() {
@@ -252,6 +283,9 @@ ProcessSingleton::NotifyOtherProcessOrCreate() {
     result = NotifyOtherProcess();
     if (result == PROCESS_NONE)
       result = PROFILE_IN_USE;
+  } else {
+    g_browser_process->platform_part()->PlatformSpecificCommandLineProcessing(
+        *base::CommandLine::ForCurrentProcess());
   }
   return result;
 }
@@ -260,10 +294,10 @@ ProcessSingleton::NotifyOtherProcessOrCreate() {
 // isn't one, create a message window with its title set to the profile
 // directory path.
 bool ProcessSingleton::Create() {
-  static const wchar_t kMutexName[] = L"Local\\AtomProcessSingletonStartup!";
+  static const wchar_t kMutexName[] = L"Local\\ChromeProcessSingletonStartup!";
 
   remote_window_ = chrome::FindRunningChromeWindow(user_data_dir_);
-  if (!remote_window_) {
+  if (!remote_window_ && !EscapeVirtualization(user_data_dir_)) {
     // Make sure we will be the one and only process creating the window.
     // We use a named Mutex since we are protecting against multi-process
     // access. As documented, it's clearer to NOT request ownership on creation
@@ -282,6 +316,7 @@ bool ProcessSingleton::Create() {
     // between the time where we looked for it above and the time the mutex
     // was given to us.
     remote_window_ = chrome::FindRunningChromeWindow(user_data_dir_);
+
     if (!remote_window_) {
       // We have to make sure there is no Chrome instance running on another
       // machine that uses the same profile.
@@ -306,11 +341,6 @@ bool ProcessSingleton::Create() {
         bool result = window_.CreateNamed(
             base::Bind(&ProcessLaunchNotification, notification_callback_),
             user_data_dir_.value());
-
-        // NB: Ensure that if the primary app gets started as elevated
-        // admin inadvertently, secondary windows running not as elevated
-        // will still be able to send messages
-        ::ChangeWindowMessageFilterEx(window_.hwnd(), WM_COPYDATA, MSGFLT_ALLOW, NULL);
         CHECK(result && window_.hwnd());
       }
     }

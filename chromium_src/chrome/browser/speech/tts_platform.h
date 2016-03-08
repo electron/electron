@@ -7,6 +7,7 @@
 
 #include <string>
 
+#include "base/macros.h"
 #include "chrome/browser/speech/tts_controller.h"
 
 // Abstract class that defines the native platform TTS interface,

@@ -151,11 +151,6 @@ class Utterance {
   void set_options(const base::Value* options);
   const base::Value* options() const { return options_.get(); }
 
-  void set_src_extension_id(const std::string& src_extension_id) {
-    src_extension_id_ = src_extension_id;
-  }
-  const std::string& src_extension_id() { return src_extension_id_; }
-
   void set_src_id(int src_id) { src_id_ = src_id; }
   int src_id() { return src_id_; }
 
@@ -177,8 +172,12 @@ class Utterance {
   }
   TtsGenderType gender() const { return gender_; }
 
-  void set_continuous_parameters(const UtteranceContinuousParameters& params) {
-    continuous_parameters_ = params;
+  void set_continuous_parameters(const double rate,
+                                 const double pitch,
+                                 const double volume) {
+    continuous_parameters_.rate = rate;
+    continuous_parameters_.pitch = pitch;
+    continuous_parameters_.volume = volume;
   }
   const UtteranceContinuousParameters& continuous_parameters() {
     return continuous_parameters_;
@@ -207,10 +206,9 @@ class Utterance {
   }
 
   UtteranceEventDelegate* event_delegate() const {
-    return event_delegate_.get();
+    return event_delegate_;
   }
-  void set_event_delegate(
-      base::WeakPtr<UtteranceEventDelegate> event_delegate) {
+  void set_event_delegate(UtteranceEventDelegate* event_delegate) {
     event_delegate_ = event_delegate;
   }
 
@@ -242,10 +240,6 @@ class Utterance {
   // other than the ones we explicitly parse, below.
   scoped_ptr<base::Value> options_;
 
-  // The extension ID of the extension that called speak() and should
-  // receive events.
-  std::string src_extension_id_;
-
   // The source extension's ID of this utterance, so that it can associate
   // events with the appropriate callback.
   int src_id_;
@@ -254,7 +248,7 @@ class Utterance {
   GURL src_url_;
 
   // The delegate to be called when an utterance event is fired.
-  base::WeakPtr<UtteranceEventDelegate> event_delegate_;
+  UtteranceEventDelegate* event_delegate_;
 
   // The parsed options.
   std::string voice_name_;
@@ -323,6 +317,12 @@ class TtsController {
 
   // Remove delegate that wants to be notified when the set of voices changes.
   virtual void RemoveVoicesChangedDelegate(VoicesChangedDelegate* delegate) = 0;
+
+  // Remove delegate that wants to be notified when an utterance fires an event.
+  // Note: this cancels speech from any utterance with this delegate, and
+  // removes any utterances with this delegate from the queue.
+  virtual void RemoveUtteranceEventDelegate(UtteranceEventDelegate* delegate)
+      = 0;
 
   // Set the delegate that processes TTS requests with user-installed
   // extensions.

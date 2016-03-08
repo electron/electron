@@ -7,6 +7,7 @@
 #include <commdlg.h>
 
 #include "base/bind.h"
+#include "base/macros.h"
 #include "base/message_loop/message_loop.h"
 #include "base/threading/thread.h"
 #include "content/public/browser/browser_thread.h"
@@ -40,9 +41,6 @@ ColorChooserDialog::ColorChooserDialog(views::ColorChooserListener* listener,
       base::Bind(&ColorChooserDialog::ExecuteOpen, this, execute_params));
 }
 
-ColorChooserDialog::~ColorChooserDialog() {
-}
-
 bool ColorChooserDialog::IsRunning(gfx::NativeWindow owning_window) const {
   return listener_ && IsRunningDialogForOwner(
       views::HWNDForNativeWindow(owning_window));
@@ -52,6 +50,9 @@ void ColorChooserDialog::ListenerDestroyed() {
   // Our associated listener has gone away, so we shouldn't call back to it if
   // our worker thread returns after the listener is dead.
   listener_ = NULL;
+}
+
+ColorChooserDialog::~ColorChooserDialog() {
 }
 
 void ColorChooserDialog::ExecuteOpen(const ExecuteOpenParams& params) {

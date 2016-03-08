@@ -5,7 +5,7 @@
 #ifndef ATOM_COMMON_NODE_BINDINGS_H_
 #define ATOM_COMMON_NODE_BINDINGS_H_
 
-#include "base/basictypes.h"
+#include "base/macros.h"
 #include "base/memory/weak_ptr.h"
 #include "v8/include/v8.h"
 #include "vendor/node/deps/uv/include/uv.h"

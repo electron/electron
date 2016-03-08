@@ -5,11 +5,13 @@
 #include <string>
 
 #include "base/mac/scoped_nsobject.h"
+#include "base/macros.h"
 #include "base/memory/singleton.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/values.h"
 #include "chrome/browser/speech/tts_controller.h"
 #include "chrome/browser/speech/tts_platform.h"
+#include "extensions/browser/extension_function.h"
 
 #import <Cocoa/Cocoa.h>
 
@@ -49,26 +51,23 @@ class TtsPlatformImplMac;
 
 class TtsPlatformImplMac : public TtsPlatformImpl {
  public:
-  virtual bool PlatformImplAvailable() override {
-    return true;
-  }
+  bool PlatformImplAvailable() override { return true; }
 
-  virtual bool Speak(
-      int utterance_id,
-      const std::string& utterance,
-      const std::string& lang,
-      const VoiceData& voice,
-      const UtteranceContinuousParameters& params) override;
+  bool Speak(int utterance_id,
+             const std::string& utterance,
+             const std::string& lang,
+             const VoiceData& voice,
+             const UtteranceContinuousParameters& params) override;
 
-  virtual bool StopSpeaking() override;
+  bool StopSpeaking() override;
 
-  virtual void Pause() override;
+  void Pause() override;
 
-  virtual void Resume() override;
+  void Resume() override;
 
-  virtual bool IsSpeaking() override;
+  bool IsSpeaking() override;
 
-  virtual void GetVoices(std::vector<VoiceData>* out_voices) override;
+  void GetVoices(std::vector<VoiceData>* out_voices) override;
 
   // Called by ChromeTtsDelegate when we get a callback from the
   // native speech engine.
@@ -82,7 +81,7 @@ class TtsPlatformImplMac : public TtsPlatformImpl {
 
  private:
   TtsPlatformImplMac();
-  virtual ~TtsPlatformImplMac();
+  ~TtsPlatformImplMac() override;
 
   base::scoped_nsobject<SingleUseSpeechSynthesizer> speech_synthesizer_;
   base::scoped_nsobject<ChromeTtsDelegate> delegate_;

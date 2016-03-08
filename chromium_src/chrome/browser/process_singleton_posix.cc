@@ -52,15 +52,16 @@
 #include <set>
 #include <string>
 
-#include "atom/common/atom_command_line.h"
+#include <stddef.h>
+
 #include "base/base_paths.h"
-#include "base/basictypes.h"
 #include "base/bind.h"
 #include "base/command_line.h"
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
 #include "base/location.h"
 #include "base/logging.h"
+#include "base/macros.h"
 #include "base/message_loop/message_loop.h"
 #include "base/path_service.h"
 #include "base/posix/eintr_wrapper.h"
@@ -78,9 +79,17 @@
 #include "base/threading/platform_thread.h"
 #include "base/time/time.h"
 #include "base/timer/timer.h"
+#include "build/build_config.h"
+#include "chrome/common/chrome_constants.h"
+#include "chrome/grit/chromium_strings.h"
+#include "chrome/grit/generated_resources.h"
 #include "content/public/browser/browser_thread.h"
 #include "net/base/net_util.h"
 #include "ui/base/l10n/l10n_util.h"
+
+#if defined(OS_LINUX)
+#include "chrome/browser/ui/process_singleton_dialog_linux.h"
+#endif
 
 #if defined(TOOLKIT_VIEWS) && defined(OS_LINUX) && !defined(OS_CHROMEOS)
 #include "ui/views/linux_ui/linux_ui.h"
@@ -105,13 +114,6 @@ const int kMaxMessageLength = 32 * 1024;
 const int kMaxACKMessageLength = arraysize(kShutdownToken) - 1;
 
 const char kLockDelimiter = '-';
-
-const base::FilePath::CharType kSingletonCookieFilename[] =
-      FILE_PATH_LITERAL("SingletonCookie");
-
-const base::FilePath::CharType kSingletonLockFilename[] = FILE_PATH_LITERAL("SingletonLock");
-const base::FilePath::CharType kSingletonSocketFilename[] =
-      FILE_PATH_LITERAL("SingletonSocket");
 
 // Set the close-on-exec bit on a file descriptor.
 // Returns 0 on success, -1 on failure.
@@ -222,9 +224,8 @@ int SetupSocketOnly() {
   int sock = socket(PF_UNIX, SOCK_STREAM, 0);
   PCHECK(sock >= 0) << "socket() failed";
 
-  int rv = net::SetNonBlocking(sock);
-  DCHECK_EQ(0, rv) << "Failed to make non-blocking socket.";
-  rv = SetCloseOnExec(sock);
+  DCHECK(base::SetNonBlocking(sock)) << "Failed to make non-blocking socket.";
+  int rv = SetCloseOnExec(sock);
   DCHECK_EQ(0, rv) << "Failed to set CLOEXEC on socket.";
 
   return sock;
@@ -305,19 +306,33 @@ bool ParseLockPath(const base::FilePath& path,
 bool DisplayProfileInUseError(const base::FilePath& lock_path,
                               const std::string& hostname,
                               int pid) {
-  // TODO: yolo
+  base::string16 error = l10n_util::GetStringFUTF16(
+      IDS_PROFILE_IN_USE_POSIX,
+      base::IntToString16(pid),
+      base::ASCIIToUTF16(hostname));
+  LOG(ERROR) << error;
+
+  if (g_disable_prompt)
+    return false;
+
+#if defined(OS_LINUX)
+  base::string16 relaunch_button_text = l10n_util::GetStringUTF16(
+      IDS_PROFILE_IN_USE_LINUX_RELAUNCH);
+  return ShowProcessSingletonDialog(error, relaunch_button_text);
+#elif defined(OS_MACOSX)
+  // On Mac, always usurp the lock.
   return true;
+#endif
+
+  NOTREACHED();
+  return false;
 }
 
 bool IsChromeProcess(pid_t pid) {
   base::FilePath other_chrome_path(base::GetProcessExecutablePath(pid));
-
-  auto command_line = base::CommandLine::ForCurrentProcess();
-  base::FilePath exec_path(command_line->GetProgram());
-  PathService::Get(base::FILE_EXE, &exec_path);
-
   return (!other_chrome_path.empty() &&
-          other_chrome_path.BaseName() == exec_path.BaseName());
+          other_chrome_path.BaseName() ==
+          base::FilePath(chrome::kBrowserProcessExecutableName));
 }
 
 // A helper class to hold onto a socket.
@@ -358,7 +373,7 @@ bool ConnectSocket(ScopedSocket* socket,
     if (cookie.empty())
       return false;
     base::FilePath remote_cookie = socket_target.DirName().
-                             Append(kSingletonCookieFilename);
+                             Append(chrome::kSingletonCookieFilename);
     // Verify the cookie before connecting.
     if (!CheckCookie(remote_cookie, cookie))
       return false;
@@ -577,8 +592,8 @@ void ProcessSingleton::LinuxWatcher::OnFileCanReadWithoutBlocking(int fd) {
     PLOG(ERROR) << "accept() failed";
     return;
   }
-  int rv = net::SetNonBlocking(connection_socket);
-  DCHECK_EQ(0, rv) << "Failed to make non-blocking socket.";
+  DCHECK(base::SetNonBlocking(connection_socket))
+      << "Failed to make non-blocking socket.";
   SocketReader* reader = new SocketReader(this,
                                           ui_message_loop_,
                                           connection_socket);
@@ -600,7 +615,7 @@ void ProcessSingleton::LinuxWatcher::HandleMessage(
   DCHECK(ui_message_loop_ == base::MessageLoop::current());
   DCHECK(reader);
 
-  if (parent_->notification_callback_.Run(argv,
+  if (parent_->notification_callback_.Run(base::CommandLine(argv),
                                           base::FilePath(current_dir))) {
     // Send back "ACK" message to prevent the client process from starting up.
     reader->FinishWithACK(kACKToken, arraysize(kACKToken) - 1);
@@ -716,10 +731,11 @@ ProcessSingleton::ProcessSingleton(
     const base::FilePath& user_data_dir,
     const NotificationCallback& notification_callback)
     : notification_callback_(notification_callback),
-      current_pid_(base::GetCurrentProcId()) {
-  socket_path_ = user_data_dir.Append(kSingletonSocketFilename);
-  lock_path_ = user_data_dir.Append(kSingletonLockFilename);
-  cookie_path_ = user_data_dir.Append(kSingletonCookieFilename);
+      current_pid_(base::GetCurrentProcId()),
+      watcher_(new LinuxWatcher(this)) {
+  socket_path_ = user_data_dir.Append(chrome::kSingletonSocketFilename);
+  lock_path_ = user_data_dir.Append(chrome::kSingletonLockFilename);
+  cookie_path_ = user_data_dir.Append(chrome::kSingletonCookieFilename);
 
   kill_callback_ = base::Bind(&ProcessSingleton::KillProcess,
                               base::Unretained(this));
@@ -818,7 +834,7 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessWithTimeout(
     return PROCESS_NONE;
   to_send.append(current_dir.value());
 
-  const std::vector<std::string>& argv = atom::AtomCommandLine::argv();
+  const std::vector<std::string>& argv = cmd_line.argv();
   for (std::vector<std::string>::const_iterator it = argv.begin();
       it != argv.end(); ++it) {
     to_send.push_back(kTokenDelimiter);
@@ -959,10 +975,10 @@ bool ProcessSingleton::Create() {
 
   // Setup the socket symlink and the two cookies.
   base::FilePath socket_target_path =
-      socket_dir_.path().Append(kSingletonSocketFilename);
+      socket_dir_.path().Append(chrome::kSingletonSocketFilename);
   base::FilePath cookie(GenerateCookie());
   base::FilePath remote_cookie_path =
-      socket_dir_.path().Append(kSingletonCookieFilename);
+      socket_dir_.path().Append(chrome::kSingletonCookieFilename);
   UnlinkPath(socket_path_);
   UnlinkPath(cookie_path_);
   if (!SymlinkPath(socket_target_path, socket_path_) ||
@@ -987,15 +1003,13 @@ bool ProcessSingleton::Create() {
   if (listen(sock, 5) < 0)
     NOTREACHED() << "listen failed: " << base::safe_strerror(errno);
 
-  // In Electron the ProcessSingleton is created earlier than the IO
-  // thread gets created, so we have to postpone the call until message
-  // loop is up an running.
-  scoped_refptr<base::SingleThreadTaskRunner> task_runner(
-      base::ThreadTaskRunnerHandle::Get());
-  task_runner->PostTask(
+  DCHECK(BrowserThread::IsMessageLoopValid(BrowserThread::IO));
+  BrowserThread::PostTask(
+      BrowserThread::IO,
       FROM_HERE,
-      base::Bind(&ProcessSingleton::StartListening,
-                 base::Unretained(this), sock));
+      base::Bind(&ProcessSingleton::LinuxWatcher::StartListening,
+                 watcher_.get(),
+                 sock));
 
   return true;
 }
@@ -1004,17 +1018,6 @@ void ProcessSingleton::Cleanup() {
   UnlinkPath(socket_path_);
   UnlinkPath(cookie_path_);
   UnlinkPath(lock_path_);
-}
-
-void ProcessSingleton::StartListening(int sock) {
-  watcher_ = new LinuxWatcher(this);
-  DCHECK(BrowserThread::IsMessageLoopValid(BrowserThread::IO));
-  BrowserThread::PostTask(
-      BrowserThread::IO,
-      FROM_HERE,
-      base::Bind(&ProcessSingleton::LinuxWatcher::StartListening,
-                 watcher_.get(),
-                 sock));
 }
 
 bool ProcessSingleton::IsSameChromeInstance(pid_t pid) {

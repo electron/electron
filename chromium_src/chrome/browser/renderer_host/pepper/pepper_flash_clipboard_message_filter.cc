@@ -4,8 +4,11 @@
 
 #include "chrome/browser/renderer_host/pepper/pepper_flash_clipboard_message_filter.h"
 
+#include <stddef.h>
+
 #include "base/pickle.h"
 #include "base/strings/utf_string_conversions.h"
+#include "build/build_config.h"
 #include "content/public/browser/browser_thread.h"
 #include "ipc/ipc_message.h"
 #include "ipc/ipc_message_macros.h"
@@ -240,8 +243,8 @@ int32_t PepperFlashClipboardMessageFilter::OnMsgReadData(
 
       base::string16 html;
       std::string url;
-      uint32 fragment_start;
-      uint32 fragment_end;
+      uint32_t fragment_start;
+      uint32_t fragment_end;
       clipboard->ReadHTML(type, &html, &url, &fragment_start, &fragment_end);
       result = PP_OK;
       clipboard_string = base::UTF16ToUTF8(

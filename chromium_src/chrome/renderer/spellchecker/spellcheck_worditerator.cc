@@ -8,16 +8,20 @@
 
 #include <map>
 #include <string>
+#include <utility>
 
-#include "base/basictypes.h"
 #include "base/i18n/break_iterator.h"
 #include "base/logging.h"
+#include "base/macros.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
+#include "chrome/renderer/spellchecker/spellcheck.h"
 #include "third_party/icu/source/common/unicode/normlzr.h"
 #include "third_party/icu/source/common/unicode/schriter.h"
 #include "third_party/icu/source/common/unicode/uscript.h"
 #include "third_party/icu/source/i18n/unicode/ulocdata.h"
+
+using base::i18n::BreakIterator;
 
 // SpellcheckCharAttribute implementation:
 
@@ -323,8 +327,7 @@ bool SpellcheckWordIterator::Initialize(
   if (rule.empty())
     return false;
 
-  scoped_ptr<base::i18n::BreakIterator> iterator(
-      new base::i18n::BreakIterator(base::string16(), rule));
+  scoped_ptr<BreakIterator> iterator(new BreakIterator(base::string16(), rule));
   if (!iterator->Init()) {
     // Since we're not passing in any text, the only reason this could fail
     // is if we fail to parse the rules. Since the rules are hardcoded,
@@ -332,7 +335,7 @@ bool SpellcheckWordIterator::Initialize(
     NOTREACHED() << "failed to open iterator (broken rules)";
     return false;
   }
-  iterator_ = iterator.Pass();
+  iterator_ = std::move(iterator);
 
   // Set the character attributes so we can normalize the words extracted by
   // this iterator.
@@ -358,9 +361,10 @@ bool SpellcheckWordIterator::SetText(const base::char16* text, size_t length) {
   return true;
 }
 
-bool SpellcheckWordIterator::GetNextWord(base::string16* word_string,
-                                         int* word_start,
-                                         int* word_length) {
+SpellcheckWordIterator::WordIteratorStatus SpellcheckWordIterator::GetNextWord(
+    base::string16* word_string,
+    int* word_start,
+    int* word_length) {
   DCHECK(!!text_);
 
   word_string->clear();
@@ -368,28 +372,41 @@ bool SpellcheckWordIterator::GetNextWord(base::string16* word_string,
   *word_length = 0;
 
   if (!text_) {
-    return false;
+    return IS_END_OF_TEXT;
   }
 
-  // Find a word that can be checked for spelling. Our rule sets filter out
-  // invalid words (e.g. numbers and characters not supported by the
-  // spellchecker language) so this ubrk_getRuleStatus() call returns
-  // UBRK_WORD_NONE when this iterator finds an invalid word. So, we skip such
-  // words until we can find a valid word or reach the end of the input string.
+  // Find a word that can be checked for spelling or a character that can be
+  // skipped over. Rather than moving past a skippable character this returns
+  // IS_SKIPPABLE and defers handling the character to the calling function.
   while (iterator_->Advance()) {
     const size_t start = iterator_->prev();
     const size_t length = iterator_->pos() - start;
-    if (iterator_->IsWord()) {
-      if (Normalize(start, length, word_string)) {
+    switch (iterator_->GetWordBreakStatus()) {
+      case BreakIterator::IS_WORD_BREAK: {
+        if (Normalize(start, length, word_string)) {
+          *word_start = start;
+          *word_length = length;
+          return IS_WORD;
+        }
+        break;
+      }
+      case BreakIterator::IS_SKIPPABLE_WORD: {
+        *word_string = iterator_->GetString();
         *word_start = start;
         *word_length = length;
-        return true;
+        return IS_SKIPPABLE;
+      }
+      // |iterator_| is RULE_BASED so the break status should never be
+      // IS_LINE_OR_CHAR_BREAK.
+      case BreakIterator::IS_LINE_OR_CHAR_BREAK: {
+        NOTREACHED();
+        break;
       }
     }
   }
 
   // There aren't any more words in the given text.
-  return false;
+  return IS_END_OF_TEXT;
 }
 
 void SpellcheckWordIterator::Reset() {

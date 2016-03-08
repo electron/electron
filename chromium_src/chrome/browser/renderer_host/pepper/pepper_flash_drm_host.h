@@ -11,6 +11,7 @@
 
 #include "base/macros.h"
 #include "base/memory/weak_ptr.h"
+#include "chrome/browser/renderer_host/pepper/device_id_fetcher.h"
 #include "ppapi/host/host_message_context.h"
 #include "ppapi/host/resource_host.h"
 
@@ -43,6 +44,13 @@ class PepperFlashDRMHost : public ppapi::host::ResourceHost {
   int32_t OnHostMsgGetHmonitor(ppapi::host::HostMessageContext* context);
   int32_t OnHostMsgMonitorIsExternal(ppapi::host::HostMessageContext* context);
 
+  // Called by the fetcher when the device ID was retrieved, or the empty string
+  // on error.
+  void GotDeviceID(ppapi::host::ReplyMessageContext reply_context,
+                   const std::string& id,
+                   int32_t result);
+
+  scoped_refptr<DeviceIDFetcher> fetcher_;
   scoped_refptr<MonitorFinder> monitor_finder_;
 
   base::WeakPtrFactory<PepperFlashDRMHost> weak_factory_;

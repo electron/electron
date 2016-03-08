@@ -5,11 +5,13 @@
 #ifndef CHROME_BROWSER_RENDERER_HOST_PEPPER_PEPPER_FLASH_CLIPBOARD_MESSAGE_FILTER_H_
 #define CHROME_BROWSER_RENDERER_HOST_PEPPER_PEPPER_FLASH_CLIPBOARD_MESSAGE_FILTER_H_
 
+#include <stdint.h>
+
 #include <string>
 #include <vector>
 
-#include "base/basictypes.h"
 #include "base/compiler_specific.h"
+#include "base/macros.h"
 #include "ppapi/host/resource_message_filter.h"
 #include "ppapi/shared_impl/flash_clipboard_format_registry.h"
 

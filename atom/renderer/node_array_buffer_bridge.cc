@@ -4,7 +4,7 @@
 
 #include "atom/renderer/node_array_buffer_bridge.h"
 
-#include "base/basictypes.h"
+#include "base/macros.h"
 #include "atom/common/node_includes.h"
 #include "native_mate/converter.h"
 #include "third_party/WebKit/public/web/WebArrayBuffer.h"

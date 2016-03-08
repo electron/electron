@@ -6,6 +6,10 @@
 
 #include <string>
 
+#include "chrome/browser/content_settings/host_content_settings_map_factory.h"
+#include "chrome/browser/profiles/profile.h"
+#include "components/content_settings/core/browser/host_content_settings_map.h"
+#include "components/content_settings/core/common/content_settings.h"
 #include "content/public/browser/browser_ppapi_host.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/render_process_host.h"
@@ -48,7 +52,25 @@ int32_t PepperBrokerMessageFilter::OnResourceMessageReceived(
 
 int32_t PepperBrokerMessageFilter::OnIsAllowed(
     ppapi::host::HostMessageContext* context) {
-  return PP_OK;
+  DCHECK_CURRENTLY_ON(BrowserThread::UI);
+  if (!document_url_.is_valid())
+    return PP_ERROR_FAILED;
+  RenderProcessHost* render_process_host =
+      RenderProcessHost::FromID(render_process_id_);
+  if (!render_process_host)
+    return PP_ERROR_FAILED;
+  Profile* profile =
+      Profile::FromBrowserContext(render_process_host->GetBrowserContext());
+  HostContentSettingsMap* content_settings =
+      HostContentSettingsMapFactory::GetForProfile(profile);
+  ContentSetting setting =
+      content_settings->GetContentSetting(document_url_,
+                                          document_url_,
+                                          CONTENT_SETTINGS_TYPE_PPAPI_BROKER,
+                                          std::string());
+  if (setting == CONTENT_SETTING_ALLOW)
+    return PP_OK;
+  return PP_ERROR_FAILED;
 }
 
 }  // namespace chrome

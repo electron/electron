@@ -5,7 +5,9 @@
 #ifndef CHROME_BROWSER_RENDERER_HOST_PEPPER_PEPPER_FLASH_BROWSER_HOST_H_
 #define CHROME_BROWSER_RENDERER_HOST_PEPPER_PEPPER_FLASH_BROWSER_HOST_H_
 
-#include "base/basictypes.h"
+#include <stdint.h>
+
+#include "base/macros.h"
 #include "base/memory/ref_counted.h"
 #include "base/memory/weak_ptr.h"
 #include "ppapi/host/host_message_context.h"
@@ -18,6 +20,10 @@ class Time;
 namespace content {
 class BrowserPpapiHost;
 class ResourceContext;
+}
+
+namespace content_settings {
+class CookieSettings;
 }
 
 class GURL;
@@ -43,13 +49,16 @@ class PepperFlashBrowserHost : public ppapi::host::ResourceHost {
       const base::Time& t);
   int32_t OnGetLocalDataRestrictions(ppapi::host::HostMessageContext* context);
 
-  void GetLocalDataRestrictions(ppapi::host::ReplyMessageContext reply_context,
-                                const GURL& document_url,
-                                const GURL& plugin_url);
+  void GetLocalDataRestrictions(
+      ppapi::host::ReplyMessageContext reply_context,
+      const GURL& document_url,
+      const GURL& plugin_url,
+      scoped_refptr<content_settings::CookieSettings> cookie_settings);
 
   content::BrowserPpapiHost* host_;
   int render_process_id_;
   // For fetching the Flash LSO settings.
+  scoped_refptr<content_settings::CookieSettings> cookie_settings_;
   base::WeakPtrFactory<PepperFlashBrowserHost> weak_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(PepperFlashBrowserHost);

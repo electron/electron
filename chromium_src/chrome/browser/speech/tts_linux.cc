@@ -3,11 +3,13 @@
 // found in the LICENSE file.
 
 #include <math.h>
+#include <stddef.h>
 
 #include <map>
 
 #include "base/command_line.h"
 #include "base/debug/leak_annotations.h"
+#include "base/macros.h"
 #include "base/memory/scoped_ptr.h"
 #include "base/memory/singleton.h"
 #include "base/synchronization/lock.h"

@@ -5,10 +5,11 @@
 #ifndef CHROME_BROWSER_PRINTING_PRINT_JOB_H_
 #define CHROME_BROWSER_PRINTING_PRINT_JOB_H_
 
-#include "base/basictypes.h"
+#include "base/macros.h"
 #include "base/memory/scoped_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/message_loop/message_loop.h"
+#include "build/build_config.h"
 #include "chrome/browser/printing/print_job_worker_owner.h"
 #include "content/public/browser/notification_observer.h"
 #include "content/public/browser/notification_registrar.h"
@@ -49,16 +50,16 @@ class PrintJob : public PrintJobWorkerOwner,
                   int page_count);
 
   // content::NotificationObserver implementation.
-  virtual void Observe(int type,
-                       const content::NotificationSource& source,
-                       const content::NotificationDetails& details) override;
+  void Observe(int type,
+               const content::NotificationSource& source,
+               const content::NotificationDetails& details) override;
 
   // PrintJobWorkerOwner implementation.
-  virtual void GetSettingsDone(const PrintSettings& new_settings,
-                               PrintingContext::Result result) override;
-  virtual PrintJobWorker* DetachWorker(PrintJobWorkerOwner* new_owner) override;
-  virtual const PrintSettings& settings() const override;
-  virtual int cookie() const override;
+  void GetSettingsDone(const PrintSettings& new_settings,
+                       PrintingContext::Result result) override;
+  PrintJobWorker* DetachWorker(PrintJobWorkerOwner* new_owner) override;
+  const PrintSettings& settings() const override;
+  int cookie() const override;
 
   // Starts the actual printing. Signals the worker that it should begin to
   // spool as soon as data is available.
@@ -95,16 +96,10 @@ class PrintJob : public PrintJobWorkerOwner,
       const scoped_refptr<base::RefCountedMemory>& bytes,
       const gfx::Size& page_size,
       const gfx::Rect& content_area);
-
-  void OnPdfToEmfStarted(int page_count);
-  void OnPdfToEmfPageConverted(int page_number,
-                               float scale_factor,
-                               scoped_ptr<MetafilePlayer> emf);
-
 #endif  // OS_WIN
 
  protected:
-  virtual ~PrintJob();
+  ~PrintJob() override;
 
  private:
   // Updates document_ to a new instance.
@@ -125,6 +120,13 @@ class PrintJob : public PrintJobWorkerOwner,
   void Quit();
 
   void HoldUntilStopIsCalled();
+
+#if defined(OS_WIN)
+  void OnPdfToEmfStarted(int page_count);
+  void OnPdfToEmfPageConverted(int page_number,
+                               float scale_factor,
+                               scoped_ptr<MetafilePlayer> emf);
+#endif  // OS_WIN
 
   content::NotificationRegistrar registrar_;
 

@@ -11,7 +11,6 @@
 
 class GURL;
 
-namespace extensions {
 // A pattern that can be used to match URLs. A URLPattern is a very restricted
 // subset of URL syntax:
 //
@@ -258,7 +257,5 @@ class URLPattern {
 std::ostream& operator<<(std::ostream& out, const URLPattern& url_pattern);
 
 typedef std::vector<URLPattern> URLPatternList;
-
-}  // namespace extensions
 
 #endif  // EXTENSIONS_COMMON_URL_PATTERN_H_

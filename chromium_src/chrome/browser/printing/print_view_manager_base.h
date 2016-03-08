@@ -5,13 +5,14 @@
 #ifndef CHROME_BROWSER_PRINTING_PRINT_VIEW_MANAGER_BASE_H_
 #define CHROME_BROWSER_PRINTING_PRINT_VIEW_MANAGER_BASE_H_
 
+#include "base/macros.h"
 #include "base/memory/ref_counted.h"
 #include "base/prefs/pref_member.h"
 #include "base/strings/string16.h"
+#include "build/build_config.h"
+#include "components/printing/browser/print_manager.h"
 #include "content/public/browser/notification_observer.h"
 #include "content/public/browser/notification_registrar.h"
-#include "content/public/browser/web_contents_observer.h"
-#include "content/public/browser/web_contents_user_data.h"
 #include "printing/printed_pages_source.h"
 
 struct PrintHostMsg_DidPrintPage_Params;
@@ -31,19 +32,22 @@ class PrintQueriesQueue;
 // Base class for managing the print commands for a WebContents.
 class PrintViewManagerBase : public content::NotificationObserver,
                              public PrintedPagesSource,
-                             public content::WebContentsObserver {
+                             public PrintManager {
  public:
-  virtual ~PrintViewManagerBase();
+  ~PrintViewManagerBase() override;
 
-#if !defined(DISABLE_BASIC_PRINTING)
+#if defined(ENABLE_BASIC_PRINTING)
   // Prints the current document immediately. Since the rendering is
   // asynchronous, the actual printing will not be completed on the return of
   // this function. Returns false if printing is impossible at the moment.
-  virtual bool PrintNow(bool silent, bool print_background);
-#endif  // !DISABLE_BASIC_PRINTING
+  virtual bool PrintNow();
+#endif  // ENABLE_BASIC_PRINTING
+
+  // Whether to block scripted printing for our tab or not.
+  void UpdateScriptedPrintingBlocked();
 
   // PrintedPagesSource implementation.
-  virtual base::string16 RenderSourceName() override;
+  base::string16 RenderSourceName() override;
 
  protected:
   explicit PrintViewManagerBase(content::WebContents* web_contents);
@@ -52,27 +56,27 @@ class PrintViewManagerBase : public content::NotificationObserver,
   bool PrintNowInternal(IPC::Message* message);
 
   // Terminates or cancels the print job if one was pending.
-  virtual void RenderProcessGone(base::TerminationStatus status) override;
+  void RenderProcessGone(base::TerminationStatus status) override;
 
   // content::WebContentsObserver implementation.
-  virtual bool OnMessageReceived(const IPC::Message& message) override;
-
-  // IPC Message handlers.
-  virtual void OnPrintingFailed(int cookie);
+  bool OnMessageReceived(const IPC::Message& message) override;
 
  private:
   // content::NotificationObserver implementation.
-  virtual void Observe(int type,
-                       const content::NotificationSource& source,
-                       const content::NotificationDetails& details) override;
+  void Observe(int type,
+               const content::NotificationSource& source,
+               const content::NotificationDetails& details) override;
+
+  // content::WebContentsObserver implementation.
+  void DidStartLoading() override;
 
   // Cancels the print job.
-  virtual void NavigationStopped() override;
+  void NavigationStopped() override;
 
   // IPC Message handlers.
-  void OnDidGetPrintedPagesCount(int cookie, int number_pages);
-  void OnDidGetDocumentCookie(int cookie);
+  void OnDidGetPrintedPagesCount(int cookie, int number_pages) override;
   void OnDidPrintPage(const PrintHostMsg_DidPrintPage_Params& params);
+  void OnPrintingFailed(int cookie) override;
   void OnShowInvalidPrinterSettingsError();
 
   // Processes a NOTIFY_PRINT_JOB_EVENT notification.
@@ -131,9 +135,6 @@ class PrintViewManagerBase : public content::NotificationObserver,
   // Manages the low-level talk to the printer.
   scoped_refptr<PrintJob> print_job_;
 
-  // Number of pages to print in the print job.
-  int number_pages_;
-
   // Indication of success of the print job.
   bool printing_succeeded_;
 
@@ -145,13 +146,10 @@ class PrintViewManagerBase : public content::NotificationObserver,
 #if !defined(OS_MACOSX)
   // Set to true when OnDidPrintPage() should be expecting the first page.
   bool expecting_first_page_;
-#endif  // OS_MACOSX
-
-  // The document cookie of the current PrinterQuery.
-  int cookie_;
+#endif
 
   // Whether printing is enabled.
-  bool printing_enabled_;
+  BooleanPrefMember printing_enabled_;
 
   scoped_refptr<printing::PrintQueriesQueue> queue_;
 

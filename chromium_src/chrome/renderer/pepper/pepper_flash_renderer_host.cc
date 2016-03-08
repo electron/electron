@@ -4,12 +4,16 @@
 
 #include "chrome/renderer/pepper/pepper_flash_renderer_host.h"
 
+#include <stddef.h>
+
 #include <map>
 #include <vector>
 
 #include "base/lazy_instance.h"
+#include "base/macros.h"
 #include "base/metrics/histogram.h"
 #include "base/strings/string_util.h"
+#include "components/pdf/renderer/pepper_pdf_host.h"
 #include "content/public/renderer/pepper_plugin_instance.h"
 #include "content/public/renderer/render_thread.h"
 #include "content/public/renderer/renderer_ppapi_host.h"
@@ -161,6 +165,8 @@ int32_t PepperFlashRendererHost::OnResourceMessageReceived(
     PPAPI_DISPATCH_HOST_RESOURCE_CALL(PpapiHostMsg_Flash_Navigate, OnNavigate)
     PPAPI_DISPATCH_HOST_RESOURCE_CALL(PpapiHostMsg_Flash_IsRectTopmost,
                                       OnIsRectTopmost)
+    PPAPI_DISPATCH_HOST_RESOURCE_CALL_0(PpapiHostMsg_Flash_InvokePrinting,
+                                        OnInvokePrinting)
   PPAPI_END_MESSAGE_MAP()
   return PP_ERROR_FAILED;
 }
@@ -267,9 +273,7 @@ int32_t PepperFlashRendererHost::OnDrawGlyphs(
   // Build up the skia advances.
   size_t glyph_count = params.glyph_indices.size();
   if (glyph_count) {
-    std::vector<SkPoint> storage;
-    storage.resize(glyph_count);
-    SkPoint* sk_positions = &storage[0];
+    std::vector<SkPoint> sk_positions(glyph_count);
     for (uint32_t i = 0; i < glyph_count; i++) {
       sk_positions[i].set(x, y);
       x += SkFloatToScalar(params.glyph_advances[i].x);
@@ -277,7 +281,7 @@ int32_t PepperFlashRendererHost::OnDrawGlyphs(
     }
 
     canvas->drawPosText(
-        &params.glyph_indices[0], glyph_count * 2, sk_positions, paint);
+        &params.glyph_indices[0], glyph_count * 2, &sk_positions[0], paint);
   }
 
   if (needs_unmapping)
@@ -369,4 +373,10 @@ int32_t PepperFlashRendererHost::OnIsRectTopmost(
           rect.point.x, rect.point.y, rect.size.width, rect.size.height)))
     return PP_OK;
   return PP_ERROR_FAILED;
+}
+
+int32_t PepperFlashRendererHost::OnInvokePrinting(
+    ppapi::host::HostMessageContext* host_context) {
+  pdf::PepperPDFHost::InvokePrintingForInstance(pp_instance());
+  return PP_OK;
 }

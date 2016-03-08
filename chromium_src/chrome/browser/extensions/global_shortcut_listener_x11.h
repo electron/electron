@@ -5,9 +5,12 @@
 #ifndef CHROME_BROWSER_EXTENSIONS_GLOBAL_SHORTCUT_LISTENER_X11_H_
 #define CHROME_BROWSER_EXTENSIONS_GLOBAL_SHORTCUT_LISTENER_X11_H_
 
+#include <stdint.h>
 #include <X11/Xlib.h>
+
 #include <set>
 
+#include "base/macros.h"
 #include "chrome/browser/extensions/global_shortcut_listener.h"
 #include "ui/events/platform/platform_event_dispatcher.h"
 
@@ -20,20 +23,18 @@ class GlobalShortcutListenerX11 : public GlobalShortcutListener,
                                   public ui::PlatformEventDispatcher {
  public:
   GlobalShortcutListenerX11();
-  virtual ~GlobalShortcutListenerX11();
+  ~GlobalShortcutListenerX11() override;
 
   // ui::PlatformEventDispatcher implementation.
-  virtual bool CanDispatchEvent(const ui::PlatformEvent& event) override;
-  virtual uint32_t DispatchEvent(const ui::PlatformEvent& event) override;
+  bool CanDispatchEvent(const ui::PlatformEvent& event) override;
+  uint32_t DispatchEvent(const ui::PlatformEvent& event) override;
 
  private:
   // GlobalShortcutListener implementation.
-  virtual void StartListening() override;
-  virtual void StopListening() override;
-  virtual bool RegisterAcceleratorImpl(
-      const ui::Accelerator& accelerator) override;
-  virtual void UnregisterAcceleratorImpl(
-      const ui::Accelerator& accelerator) override;
+  void StartListening() override;
+  void StopListening() override;
+  bool RegisterAcceleratorImpl(const ui::Accelerator& accelerator) override;
+  void UnregisterAcceleratorImpl(const ui::Accelerator& accelerator) override;
 
   // Invoked when a global shortcut is pressed.
   void OnXKeyPressEvent(::XEvent* x_event);

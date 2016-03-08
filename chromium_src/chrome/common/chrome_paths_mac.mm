@@ -15,6 +15,7 @@
 #import "base/mac/scoped_nsautorelease_pool.h"
 #include "base/memory/scoped_ptr.h"
 #include "base/path_service.h"
+#include "build/build_config.h"
 #include "chrome/common/chrome_constants.h"
 
 namespace {
@@ -179,9 +180,10 @@ base::FilePath GetVersionedDirectory() {
     // .app's versioned directory.  Go up two steps to get to the browser
     // .app's versioned directory.
     path = path.DirName().DirName();
+    DCHECK_EQ(path.BaseName().value(), kChromeVersion);
   } else {
     // Go into the versioned directory.
-    path = path.Append("Frameworks");
+    path = path.Append("Versions").Append(kChromeVersion);
   }
 
   return path;

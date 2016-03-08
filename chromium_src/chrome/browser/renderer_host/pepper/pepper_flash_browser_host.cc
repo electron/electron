@@ -5,6 +5,10 @@
 #include "chrome/browser/renderer_host/pepper/pepper_flash_browser_host.h"
 
 #include "base/time/time.h"
+#include "build/build_config.h"
+#include "chrome/browser/content_settings/cookie_settings_factory.h"
+#include "chrome/browser/profiles/profile.h"
+#include "components/content_settings/core/browser/cookie_settings.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/browser_ppapi_host.h"
 #include "content/public/browser/browser_thread.h"
@@ -29,6 +33,24 @@ using content::BrowserThread;
 using content::RenderProcessHost;
 
 namespace chrome {
+
+namespace {
+
+// Get the CookieSettings on the UI thread for the given render process ID.
+scoped_refptr<content_settings::CookieSettings> GetCookieSettings(
+    int render_process_id) {
+  DCHECK_CURRENTLY_ON(BrowserThread::UI);
+  RenderProcessHost* render_process_host =
+      RenderProcessHost::FromID(render_process_id);
+  if (render_process_host && render_process_host->GetBrowserContext()) {
+    Profile* profile =
+        Profile::FromBrowserContext(render_process_host->GetBrowserContext());
+    return CookieSettingsFactory::GetForProfile(profile);
+  }
+  return NULL;
+}
+
+}  // namespace
 
 PepperFlashBrowserHost::PepperFlashBrowserHost(BrowserPpapiHost* host,
                                                PP_Instance instance,
@@ -67,7 +89,7 @@ int32_t PepperFlashBrowserHost::OnUpdateActivity(
   if (SystemParametersInfo(SPI_GETSCREENSAVETIMEOUT, 0, &value, 0))
     SystemParametersInfo(SPI_SETSCREENSAVETIMEOUT, value, NULL, 0);
 #elif defined(OS_MACOSX)
-// UpdateSystemActivity(OverallAct);
+  UpdateSystemActivity(OverallAct);
 #else
 // TODO(brettw) implement this for other platforms.
 #endif
@@ -93,19 +115,49 @@ int32_t PepperFlashBrowserHost::OnGetLocalDataRestrictions(
   // call |GetLocalDataRestrictions| with it.
   GURL document_url = host_->GetDocumentURLForInstance(pp_instance());
   GURL plugin_url = host_->GetPluginURLForInstance(pp_instance());
-  GetLocalDataRestrictions(context->MakeReplyMessageContext(),
-                           document_url,
-                           plugin_url);
+  if (cookie_settings_.get()) {
+    GetLocalDataRestrictions(context->MakeReplyMessageContext(),
+                             document_url,
+                             plugin_url,
+                             cookie_settings_);
+  } else {
+    BrowserThread::PostTaskAndReplyWithResult(
+        BrowserThread::UI,
+        FROM_HERE,
+        base::Bind(&GetCookieSettings, render_process_id_),
+        base::Bind(&PepperFlashBrowserHost::GetLocalDataRestrictions,
+                   weak_factory_.GetWeakPtr(),
+                   context->MakeReplyMessageContext(),
+                   document_url,
+                   plugin_url));
+  }
   return PP_OK_COMPLETIONPENDING;
 }
 
 void PepperFlashBrowserHost::GetLocalDataRestrictions(
     ppapi::host::ReplyMessageContext reply_context,
     const GURL& document_url,
-    const GURL& plugin_url) {
-  DCHECK(BrowserThread::CurrentlyOn(BrowserThread::IO));
+    const GURL& plugin_url,
+    scoped_refptr<content_settings::CookieSettings> cookie_settings) {
+  DCHECK_CURRENTLY_ON(BrowserThread::IO);
+
+  // Lazily initialize |cookie_settings_|. The cookie settings are thread-safe
+  // ref-counted so as long as we hold a reference to them we can safely access
+  // them on the IO thread.
+  if (!cookie_settings_.get()) {
+    cookie_settings_ = cookie_settings;
+  } else {
+    DCHECK(cookie_settings_.get() == cookie_settings.get());
+  }
 
   PP_FlashLSORestrictions restrictions = PP_FLASHLSORESTRICTIONS_NONE;
+  if (cookie_settings_.get() && document_url.is_valid() &&
+      plugin_url.is_valid()) {
+    if (!cookie_settings_->IsReadingCookieAllowed(document_url, plugin_url))
+      restrictions = PP_FLASHLSORESTRICTIONS_BLOCK;
+    else if (cookie_settings_->IsCookieSessionOnly(plugin_url))
+      restrictions = PP_FLASHLSORESTRICTIONS_IN_MEMORY;
+  }
   SendReply(reply_context,
             PpapiPluginMsg_Flash_GetLocalDataRestrictionsReply(
                 static_cast<int32_t>(restrictions)));

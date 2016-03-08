@@ -4,8 +4,11 @@
 
 #include "extensions/common/url_pattern.h"
 
+#include <stddef.h>
+
 #include <ostream>
 
+#include "base/macros.h"
 #include "base/strings/pattern.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_piece.h"
@@ -13,12 +16,12 @@
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
 #include "content/public/common/url_constants.h"
+#include "extensions/common/constants.h"
 #include "net/base/registry_controlled_domains/registry_controlled_domain.h"
 #include "url/gurl.h"
 #include "url/url_util.h"
 
-const char extensions::URLPattern::kAllUrlsPattern[] = "<all_urls>";
-const char kExtensionScheme[] = "chrome-extension";
+const char URLPattern::kAllUrlsPattern[] = "<all_urls>";
 
 namespace {
 
@@ -30,18 +33,18 @@ const char* kValidSchemes[] = {
     url::kFileScheme,
     url::kFtpScheme,
     content::kChromeUIScheme,
-    kExtensionScheme,
+    extensions::kExtensionScheme,
     url::kFileSystemScheme,
 };
 
 const int kValidSchemeMasks[] = {
-  extensions::URLPattern::SCHEME_HTTP,
-  extensions::URLPattern::SCHEME_HTTPS,
-  extensions::URLPattern::SCHEME_FILE,
-  extensions::URLPattern::SCHEME_FTP,
-  extensions::URLPattern::SCHEME_CHROMEUI,
-  extensions::URLPattern::SCHEME_EXTENSION,
-  extensions::URLPattern::SCHEME_FILESYSTEM,
+  URLPattern::SCHEME_HTTP,
+  URLPattern::SCHEME_HTTPS,
+  URLPattern::SCHEME_FILE,
+  URLPattern::SCHEME_FTP,
+  URLPattern::SCHEME_CHROMEUI,
+  URLPattern::SCHEME_EXTENSION,
+  URLPattern::SCHEME_FILESYSTEM,
 };
 
 static_assert(arraysize(kValidSchemes) == arraysize(kValidSchemeMasks),
@@ -70,7 +73,7 @@ const char* const kParseResultMessages[] = {
   kParseErrorInvalidHost,
 };
 
-static_assert(extensions::URLPattern::NUM_PARSE_RESULTS == arraysize(kParseResultMessages),
+static_assert(URLPattern::NUM_PARSE_RESULTS == arraysize(kParseResultMessages),
               "must add message for each parse result");
 
 const char kPathSeparator[] = "/";
@@ -115,7 +118,6 @@ std::string StripTrailingWildcard(const std::string& path) {
 
 }  // namespace
 
-namespace extensions {
 // static
 bool URLPattern::IsValidSchemeForExtensions(const std::string& scheme) {
   for (size_t i = 0; i < arraysize(kValidSchemes); ++i) {
@@ -126,7 +128,7 @@ bool URLPattern::IsValidSchemeForExtensions(const std::string& scheme) {
 }
 
 URLPattern::URLPattern()
-    : valid_schemes_(SCHEME_ALL),
+    : valid_schemes_(SCHEME_NONE),
       match_all_urls_(false),
       match_subdomains_(false),
       port_("*") {}
@@ -615,5 +617,3 @@ const char* URLPattern::GetParseResultString(
     URLPattern::ParseResult parse_result) {
   return kParseResultMessages[parse_result];
 }
-
-}  // namespace extensions

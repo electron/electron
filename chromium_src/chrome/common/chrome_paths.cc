@@ -13,10 +13,9 @@
 #include "base/sys_info.h"
 #include "base/threading/thread_restrictions.h"
 #include "base/version.h"
+#include "build/build_config.h"
 #include "chrome/common/chrome_constants.h"
 #include "chrome/common/chrome_paths_internal.h"
-#include "chrome/common/widevine_cdm_constants.h"
-#include "third_party/widevine/cdm/stub/widevine_cdm_version.h"
 
 #if defined(OS_ANDROID)
 #include "base/android/path_utils.h"
@@ -32,6 +31,8 @@
 #if defined(OS_WIN)
 #include "base/win/registry.h"
 #endif
+
+#include "widevine_cdm_version.h"  // In SHARED_INTERMEDIATE_DIR.
 
 namespace {
 
@@ -207,10 +208,12 @@ bool PathProvider(int key, base::FilePath* result) {
       // directory.  This avoids the problem of having to re-initialize the
       // exception handler after parsing command line options, which may
       // override the location of the app's profile directory.
+      // TODO(scottmg): Consider supporting --user-data-dir. See
+      // https://crbug.com/565446.
       if (!GetDefaultUserDataDirectory(&cur))
         return false;
 #endif
-#if defined(OS_MACOSX)
+#if defined(OS_MACOSX) || defined(OS_WIN)
       cur = cur.Append(FILE_PATH_LITERAL("Crashpad"));
 #else
       cur = cur.Append(FILE_PATH_LITERAL("Crash Reports"));
@@ -364,7 +367,7 @@ bool PathProvider(int key, base::FilePath* result) {
     case chrome::DIR_COMPONENT_WIDEVINE_CDM:
       if (!PathService::Get(chrome::DIR_USER_DATA, &cur))
         return false;
-      cur = cur.Append(kWidevineCdmBaseDirectory);
+      cur = cur.Append(FILE_PATH_LITERAL("WidevineCDM"));
       break;
 #endif  // defined(WIDEVINE_CDM_IS_COMPONENT)
     // TODO(xhwang): FILE_WIDEVINE_CDM_ADAPTER has different meanings.

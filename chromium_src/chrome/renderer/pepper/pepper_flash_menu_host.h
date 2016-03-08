@@ -5,9 +5,12 @@
 #ifndef CHROME_RENDERER_PEPPER_PEPPER_FLASH_MENU_HOST_H_
 #define CHROME_RENDERER_PEPPER_PEPPER_FLASH_MENU_HOST_H_
 
+#include <stdint.h>
+
 #include <vector>
 
 #include "base/compiler_specific.h"
+#include "base/macros.h"
 #include "content/public/renderer/context_menu_client.h"
 #include "ppapi/c/pp_point.h"
 #include "ppapi/host/host_message_context.h"

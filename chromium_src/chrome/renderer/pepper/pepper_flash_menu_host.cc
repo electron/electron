@@ -4,6 +4,8 @@
 
 #include "chrome/renderer/pepper/pepper_flash_menu_host.h"
 
+#include <stddef.h>
+
 #include "base/strings/utf_string_conversions.h"
 #include "content/public/common/context_menu_params.h"
 #include "content/public/renderer/render_frame.h"

@@ -6,6 +6,7 @@
 #define CHROME_RENDERER_PEPPER_PEPPER_HELPER_H_
 
 #include "base/compiler_specific.h"
+#include "base/macros.h"
 #include "content/public/renderer/render_frame_observer.h"
 
 // This class listens for Pepper creation events from the RenderFrame and

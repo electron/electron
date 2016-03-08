@@ -8,11 +8,17 @@
 #include "base/bind_helpers.h"
 #include "base/callback.h"
 #include "base/compiler_specific.h"
+#include "base/location.h"
 #include "base/message_loop/message_loop.h"
+#include "base/single_thread_task_runner.h"
+#include "base/thread_task_runner_handle.h"
 #include "base/values.h"
+#include "build/build_config.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/chrome_notification_types.h"
 #include "chrome/browser/printing/print_job.h"
+#include "chrome/common/features.h"
+#include "chrome/grit/generated_resources.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/notification_service.h"
 #include "content/public/browser/render_view_host.h"
@@ -22,6 +28,10 @@
 #include "printing/printed_page.h"
 #include "printing/printing_utils.h"
 #include "ui/base/l10n/l10n_util.h"
+
+#if BUILDFLAG(ANDROID_JAVA_UI)
+#include "chrome/browser/android/tab_android.h"
+#endif
 
 using content::BrowserThread;
 
@@ -38,10 +48,13 @@ void HoldRefCallback(const scoped_refptr<printing::PrintJobWorkerOwner>& owner,
 class PrintingContextDelegate : public PrintingContext::Delegate {
  public:
   PrintingContextDelegate(int render_process_id, int render_view_id);
-  virtual ~PrintingContextDelegate();
+  ~PrintingContextDelegate() override;
 
-  virtual gfx::NativeView GetParentView() override;
-  virtual std::string GetAppLocale() override;
+  gfx::NativeView GetParentView() override;
+  std::string GetAppLocale() override;
+
+  // Not exposed to PrintingContext::Delegate because of dependency issues.
+  content::WebContents* GetWebContents();
 
  private:
   int render_process_id_;
@@ -58,13 +71,15 @@ PrintingContextDelegate::~PrintingContextDelegate() {
 }
 
 gfx::NativeView PrintingContextDelegate::GetParentView() {
+  content::WebContents* wc = GetWebContents();
+  return wc ? wc->GetNativeView() : nullptr;
+}
+
+content::WebContents* PrintingContextDelegate::GetWebContents() {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
   content::RenderViewHost* view =
       content::RenderViewHost::FromID(render_process_id_, render_view_id_);
-  if (!view)
-    return NULL;
-  content::WebContents* wc = content::WebContents::FromRenderViewHost(view);
-  return wc ? wc->GetNativeView() : NULL;
+  return view ? content::WebContents::FromRenderViewHost(view) : nullptr;
 }
 
 std::string PrintingContextDelegate::GetAppLocale() {
@@ -81,6 +96,13 @@ void NotificationCallback(PrintJobWorkerOwner* print_job,
       // We know that is is a PrintJob object in this circumstance.
       content::Source<PrintJob>(static_cast<PrintJob*>(print_job)),
       content::Details<JobEventDetails>(details));
+}
+
+void PostOnOwnerThread(const scoped_refptr<PrintJobWorkerOwner>& owner,
+                       const PrintingContext::PrintSettingsCallback& callback,
+                       PrintingContext::Result result) {
+  owner->PostTask(FROM_HERE, base::Bind(&HoldRefCallback, owner,
+                                        base::Bind(callback, result)));
 }
 
 }  // namespace
@@ -114,7 +136,8 @@ void PrintJobWorker::GetSettings(
     bool ask_user_for_settings,
     int document_page_count,
     bool has_selection,
-    MarginType margin_type) {
+    MarginType margin_type,
+    bool is_scripted) {
   DCHECK(task_runner_->RunsTasksOnCurrentThread());
   DCHECK_EQ(page_number_, PageNumber::npos());
 
@@ -135,7 +158,8 @@ void PrintJobWorker::GetSettings(
                    base::Bind(&PrintJobWorker::GetSettingsWithUI,
                               base::Unretained(this),
                               document_page_count,
-                              has_selection)));
+                              has_selection,
+                              is_scripted)));
   } else {
     BrowserThread::PostTask(
         BrowserThread::UI, FROM_HERE,
@@ -187,23 +211,33 @@ void PrintJobWorker::GetSettingsDone(PrintingContext::Result result) {
 
 void PrintJobWorker::GetSettingsWithUI(
     int document_page_count,
-    bool has_selection) {
+    bool has_selection,
+    bool is_scripted) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
-  printing_context_->AskUserForSettings(
-      document_page_count,
-      has_selection,
-      false,
-      base::Bind(&PrintJobWorker::GetSettingsWithUIDone,
-                 base::Unretained(this)));
-}
 
-void PrintJobWorker::GetSettingsWithUIDone(PrintingContext::Result result) {
-  PostTask(FROM_HERE,
-           base::Bind(&HoldRefCallback,
-                      make_scoped_refptr(owner_),
-                      base::Bind(&PrintJobWorker::GetSettingsDone,
-                                 base::Unretained(this),
-                                 result)));
+#if BUILDFLAG(ANDROID_JAVA_UI)
+  if (is_scripted) {
+    PrintingContextDelegate* printing_context_delegate =
+        static_cast<PrintingContextDelegate*>(printing_context_delegate_.get());
+    content::WebContents* web_contents =
+        printing_context_delegate->GetWebContents();
+    TabAndroid* tab =
+        web_contents ? TabAndroid::FromWebContents(web_contents) : nullptr;
+
+    // Regardless of whether the following call fails or not, the javascript
+    // call will return since startPendingPrint will make it return immediately
+    // in case of error.
+    if (tab)
+      tab->SetPendingPrint();
+  }
+#endif
+
+  // weak_factory_ creates pointers valid only on owner_ thread.
+  printing_context_->AskUserForSettings(
+      document_page_count, has_selection, is_scripted,
+      base::Bind(&PostOnOwnerThread, make_scoped_refptr(owner_),
+                 base::Bind(&PrintJobWorker::GetSettingsDone,
+                            weak_factory_.GetWeakPtr())));
 }
 
 void PrintJobWorker::UseDefaultSettings() {
@@ -225,6 +259,8 @@ void PrintJobWorker::StartPrinting(PrintedDocument* new_document) {
   base::string16 document_name =
       printing::SimplifyDocumentTitle(document_->name());
   if (document_name.empty()) {
+    document_name = printing::SimplifyDocumentTitle(
+        l10n_util::GetStringUTF16(IDS_DEFAULT_PRINT_DOCUMENT_TITLE));
   }
   PrintingContext::Result result =
       printing_context_->NewDocument(document_name);
@@ -278,7 +314,7 @@ void PrintJobWorker::OnNewPage() {
     scoped_refptr<PrintedPage> page = document_->GetPage(page_number_.ToInt());
     if (!page.get()) {
       // We need to wait for the page to be available.
-      base::MessageLoop::current()->PostDelayedTask(
+      base::ThreadTaskRunnerHandle::Get()->PostDelayedTask(
           FROM_HERE,
           base::Bind(&PrintJobWorker::OnNewPage, weak_factory_.GetWeakPtr()),
           base::TimeDelta::FromMilliseconds(500));

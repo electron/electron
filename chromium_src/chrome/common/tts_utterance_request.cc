@@ -21,10 +21,3 @@ TtsVoice::TtsVoice()
 
 TtsVoice::~TtsVoice() {
 }
-
-TtsUtteranceResponse::TtsUtteranceResponse()
-    : id(0) {
-}
-
-TtsUtteranceResponse::~TtsUtteranceResponse() {
-}

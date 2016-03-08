@@ -5,6 +5,8 @@
 #ifndef CHROME_BROWSER_PROCESS_SINGLETON_H_
 #define CHROME_BROWSER_PROCESS_SINGLETON_H_
 
+#include "build/build_config.h"
+
 #if defined(OS_WIN)
 #include <windows.h>
 #endif  // defined(OS_WIN)
@@ -12,11 +14,11 @@
 #include <set>
 #include <vector>
 
-#include "base/basictypes.h"
 #include "base/callback.h"
 #include "base/command_line.h"
 #include "base/files/file_path.h"
 #include "base/logging.h"
+#include "base/macros.h"
 #include "base/memory/ref_counted.h"
 #include "base/process/process.h"
 #include "base/threading/non_thread_safe.h"
@@ -60,7 +62,7 @@ class ProcessSingleton : public base::NonThreadSafe {
   // handled within the current browser instance or false if the remote process
   // should handle it (i.e., because the current process is shutting down).
   using NotificationCallback =
-      base::Callback<bool(const base::CommandLine::StringVector& command_line,
+      base::Callback<bool(const base::CommandLine& command_line,
                           const base::FilePath& current_directory)>;
 
   ProcessSingleton(const base::FilePath& user_data_dir,
@@ -126,6 +128,8 @@ class ProcessSingleton : public base::NonThreadSafe {
   NotificationCallback notification_callback_;  // Handler for notifications.
 
 #if defined(OS_WIN)
+  bool EscapeVirtualization(const base::FilePath& user_data_dir);
+
   HWND remote_window_;  // The HWND_MESSAGE of another browser.
   base::win::MessageWindow window_;  // The message-only window.
   bool is_virtualized_;  // Stuck inside Microsoft Softricity VM environment.
@@ -133,9 +137,6 @@ class ProcessSingleton : public base::NonThreadSafe {
   base::FilePath user_data_dir_;
   ShouldKillRemoteProcessCallback should_kill_remote_process_callback_;
 #elif defined(OS_POSIX) && !defined(OS_ANDROID)
-  // Start listening to the socket.
-  void StartListening(int sock);
-
   // Return true if the given pid is one of our child processes.
   // Assumes that the current pid is the root of all pids of the current
   // instance.

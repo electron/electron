@@ -5,7 +5,7 @@
 #ifndef CHROME_BROWSER_MEDIA_NATIVE_DESKTOP_MEDIA_LIST_H_
 #define CHROME_BROWSER_MEDIA_NATIVE_DESKTOP_MEDIA_LIST_H_
 
-#include "base/basictypes.h"
+#include "base/macros.h"
 #include "base/memory/scoped_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/sequenced_task_runner.h"
@@ -36,8 +36,7 @@ class NativeDesktopMediaList : public DesktopMediaList {
   void StartUpdating(DesktopMediaListObserver* observer) override;
   int GetSourceCount() const override;
   const Source& GetSource(int index) const override;
-  std::vector<Source> GetSources() const override;
-  void SetViewDialogWindowId(content::DesktopMediaID::Id dialog_id) override;
+  void SetViewDialogWindowId(content::DesktopMediaID dialog_id) override;
 
  private:
   class Worker;
@@ -77,7 +76,7 @@ class NativeDesktopMediaList : public DesktopMediaList {
   gfx::Size thumbnail_size_;
 
   // ID of the hosting dialog.
-  content::DesktopMediaID::Id view_dialog_id_;
+  content::DesktopMediaID view_dialog_id_;
 
   // The observer passed to StartUpdating().
   DesktopMediaListObserver* observer_;

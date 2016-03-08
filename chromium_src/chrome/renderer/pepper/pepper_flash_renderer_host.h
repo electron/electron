@@ -5,10 +5,12 @@
 #ifndef CHROME_RENDERER_PEPPER_PEPPER_FLASH_RENDERER_HOST_H_
 #define CHROME_RENDERER_PEPPER_PEPPER_FLASH_RENDERER_HOST_H_
 
+#include <stdint.h>
+
 #include <string>
 #include <vector>
 
-#include "base/basictypes.h"
+#include "base/macros.h"
 #include "base/memory/weak_ptr.h"
 #include "ppapi/host/host_message_context.h"
 #include "ppapi/host/resource_host.h"
@@ -55,6 +57,7 @@ class PepperFlashRendererHost : public ppapi::host::ResourceHost {
                      bool from_user_action);
   int32_t OnIsRectTopmost(ppapi::host::HostMessageContext* host_context,
                           const PP_Rect& rect);
+  int32_t OnInvokePrinting(ppapi::host::HostMessageContext* host_context);
 
   // A stack of ReplyMessageContexts to track Navigate() calls which have not
   // yet been replied to.

@@ -5,10 +5,13 @@
 #ifndef CHROME_BROWSER_RENDERER_HOST_PEPPER_PEPPER_ISOLATED_FILE_SYSTEM_MESSAGE_FILTER_H_
 #define CHROME_BROWSER_RENDERER_HOST_PEPPER_PEPPER_ISOLATED_FILE_SYSTEM_MESSAGE_FILTER_H_
 
+#include <stdint.h>
+
 #include <set>
 #include <string>
 
 #include "base/files/file_path.h"
+#include "base/macros.h"
 #include "ppapi/c/pp_instance.h"
 #include "ppapi/c/pp_resource.h"
 #include "ppapi/c/private/ppb_isolated_file_system_private.h"
@@ -52,12 +55,16 @@ class PepperIsolatedFileSystemMessageFilter
 
   ~PepperIsolatedFileSystemMessageFilter() override;
 
+  Profile* GetProfile();
+
   // Returns filesystem id of isolated filesystem if valid, or empty string
   // otherwise.  This must run on the UI thread because ProfileManager only
   // allows access on that thread.
+  std::string CreateCrxFileSystem(Profile* profile);
 
   int32_t OnOpenFileSystem(ppapi::host::HostMessageContext* context,
                            PP_IsolatedFileSystemType_Private type);
+  int32_t OpenCrxFileSystem(ppapi::host::HostMessageContext* context);
   int32_t OpenPluginPrivateFileSystem(ppapi::host::HostMessageContext* context);
 
   const int render_process_id_;
@@ -67,6 +74,9 @@ class PepperIsolatedFileSystemMessageFilter
 
   // Not owned by this object.
   ppapi::host::PpapiHost* ppapi_host_;
+
+  // Set of origins that can use CrxFs private APIs from NaCl.
+  std::set<std::string> allowed_crxfs_origins_;
 
   DISALLOW_COPY_AND_ASSIGN(PepperIsolatedFileSystemMessageFilter);
 };
