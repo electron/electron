@@ -11,7 +11,8 @@ rolesMap = {
   paste: 'paste',
   selectall: 'selectAll',
   minimize: 'minimize',
-  close: 'close'
+  close: 'close',
+  delete: 'delete'
 };
 
 // Maps methods that should be called directly on the BrowserWindow instance
