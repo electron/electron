@@ -113,7 +113,7 @@
     }],
 
     # Setup sysroot environment.
-    ['OS=="linux" and target_arch in ["arm", "ia32", "x64"] and use_sysroot', {
+    ['OS=="linux" and target_arch in ["arm", "ia32", "x64"]', {
       'variables': {
         'conditions': [
           ['target_arch=="arm"', {

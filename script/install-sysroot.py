@@ -30,15 +30,15 @@ from lib.util import get_host_arch
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 URL_PREFIX = 'https://github.com'
 URL_PATH = 'atom/debian-sysroot-image-creator/releases/download'
-REVISION_AMD64 = 264817
-REVISION_I386 = 'v0.2.0'
-REVISION_ARM = 'v0.1.0'
+REVISION_AMD64 = 'v0.3.0'
+REVISION_I386 = 'v0.3.0'
+REVISION_ARM = 'v0.3.0'
 TARBALL_AMD64 = 'debian_wheezy_amd64_sysroot.tgz'
 TARBALL_I386 = 'debian_wheezy_i386_sysroot.tgz'
 TARBALL_ARM = 'debian_wheezy_arm_sysroot.tgz'
-TARBALL_AMD64_SHA1SUM = '74b7231e12aaf45c5c5489d9aebb56bd6abb3653'
-TARBALL_I386_SHA1SUM = 'f5b2ceaeb3f7e6bc2058733585fe877d002b5fa7'
-TARBALL_ARM_SHA1SUM = '72e668c57b8591e108759584942ddb6f6cee1322'
+TARBALL_AMD64_SHA1SUM = '3dc6f553c3f4e54166ac1264b7754cddc01942e4'
+TARBALL_I386_SHA1SUM = '62d2490de201f73b3774868f7ab82b2a48acf3c0'
+TARBALL_ARM_SHA1SUM = '1110793341e7a3c12adfe5e53138d692a22c99bc'
 SYSROOT_DIR_AMD64 = 'debian_wheezy_amd64-sysroot'
 SYSROOT_DIR_I386 = 'debian_wheezy_i386-sysroot'
 SYSROOT_DIR_ARM = 'debian_wheezy_arm-sysroot'
@@ -134,11 +134,7 @@ def main():
     print 'Unknown architecture: %s' % target_arch
     assert(False)
 
-  if options.url:
-    url = options.url
-    tarball_sha1sum = options.revision
-  else:
-    url = '%s/%s/%s/%s' % (URL_PREFIX, URL_PATH, revision, tarball_filename)
+  url = '%s/%s/%s/%s' % (URL_PREFIX, URL_PATH, revision, tarball_filename)
 
   stamp = os.path.join(sysroot, '.stamp')
   if os.path.exists(stamp):
@@ -157,12 +153,11 @@ def main():
   sys.stdout.flush()
   sys.stderr.flush()
   subprocess.check_call(['curl', '--fail', '-L', url, '-o', tarball])
-  if tarball_sha1sum:
-    sha1sum = GetSha1(tarball)
-    if sha1sum != tarball_sha1sum:
-      print 'Tarball sha1sum is wrong.'
-      print 'Expected %s, actual: %s' % (tarball_sha1sum, sha1sum)
-      return 1
+  sha1sum = GetSha1(tarball)
+  if sha1sum != tarball_sha1sum:
+    print 'Tarball sha1sum is wrong.'
+    print 'Expected %s, actual: %s' % (tarball_sha1sum, sha1sum)
+    return 1
   subprocess.check_call(['tar', 'xf', tarball, '-C', sysroot])
   os.remove(tarball)
 
@@ -178,9 +173,5 @@ if __name__ == '__main__':
                                         'Linux builds')
   parser.add_option('--arch', type='choice', choices=valid_archs,
                     help='Sysroot architecture: %s' % ', '.join(valid_archs))
-  parser.add_option('--url', default=None,
-                    help='The URL to download sysroot image.')
-  parser.add_option('--revision', default=None,
-                    help='SHA1 hash of the sysroot image tarball.')
   options, _ = parser.parse_args()
   sys.exit(main())
