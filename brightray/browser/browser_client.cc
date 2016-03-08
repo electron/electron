@@ -75,7 +75,7 @@ net::URLRequestContextGetter* BrowserClient::CreateRequestContext(
   auto context = static_cast<BrowserContext*>(browser_context);
   return context->CreateRequestContext(static_cast<NetLog*>(GetNetLog()),
                                        protocol_handlers,
-                                       protocol_interceptors.Pass());
+                                       std::move(protocol_interceptors));
 }
 
 content::MediaObserver* BrowserClient::GetMediaObserver() {

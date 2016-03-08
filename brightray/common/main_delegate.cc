@@ -81,11 +81,11 @@ MainDelegate::~MainDelegate() {
 }
 
 scoped_ptr<ContentClient> MainDelegate::CreateContentClient() {
-  return make_scoped_ptr(new ContentClient).Pass();
+  return make_scoped_ptr(new ContentClient);
 }
 
 bool MainDelegate::BasicStartupComplete(int* exit_code) {
-  content_client_ = CreateContentClient().Pass();
+  content_client_ = CreateContentClient();
   SetContentClient(content_client_.get());
 #if defined(OS_MACOSX)
   OverrideChildProcessPath();
@@ -108,12 +108,12 @@ void MainDelegate::PreSandboxStartup() {
 }
 
 content::ContentBrowserClient* MainDelegate::CreateContentBrowserClient() {
-  browser_client_ = CreateBrowserClient().Pass();
+  browser_client_ = CreateBrowserClient();
   return browser_client_.get();
 }
 
 scoped_ptr<BrowserClient> MainDelegate::CreateBrowserClient() {
-  return make_scoped_ptr(new BrowserClient).Pass();
+  return make_scoped_ptr(new BrowserClient);
 }
 
 }  // namespace brightray

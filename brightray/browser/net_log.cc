@@ -55,7 +55,7 @@ void NetLog::StartLogging(net::URLRequestContext* url_request_context) {
 
   scoped_ptr<base::Value> constants(GetConstants());
   write_to_file_observer_.StartObserving(this,
-                                         log_file_.Pass(),
+                                         std::move(log_file_),
                                          constants.get(),
                                          url_request_context);
 }

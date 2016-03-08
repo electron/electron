@@ -24,7 +24,7 @@ DevToolsNetworkTransaction::DevToolsNetworkTransaction(
     DevToolsNetworkController* controller,
     scoped_ptr<net::HttpTransaction> transaction)
     : controller_(controller),
-      transaction_(transaction.Pass()),
+      transaction_(std::move(transaction)),
       request_(nullptr),
       failed_(false),
       throttled_byte_count_(0),

@@ -33,7 +33,7 @@ void OnWebNotificationAllowed(
   if (!presenter)
     return;
   scoped_ptr<NotificationDelegateAdapter> adapter(
-      new NotificationDelegateAdapter(delegate.Pass()));
+      new NotificationDelegateAdapter(std::move(delegate)));
   auto notification = presenter->CreateNotification(adapter.get());
   if (notification) {
     ignore_result(adapter.release());  // it will release itself automatically.

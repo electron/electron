@@ -40,7 +40,7 @@ void DevToolsNetworkInterceptor::UpdateConditions(
   if (conditions_->IsThrottling())
     UpdateThrottledTransactions(now);
 
-  conditions_ = conditions.Pass();
+  conditions_ = std::move(conditions);
 
   if (conditions_->offline()) {
     timer_.Stop();

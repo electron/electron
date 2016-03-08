@@ -64,7 +64,7 @@ CreateSuccessResponse(int id, scoped_ptr<base::DictionaryValue> result) {
   scoped_ptr<base::DictionaryValue> response(new base::DictionaryValue);
   response->SetInteger(kId, id);
   response->Set(params::kResult, result.release());
-  return response.Pass();
+  return response;
 }
 
 scoped_ptr<base::DictionaryValue>
@@ -75,14 +75,14 @@ CreateFailureResponse(int id, const std::string& param) {
   error_object->SetInteger(params::kErrorCode, kErrorInvalidParams);
   error_object->SetString(params::kErrorMessage,
       base::StringPrintf("Missing or Invalid '%s' parameter", param.c_str()));
-  return response.Pass();
+  return response;
 }
 
 void UpdateNetworkStateInIO(brightray::DevToolsNetworkController* controller,
                             const std::string& client_id,
                             scoped_ptr<brightray::DevToolsNetworkConditions> conditions) {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
-  controller->SetNetworkState(client_id, conditions.Pass());
+  controller->SetNetworkState(client_id, std::move(conditions));
 }
 
 }  // namespace
@@ -119,7 +119,7 @@ DevToolsNetworkProtocolHandler::CanEmulateNetworkConditions(
     const base::DictionaryValue* params) {
   scoped_ptr<base::DictionaryValue> result(new base::DictionaryValue);
   result->SetBoolean(params::kResult, true);
-  return CreateSuccessResponse(id, result.Pass());
+  return CreateSuccessResponse(id, std::move(result));
 }
 
 scoped_ptr<base::DictionaryValue>
@@ -154,7 +154,7 @@ DevToolsNetworkProtocolHandler::EmulateNetworkConditions(
                                     latency,
                                     download_throughput,
                                     upload_throughput));
-  UpdateNetworkState(agent_host, conditions.Pass());
+  UpdateNetworkState(agent_host, std::move(conditions));
   return scoped_ptr<base::DictionaryValue>();
 }
 

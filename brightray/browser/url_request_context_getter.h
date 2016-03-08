@@ -19,6 +19,7 @@ class MessageLoop;
 namespace net {
 class HostMappingRules;
 class HostResolver;
+class HttpAuthPreferences;
 class NetworkDelegate;
 class ProxyConfigService;
 class URLRequestContextStorage;
@@ -103,7 +104,8 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
   scoped_ptr<net::URLRequestContextStorage> storage_;
   scoped_ptr<net::URLRequestContext> url_request_context_;
   scoped_ptr<net::HostMappingRules> host_mapping_rules_;
-  scoped_ptr<net::URLSecurityManager> url_sec_mgr_;
+  scoped_ptr<net::HttpAuthPreferences> http_auth_preferences_;
+  scoped_ptr<net::HttpNetworkSession> http_network_session_;
   content::ProtocolHandlerMap protocol_handlers_;
   content::URLRequestInterceptorScopedVector protocol_interceptors_;
 
