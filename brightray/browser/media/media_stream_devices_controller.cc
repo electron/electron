@@ -33,10 +33,10 @@ MediaStreamDevicesController::MediaStreamDevicesController(
       // and microphone to avoid popping two infobars.
       microphone_requested_(
           request.audio_type == content::MEDIA_DEVICE_AUDIO_CAPTURE ||
-          request.request_type == content::MEDIA_OPEN_DEVICE),
+          request.request_type == content::MEDIA_OPEN_DEVICE_PEPPER_ONLY),
       webcam_requested_(
           request.video_type == content::MEDIA_DEVICE_VIDEO_CAPTURE ||
-          request.request_type == content::MEDIA_OPEN_DEVICE) {
+          request.request_type == content::MEDIA_OPEN_DEVICE_PEPPER_ONLY) {
 }
 
 MediaStreamDevicesController::~MediaStreamDevicesController() {
@@ -72,7 +72,7 @@ void MediaStreamDevicesController::Accept() {
   content::MediaStreamDevices devices;
   if (microphone_requested_ || webcam_requested_) {
     switch (request_.request_type) {
-      case content::MEDIA_OPEN_DEVICE: {
+      case content::MEDIA_OPEN_DEVICE_PEPPER_ONLY: {
         const content::MediaStreamDevice* device = NULL;
         // For open device request pick the desired device or fall back to the
         // first available of the given type.

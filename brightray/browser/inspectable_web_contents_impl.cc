@@ -573,7 +573,7 @@ void InspectableWebContentsImpl::AgentHostClosed(
     content::DevToolsAgentHost* agent_host, bool replaced) {
 }
 
-void InspectableWebContentsImpl::AboutToNavigateRenderFrame(
+void InspectableWebContentsImpl::RenderFrameHostChanged(
     content::RenderFrameHost* old_host,
     content::RenderFrameHost* new_host) {
   if (new_host->GetParent())
@@ -603,8 +603,9 @@ bool InspectableWebContentsImpl::AddMessageToConsole(
 
 bool InspectableWebContentsImpl::ShouldCreateWebContents(
     content::WebContents* web_contents,
-    int route_id,
-    int main_frame_route_id,
+    int32_t route_id,
+    int32_t main_frame_route_id,
+    int32_t main_frame_widget_route_id,
     WindowContainerType window_container_type,
     const std::string& frame_name,
     const GURL& target_url,

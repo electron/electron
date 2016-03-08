@@ -207,7 +207,7 @@ void DevToolsNetworkInterceptor::ArmTimer(base::TimeTicks now) {
   base::TimeTicks desired_time =
       offset_ + tick_length_ * (last_tick_ + min_ticks_left);
 
-  int64_t min_baseline = std::numeric_limits<int64>::max();
+  int64_t min_baseline = std::numeric_limits<int64_t>::max();
   for (size_t i = 0; i < suspend_count; ++i) {
     if (suspended_transactions_[i].second < min_baseline)
       min_baseline = suspended_transactions_[i].second;
