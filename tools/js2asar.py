@@ -29,7 +29,7 @@ def copy_js(js_source_files, output_dir):
 
 
 def call_asar(archive, output_dir):
-  js_dir = os.path.join(output_dir, 'atom')
+  js_dir = os.path.join(output_dir, 'lib')
   asar = os.path.join(SOURCE_ROOT, 'node_modules', 'asar', 'bin', 'asar')
   subprocess.check_call([find_node(), asar, 'pack', js_dir, archive])
 
