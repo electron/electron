@@ -5,7 +5,7 @@
 #ifndef BRIGHTRAY_BROWSER_WEB_UI_CONTROLLER_FACTORY_H_
 #define BRIGHTRAY_BROWSER_WEB_UI_CONTROLLER_FACTORY_H_
 
-#include "base/basictypes.h"
+#include "base/macros.h"
 #include "content/public/browser/web_ui.h"
 #include "content/public/browser/web_ui_controller_factory.h"
 

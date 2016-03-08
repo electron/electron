@@ -330,7 +330,7 @@ bool WindowsToastNotification::GetTextNodeList(
     ScopedHString* tag,
     IXmlDocument* doc,
     IXmlNodeList** node_list,
-    UINT32 req_length) {
+    Uint32_t req_length) {
   tag->Reset(L"text");
   if (!tag->success())
     return false;
@@ -338,7 +338,7 @@ bool WindowsToastNotification::GetTextNodeList(
   if (FAILED(doc->GetElementsByTagName(*tag, node_list)))
     return false;
 
-  UINT32 node_length;
+  Uint32_t node_length;
   if (FAILED((*node_list)->get_Length(&node_length)))
     return false;
 
