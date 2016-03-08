@@ -32,7 +32,7 @@ enum NotificationType {
   NOTIFICATION_BROWSER_CLOSING,
 
   // This message is sent after a window has been closed.  The source is a
-  // Source<Browser> containing the affected Browser.  No details are exptected.
+  // Source<Browser> containing the affected Browser.  No details are expected.
   NOTIFICATION_BROWSER_CLOSED,
 
   // This message is sent when closing a browser has been cancelled, either by
@@ -411,7 +411,7 @@ enum NotificationType {
   // the source is a Profile.
   NOTIFICATION_EXTENSION_LOADED_DEPRECATED,
 
-  // An error occured while attempting to load an extension. The details are a
+  // An error occurred while attempting to load an extension. The details are a
   // string with details about why the load failed.
   NOTIFICATION_EXTENSION_LOAD_ERROR,
 
@@ -434,7 +434,7 @@ enum NotificationType {
   // The details are an InstalledExtensionInfo, and the source is a Profile.
   NOTIFICATION_EXTENSION_INSTALLED,
 
-  // An error occured during extension install. The details are a string with
+  // An error occurred during extension install. The details are a string with
   // details about why the install failed.
   NOTIFICATION_EXTENSION_INSTALL_ERROR,
 
@@ -625,7 +625,7 @@ enum NotificationType {
   // TabSpecificContentSettings object, there are no details.
   NOTIFICATION_COLLECTED_COOKIES_SHOWN,
 
-  // Sent when a non-default setting in the the notification content settings
+  // Sent when a non-default setting in the notification content settings
   // map has changed. The source is the DesktopNotificationService, the
   // details are None.
   NOTIFICATION_DESKTOP_NOTIFICATION_SETTINGS_CHANGED,
@@ -776,7 +776,7 @@ enum NotificationType {
   NOTIFICATION_USER_LIST_CHANGED,
 
   // Sent when the screen lock state has changed. The source is
-  // ScreenLocker and the details is a bool specifing that the
+  // ScreenLocker and the details is a bool specifying that the
   // screen is locked. When details is a false, the source object
   // is being deleted, so the receiver shouldn't use the screen locker
   // object.
@@ -838,7 +838,7 @@ enum NotificationType {
   // which was installed.
   NOTIFICATION_APP_INSTALLED_TO_NTP,
 
-  // Similar to NOTIFICATION_APP_INSTALLED_TO_NTP but used to nofity ash AppList
+  // Similar to NOTIFICATION_APP_INSTALLED_TO_NTP but used to notify ash AppList
   // about installed app. Source is the profile in which the app is installed
   // and Details is the string ID of the extension.
   NOTIFICATION_APP_INSTALLED_TO_APPLIST,
