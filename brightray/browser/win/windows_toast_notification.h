@@ -70,7 +70,7 @@ class WindowsToastNotification : public Notification {
   bool GetTextNodeList(ScopedHString* tag,
                        ABI::Windows::Data::Xml::Dom::IXmlDocument* doc,
                        ABI::Windows::Data::Xml::Dom::IXmlNodeList** nodeList,
-                       Uint32_t reqLength);
+                       uint32_t reqLength);
   bool AppendTextToXml(ABI::Windows::Data::Xml::Dom::IXmlDocument* doc,
                        ABI::Windows::Data::Xml::Dom::IXmlNode* node,
                        const std::wstring& text);
