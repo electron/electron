@@ -69,7 +69,7 @@
             {
               'destination': '<(PRODUCT_DIR)/<(product_name).app/Contents/Resources',
               'files': [
-                'atom/browser/default_app',
+                'default_app',
               ],
             },
           ],
@@ -171,7 +171,7 @@
             {
               'destination': '<(PRODUCT_DIR)/resources',
               'files': [
-                'atom/browser/default_app',
+                'default_app',
               ]
             },
           ],
@@ -212,7 +212,7 @@
             {
               'destination': '<(PRODUCT_DIR)/resources',
               'files': [
-                'atom/browser/default_app',
+                'default_app',
               ]
             },
           ],
