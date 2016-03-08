@@ -211,7 +211,7 @@ bool CrashService::Initialize(const base::string16& application_name,
   std::wstring pipe_name = kTestPipeName;
   int max_reports = -1;
 
-  // The checkpoint file allows CrashReportSender to enforce the the maximum
+  // The checkpoint file allows CrashReportSender to enforce the maximum
   // reports per day quota. Does not seem to serve any other purpose.
   base::FilePath checkpoint_path = operating_dir.Append(kCheckPointFile);
 

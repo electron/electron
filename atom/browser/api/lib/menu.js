@@ -7,7 +7,7 @@ const bindings = process.atomBinding('menu');
 // Automatically generated radio menu item's group id.
 var nextGroupId = 0;
 
-// Search between seperators to find a radio menu item and return its group id,
+// Search between separators to find a radio menu item and return its group id,
 // otherwise generate a group id.
 var generateGroupId = function(items, pos) {
   var i, item, j, k, ref1, ref2, ref3;
