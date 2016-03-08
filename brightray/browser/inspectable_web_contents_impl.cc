@@ -26,6 +26,7 @@
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/common/user_agent.h"
+#include "ipc/ipc_channel.h"
 #include "net/http/http_response_headers.h"
 #include "net/url_request/url_fetcher.h"
 #include "net/url_request/url_fetcher_response_writer.h"
@@ -251,7 +252,9 @@ void InspectableWebContentsImpl::ShowDevTools() {
 
     agent_host_ = content::DevToolsAgentHost::GetOrCreateFor(web_contents_.get());
     frontend_host_.reset(content::DevToolsFrontendHost::Create(
-        web_contents_->GetMainFrame(), this));
+        web_contents_->GetMainFrame(),
+        base::Bind(&InspectableWebContentsImpl::HandleMessageFromDevToolsFrontend,
+                   base::Unretained(this))));
     agent_host_->AttachClient(this);
 
     GURL devtools_url(base::StringPrintf(kChromeUIDevToolsURL,
@@ -477,7 +480,8 @@ void InspectableWebContentsImpl::ResetZoom() {
 void InspectableWebContentsImpl::SetDevicesUpdatesEnabled(bool enabled) {
 }
 
-void InspectableWebContentsImpl::SendMessageToBrowser(const std::string& message) {
+void InspectableWebContentsImpl::DispatchProtocolMessageFromDevToolsFrontend(
+    const std::string& message) {
   if (agent_host_.get())
     agent_host_->DispatchProtocolMessage(message);
 }
@@ -543,12 +547,6 @@ void InspectableWebContentsImpl::HandleMessageFromDevToolsFrontend(const std::st
       params);
 }
 
-void InspectableWebContentsImpl::HandleMessageFromDevToolsFrontendToBackend(
-    const std::string& message) {
-  if (agent_host_.get())
-    agent_host_->DispatchProtocolMessage(message);
-}
-
 void InspectableWebContentsImpl::DispatchProtocolMessage(
     content::DevToolsAgentHost* agent_host, const std::string& message) {
   if (!frontend_loaded_)
@@ -578,7 +576,10 @@ void InspectableWebContentsImpl::RenderFrameHostChanged(
     content::RenderFrameHost* new_host) {
   if (new_host->GetParent())
     return;
-  frontend_host_.reset(content::DevToolsFrontendHost::Create(new_host, this));
+  frontend_host_.reset(content::DevToolsFrontendHost::Create(
+      web_contents_->GetMainFrame(),
+      base::Bind(&InspectableWebContentsImpl::HandleMessageFromDevToolsFrontend,
+                 base::Unretained(this))));
 }
 
 void InspectableWebContentsImpl::WebContentsDestroyed() {

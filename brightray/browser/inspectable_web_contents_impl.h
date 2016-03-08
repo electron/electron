@@ -104,7 +104,8 @@ class InspectableWebContentsImpl :
   void ZoomOut() override;
   void ResetZoom() override;
   void SetDevicesUpdatesEnabled(bool enabled) override;
-  void SendMessageToBrowser(const std::string& message) override;
+  void DispatchProtocolMessageFromDevToolsFrontend(
+      const std::string& message) override;
   void RecordActionUMA(const std::string& name, int action) override;
   void SendJsonRequest(const DispatchCallback& callback,
                        const std::string& browser_id,

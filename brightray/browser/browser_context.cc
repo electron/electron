@@ -232,4 +232,8 @@ content::PermissionManager* BrowserContext::GetPermissionManager() {
   return permission_manager_.get();
 }
 
+content::BackgroundSyncController* BrowserContext::GetBackgroundSyncController() {
+  return nullptr;
+}
+
 }  // namespace brightray

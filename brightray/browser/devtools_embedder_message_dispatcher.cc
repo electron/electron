@@ -190,8 +190,9 @@ DevToolsEmbedderMessageDispatcher::CreateForDevToolsFrontend(
   d->RegisterHandler("resetZoom", &Delegate::ResetZoom, delegate);
   d->RegisterHandler("setDevicesUpdatesEnabled",
                      &Delegate::SetDevicesUpdatesEnabled, delegate);
-  d->RegisterHandler("sendMessageToBrowser",
-                     &Delegate::SendMessageToBrowser, delegate);
+  d->RegisterHandler("dispatchProtocolMessage",
+                     &Delegate::DispatchProtocolMessageFromDevToolsFrontend,
+                     delegate);
   d->RegisterHandler("recordActionUMA", &Delegate::RecordActionUMA, delegate);
   d->RegisterHandlerWithCallback("sendJsonRequest",
                                  &Delegate::SendJsonRequest, delegate);

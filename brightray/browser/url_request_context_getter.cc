@@ -310,15 +310,15 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
 #else
     http_auth_preferences_.reset(new net::HttpAuthPreferences(schemes));
 #endif
-    auto auth_handler_factory = make_scoped_ptr(
+    auto auth_handler_factory =
         net::HttpAuthHandlerRegistryFactory::Create(
-            http_auth_preferences_.get(), host_resolver.get()));
+            http_auth_preferences_.get(), host_resolver.get());
 
     storage_->set_cert_verifier(delegate_->CreateCertVerifier());
     storage_->set_transport_security_state(
         make_scoped_ptr(new net::TransportSecurityState));
     storage_->set_ssl_config_service(delegate_->CreateSSLConfigService());
-    storage_->set_http_auth_handler_factory(auth_handler_factory.Pass());
+    storage_->set_http_auth_handler_factory(std::move(auth_handler_factory));
     scoped_ptr<net::HttpServerProperties> server_properties(
         new net::HttpServerPropertiesImpl);
     storage_->set_http_server_properties(std::move(server_properties));
@@ -367,10 +367,10 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     }
     storage_->set_http_transaction_factory(make_scoped_ptr(
         new net::HttpCache(
-            new DevToolsNetworkTransactionFactory(controller_,
-                                                  http_network_session_.get()),
-            url_request_context_->net_log(),
-            std::move(backend))));
+            make_scoped_ptr(new DevToolsNetworkTransactionFactory(
+                controller_, http_network_session_.get())),
+            std::move(backend),
+            false)));
 
     storage_->set_job_factory(delegate_->CreateURLRequestJobFactory(
         &protocol_handlers_, &protocol_interceptors_));
