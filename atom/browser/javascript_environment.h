@@ -5,7 +5,7 @@
 #ifndef ATOM_BROWSER_JAVASCRIPT_ENVIRONMENT_H_
 #define ATOM_BROWSER_JAVASCRIPT_ENVIRONMENT_H_
 
-#include "base/basictypes.h"
+#include "base/macros.h"
 #include "gin/public/isolate_holder.h"
 
 namespace atom {

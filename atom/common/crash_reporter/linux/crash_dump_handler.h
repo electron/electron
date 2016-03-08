@@ -6,7 +6,7 @@
 #ifndef ATOM_COMMON_CRASH_REPORTER_LINUX_CRASH_DUMP_HANDLER_H_
 #define ATOM_COMMON_CRASH_REPORTER_LINUX_CRASH_DUMP_HANDLER_H_
 
-#include "base/basictypes.h"
+#include "base/macros.h"
 #include "vendor/breakpad/src/common/simple_string_dictionary.h"
 
 namespace crash_reporter {
