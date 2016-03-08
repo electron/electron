@@ -104,8 +104,16 @@ bool URLRequestContextGetter::DelegateURLSecurityManager::CanDelegate
   return delegate_->CanDelegateURLSecurity(auth_origin);
 }
 
+void URLRequestContextGetter::DelegateURLSecurityManager::SetDefaultWhitelist(
+  scoped_ptr<net::HttpAuthFilter> whitelist_default) {
+}
+
+void URLRequestContextGetter::DelegateURLSecurityManager::SetDelegateWhitelist(
+  scoped_ptr<net::HttpAuthFilter> whitelist_delegate) {
+}
+
 URLRequestContextGetter::Delegate::Delegate() :
-  orig_url_sec_mgr_(net::URLSecurityManager::Create(NULL, NULL)) {}
+  orig_url_sec_mgr_(net::URLSecurityManager::Create()) {}
 
 std::string URLRequestContextGetter::Delegate::GetUserAgent() {
   return base::EmptyString();

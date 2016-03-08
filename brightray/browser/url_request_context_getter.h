@@ -59,6 +59,10 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
 
     bool CanUseDefaultCredentials(const GURL& auth_origin) const override;
     bool CanDelegate(const GURL& auth_origin) const override;
+    void SetDefaultWhitelist(
+      scoped_ptr<net::HttpAuthFilter> whitelist_default) override;
+    void SetDelegateWhitelist(
+      scoped_ptr<net::HttpAuthFilter> whitelist_delegate) override;
 
    private:
     URLRequestContextGetter::Delegate* delegate_;
