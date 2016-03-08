@@ -46,6 +46,7 @@ class DevToolsNetworkTransaction : public net::HttpTransaction {
   int RestartIgnoringLastError(
       const net::CompletionCallback& callback) override;
   int RestartWithCertificate(net::X509Certificate* client_cert,
+                             net::SSLPrivateKey* client_private_key,
                              const net::CompletionCallback& callback) override;
   int RestartWithAuth(const net::AuthCredentials& credentials,
                       const net::CompletionCallback& callback) override;
@@ -65,6 +66,7 @@ class DevToolsNetworkTransaction : public net::HttpTransaction {
   void SetQuicServerInfo(net::QuicServerInfo* quic_server_info) override;
   bool GetLoadTimingInfo(net::LoadTimingInfo* load_timing_info) const override;
   bool GetRemoteEndpoint(net::IPEndPoint* endpoint) const override;
+  void PopulateNetErrorDetails(net::NetErrorDetails* details) const override;
   void SetPriority(net::RequestPriority priority) override;
   void SetWebSocketHandshakeStreamCreateHelper(
       net::WebSocketHandshakeStreamBase::CreateHelper* create_helper) override;
