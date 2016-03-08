@@ -4,6 +4,8 @@
     'vendor/brightray/brightray.gypi',
   ],
   'variables': {
+    # Tell crashpad to build as external project.
+    'crashpad_dependencies': 'external',
     # Required by breakpad.
     'os_bsd': 0,
     'chromeos': 0,
