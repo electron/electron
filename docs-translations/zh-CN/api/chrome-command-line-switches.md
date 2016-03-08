@@ -124,19 +124,15 @@ app.commandLine.appendSwitch('proxy-bypass-list', '<local>;*.google.com;*foo.com
 
 设置默认最大活跃 V-logging 标准; 默认为 0.通常 V-logging 标准值为肯定值.
 
-This switch only works when `--enable-logging` is also passed.
+这个开关只有在 `--enable-logging` 开启时有效.
 
 ## --vmodule=`pattern`
 
-Gives the per-module maximal V-logging levels to override the value given by
-`--v`. E.g. `my_module=2,foo*=3` would change the logging level for all code in
-source files `my_module.*` and `foo*.*`.
+赋予每个模块最大的 V-logging levels 来覆盖 `--v` 给的值.E.g. `my_module=2,foo*=3` 会改变所有源文件 `my_module.*` and `foo*.*` 的代码中的 logging level .
 
-Any pattern containing a forward or backward slash will be tested against the
-whole pathname and not just the module. E.g. `*/foo/bar/*=2` would change the
-logging level for all code in the source files under a `foo/bar` directory.
+任何包含向前的(forward slash)或者向后的(backward slash)模式将被测试用于阻止整个路径名，并且不仅是E.g模块.`*/foo/bar/*=2` 将会改变所有在 `foo/bar` 下的源文件代码中的 logging level .
 
-This switch only works when `--enable-logging` is also passed.
+这个开关只有在 `--enable-logging` 开启时有效.
 
 [app]: app.md
 [append-switch]: app.md#appcommandlineappendswitchswitch-value
