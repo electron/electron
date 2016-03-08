@@ -4,6 +4,8 @@
 
 #include "atom/browser/atom_permission_manager.h"
 
+#include <vector>
+
 #include "content/public/browser/child_process_security_policy.h"
 #include "content/public/browser/permission_type.h"
 #include "content/public/browser/render_frame_host.h"

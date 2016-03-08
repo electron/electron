@@ -6,6 +6,7 @@
 #define ATOM_BROWSER_ATOM_PERMISSION_MANAGER_H_
 
 #include <map>
+#include <vector>
 
 #include "base/callback.h"
 #include "content/public/browser/permission_manager.h"
