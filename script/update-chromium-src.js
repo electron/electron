@@ -14,6 +14,7 @@ function updateFiles(electronDir, libchromiumcontent) {
     if (stat.isDirectory()) {
       if (!fs.existsSync(chromePath)) {
         console.error("Warning! Tried to recurse into path but it doesn't exist in libchromiumcontent! " + chromePath);
+        fs.renameSync(current, current + "__deleteme");
         continue;
       }
 
@@ -23,6 +24,7 @@ function updateFiles(electronDir, libchromiumcontent) {
 
     if (!fs.existsSync(chromePath)) {
       console.error("Warning! Tried to read file but it doesn't exist in libchromiumcontent! " + chromePath);
+      fs.renameSync(current, current + "__deleteme");
       continue;
     }
 
