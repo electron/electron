@@ -110,7 +110,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void Unselect();
   void Replace(const base::string16& word);
   void ReplaceMisspelling(const base::string16& word);
-  uint32 FindInPage(mate::Arguments* args);
+  uint32_t FindInPage(mate::Arguments* args);
   void StopFindInPage(content::StopFindAction action);
 
   // Focus.
@@ -162,9 +162,9 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   // content::WebContentsDelegate:
   bool AddMessageToConsole(content::WebContents* source,
-                           int32 level,
+                           int32_t level,
                            const base::string16& message,
-                           int32 line_no,
+                           int32_t line_no,
                            const base::string16& source_id) override;
   bool ShouldCreateWebContents(
       content::WebContents* web_contents,
@@ -270,7 +270,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   AtomBrowserContext* GetBrowserContext() const;
 
-  uint32 GetNextRequestId() {
+  uint32_t GetNextRequestId() {
     return ++request_id_;
   }
 
@@ -299,7 +299,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   Type type_;
 
   // Request id used for findInPage request.
-  uint32 request_id_;
+  uint32_t request_id_;
 
   DISALLOW_COPY_AND_ASSIGN(WebContents);
 };

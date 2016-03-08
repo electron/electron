@@ -169,7 +169,7 @@ v8::Local<v8::Value> V8ValueConverter::ToV8Array(
     CHECK(!child_v8.IsEmpty());
 
     v8::TryCatch try_catch;
-    result->Set(static_cast<uint32>(i), child_v8);
+    result->Set(static_cast<uint32_t>(i), child_v8);
     if (try_catch.HasCaught())
       LOG(ERROR) << "Setter for index " << i << " threw an exception.";
   }
@@ -222,8 +222,8 @@ base::Value* V8ValueConverter::FromV8ValueImpl(
   if (val->IsBoolean())
     return new base::FundamentalValue(val->ToBoolean()->Value());
 
-  if (val->IsInt32())
-    return new base::FundamentalValue(val->ToInt32()->Value());
+  if (val->Isint32_t())
+    return new base::FundamentalValue(val->Toint32_t()->Value());
 
   if (val->IsNumber())
     return new base::FundamentalValue(val->ToNumber()->Value());
@@ -298,7 +298,7 @@ base::Value* V8ValueConverter::FromV8Array(
   base::ListValue* result = new base::ListValue();
 
   // Only fields with integer keys are carried over to the ListValue.
-  for (uint32 i = 0; i < val->Length(); ++i) {
+  for (uint32_t i = 0; i < val->Length(); ++i) {
     v8::TryCatch try_catch;
     v8::Local<v8::Value> child_v8 = val->Get(i);
     if (try_catch.HasCaught()) {
@@ -345,7 +345,7 @@ base::Value* V8ValueConverter::FromV8Object(
   scoped_ptr<base::DictionaryValue> result(new base::DictionaryValue());
   v8::Local<v8::Array> property_names(val->GetOwnPropertyNames());
 
-  for (uint32 i = 0; i < property_names->Length(); ++i) {
+  for (uint32_t i = 0; i < property_names->Length(); ++i) {
     v8::Local<v8::Value> key(property_names->Get(i));
 
     // Extend this test to cover more types as necessary and if sensible.

@@ -90,12 +90,12 @@ bool GetNodeFromPath(std::string path,
 }
 
 bool FillFileInfoWithNode(Archive::FileInfo* info,
-                          uint32 header_size,
+                          uint32_t header_size,
                           const base::DictionaryValue* node) {
   int size;
   if (!node->GetInteger("size", &size))
     return false;
-  info->size = static_cast<uint32>(size);
+  info->size = static_cast<uint32_t>(size);
 
   if (node->GetBoolean("unpacked", &info->unpacked) && info->unpacked)
     return true;
@@ -157,8 +157,8 @@ bool Archive::Init() {
     return false;
   }
 
-  uint32 size;
-  if (!base::PickleIterator(base::Pickle(buf.data(), buf.size())).ReadUInt32(
+  uint32_t size;
+  if (!base::PickleIterator(base::Pickle(buf.data(), buf.size())).ReadUint32_t(
           &size)) {
     LOG(ERROR) << "Failed to parse header size from " << path_.value();
     return false;

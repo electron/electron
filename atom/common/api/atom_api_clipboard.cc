@@ -109,8 +109,8 @@ base::string16 ReadHtml(mate::Arguments* args) {
   base::string16 data;
   base::string16 html;
   std::string url;
-  uint32 start;
-  uint32 end;
+  uint32_t start;
+  uint32_t end;
   ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
   clipboard->ReadHTML(GetClipboardType(args), &html, &url, &start, &end);
   data = html.substr(start, end - start);
