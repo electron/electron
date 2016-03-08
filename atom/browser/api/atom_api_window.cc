@@ -191,6 +191,14 @@ void Window::OnWindowFocus() {
   Emit("focus");
 }
 
+void Window::OnWindowShow() {
+  Emit("show");
+}
+
+void Window::OnWindowHide() {
+  Emit("hide");
+}
+
 void Window::OnWindowMaximize() {
   Emit("maximize");
 }

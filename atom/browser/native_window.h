@@ -210,6 +210,8 @@ class NativeWindow : public base::SupportsUserData,
   void NotifyWindowClosed();
   void NotifyWindowBlur();
   void NotifyWindowFocus();
+  void NotifyWindowShow();
+  void NotifyWindowHide();
   void NotifyWindowMaximize();
   void NotifyWindowUnmaximize();
   void NotifyWindowMinimize();
