@@ -168,8 +168,9 @@ class WebContents : public mate::TrackableObject<WebContents>,
                            const base::string16& source_id) override;
   bool ShouldCreateWebContents(
       content::WebContents* web_contents,
-      int route_id,
-      int main_frame_route_id,
+      int32_t route_id,
+      int32_t main_frame_route_id,
+      int32_t main_frame_widget_route_id,
       WindowContainerType window_container_type,
       const std::string& frame_name,
       const GURL& target_url,
@@ -252,8 +253,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
       const std::vector<content::FaviconURL>& urls) override;
   void PluginCrashed(const base::FilePath& plugin_path,
                      base::ProcessId plugin_pid) override;
-  void MediaStartedPlaying() override;
-  void MediaPaused() override;
+  void MediaStartedPlaying(const MediaPlayerId& id) override;
+  void MediaStoppedPlaying(const MediaPlayerId& id) override;
   void DidChangeThemeColor(SkColor theme_color) override;
 
   // brightray::InspectableWebContentsViewDelegate:

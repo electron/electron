@@ -34,7 +34,7 @@ v8::Local<v8::Value> Converter<const net::URLRequest*>::ToV8(
   scoped_ptr<base::ListValue> list(new base::ListValue);
   atom::GetUploadData(list.get(), val);
   if (!list->empty())
-    dict->Set("uploadData", list.Pass());
+    dict->Set("uploadData", std::move(list));
   return mate::ConvertToV8(isolate, *(dict.get()));
 }
 
@@ -74,7 +74,7 @@ void GetUploadData(base::ListValue* upload_data_list,
   const net::UploadDataStream* upload_data = request->get_upload();
   if (!upload_data)
     return;
-  const ScopedVector<net::UploadElementReader>* readers =
+  const std::vector<scoped_ptr<net::UploadElementReader>>* readers =
       upload_data->GetElementReaders();
   for (const auto& reader : *readers) {
     scoped_ptr<base::DictionaryValue> upload_data_dict(
@@ -85,14 +85,14 @@ void GetUploadData(base::ListValue* upload_data_list,
       scoped_ptr<base::Value> bytes(
           base::BinaryValue::CreateWithCopiedBuffer(bytes_reader->bytes(),
                                                     bytes_reader->length()));
-      upload_data_dict->Set("bytes", bytes.Pass());
+      upload_data_dict->Set("bytes", std::move(bytes));
     } else if (reader->AsFileReader()) {
       const net::UploadFileElementReader* file_reader =
           reader->AsFileReader();
       auto file_path = file_reader->path().AsUTF8Unsafe();
       upload_data_dict->SetStringWithoutPathExpansion("file", file_path);
     }
-    upload_data_list->Append(upload_data_dict.Pass());
+    upload_data_list->Append(std::move(upload_data_dict));
   }
 }
 

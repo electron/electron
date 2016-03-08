@@ -7,6 +7,7 @@
 
 #include <string>
 
+#include "base/macros.h"
 #include "content/public/browser/speech_recognition_event_listener.h"
 #include "content/public/browser/speech_recognition_manager_delegate.h"
 

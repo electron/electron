@@ -80,6 +80,26 @@ int AtomPermissionManager::RequestPermission(
   return kNoPendingOperation;
 }
 
+int AtomPermissionManager::RequestPermissions(
+    const std::vector<content::PermissionType>& permissions,
+    content::RenderFrameHost* render_frame_host,
+    const GURL& requesting_origin,
+    bool user_gesture,
+    const base::Callback<void(
+    const std::vector<content::PermissionStatus>&)>& callback) {
+  // FIXME(zcbenz): Just ignore multiple permissions request for now.
+  std::vector<content::PermissionStatus> permissionStatuses;
+  for (auto permission : permissions) {
+    if (permission == content::PermissionType::MIDI_SYSEX) {
+      content::ChildProcessSecurityPolicy::GetInstance()->
+          GrantSendMidiSysExMessage(render_frame_host->GetProcess()->GetID());
+    }
+    permissionStatuses.push_back(content::PERMISSION_STATUS_GRANTED);
+  }
+  callback.Run(permissionStatuses);
+  return kNoPendingOperation;
+}
+
 void AtomPermissionManager::OnPermissionResponse(
     int request_id,
     const GURL& origin,

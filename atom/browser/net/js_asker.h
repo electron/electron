@@ -81,7 +81,7 @@ class JsAsker : public RequestJob {
   void OnResponse(bool success, scoped_ptr<base::Value> value) {
     int error = net::ERR_NOT_IMPLEMENTED;
     if (success && value && !internal::IsErrorOptions(value.get(), &error)) {
-      StartAsync(value.Pass());
+      StartAsync(std::move(value));
     } else {
       RequestJob::NotifyStartError(
           net::URLRequestStatus(net::URLRequestStatus::FAILED, error));

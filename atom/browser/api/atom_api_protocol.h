@@ -117,7 +117,7 @@ class Protocol : public mate::Wrappable {
     scoped_ptr<CustomProtocolHandler<RequestJob>> protocol_handler(
         new CustomProtocolHandler<RequestJob>(
             isolate(), request_context_getter_, handler));
-    if (job_factory_->SetProtocolHandler(scheme, protocol_handler.Pass()))
+    if (job_factory_->SetProtocolHandler(scheme, std::move(protocol_handler)))
       return PROTOCOL_OK;
     else
       return PROTOCOL_FAIL;
@@ -161,7 +161,7 @@ class Protocol : public mate::Wrappable {
             isolate(), request_context_getter_, handler));
     original_protocols_.set(
         scheme,
-        job_factory_->ReplaceProtocol(scheme, protocol_handler.Pass()));
+        job_factory_->ReplaceProtocol(scheme, std::move(protocol_handler)));
     return PROTOCOL_OK;
   }
 

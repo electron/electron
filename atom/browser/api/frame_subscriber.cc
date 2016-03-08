@@ -54,7 +54,7 @@ void FrameSubscriber::OnFrameDelivered(const FrameCaptureCallback& callback,
     return;
 
   bitmap.copyPixelsTo(
-    reinterpret_cast<uint8*>(node::Buffer::Data(buffer.ToLocalChecked())),
+    reinterpret_cast<uint8_t*>(node::Buffer::Data(buffer.ToLocalChecked())),
     rgb_arr_size);
 
   callback_.Run(buffer.ToLocalChecked());

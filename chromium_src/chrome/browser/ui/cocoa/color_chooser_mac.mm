@@ -74,7 +74,7 @@ ColorChooserMac::ColorChooserMac(content::WebContents* web_contents,
                                  SkColor initial_color)
     : web_contents_(web_contents) {
   panel_.reset([[ColorPanelCocoa alloc] initWithChooser:this]);
-  [panel_ setColor:gfx::SkColorToDeviceNSColor(initial_color)];
+  [panel_ setColor:skia::SkColorToDeviceNSColor(initial_color)];
   [[NSColorPanel sharedColorPanel] makeKeyAndOrderFront:nil];
 }
 
@@ -101,7 +101,7 @@ void ColorChooserMac::End() {
 }
 
 void ColorChooserMac::SetSelectedColor(SkColor color) {
-  [panel_ setColor:gfx::SkColorToDeviceNSColor(color)];
+  [panel_ setColor:skia::SkColorToDeviceNSColor(color)];
 }
 
 @implementation ColorPanelCocoa
@@ -139,7 +139,7 @@ void ColorChooserMac::SetSelectedColor(SkColor color) {
     nonUserChange_ = NO;
     return;
   }
-  chooser_->DidChooseColorInColorPanel(gfx::NSDeviceColorToSkColor(
+  chooser_->DidChooseColorInColorPanel(skia::NSDeviceColorToSkColor(
       [[panel color] colorUsingColorSpaceName:NSDeviceRGBColorSpace]));
   nonUserChange_ = NO;
 }

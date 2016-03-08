@@ -96,7 +96,7 @@ bool PrintWebViewHelper::PrintPagesNative(blink::WebFrame* frame,
   metafile.FinishDocument();
 
   // Get the size of the resulting metafile.
-  uint32 buf_size = metafile.GetDataSize();
+  uint32_t buf_size = metafile.GetDataSize();
   DCHECK_GT(buf_size, 0u);
 
   PrintHostMsg_DidPrintPage_Params printed_page_params;
@@ -218,7 +218,7 @@ void PrintWebViewHelper::PrintPageInternal(
 bool PrintWebViewHelper::CopyMetafileDataToSharedMem(
     PdfMetafileSkia* metafile,
     base::SharedMemoryHandle* shared_mem_handle) {
-  uint32 buf_size = metafile->GetDataSize();
+  uint32_t buf_size = metafile->GetDataSize();
   base::SharedMemory shared_buf;
   // Allocate a shared memory buffer to hold the generated metafile data.
   if (!shared_buf.CreateAndMapAnonymous(buf_size)) {

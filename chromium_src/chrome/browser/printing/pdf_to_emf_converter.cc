@@ -256,7 +256,7 @@ void LazyEmf::Close() const {
 
 bool LazyEmf::LoadEmf(Emf* emf) const {
   file_->Seek(base::File::FROM_BEGIN, 0);
-  int64 size = file_->GetLength();
+  int64_t size = file_->GetLength();
   if (size <= 0)
     return false;
   std::vector<char> data(size);

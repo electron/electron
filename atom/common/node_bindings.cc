@@ -85,7 +85,7 @@ scoped_ptr<const char*[]> StringVectorToArgArray(
   for (size_t i = 0; i < vector.size(); ++i) {
     array[i] = vector[i].c_str();
   }
-  return array.Pass();
+  return array;
 }
 
 base::FilePath GetResourcesPath(bool is_browser) {

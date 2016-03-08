@@ -44,6 +44,7 @@ URLRequestAsarJob::URLRequestAsarJob(
     : net::URLRequestJob(request, network_delegate),
       type_(TYPE_ERROR),
       remaining_bytes_(0),
+      range_parse_result_(net::OK),
       weak_ptr_factory_(this) {}
 
 URLRequestAsarJob::~URLRequestAsarJob() {}
@@ -99,7 +100,7 @@ void URLRequestAsarJob::InitializeFileJob(
 
 void URLRequestAsarJob::Start() {
   if (type_ == TYPE_ASAR) {
-    remaining_bytes_ = static_cast<int64>(file_info_.size);
+    remaining_bytes_ = static_cast<int64_t>(file_info_.size);
 
     int flags = base::File::FLAG_OPEN |
                 base::File::FLAG_READ |
@@ -131,18 +132,14 @@ void URLRequestAsarJob::Kill() {
   URLRequestJob::Kill();
 }
 
-bool URLRequestAsarJob::ReadRawData(net::IOBuffer* dest,
-                                    int dest_size,
-                                    int* bytes_read) {
+int URLRequestAsarJob::ReadRawData(net::IOBuffer* dest, int dest_size) {
   if (remaining_bytes_ < dest_size)
     dest_size = static_cast<int>(remaining_bytes_);
 
   // If we should copy zero bytes because |remaining_bytes_| is zero, short
   // circuit here.
-  if (!dest_size) {
-    *bytes_read = 0;
-    return true;
-  }
+  if (!dest_size)
+    return 0;
 
   int rv = stream_->Read(dest,
                          dest_size,
@@ -150,20 +147,11 @@ bool URLRequestAsarJob::ReadRawData(net::IOBuffer* dest,
                                     weak_ptr_factory_.GetWeakPtr(),
                                     make_scoped_refptr(dest)));
   if (rv >= 0) {
-    // Data is immediately available.
-    *bytes_read = rv;
     remaining_bytes_ -= rv;
     DCHECK_GE(remaining_bytes_, 0);
-    return true;
   }
 
-  // Otherwise, a read error occured.  We may just need to wait...
-  if (rv == net::ERR_IO_PENDING) {
-    SetStatus(net::URLRequestStatus(net::URLRequestStatus::IO_PENDING, 0));
-  } else {
-    NotifyDone(net::URLRequestStatus(net::URLRequestStatus::FAILED, rv));
-  }
-  return false;
+  return rv;
 }
 
 bool URLRequestAsarJob::IsRedirectResponse(GURL* location,
@@ -214,15 +202,16 @@ void URLRequestAsarJob::SetExtraRequestHeaders(
     const net::HttpRequestHeaders& headers) {
   std::string range_header;
   if (headers.GetHeader(net::HttpRequestHeaders::kRange, &range_header)) {
-    // We only care about "Range" header here.
+    // This job only cares about the Range header. This method stashes the value
+    // for later use in DidOpen(), which is responsible for some of the range
+    // validation as well. NotifyStartError is not legal to call here since
+    // the job has not started.
     std::vector<net::HttpByteRange> ranges;
     if (net::HttpUtil::ParseRangeHeader(range_header, &ranges)) {
       if (ranges.size() == 1) {
         byte_range_ = ranges[0];
       } else {
-        NotifyDone(net::URLRequestStatus(
-            net::URLRequestStatus::FAILED,
-            net::ERR_REQUEST_RANGE_NOT_SATISFIABLE));
+        range_parse_result_ = net::ERR_REQUEST_RANGE_NOT_SATISFIABLE;
       }
     }
   }
@@ -274,7 +263,14 @@ void URLRequestAsarJob::DidFetchMetaInfo(const FileMetaInfo* meta_info) {
 
 void URLRequestAsarJob::DidOpen(int result) {
   if (result != net::OK) {
-    NotifyDone(net::URLRequestStatus(net::URLRequestStatus::FAILED, result));
+    NotifyStartError(net::URLRequestStatus(net::URLRequestStatus::FAILED,
+                                           result));
+    return;
+  }
+
+  if (range_parse_result_ != net::OK) {
+    NotifyStartError(net::URLRequestStatus(net::URLRequestStatus::FAILED,
+                                           range_parse_result_));
     return;
   }
 
@@ -289,8 +285,9 @@ void URLRequestAsarJob::DidOpen(int result) {
     }
   } else {
     if (!byte_range_.ComputeBounds(meta_info_.file_size)) {
-      NotifyDone(net::URLRequestStatus(net::URLRequestStatus::FAILED,
-                 net::ERR_REQUEST_RANGE_NOT_SATISFIABLE));
+      NotifyStartError(
+          net::URLRequestStatus(net::URLRequestStatus::FAILED,
+                                net::ERR_REQUEST_RANGE_NOT_SATISFIABLE));
       return;
     }
 
@@ -315,17 +312,19 @@ void URLRequestAsarJob::DidOpen(int result) {
   }
 }
 
-void URLRequestAsarJob::DidSeek(int64 result) {
+void URLRequestAsarJob::DidSeek(int64_t result) {
   if (type_ == TYPE_ASAR) {
-    if (result != static_cast<int64>(file_info_.offset)) {
-      NotifyDone(net::URLRequestStatus(net::URLRequestStatus::FAILED,
-                                       net::ERR_REQUEST_RANGE_NOT_SATISFIABLE));
+    if (result != static_cast<int64_t>(file_info_.offset)) {
+      NotifyStartError(
+          net::URLRequestStatus(net::URLRequestStatus::FAILED,
+                                net::ERR_REQUEST_RANGE_NOT_SATISFIABLE));
       return;
     }
   } else {
     if (result != byte_range_.first_byte_position()) {
-      NotifyDone(net::URLRequestStatus(net::URLRequestStatus::FAILED,
-                                       net::ERR_REQUEST_RANGE_NOT_SATISFIABLE));
+      NotifyStartError(
+          net::URLRequestStatus(net::URLRequestStatus::FAILED,
+                                net::ERR_REQUEST_RANGE_NOT_SATISFIABLE));
       return;
     }
   }
@@ -334,21 +333,14 @@ void URLRequestAsarJob::DidSeek(int64 result) {
 }
 
 void URLRequestAsarJob::DidRead(scoped_refptr<net::IOBuffer> buf, int result) {
-  if (result > 0) {
-    SetStatus(net::URLRequestStatus());  // Clear the IO_PENDING status
+  if (result >= 0) {
     remaining_bytes_ -= result;
     DCHECK_GE(remaining_bytes_, 0);
   }
 
   buf = NULL;
 
-  if (result == 0) {
-    NotifyDone(net::URLRequestStatus());
-  } else if (result < 0) {
-    NotifyDone(net::URLRequestStatus(net::URLRequestStatus::FAILED, result));
-  }
-
-  NotifyReadComplete(result);
+  ReadRawDataComplete(result);
 }
 
 }  // namespace asar

@@ -30,8 +30,8 @@ class DownloadItem : public mate::TrackableObject<DownloadItem>,
   void Pause();
   void Resume();
   void Cancel();
-  int64 GetReceivedBytes() const;
-  int64 GetTotalBytes() const;
+  int64_t GetReceivedBytes() const;
+  int64_t GetTotalBytes() const;
   std::string GetMimeType() const;
   bool HasUserGesture() const;
   std::string GetFilename() const;

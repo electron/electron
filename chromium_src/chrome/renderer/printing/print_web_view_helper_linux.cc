@@ -92,7 +92,7 @@ bool PrintWebViewHelper::PrintPagesNative(blink::WebFrame* frame,
   metafile.FinishDocument();
 
   // Get the size of the resulting metafile.
-  uint32 buf_size = metafile.GetDataSize();
+  uint32_t buf_size = metafile.GetDataSize();
   DCHECK_GT(buf_size, 0u);
 
 #if defined(OS_CHROMEOS) || defined(OS_ANDROID)

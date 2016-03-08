@@ -415,22 +415,19 @@ class PrepareFrameAndViewForPrint : public blink::WebViewClient,
     return owns_web_view_ && frame() && frame()->isLoading();
   }
 
-  // TODO(ojan): Remove this override and have this class use a non-null
-  // layerTreeView.
-  // blink::WebViewClient override:
-  virtual bool allowsBrokenNullLayerTreeView() const;
-
  protected:
   // blink::WebViewClient override:
-  virtual void didStopLoading();
+  void didStopLoading() override;
+  bool allowsBrokenNullLayerTreeView() const override;
 
-  // blink::WebFrameClient override:
-  virtual blink::WebFrame* createChildFrame(
+  // blink::WebFrameClient:
+  blink::WebFrame* createChildFrame(
       blink::WebLocalFrame* parent,
       blink::WebTreeScopeType scope,
       const blink::WebString& name,
-      blink::WebSandboxFlags sandboxFlags);
-  virtual void frameDetached(blink::WebFrame* frame, DetachType type);
+      blink::WebSandboxFlags sandboxFlags,
+      const blink::WebFrameOwnerProperties& frameOwnerProperties) override;
+  void frameDetached(blink::WebFrame* frame, DetachType type) override;
 
  private:
   void CallOnReady();
@@ -576,7 +573,8 @@ blink::WebFrame* PrepareFrameAndViewForPrint::createChildFrame(
     blink::WebLocalFrame* parent,
     blink::WebTreeScopeType scope,
     const blink::WebString& name,
-    blink::WebSandboxFlags sandboxFlags) {
+    blink::WebSandboxFlags sandboxFlags,
+    const blink::WebFrameOwnerProperties& frameOwnerProperties) {
   blink::WebFrame* frame = blink::WebLocalFrame::create(scope, this);
   parent->appendChild(frame);
   return frame;
@@ -814,7 +812,7 @@ bool PrintWebViewHelper::FinalizePrintReadyDocument() {
 
   // Get the size of the resulting metafile.
   PdfMetafileSkia* metafile = print_preview_context_.metafile();
-  uint32 buf_size = metafile->GetDataSize();
+  uint32_t buf_size = metafile->GetDataSize();
   DCHECK_GT(buf_size, 0u);
 
   PrintHostMsg_DidPreviewDocument_Params preview_params;
@@ -1164,7 +1162,7 @@ bool PrintWebViewHelper::RenderPagesForPrint(blink::WebLocalFrame* frame,
 bool PrintWebViewHelper::CopyMetafileDataToSharedMem(
     PdfMetafileSkia* metafile,
     base::SharedMemoryHandle* shared_mem_handle) {
-  uint32 buf_size = metafile->GetDataSize();
+  uint32_t buf_size = metafile->GetDataSize();
   scoped_ptr<base::SharedMemory> shared_buf(
       content::RenderThread::Get()->HostAllocateSharedMemoryBuffer(
           buf_size).release());

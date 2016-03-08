@@ -27,12 +27,12 @@ class Archive : public mate::Wrappable {
     scoped_ptr<asar::Archive> archive(new asar::Archive(path));
     if (!archive->Init())
       return v8::False(isolate);
-    return (new Archive(archive.Pass()))->GetWrapper(isolate);
+    return (new Archive(std::move(archive)))->GetWrapper(isolate);
   }
 
  protected:
   explicit Archive(scoped_ptr<asar::Archive> archive)
-      : archive_(archive.Pass()) {}
+      : archive_(std::move(archive)) {}
 
   // Reads the offset and size of file.
   v8::Local<v8::Value> GetFileInfo(v8::Isolate* isolate,

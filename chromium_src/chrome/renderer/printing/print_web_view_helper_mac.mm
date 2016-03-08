@@ -116,15 +116,13 @@ void PrintWebViewHelper::RenderPage(const PrintMsg_Print_Params& params,
   gfx::Rect canvas_area = content_area;
 
   {
-    skia::PlatformCanvas* canvas = metafile->GetVectorCanvasForNewPage(
+    SkCanvas* canvas = metafile->GetVectorCanvasForNewPage(
         *page_size, canvas_area, scale_factor);
     if (!canvas)
       return;
 
     MetafileSkiaWrapper::SetMetafileOnCanvas(*canvas, metafile);
-    skia::SetIsDraftMode(*canvas, is_print_ready_metafile_sent_);
     skia::SetIsPreviewMetafile(*canvas, is_preview);
-
     RenderPageContent(frame, page_number, canvas_area, content_area,
                       scale_factor, static_cast<blink::WebCanvas*>(canvas));
   }

@@ -158,7 +158,7 @@ bool Archive::Init() {
   }
 
   uint32_t size;
-  if (!base::PickleIterator(base::Pickle(buf.data(), buf.size())).ReadUint32_t(
+  if (!base::PickleIterator(base::Pickle(buf.data(), buf.size())).ReadUInt32(
           &size)) {
     LOG(ERROR) << "Failed to parse header size from " << path_.value();
     return false;
@@ -296,7 +296,7 @@ bool Archive::CopyFileOut(const base::FilePath& path, base::FilePath* out) {
 #endif
 
   *out = temp_file->path();
-  external_files_.set(path, temp_file.Pass());
+  external_files_.set(path, std::move(temp_file));
   return true;
 }
 

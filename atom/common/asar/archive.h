@@ -29,7 +29,7 @@ class Archive {
     bool unpacked;
     bool executable;
     uint32_t size;
-    uint64 offset;
+    uint64_t offset;
   };
 
   struct Stats : public FileInfo {

@@ -230,8 +230,7 @@ content::QuotaPermissionContext*
 }
 
 void AtomBrowserClient::AllowCertificateError(
-    int render_process_id,
-    int render_frame_id,
+    content::WebContents* web_contents,
     int cert_error,
     const net::SSLInfo& ssl_info,
     const GURL& request_url,
@@ -243,7 +242,7 @@ void AtomBrowserClient::AllowCertificateError(
     content::CertificateRequestResultType* request) {
   if (delegate_) {
     delegate_->AllowCertificateError(
-        render_process_id, render_frame_id, cert_error, ssl_info, request_url,
+        web_contents, cert_error, ssl_info, request_url,
         resource_type, overridable, strict_enforcement,
         expired_previous_decision, callback, request);
   }
@@ -265,7 +264,7 @@ void AtomBrowserClient::SelectClientCertificate(
 
   if (!cert_request_info->client_certs.empty() && delegate_) {
     delegate_->SelectClientCertificate(
-        web_contents, cert_request_info, delegate.Pass());
+        web_contents, cert_request_info, std::move(delegate));
   }
 }
 

@@ -177,7 +177,7 @@ int PrintingHandlerWin::LoadPDF(base::File pdf_file) {
   if (!g_pdf_lib.Get().IsValid())
     return 0;
 
-  int64 length64 = pdf_file.GetLength();
+  int64_t length64 = pdf_file.GetLength();
   if (length64 <= 0 || length64 > std::numeric_limits<int>::max())
     return 0;
   int length = static_cast<int>(length64);

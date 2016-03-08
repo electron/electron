@@ -181,7 +181,7 @@ int URLRequestFetchJob::DataAvailable(net::IOBuffer* buffer, int num_bytes) {
   pending_buffer_ = nullptr;
   pending_buffer_size_ = 0;
 
-  NotifyReadComplete(bytes_read);
+  ReadRawDataComplete(bytes_read);
   return bytes_read;
 }
 
@@ -190,18 +190,15 @@ void URLRequestFetchJob::Kill() {
   fetcher_.reset();
 }
 
-bool URLRequestFetchJob::ReadRawData(net::IOBuffer* dest,
-                                     int dest_size,
-                                     int* bytes_read) {
+int URLRequestFetchJob::ReadRawData(net::IOBuffer* dest, int dest_size) {
   if (GetResponseCode() == 204) {
-    *bytes_read = 0;
     request()->set_received_response_content_length(prefilter_bytes_read());
-    return true;
+    return 0;
   }
   pending_buffer_ = dest;
   pending_buffer_size_ = dest_size;
   SetStatus(net::URLRequestStatus(net::URLRequestStatus::IO_PENDING, 0));
-  return false;
+  return dest_size;
 }
 
 bool URLRequestFetchJob::GetMimeType(std::string* mime_type) const {
@@ -234,9 +231,10 @@ void URLRequestFetchJob::OnURLFetchComplete(const net::URLFetcher* source) {
 
   pending_buffer_ = nullptr;
   pending_buffer_size_ = 0;
-  NotifyDone(fetcher_->GetStatus());
   if (fetcher_->GetStatus().is_success())
-    NotifyReadComplete(0);
+    ReadRawDataComplete(0);
+  else
+    NotifyStartError(fetcher_->GetStatus());
 }
 
 }  // namespace atom

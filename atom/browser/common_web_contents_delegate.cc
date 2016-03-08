@@ -19,6 +19,7 @@
 #include "content/public/browser/child_process_security_policy.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
+#include "content/public/browser/render_widget_host.h"
 #include "storage/browser/fileapi/isolated_context.h"
 
 #if defined(TOOLKIT_VIEWS)
@@ -173,8 +174,6 @@ content::WebContents* CommonWebContentsDelegate::OpenURLFromTab(
   load_url_params.should_replace_current_entry =
       params.should_replace_current_entry;
   load_url_params.is_renderer_initiated = params.is_renderer_initiated;
-  load_url_params.transferred_global_request_id =
-      params.transferred_global_request_id;
   load_url_params.should_clear_history_list = true;
 
   source->GetController().LoadURLWithParams(load_url_params);
@@ -223,7 +222,7 @@ void CommonWebContentsDelegate::EnterFullscreenModeForTab(
     return;
   SetHtmlApiFullscreen(true);
   owner_window_->NotifyWindowEnterHtmlFullScreen();
-  source->GetRenderViewHost()->WasResized();
+  source->GetRenderViewHost()->GetWidget()->WasResized();
 }
 
 void CommonWebContentsDelegate::ExitFullscreenModeForTab(
@@ -232,7 +231,7 @@ void CommonWebContentsDelegate::ExitFullscreenModeForTab(
     return;
   SetHtmlApiFullscreen(false);
   owner_window_->NotifyWindowLeaveHtmlFullScreen();
-  source->GetRenderViewHost()->WasResized();
+  source->GetRenderViewHost()->GetWidget()->WasResized();
 }
 
 bool CommonWebContentsDelegate::IsFullscreenForTabOrPending(

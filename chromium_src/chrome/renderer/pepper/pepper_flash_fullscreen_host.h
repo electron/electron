@@ -5,8 +5,6 @@
 #ifndef CHROME_RENDERER_PEPPER_PEPPER_FLASH_FULLSCREEN_HOST_H_
 #define CHROME_RENDERER_PEPPER_PEPPER_FLASH_FULLSCREEN_HOST_H_
 
-#include "base/basictypes.h"
-#include "base/compiler_specific.h"
 #include "ppapi/host/resource_host.h"
 
 namespace content {

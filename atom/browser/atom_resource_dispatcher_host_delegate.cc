@@ -19,8 +19,8 @@ AtomResourceDispatcherHostDelegate::AtomResourceDispatcherHostDelegate() {
 
 bool AtomResourceDispatcherHostDelegate::HandleExternalProtocol(
     const GURL& url,
-    int render_process_id,
-    int render_view_id,
+    int child_id,
+    const content::ResourceRequestInfo::WebContentsGetter&,
     bool is_main_frame,
     ui::PageTransition transition,
     bool has_user_gesture) {

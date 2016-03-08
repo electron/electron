@@ -5,7 +5,6 @@
 #include "atom/browser/api/atom_api_desktop_capturer.h"
 
 #include "atom/common/api/atom_api_native_image.h"
-#include "atom/common/node_includes.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
 #include "base/strings/utf_string_conversions.h"
 #include "chrome/browser/media/desktop_media_list.h"
@@ -13,6 +12,8 @@
 #include "third_party/webrtc/modules/desktop_capture/desktop_capture_options.h"
 #include "third_party/webrtc/modules/desktop_capture/screen_capturer.h"
 #include "third_party/webrtc/modules/desktop_capture/window_capturer.h"
+
+#include "atom/common/node_includes.h"
 
 namespace mate {
 
@@ -63,8 +64,8 @@ void DesktopCapturer::StartHandling(bool capture_window,
       capture_screen ? webrtc::ScreenCapturer::Create(options) : nullptr);
   scoped_ptr<webrtc::WindowCapturer> window_capturer(
       capture_window ? webrtc::WindowCapturer::Create(options) : nullptr);
-  media_list_.reset(new NativeDesktopMediaList(screen_capturer.Pass(),
-      window_capturer.Pass()));
+  media_list_.reset(new NativeDesktopMediaList(
+      std::move(screen_capturer), std::move(window_capturer)));
 
   media_list_->SetThumbnailSize(thumbnail_size);
   media_list_->StartUpdating(this);

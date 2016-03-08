@@ -135,7 +135,7 @@ content::ContentUtilityClient* AtomMainDelegate::CreateContentUtilityClient() {
 }
 
 scoped_ptr<brightray::ContentClient> AtomMainDelegate::CreateContentClient() {
-  return scoped_ptr<brightray::ContentClient>(new AtomContentClient).Pass();
+  return scoped_ptr<brightray::ContentClient>(new AtomContentClient);
 }
 
 }  // namespace atom

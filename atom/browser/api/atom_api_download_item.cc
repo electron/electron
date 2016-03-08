@@ -106,11 +106,11 @@ void DownloadItem::Cancel() {
   download_item_->Remove();
 }
 
-int64 DownloadItem::GetReceivedBytes() const {
+int64_t DownloadItem::GetReceivedBytes() const {
   return download_item_->GetReceivedBytes();
 }
 
-int64 DownloadItem::GetTotalBytes() const {
+int64_t DownloadItem::GetTotalBytes() const {
   return download_item_->GetTotalBytes();
 }
 

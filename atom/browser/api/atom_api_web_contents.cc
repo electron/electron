@@ -44,6 +44,7 @@
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
+#include "content/public/browser/render_widget_host.h"
 #include "content/public/browser/render_widget_host_view.h"
 #include "content/public/browser/resource_request_details.h"
 #include "content/public/browser/service_worker_context.h"
@@ -150,7 +151,7 @@ struct Converter<net::HttpResponseHeaders*> {
         } else {
           scoped_ptr<base::ListValue> values(new base::ListValue());
           values->AppendString(value);
-          response_headers.Set(key, values.Pass());
+          response_headers.Set(key, std::move(values));
         }
       }
     }
@@ -317,8 +318,9 @@ bool WebContents::AddMessageToConsole(content::WebContents* source,
 
 bool WebContents::ShouldCreateWebContents(
     content::WebContents* web_contents,
-    int route_id,
-    int main_frame_route_id,
+    int32_t route_id,
+    int32_t main_frame_route_id,
+    int32_t main_frame_widget_route_id,
     WindowContainerType window_container_type,
     const std::string& frame_name,
     const GURL& target_url,
@@ -509,11 +511,11 @@ void WebContents::PluginCrashed(const base::FilePath& plugin_path,
   Emit("plugin-crashed", info.name, info.version);
 }
 
-void WebContents::MediaStartedPlaying() {
+void WebContents::MediaStartedPlaying(const MediaPlayerId& id) {
   Emit("media-started-playing");
 }
 
-void WebContents::MediaPaused() {
+void WebContents::MediaStoppedPlaying(const MediaPlayerId& id) {
   Emit("media-paused");
 }
 
@@ -1070,7 +1072,7 @@ void WebContents::BeginFrameSubscription(
   if (view) {
     scoped_ptr<FrameSubscriber> frame_subscriber(new FrameSubscriber(
         isolate(), view, callback));
-    view->BeginFrameSubscription(frame_subscriber.Pass());
+    view->BeginFrameSubscription(std::move(frame_subscriber));
   }
 }
 

@@ -118,7 +118,7 @@ void PrintPreviewMessageHandler::PrintToPDF(
 }
 
 void PrintPreviewMessageHandler::RunPrintToPDFCallback(
-     int request_id, uint32 data_size, char* data) {
+    int request_id, uint32_t data_size, char* data) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
 
   v8::Isolate* isolate = v8::Isolate::GetCurrent();

@@ -96,7 +96,7 @@ NSAlert* CreateNSAlert(NativeWindow* parent_window,
   }
 
   if (!icon.isNull()) {
-    NSImage* image = gfx::SkBitmapToNSImageWithColorSpace(
+    NSImage* image = skia::SkBitmapToNSImageWithColorSpace(
         *icon.bitmap(), base::mac::GetGenericRGBColorSpace());
     [alert setIcon:image];
   }

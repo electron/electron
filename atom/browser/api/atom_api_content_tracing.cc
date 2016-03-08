@@ -53,13 +53,7 @@ scoped_refptr<TracingController::TraceDataSink> GetTraceDataSink(
 
 void StopRecording(const base::FilePath& path,
                    const CompletionCallback& callback) {
-  TracingController::GetInstance()->DisableRecording(
-      GetTraceDataSink(path, callback));
-}
-
-void CaptureMonitoringSnapshot(const base::FilePath& path,
-                               const CompletionCallback& callback) {
-  TracingController::GetInstance()->CaptureMonitoringSnapshot(
+  TracingController::GetInstance()->StopTracing(
       GetTraceDataSink(path, callback));
 }
 
@@ -70,13 +64,8 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   dict.SetMethod("getCategories", base::Bind(
       &TracingController::GetCategories, controller));
   dict.SetMethod("startRecording", base::Bind(
-      &TracingController::EnableRecording, controller));
+      &TracingController::StartTracing, controller));
   dict.SetMethod("stopRecording", &StopRecording);
-  dict.SetMethod("startMonitoring", base::Bind(
-      &TracingController::EnableMonitoring, controller));
-  dict.SetMethod("stopMonitoring", base::Bind(
-      &TracingController::DisableMonitoring, controller));
-  dict.SetMethod("captureMonitoringSnapshot", &CaptureMonitoringSnapshot);
   dict.SetMethod("getTraceBufferUsage", base::Bind(
       &TracingController::GetTraceBufferUsage, controller));
   dict.SetMethod("setWatchEvent", base::Bind(

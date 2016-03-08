@@ -222,8 +222,8 @@ base::Value* V8ValueConverter::FromV8ValueImpl(
   if (val->IsBoolean())
     return new base::FundamentalValue(val->ToBoolean()->Value());
 
-  if (val->Isint32_t())
-    return new base::FundamentalValue(val->Toint32_t()->Value());
+  if (val->IsInt32())
+    return new base::FundamentalValue(val->ToInt32()->Value());
 
   if (val->IsNumber())
     return new base::FundamentalValue(val->ToNumber()->Value());
