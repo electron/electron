@@ -227,7 +227,8 @@ Sends the `action` to the first responder of application. This is used for
 emulating default Cocoa menu behaviors, usually you would just use the
 `role` property of `MenuItem`.
 
-See the [OS X Cocoa Event Handling Guide](https://developer.apple.com/library/mac/documentation/Cocoa/Conceptual/EventOverview/EventArchitecture/EventArchitecture.html#//apple_ref/doc/uid/10000060i-CH3-SW7) for more information on OS X's native actions.
+See the [OS X Cocoa Event Handling Guide](https://developer.apple.com/library/mac/documentation/Cocoa/Conceptual/EventOverview/EventArchitecture/EventArchitecture.html#//apple_ref/doc/uid/10000060i-CH3-SW7)
+for more information on OS X's native actions.
 
 ### `Menu.buildFromTemplate(template)`
 
