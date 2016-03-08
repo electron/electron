@@ -37,6 +37,7 @@ Role kRolesMap[] = {
   { @selector(selectAll:), "selectall" },
   { @selector(performMiniaturize:), "minimize" },
   { @selector(performClose:), "close" },
+  { @selector(performZoom:), "zoom" },
 };
 
 }  // namespace
