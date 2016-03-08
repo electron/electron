@@ -33,7 +33,6 @@ class InspectableWebContentsView;
 
 class InspectableWebContentsImpl :
     public InspectableWebContents,
-    public content::DevToolsFrontendHost::Delegate,
     public content::DevToolsAgentHostClient,
     public content::WebContentsObserver,
     public content::WebContentsDelegate,
@@ -117,8 +116,7 @@ class InspectableWebContentsImpl :
   void ClearPreferences() override;
 
   // content::DevToolsFrontendHostDelegate:
-  void HandleMessageFromDevToolsFrontend(const std::string& message) override;
-  void HandleMessageFromDevToolsFrontendToBackend(const std::string& message) override;
+  void HandleMessageFromDevToolsFrontend(const std::string& message);
 
   // content::DevToolsAgentHostClient:
   void DispatchProtocolMessage(content::DevToolsAgentHost* agent_host,
@@ -127,8 +125,8 @@ class InspectableWebContentsImpl :
                        bool replaced) override;
 
   // content::WebContentsObserver:
-  void AboutToNavigateRenderFrame(content::RenderFrameHost* old_host,
-                                  content::RenderFrameHost* new_host) override;
+  void RenderFrameHostChanged(content::RenderFrameHost* old_host,
+                              content::RenderFrameHost* new_host) override;
   void WebContentsDestroyed() override;
   void OnWebContentsFocused() override;
 
@@ -140,8 +138,9 @@ class InspectableWebContentsImpl :
                            const base::string16& source_id) override;
   bool ShouldCreateWebContents(
       content::WebContents* web_contents,
-      int route_id,
-      int main_frame_route_id,
+      int32_t route_id,
+      int32_t main_frame_route_id,
+      int32_t main_frame_widget_route_id,
       WindowContainerType window_container_type,
       const std::string& frame_name,
       const GURL& target_url,
