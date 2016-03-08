@@ -30,7 +30,7 @@ function updateFiles(electronDir, libchromiumcontent) {
 
     //console.log("     Updating " + chromePath + " => " + current);
     let buf = fs.readFileSync(chromePath);
-    fs.writeFileSync(current);
+    fs.writeFileSync(current, buf);
   }
 }
 
