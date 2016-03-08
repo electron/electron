@@ -60,12 +60,18 @@ def run_gyp(target_arch, component):
     mas_build = 1
   else:
     mas_build = 0
+  # Whether to use sysroot image.
+  if os.environ.has_key('USE_SYSROOT'):
+    use_sysroot = 1
+  else:
+    use_sysroot = 0
   defines = [
     '-Dlibchromiumcontent_component={0}'.format(component),
     '-Dtarget_arch={0}'.format(target_arch),
     '-Dhost_arch={0}'.format(get_host_arch()),
     '-Dlibrary=static_library',
     '-Dmas_build={0}'.format(mas_build),
+    '-Duse_sysroot={0}'.format(use_sysroot)
   ]
   return subprocess.call([python, gyp, '-f', 'ninja', '--depth', '.',
                           'atom.gyp', '-Icommon.gypi'] + defines, env=env)

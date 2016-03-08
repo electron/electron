@@ -134,7 +134,11 @@ def main():
     print 'Unknown architecture: %s' % target_arch
     assert(False)
 
-  url = '%s/%s/%s/%s' % (URL_PREFIX, URL_PATH, revision, tarball_filename)
+  if options.url:
+    url = options.url
+    tarball_sha1sum = options.revision
+  else:
+    url = '%s/%s/%s/%s' % (URL_PREFIX, URL_PATH, revision, tarball_filename)
 
   stamp = os.path.join(sysroot, '.stamp')
   if os.path.exists(stamp):
@@ -153,11 +157,12 @@ def main():
   sys.stdout.flush()
   sys.stderr.flush()
   subprocess.check_call(['curl', '--fail', '-L', url, '-o', tarball])
-  sha1sum = GetSha1(tarball)
-  if sha1sum != tarball_sha1sum:
-    print 'Tarball sha1sum is wrong.'
-    print 'Expected %s, actual: %s' % (tarball_sha1sum, sha1sum)
-    return 1
+  if tarball_sha1sum:
+    sha1sum = GetSha1(tarball)
+    if sha1sum != tarball_sha1sum:
+      print 'Tarball sha1sum is wrong.'
+      print 'Expected %s, actual: %s' % (tarball_sha1sum, sha1sum)
+      return 1
   subprocess.check_call(['tar', 'xf', tarball, '-C', sysroot])
   os.remove(tarball)
 
@@ -173,5 +178,9 @@ if __name__ == '__main__':
                                         'Linux builds')
   parser.add_option('--arch', type='choice', choices=valid_archs,
                     help='Sysroot architecture: %s' % ', '.join(valid_archs))
+  parser.add_option('--url', default=None,
+                    help='The URL to download sysroot image.')
+  parser.add_option('--revision', default=None,
+                    help='SHA1 hash of the sysroot image tarball.')
   options, _ = parser.parse_args()
   sys.exit(main())

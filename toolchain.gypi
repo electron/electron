@@ -113,7 +113,7 @@
     }],
 
     # Setup sysroot environment.
-    ['OS=="linux" and target_arch in ["arm", "ia32"]', {
+    ['OS=="linux" and target_arch in ["arm", "ia32", "x64"] and use_sysroot', {
       'variables': {
         'conditions': [
           ['target_arch=="arm"', {
@@ -123,6 +123,9 @@
           }],
           ['target_arch=="ia32"', {
             'sysroot': '<(source_root)/vendor/debian_wheezy_i386-sysroot',
+          }],
+          ['target_arch=="x64"', {
+            'sysroot': '<(source_root)/vendor/debian_wheezy_amd64-sysroot',
           }],
         ],
       },
