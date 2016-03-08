@@ -27,7 +27,7 @@ bool HasWordCharacters(const base::string16& text, int index) {
   const base::char16* data = text.data();
   int length = text.length();
   while (index < length) {
-    uint32 code = 0;
+    uint32_t code = 0;
     U16_NEXT(data, index, length, code);
     UErrorCode error = U_ZERO_ERROR;
     if (uscript_getScript(code, &error) != USCRIPT_COMMON)

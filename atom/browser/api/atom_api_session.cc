@@ -49,12 +49,12 @@ namespace {
 
 struct ClearStorageDataOptions {
   GURL origin;
-  uint32 storage_types = StoragePartition::REMOVE_DATA_MASK_ALL;
-  uint32 quota_types = StoragePartition::QUOTA_MANAGED_STORAGE_MASK_ALL;
+  uint32_t storage_types = StoragePartition::REMOVE_DATA_MASK_ALL;
+  uint32_t quota_types = StoragePartition::QUOTA_MANAGED_STORAGE_MASK_ALL;
 };
 
-uint32 GetStorageMask(const std::vector<std::string>& storage_types) {
-  uint32 storage_mask = 0;
+uint32_t GetStorageMask(const std::vector<std::string>& storage_types) {
+  uint32_t storage_mask = 0;
   for (const auto& it : storage_types) {
     auto type = base::ToLowerASCII(it);
     if (type == "appcache")
@@ -77,8 +77,8 @@ uint32 GetStorageMask(const std::vector<std::string>& storage_types) {
   return storage_mask;
 }
 
-uint32 GetQuotaMask(const std::vector<std::string>& quota_types) {
-  uint32 quota_mask = 0;
+uint32_t GetQuotaMask(const std::vector<std::string>& quota_types) {
+  uint32_t quota_mask = 0;
   for (const auto& it : quota_types) {
     auto type = base::ToLowerASCII(it);
     if (type == "temporary")

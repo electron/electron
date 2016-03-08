@@ -28,7 +28,7 @@ class Archive {
     FileInfo() : unpacked(false), executable(false), size(0), offset(0) {}
     bool unpacked;
     bool executable;
-    uint32 size;
+    uint32_t size;
     uint64 offset;
   };
 
@@ -71,7 +71,7 @@ class Archive {
   base::FilePath path_;
   base::File file_;
   int fd_;
-  uint32 header_size_;
+  uint32_t header_size_;
   scoped_ptr<base::DictionaryValue> header_;
 
   // Cached external temporary files.

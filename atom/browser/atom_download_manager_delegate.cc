@@ -60,7 +60,7 @@ void AtomDownloadManagerDelegate::CreateDownloadPath(
 }
 
 void AtomDownloadManagerDelegate::OnDownloadPathGenerated(
-    uint32 download_id,
+    uint32_t download_id,
     const content::DownloadTargetCallback& callback,
     const base::FilePath& default_path) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
@@ -160,7 +160,7 @@ bool AtomDownloadManagerDelegate::ShouldOpenDownload(
 
 void AtomDownloadManagerDelegate::GetNextId(
     const content::DownloadIdCallback& callback) {
-  static uint32 next_id = content::DownloadItem::kInvalidId + 1;
+  static uint32_t next_id = content::DownloadItem::kInvalidId + 1;
   callback.Run(next_id++);
 }
 
