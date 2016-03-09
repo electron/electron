@@ -42,8 +42,9 @@ void PrintWebViewHelper::PrintPageInternal(
   page_params.content_area = content_area_in_dpi;
 
   // Ask the browser to create the shared memory for us.
-  if (!CopyMetafileDataToSharedMem(&metafile,
+  if (!CopyMetafileDataToSharedMem(metafile,
                                    &(page_params.metafile_data_handle))) {
+    // TODO(thestig): Fail and return false instead.
     page_params.data_size = 0;
   }
 

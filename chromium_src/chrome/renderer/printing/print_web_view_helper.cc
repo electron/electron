@@ -386,7 +386,7 @@ class PrepareFrameAndViewForPrint : public blink::WebViewClient,
                               blink::WebLocalFrame* frame,
                               const blink::WebNode& node,
                               bool ignore_css_margins);
-  virtual ~PrepareFrameAndViewForPrint();
+  ~PrepareFrameAndViewForPrint() override;
 
   // Optional. Replaces |frame_| with selection if needed. Will call |on_ready|
   // when completed.
@@ -810,13 +810,19 @@ bool PrintWebViewHelper::FinalizePrintReadyDocument() {
   DCHECK(!is_print_ready_metafile_sent_);
   print_preview_context_.FinalizePrintReadyDocument();
 
-  // Get the size of the resulting metafile.
   PdfMetafileSkia* metafile = print_preview_context_.metafile();
-  uint32_t buf_size = metafile->GetDataSize();
-  DCHECK_GT(buf_size, 0u);
 
   PrintHostMsg_DidPreviewDocument_Params preview_params;
-  preview_params.data_size = buf_size;
+
+  // Ask the browser to create the shared memory for us.
+  if (!CopyMetafileDataToSharedMem(*metafile,
+                                   &(preview_params.metafile_data_handle))) {
+    LOG(ERROR) << "CopyMetafileDataToSharedMem failed";
+    print_preview_context_.set_error(PREVIEW_ERROR_METAFILE_COPY_FAILED);
+    return false;
+  }
+
+  preview_params.data_size = metafile->GetDataSize();
   preview_params.document_cookie = print_pages_params_->params.document_cookie;
   preview_params.expected_pages_count =
       print_preview_context_.total_page_count();
@@ -824,13 +830,6 @@ bool PrintWebViewHelper::FinalizePrintReadyDocument() {
   preview_params.preview_request_id =
       print_pages_params_->params.preview_request_id;
 
-  // Ask the browser to create the shared memory for us.
-  if (!CopyMetafileDataToSharedMem(metafile,
-                                   &(preview_params.metafile_data_handle))) {
-    LOG(ERROR) << "CopyMetafileDataToSharedMem failed";
-    print_preview_context_.set_error(PREVIEW_ERROR_METAFILE_COPY_FAILED);
-    return false;
-  }
   is_print_ready_metafile_sent_ = true;
 
   Send(new PrintHostMsg_MetafileReadyForPrinting(routing_id(), preview_params));
@@ -1160,21 +1159,25 @@ bool PrintWebViewHelper::RenderPagesForPrint(blink::WebLocalFrame* frame,
 
 #if defined(OS_POSIX)
 bool PrintWebViewHelper::CopyMetafileDataToSharedMem(
-    PdfMetafileSkia* metafile,
+    const PdfMetafileSkia& metafile,
     base::SharedMemoryHandle* shared_mem_handle) {
-  uint32_t buf_size = metafile->GetDataSize();
-  scoped_ptr<base::SharedMemory> shared_buf(
-      content::RenderThread::Get()->HostAllocateSharedMemoryBuffer(
-          buf_size).release());
+  uint32_t buf_size = metafile.GetDataSize();
+  if (buf_size == 0)
+    return false;
 
-  if (shared_buf) {
-    if (shared_buf->Map(buf_size)) {
-      metafile->GetData(shared_buf->memory(), buf_size);
-      return shared_buf->GiveToProcess(base::GetCurrentProcessHandle(),
-                                       shared_mem_handle);
-    }
-  }
-  return false;
+  scoped_ptr<base::SharedMemory> shared_buf(
+      content::RenderThread::Get()->HostAllocateSharedMemoryBuffer(buf_size));
+  if (!shared_buf)
+    return false;
+
+  if (!shared_buf->Map(buf_size))
+    return false;
+
+  if (!metafile.GetData(shared_buf->memory(), buf_size))
+    return false;
+
+  return shared_buf->GiveToProcess(base::GetCurrentProcessHandle(),
+                                   shared_mem_handle);
 }
 #endif  // defined(OS_POSIX)
 

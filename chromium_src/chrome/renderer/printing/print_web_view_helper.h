@@ -218,7 +218,7 @@ class PrintWebViewHelper
 
   // Helper methods -----------------------------------------------------------
 
-  bool CopyMetafileDataToSharedMem(PdfMetafileSkia* metafile,
+  bool CopyMetafileDataToSharedMem(const PdfMetafileSkia& metafile,
                                    base::SharedMemoryHandle* shared_mem_handle);
 
   // Helper method to get page layout in points and fit to page if needed.
