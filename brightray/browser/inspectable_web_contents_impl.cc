@@ -573,7 +573,7 @@ void InspectableWebContentsImpl::RenderFrameHostChanged(
   if (new_host->GetParent())
     return;
   frontend_host_.reset(content::DevToolsFrontendHost::Create(
-      web_contents_->GetMainFrame(),
+      new_host,
       base::Bind(&InspectableWebContentsImpl::HandleMessageFromDevToolsFrontend,
                  base::Unretained(this))));
 }
