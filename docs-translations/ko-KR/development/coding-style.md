@@ -2,6 +2,9 @@
 
 이 가이드는 Electron의 코딩 스타일에 관해 설명합니다.
 
+`npm run lint`를 실행하여 `cpplint`와 `eslint`를 통해 어떤 코딩 스타일 이슈를 확인할
+수 있습니다.
+
 ## C++과 Python
 
 C++과 Python 스크립트는 Chromium의
@@ -18,17 +21,24 @@ C++ 코드는 많은 Chromium의 추상화와 타입을 사용합니다. 따라�
 자동으로 메모리에서 할당을 해제합니다. 스마트 포인터와 같습니다) 그리고 로깅 메커니즘
 등을 언급하고 있습니다.
 
-## CoffeeScript
+## JavaScript
 
-CoffeeScript의 경우 GitHub의
-[스타일 가이드](https://github.com/styleguide/javascript)를 기본으로 따릅니다.
-그리고 추가로 다음 규칙을 따릅니다:
-
+* 하드 탭(hard tabs) 대신 소프트 탭(2 spaces) 들여쓰기를 사용합니다.
+* 항상 구문의 끝은 `;`으로 마쳐야 합니다.
 * Google의 코딩 스타일에도 맞추기 위해 파일의 끝에는 **절대** 개행을 삽입해선 안됩니다.
 * 파일 이름의 공백은 `_`대신에 `-`을 사용하여야 합니다. 예를 들어
-`file_name.coffee`를 `file-name.coffee`로 고쳐야합니다. 왜냐하면
+`file_name.js`를 `file-name.js`로 고쳐야합니다. 왜냐하면
 [github/atom](https://github.com/github/atom)에서 사용되는 모듈의 이름은 보통
-`module-name` 형식이기 때문입니다. 이 규칙은 '.coffee' 파일에만 적용됩니다.
+`module-name` 형식이기 때문입니다. 이 규칙은 '.js' 파일에만 적용됩니다.
+* 적절한 곳에 새로운 ES6/ES2015 문법을 사용해도 됩니다.
+  * [`const`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/const)
+    는 requires와 다른 상수에 사용합니다
+  * [`let`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/let)
+    은 변수를 정의할 때 사용합니다
+  * [Arrow functions](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/Arrow_functions)
+    는 `function () { }` 표현 대신에 사용합니다
+  * [Template literals](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Template_literals)
+    는 `+`로 문자열을 합치는 대신 사용합니다.
 
 ## API 이름
 

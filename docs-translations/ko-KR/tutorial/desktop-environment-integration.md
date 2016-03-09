@@ -239,21 +239,19 @@ __Audacious의 런처 숏컷:__
 
 ![audacious](https://help.ubuntu.com/community/UnityLaunchersAndDesktopFiles?action=AttachFile&do=get&target=shortcuts.png)
 
-## Taskbar progress 기능 (Windows & Unity)
+## 작업 표시줄 안의 프로그래스 바 (Windows, OS X, Unity)
 
-Windows에선 태스크바의 어플리케이션 버튼에 progress bar를 추가할 수 있습니다.
+Windows에선 작업 표시줄의 어플리케이션 버튼에 프로그래스 바를 추가할 수 있습니다.
 이 기능은 사용자가 어플리케이션의 창을 열지 않고도 어플리케이션의 작업의 상태 정보를
 시각적으로 보여줄 수 있도록 해줍니다.
 
-또한 Unity DE도 런처에 progress bar를 부착할 수 있습니다.
+OS X에선 프로그래스바가 dock 아이콘의 일부에 표시됩니다.
 
-__태스크바 버튼의 progress bar:__
+또한 Unity DE도 런처에 프로그래스 바를 부착할 수 있습니다.
+
+__작업 표시줄 버튼의 프로그래스 바:__
 
 ![Taskbar Progress Bar](https://cloud.githubusercontent.com/assets/639601/5081682/16691fda-6f0e-11e4-9676-49b6418f1264.png)
-
-__Unity 런처의 progress bar:__
-
-![Unity Launcher](https://cloud.githubusercontent.com/assets/639601/5081747/4a0a589e-6f0f-11e4-803f-91594716a546.png)
 
 이 기능은 [BrowserWindow.setProgressBar][setprogressbar] API를 사용하여 구현할 수
 있습니다:
