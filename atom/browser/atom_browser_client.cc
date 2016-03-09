@@ -203,13 +203,8 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
 
   // Certain render process will be created with no associated render view,
   // for example: ServiceWorker.
-  auto rvh = content::RenderViewHost::FromID(process_id, kDefaultRoutingID);
-  if (!rvh)
-    return;
-
-  // Get the WebContents of the render process.
   content::WebContents* web_contents =
-      content::WebContents::FromRenderViewHost(rvh);
+      WebContentsPreferences::GetWebContentsFromProcessID(process_id);
   if (!web_contents)
     return;
 
