@@ -49,7 +49,7 @@ namespace {
 // The default routing id of WebContents.
 // In Electron each RenderProcessHost only has one WebContents, so this ID is
 // same for every WebContents.
-int kDefaultRoutingID = 2;
+int kDefaultRoutingID = 1;
 
 // Next navigation should not restart renderer process.
 bool g_suppress_renderer_process_restart = false;
@@ -200,7 +200,6 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
   // If the process is a pending process, we should use the old one.
   if (ContainsKey(pending_processes_, process_id))
     process_id = pending_processes_[process_id];
-
 
   // Certain render process will be created with no associated render view,
   // for example: ServiceWorker.

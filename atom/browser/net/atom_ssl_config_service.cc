@@ -29,9 +29,9 @@ uint16_t GetSSLProtocolVersion(const std::string& version_string) {
   return version;
 }
 
-std::vector<uint16> ParseCipherSuites(
+std::vector<uint16_t> ParseCipherSuites(
     const std::vector<std::string>& cipher_strings) {
-  std::vector<uint16> cipher_suites;
+  std::vector<uint16_t> cipher_suites;
   cipher_suites.reserve(cipher_strings.size());
 
   for (auto& cipher_string : cipher_strings) {
