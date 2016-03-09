@@ -6,6 +6,10 @@
 #ifndef ATOM_COMMON_CRASH_REPORTER_LINUX_CRASH_DUMP_HANDLER_H_
 #define ATOM_COMMON_CRASH_REPORTER_LINUX_CRASH_DUMP_HANDLER_H_
 
+#include <stddef.h>
+#include <stdint.h>
+#include <sys/types.h>
+
 #include "base/macros.h"
 #include "vendor/breakpad/src/common/simple_string_dictionary.h"
 
