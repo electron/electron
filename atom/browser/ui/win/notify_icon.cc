@@ -80,7 +80,7 @@ void NotifyIcon::ResetIcon() {
   InitIconData(&icon_data);
   icon_data.uFlags |= NIF_MESSAGE;
   icon_data.uCallbackMessage = message_id_;
-  icon_data.hIcon = icon_.Get();
+  icon_data.hIcon = icon_.get();
   // If we have an image, then set the NIF_ICON flag, which tells
   // Shell_NotifyIcon() to set the image for the status icon it creates.
   if (icon_data.hIcon)
@@ -96,8 +96,8 @@ void NotifyIcon::SetImage(const gfx::Image& image) {
   NOTIFYICONDATA icon_data;
   InitIconData(&icon_data);
   icon_data.uFlags |= NIF_ICON;
-  icon_.Set(IconUtil::CreateHICONFromSkBitmap(image.AsBitmap()));
-  icon_data.hIcon = icon_.Get();
+  icon_.reset(IconUtil::CreateHICONFromSkBitmap(image.AsBitmap()));
+  icon_data.hIcon = icon_.get();
   BOOL result = Shell_NotifyIcon(NIM_MODIFY, &icon_data);
   if (!result)
     LOG(WARNING) << "Error setting status tray icon image";
@@ -132,8 +132,8 @@ void NotifyIcon::DisplayBalloon(const gfx::Image& icon,
 
   base::win::Version win_version = base::win::GetVersion();
   if (!icon.IsEmpty() && win_version != base::win::VERSION_PRE_XP) {
-    balloon_icon_.Set(IconUtil::CreateHICONFromSkBitmap(icon.AsBitmap()));
-    icon_data.hBalloonIcon = balloon_icon_.Get();
+    balloon_icon_.reset(IconUtil::CreateHICONFromSkBitmap(icon.AsBitmap()));
+    icon_data.hBalloonIcon = balloon_icon_.get();
     icon_data.dwInfoFlags = NIIF_USER | NIIF_LARGE_ICON;
   }
 
