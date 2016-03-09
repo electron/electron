@@ -5,8 +5,7 @@
     # Set this to true when building with Clang.
     'clang%': 1,
 
-    # Path to sysroot dir.
-    'sysroot%': '',
+    'system_libdir%': 'lib',
 
     'variables': {
       # The minimum OS X SDK version to use.
@@ -17,12 +16,20 @@
 
       # Set NEON compilation flags.
       'arm_neon%': 1,
+
+      'conditions': [
+        # Define the abosulte version of <(DEPTH).
+        ['OS!="win"', {
+          'source_root%': '<!(cd <(DEPTH) && pwd -P)',
+        }],  # OS!="win"
+      ],
     },
 
     # Copy conditionally-set variables out one scope.
     'mac_sdk_min%': '<(mac_sdk_min)',
     'arm_version%': '<(arm_version)',
     'arm_neon%': '<(arm_neon)',
+    'source_root%': '<(source_root)',
 
     # Variables to control Link-Time Optimization (LTO).
     'use_lto%': 0,
@@ -34,14 +41,27 @@
         'clang%': 0,
       }],  # OS=="win"
 
-      # Define the abosulte version of <(DEPTH).
-      ['OS!="win"', {
-        'source_root': '<!(cd <(DEPTH) && pwd -P)',
-      }],  # OS!="win"
-
       # Search for the available version of SDK.
       ['OS=="mac"', {
         'mac_sdk%': '<!(python <(DEPTH)/tools/mac/find_sdk.py <(mac_sdk_min))',
+      }],
+
+      ['OS=="linux"', {
+        'conditions': [
+          ['target_arch=="arm"', {
+            # sysroot needs to be an absolute path otherwise it generates
+            # incorrect results when passed to pkg-config
+            'sysroot%': '<(source_root)/vendor/debian_wheezy_arm-sysroot',
+          }],
+          ['target_arch=="ia32"', {
+            'sysroot%': '<(source_root)/vendor/debian_wheezy_i386-sysroot',
+          }],
+          ['target_arch=="x64"', {
+            'sysroot%': '<(source_root)/vendor/debian_wheezy_amd64-sysroot',
+          }],
+        ],
+      }, {
+        'sysroot%': ' ',
       }],
 
       # Set default compiler flags depending on ARM version.
@@ -114,21 +134,6 @@
 
     # Setup sysroot environment.
     ['OS=="linux" and target_arch in ["arm", "ia32", "x64"]', {
-      'variables': {
-        'conditions': [
-          ['target_arch=="arm"', {
-            # sysroot needs to be an absolute path otherwise it generates
-            # incorrect results when passed to pkg-config
-            'sysroot': '<(source_root)/vendor/debian_wheezy_arm-sysroot',
-          }],
-          ['target_arch=="ia32"', {
-            'sysroot': '<(source_root)/vendor/debian_wheezy_i386-sysroot',
-          }],
-          ['target_arch=="x64"', {
-            'sysroot': '<(source_root)/vendor/debian_wheezy_amd64-sysroot',
-          }],
-        ],
-      },
       'target_defaults': {
         'target_conditions': [
           ['_toolset=="target"', {
@@ -142,7 +147,7 @@
           }]
         ],
       },
-    }],  # target_arch==arm
+    }],  # sysroot
 
     # Setup cross-compilation on Linux.
     ['OS=="linux"', {
