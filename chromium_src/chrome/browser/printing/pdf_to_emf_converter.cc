@@ -109,21 +109,21 @@ class PdfToEmfUtilityProcessHostClient
 
  private:
   class GetPageCallbackData {
-    MOVE_ONLY_TYPE_FOR_CPP_03(GetPageCallbackData, RValue);
+    MOVE_ONLY_TYPE_FOR_CPP_03(GetPageCallbackData);
 
    public:
     GetPageCallbackData(int page_number,
                         PdfToEmfConverter::GetPageCallback callback)
         : page_number_(page_number), callback_(callback) {}
 
-    // Move constructor for STL.
-    GetPageCallbackData(RValue other) { this->operator=(other); }
+    GetPageCallbackData(GetPageCallbackData&& other) {
+      *this = std::move(other);
+    }
 
-    // Move assignment for STL.
-    GetPageCallbackData& operator=(RValue rhs) {
-      page_number_ = rhs.object->page_number_;
-      callback_ = rhs.object->callback_;
-      emf_ = rhs.object->emf_.Pass();
+    GetPageCallbackData& operator=(GetPageCallbackData&& rhs) {
+      page_number_ = rhs.page_number_;
+      callback_ = rhs.callback_;
+      emf_ = std::move(rhs.emf_);
       return *this;
     }
 
