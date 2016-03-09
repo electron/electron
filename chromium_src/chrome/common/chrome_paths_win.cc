@@ -12,7 +12,6 @@
 
 #include "base/files/file_path.h"
 #include "base/path_service.h"
-#include "base/win/metro.h"
 #include "base/win/scoped_co_mem.h"
 #include "chrome/common/chrome_constants.h"
 

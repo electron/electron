@@ -158,11 +158,11 @@ bool ReadImageSkiaFromICO(gfx::ImageSkia* image, const base::FilePath& path) {
   base::win::ScopedHICON icon(static_cast<HICON>(
       LoadImage(NULL, image_path.value().c_str(), IMAGE_ICON, 0, 0,
                 LR_DEFAULTSIZE | LR_LOADFROMFILE)));
-  if (!icon)
+  if (!icon.get())
     return false;
 
   // Convert the icon from the Windows specific HICON to gfx::ImageSkia.
-  scoped_ptr<SkBitmap> bitmap(IconUtil::CreateSkBitmapFromHICON(icon));
+  scoped_ptr<SkBitmap> bitmap(IconUtil::  CreateSkBitmapFromHICON(icon.get()));
   image->AddRepresentation(gfx::ImageSkiaRep(*bitmap, 1.0f));
   return true;
 }
