@@ -251,10 +251,6 @@ void InspectableWebContentsImpl::ShowDevTools() {
     devtools_web_contents_->SetDelegate(this);
 
     agent_host_ = content::DevToolsAgentHost::GetOrCreateFor(web_contents_.get());
-    frontend_host_.reset(content::DevToolsFrontendHost::Create(
-        web_contents_->GetMainFrame(),
-        base::Bind(&InspectableWebContentsImpl::HandleMessageFromDevToolsFrontend,
-                   base::Unretained(this))));
     agent_host_->AttachClient(this);
 
     GURL devtools_url(base::StringPrintf(kChromeUIDevToolsURL,
@@ -632,6 +628,16 @@ void InspectableWebContentsImpl::OnWebContentsFocused() {
   if (view_->GetDelegate())
     view_->GetDelegate()->DevToolsFocused();
 #endif
+}
+
+void InspectableWebContentsImpl::DidStartNavigationToPendingEntry(
+    const GURL& url,
+    content::NavigationController::ReloadType reload_type) {
+  frontend_host_.reset(
+      content::DevToolsFrontendHost::Create(
+          web_contents()->GetMainFrame(),
+          base::Bind(&InspectableWebContentsImpl::HandleMessageFromDevToolsFrontend,
+                     base::Unretained(this))));
 }
 
 void InspectableWebContentsImpl::OnURLFetchComplete(const net::URLFetcher* source) {

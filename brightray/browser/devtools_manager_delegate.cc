@@ -109,7 +109,6 @@ DevToolsDelegate::~DevToolsDelegate() {
 }
 
 std::string DevToolsDelegate::GetDiscoveryPageHTML() {
-  LOG(WARNING) << IDR_CONTENT_SHELL_DEVTOOLS_DISCOVERY_PAGE;
   return ResourceBundle::GetSharedInstance().GetRawDataResource(
       IDR_CONTENT_SHELL_DEVTOOLS_DISCOVERY_PAGE).as_string();
 }

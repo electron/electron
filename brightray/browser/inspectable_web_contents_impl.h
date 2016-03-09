@@ -130,6 +130,9 @@ class InspectableWebContentsImpl :
                               content::RenderFrameHost* new_host) override;
   void WebContentsDestroyed() override;
   void OnWebContentsFocused() override;
+  void DidStartNavigationToPendingEntry(
+      const GURL& url,
+      content::NavigationController::ReloadType reload_type) override;
 
   // content::WebContentsDelegate:
   bool AddMessageToConsole(content::WebContents* source,
