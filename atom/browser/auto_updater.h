@@ -8,6 +8,7 @@
 #include <string>
 
 #include "base/macros.h"
+#include "build/build_config.h"
 
 namespace base {
 class Time;
