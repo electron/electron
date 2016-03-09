@@ -59,8 +59,8 @@ win.show();
 * `alwaysOnTop` Boolean - 윈도우이 언제나 다른 창들 위에 유지되는지 여부.
   기본값은 `false`입니다.
 * `fullscreen` Boolean - 윈도우의 전체화면 활성화 여부. 이 속성을 명시적으로
-  `false`로 지정했을 경우, OS X에선 전체화면 버튼이 숨겨지거나 비활성화되고,
-  Windows에선 최대화 버튼이 비활성화됩니다. 기본값은 `false` 입니다.
+  `false`로 지정했을 경우, OS X에선 전체화면 버튼이 숨겨지거나 비활성됩니다. 기본값은
+  `false` 입니다.
 * `fullscreenable` Boolean - OS X의 최대화/줌 버튼이 전체화면 모드 또는 윈도우
   최대화를 토글할 수 있게 할지 여부입니다. 기본값은 `true` 입니다.
 * `skipTaskbar` Boolean - 작업표시줄 어플리케이션 아이콘 표시 스킵 여부. 기본값은
@@ -575,17 +575,17 @@ var win = new BrowserWindow({ width: 800, height: 600 });
 사용자에 의해 윈도우를 최대화시킬 수 있는지 여부를 반환합니다. Linux에선 항상 `true`를
 반환합니다.
 
-### `win.setFullScreenable(fullscreenable)` _OS X_
+### `win.setFullScreenable(fullscreenable)`
 
 * `fullscreenable` Boolean
 
 최대화/줌 버튼이 전체화면 모드 또는 윈도우 최대화를 토글할 수 있게 할지 여부를
-지정합니다. Windows와 Linux에선 아무 일도 일어나지 않습니다.
+지정합니다.
 
-### `win.isFullScreenable()` _OS X_
+### `win.isFullScreenable()`
 
 최대화/줌 버튼이 전체화면 모드 또는 윈도우 최대화를 토글할 수 있게 할지 여부를
-반환합니다. Windows와 Linux에선 항상 `true`를 반환합니다.
+반환합니다.
 
 ### `win.setClosable(closable)` _OS X_ _Windows_
 

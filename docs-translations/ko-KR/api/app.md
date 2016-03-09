@@ -236,6 +236,10 @@ app.on('login', function(event, webContents, request, authInfo, callback) {
 
 GPU가 작동하던 중 크래시가 일어났을 때 발생하는 이벤트입니다.
 
+### Event: 'platform-theme-changed' _OS X_
+
+시스템의 다크 모드 테마가 토글되면 발생하는 이벤트입니다.
+
 ## Methods
 
 `app` 객체는 다음과 같은 메서드를 가지고 있습니다:
@@ -470,6 +474,11 @@ if (browserOptions.transparent) {
   win.loadURL('file://' + __dirname + '/fallback.html');
 }
 ```
+
+### `app.isDarkMode()` _OS X_
+
+이 메서드는 시스템이 다크 모드 상태인 경우 `true`를 반환하고 아닐 경우 `false`를
+반환합니다.
 
 ### `app.commandLine.appendSwitch(switch[, value])`
 

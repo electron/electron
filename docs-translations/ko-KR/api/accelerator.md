@@ -22,6 +22,8 @@ Linux와 Windows에서는 `Command`키가 없으므로 작동하지 않습니다
 * `Control` (단축어 `Ctrl`)
 * `CommandOrControl` (단축어 `CmdOrCtrl`)
 * `Alt`
+* `Option`
+* `AltGr`
 * `Shift`
 * `Super`
 
@@ -43,5 +45,6 @@ Linux와 Windows에서는 `Command`키가 없으므로 작동하지 않습니다
 * `Escape` (단축어 `Esc`)
 * `VolumeUp`, `VolumeDown` 그리고 `VolumeMute`
 * `MediaNextTrack`, `MediaPreviousTrack`, `MediaStop` 그리고 `MediaPlayPause`
+* `PrintScreen`
 
 __키코드는 `단축어`로도 사용할 수 있습니다__
