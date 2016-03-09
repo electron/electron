@@ -96,7 +96,7 @@ void NotifyIcon::SetImage(const gfx::Image& image) {
   NOTIFYICONDATA icon_data;
   InitIconData(&icon_data);
   icon_data.uFlags |= NIF_ICON;
-  icon_.reset(IconUtil::CreateHICONFromSkBitmap(image.AsBitmap()));
+  icon_ = IconUtil::CreateHICONFromSkBitmap(image.AsBitmap());
   icon_data.hIcon = icon_.get();
   BOOL result = Shell_NotifyIcon(NIM_MODIFY, &icon_data);
   if (!result)
@@ -132,7 +132,7 @@ void NotifyIcon::DisplayBalloon(const gfx::Image& icon,
 
   base::win::Version win_version = base::win::GetVersion();
   if (!icon.IsEmpty() && win_version != base::win::VERSION_PRE_XP) {
-    balloon_icon_.reset(IconUtil::CreateHICONFromSkBitmap(icon.AsBitmap()));
+    balloon_icon_ = IconUtil::CreateHICONFromSkBitmap(icon.AsBitmap());
     icon_data.hBalloonIcon = balloon_icon_.get();
     icon_data.dwInfoFlags = NIIF_USER | NIIF_LARGE_ICON;
   }
