@@ -164,7 +164,6 @@ void PrintWebViewHelper::PrintPageInternal(
     return;
 
   MetafileSkiaWrapper::SetMetafileOnCanvas(*canvas, metafile);
-  skia::SetIsDraftMode(*canvas, is_print_ready_metafile_sent_);
 
 #if 0
   if (params.params.display_header_footer) {
