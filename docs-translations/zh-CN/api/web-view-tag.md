@@ -1,6 +1,6 @@
 # `<webview>` 标签
 
-使用 `webview` 标签来把 'guest' 内容（例如 web pages ）嵌入到你的 Electron app 中. guest内容包含在 `webview` 容器中.一个嵌入你的应用的page控制着guest内容如何布局摆放和表达含义.
+使用 `webview` 标签来把 'guest' 内容（例如 web pages ）嵌入到你的 Electron app 中. guest内容包含在 `webview` 容器中.一个嵌入你应用的page控制着guest内容如何布局摆放和表达含义.
 
 与 `iframe` 不同, `webview` 和你的应用运行的是不同的进程. 它不拥有渲染进程的权限，并且应用和嵌入内容之间的交互全部都是异步的.因为这能保证应用的安全性不受嵌入内容的影响.
 
@@ -64,7 +64,7 @@
 <webview src="http://www.google.com/" nodeintegration></webview>
 ```
 
-如果这个属性的值为 "on" ， `webview` 中的 guest page 将整合node，并且拥有可以使用系统底层的资源，例如 `require` 和 `process` .
+如果设置了这个属性， `webview` 中的 guest page 将整合node，并且拥有可以使用系统底层的资源，例如 `require` 和 `process` .
 
 ### `plugins`
 
