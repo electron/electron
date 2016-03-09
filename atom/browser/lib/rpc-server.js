@@ -16,7 +16,7 @@ const FUNCTION_PROPERTIES = [
 let rendererFunctions = {};
 
 // Return the description of object's members:
-let getObjectMemebers = function(object) {
+let getObjectMembers = function(object) {
   let names = Object.getOwnPropertyNames(object);
   // For Function, we should not override following properties even though they
   // are "own" properties.
@@ -46,7 +46,7 @@ let getObjectPrototype = function(object) {
   if (proto === null || proto === Object.prototype)
     return null;
   return {
-    members: getObjectMemebers(proto),
+    members: getObjectMembers(proto),
     proto: getObjectPrototype(proto),
   };
 };
@@ -101,7 +101,7 @@ var valueToMeta = function(sender, value, optimizeSimpleObject) {
     // passed to renderer we would assume the renderer keeps a reference of
     // it.
     meta.id = objectsRegistry.add(sender, value);
-    meta.members = getObjectMemebers(value);
+    meta.members = getObjectMembers(value);
     meta.proto = getObjectPrototype(value);
   } else if (meta.type === 'buffer') {
     meta.value = Array.prototype.slice.call(value, 0);

@@ -228,6 +228,10 @@ app.on('login', function(event, webContents, request, authInfo, callback) {
 
 Emitted when the gpu process crashes.
 
+### Event: 'platform-theme-changed' _OS X_
+
+Emitted when the system's Dark Mode theme is toggled.
+
 ## Methods
 
 The `app` object has the following methods:
@@ -460,6 +464,10 @@ if (browserOptions.transparent) {
   win.loadURL('file://' + __dirname + '/fallback.html');
 }
 ```
+
+### `app.isDarkMode()` _OS X_
+
+This method returns `true` if the system is in Dark Mode, and `false` otherwise.
 
 ### `app.commandLine.appendSwitch(switch[, value])`
 

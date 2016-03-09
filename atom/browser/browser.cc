@@ -181,4 +181,8 @@ void Browser::OnWindowAllClosed() {
     FOR_EACH_OBSERVER(BrowserObserver, observers_, OnWindowAllClosed());
 }
 
+void Browser::PlatformThemeChanged() {
+  FOR_EACH_OBSERVER(BrowserObserver, observers_, OnPlatformThemeChanged());
+}
+
 }  // namespace atom

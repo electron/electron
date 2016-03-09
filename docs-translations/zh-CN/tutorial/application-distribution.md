@@ -1,6 +1,7 @@
 # 应用部署
 
-为了使用Electron部署你的应用程序，你存放应用程序的文件夹需要叫做 `app` 并且需要放在 Electron 的资源文件夹下（在 OS X 中是指 `Electron.app/Contents/Resources/`，在 Linux 和 Windows 中是指 `resources/`）
+为了使用 Electron 部署你的应用程序，你存放应用程序的文件夹需要叫做 `app` 并且需要放在 Electron 的
+资源文件夹下（在 OS X 中是指 `Electron.app/Contents/Resources/`，在 Linux 和 Windows 中是指 `resources/`）
 就像这样：
 
 在 OS X 中:
@@ -56,7 +57,7 @@ electron/resources/
 
 你可以将 `electron.exe` 改成任意你喜欢的名字，然后可以使用像
 [rcedit](https://github.com/atom/rcedit)
-编辑它的icon和其他信息。
+编辑它的 icon 和其他信息。
 
 ### OS X
 

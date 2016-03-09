@@ -11,7 +11,8 @@ rolesMap = {
   paste: 'paste',
   selectall: 'selectAll',
   minimize: 'minimize',
-  close: 'close'
+  close: 'close',
+  delete: 'delete'
 };
 
 // Maps methods that should be called directly on the BrowserWindow instance
@@ -67,7 +68,7 @@ MenuItem = (function() {
           }
         } else if (typeof click === 'function') {
           return click(_this, focusedWindow);
-        } else if (typeof _this.selector === 'string') {
+        } else if (typeof _this.selector === 'string' && process.platform === 'darwin') {
           return Menu.sendActionToFirstResponder(_this.selector);
         }
       };

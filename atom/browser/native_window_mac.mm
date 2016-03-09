@@ -482,19 +482,9 @@ NativeWindowMac::NativeWindowMac(
   options.Get(options::kDisableAutoHideCursor, &disableAutoHideCursor);
   [window_ setDisableAutoHideCursor:disableAutoHideCursor];
 
-  // Disable fullscreen button when 'fullscreenable' is false or 'fullscreen'
-  // is specified to false.
-  bool fullscreenable = true;
-  options.Get(options::kFullScreenable, &fullscreenable);
-  bool fullscreen = false;
-  if (options.Get(options::kFullscreen, &fullscreen) && !fullscreen)
-    fullscreenable = false;
-  SetFullScreenable(fullscreenable);
-
-  // Disable zoom button if window is not resizable
-  if (!maximizable) {
+  // Disable zoom button if window is not resizable.
+  if (!maximizable)
     SetMaximizable(false);
-  }
 
   NSView* view = inspectable_web_contents()->GetView()->GetNativeView();
   [view setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
@@ -583,7 +573,16 @@ void NativeWindowMac::Unmaximize() {
 }
 
 bool NativeWindowMac::IsMaximized() {
-  return [window_ isZoomed];
+  if (([window_ styleMask] & NSResizableWindowMask) != 0) {
+    return [window_ isZoomed];
+  } else {
+    NSRect rectScreen = [[NSScreen mainScreen] visibleFrame];
+    NSRect rectWindow = [window_ frame];
+    return (rectScreen.origin.x == rectWindow.origin.x &&
+            rectScreen.origin.y == rectWindow.origin.y &&
+            rectScreen.size.width == rectWindow.size.width &&
+            rectScreen.size.height == rectWindow.size.height);
+  }
 }
 
 void NativeWindowMac::Minimize() {
@@ -896,21 +895,11 @@ void NativeWindowMac::HandleKeyboardEvent(
     // Handle the cmd+~ shortcut.
     if ((event.os_event.modifierFlags & NSCommandKeyMask) /* cmd */ &&
         (event.os_event.keyCode == 50  /* ~ */)) {
-      // Switch to next visible window.
-      NSArray* windows = [NSApp windows];
-      NSIndexSet* indexes = [windows indexesOfObjectsPassingTest:
-          ^BOOL(id window, NSUInteger idx, BOOL* stop) {
-            return [window isVisible];
-          }];
-      if ([indexes count] == 0)
-        return;
-      NSUInteger current = [windows indexOfObject:event.os_event.window];
-      if (current == NSNotFound)  // Some faked event.
-        return;
-      NSUInteger next = [indexes indexGreaterThanIndex:current];
-      if (next == NSNotFound)
-        next = [indexes firstIndex];
-      [[windows objectAtIndex:next] makeKeyAndOrderFront:nil];
+      if (event.os_event.modifierFlags & NSShiftKeyMask) {
+        [NSApp sendAction:@selector(_cycleWindowsReversed:) to:nil from:nil];
+      } else {
+        [NSApp sendAction:@selector(_cycleWindows:) to:nil from:nil];
+      }
     }
   }
 }

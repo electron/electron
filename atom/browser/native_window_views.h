@@ -212,6 +212,7 @@ class NativeWindowViews : public NativeWindow,
   bool resizable_;
   bool maximizable_;
   bool minimizable_;
+  bool fullscreenable_;
   std::string title_;
   gfx::Size widget_size_;
 

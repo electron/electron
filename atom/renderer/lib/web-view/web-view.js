@@ -33,6 +33,7 @@ var WebViewImpl = (function() {
     this.on = {};
     this.browserPluginNode = this.createBrowserPluginNode();
     shadowRoot = this.webviewNode.createShadowRoot();
+    shadowRoot.innerHTML = '<style>:host { display: flex; }</style>';
     this.setupWebViewAttributes();
     this.setupFocusPropagation();
     this.viewInstanceId = getNextId();
@@ -279,9 +280,7 @@ var registerBrowserPluginElement = function() {
     this.setAttribute('id', 'browser-plugin-' + getNextId());
 
     // The <object> node fills in the <webview> container.
-    this.style.display = 'block';
-    this.style.width = '100%';
-    return this.style.height = '100%';
+    return this.style.flex = '1 1 auto';
   };
   proto.attributeChangedCallback = function(name, oldValue, newValue) {
     var internal;
