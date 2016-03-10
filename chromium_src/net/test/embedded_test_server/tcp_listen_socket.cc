@@ -8,6 +8,7 @@
 // winsock2.h must be included first in order to ensure it is included before
 // windows.h.
 #include <winsock2.h>
+#include <ws2tcpip.h>
 #elif defined(OS_POSIX)
 #include <arpa/inet.h>
 #include <errno.h>
