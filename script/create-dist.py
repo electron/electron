@@ -40,7 +40,6 @@ TARGET_BINARIES = {
     'msvcr120.dll',
     'ffmpeg.dll',
     'node.dll',
-    'pdf.dll',
     'content_resources_200_percent.pak',
     'ui_resources_200_percent.pak',
     'xinput1_3.dll',
