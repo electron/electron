@@ -198,6 +198,7 @@
                 'libraries': [
                   '<(libchromiumcontent_dir)/base_static.lib',
                   '<(libchromiumcontent_dir)/sandbox.lib',
+                  '<(libchromiumcontent_dir)/sandbox_helper_win.lib',
                   '<(libchromiumcontent_dir)/devtools_discovery.lib',
                   '<(libchromiumcontent_dir)/devtools_http_handler.lib',
                   '<(libchromiumcontent_dir)/http_server.lib',
