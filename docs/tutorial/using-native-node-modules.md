@@ -61,7 +61,6 @@ $ cd /path-to-module/
 $ HOME=~/.electron-gyp node-gyp rebuild --target=0.36.1 --arch=x64 --dist-url=https://atom.io/download/atom-shell
 #On Windows Try this
 cd /path-to-module/
-node-gyp configure
 X:\path-to-module>node-gyp rebuild --target=0.36.1 --arch=x64 --dist-url=https://atom.io/download/atom-shell
 #notice the target version is the electron binary version
 ```
