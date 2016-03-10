@@ -200,7 +200,8 @@ URLRequestContextGetter::URLRequestContextGetter(
   // Must first be created on the UI thread.
   DCHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
 
-  std::swap(protocol_handlers_, *protocol_handlers);
+  if (protocol_handlers)
+    std::swap(protocol_handlers_, *protocol_handlers);
 
   // We must create the proxy config service on the UI loop on Linux because it
   // must synchronously run on the glib message loop. This will be passed to
@@ -231,8 +232,10 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
 #endif
 
     // --log-net-log
-    net_log_->StartLogging(url_request_context_.get());
-    url_request_context_->set_net_log(net_log_);
+    if (net_log_) {
+      net_log_->StartLogging(url_request_context_.get());
+      url_request_context_->set_net_log(net_log_);
+    }
 
     network_delegate_.reset(delegate_->CreateNetworkDelegate());
     url_request_context_->set_network_delegate(network_delegate_.get());
@@ -365,12 +368,20 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     } else {
       backend.reset(delegate_->CreateHttpCacheBackendFactory(base_path_));
     }
-    storage_->set_http_transaction_factory(make_scoped_ptr(
-        new net::HttpCache(
-            make_scoped_ptr(new DevToolsNetworkTransactionFactory(
-                controller_, http_network_session_.get())),
-            std::move(backend),
-            false)));
+
+    if (controller_) {
+      storage_->set_http_transaction_factory(make_scoped_ptr(
+          new net::HttpCache(
+              make_scoped_ptr(new DevToolsNetworkTransactionFactory(
+                  controller_, http_network_session_.get())),
+              std::move(backend),
+              false)));
+    } else {
+      storage_->set_http_transaction_factory(make_scoped_ptr(
+          new net::HttpCache(http_network_session_.get(),
+                             std::move(backend),
+                             false)));
+    }
 
     storage_->set_job_factory(delegate_->CreateURLRequestJobFactory(
         &protocol_handlers_, &protocol_interceptors_));
