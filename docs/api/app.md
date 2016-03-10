@@ -259,7 +259,8 @@ and `will-quit` events will not be emitted.
 
 ### `app.focus()`
 
-On Linux, focuses on the first visible window. On OS X, makes the application the active app. On Windows, focuses on the application's first window.
+On Linux, focuses on the first visible window. On OS X, makes the application
+the active app. On Windows, focuses on the application's first window.
 
 ### `app.hide()` _OS X_
 
