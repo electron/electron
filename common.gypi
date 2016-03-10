@@ -260,11 +260,5 @@
         },
       },
     }],  # OS=="mac"
-
-    ['OS=="linux"', {
-      'variables': {
-        'pkg-config': '<(source_root)/tools/linux/pkg-config-wrapper "<(sysroot)" "<(target_arch)" "<(system_libdir)"',
-      },
-    }], # OS=="linux"
   ],
 }

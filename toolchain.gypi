@@ -5,8 +5,6 @@
     # Set this to true when building with Clang.
     'clang%': 1,
 
-    'system_libdir%': 'lib',
-
     'variables': {
       # The minimum OS X SDK version to use.
       'mac_sdk_min%': '10.10',
@@ -17,12 +15,8 @@
       # Set NEON compilation flags.
       'arm_neon%': 1,
 
-      'conditions': [
-        # Define the abosulte version of <(DEPTH).
-        ['OS!="win"', {
-          'source_root%': '<!(cd <(DEPTH) && pwd -P)',
-        }],  # OS!="win"
-      ],
+      # Abosulte path to source root.
+      'source_root%': '<!(python <(DEPTH)/tools/atom_source_root.py)',
     },
 
     # Copy conditionally-set variables out one scope.
@@ -47,21 +41,31 @@
       }],
 
       ['OS=="linux"', {
-        'conditions': [
-          ['target_arch=="arm"', {
-            # sysroot needs to be an absolute path otherwise it generates
-            # incorrect results when passed to pkg-config
-            'sysroot%': '<(source_root)/vendor/debian_wheezy_arm-sysroot',
-          }],
-          ['target_arch=="ia32"', {
-            'sysroot%': '<(source_root)/vendor/debian_wheezy_i386-sysroot',
-          }],
-          ['target_arch=="x64"', {
-            'sysroot%': '<(source_root)/vendor/debian_wheezy_amd64-sysroot',
-          }],
-        ],
-      }, {
-        'sysroot%': ' ',
+        'variables': {
+          # The system libdir used for this ABI.
+          'system_libdir%': 'lib',
+
+          # Setting the path to sysroot.
+          'conditions': [
+            ['target_arch=="arm"', {
+              # sysroot needs to be an absolute path otherwise it generates
+              # incorrect results when passed to pkg-config
+              'sysroot%': '<(source_root)/vendor/debian_wheezy_arm-sysroot',
+            }],
+            ['target_arch=="ia32"', {
+              'sysroot%': '<(source_root)/vendor/debian_wheezy_i386-sysroot',
+            }],
+            ['target_arch=="x64"', {
+              'sysroot%': '<(source_root)/vendor/debian_wheezy_amd64-sysroot',
+            }],
+          ],
+        },
+        # Copy conditionally-set variables out one scope.
+        'sysroot%': '<(sysroot)',
+        'system_libdir%': '<(system_libdir)',
+
+        # Redirect pkg-config to search from sysroot.
+        'pkg-config%': '<(source_root)/tools/linux/pkg-config-wrapper "<(sysroot)" "<(target_arch)" "<(system_libdir)"',
       }],
 
       # Set default compiler flags depending on ARM version.
