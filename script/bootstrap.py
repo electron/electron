@@ -165,7 +165,7 @@ def update_clang():
 
 def download_sysroot(target_arch):
   if target_arch == 'ia32':
-     target_arch = 'i386'
+    target_arch = 'i386'
   if target_arch == 'x64':
     target_arch = 'amd64'
   execute_stdout([os.path.join(SOURCE_ROOT, 'script', 'install-sysroot.py'),
