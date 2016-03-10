@@ -49,7 +49,7 @@ app.on('ready', function() {
 ## 분리 할당
 
 만약 CoffeeScript나 Babel을 사용하고 있다면, 빌트인 모듈을 사용할 때
-[분리 할당][desctructuring-assignment]을 통해 직관적으로 사용할 수 있습니다:
+[분리 할당][destructuring-assignment]을 통해 직관적으로 사용할 수 있습니다:
 
 ```javascript
 const {app, BrowserWindow} = require('electron')
@@ -78,5 +78,5 @@ require('electron').hideInternalModules()
 ```
 
 [gui]: https://en.wikipedia.org/wiki/Graphical_user_interface
-[desctructuring-assignment]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Destructuring_assignment
+[destructuring-assignment]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Destructuring_assignment
 [issue-387]: https://github.com/atom/electron/issues/387

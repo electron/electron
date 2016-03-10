@@ -758,12 +758,8 @@ Input `event`를 웹 페이지로 전송합니다.
 
 키보드 이벤트들에 대해서는 `event` 객체는 다음 속성들을 사용할 수 있습니다:
 
-* `keyCode` Char or String (**required**) - 키보드 이벤트로 보내지는 문자. 단일
-  UTF-8 문자를 사용할 수 있고 이벤트를 발생시키는 다음 키 중 하나를 포함할 수 있습니다:
-  `enter`, `backspace`, `delete`, `tab`, `escape`, `control`, `alt`, `altgr`
-  (Windows 전용), `shift`, `end`, `home`, `insert`, `left`, `up`, `right`,
-  `down`, `pageUp`, `pageDown`, `printScreen`, `meta`, `cmd` (OSX 전용),
-  `command` (OSX 전용), `option` (OSX 전용)
+* `keyCode` String (**required**) - 키보드 이벤트가 발생할 때 보내질 문자.
+  [Accelerator](accelerator.md)의 올바른 키 코드만 사용해야 합니다.
 
 마우스 이벤트들에 대해서는 `event` 객체는 다음 속성들을 사용할 수 있습니다:
 
