@@ -240,6 +240,14 @@ window.onbeforeunload = function(e) {
 
 윈도우가 포커스를 가졌을 때 발생하는 이벤트입니다.
 
+### Event: 'show'
+
+윈도우가 보여진 상태일 때 발생하는 이벤트입니다.
+
+### Event: 'hide'
+
+윈도우가 숨겨진 상태일 때 발생하는 이벤트입니다.
+
 ### Event: 'maximize'
 
 윈도우가 최대화됐을 때 발생하는 이벤트입니다.
