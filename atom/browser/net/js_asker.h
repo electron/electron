@@ -23,6 +23,8 @@ using JavaScriptHandler =
 
 namespace internal {
 
+using BeforeStartCallback =
+    base::Callback<void(v8::Isolate*, v8::Local<v8::Value>)>;
 using ResponseCallback =
     base::Callback<void(bool, scoped_ptr<base::Value> options)>;
 
@@ -30,6 +32,7 @@ using ResponseCallback =
 void AskForOptions(v8::Isolate* isolate,
                    const JavaScriptHandler& handler,
                    net::URLRequest* request,
+                   const BeforeStartCallback& before_start,
                    const ResponseCallback& callback);
 
 // Test whether the |options| means an error.
@@ -54,6 +57,7 @@ class JsAsker : public RequestJob {
   }
 
   // Subclass should do initailze work here.
+  virtual void BeforeStartInUI(v8::Isolate*, v8::Local<v8::Value>) {}
   virtual void StartAsync(scoped_ptr<base::Value> options) = 0;
 
   net::URLRequestContextGetter* request_context_getter() const {
@@ -69,6 +73,8 @@ class JsAsker : public RequestJob {
                    isolate_,
                    handler_,
                    RequestJob::request(),
+                   base::Bind(&JsAsker::BeforeStartInUI,
+                              weak_factory_.GetWeakPtr()),
                    base::Bind(&JsAsker::OnResponse,
                               weak_factory_.GetWeakPtr())));
   }

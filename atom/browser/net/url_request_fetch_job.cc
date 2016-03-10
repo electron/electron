@@ -8,15 +8,14 @@
 #include <string>
 
 #include "base/strings/string_util.h"
-#include "base/thread_task_runner_handle.h"
+#include "native_mate/dictionary.h"
 #include "net/base/io_buffer.h"
 #include "net/base/net_errors.h"
 #include "net/http/http_response_headers.h"
 #include "net/url_request/url_fetcher.h"
 #include "net/url_request/url_fetcher_response_writer.h"
-#include "net/url_request/url_request_context.h"
-#include "net/url_request/url_request_context_builder.h"
-#include "net/url_request/url_request_status.h"
+
+using content::BrowserThread;
 
 namespace atom {
 
@@ -81,6 +80,25 @@ URLRequestFetchJob::URLRequestFetchJob(
       pending_buffer_size_(0) {
 }
 
+void URLRequestFetchJob::BeforeStartInUI(
+    v8::Isolate* isolate, v8::Local<v8::Value> value) {
+  mate::Dictionary options;
+  if (!mate::ConvertFromV8(isolate, value, &options))
+    return;
+
+  // When |session| is set to |null| we use a new request context for fetch job.
+  // TODO(zcbenz): Handle the case when it is not null.
+  v8::Local<v8::Value> session;
+  if (options.Get("session", &session) && session->IsNull()) {
+    // We have to create the URLRequestContextGetter on UI thread.
+    url_request_context_getter_ = new brightray::URLRequestContextGetter(
+        this, nullptr, nullptr, base::FilePath(), true,
+        BrowserThread::UnsafeGetMessageLoopForThread(BrowserThread::IO),
+        BrowserThread::UnsafeGetMessageLoopForThread(BrowserThread::FILE),
+        nullptr, content::URLRequestInterceptorScopedVector());
+  }
+}
+
 void URLRequestFetchJob::StartAsync(scoped_ptr<base::Value> options) {
   if (!options->IsType(base::Value::TYPE_DICTIONARY)) {
     NotifyStartError(net::URLRequestStatus(
@@ -89,14 +107,12 @@ void URLRequestFetchJob::StartAsync(scoped_ptr<base::Value> options) {
   }
 
   std::string url, method, referrer;
-  base::Value* session = nullptr;
   base::DictionaryValue* upload_data = nullptr;
   base::DictionaryValue* dict =
       static_cast<base::DictionaryValue*>(options.get());
   dict->GetString("url", &url);
   dict->GetString("method", &method);
   dict->GetString("referrer", &referrer);
-  dict->Get("session", &session);
   dict->GetDictionary("uploadData", &upload_data);
 
   // Check if URL is valid.
@@ -117,9 +133,9 @@ void URLRequestFetchJob::StartAsync(scoped_ptr<base::Value> options) {
   fetcher_ = net::URLFetcher::Create(formated_url, request_type, this);
   fetcher_->SaveResponseWithWriter(make_scoped_ptr(new ResponsePiper(this)));
 
-  // When |session| is set to |null| we use a new request context for fetch job.
-  if (session && session->IsType(base::Value::TYPE_NULL))
-    fetcher_->SetRequestContext(CreateRequestContext());
+  // A request context getter is passed by the user.
+  if (url_request_context_getter_)
+    fetcher_->SetRequestContext(url_request_context_getter_.get());
   else
     fetcher_->SetRequestContext(request_context_getter());
 
@@ -142,18 +158,6 @@ void URLRequestFetchJob::StartAsync(scoped_ptr<base::Value> options) {
       request()->extra_request_headers().ToString());
 
   fetcher_->Start();
-}
-
-net::URLRequestContextGetter* URLRequestFetchJob::CreateRequestContext() {
-  if (!url_request_context_getter_.get()) {
-    auto task_runner = base::ThreadTaskRunnerHandle::Get();
-    net::URLRequestContextBuilder builder;
-    builder.set_proxy_service(net::ProxyService::CreateDirect());
-    request_context_ = builder.Build();
-    url_request_context_getter_ = new net::TrivialURLRequestContextGetter(
-        request_context_.get(), task_runner);
-  }
-  return url_request_context_getter_.get();
 }
 
 void URLRequestFetchJob::HeadersCompleted() {

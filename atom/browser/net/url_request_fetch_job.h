@@ -8,6 +8,7 @@
 #include <string>
 
 #include "atom/browser/net/js_asker.h"
+#include "browser/url_request_context_getter.h"
 #include "net/url_request/url_request_context_getter.h"
 #include "net/url_request/url_fetcher_delegate.h"
 #include "net/url_request/url_request_job.h"
@@ -17,7 +18,8 @@ namespace atom {
 class AtomBrowserContext;
 
 class URLRequestFetchJob : public JsAsker<net::URLRequestJob>,
-                           public net::URLFetcherDelegate {
+                           public net::URLFetcherDelegate,
+                           public brightray::URLRequestContextGetter::Delegate {
  public:
   URLRequestFetchJob(net::URLRequest*, net::NetworkDelegate*);
 
@@ -27,6 +29,7 @@ class URLRequestFetchJob : public JsAsker<net::URLRequestJob>,
 
  protected:
   // JsAsker:
+  void BeforeStartInUI(v8::Isolate*, v8::Local<v8::Value>) override;
   void StartAsync(scoped_ptr<base::Value> options) override;
 
   // net::URLRequestJob:
@@ -40,10 +43,6 @@ class URLRequestFetchJob : public JsAsker<net::URLRequestJob>,
   void OnURLFetchComplete(const net::URLFetcher* source) override;
 
  private:
-  // Create a independent request context.
-  net::URLRequestContextGetter* CreateRequestContext();
-
-  scoped_ptr<net::URLRequestContext> request_context_;
   scoped_refptr<net::URLRequestContextGetter> url_request_context_getter_;
   scoped_ptr<net::URLFetcher> fetcher_;
   scoped_refptr<net::IOBuffer> pending_buffer_;
