@@ -17,7 +17,7 @@ describe('asar package', function() {
       it('does not leak fd', function() {
         var readCalls = 1;
         while(readCalls <= 10000) {
-          fs.readFileSync(path.join(process.resourcesPath, 'atom.asar', 'renderer', 'api', 'lib', 'ipc.js'));
+          fs.readFileSync(path.join(process.resourcesPath, 'atom.asar', 'renderer', 'api', 'ipc.js'));
           readCalls++;
         }
       });
