@@ -4,6 +4,7 @@
   ],
   'variables': {
     'libchromiumcontent_component%': 1,
+    'pkg-config%': 'pkg-config',
     'conditions': [
       # The "libchromiumcontent_component" is defined when calling "gyp".
       ['libchromiumcontent_component', {
