@@ -258,11 +258,11 @@ someWindow.on('app-command', function(e, cmd) {
 
 ### `BrowserWindow.getAllWindows()`
 
-返回一个所有已经打开了的窗口的对象数组.
+返回一个所有已经打开了窗口的对象数组.
 
 ### `BrowserWindow.getFocusedWindow()`
 
-返回应用当前聚焦窗口,如果没有就返回 `null`.
+返回应用当前获得焦点窗口,如果没有就返回 `null`.
 
 ### `BrowserWindow.fromWebContents(webContents)`
 
@@ -325,19 +325,19 @@ var win = new BrowserWindow({ width: 800, height: 600 });
 
 ### `win.focus()`
 
-聚焦窗口.
+窗口获得焦点.
 
 ### `win.isFocused()`
 
-返回 boolean, 窗口是否聚焦.
+返回 boolean, 窗口是否获得焦点.
 
 ### `win.show()`
 
-展示并且聚焦窗口.
+展示并且使窗口获得焦点.
 
 ### `win.showInactive()`
 
-展示窗口但是不聚焦.
+展示窗口但是不获得焦点.
 
 ### `win.hide()`
 
@@ -462,7 +462,7 @@ var win = new BrowserWindow({ width: 800, height: 600 });
 
 ### `win.isResizable()`
 
-返回窗口是否可以被用户改变size的状态.
+返回 boolean,窗口是否可以被用户改变size.
 
 ### `win.setMovable(movable)` _OS X_ _Windows_
 
@@ -472,7 +472,7 @@ var win = new BrowserWindow({ width: 800, height: 600 });
 
 ### `win.isMovable()` _OS X_ _Windows_
 
-返回窗口是否可以被用户拖动的状态. Linux 总是返回 `true`.
+返回 boolean,窗口是否可以被用户拖动. Linux 总是返回 `true`.
 
 ### `win.setMinimizable(minimizable)` _OS X_ _Windows_
 
@@ -482,7 +482,7 @@ var win = new BrowserWindow({ width: 800, height: 600 });
 
 ### `win.isMinimizable()` _OS X_ _Windows_
 
-返回窗口是否可以最小化的状态. Linux 总是返回 `true`.
+返回 boolean,窗口是否可以最小化. Linux 总是返回 `true`.
 
 ### `win.setMaximizable(maximizable)` _OS X_ _Windows_
 
@@ -492,7 +492,7 @@ var win = new BrowserWindow({ width: 800, height: 600 });
 
 ### `win.isMaximizable()` _OS X_ _Windows_
 
-返回窗口是否可以最大化的状态. Linux 总是返回 `true`.
+返回 boolean,窗口是否可以最大化. Linux 总是返回 `true`.
 
 ### `win.setFullScreenable(fullscreenable)`
 
@@ -502,7 +502,7 @@ var win = new BrowserWindow({ width: 800, height: 600 });
 
 ### `win.isFullScreenable()`
 
-返回点击最大化按钮是否可以全屏或最大化窗口的状态.
+返回 boolean,点击最大化按钮是否可以全屏或最大化窗口.
 
 ### `win.setClosable(closable)` _OS X_ _Windows_
 
@@ -512,17 +512,17 @@ var win = new BrowserWindow({ width: 800, height: 600 });
 
 ### `win.isClosable()` _OS X_ _Windows_
 
-返回窗口是否可以人为关闭的状态. Linux 总是返回 `true`.
+返回 boolean,窗口是否可以人为关闭. Linux 总是返回 `true`.
 
 ### `win.setAlwaysOnTop(flag)`
 
 * `flag` Boolean
 
-是否设置这个窗口始终在其他窗口之上.设置之后，这个窗口仍然是一个普通的窗口，不是一个不可以聚焦的工具箱窗口.
+是否设置这个窗口始终在其他窗口之上.设置之后，这个窗口仍然是一个普通的窗口，不是一个不可以获得焦点的工具箱窗口.
 
 ### `win.isAlwaysOnTop()`
 
-返回当前窗口是否始终在其它窗口之前的状态.
+返回 boolean,当前窗口是否始终在其它窗口之前.
 
 ### `win.center()`
 
@@ -572,7 +572,7 @@ var win = new BrowserWindow({ width: 800, height: 600 });
 
 ### `win.isKiosk()`
 
-返回是否进入或离开 kiosk 模式的状态.
+返回 boolean,是否进入或离开 kiosk 模式.
 
 ### `win.getNativeWindowHandle()`
 
@@ -621,7 +621,7 @@ windows上句柄类型为 `HWND` ，OS X `NSView*` ， Linux `Window`.
 
 ### `win.isDocumentEdited()` _OS X_
 
-返回当前窗口文档是否可编辑状态.
+返回 boolean,当前窗口文档是否可编辑.
 
 ### `win.focusOnWebView()`
 
@@ -673,14 +673,10 @@ windows上句柄类型为 `HWND` ，OS X `NSView*` ， Linux `Window`.
 
 ### `win.setOverlayIcon(overlay, description)` _Windows 7+_
 
-* `overlay` [NativeImage](native-image.md) - the icon to display on the bottom
-right corner of the taskbar icon. If this parameter is `null`, the overlay is
-cleared
-* `description` String - a description that will be provided to Accessibility
-screen readers
+* `overlay` [NativeImage](native-image.md) - 在底部任务栏右边显示图标. 
+* `description` String - 描述.
 
-Sets a 16 x 16 pixel overlay onto the current taskbar icon, usually used to convey some
-sort of application status or to passively notify the user.
+向当前任务栏添加一个 16 x 16 像素的图标，通常用来覆盖一些应用的状态，或者直接来提示用户.
 
 ### `win.setHasShadow(hasShadow)` _OS X_
 
@@ -690,7 +686,7 @@ sort of application status or to passively notify the user.
 
 ### `win.hasShadow()` _OS X_
 
-返回设置窗口是否有阴影的状态.在Windows和Linux系统始终返回
+返回 boolean,设置窗口是否有阴影.在Windows和Linux系统始终返回
 `true`.
 
 ### `win.setThumbarButtons(buttons)` _Windows 7+_
@@ -732,7 +728,7 @@ sort of application status or to passively notify the user.
 
 ### `win.isMenuBarAutoHide()`
 
-返回窗口的菜单栏是否可以自动隐藏的状态.
+返回 boolean,窗口的菜单栏是否可以自动隐藏.
 
 ### `win.setMenuBarVisibility(visible)`
 
@@ -742,7 +738,7 @@ sort of application status or to passively notify the user.
 
 ### `win.isMenuBarVisible()`
 
-返回菜单栏是否可见的状态.
+返回 boolean,菜单栏是否可见.
 
 ### `win.setVisibleOnAllWorkspaces(visible)`
 
@@ -754,7 +750,7 @@ sort of application status or to passively notify the user.
 
 ### `win.isVisibleOnAllWorkspaces()`
 
-返回窗口是否在所有地方都可见的状态.
+返回 boolean,窗口是否在所有地方都可见.
 
 **注意:** 在 windows上始终返回 false.
 
