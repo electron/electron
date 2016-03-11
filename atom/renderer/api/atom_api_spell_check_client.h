@@ -41,8 +41,6 @@ class SpellCheckClient : public blink::WebSpellCheckClient {
       const blink::WebVector<uint32_t>& markersInText,
       const blink::WebVector<unsigned>& markerOffsets,
       blink::WebTextCheckingCompletion* completionCallback) override;
-  blink::WebString autoCorrectWord(
-      const blink::WebString& misspelledWord) override;
   void showSpellingUI(bool show) override;
   bool isShowingSpellingUI() override;
   void updateSpellingUIWithMisspelledWord(

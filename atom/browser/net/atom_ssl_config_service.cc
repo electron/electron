@@ -18,8 +18,8 @@ namespace atom {
 
 namespace {
 
-uint16 GetSSLProtocolVersion(const std::string& version_string) {
-  uint16 version = 0;  // Invalid
+uint16_t GetSSLProtocolVersion(const std::string& version_string) {
+  uint16_t version = 0;  // Invalid
   if (version_string == "tls1")
     version = net::SSL_PROTOCOL_VERSION_TLS1;
   else if (version_string == "tls1.1")
@@ -29,13 +29,13 @@ uint16 GetSSLProtocolVersion(const std::string& version_string) {
   return version;
 }
 
-std::vector<uint16> ParseCipherSuites(
+std::vector<uint16_t> ParseCipherSuites(
     const std::vector<std::string>& cipher_strings) {
-  std::vector<uint16> cipher_suites;
+  std::vector<uint16_t> cipher_suites;
   cipher_suites.reserve(cipher_strings.size());
 
   for (auto& cipher_string : cipher_strings) {
-    uint16 cipher_suite = 0;
+    uint16_t cipher_suite = 0;
     if (!net::ParseSSLCipherString(cipher_string, &cipher_suite)) {
       LOG(ERROR) << "Ignoring unrecognised cipher suite : "
                  << cipher_string;

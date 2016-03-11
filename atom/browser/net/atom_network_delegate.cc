@@ -78,7 +78,7 @@ void ToDictionary(base::DictionaryValue* details, net::URLRequest* request) {
   scoped_ptr<base::ListValue> list(new base::ListValue);
   GetUploadData(list.get(), request);
   if (!list->empty())
-    details->Set("uploadData", list.Pass());
+    details->Set("uploadData", std::move(list));
 }
 
 void ToDictionary(base::DictionaryValue* details,
@@ -87,7 +87,7 @@ void ToDictionary(base::DictionaryValue* details,
   net::HttpRequestHeaders::Iterator it(headers);
   while (it.GetNext())
     dict->SetString(it.name(), it.value());
-  details->Set("requestHeaders", dict.Pass());
+  details->Set("requestHeaders", std::move(dict));
 }
 
 void ToDictionary(base::DictionaryValue* details,
@@ -107,10 +107,10 @@ void ToDictionary(base::DictionaryValue* details,
     } else {
       scoped_ptr<base::ListValue> values(new base::ListValue);
       values->AppendString(value);
-      dict->Set(key, values.Pass());
+      dict->Set(key, std::move(values));
     }
   }
-  details->Set("responseHeaders", dict.Pass());
+  details->Set("responseHeaders", std::move(dict));
   details->SetString("statusLine", headers->GetStatusLine());
   details->SetInteger("statusCode", headers->response_code());
 }

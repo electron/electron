@@ -28,7 +28,7 @@ void SetPlatformAccelerator(ui::Accelerator* accelerator) {
 
   scoped_ptr<ui::PlatformAccelerator> platform_accelerator(
       new ui::PlatformAcceleratorCocoa(characters, modifiers));
-  accelerator->set_platform_accelerator(platform_accelerator.Pass());
+  accelerator->set_platform_accelerator(std::move(platform_accelerator));
 }
 
 }  // namespace accelerator_util

@@ -4,7 +4,6 @@
 
 #include "chrome/common/print_messages.h"
 
-#include "base/basictypes.h"
 #include "base/strings/string16.h"
 #include "ui/gfx/geometry/size.h"
 

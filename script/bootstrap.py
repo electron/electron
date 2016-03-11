@@ -43,7 +43,7 @@ def main():
                       args.libcc_source_path, args.libcc_shared_library_path,
                       args.libcc_static_library_path)
 
-  if args.target_arch in ['arm', 'ia32'] and PLATFORM == 'linux':
+  if PLATFORM == 'linux':
     download_sysroot(args.target_arch)
 
   create_chrome_version_h()
@@ -166,9 +166,10 @@ def update_clang():
 def download_sysroot(target_arch):
   if target_arch == 'ia32':
     target_arch = 'i386'
+  if target_arch == 'x64':
+    target_arch = 'amd64'
   execute_stdout([os.path.join(SOURCE_ROOT, 'script', 'install-sysroot.py'),
                   '--arch', target_arch])
-
 
 def create_chrome_version_h():
   version_file = os.path.join(SOURCE_ROOT, 'vendor', 'brightray', 'vendor',

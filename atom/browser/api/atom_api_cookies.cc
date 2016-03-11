@@ -180,7 +180,8 @@ void SetCookieOnIO(scoped_refptr<net::URLRequestContextGetter> getter,
 
   GetCookieStore(getter)->GetCookieMonster()->SetCookieWithDetailsAsync(
       GURL(url), name, value, domain, path, expiration_time, secure, http_only,
-      false, net::COOKIE_PRIORITY_DEFAULT, base::Bind(OnSetCookie, callback));
+      false, false, false, net::COOKIE_PRIORITY_DEFAULT,
+      base::Bind(OnSetCookie, callback));
 }
 
 }  // namespace

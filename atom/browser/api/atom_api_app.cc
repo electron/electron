@@ -230,8 +230,7 @@ void App::OnLogin(LoginHandler* login_handler) {
 }
 
 void App::AllowCertificateError(
-    int pid,
-    int fid,
+    content::WebContents* web_contents,
     int cert_error,
     const net::SSLInfo& ssl_info,
     const GURL& request_url,
@@ -241,9 +240,6 @@ void App::AllowCertificateError(
     bool expired_previous_decision,
     const base::Callback<void(bool)>& callback,
     content::CertificateRequestResultType* request) {
-  auto rfh = content::RenderFrameHost::FromID(pid, fid);
-  auto web_contents = content::WebContents::FromRenderFrameHost(rfh);
-
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
   bool prevent_default = Emit("certificate-error",

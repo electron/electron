@@ -4,12 +4,15 @@
 
 #include "atom/browser/web_contents_preferences.h"
 
+#include <algorithm>
 #include <string>
+#include <vector>
 
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/options_switches.h"
 #include "base/command_line.h"
 #include "base/strings/string_number_conversions.h"
+#include "content/public/browser/render_process_host.h"
 #include "content/public/common/content_switches.h"
 #include "content/public/common/web_preferences.h"
 #include "native_mate/dictionary.h"
@@ -23,9 +26,13 @@ DEFINE_WEB_CONTENTS_USER_DATA_KEY(atom::WebContentsPreferences);
 
 namespace atom {
 
+// static
+std::vector<WebContentsPreferences*> WebContentsPreferences::instances_;
+
 WebContentsPreferences::WebContentsPreferences(
     content::WebContents* web_contents,
-    const mate::Dictionary& web_preferences) {
+    const mate::Dictionary& web_preferences)
+    : web_contents_(web_contents) {
   v8::Isolate* isolate = web_preferences.isolate();
   mate::Dictionary copied(isolate, web_preferences.GetHandle()->Clone());
   // Following fields should not be stored.
@@ -35,13 +42,29 @@ WebContentsPreferences::WebContentsPreferences(
 
   mate::ConvertFromV8(isolate, copied.GetHandle(), &web_preferences_);
   web_contents->SetUserData(UserDataKey(), this);
+
+  instances_.push_back(this);
 }
 
 WebContentsPreferences::~WebContentsPreferences() {
+  instances_.erase(
+      std::remove(instances_.begin(), instances_.end(), this),
+      instances_.end());
 }
 
 void WebContentsPreferences::Merge(const base::DictionaryValue& extend) {
   web_preferences_.MergeDictionary(&extend);
+}
+
+// static
+content::WebContents* WebContentsPreferences::GetWebContentsFromProcessID(
+    int process_id) {
+  for (WebContentsPreferences* preferences : instances_) {
+    content::WebContents* web_contents = preferences->web_contents_;
+    if (web_contents->GetRenderProcessHost()->GetID() == process_id)
+      return web_contents;
+  }
+  return nullptr;
 }
 
 // static

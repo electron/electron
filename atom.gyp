@@ -143,7 +143,6 @@
                     ],
                   }, {
                     'copied_libraries': [
-                      '<(libchromiumcontent_dir)/pdf.dll',
                       '<(libchromiumcontent_dir)/ffmpeg.dll',
                     ],
                   }],

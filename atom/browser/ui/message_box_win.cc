@@ -102,9 +102,9 @@ int ShowMessageBoxUTF16(HWND parent,
 
   base::win::ScopedHICON hicon;
   if (!icon.isNull()) {
-    hicon.Set(IconUtil::CreateHICONFromSkBitmap(*icon.bitmap()));
+    hicon = IconUtil::CreateHICONFromSkBitmap(*icon.bitmap());
     config.dwFlags |= TDF_USE_HICON_MAIN;
-    config.hMainIcon = hicon.Get();
+    config.hMainIcon = hicon.get();
   } else {
     // Show icon according to dialog's type.
     switch (type) {

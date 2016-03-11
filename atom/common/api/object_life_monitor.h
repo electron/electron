@@ -5,7 +5,7 @@
 #ifndef ATOM_COMMON_API_OBJECT_LIFE_MONITOR_H_
 #define ATOM_COMMON_API_OBJECT_LIFE_MONITOR_H_
 
-#include "base/basictypes.h"
+#include "base/macros.h"
 #include "base/memory/weak_ptr.h"
 #include "v8/include/v8.h"
 

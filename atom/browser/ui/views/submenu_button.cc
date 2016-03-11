@@ -37,7 +37,7 @@ SubmenuButton::SubmenuButton(views::ButtonListener* listener,
       underline_color_(SK_ColorBLACK) {
 #if defined(OS_LINUX)
   // Dont' use native style border.
-  SetBorder(CreateDefaultBorder().Pass());
+  SetBorder(std::move(CreateDefaultBorder()));
 #endif
 
   if (GetUnderlinePosition(title, &accelerator_, &underline_start_,

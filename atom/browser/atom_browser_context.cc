@@ -134,14 +134,15 @@ AtomBrowserContext::CreateURLRequestJobFactory(
           new net::FtpNetworkLayer(host_resolver))));
 
   // Set up interceptors in the reverse order.
-  scoped_ptr<net::URLRequestJobFactory> top_job_factory = job_factory.Pass();
+  scoped_ptr<net::URLRequestJobFactory> top_job_factory =
+      std::move(job_factory);
   content::URLRequestInterceptorScopedVector::reverse_iterator it;
   for (it = interceptors->rbegin(); it != interceptors->rend(); ++it)
     top_job_factory.reset(new net::URLRequestInterceptingJobFactory(
-        top_job_factory.Pass(), make_scoped_ptr(*it)));
+        std::move(top_job_factory), make_scoped_ptr(*it)));
   interceptors->weak_clear();
 
-  return top_job_factory.Pass();
+  return top_job_factory;
 }
 
 net::HttpCache::BackendFactory*

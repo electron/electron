@@ -53,7 +53,7 @@ namespace {
 using WrapDownloadItemCallback = base::Callback<void(v8::Local<v8::Value>)>;
 WrapDownloadItemCallback g_wrap_download_item;
 
-std::map<uint32, linked_ptr<v8::Global<v8::Value>>> g_download_item_objects;
+std::map<uint32_t, linked_ptr<v8::Global<v8::Value>>> g_download_item_objects;
 
 }  // namespace
 
@@ -106,11 +106,11 @@ void DownloadItem::Cancel() {
   download_item_->Remove();
 }
 
-int64 DownloadItem::GetReceivedBytes() const {
+int64_t DownloadItem::GetReceivedBytes() const {
   return download_item_->GetReceivedBytes();
 }
 
-int64 DownloadItem::GetTotalBytes() const {
+int64_t DownloadItem::GetTotalBytes() const {
   return download_item_->GetTotalBytes();
 }
 

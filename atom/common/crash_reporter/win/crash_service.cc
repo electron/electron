@@ -86,7 +86,7 @@ bool WriteReportIDToFile(const std::wstring& dump_path,
   if (!file.is_open())
     return false;
 
-  int64 seconds_since_epoch =
+  int64_t seconds_since_epoch =
       (base::Time::Now() - base::Time::UnixEpoch()).InSeconds();
   std::wstring line = base::Int64ToString16(seconds_since_epoch);
   line += L',';

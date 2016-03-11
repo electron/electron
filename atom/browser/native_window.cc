@@ -27,6 +27,7 @@
 #include "content/public/browser/plugin_service.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
+#include "content/public/browser/render_widget_host.h"
 #include "content/public/browser/render_widget_host_view.h"
 #include "content/public/common/content_switches.h"
 #include "ipc/ipc_message_macros.h"
@@ -275,15 +276,15 @@ bool NativeWindow::HasModalDialog() {
 }
 
 void NativeWindow::FocusOnWebView() {
-  web_contents()->GetRenderViewHost()->Focus();
+  web_contents()->GetRenderViewHost()->GetWidget()->Focus();
 }
 
 void NativeWindow::BlurWebView() {
-  web_contents()->GetRenderViewHost()->Blur();
+  web_contents()->GetRenderViewHost()->GetWidget()->Blur();
 }
 
 bool NativeWindow::IsWebViewFocused() {
-  auto host_view = web_contents()->GetRenderViewHost()->GetView();
+  auto host_view = web_contents()->GetRenderViewHost()->GetWidget()->GetView();
   return host_view && host_view->HasFocus();
 }
 
@@ -519,7 +520,7 @@ scoped_ptr<SkRegion> NativeWindow::DraggableRegionsToSkRegion(
         region.bounds.bottom(),
         region.draggable ? SkRegion::kUnion_Op : SkRegion::kDifference_Op);
   }
-  return sk_region.Pass();
+  return sk_region;
 }
 
 void NativeWindow::RenderViewCreated(

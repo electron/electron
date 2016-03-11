@@ -9,6 +9,7 @@
 #include "content/public/browser/guest_host.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_view_host.h"
+#include "content/public/browser/render_widget_host.h"
 #include "content/public/browser/render_widget_host_view.h"
 
 namespace atom {
@@ -101,13 +102,14 @@ void WebViewGuestDelegate::SetAllowTransparency(bool allow) {
 
   auto render_view_host = web_contents()->GetRenderViewHost();
   guest_opaque_ = !allow;
-  if (!render_view_host->GetView())
+  if (!render_view_host->GetWidget()->GetView())
     return;
 
   if (guest_opaque_) {
-    render_view_host->GetView()->SetBackgroundColorToDefault();
+    render_view_host->GetWidget()->GetView()->SetBackgroundColorToDefault();
   } else {
-    render_view_host->GetView()->SetBackgroundColor(SK_ColorTRANSPARENT);
+    render_view_host->GetWidget()->GetView()->SetBackgroundColor(
+        SK_ColorTRANSPARENT);
   }
 }
 
@@ -123,7 +125,8 @@ void WebViewGuestDelegate::RenderViewReady() {
   // WebContents::GetRenderWidgetHostView will return the RWHV of an
   // interstitial page if one is showing at this time. We only want opacity
   // to apply to web pages.
-  auto render_view_host_view = web_contents()->GetRenderViewHost()->GetView();
+  auto render_view_host_view =
+      web_contents()->GetRenderViewHost()->GetWidget()->GetView();
   if (guest_opaque_)
     render_view_host_view->SetBackgroundColorToDefault();
   else

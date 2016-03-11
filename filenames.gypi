@@ -534,7 +534,6 @@
           'atom/browser/resources/win/resource.h',
           'atom/browser/resources/win/atom.ico',
           'atom/browser/resources/win/atom.rc',
-          '<(libchromiumcontent_src_dir)/content/app/startup_helper_win.cc',
           # Cursors.
           '<(libchromiumcontent_src_dir)/ui/resources/cursors/aliasb.cur',
           '<(libchromiumcontent_src_dir)/ui/resources/cursors/cell.cur',

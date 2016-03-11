@@ -8,6 +8,7 @@
 // winsock2.h must be included first in order to ensure it is included before
 // windows.h.
 #include <winsock2.h>
+#include <ws2tcpip.h>
 #elif defined(OS_POSIX)
 #include <arpa/inet.h>
 #include <errno.h>
@@ -34,14 +35,14 @@ namespace test_server {
 // static
 scoped_ptr<TCPListenSocket> TCPListenSocket::CreateAndListen(
     const string& ip,
-    uint16 port,
+    uint16_t port,
     StreamListenSocket::Delegate* del) {
   SocketDescriptor s = CreateAndBind(ip, port);
   if (s == kInvalidSocket)
     return scoped_ptr<TCPListenSocket>();
   scoped_ptr<TCPListenSocket> sock(new TCPListenSocket(s, del));
   sock->Listen();
-  return sock.Pass();
+  return sock;
 }
 
 TCPListenSocket::TCPListenSocket(SocketDescriptor s,
@@ -52,7 +53,8 @@ TCPListenSocket::TCPListenSocket(SocketDescriptor s,
 TCPListenSocket::~TCPListenSocket() {
 }
 
-SocketDescriptor TCPListenSocket::CreateAndBind(const string& ip, uint16 port) {
+SocketDescriptor TCPListenSocket::CreateAndBind(const string& ip,
+                                                uint16_t port) {
   SocketDescriptor s = CreatePlatformSocket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
   if (s != kInvalidSocket) {
 #if defined(OS_POSIX)
@@ -79,7 +81,7 @@ SocketDescriptor TCPListenSocket::CreateAndBind(const string& ip, uint16 port) {
 }
 
 SocketDescriptor TCPListenSocket::CreateAndBindAnyPort(const string& ip,
-                                                       uint16* port) {
+                                                       uint16_t* port) {
   SocketDescriptor s = CreateAndBind(ip, 0);
   if (s == kInvalidSocket)
     return kInvalidSocket;
@@ -110,7 +112,7 @@ void TCPListenSocket::Accept() {
 #if defined(OS_POSIX)
   sock->WatchSocket(WAITING_READ);
 #endif
-  socket_delegate_->DidAccept(this, sock.Pass());
+  socket_delegate_->DidAccept(this, std::move(sock));
 }
 
 }  // namespace test_server
