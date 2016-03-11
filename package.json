@@ -1,6 +1,6 @@
 {
   "name": "electron",
-  "version": "0.36.10",
+  "version": "0.36.11",
   "devDependencies": {
     "asar": "^0.10.0",
     "eslint": "^2.1.0",
