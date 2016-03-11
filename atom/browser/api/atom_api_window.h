@@ -83,6 +83,7 @@ class Window : public mate::TrackableObject<Window>,
   // APIs for NativeWindow.
   void Close();
   void Focus();
+  void Blur();
   bool IsFocused();
   void Show();
   void ShowInactive();

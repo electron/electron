@@ -397,6 +397,10 @@ the [close event](#event-close).
 
 Focus on the window.
 
+### `win.blur()`
+
+Remove focus on the window.
+
 ### `win.isFocused()`
 
 Returns a boolean, whether the window is focused.
