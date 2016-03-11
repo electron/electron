@@ -30,7 +30,7 @@
 
 ### `BrowserWindowProxy.blur()`
 
-取消对子窗口的聚焦.
+子窗口的失去焦点.
 ### `BrowserWindowProxy.close()`
 
 强行关闭子窗口，忽略卸载事件.
@@ -47,7 +47,7 @@
 
 ### `BrowserWindowProxy.focus()`
 
-聚焦子窗口(让其现实在最前).
+子窗口获得焦点(让其显示在最前).
 
 ### `BrowserWindowProxy.postMessage(message, targetOrigin)`
 

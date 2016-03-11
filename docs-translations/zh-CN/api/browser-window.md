@@ -197,12 +197,10 @@ window.onbeforeunload = function(e) {
 ### Event: 'restore'
 
 在窗口从最小化恢复的时候触发.
-Emitted when the window is restored from minimized state.
 
 ### Event: 'resize'
 
 在窗口size改变的时候触发.
-Emitted when the window is getting resized.
 
 ### Event: 'move'
 
