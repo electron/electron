@@ -568,6 +568,7 @@ describe('<webview> tag', function() {
     });
 
     it('can return the result of the executed script', function(done) {
+      this.timeout(50000);
       var listener = function() {
         var jsScript = "'4'+2";
         webview.executeJavaScript(jsScript, false, function(result) {
