@@ -71,16 +71,10 @@ TARGET_DIRECTORIES = {
   ],
 }
 
-SYSTEM_LIBRARIES = [
-  'libgcrypt.so',
-]
-
 
 def main():
   rm_rf(DIST_DIR)
   os.makedirs(DIST_DIR)
-
-  target_arch = get_target_arch()
 
   force_build()
   create_symbols()
@@ -91,8 +85,6 @@ def main():
 
   if PLATFORM == 'linux':
     strip_binaries()
-    if target_arch != 'arm':
-      copy_system_libraries()
 
   create_version()
   create_dist_zip()
@@ -144,21 +136,6 @@ def strip_binaries():
       execute([strip, os.path.join(DIST_DIR, binary)])
 
 
-def copy_system_libraries():
-  executable_path = os.path.join(OUT_DIR, PROJECT_NAME)  # our/R/electron
-  ldd = execute(['ldd', executable_path])
-  lib_re = re.compile('\t(.*) => (.+) \(.*\)$')
-  for line in ldd.splitlines():
-    m = lib_re.match(line)
-    if not m:
-      continue
-    for i, library in enumerate(SYSTEM_LIBRARIES):
-      real_library = m.group(1)
-      if real_library.startswith(library):
-        shutil.copyfile(m.group(2), os.path.join(DIST_DIR, real_library))
-        SYSTEM_LIBRARIES[i] = real_library
-
-
 def create_version():
   version_path = os.path.join(SOURCE_ROOT, 'dist', 'version')
   with open(version_path, 'w') as version_file:
@@ -185,8 +162,6 @@ def create_dist_zip():
   with scoped_cwd(DIST_DIR):
     files = TARGET_BINARIES[PLATFORM] +  ['LICENSE', 'LICENSES.chromium.html',
                                           'version']
-    if PLATFORM == 'linux':
-      files += [lib for lib in SYSTEM_LIBRARIES if os.path.exists(lib)]
     dirs = TARGET_DIRECTORIES[PLATFORM]
     make_zip(zip_file, files, dirs)
 
