@@ -43,10 +43,9 @@ class NetworkDelegate : public net::NetworkDelegate {
   void OnBeforeRedirect(net::URLRequest* request,
                         const GURL& new_location) override;
   void OnResponseStarted(net::URLRequest* request) override;
-  void OnURLRequestJobOrphaned(net::URLRequest* request) override;
-  void OnNetworkBytesReceived(const net::URLRequest& request,
+  void OnNetworkBytesReceived(net::URLRequest* request,
                               int64_t bytes_read) override;
-  void OnNetworkBytesSent(const net::URLRequest& request,
+  void OnNetworkBytesSent(net::URLRequest* request,
                           int64_t bytes_sent) override;
   void OnCompleted(net::URLRequest* request, bool started) override;
   void OnURLRequestDestroyed(net::URLRequest* request) override;
@@ -67,7 +66,8 @@ class NetworkDelegate : public net::NetworkDelegate {
   bool OnCanEnablePrivacyMode(
       const GURL& url,
       const GURL& first_party_for_cookies) const override;
-  bool OnFirstPartyOnlyCookieExperimentEnabled() const override;
+  bool OnAreStrictSecureCookiesEnabled() const override;
+  bool OnAreExperimentalCookieFeaturesEnabled() const override;
   bool OnCancelURLRequestWithPolicyViolatingReferrerHeader(
       const net::URLRequest& request,
       const GURL& target_url,

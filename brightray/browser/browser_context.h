@@ -57,6 +57,7 @@ class BrowserContext : public base::RefCounted<BrowserContext>,
   content::PushMessagingService* GetPushMessagingService() override;
   content::SSLHostStateDelegate* GetSSLHostStateDelegate() override;
   content::PermissionManager* GetPermissionManager() override;
+  content::BackgroundSyncController* GetBackgroundSyncController() override;
 
   net::URLRequestContextGetter* CreateRequestContext(
       NetLog* net_log,

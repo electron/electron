@@ -173,10 +173,10 @@ bool WindowsToastNotification::GetToastXml(
     if (!SetXmlText(*toast_xml, title, msg))
       return false;
   }
-  
+
   // Configure the toast's notification sound
   if (silent) {
-    if (FAILED(SetXmlAudioSilent(*toast_xml))) 
+    if (FAILED(SetXmlAudioSilent(*toast_xml)))
       return false;
   }
 
@@ -200,40 +200,40 @@ bool WindowsToastNotification::SetXmlAudioSilent(
   ComPtr<IXmlNode> root;
   if (FAILED(node_list->Item(0, &root)))
     return false;
-  
+
   ComPtr<IXmlElement> audio_element;
   ScopedHString audio_str(L"audio");
   if (FAILED(doc->CreateElement(audio_str, &audio_element)))
     return false;
-  
+
   ComPtr<IXmlNode> audio_node_tmp;
   if (FAILED(audio_element.As(&audio_node_tmp)))
     return false;
-  
+
   // Append audio node to toast xml
   ComPtr<IXmlNode> audio_node;
   if (FAILED(root->AppendChild(audio_node_tmp.Get(), &audio_node)))
     return false;
-  
+
   // Create silent attribute
   ComPtr<IXmlNamedNodeMap> attributes;
   if (FAILED(audio_node->get_Attributes(&attributes)))
     return false;
-    
+
   ComPtr<IXmlAttribute> silent_attribute;
   ScopedHString silent_str(L"silent");
   if (FAILED(doc->CreateAttribute(silent_str, &silent_attribute)))
     return false;
-  
+
   ComPtr<IXmlNode> silent_attribute_node;
   if (FAILED(silent_attribute.As(&silent_attribute_node)))
     return false;
-  
+
   // Set silent attribute to true
   ScopedHString silent_value(L"true");
   if (!silent_value.success())
     return false;
-  
+
   ComPtr<IXmlText> silent_text;
   if (FAILED(doc->CreateTextNode(silent_value, &silent_text)))
     return false;
@@ -241,11 +241,11 @@ bool WindowsToastNotification::SetXmlAudioSilent(
   ComPtr<IXmlNode> silent_node;
   if (FAILED(silent_text.As(&silent_node)))
     return false;
-    
+
   ComPtr<IXmlNode> child_node;
   if (FAILED(silent_attribute_node->AppendChild(silent_node.Get(), &child_node)))
     return false;
-  
+
   ComPtr<IXmlNode> silent_attribute_pnode;
   return SUCCEEDED(attributes.Get()->SetNamedItem(silent_attribute_node.Get(), &silent_attribute_pnode));
 }
@@ -330,7 +330,7 @@ bool WindowsToastNotification::GetTextNodeList(
     ScopedHString* tag,
     IXmlDocument* doc,
     IXmlNodeList** node_list,
-    UINT32 req_length) {
+    uint32_t req_length) {
   tag->Reset(L"text");
   if (!tag->success())
     return false;
@@ -338,7 +338,7 @@ bool WindowsToastNotification::GetTextNodeList(
   if (FAILED(doc->GetElementsByTagName(*tag, node_list)))
     return false;
 
-  UINT32 node_length;
+  uint32_t node_length;
   if (FAILED((*node_list)->get_Length(&node_length)))
     return false;
 

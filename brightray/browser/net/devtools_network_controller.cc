@@ -30,7 +30,7 @@ void DevToolsNetworkController::SetNetworkState(
   if (client_id.empty()) {
     if (!conditions)
       return;
-    default_interceptor_->UpdateConditions(conditions.Pass());
+    default_interceptor_->UpdateConditions(std::move(conditions));
     return;
   }
 
@@ -40,16 +40,16 @@ void DevToolsNetworkController::SetNetworkState(
       return;
     scoped_ptr<DevToolsNetworkInterceptor> new_interceptor(
         new DevToolsNetworkInterceptor);
-    new_interceptor->UpdateConditions(conditions.Pass());
-    interceptors_.set(client_id, new_interceptor.Pass());
+    new_interceptor->UpdateConditions(std::move(conditions));
+    interceptors_.set(client_id, std::move(new_interceptor));
   } else {
     if (!conditions) {
       scoped_ptr<DevToolsNetworkConditions> online_conditions(
           new DevToolsNetworkConditions(false));
-      interceptor->UpdateConditions(online_conditions.Pass());
+      interceptor->UpdateConditions(std::move(online_conditions));
       interceptors_.erase(client_id);
     } else {
-      interceptor->UpdateConditions(conditions.Pass());
+      interceptor->UpdateConditions(std::move(conditions));
     }
   }
 }

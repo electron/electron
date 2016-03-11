@@ -22,7 +22,9 @@
 #include "net/cert/cert_verifier.h"
 #include "net/cookies/cookie_monster.h"
 #include "net/dns/mapped_host_resolver.h"
+#include "net/http/http_auth_filter.h"
 #include "net/http/http_auth_handler_factory.h"
+#include "net/http/http_auth_preferences.h"
 #include "net/http/http_server_properties_impl.h"
 #include "net/log/net_log.h"
 #include "net/proxy/dhcp_proxy_script_fetcher_factory.h"
@@ -104,8 +106,16 @@ bool URLRequestContextGetter::DelegateURLSecurityManager::CanDelegate
   return delegate_->CanDelegateURLSecurity(auth_origin);
 }
 
+void URLRequestContextGetter::DelegateURLSecurityManager::SetDefaultWhitelist(
+  scoped_ptr<net::HttpAuthFilter> whitelist_default) {
+}
+
+void URLRequestContextGetter::DelegateURLSecurityManager::SetDelegateWhitelist(
+  scoped_ptr<net::HttpAuthFilter> whitelist_delegate) {
+}
+
 URLRequestContextGetter::Delegate::Delegate() :
-  orig_url_sec_mgr_(net::URLSecurityManager::Create(NULL, NULL)) {}
+  orig_url_sec_mgr_(net::URLSecurityManager::Create()) {}
 
 std::string URLRequestContextGetter::Delegate::GetUserAgent() {
   return base::EmptyString();
@@ -131,14 +141,14 @@ URLRequestContextGetter::Delegate::CreateURLRequestJobFactory(
               base::SequencedWorkerPool::SKIP_ON_SHUTDOWN))));
 
   // Set up interceptors in the reverse order.
-  scoped_ptr<net::URLRequestJobFactory> top_job_factory = job_factory.Pass();
+  scoped_ptr<net::URLRequestJobFactory> top_job_factory = std::move(job_factory);
   content::URLRequestInterceptorScopedVector::reverse_iterator i;
   for (i = protocol_interceptors->rbegin(); i != protocol_interceptors->rend(); ++i)
     top_job_factory.reset(new net::URLRequestInterceptingJobFactory(
-        top_job_factory.Pass(), make_scoped_ptr(*i)));
+        std::move(top_job_factory), make_scoped_ptr(*i)));
   protocol_interceptors->weak_clear();
 
-  return top_job_factory.Pass();
+  return top_job_factory;
 }
 
 net::HttpCache::BackendFactory*
@@ -187,12 +197,12 @@ URLRequestContextGetter::URLRequestContextGetter(
       in_memory_(in_memory),
       io_loop_(io_loop),
       file_loop_(file_loop),
-      url_sec_mgr_(new URLRequestContextGetter::DelegateURLSecurityManager(delegate)),
-      protocol_interceptors_(protocol_interceptors.Pass()) {
+      protocol_interceptors_(std::move(protocol_interceptors)) {
   // Must first be created on the UI thread.
   DCHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
 
-  std::swap(protocol_handlers_, *protocol_handlers);
+  if (protocol_handlers)
+    std::swap(protocol_handlers_, *protocol_handlers);
 
   // We must create the proxy config service on the UI loop on Linux because it
   // must synchronously run on the glib message loop. This will be passed to
@@ -223,8 +233,10 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
 #endif
 
     // --log-net-log
-    net_log_->StartLogging(url_request_context_.get());
-    url_request_context_->set_net_log(net_log_);
+    if (net_log_) {
+      net_log_->StartLogging(url_request_context_.get());
+      url_request_context_->set_net_log(net_log_);
+    }
 
     network_delegate_.reset(delegate_->CreateNetworkDelegate());
     url_request_context_->set_network_delegate(network_delegate_.get());
@@ -257,10 +269,10 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     // --host-resolver-rules
     if (command_line.HasSwitch(switches::kHostResolverRules)) {
       scoped_ptr<net::MappedHostResolver> remapped_resolver(
-          new net::MappedHostResolver(host_resolver.Pass()));
+          new net::MappedHostResolver(std::move(host_resolver)));
       remapped_resolver->SetRulesFromString(
           command_line.GetSwitchValueASCII(switches::kHostResolverRules));
-      host_resolver = remapped_resolver.Pass();
+      host_resolver = std::move(remapped_resolver);
     }
 
     // --proxy-server
@@ -283,7 +295,7 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     } else {
       storage_->set_proxy_service(
           net::CreateProxyServiceUsingV8ProxyResolver(
-              proxy_config_service_.Pass(),
+              std::move(proxy_config_service_),
               new net::ProxyScriptFetcherImpl(url_request_context_.get()),
               dhcp_factory.Create(url_request_context_.get()),
               host_resolver.get(),
@@ -296,25 +308,24 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     schemes.push_back(std::string("digest"));
     schemes.push_back(std::string("ntlm"));
     schemes.push_back(std::string("negotiate"));
-
-    auto auth_handler_factory = make_scoped_ptr(
+#if defined(OS_POSIX)
+    http_auth_preferences_.reset(new net::HttpAuthPreferences(schemes,
+                                                              std::string()));
+#else
+    http_auth_preferences_.reset(new net::HttpAuthPreferences(schemes));
+#endif
+    auto auth_handler_factory =
         net::HttpAuthHandlerRegistryFactory::Create(
-            schemes,
-            url_sec_mgr_.get(),
-            host_resolver.get(),
-            std::string(),  // gssapi_library_name
-            std::string(),  // gssapi_library_nam
-            false,          // auth_android_negotiate_account_type
-            true));         // negotiate_enable_port
+            http_auth_preferences_.get(), host_resolver.get());
 
     storage_->set_cert_verifier(delegate_->CreateCertVerifier());
     storage_->set_transport_security_state(
         make_scoped_ptr(new net::TransportSecurityState));
     storage_->set_ssl_config_service(delegate_->CreateSSLConfigService());
-    storage_->set_http_auth_handler_factory(auth_handler_factory.Pass());
+    storage_->set_http_auth_handler_factory(std::move(auth_handler_factory));
     scoped_ptr<net::HttpServerProperties> server_properties(
         new net::HttpServerPropertiesImpl);
-    storage_->set_http_server_properties(server_properties.Pass());
+    storage_->set_http_server_properties(std::move(server_properties));
 
     net::HttpNetworkSession::Params network_session_params;
     network_session_params.cert_verifier = url_request_context_->cert_verifier();
@@ -347,21 +358,31 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     }
 
     // Give |storage_| ownership at the end in case it's |mapped_host_resolver|.
-    storage_->set_host_resolver(host_resolver.Pass());
+    storage_->set_host_resolver(std::move(host_resolver));
     network_session_params.host_resolver = url_request_context_->host_resolver();
 
-    net::HttpNetworkSession* session = new net::HttpNetworkSession(network_session_params);
-    net::HttpCache::BackendFactory* backend = nullptr;
+    http_network_session_.reset(
+        new net::HttpNetworkSession(network_session_params));
+    scoped_ptr<net::HttpCache::BackendFactory> backend;
     if (in_memory_) {
       backend = net::HttpCache::DefaultBackend::InMemory(0);
     } else {
-      backend = delegate_->CreateHttpCacheBackendFactory(base_path_);
+      backend.reset(delegate_->CreateHttpCacheBackendFactory(base_path_));
     }
-    storage_->set_http_transaction_factory(make_scoped_ptr(
-        new net::HttpCache(
-            new DevToolsNetworkTransactionFactory(controller_, session),
-            url_request_context_->net_log(),
-            backend)));
+
+    if (controller_) {
+      storage_->set_http_transaction_factory(make_scoped_ptr(
+          new net::HttpCache(
+              make_scoped_ptr(new DevToolsNetworkTransactionFactory(
+                  controller_, http_network_session_.get())),
+              std::move(backend),
+              false)));
+    } else {
+      storage_->set_http_transaction_factory(make_scoped_ptr(
+          new net::HttpCache(http_network_session_.get(),
+                             std::move(backend),
+                             false)));
+    }
 
     storage_->set_job_factory(delegate_->CreateURLRequestJobFactory(
         &protocol_handlers_, &protocol_interceptors_));

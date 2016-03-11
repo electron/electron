@@ -10,7 +10,7 @@
 #include <hstring.h>
 #include <windows.h>
 
-#include "base/basictypes.h"
+#include "base/macros.h"
 
 class ScopedHString {
  public:

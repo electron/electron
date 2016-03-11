@@ -55,7 +55,7 @@ class TCPServerSocketFactory
   }
 
   std::string address_;
-  uint16 port_;
+  uint16_t port_;
 
   DISALLOW_COPY_AND_ASSIGN(TCPServerSocketFactory);
 };
@@ -109,7 +109,6 @@ DevToolsDelegate::~DevToolsDelegate() {
 }
 
 std::string DevToolsDelegate::GetDiscoveryPageHTML() {
-  LOG(WARNING) << IDR_CONTENT_SHELL_DEVTOOLS_DISCOVERY_PAGE;
   return ResourceBundle::GetSharedInstance().GetRawDataResource(
       IDR_CONTENT_SHELL_DEVTOOLS_DISCOVERY_PAGE).as_string();
 }

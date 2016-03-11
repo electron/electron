@@ -26,6 +26,7 @@
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/common/user_agent.h"
+#include "ipc/ipc_channel.h"
 #include "net/http/http_response_headers.h"
 #include "net/url_request/url_fetcher.h"
 #include "net/url_request/url_fetcher_response_writer.h"
@@ -250,8 +251,6 @@ void InspectableWebContentsImpl::ShowDevTools() {
     devtools_web_contents_->SetDelegate(this);
 
     agent_host_ = content::DevToolsAgentHost::GetOrCreateFor(web_contents_.get());
-    frontend_host_.reset(content::DevToolsFrontendHost::Create(
-        web_contents_->GetMainFrame(), this));
     agent_host_->AttachClient(this);
 
     GURL devtools_url(base::StringPrintf(kChromeUIDevToolsURL,
@@ -477,7 +476,8 @@ void InspectableWebContentsImpl::ResetZoom() {
 void InspectableWebContentsImpl::SetDevicesUpdatesEnabled(bool enabled) {
 }
 
-void InspectableWebContentsImpl::SendMessageToBrowser(const std::string& message) {
+void InspectableWebContentsImpl::DispatchProtocolMessageFromDevToolsFrontend(
+    const std::string& message) {
   if (agent_host_.get())
     agent_host_->DispatchProtocolMessage(message);
 }
@@ -543,12 +543,6 @@ void InspectableWebContentsImpl::HandleMessageFromDevToolsFrontend(const std::st
       params);
 }
 
-void InspectableWebContentsImpl::HandleMessageFromDevToolsFrontendToBackend(
-    const std::string& message) {
-  if (agent_host_.get())
-    agent_host_->DispatchProtocolMessage(message);
-}
-
 void InspectableWebContentsImpl::DispatchProtocolMessage(
     content::DevToolsAgentHost* agent_host, const std::string& message) {
   if (!frontend_loaded_)
@@ -573,12 +567,15 @@ void InspectableWebContentsImpl::AgentHostClosed(
     content::DevToolsAgentHost* agent_host, bool replaced) {
 }
 
-void InspectableWebContentsImpl::AboutToNavigateRenderFrame(
+void InspectableWebContentsImpl::RenderFrameHostChanged(
     content::RenderFrameHost* old_host,
     content::RenderFrameHost* new_host) {
   if (new_host->GetParent())
     return;
-  frontend_host_.reset(content::DevToolsFrontendHost::Create(new_host, this));
+  frontend_host_.reset(content::DevToolsFrontendHost::Create(
+      new_host,
+      base::Bind(&InspectableWebContentsImpl::HandleMessageFromDevToolsFrontend,
+                 base::Unretained(this))));
 }
 
 void InspectableWebContentsImpl::WebContentsDestroyed() {
@@ -592,9 +589,9 @@ void InspectableWebContentsImpl::WebContentsDestroyed() {
 
 bool InspectableWebContentsImpl::AddMessageToConsole(
     content::WebContents* source,
-    int32 level,
+    int32_t level,
     const base::string16& message,
-    int32 line_no,
+    int32_t line_no,
     const base::string16& source_id) {
   logging::LogMessage("CONSOLE", line_no, level).stream() << "\"" <<
       message << "\", source: " << source_id << " (" << line_no << ")";
@@ -603,8 +600,9 @@ bool InspectableWebContentsImpl::AddMessageToConsole(
 
 bool InspectableWebContentsImpl::ShouldCreateWebContents(
     content::WebContents* web_contents,
-    int route_id,
-    int main_frame_route_id,
+    int32_t route_id,
+    int32_t main_frame_route_id,
+    int32_t main_frame_widget_route_id,
     WindowContainerType window_container_type,
     const std::string& frame_name,
     const GURL& target_url,
@@ -630,6 +628,16 @@ void InspectableWebContentsImpl::OnWebContentsFocused() {
   if (view_->GetDelegate())
     view_->GetDelegate()->DevToolsFocused();
 #endif
+}
+
+void InspectableWebContentsImpl::DidStartNavigationToPendingEntry(
+    const GURL& url,
+    content::NavigationController::ReloadType reload_type) {
+  frontend_host_.reset(
+      content::DevToolsFrontendHost::Create(
+          web_contents()->GetMainFrame(),
+          base::Bind(&InspectableWebContentsImpl::HandleMessageFromDevToolsFrontend,
+                     base::Unretained(this))));
 }
 
 void InspectableWebContentsImpl::OnURLFetchComplete(const net::URLFetcher* source) {

@@ -33,7 +33,6 @@ class InspectableWebContentsView;
 
 class InspectableWebContentsImpl :
     public InspectableWebContents,
-    public content::DevToolsFrontendHost::Delegate,
     public content::DevToolsAgentHostClient,
     public content::WebContentsObserver,
     public content::WebContentsDelegate,
@@ -105,7 +104,8 @@ class InspectableWebContentsImpl :
   void ZoomOut() override;
   void ResetZoom() override;
   void SetDevicesUpdatesEnabled(bool enabled) override;
-  void SendMessageToBrowser(const std::string& message) override;
+  void DispatchProtocolMessageFromDevToolsFrontend(
+      const std::string& message) override;
   void RecordActionUMA(const std::string& name, int action) override;
   void SendJsonRequest(const DispatchCallback& callback,
                        const std::string& browser_id,
@@ -117,8 +117,7 @@ class InspectableWebContentsImpl :
   void ClearPreferences() override;
 
   // content::DevToolsFrontendHostDelegate:
-  void HandleMessageFromDevToolsFrontend(const std::string& message) override;
-  void HandleMessageFromDevToolsFrontendToBackend(const std::string& message) override;
+  void HandleMessageFromDevToolsFrontend(const std::string& message);
 
   // content::DevToolsAgentHostClient:
   void DispatchProtocolMessage(content::DevToolsAgentHost* agent_host,
@@ -127,21 +126,25 @@ class InspectableWebContentsImpl :
                        bool replaced) override;
 
   // content::WebContentsObserver:
-  void AboutToNavigateRenderFrame(content::RenderFrameHost* old_host,
-                                  content::RenderFrameHost* new_host) override;
+  void RenderFrameHostChanged(content::RenderFrameHost* old_host,
+                              content::RenderFrameHost* new_host) override;
   void WebContentsDestroyed() override;
   void OnWebContentsFocused() override;
+  void DidStartNavigationToPendingEntry(
+      const GURL& url,
+      content::NavigationController::ReloadType reload_type) override;
 
   // content::WebContentsDelegate:
   bool AddMessageToConsole(content::WebContents* source,
-                           int32 level,
+                           int32_t level,
                            const base::string16& message,
-                           int32 line_no,
+                           int32_t line_no,
                            const base::string16& source_id) override;
   bool ShouldCreateWebContents(
       content::WebContents* web_contents,
-      int route_id,
-      int main_frame_route_id,
+      int32_t route_id,
+      int32_t main_frame_route_id,
+      int32_t main_frame_widget_route_id,
       WindowContainerType window_container_type,
       const std::string& frame_name,
       const GURL& target_url,

@@ -55,15 +55,15 @@
         ['OS=="linux"', {
           'link_settings': {
             'ldflags': [
-              '<!@(pkg-config --libs-only-L --libs-only-other <(linux_system_libraries))',
+              '<!@(<(pkg-config) --libs-only-L --libs-only-other <(linux_system_libraries))',
             ],
             'libraries': [
               '-lpthread',
-              '<!@(pkg-config --libs-only-l <(linux_system_libraries))',
+              '<!@(<(pkg-config) --libs-only-l <(linux_system_libraries))',
             ],
           },
           'cflags': [
-            '<!@(pkg-config --cflags <(linux_system_libraries))',
+            '<!@(<(pkg-config) --cflags <(linux_system_libraries))',
             # Needed by using libgtk2ui:
             '-Wno-deprecated-register',
             '-Wno-sentinel',
@@ -73,7 +73,7 @@
           ],
           'direct_dependent_settings': {
             'cflags': [
-              '<!@(pkg-config --cflags <(linux_system_libraries))',
+              '<!@(<(pkg-config) --cflags <(linux_system_libraries))',
               '-Wno-deprecated-register',
               '-Wno-sentinel',
             ],
@@ -117,9 +117,6 @@
             }],
             ['target_arch=="arm"', {
               'link_settings': {
-                'libraries': [
-                  '<(libchromiumcontent_dir)/libyuv_neon.a',
-                ],
                 'libraries!': [
                   '<(libchromiumcontent_dir)/libdesktop_capture_differ_sse2.a',
                 ],
@@ -201,6 +198,7 @@
                 'libraries': [
                   '<(libchromiumcontent_dir)/base_static.lib',
                   '<(libchromiumcontent_dir)/sandbox.lib',
+                  '<(libchromiumcontent_dir)/sandbox_helper_win.lib',
                   '<(libchromiumcontent_dir)/devtools_discovery.lib',
                   '<(libchromiumcontent_dir)/devtools_http_handler.lib',
                   '<(libchromiumcontent_dir)/http_server.lib',

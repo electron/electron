@@ -8,7 +8,7 @@ namespace brightray {
 
 NotificationDelegateAdapter::NotificationDelegateAdapter(
     scoped_ptr<content::DesktopNotificationDelegate> delegate)
-    : delegate_(delegate.Pass()) {
+    : delegate_(std::move(delegate)) {
 }
 
 NotificationDelegateAdapter::~NotificationDelegateAdapter() {

@@ -35,7 +35,8 @@ int DevToolsNetworkTransactionFactory::CreateTransaction(
   int rv = network_layer_->CreateTransaction(priority, &new_transaction);
   if (rv != net::OK)
     return rv;
-  transaction->reset(new DevToolsNetworkTransaction(controller_, new_transaction.Pass()));
+  transaction->reset(
+      new DevToolsNetworkTransaction(controller_, std::move(new_transaction)));
   return net::OK;
 }
 

@@ -24,7 +24,7 @@ DevToolsNetworkTransaction::DevToolsNetworkTransaction(
     DevToolsNetworkController* controller,
     scoped_ptr<net::HttpTransaction> transaction)
     : controller_(controller),
-      transaction_(transaction.Pass()),
+      transaction_(std::move(transaction)),
       request_(nullptr),
       failed_(false),
       throttled_byte_count_(0),
@@ -106,10 +106,11 @@ int DevToolsNetworkTransaction::RestartIgnoringLastError(
 
 int DevToolsNetworkTransaction::RestartWithCertificate(
     net::X509Certificate* client_certificate,
+    net::SSLPrivateKey* client_private_key,
     const net::CompletionCallback& callback) {
   if (failed_)
     return net::ERR_INTERNET_DISCONNECTED;
-  int rv = transaction_->RestartWithCertificate(client_certificate, proxy_callback_);
+  int rv = transaction_->RestartWithCertificate(client_certificate, client_private_key, proxy_callback_);
   return SetupCallback(callback, rv, RESTART_WITH_CERTIFICATE);
 }
 
@@ -183,6 +184,11 @@ bool DevToolsNetworkTransaction::GetLoadTimingInfo(
 bool DevToolsNetworkTransaction::GetRemoteEndpoint(
     net::IPEndPoint* endpoint) const {
   return transaction_->GetRemoteEndpoint(endpoint);
+}
+
+void DevToolsNetworkTransaction::PopulateNetErrorDetails(
+    net::NetErrorDetails* details) const {
+  return transaction_->PopulateNetErrorDetails(details);
 }
 
 void DevToolsNetworkTransaction::SetPriority(net::RequestPriority priority) {

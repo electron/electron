@@ -32,6 +32,28 @@ int PermissionManager::RequestPermission(
   return kNoPendingOperation;
 }
 
+int PermissionManager::RequestPermissions(
+    const std::vector<content::PermissionType>& permissions,
+    content::RenderFrameHost* render_frame_host,
+    const GURL& requesting_origin,
+    bool user_gesture,
+    const base::Callback<void(
+        const std::vector<content::PermissionStatus>&)>& callback) {
+  std::vector<content::PermissionStatus> permissionStatuses;
+
+  for (auto permission : permissions) {
+    if (permission == content::PermissionType::MIDI_SYSEX) {
+      content::ChildProcessSecurityPolicy::GetInstance()->
+          GrantSendMidiSysExMessage(render_frame_host->GetProcess()->GetID());
+    }
+
+    permissionStatuses.push_back(content::PERMISSION_STATUS_GRANTED);
+  }
+
+  callback.Run(permissionStatuses);
+  return kNoPendingOperation;
+}
+
 void PermissionManager::CancelPermissionRequest(int request_id) {
 }
 

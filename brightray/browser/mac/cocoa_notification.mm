@@ -39,11 +39,11 @@ void CocoaNotification::Show(const base::string16& title,
 
   if ([notification_ respondsToSelector:@selector(setContentImage:)] &&
       !icon.drawsNothing()) {
-    NSImage* image = gfx::SkBitmapToNSImageWithColorSpace(
+    NSImage* image = skia::SkBitmapToNSImageWithColorSpace(
         icon, base::mac::GetGenericRGBColorSpace());
     [notification_ setContentImage:image];
   }
-  
+
   if (silent) {
     [notification_ setSoundName:nil];
   } else {
