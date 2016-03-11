@@ -245,6 +245,14 @@ Emitted when the window loses focus.
 
 Emitted when the window gains focus.
 
+### Event: 'show'
+
+Emitted when the window is shown.
+
+### Event: 'hide'
+
+Emitted when the window is hidden.
+
 ### Event: 'maximize'
 
 Emitted when window is maximized.

@@ -42,6 +42,12 @@ class NativeWindowObserver {
   // Called when window gains focus.
   virtual void OnWindowFocus() {}
 
+  // Called when window is shown.
+  virtual void OnWindowShow() {}
+
+  // Called when window is hidden.
+  virtual void OnWindowHide() {}
+
   // Called when window state changed.
   virtual void OnWindowMaximize() {}
   virtual void OnWindowUnmaximize() {}

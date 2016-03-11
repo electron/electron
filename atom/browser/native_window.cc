@@ -428,6 +428,14 @@ void NativeWindow::NotifyWindowFocus() {
   FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnWindowFocus());
 }
 
+void NativeWindow::NotifyWindowShow() {
+  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnWindowShow());
+}
+
+void NativeWindow::NotifyWindowHide() {
+  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnWindowHide());
+}
+
 void NativeWindow::NotifyWindowMaximize() {
   FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnWindowMaximize());
 }

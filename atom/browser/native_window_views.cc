@@ -302,6 +302,8 @@ bool NativeWindowViews::IsFocused() {
 void NativeWindowViews::Show() {
   window_->native_widget_private()->ShowWithWindowState(GetRestoredState());
 
+  NotifyWindowShow();
+
 #if defined(USE_X11)
   if (global_menu_bar_)
     global_menu_bar_->OnWindowMapped();
@@ -311,6 +313,8 @@ void NativeWindowViews::Show() {
 void NativeWindowViews::ShowInactive() {
   window_->ShowInactive();
 
+  NotifyWindowShow();
+
 #if defined(USE_X11)
   if (global_menu_bar_)
     global_menu_bar_->OnWindowMapped();
@@ -319,6 +323,8 @@ void NativeWindowViews::ShowInactive() {
 
 void NativeWindowViews::Hide() {
   window_->Hide();
+
+  NotifyWindowHide();
 
 #if defined(USE_X11)
   if (global_menu_bar_)
