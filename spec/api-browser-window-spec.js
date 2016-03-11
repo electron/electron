@@ -186,6 +186,13 @@ describe('browser-window module', function() {
     });
   });
 
+  describe('BrowserWindow.blur()', function() {
+    it('removes focus from window', function() {
+      w.blur();
+      assert(!w.isFocused());
+    });
+  });
+
   describe('BrowserWindow.capturePage(rect, callback)', function() {
     it('calls the callback with a Buffer', function(done) {
       w.capturePage({
