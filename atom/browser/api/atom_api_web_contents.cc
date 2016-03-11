@@ -407,7 +407,7 @@ void WebContents::AddNewContents(content::WebContents* source,
     browser_options->SetInteger("width", initial_rect.width());
     browser_options->SetInteger("x", initial_rect.x());
     browser_options->SetInteger("y", initial_rect.y());
-    options->Set("windowOptions", browser_options.Pass());
+    options->Set("windowOptions", std::move(browser_options));
 
     // fire off the window open event
     auto window_open_event = v8::Local<v8::Object>::Cast(
