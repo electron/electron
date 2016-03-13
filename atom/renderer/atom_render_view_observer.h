@@ -32,6 +32,7 @@ class AtomRenderViewObserver : public content::RenderViewObserver {
 
   void OnBrowserMessage(const base::string16& channel,
                         const base::ListValue& args);
+  void OnSetTransparentBackground();
 
   // Weak reference to renderer client.
   AtomRendererClient* renderer_client_;

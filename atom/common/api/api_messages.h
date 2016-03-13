@@ -37,3 +37,5 @@ IPC_MESSAGE_ROUTED2(AtomViewMsg_Message,
 // Sent by the renderer when the draggable regions are updated.
 IPC_MESSAGE_ROUTED1(AtomViewHostMsg_UpdateDraggableRegions,
                     std::vector<atom::DraggableRegion> /* regions */)
+
+IPC_MESSAGE_ROUTED0(AtomViewMsg_SetTransparentBackground)

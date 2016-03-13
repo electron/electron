@@ -49,9 +49,6 @@ class WebViewGuestDelegate : public content::BrowserPluginGuestDelegate,
   // and normal sizes.
   void SetSize(const SetSizeParams& params);
 
-  // Sets the transparency of the guest.
-  void SetAllowTransparency(bool allow);
-
   // Transfer the keyboard event to embedder.
   void HandleKeyboardEvent(content::WebContents* source,
                            const content::NativeWebKeyboardEvent& event);
@@ -84,9 +81,6 @@ class WebViewGuestDelegate : public content::BrowserPluginGuestDelegate,
 
   // Returns the default size of the guestview.
   gfx::Size GetDefaultSize() const;
-
-  // Stores whether the contents of the guest can be transparent.
-  bool guest_opaque_;
 
   // The WebContents that attaches this guest view.
   content::WebContents* embedder_web_contents_;

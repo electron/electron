@@ -131,7 +131,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   // Methods for creating <webview>.
   void SetSize(const SetSizeParams& params);
-  void SetAllowTransparency(bool allow);
   bool IsGuest() const;
 
   // Callback triggered on permission response.

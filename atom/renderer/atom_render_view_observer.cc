@@ -22,6 +22,7 @@
 #include "ipc/ipc_message_macros.h"
 #include "net/base/net_module.h"
 #include "net/grit/net_resources.h"
+#include "third_party/skia/include/core/SkColor.h"
 #include "third_party/WebKit/public/web/WebDraggableRegion.h"
 #include "third_party/WebKit/public/web/WebDocument.h"
 #include "third_party/WebKit/public/web/WebFrame.h"
@@ -113,6 +114,8 @@ bool AtomRenderViewObserver::OnMessageReceived(const IPC::Message& message) {
   bool handled = true;
   IPC_BEGIN_MESSAGE_MAP(AtomRenderViewObserver, message)
     IPC_MESSAGE_HANDLER(AtomViewMsg_Message, OnBrowserMessage)
+    IPC_MESSAGE_HANDLER(AtomViewMsg_SetTransparentBackground,
+                        OnSetTransparentBackground)
     IPC_MESSAGE_UNHANDLED(handled = false)
   IPC_END_MESSAGE_MAP()
 
@@ -146,6 +149,12 @@ void AtomRenderViewObserver::OnBrowserMessage(const base::string16& channel,
     args_vector.insert(args_vector.begin(), event.GetHandle());
     mate::EmitEvent(isolate, ipc, channel, args_vector);
   }
+}
+
+void AtomRenderViewObserver::OnSetTransparentBackground() {
+  if (!render_view()->GetWebView())
+    return;
+  render_view()->GetWebView()->setBaseBackgroundColor(SK_ColorTRANSPARENT);
 }
 
 }  // namespace atom
