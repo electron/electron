@@ -401,6 +401,10 @@ var win = new BrowserWindow({ width: 800, height: 600 });
 
 윈도우에 포커스를 맞춥니다.
 
+### `win.blur()`
+
+윈도우의 포커스를 없앱니다.
+
 ### `win.isFocused()`
 
 윈도우가 포커스되었는지 여부를 반환합니다.
