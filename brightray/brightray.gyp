@@ -242,11 +242,12 @@
                       'gdi32.lib',
                       'netapi32.lib',
                       'oleacc.lib',
-                      'powrprof.lib',
                       'user32.lib',
                       'usp10.lib',
                       'version.lib',
                       'winspool.lib',
+                      # base.gyp:
+                      'powrprof.lib',
                     ],
                     'DelayLoadDLLs': [
                       # content_common.gypi:
@@ -260,6 +261,8 @@
                       'BluetoothApis.dll',
                       'Bthprops.cpl',
                       'setupapi.dll',
+                      # base.gyp:
+                      'powrprof.dll',
                       # windows runtime
                       'API-MS-WIN-CORE-WINRT-L1-1-0.DLL',
                       'API-MS-WIN-CORE-WINRT-STRING-L1-1-0.DLL',
