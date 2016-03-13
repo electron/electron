@@ -5,7 +5,6 @@
 #ifndef BROWSER_DEVTOOLS_NETWORK_INTERCEPTOR_H_
 #define BROWSER_DEVTOOLS_NETWORK_INTERCEPTOR_H_
 
-#include <set>
 #include <string>
 #include <utility>
 #include <vector>
@@ -26,6 +25,8 @@ class DevToolsNetworkTransaction;
 
 class DevToolsNetworkInterceptor {
  public:
+  using ThrottleCallback = base::Callback<void(int, int64_t)>;
+
   DevToolsNetworkInterceptor();
   virtual ~DevToolsNetworkInterceptor();
 
@@ -34,45 +35,68 @@ class DevToolsNetworkInterceptor {
   // Applies network emulation configuration.
   void UpdateConditions(scoped_ptr<DevToolsNetworkConditions> conditions);
 
-  void AddTransaction(DevToolsNetworkTransaction* transaction);
-  void RemoveTransaction(DevToolsNetworkTransaction* transaction);
+  // Throttles with |is_upload == true| always succeed, even in offline mode.
+  int StartThrottle(int result,
+                    int64_t bytes,
+                    base::TimeTicks send_end,
+                    bool start,
+                    bool is_upload,
+                    const ThrottleCallback& callback);
+  void StopThrottle(const ThrottleCallback& callback);
 
-  // Returns whether transaction should fail with |net::ERR_INTERNET_DISCONNECTED|
-  bool ShouldFail(const DevToolsNetworkTransaction* transaction);
-  // Returns whether transaction should be throttled.
-  bool ShouldThrottle(const DevToolsNetworkTransaction* transaction);
-
-  void ThrottleTransaction(DevToolsNetworkTransaction* transaction, bool start);
-
-  const DevToolsNetworkConditions* conditions() const {
-    return conditions_.get();
-  }
+  bool IsOffline();
 
  private:
-  void UpdateThrottledTransactions(base::TimeTicks now);
-  void UpdateSuspendedTransactions(base::TimeTicks now);
-  void ArmTimer(base::TimeTicks now);
+  struct ThrottleRecord {
+   public:
+    ThrottleRecord();
+    ThrottleRecord(const ThrottleRecord& other);
+    ~ThrottleRecord();
+
+    int result;
+    int64_t bytes;
+    int64_t send_end;
+    bool is_upload;
+    ThrottleCallback callback;
+  };
+
+  using ThrottleRecords = std::vector<ThrottleRecord>;
+
+  void FinishRecords(ThrottleRecords* records, bool offline);
+
+  uint64_t UpdateThrottledRecords(base::TimeTicks now,
+                                  ThrottleRecords* records,
+                                  uint64_t last_tick,
+                                  base::TimeDelta tick_length);
+  void UpdateThrottled(base::TimeTicks now);
+  void UpdateSuspended(base::TimeTicks now);
+
+  void CollectFinished(ThrottleRecords* records, ThrottleRecords* finished);
   void OnTimer();
-  void FireThrottledCallback(DevToolsNetworkTransaction* transaction);
+
+  base::TimeTicks CalculateDesiredTime(const ThrottleRecords& records,
+                                       uint64_t last_tick,
+                                       base::TimeDelta tick_length);
+  void ArmTimer(base::TimeTicks now);
+
+  void RemoveRecord(ThrottleRecords* records, const ThrottleCallback& callback);
 
   scoped_ptr<DevToolsNetworkConditions> conditions_;
 
-  using Transactions = std::set<DevToolsNetworkTransaction*>;
-  Transactions transactions_;
+  // Throttables suspended for a "latency" period.
+  ThrottleRecords suspended_;
 
-  // Transactions suspended for a latency period.
-  using SuspendedTransaction = std::pair<DevToolsNetworkTransaction*, int64_t>;
-  using SuspendedTransactions = std::vector<SuspendedTransaction>;
-  SuspendedTransactions suspended_transactions_;
-
-  // Transactions waiting certain amount of transfer to be accounted.
-  std::vector<DevToolsNetworkTransaction*> throttled_transactions_;
+  // Throttables waiting for certain amount of transfer to be "accounted".
+  ThrottleRecords download_;
+  ThrottleRecords upload_;
 
   base::OneShotTimer timer_;
   base::TimeTicks offset_;
-  base::TimeDelta tick_length_;
+  base::TimeDelta download_tick_length_;
+  base::TimeDelta upload_tick_length_;
   base::TimeDelta latency_length_;
-  uint64_t last_tick_;
+  uint64_t download_last_tick_;
+  uint64_t upload_last_tick_;
 
   base::WeakPtrFactory<DevToolsNetworkInterceptor> weak_ptr_factory_;
 

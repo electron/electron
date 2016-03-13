@@ -9,6 +9,7 @@
 
 #include "base/memory/scoped_ptr.h"
 #include "base/memory/weak_ptr.h"
+#include "browser/net/devtools_network_interceptor.h"
 #include "net/base/completion_callback.h"
 #include "net/base/load_states.h"
 #include "net/base/request_priority.h"
@@ -18,7 +19,7 @@
 namespace brightray {
 
 class DevToolsNetworkController;
-class DevToolsNetworkInterceptor;
+class DevToolsNetworkUploadDataStream;
 
 class DevToolsNetworkTransaction : public net::HttpTransaction {
  public:
@@ -28,16 +29,6 @@ class DevToolsNetworkTransaction : public net::HttpTransaction {
       DevToolsNetworkController* controller,
       scoped_ptr<net::HttpTransaction> network_transaction);
   ~DevToolsNetworkTransaction() override;
-
-  // Checks if request contains DevTools specific headers. Found values are
-  // remembered and corresponding keys are removed from headers.
-  void ProcessRequest();
-
-  // Runs callback with net::ERR_INTERNET_DISCONNECTED result.
-  void Fail();
-
-  void DecreaseThrottledByteCount(int64_t delta);
-  void FireThrottledCallback();
 
   // HttpTransaction methods:
   int Start(const net::HttpRequestInfo* request,
@@ -77,39 +68,30 @@ class DevToolsNetworkTransaction : public net::HttpTransaction {
   int ResumeNetworkStart() override;
   void GetConnectionAttempts(net::ConnectionAttempts* out) const override;
 
-  bool failed() const { return failed_; }
-
-  const net::HttpRequestInfo* request() const { return request_; }
-
-  int64_t throttled_byte_count() const { return throttled_byte_count_; }
-
-  const std::string& client_id() const {
-    return client_id_;
-  }
-
  private:
-  enum CallbackType {
-      NONE,
-      READ,
-      RESTART_IGNORING_LAST_ERROR,
-      RESTART_WITH_AUTH,
-      RESTART_WITH_CERTIFICATE,
-      START
-  };
+  void Fail();
+  bool CheckFailed();
 
-  // Proxy callback handler. Runs saved callback.
-  void OnCallback(int result);
+  void IOCallback(const net::CompletionCallback& callback,
+                  bool start,
+                  int result);
+  int Throttle(const net::CompletionCallback& callback,
+               bool start,
+               int result);
+  void ThrottleCallback(const net::CompletionCallback& callback,
+                        int result,
+                        int64_t bytes);
 
-  int SetupCallback(
-      net::CompletionCallback callback,
-      int result,
-      CallbackType callback_type);
-  void Throttle(int result);
+  DevToolsNetworkInterceptor::ThrottleCallback throttle_callback_;
+  int64_t throttled_byte_count_;
 
   DevToolsNetworkController* controller_;
   base::WeakPtr<DevToolsNetworkInterceptor> interceptor_;
 
-  // Modified request. Should be destructed after |transaction_|
+  // Modified upload data stream. Should be destructed after |custom_request_|.
+  scoped_ptr<DevToolsNetworkUploadDataStream> custom_upload_data_stream_;
+
+  // Modified request. Should be destructed after |transaction_|.
   scoped_ptr<net::HttpRequestInfo> custom_request_;
 
   // Original network transaction.
@@ -119,15 +101,6 @@ class DevToolsNetworkTransaction : public net::HttpTransaction {
 
   // True if Fail was already invoked.
   bool failed_;
-
-  // Value of "X-DevTools-Emulate-Network-Conditions-Client-Id" request header.
-  std::string client_id_;
-
-  int throttled_result_;
-  int64_t throttled_byte_count_;
-  CallbackType callback_type_;
-  net::CompletionCallback proxy_callback_;
-  net::CompletionCallback callback_;
 
   DISALLOW_COPY_AND_ASSIGN(DevToolsNetworkTransaction);
 };

@@ -158,6 +158,12 @@ DevToolsManagerDelegate::DevToolsManagerDelegate()
 DevToolsManagerDelegate::~DevToolsManagerDelegate() {
 }
 
+void DevToolsManagerDelegate::DevToolsAgentStateChanged(
+    content::DevToolsAgentHost* agent_host,
+    bool attached) {
+  handler_->DevToolsAgentStateChanged(agent_host, attached);
+}
+
 base::DictionaryValue* DevToolsManagerDelegate::HandleCommand(
     content::DevToolsAgentHost* agent_host,
     base::DictionaryValue* command) {

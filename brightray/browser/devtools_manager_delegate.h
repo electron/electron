@@ -29,7 +29,7 @@ class DevToolsManagerDelegate : public content::DevToolsManagerDelegate {
   void Inspect(content::BrowserContext* browser_context,
                content::DevToolsAgentHost* agent_host) override {}
   void DevToolsAgentStateChanged(content::DevToolsAgentHost* agent_host,
-                                         bool attached) override {}
+                                 bool attached) override;
   base::DictionaryValue* HandleCommand(content::DevToolsAgentHost* agent_host,
                                        base::DictionaryValue* command) override;
 

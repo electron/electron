@@ -16,7 +16,7 @@ using content::BrowserThread;
 namespace brightray {
 
 DevToolsNetworkController::DevToolsNetworkController()
-    : default_interceptor_(new DevToolsNetworkInterceptor) {
+    : appcache_interceptor_(new DevToolsNetworkInterceptor) {
 }
 
 DevToolsNetworkController::~DevToolsNetworkController() {
@@ -27,14 +27,7 @@ void DevToolsNetworkController::SetNetworkState(
     scoped_ptr<DevToolsNetworkConditions> conditions) {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
 
-  if (client_id.empty()) {
-    if (!conditions)
-      return;
-    default_interceptor_->UpdateConditions(std::move(conditions));
-    return;
-  }
-
-  auto interceptor = interceptors_.get(client_id);
+  DevToolsNetworkInterceptor* interceptor = interceptors_.get(client_id);
   if (!interceptor) {
     if (!conditions)
       return;
@@ -52,23 +45,36 @@ void DevToolsNetworkController::SetNetworkState(
       interceptor->UpdateConditions(std::move(conditions));
     }
   }
+
+  bool has_offline_interceptors = false;
+  InterceptorMap::iterator it = interceptors_.begin();
+  for (; it != interceptors_.end(); ++it) {
+    if (it->second->IsOffline()) {
+      has_offline_interceptors = true;
+      break;
+    }
+  }
+
+  bool is_appcache_offline = appcache_interceptor_->IsOffline();
+  if (is_appcache_offline != has_offline_interceptors) {
+    scoped_ptr<DevToolsNetworkConditions> appcache_conditions(
+        new DevToolsNetworkConditions(has_offline_interceptors));
+    appcache_interceptor_->UpdateConditions(std::move(appcache_conditions));
+  }
 }
 
-base::WeakPtr<DevToolsNetworkInterceptor>
-DevToolsNetworkController::GetInterceptor(DevToolsNetworkTransaction* transaction) {
+DevToolsNetworkInterceptor*
+DevToolsNetworkController::GetInterceptor(const std::string& client_id) {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
-  DCHECK(transaction->request());
 
-  if (!interceptors_.size())
-    return default_interceptor_->GetWeakPtr();
+  if (!interceptors_.size() || client_id.empty())
+    return nullptr;
 
-  transaction->ProcessRequest();
-  auto& client_id = transaction->client_id();
-  auto interceptor = interceptors_.get(client_id);
+  DevToolsNetworkInterceptor* interceptor = interceptors_.get(client_id);
   if (!interceptor)
-    return default_interceptor_->GetWeakPtr();
+    return nullptr;
 
-  return interceptor->GetWeakPtr();
+  return interceptor;
 }
 
 }  // namespace brightray
