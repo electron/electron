@@ -193,6 +193,32 @@ describe('chromium feature', function() {
       window.addEventListener('message', listener);
       b = window.open("file://" + fixtures + "/pages/window-open-size.html", '', "show=no,width=" + size.width + ",height=" + size.height);
     });
+
+    it('defines a window.location getter', function(done) {
+      var b, targetURL;
+      targetURL = "file://" + fixtures + "/pages/base-page.html";
+      b = window.open(targetURL);
+      BrowserWindow.fromId(b.guestId).webContents.once('did-finish-load', function() {
+        assert.equal(b.location, targetURL);
+        b.close();
+        done();
+      });
+    });
+
+    it('defines a window.location setter', function(done) {
+      // Load a page that definitely won't redirect
+      var b;
+      b = window.open("about:blank");
+      BrowserWindow.fromId(b.guestId).webContents.once('did-finish-load', function() {
+        // When it loads, redirect
+        b.location = "file://" + fixtures + "/pages/base-page.html";
+        BrowserWindow.fromId(b.guestId).webContents.once('did-finish-load', function() {
+          // After our second redirect, cleanup and callback
+          b.close();
+          done();
+        });
+      });
+    });
   });
 
   describe('window.opener', function() {
