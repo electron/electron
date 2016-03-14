@@ -267,6 +267,7 @@ v8::Local<v8::Value> NativeImage::AsNativeRepresentation(
     ptr = reinterpret_cast<void*>(image_.AsNSImage());
     break;
 #endif
+  case NativeRepresentation::INVALID:
   default:
     args->ThrowError();
     break;
