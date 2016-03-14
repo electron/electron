@@ -5,7 +5,6 @@
 #include "atom/browser/web_view_guest_delegate.h"
 
 #include "atom/browser/api/atom_api_web_contents.h"
-#include "atom/common/api/api_messages.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "content/public/browser/guest_host.h"
 #include "content/public/browser/render_frame_host.h"
@@ -101,12 +100,6 @@ void WebViewGuestDelegate::HandleKeyboardEvent(
     const content::NativeWebKeyboardEvent& event) {
   if (embedder_web_contents_)
     embedder_web_contents_->GetDelegate()->HandleKeyboardEvent(source, event);
-}
-
-void WebViewGuestDelegate::RenderViewReady() {
-  // Set default UA-dependent background as transparent.
-  api_web_contents_->Send(new AtomViewMsg_SetTransparentBackground(
-      api_web_contents_->routing_id()));
 }
 
 void WebViewGuestDelegate::DidCommitProvisionalLoadForFrame(
