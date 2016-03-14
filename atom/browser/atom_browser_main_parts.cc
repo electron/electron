@@ -46,6 +46,14 @@ AtomBrowserMainParts::AtomBrowserMainParts()
 }
 
 AtomBrowserMainParts::~AtomBrowserMainParts() {
+  // Leak the JavascriptEnvironment on exit.
+  // This is to work around the bug that V8 would be waiting for background
+  // tasks to finish on exit, while somehow it waits forever in Electron, more
+  // about this can be found at https://github.com/atom/electron/issues/4767.
+  // On the other handle there is actually no need to gracefully shutdown V8
+  // on exit in the main process, we already ensured all necessary resources get
+  // cleaned up, and it would make quitting faster.
+  ignore_result(js_env_.release());
 }
 
 // static
@@ -172,14 +180,6 @@ void AtomBrowserMainParts::PostMainMessageLoopRun() {
     ++iter;
     callback.Run();
   }
-
-  // Destroy JavaScript environment immediately after running destruction
-  // callbacks.
-  gc_timer_.Stop();
-  node_debugger_.reset();
-  atom_bindings_.reset();
-  node_bindings_.reset();
-  js_env_.reset();
 }
 
 }  // namespace atom
