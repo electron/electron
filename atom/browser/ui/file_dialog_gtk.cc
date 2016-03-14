@@ -39,7 +39,8 @@ class FileChooserDialog {
                     const std::string& title,
                     const base::FilePath& default_path,
                     const Filters& filters)
-      : dialog_scope_(parent_window) {
+      : dialog_scope_(parent_window),
+        filters_(filters) {
     const char* confirm_text = GTK_STOCK_OK;
     if (action == GTK_FILE_CHOOSER_ACTION_SAVE)
       confirm_text = GTK_STOCK_SAVE;
@@ -111,7 +112,7 @@ class FileChooserDialog {
 
   base::FilePath GetFileName() const {
     gchar* filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog_));
-    base::FilePath path(filename);
+    base::FilePath path = AddExtensionForFilename(filename);
     g_free(filename);
     return path;
   }
@@ -121,7 +122,8 @@ class FileChooserDialog {
     GSList* filenames = gtk_file_chooser_get_filenames(
         GTK_FILE_CHOOSER(dialog_));
     for (GSList* iter = filenames; iter != NULL; iter = g_slist_next(iter)) {
-      base::FilePath path(static_cast<char*>(iter->data));
+      base::FilePath path = AddExtensionForFilename(
+          static_cast<char*>(iter->data));
       g_free(iter->data);
       paths.push_back(path);
     }
@@ -135,11 +137,13 @@ class FileChooserDialog {
 
  private:
   void AddFilters(const Filters& filters);
+  base::FilePath AddExtensionForFilename(const gchar* filename) const;
 
   atom::NativeWindow::DialogScope dialog_scope_;
 
   GtkWidget* dialog_;
 
+  Filters filters_;
   SaveDialogCallback save_callback_;
   OpenDialogCallback open_callback_;
 
@@ -183,6 +187,30 @@ void FileChooserDialog::AddFilters(const Filters& filters) {
     gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(dialog_), gtk_filter);
   }
 }
+
+base::FilePath FileChooserDialog::AddExtensionForFilename(
+    const gchar* filename) const {
+  base::FilePath path(filename);
+  GtkFileFilter* selected_filter =
+      gtk_file_chooser_get_filter(GTK_FILE_CHOOSER(dialog_));
+  if (!selected_filter)
+    return path;
+
+  GSList* filters = gtk_file_chooser_list_filters(GTK_FILE_CHOOSER(dialog_));
+  int i = g_slist_index(filters, selected_filter);
+  g_slist_free(filters);
+  if (i >= filters_.size())
+    return path;
+
+  const auto& extensions = filters_[i].second;
+  for (const auto& extension : extensions) {
+    if (extension == "*" || path.MatchesExtension("." + extension))
+      return path;
+  }
+
+  return path.AddExtension(extensions[0]);
+}
+
 
 }  // namespace
 
