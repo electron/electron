@@ -7,7 +7,11 @@ const app = remote.require('electron').app;
 const BrowserWindow = remote.require('electron').BrowserWindow;
 
 describe('electron module', function() {
-  it ('can prevent exposing internal modules to require', function(done) {
+  it('allows old style require by default', function() {
+    require('shell');
+  });
+
+  it('can prevent exposing internal modules to require', function(done) {
     const electron = require('electron');
     const clipboard = require('clipboard');
     assert.equal(typeof clipboard, 'object');
