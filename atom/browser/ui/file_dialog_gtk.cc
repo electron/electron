@@ -208,7 +208,7 @@ base::FilePath FileChooserDialog::AddExtensionForFilename(
       return path;
   }
 
-  return path.AddExtension(extensions[0]);
+  return path.ReplaceExtension(extensions[0]);
 }
 
 
