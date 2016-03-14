@@ -642,12 +642,21 @@ describe('<webview> tag', function() {
   describe('found-in-page event', function() {
     it('emits when a request is made', function(done) {
       var requestId = null;
+      var totalMatches = null;
+      var activeMatchOrdinal = [];
       var listener = function(e) {
         assert.equal(e.result.requestId, requestId);
         if (e.result.finalUpdate) {
           assert.equal(e.result.matches, 3);
-          webview.stopFindInPage("clearSelection");
-          done();
+          totalMatches = e.result.matches;
+          listener2();
+        } else {
+          activeMatchOrdinal.push(e.result.activeMatchOrdinal);
+          if (e.result.activeMatchOrdinal == totalMatches) {
+            assert.deepEqual(activeMatchOrdinal, [1, 2, 3]);
+            webview.stopFindInPage("clearSelection");
+            done();
+          }
         }
       };
       var listener2 = function() {

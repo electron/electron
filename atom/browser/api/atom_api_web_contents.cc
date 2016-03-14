@@ -456,6 +456,7 @@ void WebContents::FindReply(content::WebContents* web_contents,
     result.Set("requestId", request_id);
     result.Set("selectionArea", selection_rect);
     result.Set("finalUpdate", final_update);
+    result.Set("activeMatchOrdinal", active_match_ordinal);
     Emit("found-in-page", result);
   } else if (final_update) {
     result.Set("requestId", request_id);
