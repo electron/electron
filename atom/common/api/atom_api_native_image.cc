@@ -198,7 +198,8 @@ mate::ObjectTemplateBuilder NativeImage::GetObjectTemplateBuilder(
     template_.Reset(isolate, mate::ObjectTemplateBuilder(isolate)
         .SetMethod("toPng", &NativeImage::ToPNG)
         .SetMethod("toJpeg", &NativeImage::ToJPEG)
-        .SetMethod("asNativeRepresentation", &NativeImage::AsNativeRepresentation)
+        .SetMethod("asNativeRepresentation",
+          &NativeImage::AsNativeRepresentation)
         .SetMethod("toDataURL", &NativeImage::ToDataURL)
         .SetMethod("toDataUrl", &NativeImage::ToDataURL)  // deprecated.
         .SetMethod("isEmpty", &NativeImage::IsEmpty)
@@ -236,28 +237,30 @@ std::string NativeImage::ToDataURL() {
   return data_url;
 }
 
-v8::Local<v8::Value> NativeImage::AsNativeRepresentation(v8::Isolate* isolate, mate::Arguments* args) {
+v8::Local<v8::Value> NativeImage::AsNativeRepresentation(
+    v8::Isolate* isolate,
+    mate::Arguments* args) {
   NativeRepresentation desiredRep = NativeRepresentation::INVALID;
   void* ptr = nullptr;
   std::string type;
-  
+
   if (!args->GetNext(&type)) {
     args->ThrowError();
     goto out;
   }
-  
+
   for (const NativeRepresentationPair& item : kNativeRepresentations) {
     if (type.compare(item.name) == 0) {
       desiredRep = item.rep;
       break;
     }
   }
-  
+
   if (desiredRep == NativeRepresentation::INVALID) {
     args->ThrowError();
     goto out;
   }
-  
+
   switch (desiredRep) {
 #if defined(OS_MACOSX)
   case NativeRepresentation::AS_NSIMAGE:
@@ -268,9 +271,9 @@ v8::Local<v8::Value> NativeImage::AsNativeRepresentation(v8::Isolate* isolate, m
     args->ThrowError();
     break;
   }
-  
+
 out:
-  
+
   return node::Buffer::Copy(
     isolate,
     reinterpret_cast<char*>(ptr),

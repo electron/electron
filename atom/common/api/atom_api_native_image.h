@@ -61,7 +61,9 @@ class NativeImage : public mate::Wrappable {
  private:
   v8::Local<v8::Value> ToPNG(v8::Isolate* isolate);
   v8::Local<v8::Value> ToJPEG(v8::Isolate* isolate, int quality);
-  v8::Local<v8::Value> AsNativeRepresentation(v8::Isolate* isolate, mate::Arguments* args);
+  v8::Local<v8::Value> AsNativeRepresentation(
+    v8::Isolate* isolate,
+    mate::Arguments* args);
   std::string ToDataURL();
   bool IsEmpty();
   gfx::Size GetSize();
