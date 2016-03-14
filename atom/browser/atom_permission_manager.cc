@@ -6,6 +6,7 @@
 
 #include <vector>
 
+#include "atom/browser/web_contents_preferences.h"
 #include "content/public/browser/child_process_security_policy.h"
 #include "content/public/browser/permission_type.h"
 #include "content/public/browser/render_frame_host.h"
@@ -17,17 +18,12 @@ namespace atom {
 
 namespace {
 
-// Must be kept in sync with atom_browser_client.cc
-int kDefaultRoutingID = 2;
-
 bool WebContentsDestroyed(int process_id) {
-  auto rvh = content::RenderViewHost::FromID(process_id, kDefaultRoutingID);
-  if (rvh) {
-    auto contents = content::WebContents::FromRenderViewHost(rvh);
-    return contents->IsBeingDestroyed();
-  }
-
-  return true;
+  auto contents =
+      WebContentsPreferences::GetWebContentsFromProcessID(process_id);
+  if (!contents)
+    return true;
+  return contents->IsBeingDestroyed();
 }
 
 }  // namespace

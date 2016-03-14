@@ -46,11 +46,6 @@ namespace atom {
 
 namespace {
 
-// The default routing id of WebContents.
-// In Electron each RenderProcessHost only has one WebContents, so this ID is
-// same for every WebContents.
-int kDefaultRoutingID = 1;
-
 // Next navigation should not restart renderer process.
 bool g_suppress_renderer_process_restart = false;
 
@@ -278,8 +273,8 @@ brightray::BrowserMainParts* AtomBrowserClient::OverrideCreateBrowserMainParts(
 void AtomBrowserClient::WebNotificationAllowed(
     int render_process_id,
     const base::Callback<void(bool)>& callback) {
-  content::WebContents* web_contents = content::WebContents::FromRenderViewHost(
-      content::RenderViewHost::FromID(render_process_id, kDefaultRoutingID));
+  content::WebContents* web_contents =
+      WebContentsPreferences::GetWebContentsFromProcessID(render_process_id);
   if (!web_contents) {
     callback.Run(false);
     return;
