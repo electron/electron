@@ -112,6 +112,15 @@ base::DictionaryValue* DevToolsNetworkProtocolHandler::HandleCommand(
   return nullptr;
 }
 
+void DevToolsNetworkProtocolHandler::DevToolsAgentStateChanged(
+    content::DevToolsAgentHost* agent_host,
+    bool attached) {
+  scoped_ptr<DevToolsNetworkConditions> conditions;
+  if (attached)
+    conditions.reset(new DevToolsNetworkConditions(false));
+  UpdateNetworkState(agent_host, std::move(conditions));
+}
+
 scoped_ptr<base::DictionaryValue>
 DevToolsNetworkProtocolHandler::CanEmulateNetworkConditions(
     content::DevToolsAgentHost* agent_host,

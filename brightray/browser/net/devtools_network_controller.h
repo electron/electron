@@ -8,7 +8,6 @@
 #include "base/containers/scoped_ptr_hash_map.h"
 #include "base/macros.h"
 #include "base/memory/scoped_ptr.h"
-#include "base/memory/weak_ptr.h"
 
 namespace brightray {
 
@@ -23,13 +22,13 @@ class DevToolsNetworkController {
 
   void SetNetworkState(const std::string& client_id,
                        scoped_ptr<DevToolsNetworkConditions> conditions);
-  base::WeakPtr<DevToolsNetworkInterceptor> GetInterceptor(
-      DevToolsNetworkTransaction* transaction);
+  DevToolsNetworkInterceptor* GetInterceptor(const std::string& client_id);
 
  private:
   using InterceptorMap = base::ScopedPtrHashMap<std::string,
                                                 scoped_ptr<DevToolsNetworkInterceptor>>;
-  scoped_ptr<DevToolsNetworkInterceptor> default_interceptor_;
+
+  scoped_ptr<DevToolsNetworkInterceptor> appcache_interceptor_;
   InterceptorMap interceptors_;
 
   DISALLOW_COPY_AND_ASSIGN(DevToolsNetworkController);

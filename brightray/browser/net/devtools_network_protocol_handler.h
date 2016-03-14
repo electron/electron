@@ -25,6 +25,8 @@ class DevToolsNetworkProtocolHandler {
   base::DictionaryValue* HandleCommand(
       content::DevToolsAgentHost* agent_host,
       base::DictionaryValue* command);
+  void DevToolsAgentStateChanged(content::DevToolsAgentHost* agent_host,
+                                 bool attached);
 
  private:
   scoped_ptr<base::DictionaryValue> CanEmulateNetworkConditions(
