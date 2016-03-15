@@ -194,6 +194,7 @@ void AtomBrowserContext::RegisterPrefs(PrefRegistrySimple* pref_registry) {
   PathService::Get(chrome::DIR_DEFAULT_DOWNLOADS, &download_dir);
   pref_registry->RegisterFilePathPref(prefs::kDownloadDefaultDirectory,
                                       download_dir);
+  pref_registry->RegisterDictionaryPref(prefs::kDevToolsFileSystemPaths);
 }
 
 bool AtomBrowserContext::AllowNTLMCredentialsForDomain(const GURL& origin) {
