@@ -184,8 +184,8 @@ mate::ObjectTemplateBuilder NativeImage::GetObjectTemplateBuilder(
     template_.Reset(isolate, mate::ObjectTemplateBuilder(isolate)
         .SetMethod("toPng", &NativeImage::ToPNG)
         .SetMethod("toJpeg", &NativeImage::ToJPEG)
-        .SetMethod("asNativeRepresentation",
-          &NativeImage::AsNativeRepresentation)
+        .SetMethod("getNativeHandle",
+          &NativeImage::GetNativeHandle)
         .SetMethod("toDataURL", &NativeImage::ToDataURL)
         .SetMethod("toDataUrl", &NativeImage::ToDataURL)  // deprecated.
         .SetMethod("isEmpty", &NativeImage::IsEmpty)
@@ -223,7 +223,7 @@ std::string NativeImage::ToDataURL() {
   return data_url;
 }
 
-v8::Local<v8::Value> NativeImage::AsNativeRepresentation(
+v8::Local<v8::Value> NativeImage::GetNativeHandle(
     v8::Isolate* isolate,
     mate::Arguments* args) {
 #if defined(OS_MACOSX)
