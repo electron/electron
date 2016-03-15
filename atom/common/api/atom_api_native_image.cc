@@ -58,20 +58,6 @@ ScaleFactorPair kScaleFactorPairs[] = {
   { "@2.5x"  , 2.5f },
 };
 
-enum NativeRepresentation {
-  INVALID = 0,
-  AS_NSIMAGE,
-};
-
-struct NativeRepresentationPair {
-  const char* name;
-  NativeRepresentation rep;
-};
-
-NativeRepresentationPair kNativeRepresentations[] {
-  { "nsimage", NativeRepresentation::AS_NSIMAGE },
-};
-
 float GetScaleFactorFromPath(const base::FilePath& path) {
   std::string filename(path.BaseName().RemoveExtension().AsUTF8Unsafe());
 
@@ -240,40 +226,12 @@ std::string NativeImage::ToDataURL() {
 v8::Local<v8::Value> NativeImage::AsNativeRepresentation(
     v8::Isolate* isolate,
     mate::Arguments* args) {
-  NativeRepresentation desiredRep = NativeRepresentation::INVALID;
-  void* ptr = nullptr;
-  std::string type;
-
-  if (!args->GetNext(&type)) {
-    args->ThrowError();
-    goto out;
-  }
-
-  for (const NativeRepresentationPair& item : kNativeRepresentations) {
-    if (type.compare(item.name) == 0) {
-      desiredRep = item.rep;
-      break;
-    }
-  }
-
-  if (desiredRep == NativeRepresentation::INVALID) {
-    args->ThrowError();
-    goto out;
-  }
-
-  switch (desiredRep) {
 #if defined(OS_MACOSX)
-  case NativeRepresentation::AS_NSIMAGE:
-    ptr = reinterpret_cast<void*>(image_.AsNSImage());
-    break;
+  void* ptr = reinterpret_cast<void*>(image_.AsNSImage());
+#else
+  args.ThrowError();
+  return v8::Undefined(isolate);
 #endif
-  case NativeRepresentation::INVALID:
-  default:
-    args->ThrowError();
-    break;
-  }
-
-out:
 
   return node::Buffer::Copy(
     isolate,
