@@ -1101,11 +1101,6 @@ void WebContents::SetSize(const SetSizeParams& params) {
     guest_delegate_->SetSize(params);
 }
 
-void WebContents::SetAllowTransparency(bool allow) {
-  if (guest_delegate_)
-    guest_delegate_->SetAllowTransparency(allow);
-}
-
 bool WebContents::IsGuest() const {
   return type_ == WEB_VIEW;
 }
@@ -1203,7 +1198,6 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
                  &WebContents::BeginFrameSubscription)
       .SetMethod("endFrameSubscription", &WebContents::EndFrameSubscription)
       .SetMethod("setSize", &WebContents::SetSize)
-      .SetMethod("setAllowTransparency", &WebContents::SetAllowTransparency)
       .SetMethod("isGuest", &WebContents::IsGuest)
       .SetMethod("getWebPreferences", &WebContents::GetWebPreferences)
       .SetMethod("getOwnerBrowserWindow", &WebContents::GetOwnerBrowserWindow)

@@ -25,6 +25,7 @@
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_frame_observer.h"
 #include "content/public/renderer/render_thread.h"
+#include "content/public/renderer/render_view.h"
 #include "ipc/ipc_message_macros.h"
 #include "third_party/WebKit/public/web/WebCustomElement.h"
 #include "third_party/WebKit/public/web/WebLocalFrame.h"
@@ -131,6 +132,9 @@ void AtomRendererClient::RenderFrameCreated(
 }
 
 void AtomRendererClient::RenderViewCreated(content::RenderView* render_view) {
+  // Set default UA-dependent background as transparent.
+  render_view->GetWebView()->setBaseBackgroundColor(SK_ColorTRANSPARENT);
+
   new printing::PrintWebViewHelper(render_view);
   new AtomRenderViewObserver(render_view, this);
 }
