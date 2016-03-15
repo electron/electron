@@ -420,13 +420,15 @@ void InspectableWebContentsImpl::AppendToFile(
 }
 
 void InspectableWebContentsImpl::RequestFileSystems() {
-  GetDevToolsWebContents()->GetMainFrame()->ExecuteJavaScript(
-      base::ASCIIToUTF16("DevToolsAPI.fileSystemsLoaded([])"));
+  if (delegate_)
+    delegate_->DevToolsRequestFileSystems();
 }
 
-void InspectableWebContentsImpl::AddFileSystem() {
+void InspectableWebContentsImpl::AddFileSystem(
+    const std::string& file_system_path) {
   if (delegate_)
-    delegate_->DevToolsAddFileSystem(base::FilePath());
+    delegate_->DevToolsAddFileSystem(
+        base::FilePath::FromUTF8Unsafe(file_system_path));
 }
 
 void InspectableWebContentsImpl::RemoveFileSystem(
