@@ -49,7 +49,7 @@ class DevToolsEmbedderMessageDispatcher {
     virtual void AppendToFile(const std::string& url,
                               const std::string& content) = 0;
     virtual void RequestFileSystems() = 0;
-    virtual void AddFileSystem() = 0;
+    virtual void AddFileSystem(const std::string& file_system_path) = 0;
     virtual void RemoveFileSystem(const std::string& file_system_path) = 0;
     virtual void UpgradeDraggedFileSystemPermissions(
         const std::string& file_system_url) = 0;

@@ -14,6 +14,7 @@ class InspectableWebContentsDelegate {
       const std::string& url, const std::string& content, bool save_as) {}
   virtual void DevToolsAppendToFile(
       const std::string& url, const std::string& content) {}
+  virtual void DevToolsRequestFileSystems() {}
   virtual void DevToolsAddFileSystem(
       const base::FilePath& file_system_path) {}
   virtual void DevToolsRemoveFileSystem(
