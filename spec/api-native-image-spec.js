@@ -40,26 +40,12 @@ describe('nativeImage module', () => {
 
       const imagePath = `${path.join(__dirname, 'fixtures', 'api')}${path.sep}..${path.sep}${path.join('assets', 'logo.png')}`;
       const image = nativeImage.createFromPath(imagePath);
-      const nsimage = image.asNativeRepresentation('nsimage');
+      const nsimage = image.getNativeHandle();
 
       assert.equal(nsimage.length, 8);
 
       // If all bytes are null, that's Bad
       assert.equal(nsimage.reduce((acc,x) => acc || (x != 0)), true);
-    });
-
-    it('Throws when asNativeRepresentation gets a bogus value', () => {
-      const imagePath = `${path.join(__dirname, 'fixtures', 'api')}${path.sep}..${path.sep}${path.join('assets', 'logo.png')}`;
-      const image = nativeImage.createFromPath(imagePath);
-
-      let shouldDie = true;
-      try {
-        image.asNativeRepresentation('__foobar__');
-      } catch (e) {
-        shouldDie = false;
-      }
-
-      assert.equal(shouldDie, false);
     });
   });
 });
