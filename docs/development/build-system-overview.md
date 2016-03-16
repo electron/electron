@@ -1,6 +1,6 @@
 # Build System Overview
 
-Electron uses `gyp` for project generation and `ninja` for building. Project
+Electron uses `gyp` for project generation and [ninja](https://ninja-build.org/) for building. Project
 configurations can be found in the `.gyp` and `.gypi` files.
 
 ## Gyp Files
