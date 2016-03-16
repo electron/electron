@@ -52,7 +52,7 @@ namespace api {
 
 namespace {
 
-// The DeprecatedOptionsCheckCallback funtion which is implemented in JavaScript
+// This function is implemented in JavaScript
 using DeprecatedOptionsCheckCallback =
     base::Callback<std::string(v8::Local<v8::Value>)>;
 DeprecatedOptionsCheckCallback g_deprecated_options_check;
