@@ -759,4 +759,25 @@ describe('browser-window module', function() {
       });
     });
   });
+
+  describe('deprecated options', function() {
+    it('throws a deprecation error for option keys using hyphens instead of camel case', function() {
+      assert.throws(function () {
+        new BrowserWindow({'min-width': 500})
+      }, 'min-width is deprecated. Use minWidth instead.');
+    });
+
+    it('throws a deprecation error for webPreference keys using hyphens instead of camel case', function() {
+      assert.throws(function () {
+        new BrowserWindow({webPreferences: {'node-integration': false}})
+      }, 'node-integration is deprecated. Use nodeIntegration instead.');
+    });
+
+    it('throws a deprecation error for option keys that should be set on webPreferences', function() {
+      assert.throws(function () {
+        new BrowserWindow({zoomFactor: 1})
+      }, 'Setting zoomFactor on options is deprecated. Set it on options.webPreferences instead.');
+    });
+  })
+
 });
