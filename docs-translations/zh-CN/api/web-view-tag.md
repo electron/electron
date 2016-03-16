@@ -528,6 +528,7 @@ webview.addEventListener('console-message', function(e) {
 * `result` Object
   * `requestId` Integer
   * `finalUpdate` Boolean - 指明下面是否还有更多的回应.
+  * `activeMatchOrdinal` Integer (可选) - 活动匹配位置
   * `matches` Integer (optional) - 匹配数量.
   * `selectionArea` Object (optional) - 整合第一个匹配域.
 

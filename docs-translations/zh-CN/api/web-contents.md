@@ -242,6 +242,7 @@ var webContents = win.webContents;
 * `result` Object
   * `requestId` Integer
   * `finalUpdate` Boolean - 标识是否还有更多的值可以查看.
+  * `activeMatchOrdinal` Integer (可选) - 活动匹配位置
   * `matches` Integer (可选) - 匹配数量.
   * `selectionArea` Object (可选) - 协调首个匹配位置.
 
