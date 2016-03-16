@@ -226,10 +226,11 @@ std::string NativeImage::ToDataURL() {
 v8::Local<v8::Value> NativeImage::GetNativeHandle(
     v8::Isolate* isolate,
     mate::Arguments* args) {
+void* ptr = NULL;
 #if defined(OS_MACOSX)
-  void* ptr = reinterpret_cast<void*>(image_.AsNSImage());
+  ptr = reinterpret_cast<void*>(image_.AsNSImage());
 #else
-  args.ThrowError();
+  args->ThrowError();
   return v8::Undefined(isolate);
 #endif
 
