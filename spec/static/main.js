@@ -82,8 +82,8 @@ app.on('ready', function() {
     show: false,
     width: 800,
     height: 600,
-    'web-preferences': {
-      javascript: true  // Test whether web-preferences crashes.
+    webPreferences: {
+      javascript: true  // Test whether web preferences crashes.
     },
   });
   window.loadURL(url.format({
