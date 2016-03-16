@@ -5,7 +5,7 @@
 The Chrome version of Electron is usually bumped within one or two weeks after
 a new stable Chrome version gets released.
 
-Also we only use stable channel of Chrome, if an important fix is in beta or dev
+Also we only use stable channel of Chrome. If an important fix is in beta or dev
 channel, we will back-port it.
 
 ## When will Electron upgrade to latest Node.js?
@@ -25,7 +25,7 @@ use HTML5 APIs which are already available in browsers. Good candidates are
 [Storage API][storage], [`localStorage`][local-storage],
 [`sessionStorage`][session-storage], and [IndexedDB][indexed-db].
 
-Or you can use the IPC system, which are specific to Electron, to store objects
+Or you can use the IPC system, which is specific to Electron, to store objects
 in the main process as a global variable, and then to access them from the
 renderers through the `remote` module:
 
@@ -51,8 +51,7 @@ console.log(require('remote').getGlobal('sharedObject').someProperty);
 This happens when the variable which is used to store the window/tray gets
 garbage collected.
 
-It is recommended to have a reading of following articles you encountered this
-problem:
+If you encounter this problem, the following articles may prove helpful:
 
 * [Memory Management][memory-management]
 * [Variable Scope][variable-scope]
@@ -78,8 +77,8 @@ app.on('ready', function() {
 ## I can not use jQuery/RequireJS/Meteor/AngularJS in Electron.
 
 Due to the Node.js integration of Electron, there are some extra symbols
-inserted into DOM, like `module`, `exports`, `require`. This causes troubles for
-some libraries since they want to insert the symbols with same names.
+inserted into the DOM like `module`, `exports`, `require`. This causes troubles for
+some libraries since they want to insert the symbols with the same names.
 
 To solve this, you can turn off node integration in Electron:
 
@@ -141,7 +140,7 @@ npm uninstall -g electron
 ```
 
 However if your are using the built-in module but still getting this error, it
-is very likely you are using the module in wrong process. For example
+is very likely you are using the module in the wrong process. For example
 `electron.app` can only be used in the main process, while `electron.webFrame`
 is only available in renderer processes.
 
