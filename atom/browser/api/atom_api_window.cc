@@ -52,6 +52,11 @@ namespace api {
 
 namespace {
 
+// The DeprecatedOptionsCheckCallback funtion which is implemented in JavaScript
+using DeprecatedOptionsCheckCallback =
+    base::Callback<std::string(v8::Local<v8::Value>)>;
+DeprecatedOptionsCheckCallback g_deprecated_options_check;
+
 void OnCapturePageDone(
     v8::Isolate* isolate,
     const base::Callback<void(const gfx::Image&)>& callback,
@@ -289,6 +294,13 @@ mate::Wrappable* Window::New(v8::Isolate* isolate, mate::Arguments* args) {
   mate::Dictionary options;
   if (!(args->Length() == 1 && args->GetNext(&options))) {
     options = mate::Dictionary::CreateEmpty(isolate);
+  }
+
+  std::string deprecation_message = g_deprecated_options_check.Run(
+      options.GetHandle());
+  if (deprecation_message.length() > 0) {
+    args->ThrowError(deprecation_message);
+    return nullptr;
   }
 
   return new Window(isolate, options);
@@ -797,6 +809,10 @@ v8::Local<v8::Value> Window::From(v8::Isolate* isolate,
     return v8::Null(isolate);
 }
 
+void SetDeprecatedOptionsCheck(const DeprecatedOptionsCheckCallback& callback) {
+  g_deprecated_options_check = callback;
+}
+
 }  // namespace api
 
 }  // namespace atom
@@ -816,6 +832,9 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                            &mate::TrackableObject<Window>::FromWeakMapID);
   browser_window.SetMethod("getAllWindows",
                            &mate::TrackableObject<Window>::GetAll);
+  browser_window.SetMethod("_setDeprecatedOptionsCheck",
+                           &atom::api::SetDeprecatedOptionsCheck);
+
 
   mate::Dictionary dict(isolate, exports);
   dict.Set("BrowserWindow", browser_window);
