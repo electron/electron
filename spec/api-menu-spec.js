@@ -38,6 +38,10 @@ describe('menu module', function() {
           {
             label: 'text',
             accelerator: undefined
+          },
+          {
+            label: 'text again',
+            accelerator: null
           }
         ]);
       });
