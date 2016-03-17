@@ -184,8 +184,7 @@ mate::ObjectTemplateBuilder NativeImage::GetObjectTemplateBuilder(
     template_.Reset(isolate, mate::ObjectTemplateBuilder(isolate)
         .SetMethod("toPng", &NativeImage::ToPNG)
         .SetMethod("toJpeg", &NativeImage::ToJPEG)
-        .SetMethod("getNativeHandle",
-          &NativeImage::GetNativeHandle)
+        .SetMethod("getNativeHandle", &NativeImage::GetNativeHandle)
         .SetMethod("toDataURL", &NativeImage::ToDataURL)
         .SetMethod("toDataUrl", &NativeImage::ToDataURL)  // deprecated.
         .SetMethod("isEmpty", &NativeImage::IsEmpty)
@@ -223,21 +222,18 @@ std::string NativeImage::ToDataURL() {
   return data_url;
 }
 
-v8::Local<v8::Value> NativeImage::GetNativeHandle(
-    v8::Isolate* isolate,
-    mate::Arguments* args) {
-void* ptr = NULL;
+v8::Local<v8::Value> NativeImage::GetNativeHandle(v8::Isolate* isolate,
+                                                  mate::Arguments* args) {
 #if defined(OS_MACOSX)
-  ptr = reinterpret_cast<void*>(image_.AsNSImage());
+  NSImage* ptr = image_.AsNSImage();
+  return node::Buffer::Copy(
+      isolate,
+      reinterpret_cast<char*>(ptr),
+      sizeof(void*)).ToLocalChecked();
 #else
-  args->ThrowError();
+  args->ThrowError("Not implemented");
   return v8::Undefined(isolate);
 #endif
-
-  return node::Buffer::Copy(
-    isolate,
-    reinterpret_cast<char*>(ptr),
-    sizeof(void*)).ToLocalChecked();
 }
 
 bool NativeImage::IsEmpty() {

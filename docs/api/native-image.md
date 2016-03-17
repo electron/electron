@@ -133,11 +133,14 @@ Returns a [Buffer][buffer] that contains the image's `JPEG` encoded data.
 
 Returns the data URL of the image.
 
-### `image.getNativeHandle()`
+### `image.getNativeHandle()` _OS X_
 
-Returns a pointer to an underlying native type (encoded as a [Buffer][buffer]) which can be used with native APIs. Note that in many cases, this pointer is a weak pointer to the underlying native image not a copy, so you _must_ ensure that the associated `nativeImage` instance is kept around.
+Returns a [Buffer][buffer] that stores C pointer to underlying native handle of
+the image. On OS X, a pointer to `NSImage` instance would be returned.
 
-Returns a [Buffer][buffer] that represents a pointer to a native type - on OS X, this type is an NSImage object.
+Notice that the returned pointer is a weak pointer to the underlying native
+image instead of a copy, so you _must_ ensure that the associated
+`nativeImage` instance is kept around.
 
 ### `image.isEmpty()`
 
