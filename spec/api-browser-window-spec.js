@@ -776,7 +776,7 @@ describe('browser-window module', function() {
     it('throws a deprecation error for option keys that should be set on webPreferences', function() {
       assert.throws(function () {
         new BrowserWindow({zoomFactor: 1});
-      }, 'Setting zoomFactor on options is deprecated. Set it on options.webPreferences instead.');
+      }, 'options.zoomFactor is deprecated. Use options.webPreferences.zoomFactor instead.');
     });
   });
 });
