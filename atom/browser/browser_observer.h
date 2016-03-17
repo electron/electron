@@ -47,6 +47,8 @@ class BrowserObserver {
 
   virtual void OnPlatformThemeChanged() {}
 
+  virtual void EmitDistributedNotificationEvent(const std::string& eventName) {}
+
  protected:
   virtual ~BrowserObserver() {}
 };

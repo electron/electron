@@ -107,6 +107,12 @@ class Browser : public WindowListObserver {
 
   // Set docks' icon.
   void DockSetIcon(const gfx::Image& image);
+
+  void AddDistributedNotificationObserver(   \
+        const std::string& notificationName, \
+        const std::string& eventName);
+
+  void DistributedNotificationEvent(const std::string& eventName);
 #endif  // defined(OS_MACOSX)
 
 #if defined(OS_WIN)
