@@ -34,5 +34,18 @@ describe('nativeImage module', () => {
       assert.equal(image.getSize().height, 190);
       assert.equal(image.getSize().width, 538);
     });
+
+    it('Gets an NSImage pointer on OS X', () => {
+      if (process.platform !== 'darwin') return;
+
+      const imagePath = `${path.join(__dirname, 'fixtures', 'api')}${path.sep}..${path.sep}${path.join('assets', 'logo.png')}`;
+      const image = nativeImage.createFromPath(imagePath);
+      const nsimage = image.getNativeHandle();
+
+      assert.equal(nsimage.length, 8);
+
+      // If all bytes are null, that's Bad
+      assert.equal(nsimage.reduce((acc,x) => acc || (x != 0), false), true);
+    });
   });
 });

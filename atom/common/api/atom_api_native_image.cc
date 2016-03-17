@@ -184,6 +184,8 @@ mate::ObjectTemplateBuilder NativeImage::GetObjectTemplateBuilder(
     template_.Reset(isolate, mate::ObjectTemplateBuilder(isolate)
         .SetMethod("toPng", &NativeImage::ToPNG)
         .SetMethod("toJpeg", &NativeImage::ToJPEG)
+        .SetMethod("getNativeHandle",
+          &NativeImage::GetNativeHandle)
         .SetMethod("toDataURL", &NativeImage::ToDataURL)
         .SetMethod("toDataUrl", &NativeImage::ToDataURL)  // deprecated.
         .SetMethod("isEmpty", &NativeImage::IsEmpty)
@@ -219,6 +221,23 @@ std::string NativeImage::ToDataURL() {
   base::Base64Encode(data_url, &data_url);
   data_url.insert(0, "data:image/png;base64,");
   return data_url;
+}
+
+v8::Local<v8::Value> NativeImage::GetNativeHandle(
+    v8::Isolate* isolate,
+    mate::Arguments* args) {
+void* ptr = NULL;
+#if defined(OS_MACOSX)
+  ptr = reinterpret_cast<void*>(image_.AsNSImage());
+#else
+  args->ThrowError();
+  return v8::Undefined(isolate);
+#endif
+
+  return node::Buffer::Copy(
+    isolate,
+    reinterpret_cast<char*>(ptr),
+    sizeof(void*)).ToLocalChecked();
 }
 
 bool NativeImage::IsEmpty() {
