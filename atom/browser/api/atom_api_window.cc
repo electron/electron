@@ -832,12 +832,11 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                            &mate::TrackableObject<Window>::FromWeakMapID);
   browser_window.SetMethod("getAllWindows",
                            &mate::TrackableObject<Window>::GetAll);
-  browser_window.SetMethod("_setDeprecatedOptionsCheck",
-                           &atom::api::SetDeprecatedOptionsCheck);
-
 
   mate::Dictionary dict(isolate, exports);
   dict.Set("BrowserWindow", browser_window);
+  dict.SetMethod("_setDeprecatedOptionsCheck",
+                 &atom::api::SetDeprecatedOptionsCheck);
 }
 
 }  // namespace
