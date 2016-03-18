@@ -155,7 +155,7 @@ describe('chromium feature', function() {
       b.close();
     });
 
-    it('accepts "node-integration" as feature', function(done) {
+    it('accepts "nodeIntegration" as feature', function(done) {
       var b;
       listener = function(event) {
         assert.equal(event.data, 'undefined');
