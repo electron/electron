@@ -184,9 +184,8 @@ void Browser::OnWindowAllClosed() {
 void Browser::PlatformThemeChanged() {
   FOR_EACH_OBSERVER(BrowserObserver, observers_, OnPlatformThemeChanged());
 }
-#include <cstdio>
+
 void Browser::DistributedNotificationEvent(const std::string& eventName) {
-  printf("%s\n", eventName.c_str());
   FOR_EACH_OBSERVER(BrowserObserver, observers_, \
         EmitDistributedNotificationEvent(eventName));
 }
