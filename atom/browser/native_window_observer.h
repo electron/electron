@@ -58,6 +58,10 @@ class NativeWindowObserver {
   virtual void OnWindowMoved() {}
   virtual void OnWindowScrollTouchBegin() {}
   virtual void OnWindowScrollTouchEnd() {}
+  virtual void OnWindowSwipeUp() {}
+  virtual void OnWindowSwipeRight() {}
+  virtual void OnWindowSwipeDown() {}
+  virtual void OnWindowSwipeLeft() {}
   virtual void OnWindowEnterFullScreen() {}
   virtual void OnWindowLeaveFullScreen() {}
   virtual void OnWindowEnterHtmlFullScreen() {}

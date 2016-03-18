@@ -267,6 +267,18 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 // NSWindow overrides.
 
+- (void)swipeWithEvent:(NSEvent *)event {
+    if (event.deltaY == 1.0) {
+        shell_->NotifyWindowSwipeUp();
+    } else if (event.deltaX == -1.0) {
+        shell_->NotifyWindowSwipeRight();
+    } else if (event.deltaY == -1.0) {
+        shell_->NotifyWindowSwipeDown();
+    } else if (event.deltaX == 1.0) {
+        shell_->NotifyWindowSwipeLeft();
+    }
+}
+
 - (NSRect)constrainFrameRect:(NSRect)frameRect toScreen:(NSScreen*)screen {
   // Resizing is disabled.
   if (ScopedDisableResize::IsResizeDisabled())

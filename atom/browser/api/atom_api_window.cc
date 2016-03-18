@@ -243,6 +243,22 @@ void Window::OnWindowScrollTouchEnd() {
   Emit("scroll-touch-end");
 }
 
+void Window::OnWindowSwipeUp() {
+  Emit("swipe-up");
+}
+
+void Window::OnWindowSwipeRight() {
+  Emit("swipe-right");
+}
+
+void Window::OnWindowSwipeDown() {
+  Emit("swipe-down");
+}
+
+void Window::OnWindowSwipeLeft() {
+  Emit("swipe-left");
+}
+
 void Window::OnWindowEnterHtmlFullScreen() {
   Emit("enter-html-full-screen");
 }

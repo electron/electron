@@ -480,6 +480,26 @@ void NativeWindow::NotifyWindowScrollTouchEnd() {
                     OnWindowScrollTouchEnd());
 }
 
+void NativeWindow::NotifyWindowSwipeUp() {
+  FOR_EACH_OBSERVER(NativeWindowObserver, observers_,
+                    OnWindowSwipeUp());
+}
+
+void NativeWindow::NotifyWindowSwipeRight() {
+  FOR_EACH_OBSERVER(NativeWindowObserver, observers_,
+                    OnWindowSwipeRight());
+}
+
+void NativeWindow::NotifyWindowSwipeDown() {
+  FOR_EACH_OBSERVER(NativeWindowObserver, observers_,
+                    OnWindowSwipeDown());
+}
+
+void NativeWindow::NotifyWindowSwipeLeft() {
+  FOR_EACH_OBSERVER(NativeWindowObserver, observers_,
+                    OnWindowSwipeLeft());
+}
+
 void NativeWindow::NotifyWindowLeaveFullScreen() {
   FOR_EACH_OBSERVER(NativeWindowObserver, observers_,
                     OnWindowLeaveFullScreen());

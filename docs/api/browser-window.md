@@ -322,6 +322,22 @@ Emitted when scroll wheel event phase has begun.
 
 Emitted when scroll wheel event phase has ended.
 
+### Event: 'swipe-up' _OS X_
+
+Emitted on 3-finger swipe up.
+
+### Event: 'swipe-right' _OS X_
+
+Emitted on 3-finger swipe right.
+
+### Event: 'swipe-down' _OS X_
+
+Emitted on 3-finger swipe down.
+
+### Event: 'swipe-left' _OS X_
+
+Emitted on 3-finger swipe left.
+
 ## Methods
 
 The `BrowserWindow` object has the following methods:
