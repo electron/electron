@@ -33,7 +33,7 @@ describe('menu module', function() {
     });
 
     it('does not throw exceptions for undefined/null values', function() {
-      assert.doesNotThrow(function(){
+      assert.doesNotThrow(function() {
         Menu.buildFromTemplate([
           {
             label: 'text',
