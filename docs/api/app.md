@@ -331,6 +331,12 @@ to the npm modules spec. You should usually also specify a `productName`
 field, which is your application's full capitalized name, and which will be
 preferred over `name` by Electron.
 
+### `app.setName(name)`
+
+* `name` String
+
+Overrides the current application's name.
+
 ### `app.getLocale()`
 
 Returns the current application locale.
