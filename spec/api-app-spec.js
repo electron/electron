@@ -104,7 +104,7 @@ describe('app module', function() {
       });
 
       //Emit an event
-      ChildProcess.exec('echo \'import Foundation;' + 
+      ChildProcess.exec('echo \'import Foundation;' +
         'NSDistributedNotificationCenter.defaultCenter().postNotificationName'+
         '("ExampleNotification", object: nil);\' | swift -'
       );
