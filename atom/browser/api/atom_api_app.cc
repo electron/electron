@@ -283,10 +283,8 @@ void App::OnGpuProcessCrashed(base::TerminationStatus exit_code) {
 void App::OnPlatformThemeChanged() {
   Emit("platform-theme-changed");
 }
-#endif
 
-#if defined(OS_MACOSX)
-void App::EmitDistributedNotificationEvent(const std::string& eventName){
+void App::EmitDistributedNotificationEvent(const std::string& eventName) {
   Emit(eventName);
 }
 #endif
@@ -382,7 +380,8 @@ mate::ObjectTemplateBuilder App::GetObjectTemplateBuilder(
       .SetMethod("isDarkMode",
                  base::Bind(&Browser::IsDarkMode, browser))
       .SetMethod("addDistributedNotificationObserver",
-                 base::Bind(&Browser::AddDistributedNotificationObserver, browser))
+                 base::Bind(&Browser::AddDistributedNotificationObserver,
+                 browser))
 #endif
 #if defined(OS_WIN)
       .SetMethod("setUserTasks",
