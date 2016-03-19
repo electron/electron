@@ -474,6 +474,12 @@ if (browserOptions.transparent) {
 
 This method returns `true` if the system is in Dark Mode, and `false` otherwise.
 
+### `app.addDistributedNotificationObserver(notification, event)` _OS X_
+
+This method is for making the electron app an observer for `notificiation`.
+The app will emit an event with the name `event` when this notification is
+observed.
+
 ### `app.commandLine.appendSwitch(switch[, value])`
 
 Append a switch (with optional `value`) to Chromium's command line.
