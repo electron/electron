@@ -240,7 +240,11 @@ Generally, the `template` is just an array of `options` for constructing a
 You can also attach other fields to the element of the `template` and they
 will become properties of the constructed menu items.
 
-### `Menu.popup([browserWindow, x, y, positioningItem])`
+## Instance Methods
+
+The `menu` object has the following instance methods:
+
+### `menu.popup([browserWindow, x, y, positioningItem])`
 
 * `browserWindow` BrowserWindow (optional) - Default is `null`.
 * `x` Number (optional) - Default is -1.
@@ -253,20 +257,24 @@ Pops up this menu as a context menu in the `browserWindow`. You can optionally
 provide a `x, y` coordinate to place the menu at, otherwise it will be placed
 at the current mouse cursor position.
 
-### `Menu.append(menuItem)`
+### `menu.append(menuItem)`
 
 * `menuItem` MenuItem
 
 Appends the `menuItem` to the menu.
 
-### `Menu.insert(pos, menuItem)`
+### `menu.insert(pos, menuItem)`
 
 * `pos` Integer
 * `menuItem` MenuItem
 
 Inserts the `menuItem` to the `pos` position of the menu.
 
-### `Menu.items()`
+## Instance Properties
+
+`menu` objects also have the following properties:
+
+### `menu.items`
 
 Get an array containing the menu's items.
 
