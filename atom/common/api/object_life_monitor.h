@@ -23,6 +23,7 @@ class ObjectLifeMonitor {
                     v8::Local<v8::Function> destructor);
 
   static void OnObjectGC(const v8::WeakCallbackInfo<ObjectLifeMonitor>& data);
+  static void Free(const v8::WeakCallbackInfo<ObjectLifeMonitor>& data);
 
   void RunCallback();
 
