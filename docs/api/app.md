@@ -348,6 +348,25 @@ bar, and on OS X you can visit it from dock menu.
 
 Clears the recent documents list.
 
+### `app.setAsDefaultProtocolClient(protocol)` _OS X_ _Windows_
+
+ * `protocol` String - The name of your protocol, without `://`. If you want your
+   app to handle `electron://` links, call this method with `electron` as the
+   parameter.
+   
+This method sets the current executable as the default handler for a protocol
+(aka URI scheme). It allows you to integrate your app deeper into the operating
+system. Once registered, all links with `your-protocol://` will be openend with
+the current executable. The whole link, including protocol, will be passed to
+your application as a parameter.
+ 
+**Note:** On OS X, you can only register protocols that have been added to
+your app's `info.plist`, which can not be modified at runtime. You can however
+change the file with a simple text editor or script during build time.
+Please refer to [Apple's documentation][CFBundleURLTypes] for details.
+
+The API uses the Windows Registry and LSSetDefaultHandlerForURLScheme internally.
+
 ### `app.setUserTasks(tasks)` _Windows_
 
 * `tasks` Array - Array of `Task` objects
@@ -541,3 +560,4 @@ Sets the `image` associated with this dock icon.
 [dock-menu]:https://developer.apple.com/library/mac/documentation/Carbon/Conceptual/customizing_docktile/concepts/dockconcepts.html#//apple_ref/doc/uid/TP30000986-CH2-TPXREF103
 [tasks]:http://msdn.microsoft.com/en-us/library/windows/desktop/dd378460(v=vs.85).aspx#tasks
 [app-user-model-id]: https://msdn.microsoft.com/en-us/library/windows/desktop/dd378459(v=vs.85).aspx
+[CFBundleURLTypes]: https://developer.apple.com/library/ios/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html#//apple_ref/doc/uid/TP40009249-102207-TPXREF115

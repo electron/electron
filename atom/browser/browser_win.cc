@@ -19,6 +19,7 @@
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/win/win_util.h"
+#include "base/win/registry.h"
 #include "base/win/windows_version.h"
 #include "atom/common/atom_version.h"
 
@@ -123,6 +124,59 @@ void Browser::SetUserTasks(const std::vector<UserTask>& tasks) {
   CComQIPtr<IObjectArray> task_array = collection;
   destinations->AddUserTasks(task_array);
   destinations->CommitList();
+}
+
+bool Browser::SetAsDefaultProtocolClient(const std::string& protocol) {
+  // HKEY_CLASSES_ROOT
+  //    $PROTOCOL
+  //       (Default) = "URL:$NAME"
+  //       URL Protocol = ""
+  //       shell
+  //          open
+  //             command
+  //                (Default) = "$COMMAND" "%1"
+  //
+  // However, the "HKEY_CLASSES_ROOT" key can only be written by the
+  // Administrator user. So, we instead write to "HKEY_CURRENT_USER\
+  // Software\Classes", which is inherited by "HKEY_CLASSES_ROOT"
+  // anyway, and can be written by unprivileged users.
+
+  if (protocol.empty())
+    return false;
+
+  base::FilePath path;
+  if (!PathService::Get(base::FILE_EXE, &path)) {
+    LOG(ERROR) << "Error getting app exe path";
+    return false;
+  }
+
+  // Main Registry Key
+  HKEY root = HKEY_CURRENT_USER;
+  std::string keyPathStr = "Software\\Classes\\" + protocol;
+  std::wstring keyPath = std::wstring(keyPathStr.begin(), keyPathStr.end());
+  std::string urlDeclStr = "URL:" + protocol;
+  std::wstring urlDecl = std::wstring(urlDeclStr.begin(), urlDeclStr.end());
+
+  // Command Key
+  std::string cmdPathStr = keyPathStr + "\\shell\\open\\command";
+  std::wstring cmdPath = std::wstring(cmdPathStr.begin(), cmdPathStr.end());
+
+  // Executable Path
+  std::wstring exePath(path.value());
+  std::wstring exe = L"\"" + exePath + L"\" \"%1\"";
+
+  // Write information to registry
+  base::win::RegKey key(root, keyPath.c_str(), KEY_ALL_ACCESS);
+  if (FAILED(key.WriteValue(L"URL Protocol", L"")) ||
+      FAILED(key.WriteValue(L"", urlDecl.c_str())))
+    return false;
+
+  base::win::RegKey commandKey(root, cmdPath.c_str(), KEY_ALL_ACCESS);
+  if (FAILED(commandKey.WriteValue(L"", exe.c_str())))
+    return false;
+
+  VLOG(1) << "Chrome registered as default handler for " << protocol << ".";
+  return true;
 }
 
 PCWSTR Browser::GetAppUserModelID() {
