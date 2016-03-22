@@ -9,12 +9,6 @@ const path = require('path');
 const repl = require('repl');
 const url = require('url');
 
-// Quit when all windows are closed and no other one is listening to this.
-app.on('window-all-closed', function() {
-  if (app.listeners('window-all-closed').length == 1)
-    app.quit();
-});
-
 // Parse command line options.
 var argv = process.argv.slice(1);
 var option = { file: null, help: null, version: null, webdriver: null, modules: [] };
@@ -42,6 +36,12 @@ for (var i = 0; i < argv.length; i++) {
     break;
   }
 }
+
+// Quit when all windows are closed and no other one is listening to this.
+app.on('window-all-closed', function() {
+  if (app.listeners('window-all-closed').length == 1 && !option.interactive)
+    app.quit();
+});
 
 // Create default menu.
 app.once('ready', function() {
