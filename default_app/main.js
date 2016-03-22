@@ -278,6 +278,12 @@ function loadApplicationByUrl(appUrl) {
   require('./default_app').load(appUrl);
 }
 
+function startRepl() {
+  repl.start('> ').on('exit', function() {
+    process.exit(0);
+  });
+}
+
 // Start the specified app if there is one specified in command line, otherwise
 // start the default app.
 if (option.file && !option.webdriver) {
@@ -312,7 +318,7 @@ if (option.file && !option.webdriver) {
   console.log(helpMessage);
   process.exit(0);
 } else if (option.interactive) {
-  repl.start('> ');
+  startRepl();
 } else {
   loadApplicationByUrl('file://' + __dirname + '/index.html');
 }
