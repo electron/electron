@@ -305,8 +305,9 @@ if (option.file && !option.webdriver) {
   helpMessage    += "  - .html/.htm file.\n";
   helpMessage    += "  - http://, https://, or file:// URL.\n";
   helpMessage    += "\nOptions:\n";
-  helpMessage    += "  -r, --require         Module to preload (option can be repeated)\n";
   helpMessage    += "  -h, --help            Print this usage message.\n";
+  helpMessage    += "  -i, --interactive     Open a REPL to the main process.\n";
+  helpMessage    += "  -r, --require         Module to preload (option can be repeated)\n";
   helpMessage    += "  -v, --version         Print the version.";
   console.log(helpMessage);
   process.exit(0);
