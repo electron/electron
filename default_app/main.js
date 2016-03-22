@@ -6,6 +6,7 @@ const Menu     = electron.Menu;
 
 const fs = require('fs');
 const path = require('path');
+const repl = require('repl');
 const url = require('url');
 
 // Quit when all windows are closed and no other one is listening to this.
@@ -27,6 +28,8 @@ for (var i = 0; i < argv.length; i++) {
   } else if (argv[i] == '--help' || argv[i] == '-h') {
     option.help = true;
     break;
+  } else if (argv[i] == '--interactive' || argv[i] == '-i') {
+    option.interactive = true;
   } else if (argv[i] == '--test-type=webdriver') {
     option.webdriver = true;
   } else if (argv[i] == '--require' || argv[i] == '-r') {
@@ -307,6 +310,8 @@ if (option.file && !option.webdriver) {
   helpMessage    += "  -v, --version         Print the version.";
   console.log(helpMessage);
   process.exit(0);
+} else if (option.interactive) {
+  repl.start('> ');
 } else {
   loadApplicationByUrl('file://' + __dirname + '/index.html');
 }
