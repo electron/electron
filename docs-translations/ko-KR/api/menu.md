@@ -237,7 +237,11 @@ OS X의 네이티브 액션에 대해 자세히 알아보려면
 또한 `template`에는 다른 속성도 추가할 수 있으며 메뉴가 만들어질 때 해당 메뉴 아이템의
 프로퍼티로 변환됩니다.
 
-### `Menu.popup([browserWindow, x, y, positioningItem])`
+## Instance Methods
+
+`menu` 객체는 다음과 같은 인스턴스 메서드를 가지고 있습니다:
+
+### `menu.popup([browserWindow, x, y, positioningItem])`
 
 * `browserWindow` BrowserWindow (optional) - 기본값은 `null`입니다.
 * `x` Number (optional) - 기본값은 -1입니다.
@@ -250,20 +254,24 @@ OS X의 네이티브 액션에 대해 자세히 알아보려면
 `positioningItem` 속성은 메뉴 팝업 시 마우스 커서에 바로 위치시킬 메뉴 아이템의
 인덱스입니다. (OS X에서만 지원합니다)
 
-### `Menu.append(menuItem)`
+### `menu.append(menuItem)`
 
 * `menuItem` MenuItem
 
 메뉴의 리스트 끝에 `menuItem`을 삽입합니다.
 
-### `Menu.insert(pos, menuItem)`
+### `menu.insert(pos, menuItem)`
 
 * `pos` Integer
 * `menuItem` MenuItem
 
 `pos` 위치에 `menuItem`을 삽입합니다.
 
-### `Menu.items()`
+## Instance Properties
+
+`menu` 객체는 또한 다음과 같은 속성을 가지고 있습니다:
+
+### `menu.items`
 
 메뉴가 가지고 있는 메뉴 아이템들의 배열입니다.
 
