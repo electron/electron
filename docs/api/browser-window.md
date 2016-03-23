@@ -322,21 +322,14 @@ Emitted when scroll wheel event phase has begun.
 
 Emitted when scroll wheel event phase has ended.
 
-### Event: 'swipe-up' _OS X_
+### Event: 'swipe' _OS X_
 
-Emitted on 3-finger swipe up.
+Returns:
 
-### Event: 'swipe-right' _OS X_
+* `event` Event
+* `direction` String
 
-Emitted on 3-finger swipe right.
-
-### Event: 'swipe-down' _OS X_
-
-Emitted on 3-finger swipe down.
-
-### Event: 'swipe-left' _OS X_
-
-Emitted on 3-finger swipe left.
+Emitted on 3-finger swipe. Possible directions are `up`, `right`, `down`, `left`.
 
 ## Methods
 

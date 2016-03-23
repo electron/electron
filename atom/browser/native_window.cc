@@ -480,24 +480,9 @@ void NativeWindow::NotifyWindowScrollTouchEnd() {
                     OnWindowScrollTouchEnd());
 }
 
-void NativeWindow::NotifyWindowSwipeUp() {
+void NativeWindow::NotifyWindowSwipe(const std::string& direction) {
   FOR_EACH_OBSERVER(NativeWindowObserver, observers_,
-                    OnWindowSwipeUp());
-}
-
-void NativeWindow::NotifyWindowSwipeRight() {
-  FOR_EACH_OBSERVER(NativeWindowObserver, observers_,
-                    OnWindowSwipeRight());
-}
-
-void NativeWindow::NotifyWindowSwipeDown() {
-  FOR_EACH_OBSERVER(NativeWindowObserver, observers_,
-                    OnWindowSwipeDown());
-}
-
-void NativeWindow::NotifyWindowSwipeLeft() {
-  FOR_EACH_OBSERVER(NativeWindowObserver, observers_,
-                    OnWindowSwipeLeft());
+                    OnWindowSwipe(direction));
 }
 
 void NativeWindow::NotifyWindowLeaveFullScreen() {
