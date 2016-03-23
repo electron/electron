@@ -1,6 +1,6 @@
 # Build System Overview
 
-Electron 使用 `gyp` 来生成项目 ，使用 `ninja` 来构建项目. 项目配置可以在 `.gyp` 和 `.gypi` 文件中找到.
+Electron 使用 [gyp](https://gyp.gsrc.io/) 来生成项目 ，使用 [ninja](https://ninja-build.org/) 来构建项目. 项目配置可以在 `.gyp` 和 `.gypi` 文件中找到.
 
 ## Gyp 文件
 

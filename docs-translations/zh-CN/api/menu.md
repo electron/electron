@@ -230,7 +230,11 @@ Menu.setApplicationMenu(menu);
 
 你也可以向 `template` 元素添加其它东西，并且他们会变成已经有的菜单项的属性.
 
-### `Menu.popup([browserWindow, x, y, positioningItem])`
+##实例方法
+
+`menu` 对象有如下实例方法
+
+### `menu.popup([browserWindow, x, y, positioningItem])`
 
 * `browserWindow` BrowserWindow (可选) - 默认为 `null`.
 * `x` Number (可选) - 默认为 -1.
@@ -240,20 +244,20 @@ Menu.setApplicationMenu(menu);
 
 在 `browserWindow` 中弹出 context menu .你可以选择性地提供指定的 `x, y` 来设置菜单应该放在哪里,否则它将默认地放在当前鼠标的位置.
 
-### `Menu.append(menuItem)`
+### `menu.append(menuItem)`
 
 * `menuItem` MenuItem
 
 添加菜单项.
 
-### `Menu.insert(pos, menuItem)`
+### `menu.insert(pos, menuItem)`
 
 * `pos` Integer
 * `menuItem` MenuItem
 
 在制定位置添加菜单项.
 
-### `Menu.items()`
+### `menu.items()`
 
 获取一个菜单项数组.
 

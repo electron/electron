@@ -42,6 +42,8 @@ $ node_modules/.bin/node-pre-gyp --target=0.36.2 --runtime=electron --fallback-t
 $ node_modules/.bin/node-pre-gyp --target=0.36.2 --runtime=electron --fallback-to-build --directory node_modules/v8-profiler/ --dist-url=https://atom.io/download/atom-shell reinstall
 ```
 
+[How to install native modules][how-to-install-native-modules].
+
 ### 5. 打开 Electron 的调试模式
 
 你也可以用调试参数来运行 Electron ：
