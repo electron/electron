@@ -199,7 +199,7 @@ describe('chromium feature', function () {
         },
         slashes: true
       })
-      b = window.open(windowUrl, 'nodeIntegration=no,show=no')
+      b = window.open(windowUrl, '', 'nodeIntegration=no,show=no')
     })
 
     it('does not override child options', function (done) {
