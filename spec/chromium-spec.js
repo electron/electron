@@ -199,7 +199,6 @@ describe('chromium feature', function () {
         },
         slashes: true
       })
-      console.log(windowUrl)
       b = window.open(windowUrl, 'nodeIntegration=no,show=no')
     })
 
