@@ -126,6 +126,53 @@ void Browser::SetUserTasks(const std::vector<UserTask>& tasks) {
   destinations->CommitList();
 }
 
+bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol) {
+  if (protocol.empty())
+    return false;
+
+  base::FilePath path;
+  if (!PathService::Get(base::FILE_EXE, &path)) {
+    LOG(ERROR) << "Error getting app exe path";
+    return false;
+  }
+
+  // Main Registry Key
+  HKEY root = HKEY_CURRENT_USER;
+  std::string keyPathStr = "Software\\Classes\\" + protocol;
+  std::wstring keyPath = std::wstring(keyPathStr.begin(), keyPathStr.end());
+
+  // Command Key
+  std::string cmdPathStr = keyPathStr + "\\shell\\open\\command";
+  std::wstring cmdPath = std::wstring(cmdPathStr.begin(), cmdPathStr.end());
+
+  base::win::RegKey key;
+  base::win::RegKey commandKey;
+  if (FAILED(key.Open(root, keyPath.c_str(), KEY_ALL_ACCESS)))
+    // Key doesn't even exist, we can confirm that it is not set
+    return true;
+
+  if (FAILED(commandKey.Open(root, cmdPath.c_str(), KEY_ALL_ACCESS)))
+    // Key doesn't even exist, we can confirm that it is not set
+    return true;
+
+  std::wstring keyVal;
+  if (FAILED(commandKey.ReadValue(L"", &keyVal)))
+    // Default value not set, we can confirm that it is not set
+    return true;
+
+  std::wstring exePath(path.value());
+  std::wstring exe = L"\"" + exePath + L"\" \"%1\"";
+  if (keyVal == exe) {
+    // Let's kill the key
+    if (FAILED(key.DeleteKey(L"shell")))
+      return false;
+
+    return true;
+  } else {
+    return true;
+  }
+}
+
 bool Browser::SetAsDefaultProtocolClient(const std::string& protocol) {
   // HKEY_CLASSES_ROOT
   //    $PROTOCOL
@@ -175,7 +222,6 @@ bool Browser::SetAsDefaultProtocolClient(const std::string& protocol) {
   if (FAILED(commandKey.WriteValue(L"", exe.c_str())))
     return false;
 
-  VLOG(1) << "Chrome registered as default handler for " << protocol << ".";
   return true;
 }
 

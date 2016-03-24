@@ -46,6 +46,10 @@ void Browser::ClearRecentDocuments() {
   [[NSDocumentController sharedDocumentController] clearRecentDocuments:nil];
 }
 
+bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol) {
+  return false;
+}
+
 bool Browser::SetAsDefaultProtocolClient(const std::string& protocol) {
   if (protocol.empty())
     return false;

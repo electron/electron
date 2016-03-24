@@ -372,6 +372,8 @@ mate::ObjectTemplateBuilder App::GetObjectTemplateBuilder(
                  base::Bind(&Browser::SetAppUserModelID, browser))
       .SetMethod("setAsDefaultProtocolClient",
                  base::Bind(&Browser::SetAsDefaultProtocolClient, browser))
+      .SetMethod("removeAsDefaultProtocolClient",
+                 base::Bind(&Browser::RemoveAsDefaultProtocolClient, browser))
 #if defined(OS_MACOSX)
       .SetMethod("hide", base::Bind(&Browser::Hide, browser))
       .SetMethod("show", base::Bind(&Browser::Show, browser))
