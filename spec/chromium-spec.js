@@ -192,10 +192,10 @@ describe('chromium feature', function () {
       window.addEventListener('message', listener)
 
       var windowUrl = require('url').format({
-        pathname: fixtures + "/pages/window-opener-no-node-integration.html",
+        pathname: `${fixtures}/pages/window-opener-no-node-integration.html`,
         protocol: 'file',
         query: {
-          p: fixtures + "/pages/window-opener-node.html"
+          p: `${fixtures}/pages/window-opener-node.html`
         },
         slashes: true
       })
