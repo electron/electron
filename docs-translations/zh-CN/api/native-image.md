@@ -121,6 +121,12 @@ var image = nativeImage.createFromPath('/Users/somebody/images/icon.png');
 
 返回图片数据的 URL.
 
+### `image.getNativeHandle()` _OS X_
+
+返回一个保存了 c 指针的 [Buffer][buffer] 来潜在处理原始图像.在OS X, 将会返回一个 `NSImage` 指针实例.
+
+注意那返回的指针是潜在原始图像的弱指针，而不是一个复制，你_必须_ 确保与 `nativeImage` 的关联不间断 .
+
 ### `image.isEmpty()`
 
 返回一个 boolean ，标识图片是否为空.
