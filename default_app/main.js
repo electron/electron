@@ -6,13 +6,8 @@ const Menu     = electron.Menu;
 
 const fs = require('fs');
 const path = require('path');
+const repl = require('repl');
 const url = require('url');
-
-// Quit when all windows are closed and no other one is listening to this.
-app.on('window-all-closed', function() {
-  if (app.listeners('window-all-closed').length == 1)
-    app.quit();
-});
 
 // Parse command line options.
 var argv = process.argv.slice(1);
@@ -27,6 +22,8 @@ for (var i = 0; i < argv.length; i++) {
   } else if (argv[i] == '--help' || argv[i] == '-h') {
     option.help = true;
     break;
+  } else if (argv[i] == '--interactive' || argv[i] == '-i') {
+    option.interactive = true;
   } else if (argv[i] == '--test-type=webdriver') {
     option.webdriver = true;
   } else if (argv[i] == '--require' || argv[i] == '-r') {
@@ -39,6 +36,12 @@ for (var i = 0; i < argv.length; i++) {
     break;
   }
 }
+
+// Quit when all windows are closed and no other one is listening to this.
+app.on('window-all-closed', function() {
+  if (app.listeners('window-all-closed').length == 1 && !option.interactive)
+    app.quit();
+});
 
 // Create default menu.
 app.once('ready', function() {
@@ -275,6 +278,12 @@ function loadApplicationByUrl(appUrl) {
   require('./default_app').load(appUrl);
 }
 
+function startRepl() {
+  repl.start('> ').on('exit', function() {
+    process.exit(0);
+  });
+}
+
 // Start the specified app if there is one specified in command line, otherwise
 // start the default app.
 if (option.file && !option.webdriver) {
@@ -302,11 +311,14 @@ if (option.file && !option.webdriver) {
   helpMessage    += "  - .html/.htm file.\n";
   helpMessage    += "  - http://, https://, or file:// URL.\n";
   helpMessage    += "\nOptions:\n";
-  helpMessage    += "  -r, --require         Module to preload (option can be repeated)\n";
   helpMessage    += "  -h, --help            Print this usage message.\n";
+  helpMessage    += "  -i, --interactive     Open a REPL to the main process.\n";
+  helpMessage    += "  -r, --require         Module to preload (option can be repeated)\n";
   helpMessage    += "  -v, --version         Print the version.";
   console.log(helpMessage);
   process.exit(0);
+} else if (option.interactive) {
+  startRepl();
 } else {
   loadApplicationByUrl('file://' + __dirname + '/index.html');
 }
