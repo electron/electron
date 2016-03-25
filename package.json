@@ -5,7 +5,7 @@
     "asar": "^0.10.0",
     "eslint": "^2.1.0",
     "request": "*",
-    "standard-format": "^2.1.1"
+    "snazzy": "^3.0.0"
   },
   "optionalDependencies": {
     "runas": "^3.0.0"
