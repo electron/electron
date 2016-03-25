@@ -326,10 +326,12 @@ bool WebContents::ShouldCreateWebContents(
     const GURL& target_url,
     const std::string& partition_id,
     content::SessionStorageNamespace* session_storage_namespace) {
+  auto disposition = (window_container_type == WINDOW_CONTAINER_TYPE_BACKGROUND)
+      ? "background-tab" : "new-window";
   if (type_ == BROWSER_WINDOW)
-    Emit("-new-window", target_url, frame_name, NEW_FOREGROUND_TAB);
+    Emit("-new-window", target_url, frame_name, disposition);
   else
-    Emit("new-window", target_url, frame_name, NEW_FOREGROUND_TAB);
+    Emit("new-window", target_url, frame_name, disposition);
   return false;
 }
 
