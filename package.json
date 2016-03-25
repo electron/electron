@@ -12,7 +12,8 @@
   },
   "standard": {
     "ignore": [
-      "/lib/browser/rpc-server.js"
+      "/lib/browser/rpc-server.js",
+      "/lib/common/asar.js"
     ]
   },
   "private": true,
