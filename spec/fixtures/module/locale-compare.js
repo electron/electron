@@ -3,5 +3,5 @@ process.on('message', function () {
     'a'.localeCompare('a'),
     'ä'.localeCompare('z', 'de'),
     'ä'.localeCompare('a', 'sv', { sensitivity: 'base' }),
-  ]);
-});
+  ])
+})
