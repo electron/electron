@@ -1,1 +1,1 @@
-exports.aFunction = function() { return 1127; };
+exports.aFunction = function () { return 1127; }

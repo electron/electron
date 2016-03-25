@@ -1,4 +1,4 @@
-process.on('message', function() {
-  process.send(process.argv);
-  process.exit(0);
-});
+process.on('message', function () {
+  process.send(process.argv)
+  process.exit(0)
+})

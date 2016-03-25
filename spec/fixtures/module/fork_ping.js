@@ -1,14 +1,14 @@
-process.on('uncaughtException', function(error) {
-  process.send(error.stack);
-});
+process.on('uncaughtException', function (error) {
+  process.send(error.stack)
+})
 
-var child = require('child_process').fork(__dirname + '/ping.js');
-process.on('message', function(msg) {
-  child.send(msg);
-});
+var child = require('child_process').fork(__dirname + '/ping.js')
+process.on('message', function (msg) {
+  child.send(msg)
+})
 child.on('message', function (msg) {
-  process.send(msg);
-});
-child.on('exit', function(code) {
-  process.exit(code);
-});
+  process.send(msg)
+})
+child.on('exit', function (code) {
+  process.exit(code)
+})
