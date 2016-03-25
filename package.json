@@ -10,6 +10,11 @@
   "optionalDependencies": {
     "runas": "^3.0.0"
   },
+  "standard": {
+    "ignore": [
+      "/lib/browser/rpc-server.js"
+    ]
+  },
   "private": true,
   "scripts": {
     "bootstrap": "python ./script/bootstrap.py",
