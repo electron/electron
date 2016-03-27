@@ -86,24 +86,24 @@ const CGFloat kVerticalTitleMargin = 2;
   if (inMouseEventSequence_ && alternateImage_) {
     image = alternateImage_.get();
   }
-
   // Apply the higlight color if the image is a template image. When this moves
   // to using the new [NSStatusItem button] API, this should work automagically.
   if ([image isTemplate] == YES) {
 	   NSImage * imageWithColor = [image copy];
     [imageWithColor lockFocus];
     [[self colorWithHighlight: highlightContent] set];
-    NSRectFillUsingOperation(self.bounds, NSCompositeSourceAtop);
+    CGRect imageBounds = CGRectMake(0,0, image.size.width, image.size.height);
+    NSRectFillUsingOperation(imageBounds, NSCompositeSourceAtop);
     [imageWithColor unlockFocus];
     image = imageWithColor;
   }
 
   // Draw the image
   [image drawInRect: CGRectMake(
-    roundf(([self iconWidth] - [image size].width) / 2),
-    roundf((thickness - [image size].height) / 2),
-    [image size].width,
-    [image size].height
+    roundf(([self iconWidth] - image.size.width) / 2),
+    roundf((thickness - image.size.height) / 2),
+    image.size.width,
+    image.size.height
   )];
 
   if (title_) {
