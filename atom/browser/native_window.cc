@@ -201,6 +201,14 @@ gfx::Size NativeWindow::GetContentSize() {
   return WindowSizeToContentSize(GetSize());
 }
 
+void NativeWindow::SetSheetOffset(const double offset) {
+  sheet_offset_ = offset;
+}
+
+double NativeWindow::GetSheetOffset() {
+  return sheet_offset_;
+}
+
 void NativeWindow::SetSizeConstraints(
     const extensions::SizeConstraints& window_constraints) {
   extensions::SizeConstraints content_constraints;

@@ -190,6 +190,9 @@ class NativeWindow : public base::SupportsUserData,
   gfx::Size GetAspectRatioExtraSize();
   void SetAspectRatio(double aspect_ratio, const gfx::Size& extra_size);
 
+  void SetSheetOffset(const double offset);
+  double GetSheetOffset();
+
   base::WeakPtr<NativeWindow> GetWeakPtr() {
     return weak_factory_.GetWeakPtr();
   }
@@ -325,6 +328,9 @@ class NativeWindow : public base::SupportsUserData,
   // Closure that would be called when window is unresponsive when closing,
   // it should be cancelled when we can prove that the window is responsive.
   base::CancelableClosure window_unresposive_closure_;
+
+  // Used to display sheets at the appropriate vertical offset
+  double sheet_offset_;
 
   // Used to maintain the aspect ratio of a view which is inside of the
   // content view.

@@ -243,6 +243,12 @@ bool ScopedDisableResize::disable_resize_ = false;
   return NO;
 }
 
+- (NSRect)window:(NSWindow *)window willPositionSheet:(NSWindow *)sheet usingRect:(NSRect)rect {
+  rect.origin.y = window.contentView.frame.size.height - shell_->GetSheetOffset();
+  return rect;
+}
+
+
 @end
 
 @interface AtomNSWindow : NSWindow {

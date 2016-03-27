@@ -18,10 +18,6 @@ The Dialog is opened from Electron's main thread. If you want to use the dialog 
 const dialog = require('electron').remote.dialog;
 ```
 
-**Note for OS X**: If you want to present dialogs as sheets, the only thing you
-have to do is provide a `BrowserWindow` reference in the `browserWindow`
-parameter.
-
 ## Methods
 
 The `dialog` module has the following methods:
@@ -125,3 +121,27 @@ This API can be called safely before the `ready` event the `app` module emits,
 it is usually used to report errors in early stage of startup.  If called
 before the app `ready`event on Linux, the message will be emitted to stderr,
 and no GUI dialog will appear.
+
+
+## Sheets
+
+On Mac OS X, dialogs are presented as sheets attached to a window if you provide
+a `BrowserWindow` reference in the `browserWindow` parameter, or modals if no
+window is provided.
+
+### `dialog.setSheetOffset(browserWindow, offset)`
+
+* `browserWindow` BrowserWindow (optional)
+
+Changes the attachment point for sheets on Mac OS X. By default, sheets are attached
+just below the window frame, but you may want to display them beneath a HTML-rendered
+toolbar. For example:
+```
+const {remote} = require('electron');
+const browserWindow = remote.getCurrentWindow();
+
+var toolbarRect = document.getElementById('toolbar').getBoundingClientRect();
+remote.dialog.setSheetOffset(browserWindow, toolbarRect.height);
+
+... show dialog ...
+```
