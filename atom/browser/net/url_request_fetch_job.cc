@@ -167,8 +167,6 @@ void URLRequestFetchJob::HeadersCompleted() {
 }
 
 int URLRequestFetchJob::DataAvailable(net::IOBuffer* buffer, int num_bytes) {
-  // Clear the IO_PENDING status.
-  SetStatus(net::URLRequestStatus());
   // Do nothing if pending_buffer_ is empty, i.e. there's no ReadRawData()
   // operation waiting for IO completion.
   if (!pending_buffer_.get())
@@ -176,7 +174,6 @@ int URLRequestFetchJob::DataAvailable(net::IOBuffer* buffer, int num_bytes) {
 
   // pending_buffer_ is set to the IOBuffer instance provided to ReadRawData()
   // by URLRequestJob.
-
   int bytes_read = std::min(num_bytes, pending_buffer_size_);
   memcpy(pending_buffer_->data(), buffer->data(), bytes_read);
 
@@ -197,12 +194,11 @@ void URLRequestFetchJob::Kill() {
 int URLRequestFetchJob::ReadRawData(net::IOBuffer* dest, int dest_size) {
   if (GetResponseCode() == 204) {
     request()->set_received_response_content_length(prefilter_bytes_read());
-    return 0;
+    return net::OK;
   }
   pending_buffer_ = dest;
   pending_buffer_size_ = dest_size;
-  SetStatus(net::URLRequestStatus(net::URLRequestStatus::IO_PENDING, 0));
-  return dest_size;
+  return net::ERR_IO_PENDING;
 }
 
 bool URLRequestFetchJob::GetMimeType(std::string* mime_type) const {
