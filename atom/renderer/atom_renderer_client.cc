@@ -163,6 +163,9 @@ void AtomRendererClient::DidCreateScriptContext(
   // Add atom-shell extended APIs.
   atom_bindings_->BindTo(env->isolate(), env->process_object());
 
+  // Load everything.
+  node_bindings_->LoadEnvironment(env);
+
   if (first_time) {
     // Make uv loop being wrapped by window context.
     node_bindings_->set_uv_env(env);
@@ -170,9 +173,6 @@ void AtomRendererClient::DidCreateScriptContext(
     // Give the node loop a run to make sure everything is ready.
     node_bindings_->RunMessageLoop();
   }
-
-  // Load everything.
-  node_bindings_->LoadEnvironment(env);
 }
 
 void AtomRendererClient::WillReleaseScriptContext(
