@@ -13,23 +13,23 @@ const url = require('url')
 var argv = process.argv.slice(1)
 var option = { file: null, help: null, version: null, webdriver: null, modules: [] }
 for (var i = 0; i < argv.length; i++) {
-  if (argv[i] == '--version' || argv[i] == '-v') {
+  if (argv[i] === '--version' || argv[i] === '-v') {
     option.version = true
     break
   } else if (argv[i].match(/^--app=/)) {
     option.file = argv[i].split('=')[1]
     break
-  } else if (argv[i] == '--help' || argv[i] == '-h') {
+  } else if (argv[i] === '--help' || argv[i] === '-h') {
     option.help = true
     break
-  } else if (argv[i] == '--interactive' || argv[i] == '-i') {
+  } else if (argv[i] === '--interactive' || argv[i] === '-i') {
     option.interactive = true
-  } else if (argv[i] == '--test-type=webdriver') {
+  } else if (argv[i] === '--test-type=webdriver') {
     option.webdriver = true
-  } else if (argv[i] == '--require' || argv[i] == '-r') {
+  } else if (argv[i] === '--require' || argv[i] === '-r') {
     option.modules.push(argv[++i])
     continue
-  } else if (argv[i][0] == '-') {
+  } else if (argv[i][0] === '-') {
     continue
   } else {
     option.file = argv[i]
@@ -39,14 +39,14 @@ for (var i = 0; i < argv.length; i++) {
 
 // Quit when all windows are closed and no other one is listening to this.
 app.on('window-all-closed', function () {
-  if (app.listeners('window-all-closed').length == 1 && !option.interactive)
+  if (app.listeners('window-all-closed').length === 1 && !option.interactive) {
     app.quit()
+  }
 })
 
 // Create default menu.
 app.once('ready', function () {
-  if (Menu.getApplicationMenu())
-    return
+  if (Menu.getApplicationMenu()) return
 
   var template = [
     {
@@ -84,7 +84,7 @@ app.once('ready', function () {
           label: 'Select All',
           accelerator: 'CmdOrCtrl+A',
           role: 'selectall'
-        },
+        }
       ]
     },
     {
@@ -94,14 +94,13 @@ app.once('ready', function () {
           label: 'Reload',
           accelerator: 'CmdOrCtrl+R',
           click: function (item, focusedWindow) {
-            if (focusedWindow)
-              focusedWindow.reload()
+            if (focusedWindow) focusedWindow.reload()
           }
         },
         {
           label: 'Toggle Full Screen',
           accelerator: (function () {
-            if (process.platform == 'darwin')
+            if (process.platform === 'darwin')
               return 'Ctrl+Command+F'
             else
               return 'F11'
@@ -114,7 +113,7 @@ app.once('ready', function () {
         {
           label: 'Toggle Developer Tools',
           accelerator: (function () {
-            if (process.platform == 'darwin')
+            if (process.platform === 'darwin')
               return 'Alt+Command+I'
             else
               return 'Ctrl+Shift+I'
@@ -176,7 +175,7 @@ app.once('ready', function () {
     },
   ]
 
-  if (process.platform == 'darwin') {
+  if (process.platform === 'darwin') {
     template.unshift({
       label: 'Electron',
       submenu: [
@@ -259,7 +258,7 @@ function loadApplicationPackage (packagePath) {
     // Run the app.
     require('module')._load(packagePath, module, true)
   } catch(e) {
-    if (e.code == 'MODULE_NOT_FOUND') {
+    if (e.code === 'MODULE_NOT_FOUND') {
       app.focus()
       dialog.showErrorBox(
         'Error opening app',

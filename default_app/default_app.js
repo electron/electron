@@ -15,7 +15,7 @@ exports.load = function (appUrl) {
       width: 800,
       height: 600,
       autoHideMenuBar: true,
-      useContentSize: true,
+      useContentSize: true
     })
     mainWindow.loadURL(appUrl)
     mainWindow.focus()
