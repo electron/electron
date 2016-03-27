@@ -106,8 +106,6 @@ base::FilePath GetResourcesPath(bool is_browser) {
 
 }  // namespace
 
-node::Environment* global_env = nullptr;
-
 NodeBindings::NodeBindings(bool is_browser)
     : is_browser_(is_browser),
       message_loop_(nullptr),
@@ -214,10 +212,8 @@ void NodeBindings::RunMessageLoop() {
 void NodeBindings::UvRunOnce() {
   DCHECK(!is_browser_ || BrowserThread::CurrentlyOn(BrowserThread::UI));
 
-  // By default the global env would be used unless user specified another one
-  // (this happens for renderer process, which wraps the uv loop with web page
-  // context).
-  node::Environment* env = uv_env() ? uv_env() : global_env;
+  node::Environment* env = uv_env();
+  CHECK(env);
 
   // Use Locker in browser process.
   mate::Locker locker(env->isolate());

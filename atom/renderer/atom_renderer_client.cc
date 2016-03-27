@@ -90,18 +90,6 @@ void AtomRendererClient::WebKitInitialized() {
   blink::WebCustomElement::addEmbedderCustomElementName("browserplugin");
 
   OverrideNodeArrayBuffer();
-
-  node_bindings_->Initialize();
-  node_bindings_->PrepareMessageLoop();
-
-  DCHECK(!global_env);
-
-  // Create a default empty environment which would be used when we need to
-  // run V8 code out of a window context (like running a uv callback).
-  v8::Isolate* isolate = blink::mainThreadIsolate();
-  v8::HandleScope handle_scope(isolate);
-  v8::Local<v8::Context> context = v8::Context::New(isolate);
-  global_env = node::Environment::New(context, uv_default_loop());
 }
 
 void AtomRendererClient::RenderThreadStarted() {
@@ -160,8 +148,14 @@ bool AtomRendererClient::OverrideCreatePlugin(
 
 void AtomRendererClient::DidCreateScriptContext(
     v8::Handle<v8::Context> context) {
-  // Give the node loop a run to make sure everything is ready.
-  node_bindings_->RunMessageLoop();
+  // Whether the node binding has been initialized.
+  bool first_time = node_bindings_->uv_env() == nullptr;
+
+  // Prepare the node bindings.
+  if (first_time) {
+    node_bindings_->Initialize();
+    node_bindings_->PrepareMessageLoop();
+  }
 
   // Setup node environment for each window.
   node::Environment* env = node_bindings_->CreateEnvironment(context);
@@ -169,12 +163,16 @@ void AtomRendererClient::DidCreateScriptContext(
   // Add atom-shell extended APIs.
   atom_bindings_->BindTo(env->isolate(), env->process_object());
 
-  // Make uv loop being wrapped by window context.
-  if (node_bindings_->uv_env() == nullptr)
-    node_bindings_->set_uv_env(env);
-
   // Load everything.
   node_bindings_->LoadEnvironment(env);
+
+  if (first_time) {
+    // Make uv loop being wrapped by window context.
+    node_bindings_->set_uv_env(env);
+
+    // Give the node loop a run to make sure everything is ready.
+    node_bindings_->RunMessageLoop();
+  }
 }
 
 void AtomRendererClient::WillReleaseScriptContext(

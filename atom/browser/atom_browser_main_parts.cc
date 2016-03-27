@@ -106,17 +106,21 @@ void AtomBrowserMainParts::PostEarlyInitialization() {
   node_debugger_.reset(new NodeDebugger(js_env_->isolate()));
 
   // Create the global environment.
-  global_env = node_bindings_->CreateEnvironment(js_env_->context());
+  node::Environment* env =
+      node_bindings_->CreateEnvironment(js_env_->context());
 
   // Make sure node can get correct environment when debugging.
   if (node_debugger_->IsRunning())
-    global_env->AssignToContext(v8::Debug::GetDebugContext());
+    env->AssignToContext(v8::Debug::GetDebugContext());
 
   // Add atom-shell extended APIs.
-  atom_bindings_->BindTo(js_env_->isolate(), global_env->process_object());
+  atom_bindings_->BindTo(js_env_->isolate(), env->process_object());
 
   // Load everything.
-  node_bindings_->LoadEnvironment(global_env);
+  node_bindings_->LoadEnvironment(env);
+
+  // Wrap the uv loop with global env.
+  node_bindings_->set_uv_env(env);
 }
 
 void AtomBrowserMainParts::PreMainMessageLoopRun() {
