@@ -26,10 +26,10 @@ Emitted when the system is suspending.
 
 Emitted when system is resuming.
 
-### Event: 'on-ac'
+### Event: 'on-ac' *Windows*
 
 Emitted when the system changes to AC power.
 
-### Event: 'on-battery'
+### Event: 'on-battery' *Windows*
 
 Emitted when system changes to battery power.
