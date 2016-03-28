@@ -1,3 +1,5 @@
+/* globals btoa, WebView, xdescribe */
+
 const assert = require('assert')
 const path = require('path')
 const http = require('http')
@@ -10,7 +12,7 @@ describe('<webview> tag', function () {
   var webview = null
 
   beforeEach(function () {
-    webview = new WebView
+    webview = new WebView()
   })
 
   afterEach(function () {
@@ -168,7 +170,8 @@ describe('<webview> tag', function () {
 
   describe('disablewebsecurity attribute', function () {
     it('does not disable web security when not set', function (done) {
-      var src = "<script src='file://" + __dirname + "/static/jquery-2.0.3.min.js'></script> <script>console.log('ok');</script>"
+      var jqueryPath = path.join(__dirname, '/static/jquery-2.0.3.min.js')
+      var src = `<script src='file://${jqueryPath}'></script> <script>console.log('ok');</script>`
       var encoded = btoa(unescape(encodeURIComponent(src)))
       var listener = function (e) {
         assert(/Not allowed to load local resource/.test(e.message))
@@ -181,7 +184,8 @@ describe('<webview> tag', function () {
     })
 
     it('disables web security when set', function (done) {
-      var src = "<script src='file://" + __dirname + "/static/jquery-2.0.3.min.js'></script> <script>console.log('ok');</script>"
+      var jqueryPath = path.join(__dirname, '/static/jquery-2.0.3.min.js')
+      var src = `<script src='file://${jqueryPath}'></script> <script>console.log('ok');</script>`
       var encoded = btoa(unescape(encodeURIComponent(src)))
       var listener = function (e) {
         assert.equal(e.message, 'ok')
@@ -549,8 +553,7 @@ describe('<webview> tag', function () {
 
   describe('executeJavaScript', function () {
     it('should support user gesture', function (done) {
-      if (process.env.TRAVIS !== 'true' || process.platform == 'darwin')
-        return done()
+      if (process.env.TRAVIS !== 'true' || process.platform === 'darwin') return done()
 
       var listener = function () {
         webview.removeEventListener('enter-html-full-screen', listener)
@@ -568,8 +571,7 @@ describe('<webview> tag', function () {
     })
 
     it('can return the result of the executed script', function (done) {
-      if (process.env.TRAVIS === 'true' && process.platform == 'darwin')
-        return done()
+      if (process.env.TRAVIS === 'true' && process.platform === 'darwin') return done()
 
       var listener = function () {
         var jsScript = "'4'+2"
@@ -652,7 +654,7 @@ describe('<webview> tag', function () {
           listener2()
         } else {
           activeMatchOrdinal.push(e.result.activeMatchOrdinal)
-          if (e.result.activeMatchOrdinal == totalMatches) {
+          if (e.result.activeMatchOrdinal === totalMatches) {
             assert.deepEqual(activeMatchOrdinal, [1, 2, 3])
             webview.stopFindInPage('clearSelection')
             done()
