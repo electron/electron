@@ -18,7 +18,7 @@ describe('asar package', function () {
     describe('fs.readFileSync', function () {
       it('does not leak fd', function () {
         var readCalls = 1
-        while(readCalls <= 10000) {
+        while (readCalls <= 10000) {
           fs.readFileSync(path.join(process.resourcesPath, 'atom.asar', 'renderer', 'api', 'ipc.js'))
           readCalls++
         }
@@ -530,9 +530,9 @@ describe('asar package', function () {
     describe('fs.mkdirSync', function () {
       it('throws error when calling inside asar archive', function () {
         var p = path.join(fixtures, 'asar', 'a.asar', 'not-exist')
-        assert.throws((function () {
+        assert.throws(function () {
           fs.mkdirSync(p)
-        }), new RegExp('ENOTDIR'))
+        }, new RegExp('ENOTDIR'))
       })
     })
 

@@ -45,7 +45,7 @@ describe('nativeImage module', () => {
       assert.equal(nsimage.length, 8)
 
       // If all bytes are null, that's Bad
-      assert.equal(nsimage.reduce((acc, x) => acc || (x != 0), false), true)
+      assert.equal(nsimage.reduce((acc, x) => acc || (x !== 0), false), true)
     })
   })
 })
