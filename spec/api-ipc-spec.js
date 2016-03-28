@@ -60,7 +60,7 @@ describe('ipc module', function () {
 
     it('can construct an object from its member', function () {
       var call = remote.require(path.join(fixtures, 'module', 'call.js'))
-      var obj = new call.constructor
+      var obj = new call.constructor // eslint-disable-line
       assert.equal(obj.test, 'test')
     })
 
@@ -68,7 +68,7 @@ describe('ipc module', function () {
       var remoteFunctions = remote.require(path.join(fixtures, 'module', 'function.js'))
       assert.equal(remoteFunctions.aFunction(), 1127)
 
-      remoteFunctions.aFunction = function () { return 1234; }
+      remoteFunctions.aFunction = function () { return 1234 }
       assert.equal(remoteFunctions.aFunction(), 1234)
 
       assert.equal(delete remoteFunctions.aFunction, true)
@@ -106,7 +106,7 @@ describe('ipc module', function () {
     it('can return same object with different getters', function () {
       var contents1 = remote.getCurrentWindow().webContents
       var contents2 = remote.getCurrentWebContents()
-      assert(contents1 == contents2)
+      assert(contents1 === contents2)
     })
   })
 
