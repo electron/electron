@@ -1,3 +1,5 @@
+/* globals $ */
+
 const assert = require('assert')
 const http = require('http')
 const qs = require('querystring')

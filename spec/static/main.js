@@ -17,7 +17,7 @@ var argv = require('yargs')
   .argv
 
 var window = null
-process.port = 0; // will be used by crash-reporter spec.
+process.port = 0 // will be used by crash-reporter spec.
 
 app.commandLine.appendSwitch('js-flags', '--expose_gc')
 app.commandLine.appendSwitch('ignore-certificate-errors')
@@ -48,7 +48,7 @@ ipcMain.on('process.exit', function (event, code) {
 })
 
 ipcMain.on('eval', function (event, script) {
-  event.returnValue = eval(script)
+  event.returnValue = eval(script) // eslint-disable-line
 })
 
 ipcMain.on('echo', function (event, msg) {
@@ -84,10 +84,10 @@ app.on('ready', function () {
     height: 600,
     webPreferences: {
       javascript: true // Test whether web preferences crashes.
-    },
+    }
   })
   window.loadURL(url.format({
-    pathname: __dirname + '/index.html',
+    pathname: path.join(__dirname, '/index.html'),
     protocol: 'file',
     query: {
       grep: argv.grep,

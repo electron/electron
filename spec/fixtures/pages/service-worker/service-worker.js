@@ -1,3 +1,5 @@
+/* globals self, URL, Response */
+
 self.addEventListener('fetch', function (event) {
   var requestUrl = new URL(event.request.url)
 
