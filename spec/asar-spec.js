@@ -1,3 +1,5 @@
+/* globals xit */
+
 const assert = require('assert')
 const child_process = require('child_process')
 const fs = require('fs')
@@ -560,7 +562,9 @@ describe('asar package', function () {
       if (process.platform !== 'darwin') {
         return
       }
-      ref2 = require('child_process'), execFile = ref2.execFile, execFileSync = ref2.execFileSync
+      ref2 = require('child_process')
+      execFile = ref2.execFile
+      execFileSync = ref2.execFileSync
       echo = path.join(fixtures, 'asar', 'echo.asar', 'echo')
 
       it('executes binaries', function (done) {
@@ -609,18 +613,18 @@ describe('asar package', function () {
       it('disables asar support in sync API', function () {
         var file = path.join(fixtures, 'asar', 'a.asar', 'file1')
         var dir = path.join(fixtures, 'asar', 'a.asar', 'dir1')
-        assert.throws((function () {
+        assert.throws(function () {
           fs.readFileSync(file)
-        }), new RegExp(errorName))
-        assert.throws((function () {
+        }, new RegExp(errorName))
+        assert.throws(function () {
           fs.lstatSync(file)
-        }), new RegExp(errorName))
-        assert.throws((function () {
+        }, new RegExp(errorName))
+        assert.throws(function () {
           fs.realpathSync(file)
-        }), new RegExp(errorName))
-        assert.throws((function () {
+        }, new RegExp(errorName))
+        assert.throws(function () {
           fs.readdirSync(dir)
-        }), new RegExp(errorName))
+        }, new RegExp(errorName))
       })
 
       it('disables asar support in async API', function (done) {
@@ -647,9 +651,9 @@ describe('asar package', function () {
         var content1 = fs.readFileSync(asar)
         var content2 = originalFs.readFileSync(asar)
         assert.equal(content1.compare(content2), 0)
-        assert.throws((function () {
+        assert.throws(function () {
           fs.readdirSync(asar)
-        }), /ENOTDIR/)
+        }, /ENOTDIR/)
       })
     })
   })
@@ -785,9 +789,9 @@ describe('asar package', function () {
 
     it('throws error when calling inside asar archive', function () {
       var p = path.join(fixtures, 'asar', 'a.asar', 'not-exist')
-      assert.throws((function () {
+      assert.throws(function () {
         mkdirp.sync(p)
-      }), new RegExp('ENOTDIR'))
+      }, new RegExp('ENOTDIR'))
     })
   })
 

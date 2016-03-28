@@ -116,7 +116,7 @@ app.on('ready', function () {
         setImmediate(function () {
           try {
             item.getURL()
-          } catch(err) {
+          } catch (err) {
             window.webContents.send('download-error', url, filename, err.message)
           }
         })
@@ -132,8 +132,7 @@ app.on('ready', function () {
             item.getContentDisposition(),
             item.getFilename())
         })
-        if (need_cancel)
-          item.cancel()
+        if (need_cancel) item.cancel()
       }
     })
     event.returnValue = 'done'

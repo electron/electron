@@ -1,3 +1,5 @@
+/* globals xdescribe, Worker, SharedWorker, WebSocket, HTMLElement */
+
 const assert = require('assert')
 const http = require('http')
 const path = require('path')
@@ -295,15 +297,15 @@ describe('chromium feature', function () {
   describe('creating a Uint8Array under browser side', function () {
     it('does not crash', function () {
       var RUint8Array = remote.getGlobal('Uint8Array')
-      new RUint8Array
+      var arr = new RUint8Array()
+      assert(arr)
     })
   })
 
   describe('webgl', function () {
     it('can be get as context in canvas', function () {
-      if (process.platform === 'linux') {
-        return
-      }
+      if (process.platform === 'linux') return
+
       var webgl = document.createElement('canvas').getContext('webgl')
       assert.notEqual(webgl, null)
     })
@@ -387,7 +389,8 @@ describe('chromium feature', function () {
             done('user agent is empty')
           }
         })
-        new WebSocket('ws://127.0.0.1:' + port)
+        var socket = new WebSocket(`ws://127.0.0.1: ${port}`)
+        assert(socket)
       })
     })
   })

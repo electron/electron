@@ -45,7 +45,7 @@ function getIndexJsInServer (callback) {
   request(TARGET_URL, function (e, res, body) {
     if (e) {
       callback(e)
-    } else if (res.statusCode != 200) {
+    } else if (res.statusCode !== 200) {
       callback(new Error('Server returned ' + res.statusCode))
     } else {
       callback(null, JSON.parse(body))
@@ -54,9 +54,9 @@ function getIndexJsInServer (callback) {
 }
 
 function findObjectByVersion (all, version) {
-  for (var i in all)
-    if (all[i].version == version)
-      return i
+  for (var i in all) {
+    if (all[i].version === version) return i
+  }
   return -1
 }
 
@@ -69,11 +69,11 @@ app.on('ready', function () {
 
     var current = getInfoForCurrentVersion()
     var found = findObjectByVersion(all, current.version)
-    if (found == -1)
+    if (found === -1) {
       all.unshift(current)
-    else
+    } else {
       all[found] = current
-
+    }
     fs.writeFileSync(process.argv[2], JSON.stringify(all))
     process.exit(0)
   })

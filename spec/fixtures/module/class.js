@@ -24,6 +24,6 @@ class DerivedClass extends BaseClass {
 }
 
 module.exports = {
-  base: new BaseClass,
-  derived: new DerivedClass,
+  base: new BaseClass(),
+  derived: new DerivedClass()
 }
