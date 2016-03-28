@@ -1,3 +1,5 @@
+/* globals fetch */
+
 const assert = require('assert')
 const path = require('path')
 const webFrame = require('electron').webFrame
