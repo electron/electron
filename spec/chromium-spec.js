@@ -391,7 +391,7 @@ describe('chromium feature', function () {
             done('user agent is empty')
           }
         })
-        var socket = new WebSocket(`ws://127.0.0.1: ${port}`)
+        var socket = new WebSocket(`ws://127.0.0.1:${port}`)
         assert(socket)
       })
     })

@@ -80,24 +80,28 @@ describe('debugger module', function () {
       try {
         w.webContents.debugger.attach()
       } catch (err) {
-        done('unexpected error : ' + err)
+        return done('unexpected error : ' + err)
       }
+      /* eslint-disable */
+      // standard expects callback errors to be handled,
+      // but for some reason this err is not actually null..
       var callback = function (err, res) {
         assert(!res.wasThrown)
         assert.equal(res.result.value, 6)
         w.webContents.debugger.detach()
         done()
       }
+      /* eslint-enable */
       const params = {
-        'expression': '4+2',
+        'expression': '4+2'
       }
       w.webContents.debugger.sendCommand('Runtime.evaluate', params, callback)
     })
 
     it('fires message event', function (done) {
-      var url = process.platform != 'win32' ?
-        'file://' + path.join(fixtures, 'pages', 'a.html') :
-        'file:///' + path.join(fixtures, 'pages', 'a.html').replace(/\\/g, '/')
+      var url = process.platform !== 'win32'
+        ? 'file://' + path.join(fixtures, 'pages', 'a.html')
+        : 'file:///' + path.join(fixtures, 'pages', 'a.html').replace(/\\/g, '/')
       w.webContents.loadURL(url)
       try {
         w.webContents.debugger.attach()
@@ -105,7 +109,7 @@ describe('debugger module', function () {
         done('unexpected error : ' + err)
       }
       w.webContents.debugger.on('message', function (e, method, params) {
-        if (method == 'Console.messageAdded') {
+        if (method === 'Console.messageAdded') {
           assert.equal(params.message.type, 'log')
           assert.equal(params.message.url, url)
           assert.equal(params.message.text, 'a')
