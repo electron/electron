@@ -234,8 +234,7 @@
         # Defined in Chromium but not exposed in its gyp file.
         'V8_USE_EXTERNAL_STARTUP_DATA',
         'ENABLE_PLUGINS',
-        'ENABLE_PEPPER_CDMS',
-        'USE_PROPRIETARY_CODECS',
+        'ENABLE_PEPPER_CDMS'
       ],
       'sources': [
         '<@(lib_sources)',
