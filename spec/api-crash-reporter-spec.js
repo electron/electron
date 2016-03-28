@@ -40,9 +40,8 @@ describe('crash-reporter module', function () {
       server.close()
       var form = new multiparty.Form()
       form.parse(req, function (error, fields) {
-        if (called) {
-          return
-        }
+        if (error) throw error
+        if (called) return
         called = true
         assert.equal(fields['prod'], 'Electron')
         assert.equal(fields['ver'], process.versions['electron'])
