@@ -15,7 +15,7 @@ to the user. Electron conveniently allows developers to send notifications with
 the [HTML5 Notification API](https://notifications.spec.whatwg.org/), using
 the currently running operating system's native notification APIs to display it.
 
-Note: since this is an HTML5 API it is only avaialable in the renderer process.
+Note: since this is an HTML5 API it is only available in the renderer process.
 
 ```javascript
 var myNotification = new Notification('Title', {
