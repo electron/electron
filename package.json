@@ -11,11 +11,7 @@
     "runas": "^3.0.0"
   },
   "standard": {
-    "ignore": [
-      "/lib/browser/rpc-server.js",
-      "/lib/common/asar.js",
-      "/vendor"
-    ]
+    "ignore": ["/vendor"],
   },
   "private": true,
   "scripts": {
