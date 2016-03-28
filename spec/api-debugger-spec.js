@@ -30,7 +30,7 @@ describe('debugger module', function () {
         w.webContents.openDevTools()
         try {
           w.webContents.debugger.attach()
-        } catch(err) {
+        } catch (err) {
           assert(w.webContents.debugger.isAttached())
           done()
         }
@@ -41,7 +41,7 @@ describe('debugger module', function () {
     it('fails when protocol version is not supported', function (done) {
       try {
         w.webContents.debugger.attach('2.0')
-      } catch(err) {
+      } catch (err) {
         assert(!w.webContents.debugger.isAttached())
         done()
       }
@@ -50,7 +50,7 @@ describe('debugger module', function () {
     it('attaches when no protocol version is specified', function (done) {
       try {
         w.webContents.debugger.attach()
-      } catch(err) {
+      } catch (err) {
         done('unexpected error : ' + err)
       }
       assert(w.webContents.debugger.isAttached())
@@ -67,7 +67,7 @@ describe('debugger module', function () {
       })
       try {
         w.webContents.debugger.attach()
-      } catch(err) {
+      } catch (err) {
         done('unexpected error : ' + err)
       }
       w.webContents.debugger.detach()
@@ -79,7 +79,7 @@ describe('debugger module', function () {
       w.webContents.loadURL('about:blank')
       try {
         w.webContents.debugger.attach()
-      } catch(err) {
+      } catch (err) {
         done('unexpected error : ' + err)
       }
       var callback = function (err, res) {
@@ -101,7 +101,7 @@ describe('debugger module', function () {
       w.webContents.loadURL(url)
       try {
         w.webContents.debugger.attach()
-      } catch(err) {
+      } catch (err) {
         done('unexpected error : ' + err)
       }
       w.webContents.debugger.on('message', function (e, method, params) {
@@ -120,7 +120,7 @@ describe('debugger module', function () {
       w.webContents.loadURL('about:blank')
       try {
         w.webContents.debugger.attach()
-      } catch(err) {
+      } catch (err) {
         done('unexpected error : ' + err)
       }
       w.webContents.debugger.sendCommand('Test', function (err) {

@@ -183,7 +183,7 @@ describe('protocol module', function () {
 
     it('fails when sending object other than string', function (done) {
       var handler = function (request, callback) {
-        callback(new Date)
+        callback(new Date())
       }
       protocol.registerBufferProtocol(protocolName, handler, function (error) {
         if (error) {
@@ -413,7 +413,7 @@ describe('protocol module', function () {
 
     it('fails when sending unsupported content', function (done) {
       var handler = function (request, callback) {
-        callback(new Date)
+        callback(new Date())
       }
       protocol.registerBufferProtocol(protocolName, handler, function (error) {
         if (error) {
@@ -491,7 +491,7 @@ describe('protocol module', function () {
 
     it('fails when sending unsupported content', function (done) {
       var handler = function (request, callback) {
-        callback(new Date)
+        callback(new Date())
       }
       protocol.registerHttpProtocol(protocolName, handler, function (error) {
         if (error) {

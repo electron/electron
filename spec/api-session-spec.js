@@ -1,3 +1,5 @@
+/* globals WebView */
+
 const assert = require('assert')
 const http = require('http')
 const path = require('path')
@@ -231,7 +233,7 @@ describe('session module', function () {
       downloadServer.listen(0, '127.0.0.1', function () {
         var port = downloadServer.address().port
         ipcRenderer.sendSync('set-download-option', false, false)
-        var webview = new WebView
+        var webview = new WebView()
         webview.src = 'file://' + fixtures + '/api/blank.html'
         webview.addEventListener('did-finish-load', function () {
           webview.downloadURL(url + ':' + port + '/')

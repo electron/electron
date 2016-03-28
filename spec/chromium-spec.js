@@ -103,10 +103,11 @@ describe('chromium feature', function () {
       navigator.mediaDevices.enumerateDevices().then((devices) => {
         const labels = devices.map((device) => device.label)
         const labelFound = labels.some((label) => !!label)
-        if (labelFound)
+        if (labelFound) {
           done()
-        else
+        } else {
           done('No device labels found: ' + JSON.stringify(labels))
+        }
       }).catch(done)
     })
   })
@@ -171,8 +172,9 @@ describe('chromium feature', function () {
     it('inherit options of parent window', function (done) {
       var b
       listener = function (event) {
-        var height, ref1, width
-        ref1 = remote.getCurrentWindow().getSize(), width = ref1[0], height = ref1[1]
+        var ref1 = remote.getCurrentWindow().getSize()
+        var width = ref1[0]
+        var height = ref1[1]
         assert.equal(event.data, 'size: ' + width + ' ' + height)
         b.close()
         done()
