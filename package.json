@@ -12,6 +12,7 @@
   },
   "standard": {
     "ignore": ["/vendor"],
+    "globals": ["afterEach", "beforeEach", "describe", "it", "location"]
   },
   "private": true,
   "scripts": {
