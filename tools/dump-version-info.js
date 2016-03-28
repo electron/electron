@@ -1,6 +1,5 @@
 var app = require('app')
 var fs = require('fs')
-var path = require('path')
 var request = require('request')
 
 var TARGET_URL = 'https://atom.io/download/atom-shell/index.json'
@@ -9,11 +8,9 @@ function getDate () {
   var today = new Date()
   var year = today.getFullYear()
   var month = today.getMonth() + 1
-  if (month <= 9)
-    month = '0' + month
+  if (month <= 9) month = '0' + month
   var day = today.getDate()
-  if (day <= 9)
-    day = '0' + day
+  if (day <= 9) day = '0' + day
   return year + '-' + month + '-' + day
 }
 
@@ -38,7 +35,7 @@ function getInfoForCurrentVersion () {
     'win32-ia32',
     'win32-ia32-symbols',
     'win32-x64',
-    'win32-x64-symbols',
+    'win32-x64-symbols'
   ]
 
   return json
@@ -46,12 +43,13 @@ function getInfoForCurrentVersion () {
 
 function getIndexJsInServer (callback) {
   request(TARGET_URL, function (e, res, body) {
-    if (e)
+    if (e) {
       callback(e)
-    else if (res.statusCode != 200)
+    } else if (res.statusCode != 200) {
       callback(new Error('Server returned ' + res.statusCode))
-    else
+    } else {
       callback(null, JSON.parse(body))
+    }
   })
 }
 

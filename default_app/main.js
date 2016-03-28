@@ -100,29 +100,21 @@ app.once('ready', function () {
         {
           label: 'Toggle Full Screen',
           accelerator: (function () {
-            if (process.platform === 'darwin')
-              return 'Ctrl+Command+F'
-            else
-              return 'F11'
+            return (process.platform === 'darwin') ? 'Ctrl+Command+F' : 'F11'
           })(),
           click: function (item, focusedWindow) {
-            if (focusedWindow)
-              focusedWindow.setFullScreen(!focusedWindow.isFullScreen())
+            if (focusedWindow) focusedWindow.setFullScreen(!focusedWindow.isFullScreen())
           }
         },
         {
           label: 'Toggle Developer Tools',
           accelerator: (function () {
-            if (process.platform === 'darwin')
-              return 'Alt+Command+I'
-            else
-              return 'Ctrl+Shift+I'
+            return (process.platform === 'darwin') ? 'Alt+Command+I' : 'Ctrl+Shift+I'
           })(),
           click: function (item, focusedWindow) {
-            if (focusedWindow)
-              focusedWindow.toggleDevTools()
+            if (focusedWindow) focusedWindow.toggleDevTools()
           }
-        },
+        }
       ]
     },
     {
@@ -138,7 +130,7 @@ app.once('ready', function () {
           label: 'Close',
           accelerator: 'CmdOrCtrl+W',
           role: 'close'
-        },
+        }
       ]
     },
     {
@@ -172,7 +164,7 @@ app.once('ready', function () {
           }
         }
       ]
-    },
+    }
   ]
 
   if (process.platform === 'darwin') {
@@ -214,8 +206,8 @@ app.once('ready', function () {
         {
           label: 'Quit',
           accelerator: 'Command+Q',
-          click: function () { app.quit(); }
-        },
+          click: function () { app.quit() }
+        }
       ]
     })
     template[3].submenu.push(
@@ -244,12 +236,14 @@ function loadApplicationPackage (packagePath) {
     var packageJsonPath = path.join(packagePath, 'package.json')
     if (fs.existsSync(packageJsonPath)) {
       var packageJson = JSON.parse(fs.readFileSync(packageJsonPath))
-      if (packageJson.version)
-        app.setVersion(packageJson.version)
-      if (packageJson.productName)
+      if (packageJson.version) app.setVersion(packageJson.version)
+
+      if (packageJson.productName) {
         app.setName(packageJson.productName)
-      else if (packageJson.name)
+      } else if (packageJson.name) {
         app.setName(packageJson.name)
+      }
+        
       app.setPath('userData', path.join(app.getPath('appData'), app.getName()))
       app.setPath('userCache', path.join(app.getPath('cache'), app.getName()))
       app.setAppPath(packagePath)
