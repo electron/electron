@@ -87,9 +87,9 @@ describe('browser-window module', function () {
     it('prevents users to access methods of webContents', function () {
       var webContents = w.webContents
       w.destroy()
-      assert.throws((function () {
+      assert.throws(function () {
         webContents.getId()
-      }), /Object has been destroyed/)
+      }, /Object has been destroyed/)
     })
   })
 
@@ -522,8 +522,7 @@ describe('browser-window module', function () {
       w.loadURL('file://' + fixtures + '/api/blank.html')
       w.webContents.beginFrameSubscription(function (data) {
         // This callback might be called twice.
-        if (called)
-          return
+        if (called) return
         called = true
 
         assert.notEqual(data.length, 0)
@@ -595,8 +594,7 @@ describe('browser-window module', function () {
 
   describe('window states (excluding Linux)', function () {
     // Not implemented on Linux.
-    if (process.platform == 'linux')
-      return
+    if (process.platform === 'linux') return
 
     describe('movable state', function () {
       it('can be changed with movable option', function () {
@@ -657,8 +655,7 @@ describe('browser-window module', function () {
 
     describe('fullscreenable state', function () {
       // Only implemented on OS X.
-      if (process.platform != 'darwin')
-        return
+      if (process.platform !== 'darwin') return
 
       it('can be changed with fullscreenable option', function () {
         w.destroy()
@@ -696,14 +693,13 @@ describe('browser-window module', function () {
       // dynamically.
       it('can be changed with hasShadow option', function () {
         w.destroy()
-        let hasShadow = process.platform == 'darwin' ? false : true
+        let hasShadow = process.platform !== 'darwin'
         w = new BrowserWindow({show: false, hasShadow: hasShadow})
         assert.equal(w.hasShadow(), hasShadow)
       })
 
       it('can be changed with setHasShadow method', function () {
-        if (process.platform != 'darwin')
-          return
+        if (process.platform !== 'darwin') return
 
         assert.equal(w.hasShadow(), true)
         w.setHasShadow(false)
@@ -763,19 +759,19 @@ describe('browser-window module', function () {
   describe('deprecated options', function () {
     it('throws a deprecation error for option keys using hyphens instead of camel case', function () {
       assert.throws(function () {
-        new BrowserWindow({'min-width': 500})
+        new BrowserWindow({'min-width': 500}) // eslint-disable-line
       }, 'min-width is deprecated. Use minWidth instead.')
     })
 
     it('throws a deprecation error for webPreference keys using hyphens instead of camel case', function () {
       assert.throws(function () {
-        new BrowserWindow({webPreferences: {'node-integration': false}})
+        new BrowserWindow({webPreferences: {'node-integration': false}}) // eslint-disable-line
       }, 'node-integration is deprecated. Use nodeIntegration instead.')
     })
 
     it('throws a deprecation error for option keys that should be set on webPreferences', function () {
       assert.throws(function () {
-        new BrowserWindow({zoomFactor: 1})
+        new BrowserWindow({zoomFactor: 1}) // eslint-disable-line
       }, 'options.zoomFactor is deprecated. Use options.webPreferences.zoomFactor instead.')
     })
   })
