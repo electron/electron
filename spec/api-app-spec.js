@@ -18,7 +18,7 @@ describe('electron module', function () {
     electron.hideInternalModules()
     try {
       require('clipboard')
-    } catch(err) {
+    } catch (err) {
       assert.equal(err.message, "Cannot find module 'clipboard'")
       done()
     }
