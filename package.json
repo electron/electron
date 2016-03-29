@@ -29,7 +29,7 @@
   "scripts": {
     "bootstrap": "python ./script/bootstrap.py",
     "build": "python ./script/build.py -c D",
-    "lint": "python ./script/eslint.py && python ./script/cpplint.py",
+    "lint": "standard && python ./script/cpplint.py",
     "preinstall": "node -e 'process.exit(0)'",
     "repl": "python ./script/start.py --interactive",
     "start": "python ./script/start.py",
