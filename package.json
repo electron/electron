@@ -5,15 +5,25 @@
     "asar": "^0.10.0",
     "eslint": "^2.1.0",
     "request": "*",
-    "snazzy": "^3.0.0"
+    "standard": "^6.0.8"
   },
   "optionalDependencies": {
     "runas": "^3.0.0"
   },
   "standard": {
-    "ignore": ["/vendor"],
-    "globals": ["$", "after", "afterEach", "before",
-      "beforeEach", "describe", "it", "location"]
+    "ignore": [
+      "/vendor"
+    ],
+    "globals": [
+      "$",
+      "after",
+      "afterEach",
+      "before",
+      "beforeEach",
+      "describe",
+      "it",
+      "location"
+    ]
   },
   "private": true,
   "scripts": {
