@@ -243,7 +243,7 @@ function loadApplicationPackage (packagePath) {
       } else if (packageJson.name) {
         app.setName(packageJson.name)
       }
-        
+
       app.setPath('userData', path.join(app.getPath('appData'), app.getName()))
       app.setPath('userCache', path.join(app.getPath('cache'), app.getName()))
       app.setAppPath(packagePath)
@@ -251,7 +251,7 @@ function loadApplicationPackage (packagePath) {
 
     // Run the app.
     require('module')._load(packagePath, module, true)
-  } catch(e) {
+  } catch (e) {
     if (e.code === 'MODULE_NOT_FOUND') {
       app.focus()
       dialog.showErrorBox(
@@ -319,5 +319,6 @@ if (option.file && !option.webdriver) {
 } else if (option.interactive) {
   startRepl()
 } else {
-  loadApplicationByUrl('file://' + __dirname + '/index.html')
+  var indexPath = path.join(__dirname, '/index.html')
+  loadApplicationByUrl(`file://${indexPath}`)
 }
