@@ -2,7 +2,7 @@
 
 [![build status](http://img.shields.io/travis/electron-userland/electron-prebuilt.svg?style=flat)](http://travis-ci.org/electron-userland/electron-prebuilt)
 
-![badge](https://nodei.co/npm/electron-prebuilt.png?downloads=true)
+[![badge](https://nodei.co/npm/electron-prebuilt.png?downloads=true)](https://www.npmjs.com/package/electron-prebuilt)
 
 Install [electron](https://github.com/atom/electron) prebuilt binaries for command-line use using npm. This module helps you easily install the `electron` command for use on the command line without having to compile anything.
 
