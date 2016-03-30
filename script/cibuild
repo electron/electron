@@ -62,8 +62,8 @@ def main():
     args += ['--dev']
   run_script('bootstrap.py', args)
 
-  run_script('cpplint.py')
-  run_script('eslint.py')
+  execute([npm, 'run', 'lint'])
+
   if is_release:
     run_script('build.py', ['-c', 'R'])
     run_script('create-dist.py')
