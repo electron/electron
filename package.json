@@ -11,21 +11,18 @@
   },
   "standard": {
     "ignore": [
+      "/out",
+      "/spec",
       "/vendor"
-    ],
-    "env": {
-      "mocha": true
-    },
-    "globals": [
-      "$",
-      "location"
     ]
   },
   "private": true,
   "scripts": {
     "bootstrap": "python ./script/bootstrap.py",
     "build": "python ./script/build.py -c D",
-    "lint": "standard && python ./script/cpplint.py",
+    "lint": "npm run lint-js && npm run lint-cpp",
+    "lint-js": "standard && standard spec",
+    "lint-cpp": "python ./script/cpplint.py",
     "preinstall": "node -e 'process.exit(0)'",
     "repl": "python ./script/start.py --interactive",
     "start": "python ./script/start.py",

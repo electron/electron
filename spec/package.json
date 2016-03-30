@@ -18,5 +18,10 @@
   "optionalDependencies": {
     "ffi": "2.0.0",
     "runas": "3.x"
+  },
+  "standard": {
+    "env": {
+      "mocha": true
+    }
   }
 }
