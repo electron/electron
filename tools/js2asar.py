@@ -29,7 +29,6 @@ def copy_files(source_files, output_dir):
 
 
 def call_asar(archive, output_dir):
-  print(output_dir)
   asar = os.path.join(SOURCE_ROOT, 'node_modules', 'asar', 'bin', 'asar')
   subprocess.check_call([find_node(), asar, 'pack', output_dir, archive])
 
