@@ -3,6 +3,9 @@ const path = require('path')
 const http = require('http')
 const url = require('url')
 
+const {remote} = require('electron')
+const {BrowserWindow} = remote
+
 describe('<webview> tag', function () {
   this.timeout(10000)
 
@@ -71,6 +74,32 @@ describe('<webview> tag', function () {
       })
       webview.setAttribute('nodeintegration', 'on')
       webview.src = 'file://' + fixtures + '/pages/post.html'
+      document.body.appendChild(webview)
+    })
+
+
+    it('disables node integration on child windows when it is disabled on the webview', function (done) {
+      webview.addEventListener('console-message', function (e) {
+        assert.equal(e.message, 'window opened')
+        const sourceId = remote.getCurrentWindow().id
+        const windows = BrowserWindow.getAllWindows().filter(function (window) {
+          return window.id !== sourceId
+        })
+        assert.equal(windows.length, 1)
+        assert.equal(windows[0].webContents.getWebPreferences().nodeIntegration, false)
+        done()
+      })
+
+      webview.setAttribute('allowpopups', 'on')
+
+      webview.src = require('url').format({
+        pathname: `${fixtures}/pages/webview-opener-no-node-integration.html`,
+        protocol: 'file',
+        query: {
+          p: `${fixtures}/pages/window-opener-node.html`
+        },
+        slashes: true
+      })
       document.body.appendChild(webview)
     })
 
