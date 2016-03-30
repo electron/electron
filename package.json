@@ -3,7 +3,6 @@
   "version": "0.37.3",
   "devDependencies": {
     "asar": "^0.10.0",
-    "eslint": "^2.1.0",
     "request": "*",
     "standard": "^6.0.8"
   },
