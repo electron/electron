@@ -14,14 +14,11 @@
     "ignore": [
       "/vendor"
     ],
+    "env": {
+      "mocha": true
+    },
     "globals": [
       "$",
-      "after",
-      "afterEach",
-      "before",
-      "beforeEach",
-      "describe",
-      "it",
       "location"
     ]
   },
