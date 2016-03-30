@@ -21,7 +21,12 @@
   },
   "standard": {
     "env": {
-      "mocha": true
-    }
+      "mocha": true,
+      "jquery": true,
+      "serviceworker": true
+    },
+    "globals": [
+      "WebView"
+    ]
   }
 }

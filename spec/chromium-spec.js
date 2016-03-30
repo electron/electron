@@ -1,4 +1,3 @@
-/* globals xdescribe, Worker, SharedWorker, WebSocket, HTMLElement */
 
 const assert = require('assert')
 const http = require('http')
