@@ -97,11 +97,6 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
   // Check if we have node integration specified.
   bool node_integration = true;
   web_preferences.GetBoolean(options::kNodeIntegration, &node_integration);
-  // Be compatible with old API of "node-integration" option.
-  std::string old_token;
-  if (web_preferences.GetString(options::kNodeIntegration, &old_token) &&
-      old_token != "disable")
-    node_integration = true;
   command_line->AppendSwitchASCII(switches::kNodeIntegration,
                                   node_integration ? "true" : "false");
 
