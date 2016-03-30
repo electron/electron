@@ -14,7 +14,10 @@
       "/out",
       "/spec",
       "/vendor"
-    ]
+    ],
+    "env": {
+      "browser": true
+    }
   },
   "private": true,
   "scripts": {

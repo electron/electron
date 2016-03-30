@@ -1,5 +1,3 @@
-/* globals btoa, WebView, xdescribe */
-
 const assert = require('assert')
 const path = require('path')
 const http = require('http')

@@ -1,5 +1,3 @@
-/* globals xit */
-
 const assert = require('assert')
 const child_process = require('child_process')
 const fs = require('fs')
