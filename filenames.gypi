@@ -67,6 +67,12 @@
       'lib/common/asar.js',
       'lib/common/asar_init.js',
     ],
+    'default_app_sources': [
+      'default_app/default_app.js',
+      'default_app/index.html',
+      'default_app/main.js',
+      'default_app/package.json',
+    ],
     'lib_sources': [
       'atom/app/atom_content_client.cc',
       'atom/app/atom_content_client.h',

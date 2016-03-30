@@ -29,6 +29,7 @@
       'type': 'executable',
       'dependencies': [
         'js2asar',
+        'app2asar',
         '<(project_name)_lib',
       ],
       'sources': [
@@ -64,12 +65,6 @@
               'files': [
                 '<(PRODUCT_DIR)/<(product_name) Helper.app',
                 '<(PRODUCT_DIR)/<(product_name) Framework.framework',
-              ],
-            },
-            {
-              'destination': '<(PRODUCT_DIR)/<(product_name).app/Contents/Resources',
-              'files': [
-                'default_app',
               ],
             },
           ],
@@ -167,12 +162,6 @@
                 'external_binaries/vccorlib120.dll',
               ],
             },
-            {
-              'destination': '<(PRODUCT_DIR)/resources',
-              'files': [
-                'default_app',
-              ]
-            },
           ],
         }, {
           'dependencies': [
@@ -207,12 +196,6 @@
                 '<(libchromiumcontent_dir)/natives_blob.bin',
                 '<(libchromiumcontent_dir)/snapshot_blob.bin',
               ],
-            },
-            {
-              'destination': '<(PRODUCT_DIR)/resources',
-              'files': [
-                'default_app',
-              ]
             },
           ],
         }],  # OS=="linux"
@@ -376,11 +359,43 @@
             'python',
             'tools/js2asar.py',
             '<@(_outputs)',
+            'lib',
             '<@(_inputs)',
           ],
         }
       ],
     },  # target js2asar
+    {
+      'target_name': 'app2asar',
+      'type': 'none',
+      'actions': [
+        {
+          'action_name': 'app2asar',
+          'variables': {
+            'conditions': [
+              ['OS=="mac"', {
+                'resources_path': '<(PRODUCT_DIR)/<(product_name).app/Contents/Resources',
+              },{
+                'resources_path': '<(PRODUCT_DIR)/resources',
+              }],
+            ],
+          },
+          'inputs': [
+            '<@(default_app_sources)',
+          ],
+          'outputs': [
+            '<(resources_path)/default_app.asar',
+          ],
+          'action': [
+            'python',
+            'tools/js2asar.py',
+            '<@(_outputs)',
+            'default_app',
+            '<@(_inputs)',
+          ],
+        }
+      ],
+    },  # target app2asar
     {
       'target_name': 'atom_js2c',
       'type': 'none',
