@@ -2,9 +2,7 @@ const assert = require('assert')
 const path = require('path')
 const http = require('http')
 const url = require('url')
-
-const {remote} = require('electron')
-const {app} = remote
+const {app, session} = require('electron')
 
 describe('<webview> tag', function () {
   this.timeout(10000)
@@ -704,7 +702,6 @@ describe('<webview> tag', function () {
 
   describe('permission-request event', function () {
     function setUpRequestHandler (webview, requested_permission) {
-      const session = require('electron').remote.session
       var listener = function (webContents, permission, callback) {
         if (webContents.getId() === webview.getId()) {
           assert.equal(permission, requested_permission)
