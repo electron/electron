@@ -60,7 +60,7 @@ describe('ipc module', function () {
 
     it('can construct an object from its member', function () {
       var call = remote.require(path.join(fixtures, 'module', 'call.js'))
-      var obj = new call.constructor // eslint-disable-line
+      var obj = new call.constructor()
       assert.equal(obj.test, 'test')
     })
 
