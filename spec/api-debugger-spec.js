@@ -82,16 +82,13 @@ describe('debugger module', function () {
       } catch (err) {
         return done('unexpected error : ' + err)
       }
-      /* eslint-disable */
-      // standard expects callback errors to be handled,
-      // but for some reason this err is not actually null..
       var callback = function (err, res) {
+        assert(!err.message)
         assert(!res.wasThrown)
         assert.equal(res.result.value, 6)
         w.webContents.debugger.detach()
         done()
       }
-      /* eslint-enable */
       const params = {
         'expression': '4+2'
       }
