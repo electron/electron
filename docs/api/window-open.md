@@ -23,6 +23,9 @@ Creates a new window and returns an instance of `BrowserWindowProxy` class.
 The `features` string follows the format of standard browser, but each feature
 has to be a field of `BrowserWindow`'s options.
 
+**Note:** Node integration will always be disabled in the opened `window` if it
+is disabled on the parent window.
+
 ### `window.opener.postMessage(message, targetOrigin)`
 
 * `message` String
