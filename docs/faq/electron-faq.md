@@ -145,7 +145,9 @@ is very likely you are using the module in the wrong process. For example
 is only available in renderer processes.
 
 ## Why is my app's background transparent?
-Since Electron `0.37.3`, the default user-agent background color is `transparent`. Simply specify a background color in HTML;
+
+Since Electron `0.37.3`, the default user-agent background color is `transparent`.
+Simply specify a background color in HTML:
 
 ```html
 <style type='text/css'>
