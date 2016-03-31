@@ -2,11 +2,11 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/api/atom_api_power_save_blocker.h"
+#include "electron/browser/api/atom_api_power_save_blocker.h"
 
 #include <string>
 
-#include "atom/common/node_includes.h"
+#include "electron/common/node_includes.h"
 #include "content/public/browser/power_save_blocker.h"
 #include "native_mate/dictionary.h"
 

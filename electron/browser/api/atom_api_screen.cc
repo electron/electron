@@ -2,19 +2,19 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/api/atom_api_screen.h"
+#include "electron/browser/api/atom_api_screen.h"
 
 #include <algorithm>
 #include <string>
 
-#include "atom/browser/browser.h"
-#include "atom/common/native_mate_converters/gfx_converter.h"
+#include "electron/browser/browser.h"
+#include "electron/common/native_mate_converters/gfx_converter.h"
 #include "base/bind.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 #include "ui/gfx/screen.h"
 
-#include "atom/common/node_includes.h"
+#include "electron/common/node_includes.h"
 
 namespace atom {
 

@@ -2,16 +2,16 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/common/api/atom_api_native_image.h"
+#include "electron/common/api/atom_api_native_image.h"
 
 #include <string>
 #include <vector>
 
-#include "atom/common/asar/asar_util.h"
-#include "atom/common/native_mate_converters/file_path_converter.h"
-#include "atom/common/native_mate_converters/gfx_converter.h"
-#include "atom/common/native_mate_converters/gurl_converter.h"
-#include "atom/common/node_includes.h"
+#include "electron/common/asar/asar_util.h"
+#include "electron/common/native_mate_converters/file_path_converter.h"
+#include "electron/common/native_mate_converters/gfx_converter.h"
+#include "electron/common/native_mate_converters/gurl_converter.h"
+#include "electron/common/node_includes.h"
 #include "base/base64.h"
 #include "base/files/file_util.h"
 #include "base/strings/string_util.h"
@@ -27,7 +27,7 @@
 #include "ui/gfx/image/image_util.h"
 
 #if defined(OS_WIN)
-#include "atom/common/asar/archive.h"
+#include "electron/common/asar/archive.h"
 #include "base/win/scoped_gdi_object.h"
 #include "ui/gfx/icon_util.h"
 #endif

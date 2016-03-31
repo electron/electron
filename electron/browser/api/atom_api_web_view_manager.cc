@@ -2,11 +2,11 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/api/atom_api_web_contents.h"
-#include "atom/browser/web_contents_preferences.h"
-#include "atom/browser/web_view_manager.h"
-#include "atom/common/native_mate_converters/value_converter.h"
-#include "atom/common/node_includes.h"
+#include "electron/browser/api/atom_api_web_contents.h"
+#include "electron/browser/web_contents_preferences.h"
+#include "electron/browser/web_view_manager.h"
+#include "electron/common/native_mate_converters/value_converter.h"
+#include "electron/common/node_includes.h"
 #include "content/public/browser/browser_context.h"
 #include "native_mate/dictionary.h"
 

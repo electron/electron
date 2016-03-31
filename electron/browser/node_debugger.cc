@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/node_debugger.h"
+#include "electron/browser/node_debugger.h"
 
 #include <string>
 
@@ -14,7 +14,7 @@
 #include "content/public/browser/browser_thread.h"
 #include "net/test/embedded_test_server/tcp_listen_socket.h"
 
-#include "atom/common/node_includes.h"
+#include "electron/common/node_includes.h"
 
 namespace atom {
 

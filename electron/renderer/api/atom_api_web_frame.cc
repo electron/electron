@@ -2,13 +2,13 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/renderer/api/atom_api_web_frame.h"
+#include "electron/renderer/api/atom_api_web_frame.h"
 
-#include "atom/common/api/event_emitter_caller.h"
-#include "atom/common/native_mate_converters/callback.h"
-#include "atom/common/native_mate_converters/gfx_converter.h"
-#include "atom/common/native_mate_converters/string16_converter.h"
-#include "atom/renderer/api/atom_api_spell_check_client.h"
+#include "electron/common/api/event_emitter_caller.h"
+#include "electron/common/native_mate_converters/callback.h"
+#include "electron/common/native_mate_converters/gfx_converter.h"
+#include "electron/common/native_mate_converters/string16_converter.h"
+#include "electron/renderer/api/atom_api_spell_check_client.h"
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_view.h"
 #include "native_mate/dictionary.h"
@@ -20,7 +20,7 @@
 #include "third_party/WebKit/public/web/WebSecurityPolicy.h"
 #include "third_party/WebKit/public/web/WebView.h"
 
-#include "atom/common/node_includes.h"
+#include "electron/common/node_includes.h"
 
 namespace atom {
 

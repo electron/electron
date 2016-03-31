@@ -8,10 +8,10 @@
 #include <string>
 #include <vector>
 
-#include "atom/browser/api/frame_subscriber.h"
-#include "atom/browser/api/save_page_handler.h"
-#include "atom/browser/api/trackable_object.h"
-#include "atom/browser/common_web_contents_delegate.h"
+#include "electron/browser/api/frame_subscriber.h"
+#include "electron/browser/api/save_page_handler.h"
+#include "electron/browser/api/trackable_object.h"
+#include "electron/browser/common_web_contents_delegate.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "content/public/common/favicon_url.h"
 #include "content/common/cursors/webcursor.h"

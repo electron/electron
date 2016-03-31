@@ -5,8 +5,8 @@
 #include <string>
 #include <vector>
 
-#include "atom/common/native_mate_converters/image_converter.h"
-#include "atom/common/native_mate_converters/string16_converter.h"
+#include "electron/common/native_mate_converters/image_converter.h"
+#include "electron/common/native_mate_converters/string16_converter.h"
 #include "base/strings/utf_string_conversions.h"
 #include "native_mate/arguments.h"
 #include "native_mate/dictionary.h"
@@ -15,7 +15,7 @@
 #include "ui/base/clipboard/scoped_clipboard_writer.h"
 #include "ui/gfx/image/image.h"
 
-#include "atom/common/node_includes.h"
+#include "electron/common/node_includes.h"
 
 namespace {
 

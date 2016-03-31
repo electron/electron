@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/ui/tray_icon_gtk.h"
+#include "electron/browser/ui/tray_icon_gtk.h"
 
 #include "base/guid.h"
 #include "base/strings/utf_string_conversions.h"

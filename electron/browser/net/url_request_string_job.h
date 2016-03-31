@@ -7,7 +7,7 @@
 
 #include <string>
 
-#include "atom/browser/net/js_asker.h"
+#include "electron/browser/net/js_asker.h"
 #include "net/url_request/url_request_simple_job.h"
 
 namespace atom {

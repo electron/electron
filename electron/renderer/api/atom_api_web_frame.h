@@ -7,7 +7,7 @@
 
 #include <string>
 
-#include "atom/renderer/guest_view_container.h"
+#include "electron/renderer/guest_view_container.h"
 #include "base/memory/scoped_ptr.h"
 #include "native_mate/handle.h"
 #include "native_mate/wrappable.h"

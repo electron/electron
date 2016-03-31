@@ -2,9 +2,9 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/api/atom_api_menu_views.h"
+#include "electron/browser/api/atom_api_menu_views.h"
 
-#include "atom/browser/native_window_views.h"
+#include "electron/browser/native_window_views.h"
 #include "content/public/browser/render_widget_host_view.h"
 #include "ui/gfx/screen.h"
 #include "ui/views/controls/menu/menu_runner.h"

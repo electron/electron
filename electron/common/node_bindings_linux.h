@@ -6,7 +6,7 @@
 #define ATOM_COMMON_NODE_BINDINGS_LINUX_H_
 
 #include "base/compiler_specific.h"
-#include "atom/common/node_bindings.h"
+#include "electron/common/node_bindings.h"
 
 namespace atom {
 

@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/ui/views/global_menu_bar_x11.h"
+#include "electron/browser/ui/views/global_menu_bar_x11.h"
 
 #include <X11/Xlib.h>
 
@@ -15,7 +15,7 @@
 #include <dlfcn.h>
 #include <glib-object.h>
 
-#include "atom/browser/native_window_views.h"
+#include "electron/browser/native_window_views.h"
 #include "base/logging.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"

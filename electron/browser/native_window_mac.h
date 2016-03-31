@@ -11,7 +11,7 @@
 #include <vector>
 
 #include "base/mac/scoped_nsobject.h"
-#include "atom/browser/native_window.h"
+#include "electron/browser/native_window.h"
 
 @class AtomNSWindow;
 @class AtomNSWindowDelegate;

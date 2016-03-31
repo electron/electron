@@ -2,25 +2,25 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/api/atom_api_app.h"
+#include "electron/browser/api/atom_api_app.h"
 
 #include <string>
 #include <vector>
 
-#include "atom/browser/api/atom_api_menu.h"
-#include "atom/browser/api/atom_api_session.h"
-#include "atom/browser/api/atom_api_web_contents.h"
-#include "atom/browser/atom_browser_context.h"
-#include "atom/browser/atom_browser_main_parts.h"
-#include "atom/browser/browser.h"
-#include "atom/browser/login_handler.h"
-#include "atom/common/native_mate_converters/callback.h"
-#include "atom/common/native_mate_converters/net_converter.h"
-#include "atom/common/native_mate_converters/file_path_converter.h"
-#include "atom/common/native_mate_converters/gurl_converter.h"
-#include "atom/common/native_mate_converters/image_converter.h"
-#include "atom/common/node_includes.h"
-#include "atom/common/options_switches.h"
+#include "electron/browser/api/atom_api_menu.h"
+#include "electron/browser/api/atom_api_session.h"
+#include "electron/browser/api/atom_api_web_contents.h"
+#include "electron/browser/atom_browser_context.h"
+#include "electron/browser/atom_browser_main_parts.h"
+#include "electron/browser/browser.h"
+#include "electron/browser/login_handler.h"
+#include "electron/common/native_mate_converters/callback.h"
+#include "electron/common/native_mate_converters/net_converter.h"
+#include "electron/common/native_mate_converters/file_path_converter.h"
+#include "electron/common/native_mate_converters/gurl_converter.h"
+#include "electron/common/native_mate_converters/image_converter.h"
+#include "electron/common/node_includes.h"
+#include "electron/common/options_switches.h"
 #include "base/command_line.h"
 #include "base/environment.h"
 #include "base/files/file_path.h"

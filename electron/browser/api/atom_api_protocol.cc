@@ -2,18 +2,18 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/api/atom_api_protocol.h"
+#include "electron/browser/api/atom_api_protocol.h"
 
-#include "atom/browser/atom_browser_client.h"
-#include "atom/browser/atom_browser_context.h"
-#include "atom/browser/atom_browser_main_parts.h"
-#include "atom/browser/net/url_request_async_asar_job.h"
-#include "atom/browser/net/url_request_buffer_job.h"
-#include "atom/browser/net/url_request_fetch_job.h"
-#include "atom/browser/net/url_request_string_job.h"
-#include "atom/common/native_mate_converters/callback.h"
-#include "atom/common/native_mate_converters/net_converter.h"
-#include "atom/common/node_includes.h"
+#include "electron/browser/atom_browser_client.h"
+#include "electron/browser/atom_browser_context.h"
+#include "electron/browser/atom_browser_main_parts.h"
+#include "electron/browser/net/url_request_async_asar_job.h"
+#include "electron/browser/net/url_request_buffer_job.h"
+#include "electron/browser/net/url_request_fetch_job.h"
+#include "electron/browser/net/url_request_string_job.h"
+#include "electron/common/native_mate_converters/callback.h"
+#include "electron/common/native_mate_converters/net_converter.h"
+#include "electron/common/node_includes.h"
 #include "native_mate/dictionary.h"
 
 using content::BrowserThread;

@@ -2,9 +2,9 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/common/crash_reporter/win/crash_service_main.h"
+#include "electron/common/crash_reporter/win/crash_service_main.h"
 
-#include "atom/common/crash_reporter/win/crash_service.h"
+#include "electron/common/crash_reporter/win/crash_service.h"
 #include "base/at_exit.h"
 #include "base/command_line.h"
 #include "base/files/file_util.h"

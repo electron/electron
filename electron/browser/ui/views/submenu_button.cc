@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/ui/views/submenu_button.h"
+#include "electron/browser/ui/views/submenu_button.h"
 
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"

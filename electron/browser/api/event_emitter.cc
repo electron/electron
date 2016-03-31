@@ -2,9 +2,9 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/api/event_emitter.h"
+#include "electron/browser/api/event_emitter.h"
 
-#include "atom/browser/api/event.h"
+#include "electron/browser/api/event.h"
 #include "native_mate/arguments.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"

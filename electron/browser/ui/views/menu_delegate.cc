@@ -2,9 +2,9 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/ui/views/menu_delegate.h"
+#include "electron/browser/ui/views/menu_delegate.h"
 
-#include "atom/browser/ui/views/menu_bar.h"
+#include "electron/browser/ui/views/menu_bar.h"
 #include "content/public/browser/browser_thread.h"
 #include "ui/views/controls/button/menu_button.h"
 #include "ui/views/controls/menu/menu_item_view.h"

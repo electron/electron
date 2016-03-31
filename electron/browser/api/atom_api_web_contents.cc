@@ -2,33 +2,33 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/api/atom_api_web_contents.h"
+#include "electron/browser/api/atom_api_web_contents.h"
 
 #include <set>
 #include <string>
 
-#include "atom/browser/api/atom_api_debugger.h"
-#include "atom/browser/api/atom_api_session.h"
-#include "atom/browser/api/atom_api_window.h"
-#include "atom/browser/atom_browser_client.h"
-#include "atom/browser/atom_browser_context.h"
-#include "atom/browser/atom_browser_main_parts.h"
-#include "atom/browser/native_window.h"
-#include "atom/browser/web_contents_permission_helper.h"
-#include "atom/browser/web_contents_preferences.h"
-#include "atom/browser/web_view_guest_delegate.h"
-#include "atom/common/api/api_messages.h"
-#include "atom/common/api/event_emitter_caller.h"
-#include "atom/common/native_mate_converters/blink_converter.h"
-#include "atom/common/native_mate_converters/callback.h"
-#include "atom/common/native_mate_converters/content_converter.h"
-#include "atom/common/native_mate_converters/file_path_converter.h"
-#include "atom/common/native_mate_converters/gfx_converter.h"
-#include "atom/common/native_mate_converters/gurl_converter.h"
-#include "atom/common/native_mate_converters/image_converter.h"
-#include "atom/common/native_mate_converters/string16_converter.h"
-#include "atom/common/native_mate_converters/value_converter.h"
-#include "atom/common/mouse_util.h"
+#include "electron/browser/api/atom_api_debugger.h"
+#include "electron/browser/api/atom_api_session.h"
+#include "electron/browser/api/atom_api_window.h"
+#include "electron/browser/atom_browser_client.h"
+#include "electron/browser/atom_browser_context.h"
+#include "electron/browser/atom_browser_main_parts.h"
+#include "electron/browser/native_window.h"
+#include "electron/browser/web_contents_permission_helper.h"
+#include "electron/browser/web_contents_preferences.h"
+#include "electron/browser/web_view_guest_delegate.h"
+#include "electron/common/api/api_messages.h"
+#include "electron/common/api/event_emitter_caller.h"
+#include "electron/common/native_mate_converters/blink_converter.h"
+#include "electron/common/native_mate_converters/callback.h"
+#include "electron/common/native_mate_converters/content_converter.h"
+#include "electron/common/native_mate_converters/file_path_converter.h"
+#include "electron/common/native_mate_converters/gfx_converter.h"
+#include "electron/common/native_mate_converters/gurl_converter.h"
+#include "electron/common/native_mate_converters/image_converter.h"
+#include "electron/common/native_mate_converters/string16_converter.h"
+#include "electron/common/native_mate_converters/value_converter.h"
+#include "electron/common/mouse_util.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "brightray/browser/inspectable_web_contents.h"
@@ -60,7 +60,7 @@
 #include "third_party/WebKit/public/web/WebInputEvent.h"
 #include "ui/base/l10n/l10n_util.h"
 
-#include "atom/common/node_includes.h"
+#include "electron/common/node_includes.h"
 
 namespace {
 

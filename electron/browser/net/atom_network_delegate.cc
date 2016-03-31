@@ -2,11 +2,11 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/net/atom_network_delegate.h"
+#include "electron/browser/net/atom_network_delegate.h"
 
 #include <string>
 
-#include "atom/common/native_mate_converters/net_converter.h"
+#include "electron/common/native_mate_converters/net_converter.h"
 #include "base/stl_util.h"
 #include "base/strings/string_util.h"
 #include "content/public/browser/browser_thread.h"

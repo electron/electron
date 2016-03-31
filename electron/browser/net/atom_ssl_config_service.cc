@@ -2,14 +2,14 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/net/atom_ssl_config_service.h"
+#include "electron/browser/net/atom_ssl_config_service.h"
 
 #include <string>
 #include <vector>
 
 #include "base/command_line.h"
 #include "base/strings/string_split.h"
-#include "atom/common/options_switches.h"
+#include "electron/common/options_switches.h"
 #include "content/public/browser/browser_thread.h"
 #include "net/socket/ssl_client_socket.h"
 #include "net/ssl/ssl_cipher_suite_names.h"

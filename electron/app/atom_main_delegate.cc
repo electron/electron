@@ -2,16 +2,16 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/app/atom_main_delegate.h"
+#include "electron/app/atom_main_delegate.h"
 
 #include <string>
 #include <iostream>
 
-#include "atom/app/atom_content_client.h"
-#include "atom/browser/atom_browser_client.h"
-#include "atom/common/google_api_key.h"
-#include "atom/renderer/atom_renderer_client.h"
-#include "atom/utility/atom_content_utility_client.h"
+#include "electron/app/atom_content_client.h"
+#include "electron/browser/atom_browser_client.h"
+#include "electron/common/google_api_key.h"
+#include "electron/renderer/atom_renderer_client.h"
+#include "electron/utility/atom_content_utility_client.h"
 #include "base/command_line.h"
 #include "base/debug/stack_trace.h"
 #include "base/environment.h"

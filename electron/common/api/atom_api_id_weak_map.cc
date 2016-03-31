@@ -2,9 +2,9 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/common/api/atom_api_id_weak_map.h"
+#include "electron/common/api/atom_api_id_weak_map.h"
 
-#include "atom/common/node_includes.h"
+#include "electron/common/node_includes.h"
 #include "native_mate/constructor.h"
 #include "native_mate/dictionary.h"
 

@@ -2,9 +2,9 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/ui/win/atom_desktop_window_tree_host_win.h"
+#include "electron/browser/ui/win/atom_desktop_window_tree_host_win.h"
 
-#include "atom/browser/ui/win/message_handler_delegate.h"
+#include "electron/browser/ui/win/message_handler_delegate.h"
 
 namespace atom {
 

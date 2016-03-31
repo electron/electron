@@ -8,8 +8,8 @@
 #include <string>
 #include <vector>
 
-#include "atom/browser/api/trackable_object.h"
-#include "atom/browser/ui/tray_icon_observer.h"
+#include "electron/browser/api/trackable_object.h"
+#include "electron/browser/ui/tray_icon_observer.h"
 #include "base/memory/scoped_ptr.h"
 
 namespace gfx {

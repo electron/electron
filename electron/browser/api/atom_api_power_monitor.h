@@ -5,7 +5,7 @@
 #ifndef ATOM_BROWSER_API_ATOM_API_POWER_MONITOR_H_
 #define ATOM_BROWSER_API_ATOM_API_POWER_MONITOR_H_
 
-#include "atom/browser/api/trackable_object.h"
+#include "electron/browser/api/trackable_object.h"
 #include "base/compiler_specific.h"
 #include "base/power_monitor/power_observer.h"
 #include "native_mate/handle.h"

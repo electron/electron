@@ -4,8 +4,8 @@
 
 #include <string>
 
-#include "atom/common/api/object_life_monitor.h"
-#include "atom/common/node_includes.h"
+#include "electron/common/api/object_life_monitor.h"
+#include "electron/common/node_includes.h"
 #include "native_mate/dictionary.h"
 #include "v8/include/v8-profiler.h"
 

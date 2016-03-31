@@ -2,12 +2,12 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/renderer/api/atom_api_spell_check_client.h"
+#include "electron/renderer/api/atom_api_spell_check_client.h"
 
 #include <algorithm>
 #include <vector>
 
-#include "atom/common/native_mate_converters/string16_converter.h"
+#include "electron/common/native_mate_converters/string16_converter.h"
 #include "base/logging.h"
 #include "native_mate/converter.h"
 #include "native_mate/dictionary.h"

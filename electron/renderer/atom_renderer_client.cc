@@ -2,20 +2,20 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/renderer/atom_renderer_client.h"
+#include "electron/renderer/atom_renderer_client.h"
 
 #include <string>
 #include <vector>
 
-#include "atom/common/api/api_messages.h"
-#include "atom/common/api/atom_bindings.h"
-#include "atom/common/api/event_emitter_caller.h"
-#include "atom/common/node_bindings.h"
-#include "atom/common/node_includes.h"
-#include "atom/common/options_switches.h"
-#include "atom/renderer/atom_render_view_observer.h"
-#include "atom/renderer/guest_view_container.h"
-#include "atom/renderer/node_array_buffer_bridge.h"
+#include "electron/common/api/api_messages.h"
+#include "electron/common/api/atom_bindings.h"
+#include "electron/common/api/event_emitter_caller.h"
+#include "electron/common/node_bindings.h"
+#include "electron/common/node_includes.h"
+#include "electron/common/options_switches.h"
+#include "electron/renderer/atom_render_view_observer.h"
+#include "electron/renderer/guest_view_container.h"
+#include "electron/renderer/node_array_buffer_bridge.h"
 #include "base/command_line.h"
 #include "chrome/renderer/media/chrome_key_systems.h"
 #include "chrome/renderer/pepper/pepper_helper.h"

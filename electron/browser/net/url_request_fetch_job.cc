@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/net/url_request_fetch_job.h"
+#include "electron/browser/net/url_request_fetch_job.h"
 
 #include <algorithm>
 #include <string>

@@ -5,18 +5,18 @@
 #ifndef ATOM_BROWSER_NATIVE_WINDOW_VIEWS_H_
 #define ATOM_BROWSER_NATIVE_WINDOW_VIEWS_H_
 
-#include "atom/browser/native_window.h"
+#include "electron/browser/native_window.h"
 
 #include <string>
 #include <vector>
 
-#include "atom/browser/ui/accelerator_util.h"
+#include "electron/browser/ui/accelerator_util.h"
 #include "ui/views/widget/widget_delegate.h"
 #include "ui/views/widget/widget_observer.h"
 
 #if defined(OS_WIN)
-#include "atom/browser/ui/win/message_handler_delegate.h"
-#include "atom/browser/ui/win/taskbar_host.h"
+#include "electron/browser/ui/win/message_handler_delegate.h"
+#include "electron/browser/ui/win/taskbar_host.h"
 #endif
 
 namespace views {

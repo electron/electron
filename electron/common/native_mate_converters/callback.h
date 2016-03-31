@@ -7,7 +7,7 @@
 
 #include <vector>
 
-#include "atom/common/api/locker.h"
+#include "electron/common/api/locker.h"
 #include "base/bind.h"
 #include "base/callback.h"
 #include "base/memory/weak_ptr.h"

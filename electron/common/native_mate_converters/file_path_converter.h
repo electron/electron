@@ -7,7 +7,7 @@
 
 #include <string>
 
-#include "atom/common/native_mate_converters/string16_converter.h"
+#include "electron/common/native_mate_converters/string16_converter.h"
 #include "base/files/file_path.h"
 
 namespace mate {

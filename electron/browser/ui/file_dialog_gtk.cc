@@ -2,9 +2,9 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/ui/file_dialog.h"
+#include "electron/browser/ui/file_dialog.h"
 
-#include "atom/browser/native_window.h"
+#include "electron/browser/native_window.h"
 #include "base/callback.h"
 #include "base/files/file_util.h"
 #include "base/strings/string_util.h"

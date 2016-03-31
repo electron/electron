@@ -2,13 +2,13 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/app/node_main.h"
+#include "electron/app/node_main.h"
 
-#include "atom/app/uv_task_runner.h"
-#include "atom/browser/javascript_environment.h"
-#include "atom/browser/node_debugger.h"
+#include "electron/app/uv_task_runner.h"
+#include "electron/browser/javascript_environment.h"
+#include "electron/browser/node_debugger.h"
 #include "base/command_line.h"
-#include "atom/common/node_includes.h"
+#include "electron/common/node_includes.h"
 #include "base/thread_task_runner_handle.h"
 #include "gin/array_buffer.h"
 #include "gin/public/isolate_holder.h"

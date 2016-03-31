@@ -9,7 +9,7 @@
 #include <map>
 #include <vector>
 
-#include "atom/browser/net/atom_url_request_job_factory.h"
+#include "electron/browser/net/atom_url_request_job_factory.h"
 #include "base/callback.h"
 #include "base/containers/scoped_ptr_hash_map.h"
 #include "content/public/browser/browser_thread.h"

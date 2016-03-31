@@ -2,10 +2,10 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/common/api/api_messages.h"
-#include "atom/common/native_mate_converters/string16_converter.h"
-#include "atom/common/native_mate_converters/value_converter.h"
-#include "atom/common/node_includes.h"
+#include "electron/common/api/api_messages.h"
+#include "electron/common/native_mate_converters/string16_converter.h"
+#include "electron/common/native_mate_converters/value_converter.h"
+#include "electron/common/node_includes.h"
 #include "content/public/renderer/render_view.h"
 #include "native_mate/dictionary.h"
 #include "third_party/WebKit/public/web/WebLocalFrame.h"

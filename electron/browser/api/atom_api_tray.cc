@@ -2,17 +2,17 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/api/atom_api_tray.h"
+#include "electron/browser/api/atom_api_tray.h"
 
 #include <string>
 
-#include "atom/browser/api/atom_api_menu.h"
-#include "atom/browser/browser.h"
-#include "atom/browser/ui/tray_icon.h"
-#include "atom/common/native_mate_converters/gfx_converter.h"
-#include "atom/common/native_mate_converters/image_converter.h"
-#include "atom/common/native_mate_converters/string16_converter.h"
-#include "atom/common/node_includes.h"
+#include "electron/browser/api/atom_api_menu.h"
+#include "electron/browser/browser.h"
+#include "electron/browser/ui/tray_icon.h"
+#include "electron/common/native_mate_converters/gfx_converter.h"
+#include "electron/common/native_mate_converters/image_converter.h"
+#include "electron/common/native_mate_converters/string16_converter.h"
+#include "electron/common/node_includes.h"
 #include "native_mate/constructor.h"
 #include "native_mate/dictionary.h"
 #include "ui/events/event_constants.h"

@@ -2,14 +2,14 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/ui/accelerator_util.h"
+#include "electron/browser/ui/accelerator_util.h"
 
 #include <stdio.h>
 
 #include <string>
 #include <vector>
 
-#include "atom/common/keyboard_util.h"
+#include "electron/common/keyboard_util.h"
 #include "base/stl_util.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_split.h"

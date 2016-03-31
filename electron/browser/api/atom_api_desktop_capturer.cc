@@ -2,10 +2,10 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/api/atom_api_desktop_capturer.h"
+#include "electron/browser/api/atom_api_desktop_capturer.h"
 
-#include "atom/common/api/atom_api_native_image.h"
-#include "atom/common/native_mate_converters/gfx_converter.h"
+#include "electron/common/api/atom_api_native_image.h"
+#include "electron/common/native_mate_converters/gfx_converter.h"
 #include "base/strings/utf_string_conversions.h"
 #include "chrome/browser/media/desktop_media_list.h"
 #include "native_mate/dictionary.h"
@@ -13,7 +13,7 @@
 #include "third_party/webrtc/modules/desktop_capture/screen_capturer.h"
 #include "third_party/webrtc/modules/desktop_capture/window_capturer.h"
 
-#include "atom/common/node_includes.h"
+#include "electron/common/node_includes.h"
 
 namespace mate {
 

@@ -4,7 +4,7 @@
 
 // Most code came from: chrome/browser/chrome_browser_main_posix.cc.
 
-#include "atom/browser/atom_browser_main_parts.h"
+#include "electron/browser/atom_browser_main_parts.h"
 
 #include <errno.h>
 #include <limits.h>
@@ -13,7 +13,7 @@
 #include <sys/resource.h>
 #include <unistd.h>
 
-#include "atom/browser/browser.h"
+#include "electron/browser/browser.h"
 #include "base/posix/eintr_wrapper.h"
 #include "content/public/browser/browser_thread.h"
 

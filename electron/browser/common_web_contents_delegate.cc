@@ -2,17 +2,17 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/common_web_contents_delegate.h"
+#include "electron/browser/common_web_contents_delegate.h"
 
 #include <set>
 #include <string>
 #include <vector>
 
-#include "atom/browser/atom_browser_context.h"
-#include "atom/browser/atom_javascript_dialog_manager.h"
-#include "atom/browser/native_window.h"
-#include "atom/browser/ui/file_dialog.h"
-#include "atom/browser/web_dialog_helper.h"
+#include "electron/browser/atom_browser_context.h"
+#include "electron/browser/atom_javascript_dialog_manager.h"
+#include "electron/browser/native_window.h"
+#include "electron/browser/ui/file_dialog.h"
+#include "electron/browser/web_dialog_helper.h"
 #include "base/files/file_util.h"
 #include "base/prefs/pref_service.h"
 #include "base/prefs/scoped_user_pref_update.h"
@@ -28,11 +28,11 @@
 #include "storage/browser/fileapi/isolated_context.h"
 
 #if defined(TOOLKIT_VIEWS)
-#include "atom/browser/native_window_views.h"
+#include "electron/browser/native_window_views.h"
 #endif
 
 #if defined(USE_X11)
-#include "atom/browser/browser.h"
+#include "electron/browser/browser.h"
 #endif
 
 using content::BrowserThread;

@@ -2,11 +2,11 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/web_contents_permission_helper.h"
+#include "electron/browser/web_contents_permission_helper.h"
 
 #include <string>
 
-#include "atom/browser/atom_permission_manager.h"
+#include "electron/browser/atom_permission_manager.h"
 #include "brightray/browser/media/media_stream_devices_controller.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/render_process_host.h"

@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/app/atom_main_delegate.h"
+#include "electron/app/atom_main_delegate.h"
 
 #include "base/mac/bundle_locations.h"
 #include "base/files/file_path.h"

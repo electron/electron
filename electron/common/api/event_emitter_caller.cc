@@ -2,10 +2,10 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/common/api/event_emitter_caller.h"
+#include "electron/common/api/event_emitter_caller.h"
 
-#include "atom/common/api/locker.h"
-#include "atom/common/node_includes.h"
+#include "electron/common/api/locker.h"
+#include "electron/common/node_includes.h"
 #include "base/memory/scoped_ptr.h"
 #include "third_party/WebKit/public/web/WebScopedMicrotaskSuppression.h"
 

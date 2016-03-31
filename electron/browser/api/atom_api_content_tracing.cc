@@ -5,9 +5,9 @@
 #include <set>
 #include <string>
 
-#include "atom/common/native_mate_converters/callback.h"
-#include "atom/common/native_mate_converters/file_path_converter.h"
-#include "atom/common/node_includes.h"
+#include "electron/common/native_mate_converters/callback.h"
+#include "electron/common/native_mate_converters/file_path_converter.h"
+#include "electron/common/node_includes.h"
 #include "base/bind.h"
 #include "base/files/file_util.h"
 #include "content/public/browser/tracing_controller.h"

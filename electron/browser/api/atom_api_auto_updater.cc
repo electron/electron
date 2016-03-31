@@ -2,14 +2,14 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/api/atom_api_auto_updater.h"
+#include "electron/browser/api/atom_api_auto_updater.h"
 
 #include "base/time/time.h"
-#include "atom/browser/browser.h"
-#include "atom/browser/native_window.h"
-#include "atom/browser/window_list.h"
-#include "atom/common/native_mate_converters/callback.h"
-#include "atom/common/node_includes.h"
+#include "electron/browser/browser.h"
+#include "electron/browser/native_window.h"
+#include "electron/browser/window_list.h"
+#include "electron/common/native_mate_converters/callback.h"
+#include "electron/common/node_includes.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 

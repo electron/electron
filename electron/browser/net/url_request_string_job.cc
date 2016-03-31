@@ -2,11 +2,11 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/net/url_request_string_job.h"
+#include "electron/browser/net/url_request_string_job.h"
 
 #include <string>
 
-#include "atom/common/atom_constants.h"
+#include "electron/common/atom_constants.h"
 #include "net/base/net_errors.h"
 
 namespace atom {

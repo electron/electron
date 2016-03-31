@@ -2,18 +2,18 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/atom_browser_main_parts.h"
+#include "electron/browser/atom_browser_main_parts.h"
 
-#include "atom/browser/api/trackable_object.h"
-#include "atom/browser/atom_browser_client.h"
-#include "atom/browser/atom_browser_context.h"
-#include "atom/browser/bridge_task_runner.h"
-#include "atom/browser/browser.h"
-#include "atom/browser/javascript_environment.h"
-#include "atom/browser/node_debugger.h"
-#include "atom/common/api/atom_bindings.h"
-#include "atom/common/node_bindings.h"
-#include "atom/common/node_includes.h"
+#include "electron/browser/api/trackable_object.h"
+#include "electron/browser/atom_browser_client.h"
+#include "electron/browser/atom_browser_context.h"
+#include "electron/browser/bridge_task_runner.h"
+#include "electron/browser/browser.h"
+#include "electron/browser/javascript_environment.h"
+#include "electron/browser/node_debugger.h"
+#include "electron/common/api/atom_bindings.h"
+#include "electron/common/node_bindings.h"
+#include "electron/common/node_includes.h"
 #include "base/command_line.h"
 #include "base/thread_task_runner_handle.h"
 #include "chrome/browser/browser_process.h"
@@ -49,7 +49,7 @@ AtomBrowserMainParts::~AtomBrowserMainParts() {
   // Leak the JavascriptEnvironment on exit.
   // This is to work around the bug that V8 would be waiting for background
   // tasks to finish on exit, while somehow it waits forever in Electron, more
-  // about this can be found at https://github.com/atom/electron/issues/4767.
+  // about this can be found at https://github.com/electron/electron/issues/4767.
   // On the other handle there is actually no need to gracefully shutdown V8
   // on exit in the main process, we already ensured all necessary resources get
   // cleaned up, and it would make quitting faster.

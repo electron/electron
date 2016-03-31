@@ -2,9 +2,9 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/web_view_manager.h"
+#include "electron/browser/web_view_manager.h"
 
-#include "atom/browser/atom_browser_context.h"
+#include "electron/browser/atom_browser_context.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/web_contents.h"
 

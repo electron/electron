@@ -5,7 +5,7 @@
 #ifndef ATOM_COMMON_NODE_BINDINGS_MAC_H_
 #define ATOM_COMMON_NODE_BINDINGS_MAC_H_
 
-#include "atom/common/node_bindings.h"
+#include "electron/common/node_bindings.h"
 #include "base/compiler_specific.h"
 
 namespace atom {

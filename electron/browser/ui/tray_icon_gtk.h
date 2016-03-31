@@ -7,7 +7,7 @@
 
 #include <string>
 
-#include "atom/browser/ui/tray_icon.h"
+#include "electron/browser/ui/tray_icon.h"
 #include "ui/views/linux_ui/status_icon_linux.h"
 
 namespace views {

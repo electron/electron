@@ -7,7 +7,7 @@
 
 #include <map>
 
-#include "atom/browser/api/atom_api_web_contents.h"
+#include "electron/browser/api/atom_api_web_contents.h"
 #include "base/compiler_specific.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "content/public/browser/web_contents_user_data.h"

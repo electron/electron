@@ -2,14 +2,14 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/net/asar/url_request_asar_job.h"
+#include "electron/browser/net/asar/url_request_asar_job.h"
 
 #include <string>
 #include <vector>
 
-#include "atom/common/asar/archive.h"
-#include "atom/common/asar/asar_util.h"
-#include "atom/common/atom_constants.h"
+#include "electron/common/asar/archive.h"
+#include "electron/common/asar/asar_util.h"
+#include "electron/common/atom_constants.h"
 #include "base/bind.h"
 #include "base/files/file_util.h"
 #include "base/strings/string_util.h"

@@ -5,7 +5,7 @@
 #ifndef ATOM_COMMON_API_ATOM_API_ID_WEAK_MAP_H_
 #define ATOM_COMMON_API_ATOM_API_ID_WEAK_MAP_H_
 
-#include "atom/common/id_weak_map.h"
+#include "electron/common/id_weak_map.h"
 #include "native_mate/object_template_builder.h"
 #include "native_mate/handle.h"
 

@@ -2,10 +2,10 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/api/atom_api_power_monitor.h"
+#include "electron/browser/api/atom_api_power_monitor.h"
 
-#include "atom/browser/browser.h"
-#include "atom/common/node_includes.h"
+#include "electron/browser/browser.h"
+#include "electron/common/node_includes.h"
 #include "base/power_monitor/power_monitor.h"
 #include "base/power_monitor/power_monitor_device_source.h"
 #include "native_mate/dictionary.h"

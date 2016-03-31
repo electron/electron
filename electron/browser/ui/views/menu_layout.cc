@@ -2,10 +2,10 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/ui/views/menu_layout.h"
+#include "electron/browser/ui/views/menu_layout.h"
 
 #if defined(OS_WIN)
-#include "atom/browser/native_window_views.h"
+#include "electron/browser/native_window_views.h"
 #endif
 
 namespace atom {

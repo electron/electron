@@ -7,9 +7,9 @@
 
 #include <string>
 
-#include "atom/browser/api/atom_api_window.h"
-#include "atom/browser/api/trackable_object.h"
-#include "atom/browser/ui/atom_menu_model.h"
+#include "electron/browser/api/atom_api_window.h"
+#include "electron/browser/api/trackable_object.h"
+#include "electron/browser/ui/atom_menu_model.h"
 #include "base/callback.h"
 #include "base/memory/scoped_ptr.h"
 

@@ -2,12 +2,12 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/common/asar/asar_util.h"
+#include "electron/common/asar/asar_util.h"
 
 #include <map>
 #include <string>
 
-#include "atom/common/asar/archive.h"
+#include "electron/common/asar/archive.h"
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
 #include "base/lazy_instance.h"

@@ -2,23 +2,23 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/atom_browser_client.h"
+#include "electron/browser/atom_browser_client.h"
 
 #if defined(OS_WIN)
 #include <shlobj.h>
 #endif
 
-#include "atom/browser/atom_access_token_store.h"
-#include "atom/browser/atom_browser_context.h"
-#include "atom/browser/atom_browser_main_parts.h"
-#include "atom/browser/atom_quota_permission_context.h"
-#include "atom/browser/atom_resource_dispatcher_host_delegate.h"
-#include "atom/browser/atom_speech_recognition_manager_delegate.h"
-#include "atom/browser/native_window.h"
-#include "atom/browser/web_contents_permission_helper.h"
-#include "atom/browser/web_contents_preferences.h"
-#include "atom/browser/window_list.h"
-#include "atom/common/options_switches.h"
+#include "electron/browser/atom_access_token_store.h"
+#include "electron/browser/atom_browser_context.h"
+#include "electron/browser/atom_browser_main_parts.h"
+#include "electron/browser/atom_quota_permission_context.h"
+#include "electron/browser/atom_resource_dispatcher_host_delegate.h"
+#include "electron/browser/atom_speech_recognition_manager_delegate.h"
+#include "electron/browser/native_window.h"
+#include "electron/browser/web_contents_permission_helper.h"
+#include "electron/browser/web_contents_preferences.h"
+#include "electron/browser/window_list.h"
+#include "electron/common/options_switches.h"
 #include "base/command_line.h"
 #include "base/files/file_util.h"
 #include "base/stl_util.h"

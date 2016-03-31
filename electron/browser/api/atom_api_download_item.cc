@@ -2,15 +2,15 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/api/atom_api_download_item.h"
+#include "electron/browser/api/atom_api_download_item.h"
 
 #include <map>
 
-#include "atom/browser/atom_browser_main_parts.h"
-#include "atom/common/native_mate_converters/callback.h"
-#include "atom/common/native_mate_converters/file_path_converter.h"
-#include "atom/common/native_mate_converters/gurl_converter.h"
-#include "atom/common/node_includes.h"
+#include "electron/browser/atom_browser_main_parts.h"
+#include "electron/common/native_mate_converters/callback.h"
+#include "electron/common/native_mate_converters/file_path_converter.h"
+#include "electron/common/native_mate_converters/gurl_converter.h"
+#include "electron/common/node_includes.h"
 #include "base/memory/linked_ptr.h"
 #include "base/message_loop/message_loop.h"
 #include "base/strings/utf_string_conversions.h"

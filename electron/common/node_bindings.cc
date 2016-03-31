@@ -2,16 +2,16 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/common/node_bindings.h"
+#include "electron/common/node_bindings.h"
 
 #include <string>
 #include <vector>
 
-#include "atom/common/api/event_emitter_caller.h"
-#include "atom/common/api/locker.h"
-#include "atom/common/atom_command_line.h"
-#include "atom/common/native_mate_converters/file_path_converter.h"
-#include "atom/common/node_includes.h"
+#include "electron/common/api/event_emitter_caller.h"
+#include "electron/common/api/locker.h"
+#include "electron/common/atom_command_line.h"
+#include "electron/common/native_mate_converters/file_path_converter.h"
+#include "electron/common/node_includes.h"
 #include "base/command_line.h"
 #include "base/base_paths.h"
 #include "base/environment.h"

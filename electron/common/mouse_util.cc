@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 #include <string>
-#include "atom/common/mouse_util.h"
+#include "electron/common/mouse_util.h"
 
 using Cursor = blink::WebCursorInfo::Type;
 

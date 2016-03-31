@@ -2,10 +2,10 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/web_view_guest_delegate.h"
+#include "electron/browser/web_view_guest_delegate.h"
 
-#include "atom/browser/api/atom_api_web_contents.h"
-#include "atom/common/native_mate_converters/gurl_converter.h"
+#include "electron/browser/api/atom_api_web_contents.h"
+#include "electron/common/native_mate_converters/gurl_converter.h"
 #include "content/public/browser/guest_host.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_view_host.h"

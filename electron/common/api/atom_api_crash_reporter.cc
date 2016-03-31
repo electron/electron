@@ -5,11 +5,11 @@
 #include <map>
 #include <string>
 
-#include "atom/common/crash_reporter/crash_reporter.h"
+#include "electron/common/crash_reporter/crash_reporter.h"
 #include "base/bind.h"
 #include "native_mate/dictionary.h"
 
-#include "atom/common/node_includes.h"
+#include "electron/common/node_includes.h"
 
 using crash_reporter::CrashReporter;
 

@@ -2,28 +2,28 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/api/atom_api_window.h"
-#include "atom/common/native_mate_converters/value_converter.h"
+#include "electron/browser/api/atom_api_window.h"
+#include "electron/common/native_mate_converters/value_converter.h"
 
-#include "atom/browser/api/atom_api_menu.h"
-#include "atom/browser/api/atom_api_web_contents.h"
-#include "atom/browser/browser.h"
-#include "atom/browser/native_window.h"
-#include "atom/common/native_mate_converters/callback.h"
-#include "atom/common/native_mate_converters/gfx_converter.h"
-#include "atom/common/native_mate_converters/gurl_converter.h"
-#include "atom/common/native_mate_converters/image_converter.h"
-#include "atom/common/native_mate_converters/string16_converter.h"
-#include "atom/common/node_includes.h"
-#include "atom/common/options_switches.h"
+#include "electron/browser/api/atom_api_menu.h"
+#include "electron/browser/api/atom_api_web_contents.h"
+#include "electron/browser/browser.h"
+#include "electron/browser/native_window.h"
+#include "electron/common/native_mate_converters/callback.h"
+#include "electron/common/native_mate_converters/gfx_converter.h"
+#include "electron/common/native_mate_converters/gurl_converter.h"
+#include "electron/common/native_mate_converters/image_converter.h"
+#include "electron/common/native_mate_converters/string16_converter.h"
+#include "electron/common/node_includes.h"
+#include "electron/common/options_switches.h"
 #include "content/public/browser/render_process_host.h"
 #include "native_mate/constructor.h"
 #include "native_mate/dictionary.h"
 #include "ui/gfx/geometry/rect.h"
 
 #if defined(OS_WIN)
-#include "atom/browser/native_window_views.h"
-#include "atom/browser/ui/win/taskbar_host.h"
+#include "electron/browser/native_window_views.h"
+#include "electron/browser/ui/win/taskbar_host.h"
 #endif
 
 #if defined(OS_WIN)

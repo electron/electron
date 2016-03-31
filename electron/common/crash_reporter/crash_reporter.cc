@@ -2,10 +2,10 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/common/crash_reporter/crash_reporter.h"
+#include "electron/common/crash_reporter/crash_reporter.h"
 
-#include "atom/browser/browser.h"
-#include "atom/common/atom_version.h"
+#include "electron/browser/browser.h"
+#include "electron/common/atom_version.h"
 #include "base/command_line.h"
 #include "base/files/file_util.h"
 #include "base/strings/string_split.h"

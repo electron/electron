@@ -50,7 +50,7 @@
           ],
           'xcode_settings': {
             'ATOM_BUNDLE_ID': 'com.<(company_abbr).<(project_name)',
-            'INFOPLIST_FILE': 'atom/browser/resources/mac/Info.plist',
+            'INFOPLIST_FILE': 'electron/browser/resources/mac/Info.plist',
             'LD_RUNPATH_SEARCH_PATHS': [
               '@executable_path/../Frameworks',
             ],
@@ -129,7 +129,7 @@
           'msvs_settings': {
             'VCManifestTool': {
               'EmbedManifest': 'true',
-              'AdditionalManifestFiles': 'atom/browser/resources/win/atom.manifest',
+              'AdditionalManifestFiles': 'electron/browser/resources/win/atom.manifest',
             }
           },
           'copies': [
@@ -321,9 +321,9 @@
             'MAS_BUILD',
           ],
           'sources!': [
-            'atom/browser/auto_updater_mac.mm',
-            'atom/common/crash_reporter/crash_reporter_mac.h',
-            'atom/common/crash_reporter/crash_reporter_mac.mm',
+            'electron/browser/auto_updater_mac.mm',
+            'electron/common/crash_reporter/crash_reporter_mac.h',
+            'electron/common/crash_reporter/crash_reporter_mac.mm',
           ],
         }],  # OS=="mac" and mas_build==1
         ['OS=="linux"', {
@@ -432,7 +432,7 @@
           },
           'mac_bundle': 1,
           'mac_bundle_resources': [
-            'atom/common/resources/mac/MainMenu.xib',
+            'electron/common/resources/mac/MainMenu.xib',
             '<(libchromiumcontent_dir)/content_shell.pak',
             '<(libchromiumcontent_dir)/icudtl.dat',
             '<(libchromiumcontent_dir)/natives_blob.bin',
@@ -440,7 +440,7 @@
           ],
           'xcode_settings': {
             'ATOM_BUNDLE_ID': 'com.<(company_abbr).<(project_name).framework',
-            'INFOPLIST_FILE': 'atom/common/resources/mac/Info.plist',
+            'INFOPLIST_FILE': 'electron/common/resources/mac/Info.plist',
             'LD_DYLIB_INSTALL_NAME': '@rpath/<(product_name) Framework.framework/<(product_name) Framework',
             'LD_RUNPATH_SEARCH_PATHS': [
               '@loader_path/Libraries',
@@ -549,7 +549,7 @@
           'mac_bundle': 1,
           'xcode_settings': {
             'ATOM_BUNDLE_ID': 'com.<(company_abbr).<(project_name).helper',
-            'INFOPLIST_FILE': 'atom/renderer/resources/mac/Info.plist',
+            'INFOPLIST_FILE': 'electron/renderer/resources/mac/Info.plist',
             'LD_RUNPATH_SEARCH_PATHS': [
               '@executable_path/../../..',
             ],

@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/browser.h"
+#include "electron/browser/browser.h"
 
 #include <atlbase.h>
 #include <propkey.h>
@@ -21,7 +21,7 @@
 #include "base/win/win_util.h"
 #include "base/win/registry.h"
 #include "base/win/windows_version.h"
-#include "atom/common/atom_version.h"
+#include "electron/common/atom_version.h"
 
 namespace atom {
 

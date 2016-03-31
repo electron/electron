@@ -2,10 +2,10 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/ui/message_box.h"
+#include "electron/browser/ui/message_box.h"
 
-#include "atom/browser/browser.h"
-#include "atom/browser/native_window.h"
+#include "electron/browser/browser.h"
+#include "electron/browser/native_window.h"
 #include "base/callback.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"

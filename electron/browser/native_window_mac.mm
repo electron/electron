@@ -2,12 +2,12 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/native_window_mac.h"
+#include "electron/browser/native_window_mac.h"
 
 #include <string>
 
-#include "atom/common/draggable_region.h"
-#include "atom/common/options_switches.h"
+#include "electron/common/draggable_region.h"
+#include "electron/common/options_switches.h"
 #include "base/mac/mac_util.h"
 #include "base/strings/sys_string_conversions.h"
 #include "brightray/browser/inspectable_web_contents.h"

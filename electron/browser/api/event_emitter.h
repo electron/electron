@@ -7,7 +7,7 @@
 
 #include <vector>
 
-#include "atom/common/api/event_emitter_caller.h"
+#include "electron/common/api/event_emitter_caller.h"
 #include "native_mate/wrappable.h"
 
 namespace content {

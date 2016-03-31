@@ -2,9 +2,9 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/ui/views/native_frame_view.h"
+#include "electron/browser/ui/views/native_frame_view.h"
 
-#include "atom/browser/native_window.h"
+#include "electron/browser/native_window.h"
 
 namespace atom {
 

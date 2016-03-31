@@ -12,8 +12,8 @@
 #include "base/compiler_specific.h"
 #include "base/observer_list.h"
 #include "base/strings/string16.h"
-#include "atom/browser/browser_observer.h"
-#include "atom/browser/window_list_observer.h"
+#include "electron/browser/browser_observer.h"
+#include "electron/browser/window_list_observer.h"
 
 #if defined(OS_WIN)
 #include "base/files/file_path.h"

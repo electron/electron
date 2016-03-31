@@ -2,10 +2,10 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/common/native_mate_converters/image_converter.h"
+#include "electron/common/native_mate_converters/image_converter.h"
 
-#include "atom/common/api/atom_api_native_image.h"
-#include "atom/common/native_mate_converters/file_path_converter.h"
+#include "electron/common/api/atom_api_native_image.h"
+#include "electron/common/native_mate_converters/file_path_converter.h"
 #include "ui/gfx/image/image_skia.h"
 
 namespace mate {

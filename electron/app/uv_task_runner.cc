@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/app/uv_task_runner.h"
+#include "electron/app/uv_task_runner.h"
 
 #include "base/stl_util.h"
 

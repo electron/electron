@@ -2,13 +2,13 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/browser.h"
+#include "electron/browser/browser.h"
 
 #include <string>
 
-#include "atom/browser/atom_browser_main_parts.h"
-#include "atom/browser/native_window.h"
-#include "atom/browser/window_list.h"
+#include "electron/browser/atom_browser_main_parts.h"
+#include "electron/browser/native_window.h"
+#include "electron/browser/window_list.h"
 #include "base/message_loop/message_loop.h"
 
 namespace atom {

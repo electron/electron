@@ -2,11 +2,11 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/atom_permission_manager.h"
+#include "electron/browser/atom_permission_manager.h"
 
 #include <vector>
 
-#include "atom/browser/web_contents_preferences.h"
+#include "electron/browser/web_contents_preferences.h"
 #include "content/public/browser/child_process_security_policy.h"
 #include "content/public/browser/permission_type.h"
 #include "content/public/browser/render_frame_host.h"

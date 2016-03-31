@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/native_window_views.h"
+#include "electron/browser/native_window_views.h"
 #include "content/public/browser/browser_accessibility_state.h"
 
 namespace atom {

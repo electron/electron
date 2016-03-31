@@ -2,20 +2,20 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/renderer/atom_render_view_observer.h"
+#include "electron/renderer/atom_render_view_observer.h"
 
 #include <string>
 #include <vector>
 
 // Put this before event_emitter_caller.h to have string16 support.
-#include "atom/common/native_mate_converters/string16_converter.h"
+#include "electron/common/native_mate_converters/string16_converter.h"
 
-#include "atom/common/api/api_messages.h"
-#include "atom/common/api/event_emitter_caller.h"
-#include "atom/common/native_mate_converters/value_converter.h"
-#include "atom/common/node_includes.h"
-#include "atom/common/options_switches.h"
-#include "atom/renderer/atom_renderer_client.h"
+#include "electron/common/api/api_messages.h"
+#include "electron/common/api/event_emitter_caller.h"
+#include "electron/common/native_mate_converters/value_converter.h"
+#include "electron/common/node_includes.h"
+#include "electron/common/options_switches.h"
+#include "electron/renderer/atom_renderer_client.h"
 #include "base/command_line.h"
 #include "base/strings/string_number_conversions.h"
 #include "content/public/renderer/render_view.h"

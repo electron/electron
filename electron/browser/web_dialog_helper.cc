@@ -2,14 +2,14 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/web_dialog_helper.h"
+#include "electron/browser/web_dialog_helper.h"
 
 #include <string>
 #include <vector>
 
-#include "atom/browser/atom_browser_context.h"
-#include "atom/browser/native_window.h"
-#include "atom/browser/ui/file_dialog.h"
+#include "electron/browser/atom_browser_context.h"
+#include "electron/browser/native_window.h"
+#include "electron/browser/ui/file_dialog.h"
 #include "base/bind.h"
 #include "base/files/file_enumerator.h"
 #include "base/files/file_path.h"

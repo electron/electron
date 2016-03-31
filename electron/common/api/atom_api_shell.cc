@@ -4,10 +4,10 @@
 
 #include <string>
 
-#include "atom/common/platform_util.h"
-#include "atom/common/native_mate_converters/file_path_converter.h"
-#include "atom/common/native_mate_converters/gurl_converter.h"
-#include "atom/common/node_includes.h"
+#include "electron/common/platform_util.h"
+#include "electron/common/native_mate_converters/file_path_converter.h"
+#include "electron/common/native_mate_converters/gurl_converter.h"
+#include "electron/common/node_includes.h"
 #include "native_mate/dictionary.h"
 
 namespace {

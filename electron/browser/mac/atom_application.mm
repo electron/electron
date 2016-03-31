@@ -2,9 +2,9 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#import "atom/browser/mac/atom_application.h"
+#import "electron/browser/mac/atom_application.h"
 
-#include "atom/browser/browser.h"
+#include "electron/browser/browser.h"
 #include "base/auto_reset.h"
 #include "base/strings/sys_string_conversions.h"
 #include "content/public/browser/browser_accessibility_state.h"

@@ -8,8 +8,8 @@
 #include <memory>
 #include <string>
 
-#include "atom/browser/net/js_asker.h"
-#include "atom/common/asar/archive.h"
+#include "electron/browser/net/js_asker.h"
+#include "electron/common/asar/archive.h"
 #include "base/files/file_path.h"
 #include "base/memory/ref_counted.h"
 #include "base/memory/weak_ptr.h"

@@ -2,10 +2,10 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/atom_resource_dispatcher_host_delegate.h"
+#include "electron/browser/atom_resource_dispatcher_host_delegate.h"
 
-#include "atom/browser/login_handler.h"
-#include "atom/common/platform_util.h"
+#include "electron/browser/login_handler.h"
+#include "electron/common/platform_util.h"
 #include "content/public/browser/browser_thread.h"
 #include "net/base/escape.h"
 #include "url/gurl.h"

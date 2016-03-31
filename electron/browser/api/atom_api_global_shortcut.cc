@@ -2,16 +2,16 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/api/atom_api_global_shortcut.h"
+#include "electron/browser/api/atom_api_global_shortcut.h"
 
 #include <string>
 
-#include "atom/common/native_mate_converters/accelerator_converter.h"
-#include "atom/common/native_mate_converters/callback.h"
+#include "electron/common/native_mate_converters/accelerator_converter.h"
+#include "electron/common/native_mate_converters/callback.h"
 #include "base/stl_util.h"
 #include "native_mate/dictionary.h"
 
-#include "atom/common/node_includes.h"
+#include "electron/common/node_includes.h"
 
 using extensions::GlobalShortcutListener;
 

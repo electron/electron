@@ -2,10 +2,10 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/api/frame_subscriber.h"
+#include "electron/browser/api/frame_subscriber.h"
 
 #include "base/bind.h"
-#include "atom/common/node_includes.h"
+#include "electron/common/node_includes.h"
 #include "content/public/browser/render_widget_host.h"
 
 namespace atom {

@@ -7,8 +7,8 @@
 
 #include <vector>
 
-#include "atom/browser/api/event_emitter.h"
-#include "atom/common/id_weak_map.h"
+#include "electron/browser/api/event_emitter.h"
+#include "electron/common/id_weak_map.h"
 #include "base/bind.h"
 #include "base/memory/scoped_ptr.h"
 #include "base/memory/weak_ptr.h"

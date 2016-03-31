@@ -2,12 +2,12 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/common/native_mate_converters/blink_converter.h"
+#include "electron/common/native_mate_converters/blink_converter.h"
 
 #include <string>
 #include <vector>
 
-#include "atom/common/keyboard_util.h"
+#include "electron/common/keyboard_util.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "content/public/browser/native_web_keyboard_event.h"

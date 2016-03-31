@@ -6,16 +6,16 @@
 #include <utility>
 #include <vector>
 
-#include "atom/browser/api/atom_api_window.h"
-#include "atom/browser/native_window.h"
-#include "atom/browser/ui/file_dialog.h"
-#include "atom/browser/ui/message_box.h"
-#include "atom/common/native_mate_converters/callback.h"
-#include "atom/common/native_mate_converters/file_path_converter.h"
-#include "atom/common/native_mate_converters/image_converter.h"
+#include "electron/browser/api/atom_api_window.h"
+#include "electron/browser/native_window.h"
+#include "electron/browser/ui/file_dialog.h"
+#include "electron/browser/ui/message_box.h"
+#include "electron/common/native_mate_converters/callback.h"
+#include "electron/common/native_mate_converters/file_path_converter.h"
+#include "electron/common/native_mate_converters/image_converter.h"
 #include "native_mate/dictionary.h"
 
-#include "atom/common/node_includes.h"
+#include "electron/common/node_includes.h"
 
 namespace mate {
 

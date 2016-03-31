@@ -2,19 +2,19 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/native_window.h"
+#include "electron/browser/native_window.h"
 
 #include <string>
 #include <utility>
 #include <vector>
 
-#include "atom/browser/atom_browser_context.h"
-#include "atom/browser/atom_browser_main_parts.h"
-#include "atom/browser/window_list.h"
-#include "atom/common/api/api_messages.h"
-#include "atom/common/native_mate_converters/image_converter.h"
-#include "atom/common/native_mate_converters/file_path_converter.h"
-#include "atom/common/options_switches.h"
+#include "electron/browser/atom_browser_context.h"
+#include "electron/browser/atom_browser_main_parts.h"
+#include "electron/browser/window_list.h"
+#include "electron/common/api/api_messages.h"
+#include "electron/common/native_mate_converters/image_converter.h"
+#include "electron/common/native_mate_converters/file_path_converter.h"
+#include "electron/common/options_switches.h"
 #include "base/files/file_util.h"
 #include "base/json/json_writer.h"
 #include "base/prefs/pref_service.h"

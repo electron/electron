@@ -2,10 +2,10 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/renderer/node_array_buffer_bridge.h"
+#include "electron/renderer/node_array_buffer_bridge.h"
 
 #include "base/macros.h"
-#include "atom/common/node_includes.h"
+#include "electron/common/node_includes.h"
 #include "native_mate/converter.h"
 #include "third_party/WebKit/public/web/WebArrayBuffer.h"
 #include "third_party/WebKit/public/web/WebArrayBufferConverter.h"

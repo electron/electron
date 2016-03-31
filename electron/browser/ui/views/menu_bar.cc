@@ -2,14 +2,14 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/ui/views/menu_bar.h"
+#include "electron/browser/ui/views/menu_bar.h"
 
 #if defined(USE_X11)
 #include "gtk/gtk.h"
 #endif
 
-#include "atom/browser/ui/views/menu_delegate.h"
-#include "atom/browser/ui/views/submenu_button.h"
+#include "electron/browser/ui/views/menu_delegate.h"
+#include "electron/browser/ui/views/submenu_button.h"
 #include "ui/base/models/menu_model.h"
 #include "ui/views/background.h"
 #include "ui/views/layout/box_layout.h"

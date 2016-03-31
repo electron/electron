@@ -7,10 +7,10 @@
 
 #include <string>
 
-#include "atom/browser/api/event_emitter.h"
-#include "atom/browser/atom_browser_client.h"
-#include "atom/browser/browser_observer.h"
-#include "atom/common/native_mate_converters/callback.h"
+#include "electron/browser/api/event_emitter.h"
+#include "electron/browser/atom_browser_client.h"
+#include "electron/browser/browser_observer.h"
+#include "electron/common/native_mate_converters/callback.h"
 #include "chrome/browser/process_singleton.h"
 #include "content/public/browser/gpu_data_manager_observer.h"
 #include "native_mate/handle.h"

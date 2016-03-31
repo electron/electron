@@ -2,14 +2,14 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/common/native_mate_converters/net_converter.h"
+#include "electron/common/native_mate_converters/net_converter.h"
 
 #include <string>
 #include <vector>
 
-#include "atom/common/node_includes.h"
-#include "atom/common/native_mate_converters/gurl_converter.h"
-#include "atom/common/native_mate_converters/value_converter.h"
+#include "electron/common/node_includes.h"
+#include "electron/common/native_mate_converters/gurl_converter.h"
+#include "electron/common/native_mate_converters/value_converter.h"
 #include "base/values.h"
 #include "native_mate/dictionary.h"
 #include "net/base/upload_bytes_element_reader.h"

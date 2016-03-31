@@ -2,13 +2,13 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/atom_access_token_store.h"
+#include "electron/browser/atom_access_token_store.h"
 
 #include <utility>
 
-#include "atom/browser/atom_browser_context.h"
-#include "atom/browser/atom_browser_main_parts.h"
-#include "atom/common/google_api_key.h"
+#include "electron/browser/atom_browser_context.h"
+#include "electron/browser/atom_browser_main_parts.h"
+#include "electron/common/google_api_key.h"
 #include "content/public/browser/geolocation_provider.h"
 
 namespace atom {

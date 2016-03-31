@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/app/atom_main.h"
+#include "electron/app/atom_main.h"
 
 #include <stdlib.h>
 
@@ -12,22 +12,22 @@
 #include <tchar.h>
 #include <shellapi.h>
 
-#include "atom/app/atom_main_delegate.h"
-#include "atom/common/crash_reporter/win/crash_service_main.h"
+#include "electron/app/atom_main_delegate.h"
+#include "electron/common/crash_reporter/win/crash_service_main.h"
 #include "base/environment.h"
 #include "base/win/windows_version.h"
 #include "content/public/app/sandbox_helper_win.h"
 #include "sandbox/win/src/sandbox_types.h"
 #include "ui/gfx/win/dpi.h"
 #elif defined(OS_LINUX)  // defined(OS_WIN)
-#include "atom/app/atom_main_delegate.h"  // NOLINT
+#include "electron/app/atom_main_delegate.h"  // NOLINT
 #include "content/public/app/content_main.h"
 #else  // defined(OS_LINUX)
-#include "atom/app/atom_library_main.h"
+#include "electron/app/atom_library_main.h"
 #endif  // defined(OS_MACOSX)
 
-#include "atom/app/node_main.h"
-#include "atom/common/atom_command_line.h"
+#include "electron/app/node_main.h"
+#include "electron/common/atom_command_line.h"
 #include "base/at_exit.h"
 #include "base/i18n/icu_util.h"
 

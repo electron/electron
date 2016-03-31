@@ -4,7 +4,7 @@
 
 #include "chrome/browser/ui/views/frame/global_menu_bar_registrar_x11.h"
 
-#include "atom/browser/ui/views/global_menu_bar_x11.h"
+#include "electron/browser/ui/views/global_menu_bar_x11.h"
 #include "base/bind.h"
 #include "base/debug/leak_annotations.h"
 #include "base/logging.h"

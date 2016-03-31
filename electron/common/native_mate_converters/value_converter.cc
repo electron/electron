@@ -2,9 +2,9 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/common/native_mate_converters/value_converter.h"
+#include "electron/common/native_mate_converters/value_converter.h"
 
-#include "atom/common/native_mate_converters/v8_value_converter.h"
+#include "electron/common/native_mate_converters/v8_value_converter.h"
 #include "base/values.h"
 
 namespace mate {

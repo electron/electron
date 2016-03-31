@@ -9,8 +9,8 @@
 #include <string>
 #include <vector>
 
-#include "atom/browser/native_window_observer.h"
-#include "atom/browser/ui/accelerator_util.h"
+#include "electron/browser/native_window_observer.h"
+#include "electron/browser/ui/accelerator_util.h"
 #include "base/cancelable_callback.h"
 #include "base/memory/scoped_ptr.h"
 #include "base/memory/weak_ptr.h"

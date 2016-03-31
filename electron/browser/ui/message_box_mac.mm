@@ -2,11 +2,11 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/ui/message_box.h"
+#include "electron/browser/ui/message_box.h"
 
 #import <Cocoa/Cocoa.h>
 
-#include "atom/browser/native_window.h"
+#include "electron/browser/native_window.h"
 #include "base/callback.h"
 #include "base/mac/mac_util.h"
 #include "base/strings/sys_string_conversions.h"

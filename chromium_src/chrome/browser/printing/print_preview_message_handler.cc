@@ -17,7 +17,7 @@
 #include "printing/print_job_constants.h"
 #include "printing/pdf_metafile_skia.h"
 
-#include "atom/common/node_includes.h"
+#include "electron/common/node_includes.h"
 
 using content::BrowserThread;
 using content::WebContents;

@@ -2,12 +2,12 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/browser.h"
+#include "electron/browser/browser.h"
 
-#include "atom/browser/mac/atom_application.h"
-#include "atom/browser/mac/atom_application_delegate.h"
-#include "atom/browser/native_window.h"
-#include "atom/browser/window_list.h"
+#include "electron/browser/mac/atom_application.h"
+#include "electron/browser/mac/atom_application_delegate.h"
+#include "electron/browser/native_window.h"
+#include "electron/browser/window_list.h"
 #include "base/mac/bundle_locations.h"
 #include "base/mac/foundation_util.h"
 #include "base/strings/sys_string_conversions.h"

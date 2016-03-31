@@ -2,11 +2,11 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/api/atom_api_cookies.h"
+#include "electron/browser/api/atom_api_cookies.h"
 
-#include "atom/common/native_mate_converters/callback.h"
-#include "atom/common/native_mate_converters/gurl_converter.h"
-#include "atom/common/native_mate_converters/value_converter.h"
+#include "electron/common/native_mate_converters/callback.h"
+#include "electron/common/native_mate_converters/gurl_converter.h"
+#include "electron/common/native_mate_converters/value_converter.h"
 #include "base/time/time.h"
 #include "base/values.h"
 #include "content/public/browser/browser_context.h"

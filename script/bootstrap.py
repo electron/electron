@@ -174,7 +174,7 @@ def download_sysroot(target_arch):
 def create_chrome_version_h():
   version_file = os.path.join(SOURCE_ROOT, 'vendor', 'brightray', 'vendor',
                               'libchromiumcontent', 'VERSION')
-  target_file = os.path.join(SOURCE_ROOT, 'atom', 'common', 'chrome_version.h')
+  target_file = os.path.join(SOURCE_ROOT, 'electron', 'common', 'chrome_version.h')
   template_file = os.path.join(SOURCE_ROOT, 'script', 'chrome_version.h.in')
 
   with open(version_file, 'r') as f:

@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/common/asar/archive.h"
+#include "electron/common/asar/archive.h"
 
 #if defined(OS_WIN)
 #include <io.h>
@@ -11,7 +11,7 @@
 #include <string>
 #include <vector>
 
-#include "atom/common/asar/scoped_temporary_file.h"
+#include "electron/common/asar/scoped_temporary_file.h"
 #include "base/files/file.h"
 #include "base/files/file_util.h"
 #include "base/logging.h"

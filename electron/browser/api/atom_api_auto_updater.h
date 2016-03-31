@@ -7,9 +7,9 @@
 
 #include <string>
 
-#include "atom/browser/api/event_emitter.h"
-#include "atom/browser/auto_updater.h"
-#include "atom/browser/window_list_observer.h"
+#include "electron/browser/api/event_emitter.h"
+#include "electron/browser/auto_updater.h"
+#include "electron/browser/window_list_observer.h"
 #include "native_mate/handle.h"
 
 namespace atom {

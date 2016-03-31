@@ -2,14 +2,14 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/api/atom_api_debugger.h"
+#include "electron/browser/api/atom_api_debugger.h"
 
 #include <string>
 
-#include "atom/browser/atom_browser_main_parts.h"
-#include "atom/common/native_mate_converters/callback.h"
-#include "atom/common/native_mate_converters/value_converter.h"
-#include "atom/common/node_includes.h"
+#include "electron/browser/atom_browser_main_parts.h"
+#include "electron/common/native_mate_converters/callback.h"
+#include "electron/common/native_mate_converters/value_converter.h"
+#include "electron/common/node_includes.h"
 #include "base/json/json_reader.h"
 #include "base/json/json_writer.h"
 #include "content/public/browser/devtools_agent_host.h"

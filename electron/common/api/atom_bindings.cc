@@ -2,20 +2,20 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/common/api/atom_bindings.h"
+#include "electron/common/api/atom_bindings.h"
 
 #include <algorithm>
 #include <string>
 #include <iostream>
 
-#include "atom/common/atom_version.h"
-#include "atom/common/chrome_version.h"
-#include "atom/common/native_mate_converters/string16_converter.h"
+#include "electron/common/atom_version.h"
+#include "electron/common/chrome_version.h"
+#include "electron/common/native_mate_converters/string16_converter.h"
 #include "base/logging.h"
 #include "base/process/process_metrics.h"
 #include "native_mate/dictionary.h"
 
-#include "atom/common/node_includes.h"
+#include "electron/common/node_includes.h"
 
 namespace atom {
 

@@ -9,8 +9,8 @@
 
 #include <string>
 
-#include "atom/browser/ui/atom_menu_model.h"
-#include "atom/browser/ui/tray_icon.h"
+#include "electron/browser/ui/atom_menu_model.h"
+#include "electron/browser/ui/tray_icon.h"
 #include "base/mac/scoped_nsobject.h"
 
 @class AtomMenuController;

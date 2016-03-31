@@ -2,15 +2,15 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/native_window_views.h"
+#include "electron/browser/native_window_views.h"
 
 #include <string>
 #include <vector>
 
-#include "atom/browser/ui/views/menu_bar.h"
-#include "atom/browser/ui/views/menu_layout.h"
-#include "atom/common/draggable_region.h"
-#include "atom/common/options_switches.h"
+#include "electron/browser/ui/views/menu_bar.h"
+#include "electron/browser/ui/views/menu_layout.h"
+#include "electron/common/draggable_region.h"
+#include "electron/common/options_switches.h"
 #include "base/strings/utf_string_conversions.h"
 #include "brightray/browser/inspectable_web_contents.h"
 #include "brightray/browser/inspectable_web_contents_view.h"
@@ -28,20 +28,20 @@
 #include "ui/wm/core/shadow_types.h"
 
 #if defined(USE_X11)
-#include "atom/browser/browser.h"
-#include "atom/browser/ui/views/global_menu_bar_x11.h"
-#include "atom/browser/ui/views/frameless_view.h"
-#include "atom/browser/ui/views/native_frame_view.h"
-#include "atom/browser/ui/x/window_state_watcher.h"
-#include "atom/browser/ui/x/x_window_utils.h"
+#include "electron/browser/browser.h"
+#include "electron/browser/ui/views/global_menu_bar_x11.h"
+#include "electron/browser/ui/views/frameless_view.h"
+#include "electron/browser/ui/views/native_frame_view.h"
+#include "electron/browser/ui/x/window_state_watcher.h"
+#include "electron/browser/ui/x/x_window_utils.h"
 #include "base/strings/string_util.h"
 #include "chrome/browser/ui/libgtk2ui/unity_service.h"
 #include "ui/base/x/x11_util.h"
 #include "ui/gfx/x/x11_types.h"
 #include "ui/views/window/native_frame_view.h"
 #elif defined(OS_WIN)
-#include "atom/browser/ui/views/win_frame_view.h"
-#include "atom/browser/ui/win/atom_desktop_window_tree_host_win.h"
+#include "electron/browser/ui/views/win_frame_view.h"
+#include "electron/browser/ui/win/atom_desktop_window_tree_host_win.h"
 #include "skia/ext/skia_utils_win.h"
 #include "ui/base/win/shell.h"
 #include "ui/gfx/win/dpi.h"
