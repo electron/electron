@@ -49,7 +49,7 @@
             '<(project_name)_helper',
           ],
           'xcode_settings': {
-            'ATOM_BUNDLE_ID': 'com.<(company_abbr).<(project_name)',
+            'ELECTRON_BUNDLE_ID': 'com.<(company_abbr).<(project_name)',
             'INFOPLIST_FILE': 'electron/browser/resources/mac/Info.plist',
             'LD_RUNPATH_SEARCH_PATHS': [
               '@executable_path/../Frameworks',
@@ -439,7 +439,7 @@
             '<(libchromiumcontent_dir)/snapshot_blob.bin',
           ],
           'xcode_settings': {
-            'ATOM_BUNDLE_ID': 'com.<(company_abbr).<(project_name).framework',
+            'ELECTRON_BUNDLE_ID': 'com.<(company_abbr).<(project_name).framework',
             'INFOPLIST_FILE': 'electron/common/resources/mac/Info.plist',
             'LD_DYLIB_INSTALL_NAME': '@rpath/<(product_name) Framework.framework/<(product_name) Framework',
             'LD_RUNPATH_SEARCH_PATHS': [
@@ -548,7 +548,7 @@
           ],
           'mac_bundle': 1,
           'xcode_settings': {
-            'ATOM_BUNDLE_ID': 'com.<(company_abbr).<(project_name).helper',
+            'ELECTRON_BUNDLE_ID': 'com.<(company_abbr).<(project_name).helper',
             'INFOPLIST_FILE': 'electron/renderer/resources/mac/Info.plist',
             'LD_RUNPATH_SEARCH_PATHS': [
               '@executable_path/../../..',

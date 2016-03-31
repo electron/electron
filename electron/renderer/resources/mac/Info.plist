@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
   <key>CFBundleIdentifier</key>
-  <string>${ATOM_BUNDLE_ID}</string>
+  <string>${ELECTRON_BUNDLE_ID}</string>
   <key>CFBundleName</key>
   <string>${PRODUCT_NAME}</string>
   <key>CFBundlePackageType</key>
