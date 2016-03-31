@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ELECTRON_BROWSER_API_ATOM_API_POWER_SAVE_BLOCKER_H_
-#define ELECTRON_BROWSER_API_ATOM_API_POWER_SAVE_BLOCKER_H_
+#ifndef ELECTRON_BROWSER_API_ELECTRON_API_POWER_SAVE_BLOCKER_H_
+#define ELECTRON_BROWSER_API_ELECTRON_API_POWER_SAVE_BLOCKER_H_
 
 #include <map>
 
@@ -55,4 +55,4 @@ class PowerSaveBlocker : public mate::TrackableObject<PowerSaveBlocker> {
 
 }  // namespace electron
 
-#endif  // ELECTRON_BROWSER_API_ATOM_API_POWER_SAVE_BLOCKER_H_
+#endif  // ELECTRON_BROWSER_API_ELECTRON_API_POWER_SAVE_BLOCKER_H_

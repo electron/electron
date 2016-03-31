@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ELECTRON_UTILITY_ATOM_CONTENT_UTILITY_CLIENT_H_
-#define ELECTRON_UTILITY_ATOM_CONTENT_UTILITY_CLIENT_H_
+#ifndef ELECTRON_UTILITY_ELECTRON_CONTENT_UTILITY_CLIENT_H_
+#define ELECTRON_UTILITY_ELECTRON_CONTENT_UTILITY_CLIENT_H_
 
 #include <set>
 #include <string>
@@ -55,4 +55,4 @@ class AtomContentUtilityClient : public content::ContentUtilityClient {
 
 }  // namespace electron
 
-#endif  // ELECTRON_UTILITY_ATOM_CONTENT_UTILITY_CLIENT_H_
+#endif  // ELECTRON_UTILITY_ELECTRON_CONTENT_UTILITY_CLIENT_H_

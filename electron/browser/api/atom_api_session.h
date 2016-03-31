@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ELECTRON_BROWSER_API_ATOM_API_SESSION_H_
-#define ELECTRON_BROWSER_API_ATOM_API_SESSION_H_
+#ifndef ELECTRON_BROWSER_API_ELECTRON_API_SESSION_H_
+#define ELECTRON_BROWSER_API_ELECTRON_API_SESSION_H_
 
 #include <string>
 
@@ -95,4 +95,4 @@ class Session: public mate::TrackableObject<Session>,
 
 }  // namespace electron
 
-#endif  // ELECTRON_BROWSER_API_ATOM_API_SESSION_H_
+#endif  // ELECTRON_BROWSER_API_ELECTRON_API_SESSION_H_

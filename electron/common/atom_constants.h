@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ELECTRON_COMMON_ATOM_CONSTANTS_H_
-#define ELECTRON_COMMON_ATOM_CONSTANTS_H_
+#ifndef ELECTRON_COMMON_ELECTRON_CONSTANTS_H_
+#define ELECTRON_COMMON_ELECTRON_CONSTANTS_H_
 
 namespace electron {
 
@@ -12,4 +12,4 @@ extern const char* kCORSHeader;
 
 }  // namespace electron
 
-#endif  // ELECTRON_COMMON_ATOM_CONSTANTS_H_
+#endif  // ELECTRON_COMMON_ELECTRON_CONSTANTS_H_

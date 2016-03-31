@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ELECTRON_BROWSER_NET_ATOM_CERT_VERIFIER_H_
-#define ELECTRON_BROWSER_NET_ATOM_CERT_VERIFIER_H_
+#ifndef ELECTRON_BROWSER_NET_ELECTRON_CERT_VERIFIER_H_
+#define ELECTRON_BROWSER_NET_ELECTRON_CERT_VERIFIER_H_
 
 #include <string>
 
@@ -48,4 +48,4 @@ class AtomCertVerifier : public net::CertVerifier {
 
 }   // namespace electron
 
-#endif  // ELECTRON_BROWSER_NET_ATOM_CERT_VERIFIER_H_
+#endif  // ELECTRON_BROWSER_NET_ELECTRON_CERT_VERIFIER_H_

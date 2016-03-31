@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ELECTRON_APP_ATOM_CONTENT_CLIENT_H_
-#define ELECTRON_APP_ATOM_CONTENT_CLIENT_H_
+#ifndef ELECTRON_APP_ELECTRON_CONTENT_CLIENT_H_
+#define ELECTRON_APP_ELECTRON_CONTENT_CLIENT_H_
 
 #include <set>
 #include <string>
@@ -37,4 +37,4 @@ class AtomContentClient : public brightray::ContentClient {
 
 }  // namespace electron
 
-#endif  // ELECTRON_APP_ATOM_CONTENT_CLIENT_H_
+#endif  // ELECTRON_APP_ELECTRON_CONTENT_CLIENT_H_

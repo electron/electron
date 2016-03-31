@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ELECTRON_RENDERER_API_ATOM_API_WEB_FRAME_H_
-#define ELECTRON_RENDERER_API_ATOM_API_WEB_FRAME_H_
+#ifndef ELECTRON_RENDERER_API_ELECTRON_API_WEB_FRAME_H_
+#define ELECTRON_RENDERER_API_ELECTRON_API_WEB_FRAME_H_
 
 #include <string>
 
@@ -81,4 +81,4 @@ class WebFrame : public mate::Wrappable {
 
 }  // namespace electron
 
-#endif  // ELECTRON_RENDERER_API_ATOM_API_WEB_FRAME_H_
+#endif  // ELECTRON_RENDERER_API_ELECTRON_API_WEB_FRAME_H_

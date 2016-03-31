@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ELECTRON_BROWSER_API_ATOM_API_PROTOCOL_H_
-#define ELECTRON_BROWSER_API_ATOM_API_PROTOCOL_H_
+#ifndef ELECTRON_BROWSER_API_ELECTRON_API_PROTOCOL_H_
+#define ELECTRON_BROWSER_API_ELECTRON_API_PROTOCOL_H_
 
 #include <string>
 #include <map>
@@ -192,4 +192,4 @@ class Protocol : public mate::Wrappable {
 
 }  // namespace electron
 
-#endif  // ELECTRON_BROWSER_API_ATOM_API_PROTOCOL_H_
+#endif  // ELECTRON_BROWSER_API_ELECTRON_API_PROTOCOL_H_

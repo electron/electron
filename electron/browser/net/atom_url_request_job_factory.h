@@ -3,8 +3,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ELECTRON_BROWSER_NET_ATOM_URL_REQUEST_JOB_FACTORY_H_
-#define ELECTRON_BROWSER_NET_ATOM_URL_REQUEST_JOB_FACTORY_H_
+#ifndef ELECTRON_BROWSER_NET_ELECTRON_URL_REQUEST_JOB_FACTORY_H_
+#define ELECTRON_BROWSER_NET_ELECTRON_URL_REQUEST_JOB_FACTORY_H_
 
 #include <map>
 #include <string>
@@ -64,4 +64,4 @@ class AtomURLRequestJobFactory : public net::URLRequestJobFactory {
 
 }  // namespace electron
 
-#endif  // ELECTRON_BROWSER_NET_ATOM_URL_REQUEST_JOB_FACTORY_H_
+#endif  // ELECTRON_BROWSER_NET_ELECTRON_URL_REQUEST_JOB_FACTORY_H_

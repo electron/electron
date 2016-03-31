@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ELECTRON_BROWSER_API_ATOM_API_POWER_MONITOR_H_
-#define ELECTRON_BROWSER_API_ATOM_API_POWER_MONITOR_H_
+#ifndef ELECTRON_BROWSER_API_ELECTRON_API_POWER_MONITOR_H_
+#define ELECTRON_BROWSER_API_ELECTRON_API_POWER_MONITOR_H_
 
 #include "electron/browser/api/trackable_object.h"
 #include "base/compiler_specific.h"
@@ -36,4 +36,4 @@ class PowerMonitor : public mate::TrackableObject<PowerMonitor>,
 
 }  // namespace electron
 
-#endif  // ELECTRON_BROWSER_API_ATOM_API_POWER_MONITOR_H_
+#endif  // ELECTRON_BROWSER_API_ELECTRON_API_POWER_MONITOR_H_

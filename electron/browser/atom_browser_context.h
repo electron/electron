@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ELECTRON_BROWSER_ATOM_BROWSER_CONTEXT_H_
-#define ELECTRON_BROWSER_ATOM_BROWSER_CONTEXT_H_
+#ifndef ELECTRON_BROWSER_ELECTRON_BROWSER_CONTEXT_H_
+#define ELECTRON_BROWSER_ELECTRON_BROWSER_CONTEXT_H_
 
 #include <string>
 
@@ -68,4 +68,4 @@ class AtomBrowserContext : public brightray::BrowserContext {
 
 }  // namespace electron
 
-#endif  // ELECTRON_BROWSER_ATOM_BROWSER_CONTEXT_H_
+#endif  // ELECTRON_BROWSER_ELECTRON_BROWSER_CONTEXT_H_

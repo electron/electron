@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ELECTRON_BROWSER_API_ATOM_API_WEB_CONTENTS_H_
-#define ELECTRON_BROWSER_API_ATOM_API_WEB_CONTENTS_H_
+#ifndef ELECTRON_BROWSER_API_ELECTRON_API_WEB_CONTENTS_H_
+#define ELECTRON_BROWSER_API_ELECTRON_API_WEB_CONTENTS_H_
 
 #include <string>
 #include <vector>
@@ -308,4 +308,4 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
 }  // namespace electron
 
-#endif  // ELECTRON_BROWSER_API_ATOM_API_WEB_CONTENTS_H_
+#endif  // ELECTRON_BROWSER_API_ELECTRON_API_WEB_CONTENTS_H_

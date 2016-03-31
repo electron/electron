@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ELECTRON_BROWSER_API_ATOM_API_SCREEN_H_
-#define ELECTRON_BROWSER_API_ATOM_API_SCREEN_H_
+#ifndef ELECTRON_BROWSER_API_ELECTRON_API_SCREEN_H_
+#define ELECTRON_BROWSER_API_ELECTRON_API_SCREEN_H_
 
 #include <vector>
 
@@ -57,4 +57,4 @@ class Screen : public mate::EventEmitter,
 
 }  // namespace electron
 
-#endif  // ELECTRON_BROWSER_API_ATOM_API_SCREEN_H_
+#endif  // ELECTRON_BROWSER_API_ELECTRON_API_SCREEN_H_
