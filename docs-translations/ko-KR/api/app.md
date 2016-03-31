@@ -366,6 +366,32 @@ npm 모듈 규칙에 따라 대부분의 경우 `package.json`의 `name` 필드�
 
 최근 문서 목록을 모두 비웁니다.
 
+### `app.setAsDefaultProtocolClient(protocol)` _OS X_ _Windows_
+
+* `protocol` String - 프로토콜의 이름, `://` 제외. 만약 앱을 통해 `electron://`과
+  같은 링크를 처리하고 싶다면, 이 메서드에 `electron` 인수를 담아 호출하면 됩니다.
+
+이 메서드는 지정한 프로토콜(URI scheme)에 대해 현재 실행파일을 기본 핸들러로
+등록합니다. 이를 통해 운영체제와 더 가깝게 통합할 수 있습니다. 한 번 등록되면,
+`your-protocol://`과 같은 모든 링크에 대해 호출시 현재 실행 파일이 실행됩니다.
+모든 링크, 프로토콜을 포함하여 어플리케이션의 인수로 전달됩니다.
+
+**참고:** OS X에선, 어플리케이션의 `info.plist`에 등록해둔 프로토콜만 사용할 수
+있습니다. 이는 런타임에서 변경될 수 없습니다. 이 파일은 간단히 텍스트 에디터를
+사용하거나, 어플리케이션을 빌드할 때 스크립트가 생성되도록 할 수 있습니다. 자세한
+내용은 [Apple의 참조 문서를][CFBundleURLTypes] 확인하세요.
+
+이 API는 내부적으로 Windows 레지스트리와 LSSetDefaultHandlerForURLScheme를 사용합니다.
+
+### `app.removeAsDefaultProtocolClient(protocol)` _Windows_
+
+* `protocol` String - 프로토콜의 이름, `://` 제외.
+
+이 메서드는 현재 실행파일이 지정한 프로토콜(URI scheme)에 대해 기본 핸들러인지를
+확인합니다. 만약 그렇다면, 이 메서드는 앱을 기본 핸들러에서 제거합니다.
+
+**참고:** OS X에서는 앱을 제거하면 자동으로 기본 프로토콜 핸들러에서 제거됩니다.
+
 ### `app.setUserTasks(tasks)` _Windows_
 
 * `tasks` Array - `Task` 객체의 배열
@@ -556,3 +582,4 @@ dock 아이콘의 `image`를 설정합니다.
 [dock-menu]:https://developer.apple.com/library/mac/documentation/Carbon/Conceptual/customizing_docktile/concepts/dockconcepts.html#//apple_ref/doc/uid/TP30000986-CH2-TPXREF103
 [tasks]:http://msdn.microsoft.com/en-us/library/windows/desktop/dd378460(v=vs.85).aspx#tasks
 [app-user-model-id]: https://msdn.microsoft.com/en-us/library/windows/desktop/dd378459(v=vs.85).aspx
+[CFBundleURLTypes]: https://developer.apple.com/library/ios/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html#//apple_ref/doc/uid/TP40009249-102207-TPXREF115

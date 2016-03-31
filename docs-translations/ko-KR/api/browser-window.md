@@ -318,6 +318,16 @@ someWindow.on('app-command', function(e, cmd) {
 
 스크롤 휠 이벤트가 동작을 멈췄을 때 발생하는 이벤트입니다.
 
+### Event: 'swipe' _OS X_
+
+Returns:
+
+* `event` Event
+* `direction` String
+
+3-손가락 스와이프가 작동할 때 발생하는 이벤트입니다. 방향은 `up`, `right`, `down`,
+`left`가 될 수 있습니다.
+
 ## Methods
 
 `BrowserWindow` 객체는 다음과 같은 메서드를 가지고 있습니다:
