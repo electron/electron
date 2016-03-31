@@ -147,7 +147,7 @@ app.once('ready', function () {
           label: 'Documentation',
           click: function () {
             shell.openExternal(
-              `https://github.com/atom/electron/tree/v${process.versions.electron}/docs#readme`
+              `https://github.com/electron/electron/tree/v${process.versions.electron}/docs#readme`
             )
           }
         },
@@ -160,7 +160,7 @@ app.once('ready', function () {
         {
           label: 'Search Issues',
           click: function () {
-            shell.openExternal('https://github.com/atom/electron/issues')
+            shell.openExternal('https://github.com/electron/electron/issues')
           }
         }
       ]
@@ -257,7 +257,7 @@ function loadApplicationPackage (packagePath) {
       dialog.showErrorBox(
         'Error opening app',
         'The app provided is not a valid Electron app, please read the docs on how to write one:\n' +
-        `https://github.com/atom/electron/tree/v${process.versions.electron}/docs
+        `https://github.com/electron/electron/tree/v${process.versions.electron}/docs
 
 ${e.toString()}`
       )
