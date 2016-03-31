@@ -322,6 +322,15 @@ Emitted when scroll wheel event phase has begun.
 
 Emitted when scroll wheel event phase has ended.
 
+### Event: 'swipe' _OS X_
+
+Returns:
+
+* `event` Event
+* `direction` String
+
+Emitted on 3-finger swipe. Possible directions are `up`, `right`, `down`, `left`.
+
 ## Methods
 
 The `BrowserWindow` object has the following methods:
