@@ -183,10 +183,13 @@ class Browser : public WindowListObserver {
   // Observers of the browser.
   base::ObserverList<BrowserObserver> observers_;
 
+  // Whether `app.exit()` has been called
+  bool is_exiting_;
+
   // Whether "ready" event has been emitted.
   bool is_ready_;
 
-  // The browse is being shutdown.
+  // The browser is being shutdown.
   bool is_shutdown_;
 
   std::string version_override_;

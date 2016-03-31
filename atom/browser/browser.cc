@@ -15,6 +15,7 @@ namespace atom {
 
 Browser::Browser()
     : is_quiting_(false),
+      is_exiting_(false),
       is_ready_(false),
       is_shutdown_(false) {
   WindowList::AddObserver(this);
@@ -49,8 +50,11 @@ void Browser::Exit(int code) {
     // Message loop is not ready, quit directly.
     exit(code);
   } else {
-    // Prepare to quit when all windows have been closed..
+    // Prepare to quit when all windows have been closed.
     is_quiting_ = true;
+
+    // Remember this caller so that we don't emit unrelated events.
+    is_exiting_ = true;
 
     // Must destroy windows before quitting, otherwise bad things can happen.
     atom::WindowList* window_list = atom::WindowList::GetInstance();
@@ -175,7 +179,9 @@ void Browser::OnWindowCloseCancelled(NativeWindow* window) {
 }
 
 void Browser::OnWindowAllClosed() {
-  if (is_quiting_)
+  if (is_exiting_)
+    Shutdown();
+  else if (is_quiting_)
     NotifyAndShutdown();
   else
     FOR_EACH_OBSERVER(BrowserObserver, observers_, OnWindowAllClosed());
