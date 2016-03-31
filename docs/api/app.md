@@ -356,16 +356,16 @@ Clears the recent documents list.
 
 ### `app.setAsDefaultProtocolClient(protocol)` _OS X_ _Windows_
 
- * `protocol` String - The name of your protocol, without `://`. If you want your
-   app to handle `electron://` links, call this method with `electron` as the
-   parameter.
-   
+* `protocol` String - The name of your protocol, without `://`. If you want your
+  app to handle `electron://` links, call this method with `electron` as the
+  parameter.
+
 This method sets the current executable as the default handler for a protocol
 (aka URI scheme). It allows you to integrate your app deeper into the operating
 system. Once registered, all links with `your-protocol://` will be openend with
 the current executable. The whole link, including protocol, will be passed to
 your application as a parameter.
- 
+
 **Note:** On OS X, you can only register protocols that have been added to
 your app's `info.plist`, which can not be modified at runtime. You can however
 change the file with a simple text editor or script during build time.
@@ -375,11 +375,11 @@ The API uses the Windows Registry and LSSetDefaultHandlerForURLScheme internally
 
 ### `app.removeAsDefaultProtocolClient(protocol)` _Windows_
 
- * `protocol` String - The name of your protocol, without `://`.
-   
+* `protocol` String - The name of your protocol, without `://`.
+
 This method checks if the current executable as the default handler for a protocol
 (aka URI scheme). If so, it will remove the app as the default handler.
- 
+
 **Note:** On OS X, removing the app will automatically remove the app as the
 default protocol handler.
 
