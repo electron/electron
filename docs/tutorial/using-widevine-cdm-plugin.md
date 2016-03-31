@@ -8,7 +8,7 @@ Electron doesn't ship with the Widevine CDM plugin for license reasons, to get
 it, you need to install the official Chrome browser first, which should match
 the architecture and Chrome version of the Electron build you use.
 
-__Note:__ The major version of Chrome browser has to be the same with the Chrome
+**Note:** The major version of Chrome browser has to be the same with the Chrome
 version used by Electron, otherwise the plugin will not work even though
 `navigator.plugins` would show it has been loaded.
 
@@ -41,7 +41,7 @@ After getting the plugin files, you should pass the `widevinecdmadapter`'s path
 to Electron with `--widevine-cdm-path` command line switch, and the plugin's
 version with `--widevine-cdm-version` switch.
 
-__Note:__ Though only the `widevinecdmadapter` binary is passed to Electron, the
+**Note:** Though only the `widevinecdmadapter` binary is passed to Electron, the
 `widevinecdm` binary has to be put aside it.
 
 The command line switches have to be passed before the `ready` event of `app`
