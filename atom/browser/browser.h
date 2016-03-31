@@ -76,6 +76,12 @@ class Browser : public WindowListObserver {
   // Set the application user model ID.
   void SetAppUserModelID(const base::string16& name);
 
+  // Remove the default protocol handler registry key
+  bool RemoveAsDefaultProtocolClient(const std::string& protocol);
+
+  // Set as default handler for a protocol.
+  bool SetAsDefaultProtocolClient(const std::string& protocol);
+
 #if defined(OS_MACOSX)
   // Hide the application.
   void Hide();

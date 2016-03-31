@@ -8,6 +8,7 @@
 #include "atom/browser/mac/atom_application_delegate.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/window_list.h"
+#include "base/mac/bundle_locations.h"
 #include "base/mac/foundation_util.h"
 #include "base/strings/sys_string_conversions.h"
 #include "brightray/common/application_info.h"
@@ -43,6 +44,25 @@ void Browser::AddRecentDocument(const base::FilePath& path) {
 
 void Browser::ClearRecentDocuments() {
   [[NSDocumentController sharedDocumentController] clearRecentDocuments:nil];
+}
+
+bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol) {
+  return false;
+}
+
+bool Browser::SetAsDefaultProtocolClient(const std::string& protocol) {
+  if (protocol.empty())
+    return false;
+
+  NSString* identifier = [base::mac::MainBundle() bundleIdentifier];
+  if (!identifier)
+    return false;
+
+  NSString* protocol_ns = [NSString stringWithUTF8String:protocol.c_str()];
+  OSStatus return_code =
+      LSSetDefaultHandlerForURLScheme(base::mac::NSToCFCast(protocol_ns),
+                                      base::mac::NSToCFCast(identifier));
+  return return_code == noErr;
 }
 
 void Browser::SetAppUserModelID(const base::string16& name) {
