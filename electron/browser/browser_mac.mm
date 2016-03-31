@@ -4,8 +4,8 @@
 
 #include "electron/browser/browser.h"
 
-#include "electron/browser/mac/atom_application.h"
-#include "electron/browser/mac/atom_application_delegate.h"
+#include "electron/browser/mac/electron_application.h"
+#include "electron/browser/mac/electron_application_delegate.h"
 #include "electron/browser/native_window.h"
 #include "electron/browser/window_list.h"
 #include "base/mac/bundle_locations.h"

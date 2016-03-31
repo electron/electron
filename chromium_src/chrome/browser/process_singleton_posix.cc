@@ -52,7 +52,7 @@
 #include <set>
 #include <string>
 
-#include "electron/common/atom_command_line.h"
+#include "electron/common/electron_command_line.h"
 #include "base/base_paths.h"
 #include "base/bind.h"
 #include "base/command_line.h"

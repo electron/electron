@@ -5,11 +5,11 @@
 #ifndef ELECTRON_BROWSER_API_ELECTRON_API_MENU_MAC_H_
 #define ELECTRON_BROWSER_API_ELECTRON_API_MENU_MAC_H_
 
-#include "electron/browser/api/atom_api_menu.h"
+#include "electron/browser/api/electron_api_menu.h"
 
 #include <string>
 
-#import "electron/browser/ui/cocoa/atom_menu_controller.h"
+#import "electron/browser/ui/cocoa/electron_menu_controller.h"
 
 namespace electron {
 

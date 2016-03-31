@@ -6,7 +6,7 @@
 
 #include <vector>
 
-#include "atom_natives.h"  // NOLINT: This file is generated with coffee2c.
+#include "electron_natives.h"  // NOLINT: This file is generated with coffee2c.
 #include "electron/common/asar/archive.h"
 #include "electron/common/native_mate_converters/callback.h"
 #include "electron/common/native_mate_converters/file_path_converter.h"
@@ -128,7 +128,7 @@ class Archive : public mate::Wrappable {
 void InitAsarSupport(v8::Isolate* isolate,
                      v8::Local<v8::Value> process,
                      v8::Local<v8::Value> require) {
-  // Evaluate asar_init.coffee.
+  // Evaluate asar_init.js.
   const char* asar_init_native = reinterpret_cast<const char*>(
       static_cast<const unsigned char*>(node::asar_init_native));
   v8::Local<v8::Script> asar_init = v8::Script::Compile(v8::String::NewFromUtf8(
@@ -160,4 +160,4 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
 
 }  // namespace
 
-NODE_MODULE_CONTEXT_AWARE_BUILTIN(atom_common_asar, Initialize)
+NODE_MODULE_CONTEXT_AWARE_BUILTIN(electron_common_asar, Initialize)

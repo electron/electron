@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#import "electron/browser/api/atom_api_menu_mac.h"
+#import "electron/browser/api/electron_api_menu_mac.h"
 
 #include "electron/browser/native_window.h"
 #include "base/message_loop/message_loop.h"

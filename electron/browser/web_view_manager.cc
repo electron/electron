@@ -4,7 +4,7 @@
 
 #include "electron/browser/web_view_manager.h"
 
-#include "electron/browser/atom_browser_context.h"
+#include "electron/browser/electron_browser_context.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/web_contents.h"
 

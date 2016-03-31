@@ -4,7 +4,7 @@
 
 #include "electron/browser/api/trackable_object.h"
 
-#include "electron/browser/atom_browser_main_parts.h"
+#include "electron/browser/electron_browser_main_parts.h"
 #include "base/bind.h"
 #include "base/supports_user_data.h"
 

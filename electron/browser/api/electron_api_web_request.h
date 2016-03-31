@@ -6,7 +6,7 @@
 #define ELECTRON_BROWSER_API_ELECTRON_API_WEB_REQUEST_H_
 
 #include "electron/browser/api/trackable_object.h"
-#include "electron/browser/net/atom_network_delegate.h"
+#include "electron/browser/net/electron_network_delegate.h"
 #include "native_mate/arguments.h"
 #include "native_mate/handle.h"
 

@@ -8,8 +8,8 @@
 #include <utility>
 #include <vector>
 
-#include "electron/browser/atom_browser_context.h"
-#include "electron/browser/atom_browser_main_parts.h"
+#include "electron/browser/electron_browser_context.h"
+#include "electron/browser/electron_browser_main_parts.h"
 #include "electron/browser/window_list.h"
 #include "electron/common/api/api_messages.h"
 #include "electron/common/native_mate_converters/image_converter.h"

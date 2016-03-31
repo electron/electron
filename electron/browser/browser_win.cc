@@ -21,7 +21,7 @@
 #include "base/win/win_util.h"
 #include "base/win/registry.h"
 #include "base/win/windows_version.h"
-#include "electron/common/atom_version.h"
+#include "electron/common/electron_version.h"
 
 namespace electron {
 

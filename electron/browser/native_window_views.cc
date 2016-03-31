@@ -41,7 +41,7 @@
 #include "ui/views/window/native_frame_view.h"
 #elif defined(OS_WIN)
 #include "electron/browser/ui/views/win_frame_view.h"
-#include "electron/browser/ui/win/atom_desktop_window_tree_host_win.h"
+#include "electron/browser/ui/win/electron_desktop_window_tree_host_win.h"
 #include "skia/ext/skia_utils_win.h"
 #include "ui/base/win/shell.h"
 #include "ui/gfx/win/dpi.h"
@@ -164,11 +164,11 @@ NativeWindowViews::NativeWindowViews(
 #if defined(OS_WIN)
   params.native_widget =
       new views::DesktopNativeWidgetAura(window_.get());
-  atom_desktop_window_tree_host_win_ = new ElectronDesktopWindowTreeHostWin(
+  electron_desktop_window_tree_host_win_ = new ElectronDesktopWindowTreeHostWin(
       this,
       window_.get(),
       static_cast<views::DesktopNativeWidgetAura*>(params.native_widget));
-  params.desktop_window_tree_host = atom_desktop_window_tree_host_win_;
+  params.desktop_window_tree_host = electron_desktop_window_tree_host_win_;
 #elif defined(USE_X11)
   std::string name = Browser::Get()->GetName();
   // Set WM_WINDOW_ROLE.
@@ -201,19 +201,19 @@ NativeWindowViews::NativeWindowViews(
 
   // Before the window is mapped the SetWMSpecState can not work, so we have
   // to manually set the _NET_WM_STATE.
-  std::vector<::Atom> state_atom_list;
+  std::vector<::Atom> state_electron_list;
   bool skip_taskbar = false;
   if (options.Get(options::kSkipTaskbar, &skip_taskbar) && skip_taskbar) {
-    state_atom_list.push_back(GetAtom("_NET_WM_STATE_SKIP_TASKBAR"));
+    state_electron_list.push_back(GetAtom("_NET_WM_STATE_SKIP_TASKBAR"));
   }
 
   // Before the window is mapped, there is no SHOW_FULLSCREEN_STATE.
   if (fullscreen) {
-    state_atom_list.push_back(GetAtom("_NET_WM_STATE_FULLSCREEN"));
+    state_electron_list.push_back(GetAtom("_NET_WM_STATE_FULLSCREEN"));
   }
 
   ui::SetElectronArrayProperty(GetAcceleratedWidget(), "_NET_WM_STATE", "ATOM",
-                           state_atom_list);
+                           state_electron_list);
 
   // Set the _NET_WM_WINDOW_TYPE.
   std::string window_type;

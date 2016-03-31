@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "electron/browser/net/atom_cert_verifier.h"
+#include "electron/browser/net/electron_cert_verifier.h"
 
 #include "electron/browser/browser.h"
 #include "electron/common/native_mate_converters/net_converter.h"

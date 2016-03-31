@@ -8,7 +8,7 @@
 #include "ui/events/platform/platform_event_observer.h"
 
 #include "electron/browser/native_window_views.h"
-#include "ui/gfx/x/x11_atom_cache.h"
+#include "ui/gfx/x/x11_electron_cache.h"
 
 namespace electron {
 
@@ -28,7 +28,7 @@ class WindowStateWatcher : public ui::PlatformEventObserver {
   NativeWindowViews* window_;
   gfx::AcceleratedWidget widget_;
 
-  ui::X11ElectronCache atom_cache_;
+  ui::X11ElectronCache electron_cache_;
 
   bool was_minimized_;
   bool was_maximized_;

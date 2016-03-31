@@ -8,7 +8,7 @@
 #include <string>
 
 #include "electron/browser/api/event_emitter.h"
-#include "electron/browser/atom_browser_client.h"
+#include "electron/browser/electron_browser_client.h"
 #include "electron/browser/browser_observer.h"
 #include "electron/common/native_mate_converters/callback.h"
 #include "chrome/browser/process_singleton.h"

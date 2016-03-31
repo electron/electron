@@ -59,7 +59,7 @@ class ElectronRendererClient : public content::ContentRendererClient,
   void AddKeySystems(std::vector<media::KeySystemInfo>* key_systems) override;
 
   scoped_ptr<NodeBindings> node_bindings_;
-  scoped_ptr<ElectronBindings> atom_bindings_;
+  scoped_ptr<ElectronBindings> electron_bindings_;
 
   DISALLOW_COPY_AND_ASSIGN(ElectronRendererClient);
 };

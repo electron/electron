@@ -7,7 +7,7 @@
 #include <string>
 #include <vector>
 
-#include "electron/browser/api/atom_api_web_contents.h"
+#include "electron/browser/api/electron_api_web_contents.h"
 #include "electron/browser/web_contents_permission_helper.h"
 #include "electron/common/native_mate_converters/callback.h"
 #include "electron/common/native_mate_converters/string16_converter.h"

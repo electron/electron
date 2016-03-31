@@ -5,7 +5,7 @@
 #ifndef ELECTRON_BROWSER_API_ELECTRON_API_MENU_VIEWS_H_
 #define ELECTRON_BROWSER_API_ELECTRON_API_MENU_VIEWS_H_
 
-#include "electron/browser/api/atom_api_menu.h"
+#include "electron/browser/api/electron_api_menu.h"
 #include "ui/gfx/screen.h"
 
 namespace electron {

@@ -2,16 +2,16 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "electron/browser/atom_browser_main_parts.h"
+#include "electron/browser/electron_browser_main_parts.h"
 
 #include "electron/browser/api/trackable_object.h"
-#include "electron/browser/atom_browser_client.h"
-#include "electron/browser/atom_browser_context.h"
+#include "electron/browser/electron_browser_client.h"
+#include "electron/browser/electron_browser_context.h"
 #include "electron/browser/bridge_task_runner.h"
 #include "electron/browser/browser.h"
 #include "electron/browser/javascript_environment.h"
 #include "electron/browser/node_debugger.h"
-#include "electron/common/api/atom_bindings.h"
+#include "electron/common/api/electron_bindings.h"
 #include "electron/common/node_bindings.h"
 #include "electron/common/node_includes.h"
 #include "base/command_line.h"
@@ -39,7 +39,7 @@ ElectronBrowserMainParts::ElectronBrowserMainParts()
       exit_code_(nullptr),
       browser_(new Browser),
       node_bindings_(NodeBindings::Create(true)),
-      atom_bindings_(new ElectronBindings),
+      electron_bindings_(new ElectronBindings),
       gc_timer_(true, true) {
   DCHECK(!self_) << "Cannot have two ElectronBrowserMainParts";
   self_ = this;
@@ -114,7 +114,7 @@ void ElectronBrowserMainParts::PostEarlyInitialization() {
     env->AssignToContext(v8::Debug::GetDebugContext());
 
   // Add Electron extended APIs.
-  atom_bindings_->BindTo(js_env_->isolate(), env->process_object());
+  electron_bindings_->BindTo(js_env_->isolate(), env->process_object());
 
   // Load everything.
   node_bindings_->LoadEnvironment(env);

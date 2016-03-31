@@ -2,11 +2,11 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "electron/browser/api/atom_api_window.h"
+#include "electron/browser/api/electron_api_window.h"
 #include "electron/common/native_mate_converters/value_converter.h"
 
-#include "electron/browser/api/atom_api_menu.h"
-#include "electron/browser/api/atom_api_web_contents.h"
+#include "electron/browser/api/electron_api_menu.h"
+#include "electron/browser/api/electron_api_web_contents.h"
 #include "electron/browser/browser.h"
 #include "electron/browser/native_window.h"
 #include "electron/common/native_mate_converters/callback.h"
@@ -845,4 +845,4 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
 
 }  // namespace
 
-NODE_MODULE_CONTEXT_AWARE_BUILTIN(atom_browser_window, Initialize)
+NODE_MODULE_CONTEXT_AWARE_BUILTIN(electron_browser_window, Initialize)

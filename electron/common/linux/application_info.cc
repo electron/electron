@@ -4,7 +4,7 @@
 
 #include <string>
 
-#include "electron/common/atom_version.h"
+#include "electron/common/electron_version.h"
 
 namespace brightray {
 

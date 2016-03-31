@@ -4,7 +4,7 @@
 
 #include "electron/browser/ui/tray_icon_cocoa.h"
 
-#include "electron/browser/ui/cocoa/atom_menu_controller.h"
+#include "electron/browser/ui/cocoa/electron_menu_controller.h"
 #include "base/strings/sys_string_conversions.h"
 #include "ui/events/cocoa/cocoa_event_utils.h"
 #include "ui/gfx/image/image.h"

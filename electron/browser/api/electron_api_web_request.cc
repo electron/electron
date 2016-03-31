@@ -2,12 +2,12 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "electron/browser/api/atom_api_web_request.h"
+#include "electron/browser/api/electron_api_web_request.h"
 
 #include <string>
 
-#include "electron/browser/atom_browser_context.h"
-#include "electron/browser/net/atom_network_delegate.h"
+#include "electron/browser/electron_browser_context.h"
+#include "electron/browser/net/electron_network_delegate.h"
 #include "electron/common/native_mate_converters/callback.h"
 #include "electron/common/native_mate_converters/net_converter.h"
 #include "electron/common/native_mate_converters/value_converter.h"

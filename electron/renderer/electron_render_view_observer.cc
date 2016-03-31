@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "electron/renderer/atom_render_view_observer.h"
+#include "electron/renderer/electron_render_view_observer.h"
 
 #include <string>
 #include <vector>
@@ -15,7 +15,7 @@
 #include "electron/common/native_mate_converters/value_converter.h"
 #include "electron/common/node_includes.h"
 #include "electron/common/options_switches.h"
-#include "electron/renderer/atom_renderer_client.h"
+#include "electron/renderer/electron_renderer_client.h"
 #include "base/command_line.h"
 #include "base/strings/string_number_conversions.h"
 #include "content/public/renderer/render_view.h"

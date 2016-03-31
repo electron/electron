@@ -3,9 +3,9 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#import "electron/browser/ui/cocoa/atom_menu_controller.h"
+#import "electron/browser/ui/cocoa/electron_menu_controller.h"
 
-#include "electron/browser/ui/atom_menu_model.h"
+#include "electron/browser/ui/electron_menu_model.h"
 #include "base/logging.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/strings/utf_string_conversions.h"

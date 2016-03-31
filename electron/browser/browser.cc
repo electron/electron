@@ -6,7 +6,7 @@
 
 #include <string>
 
-#include "electron/browser/atom_browser_main_parts.h"
+#include "electron/browser/electron_browser_main_parts.h"
 #include "electron/browser/native_window.h"
 #include "electron/browser/window_list.h"
 #include "base/message_loop/message_loop.h"

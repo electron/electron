@@ -9,7 +9,7 @@
 
 #include "electron/common/asar/archive.h"
 #include "electron/common/asar/asar_util.h"
-#include "electron/common/atom_constants.h"
+#include "electron/common/electron_constants.h"
 #include "base/bind.h"
 #include "base/files/file_util.h"
 #include "base/strings/string_util.h"

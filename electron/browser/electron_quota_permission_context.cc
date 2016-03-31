@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "electron/browser/atom_quota_permission_context.h"
+#include "electron/browser/electron_quota_permission_context.h"
 
 #include "storage/common/quota/quota_types.h"
 

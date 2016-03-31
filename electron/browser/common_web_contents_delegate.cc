@@ -8,8 +8,8 @@
 #include <string>
 #include <vector>
 
-#include "electron/browser/atom_browser_context.h"
-#include "electron/browser/atom_javascript_dialog_manager.h"
+#include "electron/browser/electron_browser_context.h"
+#include "electron/browser/electron_javascript_dialog_manager.h"
 #include "electron/browser/native_window.h"
 #include "electron/browser/ui/file_dialog.h"
 #include "electron/browser/web_dialog_helper.h"

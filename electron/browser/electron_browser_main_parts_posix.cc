@@ -4,7 +4,7 @@
 
 // Most code came from: chrome/browser/chrome_browser_main_posix.cc.
 
-#include "electron/browser/atom_browser_main_parts.h"
+#include "electron/browser/electron_browser_main_parts.h"
 
 #include <errno.h>
 #include <limits.h>

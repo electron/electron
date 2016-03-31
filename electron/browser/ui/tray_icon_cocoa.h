@@ -9,7 +9,7 @@
 
 #include <string>
 
-#include "electron/browser/ui/atom_menu_model.h"
+#include "electron/browser/ui/electron_menu_model.h"
 #include "electron/browser/ui/tray_icon.h"
 #include "base/mac/scoped_nsobject.h"
 

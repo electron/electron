@@ -7,7 +7,7 @@
 #include <string>
 #include <vector>
 
-#include "electron/browser/atom_browser_context.h"
+#include "electron/browser/electron_browser_context.h"
 #include "electron/browser/native_window.h"
 #include "electron/browser/ui/file_dialog.h"
 #include "base/bind.h"

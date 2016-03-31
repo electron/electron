@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "electron/common/api/atom_api_native_image.h"
+#include "electron/common/api/electron_api_native_image.h"
 
 #include <string>
 #include <vector>
@@ -349,4 +349,4 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
 
 }  // namespace
 
-NODE_MODULE_CONTEXT_AWARE_BUILTIN(atom_common_native_image, Initialize)
+NODE_MODULE_CONTEXT_AWARE_BUILTIN(electron_common_native_image, Initialize)

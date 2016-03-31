@@ -9,7 +9,7 @@
 
 #include "electron/common/api/event_emitter_caller.h"
 #include "electron/common/api/locker.h"
-#include "electron/common/atom_command_line.h"
+#include "electron/common/electron_command_line.h"
 #include "electron/common/native_mate_converters/file_path_converter.h"
 #include "electron/common/node_includes.h"
 #include "base/command_line.h"
@@ -31,33 +31,33 @@ using content::BrowserThread;
   extern "C" void _register_ ## name(void); \
   void (*fp_register_ ## name)(void) = _register_ ## name
 // Electron's builtin modules.
-REFERENCE_MODULE(atom_browser_app);
-REFERENCE_MODULE(atom_browser_auto_updater);
-REFERENCE_MODULE(atom_browser_content_tracing);
-REFERENCE_MODULE(atom_browser_dialog);
-REFERENCE_MODULE(atom_browser_debugger);
-REFERENCE_MODULE(atom_browser_desktop_capturer);
-REFERENCE_MODULE(atom_browser_download_item);
-REFERENCE_MODULE(atom_browser_menu);
-REFERENCE_MODULE(atom_browser_power_monitor);
-REFERENCE_MODULE(atom_browser_power_save_blocker);
-REFERENCE_MODULE(atom_browser_protocol);
-REFERENCE_MODULE(atom_browser_global_shortcut);
-REFERENCE_MODULE(atom_browser_session);
-REFERENCE_MODULE(atom_browser_tray);
-REFERENCE_MODULE(atom_browser_web_contents);
-REFERENCE_MODULE(atom_browser_web_view_manager);
-REFERENCE_MODULE(atom_browser_window);
-REFERENCE_MODULE(atom_common_asar);
-REFERENCE_MODULE(atom_common_clipboard);
-REFERENCE_MODULE(atom_common_crash_reporter);
-REFERENCE_MODULE(atom_common_id_weak_map);
-REFERENCE_MODULE(atom_common_native_image);
-REFERENCE_MODULE(atom_common_screen);
-REFERENCE_MODULE(atom_common_shell);
-REFERENCE_MODULE(atom_common_v8_util);
-REFERENCE_MODULE(atom_renderer_ipc);
-REFERENCE_MODULE(atom_renderer_web_frame);
+REFERENCE_MODULE(electron_browser_app);
+REFERENCE_MODULE(electron_browser_auto_updater);
+REFERENCE_MODULE(electron_browser_content_tracing);
+REFERENCE_MODULE(electron_browser_dialog);
+REFERENCE_MODULE(electron_browser_debugger);
+REFERENCE_MODULE(electron_browser_desktop_capturer);
+REFERENCE_MODULE(electron_browser_download_item);
+REFERENCE_MODULE(electron_browser_menu);
+REFERENCE_MODULE(electron_browser_power_monitor);
+REFERENCE_MODULE(electron_browser_power_save_blocker);
+REFERENCE_MODULE(electron_browser_protocol);
+REFERENCE_MODULE(electron_browser_global_shortcut);
+REFERENCE_MODULE(electron_browser_session);
+REFERENCE_MODULE(electron_browser_tray);
+REFERENCE_MODULE(electron_browser_web_contents);
+REFERENCE_MODULE(electron_browser_web_view_manager);
+REFERENCE_MODULE(electron_browser_window);
+REFERENCE_MODULE(electron_common_asar);
+REFERENCE_MODULE(electron_common_clipboard);
+REFERENCE_MODULE(electron_common_crash_reporter);
+REFERENCE_MODULE(electron_common_id_weak_map);
+REFERENCE_MODULE(electron_common_native_image);
+REFERENCE_MODULE(electron_common_screen);
+REFERENCE_MODULE(electron_common_shell);
+REFERENCE_MODULE(electron_common_v8_util);
+REFERENCE_MODULE(electron_renderer_ipc);
+REFERENCE_MODULE(electron_renderer_web_frame);
 #undef REFERENCE_MODULE
 
 // The "v8::Function::kLineOffsetNotFound" is exported in node.dll, but the

@@ -2,17 +2,17 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "electron/browser/api/atom_api_web_contents.h"
+#include "electron/browser/api/electron_api_web_contents.h"
 
 #include <set>
 #include <string>
 
-#include "electron/browser/api/atom_api_debugger.h"
-#include "electron/browser/api/atom_api_session.h"
-#include "electron/browser/api/atom_api_window.h"
-#include "electron/browser/atom_browser_client.h"
-#include "electron/browser/atom_browser_context.h"
-#include "electron/browser/atom_browser_main_parts.h"
+#include "electron/browser/api/electron_api_debugger.h"
+#include "electron/browser/api/electron_api_session.h"
+#include "electron/browser/api/electron_api_window.h"
+#include "electron/browser/electron_browser_client.h"
+#include "electron/browser/electron_browser_context.h"
+#include "electron/browser/electron_browser_main_parts.h"
 #include "electron/browser/native_window.h"
 #include "electron/browser/web_contents_permission_helper.h"
 #include "electron/browser/web_contents_preferences.h"
@@ -1283,4 +1283,4 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
 
 }  // namespace
 
-NODE_MODULE_CONTEXT_AWARE_BUILTIN(atom_browser_web_contents, Initialize)
+NODE_MODULE_CONTEXT_AWARE_BUILTIN(electron_browser_web_contents, Initialize)

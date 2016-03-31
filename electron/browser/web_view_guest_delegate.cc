@@ -4,7 +4,7 @@
 
 #include "electron/browser/web_view_guest_delegate.h"
 
-#include "electron/browser/api/atom_api_web_contents.h"
+#include "electron/browser/api/electron_api_web_contents.h"
 #include "electron/common/native_mate_converters/gurl_converter.h"
 #include "content/public/browser/guest_host.h"
 #include "content/public/browser/render_frame_host.h"

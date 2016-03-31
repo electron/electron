@@ -6,7 +6,7 @@
 
 #include <string>
 
-#include "electron/browser/atom_browser_context.h"
+#include "electron/browser/electron_browser_context.h"
 #include "base/callback.h"
 #include "base/files/file_path.h"
 #include "content/public/browser/web_contents.h"

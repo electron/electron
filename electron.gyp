@@ -222,7 +222,7 @@
       'target_name': '<(project_name)_lib',
       'type': 'static_library',
       'dependencies': [
-        'atom_js2c',
+        'electron_js2c',
         'vendor/brightray/brightray.gyp:brightray',
         'vendor/node/node.gyp:node',
       ],
@@ -245,7 +245,7 @@
         'chromium_src',
         'vendor/brightray',
         'vendor/native_mate',
-        # Include atom_natives.h.
+        # Include electron_natives.h.
         '<(SHARED_INTERMEDIATE_DIR)',
         # Include directories for uv and node.
         'vendor/node/src',
@@ -382,16 +382,16 @@
       ],
     },  # target js2asar
     {
-      'target_name': 'atom_js2c',
+      'target_name': 'electron_js2c',
       'type': 'none',
       'actions': [
         {
-          'action_name': 'atom_js2c',
+          'action_name': 'electron_js2c',
           'inputs': [
             '<@(js2c_sources)',
           ],
           'outputs': [
-            '<(SHARED_INTERMEDIATE_DIR)/atom_natives.h',
+            '<(SHARED_INTERMEDIATE_DIR)/electron_natives.h',
           ],
           'action': [
             'python',
@@ -401,7 +401,7 @@
           ],
         }
       ],
-    },  # target atom_js2c
+    },  # target electron_js2c
   ],
   'conditions': [
     ['OS=="mac"', {

@@ -51,7 +51,7 @@ int GetKeyboardModifers() {
 
 NotifyIconHost::NotifyIconHost()
     : next_icon_id_(1),
-      atom_(0),
+      electron_(0),
       instance_(NULL),
       window_(NULL) {
   // Register our window class
@@ -62,8 +62,8 @@ NotifyIconHost::NotifyIconHost()
       0, 0, 0, NULL, NULL, NULL, NULL, NULL,
       &window_class);
   instance_ = window_class.hInstance;
-  atom_ = RegisterClassEx(&window_class);
-  CHECK(atom_);
+  electron_ = RegisterClassEx(&window_class);
+  CHECK(electron_);
 
   // If the taskbar is re-created after we start up, we have to rebuild all of
   // our icons.
@@ -73,7 +73,7 @@ NotifyIconHost::NotifyIconHost()
   // create a hidden WS_POPUP window instead of an HWND_MESSAGE window, because
   // only top-level windows such as popups can receive broadcast messages like
   // "TaskbarCreated".
-  window_ = CreateWindow(MAKEINTATOM(atom_),
+  window_ = CreateWindow(MAKEINTATOM(electron_),
                          0, WS_POPUP, 0, 0, 0, 0, 0, 0, instance_, 0);
   gfx::CheckWindowCreated(window_);
   gfx::SetWindowUserData(window_, this);
@@ -83,8 +83,8 @@ NotifyIconHost::~NotifyIconHost() {
   if (window_)
     DestroyWindow(window_);
 
-  if (atom_)
-    UnregisterClass(MAKEINTATOM(atom_), instance_);
+  if (electron_)
+    UnregisterClass(MAKEINTATOM(electron_), instance_);
 
   NotifyIcons copied_container(notify_icons_);
   STLDeleteContainerPointers(copied_container.begin(), copied_container.end());

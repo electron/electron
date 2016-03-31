@@ -2,11 +2,11 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "electron/browser/api/atom_api_download_item.h"
+#include "electron/browser/api/electron_api_download_item.h"
 
 #include <map>
 
-#include "electron/browser/atom_browser_main_parts.h"
+#include "electron/browser/electron_browser_main_parts.h"
 #include "electron/common/native_mate_converters/callback.h"
 #include "electron/common/native_mate_converters/file_path_converter.h"
 #include "electron/common/native_mate_converters/gurl_converter.h"
@@ -209,4 +209,4 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
 
 }  // namespace
 
-NODE_MODULE_CONTEXT_AWARE_BUILTIN(atom_browser_download_item, Initialize);
+NODE_MODULE_CONTEXT_AWARE_BUILTIN(electron_browser_download_item, Initialize);

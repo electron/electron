@@ -187,7 +187,7 @@ class NativeWindowViews : public NativeWindow,
   extensions::SizeConstraints old_size_constraints_;
 #elif defined(OS_WIN)
   // Weak ref.
-  ElectronDesktopWindowTreeHostWin* atom_desktop_window_tree_host_win_;
+  ElectronDesktopWindowTreeHostWin* electron_desktop_window_tree_host_win_;
 
   ui::WindowShowState last_window_state_;
 

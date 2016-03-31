@@ -8,7 +8,7 @@
 
 #include "electron/browser/native_window.h"
 #include "electron/browser/window_list.h"
-#include "electron/common/atom_version.h"
+#include "electron/common/electron_version.h"
 #include "brightray/common/application_info.h"
 
 namespace electron {

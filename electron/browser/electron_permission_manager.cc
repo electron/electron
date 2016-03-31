@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "electron/browser/atom_permission_manager.h"
+#include "electron/browser/electron_permission_manager.h"
 
 #include <vector>
 

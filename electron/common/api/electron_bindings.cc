@@ -2,13 +2,13 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "electron/common/api/atom_bindings.h"
+#include "electron/common/api/electron_bindings.h"
 
 #include <algorithm>
 #include <string>
 #include <iostream>
 
-#include "electron/common/atom_version.h"
+#include "electron/common/electron_version.h"
 #include "electron/common/chrome_version.h"
 #include "electron/common/native_mate_converters/string16_converter.h"
 #include "base/logging.h"

@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "electron/renderer/api/atom_api_spell_check_client.h"
+#include "electron/renderer/api/electron_api_spell_check_client.h"
 
 #include <algorithm>
 #include <vector>

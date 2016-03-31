@@ -2,12 +2,12 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "electron/browser/atom_download_manager_delegate.h"
+#include "electron/browser/electron_download_manager_delegate.h"
 
 #include <string>
 
-#include "electron/browser/api/atom_api_download_item.h"
-#include "electron/browser/atom_browser_context.h"
+#include "electron/browser/api/electron_api_download_item.h"
+#include "electron/browser/electron_browser_context.h"
 #include "electron/browser/native_window.h"
 #include "electron/browser/ui/file_dialog.h"
 #include "base/bind.h"

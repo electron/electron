@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "electron/browser/api/atom_api_global_shortcut.h"
+#include "electron/browser/api/electron_api_global_shortcut.h"
 
 #include <string>
 
@@ -95,4 +95,4 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
 
 }  // namespace
 
-NODE_MODULE_CONTEXT_AWARE_BUILTIN(atom_browser_global_shortcut, Initialize)
+NODE_MODULE_CONTEXT_AWARE_BUILTIN(electron_browser_global_shortcut, Initialize)

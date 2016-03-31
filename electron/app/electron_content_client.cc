@@ -2,12 +2,12 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "electron/app/atom_content_client.h"
+#include "electron/app/electron_content_client.h"
 
 #include <string>
 #include <vector>
 
-#include "electron/common/atom_version.h"
+#include "electron/common/electron_version.h"
 #include "electron/common/chrome_version.h"
 #include "electron/common/options_switches.h"
 #include "base/command_line.h"

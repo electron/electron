@@ -2,11 +2,11 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "electron/browser/api/atom_api_protocol.h"
+#include "electron/browser/api/electron_api_protocol.h"
 
-#include "electron/browser/atom_browser_client.h"
-#include "electron/browser/atom_browser_context.h"
-#include "electron/browser/atom_browser_main_parts.h"
+#include "electron/browser/electron_browser_client.h"
+#include "electron/browser/electron_browser_context.h"
+#include "electron/browser/electron_browser_main_parts.h"
 #include "electron/browser/net/url_request_async_asar_job.h"
 #include "electron/browser/net/url_request_buffer_job.h"
 #include "electron/browser/net/url_request_fetch_job.h"
@@ -170,4 +170,4 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
 
 }  // namespace
 
-NODE_MODULE_CONTEXT_AWARE_BUILTIN(atom_browser_protocol, Initialize)
+NODE_MODULE_CONTEXT_AWARE_BUILTIN(electron_browser_protocol, Initialize)

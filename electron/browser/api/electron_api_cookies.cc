@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "electron/browser/api/atom_api_cookies.h"
+#include "electron/browser/api/electron_api_cookies.h"
 
 #include "electron/common/native_mate_converters/callback.h"
 #include "electron/common/native_mate_converters/gurl_converter.h"

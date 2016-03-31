@@ -2,20 +2,20 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "electron/browser/api/atom_api_session.h"
+#include "electron/browser/api/electron_api_session.h"
 
 #include <string>
 #include <vector>
 
-#include "electron/browser/api/atom_api_cookies.h"
-#include "electron/browser/api/atom_api_download_item.h"
-#include "electron/browser/api/atom_api_web_contents.h"
-#include "electron/browser/api/atom_api_web_request.h"
+#include "electron/browser/api/electron_api_cookies.h"
+#include "electron/browser/api/electron_api_download_item.h"
+#include "electron/browser/api/electron_api_web_contents.h"
+#include "electron/browser/api/electron_api_web_request.h"
 #include "electron/browser/api/save_page_handler.h"
-#include "electron/browser/atom_browser_context.h"
-#include "electron/browser/atom_browser_main_parts.h"
-#include "electron/browser/atom_permission_manager.h"
-#include "electron/browser/net/atom_cert_verifier.h"
+#include "electron/browser/electron_browser_context.h"
+#include "electron/browser/electron_browser_main_parts.h"
+#include "electron/browser/electron_permission_manager.h"
+#include "electron/browser/net/electron_cert_verifier.h"
 #include "electron/common/native_mate_converters/callback.h"
 #include "electron/common/native_mate_converters/content_converter.h"
 #include "electron/common/native_mate_converters/gurl_converter.h"
@@ -521,4 +521,4 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
 
 }  // namespace
 
-NODE_MODULE_CONTEXT_AWARE_BUILTIN(atom_browser_session, Initialize)
+NODE_MODULE_CONTEXT_AWARE_BUILTIN(electron_browser_session, Initialize)

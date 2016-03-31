@@ -80,7 +80,7 @@ class ElectronBrowserMainParts : public brightray::BrowserMainParts {
   scoped_ptr<Browser> browser_;
   scoped_ptr<JavascriptEnvironment> js_env_;
   scoped_ptr<NodeBindings> node_bindings_;
-  scoped_ptr<ElectronBindings> atom_bindings_;
+  scoped_ptr<ElectronBindings> electron_bindings_;
   scoped_ptr<NodeDebugger> node_debugger_;
 
   base::Timer gc_timer_;

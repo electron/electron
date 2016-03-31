@@ -43,7 +43,7 @@ class NotifyIconHost {
   NotifyIcons notify_icons_;
 
   // The window class of |window_|.
-  ATOM atom_;
+  ATOM electron_;
 
   // The handle of the module that contains the window procedure of |window_|.
   HMODULE instance_;

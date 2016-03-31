@@ -2,9 +2,9 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "electron/browser/api/atom_api_desktop_capturer.h"
+#include "electron/browser/api/electron_api_desktop_capturer.h"
 
-#include "electron/common/api/atom_api_native_image.h"
+#include "electron/common/api/electron_api_native_image.h"
 #include "electron/common/native_mate_converters/gfx_converter.h"
 #include "base/strings/utf_string_conversions.h"
 #include "chrome/browser/media/desktop_media_list.h"
@@ -118,4 +118,4 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
 
 }  // namespace
 
-NODE_MODULE_CONTEXT_AWARE_BUILTIN(atom_browser_desktop_capturer, Initialize);
+NODE_MODULE_CONTEXT_AWARE_BUILTIN(electron_browser_desktop_capturer, Initialize);

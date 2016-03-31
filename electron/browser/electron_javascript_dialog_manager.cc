@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "electron/browser/atom_javascript_dialog_manager.h"
+#include "electron/browser/electron_javascript_dialog_manager.h"
 
 #include <string>
 

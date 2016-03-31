@@ -6,7 +6,7 @@
 #include <utility>
 #include <vector>
 
-#include "electron/browser/api/atom_api_window.h"
+#include "electron/browser/api/electron_api_window.h"
 #include "electron/browser/native_window.h"
 #include "electron/browser/ui/file_dialog.h"
 #include "electron/browser/ui/message_box.h"
@@ -117,4 +117,4 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
 
 }  // namespace
 
-NODE_MODULE_CONTEXT_AWARE_BUILTIN(atom_browser_dialog, Initialize)
+NODE_MODULE_CONTEXT_AWARE_BUILTIN(electron_browser_dialog, Initialize)

@@ -5,7 +5,7 @@
 #include "electron/common/crash_reporter/crash_reporter.h"
 
 #include "electron/browser/browser.h"
-#include "electron/common/atom_version.h"
+#include "electron/common/electron_version.h"
 #include "base/command_line.h"
 #include "base/files/file_util.h"
 #include "base/strings/string_split.h"

@@ -2,18 +2,18 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "electron/renderer/atom_renderer_client.h"
+#include "electron/renderer/electron_renderer_client.h"
 
 #include <string>
 #include <vector>
 
 #include "electron/common/api/api_messages.h"
-#include "electron/common/api/atom_bindings.h"
+#include "electron/common/api/electron_bindings.h"
 #include "electron/common/api/event_emitter_caller.h"
 #include "electron/common/node_bindings.h"
 #include "electron/common/node_includes.h"
 #include "electron/common/options_switches.h"
-#include "electron/renderer/atom_render_view_observer.h"
+#include "electron/renderer/electron_render_view_observer.h"
 #include "electron/renderer/guest_view_container.h"
 #include "electron/renderer/node_array_buffer_bridge.h"
 #include "base/command_line.h"
@@ -79,7 +79,7 @@ class ElectronRenderFrameObserver : public content::RenderFrameObserver {
 
 ElectronRendererClient::ElectronRendererClient()
     : node_bindings_(NodeBindings::Create(false)),
-      atom_bindings_(new ElectronBindings) {
+      electron_bindings_(new ElectronBindings) {
 }
 
 ElectronRendererClient::~ElectronRendererClient() {
@@ -161,7 +161,7 @@ void ElectronRendererClient::DidCreateScriptContext(
   node::Environment* env = node_bindings_->CreateEnvironment(context);
 
   // Add Electron extended APIs.
-  atom_bindings_->BindTo(env->isolate(), env->process_object());
+  electron_bindings_->BindTo(env->isolate(), env->process_object());
 
   // Load everything.
   node_bindings_->LoadEnvironment(env);

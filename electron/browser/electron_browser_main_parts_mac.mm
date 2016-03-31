@@ -2,10 +2,10 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "electron/browser/atom_browser_main_parts.h"
+#include "electron/browser/electron_browser_main_parts.h"
 
-#include "electron/browser/mac/atom_application.h"
-#include "electron/browser/mac/atom_application_delegate.h"
+#include "electron/browser/mac/electron_application.h"
+#include "electron/browser/mac/electron_application_delegate.h"
 #include "base/mac/bundle_locations.h"
 #include "base/mac/foundation_util.h"
 #include "ui/base/l10n/l10n_util_mac.h"

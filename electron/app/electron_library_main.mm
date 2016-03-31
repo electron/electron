@@ -2,11 +2,11 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "electron/app/atom_library_main.h"
+#include "electron/app/electron_library_main.h"
 
-#include "electron/app/atom_main_delegate.h"
+#include "electron/app/electron_main_delegate.h"
 #include "electron/app/node_main.h"
-#include "electron/common/atom_command_line.h"
+#include "electron/common/electron_command_line.h"
 #include "base/at_exit.h"
 #include "base/i18n/icu_util.h"
 #include "base/mac/bundle_locations.h"

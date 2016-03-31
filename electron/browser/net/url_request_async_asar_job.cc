@@ -6,7 +6,7 @@
 
 #include <string>
 
-#include "electron/common/atom_constants.h"
+#include "electron/common/electron_constants.h"
 
 namespace electron {
 
