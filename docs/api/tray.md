@@ -75,7 +75,7 @@ labeled as such.
 
 Emitted when the tray icon is clicked.
 
-__Note:__ The `bounds` payload is only implemented on OS X and Windows.
+**Note:** The `bounds` payload is only implemented on OS X and Windows.
 
 ### Event: 'right-click' _OS X_ _Windows_
 

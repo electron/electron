@@ -4,11 +4,11 @@ Since v0.34.0, Electron allows submitting packaged apps to the Mac App Store
 (MAS). This guide provides information on: how to submit your app and the
 limitations of the MAS build.
 
-__Note:__ From v0.36.0 there was a bug preventing GPU process to start after
+**Note:** From v0.36.0 there was a bug preventing GPU process to start after
 the app being sandboxed, so it is recommended to use v0.35.x before this bug
 gets fixed. You can find more about this in [issue #3871][issue-3871].
 
-__Note:__ Submitting an app to Mac App Store requires enrolling [Apple Developer
+**Note:** Submitting an app to Mac App Store requires enrolling [Apple Developer
 Program][developer-program], which costs money.
 
 ## How to Submit Your App
