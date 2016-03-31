@@ -44,5 +44,5 @@ C++ 코드는 많은 Chromium의 추상화와 타입을 사용합니다. 따라�
 
 새로운 API를 만들 땐 getter, setter스타일 대신 jQuery의 one-function 스타일을
 사용해야 합니다. 예를 들어 `.getText()`와 `.setText(text)`대신에 `.text([text])`
-형식으로 설계하면 됩니다. 포럼에 이 문제에 대한 [논의](https://github.com/atom/electron/issues/46)가
+형식으로 설계하면 됩니다. 포럼에 이 문제에 대한 [논의](https://github.com/electron/electron/issues/46)가
 진행되고 있습니다.

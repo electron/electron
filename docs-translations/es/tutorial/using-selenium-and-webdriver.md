@@ -8,7 +8,7 @@ De [ChromeDriver - WebDriver for Chrome][chrome-driver]:
 > el protocolo de WebDriver para Chromium. Se encuentra en desarrollo por los miembros de 
 > Chromium y WebDriver.
 
-En la página de [lanzamientos](https://github.com/atom/electron/releases) de Electron encontrarás paquetes de `chromedriver`.
+En la página de [lanzamientos](https://github.com/electron/electron/releases) de Electron encontrarás paquetes de `chromedriver`.
 
 ## Ajustando parámetros con WebDriverJs
 
@@ -65,7 +65,7 @@ driver.quit();
 
 ## Workflow
 
-Para probar tu aplicación sin recompilar Electron, simplemente [copia](https://github.com/atom/electron/blob/master/docs/tutorial/application-distribution.md) las fuentes de tu aplicación en el directorio de recursos de Electron.
+Para probar tu aplicación sin recompilar Electron, simplemente [copia](https://github.com/electron/electron/blob/master/docs/tutorial/application-distribution.md) las fuentes de tu aplicación en el directorio de recursos de Electron.
 
 [chrome-driver]: https://sites.google.com/a/chromium.org/chromedriver/
 

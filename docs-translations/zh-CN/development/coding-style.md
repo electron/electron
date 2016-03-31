@@ -20,4 +20,4 @@ C++ 代码中用到了许多 Chromium 中的接口和数据类型，所以希望
 ## API 命名
 
 当新建一个 API 时，我们倾向于使用 getters 和 setters 而不是 jQuery 单函数的命名方式，比如 `.getText()` 和 `.setText(text)`
- 而不是 `.text([text])`。这里有关于该规则的[讨论记录](https://github.com/atom/electron/issues/46)。
+ 而不是 `.text([text])`。这里有关于该规则的[讨论记录](https://github.com/electron/electron/issues/46)。

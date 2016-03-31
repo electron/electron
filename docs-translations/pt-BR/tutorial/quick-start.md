@@ -180,7 +180,7 @@ $ ./Electron.app/Contents/MacOS/Electron seu-app/
 ```
 
 `Electron.app` aqui é uma parte do pacote de lançamento do Electron, você pode baixa-lo
-[aqui](https://github.com/atom/electron/releases).
+[aqui](https://github.com/electron/electron/releases).
 
 ### Executar como uma distribuição
 

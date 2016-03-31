@@ -10,8 +10,8 @@ Native modules might break when Node starts using a new version of V8.
 To make sure the module you're interested in will work with Electron, you should
 check if it supports the internal Node version used by Electron.
 You can check what version of Node is used in Electron by looking it up in
-the [releases](https://github.com/atom/electron/releases) page or by using
-`process.version` (see [Quick Start](https://github.com/atom/electron/blob/master/docs/tutorial/quick-start.md)
+the [releases](https://github.com/electron/electron/releases) page or by using
+`process.version` (see [Quick Start](https://github.com/electron/electron/blob/master/docs/tutorial/quick-start.md)
 for example).
 
 Consider using [NAN](https://github.com/nodejs/nan/) for your own modules, since

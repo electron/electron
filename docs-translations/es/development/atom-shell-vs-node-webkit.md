@@ -31,4 +31,4 @@ Si usted es un usuario experimentado NW.js, usted debe estar familiarizado con e
 
 Mediante el uso de la característica [multi-contexto](http://strongloop.com/strongblog/whats-new-node-js-v0-12-multiple-context-execution/) de Node, Electron no introduce un nuevo contexto JavaScript en páginas web.Resultados de búsqueda
 
-[node-bindings]: https://github.com/atom/electron/tree/master/atom/common
+[node-bindings]: https://github.com/electron/electron/tree/master/atom/common

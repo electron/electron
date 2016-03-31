@@ -127,7 +127,7 @@ $ ./Electron.app/Contents/MacOS/Electron your-app/
 在你完成了你的应用后，你可以按照[应用部署][4]指导发布一个版本，并且以已经打包好的形式运行应用。
 
 
-  [1]: https://github.com/atom/electron/blob/master/docs-translations/zh-CN/api/ipc-main-process.md
-  [2]: https://github.com/atom/electron/blob/master/docs-translations/zh-CN/api/remote.md
-  [3]: https://github.com/atom/electron/releases
-  [4]: https://github.com/atom/electron/blob/master/docs-translations/zh-CN/tutorial/application-distribution.md
+  [1]: https://github.com/electron/electron/blob/master/docs-translations/zh-CN/api/ipc-main-process.md
+  [2]: https://github.com/electron/electron/blob/master/docs-translations/zh-CN/api/remote.md
+  [3]: https://github.com/electron/electron/releases
+  [4]: https://github.com/electron/electron/blob/master/docs-translations/zh-CN/tutorial/application-distribution.md

@@ -147,4 +147,4 @@ En OS X:
 $ ./Electron.app/Contents/MacOS/Electron your-app/
 ```
 
-`Electron.app` es parte del paquete de release de Electron, puedes descargarlo [aquí](https://github.com/atom/electron/releases).
+`Electron.app` es parte del paquete de release de Electron, puedes descargarlo [aquí](https://github.com/electron/electron/releases).
