@@ -12,7 +12,7 @@
 #include "content/public/browser/render_widget_host.h"
 #include "content/public/browser/render_widget_host_view.h"
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -154,4 +154,4 @@ gfx::Size WebViewGuestDelegate::GetDefaultSize() const {
   }
 }
 
-}  // namespace atom
+}  // namespace electron

@@ -7,7 +7,7 @@
 
 #include "ui/views/window/native_frame_view.h"
 
-namespace atom {
+namespace electron {
 
 class NativeWindow;
 
@@ -29,6 +29,6 @@ class NativeFrameView : public views::NativeFrameView {
   DISALLOW_COPY_AND_ASSIGN(NativeFrameView);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_BROWSER_UI_VIEWS_NATIVE_FRAME_VIEW_H_

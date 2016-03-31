@@ -5,11 +5,11 @@
 #ifndef ELECTRON_COMMON_ATOM_CONSTANTS_H_
 #define ELECTRON_COMMON_ATOM_CONSTANTS_H_
 
-namespace atom {
+namespace electron {
 
 // Header to ignore CORS.
 extern const char* kCORSHeader;
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_COMMON_ATOM_CONSTANTS_H_

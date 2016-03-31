@@ -19,7 +19,7 @@
 #include "content/public/browser/download_manager.h"
 #include "net/base/filename_util.h"
 
-namespace atom {
+namespace electron {
 
 AtomDownloadManagerDelegate::AtomDownloadManagerDelegate(
     content::DownloadManager* manager)
@@ -164,4 +164,4 @@ void AtomDownloadManagerDelegate::GetNextId(
   callback.Run(next_id++);
 }
 
-}  // namespace atom
+}  // namespace electron

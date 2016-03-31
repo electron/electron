@@ -7,7 +7,7 @@
 
 #include <windows.h>
 
-namespace atom {
+namespace electron {
 
 class MessageHandlerDelegate {
  public:
@@ -21,6 +21,6 @@ class MessageHandlerDelegate {
       UINT message, WPARAM w_param, LPARAM l_param, LRESULT* result);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_BROWSER_UI_WIN_MESSAGE_HANDLER_DELEGATE_H_

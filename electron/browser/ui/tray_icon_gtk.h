@@ -14,7 +14,7 @@ namespace views {
 class StatusIconLinux;
 }
 
-namespace atom {
+namespace electron {
 
 class TrayIconGtk : public TrayIcon,
                     public views::StatusIconLinux::Delegate {
@@ -37,6 +37,6 @@ class TrayIconGtk : public TrayIcon,
   DISALLOW_COPY_AND_ASSIGN(TrayIconGtk);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_BROWSER_UI_TRAY_ICON_GTK_H_

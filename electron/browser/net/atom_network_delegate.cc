@@ -15,7 +15,7 @@
 
 using content::BrowserThread;
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -398,4 +398,4 @@ void AtomNetworkDelegate::OnListenerResultInUI(
                  base::Unretained(this),  id, out, base::Passed(&copy)));
 }
 
-}  // namespace atom
+}  // namespace electron

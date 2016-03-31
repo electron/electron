@@ -12,7 +12,7 @@
 
 using content::BrowserThread;
 
-namespace atom {
+namespace electron {
 
 typedef net::URLRequestJobFactory::ProtocolHandler ProtocolHandler;
 
@@ -110,4 +110,4 @@ bool AtomURLRequestJobFactory::IsSafeRedirectTarget(
   return IsHandledURL(location);
 }
 
-}  // namespace atom
+}  // namespace electron

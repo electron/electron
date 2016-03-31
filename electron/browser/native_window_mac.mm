@@ -65,14 +65,14 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 @interface AtomNSWindowDelegate : NSObject<NSWindowDelegate> {
  @private
-  atom::NativeWindowMac* shell_;
+  electron::NativeWindowMac* shell_;
 }
-- (id)initWithShell:(atom::NativeWindowMac*)shell;
+- (id)initWithShell:(electron::NativeWindowMac*)shell;
 @end
 
 @implementation AtomNSWindowDelegate
 
-- (id)initWithShell:(atom::NativeWindowMac*)shell {
+- (id)initWithShell:(electron::NativeWindowMac*)shell {
   if ((self = [super init])) {
     shell_ = shell;
   }
@@ -244,20 +244,20 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 @interface AtomNSWindow : NSWindow {
  @private
-  atom::NativeWindowMac* shell_;
+  electron::NativeWindowMac* shell_;
   bool enable_larger_than_screen_;
 }
 @property BOOL acceptsFirstMouse;
 @property BOOL disableAutoHideCursor;
 @property BOOL disableKeyOrMainWindow;
 
-- (void)setShell:(atom::NativeWindowMac*)shell;
+- (void)setShell:(electron::NativeWindowMac*)shell;
 - (void)setEnableLargerThanScreen:(bool)enable;
 @end
 
 @implementation AtomNSWindow
 
-- (void)setShell:(atom::NativeWindowMac*)shell {
+- (void)setShell:(electron::NativeWindowMac*)shell {
   shell_ = shell;
 }
 
@@ -373,7 +373,7 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 @end
 
-namespace atom {
+namespace electron {
 
 NativeWindowMac::NativeWindowMac(
     brightray::InspectableWebContents* web_contents,
@@ -1093,4 +1093,4 @@ NativeWindow* NativeWindow::Create(
   return new NativeWindowMac(inspectable_web_contents, options);
 }
 
-}  // namespace atom
+}  // namespace electron

@@ -5,7 +5,7 @@
 #ifndef ELECTRON_COMMON_OPTIONS_SWITCHES_H_
 #define ELECTRON_COMMON_OPTIONS_SWITCHES_H_
 
-namespace atom {
+namespace electron {
 
 namespace options {
 
@@ -88,6 +88,6 @@ extern const char kWidevineCdmVersion[];
 
 }  // namespace switches
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_COMMON_OPTIONS_SWITCHES_H_

@@ -10,7 +10,7 @@
 #include "content/public/browser/browser_context.h"
 #include "native_mate/dictionary.h"
 
-using atom::WebContentsPreferences;
+using electron::WebContentsPreferences;
 
 namespace mate {
 
@@ -18,8 +18,8 @@ template<>
 struct Converter<content::WebContents*> {
   static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
                      content::WebContents** out) {
-    atom::api::WebContents* contents;
-    if (!Converter<atom::api::WebContents*>::FromV8(isolate, val, &contents))
+    electron::api::WebContents* contents;
+    if (!Converter<electron::api::WebContents*>::FromV8(isolate, val, &contents))
       return false;
     *out = contents->web_contents();
     return true;
@@ -30,11 +30,11 @@ struct Converter<content::WebContents*> {
 
 namespace {
 
-atom::WebViewManager* GetWebViewManager(content::WebContents* web_contents) {
+electron::WebViewManager* GetWebViewManager(content::WebContents* web_contents) {
   auto context = web_contents->GetBrowserContext();
   if (context) {
     auto manager = context->GetGuestManager();
-    return static_cast<atom::WebViewManager*>(manager);
+    return static_cast<electron::WebViewManager*>(manager);
   } else {
     return nullptr;
   }

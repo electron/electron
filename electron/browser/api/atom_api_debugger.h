@@ -23,7 +23,7 @@ namespace mate {
 class Arguments;
 }
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -70,6 +70,6 @@ class Debugger: public mate::TrackableObject<Debugger>,
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_BROWSER_API_ATOM_API_DEBUGGER_H_

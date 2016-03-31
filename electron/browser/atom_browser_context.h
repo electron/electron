@@ -9,7 +9,7 @@
 
 #include "brightray/browser/browser_context.h"
 
-namespace atom {
+namespace electron {
 
 class AtomDownloadManagerDelegate;
 class AtomCertVerifier;
@@ -66,6 +66,6 @@ class AtomBrowserContext : public brightray::BrowserContext {
   DISALLOW_COPY_AND_ASSIGN(AtomBrowserContext);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_BROWSER_ATOM_BROWSER_CONTEXT_H_

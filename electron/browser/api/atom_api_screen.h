@@ -17,7 +17,7 @@ class Rect;
 class Screen;
 }
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -55,6 +55,6 @@ class Screen : public mate::EventEmitter,
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_BROWSER_API_ATOM_API_SCREEN_H_

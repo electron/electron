@@ -10,7 +10,7 @@
 #include "base/strings/string_number_conversions.h"
 #include "net/base/net_errors.h"
 
-namespace atom {
+namespace electron {
 
 URLRequestBufferJob::URLRequestBufferJob(
     net::URLRequest* request, net::NetworkDelegate* network_delegate)
@@ -74,4 +74,4 @@ int URLRequestBufferJob::GetRefCountedData(
   return net::OK;
 }
 
-}  // namespace atom
+}  // namespace electron

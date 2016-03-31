@@ -8,7 +8,7 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -173,4 +173,4 @@ ui::KeyboardCode KeyboardCodeFromStr(const std::string& str, bool* shifted) {
     return KeyboardCodeFromKeyIdentifier(str, shifted);
 }
 
-}  // namespace atom
+}  // namespace electron

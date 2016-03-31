@@ -10,7 +10,7 @@
 #include "base/power_monitor/power_observer.h"
 #include "native_mate/handle.h"
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -34,6 +34,6 @@ class PowerMonitor : public mate::TrackableObject<PowerMonitor>,
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_BROWSER_API_ATOM_API_POWER_MONITOR_H_

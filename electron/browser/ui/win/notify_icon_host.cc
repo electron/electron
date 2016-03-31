@@ -18,7 +18,7 @@
 #include "ui/events/win/system_event_state_lookup.h"
 #include "ui/gfx/win/hwnd_util.h"
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -187,4 +187,4 @@ UINT NotifyIconHost::NextIconId() {
   return kBaseIconId + icon_id;
 }
 
-}  // namespace atom
+}  // namespace electron

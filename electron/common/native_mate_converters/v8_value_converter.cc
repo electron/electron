@@ -14,7 +14,7 @@
 #include "native_mate/dictionary.h"
 #include "vendor/node/src/node_buffer.h"
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -407,4 +407,4 @@ base::Value* V8ValueConverter::FromV8Object(
   return result.release();
 }
 
-}  // namespace atom
+}  // namespace electron

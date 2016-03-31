@@ -8,7 +8,7 @@
 
 #include "ui/events/platform/platform_event_source.h"
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -75,4 +75,4 @@ bool WindowStateWatcher::IsWindowStateEvent(const ui::PlatformEvent& event) {
           event->xproperty.window == widget_);
 }
 
-}  // namespace atom
+}  // namespace electron

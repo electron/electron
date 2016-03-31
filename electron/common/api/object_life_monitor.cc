@@ -8,7 +8,7 @@
 #include "base/bind.h"
 #include "base/message_loop/message_loop.h"
 
-namespace atom {
+namespace electron {
 
 // static
 void ObjectLifeMonitor::BindTo(v8::Isolate* isolate,
@@ -52,4 +52,4 @@ void ObjectLifeMonitor::RunCallback() {
       context->Global(), 0, nullptr);
 }
 
-}  // namespace atom
+}  // namespace electron

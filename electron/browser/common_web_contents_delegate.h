@@ -14,7 +14,7 @@
 #include "brightray/browser/inspectable_web_contents_view_delegate.h"
 #include "content/public/browser/web_contents_delegate.h"
 
-namespace atom {
+namespace electron {
 
 class AtomJavaScriptDialogManager;
 class NativeWindow;
@@ -132,6 +132,6 @@ class CommonWebContentsDelegate
   DISALLOW_COPY_AND_ASSIGN(CommonWebContentsDelegate);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_BROWSER_COMMON_WEB_CONTENTS_DELEGATE_H_

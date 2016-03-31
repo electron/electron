@@ -11,7 +11,7 @@
 #include "content/public/renderer/content_renderer_client.h"
 #include "content/public/renderer/render_process_observer.h"
 
-namespace atom {
+namespace electron {
 
 class AtomBindings;
 class NodeBindings;
@@ -64,6 +64,6 @@ class AtomRendererClient : public content::ContentRendererClient,
   DISALLOW_COPY_AND_ASSIGN(AtomRendererClient);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_RENDERER_ATOM_RENDERER_CLIENT_H_

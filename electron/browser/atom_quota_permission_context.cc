@@ -6,7 +6,7 @@
 
 #include "storage/common/quota/quota_types.h"
 
-namespace atom {
+namespace electron {
 
 AtomQuotaPermissionContext::AtomQuotaPermissionContext() {
 }
@@ -21,4 +21,4 @@ void AtomQuotaPermissionContext::RequestQuotaPermission(
   callback.Run(response::QUOTA_PERMISSION_RESPONSE_ALLOW);
 }
 
-}  // namespace atom
+}  // namespace electron

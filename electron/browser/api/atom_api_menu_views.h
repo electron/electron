@@ -8,7 +8,7 @@
 #include "electron/browser/api/atom_api_menu.h"
 #include "ui/gfx/screen.h"
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -25,6 +25,6 @@ class MenuViews : public Menu {
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_BROWSER_API_ATOM_API_MENU_VIEWS_H_

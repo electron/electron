@@ -21,7 +21,7 @@ struct FileDescriptor;
 
 class UtilityMessageHandler;
 
-namespace atom {
+namespace electron {
 
 class AtomContentUtilityClient : public content::ContentUtilityClient {
  public:
@@ -53,6 +53,6 @@ class AtomContentUtilityClient : public content::ContentUtilityClient {
   DISALLOW_COPY_AND_ASSIGN(AtomContentUtilityClient);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_UTILITY_ATOM_CONTENT_UTILITY_CLIENT_H_

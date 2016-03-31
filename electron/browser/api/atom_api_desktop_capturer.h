@@ -10,7 +10,7 @@
 #include "chrome/browser/media/native_desktop_media_list.h"
 #include "native_mate/handle.h"
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -47,6 +47,6 @@ class DesktopCapturer: public mate::EventEmitter,
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_BROWSER_API_ATOM_API_DESKTOP_CAPTURER_H_

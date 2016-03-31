@@ -13,7 +13,7 @@
 #include "dbus/message.h"
 #include "ui/base/x/x11_util.h"
 
-namespace atom {
+namespace electron {
 
 ::Atom GetAtom(const char* name) {
   return XInternAtom(gfx::GetXDisplay(), name, false);
@@ -87,4 +87,4 @@ bool ShouldUseGlobalMenuBar() {
   return false;
 }
 
-}  // namespace atom
+}  // namespace electron

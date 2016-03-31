@@ -5,11 +5,11 @@
 #ifndef ELECTRON_RENDERER_NODE_ARRAY_BUFFER_BRIDGE_H_
 #define ELECTRON_RENDERER_NODE_ARRAY_BUFFER_BRIDGE_H_
 
-namespace atom {
+namespace electron {
 
 // Override Node's ArrayBuffer with DOM's ArrayBuffer.
 void OverrideNodeArrayBuffer();
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_RENDERER_NODE_ARRAY_BUFFER_BRIDGE_H_

@@ -16,7 +16,7 @@
 #include "ui/gfx/screen.h"
 #include "ui/views/controls/menu/menu_runner.h"
 
-namespace atom {
+namespace electron {
 
 NotifyIcon::NotifyIcon(NotifyIconHost* host,
                        UINT id,
@@ -175,4 +175,4 @@ void NotifyIcon::InitIconData(NOTIFYICONDATA* icon_data) {
   icon_data->uID = icon_id_;
 }
 
-}  // namespace atom
+}  // namespace electron

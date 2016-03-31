@@ -21,7 +21,7 @@ namespace net {
 class SSLCertRequestInfo;
 }
 
-namespace atom {
+namespace electron {
 
 class AtomResourceDispatcherHostDelegate;
 
@@ -99,6 +99,6 @@ class AtomBrowserClient : public brightray::BrowserClient,
   DISALLOW_COPY_AND_ASSIGN(AtomBrowserClient);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_BROWSER_ATOM_BROWSER_CLIENT_H_

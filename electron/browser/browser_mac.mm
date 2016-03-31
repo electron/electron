@@ -13,7 +13,7 @@
 #include "base/strings/sys_string_conversions.h"
 #include "brightray/common/application_info.h"
 
-namespace atom {
+namespace electron {
 
 void Browser::Focus() {
   [[AtomApplication sharedApplication] activateIgnoringOtherApps:YES];
@@ -140,4 +140,4 @@ void Browser::DockSetIcon(const gfx::Image& image) {
       setApplicationIconImage:image.AsNSImage()];
 }
 
-}  // namespace atom
+}  // namespace electron

@@ -6,7 +6,7 @@
 
 #include "base/stl_util.h"
 
-namespace atom {
+namespace electron {
 
 AtomMenuModel::AtomMenuModel(Delegate* delegate)
     : ui::SimpleMenuModel(delegate),
@@ -32,4 +32,4 @@ void AtomMenuModel::MenuClosed() {
   FOR_EACH_OBSERVER(Observer, observers_, MenuClosed());
 }
 
-}  // namespace atom
+}  // namespace electron

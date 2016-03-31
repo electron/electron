@@ -27,14 +27,14 @@ struct Converter<DesktopMediaList::Source> {
     dict.Set("id", id.ToString());
     dict.Set(
         "thumbnail",
-        atom::api::NativeImage::Create(isolate, gfx::Image(source.thumbnail)));
+        electron::api::NativeImage::Create(isolate, gfx::Image(source.thumbnail)));
     return ConvertToV8(isolate, dict);
   }
 };
 
 }  // namespace mate
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -105,7 +105,7 @@ mate::Handle<DesktopCapturer> DesktopCapturer::Create(v8::Isolate* isolate) {
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 namespace {
 
@@ -113,7 +113,7 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
-  dict.Set("desktopCapturer", atom::api::DesktopCapturer::Create(isolate));
+  dict.Set("desktopCapturer", electron::api::DesktopCapturer::Create(isolate));
 }
 
 }  // namespace

@@ -4,11 +4,11 @@
 
 #include "electron/browser/ui/win/message_handler_delegate.h"
 
-namespace atom {
+namespace electron {
 
 bool MessageHandlerDelegate::PreHandleMSG(
     UINT message, WPARAM w_param, LPARAM l_param, LRESULT* result) {
   return false;
 }
 
-}  // namespace atom
+}  // namespace electron

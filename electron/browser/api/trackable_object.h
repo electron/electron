@@ -112,7 +112,7 @@ class TrackableObject : public TrackableObjectBase {
 
   void AfterInit(v8::Isolate* isolate) override {
     if (!weak_map_) {
-      weak_map_.reset(new atom::IDWeakMap);
+      weak_map_.reset(new electron::IDWeakMap);
       RegisterDestructionCallback(
           base::Bind(&TrackableObject<T>::ReleaseAllWeakReferences));
     }
@@ -140,7 +140,7 @@ class TrackableObject : public TrackableObjectBase {
   }
 
   static v8::Persistent<v8::ObjectTemplate> template_;
-  static scoped_ptr<atom::IDWeakMap> weak_map_;
+  static scoped_ptr<electron::IDWeakMap> weak_map_;
 
   DISALLOW_COPY_AND_ASSIGN(TrackableObject);
 };
@@ -149,7 +149,7 @@ template<typename T>
 v8::Persistent<v8::ObjectTemplate> TrackableObject<T>::template_;
 
 template<typename T>
-scoped_ptr<atom::IDWeakMap> TrackableObject<T>::weak_map_;
+scoped_ptr<electron::IDWeakMap> TrackableObject<T>::weak_map_;
 
 }  // namespace mate
 

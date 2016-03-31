@@ -10,7 +10,7 @@
 #include "base/single_thread_task_runner.h"
 #include "base/tuple.h"
 
-namespace atom {
+namespace electron {
 
 // Post all tasks to the current message loop's task runner if available,
 // otherwise delay the work until message loop is ready.
@@ -41,6 +41,6 @@ class BridgeTaskRunner : public base::SingleThreadTaskRunner {
   DISALLOW_COPY_AND_ASSIGN(BridgeTaskRunner);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_BROWSER_BRIDGE_TASK_RUNNER_H_

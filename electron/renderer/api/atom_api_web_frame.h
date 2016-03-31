@@ -20,7 +20,7 @@ namespace mate {
 class Arguments;
 }
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -79,6 +79,6 @@ class WebFrame : public mate::Wrappable {
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_RENDERER_API_ATOM_API_WEB_FRAME_H_

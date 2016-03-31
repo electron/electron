@@ -23,7 +23,7 @@
 #include "base/win/windows_version.h"
 #include "electron/common/atom_version.h"
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -256,4 +256,4 @@ std::string Browser::GetExecutableFileProductName() const {
   return ATOM_PRODUCT_NAME;
 }
 
-}  // namespace atom
+}  // namespace electron

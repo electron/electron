@@ -13,7 +13,7 @@
 #include "native_mate/scoped_persistent.h"
 #include "third_party/WebKit/public/web/WebSpellCheckClient.h"
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -86,6 +86,6 @@ class SpellCheckClient : public blink::WebSpellCheckClient {
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_RENDERER_API_ATOM_API_SPELL_CHECK_CLIENT_H_

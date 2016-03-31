@@ -15,7 +15,7 @@
 
 #include "electron/common/node_includes.h"
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -174,14 +174,14 @@ void Menu::BuildPrototype(v8::Isolate* isolate,
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 
 namespace {
 
 void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
-  using atom::api::Menu;
+  using electron::api::Menu;
   v8::Isolate* isolate = context->GetIsolate();
   v8::Local<v8::Function> constructor = mate::CreateConstructor<Menu>(
       isolate, "Menu", base::Bind(&Menu::Create));

@@ -27,11 +27,11 @@
   // Add observer to monitor the system's Dark Mode theme.
   [[NSDistributedNotificationCenter defaultCenter] addObserver:self selector:@selector(platformThemeChanged:) name:@"AppleInterfaceThemeChangedNotification" object:nil];
 
-  atom::Browser::Get()->WillFinishLaunching();
+  electron::Browser::Get()->WillFinishLaunching();
 }
 
 - (void)applicationDidFinishLaunching:(NSNotification*)notify {
-  atom::Browser::Get()->DidFinishLaunching();
+  electron::Browser::Get()->DidFinishLaunching();
 }
 
 - (NSMenu*)applicationDockMenu:(NSApplication*)sender {
@@ -41,29 +41,29 @@
 - (BOOL)application:(NSApplication*)sender
            openFile:(NSString*)filename {
   std::string filename_str(base::SysNSStringToUTF8(filename));
-  return atom::Browser::Get()->OpenFile(filename_str) ? YES : NO;
+  return electron::Browser::Get()->OpenFile(filename_str) ? YES : NO;
 }
 
 - (NSApplicationTerminateReply)applicationShouldTerminate:(NSApplication*)sender {
-  atom::Browser* browser = atom::Browser::Get();
+  electron::Browser* browser = electron::Browser::Get();
   if (browser->is_quiting()) {
     return NSTerminateNow;
   } else {
     // System started termination.
-    atom::Browser::Get()->Quit();
+    electron::Browser::Get()->Quit();
     return NSTerminateCancel;
   }
 }
 
 - (BOOL)applicationShouldHandleReopen:(NSApplication*)theApplication
                     hasVisibleWindows:(BOOL)flag {
-  atom::Browser* browser = atom::Browser::Get();
+  electron::Browser* browser = electron::Browser::Get();
   browser->Activate(static_cast<bool>(flag));
   return flag;
 }
 
 - (void)platformThemeChanged:(NSNotification *)notify {
-  atom::Browser::Get()->PlatformThemeChanged();
+  electron::Browser::Get()->PlatformThemeChanged();
 }
 
 @end

@@ -8,7 +8,7 @@
 #include "base/macros.h"
 #include "gin/public/isolate_holder.h"
 
-namespace atom {
+namespace electron {
 
 class JavascriptEnvironment {
  public:
@@ -34,6 +34,6 @@ class JavascriptEnvironment {
   DISALLOW_COPY_AND_ASSIGN(JavascriptEnvironment);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_BROWSER_JAVASCRIPT_ENVIRONMENT_H_

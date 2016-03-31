@@ -8,7 +8,7 @@
 
 #include "native_mate/converter.h"
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -91,4 +91,4 @@ int32_t IDWeakMap::GetNextID() {
   return ++next_id_;
 }
 
-}  // namespace atom
+}  // namespace electron

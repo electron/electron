@@ -11,7 +11,7 @@
 
 #include "electron/common/node_includes.h"
 
-namespace atom {
+namespace electron {
 
 NodeBindingsMac::NodeBindingsMac(bool is_browser)
     : NodeBindings(is_browser),
@@ -65,4 +65,4 @@ NodeBindings* NodeBindings::Create(bool is_browser) {
   return new NodeBindingsMac(is_browser);
 }
 
-}  // namespace atom
+}  // namespace electron

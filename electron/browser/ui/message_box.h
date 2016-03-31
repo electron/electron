@@ -15,7 +15,7 @@ namespace gfx {
 class ImageSkia;
 }
 
-namespace atom {
+namespace electron {
 
 class NativeWindow;
 
@@ -61,6 +61,6 @@ void ShowMessageBox(NativeWindow* parent_window,
 // stage of application.
 void ShowErrorBox(const base::string16& title, const base::string16& content);
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_BROWSER_UI_MESSAGE_BOX_H_

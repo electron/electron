@@ -5,7 +5,7 @@
 #include "electron/browser/native_window_views.h"
 #include "content/public/browser/browser_accessibility_state.h"
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -153,4 +153,4 @@ void NativeWindowViews::HandleSizeEvent(WPARAM w_param, LPARAM l_param) {
   }
 }
 
-}  // namespace atom
+}  // namespace electron

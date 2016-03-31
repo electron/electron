@@ -13,7 +13,7 @@
 #include "ui/base/models/simple_menu_model.h"
 #include "ui/gfx/geometry/rect.h"
 
-namespace atom {
+namespace electron {
 
 class TrayIcon {
  public:
@@ -78,6 +78,6 @@ class TrayIcon {
   DISALLOW_COPY_AND_ASSIGN(TrayIcon);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_BROWSER_UI_TRAY_ICON_H_

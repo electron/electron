@@ -11,7 +11,7 @@
 #include "base/message_loop/message_loop.h"
 #include "ui/gfx/geometry/size.h"
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -62,4 +62,4 @@ base::WeakPtr<content::BrowserPluginDelegate> GuestViewContainer::GetWeakPtr() {
   return weak_ptr_factory_.GetWeakPtr();
 }
 
-}  // namespace atom
+}  // namespace electron

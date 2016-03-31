@@ -18,7 +18,7 @@ class AuthChallengeInfo;
 class URLRequest;
 }
 
-namespace atom {
+namespace electron {
 
 // Handles the HTTP basic auth, must be created on IO thread.
 class LoginHandler : public content::ResourceDispatcherHostLoginDelegate {
@@ -71,6 +71,6 @@ class LoginHandler : public content::ResourceDispatcherHostLoginDelegate {
   DISALLOW_COPY_AND_ASSIGN(LoginHandler);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_BROWSER_LOGIN_HANDLER_H_

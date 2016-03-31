@@ -7,7 +7,7 @@
 
 #include <string>
 
-namespace atom {
+namespace electron {
 
 class LoginHandler;
 
@@ -51,6 +51,6 @@ class BrowserObserver {
   virtual ~BrowserObserver() {}
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_BROWSER_BROWSER_OBSERVER_H_

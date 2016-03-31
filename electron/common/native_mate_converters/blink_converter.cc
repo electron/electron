@@ -163,7 +163,7 @@ bool Converter<blink::WebKeyboardEvent>::FromV8(
   std::string str;
   bool shifted = false;
   if (dict.Get("keyCode", &str))
-    out->windowsKeyCode = atom::KeyboardCodeFromStr(str, &shifted);
+    out->windowsKeyCode = electron::KeyboardCodeFromStr(str, &shifted);
   else
     return false;
 

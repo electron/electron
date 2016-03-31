@@ -11,7 +11,7 @@
 #include "electron/common/google_api_key.h"
 #include "content/public/browser/geolocation_provider.h"
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -50,4 +50,4 @@ void AtomAccessTokenStore::SaveAccessToken(const GURL& server_url,
                                            const base::string16& access_token) {
 }
 
-}  // namespace atom
+}  // namespace electron

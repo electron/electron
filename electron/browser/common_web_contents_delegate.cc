@@ -37,7 +37,7 @@
 
 using content::BrowserThread;
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -122,7 +122,7 @@ void AppendToFile(const base::FilePath& path,
 
 PrefService* GetPrefService(content::WebContents* web_contents) {
   auto context = web_contents->GetBrowserContext();
-  return static_cast<atom::AtomBrowserContext*>(context)->prefs();
+  return static_cast<electron::AtomBrowserContext*>(context)->prefs();
 }
 
 std::set<std::string> GetAddedFileSystemPaths(
@@ -440,4 +440,4 @@ void CommonWebContentsDelegate::SetHtmlApiFullscreen(bool enter_fullscreen) {
   native_fullscreen_ = false;
 }
 
-}  // namespace atom
+}  // namespace electron

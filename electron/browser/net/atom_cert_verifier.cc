@@ -13,7 +13,7 @@
 
 using content::BrowserThread;
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -74,4 +74,4 @@ bool AtomCertVerifier::SupportsOCSPStapling() {
   return true;
 }
 
-}  // namespace atom
+}  // namespace electron

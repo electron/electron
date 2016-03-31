@@ -8,7 +8,7 @@
 #include "electron/common/node_includes.h"
 #include "content/public/browser/render_widget_host.h"
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -62,4 +62,4 @@ void FrameSubscriber::OnFrameDelivered(const FrameCaptureCallback& callback,
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron

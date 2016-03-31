@@ -8,7 +8,7 @@
 #include "ui/views/widget/widget.h"
 #include "ui/views/win/hwnd_util.h"
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -42,4 +42,4 @@ const char* WinFrameView::GetClassName() const {
   return kViewClassName;
 }
 
-}  // namespace atom
+}  // namespace electron

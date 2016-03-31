@@ -11,7 +11,7 @@
 #include "base/memory/linked_ptr.h"
 #include "v8/include/v8.h"
 
-namespace atom {
+namespace electron {
 
 // Like ES6's WeakMap, but the key is Integer and the value is Weak Pointer.
 class IDWeakMap {
@@ -56,6 +56,6 @@ class IDWeakMap {
   DISALLOW_COPY_AND_ASSIGN(IDWeakMap);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_COMMON_ID_WEAK_MAP_H_

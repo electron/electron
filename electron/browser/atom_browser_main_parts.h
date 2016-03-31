@@ -15,7 +15,7 @@
 
 class BrowserProcess;
 
-namespace atom {
+namespace electron {
 
 class AtomBindings;
 class Browser;
@@ -93,6 +93,6 @@ class AtomBrowserMainParts : public brightray::BrowserMainParts {
   DISALLOW_COPY_AND_ASSIGN(AtomBrowserMainParts);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_BROWSER_ATOM_BROWSER_MAIN_PARTS_H_

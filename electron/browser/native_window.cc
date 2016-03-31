@@ -40,9 +40,9 @@
 #include "ui/gfx/screen.h"
 #include "ui/gl/gpu_switching_manager.h"
 
-DEFINE_WEB_CONTENTS_USER_DATA_KEY(atom::NativeWindowRelay);
+DEFINE_WEB_CONTENTS_USER_DATA_KEY(electron::NativeWindowRelay);
 
-namespace atom {
+namespace electron {
 
 NativeWindow::NativeWindow(
     brightray::InspectableWebContents* inspectable_web_contents,
@@ -617,4 +617,4 @@ SkColor NativeWindow::ParseHexColor(const std::string& name) {
   return result;
 }
 
-}  // namespace atom
+}  // namespace electron

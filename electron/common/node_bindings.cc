@@ -68,7 +68,7 @@ const int Function::kLineOffsetNotFound = -1;
 }
 #endif
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -269,4 +269,4 @@ void NodeBindings::EmbedThreadRunner(void *arg) {
   }
 }
 
-}  // namespace atom
+}  // namespace electron

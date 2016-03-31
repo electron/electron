@@ -8,7 +8,7 @@
 
 #include "base/strings/utf_string_conversions.h"
 
-namespace atom {
+namespace electron {
 
 void AtomJavaScriptDialogManager::RunJavaScriptDialog(
     content::WebContents* web_contents,
@@ -32,4 +32,4 @@ void AtomJavaScriptDialogManager::RunBeforeUnloadDialog(
   callback.Run(!prevent_reload, message_text);
 }
 
-}  // namespace atom
+}  // namespace electron

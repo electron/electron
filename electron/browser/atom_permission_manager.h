@@ -15,7 +15,7 @@ namespace content {
 class WebContents;
 }
 
-namespace atom {
+namespace electron {
 
 class AtomPermissionManager : public content::PermissionManager {
  public:
@@ -87,6 +87,6 @@ class AtomPermissionManager : public content::PermissionManager {
   DISALLOW_COPY_AND_ASSIGN(AtomPermissionManager);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_BROWSER_ATOM_PERMISSION_MANAGER_H_

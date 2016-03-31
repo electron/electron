@@ -144,7 +144,7 @@ struct Converter<net::ProxyConfig> {
 
 }  // namespace mate
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -437,7 +437,7 @@ void Session::ClearHostResolverCache(mate::Arguments* args) {
 
 v8::Local<v8::Value> Session::Cookies(v8::Isolate* isolate) {
   if (cookies_.IsEmpty()) {
-    auto handle = atom::api::Cookies::Create(isolate, browser_context());
+    auto handle = electron::api::Cookies::Create(isolate, browser_context());
     cookies_.Reset(isolate, handle.ToV8());
   }
   return v8::Local<v8::Value>::New(isolate, cookies_);
@@ -445,7 +445,7 @@ v8::Local<v8::Value> Session::Cookies(v8::Isolate* isolate) {
 
 v8::Local<v8::Value> Session::WebRequest(v8::Isolate* isolate) {
   if (web_request_.IsEmpty()) {
-    auto handle = atom::api::WebRequest::Create(isolate, browser_context());
+    auto handle = electron::api::WebRequest::Create(isolate, browser_context());
     web_request_.Reset(isolate, handle.ToV8());
   }
   return v8::Local<v8::Value>::New(isolate, web_request_);
@@ -501,13 +501,13 @@ void SetWrapSession(const WrapSessionCallback& callback) {
   g_wrap_session = callback;
 
   // Cleanup the wrapper on exit.
-  atom::AtomBrowserMainParts::Get()->RegisterDestructionCallback(
+  electron::AtomBrowserMainParts::Get()->RegisterDestructionCallback(
       base::Bind(ClearWrapSession));
 }
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 namespace {
 
@@ -515,8 +515,8 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
-  dict.SetMethod("fromPartition", &atom::api::Session::FromPartition);
-  dict.SetMethod("_setWrapSession", &atom::api::SetWrapSession);
+  dict.SetMethod("fromPartition", &electron::api::Session::FromPartition);
+  dict.SetMethod("_setWrapSession", &electron::api::SetWrapSession);
 }
 
 }  // namespace

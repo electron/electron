@@ -10,7 +10,7 @@
 #include "base/power_monitor/power_monitor_device_source.h"
 #include "native_mate/dictionary.h"
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -51,7 +51,7 @@ v8::Local<v8::Value> PowerMonitor::Create(v8::Isolate* isolate) {
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 
 namespace {
@@ -62,7 +62,7 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   base::PowerMonitorDeviceSource::AllocateSystemIOPorts();
 #endif
 
-  using atom::api::PowerMonitor;
+  using electron::api::PowerMonitor;
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
   dict.Set("powerMonitor", PowerMonitor::Create(isolate));

@@ -15,7 +15,7 @@
 #include <windows.h>
 #endif
 
-namespace atom {
+namespace electron {
 
 class NativeWindowObserver {
  public:
@@ -79,6 +79,6 @@ class NativeWindowObserver {
   virtual void OnExecuteWindowsCommand(const std::string& command_name) {}
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_BROWSER_NATIVE_WINDOW_OBSERVER_H_

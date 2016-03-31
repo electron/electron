@@ -7,7 +7,7 @@
 
 #include "ui/gfx/geometry/rect.h"
 
-namespace atom {
+namespace electron {
 
 struct DraggableRegion {
   bool draggable;
@@ -16,6 +16,6 @@ struct DraggableRegion {
   DraggableRegion();
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_COMMON_DRAGGABLE_REGION_H_

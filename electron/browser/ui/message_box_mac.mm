@@ -14,18 +14,18 @@
 
 @interface ModalDelegate : NSObject {
  @private
-  atom::MessageBoxCallback callback_;
+  electron::MessageBoxCallback callback_;
   NSAlert* alert_;
   bool callEndModal_;
 }
-- (id)initWithCallback:(const atom::MessageBoxCallback&)callback
+- (id)initWithCallback:(const electron::MessageBoxCallback&)callback
               andAlert:(NSAlert*)alert
           callEndModal:(bool)flag;
 @end
 
 @implementation ModalDelegate
 
-- (id)initWithCallback:(const atom::MessageBoxCallback&)callback
+- (id)initWithCallback:(const electron::MessageBoxCallback&)callback
               andAlert:(NSAlert*)alert
           callEndModal:(bool)flag {
   if ((self = [super init])) {
@@ -49,7 +49,7 @@
 
 @end
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -179,4 +179,4 @@ void ShowErrorBox(const base::string16& title, const base::string16& content) {
   [alert release];
 }
 
-}  // namespace atom
+}  // namespace electron

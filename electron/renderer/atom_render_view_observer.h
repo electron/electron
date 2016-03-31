@@ -12,7 +12,7 @@ namespace base {
 class ListValue;
 }
 
-namespace atom {
+namespace electron {
 
 class AtomRendererClient;
 
@@ -42,6 +42,6 @@ class AtomRenderViewObserver : public content::RenderViewObserver {
   DISALLOW_COPY_AND_ASSIGN(AtomRenderViewObserver);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_RENDERER_ATOM_RENDER_VIEW_OBSERVER_H_

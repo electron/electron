@@ -8,7 +8,7 @@
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/web_contents.h"
 
-namespace atom {
+namespace electron {
 
 WebViewManager::WebViewManager() {
 }
@@ -65,4 +65,4 @@ bool WebViewManager::ForEachGuest(content::WebContents* embedder_web_contents,
   return false;
 }
 
-}  // namespace atom
+}  // namespace electron

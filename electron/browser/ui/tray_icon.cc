@@ -4,7 +4,7 @@
 
 #include "electron/browser/ui/tray_icon.h"
 
-namespace atom {
+namespace electron {
 
 TrayIcon::TrayIcon() {
 }
@@ -76,4 +76,4 @@ void TrayIcon::NotifyDragEnded() {
   FOR_EACH_OBSERVER(TrayIconObserver, observers_, OnDragEnded());
 }
 
-}  // namespace atom
+}  // namespace electron

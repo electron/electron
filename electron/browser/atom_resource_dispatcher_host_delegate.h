@@ -7,7 +7,7 @@
 
 #include "content/public/browser/resource_dispatcher_host_delegate.h"
 
-namespace atom {
+namespace electron {
 
 class AtomResourceDispatcherHostDelegate
     : public content::ResourceDispatcherHostDelegate {
@@ -27,6 +27,6 @@ class AtomResourceDispatcherHostDelegate
       net::URLRequest* request) override;
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_BROWSER_ATOM_RESOURCE_DISPATCHER_HOST_DELEGATE_H_

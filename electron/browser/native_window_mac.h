@@ -17,7 +17,7 @@
 @class AtomNSWindowDelegate;
 @class FullSizeContentView;
 
-namespace atom {
+namespace electron {
 
 class NativeWindowMac : public NativeWindow {
  public:
@@ -147,6 +147,6 @@ class NativeWindowMac : public NativeWindow {
   DISALLOW_COPY_AND_ASSIGN(NativeWindowMac);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_BROWSER_NATIVE_WINDOW_MAC_H_

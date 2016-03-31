@@ -16,7 +16,7 @@
 
 #include "electron/common/node_includes.h"
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -200,4 +200,4 @@ void NodeDebugger::DidClose(net::test_server::StreamListenSocket* socket) {
   OnMessage("{\"seq\":1,\"type\":\"request\",\"command\":\"disconnect\"}");
 }
 
-}  // namespace atom
+}  // namespace electron

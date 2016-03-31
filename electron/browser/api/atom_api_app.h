@@ -23,7 +23,7 @@ namespace mate {
 class Arguments;
 }
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -102,6 +102,6 @@ class App : public AtomBrowserClient::Delegate,
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_BROWSER_API_ATOM_API_APP_H_

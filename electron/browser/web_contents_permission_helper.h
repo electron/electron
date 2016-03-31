@@ -9,7 +9,7 @@
 #include "content/public/browser/web_contents_user_data.h"
 #include "content/public/common/media_stream_request.h"
 
-namespace atom {
+namespace electron {
 
 // Applies the permission requested for WebContents.
 class WebContentsPermissionHelper
@@ -45,6 +45,6 @@ class WebContentsPermissionHelper
   DISALLOW_COPY_AND_ASSIGN(WebContentsPermissionHelper);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_BROWSER_WEB_CONTENTS_PERMISSION_HELPER_H_

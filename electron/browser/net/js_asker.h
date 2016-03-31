@@ -16,7 +16,7 @@
 #include "net/url_request/url_request_job.h"
 #include "v8/include/v8.h"
 
-namespace atom {
+namespace electron {
 
 using JavaScriptHandler =
     base::Callback<void(const net::URLRequest*, v8::Local<v8::Value>)>;
@@ -103,6 +103,6 @@ class JsAsker : public RequestJob {
   DISALLOW_COPY_AND_ASSIGN(JsAsker);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_BROWSER_NET_JS_ASKER_H_

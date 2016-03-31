@@ -15,7 +15,7 @@
 #include "third_party/WebKit/public/web/WebTextCheckingCompletion.h"
 #include "third_party/WebKit/public/web/WebTextCheckingResult.h"
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -186,4 +186,4 @@ bool SpellCheckClient::IsValidContraction(const base::string16& contraction) {
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron

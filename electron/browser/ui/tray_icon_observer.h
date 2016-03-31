@@ -12,7 +12,7 @@ namespace gfx {
 class Rect;
 }
 
-namespace atom {
+namespace electron {
 
 class TrayIconObserver {
  public:
@@ -32,6 +32,6 @@ class TrayIconObserver {
   virtual ~TrayIconObserver() {}
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_BROWSER_UI_TRAY_ICON_OBSERVER_H_

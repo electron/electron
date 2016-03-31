@@ -6,7 +6,7 @@
 
 #import <Cocoa/Cocoa.h>
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -20,4 +20,4 @@ bool NativeImage::IsTemplateImage() {
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron

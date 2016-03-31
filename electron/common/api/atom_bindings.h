@@ -16,7 +16,7 @@ namespace node {
 class Environment;
 }
 
-namespace atom {
+namespace electron {
 
 class AtomBindings {
  public:
@@ -38,6 +38,6 @@ class AtomBindings {
   DISALLOW_COPY_AND_ASSIGN(AtomBindings);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_COMMON_API_ATOM_BINDINGS_H_

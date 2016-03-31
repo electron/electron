@@ -25,7 +25,7 @@ namespace mate {
 class Arguments;
 }
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -80,6 +80,6 @@ class NativeImage : public mate::Wrappable {
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_COMMON_API_ATOM_API_NATIVE_IMAGE_H_

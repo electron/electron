@@ -12,7 +12,7 @@ namespace mate {
 bool Converter<base::DictionaryValue>::FromV8(v8::Isolate* isolate,
                                               v8::Local<v8::Value> val,
                                               base::DictionaryValue* out) {
-  scoped_ptr<atom::V8ValueConverter> converter(new atom::V8ValueConverter);
+  scoped_ptr<electron::V8ValueConverter> converter(new electron::V8ValueConverter);
   scoped_ptr<base::Value> value(converter->FromV8Value(
       val, isolate->GetCurrentContext()));
   if (value && value->IsType(base::Value::TYPE_DICTIONARY)) {
@@ -26,14 +26,14 @@ bool Converter<base::DictionaryValue>::FromV8(v8::Isolate* isolate,
 v8::Local<v8::Value> Converter<base::DictionaryValue>::ToV8(
     v8::Isolate* isolate,
     const base::DictionaryValue& val) {
-  scoped_ptr<atom::V8ValueConverter> converter(new atom::V8ValueConverter);
+  scoped_ptr<electron::V8ValueConverter> converter(new electron::V8ValueConverter);
   return converter->ToV8Value(&val, isolate->GetCurrentContext());
 }
 
 bool Converter<base::ListValue>::FromV8(v8::Isolate* isolate,
                                         v8::Local<v8::Value> val,
                                         base::ListValue* out) {
-  scoped_ptr<atom::V8ValueConverter> converter(new atom::V8ValueConverter);
+  scoped_ptr<electron::V8ValueConverter> converter(new electron::V8ValueConverter);
   scoped_ptr<base::Value> value(converter->FromV8Value(
       val, isolate->GetCurrentContext()));
   if (value->IsType(base::Value::TYPE_LIST)) {
@@ -47,7 +47,7 @@ bool Converter<base::ListValue>::FromV8(v8::Isolate* isolate,
 v8::Local<v8::Value> Converter<base::ListValue>::ToV8(
     v8::Isolate* isolate,
     const base::ListValue& val) {
-  scoped_ptr<atom::V8ValueConverter> converter(new atom::V8ValueConverter);
+  scoped_ptr<electron::V8ValueConverter> converter(new electron::V8ValueConverter);
   return converter->ToV8Value(&val, isolate->GetCurrentContext());
 }
 

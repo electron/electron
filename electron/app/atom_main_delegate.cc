@@ -21,7 +21,7 @@
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/base/resource/resource_bundle.h"
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -138,4 +138,4 @@ scoped_ptr<brightray::ContentClient> AtomMainDelegate::CreateContentClient() {
   return scoped_ptr<brightray::ContentClient>(new AtomContentClient);
 }
 
-}  // namespace atom
+}  // namespace electron

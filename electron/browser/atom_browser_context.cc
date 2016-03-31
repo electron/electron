@@ -40,7 +40,7 @@
 
 using content::BrowserThread;
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -207,14 +207,14 @@ void AtomBrowserContext::AllowNTLMCredentialsForAllDomains(bool should_allow) {
   allow_ntlm_everywhere_ = should_allow;
 }
 
-}  // namespace atom
+}  // namespace electron
 
 namespace brightray {
 
 // static
 scoped_refptr<BrowserContext> BrowserContext::Create(
     const std::string& partition, bool in_memory) {
-  return make_scoped_refptr(new atom::AtomBrowserContext(partition, in_memory));
+  return make_scoped_refptr(new electron::AtomBrowserContext(partition, in_memory));
 }
 
 }  // namespace brightray

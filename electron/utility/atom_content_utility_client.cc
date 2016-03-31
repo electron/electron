@@ -29,7 +29,7 @@ bool Send(IPC::Message* message) {
 
 }  // namespace
 
-namespace atom {
+namespace electron {
 
 int64_t AtomContentUtilityClient::max_ipc_message_size_ =
     IPC::Channel::kMaximumMessageSize;
@@ -78,4 +78,4 @@ void AtomContentUtilityClient::PreSandboxStartup() {
 #endif
 }
 
-}  // namespace atom
+}  // namespace electron

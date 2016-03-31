@@ -4,7 +4,7 @@
 
 #include "electron/common/options_switches.h"
 
-namespace atom {
+namespace electron {
 
 namespace options {
 
@@ -157,4 +157,4 @@ const char kWidevineCdmVersion[] = "widevine-cdm-version";
 
 }  // namespace switches
 
-}  // namespace atom
+}  // namespace electron

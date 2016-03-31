@@ -32,7 +32,7 @@ v8::Local<v8::Value> Converter<const net::URLRequest*>::ToV8(
   dict->SetStringWithoutPathExpansion("url", url);
   dict->SetString("referrer", val->referrer());
   scoped_ptr<base::ListValue> list(new base::ListValue);
-  atom::GetUploadData(list.get(), val);
+  electron::GetUploadData(list.get(), val);
   if (!list->empty())
     dict->Set("uploadData", std::move(list));
   return mate::ConvertToV8(isolate, *(dict.get()));
@@ -67,7 +67,7 @@ v8::Local<v8::Value> Converter<scoped_refptr<net::X509Certificate>>::ToV8(
 
 }  // namespace mate
 
-namespace atom {
+namespace electron {
 
 void GetUploadData(base::ListValue* upload_data_list,
                    const net::URLRequest* request) {
@@ -96,4 +96,4 @@ void GetUploadData(base::ListValue* upload_data_list,
   }
 }
 
-}  // namespace atom
+}  // namespace electron

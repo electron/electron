@@ -14,7 +14,7 @@
 #include "gin/public/isolate_holder.h"
 #include "gin/v8_initializer.h"
 
-namespace atom {
+namespace electron {
 
 int NodeMain(int argc, char *argv[]) {
   base::CommandLine::Init(argc, argv);
@@ -71,4 +71,4 @@ int NodeMain(int argc, char *argv[]) {
   return exit_code;
 }
 
-}  // namespace atom
+}  // namespace electron

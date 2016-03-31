@@ -16,11 +16,11 @@
 
 #if defined(OS_MACOSX)
 int AtomMain(int argc, const char* argv[]) {
-  atom::AtomMainDelegate delegate;
+  electron::AtomMainDelegate delegate;
   content::ContentMainParams params(&delegate);
   params.argc = argc;
   params.argv = argv;
-  atom::AtomCommandLine::Init(argc, argv);
+  electron::AtomCommandLine::Init(argc, argv);
   return content::ContentMain(params);
 }
 
@@ -33,6 +33,6 @@ int AtomInitializeICUandStartNode(int argc, char *argv[]) {
           .Append("Frameworks")
           .Append(ATOM_PRODUCT_NAME " Framework.framework"));
   base::i18n::InitializeICU();
-  return atom::NodeMain(argc, argv);
+  return electron::NodeMain(argc, argv);
 }
 #endif  // OS_MACOSX

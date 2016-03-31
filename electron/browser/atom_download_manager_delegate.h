@@ -14,7 +14,7 @@ namespace content {
 class DownloadManager;
 }
 
-namespace atom {
+namespace electron {
 
 class AtomDownloadManagerDelegate : public content::DownloadManagerDelegate {
  public:
@@ -52,6 +52,6 @@ class AtomDownloadManagerDelegate : public content::DownloadManagerDelegate {
   DISALLOW_COPY_AND_ASSIGN(AtomDownloadManagerDelegate);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_BROWSER_ATOM_DOWNLOAD_MANAGER_DELEGATE_H_

@@ -9,7 +9,7 @@
 #include "ui/gfx/screen.h"
 #include "ui/views/controls/menu/menu_runner.h"
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -55,4 +55,4 @@ mate::Wrappable* Menu::Create() {
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron

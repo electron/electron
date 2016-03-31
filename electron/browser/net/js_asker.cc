@@ -9,7 +9,7 @@
 #include "electron/common/native_mate_converters/callback.h"
 #include "electron/common/native_mate_converters/v8_value_converter.h"
 
-namespace atom {
+namespace electron {
 
 namespace internal {
 
@@ -72,4 +72,4 @@ bool IsErrorOptions(base::Value* value, int* error) {
 
 }  // namespace internal
 
-}  // namespace atom
+}  // namespace electron

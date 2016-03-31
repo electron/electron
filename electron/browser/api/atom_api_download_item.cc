@@ -43,7 +43,7 @@ struct Converter<content::DownloadItem::DownloadState> {
 
 }  // namespace mate
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -190,13 +190,13 @@ void SetWrapDownloadItem(const WrapDownloadItemCallback& callback) {
   g_wrap_download_item = callback;
 
   // Cleanup the wrapper on exit.
-  atom::AtomBrowserMainParts::Get()->RegisterDestructionCallback(
+  electron::AtomBrowserMainParts::Get()->RegisterDestructionCallback(
       base::Bind(ClearWrapDownloadItem));
 }
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 namespace {
 
@@ -204,7 +204,7 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
-  dict.SetMethod("_setWrapDownloadItem", &atom::api::SetWrapDownloadItem);
+  dict.SetMethod("_setWrapDownloadItem", &electron::api::SetWrapDownloadItem);
 }
 
 }  // namespace

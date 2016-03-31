@@ -12,7 +12,7 @@
 #include "electron/browser/native_window.h"
 #include "ui/views/widget/desktop_aura/desktop_window_tree_host_win.h"
 
-namespace atom {
+namespace electron {
 
 class MessageHandlerDelegate;
 
@@ -34,6 +34,6 @@ class AtomDesktopWindowTreeHostWin : public views::DesktopWindowTreeHostWin {
   DISALLOW_COPY_AND_ASSIGN(AtomDesktopWindowTreeHostWin);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_BROWSER_UI_WIN_ATOM_DESKTOP_WINDOW_TREE_HOST_WIN_H_

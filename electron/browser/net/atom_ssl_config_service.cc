@@ -14,7 +14,7 @@
 #include "net/socket/ssl_client_socket.h"
 #include "net/ssl/ssl_cipher_suite_names.h"
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -71,4 +71,4 @@ void AtomSSLConfigService::GetSSLConfig(net::SSLConfig* config) {
   *config = config_;
 }
 
-}  // namespace atom
+}  // namespace electron

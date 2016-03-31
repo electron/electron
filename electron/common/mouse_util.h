@@ -26,11 +26,11 @@
       }                                                                        \
       break;
 
-namespace atom {
+namespace electron {
 
 // Returns the cursor's type as a string.
 std::string CursorTypeToString(const content::WebCursor::CursorInfo& info);
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_COMMON_MOUSE_UTIL_H_

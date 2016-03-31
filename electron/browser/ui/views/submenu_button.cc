@@ -10,7 +10,7 @@
 #include "ui/gfx/text_utils.h"
 #include "ui/views/controls/button/label_button_border.h"
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -95,4 +95,4 @@ void SubmenuButton::GetCharacterPosition(
                              0, 0);
 }
 
-}  // namespace atom
+}  // namespace electron

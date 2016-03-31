@@ -47,7 +47,7 @@ namespace ui {
 class MenuModel;
 }
 
-namespace atom {
+namespace electron {
 
 struct DraggableRegion;
 
@@ -359,6 +359,6 @@ class NativeWindowRelay :
   friend class content::WebContentsUserData<NativeWindow>;
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_BROWSER_NATIVE_WINDOW_H_

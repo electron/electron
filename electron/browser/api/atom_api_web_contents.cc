@@ -83,10 +83,10 @@ void SetUserAgentInIO(scoped_refptr<net::URLRequestContextGetter> getter,
 namespace mate {
 
 template<>
-struct Converter<atom::SetSizeParams> {
+struct Converter<electron::SetSizeParams> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
-                     atom::SetSizeParams* out) {
+                     electron::SetSizeParams* out) {
     mate::Dictionary params;
     if (!ConvertFromV8(isolate, val, &params))
       return false;
@@ -183,7 +183,7 @@ struct Converter<content::SavePageType> {
 }  // namespace mate
 
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -768,17 +768,17 @@ void WebContents::Stop() {
 }
 
 void WebContents::GoBack() {
-  atom::AtomBrowserClient::SuppressRendererProcessRestartForOnce();
+  electron::AtomBrowserClient::SuppressRendererProcessRestartForOnce();
   web_contents()->GetController().GoBack();
 }
 
 void WebContents::GoForward() {
-  atom::AtomBrowserClient::SuppressRendererProcessRestartForOnce();
+  electron::AtomBrowserClient::SuppressRendererProcessRestartForOnce();
   web_contents()->GetController().GoForward();
 }
 
 void WebContents::GoToOffset(int offset) {
-  atom::AtomBrowserClient::SuppressRendererProcessRestartForOnce();
+  electron::AtomBrowserClient::SuppressRendererProcessRestartForOnce();
   web_contents()->GetController().GoToOffset(offset);
 }
 
@@ -1137,7 +1137,7 @@ v8::Local<v8::Value> WebContents::DevToolsWebContents(v8::Isolate* isolate) {
 
 v8::Local<v8::Value> WebContents::Debugger(v8::Isolate* isolate) {
   if (debugger_.IsEmpty()) {
-    auto handle = atom::api::Debugger::Create(isolate, web_contents());
+    auto handle = electron::api::Debugger::Create(isolate, web_contents());
     debugger_.Reset(isolate, handle.ToV8());
   }
   return v8::Local<v8::Value>::New(isolate, debugger_);
@@ -1262,13 +1262,13 @@ void SetWrapWebContents(const WrapWebContentsCallback& callback) {
   g_wrap_web_contents = callback;
 
   // Cleanup the wrapper on exit.
-  atom::AtomBrowserMainParts::Get()->RegisterDestructionCallback(
+  electron::AtomBrowserMainParts::Get()->RegisterDestructionCallback(
       base::Bind(ClearWrapWebContents));
 }
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 
 namespace {
@@ -1277,8 +1277,8 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
-  dict.SetMethod("create", &atom::api::WebContents::Create);
-  dict.SetMethod("_setWrapWebContents", &atom::api::SetWrapWebContents);
+  dict.SetMethod("create", &electron::api::WebContents::Create);
+  dict.SetMethod("_setWrapWebContents", &electron::api::SetWrapWebContents);
 }
 
 }  // namespace

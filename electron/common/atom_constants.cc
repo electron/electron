@@ -4,8 +4,8 @@
 
 #include "electron/common/atom_constants.h"
 
-namespace atom {
+namespace electron {
 
 const char* kCORSHeader = "Access-Control-Allow-Origin: *";
 
-}  // namespace atom
+}  // namespace electron

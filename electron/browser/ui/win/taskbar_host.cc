@@ -12,7 +12,7 @@
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "ui/gfx/icon_util.h"
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -163,4 +163,4 @@ bool TaskbarHost::InitailizeTaskbar() {
   }
 }
 
-}  // namespace atom
+}  // namespace electron

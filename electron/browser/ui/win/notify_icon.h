@@ -20,7 +20,7 @@ namespace gfx {
 class Point;
 }
 
-namespace atom {
+namespace electron {
 
 class NotifyIconHost;
 
@@ -82,6 +82,6 @@ class NotifyIcon : public TrayIcon {
   DISALLOW_COPY_AND_ASSIGN(NotifyIcon);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_BROWSER_UI_WIN_NOTIFY_ICON_H_

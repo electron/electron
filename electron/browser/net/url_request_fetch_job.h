@@ -13,7 +13,7 @@
 #include "net/url_request/url_fetcher_delegate.h"
 #include "net/url_request/url_request_job.h"
 
-namespace atom {
+namespace electron {
 
 class AtomBrowserContext;
 
@@ -52,6 +52,6 @@ class URLRequestFetchJob : public JsAsker<net::URLRequestJob>,
   DISALLOW_COPY_AND_ASSIGN(URLRequestFetchJob);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_BROWSER_NET_URL_REQUEST_FETCH_JOB_H_

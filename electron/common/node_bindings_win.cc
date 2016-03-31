@@ -12,7 +12,7 @@ extern "C" {
 #include "vendor/node/deps/uv/src/win/internal.h"
 }
 
-namespace atom {
+namespace electron {
 
 NodeBindingsWin::NodeBindingsWin(bool is_browser)
     : NodeBindings(is_browser) {
@@ -49,4 +49,4 @@ NodeBindings* NodeBindings::Create(bool is_browser) {
   return new NodeBindingsWin(is_browser);
 }
 
-}  // namespace atom
+}  // namespace electron

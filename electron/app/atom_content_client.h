@@ -11,7 +11,7 @@
 
 #include "brightray/common/content_client.h"
 
-namespace atom {
+namespace electron {
 
 class AtomContentClient : public brightray::ContentClient {
  public:
@@ -35,6 +35,6 @@ class AtomContentClient : public brightray::ContentClient {
   DISALLOW_COPY_AND_ASSIGN(AtomContentClient);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_APP_ATOM_CONTENT_CLIENT_H_

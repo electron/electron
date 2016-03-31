@@ -14,7 +14,7 @@
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/web_contents.h"
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -151,4 +151,4 @@ void AtomPermissionManager::UnsubscribePermissionStatusChange(
     int subscription_id) {
 }
 
-}  // namespace atom
+}  // namespace electron

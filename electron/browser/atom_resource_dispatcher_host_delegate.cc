@@ -12,7 +12,7 @@
 
 using content::BrowserThread;
 
-namespace atom {
+namespace electron {
 
 AtomResourceDispatcherHostDelegate::AtomResourceDispatcherHostDelegate() {
 }
@@ -38,4 +38,4 @@ AtomResourceDispatcherHostDelegate::CreateLoginDelegate(
   return new LoginHandler(auth_info, request);
 }
 
-}  // namespace atom
+}  // namespace electron

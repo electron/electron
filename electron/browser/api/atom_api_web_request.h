@@ -10,7 +10,7 @@
 #include "native_mate/arguments.h"
 #include "native_mate/handle.h"
 
-namespace atom {
+namespace electron {
 
 class AtomBrowserContext;
 
@@ -45,6 +45,6 @@ class WebRequest : public mate::TrackableObject<WebRequest> {
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_BROWSER_API_ATOM_API_WEB_REQUEST_H_

@@ -7,7 +7,7 @@
 #include "base/command_line.h"
 #include "node/deps/uv/include/uv.h"
 
-namespace atom {
+namespace electron {
 
 // static
 std::vector<std::string> AtomCommandLine::argv_;
@@ -28,4 +28,4 @@ void AtomCommandLine::InitializeFromCommandLine() {
 }
 #endif
 
-}  // namespace atom
+}  // namespace electron

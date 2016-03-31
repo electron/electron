@@ -8,7 +8,7 @@
 #include "electron/browser/native_window_views.h"
 #endif
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -83,4 +83,4 @@ bool MenuLayout::HasMenu(const views::View* host) const {
   return host->child_count() == 2;
 }
 
-}  // namespace atom
+}  // namespace electron

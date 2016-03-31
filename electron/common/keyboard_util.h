@@ -9,12 +9,12 @@
 
 #include "ui/events/keycodes/keyboard_codes.h"
 
-namespace atom {
+namespace electron {
 
 // Return key code of the |str|, and also determine whether the SHIFT key is
 // pressed.
 ui::KeyboardCode KeyboardCodeFromStr(const std::string& str, bool* shifted);
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_COMMON_KEYBOARD_UTIL_H_

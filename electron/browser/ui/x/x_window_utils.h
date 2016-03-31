@@ -11,7 +11,7 @@
 
 #include <string>
 
-namespace atom {
+namespace electron {
 
 ::Atom GetAtom(const char* name);
 
@@ -25,6 +25,6 @@ void SetWindowType(::Window xwindow, const std::string& type);
 // Returns true if the bus name "com.canonical.AppMenu.Registrar" is available.
 bool ShouldUseGlobalMenuBar();
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_BROWSER_UI_X_X_WINDOW_UTILS_H_

@@ -40,7 +40,7 @@
         withReplyEvent:(NSAppleEventDescriptor*)replyEvent {
   NSString* url = [
       [event paramDescriptorForKeyword:keyDirectObject] stringValue];
-  atom::Browser::Get()->OpenURL(base::SysNSStringToUTF8(url));
+  electron::Browser::Get()->OpenURL(base::SysNSStringToUTF8(url));
 }
 
 - (bool)voiceOverEnabled {

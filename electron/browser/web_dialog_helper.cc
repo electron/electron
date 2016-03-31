@@ -64,7 +64,7 @@ file_dialog::Filters GetFileTypesFromAcceptType(
 
 }  // namespace
 
-namespace atom {
+namespace electron {
 
 WebDialogHelper::WebDialogHelper(NativeWindow* window)
     : window_(window),
@@ -152,4 +152,4 @@ void WebDialogHelper::EnumerateDirectory(content::WebContents* web_contents,
       request_id, paths);
 }
 
-}  // namespace atom
+}  // namespace electron

@@ -24,7 +24,7 @@
 #include "ui/events/devices/x11/touch_factory_x11.h"
 #endif
 
-namespace atom {
+namespace electron {
 
 template<typename T>
 void Erase(T* container, typename T::iterator iter) {
@@ -186,4 +186,4 @@ void AtomBrowserMainParts::PostMainMessageLoopRun() {
   }
 }
 
-}  // namespace atom
+}  // namespace electron

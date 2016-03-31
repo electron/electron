@@ -6,7 +6,7 @@
 
 #include "net/url_request/url_request_http_job.h"
 
-namespace atom {
+namespace electron {
 
 HttpProtocolHandler::HttpProtocolHandler(const std::string& scheme)
     : scheme_(scheme) {
@@ -23,4 +23,4 @@ net::URLRequestJob* HttpProtocolHandler::MaybeCreateJob(
                                          scheme_);
 }
 
-}  // namespace atom
+}  // namespace electron

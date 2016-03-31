@@ -20,7 +20,7 @@
 #include "chrome/browser/ui/libgtk2ui/skia_utils_gtk2.h"
 #endif
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -159,4 +159,4 @@ void MenuBar::OnMenuButtonClicked(views::View* source,
   menu_delegate.RunMenu(menu_model_->GetSubmenuModelAt(id), button);
 }
 
-}  // namespace atom
+}  // namespace electron

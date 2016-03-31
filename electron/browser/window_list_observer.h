@@ -5,7 +5,7 @@
 #ifndef ELECTRON_BROWSER_WINDOW_LIST_OBSERVER_H_
 #define ELECTRON_BROWSER_WINDOW_LIST_OBSERVER_H_
 
-namespace atom {
+namespace electron {
 
 class NativeWindow;
 
@@ -27,6 +27,6 @@ class WindowListObserver {
   virtual ~WindowListObserver() {}
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_BROWSER_WINDOW_LIST_OBSERVER_H_

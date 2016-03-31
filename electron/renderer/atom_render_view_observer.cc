@@ -31,7 +31,7 @@
 #include "ui/base/resource/resource_bundle.h"
 #include "native_mate/dictionary.h"
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -152,4 +152,4 @@ void AtomRenderViewObserver::OnBrowserMessage(const base::string16& channel,
   }
 }
 
-}  // namespace atom
+}  // namespace electron

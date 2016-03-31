@@ -27,14 +27,14 @@ bool Converter<gfx::Image>::FromV8(v8::Isolate* isolate,
   if (val->IsNull())
     return true;
 
-  Handle<atom::api::NativeImage> native_image;
+  Handle<electron::api::NativeImage> native_image;
   if (!ConvertFromV8(isolate, val, &native_image)) {
     // Try converting from file path.
     base::FilePath path;
     if (!Converter<base::FilePath>::FromV8(isolate, val, &path))
       return false;
 
-    native_image = atom::api::NativeImage::CreateFromPath(isolate, path);
+    native_image = electron::api::NativeImage::CreateFromPath(isolate, path);
     if (native_image->image().IsEmpty())
       return false;
   }
@@ -45,7 +45,7 @@ bool Converter<gfx::Image>::FromV8(v8::Isolate* isolate,
 
 v8::Local<v8::Value> Converter<gfx::Image>::ToV8(v8::Isolate* isolate,
                                                   const gfx::Image& val) {
-  return ConvertToV8(isolate, atom::api::NativeImage::Create(isolate, val));
+  return ConvertToV8(isolate, electron::api::NativeImage::Create(isolate, val));
 }
 
 }  // namespace mate

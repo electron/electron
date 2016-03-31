@@ -8,7 +8,7 @@
 #include "electron/common/node_bindings.h"
 #include "base/compiler_specific.h"
 
-namespace atom {
+namespace electron {
 
 class NodeBindingsMac : public NodeBindings {
  public:
@@ -29,6 +29,6 @@ class NodeBindingsMac : public NodeBindings {
   DISALLOW_COPY_AND_ASSIGN(NodeBindingsMac);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_COMMON_NODE_BINDINGS_MAC_H_

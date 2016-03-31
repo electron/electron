@@ -11,7 +11,7 @@
 
 #import "electron/browser/ui/cocoa/atom_menu_controller.h"
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -33,6 +33,6 @@ class MenuMac : public Menu {
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_BROWSER_API_ATOM_API_MENU_MAC_H_

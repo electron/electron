@@ -30,9 +30,9 @@
 namespace mate {
 
 template<>
-struct Converter<atom::TaskbarHost::ThumbarButton> {
+struct Converter<electron::TaskbarHost::ThumbarButton> {
   static bool FromV8(v8::Isolate* isolate, v8::Handle<v8::Value> val,
-                     atom::TaskbarHost::ThumbarButton* out) {
+                     electron::TaskbarHost::ThumbarButton* out) {
     mate::Dictionary dict;
     if (!ConvertFromV8(isolate, val, &dict))
       return false;
@@ -46,7 +46,7 @@ struct Converter<atom::TaskbarHost::ThumbarButton> {
 }  // namespace mate
 #endif
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -819,12 +819,12 @@ void SetDeprecatedOptionsCheck(const DeprecatedOptionsCheckCallback& callback) {
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 
 namespace {
 
-using atom::api::Window;
+using electron::api::Window;
 
 void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
@@ -840,7 +840,7 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   mate::Dictionary dict(isolate, exports);
   dict.Set("BrowserWindow", browser_window);
   dict.SetMethod("_setDeprecatedOptionsCheck",
-                 &atom::api::SetDeprecatedOptionsCheck);
+                 &electron::api::SetDeprecatedOptionsCheck);
 }
 
 }  // namespace

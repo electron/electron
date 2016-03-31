@@ -17,7 +17,7 @@
 
 using content::BrowserThread;
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -237,4 +237,4 @@ void URLRequestFetchJob::OnURLFetchComplete(const net::URLFetcher* source) {
     NotifyStartError(fetcher_->GetStatus());
 }
 
-}  // namespace atom
+}  // namespace electron

@@ -16,7 +16,7 @@
 
 #define IPC_MESSAGE_START ShellMsgStart
 
-IPC_STRUCT_TRAITS_BEGIN(atom::DraggableRegion)
+IPC_STRUCT_TRAITS_BEGIN(electron::DraggableRegion)
   IPC_STRUCT_TRAITS_MEMBER(draggable)
   IPC_STRUCT_TRAITS_MEMBER(bounds)
 IPC_STRUCT_TRAITS_END()
@@ -36,4 +36,4 @@ IPC_MESSAGE_ROUTED2(AtomViewMsg_Message,
 
 // Sent by the renderer when the draggable regions are updated.
 IPC_MESSAGE_ROUTED1(AtomViewHostMsg_UpdateDraggableRegions,
-                    std::vector<atom::DraggableRegion> /* regions */)
+                    std::vector<electron::DraggableRegion> /* regions */)

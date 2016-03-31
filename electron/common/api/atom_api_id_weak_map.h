@@ -9,7 +9,7 @@
 #include "native_mate/object_template_builder.h"
 #include "native_mate/handle.h"
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -32,13 +32,13 @@ class IDWeakMap : public mate::Wrappable {
   void Remove(int32_t id);
   void Clear();
 
-  atom::IDWeakMap id_weak_map_;
+  electron::IDWeakMap id_weak_map_;
 
   DISALLOW_COPY_AND_ASSIGN(IDWeakMap);
 };
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_COMMON_API_ATOM_API_ID_WEAK_MAP_H_

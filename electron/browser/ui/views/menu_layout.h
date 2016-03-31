@@ -7,7 +7,7 @@
 
 #include "ui/views/layout/fill_layout.h"
 
-namespace atom {
+namespace electron {
 
 class NativeWindowViews;
 
@@ -31,6 +31,6 @@ class MenuLayout : public views::FillLayout {
   DISALLOW_COPY_AND_ASSIGN(MenuLayout);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_BROWSER_UI_VIEWS_MENU_LAYOUT_H_

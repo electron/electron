@@ -9,7 +9,7 @@
 #include "electron/common/atom_constants.h"
 #include "net/base/net_errors.h"
 
-namespace atom {
+namespace electron {
 
 URLRequestStringJob::URLRequestStringJob(
     net::URLRequest* request, net::NetworkDelegate* network_delegate)
@@ -56,4 +56,4 @@ int URLRequestStringJob::GetData(
   return net::OK;
 }
 
-}  // namespace atom
+}  // namespace electron

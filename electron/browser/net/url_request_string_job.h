@@ -10,7 +10,7 @@
 #include "electron/browser/net/js_asker.h"
 #include "net/url_request/url_request_simple_job.h"
 
-namespace atom {
+namespace electron {
 
 class URLRequestStringJob : public JsAsker<net::URLRequestSimpleJob> {
  public:
@@ -36,6 +36,6 @@ class URLRequestStringJob : public JsAsker<net::URLRequestSimpleJob> {
   DISALLOW_COPY_AND_ASSIGN(URLRequestStringJob);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_BROWSER_NET_URL_REQUEST_STRING_JOB_H_

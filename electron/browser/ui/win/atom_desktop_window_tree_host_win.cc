@@ -6,7 +6,7 @@
 
 #include "electron/browser/ui/win/message_handler_delegate.h"
 
-namespace atom {
+namespace electron {
 
 AtomDesktopWindowTreeHostWin::AtomDesktopWindowTreeHostWin(
     MessageHandlerDelegate* delegate,
@@ -25,4 +25,4 @@ bool AtomDesktopWindowTreeHostWin::PreHandleMSG(
   return delegate_->PreHandleMSG(message, w_param, l_param, result);
 }
 
-}  // namespace atom
+}  // namespace electron

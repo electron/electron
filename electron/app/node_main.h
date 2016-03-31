@@ -5,10 +5,10 @@
 #ifndef ELECTRON_APP_NODE_MAIN_H_
 #define ELECTRON_APP_NODE_MAIN_H_
 
-namespace atom {
+namespace electron {
 
 int NodeMain(int argc, char *argv[]);
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_APP_NODE_MAIN_H_

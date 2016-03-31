@@ -7,7 +7,7 @@
 
 #include "net/ssl/ssl_config_service.h"
 
-namespace atom {
+namespace electron {
 
 class AtomSSLConfigService : public net::SSLConfigService {
  public:
@@ -23,6 +23,6 @@ class AtomSSLConfigService : public net::SSLConfigService {
   DISALLOW_COPY_AND_ASSIGN(AtomSSLConfigService);
 };
 
-}   // namespace atom
+}   // namespace electron
 
 #endif  // ELECTRON_BROWSER_NET_ATOM_SSL_CONFIG_SERVICE_H_

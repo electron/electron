@@ -31,7 +31,7 @@ class Arguments;
 class Dictionary;
 }
 
-namespace atom {
+namespace electron {
 
 struct SetSizeParams;
 class AtomBrowserContext;
@@ -306,6 +306,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_BROWSER_API_ATOM_API_WEB_CONTENTS_H_

@@ -33,7 +33,7 @@ struct Converter<content::PowerSaveBlocker::PowerSaveBlockerType> {
 
 }  // namespace mate
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -112,7 +112,7 @@ mate::Handle<PowerSaveBlocker> PowerSaveBlocker::Create(v8::Isolate* isolate) {
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 namespace {
 
@@ -120,7 +120,7 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
-  dict.Set("powerSaveBlocker", atom::api::PowerSaveBlocker::Create(isolate));
+  dict.Set("powerSaveBlocker", electron::api::PowerSaveBlocker::Create(isolate));
 }
 
 }  // namespace

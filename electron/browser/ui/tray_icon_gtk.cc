@@ -10,7 +10,7 @@
 #include "chrome/browser/ui/libgtk2ui/gtk2_status_icon.h"
 #include "ui/gfx/image/image.h"
 
-namespace atom {
+namespace electron {
 
 TrayIconGtk::TrayIconGtk() {
 }
@@ -54,4 +54,4 @@ TrayIcon* TrayIcon::Create() {
   return new TrayIconGtk;
 }
 
-}  // namespace atom
+}  // namespace electron

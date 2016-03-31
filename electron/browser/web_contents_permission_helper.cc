@@ -11,9 +11,9 @@
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/render_process_host.h"
 
-DEFINE_WEB_CONTENTS_USER_DATA_KEY(atom::WebContentsPermissionHelper);
+DEFINE_WEB_CONTENTS_USER_DATA_KEY(electron::WebContentsPermissionHelper);
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -91,4 +91,4 @@ void WebContentsPermissionHelper::RequestPointerLockPermission(
                     user_gesture);
 }
 
-}  // namespace atom
+}  // namespace electron

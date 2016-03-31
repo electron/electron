@@ -20,7 +20,7 @@ namespace content {
 class WebContents;
 }
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -55,6 +55,6 @@ class SavePageHandler : public content::DownloadManager::Observer,
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_BROWSER_API_SAVE_PAGE_HANDLER_H_

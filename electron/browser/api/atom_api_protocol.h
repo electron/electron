@@ -23,7 +23,7 @@ class URLRequest;
 class URLRequestContextGetter;
 }
 
-namespace atom {
+namespace electron {
 
 class AtomBrowserContext;
 class AtomURLRequestJobFactory;
@@ -190,6 +190,6 @@ class Protocol : public mate::Wrappable {
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_BROWSER_API_ATOM_API_PROTOCOL_H_

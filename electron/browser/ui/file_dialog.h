@@ -12,7 +12,7 @@
 #include "base/callback_forward.h"
 #include "base/files/file_path.h"
 
-namespace atom {
+namespace electron {
 class NativeWindow;
 }
 
@@ -35,27 +35,27 @@ typedef base::Callback<void(
 typedef base::Callback<void(
     bool result, const base::FilePath& path)> SaveDialogCallback;
 
-bool ShowOpenDialog(atom::NativeWindow* parent_window,
+bool ShowOpenDialog(electron::NativeWindow* parent_window,
                     const std::string& title,
                     const base::FilePath& default_path,
                     const Filters& filters,
                     int properties,
                     std::vector<base::FilePath>* paths);
 
-void ShowOpenDialog(atom::NativeWindow* parent_window,
+void ShowOpenDialog(electron::NativeWindow* parent_window,
                     const std::string& title,
                     const base::FilePath& default_path,
                     const Filters& filters,
                     int properties,
                     const OpenDialogCallback& callback);
 
-bool ShowSaveDialog(atom::NativeWindow* parent_window,
+bool ShowSaveDialog(electron::NativeWindow* parent_window,
                     const std::string& title,
                     const base::FilePath& default_path,
                     const Filters& filters,
                     base::FilePath* path);
 
-void ShowSaveDialog(atom::NativeWindow* parent_window,
+void ShowSaveDialog(electron::NativeWindow* parent_window,
                     const std::string& title,
                     const base::FilePath& default_path,
                     const Filters& filters,

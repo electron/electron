@@ -17,7 +17,7 @@
 
 #include "electron/common/node_includes.h"
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -105,4 +105,4 @@ void AtomBindings::OnCallNextTick(uv_async_t* handle) {
   self->pending_next_ticks_.clear();
 }
 
-}  // namespace atom
+}  // namespace electron

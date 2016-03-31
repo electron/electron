@@ -27,7 +27,7 @@
 #include "chrome/common/widevine_cdm_constants.h"
 #endif
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -213,4 +213,4 @@ void AtomContentClient::AddServiceWorkerSchemes(
   service_worker_schemes->insert(url::kFileScheme);
 }
 
-}  // namespace atom
+}  // namespace electron

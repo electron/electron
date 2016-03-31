@@ -8,7 +8,7 @@
 #include "brightray/common/main_delegate.h"
 #include "brightray/common/content_client.h"
 
-namespace atom {
+namespace electron {
 
 class AtomMainDelegate : public brightray::MainDelegate {
  public:
@@ -39,6 +39,6 @@ class AtomMainDelegate : public brightray::MainDelegate {
   DISALLOW_COPY_AND_ASSIGN(AtomMainDelegate);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_APP_ATOM_MAIN_DELEGATE_H_

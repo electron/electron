@@ -16,7 +16,7 @@
 
 #include "electron/common/node_includes.h"
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -131,14 +131,14 @@ v8::Local<v8::Value> Screen::Create(v8::Isolate* isolate) {
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 namespace {
 
 void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
   mate::Dictionary dict(context->GetIsolate(), exports);
-  dict.Set("screen", atom::api::Screen::Create(context->GetIsolate()));
+  dict.Set("screen", electron::api::Screen::Create(context->GetIsolate()));
 }
 
 }  // namespace

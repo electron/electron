@@ -48,18 +48,18 @@ void ShowMessageBox(int type,
                     const std::string& message,
                     const std::string& detail,
                     const gfx::ImageSkia& icon,
-                    atom::NativeWindow* window,
+                    electron::NativeWindow* window,
                     mate::Arguments* args) {
   v8::Local<v8::Value> peek = args->PeekNext();
-  atom::MessageBoxCallback callback;
-  if (mate::Converter<atom::MessageBoxCallback>::FromV8(args->isolate(),
+  electron::MessageBoxCallback callback;
+  if (mate::Converter<electron::MessageBoxCallback>::FromV8(args->isolate(),
                                                         peek,
                                                         &callback)) {
-    atom::ShowMessageBox(window, (atom::MessageBoxType)type, buttons,
+    electron::ShowMessageBox(window, (electron::MessageBoxType)type, buttons,
                          default_id, cancel_id, options, title,
                          message, detail, icon, callback);
   } else {
-    int chosen = atom::ShowMessageBox(window, (atom::MessageBoxType)type,
+    int chosen = electron::ShowMessageBox(window, (electron::MessageBoxType)type,
                                       buttons, default_id, cancel_id,
                                       options, title, message, detail, icon);
     args->Return(chosen);
@@ -70,7 +70,7 @@ void ShowOpenDialog(const std::string& title,
                     const base::FilePath& default_path,
                     const file_dialog::Filters& filters,
                     int properties,
-                    atom::NativeWindow* window,
+                    electron::NativeWindow* window,
                     mate::Arguments* args) {
   v8::Local<v8::Value> peek = args->PeekNext();
   file_dialog::OpenDialogCallback callback;
@@ -90,7 +90,7 @@ void ShowOpenDialog(const std::string& title,
 void ShowSaveDialog(const std::string& title,
                     const base::FilePath& default_path,
                     const file_dialog::Filters& filters,
-                    atom::NativeWindow* window,
+                    electron::NativeWindow* window,
                     mate::Arguments* args) {
   v8::Local<v8::Value> peek = args->PeekNext();
   file_dialog::SaveDialogCallback callback;
@@ -110,7 +110,7 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
   mate::Dictionary dict(context->GetIsolate(), exports);
   dict.SetMethod("showMessageBox", &ShowMessageBox);
-  dict.SetMethod("showErrorBox", &atom::ShowErrorBox);
+  dict.SetMethod("showErrorBox", &electron::ShowErrorBox);
   dict.SetMethod("showOpenDialog", &ShowOpenDialog);
   dict.SetMethod("showSaveDialog", &ShowSaveDialog);
 }

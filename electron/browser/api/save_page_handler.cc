@@ -11,7 +11,7 @@
 #include "base/files/file_path.h"
 #include "content/public/browser/web_contents.h"
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -80,4 +80,4 @@ bool SavePageHandler::IsSavePageTypes(const std::string& type) {
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron

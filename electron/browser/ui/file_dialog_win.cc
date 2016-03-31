@@ -102,9 +102,9 @@ class FileDialog {
     SetDefaultFolder(default_path);
   }
 
-  bool Show(atom::NativeWindow* parent_window) {
-    atom::NativeWindow::DialogScope dialog_scope(parent_window);
-    HWND window = parent_window ? static_cast<atom::NativeWindowViews*>(
+  bool Show(electron::NativeWindow* parent_window) {
+    electron::NativeWindow::DialogScope dialog_scope(parent_window);
+    HWND window = parent_window ? static_cast<electron::NativeWindowViews*>(
         parent_window)->GetAcceleratedWidget() :
         NULL;
     return dialog_->DoModal(window) == IDOK;
@@ -152,7 +152,7 @@ bool CreateDialogThread(RunState* run_state) {
 }
 
 void RunOpenDialogInNewThread(const RunState& run_state,
-                              atom::NativeWindow* parent,
+                              electron::NativeWindow* parent,
                               const std::string& title,
                               const base::FilePath& default_path,
                               const Filters& filters,
@@ -167,7 +167,7 @@ void RunOpenDialogInNewThread(const RunState& run_state,
 }
 
 void RunSaveDialogInNewThread(const RunState& run_state,
-                              atom::NativeWindow* parent,
+                              electron::NativeWindow* parent,
                               const std::string& title,
                               const base::FilePath& default_path,
                               const Filters& filters,
@@ -181,7 +181,7 @@ void RunSaveDialogInNewThread(const RunState& run_state,
 
 }  // namespace
 
-bool ShowOpenDialog(atom::NativeWindow* parent_window,
+bool ShowOpenDialog(electron::NativeWindow* parent_window,
                     const std::string& title,
                     const base::FilePath& default_path,
                     const Filters& filters,
@@ -228,7 +228,7 @@ bool ShowOpenDialog(atom::NativeWindow* parent_window,
   return true;
 }
 
-void ShowOpenDialog(atom::NativeWindow* parent,
+void ShowOpenDialog(electron::NativeWindow* parent,
                     const std::string& title,
                     const base::FilePath& default_path,
                     const Filters& filters,
@@ -246,7 +246,7 @@ void ShowOpenDialog(atom::NativeWindow* parent,
                  default_path, filters, properties, callback));
 }
 
-bool ShowSaveDialog(atom::NativeWindow* parent_window,
+bool ShowSaveDialog(electron::NativeWindow* parent_window,
                     const std::string& title,
                     const base::FilePath& default_path,
                     const Filters& filters,
@@ -266,7 +266,7 @@ bool ShowSaveDialog(atom::NativeWindow* parent_window,
   return true;
 }
 
-void ShowSaveDialog(atom::NativeWindow* parent,
+void ShowSaveDialog(electron::NativeWindow* parent,
                     const std::string& title,
                     const base::FilePath& default_path,
                     const Filters& filters,

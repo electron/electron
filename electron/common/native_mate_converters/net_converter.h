@@ -40,11 +40,11 @@ struct Converter<scoped_refptr<net::X509Certificate>> {
 
 }  // namespace mate
 
-namespace atom {
+namespace electron {
 
 void GetUploadData(base::ListValue* upload_data_list,
                    const net::URLRequest* request);
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_COMMON_NATIVE_MATE_CONVERTERS_NET_CONVERTER_H_

@@ -11,7 +11,7 @@
 #include "gin/array_buffer.h"
 #include "gin/v8_initializer.h"
 
-namespace atom {
+namespace electron {
 
 JavascriptEnvironment::JavascriptEnvironment()
     : initialized_(Initialize()),
@@ -42,4 +42,4 @@ bool JavascriptEnvironment::Initialize() {
   return true;
 }
 
-}  // namespace atom
+}  // namespace electron

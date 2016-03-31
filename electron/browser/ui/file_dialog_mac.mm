@@ -85,7 +85,7 @@ void SetupDialogForProperties(NSOpenPanel* dialog, int properties) {
 }
 
 // Run modal dialog with parent window and return user's choice.
-int RunModalDialog(NSSavePanel* dialog, atom::NativeWindow* parent_window) {
+int RunModalDialog(NSSavePanel* dialog, electron::NativeWindow* parent_window) {
   __block int chosen = NSFileHandlingPanelCancelButton;
   if (!parent_window || !parent_window->GetNativeWindow()) {
     chosen = [dialog runModal];
@@ -112,7 +112,7 @@ void ReadDialogPaths(NSOpenPanel* dialog, std::vector<base::FilePath>* paths) {
 
 }  // namespace
 
-bool ShowOpenDialog(atom::NativeWindow* parent_window,
+bool ShowOpenDialog(electron::NativeWindow* parent_window,
                     const std::string& title,
                     const base::FilePath& default_path,
                     const Filters& filters,
@@ -132,7 +132,7 @@ bool ShowOpenDialog(atom::NativeWindow* parent_window,
   return true;
 }
 
-void ShowOpenDialog(atom::NativeWindow* parent_window,
+void ShowOpenDialog(electron::NativeWindow* parent_window,
                     const std::string& title,
                     const base::FilePath& default_path,
                     const Filters& filters,
@@ -160,7 +160,7 @@ void ShowOpenDialog(atom::NativeWindow* parent_window,
   }];
 }
 
-bool ShowSaveDialog(atom::NativeWindow* parent_window,
+bool ShowSaveDialog(electron::NativeWindow* parent_window,
                     const std::string& title,
                     const base::FilePath& default_path,
                     const Filters& filters,
@@ -178,7 +178,7 @@ bool ShowSaveDialog(atom::NativeWindow* parent_window,
   return true;
 }
 
-void ShowSaveDialog(atom::NativeWindow* parent_window,
+void ShowSaveDialog(electron::NativeWindow* parent_window,
                     const std::string& title,
                     const base::FilePath& default_path,
                     const Filters& filters,

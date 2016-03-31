@@ -12,7 +12,7 @@
 #include "brightray/common/mac/main_application_bundle.h"
 #include "content/public/common/content_paths.h"
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -48,4 +48,4 @@ void AtomMainDelegate::OverrideChildProcessPath() {
   PathService::Override(content::CHILD_PROCESS_EXE, helper_path);
 }
 
-}  // namespace atom
+}  // namespace electron

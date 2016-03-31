@@ -9,7 +9,7 @@
 
 #include "content/public/browser/browser_plugin_guest_manager.h"
 
-namespace atom {
+namespace electron {
 
 class WebViewManager : public content::BrowserPluginGuestManager {
  public:
@@ -62,6 +62,6 @@ class WebViewManager : public content::BrowserPluginGuestManager {
   DISALLOW_COPY_AND_ASSIGN(WebViewManager);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_BROWSER_WEB_VIEW_MANAGER_H_

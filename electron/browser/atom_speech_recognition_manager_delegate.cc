@@ -8,7 +8,7 @@
 
 #include "base/callback.h"
 
-namespace atom {
+namespace electron {
 
 AtomSpeechRecognitionManagerDelegate::AtomSpeechRecognitionManagerDelegate() {
 }
@@ -71,4 +71,4 @@ bool AtomSpeechRecognitionManagerDelegate::FilterProfanities(
   return false;
 }
 
-}  // namespace atom
+}  // namespace electron

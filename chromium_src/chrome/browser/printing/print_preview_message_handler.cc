@@ -108,7 +108,7 @@ bool PrintPreviewMessageHandler::OnMessageReceived(
 
 void PrintPreviewMessageHandler::PrintToPDF(
     const base::DictionaryValue& options,
-    const atom::api::WebContents::PrintToPDFCallback& callback) {
+    const electron::api::WebContents::PrintToPDFCallback& callback) {
   int request_id;
   options.GetInteger(printing::kPreviewRequestID, &request_id);
   print_to_pdf_callback_map_[request_id] = callback;

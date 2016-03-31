@@ -10,7 +10,7 @@
 #include "electron/browser/native_window_views.h"
 #include "ui/gfx/x/x11_atom_cache.h"
 
-namespace atom {
+namespace electron {
 
 class WindowStateWatcher : public ui::PlatformEventObserver {
  public:
@@ -36,6 +36,6 @@ class WindowStateWatcher : public ui::PlatformEventObserver {
   DISALLOW_COPY_AND_ASSIGN(WindowStateWatcher);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_BROWSER_UI_X_WINDOW_STATE_WATCHER_H_

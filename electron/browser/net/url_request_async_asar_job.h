@@ -8,7 +8,7 @@
 #include "electron/browser/net/asar/url_request_asar_job.h"
 #include "electron/browser/net/js_asker.h"
 
-namespace atom {
+namespace electron {
 
 // Like URLRequestAsarJob, but asks the JavaScript handler for file path.
 class URLRequestAsyncAsarJob : public JsAsker<asar::URLRequestAsarJob> {
@@ -25,6 +25,6 @@ class URLRequestAsyncAsarJob : public JsAsker<asar::URLRequestAsarJob> {
   DISALLOW_COPY_AND_ASSIGN(URLRequestAsyncAsarJob);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_BROWSER_NET_URL_REQUEST_ASYNC_ASAR_JOB_H_

@@ -42,7 +42,7 @@
 #include "ui/base/win/shell.h"
 #endif
 
-using atom::Browser;
+using electron::Browser;
 
 namespace mate {
 
@@ -70,7 +70,7 @@ struct Converter<Browser::UserTask> {
 }  // namespace mate
 
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -401,7 +401,7 @@ mate::Handle<App> App::Create(v8::Isolate* isolate) {
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 
 namespace {
@@ -409,8 +409,8 @@ namespace {
 void AppendSwitch(const std::string& switch_string, mate::Arguments* args) {
   auto command_line = base::CommandLine::ForCurrentProcess();
 
-  if (switch_string == atom::switches::kPpapiFlashPath ||
-      switch_string == atom::switches::kClientCertificate ||
+  if (switch_string == electron::switches::kPpapiFlashPath ||
+      switch_string == electron::switches::kClientCertificate ||
       switch_string == switches::kLogNetLog) {
     base::FilePath path;
     args->GetNext(&path);
@@ -435,7 +435,7 @@ int DockBounce(const std::string& type) {
   return request_id;
 }
 
-void DockSetMenu(atom::api::Menu* menu) {
+void DockSetMenu(electron::api::Menu* menu) {
   Browser::Get()->DockSetMenu(menu->model());
 }
 #endif
@@ -446,7 +446,7 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   auto command_line = base::CommandLine::ForCurrentProcess();
 
   mate::Dictionary dict(isolate, exports);
-  dict.Set("app", atom::api::App::Create(isolate));
+  dict.Set("app", electron::api::App::Create(isolate));
   dict.SetMethod("appendSwitch", &AppendSwitch);
   dict.SetMethod("appendArgument",
                  base::Bind(&base::CommandLine::AppendArg,

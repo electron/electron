@@ -6,7 +6,7 @@
 
 #include "base/message_loop/message_loop.h"
 
-namespace atom {
+namespace electron {
 
 void BridgeTaskRunner::MessageLoopIsReady() {
   auto message_loop = base::MessageLoop::current();
@@ -56,4 +56,4 @@ bool BridgeTaskRunner::PostNonNestableDelayedTask(
       from_here, task, delay);
 }
 
-}  // namespace atom
+}  // namespace electron

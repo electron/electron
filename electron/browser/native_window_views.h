@@ -23,7 +23,7 @@ namespace views {
 class UnhandledKeyboardEventHandler;
 }
 
-namespace atom {
+namespace electron {
 
 class GlobalMenuBarX11;
 class MenuBar;
@@ -219,6 +219,6 @@ class NativeWindowViews : public NativeWindow,
   DISALLOW_COPY_AND_ASSIGN(NativeWindowViews);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_BROWSER_NATIVE_WINDOW_VIEWS_H_

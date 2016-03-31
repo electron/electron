@@ -20,7 +20,7 @@
 #define ANSI_BACKGROUND_GRAY  "\x1b[47m"
 #define ANSI_RESET            "\x1b[0m"
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -137,7 +137,7 @@ class GtkMessageBox {
   CHROMEGTK_CALLBACK_1(GtkMessageBox, void, OnResponseDialog, int);
 
  private:
-  atom::NativeWindow::DialogScope dialog_scope_;
+  electron::NativeWindow::DialogScope dialog_scope_;
 
   // The id to return when the dialog is closed without pressing buttons.
   int cancel_id_;
@@ -206,4 +206,4 @@ void ShowErrorBox(const base::string16& title, const base::string16& content) {
   }
 }
 
-}  // namespace atom
+}  // namespace electron

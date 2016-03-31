@@ -14,7 +14,7 @@
 #include "ui/gfx/geometry/size.h"
 #include "v8/include/v8.h"
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -46,6 +46,6 @@ class FrameSubscriber : public content::RenderWidgetHostViewFrameSubscriber {
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_BROWSER_API_FRAME_SUBSCRIBER_H_

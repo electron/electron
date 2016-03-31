@@ -20,7 +20,7 @@ namespace extensions {
 class URLPattern;
 }
 
-namespace atom {
+namespace electron {
 
 using URLPatterns = std::set<extensions::URLPattern>;
 
@@ -116,6 +116,6 @@ class AtomNetworkDelegate : public brightray::NetworkDelegate {
   DISALLOW_COPY_AND_ASSIGN(AtomNetworkDelegate);
 };
 
-}   // namespace atom
+}   // namespace electron
 
 #endif  // ELECTRON_BROWSER_NET_ATOM_NETWORK_DELEGATE_H_

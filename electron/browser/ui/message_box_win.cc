@@ -20,7 +20,7 @@
 #include "content/public/browser/browser_thread.h"
 #include "ui/gfx/icon_util.h"
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -193,7 +193,7 @@ int ShowMessageBox(NativeWindow* parent,
     utf16_buttons.push_back(base::UTF8ToUTF16(button));
 
   HWND hwnd_parent = parent ?
-      static_cast<atom::NativeWindowViews*>(parent)->GetAcceleratedWidget() :
+      static_cast<electron::NativeWindowViews*>(parent)->GetAcceleratedWidget() :
       NULL;
 
   NativeWindow::DialogScope dialog_scope(parent);
@@ -241,4 +241,4 @@ void ShowErrorBox(const base::string16& title, const base::string16& content) {
                       title, content, gfx::ImageSkia());
 }
 
-}  // namespace atom
+}  // namespace electron

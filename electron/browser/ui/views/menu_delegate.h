@@ -16,7 +16,7 @@ namespace ui {
 class MenuModel;
 }
 
-namespace atom {
+namespace electron {
 
 class MenuBar;
 
@@ -58,6 +58,6 @@ class MenuDelegate : public views::MenuDelegate {
   DISALLOW_COPY_AND_ASSIGN(MenuDelegate);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_BROWSER_UI_VIEWS_MENU_DELEGATE_H_

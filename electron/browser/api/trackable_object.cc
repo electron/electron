@@ -77,7 +77,7 @@ int32_t TrackableObjectBase::GetIDFromWrappedClass(base::SupportsUserData* w) {
 // static
 base::Closure TrackableObjectBase::RegisterDestructionCallback(
     const base::Closure& c) {
-  return atom::AtomBrowserMainParts::Get()->RegisterDestructionCallback(c);
+  return electron::AtomBrowserMainParts::Get()->RegisterDestructionCallback(c);
 }
 
 }  // namespace mate

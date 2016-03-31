@@ -7,7 +7,7 @@
 
 #include "content/public/browser/access_token_store.h"
 
-namespace atom {
+namespace electron {
 
 class AtomBrowserContext;
 
@@ -26,6 +26,6 @@ class AtomAccessTokenStore : public content::AccessTokenStore {
   DISALLOW_COPY_AND_ASSIGN(AtomAccessTokenStore);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_BROWSER_ATOM_ACCESS_TOKEN_STORE_H_

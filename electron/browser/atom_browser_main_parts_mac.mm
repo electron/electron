@@ -10,7 +10,7 @@
 #include "base/mac/foundation_util.h"
 #include "ui/base/l10n/l10n_util_mac.h"
 
-namespace atom {
+namespace electron {
 
 void AtomBrowserMainParts::PreMainMessageLoopStart() {
   // Force the NSApplication subclass to be used.
@@ -33,4 +33,4 @@ void AtomBrowserMainParts::FreeAppDelegate() {
   [NSApp setDelegate:nil];
 }
 
-}  // namespace atom
+}  // namespace electron

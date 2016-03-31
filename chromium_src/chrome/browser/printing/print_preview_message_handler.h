@@ -33,10 +33,10 @@ class PrintPreviewMessageHandler
   bool OnMessageReceived(const IPC::Message& message) override;
 
   void PrintToPDF(const base::DictionaryValue& options,
-                  const atom::api::WebContents::PrintToPDFCallback& callback);
+                  const electron::api::WebContents::PrintToPDFCallback& callback);
 
  private:
-  typedef std::map<int, atom::api::WebContents::PrintToPDFCallback>
+  typedef std::map<int, electron::api::WebContents::PrintToPDFCallback>
       PrintToPDFCallbackMap;
 
   explicit PrintPreviewMessageHandler(content::WebContents* web_contents);

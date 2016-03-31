@@ -6,7 +6,7 @@
 
 #include "electron/browser/native_window.h"
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -31,4 +31,4 @@ const char* NativeFrameView::GetClassName() const {
   return kViewClassName;
 }
 
-}  // namespace atom
+}  // namespace electron

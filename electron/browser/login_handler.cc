@@ -15,7 +15,7 @@
 
 using content::BrowserThread;
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -106,4 +106,4 @@ void LoginHandler::DoLogin(const base::string16& username,
   }
 }
 
-}  // namespace atom
+}  // namespace electron

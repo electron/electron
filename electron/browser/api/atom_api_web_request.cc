@@ -32,7 +32,7 @@ struct Converter<extensions::URLPattern> {
 
 }  // namespace mate
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -116,4 +116,4 @@ void WebRequest::BuildPrototype(v8::Isolate* isolate,
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron

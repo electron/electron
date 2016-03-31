@@ -5,7 +5,7 @@
 #include "electron/browser/ui/win/notify_icon.h"
 #include "electron/browser/ui/win/notify_icon_host.h"
 
-namespace atom {
+namespace electron {
 
 // static
 TrayIcon* TrayIcon::Create() {
@@ -13,4 +13,4 @@ TrayIcon* TrayIcon::Create() {
   return host.CreateNotifyIcon();
 }
 
-}  // namespace atom
+}  // namespace electron

@@ -39,7 +39,7 @@
 #include <shlobj.h>
 #endif
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -211,4 +211,4 @@ void AtomRendererClient::AddKeySystems(
   AddChromeKeySystems(key_systems);
 }
 
-}  // namespace atom
+}  // namespace electron

@@ -18,7 +18,7 @@
 #include "ui/events/event_constants.h"
 #include "ui/gfx/image/image.h"
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -167,14 +167,14 @@ void Tray::BuildPrototype(v8::Isolate* isolate,
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 
 namespace {
 
 void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
-  using atom::api::Tray;
+  using electron::api::Tray;
   v8::Isolate* isolate = context->GetIsolate();
   v8::Local<v8::Function> constructor = mate::CreateConstructor<Tray>(
       isolate, "Tray", base::Bind(&Tray::New));

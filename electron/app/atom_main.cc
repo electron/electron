@@ -145,14 +145,14 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
     // Now that argv conversion is done, we can finally start.
     base::AtExitManager atexit_manager;
     base::i18n::InitializeICU();
-    return atom::NodeMain(argc, argv);
+    return electron::NodeMain(argc, argv);
   } else if (IsEnvSet("ATOM_SHELL_INTERNAL_CRASH_SERVICE")) {
     return crash_service::Main(cmd);
   }
 
   sandbox::SandboxInterfaceInfo sandbox_info = {0};
   content::InitializeSandboxInfo(&sandbox_info);
-  atom::AtomMainDelegate delegate;
+  electron::AtomMainDelegate delegate;
 
   // We don't want to set DPI awareness on pre-Win7 because we don't support
   // DirectWrite there. GDI fonts are kerned very badly, so better to leave
@@ -163,7 +163,7 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
   content::ContentMainParams params(&delegate);
   params.instance = instance;
   params.sandbox_info = &sandbox_info;
-  atom::AtomCommandLine::Init(argc, argv);
+  electron::AtomCommandLine::Init(argc, argv);
   return content::ContentMain(params);
 }
 
@@ -173,14 +173,14 @@ int main(int argc, const char* argv[]) {
   if (IsRunAsNode()) {
     base::i18n::InitializeICU();
     base::AtExitManager atexit_manager;
-    return atom::NodeMain(argc, const_cast<char**>(argv));
+    return electron::NodeMain(argc, const_cast<char**>(argv));
   }
 
-  atom::AtomMainDelegate delegate;
+  electron::AtomMainDelegate delegate;
   content::ContentMainParams params(&delegate);
   params.argc = argc;
   params.argv = argv;
-  atom::AtomCommandLine::Init(argc, argv);
+  electron::AtomCommandLine::Init(argc, argv);
   return content::ContentMain(params);
 }
 

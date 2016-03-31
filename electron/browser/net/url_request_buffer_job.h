@@ -12,7 +12,7 @@
 #include "net/http/http_status_code.h"
 #include "net/url_request/url_request_simple_job.h"
 
-namespace atom {
+namespace electron {
 
 class URLRequestBufferJob : public JsAsker<net::URLRequestSimpleJob> {
  public:
@@ -39,6 +39,6 @@ class URLRequestBufferJob : public JsAsker<net::URLRequestSimpleJob> {
   DISALLOW_COPY_AND_ASSIGN(URLRequestBufferJob);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_BROWSER_NET_URL_REQUEST_BUFFER_JOB_H_

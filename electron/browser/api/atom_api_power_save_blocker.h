@@ -16,7 +16,7 @@ namespace mate {
 class Dictionary;
 }
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -53,6 +53,6 @@ class PowerSaveBlocker : public mate::TrackableObject<PowerSaveBlocker> {
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_BROWSER_API_ATOM_API_POWER_SAVE_BLOCKER_H_

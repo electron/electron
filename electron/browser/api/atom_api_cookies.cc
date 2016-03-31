@@ -24,10 +24,10 @@ using content::BrowserThread;
 namespace mate {
 
 template<>
-struct Converter<atom::api::Cookies::Error> {
+struct Converter<electron::api::Cookies::Error> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   atom::api::Cookies::Error val) {
-    if (val == atom::api::Cookies::SUCCESS)
+                                   electron::api::Cookies::Error val) {
+    if (val == electron::api::Cookies::SUCCESS)
       return v8::Null(isolate);
     else
       return v8::Exception::Error(StringToV8(isolate, "failed"));
@@ -55,7 +55,7 @@ struct Converter<net::CanonicalCookie> {
 
 }  // namespace mate
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -237,4 +237,4 @@ void Cookies::BuildPrototype(v8::Isolate* isolate,
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron

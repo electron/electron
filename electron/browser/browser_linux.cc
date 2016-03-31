@@ -11,7 +11,7 @@
 #include "electron/common/atom_version.h"
 #include "brightray/common/application_info.h"
 
-namespace atom {
+namespace electron {
 
 void Browser::Focus() {
   // Focus on the first visible window.
@@ -50,4 +50,4 @@ std::string Browser::GetExecutableFileProductName() const {
   return brightray::GetApplicationName();
 }
 
-}  // namespace atom
+}  // namespace electron

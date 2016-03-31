@@ -11,7 +11,7 @@
 #include "electron/browser/window_list.h"
 #include "base/message_loop/message_loop.h"
 
-namespace atom {
+namespace electron {
 
 Browser::Browser()
     : is_quiting_(false),
@@ -37,7 +37,7 @@ void Browser::Quit() {
   if (!is_quiting_)
     return;
 
-  atom::WindowList* window_list = atom::WindowList::GetInstance();
+  electron::WindowList* window_list = electron::WindowList::GetInstance();
   if (window_list->size() == 0)
     NotifyAndShutdown();
 
@@ -53,7 +53,7 @@ void Browser::Exit(int code) {
     is_quiting_ = true;
 
     // Must destroy windows before quitting, otherwise bad things can happen.
-    atom::WindowList* window_list = atom::WindowList::GetInstance();
+    electron::WindowList* window_list = electron::WindowList::GetInstance();
     if (window_list->size() == 0) {
       Shutdown();
     } else {
@@ -185,4 +185,4 @@ void Browser::PlatformThemeChanged() {
   FOR_EACH_OBSERVER(BrowserObserver, observers_, OnPlatformThemeChanged());
 }
 
-}  // namespace atom
+}  // namespace electron

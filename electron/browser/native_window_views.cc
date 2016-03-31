@@ -48,7 +48,7 @@
 #include "ui/views/widget/desktop_aura/desktop_native_widget_aura.h"
 #endif
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -1027,4 +1027,4 @@ NativeWindow* NativeWindow::Create(
   return new NativeWindowViews(inspectable_web_contents, options);
 }
 
-}  // namespace atom
+}  // namespace electron

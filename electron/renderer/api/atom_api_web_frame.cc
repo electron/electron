@@ -22,7 +22,7 @@
 
 #include "electron/common/node_includes.h"
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -194,7 +194,7 @@ mate::Handle<WebFrame> WebFrame::Create(v8::Isolate* isolate) {
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 namespace {
 
@@ -202,7 +202,7 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
-  dict.Set("webFrame", atom::api::WebFrame::Create(isolate));
+  dict.Set("webFrame", electron::api::WebFrame::Create(isolate));
 }
 
 }  // namespace

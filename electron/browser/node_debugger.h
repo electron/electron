@@ -14,7 +14,7 @@
 #include "v8/include/v8-debug.h"
 #include "vendor/node/deps/uv/include/uv.h"
 
-namespace atom {
+namespace electron {
 
 // Add support for node's "--debug" switch.
 class NodeDebugger : public net::test_server::StreamListenSocket::Delegate {
@@ -60,6 +60,6 @@ class NodeDebugger : public net::test_server::StreamListenSocket::Delegate {
   DISALLOW_COPY_AND_ASSIGN(NodeDebugger);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_BROWSER_NODE_DEBUGGER_H_

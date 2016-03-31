@@ -30,7 +30,7 @@ struct Converter<base::Time> {
 
 }  // namespace mate
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -107,7 +107,7 @@ mate::Handle<AutoUpdater> AutoUpdater::Create(v8::Isolate* isolate) {
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 
 namespace {
@@ -116,7 +116,7 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
-  dict.Set("autoUpdater", atom::api::AutoUpdater::Create(isolate));
+  dict.Set("autoUpdater", electron::api::AutoUpdater::Create(isolate));
 }
 
 }  // namespace

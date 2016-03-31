@@ -35,7 +35,7 @@ void OnFileFilterDataDestroyed(std::string* file_extension) {
 class FileChooserDialog {
  public:
   FileChooserDialog(GtkFileChooserAction action,
-                    atom::NativeWindow* parent_window,
+                    electron::NativeWindow* parent_window,
                     const std::string& title,
                     const base::FilePath& default_path,
                     const Filters& filters)
@@ -139,7 +139,7 @@ class FileChooserDialog {
   void AddFilters(const Filters& filters);
   base::FilePath AddExtensionForFilename(const gchar* filename) const;
 
-  atom::NativeWindow::DialogScope dialog_scope_;
+  electron::NativeWindow::DialogScope dialog_scope_;
 
   GtkWidget* dialog_;
 
@@ -214,7 +214,7 @@ base::FilePath FileChooserDialog::AddExtensionForFilename(
 
 }  // namespace
 
-bool ShowOpenDialog(atom::NativeWindow* parent_window,
+bool ShowOpenDialog(electron::NativeWindow* parent_window,
                     const std::string& title,
                     const base::FilePath& default_path,
                     const Filters& filters,
@@ -239,7 +239,7 @@ bool ShowOpenDialog(atom::NativeWindow* parent_window,
   }
 }
 
-void ShowOpenDialog(atom::NativeWindow* parent_window,
+void ShowOpenDialog(electron::NativeWindow* parent_window,
                     const std::string& title,
                     const base::FilePath& default_path,
                     const Filters& filters,
@@ -257,7 +257,7 @@ void ShowOpenDialog(atom::NativeWindow* parent_window,
   open_dialog->RunOpenAsynchronous(callback);
 }
 
-bool ShowSaveDialog(atom::NativeWindow* parent_window,
+bool ShowSaveDialog(electron::NativeWindow* parent_window,
                     const std::string& title,
                     const base::FilePath& default_path,
                     const Filters& filters,
@@ -274,7 +274,7 @@ bool ShowSaveDialog(atom::NativeWindow* parent_window,
   }
 }
 
-void ShowSaveDialog(atom::NativeWindow* parent_window,
+void ShowSaveDialog(electron::NativeWindow* parent_window,
                     const std::string& title,
                     const base::FilePath& default_path,
                     const Filters& filters,

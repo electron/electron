@@ -13,7 +13,7 @@
 #include "native_mate/handle.h"
 #include "url/gurl.h"
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -57,6 +57,6 @@ class DownloadItem : public mate::TrackableObject<DownloadItem>,
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_BROWSER_API_ATOM_API_DOWNLOAD_ITEM_H_

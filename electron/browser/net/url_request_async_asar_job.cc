@@ -8,7 +8,7 @@
 
 #include "electron/common/atom_constants.h"
 
-namespace atom {
+namespace electron {
 
 URLRequestAsyncAsarJob::URLRequestAsyncAsarJob(
     net::URLRequest* request,
@@ -46,4 +46,4 @@ void URLRequestAsyncAsarJob::GetResponseInfo(net::HttpResponseInfo* info) {
   info->headers = headers;
 }
 
-}  // namespace atom
+}  // namespace electron

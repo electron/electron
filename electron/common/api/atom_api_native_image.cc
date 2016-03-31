@@ -32,7 +32,7 @@
 #include "ui/gfx/icon_util.h"
 #endif
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -332,7 +332,7 @@ mate::Handle<NativeImage> NativeImage::CreateFromDataURL(
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 
 namespace {
@@ -340,11 +340,11 @@ namespace {
 void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
   mate::Dictionary dict(context->GetIsolate(), exports);
-  dict.SetMethod("createEmpty", &atom::api::NativeImage::CreateEmpty);
-  dict.SetMethod("createFromPath", &atom::api::NativeImage::CreateFromPath);
-  dict.SetMethod("createFromBuffer", &atom::api::NativeImage::CreateFromBuffer);
+  dict.SetMethod("createEmpty", &electron::api::NativeImage::CreateEmpty);
+  dict.SetMethod("createFromPath", &electron::api::NativeImage::CreateFromPath);
+  dict.SetMethod("createFromBuffer", &electron::api::NativeImage::CreateFromBuffer);
   dict.SetMethod("createFromDataURL",
-                 &atom::api::NativeImage::CreateFromDataURL);
+                 &electron::api::NativeImage::CreateFromDataURL);
 }
 
 }  // namespace

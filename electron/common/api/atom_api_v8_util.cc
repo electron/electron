@@ -54,7 +54,7 @@ int32_t GetObjectHash(v8::Local<v8::Object> object) {
 void SetDestructor(v8::Isolate* isolate,
                    v8::Local<v8::Object> object,
                    v8::Local<v8::Function> callback) {
-  atom::ObjectLifeMonitor::BindTo(isolate, object, callback);
+  electron::ObjectLifeMonitor::BindTo(isolate, object, callback);
 }
 
 void TakeHeapSnapshot(v8::Isolate* isolate) {

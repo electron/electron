@@ -8,7 +8,7 @@
 #include "native_mate/constructor.h"
 #include "native_mate/dictionary.h"
 
-namespace atom {
+namespace electron {
 
 namespace api {
 
@@ -58,11 +58,11 @@ mate::Wrappable* IDWeakMap::Create(v8::Isolate* isolate) {
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 namespace {
 
-using atom::api::IDWeakMap;
+using electron::api::IDWeakMap;
 
 void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {

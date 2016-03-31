@@ -9,7 +9,7 @@
 
 #include "content/public/browser/javascript_dialog_manager.h"
 
-namespace atom {
+namespace electron {
 
 class AtomJavaScriptDialogManager : public content::JavaScriptDialogManager {
  public:
@@ -33,6 +33,6 @@ class AtomJavaScriptDialogManager : public content::JavaScriptDialogManager {
   void ResetDialogState(content::WebContents* web_contents) override {};
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_BROWSER_ATOM_JAVASCRIPT_DIALOG_MANAGER_H_

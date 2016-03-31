@@ -10,7 +10,7 @@
 #include "third_party/WebKit/public/web/WebArrayBuffer.h"
 #include "third_party/WebKit/public/web/WebArrayBufferConverter.h"
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -63,4 +63,4 @@ void OverrideNodeArrayBuffer() {
       BlinkArrayBufferNew, BlinkArrayBufferNewWith, BlinkUint8ArrayNew);
 }
 
-}  // namespace atom
+}  // namespace electron

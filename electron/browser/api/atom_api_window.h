@@ -27,7 +27,7 @@ class Arguments;
 class Dictionary;
 }
 
-namespace atom {
+namespace electron {
 
 class NativeWindow;
 
@@ -194,23 +194,23 @@ class Window : public mate::TrackableObject<Window>,
 
 }  // namespace api
 
-}  // namespace atom
+}  // namespace electron
 
 
 namespace mate {
 
 template<>
-struct Converter<atom::NativeWindow*> {
+struct Converter<electron::NativeWindow*> {
   static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
-                     atom::NativeWindow** out) {
+                     electron::NativeWindow** out) {
     // null would be tranfered to NULL.
     if (val->IsNull()) {
       *out = NULL;
       return true;
     }
 
-    atom::api::Window* window;
-    if (!Converter<atom::api::Window*>::FromV8(isolate, val, &window))
+    electron::api::Window* window;
+    if (!Converter<electron::api::Window*>::FromV8(isolate, val, &window))
       return false;
     *out = window->window();
     return true;

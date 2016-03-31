@@ -14,7 +14,7 @@
 #include "base/synchronization/lock.h"
 #include "net/url_request/url_request_job_factory.h"
 
-namespace atom {
+namespace electron {
 
 class AtomURLRequestJobFactory : public net::URLRequestJobFactory {
  public:
@@ -62,6 +62,6 @@ class AtomURLRequestJobFactory : public net::URLRequestJobFactory {
   DISALLOW_COPY_AND_ASSIGN(AtomURLRequestJobFactory);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_BROWSER_NET_ATOM_URL_REQUEST_JOB_FACTORY_H_

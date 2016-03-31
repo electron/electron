@@ -20,7 +20,7 @@ const CGFloat kVerticalTitleMargin = 2;
 }  //  namespace
 
 @interface StatusItemView : NSView {
-  atom::TrayIconCocoa* trayIcon_; // weak
+  electron::TrayIconCocoa* trayIcon_; // weak
   AtomMenuController* menuController_; // weak
   BOOL isHighlightEnable_;
   BOOL forceHighlight_;
@@ -36,7 +36,7 @@ const CGFloat kVerticalTitleMargin = 2;
 
 @implementation StatusItemView
 
-- (id)initWithImage:(NSImage*)image icon:(atom::TrayIconCocoa*)icon {
+- (id)initWithImage:(NSImage*)image icon:(electron::TrayIconCocoa*)icon {
   image_.reset([image copy]);
   trayIcon_ = icon;
   isHighlightEnable_ = YES;
@@ -326,7 +326,7 @@ const CGFloat kVerticalTitleMargin = 2;
 }
 @end
 
-namespace atom {
+namespace electron {
 
 TrayIconCocoa::TrayIconCocoa() : menu_model_(nullptr) {
 }
@@ -388,4 +388,4 @@ TrayIcon* TrayIcon::Create() {
   return new TrayIconCocoa;
 }
 
-}  // namespace atom
+}  // namespace electron

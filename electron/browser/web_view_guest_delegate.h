@@ -12,7 +12,7 @@ namespace content {
 struct NativeWebKeyboardEvent;
 }
 
-namespace atom {
+namespace electron {
 
 namespace api {
 class WebContents;
@@ -114,6 +114,6 @@ class WebViewGuestDelegate : public content::BrowserPluginGuestDelegate,
   DISALLOW_COPY_AND_ASSIGN(WebViewGuestDelegate);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_BROWSER_WEB_VIEW_GUEST_DELEGATE_H_

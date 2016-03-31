@@ -15,7 +15,7 @@
 #include "base/win/scoped_comptr.h"
 #include "ui/gfx/image/image.h"
 
-namespace atom {
+namespace electron {
 
 class TaskbarHost {
  public:
@@ -59,6 +59,6 @@ class TaskbarHost {
   DISALLOW_COPY_AND_ASSIGN(TaskbarHost);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_BROWSER_UI_WIN_TASKBAR_HOST_H_

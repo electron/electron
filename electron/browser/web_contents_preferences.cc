@@ -22,9 +22,9 @@
 #include "ui/gfx/switches.h"
 #endif
 
-DEFINE_WEB_CONTENTS_USER_DATA_KEY(atom::WebContentsPreferences);
+DEFINE_WEB_CONTENTS_USER_DATA_KEY(electron::WebContentsPreferences);
 
-namespace atom {
+namespace electron {
 
 // static
 std::vector<WebContentsPreferences*> WebContentsPreferences::instances_;
@@ -198,4 +198,4 @@ void WebContentsPreferences::OverrideWebkitPrefs(
     prefs->default_encoding = encoding;
 }
 
-}  // namespace atom
+}  // namespace electron

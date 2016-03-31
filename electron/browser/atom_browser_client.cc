@@ -42,7 +42,7 @@
 #include "ui/base/l10n/l10n_util.h"
 #include "v8/include/v8.h"
 
-namespace atom {
+namespace electron {
 
 namespace {
 
@@ -299,4 +299,4 @@ void AtomBrowserClient::RenderProcessHostDestroyed(
   }
 }
 
-}  // namespace atom
+}  // namespace electron

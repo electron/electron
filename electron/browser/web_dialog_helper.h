@@ -16,7 +16,7 @@ struct FileChooserParams;
 class WebContents;
 }
 
-namespace atom {
+namespace electron {
 
 class NativeWindow;
 
@@ -39,6 +39,6 @@ class WebDialogHelper {
   DISALLOW_COPY_AND_ASSIGN(WebDialogHelper);
 };
 
-}  // namespace atom
+}  // namespace electron
 
 #endif  // ELECTRON_BROWSER_WEB_DIALOG_HELPER_H_

@@ -4,10 +4,10 @@
 
 #include "electron/common/draggable_region.h"
 
-namespace atom {
+namespace electron {
 
 DraggableRegion::DraggableRegion()
     : draggable(false) {
 }
 
-}  // namespace atom
+}  // namespace electron
