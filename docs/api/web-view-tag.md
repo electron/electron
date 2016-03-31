@@ -606,7 +606,10 @@ The following example code opens the new url in system's default browser.
 
 ```javascript
 webview.addEventListener('new-window', function(e) {
-  require('electron').shell.openExternal(e.url);
+  var protocol = require('url').parse(e.url).protocol;
+  if (protocol === 'http:' || protocol === 'https:') {
+    require('electron').shell.openExternal(e.url);
+  }
 });
 ```
 
