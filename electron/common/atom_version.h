@@ -2,42 +2,42 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_VERSION_H
-#define ATOM_VERSION_H
+#ifndef ELECTRON_VERSION_H
+#define ELECTRON_VERSION_H
 
-#define ATOM_MAJOR_VERSION 0
-#define ATOM_MINOR_VERSION 37
-#define ATOM_PATCH_VERSION 3
+#define ELECTRON_MAJOR_VERSION 0
+#define ELECTRON_MINOR_VERSION 37
+#define ELECTRON_PATCH_VERSION 3
 
-#define ATOM_VERSION_IS_RELEASE 1
+#define ELECTRON_VERSION_IS_RELEASE 1
 
-#ifndef ATOM_TAG
-# define ATOM_TAG ""
+#ifndef ELECTRON_TAG
+# define ELECTRON_TAG ""
 #endif
 
-#ifndef ATOM_STRINGIFY
-#define ATOM_STRINGIFY(n) ATOM_STRINGIFY_HELPER(n)
-#define ATOM_STRINGIFY_HELPER(n) #n
+#ifndef ELECTRON_STRINGIFY
+#define ELECTRON_STRINGIFY(n) ELECTRON_STRINGIFY_HELPER(n)
+#define ELECTRON_STRINGIFY_HELPER(n) #n
 #endif
 
-#if ATOM_VERSION_IS_RELEASE
-# define ATOM_VERSION_STRING  ATOM_STRINGIFY(ATOM_MAJOR_VERSION) "." \
-                              ATOM_STRINGIFY(ATOM_MINOR_VERSION) "." \
-                              ATOM_STRINGIFY(ATOM_PATCH_VERSION)     \
-                              ATOM_TAG
+#if ELECTRON_VERSION_IS_RELEASE
+# define ELECTRON_VERSION_STRING  ELECTRON_STRINGIFY(ELECTRON_MAJOR_VERSION) "." \
+                              ELECTRON_STRINGIFY(ELECTRON_MINOR_VERSION) "." \
+                              ELECTRON_STRINGIFY(ELECTRON_PATCH_VERSION)     \
+                              ELECTRON_TAG
 #else
-# define ATOM_VERSION_STRING  ATOM_STRINGIFY(ATOM_MAJOR_VERSION) "." \
-                              ATOM_STRINGIFY(ATOM_MINOR_VERSION) "." \
-                              ATOM_STRINGIFY(ATOM_PATCH_VERSION)     \
-                              ATOM_TAG "-pre"
+# define ELECTRON_VERSION_STRING  ELECTRON_STRINGIFY(ELECTRON_MAJOR_VERSION) "." \
+                              ELECTRON_STRINGIFY(ELECTRON_MINOR_VERSION) "." \
+                              ELECTRON_STRINGIFY(ELECTRON_PATCH_VERSION)     \
+                              ELECTRON_TAG "-pre"
 #endif
 
-#define ATOM_VERSION "v" ATOM_VERSION_STRING
+#define ELECTRON_VERSION "v" ELECTRON_VERSION_STRING
 
 
-#define ATOM_VERSION_AT_LEAST(major, minor, patch) \
-  (( (major) < ATOM_MAJOR_VERSION) \
-  || ((major) == ATOM_MAJOR_VERSION && (minor) < ATOM_MINOR_VERSION) \
-  || ((major) == ATOM_MAJOR_VERSION && (minor) == ATOM_MINOR_VERSION && (patch) <= ATOM_PATCH_VERSION))
+#define ELECTRON_VERSION_AT_LEAST(major, minor, patch) \
+  (( (major) < ELECTRON_MAJOR_VERSION) \
+  || ((major) == ELECTRON_MAJOR_VERSION && (minor) < ELECTRON_MINOR_VERSION) \
+  || ((major) == ELECTRON_MAJOR_VERSION && (minor) == ELECTRON_MINOR_VERSION && (patch) <= ELECTRON_PATCH_VERSION))
 
-#endif /* ATOM_VERSION_H */
+#endif /* ELECTRON_VERSION_H */

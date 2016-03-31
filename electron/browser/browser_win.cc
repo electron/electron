@@ -242,7 +242,7 @@ std::string Browser::GetExecutableFileVersion() const {
     return base::UTF16ToUTF8(version_info->product_version());
   }
 
-  return ATOM_VERSION_STRING;
+  return ELECTRON_VERSION_STRING;
 }
 
 std::string Browser::GetExecutableFileProductName() const {

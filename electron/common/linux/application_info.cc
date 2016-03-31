@@ -13,7 +13,7 @@ std::string GetApplicationName() {
 }
 
 std::string GetApplicationVersion() {
-  return ATOM_VERSION_STRING;
+  return ELECTRON_VERSION_STRING;
 }
 
 }  // namespace brightray

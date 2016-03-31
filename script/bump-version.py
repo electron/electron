@@ -88,10 +88,10 @@ def update_version_h(versions):
 
   for i in range(0, len(lines)):
     line = lines[i]
-    if 'ATOM_MAJOR_VERSION' in line:
-      lines[i] = '#define ATOM_MAJOR_VERSION {0}\n'.format(versions[0])
-      lines[i + 1] = '#define ATOM_MINOR_VERSION {0}\n'.format(versions[1])
-      lines[i + 2] = '#define ATOM_PATCH_VERSION {0}\n'.format(versions[2])
+    if 'ELECTRON_MAJOR_VERSION' in line:
+      lines[i] = '#define ELECTRON_MAJOR_VERSION {0}\n'.format(versions[0])
+      lines[i + 1] = '#define ELECTRON_MINOR_VERSION {0}\n'.format(versions[1])
+      lines[i + 2] = '#define ELECTRON_PATCH_VERSION {0}\n'.format(versions[2])
 
       with open(version_h, 'w') as f:
         f.write(''.join(lines))

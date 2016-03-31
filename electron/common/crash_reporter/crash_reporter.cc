@@ -30,7 +30,7 @@ void CrashReporter::Start(const std::string& product_name,
                           const StringMap& extra_parameters) {
   SetUploadParameters(extra_parameters);
 
-  InitBreakpad(product_name, ATOM_VERSION_STRING, company_name, submit_url,
+  InitBreakpad(product_name, ELECTRON_VERSION_STRING, company_name, submit_url,
                auto_submit, skip_system_crash_handler);
 }
 
