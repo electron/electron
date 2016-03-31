@@ -341,6 +341,11 @@ Overrides the current application's name.
 
 Returns the current application locale.
 
+**Note:** When distributing your packaged app, you have to also ship the
+`locales` folder.
+
+**Note:** On Windows you have to call it after the `ready` events gets emitted.
+
 ### `app.addRecentDocument(path)` _OS X_ _Windows_
 
 * `path` String
