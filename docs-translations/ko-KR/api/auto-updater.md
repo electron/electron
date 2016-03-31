@@ -2,6 +2,9 @@
 
 이 모듈은 `Squirrel` 자동 업데이트 프레임워크의 인터페이스를 제공합니다.
 
+[electron-release-server](https://github.com/ArekSredzki/electron-release-server)를
+포크하면 어플리케이션을 배포하기 위한 멀티 플랫폼 릴리즈 서버를 손쉽게 구축할 수 있습니다.
+
 ## 플랫폼별 참고 사항
 
 `autoUpdater`는 기본적으로 모든 플랫폼에 대해 같은 API를 제공하지만, 여전히 플랫폼별로

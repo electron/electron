@@ -10,33 +10,34 @@ Electron의 소스 코드는 몇 개의 파트로 분리되어 있습니다. 그
 
 ```
 Electron
-├──atom - Electron의 소스코드.
-|  ├── app - 시스템 엔트리 코드.
-|  ├── browser - 주 윈도우를 포함한 프론트엔드, UI, 그리고 메인 프로세스에 관련된 것과
-|  |   랜더러와 웹 페이지 관리 관련 코드.
-|  |   ├── lib - 메인 프로세스 초기화 코드의 자바스크립트 파트.
-|  |   ├── ui - 크로스 플랫폼에 대응하는 UI 구현.
-|  |   |   ├── cocoa - 코코아 특정 소스 코드.
-|  |   |   ├── gtk - GTK+ 특정 소스 코드.
-|  |   |   └── win - Windows GUI 특정 소스 코드.
-|  |   ├── default_app - 어플리케이션이 제공되지 않으면 기본으로 사용되는 페이지.
-|  |   ├── api - 메인 프로세스 API의 구현.
-|  |   |   └── lib - API 구현의 자바스크립트 파트.
-|  |   ├── net - 네트워크 관련 코드.
-|  |   ├── mac - Mac 특정 Objective-C 소스 코드.
-|  |   └── resources - 아이콘들, 플랫폼 종속성 파일들, 기타 등등.
-|  ├── renderer - 랜더러 프로세스에서 작동하는 코드들.
-|  |   ├── lib - 랜더러 프로세스 초기화 코드의 자바스크립트 파트.
-|  |   └── api - 랜더러 프로세스 API들의 구현.
-|  |       └── lib - API 구현의 자바스크립트 파트.
-|  └── common - 메인 프로세스와 랜더러 프로세스에서 공유하는 코드. 유틸리티 함수와
-|      node 메시지 루프를 Chromium의 메시지 루프에 통합시킨 코드도 포함.
-|      ├── lib - 공통 자바스크립트 초기화 코드.
-|      └── api - 공통 API들의 구현, Electron의 빌트인 모듈 기초 코드들.
-|          └── lib - API 구현의 자바스크립트 파트.
-├── chromium_src - 복사된 Chromium 소스 코드.
+├── atom - C++ 소스 코드.
+|   ├── app - 시스템 엔트리 코드.
+|   ├── browser - 주 윈도우를 포함한 프론트엔드, UI, 그리고 메인 프로세스에 관련된
+|   |   코드와 랜더러 및 웹 페이지 관리 관련 코드.
+|   |   ├── ui - 서로 다른 플랫폼에 대한 UI 관련 구현 코드.
+|   |   |   ├── cocoa - Cocoa 특정 소스 코드.
+|   |   |   ├── gtk - GTK+ 특정 소스 코드.
+|   |   |   └── win - Windows GUI 특정 소스 코드.
+|   |   ├── api - 메인 프로세스 API의 구현.
+|   |   ├── net - 네트워킹 관련 코드.
+|   |   ├── mac - Mac 특정 Objective-C 소스 코드.
+|   |   └── resources - 아이콘들, 플랫폼 종속성 파일들, 기타 등등..
+|   ├── renderer - 랜더러 프로세스에서 작동하는 코드.
+|   |   └── api - 랜더러 프로세스 API의 구현.
+|   └── common - 메인과 랜더러 프로세스에서 모두 사용하는 코드, 몇가지 유틸리티
+|       함수들이 포함되어 있고 node의 메시지 루프와 Chromium의 메시지 루프를 통합.
+|       └── api - 공통 API 구현들, 기초 Electron 빌트-인 모듈들.
+├── chromium_src - Chromium에서 복사하여 가져온 소스코드.
+├── default_app - Electron에 앱이 제공되지 않았을 때 보여지는 기본 페이지.
 ├── docs - 참조 문서.
-├── spec - 자동화된 테스트.
+├── lib  - JavaScript 소스 코드.
+|   ├── browser - Javascript 메인 프로세스 초기화 코드.
+|   |   └── api - Javascript API 구현 코드.
+|   ├── common - 메인과 랜더러 프로세스에서 모두 사용하는 JavaScript
+|   |   └── api - Javascript API 구현 코드.
+|   └── renderer - Javascript 랜더러 프로세스 초기화 코드.
+|       └── api - Javascript API 구현 코드.
+├── spec - 자동화 테스트.
 ├── atom.gyp - Electron의 빌드 규칙.
 └── common.gypi - 컴파일러 설정 및 `node` 와 `breakpad` 등의 구성요소를 위한 빌드
     규칙.

@@ -144,6 +144,19 @@ npm uninstall -g electron
 모듈이며, 반면 `electron.webFrame` 모듈은 랜더러 프로세스에서만 사용할 수 있는
 모듈입니다.
 
+## 왜 저의 앱 배경이 투명하죠?
+
+Electron `0.37.3` 부터, 기본 클라이언트 배경색이 `투명색`으로 변경되었습니다.
+간단히 HTML에서 배경색을 지정합니다:
+
+```html
+<style type='text/css'>
+  html {
+    background: white;
+  }
+</style>
+```
+
 [memory-management]: https://developer.mozilla.org/ko/docs/Web/JavaScript/Memory_Management
 [variable-scope]: https://msdn.microsoft.com/library/bzt2dkta(v=vs.94).aspx
 [electron-module]: https://www.npmjs.com/package/electron
