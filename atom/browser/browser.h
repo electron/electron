@@ -111,8 +111,6 @@ class Browser : public WindowListObserver {
   void AddDistributedNotificationObserver(   \
         const std::string& notificationName, \
         const std::string& eventName);
-
-  void DistributedNotificationEvent(const std::string& eventName);
 #endif  // defined(OS_MACOSX)
 
 #if defined(OS_WIN)
@@ -153,6 +151,8 @@ class Browser : public WindowListObserver {
 
   // Tell the application that plaform's theme changed.
   void PlatformThemeChanged();
+
+  void DistributedNotificationEvent(const std::string& eventName);
 
   void AddObserver(BrowserObserver* obs) {
     observers_.AddObserver(obs);
