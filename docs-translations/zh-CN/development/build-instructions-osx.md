@@ -20,7 +20,7 @@ $ git clone https://github.com/atom/electron.git
 
 ## Bootstrapping
 
-bootstrap 脚本也是必要下载的构建依赖，来创建项目文件.注意我们使用的是 `ninja` 来构建 Electron，所以没有生成 Xcode 项目.
+bootstrap 脚本也是必要下载的构建依赖，来创建项目文件.注意我们使用的是 [ninja](https://ninja-build.org/) 来构建 Electron，所以没有生成 Xcode 项目.
 
 ```bash
 $ cd electron

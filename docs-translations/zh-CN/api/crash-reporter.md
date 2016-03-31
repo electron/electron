@@ -15,6 +15,11 @@ crashReporter.start({
 });
 ```
 
+可以使用下面的项目来创建一个服务器，用来接收和处理崩溃报告 :
+
+* [socorro](https://github.com/mozilla/socorro)
+* [mini-breakpad-server](https://github.com/atom/mini-breakpad-server)
+
 ## 方法
 
 `crash-reporter` 模块有如下方法:
@@ -44,7 +49,7 @@ crashReporter.start({
 
 ## crash-reporter Payload
 
-崩溃报告将发送下面的数据给 `POST` 型的 `提交 URL` :
+崩溃报告将发送下面 `multipart/form-data` `POST` 型的数据给 `submitURL` :
 
 * `ver` String - Electron 版本.
 * `platform` String - 例如 'win32'.
@@ -56,6 +61,6 @@ crashReporter.start({
 * `prod` String - 基础产品名字. 这种情况为 Electron.
 * `_companyName` String - `crashReporter` `options`
   对象中的公司名字.
-* `upload_file_minidump` File - 崩溃报告为文件.
+* `upload_file_minidump` File - 崩溃报告按照 `minidump` 的格式.
 * `crashReporter` 中的 `extra` 对象的所有等级和一个属性.
   `options` object
