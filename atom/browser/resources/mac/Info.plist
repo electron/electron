@@ -15,7 +15,7 @@
   <key>CFBundlePackageType</key>
   <string>APPL</string>
   <key>CFBundleIconFile</key>
-  <string>atom.icns</string>
+  <string>electron.icns</string>
   <key>CFBundleVersion</key>
   <string>0.37.3</string>
   <key>CFBundleShortVersionString</key>
