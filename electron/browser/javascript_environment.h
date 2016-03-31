@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_JAVASCRIPT_ENVIRONMENT_H_
-#define ATOM_BROWSER_JAVASCRIPT_ENVIRONMENT_H_
+#ifndef ELECTRON_BROWSER_JAVASCRIPT_ENVIRONMENT_H_
+#define ELECTRON_BROWSER_JAVASCRIPT_ENVIRONMENT_H_
 
 #include "base/macros.h"
 #include "gin/public/isolate_holder.h"
@@ -36,4 +36,4 @@ class JavascriptEnvironment {
 
 }  // namespace atom
 
-#endif  // ATOM_BROWSER_JAVASCRIPT_ENVIRONMENT_H_
+#endif  // ELECTRON_BROWSER_JAVASCRIPT_ENVIRONMENT_H_

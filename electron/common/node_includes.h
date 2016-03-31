@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_COMMON_NODE_INCLUDES_H_
-#define ATOM_COMMON_NODE_INCLUDES_H_
+#ifndef ELECTRON_COMMON_NODE_INCLUDES_H_
+#define ELECTRON_COMMON_NODE_INCLUDES_H_
 
 #include "base/logging.h"
 
@@ -28,4 +28,4 @@
 #include "vendor/node/src/node_buffer.h"
 #include "vendor/node/src/node_internals.h"
 
-#endif  // ATOM_COMMON_NODE_INCLUDES_H_
+#endif  // ELECTRON_COMMON_NODE_INCLUDES_H_

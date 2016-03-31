@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_BROWSER_H_
-#define ATOM_BROWSER_BROWSER_H_
+#ifndef ELECTRON_BROWSER_BROWSER_H_
+#define ELECTRON_BROWSER_BROWSER_H_
 
 #include <string>
 #include <vector>
@@ -207,4 +207,4 @@ class Browser : public WindowListObserver {
 
 }  // namespace atom
 
-#endif  // ATOM_BROWSER_BROWSER_H_
+#endif  // ELECTRON_BROWSER_BROWSER_H_

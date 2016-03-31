@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_API_EVENT_EMITTER_H_
-#define ATOM_BROWSER_API_EVENT_EMITTER_H_
+#ifndef ELECTRON_BROWSER_API_EVENT_EMITTER_H_
+#define ELECTRON_BROWSER_API_EVENT_EMITTER_H_
 
 #include <vector>
 
@@ -78,4 +78,4 @@ class EventEmitter : public Wrappable {
 
 }  // namespace mate
 
-#endif  // ATOM_BROWSER_API_EVENT_EMITTER_H_
+#endif  // ELECTRON_BROWSER_API_EVENT_EMITTER_H_

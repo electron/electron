@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_WEB_VIEW_GUEST_DELEGATE_H_
-#define ATOM_BROWSER_WEB_VIEW_GUEST_DELEGATE_H_
+#ifndef ELECTRON_BROWSER_WEB_VIEW_GUEST_DELEGATE_H_
+#define ELECTRON_BROWSER_WEB_VIEW_GUEST_DELEGATE_H_
 
 #include "content/public/browser/browser_plugin_guest_delegate.h"
 #include "content/public/browser/web_contents_observer.h"
@@ -116,4 +116,4 @@ class WebViewGuestDelegate : public content::BrowserPluginGuestDelegate,
 
 }  // namespace atom
 
-#endif  // ATOM_BROWSER_WEB_VIEW_GUEST_DELEGATE_H_
+#endif  // ELECTRON_BROWSER_WEB_VIEW_GUEST_DELEGATE_H_

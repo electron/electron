@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_COMMON_KEYBOARD_UTIL_H_
-#define ATOM_COMMON_KEYBOARD_UTIL_H_
+#ifndef ELECTRON_COMMON_KEYBOARD_UTIL_H_
+#define ELECTRON_COMMON_KEYBOARD_UTIL_H_
 
 #include <string>
 
@@ -17,4 +17,4 @@ ui::KeyboardCode KeyboardCodeFromStr(const std::string& str, bool* shifted);
 
 }  // namespace atom
 
-#endif  // ATOM_COMMON_KEYBOARD_UTIL_H_
+#endif  // ELECTRON_COMMON_KEYBOARD_UTIL_H_

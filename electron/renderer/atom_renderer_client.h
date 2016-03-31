@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_RENDERER_ATOM_RENDERER_CLIENT_H_
-#define ATOM_RENDERER_ATOM_RENDERER_CLIENT_H_
+#ifndef ELECTRON_RENDERER_ATOM_RENDERER_CLIENT_H_
+#define ELECTRON_RENDERER_ATOM_RENDERER_CLIENT_H_
 
 #include <string>
 #include <vector>
@@ -66,4 +66,4 @@ class AtomRendererClient : public content::ContentRendererClient,
 
 }  // namespace atom
 
-#endif  // ATOM_RENDERER_ATOM_RENDERER_CLIENT_H_
+#endif  // ELECTRON_RENDERER_ATOM_RENDERER_CLIENT_H_

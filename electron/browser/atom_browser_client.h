@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_ATOM_BROWSER_CLIENT_H_
-#define ATOM_BROWSER_ATOM_BROWSER_CLIENT_H_
+#ifndef ELECTRON_BROWSER_ATOM_BROWSER_CLIENT_H_
+#define ELECTRON_BROWSER_ATOM_BROWSER_CLIENT_H_
 
 #include <map>
 #include <string>
@@ -101,4 +101,4 @@ class AtomBrowserClient : public brightray::BrowserClient,
 
 }  // namespace atom
 
-#endif  // ATOM_BROWSER_ATOM_BROWSER_CLIENT_H_
+#endif  // ELECTRON_BROWSER_ATOM_BROWSER_CLIENT_H_

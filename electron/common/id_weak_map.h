@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_COMMON_ID_WEAK_MAP_H_
-#define ATOM_COMMON_ID_WEAK_MAP_H_
+#ifndef ELECTRON_COMMON_ID_WEAK_MAP_H_
+#define ELECTRON_COMMON_ID_WEAK_MAP_H_
 
 #include <unordered_map>
 #include <vector>
@@ -58,4 +58,4 @@ class IDWeakMap {
 
 }  // namespace atom
 
-#endif  // ATOM_COMMON_ID_WEAK_MAP_H_
+#endif  // ELECTRON_COMMON_ID_WEAK_MAP_H_

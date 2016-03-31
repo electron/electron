@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE.chromium file.
 
-#ifndef ATOM_COMMON_API_LOCKER_H_
-#define ATOM_COMMON_API_LOCKER_H_
+#ifndef ELECTRON_COMMON_API_LOCKER_H_
+#define ELECTRON_COMMON_API_LOCKER_H_
 
 #include "base/memory/scoped_ptr.h"
 #include "v8/include/v8.h"
@@ -31,4 +31,4 @@ class Locker {
 
 }  // namespace mate
 
-#endif  // ATOM_COMMON_API_LOCKER_H_
+#endif  // ELECTRON_COMMON_API_LOCKER_H_

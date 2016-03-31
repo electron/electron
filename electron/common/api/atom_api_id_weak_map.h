@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_COMMON_API_ATOM_API_ID_WEAK_MAP_H_
-#define ATOM_COMMON_API_ATOM_API_ID_WEAK_MAP_H_
+#ifndef ELECTRON_COMMON_API_ATOM_API_ID_WEAK_MAP_H_
+#define ELECTRON_COMMON_API_ATOM_API_ID_WEAK_MAP_H_
 
 #include "electron/common/id_weak_map.h"
 #include "native_mate/object_template_builder.h"
@@ -41,4 +41,4 @@ class IDWeakMap : public mate::Wrappable {
 
 }  // namespace atom
 
-#endif  // ATOM_COMMON_API_ATOM_API_ID_WEAK_MAP_H_
+#endif  // ELECTRON_COMMON_API_ATOM_API_ID_WEAK_MAP_H_

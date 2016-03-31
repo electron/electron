@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_COMMON_NATIVE_MATE_CONVERTERS_STRING16_CONVERTER_H_
-#define ATOM_COMMON_NATIVE_MATE_CONVERTERS_STRING16_CONVERTER_H_
+#ifndef ELECTRON_COMMON_NATIVE_MATE_CONVERTERS_STRING16_CONVERTER_H_
+#define ELECTRON_COMMON_NATIVE_MATE_CONVERTERS_STRING16_CONVERTER_H_
 
 #include "base/strings/string16.h"
 #include "native_mate/converter.h"
@@ -37,4 +37,4 @@ inline v8::Local<v8::String> StringToV8(
 
 }  // namespace mate
 
-#endif  // ATOM_COMMON_NATIVE_MATE_CONVERTERS_STRING16_CONVERTER_H_
+#endif  // ELECTRON_COMMON_NATIVE_MATE_CONVERTERS_STRING16_CONVERTER_H_

@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_ATOM_ACCESS_TOKEN_STORE_H_
-#define ATOM_BROWSER_ATOM_ACCESS_TOKEN_STORE_H_
+#ifndef ELECTRON_BROWSER_ATOM_ACCESS_TOKEN_STORE_H_
+#define ELECTRON_BROWSER_ATOM_ACCESS_TOKEN_STORE_H_
 
 #include "content/public/browser/access_token_store.h"
 
@@ -28,4 +28,4 @@ class AtomAccessTokenStore : public content::AccessTokenStore {
 
 }  // namespace atom
 
-#endif  // ATOM_BROWSER_ATOM_ACCESS_TOKEN_STORE_H_
+#endif  // ELECTRON_BROWSER_ATOM_ACCESS_TOKEN_STORE_H_

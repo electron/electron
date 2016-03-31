@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_API_ATOM_API_WINDOW_H_
-#define ATOM_BROWSER_API_ATOM_API_WINDOW_H_
+#ifndef ELECTRON_BROWSER_API_ATOM_API_WINDOW_H_
+#define ELECTRON_BROWSER_API_ATOM_API_WINDOW_H_
 
 #include <map>
 #include <string>
@@ -219,4 +219,4 @@ struct Converter<atom::NativeWindow*> {
 
 }  // namespace mate
 
-#endif  // ATOM_BROWSER_API_ATOM_API_WINDOW_H_
+#endif  // ELECTRON_BROWSER_API_ATOM_API_WINDOW_H_

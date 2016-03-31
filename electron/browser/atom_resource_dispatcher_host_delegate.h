@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_ATOM_RESOURCE_DISPATCHER_HOST_DELEGATE_H_
-#define ATOM_BROWSER_ATOM_RESOURCE_DISPATCHER_HOST_DELEGATE_H_
+#ifndef ELECTRON_BROWSER_ATOM_RESOURCE_DISPATCHER_HOST_DELEGATE_H_
+#define ELECTRON_BROWSER_ATOM_RESOURCE_DISPATCHER_HOST_DELEGATE_H_
 
 #include "content/public/browser/resource_dispatcher_host_delegate.h"
 
@@ -29,4 +29,4 @@ class AtomResourceDispatcherHostDelegate
 
 }  // namespace atom
 
-#endif  // ATOM_BROWSER_ATOM_RESOURCE_DISPATCHER_HOST_DELEGATE_H_
+#endif  // ELECTRON_BROWSER_ATOM_RESOURCE_DISPATCHER_HOST_DELEGATE_H_
