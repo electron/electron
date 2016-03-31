@@ -15,7 +15,7 @@
 
 namespace electron {
 
-class AtomBrowserContext;
+class ElectronBrowserContext;
 
 class URLRequestFetchJob : public JsAsker<net::URLRequestJob>,
                            public net::URLFetcherDelegate,

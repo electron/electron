@@ -28,19 +28,19 @@ void OnResult(
 
 }  // namespace
 
-AtomCertVerifier::AtomCertVerifier()
+ElectronCertVerifier::ElectronCertVerifier()
     : default_cert_verifier_(net::CertVerifier::CreateDefault()) {
 }
 
-AtomCertVerifier::~AtomCertVerifier() {
+ElectronCertVerifier::~ElectronCertVerifier() {
 }
 
-void AtomCertVerifier::SetVerifyProc(const VerifyProc& proc) {
+void ElectronCertVerifier::SetVerifyProc(const VerifyProc& proc) {
   base::AutoLock auto_lock(lock_);
   verify_proc_ = proc;
 }
 
-int AtomCertVerifier::Verify(
+int ElectronCertVerifier::Verify(
     net::X509Certificate* cert,
     const std::string& hostname,
     const std::string& ocsp_response,
@@ -70,7 +70,7 @@ int AtomCertVerifier::Verify(
   return net::ERR_IO_PENDING;
 }
 
-bool AtomCertVerifier::SupportsOCSPStapling() {
+bool ElectronCertVerifier::SupportsOCSPStapling() {
   return true;
 }
 

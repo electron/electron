@@ -60,7 +60,7 @@ bool Event::SendReply(const base::string16& json) {
   if (message_ == NULL || sender_ == NULL)
     return false;
 
-  AtomViewHostMsg_Message_Sync::WriteReplyParams(message_, json);
+  ElectronViewHostMsg_Message_Sync::WriteReplyParams(message_, json);
   return sender_->Send(message_);
 }
 

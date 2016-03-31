@@ -23,13 +23,13 @@ class SSLCertRequestInfo;
 
 namespace electron {
 
-class AtomResourceDispatcherHostDelegate;
+class ElectronResourceDispatcherHostDelegate;
 
-class AtomBrowserClient : public brightray::BrowserClient,
+class ElectronBrowserClient : public brightray::BrowserClient,
                           public content::RenderProcessHostObserver {
  public:
-  AtomBrowserClient();
-  virtual ~AtomBrowserClient();
+  ElectronBrowserClient();
+  virtual ~ElectronBrowserClient();
 
   using Delegate = content::ContentBrowserClient;
   void set_delegate(Delegate* delegate) { delegate_ = delegate; }
@@ -91,12 +91,12 @@ class AtomBrowserClient : public brightray::BrowserClient,
   // pending_render_process => current_render_process.
   std::map<int, int> pending_processes_;
 
-  scoped_ptr<AtomResourceDispatcherHostDelegate>
+  scoped_ptr<ElectronResourceDispatcherHostDelegate>
       resource_dispatcher_host_delegate_;
 
   Delegate* delegate_;
 
-  DISALLOW_COPY_AND_ASSIGN(AtomBrowserClient);
+  DISALLOW_COPY_AND_ASSIGN(ElectronBrowserClient);
 };
 
 }  // namespace electron

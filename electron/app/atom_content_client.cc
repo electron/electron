@@ -160,27 +160,27 @@ void AddWidevineCdmFromCommandLine(
 }
 #endif
 
-AtomContentClient::AtomContentClient() {
+ElectronContentClient::ElectronContentClient() {
 }
 
-AtomContentClient::~AtomContentClient() {
+ElectronContentClient::~ElectronContentClient() {
 }
 
-std::string AtomContentClient::GetProduct() const {
+std::string ElectronContentClient::GetProduct() const {
   return "Chrome/" CHROME_VERSION_STRING;
 }
 
-std::string AtomContentClient::GetUserAgent() const {
+std::string ElectronContentClient::GetUserAgent() const {
   return content::BuildUserAgentFromProduct(
       "Chrome/" CHROME_VERSION_STRING " "
       ATOM_PRODUCT_NAME "/" ATOM_VERSION_STRING);
 }
 
-base::string16 AtomContentClient::GetLocalizedString(int message_id) const {
+base::string16 ElectronContentClient::GetLocalizedString(int message_id) const {
   return l10n_util::GetStringUTF16(message_id);
 }
 
-void AtomContentClient::AddAdditionalSchemes(
+void ElectronContentClient::AddAdditionalSchemes(
     std::vector<url::SchemeWithType>* standard_schemes,
     std::vector<std::string>* savable_schemes) {
   std::vector<std::string> schemes;
@@ -193,7 +193,7 @@ void AtomContentClient::AddAdditionalSchemes(
   standard_schemes->push_back({"chrome-extension", url::SCHEME_WITHOUT_PORT});
 }
 
-void AtomContentClient::AddPepperPlugins(
+void ElectronContentClient::AddPepperPlugins(
     std::vector<content::PepperPluginInfo>* plugins) {
   AddPepperFlashFromCommandLine(plugins);
 #if defined(WIDEVINE_CDM_AVAILABLE) && defined(ENABLE_PEPPER_CDMS)
@@ -201,7 +201,7 @@ void AtomContentClient::AddPepperPlugins(
 #endif
 }
 
-void AtomContentClient::AddServiceWorkerSchemes(
+void ElectronContentClient::AddServiceWorkerSchemes(
     std::set<std::string>* service_worker_schemes) {
   std::vector<std::string> schemes;
   ConvertStringWithSeparatorToVector(&schemes, ",",

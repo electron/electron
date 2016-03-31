@@ -77,27 +77,27 @@ scoped_refptr<net::X509Certificate> ImportCertFromFile(
 }  // namespace
 
 // static
-void AtomBrowserClient::SuppressRendererProcessRestartForOnce() {
+void ElectronBrowserClient::SuppressRendererProcessRestartForOnce() {
   g_suppress_renderer_process_restart = true;
 }
 
-void AtomBrowserClient::SetCustomSchemes(
+void ElectronBrowserClient::SetCustomSchemes(
     const std::vector<std::string>& schemes) {
   g_custom_schemes = base::JoinString(schemes, ",");
 }
 
-void AtomBrowserClient::SetCustomServiceWorkerSchemes(
+void ElectronBrowserClient::SetCustomServiceWorkerSchemes(
     const std::vector<std::string>& schemes) {
   g_custom_service_worker_schemes = base::JoinString(schemes, ",");
 }
 
-AtomBrowserClient::AtomBrowserClient() : delegate_(nullptr) {
+ElectronBrowserClient::ElectronBrowserClient() : delegate_(nullptr) {
 }
 
-AtomBrowserClient::~AtomBrowserClient() {
+ElectronBrowserClient::~ElectronBrowserClient() {
 }
 
-void AtomBrowserClient::RenderProcessWillLaunch(
+void ElectronBrowserClient::RenderProcessWillLaunch(
     content::RenderProcessHost* host) {
   int process_id = host->GetID();
   host->AddFilter(new printing::PrintingMessageFilter(process_id));
@@ -107,15 +107,15 @@ void AtomBrowserClient::RenderProcessWillLaunch(
 }
 
 content::SpeechRecognitionManagerDelegate*
-    AtomBrowserClient::CreateSpeechRecognitionManagerDelegate() {
-  return new AtomSpeechRecognitionManagerDelegate;
+    ElectronBrowserClient::CreateSpeechRecognitionManagerDelegate() {
+  return new ElectronSpeechRecognitionManagerDelegate;
 }
 
-content::AccessTokenStore* AtomBrowserClient::CreateAccessTokenStore() {
-  return new AtomAccessTokenStore;
+content::AccessTokenStore* ElectronBrowserClient::CreateAccessTokenStore() {
+  return new ElectronAccessTokenStore;
 }
 
-void AtomBrowserClient::OverrideWebkitPrefs(
+void ElectronBrowserClient::OverrideWebkitPrefs(
     content::RenderViewHost* host, content::WebPreferences* prefs) {
   prefs->javascript_enabled = true;
   prefs->web_security_enabled = true;
@@ -138,11 +138,11 @@ void AtomBrowserClient::OverrideWebkitPrefs(
   WebContentsPreferences::OverrideWebkitPrefs(web_contents, prefs);
 }
 
-std::string AtomBrowserClient::GetApplicationLocale() {
+std::string ElectronBrowserClient::GetApplicationLocale() {
   return l10n_util::GetApplicationLocale("");
 }
 
-void AtomBrowserClient::OverrideSiteInstanceForNavigation(
+void ElectronBrowserClient::OverrideSiteInstanceForNavigation(
     content::BrowserContext* browser_context,
     content::SiteInstance* current_instance,
     const GURL& url,
@@ -166,7 +166,7 @@ void AtomBrowserClient::OverrideSiteInstanceForNavigation(
   current_process->AddObserver(this);
 }
 
-void AtomBrowserClient::AppendExtraCommandLineSwitches(
+void ElectronBrowserClient::AppendExtraCommandLineSwitches(
     base::CommandLine* command_line,
     int process_id) {
   std::string process_type = command_line->GetSwitchValueASCII("type");
@@ -207,18 +207,18 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
       web_contents, command_line);
 }
 
-void AtomBrowserClient::DidCreatePpapiPlugin(
+void ElectronBrowserClient::DidCreatePpapiPlugin(
     content::BrowserPpapiHost* host) {
   host->GetPpapiHost()->AddHostFactoryFilter(
       make_scoped_ptr(new chrome::ChromeBrowserPepperHostFactory(host)));
 }
 
 content::QuotaPermissionContext*
-    AtomBrowserClient::CreateQuotaPermissionContext() {
-  return new AtomQuotaPermissionContext;
+    ElectronBrowserClient::CreateQuotaPermissionContext() {
+  return new ElectronQuotaPermissionContext;
 }
 
-void AtomBrowserClient::AllowCertificateError(
+void ElectronBrowserClient::AllowCertificateError(
     content::WebContents* web_contents,
     int cert_error,
     const net::SSLInfo& ssl_info,
@@ -237,7 +237,7 @@ void AtomBrowserClient::AllowCertificateError(
   }
 }
 
-void AtomBrowserClient::SelectClientCertificate(
+void ElectronBrowserClient::SelectClientCertificate(
     content::WebContents* web_contents,
     net::SSLCertRequestInfo* cert_request_info,
     scoped_ptr<content::ClientCertificateDelegate> delegate) {
@@ -257,20 +257,20 @@ void AtomBrowserClient::SelectClientCertificate(
   }
 }
 
-void AtomBrowserClient::ResourceDispatcherHostCreated() {
+void ElectronBrowserClient::ResourceDispatcherHostCreated() {
   resource_dispatcher_host_delegate_.reset(
-      new AtomResourceDispatcherHostDelegate);
+      new ElectronResourceDispatcherHostDelegate);
   content::ResourceDispatcherHost::Get()->SetDelegate(
       resource_dispatcher_host_delegate_.get());
 }
 
-brightray::BrowserMainParts* AtomBrowserClient::OverrideCreateBrowserMainParts(
+brightray::BrowserMainParts* ElectronBrowserClient::OverrideCreateBrowserMainParts(
     const content::MainFunctionParams&) {
   v8::V8::Initialize();  // Init V8 before creating main parts.
-  return new AtomBrowserMainParts;
+  return new ElectronBrowserMainParts;
 }
 
-void AtomBrowserClient::WebNotificationAllowed(
+void ElectronBrowserClient::WebNotificationAllowed(
     int render_process_id,
     const base::Callback<void(bool)>& callback) {
   content::WebContents* web_contents =
@@ -288,7 +288,7 @@ void AtomBrowserClient::WebNotificationAllowed(
   permission_helper->RequestWebNotificationPermission(callback);
 }
 
-void AtomBrowserClient::RenderProcessHostDestroyed(
+void ElectronBrowserClient::RenderProcessHostDestroyed(
     content::RenderProcessHost* host) {
   int process_id = host->GetID();
   for (const auto& entry : pending_processes_) {

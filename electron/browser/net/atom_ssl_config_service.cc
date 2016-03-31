@@ -48,7 +48,7 @@ std::vector<uint16_t> ParseCipherSuites(
 
 }  // namespace
 
-AtomSSLConfigService::AtomSSLConfigService() {
+ElectronSSLConfigService::ElectronSSLConfigService() {
   auto cmd_line = base::CommandLine::ForCurrentProcess();
   if (cmd_line->HasSwitch(switches::kSSLVersionFallbackMin)) {
     auto version_string =
@@ -64,10 +64,10 @@ AtomSSLConfigService::AtomSSLConfigService() {
   }
 }
 
-AtomSSLConfigService::~AtomSSLConfigService() {
+ElectronSSLConfigService::~ElectronSSLConfigService() {
 }
 
-void AtomSSLConfigService::GetSSLConfig(net::SSLConfig* config) {
+void ElectronSSLConfigService::GetSSLConfig(net::SSLConfig* config) {
   *config = config_;
 }
 

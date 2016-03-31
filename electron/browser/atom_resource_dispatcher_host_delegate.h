@@ -9,10 +9,10 @@
 
 namespace electron {
 
-class AtomResourceDispatcherHostDelegate
+class ElectronResourceDispatcherHostDelegate
     : public content::ResourceDispatcherHostDelegate {
  public:
-  AtomResourceDispatcherHostDelegate();
+  ElectronResourceDispatcherHostDelegate();
 
   // content::ResourceDispatcherHostDelegate:
   bool HandleExternalProtocol(

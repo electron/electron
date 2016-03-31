@@ -16,7 +16,7 @@
 
 namespace electron {
 
-class AtomJavaScriptDialogManager;
+class ElectronJavaScriptDialogManager;
 class NativeWindow;
 class WebDialogHelper;
 
@@ -117,7 +117,7 @@ class CommonWebContentsDelegate
   bool native_fullscreen_;
 
   scoped_ptr<WebDialogHelper> web_dialog_helper_;
-  scoped_ptr<AtomJavaScriptDialogManager> dialog_manager_;
+  scoped_ptr<ElectronJavaScriptDialogManager> dialog_manager_;
 
   // The stored InspectableWebContents object.
   // Notice that web_contents_ must be placed after dialog_manager_, so we can

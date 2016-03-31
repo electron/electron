@@ -23,10 +23,10 @@ class UtilityMessageHandler;
 
 namespace electron {
 
-class AtomContentUtilityClient : public content::ContentUtilityClient {
+class ElectronContentUtilityClient : public content::ContentUtilityClient {
  public:
-  AtomContentUtilityClient();
-  ~AtomContentUtilityClient() override;
+  ElectronContentUtilityClient();
+  ~ElectronContentUtilityClient() override;
 
   void UtilityThreadStarted() override;
   bool OnMessageReceived(const IPC::Message& message) override;
@@ -50,7 +50,7 @@ class AtomContentUtilityClient : public content::ContentUtilityClient {
   // Maximum IPC msg size (default to kMaximumMessageSize; override for testing)
   static int64_t max_ipc_message_size_;
 
-  DISALLOW_COPY_AND_ASSIGN(AtomContentUtilityClient);
+  DISALLOW_COPY_AND_ASSIGN(ElectronContentUtilityClient);
 };
 
 }  // namespace electron

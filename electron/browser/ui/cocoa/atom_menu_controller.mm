@@ -42,7 +42,7 @@ Role kRolesMap[] = {
 
 }  // namespace
 
-@implementation AtomMenuController
+@implementation ElectronMenuController
 
 @synthesize model = model_;
 
@@ -125,7 +125,7 @@ Role kRolesMap[] = {
 - (void)addItemToMenu:(NSMenu*)menu
               atIndex:(NSInteger)index
             fromModel:(ui::MenuModel*)ui_model {
-  electron::AtomMenuModel* model = static_cast<electron::AtomMenuModel*>(ui_model);
+  electron::ElectronMenuModel* model = static_cast<electron::ElectronMenuModel*>(ui_model);
 
   base::string16 label16 = model->GetLabelAt(index);
   NSString* label = l10n_util::FixUpWindowsStyleLabel(label16);

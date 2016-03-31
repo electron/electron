@@ -164,7 +164,7 @@ NativeWindowViews::NativeWindowViews(
 #if defined(OS_WIN)
   params.native_widget =
       new views::DesktopNativeWidgetAura(window_.get());
-  atom_desktop_window_tree_host_win_ = new AtomDesktopWindowTreeHostWin(
+  atom_desktop_window_tree_host_win_ = new ElectronDesktopWindowTreeHostWin(
       this,
       window_.get(),
       static_cast<views::DesktopNativeWidgetAura*>(params.native_widget));
@@ -212,7 +212,7 @@ NativeWindowViews::NativeWindowViews(
     state_atom_list.push_back(GetAtom("_NET_WM_STATE_FULLSCREEN"));
   }
 
-  ui::SetAtomArrayProperty(GetAcceleratedWidget(), "_NET_WM_STATE", "ATOM",
+  ui::SetElectronArrayProperty(GetAcceleratedWidget(), "_NET_WM_STATE", "ATOM",
                            state_atom_list);
 
   // Set the _NET_WM_WINDOW_TYPE.
@@ -763,7 +763,7 @@ bool NativeWindowViews::IsVisibleOnAllWorkspaces() {
   // determine whether the current window is visible on all workspaces.
   XAtom sticky_atom = GetAtom("_NET_WM_STATE_STICKY");
   std::vector<XAtom> wm_states;
-  ui::GetAtomArrayProperty(GetAcceleratedWidget(), "_NET_WM_STATE", &wm_states);
+  ui::GetElectronArrayProperty(GetAcceleratedWidget(), "_NET_WM_STATE", &wm_states);
   return std::find(wm_states.begin(),
                    wm_states.end(), sticky_atom) != wm_states.end();
 #endif

@@ -47,15 +47,15 @@ void Log(const base::string16& message) {
 }  // namespace
 
 
-AtomBindings::AtomBindings() {
+ElectronBindings::ElectronBindings() {
   uv_async_init(uv_default_loop(), &call_next_tick_async_, OnCallNextTick);
   call_next_tick_async_.data = this;
 }
 
-AtomBindings::~AtomBindings() {
+ElectronBindings::~ElectronBindings() {
 }
 
-void AtomBindings::BindTo(v8::Isolate* isolate,
+void ElectronBindings::BindTo(v8::Isolate* isolate,
                           v8::Local<v8::Object> process) {
   v8::V8::SetFatalErrorHandler(FatalErrorCallback);
 
@@ -67,7 +67,7 @@ void AtomBindings::BindTo(v8::Isolate* isolate,
   dict.SetMethod("setFdLimit", &base::SetFdLimit);
 #endif
   dict.SetMethod("activateUvLoop",
-      base::Bind(&AtomBindings::ActivateUVLoop, base::Unretained(this)));
+      base::Bind(&ElectronBindings::ActivateUVLoop, base::Unretained(this)));
 
 #if defined(MAS_BUILD)
   dict.Set("mas", true);
@@ -81,7 +81,7 @@ void AtomBindings::BindTo(v8::Isolate* isolate,
   }
 }
 
-void AtomBindings::ActivateUVLoop(v8::Isolate* isolate) {
+void ElectronBindings::ActivateUVLoop(v8::Isolate* isolate) {
   node::Environment* env = node::Environment::GetCurrent(isolate);
   if (std::find(pending_next_ticks_.begin(), pending_next_ticks_.end(), env) !=
       pending_next_ticks_.end())
@@ -92,8 +92,8 @@ void AtomBindings::ActivateUVLoop(v8::Isolate* isolate) {
 }
 
 // static
-void AtomBindings::OnCallNextTick(uv_async_t* handle) {
-  AtomBindings* self = static_cast<AtomBindings*>(handle->data);
+void ElectronBindings::OnCallNextTick(uv_async_t* handle) {
+  ElectronBindings* self = static_cast<ElectronBindings*>(handle->data);
   for (std::list<node::Environment*>::const_iterator it =
            self->pending_next_ticks_.begin();
        it != self->pending_next_ticks_.end(); ++it) {

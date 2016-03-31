@@ -8,7 +8,7 @@
 
 namespace electron {
 
-AtomDesktopWindowTreeHostWin::AtomDesktopWindowTreeHostWin(
+ElectronDesktopWindowTreeHostWin::ElectronDesktopWindowTreeHostWin(
     MessageHandlerDelegate* delegate,
     views::internal::NativeWidgetDelegate* native_widget_delegate,
     views::DesktopNativeWidgetAura* desktop_native_widget_aura)
@@ -17,10 +17,10 @@ AtomDesktopWindowTreeHostWin::AtomDesktopWindowTreeHostWin(
           delegate_(delegate) {
 }
 
-AtomDesktopWindowTreeHostWin::~AtomDesktopWindowTreeHostWin() {
+ElectronDesktopWindowTreeHostWin::~ElectronDesktopWindowTreeHostWin() {
 }
 
-bool AtomDesktopWindowTreeHostWin::PreHandleMSG(
+bool ElectronDesktopWindowTreeHostWin::PreHandleMSG(
     UINT message, WPARAM w_param, LPARAM l_param, LRESULT* result) {
   return delegate_->PreHandleMSG(message, w_param, l_param, result);
 }

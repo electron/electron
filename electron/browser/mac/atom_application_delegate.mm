@@ -8,11 +8,11 @@
 #include "electron/browser/browser.h"
 #include "base/strings/sys_string_conversions.h"
 
-@implementation AtomApplicationDelegate
+@implementation ElectronApplicationDelegate
 
 - (id)init {
   self = [super init];
-  menu_controller_.reset([[AtomMenuController alloc] init]);
+  menu_controller_.reset([[ElectronMenuController alloc] init]);
   return self;
 }
 

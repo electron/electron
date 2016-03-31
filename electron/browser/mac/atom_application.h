@@ -4,13 +4,13 @@
 
 #import "base/mac/scoped_sending_event.h"
 
-@interface AtomApplication : NSApplication<CrAppProtocol,
+@interface ElectronApplication : NSApplication<CrAppProtocol,
                                            CrAppControlProtocol> {
  @private
   BOOL handlingSendEvent_;
 }
 
-+ (AtomApplication*)sharedApplication;
++ (ElectronApplication*)sharedApplication;
 
 // CrAppProtocol:
 - (BOOL)isHandlingSendEvent;

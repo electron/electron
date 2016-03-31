@@ -8,13 +8,13 @@
 
 namespace electron {
 
-AtomQuotaPermissionContext::AtomQuotaPermissionContext() {
+ElectronQuotaPermissionContext::ElectronQuotaPermissionContext() {
 }
 
-AtomQuotaPermissionContext::~AtomQuotaPermissionContext() {
+ElectronQuotaPermissionContext::~ElectronQuotaPermissionContext() {
 }
 
-void AtomQuotaPermissionContext::RequestQuotaPermission(
+void ElectronQuotaPermissionContext::RequestQuotaPermission(
     const content::StorageQuotaParams& params,
     int render_process_id,
     const PermissionCallback& callback) {

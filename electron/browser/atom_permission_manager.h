@@ -17,10 +17,10 @@ class WebContents;
 
 namespace electron {
 
-class AtomPermissionManager : public content::PermissionManager {
+class ElectronPermissionManager : public content::PermissionManager {
  public:
-  AtomPermissionManager();
-  ~AtomPermissionManager() override;
+  ElectronPermissionManager();
+  ~ElectronPermissionManager() override;
 
   using ResponseCallback =
       base::Callback<void(content::PermissionStatus)>;
@@ -84,7 +84,7 @@ class AtomPermissionManager : public content::PermissionManager {
 
   int request_id_;
 
-  DISALLOW_COPY_AND_ASSIGN(AtomPermissionManager);
+  DISALLOW_COPY_AND_ASSIGN(ElectronPermissionManager);
 };
 
 }  // namespace electron

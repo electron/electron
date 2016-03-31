@@ -28,7 +28,7 @@ class WindowStateWatcher : public ui::PlatformEventObserver {
   NativeWindowViews* window_;
   gfx::AcceleratedWidget widget_;
 
-  ui::X11AtomCache atom_cache_;
+  ui::X11ElectronCache atom_cache_;
 
   bool was_minimized_;
   bool was_maximized_;

@@ -25,8 +25,8 @@ class URLRequestContextGetter;
 
 namespace electron {
 
-class AtomBrowserContext;
-class AtomURLRequestJobFactory;
+class ElectronBrowserContext;
+class ElectronURLRequestJobFactory;
 
 namespace api {
 
@@ -38,10 +38,10 @@ class Protocol : public mate::Wrappable {
   using BooleanCallback = base::Callback<void(bool)>;
 
   static mate::Handle<Protocol> Create(
-      v8::Isolate* isolate, AtomBrowserContext* browser_context);
+      v8::Isolate* isolate, ElectronBrowserContext* browser_context);
 
  protected:
-  explicit Protocol(AtomBrowserContext* browser_context);
+  explicit Protocol(ElectronBrowserContext* browser_context);
 
   // mate::Wrappable implementations:
   virtual mate::ObjectTemplateBuilder GetObjectTemplateBuilder(
@@ -183,7 +183,7 @@ class Protocol : public mate::Wrappable {
       scoped_ptr<net::URLRequestJobFactory::ProtocolHandler>>;
   OriginalProtocolsMap original_protocols_;
 
-  AtomURLRequestJobFactory* job_factory_;  // weak ref
+  ElectronURLRequestJobFactory* job_factory_;  // weak ref
 
   DISALLOW_COPY_AND_ASSIGN(Protocol);
 };

@@ -18,10 +18,10 @@ class Environment;
 
 namespace electron {
 
-class AtomBindings {
+class ElectronBindings {
  public:
-  AtomBindings();
-  virtual ~AtomBindings();
+  ElectronBindings();
+  virtual ~ElectronBindings();
 
   // Add process.atomBinding function, which behaves like process.binding but
   // load native code from atom-shell instead.
@@ -35,7 +35,7 @@ class AtomBindings {
   uv_async_t call_next_tick_async_;
   std::list<node::Environment*> pending_next_ticks_;
 
-  DISALLOW_COPY_AND_ASSIGN(AtomBindings);
+  DISALLOW_COPY_AND_ASSIGN(ElectronBindings);
 };
 
 }  // namespace electron

@@ -31,12 +31,12 @@ base::FilePath GetHelperAppPath(const base::FilePath& frameworks_path,
 
 }  // namespace
 
-void AtomMainDelegate::OverrideFrameworkBundlePath() {
+void ElectronMainDelegate::OverrideFrameworkBundlePath() {
   base::mac::SetOverrideFrameworkBundlePath(
       GetFrameworksPath().Append(ATOM_PRODUCT_NAME " Framework.framework"));
 }
 
-void AtomMainDelegate::OverrideChildProcessPath() {
+void ElectronMainDelegate::OverrideChildProcessPath() {
   base::FilePath frameworks_path = GetFrameworksPath();
   base::FilePath helper_path = GetHelperAppPath(frameworks_path,
                                                 ATOM_PRODUCT_NAME);

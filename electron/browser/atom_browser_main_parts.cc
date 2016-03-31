@@ -32,20 +32,20 @@ void Erase(T* container, typename T::iterator iter) {
 }
 
 // static
-AtomBrowserMainParts* AtomBrowserMainParts::self_ = NULL;
+ElectronBrowserMainParts* ElectronBrowserMainParts::self_ = NULL;
 
-AtomBrowserMainParts::AtomBrowserMainParts()
+ElectronBrowserMainParts::ElectronBrowserMainParts()
     : fake_browser_process_(new BrowserProcess),
       exit_code_(nullptr),
       browser_(new Browser),
       node_bindings_(NodeBindings::Create(true)),
-      atom_bindings_(new AtomBindings),
+      atom_bindings_(new ElectronBindings),
       gc_timer_(true, true) {
-  DCHECK(!self_) << "Cannot have two AtomBrowserMainParts";
+  DCHECK(!self_) << "Cannot have two ElectronBrowserMainParts";
   self_ = this;
 }
 
-AtomBrowserMainParts::~AtomBrowserMainParts() {
+ElectronBrowserMainParts::~ElectronBrowserMainParts() {
   // Leak the JavascriptEnvironment on exit.
   // This is to work around the bug that V8 would be waiting for background
   // tasks to finish on exit, while somehow it waits forever in Electron, more
@@ -57,12 +57,12 @@ AtomBrowserMainParts::~AtomBrowserMainParts() {
 }
 
 // static
-AtomBrowserMainParts* AtomBrowserMainParts::Get() {
+ElectronBrowserMainParts* ElectronBrowserMainParts::Get() {
   DCHECK(self_);
   return self_;
 }
 
-bool AtomBrowserMainParts::SetExitCode(int code) {
+bool ElectronBrowserMainParts::SetExitCode(int code) {
   if (!exit_code_)
     return false;
 
@@ -70,24 +70,24 @@ bool AtomBrowserMainParts::SetExitCode(int code) {
   return true;
 }
 
-int AtomBrowserMainParts::GetExitCode() {
+int ElectronBrowserMainParts::GetExitCode() {
   return exit_code_ != nullptr ? *exit_code_ : 0;
 }
 
-base::Closure AtomBrowserMainParts::RegisterDestructionCallback(
+base::Closure ElectronBrowserMainParts::RegisterDestructionCallback(
     const base::Closure& callback) {
   auto iter = destructors_.insert(destructors_.end(), callback);
   return base::Bind(&Erase<std::list<base::Closure>>, &destructors_, iter);
 }
 
-void AtomBrowserMainParts::PreEarlyInitialization() {
+void ElectronBrowserMainParts::PreEarlyInitialization() {
   brightray::BrowserMainParts::PreEarlyInitialization();
 #if defined(OS_POSIX)
   HandleSIGCHLD();
 #endif
 }
 
-void AtomBrowserMainParts::PostEarlyInitialization() {
+void ElectronBrowserMainParts::PostEarlyInitialization() {
   brightray::BrowserMainParts::PostEarlyInitialization();
 
   // Temporary set the bridge_task_runner_ as current thread's task runner,
@@ -123,7 +123,7 @@ void AtomBrowserMainParts::PostEarlyInitialization() {
   node_bindings_->set_uv_env(env);
 }
 
-void AtomBrowserMainParts::PreMainMessageLoopRun() {
+void ElectronBrowserMainParts::PreMainMessageLoopRun() {
   // Run user's main script before most things get initialized, so we can have
   // a chance to setup everything.
   node_bindings_->PrepareMessageLoop();
@@ -149,25 +149,25 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
 #endif
 
 #if !defined(OS_MACOSX)
-  // The corresponding call in OS X is in AtomApplicationDelegate.
+  // The corresponding call in OS X is in ElectronApplicationDelegate.
   Browser::Get()->WillFinishLaunching();
   Browser::Get()->DidFinishLaunching();
 #endif
 }
 
-bool AtomBrowserMainParts::MainMessageLoopRun(int* result_code) {
+bool ElectronBrowserMainParts::MainMessageLoopRun(int* result_code) {
   exit_code_ = result_code;
   return brightray::BrowserMainParts::MainMessageLoopRun(result_code);
 }
 
-void AtomBrowserMainParts::PostMainMessageLoopStart() {
+void ElectronBrowserMainParts::PostMainMessageLoopStart() {
   brightray::BrowserMainParts::PostMainMessageLoopStart();
 #if defined(OS_POSIX)
   HandleShutdownSignals();
 #endif
 }
 
-void AtomBrowserMainParts::PostMainMessageLoopRun() {
+void ElectronBrowserMainParts::PostMainMessageLoopRun() {
   brightray::BrowserMainParts::PostMainMessageLoopRun();
 
 #if defined(OS_MACOSX)

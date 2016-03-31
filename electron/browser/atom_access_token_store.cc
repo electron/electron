@@ -24,14 +24,14 @@ const char* kGeolocationProviderURL =
 
 }  // namespace
 
-AtomAccessTokenStore::AtomAccessTokenStore() {
+ElectronAccessTokenStore::ElectronAccessTokenStore() {
   content::GeolocationProvider::GetInstance()->UserDidOptIntoLocationServices();
 }
 
-AtomAccessTokenStore::~AtomAccessTokenStore() {
+ElectronAccessTokenStore::~ElectronAccessTokenStore() {
 }
 
-void AtomAccessTokenStore::LoadAccessTokens(
+void ElectronAccessTokenStore::LoadAccessTokens(
     const LoadAccessTokensCallbackType& callback) {
   AccessTokenSet access_token_set;
 
@@ -42,11 +42,11 @@ void AtomAccessTokenStore::LoadAccessTokens(
   token_pair.first = GURL(kGeolocationProviderURL);
   access_token_set.insert(token_pair);
 
-  auto browser_context = AtomBrowserMainParts::Get()->browser_context();
+  auto browser_context = ElectronBrowserMainParts::Get()->browser_context();
   callback.Run(access_token_set, browser_context->url_request_context_getter());
 }
 
-void AtomAccessTokenStore::SaveAccessToken(const GURL& server_url,
+void ElectronAccessTokenStore::SaveAccessToken(const GURL& server_url,
                                            const base::string16& access_token) {
 }
 

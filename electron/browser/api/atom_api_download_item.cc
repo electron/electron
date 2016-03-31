@@ -190,7 +190,7 @@ void SetWrapDownloadItem(const WrapDownloadItemCallback& callback) {
   g_wrap_download_item = callback;
 
   // Cleanup the wrapper on exit.
-  electron::AtomBrowserMainParts::Get()->RegisterDestructionCallback(
+  electron::ElectronBrowserMainParts::Get()->RegisterDestructionCallback(
       base::Bind(ClearWrapDownloadItem));
 }
 

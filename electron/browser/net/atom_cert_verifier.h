@@ -13,10 +13,10 @@
 
 namespace electron {
 
-class AtomCertVerifier : public net::CertVerifier {
+class ElectronCertVerifier : public net::CertVerifier {
  public:
-  AtomCertVerifier();
-  virtual ~AtomCertVerifier();
+  ElectronCertVerifier();
+  virtual ~ElectronCertVerifier();
 
   using VerifyProc =
       base::Callback<void(const std::string& hostname,
@@ -43,7 +43,7 @@ class AtomCertVerifier : public net::CertVerifier {
   VerifyProc verify_proc_;
   scoped_ptr<net::CertVerifier> default_cert_verifier_;
 
-  DISALLOW_COPY_AND_ASSIGN(AtomCertVerifier);
+  DISALLOW_COPY_AND_ASSIGN(ElectronCertVerifier);
 };
 
 }   // namespace electron

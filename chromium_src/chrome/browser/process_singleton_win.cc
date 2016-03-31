@@ -259,7 +259,7 @@ ProcessSingleton::NotifyOtherProcessOrCreate() {
 // isn't one, create a message window with its title set to the profile
 // directory path.
 bool ProcessSingleton::Create() {
-  static const wchar_t kMutexName[] = L"Local\\AtomProcessSingletonStartup!";
+  static const wchar_t kMutexName[] = L"Local\\ElectronProcessSingletonStartup!";
 
   remote_window_ = chrome::FindRunningChromeWindow(user_data_dir_);
   if (!remote_window_) {

@@ -108,7 +108,7 @@ void WebDialogHelper::RunFileChooser(content::WebContents* web_contents,
     }
 
     std::vector<base::FilePath> paths;
-    AtomBrowserContext* browser_context = static_cast<AtomBrowserContext*>(
+    ElectronBrowserContext* browser_context = static_cast<ElectronBrowserContext*>(
         window_->web_contents()->GetBrowserContext());
     base::FilePath default_file_path = browser_context->prefs()->GetFilePath(
         prefs::kSelectFileLastDirectory).Append(params.default_file_name);

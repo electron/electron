@@ -16,13 +16,13 @@ namespace electron {
 
 typedef net::URLRequestJobFactory::ProtocolHandler ProtocolHandler;
 
-AtomURLRequestJobFactory::AtomURLRequestJobFactory() {}
+ElectronURLRequestJobFactory::ElectronURLRequestJobFactory() {}
 
-AtomURLRequestJobFactory::~AtomURLRequestJobFactory() {
+ElectronURLRequestJobFactory::~ElectronURLRequestJobFactory() {
   STLDeleteValues(&protocol_handler_map_);
 }
 
-bool AtomURLRequestJobFactory::SetProtocolHandler(
+bool ElectronURLRequestJobFactory::SetProtocolHandler(
     const std::string& scheme, scoped_ptr<ProtocolHandler> protocol_handler) {
   if (!protocol_handler) {
     ProtocolHandlerMap::iterator it = protocol_handler_map_.find(scheme);
@@ -40,7 +40,7 @@ bool AtomURLRequestJobFactory::SetProtocolHandler(
   return true;
 }
 
-scoped_ptr<ProtocolHandler> AtomURLRequestJobFactory::ReplaceProtocol(
+scoped_ptr<ProtocolHandler> ElectronURLRequestJobFactory::ReplaceProtocol(
     const std::string& scheme, scoped_ptr<ProtocolHandler> protocol_handler) {
   if (!ContainsKey(protocol_handler_map_, scheme))
     return nullptr;
@@ -49,7 +49,7 @@ scoped_ptr<ProtocolHandler> AtomURLRequestJobFactory::ReplaceProtocol(
   return make_scoped_ptr(original_protocol_handler);
 }
 
-ProtocolHandler* AtomURLRequestJobFactory::GetProtocolHandler(
+ProtocolHandler* ElectronURLRequestJobFactory::GetProtocolHandler(
     const std::string& scheme) const {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
 
@@ -59,12 +59,12 @@ ProtocolHandler* AtomURLRequestJobFactory::GetProtocolHandler(
   return it->second;
 }
 
-bool AtomURLRequestJobFactory::HasProtocolHandler(
+bool ElectronURLRequestJobFactory::HasProtocolHandler(
     const std::string& scheme) const {
   return ContainsKey(protocol_handler_map_, scheme);
 }
 
-net::URLRequestJob* AtomURLRequestJobFactory::MaybeCreateJobWithProtocolHandler(
+net::URLRequestJob* ElectronURLRequestJobFactory::MaybeCreateJobWithProtocolHandler(
     const std::string& scheme,
     net::URLRequest* request,
     net::NetworkDelegate* network_delegate) const {
@@ -76,20 +76,20 @@ net::URLRequestJob* AtomURLRequestJobFactory::MaybeCreateJobWithProtocolHandler(
   return it->second->MaybeCreateJob(request, network_delegate);
 }
 
-net::URLRequestJob* AtomURLRequestJobFactory::MaybeInterceptRedirect(
+net::URLRequestJob* ElectronURLRequestJobFactory::MaybeInterceptRedirect(
     net::URLRequest* request,
     net::NetworkDelegate* network_delegate,
     const GURL& location) const {
   return nullptr;
 }
 
-net::URLRequestJob* AtomURLRequestJobFactory::MaybeInterceptResponse(
+net::URLRequestJob* ElectronURLRequestJobFactory::MaybeInterceptResponse(
     net::URLRequest* request,
     net::NetworkDelegate* network_delegate) const {
   return nullptr;
 }
 
-bool AtomURLRequestJobFactory::IsHandledProtocol(
+bool ElectronURLRequestJobFactory::IsHandledProtocol(
     const std::string& scheme) const {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
 
@@ -97,7 +97,7 @@ bool AtomURLRequestJobFactory::IsHandledProtocol(
       net::URLRequest::IsHandledProtocol(scheme);
 }
 
-bool AtomURLRequestJobFactory::IsHandledURL(const GURL& url) const {
+bool ElectronURLRequestJobFactory::IsHandledURL(const GURL& url) const {
   if (!url.is_valid()) {
     // We handle error cases.
     return true;
@@ -105,7 +105,7 @@ bool AtomURLRequestJobFactory::IsHandledURL(const GURL& url) const {
   return IsHandledProtocol(url.scheme());
 }
 
-bool AtomURLRequestJobFactory::IsSafeRedirectTarget(
+bool ElectronURLRequestJobFactory::IsSafeRedirectTarget(
     const GURL& location) const {
   return IsHandledURL(location);
 }

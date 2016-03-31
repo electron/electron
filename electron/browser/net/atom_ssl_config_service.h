@@ -9,10 +9,10 @@
 
 namespace electron {
 
-class AtomSSLConfigService : public net::SSLConfigService {
+class ElectronSSLConfigService : public net::SSLConfigService {
  public:
-  AtomSSLConfigService();
-  ~AtomSSLConfigService() override;
+  ElectronSSLConfigService();
+  ~ElectronSSLConfigService() override;
 
   // net::SSLConfigService:
   void GetSSLConfig(net::SSLConfig* config) override;
@@ -20,7 +20,7 @@ class AtomSSLConfigService : public net::SSLConfigService {
  private:
   net::SSLConfig config_;
 
-  DISALLOW_COPY_AND_ASSIGN(AtomSSLConfigService);
+  DISALLOW_COPY_AND_ASSIGN(ElectronSSLConfigService);
 };
 
 }   // namespace electron

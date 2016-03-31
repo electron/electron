@@ -36,23 +36,23 @@ namespace electron {
 
 namespace api {
 
-WebRequest::WebRequest(AtomBrowserContext* browser_context)
+WebRequest::WebRequest(ElectronBrowserContext* browser_context)
     : browser_context_(browser_context) {
 }
 
 WebRequest::~WebRequest() {
 }
 
-template<AtomNetworkDelegate::SimpleEvent type>
+template<ElectronNetworkDelegate::SimpleEvent type>
 void WebRequest::SetSimpleListener(mate::Arguments* args) {
-  SetListener<AtomNetworkDelegate::SimpleListener>(
-      &AtomNetworkDelegate::SetSimpleListenerInIO, type, args);
+  SetListener<ElectronNetworkDelegate::SimpleListener>(
+      &ElectronNetworkDelegate::SetSimpleListenerInIO, type, args);
 }
 
-template<AtomNetworkDelegate::ResponseEvent type>
+template<ElectronNetworkDelegate::ResponseEvent type>
 void WebRequest::SetResponseListener(mate::Arguments* args) {
-  SetListener<AtomNetworkDelegate::ResponseListener>(
-      &AtomNetworkDelegate::SetResponseListenerInIO, type, args);
+  SetListener<ElectronNetworkDelegate::ResponseListener>(
+      &ElectronNetworkDelegate::SetResponseListenerInIO, type, args);
 }
 
 template<typename Listener, typename Method, typename Event>
@@ -80,7 +80,7 @@ void WebRequest::SetListener(Method method, Event type, mate::Arguments* args) {
 // static
 mate::Handle<WebRequest> WebRequest::Create(
     v8::Isolate* isolate,
-    AtomBrowserContext* browser_context) {
+    ElectronBrowserContext* browser_context) {
   return mate::CreateHandle(isolate, new WebRequest(browser_context));
 }
 
@@ -90,28 +90,28 @@ void WebRequest::BuildPrototype(v8::Isolate* isolate,
   mate::ObjectTemplateBuilder(isolate, prototype)
       .SetMethod("onBeforeRequest",
                  &WebRequest::SetResponseListener<
-                    AtomNetworkDelegate::kOnBeforeRequest>)
+                    ElectronNetworkDelegate::kOnBeforeRequest>)
       .SetMethod("onBeforeSendHeaders",
                  &WebRequest::SetResponseListener<
-                    AtomNetworkDelegate::kOnBeforeSendHeaders>)
+                    ElectronNetworkDelegate::kOnBeforeSendHeaders>)
       .SetMethod("onHeadersReceived",
                  &WebRequest::SetResponseListener<
-                    AtomNetworkDelegate::kOnHeadersReceived>)
+                    ElectronNetworkDelegate::kOnHeadersReceived>)
       .SetMethod("onSendHeaders",
                  &WebRequest::SetSimpleListener<
-                    AtomNetworkDelegate::kOnSendHeaders>)
+                    ElectronNetworkDelegate::kOnSendHeaders>)
       .SetMethod("onBeforeRedirect",
                  &WebRequest::SetSimpleListener<
-                    AtomNetworkDelegate::kOnBeforeRedirect>)
+                    ElectronNetworkDelegate::kOnBeforeRedirect>)
       .SetMethod("onResponseStarted",
                  &WebRequest::SetSimpleListener<
-                    AtomNetworkDelegate::kOnResponseStarted>)
+                    ElectronNetworkDelegate::kOnResponseStarted>)
       .SetMethod("onCompleted",
                  &WebRequest::SetSimpleListener<
-                    AtomNetworkDelegate::kOnCompleted>)
+                    ElectronNetworkDelegate::kOnCompleted>)
       .SetMethod("onErrorOccurred",
                  &WebRequest::SetSimpleListener<
-                    AtomNetworkDelegate::kOnErrorOccurred>);
+                    ElectronNetworkDelegate::kOnErrorOccurred>);
 }
 
 }  // namespace api

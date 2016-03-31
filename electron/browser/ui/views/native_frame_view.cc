@@ -10,7 +10,7 @@ namespace electron {
 
 namespace {
 
-const char kViewClassName[] = "AtomNativeFrameView";
+const char kViewClassName[] = "ElectronNativeFrameView";
 
 }  // namespace
 

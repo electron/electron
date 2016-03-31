@@ -62,23 +62,23 @@ std::string RemoveWhitespace(const std::string& str) {
 
 }  // namespace
 
-AtomBrowserContext::AtomBrowserContext(const std::string& partition,
+ElectronBrowserContext::ElectronBrowserContext(const std::string& partition,
                                        bool in_memory)
     : brightray::BrowserContext(partition, in_memory),
       cert_verifier_(nullptr),
-      job_factory_(new AtomURLRequestJobFactory),
-      network_delegate_(new AtomNetworkDelegate),
+      job_factory_(new ElectronURLRequestJobFactory),
+      network_delegate_(new ElectronNetworkDelegate),
       allow_ntlm_everywhere_(false) {
 }
 
-AtomBrowserContext::~AtomBrowserContext() {
+ElectronBrowserContext::~ElectronBrowserContext() {
 }
 
-net::NetworkDelegate* AtomBrowserContext::CreateNetworkDelegate() {
+net::NetworkDelegate* ElectronBrowserContext::CreateNetworkDelegate() {
   return network_delegate_;
 }
 
-std::string AtomBrowserContext::GetUserAgent() {
+std::string ElectronBrowserContext::GetUserAgent() {
   Browser* browser = Browser::Get();
   std::string name = RemoveWhitespace(browser->GetName());
   std::string user_agent;
@@ -96,10 +96,10 @@ std::string AtomBrowserContext::GetUserAgent() {
 }
 
 scoped_ptr<net::URLRequestJobFactory>
-AtomBrowserContext::CreateURLRequestJobFactory(
+ElectronBrowserContext::CreateURLRequestJobFactory(
     content::ProtocolHandlerMap* handlers,
     content::URLRequestInterceptorScopedVector* interceptors) {
-  scoped_ptr<AtomURLRequestJobFactory> job_factory(job_factory_);
+  scoped_ptr<ElectronURLRequestJobFactory> job_factory(job_factory_);
 
   for (auto& it : *handlers) {
     job_factory->SetProtocolHandler(it.first,
@@ -146,7 +146,7 @@ AtomBrowserContext::CreateURLRequestJobFactory(
 }
 
 net::HttpCache::BackendFactory*
-AtomBrowserContext::CreateHttpCacheBackendFactory(
+ElectronBrowserContext::CreateHttpCacheBackendFactory(
     const base::FilePath& base_path) {
   base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
   if (command_line->HasSwitch(switches::kDisableHttpCache))
@@ -156,38 +156,38 @@ AtomBrowserContext::CreateHttpCacheBackendFactory(
 }
 
 content::DownloadManagerDelegate*
-AtomBrowserContext::GetDownloadManagerDelegate() {
+ElectronBrowserContext::GetDownloadManagerDelegate() {
   if (!download_manager_delegate_.get()) {
     auto download_manager = content::BrowserContext::GetDownloadManager(this);
     download_manager_delegate_.reset(
-        new AtomDownloadManagerDelegate(download_manager));
+        new ElectronDownloadManagerDelegate(download_manager));
   }
   return download_manager_delegate_.get();
 }
 
-content::BrowserPluginGuestManager* AtomBrowserContext::GetGuestManager() {
+content::BrowserPluginGuestManager* ElectronBrowserContext::GetGuestManager() {
   if (!guest_manager_)
     guest_manager_.reset(new WebViewManager);
   return guest_manager_.get();
 }
 
-content::PermissionManager* AtomBrowserContext::GetPermissionManager() {
+content::PermissionManager* ElectronBrowserContext::GetPermissionManager() {
   if (!permission_manager_.get())
-    permission_manager_.reset(new AtomPermissionManager);
+    permission_manager_.reset(new ElectronPermissionManager);
   return permission_manager_.get();
 }
 
-scoped_ptr<net::CertVerifier> AtomBrowserContext::CreateCertVerifier() {
+scoped_ptr<net::CertVerifier> ElectronBrowserContext::CreateCertVerifier() {
   DCHECK(!cert_verifier_);
-  cert_verifier_ = new AtomCertVerifier;
+  cert_verifier_ = new ElectronCertVerifier;
   return make_scoped_ptr(cert_verifier_);
 }
 
-net::SSLConfigService* AtomBrowserContext::CreateSSLConfigService() {
-  return new AtomSSLConfigService;
+net::SSLConfigService* ElectronBrowserContext::CreateSSLConfigService() {
+  return new ElectronSSLConfigService;
 }
 
-void AtomBrowserContext::RegisterPrefs(PrefRegistrySimple* pref_registry) {
+void ElectronBrowserContext::RegisterPrefs(PrefRegistrySimple* pref_registry) {
   pref_registry->RegisterFilePathPref(prefs::kSelectFileLastDirectory,
                                       base::FilePath());
   base::FilePath download_dir;
@@ -197,13 +197,13 @@ void AtomBrowserContext::RegisterPrefs(PrefRegistrySimple* pref_registry) {
   pref_registry->RegisterDictionaryPref(prefs::kDevToolsFileSystemPaths);
 }
 
-bool AtomBrowserContext::AllowNTLMCredentialsForDomain(const GURL& origin) {
+bool ElectronBrowserContext::AllowNTLMCredentialsForDomain(const GURL& origin) {
   if (allow_ntlm_everywhere_)
     return true;
   return Delegate::AllowNTLMCredentialsForDomain(origin);
 }
 
-void AtomBrowserContext::AllowNTLMCredentialsForAllDomains(bool should_allow) {
+void ElectronBrowserContext::AllowNTLMCredentialsForAllDomains(bool should_allow) {
   allow_ntlm_everywhere_ = should_allow;
 }
 
@@ -214,7 +214,7 @@ namespace brightray {
 // static
 scoped_refptr<BrowserContext> BrowserContext::Create(
     const std::string& partition, bool in_memory) {
-  return make_scoped_refptr(new electron::AtomBrowserContext(partition, in_memory));
+  return make_scoped_refptr(new electron::ElectronBrowserContext(partition, in_memory));
 }
 
 }  // namespace brightray

@@ -29,7 +29,7 @@ class ProxyConfig;
 
 namespace electron {
 
-class AtomBrowserContext;
+class ElectronBrowserContext;
 
 namespace api {
 
@@ -45,20 +45,20 @@ class Session: public mate::TrackableObject<Session>,
 
   // Gets or creates Session from the |browser_context|.
   static mate::Handle<Session> CreateFrom(
-      v8::Isolate* isolate, AtomBrowserContext* browser_context);
+      v8::Isolate* isolate, ElectronBrowserContext* browser_context);
 
   // Gets the Session of |partition| and |in_memory|.
   static mate::Handle<Session> FromPartition(
       v8::Isolate* isolate, const std::string& partition, bool in_memory);
 
-  AtomBrowserContext* browser_context() const { return browser_context_.get(); }
+  ElectronBrowserContext* browser_context() const { return browser_context_.get(); }
 
   // mate::TrackableObject:
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::ObjectTemplate> prototype);
 
  protected:
-  explicit Session(AtomBrowserContext* browser_context);
+  explicit Session(ElectronBrowserContext* browser_context);
   ~Session();
 
   // content::DownloadManager::Observer:
@@ -86,7 +86,7 @@ class Session: public mate::TrackableObject<Session>,
   v8::Global<v8::Value> cookies_;
   v8::Global<v8::Value> web_request_;
 
-  scoped_refptr<AtomBrowserContext> browser_context_;
+  scoped_refptr<ElectronBrowserContext> browser_context_;
 
   DISALLOW_COPY_AND_ASSIGN(Session);
 };

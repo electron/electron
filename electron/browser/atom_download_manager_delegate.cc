@@ -21,12 +21,12 @@
 
 namespace electron {
 
-AtomDownloadManagerDelegate::AtomDownloadManagerDelegate(
+ElectronDownloadManagerDelegate::ElectronDownloadManagerDelegate(
     content::DownloadManager* manager)
     : download_manager_(manager),
       weak_ptr_factory_(this) {}
 
-AtomDownloadManagerDelegate::~AtomDownloadManagerDelegate() {
+ElectronDownloadManagerDelegate::~ElectronDownloadManagerDelegate() {
   if (download_manager_) {
     DCHECK_EQ(static_cast<content::DownloadManagerDelegate*>(this),
               download_manager_->GetDelegate());
@@ -35,7 +35,7 @@ AtomDownloadManagerDelegate::~AtomDownloadManagerDelegate() {
   }
 }
 
-void AtomDownloadManagerDelegate::CreateDownloadPath(
+void ElectronDownloadManagerDelegate::CreateDownloadPath(
     const GURL& url,
     const std::string& content_disposition,
     const std::string& suggested_filename,
@@ -59,7 +59,7 @@ void AtomDownloadManagerDelegate::CreateDownloadPath(
                                    base::Bind(callback, path));
 }
 
-void AtomDownloadManagerDelegate::OnDownloadPathGenerated(
+void ElectronDownloadManagerDelegate::OnDownloadPathGenerated(
     uint32_t download_id,
     const content::DownloadTargetCallback& callback,
     const base::FilePath& default_path) {
@@ -78,7 +78,7 @@ void AtomDownloadManagerDelegate::OnDownloadPathGenerated(
   if (file_dialog::ShowSaveDialog(window, item->GetURL().spec(), default_path,
                                   file_dialog::Filters(), &path)) {
     // Remember the last selected download directory.
-    AtomBrowserContext* browser_context = static_cast<AtomBrowserContext*>(
+    ElectronBrowserContext* browser_context = static_cast<ElectronBrowserContext*>(
         download_manager_->GetBrowserContext());
     browser_context->prefs()->SetFilePath(prefs::kDownloadDefaultDirectory,
                                           path.DirName());
@@ -92,12 +92,12 @@ void AtomDownloadManagerDelegate::OnDownloadPathGenerated(
                content::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS, path);
 }
 
-void AtomDownloadManagerDelegate::Shutdown() {
+void ElectronDownloadManagerDelegate::Shutdown() {
   weak_ptr_factory_.InvalidateWeakPtrs();
   download_manager_ = nullptr;
 }
 
-bool AtomDownloadManagerDelegate::DetermineDownloadTarget(
+bool ElectronDownloadManagerDelegate::DetermineDownloadTarget(
     content::DownloadItem* download,
     const content::DownloadTargetCallback& callback) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
@@ -129,19 +129,19 @@ bool AtomDownloadManagerDelegate::DetermineDownloadTarget(
     }
   }
 
-  AtomBrowserContext* browser_context = static_cast<AtomBrowserContext*>(
+  ElectronBrowserContext* browser_context = static_cast<ElectronBrowserContext*>(
       download_manager_->GetBrowserContext());
   base::FilePath default_download_path = browser_context->prefs()->GetFilePath(
       prefs::kDownloadDefaultDirectory);
 
   CreateDownloadPathCallback download_path_callback =
-      base::Bind(&AtomDownloadManagerDelegate::OnDownloadPathGenerated,
+      base::Bind(&ElectronDownloadManagerDelegate::OnDownloadPathGenerated,
                  weak_ptr_factory_.GetWeakPtr(),
                  download->GetId(), callback);
 
   content::BrowserThread::PostTask(
       content::BrowserThread::FILE, FROM_HERE,
-      base::Bind(&AtomDownloadManagerDelegate::CreateDownloadPath,
+      base::Bind(&ElectronDownloadManagerDelegate::CreateDownloadPath,
                  weak_ptr_factory_.GetWeakPtr(),
                  download->GetURL(),
                  download->GetContentDisposition(),
@@ -152,13 +152,13 @@ bool AtomDownloadManagerDelegate::DetermineDownloadTarget(
   return true;
 }
 
-bool AtomDownloadManagerDelegate::ShouldOpenDownload(
+bool ElectronDownloadManagerDelegate::ShouldOpenDownload(
     content::DownloadItem* download,
     const content::DownloadOpenDelayedCallback& callback) {
   return true;
 }
 
-void AtomDownloadManagerDelegate::GetNextId(
+void ElectronDownloadManagerDelegate::GetNextId(
     const content::DownloadIdCallback& callback) {
   static uint32_t next_id = content::DownloadItem::kInvalidId + 1;
   callback.Run(next_id++);

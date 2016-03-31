@@ -160,13 +160,13 @@ void PassLoginInformation(scoped_refptr<LoginHandler> login_handler,
 }  // namespace
 
 App::App() {
-  static_cast<AtomBrowserClient*>(AtomBrowserClient::Get())->set_delegate(this);
+  static_cast<ElectronBrowserClient*>(ElectronBrowserClient::Get())->set_delegate(this);
   Browser::Get()->AddObserver(this);
   content::GpuDataManager::GetInstance()->AddObserver(this);
 }
 
 App::~App() {
-  static_cast<AtomBrowserClient*>(AtomBrowserClient::Get())->set_delegate(
+  static_cast<ElectronBrowserClient*>(ElectronBrowserClient::Get())->set_delegate(
       nullptr);
   Browser::Get()->RemoveObserver(this);
   content::GpuDataManager::GetInstance()->RemoveObserver(this);
@@ -185,7 +185,7 @@ void App::OnWindowAllClosed() {
 }
 
 void App::OnQuit() {
-  int exitCode = AtomBrowserMainParts::Get()->GetExitCode();
+  int exitCode = ElectronBrowserMainParts::Get()->GetExitCode();
   Emit("quit", exitCode);
 
   if (process_singleton_.get()) {
@@ -315,8 +315,8 @@ void App::SetDesktopName(const std::string& desktop_name) {
 }
 
 void App::AllowNTLMCredentialsForAllDomains(bool should_allow) {
-  auto browser_context = static_cast<AtomBrowserContext*>(
-        AtomBrowserMainParts::Get()->browser_context());
+  auto browser_context = static_cast<ElectronBrowserContext*>(
+        ElectronBrowserMainParts::Get()->browser_context());
   browser_context->AllowNTLMCredentialsForAllDomains(should_allow);
 }
 

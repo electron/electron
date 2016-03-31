@@ -122,7 +122,7 @@ void AppendToFile(const base::FilePath& path,
 
 PrefService* GetPrefService(content::WebContents* web_contents) {
   auto context = web_contents->GetBrowserContext();
-  return static_cast<electron::AtomBrowserContext*>(context)->prefs();
+  return static_cast<electron::ElectronBrowserContext*>(context)->prefs();
 }
 
 std::set<std::string> GetAddedFileSystemPaths(
@@ -214,7 +214,7 @@ content::JavaScriptDialogManager*
 CommonWebContentsDelegate::GetJavaScriptDialogManager(
     content::WebContents* source) {
   if (!dialog_manager_)
-    dialog_manager_.reset(new AtomJavaScriptDialogManager);
+    dialog_manager_.reset(new ElectronJavaScriptDialogManager);
 
   return dialog_manager_.get();
 }

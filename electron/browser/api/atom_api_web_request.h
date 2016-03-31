@@ -12,33 +12,33 @@
 
 namespace electron {
 
-class AtomBrowserContext;
+class ElectronBrowserContext;
 
 namespace api {
 
 class WebRequest : public mate::TrackableObject<WebRequest> {
  public:
   static mate::Handle<WebRequest> Create(v8::Isolate* isolate,
-                                         AtomBrowserContext* browser_context);
+                                         ElectronBrowserContext* browser_context);
 
   // mate::TrackableObject:
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::ObjectTemplate> prototype);
 
  protected:
-  explicit WebRequest(AtomBrowserContext* browser_context);
+  explicit WebRequest(ElectronBrowserContext* browser_context);
   ~WebRequest();
 
   // C++ can not distinguish overloaded member function.
-  template<AtomNetworkDelegate::SimpleEvent type>
+  template<ElectronNetworkDelegate::SimpleEvent type>
   void SetSimpleListener(mate::Arguments* args);
-  template<AtomNetworkDelegate::ResponseEvent type>
+  template<ElectronNetworkDelegate::ResponseEvent type>
   void SetResponseListener(mate::Arguments* args);
   template<typename Listener, typename Method, typename Event>
   void SetListener(Method method, Event type, mate::Arguments* args);
 
  private:
-  scoped_refptr<AtomBrowserContext> browser_context_;
+  scoped_refptr<ElectronBrowserContext> browser_context_;
 
   DISALLOW_COPY_AND_ASSIGN(WebRequest);
 };

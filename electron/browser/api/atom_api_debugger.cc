@@ -173,7 +173,7 @@ void SetWrapDebugger(const WrapDebuggerCallback& callback) {
   g_wrap_debugger = callback;
 
   // Cleanup the wrapper on exit.
-  electron::AtomBrowserMainParts::Get()->RegisterDestructionCallback(
+  electron::ElectronBrowserMainParts::Get()->RegisterDestructionCallback(
       base::Bind(ClearWrapDebugger));
 }
 

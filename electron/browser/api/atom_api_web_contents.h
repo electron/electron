@@ -34,7 +34,7 @@ class Dictionary;
 namespace electron {
 
 struct SetSizeParams;
-class AtomBrowserContext;
+class ElectronBrowserContext;
 class WebViewGuestDelegate;
 
 namespace api {
@@ -268,7 +268,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
     REMOTE,  // Thin wrap around an existing WebContents.
   };
 
-  AtomBrowserContext* GetBrowserContext() const;
+  ElectronBrowserContext* GetBrowserContext() const;
 
   uint32_t GetNextRequestId() {
     return ++request_id_;

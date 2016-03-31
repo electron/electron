@@ -22,7 +22,7 @@ namespace electron {
 
 namespace api {
 
-Protocol::Protocol(AtomBrowserContext* browser_context)
+Protocol::Protocol(ElectronBrowserContext* browser_context)
     : request_context_getter_(browser_context->GetRequestContext()),
       job_factory_(browser_context->job_factory()) {
   CHECK(job_factory_);
@@ -57,12 +57,12 @@ mate::ObjectTemplateBuilder Protocol::GetObjectTemplateBuilder(
 
 void Protocol::RegisterStandardSchemes(
     const std::vector<std::string>& schemes) {
-  electron::AtomBrowserClient::SetCustomSchemes(schemes);
+  electron::ElectronBrowserClient::SetCustomSchemes(schemes);
 }
 
 void Protocol::RegisterServiceWorkerSchemes(
     const std::vector<std::string>& schemes) {
-  electron::AtomBrowserClient::SetCustomServiceWorkerSchemes(schemes);
+  electron::ElectronBrowserClient::SetCustomServiceWorkerSchemes(schemes);
 }
 
 void Protocol::UnregisterProtocol(
@@ -149,7 +149,7 @@ std::string Protocol::ErrorCodeToString(ProtocolError error) {
 
 // static
 mate::Handle<Protocol> Protocol::Create(
-    v8::Isolate* isolate, AtomBrowserContext* browser_context) {
+    v8::Isolate* isolate, ElectronBrowserContext* browser_context) {
   return mate::CreateHandle(isolate, new Protocol(browser_context));
 }
 
@@ -163,8 +163,8 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
-  auto browser_context = static_cast<electron::AtomBrowserContext*>(
-      electron::AtomBrowserMainParts::Get()->browser_context());
+  auto browser_context = static_cast<electron::ElectronBrowserContext*>(
+      electron::ElectronBrowserMainParts::Get()->browser_context());
   dict.Set("protocol", electron::api::Protocol::Create(isolate, browser_context));
 }
 

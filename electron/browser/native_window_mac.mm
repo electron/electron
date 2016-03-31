@@ -63,14 +63,14 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 @end
 
-@interface AtomNSWindowDelegate : NSObject<NSWindowDelegate> {
+@interface ElectronNSWindowDelegate : NSObject<NSWindowDelegate> {
  @private
   electron::NativeWindowMac* shell_;
 }
 - (id)initWithShell:(electron::NativeWindowMac*)shell;
 @end
 
-@implementation AtomNSWindowDelegate
+@implementation ElectronNSWindowDelegate
 
 - (id)initWithShell:(electron::NativeWindowMac*)shell {
   if ((self = [super init])) {
@@ -242,7 +242,7 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 @end
 
-@interface AtomNSWindow : NSWindow {
+@interface ElectronNSWindow : NSWindow {
  @private
   electron::NativeWindowMac* shell_;
   bool enable_larger_than_screen_;
@@ -255,7 +255,7 @@ bool ScopedDisableResize::disable_resize_ = false;
 - (void)setEnableLargerThanScreen:(bool)enable;
 @end
 
-@implementation AtomNSWindow
+@implementation ElectronNSWindow
 
 - (void)setShell:(electron::NativeWindowMac*)shell {
   shell_ = shell;
@@ -340,10 +340,10 @@ bool ScopedDisableResize::disable_resize_ = false;
 - (void)setMouseDownCanMoveWindow:(BOOL)can_move;
 @end
 
-@interface AtomProgressBar : NSProgressIndicator
+@interface ElectronProgressBar : NSProgressIndicator
 @end
 
-@implementation AtomProgressBar
+@implementation ElectronProgressBar
 
 - (void)drawRect:(NSRect)dirtyRect {
   if (self.style != NSProgressIndicatorBarStyle)
@@ -445,7 +445,7 @@ NativeWindowMac::NativeWindowMac(
     should_hide_native_toolbar_in_fullscreen_ = true;
   }
 
-  window_.reset([[AtomNSWindow alloc]
+  window_.reset([[ElectronNSWindow alloc]
       initWithContentRect:cocoa_bounds
                 styleMask:styleMask
                   backing:NSBackingStoreBuffered
@@ -453,7 +453,7 @@ NativeWindowMac::NativeWindowMac(
   [window_ setShell:this];
   [window_ setEnableLargerThanScreen:enable_larger_than_screen()];
 
-  window_delegate_.reset([[AtomNSWindowDelegate alloc] initWithShell:this]);
+  window_delegate_.reset([[ElectronNSWindowDelegate alloc] initWithShell:this]);
   [window_ setDelegate:window_delegate_];
 
   if (transparent()) {
@@ -861,7 +861,7 @@ void NativeWindowMac::SetProgressBar(double progress) {
     [image_view setImage:[NSApp applicationIconImage]];
     [dock_tile setContentView:image_view];
 
-    NSProgressIndicator* progress_indicator = [[AtomProgressBar alloc]
+    NSProgressIndicator* progress_indicator = [[ElectronProgressBar alloc]
         initWithFrame:NSMakeRect(0.0f, 0.0f, dock_tile.size.width, 15.0)];
     [progress_indicator setStyle:NSProgressIndicatorBarStyle];
     [progress_indicator setIndeterminate:NO];

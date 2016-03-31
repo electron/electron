@@ -28,14 +28,14 @@ bool WebContentsDestroyed(int process_id) {
 
 }  // namespace
 
-AtomPermissionManager::AtomPermissionManager()
+ElectronPermissionManager::ElectronPermissionManager()
     : request_id_(0) {
 }
 
-AtomPermissionManager::~AtomPermissionManager() {
+ElectronPermissionManager::~ElectronPermissionManager() {
 }
 
-void AtomPermissionManager::SetPermissionRequestHandler(
+void ElectronPermissionManager::SetPermissionRequestHandler(
     const RequestHandler& handler) {
   if (handler.is_null() && !pending_requests_.empty()) {
     for (const auto& request : pending_requests_) {
@@ -47,7 +47,7 @@ void AtomPermissionManager::SetPermissionRequestHandler(
   request_handler_ = handler;
 }
 
-int AtomPermissionManager::RequestPermission(
+int ElectronPermissionManager::RequestPermission(
     content::PermissionType permission,
     content::RenderFrameHost* render_frame_host,
     const GURL& requesting_origin,
@@ -64,7 +64,7 @@ int AtomPermissionManager::RequestPermission(
     auto web_contents =
         content::WebContents::FromRenderFrameHost(render_frame_host);
     ++request_id_;
-    auto callback = base::Bind(&AtomPermissionManager::OnPermissionResponse,
+    auto callback = base::Bind(&ElectronPermissionManager::OnPermissionResponse,
                                base::Unretained(this),
                                request_id_,
                                requesting_origin,
@@ -78,7 +78,7 @@ int AtomPermissionManager::RequestPermission(
   return kNoPendingOperation;
 }
 
-int AtomPermissionManager::RequestPermissions(
+int ElectronPermissionManager::RequestPermissions(
     const std::vector<content::PermissionType>& permissions,
     content::RenderFrameHost* render_frame_host,
     const GURL& requesting_origin,
@@ -98,7 +98,7 @@ int AtomPermissionManager::RequestPermissions(
   return kNoPendingOperation;
 }
 
-void AtomPermissionManager::OnPermissionResponse(
+void ElectronPermissionManager::OnPermissionResponse(
     int request_id,
     const GURL& origin,
     const ResponseCallback& callback,
@@ -111,7 +111,7 @@ void AtomPermissionManager::OnPermissionResponse(
   }
 }
 
-void AtomPermissionManager::CancelPermissionRequest(int request_id) {
+void ElectronPermissionManager::CancelPermissionRequest(int request_id) {
   auto request = pending_requests_.find(request_id);
   if (request != pending_requests_.end()) {
     if (!WebContentsDestroyed(request->second.render_process_id))
@@ -120,26 +120,26 @@ void AtomPermissionManager::CancelPermissionRequest(int request_id) {
   }
 }
 
-void AtomPermissionManager::ResetPermission(
+void ElectronPermissionManager::ResetPermission(
     content::PermissionType permission,
     const GURL& requesting_origin,
     const GURL& embedding_origin) {
 }
 
-content::PermissionStatus AtomPermissionManager::GetPermissionStatus(
+content::PermissionStatus ElectronPermissionManager::GetPermissionStatus(
     content::PermissionType permission,
     const GURL& requesting_origin,
     const GURL& embedding_origin) {
   return content::PERMISSION_STATUS_GRANTED;
 }
 
-void AtomPermissionManager::RegisterPermissionUsage(
+void ElectronPermissionManager::RegisterPermissionUsage(
     content::PermissionType permission,
     const GURL& requesting_origin,
     const GURL& embedding_origin) {
 }
 
-int AtomPermissionManager::SubscribePermissionStatusChange(
+int ElectronPermissionManager::SubscribePermissionStatusChange(
     content::PermissionType permission,
     const GURL& requesting_origin,
     const GURL& embedding_origin,
@@ -147,7 +147,7 @@ int AtomPermissionManager::SubscribePermissionStatusChange(
   return -1;
 }
 
-void AtomPermissionManager::UnsubscribePermissionStatusChange(
+void ElectronPermissionManager::UnsubscribePermissionStatusChange(
     int subscription_id) {
 }
 

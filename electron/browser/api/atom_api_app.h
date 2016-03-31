@@ -27,7 +27,7 @@ namespace electron {
 
 namespace api {
 
-class App : public AtomBrowserClient::Delegate,
+class App : public ElectronBrowserClient::Delegate,
             public mate::EventEmitter,
             public BrowserObserver,
             public content::GpuDataManagerObserver {

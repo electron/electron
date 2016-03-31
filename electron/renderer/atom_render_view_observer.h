@@ -14,15 +14,15 @@ class ListValue;
 
 namespace electron {
 
-class AtomRendererClient;
+class ElectronRendererClient;
 
-class AtomRenderViewObserver : public content::RenderViewObserver {
+class ElectronRenderViewObserver : public content::RenderViewObserver {
  public:
-  explicit AtomRenderViewObserver(content::RenderView* render_view,
-                                  AtomRendererClient* renderer_client);
+  explicit ElectronRenderViewObserver(content::RenderView* render_view,
+                                  ElectronRendererClient* renderer_client);
 
  protected:
-  virtual ~AtomRenderViewObserver();
+  virtual ~ElectronRenderViewObserver();
 
  private:
   // content::RenderViewObserver implementation.
@@ -34,12 +34,12 @@ class AtomRenderViewObserver : public content::RenderViewObserver {
                         const base::ListValue& args);
 
   // Weak reference to renderer client.
-  AtomRendererClient* renderer_client_;
+  ElectronRendererClient* renderer_client_;
 
   // Whether the document object has been created.
   bool document_created_;
 
-  DISALLOW_COPY_AND_ASSIGN(AtomRenderViewObserver);
+  DISALLOW_COPY_AND_ASSIGN(ElectronRenderViewObserver);
 };
 
 }  // namespace electron

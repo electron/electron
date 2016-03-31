@@ -26,7 +26,7 @@ Browser::~Browser() {
 
 // static
 Browser* Browser::Get() {
-  return AtomBrowserMainParts::Get()->browser();
+  return ElectronBrowserMainParts::Get()->browser();
 }
 
 void Browser::Quit() {
@@ -45,7 +45,7 @@ void Browser::Quit() {
 }
 
 void Browser::Exit(int code) {
-  if (!AtomBrowserMainParts::Get()->SetExitCode(code)) {
+  if (!ElectronBrowserMainParts::Get()->SetExitCode(code)) {
     // Message loop is not ready, quit directly.
     exit(code);
   } else {

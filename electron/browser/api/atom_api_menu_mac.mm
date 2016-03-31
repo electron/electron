@@ -26,8 +26,8 @@ void MenuMac::PopupAt(Window* window, int x, int y, int positioning_item) {
   if (!web_contents)
     return;
 
-  base::scoped_nsobject<AtomMenuController> menu_controller(
-      [[AtomMenuController alloc] initWithModel:model_.get()]);
+  base::scoped_nsobject<ElectronMenuController> menu_controller(
+      [[ElectronMenuController alloc] initWithModel:model_.get()]);
   NSMenu* menu = [menu_controller menu];
   NSView* view = web_contents->GetContentNativeView();
 
@@ -53,8 +53,8 @@ void MenuMac::PopupAt(Window* window, int x, int y, int positioning_item) {
 // static
 void Menu::SetApplicationMenu(Menu* base_menu) {
   MenuMac* menu = static_cast<MenuMac*>(base_menu);
-  base::scoped_nsobject<AtomMenuController> menu_controller(
-      [[AtomMenuController alloc] initWithModel:menu->model_.get()]);
+  base::scoped_nsobject<ElectronMenuController> menu_controller(
+      [[ElectronMenuController alloc] initWithModel:menu->model_.get()]);
   [NSApp setMainMenu:[menu_controller menu]];
 
   // Ensure the menu_controller_ is destroyed after main menu is set.

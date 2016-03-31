@@ -13,10 +13,10 @@
 
 namespace electron {
 
-class AtomContentClient : public brightray::ContentClient {
+class ElectronContentClient : public brightray::ContentClient {
  public:
-  AtomContentClient();
-  virtual ~AtomContentClient();
+  ElectronContentClient();
+  virtual ~ElectronContentClient();
 
  protected:
   // content::ContentClient:
@@ -32,7 +32,7 @@ class AtomContentClient : public brightray::ContentClient {
       std::set<std::string>* service_worker_schemes) override;
 
  private:
-  DISALLOW_COPY_AND_ASSIGN(AtomContentClient);
+  DISALLOW_COPY_AND_ASSIGN(ElectronContentClient);
 };
 
 }  // namespace electron

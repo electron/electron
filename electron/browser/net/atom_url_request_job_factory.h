@@ -16,10 +16,10 @@
 
 namespace electron {
 
-class AtomURLRequestJobFactory : public net::URLRequestJobFactory {
+class ElectronURLRequestJobFactory : public net::URLRequestJobFactory {
  public:
-  AtomURLRequestJobFactory();
-  virtual ~AtomURLRequestJobFactory();
+  ElectronURLRequestJobFactory();
+  virtual ~ElectronURLRequestJobFactory();
 
   // Sets the ProtocolHandler for a scheme. Returns true on success, false on
   // failure (a ProtocolHandler already exists for |scheme|). On success,
@@ -59,7 +59,7 @@ class AtomURLRequestJobFactory : public net::URLRequestJobFactory {
 
   ProtocolHandlerMap protocol_handler_map_;
 
-  DISALLOW_COPY_AND_ASSIGN(AtomURLRequestJobFactory);
+  DISALLOW_COPY_AND_ASSIGN(ElectronURLRequestJobFactory);
 };
 
 }  // namespace electron

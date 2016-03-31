@@ -10,10 +10,10 @@
 #if defined(OS_MACOSX)
 extern "C" {
 __attribute__((visibility("default")))
-int AtomMain(int argc, const char* argv[]);
+int ElectronMain(int argc, const char* argv[]);
 
 __attribute__((visibility("default")))
-int AtomInitializeICUandStartNode(int argc, char *argv[]);
+int ElectronInitializeICUandStartNode(int argc, char *argv[]);
 }
 #endif  // OS_MACOSX
 

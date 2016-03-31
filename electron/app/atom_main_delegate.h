@@ -10,10 +10,10 @@
 
 namespace electron {
 
-class AtomMainDelegate : public brightray::MainDelegate {
+class ElectronMainDelegate : public brightray::MainDelegate {
  public:
-  AtomMainDelegate();
-  ~AtomMainDelegate();
+  ElectronMainDelegate();
+  ~ElectronMainDelegate();
 
  protected:
   // content::ContentMainDelegate:
@@ -36,7 +36,7 @@ class AtomMainDelegate : public brightray::MainDelegate {
   scoped_ptr<content::ContentRendererClient> renderer_client_;
   scoped_ptr<content::ContentUtilityClient> utility_client_;
 
-  DISALLOW_COPY_AND_ASSIGN(AtomMainDelegate);
+  DISALLOW_COPY_AND_ASSIGN(ElectronMainDelegate);
 };
 
 }  // namespace electron

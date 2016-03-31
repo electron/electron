@@ -16,13 +16,13 @@ namespace electron {
 
 class MessageHandlerDelegate;
 
-class AtomDesktopWindowTreeHostWin : public views::DesktopWindowTreeHostWin {
+class ElectronDesktopWindowTreeHostWin : public views::DesktopWindowTreeHostWin {
  public:
-  AtomDesktopWindowTreeHostWin(
+  ElectronDesktopWindowTreeHostWin(
       MessageHandlerDelegate* delegate,
       views::internal::NativeWidgetDelegate* native_widget_delegate,
       views::DesktopNativeWidgetAura* desktop_native_widget_aura);
-  ~AtomDesktopWindowTreeHostWin() override;
+  ~ElectronDesktopWindowTreeHostWin() override;
 
  protected:
   bool PreHandleMSG(
@@ -31,7 +31,7 @@ class AtomDesktopWindowTreeHostWin : public views::DesktopWindowTreeHostWin {
  private:
   MessageHandlerDelegate* delegate_;  // weak ref
 
-  DISALLOW_COPY_AND_ASSIGN(AtomDesktopWindowTreeHostWin);
+  DISALLOW_COPY_AND_ASSIGN(ElectronDesktopWindowTreeHostWin);
 };
 
 }  // namespace electron

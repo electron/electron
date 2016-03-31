@@ -12,12 +12,12 @@
 
 namespace electron {
 
-void AtomBrowserMainParts::PreMainMessageLoopStart() {
+void ElectronBrowserMainParts::PreMainMessageLoopStart() {
   // Force the NSApplication subclass to be used.
-  [AtomApplication sharedApplication];
+  [ElectronApplication sharedApplication];
 
   // Set our own application delegate.
-  AtomApplicationDelegate* delegate = [[AtomApplicationDelegate alloc] init];
+  ElectronApplicationDelegate* delegate = [[ElectronApplicationDelegate alloc] init];
   [NSApp setDelegate:(id<NSFileManagerDelegate>)delegate];
 
   brightray::BrowserMainParts::PreMainMessageLoopStart();
@@ -28,7 +28,7 @@ void AtomBrowserMainParts::PreMainMessageLoopStart() {
       setObject:@"NO" forKey:@"NSTreatUnknownArgumentsAsOpen"];
 }
 
-void AtomBrowserMainParts::FreeAppDelegate() {
+void ElectronBrowserMainParts::FreeAppDelegate() {
   [[NSApp delegate] release];
   [NSApp setDelegate:nil];
 }

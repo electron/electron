@@ -11,7 +11,7 @@
 
 namespace electron {
 
-class AtomJavaScriptDialogManager : public content::JavaScriptDialogManager {
+class ElectronJavaScriptDialogManager : public content::JavaScriptDialogManager {
  public:
   // content::JavaScriptDialogManager implementations.
   void RunJavaScriptDialog(

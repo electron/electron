@@ -44,10 +44,10 @@ namespace electron {
 namespace {
 
 // Helper class to forward the messages to the client.
-class AtomRenderFrameObserver : public content::RenderFrameObserver {
+class ElectronRenderFrameObserver : public content::RenderFrameObserver {
  public:
-  AtomRenderFrameObserver(content::RenderFrame* frame,
-                          AtomRendererClient* renderer_client)
+  ElectronRenderFrameObserver(content::RenderFrame* frame,
+                          ElectronRendererClient* renderer_client)
       : content::RenderFrameObserver(frame),
         world_id_(-1),
         renderer_client_(renderer_client) {}
@@ -70,29 +70,29 @@ class AtomRenderFrameObserver : public content::RenderFrameObserver {
 
  private:
   int world_id_;
-  AtomRendererClient* renderer_client_;
+  ElectronRendererClient* renderer_client_;
 
-  DISALLOW_COPY_AND_ASSIGN(AtomRenderFrameObserver);
+  DISALLOW_COPY_AND_ASSIGN(ElectronRenderFrameObserver);
 };
 
 }  // namespace
 
-AtomRendererClient::AtomRendererClient()
+ElectronRendererClient::ElectronRendererClient()
     : node_bindings_(NodeBindings::Create(false)),
-      atom_bindings_(new AtomBindings) {
+      atom_bindings_(new ElectronBindings) {
 }
 
-AtomRendererClient::~AtomRendererClient() {
+ElectronRendererClient::~ElectronRendererClient() {
 }
 
-void AtomRendererClient::WebKitInitialized() {
+void ElectronRendererClient::WebKitInitialized() {
   blink::WebCustomElement::addEmbedderCustomElementName("webview");
   blink::WebCustomElement::addEmbedderCustomElementName("browserplugin");
 
   OverrideNodeArrayBuffer();
 }
 
-void AtomRendererClient::RenderThreadStarted() {
+void ElectronRendererClient::RenderThreadStarted() {
   content::RenderThread::Get()->AddObserver(this);
 
 #if defined(OS_WIN)
@@ -105,7 +105,7 @@ void AtomRendererClient::RenderThreadStarted() {
 #endif
 }
 
-void AtomRendererClient::RenderFrameCreated(
+void ElectronRendererClient::RenderFrameCreated(
     content::RenderFrame* render_frame) {
   new PepperHelper(render_frame);
 
@@ -116,23 +116,23 @@ void AtomRendererClient::RenderFrameCreated(
   if (!render_frame->IsMainFrame())
     return;
 
-  new AtomRenderFrameObserver(render_frame, this);
+  new ElectronRenderFrameObserver(render_frame, this);
 }
 
-void AtomRendererClient::RenderViewCreated(content::RenderView* render_view) {
+void ElectronRendererClient::RenderViewCreated(content::RenderView* render_view) {
   // Set default UA-dependent background as transparent.
   render_view->GetWebView()->setBaseBackgroundColor(SK_ColorTRANSPARENT);
 
   new printing::PrintWebViewHelper(render_view);
-  new AtomRenderViewObserver(render_view, this);
+  new ElectronRenderViewObserver(render_view, this);
 }
 
-blink::WebSpeechSynthesizer* AtomRendererClient::OverrideSpeechSynthesizer(
+blink::WebSpeechSynthesizer* ElectronRendererClient::OverrideSpeechSynthesizer(
     blink::WebSpeechSynthesizerClient* client) {
   return new TtsDispatcher(client);
 }
 
-bool AtomRendererClient::OverrideCreatePlugin(
+bool ElectronRendererClient::OverrideCreatePlugin(
     content::RenderFrame* render_frame,
     blink::WebLocalFrame* frame,
     const blink::WebPluginParams& params,
@@ -146,7 +146,7 @@ bool AtomRendererClient::OverrideCreatePlugin(
   return true;
 }
 
-void AtomRendererClient::DidCreateScriptContext(
+void ElectronRendererClient::DidCreateScriptContext(
     v8::Handle<v8::Context> context) {
   // Whether the node binding has been initialized.
   bool first_time = node_bindings_->uv_env() == nullptr;
@@ -175,13 +175,13 @@ void AtomRendererClient::DidCreateScriptContext(
   }
 }
 
-void AtomRendererClient::WillReleaseScriptContext(
+void ElectronRendererClient::WillReleaseScriptContext(
     v8::Handle<v8::Context> context) {
   node::Environment* env = node::Environment::GetCurrent(context);
   mate::EmitEvent(env->isolate(), env->process_object(), "exit");
 }
 
-bool AtomRendererClient::ShouldFork(blink::WebLocalFrame* frame,
+bool ElectronRendererClient::ShouldFork(blink::WebLocalFrame* frame,
                                     const GURL& url,
                                     const std::string& http_method,
                                     bool is_initial_navigation,
@@ -195,7 +195,7 @@ bool AtomRendererClient::ShouldFork(blink::WebLocalFrame* frame,
   return http_method == "GET";
 }
 
-content::BrowserPluginDelegate* AtomRendererClient::CreateBrowserPluginDelegate(
+content::BrowserPluginDelegate* ElectronRendererClient::CreateBrowserPluginDelegate(
     content::RenderFrame* render_frame,
     const std::string& mime_type,
     const GURL& original_url) {
@@ -206,7 +206,7 @@ content::BrowserPluginDelegate* AtomRendererClient::CreateBrowserPluginDelegate(
   }
 }
 
-void AtomRendererClient::AddKeySystems(
+void ElectronRendererClient::AddKeySystems(
     std::vector<media::KeySystemInfo>* key_systems) {
   AddChromeKeySystems(key_systems);
 }

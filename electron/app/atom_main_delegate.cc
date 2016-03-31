@@ -32,13 +32,13 @@ bool IsBrowserProcess(base::CommandLine* cmd) {
 
 }  // namespace
 
-AtomMainDelegate::AtomMainDelegate() {
+ElectronMainDelegate::ElectronMainDelegate() {
 }
 
-AtomMainDelegate::~AtomMainDelegate() {
+ElectronMainDelegate::~ElectronMainDelegate() {
 }
 
-bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
+bool ElectronMainDelegate::BasicStartupComplete(int* exit_code) {
   auto command_line = base::CommandLine::ForCurrentProcess();
 
   logging::LoggingSettings settings;
@@ -86,7 +86,7 @@ bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
   return brightray::MainDelegate::BasicStartupComplete(exit_code);
 }
 
-void AtomMainDelegate::PreSandboxStartup() {
+void ElectronMainDelegate::PreSandboxStartup() {
   brightray::MainDelegate::PreSandboxStartup();
 
   // Set google API key.
@@ -99,7 +99,7 @@ void AtomMainDelegate::PreSandboxStartup() {
       switches::kProcessType);
 
   if (process_type == switches::kUtilityProcess) {
-    AtomContentUtilityClient::PreSandboxStartup();
+    ElectronContentUtilityClient::PreSandboxStartup();
   }
 
   // Only append arguments for browser process.
@@ -118,24 +118,24 @@ void AtomMainDelegate::PreSandboxStartup() {
 #endif
 }
 
-content::ContentBrowserClient* AtomMainDelegate::CreateContentBrowserClient() {
-  browser_client_.reset(new AtomBrowserClient);
+content::ContentBrowserClient* ElectronMainDelegate::CreateContentBrowserClient() {
+  browser_client_.reset(new ElectronBrowserClient);
   return browser_client_.get();
 }
 
 content::ContentRendererClient*
-    AtomMainDelegate::CreateContentRendererClient() {
-  renderer_client_.reset(new AtomRendererClient);
+    ElectronMainDelegate::CreateContentRendererClient() {
+  renderer_client_.reset(new ElectronRendererClient);
   return renderer_client_.get();
 }
 
-content::ContentUtilityClient* AtomMainDelegate::CreateContentUtilityClient() {
-  utility_client_.reset(new AtomContentUtilityClient);
+content::ContentUtilityClient* ElectronMainDelegate::CreateContentUtilityClient() {
+  utility_client_.reset(new ElectronContentUtilityClient);
   return utility_client_.get();
 }
 
-scoped_ptr<brightray::ContentClient> AtomMainDelegate::CreateContentClient() {
-  return scoped_ptr<brightray::ContentClient>(new AtomContentClient);
+scoped_ptr<brightray::ContentClient> ElectronMainDelegate::CreateContentClient() {
+  return scoped_ptr<brightray::ContentClient>(new ElectronContentClient);
 }
 
 }  // namespace electron

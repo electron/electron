@@ -9,12 +9,12 @@
 
 namespace electron {
 
-class AtomQuotaPermissionContext : public content::QuotaPermissionContext {
+class ElectronQuotaPermissionContext : public content::QuotaPermissionContext {
  public:
   typedef content::QuotaPermissionContext::QuotaPermissionResponse response;
 
-  AtomQuotaPermissionContext();
-  virtual ~AtomQuotaPermissionContext();
+  ElectronQuotaPermissionContext();
+  virtual ~ElectronQuotaPermissionContext();
 
   // content::QuotaPermissionContext:
   void RequestQuotaPermission(
@@ -23,7 +23,7 @@ class AtomQuotaPermissionContext : public content::QuotaPermissionContext {
       const PermissionCallback& callback) override;
 
  private:
-  DISALLOW_COPY_AND_ASSIGN(AtomQuotaPermissionContext);
+  DISALLOW_COPY_AND_ASSIGN(ElectronQuotaPermissionContext);
 };
 
 }  // namespace electron

@@ -13,8 +13,8 @@
 #include "base/mac/scoped_nsobject.h"
 #include "electron/browser/native_window.h"
 
-@class AtomNSWindow;
-@class AtomNSWindowDelegate;
+@class ElectronNSWindow;
+@class ElectronNSWindowDelegate;
 @class FullSizeContentView;
 
 namespace electron {
@@ -124,8 +124,8 @@ class NativeWindowMac : public NativeWindow {
   void SetStyleMask(bool on, NSUInteger flag);
   void SetCollectionBehavior(bool on, NSUInteger flag);
 
-  base::scoped_nsobject<AtomNSWindow> window_;
-  base::scoped_nsobject<AtomNSWindowDelegate> window_delegate_;
+  base::scoped_nsobject<ElectronNSWindow> window_;
+  base::scoped_nsobject<ElectronNSWindowDelegate> window_delegate_;
 
   // Event monitor for scroll wheel event.
   id wheel_event_monitor_;

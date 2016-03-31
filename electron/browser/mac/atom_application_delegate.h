@@ -6,9 +6,9 @@
 
 #import "electron/browser/ui/cocoa/atom_menu_controller.h"
 
-@interface AtomApplicationDelegate : NSObject<NSApplicationDelegate> {
+@interface ElectronApplicationDelegate : NSObject<NSApplicationDelegate> {
  @private
-  base::scoped_nsobject<AtomMenuController> menu_controller_;
+  base::scoped_nsobject<ElectronMenuController> menu_controller_;
 }
 
 - (id)init;

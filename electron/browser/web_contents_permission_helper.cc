@@ -56,7 +56,7 @@ void WebContentsPermissionHelper::RequestPermission(
     const base::Callback<void(bool)>& callback,
     bool user_gesture) {
   auto rfh = web_contents_->GetMainFrame();
-  auto permission_manager = static_cast<AtomPermissionManager*>(
+  auto permission_manager = static_cast<ElectronPermissionManager*>(
       web_contents_->GetBrowserContext()->GetPermissionManager());
   auto origin = web_contents_->GetLastCommittedURL();
   permission_manager->RequestPermission(

@@ -156,7 +156,7 @@ WrapSessionCallback g_wrap_session;
 
 class ResolveProxyHelper {
  public:
-  ResolveProxyHelper(AtomBrowserContext* browser_context,
+  ResolveProxyHelper(ElectronBrowserContext* browser_context,
                      const GURL& url,
                      Session::ResolveProxyCallback callback)
       : callback_(callback),
@@ -287,7 +287,7 @@ void ClearHostResolverCacheInIO(
 
 }  // namespace
 
-Session::Session(AtomBrowserContext* browser_context)
+Session::Session(ElectronBrowserContext* browser_context)
     : browser_context_(browser_context) {
   AttachAsUserData(browser_context);
 
@@ -404,7 +404,7 @@ void Session::DisableNetworkEmulation() {
 
 void Session::SetCertVerifyProc(v8::Local<v8::Value> val,
                                 mate::Arguments* args) {
-  AtomCertVerifier::VerifyProc proc;
+  ElectronCertVerifier::VerifyProc proc;
   if (!(val->IsNull() || mate::ConvertFromV8(args->isolate(), val, &proc))) {
     args->ThrowError("Must pass null or function");
     return;
@@ -415,12 +415,12 @@ void Session::SetCertVerifyProc(v8::Local<v8::Value> val,
 
 void Session::SetPermissionRequestHandler(v8::Local<v8::Value> val,
                                           mate::Arguments* args) {
-  AtomPermissionManager::RequestHandler handler;
+  ElectronPermissionManager::RequestHandler handler;
   if (!(val->IsNull() || mate::ConvertFromV8(args->isolate(), val, &handler))) {
     args->ThrowError("Must pass null or function");
     return;
   }
-  auto permission_manager = static_cast<AtomPermissionManager*>(
+  auto permission_manager = static_cast<ElectronPermissionManager*>(
       browser_context()->GetPermissionManager());
   permission_manager->SetPermissionRequestHandler(handler);
 }
@@ -453,7 +453,7 @@ v8::Local<v8::Value> Session::WebRequest(v8::Isolate* isolate) {
 
 // static
 mate::Handle<Session> Session::CreateFrom(
-    v8::Isolate* isolate, AtomBrowserContext* browser_context) {
+    v8::Isolate* isolate, ElectronBrowserContext* browser_context) {
   auto existing = TrackableObject::FromWrappedClass(isolate, browser_context);
   if (existing)
     return mate::CreateHandle(isolate, static_cast<Session*>(existing));
@@ -468,7 +468,7 @@ mate::Handle<Session> Session::FromPartition(
     v8::Isolate* isolate, const std::string& partition, bool in_memory) {
   auto browser_context = brightray::BrowserContext::From(partition, in_memory);
   return CreateFrom(isolate,
-                    static_cast<AtomBrowserContext*>(browser_context.get()));
+                    static_cast<ElectronBrowserContext*>(browser_context.get()));
 }
 
 // static
@@ -501,7 +501,7 @@ void SetWrapSession(const WrapSessionCallback& callback) {
   g_wrap_session = callback;
 
   // Cleanup the wrapper on exit.
-  electron::AtomBrowserMainParts::Get()->RegisterDestructionCallback(
+  electron::ElectronBrowserMainParts::Get()->RegisterDestructionCallback(
       base::Bind(ClearWrapSession));
 }
 

@@ -17,19 +17,19 @@ class BrowserProcess;
 
 namespace electron {
 
-class AtomBindings;
+class ElectronBindings;
 class Browser;
 class JavascriptEnvironment;
 class NodeBindings;
 class NodeDebugger;
 class BridgeTaskRunner;
 
-class AtomBrowserMainParts : public brightray::BrowserMainParts {
+class ElectronBrowserMainParts : public brightray::BrowserMainParts {
  public:
-  AtomBrowserMainParts();
-  virtual ~AtomBrowserMainParts();
+  ElectronBrowserMainParts();
+  virtual ~ElectronBrowserMainParts();
 
-  static AtomBrowserMainParts* Get();
+  static ElectronBrowserMainParts* Get();
 
   // Sets the exit code, will fail if the message loop is not ready.
   bool SetExitCode(int code);
@@ -80,7 +80,7 @@ class AtomBrowserMainParts : public brightray::BrowserMainParts {
   scoped_ptr<Browser> browser_;
   scoped_ptr<JavascriptEnvironment> js_env_;
   scoped_ptr<NodeBindings> node_bindings_;
-  scoped_ptr<AtomBindings> atom_bindings_;
+  scoped_ptr<ElectronBindings> atom_bindings_;
   scoped_ptr<NodeDebugger> node_debugger_;
 
   base::Timer gc_timer_;
@@ -88,9 +88,9 @@ class AtomBrowserMainParts : public brightray::BrowserMainParts {
   // List of callbacks should be executed before destroying JS env.
   std::list<base::Closure> destructors_;
 
-  static AtomBrowserMainParts* self_;
+  static ElectronBrowserMainParts* self_;
 
-  DISALLOW_COPY_AND_ASSIGN(AtomBrowserMainParts);
+  DISALLOW_COPY_AND_ASSIGN(ElectronBrowserMainParts);
 };
 
 }  // namespace electron

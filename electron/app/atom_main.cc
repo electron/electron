@@ -152,7 +152,7 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
 
   sandbox::SandboxInterfaceInfo sandbox_info = {0};
   content::InitializeSandboxInfo(&sandbox_info);
-  electron::AtomMainDelegate delegate;
+  electron::ElectronMainDelegate delegate;
 
   // We don't want to set DPI awareness on pre-Win7 because we don't support
   // DirectWrite there. GDI fonts are kerned very badly, so better to leave
@@ -163,7 +163,7 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
   content::ContentMainParams params(&delegate);
   params.instance = instance;
   params.sandbox_info = &sandbox_info;
-  electron::AtomCommandLine::Init(argc, argv);
+  electron::ElectronCommandLine::Init(argc, argv);
   return content::ContentMain(params);
 }
 
@@ -176,11 +176,11 @@ int main(int argc, const char* argv[]) {
     return electron::NodeMain(argc, const_cast<char**>(argv));
   }
 
-  electron::AtomMainDelegate delegate;
+  electron::ElectronMainDelegate delegate;
   content::ContentMainParams params(&delegate);
   params.argc = argc;
   params.argv = argv;
-  electron::AtomCommandLine::Init(argc, argv);
+  electron::ElectronCommandLine::Init(argc, argv);
   return content::ContentMain(params);
 }
 
@@ -188,10 +188,10 @@ int main(int argc, const char* argv[]) {
 
 int main(int argc, const char* argv[]) {
   if (IsRunAsNode()) {
-    return AtomInitializeICUandStartNode(argc, const_cast<char**>(argv));
+    return ElectronInitializeICUandStartNode(argc, const_cast<char**>(argv));
   }
 
-  return AtomMain(argc, argv);
+  return ElectronMain(argc, argv);
 }
 
 #endif  // defined(OS_MACOSX)

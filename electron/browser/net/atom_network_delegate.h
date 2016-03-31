@@ -24,7 +24,7 @@ namespace electron {
 
 using URLPatterns = std::set<extensions::URLPattern>;
 
-class AtomNetworkDelegate : public brightray::NetworkDelegate {
+class ElectronNetworkDelegate : public brightray::NetworkDelegate {
  public:
   using ResponseCallback = base::Callback<void(const base::DictionaryValue&)>;
   using SimpleListener = base::Callback<void(const base::DictionaryValue&)>;
@@ -55,8 +55,8 @@ class AtomNetworkDelegate : public brightray::NetworkDelegate {
     ResponseListener listener;
   };
 
-  AtomNetworkDelegate();
-  ~AtomNetworkDelegate() override;
+  ElectronNetworkDelegate();
+  ~ElectronNetworkDelegate() override;
 
   void SetSimpleListenerInIO(SimpleEvent type,
                              const URLPatterns& patterns,
@@ -113,7 +113,7 @@ class AtomNetworkDelegate : public brightray::NetworkDelegate {
   std::map<ResponseEvent, ResponseListenerInfo> response_listeners_;
   std::map<uint64_t, net::CompletionCallback> callbacks_;
 
-  DISALLOW_COPY_AND_ASSIGN(AtomNetworkDelegate);
+  DISALLOW_COPY_AND_ASSIGN(ElectronNetworkDelegate);
 };
 
 }   // namespace electron

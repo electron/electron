@@ -30,7 +30,7 @@ class MenuBar;
 class WindowStateWatcher;
 
 #if defined(OS_WIN)
-class AtomDesktopWindowTreeHostWin;
+class ElectronDesktopWindowTreeHostWin;
 #endif
 
 class NativeWindowViews : public NativeWindow,
@@ -187,7 +187,7 @@ class NativeWindowViews : public NativeWindow,
   extensions::SizeConstraints old_size_constraints_;
 #elif defined(OS_WIN)
   // Weak ref.
-  AtomDesktopWindowTreeHostWin* atom_desktop_window_tree_host_win_;
+  ElectronDesktopWindowTreeHostWin* atom_desktop_window_tree_host_win_;
 
   ui::WindowShowState last_window_state_;
 

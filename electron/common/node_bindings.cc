@@ -136,7 +136,7 @@ void NodeBindings::Initialize() {
 #if defined(OS_LINUX)
   // Get real command line in renderer process forked by zygote.
   if (!is_browser_)
-    AtomCommandLine::InitializeFromCommandLine();
+    ElectronCommandLine::InitializeFromCommandLine();
 #endif
 
   // Init node.
@@ -154,7 +154,7 @@ void NodeBindings::Initialize() {
 
 node::Environment* NodeBindings::CreateEnvironment(
     v8::Handle<v8::Context> context) {
-  auto args = AtomCommandLine::argv();
+  auto args = ElectronCommandLine::argv();
 
   // Feed node the path to initialization script.
   base::FilePath::StringType process_type = is_browser_ ?

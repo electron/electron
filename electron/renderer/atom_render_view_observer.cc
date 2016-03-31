@@ -71,9 +71,9 @@ base::StringPiece NetResourceProvider(int key) {
 
 }  // namespace
 
-AtomRenderViewObserver::AtomRenderViewObserver(
+ElectronRenderViewObserver::ElectronRenderViewObserver(
     content::RenderView* render_view,
-    AtomRendererClient* renderer_client)
+    ElectronRendererClient* renderer_client)
     : content::RenderViewObserver(render_view),
       renderer_client_(renderer_client),
       document_created_(false) {
@@ -81,10 +81,10 @@ AtomRenderViewObserver::AtomRenderViewObserver(
   net::NetModule::SetResourceProvider(NetResourceProvider);
 }
 
-AtomRenderViewObserver::~AtomRenderViewObserver() {
+ElectronRenderViewObserver::~ElectronRenderViewObserver() {
 }
 
-void AtomRenderViewObserver::DidCreateDocumentElement(
+void ElectronRenderViewObserver::DidCreateDocumentElement(
     blink::WebLocalFrame* frame) {
   document_created_ = true;
 
@@ -100,7 +100,7 @@ void AtomRenderViewObserver::DidCreateDocumentElement(
   frame->view()->setZoomLevel(zoom_level);
 }
 
-void AtomRenderViewObserver::DraggableRegionsChanged(blink::WebFrame* frame) {
+void ElectronRenderViewObserver::DraggableRegionsChanged(blink::WebFrame* frame) {
   blink::WebVector<blink::WebDraggableRegion> webregions =
       frame->document().draggableRegions();
   std::vector<DraggableRegion> regions;
@@ -110,20 +110,20 @@ void AtomRenderViewObserver::DraggableRegionsChanged(blink::WebFrame* frame) {
     region.draggable = webregions[i].draggable;
     regions.push_back(region);
   }
-  Send(new AtomViewHostMsg_UpdateDraggableRegions(routing_id(), regions));
+  Send(new ElectronViewHostMsg_UpdateDraggableRegions(routing_id(), regions));
 }
 
-bool AtomRenderViewObserver::OnMessageReceived(const IPC::Message& message) {
+bool ElectronRenderViewObserver::OnMessageReceived(const IPC::Message& message) {
   bool handled = true;
-  IPC_BEGIN_MESSAGE_MAP(AtomRenderViewObserver, message)
-    IPC_MESSAGE_HANDLER(AtomViewMsg_Message, OnBrowserMessage)
+  IPC_BEGIN_MESSAGE_MAP(ElectronRenderViewObserver, message)
+    IPC_MESSAGE_HANDLER(ElectronViewMsg_Message, OnBrowserMessage)
     IPC_MESSAGE_UNHANDLED(handled = false)
   IPC_END_MESSAGE_MAP()
 
   return handled;
 }
 
-void AtomRenderViewObserver::OnBrowserMessage(const base::string16& channel,
+void ElectronRenderViewObserver::OnBrowserMessage(const base::string16& channel,
                                               const base::ListValue& args) {
   if (!document_created_)
     return;

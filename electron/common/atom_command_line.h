@@ -14,7 +14,7 @@
 namespace electron {
 
 // Singleton to remember the original "argc" and "argv".
-class AtomCommandLine {
+class ElectronCommandLine {
  public:
   static void Init(int argc, const char* const* argv);
   static std::vector<std::string> argv() { return argv_; }
@@ -28,7 +28,7 @@ class AtomCommandLine {
  private:
   static std::vector<std::string> argv_;
 
-  DISALLOW_IMPLICIT_CONSTRUCTORS(AtomCommandLine);
+  DISALLOW_IMPLICIT_CONSTRUCTORS(ElectronCommandLine);
 };
 
 }  // namespace electron

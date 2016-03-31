@@ -8,26 +8,26 @@
 
 namespace electron {
 
-AtomMenuModel::AtomMenuModel(Delegate* delegate)
+ElectronMenuModel::ElectronMenuModel(Delegate* delegate)
     : ui::SimpleMenuModel(delegate),
       delegate_(delegate) {
 }
 
-AtomMenuModel::~AtomMenuModel() {
+ElectronMenuModel::~ElectronMenuModel() {
 }
 
-void AtomMenuModel::SetRole(int index, const base::string16& role) {
+void ElectronMenuModel::SetRole(int index, const base::string16& role) {
   roles_[index] = role;
 }
 
-base::string16 AtomMenuModel::GetRoleAt(int index) {
+base::string16 ElectronMenuModel::GetRoleAt(int index) {
   if (ContainsKey(roles_, index))
     return roles_[index];
   else
     return base::string16();
 }
 
-void AtomMenuModel::MenuClosed() {
+void ElectronMenuModel::MenuClosed() {
   ui::SimpleMenuModel::MenuClosed();
   FOR_EACH_OBSERVER(Observer, observers_, MenuClosed());
 }

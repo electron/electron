@@ -14,10 +14,10 @@ using content::BrowserThread;
 
 namespace electron {
 
-AtomResourceDispatcherHostDelegate::AtomResourceDispatcherHostDelegate() {
+ElectronResourceDispatcherHostDelegate::ElectronResourceDispatcherHostDelegate() {
 }
 
-bool AtomResourceDispatcherHostDelegate::HandleExternalProtocol(
+bool ElectronResourceDispatcherHostDelegate::HandleExternalProtocol(
     const GURL& url,
     int child_id,
     const content::ResourceRequestInfo::WebContentsGetter&,
@@ -32,7 +32,7 @@ bool AtomResourceDispatcherHostDelegate::HandleExternalProtocol(
 }
 
 content::ResourceDispatcherHostLoginDelegate*
-AtomResourceDispatcherHostDelegate::CreateLoginDelegate(
+ElectronResourceDispatcherHostDelegate::CreateLoginDelegate(
     net::AuthChallengeInfo* auth_info,
     net::URLRequest* request) {
   return new LoginHandler(auth_info, request);

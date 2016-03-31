@@ -21,7 +21,7 @@ class MenuMac : public Menu {
 
   void PopupAt(Window* window, int x, int y, int positioning_item = 0) override;
 
-  base::scoped_nsobject<AtomMenuController> menu_controller_;
+  base::scoped_nsobject<ElectronMenuController> menu_controller_;
 
  private:
   friend class Menu;

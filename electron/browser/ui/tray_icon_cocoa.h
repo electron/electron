@@ -13,13 +13,13 @@
 #include "electron/browser/ui/tray_icon.h"
 #include "base/mac/scoped_nsobject.h"
 
-@class AtomMenuController;
+@class ElectronMenuController;
 @class StatusItemView;
 
 namespace electron {
 
 class TrayIconCocoa : public TrayIcon,
-                      public AtomMenuModel::Observer {
+                      public ElectronMenuModel::Observer {
  public:
   TrayIconCocoa();
   virtual ~TrayIconCocoa();
@@ -34,7 +34,7 @@ class TrayIconCocoa : public TrayIcon,
   void SetContextMenu(ui::SimpleMenuModel* menu_model) override;
 
  protected:
-  // AtomMenuModel::Observer:
+  // ElectronMenuModel::Observer:
   void MenuClosed() override;
 
  private:
@@ -42,10 +42,10 @@ class TrayIconCocoa : public TrayIcon,
   base::scoped_nsobject<StatusItemView> status_item_view_;
 
   // Status menu shown when right-clicking the system icon.
-  base::scoped_nsobject<AtomMenuController> menu_;
+  base::scoped_nsobject<ElectronMenuController> menu_;
 
   // Used for unregistering observer.
-  AtomMenuModel* menu_model_;  // weak ref.
+  ElectronMenuModel* menu_model_;  // weak ref.
 
   DISALLOW_COPY_AND_ASSIGN(TrayIconCocoa);
 };

@@ -15,16 +15,16 @@
 #include "content/public/app/content_main.h"
 
 #if defined(OS_MACOSX)
-int AtomMain(int argc, const char* argv[]) {
-  electron::AtomMainDelegate delegate;
+int ElectronMain(int argc, const char* argv[]) {
+  electron::ElectronMainDelegate delegate;
   content::ContentMainParams params(&delegate);
   params.argc = argc;
   params.argv = argv;
-  electron::AtomCommandLine::Init(argc, argv);
+  electron::ElectronCommandLine::Init(argc, argv);
   return content::ContentMain(params);
 }
 
-int AtomInitializeICUandStartNode(int argc, char *argv[]) {
+int ElectronInitializeICUandStartNode(int argc, char *argv[]) {
   base::AtExitManager atexit_manager;
   base::mac::ScopedNSAutoreleasePool pool;
   base::mac::SetOverrideFrameworkBundlePath(

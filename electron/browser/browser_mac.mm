@@ -16,15 +16,15 @@
 namespace electron {
 
 void Browser::Focus() {
-  [[AtomApplication sharedApplication] activateIgnoringOtherApps:YES];
+  [[ElectronApplication sharedApplication] activateIgnoringOtherApps:YES];
 }
 
 void Browser::Hide() {
-  [[AtomApplication sharedApplication] hide:nil];
+  [[ElectronApplication sharedApplication] hide:nil];
 }
 
 void Browser::Show() {
-  [[AtomApplication sharedApplication] unhide:nil];
+  [[ElectronApplication sharedApplication] unhide:nil];
 }
 
 bool Browser::IsDarkMode() {
@@ -77,21 +77,21 @@ std::string Browser::GetExecutableFileProductName() const {
 }
 
 int Browser::DockBounce(BounceType type) {
-  return [[AtomApplication sharedApplication]
+  return [[ElectronApplication sharedApplication]
       requestUserAttention:(NSRequestUserAttentionType)type];
 }
 
 void Browser::DockCancelBounce(int request_id) {
-  [[AtomApplication sharedApplication] cancelUserAttentionRequest:request_id];
+  [[ElectronApplication sharedApplication] cancelUserAttentionRequest:request_id];
 }
 
 void Browser::DockSetBadgeText(const std::string& label) {
-  NSDockTile *tile = [[AtomApplication sharedApplication] dockTile];
+  NSDockTile *tile = [[ElectronApplication sharedApplication] dockTile];
   [tile setBadgeLabel:base::SysUTF8ToNSString(label)];
 }
 
 std::string Browser::DockGetBadgeText() {
-  NSDockTile *tile = [[AtomApplication sharedApplication] dockTile];
+  NSDockTile *tile = [[ElectronApplication sharedApplication] dockTile];
   return base::SysNSStringToUTF8([tile badgeLabel]);
 }
 
@@ -131,12 +131,12 @@ void Browser::DockShow() {
 }
 
 void Browser::DockSetMenu(ui::MenuModel* model) {
-  AtomApplicationDelegate* delegate = (AtomApplicationDelegate*)[NSApp delegate];
+  ElectronApplicationDelegate* delegate = (ElectronApplicationDelegate*)[NSApp delegate];
   [delegate setApplicationDockMenu:model];
 }
 
 void Browser::DockSetIcon(const gfx::Image& image) {
-  [[AtomApplication sharedApplication]
+  [[ElectronApplication sharedApplication]
       setApplicationIconImage:image.AsNSImage()];
 }
 

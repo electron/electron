@@ -10,10 +10,10 @@
 namespace electron {
 
 // static
-std::vector<std::string> AtomCommandLine::argv_;
+std::vector<std::string> ElectronCommandLine::argv_;
 
 // static
-void AtomCommandLine::Init(int argc, const char* const* argv) {
+void ElectronCommandLine::Init(int argc, const char* const* argv) {
   // Hack around with the argv pointer. Used for process.title = "blah"
   char** new_argv = uv_setup_args(argc, const_cast<char**>(argv));
   for (int i = 0; i < argc; ++i) {
@@ -23,7 +23,7 @@ void AtomCommandLine::Init(int argc, const char* const* argv) {
 
 #if defined(OS_LINUX)
 // static
-void AtomCommandLine::InitializeFromCommandLine() {
+void ElectronCommandLine::InitializeFromCommandLine() {
   argv_ = base::CommandLine::ForCurrentProcess()->argv();
 }
 #endif

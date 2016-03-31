@@ -40,15 +40,15 @@ const char* ResourceTypeToString(content::ResourceType type) {
   }
 }
 
-void RunSimpleListener(const AtomNetworkDelegate::SimpleListener& listener,
+void RunSimpleListener(const ElectronNetworkDelegate::SimpleListener& listener,
                        scoped_ptr<base::DictionaryValue> details) {
   return listener.Run(*(details.get()));
 }
 
 void RunResponseListener(
-    const AtomNetworkDelegate::ResponseListener& listener,
+    const ElectronNetworkDelegate::ResponseListener& listener,
     scoped_ptr<base::DictionaryValue> details,
-    const AtomNetworkDelegate::ResponseCallback& callback) {
+    const ElectronNetworkDelegate::ResponseCallback& callback) {
   return listener.Run(*(details.get()), callback);
 }
 
@@ -192,13 +192,13 @@ void ReadFromResponseObject(const base::DictionaryValue& response,
 
 }  // namespace
 
-AtomNetworkDelegate::AtomNetworkDelegate() {
+ElectronNetworkDelegate::ElectronNetworkDelegate() {
 }
 
-AtomNetworkDelegate::~AtomNetworkDelegate() {
+ElectronNetworkDelegate::~ElectronNetworkDelegate() {
 }
 
-void AtomNetworkDelegate::SetSimpleListenerInIO(
+void ElectronNetworkDelegate::SetSimpleListenerInIO(
     SimpleEvent type,
     const URLPatterns& patterns,
     const SimpleListener& callback) {
@@ -208,7 +208,7 @@ void AtomNetworkDelegate::SetSimpleListenerInIO(
     simple_listeners_[type] = { patterns, callback };
 }
 
-void AtomNetworkDelegate::SetResponseListenerInIO(
+void ElectronNetworkDelegate::SetResponseListenerInIO(
     ResponseEvent type,
     const URLPatterns& patterns,
     const ResponseListener& callback) {
@@ -218,7 +218,7 @@ void AtomNetworkDelegate::SetResponseListenerInIO(
     response_listeners_[type] = { patterns, callback };
 }
 
-int AtomNetworkDelegate::OnBeforeURLRequest(
+int ElectronNetworkDelegate::OnBeforeURLRequest(
     net::URLRequest* request,
     const net::CompletionCallback& callback,
     GURL* new_url) {
@@ -229,7 +229,7 @@ int AtomNetworkDelegate::OnBeforeURLRequest(
   return HandleResponseEvent(kOnBeforeRequest, request, callback, new_url);
 }
 
-int AtomNetworkDelegate::OnBeforeSendHeaders(
+int ElectronNetworkDelegate::OnBeforeSendHeaders(
     net::URLRequest* request,
     const net::CompletionCallback& callback,
     net::HttpRequestHeaders* headers) {
@@ -241,7 +241,7 @@ int AtomNetworkDelegate::OnBeforeSendHeaders(
       kOnBeforeSendHeaders, request, callback, headers, *headers);
 }
 
-void AtomNetworkDelegate::OnSendHeaders(
+void ElectronNetworkDelegate::OnSendHeaders(
     net::URLRequest* request,
     const net::HttpRequestHeaders& headers) {
   if (!ContainsKey(simple_listeners_, kOnSendHeaders)) {
@@ -252,7 +252,7 @@ void AtomNetworkDelegate::OnSendHeaders(
   HandleSimpleEvent(kOnSendHeaders, request, headers);
 }
 
-int AtomNetworkDelegate::OnHeadersReceived(
+int ElectronNetworkDelegate::OnHeadersReceived(
     net::URLRequest* request,
     const net::CompletionCallback& callback,
     const net::HttpResponseHeaders* original,
@@ -266,7 +266,7 @@ int AtomNetworkDelegate::OnHeadersReceived(
       kOnHeadersReceived, request, callback, override, original);
 }
 
-void AtomNetworkDelegate::OnBeforeRedirect(net::URLRequest* request,
+void ElectronNetworkDelegate::OnBeforeRedirect(net::URLRequest* request,
                                            const GURL& new_location) {
   if (!ContainsKey(simple_listeners_, kOnBeforeRedirect)) {
     brightray::NetworkDelegate::OnBeforeRedirect(request, new_location);
@@ -278,7 +278,7 @@ void AtomNetworkDelegate::OnBeforeRedirect(net::URLRequest* request,
                     request->was_cached());
 }
 
-void AtomNetworkDelegate::OnResponseStarted(net::URLRequest* request) {
+void ElectronNetworkDelegate::OnResponseStarted(net::URLRequest* request) {
   if (!ContainsKey(simple_listeners_, kOnResponseStarted)) {
     brightray::NetworkDelegate::OnResponseStarted(request);
     return;
@@ -291,7 +291,7 @@ void AtomNetworkDelegate::OnResponseStarted(net::URLRequest* request) {
                     request->was_cached());
 }
 
-void AtomNetworkDelegate::OnCompleted(net::URLRequest* request, bool started) {
+void ElectronNetworkDelegate::OnCompleted(net::URLRequest* request, bool started) {
   // OnCompleted may happen before other events.
   callbacks_.erase(request->identifier());
 
@@ -317,11 +317,11 @@ void AtomNetworkDelegate::OnCompleted(net::URLRequest* request, bool started) {
                     request->was_cached());
 }
 
-void AtomNetworkDelegate::OnURLRequestDestroyed(net::URLRequest* request) {
+void ElectronNetworkDelegate::OnURLRequestDestroyed(net::URLRequest* request) {
   callbacks_.erase(request->identifier());
 }
 
-void AtomNetworkDelegate::OnErrorOccurred(
+void ElectronNetworkDelegate::OnErrorOccurred(
     net::URLRequest* request, bool started) {
   if (!ContainsKey(simple_listeners_, kOnErrorOccurred)) {
     brightray::NetworkDelegate::OnCompleted(request, started);
@@ -333,7 +333,7 @@ void AtomNetworkDelegate::OnErrorOccurred(
 }
 
 template<typename Out, typename... Args>
-int AtomNetworkDelegate::HandleResponseEvent(
+int ElectronNetworkDelegate::HandleResponseEvent(
     ResponseEvent type,
     net::URLRequest* request,
     const net::CompletionCallback& callback,
@@ -350,7 +350,7 @@ int AtomNetworkDelegate::HandleResponseEvent(
   callbacks_[request->identifier()] = callback;
 
   ResponseCallback response =
-      base::Bind(&AtomNetworkDelegate::OnListenerResultInUI<Out>,
+      base::Bind(&ElectronNetworkDelegate::OnListenerResultInUI<Out>,
                  base::Unretained(this), request->identifier(), out);
   BrowserThread::PostTask(
       BrowserThread::UI, FROM_HERE,
@@ -360,7 +360,7 @@ int AtomNetworkDelegate::HandleResponseEvent(
 }
 
 template<typename...Args>
-void AtomNetworkDelegate::HandleSimpleEvent(
+void ElectronNetworkDelegate::HandleSimpleEvent(
     SimpleEvent type, net::URLRequest* request, Args... args) {
   const auto& info = simple_listeners_[type];
   if (!MatchesFilterCondition(request, info.url_patterns))
@@ -375,7 +375,7 @@ void AtomNetworkDelegate::HandleSimpleEvent(
 }
 
 template<typename T>
-void AtomNetworkDelegate::OnListenerResultInIO(
+void ElectronNetworkDelegate::OnListenerResultInIO(
     uint64_t id, T out, scoped_ptr<base::DictionaryValue> response) {
   // The request has been destroyed.
   if (!ContainsKey(callbacks_, id))
@@ -389,12 +389,12 @@ void AtomNetworkDelegate::OnListenerResultInIO(
 }
 
 template<typename T>
-void AtomNetworkDelegate::OnListenerResultInUI(
+void ElectronNetworkDelegate::OnListenerResultInUI(
     uint64_t id, T out, const base::DictionaryValue& response) {
   scoped_ptr<base::DictionaryValue> copy = response.CreateDeepCopy();
   BrowserThread::PostTask(
       BrowserThread::IO, FROM_HERE,
-      base::Bind(&AtomNetworkDelegate::OnListenerResultInIO<T>,
+      base::Bind(&ElectronNetworkDelegate::OnListenerResultInIO<T>,
                  base::Unretained(this),  id, out, base::Passed(&copy)));
 }
 

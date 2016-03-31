@@ -18,7 +18,7 @@ namespace electron {
 namespace api {
 
 class Menu : public mate::TrackableObject<Menu>,
-             public AtomMenuModel::Delegate {
+             public ElectronMenuModel::Delegate {
  public:
   static mate::Wrappable* Create();
 
@@ -33,7 +33,7 @@ class Menu : public mate::TrackableObject<Menu>,
   static void SendActionToFirstResponder(const std::string& action);
 #endif
 
-  AtomMenuModel* model() const { return model_.get(); }
+  ElectronMenuModel* model() const { return model_.get(); }
 
  protected:
   Menu();
@@ -55,7 +55,7 @@ class Menu : public mate::TrackableObject<Menu>,
                        int x = -1, int y = -1,
                        int positioning_item = 0) = 0;
 
-  scoped_ptr<AtomMenuModel> model_;
+  scoped_ptr<ElectronMenuModel> model_;
   Menu* parent_;
 
  private:
@@ -104,9 +104,9 @@ class Menu : public mate::TrackableObject<Menu>,
 namespace mate {
 
 template<>
-struct Converter<electron::AtomMenuModel*> {
+struct Converter<electron::ElectronMenuModel*> {
   static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
-                     electron::AtomMenuModel** out) {
+                     electron::ElectronMenuModel** out) {
     // null would be tranfered to NULL.
     if (val->IsNull()) {
       *out = nullptr;

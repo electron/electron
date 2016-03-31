@@ -21,7 +21,7 @@ const CGFloat kVerticalTitleMargin = 2;
 
 @interface StatusItemView : NSView {
   electron::TrayIconCocoa* trayIcon_; // weak
-  AtomMenuController* menuController_; // weak
+  ElectronMenuController* menuController_; // weak
   BOOL isHighlightEnable_;
   BOOL forceHighlight_;
   BOOL inMouseEventSequence_;
@@ -194,7 +194,7 @@ const CGFloat kVerticalTitleMargin = 2;
   [self updateDimensions];
 }
 
-- (void)setMenuController:(AtomMenuController*)menu {
+- (void)setMenuController:(ElectronMenuController*)menu {
   menuController_ = menu;
 }
 
@@ -244,8 +244,8 @@ const CGFloat kVerticalTitleMargin = 2;
 - (void)popUpContextMenu:(ui::SimpleMenuModel*)menu_model {
   // Show a custom menu.
   if (menu_model) {
-    base::scoped_nsobject<AtomMenuController> menuController(
-        [[AtomMenuController alloc] initWithModel:menu_model]);
+    base::scoped_nsobject<ElectronMenuController> menuController(
+        [[ElectronMenuController alloc] initWithModel:menu_model]);
     forceHighlight_ = YES;  // Should highlight when showing menu.
     [self setNeedsDisplay:YES];
     [statusItem_ popUpStatusItemMenu:[menuController menu]];
@@ -372,10 +372,10 @@ void TrayIconCocoa::SetContextMenu(ui::SimpleMenuModel* menu_model) {
   // Substribe to MenuClosed event.
   if (menu_model_)
     menu_model_->RemoveObserver(this);
-  static_cast<AtomMenuModel*>(menu_model)->AddObserver(this);
+  static_cast<ElectronMenuModel*>(menu_model)->AddObserver(this);
 
   // Create native menu.
-  menu_.reset([[AtomMenuController alloc] initWithModel:menu_model]);
+  menu_.reset([[ElectronMenuController alloc] initWithModel:menu_model]);
   [status_item_view_ setMenuController:menu_.get()];
 }
 

@@ -20,7 +20,7 @@ namespace electron {
 namespace api {
 
 Menu::Menu()
-    : model_(new AtomMenuModel(this)),
+    : model_(new ElectronMenuModel(this)),
       parent_(NULL) {
 }
 

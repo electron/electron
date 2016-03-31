@@ -653,8 +653,8 @@ void WebContents::DevToolsClosed() {
 bool WebContents::OnMessageReceived(const IPC::Message& message) {
   bool handled = true;
   IPC_BEGIN_MESSAGE_MAP(WebContents, message)
-    IPC_MESSAGE_HANDLER(AtomViewHostMsg_Message, OnRendererMessage)
-    IPC_MESSAGE_HANDLER_DELAY_REPLY(AtomViewHostMsg_Message_Sync,
+    IPC_MESSAGE_HANDLER(ElectronViewHostMsg_Message, OnRendererMessage)
+    IPC_MESSAGE_HANDLER_DELAY_REPLY(ElectronViewHostMsg_Message_Sync,
                                     OnRendererMessageSync)
     IPC_MESSAGE_HANDLER_CODE(ViewHostMsg_SetCursor, OnCursorChange,
       handled = false)
@@ -768,17 +768,17 @@ void WebContents::Stop() {
 }
 
 void WebContents::GoBack() {
-  electron::AtomBrowserClient::SuppressRendererProcessRestartForOnce();
+  electron::ElectronBrowserClient::SuppressRendererProcessRestartForOnce();
   web_contents()->GetController().GoBack();
 }
 
 void WebContents::GoForward() {
-  electron::AtomBrowserClient::SuppressRendererProcessRestartForOnce();
+  electron::ElectronBrowserClient::SuppressRendererProcessRestartForOnce();
   web_contents()->GetController().GoForward();
 }
 
 void WebContents::GoToOffset(int offset) {
-  electron::AtomBrowserClient::SuppressRendererProcessRestartForOnce();
+  electron::ElectronBrowserClient::SuppressRendererProcessRestartForOnce();
   web_contents()->GetController().GoToOffset(offset);
 }
 
@@ -1030,7 +1030,7 @@ void WebContents::TabTraverse(bool reverse) {
 
 bool WebContents::SendIPCMessage(const base::string16& channel,
                                  const base::ListValue& args) {
-  return Send(new AtomViewMsg_Message(routing_id(), channel, args));
+  return Send(new ElectronViewMsg_Message(routing_id(), channel, args));
 }
 
 void WebContents::SendInputEvent(v8::Isolate* isolate,
@@ -1215,8 +1215,8 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetProperty("debugger", &WebContents::Debugger);
 }
 
-AtomBrowserContext* WebContents::GetBrowserContext() const {
-  return static_cast<AtomBrowserContext*>(web_contents()->GetBrowserContext());
+ElectronBrowserContext* WebContents::GetBrowserContext() const {
+  return static_cast<ElectronBrowserContext*>(web_contents()->GetBrowserContext());
 }
 
 void WebContents::OnRendererMessage(const base::string16& channel,
@@ -1262,7 +1262,7 @@ void SetWrapWebContents(const WrapWebContentsCallback& callback) {
   g_wrap_web_contents = callback;
 
   // Cleanup the wrapper on exit.
-  electron::AtomBrowserMainParts::Get()->RegisterDestructionCallback(
+  electron::ElectronBrowserMainParts::Get()->RegisterDestructionCallback(
       base::Bind(ClearWrapWebContents));
 }
 

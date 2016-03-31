@@ -12,7 +12,7 @@
 
 namespace electron {
 
-class AtomMenuModel : public ui::SimpleMenuModel {
+class ElectronMenuModel : public ui::SimpleMenuModel {
  public:
   class Delegate : public ui::SimpleMenuModel::Delegate {
    public:
@@ -27,8 +27,8 @@ class AtomMenuModel : public ui::SimpleMenuModel {
     virtual void MenuClosed() {}
   };
 
-  explicit AtomMenuModel(Delegate* delegate);
-  virtual ~AtomMenuModel();
+  explicit ElectronMenuModel(Delegate* delegate);
+  virtual ~ElectronMenuModel();
 
   void AddObserver(Observer* obs) { observers_.AddObserver(obs); }
   void RemoveObserver(Observer* obs) { observers_.RemoveObserver(obs); }
@@ -45,7 +45,7 @@ class AtomMenuModel : public ui::SimpleMenuModel {
   std::map<int, base::string16> roles_;
   base::ObserverList<Observer> observers_;
 
-  DISALLOW_COPY_AND_ASSIGN(AtomMenuModel);
+  DISALLOW_COPY_AND_ASSIGN(ElectronMenuModel);
 };
 
 }  // namespace electron

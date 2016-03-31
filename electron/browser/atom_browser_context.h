@@ -11,17 +11,17 @@
 
 namespace electron {
 
-class AtomDownloadManagerDelegate;
-class AtomCertVerifier;
-class AtomNetworkDelegate;
-class AtomPermissionManager;
-class AtomURLRequestJobFactory;
+class ElectronDownloadManagerDelegate;
+class ElectronCertVerifier;
+class ElectronNetworkDelegate;
+class ElectronPermissionManager;
+class ElectronURLRequestJobFactory;
 class WebViewManager;
 
-class AtomBrowserContext : public brightray::BrowserContext {
+class ElectronBrowserContext : public brightray::BrowserContext {
  public:
-  AtomBrowserContext(const std::string& partition, bool in_memory);
-  ~AtomBrowserContext() override;
+  ElectronBrowserContext(const std::string& partition, bool in_memory);
+  ~ElectronBrowserContext() override;
 
   // brightray::URLRequestContextGetter::Delegate:
   net::NetworkDelegate* CreateNetworkDelegate() override;
@@ -45,25 +45,25 @@ class AtomBrowserContext : public brightray::BrowserContext {
 
   void AllowNTLMCredentialsForAllDomains(bool should_allow);
 
-  AtomCertVerifier* cert_verifier() const { return cert_verifier_; }
+  ElectronCertVerifier* cert_verifier() const { return cert_verifier_; }
 
-  AtomURLRequestJobFactory* job_factory() const { return job_factory_; }
+  ElectronURLRequestJobFactory* job_factory() const { return job_factory_; }
 
-  AtomNetworkDelegate* network_delegate() const { return network_delegate_; }
+  ElectronNetworkDelegate* network_delegate() const { return network_delegate_; }
 
  private:
-  scoped_ptr<AtomDownloadManagerDelegate> download_manager_delegate_;
+  scoped_ptr<ElectronDownloadManagerDelegate> download_manager_delegate_;
   scoped_ptr<WebViewManager> guest_manager_;
-  scoped_ptr<AtomPermissionManager> permission_manager_;
+  scoped_ptr<ElectronPermissionManager> permission_manager_;
 
   // Managed by brightray::BrowserContext.
-  AtomCertVerifier* cert_verifier_;
-  AtomURLRequestJobFactory* job_factory_;
-  AtomNetworkDelegate* network_delegate_;
+  ElectronCertVerifier* cert_verifier_;
+  ElectronURLRequestJobFactory* job_factory_;
+  ElectronNetworkDelegate* network_delegate_;
 
   bool allow_ntlm_everywhere_;
 
-  DISALLOW_COPY_AND_ASSIGN(AtomBrowserContext);
+  DISALLOW_COPY_AND_ASSIGN(ElectronBrowserContext);
 };
 
 }  // namespace electron

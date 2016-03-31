@@ -10,7 +10,7 @@
 
 namespace electron {
 
-void AtomJavaScriptDialogManager::RunJavaScriptDialog(
+void ElectronJavaScriptDialogManager::RunJavaScriptDialog(
     content::WebContents* web_contents,
     const GURL& origin_url,
     const std::string& accept_lang,
@@ -22,7 +22,7 @@ void AtomJavaScriptDialogManager::RunJavaScriptDialog(
   callback.Run(false, base::string16());
 }
 
-void AtomJavaScriptDialogManager::RunBeforeUnloadDialog(
+void ElectronJavaScriptDialogManager::RunBeforeUnloadDialog(
     content::WebContents* web_contents,
     const base::string16& message_text,
     bool is_reload,

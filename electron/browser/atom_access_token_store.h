@@ -9,12 +9,12 @@
 
 namespace electron {
 
-class AtomBrowserContext;
+class ElectronBrowserContext;
 
-class AtomAccessTokenStore : public content::AccessTokenStore {
+class ElectronAccessTokenStore : public content::AccessTokenStore {
  public:
-  AtomAccessTokenStore();
-  virtual ~AtomAccessTokenStore();
+  ElectronAccessTokenStore();
+  virtual ~ElectronAccessTokenStore();
 
   // content::AccessTokenStore:
   void LoadAccessTokens(
@@ -23,7 +23,7 @@ class AtomAccessTokenStore : public content::AccessTokenStore {
                        const base::string16& access_token) override;
 
  private:
-  DISALLOW_COPY_AND_ASSIGN(AtomAccessTokenStore);
+  DISALLOW_COPY_AND_ASSIGN(ElectronAccessTokenStore);
 };
 
 }  // namespace electron

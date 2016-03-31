@@ -16,13 +16,13 @@ class DownloadManager;
 
 namespace electron {
 
-class AtomDownloadManagerDelegate : public content::DownloadManagerDelegate {
+class ElectronDownloadManagerDelegate : public content::DownloadManagerDelegate {
  public:
   using CreateDownloadPathCallback =
       base::Callback<void(const base::FilePath&)>;
 
-  explicit AtomDownloadManagerDelegate(content::DownloadManager* manager);
-  virtual ~AtomDownloadManagerDelegate();
+  explicit ElectronDownloadManagerDelegate(content::DownloadManager* manager);
+  virtual ~ElectronDownloadManagerDelegate();
 
   // Generate default file path to save the download.
   void CreateDownloadPath(const GURL& url,
@@ -47,9 +47,9 @@ class AtomDownloadManagerDelegate : public content::DownloadManagerDelegate {
 
  private:
   content::DownloadManager* download_manager_;
-  base::WeakPtrFactory<AtomDownloadManagerDelegate> weak_ptr_factory_;
+  base::WeakPtrFactory<ElectronDownloadManagerDelegate> weak_ptr_factory_;
 
-  DISALLOW_COPY_AND_ASSIGN(AtomDownloadManagerDelegate);
+  DISALLOW_COPY_AND_ASSIGN(ElectronDownloadManagerDelegate);
 };
 
 }  // namespace electron

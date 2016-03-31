@@ -31,29 +31,29 @@ bool Send(IPC::Message* message) {
 
 namespace electron {
 
-int64_t AtomContentUtilityClient::max_ipc_message_size_ =
+int64_t ElectronContentUtilityClient::max_ipc_message_size_ =
     IPC::Channel::kMaximumMessageSize;
 
-AtomContentUtilityClient::AtomContentUtilityClient()
+ElectronContentUtilityClient::ElectronContentUtilityClient()
     : filter_messages_(false) {
 #if defined(OS_WIN)
   handlers_.push_back(new PrintingHandlerWin());
 #endif
 }
 
-AtomContentUtilityClient::~AtomContentUtilityClient() {
+ElectronContentUtilityClient::~ElectronContentUtilityClient() {
 }
 
-void AtomContentUtilityClient::UtilityThreadStarted() {
+void ElectronContentUtilityClient::UtilityThreadStarted() {
 }
 
-bool AtomContentUtilityClient::OnMessageReceived(
+bool ElectronContentUtilityClient::OnMessageReceived(
     const IPC::Message& message) {
   if (filter_messages_ && !ContainsKey(message_id_whitelist_, message.type()))
     return false;
 
   bool handled = true;
-  IPC_BEGIN_MESSAGE_MAP(AtomContentUtilityClient, message)
+  IPC_BEGIN_MESSAGE_MAP(ElectronContentUtilityClient, message)
     IPC_MESSAGE_HANDLER(ChromeUtilityMsg_StartupPing, OnStartupPing)
     IPC_MESSAGE_UNHANDLED(handled = false)
   IPC_END_MESSAGE_MAP()
@@ -66,13 +66,13 @@ bool AtomContentUtilityClient::OnMessageReceived(
   return handled;
 }
 
-void AtomContentUtilityClient::OnStartupPing() {
+void ElectronContentUtilityClient::OnStartupPing() {
   Send(new ChromeUtilityHostMsg_ProcessStarted);
   // Don't release the process, we assume further messages are on the way.
 }
 
 // static
-void AtomContentUtilityClient::PreSandboxStartup() {
+void ElectronContentUtilityClient::PreSandboxStartup() {
 #if defined(OS_WIN)
   PrintingHandlerWin::PreSandboxStartup();
 #endif

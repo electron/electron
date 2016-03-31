@@ -9,10 +9,10 @@
 #include "base/strings/sys_string_conversions.h"
 #include "content/public/browser/browser_accessibility_state.h"
 
-@implementation AtomApplication
+@implementation ElectronApplication
 
-+ (AtomApplication*)sharedApplication {
-  return (AtomApplication*)[super sharedApplication];
++ (ElectronApplication*)sharedApplication {
+  return (ElectronApplication*)[super sharedApplication];
 }
 
 - (BOOL)isHandlingSendEvent {

@@ -13,14 +13,14 @@
 
 namespace electron {
 
-class AtomBindings;
+class ElectronBindings;
 class NodeBindings;
 
-class AtomRendererClient : public content::ContentRendererClient,
+class ElectronRendererClient : public content::ContentRendererClient,
                            public content::RenderProcessObserver {
  public:
-  AtomRendererClient();
-  virtual ~AtomRendererClient();
+  ElectronRendererClient();
+  virtual ~ElectronRendererClient();
 
   void DidCreateScriptContext(v8::Handle<v8::Context> context);
   void WillReleaseScriptContext(v8::Handle<v8::Context> context);
@@ -59,9 +59,9 @@ class AtomRendererClient : public content::ContentRendererClient,
   void AddKeySystems(std::vector<media::KeySystemInfo>* key_systems) override;
 
   scoped_ptr<NodeBindings> node_bindings_;
-  scoped_ptr<AtomBindings> atom_bindings_;
+  scoped_ptr<ElectronBindings> atom_bindings_;
 
-  DISALLOW_COPY_AND_ASSIGN(AtomRendererClient);
+  DISALLOW_COPY_AND_ASSIGN(ElectronRendererClient);
 };
 
 }  // namespace electron
