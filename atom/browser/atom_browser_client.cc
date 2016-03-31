@@ -264,6 +264,45 @@ void AtomBrowserClient::ResourceDispatcherHostCreated() {
       resource_dispatcher_host_delegate_.get());
 }
 
+bool AtomBrowserClient::CanCreateWindow(
+    const GURL& opener_url,
+    const GURL& opener_top_level_frame_url,
+    const GURL& source_origin,
+    WindowContainerType container_type,
+    const std::string& frame_name,
+    const GURL& target_url,
+    const content::Referrer& referrer,
+    WindowOpenDisposition disposition,
+    const blink::WebWindowFeatures& features,
+    bool user_gesture,
+    bool opener_suppressed,
+    content::ResourceContext* context,
+    int render_process_id,
+    int opener_render_view_id,
+    int opener_render_frame_id,
+    bool* no_javascript_access) {
+  if (delegate_) {
+    return delegate_->CanCreateWindow(opener_url,
+                                      opener_top_level_frame_url,
+                                      source_origin,
+                                      container_type,
+                                      frame_name,
+                                      target_url,
+                                      referrer,
+                                      disposition,
+                                      features,
+                                      user_gesture,
+                                      opener_suppressed,
+                                      context,
+                                      render_process_id,
+                                      opener_render_view_id,
+                                      opener_render_frame_id,
+                                      no_javascript_access);
+  } else {
+    return false;
+  }
+}
+
 brightray::BrowserMainParts* AtomBrowserClient::OverrideCreateBrowserMainParts(
     const content::MainFunctionParams&) {
   v8::V8::Initialize();  // Init V8 before creating main parts.

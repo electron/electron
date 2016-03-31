@@ -27,6 +27,7 @@
 #include "base/path_service.h"
 #include "brightray/browser/brightray_paths.h"
 #include "chrome/common/chrome_paths.h"
+#include "content/public/browser/browser_thread.h"
 #include "content/public/browser/client_certificate_delegate.h"
 #include "content/public/browser/gpu_data_manager.h"
 #include "content/public/browser/render_frame_host.h"
@@ -273,6 +274,53 @@ void App::SelectClientCertificate(
   if (!prevent_default)
     shared_delegate->ContinueWithCertificate(
         cert_request_info->client_certs[0].get());
+}
+
+bool App::CanCreateWindow(const GURL& opener_url,
+                          const GURL& opener_top_level_frame_url,
+                          const GURL& source_origin,
+                          WindowContainerType container_type,
+                          const std::string& frame_name,
+                          const GURL& target_url,
+                          const content::Referrer& referrer,
+                          WindowOpenDisposition disposition,
+                          const blink::WebWindowFeatures& features,
+                          bool user_gesture,
+                          bool opener_suppressed,
+                          content::ResourceContext* context,
+                          int render_process_id,
+                          int opener_render_view_id,
+                          int opener_render_frame_id,
+                          bool* no_javascript_access) {
+  DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
+
+  content::BrowserThread::PostTask(content::BrowserThread::UI, FROM_HERE,
+                                   base::Bind(&App::OnCreateWindow,
+                                              base::Unretained(this),
+                                              target_url,
+                                              frame_name,
+                                              disposition,
+                                              render_process_id,
+                                              opener_render_frame_id));
+
+  return false;
+}
+
+void App::OnCreateWindow(const GURL& target_url,
+                         const std::string& frame_name,
+                         WindowOpenDisposition disposition,
+                         int render_process_id,
+                         int render_frame_id) {
+  v8::Locker locker(isolate());
+  v8::HandleScope handle_scope(isolate());
+  content::RenderFrameHost* rfh =
+      content::RenderFrameHost::FromID(render_process_id, render_frame_id);
+  content::WebContents* web_contents =
+      content::WebContents::FromRenderFrameHost(rfh);
+  if (web_contents) {
+    auto api_web_contents = WebContents::CreateFrom(isolate(), web_contents);
+    api_web_contents->CreateWindow(target_url, frame_name, disposition);
+  }
 }
 
 void App::OnGpuProcessCrashed(base::TerminationStatus exit_code) {

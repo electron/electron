@@ -138,6 +138,11 @@ class WebContents : public mate::TrackableObject<WebContents>,
                                    const GURL& origin,
                                    bool allowed);
 
+  // Create window with the given disposition.
+  void CreateWindow(const GURL& target_url,
+                    const std::string& frame_name,
+                    WindowOpenDisposition disposition);
+
   // Returns the web preferences of current WebContents.
   v8::Local<v8::Value> GetWebPreferences(v8::Isolate* isolate);
 
@@ -165,16 +170,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
                            const base::string16& message,
                            int32_t line_no,
                            const base::string16& source_id) override;
-  bool ShouldCreateWebContents(
-      content::WebContents* web_contents,
-      int32_t route_id,
-      int32_t main_frame_route_id,
-      int32_t main_frame_widget_route_id,
-      WindowContainerType window_container_type,
-      const std::string& frame_name,
-      const GURL& target_url,
-      const std::string& partition_id,
-      content::SessionStorageNamespace* session_storage_namespace) override;
   content::WebContents* OpenURLFromTab(
       content::WebContents* source,
       const content::OpenURLParams& params) override;
