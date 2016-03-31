@@ -12,8 +12,8 @@
   ],
   'target_defaults': {
     'defines': [
-      'ATOM_PRODUCT_NAME="<(product_name)"',
-      'ATOM_PROJECT_NAME="<(project_name)"',
+      'ELECTRON_PRODUCT_NAME="<(product_name)"',
+      'ELECTRON_PROJECT_NAME="<(project_name)"',
     ],
     'conditions': [
       ['OS=="mac"', {

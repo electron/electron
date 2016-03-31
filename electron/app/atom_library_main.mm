@@ -31,7 +31,7 @@ int ElectronInitializeICUandStartNode(int argc, char *argv[]) {
       brightray::MainApplicationBundlePath()
           .Append("Contents")
           .Append("Frameworks")
-          .Append(ATOM_PRODUCT_NAME " Framework.framework"));
+          .Append(ELECTRON_PRODUCT_NAME " Framework.framework"));
   base::i18n::InitializeICU();
   return electron::NodeMain(argc, argv);
 }

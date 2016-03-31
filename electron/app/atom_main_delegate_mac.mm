@@ -33,13 +33,13 @@ base::FilePath GetHelperAppPath(const base::FilePath& frameworks_path,
 
 void ElectronMainDelegate::OverrideFrameworkBundlePath() {
   base::mac::SetOverrideFrameworkBundlePath(
-      GetFrameworksPath().Append(ATOM_PRODUCT_NAME " Framework.framework"));
+      GetFrameworksPath().Append(ELECTRON_PRODUCT_NAME " Framework.framework"));
 }
 
 void ElectronMainDelegate::OverrideChildProcessPath() {
   base::FilePath frameworks_path = GetFrameworksPath();
   base::FilePath helper_path = GetHelperAppPath(frameworks_path,
-                                                ATOM_PRODUCT_NAME);
+                                                ELECTRON_PRODUCT_NAME);
   if (!base::PathExists(helper_path))
     helper_path = GetHelperAppPath(frameworks_path,
                                    brightray::GetApplicationName());

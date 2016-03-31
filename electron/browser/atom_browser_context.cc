@@ -82,12 +82,12 @@ std::string ElectronBrowserContext::GetUserAgent() {
   Browser* browser = Browser::Get();
   std::string name = RemoveWhitespace(browser->GetName());
   std::string user_agent;
-  if (name == ATOM_PRODUCT_NAME) {
+  if (name == ELECTRON_PRODUCT_NAME) {
     user_agent = "Chrome/" CHROME_VERSION_STRING " "
-                 ATOM_PRODUCT_NAME "/" ATOM_VERSION_STRING;
+                 ELECTRON_PRODUCT_NAME "/" ATOM_VERSION_STRING;
   } else {
     user_agent = base::StringPrintf(
-        "%s/%s Chrome/%s " ATOM_PRODUCT_NAME "/" ATOM_VERSION_STRING,
+        "%s/%s Chrome/%s " ELECTRON_PRODUCT_NAME "/" ATOM_VERSION_STRING,
         name.c_str(),
         browser->GetVersion().c_str(),
         CHROME_VERSION_STRING);

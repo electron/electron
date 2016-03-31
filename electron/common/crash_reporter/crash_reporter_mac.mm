@@ -65,7 +65,7 @@ void CrashReporterMac::InitBreakpad(const std::string& product_name,
   simple_string_dictionary_.reset(new crashpad::SimpleStringDictionary());
   crashpad_info->set_simple_annotations(simple_string_dictionary_.get());
 
-  SetCrashKeyValue("prod", ATOM_PRODUCT_NAME);
+  SetCrashKeyValue("prod", ELECTRON_PRODUCT_NAME);
   SetCrashKeyValue("process_type", is_browser_ ? "browser" : "renderer");
   SetCrashKeyValue("ver", version);
 

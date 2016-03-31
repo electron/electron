@@ -253,7 +253,7 @@ std::string Browser::GetExecutableFileProductName() const {
     return base::UTF16ToUTF8(version_info->product_name());
   }
 
-  return ATOM_PRODUCT_NAME;
+  return ELECTRON_PRODUCT_NAME;
 }
 
 }  // namespace electron

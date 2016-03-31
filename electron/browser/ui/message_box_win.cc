@@ -221,7 +221,7 @@ void ShowMessageBox(NativeWindow* parent,
                     const gfx::ImageSkia& icon,
                     const MessageBoxCallback& callback) {
   scoped_ptr<base::Thread> thread(
-      new base::Thread(ATOM_PRODUCT_NAME "MessageBoxThread"));
+      new base::Thread(ELECTRON_PRODUCT_NAME "MessageBoxThread"));
   thread->init_com_with_mta(false);
   if (!thread->Start()) {
     callback.Run(cancel_id);

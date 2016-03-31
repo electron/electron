@@ -9,7 +9,7 @@
 namespace brightray {
 
 std::string GetApplicationName() {
-  return ATOM_PRODUCT_NAME;
+  return ELECTRON_PRODUCT_NAME;
 }
 
 std::string GetApplicationVersion() {

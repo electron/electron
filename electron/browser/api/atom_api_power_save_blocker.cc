@@ -73,7 +73,7 @@ void PowerSaveBlocker::UpdatePowerSaveBlocker() {
         content::PowerSaveBlocker::Create(
             new_blocker_type,
             content::PowerSaveBlocker::kReasonOther,
-            ATOM_PRODUCT_NAME);
+            ELECTRON_PRODUCT_NAME);
     power_save_blocker_.swap(new_blocker);
     current_blocker_type_ = new_blocker_type;
   }

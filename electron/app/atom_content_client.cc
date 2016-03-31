@@ -173,7 +173,7 @@ std::string ElectronContentClient::GetProduct() const {
 std::string ElectronContentClient::GetUserAgent() const {
   return content::BuildUserAgentFromProduct(
       "Chrome/" CHROME_VERSION_STRING " "
-      ATOM_PRODUCT_NAME "/" ATOM_VERSION_STRING);
+      ELECTRON_PRODUCT_NAME "/" ATOM_VERSION_STRING);
 }
 
 base::string16 ElectronContentClient::GetLocalizedString(int message_id) const {

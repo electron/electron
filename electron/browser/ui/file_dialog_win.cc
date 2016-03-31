@@ -141,7 +141,7 @@ struct RunState {
 
 bool CreateDialogThread(RunState* run_state) {
   scoped_ptr<base::Thread> thread(
-      new base::Thread(ATOM_PRODUCT_NAME "FileDialogThread"));
+      new base::Thread(ELECTRON_PRODUCT_NAME "FileDialogThread"));
   thread->init_com_with_mta(false);
   if (!thread->Start())
     return false;

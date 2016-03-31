@@ -10,7 +10,7 @@ namespace chrome {
 
 #if defined(OS_MACOSX)
 const base::FilePath::CharType kFrameworkName[] =
-    FPL(ATOM_PRODUCT_NAME " Framework.framework");
+    FPL(ELECTRON_PRODUCT_NAME " Framework.framework");
 #endif  // OS_MACOSX
 
 // filenames
