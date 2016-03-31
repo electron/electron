@@ -22,7 +22,7 @@ app.on('ready', function() {
 
 ## --disable-http-cache
 
-禁用 HTTP 请求.
+禁止请求 HTTP 时使用磁盘缓存.
 
 ## --remote-debugging-port=`port`
 
