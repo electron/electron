@@ -39,7 +39,11 @@ bool GetIPCObject(v8::Isolate* isolate,
                   v8::Local<v8::Context> context,
                   v8::Local<v8::Object>* ipc) {
   v8::Local<v8::String> key = mate::StringToV8(isolate, "ipc");
-  v8::Local<v8::Value> value = context->Global()->GetHiddenValue(key);
+  v8::Local<v8::Private> privateKey = v8::Private::ForApi(isolate, key);
+  v8::Local<v8::Object> global_object = context->Global();
+  v8::Local<v8::Value> value;
+  if (!global_object->GetPrivate(context, privateKey).ToLocal(&value))
+    return false;
   if (value.IsEmpty() || !value->IsObject())
     return false;
   *ipc = value->ToObject();
