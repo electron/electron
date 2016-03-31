@@ -1,21 +1,21 @@
 [submodule "vendor/brightray"]
 	path = vendor/brightray
-	url = https://github.com/atom/brightray.git
+	url = https://github.com/electron/brightray.git
 [submodule "vendor/node"]
 	path = vendor/node
-	url = https://github.com/atom/node.git
+	url = https://github.com/electron/node.git
 [submodule "vendor/depot_tools"]
 	path = vendor/depot_tools
 	url = https://chromium.googlesource.com/chromium/tools/depot_tools.git
 [submodule "vendor/breakpad"]
 	path = vendor/breakpad
-	url = https://github.com/atom/chromium-breakpad.git
+	url = https://github.com/electron/chromium-breakpad.git
 [submodule "vendor/native_mate"]
 	path = vendor/native_mate
 	url = https://github.com/zcbenz/native-mate.git
 [submodule "vendor/crashpad"]
 	path = vendor/crashpad
-	url = https://github.com/atom/crashpad.git
+	url = https://github.com/electron/crashpad.git
 [submodule "vendor/requests"]
 	path = vendor/requests
 	url = https://github.com/kennethreitz/requests
