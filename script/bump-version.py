@@ -61,7 +61,7 @@ def update_win_rc(version, versions):
   pattern_fvs = re.compile(' *VALUE "FileVersion", "[0-9.]+"')
   pattern_pvs = re.compile(' *VALUE "ProductVersion", "[0-9.]+"')
 
-  win_rc = os.path.join('atom', 'browser', 'resources', 'win', 'atom.rc')
+  win_rc = os.path.join('atom', 'browser', 'resources', 'win', 'electron.rc')
   with open(win_rc, 'r') as f:
     lines = f.readlines()
 

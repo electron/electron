@@ -129,7 +129,7 @@
           'msvs_settings': {
             'VCManifestTool': {
               'EmbedManifest': 'true',
-              'AdditionalManifestFiles': 'electron/browser/resources/win/atom.manifest',
+              'AdditionalManifestFiles': 'electron/browser/resources/win/electron.manifest',
             }
           },
           'copies': [
