@@ -68,7 +68,7 @@ def run_gyp(target_arch, component):
     '-Dmas_build={0}'.format(mas_build),
   ]
   return subprocess.call([python, gyp, '-f', 'ninja', '--depth', '.',
-                          'atom.gyp', '-Icommon.gypi'] + defines, env=env)
+                          'electron.gyp', '-Icommon.gypi'] + defines, env=env)
 
 
 if __name__ == '__main__':
