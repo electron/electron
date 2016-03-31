@@ -2,6 +2,8 @@
 
 This module provides an interface for the `Squirrel` auto-updater framework.
 
+You can quickly launch a multi-platform release server for distributing your application by forking [electron-release-server](https://github.com/ArekSredzki/electron-release-server).
+
 ## Platform notices
 
 Though `autoUpdater` provides a uniform API for different platforms, there are
