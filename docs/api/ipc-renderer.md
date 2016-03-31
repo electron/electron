@@ -69,7 +69,7 @@ hence no functions or prototype chain will be included.
 The main process handles it by listening for `channel` with `ipcMain` module,
 and replies by setting `event.returnValue`.
 
-__Note:__ Sending a synchronous message will block the whole renderer process,
+**Note:** Sending a synchronous message will block the whole renderer process,
 unless you know what you are doing you should never use it.
 
 ### `ipcRenderer.sendToHost(channel[, arg1][, arg2][, ...])`
