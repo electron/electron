@@ -32,6 +32,21 @@ describe('menu module', function() {
       ]);
     });
 
+    it('does not throw exceptions for undefined/null values', function() {
+      assert.doesNotThrow(function() {
+        Menu.buildFromTemplate([
+          {
+            label: 'text',
+            accelerator: undefined
+          },
+          {
+            label: 'text again',
+            accelerator: null
+          }
+        ]);
+      });
+    });
+
     describe('Menu.buildFromTemplate should reorder based on item position specifiers', function() {
       it('should position before existing item', function() {
         var menu = Menu.buildFromTemplate([

@@ -342,6 +342,12 @@ npm 모듈 규칙에 따라 대부분의 경우 `package.json`의 `name` 필드�
 반드시 이 필드도 같이 지정해야 합니다. 이 필드는 맨 앞글자가 대문자인 어플리케이션
 전체 이름을 지정해야 합니다.
 
+### `app.setName(name)`
+
+* `name` String
+
+현재 어플리케이션의 이름을 덮어씌웁니다.
+
 ### `app.getLocale()`
 
 현재 어플리케이션의 [로케일](https://ko.wikipedia.org/wiki/%EB%A1%9C%EC%BC%80%EC%9D%BC)을

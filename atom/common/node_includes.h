@@ -28,11 +28,4 @@
 #include "vendor/node/src/node_buffer.h"
 #include "vendor/node/src/node_internals.h"
 
-namespace atom {
-// Defined in node_bindings.cc.
-// For renderer it's created in atom_renderer_client.cc.
-// For browser it's created in atom_browser_main_parts.cc.
-extern node::Environment* global_env;
-}
-
 #endif  // ATOM_COMMON_NODE_INCLUDES_H_

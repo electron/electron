@@ -16,6 +16,12 @@ crashReporter.start({
 });
 ```
 
+For setting up a server to accept and process crash reports, you can use
+following projects:
+
+* [socorro](https://github.com/mozilla/socorro)
+* [mini-breakpad-server](https://github.com/atom/mini-breakpad-server)
+
 ## Methods
 
 The `crash-reporter` module has the following methods:
@@ -54,7 +60,7 @@ ID.
 
 ## crash-reporter Payload
 
-The crash reporter will send the following data to the `submitURL` as `POST`:
+The crash reporter will send the following data to the `submitURL` as a `multipart/form-data` `POST`:
 
 * `ver` String - The version of Electron.
 * `platform` String - e.g. 'win32'.
@@ -66,6 +72,6 @@ The crash reporter will send the following data to the `submitURL` as `POST`:
 * `prod` String - Name of the underlying product. In this case Electron.
 * `_companyName` String - The company name in the `crashReporter` `options`
   object.
-* `upload_file_minidump` File - The crash report as file.
+* `upload_file_minidump` File - The crash report in the format of `minidump`.
 * All level one properties of the `extra` object in the `crashReporter`.
   `options` object

@@ -131,6 +131,15 @@ var image = nativeImage.createFromPath('/Users/somebody/images/icon.png');
 
 이미지를 data URL로 반환합니다.
 
+### `image.getNativeHandle()` _OS X_
+
+이미지의 네이티브 핸들 밑에 있는 C 포인터를 담은 [Buffer][buffer]을 반환합니다.
+OS X에선, `NSImage` 인스턴스가 반환됩니다.
+
+참고로 반환된 포인터는 복사본이 아닌 네이티브 이미지의 밑에 있는 약한 포인터이며,
+따라서 반드시 관련된 `nativeImage` 인스턴스가 확실하게 유지되고 있는지를 인지해야
+합니다.
+
 ### `image.isEmpty()`
 
 이미지가 비었는지 확인합니다.

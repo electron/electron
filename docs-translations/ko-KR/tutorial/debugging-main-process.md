@@ -40,11 +40,11 @@ $ npm install git+https://git@github.com/enlight/node-pre-gyp.git#detect-electro
 ### 4. Electron용 `node-inspector` `v8` 모듈을 재 컴파일 (target을 사용하는 Electron의 버전에 맞춰 변경)
 
 ```bash
-$ node_modules/.bin/node-pre-gyp --target=0.36.2 --runtime=electron --fallback-to-build --directory node_modules/v8-debug/ --dist-url=https://atom.io/download/atom-shell reinstall
-$ node_modules/.bin/node-pre-gyp --target=0.36.2 --runtime=electron --fallback-to-build --directory node_modules/v8-profiler/ --dist-url=https://atom.io/download/atom-shell reinstall
+$ node_modules/.bin/node-pre-gyp --target=0.36.11 --runtime=electron --fallback-to-build --directory node_modules/v8-debug/ --dist-url=https://atom.io/download/atom-shell reinstall
+$ node_modules/.bin/node-pre-gyp --target=0.36.11 --runtime=electron --fallback-to-build --directory node_modules/v8-profiler/ --dist-url=https://atom.io/download/atom-shell reinstall
 ```
 
-또한 [네이티브 모듈을 사용하는 방법](how-to-install-native-modules) 문서도 참고해보세요.
+또한 [네이티브 모듈을 사용하는 방법][how-to-install-native-modules] 문서도 참고해보세요.
 
 ### 5. Electron 디버그 모드 활성화
 

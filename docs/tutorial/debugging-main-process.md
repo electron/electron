@@ -44,7 +44,7 @@ $ node_modules/.bin/node-pre-gyp --target=0.36.11 --runtime=electron --fallback-
 $ node_modules/.bin/node-pre-gyp --target=0.36.11 --runtime=electron --fallback-to-build --directory node_modules/v8-profiler/ --dist-url=https://atom.io/download/atom-shell reinstall
 ```
 
-See also [How to install native modules](using-native-node-modules.md).
+See also [How to install native modules][how-to-install-native-modules].
 
 ### 5. Enable debug mode for Electron
 
