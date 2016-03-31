@@ -5,7 +5,7 @@
       'electron/app/electron_main.h',
     ],
     'bundle_sources': [
-      'electron/browser/resources/mac/atom.icns',
+      'electron/browser/resources/mac/electron.icns',
     ],
     'js_sources': [
       'lib/browser/api/app.js',
@@ -532,8 +532,8 @@
       ['OS=="win"', {
         'app_sources': [
           'electron/browser/resources/win/resource.h',
-          'electron/browser/resources/win/atom.ico',
-          'electron/browser/resources/win/atom.rc',
+          'electron/browser/resources/win/electron.ico',
+          'electron/browser/resources/win/electron.rc',
           # Cursors.
           '<(libchromiumcontent_src_dir)/ui/resources/cursors/aliasb.cur',
           '<(libchromiumcontent_src_dir)/ui/resources/cursors/cell.cur',
