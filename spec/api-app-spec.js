@@ -87,6 +87,30 @@ describe('app module', function() {
     });
   });
 
+  describe('app.addDistributedNotificationObserver', function() {
+    it('emits custom events for notifications', function(done) {
+      if (process.platform != 'darwin')
+        done();
+
+      this.timeout(12000);
+
+      app.addDistributedNotificationObserver(
+        'ExampleNotification',
+        'example-notification'
+      );
+
+      app.on('example-notification', function(){
+        done();
+      });
+
+      //Emit an event
+      ChildProcess.exec('echo \'import Foundation;' +
+        'NSDistributedNotificationCenter.defaultCenter().postNotificationName'+
+        '("ExampleNotification", object: nil);\' | swift -'
+      );
+    });
+  });
+
   describe('BrowserWindow events', function() {
     var w = null;
 

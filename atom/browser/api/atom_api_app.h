@@ -72,6 +72,7 @@ class App : public AtomBrowserClient::Delegate,
 
 #if defined(OS_MACOSX)
   void OnPlatformThemeChanged() override;
+  void EmitDistributedNotificationEvent(const std::string& eventName) override;
 #endif
 
   // mate::Wrappable:

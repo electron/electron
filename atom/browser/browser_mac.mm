@@ -140,4 +140,22 @@ void Browser::DockSetIcon(const gfx::Image& image) {
       setApplicationIconImage:image.AsNSImage()];
 }
 
+void Browser::AddDistributedNotificationObserver( \
+        const std::string& notificationName,      \
+        const std::string& eventName){
+  NSString *objcNotificationName = base::SysUTF8ToNSString(notificationName);
+  NSString *objcEventName = base::SysUTF8ToNSString(eventName);
+
+  [[NSDistributedNotificationCenter defaultCenter]
+    addObserverForName:objcNotificationName
+    object:nil
+    queue:nil
+    usingBlock:^(NSNotification * notification) {
+      std::string ccEventName([objcEventName UTF8String]);
+      atom::Browser::Get()->DistributedNotificationEvent(ccEventName);
+    }
+  ];
+}
+
+
 }  // namespace atom

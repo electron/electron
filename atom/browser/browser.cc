@@ -185,4 +185,9 @@ void Browser::PlatformThemeChanged() {
   FOR_EACH_OBSERVER(BrowserObserver, observers_, OnPlatformThemeChanged());
 }
 
+void Browser::DistributedNotificationEvent(const std::string& eventName) {
+  FOR_EACH_OBSERVER(BrowserObserver, observers_, \
+        EmitDistributedNotificationEvent(eventName));
+}
+
 }  // namespace atom
