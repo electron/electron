@@ -92,7 +92,7 @@ describe('app module', function() {
       if (process.platform != 'darwin')
         done();
 
-      this.timeout(5000);
+      this.timeout(12000);
 
       app.addDistributedNotificationObserver(
         'ExampleNotification',
