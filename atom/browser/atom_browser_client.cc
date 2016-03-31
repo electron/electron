@@ -8,6 +8,7 @@
 #include <shlobj.h>
 #endif
 
+#include "atom/browser/api/atom_api_app.h"
 #include "atom/browser/atom_access_token_store.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
@@ -281,26 +282,20 @@ bool AtomBrowserClient::CanCreateWindow(
     int opener_render_view_id,
     int opener_render_frame_id,
     bool* no_javascript_access) {
+  DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
+
   if (delegate_) {
-    return delegate_->CanCreateWindow(opener_url,
-                                      opener_top_level_frame_url,
-                                      source_origin,
-                                      container_type,
-                                      frame_name,
-                                      target_url,
-                                      referrer,
-                                      disposition,
-                                      features,
-                                      user_gesture,
-                                      opener_suppressed,
-                                      context,
-                                      render_process_id,
-                                      opener_render_view_id,
-                                      opener_render_frame_id,
-                                      no_javascript_access);
-  } else {
-    return false;
+    content::BrowserThread::PostTask(content::BrowserThread::UI, FROM_HERE,
+        base::Bind(&api::App::OnCreateWindow,
+                   base::Unretained(static_cast<api::App*>(delegate_)),
+                                    target_url,
+                                    frame_name,
+                                    disposition,
+                                    render_process_id,
+                                    opener_render_frame_id));
   }
+
+  return false;
 }
 
 brightray::BrowserMainParts* AtomBrowserClient::OverrideCreateBrowserMainParts(
