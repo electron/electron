@@ -73,6 +73,12 @@ describe('ipc module', function () {
 
       assert.equal(delete remoteFunctions.aFunction, true)
     })
+
+    it('is referenced by its members', function () {
+      let stringify = remote.getGlobal('JSON').stringify
+      gc();
+      stringify({})
+    });
   })
 
   describe('remote value in browser', function () {
@@ -143,6 +149,13 @@ describe('ipc module', function () {
       assert(!proto.hasOwnProperty('method'))
       assert(Object.getPrototypeOf(proto).hasOwnProperty('method'))
     })
+
+    it('is referenced by methods in prototype chain', function () {
+      let method = derived.method
+      derived = null
+      gc()
+      assert.equal(method(), 'method')
+    });
   })
 
   describe('ipc.sender.send', function () {
