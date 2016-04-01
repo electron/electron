@@ -76,6 +76,22 @@ class AtomBrowserClient : public brightray::BrowserClient,
       net::SSLCertRequestInfo* cert_request_info,
       scoped_ptr<content::ClientCertificateDelegate> delegate) override;
   void ResourceDispatcherHostCreated() override;
+  bool CanCreateWindow(const GURL& opener_url,
+                       const GURL& opener_top_level_frame_url,
+                       const GURL& source_origin,
+                       WindowContainerType container_type,
+                       const std::string& frame_name,
+                       const GURL& target_url,
+                       const content::Referrer& referrer,
+                       WindowOpenDisposition disposition,
+                       const blink::WebWindowFeatures& features,
+                       bool user_gesture,
+                       bool opener_suppressed,
+                       content::ResourceContext* context,
+                       int render_process_id,
+                       int opener_render_view_id,
+                       int opener_render_frame_id,
+                       bool* no_javascript_access) override;
 
   // brightray::BrowserClient:
   brightray::BrowserMainParts* OverrideCreateBrowserMainParts(

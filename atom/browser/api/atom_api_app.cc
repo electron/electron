@@ -229,6 +229,23 @@ void App::OnLogin(LoginHandler* login_handler) {
     login_handler->CancelAuth();
 }
 
+void App::OnCreateWindow(const GURL& target_url,
+                         const std::string& frame_name,
+                         WindowOpenDisposition disposition,
+                         int render_process_id,
+                         int render_frame_id) {
+  v8::Locker locker(isolate());
+  v8::HandleScope handle_scope(isolate());
+  content::RenderFrameHost* rfh =
+      content::RenderFrameHost::FromID(render_process_id, render_frame_id);
+  content::WebContents* web_contents =
+      content::WebContents::FromRenderFrameHost(rfh);
+  if (web_contents) {
+    auto api_web_contents = WebContents::CreateFrom(isolate(), web_contents);
+    api_web_contents->CreateWindow(target_url, frame_name, disposition);
+  }
+}
+
 void App::AllowCertificateError(
     content::WebContents* web_contents,
     int cert_error,

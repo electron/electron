@@ -34,6 +34,13 @@ class App : public AtomBrowserClient::Delegate,
  public:
   static mate::Handle<App> Create(v8::Isolate* isolate);
 
+  // Called when window with disposition needs to be created.
+  void OnCreateWindow(const GURL& target_url,
+                      const std::string& frame_name,
+                      WindowOpenDisposition disposition,
+                      int render_process_id,
+                      int render_frame_id);
+
  protected:
   App();
   virtual ~App();

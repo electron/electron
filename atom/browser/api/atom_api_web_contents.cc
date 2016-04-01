@@ -316,21 +316,13 @@ bool WebContents::AddMessageToConsole(content::WebContents* source,
   }
 }
 
-bool WebContents::ShouldCreateWebContents(
-    content::WebContents* web_contents,
-    int32_t route_id,
-    int32_t main_frame_route_id,
-    int32_t main_frame_widget_route_id,
-    WindowContainerType window_container_type,
-    const std::string& frame_name,
-    const GURL& target_url,
-    const std::string& partition_id,
-    content::SessionStorageNamespace* session_storage_namespace) {
+void WebContents::CreateWindow(const GURL& target_url,
+                               const std::string& frame_name,
+                               WindowOpenDisposition disposition) {
   if (type_ == BROWSER_WINDOW)
-    Emit("-new-window", target_url, frame_name, NEW_FOREGROUND_TAB);
+    Emit("-new-window", target_url, frame_name, disposition);
   else
-    Emit("new-window", target_url, frame_name, NEW_FOREGROUND_TAB);
-  return false;
+    Emit("new-window", target_url, frame_name, disposition);
 }
 
 content::WebContents* WebContents::OpenURLFromTab(
