@@ -84,7 +84,7 @@ describe('<webview> tag', function () {
 
       webview.setAttribute('allowpopups', 'on')
 
-      webview.src = require('url').format({
+      webview.src = url.format({
         pathname: `${fixtures}/pages/webview-opener-no-node-integration.html`,
         protocol: 'file',
         query: {
