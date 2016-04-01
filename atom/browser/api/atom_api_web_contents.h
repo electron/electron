@@ -139,9 +139,9 @@ class WebContents : public mate::TrackableObject<WebContents>,
                                    bool allowed);
 
   // Create window with the given disposition.
-  void CreateWindow(const GURL& target_url,
-                    const std::string& frame_name,
-                    WindowOpenDisposition disposition);
+  void OnCreateWindow(const GURL& target_url,
+                      const std::string& frame_name,
+                      WindowOpenDisposition disposition);
 
   // Returns the web preferences of current WebContents.
   v8::Local<v8::Value> GetWebPreferences(v8::Isolate* isolate);
