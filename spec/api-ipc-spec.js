@@ -73,6 +73,12 @@ describe('ipc module', function () {
 
       assert.equal(delete remoteFunctions.aFunction, true)
     })
+
+    it('is referenced by its members', function () {
+      let stringify = remote.getGlobal('JSON').stringify
+      c()
+      stringify({})
+    })
   })
 
   describe('remote value in browser', function () {
