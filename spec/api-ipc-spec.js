@@ -149,6 +149,13 @@ describe('ipc module', function () {
       assert(!proto.hasOwnProperty('method'))
       assert(Object.getPrototypeOf(proto).hasOwnProperty('method'))
     })
+
+    it('is referenced by methods in prototype chain', function () {
+      let method = derived.method
+      derived = null
+      gc()
+      assert.equal(method(), 'method')
+    })
   })
 
   describe('ipc.sender.send', function () {
