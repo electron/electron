@@ -2,7 +2,7 @@ const assert = require('assert')
 const path = require('path')
 const http = require('http')
 const url = require('url')
-const {app, session} = require('electron')
+const {app, session} = require('electron').remote
 
 describe('<webview> tag', function () {
   this.timeout(10000)
