@@ -5,11 +5,11 @@
   var opened = window.open('file://' + windowUrl, '', 'nodeIntegration=yes,show=no')
   window.addEventListener('message', function (event) {
     try {
-      opened.close();
+      opened.close()
     } finally {
-      window.opener.postMessage(event.data, '*');
+      window.opener.postMessage(event.data, '*')
     }
-  });
+  })
 </script>
 </body>
 </html>
