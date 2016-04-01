@@ -1,52 +1,52 @@
-const electron = require('electron');
-const app      = electron.app;
-const dialog   = electron.dialog;
-const shell    = electron.shell;
-const Menu     = electron.Menu;
+const electron = require('electron')
+const app = electron.app
+const dialog = electron.dialog
+const shell = electron.shell
+const Menu = electron.Menu
 
-const fs = require('fs');
-const path = require('path');
-const repl = require('repl');
-const url = require('url');
+const fs = require('fs')
+const path = require('path')
+const repl = require('repl')
+const url = require('url')
 
 // Parse command line options.
-var argv = process.argv.slice(1);
-var option = { file: null, help: null, version: null, webdriver: null, modules: [] };
+var argv = process.argv.slice(1)
+var option = { file: null, help: null, version: null, webdriver: null, modules: [] }
 for (var i = 0; i < argv.length; i++) {
-  if (argv[i] == '--version' || argv[i] == '-v') {
-    option.version = true;
-    break;
+  if (argv[i] === '--version' || argv[i] === '-v') {
+    option.version = true
+    break
   } else if (argv[i].match(/^--app=/)) {
-    option.file = argv[i].split('=')[1];
-    break;
-  } else if (argv[i] == '--help' || argv[i] == '-h') {
-    option.help = true;
-    break;
-  } else if (argv[i] == '--interactive' || argv[i] == '-i') {
-    option.interactive = true;
-  } else if (argv[i] == '--test-type=webdriver') {
-    option.webdriver = true;
-  } else if (argv[i] == '--require' || argv[i] == '-r') {
-    option.modules.push(argv[++i]);
-    continue;
-  } else if (argv[i][0] == '-') {
-    continue;
+    option.file = argv[i].split('=')[1]
+    break
+  } else if (argv[i] === '--help' || argv[i] === '-h') {
+    option.help = true
+    break
+  } else if (argv[i] === '--interactive' || argv[i] === '-i') {
+    option.interactive = true
+  } else if (argv[i] === '--test-type=webdriver') {
+    option.webdriver = true
+  } else if (argv[i] === '--require' || argv[i] === '-r') {
+    option.modules.push(argv[++i])
+    continue
+  } else if (argv[i][0] === '-') {
+    continue
   } else {
-    option.file = argv[i];
-    break;
+    option.file = argv[i]
+    break
   }
 }
 
 // Quit when all windows are closed and no other one is listening to this.
-app.on('window-all-closed', function() {
-  if (app.listeners('window-all-closed').length == 1 && !option.interactive)
-    app.quit();
-});
+app.on('window-all-closed', function () {
+  if (app.listeners('window-all-closed').length === 1 && !option.interactive) {
+    app.quit()
+  }
+})
 
 // Create default menu.
-app.once('ready', function() {
-  if (Menu.getApplicationMenu())
-    return;
+app.once('ready', function () {
+  if (Menu.getApplicationMenu()) return
 
   var template = [
     {
@@ -84,7 +84,7 @@ app.once('ready', function() {
           label: 'Select All',
           accelerator: 'CmdOrCtrl+A',
           role: 'selectall'
-        },
+        }
       ]
     },
     {
@@ -93,37 +93,28 @@ app.once('ready', function() {
         {
           label: 'Reload',
           accelerator: 'CmdOrCtrl+R',
-          click: function(item, focusedWindow) {
-            if (focusedWindow)
-              focusedWindow.reload();
+          click: function (item, focusedWindow) {
+            if (focusedWindow) focusedWindow.reload()
           }
         },
         {
           label: 'Toggle Full Screen',
-          accelerator: (function() {
-            if (process.platform == 'darwin')
-              return 'Ctrl+Command+F';
-            else
-              return 'F11';
+          accelerator: (function () {
+            return (process.platform === 'darwin') ? 'Ctrl+Command+F' : 'F11'
           })(),
-          click: function(item, focusedWindow) {
-            if (focusedWindow)
-              focusedWindow.setFullScreen(!focusedWindow.isFullScreen());
+          click: function (item, focusedWindow) {
+            if (focusedWindow) focusedWindow.setFullScreen(!focusedWindow.isFullScreen())
           }
         },
         {
           label: 'Toggle Developer Tools',
-          accelerator: (function() {
-            if (process.platform == 'darwin')
-              return 'Alt+Command+I';
-            else
-              return 'Ctrl+Shift+I';
+          accelerator: (function () {
+            return (process.platform === 'darwin') ? 'Alt+Command+I' : 'Ctrl+Shift+I'
           })(),
-          click: function(item, focusedWindow) {
-            if (focusedWindow)
-              focusedWindow.toggleDevTools();
+          click: function (item, focusedWindow) {
+            if (focusedWindow) focusedWindow.toggleDevTools()
           }
-        },
+        }
       ]
     },
     {
@@ -139,7 +130,7 @@ app.once('ready', function() {
           label: 'Close',
           accelerator: 'CmdOrCtrl+W',
           role: 'close'
-        },
+        }
       ]
     },
     {
@@ -148,35 +139,35 @@ app.once('ready', function() {
       submenu: [
         {
           label: 'Learn More',
-          click: function() {
-            shell.openExternal('http://electron.atom.io');
+          click: function () {
+            shell.openExternal('http://electron.atom.io')
           }
         },
         {
           label: 'Documentation',
-          click: function() {
+          click: function () {
             shell.openExternal(
               `https://github.com/atom/electron/tree/v${process.versions.electron}/docs#readme`
-            );
+            )
           }
         },
         {
           label: 'Community Discussions',
-          click: function() {
-            shell.openExternal('https://discuss.atom.io/c/electron');
+          click: function () {
+            shell.openExternal('https://discuss.atom.io/c/electron')
           }
         },
         {
           label: 'Search Issues',
-          click: function() {
-            shell.openExternal('https://github.com/atom/electron/issues');
+          click: function () {
+            shell.openExternal('https://github.com/atom/electron/issues')
           }
         }
       ]
-    },
-  ];
+    }
+  ]
 
-  if (process.platform == 'darwin') {
+  if (process.platform === 'darwin') {
     template.unshift({
       label: 'Electron',
       submenu: [
@@ -215,10 +206,10 @@ app.once('ready', function() {
         {
           label: 'Quit',
           accelerator: 'Command+Q',
-          click: function() { app.quit(); }
-        },
+          click: function () { app.quit() }
+        }
       ]
-    });
+    })
     template[3].submenu.push(
       {
         type: 'separator'
@@ -227,98 +218,107 @@ app.once('ready', function() {
         label: 'Bring All to Front',
         role: 'front'
       }
-    );
+    )
   }
 
-  var menu = Menu.buildFromTemplate(template);
-  Menu.setApplicationMenu(menu);
-});
+  var menu = Menu.buildFromTemplate(template)
+  Menu.setApplicationMenu(menu)
+})
 
 if (option.modules.length > 0) {
-  require('module')._preloadModules(option.modules);
+  require('module')._preloadModules(option.modules)
 }
 
-function loadApplicationPackage(packagePath) {
+function loadApplicationPackage (packagePath) {
   try {
     // Override app name and version.
-    packagePath = path.resolve(packagePath);
-    var packageJsonPath = path.join(packagePath, 'package.json');
+    packagePath = path.resolve(packagePath)
+    var packageJsonPath = path.join(packagePath, 'package.json')
     if (fs.existsSync(packageJsonPath)) {
-      var packageJson = JSON.parse(fs.readFileSync(packageJsonPath));
-      if (packageJson.version)
-        app.setVersion(packageJson.version);
-      if (packageJson.productName)
-        app.setName(packageJson.productName);
-      else if (packageJson.name)
-        app.setName(packageJson.name);
-      app.setPath('userData', path.join(app.getPath('appData'), app.getName()));
-      app.setPath('userCache', path.join(app.getPath('cache'), app.getName()));
-      app.setAppPath(packagePath);
+      var packageJson = JSON.parse(fs.readFileSync(packageJsonPath))
+      if (packageJson.version) app.setVersion(packageJson.version)
+
+      if (packageJson.productName) {
+        app.setName(packageJson.productName)
+      } else if (packageJson.name) {
+        app.setName(packageJson.name)
+      }
+
+      app.setPath('userData', path.join(app.getPath('appData'), app.getName()))
+      app.setPath('userCache', path.join(app.getPath('cache'), app.getName()))
+      app.setAppPath(packagePath)
     }
 
     // Run the app.
-    require('module')._load(packagePath, module, true);
-  } catch(e) {
-    if (e.code == 'MODULE_NOT_FOUND') {
-      app.focus();
+    require('module')._load(packagePath, module, true)
+  } catch (e) {
+    if (e.code === 'MODULE_NOT_FOUND') {
+      app.focus()
       dialog.showErrorBox(
         'Error opening app',
         'The app provided is not a valid Electron app, please read the docs on how to write one:\n' +
-        `https://github.com/atom/electron/tree/v${process.versions.electron}/docs\n\n${e.toString()}`
-      );
-      process.exit(1);
+        `https://github.com/atom/electron/tree/v${process.versions.electron}/docs
+
+${e.toString()}`
+      )
+      process.exit(1)
     } else {
-      console.error('App threw an error when running', e);
-      throw e;
+      console.error('App threw an error when running', e)
+      throw e
     }
   }
 }
 
-function loadApplicationByUrl(appUrl) {
-  require('./default_app').load(appUrl);
+function loadApplicationByUrl (appUrl) {
+  require('./default_app').load(appUrl)
 }
 
-function startRepl() {
-  repl.start('> ').on('exit', function() {
-    process.exit(0);
-  });
+function startRepl () {
+  repl.start('> ').on('exit', function () {
+    process.exit(0)
+  })
 }
 
 // Start the specified app if there is one specified in command line, otherwise
 // start the default app.
 if (option.file && !option.webdriver) {
-  var file = option.file;
-  var protocol = url.parse(file).protocol;
-  var extension = path.extname(file);
+  var file = option.file
+  var protocol = url.parse(file).protocol
+  var extension = path.extname(file)
   if (protocol === 'http:' || protocol === 'https:' || protocol === 'file:') {
-    loadApplicationByUrl(file);
+    loadApplicationByUrl(file)
   } else if (extension === '.html' || extension === '.htm') {
-    loadApplicationByUrl('file://' + path.resolve(file));
+    loadApplicationByUrl('file://' + path.resolve(file))
   } else {
-    loadApplicationPackage(file);
+    loadApplicationPackage(file)
   }
 } else if (option.version) {
-  console.log('v' + process.versions.electron);
-  process.exit(0);
+  console.log('v' + process.versions.electron)
+  process.exit(0)
 } else if (option.help) {
-  var helpMessage = "Electron v" + process.versions.electron + " - Cross Platform Desktop Application Shell\n\n";
-  helpMessage    += "Usage: electron [options] [path]\n\n";
-  helpMessage    += "A path to an Electron application may be specified.\n";
-  helpMessage    += "The path must be one of the following:\n\n";
-  helpMessage    += "  - index.js file.\n";
-  helpMessage    += "  - Folder containing a package.json file.\n";
-  helpMessage    += "  - Folder containing an index.js file.\n";
-  helpMessage    += "  - .html/.htm file.\n";
-  helpMessage    += "  - http://, https://, or file:// URL.\n";
-  helpMessage    += "\nOptions:\n";
-  helpMessage    += "  -h, --help            Print this usage message.\n";
-  helpMessage    += "  -i, --interactive     Open a REPL to the main process.\n";
-  helpMessage    += "  -r, --require         Module to preload (option can be repeated)\n";
-  helpMessage    += "  -v, --version         Print the version.";
-  console.log(helpMessage);
-  process.exit(0);
+  var helpMessage = `Electron v${process.versions.electron} - Cross Platform Desktop Application Shell
+
+  Usage: electron [options] [path]
+
+  A path to an Electron application may be specified.
+  The path must be one of the following:
+
+    - index.js file.
+    - Folder containing a package.json file.
+    - Folder containing an index.js file.
+    - .html/.htm file.
+    - http://, https://, or file:// URL.
+
+  Options:
+    -h, --help            Print this usage message.
+    -i, --interactive     Open a REPL to the main process.
+    -r, --require         Module to preload (option can be repeated)
+    -v, --version         Print the version.`
+  console.log(helpMessage)
+  process.exit(0)
 } else if (option.interactive) {
-  startRepl();
+  startRepl()
 } else {
-  loadApplicationByUrl('file://' + __dirname + '/index.html');
+  var indexPath = path.join(__dirname, '/index.html')
+  loadApplicationByUrl(`file://${indexPath}`)
 }

@@ -1,1 +1,1 @@
-exports.property = 1127;
+exports.property = 1127

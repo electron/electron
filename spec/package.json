@@ -18,5 +18,15 @@
   "optionalDependencies": {
     "ffi": "2.0.0",
     "runas": "3.x"
+  },
+  "standard": {
+    "env": {
+      "mocha": true,
+      "jquery": true,
+      "serviceworker": true
+    },
+    "globals": [
+      "WebView"
+    ]
   }
 }
