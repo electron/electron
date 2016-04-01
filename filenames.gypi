@@ -5,7 +5,7 @@
       'atom/app/atom_main.h',
     ],
     'bundle_sources': [
-      'atom/browser/resources/mac/atom.icns',
+      'atom/browser/resources/mac/electron.icns',
     ],
     'js_sources': [
       'lib/browser/api/app.js',

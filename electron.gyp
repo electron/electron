@@ -87,7 +87,7 @@
             },
               # The application doesn't have real localizations, it just has
               # empty .lproj directories, which is enough to convince Cocoa
-              # atom-shell supports those languages.
+              # that Electron supports those languages.
             {
               'postbuild_name': 'Make Empty Localizations',
               'variables': {
@@ -353,7 +353,7 @@
             '<@(js_sources)',
           ],
           'outputs': [
-            '<(resources_path)/atom.asar',
+            '<(resources_path)/electron.asar',
           ],
           'action': [
             'python',
