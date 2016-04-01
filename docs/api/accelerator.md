@@ -14,6 +14,9 @@ On Linux and Windows, the `Command` key does not have any effect so
 use `CommandOrControl` which represents `Command` on OS X and `Control` on
 Linux and Windows to define some accelerators.
 
+Use `Alt` instead of `Option`. The `Option` key only exists on OS X, whereas
+the `Alt` key is available on all platforms.
+
 The `Super` key is mapped to the `Windows` key on Windows and Linux and
 `Cmd` on OS X.
 
