@@ -199,7 +199,10 @@ describe('chromium feature', function () {
 
     it('defines a window.location getter', function (done) {
       var b, targetURL
-      targetURL = 'file://' + fixtures + '/pages/base-page.html'
+      if (process.platform == 'win32')
+        targetURL = 'file:///' + fixtures.replace(/\\/g, '/') + '/pages/base-page.html'
+      else
+        targetURL = 'file://' + fixtures + '/pages/base-page.html'
       b = window.open(targetURL)
       BrowserWindow.fromId(b.guestId).webContents.once('did-finish-load', function () {
         assert.equal(b.location, targetURL)

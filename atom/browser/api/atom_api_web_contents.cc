@@ -316,9 +316,9 @@ bool WebContents::AddMessageToConsole(content::WebContents* source,
   }
 }
 
-void WebContents::CreateWindow(const GURL& target_url,
-                               const std::string& frame_name,
-                               WindowOpenDisposition disposition) {
+void WebContents::OnCreateWindow(const GURL& target_url,
+                                 const std::string& frame_name,
+                                 WindowOpenDisposition disposition) {
   if (type_ == BROWSER_WINDOW)
     Emit("-new-window", target_url, frame_name, disposition);
   else

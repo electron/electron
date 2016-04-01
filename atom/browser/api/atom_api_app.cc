@@ -242,7 +242,7 @@ void App::OnCreateWindow(const GURL& target_url,
       content::WebContents::FromRenderFrameHost(rfh);
   if (web_contents) {
     auto api_web_contents = WebContents::CreateFrom(isolate(), web_contents);
-    api_web_contents->CreateWindow(target_url, frame_name, disposition);
+    api_web_contents->OnCreateWindow(target_url, frame_name, disposition);
   }
 }
 
