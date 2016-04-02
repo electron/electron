@@ -6,6 +6,7 @@
 
 #include <string>
 
+#include "atom/common/color_util.h"
 #include "atom/common/draggable_region.h"
 #include "atom/common/options_switches.h"
 #include "base/mac/mac_util.h"
@@ -804,7 +805,7 @@ bool NativeWindowMac::IsKiosk() {
 }
 
 void NativeWindowMac::SetBackgroundColor(const std::string& color_name) {
-  SkColor background_color = NativeWindow::ParseHexColor(color_name);
+  SkColor background_color = ParseHexColor(color_name);
   NSColor *color = [NSColor colorWithCalibratedRed:SkColorGetR(background_color)
     green:SkColorGetG(background_color)
     blue:SkColorGetB(background_color)

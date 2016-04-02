@@ -76,6 +76,7 @@ extern const char kSSLVersionFallbackMin[];
 extern const char kCipherSuiteBlacklist[];
 extern const char kAppUserModelId[];
 
+extern const char kBackgroundColor[];
 extern const char kZoomFactor[];
 extern const char kPreloadScript[];
 extern const char kPreloadURL[];

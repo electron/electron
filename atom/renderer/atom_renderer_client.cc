@@ -10,6 +10,7 @@
 #include "atom/common/api/api_messages.h"
 #include "atom/common/api/atom_bindings.h"
 #include "atom/common/api/event_emitter_caller.h"
+#include "atom/common/color_util.h"
 #include "atom/common/node_bindings.h"
 #include "atom/common/node_includes.h"
 #include "atom/common/options_switches.h"
@@ -120,8 +121,17 @@ void AtomRendererClient::RenderFrameCreated(
 }
 
 void AtomRendererClient::RenderViewCreated(content::RenderView* render_view) {
-  // Set default UA-dependent background as transparent.
-  render_view->GetWebView()->setBaseBackgroundColor(SK_ColorTRANSPARENT);
+  base::CommandLine* cmd = base::CommandLine::ForCurrentProcess();
+  if (cmd->HasSwitch(switches::kGuestInstanceID)) {  // webview.
+    // Set transparent background.
+    render_view->GetWebView()->setBaseBackgroundColor(SK_ColorTRANSPARENT);
+  } else {  // normal window.
+    // If backgroundColor is specified then use it.
+    std::string name = cmd->GetSwitchValueASCII(switches::kBackgroundColor);
+    // Otherwise use white background.
+    SkColor color = name.empty() ? SK_ColorWHITE : ParseHexColor(name);
+    render_view->GetWebView()->setBaseBackgroundColor(color);
+  }
 
   new printing::PrintWebViewHelper(render_view);
   new AtomRenderViewObserver(render_view, this);

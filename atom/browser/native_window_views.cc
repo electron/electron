@@ -9,6 +9,7 @@
 
 #include "atom/browser/ui/views/menu_bar.h"
 #include "atom/browser/ui/views/menu_layout.h"
+#include "atom/common/color_util.h"
 #include "atom/common/draggable_region.h"
 #include "atom/common/options_switches.h"
 #include "base/strings/utf_string_conversions.h"
@@ -614,7 +615,7 @@ bool NativeWindowViews::IsKiosk() {
 
 void NativeWindowViews::SetBackgroundColor(const std::string& color_name) {
   // web views' background color.
-  SkColor background_color = NativeWindow::ParseHexColor(color_name);
+  SkColor background_color = ParseHexColor(color_name);
   set_background(views::Background::CreateSolidBackground(background_color));
 
 #if defined(OS_WIN)
