@@ -19,7 +19,7 @@ Like `--debug` but pauses the script on the first line.
 
 ## Use node-inspector for Debugging
 
-__Note:__ Electron doesn't currently work very well
+**Note:** Electron doesn't currently work very well
 with node-inspector, and the main process will crash if you inspect the
 `process` object under node-inspector's console.
 
@@ -40,11 +40,11 @@ $ npm install git+https://git@github.com/enlight/node-pre-gyp.git#detect-electro
 ### 4. Recompile the `node-inspector` `v8` modules for electron (change the target to your electron version number)
 
 ```bash
-$ node_modules/.bin/node-pre-gyp --target=0.36.2 --runtime=electron --fallback-to-build --directory node_modules/v8-debug/ --dist-url=https://atom.io/download/atom-shell reinstall
-$ node_modules/.bin/node-pre-gyp --target=0.36.2 --runtime=electron --fallback-to-build --directory node_modules/v8-profiler/ --dist-url=https://atom.io/download/atom-shell reinstall
+$ node_modules/.bin/node-pre-gyp --target=0.36.11 --runtime=electron --fallback-to-build --directory node_modules/v8-debug/ --dist-url=https://atom.io/download/atom-shell reinstall
+$ node_modules/.bin/node-pre-gyp --target=0.36.11 --runtime=electron --fallback-to-build --directory node_modules/v8-profiler/ --dist-url=https://atom.io/download/atom-shell reinstall
 ```
 
-See also [How to install native modules](how-to-install-native-modules).
+See also [How to install native modules][how-to-install-native-modules].
 
 ### 5. Enable debug mode for Electron
 

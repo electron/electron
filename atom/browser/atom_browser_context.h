@@ -14,6 +14,7 @@ namespace atom {
 class AtomDownloadManagerDelegate;
 class AtomCertVerifier;
 class AtomNetworkDelegate;
+class AtomPermissionManager;
 class AtomURLRequestJobFactory;
 class WebViewManager;
 
@@ -37,6 +38,7 @@ class AtomBrowserContext : public brightray::BrowserContext {
   // content::BrowserContext:
   content::DownloadManagerDelegate* GetDownloadManagerDelegate() override;
   content::BrowserPluginGuestManager* GetGuestManager() override;
+  content::PermissionManager* GetPermissionManager() override;
 
   // brightray::BrowserContext:
   void RegisterPrefs(PrefRegistrySimple* pref_registry) override;
@@ -52,6 +54,7 @@ class AtomBrowserContext : public brightray::BrowserContext {
  private:
   scoped_ptr<AtomDownloadManagerDelegate> download_manager_delegate_;
   scoped_ptr<WebViewManager> guest_manager_;
+  scoped_ptr<AtomPermissionManager> permission_manager_;
 
   // Managed by brightray::BrowserContext.
   AtomCertVerifier* cert_verifier_;

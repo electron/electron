@@ -1,3 +1,3 @@
-process.on('message', function (msg) {
-  process.send(typeof require('original-fs'));
-});
+process.on('message', function () {
+  process.send(typeof require('original-fs'))
+})

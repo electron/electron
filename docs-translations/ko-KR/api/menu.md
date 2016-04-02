@@ -140,7 +140,7 @@ var template = [
 ];
 
 if (process.platform == 'darwin') {
-  var name = require('electron').app.getName();
+  var name = require('electron').remote.app.getName();
   template.unshift({
     label: name,
     submenu: [
@@ -166,7 +166,7 @@ if (process.platform == 'darwin') {
       },
       {
         label: 'Hide Others',
-        accelerator: 'Command+Shift+H',
+        accelerator: 'Command+Alt+H',
         role: 'hideothers'
       },
       {
@@ -223,7 +223,9 @@ Linux에선 각 창의 상단에 표시됩니다.
 `action`을 어플리케이션의 first responder에 전달합니다. 이 메서드는 Cocoa 메뉴
 동작을 에뮬레이트 하는데 사용되며 보통 `MenuItem`의 `role` 속성에 사용됩니다.
 
-**참고:** 이 메서드는 OS X에서만 사용할 수 있습니다.
+OS X의 네이티브 액션에 대해 자세히 알아보려면
+[OS X Cocoa Event Handling Guide](https://developer.apple.com/library/mac/documentation/Cocoa/Conceptual/EventOverview/EventArchitecture/EventArchitecture.html#//apple_ref/doc/uid/10000060i-CH3-SW7)
+문서를 참고하세요.
 
 ### `Menu.buildFromTemplate(template)`
 
@@ -235,29 +237,41 @@ Linux에선 각 창의 상단에 표시됩니다.
 또한 `template`에는 다른 속성도 추가할 수 있으며 메뉴가 만들어질 때 해당 메뉴 아이템의
 프로퍼티로 변환됩니다.
 
-### `Menu.popup([browserWindow, x, y])`
+## Instance Methods
 
-* `browserWindow` BrowserWindow (optional)
-* `x` Number (optional)
-* `y` Number (만약 `x`를 지정했을 경우 반드시 `y`도 지정해야 합니다)
+`menu` 객체는 다음과 같은 인스턴스 메서드를 가지고 있습니다:
+
+### `menu.popup([browserWindow, x, y, positioningItem])`
+
+* `browserWindow` BrowserWindow (optional) - 기본값은 `null`입니다.
+* `x` Number (optional) - 기본값은 -1입니다.
+* `y` Number (만약 `x`를 지정한 경우 **필수 항목**) - 기본값은 -1입니다.
+* `positioningItem` Number (optional) _OS X_ - 메뉴 팝업 시 마우스 커서에 바로
+  위치시킬 메뉴 아이템의 인덱스. 기본값은 -1입니다.
 
 메뉴를 `browserWindow` 내부 팝업으로 표시합니다. 옵션으로 메뉴를 표시할 `(x,y)`
 좌표를 지정할 수 있습니다. 따로 좌표를 지정하지 않은 경우 마우스 커서 위치에 표시됩니다.
+`positioningItem` 속성은 메뉴 팝업 시 마우스 커서에 바로 위치시킬 메뉴 아이템의
+인덱스입니다. (OS X에서만 지원합니다)
 
-### `Menu.append(menuItem)`
+### `menu.append(menuItem)`
 
 * `menuItem` MenuItem
 
 메뉴의 리스트 끝에 `menuItem`을 삽입합니다.
 
-### `Menu.insert(pos, menuItem)`
+### `menu.insert(pos, menuItem)`
 
 * `pos` Integer
 * `menuItem` MenuItem
 
 `pos` 위치에 `menuItem`을 삽입합니다.
 
-### `Menu.items()`
+## Instance Properties
+
+`menu` 객체는 또한 다음과 같은 속성을 가지고 있습니다:
+
+### `menu.items`
 
 메뉴가 가지고 있는 메뉴 아이템들의 배열입니다.
 
@@ -288,6 +302,11 @@ OS X는 몇가지 메뉴 아이템에 대해 `About xxx`, `Hide xxx`, `Hide Othe
 OS X에선 지정한 어플리케이션 메뉴에 상관없이 메뉴의 첫번째 라벨은 언제나 어플리케이션의
 이름이 됩니다. 어플리케이션 이름을 변경하려면 앱 번들내의 `Info.plist` 파일을 수정해야
 합니다. 자세한 내용은 [About Information Property List Files][AboutInformationPropertyListFiles] 문서를 참고하세요.
+
+## 지정한 브라우저 윈도우에 메뉴 설정 (*Linux* *Windows*)
+
+브라우저 윈도우의 [`setMenu` 메서드][setMenu]는 어떤 브라우저 윈도우의 메뉴를 설정할
+수 있습니다.
 
 ## 메뉴 아이템 위치
 
@@ -363,3 +382,4 @@ OS X에선 지정한 어플리케이션 메뉴에 상관없이 메뉴의 첫번�
 ```
 
 [AboutInformationPropertyListFiles]: https://developer.apple.com/library/ios/documentation/general/Reference/InfoPlistKeyReference/Articles/AboutInformationPropertyListFiles.html
+[setMenu]: https://github.com/atom/electron/blob/master/docs-translations/ko-KR/api/browser-window.md#winsetmenumenu-linux-windows

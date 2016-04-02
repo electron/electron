@@ -60,7 +60,7 @@ void AtomDownloadManagerDelegate::CreateDownloadPath(
 }
 
 void AtomDownloadManagerDelegate::OnDownloadPathGenerated(
-    uint32 download_id,
+    uint32_t download_id,
     const content::DownloadTargetCallback& callback,
     const base::FilePath& default_path) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
@@ -109,16 +109,24 @@ bool AtomDownloadManagerDelegate::DetermineDownloadTarget(
                  download->GetForcedFilePath());
     return true;
   }
-  base::SupportsUserData::Data* save_path = download->GetUserData(
-      atom::api::DownloadItem::UserDataKey());
-  if (save_path) {
-    const base::FilePath& default_download_path =
-        static_cast<api::DownloadItem::SavePathData*>(save_path)->path();
-    callback.Run(default_download_path,
-                 content::DownloadItem::TARGET_DISPOSITION_OVERWRITE,
-                 content::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS,
-                 default_download_path);
-    return true;
+
+  // Try to get the save path from JS wrapper.
+  {
+    v8::Isolate* isolate = v8::Isolate::GetCurrent();
+    v8::Locker locker(isolate);
+    v8::HandleScope handle_scope(isolate);
+    api::DownloadItem* download_item = api::DownloadItem::FromWrappedClass(
+        isolate, download);
+    if (download_item) {
+      base::FilePath save_path = download_item->GetSavePath();
+      if (!save_path.empty()) {
+        callback.Run(save_path,
+                     content::DownloadItem::TARGET_DISPOSITION_OVERWRITE,
+                     content::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS,
+                     save_path);
+        return true;
+      }
+    }
   }
 
   AtomBrowserContext* browser_context = static_cast<AtomBrowserContext*>(
@@ -152,7 +160,7 @@ bool AtomDownloadManagerDelegate::ShouldOpenDownload(
 
 void AtomDownloadManagerDelegate::GetNextId(
     const content::DownloadIdCallback& callback) {
-  static uint32 next_id = content::DownloadItem::kInvalidId + 1;
+  static uint32_t next_id = content::DownloadItem::kInvalidId + 1;
   callback.Run(next_id++);
 }
 

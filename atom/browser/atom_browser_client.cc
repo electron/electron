@@ -8,6 +8,7 @@
 #include <shlobj.h>
 #endif
 
+#include "atom/browser/api/atom_api_app.h"
 #include "atom/browser/atom_access_token_store.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
@@ -15,6 +16,7 @@
 #include "atom/browser/atom_resource_dispatcher_host_delegate.h"
 #include "atom/browser/atom_speech_recognition_manager_delegate.h"
 #include "atom/browser/native_window.h"
+#include "atom/browser/web_contents_permission_helper.h"
 #include "atom/browser/web_contents_preferences.h"
 #include "atom/browser/window_list.h"
 #include "atom/common/options_switches.h"
@@ -44,11 +46,6 @@
 namespace atom {
 
 namespace {
-
-// The default routing id of WebContents.
-// In Electron each RenderProcessHost only has one WebContents, so this ID is
-// same for every WebContents.
-int kDefaultRoutingID = 2;
 
 // Next navigation should not restart renderer process.
 bool g_suppress_renderer_process_restart = false;
@@ -200,16 +197,10 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
   if (ContainsKey(pending_processes_, process_id))
     process_id = pending_processes_[process_id];
 
-
   // Certain render process will be created with no associated render view,
   // for example: ServiceWorker.
-  auto rvh = content::RenderViewHost::FromID(process_id, kDefaultRoutingID);
-  if (!rvh)
-    return;
-
-  // Get the WebContents of the render process.
   content::WebContents* web_contents =
-      content::WebContents::FromRenderViewHost(rvh);
+      WebContentsPreferences::GetWebContentsFromProcessID(process_id);
   if (!web_contents)
     return;
 
@@ -229,8 +220,7 @@ content::QuotaPermissionContext*
 }
 
 void AtomBrowserClient::AllowCertificateError(
-    int render_process_id,
-    int render_frame_id,
+    content::WebContents* web_contents,
     int cert_error,
     const net::SSLInfo& ssl_info,
     const GURL& request_url,
@@ -242,7 +232,7 @@ void AtomBrowserClient::AllowCertificateError(
     content::CertificateRequestResultType* request) {
   if (delegate_) {
     delegate_->AllowCertificateError(
-        render_process_id, render_frame_id, cert_error, ssl_info, request_url,
+        web_contents, cert_error, ssl_info, request_url,
         resource_type, overridable, strict_enforcement,
         expired_previous_decision, callback, request);
   }
@@ -264,7 +254,7 @@ void AtomBrowserClient::SelectClientCertificate(
 
   if (!cert_request_info->client_certs.empty() && delegate_) {
     delegate_->SelectClientCertificate(
-        web_contents, cert_request_info, delegate.Pass());
+        web_contents, cert_request_info, std::move(delegate));
   }
 }
 
@@ -275,10 +265,61 @@ void AtomBrowserClient::ResourceDispatcherHostCreated() {
       resource_dispatcher_host_delegate_.get());
 }
 
+bool AtomBrowserClient::CanCreateWindow(
+    const GURL& opener_url,
+    const GURL& opener_top_level_frame_url,
+    const GURL& source_origin,
+    WindowContainerType container_type,
+    const std::string& frame_name,
+    const GURL& target_url,
+    const content::Referrer& referrer,
+    WindowOpenDisposition disposition,
+    const blink::WebWindowFeatures& features,
+    bool user_gesture,
+    bool opener_suppressed,
+    content::ResourceContext* context,
+    int render_process_id,
+    int opener_render_view_id,
+    int opener_render_frame_id,
+    bool* no_javascript_access) {
+  DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
+
+  if (delegate_) {
+    content::BrowserThread::PostTask(content::BrowserThread::UI, FROM_HERE,
+        base::Bind(&api::App::OnCreateWindow,
+                   base::Unretained(static_cast<api::App*>(delegate_)),
+                                    target_url,
+                                    frame_name,
+                                    disposition,
+                                    render_process_id,
+                                    opener_render_frame_id));
+  }
+
+  return false;
+}
+
 brightray::BrowserMainParts* AtomBrowserClient::OverrideCreateBrowserMainParts(
     const content::MainFunctionParams&) {
   v8::V8::Initialize();  // Init V8 before creating main parts.
   return new AtomBrowserMainParts;
+}
+
+void AtomBrowserClient::WebNotificationAllowed(
+    int render_process_id,
+    const base::Callback<void(bool)>& callback) {
+  content::WebContents* web_contents =
+      WebContentsPreferences::GetWebContentsFromProcessID(render_process_id);
+  if (!web_contents) {
+    callback.Run(false);
+    return;
+  }
+  auto permission_helper =
+      WebContentsPermissionHelper::FromWebContents(web_contents);
+  if (!permission_helper) {
+    callback.Run(false);
+    return;
+  }
+  permission_helper->RequestWebNotificationPermission(callback);
 }
 
 void AtomBrowserClient::RenderProcessHostDestroyed(

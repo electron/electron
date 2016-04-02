@@ -34,6 +34,14 @@ void Browser::ClearRecentDocuments() {
 void Browser::SetAppUserModelID(const base::string16& name) {
 }
 
+bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol) {
+  return false;
+}
+
+bool Browser::SetAsDefaultProtocolClient(const std::string& protocol) {
+  return false;
+}
+
 std::string Browser::GetExecutableFileVersion() const {
   return brightray::GetApplicationVersion();
 }

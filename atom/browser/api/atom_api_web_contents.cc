@@ -7,12 +7,14 @@
 #include <set>
 #include <string>
 
+#include "atom/browser/api/atom_api_debugger.h"
 #include "atom/browser/api/atom_api_session.h"
 #include "atom/browser/api/atom_api_window.h"
 #include "atom/browser/atom_browser_client.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/native_window.h"
+#include "atom/browser/web_contents_permission_helper.h"
 #include "atom/browser/web_contents_preferences.h"
 #include "atom/browser/web_view_guest_delegate.h"
 #include "atom/common/api/api_messages.h"
@@ -26,6 +28,7 @@
 #include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
+#include "atom/common/mouse_util.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "brightray/browser/inspectable_web_contents.h"
@@ -41,6 +44,7 @@
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
+#include "content/public/browser/render_widget_host.h"
 #include "content/public/browser/render_widget_host_view.h"
 #include "content/public/browser/resource_request_details.h"
 #include "content/public/browser/service_worker_context.h"
@@ -147,7 +151,7 @@ struct Converter<net::HttpResponseHeaders*> {
         } else {
           scoped_ptr<base::ListValue> values(new base::ListValue());
           values->AppendString(value);
-          response_headers.Set(key, values.Pass());
+          response_headers.Set(key, std::move(values));
         }
       }
     }
@@ -215,7 +219,8 @@ WebContents::WebContents(content::WebContents* web_contents)
 
 WebContents::WebContents(v8::Isolate* isolate,
                          const mate::Dictionary& options)
-    : request_id_(0) {
+    : embedder_(nullptr),
+      request_id_(0) {
   // Whether it is a guest WebContents.
   bool is_guest = false;
   options.Get("isGuest", &is_guest);
@@ -261,16 +266,19 @@ WebContents::WebContents(v8::Isolate* isolate,
   // Save the preferences in C++.
   new WebContentsPreferences(web_contents, options);
 
+  // Intialize permission helper.
+  WebContentsPermissionHelper::CreateForWebContents(web_contents);
+
   web_contents->SetUserAgentOverride(GetBrowserContext()->GetUserAgent());
 
   if (is_guest) {
     guest_delegate_->Initialize(this);
 
     NativeWindow* owner_window = nullptr;
-    WebContents* embedder = nullptr;
-    if (options.Get("embedder", &embedder) && embedder) {
+    if (options.Get("embedder", &embedder_) && embedder_) {
       // New WebContents's owner_window is the embedder's owner_window.
-      auto relay = NativeWindowRelay::FromWebContents(embedder->web_contents());
+      auto relay =
+          NativeWindowRelay::FromWebContents(embedder_->web_contents());
       if (relay)
         owner_window = relay->window.get();
     }
@@ -290,14 +298,15 @@ WebContents::~WebContents() {
     // The WebContentsDestroyed will not be called automatically because we
     // unsubscribe from webContents before destroying it. So we have to manually
     // call it here to make sure "destroyed" event is emitted.
+    RenderViewDeleted(web_contents()->GetRenderViewHost());
     WebContentsDestroyed();
   }
 }
 
 bool WebContents::AddMessageToConsole(content::WebContents* source,
-                                      int32 level,
+                                      int32_t level,
                                       const base::string16& message,
-                                      int32 line_no,
+                                      int32_t line_no,
                                       const base::string16& source_id) {
   if (type_ == BROWSER_WINDOW) {
     return false;
@@ -307,20 +316,13 @@ bool WebContents::AddMessageToConsole(content::WebContents* source,
   }
 }
 
-bool WebContents::ShouldCreateWebContents(
-    content::WebContents* web_contents,
-    int route_id,
-    int main_frame_route_id,
-    WindowContainerType window_container_type,
-    const std::string& frame_name,
-    const GURL& target_url,
-    const std::string& partition_id,
-    content::SessionStorageNamespace* session_storage_namespace) {
+void WebContents::OnCreateWindow(const GURL& target_url,
+                                 const std::string& frame_name,
+                                 WindowOpenDisposition disposition) {
   if (type_ == BROWSER_WINDOW)
-    Emit("-new-window", target_url, frame_name, NEW_FOREGROUND_TAB);
+    Emit("-new-window", target_url, frame_name, disposition);
   else
-    Emit("new-window", target_url, frame_name, NEW_FOREGROUND_TAB);
-  return false;
+    Emit("new-window", target_url, frame_name, disposition);
 }
 
 content::WebContents* WebContents::OpenURLFromTab(
@@ -385,6 +387,18 @@ void WebContents::HandleKeyboardEvent(
 
 void WebContents::EnterFullscreenModeForTab(content::WebContents* source,
                                             const GURL& origin) {
+  auto permission_helper =
+      WebContentsPermissionHelper::FromWebContents(source);
+  auto callback = base::Bind(&WebContents::OnEnterFullscreenModeForTab,
+                             base::Unretained(this), source, origin);
+  permission_helper->RequestFullscreenPermission(callback);
+}
+
+void WebContents::OnEnterFullscreenModeForTab(content::WebContents* source,
+                                              const GURL& origin,
+                                              bool allowed) {
+  if (!allowed)
+    return;
   CommonWebContentsDelegate::EnterFullscreenModeForTab(source, origin);
   Emit("enter-html-full-screen");
 }
@@ -434,6 +448,7 @@ void WebContents::FindReply(content::WebContents* web_contents,
     result.Set("requestId", request_id);
     result.Set("selectionArea", selection_rect);
     result.Set("finalUpdate", final_update);
+    result.Set("activeMatchOrdinal", active_match_ordinal);
     Emit("found-in-page", result);
   } else if (final_update) {
     result.Set("requestId", request_id);
@@ -443,23 +458,38 @@ void WebContents::FindReply(content::WebContents* web_contents,
   }
 }
 
+bool WebContents::CheckMediaAccessPermission(
+    content::WebContents* web_contents,
+    const GURL& security_origin,
+    content::MediaStreamType type) {
+  return true;
+}
+
+void WebContents::RequestMediaAccessPermission(
+    content::WebContents* web_contents,
+    const content::MediaStreamRequest& request,
+    const content::MediaResponseCallback& callback) {
+  auto permission_helper =
+      WebContentsPermissionHelper::FromWebContents(web_contents);
+  permission_helper->RequestMediaAccessPermission(request, callback);
+}
+
+void WebContents::RequestToLockMouse(
+    content::WebContents* web_contents,
+    bool user_gesture,
+    bool last_unlocked_by_target) {
+  auto permission_helper =
+      WebContentsPermissionHelper::FromWebContents(web_contents);
+  permission_helper->RequestPointerLockPermission(user_gesture);
+}
+
 void WebContents::BeforeUnloadFired(const base::TimeTicks& proceed_time) {
   // Do nothing, we override this method just to avoid compilation error since
   // there are two virtual functions named BeforeUnloadFired.
 }
 
 void WebContents::RenderViewDeleted(content::RenderViewHost* render_view_host) {
-  int process_id = render_view_host->GetProcess()->GetID();
-  Emit("render-view-deleted", process_id);
-
-  // process.emit('ATOM_BROWSER_RELEASE_RENDER_VIEW', processId);
-  // Tell the rpc server that a render view has been deleted and we need to
-  // release all objects owned by it.
-  v8::Locker locker(isolate());
-  v8::HandleScope handle_scope(isolate());
-  node::Environment* env = node::Environment::GetCurrent(isolate());
-  mate::EmitEvent(isolate(), env->process_object(),
-                  "ATOM_BROWSER_RELEASE_RENDER_VIEW", process_id);
+  Emit("render-view-deleted", render_view_host->GetProcess()->GetID());
 }
 
 void WebContents::RenderProcessGone(base::TerminationStatus status) {
@@ -474,11 +504,11 @@ void WebContents::PluginCrashed(const base::FilePath& plugin_path,
   Emit("plugin-crashed", info.name, info.version);
 }
 
-void WebContents::MediaStartedPlaying() {
+void WebContents::MediaStartedPlaying(const MediaPlayerId& id) {
   Emit("media-started-playing");
 }
 
-void WebContents::MediaPaused() {
+void WebContents::MediaStoppedPlaying(const MediaPlayerId& id) {
   Emit("media-paused");
 }
 
@@ -618,6 +648,8 @@ bool WebContents::OnMessageReceived(const IPC::Message& message) {
     IPC_MESSAGE_HANDLER(AtomViewHostMsg_Message, OnRendererMessage)
     IPC_MESSAGE_HANDLER_DELAY_REPLY(AtomViewHostMsg_Message_Sync,
                                     OnRendererMessageSync)
+    IPC_MESSAGE_HANDLER_CODE(ViewHostMsg_SetCursor, OnCursorChange,
+      handled = false)
     IPC_MESSAGE_UNHANDLED(handled = false)
   IPC_END_MESSAGE_MAP()
 
@@ -637,9 +669,6 @@ bool WebContents::OnMessageReceived(const IPC::Message& message) {
 // be destroyed on close, and WebContentsDestroyed would be called for it, so
 // we need to make sure the api::WebContents is also deleted.
 void WebContents::WebContentsDestroyed() {
-  // The RenderViewDeleted was not called when the WebContents is destroyed.
-  RenderViewDeleted(web_contents()->GetRenderViewHost());
-
   // This event is only for internal use, which is emitted when WebContents is
   // being destroyed.
   Emit("will-destroy");
@@ -672,6 +701,14 @@ bool WebContents::Equal(const WebContents* web_contents) const {
 }
 
 void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
+  if (!url.is_valid()) {
+    Emit("did-fail-load",
+         static_cast<int>(net::ERR_INVALID_URL),
+         net::ErrorToShortString(net::ERR_INVALID_URL),
+         url.possibly_invalid_spec());
+    return;
+  }
+
   content::NavigationController::LoadURLParams params(url);
 
   GURL http_referrer;
@@ -956,8 +993,8 @@ void WebContents::ReplaceMisspelling(const base::string16& word) {
   web_contents()->ReplaceMisspelling(word);
 }
 
-uint32 WebContents::FindInPage(mate::Arguments* args) {
-  uint32 request_id = GetNextRequestId();
+uint32_t WebContents::FindInPage(mate::Arguments* args) {
+  uint32_t request_id = GetNextRequestId();
   base::string16 search_text;
   blink::WebFindOptions options;
   if (!args->GetNext(&search_text) || search_text.empty()) {
@@ -1027,8 +1064,8 @@ void WebContents::BeginFrameSubscription(
   const auto view = web_contents()->GetRenderWidgetHostView();
   if (view) {
     scoped_ptr<FrameSubscriber> frame_subscriber(new FrameSubscriber(
-        isolate(), view->GetVisibleViewportSize(), callback));
-    view->BeginFrameSubscription(frame_subscriber.Pass());
+        isolate(), view, callback));
+    view->BeginFrameSubscription(std::move(frame_subscriber));
   }
 }
 
@@ -1038,14 +1075,22 @@ void WebContents::EndFrameSubscription() {
     view->EndFrameSubscription();
 }
 
+void WebContents::OnCursorChange(const content::WebCursor& cursor) {
+  content::WebCursor::CursorInfo info;
+  cursor.GetCursorInfo(&info);
+
+  if (cursor.IsCustom()) {
+    Emit("cursor-changed", CursorTypeToString(info),
+      gfx::Image::CreateFrom1xBitmap(info.custom_image),
+      info.image_scale_factor);
+  } else {
+    Emit("cursor-changed", CursorTypeToString(info));
+  }
+}
+
 void WebContents::SetSize(const SetSizeParams& params) {
   if (guest_delegate_)
     guest_delegate_->SetSize(params);
-}
-
-void WebContents::SetAllowTransparency(bool allow) {
-  if (guest_delegate_)
-    guest_delegate_->SetAllowTransparency(allow);
 }
 
 bool WebContents::IsGuest() const {
@@ -1069,11 +1114,25 @@ v8::Local<v8::Value> WebContents::Session(v8::Isolate* isolate) {
   return v8::Local<v8::Value>::New(isolate, session_);
 }
 
+content::WebContents* WebContents::HostWebContents() {
+  if (!embedder_)
+    return nullptr;
+  return embedder_->web_contents();
+}
+
 v8::Local<v8::Value> WebContents::DevToolsWebContents(v8::Isolate* isolate) {
   if (devtools_web_contents_.IsEmpty())
     return v8::Null(isolate);
   else
     return v8::Local<v8::Value>::New(isolate, devtools_web_contents_);
+}
+
+v8::Local<v8::Value> WebContents::Debugger(v8::Isolate* isolate) {
+  if (debugger_.IsEmpty()) {
+    auto handle = atom::api::Debugger::Create(isolate, web_contents());
+    debugger_.Reset(isolate, handle.ToV8());
+  }
+  return v8::Local<v8::Value>::New(isolate, debugger_);
 }
 
 // static
@@ -1131,7 +1190,6 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
                  &WebContents::BeginFrameSubscription)
       .SetMethod("endFrameSubscription", &WebContents::EndFrameSubscription)
       .SetMethod("setSize", &WebContents::SetSize)
-      .SetMethod("setAllowTransparency", &WebContents::SetAllowTransparency)
       .SetMethod("isGuest", &WebContents::IsGuest)
       .SetMethod("getWebPreferences", &WebContents::GetWebPreferences)
       .SetMethod("getOwnerBrowserWindow", &WebContents::GetOwnerBrowserWindow)
@@ -1144,7 +1202,9 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("addWorkSpace", &WebContents::AddWorkSpace)
       .SetMethod("removeWorkSpace", &WebContents::RemoveWorkSpace)
       .SetProperty("session", &WebContents::Session)
-      .SetProperty("devToolsWebContents", &WebContents::DevToolsWebContents);
+      .SetProperty("hostWebContents", &WebContents::HostWebContents)
+      .SetProperty("devToolsWebContents", &WebContents::DevToolsWebContents)
+      .SetProperty("debugger", &WebContents::Debugger);
 }
 
 AtomBrowserContext* WebContents::GetBrowserContext() const {

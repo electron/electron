@@ -13,6 +13,7 @@
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/node_includes.h"
 #include "base/base64.h"
+#include "base/files/file_util.h"
 #include "base/strings/string_util.h"
 #include "base/strings/pattern.h"
 #include "native_mate/dictionary.h"
@@ -119,6 +120,20 @@ bool PopulateImageSkiaRepsFromPath(gfx::ImageSkia* image,
   return succeed;
 }
 
+base::FilePath NormalizePath(const base::FilePath& path) {
+  if (!path.ReferencesParent()) {
+    return path;
+  }
+
+  base::FilePath absolute_path = MakeAbsoluteFilePath(path);
+  // MakeAbsoluteFilePath returns an empty path on failures so use original path
+  if (absolute_path.empty()) {
+    return path;
+  } else {
+    return absolute_path;
+  }
+}
+
 #if defined(OS_MACOSX)
 bool IsTemplateFilename(const base::FilePath& path) {
   return (base::MatchPattern(path.value(), "*Template.*") ||
@@ -143,11 +158,11 @@ bool ReadImageSkiaFromICO(gfx::ImageSkia* image, const base::FilePath& path) {
   base::win::ScopedHICON icon(static_cast<HICON>(
       LoadImage(NULL, image_path.value().c_str(), IMAGE_ICON, 0, 0,
                 LR_DEFAULTSIZE | LR_LOADFROMFILE)));
-  if (!icon)
+  if (!icon.get())
     return false;
 
   // Convert the icon from the Windows specific HICON to gfx::ImageSkia.
-  scoped_ptr<SkBitmap> bitmap(IconUtil::CreateSkBitmapFromHICON(icon));
+  scoped_ptr<SkBitmap> bitmap(IconUtil::  CreateSkBitmapFromHICON(icon.get()));
   image->AddRepresentation(gfx::ImageSkiaRep(*bitmap, 1.0f));
   return true;
 }
@@ -169,6 +184,7 @@ mate::ObjectTemplateBuilder NativeImage::GetObjectTemplateBuilder(
     template_.Reset(isolate, mate::ObjectTemplateBuilder(isolate)
         .SetMethod("toPng", &NativeImage::ToPNG)
         .SetMethod("toJpeg", &NativeImage::ToJPEG)
+        .SetMethod("getNativeHandle", &NativeImage::GetNativeHandle)
         .SetMethod("toDataURL", &NativeImage::ToDataURL)
         .SetMethod("toDataUrl", &NativeImage::ToDataURL)  // deprecated.
         .SetMethod("isEmpty", &NativeImage::IsEmpty)
@@ -204,6 +220,20 @@ std::string NativeImage::ToDataURL() {
   base::Base64Encode(data_url, &data_url);
   data_url.insert(0, "data:image/png;base64,");
   return data_url;
+}
+
+v8::Local<v8::Value> NativeImage::GetNativeHandle(v8::Isolate* isolate,
+                                                  mate::Arguments* args) {
+#if defined(OS_MACOSX)
+  NSImage* ptr = image_.AsNSImage();
+  return node::Buffer::Copy(
+      isolate,
+      reinterpret_cast<char*>(ptr),
+      sizeof(void*)).ToLocalChecked();
+#else
+  args->ThrowError("Not implemented");
+  return v8::Undefined(isolate);
+#endif
 }
 
 bool NativeImage::IsEmpty() {
@@ -254,17 +284,19 @@ mate::Handle<NativeImage> NativeImage::CreateFromJPEG(
 mate::Handle<NativeImage> NativeImage::CreateFromPath(
     v8::Isolate* isolate, const base::FilePath& path) {
   gfx::ImageSkia image_skia;
-  if (path.MatchesExtension(FILE_PATH_LITERAL(".ico"))) {
+  base::FilePath image_path = NormalizePath(path);
+
+  if (image_path.MatchesExtension(FILE_PATH_LITERAL(".ico"))) {
 #if defined(OS_WIN)
-    ReadImageSkiaFromICO(&image_skia, path);
+    ReadImageSkiaFromICO(&image_skia, image_path);
 #endif
   } else {
-    PopulateImageSkiaRepsFromPath(&image_skia, path);
+    PopulateImageSkiaRepsFromPath(&image_skia, image_path);
   }
   gfx::Image image(image_skia);
   mate::Handle<NativeImage> handle = Create(isolate, image);
 #if defined(OS_MACOSX)
-  if (IsTemplateFilename(path))
+  if (IsTemplateFilename(image_path))
     handle->SetTemplateImage(true);
 #endif
   return handle;

@@ -47,13 +47,21 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
   * `maxWidth` Integer - Window's maximum width. Default is no limit.
   * `maxHeight` Integer - Window's maximum height. Default is no limit.
   * `resizable` Boolean - Whether window is resizable. Default is `true`.
-  * `movable` Boolean - Whether window is movable. This is only implemented
-    on OS X. Default is `true`.
+  * `movable` Boolean - Whether window is movable. This is not implemented
+    on Linux. Default is `true`.
+  * `minimizable` Boolean - Whether window is minimizable. This is not
+    implemented on Linux. Default is `true`.
+  * `maximizable` Boolean - Whether window is maximizable. This is not
+    implemented on Linux. Default is `true`.
+  * `closable` Boolean - Whether window is closable. This is not implemented
+    on Linux. Default is `true`.
   * `alwaysOnTop` Boolean - Whether the window should always stay on top of
     other windows. Default is `false`.
   * `fullscreen` Boolean - Whether the window should show in fullscreen. When
-    set to `false` the fullscreen button will be hidden or disabled on OS X.
-    Default is `false`.
+    explicity set to `false` the fullscreen button will be hidden or disabled
+    on OS X. Default is `false`.
+  * `fullscreenable` Boolean - Whether the maximize/zoom button on OS X should
+    toggle full screen mode or maximize window. Default is `true`.
   * `skipTaskbar` Boolean - Whether to show the window in taskbar. Default is
     `false`.
   * `kiosk` Boolean - The kiosk mode. Default is `false`.
@@ -74,8 +82,11 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
   * `enableLargerThanScreen` Boolean - Enable the window to be resized larger
     than screen. Default is `false`.
   * `backgroundColor` String - Window's background color as Hexadecimal value,
-    like `#66CD00` or `#FFF`. Default is `#000` (black) for Linux and Windows,
-    `#FFF` for Mac (or clear if transparent).
+    like `#66CD00` or `#FFF` or `#80FFFFFF` (alpha is supported). Default is
+    `#000` (black) for Linux and Windows, `#FFF` for Mac (or clear if
+    transparent).
+  * `hasShadow` Boolean - Whether window should have a shadow. This is only
+    implemented on OS X. Default is `true`.
   * `darkTheme` Boolean - Forces using dark theme for the window, only works on
     some GTK+3 desktop environments. Default is `false`.
   * `transparent` Boolean - Makes the window [transparent](frameless-window.md).
@@ -234,6 +245,14 @@ Emitted when the window loses focus.
 
 Emitted when the window gains focus.
 
+### Event: 'show'
+
+Emitted when the window is shown.
+
+### Event: 'hide'
+
+Emitted when the window is hidden.
+
 ### Event: 'maximize'
 
 Emitted when window is maximized.
@@ -282,9 +301,17 @@ Emitted when the window leaves full screen state triggered by html api.
 
 ### Event: 'app-command' _Windows_
 
+Returns:
+
+* `event` Event
+* `command` String
+
 Emitted when an [App Command](https://msdn.microsoft.com/en-us/library/windows/desktop/ms646275(v=vs.85).aspx)
 is invoked. These are typically related to keyboard media keys or browser
 commands, as well as the "Back" button built into some mice on Windows.
+
+Commands are lowercased with underscores replaced with hyphens and the `APPCOMMAND_` prefix stripped off.
+e.g. `APPCOMMAND_BROWSER_BACKWARD` is emitted as `browser-backward`.
 
 ```js
 someWindow.on('app-command', function(e, cmd) {
@@ -294,6 +321,23 @@ someWindow.on('app-command', function(e, cmd) {
   }
 });
 ```
+
+### Event: 'scroll-touch-begin' _OS X_
+
+Emitted when scroll wheel event phase has begun.
+
+### Event: 'scroll-touch-end' _OS X_
+
+Emitted when scroll wheel event phase has ended.
+
+### Event: 'swipe' _OS X_
+
+Returns:
+
+* `event` Event
+* `direction` String
+
+Emitted on 3-finger swipe. Possible directions are `up`, `right`, `down`, `left`.
 
 ## Methods
 
@@ -378,6 +422,10 @@ the [close event](#event-close).
 
 Focus on the window.
 
+### `win.blur()`
+
+Remove focus on the window.
+
 ### `win.isFocused()`
 
 Returns a boolean, whether the window is focused.
@@ -438,7 +486,7 @@ Returns a boolean, whether the window is in fullscreen mode.
 * `aspectRatio` The aspect ratio we want to maintain for some portion of the
 content view.
 * `extraSize` Object (optional) - The extra size not to be included while
-maintaining the aspect ratio. Properties:
+maintaining the aspect ratio.
   * `width` Integer
   * `height` Integer
 
@@ -458,13 +506,11 @@ height areas you have within the overall content view.
 
 ### `win.setBounds(options[, animate])`
 
-* `options` Object, properties:
-
+* `options` Object
   * `x` Integer
   * `y` Integer
   * `width` Integer
   * `height` Integer
-
 * `animate` Boolean (optional) _OS X_
 
 Resizes and moves the window to `width`, `height`, `x`, `y`.
@@ -528,6 +574,64 @@ Sets whether the window can be manually resized by user.
 ### `win.isResizable()`
 
 Returns whether the window can be manually resized by user.
+
+### `win.setMovable(movable)` _OS X_ _Windows_
+
+* `movable` Boolean
+
+Sets whether the window can be moved by user. On Linux does nothing.
+
+### `win.isMovable()` _OS X_ _Windows_
+
+Returns whether the window can be moved by user. On Linux always returns
+`true`.
+
+### `win.setMinimizable(minimizable)` _OS X_ _Windows_
+
+* `minimizable` Boolean
+
+Sets whether the window can be manually minimized by user. On Linux does
+nothing.
+
+### `win.isMinimizable()` _OS X_ _Windows_
+
+Returns whether the window can be manually minimized by user. On Linux always
+returns `true`.
+
+### `win.setMaximizable(maximizable)` _OS X_ _Windows_
+
+* `maximizable` Boolean
+
+Sets whether the window can be manually maximized by user. On Linux does
+nothing.
+
+### `win.isMaximizable()` _OS X_ _Windows_
+
+Returns whether the window can be manually maximized by user. On Linux always
+returns `true`.
+
+### `win.setFullScreenable(fullscreenable)`
+
+* `fullscreenable` Boolean
+
+Sets whether the maximize/zoom window button toggles fullscreen mode or
+maximizes the window.
+
+### `win.isFullScreenable()`
+
+Returns whether the maximize/zoom window button toggles fullscreen mode or
+maximizes the window.
+
+### `win.setClosable(closable)` _OS X_ _Windows_
+
+* `closable` Boolean
+
+Sets whether the window can be manually closed by user. On Linux does nothing.
+
+### `win.isClosable()` _OS X_ _Windows_
+
+Returns whether the window can be manually closed by user. On Linux always
+returns `true`.
 
 ### `win.setAlwaysOnTop(flag)`
 
@@ -639,7 +743,7 @@ Returns the pathname of the file the window represents.
 * `edited` Boolean
 
 Specifies whether the window’s document has been edited, and the icon in title
-bar will become grey when set to `true`.
+bar will become gray when set to `true`.
 
 ### `win.isDocumentEdited()` _OS X_
 
@@ -651,7 +755,7 @@ Whether the window's document has been edited.
 
 ### `win.capturePage([rect, ]callback)`
 
-* `rect` Object (optional)- The area of page to be captured, properties:
+* `rect` Object (optional) - The area of page to be captured
   * `x` Integer
   * `y` Integer
   * `width` Integer
@@ -707,33 +811,24 @@ cleared
 * `description` String - a description that will be provided to Accessibility
 screen readers
 
-Sets a 16px overlay onto the current taskbar icon, usually used to convey some
+Sets a 16 x 16 pixel overlay onto the current taskbar icon, usually used to convey some
 sort of application status or to passively notify the user.
 
+### `win.setHasShadow(hasShadow)` _OS X_
+
+* `hasShadow` (Boolean)
+
+Sets whether the window should have a shadow. On Windows and Linux does
+nothing.
+
+### `win.hasShadow()` _OS X_
+
+Returns whether the window has a shadow. On Windows and Linux always returns
+`true`.
 
 ### `win.setThumbarButtons(buttons)` _Windows 7+_
 
-`buttons` Array of `button` Objects:
-
-`button` Object, properties:
-
-* `icon` [NativeImage](native-image.md) - The icon showing in thumbnail
-  toolbar.
-* `tooltip` String (optional) - The text of the button's tooltip.
-* `flags` Array (optional) - Control specific states and behaviors
-  of the button. By default, it uses `enabled`. It can include following
-  Strings:
-  * `enabled` - The button is active and available to the user.
-  * `disabled` - The button is disabled. It is present, but has a visual
-    state indicating it will not respond to user action.
-  * `dismissonclick` - When the button is clicked, the taskbar button's
-    flyout closes immediately.
-  * `nobackground` - Do not draw a button border, use only the image.
-  * `hidden` - The button is not shown to the user.
-  * `noninteractive` - The button is enabled but not interactive; no
-    pressed button state is drawn. This value is intended for instances
-    where the button is used in a notification.
-* `click` - Function
+* `buttons` Array
 
 Add a thumbnail toolbar with a specified set of buttons to the thumbnail image
 of a window in a taskbar button layout. Returns a `Boolean` object indicates
@@ -743,6 +838,29 @@ The number of buttons in thumbnail toolbar should be no greater than 7 due to
 the limited room. Once you setup the thumbnail toolbar, the toolbar cannot be
 removed due to the platform's limitation. But you can call the API with an empty
 array to clean the buttons.
+
+The `buttons` is an array of `Button` objects:
+
+* `Button` Object
+  * `icon` [NativeImage](native-image.md) - The icon showing in thumbnail
+    toolbar.
+  * `click` Function
+  * `tooltip` String (optional) - The text of the button's tooltip.
+  * `flags` Array (optional) - Control specific states and behaviors of the
+    button. By default, it is `['enabled']`.
+
+The `flags` is an array that can include following `String`s:
+
+* `enabled` - The button is active and available to the user.
+* `disabled` - The button is disabled. It is present, but has a visual state
+  indicating it will not respond to user action.
+* `dismissonclick` - When the button is clicked, the thumbnail window closes
+  immediately.
+* `nobackground` - Do not draw a button border, use only the image.
+* `hidden` - The button is not shown to the user.
+* `noninteractive` - The button is enabled but not interactive; no pressed
+  button state is drawn. This value is intended for instances where the button
+  is used in a notification.
 
 ### `win.showDefinitionForSelection()` _OS X_
 

@@ -35,6 +35,7 @@ REFERENCE_MODULE(atom_browser_app);
 REFERENCE_MODULE(atom_browser_auto_updater);
 REFERENCE_MODULE(atom_browser_content_tracing);
 REFERENCE_MODULE(atom_browser_dialog);
+REFERENCE_MODULE(atom_browser_debugger);
 REFERENCE_MODULE(atom_browser_desktop_capturer);
 REFERENCE_MODULE(atom_browser_download_item);
 REFERENCE_MODULE(atom_browser_menu);
@@ -84,7 +85,7 @@ scoped_ptr<const char*[]> StringVectorToArgArray(
   for (size_t i = 0; i < vector.size(); ++i) {
     array[i] = vector[i].c_str();
   }
-  return array.Pass();
+  return array;
 }
 
 base::FilePath GetResourcesPath(bool is_browser) {
@@ -104,8 +105,6 @@ base::FilePath GetResourcesPath(bool is_browser) {
 }
 
 }  // namespace
-
-node::Environment* global_env = nullptr;
 
 NodeBindings::NodeBindings(bool is_browser)
     : is_browser_(is_browser),
@@ -162,9 +161,8 @@ node::Environment* NodeBindings::CreateEnvironment(
       FILE_PATH_LITERAL("browser") : FILE_PATH_LITERAL("renderer");
   base::FilePath resources_path = GetResourcesPath(is_browser_);
   base::FilePath script_path =
-      resources_path.Append(FILE_PATH_LITERAL("atom.asar"))
+      resources_path.Append(FILE_PATH_LITERAL("electron.asar"))
                     .Append(process_type)
-                    .Append(FILE_PATH_LITERAL("lib"))
                     .Append(FILE_PATH_LITERAL("init.js"));
   std::string script_path_str = script_path.AsUTF8Unsafe();
   args.insert(args.begin() + 1, script_path_str.c_str());
@@ -214,10 +212,8 @@ void NodeBindings::RunMessageLoop() {
 void NodeBindings::UvRunOnce() {
   DCHECK(!is_browser_ || BrowserThread::CurrentlyOn(BrowserThread::UI));
 
-  // By default the global env would be used unless user specified another one
-  // (this happens for renderer process, which wraps the uv loop with web page
-  // context).
-  node::Environment* env = uv_env() ? uv_env() : global_env;
+  node::Environment* env = uv_env();
+  CHECK(env);
 
   // Use Locker in browser process.
   mate::Locker locker(env->isolate());

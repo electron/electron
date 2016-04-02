@@ -79,6 +79,21 @@ bool ScopedDisableResize::disable_resize_ = false;
   return self;
 }
 
+- (void)windowDidChangeOcclusionState:(NSNotification *)notification {
+  // notification.object is the window that changed its state.
+  // It's safe to use self.window instead if you don't assign one delegate to many windows
+  NSWindow *window = notification.object;
+
+  // check occlusion binary flag
+  if (window.occlusionState & NSWindowOcclusionStateVisible)   {
+     // The app is visible
+     shell_->NotifyWindowShow();
+   } else {
+     // The app is not visible
+     shell_->NotifyWindowHide();
+   }
+}
+
 - (void)windowDidBecomeMain:(NSNotification*)notification {
   content::WebContents* web_contents = shell_->web_contents();
   if (!web_contents)
@@ -252,6 +267,18 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 // NSWindow overrides.
 
+- (void)swipeWithEvent:(NSEvent *)event {
+  if (event.deltaY == 1.0) {
+    shell_->NotifyWindowSwipe("up");
+  } else if (event.deltaX == -1.0) {
+    shell_->NotifyWindowSwipe("right");
+  } else if (event.deltaY == -1.0) {
+    shell_->NotifyWindowSwipe("down");
+  } else if (event.deltaX == 1.0) {
+    shell_->NotifyWindowSwipe("left");
+  }
+}
+
 - (NSRect)constrainFrameRect:(NSRect)frameRect toScreen:(NSScreen*)screen {
   // Resizing is disabled.
   if (ScopedDisableResize::IsResizeDisabled())
@@ -369,6 +396,15 @@ NativeWindowMac::NativeWindowMac(
   bool resizable = true;
   options.Get(options::kResizable, &resizable);
 
+  bool minimizable = true;
+  options.Get(options::kMinimizable, &minimizable);
+
+  bool maximizable = true;
+  options.Get(options::kMaximizable, &maximizable);
+
+  bool closable = true;
+  options.Get(options::kClosable, &closable);
+
   // New title bar styles are available in Yosemite or newer
   std::string titleBarStyle;
   if (base::mac::IsOSYosemiteOrLater())
@@ -385,8 +421,13 @@ NativeWindowMac::NativeWindowMac(
     useStandardWindow = false;
   }
 
-  NSUInteger styleMask = NSTitledWindowMask | NSClosableWindowMask |
-                         NSMiniaturizableWindowMask;
+  NSUInteger styleMask = NSTitledWindowMask;
+  if (minimizable) {
+    styleMask |= NSMiniaturizableWindowMask;
+  }
+  if (closable) {
+    styleMask |= NSClosableWindowMask;
+  }
   if (!useStandardWindow || transparent() || !has_frame()) {
     styleMask |= NSTexturedBackgroundWindowMask;
   }
@@ -452,11 +493,6 @@ NativeWindowMac::NativeWindowMac(
     set_force_using_draggable_region(true);
   }
 
-  bool movable;
-  if (options.Get(options::kMovable, &movable)) {
-    [window_ setMovable:movable];
-  }
-
   // On OS X the initial window size doesn't include window frame.
   bool use_content_size = false;
   options.Get(options::kUseContentSize, &use_content_size);
@@ -473,27 +509,41 @@ NativeWindowMac::NativeWindowMac(
   options.Get(options::kDisableAutoHideCursor, &disableAutoHideCursor);
   [window_ setDisableAutoHideCursor:disableAutoHideCursor];
 
-  // Disable fullscreen button when 'fullscreen' is specified to false.
-  bool fullscreen = false;
-  if (!(options.Get(options::kFullscreen, &fullscreen) &&
-        !fullscreen)) {
-    NSUInteger collectionBehavior = [window_ collectionBehavior];
-    collectionBehavior |= NSWindowCollectionBehaviorFullScreenPrimary;
-    [window_ setCollectionBehavior:collectionBehavior];
-  } else if (base::mac::IsOSElCapitanOrLater()) {
-    // On EL Capitan this flag is required to hide fullscreen button.
-    NSUInteger collectionBehavior = [window_ collectionBehavior];
-    collectionBehavior |= NSWindowCollectionBehaviorFullScreenAuxiliary;
-    [window_ setCollectionBehavior:collectionBehavior];
-  }
+  // Disable zoom button if window is not resizable.
+  if (!maximizable)
+    SetMaximizable(false);
 
   NSView* view = inspectable_web_contents()->GetView()->GetNativeView();
   [view setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
+
+  // Use an NSEvent monitor to listen for the wheel event.
+  BOOL __block began = NO;
+  wheel_event_monitor_ = [NSEvent
+    addLocalMonitorForEventsMatchingMask:NSScrollWheelMask
+    handler:^(NSEvent* event) {
+      if ([[event window] windowNumber] != [window_ windowNumber])
+        return event;
+
+      if (!web_contents)
+        return event;
+
+      if (!began && (([event phase] == NSEventPhaseMayBegin) ||
+                     ([event phase] == NSEventPhaseBegan))) {
+        this->NotifyWindowScrollTouchBegin();
+        began = YES;
+      } else if (began && (([event phase] == NSEventPhaseEnded) ||
+                           ([event phase] == NSEventPhaseCancelled))) {
+        this->NotifyWindowScrollTouchEnd();
+        began = NO;
+      }
+      return event;
+  }];
 
   InstallView();
 }
 
 NativeWindowMac::~NativeWindowMac() {
+  [NSEvent removeMonitor:wheel_event_monitor_];
   Observe(nullptr);
 }
 
@@ -550,7 +600,16 @@ void NativeWindowMac::Unmaximize() {
 }
 
 bool NativeWindowMac::IsMaximized() {
-  return [window_ isZoomed];
+  if (([window_ styleMask] & NSResizableWindowMask) != 0) {
+    return [window_ isZoomed];
+  } else {
+    NSRect rectScreen = [[NSScreen mainScreen] visibleFrame];
+    NSRect rectWindow = [window_ frame];
+    return (rectScreen.origin.x == rectWindow.origin.x &&
+            rectScreen.origin.y == rectWindow.origin.y &&
+            rectScreen.size.width == rectWindow.size.width &&
+            rectScreen.size.height == rectWindow.size.height);
+  }
 }
 
 void NativeWindowMac::Minimize() {
@@ -631,17 +690,56 @@ void NativeWindowMac::SetResizable(bool resizable) {
   // Change styleMask for frameless causes the window to change size, so we have
   // to explicitly disables that.
   ScopedDisableResize disable_resize;
-  if (resizable) {
-    [[window_ standardWindowButton:NSWindowZoomButton] setEnabled:YES];
-    [window_ setStyleMask:[window_ styleMask] | NSResizableWindowMask];
-  } else {
-    [[window_ standardWindowButton:NSWindowZoomButton] setEnabled:NO];
-    [window_ setStyleMask:[window_ styleMask] & (~NSResizableWindowMask)];
-  }
+  SetStyleMask(resizable, NSResizableWindowMask);
 }
 
 bool NativeWindowMac::IsResizable() {
   return [window_ styleMask] & NSResizableWindowMask;
+}
+
+void NativeWindowMac::SetMovable(bool movable) {
+  [window_ setMovable:movable];
+}
+
+bool NativeWindowMac::IsMovable() {
+  return [window_ isMovable];
+}
+
+void NativeWindowMac::SetMinimizable(bool minimizable) {
+  SetStyleMask(minimizable, NSMiniaturizableWindowMask);
+}
+
+bool NativeWindowMac::IsMinimizable() {
+  return [window_ styleMask] & NSMiniaturizableWindowMask;
+}
+
+void NativeWindowMac::SetMaximizable(bool maximizable) {
+  [[window_ standardWindowButton:NSWindowZoomButton] setEnabled:maximizable];
+}
+
+bool NativeWindowMac::IsMaximizable() {
+  return [[window_ standardWindowButton:NSWindowZoomButton] isEnabled];
+}
+
+void NativeWindowMac::SetFullScreenable(bool fullscreenable) {
+  SetCollectionBehavior(
+      fullscreenable, NSWindowCollectionBehaviorFullScreenPrimary);
+  // On EL Capitan this flag is required to hide fullscreen button.
+  SetCollectionBehavior(
+      !fullscreenable, NSWindowCollectionBehaviorFullScreenAuxiliary);
+}
+
+bool NativeWindowMac::IsFullScreenable() {
+  NSUInteger collectionBehavior = [window_ collectionBehavior];
+  return collectionBehavior & NSWindowCollectionBehaviorFullScreenPrimary;
+}
+
+void NativeWindowMac::SetClosable(bool closable) {
+  SetStyleMask(closable, NSClosableWindowMask);
+}
+
+bool NativeWindowMac::IsClosable() {
+  return [window_ styleMask] & NSClosableWindowMask;
 }
 
 void NativeWindowMac::SetAlwaysOnTop(bool top) {
@@ -710,8 +808,16 @@ void NativeWindowMac::SetBackgroundColor(const std::string& color_name) {
   NSColor *color = [NSColor colorWithCalibratedRed:SkColorGetR(background_color)
     green:SkColorGetG(background_color)
     blue:SkColorGetB(background_color)
-    alpha:1.0];
+    alpha:SkColorGetA(background_color)/255.0f];
   [window_ setBackgroundColor:color];
+}
+
+void NativeWindowMac::SetHasShadow(bool has_shadow) {
+  [window_ setHasShadow:has_shadow];
+}
+
+bool NativeWindowMac::HasShadow() {
+  return [window_ hasShadow];
 }
 
 void NativeWindowMac::SetRepresentedFilename(const std::string& filename) {
@@ -796,13 +902,7 @@ void NativeWindowMac::ShowDefinitionForSelection() {
 }
 
 void NativeWindowMac::SetVisibleOnAllWorkspaces(bool visible) {
-  NSUInteger collectionBehavior = [window_ collectionBehavior];
-  if (visible) {
-    collectionBehavior |= NSWindowCollectionBehaviorCanJoinAllSpaces;
-  } else {
-    collectionBehavior &= ~NSWindowCollectionBehaviorCanJoinAllSpaces;
-  }
-  [window_ setCollectionBehavior:collectionBehavior];
+  SetCollectionBehavior(visible, NSWindowCollectionBehaviorCanJoinAllSpaces);
 }
 
 bool NativeWindowMac::IsVisibleOnAllWorkspaces() {
@@ -818,12 +918,15 @@ void NativeWindowMac::HandleKeyboardEvent(
     return;
 
   BOOL handled = [[NSApp mainMenu] performKeyEquivalent:event.os_event];
-  if (!handled && event.os_event.window != window_.get()) {
-    // The event comes from detached devtools view, and it has already been
-    if (!handled && (event.os_event.modifierFlags & NSCommandKeyMask) &&
-        (event.os_event.keyCode == 50  /* ~ key */)) {
-      // Handle the cmd+~ shortcut.
-      Focus(true);
+  if (!handled && event.os_event.window) {
+    // Handle the cmd+~ shortcut.
+    if ((event.os_event.modifierFlags & NSCommandKeyMask) /* cmd */ &&
+        (event.os_event.keyCode == 50  /* ~ */)) {
+      if (event.os_event.modifierFlags & NSShiftKeyMask) {
+        [NSApp sendAction:@selector(_cycleWindowsReversed:) to:nil from:nil];
+      } else {
+        [NSApp sendAction:@selector(_cycleWindows:) to:nil from:nil];
+      }
     }
   }
 }
@@ -957,6 +1060,30 @@ void NativeWindowMac::UpdateDraggableRegionViews(
   // Calling the below seems to be an effective solution.
   [window_ setMovableByWindowBackground:NO];
   [window_ setMovableByWindowBackground:YES];
+}
+
+void NativeWindowMac::SetStyleMask(bool on, NSUInteger flag) {
+  bool zoom_button_enabled = IsMaximizable();
+  if (on)
+    [window_ setStyleMask:[window_ styleMask] | flag];
+  else
+    [window_ setStyleMask:[window_ styleMask] & (~flag)];
+  // Change style mask will make the zoom button revert to default, probably
+  // a bug of Cocoa or OS X.
+  if (!zoom_button_enabled)
+    SetMaximizable(false);
+}
+
+void NativeWindowMac::SetCollectionBehavior(bool on, NSUInteger flag) {
+  bool zoom_button_enabled = IsMaximizable();
+  if (on)
+    [window_ setCollectionBehavior:[window_ collectionBehavior] | flag];
+  else
+    [window_ setCollectionBehavior:[window_ collectionBehavior] & (~flag)];
+  // Change collectionBehavior will make the zoom button revert to default,
+  // probably a bug of Cocoa or OS X.
+  if (!zoom_button_enabled)
+    SetMaximizable(false);
 }
 
 // static

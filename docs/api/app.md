@@ -87,7 +87,7 @@ handle this case (even before the `ready` event is emitted).
 
 You should call `event.preventDefault()` if you want to handle this event.
 
-On Windows, you have to parse `process.argv` to get the filepath.
+On Windows, you have to parse `process.argv` (in the main process) to get the filepath.
 
 ### Event: 'open-url' _OS X_
 
@@ -156,7 +156,7 @@ certificate you should prevent the default behavior with
 `event.preventDefault()` and call `callback(true)`.
 
 ```javascript
-session.on('certificate-error', function(event, webContents, url, error, certificate, callback) {
+app.on('certificate-error', function(event, webContents, url, error, certificate, callback) {
   if (url == "https://github.com") {
     // Verification logic.
     event.preventDefault();
@@ -228,6 +228,10 @@ app.on('login', function(event, webContents, request, authInfo, callback) {
 
 Emitted when the gpu process crashes.
 
+### Event: 'platform-theme-changed' _OS X_
+
+Emitted when the system's Dark Mode theme is toggled.
+
 ## Methods
 
 The `app` object has the following methods:
@@ -252,6 +256,19 @@ Exits immediately with `exitCode`.
 
 All windows will be closed immediately without asking user and the `before-quit`
 and `will-quit` events will not be emitted.
+
+### `app.focus()`
+
+On Linux, focuses on the first visible window. On OS X, makes the application
+the active app. On Windows, focuses on the application's first window.
+
+### `app.hide()` _OS X_
+
+Hides all application windows without minimizing them.
+
+### `app.show()` _OS X_
+
+Shows application windows after they were hidden. Does not automatically focus them.
 
 ### `app.getAppPath()`
 
@@ -314,9 +331,20 @@ to the npm modules spec. You should usually also specify a `productName`
 field, which is your application's full capitalized name, and which will be
 preferred over `name` by Electron.
 
+### `app.setName(name)`
+
+* `name` String
+
+Overrides the current application's name.
+
 ### `app.getLocale()`
 
 Returns the current application locale.
+
+**Note:** When distributing your packaged app, you have to also ship the
+`locales` folder.
+
+**Note:** On Windows you have to call it after the `ready` events gets emitted.
 
 ### `app.addRecentDocument(path)` _OS X_ _Windows_
 
@@ -330,6 +358,35 @@ bar, and on OS X you can visit it from dock menu.
 ### `app.clearRecentDocuments()` _OS X_ _Windows_
 
 Clears the recent documents list.
+
+### `app.setAsDefaultProtocolClient(protocol)` _OS X_ _Windows_
+
+* `protocol` String - The name of your protocol, without `://`. If you want your
+  app to handle `electron://` links, call this method with `electron` as the
+  parameter.
+
+This method sets the current executable as the default handler for a protocol
+(aka URI scheme). It allows you to integrate your app deeper into the operating
+system. Once registered, all links with `your-protocol://` will be openend with
+the current executable. The whole link, including protocol, will be passed to
+your application as a parameter.
+
+**Note:** On OS X, you can only register protocols that have been added to
+your app's `info.plist`, which can not be modified at runtime. You can however
+change the file with a simple text editor or script during build time.
+Please refer to [Apple's documentation][CFBundleURLTypes] for details.
+
+The API uses the Windows Registry and LSSetDefaultHandlerForURLScheme internally.
+
+### `app.removeAsDefaultProtocolClient(protocol)` _Windows_
+
+* `protocol` String - The name of your protocol, without `://`.
+
+This method checks if the current executable as the default handler for a protocol
+(aka URI scheme). If so, it will remove the app as the default handler.
+
+**Note:** On OS X, removing the app will automatically remove the app as the
+default protocol handler.
 
 ### `app.setUserTasks(tasks)` _Windows_
 
@@ -390,7 +447,7 @@ quit.
 On OS X the system enforces single instance automatically when users try to open
 a second instance of your app in Finder, and the `open-file` and `open-url`
 events will be emitted for that. However when users start your app in command
-line the system's single instance machanism will be bypassed and you have to
+line the system's single instance mechanism will be bypassed and you have to
 use this method to ensure single instance.
 
 An example of activating the window of primary instance when a second instance
@@ -405,7 +462,6 @@ var shouldQuit = app.makeSingleInstance(function(commandLine, workingDirectory) 
     if (myWindow.isMinimized()) myWindow.restore();
     myWindow.focus();
   }
-  return true;
 });
 
 if (shouldQuit) {
@@ -453,6 +509,10 @@ if (browserOptions.transparent) {
   win.loadURL('file://' + __dirname + '/fallback.html');
 }
 ```
+
+### `app.isDarkMode()` _OS X_
+
+This method returns `true` if the system is in Dark Mode, and `false` otherwise.
 
 ### `app.commandLine.appendSwitch(switch[, value])`
 
@@ -508,10 +568,17 @@ Shows the dock icon.
 
 ### `app.dock.setMenu(menu)` _OS X_
 
-* `menu` Menu
+* `menu` [Menu](menu.md)
 
 Sets the application's [dock menu][dock-menu].
+
+### `app.dock.setIcon(image)` _OS X_
+
+* `image` [NativeImage](native-image.md)
+
+Sets the `image` associated with this dock icon.
 
 [dock-menu]:https://developer.apple.com/library/mac/documentation/Carbon/Conceptual/customizing_docktile/concepts/dockconcepts.html#//apple_ref/doc/uid/TP30000986-CH2-TPXREF103
 [tasks]:http://msdn.microsoft.com/en-us/library/windows/desktop/dd378460(v=vs.85).aspx#tasks
 [app-user-model-id]: https://msdn.microsoft.com/en-us/library/windows/desktop/dd378459(v=vs.85).aspx
+[CFBundleURLTypes]: https://developer.apple.com/library/ios/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html#//apple_ref/doc/uid/TP40009249-102207-TPXREF115

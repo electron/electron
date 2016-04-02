@@ -13,6 +13,7 @@
 #include "atom/browser/net/atom_url_request_job_factory.h"
 #include "atom/browser/net/asar/asar_protocol_handler.h"
 #include "atom/browser/net/http_protocol_handler.h"
+#include "atom/browser/atom_permission_manager.h"
 #include "atom/browser/web_view_manager.h"
 #include "atom/common/atom_version.h"
 #include "atom/common/chrome_version.h"
@@ -133,14 +134,15 @@ AtomBrowserContext::CreateURLRequestJobFactory(
           new net::FtpNetworkLayer(host_resolver))));
 
   // Set up interceptors in the reverse order.
-  scoped_ptr<net::URLRequestJobFactory> top_job_factory = job_factory.Pass();
+  scoped_ptr<net::URLRequestJobFactory> top_job_factory =
+      std::move(job_factory);
   content::URLRequestInterceptorScopedVector::reverse_iterator it;
   for (it = interceptors->rbegin(); it != interceptors->rend(); ++it)
     top_job_factory.reset(new net::URLRequestInterceptingJobFactory(
-        top_job_factory.Pass(), make_scoped_ptr(*it)));
+        std::move(top_job_factory), make_scoped_ptr(*it)));
   interceptors->weak_clear();
 
-  return top_job_factory.Pass();
+  return top_job_factory;
 }
 
 net::HttpCache::BackendFactory*
@@ -169,6 +171,12 @@ content::BrowserPluginGuestManager* AtomBrowserContext::GetGuestManager() {
   return guest_manager_.get();
 }
 
+content::PermissionManager* AtomBrowserContext::GetPermissionManager() {
+  if (!permission_manager_.get())
+    permission_manager_.reset(new AtomPermissionManager);
+  return permission_manager_.get();
+}
+
 scoped_ptr<net::CertVerifier> AtomBrowserContext::CreateCertVerifier() {
   DCHECK(!cert_verifier_);
   cert_verifier_ = new AtomCertVerifier;
@@ -186,6 +194,7 @@ void AtomBrowserContext::RegisterPrefs(PrefRegistrySimple* pref_registry) {
   PathService::Get(chrome::DIR_DEFAULT_DOWNLOADS, &download_dir);
   pref_registry->RegisterFilePathPref(prefs::kDownloadDefaultDirectory,
                                       download_dir);
+  pref_registry->RegisterDictionaryPref(prefs::kDevToolsFileSystemPaths);
 }
 
 bool AtomBrowserContext::AllowNTLMCredentialsForDomain(const GURL& origin) {

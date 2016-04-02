@@ -76,14 +76,9 @@ class V8ValueConverter::FromV8ValueState {
 };
 
 V8ValueConverter::V8ValueConverter()
-    : date_allowed_(false),
-      reg_exp_allowed_(false),
+    : reg_exp_allowed_(false),
       function_allowed_(false),
       strip_null_from_objects_(false) {}
-
-void V8ValueConverter::SetDateAllowed(bool val) {
-  date_allowed_ = val;
-}
 
 void V8ValueConverter::SetRegExpAllowed(bool val) {
   reg_exp_allowed_ = val;
@@ -174,7 +169,7 @@ v8::Local<v8::Value> V8ValueConverter::ToV8Array(
     CHECK(!child_v8.IsEmpty());
 
     v8::TryCatch try_catch;
-    result->Set(static_cast<uint32>(i), child_v8);
+    result->Set(static_cast<uint32_t>(i), child_v8);
     if (try_catch.HasCaught())
       LOG(ERROR) << "Setter for index " << i << " threw an exception.";
   }
@@ -243,12 +238,17 @@ base::Value* V8ValueConverter::FromV8ValueImpl(
     return NULL;
 
   if (val->IsDate()) {
-    if (!date_allowed_)
-      // JSON.stringify would convert this to a string, but an object is more
-      // consistent within this class.
-      return FromV8Object(val->ToObject(), state, isolate);
     v8::Date* date = v8::Date::Cast(*val);
-    return new base::FundamentalValue(date->NumberValue() / 1000.0);
+    v8::Local<v8::Value> toISOString =
+        date->Get(v8::String::NewFromUtf8(isolate, "toISOString"));
+    if (toISOString->IsFunction()) {
+      v8::Local<v8::Value> result =
+          toISOString.As<v8::Function>()->Call(val, 0, nullptr);
+      if (!result.IsEmpty()) {
+        v8::String::Utf8Value utf8(result->ToString());
+        return new base::StringValue(std::string(*utf8, utf8.length()));
+      }
+    }
   }
 
   if (val->IsRegExp()) {
@@ -298,7 +298,7 @@ base::Value* V8ValueConverter::FromV8Array(
   base::ListValue* result = new base::ListValue();
 
   // Only fields with integer keys are carried over to the ListValue.
-  for (uint32 i = 0; i < val->Length(); ++i) {
+  for (uint32_t i = 0; i < val->Length(); ++i) {
     v8::TryCatch try_catch;
     v8::Local<v8::Value> child_v8 = val->Get(i);
     if (try_catch.HasCaught()) {
@@ -345,7 +345,7 @@ base::Value* V8ValueConverter::FromV8Object(
   scoped_ptr<base::DictionaryValue> result(new base::DictionaryValue());
   v8::Local<v8::Array> property_names(val->GetOwnPropertyNames());
 
-  for (uint32 i = 0; i < property_names->Length(); ++i) {
+  for (uint32_t i = 0; i < property_names->Length(); ++i) {
     v8::Local<v8::Value> key(property_names->Get(i));
 
     // Extend this test to cover more types as necessary and if sensible.

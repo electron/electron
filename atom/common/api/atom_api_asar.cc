@@ -27,12 +27,12 @@ class Archive : public mate::Wrappable {
     scoped_ptr<asar::Archive> archive(new asar::Archive(path));
     if (!archive->Init())
       return v8::False(isolate);
-    return (new Archive(archive.Pass()))->GetWrapper(isolate);
+    return (new Archive(std::move(archive)))->GetWrapper(isolate);
   }
 
  protected:
   explicit Archive(scoped_ptr<asar::Archive> archive)
-      : archive_(archive.Pass()) {}
+      : archive_(std::move(archive)) {}
 
   // Reads the offset and size of file.
   v8::Local<v8::Value> GetFileInfo(v8::Isolate* isolate,
@@ -129,9 +129,11 @@ void InitAsarSupport(v8::Isolate* isolate,
                      v8::Local<v8::Value> process,
                      v8::Local<v8::Value> require) {
   // Evaluate asar_init.coffee.
+  const char* asar_init_native = reinterpret_cast<const char*>(
+      static_cast<const unsigned char*>(node::asar_init_native));
   v8::Local<v8::Script> asar_init = v8::Script::Compile(v8::String::NewFromUtf8(
       isolate,
-      node::asar_init_native,
+      asar_init_native,
       v8::String::kNormalString,
       sizeof(node::asar_init_native) -1));
   v8::Local<v8::Value> result = asar_init->Run();
@@ -141,9 +143,11 @@ void InitAsarSupport(v8::Isolate* isolate,
                       v8::Local<v8::Value>,
                       std::string)> init;
   if (mate::ConvertFromV8(isolate, result, &init)) {
+    const char* asar_native = reinterpret_cast<const char*>(
+        static_cast<const unsigned char*>(node::asar_native));
     init.Run(process,
              require,
-             std::string(node::asar_native, sizeof(node::asar_native) - 1));
+             std::string(asar_native, sizeof(node::asar_native) - 1));
   }
 }
 

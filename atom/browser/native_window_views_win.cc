@@ -89,10 +89,18 @@ bool NativeWindowViews::PreHandleMSG(
       if (HIWORD(w_param) == THBN_CLICKED)
         return taskbar_host_.HandleThumbarButtonEvent(LOWORD(w_param));
       return false;
+
     case WM_SIZE:
       // Handle window state change.
       HandleSizeEvent(w_param, l_param);
       return false;
+
+    case WM_MOVING: {
+      if (!movable_)
+        ::GetWindowRect(GetAcceleratedWidget(), (LPRECT)l_param);
+      return false;
+    }
+
     default:
       return false;
   }

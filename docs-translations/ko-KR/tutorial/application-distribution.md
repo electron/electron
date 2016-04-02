@@ -59,9 +59,8 @@ electron/resources/
 
 ### Windows
 
-`electron.exe`을 원하는 이름으로 변경할 수 있습니다.
-그리고 [rcedit](https://github.com/atom/rcedit) 또는
-[ResEdit](http://www.resedit.net)를 사용하여 아이콘을 변경할 수 있습니다.
+[rcedit](https://github.com/atom/rcedit)를 통해 `electron.exe`을 원하는 이름으로
+변경할 수 있고, 또한 아이콘과 기타 정보도 변경할 수 있습니다.
 
 ### OS X
 

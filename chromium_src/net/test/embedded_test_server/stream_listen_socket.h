@@ -28,7 +28,7 @@
 #include "base/message_loop/message_loop.h"
 #endif
 
-#include "base/basictypes.h"
+#include "base/macros.h"
 #include "base/compiler_specific.h"
 #include "base/memory/scoped_ptr.h"
 #include "net/base/net_export.h"

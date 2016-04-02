@@ -1,1 +1,1 @@
-window.test = 'preload';
+window.test = 'preload'

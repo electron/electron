@@ -107,7 +107,7 @@ class PrintingMessageFilter : public content::BrowserMessageFilter {
 
 #if defined(ENABLE_FULL_PRINTING)
   // Check to see if print preview has been cancelled.
-  void OnCheckForCancel(int32 preview_ui_id,
+  void OnCheckForCancel(int32_t preview_ui_id,
                         int preview_request_id,
                         bool* cancel);
 #endif

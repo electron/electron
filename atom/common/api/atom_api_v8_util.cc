@@ -2,63 +2,49 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include <map>
 #include <string>
 
 #include "atom/common/api/object_life_monitor.h"
 #include "atom/common/node_includes.h"
-#include "base/stl_util.h"
 #include "native_mate/dictionary.h"
 #include "v8/include/v8-profiler.h"
 
 namespace {
 
-// A Persistent that can be copied and will not free itself.
-template<class T>
-struct LeakedPersistentTraits {
-  typedef v8::Persistent<T, LeakedPersistentTraits<T> > LeakedPersistent;
-  static const bool kResetInDestructor = false;
-  template<class S, class M>
-  static V8_INLINE void Copy(const v8::Persistent<S, M>& source,
-                             LeakedPersistent* dest) {
-    // do nothing, just allow copy
-  }
-};
-
-// The handles are leaked on purpose.
-using FunctionTemplateHandle =
-    LeakedPersistentTraits<v8::FunctionTemplate>::LeakedPersistent;
-std::map<std::string, FunctionTemplateHandle> function_templates_;
-
-v8::Local<v8::Object> CreateObjectWithName(v8::Isolate* isolate,
-                                           const std::string& name) {
-  if (name == "Object")
-    return v8::Object::New(isolate);
-
-  if (ContainsKey(function_templates_, name))
-    return v8::Local<v8::FunctionTemplate>::New(
-        isolate, function_templates_[name])->GetFunction()->NewInstance();
-
-  v8::Local<v8::FunctionTemplate> t = v8::FunctionTemplate::New(isolate);
-  t->SetClassName(mate::StringToV8(isolate, name));
-  function_templates_[name] = FunctionTemplateHandle(isolate, t);
-  return t->GetFunction()->NewInstance();
-}
-
-v8::Local<v8::Value> GetHiddenValue(v8::Local<v8::Object> object,
+v8::Local<v8::Value> GetHiddenValue(v8::Isolate* isolate,
+                                    v8::Local<v8::Object> object,
                                     v8::Local<v8::String> key) {
-  return object->GetHiddenValue(key);
+  v8::Local<v8::Context> context = isolate->GetCurrentContext();
+  v8::Local<v8::Private> privateKey = v8::Private::ForApi(isolate, key);
+  v8::Local<v8::Value> value;
+  v8::Maybe<bool> result = object->HasPrivate(context, privateKey);
+  if (!(result.IsJust() && result.FromJust()))
+    return v8::Local<v8::Value>();
+  if (object->GetPrivate(context, privateKey).ToLocal(&value))
+    return value;
+  return v8::Local<v8::Value>();
 }
 
-void SetHiddenValue(v8::Local<v8::Object> object,
+void SetHiddenValue(v8::Isolate* isolate,
+                    v8::Local<v8::Object> object,
                     v8::Local<v8::String> key,
                     v8::Local<v8::Value> value) {
-  object->SetHiddenValue(key, value);
+  if (value.IsEmpty())
+    return;
+  v8::Local<v8::Context> context = isolate->GetCurrentContext();
+  v8::Local<v8::Private> privateKey = v8::Private::ForApi(isolate, key);
+  object->SetPrivate(context, privateKey, value);
 }
 
-void DeleteHiddenValue(v8::Local<v8::Object> object,
+void DeleteHiddenValue(v8::Isolate* isolate,
+                       v8::Local<v8::Object> object,
                        v8::Local<v8::String> key) {
-  object->DeleteHiddenValue(key);
+  v8::Local<v8::Context> context = isolate->GetCurrentContext();
+  v8::Local<v8::Private> privateKey = v8::Private::ForApi(isolate, key);
+  // Actually deleting the value would make force the object into
+  // dictionary mode which is unnecessarily slow. Instead, we replace
+  // the hidden value with "undefined".
+  object->SetPrivate(context, privateKey, v8::Undefined(isolate));
 }
 
 int32_t GetObjectHash(v8::Local<v8::Object> object) {
@@ -78,7 +64,6 @@ void TakeHeapSnapshot(v8::Isolate* isolate) {
 void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
   mate::Dictionary dict(context->GetIsolate(), exports);
-  dict.SetMethod("createObjectWithName", &CreateObjectWithName);
   dict.SetMethod("getHiddenValue", &GetHiddenValue);
   dict.SetMethod("setHiddenValue", &SetHiddenValue);
   dict.SetMethod("deleteHiddenValue", &DeleteHiddenValue);

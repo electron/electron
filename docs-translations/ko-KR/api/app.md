@@ -2,7 +2,7 @@
 
 `app` 모듈은 어플리케이션의 생명주기 제어를 책임집니다.
 
-밑의 예제는 마지막 윈도우 창이 종료되었을 때, 어플리케이션을 종료시키는 예제입니다:
+밑의 예제는 마지막 윈도우가 종료되었을 때, 어플리케이션을 종료시키는 예제입니다:
 
 ```javascript
 const app = require('electron').app;
@@ -32,15 +32,15 @@ Electron이 초기화를 끝냈을 때 발생하는 이벤트입니다.
 
 ### Event: 'window-all-closed'
 
-모든 윈도우 창이 종료되었을 때 발생하는 이벤트입니다.
+모든 윈도우가 종료되었을 때 발생하는 이벤트입니다.
 
 이 이벤트는 어플리케이션이 완전히 종료되지 않았을 때만 발생합니다.
 만약 사용자가 `Cmd + Q`를 입력했거나 개발자가 `app.quit()`를 호출했다면,
-Electron은 먼저 모든 윈도우 창의 종료를 시도하고 `will-quit` 이벤트를 발생시킵니다.
+Electron은 먼저 모든 윈도우의 종료를 시도하고 `will-quit` 이벤트를 발생시킵니다.
 그리고 `will-quit` 이벤트가 발생했을 땐 `window-all-closed` 이벤트가 발생하지
 않습니다.
 
-**역주:** 이 이벤트는 말 그대로 현재 어플리케이션에서 윈도우 창만 완전히 종료됬을 때
+**역주:** 이 이벤트는 말 그대로 현재 어플리케이션에서 윈도우만 완전히 종료됬을 때
 발생하는 이벤트 입니다. 따라서 어플리케이션을 완전히 종료하려면 이 이벤트에서
 `app.quit()`를 호출해 주어야 합니다.
 
@@ -50,7 +50,7 @@ Returns:
 
 * `event` Event
 
-어플리케이션 윈도우 창들이 닫히기 시작할 때 발생하는 이벤트입니다.
+어플리케이션 윈도우들이 닫히기 시작할 때 발생하는 이벤트입니다.
 `event.preventDefault()` 호출은 이벤트의 기본 동작을 방지하기 때문에
 이를 통해 어플리케이션의 종료를 방지할 수 있습니다.
 
@@ -60,7 +60,7 @@ Returns:
 
 * `event` Event
 
-모든 윈도우 창들이 종료되고 어플리케이션이 종료되기 시작할 때 발생하는 이벤트 입니다.
+모든 윈도우들이 종료되고 어플리케이션이 종료되기 시작할 때 발생하는 이벤트 입니다.
 `event.preventDefault()` 호출을 통해 어플리케이션의 종료를 방지할 수 있습니다.
 
 `will-quit` 와 `window-all-closed` 이벤트의 차이점을 확인하려면 `window-all-close`
@@ -92,7 +92,7 @@ Returns:
 
 이 이벤트를 처리할 땐 반드시 `event.preventDefault()`를 호출해야 합니다.
 
-Windows에선 `process.argv`를 통해 파일 경로를 얻을 수 있습니다.
+Windows에선 `process.argv` (메인 프로세스에서)를 통해 파일 경로를 얻을 수 있습니다.
 
 ### Event: 'open-url' _OS X_
 
@@ -164,7 +164,7 @@ Returns:
 기본 동작을 방지하고 인증을 승인할 수 있습니다.
 
 ```javascript
-session.on('certificate-error', function(event, webContents, url, error, certificate, callback) {
+app.on('certificate-error', function(event, webContents, url, error, certificate, callback) {
   if (url == "https://github.com") {
     // Verification logic.
     event.preventDefault();
@@ -236,6 +236,10 @@ app.on('login', function(event, webContents, request, authInfo, callback) {
 
 GPU가 작동하던 중 크래시가 일어났을 때 발생하는 이벤트입니다.
 
+### Event: 'platform-theme-changed' _OS X_
+
+시스템의 다크 모드 테마가 토글되면 발생하는 이벤트입니다.
+
 ## Methods
 
 `app` 객체는 다음과 같은 메서드를 가지고 있습니다:
@@ -244,12 +248,12 @@ GPU가 작동하던 중 크래시가 일어났을 때 발생하는 이벤트입�
 
 ### `app.quit()`
 
-모든 윈도우 창 종료를 시도합니다. `before-quit` 이벤트가 먼저 발생합니다.
-모든 윈도우 창이 성공적으로 종료되면 `will-quit` 이벤트가 발생하고 기본 동작에 따라
+모든 윈도우 종료를 시도합니다. `before-quit` 이벤트가 먼저 발생합니다.
+모든 윈도우가 성공적으로 종료되면 `will-quit` 이벤트가 발생하고 기본 동작에 따라
 어플리케이션이 종료됩니다.
 
 이 함수는 모든 `beforeunload`와 `unload` 이벤트 핸들러가 제대로 실행됨을 보장합니다.
-`beforeunload` 이벤트 핸들러에서 `false`를 반환했을 때 윈도우 창 종료가 취소 될 수
+`beforeunload` 이벤트 핸들러에서 `false`를 반환했을 때 윈도우 종료가 취소 될 수
 있습니다.
 
 ### `app.exit(exitCode)`
@@ -258,8 +262,21 @@ GPU가 작동하던 중 크래시가 일어났을 때 발생하는 이벤트입�
 
 `exitCode`와 함께 어플리케이션을 즉시 종료합니다.
 
-모든 윈도우 창은 사용자의 동의 여부에 상관없이 즉시 종료되며 `before-quit` 이벤트와
+모든 윈도우는 사용자의 동의 여부에 상관없이 즉시 종료되며 `before-quit` 이벤트와
 `will-quit` 이벤트가 발생하지 않습니다.
+
+### `app.focus()`
+
+Linux에선, 첫 번째로 보여지는 윈도우가 포커스됩니다. OS X에선, 어플리케이션을 활성화
+앱 상태로 만듭니다. Windows에선, 어플리케이션의 첫 윈도우에 포커스 됩니다.
+
+### `app.hide()` _OS X_
+
+최소화를 하지 않고 어플리케이션의 모든 윈도우들을 숨깁니다.
+
+### `app.show()` _OS X_
+
+숨긴 어플리케이션 윈도우들을 다시 보이게 만듭니다. 자동으로 포커스되지 않습니다.
 
 ### `app.getAppPath()`
 
@@ -325,6 +342,12 @@ npm 모듈 규칙에 따라 대부분의 경우 `package.json`의 `name` 필드�
 반드시 이 필드도 같이 지정해야 합니다. 이 필드는 맨 앞글자가 대문자인 어플리케이션
 전체 이름을 지정해야 합니다.
 
+### `app.setName(name)`
+
+* `name` String
+
+현재 어플리케이션의 이름을 덮어씌웁니다.
+
 ### `app.getLocale()`
 
 현재 어플리케이션의 [로케일](https://ko.wikipedia.org/wiki/%EB%A1%9C%EC%BC%80%EC%9D%BC)을
@@ -342,6 +365,32 @@ npm 모듈 규칙에 따라 대부분의 경우 `package.json`의 `name` 필드�
 ### `app.clearRecentDocuments()` _OS X_ _Windows_
 
 최근 문서 목록을 모두 비웁니다.
+
+### `app.setAsDefaultProtocolClient(protocol)` _OS X_ _Windows_
+
+* `protocol` String - 프로토콜의 이름, `://` 제외. 만약 앱을 통해 `electron://`과
+  같은 링크를 처리하고 싶다면, 이 메서드에 `electron` 인수를 담아 호출하면 됩니다.
+
+이 메서드는 지정한 프로토콜(URI scheme)에 대해 현재 실행파일을 기본 핸들러로
+등록합니다. 이를 통해 운영체제와 더 가깝게 통합할 수 있습니다. 한 번 등록되면,
+`your-protocol://`과 같은 모든 링크에 대해 호출시 현재 실행 파일이 실행됩니다.
+모든 링크, 프로토콜을 포함하여 어플리케이션의 인수로 전달됩니다.
+
+**참고:** OS X에선, 어플리케이션의 `info.plist`에 등록해둔 프로토콜만 사용할 수
+있습니다. 이는 런타임에서 변경될 수 없습니다. 이 파일은 간단히 텍스트 에디터를
+사용하거나, 어플리케이션을 빌드할 때 스크립트가 생성되도록 할 수 있습니다. 자세한
+내용은 [Apple의 참조 문서를][CFBundleURLTypes] 확인하세요.
+
+이 API는 내부적으로 Windows 레지스트리와 LSSetDefaultHandlerForURLScheme를 사용합니다.
+
+### `app.removeAsDefaultProtocolClient(protocol)` _Windows_
+
+* `protocol` String - 프로토콜의 이름, `://` 제외.
+
+이 메서드는 현재 실행파일이 지정한 프로토콜(URI scheme)에 대해 기본 핸들러인지를
+확인합니다. 만약 그렇다면, 이 메서드는 앱을 기본 핸들러에서 제거합니다.
+
+**참고:** OS X에서는 앱을 제거하면 자동으로 기본 프로토콜 핸들러에서 제거됩니다.
 
 ### `app.setUserTasks(tasks)` _Windows_
 
@@ -386,7 +435,7 @@ Windows에서 사용할 수 있는 JumpList의 [Tasks][tasks] 카테고리에 `t
 `callback`은 주 인스턴스가 생성된 이후 또 다른 인스턴스가 생성됐을 때
 `callback(argv, workingDirectory)` 형식으로 호출됩니다. `argv`는 두 번째 인스턴스의
 명령줄 인수이며 `workingDirectory`는 현재 작업중인 디렉터리입니다. 보통 대부분의
-어플리케이션은 이러한 콜백이 호출될 때 주 윈도우 창을 포커스하고 최소화되어있으면 창
+어플리케이션은 이러한 콜백이 호출될 때 주 윈도우를 포커스하고 최소화되어있으면 창
 복구를 실행합니다.
 
 `callback`은 `app`의 `ready` 이벤트가 발생한 후 실행됨을 보장합니다.
@@ -403,7 +452,7 @@ OS X에선 사용자가 Finder에서 어플리케이션의 두 번째 인스턴�
 중복 실행을 방지하는 것이 좋습니다.
 
 다음 예제는 두 번째 인스턴스가 생성되었을 때 중복된 인스턴스를 종료하고 주 어플리케이션
-인스턴스의 윈도우 창을 활성화 시키는 예제입니다:
+인스턴스의 윈도우를 활성화 시키는 예제입니다:
 
 ```javascript
 var myWindow = null;
@@ -422,7 +471,7 @@ if (shouldQuit) {
   return;
 }
 
-// 윈도우 창을 생성하고 각종 리소스를 로드하고 작업합니다.
+// 윈도우를 생성하고 각종 리소스를 로드하고 작업합니다.
 app.on('ready', function() {
 });
 ```
@@ -462,6 +511,11 @@ if (browserOptions.transparent) {
   win.loadURL('file://' + __dirname + '/fallback.html');
 }
 ```
+
+### `app.isDarkMode()` _OS X_
+
+이 메서드는 시스템이 다크 모드 상태인 경우 `true`를 반환하고 아닐 경우 `false`를
+반환합니다.
 
 ### `app.commandLine.appendSwitch(switch[, value])`
 
@@ -515,10 +569,17 @@ dock 아이콘을 표시합니다.
 
 ### `app.dock.setMenu(menu)` _OS X_
 
-* `menu` Menu
+* `menu` [Menu](menu.md)
 
 어플리케이션의 [dock menu][dock-menu]를 설정합니다.
+
+### `app.dock.setIcon(image)` _OS X_
+
+* `image` [NativeImage](native-image.md)
+
+dock 아이콘의 `image`를 설정합니다.
 
 [dock-menu]:https://developer.apple.com/library/mac/documentation/Carbon/Conceptual/customizing_docktile/concepts/dockconcepts.html#//apple_ref/doc/uid/TP30000986-CH2-TPXREF103
 [tasks]:http://msdn.microsoft.com/en-us/library/windows/desktop/dd378460(v=vs.85).aspx#tasks
 [app-user-model-id]: https://msdn.microsoft.com/en-us/library/windows/desktop/dd378459(v=vs.85).aspx
+[CFBundleURLTypes]: https://developer.apple.com/library/ios/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html#//apple_ref/doc/uid/TP40009249-102207-TPXREF115

@@ -1,0 +1,15 @@
+<html>
+<body>
+<script type="text/javascript" charset="utf-8">
+  var windowUrl = decodeURIComponent(window.location.search.substring(3))
+  var opened = window.open('file://' + windowUrl, '', 'nodeIntegration=yes,show=no')
+  window.addEventListener('message', function (event) {
+    try {
+      opened.close()
+    } finally {
+      window.opener.postMessage(event.data, '*')
+    }
+  })
+</script>
+</body>
+</html>

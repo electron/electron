@@ -5,7 +5,7 @@
 #ifndef ATOM_COMMON_API_OBJECT_LIFE_MONITOR_H_
 #define ATOM_COMMON_API_OBJECT_LIFE_MONITOR_H_
 
-#include "base/basictypes.h"
+#include "base/macros.h"
 #include "base/memory/weak_ptr.h"
 #include "v8/include/v8.h"
 
@@ -23,6 +23,7 @@ class ObjectLifeMonitor {
                     v8::Local<v8::Function> destructor);
 
   static void OnObjectGC(const v8::WeakCallbackInfo<ObjectLifeMonitor>& data);
+  static void Free(const v8::WeakCallbackInfo<ObjectLifeMonitor>& data);
 
   void RunCallback();
 

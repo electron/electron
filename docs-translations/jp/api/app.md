@@ -378,6 +378,7 @@ if (browserOptions.transparent) {
   // No transparency, so we load a fallback that uses basic styles.
   win.loadURL('file://' + __dirname + '/fallback.html');
 }
+```
 
 ### `app.commandLine.appendSwitch(switch[, value])`
 
@@ -430,6 +431,12 @@ dock アイコンを表示します。
 * `menu` Menu
 
 アプリケーションの[dock menu][dock-menu]を設定します。
+
+### `app.dock.setIcon(image)` _OS X_
+
+* `image` [NativeImage](native-image.md)
+
+dock アイコンに紐づいた`image`を設定します。
 
 [dock-menu]:https://developer.apple.com/library/mac/documentation/Carbon/Conceptual/customizing_docktile/concepts/dockconcepts.html#//apple_ref/doc/uid/TP30000986-CH2-TPXREF103
 [tasks]:http://msdn.microsoft.com/en-us/library/windows/desktop/dd378460(v=vs.85).aspx#tasks

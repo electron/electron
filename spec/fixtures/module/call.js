@@ -1,7 +1,7 @@
-exports.call = function(func) {
-  return func();
+exports.call = function (func) {
+  return func()
 }
 
-exports.constructor = function() {
-  this.test = 'test';
+exports.constructor = function () {
+  this.test = 'test'
 }

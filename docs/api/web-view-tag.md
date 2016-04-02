@@ -84,6 +84,9 @@ than the minimum values or greater than the maximum.
 If "on", the guest page in `webview` will have node integration and can use node
 APIs like `require` and `process` to access low level system resources.
 
+**Note:** Node integration will always be disabled in the `webview` if it is
+disabled on the parent window.
+
 ### `plugins`
 
 ```html
@@ -184,7 +187,7 @@ webview.addEventListener("dom-ready", function() {
 ### `<webview>.loadURL(url[, options])`
 
 * `url` URL
-* `options` Object (optional), properties:
+* `options` Object (optional)
   * `httpReferrer` String - A HTTP Referrer url.
   * `userAgent` String - A user agent originating the request.
   * `extraHeaders` String - Extra headers separated by "\n"
@@ -279,10 +282,12 @@ Returns a `String` representing the user agent for guest page.
 
 Injects CSS into the guest page.
 
-### `<webview>.executeJavaScript(code, userGesture)`
+### `<webview>.executeJavaScript(code, userGesture, callback)`
 
 * `code` String
 * `userGesture` Boolean - Default `false`.
+* `callback` Function (optional) - Called after script has been executed.
+  * `result`
 
 Evaluates `code` in page. If `userGesture` is set, it will create the user
 gesture context in the page. HTML APIs like `requestFullScreen`, which require
@@ -361,7 +366,7 @@ Executes editing command `selectAll` in page.
 
 Executes editing command `unselect` in page.
 
-### `<webview.replace(text)`
+### `<webview>.replace(text)`
 
 * `text` String
 
@@ -382,7 +387,7 @@ Inserts `text` to the focused element.
 ### `<webview>.findInPage(text[, options])`
 
 * `text` String - Content to be searched, must not be empty.
-* `options` Object (Optional)
+* `options` Object (optional)
   * `forward` Boolean - Whether to search forward or backward, defaults to `true`.
   * `findNext` Boolean - Whether the operation is first request or a follow up,
     defaults to `false`.
@@ -437,6 +442,10 @@ Sends an input `event` to the page.
 
 See [webContents.sendInputEvent](web-contents.md##webcontentssendinputeventevent)
 for detailed description of `event` object.
+
+### `<webview>.getWebContents()`
+
+Returns the [WebContents](web-contents.md) associated with this `webview`.
 
 ## DOM events
 
@@ -522,7 +531,7 @@ Returns:
 * `explicitSet` Boolean
 
 Fired when page title is set during navigation. `explicitSet` is false when
-title is synthesised from file url.
+title is synthesized from file url.
 
 ### Event: 'page-favicon-updated'
 
@@ -567,8 +576,9 @@ Returns:
 * `result` Object
   * `requestId` Integer
   * `finalUpdate` Boolean - Indicates if more responses are to follow.
-  * `matches` Integer (Optional) - Number of Matches.
-  * `selectionArea` Object (Optional) - Coordinates of first match region.
+  * `activeMatchOrdinal` Integer (optional) - Position of the active match.
+  * `matches` Integer (optional) - Number of Matches.
+  * `selectionArea` Object (optional) - Coordinates of first match region.
 
 Fired when a result is available for
 [`webview.findInPage`](web-view-tag.md#webviewtagfindinpage) request.
@@ -599,7 +609,10 @@ The following example code opens the new url in system's default browser.
 
 ```javascript
 webview.addEventListener('new-window', function(e) {
-  require('electron').shell.openExternal(e.url);
+  var protocol = require('url').parse(e.url).protocol;
+  if (protocol === 'http:' || protocol === 'https:') {
+    require('electron').shell.openExternal(e.url);
+  }
 });
 ```
 

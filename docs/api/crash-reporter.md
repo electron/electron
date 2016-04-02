@@ -16,25 +16,28 @@ crashReporter.start({
 });
 ```
 
+For setting up a server to accept and process crash reports, you can use
+following projects:
+
+* [socorro](https://github.com/mozilla/socorro)
+* [mini-breakpad-server](https://github.com/atom/mini-breakpad-server)
+
 ## Methods
 
 The `crash-reporter` module has the following methods:
 
 ### `crashReporter.start(options)`
 
-`options` Object, properties:
-
-* `productName` String, default: Electron.
-* `companyName` String (**required**)
-* `submitURL` String, (**required**)
-  * URL that crash reports will be sent to as POST.
-* `autoSubmit` Boolean, default: `true`.
-  * Send the crash report without user interaction.
-* `ignoreSystemCrashHandler` Boolean, default: `false`.
-* `extra` Object
-  * An object you can define that will be sent along with the report.
-  * Only string properties are sent correctly.
-  * Nested objects are not supported.
+* `options` Object
+  * `companyName` String
+  * `submitURL` String - URL that crash reports will be sent to as POST.
+  * `productName` String (optional) - Default is `Electron`.
+  * `autoSubmit` Boolean - Send the crash report without user interaction.
+    Default is `true`.
+  * `ignoreSystemCrashHandler` Boolean - Default is `false`.
+  * `extra` Object - An object you can define that will be sent along with the
+    report. Only string properties are sent correctly, Nested objects are not
+    supported.
 
 You are required to call this method before using other `crashReporter`
 APIs.
@@ -57,7 +60,7 @@ ID.
 
 ## crash-reporter Payload
 
-The crash reporter will send the following data to the `submitURL` as `POST`:
+The crash reporter will send the following data to the `submitURL` as a `multipart/form-data` `POST`:
 
 * `ver` String - The version of Electron.
 * `platform` String - e.g. 'win32'.
@@ -69,6 +72,6 @@ The crash reporter will send the following data to the `submitURL` as `POST`:
 * `prod` String - Name of the underlying product. In this case Electron.
 * `_companyName` String - The company name in the `crashReporter` `options`
   object.
-* `upload_file_minidump` File - The crash report as file.
+* `upload_file_minidump` File - The crash report in the format of `minidump`.
 * All level one properties of the `extra` object in the `crashReporter`.
   `options` object

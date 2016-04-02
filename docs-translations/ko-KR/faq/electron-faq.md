@@ -18,6 +18,34 @@ Node.js의 새로운 기능은 보통 V8 업그레이드에서 가져옵니다. 
 브라우저에 탑재된 V8을 사용하고 있습니다. 눈부신 새로운 Node.js 버전의 자바스크립트
 기능은 보통 이미 Electron에 있습니다.
 
+## 어떻게 웹 페이지 간에 데이터를 공유할 수 있나요?
+
+두 웹페이지 간에 (랜더러 프로세스) 데이터를 공유하려면 간단히 이미 모든 브라우저에서
+사용할 수 있는 HTML5 API들을 사용하면 됩니다. 가장 좋은 후보는
+[Storage API][storage], [`localStorage`][local-storage],
+[`sessionStorage`][session-storage], 그리고 [IndexedDB][indexed-db]가 있습니다.
+
+또는 Electron에서만 사용할 수 있는 IPC 시스템을 사용하여 메인 프로세스의 global
+변수에 데이터를 저장한 후 다음과 같이 랜더러 프로세스에서 `remote` 모듈을 사용하여
+접근할 수 있습니다:
+
+```javascript
+// 메인 프로세스에서
+global.sharedObject = {
+  someProperty: 'default value'
+};
+```
+
+```javascript
+// 첫 번째 페이지에서
+require('remote').getGlobal('sharedObject').someProperty = 'new value';
+```
+
+```javascript
+// 두 번째 페이지에서
+console.log(require('remote').getGlobal('sharedObject').someProperty);
+```
+
 ## 제작한 어플리케이션의 윈도우/트레이가 몇 분 후에나 나타납니다.
 
 이러한 문제가 발생하는 이유는 보통 윈도우/트레이를 담은 변수에 가비지 컬렉션이 작동해서
@@ -77,5 +105,62 @@ delete window.module;
 </head>
 ```
 
+## `require('electron').xxx`가 undefined를 반환합니다.
+
+Electron의 빌트인 모듈을 사용할 때, 다음과 같은 오류가 발생할 수 있습니다:
+
+```
+> require('electron').webFrame.setZoomFactor(1.0);
+Uncaught TypeError: Cannot read property 'setZoomLevel' of undefined
+```
+
+이러한 문제가 발생하는 이유는 [npm의 `electron` 모듈][electron-module]이 로컬 또는
+전역 중 한 곳에 설치되어, Electron의 빌트인 모듈을 덮어씌우는 바람에 빌트인 모듈을
+사용할 수 없기 때문입니다.
+
+올바른 빌트인 모듈을 사용하고 있는지 확인하고 싶다면, `electron` 모듈의 경로를
+출력하는 방법이 있습니다:
+
+```javascript
+console.log(require.resolve('electron'));
+```
+
+그리고 다음과 같은 경로를 가지는지 점검하면 됩니다:
+
+```
+"/path/to/Electron.app/Contents/Resources/atom.asar/renderer/api/lib/exports/electron.js"
+```
+
+하지만 `node_modules/electron/index.js`와 같은 경로로 되어있을 경우, `electron`
+모듈을 지우거나 이름을 바꿔야만 합니다.
+
+```bash
+npm uninstall electron
+npm uninstall -g electron
+```
+
+그런데 여전히 빌트인 모듈이 계속해서 문제를 발생시키는 경우, 아마 모듈을 잘못 사용하고
+있을 가능성이 큽니다. 예를 들면 `electron.app`은 메인 프로세스에서만 사용할 수 있는
+모듈이며, 반면 `electron.webFrame` 모듈은 랜더러 프로세스에서만 사용할 수 있는
+모듈입니다.
+
+## 왜 저의 앱 배경이 투명하죠?
+
+Electron `0.37.3` 부터, 기본 클라이언트 배경색이 `투명색`으로 변경되었습니다.
+간단히 HTML에서 배경색을 지정합니다:
+
+```html
+<style type='text/css'>
+  html {
+    background: white;
+  }
+</style>
+```
+
 [memory-management]: https://developer.mozilla.org/ko/docs/Web/JavaScript/Memory_Management
 [variable-scope]: https://msdn.microsoft.com/library/bzt2dkta(v=vs.94).aspx
+[electron-module]: https://www.npmjs.com/package/electron
+[storage]: https://developer.mozilla.org/en-US/docs/Web/API/Storage
+[local-storage]: https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage
+[session-storage]: https://developer.mozilla.org/en-US/docs/Web/API/Window/sessionStorage
+[indexed-db]: https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API

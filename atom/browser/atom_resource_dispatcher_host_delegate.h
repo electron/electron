@@ -15,12 +15,13 @@ class AtomResourceDispatcherHostDelegate
   AtomResourceDispatcherHostDelegate();
 
   // content::ResourceDispatcherHostDelegate:
-  bool HandleExternalProtocol(const GURL& url,
-                              int render_process_id,
-                              int render_view_id,
-                              bool is_main_frame,
-                              ui::PageTransition transition,
-                              bool has_user_gesture) override;
+  bool HandleExternalProtocol(
+      const GURL& url,
+      int child_id,
+      const content::ResourceRequestInfo::WebContentsGetter&,
+      bool is_main_frame,
+      ui::PageTransition transition,
+      bool has_user_gesture) override;
   content::ResourceDispatcherHostLoginDelegate* CreateLoginDelegate(
       net::AuthChallengeInfo* auth_info,
       net::URLRequest* request) override;

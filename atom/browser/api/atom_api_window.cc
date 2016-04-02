@@ -52,6 +52,11 @@ namespace api {
 
 namespace {
 
+// This function is implemented in JavaScript
+using DeprecatedOptionsCheckCallback =
+    base::Callback<std::string(v8::Local<v8::Value>)>;
+DeprecatedOptionsCheckCallback g_deprecated_options_check;
+
 void OnCapturePageDone(
     v8::Isolate* isolate,
     const base::Callback<void(const gfx::Image&)>& callback,
@@ -109,7 +114,7 @@ void TranslateOldOptions(v8::Isolate* isolate, v8::Local<v8::Object> options) {
 
 // Converts binary data to Buffer.
 v8::Local<v8::Value> ToBuffer(v8::Isolate* isolate, void* val, int size) {
-  auto buffer = node::Buffer::New(isolate, static_cast<char*>(val), size);
+  auto buffer = node::Buffer::Copy(isolate, static_cast<char*>(val), size);
   if (buffer.IsEmpty())
     return v8::Null(isolate);
   else
@@ -191,6 +196,14 @@ void Window::OnWindowFocus() {
   Emit("focus");
 }
 
+void Window::OnWindowShow() {
+  Emit("show");
+}
+
+void Window::OnWindowHide() {
+  Emit("hide");
+}
+
 void Window::OnWindowMaximize() {
   Emit("maximize");
 }
@@ -225,6 +238,18 @@ void Window::OnWindowEnterFullScreen() {
 
 void Window::OnWindowLeaveFullScreen() {
   Emit("leave-full-screen");
+}
+
+void Window::OnWindowScrollTouchBegin() {
+  Emit("scroll-touch-begin");
+}
+
+void Window::OnWindowScrollTouchEnd() {
+  Emit("scroll-touch-end");
+}
+
+void Window::OnWindowSwipe(const std::string& direction) {
+  Emit("swipe", direction);
 }
 
 void Window::OnWindowEnterHtmlFullScreen() {
@@ -275,6 +300,13 @@ mate::Wrappable* Window::New(v8::Isolate* isolate, mate::Arguments* args) {
     options = mate::Dictionary::CreateEmpty(isolate);
   }
 
+  std::string deprecation_message = g_deprecated_options_check.Run(
+      options.GetHandle());
+  if (deprecation_message.length() > 0) {
+    args->ThrowError(deprecation_message);
+    return nullptr;
+  }
+
   return new Window(isolate, options);
 }
 
@@ -284,6 +316,10 @@ void Window::Close() {
 
 void Window::Focus() {
   window_->Focus(true);
+}
+
+void Window::Blur() {
+  window_->Focus(false);
 }
 
 bool Window::IsFocused() {
@@ -408,6 +444,46 @@ bool Window::IsResizable() {
   return window_->IsResizable();
 }
 
+void Window::SetMovable(bool movable) {
+  window_->SetMovable(movable);
+}
+
+bool Window::IsMovable() {
+  return window_->IsMovable();
+}
+
+void Window::SetMinimizable(bool minimizable) {
+  window_->SetMinimizable(minimizable);
+}
+
+bool Window::IsMinimizable() {
+  return window_->IsMinimizable();
+}
+
+void Window::SetMaximizable(bool maximizable) {
+  window_->SetMaximizable(maximizable);
+}
+
+bool Window::IsMaximizable() {
+  return window_->IsMaximizable();
+}
+
+void Window::SetFullScreenable(bool fullscreenable) {
+  window_->SetFullScreenable(fullscreenable);
+}
+
+bool Window::IsFullScreenable() {
+  return window_->IsFullScreenable();
+}
+
+void Window::SetClosable(bool closable) {
+  window_->SetClosable(closable);
+}
+
+bool Window::IsClosable() {
+  return window_->IsClosable();
+}
+
 void Window::SetAlwaysOnTop(bool top) {
   window_->SetAlwaysOnTop(top);
 }
@@ -460,6 +536,14 @@ bool Window::IsKiosk() {
 
 void Window::SetBackgroundColor(const std::string& color_name) {
   window_->SetBackgroundColor(color_name);
+}
+
+void Window::SetHasShadow(bool has_shadow) {
+  window_->SetHasShadow(has_shadow);
+}
+
+bool Window::HasShadow() {
+  return window_->HasShadow();
 }
 
 void Window::FocusOnWebView() {
@@ -632,6 +716,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .MakeDestroyable()
       .SetMethod("close", &Window::Close)
       .SetMethod("focus", &Window::Focus)
+      .SetMethod("blur", &Window::Blur)
       .SetMethod("isFocused", &Window::IsFocused)
       .SetMethod("show", &Window::Show)
       .SetMethod("showInactive", &Window::ShowInactive)
@@ -659,6 +744,16 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("getMaximumSize", &Window::GetMaximumSize)
       .SetMethod("setResizable", &Window::SetResizable)
       .SetMethod("isResizable", &Window::IsResizable)
+      .SetMethod("setMovable", &Window::SetMovable)
+      .SetMethod("isMovable", &Window::IsMovable)
+      .SetMethod("setMinimizable", &Window::SetMinimizable)
+      .SetMethod("isMinimizable", &Window::IsMinimizable)
+      .SetMethod("setMaximizable", &Window::SetMaximizable)
+      .SetMethod("isMaximizable", &Window::IsMaximizable)
+      .SetMethod("setFullScreenable", &Window::SetFullScreenable)
+      .SetMethod("isFullScreenable", &Window::IsFullScreenable)
+      .SetMethod("setClosable", &Window::SetClosable)
+      .SetMethod("isClosable", &Window::IsClosable)
       .SetMethod("setAlwaysOnTop", &Window::SetAlwaysOnTop)
       .SetMethod("isAlwaysOnTop", &Window::IsAlwaysOnTop)
       .SetMethod("center", &Window::Center)
@@ -671,6 +766,8 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setKiosk", &Window::SetKiosk)
       .SetMethod("isKiosk", &Window::IsKiosk)
       .SetMethod("setBackgroundColor", &Window::SetBackgroundColor)
+      .SetMethod("setHasShadow", &Window::SetHasShadow)
+      .SetMethod("hasShadow", &Window::HasShadow)
       .SetMethod("setRepresentedFilename", &Window::SetRepresentedFilename)
       .SetMethod("getRepresentedFilename", &Window::GetRepresentedFilename)
       .SetMethod("setDocumentEdited", &Window::SetDocumentEdited)
@@ -716,6 +813,10 @@ v8::Local<v8::Value> Window::From(v8::Isolate* isolate,
     return v8::Null(isolate);
 }
 
+void SetDeprecatedOptionsCheck(const DeprecatedOptionsCheckCallback& callback) {
+  g_deprecated_options_check = callback;
+}
+
 }  // namespace api
 
 }  // namespace atom
@@ -738,6 +839,8 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
 
   mate::Dictionary dict(isolate, exports);
   dict.Set("BrowserWindow", browser_window);
+  dict.SetMethod("_setDeprecatedOptionsCheck",
+                 &atom::api::SetDeprecatedOptionsCheck);
 }
 
 }  // namespace

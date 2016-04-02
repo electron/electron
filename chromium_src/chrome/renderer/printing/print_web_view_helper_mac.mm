@@ -42,8 +42,9 @@ void PrintWebViewHelper::PrintPageInternal(
   page_params.content_area = content_area_in_dpi;
 
   // Ask the browser to create the shared memory for us.
-  if (!CopyMetafileDataToSharedMem(&metafile,
+  if (!CopyMetafileDataToSharedMem(metafile,
                                    &(page_params.metafile_data_handle))) {
+    // TODO(thestig): Fail and return false instead.
     page_params.data_size = 0;
   }
 
@@ -116,15 +117,13 @@ void PrintWebViewHelper::RenderPage(const PrintMsg_Print_Params& params,
   gfx::Rect canvas_area = content_area;
 
   {
-    skia::PlatformCanvas* canvas = metafile->GetVectorCanvasForNewPage(
+    SkCanvas* canvas = metafile->GetVectorCanvasForNewPage(
         *page_size, canvas_area, scale_factor);
     if (!canvas)
       return;
 
     MetafileSkiaWrapper::SetMetafileOnCanvas(*canvas, metafile);
-    skia::SetIsDraftMode(*canvas, is_print_ready_metafile_sent_);
     skia::SetIsPreviewMetafile(*canvas, is_preview);
-
     RenderPageContent(frame, page_number, canvas_area, content_area,
                       scale_factor, static_cast<blink::WebCanvas*>(canvas));
   }

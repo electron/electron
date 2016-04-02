@@ -259,8 +259,9 @@ Returns:
 * `result` Object
   * `requestId` Integer
   * `finalUpdate` Boolean - Indicates if more responses are to follow.
-  * `matches` Integer (Optional) - Number of Matches.
-  * `selectionArea` Object (Optional) - Coordinates of first match region.
+  * `activeMatchOrdinal` Integer (optional) - Position of the active match.
+  * `matches` Integer (optional) - Number of Matches.
+  * `selectionArea` Object (optional) - Coordinates of first match region.
 
 Emitted when a result is available for
 [`webContents.findInPage`](web-contents.md#webcontentsfindinpage) request.
@@ -281,6 +282,28 @@ Emitted when a page's theme color changes. This is usually due to encountering a
 <meta name='theme-color' content='#ff0000'>
 ```
 
+### Event: 'cursor-changed'
+
+Returns:
+
+* `event` Event
+* `type` String
+* `image` NativeImage (optional)
+* `scale` Float (optional)
+
+Emitted when the cursor's type changes. The `type` parameter can be `default`,
+`crosshair`, `pointer`, `text`, `wait`, `help`, `e-resize`, `n-resize`,
+`ne-resize`, `nw-resize`, `s-resize`, `se-resize`, `sw-resize`, `w-resize`,
+`ns-resize`, `ew-resize`, `nesw-resize`, `nwse-resize`, `col-resize`,
+`row-resize`, `m-panning`, `e-panning`, `n-panning`, `ne-panning`, `nw-panning`,
+`s-panning`, `se-panning`, `sw-panning`, `w-panning`, `move`, `vertical-text`,
+`cell`, `context-menu`, `alias`, `progress`, `nodrop`, `copy`, `none`,
+`not-allowed`, `zoom-in`, `zoom-out`, `grab`, `grabbing`, `custom`.
+
+If the `type` parameter is `custom`, the `image` parameter will hold the custom
+cursor image in a `NativeImage`, and the `scale` will hold scaling information
+for the image.
+
 ## Instance Methods
 
 The `webContents` object has the following instance methods:
@@ -288,7 +311,7 @@ The `webContents` object has the following instance methods:
 ### `webContents.loadURL(url[, options])`
 
 * `url` URL
-* `options` Object (optional), properties:
+* `options` Object (optional)
   * `httpReferrer` String - A HTTP Referrer url.
   * `userAgent` String - A user agent originating the request.
   * `extraHeaders` String - Extra headers separated by "\n"
@@ -403,10 +426,12 @@ Returns a `String` representing the user agent for this web page.
 
 Injects CSS into the current web page.
 
-### `webContents.executeJavaScript(code[, userGesture])`
+### `webContents.executeJavaScript(code[, userGesture, callback])`
 
 * `code` String
 * `userGesture` Boolean (optional)
+* `callback` Function (optional) - Called after script has been executed.
+  * `result`
 
 Evaluates `code` in page.
 
@@ -481,7 +506,7 @@ Inserts `text` to the focused element.
 ### `webContents.findInPage(text[, options])`
 
 * `text` String - Content to be searched, must not be empty.
-* `options` Object (Optional)
+* `options` Object (optional)
   * `forward` Boolean - Whether to search forward or backward, defaults to `true`.
   * `findNext` Boolean - Whether the operation is first request or a follow up,
     defaults to `false`.
@@ -534,11 +559,10 @@ when the JS promise is rejected.
 
 ### `webContents.print([options])`
 
-`options` Object (optional), properties:
-
-* `silent` Boolean - Don't ask user for print settings, defaults to `false`
-* `printBackground` Boolean - Also prints the background color and image of
-  the web page, defaults to `false`.
+* `options` Object (optional)
+  * `silent` Boolean - Don't ask user for print settings. Default is `false`.
+  * `printBackground` Boolean - Also prints the background color and image of
+    the web page. Default is `false`.
 
 Prints window's web page. When `silent` is set to `false`, Electron will pick
 up system's default printer and default settings for printing.
@@ -552,30 +576,21 @@ size.
 
 ### `webContents.printToPDF(options, callback)`
 
-`options` Object, properties:
-
-* `marginsType` Integer - Specify the type of margins to use
-  * 0 - default
-  * 1 - none
-  * 2 - minimum
-* `pageSize` String - Specify page size of the generated PDF.
-  * `A5`
-  * `A4`
-  * `A3`
-  * `Legal`
-  * `Letter`
-  * `Tabloid`
-* `printBackground` Boolean - Whether to print CSS backgrounds.
-* `printSelectionOnly` Boolean - Whether to print selection only.
-* `landscape` Boolean - `true` for landscape, `false` for portrait.
-
-`callback` Function - `function(error, data) {}`
-
-* `error` Error
-* `data` Buffer - PDF file content.
+* `options` Object
+  * `marginsType` Integer - Specifies the type of margins to use. Uses 0 for
+    default margin, 1 for no margin, and 2 for minimum margin.
+  * `pageSize` String - Specify page size of the generated PDF. Can be `A3`,
+    `A4`, `A5`, `Legal`, `Letter` and `Tabloid`.
+  * `printBackground` Boolean - Whether to print CSS backgrounds.
+  * `printSelectionOnly` Boolean - Whether to print selection only.
+  * `landscape` Boolean - `true` for landscape, `false` for portrait.
+* `callback` Function
 
 Prints window's web page as PDF with Chromium's preview printing custom
 settings.
+
+The `callback` will be called with `callback(error, data)` on completion. The
+`data` is a `Buffer` that contains the generated PDF data.
 
 By default, an empty `options` will be regarded as:
 
@@ -629,7 +644,7 @@ Removes the specified path from DevTools workspace.
 
 ### `webContents.openDevTools([options])`
 
-* `options` Object (optional). Properties:
+* `options` Object (optional)
   * `detach` Boolean - opens DevTools in a new window
 
 Opens the devtools.
@@ -650,10 +665,6 @@ Returns whether the devtools view is focused .
 
 Toggles the developer tools.
 
-### `webContents.isDevToolsFocused()`
-
-Returns whether the developer tools is focused.
-
 ### `webContents.inspectElement(x, y)`
 
 * `x` Integer
@@ -671,8 +682,11 @@ Opens the developer tools for the service worker context.
 * `arg` (optional)
 
 Send an asynchronous message to renderer process via `channel`, you can also
-send arbitrary arguments. The renderer process can handle the message by
-listening to the `channel` event with the `ipcRenderer` module.
+send arbitrary arguments. Arguments will be serialized in JSON internally and
+hence no functions or prototype chain will be included.
+
+The renderer process can handle the message by listening to `channel` with the
+`ipcRenderer` module.
 
 An example of sending messages from the main process to the renderer process:
 
@@ -751,11 +765,9 @@ Sends an input `event` to the page.
 
 For keyboard events, the `event` object also have following properties:
 
-* `keyCode` Char or String (**required**) - The character that will be sent
-  as the keyboard event. Can be a single UTF-8 character, or the name of the
-  key that generates the event. Accepted key names are `enter`, `backspace`,
-  `delete`, `tab`, `escape`, `control`, `alt`, `shift`, `end`, `home`, `insert`,
-  `left`, `up`, `right`, `down`, `pageUp`, `pageDown`, `printScreen`
+* `keyCode` String (**required**) - The character that will be sent
+  as the keyboard event. Should only use the valid key codes in
+  [Accelerator](accelerator.md).
 
 For mouse events, the `event` object also have following properties:
 
@@ -827,9 +839,83 @@ win.webContents.on('did-finish-load', function() {
 
 Returns the [session](session.md) object used by this webContents.
 
+### `webContents.hostWebContents`
+
+Returns the `WebContents` that might own this `WebContents`.
+
 ### `webContents.devToolsWebContents`
 
 Get the `WebContents` of DevTools for this `WebContents`.
 
 **Note:** Users should never store this object because it may become `null`
 when the DevTools has been closed.
+
+### `webContents.debugger`
+
+Debugger API serves as an alternate transport for [remote debugging protocol][rdp].
+
+```javascript
+try {
+  win.webContents.debugger.attach("1.1");
+} catch(err) {
+  console.log("Debugger attach failed : ", err);
+};
+
+win.webContents.debugger.on('detach', function(event, reason) {
+  console.log("Debugger detached due to : ", reason);
+});
+
+win.webContents.debugger.on('message', function(event, method, params) {
+  if (method == "Network.requestWillBeSent") {
+    if (params.request.url == "https://www.github.com")
+      win.webContents.debugger.detach();
+  }
+})
+
+win.webContents.debugger.sendCommand("Network.enable");
+```
+
+#### `webContents.debugger.attach([protocolVersion])`
+
+* `protocolVersion` String (optional) - Requested debugging protocol version.
+
+Attaches the debugger to the `webContents`.
+
+#### `webContents.debugger.isAttached()`
+
+Returns a boolean indicating whether a debugger is attached to the `webContents`.
+
+#### `webContents.debugger.detach()`
+
+Detaches the debugger from the `webContents`.
+
+#### `webContents.debugger.sendCommand(method[, commandParams, callback])`
+
+* `method` String - Method name, should be one of the methods defined by the
+   remote debugging protocol.
+* `commandParams` Object (optional) - JSON object with request parameters.
+* `callback` Function (optional) - Response
+  * `error` Object - Error message indicating the failure of the command.
+  * `result` Object - Response defined by the 'returns' attribute of
+     the command description in the remote debugging protocol.
+
+Send given command to the debugging target.
+
+#### Event: 'detach'
+
+* `event` Event
+* `reason` String - Reason for detaching debugger.
+
+Emitted when debugging session is terminated. This happens either when
+`webContents` is closed or devtools is invoked for the attached `webContents`.
+
+#### Event: 'message'
+
+* `event` Event
+* `method` String - Method name.
+* `params` Object - Event parameters defined by the 'parameters'
+   attribute in the remote debugging protocol.
+
+Emitted whenever debugging target issues instrumentation event.
+
+[rdp]: https://developer.chrome.com/devtools/docs/debugger-protocol

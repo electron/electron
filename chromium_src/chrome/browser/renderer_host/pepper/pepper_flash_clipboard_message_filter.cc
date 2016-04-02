@@ -240,8 +240,8 @@ int32_t PepperFlashClipboardMessageFilter::OnMsgReadData(
 
       base::string16 html;
       std::string url;
-      uint32 fragment_start;
-      uint32 fragment_end;
+      uint32_t fragment_start;
+      uint32_t fragment_end;
       clipboard->ReadHTML(type, &html, &url, &fragment_start, &fragment_end);
       result = PP_OK;
       clipboard_string = base::UTF16ToUTF8(

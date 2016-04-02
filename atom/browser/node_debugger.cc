@@ -152,7 +152,7 @@ void NodeDebugger::DidAccept(
     return;
   }
 
-  accepted_socket_ = socket.Pass();
+  accepted_socket_ = std::move(socket);
   SendConnectMessage();
 }
 

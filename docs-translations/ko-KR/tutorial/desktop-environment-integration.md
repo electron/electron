@@ -14,6 +14,8 @@ Windows, Linux, OS X 운영체제 모두 기본적으로 어플리케이션에�
 통해 개발자가 편리하게 데스크톱 알림을 사용할 수 있는 기능을 제공합니다. 데스크톱 알림은
 운영체제의 네이티브 알림 API를 사용하여 표시합니다.
 
+__참고:__ 이 API는 HTML5 API이기 때문에 랜더러 프로세스에서만 사용할 수 있습니다.
+
 ```javascript
 var myNotification = new Notification('Title', {
   body: 'Lorem Ipsum Dolor Sit Amet'
@@ -239,21 +241,19 @@ __Audacious의 런처 숏컷:__
 
 ![audacious](https://help.ubuntu.com/community/UnityLaunchersAndDesktopFiles?action=AttachFile&do=get&target=shortcuts.png)
 
-## Taskbar progress 기능 (Windows & Unity)
+## 작업 표시줄 안의 프로그래스 바 (Windows, OS X, Unity)
 
-Windows에선 태스크바의 어플리케이션 버튼에 progress bar를 추가할 수 있습니다.
+Windows에선 작업 표시줄의 어플리케이션 버튼에 프로그래스 바를 추가할 수 있습니다.
 이 기능은 사용자가 어플리케이션의 창을 열지 않고도 어플리케이션의 작업의 상태 정보를
 시각적으로 보여줄 수 있도록 해줍니다.
 
-또한 Unity DE도 런처에 progress bar를 부착할 수 있습니다.
+OS X에선 프로그래스바가 dock 아이콘의 일부에 표시됩니다.
 
-__태스크바 버튼의 progress bar:__
+또한 Unity DE도 런처에 프로그래스 바를 부착할 수 있습니다.
+
+__작업 표시줄 버튼의 프로그래스 바:__
 
 ![Taskbar Progress Bar](https://cloud.githubusercontent.com/assets/639601/5081682/16691fda-6f0e-11e4-9676-49b6418f1264.png)
-
-__Unity 런처의 progress bar:__
-
-![Unity Launcher](https://cloud.githubusercontent.com/assets/639601/5081747/4a0a589e-6f0f-11e4-803f-91594716a546.png)
 
 이 기능은 [BrowserWindow.setProgressBar][setprogressbar] API를 사용하여 구현할 수
 있습니다:
@@ -261,6 +261,33 @@ __Unity 런처의 progress bar:__
 ```javascript
 var window = new BrowserWindow({...});
 window.setProgressBar(0.5);
+```
+
+## 작업 표시줄의 아이콘 오버레이 (Windows)
+
+Windows에선 작업 표시줄 버튼에 어플리케이션의 상태를 표시하는 작은 오버레이를 사용할
+수 있습니다. MSDN에서 인용하자면 (영문):
+
+> Icon overlays serve as a contextual notification of status, and are intended
+> to negate the need for a separate notification area status icon to communicate
+> that information to the user. For instance, the new mail status in Microsoft
+> Outlook, currently shown in the notification area, can now be indicated
+> through an overlay on the taskbar button. Again, you must decide during your
+> development cycle which method is best for your application. Overlay icons are
+> intended to supply important, long-standing status or notifications such as
+> network status, messenger status, or new mail. The user should not be
+> presented with constantly changing overlays or animations.
+
+__작업 표시줄 버튼 위의 오버레이:__
+
+![작업 표시줄 버튼 위의 오버레이](https://i-msdn.sec.s-msft.com/dynimg/IC420441.png)
+
+윈도우에 오버레이 아이콘을 설정하려면 [BrowserWindow.setOverlayIcon][setoverlayicon]
+API를 사용할 수 있습니다:
+
+```javascript
+var window = new BrowserWindow({...});
+window.setOverlayIcon('path/to/overlay.png', 'Description for overlay');
 ```
 
 ## 대표 파일 제시 (OS X)
@@ -283,13 +310,16 @@ window.setRepresentedFilename('/etc/passwd');
 window.setDocumentEdited(true);
 ```
 
-[addrecentdocument]: ../api/app.md#appaddrecentdocumentpath
-[clearrecentdocuments]: ../api/app.md#appclearrecentdocuments
-[setusertaskstasks]: ../api/app.md#appsetusertaskstasks
-[setprogressbar]: ../api/browser-window.md#browserwindowsetprogressbarprogress
-[setrepresentedfilename]: ../api/browser-window.md#browserwindowsetrepresentedfilenamefilename
-[setdocumentedited]: ../api/browser-window.md#browserwindowsetdocumenteditededited
+[addrecentdocument]: ../api/app.md#appaddrecentdocumentpath-os-x-windows
+[clearrecentdocuments]: ../api/app.md#appclearrecentdocuments-os-x-windows
+[setusertaskstasks]: ../api/app.md#appsetusertaskstasks-windows
+[setprogressbar]: ../api/browser-window.md#winsetprogressbarprogress
+[setoverlayicon]: ../api/browser-window.md#winsetoverlayiconoverlay-description-windows-7
+[setrepresentedfilename]: ../api/browser-window.md#winsetrepresentedfilenamefilename-os-x
+[setdocumentedited]: ../api/browser-window.md#winsetdocumenteditededited-os-x
 [app-registration]: http://msdn.microsoft.com/en-us/library/windows/desktop/ee872121(v=vs.85).aspx
 [unity-launcher]: https://help.ubuntu.com/community/UnityLaunchersAndDesktopFiles#Adding_shortcuts_to_a_launcher
-[setthumbarbuttons]: ../api/browser-window.md#browserwindowsetthumbarbuttonsbuttons
-[trayballoon]: ../api/tray.md#traydisplayballoonoptions-windows
+[setthumbarbuttons]: ../api/browser-window.md#winsetthumbarbuttonsbuttons-windows-7
+[tray-balloon]: ../api/tray.md#traydisplayballoonoptions-windows
+[app-user-model-id]: https://msdn.microsoft.com/en-us/library/windows/desktop/dd378459(v=vs.85).aspx
+[notification-spec]: https://developer.gnome.org/notification-spec/

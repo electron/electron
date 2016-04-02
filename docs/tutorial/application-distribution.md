@@ -61,8 +61,7 @@ before distributing it to users.
 ### Windows
 
 You can rename `electron.exe` to any name you like, and edit its icon and other
-information with tools like [rcedit](https://github.com/atom/rcedit) or
-[ResEdit](http://www.resedit.net).
+information with tools like [rcedit](https://github.com/atom/rcedit).
 
 ### OS X
 

@@ -44,13 +44,13 @@ def increase_version(versions, index):
 
 def update_atom_gyp(version):
   pattern = re.compile(" *'version%' *: *'[0-9.]+'")
-  with open('atom.gyp', 'r') as f:
+  with open('electron.gyp', 'r') as f:
     lines = f.readlines()
 
   for i in range(0, len(lines)):
     if pattern.match(lines[i]):
       lines[i] = "    'version%': '{0}',\n".format(version)
-      with open('atom.gyp', 'w') as f:
+      with open('electron.gyp', 'w') as f:
         f.write(''.join(lines))
       return
 

@@ -1,8 +1,8 @@
 # BrowserWindow
 
-`BrowserWindow` 클래스는 브라우저 창(윈도우 창)을 만드는 역할을 담당합니다.
+`BrowserWindow` 클래스는 브라우저 창(윈도우)을 만드는 역할을 담당합니다.
 
-다음 예제는 윈도우 창을 생성합니다:
+다음 예제는 윈도우를 생성합니다:
 
 ```javascript
 // 메인 프로세스에서
@@ -28,37 +28,45 @@ win.show();
 `BrowserWindow`는 [EventEmitter](http://nodejs.org/api/events.html#events_class_events_eventemitter)를
 상속받은 클래스 입니다.
 
-`BrowserWindow`는 `options`를 통해 네이티브 속성을 포함한 새로운 윈도우 창을
-생성합니다.
+`BrowserWindow`는 `options`를 통해 네이티브 속성을 포함한 새로운 윈도우를 생성합니다.
 
 ### `new BrowserWindow([options])`
 
 `options` 객체 (optional), 사용할 수 있는 속성들:
 
-* `width` Integer - 윈도우 창의 가로 너비. 기본값은 `800`입니다.
-* `height` Integer - 윈도우 창의 세로 높이. 기본값은 `600`입니다.
+* `width` Integer - 윈도우의 가로 너비. 기본값은 `800`입니다.
+* `height` Integer - 윈도우의 세로 높이. 기본값은 `600`입니다.
 * `x` Integer - 화면을 기준으로 창 좌측을 오프셋 한 위치. 기본값은 `화면중앙`입니다.
 * `y` Integer - 화면을 기준으로 창 상단을 오프셋 한 위치. 기본값은 `화면중앙`입니다.
 * `useContentSize` Boolean - `width`와 `height`를 웹 페이지의 크기로 사용합니다.
   이 속성을 사용하면 웹 페이지의 크기에 윈도우 프레임 크기가 추가되므로 실제 창은 조금
   더 커질 수 있습니다. 기본값은 `false`입니다.
-* `center` Boolean - 윈도우 창을 화면 정 중앙에 위치시킵니다.
-* `minWidth` Integer - 윈도우 창의 최소 가로 너비. 기본값은 `0`입니다.
-* `minHeight` Integer - 윈도우 창의 최소 세로 높이. 기본값은 `0`입니다.
-* `maxWidth` Integer - 윈도우 창의 최대 가로 너비. 기본값은 `제한없음`입니다.
-* `maxHeight` Integer - 윈도우 창의 최대 세로 높이. 기본값은 `제한없음`입니다.
-* `resizable` Boolean - 윈도우 창의 크기를 재조정 할 수 있는지 여부. 기본값은 `true`
+* `center` Boolean - 윈도우를 화면 정 중앙에 위치시킵니다.
+* `minWidth` Integer - 윈도우의 최소 가로 너비. 기본값은 `0`입니다.
+* `minHeight` Integer - 윈도우의 최소 세로 높이. 기본값은 `0`입니다.
+* `maxWidth` Integer - 윈도우의 최대 가로 너비. 기본값은 `제한없음`입니다.
+* `maxHeight` Integer - 윈도우의 최대 세로 높이. 기본값은 `제한없음`입니다.
+* `resizable` Boolean - 윈도우의 크기를 재조정 할 수 있는지 여부. 기본값은 `true`
   입니다.
-* `movable` Boolean - 윈도우를 이동시킬 수 있는지 여부. 이 기능은 현재 OSX에만
-  구현되어 있습니다. 기본값은 `true`
-* `alwaysOnTop` Boolean - 윈도우 창이 언제나 다른 창들 위에 유지되는지 여부.
+* `movable` Boolean - 윈도우를 이동시킬 수 있는지 여부. Linux에선 구현되어있지
+  않습니다. 기본값은 `true` 입니다.
+* `minimizable` Boolean - 윈도우를 최소화시킬 수 있는지 여부. Linux에선 구현되어있지
+  않습니다. 기본값은 `true` 입니다.
+* `maximizable` Boolean - 윈도우를 최대화시킬 수 있는지 여부. Linux에선 구현되어있지
+  않습니다. 기본값은 `true` 입니다.
+* `closable` Boolean - 윈도우를 닫을 수 있는지 여부. Linux에선 구현되어있지 않습니다.
+  기본값은 `true` 입니다.
+* `alwaysOnTop` Boolean - 윈도우이 언제나 다른 창들 위에 유지되는지 여부.
   기본값은 `false`입니다.
-* `fullscreen` Boolean - 윈도우 창의 전체화면 활성화 여부. 기본값은 `false` 입니다.
-  `false`로 지정했을 경우 OS X에선 전체화면 버튼이 숨겨지거나 비활성화됩니다.
+* `fullscreen` Boolean - 윈도우의 전체화면 활성화 여부. 이 속성을 명시적으로
+  `false`로 지정했을 경우, OS X에선 전체화면 버튼이 숨겨지거나 비활성됩니다. 기본값은
+  `false` 입니다.
+* `fullscreenable` Boolean - OS X의 최대화/줌 버튼이 전체화면 모드 또는 윈도우
+  최대화를 토글할 수 있게 할지 여부입니다. 기본값은 `true` 입니다.
 * `skipTaskbar` Boolean - 작업표시줄 어플리케이션 아이콘 표시 스킵 여부. 기본값은
   `false`입니다.
 * `kiosk` Boolean - Kiosk(키오스크) 모드. 기본값은 `false`입니다.
-* `title` String - 기본 윈도우 창 제목. 기본값은 `"Electron"`입니다.
+* `title` String - 기본 윈도우 제목. 기본값은 `"Electron"`입니다.
 * `icon` [NativeImage](native-image.md) - 윈도우 아이콘, 생략하면 실행 파일의
   아이콘이 대신 사용됩니다.
 * `show` Boolean - 윈도우가 생성되면 보여줄지 여부. 기본값은 `true`입니다.
@@ -70,16 +78,18 @@ win.show();
   `false`입니다.
 * `autoHideMenuBar` Boolean - `Alt`를 누르지 않는 한 어플리케이션 메뉴바를 숨길지
   여부. 기본값은 `false`입니다.
-* `enableLargerThanScreen` Boolean - 윈도우 창 크기가 화면 크기보다 크게 재조정 될
+* `enableLargerThanScreen` Boolean - 윈도우 크기가 화면 크기보다 크게 재조정 될
   수 있는지 여부. 기본값은 `false`입니다.
-* `backgroundColor` String - 16진수로 표현된 윈도우의 배경 색. `#66CD00` 또는
-  `#FFF`가 사용될 수 있습니다. 이 속성은 Linux와 Windows에만 구현되어 있습니다.
-  기본값은 `#000`(검정)입니다.
+* `backgroundColor` String - `#66CD00` 와 `#FFF`, `#80FFFFFF` (알파 지원됨) 같이
+  16진수로 표현된 윈도우의 배경 색. 기본값은 Linux와 Windows에선 `#000` (검정)이며,
+  Mac에선 `#FFF` (또는, transparent(투명)일 경우 clear(색 없음)로 설정)
+* `hasShadow` Boolean - 윈도우가 그림자를 가질지 여부를 지정합니다. 이 속성은
+  OS X에서만 구현되어 있습니다. 기본값은 `true`입니다.
 * `darkTheme` Boolean - 설정에 상관 없이 무조건 어두운 윈도우 테마를 사용합니다.
   몇몇 GTK+3 데스크톱 환경에서만 작동합니다. 기본값은 `false`입니다.
-* `transparent` Boolean - 윈도우 창을 [투명화](frameless-window.md)합니다. 기본값은
+* `transparent` Boolean - 윈도우를 [투명화](frameless-window.md)합니다. 기본값은
   `false`입니다.
-* `type` String - 특정 플랫폼에만 적용되는 윈도우 창의 종류를 지정합니다. 기본값은
+* `type` String - 특정 플랫폼에만 적용되는 윈도우의 종류를 지정합니다. 기본값은
   일반 윈도우 입니다. 사용할 수 있는 창의 종류는 아래를 참고하세요.
 * `standardWindow` Boolean - OS X의 표준 윈도우를 텍스쳐 윈도우 대신 사용합니다.
   기본 값은 `true`입니다.
@@ -155,6 +165,15 @@ win.show();
 * `blinkFeatures` String - `CSSVariables,KeyboardEventKey`같은 `,`로 구분된
   기능 문자열들의 리스트입니다. 지원하는 전체 기능 문자열들은
   [setFeatureEnabledFromString][blink-feature-string] 함수에서 찾을 수 있습니다.
+* `defaultFontFamily` Object - font-family의 기본 폰트를 지정합니다.
+  * `standard` String - 기본값 `Times New Roman`.
+  * `serif` String - 기본값 `Times New Roman`.
+  * `sansSerif` String - 기본값 `Arial`.
+  * `monospace` String - 기본값 `Courier New`.
+* `defaultFontSize` Integer - 기본값 `16`.
+* `defaultMonospaceFontSize` Integer - 기본값 `13`.
+* `minimumFontSize` Integer - 기본값 `0`.
+* `defaultEncoding` String - 기본값 `ISO-8859-1`.
 
 ## Events
 
@@ -203,7 +222,7 @@ window.onbeforeunload = function(e) {
 ### Event: 'closed'
 
 윈도우 종료가 완료된 경우 발생하는 이벤트입니다. 이 이벤트가 발생했을 경우 반드시
-윈도우 창의 레퍼런스가 더 이상 사용되지 않도록 제거해야 합니다.
+윈도우의 레퍼런스가 더 이상 사용되지 않도록 제거해야 합니다.
 
 ### Event: 'unresponsive'
 
@@ -220,6 +239,14 @@ window.onbeforeunload = function(e) {
 ### Event: 'focus'
 
 윈도우가 포커스를 가졌을 때 발생하는 이벤트입니다.
+
+### Event: 'show'
+
+윈도우가 보여진 상태일 때 발생하는 이벤트입니다.
+
+### Event: 'hide'
+
+윈도우가 숨겨진 상태일 때 발생하는 이벤트입니다.
 
 ### Event: 'maximize'
 
@@ -282,6 +309,24 @@ someWindow.on('app-command', function(e, cmd) {
   }
 });
 ```
+
+### Event: 'scroll-touch-begin' _OS X_
+
+스크롤 휠 이벤트가 동작하기 시작했을 때 발생하는 이벤트입니다.
+
+### Event: 'scroll-touch-end' _OS X_
+
+스크롤 휠 이벤트가 동작을 멈췄을 때 발생하는 이벤트입니다.
+
+### Event: 'swipe' _OS X_
+
+Returns:
+
+* `event` Event
+* `direction` String
+
+3-손가락 스와이프가 작동할 때 발생하는 이벤트입니다. 방향은 `up`, `right`, `down`,
+`left`가 될 수 있습니다.
 
 ## Methods
 
@@ -366,6 +411,10 @@ var win = new BrowserWindow({ width: 800, height: 600 });
 
 윈도우에 포커스를 맞춥니다.
 
+### `win.blur()`
+
+윈도우의 포커스를 없앱니다.
+
 ### `win.isFocused()`
 
 윈도우가 포커스되었는지 여부를 반환합니다.
@@ -424,7 +473,6 @@ var win = new BrowserWindow({ width: 800, height: 600 });
 
 * `aspectRatio` 유지하려 하는 컨텐츠 뷰 일부의 종횡비
 * `extraSize` Object (optional) - 종횡비를 유지하는 동안 포함되지 않을 엑스트라 크기.
-  사용 가능한 속성:
   * `width` Integer
   * `height` Integer
 
@@ -442,7 +490,7 @@ var win = new BrowserWindow({ width: 800, height: 600 });
 
 ### `win.setBounds(options[, animate])`
 
-* `options` Object, properties:
+* `options` Object
 
   * `x` Integer
   * `y` Integer
@@ -507,11 +555,71 @@ var win = new BrowserWindow({ width: 800, height: 600 });
 
 * `resizable` Boolean
 
-윈도우의 크기가 사용자에 의해 재조정될 수 있는지를 지정합니다.
+사용자에 의해 윈도우의 크기가 재조정될 수 있는지를 지정합니다.
 
 ### `win.isResizable()`
 
-윈도우의 크기가 사용자에 의해 재조정될 수 있는지 여부를 반환합니다.
+사용자에 의해 윈도우의 크기가 재조정될 수 있는지 여부를 반환합니다.
+
+### `win.setMovable(movable)` _OS X_ _Windows_
+
+* `movable` Boolean
+
+사용자에 의해 윈도우를 이동시킬 수 있는지 여부를 지정합니다. Linux에선 아무 일도
+일어나지 않습니다.
+
+### `win.isMovable()` _OS X_ _Windows_
+
+사용자에 의해 윈도우를 이동시킬 수 있는지 여부를 반환합니다. Linux에선 항상 `true`를
+반환합니다.
+
+### `win.setMinimizable(minimizable)` _OS X_ _Windows_
+
+* `minimizable` Boolean
+
+사용자에 의해 윈도우를 최소화시킬 수 있는지 여부를 지정합니다. Linux에선 아무 일도
+일어나지 않습니다.
+
+### `win.isMinimizable()` _OS X_ _Windows_
+
+사용자에 의해 윈도우를 최소화시킬 수 있는지 여부를 반환합니다. Linux에선 항상 `true`를
+반환합니다.
+
+### `win.setMaximizable(maximizable)` _OS X_ _Windows_
+
+* `maximizable` Boolean
+
+사용자에 의해 윈도우를 최대화시킬 수 있는지 여부를 지정합니다. Linux에선 아무 일도
+일어나지 않습니다.
+
+### `win.isMaximizable()` _OS X_ _Windows_
+
+사용자에 의해 윈도우를 최대화시킬 수 있는지 여부를 반환합니다. Linux에선 항상 `true`를
+반환합니다.
+
+### `win.setFullScreenable(fullscreenable)`
+
+* `fullscreenable` Boolean
+
+최대화/줌 버튼이 전체화면 모드 또는 윈도우 최대화를 토글할 수 있게 할지 여부를
+지정합니다.
+
+### `win.isFullScreenable()`
+
+최대화/줌 버튼이 전체화면 모드 또는 윈도우 최대화를 토글할 수 있게 할지 여부를
+반환합니다.
+
+### `win.setClosable(closable)` _OS X_ _Windows_
+
+* `closable` Boolean
+
+사용자에 의해 윈도우가 수동적으로 닫힐 수 있는지 여부를 지정합니다. Linux에선 아무 일도
+일어나지 않습니다.
+
+### `win.isClosable()` _OS X_ _Windows_
+
+사용자에 의해 윈도우가 수동적으로 닫힐 수 있는지 여부를 반환합니다. Linux에선 항상
+`true`를 반환합니다.
 
 ### `win.setAlwaysOnTop(flag)`
 
@@ -632,8 +740,7 @@ Windows 메시지 훅을 등록합니다. `callback`은 WndProc에서 메시지�
 
 ### `win.capturePage([rect, ]callback)`
 
-* `rect` Object (optional) - 캡쳐할 페이지의 영역.
-  사용할 수 있는 속성은 다음과 같습니다:
+* `rect` Object (optional) - 캡쳐할 페이지의 영역
   * `x` Integer
   * `y` Integer
   * `width` Integer
@@ -686,38 +793,50 @@ Linux 플랫폼에선 Unity 데스크톱 환경만 지원합니다. 그리고 �
 아이콘입니다. `null`로 지정하면 빈 오버레이가 사용됩니다
 * `description` String - 접근성 설정에 의한 스크린 리더에 제공될 설명입니다
 
-현재 작업표시줄 아이콘에 16px 크기의 오버레이를 지정합니다. 보통 이 기능은
+현재 작업표시줄 아이콘에 16 x 16 픽셀 크기의 오버레이를 지정합니다. 보통 이 기능은
 어플리케이션의 여러 상태를 사용자에게 소극적으로 알리기 위한 방법으로 사용됩니다.
+
+### `win.setHasShadow(hasShadow)` _OS X_
+
+* `hasShadow` (Boolean)
+
+윈도우가 그림자를 가질지 여부를 지정합니다. Windows와 Linux에선 아무 일도 일어나지
+않습니다.
+
+### `win.hasShadow()` _OS X_
+
+윈도우가 그림자를 가지고 있는지 여부를 반환합니다. Windows와 Linux에선 항상 `true`를
+반환합니다.
 
 ### `win.setThumbarButtons(buttons)` _Windows 7+_
 
-`buttons` - `button` 객체의 배열:
-
-`button` 객체는 다음과 같은 속성을 가지고 있습니다:
-
-* `icon` [NativeImage](native-image.md) - 미리보기 툴바에 보여질 아이콘.
-* `tooltip` String (optional) - 버튼의 툴팁 텍스트.
-* `flags` Array (optional) - 버튼의 특정 동작 및 상태 제어. 기본적으로 `enabled`이
-  사용됩니다. 이 속성은 다음 문자열들을 포함할 수 있습니다:
-  * `enabled` - 사용자가 사용할 수 있도록 버튼이 활성화 됩니다.
-  * `disabled` - 버튼이 비활성화 됩니다. 버튼은 표시되지만 시각적인 상태는 사용자의
-    동작에 응답하지 않는 비활성화 상태로 표시됩니다.
-  * `dismissonclick` - 버튼이 클릭되면 작업표시줄 버튼의 미리보기(flyout)가 즉시
-    종료됩니다.
-  * `nobackground` - 버튼의 테두리를 표시하지 않습니다. 이미지에만 사용할 수 있습니다.
-  * `hidden` - 버튼을 사용자에게 표시되지 않도록 숨깁니다.
-  * `noninteractive` - 버튼은 활성화되어 있지만 반응이 제거되며 버튼을 눌러도
-    눌려지지 않은 상태를 유지합니다. 이 값은 버튼을 알림의 용도로 사용하기 위해
-    만들어졌습니다.
-* `click` - Function
+* `buttons` - Array
 
 윈도우 작업표시줄 버튼 레이아웃의 미리보기 이미지 영역에 미리보기 툴바와 버튼 세트를
-지정합니다. 반환되는 `Boolean` 값은 미리보기 툴바가 성공적으로 추가됬는지를 알려줍니다.
+추가합니다. 반환되는 `Boolean` 값은 미리보기 툴바가 성공적으로 추가됬는지를 알려줍니다.
 
 미리보기 이미지 영역의 제한된 크기로 인해 미리보기 툴바에 추가될 수 있는 최대 버튼의
 개수는 7개이며 이 이상 추가될 수 없습니다. 플랫폼의 제약으로 인해 미리보기 툴바는 한 번
 설정되면 삭제할 수 없습니다. 하지만 이 API에 빈 배열을 전달하여 버튼들을 제거할 수
 있습니다.
+
+`buttons`는 `Button` 객체의 배열입니다:
+
+* `Button` 객체
+  * `icon` [NativeImage](native-image.md) - 미리보기 툴바에 보여질 아이콘.
+  * `tooltip` String (optional) - 버튼의 툴팁 텍스트.
+  * `flags` Array (optional) - 버튼의 특정 동작 및 상태 제어. 기본적으로 `enabled`이
+    사용됩니다. 이 속성은 다음 문자열들을 포함할 수 있습니다:
+    * `enabled` - 사용자가 사용할 수 있도록 버튼이 활성화 됩니다.
+    * `disabled` - 버튼이 비활성화 됩니다. 버튼은 표시되지만 시각적인 상태는 사용자의
+      동작에 응답하지 않는 비활성화 상태로 표시됩니다.
+    * `dismissonclick` - 버튼이 클릭되면 작업표시줄 버튼의 미리보기(flyout)가 즉시
+      종료됩니다.
+    * `nobackground` - 버튼의 테두리를 표시하지 않습니다. 이미지에만 사용할 수 있습니다.
+    * `hidden` - 버튼을 사용자에게 표시되지 않도록 숨깁니다.
+    * `noninteractive` - 버튼은 활성화되어 있지만 반응이 제거되며 버튼을 눌러도
+      눌려지지 않은 상태를 유지합니다. 이 값은 버튼을 알림의 용도로 사용하기 위해
+      만들어졌습니다.
 
 ### `win.showDefinitionForSelection()` _OS X_
 

@@ -125,6 +125,16 @@ class NativeWindow : public base::SupportsUserData,
   virtual gfx::Size GetMaximumSize();
   virtual void SetResizable(bool resizable) = 0;
   virtual bool IsResizable() = 0;
+  virtual void SetMovable(bool movable) = 0;
+  virtual bool IsMovable() = 0;
+  virtual void SetMinimizable(bool minimizable) = 0;
+  virtual bool IsMinimizable() = 0;
+  virtual void SetMaximizable(bool maximizable) = 0;
+  virtual bool IsMaximizable() = 0;
+  virtual void SetFullScreenable(bool fullscreenable) = 0;
+  virtual bool IsFullScreenable() = 0;
+  virtual void SetClosable(bool closable) = 0;
+  virtual bool IsClosable() = 0;
   virtual void SetAlwaysOnTop(bool top) = 0;
   virtual bool IsAlwaysOnTop() = 0;
   virtual void Center() = 0;
@@ -135,6 +145,8 @@ class NativeWindow : public base::SupportsUserData,
   virtual void SetKiosk(bool kiosk) = 0;
   virtual bool IsKiosk() = 0;
   virtual void SetBackgroundColor(const std::string& color_name) = 0;
+  virtual void SetHasShadow(bool has_shadow) = 0;
+  virtual bool HasShadow() = 0;
   virtual void SetRepresentedFilename(const std::string& filename);
   virtual std::string GetRepresentedFilename();
   virtual void SetDocumentEdited(bool edited);
@@ -198,6 +210,8 @@ class NativeWindow : public base::SupportsUserData,
   void NotifyWindowClosed();
   void NotifyWindowBlur();
   void NotifyWindowFocus();
+  void NotifyWindowShow();
+  void NotifyWindowHide();
   void NotifyWindowMaximize();
   void NotifyWindowUnmaximize();
   void NotifyWindowMinimize();
@@ -205,6 +219,9 @@ class NativeWindow : public base::SupportsUserData,
   void NotifyWindowMove();
   void NotifyWindowResize();
   void NotifyWindowMoved();
+  void NotifyWindowScrollTouchBegin();
+  void NotifyWindowScrollTouchEnd();
+  void NotifyWindowSwipe(const std::string& direction);
   void NotifyWindowEnterFullScreen();
   void NotifyWindowLeaveFullScreen();
   void NotifyWindowEnterHtmlFullScreen();

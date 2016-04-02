@@ -58,6 +58,8 @@ class Window : public mate::TrackableObject<Window>,
   void OnWindowClosed() override;
   void OnWindowBlur() override;
   void OnWindowFocus() override;
+  void OnWindowShow() override;
+  void OnWindowHide() override;
   void OnWindowMaximize() override;
   void OnWindowUnmaximize() override;
   void OnWindowMinimize() override;
@@ -65,6 +67,9 @@ class Window : public mate::TrackableObject<Window>,
   void OnWindowResize() override;
   void OnWindowMove() override;
   void OnWindowMoved() override;
+  void OnWindowScrollTouchBegin() override;
+  void OnWindowScrollTouchEnd() override;
+  void OnWindowSwipe(const std::string& direction) override;
   void OnWindowEnterFullScreen() override;
   void OnWindowLeaveFullScreen() override;
   void OnWindowEnterHtmlFullScreen() override;
@@ -81,6 +86,7 @@ class Window : public mate::TrackableObject<Window>,
   // APIs for NativeWindow.
   void Close();
   void Focus();
+  void Blur();
   bool IsFocused();
   void Show();
   void ShowInactive();
@@ -106,6 +112,16 @@ class Window : public mate::TrackableObject<Window>,
   std::vector<int> GetMaximumSize();
   void SetResizable(bool resizable);
   bool IsResizable();
+  void SetMovable(bool movable);
+  bool IsMovable();
+  void SetMinimizable(bool minimizable);
+  bool IsMinimizable();
+  void SetMaximizable(bool maximizable);
+  bool IsMaximizable();
+  void SetFullScreenable(bool fullscreenable);
+  bool IsFullScreenable();
+  void SetClosable(bool closable);
+  bool IsClosable();
   void SetAlwaysOnTop(bool top);
   bool IsAlwaysOnTop();
   void Center();
@@ -118,6 +134,8 @@ class Window : public mate::TrackableObject<Window>,
   void SetKiosk(bool kiosk);
   bool IsKiosk();
   void SetBackgroundColor(const std::string& color_name);
+  void SetHasShadow(bool has_shadow);
+  bool HasShadow();
   void FocusOnWebView();
   void BlurWebView();
   bool IsWebViewFocused();

@@ -9,10 +9,10 @@
 #include <string>
 #include <vector>
 
-#include "brightray/browser/default_web_contents_delegate.h"
 #include "brightray/browser/inspectable_web_contents_impl.h"
 #include "brightray/browser/inspectable_web_contents_delegate.h"
 #include "brightray/browser/inspectable_web_contents_view_delegate.h"
+#include "content/public/browser/web_contents_delegate.h"
 
 namespace atom {
 
@@ -21,7 +21,7 @@ class NativeWindow;
 class WebDialogHelper;
 
 class CommonWebContentsDelegate
-    : public brightray::DefaultWebContentsDelegate,
+    : public content::WebContentsDelegate,
       public brightray::InspectableWebContentsDelegate,
       public brightray::InspectableWebContentsViewDelegate {
  public:
@@ -59,9 +59,6 @@ class CommonWebContentsDelegate
   content::WebContents* OpenURLFromTab(
       content::WebContents* source,
       const content::OpenURLParams& params) override;
-  void RequestToLockMouse(content::WebContents* web_contents,
-                          bool user_gesture,
-                          bool last_unlocked_by_target) override;
   bool CanOverscrollContent() const override;
   content::JavaScriptDialogManager* GetJavaScriptDialogManager(
       content::WebContents* source) override;
@@ -86,6 +83,7 @@ class CommonWebContentsDelegate
                           bool save_as) override;
   void DevToolsAppendToFile(const std::string& url,
                             const std::string& content) override;
+  void DevToolsRequestFileSystems() override;
   void DevToolsAddFileSystem(const base::FilePath& path) override;
   void DevToolsRemoveFileSystem(
       const base::FilePath& file_system_path) override;
@@ -130,11 +128,6 @@ class CommonWebContentsDelegate
   // Maps url to file path, used by the file requests sent from devtools.
   typedef std::map<std::string, base::FilePath> PathsMap;
   PathsMap saved_files_;
-
-  // Maps file system id to file path, used by the file system requests
-  // sent from devtools.
-  typedef std::map<std::string, base::FilePath> WorkspaceMap;
-  WorkspaceMap saved_paths_;
 
   DISALLOW_COPY_AND_ASSIGN(CommonWebContentsDelegate);
 };

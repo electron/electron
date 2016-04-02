@@ -60,7 +60,8 @@ The following events are available on instances of `Session`:
 
 Emitted when Electron is about to download `item` in `webContents`.
 
-Calling `event.preventDefault()` will cancel the download.
+Calling `event.preventDefault()` will cancel the download and `item` will not be
+available from next tick of the process.
 
 ```javascript
 session.defaultSession.on('will-download', function(event, item, webContents) {
@@ -213,6 +214,7 @@ proxyURL = [<proxyScheme>"://"]<proxyHost>[":"<proxyPort>]
 ```
 
 For example:
+
 * `http=foopy:80;ftp=foopy2` - Use HTTP proxy `foopy:80` for `http://` URLs, and
   HTTP proxy `foopy2:80` for `ftp://` URLs.
 * `foopy:80` - Use HTTP proxy `foopy:80` for all URLs.
@@ -289,6 +291,35 @@ myWindow.webContents.session.setCertificateVerifyProc(function(hostname, cert, c
 });
 ```
 
+#### `ses.setPermissionRequestHandler(handler)`
+
+* `handler` Function
+  * `webContents` Object - [WebContents](web-contents.md) requesting the permission.
+  * `permission`  String - Enum of 'media', 'geolocation', 'notifications', 'midiSysex', 'pointerLock', 'fullscreen'.
+  * `callback`  Function - Allow or deny the permission.
+
+Sets the handler which can be used to respond to permission requests for the `session`.
+Calling `callback(true)` will allow the permission and `callback(false)` will reject it.
+
+```javascript
+session.fromPartition(partition).setPermissionRequestHandler(function(webContents, permission, callback) {
+  if (webContents.getURL() === host) {
+    if (permission == "notifications") {
+      callback(false); // denied.
+      return;
+    }
+  }
+
+  callback(true);
+});
+```
+
+#### `ses.clearHostResolverCache([callback])`
+
+* `callback` Function (optional) - Called when operation is done.
+
+Clears the host resolver cache.
+
 #### `ses.webRequest`
 
 The `webRequest` API set allows to intercept and modify contents of a request at
@@ -332,6 +363,14 @@ is about to occur.
   * `method` String
   * `resourceType` String
   * `timestamp` Double
+  * `uploadData` Array (optional)
+* `callback` Function
+
+The `uploadData` is an array of `data` objects:
+
+* `data` Object
+  * `bytes` Buffer - Content being sent.
+  * `file` String - Path of file being uploaded.
 
 The `callback` has to be called with an `response` object:
 
@@ -356,6 +395,7 @@ TCP connection is made to the server, but before any http data is sent.
   * `resourceType` String
   * `timestamp` Double
   * `requestHeaders` Object
+* `callback` Function
 
 The `callback` has to be called with an `response` object:
 
@@ -398,6 +438,7 @@ response headers of a request have been received.
   * `statusLine` String
   * `statusCode` Integer
   * `responseHeaders` Object
+* `callback` Function
 
 The `callback` has to be called with an `response` object:
 

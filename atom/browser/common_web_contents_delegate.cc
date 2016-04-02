@@ -4,21 +4,27 @@
 
 #include "atom/browser/common_web_contents_delegate.h"
 
+#include <set>
 #include <string>
 #include <vector>
 
+#include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_javascript_dialog_manager.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/ui/file_dialog.h"
 #include "atom/browser/web_dialog_helper.h"
 #include "base/files/file_util.h"
+#include "base/prefs/pref_service.h"
+#include "base/prefs/scoped_user_pref_update.h"
 #include "chrome/browser/printing/print_preview_message_handler.h"
 #include "chrome/browser/printing/print_view_manager_basic.h"
 #include "chrome/browser/ui/browser_dialogs.h"
+#include "chrome/common/pref_names.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/child_process_security_policy.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
+#include "content/public/browser/render_widget_host.h"
 #include "storage/browser/fileapi/isolated_context.h"
 
 #if defined(TOOLKIT_VIEWS)
@@ -34,6 +40,8 @@ using content::BrowserThread;
 namespace atom {
 
 namespace {
+
+const char kRootName[] = "<root>";
 
 struct FileSystem {
   FileSystem() {
@@ -52,14 +60,14 @@ struct FileSystem {
 };
 
 std::string RegisterFileSystem(content::WebContents* web_contents,
-                               const base::FilePath& path,
-                               std::string* registered_name) {
+                               const base::FilePath& path) {
   auto isolated_context = storage::IsolatedContext::GetInstance();
+  std::string root_name(kRootName);
   std::string file_system_id = isolated_context->RegisterFileSystemForPath(
       storage::kFileSystemTypeNativeLocal,
       std::string(),
       path,
-      registered_name);
+      &root_name);
 
   content::ChildProcessSecurityPolicy* policy =
       content::ChildProcessSecurityPolicy::GetInstance();
@@ -79,13 +87,12 @@ std::string RegisterFileSystem(content::WebContents* web_contents,
 FileSystem CreateFileSystemStruct(
     content::WebContents* web_contents,
     const std::string& file_system_id,
-    const std::string& registered_name,
     const std::string& file_system_path) {
   const GURL origin = web_contents->GetURL().GetOrigin();
   std::string file_system_name =
       storage::GetIsolatedFileSystemName(origin, file_system_id);
   std::string root_url = storage::GetIsolatedFileSystemRootURIString(
-      origin, file_system_id, registered_name);
+      origin, file_system_id, kRootName);
   return FileSystem(file_system_name, root_url, file_system_path);
 }
 
@@ -111,6 +118,26 @@ void AppendToFile(const base::FilePath& path,
   DCHECK(!path.empty());
 
   base::AppendToFile(path, content.data(), content.size());
+}
+
+PrefService* GetPrefService(content::WebContents* web_contents) {
+  auto context = web_contents->GetBrowserContext();
+  return static_cast<atom::AtomBrowserContext*>(context)->prefs();
+}
+
+std::set<std::string> GetAddedFileSystemPaths(
+    content::WebContents* web_contents) {
+  auto pref_service = GetPrefService(web_contents);
+  const base::DictionaryValue* file_system_paths_value =
+      pref_service->GetDictionary(prefs::kDevToolsFileSystemPaths);
+  std::set<std::string> result;
+  if (file_system_paths_value) {
+    base::DictionaryValue::Iterator it(*file_system_paths_value);
+    for (; !it.IsAtEnd(); it.Advance()) {
+      result.insert(it.key());
+    }
+  }
+  return result;
 }
 
 }  // namespace
@@ -173,19 +200,10 @@ content::WebContents* CommonWebContentsDelegate::OpenURLFromTab(
   load_url_params.should_replace_current_entry =
       params.should_replace_current_entry;
   load_url_params.is_renderer_initiated = params.is_renderer_initiated;
-  load_url_params.transferred_global_request_id =
-      params.transferred_global_request_id;
   load_url_params.should_clear_history_list = true;
 
   source->GetController().LoadURLWithParams(load_url_params);
   return source;
-}
-
-void CommonWebContentsDelegate::RequestToLockMouse(
-    content::WebContents* web_contents,
-    bool user_gesture,
-    bool last_unlocked_by_target) {
-  GetWebContents()->GotResponseToLockMouseRequest(true);
 }
 
 bool CommonWebContentsDelegate::CanOverscrollContent() const {
@@ -230,7 +248,7 @@ void CommonWebContentsDelegate::EnterFullscreenModeForTab(
     return;
   SetHtmlApiFullscreen(true);
   owner_window_->NotifyWindowEnterHtmlFullScreen();
-  source->GetRenderViewHost()->WasResized();
+  source->GetRenderViewHost()->GetWidget()->WasResized();
 }
 
 void CommonWebContentsDelegate::ExitFullscreenModeForTab(
@@ -239,7 +257,7 @@ void CommonWebContentsDelegate::ExitFullscreenModeForTab(
     return;
   SetHtmlApiFullscreen(false);
   owner_window_->NotifyWindowLeaveHtmlFullScreen();
-  source->GetRenderViewHost()->WasResized();
+  source->GetRenderViewHost()->GetWidget()->WasResized();
 }
 
 bool CommonWebContentsDelegate::IsFullscreenForTabOrPending(
@@ -286,6 +304,34 @@ void CommonWebContentsDelegate::DevToolsAppendToFile(
                  base::Unretained(this), url));
 }
 
+void CommonWebContentsDelegate::DevToolsRequestFileSystems() {
+  auto file_system_paths = GetAddedFileSystemPaths(GetDevToolsWebContents());
+  if (file_system_paths.empty()) {
+    base::ListValue empty_file_system_value;
+    web_contents_->CallClientFunction("DevToolsAPI.fileSystemsLoaded",
+                                      &empty_file_system_value,
+                                      nullptr, nullptr);
+    return;
+  }
+
+  std::vector<FileSystem> file_systems;
+  for (auto file_system_path : file_system_paths) {
+    base::FilePath path = base::FilePath::FromUTF8Unsafe(file_system_path);
+    std::string file_system_id = RegisterFileSystem(GetDevToolsWebContents(),
+                                                    path);
+    FileSystem file_system = CreateFileSystemStruct(GetDevToolsWebContents(),
+                                                    file_system_id,
+                                                    file_system_path);
+    file_systems.push_back(file_system);
+  }
+
+  base::ListValue file_system_value;
+  for (size_t i = 0; i < file_systems.size(); ++i)
+    file_system_value.Append(CreateFileSystemValue(file_systems[i]));
+  web_contents_->CallClientFunction("DevToolsAPI.fileSystemsLoaded",
+                                    &file_system_value, nullptr, nullptr);
+}
+
 void CommonWebContentsDelegate::DevToolsAddFileSystem(
     const base::FilePath& file_system_path) {
   base::FilePath path = file_system_path;
@@ -301,32 +347,26 @@ void CommonWebContentsDelegate::DevToolsAddFileSystem(
     path = paths[0];
   }
 
-  std::string registered_name;
   std::string file_system_id = RegisterFileSystem(GetDevToolsWebContents(),
-                                                  path,
-                                                  &registered_name);
-
-  WorkspaceMap::iterator it = saved_paths_.find(file_system_id);
-  if (it != saved_paths_.end())
+                                                  path);
+  auto file_system_paths = GetAddedFileSystemPaths(GetDevToolsWebContents());
+  if (file_system_paths.find(path.AsUTF8Unsafe()) != file_system_paths.end())
     return;
 
-  saved_paths_[file_system_id] = path;
-
   FileSystem file_system = CreateFileSystemStruct(GetDevToolsWebContents(),
-                                                  file_system_id,
-                                                  registered_name,
-                                                  path.AsUTF8Unsafe());
+                                                 file_system_id,
+                                                 path.AsUTF8Unsafe());
+  scoped_ptr<base::DictionaryValue> file_system_value(
+      CreateFileSystemValue(file_system));
 
-  scoped_ptr<base::StringValue> error_string_value(
-      new base::StringValue(std::string()));
-  scoped_ptr<base::DictionaryValue> file_system_value;
-  if (!file_system.file_system_path.empty())
-    file_system_value.reset(CreateFileSystemValue(file_system));
-  web_contents_->CallClientFunction(
-      "DevToolsAPI.fileSystemAdded",
-      error_string_value.get(),
-      file_system_value.get(),
-      nullptr);
+  auto pref_service = GetPrefService(GetDevToolsWebContents());
+  DictionaryPrefUpdate update(pref_service, prefs::kDevToolsFileSystemPaths);
+  update.Get()->SetWithoutPathExpansion(
+      path.AsUTF8Unsafe(), base::Value::CreateNullValue());
+
+  web_contents_->CallClientFunction("DevToolsAPI.fileSystemAdded",
+                                    file_system_value.get(),
+                                    nullptr, nullptr);
 }
 
 void CommonWebContentsDelegate::DevToolsRemoveFileSystem(
@@ -334,21 +374,18 @@ void CommonWebContentsDelegate::DevToolsRemoveFileSystem(
   if (!web_contents_)
     return;
 
+  std::string path = file_system_path.AsUTF8Unsafe();
   storage::IsolatedContext::GetInstance()->
       RevokeFileSystemByPath(file_system_path);
 
-  for (auto it = saved_paths_.begin(); it != saved_paths_.end(); ++it)
-    if (it->second == file_system_path) {
-      saved_paths_.erase(it);
-      break;
-    }
+  auto pref_service = GetPrefService(GetDevToolsWebContents());
+  DictionaryPrefUpdate update(pref_service, prefs::kDevToolsFileSystemPaths);
+  update.Get()->RemoveWithoutPathExpansion(path, nullptr);
 
-  base::StringValue file_system_path_value(file_system_path.AsUTF8Unsafe());
-  web_contents_->CallClientFunction(
-      "DevToolsAPI.fileSystemRemoved",
-       &file_system_path_value,
-       nullptr,
-       nullptr);
+  base::StringValue file_system_path_value(path);
+  web_contents_->CallClientFunction("DevToolsAPI.fileSystemRemoved",
+                                    &file_system_path_value,
+                                    nullptr, nullptr);
 }
 
 void CommonWebContentsDelegate::OnDevToolsSaveToFile(

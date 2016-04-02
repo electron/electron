@@ -151,6 +151,16 @@ API를 사용할 수 있습니다. 이를 지정하면 내부에서 로우레벨
 
 "on"으로 지정하면 페이지에서 새로운 창을 열 수 있도록 허용합니다.
 
+### `blinkfeatures`
+
+```html
+<webview src="https://www.github.com/" blinkfeatures="PreciseMemoryInfo, CSSVariables"></webview>
+```
+
+활성화할 blink 기능을 지정한 `,`로 구분된 문자열의 리스트입니다. 지원하는 기능 문자열의
+전체 목록은 [setFeatureEnabledFromString][blink-feature-string] 함수에서 찾을 수
+있습니다.
+
 ## Methods
 
 `webview` 태그는 다음과 같은 메서드를 가지고 있습니다:
@@ -164,6 +174,17 @@ webview.addEventListener("dom-ready", function() {
   webview.openDevTools();
 });
 ```
+
+### `<webview>.loadURL(url[, options])`
+
+* `url` URL
+* `options` Object (optional)
+  * `httpReferrer` String - HTTP 레퍼러 url.
+  * `userAgent` String - 요청을 시작한 유저 에이전트.
+  * `extraHeaders` String - "\n"로 구분된 Extra 헤더들.
+
+Webview에 웹 페이지 `url`을 로드합니다. `url`은 `http://`, `file://`과 같은
+프로토콜 접두사를 가지고 있어야 합니다.
 
 ### `<webview>.getURL()`
 
@@ -251,12 +272,14 @@ webview.addEventListener("dom-ready", function() {
 
 페이지에 CSS를 삽입합니다.
 
-### `<webview>.executeJavaScript(code[, userGesture])`
+### `<webview>.executeJavaScript(code[, userGesture, callback])`
 
 * `code` String
 * `userGesture` Boolean
+* `callback` Function (optional) - 스크립트의 실행이 완료되면 호출됩니다.
+  * `result`
 
-페이지에서 자바스크립트 `code`를 실행합니다.
+페이지에서 자바스크립트 코드를 실행합니다.
 
 만약 `userGesture`가 `true`로 설정되어 있으면 페이지에 유저 제스쳐 컨텍스트를 만듭니다.
 이 옵션을 활성화 시키면 `requestFullScreen`와 같은 HTML API에서 유저의 승인을
@@ -349,7 +372,7 @@ Service worker에 대한 개발자 도구를 엽니다.
 ### `webContents.findInPage(text[, options])`
 
 * `text` String - 찾을 컨텐츠, 반드시 공백이 아니여야 합니다.
-* `options` Object (Optional)
+* `options` Object (optional)
   * `forward` Boolean - 앞에서부터 검색할지 뒤에서부터 검색할지 여부입니다. 기본값은
     `true`입니다.
   * `findNext` Boolean - 작업을 계속 처리할지 첫 요청만 처리할지 여부입니다. 기본값은
@@ -405,6 +428,10 @@ Webview 페이지를 PDF 형식으로 인쇄합니다.
 
 `event` 객체에 대해 자세히 알아보려면 [webContents.sendInputEvent](web-contents.md##webcontentssendinputeventevent)를
 참고하세요.
+
+### `<webview>.getWebContents()`
+
+이 `webview`에 해당하는 [WebContents](web-contents.md)를 반환합니다.
 
 ## DOM 이벤트
 
@@ -536,8 +563,9 @@ Returns:
 * `result` Object
   * `requestId` Integer
   * `finalUpdate` Boolean - 더 많은 응답이 따르는 경우를 표시합니다.
-  * `matches` Integer (Optional) - 일치하는 개수.
-  * `selectionArea` Object (Optional) - 첫 일치 부위의 좌표.
+  * `activeMatchOrdinal` Integer (optional) - 활성화 일치의 위치.
+  * `matches` Integer (optional) - 일치하는 개수.
+  * `selectionArea` Object (optional) - 첫 일치 부위의 좌표.
 
 [`webContents.findInPage`](web-contents.md#webcontentsfindinpage) 요청의 결과를
 사용할 수 있을 때 발생하는 이벤트입니다.
@@ -701,3 +729,5 @@ WebContents가 파괴될 때 발생하는 이벤트입니다.
 ### Event: 'devtools-focused'
 
 개발자 도구가 포커스되거나 열렸을 때 발생하는 이벤트입니다.
+
+[blink-feature-string]: https://code.google.com/p/chromium/codesearch#chromium/src/out/Debug/gen/blink/platform/RuntimeEnabledFeatures.cpp&sq=package:chromium&type=cs&l=527

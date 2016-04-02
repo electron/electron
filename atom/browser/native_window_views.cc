@@ -59,6 +59,17 @@ const int kMenuBarHeight = 20;
 const int kMenuBarHeight = 25;
 #endif
 
+#if defined(OS_WIN)
+void FlipWindowStyle(HWND handle, bool on, DWORD flag) {
+  DWORD style = ::GetWindowLong(handle, GWL_STYLE);
+  if (on)
+    style |= flag;
+  else
+    style &= ~flag;
+  ::SetWindowLong(handle, GWL_STYLE, style);
+}
+#endif
+
 bool IsAltKey(const content::NativeWebKeyboardEvent& event) {
   return event.windowsKeyCode == ui::VKEY_MENU;
 }
@@ -103,7 +114,11 @@ NativeWindowViews::NativeWindowViews(
       menu_bar_alt_pressed_(false),
       keyboard_event_handler_(new views::UnhandledKeyboardEventHandler),
       use_content_size_(false),
-      resizable_(true) {
+      movable_(true),
+      resizable_(true),
+      maximizable_(true),
+      minimizable_(true),
+      fullscreenable_(true) {
   options.Get(options::kTitle, &title_);
   options.Get(options::kAutoHideMenuBar, &menu_bar_autohide_);
 
@@ -111,6 +126,8 @@ NativeWindowViews::NativeWindowViews(
   // On Windows we rely on the CanResize() to indicate whether window can be
   // resized, and it should be set before window is created.
   options.Get(options::kResizable, &resizable_);
+  options.Get(options::kMinimizable, &minimizable_);
+  options.Get(options::kMaximizable, &maximizable_);
 #endif
 
   if (enable_larger_than_screen())
@@ -138,6 +155,11 @@ NativeWindowViews::NativeWindowViews(
 
   if (transparent())
     params.opacity = views::Widget::InitParams::TRANSLUCENT_WINDOW;
+
+  // The given window is most likely not rectangular since it uses
+  // transparency and has no standard frame, don't show a shadow for it.
+  if (transparent() && !has_frame())
+    params.shadow_type = views::Widget::InitParams::SHADOW_TYPE_NONE;
 
 #if defined(OS_WIN)
   params.native_widget =
@@ -210,14 +232,18 @@ NativeWindowViews::NativeWindowViews(
     last_window_state_ = ui::SHOW_STATE_FULLSCREEN;
   else
     last_window_state_ = ui::SHOW_STATE_NORMAL;
-
   last_normal_size_ = gfx::Size(widget_size_);
 
   if (!has_frame()) {
     // Set Window style so that we get a minimize and maximize animation when
     // frameless.
-    DWORD frame_style = WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX |
-                        WS_CAPTION;
+    DWORD frame_style = WS_CAPTION;
+    if (resizable_)
+      frame_style |= WS_THICKFRAME;
+    if (minimizable_)
+      frame_style |= WS_MINIMIZEBOX;
+    if (maximizable_)
+      frame_style |= WS_MAXIMIZEBOX;
     // We should not show a frame for transparent window.
     if (transparent())
       frame_style &= ~(WS_THICKFRAME | WS_CAPTION);
@@ -238,11 +264,6 @@ NativeWindowViews::NativeWindowViews(
     window_->set_frame_type(views::Widget::FrameType::FRAME_TYPE_FORCE_NATIVE);
     window_->FrameTypeChanged();
   }
-
-  // The given window is most likely not rectangular since it uses
-  // transparency and has no standard frame, don't show a shadow for it.
-  if (transparent() && !has_frame())
-    wm::SetShadowType(GetNativeWindow(), wm::SHADOW_TYPE_NONE);
 
   gfx::Size size = bounds.size();
   if (has_frame() &&
@@ -280,14 +301,35 @@ bool NativeWindowViews::IsFocused() {
 
 void NativeWindowViews::Show() {
   window_->native_widget_private()->ShowWithWindowState(GetRestoredState());
+
+  NotifyWindowShow();
+
+#if defined(USE_X11)
+  if (global_menu_bar_)
+    global_menu_bar_->OnWindowMapped();
+#endif
 }
 
 void NativeWindowViews::ShowInactive() {
   window_->ShowInactive();
+
+  NotifyWindowShow();
+
+#if defined(USE_X11)
+  if (global_menu_bar_)
+    global_menu_bar_->OnWindowMapped();
+#endif
 }
 
 void NativeWindowViews::Hide() {
   window_->Hide();
+
+  NotifyWindowHide();
+
+#if defined(USE_X11)
+  if (global_menu_bar_)
+    global_menu_bar_->OnWindowUnmapped();
+#endif
 }
 
 bool NativeWindowViews::IsVisible() {
@@ -327,6 +369,9 @@ bool NativeWindowViews::IsMinimized() {
 }
 
 void NativeWindowViews::SetFullScreen(bool fullscreen) {
+  if (!IsFullScreenable())
+    return;
+
 #if defined(OS_WIN)
   // There is no native fullscreen state on Windows.
   if (fullscreen) {
@@ -399,17 +444,8 @@ void NativeWindowViews::SetContentSizeConstraints(
 
 void NativeWindowViews::SetResizable(bool resizable) {
 #if defined(OS_WIN)
-  // WS_MAXIMIZEBOX => Maximize button
-  // WS_MINIMIZEBOX => Minimize button
-  // WS_THICKFRAME => Resize handle
-  if (!transparent()) {
-    DWORD style = ::GetWindowLong(GetAcceleratedWidget(), GWL_STYLE);
-    if (resizable)
-      style |= WS_MAXIMIZEBOX | WS_MINIMIZEBOX | WS_THICKFRAME;
-    else
-      style = (style & ~(WS_MAXIMIZEBOX | WS_THICKFRAME)) | WS_MINIMIZEBOX;
-    ::SetWindowLong(GetAcceleratedWidget(), GWL_STYLE, style);
-  }
+  if (!transparent())
+    FlipWindowStyle(GetAcceleratedWidget(), resizable, WS_THICKFRAME);
 #elif defined(USE_X11)
   if (resizable != resizable_) {
     // On Linux there is no "resizable" property of a window, we have to set
@@ -430,7 +466,88 @@ void NativeWindowViews::SetResizable(bool resizable) {
 }
 
 bool NativeWindowViews::IsResizable() {
-  return resizable_;
+#if defined(OS_WIN)
+  return ::GetWindowLong(GetAcceleratedWidget(), GWL_STYLE) & WS_THICKFRAME;
+#else
+  return CanResize();
+#endif
+}
+
+void NativeWindowViews::SetMovable(bool movable) {
+  movable_ = movable;
+}
+
+bool NativeWindowViews::IsMovable() {
+#if defined(OS_WIN)
+  return movable_;
+#else
+  return true;  // Not implemented on Linux.
+#endif
+}
+
+void NativeWindowViews::SetMinimizable(bool minimizable) {
+#if defined(OS_WIN)
+  FlipWindowStyle(GetAcceleratedWidget(), minimizable, WS_MINIMIZEBOX);
+#endif
+  minimizable_ = minimizable;
+}
+
+bool NativeWindowViews::IsMinimizable() {
+#if defined(OS_WIN)
+  return ::GetWindowLong(GetAcceleratedWidget(), GWL_STYLE) & WS_MINIMIZEBOX;
+#else
+  return true;  // Not implemented on Linux.
+#endif
+}
+
+void NativeWindowViews::SetMaximizable(bool maximizable) {
+#if defined(OS_WIN)
+  FlipWindowStyle(GetAcceleratedWidget(), maximizable, WS_MAXIMIZEBOX);
+#endif
+  maximizable_ = maximizable;
+}
+
+bool NativeWindowViews::IsMaximizable() {
+#if defined(OS_WIN)
+  return ::GetWindowLong(GetAcceleratedWidget(), GWL_STYLE) & WS_MAXIMIZEBOX;
+#else
+  return true;  // Not implemented on Linux.
+#endif
+}
+
+void NativeWindowViews::SetFullScreenable(bool fullscreenable) {
+  fullscreenable_ = fullscreenable;
+}
+
+bool NativeWindowViews::IsFullScreenable() {
+  return fullscreenable_;
+}
+
+void NativeWindowViews::SetClosable(bool closable) {
+#if defined(OS_WIN)
+  HMENU menu = GetSystemMenu(GetAcceleratedWidget(), false);
+  if (closable) {
+    EnableMenuItem(menu, SC_CLOSE, MF_BYCOMMAND | MF_ENABLED);
+  } else {
+    EnableMenuItem(menu, SC_CLOSE, MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
+  }
+#endif
+}
+
+bool NativeWindowViews::IsClosable() {
+#if defined(OS_WIN)
+  HMENU menu = GetSystemMenu(GetAcceleratedWidget(), false);
+  MENUITEMINFO info;
+  memset(&info, 0, sizeof(info));
+  info.cbSize = sizeof(info);
+  info.fMask = MIIM_STATE;
+  if (!GetMenuItemInfo(menu, SC_CLOSE, false, &info)) {
+    return false;
+  }
+  return !(info.fState & MFS_DISABLED);
+#elif defined(USE_X11)
+  return true;
+#endif
 }
 
 void NativeWindowViews::SetAlwaysOnTop(bool top) {
@@ -508,6 +625,16 @@ void NativeWindowViews::SetBackgroundColor(const std::string& color_name) {
   if (previous_brush)
     DeleteObject((HBRUSH)previous_brush);
 #endif
+}
+
+void NativeWindowViews::SetHasShadow(bool has_shadow) {
+  wm::SetShadowType(
+      GetNativeWindow(),
+      has_shadow ? wm::SHADOW_TYPE_RECTANGULAR : wm::SHADOW_TYPE_NONE);
+}
+
+bool NativeWindowViews::HasShadow() {
+  return wm::GetShadowType(GetNativeWindow()) != wm::SHADOW_TYPE_NONE;
 }
 
 void NativeWindowViews::SetMenu(ui::MenuModel* menu_model) {
@@ -690,11 +817,15 @@ bool NativeWindowViews::CanResize() const {
 }
 
 bool NativeWindowViews::CanMaximize() const {
-  return resizable_;
+  return resizable_ && maximizable_;
 }
 
 bool NativeWindowViews::CanMinimize() const {
+#if defined(OS_WIN)
+  return minimizable_;
+#elif defined(USE_X11)
   return true;
+#endif
 }
 
 base::string16 NativeWindowViews::GetWindowTitle() const {

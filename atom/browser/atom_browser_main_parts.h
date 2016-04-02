@@ -31,7 +31,7 @@ class AtomBrowserMainParts : public brightray::BrowserMainParts {
 
   static AtomBrowserMainParts* Get();
 
-  // Sets the exit code, will fail if the the message loop is not ready.
+  // Sets the exit code, will fail if the message loop is not ready.
   bool SetExitCode(int code);
 
   // Gets the exit code

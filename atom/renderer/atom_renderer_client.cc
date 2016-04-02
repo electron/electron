@@ -9,6 +9,7 @@
 
 #include "atom/common/api/api_messages.h"
 #include "atom/common/api/atom_bindings.h"
+#include "atom/common/api/event_emitter_caller.h"
 #include "atom/common/node_bindings.h"
 #include "atom/common/node_includes.h"
 #include "atom/common/options_switches.h"
@@ -24,6 +25,7 @@
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_frame_observer.h"
 #include "content/public/renderer/render_thread.h"
+#include "content/public/renderer/render_view.h"
 #include "ipc/ipc_message_macros.h"
 #include "third_party/WebKit/public/web/WebCustomElement.h"
 #include "third_party/WebKit/public/web/WebLocalFrame.h"
@@ -47,17 +49,27 @@ class AtomRenderFrameObserver : public content::RenderFrameObserver {
   AtomRenderFrameObserver(content::RenderFrame* frame,
                           AtomRendererClient* renderer_client)
       : content::RenderFrameObserver(frame),
+        world_id_(-1),
         renderer_client_(renderer_client) {}
 
   // content::RenderFrameObserver:
   void DidCreateScriptContext(v8::Handle<v8::Context> context,
                               int extension_group,
-                              int world_id) {
-    renderer_client_->DidCreateScriptContext(
-        render_frame()->GetWebFrame(), context);
+                              int world_id) override {
+    if (world_id_ != -1 && world_id_ != world_id)
+      return;
+    world_id_ = world_id;
+    renderer_client_->DidCreateScriptContext(context);
+  }
+  void WillReleaseScriptContext(v8::Local<v8::Context> context,
+                                int world_id) override {
+    if (world_id_ != world_id)
+      return;
+    renderer_client_->WillReleaseScriptContext(context);
   }
 
  private:
+  int world_id_;
   AtomRendererClient* renderer_client_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomRenderFrameObserver);
@@ -78,18 +90,6 @@ void AtomRendererClient::WebKitInitialized() {
   blink::WebCustomElement::addEmbedderCustomElementName("browserplugin");
 
   OverrideNodeArrayBuffer();
-
-  node_bindings_->Initialize();
-  node_bindings_->PrepareMessageLoop();
-
-  DCHECK(!global_env);
-
-  // Create a default empty environment which would be used when we need to
-  // run V8 code out of a window context (like running a uv callback).
-  v8::Isolate* isolate = blink::mainThreadIsolate();
-  v8::HandleScope handle_scope(isolate);
-  v8::Local<v8::Context> context = v8::Context::New(isolate);
-  global_env = node::Environment::New(context, uv_default_loop());
 }
 
 void AtomRendererClient::RenderThreadStarted() {
@@ -108,13 +108,21 @@ void AtomRendererClient::RenderThreadStarted() {
 void AtomRendererClient::RenderFrameCreated(
     content::RenderFrame* render_frame) {
   new PepperHelper(render_frame);
-  new AtomRenderFrameObserver(render_frame, this);
 
   // Allow file scheme to handle service worker by default.
   blink::WebSecurityPolicy::registerURLSchemeAsAllowingServiceWorkers("file");
+
+  // Only insert node integration for the main frame.
+  if (!render_frame->IsMainFrame())
+    return;
+
+  new AtomRenderFrameObserver(render_frame, this);
 }
 
 void AtomRendererClient::RenderViewCreated(content::RenderView* render_view) {
+  // Set default UA-dependent background as transparent.
+  render_view->GetWebView()->setBaseBackgroundColor(SK_ColorTRANSPARENT);
+
   new printing::PrintWebViewHelper(render_view);
   new AtomRenderViewObserver(render_view, this);
 }
@@ -139,14 +147,15 @@ bool AtomRendererClient::OverrideCreatePlugin(
 }
 
 void AtomRendererClient::DidCreateScriptContext(
-    blink::WebFrame* frame,
     v8::Handle<v8::Context> context) {
-  // Only insert node integration for the main frame.
-  if (frame->parent())
-    return;
+  // Whether the node binding has been initialized.
+  bool first_time = node_bindings_->uv_env() == nullptr;
 
-  // Give the node loop a run to make sure everything is ready.
-  node_bindings_->RunMessageLoop();
+  // Prepare the node bindings.
+  if (first_time) {
+    node_bindings_->Initialize();
+    node_bindings_->PrepareMessageLoop();
+  }
 
   // Setup node environment for each window.
   node::Environment* env = node_bindings_->CreateEnvironment(context);
@@ -154,12 +163,22 @@ void AtomRendererClient::DidCreateScriptContext(
   // Add atom-shell extended APIs.
   atom_bindings_->BindTo(env->isolate(), env->process_object());
 
-  // Make uv loop being wrapped by window context.
-  if (node_bindings_->uv_env() == nullptr)
-    node_bindings_->set_uv_env(env);
-
   // Load everything.
   node_bindings_->LoadEnvironment(env);
+
+  if (first_time) {
+    // Make uv loop being wrapped by window context.
+    node_bindings_->set_uv_env(env);
+
+    // Give the node loop a run to make sure everything is ready.
+    node_bindings_->RunMessageLoop();
+  }
+}
+
+void AtomRendererClient::WillReleaseScriptContext(
+    v8::Handle<v8::Context> context) {
+  node::Environment* env = node::Environment::GetCurrent(context);
+  mate::EmitEvent(env->isolate(), env->process_object(), "exit");
 }
 
 bool AtomRendererClient::ShouldFork(blink::WebLocalFrame* frame,
@@ -173,7 +192,7 @@ bool AtomRendererClient::ShouldFork(blink::WebLocalFrame* frame,
   // the OpenURLFromTab is triggered, which means form posting would not work,
   // we should solve this by patching Chromium in future.
   *send_referrer = true;
-  return http_method == "GET" && !is_server_redirect;
+  return http_method == "GET";
 }
 
 content::BrowserPluginDelegate* AtomRendererClient::CreateBrowserPluginDelegate(

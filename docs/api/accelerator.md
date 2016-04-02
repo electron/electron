@@ -14,6 +14,9 @@ On Linux and Windows, the `Command` key does not have any effect so
 use `CommandOrControl` which represents `Command` on OS X and `Control` on
 Linux and Windows to define some accelerators.
 
+Use `Alt` instead of `Option`. The `Option` key only exists on OS X, whereas
+the `Alt` key is available on all platforms.
+
 The `Super` key is mapped to the `Windows` key on Windows and Linux and
 `Cmd` on OS X.
 
@@ -23,6 +26,8 @@ The `Super` key is mapped to the `Windows` key on Windows and Linux and
 * `Control` (or `Ctrl` for short)
 * `CommandOrControl` (or `CmdOrCtrl` for short)
 * `Alt`
+* `Option`
+* `AltGr`
 * `Shift`
 * `Super`
 
@@ -44,3 +49,4 @@ The `Super` key is mapped to the `Windows` key on Windows and Linux and
 * `Escape` (or `Esc` for short)
 * `VolumeUp`, `VolumeDown` and `VolumeMute`
 * `MediaNextTrack`, `MediaPreviousTrack`, `MediaStop` and `MediaPlayPause`
+* `PrintScreen`

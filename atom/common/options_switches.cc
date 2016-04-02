@@ -8,22 +8,26 @@ namespace atom {
 
 namespace options {
 
-const char kTitle[]      = "title";
-const char kIcon[]       = "icon";
-const char kFrame[]      = "frame";
-const char kShow[]       = "show";
-const char kCenter[]     = "center";
-const char kX[]          = "x";
-const char kY[]          = "y";
-const char kWidth[]      = "width";
-const char kHeight[]     = "height";
-const char kMinWidth[]   = "minWidth";
-const char kMinHeight[]  = "minHeight";
-const char kMaxWidth[]   = "maxWidth";
-const char kMaxHeight[]  = "maxHeight";
-const char kResizable[]  = "resizable";
-const char kMovable[]    = "movable";
-const char kFullscreen[] = "fullscreen";
+const char kTitle[]          = "title";
+const char kIcon[]           = "icon";
+const char kFrame[]          = "frame";
+const char kShow[]           = "show";
+const char kCenter[]         = "center";
+const char kX[]              = "x";
+const char kY[]              = "y";
+const char kWidth[]          = "width";
+const char kHeight[]         = "height";
+const char kMinWidth[]       = "minWidth";
+const char kMinHeight[]      = "minHeight";
+const char kMaxWidth[]       = "maxWidth";
+const char kMaxHeight[]      = "maxHeight";
+const char kResizable[]      = "resizable";
+const char kMovable[]        = "movable";
+const char kMinimizable[]    = "minimizable";
+const char kMaximizable[]    = "maximizable";
+const char kFullScreenable[] = "fullscreenable";
+const char kClosable[]       = "closable";
+const char kFullscreen[]     = "fullscreen";
 
 // Whether the window should show in taskbar.
 const char kSkipTaskbar[] = "skipTaskbar";
@@ -67,6 +71,9 @@ const char kStandardWindow[] = "standardWindow";
 
 // Default browser window background color.
 const char kBackgroundColor[] = "backgroundColor";
+
+// Whether the window should have a shadow.
+const char kHasShadow[] = "hasShadow";
 
 // The WebPreferences.
 const char kWebPreferences[] = "webPreferences";

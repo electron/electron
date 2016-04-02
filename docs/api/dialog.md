@@ -12,6 +12,12 @@ const dialog = require('electron').dialog;
 console.log(dialog.showOpenDialog({ properties: [ 'openFile', 'openDirectory', 'multiSelections' ]}));
 ```
 
+The Dialog is opened from Electron's main thread. If you want to use the dialog object from a renderer process, remember to access it using the remote:
+
+```javascript
+const dialog = require('electron').remote.dialog;
+```
+
 **Note for OS X**: If you want to present dialogs as sheets, the only thing you
 have to do is provide a `BrowserWindow` reference in the `browserWindow`
 parameter.

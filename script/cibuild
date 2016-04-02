@@ -62,9 +62,10 @@ def main():
     args += ['--dev']
   run_script('bootstrap.py', args)
 
-  run_script('cpplint.py')
-  run_script('eslint.py')
   if PLATFORM != 'win32':
+    sys.stderr.write('\nRunning `npm run lint`\n')
+    sys.stderr.flush()
+    execute([npm, 'run', 'lint'])
     run_script('pylint.py')
   if is_release:
     run_script('build.py', ['-c', 'R'])

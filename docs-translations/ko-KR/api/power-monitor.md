@@ -29,10 +29,10 @@ app.on('ready', function() {
 
 시스템의 절전모드가 해제될 때 발생하는 이벤트입니다.
 
-## Event: `on-ac`
+## Event: `on-ac` _Windows_
 
 시스템이 AC 어뎁터 충전기를 사용하기 시작할 때 발생하는 이벤트입니다.
 
-## Event: `on-battery`
+## Event: `on-battery` _Windows_
 
 시스템이 배터리를 사용하기 시작할 때 발생하는 이벤트입니다.

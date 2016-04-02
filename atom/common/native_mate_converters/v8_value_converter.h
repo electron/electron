@@ -5,7 +5,7 @@
 #ifndef ATOM_COMMON_NATIVE_MATE_CONVERTERS_V8_VALUE_CONVERTER_H_
 #define ATOM_COMMON_NATIVE_MATE_CONVERTERS_V8_VALUE_CONVERTER_H_
 
-#include "base/basictypes.h"
+#include "base/macros.h"
 #include "base/compiler_specific.h"
 #include "v8/include/v8.h"
 
@@ -22,7 +22,6 @@ class V8ValueConverter {
  public:
   V8ValueConverter();
 
-  void SetDateAllowed(bool val);
   void SetRegExpAllowed(bool val);
   void SetFunctionAllowed(bool val);
   void SetStripNullFromObjects(bool val);
@@ -57,9 +56,6 @@ class V8ValueConverter {
   base::Value* FromV8Object(v8::Local<v8::Object> object,
                             FromV8ValueState* state,
                             v8::Isolate* isolate) const;
-
-  // If true, we will convert Date JavaScript objects to doubles.
-  bool date_allowed_;
 
   // If true, we will convert RegExp JavaScript objects to string.
   bool reg_exp_allowed_;

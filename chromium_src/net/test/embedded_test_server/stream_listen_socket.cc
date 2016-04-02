@@ -17,6 +17,7 @@
 #include "net/base/net_errors.h"
 #endif
 
+#include "base/files/file_util.h"
 #include "base/logging.h"
 #include "base/memory/ref_counted.h"
 #include "base/memory/scoped_ptr.h"
@@ -27,6 +28,7 @@
 #include "net/base/ip_endpoint.h"
 #include "net/base/net_errors.h"
 #include "net/base/net_util.h"
+#include "net/base/sockaddr_storage.h"
 #include "net/socket/socket_descriptor.h"
 
 using std::string;
@@ -125,7 +127,7 @@ SocketDescriptor StreamListenSocket::AcceptSocket() {
   if (conn == kInvalidSocket)
     LOG(ERROR) << "Error accepting connection.";
   else
-    SetNonBlocking(conn);
+    base::SetNonBlocking(conn);
   return conn;
 }
 

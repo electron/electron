@@ -90,12 +90,12 @@ bool GetNodeFromPath(std::string path,
 }
 
 bool FillFileInfoWithNode(Archive::FileInfo* info,
-                          uint32 header_size,
+                          uint32_t header_size,
                           const base::DictionaryValue* node) {
   int size;
   if (!node->GetInteger("size", &size))
     return false;
-  info->size = static_cast<uint32>(size);
+  info->size = static_cast<uint32_t>(size);
 
   if (node->GetBoolean("unpacked", &info->unpacked) && info->unpacked)
     return true;
@@ -130,14 +130,22 @@ Archive::Archive(const base::FilePath& path)
 
 Archive::~Archive() {
 #if defined(OS_WIN)
-  file_.Close();
-  _close(fd_);
+  if (fd_ != -1) {
+    _close(fd_);
+    // Don't close the handle since we already closed the fd.
+    file_.TakePlatformFile();
+  }
 #endif
 }
 
 bool Archive::Init() {
-  if (!file_.IsValid())
+  if (!file_.IsValid()) {
+    if (file_.error_details() != base::File::FILE_ERROR_NOT_FOUND) {
+      LOG(WARNING) << "Opening " << path_.value()
+                   << ": " << base::File::ErrorToString(file_.error_details());
+    }
     return false;
+  }
 
   std::vector<char> buf;
   int len;
@@ -149,7 +157,7 @@ bool Archive::Init() {
     return false;
   }
 
-  uint32 size;
+  uint32_t size;
   if (!base::PickleIterator(base::Pickle(buf.data(), buf.size())).ReadUInt32(
           &size)) {
     LOG(ERROR) << "Failed to parse header size from " << path_.value();
@@ -288,7 +296,7 @@ bool Archive::CopyFileOut(const base::FilePath& path, base::FilePath* out) {
 #endif
 
   *out = temp_file->path();
-  external_files_.set(path, temp_file.Pass());
+  external_files_.set(path, std::move(temp_file));
   return true;
 }
 

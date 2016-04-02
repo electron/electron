@@ -24,6 +24,9 @@
   // Don't add the "Enter Full Screen" menu item automatically.
   [[NSUserDefaults standardUserDefaults] setBool:NO forKey:@"NSFullScreenMenuItemEverywhere"];
 
+  // Add observer to monitor the system's Dark Mode theme.
+  [[NSDistributedNotificationCenter defaultCenter] addObserver:self selector:@selector(platformThemeChanged:) name:@"AppleInterfaceThemeChangedNotification" object:nil];
+
   atom::Browser::Get()->WillFinishLaunching();
 }
 
@@ -57,6 +60,10 @@
   atom::Browser* browser = atom::Browser::Get();
   browser->Activate(static_cast<bool>(flag));
   return flag;
+}
+
+- (void)platformThemeChanged:(NSNotification *)notify {
+  atom::Browser::Get()->PlatformThemeChanged();
 }
 
 @end

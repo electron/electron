@@ -2,6 +2,9 @@
 
 This module provides an interface for the `Squirrel` auto-updater framework.
 
+You can quickly launch a multi-platform release server for distributing your
+application by forking [electron-release-server][electron-release-server].
+
 ## Platform notices
 
 Though `autoUpdater` provides a uniform API for different platforms, there are
@@ -99,3 +102,4 @@ should only be called after `update-downloaded` has been emitted.
 [squirrel-windows]: https://github.com/Squirrel/Squirrel.Windows
 [installer]: https://github.com/atom/grunt-electron-installer
 [app-user-model-id]: https://msdn.microsoft.com/en-us/library/windows/desktop/dd378459(v=vs.85).aspx
+[electron-release-server]: https://github.com/ArekSredzki/electron-release-server

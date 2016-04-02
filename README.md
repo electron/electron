@@ -1,6 +1,7 @@
 [![Electron Logo](http://electron.atom.io/images/electron-logo.svg)](http://electron.atom.io/)
 
-[![Build Status](https://travis-ci.org/atom/electron.svg?branch=master)](https://travis-ci.org/atom/electron)
+[![Travis Build Status](https://travis-ci.org/atom/electron.svg?branch=master)](https://travis-ci.org/atom/electron)
+[![AppVeyor Build Status](https://ci.appveyor.com/api/projects/status/qtmod45u0cc1ouov/branch/master?svg=true)](https://ci.appveyor.com/project/Atom/electron)
 [![devDependency Status](https://david-dm.org/atom/electron/dev-status.svg)](https://david-dm.org/atom/electron#info=devDependencies)
 [![Join the Electron Community on Slack](http://atom-slack.herokuapp.com/badge.svg)](http://atom-slack.herokuapp.com/)
 
@@ -54,6 +55,7 @@ contains documents describing how to build and contribute to Electron.
 - [Traditional Chinese](https://github.com/atom/electron/tree/master/docs-translations/zh-TW)
 - [Ukrainian](https://github.com/atom/electron/tree/master/docs-translations/uk-UA)
 - [Russian](https://github.com/atom/electron/tree/master/docs-translations/ru-RU)
+- [French](https://github.com/atom/electron/tree/master/docs-translations/fr-FR)
 
 ## Quick Start
 
@@ -70,6 +72,7 @@ forums
 - [`Atom`](http://atom-slack.herokuapp.com/) channel on Slack
 - [`electron-br`](https://electron-br.slack.com) *(Brazilian Portuguese)*
 - [`electron-kr`](http://www.meetup.com/electron-kr/) *(Korean)*
+- [`electron-jp`](https://electron-jp-slackin.herokuapp.com/) *(Japanese)*
 
 Check out [awesome-electron](https://github.com/sindresorhus/awesome-electron)
 for a community maintained list of useful example apps, tools and resources.

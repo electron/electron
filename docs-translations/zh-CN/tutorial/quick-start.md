@@ -14,7 +14,7 @@ Electron 可以让你使用纯 JavaScript 调用丰富的原生 APIs 来创造�
 在一般浏览器中，网页通常会在沙盒环境下运行，并且不允许访问原生资源。然而，Electron 用户拥有在网页中调用 io.js 的 APIs 的能力，可以与底层操作系统直接交互。
 
 ## 主进程与渲染进程的区别
-主进程使用 BroswerWindow 实例创建网页。每个 BroswerWindow 实例都在自己的渲染进程里运行着一个网页。当一个 BroswerWindow 实例被销毁后，相应的渲染进程也会被终止。
+主进程使用 BrowserWindow 实例创建网页。每个 BrowserWindow 实例都在自己的渲染进程里运行着一个网页。当一个 BrowserWindow 实例被销毁后，相应的渲染进程也会被终止。
 
 主进程管理所有页面和与之对应的渲染进程。每个渲染进程都是相互独立的，并且只关心他们自己的网页。
 
@@ -127,7 +127,7 @@ $ ./Electron.app/Contents/MacOS/Electron your-app/
 在你完成了你的应用后，你可以按照[应用部署][4]指导发布一个版本，并且以已经打包好的形式运行应用。
 
 
-  [1]: https://github.com/atom/electron/blob/master/docs-translations/zh-CN/api/ipc-renderer.md
+  [1]: https://github.com/atom/electron/blob/master/docs-translations/zh-CN/api/ipc-main-process.md
   [2]: https://github.com/atom/electron/blob/master/docs-translations/zh-CN/api/remote.md
   [3]: https://github.com/atom/electron/releases
   [4]: https://github.com/atom/electron/blob/master/docs-translations/zh-CN/tutorial/application-distribution.md
