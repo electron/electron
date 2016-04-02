@@ -144,19 +144,6 @@ is very likely you are using the module in the wrong process. For example
 `electron.app` can only be used in the main process, while `electron.webFrame`
 is only available in renderer processes.
 
-## Why is my app's background transparent?
-
-Since Electron `0.37.3`, the default user-agent background color is `transparent`.
-Simply specify a background color in HTML:
-
-```html
-<style type='text/css'>
-  html {
-    background: white;
-  }
-</style>
-```
-
 [memory-management]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Memory_Management
 [variable-scope]: https://msdn.microsoft.com/library/bzt2dkta(v=vs.94).aspx
 [electron-module]: https://www.npmjs.com/package/electron
