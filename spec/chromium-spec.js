@@ -160,7 +160,7 @@ describe('chromium feature', function () {
     it('accepts "nodeIntegration" as feature', function (done) {
       var b
       listener = function (event) {
-        assert.equal(event.data, 'undefined')
+        assert.equal(event.data.isProcessGlobalUndefined, true)
         b.close()
         done()
       }
@@ -180,6 +180,26 @@ describe('chromium feature', function () {
       }
       window.addEventListener('message', listener)
       b = window.open('file://' + fixtures + '/pages/window-open-size.html', '', 'show=no')
+    })
+
+    it('disables node integration when it is disabled on the parent window', function (done) {
+      var b
+      listener = function (event) {
+        assert.equal(event.data.isProcessGlobalUndefined, true)
+        b.close()
+        done()
+      }
+      window.addEventListener('message', listener)
+
+      var windowUrl = require('url').format({
+        pathname: `${fixtures}/pages/window-opener-no-node-integration.html`,
+        protocol: 'file',
+        query: {
+          p: `${fixtures}/pages/window-opener-node.html`
+        },
+        slashes: true
+      })
+      b = window.open(windowUrl, '', 'nodeIntegration=no,show=no')
     })
 
     it('does not override child options', function (done) {
