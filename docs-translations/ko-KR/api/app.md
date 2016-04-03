@@ -353,6 +353,10 @@ npm 모듈 규칙에 따라 대부분의 경우 `package.json`의 `name` 필드�
 현재 어플리케이션의 [로케일](https://ko.wikipedia.org/wiki/%EB%A1%9C%EC%BC%80%EC%9D%BC)을
 반환합니다.
 
+**참고:** 패키징된 앱을 배포할 때, `locales` 폴더도 같이 배포해야 합니다.
+
+**참고:** Windows에선 `ready` 이벤트가 발생한 이후에 이 메서드를 사용해야 합니다.
+
 ### `app.addRecentDocument(path)` _OS X_ _Windows_
 
 * `path` String

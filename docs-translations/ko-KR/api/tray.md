@@ -74,7 +74,7 @@ appIcon.setContextMenu(contextMenu);
 
 트레이 아이콘이 클릭될 때 발생하는 이벤트입니다.
 
-__주의:__ `bounds`는 OS X 와 Windows에서만 작동합니다.
+**참고:** `bounds`는 OS X 와 Windows에서만 작동합니다.
 
 ### Event: 'right-click' _OS X_ _Windows_
 

@@ -12,6 +12,13 @@ const dialog = require('electron').dialog;
 console.log(dialog.showOpenDialog({ properties: [ 'openFile', 'openDirectory', 'multiSelections' ]}));
 ```
 
+대화 상자는 Electron의 메인 스레드에서 열립니다. 만약 랜더러 프로세스에서 대화 상자
+객체를 사용하고 싶다면, `remote`를 통해 접근하는 방법을 고려해야 합니다:
+
+```javascript
+const dialog = require('electron').remote.dialog;
+```
+
 **OS X 참고**: 대화 상자를 시트처럼 보여지게 하려면 `browserWindow` 인자에
 `BrowserWindow` 객체의 참조를 제공하면 됩니다.
 
