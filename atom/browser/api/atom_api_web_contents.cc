@@ -728,6 +728,13 @@ void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
   params.should_clear_history_list = true;
   params.override_user_agent = content::NavigationController::UA_OVERRIDE_TRUE;
   web_contents()->GetController().LoadURLWithParams(params);
+
+  // Set the background color of RenderViewHost to transparent so it doesn't
+  // override the background color set by the user.
+  // We have to call it right after LoadURL because the RenderViewHost is only
+  // created after loading a page.
+  web_contents()->GetRenderViewHost()->GetWidget()->GetView()
+                ->SetBackgroundColor(SK_ColorTRANSPARENT);
 }
 
 void WebContents::DownloadURL(const GURL& url) {

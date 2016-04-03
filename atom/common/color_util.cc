@@ -4,31 +4,45 @@
 
 #include "atom/common/color_util.h"
 
+#include <vector>
+
+#include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 
 namespace atom {
 
-SkColor ParseHexColor(const std::string& name) {
-  auto color = name.substr(1);
-  unsigned length = color.size();
-  SkColor result = (length != 8 ? 0xFF000000 : 0x00000000);
-  unsigned value = 0;
-  if (length != 3 && length != 6 && length != 8)
-    return result;
-  for (unsigned i = 0; i < length; ++i) {
-    if (!base::IsHexDigit(color[i]))
-      return result;
-    value <<= 4;
-    value |= (color[i] < 'A' ? color[i] - '0' : (color[i] - 'A' + 10) & 0xF);
+SkColor ParseHexColor(const std::string& color_string) {
+  // Check the string for incorrect formatting.
+  if (color_string.empty() || color_string[0] != '#')
+    return SK_ColorWHITE;
+
+  // Prepend FF if alpha channel is not specified.
+  std::string source = color_string.substr(1);
+  if (source.size() == 3)
+    source.insert(0, "F");
+  else if (source.size() == 6)
+    source.insert(0, "FF");
+
+  // Convert the string from #FFF format to #FFFFFF format.
+  std::string formatted_color;
+  if (source.size() == 4) {
+    for (size_t i = 0; i < 4; ++i) {
+      formatted_color += source[i];
+      formatted_color += source[i];
+    }
+  } else if (source.size() == 8) {
+    formatted_color = source;
+  } else {
+    return SK_ColorWHITE;
   }
-  if (length == 6 || length == 8) {
-    result |= value;
-    return result;
-  }
-  result |= (value & 0xF00) << 12 | (value & 0xF00) << 8
-      | (value & 0xF0) << 8 | (value & 0xF0) << 4
-      | (value & 0xF) << 4 | (value & 0xF);
-  return result;
+
+  // Convert the string to an integer and make sure it is in the correct value
+  // range.
+  std::vector<uint8_t> bytes;
+  if (!base::HexStringToBytes(formatted_color, &bytes))
+    return SK_ColorWHITE;
+
+  return SkColorSetARGB(bytes[0], bytes[1], bytes[2], bytes[3]);
 }
 
 }  // namespace atom
