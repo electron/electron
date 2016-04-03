@@ -1,6 +1,6 @@
 {
   "name": "electron",
-  "version": "0.37.3",
+  "version": "0.37.4",
   "devDependencies": {
     "asar": "^0.10.0",
     "request": "*",
