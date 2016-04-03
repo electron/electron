@@ -10,6 +10,7 @@
 #include "atom/common/draggable_region.h"
 #include "atom/common/options_switches.h"
 #include "base/mac/mac_util.h"
+#include "base/mac/scoped_cftyperef.h"
 #include "base/strings/sys_string_conversions.h"
 #include "brightray/browser/inspectable_web_contents.h"
 #include "brightray/browser/inspectable_web_contents_view.h"
@@ -806,8 +807,9 @@ bool NativeWindowMac::IsKiosk() {
 }
 
 void NativeWindowMac::SetBackgroundColor(const std::string& color_name) {
-  SkColor color = ParseHexColor(color_name);
-  [window_ setBackgroundColor:skia::SkColorToCalibratedNSColor(color)];
+  base::ScopedCFTypeRef<CGColorRef> color =
+      skia::CGColorCreateFromSkColor(ParseHexColor(color_name));
+  [[[window_ contentView] layer] setBackgroundColor:color];
 }
 
 void NativeWindowMac::SetHasShadow(bool has_shadow) {
