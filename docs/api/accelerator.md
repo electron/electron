@@ -5,8 +5,8 @@ multiple modifiers and key codes, combined by the `+` character.
 
 Examples:
 
-* `Command+A`
-* `Ctrl+Shift+Z`
+* `CommandOrControl+A`
+* `CommandOrControl+Shift+Z`
 
 ## Platform notice
 
