@@ -141,6 +141,10 @@ Window::Window(v8::Isolate* isolate, const mate::Dictionary& options) {
   if (options.Get(options::kZoomFactor, &value))
     web_preferences.Set(options::kZoomFactor, value);
 
+  // Copy the backgroundColor to webContents.
+  if (options.Get(options::kBackgroundColor, &value))
+    web_preferences.Set(options::kBackgroundColor, value);
+
   // Creates the WebContents used by BrowserWindow.
   auto web_contents = WebContents::Create(isolate, web_preferences);
   web_contents_.Reset(isolate, web_contents.ToV8());

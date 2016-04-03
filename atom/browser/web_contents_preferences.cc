@@ -116,6 +116,11 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
       LOG(ERROR) << "preload url must be file:// protocol.";
   }
 
+  // --background-color.
+  std::string color;
+  if (web_preferences.GetString(options::kBackgroundColor, &color))
+    command_line->AppendSwitchASCII(switches::kBackgroundColor, color);
+
   // The zoom factor.
   double zoom_factor = 1.0;
   if (web_preferences.GetDouble(options::kZoomFactor, &zoom_factor) &&

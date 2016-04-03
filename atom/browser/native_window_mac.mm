@@ -6,6 +6,7 @@
 
 #include <string>
 
+#include "atom/common/color_util.h"
 #include "atom/common/draggable_region.h"
 #include "atom/common/options_switches.h"
 #include "base/mac/mac_util.h"
@@ -18,6 +19,7 @@
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/render_widget_host_view.h"
 #include "native_mate/dictionary.h"
+#include "skia/ext/skia_utils_mac.h"
 #include "ui/gfx/skia_util.h"
 
 namespace {
@@ -804,12 +806,8 @@ bool NativeWindowMac::IsKiosk() {
 }
 
 void NativeWindowMac::SetBackgroundColor(const std::string& color_name) {
-  SkColor background_color = NativeWindow::ParseHexColor(color_name);
-  NSColor *color = [NSColor colorWithCalibratedRed:SkColorGetR(background_color)
-    green:SkColorGetG(background_color)
-    blue:SkColorGetB(background_color)
-    alpha:SkColorGetA(background_color)/255.0f];
-  [window_ setBackgroundColor:color];
+  SkColor color = ParseHexColor(color_name);
+  [window_ setBackgroundColor:skia::SkColorToCalibratedNSColor(color)];
 }
 
 void NativeWindowMac::SetHasShadow(bool has_shadow) {
