@@ -16,7 +16,7 @@ following python modules:
 ## Getting the Code
 
 ```bash
-$ git clone https://github.com/atom/electron.git
+$ git clone https://github.com/electron/electron.git
 ```
 
 ## Bootstrapping

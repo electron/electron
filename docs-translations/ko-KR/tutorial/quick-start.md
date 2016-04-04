@@ -186,7 +186,7 @@ $ ./Electron.app/Contents/MacOS/Electron your-app/
 ```
 
 어플리케이션 실행파일은 `Electron`의 release 패키지에 포함되어 있습니다.
-[여기](https://github.com/atom/electron/releases)에서 다운로드 받을 수 있습니다.
+[여기](https://github.com/electron/electron/releases)에서 다운로드 받을 수 있습니다.
 
 ### 배포용 실행 파일 만들기
 
@@ -195,7 +195,7 @@ $ ./Electron.app/Contents/MacOS/Electron your-app/
 
 ### 미리 작성된 앱 실행하기
 
-[`atom/electron-quick-start`](https://github.com/atom/electron-quick-start)
+[`atom/electron-quick-start`](https://github.com/electron/electron-quick-start)
 저장소를 클론하면 이 문서에서 작성한 예제 앱을 바로 실행해 볼 수 있습니다.
 
 **참고**: 이 예제를 실행시키려면 [Git](https://git-scm.com)과
@@ -206,7 +206,7 @@ $ ./Electron.app/Contents/MacOS/Electron your-app/
 
 ```bash
 # 저장소를 클론합니다
-$ git clone https://github.com/atom/electron-quick-start
+$ git clone https://github.com/electron/electron-quick-start
 # 저장소 안으로 들어갑니다
 $ cd electron-quick-start
 # 어플리케이션의 종속성 모듈을 설치한 후 실행합니다

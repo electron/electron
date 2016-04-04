@@ -43,7 +43,7 @@ Para agregar otro set (o un set parcial):
 - Actualizar el `README.md` dentro del subdirectorio del lenguaje apuntando a
   los archivos que has traducido.
 - Agregar un enlace al folder de tu traducción en la sección principal Electron
-[README](https://github.com/atom/electron#documentation-translations).
+[README](https://github.com/electron/electron#documentation-translations).
 
 ## Leyendo la Documentación de Electron
 

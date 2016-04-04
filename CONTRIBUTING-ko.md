@@ -12,7 +12,7 @@
 
 ## 이슈 제출
 
-* [여기](https://github.com/atom/electron/issues/new)에서 새로운 이슈를 만들 수
+* [여기](https://github.com/electron/electron/issues/new)에서 새로운 이슈를 만들 수
 있습니다. 하지만 이슈를 작성하기 전에 아래의 항목들을 숙지하고 가능한한 이슈 보고에
 대해 최대한 많은 정보와 자세한 설명을 포함해야 합니다. 가능하다면 다음 항목을 포함해야
 합니다:
@@ -23,7 +23,7 @@
 * 추가로 다음 사항을 준수하면 이슈를 해결하는데 큰 도움이 됩니다:
   * 스크린샷 또는 GIF 애니메이션 이미지들
   * 터미널에 출력된 에러의 내용 또는 개발자 도구, 알림창에 뜬 내용
-  * [Cursory search](https://github.com/atom/electron/issues?utf8=✓&q=is%3Aissue+)를
+  * [Cursory search](https://github.com/electron/electron/issues?utf8=✓&q=is%3Aissue+)를
   통해 이미 비슷한 내용의 이슈가 등록되어있는지 확인
 
 ## Pull Request 하기
