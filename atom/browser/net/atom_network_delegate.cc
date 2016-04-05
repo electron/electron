@@ -178,6 +178,8 @@ void ReadFromResponseObject(const base::DictionaryValue& response,
          !it.IsAtEnd();
          it.Advance()) {
       const base::ListValue* list;
+      if (base::ToLowerASCII(it.key()) == "location")
+        (*headers)->ReplaceStatusLine("HTTP/1.1 302 Found");
       if (it.value().GetAsList(&list)) {
         (*headers)->RemoveHeader(it.key());
         for (size_t i = 0; i < list->GetSize(); ++i) {
