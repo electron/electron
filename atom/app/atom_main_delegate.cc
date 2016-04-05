@@ -17,6 +17,7 @@
 #include "base/debug/stack_trace.h"
 #include "base/environment.h"
 #include "base/logging.h"
+#include "base/path_service.h"
 #include "chrome/common/chrome_paths.h"
 #include "content/public/common/content_switches.h"
 #include "ui/base/l10n/l10n_util.h"
@@ -113,13 +114,13 @@ void LoadExtensionResources() {
 
   // Append returns a new FilePath
   pak_resource_paths.push_back(
-    pak_dir.Append(FILE_PATH_LITERAL("extensions_resources.pak"));
+    pak_dir.Append(FILE_PATH_LITERAL("extensions_resources.pak")));
   pak_resource_paths.push_back(
-    pak_dir.Append(FILE_PATH_LITERAL("extensions_renderer_resources.pak"));
+    pak_dir.Append(FILE_PATH_LITERAL("extensions_renderer_resources.pak")));
   pak_resource_paths.push_back(
-    pak_dir.Append(FILE_PATH_LITERAL("atom_resources.pak"));
+    pak_dir.Append(FILE_PATH_LITERAL("atom_resources.pak")));
   pak_resource_paths.push_back(
-    pak_dir.Append(FILE_PATH_LITERAL("extensions_api_resources.pak"));
+    pak_dir.Append(FILE_PATH_LITERAL("extensions_api_resources.pak")));
 
 #endif
 
