@@ -89,7 +89,7 @@ const CGFloat kVerticalTitleMargin = 2;
   // Apply the higlight color if the image is a template image. When this moves
   // to using the new [NSStatusItem button] API, this should work automagically.
   if ([image isTemplate] == YES) {
-	   NSImage * imageWithColor = [image copy];
+	   NSImage * imageWithColor = [image copy] autorelease];
     [imageWithColor lockFocus];
     [[self colorWithHighlight: highlightContent] set];
     CGRect imageBounds = CGRectMake(0,0, image.size.width, image.size.height);
