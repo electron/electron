@@ -16,7 +16,7 @@
       'arm_neon%': 1,
 
       # Abosulte path to source root.
-      'source_root%': '<!(python <(DEPTH)/tools/atom_source_root.py)',
+      'source_root%': '<!(node <(DEPTH)/tools/atom_source_root.js)',
     },
 
     # Copy conditionally-set variables out one scope.
