@@ -217,6 +217,12 @@ describe('node feature', function () {
     })
   })
 
+  describe('process.version', function () {
+    it('should not have -pre', function () {
+      assert(!process.version.endsWith('-pre'))
+    })
+  })
+
   describe('vm.createContext', function () {
     it('should not crash', function () {
       require('vm').runInNewContext('')
