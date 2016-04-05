@@ -102,20 +102,30 @@ describe('browser-window module', function () {
     })
 
     it('should emit did-fail-load event for files that do not exist', function (done) {
-      w.webContents.on('did-fail-load', function (event, code) {
+      w.webContents.on('did-fail-load', function (event, code, desc, url, isMainFrame) {
         assert.equal(code, -6)
+        assert.equal(isMainFrame, true)
         done()
       })
       w.loadURL('file://a.txt')
     })
 
     it('should emit did-fail-load event for invalid URL', function (done) {
-      w.webContents.on('did-fail-load', function (event, code, desc) {
+      w.webContents.on('did-fail-load', function (event, code, desc, url, isMainFrame) {
         assert.equal(desc, 'ERR_INVALID_URL')
         assert.equal(code, -300)
+        assert.equal(isMainFrame, true)
         done()
       })
       w.loadURL('http://example:port')
+    })
+
+    it('should set `mainFrame = false` on did-fail-load events in iframes', function (done) {
+      w.webContents.on('did-fail-load', function (event, code, desc, url, isMainFrame) {
+        assert.equal(isMainFrame, false)
+        done()
+      })
+      w.loadURL('file://' + path.join(fixtures, 'api', 'did-fail-load-iframe.html'))
     })
   })
 

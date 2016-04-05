@@ -541,7 +541,12 @@ void WebContents::DidFailProvisionalLoad(
     int error_code,
     const base::string16& error_description,
     bool was_ignored_by_handler) {
-  Emit("did-fail-provisional-load", error_code, error_description, url);
+  bool is_main_frame = !render_frame_host->GetParent();
+  Emit("did-fail-provisional-load",
+       error_code,
+       error_description,
+       url,
+       is_main_frame);
 }
 
 void WebContents::DidFailLoad(content::RenderFrameHost* render_frame_host,
@@ -549,7 +554,12 @@ void WebContents::DidFailLoad(content::RenderFrameHost* render_frame_host,
                               int error_code,
                               const base::string16& error_description,
                               bool was_ignored_by_handler) {
-  Emit("did-fail-load", error_code, error_description, validated_url);
+  bool is_main_frame = !render_frame_host->GetParent();
+  Emit("did-fail-load",
+       error_code,
+       error_description,
+       validated_url,
+       is_main_frame);
 }
 
 void WebContents::DidStartLoading() {
@@ -705,7 +715,8 @@ void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
     Emit("did-fail-load",
          static_cast<int>(net::ERR_INVALID_URL),
          net::ErrorToShortString(net::ERR_INVALID_URL),
-         url.possibly_invalid_spec());
+         url.possibly_invalid_spec(),
+         true);
     return;
   }
 
