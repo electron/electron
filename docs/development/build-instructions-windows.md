@@ -27,7 +27,7 @@ building with Visual Studio will come in the future.
 ## Getting the Code
 
 ```powershell
-$ git clone https://github.com/atom/electron.git
+$ git clone https://github.com/electron/electron.git
 ```
 
 ## Bootstrapping
@@ -84,7 +84,7 @@ $ python script\test.py
 ```
 
 Tests that include native modules (e.g. `runas`) can't be executed with the
-debug build (see [#2558](https://github.com/atom/electron/issues/2558) for
+debug build (see [#2558](https://github.com/electron/electron/issues/2558) for
 details), but they will work with the release build.
 
 To run the tests with the release build use:

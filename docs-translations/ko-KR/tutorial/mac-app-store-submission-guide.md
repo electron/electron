@@ -164,5 +164,5 @@ ERN의 승인을 얻는 방법은, 다음 글을 참고하는 것이 좋습니�
 [create-record]: https://developer.apple.com/library/ios/documentation/LanguagesUtilities/Conceptual/iTunesConnect_Guide/Chapters/CreatingiTunesConnectRecord.html
 [submit-for-review]: https://developer.apple.com/library/ios/documentation/LanguagesUtilities/Conceptual/iTunesConnect_Guide/Chapters/SubmittingTheApp.html
 [app-sandboxing]: https://developer.apple.com/app-sandboxing/
-[issue-3871]: https://github.com/atom/electron/issues/3871
+[issue-3871]: https://github.com/electron/electron/issues/3871
 [ern-tutorial]: https://carouselapps.com/2015/12/15/legally-submit-app-apples-app-store-uses-encryption-obtain-ern/

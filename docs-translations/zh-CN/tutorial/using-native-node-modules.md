@@ -4,7 +4,7 @@ Electron 同样也支持原生模块，但由于和官方的 Node 相比使用�
 
 ## 原生Node模块的兼容性
 
-当 Node 开始换新的V8引擎版本时，原生模块可能“坏”掉。为确保一切工作正常，你需要检查你想要使用的原生模块是否被 Electron 内置的 Node 支持。你可以在[这里](https://github.com/atom/electron/releases)查看 Electron 内置的 Node 版本，或者使用 `process.version` (参考：[快速入门](https://github.com/atom/electron/blob/master/docs/tutorial/quick-start.md))查看。
+当 Node 开始换新的V8引擎版本时，原生模块可能“坏”掉。为确保一切工作正常，你需要检查你想要使用的原生模块是否被 Electron 内置的 Node 支持。你可以在[这里](https://github.com/electron/electron/releases)查看 Electron 内置的 Node 版本，或者使用 `process.version` (参考：[快速入门](https://github.com/electron/electron/blob/master/docs/tutorial/quick-start.md))查看。
 
 考虑到 [NAN](https://github.com/nodejs/nan/) 可以使你的开发更容易对多版本 Node 的支持，建议使用它来开发你自己的模块。你也可以使用 [NAN](https://github.com/nodejs/nan/) 来移植旧的模块到新的 Nod e版本，以使它们可以在新的 Electron 下良好工作。
 

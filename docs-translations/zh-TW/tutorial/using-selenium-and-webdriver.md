@@ -116,7 +116,7 @@ client
 
 ## 運作流程
 
-要在不重新建置 Electron 的情況下測試你的應用程式，只需要 [放置](https://github.com/atom/electron/blob/master/docs/tutorial/application-distribution.md) 你的應用程式到 Electron 的資源目錄中即可。
+要在不重新建置 Electron 的情況下測試你的應用程式，只需要 [放置](https://github.com/electron/electron/blob/master/docs/tutorial/application-distribution.md) 你的應用程式到 Electron 的資源目錄中即可。
 
 或者，傳遞一個指向你應用程式資料夾的參數來透過你的 Electron 執行檔運行，這會減少複製你應用程式到 Electron 資源資料夾的需求。
 

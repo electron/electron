@@ -28,4 +28,4 @@ __4. 多上下文__
 
 通过使用 Node 的[多上下文](http://strongloop.com/strongblog/whats-new-node-js-v0-12-multiple-context-execution/)特性，Electron不需要在网页中引入新的 JavaScript 上下文。
 
-[node-bindings]: https://github.com/atom/electron/tree/master/atom/common
+[node-bindings]: https://github.com/electron/electron/tree/master/atom/common

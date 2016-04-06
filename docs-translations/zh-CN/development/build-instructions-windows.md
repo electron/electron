@@ -25,7 +25,7 @@
 ## 获取代码
 
 ```powershell
-$ git clone https://github.com/atom/electron.git
+$ git clone https://github.com/electron/electron.git
 ```
 
 ## Bootstrapping
@@ -76,7 +76,7 @@ $ python script\cpplint.py
 ```powershell
 $ python script\test.py
 ```
-在构建 debug 时为 Tests包含原生模块 (例如 `runas`) 将不会执行(详情 [#2558](https://github.com/atom/electron/issues/2558)), 但是它们在构建 release 会起效.
+在构建 debug 时为 Tests包含原生模块 (例如 `runas`) 将不会执行(详情 [#2558](https://github.com/electron/electron/issues/2558)), 但是它们在构建 release 会起效.
 
 运行 release 构建使用 :
 

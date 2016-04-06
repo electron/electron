@@ -41,7 +41,7 @@ Electron 문서를 작성하는 규칙은 다음과 같습니다.
   유지합니다.
 - 문서를 번역합니다.
 - 언어 디렉터리 내의 `README.md`에 번역한 문서의 링크를 추가합니다.
-- 메인(upstream) Electron의 [README](https://github.com/atom/electron#documentation-translations)에
+- 메인(upstream) Electron의 [README](https://github.com/electron/electron#documentation-translations)에
   번역된 언어 디렉터리의 링크를 추가합니다.
 
 ## Electron 문서 읽기

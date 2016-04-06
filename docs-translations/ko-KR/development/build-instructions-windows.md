@@ -27,7 +27,7 @@ Studio를 사용할 수 없습니다. 하지만 여전히 Electron을 개발할 
 ## 코드 가져오기
 
 ```powershell
-$ git clone https://github.com/atom/electron.git
+$ git clone https://github.com/electron/electron.git
 ```
 
 ## 부트 스트랩

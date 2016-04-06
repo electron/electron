@@ -112,7 +112,7 @@ client
 
 ## ワークフロー
 
-Electronはリビルドせずにアプリケーションをテストするために、単純にElectronのリソースディレクトリでアプリのソースを[配置します](https://github.com/atom/electron/blob/master/docs/tutorial/application-distribution.md)。
+Electronはリビルドせずにアプリケーションをテストするために、単純にElectronのリソースディレクトリでアプリのソースを[配置します](https://github.com/electron/electron/blob/master/docs/tutorial/application-distribution.md)。
 
 もしくは、アプリのフォルダーを引数にしてElectronバイナリを実行します。これは、Electronのリソースディレクトリにアプリをコピー＆ペーストする必要性を除きます。
 

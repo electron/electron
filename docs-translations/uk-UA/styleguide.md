@@ -39,7 +39,7 @@ or [writing Electron documentation](#writing-electron-documentation).
 - Translate the files.
 - Update the `README.md` within your language directory to link to the files
   you have translated.
-- Add a link to your translation directory on the main Electron [README](https://github.com/atom/electron#documentation-translations).
+- Add a link to your translation directory on the main Electron [README](https://github.com/electron/electron#documentation-translations).
 
 ## Читання документації Electron
 
