@@ -91,11 +91,16 @@ bool NativeWindowViews::PreHandleMSG(
     // accessibility object.
     case WM_GETOBJECT: {
       const DWORD obj_id = static_cast<DWORD>(l_param);
+      if (enabled_a11y_support_) return false;
+
       if (obj_id == OBJID_CLIENT) {
         const auto axState = content::BrowserAccessibilityState::GetInstance();
-        if (axState && !axState->IsAccessibleBrowser())
+        if (axState && !axState->IsAccessibleBrowser()) {
           axState->OnScreenReaderDetected();
+          enabled_a11y_support_ = true;
+        }
       }
+
       return false;
     }
     case WM_COMMAND:
