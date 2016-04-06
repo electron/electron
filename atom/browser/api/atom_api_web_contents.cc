@@ -426,6 +426,7 @@ void WebContents::AddNewContents(content::WebContents* source,
                   window_open_event,
                   "about:blank",
                   "",
+                  disposition,
                   *options);
   }
 }
