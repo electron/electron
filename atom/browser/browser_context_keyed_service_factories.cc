@@ -10,7 +10,6 @@
 #include "extensions/browser/api/api_resource_manager.h"
 #include "extensions/browser/api/audio/audio_api.h"
 #include "extensions/browser/api/idle/idle_manager_factory.h"
-#include "extensions/browser/api/networking_private/networking_private_event_router_factory.h"
 #include "extensions/browser/api/socket/socket.h"
 #include "extensions/browser/api/socket/tcp_socket.h"
 #include "extensions/browser/api/socket/udp_socket.h"
@@ -50,7 +49,6 @@ void EnsureBrowserContextKeyedServiceFactoriesBuilt() {
   extensions::ExtensionMessageFilter::EnsureShutdownNotifierFactoryBuilt();
   extensions::ExtensionPrefsFactory::GetInstance();
   extensions::IdleManagerFactory::GetInstance();
-  extensions::NetworkingPrivateEventRouterFactory::GetInstance();
   extensions::ProcessManagerFactory::GetInstance();
   extensions::RendererStartupHelperFactory::GetInstance();
   extensions::RuntimeAPI::GetFactoryInstance();

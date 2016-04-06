@@ -278,6 +278,8 @@
       'conditions': [
         ['enable_extensions==1', {
           'sources': [ '<@(extension_sources)' ],
+        }],
+        ['enable_extensions==1 and libchromiumcontent_component==1', {
           'link_settings': {
             'libraries': [ '<@(extension_libraries)' ],
           },

@@ -27,7 +27,6 @@
 #include "extensions/browser/api/declarative/declarative_api.h"
 #include "extensions/browser/api/extensions_api_client.h"
 #include "extensions/browser/api/idle/idle_api.h"
-#include "extensions/browser/api/networking_private/networking_private_api.h"
 #include "extensions/browser/api/runtime/runtime_api.h"
 #include "extensions/browser/api/runtime/runtime_api_delegate.h"
 #include "extensions/browser/api/socket/socket_api.h"
@@ -406,33 +405,7 @@ AtomExtensionsBrowserClient::GetExtensionSystemFactory() {
 
 void AtomExtensionsBrowserClient::RegisterExtensionFunctions(
     ExtensionFunctionRegistry* registry) const {
-    registry->RegisterFunction<WebRequestHandlerBehaviorChangedFunction>();
-  registry->RegisterFunction<NetworkingPrivateGetPropertiesFunction>();
-  registry->RegisterFunction<NetworkingPrivateGetManagedPropertiesFunction>();
-  registry->RegisterFunction<NetworkingPrivateGetStateFunction>();
-  registry->RegisterFunction<NetworkingPrivateSetPropertiesFunction>();
-  registry->RegisterFunction<NetworkingPrivateCreateNetworkFunction>();
-  registry->RegisterFunction<NetworkingPrivateForgetNetworkFunction>();
-  registry->RegisterFunction<NetworkingPrivateGetNetworksFunction>();
-  registry->RegisterFunction<NetworkingPrivateGetVisibleNetworksFunction>();
-  registry->RegisterFunction<NetworkingPrivateGetEnabledNetworkTypesFunction>();
-  registry->RegisterFunction<NetworkingPrivateGetDeviceStatesFunction>();
-  registry->RegisterFunction<NetworkingPrivateEnableNetworkTypeFunction>();
-  registry->RegisterFunction<NetworkingPrivateDisableNetworkTypeFunction>();
-  registry->RegisterFunction<NetworkingPrivateRequestNetworkScanFunction>();
-  registry->RegisterFunction<NetworkingPrivateStartConnectFunction>();
-  registry->RegisterFunction<NetworkingPrivateStartDisconnectFunction>();
-  registry->RegisterFunction<NetworkingPrivateStartActivateFunction>();
-  registry->RegisterFunction<NetworkingPrivateVerifyDestinationFunction>();
-  registry->
-      RegisterFunction<NetworkingPrivateVerifyAndEncryptCredentialsFunction>();
-  registry->RegisterFunction<NetworkingPrivateVerifyAndEncryptDataFunction>();
-  registry->
-      RegisterFunction<NetworkingPrivateSetWifiTDLSEnabledStateFunction>();
-  registry->RegisterFunction<NetworkingPrivateGetWifiTDLSStatusFunction>();
-  registry->RegisterFunction<NetworkingPrivateGetCaptivePortalStatusFunction>();
-  registry->RegisterFunction<NetworkingPrivateUnlockCellularSimFunction>();
-  registry->RegisterFunction<NetworkingPrivateSetCellularSimStateFunction>();
+  registry->RegisterFunction<WebRequestHandlerBehaviorChangedFunction>();
   registry->RegisterFunction<api::SocketsUdpCreateFunction>();
   registry->RegisterFunction<api::SocketsUdpUpdateFunction>();
   registry->RegisterFunction<api::SocketsUdpSetPausedFunction>();
