@@ -22,6 +22,9 @@
 `features` 문자열은 표준 브라우저의 포맷을 따르고 있지만, 각 기능은 `BrowserWindow`의
 옵션이어야 합니다.
 
+**참고:** Node 통합 기능은 열린 `window`에서 부모 윈도우가 해당 옵션이
+비활성화되어있는 경우 항상 비활성화됩니다.
+
 ### `window.opener.postMessage(message, targetOrigin)`
 
 * `message` String
