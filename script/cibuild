@@ -94,12 +94,12 @@ def run_script(script, args=[]):
 def log_versions():
   sys.stderr.write('\nnode --version\n')
   sys.stderr.flush()
-  subprocess.call(["node", "--version"])
+  subprocess.call(['node', '--version'])
 
   sys.stderr.write('\nnpm --version\n')
   sys.stderr.flush()
   npm = 'npm.cmd' if PLATFORM == 'win32' else 'npm'
-  subprocess.call([npm, "--version"])
+  subprocess.call([npm, '--version'])
 
 
 def setup_nodenv():
