@@ -78,18 +78,18 @@ const CGFloat kVerticalTitleMargin = 2;
   BOOL highlightContent = highlight | [self isDarkMode];
   CGFloat thickness = [[statusItem_ statusBar] thickness];
 
-  // Draw the system bar background
+  // Draw the system bar background.
   [statusItem_ drawStatusBarBackgroundInRect:self.bounds withHighlight:highlight];
 
-  // Determine which image to use
-  NSImage * image = image_.get();
+  // Determine which image to use.
+  NSImage* image = image_.get();
   if (inMouseEventSequence_ && alternateImage_) {
     image = alternateImage_.get();
   }
   // Apply the higlight color if the image is a template image. When this moves
   // to using the new [NSStatusItem button] API, this should work automagically.
   if ([image isTemplate] == YES) {
-	   NSImage * imageWithColor = [image copy] autorelease];
+    NSImage* imageWithColor = [[image copy] autorelease];
     [imageWithColor lockFocus];
     [[self colorWithHighlight: highlightContent] set];
     CGRect imageBounds = CGRectMake(0,0, image.size.width, image.size.height);
@@ -162,17 +162,16 @@ const CGFloat kVerticalTitleMargin = 2;
   return [attributes size].width;
 }
 
-- (NSColor*)colorWithHighlight:(BOOL)highlight
-{
+- (NSColor*)colorWithHighlight:(BOOL)highlight {
   return highlight ?
-    [NSColor whiteColor] :
-    [NSColor colorWithRed:0.265625 green:0.25390625 blue:0.234375 alpha:1.0];
+      [NSColor whiteColor] :
+      [NSColor colorWithRed:0.265625 green:0.25390625 blue:0.234375 alpha:1.0];
 }
 
 - (NSDictionary*)titleAttributesWithHighlight:(BOOL)highlight {
   return @{
-    NSFontAttributeName: [NSFont menuBarFontOfSize:0],
-    NSForegroundColorAttributeName: [self colorWithHighlight: highlight]
+      NSFontAttributeName:[NSFont menuBarFontOfSize:0],
+      NSForegroundColorAttributeName:[self colorWithHighlight: highlight]
   };
 }
 
