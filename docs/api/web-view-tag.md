@@ -18,8 +18,13 @@ form, the `webview` tag includes the `src` of the web page and css styles that
 control the appearance of the `webview` container:
 
 ```html
-<webview id="foo" src="https://www.github.com/" style="display:inline-block; width:640px; height:480px"></webview>
+<webview id="foo" src="https://www.github.com/" style="display:inline-flex; width:640px; height:480px"></webview>
 ```
+Please note that the `webview` tag's style uses `display:flex;` internally to 
+ensure the child `object` element fills the full height and width of its `webview` 
+container when used with traditional and flexbox layouts (since v0.36.11). Please 
+do not overwrite the default `display:flex;` CSS property, unless specifying 
+`display:inline-flex;` for inline layout.
 
 If you want to control the guest content in any way, you can write JavaScript
 that listens for `webview` events and responds to those events using the
