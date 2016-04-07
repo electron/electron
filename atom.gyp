@@ -284,6 +284,15 @@
             'libraries': [ '<@(extension_libraries)' ],
           },
         }],
+        ['enable_extensions==1 and OS=="linux" and libchromiumcontent_component==0', {
+          'direct_dependent_settings': {
+            'ldflags': [
+              '-Wl,--whole-archive',
+              '<@(extension_libraries)',
+              '-Wl,--no-whole-archive',
+            ],
+          }
+        }],
         ['libchromiumcontent_component', {
           'link_settings': {
             'libraries': [ '<@(libchromiumcontent_v8_libraries)' ],
