@@ -33,8 +33,8 @@ fi
 
 python2=$(which python2)
 if [ ! -x "$python2" ] ; then
-	python2=python
-fi 
+  python2=python
+fi
 
 rewrite=`dirname $0`/rewrite_dirs.py
 package=${!#}
