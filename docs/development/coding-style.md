@@ -44,7 +44,7 @@ etc.
 Electron APIs uses the same capitalization scheme as Node.js:
 
 - When the module itself is a class like `BrowserWindow`, use CamelCase.
-- When the module is a set of APIs, like `clipboard`, use mixedCase.
+- When the module is a set of APIs, like `globalShortcut`, use mixedCase.
 - When the API is a property of object, and it is complex enough to be in a separate chapter like `win.webContents`, use mixedCase.
 - For other non-module APIs, use natural titles, like `<webview> Tag` or `Process Object`.
 
