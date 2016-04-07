@@ -84,6 +84,25 @@ bool NativeWindowViews::PreHandleMSG(
   NotifyWindowMessage(message, w_param, l_param);
 
   switch (message) {
+    // Screen readers send WM_GETOBJECT in order to get the accessibility
+    // object, so take this opportunity to push Chromium into accessible
+    // mode if it isn't already, always say we didn't handle the message
+    // because we still want Chromium to handle returning the actual
+    // accessibility object.
+    case WM_GETOBJECT: {
+      const DWORD obj_id = static_cast<DWORD>(l_param);
+      if (enabled_a11y_support_) return false;
+
+      if (obj_id == OBJID_CLIENT) {
+        const auto axState = content::BrowserAccessibilityState::GetInstance();
+        if (axState && !axState->IsAccessibleBrowser()) {
+          axState->OnScreenReaderDetected();
+          enabled_a11y_support_ = true;
+        }
+      }
+
+      return false;
+    }
     case WM_COMMAND:
       // Handle thumbar button click message.
       if (HIWORD(w_param) == THBN_CLICKED)
