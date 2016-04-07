@@ -271,7 +271,6 @@
       },
       'export_dependent_settings': [
         'vendor/brightray/brightray.gyp:brightray',
-        'extensions.gyp:atom_resources',
       ],
       'conditions': [
         ['enable_extensions==1', {
@@ -280,17 +279,9 @@
         }],
         ['enable_extensions==1 and libchromiumcontent_component==1', {
           'link_settings': {
+            # Following libraries are always linked statically.
             'libraries': [ '<@(extension_libraries)' ],
           },
-        }],
-        ['enable_extensions==1 and OS=="linux" and libchromiumcontent_component==0', {
-          'direct_dependent_settings': {
-            'ldflags': [
-              '-Wl,--whole-archive',
-              '<@(extension_libraries)',
-              '-Wl,--no-whole-archive',
-            ],
-          }
         }],
         ['libchromiumcontent_component', {
           'link_settings': {
@@ -431,6 +422,7 @@
           'type': 'shared_library',
           'dependencies': [
             '<(project_name)_lib',
+            'extensions.gyp:atom_resources',
           ],
           'sources': [
             '<@(framework_sources)',

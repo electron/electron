@@ -53,6 +53,7 @@
       'chromium_src/chrome/common/cloud_devices_urls.cc',
       'chromium_src/chrome/common/cloud_devices_urls.h',
       'chromium_src/components/sessions/core/session_id.h',
+      'chromium_src/components/sessions/core/session_id.cc',
       'chromium_src/components/sessions/core/sessions_export.h',
     ],
   },
