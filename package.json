@@ -2,7 +2,7 @@
   "name": "electron",
   "version": "0.37.5",
   "devDependencies": {
-    "asar": "^0.10.0",
+    "asar": "^0.11.0",
     "request": "*",
     "standard": "^6.0.8"
   },
