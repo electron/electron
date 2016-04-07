@@ -39,9 +39,6 @@
         '.',
       ],
       'conditions': [
-        ['enable_extensions==1', {
-          'dependencies': [ 'extensions.gyp:atom_resources' ]
-        }],
         ['OS=="mac"', {
           'product_name': '<(product_name)',
           'mac_bundle': 1,
@@ -274,9 +271,11 @@
       },
       'export_dependent_settings': [
         'vendor/brightray/brightray.gyp:brightray',
+        'extensions.gyp:atom_resources',
       ],
       'conditions': [
         ['enable_extensions==1', {
+          'dependencies': [ 'extensions.gyp:atom_resources' ]
           'sources': [ '<@(extension_sources)' ],
         }],
         ['enable_extensions==1 and libchromiumcontent_component==1', {
@@ -534,9 +533,6 @@
             },
           ],
           'conditions': [
-            ['enable_extensions==1', {
-              'dependencies': [ 'extensions.gyp:atom_resources' ]
-            }],
             ['mas_build==0', {
               'link_settings': {
                 'libraries': [
