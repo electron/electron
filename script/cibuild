@@ -98,7 +98,8 @@ def log_versions():
 
   sys.stderr.write('\nnpm --version\n')
   sys.stderr.flush()
-  subprocess.call(["npm", "--version"])
+  npm = 'npm.cmd' if PLATFORM == 'win32' else 'npm'
+  subprocess.call([npm, "--version"])
 
 
 def setup_nodenv():
