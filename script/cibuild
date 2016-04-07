@@ -32,6 +32,9 @@ LINUX_DEPS_ARM = [
 def main():
   os.environ['CI'] = '1'
 
+  if os.environ.has_key('JANKY_SHA1'):
+    setup_nodenv()
+
   target_arch = 'x64'
   if os.environ.has_key('TARGET_ARCH'):
     target_arch = os.environ['TARGET_ARCH']
@@ -84,6 +87,13 @@ def run_script(script, args=[]):
   sys.stderr.flush()
   script = os.path.join(SOURCE_ROOT, 'script', script)
   subprocess.check_call([sys.executable, script] + args)
+
+
+def setup_nodenv():
+  if os.isdir('/usr/local/share/nodenv'):
+    os.environ['NODENV_ROOT'] = '/usr/local/share/nodenv'
+    os.environ['PATH'] += '/usr/local/share/nodenv/bin:/usr/local/share/nodenv/shims:' + os.environ['PATH']
+    os.environ['NODENV_VERSION'] = 'v0.10.21'
 
 
 if __name__ == '__main__':
