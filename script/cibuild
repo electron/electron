@@ -92,7 +92,7 @@ def run_script(script, args=[]):
 def setup_nodenv():
   if os.path.isdir('/usr/local/share/nodenv'):
     os.environ['NODENV_ROOT'] = '/usr/local/share/nodenv'
-    os.environ['PATH'] += '/usr/local/share/nodenv/bin:/usr/local/share/nodenv/shims:' + os.environ['PATH']
+    os.environ['PATH'] = '/usr/local/share/nodenv/bin:/usr/local/share/nodenv/shims:' + os.environ['PATH']
     os.environ['NODENV_VERSION'] = 'v0.10.21'
     print('configured nodenv')
   subprocess.call(["node", "--version"])
