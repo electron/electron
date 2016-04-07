@@ -94,6 +94,7 @@ def setup_nodenv():
     os.environ['NODENV_ROOT'] = '/usr/local/share/nodenv'
     os.environ['PATH'] += '/usr/local/share/nodenv/bin:/usr/local/share/nodenv/shims:' + os.environ['PATH']
     os.environ['NODENV_VERSION'] = 'v0.10.21'
+  subprocess.call(["node", "--version"])
 
 
 if __name__ == '__main__':
