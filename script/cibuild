@@ -59,6 +59,8 @@ def main():
   npm = 'npm.cmd' if PLATFORM == 'win32' else 'npm'
   execute([npm, 'install', 'npm@2.12.1'])
 
+  log_versions()
+
   is_release = os.environ.has_key('ELECTRON_RELEASE')
   args = ['--target_arch=' + target_arch]
   if not is_release:
@@ -89,13 +91,21 @@ def run_script(script, args=[]):
   subprocess.check_call([sys.executable, script] + args)
 
 
+def log_versions():
+  sys.stderr.write('\nnode --version\n')
+  sys.stderr.flush()
+  subprocess.call(["node", "--version"])
+
+  sys.stderr.write('\nnpm --version\n')
+  sys.stderr.flush()
+  subprocess.call(["npm", "--version"])
+
+
 def setup_nodenv():
   if os.path.isdir('/usr/local/share/nodenv'):
     os.environ['NODENV_ROOT'] = '/usr/local/share/nodenv'
     os.environ['PATH'] = '/usr/local/share/nodenv/bin:/usr/local/share/nodenv/shims:' + os.environ['PATH']
     os.environ['NODENV_VERSION'] = 'v0.10.21'
-    print('configured nodenv')
-  subprocess.call(["node", "--version"])
 
 
 if __name__ == '__main__':
