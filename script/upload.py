@@ -14,7 +14,7 @@ from lib.util import atom_gyp, execute, get_atom_shell_version, parse_version, \
 from lib.github import GitHub
 
 
-ATOM_SHELL_REPO = 'atom/electron'
+ATOM_SHELL_REPO = 'electron/electron'
 ATOM_SHELL_VERSION = get_atom_shell_version()
 
 PROJECT_NAME = atom_gyp()['project_name%']
