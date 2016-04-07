@@ -143,6 +143,9 @@ class WebContents : public mate::TrackableObject<WebContents>,
                       const std::string& frame_name,
                       WindowOpenDisposition disposition);
 
+  // Callback triggered to set security state.
+  void OnSecurityStateResponse(const base::DictionaryValue& state);
+
   // Returns the web preferences of current WebContents.
   v8::Local<v8::Value> GetWebPreferences(v8::Isolate* isolate);
 
@@ -209,6 +212,9 @@ class WebContents : public mate::TrackableObject<WebContents>,
       content::WebContents* web_contents,
       bool user_gesture,
       bool last_unlocked_by_target) override;
+  content::SecurityStyle GetSecurityStyle(
+      content::WebContents* web_contents,
+      content::SecurityStyleExplanations* explanations) override;
 
   // content::WebContentsObserver:
   void BeforeUnloadFired(const base::TimeTicks& proceed_time) override;

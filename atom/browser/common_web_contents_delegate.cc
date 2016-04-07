@@ -14,6 +14,7 @@
 #include "atom/browser/ui/file_dialog.h"
 #include "atom/browser/web_dialog_helper.h"
 #include "base/files/file_util.h"
+#include "base/json/json_writer.h"
 #include "base/prefs/pref_service.h"
 #include "base/prefs/scoped_user_pref_update.h"
 #include "chrome/browser/printing/print_preview_message_handler.h"
@@ -175,6 +176,13 @@ void CommonWebContentsDelegate::SetOwnerWindow(
 
 void CommonWebContentsDelegate::DestroyWebContents() {
   web_contents_.reset();
+}
+
+void CommonWebContentsDelegate::SendMessageToDevTools(
+    const base::DictionaryValue& notification) {
+  std::string json_message;
+  base::JSONWriter::Write(notification, &json_message);
+  web_contents_->SendProtocolMessage(json_message);
 }
 
 content::WebContents* CommonWebContentsDelegate::GetWebContents() const {

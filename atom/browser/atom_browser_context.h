@@ -9,6 +9,10 @@
 
 #include "brightray/browser/browser_context.h"
 
+namespace content {
+struct SSLStatus;
+}
+
 namespace atom {
 
 class AtomDownloadManagerDelegate;
@@ -20,6 +24,12 @@ class WebViewManager;
 
 class AtomBrowserContext : public brightray::BrowserContext {
  public:
+  using SecurityStateHandler =
+      base::Callback<void(content::WebContents*,
+                          const content::SSLStatus&,
+                          scoped_refptr<net::X509Certificate>,
+                          base::Callback<void(const base::DictionaryValue&)>)>;
+
   AtomBrowserContext(const std::string& partition, bool in_memory);
   ~AtomBrowserContext() override;
 
@@ -51,6 +61,13 @@ class AtomBrowserContext : public brightray::BrowserContext {
 
   AtomNetworkDelegate* network_delegate() const { return network_delegate_; }
 
+  void set_security_state_handler(const SecurityStateHandler& handler) {
+    security_state_handler_ = handler;
+  }
+  SecurityStateHandler security_state_handler() const {
+      return security_state_handler_;
+  }
+
  private:
   scoped_ptr<AtomDownloadManagerDelegate> download_manager_delegate_;
   scoped_ptr<WebViewManager> guest_manager_;
@@ -60,6 +77,8 @@ class AtomBrowserContext : public brightray::BrowserContext {
   AtomCertVerifier* cert_verifier_;
   AtomURLRequestJobFactory* job_factory_;
   AtomNetworkDelegate* network_delegate_;
+
+  SecurityStateHandler security_state_handler_;
 
   bool allow_ntlm_everywhere_;
 
