@@ -31,6 +31,11 @@ then
   exit 1
 fi
 
+python2=$(which python2)
+if [ ! -x "$python2" ] ; then
+  python2=python
+fi
+
 rewrite=`dirname $0`/rewrite_dirs.py
 package=${!#}
 
@@ -46,4 +51,4 @@ set -e
 # pkg-config's |prefix| variable.
 prefix=`PKG_CONFIG_LIBDIR=$libdir pkg-config --variable=prefix "$package" | sed -e 's|/usr$||'`
 result=`PKG_CONFIG_LIBDIR=$libdir pkg-config "$@"`
-echo "$result"| $rewrite --sysroot "$root" --strip-prefix "$prefix"
+echo "$result"| $python2 $rewrite --sysroot "$root" --strip-prefix "$prefix"
