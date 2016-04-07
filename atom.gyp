@@ -275,7 +275,7 @@
       ],
       'conditions': [
         ['enable_extensions==1', {
-          'dependencies': [ 'extensions.gyp:atom_resources' ]
+          'dependencies': [ 'extensions.gyp:atom_resources' ],
           'sources': [ '<@(extension_sources)' ],
         }],
         ['enable_extensions==1 and libchromiumcontent_component==1', {
