@@ -32,6 +32,9 @@ LINUX_DEPS_ARM = [
 def main():
   os.environ['CI'] = '1'
 
+  if os.environ.has_key('JANKY_SHA1'):
+    setup_nodenv()
+
   target_arch = 'x64'
   if os.environ.has_key('TARGET_ARCH'):
     target_arch = os.environ['TARGET_ARCH']
@@ -55,6 +58,8 @@ def main():
   # CI's npm is not reliable.
   npm = 'npm.cmd' if PLATFORM == 'win32' else 'npm'
   execute([npm, 'install', 'npm@2.12.1'])
+
+  log_versions()
 
   is_release = os.environ.has_key('ELECTRON_RELEASE')
   args = ['--target_arch=' + target_arch]
@@ -84,6 +89,24 @@ def run_script(script, args=[]):
   sys.stderr.flush()
   script = os.path.join(SOURCE_ROOT, 'script', script)
   subprocess.check_call([sys.executable, script] + args)
+
+
+def log_versions():
+  sys.stderr.write('\nnode --version\n')
+  sys.stderr.flush()
+  subprocess.call(['node', '--version'])
+
+  sys.stderr.write('\nnpm --version\n')
+  sys.stderr.flush()
+  npm = 'npm.cmd' if PLATFORM == 'win32' else 'npm'
+  subprocess.call([npm, '--version'])
+
+
+def setup_nodenv():
+  if os.path.isdir('/usr/local/share/nodenv'):
+    os.environ['NODENV_ROOT'] = '/usr/local/share/nodenv'
+    os.environ['PATH'] = '/usr/local/share/nodenv/bin:/usr/local/share/nodenv/shims:' + os.environ['PATH']
+    os.environ['NODENV_VERSION'] = 'v0.10.21'
 
 
 if __name__ == '__main__':
