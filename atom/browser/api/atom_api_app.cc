@@ -47,6 +47,10 @@
 #include "ui/base/win/shell.h"
 #endif
 
+#if defined(ENABLE_EXTENSIONS)
+#include "extensions/common/constants.h"
+#endif
+
 using atom::Browser;
 
 namespace mate {
@@ -180,11 +184,15 @@ void App::Observe(
     case content::NOTIFICATION_WEB_CONTENTS_RENDER_VIEW_HOST_CREATED: {
       // make sure background page webcontents get a webcontents
       // api wrapper so they can communicate via IPC
+#if defined(ENABLE_EXTENSIONS)
       content::WebContents* web_contents =
           content::Source<content::WebContents>(source).ptr();
-      v8::Locker locker(isolate());
-      v8::HandleScope handle_scope(isolate());
-      WebContents::CreateFrom(isolate(), web_contents);
+      if (web_contents->GetURL().SchemeIs(extensions::kExtensionScheme)) {
+        v8::Locker locker(isolate());
+        v8::HandleScope handle_scope(isolate());
+        WebContents::CreateFrom(isolate(), web_contents);
+      }
+#endif
       break;
     }
   }
