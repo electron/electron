@@ -15,7 +15,7 @@ namespace {
 
 bool XDGUtil(const std::string& util,
              const std::string& arg,
-             bool wait_for_exit) {
+             const bool wait_for_exit) {
   std::vector<std::string> argv;
   argv.push_back(util);
   argv.push_back(arg);
@@ -42,11 +42,11 @@ bool XDGUtil(const std::string& util,
   return (exit_code == 0);
 }
 
-bool XDGOpen(const std::string& path, bool wait_for_exit) {
+bool XDGOpen(const std::string& path, const bool wait_for_exit) {
   return XDGUtil("xdg-open", path, wait_for_exit);
 }
 
-bool XDGEmail(const std::string& email, bool wait_for_exit) {
+bool XDGEmail(const std::string& email, const bool wait_for_exit) {
   return XDGUtil("xdg-email", email, wait_for_exit);
 }
 
