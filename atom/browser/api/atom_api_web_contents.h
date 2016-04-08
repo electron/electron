@@ -296,6 +296,9 @@ class WebContents : public mate::TrackableObject<WebContents>,
   // Request id used for findInPage request.
   uint32_t request_id_;
 
+  // Whether background throttling is disabled.
+  bool background_throttling_;
+
   DISALLOW_COPY_AND_ASSIGN(WebContents);
 };
 
