@@ -5,6 +5,7 @@
 #include "atom/common/platform_util.h"
 
 #include <stdio.h>
+#include <unistd.h>
 
 #include "base/files/file_util.h"
 #include "base/process/kill.h"
@@ -38,6 +39,11 @@ bool XDGUtil(const std::string& util, const std::string& arg) {
 }
 
 bool XDGOpen(const std::string& path) {
+  if (getuid() == 0) {
+      // xdg-open does not support opening URLs as root
+      LOG(WARNING) << "Cannot open URLs externally as root user";
+      return false;
+  }
   return XDGUtil("xdg-open", path);
 }
 
