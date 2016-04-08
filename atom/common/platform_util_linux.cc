@@ -32,8 +32,10 @@ bool XDGUtil(const std::string& util,
   if (!process.IsValid())
     return false;
 
-  if (!wait_for_exit)
+  if (!wait_for_exit) {
+    base::EnsureProcessGetsReaped(process.Pid());
     return true;
+  }
 
   int exit_code = -1;
   if (!process.WaitForExit(&exit_code))
