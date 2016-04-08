@@ -2,6 +2,29 @@
   'includes': [
     'extensions.gypi',
   ],
+  'conditions': [
+    ['OS=="linux"', {
+      'targets': [
+        {
+          'target_name': 'xscrnsaver',
+          'type': 'none',
+          'direct_dependent_settings': {
+            'cflags': [
+              '<!@(<(pkg-config) --cflags xscrnsaver)',
+            ],
+          },
+          'link_settings': {
+            'ldflags': [
+              '<!@(<(pkg-config) --libs-only-L --libs-only-other xscrnsaver)',
+            ],
+            'libraries': [
+              '<!@(<(pkg-config) --libs-only-l xscrnsaver)',
+            ],
+          },
+        },
+      ]
+    }]
+  ],
   'targets': [
     {
       'target_name': 'atom_resources',
