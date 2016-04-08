@@ -446,6 +446,8 @@ The `callback` has to be called with an `response` object:
   * `cancel` Boolean
   * `responseHeaders` Object (optional) - When provided, the server is assumed
     to have responded with these headers.
+  * `statusLine` String (optional) - Should be provided when overriding `responseHeaders`
+    to change header status otherwise original response header's status will be used.
 
 #### `ses.webRequest.onResponseStarted([filter, ]listener)`
 

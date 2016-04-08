@@ -322,6 +322,25 @@ describe('webRequest module', function () {
         }
       })
     })
+
+    it('can change the header status', function (done) {
+      ses.webRequest.onHeadersReceived(function (details, callback) {
+        var responseHeaders = details.responseHeaders
+        callback({
+          responseHeaders: responseHeaders,
+          statusLine: "HTTP/1.1 404 Not Found"
+        })
+      })
+      $.ajax({
+        url: defaultURL,
+        success: function (data, status, xhr) {
+        },
+        error: function (xhr, errorType) {
+          assert.equal(xhr.getResponseHeader('Custom'), 'Header')
+          done()
+        }
+      })
+    })
   })
 
   describe('webRequest.onResponseStarted', function () {
