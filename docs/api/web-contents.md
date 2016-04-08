@@ -68,6 +68,7 @@ Returns:
 * `requestMethod` String
 * `referrer` String
 * `headers` Object
+* `resourceType` String
 
 Emitted when details regarding a requested resource are available.
 `status` indicates the socket connection to download the resource.
