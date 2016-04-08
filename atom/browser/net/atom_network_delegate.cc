@@ -36,7 +36,7 @@ const char* ResourceTypeToString(content::ResourceType type) {
       return "other";
   }
 }
-    
+
 namespace {
 
 void RunSimpleListener(const AtomNetworkDelegate::SimpleListener& listener,
