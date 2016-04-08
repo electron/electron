@@ -161,17 +161,11 @@ bool AtomExtensionsRendererClient::WillSendRequest(
     //     images, page_url check is for iframes)
     bool is_own_resource = frame_url.GetOrigin() == extension->url() ||
                            page_origin == extension->url();
-    // - devtools (chrome-extension:// URLs are loaded into frames of devtools
-    //     to support the devtools extension APIs)
-    bool is_dev_tools =
-        page_origin.SchemeIs(content::kChromeDevToolsScheme) &&
-        !chrome_manifest_urls::GetDevToolsPage(extension).is_empty();
     // - unreachable web page error page (to allow showing the icon of the
     //   unreachable app on this page)
     bool is_error_page = frame_url == GURL(content::kUnreachableWebDataURL);
 
-    if (!is_generated_background_page && !is_own_resource &&
-          !is_dev_tools && !is_error_page) {
+    if (!is_generated_background_page && !is_own_resource && !is_error_page) {
       std::string message = base::StringPrintf(
           "Denying load of %s. Resources must be listed in the "
           "web_accessible_resources manifest key in order to be loaded by "
@@ -180,7 +174,7 @@ bool AtomExtensionsRendererClient::WillSendRequest(
       frame->addMessageToConsole(
           blink::WebConsoleMessage(blink::WebConsoleMessage::LevelError,
                                     blink::WebString::fromUTF8(message)));
-      *new_url = GURL(chrome::kExtensionInvalidRequestURL);
+      *new_url = GURL("chrome-extension://invalid/");
       return true;
     }
   }
