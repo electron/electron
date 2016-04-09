@@ -48,7 +48,11 @@
 #endif
 
 #if defined(ENABLE_EXTENSIONS)
-#include "extensions/common/constants.h"
+#include "extensions/browser/extension_registry.h"
+#include "extensions/browser/extension_system.h"
+#include "extensions/common/extension.h"
+#include "extensions/common/manifest_handlers/background_info.h"
+#include "extensions/common/one_shot_event.h"
 #endif
 
 using atom::Browser;
@@ -182,15 +186,24 @@ void App::Observe(
     const content::NotificationDetails& details) {
   switch (type) {
     case content::NOTIFICATION_WEB_CONTENTS_RENDER_VIEW_HOST_CREATED: {
-      // make sure background page webcontents get a webcontents
-      // api wrapper so they can communicate via IPC
 #if defined(ENABLE_EXTENSIONS)
       content::WebContents* web_contents =
           content::Source<content::WebContents>(source).ptr();
-      if (web_contents->GetURL().SchemeIs(extensions::kExtensionScheme)) {
-        v8::Locker locker(isolate());
-        v8::HandleScope handle_scope(isolate());
-        WebContents::CreateFrom(isolate(), web_contents);
+      auto browser_context = web_contents->GetBrowserContext();
+      auto url = web_contents->GetURL();
+
+      // make sure background pages get a webcontents
+      // api wrapper so they can communicate via IPC
+      if (extensions::ExtensionSystem::Get(browser_context)->ready().is_signaled()) {
+        const extensions::Extension* extension =
+            extensions::ExtensionRegistry::Get(browser_context)->
+                enabled_extensions().GetExtensionOrAppByURL(url);
+        if (extension &&
+            url == extensions::BackgroundInfo::GetBackgroundURL(extension)) {
+          v8::Locker locker(isolate());
+          v8::HandleScope handle_scope(isolate());
+          WebContents::CreateFrom(isolate(), web_contents);
+        }
       }
 #endif
       break;
