@@ -3,36 +3,42 @@ var EventEmitter = require('event_emitter').EventEmitter;
 var ipc = atom.ipc;
 var webFrame = atom.web_frame.webFrame;
 
-var slice = [].slice;
+if (!atom.v8_util.getHiddenValue(atom, 'ipcRenderer')) {
+  var slice = [].slice;
 
-var ipcRenderer = new EventEmitter;
+  var ipcRenderer = new EventEmitter;
 
-ipcRenderer.send = function() {
-  var args;
-  args = 1 <= arguments.length ? slice.call(arguments, 0) : [];
-  return ipc.send('ipc-message', slice.call(args));
-};
+  ipcRenderer.send = function() {
+    var args;
+    args = 1 <= arguments.length ? slice.call(arguments, 0) : [];
+    return ipc.send('ipc-message', slice.call(args));
+  };
 
-ipcRenderer.sendSync = function() {
-  var args;
-  args = 1 <= arguments.length ? slice.call(arguments, 0) : [];
-  return JSON.parse(ipc.sendSync('ipc-message-sync', slice.call(args)));
-};
+  ipcRenderer.sendSync = function() {
+    var args;
+    args = 1 <= arguments.length ? slice.call(arguments, 0) : [];
+    return JSON.parse(ipc.sendSync('ipc-message-sync', slice.call(args)));
+  };
 
-ipcRenderer.sendToHost = function() {
-  var args;
-  args = 1 <= arguments.length ? slice.call(arguments, 0) : [];
-  return ipc.send('ipc-message-host', slice.call(args));
-};
+  ipcRenderer.sendToHost = function() {
+    var args;
+    args = 1 <= arguments.length ? slice.call(arguments, 0) : [];
+    return ipc.send('ipc-message-host', slice.call(args));
+  };
 
-ipcRenderer.emit = function() {
-  arguments[1].sender = ipcRenderer;
-  return EventEmitter.prototype.emit.apply(ipcRenderer, arguments);
-};
+  ipcRenderer.emit = function() {
+    arguments[1].sender = ipcRenderer;
+    return EventEmitter.prototype.emit.apply(ipcRenderer, arguments);
+  };
 
-ipcRenderer.on('ELECTRON_INTERNAL_RENDERER_WEB_FRAME_METHOD', function(event, method, args) {
-  webFrame[method].apply(webFrame, args);
-});
+  ipcRenderer.on('ELECTRON_INTERNAL_RENDERER_WEB_FRAME_METHOD', function(event, method, args) {
+    webFrame[method].apply(webFrame, args);
+  });
+
+  atom.v8_util.setHiddenValue(atom, 'ipcRenderer', ipcRenderer);
+}
+
+var ipcRenderer = atom.v8_util.getHiddenValue(atom, 'ipcRenderer');
 
 exports.on = ipcRenderer.on.bind(ipcRenderer);
 exports.once = ipcRenderer.once.bind(ipcRenderer);
