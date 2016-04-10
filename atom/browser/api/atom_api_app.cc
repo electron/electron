@@ -194,7 +194,8 @@ void App::Observe(
 
       // make sure background pages get a webcontents
       // api wrapper so they can communicate via IPC
-      if (extensions::ExtensionSystem::Get(browser_context)->ready().is_signaled()) {
+      if (extensions::ExtensionSystem::Get(browser_context)
+          ->ready().is_signaled()) {
         const extensions::Extension* extension =
             extensions::ExtensionRegistry::Get(browser_context)->
                 enabled_extensions().GetExtensionOrAppByURL(url);
