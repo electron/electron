@@ -40,7 +40,7 @@ your-app/
 ```
 **注意**：如果 `main` 字段没有在 `package.json` 声明，Electron会优先加载 `index.js`。
 
-`main.js` 应该用于创建窗口和处理系统时间，一个典型的例子如下：
+`main.js` 应该用于创建窗口和处理系统事件，一个典型的例子如下：
 ```javascript
 var app = require('app');  // 控制应用生命周期的模块。
 var BrowserWindow = require('browser-window');  // 创建原生浏览器窗口的模块
