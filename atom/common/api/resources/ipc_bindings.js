@@ -1,6 +1,8 @@
 var ipc = require('ipc_utils')
 
 exports.didCreateDocumentElement = function() {
+  var slice = [].slice;
+
   window.alert = function(message, title) {
     return ipc.send('window-alert', message, title);
   };
