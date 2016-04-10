@@ -35,6 +35,14 @@ if (!atom.v8_util.getHiddenValue(atom, 'ipcRenderer')) {
     webFrame[method].apply(webFrame, args);
   });
 
+  ipcRenderer.on('ELECTRON_INTERNAL_RENDERER_ASYNC_WEB_FRAME_METHOD', (event, requestId, method, args) => {
+    const responseCallback = function(result) {
+      event.sender.send(`ELECTRON_INTERNAL_BROWSER_ASYNC_WEB_FRAME_RESPONSE_${requestId}`, result);
+    };
+    args.push(responseCallback);
+    webFrame[method].apply(webFrame, args);
+  });
+
   atom.v8_util.setHiddenValue(atom, 'ipcRenderer', ipcRenderer);
 }
 
