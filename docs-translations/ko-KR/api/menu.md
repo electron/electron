@@ -1,6 +1,6 @@
 ﻿# Menu
 
-`menu` 클래스는 어플리케이션 메뉴와 [컨텍스트 메뉴](https://developer.mozilla.org/en-US/docs/Mozilla/Tech/XUL/PopupGuide/ContextMenus)를
+`menu` 클래스는 어플리케이션 메뉴와 [컨텍스트 메뉴](https://developer.mozilla.org/ko/docs/Mozilla/Tech/XUL/PopupGuide/ContextMenus)를
 만들 때 사용됩니다. 이 모듈은 메인 프로세스용 모듈이지만 `remote` 모듈을 통해 랜더러
 프로세스에서도 사용할 수 있습니다.
 

@@ -30,13 +30,13 @@ C++ 코드는 많은 Chromium의 추상화와 타입을 사용합니다. 따라�
 [github/atom](https://github.com/github/atom)에서 사용되는 모듈의 이름은 보통
 `module-name` 형식이기 때문입니다. 이 규칙은 '.js' 파일에만 적용됩니다.
 * 적절한 곳에 새로운 ES6/ES2015 문법을 사용해도 됩니다.
-  * [`const`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/const)
+  * [`const`](https://developer.mozilla.org/ko/docs/Web/JavaScript/Reference/Statements/const)
     는 requires와 다른 상수에 사용합니다
-  * [`let`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/let)
+  * [`let`](https://developer.mozilla.org/ko/docs/Web/JavaScript/Reference/Statements/let)
     은 변수를 정의할 때 사용합니다
-  * [Arrow functions](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/Arrow_functions)
+  * [Arrow functions](https://developer.mozilla.org/ko/docs/Web/JavaScript/Reference/Functions/Arrow_functions)
     는 `function () { }` 표현 대신에 사용합니다
-  * [Template literals](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Template_literals)
+  * [Template literals](https://developer.mozilla.org/ko/docs/Web/JavaScript/Reference/Template_literals)
     는 `+`로 문자열을 합치는 대신 사용합니다.
 
 ## API 이름
