@@ -179,4 +179,4 @@ $ asar pack app app.asar --unpack *.node
 포함되어 있습니다. 사용자에게 어플리케이션을 배포할 때 반드시 해당 폴더도 같이 배포해야
 합니다.
 
-[asar]: https://github.com/atom/asar
+[asar]: https://github.com/electron/asar

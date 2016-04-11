@@ -147,7 +147,7 @@ npm uninstall -g electron
 [memory-management]: https://developer.mozilla.org/ko/docs/Web/JavaScript/Memory_Management
 [variable-scope]: https://msdn.microsoft.com/library/bzt2dkta(v=vs.94).aspx
 [electron-module]: https://www.npmjs.com/package/electron
-[storage]: https://developer.mozilla.org/en-US/docs/Web/API/Storage
-[local-storage]: https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage
-[session-storage]: https://developer.mozilla.org/en-US/docs/Web/API/Window/sessionStorage
-[indexed-db]: https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API
+[storage]: https://developer.mozilla.org/ko/docs/Web/API/Storage
+[local-storage]: https://developer.mozilla.org/ko/docs/Web/API/Window/localStorage
+[session-storage]: https://developer.mozilla.org/ko/docs/Web/API/Window/sessionStorage
+[indexed-db]: https://developer.mozilla.org/ko/docs/Web/API/IndexedDB_API
