@@ -95,6 +95,7 @@
                   '<(libchromiumcontent_dir)/libwebrtc_common.a',
                   '<(libchromiumcontent_dir)/libyuv.a',
                   '<(libchromiumcontent_dir)/libcdm_renderer.a',
+                  '<(libchromiumcontent_dir)/libsecurity_state.a',
                 ],
               },
             }, {
@@ -149,6 +150,7 @@
                   '<(libchromiumcontent_dir)/libwebrtc_common.a',
                   '<(libchromiumcontent_dir)/libyuv.a',
                   '<(libchromiumcontent_dir)/libcdm_renderer.a',
+                  '<(libchromiumcontent_dir)/libsecurity_state.a',
                 ],
               },
             }, {
@@ -210,6 +212,7 @@
                   '<(libchromiumcontent_dir)/webrtc_common.lib',
                   '<(libchromiumcontent_dir)/libyuv.lib',
                   '<(libchromiumcontent_dir)/cdm_renderer.lib',
+                  '<(libchromiumcontent_dir)/security_state.lib',
                 ],
               },
             }, {
