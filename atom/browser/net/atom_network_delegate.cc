@@ -11,17 +11,11 @@
 #include "base/stl_util.h"
 #include "base/strings/string_util.h"
 #include "content/public/browser/browser_thread.h"
-#include "content/public/browser/resource_request_info.h"
 #include "net/url_request/url_request.h"
 
 using content::BrowserThread;
 
 namespace atom {
-
-namespace {
-
-using ResponseHeadersContainer =
-    std::pair<scoped_refptr<net::HttpResponseHeaders>*, const std::string&>;
 
 const char* ResourceTypeToString(content::ResourceType type) {
   switch (type) {
@@ -43,6 +37,11 @@ const char* ResourceTypeToString(content::ResourceType type) {
       return "other";
   }
 }
+
+namespace {
+
+using ResponseHeadersContainer =
+    std::pair<scoped_refptr<net::HttpResponseHeaders>*, const std::string&>;
 
 void RunSimpleListener(const AtomNetworkDelegate::SimpleListener& listener,
                        scoped_ptr<base::DictionaryValue> details) {

@@ -14,6 +14,7 @@
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/native_window.h"
+#include "atom/browser/net/atom_network_delegate.h"
 #include "atom/browser/web_contents_permission_helper.h"
 #include "atom/browser/web_contents_preferences.h"
 #include "atom/browser/web_view_guest_delegate.h"
@@ -587,7 +588,8 @@ void WebContents::DidGetResourceResponseStart(
        details.http_response_code,
        details.method,
        details.referrer,
-       details.headers.get());
+       details.headers.get(),
+       ResourceTypeToString(details.resource_type));
 }
 
 void WebContents::DidGetRedirectForResourceRequest(

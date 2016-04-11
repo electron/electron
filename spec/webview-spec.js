@@ -763,4 +763,33 @@ describe('<webview> tag', function () {
       document.body.appendChild(webview)
     })
   })
+
+  describe('did-get-response-details event', function () {
+    it('emits for the page and its resources', function (done) {
+      // expected {fileName: resourceType} pairs
+      var expectedResources = {
+        'did-get-response-details.html': 'mainFrame',
+        'logo.png': 'image'
+      }
+      var responses = 0;
+      webview.addEventListener('did-get-response-details', function (event) {
+        responses++
+        var fileName = event.newURL.slice(event.newURL.lastIndexOf('/') + 1)
+        var expectedType = expectedResources[fileName]
+        assert(!!expectedType, `Unexpected response details for ${event.newURL}`)
+        assert(typeof event.status === 'boolean', 'status should be boolean')
+        assert.equal(event.httpResponseCode, 200)
+        assert.equal(event.requestMethod, 'GET')
+        assert(typeof event.referrer === 'string', 'referrer should be string')
+        assert(!!event.headers, 'headers should be present')
+        assert(typeof event.headers === 'object', 'headers should be object')
+        assert.equal(event.resourceType, expectedType, 'Incorrect resourceType')
+        if (responses === Object.keys(expectedResources).length) {
+          done()
+        }
+      })
+      webview.src = 'file://' + path.join(fixtures, 'pages', 'did-get-response-details.html')
+      document.body.appendChild(webview)
+    })
+  })
 })
