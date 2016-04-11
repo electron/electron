@@ -20,7 +20,7 @@ crashReporter.start({
 있습니다:
 
 * [socorro](https://github.com/mozilla/socorro)
-* [mini-breakpad-server](https://github.com/atom/mini-breakpad-server)
+* [mini-breakpad-server](https://github.com/electron/mini-breakpad-server)
 
 ## Methods
 
