@@ -26,7 +26,7 @@ C++ 코드는 많은 Chromium의 추상화와 타입을 사용합니다. 따라�
 * [표준](http://npm.im/standard) JavaScript 코딩 스타일을 사용합니다.
 * Google의 코딩 스타일에도 맞추기 위해 파일의 끝에는 **절대** 개행을 삽입해선 안됩니다.
 * 파일 이름의 공백은 `_`대신에 `-`을 사용하여야 합니다. 예를 들어
-`file_name.js`를 `file-name.js`로 고쳐야합니다. 왜냐하면
+`file_name.js`를 `file-name.js`로 고쳐야 합니다. 왜냐하면
 [github/atom](https://github.com/github/atom)에서 사용되는 모듈의 이름은 보통
 `module-name` 형식이기 때문입니다. 이 규칙은 '.js' 파일에만 적용됩니다.
 * 적절한 곳에 새로운 ES6/ES2015 문법을 사용해도 됩니다.
