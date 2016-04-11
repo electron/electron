@@ -382,4 +382,4 @@ OS X에선 지정한 어플리케이션 메뉴에 상관없이 메뉴의 첫번�
 ```
 
 [AboutInformationPropertyListFiles]: https://developer.apple.com/library/ios/documentation/general/Reference/InfoPlistKeyReference/Articles/AboutInformationPropertyListFiles.html
-[setMenu]: https://github.com/electron/electron/blob/master/docs-translations/ko-KR/api/browser-window.md#winsetmenumenu-linux-windows
+[setMenu]: ./browser-window.md#winsetmenumenu-linux-windows
