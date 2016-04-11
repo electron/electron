@@ -5,7 +5,7 @@
 
 Electron의 메인 프로세스에선 GUI와 관련 있는(`dialog`, `menu`등) 모듈만 사용할 수
 있습니다. 랜더러 프로세스에서 이러한 모듈들을 사용하려면 `ipc` 모듈을 통해 메인
-프로세스와 inter-process 통신을 해야합니다. 또한, `remote` 모듈을 사용하면
+프로세스와 inter-process 통신을 해야 합니다. 또한, `remote` 모듈을 사용하면
 inter-process 통신을 하지 않고도 간단한 API를 통해 직접 메인 프로세스의 모듈과
 메서드를 사용할 수 있습니다. 이 개념은 Java의 [RMI][rmi]와 비슷합니다.
 
