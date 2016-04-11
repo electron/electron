@@ -17,8 +17,14 @@
 수 있습니다:
 
 ```html
-<webview id="foo" src="https://www.github.com/" style="display:inline-block; width:640px; height:480px"></webview>
+<webview id="foo" src="https://www.github.com/" style="display:inline-flex; width:640px; height:480px"></webview>
 ```
+
+주의할 점은 `webview` 태그의 스타일은 전통적인 flexbox 레이아웃을 사용했을 때 자식
+`object` 요소가 해당 `webview` 컨테이너의 전체 높이와 넓이를 확실히 채우도록
+내부적으로 `display:flex;`를 사용합니다. (v0.36.11 부터) 따라서 인라인 레이아웃을
+위해 `display:inline-flex;`를 쓰지 않는 한, 기본 `display:flex;` CSS 속성을
+덮어쓰지 않도록 주의해야 합니다.
 
 게스트 컨텐츠를 조작하기 위해 자바스크립트로 `webview` 태그의 이벤트를 리스닝 하여
 응답을 받을 수 있습니다. 다음 예제를 참고하세요: 첫번째 리스너는 페이지 로딩 시작시의
