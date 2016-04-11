@@ -11,9 +11,11 @@
 
 #include "base/command_line.h"
 #include "base/strings/string_number_conversions.h"
+#include "base/strings/utf_string_conversions.h"
 #include "components/devtools_http_handler/devtools_http_handler.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/common/content_switches.h"
+#include "media/base/media_resources.h"
 #include "net/proxy/proxy_resolver_v8.h"
 #include "ui/base/l10n/l10n_util.h"
 
@@ -129,6 +131,19 @@ int X11EmptyIOErrorHandler(Display* d) {
 }
 #endif
 
+base::string16 MediaStringProvider(media::MessageId id) {
+  switch (id) {
+    case media::DEFAULT_AUDIO_DEVICE_NAME:
+      return base::ASCIIToUTF16("Default");
+#if defined(OS_WIN)
+    case media::COMMUNICATIONS_AUDIO_DEVICE_NAME:
+      return base::ASCIIToUTF16("Communications");
+#endif
+    default:
+      return base::string16();
+  }
+}
+
 }  // namespace
 
 BrowserMainParts::BrowserMainParts() {
@@ -177,6 +192,7 @@ void BrowserMainParts::PreMainMessageLoopStart() {
 #if defined(OS_MACOSX)
   InitializeMainNib();
 #endif
+  media::SetLocalizedStringProvider(MediaStringProvider);
 }
 
 void BrowserMainParts::PreMainMessageLoopRun() {
