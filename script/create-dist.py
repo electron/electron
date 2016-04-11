@@ -45,6 +45,7 @@ TARGET_BINARIES = {
     'extensions_resources.pak',
     'extensions_renderer_resources.pak',
     'extensions_api_resources.pak',
+    'atom_resources.pak',
     'xinput1_3.dll',
     'natives_blob.bin',
     'snapshot_blob.bin',
