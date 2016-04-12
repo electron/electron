@@ -155,6 +155,18 @@ describe('<webview> tag', function () {
       webview.src = 'file://' + fixtures + '/pages/e.html'
       document.body.appendChild(webview)
     })
+
+    it('works without script tag in page', function (done) {
+      var listener = function (e) {
+        assert.equal(e.message, 'function object object')
+        webview.removeEventListener('console-message', listener)
+        done()
+      }
+      webview.addEventListener('console-message', listener)
+      webview.setAttribute('preload', fixtures + '/module/preload.js')
+      webview.src = 'file://' + fixtures + '/pages/base-page.html'
+      document.body.appendChild(webview)
+    })
   })
 
   describe('httpreferrer attribute', function () {
