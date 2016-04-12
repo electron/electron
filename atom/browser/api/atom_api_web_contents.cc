@@ -635,6 +635,10 @@ void WebContents::DidUpdateFaviconURL(
   Emit("page-favicon-updated", unique_urls);
 }
 
+void WebContents::DevToolsReloadPage() {
+  Emit("devtools-reload-page");
+}
+
 void WebContents::DevToolsFocused() {
   Emit("devtools-focused");
 }
