@@ -18,6 +18,7 @@
 #include "base/prefs/pref_registry_simple.h"
 #include "base/prefs/pref_service.h"
 #include "base/prefs/scoped_user_pref_update.h"
+#include "base/strings/pattern.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/values.h"
@@ -480,6 +481,16 @@ void InspectableWebContentsImpl::SetDevicesUpdatesEnabled(bool enabled) {
 
 void InspectableWebContentsImpl::DispatchProtocolMessageFromDevToolsFrontend(
     const std::string& message) {
+  // If the devtools wants to reload the page, hijack the message and handle it
+  // to the delegate.
+  if (base::MatchPattern(message, "{\"id\":*,"
+                                  "\"method\":\"Page.reload\","
+                                  "\"params\":*}")) {
+    if (delegate_)
+      delegate_->DevToolsReloadPage();
+    return;
+  }
+
   if (agent_host_.get())
     agent_host_->DispatchProtocolMessage(message);
 }

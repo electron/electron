@@ -10,6 +10,7 @@ class InspectableWebContentsDelegate {
   virtual ~InspectableWebContentsDelegate() {}
 
   // Requested by WebContents of devtools.
+  virtual void DevToolsReloadPage() {}
   virtual void DevToolsSaveToFile(
       const std::string& url, const std::string& content, bool save_as) {}
   virtual void DevToolsAppendToFile(
