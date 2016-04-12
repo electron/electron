@@ -2,7 +2,7 @@ const assert = require('assert')
 const path = require('path')
 const http = require('http')
 const url = require('url')
-const {app, session} = require('electron').remote
+const {app, session, ipcMain, BrowserWindow} = require('electron').remote
 
 describe('<webview> tag', function () {
   this.timeout(10000)
@@ -18,6 +18,15 @@ describe('<webview> tag', function () {
     if (document.body.contains(webview)) {
       document.body.removeChild(webview)
     }
+  })
+
+  it('works without script tag in page', function (done) {
+    let w = new BrowserWindow({show: false})
+    ipcMain.once('pong', function () {
+      w.destroy()
+      done()
+    })
+    w.loadURL('file://' + fixtures + '/pages/webview-no-script.html')
   })
 
   describe('src attribute', function () {
@@ -153,6 +162,18 @@ describe('<webview> tag', function () {
       webview.addEventListener('did-finish-load', listener2)
       webview.setAttribute('preload', fixtures + '/module/preload-ipc.js')
       webview.src = 'file://' + fixtures + '/pages/e.html'
+      document.body.appendChild(webview)
+    })
+
+    it('works without script tag in page', function (done) {
+      var listener = function (e) {
+        assert.equal(e.message, 'function object object')
+        webview.removeEventListener('console-message', listener)
+        done()
+      }
+      webview.addEventListener('console-message', listener)
+      webview.setAttribute('preload', fixtures + '/module/preload.js')
+      webview.src = 'file://' + fixtures + '/pages/base-page.html'
       document.body.appendChild(webview)
     })
   })

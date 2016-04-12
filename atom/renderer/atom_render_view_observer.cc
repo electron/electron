@@ -27,6 +27,7 @@
 #include "third_party/WebKit/public/web/WebFrame.h"
 #include "third_party/WebKit/public/web/WebLocalFrame.h"
 #include "third_party/WebKit/public/web/WebKit.h"
+#include "third_party/WebKit/public/web/WebScriptSource.h"
 #include "third_party/WebKit/public/web/WebView.h"
 #include "ui/base/resource/resource_bundle.h"
 #include "native_mate/dictionary.h"
@@ -87,6 +88,9 @@ AtomRenderViewObserver::~AtomRenderViewObserver() {
 void AtomRenderViewObserver::DidCreateDocumentElement(
     blink::WebLocalFrame* frame) {
   document_created_ = true;
+
+  // Make sure every page will get a script context created.
+  frame->executeScript(blink::WebScriptSource("void 0"));
 
   // Read --zoom-factor from command line.
   std::string zoom_factor_str = base::CommandLine::ForCurrentProcess()->
