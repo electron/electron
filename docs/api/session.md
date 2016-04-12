@@ -320,6 +320,119 @@ session.fromPartition(partition).setPermissionRequestHandler(function(webContent
 
 Clears the host resolver cache.
 
+#### `ses.setSecurityStateHandler(handler)`
+
+* `handler` Function
+  * `webContents` Object - [WebContents](web-contents.md) requesting the security state.
+  * `sslStatus` Object
+    * `certStatus` String (optional) - Certificate error status as described
+      in [cert_status_flags.h](cert-status-flags).
+    * `sslVersion` String (optional)
+    * `ciphersuite` Object (optional)
+      * `keyExchange` String
+      * `cipher` String
+    * `ranMixedContent` Boolean
+    * `displayedMixedContent` Boolean
+  * `certificate` Object
+    * `data` Buffer - PEM encoded data
+    * `issuerName` String - Issuer's Common Name
+    * `vaildStart` Double - The valid start date of the certificate as
+       the number of seconds since the UNIX epoch.
+    * `validExpiry` Double - The expiration date of the certificate as
+       the number of seconds since the UNIX epoch.
+  * `callback` Function
+
+The `callback` has to be called with a `securityState` object
+
+* `securityState` Object
+  * `securityState` String - The security level of the page resource, can be
+    'unknown', 'neutral', 'insecure', 'warning', 'secure', 'info'.
+  * `explanations` Array (optional) - An array of `securityStateExplanation`.
+  * `mixedContentStatus` Object (optional)
+    * `ranInsecureContent` Boolean - Whether the page ran insecure content such as scripts.
+    * `displayedInsecureContent` Boolean - Whether the page displayed insecure content such as images.
+    * `ranInsecureContentStyle` String - `securityState` representing a page that ran insecure content.
+    * `displayedInsecureContentStyle` String - `securityState` representing a page that displayed insecure content.
+  * `schemeIsCryptographic` Boolean (optional) - Whether the page was loaded over a cryptographic transport.
+
+* `securityStateExplanation` Object
+  * `securityState` String - Represents the severity of the factor being explained, can be
+    'unknown', 'neutral', 'insecure', 'warning', 'secure', 'info'.
+  * `summary` String - Short phrase descirbing the type of factor.
+  * `description` String - Full text explanation of the factor.
+
+Sets the `handler` which can be used to respond security state requests for the `session`.
+
+```javascript
+session.fromPartition(partition).setSecurityStateHandler(function(webContents, sslStatus, certificate, callback) {
+  let explanations = []
+  let certExplanation, cipherExplanation, securityState = "neutral"
+  let isSecureScheme = (url.parse(webContents.getURL()).protocol == "https:")
+  if (isSecureScheme) {
+    securityState = "secure"
+    if (sslStatus.certStatus) {
+      securityState = "insecure"
+      certExplanation = {
+        securityState: "insecure",
+        summary: "Certificate Error",
+        description: "There are issues with site's certificate chain " + sslStatus.certStatus,
+      }
+    } else {
+      certExplanation = {
+        securityState: "secure",
+        summary: "Valid Certificate",
+        description: "The connection to this site is using a valid, trusted server certificate.",
+      }
+    }
+    explanations.push(certExplanation)
+
+    if (sslStatus.sslVersion && sslStatus.ciphersuite) {
+      let isSecureProtocol = (sslStatus.sslVersion == "TLS 1.2")
+      let isSecureCiphersuite = true
+      let ciphersuite = sslStatus.ciphersuite
+      switch (ciphersuite.keyExchange) {
+        case "ECDHE_RSA":
+        case "ECDHE_ECDSA":
+          break
+        default:
+          isSecureCiphersuite = false
+      }
+
+      switch (ciphersuite.cipher) {
+        case "AES_128_GCM":
+        case "AES_256_GCM":
+          break
+        default:
+          isSecureCiphersuite = false
+      }
+
+      if (isSecureProtocol && isSecureCiphersuite) {
+        cipherExplanation = {
+          securityState: "secure",
+          summary: "Secure TLS connection",
+          description: "The connection to this site is using strong protocol and cipher suite."
+        }
+        explanations.push(cipherExplanation)
+      }
+    }
+  }
+
+  let state = {
+    securityState: securityState,
+    explanations: explanations,
+    mixedContentStatus: {
+      ranInsecureContent: sslStatus.ranInsecureContent,
+      displayedInsecureContent: sslStatus.displayedInsecureContent,
+      ranInsecureContentStyle: "insecure",
+      displayedInsecureContentStyle: "neutral",
+    },
+    schemeIsCryptograhic: isSecureScheme,
+  }
+
+  callback(state);
+});
+```
+
 #### `ses.webRequest`
 
 The `webRequest` API set allows to intercept and modify contents of a request at
@@ -525,3 +638,5 @@ The `listener` will be called with `listener(details)` when an error occurs.
   * `timestamp` Double
   * `fromCache` Boolean
   * `error` String - The error description.
+
+[cert-status-flags]: https://code.google.com/p/chromium/codesearch#chromium/src/net/cert/cert_status_flags_list.h

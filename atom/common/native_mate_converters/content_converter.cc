@@ -13,7 +13,10 @@
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/common/context_menu_params.h"
+#include "content/public/common/ssl_status.h"
 #include "native_mate/dictionary.h"
+#include "net/ssl/ssl_cipher_suite_names.h"
+#include "net/ssl/ssl_connection_status_flags.h"
 
 namespace {
 
@@ -168,6 +171,41 @@ bool Converter<content::StopFindAction>::FromV8(
     return false;
 
   return true;
+}
+
+// static
+v8::Local<v8::Value> Converter<content::SSLStatus>::ToV8(
+    v8::Isolate* isolate, const content::SSLStatus& val) {
+  auto dict = mate::Dictionary::CreateEmpty(isolate);
+  if (net::IsCertStatusError(val.cert_status)) {
+    std::string cert_status = net::ErrorToString(
+        net::MapCertStatusToNetError(val.cert_status));
+    dict.Set("certStatus", cert_status);
+  }
+  uint16_t cipher_suite =
+      net::SSLConnectionStatusToCipherSuite(val.connection_status);
+  if (val.security_bits > 0 && cipher_suite) {
+    auto cipher_suite_dict = mate::Dictionary::CreateEmpty(isolate);
+    const char* ssl_version, *key_exchange, *cipher, *mac;
+    bool is_aead;
+    net::SSLVersionToString(&ssl_version,
+        net::SSLConnectionStatusToVersion(val.connection_status));
+    net::SSLCipherSuiteToStrings(&key_exchange,
+                                 &cipher,
+                                 &mac,
+                                 &is_aead,
+                                 cipher_suite);
+    cipher_suite_dict.Set("keyExchange", key_exchange);
+    cipher_suite_dict.Set("cipher", cipher);
+    dict.Set("sslVersion", ssl_version);
+    dict.Set("ciphersuite", cipher_suite_dict);
+  }
+  dict.Set("ranMixedContent",
+           val.content_status & content::SSLStatus::RAN_INSECURE_CONTENT);
+  dict.Set("displayedMixedContent",
+           val.content_status & content::SSLStatus::DISPLAYED_INSECURE_CONTENT);
+
+  return mate::ConvertToV8(isolate, dict);
 }
 
 // static

@@ -54,6 +54,8 @@ v8::Local<v8::Value> Converter<const net::AuthChallengeInfo*>::ToV8(
 v8::Local<v8::Value> Converter<scoped_refptr<net::X509Certificate>>::ToV8(
     v8::Isolate* isolate, const scoped_refptr<net::X509Certificate>& val) {
   mate::Dictionary dict(isolate, v8::Object::New(isolate));
+  if (!val.get())
+     return v8::Null(isolate);
   std::string encoded_data;
   net::X509Certificate::GetPEMEncoded(
       val->os_cert_handle(), &encoded_data);
@@ -62,6 +64,8 @@ v8::Local<v8::Value> Converter<scoped_refptr<net::X509Certificate>>::ToV8(
                                    encoded_data.size()).ToLocalChecked();
   dict.Set("data", buffer);
   dict.Set("issuerName", val->issuer().GetDisplayName());
+  dict.Set("validStart", val->valid_start().ToDoubleT());
+  dict.Set("validExpiry", val->valid_expiry().ToDoubleT());
   return dict.GetHandle();
 }
 

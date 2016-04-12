@@ -40,6 +40,8 @@ class CommonWebContentsDelegate
   // Destroy the managed InspectableWebContents object.
   void DestroyWebContents();
 
+  void SendMessageToDevTools(const base::DictionaryValue& params);
+
   // Returns the WebContents managed by this delegate.
   content::WebContents* GetWebContents() const;
 

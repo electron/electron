@@ -15,6 +15,7 @@
 
 namespace content {
 struct ContextMenuParams;
+struct SSLStatus;
 class WebContents;
 }
 
@@ -51,6 +52,12 @@ template<>
 struct Converter<content::StopFindAction> {
   static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
                      content::StopFindAction* out);
+};
+
+template<>
+struct Converter<content::SSLStatus> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const content::SSLStatus& val);
 };
 
 template<>

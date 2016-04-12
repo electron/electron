@@ -39,6 +39,7 @@
 #include "chrome/browser/printing/print_preview_message_handler.h"
 #include "content/browser/renderer_host/render_widget_host_impl.h"
 #include "content/common/view_messages.h"
+#include "content/public/browser/cert_store.h"
 #include "content/public/browser/favicon_status.h"
 #include "content/public/browser/native_web_keyboard_event.h"
 #include "content/public/browser/navigation_details.h"
@@ -490,6 +491,40 @@ void WebContents::RequestToLockMouse(
   auto permission_helper =
       WebContentsPermissionHelper::FromWebContents(web_contents);
   permission_helper->RequestPointerLockPermission(user_gesture);
+}
+
+content::SecurityStyle WebContents::GetSecurityStyle(
+    content::WebContents* web_contents,
+    content::SecurityStyleExplanations* explanations) {
+  content::NavigationEntry* entry =
+      web_contents->GetController().GetVisibleEntry();
+  if (!entry)
+    return content::SECURITY_STYLE_UNKNOWN;
+  const content::SSLStatus& ssl_status = entry->GetSSL();
+  scoped_refptr<net::X509Certificate> cert = nullptr;
+  content::CertStore::GetInstance()->RetrieveCert(ssl_status.cert_id, &cert);
+  auto callback =
+      base::Bind(&WebContents::OnSecurityStateResponse, base::Unretained(this));
+  auto handler = GetBrowserContext()->security_state_handler();
+  if (!handler.is_null()) {
+    // Run in next tick to avoid race condition with default result dispatched to
+    // devtools.
+    base::MessageLoop::current()->PostTask(FROM_HERE,
+                                           base::Bind(handler,
+                                                      web_contents,
+                                                      ssl_status,
+                                                      cert,
+                                                      callback));
+  }
+  return ssl_status.security_style;
+}
+
+void WebContents::OnSecurityStateResponse(
+    const base::DictionaryValue& state) {
+  base::DictionaryValue notification;
+  notification.SetString("method", "Security.securityStateChanged");
+  notification.Set("params", make_scoped_ptr(state.DeepCopy()));
+  SendMessageToDevTools(notification);
 }
 
 void WebContents::BeforeUnloadFired(const base::TimeTicks& proceed_time) {
