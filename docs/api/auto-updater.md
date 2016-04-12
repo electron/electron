@@ -19,6 +19,9 @@ On OS X, the `autoUpdater` module is built upon [Squirrel.Mac][squirrel-mac],
 meaning you don't need any special setup to make it work. For server-side
 requirements, you can read [Server Support][server-support].
 
+**Note:** Your application must be signed for automatic updates on Mac OS X.
+This is a requirement of `Squirrel.Mac`.
+
 ### Windows
 
 On Windows, you have to install your app into a user's machine before you can

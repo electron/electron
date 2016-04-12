@@ -83,7 +83,7 @@ app.on('ready', function () {
     width: 800,
     height: 600,
     webPreferences: {
-      javascript: true // Test whether web preferences crashes.
+      backgroundThrottling: false,
     }
   })
   window.loadURL(url.format({

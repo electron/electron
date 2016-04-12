@@ -5,7 +5,7 @@
 
 Electron의 메인 프로세스에선 GUI와 관련 있는(`dialog`, `menu`등) 모듈만 사용할 수
 있습니다. 랜더러 프로세스에서 이러한 모듈들을 사용하려면 `ipc` 모듈을 통해 메인
-프로세스와 inter-process 통신을 해야합니다. 또한, `remote` 모듈을 사용하면
+프로세스와 inter-process 통신을 해야 합니다. 또한, `remote` 모듈을 사용하면
 inter-process 통신을 하지 않고도 간단한 API를 통해 직접 메인 프로세스의 모듈과
 메서드를 사용할 수 있습니다. 이 개념은 Java의 [RMI][rmi]와 비슷합니다.
 
@@ -34,7 +34,7 @@ win.loadURL('https://github.com');
 않습니다. 대신에 이 `BrowserWindow` 객체는 메인 프로세스에서 생성되며 랜더러
 프로세스에 `win` 객체와 같이 이에 대응하는 remote 객체를 반환합니다.
 
-참고로 remote를 통해선 [enumerable 속성](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Enumerability_and_ownership_of_properties)을
+참고로 remote를 통해선 [enumerable 속성](https://developer.mozilla.org/ko/docs/Web/JavaScript/Enumerability_and_ownership_of_properties)을
 가진 프로퍼티에만 접근할 수 있습니다.
 
 ## Remote 객체의 생명 주기

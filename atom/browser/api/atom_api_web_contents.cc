@@ -14,11 +14,13 @@
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/native_window.h"
+#include "atom/browser/net/atom_network_delegate.h"
 #include "atom/browser/web_contents_permission_helper.h"
 #include "atom/browser/web_contents_preferences.h"
 #include "atom/browser/web_view_guest_delegate.h"
 #include "atom/common/api/api_messages.h"
 #include "atom/common/api/event_emitter_caller.h"
+#include "atom/common/mouse_util.h"
 #include "atom/common/native_mate_converters/blink_converter.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/content_converter.h"
@@ -28,13 +30,14 @@
 #include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
-#include "atom/common/mouse_util.h"
+#include "atom/common/options_switches.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "brightray/browser/inspectable_web_contents.h"
 #include "brightray/browser/inspectable_web_contents_view.h"
 #include "chrome/browser/printing/print_view_manager_basic.h"
 #include "chrome/browser/printing/print_preview_message_handler.h"
+#include "content/browser/renderer_host/render_widget_host_impl.h"
 #include "content/common/view_messages.h"
 #include "content/public/browser/favicon_status.h"
 #include "content/public/browser/native_web_keyboard_event.h"
@@ -212,7 +215,9 @@ content::ServiceWorkerContext* GetServiceWorkerContext(
 
 WebContents::WebContents(content::WebContents* web_contents)
     : content::WebContentsObserver(web_contents),
-      type_(REMOTE) {
+      type_(REMOTE),
+      request_id_(0),
+      background_throttling_(true) {
   AttachAsUserData(web_contents);
   web_contents->SetUserAgentOverride(GetBrowserContext()->GetUserAgent());
 }
@@ -220,7 +225,11 @@ WebContents::WebContents(content::WebContents* web_contents)
 WebContents::WebContents(v8::Isolate* isolate,
                          const mate::Dictionary& options)
     : embedder_(nullptr),
-      request_id_(0) {
+      request_id_(0),
+      background_throttling_(true) {
+  // Read options.
+  options.Get("backgroundThrottling", &background_throttling_);
+
   // Whether it is a guest WebContents.
   bool is_guest = false;
   options.Get("isGuest", &is_guest);
@@ -579,7 +588,8 @@ void WebContents::DidGetResourceResponseStart(
        details.http_response_code,
        details.method,
        details.referrer,
-       details.headers.get());
+       details.headers.get(),
+       ResourceTypeToString(details.resource_type));
 }
 
 void WebContents::DidGetRedirectForResourceRequest(
@@ -623,6 +633,10 @@ void WebContents::DidUpdateFaviconURL(
       unique_urls.insert(url);
   }
   Emit("page-favicon-updated", unique_urls);
+}
+
+void WebContents::DevToolsReloadPage() {
+  Emit("devtools-reload-page");
 }
 
 void WebContents::DevToolsFocused() {
@@ -744,8 +758,13 @@ void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
   // override the background color set by the user.
   // We have to call it right after LoadURL because the RenderViewHost is only
   // created after loading a page.
-  web_contents()->GetRenderViewHost()->GetWidget()->GetView()
-                ->SetBackgroundColor(SK_ColorTRANSPARENT);
+  const auto view = web_contents()->GetRenderWidgetHostView();
+  view->SetBackgroundColor(SK_ColorTRANSPARENT);
+
+  // For the same reason we can only disable hidden here.
+  const auto host = static_cast<content::RenderWidgetHostImpl*>(
+      view->GetRenderWidgetHost());
+  host->disable_hidden_ = !background_throttling_;
 }
 
 void WebContents::DownloadURL(const GURL& url) {

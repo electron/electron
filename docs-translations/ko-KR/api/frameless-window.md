@@ -1,6 +1,6 @@
 # Frameless Window
 
-Frameless Window는 [창 테두리](https://developer.mozilla.org/en-US/docs/Glossary/Chrome)가
+Frameless Window는 [창 테두리](https://developer.mozilla.org/ko/docs/Glossary/Chrome)가
 없는 윈도우를 말합니다. 이 기능은 윈도우의 일부분인 툴바와 같이 웹 페이지의 일부분이
 아닌 부분을 보이지 않도록 합니다. [`BrowserWindow`](browser-window.md) 클래스의
 옵션에서 설정할 수 있습니다.

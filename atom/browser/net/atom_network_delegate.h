@@ -15,6 +15,7 @@
 #include "net/base/net_errors.h"
 #include "net/http/http_request_headers.h"
 #include "net/http/http_response_headers.h"
+#include "content/public/browser/resource_request_info.h"
 
 namespace extensions {
 class URLPattern;
@@ -23,6 +24,8 @@ class URLPattern;
 namespace atom {
 
 using URLPatterns = std::set<extensions::URLPattern>;
+
+const char* ResourceTypeToString(content::ResourceType type);
 
 class AtomNetworkDelegate : public brightray::NetworkDelegate {
  public:

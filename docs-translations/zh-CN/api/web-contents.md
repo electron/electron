@@ -63,6 +63,7 @@ var webContents = win.webContents;
 * `requestMethod` String
 * `referrer` String
 * `headers` Object
+* `resourceType` String
 
 当有关请求资源的详细信息可用的时候发出事件.
 `status` 标识了 socket链接来下载资源.

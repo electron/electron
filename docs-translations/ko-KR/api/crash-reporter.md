@@ -20,7 +20,7 @@ crashReporter.start({
 있습니다:
 
 * [socorro](https://github.com/mozilla/socorro)
-* [mini-breakpad-server](https://github.com/atom/mini-breakpad-server)
+* [mini-breakpad-server](https://github.com/electron/mini-breakpad-server)
 
 ## Methods
 
@@ -43,7 +43,7 @@ crashReporter.start({
 **참고:** OS X에선 Windows와 Linux의 `breakpad`와 달리 새로운 `crashpad`
 클라이언트를 사용합니다. 오류 수집 기능을 활성화 시키려면 오류를 수집하고 싶은 메인
 프로세스나 랜더러 프로세스에서 `crashReporter.start` 메서드를 호출하여 `crashpad`를
-초기화 해야합니다.
+초기화해야 합니다.
 
 ### `crashReporter.getLastCrashReport()`
 

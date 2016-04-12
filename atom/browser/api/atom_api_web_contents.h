@@ -251,6 +251,9 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void MediaStoppedPlaying(const MediaPlayerId& id) override;
   void DidChangeThemeColor(SkColor theme_color) override;
 
+  // brightray::InspectableWebContentsDelegate:
+  void DevToolsReloadPage() override;
+
   // brightray::InspectableWebContentsViewDelegate:
   void DevToolsFocused() override;
   void DevToolsOpened() override;
@@ -295,6 +298,9 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   // Request id used for findInPage request.
   uint32_t request_id_;
+
+  // Whether background throttling is disabled.
+  bool background_throttling_;
 
   DISALLOW_COPY_AND_ASSIGN(WebContents);
 };

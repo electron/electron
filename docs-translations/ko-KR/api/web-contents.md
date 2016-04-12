@@ -67,6 +67,7 @@ Returns:
 * `requestMethod` String
 * `referrer` String
 * `headers` Object
+* `resourceType` String
 
 요청한 리소스에 관련된 자세한 정보를 사용할 수 있을 때 발생하는 이벤트입니다.
 `status`는 리소스를 다운로드하기 위한 소켓 연결을 나타냅니다.
