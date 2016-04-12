@@ -17,8 +17,6 @@
 #include "extensions/renderer/extensions_renderer_client.h"
 #include "extensions/renderer/extensions_render_frame_observer.h"
 #include "chrome/common/chrome_isolated_world_ids.h"
-#include "chrome/common/extensions/chrome_manifest_url_handlers.h"
-#include "chrome/common/url_constants.h"
 #include "extensions/common/constants.h"
 #include "third_party/WebKit/public/web/WebConsoleMessage.h"
 #include "third_party/WebKit/public/web/WebDocument.h"
@@ -163,7 +161,7 @@ bool AtomExtensionsRendererClient::WillSendRequest(
                            page_origin == extension->url();
     // - unreachable web page error page (to allow showing the icon of the
     //   unreachable app on this page)
-    bool is_error_page = frame_url == GURL(content::kUnreachableWebDataURL);
+    bool is_error_page = frame_url == GURL("data:text/html,chromewebdata");
 
     if (!is_generated_background_page && !is_own_resource && !is_error_page) {
       std::string message = base::StringPrintf(
