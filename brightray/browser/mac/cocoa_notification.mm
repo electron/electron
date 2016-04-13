@@ -30,6 +30,7 @@ CocoaNotification::~CocoaNotification() {
 
 void CocoaNotification::Show(const base::string16& title,
                              const base::string16& body,
+                             const std::string& tag,
                              const GURL& icon_url,
                              const SkBitmap& icon,
                              const bool silent) {

@@ -80,6 +80,7 @@ LibnotifyNotification::~LibnotifyNotification() {
 
 void LibnotifyNotification::Show(const base::string16& title,
                                  const base::string16& body,
+                                 const std::string& tag,
                                  const GURL& icon_url,
                                  const SkBitmap& icon,
                                  const bool silent) {
@@ -106,6 +107,11 @@ void LibnotifyNotification::Show(const base::string16& title,
     libnotify_loader_.notify_notification_set_timeout(
         notification_, NOTIFY_EXPIRES_DEFAULT);
     g_object_unref(pixbuf);
+  }
+
+  if (!tag.empty()) {
+    GQuark id = g_quark_from_string(tag.c_str());
+    g_object_set(G_OBJECT(notification_), "id", id, NULL);
   }
 
   GError* error = nullptr;

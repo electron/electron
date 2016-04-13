@@ -22,6 +22,7 @@ class CocoaNotification : public Notification {
   // Notification:
   void Show(const base::string16& title,
             const base::string16& msg,
+            const std::string& tag,
             const GURL& icon_url,
             const SkBitmap& icon,
             const bool silent) override;
