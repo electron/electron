@@ -20,6 +20,7 @@ class LibNotifyLoader {
 
   decltype(&::notify_is_initted) notify_is_initted;
   decltype(&::notify_init) notify_init;
+  decltype(&::notify_get_server_info) notify_get_server_info;
   decltype(&::notify_notification_new) notify_notification_new;
   decltype(&::notify_notification_add_action) notify_notification_add_action;
   decltype(&::notify_notification_set_image_from_pixbuf) notify_notification_set_image_from_pixbuf;

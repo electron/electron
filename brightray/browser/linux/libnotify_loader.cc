@@ -38,6 +38,15 @@ bool LibNotifyLoader::Load(const std::string& library_name) {
     return false;
   }
 
+  notify_get_server_info =
+      reinterpret_cast<decltype(this->notify_get_server_info)>(
+          dlsym(library_, "notify_get_server_info"));
+  notify_get_server_info = &::notify_get_server_info;
+  if (!notify_get_server_info) {
+    CleanUp(true);
+    return false;
+  }
+
   notify_notification_new =
       reinterpret_cast<decltype(this->notify_notification_new)>(
           dlsym(library_, "notify_notification_new"));
@@ -104,6 +113,7 @@ void LibNotifyLoader::CleanUp(bool unload) {
   loaded_ = false;
   notify_is_initted = NULL;
   notify_init = NULL;
+  notify_get_server_info = NULL;
   notify_notification_new = NULL;
   notify_notification_add_action = NULL;
   notify_notification_set_image_from_pixbuf = NULL;
