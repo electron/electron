@@ -156,10 +156,10 @@ describe('browser-window module', function () {
 
     it('does not crash in did-fail-provisional-load handler', function (done) {
       w.webContents.once('did-fail-provisional-load', function () {
-        w.loadURL('http://somewhere-that-does-not.exist/')
+        w.loadURL('http://localhost:11111')
         done()
       })
-      w.loadURL('http://somewhere-that-does-not.exist/')
+      w.loadURL('http://localhost:11111')
     })
   })
 
