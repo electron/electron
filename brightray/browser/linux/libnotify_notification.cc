@@ -15,32 +15,26 @@
 namespace brightray {
 
 namespace {
+LibNotifyLoader libnotify_loader_;
 
-bool unity_has_result = false;
-bool unity_result = false;
-
-bool UnityIsRunning() {
+bool NotifierSupportsActions() {
   if (getenv("ELECTRON_USE_UBUNTU_NOTIFIER"))
-    return true;
+    return false;
 
-  if (unity_has_result)
-    return unity_result;
+  static bool notify_has_result = false;
+  static bool notify_result = false;
+  GList *capabilities = NULL;
 
-  unity_has_result = true;
+  if (notify_has_result)
+    return notify_result;
 
-  // Look for the presence of libunity as our hint that we're under Ubuntu.
-  base::FileEnumerator enumerator(base::FilePath("/usr/lib"),
-                                  false, base::FileEnumerator::FILES);
-  base::FilePath haystack;
-  while (!((haystack = enumerator.Next()).empty())) {
-    if (base::StartsWith(haystack.value(), "/usr/lib/libunity-",
-                         base::CompareCase::SENSITIVE)) {
-      unity_result = true;
-      break;
-    }
-  }
+  capabilities = libnotify_loader_.notify_get_server_caps();
 
-  return unity_result;
+  if (g_list_find_custom(capabilities, "actions", (GCompareFunc) g_strcmp0) != NULL)
+    notify_result = true;
+
+  g_list_free_full(capabilities, g_free);
+  return notify_result;
 }
 
 void log_and_clear_error(GError* error, const char* context) {
@@ -58,9 +52,6 @@ Notification* Notification::Create(NotificationDelegate* delegate,
                                    NotificationPresenter* presenter) {
   return new LibnotifyNotification(delegate, presenter);
 }
-
-// static
-LibNotifyLoader LibnotifyNotification::libnotify_loader_;
 
 // static
 bool LibnotifyNotification::Initialize() {
@@ -83,6 +74,7 @@ LibnotifyNotification::LibnotifyNotification(NotificationDelegate* delegate,
 }
 
 LibnotifyNotification::~LibnotifyNotification() {
+  g_signal_handlers_disconnect_by_data(notification_, this);
   g_object_unref(notification_);
 }
 
@@ -99,11 +91,9 @@ void LibnotifyNotification::Show(const base::string16& title,
   g_signal_connect(
       notification_, "closed", G_CALLBACK(OnNotificationClosedThunk), this);
 
-  // NB: On Unity, adding a notification action will cause the notification
-  // to display as a modal dialog box. Testing for distros that have "Unity
-  // Zen Nature" is difficult, we will test for the presence of the indicate
-  // dbus service
-  if (!UnityIsRunning()) {
+  // NB: On Unity and on any other DE using Notify-OSD, adding a notification
+  // action will cause the notification to display as a modal dialog box.
+  if (NotifierSupportsActions()) {
     libnotify_loader_.notify_notification_add_action(
         notification_, "default", "View", OnNotificationViewThunk, this,
         nullptr);

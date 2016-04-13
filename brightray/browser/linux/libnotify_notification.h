@@ -35,8 +35,6 @@ class LibnotifyNotification : public Notification {
 
   void NotificationFailed();
 
-  static LibNotifyLoader libnotify_loader_;
-
   NotifyNotification* notification_;
 
   DISALLOW_COPY_AND_ASSIGN(LibnotifyNotification);
