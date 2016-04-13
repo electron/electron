@@ -119,6 +119,11 @@ void LibnotifyNotification::Show(const base::string16& title,
     g_object_unref(pixbuf);
   }
 
+  if (!tag.empty()) {
+    GQuark id = g_quark_from_string(tag.c_str());
+    g_object_set(G_OBJECT(notification_), "id", id, NULL);
+  }
+
   GError* error = nullptr;
   libnotify_loader_.notify_notification_show(notification_, &error);
   if (error) {
