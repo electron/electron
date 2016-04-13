@@ -547,28 +547,21 @@ void WebContents::DidFinishLoad(content::RenderFrameHost* render_frame_host,
 void WebContents::DidFailProvisionalLoad(
     content::RenderFrameHost* render_frame_host,
     const GURL& url,
-    int error_code,
-    const base::string16& error_description,
+    int code,
+    const base::string16& description,
     bool was_ignored_by_handler) {
   bool is_main_frame = !render_frame_host->GetParent();
-  Emit("did-fail-provisional-load",
-       error_code,
-       error_description,
-       url,
-       is_main_frame);
+  Emit("did-fail-provisional-load", code, description, url, is_main_frame);
+  Emit("did-fail-load", code, description, url, is_main_frame);
 }
 
 void WebContents::DidFailLoad(content::RenderFrameHost* render_frame_host,
-                              const GURL& validated_url,
+                              const GURL& url,
                               int error_code,
                               const base::string16& error_description,
                               bool was_ignored_by_handler) {
   bool is_main_frame = !render_frame_host->GetParent();
-  Emit("did-fail-load",
-       error_code,
-       error_description,
-       validated_url,
-       is_main_frame);
+  Emit("did-fail-load", error_code, error_description, url, is_main_frame);
 }
 
 void WebContents::DidStartLoading() {

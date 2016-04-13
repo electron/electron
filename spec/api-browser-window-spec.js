@@ -153,6 +153,14 @@ describe('browser-window module', function () {
       })
       w.loadURL('file://' + path.join(fixtures, 'api', 'did-fail-load-iframe.html'))
     })
+
+    it('does not crash in did-fail-provisional-load handler', function (done) {
+      w.webContents.once('did-fail-provisional-load', function () {
+        w.loadURL('http://localhost:11111')
+        done()
+      })
+      w.loadURL('http://localhost:11111')
+    })
   })
 
   describe('BrowserWindow.show()', function () {
