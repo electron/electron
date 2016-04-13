@@ -144,6 +144,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
                       WindowOpenDisposition disposition);
 
   // Returns the web preferences of current WebContents.
+  void MergeWebPreferences(const base::DictionaryValue& extend);
   v8::Local<v8::Value> GetWebPreferences(v8::Isolate* isolate);
 
   // Returns the owner window.

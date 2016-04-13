@@ -106,6 +106,9 @@ const char kOpenerID[] = "openerId";
 // Enable blink features.
 const char kBlinkFeatures[] = "blinkFeatures";
 
+// The initiali visibility state.
+const char kVisibilityState[] = "visibilityState";
+
 }  // namespace options
 
 namespace switches {
@@ -149,6 +152,7 @@ const char kPreloadURL[]      = "preload-url";
 const char kNodeIntegration[] = "node-integration";
 const char kGuestInstanceID[] = "guest-instance-id";
 const char kOpenerID[]        = "opener-id";
+const char kVisibilityState[] = "visibility-state";
 
 // Widevine options
 // Path to Widevine CDM binaries.

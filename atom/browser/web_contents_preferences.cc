@@ -131,20 +131,25 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
   // --guest-instance-id, which is used to identify guest WebContents.
   int guest_instance_id;
   if (web_preferences.GetInteger(options::kGuestInstanceID, &guest_instance_id))
-      command_line->AppendSwitchASCII(switches::kGuestInstanceID,
-                                      base::IntToString(guest_instance_id));
+    command_line->AppendSwitchASCII(switches::kGuestInstanceID,
+                                    base::IntToString(guest_instance_id));
 
   // Pass the opener's window id.
   int opener_id;
   if (web_preferences.GetInteger(options::kOpenerID, &opener_id))
-      command_line->AppendSwitchASCII(switches::kOpenerID,
-                                      base::IntToString(opener_id));
+    command_line->AppendSwitchASCII(switches::kOpenerID,
+                                    base::IntToString(opener_id));
 
   // Enable blink features.
   std::string blink_features;
   if (web_preferences.GetString(options::kBlinkFeatures, &blink_features))
-      command_line->AppendSwitchASCII(::switches::kEnableBlinkFeatures,
-                                      blink_features);
+    command_line->AppendSwitchASCII(::switches::kEnableBlinkFeatures,
+                                    blink_features);
+
+  // The initial visibility state.
+  std::string visibility;
+  if (web_preferences.GetString(options::kVisibilityState, &visibility))
+    command_line->AppendSwitchASCII(switches::kVisibilityState, visibility);
 }
 
 // static

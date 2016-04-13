@@ -1127,6 +1127,12 @@ bool WebContents::IsGuest() const {
   return type_ == WEB_VIEW;
 }
 
+void WebContents::MergeWebPreferences(const base::DictionaryValue& extend) {
+  WebContentsPreferences* web_preferences =
+      WebContentsPreferences::FromWebContents(web_contents());
+  web_preferences->Merge(extend);
+}
+
 v8::Local<v8::Value> WebContents::GetWebPreferences(v8::Isolate* isolate) {
   WebContentsPreferences* web_preferences =
       WebContentsPreferences::FromWebContents(web_contents());
@@ -1221,6 +1227,7 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("endFrameSubscription", &WebContents::EndFrameSubscription)
       .SetMethod("setSize", &WebContents::SetSize)
       .SetMethod("isGuest", &WebContents::IsGuest)
+      .SetMethod("mergeWebPreferences", &WebContents::MergeWebPreferences)
       .SetMethod("getWebPreferences", &WebContents::GetWebPreferences)
       .SetMethod("getOwnerBrowserWindow", &WebContents::GetOwnerBrowserWindow)
       .SetMethod("hasServiceWorker", &WebContents::HasServiceWorker)
