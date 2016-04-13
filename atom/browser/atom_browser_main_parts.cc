@@ -136,9 +136,8 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
   // Start idle gc.
   gc_timer_.Start(
       FROM_HERE, base::TimeDelta::FromMinutes(1),
-      base::Bind(base::IgnoreResult(&v8::Isolate::IdleNotification),
-                 base::Unretained(js_env_->isolate()),
-                 1000));
+      base::Bind(&v8::Isolate::LowMemoryNotification,
+                 base::Unretained(js_env_->isolate())));
 
   brightray::BrowserMainParts::PreMainMessageLoopRun();
   bridge_task_runner_->MessageLoopIsReady();
