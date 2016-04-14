@@ -98,10 +98,6 @@ void AtomMainDelegate::PreSandboxStartup() {
   std::string process_type = command_line->GetSwitchValueASCII(
       switches::kProcessType);
 
-  if (process_type == switches::kUtilityProcess) {
-    AtomContentUtilityClient::PreSandboxStartup();
-  }
-
   // Only append arguments for browser process.
   if (!IsBrowserProcess(command_line))
     return;
