@@ -20,6 +20,7 @@
 #include "atom/browser/web_view_guest_delegate.h"
 #include "atom/common/api/api_messages.h"
 #include "atom/common/api/event_emitter_caller.h"
+#include "atom/common/color_util.h"
 #include "atom/common/mouse_util.h"
 #include "atom/common/native_mate_converters/blink_converter.h"
 #include "atom/common/native_mate_converters/callback.h"
@@ -747,12 +748,19 @@ void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
   params.override_user_agent = content::NavigationController::UA_OVERRIDE_TRUE;
   web_contents()->GetController().LoadURLWithParams(params);
 
-  // Set the background color of RenderViewHost to transparent so it doesn't
-  // override the background color set by the user.
+  // Set the background color of RenderWidgetHostView.
   // We have to call it right after LoadURL because the RenderViewHost is only
   // created after loading a page.
   const auto view = web_contents()->GetRenderWidgetHostView();
-  view->SetBackgroundColor(SK_ColorTRANSPARENT);
+  WebContentsPreferences* web_preferences =
+      WebContentsPreferences::FromWebContents(web_contents());
+  std::string color_name;
+  if (web_preferences->web_preferences()->GetString(options::kBackgroundColor,
+                                                    &color_name)) {
+    view->SetBackgroundColor(ParseHexColor(color_name));
+  } else {
+    view->SetBackgroundColor(SK_ColorTRANSPARENT);
+  }
 
   // For the same reason we can only disable hidden here.
   const auto host = static_cast<content::RenderWidgetHostImpl*>(
