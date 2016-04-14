@@ -444,6 +444,9 @@ HTTP 요청을 보내기 전 요청 헤더를 사용할 수 있을 때 `listener
   * `cancel` Boolean
   * `responseHeaders` Object (optional) - 이 속성이 제공되면 서버는 이 헤더와
     함께 응답합니다.
+  * `statusLine` String (optional) - `responseHeaders`를 덮어쓸 땐, 헤더의 상태를
+    변경하기 위해 반드시 지정되어야 합니다. 그렇지 않은 경우, 기존의 응답 헤더의 상태가
+    사용됩니다.
 
 #### `ses.webRequest.onResponseStarted([filter, ]listener)`
 

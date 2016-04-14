@@ -39,9 +39,19 @@ C++ 코드는 많은 Chromium의 추상화와 타입을 사용합니다. 따라�
   * [Template literals](https://developer.mozilla.org/ko/docs/Web/JavaScript/Reference/Template_literals)
     는 `+`로 문자열을 합치는 대신 사용합니다.
 
-## API 이름
+## 이름 짓기
 
-새로운 API를 만들 땐 getter, setter스타일 대신 jQuery의 one-function 스타일을
-사용해야 합니다. 예를 들어 `.getText()`와 `.setText(text)`대신에 `.text([text])`
-형식으로 설계하면 됩니다. 포럼에 이 문제에 대한 [논의](https://github.com/electron/electron/issues/46)가
+Electron API는 Node.js와 비슷한 명명법을 사용합니다:
+
+- `BrowserWindow`와 같은 모듈 자체를 뜻하는 이름은, `CamelCase`를 사용합니다.
+- `globalShortcut`과 같은 API의 세트일 땐, `mixedCase`를 사용합니다.
+- API가 객체의 속성일 경우, 그리고 `win.webContents`와 같이 충분히 복잡하고 분리된
+  부분일 경우, `mixedCase`를 사용합니다.
+- 다른 모듈이 아닌 API를 구현할 땐, `<webview> Tag` 또는 `Process Object`와 같이
+  단순하고 자연스러운 제목을 사용합니다.
+
+새로운 API를 만들 땐 jQuery의 one-function 스타일 대신 getter, setter스타일을
+사용해야 합니다. 예를 들어 `.text([text])` 대신 `.getText()`와 `.setText(text)`
+형식으로 함수를 설계하면 됩니다. 포럼에 이 문제에 대한
+[논의](https://github.com/electron/electron/issues/46)가
 진행되고 있습니다.
