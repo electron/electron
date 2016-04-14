@@ -121,6 +121,16 @@ void LibnotifyNotification::Show(const base::string16& title,
     g_object_set(G_OBJECT(notification_), "id", id, NULL);
   }
 
+  // Always try to append notifications.
+  // Unique tags can be used to prevent this.
+  if (HasCapability("append")) {
+    libnotify_loader_.notify_notification_set_hint_string(
+        notification_, "append", "true");
+  } else if (HasCapability("x-canonical-append")) {
+    libnotify_loader_.notify_notification_set_hint_string(
+        notification_, "x-canonical-append", "true");
+  }
+
   GError* error = nullptr;
   libnotify_loader_.notify_notification_show(notification_, &error);
   if (error) {
