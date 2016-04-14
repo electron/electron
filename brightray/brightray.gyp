@@ -206,6 +206,7 @@
                   '<(libchromiumcontent_dir)/http_server.lib',
                   '<(libchromiumcontent_dir)/desktop_capture.lib',
                   '<(libchromiumcontent_dir)/desktop_capture_differ_sse2.lib',
+                  '<(libchromiumcontent_dir)/pdf.lib',
                   '<(libchromiumcontent_dir)/rtc_base.lib',
                   '<(libchromiumcontent_dir)/rtc_base_approved.lib',
                   '<(libchromiumcontent_dir)/system_wrappers.lib',
