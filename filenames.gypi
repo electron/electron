@@ -157,6 +157,8 @@
       'atom/browser/atom_quota_permission_context.h',
       'atom/browser/atom_resource_dispatcher_host_delegate.cc',
       'atom/browser/atom_resource_dispatcher_host_delegate.h',
+      'atom/browser/atom_security_state_model_client.cc',
+      'atom/browser/atom_security_state_model_client.h',
       'atom/browser/atom_speech_recognition_manager_delegate.cc',
       'atom/browser/atom_speech_recognition_manager_delegate.h',
       'atom/browser/bridge_task_runner.cc',

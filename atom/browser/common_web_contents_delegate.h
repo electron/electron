@@ -76,6 +76,9 @@ class CommonWebContentsDelegate
   void ExitFullscreenModeForTab(content::WebContents* source) override;
   bool IsFullscreenForTabOrPending(
       const content::WebContents* source) const override;
+  content::SecurityStyle GetSecurityStyle(
+      content::WebContents* web_contents,
+      content::SecurityStyleExplanations* explanations) override;
 
   // brightray::InspectableWebContentsDelegate:
   void DevToolsSaveToFile(const std::string& url,

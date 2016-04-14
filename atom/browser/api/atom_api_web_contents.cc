@@ -13,6 +13,7 @@
 #include "atom/browser/atom_browser_client.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
+#include "atom/browser/atom_security_state_model_client.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/net/atom_network_delegate.h"
 #include "atom/browser/web_contents_permission_helper.h"
@@ -277,6 +278,8 @@ WebContents::WebContents(v8::Isolate* isolate,
 
   // Intialize permission helper.
   WebContentsPermissionHelper::CreateForWebContents(web_contents);
+  // Intialize security state client.
+  AtomSecurityStateModelClient::CreateForWebContents(web_contents);
 
   web_contents->SetUserAgentOverride(GetBrowserContext()->GetUserAgent());
 
