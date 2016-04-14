@@ -17,6 +17,18 @@ namespace brightray {
 namespace {
 LibNotifyLoader libnotify_loader_;
 
+bool HasCapability(const std::string& capability) {
+  bool result = false;
+  GList* capabilities = libnotify_loader_.notify_get_server_caps();
+
+  if (g_list_find_custom(capabilities, capability.c_str(), (GCompareFunc) g_strcmp0) != NULL)
+    result = true;
+
+  g_list_free_full(capabilities, g_free);
+
+  return result;
+}
+
 bool NotifierSupportsActions() {
   if (getenv("ELECTRON_USE_UBUNTU_NOTIFIER"))
     return false;
@@ -28,12 +40,7 @@ bool NotifierSupportsActions() {
   if (notify_has_result)
     return notify_result;
 
-  capabilities = libnotify_loader_.notify_get_server_caps();
-
-  if (g_list_find_custom(capabilities, "actions", (GCompareFunc) g_strcmp0) != NULL)
-    notify_result = true;
-
-  g_list_free_full(capabilities, g_free);
+  notify_result = HasCapability("actions");
   return notify_result;
 }
 
