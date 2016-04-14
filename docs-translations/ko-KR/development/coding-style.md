@@ -52,6 +52,6 @@ Electron API는 Node.js와 비슷한 명명법을 사용합니다:
 
 새로운 API를 만들 땐 jQuery의 one-function 스타일 대신 getter, setter스타일을
 사용해야 합니다. 예를 들어 `.text([text])` 대신 `.getText()`와 `.setText(text)`
-형식으로 함수를 설계하면 됩니다. 포럼에 이 문제에 대한
+형식으로 함수를 설계하면 됩니다. 포럼에서 이 문제에 대한
 [논의](https://github.com/electron/electron/issues/46)가
 진행되고 있습니다.
