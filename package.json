@@ -18,6 +18,7 @@
     "repl": "python ./script/start.py --interactive",
     "start": "python ./script/start.py",
     "cibuild-windows": "rm -Rf node_mdules && python ./script/cibuild --target_arch=x64",
+    "cibuild-windows-ia32": "rm -Rf node_mdules && python ./script/cibuild --target_arch=ia32",
     "test": "python ./script/test.py"
   }
 }
