@@ -75,7 +75,7 @@ void DevToolsNetworkInterceptor::UpdateConditions(
   conditions_ = std::move(conditions);
 
   bool offline = conditions_->offline();
-  if (offline || conditions_->IsThrottling()) {
+  if (offline || !conditions_->IsThrottling()) {
     timer_.Stop();
     FinishRecords(&download_, offline);
     FinishRecords(&upload_, offline);
@@ -98,7 +98,7 @@ void DevToolsNetworkInterceptor::UpdateConditions(
   latency_length_ = base::TimeDelta();
   double latency = conditions_->latency();
   if (latency > 0)
-    latency_length_ = base::TimeDelta::FromMilliseconds(latency);
+    latency_length_ = base::TimeDelta::FromMillisecondsD(latency);
   ArmTimer(now);
 }
 
@@ -124,7 +124,7 @@ uint64_t DevToolsNetworkInterceptor::UpdateThrottledRecords(
     (*records)[i].bytes -=
         (ticks / length) * kPacketSize + (i < shift ? kPacketSize : 0);
   }
-  std::rotate(records->begin(), records->end() + shift, records->end());
+  std::rotate(records->begin(), records->begin() + shift, records->end());
   return new_tick;
 }
 
@@ -138,7 +138,7 @@ void DevToolsNetworkInterceptor::UpdateThrottled(base::TimeTicks now) {
 
 void DevToolsNetworkInterceptor::UpdateSuspended(base::TimeTicks now) {
   int64_t activation_baseline =
-      (now - latency_length_ - base::TimeTicks::Now()).InMicroseconds();
+      (now - latency_length_ - base::TimeTicks()).InMicroseconds();
   ThrottleRecords suspended;
   for (const ThrottleRecord& record : suspended_) {
     if (record.send_end <= activation_baseline) {

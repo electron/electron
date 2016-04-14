@@ -78,13 +78,6 @@ CreateFailureResponse(int id, const std::string& param) {
   return response;
 }
 
-void UpdateNetworkStateInIO(brightray::DevToolsNetworkController* controller,
-                            const std::string& client_id,
-                            scoped_ptr<brightray::DevToolsNetworkConditions> conditions) {
-  DCHECK_CURRENTLY_ON(BrowserThread::IO);
-  controller->SetNetworkState(client_id, std::move(conditions));
-}
-
 }  // namespace
 
 DevToolsNetworkProtocolHandler::DevToolsNetworkProtocolHandler() {
@@ -172,11 +165,8 @@ void DevToolsNetworkProtocolHandler::UpdateNetworkState(
     scoped_ptr<DevToolsNetworkConditions> conditions) {
   auto browser_context =
       static_cast<brightray::BrowserContext*>(agent_host->GetBrowserContext());
-  BrowserThread::PostTask(BrowserThread::IO, FROM_HERE,
-                          base::Bind(&UpdateNetworkStateInIO,
-                                     browser_context->GetDevToolsNetworkController(),
-                                     agent_host->GetId(),
-                                     base::Passed(&conditions)));
+  browser_context->network_controller_handle()->SetNetworkState(
+      agent_host->GetId(), std::move(conditions));
 }
 
 }  // namespace brightray

@@ -45,6 +45,8 @@
       'browser/net/devtools_network_conditions.h',
       'browser/net/devtools_network_controller.cc',
       'browser/net/devtools_network_controller.h',
+      'browser/net/devtools_network_controller_handle.cc',
+      'browser/net/devtools_network_controller_handle.h',
       'browser/net/devtools_network_interceptor.cc',
       'browser/net/devtools_network_interceptor.h',
       'browser/net/devtools_network_protocol_handler.cc',

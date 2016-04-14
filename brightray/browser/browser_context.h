@@ -7,7 +7,7 @@
 
 #include <map>
 
-#include "browser/net/devtools_network_controller.h"
+#include "browser/net/devtools_network_controller_handle.h"
 #include "browser/permission_manager.h"
 #include "browser/url_request_context_getter.h"
 
@@ -63,10 +63,13 @@ class BrowserContext : public base::RefCounted<BrowserContext>,
       NetLog* net_log,
       content::ProtocolHandlerMap* protocol_handlers,
       content::URLRequestInterceptorScopedVector protocol_interceptors);
-  DevToolsNetworkController* GetDevToolsNetworkController();
 
   net::URLRequestContextGetter* url_request_context_getter() const {
     return url_request_getter_.get();
+  }
+
+  DevToolsNetworkControllerHandle* network_controller_handle() {
+    return &network_controller_handle_;
   }
 
   void InitPrefs();
@@ -114,8 +117,10 @@ class BrowserContext : public base::RefCounted<BrowserContext>,
 
   base::FilePath path_;
   bool in_memory_;
+
+  DevToolsNetworkControllerHandle network_controller_handle_;
+
   scoped_ptr<ResourceContext> resource_context_;
-  scoped_ptr<DevToolsNetworkController> controller_;
   scoped_refptr<URLRequestContextGetter> url_request_getter_;
   scoped_refptr<storage::SpecialStoragePolicy> storage_policy_;
   scoped_ptr<PrefService> prefs_;
