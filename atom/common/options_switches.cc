@@ -156,6 +156,10 @@ const char kWidevineCdmPath[] = "widevine-cdm-path";
 // Widevine CDM version.
 const char kWidevineCdmVersion[] = "widevine-cdm-version";
 
+// Client id for devtools network emulation.
+const char kDevToolsEmulateNetworkConditionsClientId[] =
+    "X-DevTools-Emulate-Network-Conditions-Client-Id";
+
 }  // namespace switches
 
 }  // namespace atom

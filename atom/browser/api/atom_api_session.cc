@@ -22,6 +22,8 @@
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/net_converter.h"
 #include "atom/common/node_includes.h"
+#include "atom/common/options_switches.h"
+#include "base/command_line.h"
 #include "base/files/file_path.h"
 #include "base/guid.h"
 #include "base/prefs/pref_service.h"
@@ -286,6 +288,12 @@ void ClearHostResolverCacheInIO(
   }
 }
 
+void SetDevToolsNetworkEmulationClientId(const std::string& id) {
+  auto cmd_line = base::CommandLine::ForCurrentProcess();
+  cmd_line->AppendSwitchASCII(
+      switches::kDevToolsEmulateNetworkConditionsClientId, id);
+}
+
 }  // namespace
 
 Session::Session(AtomBrowserContext* browser_context)
@@ -386,12 +394,14 @@ void Session::EnableNetworkEmulation(const mate::Dictionary& options) {
 
   browser_context_->network_controller_handle()->SetNetworkState(
       devtools_network_emulation_client_id_, std::move(conditions));
+  SetDevToolsNetworkEmulationClientId(devtools_network_emulation_client_id_);
 }
 
 void Session::DisableNetworkEmulation() {
   scoped_ptr<brightray::DevToolsNetworkConditions> conditions;
   browser_context_->network_controller_handle()->SetNetworkState(
       devtools_network_emulation_client_id_, std::move(conditions));
+  SetDevToolsNetworkEmulationClientId(std::string());
 }
 
 void Session::SetCertVerifyProc(v8::Local<v8::Value> val,

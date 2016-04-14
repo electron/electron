@@ -87,6 +87,8 @@ extern const char kOpenerID[];
 extern const char kWidevineCdmPath[];
 extern const char kWidevineCdmVersion[];
 
+extern const char kDevToolsEmulateNetworkConditionsClientId[];
+
 }  // namespace switches
 
 }  // namespace atom
