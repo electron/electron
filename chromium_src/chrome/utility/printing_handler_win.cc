@@ -10,10 +10,13 @@
 #include "base/scoped_native_library.h"
 #include "chrome/common/print_messages.h"
 #include "content/public/utility/utility_thread.h"
+#include "pdf/pdf.h"
 #include "printing/emf_win.h"
 #include "printing/page_range.h"
 #include "printing/pdf_render_settings.h"
 #include "ui/gfx/gdi_util.h"
+
+namespace printing {
 
 namespace {
 
@@ -25,113 +28,11 @@ void ReleaseProcessIfNeeded() {
   content::UtilityThread::Get()->ReleaseProcessIfNeeded();
 }
 
-class PdfFunctions {
- public:
-  PdfFunctions() : get_pdf_doc_info_func_(NULL),
-                   render_pdf_to_dc_func_(NULL) {}
-
-  bool Init() {
-    base::FilePath module_path;
-    if (!PathService::Get(base::DIR_MODULE, &module_path))
-      return false;
-    base::FilePath::StringType name(FILE_PATH_LITERAL("pdf.dll"));
-    pdf_lib_.Reset(base::LoadNativeLibrary(module_path.Append(name), NULL));
-    if (!pdf_lib_.is_valid()) {
-      LOG(WARNING) << "Couldn't load PDF plugin";
-      return false;
-    }
-
-    get_pdf_doc_info_func_ =
-        reinterpret_cast<GetPDFDocInfoProc>(
-            pdf_lib_.GetFunctionPointer("GetPDFDocInfo"));
-    LOG_IF(WARNING, !get_pdf_doc_info_func_) << "Missing GetPDFDocInfo";
-
-    render_pdf_to_dc_func_ =
-      reinterpret_cast<RenderPDFPageToDCProc>(
-          pdf_lib_.GetFunctionPointer("RenderPDFPageToDC"));
-    LOG_IF(WARNING, !render_pdf_to_dc_func_) << "Missing RenderPDFPageToDC";
-
-    if (!get_pdf_doc_info_func_ || !render_pdf_to_dc_func_) {
-      Reset();
-    }
-
-    return IsValid();
-  }
-
-  bool IsValid() const {
-    return pdf_lib_.is_valid();
-  }
-
-  void Reset() {
-    pdf_lib_.Reset(NULL);
-  }
-
-  bool GetPDFDocInfo(const void* pdf_buffer,
-                     int buffer_size,
-                     int* page_count,
-                     double* max_page_width) {
-    if (!get_pdf_doc_info_func_)
-      return false;
-    return get_pdf_doc_info_func_(pdf_buffer, buffer_size, page_count,
-                                  max_page_width);
-  }
-
-  bool RenderPDFPageToDC(const void* pdf_buffer,
-                         int buffer_size,
-                         int page_number,
-                         HDC dc,
-                         int dpi,
-                         int bounds_origin_x,
-                         int bounds_origin_y,
-                         int bounds_width,
-                         int bounds_height,
-                         bool fit_to_bounds,
-                         bool stretch_to_bounds,
-                         bool keep_aspect_ratio,
-                         bool center_in_bounds,
-                         bool autorotate) {
-    if (!render_pdf_to_dc_func_)
-      return false;
-    return render_pdf_to_dc_func_(pdf_buffer, buffer_size, page_number,
-                                  dc, dpi, bounds_origin_x,
-                                  bounds_origin_y, bounds_width, bounds_height,
-                                  fit_to_bounds, stretch_to_bounds,
-                                  keep_aspect_ratio, center_in_bounds,
-                                  autorotate);
-  }
-
- private:
-  // Exported by PDF plugin.
-  typedef bool (*GetPDFDocInfoProc)(const void* pdf_buffer,
-                                    int buffer_size, int* page_count,
-                                    double* max_page_width);
-  typedef bool (*RenderPDFPageToDCProc)(
-      const void* pdf_buffer, int buffer_size, int page_number, HDC dc,
-      int dpi, int bounds_origin_x, int bounds_origin_y,
-      int bounds_width, int bounds_height, bool fit_to_bounds,
-      bool stretch_to_bounds, bool keep_aspect_ratio, bool center_in_bounds,
-      bool autorotate);
-
-  RenderPDFPageToDCProc render_pdf_to_dc_func_;
-  GetPDFDocInfoProc get_pdf_doc_info_func_;
-
-  base::ScopedNativeLibrary pdf_lib_;
-
-  DISALLOW_COPY_AND_ASSIGN(PdfFunctions);
-};
-
-base::LazyInstance<PdfFunctions> g_pdf_lib = LAZY_INSTANCE_INITIALIZER;
-
 }  // namespace
 
 PrintingHandlerWin::PrintingHandlerWin() {}
 
 PrintingHandlerWin::~PrintingHandlerWin() {}
-
-// static
-void PrintingHandlerWin::PreSandboxStartup() {
-  g_pdf_lib.Get().Init();
-}
 
 bool PrintingHandlerWin::OnMessageReceived(const IPC::Message& message) {
   bool handled = true;
@@ -149,7 +50,7 @@ bool PrintingHandlerWin::OnMessageReceived(const IPC::Message& message) {
 
 void PrintingHandlerWin::OnRenderPDFPagesToMetafile(
     IPC::PlatformFileForTransit pdf_transit,
-    const printing::PdfRenderSettings& settings) {
+    const PdfRenderSettings& settings) {
   pdf_rendering_settings_ = settings;
   base::File pdf_file = IPC::PlatformFileForTransitToFile(pdf_transit);
   int page_count = LoadPDF(pdf_file.Pass());
@@ -174,9 +75,6 @@ void PrintingHandlerWin::OnRenderPDFPagesToMetafileStop() {
 }
 
 int PrintingHandlerWin::LoadPDF(base::File pdf_file) {
-  if (!g_pdf_lib.Get().IsValid())
-    return 0;
-
   int64_t length64 = pdf_file.GetLength();
   if (length64 <= 0 || length64 > std::numeric_limits<int>::max())
     return 0;
@@ -187,8 +85,8 @@ int PrintingHandlerWin::LoadPDF(base::File pdf_file) {
     return 0;
 
   int total_page_count = 0;
-  if (!g_pdf_lib.Get().GetPDFDocInfo(
-          &pdf_data_.front(), pdf_data_.size(), &total_page_count, NULL)) {
+  if (!chrome_pdf::GetPDFDocInfo(&pdf_data_.front(), pdf_data_.size(),
+                                 &total_page_count, nullptr)) {
     return 0;
   }
   return total_page_count;
@@ -197,7 +95,7 @@ int PrintingHandlerWin::LoadPDF(base::File pdf_file) {
 bool PrintingHandlerWin::RenderPdfPageToMetafile(int page_number,
                                                  base::File output_file,
                                                  float* scale_factor) {
-  printing::Emf metafile;
+  Emf metafile;
   metafile.Init();
 
   // We need to scale down DC to fit an entire page into DC available area.
@@ -216,7 +114,7 @@ bool PrintingHandlerWin::RenderPdfPageToMetafile(int page_number,
   // The underlying metafile is of type Emf and ignores the arguments passed
   // to StartPage.
   metafile.StartPage(gfx::Size(), gfx::Rect(), 1);
-  if (!g_pdf_lib.Get().RenderPDFPageToDC(
+  if (!chrome_pdf::RenderPDFPageToDC(
           &pdf_data_.front(),
           pdf_data_.size(),
           page_number,
@@ -237,3 +135,5 @@ bool PrintingHandlerWin::RenderPdfPageToMetafile(int page_number,
   metafile.FinishDocument();
   return metafile.SaveTo(&output_file);
 }
+
+}  // printing
