@@ -216,7 +216,6 @@
                   # Friends of pdf.lib:
                   '<(libchromiumcontent_dir)/pdf.lib',
                   '<(libchromiumcontent_dir)/ppapi_cpp_objects.lib',
-                  '<(libchromiumcontent_dir)/ppapi_cpp.lib',
                   '<(libchromiumcontent_dir)/ppapi_internal_module.lib',
                   '<(libchromiumcontent_dir)/libjpeg.lib',
                   '<(libchromiumcontent_dir)/pdfium.lib',
