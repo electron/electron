@@ -17,6 +17,18 @@ namespace brightray {
 namespace {
 LibNotifyLoader libnotify_loader_;
 
+bool HasCapability(const std::string& capability) {
+  bool result = false;
+  GList* capabilities = libnotify_loader_.notify_get_server_caps();
+
+  if (g_list_find_custom(capabilities, capability.c_str(), (GCompareFunc) g_strcmp0) != NULL)
+    result = true;
+
+  g_list_free_full(capabilities, g_free);
+
+  return result;
+}
+
 bool NotifierSupportsActions() {
   if (getenv("ELECTRON_USE_UBUNTU_NOTIFIER"))
     return false;
@@ -28,12 +40,7 @@ bool NotifierSupportsActions() {
   if (notify_has_result)
     return notify_result;
 
-  capabilities = libnotify_loader_.notify_get_server_caps();
-
-  if (g_list_find_custom(capabilities, "actions", (GCompareFunc) g_strcmp0) != NULL)
-    notify_result = true;
-
-  g_list_free_full(capabilities, g_free);
+  notify_result = HasCapability("actions");
   return notify_result;
 }
 
@@ -112,6 +119,16 @@ void LibnotifyNotification::Show(const base::string16& title,
   if (!tag.empty()) {
     GQuark id = g_quark_from_string(tag.c_str());
     g_object_set(G_OBJECT(notification_), "id", id, NULL);
+  }
+
+  // Always try to append notifications.
+  // Unique tags can be used to prevent this.
+  if (HasCapability("append")) {
+    libnotify_loader_.notify_notification_set_hint_string(
+        notification_, "append", "true");
+  } else if (HasCapability("x-canonical-append")) {
+    libnotify_loader_.notify_notification_set_hint_string(
+        notification_, "x-canonical-append", "true");
   }
 
   GError* error = nullptr;

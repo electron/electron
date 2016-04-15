@@ -92,6 +92,15 @@ bool LibNotifyLoader::Load(const std::string& library_name) {
     return false;
   }
 
+  notify_notification_set_hint_string =
+      reinterpret_cast<decltype(this->notify_notification_set_hint_string)>(
+          dlsym(library_, "notify_notification_set_hint_string"));
+  notify_notification_set_hint_string = &::notify_notification_set_hint_string;
+  if (!notify_notification_set_hint_string) {
+    CleanUp(true);
+    return false;
+  }
+
   notify_notification_show =
       reinterpret_cast<decltype(this->notify_notification_show)>(
           dlsym(library_, "notify_notification_show"));
@@ -128,6 +137,7 @@ void LibNotifyLoader::CleanUp(bool unload) {
   notify_notification_add_action = NULL;
   notify_notification_set_image_from_pixbuf = NULL;
   notify_notification_set_timeout = NULL;
+  notify_notification_set_hint_string = NULL;
   notify_notification_show = NULL;
   notify_notification_close = NULL;
 }
