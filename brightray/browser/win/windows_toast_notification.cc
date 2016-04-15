@@ -12,6 +12,7 @@
 #include "browser/win/scoped_hstring.h"
 #include "browser/win/notification_presenter_win.h"
 #include "common/application_info.h"
+#include "content/public/browser/browser_thread.h"
 
 using namespace ABI::Windows::Data::Xml::Dom;
 
@@ -384,21 +385,27 @@ ToastEventHandler::~ToastEventHandler() {
 
 IFACEMETHODIMP ToastEventHandler::Invoke(
     ABI::Windows::UI::Notifications::IToastNotification* sender, IInspectable* args) {
-  notification_->NotificationClicked();
+  content::BrowserThread::PostTask(
+      content::BrowserThread::UI, FROM_HERE,
+      base::Bind(&Notification::NotificationClicked, notification_));
   return S_OK;
 }
 
 IFACEMETHODIMP ToastEventHandler::Invoke(
     ABI::Windows::UI::Notifications::IToastNotification* sender,
     ABI::Windows::UI::Notifications::IToastDismissedEventArgs* e) {
-  notification_->NotificationDismissed();
+  content::BrowserThread::PostTask(
+      content::BrowserThread::UI, FROM_HERE,
+      base::Bind(&Notification::NotificationDismissed, notification_));
   return S_OK;
 }
 
 IFACEMETHODIMP ToastEventHandler::Invoke(
     ABI::Windows::UI::Notifications::IToastNotification* sender,
     ABI::Windows::UI::Notifications::IToastFailedEventArgs* e) {
-  notification_->NotificationFailed();
+  content::BrowserThread::PostTask(
+      content::BrowserThread::UI, FROM_HERE,
+      base::Bind(&Notification::NotificationFailed, notification_));
   return S_OK;
 }
 
