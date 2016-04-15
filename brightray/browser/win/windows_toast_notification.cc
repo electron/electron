@@ -12,6 +12,7 @@
 #include "browser/win/scoped_hstring.h"
 #include "browser/win/notification_presenter_win.h"
 #include "common/application_info.h"
+#include "content/public/browser/browser_thread.h"
 
 using namespace ABI::Windows::Data::Xml::Dom;
 
@@ -90,16 +91,7 @@ void WindowsToastNotification::Show(
     const bool silent) {
   auto presenter_win = static_cast<NotificationPresenterWin*>(presenter());
   std::wstring icon_path = presenter_win->SaveIconToFilesystem(icon, icon_url);
-  
-  // Ask Windows for the current notification settings
-  // If not allowed, we return here (0 = enabled)
-  ABI::Windows::UI::Notifications::NotificationSetting setting;
-  toast_notifier_->get_Setting(&setting);
-  if (setting != 0) {
-    NotificationFailed();
-    return;
-  }
-  
+
   ComPtr<IXmlDocument> toast_xml;
   if(FAILED(GetToastXml(toast_manager_.Get(), title, msg, icon_path, silent, &toast_xml))) {
     NotificationFailed();
@@ -126,7 +118,7 @@ void WindowsToastNotification::Show(
     return;
   }
 
-  if (FAILED(SetupCallbacks(toast_notification_.Get()))) {
+  if (!SetupCallbacks(toast_notification_.Get())) {
     NotificationFailed();
     return;
   }
@@ -141,21 +133,6 @@ void WindowsToastNotification::Show(
 
 void WindowsToastNotification::Dismiss() {
   toast_notifier_->Hide(toast_notification_.Get());
-}
-
-void WindowsToastNotification::NotificationClicked() {
-  delegate()->NotificationClick();
-  Destroy();
-}
-
-void WindowsToastNotification::NotificationDismissed() {
-  delegate()->NotificationClosed();
-  Destroy();
-}
-
-void WindowsToastNotification::NotificationFailed() {
-  delegate()->NotificationFailed();
-  Destroy();
 }
 
 bool WindowsToastNotification::GetToastXml(
@@ -399,8 +376,8 @@ bool WindowsToastNotification::RemoveCallbacks(
 /*
 / Toast Event Handler
 */
-ToastEventHandler::ToastEventHandler(WindowsToastNotification* notification)
-    : notification_(notification) {
+ToastEventHandler::ToastEventHandler(Notification* notification)
+    : notification_(notification->GetWeakPtr()) {
 }
 
 ToastEventHandler::~ToastEventHandler() {
@@ -408,21 +385,27 @@ ToastEventHandler::~ToastEventHandler() {
 
 IFACEMETHODIMP ToastEventHandler::Invoke(
     ABI::Windows::UI::Notifications::IToastNotification* sender, IInspectable* args) {
-  notification_->NotificationClicked();
+  content::BrowserThread::PostTask(
+      content::BrowserThread::UI, FROM_HERE,
+      base::Bind(&Notification::NotificationClicked, notification_));
   return S_OK;
 }
 
 IFACEMETHODIMP ToastEventHandler::Invoke(
     ABI::Windows::UI::Notifications::IToastNotification* sender,
     ABI::Windows::UI::Notifications::IToastDismissedEventArgs* e) {
-  notification_->NotificationDismissed();
+  content::BrowserThread::PostTask(
+      content::BrowserThread::UI, FROM_HERE,
+      base::Bind(&Notification::NotificationDismissed, notification_));
   return S_OK;
 }
 
 IFACEMETHODIMP ToastEventHandler::Invoke(
     ABI::Windows::UI::Notifications::IToastNotification* sender,
     ABI::Windows::UI::Notifications::IToastFailedEventArgs* e) {
-  notification_->NotificationFailed();
+  content::BrowserThread::PostTask(
+      content::BrowserThread::UI, FROM_HERE,
+      base::Bind(&Notification::NotificationFailed, notification_));
   return S_OK;
 }
 

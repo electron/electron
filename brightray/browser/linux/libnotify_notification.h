@@ -34,8 +34,6 @@ class LibnotifyNotification : public Notification {
   CHROMEG_CALLBACK_1(LibnotifyNotification, void, OnNotificationView,
                      NotifyNotification*, char*);
 
-  void NotificationFailed();
-
   NotifyNotification* notification_;
 
   DISALLOW_COPY_AND_ASSIGN(LibnotifyNotification);

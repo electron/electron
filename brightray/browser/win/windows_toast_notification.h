@@ -50,10 +50,6 @@ class WindowsToastNotification : public Notification {
  private:
   friend class ToastEventHandler;
 
-  void NotificationClicked();
-  void NotificationDismissed();
-  void NotificationFailed();
-
   bool GetToastXml(ABI::Windows::UI::Notifications::IToastNotificationManagerStatics* toastManager,
                    const std::wstring& title,
                    const std::wstring& msg,
@@ -97,7 +93,7 @@ class ToastEventHandler : public RuntimeClass<RuntimeClassFlags<ClassicCom>,
                                               DesktopToastDismissedEventHandler,
                                               DesktopToastFailedEventHandler> {
  public:
-  ToastEventHandler(WindowsToastNotification* notification);
+  ToastEventHandler(Notification* notification);
   ~ToastEventHandler();
 
   IFACEMETHODIMP Invoke(ABI::Windows::UI::Notifications::IToastNotification* sender, IInspectable* args);
@@ -105,7 +101,7 @@ class ToastEventHandler : public RuntimeClass<RuntimeClassFlags<ClassicCom>,
   IFACEMETHODIMP Invoke(ABI::Windows::UI::Notifications::IToastNotification* sender, ABI::Windows::UI::Notifications::IToastFailedEventArgs* e);
 
  private:
-  WindowsToastNotification* notification_;  // weak ref.
+  base::WeakPtr<Notification> notification_;  // weak ref.
 
   DISALLOW_COPY_AND_ASSIGN(ToastEventHandler);
 };

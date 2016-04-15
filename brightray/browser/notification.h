@@ -29,6 +29,11 @@ class Notification {
   // notification gets closed.
   virtual void Dismiss() = 0;
 
+  // Should be called by derived classes.
+  void NotificationClicked();
+  void NotificationDismissed();
+  void NotificationFailed();
+
   base::WeakPtr<Notification> GetWeakPtr() {
     return weak_factory_.GetWeakPtr();
   }
