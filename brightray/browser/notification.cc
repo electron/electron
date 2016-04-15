@@ -20,6 +20,21 @@ Notification::~Notification() {
   delegate()->NotificationDestroyed();
 }
 
+void Notification::NotificationClicked() {
+  delegate()->NotificationClick();
+  Destroy();
+}
+
+void Notification::NotificationDismissed() {
+  delegate()->NotificationClosed();
+  Destroy();
+}
+
+void Notification::NotificationFailed() {
+  delegate()->NotificationFailed();
+  Destroy();
+}
+
 void Notification::Destroy() {
   presenter()->RemoveNotification(this);
 }

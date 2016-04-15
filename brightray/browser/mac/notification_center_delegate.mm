@@ -22,14 +22,14 @@
         didDeliverNotification:(NSUserNotification*)notif {
   auto notification = presenter_->GetNotification(notif);
   if (notification)
-    notification->NotifyDisplayed();
+    notification->NotificationDisplayed();
 }
 
 - (void)userNotificationCenter:(NSUserNotificationCenter*)center
        didActivateNotification:(NSUserNotification *)notif {
   auto notification = presenter_->GetNotification(notif);
   if (notification)
-    notification->NotifyClick();
+    notification->NotificationClicked();
 }
 
 - (BOOL)userNotificationCenter:(NSUserNotificationCenter*)center

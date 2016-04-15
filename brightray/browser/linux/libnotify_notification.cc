@@ -136,19 +136,12 @@ void LibnotifyNotification::Dismiss() {
 
 void LibnotifyNotification::OnNotificationClosed(
     NotifyNotification* notification) {
-  delegate()->NotificationClosed();
-  Destroy();
+  NotificationDismissed();
 }
 
 void LibnotifyNotification::OnNotificationView(
     NotifyNotification* notification, char* action) {
-  delegate()->NotificationClick();
-  Destroy();
-}
-
-void LibnotifyNotification::NotificationFailed() {
-  delegate()->NotificationFailed();
-  Destroy();
+  NotificationClicked();
 }
 
 }  // namespace brightray

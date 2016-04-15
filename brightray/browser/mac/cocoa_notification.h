@@ -28,8 +28,7 @@ class CocoaNotification : public Notification {
             const bool silent) override;
   void Dismiss() override;
 
-  void NotifyDisplayed();
-  void NotifyClick();
+  void NotificationDisplayed();
 
   NSUserNotification* notification() const { return notification_; }
 

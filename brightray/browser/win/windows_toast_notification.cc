@@ -117,7 +117,7 @@ void WindowsToastNotification::Show(
     return;
   }
 
-  if (FAILED(SetupCallbacks(toast_notification_.Get()))) {
+  if (!SetupCallbacks(toast_notification_.Get())) {
     NotificationFailed();
     return;
   }
@@ -132,21 +132,6 @@ void WindowsToastNotification::Show(
 
 void WindowsToastNotification::Dismiss() {
   toast_notifier_->Hide(toast_notification_.Get());
-}
-
-void WindowsToastNotification::NotificationClicked() {
-  delegate()->NotificationClick();
-  Destroy();
-}
-
-void WindowsToastNotification::NotificationDismissed() {
-  delegate()->NotificationClosed();
-  Destroy();
-}
-
-void WindowsToastNotification::NotificationFailed() {
-  delegate()->NotificationFailed();
-  Destroy();
 }
 
 bool WindowsToastNotification::GetToastXml(
@@ -390,8 +375,8 @@ bool WindowsToastNotification::RemoveCallbacks(
 /*
 / Toast Event Handler
 */
-ToastEventHandler::ToastEventHandler(WindowsToastNotification* notification)
-    : notification_(notification) {
+ToastEventHandler::ToastEventHandler(Notification* notification)
+    : notification_(notification->GetWeakPtr()) {
 }
 
 ToastEventHandler::~ToastEventHandler() {

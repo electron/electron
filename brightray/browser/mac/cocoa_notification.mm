@@ -58,17 +58,11 @@ void CocoaNotification::Show(const base::string16& title,
 void CocoaNotification::Dismiss() {
   [NSUserNotificationCenter.defaultUserNotificationCenter
       removeDeliveredNotification:notification_];
-  delegate()->NotificationClosed();
-  Destroy();
+  NotificationDismissed();
 }
 
-void CocoaNotification::NotifyDisplayed() {
+void CocoaNotification::NotificationDisplayed() {
   delegate()->NotificationDisplayed();
-}
-
-void CocoaNotification::NotifyClick() {
-  delegate()->NotificationClick();
-  Destroy();
 }
 
 }  // namespace brightray
