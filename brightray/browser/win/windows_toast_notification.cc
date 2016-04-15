@@ -90,16 +90,7 @@ void WindowsToastNotification::Show(
     const bool silent) {
   auto presenter_win = static_cast<NotificationPresenterWin*>(presenter());
   std::wstring icon_path = presenter_win->SaveIconToFilesystem(icon, icon_url);
-  
-  // Ask Windows for the current notification settings
-  // If not allowed, we return here (0 = enabled)
-  ABI::Windows::UI::Notifications::NotificationSetting setting;
-  toast_notifier_->get_Setting(&setting);
-  if (setting != 0) {
-    NotificationFailed();
-    return;
-  }
-  
+
   ComPtr<IXmlDocument> toast_xml;
   if(FAILED(GetToastXml(toast_manager_.Get(), title, msg, icon_path, silent, &toast_xml))) {
     NotificationFailed();
