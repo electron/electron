@@ -7,12 +7,18 @@ const session = remote.session
 describe('webRequest module', function () {
   var ses = session.defaultSession
   var server = http.createServer(function (req, res) {
-    res.setHeader('Custom', ['Header'])
-    var content = req.url
-    if (req.headers.accept === '*/*;test/header') {
-      content += 'header/received'
+    if (req.url == '/serverRedirect') {
+      res.statusCode = 301
+      res.setHeader('Location', 'http://' + req.rawHeaders[1])
+      res.end()
+    } else {
+      res.setHeader('Custom', ['Header'])
+      var content = req.url
+      if (req.headers.accept === '*/*;test/header') {
+        content += 'header/received'
+      }
+      res.end(content)
     }
-    res.end(content)
   })
   var defaultURL = null
 
@@ -294,6 +300,44 @@ describe('webRequest module', function () {
         },
         error: function (xhr, errorType) {
           done(errorType)
+        }
+      })
+    })
+
+    it('follows server redirect', function (done) {
+      ses.webRequest.onHeadersReceived(function (details, callback) {
+        var responseHeaders = details.responseHeaders
+        callback({
+          responseHeaders: responseHeaders,
+        })
+      })
+      $.ajax({
+        url: defaultURL + 'serverRedirect',
+        success: function (data, status, xhr) {
+          assert.equal(xhr.getResponseHeader('Custom'), 'Header')
+          done()
+        },
+        error: function (xhr, errorType) {
+          done(errorType)
+        }
+      })
+    })
+
+    it('can change the header status', function (done) {
+      ses.webRequest.onHeadersReceived(function (details, callback) {
+        var responseHeaders = details.responseHeaders
+        callback({
+          responseHeaders: responseHeaders,
+          statusLine: "HTTP/1.1 404 Not Found"
+        })
+      })
+      $.ajax({
+        url: defaultURL,
+        success: function (data, status, xhr) {
+        },
+        error: function (xhr, errorType) {
+          assert.equal(xhr.getResponseHeader('Custom'), 'Header')
+          done()
         }
       })
     })

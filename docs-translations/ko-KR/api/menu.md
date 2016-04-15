@@ -1,6 +1,6 @@
 ﻿# Menu
 
-`menu` 클래스는 어플리케이션 메뉴와 [컨텍스트 메뉴](https://developer.mozilla.org/en-US/docs/Mozilla/Tech/XUL/PopupGuide/ContextMenus)를
+`menu` 클래스는 어플리케이션 메뉴와 [컨텍스트 메뉴](https://developer.mozilla.org/ko/docs/Mozilla/Tech/XUL/PopupGuide/ContextMenus)를
 만들 때 사용됩니다. 이 모듈은 메인 프로세스용 모듈이지만 `remote` 모듈을 통해 랜더러
 프로세스에서도 사용할 수 있습니다.
 
@@ -382,4 +382,4 @@ OS X에선 지정한 어플리케이션 메뉴에 상관없이 메뉴의 첫번�
 ```
 
 [AboutInformationPropertyListFiles]: https://developer.apple.com/library/ios/documentation/general/Reference/InfoPlistKeyReference/Articles/AboutInformationPropertyListFiles.html
-[setMenu]: https://github.com/electron/electron/blob/master/docs-translations/ko-KR/api/browser-window.md#winsetmenumenu-linux-windows
+[setMenu]: ./browser-window.md#winsetmenumenu-linux-windows

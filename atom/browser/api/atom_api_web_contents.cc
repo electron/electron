@@ -13,12 +13,15 @@
 #include "atom/browser/atom_browser_client.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
+#include "atom/browser/atom_security_state_model_client.h"
 #include "atom/browser/native_window.h"
+#include "atom/browser/net/atom_network_delegate.h"
 #include "atom/browser/web_contents_permission_helper.h"
 #include "atom/browser/web_contents_preferences.h"
 #include "atom/browser/web_view_guest_delegate.h"
 #include "atom/common/api/api_messages.h"
 #include "atom/common/api/event_emitter_caller.h"
+#include "atom/common/color_util.h"
 #include "atom/common/mouse_util.h"
 #include "atom/common/native_mate_converters/blink_converter.h"
 #include "atom/common/native_mate_converters/callback.h"
@@ -276,6 +279,8 @@ WebContents::WebContents(v8::Isolate* isolate,
 
   // Intialize permission helper.
   WebContentsPermissionHelper::CreateForWebContents(web_contents);
+  // Intialize security state client.
+  AtomSecurityStateModelClient::CreateForWebContents(web_contents);
 
   web_contents->SetUserAgentOverride(GetBrowserContext()->GetUserAgent());
 
@@ -546,28 +551,21 @@ void WebContents::DidFinishLoad(content::RenderFrameHost* render_frame_host,
 void WebContents::DidFailProvisionalLoad(
     content::RenderFrameHost* render_frame_host,
     const GURL& url,
-    int error_code,
-    const base::string16& error_description,
+    int code,
+    const base::string16& description,
     bool was_ignored_by_handler) {
   bool is_main_frame = !render_frame_host->GetParent();
-  Emit("did-fail-provisional-load",
-       error_code,
-       error_description,
-       url,
-       is_main_frame);
+  Emit("did-fail-provisional-load", code, description, url, is_main_frame);
+  Emit("did-fail-load", code, description, url, is_main_frame);
 }
 
 void WebContents::DidFailLoad(content::RenderFrameHost* render_frame_host,
-                              const GURL& validated_url,
+                              const GURL& url,
                               int error_code,
                               const base::string16& error_description,
                               bool was_ignored_by_handler) {
   bool is_main_frame = !render_frame_host->GetParent();
-  Emit("did-fail-load",
-       error_code,
-       error_description,
-       validated_url,
-       is_main_frame);
+  Emit("did-fail-load", error_code, error_description, url, is_main_frame);
 }
 
 void WebContents::DidStartLoading() {
@@ -587,7 +585,8 @@ void WebContents::DidGetResourceResponseStart(
        details.http_response_code,
        details.method,
        details.referrer,
-       details.headers.get());
+       details.headers.get(),
+       ResourceTypeToString(details.resource_type));
 }
 
 void WebContents::DidGetRedirectForResourceRequest(
@@ -631,6 +630,10 @@ void WebContents::DidUpdateFaviconURL(
       unique_urls.insert(url);
   }
   Emit("page-favicon-updated", unique_urls);
+}
+
+void WebContents::DevToolsReloadPage() {
+  Emit("devtools-reload-page");
 }
 
 void WebContents::DevToolsFocused() {
@@ -748,12 +751,19 @@ void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
   params.override_user_agent = content::NavigationController::UA_OVERRIDE_TRUE;
   web_contents()->GetController().LoadURLWithParams(params);
 
-  // Set the background color of RenderViewHost to transparent so it doesn't
-  // override the background color set by the user.
+  // Set the background color of RenderWidgetHostView.
   // We have to call it right after LoadURL because the RenderViewHost is only
   // created after loading a page.
   const auto view = web_contents()->GetRenderWidgetHostView();
-  view->SetBackgroundColor(SK_ColorTRANSPARENT);
+  WebContentsPreferences* web_preferences =
+      WebContentsPreferences::FromWebContents(web_contents());
+  std::string color_name;
+  if (web_preferences->web_preferences()->GetString(options::kBackgroundColor,
+                                                    &color_name)) {
+    view->SetBackgroundColor(ParseHexColor(color_name));
+  } else {
+    view->SetBackgroundColor(SK_ColorTRANSPARENT);
+  }
 
   // For the same reason we can only disable hidden here.
   const auto host = static_cast<content::RenderWidgetHostImpl*>(

@@ -162,8 +162,8 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
   std::string color;
   if (options.Get(options::kBackgroundColor, &color)) {
     SetBackgroundColor(color);
-  } else if (has_frame()) {
-    // For window with frame, use white as default background.
+  } else if (!transparent()) {
+    // For normal window, use white as default background.
     SetBackgroundColor("#FFFF");
   }
   std::string title("Electron");

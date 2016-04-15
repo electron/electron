@@ -11,7 +11,7 @@ Electron의 V8 버전에 맞춰 네이티브 모듈을 다시 빌드하고 헤�
 node.js의 버전을 확인할 필요가 있습니다. Electron에서 사용하는 node 버전은
 [releases](https://github.com/electron/electron/releases)에서 확인할 수 있으며
 `process.version`을 출력하여 버전을 확인할 수도 있습니다.
-([시작하기](https://github.com/electron/electron/blob/master/docs/tutorial/quick-start.md)의
+([시작하기](./quick-start.md)의
 예제를 참고하세요)
 
 혹시 직접 만든 네이티브 모듈이 있다면 [NAN](https://github.com/nodejs/nan/) 모듈을

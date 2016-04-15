@@ -15,6 +15,7 @@
 #include "base/strings/utf_string_conversions.h"
 #include "brightray/browser/inspectable_web_contents.h"
 #include "brightray/browser/inspectable_web_contents_view.h"
+#include "content/public/browser/browser_thread.h"
 #include "content/public/browser/native_web_keyboard_event.h"
 #include "native_mate/dictionary.h"
 #include "ui/aura/window_tree_host.h"
@@ -780,10 +781,12 @@ void NativeWindowViews::OnWidgetActivationChanged(
   if (widget != window_.get())
     return;
 
-  if (active)
-    NotifyWindowFocus();
-  else
-    NotifyWindowBlur();
+  // Post the notification to next tick.
+  content::BrowserThread::PostTask(
+      content::BrowserThread::UI, FROM_HERE,
+      base::Bind(active ? &NativeWindow::NotifyWindowFocus :
+                          &NativeWindow::NotifyWindowBlur,
+                 GetWeakPtr()));
 
   if (active && inspectable_web_contents() &&
       !inspectable_web_contents()->IsDevToolsViewShowing())

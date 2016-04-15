@@ -5,19 +5,17 @@
 #include "atom/browser/net/atom_network_delegate.h"
 
 #include <string>
+#include <utility>
 
 #include "atom/common/native_mate_converters/net_converter.h"
 #include "base/stl_util.h"
 #include "base/strings/string_util.h"
 #include "content/public/browser/browser_thread.h"
-#include "content/public/browser/resource_request_info.h"
 #include "net/url_request/url_request.h"
 
 using content::BrowserThread;
 
 namespace atom {
-
-namespace {
 
 const char* ResourceTypeToString(content::ResourceType type) {
   switch (type) {
@@ -39,6 +37,11 @@ const char* ResourceTypeToString(content::ResourceType type) {
       return "other";
   }
 }
+
+namespace {
+
+using ResponseHeadersContainer =
+    std::pair<scoped_refptr<net::HttpResponseHeaders>*, const std::string&>;
 
 void RunSimpleListener(const AtomNetworkDelegate::SimpleListener& listener,
                        scoped_ptr<base::DictionaryValue> details) {
@@ -170,10 +173,15 @@ void ReadFromResponseObject(const base::DictionaryValue& response,
 }
 
 void ReadFromResponseObject(const base::DictionaryValue& response,
-                            scoped_refptr<net::HttpResponseHeaders>* headers) {
+                            const ResponseHeadersContainer& container) {
   const base::DictionaryValue* dict;
+  std::string status_line;
+  if (!response.GetString("statusLine", &status_line))
+    status_line = container.second;
   if (response.GetDictionary("responseHeaders", &dict)) {
+    auto headers = container.first;
     *headers = new net::HttpResponseHeaders("");
+    (*headers)->ReplaceStatusLine(status_line);
     for (base::DictionaryValue::Iterator it(*dict);
          !it.IsAtEnd();
          it.Advance()) {
@@ -263,7 +271,8 @@ int AtomNetworkDelegate::OnHeadersReceived(
         request, callback, original, override, allowed);
 
   return HandleResponseEvent(
-      kOnHeadersReceived, request, callback, override, original);
+      kOnHeadersReceived, request, callback,
+      std::make_pair(override, original->GetStatusLine()), original);
 }
 
 void AtomNetworkDelegate::OnBeforeRedirect(net::URLRequest* request,

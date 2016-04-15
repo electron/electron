@@ -251,6 +251,9 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void MediaStoppedPlaying(const MediaPlayerId& id) override;
   void DidChangeThemeColor(SkColor theme_color) override;
 
+  // brightray::InspectableWebContentsDelegate:
+  void DevToolsReloadPage() override;
+
   // brightray::InspectableWebContentsViewDelegate:
   void DevToolsFocused() override;
   void DevToolsOpened() override;

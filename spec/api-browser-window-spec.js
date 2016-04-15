@@ -101,6 +101,32 @@ describe('browser-window module', function () {
       w.loadURL('about:blank')
     })
 
+    it('should emit did-get-response-details event', function (done) {
+      // expected {fileName: resourceType} pairs
+      var expectedResources = {
+        'did-get-response-details.html': 'mainFrame',
+        'logo.png': 'image'
+      }
+      var responses = 0;
+      w.webContents.on('did-get-response-details', function (event, status, newUrl, oldUrl, responseCode, method, referrer, headers, resourceType) {
+        responses++
+        var fileName = newUrl.slice(newUrl.lastIndexOf('/') + 1)
+        var expectedType = expectedResources[fileName]
+        assert(!!expectedType, `Unexpected response details for ${newUrl}`)
+        assert(typeof status === 'boolean', 'status should be boolean')
+        assert.equal(responseCode, 200)
+        assert.equal(method, 'GET')
+        assert(typeof referrer === 'string', 'referrer should be string')
+        assert(!!headers, 'headers should be present')
+        assert(typeof headers === 'object', 'headers should be object')
+        assert.equal(resourceType, expectedType, 'Incorrect resourceType')
+        if (responses === Object.keys(expectedResources).length) {
+          done()
+        }
+      })
+      w.loadURL('file://' + path.join(fixtures, 'pages', 'did-get-response-details.html'))
+    })
+
     it('should emit did-fail-load event for files that do not exist', function (done) {
       w.webContents.on('did-fail-load', function (event, code, desc, url, isMainFrame) {
         assert.equal(code, -6)
@@ -126,6 +152,14 @@ describe('browser-window module', function () {
         done()
       })
       w.loadURL('file://' + path.join(fixtures, 'api', 'did-fail-load-iframe.html'))
+    })
+
+    it('does not crash in did-fail-provisional-load handler', function (done) {
+      w.webContents.once('did-fail-provisional-load', function () {
+        w.loadURL('http://localhost:11111')
+        done()
+      })
+      w.loadURL('http://localhost:11111')
     })
   })
 

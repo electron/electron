@@ -807,9 +807,14 @@ bool NativeWindowMac::IsKiosk() {
 }
 
 void NativeWindowMac::SetBackgroundColor(const std::string& color_name) {
-  base::ScopedCFTypeRef<CGColorRef> color =
-      skia::CGColorCreateFromSkColor(ParseHexColor(color_name));
-  [[[window_ contentView] layer] setBackgroundColor:color];
+  SkColor color = ParseHexColor(color_name);
+  base::ScopedCFTypeRef<CGColorRef> cgcolor =
+      skia::CGColorCreateFromSkColor(color);
+  [[[window_ contentView] layer] setBackgroundColor:cgcolor];
+
+  const auto view = web_contents()->GetRenderWidgetHostView();
+  if (view)
+    view->SetBackgroundColor(color);
 }
 
 void NativeWindowMac::SetHasShadow(bool has_shadow) {

@@ -37,7 +37,7 @@ int64_t AtomContentUtilityClient::max_ipc_message_size_ =
 AtomContentUtilityClient::AtomContentUtilityClient()
     : filter_messages_(false) {
 #if defined(OS_WIN)
-  handlers_.push_back(new PrintingHandlerWin());
+  handlers_.push_back(new printing::PrintingHandlerWin());
 #endif
 }
 
@@ -69,13 +69,6 @@ bool AtomContentUtilityClient::OnMessageReceived(
 void AtomContentUtilityClient::OnStartupPing() {
   Send(new ChromeUtilityHostMsg_ProcessStarted);
   // Don't release the process, we assume further messages are on the way.
-}
-
-// static
-void AtomContentUtilityClient::PreSandboxStartup() {
-#if defined(OS_WIN)
-  PrintingHandlerWin::PreSandboxStartup();
-#endif
 }
 
 }  // namespace atom
