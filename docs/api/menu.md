@@ -109,7 +109,7 @@ var template = [
         })(),
         click: function(item, focusedWindow) {
           if (focusedWindow)
-            focusedWindow.toggleDevTools();
+            focusedWindow.webContents.toggleDevTools();
         }
       },
     ]
