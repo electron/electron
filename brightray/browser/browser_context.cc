@@ -141,7 +141,7 @@ net::URLRequestContextGetter* BrowserContext::CreateRequestContext(
   DCHECK(!url_request_getter_.get());
   url_request_getter_ = new URLRequestContextGetter(
       this,
-      GetDevToolsNetworkController(),
+      network_controller_handle(),
       net_log,
       GetPath(),
       in_memory_,
@@ -151,12 +151,6 @@ net::URLRequestContextGetter* BrowserContext::CreateRequestContext(
       std::move(protocol_interceptors));
   resource_context_->set_url_request_context_getter(url_request_getter_.get());
   return url_request_getter_.get();
-}
-
-DevToolsNetworkController* BrowserContext::GetDevToolsNetworkController() {
-  if (!controller_)
-    controller_.reset(new DevToolsNetworkController);
-  return controller_.get();
 }
 
 net::NetworkDelegate* BrowserContext::CreateNetworkDelegate() {

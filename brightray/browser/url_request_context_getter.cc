@@ -6,7 +6,7 @@
 
 #include <algorithm>
 
-#include "browser/net/devtools_network_controller.h"
+#include "browser/net/devtools_network_controller_handle.h"
 #include "browser/net/devtools_network_transaction_factory.h"
 #include "browser/net_log.h"
 #include "browser/network_delegate.h"
@@ -182,7 +182,7 @@ bool URLRequestContextGetter::Delegate::CanDelegateURLSecurity(const GURL& auth_
 
 URLRequestContextGetter::URLRequestContextGetter(
     Delegate* delegate,
-    DevToolsNetworkController* controller,
+    DevToolsNetworkControllerHandle* handle,
     NetLog* net_log,
     const base::FilePath& base_path,
     bool in_memory,
@@ -191,7 +191,7 @@ URLRequestContextGetter::URLRequestContextGetter(
     content::ProtocolHandlerMap* protocol_handlers,
     content::URLRequestInterceptorScopedVector protocol_interceptors)
     : delegate_(delegate),
-      controller_(controller),
+      network_controller_handle_(handle),
       net_log_(net_log),
       base_path_(base_path),
       in_memory_(in_memory),
@@ -370,11 +370,11 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
       backend.reset(delegate_->CreateHttpCacheBackendFactory(base_path_));
     }
 
-    if (controller_) {
+    if (network_controller_handle_) {
       storage_->set_http_transaction_factory(make_scoped_ptr(
           new net::HttpCache(
               make_scoped_ptr(new DevToolsNetworkTransactionFactory(
-                  controller_, http_network_session_.get())),
+                  network_controller_handle_->GetController(), http_network_session_.get())),
               std::move(backend),
               false)));
     } else {

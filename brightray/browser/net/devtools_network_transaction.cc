@@ -290,7 +290,7 @@ void DevToolsNetworkTransaction::SetBeforeProxyHeadersSentCallback(
 }
 
 int DevToolsNetworkTransaction::ResumeNetworkStart() {
-  if (failed_)
+  if (CheckFailed())
     return net::ERR_INTERNET_DISCONNECTED;
   return transaction_->ResumeNetworkStart();
 }
