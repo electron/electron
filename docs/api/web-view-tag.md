@@ -504,6 +504,7 @@ Returns:
 * `errorCode` Integer
 * `errorDescription` String
 * `validatedURL` String
+* `isMainFrame` Boolean
 
 This event is like `did-finish-load`, but fired when the load failed or was
 cancelled, e.g. `window.stop()` is invoked.
@@ -761,6 +762,10 @@ Emitted when media starts playing.
 Emitted when media is paused or done playing.
 
 ### Event: 'did-change-theme-color'
+
+Returns:
+
+* `themeColor` String
 
 Emitted when a page's theme color changes. This is usually due to encountering a meta tag:
 
