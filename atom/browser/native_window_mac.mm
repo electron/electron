@@ -244,7 +244,8 @@ bool ScopedDisableResize::disable_resize_ = false;
 }
 
 - (NSRect)window:(NSWindow *)window willPositionSheet:(NSWindow *)sheet usingRect:(NSRect)rect {
-  rect.origin.y = window.contentView.frame.size.height - shell_->GetSheetOffset();
+  NSView * view = window.contentView;
+  rect.origin.y = view.frame.size.height - shell_->GetSheetOffset();
   return rect;
 }
 
