@@ -6,7 +6,7 @@
 `screen`은 [EventEmitter](http://nodejs.org/api/events.html#events_class_events_eventemitter)를
 상속 받았습니다.
 
-**참고:** 랜더러 / DevTools에선 이미 DOM 속성이 `window.screen`을 가지고 있으므로
+**참고:** 렌더러 / DevTools에선 이미 DOM 속성이 `window.screen`을 가지고 있으므로
 `screen = require('screen')` 형식으로 모듈을 사용할 수 없습니다. 아래의 예제와 같이
 `electronScreen` 같은 이름으로 모듈 이름을 대체하여 사용해야 합니다.
 

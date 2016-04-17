@@ -149,7 +149,7 @@ API를 사용할 수 있습니다. 이를 지정하면 내부에서 로우레벨
 동일한 세션을 공유할 수 있도록 할 수 있습니다. 만약 `partition`이 지정되지 않으면 앱의
 기본 세션을 사용합니다.
 
-이 값은 첫 탐색 이전에만 지정할 수 있습니다. 즉. 작동중인 랜더러 프로세스의 세션은
+이 값은 첫 탐색 이전에만 지정할 수 있습니다. 즉. 작동중인 렌더러 프로세스의 세션은
 변경할 수 없습니다. 이후 이 값을 바꾸려고 시도하면 DOM 예외를 발생시킵니다.
 
 ### `allowpopups`
@@ -263,7 +263,7 @@ Webview에 웹 페이지 `url`을 로드합니다. `url`은 `http://`, `file://`
 
 ### `<webview>.isCrashed()`
 
-랜더러 프로세스가 크래시 됬는지 확인합니다.
+렌더러 프로세스가 크래시 됬는지 확인합니다.
 
 ### `<webview>.setUserAgent(userAgent)`
 
@@ -423,8 +423,8 @@ Webview 페이지를 PDF 형식으로 인쇄합니다.
 * `channel` String
 * `args` (optional)
 
-`channel`을 통해 랜더러 프로세스로 비동기 메시지를 보냅니다. 또한 `args`를 지정하여
-임의의 인자를 보낼 수도 있습니다. 랜더러 프로세스는 `ipcRenderer` 모듈의 `channel`
+`channel`을 통해 렌더러 프로세스로 비동기 메시지를 보냅니다. 또한 `args`를 지정하여
+임의의 인자를 보낼 수도 있습니다. 렌더러 프로세스는 `ipcRenderer` 모듈의 `channel`
 이벤트로 이 메시지를 받아 처리할 수 있습니다.
 
 예제는 [webContents.send](web-contents.md#webcontentssendchannel-args)를 참고하세요.
@@ -696,7 +696,7 @@ ipcRenderer.on('ping', function() {
 
 ### Event: 'crashed'
 
-랜더러 프로세스가 크래시 되었을 때 발생하는 이벤트입니다.
+렌더러 프로세스가 크래시 되었을 때 발생하는 이벤트입니다.
 
 ### Event: 'gpu-crashed'
 

@@ -69,7 +69,7 @@ Electron에 대해 자주 묻는 질문이 있습니다. 이슈를 생성하기 
 * [webContents](api/web-contents.md)
 * [Tray](api/tray.md)
 
-### 랜더러 프로세스에서 사용할 수 있는 모듈 (웹 페이지):
+### 렌더러 프로세스에서 사용할 수 있는 모듈 (웹 페이지):
 
 * [desktopCapturer](api/desktop-capturer.md)
 * [ipcRenderer](api/ipc-renderer.md)

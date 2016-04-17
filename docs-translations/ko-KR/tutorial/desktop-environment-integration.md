@@ -14,7 +14,7 @@ Windows, Linux, OS X 운영체제 모두 기본적으로 어플리케이션에�
 통해 개발자가 편리하게 데스크톱 알림을 사용할 수 있는 기능을 제공합니다. 데스크톱 알림은
 운영체제의 네이티브 알림 API를 사용하여 표시합니다.
 
-**참고:** 이 API는 HTML5 API이기 때문에 랜더러 프로세스에서만 사용할 수 있습니다.
+**참고:** 이 API는 HTML5 API이기 때문에 렌더러 프로세스에서만 사용할 수 있습니다.
 
 ```javascript
 var myNotification = new Notification('Title', {

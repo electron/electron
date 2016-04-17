@@ -8,7 +8,7 @@
 // 메인 프로세스에서
 const BrowserWindow = require('electron').BrowserWindow;
 
-// 또는 랜더러 프로세스에서
+// 또는 렌더러 프로세스에서
 const BrowserWindow = require('electron').remote.BrowserWindow;
 
 var win = new BrowserWindow({ width: 800, height: 600, show: false });
@@ -159,7 +159,7 @@ win.show();
   기본값은 `false`입니다.
 * `experimentalCanvasFeatures` Boolean - Chrome의 실험적인 캔버스(canvas) 기능을
   활성화합니다. 기본값은 `false`입니다.
-* `directWrite` Boolean - Windows에서 폰트 랜더링을 위해 DirectWrite를
+* `directWrite` Boolean - Windows에서 폰트 렌더링을 위해 DirectWrite를
   사용하는지를 지정합니다. 기본값은 `true`입니다.
 * `blinkFeatures` String - `CSSVariables,KeyboardEventKey`같은 `,`로 구분된
   기능 문자열들의 리스트입니다. 지원하는 전체 기능 문자열들은
