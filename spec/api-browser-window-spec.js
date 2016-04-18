@@ -4,6 +4,7 @@ const assert = require('assert')
 const fs = require('fs')
 const path = require('path')
 const os = require('os')
+const http = require('http')
 
 const remote = require('electron').remote
 const screen = require('electron').screen
@@ -785,6 +786,14 @@ describe('browser-window module', function () {
   describe('window.webContents.executeJavaScript', function () {
     var expected = 'hello, world!'
     var code = '(() => "' + expected + '")()'
+    var server
+
+    afterEach(function () {
+      if (server) {
+        server.close()
+        server = null
+      }
+    })
 
     it('doesnt throw when no calback is provided', function () {
       const result = ipcRenderer.sendSync('executeJavaScript', code, false)
@@ -796,6 +805,31 @@ describe('browser-window module', function () {
       ipcRenderer.once('executeJavaScript-response', function (event, result) {
         assert.equal(result, expected)
         done()
+      })
+    })
+
+    it('works after page load and during subframe load', function (done) {
+      var url
+      // a slow server, guaranteeing time to execute code during loading
+      server = http.createServer(function (req, res) {
+        setTimeout(function() { res.end('') }, 200)
+      });
+      server.listen(0, '127.0.0.1', function () {
+        url = 'http://127.0.0.1:' + server.address().port
+        w.loadURL('file://' + path.join(fixtures, 'pages', 'base-page.html'))
+      })
+
+      w.webContents.once('did-finish-load', function() {
+        // initiate a sub-frame load, then try and execute script during it
+        w.webContents.executeJavaScript(`
+          var iframe = document.createElement('iframe')
+          iframe.src = '${url}'
+          document.body.appendChild(iframe)
+        `, function() {
+          w.webContents.executeJavaScript(`console.log('hello')`, function() {
+            done()
+          })
+        })
       })
     })
   })
