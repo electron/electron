@@ -119,9 +119,6 @@ const char kPpapiFlashPath[] = "ppapi-flash-path";
 // Ppapi Flash version.
 const char kPpapiFlashVersion[] = "ppapi-flash-version";
 
-// Path to client certificate.
-const char kClientCertificate[] = "client-certificate";
-
 // Disable HTTP cache.
 const char kDisableHttpCache[] = "disable-http-cache";
 

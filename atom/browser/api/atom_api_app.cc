@@ -179,11 +179,11 @@ int ImportIntoCertStore(
                                    &imported_certs);
       if (imported_certs.size() > 1) {
         auto it = imported_certs.begin();
-        ++it; // skip first which would  be the client certificate.
+        ++it;  // skip first which would  be the client certificate.
         for (; it != imported_certs.end(); ++it)
           rv &= model->SetCertTrust(it->get(),
-                                   net::CA_CERT,
-                                   net::NSSCertDatabase::TRUSTED_SSL);
+                                    net::CA_CERT,
+                                    net::NSSCertDatabase::TRUSTED_SSL);
       }
     }
   }
@@ -491,7 +491,6 @@ void AppendSwitch(const std::string& switch_string, mate::Arguments* args) {
   auto command_line = base::CommandLine::ForCurrentProcess();
 
   if (switch_string == atom::switches::kPpapiFlashPath ||
-      switch_string == atom::switches::kClientCertificate ||
       switch_string == switches::kLogNetLog) {
     base::FilePath path;
     args->GetNext(&path);
