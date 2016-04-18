@@ -37,7 +37,6 @@
 #include "content/public/browser/site_instance.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/common/web_preferences.h"
-#include "net/cert/x509_certificate.h"
 #include "net/ssl/ssl_cert_request_info.h"
 #include "ppapi/host/ppapi_host.h"
 #include "ui/base/l10n/l10n_util.h"

@@ -44,9 +44,7 @@ class App : public AtomBrowserClient::Delegate,
                       int render_frame_id);
 
   void OnCertificateManagerModelCreated(
-      const base::FilePath& path,
-      const base::FilePath& ca_path,
-      const base::string16& password,
+      scoped_ptr<base::DictionaryValue> options,
       const net::CompletionCallback& callback,
       scoped_ptr<CertificateManagerModel> model);
 
@@ -106,7 +104,8 @@ class App : public AtomBrowserClient::Delegate,
   bool MakeSingleInstance(
       const ProcessSingleton::NotificationCallback& callback);
   std::string GetLocale();
-  void ImportClientCertificate(const base::FilePath& path, const base::FilePath& ca_path, const base::string16& password, const net::CompletionCallback& callback);
+  void ImportClientCertificate(const base::DictionaryValue& options,
+                               const net::CompletionCallback& callback);
 
 #if defined(OS_WIN)
   bool IsAeroGlassEnabled();

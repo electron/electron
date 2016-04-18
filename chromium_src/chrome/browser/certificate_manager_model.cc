@@ -7,10 +7,8 @@
 #include <utility>
 
 #include "base/bind.h"
-#include "base/i18n/time_formatting.h"
 #include "base/logging.h"
 #include "base/strings/utf_string_conversions.h"
-#include "build/build_config.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/resource_context.h"
@@ -20,7 +18,6 @@
 #include "net/base/net_errors.h"
 #include "net/cert/nss_cert_database.h"
 #include "net/cert/x509_certificate.h"
-#include "ui/base/l10n/l10n_util.h"
 
 using content::BrowserThread;
 
@@ -64,8 +61,6 @@ net::NSSCertDatabase* GetNSSCertDatabaseForResourceContext(
 //                                     GetNSSCertDatabaseForResourceContext
 //                                                         |
 //                               CertificateManagerModel::DidGetCertDBOnIOThread
-//                                                         |
-//                                       crypto::IsTPMTokenEnabledForNSS
 //                  v--------------------------------------/
 // CertificateManagerModel::DidGetCertDBOnUIThread
 //                  |
@@ -100,9 +95,10 @@ CertificateManagerModel::~CertificateManagerModel() {
 int CertificateManagerModel::ImportFromPKCS12(net::CryptoModule* module,
                                               const std::string& data,
                                               const base::string16& password,
-                                              bool is_extractable) {
+                                              bool is_extractable,
+                                              net::CertificateList* imported_certs) {
   return cert_db_->ImportFromPKCS12(module, data, password,
-                                          is_extractable, NULL);
+                                    is_extractable, imported_certs);
 }
 
 int CertificateManagerModel::ImportUserCert(const std::string& data) {
@@ -121,7 +117,7 @@ bool CertificateManagerModel::ImportServerCert(
     net::NSSCertDatabase::TrustBits trust_bits,
     net::NSSCertDatabase::ImportCertFailureList* not_imported) {
   return cert_db_->ImportServerCert(certificates, trust_bits,
-                                           not_imported);
+                                    not_imported);
 }
 
 bool CertificateManagerModel::SetCertTrust(

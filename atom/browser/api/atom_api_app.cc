@@ -15,10 +15,11 @@
 #include "atom/browser/browser.h"
 #include "atom/browser/login_handler.h"
 #include "atom/common/native_mate_converters/callback.h"
-#include "atom/common/native_mate_converters/net_converter.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/image_converter.h"
+#include "atom/common/native_mate_converters/net_converter.h"
+#include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/node_includes.h"
 #include "atom/common/options_switches.h"
 #include "base/command_line.h"
@@ -158,41 +159,35 @@ void PassLoginInformation(scoped_refptr<LoginHandler> login_handler,
     login_handler->CancelAuth();
 }
 
-net::CertificateList ImportCertsFromFile(
-    const base::FilePath& path) {
-  net::CertificateList certs;
-  if (path.empty())
-    return certs;
-
-  std::string cert_data;
-  if (!base::ReadFileToString(path, &cert_data))
-    return certs;
-
-  certs = net::X509Certificate::CreateCertificateListFromBytes(
-      cert_data.data(), cert_data.size(),
-      net::X509Certificate::FORMAT_AUTO);
-
-  return certs;
-}
-
-int ImportCertificateIntoCertStore(
+int ImportIntoCertStore(
     CertificateManagerModel* model,
-    const base::FilePath& path,
-    const base::FilePath& ca_path,
-    const base::string16& password) {
-  LOG(WARNING) << "importing ....";
+    const base::DictionaryValue& options) {
+  std::string file_data, cert_path;
+  base::string16 password;
+  net::CertificateList imported_certs;
+  int rv;
+  options.GetString("clientCertificate", &cert_path);
+  options.GetString("password", &password);
 
-  std::string file_data;
-  int result = -1;
-  net::CertificateList ca_certs;
-  net::NSSCertDatabase::ImportCertFailureList not_imported;
-  auto module = model->cert_db()->GetPublicModule();
-  if (base::ReadFileToString(path, &file_data)) {
-    result &= model->ImportFromPKCS12(module, file_data, password, true);
-    ca_certs = ImportCertsFromFile(ca_path);
-    result &= model->ImportCACerts(ca_certs, net::NSSCertDatabase::TRUST_DEFAULT, &not_imported);
+  if (!cert_path.empty()) {
+    if (base::ReadFileToString(base::FilePath(cert_path), &file_data)) {
+      auto module = model->cert_db()->GetPublicModule();
+      rv = model->ImportFromPKCS12(module,
+                                   file_data,
+                                   password,
+                                   true,
+                                   &imported_certs);
+      if (imported_certs.size() > 1) {
+        auto it = imported_certs.begin();
+        ++it; // skip first which would  be the client certificate.
+        for (; it != imported_certs.end(); ++it)
+          rv &= model->SetCertTrust(it->get(),
+                                   net::CA_CERT,
+                                   net::NSSCertDatabase::TRUSTED_SSL);
+      }
+    }
   }
-  return result;
+  return rv;
 }
 
 }  // namespace
@@ -408,30 +403,30 @@ bool App::MakeSingleInstance(
 }
 
 void App::ImportClientCertificate(
-    const base::FilePath& path,
-    const base::FilePath& ca_path,
-
-    const base::string16& password,
+    const base::DictionaryValue& options,
     const net::CompletionCallback& callback) {
   auto browser_context = AtomBrowserMainParts::Get()->browser_context();
   if (!certificate_manager_model_) {
-    CertificateManagerModel::Create(browser_context, base::Bind(&App::OnCertificateManagerModelCreated, base::Unretained(this), path, ca_path, password, callback));
+    scoped_ptr<base::DictionaryValue> copy = options.CreateDeepCopy();
+    CertificateManagerModel::Create(browser_context,
+        base::Bind(&App::OnCertificateManagerModelCreated,
+                   base::Unretained(this),
+                   base::Passed(&copy),
+                   callback));
     return;
   }
 
-  int rv = ImportCertificateIntoCertStore(certificate_manager_model_.get(), path, ca_path, password);
+  int rv = ImportIntoCertStore(certificate_manager_model_.get(), options);
   callback.Run(rv);
 }
 
 void App::OnCertificateManagerModelCreated(
-    const base::FilePath& path,
-    const base::FilePath& ca_path,
-    const base::string16& password,
+    scoped_ptr<base::DictionaryValue> options,
     const net::CompletionCallback& callback,
     scoped_ptr<CertificateManagerModel> model) {
   certificate_manager_model_ = std::move(model);
-
-  int rv = ImportCertificateIntoCertStore(certificate_manager_model_.get(), path, ca_path, password);
+  int rv = ImportIntoCertStore(certificate_manager_model_.get(),
+                               *(options.get()));
   callback.Run(rv);
 }
 
@@ -474,8 +469,10 @@ mate::ObjectTemplateBuilder App::GetObjectTemplateBuilder(
       .SetMethod("allowNTLMCredentialsForAllDomains",
                  &App::AllowNTLMCredentialsForAllDomains)
       .SetMethod("getLocale", &App::GetLocale)
-      .SetMethod("makeSingleInstance", &App::MakeSingleInstance)
-      .SetMethod("importClientCertificate", &App::ImportClientCertificate);
+#if defined(OS_LINUX)
+      .SetMethod("importClientCertificate", &App::ImportClientCertificate)
+#endif
+      .SetMethod("makeSingleInstance", &App::MakeSingleInstance);
 }
 
 // static
