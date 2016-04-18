@@ -217,6 +217,7 @@ content::ServiceWorkerContext* GetServiceWorkerContext(
 
 WebContents::WebContents(content::WebContents* web_contents)
     : content::WebContentsObserver(web_contents),
+      embedder_(nullptr),
       type_(REMOTE),
       request_id_(0),
       background_throttling_(true) {
