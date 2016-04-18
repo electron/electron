@@ -390,6 +390,8 @@
       'atom/utility/atom_content_utility_client.h',
       'chromium_src/chrome/browser/browser_process.cc',
       'chromium_src/chrome/browser/browser_process.h',
+      'chromium_src/chrome/browser/certificate_manager_model.cc',
+      'chromium_src/chrome/browser/certificate_manager_model.h',
       'chromium_src/chrome/browser/chrome_process_finder_win.cc',
       'chromium_src/chrome/browser/chrome_process_finder_win.h',
       'chromium_src/chrome/browser/chrome_notification_types.h',

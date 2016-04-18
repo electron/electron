@@ -24,6 +24,7 @@
 #include "base/command_line.h"
 #include "base/environment.h"
 #include "base/files/file_path.h"
+#include "base/files/file_util.h"
 #include "base/path_service.h"
 #include "brightray/browser/brightray_paths.h"
 #include "chrome/common/chrome_paths.h"
@@ -155,6 +156,43 @@ void PassLoginInformation(scoped_refptr<LoginHandler> login_handler,
     login_handler->Login(username, password);
   else
     login_handler->CancelAuth();
+}
+
+net::CertificateList ImportCertsFromFile(
+    const base::FilePath& path) {
+  net::CertificateList certs;
+  if (path.empty())
+    return certs;
+
+  std::string cert_data;
+  if (!base::ReadFileToString(path, &cert_data))
+    return certs;
+
+  certs = net::X509Certificate::CreateCertificateListFromBytes(
+      cert_data.data(), cert_data.size(),
+      net::X509Certificate::FORMAT_AUTO);
+
+  return certs;
+}
+
+int ImportCertificateIntoCertStore(
+    CertificateManagerModel* model,
+    const base::FilePath& path,
+    const base::FilePath& ca_path,
+    const base::string16& password) {
+  LOG(WARNING) << "importing ....";
+
+  std::string file_data;
+  int result = -1;
+  net::CertificateList ca_certs;
+  net::NSSCertDatabase::ImportCertFailureList not_imported;
+  auto module = model->cert_db()->GetPublicModule();
+  if (base::ReadFileToString(path, &file_data)) {
+    result &= model->ImportFromPKCS12(module, file_data, password, true);
+    ca_certs = ImportCertsFromFile(ca_path);
+    result &= model->ImportCACerts(ca_certs, net::NSSCertDatabase::TRUST_DEFAULT, &not_imported);
+  }
+  return result;
 }
 
 }  // namespace
@@ -369,6 +407,34 @@ bool App::MakeSingleInstance(
   }
 }
 
+void App::ImportClientCertificate(
+    const base::FilePath& path,
+    const base::FilePath& ca_path,
+
+    const base::string16& password,
+    const net::CompletionCallback& callback) {
+  auto browser_context = AtomBrowserMainParts::Get()->browser_context();
+  if (!certificate_manager_model_) {
+    CertificateManagerModel::Create(browser_context, base::Bind(&App::OnCertificateManagerModelCreated, base::Unretained(this), path, ca_path, password, callback));
+    return;
+  }
+
+  int rv = ImportCertificateIntoCertStore(certificate_manager_model_.get(), path, ca_path, password);
+  callback.Run(rv);
+}
+
+void App::OnCertificateManagerModelCreated(
+    const base::FilePath& path,
+    const base::FilePath& ca_path,
+    const base::string16& password,
+    const net::CompletionCallback& callback,
+    scoped_ptr<CertificateManagerModel> model) {
+  certificate_manager_model_ = std::move(model);
+
+  int rv = ImportCertificateIntoCertStore(certificate_manager_model_.get(), path, ca_path, password);
+  callback.Run(rv);
+}
+
 mate::ObjectTemplateBuilder App::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
   auto browser = base::Unretained(Browser::Get());
@@ -408,7 +474,8 @@ mate::ObjectTemplateBuilder App::GetObjectTemplateBuilder(
       .SetMethod("allowNTLMCredentialsForAllDomains",
                  &App::AllowNTLMCredentialsForAllDomains)
       .SetMethod("getLocale", &App::GetLocale)
-      .SetMethod("makeSingleInstance", &App::MakeSingleInstance);
+      .SetMethod("makeSingleInstance", &App::MakeSingleInstance)
+      .SetMethod("importClientCertificate", &App::ImportClientCertificate);
 }
 
 // static
