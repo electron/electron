@@ -95,7 +95,6 @@ describe('app module', function () {
 
     this.timeout(5000)
 
-    var port
     var w = null
     var certPath = path.join(__dirname, 'fixtures', 'certificates')
     var options = {
@@ -114,9 +113,6 @@ describe('app module', function () {
         res.writeHead(200);
         res.end('authorized');
       }
-    })
-    server.listen(0, '127.0.0.1', function () {
-      port = server.address().port
     })
 
     afterEach(function () {
@@ -141,9 +137,18 @@ describe('app module', function () {
         done()
       })
 
+      app.on('select-client-certificate', function (event, webContents, url, list, callback) {
+        assert.equal(list.length, 1)
+        assert.equal(list[0].issuerName, 'Intermediate CA')
+        callback(list[0])
+      })
+
       app.importClientCertificate(options, function (result) {
         assert(!result)
-        w.loadURL(`https://127.0.0.1:${port}`)
+        server.listen(0, '127.0.0.1', function () {
+          var port = server.address().port
+          w.loadURL(`https://127.0.0.1:${port}`)
+        })
       })
     })
   })

@@ -15,7 +15,7 @@ RANDFILE        = $dir/rand
 default_md      = sha256
 default_days    = 3650
 policy          = policy_anything
-preserve   = no
+preserve        = no
 
 [policy_anything]
 # Default signing policy
@@ -32,7 +32,7 @@ default_bits       = 2048
 default_md         = sha256
 string_mask        = utf8only
 distinguished_name = req_env_dn
-prompt = no
+prompt             = no
 
 [user_cert]
 basicConstraints = CA:FALSE
