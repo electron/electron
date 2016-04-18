@@ -220,7 +220,8 @@ WebContents::WebContents(content::WebContents* web_contents)
       embedder_(nullptr),
       type_(REMOTE),
       request_id_(0),
-      background_throttling_(true) {
+      background_throttling_(true),
+      is_loading_main_frame_(false) {
   AttachAsUserData(web_contents);
   web_contents->SetUserAgentOverride(GetBrowserContext()->GetUserAgent());
 }
@@ -229,7 +230,8 @@ WebContents::WebContents(v8::Isolate* isolate,
                          const mate::Dictionary& options)
     : embedder_(nullptr),
       request_id_(0),
-      background_throttling_(true) {
+      background_throttling_(true),
+      is_loading_main_frame_(false) {
   // Read options.
   options.Get("backgroundThrottling", &background_throttling_);
 
@@ -543,10 +545,30 @@ void WebContents::DocumentLoadedInFrame(
 void WebContents::DidFinishLoad(content::RenderFrameHost* render_frame_host,
                                 const GURL& validated_url) {
   bool is_main_frame = !render_frame_host->GetParent();
+  if (is_main_frame)
+    is_loading_main_frame_ = false;
+
   Emit("did-frame-finish-load", is_main_frame);
 
   if (is_main_frame)
     Emit("did-finish-load");
+}
+
+void WebContents::DidStartProvisionalLoadForFrame(
+    content::RenderFrameHost* render_frame_host,
+    const GURL& url,
+    bool is_error_page,
+    bool is_iframe_srcdoc) {
+  if (!render_frame_host->GetParent())
+    is_loading_main_frame_ = true;
+}
+
+void WebContents::DidCommitProvisionalLoadForFrame(
+    content::RenderFrameHost* render_frame_host,
+    const GURL& url,
+    ui::PageTransition transition_type) {
+  if (!render_frame_host->GetParent())
+    is_loading_main_frame_ = true;
 }
 
 void WebContents::DidFailProvisionalLoad(
@@ -556,6 +578,8 @@ void WebContents::DidFailProvisionalLoad(
     const base::string16& description,
     bool was_ignored_by_handler) {
   bool is_main_frame = !render_frame_host->GetParent();
+  if (is_main_frame)
+    is_loading_main_frame_ = false;
   Emit("did-fail-provisional-load", code, description, url, is_main_frame);
   Emit("did-fail-load", code, description, url, is_main_frame);
 }
@@ -791,6 +815,10 @@ base::string16 WebContents::GetTitle() const {
 
 bool WebContents::IsLoading() const {
   return web_contents()->IsLoading();
+}
+    
+bool WebContents::IsLoadingMainFrame() const {
+  return is_loading_main_frame_;
 }
 
 bool WebContents::IsWaitingForResponse() const {
@@ -1189,6 +1217,7 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("_getURL", &WebContents::GetURL)
       .SetMethod("getTitle", &WebContents::GetTitle)
       .SetMethod("isLoading", &WebContents::IsLoading)
+      .SetMethod("isLoadingMainFrame", &WebContents::IsLoadingMainFrame)
       .SetMethod("isWaitingForResponse", &WebContents::IsWaitingForResponse)
       .SetMethod("_stop", &WebContents::Stop)
       .SetMethod("_goBack", &WebContents::GoBack)

@@ -62,6 +62,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   GURL GetURL() const;
   base::string16 GetTitle() const;
   bool IsLoading() const;
+  bool IsLoadingMainFrame() const;
   bool IsWaitingForResponse() const;
   void Stop();
   void ReloadIgnoringCache();
@@ -228,6 +229,13 @@ class WebContents : public mate::TrackableObject<WebContents>,
                               int error_code,
                               const base::string16& error_description,
                               bool was_ignored_by_handler) override;
+  void DidStartProvisionalLoadForFrame(content::RenderFrameHost* render_frame_host,
+                                       const GURL& validated_url,
+                                       bool is_error_page,
+                                       bool is_iframe_srcdoc) override;
+  void DidCommitProvisionalLoadForFrame(content::RenderFrameHost* render_frame_host,
+                                        const GURL& url,
+                                        ui::PageTransition transition_type) override;
   void DidStartLoading() override;
   void DidStopLoading() override;
   void DidGetResourceResponseStart(
@@ -301,6 +309,9 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   // Whether background throttling is disabled.
   bool background_throttling_;
+
+  // Whether the main frame (not just a sub-frame) is currently loading.
+  bool is_loading_main_frame_;
 
   DISALLOW_COPY_AND_ASSIGN(WebContents);
 };
