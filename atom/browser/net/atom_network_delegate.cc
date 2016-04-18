@@ -4,17 +4,16 @@
 
 #include "atom/browser/net/atom_network_delegate.h"
 
-#include <string>
 #include <utility>
 
 #include "atom/common/native_mate_converters/net_converter.h"
-#include "atom/common/options_switches.h"
-#include "base/command_line.h"
 #include "base/stl_util.h"
 #include "base/strings/string_util.h"
+#include "brightray/browser/net/devtools_network_transaction.h"
 #include "content/public/browser/browser_thread.h"
 #include "net/url_request/url_request.h"
 
+using brightray::DevToolsNetworkTransaction;
 using content::BrowserThread;
 
 namespace atom {
@@ -228,6 +227,11 @@ void AtomNetworkDelegate::SetResponseListenerInIO(
     response_listeners_[type] = { patterns, callback };
 }
 
+void AtomNetworkDelegate::SetDevToolsNetworkEmulationClientId(
+    const std::string& client_id) {
+  client_id_ = client_id;
+}
+
 int AtomNetworkDelegate::OnBeforeURLRequest(
     net::URLRequest* request,
     const net::CompletionCallback& callback,
@@ -243,12 +247,10 @@ int AtomNetworkDelegate::OnBeforeSendHeaders(
     net::URLRequest* request,
     const net::CompletionCallback& callback,
     net::HttpRequestHeaders* headers) {
-  auto cmd_line = base::CommandLine::ForCurrentProcess();
-  auto client_id = cmd_line->GetSwitchValueASCII(
-      switches::kDevToolsEmulateNetworkConditionsClientId);
-  if (!client_id.empty())
+  if (!client_id_.empty())
     headers->SetHeader(
-        switches::kDevToolsEmulateNetworkConditionsClientId, client_id);
+        DevToolsNetworkTransaction::kDevToolsEmulateNetworkConditionsClientId,
+        client_id_);
   if (!ContainsKey(response_listeners_, kOnBeforeSendHeaders))
     return brightray::NetworkDelegate::OnBeforeSendHeaders(
         request, callback, headers);
