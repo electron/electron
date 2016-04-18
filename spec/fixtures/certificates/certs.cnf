@@ -1,0 +1,68 @@
+ID=1
+CA_DIR=out
+
+[ca]
+default_ca = ca_settings
+
+[ca_settings]
+dir             = ${ENV::CA_DIR}
+database        = $dir/${ENV::ID}-index.txt
+new_certs_dir   = $dir
+serial          = $dir/${ENV::ID}-serial
+certificate     = $dir/${ENV::ID}.pem
+private_key     = $dir/${ENV::ID}.key
+RANDFILE        = $dir/rand
+default_md      = sha256
+default_days    = 3650
+policy          = policy_anything
+preserve   = no
+
+[policy_anything]
+# Default signing policy
+countryName            = optional
+stateOrProvinceName    = optional
+localityName           = optional
+organizationName       = optional
+organizationalUnitName = optional
+commonName             = supplied
+emailAddress           = optional
+
+[req]
+default_bits       = 2048
+default_md         = sha256
+string_mask        = utf8only
+distinguished_name = req_env_dn
+prompt = no
+
+[user_cert]
+basicConstraints = CA:FALSE
+nsCertType = client
+nsComment = "OpenSSL Generated Client Certificate"
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid,issuer
+keyUsage = critical, nonRepudiation, digitalSignature, keyEncipherment
+extendedKeyUsage = clientAuth, emailProtection
+
+[server_cert]
+basicConstraints = CA:FALSE
+nsCertType = server
+nsComment = "OpenSSL Generated Server Certificate"
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid,issuer:always
+keyUsage = critical, digitalSignature, keyEncipherment
+extendedKeyUsage = serverAuth
+
+[ca_cert]
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid:always,issuer
+basicConstraints = critical, CA:true
+keyUsage = critical, digitalSignature, cRLSign, keyCertSign
+
+[ca_intermediate_cert]
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid:always,issuer
+basicConstraints = critical, CA:true, pathlen:0
+keyUsage = critical, digitalSignature, cRLSign, keyCertSign
+
+[req_env_dn]
+commonName = ${ENV::COMMON_NAME}

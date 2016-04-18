@@ -1,5 +1,7 @@
 const assert = require('assert')
 const ChildProcess = require('child_process')
+const https = require('https')
+const fs = require('fs')
 const path = require('path')
 const remote = require('electron').remote
 
@@ -83,6 +85,65 @@ describe('app module', function () {
         }
         assert.equal(code, 123)
         done()
+      })
+    })
+  })
+
+  describe('app.importClientCertificate', function () {
+    if (process.platform !== 'linux')
+      return
+
+    this.timeout(5000)
+
+    var port
+    var w = null
+    var certPath = path.join(__dirname, 'fixtures', 'certificates')
+    var options = {
+      key: fs.readFileSync(path.join(certPath, 'server.key')),
+      cert: fs.readFileSync(path.join(certPath, 'server.pem')),
+      ca: [
+        fs.readFileSync(path.join(certPath, 'rootCA.pem')),
+        fs.readFileSync(path.join(certPath, 'intermediateCA.pem'))
+      ],
+      requestCert: true,
+      rejectUnauthorized: false
+    }
+
+    var server = https.createServer(options, function (req, res) {
+      if (req.client.authorized) {
+        res.writeHead(200);
+        res.end('authorized');
+      }
+    })
+    server.listen(0, '127.0.0.1', function () {
+      port = server.address().port
+    })
+
+    afterEach(function () {
+      if (w != null) {
+        w.destroy()
+      }
+      w = null
+    })
+
+    it('can import certificate into platform cert store', function (done) {
+      let options = {
+        clientCertificate: path.join(certPath, 'client.p12'),
+        password: 'electron'
+      }
+
+      w = new BrowserWindow({
+        show: false
+      })
+
+      w.webContents.on('did-finish-load', function () {
+        server.close()
+        done()
+      })
+
+      app.importClientCertificate(options, function (result) {
+        assert(!result)
+        w.loadURL(`https://127.0.0.1:${port}`)
       })
     })
   })
