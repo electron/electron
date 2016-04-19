@@ -386,12 +386,16 @@ void Session::EnableNetworkEmulation(const mate::Dictionary& options) {
 
   browser_context_->network_controller_handle()->SetNetworkState(
       devtools_network_emulation_client_id_, std::move(conditions));
+  browser_context_->network_delegate()->SetDevToolsNetworkEmulationClientId(
+      devtools_network_emulation_client_id_);
 }
 
 void Session::DisableNetworkEmulation() {
   scoped_ptr<brightray::DevToolsNetworkConditions> conditions;
   browser_context_->network_controller_handle()->SetNetworkState(
       devtools_network_emulation_client_id_, std::move(conditions));
+  browser_context_->network_delegate()->SetDevToolsNetworkEmulationClientId(
+      std::string());
 }
 
 void Session::SetCertVerifyProc(v8::Local<v8::Value> val,

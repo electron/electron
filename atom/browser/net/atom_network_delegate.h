@@ -7,9 +7,11 @@
 
 #include <map>
 #include <set>
+#include <string>
 
 #include "brightray/browser/network_delegate.h"
 #include "base/callback.h"
+#include "base/synchronization/lock.h"
 #include "base/values.h"
 #include "extensions/common/url_pattern.h"
 #include "net/base/net_errors.h"
@@ -68,6 +70,8 @@ class AtomNetworkDelegate : public brightray::NetworkDelegate {
                                const URLPatterns& patterns,
                                const ResponseListener& callback);
 
+  void SetDevToolsNetworkEmulationClientId(const std::string& client_id);
+
  protected:
   // net::NetworkDelegate:
   int OnBeforeURLRequest(net::URLRequest* request,
@@ -115,6 +119,10 @@ class AtomNetworkDelegate : public brightray::NetworkDelegate {
   std::map<SimpleEvent, SimpleListenerInfo> simple_listeners_;
   std::map<ResponseEvent, ResponseListenerInfo> response_listeners_;
   std::map<uint64_t, net::CompletionCallback> callbacks_;
+
+  base::Lock lock_;
+  // Client id for devtools network emulation.
+  std::string client_id_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomNetworkDelegate);
 };
