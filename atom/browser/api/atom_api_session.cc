@@ -23,12 +23,13 @@
 #include "atom/common/native_mate_converters/net_converter.h"
 #include "atom/common/node_includes.h"
 #include "base/files/file_path.h"
+#include "base/guid.h"
 #include "base/prefs/pref_service.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 #include "base/thread_task_runner_handle.h"
 #include "brightray/browser/net/devtools_network_conditions.h"
-#include "brightray/browser/net/devtools_network_controller.h"
+#include "brightray/browser/net/devtools_network_controller_handle.h"
 #include "chrome/common/pref_names.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/storage_partition.h"
@@ -288,7 +289,8 @@ void ClearHostResolverCacheInIO(
 }  // namespace
 
 Session::Session(AtomBrowserContext* browser_context)
-    : browser_context_(browser_context) {
+    : devtools_network_emulation_client_id_(base::GenerateGUID()),
+      browser_context_(browser_context) {
   AttachAsUserData(browser_context);
 
   // Observe DownloadManger to get download notifications.
@@ -381,25 +383,15 @@ void Session::EnableNetworkEmulation(const mate::Dictionary& options) {
                                                  download_throughput,
                                                  upload_throughput));
   }
-  auto controller = browser_context_->GetDevToolsNetworkController();
 
-  BrowserThread::PostTask(BrowserThread::IO, FROM_HERE,
-      base::Bind(&brightray::DevToolsNetworkController::SetNetworkState,
-                 base::Unretained(controller),
-                 std::string(),
-                 base::Passed(&conditions)));
+  browser_context_->network_controller_handle()->SetNetworkState(
+      devtools_network_emulation_client_id_, std::move(conditions));
 }
 
 void Session::DisableNetworkEmulation() {
-  scoped_ptr<brightray::DevToolsNetworkConditions> conditions(
-      new brightray::DevToolsNetworkConditions(false));
-  auto controller = browser_context_->GetDevToolsNetworkController();
-
-  BrowserThread::PostTask(BrowserThread::IO, FROM_HERE,
-      base::Bind(&brightray::DevToolsNetworkController::SetNetworkState,
-                 base::Unretained(controller),
-                 std::string(),
-                 base::Passed(&conditions)));
+  scoped_ptr<brightray::DevToolsNetworkConditions> conditions;
+  browser_context_->network_controller_handle()->SetNetworkState(
+      devtools_network_emulation_client_id_, std::move(conditions));
 }
 
 void Session::SetCertVerifyProc(v8::Local<v8::Value> val,

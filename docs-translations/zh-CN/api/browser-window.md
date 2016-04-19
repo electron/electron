@@ -99,7 +99,7 @@ win.show();
 * `zoomFactor` Number - 界面默认缩放值, `3.0` 表示
   `300%`. 默认 `1.0`.
 * `javascript` Boolean - 开启javascript支持. 默认为`true`.
-* `webSecurity` Boolean - 当设置为 `false`, 它将禁用相同地方的规则 (通常测试服), 并且如果有2个非用户设置的参数，就设置
+* `webSecurity` Boolean - 当设置为 `false`, 它将禁用同源策略 (通常用来测试网站), 并且如果有2个非用户设置的参数，就设置
   `allowDisplayingInsecureContent` 和 `allowRunningInsecureContent` 的值为
   `true`. 默认为 `true`.
 * `allowDisplayingInsecureContent` Boolean -允许一个使用 https的界面来展示由 http URLs 传过来的资源. 默认`false`.

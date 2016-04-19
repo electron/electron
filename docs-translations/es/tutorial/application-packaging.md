@@ -24,8 +24,8 @@ $ asar pack your-app app.asar
 
 ## Utilizando los paquetes `asar`
 
-En Electron existen dos tipos de APIs: las APIs de Node, proveídas por Node.js,
-y las APIs Web, proveídas por Chromium. Ambas APIs soportan la lecutra de paquetes `asar`.
+En Electron existen dos tipos de APIs: las APIs de Node, provistas por Node.js,
+y las APIs Web, provistas por Chromium. Ambas APIs soportan la lectura de paquetes `asar`.
 
 ### API Node
 
@@ -92,7 +92,7 @@ $.get('file:///path/to/example.asar/file.txt', function(data) {
 ### Utilizando un paquete `asar` como un archivo normal
 
 En algunas situaciones necesitaremos acceder al paquete `asar` como archivo, por ejemplo,
-si necesitaramos verificar la integridad del archivo con un checksum.
+si necesitáramos verificar la integridad del archivo con un checksum.
 Para casos así es posible utilizar el módulo  `original-fs`, que provee la API `fs` original:
 
 ```javascript
@@ -127,7 +127,7 @@ Las APIs que requieren el desempaquetamiento adicional son:
 * `child_process.execFile`
 * `fs.open`
 * `fs.openSync`
-* `process.dlopen` - Utilizado po `require` en los módulos nativos
+* `process.dlopen` - Utilizado por `require` en los módulos nativos
 
 ### Información falsa en `fs.stat`
 
@@ -143,8 +143,8 @@ Como se menciona arriba, algunas APIs de Node desempaquetarán archivos cuando e
 que los referencie, además de los problemas de rendimiento que esto podría ocasionar, también
 podría accionar alertas falsas en software antivirus.
 
-Para lidiar con esto, puedes desempaquetar algunos archivos utilizando la opción `--unpack`,
-a continuación un ejemplo que excluye las librerías compartidas de los módulos nativos:
+Para lidiar con esto, puedes desempaquetar algunos archivos utilizando la opción `--unpack`.
+A continuación, un ejemplo que excluye las librerías compartidas de los módulos nativos:
 
 ```bash
 $ asar pack app app.asar --unpack *.node

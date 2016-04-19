@@ -86,6 +86,9 @@ class Session: public mate::TrackableObject<Session>,
   v8::Global<v8::Value> cookies_;
   v8::Global<v8::Value> web_request_;
 
+  // The X-DevTools-Emulate-Network-Conditions-Client-Id.
+  std::string devtools_network_emulation_client_id_;
+
   scoped_refptr<AtomBrowserContext> browser_context_;
 
   DISALLOW_COPY_AND_ASSIGN(Session);
