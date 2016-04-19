@@ -66,10 +66,6 @@ void ShowMessageBox(int type,
   }
 }
 
-void SetSheetOffset(atom::NativeWindow* window, const double offset) {
-  window->SetSheetOffset(offset);
-}
-
 void ShowOpenDialog(const std::string& title,
                     const base::FilePath& default_path,
                     const file_dialog::Filters& filters,
@@ -116,7 +112,6 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   dict.SetMethod("showMessageBox", &ShowMessageBox);
   dict.SetMethod("showErrorBox", &atom::ShowErrorBox);
   dict.SetMethod("showOpenDialog", &ShowOpenDialog);
-  dict.SetMethod("setSheetOffset", &SetSheetOffset);
   dict.SetMethod("showSaveDialog", &ShowSaveDialog);
 }
 

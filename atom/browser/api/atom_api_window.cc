@@ -514,6 +514,10 @@ std::vector<int> Window::GetPosition() {
   return result;
 }
 
+void Window::SetSheetOffset(double offset) {
+  window_->SetSheetOffset(offset);
+}
+
 void Window::SetTitle(const std::string& title) {
   window_->SetTitle(title);
 }
@@ -763,6 +767,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("center", &Window::Center)
       .SetMethod("setPosition", &Window::SetPosition)
       .SetMethod("getPosition", &Window::GetPosition)
+      .SetMethod("setSheetOffset", &Window::SetSheetOffset)
       .SetMethod("setTitle", &Window::SetTitle)
       .SetMethod("getTitle", &Window::GetTitle)
       .SetMethod("flashFrame", &Window::FlashFrame)

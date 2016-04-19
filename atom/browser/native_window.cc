@@ -201,14 +201,6 @@ gfx::Size NativeWindow::GetContentSize() {
   return WindowSizeToContentSize(GetSize());
 }
 
-void NativeWindow::SetSheetOffset(const double offset) {
-  sheet_offset_ = offset;
-}
-
-double NativeWindow::GetSheetOffset() {
-  return sheet_offset_;
-}
-
 void NativeWindow::SetSizeConstraints(
     const extensions::SizeConstraints& window_constraints) {
   extensions::SizeConstraints content_constraints;
@@ -260,6 +252,14 @@ void NativeWindow::SetMaximumSize(const gfx::Size& size) {
 
 gfx::Size NativeWindow::GetMaximumSize() {
   return GetSizeConstraints().GetMaximumSize();
+}
+
+void NativeWindow::SetSheetOffset(const double offset) {
+  sheet_offset_ = offset;
+}
+
+double NativeWindow::GetSheetOffset() {
+  return sheet_offset_;
 }
 
 void NativeWindow::SetRepresentedFilename(const std::string& filename) {

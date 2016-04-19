@@ -129,19 +129,5 @@ On Mac OS X, dialogs are presented as sheets attached to a window if you provide
 a `BrowserWindow` reference in the `browserWindow` parameter, or modals if no
 window is provided.
 
-### `dialog.setSheetOffset(browserWindow, offset)`
-
-* `browserWindow` BrowserWindow (optional)
-
-Changes the attachment point for sheets on Mac OS X. By default, sheets are attached
-just below the window frame, but you may want to display them beneath a HTML-rendered
-toolbar. For example:
-```
-const {remote} = require('electron');
-const browserWindow = remote.getCurrentWindow();
-
-var toolbarRect = document.getElementById('toolbar').getBoundingClientRect();
-remote.dialog.setSheetOffset(browserWindow, toolbarRect.height);
-
-... show dialog ...
-```
+You can call `BrowserWindow.getCurrentWindow().setSheetOffset(offset)` to change
+the offset from the window frame where sheets are attached.
