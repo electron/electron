@@ -48,11 +48,11 @@ const session = require('electron').session;
 var ses = session.fromPartition('persist:name');
 ```
 
-## Instance Events
+### Instance Events
 
 The following events are available on instances of `Session`:
 
-### Event: 'will-download'
+#### Event: 'will-download'
 
 * `event` Event
 * `item` [DownloadItem](download-item.md)
@@ -72,11 +72,11 @@ session.defaultSession.on('will-download', function(event, item, webContents) {
 });
 ```
 
-## Instance Methods
+### Instance Methods
 
 The following methods are available on instances of `Session`:
 
-### `session.cookies`
+#### `ses.cookies`
 
 The `cookies` gives you ability to query and modify cookies. For example:
 
@@ -100,7 +100,7 @@ session.defaultSession.cookies.set(cookie, function(error) {
 });
 ```
 
-### `session.cookies.get(filter, callback)`
+#### `ses.cookies.get(filter, callback)`
 
 * `filter` Object
   * `url` String (optional) - Retrieves cookies which are associated with
@@ -132,7 +132,7 @@ with `callback(error, cookies)` on complete.
      the number of seconds since the UNIX epoch. Not provided for session
      cookies.
 
-### `session.cookies.set(details, callback)`
+#### `ses.cookies.set(details, callback)`
 
 * `details` Object
   * `url` String - Retrieves cookies which are associated with `url`
@@ -151,7 +151,7 @@ with `callback(error, cookies)` on complete.
 Sets the cookie with `details`, `callback` will be called with `callback(error)`
 on complete.
 
-### `session.cookies.remove(url, name, callback)`
+#### `ses.cookies.remove(url, name, callback)`
 
 * `url` String - The URL associated with the cookie.
 * `name` String - The name of cookie to remove.
@@ -160,20 +160,20 @@ on complete.
 Removes the cookies matching `url` and `name`, `callback` will called with
 `callback()` on complete.
 
-### `session.getCacheSize(callback)`
+#### `ses.getCacheSize(callback)`
 
 * `callback` Function
   * `size` Integer - Cache size used in bytes.
 
 Returns the session's current cache size.
 
-### `session.clearCache(callback)`
+#### `ses.clearCache(callback)`
 
 * `callback` Function - Called when operation is done
 
 Clears the session’s HTTP cache.
 
-### `session.clearStorageData([options, ]callback)`
+#### `ses.clearStorageData([options, ]callback)`
 
 * `options` Object (optional)
   * `origin` String - Should follow `window.location.origin`’s representation
@@ -187,11 +187,11 @@ Clears the session’s HTTP cache.
 
 Clears the data of web storages.
 
-### `session.flushStorageData()`
+#### `ses.flushStorageData()`
 
 Writes any unwritten DOMStorage data to disk.
 
-### `session.setProxy(config, callback)`
+#### `ses.setProxy(config, callback)`
 
 * `config` Object
   * `pacScript` String - The URL associated with the PAC file.
@@ -228,7 +228,7 @@ For example:
 * `http=foopy;socks=foopy2` -  Use HTTP proxy `foopy` for http URLs, and use
   `socks4://foopy2` for all other URLs.
 
-### `session.resolveProxy(url, callback)`
+### `ses.resolveProxy(url, callback)`
 
 * `url` URL
 * `callback` Function
@@ -236,14 +236,14 @@ For example:
 Resolves the proxy information for `url`. The `callback` will be called with
 `callback(proxy)` when the request is performed.
 
-### `session.setDownloadPath(path)`
+#### `ses.setDownloadPath(path)`
 
 * `path` String - The download location
 
 Sets download saving directory. By default, the download directory will be the
 `Downloads` under the respective app folder.
 
-### `session.enableNetworkEmulation(options)`
+#### `ses.enableNetworkEmulation(options)`
 
 * `options` Object
   * `offline` Boolean - Whether to emulate network outage.
@@ -265,12 +265,12 @@ window.webContents.session.enableNetworkEmulation({
 window.webContents.session.enableNetworkEmulation({offline: true});
 ```
 
-### `session.disableNetworkEmulation()`
+#### `ses.disableNetworkEmulation()`
 
 Disables any network emulation already active for the `session`. Resets to
 the original network configuration.
 
-### `session.setCertificateVerifyProc(proc)`
+#### `ses.setCertificateVerifyProc(proc)`
 
 * `proc` Function
 
@@ -291,7 +291,7 @@ myWindow.webContents.session.setCertificateVerifyProc(function(hostname, cert, c
 });
 ```
 
-### `session.setPermissionRequestHandler(handler)`
+#### `ses.setPermissionRequestHandler(handler)`
 
 * `handler` Function
   * `webContents` Object - [WebContents](web-contents.md) requesting the permission.
@@ -314,13 +314,13 @@ session.fromPartition(partition).setPermissionRequestHandler(function(webContent
 });
 ```
 
-### `session.clearHostResolverCache([callback])`
+#### `ses.clearHostResolverCache([callback])`
 
 * `callback` Function (optional) - Called when operation is done.
 
 Clears the host resolver cache.
 
-### `session.webRequest`
+#### `ses.webRequest`
 
 The `webRequest` API set allows to intercept and modify contents of a request at
 various stages of its lifetime.
@@ -349,7 +349,7 @@ session.defaultSession.webRequest.onBeforeSendHeaders(filter, function(details, 
 });
 ```
 
-### `session.webRequest.onBeforeRequest([filter, ]listener)`
+#### `ses.webRequest.onBeforeRequest([filter, ]listener)`
 
 * `filter` Object
 * `listener` Function
@@ -379,7 +379,7 @@ The `callback` has to be called with an `response` object:
   * `redirectURL` String (optional) - The original request is prevented from
     being sent or completed, and is instead redirected to the given URL.
 
-### `session.webRequest.onBeforeSendHeaders([filter, ]listener)`
+#### `ses.webRequest.onBeforeSendHeaders([filter, ]listener)`
 
 * `filter` Object
 * `listener` Function
@@ -404,7 +404,7 @@ The `callback` has to be called with an `response` object:
   * `requestHeaders` Object (optional) - When provided, request will be made
     with these headers.
 
-### `session.webRequest.onSendHeaders([filter, ]listener)`
+#### `ses.webRequest.onSendHeaders([filter, ]listener)`
 
 * `filter` Object
 * `listener` Function
@@ -421,7 +421,7 @@ response are visible by the time this listener is fired.
   * `timestamp` Double
   * `requestHeaders` Object
 
-### `session.webRequest.onHeadersReceived([filter,] listener)`
+#### `ses.webRequest.onHeadersReceived([filter,] listener)`
 
 * `filter` Object
 * `listener` Function
@@ -449,7 +449,7 @@ The `callback` has to be called with an `response` object:
   * `statusLine` String (optional) - Should be provided when overriding `responseHeaders`
     to change header status otherwise original response header's status will be used.
 
-### `session.webRequest.onResponseStarted([filter, ]listener)`
+#### `ses.webRequest.onResponseStarted([filter, ]listener)`
 
 * `filter` Object
 * `listener` Function
@@ -470,7 +470,7 @@ and response headers are available.
   * `statusCode` Integer
   * `statusLine` String
 
-### `session.webRequest.onBeforeRedirect([filter, ]listener)`
+#### `ses.webRequest.onBeforeRedirect([filter, ]listener)`
 
 * `filter` Object
 * `listener` Function
@@ -491,7 +491,7 @@ redirect is about to occur.
   * `fromCache` Boolean
   * `responseHeaders` Object
 
-### `session.webRequest.onCompleted([filter, ]listener)`
+#### `ses.webRequest.onCompleted([filter, ]listener)`
 
 * `filter` Object
 * `listener` Function
@@ -510,7 +510,7 @@ completed.
   * `statusCode` Integer
   * `statusLine` String
 
-### `session.webRequest.onErrorOccurred([filter, ]listener)`
+#### `ses.webRequest.onErrorOccurred([filter, ]listener)`
 
 * `filter` Object
 * `listener` Function
