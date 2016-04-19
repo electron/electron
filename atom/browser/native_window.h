@@ -123,6 +123,8 @@ class NativeWindow : public base::SupportsUserData,
   virtual gfx::Size GetMinimumSize();
   virtual void SetMaximumSize(const gfx::Size& size);
   virtual gfx::Size GetMaximumSize();
+  virtual void SetSheetOffset(const double offset);
+  virtual double GetSheetOffset();
   virtual void SetResizable(bool resizable) = 0;
   virtual bool IsResizable() = 0;
   virtual void SetMovable(bool movable) = 0;
@@ -189,9 +191,6 @@ class NativeWindow : public base::SupportsUserData,
   double GetAspectRatio();
   gfx::Size GetAspectRatioExtraSize();
   void SetAspectRatio(double aspect_ratio, const gfx::Size& extra_size);
-
-  void SetSheetOffset(const double offset);
-  double GetSheetOffset();
 
   base::WeakPtr<NativeWindow> GetWeakPtr() {
     return weak_factory_.GetWeakPtr();

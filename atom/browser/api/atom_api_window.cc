@@ -440,6 +440,10 @@ std::vector<int> Window::GetMaximumSize() {
   return result;
 }
 
+void Window::SetSheetOffset(double offset) {
+  window_->SetSheetOffset(offset);
+}
+
 void Window::SetResizable(bool resizable) {
   window_->SetResizable(resizable);
 }
@@ -512,10 +516,6 @@ std::vector<int> Window::GetPosition() {
   result[0] = pos.x();
   result[1] = pos.y();
   return result;
-}
-
-void Window::SetSheetOffset(double offset) {
-  window_->SetSheetOffset(offset);
 }
 
 void Window::SetTitle(const std::string& title) {
@@ -750,6 +750,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("getMinimumSize", &Window::GetMinimumSize)
       .SetMethod("setMaximumSize", &Window::SetMaximumSize)
       .SetMethod("getMaximumSize", &Window::GetMaximumSize)
+      .SetMethod("setSheetOffset", &Window::SetSheetOffset)
       .SetMethod("setResizable", &Window::SetResizable)
       .SetMethod("isResizable", &Window::IsResizable)
       .SetMethod("setMovable", &Window::SetMovable)
@@ -767,7 +768,6 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("center", &Window::Center)
       .SetMethod("setPosition", &Window::SetPosition)
       .SetMethod("getPosition", &Window::GetPosition)
-      .SetMethod("setSheetOffset", &Window::SetSheetOffset)
       .SetMethod("setTitle", &Window::SetTitle)
       .SetMethod("getTitle", &Window::GetTitle)
       .SetMethod("flashFrame", &Window::FlashFrame)
