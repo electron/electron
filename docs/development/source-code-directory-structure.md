@@ -87,5 +87,5 @@ in your `~/.gitconfig` file:
 
 ```
 [alias]
-	su = git submodule update --init --recursive
+	su = submodule update --init --recursive
 ```
