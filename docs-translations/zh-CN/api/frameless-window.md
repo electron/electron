@@ -1,4 +1,4 @@
-# 无边框窗口
+# Frameless Window
 
 无边框窗口指的是不包含除页面本身以外任何其它可视部分的窗口([chrome](https://developer.mozilla.org/en-US/docs/Glossary/Chrome))。
 像工具栏，是窗口的一部分，但并不属于页面。这些是[`BrowserWindow`](browser-window.md) 类的选项。
