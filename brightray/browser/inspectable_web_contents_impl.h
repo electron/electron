@@ -50,7 +50,7 @@ class InspectableWebContentsImpl :
 
   void SetDelegate(InspectableWebContentsDelegate* delegate) override;
   InspectableWebContentsDelegate* GetDelegate() const override;
-  void SetCanDock(bool can_dock) override;
+  void SetDockState(const std::string& state) override;
   void ShowDevTools() override;
   void CloseDevTools() override;
   bool IsDevToolsViewShowing() override;
@@ -168,12 +168,13 @@ class InspectableWebContentsImpl :
   DevToolsContentsResizingStrategy contents_resizing_strategy_;
   gfx::Rect devtools_bounds_;
   bool can_dock_;
+  std::string dock_state_;
 
   using PendingRequestsMap = std::map<const net::URLFetcher*, DispatchCallback>;
   PendingRequestsMap pending_requests_;
   InspectableWebContentsDelegate* delegate_;  // weak references.
 
-  PrefService* pref_service_; // weak reference.
+  PrefService* pref_service_;  // weak reference.
 
   scoped_ptr<content::WebContents> web_contents_;
   scoped_ptr<content::WebContents> devtools_web_contents_;
