@@ -4,10 +4,6 @@ Since v0.34.0, Electron allows submitting packaged apps to the Mac App Store
 (MAS). This guide provides information on: how to submit your app and the
 limitations of the MAS build.
 
-**Note:** From v0.36.0 there was a bug preventing GPU process to start after
-the app being sandboxed, so it is recommended to use v0.35.x before this bug
-gets fixed. You can find more about this in [issue #3871][issue-3871].
-
 **Note:** Submitting an app to Mac App Store requires enrolling [Apple Developer
 Program][developer-program], which costs money.
 
@@ -56,6 +52,8 @@ First, you need to prepare two entitlements files.
   <dict>
     <key>com.apple.security.app-sandbox</key>
     <true/>
+    <key>com.apple.security.temporary-exception.sbpl</key>
+    <string>(allow mach-lookup (global-name-regex #"^org.chromium.Chromium.rohitfork.[0-9]+$"))</string>
   </dict>
 </plist>
 ```
@@ -77,17 +75,18 @@ INSTALLER_KEY="3rd Party Mac Developer Installer: Company Name (APPIDENTITY)"
 
 FRAMEWORKS_PATH="$APP_PATH/Contents/Frameworks"
 
-codesign --deep -fs "$APP_KEY" --entitlements child.plist "$FRAMEWORKS_PATH/Electron Framework.framework/Versions/A"
-codesign --deep -fs "$APP_KEY" --entitlements child.plist "$FRAMEWORKS_PATH/$APP Helper.app/"
-codesign --deep -fs "$APP_KEY" --entitlements child.plist "$FRAMEWORKS_PATH/$APP Helper EH.app/"
-codesign --deep -fs "$APP_KEY" --entitlements child.plist "$FRAMEWORKS_PATH/$APP Helper NP.app/"
-if [ -d "$FRAMEWORKS_PATH/Squirrel.framework/Versions/A" ]; then
-  # Signing a non-MAS build.
-  codesign --deep -fs "$APP_KEY" --entitlements child.plist "$FRAMEWORKS_PATH/Mantle.framework/Versions/A"
-  codesign --deep -fs "$APP_KEY" --entitlements child.plist "$FRAMEWORKS_PATH/ReactiveCocoa.framework/Versions/A"
-  codesign --deep -fs "$APP_KEY" --entitlements child.plist "$FRAMEWORKS_PATH/Squirrel.framework/Versions/A"
-fi
-codesign -fs "$APP_KEY" --entitlements parent.plist "$APP_PATH"
+codesign -s "$APP_KEY" -f --entitlements child.plist "$FRAMEWORKS_PATH/Electron Framework.framework/Versions/A/Electron Framework"
+codesign -s "$APP_KEY" -f --entitlements child.plist "$FRAMEWORKS_PATH/Electron Framework.framework/Versions/A/Libraries/libffmpeg.dylib"
+codesign -s "$APP_KEY" -f --entitlements child.plist "$FRAMEWORKS_PATH/Electron Framework.framework/Versions/A/Libraries/libnode.dylib"
+codesign -s "$APP_KEY" -f --entitlements child.plist "$FRAMEWORKS_PATH/Electron Framework.framework"
+codesign -s "$APP_KEY" -f --entitlements child.plist "$FRAMEWORKS_PATH/$APP Helper.app/Contents/MacOS/$APP Helper"
+codesign -s "$APP_KEY" -f --entitlements child.plist "$FRAMEWORKS_PATH/$APP Helper.app/"
+codesign -s "$APP_KEY" -f --entitlements child.plist "$FRAMEWORKS_PATH/$APP Helper EH.app/Contents/MacOS/$APP Helper EH"
+codesign -s "$APP_KEY" -f --entitlements child.plist "$FRAMEWORKS_PATH/$APP Helper EH.app/"
+codesign -s "$APP_KEY" -f --entitlements child.plist "$FRAMEWORKS_PATH/$APP Helper NP.app/Contents/MacOS/$APP Helper NP"
+codesign -s "$APP_KEY" -f --entitlements child.plist "$FRAMEWORKS_PATH/$APP Helper NP.app/"
+codesign -s "$APP_KEY" -f --entitlements child.plist "$APP_PATH/Contents/MacOS/$APP"
+codesign -s "$APP_KEY" -f --entitlements parent.plist "$APP_PATH"
 
 productbuild --component "$APP_PATH" /Applications --sign "$INSTALLER_KEY" "$RESULT_PATH"
 ```
@@ -96,11 +95,32 @@ If you are new to app sandboxing under OS X, you should also read through
 Apple's [Enabling App Sandbox][enable-app-sandbox] to have a basic idea, then
 add keys for the permissions needed by your app to the entitlements files.
 
-### Upload Your App and Submit for Review
+### Upload Your App
 
 After signing your app, you can use Application Loader to upload it to iTunes
 Connect for processing, making sure you have [created a record][create-record]
-before uploading. Then you can [submit your app for review][submit-for-review].
+before uploading.
+
+### Explain the Usages of `temporary-exception`
+
+When sandboxing your app there was a `temporary-exception` entry added to the
+entitlements, according to the [App Sandbox Temporary Exception
+Entitlements][temporary-exception] documentation, you have to explain why this
+entry is needed:
+
+> Note: If you request a temporary-exception entitlement, be sure to follow the
+guidance regarding entitlements provided on the iTunes Connect website. In
+particular, identify the entitlement and corresponding issue number in the App
+Sandbox Entitlement Usage Information section in iTunes Connect and explain why
+your app needs the exception.
+
+You may explain that your app is built upon Chromium browser, which uses Mach
+port for its multi-process architecture. But there is still probability that
+your app failed the review because of this.
+
+### Submit Your App for Review
+
+After these steps, you can [submit your app for review][submit-for-review].
 
 ## Limitations of MAS Build
 
@@ -165,3 +185,4 @@ ERN)][ern-tutorial].
 [app-sandboxing]: https://developer.apple.com/app-sandboxing/
 [issue-3871]: https://github.com/electron/electron/issues/3871
 [ern-tutorial]: https://carouselapps.com/2015/12/15/legally-submit-app-apples-app-store-uses-encryption-obtain-ern/
+[temporary-exception]: https://developer.apple.com/library/mac/documentation/Miscellaneous/Reference/EntitlementKeyReference/Chapters/AppSandboxTemporaryExceptionEntitlements.html
