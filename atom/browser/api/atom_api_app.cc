@@ -159,13 +159,14 @@ void PassLoginInformation(scoped_refptr<LoginHandler> login_handler,
     login_handler->CancelAuth();
 }
 
+#if defined(USE_NSS_CERTS)
 int ImportIntoCertStore(
     CertificateManagerModel* model,
     const base::DictionaryValue& options) {
   std::string file_data, cert_path;
   base::string16 password;
   net::CertificateList imported_certs;
-  int rv;
+  int rv = -1;
   options.GetString("clientCertificate", &cert_path);
   options.GetString("password", &password);
 
@@ -189,6 +190,7 @@ int ImportIntoCertStore(
   }
   return rv;
 }
+#endif
 
 }  // namespace
 
@@ -402,6 +404,7 @@ bool App::MakeSingleInstance(
   }
 }
 
+#if defined(USE_NSS_CERTS)
 void App::ImportClientCertificate(
     const base::DictionaryValue& options,
     const net::CompletionCallback& callback) {
@@ -429,6 +432,7 @@ void App::OnCertificateManagerModelCreated(
                                *(options.get()));
   callback.Run(rv);
 }
+#endif
 
 mate::ObjectTemplateBuilder App::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
@@ -469,7 +473,7 @@ mate::ObjectTemplateBuilder App::GetObjectTemplateBuilder(
       .SetMethod("allowNTLMCredentialsForAllDomains",
                  &App::AllowNTLMCredentialsForAllDomains)
       .SetMethod("getLocale", &App::GetLocale)
-#if defined(OS_LINUX)
+#if defined(USE_NSS_CERTS)
       .SetMethod("importClientCertificate", &App::ImportClientCertificate)
 #endif
       .SetMethod("makeSingleInstance", &App::MakeSingleInstance);

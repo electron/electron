@@ -390,8 +390,6 @@
       'atom/utility/atom_content_utility_client.h',
       'chromium_src/chrome/browser/browser_process.cc',
       'chromium_src/chrome/browser/browser_process.h',
-      'chromium_src/chrome/browser/certificate_manager_model.cc',
-      'chromium_src/chrome/browser/certificate_manager_model.h',
       'chromium_src/chrome/browser/chrome_process_finder_win.cc',
       'chromium_src/chrome/browser/chrome_process_finder_win.h',
       'chromium_src/chrome/browser/chrome_notification_types.h',
@@ -518,6 +516,10 @@
       'chromium_src/net/test/embedded_test_server/tcp_listen_socket.h',
       '<@(native_mate_files)',
       '<(SHARED_INTERMEDIATE_DIR)/atom_natives.h',
+    ],
+    'lib_sources_nss': [
+      'chromium_src/chrome/browser/certificate_manager_model.cc',
+      'chromium_src/chrome/browser/certificate_manager_model.h',
     ],
     'lib_sources_win': [
       'chromium_src/chrome/browser/ui/views/color_chooser_dialog.cc',
