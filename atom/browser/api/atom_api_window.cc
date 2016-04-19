@@ -440,6 +440,10 @@ std::vector<int> Window::GetMaximumSize() {
   return result;
 }
 
+void Window::SetSheetOffset(double offset) {
+  window_->SetSheetOffset(offset);
+}
+
 void Window::SetResizable(bool resizable) {
   window_->SetResizable(resizable);
 }
@@ -746,6 +750,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("getMinimumSize", &Window::GetMinimumSize)
       .SetMethod("setMaximumSize", &Window::SetMaximumSize)
       .SetMethod("getMaximumSize", &Window::GetMaximumSize)
+      .SetMethod("setSheetOffset", &Window::SetSheetOffset)
       .SetMethod("setResizable", &Window::SetResizable)
       .SetMethod("isResizable", &Window::IsResizable)
       .SetMethod("setMovable", &Window::SetMovable)
