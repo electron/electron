@@ -121,6 +121,7 @@ class AtomNetworkDelegate : public brightray::NetworkDelegate {
   std::map<uint64_t, net::CompletionCallback> callbacks_;
 
   base::Lock lock_;
+
   // Client id for devtools network emulation.
   std::string client_id_;
 
