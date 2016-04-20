@@ -62,6 +62,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   GURL GetURL() const;
   base::string16 GetTitle() const;
   bool IsLoading() const;
+  bool IsLoadingMainFrame() const;
   bool IsWaitingForResponse() const;
   void Stop();
   void ReloadIgnoringCache();

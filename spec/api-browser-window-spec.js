@@ -4,6 +4,7 @@ const assert = require('assert')
 const fs = require('fs')
 const path = require('path')
 const os = require('os')
+const http = require('http')
 
 const remote = require('electron').remote
 const screen = require('electron').screen
@@ -18,6 +19,23 @@ const isCI = remote.getGlobal('isCi')
 describe('browser-window module', function () {
   var fixtures = path.resolve(__dirname, 'fixtures')
   var w = null
+  var server
+
+  before(function (done) {
+    server = http.createServer(function (req, res) {
+      function respond() { res.end(''); }
+      setTimeout(respond, req.url.includes('slow') ? 200 : 0)
+    });
+    server.listen(0, '127.0.0.1', function () {
+      server.url = 'http://127.0.0.1:' + server.address().port
+      done()
+    })
+  })
+
+  after(function () {
+    server.close()
+    server = null
+  })
 
   beforeEach(function () {
     if (w != null) {
@@ -634,6 +652,44 @@ describe('browser-window module', function () {
         assert.equal(w.isResizable(), true)
       })
     })
+
+    describe('loading main frame state', function () {
+      it('is true when the main frame is loading', function (done) {
+        w.webContents.on('did-start-loading', function() {
+          assert.equal(w.webContents.isLoadingMainFrame(), true)
+          done()
+        })
+        w.webContents.loadURL(server.url)
+      })
+
+      it('is false when only a subframe is loading', function (done) {
+        w.webContents.once('did-finish-load', function() {
+          assert.equal(w.webContents.isLoadingMainFrame(), false)
+          w.webContents.on('did-start-loading', function() {
+            assert.equal(w.webContents.isLoadingMainFrame(), false)
+            done()
+          })
+          w.webContents.executeJavaScript(`
+            var iframe = document.createElement('iframe')
+            iframe.src = '${server.url}/page2'
+            document.body.appendChild(iframe)
+          `)
+        })
+        w.webContents.loadURL(server.url)
+      })
+
+      it('is true when navigating to pages from the same origin', function (done) {
+        w.webContents.once('did-finish-load', function() {
+          assert.equal(w.webContents.isLoadingMainFrame(), false)
+          w.webContents.on('did-start-loading', function() {
+            assert.equal(w.webContents.isLoadingMainFrame(), true)
+            done()
+          })
+          w.webContents.loadURL(`${server.url}/page2`)
+        })
+        w.webContents.loadURL(server.url)
+      })
+    })
   })
 
   describe('window states (excluding Linux)', function () {
@@ -797,6 +853,22 @@ describe('browser-window module', function () {
         assert.equal(result, expected)
         done()
       })
+    })
+
+    it('works after page load and during subframe load', function (done) {
+      w.webContents.once('did-finish-load', function() {
+        // initiate a sub-frame load, then try and execute script during it
+        w.webContents.executeJavaScript(`
+          var iframe = document.createElement('iframe')
+          iframe.src = '${server.url}/slow'
+          document.body.appendChild(iframe)
+        `, function() {
+          w.webContents.executeJavaScript(`console.log('hello')`, function() {
+            done()
+          })
+        })
+      })
+      w.loadURL(server.url)
     })
   })
 
