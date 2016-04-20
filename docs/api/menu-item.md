@@ -61,6 +61,8 @@ On OS X `role` can also have following additional values:
 * `help` - The submenu is a "Help" menu
 * `services` - The submenu is a "Services" menu
 
+When specifying `role` on OS X, `label` and `accelerator` are the only options that will affect the MenuItem. All other options will be ignored.
+
 ## Instance Properties
 
 The following properties (and no others) can be updated on an existing `MenuItem`:
