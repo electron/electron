@@ -116,6 +116,18 @@ GURL GetRemoteBaseURL() {
       content::GetWebKitRevision().c_str()));
 }
 
+GURL GetDevToolsURL(
+    bool can_dock,
+    const std::string& dock_state) {
+  auto url_string =
+      base::StringPrintf(kChromeUIDevToolsURL,
+                         GetRemoteBaseURL().spec().c_str(),
+                         can_dock ? "true" : "");
+  if (!dock_state.empty())
+    url_string += "&settings={\"currentDockState\":\"\\\"" + dock_state + "\\\"\"}&";
+  return GURL(url_string);
+}
+
 // ResponseWriter -------------------------------------------------------------
 
 class ResponseWriter : public net::URLFetcherResponseWriter {
@@ -234,8 +246,13 @@ InspectableWebContentsDelegate* InspectableWebContentsImpl::GetDelegate() const 
   return delegate_;
 }
 
-void InspectableWebContentsImpl::SetCanDock(bool can_dock) {
-  can_dock_ = can_dock;
+void InspectableWebContentsImpl::SetDockState(const std::string& state) {
+  if (state == "detach") {
+    can_dock_ = false;
+  } else {
+    can_dock_ = true;
+    dock_state_ = state;
+  }
 }
 
 void InspectableWebContentsImpl::ShowDevTools() {
@@ -254,11 +271,8 @@ void InspectableWebContentsImpl::ShowDevTools() {
     agent_host_ = content::DevToolsAgentHost::GetOrCreateFor(web_contents_.get());
     agent_host_->AttachClient(this);
 
-    GURL devtools_url(base::StringPrintf(kChromeUIDevToolsURL,
-                                         GetRemoteBaseURL().spec().c_str(),
-                                         can_dock_ ? "true" : ""));
     devtools_web_contents_->GetController().LoadURL(
-        devtools_url,
+        GetDevToolsURL(can_dock_, dock_state_),
         content::Referrer(),
         ui::PAGE_TRANSITION_AUTO_TOPLEVEL,
         std::string());
