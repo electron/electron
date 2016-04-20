@@ -62,6 +62,9 @@ OS X에서의 `role`은 다음 값을 추가로 가질 수 있습니다:
 * `help` - 부 메뉴를 가지는 "Help" 메뉴
 * `services` - 부 메뉴를 가지는 "Services" 메뉴
 
+OS X에서는 `role`을 지정할 때, `label`과 `accelerator`만 MenuItem에 효과가
+적용되도록 변경되며, 다른 옵션들은 모두 무시됩니다.
+
 ## Instance Properties
 
 다음 속성들은 존재하는 `MenuItem`에서 계속 변경될 수 있습니다:

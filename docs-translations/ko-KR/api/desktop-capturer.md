@@ -65,6 +65,7 @@ function getUserMediaError(e) {
 
 `sources`는 `Source` 객체의 배열입니다. 각 `Source`는 캡쳐된 화면과 독립적인
 윈도우를 표현합니다. 그리고 다음과 같은 속성을 가지고 있습니다:
+
 * `id` String - `navigator.webkitGetUserMedia` API에서 사용할 수 있는 캡쳐된 윈도우
   또는 화면의 id입니다. 포맷은 `window:XX` 또는 `screen:XX`로 표현되며 `XX` 는
   무작위로 생성된 숫자입니다.

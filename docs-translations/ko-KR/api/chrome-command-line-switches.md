@@ -15,10 +15,6 @@ app.on('ready', function() {
 });
 ```
 
-## --client-certificate=`path`
-
-`path`를 클라이언트 인증서로 설정합니다.
-
 ## --ignore-connections-limit=`domains`
 
 `domains` 리스트(`,`로 구분)의 연결 제한을 무시합니다.

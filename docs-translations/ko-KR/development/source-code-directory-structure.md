@@ -57,3 +57,30 @@ Electron
   스크립트로부터 만들어지는 임시 디렉터리.
 * **external_binaries** - `gyp` 빌드를 지원하지 않아 따로 다운로드된 서드파티
   프레임워크 바이너리들.
+
+## Git 서브 모듈 최신 버전으로 유지
+
+Electron 저장소는 몇 가지 외부 벤더 종속성을 가지고 있으며 [/vendor](/vendor)
+디렉터리에서 확인할 수 있습니다. 때때로 `git status`를 실행했을 때 아마 다음과 같은
+메시지를 흔히 목격할 것입니다:
+
+```sh
+$ git status
+
+	modified:   vendor/brightray (new commits)
+	modified:   vendor/node (new commits)
+```
+
+이 외부 종속성 모듈들을 업데이트 하려면, 다음 커맨드를 실행합니다:
+
+```sh
+git submodule update --init --recursive
+```
+
+만약 자기 자신이 너무 이 커맨드를 자주 사용하는 것 같다면, `~/.gitconfig` 파일을
+생성하여 편하게 업데이트할 수 있습니다:
+
+```
+[alias]
+	su = submodule update --init --recursive
+```

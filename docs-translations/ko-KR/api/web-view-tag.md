@@ -20,12 +20,6 @@
 <webview id="foo" src="https://www.github.com/" style="display:inline-flex; width:640px; height:480px"></webview>
 ```
 
-주의할 점은 `webview` 태그의 스타일은 전통적인 flexbox 레이아웃을 사용했을 때 자식
-`object` 요소가 해당 `webview` 컨테이너의 전체 높이와 넓이를 확실히 채우도록
-내부적으로 `display:flex;`를 사용합니다. (v0.36.11 부터) 따라서 인라인 레이아웃을
-위해 `display:inline-flex;`를 쓰지 않는 한, 기본 `display:flex;` CSS 속성을
-덮어쓰지 않도록 주의해야 합니다.
-
 게스트 컨텐츠를 조작하기 위해 자바스크립트로 `webview` 태그의 이벤트를 리스닝 하여
 응답을 받을 수 있습니다. 다음 예제를 참고하세요: 첫번째 리스너는 페이지 로딩 시작시의
 이벤트를 확인하고 두번째 리스너는 페이지의 로딩이 끝난시점을 확인합니다. 그리고
@@ -47,6 +41,36 @@
     webview.addEventListener("did-stop-loading", loadstop);
   }
 </script>
+```
+
+## CSS 스타일링 참고
+
+주의할 점은 `webview` 태그의 스타일은 전통적인 flexbox 레이아웃을 사용했을 때 자식
+`object` 요소가 해당 `webview` 컨테이너의 전체 높이와 넓이를 확실히 채우도록
+내부적으로 `display:flex;`를 사용합니다. (v0.36.11 부터) 따라서 인라인 레이아웃을
+위해 `display:inline-flex;`를 쓰지 않는 한, 기본 `display:flex;` CSS 속성을
+덮어쓰지 않도록 주의해야 합니다.
+
+`webview`는 `hidden` 또는 `display: none;` 속성을 사용할 때 발생하는 문제를 한 가지
+가지고 있습니다. 자식 `browserplugin` 객체 내에서 비정상적인 랜더링 동작을 발생시킬 수
+있으며 웹 페이지가 로드되었을 때, `webview`가 숨겨지지 않았을 때, 반대로 그냥 바로
+다시 보이게 됩니다. `webview`를 숨기는 방법으로 가장 권장되는 방법은 `width` &
+`height`를 0으로 지정하는 CSS를 사용하는 것이며 `flex`를 통해 0px로 요소를 수축할 수
+있도록 합니다.
+
+```html
+<style>
+  webview {
+    display:inline-flex;
+    width:640px;
+    height:480px;
+  }
+  webview.hide {
+    flex: 0 1;
+    width: 0px;
+    height: 0px;
+  }
+</style>
 ```
 
 ## 태그 속성
@@ -294,7 +318,7 @@ Webview에 웹 페이지 `url`을 로드합니다. `url`은 `http://`, `file://`
 이 옵션을 활성화 시키면 `requestFullScreen`와 같은 HTML API에서 유저의 승인을
 무시하고 개발자가 API를 바로 사용할 수 있도록 허용합니다.
 
-역주: 기본적으로 브라우저에선 전체화면, 웹캠, 파일 열기등의 API를 사용하려면 유저의
+**역주:** 기본적으로 브라우저에선 전체화면, 웹캠, 파일 열기등의 API를 사용하려면 유저의
 승인(이벤트)이 필요합니다.
 
 ### `<webview>.openDevTools()`
@@ -469,9 +493,10 @@ Returns:
 * `errorCode` Integer
 * `errorDescription` String
 * `validatedURL` String
+* `isMainFrame` Boolean
 
-`did-finish-load`와 비슷합니다. 하지만 이 이벤트는 `window.stop()`과 같은 무언가로
-인해 로드에 실패했을 때 발생하는 이벤트입니다.
+`did-finish-load`와 비슷합니다. 하지만 이 이벤트는 `window.stop()`과 같이 취소
+함수가 호출되었거나 로드에 실패했을 때 발생하는 이벤트입니다.
 
 ### Event: 'did-frame-finish-load'
 
@@ -724,6 +749,10 @@ WebContents가 파괴될 때 발생하는 이벤트입니다.
 미디어가 중지되거나 재생이 완료되었을 때 발생하는 이벤트입니다.
 
 ### Event: 'did-change-theme-color'
+
+Returns:
+
+* `themeColor` String
 
 페이지의 테마 색이 변경될 때 발생하는 이벤트입니다. 이 이벤트는 보통 meta 태그에
 의해서 발생합니다:

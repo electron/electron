@@ -4,10 +4,6 @@ Electron은 v0.34.0 버전부터 앱 패키지를 Mac App Store(MAS)에 제출�
 되었습니다. 이 가이드는 어플리케이션을 앱 스토어에 등록하는 방법과 빌드의 한계에 대한
 설명을 제공합니다.
 
-**참고:** v0.36.0 버전부터 어플리케이션이 샌드박스화 된 상태로 실행되면 GPU 작동을
-방지하는 버그가 있었습니다. 따라서 이 버그가 고쳐지기 전까진 v0.35.x 버전을 사용하는
-것을 권장합니다. 이 버그에 관한 자세한 사항은 [issue #3871][issue-3871]를 참고하세요.
-
 **참고:** Mac App Store에 어플리케이션을 등록하려면
 [Apple Developer Program][developer-program]에 등록되어 있어야 하며 비용이 발생할
 수 있습니다.
@@ -56,6 +52,8 @@ Apple로부터 인증서를 취득했다면, [어플리케이션 배포](applica
   <dict>
     <key>com.apple.security.app-sandbox</key>
     <true/>
+    <key>com.apple.security.temporary-exception.sbpl</key>
+    <string>(allow mach-lookup (global-name-regex #"^org.chromium.Chromium.rohitfork.[0-9]+$"))</string>
   </dict>
 </plist>
 ```
@@ -77,17 +75,18 @@ INSTALLER_KEY="3rd Party Mac Developer Installer: Company Name (APPIDENTITY)"
 
 FRAMEWORKS_PATH="$APP_PATH/Contents/Frameworks"
 
-codesign --deep -fs "$APP_KEY" --entitlements child.plist "$FRAMEWORKS_PATH/Electron Framework.framework/Versions/A"
-codesign --deep -fs "$APP_KEY" --entitlements child.plist "$FRAMEWORKS_PATH/$APP Helper.app/"
-codesign --deep -fs "$APP_KEY" --entitlements child.plist "$FRAMEWORKS_PATH/$APP Helper EH.app/"
-codesign --deep -fs "$APP_KEY" --entitlements child.plist "$FRAMEWORKS_PATH/$APP Helper NP.app/"
-if [ -d "$FRAMEWORKS_PATH/Squirrel.framework/Versions/A" ]; then
-  # non-MAS 빌드 서명
-  codesign --deep -fs "$APP_KEY" --entitlements child.plist "$FRAMEWORKS_PATH/Mantle.framework/Versions/A"
-  codesign --deep -fs "$APP_KEY" --entitlements child.plist "$FRAMEWORKS_PATH/ReactiveCocoa.framework/Versions/A"
-  codesign --deep -fs "$APP_KEY" --entitlements child.plist "$FRAMEWORKS_PATH/Squirrel.framework/Versions/A"
-fi
-codesign -fs "$APP_KEY" --entitlements parent.plist "$APP_PATH"
+codesign -s "$APP_KEY" -f --entitlements child.plist "$FRAMEWORKS_PATH/Electron Framework.framework/Versions/A/Electron Framework"
+codesign -s "$APP_KEY" -f --entitlements child.plist "$FRAMEWORKS_PATH/Electron Framework.framework/Versions/A/Libraries/libffmpeg.dylib"
+codesign -s "$APP_KEY" -f --entitlements child.plist "$FRAMEWORKS_PATH/Electron Framework.framework/Versions/A/Libraries/libnode.dylib"
+codesign -s "$APP_KEY" -f --entitlements child.plist "$FRAMEWORKS_PATH/Electron Framework.framework"
+codesign -s "$APP_KEY" -f --entitlements child.plist "$FRAMEWORKS_PATH/$APP Helper.app/Contents/MacOS/$APP Helper"
+codesign -s "$APP_KEY" -f --entitlements child.plist "$FRAMEWORKS_PATH/$APP Helper.app/"
+codesign -s "$APP_KEY" -f --entitlements child.plist "$FRAMEWORKS_PATH/$APP Helper EH.app/Contents/MacOS/$APP Helper EH"
+codesign -s "$APP_KEY" -f --entitlements child.plist "$FRAMEWORKS_PATH/$APP Helper EH.app/"
+codesign -s "$APP_KEY" -f --entitlements child.plist "$FRAMEWORKS_PATH/$APP Helper NP.app/Contents/MacOS/$APP Helper NP"
+codesign -s "$APP_KEY" -f --entitlements child.plist "$FRAMEWORKS_PATH/$APP Helper NP.app/"
+codesign -s "$APP_KEY" -f --entitlements child.plist "$APP_PATH/Contents/MacOS/$APP"
+codesign -s "$APP_KEY" -f --entitlements parent.plist "$APP_PATH"
 
 productbuild --component "$APP_PATH" /Applications --sign "$INSTALLER_KEY" "$RESULT_PATH"
 ```
@@ -96,11 +95,31 @@ productbuild --component "$APP_PATH" /Applications --sign "$INSTALLER_KEY" "$RES
 문서를 참고하여 기본적인 개념을 이해해야 합니다. 그리고 자격(plist) 파일에
 어플리케이션에서 요구하는 권한의 키를 추가합니다.
 
-### 어플리케이션을 업로드하고 심사용 앱으로 제출
+### 어플리케이션 업로드
 
 어플리케이션 서명을 완료한 후 iTunes Connect에 업로드하기 위해 Application Loader를
 사용할 수 있습니다. 참고로 업로드하기 전에 [레코드][create-record]를 만들었는지
-확인해야 합니다. 그리고 [심사를 위해 앱을 제출][submit-for-review]할 수 있습니다.
+확인해야 합니다.
+
+### `temporary-exception`의 사용처 설명
+
+어플리케이션을 샌드박싱할 때 `temporary-exception` 엔트리가 자격에 추가되며
+[App Sandbox Temporary Exception Entitlements][temporary-exception] 문서에 따라
+왜 이 엔트리가 필요한지 설명해야 합니다:
+
+> Note: If you request a temporary-exception entitlement, be sure to follow the
+guidance regarding entitlements provided on the iTunes Connect website. In
+particular, identify the entitlement and corresponding issue number in the App
+Sandbox Entitlement Usage Information section in iTunes Connect and explain why
+your app needs the exception.
+
+아마 제출하려는 어플리케이션이 Chromium 브라우저를 기반으로 만들어졌고, 또한
+멀티-프로세스 구조를 위해 Mach port를 사용하는 것도 설명해야 할 수 있습니다. 하지만
+여전히 이러한 문제 때문에 어플리케이션 심사에 실패할 수 있습니다.
+
+### 어플리케이션을 심사에 제출
+
+위 과정을 마치면 [어플리케이션을 심사를 위해 제출][submit-for-review]할 수 있습니다.
 
 ## MAS 빌드의 한계
 
@@ -164,5 +183,5 @@ ERN의 승인을 얻는 방법은, 다음 글을 참고하는 것이 좋습니�
 [create-record]: https://developer.apple.com/library/ios/documentation/LanguagesUtilities/Conceptual/iTunesConnect_Guide/Chapters/CreatingiTunesConnectRecord.html
 [submit-for-review]: https://developer.apple.com/library/ios/documentation/LanguagesUtilities/Conceptual/iTunesConnect_Guide/Chapters/SubmittingTheApp.html
 [app-sandboxing]: https://developer.apple.com/app-sandboxing/
-[issue-3871]: https://github.com/electron/electron/issues/3871
 [ern-tutorial]: https://carouselapps.com/2015/12/15/legally-submit-app-apples-app-store-uses-encryption-obtain-ern/
+[temporary-exception]: https://developer.apple.com/library/mac/documentation/Miscellaneous/Reference/EntitlementKeyReference/Chapters/AppSandboxTemporaryExceptionEntitlements.html

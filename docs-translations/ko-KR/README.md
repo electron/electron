@@ -93,4 +93,5 @@ Electron에 대해 자주 묻는 질문이 있습니다. 이슈를 생성하기 
 * [빌드 설명서 (OS X)](development/build-instructions-osx.md)
 * [빌드 설명서 (Windows)](development/build-instructions-windows.md)
 * [빌드 설명서 (Linux)](development/build-instructions-linux.md)
-* [디버거에서 디버그 심볼 서버 설정](development/setting-up-symbol-server.md)
+* [디버그 설명서 (Windows)](development/debug-instructions-windows.md)
+* [디버거 심볼 서버 설정](development/setting-up-symbol-server.md)

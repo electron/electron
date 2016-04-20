@@ -16,9 +16,9 @@ Electron 기반 어플리케이션을 Travis, Circle, Jenkins 또는 유사한 �
 그리고, 가상 xvfb 스크린을 생성하고 DISPLAY라고 불리우는 환경 변수를 지정합니다.
 Electron의 Chromium은 자동적으로 `$DISPLAY` 변수를 찾습니다. 따라서 앱의 추가적인
 다른 설정이 필요하지 않습니다. 이러한 작업은 Paul Betts의
-[xfvb-maybe](https://github.com/paulcbetts/xvfb-maybe)를 통해 자동화 할 수
-있습니다: `xfvb-maybe`를 테스트 커맨드 앞에 추가하고 현재 시스템에서 요구하면
-이 작은 툴이 자동적으로 xfvb를 설정합니다. Windows와 Mac OS X에선 간단히 아무 작업도
+[xvfb-maybe](https://github.com/paulcbetts/xvfb-maybe)를 통해 자동화 할 수
+있습니다: `xvfb-maybe`를 테스트 커맨드 앞에 추가하고 현재 시스템에서 요구하면
+이 작은 툴이 자동적으로 xvfb를 설정합니다. Windows와 Mac OS X에선 간단히 아무 작업도
 하지 않습니다.
 
 ```
@@ -45,7 +45,7 @@ install:
 
 ### Jenkins
 
-Jenkins는 [Xfvb 플러그인이 존재합니다](https://wiki.jenkins-ci.org/display/JENKINS/Xvfb+Plugin).
+Jenkins는 [Xvfb 플러그인이 존재합니다](https://wiki.jenkins-ci.org/display/JENKINS/Xvfb+Plugin).
 
 ### Circle CI
 

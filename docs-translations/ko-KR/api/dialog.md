@@ -19,9 +19,6 @@ console.log(dialog.showOpenDialog({ properties: [ 'openFile', 'openDirectory', '
 const dialog = require('electron').remote.dialog;
 ```
 
-**OS X 참고**: 대화 상자를 시트처럼 보여지게 하려면 `browserWindow` 인자에
-`BrowserWindow` 객체의 참조를 제공하면 됩니다.
-
 ## Methods
 
 `dialog` 모듈은 다음과 같은 메서드를 가지고 있습니다:
@@ -116,7 +113,7 @@ const dialog = require('electron').remote.dialog;
 대화 상자를 표시합니다. `browserWindow`를 지정하면 대화 상자가 완전히 닫힐 때까지
 지정한 창을 사용할 수 없습니다. 완료 시 유저가 선택한 버튼의 인덱스를 반환합니다.
 
-역주: 부정을 표현하는 "아니오", "취소"와 같은 한글 단어는 지원되지 않습니다. 만약
+**역주:** 부정을 표현하는 "아니오", "취소"와 같은 한글 단어는 지원되지 않습니다. 만약
 OS X 또는 Windows에서 "확인", "취소"와 같은 순서로 버튼을 지정하게 될 때 Alt + f4로
 해당 대화 상자를 끄게 되면 "확인"을 누른 것으로 판단되어 버립니다. 이를 해결하려면
 "Cancel"을 대신 사용하거나 BrowserWindow API를 사용하여 대화 상자를 직접 구현해야
@@ -130,4 +127,15 @@ OS X 또는 Windows에서 "확인", "취소"와 같은 순서로 버튼을 지�
 에러 메시지를 보여주는 대화 상자를 표시합니다.
 
 이 API는 `app` 모듈의 `ready` 이벤트가 발생하기 전에 사용할 수 있습니다. 이 메서드는
-보통 어플리케이션이 시작되기 전에 특정한 에러를 표시하기 위해 사용됩니다.
+보통 어플리케이션이 시작되기 전에 특정한 에러를 표시하기 위해 사용됩니다. 만약
+Linux에서 `ready` 이벤트가 호출되기 이전에 이 API를 호출할 경우, 메시지는 stderr를
+통해서 표시되며 GUI 대화 상자는 표시되지 않습니다.
+
+## Sheets
+
+Mac OS X에선, `browserWindow` 인자에 `BrowserWindow` 객체 참조를 전달하면 대화
+상자가 해당 윈도우에 시트처럼 표시되도록 표현할 수 있습니다. 윈도우의 객체 참조가
+제공되지 않으면 모달 형태로 표시됩니다.
+
+`BrowserWindow.getCurrentWindow().setSheetOffset(offset)`을 통해 윈도우에 부착될
+시트의 위치를 조정할 수 있습니다.
