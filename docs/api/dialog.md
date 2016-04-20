@@ -122,7 +122,6 @@ it is usually used to report errors in early stage of startup.  If called
 before the app `ready`event on Linux, the message will be emitted to stderr,
 and no GUI dialog will appear.
 
-
 ## Sheets
 
 On Mac OS X, dialogs are presented as sheets attached to a window if you provide

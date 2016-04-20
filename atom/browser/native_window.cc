@@ -54,6 +54,7 @@ NativeWindow::NativeWindow(
       enable_larger_than_screen_(false),
       is_closed_(false),
       has_dialog_attached_(false),
+      sheet_offset_(0.0),
       aspect_ratio_(0.0),
       inspectable_web_contents_(inspectable_web_contents),
       weak_factory_(this) {
