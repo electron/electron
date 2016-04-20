@@ -54,7 +54,7 @@ app.on('ready', function() {
 
 ## `Display` 对象
 
-`Display` 对象表示了物力方式连接系统. 一个伪造的 `Display` 或许存在于一个无头系统中，或者一个 `Display` 相当于一个远程的、虚拟的 display.
+`Display` 对象表示一个连接到系统的物理显示. 一个虚设的 `Display` 或许存在于一个`headless system`中，或者一个 `Display` 对应一个远程的、虚拟的display.
 
 * `display` object
   * `id` Integer - 与display 相关的唯一性标志.
