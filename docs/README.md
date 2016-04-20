@@ -89,4 +89,5 @@ an issue:
 * [Build Instructions (OS X)](development/build-instructions-osx.md)
 * [Build Instructions (Windows)](development/build-instructions-windows.md)
 * [Build Instructions (Linux)](development/build-instructions-linux.md)
+* [Debug Instructions (Windows)](development/debug-instructions-windows.md)
 * [Setting Up Symbol Server in debugger](development/setting-up-symbol-server.md)
