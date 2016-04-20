@@ -22,6 +22,7 @@ win.webContents.session.on('will-download', function(event, item, webContents) {
       console.log("Download is cancelled or interrupted that can't be resumed");
     }
   });
+});
 ```
 
 ## Events
