@@ -23,7 +23,7 @@ app.on('ready', function() {
 });
 ```
 
-另一个例子，在次页外创建一个窗口:
+另一个例子，在此页外创建一个窗口:
 
 ```javascript
 const electron = require('electron');
