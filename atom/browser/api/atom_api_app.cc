@@ -167,7 +167,7 @@ int ImportIntoCertStore(
   base::string16 password;
   net::CertificateList imported_certs;
   int rv = -1;
-  options.GetString("clientCertificate", &cert_path);
+  options.GetString("certificate", &cert_path);
   options.GetString("password", &password);
 
   if (!cert_path.empty()) {
@@ -405,7 +405,7 @@ bool App::MakeSingleInstance(
 }
 
 #if defined(USE_NSS_CERTS)
-void App::ImportClientCertificate(
+void App::ImportCertificate(
     const base::DictionaryValue& options,
     const net::CompletionCallback& callback) {
   auto browser_context = AtomBrowserMainParts::Get()->browser_context();
@@ -474,7 +474,7 @@ mate::ObjectTemplateBuilder App::GetObjectTemplateBuilder(
                  &App::AllowNTLMCredentialsForAllDomains)
       .SetMethod("getLocale", &App::GetLocale)
 #if defined(USE_NSS_CERTS)
-      .SetMethod("importClientCertificate", &App::ImportClientCertificate)
+      .SetMethod("importCertificate", &App::ImportCertificate)
 #endif
       .SetMethod("makeSingleInstance", &App::MakeSingleInstance);
 }

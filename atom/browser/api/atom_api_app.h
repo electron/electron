@@ -111,8 +111,8 @@ class App : public AtomBrowserClient::Delegate,
   std::string GetLocale();
 
 #if defined(USE_NSS_CERTS)
-  void ImportClientCertificate(const base::DictionaryValue& options,
-                               const net::CompletionCallback& callback);
+  void ImportCertificate(const base::DictionaryValue& options,
+                         const net::CompletionCallback& callback);
 #endif
 
 #if defined(OS_WIN)

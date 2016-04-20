@@ -89,7 +89,7 @@ describe('app module', function () {
     })
   })
 
-  describe('app.importClientCertificate', function () {
+  describe('app.importCertificate', function () {
     if (process.platform !== 'linux')
       return
 
@@ -124,7 +124,7 @@ describe('app module', function () {
 
     it('can import certificate into platform cert store', function (done) {
       let options = {
-        clientCertificate: path.join(certPath, 'client.p12'),
+        certificate: path.join(certPath, 'client.p12'),
         password: 'electron'
       }
 
@@ -143,7 +143,7 @@ describe('app module', function () {
         callback(list[0])
       })
 
-      app.importClientCertificate(options, function (result) {
+      app.importCertificate(options, function (result) {
         assert(!result)
         server.listen(0, '127.0.0.1', function () {
           var port = server.address().port
