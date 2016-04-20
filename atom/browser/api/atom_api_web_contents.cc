@@ -816,7 +816,7 @@ base::string16 WebContents::GetTitle() const {
 bool WebContents::IsLoading() const {
   return web_contents()->IsLoading();
 }
-    
+
 bool WebContents::IsLoadingMainFrame() const {
   return is_loading_main_frame_;
 }

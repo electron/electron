@@ -224,18 +224,21 @@ class WebContents : public mate::TrackableObject<WebContents>,
                    int error_code,
                    const base::string16& error_description,
                    bool was_ignored_by_handler) override;
-  void DidFailProvisionalLoad(content::RenderFrameHost* render_frame_host,
-                              const GURL& validated_url,
-                              int error_code,
-                              const base::string16& error_description,
-                              bool was_ignored_by_handler) override;
-  void DidStartProvisionalLoadForFrame(content::RenderFrameHost* render_frame_host,
-                                       const GURL& validated_url,
-                                       bool is_error_page,
-                                       bool is_iframe_srcdoc) override;
-  void DidCommitProvisionalLoadForFrame(content::RenderFrameHost* render_frame_host,
-                                        const GURL& url,
-                                        ui::PageTransition transition_type) override;
+  void DidFailProvisionalLoad(
+      content::RenderFrameHost* render_frame_host,
+      const GURL& validated_url,
+      int error_code,
+      const base::string16& error_description,
+      bool was_ignored_by_handler) override;
+  void DidStartProvisionalLoadForFrame(
+      content::RenderFrameHost* render_frame_host,
+      const GURL& validated_url,
+      bool is_error_page,
+      bool is_iframe_srcdoc) override;
+  void DidCommitProvisionalLoadForFrame(
+      content::RenderFrameHost* render_frame_host,
+      const GURL& url,
+      ui::PageTransition transition_type) override;
   void DidStartLoading() override;
   void DidStopLoading() override;
   void DidGetResourceResponseStart(
