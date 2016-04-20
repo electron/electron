@@ -15,10 +15,6 @@ app.on('ready', function() {
 });
 ```
 
-## --client-certificate=`path`
-
-Sets the `path` of client certificate file.
-
 ## --ignore-connections-limit=`domains`
 
 Ignore the connections limit for `domains` list separated by `,`.

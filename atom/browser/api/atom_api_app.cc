@@ -15,15 +15,17 @@
 #include "atom/browser/browser.h"
 #include "atom/browser/login_handler.h"
 #include "atom/common/native_mate_converters/callback.h"
-#include "atom/common/native_mate_converters/net_converter.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/image_converter.h"
+#include "atom/common/native_mate_converters/net_converter.h"
+#include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/node_includes.h"
 #include "atom/common/options_switches.h"
 #include "base/command_line.h"
 #include "base/environment.h"
 #include "base/files/file_path.h"
+#include "base/files/file_util.h"
 #include "base/path_service.h"
 #include "brightray/browser/brightray_paths.h"
 #include "chrome/common/chrome_paths.h"
@@ -156,6 +158,39 @@ void PassLoginInformation(scoped_refptr<LoginHandler> login_handler,
   else
     login_handler->CancelAuth();
 }
+
+#if defined(USE_NSS_CERTS)
+int ImportIntoCertStore(
+    CertificateManagerModel* model,
+    const base::DictionaryValue& options) {
+  std::string file_data, cert_path;
+  base::string16 password;
+  net::CertificateList imported_certs;
+  int rv = -1;
+  options.GetString("certificate", &cert_path);
+  options.GetString("password", &password);
+
+  if (!cert_path.empty()) {
+    if (base::ReadFileToString(base::FilePath(cert_path), &file_data)) {
+      auto module = model->cert_db()->GetPublicModule();
+      rv = model->ImportFromPKCS12(module,
+                                   file_data,
+                                   password,
+                                   true,
+                                   &imported_certs);
+      if (imported_certs.size() > 1) {
+        auto it = imported_certs.begin();
+        ++it;  // skip first which would  be the client certificate.
+        for (; it != imported_certs.end(); ++it)
+          rv &= model->SetCertTrust(it->get(),
+                                    net::CA_CERT,
+                                    net::NSSCertDatabase::TRUSTED_SSL);
+      }
+    }
+  }
+  return rv;
+}
+#endif
 
 }  // namespace
 
@@ -369,6 +404,36 @@ bool App::MakeSingleInstance(
   }
 }
 
+#if defined(USE_NSS_CERTS)
+void App::ImportCertificate(
+    const base::DictionaryValue& options,
+    const net::CompletionCallback& callback) {
+  auto browser_context = AtomBrowserMainParts::Get()->browser_context();
+  if (!certificate_manager_model_) {
+    scoped_ptr<base::DictionaryValue> copy = options.CreateDeepCopy();
+    CertificateManagerModel::Create(browser_context,
+        base::Bind(&App::OnCertificateManagerModelCreated,
+                   base::Unretained(this),
+                   base::Passed(&copy),
+                   callback));
+    return;
+  }
+
+  int rv = ImportIntoCertStore(certificate_manager_model_.get(), options);
+  callback.Run(rv);
+}
+
+void App::OnCertificateManagerModelCreated(
+    scoped_ptr<base::DictionaryValue> options,
+    const net::CompletionCallback& callback,
+    scoped_ptr<CertificateManagerModel> model) {
+  certificate_manager_model_ = std::move(model);
+  int rv = ImportIntoCertStore(certificate_manager_model_.get(),
+                               *(options.get()));
+  callback.Run(rv);
+}
+#endif
+
 mate::ObjectTemplateBuilder App::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
   auto browser = base::Unretained(Browser::Get());
@@ -408,6 +473,9 @@ mate::ObjectTemplateBuilder App::GetObjectTemplateBuilder(
       .SetMethod("allowNTLMCredentialsForAllDomains",
                  &App::AllowNTLMCredentialsForAllDomains)
       .SetMethod("getLocale", &App::GetLocale)
+#if defined(USE_NSS_CERTS)
+      .SetMethod("importCertificate", &App::ImportCertificate)
+#endif
       .SetMethod("makeSingleInstance", &App::MakeSingleInstance);
 }
 
@@ -427,7 +495,6 @@ void AppendSwitch(const std::string& switch_string, mate::Arguments* args) {
   auto command_line = base::CommandLine::ForCurrentProcess();
 
   if (switch_string == atom::switches::kPpapiFlashPath ||
-      switch_string == atom::switches::kClientCertificate ||
       switch_string == switches::kLogNetLog) {
     base::FilePath path;
     args->GetNext(&path);

@@ -517,6 +517,10 @@
       '<@(native_mate_files)',
       '<(SHARED_INTERMEDIATE_DIR)/atom_natives.h',
     ],
+    'lib_sources_nss': [
+      'chromium_src/chrome/browser/certificate_manager_model.cc',
+      'chromium_src/chrome/browser/certificate_manager_model.h',
+    ],
     'lib_sources_win': [
       'chromium_src/chrome/browser/ui/views/color_chooser_dialog.cc',
       'chromium_src/chrome/browser/ui/views/color_chooser_dialog.h',

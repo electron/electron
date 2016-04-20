@@ -14,6 +14,11 @@
 #include "chrome/browser/process_singleton.h"
 #include "content/public/browser/gpu_data_manager_observer.h"
 #include "native_mate/handle.h"
+#include "net/base/completion_callback.h"
+
+#if defined(USE_NSS_CERTS)
+#include "chrome/browser/certificate_manager_model.h"
+#endif
 
 namespace base {
 class FilePath;
@@ -40,6 +45,13 @@ class App : public AtomBrowserClient::Delegate,
                       WindowOpenDisposition disposition,
                       int render_process_id,
                       int render_frame_id);
+
+#if defined(USE_NSS_CERTS)
+  void OnCertificateManagerModelCreated(
+      scoped_ptr<base::DictionaryValue> options,
+      const net::CompletionCallback& callback,
+      scoped_ptr<CertificateManagerModel> model);
+#endif
 
  protected:
   App();
@@ -98,11 +110,20 @@ class App : public AtomBrowserClient::Delegate,
       const ProcessSingleton::NotificationCallback& callback);
   std::string GetLocale();
 
+#if defined(USE_NSS_CERTS)
+  void ImportCertificate(const base::DictionaryValue& options,
+                         const net::CompletionCallback& callback);
+#endif
+
 #if defined(OS_WIN)
   bool IsAeroGlassEnabled();
 #endif
 
   scoped_ptr<ProcessSingleton> process_singleton_;
+
+#if defined(USE_NSS_CERTS)
+  scoped_ptr<CertificateManagerModel> certificate_manager_model_;
+#endif
 
   DISALLOW_COPY_AND_ASSIGN(App);
 };
