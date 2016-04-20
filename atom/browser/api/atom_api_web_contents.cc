@@ -849,14 +849,20 @@ void WebContents::OpenDevTools(mate::Arguments* args) {
   if (type_ == REMOTE)
     return;
 
-  bool detach = false;
+  std::string state;
   if (type_ == WEB_VIEW) {
-    detach = true;
+    state = "detach";
   } else if (args && args->Length() == 1) {
+    bool detach = false;
     mate::Dictionary options;
-    args->GetNext(&options) && options.Get("detach", &detach);
+    if (args->GetNext(&options)) {
+      options.Get("mode", &state);
+      options.Get("detach", &detach);
+      if (state.empty() && detach)
+        state = "detach";
+    }
   }
-  managed_web_contents()->SetCanDock(!detach);
+  managed_web_contents()->SetDockState(state);
   managed_web_contents()->ShowDevTools();
 }
 

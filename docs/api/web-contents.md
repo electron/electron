@@ -647,7 +647,8 @@ Removes the specified path from DevTools workspace.
 ### `webContents.openDevTools([options])`
 
 * `options` Object (optional)
-  * `detach` Boolean - opens DevTools in a new window
+  * `mode` String - Opens the devtools with specified dock state, can be one of
+    "right", "bottom", "undocked", "detach". Defaults to last used dock state.
 
 Opens the devtools.
 
