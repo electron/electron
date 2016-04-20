@@ -145,6 +145,8 @@ v8::Local<v8::Value> Converter<content::PermissionType>::ToV8(
     return StringToV8(isolate, "pointerLock");
   else if (val == (content::PermissionType)(PermissionType::FULLSCREEN))
     return StringToV8(isolate, "fullscreen");
+  else if (val == (content::PermissionType)(PermissionType::OPEN_EXTERNAL))
+    return StringToV8(isolate, "openExternal");
 
   return StringToV8(isolate, "unknown");
 }

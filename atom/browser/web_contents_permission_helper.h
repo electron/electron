@@ -19,7 +19,8 @@ class WebContentsPermissionHelper
 
   enum class PermissionType {
     POINTER_LOCK = static_cast<int>(content::PermissionType::NUM) + 1,
-    FULLSCREEN
+    FULLSCREEN,
+    OPEN_EXTERNAL,
   };
 
   void RequestFullscreenPermission(
@@ -30,6 +31,9 @@ class WebContentsPermissionHelper
   void RequestWebNotificationPermission(
       const base::Callback<void(bool)>& callback);
   void RequestPointerLockPermission(bool user_gesture);
+  void RequestOpenExternalPermission(
+      const base::Callback<void(bool)>& callback,
+      bool user_gesture);
 
  private:
   explicit WebContentsPermissionHelper(content::WebContents* web_contents);
