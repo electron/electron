@@ -104,7 +104,7 @@ productbuild --component "$APP_PATH" /Applications --sign "$INSTALLER_KEY" "$RES
 ### `temporary-exception`의 사용처 설명
 
 어플리케이션을 샌드박싱할 때 `temporary-exception` 엔트리가 자격에 추가되며
-[App Sandbox Temporary Exception Entitlements][temporary-exception] 문서에 따라
+[어플리케이션 샌드박스 임시 예외 적용][temporary-exception] 문서에 따라
 왜 이 엔트리가 필요한지 설명해야 합니다:
 
 > Note: If you request a temporary-exception entitlement, be sure to follow the
@@ -114,7 +114,7 @@ Sandbox Entitlement Usage Information section in iTunes Connect and explain why
 your app needs the exception.
 
 아마 제출하려는 어플리케이션이 Chromium 브라우저를 기반으로 만들어졌고, 또한
-멀티-프로세스 구조를 위해 Mach port를 사용하는 것도 설명해야 할 수 있습니다. 하지만
+멀티-프로세스 구조를 위해 Mach 포트를 사용하는 것도 설명해야 할 수 있습니다. 하지만
 여전히 이러한 문제 때문에 어플리케이션 심사에 실패할 수 있습니다.
 
 ### 어플리케이션을 심사에 제출
@@ -136,7 +136,7 @@ your app needs the exception.
 * 어플리케이션이 DNS의 변경을 감지하지 못할 수 있습니다.
 
 또한 어플리케이션 샌드박스 개념으로 인해 어플리케이션에서 접근할 수 있는 리소스는
-엄격하게 제한되어 있습니다. 자세한 내용은 [App Sandboxing][app-sandboxing] 문서를
+엄격하게 제한되어 있습니다. 자세한 내용은 [앱 샌드박싱][app-sandboxing] 문서를
 참고하세요.
 
 ## Electron에서 사용하는 암호화 알고리즘

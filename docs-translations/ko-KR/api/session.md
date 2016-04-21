@@ -294,7 +294,7 @@ myWindow.webContents.session.setCertificateVerifyProc(function(hostname, cert, c
 * `handler` Function
   * `webContents` Object - [WebContents](web-contents.md) 권한을 요청.
   * `permission`  String - 'media', 'geolocation', 'notifications',
-    'midiSysex', 'pointerLock', 'fullscreen'의 나열.
+    'midiSysex', 'pointerLock', 'fullscreen', 'openExternal'의 나열.
   * `callback`  Function - 권한 허용 및 거부.
 
 `session`의 권한 요청에 응답을 하는데 사용하는 핸들러를 설정합니다.
