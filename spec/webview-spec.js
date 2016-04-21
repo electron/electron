@@ -722,11 +722,13 @@ describe('<webview> tag', function () {
   })
 
   describe('permission-request event', function () {
-    function setUpRequestHandler (webview, requested_permission) {
+    function setUpRequestHandler (webview, requested_permission, completed) {
       var listener = function (webContents, permission, callback) {
         if (webContents.getId() === webview.getId()) {
           assert.equal(permission, requested_permission)
           callback(false)
+          if (completed)
+            completed()
         }
       }
       session.fromPartition(webview.partition).setPermissionRequestHandler(listener)
@@ -768,6 +770,13 @@ describe('<webview> tag', function () {
       webview.partition = 'permissionTest'
       webview.setAttribute('nodeintegration', 'on')
       setUpRequestHandler(webview, 'midiSysex')
+      document.body.appendChild(webview)
+    })
+
+    it('emits when accessing external protocol', function (done) {
+      webview.src = 'magnet:test'
+      webview.partition = 'permissionTest'
+      setUpRequestHandler(webview, 'openExternal', done)
       document.body.appendChild(webview)
     })
   })
