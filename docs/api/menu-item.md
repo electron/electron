@@ -1,6 +1,6 @@
 # MenuItem
 
-Add items to application and context menus.
+> Add items to application and context menus.
 
 See [`menu`](menu.md) for examples.
 

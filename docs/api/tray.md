@@ -1,6 +1,6 @@
 # Tray
 
-Add icons and context menus to the system's notification area.
+> Add icons and context menus to the system's notification area.
 
 ```javascript
 const electron = require('electron');

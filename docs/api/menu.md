@@ -1,6 +1,6 @@
 # Menu
 
-Create native application menus and context menus.
+> Create native application menus and context menus.
 
 This module is a main process module which can be used in a render process via
 the `remote` module.

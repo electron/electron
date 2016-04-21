@@ -1,6 +1,6 @@
 # process
 
-Get information about the running application process.
+> Get information about the running application process.
 
 The `process` object in Electron has the following differences from the one in
 upstream node:

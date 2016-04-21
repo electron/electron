@@ -1,6 +1,6 @@
 # Synopsis
 
-Info about Node.js and the main and renderer processes.
+> Info about Node.js and the main and renderer processes.
 
 All of [Node.js's built-in modules](http://nodejs.org/api/) are available in
 Electron and third-party node modules also fully supported as well (including

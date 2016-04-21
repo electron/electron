@@ -1,6 +1,6 @@
 # BrowserWindow
 
-Create and control browser windows.
+> Create and control browser windows.
 
 ```javascript
 // In the main process.

@@ -1,6 +1,6 @@
 # autoUpdater
 
-Enable apps to update themselves automatically.
+> Enable apps to update themselves automatically.
 
 The `autoUpdater` module provides and interface for the [Squirrel](https://github.com/Squirrel) framework.
 

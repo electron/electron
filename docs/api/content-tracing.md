@@ -1,6 +1,6 @@
 # contentTracing
 
-Debug your application using Chromium's content module.
+> Debug your application using Chromium's content module.
 
 This module does not include a web interface
 so you need to open `chrome://tracing/` in a Chrome browser and load the

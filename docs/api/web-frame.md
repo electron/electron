@@ -1,6 +1,6 @@
 # webFrame
 
-Customize the rendering of the current web page.
+> Customize the rendering of the current web page.
 
 An example of zooming current page to 200%.
 

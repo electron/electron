@@ -1,6 +1,6 @@
 # shell
 
-Manage files and URLs using their default applications.
+> Manage files and URLs using their default applications.
 
 The `shell` module provides functions related to desktop integration.
 

@@ -1,6 +1,6 @@
 # desktopCapturer
 
-Capture audio, video, and images from a microphone, camera, or
+> Capture audio, video, and images from a microphone, camera, or
 screen using the `getUserMedia` API.
 
 ```javascript

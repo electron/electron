@@ -1,6 +1,6 @@
 # nativeImage
 
-Create tray, dock, and application icons using PNG or JPG files.
+> Create tray, dock, and application icons using PNG or JPG files.
 
 In Electron, for the APIs that take images, you can pass either file paths or
 `nativeImage` instances. An empty image will be used when `null` is passed.

@@ -1,6 +1,6 @@
 # The `<webview>` tag
 
-Display external web content in an isolated frame and process.
+> Display external web content in an isolated frame and process.
 
 Use the `webview` tag to embed 'guest' content (such as web pages) in your
 Electron app. The guest content is contained within the `webview` container.

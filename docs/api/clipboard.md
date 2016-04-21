@@ -1,6 +1,6 @@
 # clipboard
 
-Perform copy and paste operations on the system clipboard.
+> Perform copy and paste operations on the system clipboard.
 
 The following example shows how to write a string to the clipboard:
 

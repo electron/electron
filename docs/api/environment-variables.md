@@ -1,6 +1,6 @@
 # Environment variables
 
-Control application configuration and behavior without changing code.
+> Control application configuration and behavior without changing code.
 
 Some behaviors of Electron are controlled by environment variables, because they
 are initialized earlier than command line and the app's code.

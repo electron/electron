@@ -1,6 +1,6 @@
 # session
 
-Manage browser cookies, cache, and other session data.
+> Manage browser cookies, cache, and other session data.
 
 The `session` module can be used to create new `Session` objects.
 

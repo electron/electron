@@ -1,6 +1,6 @@
 # Accelerator
 
-Define keyboard shortcuts.
+> Define keyboard shortcuts.
 
 Accelerators can contain multiple modifiers and key codes, combined by
 the `+` character.

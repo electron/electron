@@ -1,6 +1,6 @@
 # The `window.open` function
 
-Create a new window in a web page.
+> Create a new window in a web page.
 
 When `window.open` is called to create a new window in a web page, a new instance
 of `BrowserWindow` will be created for the `url` and a proxy will be returned

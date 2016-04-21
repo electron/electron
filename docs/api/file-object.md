@@ -1,6 +1,6 @@
 # `File` object
 
-Use the HTML5 `File` API to work natively with files on the filesystem.
+> Use the HTML5 `File` API to work natively with files on the filesystem.
 
 The DOM's File interface provides abstraction around native files in order to
 let users work on native files directly with the HTML5 file API. Electron has
