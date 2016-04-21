@@ -351,10 +351,15 @@ base::FilePath App::GetPath(mate::Arguments* args, const std::string& name) {
 void App::SetPath(mate::Arguments* args,
                   const std::string& name,
                   const base::FilePath& path) {
+  if (!path.IsAbsolute()) {
+    args->ThrowError("path must be absolute");
+    return;
+  }
+
   bool succeed = false;
   int key = GetPathConstant(name);
   if (key >= 0)
-    succeed = PathService::Override(key, path);
+    succeed = PathService::OverrideAndCreateIfNeeded(key, path, true, false);
   if (!succeed)
     args->ThrowError("Failed to set path");
 }
