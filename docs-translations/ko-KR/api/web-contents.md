@@ -350,6 +350,10 @@ var currentURL = win.webContents.getURL();
 
 현재 웹 페이지가 리소스를 로드중인지 여부를 반환합니다.
 
+### `webContents.isLoadingMainFrame()`
+
+메인 프레임이 여전히 로딩중인지 여부를 반환합니다. (내부 iframe 또는 frame 포함)
+
 ### `webContents.isWaitingForResponse()`
 
 현재 웹 페이지가 페이지의 메인 리소스로부터 첫 응답을 기다리고있는지 여부를 반환합니다.
