@@ -1,8 +1,9 @@
 # screen
 
-The `screen` module retrieves information about screen size, displays, cursor
-position, etc. You can not use this module until the `ready` event of the
-`app` module is emitted (by invoking or requiring it).
+> Retrieve information about screen size, displays, cursor position, etc.
+
+You cannot not use this module until the `ready` event of the `app` module is
+emitted (by invoking or requiring it).
 
 `screen` is an [EventEmitter](http://nodejs.org/api/events.html#events_class_events_eventemitter).
 

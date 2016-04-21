@@ -1,6 +1,6 @@
 # crashReporter
 
-The `crash-reporter` module enables sending your app's crash reports.
+Submit crash reports to a remote server.
 
 The following is an example of automatically submitting a crash report to a
 remote server:

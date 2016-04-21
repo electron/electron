@@ -1,5 +1,7 @@
 # remote
 
+Communicate between the renderer process and the main process.
+
 The `remote` module provides a simple way to do inter-process communication
 (IPC) between the renderer process (web page) and the main process.
 

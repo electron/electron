@@ -1,6 +1,6 @@
 # app
 
-The `app` module is responsible for controlling the application's lifecycle.
+Control your application's event lifecycle.
 
 The following example shows how to quit the application when the last window is
 closed:

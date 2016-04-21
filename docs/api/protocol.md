@@ -1,7 +1,7 @@
 # protocol
 
-The `protocol` module can register a custom protocol or intercept an existing
-protocol.
+Register a custom protocol to intercept click events from other running
+applications.
 
 An example of implementing a protocol that has the same effect as the
 `file://` protocol:

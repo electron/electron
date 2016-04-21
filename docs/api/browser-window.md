@@ -1,7 +1,6 @@
 # BrowserWindow
 
-The `BrowserWindow` class gives you the ability to create a browser window. For
-example:
+Create and control browser windows.
 
 ```javascript
 // In the main process.

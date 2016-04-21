@@ -1,8 +1,6 @@
 # powerSaveBlocker
 
-The `powerSaveBlocker` module is used to block the system from entering
-low-power (sleep) mode and thus allowing the app to keep the system and screen
-active.
+Block the system from entering low-power (sleep) mode.
 
 For example:
 

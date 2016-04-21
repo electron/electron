@@ -1,7 +1,7 @@
 # desktopCapturer
 
-The `desktopCapturer` module can be used to get available sources that can be
-used to be captured with `getUserMedia`.
+Capture audio, video, and images from a microphone, camera, or
+screen using the `getUserMedia` API.
 
 ```javascript
 // In the renderer process.

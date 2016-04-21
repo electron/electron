@@ -1,7 +1,6 @@
 # Tray
 
-A `Tray` represents an icon in an operating system's notification area, it is
-usually attached with a context menu.
+Add icons and context menus to the system's notification area.
 
 ```javascript
 const electron = require('electron');

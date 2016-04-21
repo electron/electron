@@ -1,8 +1,7 @@
 # Menu
 
-The `menu` class is used to create native menus that can be used as
-application menus and
-[context menus](https://developer.mozilla.org/en-US/docs/Mozilla/Tech/XUL/PopupGuide/ContextMenus).
+Create native application menus and context menus.
+
 This module is a main process module which can be used in a render process via
 the `remote` module.
 

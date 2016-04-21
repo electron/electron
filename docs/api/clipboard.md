@@ -1,6 +1,7 @@
 # clipboard
 
-The `clipboard` module provides methods to perform copy and paste operations.
+Perform copy and paste operations on the system clipboard.
+
 The following example shows how to write a string to the clipboard:
 
 ```javascript

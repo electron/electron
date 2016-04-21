@@ -1,5 +1,7 @@
 # session
 
+Manage browser cookies, cache, and other session data.
+
 The `session` module can be used to create new `Session` objects.
 
 You can also access the `session` of existing pages by using the `session`

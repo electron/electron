@@ -1,8 +1,6 @@
 # dialog
 
-The `dialog` module provides APIs to show native system dialogs, such as opening
-files or alerting, so web applications can deliver the same user experience as
-native applications.
+Display native system dialogs for opening and saving files, alerting, etc.
 
 An example of showing a dialog to select multiple files and directories:
 
