@@ -422,7 +422,7 @@ response are visible by the time this listener is fired.
   * `timestamp` Double
   * `requestHeaders` Object
 
-#### `ses.webRequest.onHeadersReceived([filter,] listener)`
+#### `ses.webRequest.onHeadersReceived([filter,]listener)`
 
 * `filter` Object
 * `listener` Function
