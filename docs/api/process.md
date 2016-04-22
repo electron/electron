@@ -23,7 +23,7 @@ beginning to load the web page or the main script.
 It can be used by the preload script to add removed Node global symbols back to
 the global scope when node integration is turned off:
 
-```js
+```javascript
 // preload.js
 var _setImmediate = setImmediate;
 var _clearImmediate = clearImmediate;

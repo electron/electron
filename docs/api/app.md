@@ -453,7 +453,7 @@ use this method to ensure single instance.
 An example of activating the window of primary instance when a second instance
 starts:
 
-```js
+```javascript
 var myWindow = null;
 
 var shouldQuit = app.makeSingleInstance(function(commandLine, workingDirectory) {
@@ -489,7 +489,7 @@ correctly when DWM composition is disabled).
 
 Usage example:
 
-```js
+```javascript
 let browserOptions = {width: 1000, height: 800};
 
 // Make the window transparent only if the platform supports it.

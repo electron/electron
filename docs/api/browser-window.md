@@ -315,7 +315,7 @@ Commands are lowercased with underscores replaced with hyphens and the
 `APPCOMMAND_` prefix stripped off.
 e.g. `APPCOMMAND_BROWSER_BACKWARD` is emitted as `browser-backward`.
 
-```js
+```javascript
 someWindow.on('app-command', function(e, cmd) {
   // Navigate the window back when the user hits their mouse back button
   if (cmd === 'browser-backward' && someWindow.webContents.canGoBack()) {
@@ -682,7 +682,7 @@ Changes the attachment point for sheets on Mac OS X. By default, sheets are
 attached just below the window frame, but you may want to display them beneath
 a HTML-rendered toolbar. For example:
 
-```
+```javascript
 var toolbarRect = document.getElementById('toolbar').getBoundingClientRect();
 win.setSheetOffset(toolbarRect.height);
 ```
