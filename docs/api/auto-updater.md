@@ -5,8 +5,11 @@ This module provides an interface for the `Squirrel` auto-updater framework.
 You can quickly launch a multi-platform release server for distributing your
 application by using one of these projects:
 
-- [electron-release-server][electron-release-server]: *A fully featured, self-hosted release server for electron applications, compatible with auto-updater*
-- [squirrel-updates-server][squirrel-updates-server]: *A simple node.js server for Squirrel.Mac and Squirrel.Windows which uses GitHub releases*
+- [electron-release-server][electron-release-server]: *A fully featured,
+  self-hosted release server for electron applications, compatible with
+  auto-updater*
+- [squirrel-updates-server][squirrel-updates-server]: *A simple node.js server
+  for Squirrel.Mac and Squirrel.Windows which uses GitHub releases*
 
 ## Platform notices
 

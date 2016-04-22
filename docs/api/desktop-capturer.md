@@ -40,7 +40,7 @@ function getUserMediaError(e) {
 
 When creating a constraints object for the `navigator.webkitGetUserMedia` call,
 if you are using a source from `desktopCapturer` your `chromeMediaSource` must
-be set to `"desktop"` and your `audio` must be set to `false`. 
+be set to `"desktop"` and your `audio` must be set to `false`.
 
 If you wish to
 capture the audio and video from the entire desktop you can set
@@ -72,7 +72,7 @@ captured screen or individual window, and has following properties:
 * `name` String - The described name of the capturing screen or window. If the
   source is a screen, the name will be `Entire Screen` or `Screen <index>`; if
   it is a window, the name will be the window's title.
-* `thumbnail` A thumbnail [native image](native-image.md).
+* `thumbnail` [NativeImage](native-image.md) - A thumbnail native image.
 
 **Note:** There is no guarantee that the size of `source.thumbnail` is always
 the same as the `thumnbailSize` in `options`. It also depends on the scale of

@@ -10,8 +10,8 @@ upstream node:
 * `process.resourcesPath` String - Path to JavaScript source code.
 * `process.mas` Boolean - For Mac App Store build, this value is `true`, for
   other builds it is `undefined`.
-* `process.windowsStore` Boolean - If the app is running as a Windows Store app (appx), this value is `true`, for
-  other builds it is `undefined`.
+* `process.windowsStore` Boolean - If the app is running as a Windows Store app
+  (appx), this value is `true`, for other builds it is `undefined`.
 
 ## Events
 
@@ -23,7 +23,7 @@ beginning to load the web page or the main script.
 It can be used by the preload script to add removed Node global symbols back to
 the global scope when node integration is turned off:
 
-```js
+```javascript
 // preload.js
 var _setImmediate = setImmediate;
 var _clearImmediate = clearImmediate;
