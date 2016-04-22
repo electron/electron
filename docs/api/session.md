@@ -295,9 +295,9 @@ myWindow.webContents.session.setCertificateVerifyProc(function(hostname, cert, c
 
 * `handler` Function
   * `webContents` Object - [WebContents](web-contents.md) requesting the permission.
-  * `permission`  String - Enum of 'media', 'geolocation', 'notifications', 'midiSysex',
+  * `permission` String - Enum of 'media', 'geolocation', 'notifications', 'midiSysex',
     'pointerLock', 'fullscreen', 'openExternal'.
-  * `callback`  Function - Allow or deny the permission.
+  * `callback` Function - Allow or deny the permission.
 
 Sets the handler which can be used to respond to permission requests for the `session`.
 Calling `callback(true)` will allow the permission and `callback(false)` will reject it.
