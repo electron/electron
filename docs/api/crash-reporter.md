@@ -60,7 +60,8 @@ ID.
 
 ## crash-reporter Payload
 
-The crash reporter will send the following data to the `submitURL` as a `multipart/form-data` `POST`:
+The crash reporter will send the following data to the `submitURL` as
+a `multipart/form-data` `POST`:
 
 * `ver` String - The version of Electron.
 * `platform` String - e.g. 'win32'.

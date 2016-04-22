@@ -10,8 +10,8 @@ upstream node:
 * `process.resourcesPath` String - Path to JavaScript source code.
 * `process.mas` Boolean - For Mac App Store build, this value is `true`, for
   other builds it is `undefined`.
-* `process.windowsStore` Boolean - If the app is running as a Windows Store app (appx), this value is `true`, for
-  other builds it is `undefined`.
+* `process.windowsStore` Boolean - If the app is running as a Windows Store app
+  (appx), this value is `true`, for other builds it is `undefined`.
 
 ## Events
 

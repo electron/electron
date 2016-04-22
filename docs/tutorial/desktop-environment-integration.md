@@ -53,8 +53,7 @@ GNOME, KDE.
 ### OS X
 
 Notifications are straight-forward on OS X, you should however be aware of
-[Apple's Human Interface guidelines regarding
-notifications](https://developer.apple.com/library/mac/documentation/UserExperience/Conceptual/OSXHIGuidelines/NotificationCenter.html).
+[Apple's Human Interface guidelines regarding notifications](https://developer.apple.com/library/mac/documentation/UserExperience/Conceptual/OSXHIGuidelines/NotificationCenter.html).
 
 Note that notifications are limited to 256 bytes in size - and will be truncated
 if you exceed that limit.

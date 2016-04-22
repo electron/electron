@@ -22,9 +22,10 @@ Create a new `MenuItem` with the following method:
   * `sublabel` String
   * `accelerator` [Accelerator](accelerator.md)
   * `icon` [NativeImage](native-image.md)
-  * `enabled` Boolean - If false, the menu item will be greyed out and unclickable.
+  * `enabled` Boolean - If false, the menu item will be greyed out and
+    unclickable.
   * `visible` Boolean - If false, the menu item will be entirely hidden.
-  * `checked` Boolean - Should only be specified for `checkbox` or `radio` type 
+  * `checked` Boolean - Should only be specified for `checkbox` or `radio` type
       menu items.
   * `submenu` Menu - Should be specified for `submenu` type menu items. If
      `submenu` is specified, the `type: 'submenu'` can be omitted. If the value
@@ -61,7 +62,8 @@ On OS X `role` can also have following additional values:
 * `help` - The submenu is a "Help" menu
 * `services` - The submenu is a "Services" menu
 
-When specifying `role` on OS X, `label` and `accelerator` are the only options that will affect the MenuItem. All other options will be ignored.
+When specifying `role` on OS X, `label` and `accelerator` are the only options
+that will affect the MenuItem. All other options will be ignored.
 
 ## Instance Properties
 
@@ -79,4 +81,3 @@ selected. You can add a `click` function to do additional work.
 A `radio` menu item will turn on its `checked` property when clicked, and
 will turn off that property for all adjacent items in the same menu. Again,
 you can add a `click` function for additional behavior.
-
