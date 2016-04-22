@@ -75,8 +75,6 @@ __알림__: 만약 `main` 필드가 `package.json`에 설정되어 있지 않으
 다음과 같이 작성할 수 있습니다:
 
 ```javascript
-'use strict';
-
 const electron = require('electron');
 const app = electron.app;  // 어플리케이션 기반을 조작 하는 모듈.
 const BrowserWindow = electron.BrowserWindow;  // 네이티브 브라우저 창을 만드는 모듈.

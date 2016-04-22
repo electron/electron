@@ -1,5 +1,3 @@
-'use strict'
-
 let value = 'old'
 
 class BaseClass {

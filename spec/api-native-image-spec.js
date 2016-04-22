@@ -1,5 +1,3 @@
-'use strict'
-
 const assert = require('assert')
 const nativeImage = require('electron').nativeImage
 const path = require('path')
