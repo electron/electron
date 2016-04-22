@@ -1,6 +1,6 @@
 # protocol
 
-> Register a custom protocol and intercept existing protocols.
+> Register a custom protocol and intercept existing protocol requests.
 
 An example of implementing a protocol that has the same effect as the
 `file://` protocol:

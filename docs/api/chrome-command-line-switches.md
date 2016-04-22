@@ -3,8 +3,8 @@
 > Command line switches supported by Electron.
 
 You can use [app.commandLine.appendSwitch][append-switch] to append them in
-your app's main script before the [ready][ready] event of [app][app] module is
-emitted:
+your app's main script before the [ready][ready] event of the [app][app] module
+is emitted:
 
 ```javascript
 const app = require('electron').app;
