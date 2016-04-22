@@ -25,7 +25,16 @@
   [[NSUserDefaults standardUserDefaults] setBool:NO forKey:@"NSFullScreenMenuItemEverywhere"];
 
   // Add observer to monitor the system's Dark Mode theme.
-  [[NSDistributedNotificationCenter defaultCenter] addObserver:self selector:@selector(platformThemeChanged:) name:@"AppleInterfaceThemeChangedNotification" object:nil];
+  [[NSDistributedNotificationCenter defaultCenter] addObserver:self
+                                                      selector:@selector(platformThemeChanged:)
+                                                          name:@"AppleInterfaceThemeChangedNotification"
+                                                        object:nil];
+
+  // Add observer to monitor the system's Graphite Appearance.
+  [[NSNotificationCenter defaultCenter] addObserver:self
+                                           selector:@selector(platformAppearanceChanged:)
+                                               name:NSControlTintDidChangeNotification
+                                             object:nil];
 
   atom::Browser::Get()->WillFinishLaunching();
 }
@@ -64,6 +73,10 @@
 
 - (void)platformThemeChanged:(NSNotification *)notify {
   atom::Browser::Get()->PlatformThemeChanged();
+}
+
+- (void)platformAppearanceChanged:(NSNotification *)notify {
+  atom::Browser::Get()->PlatformAppearanceChanged();
 }
 
 @end

@@ -514,6 +514,10 @@ if (browserOptions.transparent) {
 
 This method returns `true` if the system is in Dark Mode, and `false` otherwise.
 
+### `app.getAppearance()` _OS X_
+
+Returns system appearance. Possible values: `blue`, `graphite`, `unknown`.
+
 ### `app.importCertificate(options, callback)` _LINUX_
 
 * `options` Object

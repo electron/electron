@@ -46,6 +46,7 @@ class BrowserObserver {
   virtual void OnLogin(LoginHandler* login_handler) {}
 
   virtual void OnPlatformThemeChanged() {}
+  virtual void OnPlatformAppearanceChanged() {}
 
  protected:
   virtual ~BrowserObserver() {}

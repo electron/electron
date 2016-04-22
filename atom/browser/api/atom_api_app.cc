@@ -69,6 +69,23 @@ struct Converter<Browser::UserTask> {
 };
 #endif
 
+#if defined(OS_MACOSX)
+template<>
+struct Converter<Browser::Appearance> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   Browser::Appearance val) {
+    switch (val) {
+      case Browser::Appearance::Blue:
+        return StringToV8(isolate, "blue");
+      case Browser::Appearance::Graphite:
+        return StringToV8(isolate, "graphite");
+      default:
+        return StringToV8(isolate, "unknown");
+    }
+  }
+};
+#endif
+
 }  // namespace mate
 
 
@@ -335,6 +352,10 @@ void App::OnGpuProcessCrashed(base::TerminationStatus exit_code) {
 void App::OnPlatformThemeChanged() {
   Emit("platform-theme-changed");
 }
+
+void App::OnPlatformAppearanceChanged() {
+  Emit("platform-appearance-changed");
+}
 #endif
 
 base::FilePath App::GetPath(mate::Arguments* args, const std::string& name) {
@@ -466,6 +487,8 @@ mate::ObjectTemplateBuilder App::GetObjectTemplateBuilder(
       .SetMethod("show", base::Bind(&Browser::Show, browser))
       .SetMethod("isDarkMode",
                  base::Bind(&Browser::IsDarkMode, browser))
+      .SetMethod("getAppearance",
+                 base::Bind(&Browser::GetAppearance, browser))
 #endif
 #if defined(OS_WIN)
       .SetMethod("setUserTasks",

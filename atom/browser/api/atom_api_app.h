@@ -91,6 +91,7 @@ class App : public AtomBrowserClient::Delegate,
 
 #if defined(OS_MACOSX)
   void OnPlatformThemeChanged() override;
+  void OnPlatformAppearanceChanged() override;
 #endif
 
   // mate::Wrappable:
