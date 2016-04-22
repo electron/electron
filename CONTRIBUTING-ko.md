@@ -29,8 +29,8 @@
 ## Pull Request 하기
 
 * 가능한한 스크린샷과 GIF 애니메이션 이미지를 pull request에 추가
-* CoffeeScript, JavaScript, C++과 Python등
-[참조문서에 정의된 코딩스타일](/docs-translations/ko-KR/development/coding-style.md)을
+* JavaScript, C++과 Python등
+[참조 문서에 정의된 코딩스타일](/docs-translations/ko-KR/development/coding-style.md)을
 준수
 * [문서 스타일 가이드](/docs-translations/ko-KR/styleguide.md)에 따라 문서를
 [Markdown](https://daringfireball.net/projects/markdown) 형식으로 작성.
