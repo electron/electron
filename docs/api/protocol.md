@@ -1,7 +1,6 @@
 # protocol
 
-> Register a custom protocol to intercept click events from other running
-applications.
+> Register a custom protocol and intercept existing protocols.
 
 An example of implementing a protocol that has the same effect as the
 `file://` protocol:

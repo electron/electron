@@ -1,9 +1,9 @@
 # DownloadItem
 
-> Trigger file downloads from remote sources.
+> Control file downloads from remote sources.
 
-`DownloadItem` is an EventEmitter represents a download item in Electron. It
-is used in `will-download` event of `Session` module, and allows users to
+`DownloadItem` is an EventEmitter that represents a download item in Electron.
+It is used in `will-download` event of `Session` module, and allows users to
 control the download item.
 
 ```javascript

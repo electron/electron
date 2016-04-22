@@ -1,6 +1,6 @@
 # webContents
 
-> Render and control web pages using lifecycle events.
+> Render and control web pages.
 
 `webContents` is an
 [EventEmitter](http://nodejs.org/api/events.html#events_class_events_eventemitter).

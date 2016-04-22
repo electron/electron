@@ -1,6 +1,6 @@
 # session
 
-> Manage browser cookies, cache, and other session data.
+> Manage browser sessions, cookies, cache, proxy settings, etc.
 
 The `session` module can be used to create new `Session` objects.
 

@@ -1,7 +1,7 @@
 # desktopCapturer
 
-> Capture audio, video, and images from a microphone, camera, or
-screen using the `getUserMedia` API.
+> List `getUserMedia` sources for capturing audio, video, and images from a
+microphone, camera, or screen.
 
 ```javascript
 // In the renderer process.

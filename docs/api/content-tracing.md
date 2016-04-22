@@ -1,6 +1,7 @@
 # contentTracing
 
-> Debug your application using Chromium's content module.
+> Collect tracing data from Chromium's content module for finding performance
+bottlenecks and slow operations.
 
 This module does not include a web interface
 so you need to open `chrome://tracing/` in a Chrome browser and load the
