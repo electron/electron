@@ -676,7 +676,7 @@ Returns the title of the native window.
 **Note:** The title of web page can be different from the title of the native
 window.
 
-### `win.setSheetOffset(offset)`
+### `win.setSheetOffset(offset)` _OS X_
 
 Changes the attachment point for sheets on Mac OS X. By default, sheets are
 attached just below the window frame, but you may want to display them beneath
