@@ -34,7 +34,7 @@ Electron
 ├── default_app - The default page to show when Electron is started without
 |   providing an app.
 ├── docs - Documentations.
-├── lib  - JavaScript source code.
+├── lib - JavaScript source code.
 |   ├── browser - Javascript main process initialization code.
 |   |   └── api - Javascript API implementation.
 |   ├── common - JavaScript used by both the main and renderer processes

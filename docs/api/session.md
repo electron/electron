@@ -467,7 +467,7 @@ and response headers are available.
   * `resourceType` String
   * `timestamp` Double
   * `responseHeaders` Object
-  * `fromCache` Boolean  - Indicates whether the response was fetched from disk
+  * `fromCache` Boolean - Indicates whether the response was fetched from disk
     cache.
   * `statusCode` Integer
   * `statusLine` String
