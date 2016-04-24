@@ -1,5 +1,7 @@
 # Synopsis
 
+> How to use Node.js and Electron APIs.
+
 All of [Node.js's built-in modules](http://nodejs.org/api/) are available in
 Electron and third-party node modules also fully supported as well (including
 the [native modules](../tutorial/using-native-node-modules.md)).

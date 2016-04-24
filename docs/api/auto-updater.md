@@ -1,6 +1,8 @@
 # autoUpdater
 
-This module provides an interface for the `Squirrel` auto-updater framework.
+> Enable apps to automatically update themselves.
+
+The `autoUpdater` module provides an interface for the [Squirrel](https://github.com/Squirrel) framework.
 
 You can quickly launch a multi-platform release server for distributing your
 application by using one of these projects:

@@ -1,7 +1,8 @@
 # powerMonitor
 
-The `power-monitor` module is used to monitor power state changes. You can
-only use it in the main process. You should not use this module until the `ready`
+> Monitor power state changes.
+
+You can only use it in the main process. You should not use this module until the `ready`
 event of the `app` module is emitted.
 
 For example:

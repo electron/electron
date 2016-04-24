@@ -1,5 +1,7 @@
 # Frameless Window
 
+> Open a window without toolbars, borders, or other graphical "chrome".
+
 A frameless window is a window that has no
 [chrome](https://developer.mozilla.org/en-US/docs/Glossary/Chrome), the parts of
 the window, like toolbars, that are not a part of the web page. These are
