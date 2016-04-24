@@ -105,7 +105,7 @@ originalFs.readFileSync('/path/to/example.asar');
 A pesar de que hemos intentado que los paquetes  `asar` funcionen como directorios de la mejor forma posible,
 aún existen limitaciones debido a la naturaleza de bajo nivel de la API Node.
 
-### Los paquetes son de sólo lecutra
+### Los paquetes son de sólo lectura
 
 Los paquetes `asar` no pueden ser modificados, por lo cual todas las funciones que modifiquen archivos
 no funcionarán.
@@ -132,7 +132,7 @@ Las APIs que requieren el desempaquetamiento adicional son:
 ### Información falsa en `fs.stat`
 
 El objeto `Stats` retornado por `fs.stat` y otras funciones relacionadas,
-no es preciso, ya que los archivos del paquete `asar` no existen el sistema de archivos.
+no es preciso, ya que los archivos del paquete `asar` no existen en el sistema de archivos.
 La utilización del objeto `Stats` sólo es recomendable para obtener el tamaño del archivo y/o
 comprobar el tipo de archivo.
 
