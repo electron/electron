@@ -521,6 +521,19 @@ if (browserOptions.transparent) {
 이 메서드는 시스템이 다크 모드 상태인 경우 `true`를 반환하고 아닐 경우 `false`를
 반환합니다.
 
+### `app.importCertificate(options, callback)` _LINUX_
+
+* `options` Object
+  * `certificate` String - pkcs12 파일의 위치.
+  * `password` String -  인증서의 암호.
+* `callback` Function
+  * `result` Integer - 가져오기의 결과.
+
+pkcs12 형식으로된 인증서를 플랫폼 인증서 저장소로 가져옵니다. `callback`은 가져오기의
+결과를 포함하는 `result` 객체를 포함하여 호출됩니다. 값이 `0` 일 경우 성공을 의미하며
+다른 값은 모두 Chrominum의 [net_error_list](https://code.google.com/p/chromium/codesearch#chromium/src/net/base/net_error_list.h)에
+따라 실패를 의미합니다.
+
 ### `app.commandLine.appendSwitch(switch[, value])`
 
 Chrominum의 명령줄에 스위치를 추가합니다. `value`는 추가적인 값을 뜻하며 옵션입니다.

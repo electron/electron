@@ -65,13 +65,14 @@ function getUserMediaError(e) {
 
 `sources`는 `Source` 객체의 배열입니다. 각 `Source`는 캡쳐된 화면과 독립적인
 윈도우를 표현합니다. 그리고 다음과 같은 속성을 가지고 있습니다:
+
 * `id` String - `navigator.webkitGetUserMedia` API에서 사용할 수 있는 캡쳐된 윈도우
   또는 화면의 id입니다. 포맷은 `window:XX` 또는 `screen:XX`로 표현되며 `XX` 는
   무작위로 생성된 숫자입니다.
 * `name` String - 캡쳐된 화면과 윈도우에 대해 묘사된 이름입니다. 만약 소스가
   화면이라면, `Entire Screen` 또는 `Screen <index>`가 될 것이고 소스가 윈도우라면,
   해당 윈도우의 제목이 반환됩니다.
-* `thumbnail` [NativeImage](NativeImage.md) - 섬네일 이미지.
+* `thumbnail` [NativeImage](native-image.md) - 섬네일 네이티브 이미지.
 
 **참고:** `source.thumbnail`의 크기는 언제나 `options`의 `thumnbailSize`와 같다고
 보장할 수 없습니다. 섬네일의 크기는 화면과 윈도우의 크기에 의존하여 조정됩니다.

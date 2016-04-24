@@ -8,7 +8,7 @@
 // 메인 프로세스에서
 const BrowserWindow = require('electron').BrowserWindow;
 
-// 또는 랜더러 프로세스에서
+// 또는 렌더러 프로세스에서
 const BrowserWindow = require('electron').remote.BrowserWindow;
 
 var win = new BrowserWindow({ width: 800, height: 600, show: false });
@@ -159,7 +159,7 @@ win.show();
   기본값은 `false`입니다.
 * `experimentalCanvasFeatures` Boolean - Chrome의 실험적인 캔버스(canvas) 기능을
   활성화합니다. 기본값은 `false`입니다.
-* `directWrite` Boolean - Windows에서 폰트 랜더링을 위해 DirectWrite를
+* `directWrite` Boolean - Windows에서 폰트 렌더링을 위해 DirectWrite를
   사용하는지를 지정합니다. 기본값은 `true`입니다.
 * `blinkFeatures` String - `CSSVariables,KeyboardEventKey`같은 `,`로 구분된
   기능 문자열들의 리스트입니다. 지원하는 전체 기능 문자열들은
@@ -670,6 +670,17 @@ var win = new BrowserWindow({ width: 800, height: 600 });
 
 **참고:** 웹 페이지의 제목과 네이티브 윈도우의 제목은 서로 다를 수 있습니다.
 
+### `win.setSheetOffset(offset)` _OS X_
+
+Mac OS X에서 시트를 부착할 위치를 지정합니다. 기본적으로 시트는 윈도우의 프레임 바로
+아래의 위치에 부착됩니다. 아마도 이 기능은 보통 다음과 같이 HTML 렌더링된 툴바 밑에
+표시하기 위해 사용할 것입니다:
+
+```javascript
+var toolbarRect = document.getElementById('toolbar').getBoundingClientRect();
+win.setSheetOffset(toolbarRect.height);
+```
+
 ### `win.flashFrame(flag)`
 
 * `flag` Boolean
@@ -900,4 +911,4 @@ Linux 플랫폼에선 Unity 데스크톱 환경만 지원합니다. 그리고 �
 
 윈도우에서 일어나는 모든 마우스 이벤트를 무시합니다.
 
-[blink-feature-string]: https://code.google.com/p/chromium/codesearch#chromium/src/out/Debug/gen/blink/platform/RuntimeEnabledFeatures.cpp&sq=package:chromium&type=cs&l=527
+[blink-feature-string]: https://code.google.com/p/chromium/codesearch#chromium/src/out/Debug/gen/blink/platform/RuntimeEnabledFeatures.cpp&sq=package:chromium&type=cs&l=576

@@ -350,6 +350,10 @@ var currentURL = win.webContents.getURL();
 
 현재 웹 페이지가 리소스를 로드중인지 여부를 반환합니다.
 
+### `webContents.isLoadingMainFrame()`
+
+메인 프레임이 여전히 로딩중인지 여부를 반환합니다. (내부 iframe 또는 frame 포함)
+
 ### `webContents.isWaitingForResponse()`
 
 현재 웹 페이지가 페이지의 메인 리소스로부터 첫 응답을 기다리고있는지 여부를 반환합니다.
@@ -640,6 +644,9 @@ mainWindow.webContents.on('devtools-opened', function() {
 
 * `options` Object (optional)
   * `detach` Boolean - 새 창에서 개발자 도구를 엽니다.
+  * `mode` String - 개발자 도구 표시 상태를 지정합니다. 옵션은 "right", "bottom",
+    "undocked", "detach" 중 한 가지가 될 수 있습니다. 기본값은 마지막 표시 상태를
+    사용합니다.
 
 개발자 도구를 엽니다.
 

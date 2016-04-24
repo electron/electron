@@ -1,8 +1,8 @@
 [![Electron Logo](http://electron.atom.io/images/electron-logo.svg)](http://electron.atom.io/)
 
-[![Build Status](https://travis-ci.org/atom/electron.svg?branch=master)](https://travis-ci.org/atom/electron)
+[![Travis Build Status](https://travis-ci.org/electron/electron.svg?branch=master)](https://travis-ci.org/electron/electron)
 [![AppVeyor Build Status](https://ci.appveyor.com/api/projects/status/qtmod45u0cc1ouov/branch/master?svg=true)](https://ci.appveyor.com/project/Atom/electron)
-[![devDependency Status](https://david-dm.org/atom/electron/dev-status.svg)](https://david-dm.org/atom/electron#info=devDependencies)
+[![devDependency Status](https://david-dm.org/electron/electron/dev-status.svg)](https://david-dm.org/electron/electron#info=devDependencies)
 [![Join the Electron Community on Slack](http://atom-slack.herokuapp.com/badge.svg)](http://atom-slack.herokuapp.com/)
 
 ### [Electron](https://github.com/electron/electron/) 한국어 참조문서
@@ -17,15 +17,15 @@ Cross-Platform 데스크톱 어플리케이션을 개발할 수 있도록 해주
 Electron에 대한 중요한 알림을 받고 싶다면 Twitter에서
 [@ElectronJS](https://twitter.com/electronjs)를 팔로우 하세요.
 
-이 프로젝트는 기여자 규약 [행동강령](CODE_OF_CONDUCT.md)을 준수합니다. 따라서 이
+이 프로젝트는 기여자 규약인 [행동강령](CODE_OF_CONDUCT.md)을 준수합니다. 따라서 이
 프로젝트의 개발에 참여하려면 이 규약을 지켜야 합니다. 받아들일 수 없는 행위를 발견했을
-경우 atom@github.com로 보고 하십시오.
+경우 atom@github.com로 보고하세요.
 
 ## 다운로드
 
 Linux, Windows, OS X 용으로 미리 빌드된 Electron 바이너리와 디버그 심볼이 준비되어
-있습니다. [releases](https://github.com/electron/electron/releases) 페이지에서 받아 볼
-수 있습니다.
+있습니다. [releases](https://github.com/electron/electron/releases) 페이지에서
+받아 볼 수 있습니다.
 
 또한 [`npm`](https://docs.npmjs.com/)을 통해 미리 빌드된 Electron 바이너리를 설치할
 수도 있습니다:
@@ -44,9 +44,9 @@ npm install electron-prebuilt --save-dev
 
 ## 참조 문서
 
-[Docs](https://github.com/electron/electron/tree/master/docs/README.md)에 개발 지침과
-API 레퍼런스가 있습니다. Electron을 빌드 하는 방법과 프로젝트에 기여하는법 또한 문서에
-포함되어 있으니 참고하시기 바랍니다.
+[Docs](https://github.com/electron/electron/tree/master/docs-translations/ko-KR/README.md)에
+개발 지침과 API 레퍼런스가 있습니다. Electron을 빌드 하는 방법과 프로젝트에 기여하는법
+또한 문서에 포함되어 있으니 참고하시기 바랍니다.
 
 ## 참조 문서 (번역)
 
@@ -62,7 +62,7 @@ API 레퍼런스가 있습니다. Electron을 빌드 하는 방법과 프로젝�
 
 ## 시작하기
 
-[`atom/electron-quick-start`](https://github.com/electron/electron-quick-start)
+[`electron/electron-quick-start`](https://github.com/electron/electron-quick-start)
 저장소를 클론하여 Electron을 간단히 접해볼 수 있습니다.
 
 ## 커뮤니티
