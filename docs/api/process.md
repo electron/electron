@@ -44,6 +44,10 @@ built-in modules.
 
 The `process` object has the following method:
 
+### `process.crash()`
+
+Causes the main thread of the current process crash.
+
 ### `process.hang()`
 
 Causes the main thread of the current process hang.

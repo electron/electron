@@ -62,8 +62,8 @@ a remote, virtual display.
 
 * `display` object
   * `id` Integer - Unique identifier associated with the display.
-  * `rotation` Integer - Can be 0, 1, 2, 3, each represents screen rotation in
-    clock-wise degrees of 0, 90, 180, 270.
+  * `rotation` Integer - Can be 0, 90, 180, 270, represents screen rotation in
+    clock-wise degrees.
   * `scaleFactor` Number - Output device's pixel scale factor.
   * `touchSupport` String - Can be `available`, `unavailable`, `unknown`.
   * `bounds` Object
