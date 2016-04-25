@@ -191,4 +191,8 @@ void Browser::PlatformThemeChanged() {
   FOR_EACH_OBSERVER(BrowserObserver, observers_, OnPlatformThemeChanged());
 }
 
+void Browser::PlatformAppearanceChanged() {
+  FOR_EACH_OBSERVER(BrowserObserver, observers_, OnPlatformAppearanceChanged());
+}
+
 }  // namespace atom

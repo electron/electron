@@ -92,6 +92,14 @@ class Browser : public WindowListObserver {
   // Check if the system is in Dark Mode.
   bool IsDarkMode();
 
+  // Get the system Appearance.
+  enum class Appearance {
+    Unknown,
+    Blue,
+    Graphite
+  };
+  Appearance GetAppearance();
+
   // Bounce the dock icon.
   enum BounceType {
     BOUNCE_CRITICAL = 0,
@@ -153,6 +161,9 @@ class Browser : public WindowListObserver {
 
   // Tell the application that plaform's theme changed.
   void PlatformThemeChanged();
+
+  // Tell the application that plaform's appearance changed.
+  void PlatformAppearanceChanged();
 
   void AddObserver(BrowserObserver* obs) {
     observers_.AddObserver(obs);

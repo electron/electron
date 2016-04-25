@@ -32,6 +32,17 @@ bool Browser::IsDarkMode() {
   return [mode isEqualToString: @"Dark"];
 }
 
+Browser::Appearance Browser::GetAppearance() {
+  switch ([NSColor currentControlTint]) {
+    case NSBlueControlTint:
+      return Appearance::Blue;
+    case NSGraphiteControlTint:
+      return Appearance::Graphite;
+    default:
+      return Appearance::Unknown;
+  }
+}
+
 void Browser::AddRecentDocument(const base::FilePath& path) {
   NSString* path_string = base::mac::FilePathToNSString(path);
   if (!path_string)
