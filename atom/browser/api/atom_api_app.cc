@@ -451,6 +451,8 @@ void App::BuildPrototype(
                  base::Bind(&Browser::ClearRecentDocuments, browser))
       .SetMethod("setAppUserModelId",
                  base::Bind(&Browser::SetAppUserModelID, browser))
+      .SetMethod("isDefaultProtocolClient",
+                 base::Bind(&Browser::IsDefaultProtocolClient, browser))
       .SetMethod("setAsDefaultProtocolClient",
                  base::Bind(&Browser::SetAsDefaultProtocolClient, browser))
       .SetMethod("removeAsDefaultProtocolClient",
