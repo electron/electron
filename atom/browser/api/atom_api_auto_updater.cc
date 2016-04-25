@@ -95,7 +95,7 @@ void AutoUpdater::QuitAndInstall() {
 
 // static
 mate::Handle<AutoUpdater> AutoUpdater::Create(v8::Isolate* isolate) {
-  return CreateHandle(isolate, new AutoUpdater(isolate));
+  return mate::CreateHandle(isolate, new AutoUpdater(isolate));
 }
 
 // static

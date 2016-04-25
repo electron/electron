@@ -47,7 +47,7 @@ v8::Local<v8::Value> PowerMonitor::Create(v8::Isolate* isolate) {
     return v8::Null(isolate);
   }
 
-  return CreateHandle(isolate, new PowerMonitor(isolate)).ToV8();
+  return mate::CreateHandle(isolate, new PowerMonitor(isolate)).ToV8();
 }
 
 // static

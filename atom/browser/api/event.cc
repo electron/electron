@@ -50,7 +50,7 @@ bool Event::SendReply(const base::string16& json) {
 
 // static
 Handle<Event> Event::Create(v8::Isolate* isolate) {
-  return CreateHandle(isolate, new Event(isolate));
+  return mate::CreateHandle(isolate, new Event(isolate));
 }
 
 // static

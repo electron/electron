@@ -69,7 +69,7 @@ void GlobalShortcut::UnregisterAll() {
 
 // static
 mate::Handle<GlobalShortcut> GlobalShortcut::Create(v8::Isolate* isolate) {
-  return CreateHandle(isolate, new GlobalShortcut(isolate));
+  return mate::CreateHandle(isolate, new GlobalShortcut(isolate));
 }
 
 // static

@@ -442,7 +442,7 @@ void App::OnCertificateManagerModelCreated(
 
 // static
 mate::Handle<App> App::Create(v8::Isolate* isolate) {
-  return CreateHandle(isolate, new App(isolate));
+  return mate::CreateHandle(isolate, new App(isolate));
 }
 
 // static

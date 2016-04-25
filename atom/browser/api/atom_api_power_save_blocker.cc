@@ -100,7 +100,7 @@ bool PowerSaveBlocker::IsStarted(int id) {
 
 // static
 mate::Handle<PowerSaveBlocker> PowerSaveBlocker::Create(v8::Isolate* isolate) {
-  return CreateHandle(isolate, new PowerSaveBlocker(isolate));
+  return mate::CreateHandle(isolate, new PowerSaveBlocker(isolate));
 }
 
 // static
