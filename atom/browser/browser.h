@@ -148,9 +148,6 @@ class Browser : public WindowListObserver {
   // Request basic auth login.
   void RequestLogin(LoginHandler* login_handler);
 
-  // Tell the application that plaform's theme changed.
-  void PlatformThemeChanged();
-
   void AddObserver(BrowserObserver* obs) {
     observers_.AddObserver(obs);
   }

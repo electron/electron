@@ -331,12 +331,6 @@ void App::OnGpuProcessCrashed(base::TerminationStatus exit_code) {
   Emit("gpu-process-crashed");
 }
 
-#if defined(OS_MACOSX)
-void App::OnPlatformThemeChanged() {
-  Emit("platform-theme-changed");
-}
-#endif
-
 base::FilePath App::GetPath(mate::Arguments* args, const std::string& name) {
   bool succeed = false;
   base::FilePath path;
