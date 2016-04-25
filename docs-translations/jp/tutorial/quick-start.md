@@ -52,8 +52,6 @@ __注記__： `package.json` に `main` が存在しない場合、Electron は 
 `main.js` ではウィンドウを作成してシステムイベントを管理します。典型的な例は次のようになります：
 
 ```javascript
-'use strict';
-
 const electron = require('electron');
 const app = electron.app;  // Module to control application life.
 const BrowserWindow = electron.BrowserWindow;  // Module to create native browser window.

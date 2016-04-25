@@ -80,8 +80,6 @@ The `main.js` should create windows and handle system events, a typical
 example being:
 
 ```javascript
-'use strict';
-
 const electron = require('electron');
 const app = electron.app;  // Module to control application life.
 const BrowserWindow = electron.BrowserWindow;  // Module to create native browser window.
