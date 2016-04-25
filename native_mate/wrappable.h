@@ -27,18 +27,8 @@ void* FromV8Impl(v8::Isolate* isolate, v8::Local<v8::Value> val);
 // // my_class.h
 // class MyClass : Wrappable<MyClass> {
 //  public:
-//   // Optional, only required if non-empty template should be used.
-//   virtual gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
-//       v8::Isolate* isolate);
 //   ...
 // };
-//
-// // my_class.cc
-// gin::ObjectTemplateBuilder MyClass::GetObjectTemplateBuilder(
-//     v8::Isolate* isolate) {
-//   return Wrappable<MyClass>::GetObjectTemplateBuilder(isolate)
-//       .SetValue("foobar", 42);
-// }
 //
 // Subclasses should also typically have private constructors and expose a
 // static Create function that returns a mate::Handle. Forcing creators through
@@ -46,64 +36,93 @@ void* FromV8Impl(v8::Isolate* isolate, v8::Local<v8::Value> val);
 // wrapper for the object. If clients fail to create a wrapper for a wrappable
 // object, the object will leak because we use the weak callback from the
 // wrapper as the signal to delete the wrapped object.
-class ObjectTemplateBuilder;
-
-class Wrappable {
+class WrappableBase {
  public:
-  // Retrieve (or create) the v8 wrapper object cooresponding to this object.
-  // If the type is created via the Constructor, then the GetWrapper would
-  // return the constructed object, otherwise it would try to create a new
-  // object constructed by GetObjectTemplateBuilder.
-  v8::Local<v8::Object> GetWrapper(v8::Isolate* isolate);
+  WrappableBase();
+  virtual ~WrappableBase();
+
+  // Retrieve the v8 wrapper object cooresponding to this object.
+  v8::Local<v8::Object> GetWrapper();
 
   // Returns the Isolate this object is created in.
   v8::Isolate* isolate() const { return isolate_; }
 
   // Bind the C++ class to the JS wrapper.
-  void Wrap(v8::Isolate* isolate, v8::Local<v8::Object> wrapper);
-
-  // The user should define T::BuildPrototype if they want to use Constructor
-  // to build a constructor function for this type.
-  static void BuildPrototype(v8::Isolate* isolate,
-                             v8::Local<v8::ObjectTemplate> prototype);
+  void InitWith(v8::Isolate* isolate, v8::Local<v8::Object> wrapper);
 
  protected:
-  Wrappable();
-  virtual ~Wrappable();
-
-  virtual ObjectTemplateBuilder GetObjectTemplateBuilder(v8::Isolate* isolate);
-
   // Called after the "_init" method gets called in JavaScript.
+  // FIXME(zcbenz): Should remove this.
   virtual void AfterInit(v8::Isolate* isolate) {}
 
  private:
   friend struct internal::Destroyable;
 
-  static void FirstWeakCallback(const v8::WeakCallbackInfo<Wrappable>& data);
-  static void SecondWeakCallback(const v8::WeakCallbackInfo<Wrappable>& data);
+  static void FirstWeakCallback(
+      const v8::WeakCallbackInfo<WrappableBase>& data);
+  static void SecondWeakCallback(
+      const v8::WeakCallbackInfo<WrappableBase>& data);
 
   v8::Isolate* isolate_;
-  v8::UniquePersistent<v8::Object> wrapper_;  // Weak
+  v8::Global<v8::Object> wrapper_;  // Weak
+
+  DISALLOW_COPY_AND_ASSIGN(WrappableBase);
+};
+
+template<typename T>
+class Wrappable : public WrappableBase {
+ public:
+  Wrappable() {}
+
+  // Init the class with T::BuildPrototype.
+  void Init(v8::Isolate* isolate) {
+    // Fill the object template.
+    if (templ_.IsEmpty()) {
+      v8::Local<v8::ObjectTemplate> templ = v8::ObjectTemplate::New(isolate);
+      T::BuildPrototype(isolate, templ);
+      templ_.Reset(isolate, templ);
+    }
+
+    v8::Local<v8::Object> wrapper;
+    v8::Local<v8::ObjectTemplate> templ = v8::Local<v8::ObjectTemplate>::New(
+        isolate, templ_);
+    // |wrapper| may be empty in some extreme cases, e.g., when
+    // Object.prototype.constructor is overwritten.
+    if (!templ->NewInstance(isolate->GetCurrentContext()).ToLocal(&wrapper)) {
+      // The current wrappable object will be no longer managed by V8. Delete
+      // this now.
+      delete this;
+      return;
+    }
+    InitWith(isolate, wrapper);
+  }
+
+ private:
+  static v8::Global<v8::ObjectTemplate> templ_;
 
   DISALLOW_COPY_AND_ASSIGN(Wrappable);
 };
 
+// static
+template<typename T>
+v8::Global<v8::ObjectTemplate> Wrappable<T>::templ_;
 
 // This converter handles any subclass of Wrappable.
-template<typename T>
-struct Converter<T*, typename enable_if<
-                       is_convertible<T*, Wrappable*>::value>::type> {
+template <typename T>
+struct Converter<T*,
+                 typename std::enable_if<
+                     std::is_convertible<T*, WrappableBase*>::value>::type> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate, T* val) {
     if (val)
-      return val->GetWrapper(isolate);
+      return val->GetWrapper();
     else
       return v8::Null(isolate);
   }
 
   static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val, T** out) {
-    *out = static_cast<T*>(static_cast<Wrappable*>(
+    *out = static_cast<T*>(static_cast<WrappableBase*>(
         internal::FromV8Impl(isolate, val)));
-    return *out != NULL;
+    return *out != nullptr;
   }
 };
 

@@ -60,7 +60,7 @@ struct Converter<mate::Handle<T> > {
 // without having to write out the type of the object explicitly.
 template<typename T>
 mate::Handle<T> CreateHandle(v8::Isolate* isolate, T* object) {
-  return mate::Handle<T>(object->GetWrapper(isolate), object);
+  return mate::Handle<T>(object->GetWrapper(), object);
 }
 
 }  // namespace mate

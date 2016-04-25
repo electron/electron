@@ -19,7 +19,7 @@ $var MAX_ARITY = 6
 
 namespace mate {
 
-class Wrappable;
+class WrappableBase;
 
 namespace internal {
 
@@ -37,9 +37,9 @@ $if ARITY == 0 [[
 template<$for ARG , [[typename P$(ARG)]]>
 ]]
 
-inline Wrappable* InvokeFactory(
+inline WrappableBase* InvokeFactory(
     Arguments* args,
-    const base::Callback<Wrappable*($for ARG , [[P$(ARG)]])>& callback) {
+    const base::Callback<WrappableBase*($for ARG , [[P$(ARG)]])>& callback) {
 $if ARITY != 0 [[
 
 
@@ -48,7 +48,7 @@ $for ARG [[  typename CallbackParamTraits<P$(ARG)>::LocalType a$(ARG);
 ]]
   if ($for ARG  ||
       [[!GetNextArgument(args, 0, $if ARG == 1 [[true]] $else [[false]], &a$(ARG))]])
-    return NULL;
+    return nullptr;
 ]]
 
   return callback.Run($for ARG , [[a$(ARG)]]);
@@ -92,7 +92,7 @@ class Constructor {
       MATE_METHOD_RETURN_UNDEFINED();
     }
 
-    Wrappable* object;
+    WrappableBase* object;
     {
       // Don't continue if the constructor throws an exception.
       v8::TryCatch try_catch;
@@ -104,7 +104,7 @@ class Constructor {
     }
 
     if (object)
-      object->Wrap(isolate, args->GetThis());
+      object->InitWith(isolate, args->GetThis());
     else
       args->ThrowError();
 
@@ -112,14 +112,14 @@ class Constructor {
   }
 
   base::StringPiece name_;
-  v8::UniquePersistent<v8::FunctionTemplate> constructor_;
+  v8::Global<v8::FunctionTemplate> constructor_;
 
   DISALLOW_COPY_AND_ASSIGN(Constructor);
 };
 
 
 template<typename T>
-Wrappable* NewOperatorFactory() {
+WrappableBase* NewOperatorFactory() {
   return new T;
 }
 
