@@ -184,16 +184,8 @@ mate::Handle<DownloadItem> DownloadItem::Create(
   return handle;
 }
 
-void ClearWrapDownloadItem() {
-  g_wrap_download_item.Reset();
-}
-
 void SetWrapDownloadItem(const WrapDownloadItemCallback& callback) {
   g_wrap_download_item = callback;
-
-  // Cleanup the wrapper on exit.
-  atom::AtomBrowserMainParts::Get()->RegisterDestructionCallback(
-      base::Bind(ClearWrapDownloadItem));
 }
 
 }  // namespace api

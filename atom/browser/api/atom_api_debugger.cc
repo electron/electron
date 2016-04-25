@@ -167,16 +167,8 @@ void Debugger::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("sendCommand", &Debugger::SendCommand);
 }
 
-void ClearWrapDebugger() {
-  g_wrap_debugger.Reset();
-}
-
 void SetWrapDebugger(const WrapDebuggerCallback& callback) {
   g_wrap_debugger = callback;
-
-  // Cleanup the wrapper on exit.
-  atom::AtomBrowserMainParts::Get()->RegisterDestructionCallback(
-      base::Bind(ClearWrapDebugger));
 }
 
 }  // namespace api

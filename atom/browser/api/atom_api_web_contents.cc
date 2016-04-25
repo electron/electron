@@ -1309,16 +1309,8 @@ mate::Handle<WebContents> WebContents::Create(
   return handle;
 }
 
-void ClearWrapWebContents() {
-  g_wrap_web_contents.Reset();
-}
-
 void SetWrapWebContents(const WrapWebContentsCallback& callback) {
   g_wrap_web_contents = callback;
-
-  // Cleanup the wrapper on exit.
-  atom::AtomBrowserMainParts::Get()->RegisterDestructionCallback(
-      base::Bind(ClearWrapWebContents));
 }
 
 }  // namespace api

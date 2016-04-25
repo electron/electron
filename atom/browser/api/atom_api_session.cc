@@ -494,16 +494,8 @@ void Session::BuildPrototype(v8::Isolate* isolate,
       .SetProperty("webRequest", &Session::WebRequest);
 }
 
-void ClearWrapSession() {
-  g_wrap_session.Reset();
-}
-
 void SetWrapSession(const WrapSessionCallback& callback) {
   g_wrap_session = callback;
-
-  // Cleanup the wrapper on exit.
-  atom::AtomBrowserMainParts::Get()->RegisterDestructionCallback(
-      base::Bind(ClearWrapSession));
 }
 
 }  // namespace api

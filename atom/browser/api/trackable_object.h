@@ -114,8 +114,6 @@ class TrackableObject : public TrackableObjectBase,
   void AfterInit(v8::Isolate* isolate) override {
     if (!weak_map_) {
       weak_map_.reset(new atom::IDWeakMap);
-      RegisterDestructionCallback(
-          base::Bind(&TrackableObject<T>::ReleaseAllWeakReferences));
     }
     weak_map_id_ = weak_map_->Add(isolate, Wrappable<T>::GetWrapper());
     if (wrapped_)
@@ -123,11 +121,6 @@ class TrackableObject : public TrackableObjectBase,
   }
 
  private:
-  // Releases all weak references in weak map, called when app is terminating.
-  static void ReleaseAllWeakReferences() {
-    weak_map_.reset();
-  }
-
   static scoped_ptr<atom::IDWeakMap> weak_map_;
 
   DISALLOW_COPY_AND_ASSIGN(TrackableObject);
