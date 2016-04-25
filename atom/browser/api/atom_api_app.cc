@@ -194,10 +194,11 @@ int ImportIntoCertStore(
 
 }  // namespace
 
-App::App() {
+App::App(v8::Isolate* isolate) {
   static_cast<AtomBrowserClient*>(AtomBrowserClient::Get())->set_delegate(this);
   Browser::Get()->AddObserver(this);
   content::GpuDataManager::GetInstance()->AddObserver(this);
+  Init(isolate);
 }
 
 App::~App() {
@@ -439,10 +440,16 @@ void App::OnCertificateManagerModelCreated(
 }
 #endif
 
-mate::ObjectTemplateBuilder App::GetObjectTemplateBuilder(
-    v8::Isolate* isolate) {
+// static
+mate::Handle<App> App::Create(v8::Isolate* isolate) {
+  return CreateHandle(isolate, new App(isolate));
+}
+
+// static
+void App::BuildPrototype(
+    v8::Isolate* isolate, v8::Local<v8::ObjectTemplate> prototype) {
   auto browser = base::Unretained(Browser::Get());
-  return mate::ObjectTemplateBuilder(isolate)
+  mate::ObjectTemplateBuilder(isolate, prototype)
       .SetMethod("quit", base::Bind(&Browser::Quit, browser))
       .SetMethod("exit", base::Bind(&Browser::Exit, browser))
       .SetMethod("focus", base::Bind(&Browser::Focus, browser))
@@ -482,11 +489,6 @@ mate::ObjectTemplateBuilder App::GetObjectTemplateBuilder(
       .SetMethod("importCertificate", &App::ImportCertificate)
 #endif
       .SetMethod("makeSingleInstance", &App::MakeSingleInstance);
-}
-
-// static
-mate::Handle<App> App::Create(v8::Isolate* isolate) {
-  return CreateHandle(isolate, new App);
 }
 
 }  // namespace api

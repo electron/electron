@@ -54,8 +54,9 @@ class ScriptExecutionCallback : public blink::WebScriptExecutionCallback {
 
 }  // namespace
 
-WebFrame::WebFrame()
+WebFrame::WebFrame(v8::Isolate* isolate)
     : web_frame_(blink::WebLocalFrame::frameForCurrentContext()) {
+  Init(isolate);
 }
 
 WebFrame::~WebFrame() {
@@ -67,7 +68,7 @@ void WebFrame::SetName(const std::string& name) {
 
 double WebFrame::SetZoomLevel(double level) {
   double ret = web_frame_->view()->setZoomLevel(level);
-  mate::EmitEvent(isolate(), GetWrapper(isolate()), "zoom-level-changed", ret);
+  mate::EmitEvent(isolate(), GetWrapper(), "zoom-level-changed", ret);
   return ret;
 }
 
@@ -162,9 +163,15 @@ void WebFrame::ExecuteJavaScript(const base::string16& code,
       callback.release());
 }
 
-mate::ObjectTemplateBuilder WebFrame::GetObjectTemplateBuilder(
-    v8::Isolate* isolate) {
-  return mate::ObjectTemplateBuilder(isolate)
+// static
+mate::Handle<WebFrame> WebFrame::Create(v8::Isolate* isolate) {
+  return CreateHandle(isolate, new WebFrame(isolate));
+}
+
+// static
+void WebFrame::BuildPrototype(
+    v8::Isolate* isolate, v8::Local<v8::ObjectTemplate> prototype) {
+  mate::ObjectTemplateBuilder(isolate, prototype)
       .SetMethod("setName", &WebFrame::SetName)
       .SetMethod("setZoomLevel", &WebFrame::SetZoomLevel)
       .SetMethod("getZoomLevel", &WebFrame::GetZoomLevel)
@@ -185,11 +192,6 @@ mate::ObjectTemplateBuilder WebFrame::GetObjectTemplateBuilder(
                  &WebFrame::RegisterURLSchemeAsPrivileged)
       .SetMethod("insertText", &WebFrame::InsertText)
       .SetMethod("executeJavaScript", &WebFrame::ExecuteJavaScript);
-}
-
-// static
-mate::Handle<WebFrame> WebFrame::Create(v8::Isolate* isolate) {
-  return CreateHandle(isolate, new WebFrame);
 }
 
 }  // namespace api

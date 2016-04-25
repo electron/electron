@@ -215,14 +215,17 @@ content::ServiceWorkerContext* GetServiceWorkerContext(
 
 }  // namespace
 
-WebContents::WebContents(content::WebContents* web_contents)
+WebContents::WebContents(v8::Isolate* isolate,
+                         content::WebContents* web_contents)
     : content::WebContentsObserver(web_contents),
       embedder_(nullptr),
       type_(REMOTE),
       request_id_(0),
       background_throttling_(true) {
-  AttachAsUserData(web_contents);
   web_contents->SetUserAgentOverride(GetBrowserContext()->GetUserAgent());
+
+  Init(isolate);
+  AttachAsUserData(web_contents);
 }
 
 WebContents::WebContents(v8::Isolate* isolate,
@@ -270,7 +273,6 @@ WebContents::WebContents(v8::Isolate* isolate,
   }
 
   Observe(web_contents);
-  AttachAsUserData(web_contents);
   InitWithWebContents(web_contents);
 
   managed_web_contents()->GetView()->SetDelegate(this);
@@ -299,6 +301,9 @@ WebContents::WebContents(v8::Isolate* isolate,
     if (owner_window)
       SetOwnerWindow(owner_window);
   }
+
+  Init(isolate);
+  AttachAsUserData(web_contents);
 }
 
 WebContents::~WebContents() {
@@ -1290,7 +1295,8 @@ mate::Handle<WebContents> WebContents::CreateFrom(
     return mate::CreateHandle(isolate, static_cast<WebContents*>(existing));
 
   // Otherwise create a new WebContents wrapper object.
-  auto handle = mate::CreateHandle(isolate, new WebContents(web_contents));
+  auto handle = mate::CreateHandle(
+      isolate, new WebContents(isolate, web_contents));
   g_wrap_web_contents.Run(handle.ToV8());
   return handle;
 }

@@ -19,7 +19,7 @@ namespace atom {
 
 namespace api {
 
-Menu::Menu()
+Menu::Menu(v8::Isolate* isolate)
     : model_(new AtomMenuModel(this)),
       parent_(NULL) {
 }

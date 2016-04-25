@@ -17,7 +17,7 @@ namespace api {
 
 class MenuMac : public Menu {
  protected:
-  MenuMac();
+  explicit MenuMac(v8::Isolate* isolate);
 
   void PopupAt(Window* window, int x, int y, int positioning_item = 0) override;
 

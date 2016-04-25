@@ -37,9 +37,10 @@ namespace atom {
 
 namespace api {
 
-PowerSaveBlocker::PowerSaveBlocker()
+PowerSaveBlocker::PowerSaveBlocker(v8::Isolate* isolate)
     : current_blocker_type_(
-        content::PowerSaveBlocker::kPowerSaveBlockPreventAppSuspension) {
+          content::PowerSaveBlocker::kPowerSaveBlockPreventAppSuspension) {
+  Init(isolate);
 }
 
 PowerSaveBlocker::~PowerSaveBlocker() {
@@ -97,17 +98,18 @@ bool PowerSaveBlocker::IsStarted(int id) {
   return power_save_blocker_types_.find(id) != power_save_blocker_types_.end();
 }
 
-mate::ObjectTemplateBuilder PowerSaveBlocker::GetObjectTemplateBuilder(
-    v8::Isolate* isolate) {
-  return mate::ObjectTemplateBuilder(isolate)
-      .SetMethod("start", &PowerSaveBlocker::Start)
-      .SetMethod("stop", &PowerSaveBlocker::Stop)
-      .SetMethod("isStarted", &PowerSaveBlocker::IsStarted);
+// static
+mate::Handle<PowerSaveBlocker> PowerSaveBlocker::Create(v8::Isolate* isolate) {
+  return CreateHandle(isolate, new PowerSaveBlocker(isolate));
 }
 
 // static
-mate::Handle<PowerSaveBlocker> PowerSaveBlocker::Create(v8::Isolate* isolate) {
-  return CreateHandle(isolate, new PowerSaveBlocker);
+void PowerSaveBlocker::BuildPrototype(
+    v8::Isolate* isolate, v8::Local<v8::ObjectTemplate> prototype) {
+  mate::ObjectTemplateBuilder(isolate, prototype)
+      .SetMethod("start", &PowerSaveBlocker::Start)
+      .SetMethod("stop", &PowerSaveBlocker::Stop)
+      .SetMethod("isStarted", &PowerSaveBlocker::IsStarted);
 }
 
 }  // namespace api

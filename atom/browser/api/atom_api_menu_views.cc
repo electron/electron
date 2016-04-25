@@ -13,7 +13,7 @@ namespace atom {
 
 namespace api {
 
-MenuViews::MenuViews() {
+MenuViews::MenuViews(v8::Isolate* isolate) : Menu(isolate) {
 }
 
 void MenuViews::PopupAt(Window* window, int x, int y, int positioning_item) {
@@ -49,7 +49,7 @@ void MenuViews::PopupAt(Window* window, int x, int y, int positioning_item) {
 }
 
 // static
-mate::Wrappable* Menu::Create() {
+mate::WrappableBase* Menu::Create() {
   return new MenuViews();
 }
 

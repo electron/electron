@@ -15,10 +15,13 @@ class Message;
 
 namespace mate {
 
-class Event : public Wrappable,
+class Event : public Wrappable<Event>,
               public content::WebContentsObserver {
  public:
   static Handle<Event> Create(v8::Isolate* isolate);
+
+  static void BuildPrototype(v8::Isolate* isolate,
+                             v8::Local<v8::ObjectTemplate> prototype);
 
   // Pass the sender and message to be replied.
   void SetSenderAndMessage(content::WebContents* sender, IPC::Message* message);
@@ -30,11 +33,8 @@ class Event : public Wrappable,
   bool SendReply(const base::string16& json);
 
  protected:
-  Event();
-  virtual ~Event();
-
-  // Wrappable implementations:
-  ObjectTemplateBuilder GetObjectTemplateBuilder(v8::Isolate* isolate) override;
+  explicit Event(v8::Isolate* isolate);
+  ~Event() override;
 
   // content::WebContentsObserver implementations:
   void WebContentsDestroyed() override;

@@ -58,7 +58,7 @@ class Session: public mate::TrackableObject<Session>,
                              v8::Local<v8::ObjectTemplate> prototype);
 
  protected:
-  explicit Session(AtomBrowserContext* browser_context);
+  Session(v8::Isolate* isolate, AtomBrowserContext* browser_context);
   ~Session();
 
   // content::DownloadManager::Observer:

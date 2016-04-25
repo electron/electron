@@ -38,7 +38,8 @@ namespace atom {
 
 namespace api {
 
-DesktopCapturer::DesktopCapturer() {
+DesktopCapturer::DesktopCapturer(v8::Isolate* isolate) {
+  Init(isolate);
 }
 
 DesktopCapturer::~DesktopCapturer() {
@@ -92,15 +93,16 @@ bool DesktopCapturer::OnRefreshFinished() {
   return false;
 }
 
-mate::ObjectTemplateBuilder DesktopCapturer::GetObjectTemplateBuilder(
-      v8::Isolate* isolate) {
-  return mate::ObjectTemplateBuilder(isolate)
-      .SetMethod("startHandling", &DesktopCapturer::StartHandling);
+// static
+mate::Handle<DesktopCapturer> DesktopCapturer::Create(v8::Isolate* isolate) {
+  return mate::CreateHandle(isolate, new DesktopCapturer(isolate));
 }
 
 // static
-mate::Handle<DesktopCapturer> DesktopCapturer::Create(v8::Isolate* isolate) {
-  return mate::CreateHandle(isolate, new DesktopCapturer);
+void DesktopCapturer::BuildPrototype(
+    v8::Isolate* isolate, v8::Local<v8::ObjectTemplate> prototype) {
+  mate::ObjectTemplateBuilder(isolate, prototype)
+      .SetMethod("startHandling", &DesktopCapturer::StartHandling);
 }
 
 }  // namespace api

@@ -30,7 +30,7 @@ class AtomURLRequestJobFactory;
 
 namespace api {
 
-class Protocol : public mate::Wrappable {
+class Protocol : public mate::Wrappable<Protocol> {
  public:
   using Handler =
       base::Callback<void(const net::URLRequest*, v8::Local<v8::Value>)>;
@@ -40,12 +40,11 @@ class Protocol : public mate::Wrappable {
   static mate::Handle<Protocol> Create(
       v8::Isolate* isolate, AtomBrowserContext* browser_context);
 
- protected:
-  explicit Protocol(AtomBrowserContext* browser_context);
+  static void BuildPrototype(v8::Isolate* isolate,
+                             v8::Local<v8::ObjectTemplate> prototype);
 
-  // mate::Wrappable implementations:
-  virtual mate::ObjectTemplateBuilder GetObjectTemplateBuilder(
-      v8::Isolate* isolate);
+ protected:
+  Protocol(v8::Isolate* isolate, AtomBrowserContext* browser_context);
 
  private:
   // Possible errors.

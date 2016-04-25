@@ -21,14 +21,17 @@ namespace atom {
 
 namespace api {
 
-class Screen : public mate::EventEmitter,
+class Screen : public mate::EventEmitter<Screen>,
                public gfx::DisplayObserver {
  public:
   static v8::Local<v8::Value> Create(v8::Isolate* isolate);
 
+  static void BuildPrototype(v8::Isolate* isolate,
+                             v8::Local<v8::ObjectTemplate> prototype);
+
  protected:
-  explicit Screen(gfx::Screen* screen);
-  virtual ~Screen();
+  Screen(v8::Isolate* isolate, gfx::Screen* screen);
+  ~Screen() override;
 
   gfx::Point GetCursorScreenPoint();
   gfx::Display GetPrimaryDisplay();
@@ -41,10 +44,6 @@ class Screen : public mate::EventEmitter,
   void OnDisplayRemoved(const gfx::Display& old_display) override;
   void OnDisplayMetricsChanged(const gfx::Display& display,
                                uint32_t changed_metrics) override;
-
-  // mate::Wrappable:
-  mate::ObjectTemplateBuilder GetObjectTemplateBuilder(
-      v8::Isolate* isolate) override;
 
  private:
   gfx::Screen* screen_;

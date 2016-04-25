@@ -33,11 +33,14 @@ namespace atom {
 namespace api {
 
 class App : public AtomBrowserClient::Delegate,
-            public mate::EventEmitter,
+            public mate::EventEmitter<App>,
             public BrowserObserver,
             public content::GpuDataManagerObserver {
  public:
   static mate::Handle<App> Create(v8::Isolate* isolate);
+
+  static void BuildPrototype(v8::Isolate* isolate,
+                             v8::Local<v8::ObjectTemplate> prototype);
 
   // Called when window with disposition needs to be created.
   void OnCreateWindow(const GURL& target_url,
@@ -54,8 +57,8 @@ class App : public AtomBrowserClient::Delegate,
 #endif
 
  protected:
-  App();
-  virtual ~App();
+  explicit App(v8::Isolate* isolate);
+  ~App() override;
 
   // BrowserObserver:
   void OnBeforeQuit(bool* prevent_default) override;
@@ -92,10 +95,6 @@ class App : public AtomBrowserClient::Delegate,
 #if defined(OS_MACOSX)
   void OnPlatformThemeChanged() override;
 #endif
-
-  // mate::Wrappable:
-  mate::ObjectTemplateBuilder GetObjectTemplateBuilder(
-      v8::Isolate* isolate) override;
 
  private:
   // Get/Set the pre-defined path in PathService.
