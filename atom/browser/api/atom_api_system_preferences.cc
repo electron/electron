@@ -52,6 +52,7 @@ void SystemPreferences::BuildPrototype(
                  &SystemPreferences::SubscribeNotification)
       .SetMethod("unsubscribeNotification",
                  &SystemPreferences::UnsubscribeNotification)
+      .SetMethod("getUserDefault", &SystemPreferences::GetUserDefault)
 #endif
       .SetMethod("isDarkMode", &SystemPreferences::IsDarkMode);
 }

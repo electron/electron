@@ -8,7 +8,9 @@
 
 #import <Cocoa/Cocoa.h>
 
+#include "atom/common/native_mate_converters/gurl_converter.h"
 #include "base/strings/sys_string_conversions.h"
+#include "net/base/mac/url_conversions.h"
 
 namespace atom {
 
@@ -44,6 +46,29 @@ void SystemPreferences::UnsubscribeNotification(int request_id) {
     id observer = iter->second;
     [[NSDistributedNotificationCenter defaultCenter] removeObserver:observer];
     g_id_map.erase(iter);
+  }
+}
+
+v8::Local<v8::Value> SystemPreferences::GetUserDefault(
+    const std::string& name, const std::string& type) {
+  NSUserDefaults* defaults = [NSUserDefaults standardUserDefaults];
+  NSString* key = base::SysUTF8ToNSString(name);
+  if (type == "string") {
+    return mate::StringToV8(
+        isolate(), base::SysNSStringToUTF8([defaults stringForKey:key]));
+  } else if (type == "boolean") {
+    return v8::Boolean::New(isolate(), [defaults boolForKey:key]);
+  } else if (type == "float") {
+    return v8::Number::New(isolate(), [defaults floatForKey:key]);
+  } else if (type == "integer") {
+    return v8::Integer::New(isolate(), [defaults integerForKey:key]);
+  } else if (type == "double") {
+    return v8::Number::New(isolate(), [defaults doubleForKey:key]);
+  } else if (type == "url") {
+    return mate::ConvertToV8(
+        isolate(), net::GURLWithNSURL([defaults URLForKey:key]));
+  } else {
+    return v8::Undefined(isolate());
   }
 }
 
