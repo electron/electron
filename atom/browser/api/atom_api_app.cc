@@ -41,7 +41,6 @@
 
 #if defined(OS_WIN)
 #include "base/strings/utf_string_conversions.h"
-#include "ui/base/win/shell.h"
 #endif
 
 using atom::Browser;
@@ -382,12 +381,6 @@ std::string App::GetLocale() {
   return l10n_util::GetApplicationLocale("");
 }
 
-#if defined(OS_WIN)
-bool App::IsAeroGlassEnabled() {
-  return ui::win::IsAeroGlassEnabled();
-}
-#endif
-
 bool App::MakeSingleInstance(
     const ProcessSingleton::NotificationCallback& callback) {
   if (process_singleton_.get())
@@ -471,13 +464,10 @@ void App::BuildPrototype(
 #if defined(OS_MACOSX)
       .SetMethod("hide", base::Bind(&Browser::Hide, browser))
       .SetMethod("show", base::Bind(&Browser::Show, browser))
-      .SetMethod("isDarkMode",
-                 base::Bind(&Browser::IsDarkMode, browser))
 #endif
 #if defined(OS_WIN)
       .SetMethod("setUserTasks",
                  base::Bind(&Browser::SetUserTasks, browser))
-      .SetMethod("isAeroGlassEnabled", &App::IsAeroGlassEnabled)
 #endif
       .SetMethod("setPath", &App::SetPath)
       .SetMethod("getPath", &App::GetPath)

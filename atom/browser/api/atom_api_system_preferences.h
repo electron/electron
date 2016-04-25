@@ -19,6 +19,11 @@ class SystemPreferences : public mate::EventEmitter<SystemPreferences> {
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::ObjectTemplate> prototype);
 
+#if defined(OS_WIN)
+  bool IsAeroGlassEnabled();
+#endif
+  bool IsDarkMode();
+
  protected:
   explicit SystemPreferences(v8::Isolate* isolate);
   ~SystemPreferences() override;

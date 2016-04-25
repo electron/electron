@@ -7,6 +7,10 @@
 #include "atom/common/node_includes.h"
 #include "native_mate/dictionary.h"
 
+#if defined(OS_WIN)
+#include "ui/base/win/shell.h"
+#endif
+
 namespace atom {
 
 namespace api {
@@ -18,6 +22,18 @@ SystemPreferences::SystemPreferences(v8::Isolate* isolate) {
 SystemPreferences::~SystemPreferences() {
 }
 
+#if defined(OS_WIN)
+bool SystemPreferences::IsAeroGlassEnabled() {
+  return ui::win::IsAeroGlassEnabled();
+}
+#endif
+
+#if !defined(OS_MACOSX)
+bool SystemPreferences::IsDarkMode() {
+  return false;
+}
+#endif
+
 // static
 mate::Handle<SystemPreferences> SystemPreferences::Create(
     v8::Isolate* isolate) {
@@ -27,7 +43,11 @@ mate::Handle<SystemPreferences> SystemPreferences::Create(
 // static
 void SystemPreferences::BuildPrototype(
     v8::Isolate* isolate, v8::Local<v8::ObjectTemplate> prototype) {
-  mate::ObjectTemplateBuilder(isolate, prototype);
+  mate::ObjectTemplateBuilder(isolate, prototype)
+#if defined(OS_WIN)
+      .SetMethod("isAeroGlassEnabled", &SystemPreferences::IsAeroGlassEnabled)
+#endif
+      .SetMethod("isDarkMode", &SystemPreferences::IsDarkMode);
 }
 
 }  // namespace api

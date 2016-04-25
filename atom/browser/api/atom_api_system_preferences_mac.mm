@@ -4,11 +4,19 @@
 
 #include "atom/browser/api/atom_api_system_preferences.h"
 
+#import <Cocoa/Cocoa.h>
+
 namespace atom {
 
 namespace api {
 
-
+#if defined(OS_MACOSX)
+bool SystemPreferences::IsDarkMode() {
+  NSString* mode = [[NSUserDefaults standardUserDefaults]
+      stringForKey:@"AppleInterfaceStyle"];
+  return [mode isEqualToString:@"Dark"];
+}
+#endif
 
 }  // namespace api
 

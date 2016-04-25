@@ -114,10 +114,6 @@ class App : public AtomBrowserClient::Delegate,
                          const net::CompletionCallback& callback);
 #endif
 
-#if defined(OS_WIN)
-  bool IsAeroGlassEnabled();
-#endif
-
   scoped_ptr<ProcessSingleton> process_singleton_;
 
 #if defined(USE_NSS_CERTS)
