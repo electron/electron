@@ -4,6 +4,7 @@
 
 #include "atom/browser/api/atom_api_system_preferences.h"
 
+#include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/node_includes.h"
 #include "native_mate/dictionary.h"
 
@@ -46,6 +47,11 @@ void SystemPreferences::BuildPrototype(
   mate::ObjectTemplateBuilder(isolate, prototype)
 #if defined(OS_WIN)
       .SetMethod("isAeroGlassEnabled", &SystemPreferences::IsAeroGlassEnabled)
+#elif defined(OS_MACOSX)
+      .SetMethod("subscribeNotification",
+                 &SystemPreferences::SubscribeNotification)
+      .SetMethod("unsubscribeNotification",
+                 &SystemPreferences::UnsubscribeNotification)
 #endif
       .SetMethod("isDarkMode", &SystemPreferences::IsDarkMode);
 }

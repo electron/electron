@@ -5,7 +5,10 @@
 #ifndef ATOM_BROWSER_API_ATOM_API_SYSTEM_PREFERENCES_H_
 #define ATOM_BROWSER_API_ATOM_API_SYSTEM_PREFERENCES_H_
 
+#include <string>
+
 #include "atom/browser/api/event_emitter.h"
+#include "base/callback.h"
 #include "native_mate/handle.h"
 
 namespace atom {
@@ -21,6 +24,10 @@ class SystemPreferences : public mate::EventEmitter<SystemPreferences> {
 
 #if defined(OS_WIN)
   bool IsAeroGlassEnabled();
+#elif defined(OS_MACOSX)
+  int SubscribeNotification(const std::string& name,
+                            const base::Closure& callback);
+  void UnsubscribeNotification(int id);
 #endif
   bool IsDarkMode();
 
