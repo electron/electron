@@ -22,6 +22,12 @@ SQRLUpdater* g_updater = nil;
 
 }  // namespace
 
+namespace {
+
+bool g_update_available = false;
+
+}
+
 // static
 void AutoUpdater::SetFeedURL(const std::string& feed) {
   if (g_updater == nil) {
@@ -69,6 +75,7 @@ void AutoUpdater::CheckForUpdates() {
       take:1]
       subscribeNext:^(SQRLDownloadedUpdate *downloadedUpdate) {
         if (downloadedUpdate) {
+          g_update_available = true;
           SQRLUpdate* update = downloadedUpdate.update;
           // There is a new update that has been downloaded.
           delegate->OnUpdateDownloaded(
@@ -77,6 +84,7 @@ void AutoUpdater::CheckForUpdates() {
             base::Time::FromDoubleT(update.releaseDate.timeIntervalSince1970),
             base::SysNSStringToUTF8(update.updateURL.absoluteString));
         } else {
+          g_update_available = false;
           // When the completed event is sent with no update, then we know there
           // is no update available.
           delegate->OnUpdateNotAvailable();
@@ -89,11 +97,16 @@ void AutoUpdater::CheckForUpdates() {
 }
 
 void AutoUpdater::QuitAndInstall() {
-  [[g_updater relaunchToInstallUpdate] subscribeError:^(NSError* error) {
-    Delegate* delegate = AutoUpdater::GetDelegate();
+  if (g_update_available) {
+    [[g_updater relaunchToInstallUpdate] subscribeError:^(NSError* error) {
+      Delegate* delegate = AutoUpdater::GetDelegate();
+      if (delegate)
+        delegate->OnError(base::SysNSStringToUTF8(error.localizedDescription));
+    }];
+  } else {
     if (delegate)
-      delegate->OnError(base::SysNSStringToUTF8(error.localizedDescription));
-  }];
+      delegate->OnError("No update available, can't quit and install");
+  }
 }
 
 }  // namespace auto_updater
