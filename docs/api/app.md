@@ -228,10 +228,6 @@ app.on('login', function(event, webContents, request, authInfo, callback) {
 
 Emitted when the gpu process crashes.
 
-### Event: 'platform-theme-changed' _OS X_
-
-Emitted when the system's Dark Mode theme is toggled.
-
 ## Methods
 
 The `app` object has the following methods:
