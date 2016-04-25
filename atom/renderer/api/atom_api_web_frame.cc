@@ -165,7 +165,7 @@ void WebFrame::ExecuteJavaScript(const base::string16& code,
 
 // static
 mate::Handle<WebFrame> WebFrame::Create(v8::Isolate* isolate) {
-  return CreateHandle(isolate, new WebFrame(isolate));
+  return mate::CreateHandle(isolate, new WebFrame(isolate));
 }
 
 // static

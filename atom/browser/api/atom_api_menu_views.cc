@@ -49,8 +49,8 @@ void MenuViews::PopupAt(Window* window, int x, int y, int positioning_item) {
 }
 
 // static
-mate::WrappableBase* Menu::Create() {
-  return new MenuViews();
+mate::WrappableBase* Menu::Create(v8::Isolate* isolate) {
+  return new MenuViews(isolate);
 }
 
 }  // namespace api
