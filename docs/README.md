@@ -62,6 +62,7 @@ an issue:
 * [powerSaveBlocker](api/power-save-blocker.md)
 * [protocol](api/protocol.md)
 * [session](api/session.md)
+* [systemPreferences](api/system-preferences.md)
 * [webContents](api/web-contents.md)
 * [Tray](api/tray.md)
 

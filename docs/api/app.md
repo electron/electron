@@ -228,10 +228,6 @@ app.on('login', function(event, webContents, request, authInfo, callback) {
 
 Emitted when the gpu process crashes.
 
-### Event: 'platform-theme-changed' _OS X_
-
-Emitted when the system's Dark Mode theme is toggled.
-
 ## Methods
 
 The `app` object has the following methods:
@@ -479,40 +475,6 @@ app.on('ready', function() {
 * `id` String
 
 Changes the [Application User Model ID][app-user-model-id] to `id`.
-
-### `app.isAeroGlassEnabled()` _Windows_
-
-This method returns `true` if [DWM composition](https://msdn.microsoft.com/en-us/library/windows/desktop/aa969540.aspx)
-(Aero Glass) is enabled, and `false` otherwise. You can use it to determine if
-you should create a transparent window or not (transparent windows won't work
-correctly when DWM composition is disabled).
-
-Usage example:
-
-```javascript
-let browserOptions = {width: 1000, height: 800};
-
-// Make the window transparent only if the platform supports it.
-if (process.platform !== 'win32' || app.isAeroGlassEnabled()) {
-  browserOptions.transparent = true;
-  browserOptions.frame = false;
-}
-
-// Create the window.
-win = new BrowserWindow(browserOptions);
-
-// Navigate.
-if (browserOptions.transparent) {
-  win.loadURL('file://' + __dirname + '/index.html');
-} else {
-  // No transparency, so we load a fallback that uses basic styles.
-  win.loadURL('file://' + __dirname + '/fallback.html');
-}
-```
-
-### `app.isDarkMode()` _OS X_
-
-This method returns `true` if the system is in Dark Mode, and `false` otherwise.
 
 ### `app.importCertificate(options, callback)` _LINUX_
 

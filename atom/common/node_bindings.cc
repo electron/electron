@@ -44,6 +44,7 @@ REFERENCE_MODULE(atom_browser_power_save_blocker);
 REFERENCE_MODULE(atom_browser_protocol);
 REFERENCE_MODULE(atom_browser_global_shortcut);
 REFERENCE_MODULE(atom_browser_session);
+REFERENCE_MODULE(atom_browser_system_preferences);
 REFERENCE_MODULE(atom_browser_tray);
 REFERENCE_MODULE(atom_browser_web_contents);
 REFERENCE_MODULE(atom_browser_web_view_manager);

@@ -92,10 +92,6 @@ class App : public AtomBrowserClient::Delegate,
   // content::GpuDataManagerObserver:
   void OnGpuProcessCrashed(base::TerminationStatus exit_code) override;
 
-#if defined(OS_MACOSX)
-  void OnPlatformThemeChanged() override;
-#endif
-
  private:
   // Get/Set the pre-defined path in PathService.
   base::FilePath GetPath(mate::Arguments* args, const std::string& name);
@@ -112,10 +108,6 @@ class App : public AtomBrowserClient::Delegate,
 #if defined(USE_NSS_CERTS)
   void ImportCertificate(const base::DictionaryValue& options,
                          const net::CompletionCallback& callback);
-#endif
-
-#if defined(OS_WIN)
-  bool IsAeroGlassEnabled();
 #endif
 
   scoped_ptr<ProcessSingleton> process_singleton_;
