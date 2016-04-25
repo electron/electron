@@ -14,8 +14,9 @@ namespace atom {
 
 namespace api {
 
-PowerMonitor::PowerMonitor() {
+PowerMonitor::PowerMonitor(v8::Isolate* isolate) {
   base::PowerMonitor::Get()->AddObserver(this);
+  Init(isolate);
 }
 
 PowerMonitor::~PowerMonitor() {
@@ -46,7 +47,12 @@ v8::Local<v8::Value> PowerMonitor::Create(v8::Isolate* isolate) {
     return v8::Null(isolate);
   }
 
-  return CreateHandle(isolate, new PowerMonitor).ToV8();
+  return mate::CreateHandle(isolate, new PowerMonitor(isolate)).ToV8();
+}
+
+// static
+void PowerMonitor::BuildPrototype(
+    v8::Isolate* isolate, v8::Local<v8::ObjectTemplate> prototype) {
 }
 
 }  // namespace api

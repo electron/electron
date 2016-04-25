@@ -57,9 +57,11 @@ std::map<uint32_t, linked_ptr<v8::Global<v8::Value>>> g_download_item_objects;
 
 }  // namespace
 
-DownloadItem::DownloadItem(content::DownloadItem* download_item)
+DownloadItem::DownloadItem(v8::Isolate* isolate,
+                           content::DownloadItem* download_item)
     : download_item_(download_item) {
   download_item_->AddObserver(this);
+  Init(isolate);
   AttachAsUserData(download_item);
 }
 
@@ -173,7 +175,7 @@ mate::Handle<DownloadItem> DownloadItem::Create(
   if (existing)
     return mate::CreateHandle(isolate, static_cast<DownloadItem*>(existing));
 
-  auto handle = mate::CreateHandle(isolate, new DownloadItem(item));
+  auto handle = mate::CreateHandle(isolate, new DownloadItem(isolate, item));
   g_wrap_download_item.Run(handle.ToV8());
 
   // Reference this object in case it got garbage collected.
@@ -182,16 +184,8 @@ mate::Handle<DownloadItem> DownloadItem::Create(
   return handle;
 }
 
-void ClearWrapDownloadItem() {
-  g_wrap_download_item.Reset();
-}
-
 void SetWrapDownloadItem(const WrapDownloadItemCallback& callback) {
   g_wrap_download_item = callback;
-
-  // Cleanup the wrapper on exit.
-  atom::AtomBrowserMainParts::Get()->RegisterDestructionCallback(
-      base::Bind(ClearWrapDownloadItem));
 }
 
 }  // namespace api

@@ -22,7 +22,7 @@ namespace atom {
 
 namespace api {
 
-Tray::Tray(const gfx::Image& image)
+Tray::Tray(v8::Isolate* isolate, const gfx::Image& image)
     : tray_icon_(TrayIcon::Create()) {
   tray_icon_->SetImage(image);
   tray_icon_->AddObserver(this);
@@ -32,13 +32,13 @@ Tray::~Tray() {
 }
 
 // static
-mate::Wrappable* Tray::New(v8::Isolate* isolate, const gfx::Image& image) {
+mate::WrappableBase* Tray::New(v8::Isolate* isolate, const gfx::Image& image) {
   if (!Browser::Get()->is_ready()) {
     isolate->ThrowException(v8::Exception::Error(mate::StringToV8(
         isolate, "Cannot create Tray before app is ready")));
     return nullptr;
   }
-  return new Tray(image);
+  return new Tray(isolate, image);
 }
 
 void Tray::OnClicked(const gfx::Rect& bounds, int modifiers) {

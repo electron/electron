@@ -37,15 +37,6 @@ TrackableObjectBase::~TrackableObjectBase() {
   cleanup_.Run();
 }
 
-void TrackableObjectBase::AfterInit(v8::Isolate* isolate) {
-  if (wrapped_)
-    AttachAsUserData(wrapped_);
-}
-
-void TrackableObjectBase::MarkDestroyed() {
-  GetWrapper(isolate())->SetAlignedPointerInInternalField(0, nullptr);
-}
-
 base::Closure TrackableObjectBase::GetDestroyClosure() {
   return base::Bind(&TrackableObjectBase::Destroy, weak_factory_.GetWeakPtr());
 }

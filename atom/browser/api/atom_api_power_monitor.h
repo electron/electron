@@ -19,8 +19,11 @@ class PowerMonitor : public mate::TrackableObject<PowerMonitor>,
  public:
   static v8::Local<v8::Value> Create(v8::Isolate* isolate);
 
+  static void BuildPrototype(v8::Isolate* isolate,
+                             v8::Local<v8::ObjectTemplate> prototype);
+
  protected:
-  PowerMonitor();
+  explicit PowerMonitor(v8::Isolate* isolate);
   ~PowerMonitor() override;
 
   // base::PowerObserver implementations:

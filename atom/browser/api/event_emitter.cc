@@ -34,11 +34,13 @@ v8::Local<v8::Object> CreateEventObject(v8::Isolate* isolate) {
 
 }  // namespace
 
-EventEmitter::EventEmitter() {
-}
+namespace internal {
 
-v8::Local<v8::Object> EventEmitter::CreateJSEvent(
-    v8::Isolate* isolate, content::WebContents* sender, IPC::Message* message) {
+v8::Local<v8::Object> CreateJSEvent(
+    v8::Isolate* isolate,
+    v8::Local<v8::Object> object,
+    content::WebContents* sender,
+    IPC::Message* message) {
   v8::Local<v8::Object> event;
   bool use_native_event = sender && message;
 
@@ -49,16 +51,20 @@ v8::Local<v8::Object> EventEmitter::CreateJSEvent(
   } else {
     event = CreateEventObject(isolate);
   }
-  mate::Dictionary(isolate, event).Set("sender", GetWrapper(isolate));
+  mate::Dictionary(isolate, event).Set("sender", object);
   return event;
 }
 
-v8::Local<v8::Object> EventEmitter::CreateCustomEvent(
-    v8::Isolate* isolate, v8::Local<v8::Object> custom_event) {
+v8::Local<v8::Object> CreateCustomEvent(
+    v8::Isolate* isolate,
+    v8::Local<v8::Object> object,
+    v8::Local<v8::Object> custom_event) {
   v8::Local<v8::Object> event = CreateEventObject(isolate);
   (void)event->SetPrototype(custom_event->CreationContext(), custom_event);
-  mate::Dictionary(isolate, event).Set("sender", GetWrapper(isolate));
+  mate::Dictionary(isolate, event).Set("sender", object);
   return event;
 }
+
+}  // namespace internal
 
 }  // namespace mate

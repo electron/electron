@@ -46,8 +46,8 @@ class Cookies : public mate::TrackableObject<Cookies> {
                              v8::Local<v8::ObjectTemplate> prototype);
 
  protected:
-  explicit Cookies(content::BrowserContext* browser_context);
-  ~Cookies();
+  Cookies(v8::Isolate* isolate, content::BrowserContext* browser_context);
+  ~Cookies() override;
 
   void Get(const base::DictionaryValue& filter, const GetCallback& callback);
   void Remove(const GURL& url, const std::string& name,

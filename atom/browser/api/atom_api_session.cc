@@ -288,14 +288,15 @@ void ClearHostResolverCacheInIO(
 
 }  // namespace
 
-Session::Session(AtomBrowserContext* browser_context)
+Session::Session(v8::Isolate* isolate, AtomBrowserContext* browser_context)
     : devtools_network_emulation_client_id_(base::GenerateGUID()),
       browser_context_(browser_context) {
-  AttachAsUserData(browser_context);
-
   // Observe DownloadManger to get download notifications.
   content::BrowserContext::GetDownloadManager(browser_context)->
       AddObserver(this);
+
+  Init(isolate);
+  AttachAsUserData(browser_context);
 }
 
 Session::~Session() {
@@ -308,6 +309,9 @@ void Session::OnDownloadCreated(content::DownloadManager* manager,
   auto web_contents = item->GetWebContents();
   if (SavePageHandler::IsSavePageTypes(item->GetMimeType()))
     return;
+
+  v8::Locker locker(isolate());
+  v8::HandleScope handle_scope(isolate());
   bool prevent_default = Emit(
       "will-download",
       DownloadItem::Create(isolate(), item),
@@ -454,7 +458,8 @@ mate::Handle<Session> Session::CreateFrom(
   if (existing)
     return mate::CreateHandle(isolate, static_cast<Session*>(existing));
 
-  auto handle = mate::CreateHandle(isolate, new Session(browser_context));
+  auto handle = mate::CreateHandle(
+      isolate, new Session(isolate, browser_context));
   g_wrap_session.Run(handle.ToV8());
   return handle;
 }
@@ -489,16 +494,8 @@ void Session::BuildPrototype(v8::Isolate* isolate,
       .SetProperty("webRequest", &Session::WebRequest);
 }
 
-void ClearWrapSession() {
-  g_wrap_session.Reset();
-}
-
 void SetWrapSession(const WrapSessionCallback& callback) {
   g_wrap_session = callback;
-
-  // Cleanup the wrapper on exit.
-  atom::AtomBrowserMainParts::Get()->RegisterDestructionCallback(
-      base::Bind(ClearWrapSession));
 }
 
 }  // namespace api

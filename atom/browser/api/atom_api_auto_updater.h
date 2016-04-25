@@ -16,15 +16,18 @@ namespace atom {
 
 namespace api {
 
-class AutoUpdater : public mate::EventEmitter,
+class AutoUpdater : public mate::EventEmitter<AutoUpdater>,
                     public auto_updater::Delegate,
                     public WindowListObserver {
  public:
   static mate::Handle<AutoUpdater> Create(v8::Isolate* isolate);
 
+  static void BuildPrototype(v8::Isolate* isolate,
+                             v8::Local<v8::ObjectTemplate> prototype);
+
  protected:
-  AutoUpdater();
-  virtual ~AutoUpdater();
+  explicit AutoUpdater(v8::Isolate* isolate);
+  ~AutoUpdater() override;
 
   // Delegate implementations.
   void OnError(const std::string& error) override;
@@ -38,10 +41,6 @@ class AutoUpdater : public mate::EventEmitter,
 
   // WindowListObserver:
   void OnWindowAllClosed() override;
-
-  // mate::Wrappable implementations:
-  mate::ObjectTemplateBuilder GetObjectTemplateBuilder(
-      v8::Isolate* isolate) override;
 
  private:
   void QuitAndInstall();

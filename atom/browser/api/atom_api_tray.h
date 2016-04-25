@@ -32,13 +32,14 @@ class Menu;
 class Tray : public mate::TrackableObject<Tray>,
              public TrayIconObserver {
  public:
-  static mate::Wrappable* New(v8::Isolate* isolate, const gfx::Image& image);
+  static mate::WrappableBase* New(
+      v8::Isolate* isolate, const gfx::Image& image);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::ObjectTemplate> prototype);
 
  protected:
-  explicit Tray(const gfx::Image& image);
+  Tray(v8::Isolate* isolate, const gfx::Image& image);
   ~Tray() override;
 
   // TrayIconObserver:
