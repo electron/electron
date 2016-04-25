@@ -151,7 +151,7 @@ Window::Window(v8::Isolate* isolate, const mate::Dictionary& options) {
   api_web_contents_ = web_contents.get();
 
   // Keep a copy of the options for later use.
-  mate::Dictionary(isolate, web_contents->GetWrapper(isolate)).Set(
+  mate::Dictionary(isolate, web_contents->GetWrapper()).Set(
       "browserWindowOptions", options);
 
   // Creates BrowserWindow.
@@ -817,7 +817,7 @@ v8::Local<v8::Value> Window::From(v8::Isolate* isolate,
                                   NativeWindow* native_window) {
   auto existing = TrackableObject::FromWrappedClass(isolate, native_window);
   if (existing)
-    return existing->GetWrapper(isolate);
+    return existing->GetWrapper();
   else
     return v8::Null(isolate);
 }

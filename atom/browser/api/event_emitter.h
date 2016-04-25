@@ -41,9 +41,7 @@ class EventEmitter : public Wrappable<T> {
 
   // Make the convinient methods visible:
   // https://isocpp.org/wiki/faq/templates#nondependent-name-lookup-members
-  v8::Local<v8::Object> GetWrapper(v8::Isolate* isolate = nullptr) {
-    return Wrappable<T>::GetWrapper();
-  }
+  v8::Local<v8::Object> GetWrapper() { return Wrappable<T>::GetWrapper(); }
   v8::Isolate* isolate() const { return Wrappable<T>::isolate(); }
 
   // this.emit(name, event, args...);
@@ -86,7 +84,7 @@ class EventEmitter : public Wrappable<T> {
                      const Args&... args) {
     v8::Locker locker(isolate());
     v8::HandleScope handle_scope(isolate());
-    EmitEvent(isolate(), GetWrapper(isolate()), name, event, args...);
+    EmitEvent(isolate(), GetWrapper(), name, event, args...);
     return event->Get(
         StringToV8(isolate(), "defaultPrevented"))->BooleanValue();
   }
