@@ -97,9 +97,9 @@ void AutoUpdater::CheckForUpdates() {
 }
 
 void AutoUpdater::QuitAndInstall() {
+  Delegate* delegate = AutoUpdater::GetDelegate();
   if (g_update_available) {
     [[g_updater relaunchToInstallUpdate] subscribeError:^(NSError* error) {
-      Delegate* delegate = AutoUpdater::GetDelegate();
       if (delegate)
         delegate->OnError(base::SysNSStringToUTF8(error.localizedDescription));
     }];
