@@ -12,7 +12,7 @@ webFrame.setZoomFactor(2);
 
 ## Methods
 
-The `web-frame` module has the following methods:
+The `webFrame` module has the following methods:
 
 ### `webFrame.setZoomFactor(factor)`
 
