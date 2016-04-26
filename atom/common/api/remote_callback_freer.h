@@ -30,10 +30,6 @@ class RemoteCallbackFreer : public ObjectLifeMonitor,
   void RenderViewDeleted(content::RenderViewHost*) override;
 
  private:
-  int GetRendererProcessID();
-
-  content::WebContents* web_contents_;
-  int renderer_process_id_;
   int object_id_;
 
   DISALLOW_COPY_AND_ASSIGN(RemoteCallbackFreer);
