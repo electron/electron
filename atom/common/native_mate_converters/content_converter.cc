@@ -180,4 +180,17 @@ v8::Local<v8::Value> Converter<content::WebContents*>::ToV8(
   return atom::api::WebContents::CreateFrom(isolate, val).ToV8();
 }
 
+// static
+bool Converter<content::WebContents*>::FromV8(
+    v8::Isolate* isolate,
+    v8::Local<v8::Value> val,
+    content::WebContents** out) {
+  atom::api::WebContents* web_contents = nullptr;
+  if (!ConvertFromV8(isolate, val, &web_contents) || !web_contents)
+    return false;
+
+  *out = web_contents->web_contents();
+  return true;
+}
+
 }  // namespace mate
