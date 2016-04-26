@@ -28,7 +28,7 @@ contentTracing.startRecording(options, function() {
 
 ## Methods
 
-The `content-tracing` module has the following methods:
+The `contentTracing` module has the following methods:
 
 ### `contentTracing.getCategories(callback)`
 
