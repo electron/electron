@@ -53,6 +53,7 @@ contains documents describing how to build and contribute to Electron.
 - [Spanish](https://github.com/electron/electron/tree/master/docs-translations/es)
 - [Simplified Chinese](https://github.com/electron/electron/tree/master/docs-translations/zh-CN)
 - [Traditional Chinese](https://github.com/electron/electron/tree/master/docs-translations/zh-TW)
+- [Turkish](https://github.com/electron/electron/tree/master/docs-translations/tr-TR)
 - [Ukrainian](https://github.com/electron/electron/tree/master/docs-translations/uk-UA)
 - [Russian](https://github.com/electron/electron/tree/master/docs-translations/ru-RU)
 - [French](https://github.com/electron/electron/tree/master/docs-translations/fr-FR)
