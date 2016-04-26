@@ -4,7 +4,9 @@
 
 #include <string>
 
-#include "atom/common/api/object_life_monitor.h"
+#include "atom/common/api/remote_callback_freer.h"
+#include "atom/common/api/remote_object_freer.h"
+#include "atom/common/native_mate_converters/content_converter.h"
 #include "atom/common/node_includes.h"
 #include "native_mate/dictionary.h"
 #include "v8/include/v8-profiler.h"
@@ -51,12 +53,6 @@ int32_t GetObjectHash(v8::Local<v8::Object> object) {
   return object->GetIdentityHash();
 }
 
-void SetDestructor(v8::Isolate* isolate,
-                   v8::Local<v8::Object> object,
-                   v8::Local<v8::Function> callback) {
-  atom::ObjectLifeMonitor::BindTo(isolate, object, callback);
-}
-
 void TakeHeapSnapshot(v8::Isolate* isolate) {
   isolate->GetHeapProfiler()->TakeHeapSnapshot();
 }
@@ -68,8 +64,9 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   dict.SetMethod("setHiddenValue", &SetHiddenValue);
   dict.SetMethod("deleteHiddenValue", &DeleteHiddenValue);
   dict.SetMethod("getObjectHash", &GetObjectHash);
-  dict.SetMethod("setDestructor", &SetDestructor);
   dict.SetMethod("takeHeapSnapshot", &TakeHeapSnapshot);
+  dict.SetMethod("setRemoteCallbackFreer", &atom::RemoteCallbackFreer::BindTo);
+  dict.SetMethod("setRemoteObjectFreer", &atom::RemoteObjectFreer::BindTo);
 }
 
 }  // namespace
