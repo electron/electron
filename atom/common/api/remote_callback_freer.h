@@ -27,7 +27,7 @@ class RemoteCallbackFreer : public ObjectLifeMonitor,
   void RunDestructor() override;
 
   // content::WebContentsObserver:
-  void WebContentsDestroyed() override;
+  void RenderViewDeleted(content::RenderViewHost*) override;
 
  private:
   int GetRendererProcessID();

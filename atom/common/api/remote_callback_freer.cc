@@ -48,7 +48,7 @@ void RemoteCallbackFreer::RunDestructor() {
   web_contents_ = nullptr;
 }
 
-void RemoteCallbackFreer::WebContentsDestroyed() {
+void RemoteCallbackFreer::RenderViewDeleted(content::RenderViewHost*) {
   if (!web_contents_)
     return;
 
