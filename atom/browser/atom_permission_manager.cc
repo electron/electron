@@ -40,7 +40,7 @@ void AtomPermissionManager::SetPermissionRequestHandler(
   if (handler.is_null() && !pending_requests_.empty()) {
     for (const auto& request : pending_requests_) {
       if (!WebContentsDestroyed(request.second.render_process_id))
-        request.second.callback.Run(content::PERMISSION_STATUS_DENIED);
+        request.second.callback.Run(content::PermissionStatus::DENIED);
     }
     pending_requests_.clear();
   }
@@ -74,7 +74,7 @@ int AtomPermissionManager::RequestPermission(
     return request_id_;
   }
 
-  response_callback.Run(content::PERMISSION_STATUS_GRANTED);
+  response_callback.Run(content::PermissionStatus::GRANTED);
   return kNoPendingOperation;
 }
 
@@ -92,7 +92,7 @@ int AtomPermissionManager::RequestPermissions(
       content::ChildProcessSecurityPolicy::GetInstance()->
           GrantSendMidiSysExMessage(render_frame_host->GetProcess()->GetID());
     }
-    permissionStatuses.push_back(content::PERMISSION_STATUS_GRANTED);
+    permissionStatuses.push_back(content::PermissionStatus::GRANTED);
   }
   callback.Run(permissionStatuses);
   return kNoPendingOperation;
@@ -115,7 +115,7 @@ void AtomPermissionManager::CancelPermissionRequest(int request_id) {
   auto request = pending_requests_.find(request_id);
   if (request != pending_requests_.end()) {
     if (!WebContentsDestroyed(request->second.render_process_id))
-      request->second.callback.Run(content::PERMISSION_STATUS_DENIED);
+      request->second.callback.Run(content::PermissionStatus::DENIED);
     pending_requests_.erase(request);
   }
 }
@@ -130,7 +130,7 @@ content::PermissionStatus AtomPermissionManager::GetPermissionStatus(
     content::PermissionType permission,
     const GURL& requesting_origin,
     const GURL& embedding_origin) {
-  return content::PERMISSION_STATUS_GRANTED;
+  return content::PermissionStatus::GRANTED;
 }
 
 void AtomPermissionManager::RegisterPermissionUsage(
