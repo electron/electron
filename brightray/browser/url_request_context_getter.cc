@@ -341,10 +341,7 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     network_session_params.http_auth_handler_factory =
         url_request_context_->http_auth_handler_factory();
     network_session_params.net_log = url_request_context_->net_log();
-    net::NextProtoVector next_protos;
-    next_protos.push_back(net::kProtoHTTP2);
-    next_protos.push_back(net::kProtoHTTP11);
-    network_session_params.next_protos = next_protos;
+    network_session_params.enable_http2 = true;
 
     // --ignore-certificate-errors
     if (command_line.HasSwitch(switches::kIgnoreCertificateErrors))
