@@ -27,7 +27,7 @@ int PermissionManager::RequestPermission(
     content::ChildProcessSecurityPolicy::GetInstance()->
         GrantSendMidiSysExMessage(render_frame_host->GetProcess()->GetID());
   }
-  callback.Run(content::PERMISSION_STATUS_GRANTED);
+  callback.Run(content::PermissionStatus::GRANTED);
   return kNoPendingOperation;
 }
 
@@ -45,7 +45,7 @@ int PermissionManager::RequestPermissions(
           GrantSendMidiSysExMessage(render_frame_host->GetProcess()->GetID());
     }
 
-    permissionStatuses.push_back(content::PERMISSION_STATUS_GRANTED);
+    permissionStatuses.push_back(content::PermissionStatus::GRANTED);
   }
 
   callback.Run(permissionStatuses);
@@ -65,7 +65,7 @@ content::PermissionStatus PermissionManager::GetPermissionStatus(
     content::PermissionType permission,
     const GURL& requesting_origin,
     const GURL& embedding_origin) {
-  return content::PERMISSION_STATUS_GRANTED;
+  return content::PermissionStatus::GRANTED;
 }
 
 void PermissionManager::RegisterPermissionUsage(
