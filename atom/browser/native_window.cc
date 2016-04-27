@@ -318,9 +318,9 @@ void NativeWindow::CapturePage(const gfx::Rect& rect,
   // current system, increase the requested bitmap size to capture it all.
   gfx::Size bitmap_size = view_size;
   const gfx::NativeView native_view = view->GetNativeView();
-  gfx::Screen* const screen = gfx::Screen::GetScreenFor(native_view);
   const float scale =
-      screen->GetDisplayNearestWindow(native_view).device_scale_factor();
+      gfx::Screen::GetScreen()->GetDisplayNearestWindow(native_view)
+      .device_scale_factor();
   if (scale > 1.0f)
     bitmap_size = gfx::ScaleToCeiledSize(view_size, scale);
 
