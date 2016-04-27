@@ -9,6 +9,7 @@
 #include "browser/notification_delegate_adapter.h"
 #include "browser/notification_presenter.h"
 #include "content/public/common/platform_notification_data.h"
+#include "content/public/common/notification_resources.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 
 namespace brightray {
@@ -70,24 +71,26 @@ blink::WebNotificationPermission PlatformNotificationService::CheckPermissionOnI
 void PlatformNotificationService::DisplayNotification(
     content::BrowserContext* browser_context,
     const GURL& origin,
-    const SkBitmap& icon,
-    const content::PlatformNotificationData& data,
+    const content::PlatformNotificationData& notification_data,
+    const content::NotificationResources& notification_resources,
     scoped_ptr<content::DesktopNotificationDelegate> delegate,
     base::Closure* cancel_callback) {
   browser_client_->WebNotificationAllowed(
       render_process_id_,
       base::Bind(&OnWebNotificationAllowed,
-                 browser_client_, icon, data,
+                 browser_client_,
+                 notification_resources.notification_icon,
+                 notification_data,
                  base::Passed(&delegate),
                  cancel_callback));
 }
 
 void PlatformNotificationService::DisplayPersistentNotification(
     content::BrowserContext* browser_context,
-    int64_t service_worker_registration_id,
+    int64_t persistent_notification_id,
     const GURL& origin,
-    const SkBitmap& icon,
-    const content::PlatformNotificationData& notification_data) {
+    const content::PlatformNotificationData& notification_data,
+    const content::NotificationResources& notification_resources) {
 }
 
 void PlatformNotificationService::ClosePersistentNotification(

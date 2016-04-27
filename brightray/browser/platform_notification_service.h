@@ -27,19 +27,18 @@ class PlatformNotificationService
       content::ResourceContext* resource_context,
       const GURL& origin,
       int render_process_id) override;
-  void DisplayNotification(
-      content::BrowserContext* browser_context,
+  void DisplayNotification(content::BrowserContext* browser_context,
       const GURL& origin,
-      const SkBitmap& icon,
       const content::PlatformNotificationData& notification_data,
+      const content::NotificationResources& notification_resources,
       scoped_ptr<content::DesktopNotificationDelegate> delegate,
       base::Closure* cancel_callback) override;
   void DisplayPersistentNotification(
       content::BrowserContext* browser_context,
-      int64_t service_worker_registration_id,
+      int64_t persistent_notification_id,
       const GURL& origin,
-      const SkBitmap& icon,
-      const content::PlatformNotificationData& notification_data) override;
+      const content::PlatformNotificationData& notification_data,
+      const content::NotificationResources& notification_resources) override;
   void ClosePersistentNotification(
       content::BrowserContext* browser_context,
       int64_t persistent_notification_id) override;
