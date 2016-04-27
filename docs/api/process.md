@@ -111,3 +111,8 @@ On Windows / Linux:
   system.
 * `swapFree` - The free amount of swap memory in Kilobytes available to the
   system.
+
+### `process.purgeMemory()`
+
+Issues a `CRITICAL` memory pressure warning as a hint to chromium to release
+discardable memory
