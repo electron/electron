@@ -9,9 +9,7 @@
 
 #include "atom/browser/api/atom_api_cookies.h"
 #include "atom/browser/api/atom_api_download_item.h"
-#include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/browser/api/atom_api_web_request.h"
-#include "atom/browser/api/save_page_handler.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/atom_permission_manager.h"
@@ -306,8 +304,7 @@ Session::~Session() {
 
 void Session::OnDownloadCreated(content::DownloadManager* manager,
                                 content::DownloadItem* item) {
-  auto web_contents = item->GetWebContents();
-  if (SavePageHandler::IsSavePageTypes(item->GetMimeType()))
+  if (item->IsSavePackageDownload())
     return;
 
   v8::Locker locker(isolate());
@@ -315,7 +312,7 @@ void Session::OnDownloadCreated(content::DownloadManager* manager,
   bool prevent_default = Emit(
       "will-download",
       DownloadItem::Create(isolate(), item),
-      web_contents);
+      item->GetWebContents());
   if (prevent_default) {
     item->Cancel(true);
     item->Remove();
