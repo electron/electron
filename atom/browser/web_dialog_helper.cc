@@ -13,7 +13,7 @@
 #include "base/bind.h"
 #include "base/files/file_enumerator.h"
 #include "base/files/file_path.h"
-#include "base/prefs/pref_service.h"
+#include "components/prefs/pref_service.h"
 #include "base/strings/utf_string_conversions.h"
 #include "chrome/common/pref_names.h"
 #include "content/public/browser/render_view_host.h"
