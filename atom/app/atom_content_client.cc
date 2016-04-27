@@ -89,7 +89,6 @@ content::PepperPluginInfo CreateWidevineCdmInfo(const base::FilePath& path,
 
   // Add the supported codecs as if they came from the component manifest.
   std::vector<std::string> codecs;
-  codecs.push_back(kCdmSupportedCodecVorbis);
   codecs.push_back(kCdmSupportedCodecVp8);
   codecs.push_back(kCdmSupportedCodecVp9);
 #if defined(USE_PROPRIETARY_CODECS)
