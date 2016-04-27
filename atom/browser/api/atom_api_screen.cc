@@ -99,7 +99,7 @@ v8::Local<v8::Value> Screen::Create(v8::Isolate* isolate) {
     return v8::Null(isolate);
   }
 
-  gfx::Screen* screen = gfx::Screen::GetNativeScreen();
+  gfx::Screen* screen = gfx::Screen::GetScreen();
   if (!screen) {
     isolate->ThrowException(v8::Exception::Error(mate::StringToV8(
         isolate, "Failed to get screen information")));
