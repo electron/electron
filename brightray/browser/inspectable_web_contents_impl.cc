@@ -692,7 +692,7 @@ void InspectableWebContentsImpl::OnURLFetchComplete(const net::URLFetcher* sourc
   response.SetInteger("statusCode", rh ? rh->response_code() : 200);
   response.Set("headers", headers);
 
-  void* iterator = nullptr;
+  size_t iterator = 0;
   std::string name;
   std::string value;
   while (rh && rh->EnumerateHeaderLines(&iterator, &name, &value))
