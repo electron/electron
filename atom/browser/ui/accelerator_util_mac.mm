@@ -13,18 +13,24 @@ namespace accelerator_util {
 void SetPlatformAccelerator(ui::Accelerator* accelerator) {
   unichar character;
   unichar characterIgnoringModifiers;
-  ui::MacKeyCodeForWindowsKeyCode(accelerator->key_code(),
-                                  0,
-                                  &character,
-                                  &characterIgnoringModifiers);
-  NSString* characters =
-      [[[NSString alloc] initWithCharacters:&character length:1] autorelease];
 
   NSUInteger modifiers =
       (accelerator->IsCtrlDown() ? NSControlKeyMask : 0) |
       (accelerator->IsCmdDown() ? NSCommandKeyMask : 0) |
       (accelerator->IsAltDown() ? NSAlternateKeyMask : 0) |
       (accelerator->IsShiftDown() ? NSShiftKeyMask : 0);
+
+  ui::MacKeyCodeForWindowsKeyCode(accelerator->key_code(),
+                                  modifiers,
+                                  &character,
+                                  &characterIgnoringModifiers);
+
+  if (character != characterIgnoringModifiers) {
+    modifiers ^= NSShiftKeyMask;
+  }
+
+  NSString* characters =
+      [[[NSString alloc] initWithCharacters:&character length:1] autorelease];
 
   scoped_ptr<ui::PlatformAccelerator> platform_accelerator(
       new ui::PlatformAcceleratorCocoa(characters, modifiers));
