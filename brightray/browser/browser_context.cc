@@ -13,10 +13,12 @@
 
 #include "base/files/file_path.h"
 #include "base/path_service.h"
-#include "base/prefs/json_pref_store.h"
-#include "base/prefs/pref_registry_simple.h"
-#include "base/prefs/pref_service.h"
-#include "base/prefs/pref_service_factory.h"
+
+#include "components/prefs/json_pref_store.h"
+#include "components/prefs/pref_registry_simple.h"
+#include "components/prefs/pref_service.h"
+#include "components/prefs/pref_service_factory.h"
+
 #include "base/strings/string_util.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/resource_context.h"
@@ -112,7 +114,7 @@ BrowserContext::BrowserContext(const std::string& partition, bool in_memory)
 
 void BrowserContext::InitPrefs() {
   auto prefs_path = GetPath().Append(FILE_PATH_LITERAL("Preferences"));
-  base::PrefServiceFactory prefs_factory;
+  PrefServiceFactory prefs_factory;
   prefs_factory.SetUserPrefsFile(prefs_path,
       JsonPrefStore::GetTaskRunnerForFile(
           prefs_path, BrowserThread::GetBlockingPool()).get());
