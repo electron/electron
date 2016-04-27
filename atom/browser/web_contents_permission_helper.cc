@@ -60,7 +60,7 @@ void WebContentsPermissionHelper::RequestPermission(
       web_contents_->GetBrowserContext()->GetPermissionManager());
   auto origin = web_contents_->GetLastCommittedURL();
   permission_manager->RequestPermission(
-      permission, rfh, origin, user_gesture,
+      permission, rfh, origin,
       base::Bind(&OnPermissionResponse, callback));
 }
 
