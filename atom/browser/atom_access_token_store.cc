@@ -32,7 +32,7 @@ AtomAccessTokenStore::~AtomAccessTokenStore() {
 }
 
 void AtomAccessTokenStore::LoadAccessTokens(
-    const LoadAccessTokensCallbackType& callback) {
+    const LoadAccessTokensCallback& callback) {
   AccessTokenSet access_token_set;
 
   // Equivelent to access_token_set[kGeolocationProviderURL].
