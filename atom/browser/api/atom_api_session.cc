@@ -315,7 +315,7 @@ void Session::OnDownloadCreated(content::DownloadManager* manager,
   bool prevent_default = Emit(
       "will-download",
       DownloadItem::Create(isolate(), item),
-      api::WebContents::CreateFrom(isolate(), web_contents));
+      web_contents);
   if (prevent_default) {
     item->Cancel(true);
     item->Remove();
