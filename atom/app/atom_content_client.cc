@@ -92,7 +92,6 @@ content::PepperPluginInfo CreateWidevineCdmInfo(const base::FilePath& path,
   codecs.push_back(kCdmSupportedCodecVp8);
   codecs.push_back(kCdmSupportedCodecVp9);
 #if defined(USE_PROPRIETARY_CODECS)
-  codecs.push_back(kCdmSupportedCodecAac);
   codecs.push_back(kCdmSupportedCodecAvc1);
 #endif  // defined(USE_PROPRIETARY_CODECS)
   std::string codec_string = base::JoinString(
