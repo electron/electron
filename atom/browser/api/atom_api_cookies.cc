@@ -133,12 +133,11 @@ void GetCookiesOnIO(scoped_refptr<net::URLRequestContextGetter> getter,
   auto filtered_callback =
       base::Bind(FilterCookies, base::Passed(&filter), callback);
 
-  net::CookieMonster* monster = GetCookieStore(getter)->GetCookieMonster();
   // Empty url will match all url cookies.
   if (url.empty())
-    monster->GetAllCookiesAsync(filtered_callback);
+    GetCookieStore(getter)->GetAllCookiesAsync(filtered_callback);
   else
-    monster->GetAllCookiesForURLAsync(GURL(url), filtered_callback);
+    GetCookieStore(getter)->GetAllCookiesForURLAsync(GURL(url), filtered_callback);
 }
 
 // Removes cookie with |url| and |name| in IO thread.
@@ -162,7 +161,9 @@ void SetCookieOnIO(scoped_refptr<net::URLRequestContextGetter> getter,
   std::string url, name, value, domain, path;
   bool secure = false;
   bool http_only = false;
+  double creation_date;
   double expiration_date;
+  double last_access_date;
   details->GetString("url", &url);
   details->GetString("name", &name);
   details->GetString("value", &value);
@@ -171,6 +172,13 @@ void SetCookieOnIO(scoped_refptr<net::URLRequestContextGetter> getter,
   details->GetBoolean("secure", &secure);
   details->GetBoolean("httpOnly", &http_only);
 
+  base::Time creation_time;
+  if (details->GetDouble("creationDate", &creation_date)) {
+    creation_time = (creation_date == 0) ?
+        base::Time::UnixEpoch() :
+        base::Time::FromDoubleT(creation_date);
+  }
+
   base::Time expiration_time;
   if (details->GetDouble("expirationDate", &expiration_date)) {
     expiration_time = (expiration_date == 0) ?
@@ -178,9 +186,17 @@ void SetCookieOnIO(scoped_refptr<net::URLRequestContextGetter> getter,
         base::Time::FromDoubleT(expiration_date);
   }
 
-  GetCookieStore(getter)->GetCookieMonster()->SetCookieWithDetailsAsync(
-      GURL(url), name, value, domain, path, expiration_time, secure, http_only,
-      false, false, false, net::COOKIE_PRIORITY_DEFAULT,
+  base::Time last_access_time;
+  if (details->GetDouble("lastAccessDate", &last_access_date)) {
+    last_access_time = (last_access_date == 0) ?
+        base::Time::UnixEpoch() :
+        base::Time::FromDoubleT(last_access_date);
+  }
+
+  GetCookieStore(getter)->SetCookieWithDetailsAsync(
+      GURL(url), name, value, domain, path, creation_time,
+      expiration_time, last_access_time, secure, http_only,
+      false, false, net::COOKIE_PRIORITY_DEFAULT,
       base::Bind(OnSetCookie, callback));
 }
 
