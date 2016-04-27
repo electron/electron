@@ -717,6 +717,9 @@ ProcessSingleton::ProcessSingleton(
     const NotificationCallback& notification_callback)
     : notification_callback_(notification_callback),
       current_pid_(base::GetCurrentProcId()) {
+  // The user_data_dir may have not been created yet.
+  base::CreateDirectoryAndGetError(user_data_dir, nullptr);
+
   socket_path_ = user_data_dir.Append(kSingletonSocketFilename);
   lock_path_ = user_data_dir.Append(kSingletonLockFilename);
   cookie_path_ = user_data_dir.Append(kSingletonCookieFilename);
