@@ -35,7 +35,7 @@ void OnPointerLockResponse(content::WebContents* web_contents, bool allowed) {
 
 void OnPermissionResponse(const base::Callback<void(bool)>& callback,
                           content::PermissionStatus status) {
-  if (status == content::PERMISSION_STATUS_GRANTED)
+  if (status == content::PermissionStatus::GRANTED)
     callback.Run(true);
   else
     callback.Run(false);
