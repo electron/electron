@@ -100,7 +100,7 @@ void ToDictionary(base::DictionaryValue* details,
     return;
 
   scoped_ptr<base::DictionaryValue> dict(new base::DictionaryValue);
-  void* iter = nullptr;
+  size_t iter = 0;
   std::string key;
   std::string value;
   while (headers->EnumerateHeaderLines(&iter, &key, &value)) {
