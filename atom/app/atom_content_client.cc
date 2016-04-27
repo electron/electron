@@ -181,6 +181,7 @@ base::string16 AtomContentClient::GetLocalizedString(int message_id) const {
 
 void AtomContentClient::AddAdditionalSchemes(
     std::vector<url::SchemeWithType>* standard_schemes,
+    std::vector<url::SchemeWithType>* referrer_schemes,
     std::vector<std::string>* savable_schemes) {
   standard_schemes->push_back({"chrome-extension", url::SCHEME_WITHOUT_PORT});
 }
