@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "net/base/network_delegate.h"
+#include "net/proxy/proxy_server.h"
 
 namespace brightray {
 
@@ -21,11 +22,6 @@ class NetworkDelegate : public net::NetworkDelegate {
   int OnBeforeURLRequest(net::URLRequest* request,
                          const net::CompletionCallback& callback,
                          GURL* new_url) override;
-  void OnResolveProxy(const GURL& url,
-                      int load_flags,
-                      const net::ProxyService& proxy_service,
-                      net::ProxyInfo* result) override;
-  void OnProxyFallback(const net::ProxyServer& bad_proxy, int net_error) override;
   int OnBeforeSendHeaders(net::URLRequest* request,
                           const net::CompletionCallback& callback,
                           net::HttpRequestHeaders* headers) override;
