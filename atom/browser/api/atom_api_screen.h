@@ -47,7 +47,6 @@ class Screen : public mate::EventEmitter<Screen>,
 
  private:
   gfx::Screen* screen_;
-  std::vector<gfx::Display> displays_;
 
   DISALLOW_COPY_AND_ASSIGN(Screen);
 };
