@@ -137,7 +137,8 @@ void GetCookiesOnIO(scoped_refptr<net::URLRequestContextGetter> getter,
   if (url.empty())
     GetCookieStore(getter)->GetAllCookiesAsync(filtered_callback);
   else
-    GetCookieStore(getter)->GetAllCookiesForURLAsync(GURL(url), filtered_callback);
+    GetCookieStore(getter)->GetAllCookiesForURLAsync(GURL(url),
+        filtered_callback);
 }
 
 // Removes cookie with |url| and |name| in IO thread.
