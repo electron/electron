@@ -21,7 +21,7 @@ describe('deprecations', function () {
 
   it('throws an exception if no deprecation handler is specified', function () {
     assert.throws(function () {
-      require('electron').webFrame.registerUrlSchemeAsPrivileged('some-scheme')
-    }, 'registerUrlSchemeAsPrivileged is deprecated. Use registerURLSchemeAsPrivileged instead.')
+      require('electron').deprecate.log('this is deprecated')
+    }, /this is deprecated/)
   })
 })
