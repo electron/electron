@@ -448,6 +448,20 @@ In the browser window some HTML APIs like `requestFullScreen` can only be
 invoked by a gesture from the user. Setting `userGesture` to `true` will remove
 this limitation.
 
+```javascript
+// In the main process.
+var window = null;
+app.on('ready', function() {
+  window = new BrowserWindow({width: 800, height: 600});
+  window.loadURL('file://' + __dirname + '/index.html');
+  window.webContents.on('did-finish-load', function() {
+    window.webContents.executeJavaScript('10+2', function(answer) {
+      console.log(answer); // 12
+    });
+  });
+});
+```
+
 ### `webContents.setAudioMuted(muted)`
 
 * `muted` Boolean
