@@ -89,7 +89,6 @@ void DesktopCapturer::OnSourceThumbnailChanged(int index) {
 
 bool DesktopCapturer::OnRefreshFinished() {
   Emit("finished", media_list_->GetSources());
-  media_list_.reset();
   return false;
 }
 

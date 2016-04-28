@@ -24,4 +24,16 @@ describe('desktopCapturer', function () {
     desktopCapturer.getSources({types: ['window', 'screen']}, callback)
     desktopCapturer.getSources({types: ['window', 'screen']}, callback)
   })
+
+  it('responds to subsequest calls of different options', function (done) {
+    var callCount = 0
+    var callback = function (error, sources) {
+      callCount++
+      assert.equal(error, null)
+      if (callCount === 2) done()
+    }
+
+    desktopCapturer.getSources({types: ['window']}, callback)
+    desktopCapturer.getSources({types: ['screen']}, callback)
+  })
 })
