@@ -68,7 +68,7 @@ of argument is notated by either the common types:
 [`Number`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number),
 [`Object`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object),
 [`Array`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array)
-or a custom type like Electron's [`webContent`](api/web-content.md).
+or a custom type like Electron's [`webContent`](https://github.com/electron/electron/tree/master/docs/api/web-content.md).
 
 ### Events
 
