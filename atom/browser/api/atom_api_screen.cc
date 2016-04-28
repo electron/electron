@@ -49,7 +49,6 @@ std::vector<std::string> MetricsToArray(uint32_t metrics) {
 
 Screen::Screen(v8::Isolate* isolate, gfx::Screen* screen)
     : screen_(screen) {
-  displays_ = screen_->GetAllDisplays();
   screen_->AddObserver(this);
   Init(isolate);
 }
@@ -67,7 +66,7 @@ gfx::Display Screen::GetPrimaryDisplay() {
 }
 
 std::vector<gfx::Display> Screen::GetAllDisplays() {
-  return displays_;
+  return screen_->GetAllDisplays();
 }
 
 gfx::Display Screen::GetDisplayNearestPoint(const gfx::Point& point) {
@@ -79,26 +78,15 @@ gfx::Display Screen::GetDisplayMatching(const gfx::Rect& match_rect) {
 }
 
 void Screen::OnDisplayAdded(const gfx::Display& new_display) {
-  displays_.push_back(new_display);
   Emit("display-added", new_display);
 }
 
 void Screen::OnDisplayRemoved(const gfx::Display& old_display) {
-  auto iter = FindById(&displays_, old_display.id());
-  if (iter == displays_.end())
-    return;
-
-  displays_.erase(iter);
   Emit("display-removed", old_display);
 }
 
 void Screen::OnDisplayMetricsChanged(const gfx::Display& display,
                                      uint32_t changed_metrics) {
-  auto iter = FindById(&displays_, display.id());
-  if (iter == displays_.end())
-    return;
-
-  *iter = display;
   Emit("display-metrics-changed", display, MetricsToArray(changed_metrics));
 }
 
