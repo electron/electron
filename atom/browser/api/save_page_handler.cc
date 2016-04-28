@@ -73,11 +73,6 @@ void SavePageHandler::Destroy(content::DownloadItem* item) {
   delete this;
 }
 
-// static
-bool SavePageHandler::IsSavePageTypes(const std::string& type) {
-  return type == "multipart/related" || type == "text/html";
-}
-
 }  // namespace api
 
 }  // namespace atom
