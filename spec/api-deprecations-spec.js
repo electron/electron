@@ -14,9 +14,9 @@ describe('deprecations', function () {
       messages.push(message)
     })
 
-    require('electron').webFrame.registerUrlSchemeAsSecure('some-scheme')
+    require('electron').deprecate.log('this is deprecated')
 
-    assert.deepEqual(messages, ['registerUrlSchemeAsSecure is deprecated. Use registerURLSchemeAsSecure instead.'])
+    assert.deepEqual(messages, ['this is deprecated'])
   })
 
   it('throws an exception if no deprecation handler is specified', function () {
