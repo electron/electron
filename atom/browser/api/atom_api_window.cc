@@ -61,52 +61,6 @@ void OnCapturePageDone(
   callback.Run(gfx::Image::CreateFrom1xBitmap(bitmap));
 }
 
-// Converts min-width to minWidth, returns false if no conversion is needed.
-bool TranslateOldKey(const std::string& key, std::string* new_key) {
-  if (key.find('-') == std::string::npos)
-    return false;
-  new_key->reserve(key.size());
-  bool next_upper_case = false;
-  for (char c : key) {
-    if (c == '-') {
-      next_upper_case = true;
-    } else if (next_upper_case) {
-      new_key->push_back(base::ToUpperASCII(c));
-      next_upper_case = false;
-    } else {
-      new_key->push_back(c);
-    }
-  }
-  return true;
-}
-
-// Converts min-width to minWidth recursively in the dictionary.
-void TranslateOldOptions(v8::Isolate* isolate, v8::Local<v8::Object> options) {
-  auto context = isolate->GetCurrentContext();
-  auto maybe_keys = options->GetOwnPropertyNames(context);
-  if (maybe_keys.IsEmpty())
-    return;
-  std::vector<std::string> keys;
-  if (!mate::ConvertFromV8(isolate, maybe_keys.ToLocalChecked(), &keys))
-    return;
-  mate::Dictionary dict(isolate, options);
-  for (const auto& key : keys) {
-    v8::Local<v8::Value> value;
-    if (!dict.Get(key, &value))  // Shouldn't happen, but guard it anyway.
-      continue;
-    // Go recursively.
-    v8::Local<v8::Object> sub_options;
-    if (mate::ConvertFromV8(isolate, value, &sub_options))
-      TranslateOldOptions(isolate, sub_options);
-    // Translate key.
-    std::string new_key;
-    if (TranslateOldKey(key, &new_key)) {
-      dict.Set(new_key, value);
-      dict.Delete(key);
-    }
-  }
-}
-
 // Converts binary data to Buffer.
 v8::Local<v8::Value> ToBuffer(v8::Isolate* isolate, void* val, int size) {
   auto buffer = node::Buffer::Copy(isolate, static_cast<char*>(val), size);
@@ -120,9 +74,6 @@ v8::Local<v8::Value> ToBuffer(v8::Isolate* isolate, void* val, int size) {
 
 
 Window::Window(v8::Isolate* isolate, const mate::Dictionary& options) {
-  // Be compatible with old style field names like min-width.
-  TranslateOldOptions(isolate, options.GetHandle());
-
   // Use options.webPreferences to create WebContents.
   mate::Dictionary web_preferences = mate::Dictionary::CreateEmpty(isolate);
   options.Get(options::kWebPreferences, &web_preferences);
