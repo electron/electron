@@ -870,6 +870,14 @@ describe('browser-window module', function () {
       })
       w.loadURL(server.url)
     })
+
+    it('executes after page load', function (done) {
+      w.webContents.executeJavaScript(code, function(result) {
+        assert.equal(result, expected)
+        done()
+      })
+      w.loadURL(server.url)
+    })
   })
 
   describe('deprecated options', function () {
