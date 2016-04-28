@@ -75,18 +75,18 @@ describe('crash-reporter module', function () {
     })
   })
 
-  describe('.start(options)', function () {
+  describe.only('.start(options)', function () {
     it('requires that the companyName and submitURL options be specified', function () {
       assert.throws(function () {
         crashReporter.start({
           companyName: 'Missing submitURL'
         })
-      })
+      }, /submitURL is a required option to crashReporter\.start/)
       assert.throws(function () {
         crashReporter.start({
           submitURL: 'Missing companyName'
         })
-      })
+      }, /companyName is a required option to crashReporter\.start/)
     })
   })
 })
