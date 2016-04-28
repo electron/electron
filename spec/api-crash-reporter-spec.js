@@ -75,7 +75,7 @@ describe('crash-reporter module', function () {
     })
   })
 
-  describe.only('.start(options)', function () {
+  describe('.start(options)', function () {
     it('requires that the companyName and submitURL options be specified', function () {
       assert.throws(function () {
         crashReporter.start({
