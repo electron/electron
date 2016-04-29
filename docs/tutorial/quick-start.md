@@ -147,8 +147,11 @@ working as expected.
 
 ### electron-prebuilt
 
-If you've installed `electron-prebuilt` globally with `npm`, then you will only
-need to run the following in your app's source directory:
+[`electron-prebuilt`](https://github.com/electron-userland/electron-prebuilt) is
+an `npm` module that contains pre-compiled versions of Electron.
+
+If you've installed it globally with `npm`, then you will only need to run the
+following in your app's source directory:
 
 ```bash
 electron .
