@@ -4,6 +4,8 @@
 
 #include "chrome/browser/renderer_host/pepper/pepper_flash_clipboard_message_filter.h"
 
+#include <stddef.h>
+
 #include "base/pickle.h"
 #include "base/strings/utf_string_conversions.h"
 #include "content/public/browser/browser_thread.h"
@@ -48,10 +50,10 @@ ui::ClipboardType ConvertClipboardType(uint32_t type) {
 // clipboard interface for custom data.
 bool JumpToFormatInPickle(const base::string16& format,
                           base::PickleIterator* iter) {
-  size_t size = 0;
-  if (!iter->ReadSizeT(&size))
+  uint32_t size = 0;
+  if (!iter->ReadUInt32(&size))
     return false;
-  for (size_t i = 0; i < size; ++i) {
+  for (uint32_t i = 0; i < size; ++i) {
     base::string16 stored_format;
     if (!iter->ReadString16(&stored_format))
       return false;
@@ -83,7 +85,7 @@ std::string ReadDataFromPickle(const base::string16& format,
 
 bool WriteDataToPickle(const std::map<base::string16, std::string>& data,
                        base::Pickle* pickle) {
-  pickle->WriteSizeT(data.size());
+  pickle->WriteUInt32(data.size());
   for (std::map<base::string16, std::string>::const_iterator it = data.begin();
        it != data.end();
        ++it) {
