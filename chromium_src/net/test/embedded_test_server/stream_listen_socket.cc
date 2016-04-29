@@ -27,7 +27,7 @@
 #include "build/build_config.h"
 #include "net/base/ip_endpoint.h"
 #include "net/base/net_errors.h"
-#include "net/base/net_util.h"
+#include "net/base/network_interfaces.h"
 #include "net/base/sockaddr_storage.h"
 #include "net/socket/socket_descriptor.h"
 

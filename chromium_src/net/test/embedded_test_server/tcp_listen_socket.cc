@@ -22,7 +22,7 @@
 #include "base/sys_byteorder.h"
 #include "base/threading/platform_thread.h"
 #include "build/build_config.h"
-#include "net/base/net_util.h"
+#include "net/base/network_interfaces.h"
 #include "net/base/winsock_init.h"
 #include "net/socket/socket_descriptor.h"
 
