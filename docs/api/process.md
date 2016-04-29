@@ -7,8 +7,8 @@ upstream node:
 
 * `process.type` String - Process's type, can be `browser` (i.e. main process)
   or `renderer`.
-* `process.versions['electron']` String - Version of Electron.
-* `process.versions['chrome']` String - Version of Chromium.
+* `process.versions.electron` String - Version of Electron.
+* `process.versions.chrome` String - Version of Chromium.
 * `process.resourcesPath` String - Path to JavaScript source code.
 * `process.mas` Boolean - For Mac App Store build, this value is `true`, for
   other builds it is `undefined`.
