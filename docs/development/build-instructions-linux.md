@@ -41,7 +41,7 @@ device container of at least 25 gigabytes in size.
 ## Getting the Code
 
 ```bash
-$ git clone https://github.com/atom/electron.git
+$ git clone https://github.com/electron/electron.git
 ```
 
 ## Bootstrapping

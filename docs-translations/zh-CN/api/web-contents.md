@@ -30,6 +30,7 @@ var webContents = win.webContents;
 * `errorCode` Integer
 * `errorDescription` String
 * `validatedURL` String
+* `isMainFrame` Boolean
 
 这个事件类似 `did-finish-load` ，但是是在加载失败或取消加载时发出, 例如， `window.stop()` 请求结束.错误代码的完整列表和它们的含义都可以在 [here](https://code.google.com/p/chromium/codesearch#chromium/src/net/base/net_error_list.h) 找到.
 
@@ -62,6 +63,7 @@ var webContents = win.webContents;
 * `requestMethod` String
 * `referrer` String
 * `headers` Object
+* `resourceType` String
 
 当有关请求资源的详细信息可用的时候发出事件.
 `status` 标识了 socket链接来下载资源.

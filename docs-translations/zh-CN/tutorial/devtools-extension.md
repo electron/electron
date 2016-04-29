@@ -4,7 +4,7 @@
 
 对于大多数DevTools的扩展，你可以直接下载源码，然后通过 `BrowserWindow.addDevToolsExtension` API 加载它们。Electron会记住已经加载了哪些扩展，所以你不需要每次创建一个新window时都调用 `BrowserWindow.addDevToolsExtension` API。
 
-** 注：React DevTools目前不能直接工作，详情留意 [https://github.com/atom/electron/issues/915](https://github.com/atom/electron/issues/915) **
+** 注：React DevTools目前不能直接工作，详情留意 [https://github.com/electron/electron/issues/915](https://github.com/electron/electron/issues/915) **
 
 例如，要用[React DevTools Extension](https://github.com/facebook/react-devtools)，你得先下载他的源码：
 

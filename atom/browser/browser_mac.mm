@@ -27,11 +27,6 @@ void Browser::Show() {
   [[AtomApplication sharedApplication] unhide:nil];
 }
 
-bool Browser::IsDarkMode() {
-  NSString *mode = [[NSUserDefaults standardUserDefaults] stringForKey:@"AppleInterfaceStyle"];
-  return [mode isEqualToString: @"Dark"];
-}
-
 void Browser::AddRecentDocument(const base::FilePath& path) {
   NSString* path_string = base::mac::FilePathToNSString(path);
   if (!path_string)
@@ -63,6 +58,30 @@ bool Browser::SetAsDefaultProtocolClient(const std::string& protocol) {
       LSSetDefaultHandlerForURLScheme(base::mac::NSToCFCast(protocol_ns),
                                       base::mac::NSToCFCast(identifier));
   return return_code == noErr;
+}
+
+bool Browser::IsDefaultProtocolClient(const std::string& protocol) {
+  if (protocol.empty())
+    return false;
+
+  NSString* identifier = [base::mac::MainBundle() bundleIdentifier];
+  if (!identifier)
+    return false;
+
+  NSString* protocol_ns = [NSString stringWithUTF8String:protocol.c_str()];
+  
+  CFStringRef bundle =
+      LSCopyDefaultHandlerForURLScheme(base::mac::NSToCFCast(protocol_ns));
+  NSString* bundleId = static_cast<NSString*>(
+      base::mac::CFTypeRefToNSObjectAutorelease(bundle));
+  if (!bundleId)
+    return false;
+
+  // Ensure the comparison is case-insensitive 
+  // as LS does not persist the case of the bundle id.
+  NSComparisonResult result =
+      [bundleId caseInsensitiveCompare:identifier];
+  return result == NSOrderedSame;
 }
 
 void Browser::SetAppUserModelID(const base::string16& name) {

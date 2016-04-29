@@ -6,9 +6,11 @@
 
 #include <string>
 
+#include "atom/common/color_util.h"
 #include "atom/common/draggable_region.h"
 #include "atom/common/options_switches.h"
 #include "base/mac/mac_util.h"
+#include "base/mac/scoped_cftyperef.h"
 #include "base/strings/sys_string_conversions.h"
 #include "brightray/browser/inspectable_web_contents.h"
 #include "brightray/browser/inspectable_web_contents_view.h"
@@ -18,6 +20,7 @@
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/render_widget_host_view.h"
 #include "native_mate/dictionary.h"
+#include "skia/ext/skia_utils_mac.h"
 #include "ui/gfx/skia_util.h"
 
 namespace {
@@ -238,6 +241,13 @@ bool ScopedDisableResize::disable_resize_ = false;
   // fisrt, and when the web page is closed the window will also be closed.
   shell_->RequestToClosePage();
   return NO;
+}
+
+- (NSRect)window:(NSWindow*)window
+    willPositionSheet:(NSWindow*)sheet usingRect:(NSRect)rect {
+  NSView* view = window.contentView;
+  rect.origin.y = view.frame.size.height - shell_->GetSheetOffset();
+  return rect;
 }
 
 @end
@@ -592,10 +602,16 @@ bool NativeWindowMac::IsVisible() {
 }
 
 void NativeWindowMac::Maximize() {
+  if (IsMaximized())
+    return;
+
   [window_ zoom:nil];
 }
 
 void NativeWindowMac::Unmaximize() {
+  if (!IsMaximized())
+    return;
+
   [window_ zoom:nil];
 }
 
@@ -804,12 +820,14 @@ bool NativeWindowMac::IsKiosk() {
 }
 
 void NativeWindowMac::SetBackgroundColor(const std::string& color_name) {
-  SkColor background_color = NativeWindow::ParseHexColor(color_name);
-  NSColor *color = [NSColor colorWithCalibratedRed:SkColorGetR(background_color)
-    green:SkColorGetG(background_color)
-    blue:SkColorGetB(background_color)
-    alpha:SkColorGetA(background_color)/255.0f];
-  [window_ setBackgroundColor:color];
+  SkColor color = ParseHexColor(color_name);
+  base::ScopedCFTypeRef<CGColorRef> cgcolor =
+      skia::CGColorCreateFromSkColor(color);
+  [[[window_ contentView] layer] setBackgroundColor:cgcolor];
+
+  const auto view = web_contents()->GetRenderWidgetHostView();
+  if (view)
+    view->SetBackgroundColor(color);
 }
 
 void NativeWindowMac::SetHasShadow(bool has_shadow) {

@@ -1,8 +1,9 @@
 # webContents
 
+> Render and control web pages.
+
 `webContents` is an
 [EventEmitter](http://nodejs.org/api/events.html#events_class_events_eventemitter).
-
 It is responsible for rendering and controlling a web page and is a property of
 the [`BrowserWindow`](browser-window.md) object. An example of accessing the
 `webContents` object:
@@ -33,6 +34,7 @@ Returns:
 * `errorCode` Integer
 * `errorDescription` String
 * `validatedURL` String
+* `isMainFrame` Boolean
 
 This event is like `did-finish-load` but emitted when the load failed or was
 cancelled, e.g. `window.stop()` is invoked.
@@ -67,6 +69,7 @@ Returns:
 * `requestMethod` String
 * `referrer` String
 * `headers` Object
+* `resourceType` String
 
 Emitted when details regarding a requested resource are available.
 `status` indicates the socket connection to download the resource.
@@ -276,7 +279,8 @@ Emitted when media is paused or done playing.
 
 ### Event: 'did-change-theme-color'
 
-Emitted when a page's theme color changes. This is usually due to encountering a meta tag:
+Emitted when a page's theme color changes. This is usually due to encountering
+a meta tag:
 
 ```html
 <meta name='theme-color' content='#ff0000'>
@@ -350,6 +354,11 @@ Returns the title of the current web page.
 ### `webContents.isLoading()`
 
 Returns whether web page is still loading resources.
+
+### `webContents.isLoadingMainFrame()`
+
+Returns whether the main frame (and not just iframes or frames within it) is
+still loading.
 
 ### `webContents.isWaitingForResponse()`
 
@@ -519,9 +528,10 @@ Inserts `text` to the focused element.
     uppercase letter followed by a lowercase or non-letter.
     Accepts several other intra-word matches, defaults to `false`.
 
-Starts a request to find all matches for the `text` in the web page and returns an `Integer`
-representing the request id used for the request. The result of the request can be
-obtained by subscribing to [`found-in-page`](web-contents.md#event-found-in-page) event.
+Starts a request to find all matches for the `text` in the web page and returns
+an `Integer` representing the request id used for the request. The result of
+the request can be obtained by subscribing to
+[`found-in-page`](web-contents.md#event-found-in-page) event.
 
 ### `webContents.stopFindInPage(action)`
 
@@ -645,7 +655,8 @@ Removes the specified path from DevTools workspace.
 ### `webContents.openDevTools([options])`
 
 * `options` Object (optional)
-  * `detach` Boolean - opens DevTools in a new window
+  * `mode` String - Opens the devtools with specified dock state, can be one of
+    "right", "bottom", "undocked", "detach". Defaults to last used dock state.
 
 Opens the devtools.
 

@@ -54,6 +54,7 @@ NativeWindow::NativeWindow(
       enable_larger_than_screen_(false),
       is_closed_(false),
       has_dialog_attached_(false),
+      sheet_offset_(0.0),
       aspect_ratio_(0.0),
       inspectable_web_contents_(inspectable_web_contents),
       weak_factory_(this) {
@@ -162,6 +163,9 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
   std::string color;
   if (options.Get(options::kBackgroundColor, &color)) {
     SetBackgroundColor(color);
+  } else if (!transparent()) {
+    // For normal window, use white as default background.
+    SetBackgroundColor("#FFFF");
   }
   std::string title("Electron");
   options.Get(options::kTitle, &title);
@@ -249,6 +253,14 @@ void NativeWindow::SetMaximumSize(const gfx::Size& size) {
 
 gfx::Size NativeWindow::GetMaximumSize() {
   return GetSizeConstraints().GetMaximumSize();
+}
+
+void NativeWindow::SetSheetOffset(const double offset) {
+  sheet_offset_ = offset;
+}
+
+double NativeWindow::GetSheetOffset() {
+  return sheet_offset_;
 }
 
 void NativeWindow::SetRepresentedFilename(const std::string& filename) {
@@ -592,29 +604,6 @@ void NativeWindow::OnCapturePageDone(const CapturePageCallback& callback,
                                      const SkBitmap& bitmap,
                                      content::ReadbackResponse response) {
   callback.Run(bitmap);
-}
-
-SkColor NativeWindow::ParseHexColor(const std::string& name) {
-  auto color = name.substr(1);
-  unsigned length = color.size();
-  SkColor result = (length != 8 ? 0xFF000000 : 0x00000000);
-  unsigned value = 0;
-  if (length != 3 && length != 6 && length != 8)
-    return result;
-  for (unsigned i = 0; i < length; ++i) {
-    if (!base::IsHexDigit(color[i]))
-      return result;
-    value <<= 4;
-    value |= (color[i] < 'A' ? color[i] - '0' : (color[i] - 'A' + 10) & 0xF);
-  }
-  if (length == 6 || length == 8) {
-    result |= value;
-    return result;
-  }
-  result |= (value & 0xF00) << 12 | (value & 0xF00) << 8
-      | (value & 0xF0) << 8 | (value & 0xF0) << 4
-      | (value & 0xF) << 4 | (value & 0xF);
-  return result;
 }
 
 }  // namespace atom

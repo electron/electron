@@ -14,9 +14,9 @@ const app = electron.app;
 const globalShortcut = electron.globalShortcut;
 
 app.on('ready', function() {
-  // 'ctrl+x' 단축키를 리스너에 등록합니다.
-  var ret = globalShortcut.register('ctrl+x', function() {
-    console.log('ctrl+x is pressed');
+  // 'CommandOrControl+X' 단축키를 리스너에 등록합니다.
+  var ret = globalShortcut.register('CommandOrControl+X', function() {
+    console.log('CommandOrControl+X is pressed');
   });
 
   if (!ret) {
@@ -24,12 +24,12 @@ app.on('ready', function() {
   }
 
   // 단축키가 등록되었는지 확인합니다.
-  console.log(globalShortcut.isRegistered('ctrl+x'));
+  console.log(globalShortcut.isRegistered('CommandOrControl+X'));
 });
 
 app.on('will-quit', function() {
   // 단축키의 등록을 해제합니다.
-  globalShortcut.unregister('ctrl+x');
+  globalShortcut.unregister('CommandOrControl+X');
 
   // 모든 단축키의 등록을 해제합니다.
   globalShortcut.unregisterAll();

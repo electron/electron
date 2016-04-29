@@ -196,6 +196,11 @@ describe('node feature', function () {
       assert.equal(b.toString(), 'Jøhänñéß')
       assert.equal(Buffer.byteLength(p.innerText), 13)
     })
+
+    it('does not crash when creating large Buffers', function () {
+      new Buffer(new Array(4096).join(' '));
+      new Buffer(new Array(4097).join(' '));
+    })
   })
 
   describe('process.stdout', function () {
@@ -209,6 +214,12 @@ describe('node feature', function () {
 
     xit('should have isTTY defined', function () {
       assert.equal(typeof process.stdout.isTTY, 'boolean')
+    })
+  })
+
+  describe('process.version', function () {
+    it('should not have -pre', function () {
+      assert(!process.version.endsWith('-pre'))
     })
   })
 

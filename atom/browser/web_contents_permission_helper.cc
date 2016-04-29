@@ -91,4 +91,12 @@ void WebContentsPermissionHelper::RequestPointerLockPermission(
                     user_gesture);
 }
 
+void WebContentsPermissionHelper::RequestOpenExternalPermission(
+    const base::Callback<void(bool)>& callback,
+    bool user_gesture) {
+  RequestPermission((content::PermissionType)(PermissionType::OPEN_EXTERNAL),
+                    callback,
+                    user_gesture);
+}
+
 }  // namespace atom

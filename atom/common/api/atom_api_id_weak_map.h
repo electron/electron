@@ -13,15 +13,15 @@ namespace atom {
 
 namespace api {
 
-class IDWeakMap : public mate::Wrappable {
+class IDWeakMap : public mate::Wrappable<IDWeakMap> {
  public:
-  static mate::Wrappable* Create(v8::Isolate* isolate);
+  static mate::WrappableBase* Create(v8::Isolate* isolate);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::ObjectTemplate> prototype);
 
  protected:
-  IDWeakMap();
+  explicit IDWeakMap(v8::Isolate* isolate);
   ~IDWeakMap();
 
  private:

@@ -15,6 +15,7 @@ exports.load = function (appUrl) {
       width: 800,
       height: 600,
       autoHideMenuBar: true,
+      backgroundColor: '#FFFFFF',
       useContentSize: true
     })
     mainWindow.loadURL(appUrl)

@@ -1,4 +1,4 @@
-# Synopsis
+# Sinopsis
 
 Todos los [Módulos integrados de Node.js](http://nodejs.org/api/) se encuentran
 disponibles en Electron y módulos de terceros son támbien totalmente compatibles

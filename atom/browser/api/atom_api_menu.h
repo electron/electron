@@ -20,7 +20,7 @@ namespace api {
 class Menu : public mate::TrackableObject<Menu>,
              public AtomMenuModel::Delegate {
  public:
-  static mate::Wrappable* Create();
+  static mate::WrappableBase* Create(v8::Isolate* isolate);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::ObjectTemplate> prototype);
@@ -36,7 +36,7 @@ class Menu : public mate::TrackableObject<Menu>,
   AtomMenuModel* model() const { return model_.get(); }
 
  protected:
-  Menu();
+  explicit Menu(v8::Isolate* isolate);
   ~Menu() override;
 
   // mate::Wrappable:

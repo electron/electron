@@ -1,5 +1,7 @@
 # globalShortcut
 
+> Detect keyboard events when the application does not have keyboard focus.
+
 The `globalShortcut` module can register/unregister a global keyboard shortcut
 with the operating system so that you can customize the operations for various
 shortcuts.
@@ -14,9 +16,9 @@ const app = electron.app;
 const globalShortcut = electron.globalShortcut;
 
 app.on('ready', function() {
-  // Register a 'ctrl+x' shortcut listener.
-  var ret = globalShortcut.register('ctrl+x', function() {
-    console.log('ctrl+x is pressed');
+  // Register a 'CommandOrControl+X' shortcut listener.
+  var ret = globalShortcut.register('CommandOrControl+X', function() {
+    console.log('CommandOrControl+X is pressed');
   });
 
   if (!ret) {
@@ -24,12 +26,12 @@ app.on('ready', function() {
   }
 
   // Check whether a shortcut is registered.
-  console.log(globalShortcut.isRegistered('ctrl+x'));
+  console.log(globalShortcut.isRegistered('CommandOrControl+X'));
 });
 
 app.on('will-quit', function() {
   // Unregister a shortcut.
-  globalShortcut.unregister('ctrl+x');
+  globalShortcut.unregister('CommandOrControl+X');
 
   // Unregister all shortcuts.
   globalShortcut.unregisterAll();

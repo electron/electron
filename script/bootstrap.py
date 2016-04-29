@@ -168,7 +168,8 @@ def download_sysroot(target_arch):
     target_arch = 'i386'
   if target_arch == 'x64':
     target_arch = 'amd64'
-  execute_stdout([os.path.join(SOURCE_ROOT, 'script', 'install-sysroot.py'),
+  execute_stdout([sys.executable,
+                  os.path.join(SOURCE_ROOT, 'script', 'install-sysroot.py'),
                   '--arch', target_arch])
 
 def create_chrome_version_h():

@@ -8,7 +8,7 @@
 한가지 주의할 점은 확장 기능 사용시 창이 생성될 때 마다 일일이 해당 API를 호출할 필요는
 없습니다.
 
-**주의: 현재 React DevTools은 작동하지 않습니다. https://github.com/atom/electron/issues/915 이슈를 참고하세요!**
+**주의: 현재 React DevTools은 작동하지 않습니다. https://github.com/electron/electron/issues/915 이슈를 참고하세요!**
 
 다음 예제는 [React DevTools Extension](https://github.com/facebook/react-devtools)을
 사용합니다.

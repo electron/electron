@@ -293,9 +293,9 @@ myWindow.webContents.session.setCertificateVerifyProc(function(hostname, cert, c
 
 * `handler` Function
   * `webContents` Object - [WebContents](web-contents.md) 권한을 요청.
-  * `permission`  String - 'media', 'geolocation', 'notifications',
-    'midiSysex', 'pointerLock', 'fullscreen'의 나열.
-  * `callback`  Function - 권한 허용 및 거부.
+  * `permission` String - 'media', 'geolocation', 'notifications',
+    'midiSysex', 'pointerLock', 'fullscreen', 'openExternal'의 나열.
+  * `callback` Function - 권한 허용 및 거부.
 
 `session`의 권한 요청에 응답을 하는데 사용하는 핸들러를 설정합니다.
 `callback(true)`를 호출하면 권한 제공을 허용하고 `callback(false)`를
@@ -419,7 +419,7 @@ HTTP 요청을 보내기 전 요청 헤더를 사용할 수 있을 때 `listener
   * `timestamp` Double
   * `requestHeaders` Object
 
-#### `ses.webRequest.onHeadersReceived([filter,] listener)`
+#### `ses.webRequest.onHeadersReceived([filter, ]listener)`
 
 * `filter` Object
 * `listener` Function
@@ -444,6 +444,9 @@ HTTP 요청을 보내기 전 요청 헤더를 사용할 수 있을 때 `listener
   * `cancel` Boolean
   * `responseHeaders` Object (optional) - 이 속성이 제공되면 서버는 이 헤더와
     함께 응답합니다.
+  * `statusLine` String (optional) - `responseHeaders`를 덮어쓸 땐, 헤더의 상태를
+    변경하기 위해 반드시 지정되어야 합니다. 그렇지 않은 경우, 기존의 응답 헤더의 상태가
+    사용됩니다.
 
 #### `ses.webRequest.onResponseStarted([filter, ]listener)`
 

@@ -1,5 +1,7 @@
 # Synopsis
 
+> How to use Node.js and Electron APIs.
+
 All of [Node.js's built-in modules](http://nodejs.org/api/) are available in
 Electron and third-party node modules also fully supported as well (including
 the [native modules](../tutorial/using-native-node-modules.md)).
@@ -11,8 +13,8 @@ both processes.
 
 The basic rule is: if a module is [GUI][gui] or low-level system related, then
 it should be only available in the main process. You need to be familiar with
-the concept of [main process vs. renderer process](../tutorial/quick-start.md#the-main-process) scripts to be
-able to use those modules.
+the concept of [main process vs. renderer process](../tutorial/quick-start.md#the-main-process)
+scripts to be able to use those modules.
 
 The main process script is just like a normal Node.js script:
 
@@ -80,4 +82,4 @@ require('electron').hideInternalModules()
 
 [gui]: https://en.wikipedia.org/wiki/Graphical_user_interface
 [destructuring-assignment]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Destructuring_assignment
-[issue-387]: https://github.com/atom/electron/issues/387
+[issue-387]: https://github.com/electron/electron/issues/387

@@ -1,12 +1,14 @@
 # Accelerator
 
-An accelerator is a string that represents a keyboard shortcut. It can contain
-multiple modifiers and key codes, combined by the `+` character.
+> Define keyboard shortcuts.
+
+Accelerators can contain multiple modifiers and key codes, combined by
+the `+` character.
 
 Examples:
 
-* `Command+A`
-* `Ctrl+Shift+Z`
+* `CommandOrControl+A`
+* `CommandOrControl+Shift+Z`
 
 ## Platform notice
 

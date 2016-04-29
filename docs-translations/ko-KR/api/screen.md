@@ -1,12 +1,13 @@
 ﻿# screen
 
 `screen` 모듈은 화면 크기, 디스플레이, 커서 위치 등등의 다양한 정보를 가져옵니다.
-이 모듈은 `app` 모듈의 `ready` 이벤트가 발생하기 전까지 사용할 수 없습니다.
+이 모듈은 `app` 모듈의 `ready` 이벤트가 발생하기 전까지 사용할 수 없습니다. (호출 또는
+모듈 포함)
 
 `screen`은 [EventEmitter](http://nodejs.org/api/events.html#events_class_events_eventemitter)를
 상속 받았습니다.
 
-**참고:** 랜더러 / DevTools에선 이미 DOM 속성이 `window.screen`을 가지고 있으므로
+**참고:** 렌더러 / DevTools에선 이미 DOM 속성이 `window.screen`을 가지고 있으므로
 `screen = require('screen')` 형식으로 모듈을 사용할 수 없습니다. 아래의 예제와 같이
 `electronScreen` 같은 이름으로 모듈 이름을 대체하여 사용해야 합니다.
 

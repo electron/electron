@@ -31,7 +31,7 @@ process.once('loaded', function() {
 
 ### `process.noAsar`
 
-设置它为 `true` 可以使 `asar` 文件在node的内置模块中实效.
+设置它为 `true` 可以使 `asar` 文件在node的内置模块中失效.
 
 ## 方法
 

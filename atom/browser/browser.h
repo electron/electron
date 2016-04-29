@@ -82,15 +82,15 @@ class Browser : public WindowListObserver {
   // Set as default handler for a protocol.
   bool SetAsDefaultProtocolClient(const std::string& protocol);
 
+  // Query the current state of default handler for a protocol.
+  bool IsDefaultProtocolClient(const std::string& protocol);
+
 #if defined(OS_MACOSX)
   // Hide the application.
   void Hide();
 
   // Show the application.
   void Show();
-
-  // Check if the system is in Dark Mode.
-  bool IsDarkMode();
 
   // Bounce the dock icon.
   enum BounceType {
@@ -151,9 +151,6 @@ class Browser : public WindowListObserver {
   // Request basic auth login.
   void RequestLogin(LoginHandler* login_handler);
 
-  // Tell the application that plaform's theme changed.
-  void PlatformThemeChanged();
-
   void AddObserver(BrowserObserver* obs) {
     observers_.AddObserver(obs);
   }
@@ -189,10 +186,13 @@ class Browser : public WindowListObserver {
   // Observers of the browser.
   base::ObserverList<BrowserObserver> observers_;
 
+  // Whether `app.exit()` has been called
+  bool is_exiting_;
+
   // Whether "ready" event has been emitted.
   bool is_ready_;
 
-  // The browse is being shutdown.
+  // The browser is being shutdown.
   bool is_shutdown_;
 
   std::string version_override_;

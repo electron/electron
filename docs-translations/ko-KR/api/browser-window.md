@@ -8,7 +8,7 @@
 // 메인 프로세스에서
 const BrowserWindow = require('electron').BrowserWindow;
 
-// 또는 랜더러 프로세스에서
+// 또는 렌더러 프로세스에서
 const BrowserWindow = require('electron').remote.BrowserWindow;
 
 var win = new BrowserWindow({ width: 800, height: 600, show: false });
@@ -81,8 +81,7 @@ win.show();
 * `enableLargerThanScreen` Boolean - 윈도우 크기가 화면 크기보다 크게 재조정 될
   수 있는지 여부. 기본값은 `false`입니다.
 * `backgroundColor` String - `#66CD00` 와 `#FFF`, `#80FFFFFF` (알파 지원됨) 같이
-  16진수로 표현된 윈도우의 배경 색. 기본값은 Linux와 Windows에선 `#000` (검정)이며,
-  Mac에선 `#FFF` (또는, transparent(투명)일 경우 clear(색 없음)로 설정)
+  16진수로 표현된 윈도우의 배경 색. 기본값은 `#FFF` (white).
 * `hasShadow` Boolean - 윈도우가 그림자를 가질지 여부를 지정합니다. 이 속성은
   OS X에서만 구현되어 있습니다. 기본값은 `true`입니다.
 * `darkTheme` Boolean - 설정에 상관 없이 무조건 어두운 윈도우 테마를 사용합니다.
@@ -160,7 +159,7 @@ win.show();
   기본값은 `false`입니다.
 * `experimentalCanvasFeatures` Boolean - Chrome의 실험적인 캔버스(canvas) 기능을
   활성화합니다. 기본값은 `false`입니다.
-* `directWrite` Boolean - Windows에서 폰트 랜더링을 위해 DirectWrite를
+* `directWrite` Boolean - Windows에서 폰트 렌더링을 위해 DirectWrite를
   사용하는지를 지정합니다. 기본값은 `true`입니다.
 * `blinkFeatures` String - `CSSVariables,KeyboardEventKey`같은 `,`로 구분된
   기능 문자열들의 리스트입니다. 지원하는 전체 기능 문자열들은
@@ -174,6 +173,8 @@ win.show();
 * `defaultMonospaceFontSize` Integer - 기본값 `13`.
 * `minimumFontSize` Integer - 기본값 `0`.
 * `defaultEncoding` String - 기본값 `ISO-8859-1`.
+* `backgroundThrottling` Boolean - 페이지가 백그라운드 상태에 진입할 때 애니메이션과
+  타이머에 스로틀을 적용할지 여부입니다. 기본값은 `true`입니다.
 
 ## Events
 
@@ -296,10 +297,19 @@ __참고__: OS X에선 이 이벤트가 그저 `moved` 이벤트의 별칭(alias
 
 ### Event: 'app-command' _Windows_
 
+Returns:
+
+* `event` Event
+* `command` String
+
 [App Command](https://msdn.microsoft.com/en-us/library/windows/desktop/ms646275(v=vs.85).aspx)가
 호출됐을 때 발생하는 이벤트입니다. 이 이벤트는 일반적으로 키보드 미디어 키 또는
 브라우저 커맨드(기본 동작 키)에 관련되어 있습니다. 예를 들어 Windows에서 작동하는
 몇몇 마우스는 "뒤로가기" 같은 동작을 포함하고 있습니다.
+
+반환되는 커맨드들은 모두 소문자화되며 언더스코어(`_`)는 하이픈(`-`)으로 변경되며
+`APPCOMMAND_` 접두어는 제거됩니다.
+e.g. `APPCOMMAND_BROWSER_BACKWARD` 는 `browser-backward`와 같이 반환됩니다.
 
 ```javascript
 someWindow.on('app-command', function(e, cmd) {
@@ -660,6 +670,17 @@ var win = new BrowserWindow({ width: 800, height: 600 });
 
 **참고:** 웹 페이지의 제목과 네이티브 윈도우의 제목은 서로 다를 수 있습니다.
 
+### `win.setSheetOffset(offset)` _OS X_
+
+Mac OS X에서 시트를 부착할 위치를 지정합니다. 기본적으로 시트는 윈도우의 프레임 바로
+아래의 위치에 부착됩니다. 아마도 이 기능은 보통 다음과 같이 HTML 렌더링된 툴바 밑에
+표시하기 위해 사용할 것입니다:
+
+```javascript
+var toolbarRect = document.getElementById('toolbar').getBoundingClientRect();
+win.setSheetOffset(toolbarRect.height);
+```
+
 ### `win.flashFrame(flag)`
 
 * `flag` Boolean
@@ -890,4 +911,4 @@ Linux 플랫폼에선 Unity 데스크톱 환경만 지원합니다. 그리고 �
 
 윈도우에서 일어나는 모든 마우스 이벤트를 무시합니다.
 
-[blink-feature-string]: https://code.google.com/p/chromium/codesearch#chromium/src/out/Debug/gen/blink/platform/RuntimeEnabledFeatures.cpp&sq=package:chromium&type=cs&l=527
+[blink-feature-string]: https://code.google.com/p/chromium/codesearch#chromium/src/out/Debug/gen/blink/platform/RuntimeEnabledFeatures.cpp&sq=package:chromium&type=cs&l=576

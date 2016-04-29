@@ -17,7 +17,7 @@
 수 있습니다:
 
 ```html
-<webview id="foo" src="https://www.github.com/" style="display:inline-block; width:640px; height:480px"></webview>
+<webview id="foo" src="https://www.github.com/" style="display:inline-flex; width:640px; height:480px"></webview>
 ```
 
 게스트 컨텐츠를 조작하기 위해 자바스크립트로 `webview` 태그의 이벤트를 리스닝 하여
@@ -41,6 +41,36 @@
     webview.addEventListener("did-stop-loading", loadstop);
   }
 </script>
+```
+
+## CSS 스타일링 참고
+
+주의할 점은 `webview` 태그의 스타일은 전통적인 flexbox 레이아웃을 사용했을 때 자식
+`object` 요소가 해당 `webview` 컨테이너의 전체 높이와 넓이를 확실히 채우도록
+내부적으로 `display:flex;`를 사용합니다. (v0.36.11 부터) 따라서 인라인 레이아웃을
+위해 `display:inline-flex;`를 쓰지 않는 한, 기본 `display:flex;` CSS 속성을
+덮어쓰지 않도록 주의해야 합니다.
+
+`webview`는 `hidden` 또는 `display: none;` 속성을 사용할 때 발생하는 문제를 한 가지
+가지고 있습니다. 자식 `browserplugin` 객체 내에서 비정상적인 랜더링 동작을 발생시킬 수
+있으며 웹 페이지가 로드되었을 때, `webview`가 숨겨지지 않았을 때, 반대로 그냥 바로
+다시 보이게 됩니다. `webview`를 숨기는 방법으로 가장 권장되는 방법은 `width` &
+`height`를 0으로 지정하는 CSS를 사용하는 것이며 `flex`를 통해 0px로 요소를 수축할 수
+있도록 합니다.
+
+```html
+<style>
+  webview {
+    display:inline-flex;
+    width:640px;
+    height:480px;
+  }
+  webview.hide {
+    flex: 0 1;
+    width: 0px;
+    height: 0px;
+  }
+</style>
 ```
 
 ## 태그 속성
@@ -79,6 +109,9 @@
 
 "on"으로 지정하면 `webview` 페이지 내에서 `require`와 `process 객체`같은 node.js
 API를 사용할 수 있습니다. 이를 지정하면 내부에서 로우레벨 리소스에 접근할 수 있습니다.
+
+**참고:** Node 통합 기능은 `webview`에서 부모 윈도우가 해당 옵션이 비활성화되어있는
+경우 항상 비활성화됩니다.
 
 ### `plugins`
 
@@ -140,7 +173,7 @@ API를 사용할 수 있습니다. 이를 지정하면 내부에서 로우레벨
 동일한 세션을 공유할 수 있도록 할 수 있습니다. 만약 `partition`이 지정되지 않으면 앱의
 기본 세션을 사용합니다.
 
-이 값은 첫 탐색 이전에만 지정할 수 있습니다. 즉. 작동중인 랜더러 프로세스의 세션은
+이 값은 첫 탐색 이전에만 지정할 수 있습니다. 즉. 작동중인 렌더러 프로세스의 세션은
 변경할 수 없습니다. 이후 이 값을 바꾸려고 시도하면 DOM 예외를 발생시킵니다.
 
 ### `allowpopups`
@@ -254,7 +287,7 @@ Webview에 웹 페이지 `url`을 로드합니다. `url`은 `http://`, `file://`
 
 ### `<webview>.isCrashed()`
 
-랜더러 프로세스가 크래시 됬는지 확인합니다.
+렌더러 프로세스가 크래시 됬는지 확인합니다.
 
 ### `<webview>.setUserAgent(userAgent)`
 
@@ -285,7 +318,7 @@ Webview에 웹 페이지 `url`을 로드합니다. `url`은 `http://`, `file://`
 이 옵션을 활성화 시키면 `requestFullScreen`와 같은 HTML API에서 유저의 승인을
 무시하고 개발자가 API를 바로 사용할 수 있도록 허용합니다.
 
-역주: 기본적으로 브라우저에선 전체화면, 웹캠, 파일 열기등의 API를 사용하려면 유저의
+**역주:** 기본적으로 브라우저에선 전체화면, 웹캠, 파일 열기등의 API를 사용하려면 유저의
 승인(이벤트)이 필요합니다.
 
 ### `<webview>.openDevTools()`
@@ -414,8 +447,8 @@ Webview 페이지를 PDF 형식으로 인쇄합니다.
 * `channel` String
 * `args` (optional)
 
-`channel`을 통해 랜더러 프로세스로 비동기 메시지를 보냅니다. 또한 `args`를 지정하여
-임의의 인자를 보낼 수도 있습니다. 랜더러 프로세스는 `ipcRenderer` 모듈의 `channel`
+`channel`을 통해 렌더러 프로세스로 비동기 메시지를 보냅니다. 또한 `args`를 지정하여
+임의의 인자를 보낼 수도 있습니다. 렌더러 프로세스는 `ipcRenderer` 모듈의 `channel`
 이벤트로 이 메시지를 받아 처리할 수 있습니다.
 
 예제는 [webContents.send](web-contents.md#webcontentssendchannel-args)를 참고하세요.
@@ -460,9 +493,10 @@ Returns:
 * `errorCode` Integer
 * `errorDescription` String
 * `validatedURL` String
+* `isMainFrame` Boolean
 
-`did-finish-load`와 비슷합니다. 하지만 이 이벤트는 `window.stop()`과 같은 무언가로
-인해 로드에 실패했을 때 발생하는 이벤트입니다.
+`did-finish-load`와 비슷합니다. 하지만 이 이벤트는 `window.stop()`과 같이 취소
+함수가 호출되었거나 로드에 실패했을 때 발생하는 이벤트입니다.
 
 ### Event: 'did-frame-finish-load'
 
@@ -492,6 +526,7 @@ Returns:
 * `requestMethod` String
 * `referrer` String
 * `headers` Object
+* `resourceType` String
 
 요청한 리소스에 관해 자세한 내용을 알 수 있을 때 발생하는 이벤트입니다.
 `status`는 리소스를 다운로드할 소켓 커낵션을 나타냅니다.
@@ -595,7 +630,10 @@ Returns:
 
 ```javascript
 webview.addEventListener('new-window', function(e) {
-  require('electron').shell.openExternal(e.url);
+  var protocol = require('url').parse(e.url).protocol;
+  if (protocol === 'http:' || protocol === 'https:') {
+    require('electron').shell.openExternal(e.url);
+  }
 });
 ```
 
@@ -683,7 +721,7 @@ ipcRenderer.on('ping', function() {
 
 ### Event: 'crashed'
 
-랜더러 프로세스가 크래시 되었을 때 발생하는 이벤트입니다.
+렌더러 프로세스가 크래시 되었을 때 발생하는 이벤트입니다.
 
 ### Event: 'gpu-crashed'
 
@@ -711,6 +749,10 @@ WebContents가 파괴될 때 발생하는 이벤트입니다.
 미디어가 중지되거나 재생이 완료되었을 때 발생하는 이벤트입니다.
 
 ### Event: 'did-change-theme-color'
+
+Returns:
+
+* `themeColor` String
 
 페이지의 테마 색이 변경될 때 발생하는 이벤트입니다. 이 이벤트는 보통 meta 태그에
 의해서 발생합니다:

@@ -112,7 +112,7 @@ client
 
 ## 工作流程
 
-无需重新编译 Electron，只要把 app 的源码放到 [Electron的资源目录](https://github.com/atom/electron/blob/master/docs/tutorial/application-distribution.md) 里就可直接开始测试了。
+无需重新编译 Electron，只要把 app 的源码放到 [Electron的资源目录](https://github.com/electron/electron/blob/master/docs/tutorial/application-distribution.md) 里就可直接开始测试了。
 
 当然，你也可以在运行 Electron 时传入参数指定你 app 的所在文件夹。这步可以免去你拷贝－粘贴你的 app 到 Electron 的资源目录。
 

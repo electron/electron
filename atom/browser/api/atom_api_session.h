@@ -58,7 +58,7 @@ class Session: public mate::TrackableObject<Session>,
                              v8::Local<v8::ObjectTemplate> prototype);
 
  protected:
-  explicit Session(AtomBrowserContext* browser_context);
+  Session(v8::Isolate* isolate, AtomBrowserContext* browser_context);
   ~Session();
 
   // content::DownloadManager::Observer:
@@ -85,6 +85,9 @@ class Session: public mate::TrackableObject<Session>,
   // Cached object.
   v8::Global<v8::Value> cookies_;
   v8::Global<v8::Value> web_request_;
+
+  // The X-DevTools-Emulate-Network-Conditions-Client-Id.
+  std::string devtools_network_emulation_client_id_;
 
   scoped_refptr<AtomBrowserContext> browser_context_;
 

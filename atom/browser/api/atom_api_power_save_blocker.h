@@ -24,13 +24,12 @@ class PowerSaveBlocker : public mate::TrackableObject<PowerSaveBlocker> {
  public:
   static mate::Handle<PowerSaveBlocker> Create(v8::Isolate* isolate);
 
- protected:
-  PowerSaveBlocker();
-  ~PowerSaveBlocker() override;
+  static void BuildPrototype(v8::Isolate* isolate,
+                             v8::Local<v8::ObjectTemplate> prototype);
 
-  // mate::Wrappable implementations:
-  mate::ObjectTemplateBuilder GetObjectTemplateBuilder(
-      v8::Isolate* isolate) override;
+ protected:
+  explicit PowerSaveBlocker(v8::Isolate* isolate);
+  ~PowerSaveBlocker() override;
 
  private:
   void UpdatePowerSaveBlocker();

@@ -199,6 +199,10 @@ class NativeWindowViews : public NativeWindow,
 
   // In charge of running taskbar related APIs.
   TaskbarHost taskbar_host_;
+
+  // If true we have enabled a11y
+  bool enabled_a11y_support_;
+
 #endif
 
   // Handles unhandled keyboard messages coming back from the renderer process.

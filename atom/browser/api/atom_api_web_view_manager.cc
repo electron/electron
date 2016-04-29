@@ -2,31 +2,15 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/browser/web_contents_preferences.h"
 #include "atom/browser/web_view_manager.h"
+#include "atom/common/native_mate_converters/content_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/node_includes.h"
 #include "content/public/browser/browser_context.h"
 #include "native_mate/dictionary.h"
 
 using atom::WebContentsPreferences;
-
-namespace mate {
-
-template<>
-struct Converter<content::WebContents*> {
-  static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
-                     content::WebContents** out) {
-    atom::api::WebContents* contents;
-    if (!Converter<atom::api::WebContents*>::FromV8(isolate, val, &contents))
-      return false;
-    *out = contents->web_contents();
-    return true;
-  }
-};
-
-}  // namespace mate
 
 namespace {
 

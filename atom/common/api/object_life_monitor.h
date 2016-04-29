@@ -12,25 +12,19 @@
 namespace atom {
 
 class ObjectLifeMonitor {
- public:
-  static void BindTo(v8::Isolate* isolate,
-                     v8::Local<v8::Object> target,
-                     v8::Local<v8::Function> destructor);
+ protected:
+  ObjectLifeMonitor(v8::Isolate* isolate, v8::Local<v8::Object> target);
+  virtual ~ObjectLifeMonitor();
+
+  virtual void RunDestructor() = 0;
 
  private:
-  ObjectLifeMonitor(v8::Isolate* isolate,
-                    v8::Local<v8::Object> target,
-                    v8::Local<v8::Function> destructor);
-
   static void OnObjectGC(const v8::WeakCallbackInfo<ObjectLifeMonitor>& data);
   static void Free(const v8::WeakCallbackInfo<ObjectLifeMonitor>& data);
-
-  void RunCallback();
 
   v8::Isolate* isolate_;
   v8::Global<v8::Context> context_;
   v8::Global<v8::Object> target_;
-  v8::Global<v8::Function> destructor_;
 
   base::WeakPtrFactory<ObjectLifeMonitor> weak_ptr_factory_;
 

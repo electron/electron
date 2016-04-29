@@ -11,7 +11,7 @@ const Tray = electron.Tray;
 
 var appIcon = null;
 app.on('ready', function(){
-  appIcon = new Tray('/path/to/my/icon'); // 현재 어플리케이션 디렉터리를 기준으로 하려면 `__dirname + '/images/tray.png'` 형식으로 입력해야합니다.
+  appIcon = new Tray('/path/to/my/icon'); // 현재 어플리케이션 디렉터리를 기준으로 하려면 `__dirname + '/images/tray.png'` 형식으로 입력해야 합니다.
   var contextMenu = Menu.buildFromTemplate([
     { label: 'Item1', type: 'radio' },
     { label: 'Item2', type: 'radio' },
@@ -74,7 +74,7 @@ appIcon.setContextMenu(contextMenu);
 
 트레이 아이콘이 클릭될 때 발생하는 이벤트입니다.
 
-__주의:__ `bounds`는 OS X 와 Windows에서만 작동합니다.
+**참고:** `bounds`는 OS X 와 Windows에서만 작동합니다.
 
 ### Event: 'right-click' _OS X_ _Windows_
 

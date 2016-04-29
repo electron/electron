@@ -55,6 +55,9 @@ class WebContents : public mate::TrackableObject<WebContents>,
   static mate::Handle<WebContents> Create(
       v8::Isolate* isolate, const mate::Dictionary& options);
 
+  static void BuildPrototype(v8::Isolate* isolate,
+                             v8::Local<v8::ObjectTemplate> prototype);
+
   int GetID() const;
   bool Equal(const WebContents* web_contents) const;
   void LoadURL(const GURL& url, const mate::Dictionary& options);
@@ -62,6 +65,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   GURL GetURL() const;
   base::string16 GetTitle() const;
   bool IsLoading() const;
+  bool IsLoadingMainFrame() const;
   bool IsWaitingForResponse() const;
   void Stop();
   void ReloadIgnoringCache();
@@ -155,12 +159,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
   v8::Local<v8::Value> DevToolsWebContents(v8::Isolate* isolate);
   v8::Local<v8::Value> Debugger(v8::Isolate* isolate);
 
-  // mate::TrackableObject:
-  static void BuildPrototype(v8::Isolate* isolate,
-                             v8::Local<v8::ObjectTemplate> prototype);
-
  protected:
-  explicit WebContents(content::WebContents* web_contents);
+  WebContents(v8::Isolate* isolate, content::WebContents* web_contents);
   WebContents(v8::Isolate* isolate, const mate::Dictionary& options);
   ~WebContents();
 
@@ -251,6 +251,9 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void MediaStoppedPlaying(const MediaPlayerId& id) override;
   void DidChangeThemeColor(SkColor theme_color) override;
 
+  // brightray::InspectableWebContentsDelegate:
+  void DevToolsReloadPage() override;
+
   // brightray::InspectableWebContentsViewDelegate:
   void DevToolsFocused() override;
   void DevToolsOpened() override;
@@ -295,6 +298,9 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   // Request id used for findInPage request.
   uint32_t request_id_;
+
+  // Whether background throttling is disabled.
+  bool background_throttling_;
 
   DISALLOW_COPY_AND_ASSIGN(WebContents);
 };

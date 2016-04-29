@@ -29,7 +29,7 @@ Si usted planea construir Electron en una máquina virtual, necesitará un  disp
 
 #Obteniendo el codigo
 
-`$ git clone https://github.com/atom/electron.git`
+`$ git clone https://github.com/electron/electron.git`
 
 #Bootstrapping (Arranque)
 

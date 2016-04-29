@@ -34,8 +34,9 @@ namespace atom {
 
 namespace api {
 
-AutoUpdater::AutoUpdater() {
+AutoUpdater::AutoUpdater(v8::Isolate* isolate) {
   auto_updater::AutoUpdater::SetDelegate(this);
+  Init(isolate);
 }
 
 AutoUpdater::~AutoUpdater() {
@@ -78,14 +79,6 @@ void AutoUpdater::OnWindowAllClosed() {
   QuitAndInstall();
 }
 
-mate::ObjectTemplateBuilder AutoUpdater::GetObjectTemplateBuilder(
-    v8::Isolate* isolate) {
-  return mate::ObjectTemplateBuilder(isolate)
-      .SetMethod("setFeedURL", &auto_updater::AutoUpdater::SetFeedURL)
-      .SetMethod("checkForUpdates", &auto_updater::AutoUpdater::CheckForUpdates)
-      .SetMethod("quitAndInstall", &AutoUpdater::QuitAndInstall);
-}
-
 void AutoUpdater::QuitAndInstall() {
   // If we don't have any window then quitAndInstall immediately.
   WindowList* window_list = WindowList::GetInstance();
@@ -102,7 +95,16 @@ void AutoUpdater::QuitAndInstall() {
 
 // static
 mate::Handle<AutoUpdater> AutoUpdater::Create(v8::Isolate* isolate) {
-  return CreateHandle(isolate, new AutoUpdater);
+  return mate::CreateHandle(isolate, new AutoUpdater(isolate));
+}
+
+// static
+void AutoUpdater::BuildPrototype(
+    v8::Isolate* isolate, v8::Local<v8::ObjectTemplate> prototype) {
+  mate::ObjectTemplateBuilder(isolate, prototype)
+      .SetMethod("setFeedURL", &auto_updater::AutoUpdater::SetFeedURL)
+      .SetMethod("checkForUpdates", &auto_updater::AutoUpdater::CheckForUpdates)
+      .SetMethod("quitAndInstall", &AutoUpdater::QuitAndInstall);
 }
 
 }  // namespace api

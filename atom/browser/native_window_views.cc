@@ -9,11 +9,13 @@
 
 #include "atom/browser/ui/views/menu_bar.h"
 #include "atom/browser/ui/views/menu_layout.h"
+#include "atom/common/color_util.h"
 #include "atom/common/draggable_region.h"
 #include "atom/common/options_switches.h"
 #include "base/strings/utf_string_conversions.h"
 #include "brightray/browser/inspectable_web_contents.h"
 #include "brightray/browser/inspectable_web_contents_view.h"
+#include "content/public/browser/browser_thread.h"
 #include "content/public/browser/native_web_keyboard_event.h"
 #include "native_mate/dictionary.h"
 #include "ui/aura/window_tree_host.h"
@@ -614,7 +616,7 @@ bool NativeWindowViews::IsKiosk() {
 
 void NativeWindowViews::SetBackgroundColor(const std::string& color_name) {
   // web views' background color.
-  SkColor background_color = NativeWindow::ParseHexColor(color_name);
+  SkColor background_color = ParseHexColor(color_name);
   set_background(views::Background::CreateSolidBackground(background_color));
 
 #if defined(OS_WIN)
@@ -779,10 +781,12 @@ void NativeWindowViews::OnWidgetActivationChanged(
   if (widget != window_.get())
     return;
 
-  if (active)
-    NotifyWindowFocus();
-  else
-    NotifyWindowBlur();
+  // Post the notification to next tick.
+  content::BrowserThread::PostTask(
+      content::BrowserThread::UI, FROM_HERE,
+      base::Bind(active ? &NativeWindow::NotifyWindowFocus :
+                          &NativeWindow::NotifyWindowBlur,
+                 GetWeakPtr()));
 
   if (active && inspectable_web_contents() &&
       !inspectable_web_contents()->IsDevToolsViewShowing())

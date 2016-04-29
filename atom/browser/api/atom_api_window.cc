@@ -141,13 +141,17 @@ Window::Window(v8::Isolate* isolate, const mate::Dictionary& options) {
   if (options.Get(options::kZoomFactor, &value))
     web_preferences.Set(options::kZoomFactor, value);
 
+  // Copy the backgroundColor to webContents.
+  if (options.Get(options::kBackgroundColor, &value))
+    web_preferences.Set(options::kBackgroundColor, value);
+
   // Creates the WebContents used by BrowserWindow.
   auto web_contents = WebContents::Create(isolate, web_preferences);
   web_contents_.Reset(isolate, web_contents.ToV8());
   api_web_contents_ = web_contents.get();
 
   // Keep a copy of the options for later use.
-  mate::Dictionary(isolate, web_contents->GetWrapper(isolate)).Set(
+  mate::Dictionary(isolate, web_contents->GetWrapper()).Set(
       "browserWindowOptions", options);
 
   // Creates BrowserWindow.
@@ -283,7 +287,7 @@ void Window::OnWindowMessage(UINT message, WPARAM w_param, LPARAM l_param) {
 #endif
 
 // static
-mate::Wrappable* Window::New(v8::Isolate* isolate, mate::Arguments* args) {
+mate::WrappableBase* Window::New(v8::Isolate* isolate, mate::Arguments* args) {
   if (!Browser::Get()->is_ready()) {
     isolate->ThrowException(v8::Exception::Error(mate::StringToV8(
         isolate, "Cannot create BrowserWindow before app is ready")));
@@ -434,6 +438,10 @@ std::vector<int> Window::GetMaximumSize() {
   result[0] = size.width();
   result[1] = size.height();
   return result;
+}
+
+void Window::SetSheetOffset(double offset) {
+  window_->SetSheetOffset(offset);
 }
 
 void Window::SetResizable(bool resizable) {
@@ -742,6 +750,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("getMinimumSize", &Window::GetMinimumSize)
       .SetMethod("setMaximumSize", &Window::SetMaximumSize)
       .SetMethod("getMaximumSize", &Window::GetMaximumSize)
+      .SetMethod("setSheetOffset", &Window::SetSheetOffset)
       .SetMethod("setResizable", &Window::SetResizable)
       .SetMethod("isResizable", &Window::IsResizable)
       .SetMethod("setMovable", &Window::SetMovable)
@@ -808,7 +817,7 @@ v8::Local<v8::Value> Window::From(v8::Isolate* isolate,
                                   NativeWindow* native_window) {
   auto existing = TrackableObject::FromWrappedClass(isolate, native_window);
   if (existing)
-    return existing->GetWrapper(isolate);
+    return existing->GetWrapper();
   else
     return v8::Null(isolate);
 }

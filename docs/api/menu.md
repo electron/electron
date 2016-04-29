@@ -1,8 +1,7 @@
 # Menu
 
-The `menu` class is used to create native menus that can be used as
-application menus and
-[context menus](https://developer.mozilla.org/en-US/docs/Mozilla/Tech/XUL/PopupGuide/ContextMenus).
+> Create native application menus and context menus.
+
 This module is a main process module which can be used in a render process via
 the `remote` module.
 
@@ -109,7 +108,7 @@ var template = [
         })(),
         click: function(item, focusedWindow) {
           if (focusedWindow)
-            focusedWindow.toggleDevTools();
+            focusedWindow.webContents.toggleDevTools();
         }
       },
     ]
@@ -387,4 +386,4 @@ Menu:
 ```
 
 [AboutInformationPropertyListFiles]: https://developer.apple.com/library/ios/documentation/general/Reference/InfoPlistKeyReference/Articles/AboutInformationPropertyListFiles.html
-[setMenu]: https://github.com/atom/electron/blob/master/docs/api/browser-window.md#winsetmenumenu-linux-windows
+[setMenu]: https://github.com/electron/electron/blob/master/docs/api/browser-window.md#winsetmenumenu-linux-windows

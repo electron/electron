@@ -119,9 +119,6 @@ const char kPpapiFlashPath[] = "ppapi-flash-path";
 // Ppapi Flash version.
 const char kPpapiFlashVersion[] = "ppapi-flash-version";
 
-// Path to client certificate.
-const char kClientCertificate[] = "client-certificate";
-
 // Disable HTTP cache.
 const char kDisableHttpCache[] = "disable-http-cache";
 
@@ -142,12 +139,13 @@ const char kCipherSuiteBlacklist[] = "cipher-suite-blacklist";
 const char kAppUserModelId[] = "app-user-model-id";
 
 // The command line switch versions of the options.
-const char kZoomFactor[]                 = "zoom-factor";
-const char kPreloadScript[]              = "preload";
-const char kPreloadURL[]                 = "preload-url";
-const char kNodeIntegration[]            = "node-integration";
-const char kGuestInstanceID[]            = "guest-instance-id";
-const char kOpenerID[]                   = "opener-id";
+const char kBackgroundColor[] = "background-color";
+const char kZoomFactor[]      = "zoom-factor";
+const char kPreloadScript[]   = "preload";
+const char kPreloadURL[]      = "preload-url";
+const char kNodeIntegration[] = "node-integration";
+const char kGuestInstanceID[] = "guest-instance-id";
+const char kOpenerID[]        = "opener-id";
 
 // Widevine options
 // Path to Widevine CDM binaries.

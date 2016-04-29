@@ -13,7 +13,7 @@ Si está utilizando  Python descargado de Homebrew, también es necesario instal
 
 #Obtener el Código
 
-`$ git clone https://github.com/atom/electron.git`
+`$ git clone https://github.com/electron/electron.git`
 
 #Bootstrapping (arranque)
 

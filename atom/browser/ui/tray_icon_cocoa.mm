@@ -27,7 +27,6 @@ const CGFloat kVerticalTitleMargin = 2;
   BOOL inMouseEventSequence_;
   base::scoped_nsobject<NSImage> image_;
   base::scoped_nsobject<NSImage> alternateImage_;
-  base::scoped_nsobject<NSImageView> image_view_;
   base::scoped_nsobject<NSString> title_;
   base::scoped_nsobject<NSStatusItem> statusItem_;
 }
@@ -44,15 +43,6 @@ const CGFloat kVerticalTitleMargin = 2;
   inMouseEventSequence_ = NO;
 
   if ((self = [super initWithFrame: CGRectZero])) {
-    // Setup the image view.
-    image_view_.reset([[NSImageView alloc] initWithFrame: CGRectZero]);
-    [image_view_ setImageScaling:NSImageScaleNone];
-    [image_view_ setImageAlignment:NSImageAlignCenter];
-    [self addSubview:image_view_];
-
-    // Unregister image_view_ as a dragged destination, allows its parent view
-    // (StatusItemView) handle dragging events.
-    [image_view_ unregisterDraggedTypes];
     [self registerForDraggedTypes: @[NSFilenamesPboardType]];
 
     // Create the status item.
@@ -69,7 +59,6 @@ const CGFloat kVerticalTitleMargin = 2;
 
 - (void)updateDimensions {
   NSStatusBar * bar = [NSStatusBar systemStatusBar];
-  [image_view_ setFrame: NSMakeRect(0, 0, [self iconWidth], [bar thickness])];
   [self setFrame: NSMakeRect(0, 0, [self fullWidth], [bar thickness])];
   [self setNeedsDisplay:YES];
 }
@@ -85,28 +74,44 @@ const CGFloat kVerticalTitleMargin = 2;
   //   | icon | title |
   ///  ----------------
 
-  // Draw background.
   BOOL highlight = [self shouldHighlight];
+  BOOL highlightContent = highlight | [self isDarkMode];
   CGFloat thickness = [[statusItem_ statusBar] thickness];
+
+  // Draw the system bar background.
   [statusItem_ drawStatusBarBackgroundInRect:self.bounds withHighlight:highlight];
 
-  // Make use of NSImageView to draw the image, which can correctly draw
-  // template image under dark menu bar.
-  if (inMouseEventSequence_ && alternateImage_ &&
-      [image_view_ image] != alternateImage_.get()) {
-    [image_view_ setImage:alternateImage_];
-  } else if ([image_view_ image] != image_.get()) {
-    [image_view_ setImage:image_];
+  // Determine which image to use.
+  NSImage* image = image_.get();
+  if (inMouseEventSequence_ && alternateImage_) {
+    image = alternateImage_.get();
+  }
+  // Apply the higlight color if the image is a template image. When this moves
+  // to using the new [NSStatusItem button] API, this should work automagically.
+  if ([image isTemplate] == YES) {
+    NSImage* imageWithColor = [[image copy] autorelease];
+    [imageWithColor lockFocus];
+    [[self colorWithHighlight: highlightContent] set];
+    CGRect imageBounds = CGRectMake(0,0, image.size.width, image.size.height);
+    NSRectFillUsingOperation(imageBounds, NSCompositeSourceAtop);
+    [imageWithColor unlockFocus];
+    image = imageWithColor;
   }
 
+  // Draw the image
+  [image drawInRect: CGRectMake(
+    roundf(([self iconWidth] - image.size.width) / 2),
+    roundf((thickness - image.size.height) / 2),
+    image.size.width,
+    image.size.height
+  )];
+
   if (title_) {
-    // Highlight the text when icon is highlighted or in dark mode.
-    highlight |= [self isDarkMode];
     // Draw title.
     NSRect titleDrawRect = NSMakeRect(
         [self iconWidth], -kVerticalTitleMargin, [self titleWidth], thickness);
     [title_ drawInRect:titleDrawRect
-        withAttributes:[self titleAttributesWithHighlight:highlight]];
+        withAttributes:[self titleAttributesWithHighlight:highlightContent]];
   }
 }
 
@@ -157,14 +162,16 @@ const CGFloat kVerticalTitleMargin = 2;
   return [attributes size].width;
 }
 
-- (NSDictionary*)titleAttributesWithHighlight:(BOOL)highlight {
-  NSFont* font = [NSFont menuBarFontOfSize:0];
-  NSColor* foregroundColor = highlight ?
+- (NSColor*)colorWithHighlight:(BOOL)highlight {
+  return highlight ?
       [NSColor whiteColor] :
       [NSColor colorWithRed:0.265625 green:0.25390625 blue:0.234375 alpha:1.0];
+}
+
+- (NSDictionary*)titleAttributesWithHighlight:(BOOL)highlight {
   return @{
-    NSFontAttributeName: font,
-    NSForegroundColorAttributeName: foregroundColor
+      NSFontAttributeName:[NSFont menuBarFontOfSize:0],
+      NSForegroundColorAttributeName:[self colorWithHighlight: highlight]
   };
 }
 

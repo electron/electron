@@ -9,6 +9,8 @@ Electron의 `process` 객체는 기존의 node와는 달리 약간의 차이점�
 * `process.resourcesPath` String - JavaScript 소스 코드의 경로.
 * `process.mas` Boolean - Mac 앱 스토어용 빌드일 때 `true`로 지정됩니다. 다른
   빌드일 땐 `undefined`로 지정됩니다.
+* `process.windowsStore` Boolean - 만약 앱이 Windows Store 앱 (appx)으로 작동하고
+  있다면, 이 값이 `true`로 지정되며 다른 빌드인 경우엔 `undefined`로 지정됩니다.
 
 ## Events
 

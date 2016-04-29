@@ -1,6 +1,6 @@
 # Frameless Window
 
-Frameless Window는 [창 테두리](https://developer.mozilla.org/en-US/docs/Glossary/Chrome)가
+Frameless Window는 [창 테두리](https://developer.mozilla.org/ko/docs/Glossary/Chrome)가
 없는 윈도우를 말합니다. 이 기능은 윈도우의 일부분인 툴바와 같이 웹 페이지의 일부분이
 아닌 부분을 보이지 않도록 합니다. [`BrowserWindow`](browser-window.md) 클래스의
 옵션에서 설정할 수 있습니다.
@@ -39,7 +39,7 @@ var win = new BrowserWindow({ transparent: true, frame: false });
 
 * 투명한 영역을 통과하여 클릭할 수 없습니다. 우리는 이 문제를 해결하기 위해 API를
   제공할 예정이며 자세한 내용은
-  [이슈](https://github.com/atom/electron/issues/1335)를 참고하세요.
+  [이슈](https://github.com/electron/electron/issues/1335)를 참고하세요.
 * 투명한 창은 크기를 조절할 수 없습니다. `resizable` 속성을 `true`로 할 경우 몇몇
   플랫폼에선 크래시가 일어납니다.
 * `blur` 필터는 웹 페이지에서만 적용됩니다. 윈도우 아래 컨텐츠에는 블러 효과를 적용할

@@ -13,12 +13,16 @@
 #include "atom/browser/atom_browser_client.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
+#include "atom/browser/atom_security_state_model_client.h"
 #include "atom/browser/native_window.h"
+#include "atom/browser/net/atom_network_delegate.h"
 #include "atom/browser/web_contents_permission_helper.h"
 #include "atom/browser/web_contents_preferences.h"
 #include "atom/browser/web_view_guest_delegate.h"
 #include "atom/common/api/api_messages.h"
 #include "atom/common/api/event_emitter_caller.h"
+#include "atom/common/color_util.h"
+#include "atom/common/mouse_util.h"
 #include "atom/common/native_mate_converters/blink_converter.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/content_converter.h"
@@ -28,13 +32,14 @@
 #include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
-#include "atom/common/mouse_util.h"
+#include "atom/common/options_switches.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "brightray/browser/inspectable_web_contents.h"
 #include "brightray/browser/inspectable_web_contents_view.h"
 #include "chrome/browser/printing/print_view_manager_basic.h"
 #include "chrome/browser/printing/print_preview_message_handler.h"
+#include "content/browser/renderer_host/render_widget_host_impl.h"
 #include "content/common/view_messages.h"
 #include "content/public/browser/favicon_status.h"
 #include "content/public/browser/native_web_keyboard_event.h"
@@ -210,17 +215,27 @@ content::ServiceWorkerContext* GetServiceWorkerContext(
 
 }  // namespace
 
-WebContents::WebContents(content::WebContents* web_contents)
+WebContents::WebContents(v8::Isolate* isolate,
+                         content::WebContents* web_contents)
     : content::WebContentsObserver(web_contents),
-      type_(REMOTE) {
-  AttachAsUserData(web_contents);
+      embedder_(nullptr),
+      type_(REMOTE),
+      request_id_(0),
+      background_throttling_(true) {
   web_contents->SetUserAgentOverride(GetBrowserContext()->GetUserAgent());
+
+  Init(isolate);
+  AttachAsUserData(web_contents);
 }
 
 WebContents::WebContents(v8::Isolate* isolate,
                          const mate::Dictionary& options)
     : embedder_(nullptr),
-      request_id_(0) {
+      request_id_(0),
+      background_throttling_(true) {
+  // Read options.
+  options.Get("backgroundThrottling", &background_throttling_);
+
   // Whether it is a guest WebContents.
   bool is_guest = false;
   options.Get("isGuest", &is_guest);
@@ -258,7 +273,6 @@ WebContents::WebContents(v8::Isolate* isolate,
   }
 
   Observe(web_contents);
-  AttachAsUserData(web_contents);
   InitWithWebContents(web_contents);
 
   managed_web_contents()->GetView()->SetDelegate(this);
@@ -268,6 +282,8 @@ WebContents::WebContents(v8::Isolate* isolate,
 
   // Intialize permission helper.
   WebContentsPermissionHelper::CreateForWebContents(web_contents);
+  // Intialize security state client.
+  AtomSecurityStateModelClient::CreateForWebContents(web_contents);
 
   web_contents->SetUserAgentOverride(GetBrowserContext()->GetUserAgent());
 
@@ -285,6 +301,9 @@ WebContents::WebContents(v8::Isolate* isolate,
     if (owner_window)
       SetOwnerWindow(owner_window);
   }
+
+  Init(isolate);
+  AttachAsUserData(web_contents);
 }
 
 WebContents::~WebContents() {
@@ -538,18 +557,21 @@ void WebContents::DidFinishLoad(content::RenderFrameHost* render_frame_host,
 void WebContents::DidFailProvisionalLoad(
     content::RenderFrameHost* render_frame_host,
     const GURL& url,
-    int error_code,
-    const base::string16& error_description,
+    int code,
+    const base::string16& description,
     bool was_ignored_by_handler) {
-  Emit("did-fail-provisional-load", error_code, error_description, url);
+  bool is_main_frame = !render_frame_host->GetParent();
+  Emit("did-fail-provisional-load", code, description, url, is_main_frame);
+  Emit("did-fail-load", code, description, url, is_main_frame);
 }
 
 void WebContents::DidFailLoad(content::RenderFrameHost* render_frame_host,
-                              const GURL& validated_url,
+                              const GURL& url,
                               int error_code,
                               const base::string16& error_description,
                               bool was_ignored_by_handler) {
-  Emit("did-fail-load", error_code, error_description, validated_url);
+  bool is_main_frame = !render_frame_host->GetParent();
+  Emit("did-fail-load", error_code, error_description, url, is_main_frame);
 }
 
 void WebContents::DidStartLoading() {
@@ -569,7 +591,8 @@ void WebContents::DidGetResourceResponseStart(
        details.http_response_code,
        details.method,
        details.referrer,
-       details.headers.get());
+       details.headers.get(),
+       ResourceTypeToString(details.resource_type));
 }
 
 void WebContents::DidGetRedirectForResourceRequest(
@@ -613,6 +636,10 @@ void WebContents::DidUpdateFaviconURL(
       unique_urls.insert(url);
   }
   Emit("page-favicon-updated", unique_urls);
+}
+
+void WebContents::DevToolsReloadPage() {
+  Emit("devtools-reload-page");
 }
 
 void WebContents::DevToolsFocused() {
@@ -705,7 +732,8 @@ void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
     Emit("did-fail-load",
          static_cast<int>(net::ERR_INVALID_URL),
          net::ErrorToShortString(net::ERR_INVALID_URL),
-         url.possibly_invalid_spec());
+         url.possibly_invalid_spec(),
+         true);
     return;
   }
 
@@ -728,6 +756,25 @@ void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
   params.should_clear_history_list = true;
   params.override_user_agent = content::NavigationController::UA_OVERRIDE_TRUE;
   web_contents()->GetController().LoadURLWithParams(params);
+
+  // Set the background color of RenderWidgetHostView.
+  // We have to call it right after LoadURL because the RenderViewHost is only
+  // created after loading a page.
+  const auto view = web_contents()->GetRenderWidgetHostView();
+  WebContentsPreferences* web_preferences =
+      WebContentsPreferences::FromWebContents(web_contents());
+  std::string color_name;
+  if (web_preferences->web_preferences()->GetString(options::kBackgroundColor,
+                                                    &color_name)) {
+    view->SetBackgroundColor(ParseHexColor(color_name));
+  } else {
+    view->SetBackgroundColor(SK_ColorTRANSPARENT);
+  }
+
+  // For the same reason we can only disable hidden here.
+  const auto host = static_cast<content::RenderWidgetHostImpl*>(
+      view->GetRenderWidgetHost());
+  host->disable_hidden_ = !background_throttling_;
 }
 
 void WebContents::DownloadURL(const GURL& url) {
@@ -749,6 +796,14 @@ base::string16 WebContents::GetTitle() const {
 
 bool WebContents::IsLoading() const {
   return web_contents()->IsLoading();
+}
+
+bool WebContents::IsLoadingMainFrame() const {
+  // Comparing site instances works because Electron always creates a new site
+  // instance when navigating, regardless of origin. See AtomBrowserClient.
+  return (web_contents()->GetLastCommittedURL().is_empty() ||
+          web_contents()->GetSiteInstance() !=
+          web_contents()->GetPendingSiteInstance()) && IsLoading();
 }
 
 bool WebContents::IsWaitingForResponse() const {
@@ -807,14 +862,20 @@ void WebContents::OpenDevTools(mate::Arguments* args) {
   if (type_ == REMOTE)
     return;
 
-  bool detach = false;
+  std::string state;
   if (type_ == WEB_VIEW) {
-    detach = true;
+    state = "detach";
   } else if (args && args->Length() == 1) {
+    bool detach = false;
     mate::Dictionary options;
-    args->GetNext(&options) && options.Get("detach", &detach);
+    if (args->GetNext(&options)) {
+      options.Get("mode", &state);
+      options.Get("detach", &detach);
+      if (state.empty() && detach)
+        state = "detach";
+    }
   }
-  managed_web_contents()->SetCanDock(!detach);
+  managed_web_contents()->SetDockState(state);
   managed_web_contents()->ShowDevTools();
 }
 
@@ -1147,6 +1208,7 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("_getURL", &WebContents::GetURL)
       .SetMethod("getTitle", &WebContents::GetTitle)
       .SetMethod("isLoading", &WebContents::IsLoading)
+      .SetMethod("isLoadingMainFrame", &WebContents::IsLoadingMainFrame)
       .SetMethod("isWaitingForResponse", &WebContents::IsWaitingForResponse)
       .SetMethod("_stop", &WebContents::Stop)
       .SetMethod("_goBack", &WebContents::GoBack)
@@ -1233,7 +1295,8 @@ mate::Handle<WebContents> WebContents::CreateFrom(
     return mate::CreateHandle(isolate, static_cast<WebContents*>(existing));
 
   // Otherwise create a new WebContents wrapper object.
-  auto handle = mate::CreateHandle(isolate, new WebContents(web_contents));
+  auto handle = mate::CreateHandle(
+      isolate, new WebContents(isolate, web_contents));
   g_wrap_web_contents.Run(handle.ToV8());
   return handle;
 }
@@ -1246,16 +1309,8 @@ mate::Handle<WebContents> WebContents::Create(
   return handle;
 }
 
-void ClearWrapWebContents() {
-  g_wrap_web_contents.Reset();
-}
-
 void SetWrapWebContents(const WrapWebContentsCallback& callback) {
   g_wrap_web_contents = callback;
-
-  // Cleanup the wrapper on exit.
-  atom::AtomBrowserMainParts::Get()->RegisterDestructionCallback(
-      base::Bind(ClearWrapWebContents));
 }
 
 }  // namespace api

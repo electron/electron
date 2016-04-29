@@ -1,5 +1,7 @@
 # session
 
+> Manage browser sessions, cookies, cache, proxy settings, etc.
+
 The `session` module can be used to create new `Session` objects.
 
 You can also access the `session` of existing pages by using the `session`
@@ -295,8 +297,9 @@ myWindow.webContents.session.setCertificateVerifyProc(function(hostname, cert, c
 
 * `handler` Function
   * `webContents` Object - [WebContents](web-contents.md) requesting the permission.
-  * `permission`  String - Enum of 'media', 'geolocation', 'notifications', 'midiSysex', 'pointerLock', 'fullscreen'.
-  * `callback`  Function - Allow or deny the permission.
+  * `permission` String - Enum of 'media', 'geolocation', 'notifications', 'midiSysex',
+    'pointerLock', 'fullscreen', 'openExternal'.
+  * `callback` Function - Allow or deny the permission.
 
 Sets the handler which can be used to respond to permission requests for the `session`.
 Calling `callback(true)` will allow the permission and `callback(false)` will reject it.
@@ -421,7 +424,7 @@ response are visible by the time this listener is fired.
   * `timestamp` Double
   * `requestHeaders` Object
 
-#### `ses.webRequest.onHeadersReceived([filter,] listener)`
+#### `ses.webRequest.onHeadersReceived([filter,]listener)`
 
 * `filter` Object
 * `listener` Function
@@ -446,6 +449,9 @@ The `callback` has to be called with an `response` object:
   * `cancel` Boolean
   * `responseHeaders` Object (optional) - When provided, the server is assumed
     to have responded with these headers.
+  * `statusLine` String (optional) - Should be provided when overriding
+    `responseHeaders` to change header status otherwise original response
+    header's status will be used.
 
 #### `ses.webRequest.onResponseStarted([filter, ]listener)`
 
@@ -463,7 +469,7 @@ and response headers are available.
   * `resourceType` String
   * `timestamp` Double
   * `responseHeaders` Object
-  * `fromCache` Boolean  - Indicates whether the response was fetched from disk
+  * `fromCache` Boolean - Indicates whether the response was fetched from disk
     cache.
   * `statusCode` Integer
   * `statusLine` String

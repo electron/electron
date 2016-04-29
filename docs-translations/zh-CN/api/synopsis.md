@@ -68,4 +68,4 @@ require('electron').hideInternalModules()
  [2]:https://github.com/heyunjiang/electron/blob/master/docs/tutorial/using-native-node-modules.md
  [3]:https://github.com/heyunjiang/electron/blob/master/docs/tutorial/quick-start.md#the-main-process
  [4]:https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Destructuring_assignment
- [5]:https://github.com/atom/electron/issues/387
+ [5]:https://github.com/electron/electron/issues/387

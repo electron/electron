@@ -43,7 +43,7 @@ Pour ajouter une nouvelle langue (ou commencer) :
 - Traduire les fichiers.
 - Mettre à jour le `README.md` à l'intérieur du dossier de langue en mettant les
   liens vers les fichiers traduits.
-- Ajouter un lien vers le nouveau dossier de langue dans le [README](https://github.com/atom/electron#documentation-translations)
+- Ajouter un lien vers le nouveau dossier de langue dans le [README](https://github.com/electron/electron#documentation-translations)
   principal d'Electron.
 
 ## Lire la documentation d'Electron

@@ -16,14 +16,14 @@ following python modules:
 ## Getting the Code
 
 ```bash
-$ git clone https://github.com/atom/electron.git
+$ git clone https://github.com/electron/electron.git
 ```
 
 ## Bootstrapping
 
 The bootstrap script will download all necessary build dependencies and create
-the build project files. Notice that we're using [ninja](https://ninja-build.org/) to build Electron so
-there is no Xcode project generated.
+the build project files. Notice that we're using [ninja](https://ninja-build.org/)
+to build Electron so there is no Xcode project generated.
 
 ```bash
 $ cd electron

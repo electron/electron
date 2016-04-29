@@ -4,7 +4,7 @@
 
 DevToolsエクステンションのために、ソースコードをダウンローし、`BrowserWindow.addDevToolsExtension` APIを使って読み込みます。読み込んだエクステンションは維持されているので、ウィンドウを作成するとき、毎回APIをコールする必要はありません。
 
-** NOTE: React DevTools は動作しません。issue  https://github.com/atom/electron/issues/915 でフォローしています**
+** NOTE: React DevTools は動作しません。issue  https://github.com/electron/electron/issues/915 でフォローしています**
 
 例えば、[React DevTools Extension](https://github.com/facebook/react-devtools)を使うために、最初にソースコードをダウンロードする必要があります。
 

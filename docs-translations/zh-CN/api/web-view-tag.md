@@ -457,6 +457,7 @@ Returns:
 * `requestMethod` String
 * `referrer` String
 * `headers` Object
+* `resourceType` String
 
 当获得返回详情的时候触发.
 

@@ -49,7 +49,7 @@ AtomBrowserMainParts::~AtomBrowserMainParts() {
   // Leak the JavascriptEnvironment on exit.
   // This is to work around the bug that V8 would be waiting for background
   // tasks to finish on exit, while somehow it waits forever in Electron, more
-  // about this can be found at https://github.com/atom/electron/issues/4767.
+  // about this can be found at https://github.com/electron/electron/issues/4767.
   // On the other handle there is actually no need to gracefully shutdown V8
   // on exit in the main process, we already ensured all necessary resources get
   // cleaned up, and it would make quitting faster.
@@ -136,9 +136,8 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
   // Start idle gc.
   gc_timer_.Start(
       FROM_HERE, base::TimeDelta::FromMinutes(1),
-      base::Bind(base::IgnoreResult(&v8::Isolate::IdleNotification),
-                 base::Unretained(js_env_->isolate()),
-                 1000));
+      base::Bind(&v8::Isolate::LowMemoryNotification,
+                 base::Unretained(js_env_->isolate())));
 
   brightray::BrowserMainParts::PreMainMessageLoopRun();
   bridge_task_runner_->MessageLoopIsReady();

@@ -1,7 +1,9 @@
 # DownloadItem
 
-`DownloadItem` is an EventEmitter represents a download item in Electron. It
-is used in `will-download` event of `Session` module, and allows users to
+> Control file downloads from remote sources.
+
+`DownloadItem` is an EventEmitter that represents a download item in Electron.
+It is used in `will-download` event of `Session` module, and allows users to
 control the download item.
 
 ```javascript
@@ -22,6 +24,7 @@ win.webContents.session.on('will-download', function(event, item, webContents) {
       console.log("Download is cancelled or interrupted that can't be resumed");
     }
   });
+});
 ```
 
 ## Events

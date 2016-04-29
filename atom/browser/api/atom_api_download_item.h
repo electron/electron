@@ -23,7 +23,6 @@ class DownloadItem : public mate::TrackableObject<DownloadItem>,
   static mate::Handle<DownloadItem> Create(v8::Isolate* isolate,
                                            content::DownloadItem* item);
 
-  // mate::TrackableObject:
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::ObjectTemplate> prototype);
 
@@ -41,7 +40,7 @@ class DownloadItem : public mate::TrackableObject<DownloadItem>,
   base::FilePath GetSavePath() const;
 
  protected:
-  explicit DownloadItem(content::DownloadItem* download_item);
+  DownloadItem(v8::Isolate* isolate, content::DownloadItem* download_item);
   ~DownloadItem();
 
   // Override content::DownloadItem::Observer methods

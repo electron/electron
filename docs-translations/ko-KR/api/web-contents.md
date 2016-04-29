@@ -31,6 +31,7 @@ Returns:
 * `errorCode` Integer
 * `errorDescription` String
 * `validatedURL` String
+* `isMainFrame` Boolean
 
 이 이벤트는 `did-finish-load`와 비슷하나, 로드가 실패했거나 취소되었을 때 발생합니다.
 예를 들면 `window.stop()`이 실행되었을 때 발생합니다. 발생할 수 있는 전체 에러 코드의
@@ -66,6 +67,7 @@ Returns:
 * `requestMethod` String
 * `referrer` String
 * `headers` Object
+* `resourceType` String
 
 요청한 리소스에 관련된 자세한 정보를 사용할 수 있을 때 발생하는 이벤트입니다.
 `status`는 리소스를 다운로드하기 위한 소켓 연결을 나타냅니다.
@@ -347,6 +349,10 @@ var currentURL = win.webContents.getURL();
 ### `webContents.isLoading()`
 
 현재 웹 페이지가 리소스를 로드중인지 여부를 반환합니다.
+
+### `webContents.isLoadingMainFrame()`
+
+메인 프레임이 여전히 로딩중인지 여부를 반환합니다. (내부 iframe 또는 frame 포함)
 
 ### `webContents.isWaitingForResponse()`
 
@@ -638,6 +644,9 @@ mainWindow.webContents.on('devtools-opened', function() {
 
 * `options` Object (optional)
   * `detach` Boolean - 새 창에서 개발자 도구를 엽니다.
+  * `mode` String - 개발자 도구 표시 상태를 지정합니다. 옵션은 "right", "bottom",
+    "undocked", "detach" 중 한 가지가 될 수 있습니다. 기본값은 마지막 표시 상태를
+    사용합니다.
 
 개발자 도구를 엽니다.
 

@@ -168,34 +168,14 @@ bool ReadImageSkiaFromICO(gfx::ImageSkia* image, const base::FilePath& path) {
 }
 #endif
 
-v8::Persistent<v8::ObjectTemplate> template_;
-
 }  // namespace
 
-NativeImage::NativeImage() {}
-
-NativeImage::NativeImage(const gfx::Image& image) : image_(image) {}
+NativeImage::NativeImage(v8::Isolate* isolate, const gfx::Image& image)
+    : image_(image) {
+  Init(isolate);
+}
 
 NativeImage::~NativeImage() {}
-
-mate::ObjectTemplateBuilder NativeImage::GetObjectTemplateBuilder(
-    v8::Isolate* isolate) {
-  if (template_.IsEmpty())
-    template_.Reset(isolate, mate::ObjectTemplateBuilder(isolate)
-        .SetMethod("toPng", &NativeImage::ToPNG)
-        .SetMethod("toJpeg", &NativeImage::ToJPEG)
-        .SetMethod("getNativeHandle", &NativeImage::GetNativeHandle)
-        .SetMethod("toDataURL", &NativeImage::ToDataURL)
-        .SetMethod("toDataUrl", &NativeImage::ToDataURL)  // deprecated.
-        .SetMethod("isEmpty", &NativeImage::IsEmpty)
-        .SetMethod("getSize", &NativeImage::GetSize)
-        .SetMethod("setTemplateImage", &NativeImage::SetTemplateImage)
-        .SetMethod("isTemplateImage", &NativeImage::IsTemplateImage)
-        .Build());
-
-  return mate::ObjectTemplateBuilder(
-      isolate, v8::Local<v8::ObjectTemplate>::New(isolate, template_));
-}
 
 v8::Local<v8::Value> NativeImage::ToPNG(v8::Isolate* isolate) {
   scoped_refptr<base::RefCountedMemory> png = image_.As1xPNGBytes();
@@ -255,13 +235,13 @@ bool NativeImage::IsTemplateImage() {
 
 // static
 mate::Handle<NativeImage> NativeImage::CreateEmpty(v8::Isolate* isolate) {
-  return mate::CreateHandle(isolate, new NativeImage);
+  return mate::CreateHandle(isolate, new NativeImage(isolate, gfx::Image()));
 }
 
 // static
 mate::Handle<NativeImage> NativeImage::Create(
     v8::Isolate* isolate, const gfx::Image& image) {
-  return mate::CreateHandle(isolate, new NativeImage(image));
+  return mate::CreateHandle(isolate, new NativeImage(isolate, image));
 }
 
 // static
@@ -328,6 +308,21 @@ mate::Handle<NativeImage> NativeImage::CreateFromDataURL(
   }
 
   return CreateEmpty(isolate);
+}
+
+// static
+void NativeImage::BuildPrototype(
+    v8::Isolate* isolate, v8::Local<v8::ObjectTemplate> prototype) {
+  mate::ObjectTemplateBuilder(isolate, prototype)
+      .SetMethod("toPng", &NativeImage::ToPNG)
+      .SetMethod("toJpeg", &NativeImage::ToJPEG)
+      .SetMethod("getNativeHandle", &NativeImage::GetNativeHandle)
+      .SetMethod("toDataURL", &NativeImage::ToDataURL)
+      .SetMethod("toDataUrl", &NativeImage::ToDataURL)  // deprecated.
+      .SetMethod("isEmpty", &NativeImage::IsEmpty)
+      .SetMethod("getSize", &NativeImage::GetSize)
+      .SetMethod("setTemplateImage", &NativeImage::SetTemplateImage)
+      .SetMethod("isTemplateImage", &NativeImage::IsTemplateImage);
 }
 
 }  // namespace api

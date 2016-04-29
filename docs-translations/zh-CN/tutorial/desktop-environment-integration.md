@@ -3,6 +3,47 @@
 
 本章将会说明怎样使用 Electron APIs 把你的应用和桌面环境集成到一块。
 
+## Notifications (Windows, Linux, OS X)
+
+这三个操作系统都为用户提供了发送通知的方法。Electron让开发人员通过
+[HTML5 Notification API](https://notifications.spec.whatwg.org/)
+便利的去发送通知，用操作系统自带的通知APIs去显示。
+
+**Note:** 因为这是一个HTML5API，所以只在渲染进程中起作用
+
+```javascript
+var myNotification = new Notification('Title', {
+  body: 'Lorem Ipsum Dolor Sit Amet'
+});
+
+myNotification.onclick = function () {
+  console.log('Notification clicked')
+}
+```
+
+尽管代码和用户体验在不同的操作系统中基本相同，但还是有一些差异。
+
+### Windows
+
+* 在Windows 10上, 通知"可以工作".
+* 在Windows 8.1和Windows 8系统下，你需要将你的应用通过一个[Application User
+Model ID][app-user-model-id]安装到开始屏幕上。需要注意的是，这不是将你的应用固定到开始屏幕。
+* 在Windows 7以及更低的版本中，通知不被支持。不过你可以使用[Tray API][tray-balloon]发送一个"气泡通知"。
+
+此外，通知支持的最大字符长队为250。Windows团队建议通知应该保持在200个字符以下。
+
+### Linux
+
+通知使用`libnotify`发送，它能在任何支持[Desktop Notifications
+Specification][notification-spec]的桌面环境中显示，包括 Cinnamon, Enlightenment, Unity,
+GNOME, KDE。
+
+### OS X
+
+在OS X系统中，通知是直接转发的，你应该了解[Apple's Human Interface guidelines regarding notifications](https://developer.apple.com/library/mac/documentation/UserExperience/Conceptual/OSXHIGuidelines/NotificationCenter.html)。
+
+注意通知被限制在256个字节以内，如果超出，则会被截断。
+
 ## 最近文档 (Windows & OS X)
 Windows 和 OS X 提供获取最近文档列表的便捷方式，那就是打开跳转列表或者鱼眼菜单。
 
@@ -149,19 +190,33 @@ window.setDocumentEdited(true);
 
  [1]:https://camo.githubusercontent.com/3310597e01f138b1d687e07aa618c50908a88dec/687474703a2f2f692e6d73646e2e6d6963726f736f66742e636f6d2f64796e696d672f49433432303533382e706e67
   [2]: https://cloud.githubusercontent.com/assets/639601/5069610/2aa80758-6e97-11e4-8cfb-c1a414a10774.png
-  [3]: https://github.com/atom/electron/blob/master/docs-translations/zh-CN/api/app.md
-  [4]: https://github.com/atom/electron/blob/master/docs/tutorial/clearrecentdocuments
+  [3]: https://github.com/electron/electron/blob/master/docs-translations/zh-CN/api/app.md
+  [4]: https://github.com/electron/electron/blob/master/docs/tutorial/clearrecentdocuments
   [5]: https://msdn.microsoft.com/en-us/library/windows/desktop/ee872121%28v=vs.85%29.aspx
   [6]: https://cloud.githubusercontent.com/assets/639601/5069962/6032658a-6e9c-11e4-9953-aa84006bdfff.png
   [7]: https://camo.githubusercontent.com/30154e0cc36acfc968ac9ae076a8f0d6600dd736/687474703a2f2f692e6d73646e2e6d6963726f736f66742e636f6d2f64796e696d672f49433432303533392e706e67
-  [8]: https://github.com/atom/electron/blob/master/docs/api/app.md#appsetusertaskstasks
+  [8]: https://github.com/electron/electron/blob/master/docs/api/app.md#appsetusertaskstasks
   [9]: https://camo.githubusercontent.com/098cb0f52f27084a80ec6429e51a195df3d8c333/68747470733a2f2f692d6d73646e2e7365632e732d6d7366742e636f6d2f64796e696d672f49433432303534302e706e67
-  [10]: https://github.com/atom/electron/blob/master/docs-translations/zh-CN/api/browser-window.md
+  [10]: https://github.com/electron/electron/blob/master/docs-translations/zh-CN/api/browser-window.md
   [11]: https://help.ubuntu.com/community/UnityLaunchersAndDesktopFiles#Adding_shortcuts_to_a_launcher
   [12]: https://camo.githubusercontent.com/b6f54e2bc3206ebf8e08dd029529af9ec84d58ae/68747470733a2f2f68656c702e7562756e74752e636f6d2f636f6d6d756e6974792f556e6974794c61756e6368657273416e644465736b746f7046696c65733f616374696f6e3d41747461636846696c6526646f3d676574267461726765743d73686f7274637574732e706e67
   [13]: https://cloud.githubusercontent.com/assets/639601/5081682/16691fda-6f0e-11e4-9676-49b6418f1264.png
   [14]: https://cloud.githubusercontent.com/assets/639601/5081747/4a0a589e-6f0f-11e4-803f-91594716a546.png
-  [15]: https://github.com/atom/electron/blob/master/docs-translations/zh-CN/api/browser-window.md
+  [15]: https://github.com/electron/electron/blob/master/docs-translations/zh-CN/api/browser-window.md
   [16]: https://cloud.githubusercontent.com/assets/639601/5082061/670a949a-6f14-11e4-987a-9aaa04b23c1d.png
-  [17]: https://github.com/atom/electron/blob/master/docs-translations/zh-CN/api/browser-window.md
-  [18]: https://github.com/atom/electron/blob/master/docs-translations/zh-CN/api/browser-window.md
+  [17]: https://github.com/electron/electron/blob/master/docs-translations/zh-CN/api/browser-window.md
+  [18]: https://github.com/electron/electron/blob/master/docs-translations/zh-CN/api/browser-window.md
+  
+[addrecentdocument]: ../api/app.md#appaddrecentdocumentpath-os-x-windows
+[clearrecentdocuments]: ../api/app.md#appclearrecentdocuments-os-x-windows
+[setusertaskstasks]: ../api/app.md#appsetusertaskstasks-windows
+[setprogressbar]: ../api/browser-window.md#winsetprogressbarprogress
+[setoverlayicon]: ../api/browser-window.md#winsetoverlayiconoverlay-description-windows-7
+[setrepresentedfilename]: ../api/browser-window.md#winsetrepresentedfilenamefilename-os-x
+[setdocumentedited]: ../api/browser-window.md#winsetdocumenteditededited-os-x
+[app-registration]: http://msdn.microsoft.com/en-us/library/windows/desktop/ee872121(v=vs.85).aspx
+[unity-launcher]: https://help.ubuntu.com/community/UnityLaunchersAndDesktopFiles#Adding_shortcuts_to_a_launcher
+[setthumbarbuttons]: ../api/browser-window.md#winsetthumbarbuttonsbuttons-windows-7
+[tray-balloon]: ../api/tray.md#traydisplayballoonoptions-windows
+[app-user-model-id]: https://msdn.microsoft.com/en-us/library/windows/desktop/dd378459(v=vs.85).aspx
+[notification-spec]: https://developer.gnome.org/notification-spec/

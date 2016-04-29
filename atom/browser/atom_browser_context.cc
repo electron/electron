@@ -65,7 +65,7 @@ std::string RemoveWhitespace(const std::string& str) {
 AtomBrowserContext::AtomBrowserContext(const std::string& partition,
                                        bool in_memory)
     : brightray::BrowserContext(partition, in_memory),
-      cert_verifier_(nullptr),
+      cert_verifier_(new AtomCertVerifier),
       job_factory_(new AtomURLRequestJobFactory),
       network_delegate_(new AtomNetworkDelegate),
       allow_ntlm_everywhere_(false) {
@@ -178,8 +178,6 @@ content::PermissionManager* AtomBrowserContext::GetPermissionManager() {
 }
 
 scoped_ptr<net::CertVerifier> AtomBrowserContext::CreateCertVerifier() {
-  DCHECK(!cert_verifier_);
-  cert_verifier_ = new AtomCertVerifier;
   return make_scoped_ptr(cert_verifier_);
 }
 
