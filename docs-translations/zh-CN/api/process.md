@@ -4,8 +4,8 @@ Electron 中的 `process` 对象 与 upstream node 中的有以下的不同点:
 
 * `process.type` String - 进程类型, 可以是 `browser` (i.e. main process)
   或 `renderer`.
-* `process.versions['electron']` String - Electron的版本.
-* `process.versions['chrome']` String - Chromium的版本.
+* `process.versions.electron` String - Electron的版本.
+* `process.versions.chrome` String - Chromium的版本.
 * `process.resourcesPath` String - JavaScript源代码路径.
 * `process.mas` Boolean - 在Mac App Store 创建, 它的值为 `true`, 在其它的地方值为 `undefined`.
 

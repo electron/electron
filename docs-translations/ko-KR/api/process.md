@@ -4,8 +4,8 @@ Electron의 `process` 객체는 기존의 node와는 달리 약간의 차이점�
 
 * `process.type` String - 프로세스의 타입, `browser` (메인 프로세스) 또는
   `renderer`가 됩니다.
-* `process.versions['electron']` String - Electron의 버전.
-* `process.versions['chrome']` String - Chromium의 버전.
+* `process.versions.electron` String - Electron의 버전.
+* `process.versions.chrome` String - Chromium의 버전.
 * `process.resourcesPath` String - JavaScript 소스 코드의 경로.
 * `process.mas` Boolean - Mac 앱 스토어용 빌드일 때 `true`로 지정됩니다. 다른
   빌드일 땐 `undefined`로 지정됩니다.

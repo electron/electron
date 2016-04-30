@@ -129,7 +129,7 @@ app.on('ready', function() {
     <h1>헬로 월드!</h1>
     이 어플리케이션은 node <script>document.write(process.version)</script>,
     Chrome <script>document.write(process.versions.chrome)</script>,
-    Electron <script>document.write(process.versions['electron'])</script>을 사용합니다.
+    Electron <script>document.write(process.versions.electron)</script>을 사용합니다.
   </body>
 </html>
 ```
