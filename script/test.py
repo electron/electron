@@ -32,6 +32,11 @@ def main():
 
   subprocess.check_call([atom_shell, 'spec'] + sys.argv[1:])
 
+  if os.environ.has_key('OUTPUT_TO_FILE'):
+    output_to_file = os.environ['OUTPUT_TO_FILE']
+    with open(output_to_file, 'r') as f:
+      print f.read()
+
 
 if __name__ == '__main__':
   sys.exit(main())
