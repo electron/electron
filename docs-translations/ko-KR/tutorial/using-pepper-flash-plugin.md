@@ -12,8 +12,8 @@ Pepper 플래시 플러그인을 사용하려면 Pepper 플래시 플러그인�
 ## Electron 스위치 추가
 
 플러그인을 사용하려면 Electron 커맨드 라인에 `--ppapi-flash-path` 와
-`ppapi-flash-version` 플래그를 app의 ready 이벤트가 호출되기 전에 추가해야 합니다.
-그리고 `browser-window`에 `plugins` 스위치도 추가해야 합니다.
+`ppapi-flash-version` 플래그를 `app`의 `ready` 이벤트가 발생하기 전에 추가해야
+합니다. 그리고 `browser-window`에 `plugins` 스위치도 추가해야 합니다.
 
 ```javascript
 // 플래시 플러그인의 위치를 설정합니다.

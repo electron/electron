@@ -1,5 +1,7 @@
 ﻿# process
 
+> 현재 작동중인 어플리케이션의 정보를 가져옵니다.
+
 Electron의 `process` 객체는 기존의 node와는 달리 약간의 차이점이 있습니다:
 
 * `process.type` String - 프로세스의 타입, `browser` (메인 프로세스) 또는
@@ -42,6 +44,10 @@ process.once('loaded', function() {
 ## Methods
 
 `process` 객체는 다음과 같은 메서드를 가지고 있습니다:
+
+### `process.crash()`
+
+현재 프로세스의 메인 스레드에 크래시를 일으킵니다.
 
 ### `process.hang()`
 

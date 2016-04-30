@@ -1,8 +1,9 @@
 ﻿# Menu
 
-`menu` 클래스는 어플리케이션 메뉴와 [컨텍스트 메뉴](https://developer.mozilla.org/ko/docs/Mozilla/Tech/XUL/PopupGuide/ContextMenus)를
-만들 때 사용됩니다. 이 모듈은 메인 프로세스용 모듈이지만 `remote` 모듈을 통해 렌더러
-프로세스에서도 사용할 수 있습니다.
+> 네이티브 어플리케이션 메뉴와 컨텍스트 메뉴를 생성합니다.
+
+이 모듈은 메인 프로세스용 모듈이지만 `remote` 모듈을 통해 렌더러 프로세스에서도 사용할
+수 있습니다.
 
 각 메뉴는 여러 개의 [메뉴 아이템](menu-item.md)으로 구성되고 서브 메뉴를 가질 수도 있습니다.
 

@@ -1,5 +1,7 @@
 # session
 
+> 브라우저 세션, 쿠키, 캐시, 프록시 설정 등을 관리합니다.
+
 `session` 모듈은 새로운 `Session` 객체를 만드는데 사용할 수 있습니다.
 
 또한 존재하는 [`BrowserWindow`](browser-window.md)의
