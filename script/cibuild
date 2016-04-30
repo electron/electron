@@ -78,7 +78,7 @@ def main():
     if PLATFORM == 'win32':
       os.environ['OUTPUT_TO_FILE'] = 'output.log'
     run_script('build.py', ['-c', 'D'])
-    if target_arch == 'x64':
+    if PLATFORM == 'win32' or target_arch == 'x64':
       run_script('test.py', ['--ci'])
 
 
