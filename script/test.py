@@ -30,12 +30,18 @@ def main():
   else:
     atom_shell = os.path.join(SOURCE_ROOT, 'out', config, PROJECT_NAME)
 
-  subprocess.check_call([atom_shell, 'spec'] + sys.argv[1:])
+  returncode = 0
+  try:
+    subprocess.check_call([atom_shell, 'spec'] + sys.argv[1:])
+  except subprocess.CalledProcessError as e:
+    returncode = e.returncode
 
   if os.environ.has_key('OUTPUT_TO_FILE'):
     output_to_file = os.environ['OUTPUT_TO_FILE']
     with open(output_to_file, 'r') as f:
       print f.read()
+
+  return returncode
 
 
 if __name__ == '__main__':
