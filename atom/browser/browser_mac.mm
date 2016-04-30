@@ -87,6 +87,23 @@ bool Browser::IsDefaultProtocolClient(const std::string& protocol) {
 void Browser::SetAppUserModelID(const base::string16& name) {
 }
 
+void Browser::SetUserActivity(const std::string& type, const std::map<std::string, std::string>& user_info) {
+  NSString* type_ns = [NSString stringWithUTF8String:type.c_str()];
+  NSUserActivity *user_activity = [[NSUserActivity alloc] initWithActivityType:type_ns];
+
+  NSMutableArray* user_info_args = [[NSMutableArray alloc] init];
+  for (auto const &pair : user_info) {
+    NSString* key_ns = [NSString stringWithUTF8String:pair.first.c_str()];
+    NSString* value_ns = [NSString stringWithUTF8String:pair.second.c_str()];
+    
+    [user_info_args addObject:key_ns];
+    [user_info_args addObject:value_ns];
+  }
+
+  user_activity.userInfo = [[NSDictionary alloc] initWithObjectsAndKeys:user_info_args, nil];
+  [user_activity becomeCurrent];
+}
+
 std::string Browser::GetExecutableFileVersion() const {
   return brightray::GetApplicationVersion();
 }

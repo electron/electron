@@ -460,6 +460,7 @@ void App::BuildPrototype(
 #if defined(OS_MACOSX)
       .SetMethod("hide", base::Bind(&Browser::Hide, browser))
       .SetMethod("show", base::Bind(&Browser::Show, browser))
+      .SetMethod("setUserActivity", base::Bind(&Browser::SetUserActivity, browser))
 #endif
 #if defined(OS_WIN)
       .SetMethod("setUserTasks",
