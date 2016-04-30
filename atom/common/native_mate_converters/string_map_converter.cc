@@ -6,10 +6,9 @@
 
 namespace mate {
 
-bool Converter<std::map<std::string, std::string>>::FromV8(v8::Isolate* isolate, 
+bool Converter<std::map<std::string, std::string>>::FromV8(v8::Isolate* isolate,
   v8::Local<v8::Value> val,
   std::map<std::string, std::string>* out) {
-
   if (!val->IsObject())
     return false;
 
@@ -22,9 +21,9 @@ bool Converter<std::map<std::string, std::string>>::FromV8(v8::Isolate* isolate,
   return true;
 }
 
-v8::Local<v8::Value> Converter<std::map<std::string, std::string>>::ToV8(v8::Isolate* isolate,
+v8::Local<v8::Value> Converter<std::map<std::string, std::string>>::ToV8(
+  v8::Isolate* isolate,
   const std::map<std::string, std::string>& in) {
-
   mate::Dictionary dict(isolate, v8::Object::New(isolate));
 
   for (auto const &pair : in) {
@@ -34,4 +33,4 @@ v8::Local<v8::Value> Converter<std::map<std::string, std::string>>::ToV8(v8::Iso
   return dict.GetHandle();
 }
 
-} // namespace mate
+}  // namespace mate

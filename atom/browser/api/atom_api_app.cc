@@ -250,7 +250,9 @@ void App::OnFinishLaunching() {
   Emit("ready");
 }
 
-void App::OnContinueUserActivity(bool* handled, const std::string& type, const std::map<std::string, std::string>& user_info) {
+void App::OnContinueUserActivity(bool* handled,
+  const std::string& type,
+  const std::map<std::string, std::string>& user_info) {
   *handled = Emit("continue-activity", type, user_info);
 }
 
@@ -465,7 +467,8 @@ void App::BuildPrototype(
 #if defined(OS_MACOSX)
       .SetMethod("hide", base::Bind(&Browser::Hide, browser))
       .SetMethod("show", base::Bind(&Browser::Show, browser))
-      .SetMethod("setUserActivity", base::Bind(&Browser::SetUserActivity, browser))
+      .SetMethod("setUserActivity",
+                 base::Bind(&Browser::SetUserActivity, browser))
 #endif
 #if defined(OS_WIN)
       .SetMethod("setUserTasks",

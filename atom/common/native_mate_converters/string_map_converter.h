@@ -20,7 +20,7 @@ struct Converter<std::map<std::string, std::string>> {
                      std::map<std::string, std::string>* out);
 
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   const std::map<std::string, std::string>& in);
+    const std::map<std::string, std::string>& in);
 };
 
 }  // namespace mate
