@@ -9,7 +9,7 @@ Electron의 메인 프로세스에선 GUI와 관련 있는(`dialog`, `menu`등) 
 inter-process 통신을 하지 않고도 간단한 API를 통해 직접 메인 프로세스의 모듈과
 메서드를 사용할 수 있습니다. 이 개념은 Java의 [RMI][rmi]와 비슷합니다.
 
-다음 예제는 렌더러 프로세스에서 브라우저 창을 만드는 예제입니다:
+다음 예시는 렌더러 프로세스에서 브라우저 창을 만드는 예시입니다:
 
 ```javascript
 const remote = require('electron').remote;
@@ -29,7 +29,7 @@ win.loadURL('https://github.com');
 메서드를 호출하거나, 객체에 접근하거나, 생성자로 객체를 생성하는 등의 작업은 실질적으로
 동기형 inter-process 메시지를 보냅니다.
 
-위의 예제에서 사용한 두 `BrowserWindow`와 `win`은 remote 객체입니다. 그리고
+위의 예시에서 사용한 두 `BrowserWindow`와 `win`은 remote 객체입니다. 그리고
 `new BrowserWindow`이 생성하는 `BrowserWindow` 객체는 렌더러 프로세스에서 생성되지
 않습니다. 대신에 이 `BrowserWindow` 객체는 메인 프로세스에서 생성되며 렌더러
 프로세스에 `win` 객체와 같이 이에 대응하는 remote 객체를 반환합니다.
@@ -94,7 +94,7 @@ console.log(withRendererCb, withLocalCb) // [true, true, true], [2, 3, 4]
 않습니다. 함수 참조는 메인 프로세스에서 GC가 일어나기 전까지 계속 프로세스에 남아있게
 됩니다.
 
-다음 코드를 보면 느낌이 올 것입니다. 이 예제는 remote 객체에 `close` 이벤트 콜백을
+다음 코드를 보면 느낌이 올 것입니다. 이 예시는 remote 객체에 `close` 이벤트 콜백을
 설치합니다:
 
 ```javascript

@@ -5,7 +5,7 @@
 됩니다) 메인 프로세스의 `app` 모듈에서 `ready` 이벤트를 호출하기 전까지 사용할 수
 없습니다.
 
-예제:
+예시:
 
 ```javascript
 var app = require('app');

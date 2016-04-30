@@ -71,7 +71,7 @@ your-app/
 __알림__: 만약 `main` 필드가 `package.json`에 설정되어 있지 않으면 Electron은
 자동으로 같은 디렉터리의 `index.js`를 로드합니다.
 
-반드시 `main.js`에서 창을 만들고 시스템 이벤트를 처리해야 합니다. 대표적인 예제로
+반드시 `main.js`에서 창을 만들고 시스템 이벤트를 처리해야 합니다. 대표적인 예시로
 다음과 같이 작성할 수 있습니다:
 
 ```javascript
@@ -116,7 +116,7 @@ app.on('ready', function() {
 });
 ```
 
-마지막으로, 사용자에게 보여줄 `index.html` 웹 페이지의 예제입니다:
+마지막으로, 사용자에게 보여줄 `index.html` 웹 페이지의 예시입니다:
 
 ```html
 <!DOCTYPE html>
@@ -196,9 +196,9 @@ $ ./Electron.app/Contents/MacOS/Electron your-app/
 ### 미리 작성된 앱 실행하기
 
 [`atom/electron-quick-start`](https://github.com/electron/electron-quick-start)
-저장소를 클론하면 이 문서에서 작성한 예제 앱을 바로 실행해 볼 수 있습니다.
+저장소를 클론하면 이 문서에서 작성한 예시 앱을 바로 실행해 볼 수 있습니다.
 
-**참고**: 이 예제를 실행시키려면 [Git](https://git-scm.com)과
+**참고**: 이 예시를 실행시키려면 [Git](https://git-scm.com)과
 [Node.js](https://nodejs.org/en/download/)가 필요합니다. (CLI에서 실행 가능한
   [npm](https://npmjs.org)이 있어야 합니다)
 

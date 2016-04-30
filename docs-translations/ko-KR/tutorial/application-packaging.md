@@ -168,7 +168,7 @@ Node API에는 `child_process.exec`, `child_process.spawn` 그리고
 바이러스로 진단 할 수도 있습니다.
 
 이 문제를 해결하려면 `--unpack` 옵션을 통해 파일을 압축이 풀려진 상태로 유지해야 합니다.
-다음의 예제는 node 네이티브 모듈의 공유 라이브러리를 압축이 풀려진 상태로 유지합니다:
+다음의 예시는 node 네이티브 모듈의 공유 라이브러리를 압축이 풀려진 상태로 유지합니다:
 
 ```bash
 $ asar pack app app.asar --unpack *.node

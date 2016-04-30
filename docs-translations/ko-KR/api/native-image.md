@@ -11,7 +11,7 @@ var appIcon = new Tray('/Users/somebody/images/icon.png');
 var window = new BrowserWindow({icon: '/Users/somebody/images/window.png'});
 ```
 
-이 예제는 클립보드로부터 가져온 `nativeImage`로 트레이 메뉴를 생성합니다:
+이 예시는 클립보드로부터 가져온 `nativeImage`로 트레이 메뉴를 생성합니다:
 
 ```javascript
 var image = clipboard.readImage();
@@ -73,7 +73,7 @@ var appIcon = new Tray('/Users/somebody/images/icon.png');
 
 **참고:** 템플릿 이미지는 OS X 운영체제만 지원합니다.
 
-템플릿 이미지를 지정하려면 다음 예제와 같이 파일명에 `Template` 문자열을 추가해야
+템플릿 이미지를 지정하려면 다음 예시와 같이 파일명에 `Template` 문자열을 추가해야
 합니다:
 
 * `xxxTemplate.png`

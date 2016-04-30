@@ -3,7 +3,7 @@
 `menu-item` 모듈은 어플리케이션 또는 컨텍스트 [`menu`](menu.md)에 항목 아이템을
 추가할 수 있도록 관련 클래스를 제공합니다.
 
-[`menu`](menu.md)에서 예제를 확인할 수 있습니다.
+[`menu`](menu.md)에서 예시를 확인할 수 있습니다.
 
 ## Class: MenuItem
 
