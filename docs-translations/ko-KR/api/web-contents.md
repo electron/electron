@@ -501,7 +501,7 @@ CSS 코드를 현재 웹 페이지에 삽입합니다.
 
 ### `webContents.findInPage(text[, options])`
 
-* `text` String - 찾을 컨텐츠, 반드시 공백이 아니여야 합니다.
+* `text` String - 찾을 콘텐츠, 반드시 공백이 아니여야 합니다.
 * `options` Object (optional)
   * `forward` Boolean - 앞에서부터 검색할지 뒤에서부터 검색할지 여부입니다. 기본값은
     `true`입니다.

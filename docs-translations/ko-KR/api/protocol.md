@@ -134,8 +134,8 @@ HTTP 요청을 응답으로 전송할 `scheme`의 프로토콜을 등록합니�
 POST 요청에는 반드시 `uploadData` 객체가 제공되어야 합니다.
 
 * `uploadData` object
-  * `contentType` String - 컨텐츠의 MIME 타입.
-  * `data` String - 전송할 컨텐츠.
+  * `contentType` String - 콘텐츠의 MIME 타입.
+  * `data` String - 전송할 콘텐츠.
 
 ### `protocol.unregisterProtocol(scheme[, completion])`
 

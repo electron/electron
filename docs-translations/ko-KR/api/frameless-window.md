@@ -42,7 +42,7 @@ var win = new BrowserWindow({ transparent: true, frame: false });
   [이슈](https://github.com/electron/electron/issues/1335)를 참고하세요.
 * 투명한 창은 크기를 조절할 수 없습니다. `resizable` 속성을 `true`로 할 경우 몇몇
   플랫폼에선 크래시가 일어납니다.
-* `blur` 필터는 웹 페이지에서만 적용됩니다. 윈도우 아래 컨텐츠에는 블러 효과를 적용할
+* `blur` 필터는 웹 페이지에서만 적용됩니다. 윈도우 아래 콘텐츠에는 블러 효과를 적용할
   방법이 없습니다. (예시: 유저의 시스템에 열린 다른 어플리케이션)
 * Windows에선 DWM(데스크톱 창 관리자)가 비활성화되어 있을 경우 투명한 창이 작동하지
   않습니다.

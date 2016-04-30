@@ -322,7 +322,7 @@ session.fromPartition(partition).setPermissionRequestHandler(function(webContent
 
 #### `ses.webRequest`
 
-`webRequest` API는 생명주기의 다양한 단계에 맞춰 요청 컨텐츠를 가로채거나 변경할 수
+`webRequest` API는 생명주기의 다양한 단계에 맞춰 요청 콘텐츠를 가로채거나 변경할 수
 있도록 합니다.
 
 각 API는 `filter`와 `listener`를 선택적으로 받을 수 있습니다. `listener`는 API의
@@ -367,7 +367,7 @@ session.defaultSession.webRequest.onBeforeSendHeaders(filter, function(details, 
 `uploadData`는 `data` 객체의 배열입니다:
 
 * `data` Object
-  * `bytes` Buffer - 전송될 컨텐츠.
+  * `bytes` Buffer - 전송될 콘텐츠.
   * `file` String - 업로드될 파일의 경로.
 
 `callback`은 `response` 객체와 함께 호출되어야 합니다:
