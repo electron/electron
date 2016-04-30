@@ -104,7 +104,7 @@ int MenuBar::GetAcceleratorIndex(base::char16 key) {
 void MenuBar::ActivateAccelerator(base::char16 key) {
   int i = GetAcceleratorIndex(key);
   if (i != -1)
-    static_cast<SubmenuButton*>(child_at(i))->Activate();
+    static_cast<SubmenuButton*>(child_at(i))->Activate(nullptr);
 }
 
 int MenuBar::GetItemCount() const {
@@ -141,22 +141,22 @@ const char* MenuBar::GetClassName() const {
 void MenuBar::ButtonPressed(views::Button* sender, const ui::Event& event) {
 }
 
-void MenuBar::OnMenuButtonClicked(views::View* source,
-                                  const gfx::Point& point) {
+void MenuBar::OnMenuButtonClicked(views::MenuButton* source,
+                                  const gfx::Point& point,
+                                  const ui::Event* event) {
   // Hide the accelerator when a submenu is activated.
   SetAcceleratorVisibility(false);
 
   if (!menu_model_)
     return;
 
-  views::MenuButton* button = static_cast<views::MenuButton*>(source);
-  int id = button->tag();
+  int id = source->tag();
   ui::MenuModel::ItemType type = menu_model_->GetTypeAt(id);
   if (type != ui::MenuModel::TYPE_SUBMENU)
     return;
 
   MenuDelegate menu_delegate(this);
-  menu_delegate.RunMenu(menu_model_->GetSubmenuModelAt(id), button);
+  menu_delegate.RunMenu(menu_model_->GetSubmenuModelAt(id), source);
 }
 
 }  // namespace atom
