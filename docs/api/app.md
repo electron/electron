@@ -108,8 +108,20 @@ Returns:
 * `event` Event
 * `hasVisibleWindows` Boolean
 
-Emitted when the application is activated, which usually happens when clicks on
-the applications's dock icon.
+Emitted when the application is activated, which usually happens when the user clicks on
+the application's dock icon.
+
+### Event: 'continue-activity' _OS X_
+
+Returns:
+
+* `event` Event
+* `type` String - A string identifying the event. Maps to [`NSUserActivity.activityType`](https://developer.apple.com/library/ios/documentation/Foundation/Reference/NSUserActivity_Class/index.html#//apple_ref/occ/instp/NSUserActivity/activityType).
+* `userInfo` Object - Contains app-specific state stored by the activity on another device.
+
+Emitted during [handoff](https://developer.apple.com/library/ios/documentation/UserExperience/Conceptual/Handoff/HandoffFundamentals/HandoffFundamentals.html) when an activity from a different device wants to be
+resumed. You should call `event.preventDefault()` if you want to handle this
+event.
 
 ### Event: 'browser-window-blur'
 
@@ -386,12 +398,12 @@ default protocol handler.
 
 ### `app.isDefaultProtocolClient(protocol)` _OS X_ _Windows_
 
-* `protocol` String - The name of your protocol, without `://`. 
+* `protocol` String - The name of your protocol, without `://`.
 
 This method checks if the current executable is the default handler for a protocol
-(aka URI scheme). If so, it will return true. Otherwise, it will return false. 
+(aka URI scheme). If so, it will return true. Otherwise, it will return false.
 
-**Note:** On OS X, you can use this method to check if the app has been registered as the default protocol handler for a protocol. You can also verify this by checking `~/Library/Preferences/com.apple.LaunchServices.plist` on the OS X machine. 
+**Note:** On OS X, you can use this method to check if the app has been registered as the default protocol handler for a protocol. You can also verify this by checking `~/Library/Preferences/com.apple.LaunchServices.plist` on the OS X machine.
 Please refer to [Apple's documentation][LSCopyDefaultHandlerForURLScheme] for details.
 
 The API uses the Windows Registry and LSCopyDefaultHandlerForURLScheme internally.
@@ -482,6 +494,16 @@ app.on('ready', function() {
 });
 ```
 
+### `app.setUserActivity(type, userInfo)` _OS X_
+
+* `type` String - Uniquely identifies the activity. It's recommended to use a
+reverse-DNS string.
+* `userInfo` Object - Contains app-specific state stored by the activity on
+another device.
+
+Creates an `NSUserActivity` and sets it as the current activity. The activity
+is eligible for [handoff](https://developer.apple.com/library/ios/documentation/UserExperience/Conceptual/Handoff/HandoffFundamentals/HandoffFundamentals.html) to another device afterward.
+
 ### `app.setAppUserModelId(id)` _Windows_
 
 * `id` String
@@ -568,5 +590,5 @@ Sets the `image` associated with this dock icon.
 [tasks]:http://msdn.microsoft.com/en-us/library/windows/desktop/dd378460(v=vs.85).aspx#tasks
 [app-user-model-id]: https://msdn.microsoft.com/en-us/library/windows/desktop/dd378459(v=vs.85).aspx
 [CFBundleURLTypes]: https://developer.apple.com/library/ios/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html#//apple_ref/doc/uid/TP40009249-102207-TPXREF115
-[LSCopyDefaultHandlerForURLScheme]: 
+[LSCopyDefaultHandlerForURLScheme]:
 https://developer.apple.com/library/mac/documentation/Carbon/Reference/LaunchServicesReference/#//apple_ref/c/func/LSCopyDefaultHandlerForURLScheme
