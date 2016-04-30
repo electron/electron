@@ -97,6 +97,9 @@ describe('chromium feature', function () {
     if (isCI && process.platform === 'linux') {
       return
     }
+    if (isCI && process.platform === 'win32') {
+      return
+    }
 
     it('can return labels of enumerated devices', function (done) {
       navigator.mediaDevices.enumerateDevices().then((devices) => {
@@ -327,6 +330,10 @@ describe('chromium feature', function () {
   })
 
   describe('webgl', function () {
+    if (isCI && process.platform === 'win32') {
+      return
+    }
+
     it('can be get as context in canvas', function () {
       if (process.platform === 'linux') return
 
