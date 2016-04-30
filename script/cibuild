@@ -39,6 +39,7 @@ def main():
   if os.environ.has_key('TARGET_ARCH'):
     target_arch = os.environ['TARGET_ARCH']
 
+  is_appveyor = (os.getenv('APPVEYOR') == 'True')
   is_travis = (os.getenv('TRAVIS') == 'true')
   if is_travis and PLATFORM == 'linux':
     print 'Setup travis CI'
@@ -76,7 +77,7 @@ def main():
     run_script('upload.py')
   else:
     run_script('build.py', ['-c', 'D'])
-    if PLATFORM != 'win32' and target_arch == 'x64':
+    if not is_appveyor and target_arch == 'x64':
       run_script('test.py', ['--ci'])
 
 
