@@ -59,7 +59,7 @@ not (transparent windows won't work correctly when DWM composition is disabled):
 let browserOptions = {width: 1000, height: 800};
 
 // Make the window transparent only if the platform supports it.
-if (process.platform !== 'win32' || app.isAeroGlassEnabled()) {
+if (process.platform !== 'win32' || systemPreferences.isAeroGlassEnabled()) {
   browserOptions.transparent = true;
   browserOptions.frame = false;
 }
