@@ -141,12 +141,12 @@ void Browser::Activate(bool has_visible_windows) {
 bool Browser::ContinueUserActivity(const std::string& type,
                                    const std::map<std::string,
                                    std::string>& user_info) {
-  bool handled = false;
+  bool prevent_default = false;
   FOR_EACH_OBSERVER(BrowserObserver,
                     observers_,
-                    OnContinueUserActivity(&handled, type, user_info));
+                    OnContinueUserActivity(&prevent_default, type, user_info));
 
-  return handled;
+  return prevent_default;
 }
 #endif
 

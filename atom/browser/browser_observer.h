@@ -47,7 +47,7 @@ class BrowserObserver {
   virtual void OnLogin(LoginHandler* login_handler) {}
 
   // The browser wants to resume a user activity via handoff. (OS X only)
-  virtual void OnContinueUserActivity(bool* handled,
+  virtual void OnContinueUserActivity(bool* prevent_default,
     const std::string& type,
     const std::map<std::string, std::string>& user_info) {}
 

@@ -250,10 +250,10 @@ void App::OnFinishLaunching() {
   Emit("ready");
 }
 
-void App::OnContinueUserActivity(bool* handled,
+void App::OnContinueUserActivity(bool* prevent_default,
   const std::string& type,
   const std::map<std::string, std::string>& user_info) {
-  *handled = Emit("continue-activity", type, user_info);
+  *prevent_default = Emit("continue-activity", type, user_info);
 }
 
 void App::OnLogin(LoginHandler* login_handler) {
