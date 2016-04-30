@@ -4,7 +4,7 @@ import os
 import subprocess
 import sys
 
-from lib.util import atom_gyp
+from lib.util import atom_gyp, rm_rf
 
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
@@ -40,6 +40,8 @@ def main():
     output_to_file = os.environ['OUTPUT_TO_FILE']
     with open(output_to_file, 'r') as f:
       print f.read()
+    rm_rf(output_to_file)
+
 
   return returncode
 
