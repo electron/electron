@@ -6,6 +6,7 @@
 #define ATOM_BROWSER_BROWSER_OBSERVER_H_
 
 #include <string>
+#include <map>
 
 namespace atom {
 
@@ -44,6 +45,11 @@ class BrowserObserver {
 
   // The browser requests HTTP login.
   virtual void OnLogin(LoginHandler* login_handler) {}
+
+  // The browser wants to resume a user activity via handoff. (OS X only)
+  virtual void OnContinueUserActivity(bool* handled,
+                                      const std::string& type,
+                                      const std::map<std::string, std::string>& user_info) {}
 
  protected:
   virtual ~BrowserObserver() {}
