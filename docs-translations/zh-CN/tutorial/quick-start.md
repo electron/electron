@@ -89,7 +89,7 @@ app.on('ready', function() {
   <body>
     <h1>Hello World!</h1>
     We are using io.js <script>document.write(process.version)</script>
-    and Electron <script>document.write(process.versions['electron'])</script>.
+    and Electron <script>document.write(process.versions.electron)</script>.
   </body>
 </html>
 ```
