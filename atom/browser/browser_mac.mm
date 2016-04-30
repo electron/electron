@@ -69,7 +69,7 @@ bool Browser::IsDefaultProtocolClient(const std::string& protocol) {
     return false;
 
   NSString* protocol_ns = [NSString stringWithUTF8String:protocol.c_str()];
-  
+
   CFStringRef bundle =
       LSCopyDefaultHandlerForURLScheme(base::mac::NSToCFCast(protocol_ns));
   NSString* bundleId = static_cast<NSString*>(
@@ -77,7 +77,7 @@ bool Browser::IsDefaultProtocolClient(const std::string& protocol) {
   if (!bundleId)
     return false;
 
-  // Ensure the comparison is case-insensitive 
+  // Ensure the comparison is case-insensitive
   // as LS does not persist the case of the bundle id.
   NSComparisonResult result =
       [bundleId caseInsensitiveCompare:identifier];
@@ -93,11 +93,11 @@ void Browser::SetUserActivity(const std::string& type, const std::map<std::strin
 
   NSMutableArray* user_info_args = [[NSMutableArray alloc] init];
   for (auto const &pair : user_info) {
-    NSString* key_ns = [NSString stringWithUTF8String:pair.first.c_str()];
     NSString* value_ns = [NSString stringWithUTF8String:pair.second.c_str()];
-    
-    [user_info_args addObject:key_ns];
+    NSString* key_ns = [NSString stringWithUTF8String:pair.first.c_str()];
+
     [user_info_args addObject:value_ns];
+    [user_info_args addObject:key_ns];
   }
 
   user_activity.userInfo = [[NSDictionary alloc] initWithObjectsAndKeys:user_info_args, nil];
