@@ -90,9 +90,14 @@ void AutoUpdater::CheckForUpdates() {
           delegate->OnUpdateNotAvailable();
         }
       } error:^(NSError *error) {
-        delegate->OnError(base::SysNSStringToUTF8(
-            [NSString stringWithFormat:@"%@: %@",
-                error.localizedDescription, error.localizedFailureReason]));
+        NSString *failureString;
+        if(error.localizedFailureReason) {
+          failureString = [NSString stringWithFormat:@"%@: %@",
+            error.localizedDescription, error.localizedFailureReason];
+        } else {
+          failureString = [NSString stringWithString: error.localizedDescription];
+        }
+        delegate->OnError(base::SysNSStringToUTF8(failureString));
       }];
 }
 
