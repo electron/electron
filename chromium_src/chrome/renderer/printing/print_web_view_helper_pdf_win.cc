@@ -158,7 +158,7 @@ void PrintWebViewHelper::PrintPageInternal(
       frame->getPrintPageShrink(params.page_number);
   float scale_factor = css_scale_factor * webkit_page_shrink_factor;
 
-  skia::PlatformCanvas* canvas = metafile->GetVectorCanvasForNewPage(
+  SkCanvas* canvas = metafile->GetVectorCanvasForNewPage(
       page_size, canvas_area, scale_factor);
   if (!canvas)
     return;
