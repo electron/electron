@@ -140,7 +140,7 @@ void PrintingMessageFilter::OnDuplicateSection(
     base::SharedMemoryHandle* browser_handle) {
   // Duplicate the handle in this process right now so the memory is kept alive
   // (even if it is not mapped)
-  base::SharedMemory shared_buf(renderer_handle, true, PeerHandle());
+  base::SharedMemory shared_buf(renderer_handle, true);
   shared_buf.GiveToProcess(base::GetCurrentProcessHandle(), browser_handle);
 }
 #endif
