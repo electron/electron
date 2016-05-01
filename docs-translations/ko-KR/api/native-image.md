@@ -1,5 +1,7 @@
 ﻿# nativeImage
 
+> PNG 또는 JPG 파일을 사용하여 트레이, 독, 어플리케이션 아이콘을 생성합니다.
+
 Electron은 파일 경로 또는 `nativeImage` 인스턴스를 통해 이미지를 사용할 수 있는 API를
 가지고 있습니다. `null`을 전달할 경우 빈 이미지가 생성됩니다.
 
@@ -11,7 +13,7 @@ var appIcon = new Tray('/Users/somebody/images/icon.png');
 var window = new BrowserWindow({icon: '/Users/somebody/images/window.png'});
 ```
 
-이 예제는 클립보드로부터 가져온 `nativeImage`로 트레이 메뉴를 생성합니다:
+이 예시는 클립보드로부터 가져온 `nativeImage`로 트레이 메뉴를 생성합니다:
 
 ```javascript
 var image = clipboard.readImage();
@@ -66,14 +68,14 @@ var appIcon = new Tray('/Users/somebody/images/icon.png');
 ## 템플릿 이미지
 
 템플릿 이미지는 검은색과 명확한 색상(알파 채널)으로 이루어져 있습니다. 템플릿 이미지는
-단독 이미지로 사용되지 않고 다른 컨텐츠와 혼합되어 최종 외관 만드는데 사용됩니다.
+단독 이미지로 사용되지 않고 다른 콘텐츠와 혼합되어 최종 외관 만드는데 사용됩니다.
 
 가장 일반적으로 템플릿 이미지는 밝고 어두운 테마 색상으로 변경할 수 있는 메뉴 바 아이콘
 등에 사용되고 있습니다.
 
 **참고:** 템플릿 이미지는 OS X 운영체제만 지원합니다.
 
-템플릿 이미지를 지정하려면 다음 예제와 같이 파일명에 `Template` 문자열을 추가해야
+템플릿 이미지를 지정하려면 다음 예시와 같이 파일명에 `Template` 문자열을 추가해야
 합니다:
 
 * `xxxTemplate.png`

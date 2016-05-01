@@ -1,9 +1,8 @@
 ﻿# protocol
 
-`protocol` 모듈은 이미 있는 프로토콜의 동작을 가로채거나 새로운 프로토콜을 만들 수
-있는 기능을 제공합니다.
+> 커스텀 프로토콜을 등록하거나 이미 존재하능 프로토콜의 요청의 동작을 변경합니다.
 
-다음 예제는 `file://` 프로토콜과 비슷한 일을 하는 커스텀 프로토콜을 설정합니다:
+다음 예시는 `file://` 프로토콜과 비슷한 일을 하는 커스텀 프로토콜을 설정합니다:
 
 ```javascript
 const electron = require('electron');
@@ -87,7 +86,7 @@ The `uploadData` is an array of `data` objects:
 속성을 포함하는 객체와 함께 호출되어야 한다는 점을 제외하면 `registerFileProtocol`과
 사용법이 같습니다.
 
-예제:
+예시:
 
 ```javascript
 protocol.registerBufferProtocol('atom', function(request, callback) {
@@ -134,8 +133,8 @@ HTTP 요청을 응답으로 전송할 `scheme`의 프로토콜을 등록합니�
 POST 요청에는 반드시 `uploadData` 객체가 제공되어야 합니다.
 
 * `uploadData` object
-  * `contentType` String - 컨텐츠의 MIME 타입.
-  * `data` String - 전송할 컨텐츠.
+  * `contentType` String - 콘텐츠의 MIME 타입.
+  * `data` String - 전송할 콘텐츠.
 
 ### `protocol.unregisterProtocol(scheme[, completion])`
 

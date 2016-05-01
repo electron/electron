@@ -66,6 +66,7 @@ Electron에 대해 자주 묻는 질문이 있습니다. 이슈를 생성하기 
 * [powerSaveBlocker](api/power-save-blocker.md)
 * [protocol](api/protocol.md)
 * [session](api/session.md)
+* [systemPreferences](api/system-preferences.md)
 * [webContents](api/web-contents.md)
 * [Tray](api/tray.md)
 

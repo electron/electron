@@ -1,18 +1,20 @@
 ﻿# `<webview>` 태그
 
-`guest` 컨텐츠(웹 페이지)를 Electron 앱 페이지에 삽입하기 위해 `webview` 태그를
-사용할 수 있습니다. 게스트 컨텐츠는 `webview` 컨테이너에 담겨 대상 페이지에 삽입되고
-해당 페이지에선 게스트 컨텐츠의 배치 및 렌더링 과정을 조작할 수 있습니다.
+> 외부 웹 콘텐츠를 고립된 프레임과 프로세스에서 표시합니다.
+
+`guest` 콘텐츠(웹 페이지)를 Electron 앱 페이지에 삽입하기 위해 `webview` 태그를
+사용할 수 있습니다. 게스트 콘텐츠는 `webview` 컨테이너에 담겨 대상 페이지에 삽입되고
+해당 페이지에선 게스트 콘텐츠의 배치 및 렌더링 과정을 조작할 수 있습니다.
 
 `iframe`과는 달리 `webview`는 어플리케이션과 분리된 프로세스에서 작동합니다.
-이는 웹 페이지와 같은 권한을 가지지 않고 앱과 임베디드(게스트) 컨텐츠간의 모든
-상호작용이 비동기로 작동한다는 것을 의미합니다. 따라서 임베디드 컨텐츠로부터
+이는 웹 페이지와 같은 권한을 가지지 않고 앱과 임베디드(게스트) 콘텐츠간의 모든
+상호작용이 비동기로 작동한다는 것을 의미합니다. 따라서 임베디드 콘텐츠로부터
 어플리케이션을 안전하게 유지할 수 있습니다.
 
-## 예제
+## 예시
 
 웹 페이지를 어플리케이션에 삽입하려면 `webview` 태그를 사용해 원하는 타겟 페이지에
-추가하면 됩니다. (게스트 컨텐츠가 앱 페이지에 추가 됩니다) 간단한 예로 `webview`
+추가하면 됩니다. (게스트 콘텐츠가 앱 페이지에 추가 됩니다) 간단한 예로 `webview`
 태그의 `src` 속성에 페이지를 지정하고 css 스타일을 이용해서 컨테이너의 외관을 설정할
 수 있습니다:
 
@@ -20,8 +22,8 @@
 <webview id="foo" src="https://www.github.com/" style="display:inline-flex; width:640px; height:480px"></webview>
 ```
 
-게스트 컨텐츠를 조작하기 위해 자바스크립트로 `webview` 태그의 이벤트를 리스닝 하여
-응답을 받을 수 있습니다. 다음 예제를 참고하세요: 첫번째 리스너는 페이지 로딩 시작시의
+게스트 콘텐츠를 조작하기 위해 자바스크립트로 `webview` 태그의 이벤트를 리스닝 하여
+응답을 받을 수 있습니다. 다음 예시를 참고하세요: 첫번째 리스너는 페이지 로딩 시작시의
 이벤트를 확인하고 두번째 리스너는 페이지의 로딩이 끝난시점을 확인합니다. 그리고
 페이지를 로드하는 동안 "loading..." 메시지를 표시합니다.
 
@@ -200,7 +202,7 @@ API를 사용할 수 있습니다. 이를 지정하면 내부에서 로우레벨
 
 **참고:** <webview> 태그 객체의 메서드는 페이지 로드가 끝난 뒤에만 사용할 수 있습니다.
 
-**예제**
+**예시**
 
 ```javascript
 webview.addEventListener("dom-ready", function() {
@@ -404,7 +406,7 @@ Service worker에 대한 개발자 도구를 엽니다.
 
 ### `webContents.findInPage(text[, options])`
 
-* `text` String - 찾을 컨텐츠, 반드시 공백이 아니여야 합니다.
+* `text` String - 찾을 콘텐츠, 반드시 공백이 아니여야 합니다.
 * `options` Object (optional)
   * `forward` Boolean - 앞에서부터 검색할지 뒤에서부터 검색할지 여부입니다. 기본값은
     `true`입니다.
@@ -451,7 +453,7 @@ Webview 페이지를 PDF 형식으로 인쇄합니다.
 임의의 인자를 보낼 수도 있습니다. 렌더러 프로세스는 `ipcRenderer` 모듈의 `channel`
 이벤트로 이 메시지를 받아 처리할 수 있습니다.
 
-예제는 [webContents.send](web-contents.md#webcontentssendchannel-args)를 참고하세요.
+예시는 [webContents.send](web-contents.md#webcontentssendchannel-args)를 참고하세요.
 
 ### `<webview>.sendInputEvent(event)`
 
@@ -582,8 +584,8 @@ Returns:
 
 `console.log` API에 의해 로깅될 때 발생하는 이벤트입니다.
 
-다음 예제는 모든 로그 메시지를 로그 레벨이나 다른 속성에 관련 없이 호스트 페이지의
-콘솔에 다시 로깅하는 예제입니다.
+다음 예시는 모든 로그 메시지를 로그 레벨이나 다른 속성에 관련 없이 호스트 페이지의
+콘솔에 다시 로깅하는 예시입니다.
 
 ```javascript
 webview.addEventListener('console-message', function(e) {
@@ -626,7 +628,7 @@ Returns:
 
 페이지가 새로운 브라우저 창을 생성할 때 발생하는 이벤트입니다.
 
-다음 예제 코드는 새 URL을 시스템의 기본 브라우저로 여는 코드입니다.
+다음 예시 코드는 새 URL을 시스템의 기본 브라우저로 여는 코드입니다.
 
 ```javascript
 webview.addEventListener('new-window', function(e) {
@@ -681,8 +683,8 @@ Returns:
 
 페이지가 자체적으로 닫힐 때 발생하는 이벤트입니다.
 
-다음 예제 코드는 페이지가 자체적으로 닫힐 때 `webview`를 `about:blank` 페이지로
-이동시키는 예제입니다.
+다음 예시 코드는 페이지가 자체적으로 닫힐 때 `webview`를 `about:blank` 페이지로
+이동시키는 예시입니다.
 
 ```javascript
 webview.addEventListener('close', function() {

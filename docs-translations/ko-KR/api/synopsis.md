@@ -1,5 +1,7 @@
 # 개요
 
+> Node.js와 Electron API를 사용하는 방법.
+
 Electron은 모든 [Node.js의 built-in 모듈](http://nodejs.org/api/)과 third-party
 node 모듈을 완벽하게 지원합니다. ([네이티브 모듈](../tutorial/using-native-node-modules.md)
 포함)

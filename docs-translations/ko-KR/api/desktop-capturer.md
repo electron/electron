@@ -1,7 +1,7 @@
 # desktopCapturer
 
-`desktopCapturer` 모듈은 `getUserMedia`에서 사용 가능한 소스를 가져올 때 사용할 수
-있습니다.
+> 마이크, 카메라 또는 화면에서 오디오, 비디오 그리고 이미지를 캡쳐하기 위한
+`getUserMedia` 소스를 나열합니다.
 
 ```javascript
 // 렌더러 프로세스 내부

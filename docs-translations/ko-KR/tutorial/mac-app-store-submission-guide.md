@@ -66,7 +66,7 @@ Apple로부터 인증서를 취득했다면, [어플리케이션 배포](applica
 # 어플리케이션의 이름
 APP="YourApp"
 # 서명할 어플리케이션의 경로
-APP_PATH="/path/to/YouApp.app"
+APP_PATH="/path/to/YourApp.app"
 # 서명된 패키지의 출력 경로
 RESULT_PATH="~/Desktop/$APP.pkg"
 # 요청한 인증서의 이름

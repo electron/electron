@@ -1,7 +1,6 @@
 ﻿# Tray
 
-`Tray`는 OS의 알림 영역에 아이콘을 표시합니다. 보통 컨텍스트 메뉴(context menu)를
-같이 사용합니다.
+> 아이콘과 컨텍스트 메뉴를 시스템 알림 영역에 추가합니다.
 
 ```javascript
 const electron = require('electron');

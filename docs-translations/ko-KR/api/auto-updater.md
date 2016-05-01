@@ -1,9 +1,12 @@
 ﻿# autoUpdater
 
-이 모듈은 `Squirrel` 자동 업데이트 프레임워크의 인터페이스를 제공합니다.
+> 어플리케이션이 자동으로 업데이트를 진행할 수 있도록 기능을 활성화합니다.
 
-다음 프로젝트 중 하나를 택하여 사용하면, 어플리케이션을 배포하기 위한 멀티 플랫폼
-릴리즈 서버를 손쉽게 구축할 수 있습니다:
+`autoUpdater` 모듈은 [Squirrel](https://github.com/Squirrel) 프레임워크에 대한
+인터페이스를 제공합니다.
+
+다음 프로젝트 중 하나를 선택하여, 어플리케이션을 배포하기 위한 멀티-플랫폼 릴리즈
+서버를 손쉽게 구축할 수 있습니다:
 
 - [electron-release-server][electron-release-server]: *완벽하게 모든 기능을
 지원하는 electron 어플리케이션을 위한 자가 호스트 릴리즈 서버입니다. auto-updater와

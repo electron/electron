@@ -1,8 +1,8 @@
 # app
 
-`app` 모듈은 어플리케이션의 생명주기 제어를 책임집니다.
+> 어플리케이션의 이벤트 생명주기를 제어합니다.
 
-밑의 예제는 마지막 윈도우가 종료되었을 때, 어플리케이션을 종료시키는 예제입니다:
+밑의 예시는 마지막 윈도우가 종료되었을 때, 어플리케이션을 종료시키는 예시입니다:
 
 ```javascript
 const app = require('electron').app;
@@ -236,10 +236,6 @@ app.on('login', function(event, webContents, request, authInfo, callback) {
 
 GPU가 작동하던 중 크래시가 일어났을 때 발생하는 이벤트입니다.
 
-### Event: 'platform-theme-changed' _OS X_
-
-시스템의 다크 모드 테마가 토글되면 발생하는 이벤트입니다.
-
 ## Methods
 
 `app` 객체는 다음과 같은 메서드를 가지고 있습니다:
@@ -383,7 +379,7 @@ npm 모듈 규칙에 따라 대부분의 경우 `package.json`의 `name` 필드�
 **참고:** OS X에선, 어플리케이션의 `info.plist`에 등록해둔 프로토콜만 사용할 수
 있습니다. 이는 런타임에서 변경될 수 없습니다. 이 파일은 간단히 텍스트 에디터를
 사용하거나, 어플리케이션을 빌드할 때 스크립트가 생성되도록 할 수 있습니다. 자세한
-내용은 [Apple의 참조 문서를][CFBundleURLTypes] 확인하세요.
+내용은 [Apple의 참조 문서][CFBundleURLTypes]를 확인하세요.
 
 이 API는 내부적으로 Windows 레지스트리와 LSSetDefaultHandlerForURLScheme를 사용합니다.
 
@@ -395,6 +391,21 @@ npm 모듈 규칙에 따라 대부분의 경우 `package.json`의 `name` 필드�
 확인합니다. 만약 그렇다면, 이 메서드는 앱을 기본 핸들러에서 제거합니다.
 
 **참고:** OS X에서는 앱을 제거하면 자동으로 기본 프로토콜 핸들러에서 제거됩니다.
+
+### `app.isDefaultProtocolClient(protocol)` _OS X_ _Windows_
+
+* `protocol` String - `://`를 제외한 프로토콜의 이름.
+
+이 메서드는 현재 실행 파일이 지정한 프로토콜에 대해 기본 동작인지 확인합니다. (URI
+스킴) 만약 그렇다면 `true`를 반환하고 아닌 경우 `false`를 반환합니다.
+
+**참고:** OS X에선, 응용 프로그램이 프로토콜에 대한 기본 프로토콜 동작으로
+등록되었는지를 확인하기 위해 이 메서드를 사용할 수 있습니다. 또한 OS X에서
+`~/Library/Preferences/com.apple.LaunchServices.plist`를 확인하여 검증할 수도
+있습니다. 자세한 내용은 [Apple의 참조 문서][LSCopyDefaultHandlerForURLScheme]를
+참고하세요.
+
+이 API는 내부적으로 Windows 레지스트리와 LSSetDefaultHandlerForURLScheme를 사용합니다.
 
 ### `app.setUserTasks(tasks)` _Windows_
 
@@ -455,8 +466,8 @@ OS X에선 사용자가 Finder에서 어플리케이션의 두 번째 인스턴�
 메커니즘이 무시되며 그대로 중복 실행됩니다. 따라서 OS X에서도 이 메서드를 통해 확실히
 중복 실행을 방지하는 것이 좋습니다.
 
-다음 예제는 두 번째 인스턴스가 생성되었을 때 중복된 인스턴스를 종료하고 주 어플리케이션
-인스턴스의 윈도우를 활성화 시키는 예제입니다:
+다음 예시는 두 번째 인스턴스가 생성되었을 때 중복된 인스턴스를 종료하고 주 어플리케이션
+인스턴스의 윈도우를 활성화 시키는 예시입니다:
 
 ```javascript
 var myWindow = null;
@@ -484,42 +495,7 @@ app.on('ready', function() {
 
 * `id` String
 
-[Application User Model ID][app-user-model-id]를 `id`로 변경합니다.
-
-### `app.isAeroGlassEnabled()` _Windows_
-
-이 메서드는 [DWM 컴포지션](https://msdn.microsoft.com/en-us/library/windows/desktop/aa969540.aspx)
-(Aero Glass)가 활성화 되어있을 때 `true`를 반환합니다. 아닌 경우 `false`를 반환합니다.
-이 메서드는 투명한 윈도우를 만들기 위해 사용 가능 여부를 확인할 때 사용할 수 있습니다.
-(투명한 윈도우는 DWM 컴포지션이 비활성화되어있을 시 작동하지 않습니다)
-
-사용 예시:
-
-```js
-let browserOptions = {width: 1000, height: 800};
-
-// 플랫폼이 지원하는 경우에만 투명 윈도우를 생성
-if (process.platform !== 'win32' || app.isAeroGlassEnabled()) {
-  browserOptions.transparent = true;
-  browserOptions.frame = false;
-}
-
-// 원도우 생성
-win = new BrowserWindow(browserOptions);
-
-// 페이지 로드
-if (browserOptions.transparent) {
-  win.loadURL('file://' + __dirname + '/index.html');
-} else {
-  // 투명 윈도우 상태가 아니라면, 기본적인 폴백 스타일 사용
-  win.loadURL('file://' + __dirname + '/fallback.html');
-}
-```
-
-### `app.isDarkMode()` _OS X_
-
-이 메서드는 시스템이 다크 모드 상태인 경우 `true`를 반환하고 아닐 경우 `false`를
-반환합니다.
+[어플리케이션의 사용자 모델 ID][app-user-model-id]를 `id`로 변경합니다.
 
 ### `app.importCertificate(options, callback)` _LINUX_
 
@@ -600,3 +576,4 @@ dock 아이콘의 `image`를 설정합니다.
 [tasks]:http://msdn.microsoft.com/en-us/library/windows/desktop/dd378460(v=vs.85).aspx#tasks
 [app-user-model-id]: https://msdn.microsoft.com/en-us/library/windows/desktop/dd378459(v=vs.85).aspx
 [CFBundleURLTypes]: https://developer.apple.com/library/ios/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html#//apple_ref/doc/uid/TP40009249-102207-TPXREF115
+[LSCopyDefaultHandlerForURLScheme]: https://developer.apple.com/library/mac/documentation/Carbon/Reference/LaunchServicesReference/#//apple_ref/c/func/LSCopyDefaultHandlerForURLScheme
