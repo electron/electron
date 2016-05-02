@@ -65,8 +65,8 @@ And then sign your app with the following script:
 
 # Name of your app.
 APP="YourApp"
-# The path of you app to sign.
-APP_PATH="/path/to/YouApp.app"
+# The path of your app to sign.
+APP_PATH="/path/to/YourApp.app"
 # The path to the location you want to put the signed package.
 RESULT_PATH="~/Desktop/$APP.pkg"
 # The name of certificates you requested.

@@ -4,7 +4,7 @@ import os
 import subprocess
 import sys
 
-from lib.util import atom_gyp
+from lib.util import atom_gyp, rm_rf
 
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
@@ -30,7 +30,20 @@ def main():
   else:
     atom_shell = os.path.join(SOURCE_ROOT, 'out', config, PROJECT_NAME)
 
-  subprocess.check_call([atom_shell, 'spec'] + sys.argv[1:])
+  returncode = 0
+  try:
+    subprocess.check_call([atom_shell, 'spec'] + sys.argv[1:])
+  except subprocess.CalledProcessError as e:
+    returncode = e.returncode
+
+  if os.environ.has_key('OUTPUT_TO_FILE'):
+    output_to_file = os.environ['OUTPUT_TO_FILE']
+    with open(output_to_file, 'r') as f:
+      print f.read()
+    rm_rf(output_to_file)
+
+
+  return returncode
 
 
 if __name__ == '__main__':

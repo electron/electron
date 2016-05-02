@@ -5,9 +5,9 @@
 [![devDependency Status](https://david-dm.org/electron/electron/dev-status.svg)](https://david-dm.org/electron/electron#info=devDependencies)
 [![Join the Electron Community on Slack](http://atom-slack.herokuapp.com/badge.svg)](http://atom-slack.herokuapp.com/)
 
-### [Electron](https://github.com/electron/electron/) 한국어 참조문서
+### [Electron](https://github.com/electron/electron/) 한국어 참조 문서
 
-:zap: *프레임워크 이름이 Atom Shell에서 Electron으로 변경되었습니다* :zap:
+:zap: *이전까지 Atom Shell로 불렸지만, Electron으로 변경되었습니다* :zap:
 
 Electron 프레임워크는 JavaScript, HTML 그리고 CSS를 사용하여
 Cross-Platform 데스크톱 어플리케이션을 개발할 수 있도록 해주는 프레임워크입니다.
@@ -56,7 +56,7 @@ npm install electron-prebuilt --save-dev
 - [스페인어](https://github.com/electron/electron/tree/master/docs-translations/es)
 - [중국어 간체](https://github.com/electron/electron/tree/master/docs-translations/zh-CN)
 - [중국어 번체](https://github.com/electron/electron/tree/master/docs-translations/zh-TW)
-- [터키의](https://github.com/electron/electron/tree/master/docs-translations/tr-TR)
+- [터키어](https://github.com/electron/electron/tree/master/docs-translations/tr-TR)
 - [우크라이나어](https://github.com/electron/electron/tree/master/docs-translations/uk-UA)
 - [러시아어](https://github.com/electron/electron/tree/master/docs-translations/ru-RU)
 - [프랑스어](https://github.com/electron/electron/tree/master/docs-translations/fr-FR)

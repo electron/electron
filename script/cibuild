@@ -75,8 +75,10 @@ def main():
     run_script('create-dist.py')
     run_script('upload.py')
   else:
+    if PLATFORM == 'win32':
+      os.environ['OUTPUT_TO_FILE'] = 'output.log'
     run_script('build.py', ['-c', 'D'])
-    if PLATFORM != 'win32' and target_arch == 'x64':
+    if PLATFORM == 'win32' or target_arch == 'x64':
       run_script('test.py', ['--ci'])
 
 

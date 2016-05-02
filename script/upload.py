@@ -101,6 +101,10 @@ def main():
     upload_atom_shell(github, release, os.path.join(DIST_DIR, mksnapshot))
 
   if PLATFORM == 'win32' and not tag_exists:
+    # Upload PDBs to Windows symbol server.
+    execute([sys.executable,
+             os.path.join(SOURCE_ROOT, 'script', 'upload-windows-pdb.py')])
+
     # Upload node headers.
     execute([sys.executable,
              os.path.join(SOURCE_ROOT, 'script', 'upload-node-headers.py'),

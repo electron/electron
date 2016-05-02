@@ -51,7 +51,7 @@ Electron 문서 구조를 이해하는 데 참고할 수 있는 유용한 도움
 ### Methods
 
 [Method](https://developer.mozilla.org/ko/docs/Glossary/Method) 문서의
-예제입니다:
+예시입니다:
 
 ---
 
@@ -75,7 +75,7 @@ Electron 문서 구조를 이해하는 데 참고할 수 있는 유용한 도움
 
 ### Events
 
-[Event](https://developer.mozilla.org/ko/docs/Web/API/Event) 문서의 예제입니다:
+[Event](https://developer.mozilla.org/ko/docs/Web/API/Event) 문서의 예시입니다:
 
 ---
 
