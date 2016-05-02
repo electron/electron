@@ -2,14 +2,14 @@
 
 @implementation MacNativeConverter
 
-- (base::ListValue*)arrayToV8:(NSArray*)nsArray {
+- (base::ListValue*)arrayToListValue:(NSArray*)nsArray {
   scoped_ptr<base::ListValue> list(new base::ListValue);
 
   for (id value in nsArray) {
     if ([value isKindOfClass:[NSArray class]]) {
-      list->Append([self arrayToV8:value]);
+      list->Append([self arrayToListValue:value]);
     } else if ([value isKindOfClass:[NSDictionary class]]) {
-      list->Append([self dictionaryToV8:value]);
+      list->Append([self dictionaryToDictionaryValue:value]);
     } else if ([value isKindOfClass:[NSString class]]) {
       list->AppendString(base::SysNSStringToUTF8(value));
     } else if ([value isKindOfClass:[NSNumber class]]) {
@@ -20,7 +20,7 @@
   return list.get();
 }
 
-- (base::DictionaryValue*)dictionaryToV8:(NSDictionary*)nsDictionary {
+- (base::DictionaryValue*)dictionaryToDictionaryValue:(NSDictionary*)nsDictionary {
   scoped_ptr<base::DictionaryValue> dict(new base::DictionaryValue);
 
   NSEnumerator *it = [nsDictionary keyEnumerator];
@@ -30,9 +30,9 @@
     std::string key_str(base::SysNSStringToUTF8(key));
 
     if ([value isKindOfClass:[NSArray class]]) {
-      dict->Set(key_str, [self arrayToV8:value]);
+      dict->Set(key_str, [self arrayToListValue:value]);
     } else if ([value isKindOfClass:[NSDictionary class]]) {
-      dict->Set(key_str, [self dictionaryToV8:value]);
+      dict->Set(key_str, [self dictionaryToDictionaryValue:value]);
     } else if ([value isKindOfClass:[NSString class]]) {
       dict->SetString(key_str, base::SysNSStringToUTF8(value));
     } else if ([value isKindOfClass:[NSNumber class]]) {
@@ -41,6 +41,14 @@
   }
 
   return dict.get();
+}
+
+- (NSArray*)arrayFromListValue:(const base::ListValue&)list {
+  return [[NSArray alloc] init];
+}
+
+- (NSDictionary*)dictionaryFromDictionaryValue:(const base::DictionaryValue&)dict {
+  return [[NSDictionary alloc] init];
 }
 
 @end

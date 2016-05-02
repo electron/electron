@@ -3,8 +3,9 @@
 // found in the LICENSE file.
 
 #import "atom/browser/mac/atom_application_delegate.h"
-
 #import "atom/browser/mac/atom_application.h"
+#import "atom/browser/mac/mac_native_converter.h"
+
 #include "atom/browser/browser.h"
 #include "base/strings/sys_string_conversions.h"
 
@@ -64,19 +65,11 @@ continueUserActivity:(NSUserActivity *)userActivity
   restorationHandler:(void (^)(NSArray *restorableObjects))restorationHandler {
   std::string activity_type(base::SysNSStringToUTF8(userActivity.activityType));
 
-  std::map<std::string, std::string> user_info;
-
-  NSArray* keys = [userActivity.userInfo allKeys];
-  for (NSString* key in keys)
-  {
-    NSString* value = [userActivity.userInfo objectForKey:key];
-    std::string key_str(base::SysNSStringToUTF8(key));
-    std::string value_str(base::SysNSStringToUTF8(value));
-    user_info[key_str] = value_str;
-  }
+  MacNativeConverter* converter = [[MacNativeConverter alloc] init];
+  const base::DictionaryValue* user_info = [converter dictionaryToDictionaryValue:userActivity.userInfo];
 
   atom::Browser* browser = atom::Browser::Get();
-  return browser->ContinueUserActivity(activity_type, user_info) ? YES : NO;
+  return browser->ContinueUserActivity(activity_type, *user_info) ? YES : NO;
 }
 
 @end

@@ -5,7 +5,10 @@
 
 @interface MacNativeConverter : NSObject
 
-- (base::ListValue*)arrayToV8:(NSArray*)nsArray;
-- (base::DictionaryValue*)dictionaryToV8:(NSDictionary*)nsDictionary;
+- (base::ListValue*)arrayToListValue:(NSArray*)nsArray;
+- (base::DictionaryValue*)dictionaryToDictionaryValue:(NSDictionary*)nsDictionary;
+
+- (NSArray*)arrayFromListValue:(const base::ListValue&)list;
+- (NSDictionary*)dictionaryFromDictionaryValue:(const base::DictionaryValue&)dict;
 
 @end

@@ -8,6 +8,8 @@
 #include <string>
 #include <map>
 
+#include "base/values.h"
+
 namespace atom {
 
 class LoginHandler;
@@ -49,7 +51,7 @@ class BrowserObserver {
   // The browser wants to resume a user activity via handoff. (OS X only)
   virtual void OnContinueUserActivity(bool* prevent_default,
     const std::string& type,
-    const std::map<std::string, std::string>& user_info) {}
+    const base::DictionaryValue& user_info) {}
 
  protected:
   virtual ~BrowserObserver() {}
