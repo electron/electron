@@ -4,6 +4,7 @@
 
 ## 빌드전 요구사양
 
+* 최소한 25GB 이상의 디스크 공간과 8GB 램이 필요합니다.
 * Python 2.7.x. 몇몇 CentOS와 같은 배포판들은 아직도 Python 2.6.x 버전을 사용합니다.
   그래서 먼저 `python -V`를 통해 버전을 확인할 필요가 있습니다.
 * Node.js v0.12.x. Node를 설치하는 방법은 여러 가지가 있습니다. 먼저,
@@ -35,11 +36,6 @@ $ sudo yum install clang dbus-devel gtk2-devel libnotify-devel libgnome-keyring-
 다른 배포판의 경우 pacman 같은 패키지 매니저를 통해 패키지를 설치 할 수 있습니다.
 패키지의 이름은 대부분 위 예시와 비슷할 것입니다. 또는 소스코드를 내려받아
 직접 빌드하는 방법도 있습니다.
-
-## 가상머신을 사용하여 빌드 하는 경우
-
-만약 Electron을 가상머신으로 빌드 할 계획이라면 해당 가상머신의 스토리지를 최소 25GB
-이상 확보해 놓아야 합니다.
 
 ## 코드 가져오기
 
@@ -114,8 +110,6 @@ $ ./script/clean.py
 
 ## 문제 해결
 
-개발 종속성 라이브러리들을 제대로 설치했는지 확인하세요.
-
 ## libtinfo.so.5 동적 링크 라이브러리를 로드하는 도중 에러가 발생할 경우
 
 미리 빌드된 `clang`은 `libtinfo.so.5`로 링크를 시도합니다. 따라서 플랫폼에 따라
@@ -130,7 +124,7 @@ $ sudo ln -s /usr/lib/libncurses.so.5 /usr/lib/libtinfo.so.5
 프로젝트 코딩 스타일을 확인하려면:
 
 ```bash
-$ ./script/cpplint.py
+$ npm run lint
 ```
 
 테스트를 실행하려면:
