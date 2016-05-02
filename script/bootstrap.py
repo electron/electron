@@ -153,7 +153,7 @@ def bootstrap_brightray(is_dev, url, target_arch, libcc_source_path,
 
 def update_node_modules(dirname, env=None):
   if env is None:
-    env = os.environ
+    env = os.environ.copy()
   if PLATFORM == 'linux':
     # Use prebuilt clang for building native modules.
     llvm_dir = os.path.join(SOURCE_ROOT, 'vendor', 'llvm-build',
