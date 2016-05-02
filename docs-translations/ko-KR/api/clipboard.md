@@ -1,7 +1,6 @@
 ﻿# clipboard
 
-`clipboard` 모듈은 복사/붙여넣기 작업을 수행하는 방법을 제공합니다. 다음 예제는
-클립보드에 문자열을 씁니다:
+> 시스템 클립보드에 복사와 붙여넣기를 수행합니다.
 
 ```javascript
 const clipboard = require('electron').clipboard;
@@ -27,7 +26,7 @@ console.log(clipboard.readText('selection'));
 
 * `type` String (optional)
 
-클립보드 컨텐츠를 `plain text`로 반환합니다.
+클립보드 콘텐츠를 `plain text`로 반환합니다.
 
 ### `clipboard.writeText(text[, type])`
 
@@ -40,7 +39,7 @@ console.log(clipboard.readText('selection'));
 
 * `type` String (optional)
 
-클립보드 컨텐츠를 `markup`으로 반환합니다.
+클립보드 콘텐츠를 `markup`으로 반환합니다.
 
 ### `clipboard.writeHtml(markup[, type])`
 
@@ -66,7 +65,7 @@ console.log(clipboard.readText('selection'));
 
 * `type` String (optional)
 
-클립보드로부터 RTF 형식으로 컨텐츠를 읽어옵니다.
+클립보드로부터 RTF 형식으로 콘텐츠를 읽어옵니다.
 
 ### `clipboard.writeRtf(text[, type])`
 
@@ -79,7 +78,7 @@ console.log(clipboard.readText('selection'));
 
 * `type` String (optional)
 
-클립보드에 저장된 모든 컨텐츠를 삭제합니다.
+클립보드에 저장된 모든 콘텐츠를 삭제합니다.
 
 ### clipboard.availableFormats([type])
 

@@ -1,5 +1,7 @@
 # DownloadItem
 
+> 원격 소스로부터의 파일 다운로드를 제어합니다.
+
 `DownloadItem`은 EventEmitter를 상속받았으며 Electron의 다운로드 아이템을 표현합니다.
 이 클래스 객체는 `Session` 모듈의 `will-download` 이벤트에 사용되며 사용자가 다운로드
 아이템을 다룰 수 있도록 도와줍니다.

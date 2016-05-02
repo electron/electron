@@ -71,52 +71,68 @@ your-app/
 __알림__: 만약 `main` 필드가 `package.json`에 설정되어 있지 않으면 Electron은
 자동으로 같은 디렉터리의 `index.js`를 로드합니다.
 
-반드시 `main.js`에서 창을 만들고 시스템 이벤트를 처리해야 합니다. 대표적인 예제로
+반드시 `main.js`에서 창을 만들고 시스템 이벤트를 처리해야 합니다. 대표적인 예시로
 다음과 같이 작성할 수 있습니다:
 
 ```javascript
-'use strict';
-
-const electron = require('electron');
-const app = electron.app;  // 어플리케이션 기반을 조작 하는 모듈.
-const BrowserWindow = electron.BrowserWindow;  // 네이티브 브라우저 창을 만드는 모듈.
+const electron = require('electron')
+// 어플리케이션 생명주기를 조작 하는 모듈.
+const app = electron.app
+// 네이티브 브라우저 창을 만드는 모듈.
+const BrowserWindow = electron.BrowserWindow
 
 // 윈도우 객체를 전역에 유지합니다. 만약 이렇게 하지 않으면
 // 자바스크립트 GC가 일어날 때 창이 멋대로 닫혀버립니다.
-var mainWindow = null;
+let mainWindow
 
-// 모든 창이 닫히면 어플리케이션 종료.
-app.on('window-all-closed', function() {
-  // OS X의 대부분의 어플리케이션은 유저가 Cmd + Q 커맨드로 확실하게 종료하기 전까지
-  // 메뉴바에 남아 계속 실행됩니다.
-  if (process.platform != 'darwin') {
-    app.quit();
-  }
-});
-
-// 이 메서드는 Electron의 초기화가 모두 끝나고
-// 브라우저 창을 열 준비가 되었을 때 호출됩니다.
-app.on('ready', function() {
+function createWindow () {
   // 새로운 브라우저 창을 생성합니다.
-  mainWindow = new BrowserWindow({width: 800, height: 600});
+  mainWindow = new BrowserWindow({width: 800, height: 600})
 
   // 그리고 현재 디렉터리의 index.html을 로드합니다.
-  mainWindow.loadURL('file://' + __dirname + '/index.html');
+  mainWindow.loadURL('file://' + __dirname + '/index.html')
 
   // 개발자 도구를 엽니다.
-  mainWindow.webContents.openDevTools();
+  mainWindow.webContents.openDevTools()
 
   // 창이 닫히면 호출됩니다.
-  mainWindow.on('closed', function() {
-    // 윈도우 객체의 참조를 삭제합니다 보통 멀티 윈도우 지원을 위해
+  mainWindow.on('closed', function () {
+    // 윈도우 객체의 참조를 삭제합니다. 보통 멀티 윈도우 지원을 위해
     // 윈도우 객체를 배열에 저장하는 경우가 있는데 이 경우
     // 해당하는 모든 윈도우 객체의 참조를 삭제해 주어야 합니다.
-    mainWindow = null;
-  });
-});
+    mainWindow = null
+  })
+}
+
+// 이 메서드는 Electron의 초기화가 끝나면 실행되며 브라우저
+// 윈도우를 생성할 수 있습니다. 몇몇 API는 이 이벤트 이후에만
+// 사용할 수 있습니다.
+app.on('ready', createWindow)
+
+// 모든 창이 닫히면 어플리케이션 종료.
+app.on('window-all-closed', function () {
+  // OS X의 대부분의 어플리케이션은 유저가 Cmd + Q 커맨드로 확실하게
+  // 종료하기 전까지 메뉴바에 남아 계속 실행됩니다.
+  if (process.platform !== 'darwin') {
+    app.quit()
+  }
+})
+
+app.on('activate', function () {
+  // OS X에선 보통 독 아이콘이 클릭되고 나서도
+  // 열린 윈도우가 없으면, 새로운 윈도우를 다시 만듭니다.
+  if (mainWindow === null) {
+    createWindow()
+  }
+})
+
+// 이 파일엔 제작할 어플리케이션에 특화된 메인 프로세스 코드를
+// 포함할 수 있습니다. 또한 파일을 분리하여 require하는 방법으로
+// 코드를 작성할 수도 있습니다.
+
 ```
 
-마지막으로, 사용자에게 보여줄 `index.html` 웹 페이지의 예제입니다:
+마지막으로, 사용자에게 보여줄 `index.html` 웹 페이지의 예시입니다:
 
 ```html
 <!DOCTYPE html>
@@ -140,12 +156,13 @@ app.on('ready', function() {
 패키징 하고 패키징한 앱을 실행할 수 있습니다. 또한 Electron 실행파일을 다운로드 받아
 바로 실행해 볼 수도 있습니다.
 
-### electron-prebuilt 사용
+### electron-prebuilt
 
-`npm`을 통해 `electron-prebuilt` 패키지를 전역에 설치하면 간단한 명령으로 앱을
-실행할 수 있습니다.
+[`electron-prebuilt`](https://github.com/electron-userland/electron-prebuilt)는
+Electron의 미리 컴파일된 바이너리를 포함하는 `npm` 모듈입니다.
 
-앱 디렉터리 내에서 다음 명령으로 실행할 수 있습니다:
+만약 `npm`을 통해 전역에 이 모듈을 설치했다면, 어플리케이션 소스 디렉터리에서 다음
+명령을 실행하면 바로 실행할 수 있습니다:
 
 ```bash
 electron .
@@ -196,9 +213,9 @@ $ ./Electron.app/Contents/MacOS/Electron your-app/
 ### 미리 작성된 앱 실행하기
 
 [`atom/electron-quick-start`](https://github.com/electron/electron-quick-start)
-저장소를 클론하면 이 문서에서 작성한 예제 앱을 바로 실행해 볼 수 있습니다.
+저장소를 클론하면 이 문서에서 작성한 예시 앱을 바로 실행해 볼 수 있습니다.
 
-**참고**: 이 예제를 실행시키려면 [Git](https://git-scm.com)과
+**참고**: 이 예시를 실행시키려면 [Git](https://git-scm.com)과
 [Node.js](https://nodejs.org/en/download/)가 필요합니다. (CLI에서 실행 가능한
   [npm](https://npmjs.org)이 있어야 합니다)
 

@@ -13,7 +13,7 @@ Electron에서 `chromedriver`를 사옹하려면 드라이버에서 Electron을 
 ## WebDriverJs 설정하기
 
 [WebDriverJs](https://code.google.com/p/selenium/wiki/WebDriverJs)는 WebDriver를
-사용하여 테스트 할 수 있도록 도와주는 node 패키지입니다. 다음 예제를 참고하세요.
+사용하여 테스트 할 수 있도록 도와주는 node 패키지입니다. 다음 예시를 참고하세요.
 
 ### 1. 크롬 드라이버 시작
 
