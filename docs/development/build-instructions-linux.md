@@ -137,9 +137,9 @@ The default building configuration is targeted for major desktop Linux
 distributions, to build for a specific distribution or device, following
 information may help you.
 
-### Build libchromiumcontent locally
+### Building `libchromiumcontent` locally
 
-To avoid using the prebuilt binaries of libchromiumcontent, you can pass the
+To avoid using the prebuilt binaries of `libchromiumcontent`, you can pass the
 `--build_libchromiumcontent` switch to `bootstrap.py` script:
 
 ```bash
@@ -150,5 +150,32 @@ Note that by default the `shared_library` configuration is not built, so you can
 only build `Release` version of Electron if you use this mode:
 
 ```bash
-$ ./script/build.py -c D
+$ ./script/build.py -c R
+```
+
+### Using system `clang` instead of downloaded `clang` binaries
+
+By default Electron is built with prebuilt `clang` binaries provided by Chromium
+project. If for some reason you want to build with the `clang` installed in your
+system, you can call `bootstrap.py` with `--clang_dir=<path>` switch. By passing
+it the build script will assume the clang binaries reside in `<path>/bin/`.
+
+For example if you installed `clang` under `/user/local/bin/clang`:
+
+```bash
+$ ./script/bootstrap.py -v --build_libchromiumcontent --clang_dir /usr/local
+$ ./script/build.py -c R
+```
+
+### Using other compilers other than `clang`
+
+To build Electron with compilers like `g++`, you first need to disable `clang`
+with `--disable_clang` switch first, and then set `CC` and `CXX` environment
+variables to the ones you want.
+
+For example building with GCC toolchain:
+
+```bash
+$ env CC=gcc CXX=g++ ./script/bootstrap.py -v --build_libchromiumcontent --disable_clang
+$ ./script/build.py -c R
 ```
