@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import argparse
 import os
 import platform
 import subprocess
@@ -21,6 +22,13 @@ def main():
 
   update_external_binaries()
   return update_gyp()
+
+
+def parse_args():
+  parser = argparse.ArgumentParser(description='Update build configurations')
+  parser.add_argument('--defines', default='',
+                      help='The definetions passed to gyp')
+  return parser.parse_args()
 
 
 def update_external_binaries():
@@ -60,6 +68,7 @@ def run_gyp(target_arch, component):
     mas_build = 1
   else:
     mas_build = 0
+
   defines = [
     '-Dlibchromiumcontent_component={0}'.format(component),
     '-Dtarget_arch={0}'.format(target_arch),
@@ -67,6 +76,13 @@ def run_gyp(target_arch, component):
     '-Dlibrary=static_library',
     '-Dmas_build={0}'.format(mas_build),
   ]
+
+  # Add the defines passed from command line.
+  args = parse_args()
+  for define in [d.strip() for d in args.defines.split(' ')]:
+    if define:
+      defines += ['-D' + define]
+
   return subprocess.call([python, gyp, '-f', 'ninja', '--depth', '.',
                           'electron.gyp', '-Icommon.gypi'] + defines, env=env)
 

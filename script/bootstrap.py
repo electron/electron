@@ -26,6 +26,7 @@ def main():
   os.chdir(SOURCE_ROOT)
 
   args = parse_args()
+  defines = args_to_defines(args)
   if not args.yes and PLATFORM != 'win32':
     check_root()
   if args.verbose:
@@ -63,7 +64,7 @@ def main():
 
   create_chrome_version_h()
   touch_config_gypi()
-  run_update()
+  run_update(defines)
   update_electron_modules('spec', args.target_arch)
 
 
@@ -100,6 +101,16 @@ def parse_args():
   parser.add_argument('--libcc_static_library_path', required=False,
                       help='The static library path of libchromiumcontent.')
   return parser.parse_args()
+
+
+def args_to_defines(args):
+  defines = ''
+  if args.disable_clang:
+    defines += ' clang=0'
+  if args.clang_dir:
+    defines += ' make_clang_dir=' + args.clang_dir
+    defines += ' clang_use_chrome_plugins=0'
+  return defines
 
 
 def check_root():
@@ -179,14 +190,12 @@ def update_win32_python():
       execute_stdout(['git', 'clone', PYTHON_26_URL])
 
 
-def build_libchromiumcontent(verbose, target_arch, disable_clang, clang_dir):
+def build_libchromiumcontent(verbose, target_arch, defines):
   args = [os.path.join(SOURCE_ROOT, 'script', 'build-libchromiumcontent.py')]
   if verbose:
     args += ['-v']
-  if disable_clang:
-    args += ['--disable_clang']
-  if clang_dir:
-    args += ['--clang_dir', clang_dir]
+  if defines:
+    args += ['--defines', defines]
   execute_stdout(args + ['--target_arch', target_arch])
 
 
@@ -234,9 +243,9 @@ def touch_config_gypi():
       f.write(content)
 
 
-def run_update():
+def run_update(defines):
   update = os.path.join(SOURCE_ROOT, 'script', 'update.py')
-  execute_stdout([sys.executable, update])
+  execute_stdout([sys.executable, update, '--defines', defines])
 
 
 if __name__ == '__main__':
