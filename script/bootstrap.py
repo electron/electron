@@ -42,15 +42,14 @@ def main():
 
   # Redirect to use local libchromiumcontent build.
   if args.build_libchromiumcontent:
-    build_libchromiumcontent(args.verbose, args.target_arch, args.disable_clang,
-                             args.clang_dir)
+    build_libchromiumcontent(args.verbose, args.target_arch, defines)
     dist_dir = os.path.join(SOURCE_ROOT, 'vendor', 'brightray', 'vendor',
                             'libchromiumcontent', 'dist', 'main')
     libcc_source_path = os.path.join(dist_dir, 'src')
     libcc_shared_library_path = os.path.join(dist_dir, 'shared_library')
     libcc_static_library_path = os.path.join(dist_dir, 'static_library')
 
-  if PLATFORM != 'win32' and not args.disable_clang and args.clang_dir != '':
+  if PLATFORM != 'win32' and not args.disable_clang and args.clang_dir == '':
     update_clang()
 
   setup_python_libs()
