@@ -1,7 +1,13 @@
 const assert = require('assert')
 const desktopCapturer = require('electron').desktopCapturer
 
+const isCI = require('electron').remote.getGlobal('isCi')
+
 describe('desktopCapturer', function () {
+  if (isCI && process.platform === 'win32') {
+    return
+  }
+
   it('should return a non-empty array of sources', function (done) {
     desktopCapturer.getSources({
       types: ['window', 'screen']

@@ -4,6 +4,7 @@ Follow the guidelines below for building Electron on Linux.
 
 ## Prerequisites
 
+* At least 25GB disk space and 8GB RAM.
 * Python 2.7.x. Some distributions like CentOS still use Python 2.6.x
   so you may need to check your Python version with `python -V`.
 * Node.js v0.12.x. There are various ways to install Node. You can download
@@ -32,11 +33,6 @@ $ sudo yum install clang dbus-devel gtk2-devel libnotify-devel libgnome-keyring-
 
 Other distributions may offer similar packages for installation via package
 managers such as pacman. Or one can compile from source code.
-
-## If You Use Virtual Machines For Building
-
-If you plan to build Electron on a virtual machine you will need a fixed-size
-device container of at least 25 gigabytes in size.
 
 ## Getting the Code
 
@@ -112,8 +108,6 @@ $ ./script/clean.py
 
 ## Troubleshooting
 
-Make sure you have installed all of the build dependencies.
-
 ### Error While Loading Shared Libraries: libtinfo.so.5
 
 Prebulit `clang` will try to link to `libtinfo.so.5`. Depending on the host
@@ -128,11 +122,33 @@ $ sudo ln -s /usr/lib/libncurses.so.5 /usr/lib/libtinfo.so.5
 Test your changes conform to the project coding style using:
 
 ```bash
-$ ./script/cpplint.py
+$ npm run lint
 ```
 
 Test functionality using:
 
 ```bash
 $ ./script/test.py
+```
+
+## Advanced topics
+
+The default building configuration is targeted for major desktop Linux
+distributions, to build for a specific distribution or device, following
+information may help you.
+
+### Build libchromiumcontent locally
+
+To avoid using the prebuilt binaries of libchromiumcontent, you can pass the
+`--build_libchromiumcontent` switch to `bootstrap.py` script:
+
+```bash
+$ ./script/bootstrap.py -v --build_libchromiumcontent
+```
+
+Note that by default the `shared_library` configuration is not built, so you can
+only build `Release` version of Electron if you use this mode:
+
+```bash
+$ ./script/build.py -c D
 ```

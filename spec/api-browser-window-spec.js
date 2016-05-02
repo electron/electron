@@ -173,11 +173,12 @@ describe('browser-window module', function () {
     })
 
     it('does not crash in did-fail-provisional-load handler', function (done) {
+      this.timeout(10000)
       w.webContents.once('did-fail-provisional-load', function () {
-        w.loadURL('http://localhost:11111')
+        w.loadURL('http://127.0.0.1:11111')
         done()
       })
-      w.loadURL('http://localhost:11111')
+      w.loadURL('http://127.0.0.1:11111')
     })
   })
 

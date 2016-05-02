@@ -1,9 +1,10 @@
 ﻿# 크롬 명령줄 스위치 지원
 
-크롬 명령줄(Command-Line) 스위치는 크롬 브라우저에서 제공되는 추가 옵션이며
-Electron에서도 지원합니다. [app][app]의 [ready][ready]이벤트가 작동하기 전에
-[app.commandLine.appendSwitch][append-switch] API를 사용하면 어플리케이션 내부에서
-스위치를 추가할 수 있습니다:
+> Electron에서 지원하는 커맨드 명령줄 스위치입니다.
+
+어플리케이션 메인 스크립트의 [app][app] 모듈에서 [ready][ready] 이벤트가 실행되기
+전에 [app.commandLine.appendSwitch][append-switch]를 호출하면, 어플리케이션의
+명령줄 옵션을 추가로 지정할 수 있습니다:
 
 ```javascript
 const app = require('electron').app;
