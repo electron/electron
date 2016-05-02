@@ -63,9 +63,9 @@
 continueUserActivity:(NSUserActivity *)userActivity
   restorationHandler:(void (^)(NSArray *restorableObjects))restorationHandler {
   std::string activity_type(base::SysNSStringToUTF8(userActivity.activityType));
-  
+
   std::map<std::string, std::string> user_info;
-  
+
   NSArray* keys = [userActivity.userInfo allKeys];
   for (NSString* key in keys)
   {
