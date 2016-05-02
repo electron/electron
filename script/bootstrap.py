@@ -41,14 +41,15 @@ def main():
 
   # Redirect to use local libchromiumcontent build.
   if args.build_libchromiumcontent:
-    build_libchromiumcontent(args.verbose, args.target_arch)
+    build_libchromiumcontent(args.verbose, args.target_arch, args.disable_clang,
+                             args.clang_dir)
     dist_dir = os.path.join(SOURCE_ROOT, 'vendor', 'brightray', 'vendor',
                             'libchromiumcontent', 'dist', 'main')
     libcc_source_path = os.path.join(dist_dir, 'src')
     libcc_shared_library_path = os.path.join(dist_dir, 'shared_library')
     libcc_static_library_path = os.path.join(dist_dir, 'static_library')
 
-  if PLATFORM != 'win32':
+  if PLATFORM != 'win32' and not args.disable_clang and args.clang_dir != '':
     update_clang()
 
   setup_python_libs()
@@ -85,6 +86,9 @@ def parse_args():
                            'prompts.')
   parser.add_argument('--target_arch', default=get_target_arch(),
                       help='Manually specify the arch to build for')
+  parser.add_argument('--clang_dir', default='', help='Path to clang binaries')
+  parser.add_argument('--disable_clang', action='store_true',
+                      help='Use compilers other than clang for building')
   parser.add_argument('--build_libchromiumcontent', action='store_true',
                       help='Build local version of libchromiumcontent')
   parser.add_argument('--libcc_source_path', required=False,
@@ -175,10 +179,14 @@ def update_win32_python():
       execute_stdout(['git', 'clone', PYTHON_26_URL])
 
 
-def build_libchromiumcontent(verbose, target_arch):
+def build_libchromiumcontent(verbose, target_arch, disable_clang, clang_dir):
   args = [os.path.join(SOURCE_ROOT, 'script', 'build-libchromiumcontent.py')]
   if verbose:
     args += ['-v']
+  if disable_clang:
+    args += ['--disable_clang']
+  if clang_dir:
+    args += ['--clang_dir', clang_dir]
   execute_stdout(args + ['--target_arch', target_arch])
 
 
