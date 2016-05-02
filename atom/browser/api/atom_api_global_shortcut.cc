@@ -19,7 +19,8 @@ namespace atom {
 
 namespace api {
 
-GlobalShortcut::GlobalShortcut() {
+GlobalShortcut::GlobalShortcut(v8::Isolate* isolate) {
+  Init(isolate);
 }
 
 GlobalShortcut::~GlobalShortcut() {
@@ -66,18 +67,19 @@ void GlobalShortcut::UnregisterAll() {
   GlobalShortcutListener::GetInstance()->UnregisterAccelerators(this);
 }
 
-mate::ObjectTemplateBuilder GlobalShortcut::GetObjectTemplateBuilder(
-    v8::Isolate* isolate) {
-  return mate::ObjectTemplateBuilder(isolate)
+// static
+mate::Handle<GlobalShortcut> GlobalShortcut::Create(v8::Isolate* isolate) {
+  return mate::CreateHandle(isolate, new GlobalShortcut(isolate));
+}
+
+// static
+void GlobalShortcut::BuildPrototype(
+    v8::Isolate* isolate, v8::Local<v8::ObjectTemplate> prototype) {
+  mate::ObjectTemplateBuilder(isolate, prototype)
       .SetMethod("register", &GlobalShortcut::Register)
       .SetMethod("isRegistered", &GlobalShortcut::IsRegistered)
       .SetMethod("unregister", &GlobalShortcut::Unregister)
       .SetMethod("unregisterAll", &GlobalShortcut::UnregisterAll);
-}
-
-// static
-mate::Handle<GlobalShortcut> GlobalShortcut::Create(v8::Isolate* isolate) {
-  return CreateHandle(isolate, new GlobalShortcut);
 }
 
 }  // namespace api

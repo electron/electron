@@ -23,13 +23,12 @@ class GlobalShortcut : public extensions::GlobalShortcutListener::Observer,
  public:
   static mate::Handle<GlobalShortcut> Create(v8::Isolate* isolate);
 
- protected:
-  GlobalShortcut();
-  ~GlobalShortcut() override;
+  static void BuildPrototype(v8::Isolate* isolate,
+                             v8::Local<v8::ObjectTemplate> prototype);
 
-  // mate::Wrappable implementations:
-  mate::ObjectTemplateBuilder GetObjectTemplateBuilder(
-      v8::Isolate* isolate) override;
+ protected:
+  explicit GlobalShortcut(v8::Isolate* isolate);
+  ~GlobalShortcut() override;
 
  private:
   typedef std::map<ui::Accelerator, base::Closure> AcceleratorCallbackMap;

@@ -1,8 +1,9 @@
 # screen
 
-The `screen` module retrieves information about screen size, displays, cursor
-position, etc. You should not use this module until the `ready` event of the
-`app` module is emitted.
+> Retrieve information about screen size, displays, cursor position, etc.
+
+You cannot not use this module until the `ready` event of the `app` module is
+emitted (by invoking or requiring it).
 
 `screen` is an [EventEmitter](http://nodejs.org/api/events.html#events_class_events_eventemitter).
 
@@ -62,8 +63,8 @@ a remote, virtual display.
 
 * `display` object
   * `id` Integer - Unique identifier associated with the display.
-  * `rotation` Integer - Can be 0, 1, 2, 3, each represents screen rotation in
-    clock-wise degrees of 0, 90, 180, 270.
+  * `rotation` Integer - Can be 0, 90, 180, 270, represents screen rotation in
+    clock-wise degrees.
   * `scaleFactor` Number - Output device's pixel scale factor.
   * `touchSupport` String - Can be `available`, `unavailable`, `unknown`.
   * `bounds` Object

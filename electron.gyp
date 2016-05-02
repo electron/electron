@@ -4,7 +4,7 @@
     'product_name%': 'Electron',
     'company_name%': 'GitHub, Inc',
     'company_abbr%': 'github',
-    'version%': '0.37.6',
+    'version%': '0.37.8',
   },
   'includes': [
     'filenames.gypi',
@@ -310,6 +310,9 @@
           ],
         }],  # OS=="mac" and mas_build==1
         ['OS=="linux"', {
+          'sources': [
+            '<@(lib_sources_nss)',
+          ],
           'link_settings': {
             'ldflags': [
               # Make binary search for libraries under current directory, so we

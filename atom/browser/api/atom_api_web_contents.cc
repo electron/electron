@@ -215,13 +215,17 @@ content::ServiceWorkerContext* GetServiceWorkerContext(
 
 }  // namespace
 
-WebContents::WebContents(content::WebContents* web_contents)
+WebContents::WebContents(v8::Isolate* isolate,
+                         content::WebContents* web_contents)
     : content::WebContentsObserver(web_contents),
+      embedder_(nullptr),
       type_(REMOTE),
       request_id_(0),
       background_throttling_(true) {
-  AttachAsUserData(web_contents);
   web_contents->SetUserAgentOverride(GetBrowserContext()->GetUserAgent());
+
+  Init(isolate);
+  AttachAsUserData(web_contents);
 }
 
 WebContents::WebContents(v8::Isolate* isolate,
@@ -269,7 +273,6 @@ WebContents::WebContents(v8::Isolate* isolate,
   }
 
   Observe(web_contents);
-  AttachAsUserData(web_contents);
   InitWithWebContents(web_contents);
 
   managed_web_contents()->GetView()->SetDelegate(this);
@@ -298,6 +301,9 @@ WebContents::WebContents(v8::Isolate* isolate,
     if (owner_window)
       SetOwnerWindow(owner_window);
   }
+
+  Init(isolate);
+  AttachAsUserData(web_contents);
 }
 
 WebContents::~WebContents() {
@@ -792,6 +798,14 @@ bool WebContents::IsLoading() const {
   return web_contents()->IsLoading();
 }
 
+bool WebContents::IsLoadingMainFrame() const {
+  // Comparing site instances works because Electron always creates a new site
+  // instance when navigating, regardless of origin. See AtomBrowserClient.
+  return (web_contents()->GetLastCommittedURL().is_empty() ||
+          web_contents()->GetSiteInstance() !=
+          web_contents()->GetPendingSiteInstance()) && IsLoading();
+}
+
 bool WebContents::IsWaitingForResponse() const {
   return web_contents()->IsWaitingForResponse();
 }
@@ -848,14 +862,20 @@ void WebContents::OpenDevTools(mate::Arguments* args) {
   if (type_ == REMOTE)
     return;
 
-  bool detach = false;
+  std::string state;
   if (type_ == WEB_VIEW) {
-    detach = true;
+    state = "detach";
   } else if (args && args->Length() == 1) {
+    bool detach = false;
     mate::Dictionary options;
-    args->GetNext(&options) && options.Get("detach", &detach);
+    if (args->GetNext(&options)) {
+      options.Get("mode", &state);
+      options.Get("detach", &detach);
+      if (state.empty() && detach)
+        state = "detach";
+    }
   }
-  managed_web_contents()->SetCanDock(!detach);
+  managed_web_contents()->SetDockState(state);
   managed_web_contents()->ShowDevTools();
 }
 
@@ -1188,6 +1208,7 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("_getURL", &WebContents::GetURL)
       .SetMethod("getTitle", &WebContents::GetTitle)
       .SetMethod("isLoading", &WebContents::IsLoading)
+      .SetMethod("isLoadingMainFrame", &WebContents::IsLoadingMainFrame)
       .SetMethod("isWaitingForResponse", &WebContents::IsWaitingForResponse)
       .SetMethod("_stop", &WebContents::Stop)
       .SetMethod("_goBack", &WebContents::GoBack)
@@ -1274,7 +1295,8 @@ mate::Handle<WebContents> WebContents::CreateFrom(
     return mate::CreateHandle(isolate, static_cast<WebContents*>(existing));
 
   // Otherwise create a new WebContents wrapper object.
-  auto handle = mate::CreateHandle(isolate, new WebContents(web_contents));
+  auto handle = mate::CreateHandle(
+      isolate, new WebContents(isolate, web_contents));
   g_wrap_web_contents.Run(handle.ToV8());
   return handle;
 }
@@ -1287,16 +1309,8 @@ mate::Handle<WebContents> WebContents::Create(
   return handle;
 }
 
-void ClearWrapWebContents() {
-  g_wrap_web_contents.Reset();
-}
-
 void SetWrapWebContents(const WrapWebContentsCallback& callback) {
   g_wrap_web_contents = callback;
-
-  // Cleanup the wrapper on exit.
-  atom::AtomBrowserMainParts::Get()->RegisterDestructionCallback(
-      base::Bind(ClearWrapWebContents));
 }
 
 }  // namespace api

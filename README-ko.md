@@ -56,6 +56,7 @@ npm install electron-prebuilt --save-dev
 - [스페인어](https://github.com/electron/electron/tree/master/docs-translations/es)
 - [중국어 간체](https://github.com/electron/electron/tree/master/docs-translations/zh-CN)
 - [중국어 번체](https://github.com/electron/electron/tree/master/docs-translations/zh-TW)
+- [터키의](https://github.com/electron/electron/tree/master/docs-translations/tr-TR)
 - [우크라이나어](https://github.com/electron/electron/tree/master/docs-translations/uk-UA)
 - [러시아어](https://github.com/electron/electron/tree/master/docs-translations/ru-RU)
 - [프랑스어](https://github.com/electron/electron/tree/master/docs-translations/fr-FR)

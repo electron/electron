@@ -1,7 +1,6 @@
 # BrowserWindow
 
-The `BrowserWindow` class gives you the ability to create a browser window. For
-example:
+> Create and control browser windows.
 
 ```javascript
 // In the main process.
@@ -311,10 +310,11 @@ Emitted when an [App Command](https://msdn.microsoft.com/en-us/library/windows/d
 is invoked. These are typically related to keyboard media keys or browser
 commands, as well as the "Back" button built into some mice on Windows.
 
-Commands are lowercased with underscores replaced with hyphens and the `APPCOMMAND_` prefix stripped off.
+Commands are lowercased with underscores replaced with hyphens and the
+`APPCOMMAND_` prefix stripped off.
 e.g. `APPCOMMAND_BROWSER_BACKWARD` is emitted as `browser-backward`.
 
-```js
+```javascript
 someWindow.on('app-command', function(e, cmd) {
   // Navigate the window back when the user hits their mouse back button
   if (cmd === 'browser-backward' && someWindow.webContents.canGoBack()) {
@@ -675,6 +675,17 @@ Returns the title of the native window.
 **Note:** The title of web page can be different from the title of the native
 window.
 
+### `win.setSheetOffset(offset)` _OS X_
+
+Changes the attachment point for sheets on Mac OS X. By default, sheets are
+attached just below the window frame, but you may want to display them beneath
+a HTML-rendered toolbar. For example:
+
+```javascript
+var toolbarRect = document.getElementById('toolbar').getBoundingClientRect();
+win.setSheetOffset(toolbarRect.height);
+```
+
 ### `win.flashFrame(flag)`
 
 * `flag` Boolean
@@ -812,8 +823,8 @@ cleared
 * `description` String - a description that will be provided to Accessibility
 screen readers
 
-Sets a 16 x 16 pixel overlay onto the current taskbar icon, usually used to convey some
-sort of application status or to passively notify the user.
+Sets a 16 x 16 pixel overlay onto the current taskbar icon, usually used to
+convey some sort of application status or to passively notify the user.
 
 ### `win.setHasShadow(hasShadow)` _OS X_
 
@@ -912,4 +923,4 @@ Returns whether the window is visible on all workspaces.
 
 Ignore all moused events that happened in the window.
 
-[blink-feature-string]: https://code.google.com/p/chromium/codesearch#chromium/src/out/Debug/gen/blink/platform/RuntimeEnabledFeatures.cpp&sq=package:chromium&type=cs&l=527
+[blink-feature-string]: https://code.google.com/p/chromium/codesearch#chromium/src/out/Debug/gen/blink/platform/RuntimeEnabledFeatures.cpp&sq=package:chromium&type=cs&l=576

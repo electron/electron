@@ -77,8 +77,8 @@ app.on('ready', function() {
 ## I can not use jQuery/RequireJS/Meteor/AngularJS in Electron.
 
 Due to the Node.js integration of Electron, there are some extra symbols
-inserted into the DOM like `module`, `exports`, `require`. This causes problems for
-some libraries since they want to insert the symbols with the same names.
+inserted into the DOM like `module`, `exports`, `require`. This causes problems
+for some libraries since they want to insert the symbols with the same names.
 
 To solve this, you can turn off node integration in Electron:
 

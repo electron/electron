@@ -37,7 +37,6 @@
 #include "content/public/browser/site_instance.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/common/web_preferences.h"
-#include "net/cert/x509_certificate.h"
 #include "net/ssl/ssl_cert_request_info.h"
 #include "ppapi/host/ppapi_host.h"
 #include "ui/base/l10n/l10n_util.h"
@@ -54,26 +53,6 @@ bool g_suppress_renderer_process_restart = false;
 std::string g_custom_schemes = "";
 // Custom schemes to be registered to handle service worker.
 std::string g_custom_service_worker_schemes = "";
-
-scoped_refptr<net::X509Certificate> ImportCertFromFile(
-    const base::FilePath& path) {
-  if (path.empty())
-    return nullptr;
-
-  std::string cert_data;
-  if (!base::ReadFileToString(path, &cert_data))
-    return nullptr;
-
-  net::CertificateList certs =
-      net::X509Certificate::CreateCertificateListFromBytes(
-          cert_data.data(), cert_data.size(),
-          net::X509Certificate::FORMAT_AUTO);
-
-  if (certs.empty())
-    return nullptr;
-
-  return certs[0];
-}
 
 }  // namespace
 
@@ -242,16 +221,6 @@ void AtomBrowserClient::SelectClientCertificate(
     content::WebContents* web_contents,
     net::SSLCertRequestInfo* cert_request_info,
     scoped_ptr<content::ClientCertificateDelegate> delegate) {
-  // --client-certificate=`path`
-  auto cmd = base::CommandLine::ForCurrentProcess();
-  if (cmd->HasSwitch(switches::kClientCertificate)) {
-    auto cert_path = cmd->GetSwitchValuePath(switches::kClientCertificate);
-    auto certificate = ImportCertFromFile(cert_path);
-    if (certificate.get())
-      delegate->ContinueWithCertificate(certificate.get());
-    return;
-  }
-
   if (!cert_request_info->client_certs.empty() && delegate_) {
     delegate_->SelectClientCertificate(
         web_contents, cert_request_info, std::move(delegate));

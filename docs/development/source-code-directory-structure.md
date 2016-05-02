@@ -34,7 +34,7 @@ Electron
 ├── default_app - The default page to show when Electron is started without
 |   providing an app.
 ├── docs - Documentations.
-├── lib  - JavaScript source code.
+├── lib - JavaScript source code.
 |   ├── browser - Javascript main process initialization code.
 |   |   └── api - Javascript API implementation.
 |   ├── common - JavaScript used by both the main and renderer processes
@@ -62,3 +62,30 @@ Electron
   when creating a distribution.
 * **external_binaries** - Downloaded binaries of third-party frameworks which
   do not support building with `gyp`.
+
+## Keeping Git Submodules Up to Date
+
+The Electron repository has a few vendored dependencies, found in the
+[/vendor](/vendor) directory. Occasionally you might see a message like this
+when running `git status`:
+
+```sh
+$ git status
+
+	modified:   vendor/brightray (new commits)
+	modified:   vendor/node (new commits)
+```
+
+To update these vendored dependencies, run the following command:
+
+```sh
+git submodule update --init --recursive
+```
+
+If you find yourself running this command often, you can create an alias for it
+in your `~/.gitconfig` file:
+
+```
+[alias]
+	su = submodule update --init --recursive
+```

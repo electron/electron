@@ -225,6 +225,50 @@ bool Browser::SetAsDefaultProtocolClient(const std::string& protocol) {
   return true;
 }
 
+bool Browser::IsDefaultProtocolClient(const std::string& protocol) {
+  if (protocol.empty())
+    return false;
+
+  base::FilePath path;
+  if (!PathService::Get(base::FILE_EXE, &path)) {
+    LOG(ERROR) << "Error getting app exe path";
+    return false;
+  }
+
+  // Main Registry Key
+  HKEY root = HKEY_CURRENT_USER;
+  std::string keyPathStr = "Software\\Classes\\" + protocol;
+  std::wstring keyPath = std::wstring(keyPathStr.begin(), keyPathStr.end());
+
+  // Command Key
+  std::string cmdPathStr = keyPathStr + "\\shell\\open\\command";
+  std::wstring cmdPath = std::wstring(cmdPathStr.begin(), cmdPathStr.end());
+
+  base::win::RegKey key;
+  base::win::RegKey commandKey;
+  if (FAILED(key.Open(root, keyPath.c_str(), KEY_ALL_ACCESS)))
+    // Key doesn't exist, we can confirm that it is not set
+    return false;
+
+  if (FAILED(commandKey.Open(root, cmdPath.c_str(), KEY_ALL_ACCESS)))
+    // Key doesn't exist, we can confirm that it is not set
+    return false;
+
+  std::wstring keyVal;
+  if (FAILED(commandKey.ReadValue(L"", &keyVal)))
+    // Default value not set, we can confirm that it is not set
+    return false;
+
+  std::wstring exePath(path.value());
+  std::wstring exe = L"\"" + exePath + L"\" \"%1\"";
+  if (keyVal == exe) {
+    // Default value is the same as current file path
+    return true;
+  } else {
+    return false;
+  }
+}
+
 PCWSTR Browser::GetAppUserModelID() {
   if (app_user_model_id_.empty()) {
     SetAppUserModelID(base::ReplaceStringPlaceholders(

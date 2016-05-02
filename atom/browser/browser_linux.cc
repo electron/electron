@@ -42,6 +42,10 @@ bool Browser::SetAsDefaultProtocolClient(const std::string& protocol) {
   return false;
 }
 
+bool Browser::IsDefaultProtocolClient(const std::string& protocol) {
+  return false;
+}
+
 std::string Browser::GetExecutableFileVersion() const {
   return brightray::GetApplicationVersion();
 }

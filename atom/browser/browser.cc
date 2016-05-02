@@ -9,7 +9,10 @@
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/window_list.h"
+#include "base/files/file_util.h"
 #include "base/message_loop/message_loop.h"
+#include "base/path_service.h"
+#include "brightray/browser/brightray_paths.h"
 
 namespace atom {
 
@@ -139,6 +142,11 @@ void Browser::WillFinishLaunching() {
 }
 
 void Browser::DidFinishLaunching() {
+  // Make sure the userData directory is created.
+  base::FilePath user_data;
+  if (PathService::Get(brightray::DIR_USER_DATA, &user_data))
+    base::CreateDirectoryAndGetError(user_data, nullptr);
+
   is_ready_ = true;
   FOR_EACH_OBSERVER(BrowserObserver, observers_, OnFinishLaunching());
 }
@@ -185,10 +193,6 @@ void Browser::OnWindowAllClosed() {
     NotifyAndShutdown();
   else
     FOR_EACH_OBSERVER(BrowserObserver, observers_, OnWindowAllClosed());
-}
-
-void Browser::PlatformThemeChanged() {
-  FOR_EACH_OBSERVER(BrowserObserver, observers_, OnPlatformThemeChanged());
 }
 
 }  // namespace atom

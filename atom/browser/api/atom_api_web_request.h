@@ -21,13 +21,12 @@ class WebRequest : public mate::TrackableObject<WebRequest> {
   static mate::Handle<WebRequest> Create(v8::Isolate* isolate,
                                          AtomBrowserContext* browser_context);
 
-  // mate::TrackableObject:
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::ObjectTemplate> prototype);
 
  protected:
-  explicit WebRequest(AtomBrowserContext* browser_context);
-  ~WebRequest();
+  WebRequest(v8::Isolate* isolate, AtomBrowserContext* browser_context);
+  ~WebRequest() override;
 
   // C++ can not distinguish overloaded member function.
   template<AtomNetworkDelegate::SimpleEvent type>

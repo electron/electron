@@ -42,8 +42,8 @@ class Debugger: public mate::TrackableObject<Debugger>,
                              v8::Local<v8::ObjectTemplate> prototype);
 
  protected:
-  explicit Debugger(content::WebContents* web_contents);
-  ~Debugger();
+  Debugger(v8::Isolate* isolate, content::WebContents* web_contents);
+  ~Debugger() override;
 
   // content::DevToolsAgentHostClient:
   void AgentHostClosed(content::DevToolsAgentHost* agent_host,

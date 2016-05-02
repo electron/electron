@@ -14,6 +14,11 @@
 #include "chrome/browser/process_singleton.h"
 #include "content/public/browser/gpu_data_manager_observer.h"
 #include "native_mate/handle.h"
+#include "net/base/completion_callback.h"
+
+#if defined(USE_NSS_CERTS)
+#include "chrome/browser/certificate_manager_model.h"
+#endif
 
 namespace base {
 class FilePath;
@@ -28,11 +33,14 @@ namespace atom {
 namespace api {
 
 class App : public AtomBrowserClient::Delegate,
-            public mate::EventEmitter,
+            public mate::EventEmitter<App>,
             public BrowserObserver,
             public content::GpuDataManagerObserver {
  public:
   static mate::Handle<App> Create(v8::Isolate* isolate);
+
+  static void BuildPrototype(v8::Isolate* isolate,
+                             v8::Local<v8::ObjectTemplate> prototype);
 
   // Called when window with disposition needs to be created.
   void OnCreateWindow(const GURL& target_url,
@@ -41,9 +49,16 @@ class App : public AtomBrowserClient::Delegate,
                       int render_process_id,
                       int render_frame_id);
 
+#if defined(USE_NSS_CERTS)
+  void OnCertificateManagerModelCreated(
+      scoped_ptr<base::DictionaryValue> options,
+      const net::CompletionCallback& callback,
+      scoped_ptr<CertificateManagerModel> model);
+#endif
+
  protected:
-  App();
-  virtual ~App();
+  explicit App(v8::Isolate* isolate);
+  ~App() override;
 
   // BrowserObserver:
   void OnBeforeQuit(bool* prevent_default) override;
@@ -77,14 +92,6 @@ class App : public AtomBrowserClient::Delegate,
   // content::GpuDataManagerObserver:
   void OnGpuProcessCrashed(base::TerminationStatus exit_code) override;
 
-#if defined(OS_MACOSX)
-  void OnPlatformThemeChanged() override;
-#endif
-
-  // mate::Wrappable:
-  mate::ObjectTemplateBuilder GetObjectTemplateBuilder(
-      v8::Isolate* isolate) override;
-
  private:
   // Get/Set the pre-defined path in PathService.
   base::FilePath GetPath(mate::Arguments* args, const std::string& name);
@@ -98,11 +105,16 @@ class App : public AtomBrowserClient::Delegate,
       const ProcessSingleton::NotificationCallback& callback);
   std::string GetLocale();
 
-#if defined(OS_WIN)
-  bool IsAeroGlassEnabled();
+#if defined(USE_NSS_CERTS)
+  void ImportCertificate(const base::DictionaryValue& options,
+                         const net::CompletionCallback& callback);
 #endif
 
   scoped_ptr<ProcessSingleton> process_singleton_;
+
+#if defined(USE_NSS_CERTS)
+  scoped_ptr<CertificateManagerModel> certificate_manager_model_;
+#endif
 
   DISALLOW_COPY_AND_ASSIGN(App);
 };

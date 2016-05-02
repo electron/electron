@@ -15,15 +15,17 @@
 #include "atom/browser/browser.h"
 #include "atom/browser/login_handler.h"
 #include "atom/common/native_mate_converters/callback.h"
-#include "atom/common/native_mate_converters/net_converter.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/image_converter.h"
+#include "atom/common/native_mate_converters/net_converter.h"
+#include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/node_includes.h"
 #include "atom/common/options_switches.h"
 #include "base/command_line.h"
 #include "base/environment.h"
 #include "base/files/file_path.h"
+#include "base/files/file_util.h"
 #include "base/path_service.h"
 #include "brightray/browser/brightray_paths.h"
 #include "chrome/common/chrome_paths.h"
@@ -39,7 +41,6 @@
 
 #if defined(OS_WIN)
 #include "base/strings/utf_string_conversions.h"
-#include "ui/base/win/shell.h"
 #endif
 
 using atom::Browser;
@@ -157,12 +158,46 @@ void PassLoginInformation(scoped_refptr<LoginHandler> login_handler,
     login_handler->CancelAuth();
 }
 
+#if defined(USE_NSS_CERTS)
+int ImportIntoCertStore(
+    CertificateManagerModel* model,
+    const base::DictionaryValue& options) {
+  std::string file_data, cert_path;
+  base::string16 password;
+  net::CertificateList imported_certs;
+  int rv = -1;
+  options.GetString("certificate", &cert_path);
+  options.GetString("password", &password);
+
+  if (!cert_path.empty()) {
+    if (base::ReadFileToString(base::FilePath(cert_path), &file_data)) {
+      auto module = model->cert_db()->GetPublicModule();
+      rv = model->ImportFromPKCS12(module,
+                                   file_data,
+                                   password,
+                                   true,
+                                   &imported_certs);
+      if (imported_certs.size() > 1) {
+        auto it = imported_certs.begin();
+        ++it;  // skip first which would  be the client certificate.
+        for (; it != imported_certs.end(); ++it)
+          rv &= model->SetCertTrust(it->get(),
+                                    net::CA_CERT,
+                                    net::NSSCertDatabase::TRUSTED_SSL);
+      }
+    }
+  }
+  return rv;
+}
+#endif
+
 }  // namespace
 
-App::App() {
+App::App(v8::Isolate* isolate) {
   static_cast<AtomBrowserClient*>(AtomBrowserClient::Get())->set_delegate(this);
   Browser::Get()->AddObserver(this);
   content::GpuDataManager::GetInstance()->AddObserver(this);
+  Init(isolate);
 }
 
 App::~App() {
@@ -296,12 +331,6 @@ void App::OnGpuProcessCrashed(base::TerminationStatus exit_code) {
   Emit("gpu-process-crashed");
 }
 
-#if defined(OS_MACOSX)
-void App::OnPlatformThemeChanged() {
-  Emit("platform-theme-changed");
-}
-#endif
-
 base::FilePath App::GetPath(mate::Arguments* args, const std::string& name) {
   bool succeed = false;
   base::FilePath path;
@@ -316,10 +345,15 @@ base::FilePath App::GetPath(mate::Arguments* args, const std::string& name) {
 void App::SetPath(mate::Arguments* args,
                   const std::string& name,
                   const base::FilePath& path) {
+  if (!path.IsAbsolute()) {
+    args->ThrowError("path must be absolute");
+    return;
+  }
+
   bool succeed = false;
   int key = GetPathConstant(name);
   if (key >= 0)
-    succeed = PathService::Override(key, path);
+    succeed = PathService::OverrideAndCreateIfNeeded(key, path, true, false);
   if (!succeed)
     args->ThrowError("Failed to set path");
 }
@@ -340,12 +374,6 @@ void App::AllowNTLMCredentialsForAllDomains(bool should_allow) {
 std::string App::GetLocale() {
   return l10n_util::GetApplicationLocale("");
 }
-
-#if defined(OS_WIN)
-bool App::IsAeroGlassEnabled() {
-  return ui::win::IsAeroGlassEnabled();
-}
-#endif
 
 bool App::MakeSingleInstance(
     const ProcessSingleton::NotificationCallback& callback) {
@@ -369,10 +397,46 @@ bool App::MakeSingleInstance(
   }
 }
 
-mate::ObjectTemplateBuilder App::GetObjectTemplateBuilder(
-    v8::Isolate* isolate) {
+#if defined(USE_NSS_CERTS)
+void App::ImportCertificate(
+    const base::DictionaryValue& options,
+    const net::CompletionCallback& callback) {
+  auto browser_context = AtomBrowserMainParts::Get()->browser_context();
+  if (!certificate_manager_model_) {
+    scoped_ptr<base::DictionaryValue> copy = options.CreateDeepCopy();
+    CertificateManagerModel::Create(browser_context,
+        base::Bind(&App::OnCertificateManagerModelCreated,
+                   base::Unretained(this),
+                   base::Passed(&copy),
+                   callback));
+    return;
+  }
+
+  int rv = ImportIntoCertStore(certificate_manager_model_.get(), options);
+  callback.Run(rv);
+}
+
+void App::OnCertificateManagerModelCreated(
+    scoped_ptr<base::DictionaryValue> options,
+    const net::CompletionCallback& callback,
+    scoped_ptr<CertificateManagerModel> model) {
+  certificate_manager_model_ = std::move(model);
+  int rv = ImportIntoCertStore(certificate_manager_model_.get(),
+                               *(options.get()));
+  callback.Run(rv);
+}
+#endif
+
+// static
+mate::Handle<App> App::Create(v8::Isolate* isolate) {
+  return mate::CreateHandle(isolate, new App(isolate));
+}
+
+// static
+void App::BuildPrototype(
+    v8::Isolate* isolate, v8::Local<v8::ObjectTemplate> prototype) {
   auto browser = base::Unretained(Browser::Get());
-  return mate::ObjectTemplateBuilder(isolate)
+  mate::ObjectTemplateBuilder(isolate, prototype)
       .SetMethod("quit", base::Bind(&Browser::Quit, browser))
       .SetMethod("exit", base::Bind(&Browser::Exit, browser))
       .SetMethod("focus", base::Bind(&Browser::Focus, browser))
@@ -387,6 +451,8 @@ mate::ObjectTemplateBuilder App::GetObjectTemplateBuilder(
                  base::Bind(&Browser::ClearRecentDocuments, browser))
       .SetMethod("setAppUserModelId",
                  base::Bind(&Browser::SetAppUserModelID, browser))
+      .SetMethod("isDefaultProtocolClient",
+                 base::Bind(&Browser::IsDefaultProtocolClient, browser))
       .SetMethod("setAsDefaultProtocolClient",
                  base::Bind(&Browser::SetAsDefaultProtocolClient, browser))
       .SetMethod("removeAsDefaultProtocolClient",
@@ -394,13 +460,10 @@ mate::ObjectTemplateBuilder App::GetObjectTemplateBuilder(
 #if defined(OS_MACOSX)
       .SetMethod("hide", base::Bind(&Browser::Hide, browser))
       .SetMethod("show", base::Bind(&Browser::Show, browser))
-      .SetMethod("isDarkMode",
-                 base::Bind(&Browser::IsDarkMode, browser))
 #endif
 #if defined(OS_WIN)
       .SetMethod("setUserTasks",
                  base::Bind(&Browser::SetUserTasks, browser))
-      .SetMethod("isAeroGlassEnabled", &App::IsAeroGlassEnabled)
 #endif
       .SetMethod("setPath", &App::SetPath)
       .SetMethod("getPath", &App::GetPath)
@@ -408,12 +471,10 @@ mate::ObjectTemplateBuilder App::GetObjectTemplateBuilder(
       .SetMethod("allowNTLMCredentialsForAllDomains",
                  &App::AllowNTLMCredentialsForAllDomains)
       .SetMethod("getLocale", &App::GetLocale)
+#if defined(USE_NSS_CERTS)
+      .SetMethod("importCertificate", &App::ImportCertificate)
+#endif
       .SetMethod("makeSingleInstance", &App::MakeSingleInstance);
-}
-
-// static
-mate::Handle<App> App::Create(v8::Isolate* isolate) {
-  return CreateHandle(isolate, new App);
 }
 
 }  // namespace api
@@ -427,7 +488,6 @@ void AppendSwitch(const std::string& switch_string, mate::Arguments* args) {
   auto command_line = base::CommandLine::ForCurrentProcess();
 
   if (switch_string == atom::switches::kPpapiFlashPath ||
-      switch_string == atom::switches::kClientCertificate ||
       switch_string == switches::kLogNetLog) {
     base::FilePath path;
     args->GetNext(&path);

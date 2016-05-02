@@ -1,7 +1,13 @@
 const assert = require('assert')
 const desktopCapturer = require('electron').desktopCapturer
 
+const isCI = require('electron').remote.getGlobal('isCi')
+
 describe('desktopCapturer', function () {
+  if (isCI && process.platform === 'win32') {
+    return
+  }
+
   it('should return a non-empty array of sources', function (done) {
     desktopCapturer.getSources({
       types: ['window', 'screen']
@@ -23,5 +29,17 @@ describe('desktopCapturer', function () {
 
     desktopCapturer.getSources({types: ['window', 'screen']}, callback)
     desktopCapturer.getSources({types: ['window', 'screen']}, callback)
+  })
+
+  it('responds to subsequest calls of different options', function (done) {
+    var callCount = 0
+    var callback = function (error, sources) {
+      callCount++
+      assert.equal(error, null)
+      if (callCount === 2) done()
+    }
+
+    desktopCapturer.getSources({types: ['window']}, callback)
+    desktopCapturer.getSources({types: ['screen']}, callback)
   })
 })

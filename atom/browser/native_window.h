@@ -123,6 +123,8 @@ class NativeWindow : public base::SupportsUserData,
   virtual gfx::Size GetMinimumSize();
   virtual void SetMaximumSize(const gfx::Size& size);
   virtual gfx::Size GetMaximumSize();
+  virtual void SetSheetOffset(const double offset);
+  virtual double GetSheetOffset();
   virtual void SetResizable(bool resizable) = 0;
   virtual bool IsResizable() = 0;
   virtual void SetMovable(bool movable) = 0;
@@ -325,6 +327,9 @@ class NativeWindow : public base::SupportsUserData,
   // Closure that would be called when window is unresponsive when closing,
   // it should be cancelled when we can prove that the window is responsive.
   base::CancelableClosure window_unresposive_closure_;
+
+  // Used to display sheets at the appropriate vertical offset
+  double sheet_offset_;
 
   // Used to maintain the aspect ratio of a view which is inside of the
   // content view.

@@ -243,6 +243,13 @@ bool ScopedDisableResize::disable_resize_ = false;
   return NO;
 }
 
+- (NSRect)window:(NSWindow*)window
+    willPositionSheet:(NSWindow*)sheet usingRect:(NSRect)rect {
+  NSView* view = window.contentView;
+  rect.origin.y = view.frame.size.height - shell_->GetSheetOffset();
+  return rect;
+}
+
 @end
 
 @interface AtomNSWindow : NSWindow {
@@ -595,10 +602,16 @@ bool NativeWindowMac::IsVisible() {
 }
 
 void NativeWindowMac::Maximize() {
+  if (IsMaximized())
+    return;
+
   [window_ zoom:nil];
 }
 
 void NativeWindowMac::Unmaximize() {
+  if (!IsMaximized())
+    return;
+
   [window_ zoom:nil];
 }
 

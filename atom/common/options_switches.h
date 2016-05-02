@@ -68,7 +68,6 @@ namespace switches {
 extern const char kEnablePlugins[];
 extern const char kPpapiFlashPath[];
 extern const char kPpapiFlashVersion[];
-extern const char kClientCertificate[];
 extern const char kDisableHttpCache[];
 extern const char kRegisterStandardSchemes[];
 extern const char kRegisterServiceWorkerSchemes[];

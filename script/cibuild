@@ -53,8 +53,6 @@ def main():
   if PLATFORM == 'linux':
     os.environ['DISPLAY'] = ':99.0'
 
-  run_script('clean.py')
-
   # CI's npm is not reliable.
   npm = 'npm.cmd' if PLATFORM == 'win32' else 'npm'
   execute([npm, 'install', 'npm@2.12.1'])
@@ -77,11 +75,11 @@ def main():
     run_script('create-dist.py')
     run_script('upload.py')
   else:
+    if PLATFORM == 'win32':
+      os.environ['OUTPUT_TO_FILE'] = 'output.log'
     run_script('build.py', ['-c', 'D'])
-    if PLATFORM != 'win32' and target_arch == 'x64':
+    if PLATFORM == 'win32' or target_arch == 'x64':
       run_script('test.py', ['--ci'])
-
-  run_script('clean.py')
 
 
 def run_script(script, args=[]):
