@@ -17,15 +17,7 @@ def main():
   if (args.libcc_source_path != None and
       args.libcc_shared_library_path != None and
       args.libcc_static_library_path != None):
-    if (not os.path.isdir(args.libcc_source_path)):
-      print "Error: Directory does not exist:", args.libcc_source_path
-      sys.exit(0)
-    elif (not os.path.isdir(args.libcc_shared_library_path)):
-      print "Error: Directory does not exist:", args.libcc_shared_library_path
-      sys.exit(0)
-    elif (not os.path.isdir(args.libcc_static_library_path)):
-      print "Error: Directory does not exist:", args.libcc_static_library_path
-      sys.exit(0)
+    pass
   elif (args.libcc_source_path != None or
         args.libcc_shared_library_path != None or
         args.libcc_static_library_path != None):
