@@ -174,9 +174,9 @@ def update_win32_python():
       execute_stdout(['git', 'clone', PYTHON_26_URL])
 
 
-def build_libchromiumcontent(is_verbose_mode, target_arch):
+def build_libchromiumcontent(verbose, target_arch):
   args = [os.path.join(SOURCE_ROOT, 'script', 'build-libchromiumcontent.py')]
-  if is_verbose_mode:
+  if verbose:
     args += ['-v']
   execute_stdout(args + ['--target_arch', target_arch])
 
