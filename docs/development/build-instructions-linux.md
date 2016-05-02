@@ -130,3 +130,25 @@ Test functionality using:
 ```bash
 $ ./script/test.py
 ```
+
+## Advanced topics
+
+The default building configuration is targeted for major desktop Linux
+distributions, to build for a specific distribution or device, following
+information may help you.
+
+### Build libchromiumcontent locally
+
+To avoid using the prebuilt binaries of libchromiumcontent, you can pass the
+`--build_libchromiumcontent` switch to `bootstrap.py` script:
+
+```bash
+$ ./script/bootstrap.py -v --build_libchromiumcontent
+```
+
+Note that by default the `shared_library` configuration is not built, so you can
+only build `Release` version of Electron if you use this mode:
+
+```bash
+$ ./script/build.py -c D
+```
