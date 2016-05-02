@@ -33,6 +33,19 @@ def main():
   if sys.platform == 'cygwin':
     update_win32_python()
 
+  libcc_source_path = args.libcc_source_path
+  libcc_shared_library_path = args.libcc_shared_library_path
+  libcc_static_library_path = args.libcc_static_library_path
+
+  # Redirect to use local libchromiumcontent build.
+  if args.build_libchromiumcontent:
+    build_libchromiumcontent(args.verbose, args.target_arch)
+    dist_dir = os.path.join(SOURCE_ROOT, 'vendor', 'brightray', 'vendor',
+                            'libchromiumcontent', 'dist', 'main')
+    libcc_source_path = os.path.join(dist_dir, 'src')
+    libcc_shared_library_path = os.path.join(dist_dir, 'shared_library')
+    libcc_static_library_path = os.path.join(dist_dir, 'static_library')
+
   if PLATFORM != 'win32':
     update_clang()
 
@@ -40,8 +53,8 @@ def main():
   setup_python_libs()
   update_node_modules('.')
   bootstrap_brightray(args.dev, args.url, args.target_arch,
-                      args.libcc_source_path, args.libcc_shared_library_path,
-                      args.libcc_static_library_path)
+                      libcc_source_path, libcc_shared_library_path,
+                      libcc_static_library_path)
 
   if PLATFORM == 'linux':
     download_sysroot(args.target_arch)
@@ -71,6 +84,8 @@ def parse_args():
                            'prompts.')
   parser.add_argument('--target_arch', default=get_target_arch(),
                       help='Manually specify the arch to build for')
+  parser.add_argument('--build_libchromiumcontent', action='store_true',
+                      help='Build local version of libchromiumcontent')
   parser.add_argument('--libcc_source_path', required=False,
                       help='The source path of libchromiumcontent. ' \
                            'NOTE: All options of libchromiumcontent are ' \
@@ -157,6 +172,13 @@ def update_win32_python():
   with scoped_cwd(VENDOR_DIR):
     if not os.path.exists('python_26'):
       execute_stdout(['git', 'clone', PYTHON_26_URL])
+
+
+def build_libchromiumcontent(is_verbose_mode, target_arch):
+  args = [os.path.join(SOURCE_ROOT, 'script', 'build-libchromiumcontent.py')]
+  if is_verbose_mode:
+    args += ['-v']
+  execute_stdout(args + ['--target_arch', target_arch])
 
 
 def update_clang():
