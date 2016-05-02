@@ -179,3 +179,25 @@ For example building with GCC toolchain:
 $ env CC=gcc CXX=g++ ./script/bootstrap.py -v --build_libchromiumcontent --disable_clang
 $ ./script/build.py -c R
 ```
+
+### Environment variables
+
+Apart from `CC` and `CXX`, you can also set following environment variables to
+custom the building configurations:
+
+* `CPPFLAGS`
+* `CPPFLAGS_host`
+* `CFLAGS`
+* `CFLAGS_host`
+* `CXXFLAGS`
+* `CXXFLAGS_host`
+* `AR`
+* `AR_host`
+* `CC`
+* `CC_host`
+* `CXX`
+* `CXX_host`
+* `LDFLAGS`
+
+The environment variables have to be set when executing the `bootstrap.py`
+script, it won't work in the `build.py` script.
