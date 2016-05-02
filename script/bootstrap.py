@@ -33,6 +33,8 @@ def main():
   if sys.platform == 'cygwin':
     update_win32_python()
 
+  update_submodules()
+
   libcc_source_path = args.libcc_source_path
   libcc_shared_library_path = args.libcc_shared_library_path
   libcc_static_library_path = args.libcc_static_library_path
@@ -49,7 +51,6 @@ def main():
   if PLATFORM != 'win32':
     update_clang()
 
-  update_submodules()
   setup_python_libs()
   update_node_modules('.')
   bootstrap_brightray(args.dev, args.url, args.target_arch,
