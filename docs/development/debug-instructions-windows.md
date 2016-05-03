@@ -11,7 +11,7 @@ with breakpoints inside Electron's source code.
 
 * **A debug build of Electron**: The easiest way is usually building it
   yourself, using the tools and prerequisites listed in the
-  [build instructions for Windows](build-instructions-osx.md). While you can
+  [build instructions for Windows](build-instructions-windows.md). While you can
   easily attach to and debug Electron as you can download it directly, you will
   find that it is heavily optimized, making debugging substantially more
   difficult: The debugger will not be able to show you the content of all
