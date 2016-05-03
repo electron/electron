@@ -117,7 +117,8 @@ Returns:
 
 * `event` Event
 * `type` String - A string identifying the event. Maps to [`NSUserActivity.activityType`](https://developer.apple.com/library/ios/documentation/Foundation/Reference/NSUserActivity_Class/index.html#//apple_ref/occ/instp/NSUserActivity/activityType).
-* `userInfo` Object - Contains app-specific state stored by the activity on another device.
+* `userInfo` Object - Contains app-specific state stored by the activity on
+another device. Currently only string data is supported.
 
 Emitted during [handoff](https://developer.apple.com/library/ios/documentation/UserExperience/Conceptual/Handoff/HandoffFundamentals/HandoffFundamentals.html) when an activity from a different device wants to be
 resumed. You should call `event.preventDefault()` if you want to handle this
@@ -503,8 +504,8 @@ app.on('ready', function() {
 
 * `type` String - Uniquely identifies the activity. It's recommended to use a
 reverse-DNS string.
-* `userInfo` Object - Contains app-specific state stored by the activity on
-another device.
+* `userInfo` Object - App-specific state to store for use by another device.
+Currently only string data is supported.
 
 Creates an `NSUserActivity` and sets it as the current activity. The activity
 is eligible for [handoff](https://developer.apple.com/library/ios/documentation/UserExperience/Conceptual/Handoff/HandoffFundamentals/HandoffFundamentals.html) to another device afterward.
