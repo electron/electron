@@ -139,7 +139,8 @@ void Browser::Activate(bool has_visible_windows) {
 
 #if defined(OS_MACOSX)
 bool Browser::ContinueUserActivity(const std::string& type,
-                                   const base::DictionaryValue& user_info) {
+                                   const std::map<std::string,
+                                   std::string>& user_info) {
   bool prevent_default = false;
   FOR_EACH_OBSERVER(BrowserObserver,
                     observers_,

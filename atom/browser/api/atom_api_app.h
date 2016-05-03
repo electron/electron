@@ -74,7 +74,7 @@ class App : public AtomBrowserClient::Delegate,
   void OnLogin(LoginHandler* login_handler) override;
   void OnContinueUserActivity(bool* prevent_default,
     const std::string& type,
-    const base::DictionaryValue& user_info) override;
+    const std::map<std::string, std::string>& user_info) override;
 
   // content::ContentBrowserClient:
   void AllowCertificateError(
