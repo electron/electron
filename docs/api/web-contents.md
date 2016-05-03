@@ -308,6 +308,63 @@ If the `type` parameter is `custom`, the `image` parameter will hold the custom
 cursor image in a `NativeImage`, and the `scale` will hold scaling information
 for the image.
 
+### Event: 'context-menu'
+
+Returns:
+
+* `event` Event
+* `params` Object
+  * `x` Integer - x coodinate
+  * `y` Integer - y coodinate
+  * `linkURL` String - URL of the link that encloses the node the context menu
+was invoked on.
+  * `linkText` String - Text associated with the link. May be an empty
+string if the contents of the link are an image.
+  * `pageURL` String - URL of the top level page that the context menu was
+invoked on.
+  * `frameURL` String - URL of the subframe that the context menu was invoked
+on.
+  * `srcURL` String - Source URL for the element that the context menu
+was invoked on. Elements with source URLs are images, audio and video.
+  * `mediaType` String - Type of the node the context menu was invoked on. Can
+be `none`, `image`, `audio`, `video`, `canvas`, `file` or `plugin`.
+  * `mediaFlags` Object - Parameters for the media element the context menu was
+invoked on.
+    * `inError` - Boolean
+    * `isPaused` - Boolean
+    * `isMuted` - Boolean
+    * `hasAudio` - Boolean
+    * `isLooping` - Boolean
+    * `isControlsVisible` - Boolean
+    * `canToggleControls` - Boolean
+    * `canRotate` - Boolean
+  * `hasImageContent` Boolean - Wether the context menu was invoked on an image
+which has non-empty contents.
+  * `isEditable` Boolean - Wether the context is editable.
+  * `editFlags` Object - These flags indicate wether the renderer believes it is
+able to perform the corresponding action.
+    * `canUndo` - Boolean
+    * `canRedo` - Boolean
+    * `canCut` - Boolean
+    * `canCopy` - Boolean
+    * `canPaste` - Boolean
+    * `canDelete` - Boolean
+    * `canSelectAll` - Boolean
+  * `selectionText` String - Text of the selection that the context menu was
+invoked on.
+  * `titleText` String - Title or alt text of the selection that the context
+was invoked on.
+  * `misspelledWord` String - The misspelled word under the cursor, if any.
+  * `frameCharset` String - The character encoding of the frame on which the
+menu was invoked.
+  * `inputFieldType` String - If the context menu was invoked on an input
+field, the type of that field. Possible values are `none`, `plain-text`,
+`password`, `other`.
+  * `menuSourceType` String - Input source that invoked the context menu.
+Can be `none`, `mouse`, `keyboard`, `touch`, `touch-menu`.
+
+Emitted when there is a new context menu that needs to be handled.
+
 ## Instance Methods
 
 The `webContents` object has the following instance methods:
