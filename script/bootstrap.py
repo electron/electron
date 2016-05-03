@@ -49,8 +49,11 @@ def main():
     libcc_shared_library_path = os.path.join(dist_dir, 'shared_library')
     libcc_static_library_path = os.path.join(dist_dir, 'static_library')
 
+  update_clang()
+
   if PLATFORM != 'win32' and not args.disable_clang and args.clang_dir == '':
-    update_clang()
+    # Build with prebuilt clang.
+    set_clang_env(os.environ)
 
   setup_python_libs()
   update_node_modules('.')
@@ -151,15 +154,19 @@ def bootstrap_brightray(is_dev, url, target_arch, libcc_source_path,
   execute_stdout([sys.executable, bootstrap] + args)
 
 
+def set_clang_env(env):
+  llvm_dir = os.path.join(SOURCE_ROOT, 'vendor', 'llvm-build',
+                          'Release+Asserts', 'bin')
+  env['CC']  = os.path.join(llvm_dir, 'clang')
+  env['CXX'] = os.path.join(llvm_dir, 'clang++')
+
+
 def update_node_modules(dirname, env=None):
   if env is None:
     env = os.environ.copy()
   if PLATFORM == 'linux':
     # Use prebuilt clang for building native modules.
-    llvm_dir = os.path.join(SOURCE_ROOT, 'vendor', 'llvm-build',
-                            'Release+Asserts', 'bin')
-    env['CC']  = os.path.join(llvm_dir, 'clang')
-    env['CXX'] = os.path.join(llvm_dir, 'clang++')
+    set_clang_env(env)
     env['npm_config_clang'] = '1'
   with scoped_cwd(dirname):
     args = [NPM, 'install']
