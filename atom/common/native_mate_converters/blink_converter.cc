@@ -15,6 +15,7 @@
 #include "third_party/WebKit/public/web/WebDeviceEmulationParams.h"
 #include "third_party/WebKit/public/web/WebFindOptions.h"
 #include "third_party/WebKit/public/web/WebInputEvent.h"
+#include "ui/base/clipboard/clipboard.h"
 
 namespace {
 
@@ -294,6 +295,93 @@ bool Converter<blink::WebFindOptions>::FromV8(
   dict.Get("wordStart", &out->wordStart);
   dict.Get("medialCapitalAsWordStart", &out->medialCapitalAsWordStart);
   return true;
+}
+
+// static
+v8::Local<v8::Value> Converter<blink::WebContextMenuData::MediaType>::ToV8(
+      v8::Isolate* isolate, const blink::WebContextMenuData::MediaType& in) {
+  switch (in) {
+    case blink::WebContextMenuData::MediaTypeImage:
+      return mate::StringToV8(isolate, "image");
+    case blink::WebContextMenuData::MediaTypeVideo:
+      return mate::StringToV8(isolate, "video");
+    case blink::WebContextMenuData::MediaTypeAudio:
+      return mate::StringToV8(isolate, "audio");
+    case blink::WebContextMenuData::MediaTypeCanvas:
+      return mate::StringToV8(isolate, "canvas");
+    case blink::WebContextMenuData::MediaTypeFile:
+      return mate::StringToV8(isolate, "file");
+    case blink::WebContextMenuData::MediaTypePlugin:
+      return mate::StringToV8(isolate, "plugin");
+    default:
+      return mate::StringToV8(isolate, "none");
+  }
+}
+
+// static
+v8::Local<v8::Value> Converter<blink::WebContextMenuData::InputFieldType>::ToV8(
+      v8::Isolate* isolate,
+      const blink::WebContextMenuData::InputFieldType& in) {
+  switch (in) {
+    case blink::WebContextMenuData::InputFieldTypePlainText:
+      return mate::StringToV8(isolate, "plain-text");
+    case blink::WebContextMenuData::InputFieldTypePassword:
+      return mate::StringToV8(isolate, "password");
+    case blink::WebContextMenuData::InputFieldTypeOther:
+      return mate::StringToV8(isolate, "other");
+    default:
+      return mate::StringToV8(isolate, "none");
+  }
+}
+
+v8::Local<v8::Value> EditFlagsToV8(v8::Isolate* isolate, int editFlags) {
+  mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
+  dict.Set("canUndo",
+      !!(editFlags & blink::WebContextMenuData::CanUndo));
+  dict.Set("canRedo",
+      !!(editFlags & blink::WebContextMenuData::CanRedo));
+  dict.Set("canCut",
+      !!(editFlags & blink::WebContextMenuData::CanCut));
+  dict.Set("canCopy",
+      !!(editFlags & blink::WebContextMenuData::CanCopy));
+
+  bool pasteFlag = false;
+  if (editFlags & blink::WebContextMenuData::CanPaste) {
+    std::vector<base::string16> types;
+    bool ignore;
+    ui::Clipboard::GetForCurrentThread()->ReadAvailableTypes(
+        ui::CLIPBOARD_TYPE_COPY_PASTE, &types, &ignore);
+    pasteFlag = !types.empty();
+  }
+  dict.Set("canPaste", pasteFlag);
+
+  dict.Set("canDelete",
+      !!(editFlags & blink::WebContextMenuData::CanDelete));
+  dict.Set("canSelectAll",
+      !!(editFlags & blink::WebContextMenuData::CanSelectAll));
+
+  return mate::ConvertToV8(isolate, dict);
+}
+
+v8::Local<v8::Value> MediaFlagsToV8(v8::Isolate* isolate, int mediaFlags) {
+  mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
+  dict.Set("inError",
+      !!(mediaFlags & blink::WebContextMenuData::MediaInError));
+  dict.Set("isPaused",
+      !!(mediaFlags & blink::WebContextMenuData::MediaPaused));
+  dict.Set("isMuted",
+      !!(mediaFlags & blink::WebContextMenuData::MediaMuted));
+  dict.Set("hasAudio",
+      !!(mediaFlags & blink::WebContextMenuData::MediaHasAudio));
+  dict.Set("isLooping",
+      (mediaFlags & blink::WebContextMenuData::MediaLoop) != 0);
+  dict.Set("isControlsVisible",
+      (mediaFlags & blink::WebContextMenuData::MediaControls) != 0);
+  dict.Set("canToggleControls",
+      !!(mediaFlags & blink::WebContextMenuData::MediaCanToggleControls));
+  dict.Set("canRotate",
+      !!(mediaFlags & blink::WebContextMenuData::MediaCanRotate));
+  return mate::ConvertToV8(isolate, dict);
 }
 
 }  // namespace mate

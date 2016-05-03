@@ -440,11 +440,13 @@ void WebContents::RendererResponsive(content::WebContents* source) {
 }
 
 bool WebContents::HandleContextMenu(const content::ContextMenuParams& params) {
-  if (!params.custom_context.is_pepper_menu)
-    return false;
+  if (params.custom_context.is_pepper_menu) {
+    Emit("pepper-context-menu", std::make_pair(params, web_contents()));
+    web_contents()->NotifyContextMenuClosed(params.custom_context);
+  } else {
+    Emit("context-menu", std::make_pair(params, web_contents()));
+  }
 
-  Emit("pepper-context-menu", std::make_pair(params, web_contents()));
-  web_contents()->NotifyContextMenuClosed(params.custom_context);
   return true;
 }
 
