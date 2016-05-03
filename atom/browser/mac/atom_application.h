@@ -8,6 +8,7 @@
                                            CrAppControlProtocol> {
  @private
   BOOL handlingSendEvent_;
+  NSUserActivity* currentActivity_;
 }
 
 + (AtomApplication*)sharedApplication;
@@ -17,5 +18,9 @@
 
 // CrAppControlProtocol:
 - (void)setHandlingSendEvent:(BOOL)handlingSendEvent;
+
+- (NSUserActivity*)getCurrentActivity;
+
+- (void)setCurrentActivity:(NSUserActivity*)userActivity;
 
 @end

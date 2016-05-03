@@ -89,7 +89,7 @@ void Browser::SetAppUserModelID(const base::string16& name) {
 
 void Browser::SetUserActivity(const std::string& type, const std::map<std::string, std::string>& user_info) {
   NSString* type_ns = [NSString stringWithUTF8String:type.c_str()];
-  NSUserActivity *user_activity = [[NSUserActivity alloc] initWithActivityType:type_ns];
+  NSUserActivity* user_activity = [[NSUserActivity alloc] initWithActivityType:type_ns];
 
   NSMutableArray* user_info_args = [[NSMutableArray alloc] init];
   for (auto const &pair : user_info) {
@@ -102,6 +102,8 @@ void Browser::SetUserActivity(const std::string& type, const std::map<std::strin
 
   user_activity.userInfo = [[NSDictionary alloc] initWithObjectsAndKeys:user_info_args, nil];
   [user_activity becomeCurrent];
+
+  [[AtomApplication sharedApplication] setUserActivity:user_activity];
 }
 
 std::string Browser::GetExecutableFileVersion() const {
