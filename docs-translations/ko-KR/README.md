@@ -45,7 +45,7 @@ Electron에 대해 자주 묻는 질문이 있습니다. 이슈를 생성하기 
 * [크롬 명령줄 스위치 지원](api/chrome-command-line-switches.md)
 * [환경 변수](api/environment-variables.md)
 
-### 커스텀 DOM elements:
+### 커스텀 DOM 요소:
 
 * [`File` 객체](api/file-object.md)
 * [`<webview>` 태그](api/web-view-tag.md)
