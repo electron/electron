@@ -183,8 +183,6 @@
       'atom/browser/mac/atom_application.mm',
       'atom/browser/mac/atom_application_delegate.h',
       'atom/browser/mac/atom_application_delegate.mm',
-      'atom/browser/mac/mac_native_converter.h',
-      'atom/browser/mac/mac_native_converter.mm',
       'atom/browser/native_window.cc',
       'atom/browser/native_window.h',
       'atom/browser/native_window_views_win.cc',
