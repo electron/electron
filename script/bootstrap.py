@@ -49,11 +49,12 @@ def main():
     libcc_shared_library_path = os.path.join(dist_dir, 'shared_library')
     libcc_static_library_path = os.path.join(dist_dir, 'static_library')
 
-  update_clang()
-
-  if PLATFORM != 'win32' and not args.disable_clang and args.clang_dir == '':
-    # Build with prebuilt clang.
-    set_clang_env(os.environ)
+  if PLATFORM != 'win32':
+    # Download prebuilt clang binaries.
+    update_clang()
+    if not args.disable_clang and args.clang_dir == '':
+      # Build with prebuilt clang.
+      set_clang_env(os.environ)
 
   setup_python_libs()
   update_node_modules('.')
