@@ -89,6 +89,13 @@ describe('app module', function () {
     })
   })
 
+  describe('app.setUserActivity(type, userInfo)', function () {
+    it('sets the current activity', function () {
+      app.setUserActivity('com.electron.testActivity', {testData: '123'});
+      assert.equal(app.getCurrentActivityType(), 'com.electron.testActivity');
+    })
+  })
+
   describe('app.importCertificate', function () {
     if (process.platform !== 'linux')
       return

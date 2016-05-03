@@ -91,19 +91,24 @@ void Browser::SetUserActivity(const std::string& type, const std::map<std::strin
   NSString* type_ns = [NSString stringWithUTF8String:type.c_str()];
   NSUserActivity* user_activity = [[NSUserActivity alloc] initWithActivityType:type_ns];
 
-  NSMutableArray* user_info_args = [[NSMutableArray alloc] init];
+  NSMutableDictionary* user_info_args = [[NSMutableDictionary alloc] init];
   for (auto const &pair : user_info) {
     NSString* value_ns = [NSString stringWithUTF8String:pair.second.c_str()];
     NSString* key_ns = [NSString stringWithUTF8String:pair.first.c_str()];
 
-    [user_info_args addObject:value_ns];
-    [user_info_args addObject:key_ns];
+    [user_info_args setObject:value_ns
+                       forKey:key_ns];
   }
 
-  user_activity.userInfo = [[NSDictionary alloc] initWithObjectsAndKeys:user_info_args, nil];
+  user_activity.userInfo = user_info_args;
   [user_activity becomeCurrent];
 
-  [[AtomApplication sharedApplication] setUserActivity:user_activity];
+  [[AtomApplication sharedApplication] setCurrentActivity:user_activity];
+}
+
+std::string Browser::GetCurrentActivityType() {
+  NSUserActivity* user_activity = [[AtomApplication sharedApplication] getCurrentActivity];
+  return base::SysNSStringToUTF8(user_activity.activityType);
 }
 
 std::string Browser::GetExecutableFileVersion() const {

@@ -510,6 +510,10 @@ Currently only string data is supported.
 Creates an `NSUserActivity` and sets it as the current activity. The activity
 is eligible for [handoff](https://developer.apple.com/library/ios/documentation/UserExperience/Conceptual/Handoff/HandoffFundamentals/HandoffFundamentals.html) to another device afterward.
 
+### `app.getCurrentActivityType()` _OS X_
+
+Returns the type of the currently running activity.
+
 ### `app.setAppUserModelId(id)` _Windows_
 
 * `id` String

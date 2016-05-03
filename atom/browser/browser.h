@@ -97,6 +97,9 @@ class Browser : public WindowListObserver {
   void SetUserActivity(const std::string& type,
                        const std::map<std::string, std::string>& user_info);
 
+  // Returns the type name of the current user activity.
+  std::string GetCurrentActivityType();
+
   // Resumes an activity via hand-off.
   bool ContinueUserActivity(const std::string& type,
     const std::map<std::string, std::string>& user_info);

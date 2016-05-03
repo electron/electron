@@ -469,6 +469,8 @@ void App::BuildPrototype(
       .SetMethod("show", base::Bind(&Browser::Show, browser))
       .SetMethod("setUserActivity",
                  base::Bind(&Browser::SetUserActivity, browser))
+      .SetMethod("getCurrentActivityType",
+                 base::Bind(&Browser::GetCurrentActivityType, browser))
 #endif
 #if defined(OS_WIN)
       .SetMethod("setUserTasks",
