@@ -29,11 +29,11 @@
 }
 
 - (void)setCurrentActivity:(NSUserActivity*)userActivity {
-  currentActivity_ = userActivity;
+  currentActivity_ = base::scoped_nsobject<NSUserActivity>(userActivity);
 }
 
 - (NSUserActivity*)getCurrentActivity {
-  return currentActivity_;
+  return currentActivity_.get();
 }
 
 - (void)awakeFromNib {
