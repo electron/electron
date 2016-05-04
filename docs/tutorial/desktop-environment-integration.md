@@ -18,7 +18,7 @@ the currently running operating system's native notification APIs to display it.
 **Note:** Since this is an HTML5 API it is only available in the renderer process.
 
 ```javascript
-var myNotification = new Notification('Title', {
+let myNotification = new Notification('Title', {
   body: 'Lorem Ipsum Dolor Sit Amet'
 });
 
@@ -117,8 +117,8 @@ const electron = require('electron');
 const app = electron.app;
 const Menu = electron.Menu;
 
-var dockMenu = Menu.buildFromTemplate([
-  { label: 'New Window', click: function() { console.log('New Window'); } },
+const dockMenu = Menu.buildFromTemplate([
+  { label: 'New Window', click: () => { console.log('New Window'); } },
   { label: 'New Window with Settings', submenu: [
     { label: 'Basic' },
     { label: 'Pro'}
@@ -209,24 +209,25 @@ You can use [BrowserWindow.setThumbarButtons][setthumbarbuttons] to set
 thumbnail toolbar in your application:
 
 ```javascript
-const BrowserWindow = require('electron').BrowserWindow;
+const { BrowserWindow } = require('electron');
 const path = require('path');
 
-var win = new BrowserWindow({
+let win = new BrowserWindow({
   width: 800,
   height: 600
 });
+
 win.setThumbarButtons([
   {
     tooltip: "button1",
     icon: path.join(__dirname, 'button1.png'),
-    click: function() { console.log("button2 clicked"); }
+    click: () => { console.log("button2 clicked"); }
   },
   {
     tooltip: "button2",
     icon: path.join(__dirname, 'button2.png'),
     flags:['enabled', 'dismissonclick'],
-    click: function() { console.log("button2 clicked."); }
+    click: () => { console.log("button2 clicked."); }
   }
 ]);
 ```
@@ -266,7 +267,7 @@ To set the progress bar for a Window, you can use the
 [BrowserWindow.setProgressBar][setprogressbar] API:
 
 ```javascript
-var window = new BrowserWindow({...});
+let window = new BrowserWindow({...});
 window.setProgressBar(0.5);
 ```
 
@@ -293,7 +294,7 @@ To set the overlay icon for a window, you can use the
 [BrowserWindow.setOverlayIcon][setoverlayicon] API:
 
 ```javascript
-var window = new BrowserWindow({...});
+let window = new BrowserWindow({...});
 window.setOverlayIcon('path/to/overlay.png', 'Description for overlay');
 ```
 
@@ -315,7 +316,7 @@ To set the represented file of window, you can use the
 [BrowserWindow.setDocumentEdited][setdocumentedited] APIs:
 
 ```javascript
-var window = new BrowserWindow({...});
+let window = new BrowserWindow({...});
 window.setRepresentedFilename('/etc/passwd');
 window.setDocumentEdited(true);
 ```
