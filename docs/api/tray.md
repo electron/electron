@@ -8,10 +8,10 @@ const app = electron.app;
 const Menu = electron.Menu;
 const Tray = electron.Tray;
 
-var appIcon = null;
-app.on('ready', function(){
+let appIcon = null;
+app.on('ready', () => {
   appIcon = new Tray('/path/to/my/icon');
-  var contextMenu = Menu.buildFromTemplate([
+  const contextMenu = Menu.buildFromTemplate([
     { label: 'Item1', type: 'radio' },
     { label: 'Item2', type: 'radio' },
     { label: 'Item3', type: 'radio', checked: true },
@@ -20,7 +20,6 @@ app.on('ready', function(){
   appIcon.setToolTip('This is my application.');
   appIcon.setContextMenu(contextMenu);
 });
-
 ```
 
 __Platform limitations:__

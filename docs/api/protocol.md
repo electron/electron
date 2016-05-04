@@ -7,13 +7,13 @@ An example of implementing a protocol that has the same effect as the
 
 ```javascript
 const electron = require('electron');
-const app = electron.app;
+const { app } = electron;
 const path = require('path');
 
 app.on('ready', function() {
-    var protocol = electron.protocol;
+    const { protocol } = electron;
     protocol.registerFileProtocol('atom', function(request, callback) {
-      var url = request.url.substr(7);
+      const url = request.url.substr(7);
       callback({path: path.normalize(__dirname + '/' + url)});
     }, function (error) {
       if (error)
@@ -95,9 +95,9 @@ should be called with either a `Buffer` object or an object that has the `data`,
 Example:
 
 ```javascript
-protocol.registerBufferProtocol('atom', function(request, callback) {
+protocol.registerBufferProtocol('atom', (request, callback) => {
   callback({mimeType: 'text/html', data: new Buffer('<h5>Response</h5>')});
-}, function (error) {
+}, (error) => {
   if (error)
     console.error('Failed to register protocol')
 });

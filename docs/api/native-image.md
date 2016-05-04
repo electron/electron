@@ -9,15 +9,15 @@ For example, when creating a tray or setting a window's icon, you can pass an
 image file path as a `String`:
 
 ```javascript
-var appIcon = new Tray('/Users/somebody/images/icon.png');
-var window = new BrowserWindow({icon: '/Users/somebody/images/window.png'});
+const appIcon = new Tray('/Users/somebody/images/icon.png');
+let window = new BrowserWindow({icon: '/Users/somebody/images/window.png'});
 ```
 
 Or read the image from the clipboard which returns a `nativeImage`:
 
 ```javascript
-var image = clipboard.readImage();
-var appIcon = new Tray(image);
+const image = clipboard.readImage();
+const appIcon = new Tray(image);
 ```
 
 ## Supported Formats

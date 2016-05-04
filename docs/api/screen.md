@@ -14,15 +14,13 @@ An example of creating a window that fills the whole screen:
 
 ```javascript
 const electron = require('electron');
-const app = electron.app;
-const BrowserWindow = electron.BrowserWindow;
+const { app, BrowserWindow } = electron;
 
-var mainWindow;
+let mainWindow;
 
-app.on('ready', function() {
-  var electronScreen = electron.screen;
-  var size = electronScreen.getPrimaryDisplay().workAreaSize;
-  mainWindow = new BrowserWindow({ width: size.width, height: size.height });
+app.on('ready', () => {
+  const { width, height } = electron.screen.getPrimaryDisplay().workAreaSize;
+  mainWindow = new BrowserWindow({ width, height });
 });
 ```
 
@@ -30,16 +28,15 @@ Another example of creating a window in the external display:
 
 ```javascript
 const electron = require('electron');
-const app = electron.app;
-const BrowserWindow = electron.BrowserWindow;
+const { app, BrowserWindow } = electron;
 
-var mainWindow;
+let mainWindow;
 
-app.on('ready', function() {
+app.on('ready', () => {
   var electronScreen = electron.screen;
   var displays = electronScreen.getAllDisplays();
   var externalDisplay = null;
-  for (var i in displays) {
+  for (let i in displays) {
     if (displays[i].bounds.x != 0 || displays[i].bounds.y != 0) {
       externalDisplay = displays[i];
       break;

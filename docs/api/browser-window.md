@@ -4,13 +4,13 @@
 
 ```javascript
 // In the main process.
-const BrowserWindow = require('electron').BrowserWindow;
+const { BrowserWindow } = require('electron');
 
 // Or in the renderer process.
-const BrowserWindow = require('electron').remote.BrowserWindow;
+const { BrowserWindow } = require('electron').remote;
 
-var win = new BrowserWindow({ width: 800, height: 600, show: false });
-win.on('closed', function() {
+let win = new BrowserWindow({ width: 800, height: 600, show: false });
+win.on('closed', () => {
   win = null;
 });
 
@@ -315,7 +315,7 @@ Commands are lowercased with underscores replaced with hyphens and the
 e.g. `APPCOMMAND_BROWSER_BACKWARD` is emitted as `browser-backward`.
 
 ```javascript
-someWindow.on('app-command', function(e, cmd) {
+someWindow.on('app-command', (e, cmd) => {
   // Navigate the window back when the user hits their mouse back button
   if (cmd === 'browser-backward' && someWindow.webContents.canGoBack()) {
     someWindow.webContents.goBack();

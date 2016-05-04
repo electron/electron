@@ -6,8 +6,8 @@ The following example shows how to quit the application when the last window is
 closed:
 
 ```javascript
-const app = require('electron').app;
-app.on('window-all-closed', function() {
+const { app } = require('electron');
+app.on('window-all-closed', () => {
   app.quit();
 });
 ```
@@ -218,7 +218,7 @@ should prevent the default behavior with `event.preventDefault()` and call
 `callback(username, password)` with the credentials.
 
 ```javascript
-app.on('login', function(event, webContents, request, authInfo, callback) {
+app.on('login', (event, webContents, request, authInfo, callback) => {
   event.preventDefault();
   callback('username', 'secret');
 })
@@ -386,12 +386,12 @@ default protocol handler.
 
 ### `app.isDefaultProtocolClient(protocol)` _OS X_ _Windows_
 
-* `protocol` String - The name of your protocol, without `://`. 
+* `protocol` String - The name of your protocol, without `://`.
 
 This method checks if the current executable is the default handler for a protocol
-(aka URI scheme). If so, it will return true. Otherwise, it will return false. 
+(aka URI scheme). If so, it will return true. Otherwise, it will return false.
 
-**Note:** On OS X, you can use this method to check if the app has been registered as the default protocol handler for a protocol. You can also verify this by checking `~/Library/Preferences/com.apple.LaunchServices.plist` on the OS X machine. 
+**Note:** On OS X, you can use this method to check if the app has been registered as the default protocol handler for a protocol. You can also verify this by checking `~/Library/Preferences/com.apple.LaunchServices.plist` on the OS X machine.
 Please refer to [Apple's documentation][LSCopyDefaultHandlerForURLScheme] for details.
 
 The API uses the Windows Registry and LSCopyDefaultHandlerForURLScheme internally.
@@ -462,9 +462,9 @@ An example of activating the window of primary instance when a second instance
 starts:
 
 ```javascript
-var myWindow = null;
+let myWindow = null;
 
-var shouldQuit = app.makeSingleInstance(function(commandLine, workingDirectory) {
+const shouldQuit = app.makeSingleInstance((commandLine, workingDirectory) => {
   // Someone tried to run a second instance, we should focus our window.
   if (myWindow) {
     if (myWindow.isMinimized()) myWindow.restore();
@@ -478,7 +478,7 @@ if (shouldQuit) {
 }
 
 // Create myWindow, load the rest of the app, etc...
-app.on('ready', function() {
+app.on('ready', () => {
 });
 ```
 
@@ -568,5 +568,5 @@ Sets the `image` associated with this dock icon.
 [tasks]:http://msdn.microsoft.com/en-us/library/windows/desktop/dd378460(v=vs.85).aspx#tasks
 [app-user-model-id]: https://msdn.microsoft.com/en-us/library/windows/desktop/dd378459(v=vs.85).aspx
 [CFBundleURLTypes]: https://developer.apple.com/library/ios/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html#//apple_ref/doc/uid/TP40009249-102207-TPXREF115
-[LSCopyDefaultHandlerForURLScheme]: 
+[LSCopyDefaultHandlerForURLScheme]:
 https://developer.apple.com/library/mac/documentation/Carbon/Reference/LaunchServicesReference/#//apple_ref/c/func/LSCopyDefaultHandlerForURLScheme
