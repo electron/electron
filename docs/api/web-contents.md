@@ -358,10 +358,10 @@ was invoked on.
   * `frameCharset` String - The character encoding of the frame on which the
 menu was invoked.
   * `inputFieldType` String - If the context menu was invoked on an input
-field, the type of that field. Possible values are `none`, `plain-text`,
+field, the type of that field. Possible values are `none`, `plainText`,
 `password`, `other`.
   * `menuSourceType` String - Input source that invoked the context menu.
-Can be `none`, `mouse`, `keyboard`, `touch`, `touch-menu`.
+Can be `none`, `mouse`, `keyboard`, `touch`, `touchMenu`.
 
 Emitted when there is a new context menu that needs to be handled.
 

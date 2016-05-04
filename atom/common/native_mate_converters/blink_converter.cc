@@ -324,7 +324,7 @@ v8::Local<v8::Value> Converter<blink::WebContextMenuData::InputFieldType>::ToV8(
       const blink::WebContextMenuData::InputFieldType& in) {
   switch (in) {
     case blink::WebContextMenuData::InputFieldTypePlainText:
-      return mate::StringToV8(isolate, "plain-text");
+      return mate::StringToV8(isolate, "plainText");
     case blink::WebContextMenuData::InputFieldTypePassword:
       return mate::StringToV8(isolate, "password");
     case blink::WebContextMenuData::InputFieldTypeOther:

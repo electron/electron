@@ -22,7 +22,7 @@ struct Converter<ui::MenuSourceType> {
       case ui::MENU_SOURCE_TOUCH:
         return mate::StringToV8(isolate, "touch");
       case ui::MENU_SOURCE_TOUCH_EDIT_MENU:
-        return mate::StringToV8(isolate, "touch-menu");
+        return mate::StringToV8(isolate, "touchMenu");
       default:
         return mate::StringToV8(isolate, "none");
     }
