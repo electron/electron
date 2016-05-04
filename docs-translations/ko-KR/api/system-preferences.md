@@ -59,7 +59,7 @@ OS X에선 API가 `NSUserDefaults`를 읽어들입니다. 유명한 `key`와 `ty
 let browserOptions = {width: 1000, height: 800};
 
 // 플랫폼이 지원하는 경우에만 투명 윈도우를 생성.
-if (process.platform !== 'win32' || app.isAeroGlassEnabled()) {
+if (process.platform !== 'win32' || systemPreferences.isAeroGlassEnabled()) {
   browserOptions.transparent = true;
   browserOptions.frame = false;
 }

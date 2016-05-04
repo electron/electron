@@ -4,6 +4,7 @@
 
 ## 빌드전 요구사양
 
+* 최소한 25GB 이상의 디스크 공간과 8GB 램이 필요합니다.
 * Python 2.7.x. 몇몇 CentOS와 같은 배포판들은 아직도 Python 2.6.x 버전을 사용합니다.
   그래서 먼저 `python -V`를 통해 버전을 확인할 필요가 있습니다.
 * Node.js v0.12.x. Node를 설치하는 방법은 여러 가지가 있습니다. 먼저,
@@ -35,11 +36,6 @@ $ sudo yum install clang dbus-devel gtk2-devel libnotify-devel libgnome-keyring-
 다른 배포판의 경우 pacman 같은 패키지 매니저를 통해 패키지를 설치 할 수 있습니다.
 패키지의 이름은 대부분 위 예시와 비슷할 것입니다. 또는 소스코드를 내려받아
 직접 빌드하는 방법도 있습니다.
-
-## 가상머신을 사용하여 빌드 하는 경우
-
-만약 Electron을 가상머신으로 빌드 할 계획이라면 해당 가상머신의 스토리지를 최소 25GB
-이상 확보해 놓아야 합니다.
 
 ## 코드 가져오기
 
@@ -75,7 +71,7 @@ $ sudo apt-get install libc6-dev-armhf-cross linux-libc-dev-armhf-cross \
 $ ./script/bootstrap.py -v --target_arch=arm
 ```
 
-## 빌드 하기
+## 빌드하기
 
 `Release` 와 `Debug` 두 타겟 모두 빌드 합니다:
 
@@ -104,7 +100,7 @@ $ ./script/build.py -c D
 
 빌드가 모두 끝나면 `out/D` 디렉터리에서 `electron` 디버그 바이너리를 찾을 수 있습니다.
 
-## 정리 하기
+## 정리하기
 
 빌드 파일들을 정리합니다:
 
@@ -113,8 +109,6 @@ $ ./script/clean.py
 ```
 
 ## 문제 해결
-
-개발 종속성 라이브러리들을 제대로 설치했는지 확인하세요.
 
 ## libtinfo.so.5 동적 링크 라이브러리를 로드하는 도중 에러가 발생할 경우
 
@@ -130,7 +124,7 @@ $ sudo ln -s /usr/lib/libncurses.so.5 /usr/lib/libtinfo.so.5
 프로젝트 코딩 스타일을 확인하려면:
 
 ```bash
-$ ./script/cpplint.py
+$ npm run lint
 ```
 
 테스트를 실행하려면:
@@ -138,3 +132,73 @@ $ ./script/cpplint.py
 ```bash
 $ ./script/test.py
 ```
+
+## 고급 주제
+
+기본적인 빌드 구성은 가장 주력인 Linux 배포판에 초점이 맞춰져있으며, 특정 배포판이나
+기기에 빌드할 계획이라면 다음 정보들이 도움이 될 것입니다.
+
+### 로컬에서 `libchromiumcontent` 빌드하기
+
+미리 빌드된 `libchromiumcontent`를 사용하는 것을 피하기 위해, `bootstrap.py`
+스크립트에 `--build_libchromiumcontent` 스위치를 추가할 수 있습니다:
+
+```bash
+$ ./script/bootstrap.py -v --build_libchromiumcontent
+```
+
+참고로 `shared_library` 구성은 기본적으로 빌드되어있지 않으며, 다음 모드를 사용하면
+`Release` 버전의 Electron만 빌드할 수 있습니다:
+
+```bash
+$ ./script/build.py -c R
+```
+
+### 다운로드된 `clang` 바이너리 대신 시스템의 `clang` 사용하기
+
+기본적으로 Electron은 Chromium 프로젝트에서 제공하는 미리 빌드된 `clang` 바이너리를
+통해 빌드됩니다. 만약 어떤 이유로 시스템에 설치된 `clang`을 사용하여 빌드하고 싶다면,
+`bootstrap.py`를 `--clang_dir=<path>` 스위치와 함께 실행함으로써 해결할 수 있습니다.
+빌드 스크립트를 이 스위치와 함께 실행할 때 스크립트는 `<path>/bin/`와 같은 경로로
+`clang` 바이너리를 찾습니다.
+
+예를 들어 `clang`을 `/user/local/bin/clang`에 설치했다면 다음과 같습니다:
+
+```bash
+$ ./script/bootstrap.py -v --build_libchromiumcontent --clang_dir /usr/local
+$ ./script/build.py -c R
+```
+
+### `clang` 대신 다른 컴파일러 사용하기
+
+Electron을 `g++`과 같은 다른 컴파일러로 빌드하려면, 먼저 `--disable_clang` 스위치를
+통해 `clang`을 비활성화 시켜야 하고, 필요하다면 `CC`와 `CXX` 환경 변수도 설정합니다.
+
+예를 들어 GCC 툴체인을 사용하여 빌드한다면 다음과 같습니다:
+
+```bash
+$ env CC=gcc CXX=g++ ./script/bootstrap.py -v --build_libchromiumcontent --disable_clang
+$ ./script/build.py -c R
+```
+
+### 환경 변수
+
+또한 `CC`와 `CXX`와는 별개로, 빌드 구성을 변경하기 위해 다음 환경 변수들을 사용할 수
+있습니다:
+
+* `CPPFLAGS`
+* `CPPFLAGS_host`
+* `CFLAGS`
+* `CFLAGS_host`
+* `CXXFLAGS`
+* `CXXFLAGS_host`
+* `AR`
+* `AR_host`
+* `CC`
+* `CC_host`
+* `CXX`
+* `CXX_host`
+* `LDFLAGS`
+
+이 환경 변수는 `bootstrap.py` 스크립트를 실행할 때 설정되어야 하며, `build.py`
+스크립트에선 작동하지 않습니다.

@@ -41,7 +41,7 @@ $ cd electron
 $ python script\bootstrap.py -v
 ```
 
-## 빌드 하기
+## 빌드하기
 
 `Release` 와 `Debug` 두 타겟 모두 빌드 합니다:
 
