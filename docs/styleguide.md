@@ -92,7 +92,7 @@ a value it and its type is noted below. If you were to listen and respond to
 this event it might look something like this:
 
 ```javascript
-Alarm.on('wake-up', function(time) {
+Alarm.on('wake-up', (time) => {
   console.log(time)
 })
 ```
