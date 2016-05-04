@@ -1,4 +1,4 @@
-# Headless CI 시스템에서 테스팅하기 (Travis, Jenkins) (Travis CI, Jenkins)
+# Headless CI 시스템에서 테스팅하기 (Travis, Jenkins)
 
 Chromium을 기반으로 한 Electron은 작업을 위해 디스플레이 드라이버가 필요합니다.
 만약 Chromium이 디스플레이 드라이버를 찾기 못한다면, Electron은 그대로 실행에
