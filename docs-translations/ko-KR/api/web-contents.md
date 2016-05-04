@@ -647,8 +647,9 @@ mainWindow.webContents.on('devtools-opened', function() {
 * `options` Object (optional)
   * `detach` Boolean - 새 창에서 개발자 도구를 엽니다.
   * `mode` String - 개발자 도구 표시 상태를 지정합니다. 옵션은 "right", "bottom",
-    "undocked", "detach" 중 한 가지가 될 수 있습니다. 기본값은 마지막 표시 상태를
-    사용합니다.
+    "undocked", "detach"가 될 수 있습니다. 기본값은 마지막 표시 상태를
+    사용합니다. `undocked` 모드에선 다시 독을 할 수 있습니다. 하지만 `detach`
+    모드에선 할 수 없습니다.
 
 개발자 도구를 엽니다.
 
