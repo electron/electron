@@ -1,14 +1,14 @@
 # BrowserWindow
 
-`BrowserWindow` 클래스는 브라우저 창(윈도우)을 만드는 역할을 담당합니다.
+> 브라우저 윈도우를 생성하고 제어합니다.
 
-다음 예제는 윈도우를 생성합니다:
+다음 예시는 윈도우를 생성합니다:
 
 ```javascript
 // 메인 프로세스에서
 const BrowserWindow = require('electron').BrowserWindow;
 
-// 또는 랜더러 프로세스에서
+// 또는 렌더러 프로세스에서
 const BrowserWindow = require('electron').remote.BrowserWindow;
 
 var win = new BrowserWindow({ width: 800, height: 600, show: false });
@@ -72,7 +72,7 @@ win.show();
 * `show` Boolean - 윈도우가 생성되면 보여줄지 여부. 기본값은 `true`입니다.
 * `frame` Boolean - `false`로 지정하면 창을 [Frameless Window](frameless-window.md)
   형태로 생성합니다. 기본값은 `true`입니다.
-* `acceptFirstMouse` Boolean - 윈도우가 비활성화 상태일 때 내부 컨텐츠 클릭 시
+* `acceptFirstMouse` Boolean - 윈도우가 비활성화 상태일 때 내부 콘텐츠 클릭 시
   활성화 되는 동시에 단일 mouse-down 이벤트를 발생시킬지 여부. 기본값은 `false`입니다.
 * `disableAutoHideCursor` Boolean - 타이핑중 자동으로 커서를 숨길지 여부. 기본값은
   `false`입니다.
@@ -112,7 +112,7 @@ win.show();
 값을 사용할 수 있습니다:
 
 * `default` 또는 미지정: 표준 Mac 회색 불투명 스타일을 사용합니다.
-* `hidden`: 타이틀 바를 숨기고 컨텐츠 전체를 윈도우 크기에 맞춥니다.
+* `hidden`: 타이틀 바를 숨기고 콘텐츠 전체를 윈도우 크기에 맞춥니다.
   타이틀 바는 없어지지만 표준 창 컨트롤 ("신호등 버튼")은 왼쪽 상단에 유지됩니다.
 * `hidden-inset`: `hidden` 타이틀 바 속성과 함께 신호등 버튼이 윈도우 모서리로부터
   약간 더 안쪽으로 들어가도록합니다.
@@ -125,7 +125,7 @@ win.show();
   node API에 접근할 수 있습니다. 이 속성의 스크립트 경로는 절대 경로로 지정해야
   합니다. node 통합이 비활성화되어있을 경우, preload 스크립트는 node의 global
   심볼들을 다시 global 스코프로 다시 포함 시킬 수 있습니다.
-  [여기](process.md#event-loaded)의 예제를 참고하세요.
+  [여기](process.md#event-loaded)의 예시를 참고하세요.
 * `session` [Session](session.md#class-session) - 페이지에서 사용할 세션을
   지정합니다. Session 객체를 직접적으로 전달하는 대신, 파티션 문자열을 받는
   `partition` 옵션을 사용할 수도 있습니다. `session`과 `partition`이 같이
@@ -159,7 +159,7 @@ win.show();
   기본값은 `false`입니다.
 * `experimentalCanvasFeatures` Boolean - Chrome의 실험적인 캔버스(canvas) 기능을
   활성화합니다. 기본값은 `false`입니다.
-* `directWrite` Boolean - Windows에서 폰트 랜더링을 위해 DirectWrite를
+* `directWrite` Boolean - Windows에서 폰트 렌더링을 위해 DirectWrite를
   사용하는지를 지정합니다. 기본값은 `true`입니다.
 * `blinkFeatures` String - `CSSVariables,KeyboardEventKey`같은 `,`로 구분된
   기능 문자열들의 리스트입니다. 지원하는 전체 기능 문자열들은
@@ -198,11 +198,11 @@ Returns:
 * `event` Event
 
 윈도우가 닫히기 시작할 때 발생하는 이벤트입니다.
-이 이벤트는 DOM의 `beforeunload` 와 `unload` 이벤트가 호출되기 전에 발생합니다.
+이 이벤트는 DOM의 `beforeunload` 와 `unload` 이벤트 전에 발생합니다.
 `event.preventDefault()`를 호출하여 윈도우 종료를 취소할 수 있습니다.
 
 보통 창을 닫아야 할지 결정하기 위해 `beforeunload` 이벤트를 사용하려고 할 것입니다.
-이 이벤트는 윈도우 컨텐츠를 새로고칠 때도 발생합니다.
+이 이벤트는 윈도우 콘텐츠를 새로고칠 때도 발생합니다.
 Electron에선 빈 문자열 또는 `false`를 전달할 경우 윈도우 종료를 취소합니다.
 
 예시는 다음과 같습니다:
@@ -481,21 +481,21 @@ var win = new BrowserWindow({ width: 800, height: 600 });
 
 ### `win.setAspectRatio(aspectRatio[, extraSize])` _OS X_
 
-* `aspectRatio` 유지하려 하는 컨텐츠 뷰 일부의 종횡비
+* `aspectRatio` 유지하려 하는 콘텐츠 뷰 일부의 종횡비
 * `extraSize` Object (optional) - 종횡비를 유지하는 동안 포함되지 않을 엑스트라 크기.
   * `width` Integer
   * `height` Integer
 
 이 메서드는 윈도우의 종횡비를 유지하는 기능을 수행합니다. 엑스트라 크기는 개발자가
 픽셀로 특정한 공간이 있을 때 종횡비 계산에서 제외됩니다. 이 API는 윈도우의 크기와
-컨텐츠 사이즈의 차이를 이미 고려하고 있습니다.
+콘텐츠 사이즈의 차이를 이미 고려하고 있습니다.
 
 일반 윈도우에서 작동하는 HD 비디오 플레이어와 관련된 컨트롤을 고려합니다.
 만약 15 픽셀의 컨트롤이 왼쪽 가장자리에 있고 25 픽셀의 컨트롤이 오른쪽 가장자리에
 있으며 50 픽셀의 컨트롤이 플레이어 밑에 있을 때 플레이어 자체가 16:9 종횡비(HD의 표준
 종횡비는 @1920x1080)를 유지하기 위해선 이 함수를 16/9, [ 40, 50 ] 인수와 함께
-호출해야 합니다. 두번째 인수 엑스트라 크기는 존재하는 크기만 관여하고 컨텐츠 뷰 내의
-크기는 관여하지 않습니다. 그저 전체 컨텐츠 뷰 내에 있는 모든 엑스트라 너비, 높이 영역이
+호출해야 합니다. 두번째 인수 엑스트라 크기는 존재하는 크기만 관여하고 콘텐츠 뷰 내의
+크기는 관여하지 않습니다. 그저 전체 콘텐츠 뷰 내에 있는 모든 엑스트라 너비, 높이 영역이
 합해집니다.
 
 ### `win.setBounds(options[, animate])`
@@ -669,6 +669,17 @@ var win = new BrowserWindow({ width: 800, height: 600 });
 윈도우의 제목을 반환합니다.
 
 **참고:** 웹 페이지의 제목과 네이티브 윈도우의 제목은 서로 다를 수 있습니다.
+
+### `win.setSheetOffset(offset)` _OS X_
+
+Mac OS X에서 시트를 부착할 위치를 지정합니다. 기본적으로 시트는 윈도우의 프레임 바로
+아래의 위치에 부착됩니다. 아마도 이 기능은 보통 다음과 같이 HTML 렌더링된 툴바 밑에
+표시하기 위해 사용할 것입니다:
+
+```javascript
+var toolbarRect = document.getElementById('toolbar').getBoundingClientRect();
+win.setSheetOffset(toolbarRect.height);
+```
 
 ### `win.flashFrame(flag)`
 
@@ -900,4 +911,4 @@ Linux 플랫폼에선 Unity 데스크톱 환경만 지원합니다. 그리고 �
 
 윈도우에서 일어나는 모든 마우스 이벤트를 무시합니다.
 
-[blink-feature-string]: https://code.google.com/p/chromium/codesearch#chromium/src/out/Debug/gen/blink/platform/RuntimeEnabledFeatures.cpp&sq=package:chromium&type=cs&l=527
+[blink-feature-string]: https://code.google.com/p/chromium/codesearch#chromium/src/out/Debug/gen/blink/platform/RuntimeEnabledFeatures.cpp&sq=package:chromium&type=cs&l=576

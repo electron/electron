@@ -1,5 +1,7 @@
 # session
 
+> 브라우저 세션, 쿠키, 캐시, 프록시 설정 등을 관리합니다.
+
 `session` 모듈은 새로운 `Session` 객체를 만드는데 사용할 수 있습니다.
 
 또한 존재하는 [`BrowserWindow`](browser-window.md)의
@@ -293,9 +295,9 @@ myWindow.webContents.session.setCertificateVerifyProc(function(hostname, cert, c
 
 * `handler` Function
   * `webContents` Object - [WebContents](web-contents.md) 권한을 요청.
-  * `permission`  String - 'media', 'geolocation', 'notifications',
-    'midiSysex', 'pointerLock', 'fullscreen'의 나열.
-  * `callback`  Function - 권한 허용 및 거부.
+  * `permission` String - 'media', 'geolocation', 'notifications',
+    'midiSysex', 'pointerLock', 'fullscreen', 'openExternal'의 나열.
+  * `callback` Function - 권한 허용 및 거부.
 
 `session`의 권한 요청에 응답을 하는데 사용하는 핸들러를 설정합니다.
 `callback(true)`를 호출하면 권한 제공을 허용하고 `callback(false)`를
@@ -322,7 +324,7 @@ session.fromPartition(partition).setPermissionRequestHandler(function(webContent
 
 #### `ses.webRequest`
 
-`webRequest` API는 생명주기의 다양한 단계에 맞춰 요청 컨텐츠를 가로채거나 변경할 수
+`webRequest` API는 생명주기의 다양한 단계에 맞춰 요청 콘텐츠를 가로채거나 변경할 수
 있도록 합니다.
 
 각 API는 `filter`와 `listener`를 선택적으로 받을 수 있습니다. `listener`는 API의
@@ -367,7 +369,7 @@ session.defaultSession.webRequest.onBeforeSendHeaders(filter, function(details, 
 `uploadData`는 `data` 객체의 배열입니다:
 
 * `data` Object
-  * `bytes` Buffer - 전송될 컨텐츠.
+  * `bytes` Buffer - 전송될 콘텐츠.
   * `file` String - 업로드될 파일의 경로.
 
 `callback`은 `response` 객체와 함께 호출되어야 합니다:
@@ -419,7 +421,7 @@ HTTP 요청을 보내기 전 요청 헤더를 사용할 수 있을 때 `listener
   * `timestamp` Double
   * `requestHeaders` Object
 
-#### `ses.webRequest.onHeadersReceived([filter,] listener)`
+#### `ses.webRequest.onHeadersReceived([filter, ]listener)`
 
 * `filter` Object
 * `listener` Function
@@ -444,6 +446,9 @@ HTTP 요청을 보내기 전 요청 헤더를 사용할 수 있을 때 `listener
   * `cancel` Boolean
   * `responseHeaders` Object (optional) - 이 속성이 제공되면 서버는 이 헤더와
     함께 응답합니다.
+  * `statusLine` String (optional) - `responseHeaders`를 덮어쓸 땐, 헤더의 상태를
+    변경하기 위해 반드시 지정되어야 합니다. 그렇지 않은 경우, 기존의 응답 헤더의 상태가
+    사용됩니다.
 
 #### `ses.webRequest.onResponseStarted([filter, ]listener)`
 

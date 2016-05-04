@@ -1,7 +1,6 @@
 # webFrame
 
-The `web-frame` module allows you to customize the rendering of the current
-web page.
+> Customize the rendering of the current web page.
 
 An example of zooming current page to 200%.
 
@@ -13,7 +12,7 @@ webFrame.setZoomFactor(2);
 
 ## Methods
 
-The `web-frame` module has the following methods:
+The `webFrame` module has the following methods:
 
 ### `webFrame.setZoomFactor(factor)`
 

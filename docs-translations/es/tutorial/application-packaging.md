@@ -24,8 +24,8 @@ $ asar pack your-app app.asar
 
 ## Utilizando los paquetes `asar`
 
-En Electron existen dos tipos de APIs: las APIs de Node, proveídas por Node.js,
-y las APIs Web, proveídas por Chromium. Ambas APIs soportan la lecutra de paquetes `asar`.
+En Electron existen dos tipos de APIs: las APIs de Node, provistas por Node.js,
+y las APIs Web, provistas por Chromium. Ambas APIs soportan la lectura de paquetes `asar`.
 
 ### API Node
 
@@ -92,7 +92,7 @@ $.get('file:///path/to/example.asar/file.txt', function(data) {
 ### Utilizando un paquete `asar` como un archivo normal
 
 En algunas situaciones necesitaremos acceder al paquete `asar` como archivo, por ejemplo,
-si necesitaramos verificar la integridad del archivo con un checksum.
+si necesitáramos verificar la integridad del archivo con un checksum.
 Para casos así es posible utilizar el módulo  `original-fs`, que provee la API `fs` original:
 
 ```javascript
@@ -105,7 +105,7 @@ originalFs.readFileSync('/path/to/example.asar');
 A pesar de que hemos intentado que los paquetes  `asar` funcionen como directorios de la mejor forma posible,
 aún existen limitaciones debido a la naturaleza de bajo nivel de la API Node.
 
-### Los paquetes son de sólo lecutra
+### Los paquetes son de sólo lectura
 
 Los paquetes `asar` no pueden ser modificados, por lo cual todas las funciones que modifiquen archivos
 no funcionarán.
@@ -127,12 +127,12 @@ Las APIs que requieren el desempaquetamiento adicional son:
 * `child_process.execFile`
 * `fs.open`
 * `fs.openSync`
-* `process.dlopen` - Utilizado po `require` en los módulos nativos
+* `process.dlopen` - Utilizado por `require` en los módulos nativos
 
 ### Información falsa en `fs.stat`
 
 El objeto `Stats` retornado por `fs.stat` y otras funciones relacionadas,
-no es preciso, ya que los archivos del paquete `asar` no existen el sistema de archivos.
+no es preciso, ya que los archivos del paquete `asar` no existen en el sistema de archivos.
 La utilización del objeto `Stats` sólo es recomendable para obtener el tamaño del archivo y/o
 comprobar el tipo de archivo.
 
@@ -143,8 +143,8 @@ Como se menciona arriba, algunas APIs de Node desempaquetarán archivos cuando e
 que los referencie, además de los problemas de rendimiento que esto podría ocasionar, también
 podría accionar alertas falsas en software antivirus.
 
-Para lidiar con esto, puedes desempaquetar algunos archivos utilizando la opción `--unpack`,
-a continuación un ejemplo que excluye las librerías compartidas de los módulos nativos:
+Para lidiar con esto, puedes desempaquetar algunos archivos utilizando la opción `--unpack`.
+A continuación, un ejemplo que excluye las librerías compartidas de los módulos nativos:
 
 ```bash
 $ asar pack app app.asar --unpack *.node

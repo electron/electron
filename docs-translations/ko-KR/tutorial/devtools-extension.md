@@ -10,7 +10,7 @@
 
 **주의: 현재 React DevTools은 작동하지 않습니다. https://github.com/electron/electron/issues/915 이슈를 참고하세요!**
 
-다음 예제는 [React DevTools Extension](https://github.com/facebook/react-devtools)을
+다음 예시는 [React DevTools Extension](https://github.com/facebook/react-devtools)을
 사용합니다.
 
 먼저 소스코드를 다운로드 받습니다:

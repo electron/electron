@@ -1,9 +1,8 @@
 ﻿# MenuItem
 
-`menu-item` 모듈은 어플리케이션 또는 컨텍스트 [`menu`](menu.md)에 항목 아이템을
-추가할 수 있도록 관련 클래스를 제공합니다.
+> 네이티브 어플리케이션 메뉴와 컨텍스트 메뉴에 아이템을 추가합니다.
 
-[`menu`](menu.md)에서 예제를 확인할 수 있습니다.
+[`menu`](menu.md)에서 예시를 확인할 수 있습니다.
 
 ## Class: MenuItem
 
@@ -61,6 +60,9 @@ OS X에서의 `role`은 다음 값을 추가로 가질 수 있습니다:
 * `window` - 부 메뉴를 가지는 "Window" 메뉴
 * `help` - 부 메뉴를 가지는 "Help" 메뉴
 * `services` - 부 메뉴를 가지는 "Services" 메뉴
+
+OS X에서는 `role`을 지정할 때, `label`과 `accelerator`만 MenuItem에 효과가
+적용되도록 변경되며, 다른 옵션들은 모두 무시됩니다.
 
 ## Instance Properties
 

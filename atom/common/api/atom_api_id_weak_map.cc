@@ -12,7 +12,7 @@ namespace atom {
 
 namespace api {
 
-IDWeakMap::IDWeakMap() {
+IDWeakMap::IDWeakMap(v8::Isolate* isolate) {
 }
 
 IDWeakMap::~IDWeakMap() {
@@ -52,8 +52,8 @@ void IDWeakMap::BuildPrototype(v8::Isolate* isolate,
 }
 
 // static
-mate::Wrappable* IDWeakMap::Create(v8::Isolate* isolate) {
-  return new IDWeakMap;
+mate::WrappableBase* IDWeakMap::Create(v8::Isolate* isolate) {
+  return new IDWeakMap(isolate);
 }
 
 }  // namespace api

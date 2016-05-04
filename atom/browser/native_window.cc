@@ -54,6 +54,7 @@ NativeWindow::NativeWindow(
       enable_larger_than_screen_(false),
       is_closed_(false),
       has_dialog_attached_(false),
+      sheet_offset_(0.0),
       aspect_ratio_(0.0),
       inspectable_web_contents_(inspectable_web_contents),
       weak_factory_(this) {
@@ -252,6 +253,14 @@ void NativeWindow::SetMaximumSize(const gfx::Size& size) {
 
 gfx::Size NativeWindow::GetMaximumSize() {
   return GetSizeConstraints().GetMaximumSize();
+}
+
+void NativeWindow::SetSheetOffset(const double offset) {
+  sheet_offset_ = offset;
+}
+
+double NativeWindow::GetSheetOffset() {
+  return sheet_offset_;
 }
 
 void NativeWindow::SetRepresentedFilename(const std::string& filename) {

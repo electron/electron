@@ -38,7 +38,7 @@ class WebContents;
 class Window : public mate::TrackableObject<Window>,
                public NativeWindowObserver {
  public:
-  static mate::Wrappable* New(v8::Isolate* isolate, mate::Arguments* args);
+  static mate::WrappableBase* New(v8::Isolate* isolate, mate::Arguments* args);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::ObjectTemplate> prototype);
@@ -51,7 +51,7 @@ class Window : public mate::TrackableObject<Window>,
 
  protected:
   Window(v8::Isolate* isolate, const mate::Dictionary& options);
-  virtual ~Window();
+  ~Window() override;
 
   // NativeWindowObserver:
   void WillCloseWindow(bool* prevent_default) override;
@@ -110,6 +110,7 @@ class Window : public mate::TrackableObject<Window>,
   std::vector<int> GetMinimumSize();
   void SetMaximumSize(int width, int height);
   std::vector<int> GetMaximumSize();
+  void SetSheetOffset(double offset);
   void SetResizable(bool resizable);
   bool IsResizable();
   void SetMovable(bool movable);

@@ -9,9 +9,7 @@
 
 #include "atom/browser/api/atom_api_cookies.h"
 #include "atom/browser/api/atom_api_download_item.h"
-#include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/browser/api/atom_api_web_request.h"
-#include "atom/browser/api/save_page_handler.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/atom_permission_manager.h"
@@ -23,12 +21,13 @@
 #include "atom/common/native_mate_converters/net_converter.h"
 #include "atom/common/node_includes.h"
 #include "base/files/file_path.h"
+#include "base/guid.h"
 #include "base/prefs/pref_service.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 #include "base/thread_task_runner_handle.h"
 #include "brightray/browser/net/devtools_network_conditions.h"
-#include "brightray/browser/net/devtools_network_controller.h"
+#include "brightray/browser/net/devtools_network_controller_handle.h"
 #include "chrome/common/pref_names.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/storage_partition.h"
@@ -287,13 +286,15 @@ void ClearHostResolverCacheInIO(
 
 }  // namespace
 
-Session::Session(AtomBrowserContext* browser_context)
-    : browser_context_(browser_context) {
-  AttachAsUserData(browser_context);
-
+Session::Session(v8::Isolate* isolate, AtomBrowserContext* browser_context)
+    : devtools_network_emulation_client_id_(base::GenerateGUID()),
+      browser_context_(browser_context) {
   // Observe DownloadManger to get download notifications.
   content::BrowserContext::GetDownloadManager(browser_context)->
       AddObserver(this);
+
+  Init(isolate);
+  AttachAsUserData(browser_context);
 }
 
 Session::~Session() {
@@ -303,13 +304,15 @@ Session::~Session() {
 
 void Session::OnDownloadCreated(content::DownloadManager* manager,
                                 content::DownloadItem* item) {
-  auto web_contents = item->GetWebContents();
-  if (SavePageHandler::IsSavePageTypes(item->GetMimeType()))
+  if (item->IsSavePackageDownload())
     return;
+
+  v8::Locker locker(isolate());
+  v8::HandleScope handle_scope(isolate());
   bool prevent_default = Emit(
       "will-download",
       DownloadItem::Create(isolate(), item),
-      api::WebContents::CreateFrom(isolate(), web_contents));
+      item->GetWebContents());
   if (prevent_default) {
     item->Cancel(true);
     item->Remove();
@@ -381,25 +384,19 @@ void Session::EnableNetworkEmulation(const mate::Dictionary& options) {
                                                  download_throughput,
                                                  upload_throughput));
   }
-  auto controller = browser_context_->GetDevToolsNetworkController();
 
-  BrowserThread::PostTask(BrowserThread::IO, FROM_HERE,
-      base::Bind(&brightray::DevToolsNetworkController::SetNetworkState,
-                 base::Unretained(controller),
-                 std::string(),
-                 base::Passed(&conditions)));
+  browser_context_->network_controller_handle()->SetNetworkState(
+      devtools_network_emulation_client_id_, std::move(conditions));
+  browser_context_->network_delegate()->SetDevToolsNetworkEmulationClientId(
+      devtools_network_emulation_client_id_);
 }
 
 void Session::DisableNetworkEmulation() {
-  scoped_ptr<brightray::DevToolsNetworkConditions> conditions(
-      new brightray::DevToolsNetworkConditions(false));
-  auto controller = browser_context_->GetDevToolsNetworkController();
-
-  BrowserThread::PostTask(BrowserThread::IO, FROM_HERE,
-      base::Bind(&brightray::DevToolsNetworkController::SetNetworkState,
-                 base::Unretained(controller),
-                 std::string(),
-                 base::Passed(&conditions)));
+  scoped_ptr<brightray::DevToolsNetworkConditions> conditions;
+  browser_context_->network_controller_handle()->SetNetworkState(
+      devtools_network_emulation_client_id_, std::move(conditions));
+  browser_context_->network_delegate()->SetDevToolsNetworkEmulationClientId(
+      std::string());
 }
 
 void Session::SetCertVerifyProc(v8::Local<v8::Value> val,
@@ -458,7 +455,8 @@ mate::Handle<Session> Session::CreateFrom(
   if (existing)
     return mate::CreateHandle(isolate, static_cast<Session*>(existing));
 
-  auto handle = mate::CreateHandle(isolate, new Session(browser_context));
+  auto handle = mate::CreateHandle(
+      isolate, new Session(isolate, browser_context));
   g_wrap_session.Run(handle.ToV8());
   return handle;
 }
@@ -493,16 +491,8 @@ void Session::BuildPrototype(v8::Isolate* isolate,
       .SetProperty("webRequest", &Session::WebRequest);
 }
 
-void ClearWrapSession() {
-  g_wrap_session.Reset();
-}
-
 void SetWrapSession(const WrapSessionCallback& callback) {
   g_wrap_session = callback;
-
-  // Cleanup the wrapper on exit.
-  atom::AtomBrowserMainParts::Get()->RegisterDestructionCallback(
-      base::Bind(ClearWrapSession));
 }
 
 }  // namespace api

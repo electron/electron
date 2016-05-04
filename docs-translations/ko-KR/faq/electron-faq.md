@@ -20,13 +20,13 @@ Node.js의 새로운 기능은 보통 V8 업그레이드에서 가져옵니다. 
 
 ## 어떻게 웹 페이지 간에 데이터를 공유할 수 있나요?
 
-두 웹페이지 간에 (랜더러 프로세스) 데이터를 공유하려면 간단히 이미 모든 브라우저에서
+두 웹페이지 간에 (렌더러 프로세스) 데이터를 공유하려면 간단히 이미 모든 브라우저에서
 사용할 수 있는 HTML5 API들을 사용하면 됩니다. 가장 좋은 후보는
 [Storage API][storage], [`localStorage`][local-storage],
 [`sessionStorage`][session-storage], 그리고 [IndexedDB][indexed-db]가 있습니다.
 
 또는 Electron에서만 사용할 수 있는 IPC 시스템을 사용하여 메인 프로세스의 global
-변수에 데이터를 저장한 후 다음과 같이 랜더러 프로세스에서 `remote` 모듈을 사용하여
+변수에 데이터를 저장한 후 다음과 같이 렌더러 프로세스에서 `remote` 모듈을 사용하여
 접근할 수 있습니다:
 
 ```javascript
@@ -141,7 +141,7 @@ npm uninstall -g electron
 
 그런데 여전히 빌트인 모듈이 계속해서 문제를 발생시키는 경우, 아마 모듈을 잘못 사용하고
 있을 가능성이 큽니다. 예를 들면 `electron.app`은 메인 프로세스에서만 사용할 수 있는
-모듈이며, 반면 `electron.webFrame` 모듈은 랜더러 프로세스에서만 사용할 수 있는
+모듈이며, 반면 `electron.webFrame` 모듈은 렌더러 프로세스에서만 사용할 수 있는
 모듈입니다.
 
 [memory-management]: https://developer.mozilla.org/ko/docs/Web/JavaScript/Memory_Management

@@ -1,20 +1,22 @@
 ﻿# ipcMain
 
+> 메인 프로세스에서 렌더러 프로세스로 비동기 통신을 합니다.
+
 `ipcMain` 모듈은 [EventEmitter](https://nodejs.org/api/events.html) 클래스의
-인스턴스입니다. 메인 프로세스에서 사용하면, 랜더러 프로세스(웹 페이지)에서 전달된
-동기, 비동기 메시지를 주고 받는 방법을 제공합니다. 랜더러 프로세스에서 메시지를 전달하면
+인스턴스입니다. 메인 프로세스에서 사용하면, 렌더러 프로세스(웹 페이지)에서 전달된
+동기, 비동기 메시지를 주고 받는 방법을 제공합니다. 렌더러 프로세스에서 메시지를 전달하면
 이 모듈을 통해 메시지를 받을 수 있습니다.
 
 ## 메시지 전송
 
-물론 메시지를 받는 것 말고도 메인 프로세스에서 랜더러 프로세스로 보내는 것도 가능합니다.
+물론 메시지를 받는 것 말고도 메인 프로세스에서 렌더러 프로세스로 보내는 것도 가능합니다.
 자세한 내용은 [webContents.send][web-contents-send]를 참고하세요.
 
 * 메시지를 전송할 때 이벤트 이름은 `channel`이 됩니다.
 * 메시지에 동기로 응답할 땐 반드시 `event.returnValue`를 설정해야 합니다.
 * 메시지를 비동기로 응답할 땐 `event.sender.send(...)` 메서드를 사용할 수 있습니다.
 
-다음 예제는 랜더러 프로세스와 메인 프로세스간에 메시지를 전달하고 받는 예제입니다:
+다음 예시는 렌더러 프로세스와 메인 프로세스간에 메시지를 전달하고 받는 예시입니다:
 
 ```javascript
 // 메인 프로세스
@@ -31,7 +33,7 @@ ipcMain.on('synchronous-message', function(event, arg) {
 ```
 
 ```javascript
-// 랜더러 프로세스 (웹 페이지)
+// 렌더러 프로세스 (웹 페이지)
 const ipcRenderer = require('electron').ipcRenderer;
 console.log(ipc.sendSync('synchronous-message', 'ping')); // "pong" 출력
 

@@ -29,7 +29,7 @@ namespace atom {
 
 namespace api {
 
-class NativeImage : public mate::Wrappable {
+class NativeImage : public mate::Wrappable<NativeImage> {
  public:
   static mate::Handle<NativeImage> CreateEmpty(v8::Isolate* isolate);
   static mate::Handle<NativeImage> Create(
@@ -45,18 +45,14 @@ class NativeImage : public mate::Wrappable {
   static mate::Handle<NativeImage> CreateFromDataURL(
       v8::Isolate* isolate, const GURL& url);
 
-  // The default constructor should only be used by image_converter.cc.
-  NativeImage();
+  static void BuildPrototype(v8::Isolate* isolate,
+                             v8::Local<v8::ObjectTemplate> prototype);
 
   const gfx::Image& image() const { return image_; }
 
  protected:
-  explicit NativeImage(const gfx::Image& image);
-  virtual ~NativeImage();
-
-  // mate::Wrappable:
-  mate::ObjectTemplateBuilder GetObjectTemplateBuilder(
-      v8::Isolate* isolate) override;
+  NativeImage(v8::Isolate* isolate, const gfx::Image& image);
+  ~NativeImage() override;
 
  private:
   v8::Local<v8::Value> ToPNG(v8::Isolate* isolate);

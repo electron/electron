@@ -18,21 +18,39 @@
 
 namespace {
 
-v8::Persistent<v8::ObjectTemplate> template_;
-
-class Archive : public mate::Wrappable {
+class Archive : public mate::Wrappable<Archive> {
  public:
   static v8::Local<v8::Value> Create(v8::Isolate* isolate,
                                       const base::FilePath& path) {
     scoped_ptr<asar::Archive> archive(new asar::Archive(path));
     if (!archive->Init())
       return v8::False(isolate);
-    return (new Archive(std::move(archive)))->GetWrapper(isolate);
+    return (new Archive(isolate, std::move(archive)))->GetWrapper();
+  }
+
+  static void BuildPrototype(
+      v8::Isolate* isolate, v8::Local<v8::ObjectTemplate> prototype) {
+    mate::ObjectTemplateBuilder(isolate, prototype)
+        .SetProperty("path", &Archive::GetPath)
+        .SetMethod("getFileInfo", &Archive::GetFileInfo)
+        .SetMethod("stat", &Archive::Stat)
+        .SetMethod("readdir", &Archive::Readdir)
+        .SetMethod("realpath", &Archive::Realpath)
+        .SetMethod("copyFileOut", &Archive::CopyFileOut)
+        .SetMethod("getFd", &Archive::GetFD)
+        .SetMethod("destroy", &Archive::Destroy);
   }
 
  protected:
-  explicit Archive(scoped_ptr<asar::Archive> archive)
-      : archive_(std::move(archive)) {}
+  Archive(v8::Isolate* isolate, scoped_ptr<asar::Archive> archive)
+      : archive_(std::move(archive)) {
+    Init(isolate);
+  }
+
+  // Returns the path of the file.
+  base::FilePath GetPath() {
+    return archive_->path();
+  }
 
   // Reads the offset and size of file.
   v8::Local<v8::Value> GetFileInfo(v8::Isolate* isolate,
@@ -99,24 +117,6 @@ class Archive : public mate::Wrappable {
   // Free the resources used by archive.
   void Destroy() {
     archive_.reset();
-  }
-
-  // mate::Wrappable:
-  mate::ObjectTemplateBuilder GetObjectTemplateBuilder(v8::Isolate* isolate) {
-    if (template_.IsEmpty())
-      template_.Reset(isolate, mate::ObjectTemplateBuilder(isolate)
-          .SetValue("path", archive_->path())
-          .SetMethod("getFileInfo", &Archive::GetFileInfo)
-          .SetMethod("stat", &Archive::Stat)
-          .SetMethod("readdir", &Archive::Readdir)
-          .SetMethod("realpath", &Archive::Realpath)
-          .SetMethod("copyFileOut", &Archive::CopyFileOut)
-          .SetMethod("getFd", &Archive::GetFD)
-          .SetMethod("destroy", &Archive::Destroy)
-          .Build());
-
-    return mate::ObjectTemplateBuilder(
-        isolate, v8::Local<v8::ObjectTemplate>::New(isolate, template_));
   }
 
  private:

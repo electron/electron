@@ -243,6 +243,13 @@ bool ScopedDisableResize::disable_resize_ = false;
   return NO;
 }
 
+- (NSRect)window:(NSWindow*)window
+    willPositionSheet:(NSWindow*)sheet usingRect:(NSRect)rect {
+  NSView* view = window.contentView;
+  rect.origin.y = view.frame.size.height - shell_->GetSheetOffset();
+  return rect;
+}
+
 @end
 
 @interface AtomNSWindow : NSWindow {
@@ -595,10 +602,16 @@ bool NativeWindowMac::IsVisible() {
 }
 
 void NativeWindowMac::Maximize() {
+  if (IsMaximized())
+    return;
+
   [window_ zoom:nil];
 }
 
 void NativeWindowMac::Unmaximize() {
+  if (!IsMaximized())
+    return;
+
   [window_ zoom:nil];
 }
 
@@ -807,9 +820,14 @@ bool NativeWindowMac::IsKiosk() {
 }
 
 void NativeWindowMac::SetBackgroundColor(const std::string& color_name) {
-  base::ScopedCFTypeRef<CGColorRef> color =
-      skia::CGColorCreateFromSkColor(ParseHexColor(color_name));
-  [[[window_ contentView] layer] setBackgroundColor:color];
+  SkColor color = ParseHexColor(color_name);
+  base::ScopedCFTypeRef<CGColorRef> cgcolor =
+      skia::CGColorCreateFromSkColor(color);
+  [[[window_ contentView] layer] setBackgroundColor:cgcolor];
+
+  const auto view = web_contents()->GetRenderWidgetHostView();
+  if (view)
+    view->SetBackgroundColor(color);
 }
 
 void NativeWindowMac::SetHasShadow(bool has_shadow) {

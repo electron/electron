@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        var windowUrl = decodeURIComponent(window.location.search.substring(3))
+
+        var wv = new WebView()
+        wv.setAttribute('nodeintegration', 'yes')
+        wv.setAttribute('src', windowUrl)
+        wv.setAttribute('style', 'display:inline-block; width:200px; height:200px')
+
+        wv.addEventListener('console-message', function(e) {
+          window.answer(e.message)
+        })
+
+        document.body.appendChild(wv)
+      })
+    </script>
+  </head>
+  <body>
+  </body>
+</html>

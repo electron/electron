@@ -18,9 +18,9 @@ Then, create a virtual xvfb screen and export an environment variable
 called DISPLAY that points to it. Chromium in Electron will automatically look
 for `$DISPLAY`, so no further configuration of your app is required.
 This step can be automated with Paul Betts's
-[xfvb-maybe](https://github.com/paulcbetts/xvfb-maybe): Prepend your test
-commands with `xfvb-maybe` and the little tool will automatically configure
-xfvb, if required by the current system. On Windows or Mac OS X, it will simply
+[xvfb-maybe](https://github.com/paulcbetts/xvfb-maybe): Prepend your test
+commands with `xvfb-maybe` and the little tool will automatically configure
+xvfb, if required by the current system. On Windows or Mac OS X, it will simply
 do nothing.
 
 ```
@@ -47,7 +47,7 @@ install:
 
 ### Jenkins
 
-For Jenkins, a [Xfvb plugin is available](https://wiki.jenkins-ci.org/display/JENKINS/Xvfb+Plugin).
+For Jenkins, a [Xvfb plugin is available](https://wiki.jenkins-ci.org/display/JENKINS/Xvfb+Plugin).
 
 ### Circle CI
 

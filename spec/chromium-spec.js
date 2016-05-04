@@ -62,6 +62,10 @@ describe('chromium feature', function () {
       w.loadURL(url)
     })
 
+    if (isCI && process.platform === 'win32') {
+      return
+    }
+
     it('is set correctly when window is inactive', function (done) {
       w = new BrowserWindow({
         show: false
@@ -95,6 +99,9 @@ describe('chromium feature', function () {
       return
     }
     if (isCI && process.platform === 'linux') {
+      return
+    }
+    if (isCI && process.platform === 'win32') {
       return
     }
 
@@ -327,6 +334,10 @@ describe('chromium feature', function () {
   })
 
   describe('webgl', function () {
+    if (isCI && process.platform === 'win32') {
+      return
+    }
+
     it('can be get as context in canvas', function () {
       if (process.platform === 'linux') return
 

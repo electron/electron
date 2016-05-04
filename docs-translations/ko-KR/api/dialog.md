@@ -1,10 +1,8 @@
 ﻿# dialog
 
-`dialog` 모듈은 파일 열기, 알림과 같은 네이티브 시스템의 대화 상자를 조작할 때 사용할
-수 있는 모듈입니다. 이 모듈을 사용하면 웹 어플리케이션에서 일반 네이티브 어플리케이션과
-비슷한 사용자 경험을 제공할 수 있습니다.
+> 파일을 열거나 저장하고, 알림을 표시하기 위한 네이티브 시스템 대화 상자를 표시합니다.
 
-다음 예제는 파일과 디렉터리를 다중으로 선택하는 대화 상자를 표시하는 예제입니다:
+다음 예시는 파일과 디렉터리를 다중으로 선택하는 대화 상자를 표시하는 예시입니다:
 
 ```javascript
 var win = ...;  // 대화 상자를 사용할 BrowserWindow 객체
@@ -12,15 +10,12 @@ const dialog = require('electron').dialog;
 console.log(dialog.showOpenDialog({ properties: [ 'openFile', 'openDirectory', 'multiSelections' ]}));
 ```
 
-대화 상자는 Electron의 메인 스레드에서 열립니다. 만약 랜더러 프로세스에서 대화 상자
+대화 상자는 Electron의 메인 스레드에서 열립니다. 만약 렌더러 프로세스에서 대화 상자
 객체를 사용하고 싶다면, `remote`를 통해 접근하는 방법을 고려해야 합니다:
 
 ```javascript
 const dialog = require('electron').remote.dialog;
 ```
-
-**OS X 참고**: 대화 상자를 시트처럼 보여지게 하려면 `browserWindow` 인자에
-`BrowserWindow` 객체의 참조를 제공하면 됩니다.
 
 ## Methods
 
@@ -116,7 +111,7 @@ const dialog = require('electron').remote.dialog;
 대화 상자를 표시합니다. `browserWindow`를 지정하면 대화 상자가 완전히 닫힐 때까지
 지정한 창을 사용할 수 없습니다. 완료 시 유저가 선택한 버튼의 인덱스를 반환합니다.
 
-역주: 부정을 표현하는 "아니오", "취소"와 같은 한글 단어는 지원되지 않습니다. 만약
+**역주:** 부정을 표현하는 "아니오", "취소"와 같은 한글 단어는 지원되지 않습니다. 만약
 OS X 또는 Windows에서 "확인", "취소"와 같은 순서로 버튼을 지정하게 될 때 Alt + f4로
 해당 대화 상자를 끄게 되면 "확인"을 누른 것으로 판단되어 버립니다. 이를 해결하려면
 "Cancel"을 대신 사용하거나 BrowserWindow API를 사용하여 대화 상자를 직접 구현해야
@@ -129,5 +124,16 @@ OS X 또는 Windows에서 "확인", "취소"와 같은 순서로 버튼을 지�
 
 에러 메시지를 보여주는 대화 상자를 표시합니다.
 
-이 API는 `app` 모듈의 `ready` 이벤트가 발생하기 전에 사용할 수 있습니다. 이 메서드는
-보통 어플리케이션이 시작되기 전에 특정한 에러를 표시하기 위해 사용됩니다.
+이 함수는 `app` 모듈의 `ready` 이벤트가 발생하기 전까지 사용할 수 있습니다. 이 메서드는
+보통 어플리케이션이 시작되기 전에 특정한 에러를 표시하기 위해 사용됩니다. 만약
+Linux에서 `ready` 이벤트가 발생하기 전에 이 API를 호출할 경우, 메시지는 stderr를
+통해서 표시되며 GUI 대화 상자는 표시되지 않습니다.
+
+## Sheets
+
+Mac OS X에선, `browserWindow` 인자에 `BrowserWindow` 객체 참조를 전달하면 대화
+상자가 해당 윈도우에 시트처럼 표시되도록 표현할 수 있습니다. 윈도우의 객체 참조가
+제공되지 않으면 모달 형태로 표시됩니다.
+
+`BrowserWindow.getCurrentWindow().setSheetOffset(offset)`을 통해 윈도우에 부착될
+시트의 위치를 조정할 수 있습니다.

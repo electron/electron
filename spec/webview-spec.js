@@ -84,6 +84,39 @@ describe('<webview> tag', function () {
       document.body.appendChild(webview)
     })
 
+    it('disables node integration when disabled on the parent BrowserWindow', function (done) {
+      var b = undefined
+
+      ipcMain.once('answer', function (event, typeofProcess) {
+        try {
+          assert.equal(typeofProcess, 'undefined')
+          done()
+        } finally {
+          b.close()
+        }
+      })
+
+      var windowUrl = require('url').format({
+        pathname: `${fixtures}/pages/webview-no-node-integration-on-window.html`,
+        protocol: 'file',
+        query: {
+          p: `${fixtures}/pages/web-view-log-process.html`
+        },
+        slashes: true
+      })
+      var preload = path.join(fixtures, 'module', 'answer.js')
+
+      b = new BrowserWindow({
+        height: 400,
+        width: 400,
+        show: false,
+        webPreferences: {
+          preload: preload,
+          nodeIntegration: false,
+        }
+      })
+      b.loadURL(windowUrl)
+    })
 
     it('disables node integration on child windows when it is disabled on the webview', function (done) {
       app.once('browser-window-created', function (event, window) {
@@ -722,11 +755,13 @@ describe('<webview> tag', function () {
   })
 
   describe('permission-request event', function () {
-    function setUpRequestHandler (webview, requested_permission) {
+    function setUpRequestHandler (webview, requested_permission, completed) {
       var listener = function (webContents, permission, callback) {
         if (webContents.getId() === webview.getId()) {
           assert.equal(permission, requested_permission)
           callback(false)
+          if (completed)
+            completed()
         }
       }
       session.fromPartition(webview.partition).setPermissionRequestHandler(listener)
@@ -768,6 +803,13 @@ describe('<webview> tag', function () {
       webview.partition = 'permissionTest'
       webview.setAttribute('nodeintegration', 'on')
       setUpRequestHandler(webview, 'midiSysex')
+      document.body.appendChild(webview)
+    })
+
+    it('emits when accessing external protocol', function (done) {
+      webview.src = 'magnet:test'
+      webview.partition = 'permissionTest'
+      setUpRequestHandler(webview, 'openExternal', done)
       document.body.appendChild(webview)
     })
   })

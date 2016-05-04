@@ -1,7 +1,7 @@
 [![Electron Logo](http://electron.atom.io/images/electron-logo.svg)](http://electron.atom.io/)
 
 [![Travis Build Status](https://travis-ci.org/electron/electron.svg?branch=master)](https://travis-ci.org/electron/electron)
-[![AppVeyor Build Status](https://ci.appveyor.com/api/projects/status/qtmod45u0cc1ouov/branch/master?svg=true)](https://ci.appveyor.com/project/Atom/electron)
+[![AppVeyor Build Status](https://ci.appveyor.com/api/projects/status/kvxe4byi7jcxbe26/branch/master?svg=true)](https://ci.appveyor.com/project/Atom/electron)
 [![devDependency Status](https://david-dm.org/electron/electron/dev-status.svg)](https://david-dm.org/electron/electron#info=devDependencies)
 [![Join the Electron Community on Slack](http://atom-slack.herokuapp.com/badge.svg)](http://atom-slack.herokuapp.com/)
 
@@ -53,6 +53,7 @@ contains documents describing how to build and contribute to Electron.
 - [Spanish](https://github.com/electron/electron/tree/master/docs-translations/es)
 - [Simplified Chinese](https://github.com/electron/electron/tree/master/docs-translations/zh-CN)
 - [Traditional Chinese](https://github.com/electron/electron/tree/master/docs-translations/zh-TW)
+- [Turkish](https://github.com/electron/electron/tree/master/docs-translations/tr-TR)
 - [Ukrainian](https://github.com/electron/electron/tree/master/docs-translations/uk-UA)
 - [Russian](https://github.com/electron/electron/tree/master/docs-translations/ru-RU)
 - [French](https://github.com/electron/electron/tree/master/docs-translations/fr-FR)

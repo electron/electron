@@ -1,8 +1,10 @@
 ﻿# shell
 
+> 파일과 URL을 각 기본 어플리케이션을 통해 관리합니다.
+
 `shell` 모듈은 데스크톱 환경 통합에 관련한 유틸리티를 제공하는 모듈입니다.
 
-다음 예제는 설정된 URL을 유저의 기본 브라우저로 엽니다:
+다음 예시는 설정된 URL을 유저의 기본 브라우저로 엽니다:
 
 ```javascript
 const shell = require('electron').shell;
@@ -36,13 +38,11 @@ shell.openExternal('https://github.com');
 mailto: URL은 유저의 기본 이메일 에이전트로 URL을 엽니다.) 어플리케이션이 해당 URL을
 열 수 있을 때 `true`를 반환합니다. 아니라면 `false`를 반환합니다.
 
-역주: 폴더는 'file:\\\\C:\\'와 같이 지정하여 열 수 있습니다. (Windows의 경우)
+**역주:** 탐색기로 폴더만 표시하려면 `'file://경로'`와 같이 지정하여 열 수 있습니다.
 
 ### `shell.moveItemToTrash(fullPath)`
 
 * `fullPath` String
-
-Move the given file to trash and returns boolean status for the operation.
 
 지정한 파일을 휴지통으로 이동합니다. 작업의 성공여부를 boolean 형으로 리턴합니다.
 

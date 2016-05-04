@@ -31,9 +31,10 @@ WrapDebuggerCallback g_wrap_debugger;
 
 }  // namespace
 
-Debugger::Debugger(content::WebContents* web_contents)
+Debugger::Debugger(v8::Isolate* isolate, content::WebContents* web_contents)
     : web_contents_(web_contents),
       previous_request_id_(0) {
+  Init(isolate);
 }
 
 Debugger::~Debugger() {
@@ -150,7 +151,8 @@ void Debugger::SendCommand(mate::Arguments* args) {
 mate::Handle<Debugger> Debugger::Create(
     v8::Isolate* isolate,
     content::WebContents* web_contents) {
-  auto handle = mate::CreateHandle(isolate, new Debugger(web_contents));
+  auto handle = mate::CreateHandle(
+      isolate, new Debugger(isolate, web_contents));
   g_wrap_debugger.Run(handle.ToV8());
   return handle;
 }
@@ -165,16 +167,8 @@ void Debugger::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("sendCommand", &Debugger::SendCommand);
 }
 
-void ClearWrapDebugger() {
-  g_wrap_debugger.Reset();
-}
-
 void SetWrapDebugger(const WrapDebuggerCallback& callback) {
   g_wrap_debugger = callback;
-
-  // Cleanup the wrapper on exit.
-  atom::AtomBrowserMainParts::Get()->RegisterDestructionCallback(
-      base::Bind(ClearWrapDebugger));
 }
 
 }  // namespace api

@@ -186,8 +186,10 @@ void SetCookieOnIO(scoped_refptr<net::URLRequestContextGetter> getter,
 
 }  // namespace
 
-Cookies::Cookies(content::BrowserContext* browser_context)
-    : request_context_getter_(browser_context->GetRequestContext()) {
+Cookies::Cookies(v8::Isolate* isolate,
+                 content::BrowserContext* browser_context)
+      : request_context_getter_(browser_context->GetRequestContext()) {
+  Init(isolate);
 }
 
 Cookies::~Cookies() {
@@ -223,7 +225,7 @@ void Cookies::Set(const base::DictionaryValue& details,
 mate::Handle<Cookies> Cookies::Create(
     v8::Isolate* isolate,
     content::BrowserContext* browser_context) {
-  return mate::CreateHandle(isolate, new Cookies(browser_context));
+  return mate::CreateHandle(isolate, new Cookies(isolate, browser_context));
 }
 
 // static

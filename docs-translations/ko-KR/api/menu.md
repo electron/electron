@@ -1,13 +1,14 @@
 ﻿# Menu
 
-`menu` 클래스는 어플리케이션 메뉴와 [컨텍스트 메뉴](https://developer.mozilla.org/ko/docs/Mozilla/Tech/XUL/PopupGuide/ContextMenus)를
-만들 때 사용됩니다. 이 모듈은 메인 프로세스용 모듈이지만 `remote` 모듈을 통해 랜더러
-프로세스에서도 사용할 수 있습니다.
+> 네이티브 어플리케이션 메뉴와 컨텍스트 메뉴를 생성합니다.
+
+이 모듈은 메인 프로세스용 모듈이지만 `remote` 모듈을 통해 렌더러 프로세스에서도 사용할
+수 있습니다.
 
 각 메뉴는 여러 개의 [메뉴 아이템](menu-item.md)으로 구성되고 서브 메뉴를 가질 수도 있습니다.
 
-다음 예제는 웹 페이지 내에서 [remote](remote.md) 모듈을 활용하여 동적으로 메뉴를
-생성하는 예제입니다. 그리고 유저가 페이지에서 오른쪽 클릭을 할 때마다 마우스 위치에
+다음 예시는 웹 페이지 내에서 [remote](remote.md) 모듈을 활용하여 동적으로 메뉴를
+생성하는 예시입니다. 그리고 유저가 페이지에서 오른쪽 클릭을 할 때마다 마우스 위치에
 팝업 형태로 메뉴를 표시합니다:
 
 ```html
@@ -29,7 +30,7 @@ window.addEventListener('contextmenu', function (e) {
 </script>
 ```
 
-또 하나의 예를 들자면 다음 예제는 랜더러 프로세스에서 template API를 사용하여
+또 하나의 예를 들자면 다음 예시는 렌더러 프로세스에서 template API를 사용하여
 어플리케이션 메뉴를 만듭니다:
 
 ```javascript
@@ -106,7 +107,7 @@ var template = [
         })(),
         click: function(item, focusedWindow) {
           if (focusedWindow)
-            focusedWindow.toggleDevTools();
+            focusedWindow.webContents.toggleDevTools();
         }
       },
     ]
@@ -331,7 +332,7 @@ OS X에선 지정한 어플리케이션 메뉴에 상관없이 메뉴의 첫번�
 이동하고 싶은 특정 그룹의 아이템들이 있을 경우 해당 그룹의 맨 첫번째 메뉴 아이템의
 위치만을 지정하면 됩니다.
 
-### 예제
+### 예시
 
 메뉴 템플릿:
 

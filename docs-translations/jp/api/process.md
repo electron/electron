@@ -3,8 +3,8 @@
 Electronの`process`オブジェクトは上流nodeの1つから次のような違いがあります。
 
 * `process.type` String - プロセスの種類で、`browser` (例　メインプロセス)または `renderer`を設定できます。
-* `process.versions['electron']` String - Electronのバージョン
-* `process.versions['chrome']` String - Chromiumのバージョン
+* `process.versions.electron` String - Electronのバージョン
+* `process.versions.chrome` String - Chromiumのバージョン
 * `process.resourcesPath` String - JavaScriptのソースコードのパスを設定します。
 * `process.mas` Boolean - Mac app Store用のビルドで、値は`true`です。ほかのビルドの場合は`undefined`です。
 

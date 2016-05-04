@@ -1,9 +1,11 @@
 # webContents
 
+> 웹 페이지를 렌더링하고 제어합니다.
+
 `webContents`는 [EventEmitter](http://nodejs.org/api/events.html#events_class_events_eventemitter)를
 상속받았습니다. 웹 페이지의 렌더링과 관리를 책임지며
 [`BrowserWindow`](browser-window.md)의 속성입니다. 다음은 `webContents` 객체에
-접근하는 예제입니다:
+접근하는 예시입니다:
 
 ```javascript
 const BrowserWindow = require('electron').BrowserWindow;
@@ -350,6 +352,10 @@ var currentURL = win.webContents.getURL();
 
 현재 웹 페이지가 리소스를 로드중인지 여부를 반환합니다.
 
+### `webContents.isLoadingMainFrame()`
+
+메인 프레임이 여전히 로딩중인지 여부를 반환합니다. (내부 iframe 또는 frame 포함)
+
 ### `webContents.isWaitingForResponse()`
 
 현재 웹 페이지가 페이지의 메인 리소스로부터 첫 응답을 기다리고있는지 여부를 반환합니다.
@@ -497,7 +503,7 @@ CSS 코드를 현재 웹 페이지에 삽입합니다.
 
 ### `webContents.findInPage(text[, options])`
 
-* `text` String - 찾을 컨텐츠, 반드시 공백이 아니여야 합니다.
+* `text` String - 찾을 콘텐츠, 반드시 공백이 아니여야 합니다.
 * `options` Object (optional)
   * `forward` Boolean - 앞에서부터 검색할지 뒤에서부터 검색할지 여부입니다. 기본값은
     `true`입니다.
@@ -640,6 +646,9 @@ mainWindow.webContents.on('devtools-opened', function() {
 
 * `options` Object (optional)
   * `detach` Boolean - 새 창에서 개발자 도구를 엽니다.
+  * `mode` String - 개발자 도구 표시 상태를 지정합니다. 옵션은 "right", "bottom",
+    "undocked", "detach" 중 한 가지가 될 수 있습니다. 기본값은 마지막 표시 상태를
+    사용합니다.
 
 개발자 도구를 엽니다.
 

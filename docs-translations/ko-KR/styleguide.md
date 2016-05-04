@@ -18,7 +18,7 @@ Electron 문서를 작성하는 규칙은 다음과 같습니다.
   추가합니다.
 - 메서드 헤더는 `code backtick` 으로 표시합니다.
 - 이벤트 헤더는 한 '따옴표'로 표시합니다.
-- 리스트를 2 단계 이상 중첩하지 않습니다. (안타깝게도 markdown 랜더러가 이를 지원하지
+- 리스트를 2 단계 이상 중첩하지 않습니다. (안타깝게도 markdown 렌더러가 이를 지원하지
   않습니다)
 - 섹션에 대한 제목을 추가합니다. Events, Class 메서드 그리고 인스턴스 메서드 등
 - 어떤 '것'의 사용 결과를 설명할 때 '될 것입니다' 형식을 사용하여 설명합니다.
@@ -51,7 +51,7 @@ Electron 문서 구조를 이해하는 데 참고할 수 있는 유용한 도움
 ### Methods
 
 [Method](https://developer.mozilla.org/ko/docs/Glossary/Method) 문서의
-예제입니다:
+예시입니다:
 
 ---
 
@@ -75,7 +75,7 @@ Electron 문서 구조를 이해하는 데 참고할 수 있는 유용한 도움
 
 ### Events
 
-[Event](https://developer.mozilla.org/ko/docs/Web/API/Event) 문서의 예제입니다:
+[Event](https://developer.mozilla.org/ko/docs/Web/API/Event) 문서의 예시입니다:
 
 ---
 

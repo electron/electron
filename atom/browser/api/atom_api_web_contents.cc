@@ -21,6 +21,7 @@
 #include "atom/browser/web_view_guest_delegate.h"
 #include "atom/common/api/api_messages.h"
 #include "atom/common/api/event_emitter_caller.h"
+#include "atom/common/color_util.h"
 #include "atom/common/mouse_util.h"
 #include "atom/common/native_mate_converters/blink_converter.h"
 #include "atom/common/native_mate_converters/callback.h"
@@ -214,13 +215,17 @@ content::ServiceWorkerContext* GetServiceWorkerContext(
 
 }  // namespace
 
-WebContents::WebContents(content::WebContents* web_contents)
+WebContents::WebContents(v8::Isolate* isolate,
+                         content::WebContents* web_contents)
     : content::WebContentsObserver(web_contents),
+      embedder_(nullptr),
       type_(REMOTE),
       request_id_(0),
       background_throttling_(true) {
-  AttachAsUserData(web_contents);
   web_contents->SetUserAgentOverride(GetBrowserContext()->GetUserAgent());
+
+  Init(isolate);
+  AttachAsUserData(web_contents);
 }
 
 WebContents::WebContents(v8::Isolate* isolate,
@@ -268,7 +273,6 @@ WebContents::WebContents(v8::Isolate* isolate,
   }
 
   Observe(web_contents);
-  AttachAsUserData(web_contents);
   InitWithWebContents(web_contents);
 
   managed_web_contents()->GetView()->SetDelegate(this);
@@ -297,6 +301,9 @@ WebContents::WebContents(v8::Isolate* isolate,
     if (owner_window)
       SetOwnerWindow(owner_window);
   }
+
+  Init(isolate);
+  AttachAsUserData(web_contents);
 }
 
 WebContents::~WebContents() {
@@ -750,12 +757,19 @@ void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
   params.override_user_agent = content::NavigationController::UA_OVERRIDE_TRUE;
   web_contents()->GetController().LoadURLWithParams(params);
 
-  // Set the background color of RenderViewHost to transparent so it doesn't
-  // override the background color set by the user.
+  // Set the background color of RenderWidgetHostView.
   // We have to call it right after LoadURL because the RenderViewHost is only
   // created after loading a page.
   const auto view = web_contents()->GetRenderWidgetHostView();
-  view->SetBackgroundColor(SK_ColorTRANSPARENT);
+  WebContentsPreferences* web_preferences =
+      WebContentsPreferences::FromWebContents(web_contents());
+  std::string color_name;
+  if (web_preferences->web_preferences()->GetString(options::kBackgroundColor,
+                                                    &color_name)) {
+    view->SetBackgroundColor(ParseHexColor(color_name));
+  } else {
+    view->SetBackgroundColor(SK_ColorTRANSPARENT);
+  }
 
   // For the same reason we can only disable hidden here.
   const auto host = static_cast<content::RenderWidgetHostImpl*>(
@@ -782,6 +796,14 @@ base::string16 WebContents::GetTitle() const {
 
 bool WebContents::IsLoading() const {
   return web_contents()->IsLoading();
+}
+
+bool WebContents::IsLoadingMainFrame() const {
+  // Comparing site instances works because Electron always creates a new site
+  // instance when navigating, regardless of origin. See AtomBrowserClient.
+  return (web_contents()->GetLastCommittedURL().is_empty() ||
+          web_contents()->GetSiteInstance() !=
+          web_contents()->GetPendingSiteInstance()) && IsLoading();
 }
 
 bool WebContents::IsWaitingForResponse() const {
@@ -840,14 +862,20 @@ void WebContents::OpenDevTools(mate::Arguments* args) {
   if (type_ == REMOTE)
     return;
 
-  bool detach = false;
+  std::string state;
   if (type_ == WEB_VIEW) {
-    detach = true;
+    state = "detach";
   } else if (args && args->Length() == 1) {
+    bool detach = false;
     mate::Dictionary options;
-    args->GetNext(&options) && options.Get("detach", &detach);
+    if (args->GetNext(&options)) {
+      options.Get("mode", &state);
+      options.Get("detach", &detach);
+      if (state.empty() && detach)
+        state = "detach";
+    }
   }
-  managed_web_contents()->SetCanDock(!detach);
+  managed_web_contents()->SetDockState(state);
   managed_web_contents()->ShowDevTools();
 }
 
@@ -1180,6 +1208,7 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("_getURL", &WebContents::GetURL)
       .SetMethod("getTitle", &WebContents::GetTitle)
       .SetMethod("isLoading", &WebContents::IsLoading)
+      .SetMethod("isLoadingMainFrame", &WebContents::IsLoadingMainFrame)
       .SetMethod("isWaitingForResponse", &WebContents::IsWaitingForResponse)
       .SetMethod("_stop", &WebContents::Stop)
       .SetMethod("_goBack", &WebContents::GoBack)
@@ -1266,7 +1295,8 @@ mate::Handle<WebContents> WebContents::CreateFrom(
     return mate::CreateHandle(isolate, static_cast<WebContents*>(existing));
 
   // Otherwise create a new WebContents wrapper object.
-  auto handle = mate::CreateHandle(isolate, new WebContents(web_contents));
+  auto handle = mate::CreateHandle(
+      isolate, new WebContents(isolate, web_contents));
   g_wrap_web_contents.Run(handle.ToV8());
   return handle;
 }
@@ -1279,16 +1309,8 @@ mate::Handle<WebContents> WebContents::Create(
   return handle;
 }
 
-void ClearWrapWebContents() {
-  g_wrap_web_contents.Reset();
-}
-
 void SetWrapWebContents(const WrapWebContentsCallback& callback) {
   g_wrap_web_contents = callback;
-
-  // Cleanup the wrapper on exit.
-  atom::AtomBrowserMainParts::Get()->RegisterDestructionCallback(
-      base::Bind(ClearWrapWebContents));
 }
 
 }  // namespace api

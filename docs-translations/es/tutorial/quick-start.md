@@ -1,8 +1,6 @@
-# Intro
-
 ## Introducción
 
-Electron permite la creación de aplicaciones de escritorio utilizando JavaScript puro, a través de un runtime con APIs nativas. Puedes verlo como una variante de io.js, enfocado en aplicaciones de escritorio, en vez de servidores web.
+Electron permite la creación de aplicaciones de escritorio utilizando JavaScript puro, a través de un runtime con APIs nativas. Puedes verlo como una variante de io.js, enfocado a aplicaciones de escritorio, en vez de servidores web.
 
 Esto no significa que Electron sea un binding de librerías GUI para JavaScript.
 Electron utiliza páginas web como su GUI, por lo cual puedes verlo como un navegador Chromium mínimo,
@@ -117,7 +115,7 @@ Finalmente el `index.html` es la página web que mostraremos:
   <body>
     <h1>Hello World!</h1>
     We are using io.js <script>document.write(process.version)</script>
-    and Electron <script>document.write(process.versions['electron'])</script>.
+    and Electron <script>document.write(process.versions.electron)</script>.
   </body>
 </html>
 ```
