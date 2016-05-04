@@ -52,7 +52,3 @@ Don't attach to current console session.
 ## `ELECTRON_FORCE_WINDOW_MENU_BAR` _Linux_
 
 Don't use global menu bar on Linux.
-
-## `ELECTRON_HIDE_INTERNAL_MODULES`
-
-Turns off compatibility mode for old built-in modules like `require('ipc')`.
