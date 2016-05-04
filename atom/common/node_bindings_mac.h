@@ -23,9 +23,6 @@ class NodeBindingsMac : public NodeBindings {
 
   void PollEvents() override;
 
-  // Kqueue to poll for uv's backend fd.
-  int kqueue_;
-
   DISALLOW_COPY_AND_ASSIGN(NodeBindingsMac);
 };
 
