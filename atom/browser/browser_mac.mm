@@ -87,17 +87,20 @@ bool Browser::IsDefaultProtocolClient(const std::string& protocol) {
 void Browser::SetAppUserModelID(const base::string16& name) {
 }
 
-void Browser::SetUserActivity(const std::string& type, const std::map<std::string, std::string>& user_info) {
+void Browser::SetUserActivity(
+    const std::string& type,
+    const std::map<std::string, std::string>& user_info) {
   NSString* type_ns = [NSString stringWithUTF8String:type.c_str()];
-  NSUserActivity* user_activity = [[NSUserActivity alloc] initWithActivityType:type_ns];
+  NSUserActivity* user_activity =
+      [[NSUserActivity alloc] initWithActivityType:type_ns];
 
-  base::scoped_nsobject<NSMutableDictionary> user_info_args([[NSMutableDictionary alloc] init]);
+  base::scoped_nsobject<NSMutableDictionary> user_info_args(
+      [[NSMutableDictionary alloc] init]);
   for (auto const &pair : user_info) {
     NSString* value_ns = [NSString stringWithUTF8String:pair.second.c_str()];
     NSString* key_ns = [NSString stringWithUTF8String:pair.first.c_str()];
 
-    [user_info_args.get() setObject:value_ns
-                             forKey:key_ns];
+    [user_info_args.get() setObject:value_ns forKey:key_ns];
   }
 
   user_activity.userInfo = user_info_args.get();
@@ -107,7 +110,8 @@ void Browser::SetUserActivity(const std::string& type, const std::map<std::strin
 }
 
 std::string Browser::GetCurrentActivityType() {
-  NSUserActivity* user_activity = [[AtomApplication sharedApplication] getCurrentActivity];
+  NSUserActivity* user_activity =
+      [[AtomApplication sharedApplication] getCurrentActivity];
   return base::SysNSStringToUTF8(user_activity.activityType);
 }
 

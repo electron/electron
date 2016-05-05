@@ -59,9 +59,9 @@
   return flag;
 }
 
--  (BOOL)application:(NSApplication *)sender
-continueUserActivity:(NSUserActivity *)userActivity
-  restorationHandler:(void (^)(NSArray *restorableObjects))restorationHandler {
+-  (BOOL)application:(NSApplication*)sender
+continueUserActivity:(NSUserActivity*)userActivity
+  restorationHandler:(void (^)(NSArray*restorableObjects))restorationHandler {
   std::string activity_type(base::SysNSStringToUTF8(userActivity.activityType));
 
   std::map<std::string, std::string> user_info;

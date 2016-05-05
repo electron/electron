@@ -101,8 +101,9 @@ class Browser : public WindowListObserver {
   std::string GetCurrentActivityType();
 
   // Resumes an activity via hand-off.
-  bool ContinueUserActivity(const std::string& type,
-    const std::map<std::string, std::string>& user_info);
+  bool ContinueUserActivity(
+      const std::string& type,
+      const std::map<std::string, std::string>& user_info);
 
   // Bounce the dock icon.
   enum BounceType {

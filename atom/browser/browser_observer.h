@@ -8,6 +8,8 @@
 #include <string>
 #include <map>
 
+#include "build/build_config.h"
+
 namespace atom {
 
 class LoginHandler;
@@ -46,10 +48,13 @@ class BrowserObserver {
   // The browser requests HTTP login.
   virtual void OnLogin(LoginHandler* login_handler) {}
 
+#if defined(OS_MACOSX)
   // The browser wants to resume a user activity via handoff. (OS X only)
-  virtual void OnContinueUserActivity(bool* prevent_default,
-    const std::string& type,
-    const std::map<std::string, std::string>& user_info) {}
+  virtual void OnContinueUserActivity(
+      bool* prevent_default,
+      const std::string& type,
+      const std::map<std::string, std::string>& user_info) {}
+#endif
 
  protected:
   virtual ~BrowserObserver() {}

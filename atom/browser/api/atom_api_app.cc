@@ -250,11 +250,14 @@ void App::OnFinishLaunching() {
   Emit("ready");
 }
 
-void App::OnContinueUserActivity(bool* prevent_default,
-  const std::string& type,
-  const std::map<std::string, std::string>& user_info) {
+#if defined(OS_MACOSX)
+void App::OnContinueUserActivity(
+    bool* prevent_default,
+    const std::string& type,
+    const std::map<std::string, std::string>& user_info) {
   *prevent_default = Emit("continue-activity", type, user_info);
 }
+#endif
 
 void App::OnLogin(LoginHandler* login_handler) {
   v8::Locker locker(isolate());
