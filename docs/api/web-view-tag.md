@@ -31,18 +31,20 @@ and displays a "loading..." message during the load time:
 
 ```html
 <script>
-  onload = function() {
-    var webview = document.getElementById("foo");
-    var indicator = document.querySelector(".indicator");
+  onload = () => {
+    const webview = document.getElementById('foo');
+    const indicator = document.querySelector('.indicator');
 
-    var loadstart = function() {
-      indicator.innerText = "loading...";
+    const loadstart = () => {
+      indicator.innerText = 'loading...';
     }
-    var loadstop = function() {
-      indicator.innerText = "";
+
+    const loadstop = () => {
+      indicator.innerText = '';
     }
-    webview.addEventListener("did-start-loading", loadstart);
-    webview.addEventListener("did-stop-loading", loadstop);
+
+    webview.addEventListener('did-start-loading', loadstart);
+    webview.addEventListener('did-stop-loading', loadstop);
   }
 </script>
 ```
@@ -211,7 +213,7 @@ The `webview` tag has the following methods:
 **Example**
 
 ```javascript
-webview.addEventListener("dom-ready", function() {
+webview.addEventListener("dom-ready", () => {
   webview.openDevTools();
 });
 ```
@@ -642,10 +644,12 @@ Fired when the guest page attempts to open a new browser window.
 The following example code opens the new url in system's default browser.
 
 ```javascript
-webview.addEventListener('new-window', function(e) {
-  var protocol = require('url').parse(e.url).protocol;
+const { shell } = require('electron');
+
+webview.addEventListener('new-window', (e) => {
+  const protocol = require('url').parse(e.url).protocol;
   if (protocol === 'http:' || protocol === 'https:') {
-    require('electron').shell.openExternal(e.url);
+    shell.openExternal(e.url);
   }
 });
 ```
@@ -700,7 +704,7 @@ The following example code navigates the `webview` to `about:blank` when the
 guest attempts to close itself.
 
 ```javascript
-webview.addEventListener('close', function() {
+webview.addEventListener('close', () => {
   webview.src = 'about:blank';
 });
 ```
@@ -719,7 +723,7 @@ between guest page and embedder page:
 
 ```javascript
 // In embedder page.
-webview.addEventListener('ipc-message', function(event) {
+webview.addEventListener('ipc-message', (event) => {
   console.log(event.channel);
   // Prints "pong"
 });
@@ -728,8 +732,8 @@ webview.send('ping');
 
 ```javascript
 // In guest page.
-var ipcRenderer = require('electron').ipcRenderer;
-ipcRenderer.on('ping', function() {
+var { ipcRenderer } = require('electron');
+ipcRenderer.on('ping', () => {
   ipcRenderer.sendToHost('pong');
 });
 ```

@@ -19,13 +19,11 @@ scripts to be able to use those modules.
 The main process script is just like a normal Node.js script:
 
 ```javascript
-const electron = require('electron');
-const app = electron.app;
-const BrowserWindow = electron.BrowserWindow;
+const { app, BrowserWindow } = require('electron');
 
-var window = null;
+let window = null;
 
-app.on('ready', function() {
+app.on('ready', () => {
   window = new BrowserWindow({width: 800, height: 600});
   window.loadURL('https://github.com');
 });
@@ -39,7 +37,7 @@ extra ability to use node modules:
 <html>
 <body>
 <script>
-  const remote = require('electron').remote;
+  const { remote } = require('electron');
   console.log(remote.app.getVersion());
 </script>
 </body>
@@ -50,16 +48,29 @@ To run your app, read [Run your app](../tutorial/quick-start.md#run-your-app).
 
 ## Destructuring assignment
 
-If you are using CoffeeScript or Babel, you can also use
+As of 0.37, you can use
 [destructuring assignment][destructuring-assignment] to make it easier to use
-built-in modules:
+built-in modules.
 
 ```javascript
-const {app, BrowserWindow} = require('electron')
+const { app, BrowserWindow } = require('electron');
 ```
 
-However if you are using plain JavaScript, you have to wait until Chrome fully
-supports ES6.
+If you need the entire `electron` module, you can require it and then using
+destructuring to access the individual modules from `electron`.
+
+```javascript
+const electron = require('electron');
+const { app, BrowserWindow } = electron;
+```
+
+This is equivalent to the following code:
+
+```javascript
+const electron = require('electron');
+const app = electron.app;
+const BrowserWindow = electron.BrowserWindow;
+```
 
 ## Disable old styles of using built-in modules
 

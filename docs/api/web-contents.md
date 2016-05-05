@@ -9,12 +9,12 @@ the [`BrowserWindow`](browser-window.md) object. An example of accessing the
 `webContents` object:
 
 ```javascript
-const BrowserWindow = require('electron').BrowserWindow;
+const { BrowserWindow } = require('electron');
 
-var win = new BrowserWindow({width: 800, height: 1500});
+let win = new BrowserWindow({width: 800, height: 1500});
 win.loadURL("http://github.com");
 
-var webContents = win.webContents;
+let webContents = win.webContents;
 ```
 
 ## Events
@@ -398,10 +398,10 @@ Initiates a download of the resource at `url` without navigating. The
 Returns URL of the current web page.
 
 ```javascript
-var win = new BrowserWindow({width: 800, height: 600});
+let win = new BrowserWindow({width: 800, height: 600});
 win.loadURL("http://github.com");
 
-var currentURL = win.webContents.getURL();
+let currentURL = win.webContents.getURL();
 ```
 
 ### `webContents.getTitle()`
@@ -671,22 +671,22 @@ By default, an empty `options` will be regarded as:
 ```
 
 ```javascript
-const BrowserWindow = require('electron').BrowserWindow;
+const { BrowserWindow } = require('electron');
 const fs = require('fs');
 
-var win = new BrowserWindow({width: 800, height: 600});
-win.loadURL("http://github.com");
+let win = new BrowserWindow({width: 800, height: 600});
+win.loadURL('http://github.com');
 
-win.webContents.on("did-finish-load", function() {
+win.webContents.on('did-finish-load', () => {
   // Use default printing options
-  win.webContents.printToPDF({}, function(error, data) {
+  win.webContents.printToPDF({}, (error, data) => {
     if (error) throw error;
-    fs.writeFile("/tmp/print.pdf", data, function(error) {
+    fs.writeFile('/tmp/print.pdf', data, (error) => {
       if (error)
         throw error;
-      console.log("Write PDF successfully.");
-    })
-  })
+      console.log('Write PDF successfully.');
+    });
+  });
 });
 ```
 
@@ -761,12 +761,13 @@ An example of sending messages from the main process to the renderer process:
 
 ```javascript
 // In the main process.
-var window = null;
-app.on('ready', function() {
-  window = new BrowserWindow({width: 800, height: 600});
-  window.loadURL('file://' + __dirname + '/index.html');
-  window.webContents.on('did-finish-load', function() {
-    window.webContents.send('ping', 'whoooooooh!');
+let mainWindow = null;
+
+app.on('ready', () => {
+  mainWindow = new BrowserWindow({width: 800, height: 600});
+  mainWindow.loadURL(`file://${__dirname}/index.html`);
+  mainWindow.webContents.on('did-finish-load', () => {
+    mainWindow.webContents.send('ping', 'whoooooooh!');
   });
 });
 ```
@@ -776,7 +777,7 @@ app.on('ready', function() {
 <html>
 <body>
   <script>
-    require('electron').ipcRenderer.on('ping', function(event, message) {
+    require('electron').ipcRenderer.on('ping', (event, message) => {
       console.log(message);  // Prints "whoooooooh!"
     });
   </script>
@@ -892,8 +893,8 @@ Returns true if the process of saving page has been initiated successfully.
 ```javascript
 win.loadURL('https://github.com');
 
-win.webContents.on('did-finish-load', function() {
-  win.webContents.savePage('/tmp/test.html', 'HTMLComplete', function(error) {
+win.webContents.on('did-finish-load', () => {
+  win.webContents.savePage('/tmp/test.html', 'HTMLComplete', (error) => {
     if (!error)
       console.log("Save page successfully");
   });
@@ -930,13 +931,13 @@ try {
   console.log("Debugger attach failed : ", err);
 };
 
-win.webContents.debugger.on('detach', function(event, reason) {
+win.webContents.debugger.on('detach', (event, reason) => {
   console.log("Debugger detached due to : ", reason);
 });
 
-win.webContents.debugger.on('message', function(event, method, params) {
-  if (method == "Network.requestWillBeSent") {
-    if (params.request.url == "https://www.github.com")
+win.webContents.debugger.on('message', (event, method, params) => {
+  if (method === "Network.requestWillBeSent") {
+    if (params.request.url === "https://www.github.com")
       win.webContents.debugger.detach();
   }
 })

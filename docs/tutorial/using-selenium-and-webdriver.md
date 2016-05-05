@@ -43,7 +43,7 @@ and where to find Electron's binary:
 ```javascript
 const webdriver = require('selenium-webdriver');
 
-var driver = new webdriver.Builder()
+const driver = new webdriver.Builder()
   // The "9515" is the port opened by chrome driver.
   .usingServer('http://localhost:9515')
   .withCapabilities({
@@ -58,7 +58,7 @@ var driver = new webdriver.Builder()
 driver.get('http://www.google.com');
 driver.findElement(webdriver.By.name('q')).sendKeys('webdriver');
 driver.findElement(webdriver.By.name('btnG')).click();
-driver.wait(function() {
+driver.wait(() => {
  return driver.getTitle().then(function(title) {
    return title === 'webdriver - Google Search';
  });
@@ -94,29 +94,29 @@ $ npm install webdriverio
 
 ```javascript
 const webdriverio = require('webdriverio');
-var options = {
-    host: "localhost", // Use localhost as chrome driver server
-    port: 9515,        // "9515" is the port opened by chrome driver.
-    desiredCapabilities: {
-        browserName: 'chrome',
-        chromeOptions: {
-          binary: '/Path-to-Your-App/electron', // Path to your Electron binary.
-          args: [/* cli arguments */]           // Optional, perhaps 'app=' + /path/to/your/app/
-        }
+const options = {
+  host: 'localhost', // Use localhost as chrome driver server
+  port: 9515,        // "9515" is the port opened by chrome driver.
+  desiredCapabilities: {
+    browserName: 'chrome',
+    chromeOptions: {
+      binary: '/Path-to-Your-App/electron', // Path to your Electron binary.
+      args: [/* cli arguments */]           // Optional, perhaps 'app=' + /path/to/your/app/
     }
+  }
 };
 
 var client = webdriverio.remote(options);
 
 client
-    .init()
-    .url('http://google.com')
-    .setValue('#q', 'webdriverio')
-    .click('#btnG')
-    .getTitle().then(function(title) {
-        console.log('Title was: ' + title);
-    })
-    .end();
+  .init()
+  .url('http://google.com')
+  .setValue('#q', 'webdriverio')
+  .click('#btnG')
+  .getTitle().then((title) => {
+    console.log('Title was: ' + title);
+  })
+  .end();
 ```
 
 ## Workflow

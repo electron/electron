@@ -60,16 +60,16 @@ If you want a quick fix, you can make the variables global by changing your
 code from this:
 
 ```javascript
-app.on('ready', function() {
-  var tray = new Tray('/path/to/icon.png');
+app.on('ready', () => {
+  const tray = new Tray('/path/to/icon.png');
 })
 ```
 
 to this:
 
 ```javascript
-var tray = null;
-app.on('ready', function() {
+let tray = null;
+app.on('ready', () => {
   tray = new Tray('/path/to/icon.png');
 })
 ```
@@ -84,7 +84,7 @@ To solve this, you can turn off node integration in Electron:
 
 ```javascript
 // In the main process.
-var mainWindow = new BrowserWindow({
+let mainWindow = new BrowserWindow({
   webPreferences: {
     nodeIntegration: false
   }

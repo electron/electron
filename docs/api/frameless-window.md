@@ -14,8 +14,8 @@ To create a frameless window, you need to set `frame` to `false` in
 
 
 ```javascript
-const BrowserWindow = require('electron').BrowserWindow;
-var win = new BrowserWindow({ width: 800, height: 600, frame: false });
+const { BrowserWindow } = require('electron');
+let win = new BrowserWindow({ width: 800, height: 600, frame: false });
 ```
 
 ### Alternatives on OS X
@@ -28,7 +28,7 @@ the window controls ("traffic lights") for standard window actions.
 You can do so by specifying the new `titleBarStyle` option:
 
 ```javascript
-var win = new BrowserWindow({ 'titleBarStyle': 'hidden' });
+let win = new BrowserWindow({ 'titleBarStyle': 'hidden' });
 ```
 
 ## Transparent window
@@ -37,7 +37,7 @@ By setting the `transparent` option to `true`, you can also make the frameless
 window transparent:
 
 ```javascript
-var win = new BrowserWindow({ transparent: true, frame: false });
+let win = new BrowserWindow({ transparent: true, frame: false });
 ```
 
 ### Limitations

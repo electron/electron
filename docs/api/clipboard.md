@@ -5,7 +5,7 @@
 The following example shows how to write a string to the clipboard:
 
 ```javascript
-const clipboard = require('electron').clipboard;
+const { clipboard } = require('electron');
 clipboard.writeText('Example String');
 ```
 

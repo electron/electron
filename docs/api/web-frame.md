@@ -5,7 +5,7 @@
 An example of zooming current page to 200%.
 
 ```javascript
-var webFrame = require('electron').webFrame;
+const { webFrame } = require('electron');
 
 webFrame.setZoomFactor(2);
 ```
