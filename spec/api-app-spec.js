@@ -91,7 +91,7 @@ describe('app module', function () {
   })
 
   describe('app.setUserActivity(type, userInfo)', function () {
-    if (isCI && process.platform !== 'darwin') {
+    if (process.platform !== 'darwin') {
       return
     }
 
