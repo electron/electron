@@ -200,6 +200,21 @@ describe('ipc module', function () {
       })
       w.loadURL('file://' + path.join(fixtures, 'api', 'send-sync-message.html'))
     })
+
+    it('does not crash when reply is sent by multiple listeners', function (done) {
+      var w = new BrowserWindow({
+        show: false
+      })
+      ipcMain.on('send-sync-message', function (event) {
+        event.returnValue = null
+      })
+      ipcMain.on('send-sync-message', function (event) {
+        event.returnValue = null
+        w.destroy()
+        done()
+      })
+      w.loadURL('file://' + path.join(fixtures, 'api', 'send-sync-message.html'))
+    })
   })
 
   describe('remote listeners', function () {
