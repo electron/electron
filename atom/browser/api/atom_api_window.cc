@@ -124,7 +124,10 @@ v8::Local<v8::Value> ToBuffer(v8::Isolate* isolate, void* val, int size) {
 }  // namespace
 
 
-Window::Window(v8::Isolate* isolate, const mate::Dictionary& options) {
+Window::Window(v8::Isolate* isolate, const mate::Dictionary& dict) {
+  // Make a copy of the input options so we can edit them.
+  mate::Dictionary options = dict;
+
   // Be compatible with old style field names like min-width.
   TranslateOldOptions(isolate, options.GetHandle());
 
@@ -144,6 +147,29 @@ Window::Window(v8::Isolate* isolate, const mate::Dictionary& options) {
   // Copy the backgroundColor to webContents.
   if (options.Get(options::kBackgroundColor, &value))
     web_preferences.Set(options::kBackgroundColor, value);
+
+  v8::Local<v8::Value> number;
+  // Enforce maxWidth and maxHeight on creation.
+  if (options.Get(options::kMaxWidth, &value) &&
+      options.Get(options::kWidth, &number))
+    if (number->NumberValue() > value->NumberValue())
+      options.Set(options::kWidth, value);
+
+  if (options.Get(options::kMaxHeight, &value) &&
+      options.Get(options::kHeight, &number))
+    if (number->NumberValue() > value->NumberValue())
+      options.Set(options::kHeight, value);
+
+  // Enforce minWidth and minHeight on creation.
+  if (options.Get(options::kMinWidth, &value) &&
+      options.Get(options::kWidth, &number))
+    if (number->NumberValue() < value->NumberValue())
+      options.Set(options::kWidth, value);
+
+  if (options.Get(options::kMinHeight, &value) &&
+      options.Get(options::kHeight, &number))
+    if (number->NumberValue() < value->NumberValue())
+      options.Set(options::kHeight, value);
 
   // Creates the WebContents used by BrowserWindow.
   auto web_contents = WebContents::Create(isolate, web_preferences);
