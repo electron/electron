@@ -405,9 +405,26 @@ bool Window::IsFullscreen() {
 }
 
 void Window::SetBounds(const gfx::Rect& bounds, mate::Arguments* args) {
+  // Copy the bounds so we can change them.
+  gfx::Rect params = bounds;
+
+  // Honour the max sizes
+  gfx::Size maxSize = window_->GetMaximumSize();
+  if (maxSize.width() && params.width() > maxSize.width())
+    params.set_width(maxSize.width());
+  if (maxSize.height() && params.height() > maxSize.height())
+    params.set_height(maxSize.height());
+
+  // Honour the min sizes.
+  gfx::Size minSize = window_->GetMinimumSize();
+  if (minSize.width() && params.width() < minSize.width())
+    params.set_width(minSize.width());
+  if (minSize.height() && params.height() < minSize.height())
+    params.set_height(minSize.height());
+
   bool animate = false;
   args->GetNext(&animate);
-  window_->SetBounds(bounds, animate);
+  window_->SetBounds(params, animate);
 }
 
 gfx::Rect Window::GetBounds() {
@@ -415,6 +432,20 @@ gfx::Rect Window::GetBounds() {
 }
 
 void Window::SetSize(int width, int height, mate::Arguments* args) {
+  // Honour the max sizes
+  gfx::Size maxSize = window_->GetMaximumSize();
+  if (maxSize.width() && width > maxSize.width())
+    width = maxSize.width();
+  if (maxSize.height() && height > maxSize.height())
+    height = maxSize.height();
+
+  // Honour the min sizes.
+  gfx::Size minSize = window_->GetMinimumSize();
+  if (minSize.width() && width < minSize.width())
+    width = minSize.width();
+  if (minSize.height() && height < minSize.height())
+    height = minSize.height();
+
   bool animate = false;
   args->GetNext(&animate);
   window_->SetSize(gfx::Size(width, height), animate);
