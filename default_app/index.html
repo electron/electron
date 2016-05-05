@@ -4,16 +4,21 @@
   <style>
     body {
       color: #205161;
-      background-color: #fff;
       font-family: Roboto, -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Segoe UI", "Oxygen", "Ubuntu", "Cantarell", "Open Sans", sans-serif;
-      font-style: normal;
-      font-variant: normal;
-      padding: 0;
       margin: 0;
+      display: flex;
+      flex-direction: column;
     }
 
     .container {
-      padding: 15px 30px;
+      margin: 15px 30px 30px 30px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .container > * {
+      margin: 15px 0 0 0;
     }
 
     .header {
@@ -21,7 +26,6 @@
       border-bottom: 1px solid #1a1b23;
       color: #9feaf9;
       padding: 15px 30px;
-      margin: 0;
     }
 
     .header a,
@@ -90,18 +94,15 @@
 
     #holder {
       display: flex;
+      flex: 1;
       align-items: center;
       justify-content: center;
-      margin: 0 auto;
-      padding: 10px;
-      height: 275px;
       border: 1px solid #e0e5e6;
       background-color: #f6f8f8;
       color: #466a72;
       border-radius: 3px;
       font-size: 30px;
       font-weight: 300;
-      text-align: center;
       cursor: default;
       -webkit-user-select: none;
     }
@@ -132,7 +133,7 @@
     };
   </script>
 
-  <header class="header">
+  <div class="header">
     <svg class="header-icon" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
       <g stroke="none" fill="none" fill-rule="evenodd">
         <path class="svg-stroke" d="M11.7014354,7.72646259 C7.91761319,7.04380371 4.81334929,7.69369948 3.61536899,9.74908711 C2.72656361,11.27402 3.03878853,13.3122813 4.27551338,15.4489979 M6.32642733,18.1886712 C7.89193828,19.8928217 9.9666792,21.548102 12.4120986,22.9466461 C18.2414315,26.2804624 24.2930499,27.0779063 27.1669222,25.1368228 M29.8456419,24.0565148 C29.8456419,23.1971812 29.1423799,22.5005537 28.2748621,22.5005537 C27.4073444,22.5005537 26.7040823,23.1971812 26.7040823,24.0565148 C26.7040823,24.9158484 27.4073444,25.612476 28.2748621,25.612476 C29.1423799,25.612476 29.8456419,24.9158484 29.8456419,24.0565148 L29.8456419,24.0565148 Z"></path>
@@ -154,7 +155,7 @@
       <a href="https://github.com/electron/electron">Repository</a>
       <a href="http://electron.atom.io/blog">Blog</a>
     </div>
-  </header>
+  </div>
 
   <div class="container">
 
