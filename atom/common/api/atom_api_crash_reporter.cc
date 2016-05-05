@@ -6,7 +6,6 @@
 #include <string>
 
 #include "atom/common/crash_reporter/crash_reporter.h"
-#include "atom/common/native_mate_converters/string_map_converter.h"
 #include "base/bind.h"
 #include "native_mate/dictionary.h"
 
@@ -15,6 +14,24 @@
 using crash_reporter::CrashReporter;
 
 namespace mate {
+
+template<>
+struct Converter<std::map<std::string, std::string> > {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     std::map<std::string, std::string>* out) {
+    if (!val->IsObject())
+      return false;
+
+    v8::Local<v8::Object> dict = val->ToObject();
+    v8::Local<v8::Array> keys = dict->GetOwnPropertyNames();
+    for (uint32_t i = 0; i < keys->Length(); ++i) {
+      v8::Local<v8::Value> key = keys->Get(i);
+      (*out)[V8ToString(key)] = V8ToString(dict->Get(key));
+    }
+    return true;
+  }
+};
 
 template<>
 struct Converter<CrashReporter::UploadReportResult> {

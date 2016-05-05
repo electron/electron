@@ -20,7 +20,6 @@
 #include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/native_mate_converters/net_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
-#include "atom/common/native_mate_converters/string_map_converter.h"
 #include "atom/common/node_includes.h"
 #include "atom/common/options_switches.h"
 #include "base/command_line.h"
