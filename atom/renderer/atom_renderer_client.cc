@@ -29,6 +29,7 @@
 #include "content/public/renderer/render_view.h"
 #include "ipc/ipc_message_macros.h"
 #include "third_party/WebKit/public/web/WebCustomElement.h"
+#include "third_party/WebKit/public/web/WebFrameWidget.h"
 #include "third_party/WebKit/public/web/WebLocalFrame.h"
 #include "third_party/WebKit/public/web/WebPluginParams.h"
 #include "third_party/WebKit/public/web/WebKit.h"
@@ -141,15 +142,19 @@ void AtomRendererClient::RenderFrameCreated(
 
 void AtomRendererClient::RenderViewCreated(content::RenderView* render_view) {
   base::CommandLine* cmd = base::CommandLine::ForCurrentProcess();
+  blink::WebFrameWidget* web_frame_widget = render_view->GetWebFrameWidget();
   if (cmd->HasSwitch(switches::kGuestInstanceID)) {  // webview.
-    // Set transparent background.
-    render_view->GetWebView()->setBaseBackgroundColor(SK_ColorTRANSPARENT);
+    if (web_frame_widget) {
+      web_frame_widget->setBaseBackgroundColor(SK_ColorTRANSPARENT);
+    }
   } else {  // normal window.
     // If backgroundColor is specified then use it.
     std::string name = cmd->GetSwitchValueASCII(switches::kBackgroundColor);
     // Otherwise use white background.
     SkColor color = name.empty() ? SK_ColorWHITE : ParseHexColor(name);
-    render_view->GetWebView()->setBaseBackgroundColor(color);
+    if (web_frame_widget) {
+      web_frame_widget->setBaseBackgroundColor(color);
+    }
   }
 
   new printing::PrintWebViewHelper(render_view);
