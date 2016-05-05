@@ -20,6 +20,7 @@
 #include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/native_mate_converters/net_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
+#include "atom/common/native_mate_converters/string_map_converter.h"
 #include "atom/common/node_includes.h"
 #include "atom/common/options_switches.h"
 #include "base/command_line.h"
@@ -249,6 +250,12 @@ void App::OnFinishLaunching() {
   Emit("ready");
 }
 
+void App::OnContinueUserActivity(bool* prevent_default,
+  const std::string& type,
+  const std::map<std::string, std::string>& user_info) {
+  *prevent_default = Emit("continue-activity", type, user_info);
+}
+
 void App::OnLogin(LoginHandler* login_handler) {
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
@@ -460,6 +467,10 @@ void App::BuildPrototype(
 #if defined(OS_MACOSX)
       .SetMethod("hide", base::Bind(&Browser::Hide, browser))
       .SetMethod("show", base::Bind(&Browser::Show, browser))
+      .SetMethod("setUserActivity",
+                 base::Bind(&Browser::SetUserActivity, browser))
+      .SetMethod("getCurrentActivityType",
+                 base::Bind(&Browser::GetCurrentActivityType, browser))
 #endif
 #if defined(OS_WIN)
       .SetMethod("setUserTasks",

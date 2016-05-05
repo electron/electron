@@ -59,4 +59,23 @@
   return flag;
 }
 
+-  (BOOL)application:(NSApplication *)sender
+continueUserActivity:(NSUserActivity *)userActivity
+  restorationHandler:(void (^)(NSArray *restorableObjects))restorationHandler {
+  std::string activity_type(base::SysNSStringToUTF8(userActivity.activityType));
+
+  std::map<std::string, std::string> user_info;
+  base::scoped_nsobject<NSArray> keys([userActivity.userInfo allKeys]);
+
+  for (NSString* key in keys.get()) {
+    NSString* value = [userActivity.userInfo objectForKey:key];
+    std::string key_str(base::SysNSStringToUTF8(key));
+    std::string value_str(base::SysNSStringToUTF8(value));
+    user_info[key_str] = value_str;
+  }
+
+  atom::Browser* browser = atom::Browser::Get();
+  return browser->ContinueUserActivity(activity_type, user_info) ? YES : NO;
+}
+
 @end

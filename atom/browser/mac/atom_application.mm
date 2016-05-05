@@ -28,6 +28,14 @@
   handlingSendEvent_ = handlingSendEvent;
 }
 
+- (void)setCurrentActivity:(NSUserActivity*)userActivity {
+  currentActivity_ = base::scoped_nsobject<NSUserActivity>(userActivity);
+}
+
+- (NSUserActivity*)getCurrentActivity {
+  return currentActivity_.get();
+}
+
 - (void)awakeFromNib {
   [[NSAppleEventManager sharedAppleEventManager]
       setEventHandler:self

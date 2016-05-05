@@ -7,6 +7,7 @@ const remote = require('electron').remote
 
 const app = remote.require('electron').app
 const BrowserWindow = remote.require('electron').BrowserWindow
+const isCI = remote.getGlobal('isCi')
 
 describe('electron module', function () {
   it('allows old style require by default', function () {
@@ -86,6 +87,17 @@ describe('app module', function () {
         assert.equal(code, 123)
         done()
       })
+    })
+  })
+
+  describe('app.setUserActivity(type, userInfo)', function () {
+    if (isCI && process.platform !== 'darwin') {
+      return
+    }
+
+    it('sets the current activity', function () {
+      app.setUserActivity('com.electron.testActivity', {testData: '123'});
+      assert.equal(app.getCurrentActivityType(), 'com.electron.testActivity');
     })
   })
 

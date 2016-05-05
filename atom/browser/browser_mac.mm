@@ -69,7 +69,7 @@ bool Browser::IsDefaultProtocolClient(const std::string& protocol) {
     return false;
 
   NSString* protocol_ns = [NSString stringWithUTF8String:protocol.c_str()];
-  
+
   CFStringRef bundle =
       LSCopyDefaultHandlerForURLScheme(base::mac::NSToCFCast(protocol_ns));
   NSString* bundleId = static_cast<NSString*>(
@@ -77,7 +77,7 @@ bool Browser::IsDefaultProtocolClient(const std::string& protocol) {
   if (!bundleId)
     return false;
 
-  // Ensure the comparison is case-insensitive 
+  // Ensure the comparison is case-insensitive
   // as LS does not persist the case of the bundle id.
   NSComparisonResult result =
       [bundleId caseInsensitiveCompare:identifier];
@@ -85,6 +85,30 @@ bool Browser::IsDefaultProtocolClient(const std::string& protocol) {
 }
 
 void Browser::SetAppUserModelID(const base::string16& name) {
+}
+
+void Browser::SetUserActivity(const std::string& type, const std::map<std::string, std::string>& user_info) {
+  NSString* type_ns = [NSString stringWithUTF8String:type.c_str()];
+  NSUserActivity* user_activity = [[NSUserActivity alloc] initWithActivityType:type_ns];
+
+  base::scoped_nsobject<NSMutableDictionary> user_info_args([[NSMutableDictionary alloc] init]);
+  for (auto const &pair : user_info) {
+    NSString* value_ns = [NSString stringWithUTF8String:pair.second.c_str()];
+    NSString* key_ns = [NSString stringWithUTF8String:pair.first.c_str()];
+
+    [user_info_args.get() setObject:value_ns
+                             forKey:key_ns];
+  }
+
+  user_activity.userInfo = user_info_args.get();
+  [user_activity becomeCurrent];
+
+  [[AtomApplication sharedApplication] setCurrentActivity:user_activity];
+}
+
+std::string Browser::GetCurrentActivityType() {
+  NSUserActivity* user_activity = [[AtomApplication sharedApplication] getCurrentActivity];
+  return base::SysNSStringToUTF8(user_activity.activityType);
 }
 
 std::string Browser::GetExecutableFileVersion() const {
