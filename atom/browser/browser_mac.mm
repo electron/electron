@@ -6,6 +6,7 @@
 
 #include "atom/browser/mac/atom_application.h"
 #include "atom/browser/mac/atom_application_delegate.h"
+#include "atom/browser/mac/dict_util.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/window_list.h"
 #include "base/mac/bundle_locations.h"
@@ -89,30 +90,30 @@ void Browser::SetAppUserModelID(const base::string16& name) {
 
 void Browser::SetUserActivity(
     const std::string& type,
-    const std::map<std::string, std::string>& user_info) {
-  NSString* type_ns = [NSString stringWithUTF8String:type.c_str()];
-  NSUserActivity* user_activity =
-      [[NSUserActivity alloc] initWithActivityType:type_ns];
+    const base::DictionaryValue& user_info) {
+  NSString* nstype = [NSString stringWithUTF8String:type.c_str()];
+  NSUserActivity* userActivity =
+      [[NSUserActivity alloc] initWithActivityType:nstype];
+  userActivity.userInfo = DictionaryValueToNSDictionary(user_info);
+  [userActivity becomeCurrent];
 
-  base::scoped_nsobject<NSMutableDictionary> user_info_args(
-      [[NSMutableDictionary alloc] init]);
-  for (auto const &pair : user_info) {
-    NSString* value_ns = [NSString stringWithUTF8String:pair.second.c_str()];
-    NSString* key_ns = [NSString stringWithUTF8String:pair.first.c_str()];
-
-    [user_info_args.get() setObject:value_ns forKey:key_ns];
-  }
-
-  user_activity.userInfo = user_info_args.get();
-  [user_activity becomeCurrent];
-
-  [[AtomApplication sharedApplication] setCurrentActivity:user_activity];
+  [[AtomApplication sharedApplication] setCurrentActivity:userActivity];
 }
 
 std::string Browser::GetCurrentActivityType() {
   NSUserActivity* user_activity =
       [[AtomApplication sharedApplication] getCurrentActivity];
   return base::SysNSStringToUTF8(user_activity.activityType);
+}
+
+bool Browser::ContinueUserActivity(
+    const std::string& type,
+    const base::DictionaryValue& user_info) {
+  bool prevent_default = false;
+  FOR_EACH_OBSERVER(BrowserObserver,
+                    observers_,
+                    OnContinueUserActivity(&prevent_default, type, user_info));
+  return prevent_default;
 }
 
 std::string Browser::GetExecutableFileVersion() const {

@@ -6,9 +6,12 @@
 #define ATOM_BROWSER_BROWSER_OBSERVER_H_
 
 #include <string>
-#include <map>
 
 #include "build/build_config.h"
+
+namespace base {
+class DictionaryValue;
+}
 
 namespace atom {
 
@@ -53,7 +56,7 @@ class BrowserObserver {
   virtual void OnContinueUserActivity(
       bool* prevent_default,
       const std::string& type,
-      const std::map<std::string, std::string>& user_info) {}
+      const base::DictionaryValue& user_info) {}
 #endif
 
  protected:

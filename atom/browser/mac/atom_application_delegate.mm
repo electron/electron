@@ -6,7 +6,9 @@
 
 #import "atom/browser/mac/atom_application.h"
 #include "atom/browser/browser.h"
+#include "atom/browser/mac/dict_util.h"
 #include "base/strings/sys_string_conversions.h"
+#include "base/values.h"
 
 @implementation AtomApplicationDelegate
 
@@ -63,19 +65,13 @@
 continueUserActivity:(NSUserActivity*)userActivity
   restorationHandler:(void (^)(NSArray*restorableObjects))restorationHandler {
   std::string activity_type(base::SysNSStringToUTF8(userActivity.activityType));
-
-  std::map<std::string, std::string> user_info;
-  base::scoped_nsobject<NSArray> keys([userActivity.userInfo allKeys]);
-
-  for (NSString* key in keys.get()) {
-    NSString* value = [userActivity.userInfo objectForKey:key];
-    std::string key_str(base::SysNSStringToUTF8(key));
-    std::string value_str(base::SysNSStringToUTF8(value));
-    user_info[key_str] = value_str;
-  }
+  scoped_ptr<base::DictionaryValue> user_info =
+      atom::NSDictionaryToDictionaryValue(userActivity.userInfo);
+  if (!user_info)
+    return NO;
 
   atom::Browser* browser = atom::Browser::Get();
-  return browser->ContinueUserActivity(activity_type, user_info) ? YES : NO;
+  return browser->ContinueUserActivity(activity_type, *user_info) ? YES : NO;
 }
 
 @end
