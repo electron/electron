@@ -21,7 +21,6 @@
 - (void)setHandlingSendEvent:(BOOL)handlingSendEvent;
 
 - (NSUserActivity*)getCurrentActivity;
-
-- (void)setCurrentActivity:(NSUserActivity*)userActivity;
+- (void)setCurrentActivity:(NSString*)type withUserInfo:(NSDictionary*)userInfo;
 
 @end

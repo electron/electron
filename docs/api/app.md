@@ -116,17 +116,18 @@ the application's dock icon.
 Returns:
 
 * `event` Event
-* `type` String - A string identifying the event. Maps to [`NSUserActivity.activityType`](https://developer.apple.com/library/ios/documentation/Foundation/Reference/NSUserActivity_Class/index.html#//apple_ref/occ/instp/NSUserActivity/activityType).
+* `type` String - A string identifying the activity. Maps to
+  [`NSUserActivity.activityType`][activity-type].
 * `userInfo` Object - Contains app-specific state stored by the activity on
-another device. Currently only string data is supported.
+  another device.
 
-Emitted during [handoff](https://developer.apple.com/library/ios/documentation/UserExperience/Conceptual/Handoff/HandoffFundamentals/HandoffFundamentals.html) when an activity from a different device wants to be
-resumed. You should call `event.preventDefault()` if you want to handle this
-event.
+Emitted during [Handoff][handoff] when an activity from a different device wants
+to be resumed. You should call `event.preventDefault()` if you want to handle
+this event.
 
-A user activity can be continued only in an app that has the same developer
-Team ID as the activity's source app and that supports the activity's type.
-Supported activity types are specified in the app's Info.plist under the
+A user activity can be continued only in an app that has the same developer Team
+ID as the activity's source app and that supports the activity's type.
+Supported activity types are specified in the app's `Info.plist` under the
 `NSUserActivityTypes` key.
 
 ### Event: 'browser-window-blur'
@@ -502,13 +503,12 @@ app.on('ready', function() {
 
 ### `app.setUserActivity(type, userInfo)` _OS X_
 
-* `type` String - Uniquely identifies the activity. It's recommended to use a
-reverse-DNS string.
+* `type` String - Uniquely identifies the activity. Maps to
+  [`NSUserActivity.activityType`][activity-type].
 * `userInfo` Object - App-specific state to store for use by another device.
-Currently only string data is supported.
 
 Creates an `NSUserActivity` and sets it as the current activity. The activity
-is eligible for [handoff](https://developer.apple.com/library/ios/documentation/UserExperience/Conceptual/Handoff/HandoffFundamentals/HandoffFundamentals.html) to another device afterward.
+is eligible for [Handoff][handoff] to another device afterward.
 
 ### `app.getCurrentActivityType()` _OS X_
 
@@ -600,5 +600,6 @@ Sets the `image` associated with this dock icon.
 [tasks]:http://msdn.microsoft.com/en-us/library/windows/desktop/dd378460(v=vs.85).aspx#tasks
 [app-user-model-id]: https://msdn.microsoft.com/en-us/library/windows/desktop/dd378459(v=vs.85).aspx
 [CFBundleURLTypes]: https://developer.apple.com/library/ios/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html#//apple_ref/doc/uid/TP40009249-102207-TPXREF115
-[LSCopyDefaultHandlerForURLScheme]:
-https://developer.apple.com/library/mac/documentation/Carbon/Reference/LaunchServicesReference/#//apple_ref/c/func/LSCopyDefaultHandlerForURLScheme
+[LSCopyDefaultHandlerForURLScheme]: https://developer.apple.com/library/mac/documentation/Carbon/Reference/LaunchServicesReference/#//apple_ref/c/func/LSCopyDefaultHandlerForURLScheme
+[handoff]: https://developer.apple.com/library/ios/documentation/UserExperience/Conceptual/Handoff/HandoffFundamentals/HandoffFundamentals.html
+[activity-type]: https://developer.apple.com/library/ios/documentation/Foundation/Reference/NSUserActivity_Class/index.html#//apple_ref/occ/instp/NSUserActivity/activityType

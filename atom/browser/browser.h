@@ -7,7 +7,6 @@
 
 #include <string>
 #include <vector>
-#include <map>
 
 #include "base/macros.h"
 #include "base/compiler_specific.h"
@@ -95,14 +94,14 @@ class Browser : public WindowListObserver {
 
   // Creates an activity and sets it as the one currently in use.
   void SetUserActivity(const std::string& type,
-                       const std::map<std::string, std::string>& user_info);
+                       const base::DictionaryValue& user_info);
 
   // Returns the type name of the current user activity.
   std::string GetCurrentActivityType();
 
   // Resumes an activity via hand-off.
   bool ContinueUserActivity(const std::string& type,
-    const std::map<std::string, std::string>& user_info);
+                            const base::DictionaryValue& user_info);
 
   // Bounce the dock icon.
   enum BounceType {

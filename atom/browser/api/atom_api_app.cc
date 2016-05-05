@@ -20,7 +20,6 @@
 #include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/native_mate_converters/net_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
-#include "atom/common/native_mate_converters/string_map_converter.h"
 #include "atom/common/node_includes.h"
 #include "atom/common/options_switches.h"
 #include "base/command_line.h"
@@ -250,11 +249,14 @@ void App::OnFinishLaunching() {
   Emit("ready");
 }
 
-void App::OnContinueUserActivity(bool* prevent_default,
-  const std::string& type,
-  const std::map<std::string, std::string>& user_info) {
+#if defined(OS_MACOSX)
+void App::OnContinueUserActivity(
+    bool* prevent_default,
+    const std::string& type,
+    const base::DictionaryValue& user_info) {
   *prevent_default = Emit("continue-activity", type, user_info);
 }
+#endif
 
 void App::OnLogin(LoginHandler* login_handler) {
   v8::Locker locker(isolate());

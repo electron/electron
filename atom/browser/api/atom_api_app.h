@@ -6,7 +6,6 @@
 #define ATOM_BROWSER_API_ATOM_API_APP_H_
 
 #include <string>
-#include <map>
 
 #include "atom/browser/api/event_emitter.h"
 #include "atom/browser/atom_browser_client.h"
@@ -72,9 +71,12 @@ class App : public AtomBrowserClient::Delegate,
   void OnWillFinishLaunching() override;
   void OnFinishLaunching() override;
   void OnLogin(LoginHandler* login_handler) override;
-  void OnContinueUserActivity(bool* prevent_default,
-    const std::string& type,
-    const std::map<std::string, std::string>& user_info) override;
+#if defined(OS_MACOSX)
+  void OnContinueUserActivity(
+      bool* prevent_default,
+      const std::string& type,
+      const base::DictionaryValue& user_info) override;
+#endif
 
   // content::ContentBrowserClient:
   void AllowCertificateError(
