@@ -3,6 +3,7 @@ const http = require('http')
 const path = require('path')
 const qs = require('querystring')
 const remote = require('electron').remote
+const BrowserWindow = remote.require('electron').BrowserWindow
 const protocol = remote.require('electron').protocol
 
 describe('protocol module', function () {
@@ -344,6 +345,7 @@ describe('protocol module', function () {
         })
       })
     })
+
     it('sends object as response', function (done) {
       var handler = function (request, callback) {
         callback({
@@ -394,7 +396,7 @@ describe('protocol module', function () {
       var handler = function (request, callback) {
         callback(fakeFilePath)
       }
-      protocol.registerBufferProtocol(protocolName, handler, function (error) {
+      protocol.registerFileProtocol(protocolName, handler, function (error) {
         if (error) {
           return done(error)
         }
@@ -415,7 +417,7 @@ describe('protocol module', function () {
       var handler = function (request, callback) {
         callback(new Date())
       }
-      protocol.registerBufferProtocol(protocolName, handler, function (error) {
+      protocol.registerFileProtocol(protocolName, handler, function (error) {
         if (error) {
           return done(error)
         }
@@ -811,6 +813,80 @@ describe('protocol module', function () {
       protocol.uninterceptProtocol('http', function (error) {
         assert.notEqual(error, null)
         done()
+      })
+    })
+  })
+
+  describe('protocol.registerStandardSchemes', function () {
+    const standardScheme = 'app'
+    const origin = standardScheme + '://fake-host'
+    const imageURL = origin + '/test.png'
+    const filePath = path.join(__dirname, 'fixtures', 'pages', 'b.html')
+    const fileContent = '<img src="/test.png" />'
+    var w = null
+    var success = null
+
+    before(function () {
+      protocol.registerStandardSchemes([standardScheme])
+    })
+
+    beforeEach(function () {
+      w = new BrowserWindow({show: false})
+      success = false
+    })
+
+    afterEach(function (done) {
+      protocol.unregisterProtocol(standardScheme, function () {
+        if (w != null) {
+          w.destroy()
+        }
+        w = null
+        done()
+      })
+    })
+
+    it('resolves relative resources', function (done) {
+      var handler = function (request, callback) {
+        if (request.url === imageURL) {
+          success = true
+          callback()
+        } else {
+          callback(filePath)
+        }
+      }
+      protocol.registerFileProtocol(standardScheme, handler, function (error) {
+        if (error) {
+          return done(error)
+        }
+        w.webContents.on('did-finish-load', function () {
+          assert(success)
+          done()
+        })
+        w.loadURL(origin)
+      })
+    })
+
+    it('resolves absolute resources', function (done) {
+      var handler = function (request, callback) {
+        if (request.url === imageURL) {
+          success = true
+          callback()
+        } else {
+          callback({
+            data: fileContent,
+            mimeType: 'text/html'
+          })
+        }
+      }
+      protocol.registerStringProtocol(standardScheme, handler, function (error) {
+        if (error) {
+          return done(error)
+        }
+        w.webContents.on('did-finish-load', function () {
+          assert(success)
+          done()
+        })
+        w.loadURL(origin)
       })
     })
   })

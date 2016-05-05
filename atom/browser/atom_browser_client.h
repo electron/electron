@@ -36,8 +36,7 @@ class AtomBrowserClient : public brightray::BrowserClient,
 
   // Don't force renderer process to restart for once.
   static void SuppressRendererProcessRestartForOnce();
-  // Custom schemes to be registered to standard.
-  static void SetCustomSchemes(const std::vector<std::string>& schemes);
+
   // Custom schemes to be registered to handle service worker.
   static void SetCustomServiceWorkerSchemes(
       const std::vector<std::string>& schemes);

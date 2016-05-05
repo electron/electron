@@ -49,8 +49,6 @@ namespace {
 // Next navigation should not restart renderer process.
 bool g_suppress_renderer_process_restart = false;
 
-// Custom schemes to be registered to standard.
-std::string g_custom_schemes = "";
 // Custom schemes to be registered to handle service worker.
 std::string g_custom_service_worker_schemes = "";
 
@@ -59,11 +57,6 @@ std::string g_custom_service_worker_schemes = "";
 // static
 void AtomBrowserClient::SuppressRendererProcessRestartForOnce() {
   g_suppress_renderer_process_restart = true;
-}
-
-void AtomBrowserClient::SetCustomSchemes(
-    const std::vector<std::string>& schemes) {
-  g_custom_schemes = base::JoinString(schemes, ",");
 }
 
 void AtomBrowserClient::SetCustomServiceWorkerSchemes(
@@ -152,11 +145,6 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
   std::string process_type = command_line->GetSwitchValueASCII("type");
   if (process_type != "renderer")
     return;
-
-  // The registered standard schemes.
-  if (!g_custom_schemes.empty())
-    command_line->AppendSwitchASCII(switches::kRegisterStandardSchemes,
-                                    g_custom_schemes);
 
   // The registered service worker schemes.
   if (!g_custom_service_worker_schemes.empty())
