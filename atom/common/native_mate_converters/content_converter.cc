@@ -9,8 +9,11 @@
 
 #include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/browser/web_contents_permission_helper.h"
+#include "atom/common/native_mate_converters/blink_converter.h"
 #include "atom/common/native_mate_converters/callback.h"
+#include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
+#include "atom/common/native_mate_converters/ui_base_types_converter.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/common/context_menu_params.h"
 #include "native_mate/dictionary.h"
@@ -94,6 +97,23 @@ v8::Local<v8::Value> Converter<ContextMenuParamsWithWebContents>::ToV8(
   mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
   dict.Set("x", params.x);
   dict.Set("y", params.y);
+  dict.Set("linkURL", params.link_url);
+  dict.Set("linkText", params.link_text);
+  dict.Set("pageURL", params.page_url);
+  dict.Set("frameURL", params.frame_url);
+  dict.Set("srcURL", params.src_url);
+  dict.Set("mediaType", params.media_type);
+  dict.Set("mediaFlags", MediaFlagsToV8(isolate, params.media_flags));
+  dict.Set("hasImageContents", params.has_image_contents);
+  dict.Set("isEditable", params.is_editable);
+  dict.Set("editFlags", EditFlagsToV8(isolate, params.edit_flags));
+  dict.Set("selectionText", params.selection_text);
+  dict.Set("titleText", params.title_text);
+  dict.Set("misspelledWord", params.misspelled_word);
+  dict.Set("frameCharset", params.frame_charset);
+  dict.Set("inputFieldType", params.input_field_type);
+  dict.Set("menuSourceType",  params.source_type);
+
   if (params.custom_context.is_pepper_menu)
     dict.Set("menu", MenuToV8(isolate, val.second, params.custom_context,
                               params.custom_items));
