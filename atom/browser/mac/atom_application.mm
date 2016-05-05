@@ -28,8 +28,12 @@
   handlingSendEvent_ = handlingSendEvent;
 }
 
-- (void)setCurrentActivity:(NSUserActivity*)userActivity {
-  currentActivity_ = base::scoped_nsobject<NSUserActivity>(userActivity);
+- (void)setCurrentActivity:(NSString*)type
+              withUserInfo:(NSDictionary*)userInfo {
+  currentActivity_ = base::scoped_nsobject<NSUserActivity>(
+      [[NSUserActivity alloc] initWithActivityType:type]);
+  [currentActivity_ setUserInfo:userInfo];
+  [currentActivity_ becomeCurrent];
 }
 
 - (NSUserActivity*)getCurrentActivity {

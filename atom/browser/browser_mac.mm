@@ -91,19 +91,15 @@ void Browser::SetAppUserModelID(const base::string16& name) {
 void Browser::SetUserActivity(
     const std::string& type,
     const base::DictionaryValue& user_info) {
-  NSString* nstype = [NSString stringWithUTF8String:type.c_str()];
-  NSUserActivity* userActivity =
-      [[NSUserActivity alloc] initWithActivityType:nstype];
-  userActivity.userInfo = DictionaryValueToNSDictionary(user_info);
-  [userActivity becomeCurrent];
-
-  [[AtomApplication sharedApplication] setCurrentActivity:userActivity];
+  [[AtomApplication sharedApplication]
+      setCurrentActivity:base::SysUTF8ToNSString(type)
+            withUserInfo:DictionaryValueToNSDictionary(user_info)];
 }
 
 std::string Browser::GetCurrentActivityType() {
-  NSUserActivity* user_activity =
+  NSUserActivity* userActivity =
       [[AtomApplication sharedApplication] getCurrentActivity];
-  return base::SysNSStringToUTF8(user_activity.activityType);
+  return base::SysNSStringToUTF8(userActivity.activityType);
 }
 
 bool Browser::ContinueUserActivity(
