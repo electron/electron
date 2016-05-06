@@ -389,7 +389,7 @@ void CommonWebContentsDelegate::DevToolsSaveToFile(
   } else {
     file_dialog::Filters filters;
     base::FilePath default_path(base::FilePath::FromUTF8Unsafe(url));
-    if (!file_dialog::ShowSaveDialog(owner_window(), url, default_path,
+    if (!file_dialog::ShowSaveDialog(owner_window(), url, "Save", default_path,
                                      filters, &path)) {
       base::StringValue url_value(url);
       web_contents_->CallClientFunction(
@@ -455,7 +455,7 @@ void CommonWebContentsDelegate::DevToolsAddFileSystem(
     base::FilePath default_path;
     std::vector<base::FilePath> paths;
     int flag = file_dialog::FILE_DIALOG_OPEN_DIRECTORY;
-    if (!file_dialog::ShowOpenDialog(owner_window(), "", default_path,
+    if (!file_dialog::ShowOpenDialog(owner_window(), "", "Open", default_path,
                                      filters, flag, &paths))
       return;
 

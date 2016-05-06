@@ -216,6 +216,7 @@ base::FilePath FileChooserDialog::AddExtensionForFilename(
 
 bool ShowOpenDialog(atom::NativeWindow* parent_window,
                     const std::string& title,
+                    const std::string& button_label,
                     const base::FilePath& default_path,
                     const Filters& filters,
                     int properties,
@@ -241,6 +242,7 @@ bool ShowOpenDialog(atom::NativeWindow* parent_window,
 
 void ShowOpenDialog(atom::NativeWindow* parent_window,
                     const std::string& title,
+                    const std::string& button_label,
                     const base::FilePath& default_path,
                     const Filters& filters,
                     int properties,
@@ -259,6 +261,7 @@ void ShowOpenDialog(atom::NativeWindow* parent_window,
 
 bool ShowSaveDialog(atom::NativeWindow* parent_window,
                     const std::string& title,
+                    const std::string& button_label,
                     const base::FilePath& default_path,
                     const Filters& filters,
                     base::FilePath* path) {
@@ -276,6 +279,7 @@ bool ShowSaveDialog(atom::NativeWindow* parent_window,
 
 void ShowSaveDialog(atom::NativeWindow* parent_window,
                     const std::string& title,
+                    const std::string& button_label,
                     const base::FilePath& default_path,
                     const Filters& filters,
                     const SaveDialogCallback& callback) {

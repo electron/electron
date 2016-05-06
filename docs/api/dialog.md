@@ -28,6 +28,7 @@ The `dialog` module has the following methods:
 * `options` Object
   * `title` String
   * `defaultPath` String
+  * `buttonLabel` String
   * `filters` Array
   * `properties` Array - Contains which features the dialog should use, can
     contain `openFile`, `openDirectory`, `multiSelections` and
