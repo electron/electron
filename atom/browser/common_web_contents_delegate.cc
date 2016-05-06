@@ -145,6 +145,13 @@ std::set<std::string> GetAddedFileSystemPaths(
   return result;
 }
 
+bool IsDevToolsFileSystemAdded(
+    content::WebContents* web_contents,
+    const std::string& file_system_path) {
+  auto file_system_paths = GetAddedFileSystemPaths(web_contents);
+  return file_system_paths.find(file_system_path) != file_system_paths.end();
+}
+
 content::SecurityStyle SecurityLevelToSecurityStyle(
     SecurityStateModel::SecurityLevel security_level) {
   switch (security_level) {
@@ -167,7 +174,8 @@ content::SecurityStyle SecurityLevelToSecurityStyle(
 
 CommonWebContentsDelegate::CommonWebContentsDelegate()
     : html_fullscreen_(false),
-      native_fullscreen_(false) {
+      native_fullscreen_(false),
+      devtools_file_system_indexer_(new DevToolsFileSystemIndexer) {
 }
 
 CommonWebContentsDelegate::~CommonWebContentsDelegate() {
@@ -456,8 +464,7 @@ void CommonWebContentsDelegate::DevToolsAddFileSystem(
 
   std::string file_system_id = RegisterFileSystem(GetDevToolsWebContents(),
                                                   path);
-  auto file_system_paths = GetAddedFileSystemPaths(GetDevToolsWebContents());
-  if (file_system_paths.find(path.AsUTF8Unsafe()) != file_system_paths.end())
+  if (IsDevToolsFileSystemAdded(GetDevToolsWebContents(), path.AsUTF8Unsafe()))
     return;
 
   FileSystem file_system = CreateFileSystemStruct(GetDevToolsWebContents(),
@@ -495,6 +502,61 @@ void CommonWebContentsDelegate::DevToolsRemoveFileSystem(
                                     nullptr, nullptr);
 }
 
+void CommonWebContentsDelegate::DevToolsIndexPath(
+    int request_id,
+    const std::string& file_system_path) {
+  if (!IsDevToolsFileSystemAdded(GetDevToolsWebContents(), file_system_path)) {
+    OnDevToolsIndexingDone(request_id, file_system_path);
+    return;
+  }
+  if (devtools_indexing_jobs_.count(request_id) != 0)
+    return;
+  devtools_indexing_jobs_[request_id] =
+      scoped_refptr<DevToolsFileSystemIndexer::FileSystemIndexingJob>(
+          devtools_file_system_indexer_->IndexPath(
+              file_system_path,
+              base::Bind(
+                  &CommonWebContentsDelegate::OnDevToolsIndexingWorkCalculated,
+                  base::Unretained(this),
+                  request_id,
+                  file_system_path),
+              base::Bind(&CommonWebContentsDelegate::OnDevToolsIndexingWorked,
+                         base::Unretained(this),
+                         request_id,
+                         file_system_path),
+              base::Bind(&CommonWebContentsDelegate::OnDevToolsIndexingDone,
+                         base::Unretained(this),
+                         request_id,
+                         file_system_path)));
+}
+
+void CommonWebContentsDelegate::DevToolsStopIndexing(int request_id) {
+  auto it = devtools_indexing_jobs_.find(request_id);
+  if (it == devtools_indexing_jobs_.end())
+    return;
+  it->second->Stop();
+  devtools_indexing_jobs_.erase(it);
+}
+
+void CommonWebContentsDelegate::DevToolsSearchInPath(
+    int request_id,
+    const std::string& file_system_path,
+    const std::string& query) {
+  if (!IsDevToolsFileSystemAdded(GetDevToolsWebContents(), file_system_path)) {
+    OnDevToolsSearchCompleted(request_id,
+                              file_system_path,
+                              std::vector<std::string>());
+    return;
+  }
+  devtools_file_system_indexer_->SearchInPath(
+      file_system_path,
+      query,
+      base::Bind(&CommonWebContentsDelegate::OnDevToolsSearchCompleted,
+                 base::Unretained(this),
+                 request_id,
+                 file_system_path));
+}
+
 void CommonWebContentsDelegate::OnDevToolsSaveToFile(
     const std::string& url) {
   // Notify DevTools.
@@ -509,6 +571,61 @@ void CommonWebContentsDelegate::OnDevToolsAppendToFile(
   base::StringValue url_value(url);
   web_contents_->CallClientFunction(
       "DevToolsAPI.appendedToURL", &url_value, nullptr, nullptr);
+}
+
+void CommonWebContentsDelegate::OnDevToolsIndexingWorkCalculated(
+    int request_id,
+    const std::string& file_system_path,
+    int total_work) {
+  base::FundamentalValue request_id_value(request_id);
+  base::StringValue file_system_path_value(file_system_path);
+  base::FundamentalValue total_work_value(total_work);
+  web_contents_->CallClientFunction("DevToolsAPI.indexingTotalWorkCalculated",
+                                    &request_id_value,
+                                    &file_system_path_value,
+                                    &total_work_value);
+}
+
+void CommonWebContentsDelegate::OnDevToolsIndexingWorked(
+    int request_id,
+    const std::string& file_system_path,
+    int worked) {
+  base::FundamentalValue request_id_value(request_id);
+  base::StringValue file_system_path_value(file_system_path);
+  base::FundamentalValue worked_value(worked);
+  web_contents_->CallClientFunction("DevToolsAPI.indexingWorked",
+                                    &request_id_value,
+                                    &file_system_path_value,
+                                    &worked_value);
+}
+
+void CommonWebContentsDelegate::OnDevToolsIndexingDone(
+    int request_id,
+    const std::string& file_system_path) {
+  devtools_indexing_jobs_.erase(request_id);
+  base::FundamentalValue request_id_value(request_id);
+  base::StringValue file_system_path_value(file_system_path);
+  web_contents_->CallClientFunction("DevToolsAPI.indexingDone",
+                                    &request_id_value,
+                                    &file_system_path_value,
+                                    nullptr);
+}
+
+void CommonWebContentsDelegate::OnDevToolsSearchCompleted(
+    int request_id,
+    const std::string& file_system_path,
+    const std::vector<std::string>& file_paths) {
+  base::ListValue file_paths_value;
+  for (std::vector<std::string>::const_iterator it(file_paths.begin());
+       it != file_paths.end(); ++it) {
+    file_paths_value.AppendString(*it);
+  }
+  base::FundamentalValue request_id_value(request_id);
+  base::StringValue file_system_path_value(file_system_path);
+  web_contents_->CallClientFunction("DevToolsAPI.searchCompleted",
+                                    &request_id_value,
+                                    &file_system_path_value,
+                                    &file_paths_value);
 }
 
 #if defined(TOOLKIT_VIEWS)
