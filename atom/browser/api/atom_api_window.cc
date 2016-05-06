@@ -124,7 +124,10 @@ v8::Local<v8::Value> ToBuffer(v8::Isolate* isolate, void* val, int size) {
 }  // namespace
 
 
-Window::Window(v8::Isolate* isolate, const mate::Dictionary& options) {
+Window::Window(v8::Isolate* isolate, const mate::Dictionary& dict) {
+  // Make a copy of the input options so we can edit them.
+  mate::Dictionary options = dict;
+
   // Be compatible with old style field names like min-width.
   TranslateOldOptions(isolate, options.GetHandle());
 
@@ -144,6 +147,29 @@ Window::Window(v8::Isolate* isolate, const mate::Dictionary& options) {
   // Copy the backgroundColor to webContents.
   if (options.Get(options::kBackgroundColor, &value))
     web_preferences.Set(options::kBackgroundColor, value);
+
+  v8::Local<v8::Value> number;
+  // Enforce maxWidth and maxHeight on creation.
+  if (options.Get(options::kMaxWidth, &value) &&
+      options.Get(options::kWidth, &number))
+    if (number->NumberValue() > value->NumberValue())
+      options.Set(options::kWidth, value);
+
+  if (options.Get(options::kMaxHeight, &value) &&
+      options.Get(options::kHeight, &number))
+    if (number->NumberValue() > value->NumberValue())
+      options.Set(options::kHeight, value);
+
+  // Enforce minWidth and minHeight on creation.
+  if (options.Get(options::kMinWidth, &value) &&
+      options.Get(options::kWidth, &number))
+    if (number->NumberValue() < value->NumberValue())
+      options.Set(options::kWidth, value);
+
+  if (options.Get(options::kMinHeight, &value) &&
+      options.Get(options::kHeight, &number))
+    if (number->NumberValue() < value->NumberValue())
+      options.Set(options::kHeight, value);
 
   // Creates the WebContents used by BrowserWindow.
   auto web_contents = WebContents::Create(isolate, web_preferences);
@@ -379,9 +405,26 @@ bool Window::IsFullscreen() {
 }
 
 void Window::SetBounds(const gfx::Rect& bounds, mate::Arguments* args) {
+  // Copy the bounds so we can change them.
+  gfx::Rect params = bounds;
+
+  // Honour the max sizes
+  gfx::Size maxSize = window_->GetMaximumSize();
+  if (maxSize.width() && params.width() > maxSize.width())
+    params.set_width(maxSize.width());
+  if (maxSize.height() && params.height() > maxSize.height())
+    params.set_height(maxSize.height());
+
+  // Honour the min sizes.
+  gfx::Size minSize = window_->GetMinimumSize();
+  if (minSize.width() && params.width() < minSize.width())
+    params.set_width(minSize.width());
+  if (minSize.height() && params.height() < minSize.height())
+    params.set_height(minSize.height());
+
   bool animate = false;
   args->GetNext(&animate);
-  window_->SetBounds(bounds, animate);
+  window_->SetBounds(params, animate);
 }
 
 gfx::Rect Window::GetBounds() {
@@ -389,6 +432,20 @@ gfx::Rect Window::GetBounds() {
 }
 
 void Window::SetSize(int width, int height, mate::Arguments* args) {
+  // Honour the max sizes
+  gfx::Size maxSize = window_->GetMaximumSize();
+  if (maxSize.width() && width > maxSize.width())
+    width = maxSize.width();
+  if (maxSize.height() && height > maxSize.height())
+    height = maxSize.height();
+
+  // Honour the min sizes.
+  gfx::Size minSize = window_->GetMinimumSize();
+  if (minSize.width() && width < minSize.width())
+    width = minSize.width();
+  if (minSize.height() && height < minSize.height())
+    height = minSize.height();
+
   bool animate = false;
   args->GetNext(&animate);
   window_->SetSize(gfx::Size(width, height), animate);
