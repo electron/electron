@@ -113,9 +113,7 @@
 </head>
 <body>
   <script>
-    const electron = require('electron');
-    const remote = electron.remote;
-    const shell = electron.shell;
+    const {remote, shell} = require('electron');
 
     var execPath = remote.process.execPath;
     var command = execPath + ' path-to-your-app';
