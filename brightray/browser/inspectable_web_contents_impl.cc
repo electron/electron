@@ -459,15 +459,21 @@ void InspectableWebContentsImpl::UpgradeDraggedFileSystemPermissions(
 
 void InspectableWebContentsImpl::IndexPath(
     int request_id, const std::string& file_system_path) {
+  if (delegate_)
+    delegate_->DevToolsIndexPath(request_id, file_system_path);
 }
 
 void InspectableWebContentsImpl::StopIndexing(int request_id) {
+  if (delegate_)
+    delegate_->DevToolsStopIndexing(request_id);
 }
 
 void InspectableWebContentsImpl::SearchInPath(
     int request_id,
     const std::string& file_system_path,
     const std::string& query) {
+  if (delegate_)
+    delegate_->DevToolsSearchInPath(request_id, file_system_path, query);
 }
 
 void InspectableWebContentsImpl::SetWhitelistedShortcuts(const std::string& message) {

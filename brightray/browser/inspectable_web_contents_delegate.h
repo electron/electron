@@ -20,6 +20,13 @@ class InspectableWebContentsDelegate {
       const base::FilePath& file_system_path) {}
   virtual void DevToolsRemoveFileSystem(
       const base::FilePath& file_system_path) {}
+  virtual void DevToolsIndexPath(
+      int request_id, const std::string& file_system_path) {}
+  virtual void DevToolsStopIndexing(int request_id) {}
+  virtual void DevToolsSearchInPath(
+      int request_id,
+      const std::string& file_system_path,
+      const std::string& query) {}
 };
 
 }  // namespace brightray
