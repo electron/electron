@@ -170,6 +170,8 @@ The `webPreferences` option is an object that can have following properties:
   canvas features. Default is `false`.
 * `directWrite` Boolean - Enables DirectWrite font rendering system on
   Windows. Default is `true`.
+* `scrollBounce` Boolean - Enables scroll bounce (rubber banding) effect on
+  OS X. Default is `false`.
 * `blinkFeatures` String - A list of feature strings separated by `,`, like
   `CSSVariables,KeyboardEventKey`. The full list of supported feature strings
   can be found in the [setFeatureEnabledFromString][blink-feature-string]

@@ -141,6 +141,14 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
     command_line->AppendSwitchASCII(switches::kOpenerID,
                                     base::IntToString(opener_id));
 
+#if defined(OS_MACOSX)
+  // Enable scroll bounce.
+  bool scroll_bounce;
+  if (web_preferences.GetBoolean(options::kScrollBounce, &scroll_bounce) &&
+      scroll_bounce)
+    command_line->AppendSwitch(switches::kScrollBounce);
+#endif
+
   // Enable blink features.
   std::string blink_features;
   if (web_preferences.GetString(options::kBlinkFeatures, &blink_features))

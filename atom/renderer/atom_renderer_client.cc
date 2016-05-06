@@ -36,6 +36,11 @@
 #include "third_party/WebKit/public/web/WebRuntimeFeatures.h"
 #include "third_party/WebKit/public/web/WebView.h"
 
+#if defined(OS_MACOSX)
+#include "base/mac/mac_util.h"
+#include "base/strings/sys_string_conversions.h"
+#endif
+
 #if defined(OS_WIN)
 #include <shlobj.h>
 #endif
@@ -97,11 +102,25 @@ void AtomRendererClient::RenderThreadStarted() {
   content::RenderThread::Get()->AddObserver(this);
 
 #if defined(OS_WIN)
+  // Set ApplicationUserModelID in renderer process.
   base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
   base::string16 app_id =
       command_line->GetSwitchValueNative(switches::kAppUserModelId);
   if (!app_id.empty()) {
     SetCurrentProcessExplicitAppUserModelID(app_id.c_str());
+  }
+#endif
+
+#if defined(OS_MACOSX)
+  // Disable rubber banding by default.
+  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
+  if (!command_line->HasSwitch(switches::kScrollBounce)) {
+    base::ScopedCFTypeRef<CFStringRef> key(
+        base::SysUTF8ToCFStringRef("NSScrollViewRubberbanding"));
+    base::ScopedCFTypeRef<CFStringRef> value(
+        base::SysUTF8ToCFStringRef("false"));
+    CFPreferencesSetAppValue(key, value, kCFPreferencesCurrentApplication);
+    CFPreferencesAppSynchronize(kCFPreferencesCurrentApplication);
   }
 #endif
 }
