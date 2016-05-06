@@ -230,6 +230,9 @@ if (option.modules.length > 0) {
 }
 
 function loadApplicationPackage (packagePath) {
+  // Add a flag indicating app is started from default app.
+  process.defaultApp = true
+
   try {
     // Override app name and version.
     packagePath = path.resolve(packagePath)
