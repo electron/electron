@@ -66,7 +66,7 @@ Electron
 ## Keeping Git Submodules Up to Date
 
 The Electron repository has a few vendored dependencies, found in the
-[/vendor](/vendor) directory. Occasionally you might see a message like this
+[/vendor][vendor] directory. Occasionally you might see a message like this
 when running `git status`:
 
 ```sh
@@ -89,3 +89,5 @@ in your `~/.gitconfig` file:
 [alias]
 	su = submodule update --init --recursive
 ```
+
+[vendor]: https://github.com/electron/electron/tree/master/vendor
