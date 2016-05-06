@@ -51,46 +51,6 @@ bool IsRunAsNode() {
   return IsEnvSet(kRunAsNode) || IsEnvSet(kOldRunAsNode);
 }
 
-#if defined(OS_WIN)
-// Win8.1 supports monitor-specific DPI scaling.
-bool SetProcessDpiAwarenessWrapper(PROCESS_DPI_AWARENESS value) {
-  typedef HRESULT(WINAPI *SetProcessDpiAwarenessPtr)(PROCESS_DPI_AWARENESS);
-  SetProcessDpiAwarenessPtr set_process_dpi_awareness_func =
-      reinterpret_cast<SetProcessDpiAwarenessPtr>(
-          GetProcAddress(GetModuleHandleA("user32.dll"),
-                         "SetProcessDpiAwarenessInternal"));
-  if (set_process_dpi_awareness_func) {
-    HRESULT hr = set_process_dpi_awareness_func(value);
-    if (SUCCEEDED(hr)) {
-      VLOG(1) << "SetProcessDpiAwareness succeeded.";
-      return true;
-    } else if (hr == E_ACCESSDENIED) {
-      LOG(ERROR) << "Access denied error from SetProcessDpiAwareness. "
-          "Function called twice, or manifest was used.";
-    }
-  }
-  return false;
-}
-
-// This function works for Windows Vista through Win8. Win8.1 must use
-// SetProcessDpiAwareness[Wrapper].
-BOOL SetProcessDPIAwareWrapper() {
-  typedef BOOL(WINAPI *SetProcessDPIAwarePtr)(VOID);
-  SetProcessDPIAwarePtr set_process_dpi_aware_func =
-      reinterpret_cast<SetProcessDPIAwarePtr>(
-      GetProcAddress(GetModuleHandleA("user32.dll"),
-                      "SetProcessDPIAware"));
-  return set_process_dpi_aware_func &&
-    set_process_dpi_aware_func();
-}
-
-void EnableHighDPISupport() {
-  if (!SetProcessDpiAwarenessWrapper(PROCESS_SYSTEM_DPI_AWARE)) {
-    SetProcessDPIAwareWrapper();
-  }
-}
-#endif
-
 }  // namespace
 
 #if defined(OS_WIN)
@@ -153,12 +113,6 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
   sandbox::SandboxInterfaceInfo sandbox_info = {0};
   content::InitializeSandboxInfo(&sandbox_info);
   atom::AtomMainDelegate delegate;
-
-  // We don't want to set DPI awareness on pre-Win7 because we don't support
-  // DirectWrite there. GDI fonts are kerned very badly, so better to leave
-  // DPI-unaware and at effective 1.0. See also ShouldUseDirectWrite().
-  if (base::win::GetVersion() >= base::win::VERSION_WIN7)
-    EnableHighDPISupport();
 
   content::ContentMainParams params(&delegate);
   params.instance = instance;
