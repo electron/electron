@@ -281,6 +281,36 @@ describe('browser-window module', function () {
       })
       w.setSize(size[0], size[1])
     })
+
+    it('respects the minWidth and minHeight settings', function () {
+      w.destroy()
+      var size = [300, 300]
+      w = new BrowserWindow({
+        minWidth: size[0],
+        minHeight: size[1],
+        width: 400,
+        height: 400
+      })
+      w.setSize(100, 100)
+      var after = w.getSize()
+      assert.equal(after[0], size[0])
+      assert.equal(after[1], size[1])
+    })
+
+    it('respects the maxWidth and maxHeight settings', function () {
+      w.destroy()
+      var size = [500, 500]
+      w = new BrowserWindow({
+        maxWidth: size[0],
+        maxHeight: size[1],
+        width: 400,
+        height: 400
+      })
+      w.setSize(600, 600)
+      var after = w.getSize()
+      assert.equal(after[0], size[0])
+      assert.equal(after[1], size[1])
+    })
   })
 
   describe('BrowserWindow.setPosition(x, y)', function () {
