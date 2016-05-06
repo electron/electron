@@ -30,7 +30,7 @@ your distribution to deliver to final users.
 ## Packaging Your App into a File
 
 Apart from shipping your app by copying all of its source files, you can also
-package your app into an [asar](https://github.com/atom/asar) archive to avoid
+package your app into an [asar](https://github.com/electron/asar) archive to avoid
 exposing your app's source code to users.
 
 To use an `asar` archive to replace the `app` folder, you need to rename the

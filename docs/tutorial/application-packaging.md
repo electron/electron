@@ -181,4 +181,4 @@ After running the command, apart from the `app.asar`, there is also an
 `app.asar.unpacked` folder generated which contains the unpacked files, you
 should copy it together with `app.asar` when shipping it to users.
 
-[asar]: https://github.com/atom/asar
+[asar]: https://github.com/electron/asar
