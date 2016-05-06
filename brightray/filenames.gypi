@@ -13,6 +13,8 @@
       'browser/devtools_contents_resizing_strategy.h',
       'browser/devtools_embedder_message_dispatcher.cc',
       'browser/devtools_embedder_message_dispatcher.h',
+      'browser/devtools_file_system_indexer.cc',
+      'browser/devtools_file_system_indexer.h',
       'browser/devtools_manager_delegate.cc',
       'browser/devtools_manager_delegate.h',
       'browser/devtools_ui.cc',
