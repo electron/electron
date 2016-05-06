@@ -3,10 +3,13 @@
 ## When will Electron upgrade to latest Chrome?
 
 The Chrome version of Electron is usually bumped within one or two weeks after
-a new stable Chrome version gets released.
+a new stable Chrome version gets released. This estimate is not guaranteed and
+depends on the amount of work involved with upgrading.
 
-Also we only use stable channel of Chrome. If an important fix is in beta or dev
+Only the stable channel of Chrome is used. If an important fix is in beta or dev
 channel, we will back-port it.
+
+For more information, please see the [security introduction](../tutorial/electron-security.md).
 
 ## When will Electron upgrade to latest Node.js?
 

@@ -17,6 +17,7 @@ an issue:
 ## Guides
 
 * [Supported Platforms](tutorial/supported-platforms.md)
+* [Security](tutorial/security.md)
 * [Application Distribution](tutorial/application-distribution.md)
 * [Mac App Store Submission Guide](tutorial/mac-app-store-submission-guide.md)
 * [Application Packaging](tutorial/application-packaging.md)
