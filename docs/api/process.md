@@ -14,6 +14,9 @@ upstream node:
   other builds it is `undefined`.
 * `process.windowsStore` Boolean - If the app is running as a Windows Store app
   (appx), this value is `true`, for other builds it is `undefined`.
+* `process.defaultApp` Boolean - When app is started by being passed as parameter
+  to the default app, this value is `true` in the main process, otherwise it is
+  `undefined`.
 
 ## Events
 
