@@ -180,8 +180,6 @@ void WebContentsPreferences::OverrideWebkitPrefs(
     prefs->text_areas_are_resizable = b;
   if (self->web_preferences_.GetBoolean("webgl", &b))
     prefs->experimental_webgl_enabled = b;
-  if (self->web_preferences_.GetBoolean("webaudio", &b))
-    prefs->webaudio_enabled = b;
   if (self->web_preferences_.GetBoolean("webSecurity", &b)) {
     prefs->web_security_enabled = b;
     prefs->allow_displaying_insecure_content = !b;

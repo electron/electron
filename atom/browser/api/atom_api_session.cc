@@ -22,7 +22,7 @@
 #include "atom/common/node_includes.h"
 #include "base/files/file_path.h"
 #include "base/guid.h"
-#include "base/prefs/pref_service.h"
+#include "components/prefs/pref_service.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 #include "base/thread_task_runner_handle.h"

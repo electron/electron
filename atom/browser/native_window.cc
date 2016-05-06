@@ -17,7 +17,7 @@
 #include "atom/common/options_switches.h"
 #include "base/files/file_util.h"
 #include "base/json/json_writer.h"
-#include "base/prefs/pref_service.h"
+#include "components/prefs/pref_service.h"
 #include "base/message_loop/message_loop.h"
 #include "base/strings/utf_string_conversions.h"
 #include "brightray/browser/inspectable_web_contents.h"
@@ -318,9 +318,9 @@ void NativeWindow::CapturePage(const gfx::Rect& rect,
   // current system, increase the requested bitmap size to capture it all.
   gfx::Size bitmap_size = view_size;
   const gfx::NativeView native_view = view->GetNativeView();
-  gfx::Screen* const screen = gfx::Screen::GetScreenFor(native_view);
   const float scale =
-      screen->GetDisplayNearestWindow(native_view).device_scale_factor();
+      gfx::Screen::GetScreen()->GetDisplayNearestWindow(native_view)
+      .device_scale_factor();
   if (scale > 1.0f)
     bitmap_size = gfx::ScaleToCeiledSize(view_size, scale);
 

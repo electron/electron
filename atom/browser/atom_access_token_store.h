@@ -18,7 +18,7 @@ class AtomAccessTokenStore : public content::AccessTokenStore {
 
   // content::AccessTokenStore:
   void LoadAccessTokens(
-      const LoadAccessTokensCallbackType& callback) override;
+      const LoadAccessTokensCallback& callback) override;
   void SaveAccessToken(const GURL& server_url,
                        const base::string16& access_token) override;
 

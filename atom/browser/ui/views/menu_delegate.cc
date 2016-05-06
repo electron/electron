@@ -112,7 +112,7 @@ views::MenuItemView* MenuDelegate::GetSiblingMenu(
     content::BrowserThread::PostTask(
         content::BrowserThread::UI, FROM_HERE,
         base::Bind(base::IgnoreResult(&views::MenuButton::Activate),
-                   base::Unretained(button)));
+                   base::Unretained(button), nullptr));
   }
 
   return nullptr;
