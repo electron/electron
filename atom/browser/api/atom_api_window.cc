@@ -78,15 +78,6 @@ Window::Window(v8::Isolate* isolate, const mate::Dictionary& options) {
   mate::Dictionary web_preferences = mate::Dictionary::CreateEmpty(isolate);
   options.Get(options::kWebPreferences, &web_preferences);
 
-  // Be compatible with old options which are now in web_preferences.
-  v8::Local<v8::Value> value;
-  if (options.Get(options::kNodeIntegration, &value))
-    web_preferences.Set(options::kNodeIntegration, value);
-  if (options.Get(options::kPreloadScript, &value))
-    web_preferences.Set(options::kPreloadScript, value);
-  if (options.Get(options::kZoomFactor, &value))
-    web_preferences.Set(options::kZoomFactor, value);
-
   // Copy the backgroundColor to webContents.
   if (options.Get(options::kBackgroundColor, &value))
     web_preferences.Set(options::kBackgroundColor, value);
