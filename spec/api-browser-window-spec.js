@@ -270,6 +270,62 @@ describe('browser-window module', function () {
     })
   })
 
+  describe('BrowserWindow.setBounds({x, y, width, height})', function () {
+    it('sets the window bounds', function (done) {
+      var bounds = {x: 10, y: 10, width: 300, height: 350}
+      w.once('resize', function () {
+        var newSize = w.getSize()
+        var newPosition = w.getPosition()
+        assert.equal(newSize[0], bounds.width)
+        assert.equal(newSize[1], bounds.height)
+        assert.equal(newPosition[0], bounds.x)
+        assert.equal(newPosition[1], bounds.y)
+        done()
+      })
+      w.setBounds(bounds)
+    })
+
+    it('respects the minWidth and minHeight settings', function (done) {
+      w.destroy()
+      var bounds = {x: 10, y: 10, width: 200, height: 200}
+      var size = [300, 350]
+      w = new BrowserWindow({
+        minWidth: size[0],
+        minHeight: size[1],
+        width: 400,
+        height: 400
+      })
+      w.once('resize', function () {
+        var newSize = w.getSize()
+        var newPosition = w.getPosition()
+        assert.equal(newSize[0], size[0])
+        assert.equal(newSize[1], size[1])
+        done()
+      })
+      w.setBounds(bounds)
+    })
+
+    it('respects the maxWidth and maxHeight settings', function (done) {
+      w.destroy()
+      var size = [500, 550]
+      var bounds = {x: 10, y: 10, width: 600, height: 650}
+      w = new BrowserWindow({
+        maxWidth: size[0],
+        maxHeight: size[1],
+        width: 400,
+        height: 400
+      })
+      w.once('resize', function () {
+        var newSize = w.getSize()
+        var newPosition = w.getPosition()
+        assert.equal(newSize[0], size[0])
+        assert.equal(newSize[1], size[1])
+        done()
+      })
+      w.setBounds(bounds)
+    })
+  })
+
   describe('BrowserWindow.setSize(width, height)', function () {
     it('sets the window size', function (done) {
       var size = [300, 400]
@@ -282,34 +338,40 @@ describe('browser-window module', function () {
       w.setSize(size[0], size[1])
     })
 
-    it('respects the minWidth and minHeight settings', function () {
+    it('respects the minWidth and minHeight settings', function (done) {
       w.destroy()
-      var size = [300, 300]
+      var size = [300, 350]
       w = new BrowserWindow({
         minWidth: size[0],
         minHeight: size[1],
         width: 400,
         height: 400
       })
+      w.once('resize', function () {
+        var newSize = w.getSize()
+        assert.equal(newSize[0], size[0])
+        assert.equal(newSize[1], size[1])
+        done()
+      })
       w.setSize(100, 100)
-      var after = w.getSize()
-      assert.equal(after[0], size[0])
-      assert.equal(after[1], size[1])
     })
 
-    it('respects the maxWidth and maxHeight settings', function () {
+    it('respects the maxWidth and maxHeight settings', function (done) {
       w.destroy()
-      var size = [500, 500]
+      var size = [500, 550]
       w = new BrowserWindow({
         maxWidth: size[0],
         maxHeight: size[1],
         width: 400,
         height: 400
       })
+      w.once('resize', function () {
+        var newSize = w.getSize()
+        assert.equal(newSize[0], size[0])
+        assert.equal(newSize[1], size[1])
+        done()
+      })
       w.setSize(600, 600)
-      var after = w.getSize()
-      assert.equal(after[0], size[0])
-      assert.equal(after[1], size[1])
     })
   })
 
