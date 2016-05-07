@@ -52,7 +52,7 @@ void Protocol::RegisterStandardSchemes(
   if (Browser::Get()->is_ready()) {
     isolate()->ThrowException(v8::Exception::Error(mate::StringToV8(
         isolate(),
-        "\"protocol.registerStandardSchemes\" should be called before"
+        "protocol.registerStandardSchemes should be called before"
         "app is ready")));
     return;
   }
