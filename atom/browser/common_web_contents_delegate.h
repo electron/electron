@@ -12,7 +12,10 @@
 #include "brightray/browser/inspectable_web_contents_impl.h"
 #include "brightray/browser/inspectable_web_contents_delegate.h"
 #include "brightray/browser/inspectable_web_contents_view_delegate.h"
+#include "brightray/browser/devtools_file_system_indexer.h"
 #include "content/public/browser/web_contents_delegate.h"
+
+using brightray::DevToolsFileSystemIndexer;
 
 namespace atom {
 
@@ -90,6 +93,12 @@ class CommonWebContentsDelegate
   void DevToolsAddFileSystem(const base::FilePath& path) override;
   void DevToolsRemoveFileSystem(
       const base::FilePath& file_system_path) override;
+  void DevToolsIndexPath(int request_id,
+                         const std::string& file_system_path) override;
+  void DevToolsStopIndexing(int request_id) override;
+  void DevToolsSearchInPath(int request_id,
+                            const std::string& file_system_path,
+                            const std::string& query) override;
 
   // brightray::InspectableWebContentsViewDelegate:
 #if defined(TOOLKIT_VIEWS)
@@ -107,6 +116,19 @@ class CommonWebContentsDelegate
   // Callback for when DevToolsAppendToFile has completed.
   void OnDevToolsAppendToFile(const std::string& url);
 
+  //
+  void OnDevToolsIndexingWorkCalculated(int request_id,
+                                        const std::string& file_system_path,
+                                        int total_work);
+  void OnDevToolsIndexingWorked(int request_id,
+                                const std::string& file_system_path,
+                                int worked);
+  void OnDevToolsIndexingDone(int request_id,
+                              const std::string& file_system_path);
+  void OnDevToolsSearchCompleted(int request_id,
+                                 const std::string& file_system_path,
+                                 const std::vector<std::string>& file_paths);
+
   // Set fullscreen mode triggered by html api.
   void SetHtmlApiFullscreen(bool enter_fullscreen);
 
@@ -121,6 +143,7 @@ class CommonWebContentsDelegate
 
   scoped_ptr<WebDialogHelper> web_dialog_helper_;
   scoped_ptr<AtomJavaScriptDialogManager> dialog_manager_;
+  scoped_refptr<DevToolsFileSystemIndexer> devtools_file_system_indexer_;
 
   // The stored InspectableWebContents object.
   // Notice that web_contents_ must be placed after dialog_manager_, so we can
@@ -131,6 +154,13 @@ class CommonWebContentsDelegate
   // Maps url to file path, used by the file requests sent from devtools.
   typedef std::map<std::string, base::FilePath> PathsMap;
   PathsMap saved_files_;
+
+  // Map id to index job, used for file system indexing requests from devtools.
+  typedef std::map<
+      int,
+      scoped_refptr<DevToolsFileSystemIndexer::FileSystemIndexingJob>>
+      DevToolsIndexingJobsMap;
+  DevToolsIndexingJobsMap devtools_indexing_jobs_;
 
   DISALLOW_COPY_AND_ASSIGN(CommonWebContentsDelegate);
 };
