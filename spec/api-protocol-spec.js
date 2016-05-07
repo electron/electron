@@ -818,17 +818,13 @@ describe('protocol module', function () {
   })
 
   describe('protocol.registerStandardSchemes', function () {
-    const standardScheme = 'app'
+    const standardScheme = remote.getGlobal('standardScheme')
     const origin = standardScheme + '://fake-host'
     const imageURL = origin + '/test.png'
     const filePath = path.join(__dirname, 'fixtures', 'pages', 'b.html')
     const fileContent = '<img src="/test.png" />'
     var w = null
     var success = null
-
-    before(function () {
-      protocol.registerStandardSchemes([standardScheme])
-    })
 
     beforeEach(function () {
       w = new BrowserWindow({show: false})
