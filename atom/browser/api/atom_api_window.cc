@@ -79,6 +79,7 @@ Window::Window(v8::Isolate* isolate, const mate::Dictionary& options) {
   options.Get(options::kWebPreferences, &web_preferences);
 
   // Copy the backgroundColor to webContents.
+  v8::Local<v8::Value> value;
   if (options.Get(options::kBackgroundColor, &value))
     web_preferences.Set(options::kBackgroundColor, value);
 
