@@ -1,19 +1,20 @@
 # Security, Native Capabilities, and Your Responsibility
 
 As web developers, we usually enjoy the strong security net of the browser - the
-risks associated with the code we write is relatively small. We rely on the
-fairly limited amount of power and capabilities granted to a website – and trust
-that our users enjoy a browser built by a large team of engineers that is able
-to quickly respond to newly discovered security threats.
+risks associated with the code we write are relatively small.  Our websites are
+granted limited powers in a sandbox, and we trust that our users enjoy a browser
+built by a large team of engineers that is able to quickly respond to newly
+discovered security threats.
 
-When working with Electron, it is important to understand that Electron isnot a
-web browser. It allows you to build powerful desktop apps with web technologies.
-Its core feature is the ability to build software is just as powerful as
-completely native applications, eclipsing the limited feature set of a website.
-The inherent risks scale with the additional powers granted to your code.
+When working with Electron, it is important to understand that Electron is not
+a web browser. It allows you to build feature-rich desktop applications with
+familiar web technologies, but your code wields much greater power. JavaScript
+can access to the filesystem, the user shell, and more. This allows you to build
+high quality native applications, but the inherent security risks scale with the
+additional powers granted to your code.
 
 With that in mind, be aware that displaying arbitrary content from untrusted
-sources poses a severe security risk that Electron is not built to handle.
+sources poses a severe security risk that Electron is not intended to handle.
 In fact, the most popular Electron apps (Atom, Slack, Visual Studio Code, etc)
 display primarily local content (or trusted, secure remote content without Node
 integration) – if your application executes code from an online source, it is
@@ -43,7 +44,7 @@ the actual destination), they will be able to execute native code on the user's
 machine.
 
 > :warning: Under no circumstances should you load and execute remote code with
-enabled Node integration. Instead, use only local files (packaged together with
+Node integration enabled. Instead, use only local files (packaged together with
 your application) to execute Node code. To display remote content, use the
 `webview` tag and make sure to disable the `nodeIntegration`.
 
@@ -54,6 +55,10 @@ This is not bulletproof, but at the least, you should attempt the following:
 * Disable the Node integration in all renderers that display remote content
   (using `webPreferences`)
 * Do not disable `webSecurity`. Disabling it will disable the same-origin policy.
+* Define a [`Content-Security-Policy`](http://www.html5rocks.com/en/tutorials/security/content-security-policy/)
+, and use restrictive rules (ie: `script-src 'self'`)
+* [Override and disable `eval`](https://github.com/nylas/N1/blob/0abc5d5defcdb057120d726b271933425b75b415/static/index.js#L6)
+, which allows strings to be executed as code.
 * Do not set `allowDisplayingInsecureContent` to true.
 * Do not set `allowRunningInsecureContent` to true.
 * Do not enable `experimentalFeatures` or `experimentalCanvasFeatures` unless
