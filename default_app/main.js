@@ -1,8 +1,4 @@
-const electron = require('electron')
-const app = electron.app
-const dialog = electron.dialog
-const shell = electron.shell
-const Menu = electron.Menu
+const {app, dialog, shell, Menu} = require('electron')
 
 const fs = require('fs')
 const path = require('path')
@@ -10,9 +6,9 @@ const repl = require('repl')
 const url = require('url')
 
 // Parse command line options.
-var argv = process.argv.slice(1)
-var option = { file: null, help: null, version: null, webdriver: null, modules: [] }
-for (var i = 0; i < argv.length; i++) {
+const argv = process.argv.slice(1)
+const option = { file: null, help: null, version: null, webdriver: null, modules: [] }
+for (let i = 0; i < argv.length; i++) {
   if (argv[i] === '--version' || argv[i] === '-v') {
     option.version = true
     break
@@ -38,17 +34,17 @@ for (var i = 0; i < argv.length; i++) {
 }
 
 // Quit when all windows are closed and no other one is listening to this.
-app.on('window-all-closed', function () {
+app.on('window-all-closed', () => {
   if (app.listeners('window-all-closed').length === 1 && !option.interactive) {
     app.quit()
   }
 })
 
 // Create default menu.
-app.once('ready', function () {
+app.once('ready', () => {
   if (Menu.getApplicationMenu()) return
 
-  var template = [
+  const template = [
     {
       label: 'Edit',
       submenu: [
@@ -93,25 +89,25 @@ app.once('ready', function () {
         {
           label: 'Reload',
           accelerator: 'CmdOrCtrl+R',
-          click: function (item, focusedWindow) {
+          click (item, focusedWindow) {
             if (focusedWindow) focusedWindow.reload()
           }
         },
         {
           label: 'Toggle Full Screen',
-          accelerator: (function () {
+          accelerator: (() => {
             return (process.platform === 'darwin') ? 'Ctrl+Command+F' : 'F11'
           })(),
-          click: function (item, focusedWindow) {
+          click (item, focusedWindow) {
             if (focusedWindow) focusedWindow.setFullScreen(!focusedWindow.isFullScreen())
           }
         },
         {
           label: 'Toggle Developer Tools',
-          accelerator: (function () {
+          accelerator: (() => {
             return (process.platform === 'darwin') ? 'Alt+Command+I' : 'Ctrl+Shift+I'
           })(),
-          click: function (item, focusedWindow) {
+          click (item, focusedWindow) {
             if (focusedWindow) focusedWindow.toggleDevTools()
           }
         }
@@ -139,13 +135,13 @@ app.once('ready', function () {
       submenu: [
         {
           label: 'Learn More',
-          click: function () {
+          click () {
             shell.openExternal('http://electron.atom.io')
           }
         },
         {
           label: 'Documentation',
-          click: function () {
+          click () {
             shell.openExternal(
               `https://github.com/electron/electron/tree/v${process.versions.electron}/docs#readme`
             )
@@ -153,13 +149,13 @@ app.once('ready', function () {
         },
         {
           label: 'Community Discussions',
-          click: function () {
+          click () {
             shell.openExternal('https://discuss.atom.io/c/electron')
           }
         },
         {
           label: 'Search Issues',
-          click: function () {
+          click () {
             shell.openExternal('https://github.com/electron/electron/issues')
           }
         }
@@ -206,7 +202,7 @@ app.once('ready', function () {
         {
           label: 'Quit',
           accelerator: 'Command+Q',
-          click: function () { app.quit() }
+          click () { app.quit() }
         }
       ]
     })
@@ -221,7 +217,7 @@ app.once('ready', function () {
     )
   }
 
-  var menu = Menu.buildFromTemplate(template)
+  const menu = Menu.buildFromTemplate(template)
   Menu.setApplicationMenu(menu)
 })
 
@@ -236,9 +232,9 @@ function loadApplicationPackage (packagePath) {
   try {
     // Override app name and version.
     packagePath = path.resolve(packagePath)
-    var packageJsonPath = path.join(packagePath, 'package.json')
+    const packageJsonPath = path.join(packagePath, 'package.json')
     if (fs.existsSync(packageJsonPath)) {
-      var packageJson = JSON.parse(fs.readFileSync(packageJsonPath))
+      const packageJson = JSON.parse(fs.readFileSync(packageJsonPath))
       if (packageJson.version) app.setVersion(packageJson.version)
 
       if (packageJson.productName) {
@@ -277,7 +273,7 @@ function loadApplicationByUrl (appUrl) {
 }
 
 function startRepl () {
-  repl.start('> ').on('exit', function () {
+  repl.start('> ').on('exit', () => {
     process.exit(0)
   })
 }
@@ -285,9 +281,9 @@ function startRepl () {
 // Start the specified app if there is one specified in command line, otherwise
 // start the default app.
 if (option.file && !option.webdriver) {
-  var file = option.file
-  var protocol = url.parse(file).protocol
-  var extension = path.extname(file)
+  const file = option.file
+  const protocol = url.parse(file).protocol
+  const extension = path.extname(file)
   if (protocol === 'http:' || protocol === 'https:' || protocol === 'file:') {
     loadApplicationByUrl(file)
   } else if (extension === '.html' || extension === '.htm') {
@@ -299,7 +295,7 @@ if (option.file && !option.webdriver) {
   console.log('v' + process.versions.electron)
   process.exit(0)
 } else if (option.help) {
-  var helpMessage = `Electron v${process.versions.electron} - Cross Platform Desktop Application Shell
+  const helpMessage = `Electron v${process.versions.electron} - Cross Platform Desktop Application Shell
 
   Usage: electron [options] [path]
 
@@ -322,6 +318,6 @@ if (option.file && !option.webdriver) {
 } else if (option.interactive) {
   startRepl()
 } else {
-  var indexPath = path.join(__dirname, '/index.html')
+  const indexPath = path.join(__dirname, '/index.html')
   loadApplicationByUrl(`file://${indexPath}`)
 }
