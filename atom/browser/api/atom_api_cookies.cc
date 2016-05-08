@@ -47,7 +47,7 @@ struct Converter<net::CanonicalCookie> {
     dict.Set("secure", val.IsSecure());
     dict.Set("httpOnly", val.IsHttpOnly());
     dict.Set("session", !val.IsPersistent());
-    if (!val.IsPersistent())
+    if (val.IsPersistent())
       dict.Set("expirationDate", val.ExpiryDate().ToDoubleT());
     return dict.GetHandle();
   }
