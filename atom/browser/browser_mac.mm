@@ -47,6 +47,9 @@ bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol) {
   if (!identifier)
     return false;
 
+  if (!Browser::IsDefaultProtocolClient(protocol))
+    return false;
+
   NSString* protocol_ns = [NSString stringWithUTF8String:protocol.c_str()];
   CFStringRef protocol_cf = base::mac::NSToCFCast(protocol_ns);
   CFArrayRef bundleList = LSCopyAllHandlersForURLScheme(protocol_cf);
