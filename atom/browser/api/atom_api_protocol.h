@@ -9,7 +9,6 @@
 #include <map>
 #include <vector>
 
-#include "atom/browser/browser_observer.h"
 #include "atom/browser/net/atom_url_request_job_factory.h"
 #include "base/callback.h"
 #include "base/containers/scoped_ptr_hash_map.h"
@@ -31,25 +30,21 @@ class AtomURLRequestJobFactory;
 
 namespace api {
 
-class Protocol : public mate::Wrappable<Protocol>,
-                 public BrowserObserver {
+class Protocol : public mate::Wrappable<Protocol> {
  public:
   using Handler =
       base::Callback<void(const net::URLRequest*, v8::Local<v8::Value>)>;
   using CompletionCallback = base::Callback<void(v8::Local<v8::Value>)>;
   using BooleanCallback = base::Callback<void(bool)>;
 
-  static mate::Handle<Protocol> Create(v8::Isolate* isolate);
+  static mate::Handle<Protocol> Create(
+      v8::Isolate* isolate, AtomBrowserContext* browser_context);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::ObjectTemplate> prototype);
 
  protected:
-  explicit Protocol(v8::Isolate* isolate);
-  ~Protocol();
-
-  // BrowserObserver:
-  void OnWillFinishLaunching() override;
+  Protocol(v8::Isolate* isolate, AtomBrowserContext* browser_context);
 
  private:
   // Possible errors.
@@ -93,9 +88,6 @@ class Protocol : public mate::Wrappable<Protocol>,
     DISALLOW_COPY_AND_ASSIGN(CustomProtocolHandler);
   };
 
-  // Register schemes to standard scheme list.
-  void RegisterStandardSchemes(const std::vector<std::string>& schemes);
-
   // Register schemes that can handle service worker.
   void RegisterServiceWorkerSchemes(const std::vector<std::string>& schemes);
 
@@ -106,10 +98,6 @@ class Protocol : public mate::Wrappable<Protocol>,
                         mate::Arguments* args) {
     CompletionCallback callback;
     args->GetNext(&callback);
-    if (!job_factory_) {
-      OnIOCompleted(callback, PROTOCOL_FAIL);
-      return;
-    }
     content::BrowserThread::PostTaskAndReplyWithResult(
         content::BrowserThread::IO, FROM_HERE,
         base::Bind(&Protocol::RegisterProtocolInIO<RequestJob>,
@@ -147,10 +135,6 @@ class Protocol : public mate::Wrappable<Protocol>,
                          mate::Arguments* args) {
     CompletionCallback callback;
     args->GetNext(&callback);
-    if (!job_factory_) {
-      OnIOCompleted(callback, PROTOCOL_FAIL);
-      return;
-    }
     content::BrowserThread::PostTaskAndReplyWithResult(
         content::BrowserThread::IO, FROM_HERE,
         base::Bind(&Protocol::InterceptProtocolInIO<RequestJob>,

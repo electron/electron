@@ -7,7 +7,6 @@
 #include "atom/browser/atom_browser_client.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
-#include "atom/browser/browser.h"
 #include "atom/browser/net/url_request_async_asar_job.h"
 #include "atom/browser/net/url_request_buffer_job.h"
 #include "atom/browser/net/url_request_fetch_job.h"
@@ -24,40 +23,11 @@ namespace atom {
 
 namespace api {
 
-Protocol::Protocol(v8::Isolate* isolate)
-    : request_context_getter_(nullptr),
-      job_factory_(nullptr) {
-  if (Browser::Get()->is_ready()) {
-    OnWillFinishLaunching();
-  } else {
-    Browser::Get()->AddObserver(this);
-  }
-  Init(isolate);
-}
-
-Protocol::~Protocol() {
-  Browser::Get()->RemoveObserver(this);
-}
-
-void Protocol::OnWillFinishLaunching() {
-  auto browser_context = static_cast<atom::AtomBrowserContext*>(
-      atom::AtomBrowserMainParts::Get()->browser_context());
-  request_context_getter_ = browser_context->GetRequestContext();
-  job_factory_ = browser_context->job_factory();
+Protocol::Protocol(v8::Isolate* isolate, AtomBrowserContext* browser_context)
+    : request_context_getter_(browser_context->GetRequestContext()),
+      job_factory_(browser_context->job_factory()) {
   CHECK(job_factory_);
-}
-
-void Protocol::RegisterStandardSchemes(
-    const std::vector<std::string>& schemes) {
-  if (Browser::Get()->is_ready()) {
-    isolate()->ThrowException(v8::Exception::Error(mate::StringToV8(
-        isolate(),
-        "protocol.registerStandardSchemes should be called before"
-        "app is ready")));
-    return;
-  }
-  for (const auto& scheme : schemes)
-    url::AddStandardScheme(scheme.c_str(), url::SCHEME_WITHOUT_PORT);
+  Init(isolate);
 }
 
 void Protocol::RegisterServiceWorkerSchemes(
@@ -69,10 +39,6 @@ void Protocol::UnregisterProtocol(
     const std::string& scheme, mate::Arguments* args) {
   CompletionCallback callback;
   args->GetNext(&callback);
-  if (!job_factory_) {
-    OnIOCompleted(callback, PROTOCOL_FAIL);
-    return;
-  }
   content::BrowserThread::PostTaskAndReplyWithResult(
       content::BrowserThread::IO, FROM_HERE,
       base::Bind(&Protocol::UnregisterProtocolInIO,
@@ -91,10 +57,6 @@ Protocol::ProtocolError Protocol::UnregisterProtocolInIO(
 
 void Protocol::IsProtocolHandled(const std::string& scheme,
                                     const BooleanCallback& callback) {
-  if (!job_factory_) {
-    callback.Run(false);
-    return;
-  }
   content::BrowserThread::PostTaskAndReplyWithResult(
       content::BrowserThread::IO, FROM_HERE,
       base::Bind(&Protocol::IsProtocolHandledInIO,
@@ -110,10 +72,6 @@ void Protocol::UninterceptProtocol(
     const std::string& scheme, mate::Arguments* args) {
   CompletionCallback callback;
   args->GetNext(&callback);
-  if (!job_factory_) {
-    OnIOCompleted(callback, PROTOCOL_FAIL);
-    return;
-  }
   content::BrowserThread::PostTaskAndReplyWithResult(
       content::BrowserThread::IO, FROM_HERE,
       base::Bind(&Protocol::UninterceptProtocolInIO,
@@ -160,15 +118,15 @@ std::string Protocol::ErrorCodeToString(ProtocolError error) {
 }
 
 // static
-mate::Handle<Protocol> Protocol::Create(v8::Isolate* isolate) {
-  return mate::CreateHandle(isolate, new Protocol(isolate));
+mate::Handle<Protocol> Protocol::Create(
+    v8::Isolate* isolate, AtomBrowserContext* browser_context) {
+  return mate::CreateHandle(isolate, new Protocol(isolate, browser_context));
 }
 
 // static
 void Protocol::BuildPrototype(
     v8::Isolate* isolate, v8::Local<v8::ObjectTemplate> prototype) {
   mate::ObjectTemplateBuilder(isolate, prototype)
-      .SetMethod("registerStandardSchemes", &Protocol::RegisterStandardSchemes)
       .SetMethod("registerServiceWorkerSchemes",
                  &Protocol::RegisterServiceWorkerSchemes)
       .SetMethod("registerStringProtocol",
@@ -198,11 +156,24 @@ void Protocol::BuildPrototype(
 
 namespace {
 
+void RegisterStandardSchemes(
+    const std::vector<std::string>& schemes) {
+  for (const auto& scheme : schemes)
+    url::AddStandardScheme(scheme.c_str(), url::SCHEME_WITHOUT_PORT);
+}
+
+mate::Handle<atom::api::Protocol> CreateProtocol(v8::Isolate* isolate) {
+  auto browser_context = static_cast<atom::AtomBrowserContext*>(
+      atom::AtomBrowserMainParts::Get()->browser_context());
+  return atom::api::Protocol::Create(isolate, browser_context);
+}
+
 void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
-  dict.Set("protocol", atom::api::Protocol::Create(isolate));
+  dict.SetMethod("createProtocolObject", base::Bind(&CreateProtocol, isolate));
+  dict.SetMethod("registerStandardSchemes", &RegisterStandardSchemes);
 }
 
 }  // namespace
