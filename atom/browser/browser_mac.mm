@@ -43,7 +43,31 @@ void Browser::ClearRecentDocuments() {
 }
 
 bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol) {
-  return false;
+  NSString* identifier = [base::mac::MainBundle() bundleIdentifier];
+  if (!identifier)
+    return false;
+
+  if (!Browser::IsDefaultProtocolClient(protocol))
+    return false;
+
+  NSString* protocol_ns = [NSString stringWithUTF8String:protocol.c_str()];
+  CFStringRef protocol_cf = base::mac::NSToCFCast(protocol_ns);
+  CFArrayRef bundleList = LSCopyAllHandlersForURLScheme(protocol_cf);
+  if (!bundleList) {
+    return false;
+  }
+  // On Mac OS X, we can't query the default, but the handlers list seems to put
+  // Apple's defaults first, so we'll use the first option that isn't our bundle
+  CFStringRef other = nil;
+  for (CFIndex i = 0; i < CFArrayGetCount(bundleList); i++) {
+    other = (CFStringRef)CFArrayGetValueAtIndex(bundleList, i);
+    if (![identifier isEqualToString: (__bridge NSString *)other]) {
+      break;
+    }
+  }
+
+  OSStatus return_code = LSSetDefaultHandlerForURLScheme(protocol_cf, other);
+  return return_code == noErr;
 }
 
 bool Browser::SetAsDefaultProtocolClient(const std::string& protocol) {

@@ -393,15 +393,12 @@ Please refer to [Apple's documentation][CFBundleURLTypes] for details.
 
 The API uses the Windows Registry and LSSetDefaultHandlerForURLScheme internally.
 
-### `app.removeAsDefaultProtocolClient(protocol)` _Windows_
+### `app.removeAsDefaultProtocolClient(protocol)` _OS X_ _Windows_
 
 * `protocol` String - The name of your protocol, without `://`.
 
 This method checks if the current executable as the default handler for a protocol
 (aka URI scheme). If so, it will remove the app as the default handler.
-
-**Note:** On OS X, removing the app will automatically remove the app as the
-default protocol handler.
 
 ### `app.isDefaultProtocolClient(protocol)` _OS X_ _Windows_
 
