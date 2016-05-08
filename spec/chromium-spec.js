@@ -155,6 +155,10 @@ describe('chromium feature', function () {
   })
 
   describe('window.open', function () {
+    if (process.env.TRAVIS === 'true' && process.platform === 'darwin') {
+      return
+    }
+
     this.timeout(20000)
 
     it('returns a BrowserWindowProxy object', function () {
