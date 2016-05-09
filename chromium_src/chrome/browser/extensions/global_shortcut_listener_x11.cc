@@ -38,6 +38,7 @@ int GetNativeModifiers(const ui::Accelerator& accelerator) {
   modifiers |= accelerator.IsShiftDown() ? ShiftMask : 0;
   modifiers |= accelerator.IsCtrlDown() ? ControlMask : 0;
   modifiers |= accelerator.IsAltDown() ? Mod1Mask : 0;
+  modifiers |= accelerator.IsCmdDown() ? Mod4Mask : 0;
 
   return modifiers;
 }
@@ -151,6 +152,7 @@ void GlobalShortcutListenerX11::OnXKeyPressEvent(::XEvent* x_event) {
   modifiers |= (x_event->xkey.state & ShiftMask) ? ui::EF_SHIFT_DOWN : 0;
   modifiers |= (x_event->xkey.state & ControlMask) ? ui::EF_CONTROL_DOWN : 0;
   modifiers |= (x_event->xkey.state & Mod1Mask) ? ui::EF_ALT_DOWN : 0;
+  modifiers |= (x_event->xkey.state & Mod4Mask) ? ui::EF_COMMAND_DOWN: 0;
 
   ui::Accelerator accelerator(
       ui::KeyboardCodeFromXKeyEvent(x_event), modifiers);
