@@ -62,12 +62,12 @@ The `uploadData` is an array of `data` objects:
   * `bytes` Buffer - Content being sent.
   * `file` String - Path of file being uploaded.
 
-`request`를 처리할 때 반드시 파일 경로 또는 `path` 속성을 포함하는 객체를 인자에
+`request`를 처리할 때 반드시 파일 경로 또는 `path` 속성을 포함하는 객체를 인수에
 포함하여 `callback`을 호출해야 합니다. 예: `callback(filePath)` 또는
 `callback({path: filePath})`.
 
-만약 `callback`이 아무 인자도 없이 호출되거나 숫자나 `error` 프로퍼티를 가진 객체가
-인자로 전달될 경우 `request`는 지정한 `error` 코드(숫자)를 출력합니다. 사용할 수 있는
+만약 `callback`이 아무 인수도 없이 호출되거나 숫자나 `error` 프로퍼티를 가진 객체가
+인수로 전달될 경우 `request`는 지정한 `error` 코드(숫자)를 출력합니다. 사용할 수 있는
 에러 코드는 [네트워크 에러 목록][net-error]에서 확인할 수 있습니다.
 
 기본적으로 `scheme`은 `http:`와 같이 처리됩니다. `file:`과 같이 "일반적인 URI 문법"

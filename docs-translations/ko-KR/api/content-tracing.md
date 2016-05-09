@@ -36,7 +36,7 @@ contentTracing.startRecording(options, function() {
 카테고리 그룹 세트를 가져옵니다. 카테고리 그룹은 도달된 코드 경로를 변경할 수 있습니다.
 
 모든 child 프로세스가 `getCategories` 요청을 승인하면 `callback`이 한 번 호출되며
-인자에 카테고리 그룹의 배열이 전달됩니다.
+인수에 카테고리 그룹의 배열이 전달됩니다.
 
 ### `contentTracing.startRecording(options, callback)`
 

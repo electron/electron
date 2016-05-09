@@ -90,7 +90,7 @@ app.clearRecentDocuments();
 않습니다. 어플리케이션 등록에 관련된 API의 모든 내용은 [Application Registration][app-registration]에서
 찾아볼 수 있습니다.
 
-유저가 JumpList에서 파일을 클릭할 경우 클릭된 파일의 경로가 커맨드 라인 인자로 추가되어
+유저가 JumpList에서 파일을 클릭할 경우 클릭된 파일의 경로가 커맨드 라인 인수로 추가되어
 새로운 인스턴스의 어플리케이션이 실행됩니다.
 
 ### OS X에서 주의할 점
@@ -149,7 +149,7 @@ __Internet Explorer의 작업:__
 ![IE](http://i.msdn.microsoft.com/dynimg/IC420539.png)
 
 OS X의 dock menu(진짜 메뉴)와는 달리 Windows의 사용자 작업은 어플리케이션 바로
-가기처럼 작동합니다. 유저가 작업을 클릭할 때 설정한 인자와 함께 새로운 어플리케이션이
+가기처럼 작동합니다. 유저가 작업을 클릭할 때 설정한 인수와 함께 새로운 어플리케이션이
 실행됩니다.
 
 사용자 작업을 설정하려면 [app.setUserTasks][setusertaskstasks] 메서드를 통해 구현할
@@ -168,7 +168,7 @@ app.setUserTasks([
 ]);
 ```
 
-작업 리스트를 비우려면 간단히 `app.setUserTasks` 메서드의 첫번째 인자에 빈 배열을 넣어
+작업 리스트를 비우려면 간단히 `app.setUserTasks` 메서드의 첫번째 인수에 빈 배열을 넣어
 호출하면 됩니다:
 
 ```javascript

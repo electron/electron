@@ -131,7 +131,7 @@ Linux에서 `ready` 이벤트가 발생하기 전에 이 API를 호출할 경우
 
 ## Sheets
 
-Mac OS X에선, `browserWindow` 인자에 `BrowserWindow` 객체 참조를 전달하면 대화
+Mac OS X에선, `browserWindow` 인수에 `BrowserWindow` 객체 참조를 전달하면 대화
 상자가 해당 윈도우에 시트처럼 표시되도록 표현할 수 있습니다. 윈도우의 객체 참조가
 제공되지 않으면 모달 형태로 표시됩니다.
 

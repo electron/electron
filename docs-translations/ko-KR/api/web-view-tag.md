@@ -450,7 +450,7 @@ Webview 페이지를 PDF 형식으로 인쇄합니다.
 * `args` (optional)
 
 `channel`을 통해 렌더러 프로세스로 비동기 메시지를 보냅니다. 또한 `args`를 지정하여
-임의의 인자를 보낼 수도 있습니다. 렌더러 프로세스는 `ipcRenderer` 모듈의 `channel`
+임의의 인수를 보낼 수도 있습니다. 렌더러 프로세스는 `ipcRenderer` 모듈의 `channel`
 이벤트로 이 메시지를 받아 처리할 수 있습니다.
 
 예시는 [webContents.send](web-contents.md#webcontentssendchannel-args)를 참고하세요.

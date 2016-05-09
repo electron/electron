@@ -7,7 +7,7 @@ const clipboard = require('electron').clipboard;
 clipboard.writeText('Example String');
 ```
 
-X Window 시스템에선 selection 클립보드도 존재합니다. 이를 사용하려면 인자 뒤에
+X Window 시스템에선 selection 클립보드도 존재합니다. 이를 사용하려면 인수 뒤에
 `selection` 문자열을 같이 지정해주어야 합니다:
 
 ```javascript

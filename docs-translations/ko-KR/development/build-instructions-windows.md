@@ -61,7 +61,7 @@ $ python script\build.py -c D
 ## 64비트 빌드
 
 64비트를 타겟으로 빌드 하려면 부트스트랩 스크립트를 실행할 때 `--target_arch=x64`
-인자를 같이 넘겨주면 됩니다:
+인수를 같이 넘겨주면 됩니다:
 
 ```powershell
 $ python script\bootstrap.py -v --target_arch=x64
