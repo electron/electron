@@ -141,24 +141,23 @@ void AtomRendererClient::RenderFrameCreated(
 }
 
 void AtomRendererClient::RenderViewCreated(content::RenderView* render_view) {
-  base::CommandLine* cmd = base::CommandLine::ForCurrentProcess();
+  new printing::PrintWebViewHelper(render_view);
+  new AtomRenderViewObserver(render_view, this);
+
   blink::WebFrameWidget* web_frame_widget = render_view->GetWebFrameWidget();
+  if (!web_frame_widget)
+    return;
+
+  base::CommandLine* cmd = base::CommandLine::ForCurrentProcess();
   if (cmd->HasSwitch(switches::kGuestInstanceID)) {  // webview.
-    if (web_frame_widget) {
-      web_frame_widget->setBaseBackgroundColor(SK_ColorTRANSPARENT);
-    }
+    web_frame_widget->setBaseBackgroundColor(SK_ColorTRANSPARENT);
   } else {  // normal window.
     // If backgroundColor is specified then use it.
     std::string name = cmd->GetSwitchValueASCII(switches::kBackgroundColor);
     // Otherwise use white background.
     SkColor color = name.empty() ? SK_ColorWHITE : ParseHexColor(name);
-    if (web_frame_widget) {
-      web_frame_widget->setBaseBackgroundColor(color);
-    }
+    web_frame_widget->setBaseBackgroundColor(color);
   }
-
-  new printing::PrintWebViewHelper(render_view);
-  new AtomRenderViewObserver(render_view, this);
 }
 
 blink::WebSpeechSynthesizer* AtomRendererClient::OverrideSpeechSynthesizer(
