@@ -114,8 +114,26 @@ Returns:
 * `event` Event
 * `hasVisibleWindows` Boolean
 
-어플리케이션이 활성화 되었을 때 발생하는 이벤트 입니다.
-이 이벤트는 어플리케이션의 dock 아이콘을 클릭했을 때 주로 발생합니다.
+어플리케이션이 활성화 되었을 때 발생하는 이벤트 입니다. 이 이벤트는 사용자가
+어플리케이션의 dock 아이콘을 클릭했을 때 주로 발생합니다.
+
+### Event: 'continue-activity' _OS X_
+
+Returns:
+
+* `event` Event
+* `type` String - Activity를 식별하는 문자열.
+  [`NSUserActivity.activityType`][activity-type]을 맵핑합니다.
+* `userInfo` Object - 다른 기기의 activity에서 저장된 앱-특정 상태를 포함합니다.
+
+다른 기기에서 받아온 activity를 재개하려고 할 때 [Handoff][handoff] 하는 동안
+발생하는 이벤트입니다. 이 이벤트를 처리하려면 반드시 `event.preventDefault()`를
+호출해야 합니다.
+
+사용자 activity는 activity의 소스 어플리케이션과 같은 개발자 팀 ID를 가지는
+어플리케이션 안에서만 재개될 수 있고, activity의 타입을 지원합니다. 지원하는
+activity의 타입은 어플리케이션 `Info.plist`의 `NSUserActivityTypes` 키에 열거되어
+있습니다.
 
 ### Event: 'browser-window-blur'
 
@@ -383,14 +401,12 @@ npm 모듈 규칙에 따라 대부분의 경우 `package.json`의 `name` 필드�
 
 이 API는 내부적으로 Windows 레지스트리와 LSSetDefaultHandlerForURLScheme를 사용합니다.
 
-### `app.removeAsDefaultProtocolClient(protocol)` _Windows_
+### `app.removeAsDefaultProtocolClient(protocol)` _OS X_ _Windows_
 
 * `protocol` String - 프로토콜의 이름, `://` 제외.
 
 이 메서드는 현재 실행파일이 지정한 프로토콜(URI scheme)에 대해 기본 핸들러인지를
 확인합니다. 만약 그렇다면, 이 메서드는 앱을 기본 핸들러에서 제거합니다.
-
-**참고:** OS X에서는 앱을 제거하면 자동으로 기본 프로토콜 핸들러에서 제거됩니다.
 
 ### `app.isDefaultProtocolClient(protocol)` _OS X_ _Windows_
 
@@ -418,7 +434,7 @@ Windows에서 사용할 수 있는 JumpList의 [Tasks][tasks] 카테고리에 `t
 `Task` Object:
 * `program` String - 실행할 프로그램의 경로.
   보통 현재 작동중인 어플리케이션의 경로인 `process.execPath`를 지정합니다.
-* `arguments` String - `program`이 실행될 때 사용될 명령줄 인자.
+* `arguments` String - `program`이 실행될 때 사용될 명령줄 인수.
 * `title` String - JumpList에 표시할 문자열.
 * `description` String - 이 작업에 대한 설명.
 * `iconPath` String - JumpList에 표시될 아이콘의 절대 경로.
@@ -490,6 +506,19 @@ if (shouldQuit) {
 app.on('ready', function() {
 });
 ```
+
+### `app.setUserActivity(type, userInfo)` _OS X_
+
+* `type` String - 고유하게 activity를 식별합니다.
+  [`NSUserActivity.activityType`][activity-type]을 맵핑합니다.
+* `userInfo` Object - 다른 기기에서 사용하기 위해 저장할 앱-특정 상태.
+
+`NSUserActivity`를 만들고 현재 activity에 설정합니다. 이 activity는 이후 다른 기기와
+[Handoff][handoff]할 때 자격으로 사용됩니다.
+
+### `app.getCurrentActivityType()` _OS X_
+
+현재 작동중인 activity의 타입을 반환합니다.
 
 ### `app.setAppUserModelId(id)` _Windows_
 
@@ -577,3 +606,5 @@ dock 아이콘의 `image`를 설정합니다.
 [app-user-model-id]: https://msdn.microsoft.com/en-us/library/windows/desktop/dd378459(v=vs.85).aspx
 [CFBundleURLTypes]: https://developer.apple.com/library/ios/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html#//apple_ref/doc/uid/TP40009249-102207-TPXREF115
 [LSCopyDefaultHandlerForURLScheme]: https://developer.apple.com/library/mac/documentation/Carbon/Reference/LaunchServicesReference/#//apple_ref/c/func/LSCopyDefaultHandlerForURLScheme
+[handoff]: https://developer.apple.com/library/ios/documentation/UserExperience/Conceptual/Handoff/HandoffFundamentals/HandoffFundamentals.html
+[activity-type]: https://developer.apple.com/library/ios/documentation/Foundation/Reference/NSUserActivity_Class/index.html#//apple_ref/occ/instp/NSUserActivity/activityType

@@ -97,6 +97,10 @@ win.show();
 * `webPreferences` Object - 웹 페이지 기능을 설정합니다. 사용할 수 있는 속성은
   아래를 참고하세요.
 
+`minWidth`/`maxWidth`/`minHeight`/`maxHeight`를 통해 최소 또는 최대 윈도우 크기를
+지정한 경우, 이는 사용자만을 제약하며, `setBounds`/`setSize` 또는 `BrowserWindow`의
+생성자에서 크기 제약을 따르지 않는 윈도우 크기를 전달하는 것은 막을 수 없습니다.
+
 `type` 속성에서 사용할 수 있는 값과 동작은 다음과 같으며, 플랫폼에 따라 다릅니다:
 
 * Linux의 경우, `desktop`, `dock`, `toolbar`, `splash`, `notification` 종류를
@@ -161,6 +165,8 @@ win.show();
   활성화합니다. 기본값은 `false`입니다.
 * `directWrite` Boolean - Windows에서 폰트 렌더링을 위해 DirectWrite를
   사용하는지를 지정합니다. 기본값은 `true`입니다.
+* `scrollBounce` Boolean - OS X에서 스크롤 튕기기 효과 (탄성 밴딩)를 활성화 합니다.
+  기본값은 `false`입니다.
 * `blinkFeatures` String - `CSSVariables,KeyboardEventKey`같은 `,`로 구분된
   기능 문자열들의 리스트입니다. 지원하는 전체 기능 문자열들은
   [setFeatureEnabledFromString][blink-feature-string] 함수에서 찾을 수 있습니다.

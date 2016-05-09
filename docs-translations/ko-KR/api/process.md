@@ -13,6 +13,9 @@ Electron의 `process` 객체는 기존의 node와는 달리 약간의 차이점�
   빌드일 땐 `undefined`로 지정됩니다.
 * `process.windowsStore` Boolean - 만약 앱이 Windows Store 앱 (appx)으로 작동하고
   있다면, 이 값이 `true`로 지정되며 다른 빌드인 경우엔 `undefined`로 지정됩니다.
+* `process.defaultApp` Boolean - 어플리케이션이 기본 어플리케이션 형식으로 전달되는
+  인수와 함께 실행됐을 때, 메인 프로세스에서 이 값이 `true`가 되며 다른 경우엔
+  `undefined`가 됩니다.
 
 ## Events
 

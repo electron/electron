@@ -6,11 +6,10 @@
 
 ```javascript
 const electron = require('electron');
-const app = electron.app;
+const { app, protocol } = electron;
 const path = require('path');
 
 app.on('ready', function() {
-    var protocol = electron.protocol;
     protocol.registerFileProtocol('atom', function(request, callback) {
       var url = request.url.substr(7);
       callback({path: path.normalize(__dirname + '/' + url)});
@@ -21,7 +20,8 @@ app.on('ready', function() {
 });
 ```
 
-**참고:** 이 모듈은 `app` 모듈의 `ready` 이벤트가 발생한 이후에만 사용할 수 있습니다.
+**참고:** 모든 메서드는 따로 표기하지 않는 한 `app` 모듈의 `ready` 이벤트가 발생한
+이후에만 사용할 수 있습니다.
 
 ## Methods
 
@@ -32,11 +32,16 @@ app.on('ready', function() {
 * `schemes` Array - 표준 스킴으로 등록할 커스텀 스킴 리스트
 
 표준 `scheme`의 형식은 RFC 3986 [일반 URI 구문](https://tools.ietf.org/html/rfc3986#section-3)
-표준을 따릅니다. 이 형식은 `file:`과 `filesystem:`을 포함합니다.
+표준을 따릅니다. 이 형식은 `file:`, `filesystem:`, `http` 등을 포함합니다. 스킴을
+표준을 따라 등록하면, 스킴이 제공될 때 상대, 절대 경로의 리소스를 올바르게 취할 수
+있습니다.
+
+**참고:** 이 메서드는 `app` 모듈의 `ready` 이벤트가 발생하기 이전에만 사용할 수
+있습니다.
 
 ### `protocol.registerServiceWorkerSchemes(schemes)`
 
-* `schemes` Array - 등록될 서비스 워커를 조작할 커스텀 스키마
+* `schemes` Array - 서비스 워커를 제어하기 위해 등록될 커스텀 스킴.
 
 ### `protocol.registerFileProtocol(scheme, handler[, completion])`
 
