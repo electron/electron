@@ -182,6 +182,10 @@ describe('ipc module', function () {
   })
 
   describe('ipc.sendSync', function () {
+    afterEach(function () {
+      ipcMain.removeAllListeners('send-sync-message')
+    })
+
     it('can be replied by setting event.returnValue', function () {
       var msg = ipcRenderer.sendSync('echo', 'test')
       assert.equal(msg, 'test')
