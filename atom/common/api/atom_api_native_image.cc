@@ -318,7 +318,6 @@ void NativeImage::BuildPrototype(
       .SetMethod("toJpeg", &NativeImage::ToJPEG)
       .SetMethod("getNativeHandle", &NativeImage::GetNativeHandle)
       .SetMethod("toDataURL", &NativeImage::ToDataURL)
-      .SetMethod("toDataUrl", &NativeImage::ToDataURL)  // deprecated.
       .SetMethod("isEmpty", &NativeImage::IsEmpty)
       .SetMethod("getSize", &NativeImage::GetSize)
       .SetMethod("setTemplateImage", &NativeImage::SetTemplateImage)

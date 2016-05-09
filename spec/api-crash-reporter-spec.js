@@ -81,12 +81,12 @@ describe('crash-reporter module', function () {
         crashReporter.start({
           companyName: 'Missing submitURL'
         })
-      })
+      }, /submitURL is a required option to crashReporter\.start/)
       assert.throws(function () {
         crashReporter.start({
           submitURL: 'Missing companyName'
         })
-      })
+      }, /companyName is a required option to crashReporter\.start/)
     })
   })
 })

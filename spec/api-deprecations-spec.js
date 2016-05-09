@@ -14,14 +14,14 @@ describe('deprecations', function () {
       messages.push(message)
     })
 
-    require('electron').webFrame.registerUrlSchemeAsSecure('some-scheme')
+    require('electron').deprecate.log('this is deprecated')
 
-    assert.deepEqual(messages, ['registerUrlSchemeAsSecure is deprecated. Use registerURLSchemeAsSecure instead.'])
+    assert.deepEqual(messages, ['this is deprecated'])
   })
 
   it('throws an exception if no deprecation handler is specified', function () {
     assert.throws(function () {
-      require('electron').webFrame.registerUrlSchemeAsPrivileged('some-scheme')
-    }, 'registerUrlSchemeAsPrivileged is deprecated. Use registerURLSchemeAsPrivileged instead.')
+      require('electron').deprecate.log('this is deprecated')
+    }, /this is deprecated/)
   })
 })
