@@ -41,7 +41,7 @@ Electron은 먼저 모든 윈도우의 종료를 시도하고 `will-quit` 이벤
 않습니다.
 
 **역주:** 이 이벤트는 말 그대로 현재 어플리케이션에서 윈도우만 완전히 종료됬을 때
-발생하는 이벤트 입니다. 따라서 어플리케이션을 완전히 종료하려면 이 이벤트에서
+발생하는 이벤트입니다. 따라서 어플리케이션을 완전히 종료하려면 이 이벤트에서
 `app.quit()`를 호출해 주어야 합니다.
 
 ### Event: 'before-quit'
@@ -60,7 +60,7 @@ Returns:
 
 * `event` Event
 
-모든 윈도우들이 종료되고 어플리케이션이 종료되기 시작할 때 발생하는 이벤트 입니다.
+모든 윈도우들이 종료되고 어플리케이션이 종료되기 시작할 때 발생하는 이벤트입니다.
 `event.preventDefault()` 호출을 통해 어플리케이션의 종료를 방지할 수 있습니다.
 
 `will-quit` 와 `window-all-closed` 이벤트의 차이점을 확인하려면 `window-all-close`
@@ -114,7 +114,7 @@ Returns:
 * `event` Event
 * `hasVisibleWindows` Boolean
 
-어플리케이션이 활성화 되었을 때 발생하는 이벤트 입니다. 이 이벤트는 사용자가
+어플리케이션이 활성화 되었을 때 발생하는 이벤트입니다. 이 이벤트는 사용자가
 어플리케이션의 dock 아이콘을 클릭했을 때 주로 발생합니다.
 
 ### Event: 'continue-activity' _OS X_
@@ -142,7 +142,7 @@ Returns:
 * `event` Event
 * `window` BrowserWindow
 
-[browserWindow](browser-window.md)에 대한 포커스가 사라졌을 때 발생하는 이벤트 입니다.
+[browserWindow](browser-window.md)에 대한 포커스가 사라졌을 때 발생하는 이벤트입니다.
 
 ### Event: 'browser-window-focus'
 
@@ -151,7 +151,7 @@ Returns:
 * `event` Event
 * `window` BrowserWindow
 
-[browserWindow](browser-window.md)에 대한 포커스가 발생했을 때 발생하는 이벤트 입니다.
+[browserWindow](browser-window.md)에 대한 포커스가 발생했을 때 발생하는 이벤트입니다.
 
 **역주:** _포커스_ 는 창을 클릭해서 활성화 시켰을 때를 말합니다.
 
@@ -162,7 +162,7 @@ Returns:
 * `event` Event
 * `window` BrowserWindow
 
-새로운 [browserWindow](browser-window.md)가 생성되었을 때 발생하는 이벤트 입니다.
+새로운 [browserWindow](browser-window.md)가 생성되었을 때 발생하는 이벤트입니다.
 
 ### Event: 'certificate-error'
 
@@ -205,7 +205,7 @@ Returns:
   * `issuerName` String - 발급자의 공통 이름
 * `callback` Function
 
-클라이언트 인증이 요청되었을 때 발생하는 이벤트 입니다.
+클라이언트 인증이 요청되었을 때 발생하는 이벤트입니다.
 
 `url`은 클라이언트 인증서를 요청하는 탐색 항목에 해당합니다.
 그리고 `callback`은 목록에서 필터링된 항목과 함께 호출될 필요가 있습니다.

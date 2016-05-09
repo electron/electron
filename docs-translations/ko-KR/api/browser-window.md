@@ -194,7 +194,7 @@ Returns:
 
 * `event` Event
 
-문서의 제목이 변경될 때 발생하는 이벤트 입니다. `event.preventDefault()`를 호출하여
+문서의 제목이 변경될 때 발생하는 이벤트입니다. `event.preventDefault()`를 호출하여
 네이티브 윈도우의 제목이 변경되는 것을 방지할 수 있습니다.
 
 ### Event: 'close'

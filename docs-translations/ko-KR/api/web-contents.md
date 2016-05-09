@@ -226,7 +226,7 @@ Returns:
   * `issuerName` String - 인증서 발급자 이름
 * `callback` Function
 
-클라이언트 인증이 요청되었을 때 발생하는 이벤트 입니다.
+클라이언트 인증이 요청되었을 때 발생하는 이벤트입니다.
 
 사용법은 [`app`의 `select-client-certificate` 이벤트](app.md#event-select-client-certificate)와
 같습니다.
