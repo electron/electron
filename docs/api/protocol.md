@@ -7,11 +7,10 @@ An example of implementing a protocol that has the same effect as the
 
 ```javascript
 const electron = require('electron');
-const { app } = electron;
+const { app, protocol } = electron;
 const path = require('path');
 
 app.on('ready', function() {
-    const { protocol } = electron;
     protocol.registerFileProtocol('atom', function(request, callback) {
       const url = request.url.substr(7);
       callback({path: path.normalize(__dirname + '/' + url)});
@@ -21,9 +20,8 @@ app.on('ready', function() {
     });
 });
 ```
-
-**Note:** This module can only be used after the `ready` event in the `app`
-module is emitted.
+**Note:** All methods unless specified can only be used after the `ready`
+event in the `app` module is emitted.
 
 ## Methods
 
@@ -35,7 +33,11 @@ The `protocol` module has the following methods:
 
 A standard `scheme` adheres to what RFC 3986 calls
 [generic URI syntax](https://tools.ietf.org/html/rfc3986#section-3). This
-includes `file:` and `filesystem:`.
+includes `file:`, `filesystem:`, `http` etc. Registering a scheme as standard, will
+allow relative and absolute resources to be resolved correctly when served.
+
+**Note:** This method can only be used before the `ready` event in the
+`app` module is emitted.
 
 ### `protocol.registerServiceWorkerSchemes(schemes)`
 

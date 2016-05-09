@@ -125,9 +125,6 @@ const char kPpapiFlashVersion[] = "ppapi-flash-version";
 // Disable HTTP cache.
 const char kDisableHttpCache[] = "disable-http-cache";
 
-// Register schemes to standard.
-const char kRegisterStandardSchemes[] = "register-standard-schemes";
-
 // Register schemes to handle service worker.
 const char kRegisterServiceWorkerSchemes[] = "register-service-worker-schemes";
 

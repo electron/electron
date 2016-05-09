@@ -88,9 +88,6 @@ class Protocol : public mate::Wrappable<Protocol> {
     DISALLOW_COPY_AND_ASSIGN(CustomProtocolHandler);
   };
 
-  // Register schemes to standard scheme list.
-  void RegisterStandardSchemes(const std::vector<std::string>& schemes);
-
   // Register schemes that can handle service worker.
   void RegisterServiceWorkerSchemes(const std::vector<std::string>& schemes);
 

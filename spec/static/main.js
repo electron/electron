@@ -6,6 +6,7 @@ const app = electron.app
 const ipcMain = electron.ipcMain
 const dialog = electron.dialog
 const BrowserWindow = electron.BrowserWindow
+const protocol = electron.protocol
 
 const fs = require('fs')
 const path = require('path')
@@ -70,6 +71,10 @@ if (global.isCi) {
     process.exit(1)
   })
 }
+
+// Register app as standard scheme.
+global.standardScheme = 'app'
+protocol.registerStandardSchemes([global.standardScheme])
 
 app.on('window-all-closed', function () {
   app.quit()
