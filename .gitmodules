@@ -15,7 +15,7 @@
 	url = https://github.com/zcbenz/native-mate.git
 [submodule "vendor/crashpad"]
 	path = vendor/crashpad
-	url = https://github.com/crashpad/crashpad.git
+	url = https://github.com/electron/crashpad.git
 [submodule "vendor/requests"]
 	path = vendor/requests
 	url = https://github.com/kennethreitz/requests
