@@ -841,12 +841,6 @@ describe('protocol module', function () {
       })
     })
 
-    it('throws when called after ready event', function () {
-      assert.throws(function () {
-        protocol.registerStandardSchemes(['some-scheme'])
-      }, 'protocol.registerStandardSchemes should be called before app is ready')
-    })
-
     it('resolves relative resources', function (done) {
       var handler = function (request, callback) {
         if (request.url === imageURL) {
