@@ -213,7 +213,7 @@ The `webview` tag has the following methods:
 **Example**
 
 ```javascript
-webview.addEventListener("dom-ready", () => {
+webview.addEventListener('dom-ready', () => {
   webview.openDevTools();
 });
 ```
@@ -622,10 +622,10 @@ Fired when a result is available for
 ```javascript
 webview.addEventListener('found-in-page', function(e) {
   if (e.result.finalUpdate)
-    webview.stopFindInPage("keepSelection");
+    webview.stopFindInPage('keepSelection');
 });
 
-const rquestId = webview.findInPage("test");
+const rquestId = webview.findInPage('test');
 ```
 
 ### Event: 'new-window'

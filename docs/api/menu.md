@@ -98,7 +98,7 @@ const template = [
       {
         label: 'Toggle Developer Tools',
         accelerator: (() => {
-          if (process.platform == 'darwin')
+          if (process.platform === 'darwin')
             return 'Alt+Command+I';
           else
             return 'Ctrl+Shift+I';

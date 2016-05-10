@@ -12,7 +12,7 @@ property of [`webContents`](web-contents.md) which is a property of
 const { BrowserWindow } = require('electron');
 
 let win = new BrowserWindow({ width: 800, height: 600 });
-win.loadURL("http://github.com");
+win.loadURL('http://github.com');
 
 const ses = win.webContents.session;
 ```
@@ -89,13 +89,13 @@ session.defaultSession.cookies.get({}, (error, cookies) => {
 });
 
 // Query all cookies associated with a specific url.
-session.defaultSession.cookies.get({ url : "http://www.github.com" }, (error, cookies) => {
+session.defaultSession.cookies.get({ url : 'http://www.github.com' }, (error, cookies) => {
   console.log(cookies);
 });
 
 // Set a cookie with the given cookie data;
 // may overwrite equivalent cookies if they exist.
-const cookie = { url : "http://www.github.com", name : "dummy_name", value : "dummy" };
+const cookie = { url : 'http://www.github.com', name : 'dummy_name', value : 'dummy' };
 session.defaultSession.cookies.set(cookie, (error) => {
   if (error)
     console.error(error);
@@ -307,7 +307,7 @@ Calling `callback(true)` will allow the permission and `callback(false)` will re
 ```javascript
 session.fromPartition(partition).setPermissionRequestHandler((webContents, permission, callback) => {
   if (webContents.getURL() === host) {
-    if (permission === "notifications") {
+    if (permission === 'notifications') {
       callback(false); // denied.
       return;
     }
@@ -343,7 +343,7 @@ called with an `response` object when `listener` has done its work.
 ```javascript
 // Modify the user agent for all requests to the following urls.
 const filter = {
-  urls: ["https://*.github.com/*", "*://electron.github.io"]
+  urls: ['https://*.github.com/*', '*://electron.github.io']
 };
 
 session.defaultSession.webRequest.onBeforeSendHeaders(filter, (details, callback) => {

@@ -176,7 +176,7 @@ certificate you should prevent the default behavior with
 
 ```javascript
 app.on('certificate-error', function(event, webContents, url, error, certificate, callback) {
-  if (url == "https://github.com") {
+  if (url === 'https://github.com') {
     // Verification logic.
     event.preventDefault();
     callback(true);

@@ -12,7 +12,7 @@ the [`BrowserWindow`](browser-window.md) object. An example of accessing the
 const { BrowserWindow } = require('electron');
 
 let win = new BrowserWindow({width: 800, height: 1500});
-win.loadURL("http://github.com");
+win.loadURL('http://github.com');
 
 let webContents = win.webContents;
 ```
@@ -384,7 +384,7 @@ e.g. the `http://` or `file://`. If the load should bypass http cache then
 use the `pragma` header to achieve it.
 
 ```javascript
-const options = {"extraHeaders" : "pragma: no-cache\n"}
+const options = {extraHeaders: 'pragma: no-cache\n'};
 webContents.loadURL(url, options)
 ```
 
@@ -401,7 +401,7 @@ Returns URL of the current web page.
 
 ```javascript
 let win = new BrowserWindow({width: 800, height: 600});
-win.loadURL("http://github.com");
+win.loadURL('http://github.com');
 
 let currentURL = win.webContents.getURL();
 ```
@@ -605,10 +605,10 @@ Stops any `findInPage` request for the `webContents` with the provided `action`.
 ```javascript
 webContents.on('found-in-page', function(event, result) {
   if (result.finalUpdate)
-    webContents.stopFindInPage("clearSelection");
+    webContents.stopFindInPage('clearSelection');
 });
 
-const requestId = webContents.findInPage("api");
+const requestId = webContents.findInPage('api');
 ```
 
 ### `webContents.hasServiceWorker(callback)`
@@ -898,7 +898,7 @@ win.loadURL('https://github.com');
 win.webContents.on('did-finish-load', () => {
   win.webContents.savePage('/tmp/test.html', 'HTMLComplete', (error) => {
     if (!error)
-      console.log("Save page successfully");
+      console.log('Save page successfully');
   });
 });
 ```
@@ -928,23 +928,23 @@ Debugger API serves as an alternate transport for [remote debugging protocol][rd
 
 ```javascript
 try {
-  win.webContents.debugger.attach("1.1");
+  win.webContents.debugger.attach('1.1');
 } catch(err) {
-  console.log("Debugger attach failed : ", err);
+  console.log('Debugger attach failed : ', err);
 };
 
 win.webContents.debugger.on('detach', (event, reason) => {
-  console.log("Debugger detached due to : ", reason);
+  console.log('Debugger detached due to : ', reason);
 });
 
 win.webContents.debugger.on('message', (event, method, params) => {
-  if (method === "Network.requestWillBeSent") {
-    if (params.request.url === "https://www.github.com")
+  if (method === 'Network.requestWillBeSent') {
+    if (params.request.url === 'https://www.github.com')
       win.webContents.debugger.detach();
   }
 })
 
-win.webContents.debugger.sendCommand("Network.enable");
+win.webContents.debugger.sendCommand('Network.enable');
 ```
 
 #### `webContents.debugger.attach([protocolVersion])`

@@ -37,7 +37,7 @@ app.on('ready', () => {
   var displays = electronScreen.getAllDisplays();
   var externalDisplay = null;
   for (let i in displays) {
-    if (displays[i].bounds.x != 0 || displays[i].bounds.y != 0) {
+    if (displays[i].bounds.x !== 0 || displays[i].bounds.y !== 0) {
       externalDisplay = displays[i];
       break;
     }
