@@ -93,6 +93,6 @@ this event it might look something like this:
 
 ```javascript
 Alarm.on('wake-up', (time) => {
-  console.log(time)
-})
+  console.log(time);
+});
 ```

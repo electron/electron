@@ -6,18 +6,18 @@ An example of implementing a protocol that has the same effect as the
 `file://` protocol:
 
 ```javascript
-const {app, protocol} = require('electron')
-const path = require('path')
+const {app, protocol} = require('electron');
+const path = require('path');
 
 app.on('ready', function () {
   protocol.registerFileProtocol('atom', function (request, callback) {
-    const url = request.url.substr(7)
-    callback({path: path.normalize(__dirname + '/' + url)})
+    const url = request.url.substr(7);
+    callback({path: path.normalize(__dirname + '/' + url)});
   }, function (error) {
     if (error)
-      console.error('Failed to register protocol')
-  })
-})
+      console.error('Failed to register protocol');
+  });
+});
 ```
 **Note:** All methods unless specified can only be used after the `ready` event
 of the `app` module gets emitted.
@@ -52,10 +52,10 @@ So if you want to register a custom protocol to replace the `http` protocol, you
 have to register it as standard scheme:
 
 ```javascript
-protocol.registerStandardSchemes(['atom'])
+protocol.registerStandardSchemes(['atom']);
 app.on('ready', function () {
-  protocol.registerHttpProtocol('atom', ...)
-})
+  protocol.registerHttpProtocol('atom', ...);
+});
 ```
 
 **Note:** This method can only be used before the `ready` event of the `app`
@@ -123,7 +123,7 @@ protocol.registerBufferProtocol('atom', (request, callback) => {
   callback({mimeType: 'text/html', data: new Buffer('<h5>Response</h5>')});
 }, (error) => {
   if (error)
-    console.error('Failed to register protocol')
+    console.error('Failed to register protocol');
 });
 ```
 

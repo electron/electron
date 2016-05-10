@@ -37,15 +37,15 @@ and displays a "loading..." message during the load time:
 
     const loadstart = () => {
       indicator.innerText = 'loading...';
-    }
+    };
 
     const loadstop = () => {
       indicator.innerText = '';
-    }
+    };
 
     webview.addEventListener('did-start-loading', loadstart);
     webview.addEventListener('did-stop-loading', loadstop);
-  }
+  };
 </script>
 ```
 

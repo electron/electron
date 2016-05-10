@@ -66,7 +66,7 @@ app.on('ready', () => {
       // The `plugins` have to be enabled.
       plugins: true
     }
-  })
+  });
 });
 ```
 

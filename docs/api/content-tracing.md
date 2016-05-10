@@ -13,7 +13,7 @@ const {contentTracing} = require('electron');
 const options = {
   categoryFilter: '*',
   traceOptions: 'record-until-full,enable-sampling'
-}
+};
 
 contentTracing.startRecording(options, function() {
   console.log('Tracing started');

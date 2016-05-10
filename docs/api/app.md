@@ -210,7 +210,7 @@ certificate from the store.
 app.on('select-client-certificate', function(event, webContents, url, list, callback) {
   event.preventDefault();
   callback(list[0]);
-})
+});
 ```
 
 ### Event: 'login'
@@ -241,7 +241,7 @@ should prevent the default behavior with `event.preventDefault()` and call
 app.on('login', (event, webContents, request, authInfo, callback) => {
   event.preventDefault();
   callback('username', 'secret');
-})
+});
 ```
 
 ### Event: 'gpu-process-crashed'

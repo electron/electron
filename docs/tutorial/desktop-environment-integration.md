@@ -23,8 +23,8 @@ let myNotification = new Notification('Title', {
 });
 
 myNotification.onclick = function () {
-  console.log('Notification clicked')
-}
+  console.log('Notification clicked');
+};
 ```
 
 While code and user experience across operating systems are similar, there

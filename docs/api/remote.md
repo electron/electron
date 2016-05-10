@@ -70,11 +70,11 @@ For instance you can't use a function from the renderer process in an
 // main process mapNumbers.js
 exports.withRendererCallback = (mapper) => {
   return [1,2,3].map(mapper);
-}
+};
 
 exports.withLocalCallback = () => {
   return exports.mapNumbers(x => x + 1);
-}
+};
 ```
 
 ```javascript
@@ -83,9 +83,9 @@ const mapNumbers = require('remote').require('./mapNumbers');
 
 const withRendererCb = mapNumbers.withRendererCallback(x => x + 1);
 
-const withLocalCb = mapNumbers.withLocalCallback()
+const withLocalCb = mapNumbers.withLocalCallback();
 
-console.log(withRendererCb, withLocalCb) // [true, true, true], [2, 3, 4]
+console.log(withRendererCb, withLocalCb); // [true, true, true], [2, 3, 4]
 ```
 
 As you can see, the renderer callback's synchronous return value was not as

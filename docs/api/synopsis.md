@@ -88,7 +88,7 @@ process.env.ELECTRON_HIDE_INTERNAL_MODULES = 'true'
 Or call the `hideInternalModules` API:
 
 ```javascript
-require('electron').hideInternalModules()
+require('electron').hideInternalModules();
 ```
 
 [gui]: https://en.wikipedia.org/wiki/Graphical_user_interface

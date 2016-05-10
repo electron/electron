@@ -385,7 +385,7 @@ use the `pragma` header to achieve it.
 
 ```javascript
 const options = {extraHeaders: 'pragma: no-cache\n'};
-webContents.loadURL(url, options)
+webContents.loadURL(url, options);
 ```
 
 ### `webContents.downloadURL(url)`
@@ -942,7 +942,7 @@ win.webContents.debugger.on('message', (event, method, params) => {
     if (params.request.url === 'https://www.github.com')
       win.webContents.debugger.detach();
   }
-})
+});
 
 win.webContents.debugger.sendCommand('Network.enable');
 ```
