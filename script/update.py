@@ -7,7 +7,7 @@ import subprocess
 import sys
 
 from lib.config import get_target_arch, PLATFORM
-from lib.util import get_host_arch
+from lib.util import get_host_arch, import_vs_env
 
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
@@ -49,11 +49,14 @@ def update_gyp():
 
 
 def run_gyp(target_arch, component):
+  # Update the VS build env.
+  import_vs_env(target_arch)
+
   env = os.environ.copy()
   if PLATFORM == 'linux' and target_arch != get_host_arch():
     env['GYP_CROSSCOMPILE'] = '1'
   elif PLATFORM == 'win32':
-    env['GYP_MSVS_VERSION'] = '2013'
+    env['GYP_MSVS_VERSION'] = '2015'
   python = sys.executable
   if sys.platform == 'cygwin':
     # Force using win32 python on cygwin.
