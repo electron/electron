@@ -9,11 +9,11 @@ An example of implementing a protocol that has the same effect as the
 const {app, protocol} = require('electron');
 const path = require('path');
 
-app.on('ready', function () {
-  protocol.registerFileProtocol('atom', function (request, callback) {
+app.on('ready', () => {
+  protocol.registerFileProtocol('atom', (request, callback) => {
     const url = request.url.substr(7);
     callback({path: path.normalize(__dirname + '/' + url)});
-  }, function (error) {
+  }, (error) => {
     if (error)
       console.error('Failed to register protocol');
   });
@@ -53,7 +53,7 @@ have to register it as standard scheme:
 
 ```javascript
 protocol.registerStandardSchemes(['atom']);
-app.on('ready', function () {
+app.on('ready', () => {
   protocol.registerHttpProtocol('atom', ...);
 });
 ```

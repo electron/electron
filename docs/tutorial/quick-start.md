@@ -82,15 +82,15 @@ example being:
 ```javascript
 const electron = require('electron');
 // Module to control application life.
-const app = electron.app;
+const {app} = electron;
 // Module to create native browser window.
-const BrowserWindow = electron.BrowserWindow;
+const {BrowserWindow} = electron;
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
 let mainWindow;
 
-function createWindow () {
+function createWindow() {
   // Create the browser window.
   mainWindow = new BrowserWindow({width: 800, height: 600});
 

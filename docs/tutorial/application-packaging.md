@@ -85,7 +85,7 @@ For example, to get a file with `$.get`:
 
 ```html
 <script>
-var $ = require('./jquery.min.js');
+let $ = require('./jquery.min.js');
 $.get('file:///path/to/example.asar/file.txt', (data) => {
   console.log(data);
 });

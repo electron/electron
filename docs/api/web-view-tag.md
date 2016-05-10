@@ -600,7 +600,7 @@ The following example code forwards all log messages to the embedder's console
 without regard for log level or other properties.
 
 ```javascript
-webview.addEventListener('console-message', function(e) {
+webview.addEventListener('console-message', (e) => {
   console.log('Guest page logged a message:', e.message);
 });
 ```
@@ -620,7 +620,7 @@ Fired when a result is available for
 [`webview.findInPage`](web-view-tag.md#webviewtagfindinpage) request.
 
 ```javascript
-webview.addEventListener('found-in-page', function(e) {
+webview.addEventListener('found-in-page', (e) => {
   if (e.result.finalUpdate)
     webview.stopFindInPage('keepSelection');
 });

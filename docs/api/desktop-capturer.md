@@ -9,7 +9,7 @@ const {desktopCapturer} = require('electron');
 
 desktopCapturer.getSources({types: ['window', 'screen']}, (error, sources) => {
   if (error) throw error;
-  for (var i = 0; i < sources.length; ++i) {
+  for (let i = 0; i < sources.length; ++i) {
     if (sources[i].name === 'Electron') {
       navigator.webkitGetUserMedia({
         audio: false,

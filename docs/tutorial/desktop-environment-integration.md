@@ -22,7 +22,7 @@ let myNotification = new Notification('Title', {
   body: 'Lorem Ipsum Dolor Sit Amet'
 });
 
-myNotification.onclick = function () {
+myNotification.onclick = () => {
   console.log('Notification clicked');
 };
 ```
@@ -118,7 +118,7 @@ const app = electron.app;
 const Menu = electron.Menu;
 
 const dockMenu = Menu.buildFromTemplate([
-  { label: 'New Window', click: () => { console.log('New Window'); } },
+  { label: 'New Window', click() { console.log('New Window'); } },
   { label: 'New Window with Settings', submenu: [
     { label: 'Basic' },
     { label: 'Pro'}
@@ -221,13 +221,13 @@ win.setThumbarButtons([
   {
     tooltip: 'button1',
     icon: path.join(__dirname, 'button1.png'),
-    click: () => { console.log('button2 clicked'); }
+    click() { console.log('button2 clicked'); }
   },
   {
     tooltip: 'button2',
     icon: path.join(__dirname, 'button2.png'),
-    flags:['enabled', 'dismissonclick'],
-    click: () => { console.log('button2 clicked.'); }
+    flags: ['enabled', 'dismissonclick'],
+    click() { console.log('button2 clicked.'); }
   }
 ]);
 ```

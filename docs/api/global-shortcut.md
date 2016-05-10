@@ -15,7 +15,7 @@ const {app, globalShortcut} = require('electron');
 
 app.on('ready', () => {
   // Register a 'CommandOrControl+X' shortcut listener.
-  const ret = globalShortcut.register('CommandOrControl+X', function() {
+  const ret = globalShortcut.register('CommandOrControl+X', () => {
     console.log('CommandOrControl+X is pressed');
   });
 

@@ -59,7 +59,7 @@ An example of using [node-spellchecker][spellchecker] as provider:
 
 ```javascript
 webFrame.setSpellCheckProvider('en-US', true, {
-  spellCheck: function(text) {
+  spellCheck(text) {
     return !(require('spellchecker').isMisspelled(text));
   }
 });

@@ -32,7 +32,7 @@ the global scope when node integration is turned off:
 // preload.js
 const _setImmediate = setImmediate;
 const _clearImmediate = clearImmediate;
-process.once('loaded', function() {
+process.once('loaded', () => {
   global.setImmediate = _setImmediate;
   global.clearImmediate = _clearImmediate;
 });

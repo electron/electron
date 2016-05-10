@@ -11,7 +11,7 @@ property of [`webContents`](web-contents.md) which is a property of
 ```javascript
 const {BrowserWindow} = require('electron');
 
-let win = new BrowserWindow({ width: 800, height: 600 });
+let win = new BrowserWindow({width: 800, height: 600});
 win.loadURL('http://github.com');
 
 const ses = win.webContents.session;
@@ -89,13 +89,13 @@ session.defaultSession.cookies.get({}, (error, cookies) => {
 });
 
 // Query all cookies associated with a specific url.
-session.defaultSession.cookies.get({ url : 'http://www.github.com' }, (error, cookies) => {
+session.defaultSession.cookies.get({url : 'http://www.github.com'}, (error, cookies) => {
   console.log(cookies);
 });
 
 // Set a cookie with the given cookie data;
 // may overwrite equivalent cookies if they exist.
-const cookie = { url : 'http://www.github.com', name : 'dummy_name', value : 'dummy' };
+const cookie = {url : 'http://www.github.com', name : 'dummy_name', value : 'dummy'};
 session.defaultSession.cookies.set(cookie, (error) => {
   if (error)
     console.error(error);

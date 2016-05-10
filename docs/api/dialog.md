@@ -5,10 +5,10 @@
 An example of showing a dialog to select multiple files and directories:
 
 ```javascript
-var win = ...;  // BrowserWindow in which to show the dialog
+let win = ...;  // BrowserWindow in which to show the dialog
 const {dialog} = require('electron');
 
-console.log(dialog.showOpenDialog({ properties: [ 'openFile', 'openDirectory', 'multiSelections' ]}));
+console.log(dialog.showOpenDialog({properties: ['openFile', 'openDirectory', 'multiSelections']}));
 ```
 
 The Dialog is opened from Electron's main thread. If you want to use the dialog
@@ -43,10 +43,10 @@ selected when you want to limit the user to a specific type. For example:
 ```javascript
 {
   filters: [
-    { name: 'Images', extensions: ['jpg', 'png', 'gif'] },
-    { name: 'Movies', extensions: ['mkv', 'avi', 'mp4'] },
-    { name: 'Custom File Type', extensions: ['as'] },
-    { name: 'All Files', extensions: ['*'] }
+    {name: 'Images', extensions: ['jpg', 'png', 'gif']},
+    {name: 'Movies', extensions: ['mkv', 'avi', 'mp4']},
+    {name: 'Custom File Type', extensions: ['as']},
+    {name: 'All Files', extensions: ['*']}
   ]
 }
 ```

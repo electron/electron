@@ -603,7 +603,7 @@ the request can be obtained by subscribing to
 Stops any `findInPage` request for the `webContents` with the provided `action`.
 
 ```javascript
-webContents.on('found-in-page', function(event, result) {
+webContents.on('found-in-page', (event, result) => {
   if (result.finalUpdate)
     webContents.stopFindInPage('clearSelection');
 });
@@ -700,7 +700,7 @@ Adds the specified path to DevTools workspace. Must be used after DevTools
 creation:
 
 ```javascript
-mainWindow.webContents.on('devtools-opened', function() {
+mainWindow.webContents.on('devtools-opened', () => {
   mainWindow.webContents.addWorkSpace(__dirname);
 });
 ```
@@ -887,7 +887,7 @@ End subscribing for frame presentation events.
   * `HTMLOnly` - Save only the HTML of the page.
   * `HTMLComplete` - Save complete-html page.
   * `MHTML` - Save complete-html page as MHTML.
-* `callback` Function - `function(error) {}`.
+* `callback` Function - `(error) => {}`.
   * `error` Error
 
 Returns true if the process of saving page has been initiated successfully.

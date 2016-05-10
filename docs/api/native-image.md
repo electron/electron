@@ -49,7 +49,7 @@ images/
 
 
 ```javascript
-var appIcon = new Tray('/Users/somebody/images/icon.png');
+let appIcon = new Tray('/Users/somebody/images/icon.png');
 ```
 
 Following suffixes for DPI are also supported:
@@ -118,7 +118,7 @@ The following methods are available on instances of `nativeImage`:
 ```javascript
 const nativeImage = require('electron').nativeImage;
 
-var image = nativeImage.createFromPath('/Users/somebody/images/icon.png');
+let image = nativeImage.createFromPath('/Users/somebody/images/icon.png');
 ```
 
 ### `image.toPng()`
