@@ -1,4 +1,4 @@
-# shell
+# shell _Both Processes_
 
 > Manage files and URLs using their default applications.
 

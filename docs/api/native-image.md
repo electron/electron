@@ -1,4 +1,4 @@
-# nativeImage
+# nativeImage _Both Processes_
 
 > Create tray, dock, and application icons using PNG or JPG files.
 

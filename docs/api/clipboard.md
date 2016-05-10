@@ -1,4 +1,4 @@
-# clipboard
+# clipboard _Both Processes_
 
 > Perform copy and paste operations on the system clipboard.
 

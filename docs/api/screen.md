@@ -1,4 +1,4 @@
-# screen
+# screen _Both Processes_
 
 > Retrieve information about screen size, displays, cursor position, etc.
 

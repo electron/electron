@@ -1,4 +1,4 @@
-# crashReporter
+# crashReporter _Both Processes_
 
 > Submit crash reports to a remote server.
 
