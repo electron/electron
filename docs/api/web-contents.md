@@ -700,8 +700,8 @@ Adds the specified path to DevTools workspace. Must be used after DevTools
 creation:
 
 ```javascript
-mainWindow.webContents.on('devtools-opened', () => {
-  mainWindow.webContents.addWorkSpace(__dirname);
+win.webContents.on('devtools-opened', () => {
+  win.webContents.addWorkSpace(__dirname);
 });
 ```
 
@@ -763,13 +763,13 @@ An example of sending messages from the main process to the renderer process:
 
 ```javascript
 // In the main process.
-let mainWindow = null;
+let win = null;
 
 app.on('ready', () => {
-  mainWindow = new BrowserWindow({width: 800, height: 600});
-  mainWindow.loadURL(`file://${__dirname}/index.html`);
-  mainWindow.webContents.on('did-finish-load', () => {
-    mainWindow.webContents.send('ping', 'whoooooooh!');
+  win = new BrowserWindow({width: 800, height: 600});
+  win.loadURL(`file://${__dirname}/index.html`);
+  win.webContents.on('did-finish-load', () => {
+    win.webContents.send('ping', 'whoooooooh!');
   });
 });
 ```

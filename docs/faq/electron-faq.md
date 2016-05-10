@@ -87,7 +87,7 @@ To solve this, you can turn off node integration in Electron:
 
 ```javascript
 // In the main process.
-let mainWindow = new BrowserWindow({
+let win = new BrowserWindow({
   webPreferences: {
     nodeIntegration: false
   }
