@@ -46,7 +46,7 @@ class AutoUpdater {
   static Delegate* GetDelegate();
   static void SetDelegate(Delegate* delegate);
 
-  static void SetFeedURL(const std::string& url);
+  static void SetFeedURL(const std::string& url, const std::string& authToken);
   static void CheckForUpdates();
   static void QuitAndInstall();
 
