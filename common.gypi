@@ -62,7 +62,12 @@
           4232,  # address of dllimport 'free' is not static, identity not guaranteed
           4291,  # no matching operator delete found
           4295,  # array is too small to include a terminating null character
+          4311,  # 'type cast': pointer truncation from 'void *const ' to 'unsigned long'
           4389,  # '==' : signed/unsigned mismatch
+          4456,  # declaration of 'm' hides previous local declaration
+          4457,  # declaration of 'message' hides function parameter
+          4459,  # declaration of 'wq' hides global declaration
+          4477,  # format string '%.*s' requires an argument of type 'int'
           4505,  # unreferenced local function has been removed
           4701,  # potentially uninitialized local variable 'sizew' used
           4703,  # potentially uninitialized local pointer variable 'req' used
@@ -234,9 +239,12 @@
       4189,  # local variable is initialized but not referenced
       4201,  # (uv.h) nameless struct/union
       4267,  # conversion from 'size_t' to 'int', possible loss of data
+      4302,  # (atldlgs.h) 'type cast': truncation from 'LPCTSTR' to 'WORD'
+      4458,  # (atldlgs.h) declaration of 'dwCommonButtons' hides class member
       4503,  # decorated name length exceeded, name was truncated
       4800,  # (v8.h) forcing value to bool 'true' or 'false'
       4819,  # The file contains a character that cannot be represented in the current code page
+      4838,  # (atlgdi.h) conversion from 'int' to 'UINT' requires a narrowing conversion
       4996,  # (atlapp.h) 'GetVersionExW': was declared deprecated
     ],
   },

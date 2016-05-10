@@ -64,7 +64,8 @@ void MapToCommonID(const std::vector<base::string16>& buttons,
       (*button_flags) |= common.button;
     } else {
       // It is a custom button.
-      dialog_buttons->push_back({i + kIDStart, buttons[i].c_str()});
+      dialog_buttons->push_back(
+          {static_cast<int>(i + kIDStart), buttons[i].c_str()});
     }
   }
 }
@@ -135,7 +136,8 @@ int ShowMessageBoxUTF16(HWND parent,
   std::vector<TASKDIALOG_BUTTON> dialog_buttons;
   if (options & MESSAGE_BOX_NO_LINK) {
     for (size_t i = 0; i < buttons.size(); ++i)
-      dialog_buttons.push_back({i + kIDStart, buttons[i].c_str()});
+      dialog_buttons.push_back(
+          {static_cast<int>(i + kIDStart), buttons[i].c_str()});
   } else {
     MapToCommonID(buttons, &id_map, &config.dwCommonButtons, &dialog_buttons);
   }
