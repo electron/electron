@@ -84,12 +84,7 @@ const template = [
       },
       {
         label: 'Toggle Full Screen',
-        accelerator: (() => {
-          if (process.platform === 'darwin')
-            return 'Ctrl+Command+F';
-          else
-            return 'F11';
-        })(),
+        accelerator: process.platform === 'darwin' ? 'Ctrl+Command+F' : 'F11',
         click: (item, focusedWindow) => {
           if (focusedWindow)
             focusedWindow.setFullScreen(!focusedWindow.isFullScreen());
@@ -97,12 +92,7 @@ const template = [
       },
       {
         label: 'Toggle Developer Tools',
-        accelerator: (() => {
-          if (process.platform === 'darwin')
-            return 'Alt+Command+I';
-          else
-            return 'Ctrl+Shift+I';
-        })(),
+        accelerator: process.platform === 'darwin' ? 'Alt+Command+I' : 'Ctrl+Shift+I',
         click: (item, focusedWindow) => {
           if (focusedWindow)
             focusedWindow.webContents.toggleDevTools();
