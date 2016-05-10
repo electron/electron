@@ -1,4 +1,4 @@
-# powerSaveBlocker
+# powerSaveBlocker _Main Process_
 
 > Block the system from entering low-power (sleep) mode.
 

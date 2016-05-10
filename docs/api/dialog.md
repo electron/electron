@@ -1,4 +1,4 @@
-# dialog
+# dialog _Main Process_
 
 > Display native system dialogs for opening and saving files, alerting, etc.
 

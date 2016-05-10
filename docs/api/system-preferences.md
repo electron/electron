@@ -1,4 +1,4 @@
-# systemPreferences
+# systemPreferences _Main Process_
 
 > Get system preferences.
 

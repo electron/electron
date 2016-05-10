@@ -1,4 +1,4 @@
-# Menu
+# Menu _Main Process_
 
 > Create native application menus and context menus.
 

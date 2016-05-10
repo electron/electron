@@ -1,4 +1,4 @@
-# Frameless Window
+# Frameless Window _Main Process_
 
 > Open a window without toolbars, borders, or other graphical "chrome".
 

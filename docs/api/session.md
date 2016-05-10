@@ -1,4 +1,4 @@
-# session
+# session _Main Process_
 
 > Manage browser sessions, cookies, cache, proxy settings, etc.
 

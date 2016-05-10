@@ -1,4 +1,4 @@
-# MenuItem
+# MenuItem _Main Process_
 
 > Add items to native application menus and context menus.
 

@@ -1,4 +1,4 @@
-# Tray
+# Tray _Main Process_
 
 > Add icons and context menus to the system's notification area.
 

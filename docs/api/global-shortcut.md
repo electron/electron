@@ -1,4 +1,4 @@
-# globalShortcut
+# globalShortcut _Main Process_
 
 > Detect keyboard events when the application does not have keyboard focus.
 
