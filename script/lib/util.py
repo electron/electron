@@ -227,7 +227,7 @@ def s3put(bucket, access_key, secret_key, prefix, key_prefix, files):
 
 
 def import_vs_env(target_arch):
-  if sys.platform == 'cygwin':
+  if sys.platform != 'win32':
     return
 
   if target_arch == 'ia32':
