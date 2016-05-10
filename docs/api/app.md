@@ -1,4 +1,4 @@
-# app
+# app _Main Process_
 
 > Control your application's event lifecycle.
 

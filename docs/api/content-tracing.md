@@ -1,4 +1,4 @@
-# contentTracing
+# contentTracing _Main Process_
 
 > Collect tracing data from Chromium's content module for finding performance
 bottlenecks and slow operations.

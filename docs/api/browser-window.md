@@ -1,4 +1,4 @@
-# BrowserWindow
+# BrowserWindow _Main Process_
 
 > Create and control browser windows.
 

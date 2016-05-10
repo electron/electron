@@ -1,4 +1,4 @@
-# remote
+# remote _Renderer Process_
 
 > Use main process modules from the renderer process.
 

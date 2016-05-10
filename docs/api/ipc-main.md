@@ -1,4 +1,4 @@
-# ipcMain
+# ipcMain _Main Process_
 
 > Communicate asynchronously from the main process to renderer processes.
 

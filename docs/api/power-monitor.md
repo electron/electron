@@ -1,4 +1,4 @@
-# powerMonitor
+# powerMonitor _Main Process_
 
 > Monitor power state changes.
 

@@ -1,4 +1,4 @@
-# ipcRenderer
+# ipcRenderer _Renderer Process_
 
 > Communicate asynchronously from a renderer process to the main process.
 

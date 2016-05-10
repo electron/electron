@@ -1,4 +1,4 @@
-# desktopCapturer
+# desktopCapturer _Renderer Process_
 
 > List `getUserMedia` sources for capturing audio, video, and images from a
 microphone, camera, or screen.

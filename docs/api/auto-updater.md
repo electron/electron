@@ -1,4 +1,4 @@
-# autoUpdater
+# autoUpdater _Main Process_
 
 > Enable apps to automatically update themselves.
 

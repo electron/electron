@@ -1,4 +1,4 @@
-# Accelerator
+# Accelerator _Main Process_
 
 > Define keyboard shortcuts.
 

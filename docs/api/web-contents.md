@@ -1,4 +1,4 @@
-# webContents
+# webContents _Main Process_
 
 > Render and control web pages.
 
