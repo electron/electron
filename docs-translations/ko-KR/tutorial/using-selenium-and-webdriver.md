@@ -42,7 +42,7 @@ $ npm install selenium-webdriver
 ```javascript
 const webdriver = require('selenium-webdriver');
 
-var driver = new webdriver.Builder()
+const driver = new webdriver.Builder()
   // 작동하고 있는 크롬 드라이버의 포트 "9515"를 사용합니다.
   .usingServer('http://localhost:9515')
   .withCapabilities({
@@ -57,8 +57,8 @@ var driver = new webdriver.Builder()
 driver.get('http://www.google.com');
 driver.findElement(webdriver.By.name('q')).sendKeys('webdriver');
 driver.findElement(webdriver.By.name('btnG')).click();
-driver.wait(function() {
- return driver.getTitle().then(function(title) {
+driver.wait(() => {
+ return driver.getTitle().then((title) => {
    return title === 'webdriver - Google Search';
  });
 }, 1000);
@@ -92,29 +92,29 @@ $ npm install webdriverio
 ### 3. 크롬 드라이버에 연결
 ```javascript
 const webdriverio = require('webdriverio');
-var options = {
-    host: "localhost", // localhost에서 작동중인 크롬 드라이버 서버를 사용합니다.
-    port: 9515,        // 연결할 크롬 드라이버 서버의 포트를 설정합니다.
-    desiredCapabilities: {
-        browserName: 'chrome',
-        chromeOptions: {
-          binary: '/Path-to-Your-App/electron', // Electron 바이너리 경로
-          args: [/* cli arguments */]           // 선택 사항, 'app=' + /path/to/your/app/
-        }
+let options = {
+  host: "localhost", // localhost에서 작동중인 크롬 드라이버 서버를 사용합니다.
+  port: 9515,        // 연결할 크롬 드라이버 서버의 포트를 설정합니다.
+  desiredCapabilities: {
+    browserName: 'chrome',
+    chromeOptions: {
+      binary: '/Path-to-Your-App/electron', // Electron 바이너리 경로
+      args: [/* cli arguments */]           // 선택 사항, 'app=' + /path/to/your/app/
     }
+  }
 };
 
-var client = webdriverio.remote(options);
+let client = webdriverio.remote(options);
 
 client
-    .init()
-    .url('http://google.com')
-    .setValue('#q', 'webdriverio')
-    .click('#btnG')
-    .getTitle().then(function(title) {
-        console.log('Title was: ' + title);
-    })
-    .end();
+  .init()
+  .url('http://google.com')
+  .setValue('#q', 'webdriverio')
+  .click('#btnG')
+  .getTitle().then((title) => {
+    console.log('Title was: ' + title);
+  })
+  .end();
 ```
 
 ## 작업 환경

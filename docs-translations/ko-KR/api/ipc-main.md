@@ -20,13 +20,13 @@
 
 ```javascript
 // 메인 프로세스
-const ipcMain = require('electron').ipcMain;
-ipcMain.on('asynchronous-message', function(event, arg) {
+const { ipcMain } = require('electron');
+ipcMain.on('asynchronous-message', (event, arg) => {
   console.log(arg);  // "ping" 출력
   event.sender.send('asynchronous-reply', 'pong');
 });
 
-ipcMain.on('synchronous-message', function(event, arg) {
+ipcMain.on('synchronous-message', (event, arg) => {
   console.log(arg);  // "ping" 출력
   event.returnValue = 'pong';
 });
@@ -34,10 +34,10 @@ ipcMain.on('synchronous-message', function(event, arg) {
 
 ```javascript
 // 렌더러 프로세스 (웹 페이지)
-const ipcRenderer = require('electron').ipcRenderer;
+const { ipcRenderer } = require('electron');
 console.log(ipc.sendSync('synchronous-message', 'ping')); // "pong" 출력
 
-ipcRenderer.on('asynchronous-reply', function(arg) {
+ipcRenderer.on('asynchronous-reply', (arg) => {
   console.log(arg); // "pong" 출력
 });
 ipcRenderer.send('asynchronous-message', 'ping');

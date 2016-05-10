@@ -3,15 +3,12 @@
 > 아이콘과 컨텍스트 메뉴를 시스템 알림 영역에 추가합니다.
 
 ```javascript
-const electron = require('electron');
-const app = electron.app;
-const Menu = electron.Menu;
-const Tray = electron.Tray;
+const { app, Menu, Tray } = require('electron');
 
-var appIcon = null;
-app.on('ready', function(){
+let appIcon = null;
+app.on('ready', () => {
   appIcon = new Tray('/path/to/my/icon'); // 현재 어플리케이션 디렉터리를 기준으로 하려면 `__dirname + '/images/tray.png'` 형식으로 입력해야 합니다.
-  var contextMenu = Menu.buildFromTemplate([
+  const contextMenu = Menu.buildFromTemplate([
     { label: 'Item1', type: 'radio' },
     { label: 'Item2', type: 'radio' },
     { label: 'Item3', type: 'radio', checked: true },
@@ -20,7 +17,6 @@ app.on('ready', function(){
   appIcon.setToolTip('이것은 나의 어플리케이션 입니다!');
   appIcon.setContextMenu(contextMenu);
 });
-
 ```
 
 __플랫폼별 한계:__

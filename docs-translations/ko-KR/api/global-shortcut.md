@@ -12,12 +12,11 @@
 
 ```javascript
 const electron = require('electron');
-const app = electron.app;
-const globalShortcut = electron.globalShortcut;
+const { app, globalShortcut } = electron;
 
-app.on('ready', function() {
+app.on('ready', () => {
   // 'CommandOrControl+X' 단축키를 리스너에 등록합니다.
-  var ret = globalShortcut.register('CommandOrControl+X', function() {
+  const ret = globalShortcut.register('CommandOrControl+X', () => {
     console.log('CommandOrControl+X is pressed');
   });
 
@@ -29,7 +28,7 @@ app.on('ready', function() {
   console.log(globalShortcut.isRegistered('CommandOrControl+X'));
 });
 
-app.on('will-quit', function() {
+app.on('will-quit', () => {
   // 단축키의 등록을 해제합니다.
   globalShortcut.unregister('CommandOrControl+X');
 

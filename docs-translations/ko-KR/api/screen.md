@@ -16,31 +16,28 @@
 
 ```javascript
 const electron = require('electron');
-const app = electron.app;
-const BrowserWindow = electron.BrowserWindow;
+const { app, BrowserWindow } = electron;
 
-var mainWindow;
+let mainWindow;
 
-app.on('ready', function() {
-  var electronScreen = electron.screen;
-  var size = electronScreen.getPrimaryDisplay().workAreaSize;
-  mainWindow = new BrowserWindow({ width: size.width, height: size.height });
+app.on('ready', () => {
+  const { width, height } = electron.screen.getPrimaryDisplay().workAreaSize;
+  mainWindow = new BrowserWindow({ width, height });
 });
 ```
 
 다음 예시는 확장 디스플레이에 윈도우를 생성합니다:
 
 ```javascript
-var app = require('app');
-var BrowserWindow = require('browser-window');
+const electron = require('electron');
+const { screen: electronScreen, app, BrowserWindow } = electron;
 
-var mainWindow;
+let mainWindow;
 
-app.on('ready', function() {
-  var electronScreen = require('screen');
-  var displays = electronScreen.getAllDisplays();
-  var externalDisplay = null;
-  for (var i in displays) {
+app.on('ready', () => {
+  let displays = electronScreen.getAllDisplays();
+  let externalDisplay = null;
+  for (let i in displays) {
     if (displays[i].bounds.x != 0 || displays[i].bounds.y != 0) {
       externalDisplay = displays[i];
       break;

@@ -5,9 +5,9 @@
 
 ```javascript
 // 렌더러 프로세스 내부
-var desktopCapturer = require('electron').desktopCapturer;
+const { desktopCapturer } = require('electron');
 
-desktopCapturer.getSources({types: ['window', 'screen']}, function(error, sources) {
+desktopCapturer.getSources({types: ['window', 'screen']}, (error, sources) => {
   if (error) throw error;
   for (var i = 0; i < sources.length; ++i) {
     if (sources[i].name == "Electron") {

@@ -7,11 +7,11 @@
 명령줄 옵션을 추가로 지정할 수 있습니다:
 
 ```javascript
-const app = require('electron').app;
+const { app } = require('electron');
 app.commandLine.appendSwitch('remote-debugging-port', '8315');
 app.commandLine.appendSwitch('host-rules', 'MAP * 127.0.0.1');
 
-app.on('ready', function() {
+app.on('ready', () => {
   // Your code here
 });
 ```

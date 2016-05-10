@@ -13,8 +13,8 @@ Frameless Window를 만드려면 [BrowserWindow](browser-window.md) 객체의
 `options` 객체에서 `frame` 옵션을 `false`로 지정하면 됩니다:
 
 ```javascript
-const BrowserWindow = require('electron').BrowserWindow;
-var win = new BrowserWindow({ width: 800, height: 600, frame: false });
+const { BrowserWindow } = require('electron');
+let win = new BrowserWindow({ width: 800, height: 600, frame: false });
 ```
 
 ### 최신 OS X에서 사용할 수 있는 대안
@@ -25,7 +25,7 @@ OS X 10.10 Yosemite 이후의 최신 버전부터는 테두리가 없는 창을 
 ("흔히 신호등으로 알고 있는")의 기능과 창 크기를 그대로 유지할 수 있습니다:
 
 ```javascript
-var win = new BrowserWindow({ 'titleBarStyle': 'hidden' });
+let win = new BrowserWindow({ 'titleBarStyle': 'hidden' });
 ```
 
 ## 투명한 창 만들기
@@ -34,7 +34,7 @@ Frameless Window 창의 배경을 투명하게 만들고 싶다면 `transparent`
 바꿔주기만 하면됩니다:
 
 ```javascript
-var win = new BrowserWindow({ transparent: true, frame: false });
+let win = new BrowserWindow({ transparent: true, frame: false });
 ```
 
 ### API의 한계

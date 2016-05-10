@@ -7,7 +7,7 @@
 `chrome://tracing/` 페이지를 열고 생성된 파일을 로드하면 결과를 볼 수 있습니다.
 
 ```javascript
-const contentTracing = require('electron').contentTracing;
+const { contentTracing } = require('electron');
 
 const options = {
   categoryFilter: '*',
@@ -17,8 +17,8 @@ const options = {
 contentTracing.startRecording(options, function() {
   console.log('Tracing started');
 
-  setTimeout(function() {
-    contentTracing.stopRecording('', function(path) {
+  setTimeout(() => {
+    contentTracing.stopRecording('', (path) => {
       console.log('Tracing data recorded to ' + path);
     });
   }, 5000);

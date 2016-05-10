@@ -5,19 +5,18 @@
 다음 예시는 `file://` 프로토콜과 비슷한 일을 하는 커스텀 프로토콜을 설정합니다:
 
 ```javascript
-const electron = require('electron');
-const { app, protocol } = electron;
-const path = require('path');
+const {app, protocol} = require('electron')
+const path = require('path')
 
-app.on('ready', function() {
-    protocol.registerFileProtocol('atom', function(request, callback) {
-      var url = request.url.substr(7);
-      callback({path: path.normalize(__dirname + '/' + url)});
-    }, function (error) {
-      if (error)
-        console.error('Failed to register protocol')
-    });
-});
+app.on('ready', function () {
+  protocol.registerFileProtocol('atom', function (request, callback) {
+    const url = request.url.substr(7)
+    callback({path: path.normalize(__dirname + '/' + url)})
+  }, function (error) {
+    if (error)
+      console.error('Failed to register protocol')
+  })
+})
 ```
 
 **참고:** 모든 메서드는 따로 표기하지 않는 한 `app` 모듈의 `ready` 이벤트가 발생한
@@ -31,10 +30,33 @@ app.on('ready', function() {
 
 * `schemes` Array - 표준 스킴으로 등록할 커스텀 스킴 리스트
 
-표준 `scheme`의 형식은 RFC 3986 [일반 URI 구문](https://tools.ietf.org/html/rfc3986#section-3)
-표준을 따릅니다. 이 형식은 `file:`, `filesystem:`, `http` 등을 포함합니다. 스킴을
-표준을 따라 등록하면, 스킴이 제공될 때 상대, 절대 경로의 리소스를 올바르게 취할 수
-있습니다.
+표준 스킴의 형식은 RFC 3986 [일반 URI 문법](https://tools.ietf.org/html/rfc3986#section-3)
+표준을 따릅니다. 예를 들어 `http`와 `https` 같은 표준 스킴과 `file`과 같은 표준이
+아닌 스킴이 있습니다.
+
+표준 스킴으로 등록하면, 상대, 절대 경로의 리소스를 올바르게 취할 수 있습니다. 다른
+경우엔 스킴이 상대 경로 URL에 대한 분석 기능이 제외된 `file` 프로토콜과 같이
+작동합니다.
+
+예를 들어 다음과 같은 페이지에서 표준 스킴 등록 절차 없이 커스텀 프로토콜을 사용하여
+이미지를 로드하려 했을 때, 표준 스킴으로 등록되지 않은 상대 경로 URL을 인식하지 못하고
+로드에 실패하게 됩니다:
+
+```html
+<body>
+  <img src='test.png'>
+</body>
+```
+
+따라서 커스텀 프로토콜을 등록하여 `http` 프로토콜을 덮어 쓰려면, 표준 스킴으로
+등록해야만 합니다:
+
+```javascript
+protocol.registerStandardSchemes(['atom'])
+app.on('ready', function () {
+  protocol.registerHttpProtocol('atom', ...)
+})
+```
 
 **참고:** 이 메서드는 `app` 모듈의 `ready` 이벤트가 발생하기 이전에만 사용할 수
 있습니다.
@@ -94,9 +116,9 @@ The `uploadData` is an array of `data` objects:
 예시:
 
 ```javascript
-protocol.registerBufferProtocol('atom', function(request, callback) {
+protocol.registerBufferProtocol('atom', (request, callback) => {
   callback({mimeType: 'text/html', data: new Buffer('<h5>Response</h5>')});
-}, function (error) {
+}, (error) => {
   if (error)
     console.error('Failed to register protocol')
 });

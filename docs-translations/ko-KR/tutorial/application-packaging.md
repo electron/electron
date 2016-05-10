@@ -70,8 +70,8 @@ require('/path/to/example.asar/dir/module.js');
 `BrowserWindow` 클래스를 이용해 원하는 웹 페이지도 표시할 수 있습니다:
 
 ```javascript
-const BrowserWindow = require('electron').BrowserWindow;
-var win = new BrowserWindow({width: 800, height: 600});
+const { BrowserWindow } = require('electron');
+let win = new BrowserWindow({width: 800, height: 600});
 win.loadURL('file:///path/to/example.asar/static/index.html');
 ```
 
@@ -85,7 +85,7 @@ win.loadURL('file:///path/to/example.asar/static/index.html');
 ```html
 <script>
 var $ = require('./jquery.min.js');
-$.get('file:///path/to/example.asar/file.txt', function(data) {
+$.get('file:///path/to/example.asar/file.txt', (data) => {
   console.log(data);
 });
 </script>
@@ -99,7 +99,7 @@ $.get('file:///path/to/example.asar/file.txt', function(data) {
 읽어들입니다:
 
 ```javascript
-var originalFs = require('original-fs');
+const originalFs = require('original-fs');
 originalFs.readFileSync('/path/to/example.asar');
 ```
 

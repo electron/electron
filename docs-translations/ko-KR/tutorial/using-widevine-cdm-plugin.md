@@ -59,8 +59,8 @@ app.commandLine.appendSwitch('widevine-cdm-path', '/path/to/widevinecdmadapter.p
 // 플러그인의 버전은 크롬의 `chrome://plugins` 페이지에서 취득할 수 있습니다.
 app.commandLine.appendSwitch('widevine-cdm-version', '1.4.8.866');
 
-var mainWindow = null;
-app.on('ready', function() {
+let mainWindow = null;
+app.on('ready', () => {
   mainWindow = new BrowserWindow({
     webPreferences: {
       // `plugins`은 활성화되어야 합니다.

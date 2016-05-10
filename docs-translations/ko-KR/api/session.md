@@ -8,12 +8,12 @@
 [`webContents`](web-contents.md)에서 `session` 속성으로 접근할 수도 있습니다.
 
 ```javascript
-var BrowserWindow = require('browser-window');
+const { BrowserWindow } = require('electron');
 
-var win = new BrowserWindow({ width: 800, height: 600 });
+let win = new BrowserWindow({ width: 800, height: 600 });
 win.loadURL("http://github.com");
 
-var ses = win.webContents.session;
+const ses = win.webContents.session;
 ```
 
 ## Methods
@@ -46,7 +46,7 @@ var ses = win.webContents.session;
 ```javascript
 const session = require('electron').session;
 
-var ses = session.fromPartition('persist:name');
+const ses = session.fromPartition('persist:name');
  ```
 
 ### Instance Events
@@ -65,9 +65,9 @@ Electron의 `webContents`에서 `item`을 다운로드할 때 발생하는 이�
 틱부터 `item`을 사용할 수 없게 됩니다.
 
 ```javascript
-session.defaultSession.on('will-download', function(event, item, webContents) {
+session.defaultSession.on('will-download', (event, item, webContents) => {
   event.preventDefault();
-  require('request')(item.getURL(), function(data) {
+  require('request')(item.getURL(), (data) => {
     require('fs').writeFileSync('/somewhere', data);
   });
 });
@@ -84,19 +84,19 @@ session.defaultSession.on('will-download', function(event, item, webContents) {
 
 ```javascript
 // 모든 쿠키를 요청합니다.
-session.defaultSession.cookies.get({}, function(error, cookies) {
+session.defaultSession.cookies.get({}, (error, cookies) => {
   console.log(cookies);
 });
 
 // url에 관련된 쿠키를 모두 가져옵니다.
-session.defaultSession.cookies.get({ url : "http://www.github.com" }, function(error, cookies) {
+session.defaultSession.cookies.get({ url : "http://www.github.com" }, (error, cookies) => {
   console.log(cookies);
 });
 
 // 지정한 쿠키 데이터를 설정합니다.
 // 동일한 쿠키가 있으면 해당 쿠키를 덮어씁니다.
-var cookie = { url : "http://www.github.com", name : "dummy_name", value : "dummy" };
-session.defaultSession.cookies.set(cookie, function(error) {
+const cookie = { url : "http://www.github.com", name : "dummy_name", value : "dummy" };
+session.defaultSession.cookies.set(cookie, (error) => {
   if (error)
     console.error(error);
 });
@@ -284,8 +284,8 @@ window.webContents.session.enableNetworkEmulation({offline: true});
 `setCertificateVerifyProc(null)`을 호출하면 기본 검증 프로세스로 되돌립니다.
 
 ```javascript
-myWindow.webContents.session.setCertificateVerifyProc(function(hostname, cert, callback) {
- if (hostname == 'github.com')
+myWindow.webContents.session.setCertificateVerifyProc((hostname, cert, callback) => {
+ if (hostname === 'github.com')
    callback(true);
  else
    callback(false);
@@ -304,9 +304,9 @@ myWindow.webContents.session.setCertificateVerifyProc(function(hostname, cert, c
 호출하면 권한 제공을 거부합니다.
 
 ```javascript
-session.fromPartition(partition).setPermissionRequestHandler(function(webContents, permission, callback) {
+session.fromPartition(partition).setPermissionRequestHandler((webContents, permission, callback) => {
   if (webContents.getURL() === host) {
-    if (permission == "notifications") {
+    if (permission === "notifications") {
       callback(false); // 거부됨.
       return;
     }
@@ -340,11 +340,11 @@ session.fromPartition(partition).setPermissionRequestHandler(function(webContent
 
 ```javascript
 // 다음 url에 대한 User Agent를 조작합니다.
-var filter = {
+const filter = {
   urls: ["https://*.github.com/*", "*://electron.github.io"]
 };
 
-session.defaultSession.webRequest.onBeforeSendHeaders(filter, function(details, callback) {
+session.defaultSession.webRequest.onBeforeSendHeaders(filter, (details, callback) => {
   details.requestHeaders['User-Agent'] = "MyAgent";
   callback({cancel: false, requestHeaders: details.requestHeaders});
 });

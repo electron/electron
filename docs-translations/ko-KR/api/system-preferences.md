@@ -56,7 +56,7 @@ OS X에선 API가 `NSUserDefaults`를 읽어들입니다. 유명한 `key`와 `ty
 예시입니다 (투명한 윈도우는 DWM 컴포지션이 비활성화되어있을 시 작동하지 않습니다):
 
 ```javascript
-let browserOptions = {width: 1000, height: 800};
+let browserOptions = { width: 1000, height: 800 };
 
 // 플랫폼이 지원하는 경우에만 투명 윈도우를 생성.
 if (process.platform !== 'win32' || systemPreferences.isAeroGlassEnabled()) {

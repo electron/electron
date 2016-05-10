@@ -6,7 +6,7 @@
 
 ```javascript
 var win = ...;  // 대화 상자를 사용할 BrowserWindow 객체
-const dialog = require('electron').dialog;
+const { dialog } = require('electron');
 console.log(dialog.showOpenDialog({ properties: [ 'openFile', 'openDirectory', 'multiSelections' ]}));
 ```
 
@@ -14,7 +14,7 @@ console.log(dialog.showOpenDialog({ properties: [ 'openFile', 'openDirectory', '
 객체를 사용하고 싶다면, `remote`를 통해 접근하는 방법을 고려해야 합니다:
 
 ```javascript
-const dialog = require('electron').remote.dialog;
+const { dialog } = require('electron').remote;
 ```
 
 ## Methods

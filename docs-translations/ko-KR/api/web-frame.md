@@ -5,7 +5,7 @@
 다음 예시는 현재 페이지를 200% 줌 합니다:
 
 ```javascript
-var webFrame = require('electron').webFrame;
+const { webFrame } = require('electron');
 
 webFrame.setZoomFactor(2);
 ```

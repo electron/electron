@@ -5,8 +5,8 @@
 밑의 예시는 마지막 윈도우가 종료되었을 때, 어플리케이션을 종료시키는 예시입니다:
 
 ```javascript
-const app = require('electron').app;
-app.on('window-all-closed', function() {
+const { app } = require('electron');
+app.on('window-all-closed', () => {
   app.quit();
 });
 ```
@@ -244,7 +244,7 @@ Returns:
 `callback(username, password)` 형태의 콜백을 호출하여 인증을 처리해야 합니다.
 
 ```javascript
-app.on('login', function(event, webContents, request, authInfo, callback) {
+app.on('login', (event, webContents, request, authInfo, callback) => {
   event.preventDefault();
   callback('username', 'secret');
 })
@@ -486,9 +486,9 @@ OS X에선 사용자가 Finder에서 어플리케이션의 두 번째 인스턴�
 인스턴스의 윈도우를 활성화 시키는 예시입니다:
 
 ```javascript
-var myWindow = null;
+let myWindow = null;
 
-var shouldQuit = app.makeSingleInstance(function(commandLine, workingDirectory) {
+const shouldQuit = app.makeSingleInstance((commandLine, workingDirectory) => {
   // 어플리케이션을 중복 실행했습니다. 주 어플리케이션 인스턴스를 활성화 합니다.
   if (myWindow) {
     if (myWindow.isMinimized()) myWindow.restore();
@@ -503,7 +503,7 @@ if (shouldQuit) {
 }
 
 // 윈도우를 생성하고 각종 리소스를 로드하고 작업합니다.
-app.on('ready', function() {
+app.on('ready', () => {
 });
 ```
 

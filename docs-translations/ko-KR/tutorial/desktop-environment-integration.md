@@ -17,7 +17,7 @@ Windows, Linux, OS X 운영체제 모두 기본적으로 어플리케이션에�
 **참고:** 이 API는 HTML5 API이기 때문에 렌더러 프로세스에서만 사용할 수 있습니다.
 
 ```javascript
-var myNotification = new Notification('Title', {
+let myNotification = new Notification('Title', {
   body: 'Lorem Ipsum Dolor Sit Amet'
 });
 
@@ -114,8 +114,8 @@ const electron = require('electron');
 const app = electron.app;
 const Menu = electron.Menu;
 
-var dockMenu = Menu.buildFromTemplate([
-  { label: 'New Window', click: function() { console.log('New Window'); } },
+const dockMenu = Menu.buildFromTemplate([
+  { label: 'New Window', click: () => { console.log('New Window'); } },
   { label: 'New Window with Settings', submenu: [
     { label: 'Basic' },
     { label: 'Pro'}
@@ -203,24 +203,25 @@ __Windows Media Player의 미리보기 툴바:__
 미리보기 툴바를 설정할 수 있습니다:
 
 ```javascript
-const BrowserWindow = require('electron').BrowserWindow;
+const { BrowserWindow } = require('electron');
 const path = require('path');
 
-var win = new BrowserWindow({
+let win = new BrowserWindow({
   width: 800,
   height: 600
 });
+
 win.setThumbarButtons([
   {
     tooltip: "button1",
     icon: path.join(__dirname, 'button1.png'),
-    click: function() { console.log("button2 clicked"); }
+    click: () => { console.log("button2 clicked"); }
   },
   {
     tooltip: "button2",
     icon: path.join(__dirname, 'button2.png'),
     flags:['enabled', 'dismissonclick'],
-    click: function() { console.log("button2 clicked."); }
+    click: () => { console.log("button2 clicked."); }
   }
 ]);
 ```
@@ -259,7 +260,7 @@ __작업 표시줄 버튼의 프로그래스 바:__
 있습니다:
 
 ```javascript
-var window = new BrowserWindow({...});
+let window = new BrowserWindow({...});
 window.setProgressBar(0.5);
 ```
 
@@ -286,7 +287,7 @@ __작업 표시줄 버튼 위의 오버레이:__
 API를 사용할 수 있습니다:
 
 ```javascript
-var window = new BrowserWindow({...});
+let window = new BrowserWindow({...});
 window.setOverlayIcon('path/to/overlay.png', 'Description for overlay');
 ```
 
@@ -305,7 +306,7 @@ __대표 파일 팝업 메뉴:__
 [BrowserWindow.setDocumentEdited][setdocumentedited]를 사용할 수 있습니다:
 
 ```javascript
-var window = new BrowserWindow({...});
+let window = new BrowserWindow({...});
 window.setRepresentedFilename('/etc/passwd');
 window.setDocumentEdited(true);
 ```

@@ -62,16 +62,16 @@ console.log(require('remote').getGlobal('sharedObject').someProperty);
 만약 빠르게 고치고 싶다면, 다음과 같이 변수를 전역 변수로 만드는 방법이 있습니다:
 
 ```javascript
-app.on('ready', function() {
-  var tray = new Tray('/path/to/icon.png');
+app.on('ready', () => {
+  const tray = new Tray('/path/to/icon.png');
 })
 ```
 
 를 이렇게:
 
 ```javascript
-var tray = null;
-app.on('ready', function() {
+let tray = null;
+app.on('ready', () => {
   tray = new Tray('/path/to/icon.png');
 })
 ```
@@ -86,7 +86,7 @@ Node.js가 Electron에 합쳐졌기 때문에, DOM에 `module`, `exports`, `requ
 
 ```javascript
 // 메인 프로세스에서.
-var mainWindow = new BrowserWindow({
+let mainWindow = new BrowserWindow({
   webPreferences: {
     nodeIntegration: false
   }

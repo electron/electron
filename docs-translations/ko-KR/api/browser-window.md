@@ -6,13 +6,13 @@
 
 ```javascript
 // 메인 프로세스에서
-const BrowserWindow = require('electron').BrowserWindow;
+const { BrowserWindow } = require('electron');
 
 // 또는 렌더러 프로세스에서
-const BrowserWindow = require('electron').remote.BrowserWindow;
+const { BrowserWindow } = require('electron').remote;
 
-var win = new BrowserWindow({ width: 800, height: 600, show: false });
-win.on('closed', function() {
+let win = new BrowserWindow({ width: 800, height: 600, show: false });
+win.on('closed', () => {
   win = null;
 });
 
@@ -318,7 +318,7 @@ Returns:
 e.g. `APPCOMMAND_BROWSER_BACKWARD` 는 `browser-backward`와 같이 반환됩니다.
 
 ```javascript
-someWindow.on('app-command', function(e, cmd) {
+someWindow.on('app-command', (e, cmd) => {
   // 마우스의 뒤로가기 버튼을 눌렀을 때 뒤로가기 탐색을 실행합니다
   if (cmd === 'browser-backward' && someWindow.webContents.canGoBack()) {
     someWindow.webContents.goBack();

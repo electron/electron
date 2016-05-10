@@ -5,7 +5,7 @@
 다음 예시는 윈격 서버에 어플리케이션 크래시 정보를 자동으로 보고하는 예시입니다:
 
 ```javascript
-const crashReporter = require('electron').crashReporter;
+const { crashReporter } = require('electron');
 
 crashReporter.start({
   productName: 'YourName',

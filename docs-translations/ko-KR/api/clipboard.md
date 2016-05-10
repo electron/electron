@@ -2,8 +2,10 @@
 
 > 시스템 클립보드에 복사와 붙여넣기를 수행합니다.
 
+다음 예시는 클립보드에 문자열을 쓰는 방법을 보여줍니다:
+
 ```javascript
-const clipboard = require('electron').clipboard;
+const { clipboard } = require('electron');
 clipboard.writeText('Example String');
 ```
 
