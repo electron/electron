@@ -71,7 +71,7 @@ require('/path/to/example.asar/dir/module.js');
 You can also display a web page in an `asar` archive with `BrowserWindow`:
 
 ```javascript
-const { BrowserWindow } = require('electron');
+const {BrowserWindow} = require('electron');
 let win = new BrowserWindow({width: 800, height: 600});
 win.loadURL('file:///path/to/example.asar/static/index.html');
 ```

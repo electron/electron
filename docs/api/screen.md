@@ -13,13 +13,12 @@ In our examples below, we use `electronScreen` as the variable name instead.
 An example of creating a window that fills the whole screen:
 
 ```javascript
-const electron = require('electron');
-const { app, BrowserWindow } = electron;
+const {app, BrowserWindow, screen: electronScreen} = require('electron');
 
 let mainWindow;
 
 app.on('ready', () => {
-  const { width, height } = electron.screen.getPrimaryDisplay().workAreaSize;
+  const {width, height} = electronScreen.getPrimaryDisplay().workAreaSize;
   mainWindow = new BrowserWindow({ width, height });
 });
 ```
@@ -27,13 +26,11 @@ app.on('ready', () => {
 Another example of creating a window in the external display:
 
 ```javascript
-const electron = require('electron');
-const { app, BrowserWindow } = electron;
+const {app, BrowserWindow, screen: electronScreen} = require('electron');
 
 let mainWindow;
 
 app.on('ready', () => {
-  var electronScreen = electron.screen;
   var displays = electronScreen.getAllDisplays();
   var externalDisplay = null;
   for (let i in displays) {

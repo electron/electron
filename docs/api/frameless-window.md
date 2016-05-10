@@ -14,7 +14,7 @@ To create a frameless window, you need to set `frame` to `false` in
 
 
 ```javascript
-const { BrowserWindow } = require('electron');
+const {BrowserWindow} = require('electron');
 let win = new BrowserWindow({ width: 800, height: 600, frame: false });
 ```
 

@@ -209,7 +209,7 @@ You can use [BrowserWindow.setThumbarButtons][setthumbarbuttons] to set
 thumbnail toolbar in your application:
 
 ```javascript
-const { BrowserWindow } = require('electron');
+const {BrowserWindow} = require('electron');
 const path = require('path');
 
 let win = new BrowserWindow({

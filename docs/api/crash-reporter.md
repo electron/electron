@@ -6,7 +6,7 @@ The following is an example of automatically submitting a crash report to a
 remote server:
 
 ```javascript
-const { crashReporter } = require('electron');
+const {crashReporter} = require('electron');
 
 crashReporter.start({
   productName: 'YourName',

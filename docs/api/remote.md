@@ -14,7 +14,7 @@ similar to Java's [RMI][rmi]. An example of creating a browser window from a
 renderer process:
 
 ```javascript
-const { BrowserWindow } = require('electron').remote;
+const {BrowserWindow} = require('electron').remote;
 
 var win = new BrowserWindow({ width: 800, height: 600 });
 win.loadURL('https://github.com');

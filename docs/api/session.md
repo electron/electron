@@ -9,7 +9,7 @@ property of [`webContents`](web-contents.md) which is a property of
 [`BrowserWindow`](browser-window.md).
 
 ```javascript
-const { BrowserWindow } = require('electron');
+const {BrowserWindow} = require('electron');
 
 let win = new BrowserWindow({ width: 800, height: 600 });
 win.loadURL('http://github.com');

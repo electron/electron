@@ -9,7 +9,7 @@ the [`BrowserWindow`](browser-window.md) object. An example of accessing the
 `webContents` object:
 
 ```javascript
-const { BrowserWindow } = require('electron');
+const {BrowserWindow} = require('electron');
 
 let win = new BrowserWindow({width: 800, height: 1500});
 win.loadURL('http://github.com');
@@ -673,7 +673,7 @@ By default, an empty `options` will be regarded as:
 ```
 
 ```javascript
-const { BrowserWindow } = require('electron');
+const {BrowserWindow} = require('electron');
 const fs = require('fs');
 
 let win = new BrowserWindow({width: 800, height: 600});

@@ -5,7 +5,7 @@ microphone, camera, or screen.
 
 ```javascript
 // In the renderer process.
-var { desktopCapturer } = require('electron');
+const {desktopCapturer} = require('electron');
 
 desktopCapturer.getSources({types: ['window', 'screen']}, (error, sources) => {
   if (error) throw error;

@@ -71,7 +71,7 @@ _online-status.html_
 <html>
 <body>
 <script>
-  const { ipcRenderer } = require('electron');
+  const {ipcRenderer} = require('electron');
   const updateOnlineStatus = () => {
     ipcRenderer.send('online-status-changed', navigator.onLine ? 'online' : 'offline');
   };
