@@ -126,7 +126,7 @@ void ConvertStringWithSeparatorToVector(std::vector<std::string>* vec,
 void AddPepperFlashFromCommandLine(
     std::vector<content::PepperPluginInfo>* plugins) {
   auto command_line = base::CommandLine::ForCurrentProcess();
-  auto flash_path = command_line->GetSwitchValueNative(
+  base::FilePath flash_path = command_line->GetSwitchValuePath(
       switches::kPpapiFlashPath);
   if (flash_path.empty())
     return;
@@ -134,20 +134,19 @@ void AddPepperFlashFromCommandLine(
   auto flash_version = command_line->GetSwitchValueASCII(
       switches::kPpapiFlashVersion);
 
-  plugins->push_back(
-      CreatePepperFlashInfo(base::FilePath(flash_path), flash_version));
+  plugins->push_back(CreatePepperFlashInfo(flash_path, flash_version));
 }
 
 #if defined(WIDEVINE_CDM_AVAILABLE) && defined(ENABLE_PEPPER_CDMS)
 void AddWidevineCdmFromCommandLine(
     std::vector<content::PepperPluginInfo>* plugins) {
   auto command_line = base::CommandLine::ForCurrentProcess();
-  auto widevine_cdm_path = command_line->GetSwitchValueNative(
+  base::FilePath widevine_cdm_path = command_line->GetSwitchValuePath(
       switches::kWidevineCdmPath);
   if (widevine_cdm_path.empty())
     return;
 
-  if (!base::PathExists(base::FilePath(widevine_cdm_path)))
+  if (!base::PathExists(widevine_cdm_path))
     return;
 
   auto widevine_cdm_version = command_line->GetSwitchValueASCII(
@@ -155,7 +154,7 @@ void AddWidevineCdmFromCommandLine(
   if (widevine_cdm_version.empty())
     return;
 
-  plugins->push_back(CreateWidevineCdmInfo(base::FilePath(widevine_cdm_path),
+  plugins->push_back(CreateWidevineCdmInfo(widevine_cdm_path,
                                            widevine_cdm_version));
 }
 #endif
