@@ -77,15 +77,15 @@ class Wrappable : public WrappableBase {
   // Init the class with T::BuildPrototype.
   void Init(v8::Isolate* isolate) {
     // Fill the object template.
-    if (templ_.IsEmpty()) {
+    if (!templ_) {
       v8::Local<v8::ObjectTemplate> templ = v8::ObjectTemplate::New(isolate);
       T::BuildPrototype(isolate, templ);
-      templ_.Reset(isolate, templ);
+      templ_ = new v8::Global<v8::ObjectTemplate>(isolate, templ);
     }
 
     v8::Local<v8::Object> wrapper;
     v8::Local<v8::ObjectTemplate> templ = v8::Local<v8::ObjectTemplate>::New(
-        isolate, templ_);
+        isolate, *templ_);
     // |wrapper| may be empty in some extreme cases, e.g., when
     // Object.prototype.constructor is overwritten.
     if (!templ->NewInstance(isolate->GetCurrentContext()).ToLocal(&wrapper)) {
@@ -98,14 +98,14 @@ class Wrappable : public WrappableBase {
   }
 
  private:
-  static v8::Global<v8::ObjectTemplate> templ_;
+  static v8::Global<v8::ObjectTemplate>* templ_;  // Leaked on purpose
 
   DISALLOW_COPY_AND_ASSIGN(Wrappable);
 };
 
 // static
 template<typename T>
-v8::Global<v8::ObjectTemplate> Wrappable<T>::templ_;
+v8::Global<v8::ObjectTemplate>* Wrappable<T>::templ_ = nullptr;
 
 // This converter handles any subclass of Wrappable.
 template <typename T>
