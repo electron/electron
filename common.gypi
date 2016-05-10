@@ -49,6 +49,7 @@
           4054,  #
           4055,  # 'type cast' : from data pointer 'void *' to function pointer
           4057,  # 'function' : 'volatile LONG *' differs in indirection to slightly different base types from 'unsigned long *'
+          4065,  # switch statement contains 'default' but no 'case' labels
           4189,  #
           4131,  # uses old-style declarator
           4133,  # incompatible types
