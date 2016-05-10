@@ -134,6 +134,12 @@ void Browser::DockSetBadgeText(const std::string& label) {
   [tile setBadgeLabel:base::SysUTF8ToNSString(label)];
 }
 
+void Browser::DockDownloadFinished(const std::string& filePath) {
+  [[NSDistributedNotificationCenter defaultCenter]
+      postNotificationName: @"com.apple.DownloadFileFinished"
+                    object: base::SysUTF8ToNSString(filePath)];
+}
+
 std::string Browser::DockGetBadgeText() {
   NSDockTile *tile = [[AtomApplication sharedApplication] dockTile];
   return base::SysNSStringToUTF8([tile badgeLabel]);
