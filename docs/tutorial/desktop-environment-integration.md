@@ -267,8 +267,8 @@ To set the progress bar for a Window, you can use the
 [BrowserWindow.setProgressBar][setprogressbar] API:
 
 ```javascript
-let window = new BrowserWindow({...});
-window.setProgressBar(0.5);
+let win = new BrowserWindow({...});
+win.setProgressBar(0.5);
 ```
 
 ## Icon Overlays in Taskbar (Windows)
@@ -294,8 +294,8 @@ To set the overlay icon for a window, you can use the
 [BrowserWindow.setOverlayIcon][setoverlayicon] API:
 
 ```javascript
-let window = new BrowserWindow({...});
-window.setOverlayIcon('path/to/overlay.png', 'Description for overlay');
+let win = new BrowserWindow({...});
+win.setOverlayIcon('path/to/overlay.png', 'Description for overlay');
 ```
 
 ## Represented File of Window (OS X)
@@ -316,9 +316,9 @@ To set the represented file of window, you can use the
 [BrowserWindow.setDocumentEdited][setdocumentedited] APIs:
 
 ```javascript
-let window = new BrowserWindow({...});
-window.setRepresentedFilename('/etc/passwd');
-window.setDocumentEdited(true);
+let win = new BrowserWindow({...});
+win.setRepresentedFilename('/etc/passwd');
+win.setDocumentEdited(true);
 ```
 
 [addrecentdocument]: ../api/app.md#appaddrecentdocumentpath-os-x-windows

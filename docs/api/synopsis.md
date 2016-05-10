@@ -21,11 +21,11 @@ The main process script is just like a normal Node.js script:
 ```javascript
 const {app, BrowserWindow} = require('electron');
 
-let window = null;
+let win = null;
 
 app.on('ready', () => {
-  window = new BrowserWindow({width: 800, height: 600});
-  window.loadURL('https://github.com');
+  win = new BrowserWindow({width: 800, height: 600});
+  win.loadURL('https://github.com');
 });
 ```
 

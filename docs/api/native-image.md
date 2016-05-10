@@ -10,7 +10,7 @@ image file path as a `String`:
 
 ```javascript
 const appIcon = new Tray('/Users/somebody/images/icon.png');
-let window = new BrowserWindow({icon: '/Users/somebody/images/window.png'});
+let win = new BrowserWindow({icon: '/Users/somebody/images/window.png'});
 ```
 
 Or read the image from the clipboard which returns a `nativeImage`:
