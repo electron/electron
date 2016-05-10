@@ -15,7 +15,8 @@ the user right clicks the page:
 ```html
 <!-- index.html -->
 <script>
-const { Menu, MenuItem } = require('electron').remote;
+const { remote } = require('electron');
+const { Menu, MenuItem } = remote;
 
 const menu = new Menu();
 menu.append(new MenuItem({ label: 'MenuItem1', click: () => { console.log('item 1 clicked'); } }));
