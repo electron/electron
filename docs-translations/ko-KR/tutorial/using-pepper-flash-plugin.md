@@ -27,14 +27,14 @@ app.commandLine.appendSwitch('ppapi-flash-path', '/path/to/libpepflashplayer.so'
 app.commandLine.appendSwitch('ppapi-flash-version', '17.0.0.169');
 
 app.on('ready', () => {
-  mainWindow = new BrowserWindow({
+  win = new BrowserWindow({
     width: 800,
     height: 600,
     webPreferences: {
       plugins: true
     }
   });
-  mainWindow.loadURL(`file://${__dirname}/index.html`);
+  win.loadURL(`file://${__dirname}/index.html`);
   // 이외의 코드
 });
 ```

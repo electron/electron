@@ -5,7 +5,7 @@
 밑의 예시는 마지막 윈도우가 종료되었을 때, 어플리케이션을 종료시키는 예시입니다:
 
 ```javascript
-const { app } = require('electron');
+const {app} = require('electron');
 app.on('window-all-closed', () => {
   app.quit();
 });
@@ -182,9 +182,9 @@ Returns:
 기본 동작을 방지하고 인증을 승인할 수 있습니다.
 
 ```javascript
-app.on('certificate-error', function(event, webContents, url, error, certificate, callback) {
-  if (url == "https://github.com") {
-    // Verification logic.
+app.on('certificate-error', (event, webContents, url, error, certificate, callback) => {
+  if (url === 'https://github.com') {
+    // 확인 로직.
     event.preventDefault();
     callback(true);
   } else {
@@ -213,10 +213,10 @@ Returns:
 것을 막습니다.
 
 ```javascript
-app.on('select-client-certificate', function(event, webContents, url, list, callback) {
+app.on('select-client-certificate', (event, webContents, url, list, callback) => {
   event.preventDefault();
   callback(list[0]);
-})
+});
 ```
 
 ### Event: 'login'
@@ -247,7 +247,7 @@ Returns:
 app.on('login', (event, webContents, request, authInfo, callback) => {
   event.preventDefault();
   callback('username', 'secret');
-})
+});
 ```
 
 ### Event: 'gpu-process-crashed'

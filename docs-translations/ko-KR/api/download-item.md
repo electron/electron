@@ -18,10 +18,10 @@ win.webContents.session.on('will-download', (event, item, webContents) => {
     console.log('Received bytes: ' + item.getReceivedBytes());
   });
   item.on('done', (e, state) => {
-    if (state === "completed") {
-      console.log("Download successfully");
+    if (state === 'completed') {
+      console.log('Download successfully');
     } else {
-      console.log("Download is cancelled or interrupted that can't be resumed");
+      console.log('Download is cancelled or interrupted that can\'t be resumed');
     }
   });
 });

@@ -6,14 +6,12 @@
 _main.js_
 
 ```javascript
-const electron = require('electron');
-const app = electron.app;
-const BrowserWindow = electron.BrowserWindow;
+const {app, BrowserWindow} = require('electron');
 
 let onlineStatusWindow;
 
 app.on('ready', () => {
-  onlineStatusWindow = new BrowserWindow({ width: 0, height: 0, show: false });
+  onlineStatusWindow = new BrowserWindow({width: 0, height: 0, show: false});
   onlineStatusWindow.loadURL('file://' + __dirname + '/online-status.html');
 });
 ```
@@ -48,15 +46,12 @@ _online-status.html_
 _main.js_
 
 ```javascript
-const electron = require('electron');
-const app = electron.app;
-const ipcMain = electron.ipcMain;
-const BrowserWindow = electron.BrowserWindow;
+const {app, ipcMain, BrowserWindow} = require('electron');
 
 let onlineStatusWindow;
 
 app.on('ready', () => {
-  onlineStatusWindow = new BrowserWindow({ width: 0, height: 0, show: false });
+  onlineStatusWindow = new BrowserWindow({width: 0, height: 0, show: false});
   onlineStatusWindow.loadURL(`file://${__dirname}/online-status.html`);
 });
 
@@ -72,7 +67,7 @@ _online-status.html_
 <html>
 <body>
 <script>
-  const { ipcRenderer } = require('electron');
+  const {ipcRenderer} = require('electron');
   const updateOnlineStatus = () => {
     ipcRenderer.send('online-status-changed', navigator.onLine ? 'online' : 'offline');
   };

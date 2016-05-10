@@ -18,13 +18,13 @@ node 모듈을 완벽하게 지원합니다. ([네이티브 모듈](../tutorial/
 메인 프로세스 스크립트는 일반 Node.js 스크립트와 비슷합니다:
 
 ```javascript
-const { app, BrowserWindow } = require('electron');
+const {app, BrowserWindow} = require('electron');
 
-let window = null;
+let win = null;
 
 app.on('ready', () => {
-  window = new BrowserWindow({width: 800, height: 600});
-  window.loadURL('https://github.com');
+  win = new BrowserWindow({width: 800, height: 600});
+  win.loadURL('https://github.com');
 });
 ```
 
@@ -36,8 +36,8 @@ app.on('ready', () => {
 <html>
 <body>
 <script>
-  const { remote } = require('electron');
-  console.log(remote.app.getVersion());
+  const {app} = require('electron').remote;
+  console.log(app.getVersion());
 </script>
 </body>
 </html>
@@ -52,7 +52,7 @@ app.on('ready', () => {
 직관적으로 사용할 수 있습니다:
 
 ```javascript
-const { app, BrowserWindow } = require('electron');
+const {app, BrowserWindow} = require('electron');
 ```
 
 모든 `electron` 모듈이 필요하다면, 먼저 require한 후 각 독립적인 모듈을
@@ -60,7 +60,7 @@ const { app, BrowserWindow } = require('electron');
 
 ```javascript
 const electron = require('electron');
-const { app, BrowserWindow } = electron;
+const {app, BrowserWindow} = electron;
  ```
 
 위 코드는 다음과 같습니다:
@@ -87,7 +87,7 @@ process.env.ELECTRON_HIDE_INTERNAL_MODULES = 'true'
 또는 `hideInternalModules` API를 사용해도 됩니다:
 
 ```javascript
-require('electron').hideInternalModules()
+require('electron').hideInternalModules();
 ```
 
 [gui]: https://en.wikipedia.org/wiki/Graphical_user_interface

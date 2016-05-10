@@ -5,16 +5,16 @@
 다음 예시는 파일과 디렉터리를 다중으로 선택하는 대화 상자를 표시하는 예시입니다:
 
 ```javascript
-var win = ...;  // 대화 상자를 사용할 BrowserWindow 객체
-const { dialog } = require('electron');
-console.log(dialog.showOpenDialog({ properties: [ 'openFile', 'openDirectory', 'multiSelections' ]}));
+let win = ...;  // 대화 상자를 사용할 BrowserWindow 객체
+const {dialog} = require('electron');
+console.log(dialog.showOpenDialog({properties: ['openFile', 'openDirectory', 'multiSelections']}));
 ```
 
 대화 상자는 Electron의 메인 스레드에서 열립니다. 만약 렌더러 프로세스에서 대화 상자
 객체를 사용하고 싶다면, `remote`를 통해 접근하는 방법을 고려해야 합니다:
 
 ```javascript
-const { dialog } = require('electron').remote;
+const {dialog} = require('electron').remote;
 ```
 
 ## Methods
@@ -45,10 +45,10 @@ const { dialog } = require('electron').remote;
 ```javascript
 {
   filters: [
-    { name: 'Images', extensions: ['jpg', 'png', 'gif'] },
-    { name: 'Movies', extensions: ['mkv', 'avi', 'mp4'] },
-    { name: 'Custom File Type', extensions: ['as'] },
-    { name: 'All Files', extensions: ['*'] }
+    {name: 'Images', extensions: ['jpg', 'png', 'gif']},
+    {name: 'Movies', extensions: ['mkv', 'avi', 'mp4']},
+    {name: 'Custom File Type', extensions: ['as']},
+    {name: 'All Files', extensions: ['*']}
   ]
 }
 ```
@@ -102,10 +102,10 @@ const { dialog } = require('electron').remote;
     라벨을 가지고 있을 때 해당 버튼의 인덱스를 반환합니다. 따로 두 라벨이 지정되지
     않은 경우 0을 반환합니다. OS X와 Windows에선 `cancelId` 지정 여부에 상관없이
     "Cancel" 버튼이 언제나 `cancelId`로 지정됩니다.
-  * `noLink` Boolean - Windows Electron은 "Cancel"이나 "Yes"와 같은 흔히 사용되는
-    버튼을 찾으려고 시도하고 대화 상자 내에서 해당 버튼을 커맨드 링크처럼 만듭니다.
-    이 기능으로 앱을 좀 더 Modern Windows 앱처럼 만들 수 있습니다. 이 기능을 원하지
-    않으면 `noLink`를 true로 지정하면 됩니다.
+  * `noLink` Boolean - Windows에서 Electron은 ("Cancel"이나 "Yes"와 같은) 흔히
+    사용되는 버튼을 찾으려고 시도하고 대화 상자 내에서 해당 버튼을 커맨드 링크처럼
+    만듭니다. 이 기능으로 앱을 좀 더 현대적인 Windows 앱처럼 만들 수 있습니다. 이
+    기능을 원하지 않으면 `noLink`를 true로 지정하면 됩니다.
 * `callback` Function (optional)
 
 대화 상자를 표시합니다. `browserWindow`를 지정하면 대화 상자가 완전히 닫힐 때까지

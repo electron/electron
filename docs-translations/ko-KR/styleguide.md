@@ -94,5 +94,5 @@ Returns:
 ```javascript
 Alarm.on('wake-up', (time) => {
   console.log(time)
-})
+});
 ```

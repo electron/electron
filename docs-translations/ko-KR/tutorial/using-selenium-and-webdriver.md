@@ -93,7 +93,7 @@ $ npm install webdriverio
 ```javascript
 const webdriverio = require('webdriverio');
 let options = {
-  host: "localhost", // localhost에서 작동중인 크롬 드라이버 서버를 사용합니다.
+  host: 'localhost', // localhost에서 작동중인 크롬 드라이버 서버를 사용합니다.
   port: 9515,        // 연결할 크롬 드라이버 서버의 포트를 설정합니다.
   desiredCapabilities: {
     browserName: 'chrome',

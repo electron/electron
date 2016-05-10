@@ -35,15 +35,15 @@
 
     const loadstart = () => {
       indicator.innerText = 'loading...';
-    }
+    };
 
     const loadstop = () => {
       indicator.innerText = '';
-    }
+    };
 
     webview.addEventListener('did-start-loading', loadstart);
     webview.addEventListener('did-stop-loading', loadstop);
-  }
+  };
 </script>
 ```
 
@@ -207,7 +207,7 @@ API를 사용할 수 있습니다. 이를 지정하면 내부에서 로우레벨
 **예시**
 
 ```javascript
-webview.addEventListener("dom-ready", () => {
+webview.addEventListener('dom-ready', () => {
   webview.openDevTools();
 });
 ```
@@ -590,7 +590,7 @@ Returns:
 콘솔에 다시 로깅하는 예시입니다.
 
 ```javascript
-webview.addEventListener('console-message', function(e) {
+webview.addEventListener('console-message', (e) => {
   console.log('Guest page logged a message:', e.message);
 });
 ```
@@ -610,12 +610,12 @@ Returns:
 사용할 수 있을 때 발생하는 이벤트입니다.
 
 ```javascript
-webview.addEventListener('found-in-page', function(e) {
+webview.addEventListener('found-in-page', (e) => {
   if (e.result.finalUpdate)
-    webview.stopFindInPage("keepSelection");
+    webview.stopFindInPage('keepSelection');
 });
 
-const rquestId = webview.findInPage("test");
+const rquestId = webview.findInPage('test');
 ```
 
 ### Event: 'new-window'
@@ -633,7 +633,7 @@ Returns:
 다음 예시 코드는 새 URL을 시스템의 기본 브라우저로 여는 코드입니다.
 
 ```javascript
-const { shell } = require('electron');
+const {shell} = require('electron');
 
 webview.addEventListener('new-window', (e) => {
   const protocol = require('url').parse(e.url).protocol;
@@ -719,7 +719,7 @@ webview.send('ping');
 
 ```javascript
 // In guest page.
-var { ipcRenderer } = require('electron');
+const {ipcRenderer} = require('electron');
 ipcRenderer.on('ping', () => {
   ipcRenderer.sendToHost('pong');
 });

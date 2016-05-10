@@ -11,8 +11,7 @@
 사용할 수 없습니다.
 
 ```javascript
-const electron = require('electron');
-const { app, globalShortcut } = electron;
+const {app, globalShortcut} = require('electron');
 
 app.on('ready', () => {
   // 'CommandOrControl+X' 단축키를 리스너에 등록합니다.

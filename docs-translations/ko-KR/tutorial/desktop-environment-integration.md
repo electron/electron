@@ -21,9 +21,9 @@ let myNotification = new Notification('Title', {
   body: 'Lorem Ipsum Dolor Sit Amet'
 });
 
-myNotification.onclick = function () {
-  console.log('Notification clicked')
-}
+myNotification.onclick = () => {
+  console.log('Notification clicked');
+};
 ```
 
 위 코드를 통해 생성한 데스크톱 알림은 각 운영체제 모두 비슷한 사용자 경험을 제공하지만,
@@ -110,18 +110,17 @@ __Terminal.app의 dock menu:__
 OS X에서만 사용 가능합니다:
 
 ```javascript
-const electron = require('electron');
-const app = electron.app;
-const Menu = electron.Menu;
+const {app, Menu} = require('electron');
 
 const dockMenu = Menu.buildFromTemplate([
-  { label: 'New Window', click: () => { console.log('New Window'); } },
-  { label: 'New Window with Settings', submenu: [
-    { label: 'Basic' },
-    { label: 'Pro'}
+  {label: 'New Window', click() { console.log('New Window'); }},
+  {label: 'New Window with Settings', submenu: [
+    {label: 'Basic'},
+    {label: 'Pro'}
   ]},
-  { label: 'New Command...'}
+  {label: 'New Command...'}
 ]);
+
 app.dock.setMenu(dockMenu);
 ```
 
@@ -203,7 +202,7 @@ __Windows Media Player의 미리보기 툴바:__
 미리보기 툴바를 설정할 수 있습니다:
 
 ```javascript
-const { BrowserWindow } = require('electron');
+const {BrowserWindow} = require('electron');
 const path = require('path');
 
 let win = new BrowserWindow({
@@ -213,15 +212,15 @@ let win = new BrowserWindow({
 
 win.setThumbarButtons([
   {
-    tooltip: "button1",
+    tooltip: 'button1',
     icon: path.join(__dirname, 'button1.png'),
-    click: () => { console.log("button2 clicked"); }
+    click() { console.log('button2 clicked'); }
   },
   {
-    tooltip: "button2",
+    tooltip: 'button2',
     icon: path.join(__dirname, 'button2.png'),
     flags:['enabled', 'dismissonclick'],
-    click: () => { console.log("button2 clicked."); }
+    click() { console.log('button2 clicked.'); }
   }
 ]);
 ```
@@ -260,8 +259,8 @@ __작업 표시줄 버튼의 프로그래스 바:__
 있습니다:
 
 ```javascript
-let window = new BrowserWindow({...});
-window.setProgressBar(0.5);
+let win = new BrowserWindow({...});
+win.setProgressBar(0.5);
 ```
 
 ## 작업 표시줄의 아이콘 오버레이 (Windows)
@@ -287,8 +286,8 @@ __작업 표시줄 버튼 위의 오버레이:__
 API를 사용할 수 있습니다:
 
 ```javascript
-let window = new BrowserWindow({...});
-window.setOverlayIcon('path/to/overlay.png', 'Description for overlay');
+let win = new BrowserWindow({...});
+win.setOverlayIcon('path/to/overlay.png', 'Description for overlay');
 ```
 
 ## 대표 파일 제시 (OS X)
@@ -306,9 +305,9 @@ __대표 파일 팝업 메뉴:__
 [BrowserWindow.setDocumentEdited][setdocumentedited]를 사용할 수 있습니다:
 
 ```javascript
-let window = new BrowserWindow({...});
-window.setRepresentedFilename('/etc/passwd');
-window.setDocumentEdited(true);
+let win = new BrowserWindow({...});
+win.setRepresentedFilename('/etc/passwd');
+win.setDocumentEdited(true);
 ```
 
 [addrecentdocument]: ../api/app.md#appaddrecentdocumentpath-os-x-windows

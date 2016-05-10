@@ -64,7 +64,7 @@ console.log(require('remote').getGlobal('sharedObject').someProperty);
 ```javascript
 app.on('ready', () => {
   const tray = new Tray('/path/to/icon.png');
-})
+});
 ```
 
 를 이렇게:
@@ -73,7 +73,7 @@ app.on('ready', () => {
 let tray = null;
 app.on('ready', () => {
   tray = new Tray('/path/to/icon.png');
-})
+});
 ```
 
 ## Electron에서 jQuery/RequireJS/Meteor/AngularJS를 사용할 수 없습니다.
@@ -86,7 +86,7 @@ Node.js가 Electron에 합쳐졌기 때문에, DOM에 `module`, `exports`, `requ
 
 ```javascript
 // 메인 프로세스에서.
-let mainWindow = new BrowserWindow({
+let win = new BrowserWindow({
   webPreferences: {
     nodeIntegration: false
   }

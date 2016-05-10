@@ -8,12 +8,12 @@
 [`webContents`](web-contents.md)에서 `session` 속성으로 접근할 수도 있습니다.
 
 ```javascript
-const { BrowserWindow } = require('electron');
+const {BrowserWindow} = require('electron');
 
-let win = new BrowserWindow({ width: 800, height: 600 });
-win.loadURL("http://github.com");
+let win = new BrowserWindow({width: 800, height: 600});
+win.loadURL('http://github.com');
 
-const ses = win.webContents.session;
+let ses = win.webContents.session;
 ```
 
 ## Methods
@@ -89,13 +89,13 @@ session.defaultSession.cookies.get({}, (error, cookies) => {
 });
 
 // url에 관련된 쿠키를 모두 가져옵니다.
-session.defaultSession.cookies.get({ url : "http://www.github.com" }, (error, cookies) => {
+session.defaultSession.cookies.get({url: 'http://www.github.com'}, (error, cookies) => {
   console.log(cookies);
 });
 
 // 지정한 쿠키 데이터를 설정합니다.
 // 동일한 쿠키가 있으면 해당 쿠키를 덮어씁니다.
-const cookie = { url : "http://www.github.com", name : "dummy_name", value : "dummy" };
+const cookie = {url: 'http://www.github.com', name: 'dummy_name', value: 'dummy'};
 session.defaultSession.cookies.set(cookie, (error) => {
   if (error)
     console.error(error);
@@ -306,7 +306,7 @@ myWindow.webContents.session.setCertificateVerifyProc((hostname, cert, callback)
 ```javascript
 session.fromPartition(partition).setPermissionRequestHandler((webContents, permission, callback) => {
   if (webContents.getURL() === host) {
-    if (permission === "notifications") {
+    if (permission === 'notifications') {
       callback(false); // 거부됨.
       return;
     }
@@ -341,7 +341,7 @@ session.fromPartition(partition).setPermissionRequestHandler((webContents, permi
 ```javascript
 // 다음 url에 대한 User Agent를 조작합니다.
 const filter = {
-  urls: ["https://*.github.com/*", "*://electron.github.io"]
+  urls: ['https://*.github.com/*', '*://electron.github.io']
 };
 
 session.defaultSession.webRequest.onBeforeSendHeaders(filter, (details, callback) => {

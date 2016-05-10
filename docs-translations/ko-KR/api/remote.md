@@ -14,9 +14,9 @@ inter-process 통신을 하지 않고도 간단한 API를 통해 직접 메인 �
 다음 예시는 렌더러 프로세스에서 브라우저 창을 만드는 예시입니다:
 
 ```javascript
-const { BrowserWindow } = require('electron').remote;
+const {BrowserWindow} = require('electron').remote;
 
-var win = new BrowserWindow({ width: 800, height: 600 });
+let win = new BrowserWindow({width: 800, height: 600});
 win.loadURL('https://github.com');
 ```
 
@@ -66,22 +66,22 @@ Remote 객체가 GC 되려면 대응하는 메인 프로세스 내부 객체의 
 // mapNumbers.js 메인 프로세스
 exports.withRendererCallback = (mapper) => {
   return [1,2,3].map(mapper);
-}
+;
 
 exports.withLocalCallback = () => {
   return exports.mapNumbers(x => x + 1);
-}
+};
 ```
 
 ```javascript
 // 렌더러 프로세스
-const mapNumbers = require("remote").require("./mapNumbers");
+const mapNumbers = require('remote').require('./mapNumbers');
 
 const withRendererCb = mapNumbers.withRendererCallback(x => x + 1);
 
-const withLocalCb = mapNumbers.withLocalCallback()
+const withLocalCb = mapNumbers.withLocalCallback();
 
-console.log(withRendererCb, withLocalCb) // [true, true, true], [2, 3, 4]
+console.log(withRendererCb, withLocalCb); // [true, true, true], [2, 3, 4]
 ```
 
 보다시피 동기적인 렌더러 콜백 함수의 반환 값은 예상되지 않은 값입니다. 그리고 메인

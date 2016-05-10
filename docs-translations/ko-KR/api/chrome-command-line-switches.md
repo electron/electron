@@ -7,7 +7,7 @@
 명령줄 옵션을 추가로 지정할 수 있습니다:
 
 ```javascript
-const { app } = require('electron');
+const {app} = require('electron');
 app.commandLine.appendSwitch('remote-debugging-port', '8315');
 app.commandLine.appendSwitch('host-rules', 'MAP * 127.0.0.1');
 
@@ -109,8 +109,7 @@ Net log 이벤트를 활성화하고 `path`에 로그를 기록합니다.
 
 ## --ssl-version-fallback-min=`version`
 
-TLS fallback에서 사용할 SSL/TLS 최소 버전을 지정합니다. ("tls1", "tls1.1",
-"tls1.2")
+TLS fallback에서 사용할 SSL/TLS 최소 버전을 지정합니다. (`tls1`, `tls1.1`, `tls1.2`)
 
 ## --cipher-suite-blacklist=`cipher_suites`
 

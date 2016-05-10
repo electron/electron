@@ -8,7 +8,7 @@
 예시:
 
 ```javascript
-var app = require('app');
+const {app} = require('electron');
 
 app.on('ready', () => {
   require('electron').powerMonitor.on('suspend', () => {

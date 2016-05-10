@@ -6,12 +6,12 @@
 
 ```javascript
 // 메인 프로세스에서
-const { BrowserWindow } = require('electron');
+const {BrowserWindow} = require('electron');
 
 // 또는 렌더러 프로세스에서
-const { BrowserWindow } = require('electron').remote;
+const {BrowserWindow} = require('electron').remote;
 
-let win = new BrowserWindow({ width: 800, height: 600, show: false });
+let win = new BrowserWindow({width: 800, height: 600, show: false});
 win.on('closed', () => {
   win = null;
 });
@@ -214,7 +214,7 @@ Electron에선 빈 문자열 또는 `false`를 전달할 경우 윈도우 종료
 예시는 다음과 같습니다:
 
 ```javascript
-window.onbeforeunload = function(e) {
+window.onbeforeunload = (e) => {
   console.log('I do not want to be closed');
 
   // 반드시 문자열을 반환해야 하고 사용자에게 페이지 언로드에 대한 확인 창을 보여주는
@@ -390,7 +390,7 @@ ID에 해당하는 윈도우를 찾습니다.
 
 ```javascript
 // `win`은 BrowserWindow의 인스턴스입니다
-var win = new BrowserWindow({ width: 800, height: 600 });
+let win = new BrowserWindow({width: 800, height: 600});
 ```
 
 ### `win.webContents`
@@ -683,7 +683,7 @@ Mac OS X에서 시트를 부착할 위치를 지정합니다. 기본적으로 �
 표시하기 위해 사용할 것입니다:
 
 ```javascript
-var toolbarRect = document.getElementById('toolbar').getBoundingClientRect();
+let toolbarRect = document.getElementById('toolbar').getBoundingClientRect();
 win.setSheetOffset(toolbarRect.height);
 ```
 

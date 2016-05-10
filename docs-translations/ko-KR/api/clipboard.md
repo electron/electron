@@ -5,7 +5,7 @@
 다음 예시는 클립보드에 문자열을 쓰는 방법을 보여줍니다:
 
 ```javascript
-const { clipboard } = require('electron');
+const {clipboard} = require('electron');
 clipboard.writeText('Example String');
 ```
 
@@ -113,7 +113,7 @@ console.log(clipboard.has('<p>selection</p>'));
 * `type` String (optional)
 
 ```javascript
-clipboard.write({text: 'test', html: "<b>test</b>"});
+clipboard.write({text: 'test', html: '<b>test</b>'});
 ```
 
 `data`를 클립보드에 씁니다.
