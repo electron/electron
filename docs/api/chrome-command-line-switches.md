@@ -109,7 +109,7 @@ Enables net log events to be saved and writes them to `path`.
 
 ## --ssl-version-fallback-min=`version`
 
-Sets the minimum SSL/TLS version ("tls1", "tls1.1" or "tls1.2") that TLS
+Sets the minimum SSL/TLS version (`tls1`, `tls1.1` or `tls1.2`) that TLS
 fallback will accept.
 
 ## --cipher-suite-blacklist=`cipher_suites`
