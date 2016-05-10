@@ -45,7 +45,7 @@ def get_target_arch():
 
 
 def get_chromedriver_version():
-  return 'v2.15'
+  return 'v2.21'
 
 
 def s3_config():
