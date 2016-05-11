@@ -5,52 +5,12 @@
 #ifndef ATOM_COMMON_ID_WEAK_MAP_H_
 #define ATOM_COMMON_ID_WEAK_MAP_H_
 
-#include <unordered_map>
-#include <vector>
-
-#include "base/memory/linked_ptr.h"
-#include "v8/include/v8.h"
+#include "atom/common/key_weak_map.h"
 
 namespace atom {
 
-// Like ES6's WeakMap, but the key is Integer and the value is Weak Pointer.
-class KeyWeakMap {
- public:
-  // Records the key and self, used by SetWeak.
-  struct KeyObject {
-    int32_t key;
-    KeyWeakMap* self;
-  };
-
-  KeyWeakMap();
-  virtual ~KeyWeakMap();
-
-  // Sets the object to WeakMap with the given |id|.
-  void Set(v8::Isolate* isolate, int32_t id, v8::Local<v8::Object> object);
-
-  // Gets the object from WeakMap by its |id|.
-  v8::MaybeLocal<v8::Object> Get(v8::Isolate* isolate, int32_t id);
-
-  // Whethere there is an object with |id| in this WeakMap.
-  bool Has(int32_t id) const;
-
-  // Returns all objects.
-  std::vector<v8::Local<v8::Object>> Values(v8::Isolate* isolate);
-
-  // Remove object with |id| in the WeakMap.
-  void Remove(int32_t key);
-
- private:
-  // Map of stored objects.
-  std::unordered_map<
-      int32_t,
-      std::pair<KeyObject, linked_ptr<v8::Global<v8::Object>>>> map_;
-
-  DISALLOW_COPY_AND_ASSIGN(KeyWeakMap);
-};
-
 // Provides key increments service in addition to KeyWeakMap.
-class IDWeakMap : public KeyWeakMap {
+class IDWeakMap : public KeyWeakMap<int32_t> {
  public:
   IDWeakMap();
   ~IDWeakMap() override;
