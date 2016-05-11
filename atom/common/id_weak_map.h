@@ -16,6 +16,12 @@ namespace atom {
 // Like ES6's WeakMap, but the key is Integer and the value is Weak Pointer.
 class KeyWeakMap {
  public:
+  // Records the key and self, used by SetWeak.
+  struct KeyObject {
+    int32_t key;
+    KeyWeakMap* self;
+  };
+
   KeyWeakMap();
   virtual ~KeyWeakMap();
 
@@ -36,7 +42,9 @@ class KeyWeakMap {
 
  private:
   // Map of stored objects.
-  std::unordered_map<int32_t, linked_ptr<v8::Global<v8::Object>>> map_;
+  std::unordered_map<
+      int32_t,
+      std::pair<KeyObject, linked_ptr<v8::Global<v8::Object>>>> map_;
 
   DISALLOW_COPY_AND_ASSIGN(KeyWeakMap);
 };
