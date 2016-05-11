@@ -79,7 +79,7 @@ class KeyWeakMap {
 
  private:
   static void OnObjectGC(
-      const v8::WeakCallbackInfo<KeyWeakMap<K>::KeyObject>& data) {
+      const v8::WeakCallbackInfo<typename KeyWeakMap<K>::KeyObject>& data) {
     KeyWeakMap<K>::KeyObject* key_object = data.GetParameter();
     key_object->self->Remove(key_object->key);
   }
