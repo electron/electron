@@ -5,7 +5,7 @@
 #ifndef ATOM_COMMON_API_ATOM_API_ID_WEAK_MAP_H_
 #define ATOM_COMMON_API_ATOM_API_ID_WEAK_MAP_H_
 
-#include "atom/common/id_weak_map.h"
+#include "atom/common/key_weak_map.h"
 #include "native_mate/object_template_builder.h"
 #include "native_mate/handle.h"
 
@@ -31,7 +31,7 @@ class IDWeakMap : public mate::Wrappable<IDWeakMap> {
   bool Has(int32_t id);
   void Remove(int32_t id);
 
-  atom::IDWeakMap id_weak_map_;
+  atom::KeyWeakMap<int32_t> id_weak_map_;
 
   DISALLOW_COPY_AND_ASSIGN(IDWeakMap);
 };

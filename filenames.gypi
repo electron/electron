@@ -338,8 +338,6 @@
       'atom/common/draggable_region.cc',
       'atom/common/draggable_region.h',
       'atom/common/google_api_key.h',
-      'atom/common/id_weak_map.cc',
-      'atom/common/id_weak_map.h',
       'atom/common/key_weak_map.h',
       'atom/common/keyboard_util.cc',
       'atom/common/keyboard_util.h',
