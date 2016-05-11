@@ -70,10 +70,8 @@ class KeyWeakMap {
   // Remove object with |key| in the WeakMap.
   void Remove(const K& key) {
     auto iter = map_.find(key);
-    if (iter == map_.end()) {
-      LOG(WARNING) << "Removing unexist object with ID " << key;
+    if (iter == map_.end())
       return;
-    }
 
     iter->second.second->ClearWeak();
     map_.erase(iter);
