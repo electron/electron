@@ -36,10 +36,6 @@ void IDWeakMap::Remove(int32_t id) {
   id_weak_map_.Remove(id);
 }
 
-void IDWeakMap::Clear() {
-  id_weak_map_.Clear();
-}
-
 // static
 void IDWeakMap::BuildPrototype(v8::Isolate* isolate,
                                v8::Local<v8::ObjectTemplate> prototype) {
@@ -47,8 +43,7 @@ void IDWeakMap::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("set", &IDWeakMap::Set)
       .SetMethod("get", &IDWeakMap::Get)
       .SetMethod("has", &IDWeakMap::Has)
-      .SetMethod("remove", &IDWeakMap::Remove)
-      .SetMethod("clear", &IDWeakMap::Clear);
+      .SetMethod("remove", &IDWeakMap::Remove);
 }
 
 // static

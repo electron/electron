@@ -30,7 +30,6 @@ class IDWeakMap : public mate::Wrappable<IDWeakMap> {
   v8::Local<v8::Object> Get(v8::Isolate* isolate, int32_t id);
   bool Has(int32_t id);
   void Remove(int32_t id);
-  void Clear();
 
   atom::IDWeakMap id_weak_map_;
 

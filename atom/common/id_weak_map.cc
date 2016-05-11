@@ -59,14 +59,6 @@ bool IDWeakMap::Has(int32_t id) const {
   return map_.find(id) != map_.end();
 }
 
-std::vector<int32_t> IDWeakMap::Keys() const {
-  std::vector<int32_t> keys;
-  keys.reserve(map_.size());
-  for (const auto& iter : map_)
-    keys.emplace_back(iter.first);
-  return keys;
-}
-
 std::vector<v8::Local<v8::Object>> IDWeakMap::Values(v8::Isolate* isolate) {
   std::vector<v8::Local<v8::Object>> keys;
   keys.reserve(map_.size());
@@ -81,10 +73,6 @@ void IDWeakMap::Remove(int32_t id) {
     LOG(WARNING) << "Removing unexist object with ID " << id;
   else
     map_.erase(iter);
-}
-
-void IDWeakMap::Clear() {
-  map_.clear();
 }
 
 int32_t IDWeakMap::GetNextID() {
