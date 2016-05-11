@@ -880,24 +880,4 @@ describe('browser-window module', function () {
       w.loadURL(server.url)
     })
   })
-
-  describe('deprecated options', function () {
-    it('throws a deprecation error for option keys using hyphens instead of camel case', function () {
-      assert.throws(function () {
-        return new BrowserWindow({'min-width': 500})
-      }, 'min-width is deprecated. Use minWidth instead.')
-    })
-
-    it('throws a deprecation error for webPreference keys using hyphens instead of camel case', function () {
-      assert.throws(function () {
-        return new BrowserWindow({webPreferences: {'node-integration': false}})
-      }, 'node-integration is deprecated. Use nodeIntegration instead.')
-    })
-
-    it('throws a deprecation error for option keys that should be set on webPreferences', function () {
-      assert.throws(function () {
-        return new BrowserWindow({zoomFactor: 1})
-      }, 'options.zoomFactor is deprecated. Use options.webPreferences.zoomFactor instead.')
-    })
-  })
 })

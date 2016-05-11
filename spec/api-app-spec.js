@@ -10,21 +10,10 @@ const BrowserWindow = remote.require('electron').BrowserWindow
 const isCI = remote.getGlobal('isCi')
 
 describe('electron module', function () {
-  it('allows old style require by default', function () {
-    require('shell')
-  })
-
-  it('can prevent exposing internal modules to require', function (done) {
-    const electron = require('electron')
-    const clipboard = require('clipboard')
-    assert.equal(typeof clipboard, 'object')
-    electron.hideInternalModules()
-    try {
+  it('does not expose internal modules to require', function () {
+    assert.throws(function () {
       require('clipboard')
-    } catch (err) {
-      assert.equal(err.message, "Cannot find module 'clipboard'")
-      done()
-    }
+    }, /Cannot find module 'clipboard'/)
   })
 })
 

@@ -72,25 +72,6 @@ const app = electron.app;
 const BrowserWindow = electron.BrowserWindow;
 ```
 
-## Disable old styles of using built-in modules
-
-Before v0.35.0, all built-in modules have to be used in the form of
-`require('module-name')`, though it has [many disadvantages][issue-387], we are
-still supporting it for compatibility with old apps.
-
-To disable the old styles completely, you can set the
-`ELECTRON_HIDE_INTERNAL_MODULES` environment variable:
-
-```javascript
-process.env.ELECTRON_HIDE_INTERNAL_MODULES = 'true'
-```
-
-Or call the `hideInternalModules` API:
-
-```javascript
-require('electron').hideInternalModules();
-```
-
 [gui]: https://en.wikipedia.org/wiki/Graphical_user_interface
 [destructuring-assignment]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Destructuring_assignment
 [issue-387]: https://github.com/electron/electron/issues/387
