@@ -5,7 +5,6 @@
 #include "atom/common/api/atom_api_id_weak_map.h"
 
 #include "atom/common/node_includes.h"
-#include "native_mate/constructor.h"
 #include "native_mate/dictionary.h"
 
 namespace atom {
@@ -13,6 +12,7 @@ namespace atom {
 namespace api {
 
 IDWeakMap::IDWeakMap(v8::Isolate* isolate) {
+  Init(isolate);
 }
 
 IDWeakMap::~IDWeakMap() {
@@ -47,8 +47,8 @@ void IDWeakMap::BuildPrototype(v8::Isolate* isolate,
 }
 
 // static
-mate::WrappableBase* IDWeakMap::Create(v8::Isolate* isolate) {
-  return new IDWeakMap(isolate);
+mate::Handle<IDWeakMap> IDWeakMap::Create(v8::Isolate* isolate) {
+  return mate::CreateHandle(isolate, new IDWeakMap(isolate));
 }
 
 }  // namespace api
@@ -61,12 +61,8 @@ using atom::api::IDWeakMap;
 
 void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
-  v8::Isolate* isolate = context->GetIsolate();
-  v8::Local<v8::Function> constructor = mate::CreateConstructor<IDWeakMap>(
-      isolate, "IDWeakMap", base::Bind(&IDWeakMap::Create));
-  mate::Dictionary id_weak_map(isolate, constructor);
-  mate::Dictionary dict(isolate, exports);
-  dict.Set("IDWeakMap", id_weak_map);
+  mate::Dictionary dict(context->GetIsolate(), exports);
+  dict.SetMethod("createIDWeakMap", &atom::api::IDWeakMap::Create);
 }
 
 }  // namespace

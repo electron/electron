@@ -15,7 +15,7 @@ namespace api {
 
 class IDWeakMap : public mate::Wrappable<IDWeakMap> {
  public:
-  static mate::WrappableBase* Create(v8::Isolate* isolate);
+  static mate::Handle<IDWeakMap> Create(v8::Isolate* isolate);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::ObjectTemplate> prototype);
