@@ -1,4 +1,4 @@
-var app = require('app')
+var app = require('electron').app
 var fs = require('fs')
 var request = require('request')
 
