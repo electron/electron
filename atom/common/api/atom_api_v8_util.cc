@@ -14,9 +14,10 @@
 #include "native_mate/dictionary.h"
 #include "v8/include/v8-profiler.h"
 
+// Following code should be removed after we upgraded to Chrome 50.
+#if !defined(COMPILER_MSVC)
 namespace base {
 
-// Following code should be removed after we upgraded to Chrome 50.
 template <typename T1, typename T2>
 inline size_t HashInts(T1 value1, T2 value2) {
   // This condition is expected to be compile-time evaluated and optimised away
@@ -40,6 +41,7 @@ struct hash<std::pair<Type1, Type2>> {
 };
 
 }  // namespace std
+#endif  // defined(COMPILER_MSVC)
 
 namespace mate {
 
