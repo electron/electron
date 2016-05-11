@@ -558,7 +558,7 @@ Chrominum의 명령줄에 인수를 추가합니다. 인수는 올바르게 인�
   기본값은 `informational` 입니다.
 
 `critical`이 전달되면 dock 아이콘이 어플리케이션이 활성화되거나 요청이 중지되기 전까지
-통통 튑니다.
+통통 튀는 바운스 효과를 적용합니다.
 
 `informational`이 전달되면 dock 아이콘이 1초만 통통 튑니다. 하지만 어플리케이션이
 활성화되거나 요청이 중지되기 전까지 요청은 계속 활성화로 유지 됩니다.
@@ -569,7 +569,13 @@ Chrominum의 명령줄에 인수를 추가합니다. 인수는 올바르게 인�
 
 * `id` Integer
 
-`app.dock.bounce([type])` 메서드에서 반환한 `id`의 통통 튀는 효과를 취소합니다.
+`app.dock.bounce([type])` 메서드에서 반환한 `id`의 바운스 효과를 취소합니다.
+
+### `app.dock.downloadFinished(filePath)` _OS X_
+
+* `filePath` String
+
+`filePath`가 다운로드 폴더에 들어있다면 다운로드 스택을 바운스합니다.
 
 ### `app.dock.setBadge(text)` _OS X_
 
