@@ -111,6 +111,9 @@ class Browser : public WindowListObserver {
   int DockBounce(BounceType type);
   void DockCancelBounce(int request_id);
 
+  // Bounce the Downloads stack.
+  void DockDownloadFinished(const std::string& filePath);
+
   // Set/Get dock's badge text.
   void DockSetBadgeText(const std::string& label);
   std::string DockGetBadgeText();

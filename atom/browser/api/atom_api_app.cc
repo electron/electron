@@ -548,6 +548,8 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   dict.SetMethod("dockBounce", &DockBounce);
   dict.SetMethod("dockCancelBounce",
                  base::Bind(&Browser::DockCancelBounce, browser));
+  dict.SetMethod("dockDownloadFinished",
+                 base::Bind(&Browser::DockDownloadFinished, browser));
   dict.SetMethod("dockSetBadgeText",
                  base::Bind(&Browser::DockSetBadgeText, browser));
   dict.SetMethod("dockGetBadgeText",
