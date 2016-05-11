@@ -14,16 +14,13 @@
 namespace atom {
 
 // Like ES6's WeakMap, but the key is Integer and the value is Weak Pointer.
-class IDWeakMap {
+class KeyWeakMap {
  public:
-  IDWeakMap();
-  ~IDWeakMap();
+  KeyWeakMap();
+  virtual ~KeyWeakMap();
 
   // Sets the object to WeakMap with the given |id|.
   void Set(v8::Isolate* isolate, int32_t id, v8::Local<v8::Object> object);
-
-  // Adds |object| to WeakMap and returns its allocated |id|.
-  int32_t Add(v8::Isolate* isolate, v8::Local<v8::Object> object);
 
   // Gets the object from WeakMap by its |id|.
   v8::MaybeLocal<v8::Object> Get(v8::Isolate* isolate, int32_t id);
@@ -38,14 +35,27 @@ class IDWeakMap {
   void Remove(int32_t key);
 
  private:
+  // Map of stored objects.
+  std::unordered_map<int32_t, linked_ptr<v8::Global<v8::Object>>> map_;
+
+  DISALLOW_COPY_AND_ASSIGN(KeyWeakMap);
+};
+
+// Provides key increments service in addition to KeyWeakMap.
+class IDWeakMap : public KeyWeakMap {
+ public:
+  IDWeakMap();
+  ~IDWeakMap() override;
+
+  // Adds |object| to WeakMap and returns its allocated |id|.
+  int32_t Add(v8::Isolate* isolate, v8::Local<v8::Object> object);
+
+ private:
   // Returns next available ID.
   int32_t GetNextID();
 
   // ID of next stored object.
   int32_t next_id_;
-
-  // Map of stored objects.
-  std::unordered_map<int32_t, linked_ptr<v8::Global<v8::Object>>> map_;
 
   DISALLOW_COPY_AND_ASSIGN(IDWeakMap);
 };
