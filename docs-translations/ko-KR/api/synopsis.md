@@ -18,15 +18,13 @@ node 모듈을 완벽하게 지원합니다. ([네이티브 모듈](../tutorial/
 메인 프로세스 스크립트는 일반 Node.js 스크립트와 비슷합니다:
 
 ```javascript
-const electron = require('electron');
-const app = electron.app;
-const BrowserWindow = electron.BrowserWindow;
+const {app, BrowserWindow} = require('electron');
 
-var window = null;
+let win = null;
 
-app.on('ready', function() {
-  window = new BrowserWindow({width: 800, height: 600});
-  window.loadURL('https://github.com');
+app.on('ready', () => {
+  win = new BrowserWindow({width: 800, height: 600});
+  win.loadURL('https://github.com');
 });
 ```
 
@@ -38,8 +36,8 @@ app.on('ready', function() {
 <html>
 <body>
 <script>
-  const remote = require('electron').remote;
-  console.log(remote.app.getVersion());
+  const {app} = require('electron').remote;
+  console.log(app.getVersion());
 </script>
 </body>
 </html>
@@ -50,15 +48,28 @@ app.on('ready', function() {
 
 ## 분리 할당
 
-만약 CoffeeScript나 Babel을 사용하고 있다면, 빌트인 모듈을 사용할 때
-[분리 할당][destructuring-assignment]을 통해 직관적으로 사용할 수 있습니다:
+0.37 버전부터, [분리 할당][destructuring-assignment]을 통해 빌트인 모듈을 더
+직관적으로 사용할 수 있습니다:
 
 ```javascript
-const {app, BrowserWindow} = require('electron')
+const {app, BrowserWindow} = require('electron');
 ```
 
-아직 플레인 자바스크립트를 쓰고 있다면, Chrome이 ES6를 완전히 지원하기 전까지 기다려야
-합니다.
+모든 `electron` 모듈이 필요하다면, 먼저 require한 후 각 독립적인 모듈을
+`electron`에서 분리 할당함으로써 모듈을 사용할 수 있습니다.
+
+```javascript
+const electron = require('electron');
+const {app, BrowserWindow} = electron;
+ ```
+
+위 코드는 다음과 같습니다:
+
+```javascript
+const electron = require('electron');
+const app = electron.app;
+const BrowserWindow = electron.BrowserWindow;
+```
 
 ## 이전 스타일의 빌트인 모듈 비활성화
 
@@ -76,7 +87,7 @@ process.env.ELECTRON_HIDE_INTERNAL_MODULES = 'true'
 또는 `hideInternalModules` API를 사용해도 됩니다:
 
 ```javascript
-require('electron').hideInternalModules()
+require('electron').hideInternalModules();
 ```
 
 [gui]: https://en.wikipedia.org/wiki/Graphical_user_interface

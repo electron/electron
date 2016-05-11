@@ -7,18 +7,18 @@
 `chrome://tracing/` 페이지를 열고 생성된 파일을 로드하면 결과를 볼 수 있습니다.
 
 ```javascript
-const contentTracing = require('electron').contentTracing;
+const {contentTracing} = require('electron');
 
 const options = {
   categoryFilter: '*',
   traceOptions: 'record-until-full,enable-sampling'
 };
 
-contentTracing.startRecording(options, function() {
+contentTracing.startRecording(options, () => {
   console.log('Tracing started');
 
-  setTimeout(function() {
-    contentTracing.stopRecording('', function(path) {
+  setTimeout(() => {
+    contentTracing.stopRecording('', (path) => {
       console.log('Tracing data recorded to ' + path);
     });
   }, 5000);
@@ -36,7 +36,7 @@ contentTracing.startRecording(options, function() {
 카테고리 그룹 세트를 가져옵니다. 카테고리 그룹은 도달된 코드 경로를 변경할 수 있습니다.
 
 모든 child 프로세스가 `getCategories` 요청을 승인하면 `callback`이 한 번 호출되며
-인자에 카테고리 그룹의 배열이 전달됩니다.
+인수에 카테고리 그룹의 배열이 전달됩니다.
 
 ### `contentTracing.startRecording(options, callback)`
 

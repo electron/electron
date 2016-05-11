@@ -92,7 +92,7 @@ Returns:
 다음과 같이 사용할 수 있습니다:
 
 ```javascript
-Alarm.on('wake-up', function(time) {
+Alarm.on('wake-up', (time) => {
   console.log(time)
-})
+});
 ```

@@ -11,7 +11,7 @@
 합니다.
 
 새롭게 생성된 `BrowserWindow`는 기본적으로 부모 창의 옵션을 상속합니다. 이 옵션을
-변경하려면 새 창을 열 때 `features` 인자를 지정해야 합니다.
+변경하려면 새 창을 열 때 `features` 인수를 지정해야 합니다.
 
 ### `window.open(url[, frameName][, features])`
 

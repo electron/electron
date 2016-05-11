@@ -14,10 +14,9 @@ inter-process 통신을 하지 않고도 간단한 API를 통해 직접 메인 �
 다음 예시는 렌더러 프로세스에서 브라우저 창을 만드는 예시입니다:
 
 ```javascript
-const remote = require('electron').remote;
-const BrowserWindow = remote.BrowserWindow;
+const {BrowserWindow} = require('electron').remote;
 
-var win = new BrowserWindow({ width: 800, height: 600 });
+let win = new BrowserWindow({width: 800, height: 600});
 win.loadURL('https://github.com');
 ```
 
@@ -57,7 +56,7 @@ Remote 객체가 GC 되려면 대응하는 메인 프로세스 내부 객체의 
 받을 수 있습니다. 하지만 이 작업은 반드시 주의를 기울여 사용해야 합니다.
 
 첫째, 데드락을 피하기 위해 메인 프로세스로 전달된 콜백들은 비동기로 호출됩니다. 이러한
-이유로 메인 프로세스로 전달된 콜백들의 반환 값을 내부 함수에서 언제나 정상적으로 받을
+이유로 메인 프로세스에 전달된 콜백의 반환 값을 내부 함수에서 언제나 정상적으로 받을
 것이라고 예측해선 안됩니다.
 
 예를 들어 메인 프로세스에서 `Array.map` 같은 메서드를 사용할 때 렌더러 프로세스에서
@@ -65,54 +64,50 @@ Remote 객체가 GC 되려면 대응하는 메인 프로세스 내부 객체의 
 
 ```javascript
 // mapNumbers.js 메인 프로세스
-exports.withRendererCallback = function(mapper) {
+exports.withRendererCallback = (mapper) => {
   return [1,2,3].map(mapper);
-}
+;
 
-exports.withLocalCallback = function() {
-  return exports.mapNumbers(function(x) {
-    return x + 1;
-  });
-}
+exports.withLocalCallback = () => {
+  return exports.mapNumbers(x => x + 1);
+};
 ```
 
 ```javascript
 // 렌더러 프로세스
-var mapNumbers = require("remote").require("./mapNumbers");
+const mapNumbers = require('remote').require('./mapNumbers');
 
-var withRendererCb = mapNumbers.withRendererCallback(function(x) {
-  return x + 1;
-})
+const withRendererCb = mapNumbers.withRendererCallback(x => x + 1);
 
-var withLocalCb = mapNumbers.withLocalCallback()
+const withLocalCb = mapNumbers.withLocalCallback();
 
-console.log(withRendererCb, withLocalCb) // [true, true, true], [2, 3, 4]
+console.log(withRendererCb, withLocalCb); // [true, true, true], [2, 3, 4]
 ```
 
-보다시피 렌더러 콜백의 동기 반환 값은 예상되지 않은 처리입니다.
-그리고 메인 프로세스에서 처리한 함수의 반환 값과 일치하지 않습니다.
+보다시피 동기적인 렌더러 콜백 함수의 반환 값은 예상되지 않은 값입니다. 그리고 메인
+프로세스에서 처리한 함수의 반환 값과 일치하지 않습니다.
 
 둘째, 콜백들은 메인 프로세스로 전달, 호출된 이후에도 자동으로 함수의 참조가 릴리즈 되지
 않습니다. 함수 참조는 메인 프로세스에서 GC가 일어나기 전까지 계속 프로세스에 남아있게
 됩니다.
 
 다음 코드를 보면 느낌이 올 것입니다. 이 예시는 remote 객체에 `close` 이벤트 콜백을
-설치합니다:
+등록합니다:
 
 ```javascript
-var remote = require('remote');
+const remote = require('remote');
 
-remote.getCurrentWindow().on('close', function() {
+remote.getCurrentWindow().on('close', () => {
   // blabla...
 });
 ```
 
-하지만 이 코드 처럼 이벤트를 명시적으로 제거하지 않는 이상 콜백 함수의 참조가 계속해서
-메인 프로세스에 남아있게 됩니다. 만약 명시적으로 콜백을 제거하지 않으면 매 번 창을
-새로고침 할 때마다 콜백을 새로 설치합니다. 게다가 이전 콜백이 제거되지 않고 계속해서
-쌓이면서 메모리 누수가 발생합니다.
+하지만 이 코드와 같이 등록된 이벤트는 명시적으로 제거하지 않는 이상 콜백 함수의 참조가
+계속해서 메인 프로세스에 남아있게 됩니다. 만약 명시적으로 콜백을 제거하지 않으면 매 번
+창을 새로고침 할 때마다 콜백을 새로 설치합니다. 게다가 이전 콜백이 제거되지 않고
+계속해서 쌓이면서 메모리 누수가 발생합니다.
 
-설상가상으로 이전에 설치된 콜백의 콘텍스트가 릴리즈 되고 난 후(예: 페이지 새로고침)
+설상가상으로 이전에 등록된 콜백의 콘텍스트가 릴리즈 되고 난 후 (e.g. 페이지 새로고침)
 `close` 이벤트가 발생하면 예외가 발생하고 메인 프로세스가 작동 중지됩니다.
 
 이러한 문제를 피하려면 렌더러 프로세스에서 메인 프로세스로 넘긴 함수의 참조를 사용 후

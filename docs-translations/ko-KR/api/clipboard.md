@@ -2,12 +2,14 @@
 
 > 시스템 클립보드에 복사와 붙여넣기를 수행합니다.
 
+다음 예시는 클립보드에 문자열을 쓰는 방법을 보여줍니다:
+
 ```javascript
-const clipboard = require('electron').clipboard;
+const {clipboard} = require('electron');
 clipboard.writeText('Example String');
 ```
 
-X Window 시스템에선 selection 클립보드도 존재합니다. 이를 사용하려면 인자 뒤에
+X Window 시스템에선 selection 클립보드도 존재합니다. 이를 사용하려면 인수 뒤에
 `selection` 문자열을 같이 지정해주어야 합니다:
 
 ```javascript
@@ -111,7 +113,7 @@ console.log(clipboard.has('<p>selection</p>'));
 * `type` String (optional)
 
 ```javascript
-clipboard.write({text: 'test', html: "<b>test</b>"});
+clipboard.write({text: 'test', html: '<b>test</b>'});
 ```
 
 `data`를 클립보드에 씁니다.

@@ -10,10 +10,10 @@
 ```javascript
 const BrowserWindow = require('electron').BrowserWindow;
 
-var win = new BrowserWindow({width: 800, height: 1500});
-win.loadURL("http://github.com");
+let win = new BrowserWindow({width: 800, height: 1500});
+win.loadURL('http://github.com');
 
-var webContents = win.webContents;
+let webContents = win.webContents;
 ```
 
 ## Events
@@ -322,7 +322,7 @@ Returns:
 하는 경우 `pragma` 헤더를 사용할 수 있습니다.
 
 ```javascript
-const options = {"extraHeaders" : "pragma: no-cache\n"}
+const options = {extraHeaders: 'pragma: no-cache\n'};
 webContents.loadURL(url, options)
 ```
 
@@ -338,10 +338,10 @@ webContents.loadURL(url, options)
 현재 웹 페이지의 URL을 반환합니다.
 
 ```javascript
-var win = new BrowserWindow({width: 800, height: 600});
-win.loadURL("http://github.com");
+let win = new BrowserWindow({width: 800, height: 600});
+win.loadURL('http://github.com');
 
-var currentURL = win.webContents.getURL();
+let currentURL = win.webContents.getURL();
 ```
 
 ### `webContents.getTitle()`
@@ -533,12 +533,12 @@ CSS 코드를 현재 웹 페이지에 삽입합니다.
 제공된 `action`에 대한 `webContents`의 모든 `findInPage` 요청을 중지합니다.
 
 ```javascript
-webContents.on('found-in-page', function(event, result) {
+webContents.on('found-in-page', (event, result) => {
   if (result.finalUpdate)
-    webContents.stopFindInPage("clearSelection");
+    webContents.stopFindInPage('clearSelection');
 });
 
-const requestId = webContents.findInPage("api");
+const requestId = webContents.findInPage('api');
 ```
 
 ### `webContents.hasServiceWorker(callback)`
@@ -584,7 +584,7 @@ print기능을 사용하지 않는 경우 전체 바이너리 크기를 줄이�
   * `printSelectionOnly` Boolean - 선택된 영역만 프린트할지 여부를 정합니다.
   * `landscape` Boolean - landscape을 위해선 `true`를, portrait를 위해선 `false`를
   	사용합니다.
-* `callback` Function - `function(error, data) {}`
+* `callback` Function - `(error, data) => {}`
 
 Chromium의 미리보기 프린팅 커스텀 설정을 이용하여 윈도우의 웹 페이지를 PDF로
 프린트합니다.
@@ -607,19 +607,19 @@ Chromium의 미리보기 프린팅 커스텀 설정을 이용하여 윈도우의
 const BrowserWindow = require('electron').BrowserWindow;
 const fs = require('fs');
 
-var win = new BrowserWindow({width: 800, height: 600});
-win.loadURL("http://github.com");
+let win = new BrowserWindow({width: 800, height: 600});
+win.loadURL('http://github.com');
 
-win.webContents.on("did-finish-load", function() {
+win.webContents.on('did-finish-load', () => {
   // Use default printing options
-  win.webContents.printToPDF({}, function(error, data) {
+  win.webContents.printToPDF({}, (error, data) => {
     if (error) throw error;
-    fs.writeFile("/tmp/print.pdf", data, function(error) {
+    fs.writeFile('/tmp/print.pdf', data, (error) => {
       if (error)
         throw error;
-      console.log("Write PDF successfully.");
-    })
-  })
+      console.log('Write PDF successfully.');
+    });
+  });
 });
 ```
 
@@ -631,8 +631,8 @@ win.webContents.on("did-finish-load", function() {
 이후에 사용해야 합니다.
 
 ```javascript
-mainWindow.webContents.on('devtools-opened', function() {
-  mainWindow.webContents.addWorkSpace(__dirname);
+win.webContents.on('devtools-opened', () => {
+  win.webContents.addWorkSpace(__dirname);
 });
 ```
 
@@ -696,12 +696,12 @@ mainWindow.webContents.on('devtools-opened', function() {
 
 ```javascript
 // In the main process.
-var window = null;
-app.on('ready', function() {
-  window = new BrowserWindow({width: 800, height: 600});
-  window.loadURL('file://' + __dirname + '/index.html');
-  window.webContents.on('did-finish-load', function() {
-    window.webContents.send('ping', 'whoooooooh!');
+let win = null;
+app.on('ready', () => {
+  win = new BrowserWindow({width: 800, height: 600});
+  win.loadURL('file://' + __dirname + '/index.html');
+  win.webContents.on('did-finish-load', () => {
+    win.webContents.send('ping', 'whoooooooh!');
   });
 });
 ```
@@ -711,7 +711,7 @@ app.on('ready', function() {
 <html>
 <body>
   <script>
-    require('electron').ipcRenderer.on('ping', function(event, message) {
+    require('electron').ipcRenderer.on('ping', (event, message) => {
       console.log(message);  // Prints "whoooooooh!"
     });
   </script>
@@ -820,7 +820,7 @@ Input `event`를 웹 페이지로 전송합니다.
   * `HTMLOnly` - 페이지의 HTML만 저장합니다.
   * `HTMLComplete` - 페이지의 완성된 HTML을 저장합니다.
   * `MHTML` - 페이지의 완성된 HTML을 MHTML로 저장합니다.
-* `callback` Function - `function(error) {}`.
+* `callback` Function - `(error) => {}`.
   * `error` Error
 
 만약 페이지를 저장하는 프로세스가 성공적으로 끝났을 경우 true를 반환합니다.
@@ -828,10 +828,10 @@ Input `event`를 웹 페이지로 전송합니다.
 ```javascript
 win.loadURL('https://github.com');
 
-win.webContents.on('did-finish-load', function() {
-  win.webContents.savePage('/tmp/test.html', 'HTMLComplete', function(error) {
+win.webContents.on('did-finish-load', () => {
+  win.webContents.savePage('/tmp/test.html', 'HTMLComplete', (error) => {
     if (!error)
-      console.log("Save page successfully");
+      console.log('Save page successfully');
   });
 });
 ```
@@ -861,23 +861,23 @@ win.webContents.on('did-finish-load', function() {
 
 ```javascript
 try {
-  win.webContents.debugger.attach("1.1");
+  win.webContents.debugger.attach('1.1');
 } catch(err) {
-  console.log("Debugger attach failed : ", err);
+  console.log('Debugger attach failed : ', err);
 };
 
-win.webContents.debugger.on('detach', function(event, reason) {
-  console.log("Debugger detached due to : ", reason);
+win.webContents.debugger.on('detach', (event, reason) => {
+  console.log('Debugger detached due to : ', reason);
 });
 
-win.webContents.debugger.on('message', function(event, method, params) {
-  if (method == "Network.requestWillBeSent") {
-    if (params.request.url == "https://www.github.com")
+win.webContents.debugger.on('message', (event, method, params) => {
+  if (method === 'Network.requestWillBeSent') {
+    if (params.request.url === 'https://www.github.com')
       win.webContents.debugger.detach();
   }
-})
+});
 
-win.webContents.debugger.sendCommand("Network.enable");
+win.webContents.debugger.sendCommand('Network.enable');
 ```
 
 #### `webContents.debugger.attach([protocolVersion])`

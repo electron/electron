@@ -14,16 +14,16 @@ API를 사용하여 작업할 때 선택된 파일의 경로를 알 수 있도�
 </div>
 
 <script>
-  var holder = document.getElementById('holder');
-  holder.ondragover = function () {
+  const holder = document.getElementById('holder');
+  holder.ondragover = () => {
     return false;
   };
-  holder.ondragleave = holder.ondragend = function () {
+  holder.ondragleave = holder.ondragend = () => {
     return false;
   };
-  holder.ondrop = function (e) {
+  holder.ondrop = (e) => {
     e.preventDefault();
-    var file = e.dataTransfer.files[0];
+    const file = e.dataTransfer.files[0];
     console.log('File you dragged here is', file.path);
     return false;
   };

@@ -7,7 +7,8 @@
 다음 예시는 설정된 URL을 유저의 기본 브라우저로 엽니다:
 
 ```javascript
-const shell = require('electron').shell;
+const {shell} = require('electron');
+
 shell.openExternal('https://github.com');
 ```
 

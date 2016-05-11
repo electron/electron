@@ -5,7 +5,7 @@
 다음 예시는 현재 페이지를 200% 줌 합니다:
 
 ```javascript
-var webFrame = require('electron').webFrame;
+const {webFrame} = require('electron');
 
 webFrame.setZoomFactor(2);
 ```
@@ -58,8 +58,8 @@ Input field나 text area에 철자 검사(spell checking) 제공자를 설정합
 [node-spellchecker][spellchecker]를 철자 검사 제공자로 사용하는 예시입니다:
 
 ```javascript
-webFrame.setSpellCheckProvider("en-US", true, {
-  spellCheck: function(text) {
+webFrame.setSpellCheckProvider('en-US', true, {
+  spellCheck(text) {
     return !(require('spellchecker').isMisspelled(text));
   }
 });

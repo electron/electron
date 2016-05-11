@@ -21,13 +21,13 @@ Electron 소스 코드가 중단점을 통해 순차적으로 쉽게 디버깅�
   설정해야 합니다. 이 작업은 Visual Studio가 Electron에서 무슨일이 일어나는지 더 잘
   이해할 수 있도록 하며 변수를 사람이 읽기 좋은 포맷으로 쉽게 표현할 수 있도록 합니다.
 
-* **ProcMon**: 이 무료 [SysInternals][sys-internals] 툴은 프로세스 인자, 파일
+* **ProcMon**: 이 무료 [SysInternals][sys-internals] 툴은 프로세스 인수, 파일
   핸들러 그리고 레지스트리 작업을 탐색할 수 있게 도와줍니다.
 
 ## Electron에 디버거 연결하고 디버깅하기
 
 디버깅 작업을 시작하려면, PowerShell/CMD 중 한 가지를 열고 디버그 빌드 상태의
-Electron에 인자로 어플리케이션을 전달하여 실행합니다:
+Electron에 인수로 어플리케이션을 전달하여 실행합니다:
 
 ```powershell
 $ ./out/D/electron.exe ~/my-electron-app/
