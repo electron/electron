@@ -412,7 +412,7 @@ void NativeWindow::RendererUnresponsive(content::WebContents* source) {
   // responsive event soon. This could happen after the whole application had
   // blocked for a while.
   // Also notice that when closing this event would be ignored because we have
-  // explicity started a close timeout counter. This is on purpose because we
+  // explicitly started a close timeout counter. This is on purpose because we
   // don't want the unresponsive event to be sent too early when user is closing
   // the window.
   ScheduleUnresponsiveEvent(50);
