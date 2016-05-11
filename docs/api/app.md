@@ -563,6 +563,12 @@ Returns an ID representing the request.
 
 Cancel the bounce of `id`.
 
+### `app.dock.downloadFinished(filePath)` _OS X_
+
+* `filePath` String
+
+Bounces the Downloads stack if the filePath is inside the Downloads folder.
+
 ### `app.dock.setBadge(text)` _OS X_
 
 * `text` String
