@@ -56,7 +56,7 @@ An example of using it to determine if you should create a transparent window or
 not (transparent windows won't work correctly when DWM composition is disabled):
 
 ```javascript
-let browserOptions = { width: 1000, height: 800 };
+let browserOptions = {width: 1000, height: 800};
 
 // Make the window transparent only if the platform supports it.
 if (process.platform !== 'win32' || systemPreferences.isAeroGlassEnabled()) {

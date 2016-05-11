@@ -59,14 +59,14 @@ app.commandLine.appendSwitch('widevine-cdm-path', '/path/to/widevinecdmadapter.p
 // The version of plugin can be got from `chrome://plugins` page in Chrome.
 app.commandLine.appendSwitch('widevine-cdm-version', '1.4.8.866');
 
-let mainWindow = null;
+let win = null;
 app.on('ready', () => {
-  mainWindow = new BrowserWindow({
+  win = new BrowserWindow({
     webPreferences: {
       // The `plugins` have to be enabled.
       plugins: true
     }
-  })
+  });
 });
 ```
 

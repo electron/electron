@@ -6,7 +6,7 @@ The following example shows how to quit the application when the last window is
 closed:
 
 ```javascript
-const { app } = require('electron');
+const {app} = require('electron');
 app.on('window-all-closed', () => {
   app.quit();
 });
@@ -175,8 +175,8 @@ certificate you should prevent the default behavior with
 `event.preventDefault()` and call `callback(true)`.
 
 ```javascript
-app.on('certificate-error', function(event, webContents, url, error, certificate, callback) {
-  if (url == "https://github.com") {
+app.on('certificate-error', (event, webContents, url, error, certificate, callback) => {
+  if (url === 'https://github.com') {
     // Verification logic.
     event.preventDefault();
     callback(true);
@@ -206,10 +206,10 @@ and `callback` needs to be called with an entry filtered from the list. Using
 certificate from the store.
 
 ```javascript
-app.on('select-client-certificate', function(event, webContents, url, list, callback) {
+app.on('select-client-certificate', (event, webContents, url, list, callback) => {
   event.preventDefault();
   callback(list[0]);
-})
+});
 ```
 
 ### Event: 'login'
@@ -240,7 +240,7 @@ should prevent the default behavior with `event.preventDefault()` and call
 app.on('login', (event, webContents, request, authInfo, callback) => {
   event.preventDefault();
   callback('username', 'secret');
-})
+});
 ```
 
 ### Event: 'gpu-process-crashed'

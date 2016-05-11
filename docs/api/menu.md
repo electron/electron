@@ -15,13 +15,13 @@ the user right clicks the page:
 ```html
 <!-- index.html -->
 <script>
-const { remote } = require('electron');
-const { Menu, MenuItem } = remote;
+const {remote} = require('electron');
+const {Menu, MenuItem} = remote;
 
 const menu = new Menu();
-menu.append(new MenuItem({ label: 'MenuItem1', click: () => { console.log('item 1 clicked'); } }));
-menu.append(new MenuItem({ type: 'separator' }));
-menu.append(new MenuItem({ label: 'MenuItem2', type: 'checkbox', checked: true }));
+menu.append(new MenuItem({label: 'MenuItem1', click() { console.log('item 1 clicked'); }}));
+menu.append(new MenuItem({type: 'separator'}));
+menu.append(new MenuItem({label: 'MenuItem2', type: 'checkbox', checked: true}));
 
 window.addEventListener('contextmenu', (e) => {
   e.preventDefault();
@@ -79,32 +79,22 @@ const template = [
       {
         label: 'Reload',
         accelerator: 'CmdOrCtrl+R',
-        click: (item, focusedWindow) => {
+        click(item, focusedWindow) {
           if (focusedWindow) focusedWindow.reload();
         }
       },
       {
         label: 'Toggle Full Screen',
-        accelerator: (() => {
-          if (process.platform === 'darwin')
-            return 'Ctrl+Command+F';
-          else
-            return 'F11';
-        })(),
-        click: (item, focusedWindow) => {
+        accelerator: process.platform === 'darwin' ? 'Ctrl+Command+F' : 'F11',
+        click(item, focusedWindow) {
           if (focusedWindow)
             focusedWindow.setFullScreen(!focusedWindow.isFullScreen());
         }
       },
       {
         label: 'Toggle Developer Tools',
-        accelerator: (() => {
-          if (process.platform == 'darwin')
-            return 'Alt+Command+I';
-          else
-            return 'Ctrl+Shift+I';
-        })(),
-        click: (item, focusedWindow) => {
+        accelerator: process.platform === 'darwin' ? 'Alt+Command+I' : 'Ctrl+Shift+I',
+        click(item, focusedWindow) {
           if (focusedWindow)
             focusedWindow.webContents.toggleDevTools();
         }
@@ -133,7 +123,7 @@ const template = [
     submenu: [
       {
         label: 'Learn More',
-        click: () => { require('electron').shell.openExternal('http://electron.atom.io') }
+        click() { require('electron').shell.openExternal('http://electron.atom.io'); }
       },
     ]
   },
@@ -179,7 +169,7 @@ if (process.platform === 'darwin') {
       {
         label: 'Quit',
         accelerator: 'Command+Q',
-        click: () => { app.quit(); }
+        click() { app.quit(); }
       },
     ]
   });

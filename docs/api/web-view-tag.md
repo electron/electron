@@ -37,15 +37,15 @@ and displays a "loading..." message during the load time:
 
     const loadstart = () => {
       indicator.innerText = 'loading...';
-    }
+    };
 
     const loadstop = () => {
       indicator.innerText = '';
-    }
+    };
 
     webview.addEventListener('did-start-loading', loadstart);
     webview.addEventListener('did-stop-loading', loadstop);
-  }
+  };
 </script>
 ```
 
@@ -213,7 +213,7 @@ The `webview` tag has the following methods:
 **Example**
 
 ```javascript
-webview.addEventListener("dom-ready", () => {
+webview.addEventListener('dom-ready', () => {
   webview.openDevTools();
 });
 ```
@@ -600,7 +600,7 @@ The following example code forwards all log messages to the embedder's console
 without regard for log level or other properties.
 
 ```javascript
-webview.addEventListener('console-message', function(e) {
+webview.addEventListener('console-message', (e) => {
   console.log('Guest page logged a message:', e.message);
 });
 ```
@@ -620,12 +620,12 @@ Fired when a result is available for
 [`webview.findInPage`](web-view-tag.md#webviewtagfindinpage) request.
 
 ```javascript
-webview.addEventListener('found-in-page', function(e) {
+webview.addEventListener('found-in-page', (e) => {
   if (e.result.finalUpdate)
-    webview.stopFindInPage("keepSelection");
+    webview.stopFindInPage('keepSelection');
 });
 
-const rquestId = webview.findInPage("test");
+const rquestId = webview.findInPage('test');
 ```
 
 ### Event: 'new-window'
@@ -644,7 +644,7 @@ Fired when the guest page attempts to open a new browser window.
 The following example code opens the new url in system's default browser.
 
 ```javascript
-const { shell } = require('electron');
+const {shell} = require('electron');
 
 webview.addEventListener('new-window', (e) => {
   const protocol = require('url').parse(e.url).protocol;
@@ -732,7 +732,7 @@ webview.send('ping');
 
 ```javascript
 // In guest page.
-var { ipcRenderer } = require('electron');
+const {ipcRenderer} = require('electron');
 ipcRenderer.on('ping', () => {
   ipcRenderer.sendToHost('pong');
 });

@@ -22,9 +22,9 @@ let myNotification = new Notification('Title', {
   body: 'Lorem Ipsum Dolor Sit Amet'
 });
 
-myNotification.onclick = function () {
-  console.log('Notification clicked')
-}
+myNotification.onclick = () => {
+  console.log('Notification clicked');
+};
 ```
 
 While code and user experience across operating systems are similar, there
@@ -118,7 +118,7 @@ const app = electron.app;
 const Menu = electron.Menu;
 
 const dockMenu = Menu.buildFromTemplate([
-  { label: 'New Window', click: () => { console.log('New Window'); } },
+  { label: 'New Window', click() { console.log('New Window'); } },
   { label: 'New Window with Settings', submenu: [
     { label: 'Basic' },
     { label: 'Pro'}
@@ -209,7 +209,7 @@ You can use [BrowserWindow.setThumbarButtons][setthumbarbuttons] to set
 thumbnail toolbar in your application:
 
 ```javascript
-const { BrowserWindow } = require('electron');
+const {BrowserWindow} = require('electron');
 const path = require('path');
 
 let win = new BrowserWindow({
@@ -219,15 +219,15 @@ let win = new BrowserWindow({
 
 win.setThumbarButtons([
   {
-    tooltip: "button1",
+    tooltip: 'button1',
     icon: path.join(__dirname, 'button1.png'),
-    click: () => { console.log("button2 clicked"); }
+    click() { console.log('button2 clicked'); }
   },
   {
-    tooltip: "button2",
+    tooltip: 'button2',
     icon: path.join(__dirname, 'button2.png'),
-    flags:['enabled', 'dismissonclick'],
-    click: () => { console.log("button2 clicked."); }
+    flags: ['enabled', 'dismissonclick'],
+    click() { console.log('button2 clicked.'); }
   }
 ]);
 ```
@@ -267,8 +267,8 @@ To set the progress bar for a Window, you can use the
 [BrowserWindow.setProgressBar][setprogressbar] API:
 
 ```javascript
-let window = new BrowserWindow({...});
-window.setProgressBar(0.5);
+let win = new BrowserWindow({...});
+win.setProgressBar(0.5);
 ```
 
 ## Icon Overlays in Taskbar (Windows)
@@ -294,8 +294,8 @@ To set the overlay icon for a window, you can use the
 [BrowserWindow.setOverlayIcon][setoverlayicon] API:
 
 ```javascript
-let window = new BrowserWindow({...});
-window.setOverlayIcon('path/to/overlay.png', 'Description for overlay');
+let win = new BrowserWindow({...});
+win.setOverlayIcon('path/to/overlay.png', 'Description for overlay');
 ```
 
 ## Represented File of Window (OS X)
@@ -316,9 +316,9 @@ To set the represented file of window, you can use the
 [BrowserWindow.setDocumentEdited][setdocumentedited] APIs:
 
 ```javascript
-let window = new BrowserWindow({...});
-window.setRepresentedFilename('/etc/passwd');
-window.setDocumentEdited(true);
+let win = new BrowserWindow({...});
+win.setRepresentedFilename('/etc/passwd');
+win.setDocumentEdited(true);
 ```
 
 [addrecentdocument]: ../api/app.md#appaddrecentdocumentpath-os-x-windows

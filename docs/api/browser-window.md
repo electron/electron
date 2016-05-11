@@ -4,12 +4,12 @@
 
 ```javascript
 // In the main process.
-const { BrowserWindow } = require('electron');
+const {BrowserWindow} = require('electron');
 
 // Or in the renderer process.
-const { BrowserWindow } = require('electron').remote;
+const {BrowserWindow} = require('electron').remote;
 
-let win = new BrowserWindow({ width: 800, height: 600, show: false });
+let win = new BrowserWindow({width: 800, height: 600, show: false});
 win.on('closed', () => {
   win = null;
 });
@@ -220,7 +220,7 @@ reloaded. In Electron, returning an empty string or `false` would cancel the
 close. For example:
 
 ```javascript
-window.onbeforeunload = function(e) {
+window.onbeforeunload = (e) => {
   console.log('I do not want to be closed');
 
   // Unlike usual browsers, in which a string should be returned and the user is
@@ -392,7 +392,7 @@ Objects created with `new BrowserWindow` have the following properties:
 
 ```javascript
 // In this example `win` is our instance
-var win = new BrowserWindow({ width: 800, height: 600 });
+let win = new BrowserWindow({width: 800, height: 600});
 ```
 
 ### `win.webContents`
@@ -689,7 +689,7 @@ attached just below the window frame, but you may want to display them beneath
 a HTML-rendered toolbar. For example:
 
 ```javascript
-var toolbarRect = document.getElementById('toolbar').getBoundingClientRect();
+let toolbarRect = document.getElementById('toolbar').getBoundingClientRect();
 win.setSheetOffset(toolbarRect.height);
 ```
 

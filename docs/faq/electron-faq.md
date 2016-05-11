@@ -65,7 +65,7 @@ code from this:
 ```javascript
 app.on('ready', () => {
   const tray = new Tray('/path/to/icon.png');
-})
+});
 ```
 
 to this:
@@ -74,7 +74,7 @@ to this:
 let tray = null;
 app.on('ready', () => {
   tray = new Tray('/path/to/icon.png');
-})
+});
 ```
 
 ## I can not use jQuery/RequireJS/Meteor/AngularJS in Electron.
@@ -87,7 +87,7 @@ To solve this, you can turn off node integration in Electron:
 
 ```javascript
 // In the main process.
-let mainWindow = new BrowserWindow({
+let win = new BrowserWindow({
   webPreferences: {
     nodeIntegration: false
   }

@@ -5,16 +5,17 @@
 An example of showing a dialog to select multiple files and directories:
 
 ```javascript
-var win = ...;  // BrowserWindow in which to show the dialog
-const { dialog } = require('electron');
-console.log(dialog.showOpenDialog({ properties: [ 'openFile', 'openDirectory', 'multiSelections' ]}));
+let win = ...;  // BrowserWindow in which to show the dialog
+const {dialog} = require('electron');
+
+console.log(dialog.showOpenDialog({properties: ['openFile', 'openDirectory', 'multiSelections']}));
 ```
 
 The Dialog is opened from Electron's main thread. If you want to use the dialog
 object from a renderer process, remember to access it using the remote:
 
 ```javascript
-const { dialog } = require('electron').remote;
+const {dialog} = require('electron').remote;
 ```
 
 ## Methods
@@ -42,10 +43,10 @@ selected when you want to limit the user to a specific type. For example:
 ```javascript
 {
   filters: [
-    { name: 'Images', extensions: ['jpg', 'png', 'gif'] },
-    { name: 'Movies', extensions: ['mkv', 'avi', 'mp4'] },
-    { name: 'Custom File Type', extensions: ['as'] },
-    { name: 'All Files', extensions: ['*'] }
+    {name: 'Images', extensions: ['jpg', 'png', 'gif']},
+    {name: 'Movies', extensions: ['mkv', 'avi', 'mp4']},
+    {name: 'Custom File Type', extensions: ['as']},
+    {name: 'All Files', extensions: ['*']}
   ]
 }
 ```

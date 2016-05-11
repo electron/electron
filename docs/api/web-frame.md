@@ -5,7 +5,7 @@
 An example of zooming current page to 200%.
 
 ```javascript
-const { webFrame } = require('electron');
+const {webFrame} = require('electron');
 
 webFrame.setZoomFactor(2);
 ```
@@ -58,8 +58,8 @@ whether the word passed is correctly spelled.
 An example of using [node-spellchecker][spellchecker] as provider:
 
 ```javascript
-webFrame.setSpellCheckProvider("en-US", true, {
-  spellCheck: function(text) {
+webFrame.setSpellCheckProvider('en-US', true, {
+  spellCheck(text) {
     return !(require('spellchecker').isMisspelled(text));
   }
 });
