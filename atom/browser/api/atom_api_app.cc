@@ -27,6 +27,7 @@
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
 #include "base/path_service.h"
+#include "base/strings/string_util.h"
 #include "brightray/browser/brightray_paths.h"
 #include "chrome/common/chrome_paths.h"
 #include "content/public/browser/client_certificate_delegate.h"
@@ -500,7 +501,8 @@ namespace {
 void AppendSwitch(const std::string& switch_string, mate::Arguments* args) {
   auto command_line = base::CommandLine::ForCurrentProcess();
 
-  if (switch_string == atom::switches::kPpapiFlashPath ||
+  if (base::EndsWith(switch_string, "-path",
+                     base::CompareCase::INSENSITIVE_ASCII) ||
       switch_string == switches::kLogNetLog) {
     base::FilePath path;
     args->GetNext(&path);
