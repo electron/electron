@@ -151,7 +151,7 @@ class FileChooserDialog {
 };
 
 void FileChooserDialog::OnFileDialogResponse(GtkWidget* widget, int response) {
-  gtk_widget_hide_all(dialog_);
+  gtk_widget_hide(dialog_);
 
   if (!save_callback_.is_null()) {
     if (response == GTK_RESPONSE_ACCEPT)
