@@ -30,3 +30,5 @@ Example on getting a real path from a dragged-onto-the-app file:
   };
 </script>
 ```
+
+On OS X [the `open-file` event](app.md#event-open-file-os-x) will additionally be emitted when a file is opened.
