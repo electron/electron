@@ -106,4 +106,50 @@ In the browser window some HTML APIs like `requestFullScreen` can only be
 invoked by a gesture from the user. Setting `userGesture` to `true` will remove
 this limitation.
 
+
+### `webFrame.getResourceUsage()`
+
+Returns more detailed memory usage information in kilobytes of Blink's internal
+memory caches. Returns an Object of the following shape:
+
+```js
+{
+  "images": {
+    "count": 22,
+    "size": 2549,         // 2549kb
+    "liveSize": 2542,     // 2542kb, etc...
+    "decodedSize": 478,
+    "purgedSize": 0,
+    "purgeableSize": 0
+  },
+  "cssStyleSheets": {
+    "count": 7,
+    /* ... */
+  },
+  "xslStyleSheets": {
+    "count": 0,
+    /* ... */
+  },
+  "fonts": {
+    "count": 18,
+    /* ... */
+  },
+  "other": {
+    "count": 0,
+    /* ... */
+  }
+}
+```
+
+### `webFrame.purgeCaches()`
+
+Attempts to free memory that is no longer being used (i.e. images from a
+previous navigation, etc etc).
+
+Note that blindly calling this method probably makes Electron slower since it
+will have to refill these emptied caches, you should only call it if an event
+in your app has occured that makes you think your page is actually using less
+memory (i.e. you have navigated from a super heavy page to a mostly empty one,
+and intend to stay there)
+
 [spellchecker]: https://github.com/atom/node-spellchecker
