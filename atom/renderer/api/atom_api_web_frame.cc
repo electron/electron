@@ -5,6 +5,7 @@
 #include "atom/renderer/api/atom_api_web_frame.h"
 
 #include "atom/common/api/event_emitter_caller.h"
+#include "atom/common/native_mate_converters/blink_converter.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
@@ -13,6 +14,7 @@
 #include "content/public/renderer/render_view.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
+#include "third_party/WebKit/public/web/WebCache.h"
 #include "third_party/WebKit/public/web/WebDocument.h"
 #include "third_party/WebKit/public/web/WebLocalFrame.h"
 #include "third_party/WebKit/public/web/WebScriptExecutionCallback.h"
@@ -168,6 +170,13 @@ mate::Handle<WebFrame> WebFrame::Create(v8::Isolate* isolate) {
   return mate::CreateHandle(isolate, new WebFrame(isolate));
 }
 
+v8::Local<v8::Value> WebFrame::GetResourceUsage(v8::Isolate* isolate) {
+  blink::WebCache::ResourceTypeStats stats;
+
+  blink::WebCache::getResourceTypeStats(&stats);
+  return mate::Converter<blink::WebCache::ResourceTypeStats>::ToV8(isolate, stats);
+}
+
 // static
 void WebFrame::BuildPrototype(
     v8::Isolate* isolate, v8::Local<v8::ObjectTemplate> prototype) {
@@ -191,7 +200,8 @@ void WebFrame::BuildPrototype(
       .SetMethod("registerURLSchemeAsPrivileged",
                  &WebFrame::RegisterURLSchemeAsPrivileged)
       .SetMethod("insertText", &WebFrame::InsertText)
-      .SetMethod("executeJavaScript", &WebFrame::ExecuteJavaScript);
+      .SetMethod("executeJavaScript", &WebFrame::ExecuteJavaScript)
+      .SetMethod("getResourceUsage", &WebFrame::GetResourceUsage);
 }
 
 }  // namespace api
