@@ -12,6 +12,7 @@
 #include "base/strings/utf_string_conversions.h"
 #include "content/public/browser/native_web_keyboard_event.h"
 #include "native_mate/dictionary.h"
+#include "third_party/WebKit/public/web/WebCache.h"
 #include "third_party/WebKit/public/web/WebDeviceEmulationParams.h"
 #include "third_party/WebKit/public/web/WebFindOptions.h"
 #include "third_party/WebKit/public/web/WebInputEvent.h"
@@ -382,6 +383,35 @@ v8::Local<v8::Value> MediaFlagsToV8(v8::Isolate* isolate, int mediaFlags) {
   dict.Set("canRotate",
       !!(mediaFlags & blink::WebContextMenuData::MediaCanRotate));
   return mate::ConvertToV8(isolate, dict);
+}
+
+v8::Local<v8::Value> Converter<blink::WebCache::ResourceTypeStat>::ToV8(
+    v8::Isolate* isolate,
+    const blink::WebCache::ResourceTypeStat& stat) {
+  mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
+
+  dict.Set("count", (uint32_t)stat.count);
+  dict.Set("size", (uint32_t)(stat.size >> 10));
+  dict.Set("liveSize", (uint32_t)(stat.liveSize >> 10));
+  dict.Set("decodedSize", (uint32_t)(stat.decodedSize >> 10));
+  dict.Set("purgedSize", (uint32_t)(stat.purgedSize >> 10));
+  dict.Set("purgeableSize", (uint32_t)(stat.purgeableSize >> 10));
+
+  return dict.GetHandle();
+}
+
+v8::Local<v8::Value> Converter<blink::WebCache::ResourceTypeStats>::ToV8(
+    v8::Isolate* isolate,
+    const blink::WebCache::ResourceTypeStats& stats) {
+  mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
+
+  dict.Set("images", mate::ConvertToV8(isolate, stats.images));
+  dict.Set("cssStyleSheets", mate::ConvertToV8(isolate, stats.cssStyleSheets));
+  dict.Set("xslStyleSheets", mate::ConvertToV8(isolate, stats.xslStyleSheets));
+  dict.Set("fonts", mate::ConvertToV8(isolate, stats.fonts));
+  dict.Set("other", mate::ConvertToV8(isolate, stats.other));
+
+  return dict.GetHandle();
 }
 
 }  // namespace mate
