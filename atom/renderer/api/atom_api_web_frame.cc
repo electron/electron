@@ -10,6 +10,7 @@
 #include "atom/common/native_mate_converters/gfx_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/renderer/api/atom_api_spell_check_client.h"
+#include "base/memory/memory_pressure_listener.h"
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_view.h"
 #include "native_mate/dictionary.h"
@@ -177,6 +178,14 @@ v8::Local<v8::Value> WebFrame::GetResourceUsage(v8::Isolate* isolate) {
   return mate::Converter<blink::WebCache::ResourceTypeStats>::ToV8(isolate, stats);
 }
 
+void WebFrame::PurgeCaches(v8::Isolate* isolate) {
+  isolate->IdleNotificationDeadline(0.5);
+  blink::WebCache::clear();
+
+  base::MemoryPressureListener::NotifyMemoryPressure(
+    base::MemoryPressureListener::MEMORY_PRESSURE_LEVEL_CRITICAL);
+}
+
 // static
 void WebFrame::BuildPrototype(
     v8::Isolate* isolate, v8::Local<v8::ObjectTemplate> prototype) {
@@ -201,7 +210,8 @@ void WebFrame::BuildPrototype(
                  &WebFrame::RegisterURLSchemeAsPrivileged)
       .SetMethod("insertText", &WebFrame::InsertText)
       .SetMethod("executeJavaScript", &WebFrame::ExecuteJavaScript)
-      .SetMethod("getResourceUsage", &WebFrame::GetResourceUsage);
+      .SetMethod("getResourceUsage", &WebFrame::GetResourceUsage)
+      .SetMethod("purgeCaches", &WebFrame::PurgeCaches);
 }
 
 }  // namespace api

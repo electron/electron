@@ -72,6 +72,7 @@ class WebFrame : public mate::Wrappable<WebFrame> {
 
   // Resource related methods
   v8::Local<v8::Value> GetResourceUsage(v8::Isolate* isolate);
+  void PurgeCaches(v8::Isolate* isolate);
 
   scoped_ptr<SpellCheckClient> spell_check_client_;
 
