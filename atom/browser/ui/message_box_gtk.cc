@@ -156,7 +156,7 @@ class GtkMessageBox {
 };
 
 void GtkMessageBox::OnResponseDialog(GtkWidget* widget, int response) {
-  gtk_widget_hide_all(dialog_);
+  gtk_widget_hide(dialog_);
 
   if (response < 0)
     callback_.Run(cancel_id_);
