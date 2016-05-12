@@ -258,6 +258,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void DevToolsFocused() override;
   void DevToolsOpened() override;
   void DevToolsClosed() override;
+  void DevToolsLoaded() override;
 
  private:
   enum Type {
