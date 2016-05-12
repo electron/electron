@@ -29,14 +29,10 @@ gfx::NativeView InspectableWebContentsViewMac::GetNativeView() const {
 
 void InspectableWebContentsViewMac::ShowDevTools() {
   [view_ setDevToolsVisible:YES];
-  if (GetDelegate())
-    GetDelegate()->DevToolsOpened();
 }
 
 void InspectableWebContentsViewMac::CloseDevTools() {
   [view_ setDevToolsVisible:NO];
-  if (GetDelegate())
-    GetDelegate()->DevToolsClosed();
 }
 
 bool InspectableWebContentsViewMac::IsDevToolsViewShowing() {

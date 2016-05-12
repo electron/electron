@@ -368,6 +368,9 @@ void InspectableWebContentsImpl::LoadCompleted() {
   // If the devtools can dock, "SetIsDocked" will be called by devtools itself.
   if (!can_dock_)
     SetIsDocked(DispatchCallback(), false);
+
+  if (view_->GetDelegate())
+    view_->GetDelegate()->DevToolsOpened();
 }
 
 void InspectableWebContentsImpl::SetInspectedPageBounds(const gfx::Rect& rect) {
@@ -618,6 +621,9 @@ void InspectableWebContentsImpl::WebContentsDestroyed() {
 
   for (const auto& pair : pending_requests_)
     delete pair.first;
+
+  if (view_ && view_->GetDelegate())
+    view_->GetDelegate()->DevToolsClosed();
 }
 
 bool InspectableWebContentsImpl::AddMessageToConsole(

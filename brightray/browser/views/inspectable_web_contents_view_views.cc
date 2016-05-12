@@ -118,8 +118,6 @@ void InspectableWebContentsViewViews::ShowDevTools() {
     devtools_web_view_->RequestFocus();
     Layout();
   }
-  if (GetDelegate())
-    GetDelegate()->DevToolsOpened();
 }
 
 void InspectableWebContentsViewViews::CloseDevTools() {
@@ -137,8 +135,6 @@ void InspectableWebContentsViewViews::CloseDevTools() {
     devtools_web_view_->SetWebContents(NULL);
     Layout();
   }
-  if (GetDelegate())
-    GetDelegate()->DevToolsClosed();
 }
 
 bool InspectableWebContentsViewViews::IsDevToolsViewShowing() {
