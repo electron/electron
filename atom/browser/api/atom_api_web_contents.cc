@@ -63,6 +63,7 @@
 #include "net/url_request/static_http_user_agent_settings.h"
 #include "net/url_request/url_request_context.h"
 #include "third_party/WebKit/public/web/WebInputEvent.h"
+#include "third_party/WebKit/public/web/WebFindOptions.h"
 #include "ui/base/l10n/l10n_util.h"
 
 #include "atom/common/node_includes.h"
@@ -144,7 +145,7 @@ struct Converter<net::HttpResponseHeaders*> {
                                    net::HttpResponseHeaders* headers) {
     base::DictionaryValue response_headers;
     if (headers) {
-      void* iter = nullptr;
+      size_t iter = 0;
       std::string key;
       std::string value;
       while (headers->EnumerateHeaderLines(&iter, &key, &value)) {

@@ -8,7 +8,7 @@ import sys
 
 BASE_URL = os.getenv('LIBCHROMIUMCONTENT_MIRROR') or \
     'https://s3.amazonaws.com/github-janky-artifacts/libchromiumcontent'
-LIBCHROMIUMCONTENT_COMMIT = '1a4c5e51a670633ff3ecd4448ad01ba21b440542'
+LIBCHROMIUMCONTENT_COMMIT = 'e5ddff3e0d277703e2c1adc363d49709cf1bc56a'
 
 PLATFORM = {
   'cygwin': 'win32',
@@ -45,7 +45,7 @@ def get_target_arch():
 
 
 def get_chromedriver_version():
-  return 'v2.15'
+  return 'v2.21'
 
 
 def s3_config():

@@ -16,6 +16,7 @@ import os
 import zipfile
 
 from config import is_verbose_mode
+from env_util import get_vs_env
 
 
 def get_host_arch():
@@ -223,3 +224,15 @@ def s3put(bucket, access_key, secret_key, prefix, key_prefix, files):
   ] + files
 
   execute(args, env)
+
+
+def import_vs_env(target_arch):
+  if sys.platform != 'win32':
+    return
+
+  if target_arch == 'ia32':
+    vs_arch = 'amd64_x86'
+  else:
+    vs_arch = 'x86_amd64'
+  env = get_vs_env('14.0', vs_arch)
+  os.environ.update(env)

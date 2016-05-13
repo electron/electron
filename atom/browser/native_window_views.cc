@@ -623,7 +623,9 @@ void NativeWindowViews::SetBackgroundColor(const std::string& color_name) {
   // Set the background color of native window.
   HBRUSH brush = CreateSolidBrush(skia::SkColorToCOLORREF(background_color));
   ULONG_PTR previous_brush = SetClassLongPtr(
-      GetAcceleratedWidget(), GCLP_HBRBACKGROUND, (LONG)brush);
+      GetAcceleratedWidget(),
+      GCLP_HBRBACKGROUND,
+      reinterpret_cast<LONG_PTR>(brush));
   if (previous_brush)
     DeleteObject((HBRUSH)previous_brush);
 #endif

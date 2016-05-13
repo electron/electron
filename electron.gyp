@@ -4,7 +4,7 @@
     'product_name%': 'Electron',
     'company_name%': 'GitHub, Inc',
     'company_abbr%': 'github',
-    'version%': '1.0.2',
+    'version%': '1.1.0',
   },
   'includes': [
     'filenames.gypi',
@@ -297,6 +297,10 @@
             'libraries': [
               '$(SDKROOT)/System/Library/Frameworks/QTKit.framework',
             ],
+          },
+          'xcode_settings': {
+            # ReactiveCocoa which is used by Squirrel requires using __weak.
+            'CLANG_ENABLE_OBJC_WEAK': 'YES',
           },
         }],  # OS=="mac" and mas_build==0
         ['OS=="mac" and mas_build==1', {

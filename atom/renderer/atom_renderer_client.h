@@ -40,6 +40,7 @@ class AtomRendererClient : public content::ContentRendererClient,
   void RenderThreadStarted() override;
   void RenderFrameCreated(content::RenderFrame*) override;
   void RenderViewCreated(content::RenderView*) override;
+  void RunScriptsAtDocumentStart(content::RenderFrame* render_frame) override;
   blink::WebSpeechSynthesizer* OverrideSpeechSynthesizer(
       blink::WebSpeechSynthesizerClient* client) override;
   bool OverrideCreatePlugin(content::RenderFrame* render_frame,

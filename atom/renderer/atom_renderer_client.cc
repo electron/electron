@@ -29,9 +29,11 @@
 #include "content/public/renderer/render_view.h"
 #include "ipc/ipc_message_macros.h"
 #include "third_party/WebKit/public/web/WebCustomElement.h"
+#include "third_party/WebKit/public/web/WebFrameWidget.h"
 #include "third_party/WebKit/public/web/WebLocalFrame.h"
 #include "third_party/WebKit/public/web/WebPluginParams.h"
 #include "third_party/WebKit/public/web/WebKit.h"
+#include "third_party/WebKit/public/web/WebScriptSource.h"
 #include "third_party/WebKit/public/web/WebSecurityPolicy.h"
 #include "third_party/WebKit/public/web/WebRuntimeFeatures.h"
 #include "third_party/WebKit/public/web/WebView.h"
@@ -140,20 +142,30 @@ void AtomRendererClient::RenderFrameCreated(
 }
 
 void AtomRendererClient::RenderViewCreated(content::RenderView* render_view) {
+  new printing::PrintWebViewHelper(render_view);
+  new AtomRenderViewObserver(render_view, this);
+
+  blink::WebFrameWidget* web_frame_widget = render_view->GetWebFrameWidget();
+  if (!web_frame_widget)
+    return;
+
   base::CommandLine* cmd = base::CommandLine::ForCurrentProcess();
   if (cmd->HasSwitch(switches::kGuestInstanceID)) {  // webview.
-    // Set transparent background.
-    render_view->GetWebView()->setBaseBackgroundColor(SK_ColorTRANSPARENT);
+    web_frame_widget->setBaseBackgroundColor(SK_ColorTRANSPARENT);
   } else {  // normal window.
     // If backgroundColor is specified then use it.
     std::string name = cmd->GetSwitchValueASCII(switches::kBackgroundColor);
     // Otherwise use white background.
     SkColor color = name.empty() ? SK_ColorWHITE : ParseHexColor(name);
-    render_view->GetWebView()->setBaseBackgroundColor(color);
+    web_frame_widget->setBaseBackgroundColor(color);
   }
+}
 
-  new printing::PrintWebViewHelper(render_view);
-  new AtomRenderViewObserver(render_view, this);
+void AtomRendererClient::RunScriptsAtDocumentStart(
+    content::RenderFrame* render_frame) {
+  // Make sure every page will get a script context created.
+  render_frame->GetWebFrame()->executeScript(
+      blink::WebScriptSource("void 0"));
 }
 
 blink::WebSpeechSynthesizer* AtomRendererClient::OverrideSpeechSynthesizer(

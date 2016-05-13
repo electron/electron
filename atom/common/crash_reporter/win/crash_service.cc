@@ -327,7 +327,7 @@ void CrashService::OnClientConnected(void* context,
 
 void CrashService::OnClientExited(void* context,
     const google_breakpad::ClientInfo* client_info) {
-  ProcessingLock lock;
+  ProcessingLock processing_lock;
   VLOG(1) << "client end. pid = " << client_info->pid();
   CrashService* self = static_cast<CrashService*>(context);
   ::InterlockedIncrement(&self->clients_terminated_);

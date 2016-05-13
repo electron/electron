@@ -89,11 +89,9 @@ content::PepperPluginInfo CreateWidevineCdmInfo(const base::FilePath& path,
 
   // Add the supported codecs as if they came from the component manifest.
   std::vector<std::string> codecs;
-  codecs.push_back(kCdmSupportedCodecVorbis);
   codecs.push_back(kCdmSupportedCodecVp8);
   codecs.push_back(kCdmSupportedCodecVp9);
 #if defined(USE_PROPRIETARY_CODECS)
-  codecs.push_back(kCdmSupportedCodecAac);
   codecs.push_back(kCdmSupportedCodecAvc1);
 #endif  // defined(USE_PROPRIETARY_CODECS)
   std::string codec_string = base::JoinString(
@@ -181,6 +179,7 @@ base::string16 AtomContentClient::GetLocalizedString(int message_id) const {
 
 void AtomContentClient::AddAdditionalSchemes(
     std::vector<url::SchemeWithType>* standard_schemes,
+    std::vector<url::SchemeWithType>* referrer_schemes,
     std::vector<std::string>* savable_schemes) {
   standard_schemes->push_back({"chrome-extension", url::SCHEME_WITHOUT_PORT});
 }

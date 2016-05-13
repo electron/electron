@@ -5,7 +5,8 @@ import os
 import subprocess
 import sys
 
-from lib.util import atom_gyp
+from lib.config import get_target_arch
+from lib.util import atom_gyp, import_vs_env
 
 
 CONFIGURATIONS = ['Release', 'Debug']
@@ -14,6 +15,9 @@ SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 
 def main():
   os.chdir(SOURCE_ROOT)
+
+  # Update the VS build env.
+  import_vs_env(get_target_arch())
 
   ninja = os.path.join('vendor', 'depot_tools', 'ninja')
   if sys.platform == 'win32':

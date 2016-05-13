@@ -155,7 +155,7 @@ void NotifyIcon::PopUpContextMenu(const gfx::Point& pos,
   // Show menu at mouse's position by default.
   gfx::Rect rect(pos, gfx::Size());
   if (pos.IsOrigin())
-    rect.set_origin(gfx::Screen::GetNativeScreen()->GetCursorScreenPoint());
+    rect.set_origin(gfx::Screen::GetScreen()->GetCursorScreenPoint());
 
   views::MenuRunner menu_runner(
       menu_model,

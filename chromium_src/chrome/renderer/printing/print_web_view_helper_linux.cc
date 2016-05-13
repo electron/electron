@@ -123,7 +123,7 @@ void PrintWebViewHelper::PrintPageInternal(
                                           &content_area);
   gfx::Rect canvas_area = content_area;
 
-  skia::PlatformCanvas* canvas = metafile->GetVectorCanvasForNewPage(
+  SkCanvas* canvas = metafile->GetVectorCanvasForNewPage(
       page_size, canvas_area, scale_factor);
   if (!canvas)
     return;

@@ -35,7 +35,7 @@ void OnPointerLockResponse(content::WebContents* web_contents, bool allowed) {
 
 void OnPermissionResponse(const base::Callback<void(bool)>& callback,
                           content::PermissionStatus status) {
-  if (status == content::PERMISSION_STATUS_GRANTED)
+  if (status == content::PermissionStatus::GRANTED)
     callback.Run(true);
   else
     callback.Run(false);
@@ -60,7 +60,7 @@ void WebContentsPermissionHelper::RequestPermission(
       web_contents_->GetBrowserContext()->GetPermissionManager());
   auto origin = web_contents_->GetLastCommittedURL();
   permission_manager->RequestPermission(
-      permission, rfh, origin, user_gesture,
+      permission, rfh, origin,
       base::Bind(&OnPermissionResponse, callback));
 }
 

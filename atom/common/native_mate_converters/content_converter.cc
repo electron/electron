@@ -130,9 +130,9 @@ bool Converter<content::PermissionStatus>::FromV8(
     return false;
 
   if (result)
-    *out = content::PERMISSION_STATUS_GRANTED;
+    *out = content::PermissionStatus::GRANTED;
   else
-    *out = content::PERMISSION_STATUS_DENIED;
+    *out = content::PermissionStatus::DENIED;
 
   return true;
 }
