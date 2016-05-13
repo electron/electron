@@ -370,7 +370,7 @@ void InspectableWebContentsImpl::LoadCompleted() {
     SetIsDocked(DispatchCallback(), false);
 
   if (view_->GetDelegate())
-    view_->GetDelegate()->DevToolsLoaded();
+    view_->GetDelegate()->DevToolsOpened();
 }
 
 void InspectableWebContentsImpl::SetInspectedPageBounds(const gfx::Rect& rect) {
@@ -621,6 +621,9 @@ void InspectableWebContentsImpl::WebContentsDestroyed() {
 
   for (const auto& pair : pending_requests_)
     delete pair.first;
+
+  if (view_ && view_->GetDelegate())
+    view_->GetDelegate()->DevToolsClosed();
 }
 
 bool InspectableWebContentsImpl::AddMessageToConsole(
