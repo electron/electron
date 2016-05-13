@@ -8,7 +8,7 @@
 # Do NOT CHANGE this if you don't know what you're doing -- see
 # https://code.google.com/p/chromium/wiki/UpdatingClang
 # Reverting problematic clang rolls is safe, though.
-CLANG_REVISION=247874
+CLANG_REVISION=261368
 
 # This is incremented when pushing a new build of Clang at the same revision.
 CLANG_SUB_REVISION=1
