@@ -391,11 +391,11 @@ v8::Local<v8::Value> Converter<blink::WebCache::ResourceTypeStat>::ToV8(
   mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
 
   dict.Set("count", (uint32_t)stat.count);
-  dict.Set("size", (uint32_t)(stat.size >> 10));
-  dict.Set("liveSize", (uint32_t)(stat.liveSize >> 10));
-  dict.Set("decodedSize", (uint32_t)(stat.decodedSize >> 10));
-  dict.Set("purgedSize", (uint32_t)(stat.purgedSize >> 10));
-  dict.Set("purgeableSize", (uint32_t)(stat.purgeableSize >> 10));
+  dict.Set("size", (double)stat.size);
+  dict.Set("liveSize", (double)stat.liveSize);
+  dict.Set("decodedSize", (double)stat.decodedSize);
+  dict.Set("purgedSize", (double)stat.purgedSize);
+  dict.Set("purgeableSize", (double)stat.purgeableSize);
 
   return dict.GetHandle();
 }
