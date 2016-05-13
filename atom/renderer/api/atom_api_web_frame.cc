@@ -171,11 +171,11 @@ mate::Handle<WebFrame> WebFrame::Create(v8::Isolate* isolate) {
   return mate::CreateHandle(isolate, new WebFrame(isolate));
 }
 
-v8::Local<v8::Value> WebFrame::GetResourceUsage(v8::Isolate* isolate) {
+blink::WebCache::ResourceTypeStats WebFrame::GetResourceUsage(v8::Isolate* isolate) {
   blink::WebCache::ResourceTypeStats stats;
 
   blink::WebCache::getResourceTypeStats(&stats);
-  return mate::Converter<blink::WebCache::ResourceTypeStats>::ToV8(isolate, stats);
+  return stats;
 }
 
 void WebFrame::PurgeCaches(v8::Isolate* isolate) {

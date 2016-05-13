@@ -71,7 +71,7 @@ class WebFrame : public mate::Wrappable<WebFrame> {
   void ExecuteJavaScript(const base::string16& code, mate::Arguments* args);
 
   // Resource related methods
-  v8::Local<v8::Value> GetResourceUsage(v8::Isolate* isolate);
+  blink::WebCache::ResourceTypeStats GetResourceUsage(v8::Isolate* isolate);
   void PurgeCaches(v8::Isolate* isolate);
 
   scoped_ptr<SpellCheckClient> spell_check_client_;
