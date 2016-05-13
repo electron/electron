@@ -3,7 +3,7 @@
 	url = https://github.com/electron/libchromiumcontent
 [submodule "vendor/gyp"]
 	path = vendor/gyp
-	url = https://github.com/svn2github/gyp
+	url = https://github.com/electron/gyp
 [submodule "vendor/google-styleguide"]
 	path = vendor/google-styleguide
 	url = https://github.com/svn2github/sgss-mirror-google-styleguide
