@@ -13,7 +13,7 @@
 
 namespace {
 
-v8::Local<v8::Value> GetProcessMetrics(v8::Isolate* isolate) {
+v8::Local<v8::Value> GetProcessMemoryInfo(v8::Isolate* isolate) {
   mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
   std::unique_ptr<base::ProcessMetrics> metrics(
     base::ProcessMetrics::CreateCurrentProcessMetrics());
@@ -54,7 +54,7 @@ v8::Local<v8::Value> GetSystemMemoryInfo(v8::Isolate* isolate, mate::Arguments* 
 void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
   mate::Dictionary dict(context->GetIsolate(), exports);
-  dict.SetMethod("getProcessMetrics", &GetProcessMetrics);
+  dict.SetMethod("getProcessMemoryInfo", &GetProcessMemoryInfo);
   dict.SetMethod("getSystemMemoryInfo", &GetSystemMemoryInfo);
 }
 
