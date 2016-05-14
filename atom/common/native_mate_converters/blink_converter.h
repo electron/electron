@@ -101,21 +101,22 @@ struct Converter<blink::WebContextMenuData::InputFieldType> {
       const blink::WebContextMenuData::InputFieldType& in);
 };
 
-v8::Local<v8::Value> EditFlagsToV8(v8::Isolate* isolate, int editFlags);
-
-v8::Local<v8::Value> MediaFlagsToV8(v8::Isolate* isolate, int mediaFlags);
-
 template<>
 struct Converter<blink::WebCache::ResourceTypeStat> {
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   const blink::WebCache::ResourceTypeStat& stat);
+  static v8::Local<v8::Value> ToV8(
+      v8::Isolate* isolate,
+      const blink::WebCache::ResourceTypeStat& stat);
 };
 
 template<>
 struct Converter<blink::WebCache::ResourceTypeStats> {
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   const blink::WebCache::ResourceTypeStats& stats);
+  static v8::Local<v8::Value> ToV8(
+      v8::Isolate* isolate,
+      const blink::WebCache::ResourceTypeStats& stats);
 };
+
+v8::Local<v8::Value> EditFlagsToV8(v8::Isolate* isolate, int editFlags);
+v8::Local<v8::Value> MediaFlagsToV8(v8::Isolate* isolate, int mediaFlags);
 
 }  // namespace mate
 

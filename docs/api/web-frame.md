@@ -106,7 +106,6 @@ In the browser window some HTML APIs like `requestFullScreen` can only be
 invoked by a gesture from the user. Setting `userGesture` to `true` will remove
 this limitation.
 
-
 ### `webFrame.getResourceUsage()`
 
 Returns more detailed memory usage information in kilobytes of Blink's internal

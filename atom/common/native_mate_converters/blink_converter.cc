@@ -389,14 +389,12 @@ v8::Local<v8::Value> Converter<blink::WebCache::ResourceTypeStat>::ToV8(
     v8::Isolate* isolate,
     const blink::WebCache::ResourceTypeStat& stat) {
   mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
-
-  dict.Set("count", (uint32_t)stat.count);
-  dict.Set("size", (double)stat.size);
-  dict.Set("liveSize", (double)stat.liveSize);
-  dict.Set("decodedSize", (double)stat.decodedSize);
-  dict.Set("purgedSize", (double)stat.purgedSize);
-  dict.Set("purgeableSize", (double)stat.purgeableSize);
-
+  dict.Set("count", static_cast<uint32_t>(stat.count));
+  dict.Set("size", static_cast<double>(stat.size));
+  dict.Set("liveSize", static_cast<double>(stat.liveSize));
+  dict.Set("decodedSize", static_cast<double>(stat.decodedSize));
+  dict.Set("purgedSize", static_cast<double>(stat.purgedSize));
+  dict.Set("purgeableSize", static_cast<double>(stat.purgeableSize));
   return dict.GetHandle();
 }
 
@@ -404,14 +402,12 @@ v8::Local<v8::Value> Converter<blink::WebCache::ResourceTypeStats>::ToV8(
     v8::Isolate* isolate,
     const blink::WebCache::ResourceTypeStats& stats) {
   mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
-
   dict.Set("images", mate::ConvertToV8(isolate, stats.images));
   dict.Set("scripts", mate::ConvertToV8(isolate, stats.scripts));
   dict.Set("cssStyleSheets", mate::ConvertToV8(isolate, stats.cssStyleSheets));
   dict.Set("xslStyleSheets", mate::ConvertToV8(isolate, stats.xslStyleSheets));
   dict.Set("fonts", mate::ConvertToV8(isolate, stats.fonts));
   dict.Set("other", mate::ConvertToV8(isolate, stats.other));
-
   return dict.GetHandle();
 }
 
