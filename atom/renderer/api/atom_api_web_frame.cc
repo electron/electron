@@ -178,10 +178,9 @@ blink::WebCache::ResourceTypeStats WebFrame::GetResourceUsage(
   return stats;
 }
 
-void WebFrame::PurgeCaches(v8::Isolate* isolate) {
+void WebFrame::ClearCache(v8::Isolate* isolate) {
   isolate->IdleNotificationDeadline(0.5);
   blink::WebCache::clear();
-
   base::MemoryPressureListener::NotifyMemoryPressure(
     base::MemoryPressureListener::MEMORY_PRESSURE_LEVEL_CRITICAL);
 }
@@ -211,7 +210,7 @@ void WebFrame::BuildPrototype(
       .SetMethod("insertText", &WebFrame::InsertText)
       .SetMethod("executeJavaScript", &WebFrame::ExecuteJavaScript)
       .SetMethod("getResourceUsage", &WebFrame::GetResourceUsage)
-      .SetMethod("purgeCaches", &WebFrame::PurgeCaches);
+      .SetMethod("clearCache", &WebFrame::ClearCache);
 }
 
 }  // namespace api
