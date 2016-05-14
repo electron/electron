@@ -13,6 +13,7 @@ _リンクになっていないリストは未翻訳のものです。_
 ## ガイド
 
 * [サポートするプラットフォーム](tutorial/supported-platforms.md)
+* [セキュリティ](tutorial/security.md)
 * [アプリケーションの配布](tutorial/application-distribution.md)
 * [Mac App Store 提出ガイド](tutorial/mac-app-store-submission-guide.md)
 * [アプリケーションのパッケージ化](tutorial/application-packaging.md)

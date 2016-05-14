@@ -2,9 +2,11 @@
 
 ## Electronは、いつ最新のChromeにアップグレードされますか?
 
-ElectronのChromeバージョンは、通常、新しいChromeのstabeleバージョンがリリースされた後、1～2週間以内に上げられます。
+ElectronのChromeバージョンは、通常、新しいChromeのstabeleバージョンがリリースされた後、1～2週間以内に上げられます。ただし、この期間というのは保障されてはおらず、またバージョンアップでの作業量に左右されます。
 
 また、Chromeのstableチャンネルのみを使用し、もし、重要な修正がbetaまたはdevチャンネルにある場合、それをバックポートします。
+
+もっと知りたければ、[セキュリティについて](../tutorial/security.md)をご参照ください。
 
 ## Electronは、いつ最新のNode.jsにアップグレードされますか?
 
@@ -69,7 +71,7 @@ Electronに組み込まれているNode.jsの影響で, `module`, `exports`, `re
 
 ```javascript
 // In the main process.
-var mainWindow = new BrowserWindow({
+var win = new BrowserWindow({
   webPreferences: {
     nodeIntegration: false
   }
@@ -113,7 +115,7 @@ console.log(require.resolve('electron'));
 "/path/to/Electron.app/Contents/Resources/atom.asar/renderer/api/lib/exports/electron.js"
 ```
 
-If it is something like もし、`node_modules/electron/index.js`　のような形式の場合は、npm `electron` モジュールを削除するか、それをリネームします。
+もし、`node_modules/electron/index.js`　のような形式の場合は、npm `electron` モジュールを削除するか、それをリネームします。
 
 ```bash
 npm uninstall electron
