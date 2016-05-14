@@ -44,6 +44,7 @@
       'lib/common/api/deprecations.js',
       'lib/common/api/exports/electron.js',
       'lib/common/api/native-image.js',
+      'lib/common/api/process-stats.js',
       'lib/common/api/shell.js',
       'lib/common/init.js',
       'lib/common/reset-search-paths.js',
