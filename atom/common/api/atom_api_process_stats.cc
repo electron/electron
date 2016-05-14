@@ -18,13 +18,13 @@ v8::Local<v8::Value> GetProcessMetrics(v8::Isolate* isolate) {
   std::unique_ptr<base::ProcessMetrics> metrics(
     base::ProcessMetrics::CreateCurrentProcessMetrics());
 
-  dict.Set("workingSetSize", (double)metrics->GetWorkingSetSize());
-  dict.Set("peakWorkingSetSize", (double)metrics->GetPeakWorkingSetSize());
+  dict.Set("workingSetSize", (double)(metrics->GetWorkingSetSize() >> 10));
+  dict.Set("peakWorkingSetSize", (double)(metrics->GetPeakWorkingSetSize() >> 10));
 
   size_t private_bytes, shared_bytes;
   if (metrics->GetMemoryBytes(&private_bytes, &shared_bytes)) {
-    dict.set("privateBytes", (double)private_bytes);
-    dict.set("sharedBytes", (double)shared_bytes);
+    dict.Set("privateBytes", (double)(private_bytes >> 10));
+    dict.Set("sharedBytes", (double)(shared_bytes >> 10));
   }
 
   return dict.GetHandle();
@@ -39,13 +39,13 @@ v8::Local<v8::Value> GetSystemMemoryInfo(v8::Isolate* isolate, mate::Arguments* 
     return v8::Undefined(isolate);
   }
 
-  dict.set("total", memInfo.total);
-  dict.set("free", memInfo.free);
+  dict.Set("total", memInfo.total);
+  dict.Set("free", memInfo.free);
 
   // NB: These return bogus values on OS X
-#if !DEFINED(OS_MACOSX)
-  dict.set("swapTotal", memInfo.swap_total);
-  dict.set("swapFree", memInfo.swap_free);
+#if !defined(OS_MACOSX)
+  dict.Set("swapTotal", memInfo.swap_total);
+  dict.Set("swapFree", memInfo.swap_free);
 #endif
 
   return dict.GetHandle();
