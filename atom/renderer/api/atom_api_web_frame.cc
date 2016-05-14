@@ -5,14 +5,17 @@
 #include "atom/renderer/api/atom_api_web_frame.h"
 
 #include "atom/common/api/event_emitter_caller.h"
+#include "atom/common/native_mate_converters/blink_converter.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/renderer/api/atom_api_spell_check_client.h"
+#include "base/memory/memory_pressure_listener.h"
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_view.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
+#include "third_party/WebKit/public/web/WebCache.h"
 #include "third_party/WebKit/public/web/WebDocument.h"
 #include "third_party/WebKit/public/web/WebLocalFrame.h"
 #include "third_party/WebKit/public/web/WebScriptExecutionCallback.h"
@@ -168,6 +171,20 @@ mate::Handle<WebFrame> WebFrame::Create(v8::Isolate* isolate) {
   return mate::CreateHandle(isolate, new WebFrame(isolate));
 }
 
+blink::WebCache::ResourceTypeStats WebFrame::GetResourceUsage(
+    v8::Isolate* isolate) {
+  blink::WebCache::ResourceTypeStats stats;
+  blink::WebCache::getResourceTypeStats(&stats);
+  return stats;
+}
+
+void WebFrame::ClearCache(v8::Isolate* isolate) {
+  isolate->IdleNotificationDeadline(0.5);
+  blink::WebCache::clear();
+  base::MemoryPressureListener::NotifyMemoryPressure(
+    base::MemoryPressureListener::MEMORY_PRESSURE_LEVEL_CRITICAL);
+}
+
 // static
 void WebFrame::BuildPrototype(
     v8::Isolate* isolate, v8::Local<v8::ObjectTemplate> prototype) {
@@ -191,7 +208,9 @@ void WebFrame::BuildPrototype(
       .SetMethod("registerURLSchemeAsPrivileged",
                  &WebFrame::RegisterURLSchemeAsPrivileged)
       .SetMethod("insertText", &WebFrame::InsertText)
-      .SetMethod("executeJavaScript", &WebFrame::ExecuteJavaScript);
+      .SetMethod("executeJavaScript", &WebFrame::ExecuteJavaScript)
+      .SetMethod("getResourceUsage", &WebFrame::GetResourceUsage)
+      .SetMethod("clearCache", &WebFrame::ClearCache);
 }
 
 }  // namespace api
