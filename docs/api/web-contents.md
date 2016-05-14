@@ -319,51 +319,57 @@ Returns:
   * `x` Integer - x coodinate
   * `y` Integer - y coodinate
   * `linkURL` String - URL of the link that encloses the node the context menu
-was invoked on.
+    was invoked on.
   * `linkText` String - Text associated with the link. May be an empty
-string if the contents of the link are an image.
+    string if the contents of the link are an image.
   * `pageURL` String - URL of the top level page that the context menu was
-invoked on.
+    invoked on.
   * `frameURL` String - URL of the subframe that the context menu was invoked
-on.
+    on.
   * `srcURL` String - Source URL for the element that the context menu
-was invoked on. Elements with source URLs are images, audio and video.
+    was invoked on. Elements with source URLs are images, audio and video.
   * `mediaType` String - Type of the node the context menu was invoked on. Can
-be `none`, `image`, `audio`, `video`, `canvas`, `file` or `plugin`.
-  * `mediaFlags` Object - Parameters for the media element the context menu was
-invoked on.
-    * `inError` - Boolean
-    * `isPaused` - Boolean
-    * `isMuted` - Boolean
-    * `hasAudio` - Boolean
-    * `isLooping` - Boolean
-    * `isControlsVisible` - Boolean
-    * `canToggleControls` - Boolean
-    * `canRotate` - Boolean
+    be `none`, `image`, `audio`, `video`, `canvas`, `file` or `plugin`.
   * `hasImageContent` Boolean - Wether the context menu was invoked on an image
-which has non-empty contents.
+    which has non-empty contents.
   * `isEditable` Boolean - Wether the context is editable.
-  * `editFlags` Object - These flags indicate wether the renderer believes it is
-able to perform the corresponding action.
-    * `canUndo` - Boolean
-    * `canRedo` - Boolean
-    * `canCut` - Boolean
-    * `canCopy` - Boolean
-    * `canPaste` - Boolean
-    * `canDelete` - Boolean
-    * `canSelectAll` - Boolean
   * `selectionText` String - Text of the selection that the context menu was
-invoked on.
+    invoked on.
   * `titleText` String - Title or alt text of the selection that the context
-was invoked on.
+    was invoked on.
   * `misspelledWord` String - The misspelled word under the cursor, if any.
   * `frameCharset` String - The character encoding of the frame on which the
-menu was invoked.
+    menu was invoked.
   * `inputFieldType` String - If the context menu was invoked on an input
-field, the type of that field. Possible values are `none`, `plainText`,
-`password`, `other`.
+    field, the type of that field. Possible values are `none`, `plainText`,
+    `password`, `other`.
   * `menuSourceType` String - Input source that invoked the context menu.
-Can be `none`, `mouse`, `keyboard`, `touch`, `touchMenu`.
+    Can be `none`, `mouse`, `keyboard`, `touch`, `touchMenu`.
+  * `mediaFlags` Object - The flags for the media element the context menu was
+    invoked on. See more about this below.
+  * `editFlags` Object - These flags indicate wether the renderer believes it is
+    able to perform the corresponding action. See more about this below.
+
+The `mediaFlags` is an object with the following properties:
+  * `inError` Boolean - Wether the media element has crashed.
+  * `isPaused` Boolean - Wether the media element is paused.
+  * `isMuted` Boolean - Wether the media element is muted.
+  * `hasAudio` Boolean - Wether the media element has audio.
+  * `isLooping` Boolean - Wether the media element is looping.
+  * `isControlsVisible` Boolean - Wether the media element's controls are
+    visible.
+  * `canToggleControls` Boolean - Wether the media element's controls are
+    toggleable.
+  * `canRotate` Boolean - Wether the media element can be rotated.
+
+The `editFlags` is an object with the following properties:
+  * `canUndo` Boolean - Wether the renderer believes it can undo.
+  * `canRedo` Boolean - Wether the renderer believes it can redo.
+  * `canCut` Boolean - Wether the renderer believes it can cut.
+  * `canCopy` Boolean - Wether the renderer believes it can copy
+  * `canPaste` Boolean - Wether the renderer believes it can paste.
+  * `canDelete` Boolean - Wether the renderer believes it can delete.
+  * `canSelectAll` Boolean - Wether the renderer believes it can select all.
 
 Emitted when there is a new context menu that needs to be handled.
 
