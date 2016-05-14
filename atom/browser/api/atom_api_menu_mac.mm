@@ -46,6 +46,20 @@ void MenuMac::PopupAt(Window* window, int x, int y, int positioning_item) {
     position = NSMakePoint(x, [view frame].size.height - y);
   }
 
+  // If no preferred item is specified, try to show all of the menu items.
+  if (!positioning_item) {
+    int windowBottom = CGRectGetMinY([view window].frame);
+    int distaceFromBottom = windowBottom + position.y - [menu size].height;
+    if (distaceFromBottom < 0)
+      position.y = position.y - distaceFromBottom;
+  }
+
+  // Place the menu left of cursor if it is overflowing off right of screen.
+  int windowLeft = CGRectGetMinX([view window].frame);
+  int rightmostPoint = windowLeft + position.x + [menu size].width;
+  if (rightmostPoint > [[NSScreen mainScreen] visibleFrame].size.width)
+    position.x = position.x - [menu size].width;
+
   // Show the menu.
   [menu popUpMenuPositioningItem:item atLocation:position inView:view];
 }
