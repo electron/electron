@@ -402,12 +402,12 @@ v8::Local<v8::Value> Converter<blink::WebCache::ResourceTypeStats>::ToV8(
     v8::Isolate* isolate,
     const blink::WebCache::ResourceTypeStats& stats) {
   mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
-  dict.Set("images", mate::ConvertToV8(isolate, stats.images));
-  dict.Set("scripts", mate::ConvertToV8(isolate, stats.scripts));
-  dict.Set("cssStyleSheets", mate::ConvertToV8(isolate, stats.cssStyleSheets));
-  dict.Set("xslStyleSheets", mate::ConvertToV8(isolate, stats.xslStyleSheets));
-  dict.Set("fonts", mate::ConvertToV8(isolate, stats.fonts));
-  dict.Set("other", mate::ConvertToV8(isolate, stats.other));
+  dict.Set("images", stats.images);
+  dict.Set("scripts", stats.scripts);
+  dict.Set("cssStyleSheets", stats.cssStyleSheets);
+  dict.Set("xslStyleSheets", stats.xslStyleSheets);
+  dict.Set("fonts", stats.fonts);
+  dict.Set("other", stats.other);
   return dict.GetHandle();
 }
 
