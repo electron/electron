@@ -78,7 +78,7 @@ void AtomDownloadManagerDelegate::OnDownloadPathGenerated(
 
   base::FilePath path;
   if (file_dialog::ShowSaveDialog(window, item->GetURL().spec(),
-                                  "Save", default_path,
+                                  "", default_path,
                                   file_dialog::Filters(), &path)) {
     // Remember the last selected download directory.
     AtomBrowserContext* browser_context = static_cast<AtomBrowserContext*>(
