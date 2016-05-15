@@ -44,7 +44,7 @@ class FileChooserDialog {
         filters_(filters) {
     const char* confirm_text = GTK_STOCK_OK;
 
-    if (button_label != NULL)
+    if (!button_label.empty())
       confirm_text = button_label.c_str();
     else if (action == GTK_FILE_CHOOSER_ACTION_SAVE)
       confirm_text = GTK_STOCK_SAVE;
