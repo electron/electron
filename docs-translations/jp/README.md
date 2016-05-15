@@ -16,6 +16,7 @@ _リンクになっていないリストは未翻訳のものです。_
 * [セキュリティ](tutorial/security.md)
 * [アプリケーションの配布](tutorial/application-distribution.md)
 * [Mac App Store 提出ガイド](tutorial/mac-app-store-submission-guide.md)
+* Windows Store Guide (tutorial/windows-store-guide.md)
 * [アプリケーションのパッケージ化](tutorial/application-packaging.md)
 * [ネイティブのNodeモジュールを使用する](tutorial/using-native-node-modules.md)
 * [メインプロセスのデバッグ](tutorial/debugging-main-process.md)
@@ -23,6 +24,8 @@ _リンクになっていないリストは未翻訳のものです。_
 * [DevTools エクステンション](tutorial/devtools-extension.md)
 * [Pepper Flashプラグインを使用する](tutorial/using-pepper-flash-plugin.md)
 * [Widevine CDMプラグインを使用する](tutorial/using-widevine-cdm-plugin.md)
+* Testing on Headless CI Systems (Travis, Jenkins) (tutorial/testing-on-headless-ci.md)
+
 
 # チュートリアル
 
@@ -40,14 +43,14 @@ _リンクになっていないリストは未翻訳のものです。_
 ### カスタムDOM要素:
 
 * [`File` Object](api/file-object.md)
-* `<webview>` Tag
+* `<webview>` Tag api/web-view-tag.md
 * [`window.open` 関数](api/window-open.md)
 
 ### Main Processのモジュール:
 
 * [app](api/app.md)
 * [autoUpdater](api/auto-updater.md)
-* BrowserWindow
+* BrowserWindow (api/browser-window.md)
     * [フレームの無いウィンドウ](api/frameless-window.md)
 * [contentTracing](api/content-tracing.md)
 * [dialog](api/dialog.md)
@@ -59,7 +62,8 @@ _リンクになっていないリストは未翻訳のものです。_
 * [powerSaveBlocker](api/power-save-blocker.md)
 * [protocol](api/protocol.md)
 * [session](api/session.md)
-* webContents
+* systemPreferences (api/system-preferences.md)
+* webContents (api/web-contents.md)
 * [Tray](api/tray.md)
 
 ### Renderer Processのモジュール (Web Page):
@@ -79,11 +83,13 @@ _リンクになっていないリストは未翻訳のものです。_
 
 ## 開発
 
-* Coding Style
-* Source Code Directory Structure
-* Technical Differences to NW.js (formerly node-webkit)
-* Build System Overview
-* Build Instructions (OS X)
-* Build Instructions (Windows)
-* Build Instructions (Linux)
-* Setting Up Symbol Server in debugger
+
+* Coding Style (development/coding-style.md)
+* Source Code Directory Structure (development/source-code-directory-structure.md)
+* Technical Differences to NW.js  (formerly node-webkit)(development/atom-shell-vs-node-webkit.md)
+* Build System Overview (development/build-system-overview.md)
+* Build Instructions (OS X) (development/build-instructions-osx.md)
+* Build Instructions (Windows) (development/build-instructions-windows.md)
+* Build Instructions (Linux) (development/build-instructions-linux.md)
+* Debug Instructions (Windows) (development/debug-instructions-windows.md)
+* Setting Up Symbol Server in debugger (development/setting-up-symbol-server.md)
