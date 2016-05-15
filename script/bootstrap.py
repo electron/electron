@@ -122,7 +122,7 @@ def check_root():
 
 
 def update_submodules():
-  execute_stdout(['git', 'submodule', 'sync'])
+  execute_stdout(['git', 'submodule', 'sync', '--recursive'])
   execute_stdout(['git', 'submodule', 'update', '--init', '--recursive'])
 
 
