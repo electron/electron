@@ -5,7 +5,7 @@ const url = require('url')
 const {app, session, ipcMain, BrowserWindow} = require('electron').remote
 
 describe('<webview> tag', function () {
-  this.timeout(10000)
+  this.timeout(20000)
 
   var fixtures = path.join(__dirname, 'fixtures')
   var webview = null
@@ -321,6 +321,10 @@ describe('<webview> tag', function () {
   })
 
   describe('allowpopups attribute', function () {
+    if (process.env.TRAVIS === 'true' && process.platform === 'darwin') {
+      return
+    }
+
     it('can not open new window when not set', function (done) {
       var listener = function (e) {
         assert.equal(e.message, 'null')
@@ -346,6 +350,10 @@ describe('<webview> tag', function () {
   })
 
   describe('new-window event', function () {
+    if (process.env.TRAVIS === 'true' && process.platform === 'darwin') {
+      return
+    }
+
     it('emits when window.open is called', function (done) {
       webview.addEventListener('new-window', function (e) {
         assert.equal(e.url, 'http://host/')
