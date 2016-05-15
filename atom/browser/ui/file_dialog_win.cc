@@ -180,7 +180,8 @@ void RunSaveDialogInNewThread(const RunState& run_state,
                               const Filters& filters,
                               const SaveDialogCallback& callback) {
   base::FilePath path;
-  bool result = ShowSaveDialog(parent, title, default_path, filters, &path);
+  bool result = ShowSaveDialog(parent, title, button_label, default_path,
+                               filters, &path);
   run_state.ui_message_loop->PostTask(FROM_HERE,
                                       base::Bind(callback, result, path));
   run_state.ui_message_loop->DeleteSoon(FROM_HERE, run_state.dialog_thread);
