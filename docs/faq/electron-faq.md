@@ -9,7 +9,7 @@ depends on the amount of work involved with upgrading.
 Only the stable channel of Chrome is used. If an important fix is in beta or dev
 channel, we will back-port it.
 
-For more information, please see the [security introduction](../tutorial/electron-security.md).
+For more information, please see the [security introduction](../tutorial/security.md).
 
 ## When will Electron upgrade to latest Node.js?
 
