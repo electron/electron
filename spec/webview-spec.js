@@ -5,7 +5,7 @@ const url = require('url')
 const {app, session, ipcMain, BrowserWindow} = require('electron').remote
 
 describe('<webview> tag', function () {
-  this.timeout(10000)
+  this.timeout(20000)
 
   var fixtures = path.join(__dirname, 'fixtures')
   var webview = null
