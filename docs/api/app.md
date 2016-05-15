@@ -34,7 +34,7 @@ Emitted when Electron has finished initialization.
 
 Emitted when all windows have been closed.
 
-This event is only emitted when the application is not going to quit. If the
+If you do not subscribe to this event and all windows are closed, the default behavior is to quit the app; however, if you subscribe, you control whether the app quits or not. If the
 user pressed `Cmd + Q`, or the developer called `app.quit()`, Electron will
 first try to close all the windows and then emit the `will-quit` event, and in
 this case the `window-all-closed` event would not be emitted.
