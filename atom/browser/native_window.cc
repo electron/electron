@@ -165,7 +165,7 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
     SetBackgroundColor(color);
   } else if (!transparent()) {
     // For normal window, use white as default background.
-    SetBackgroundColor("#FFFF");
+    SetBackgroundColor("#FFF");
   }
   std::string title("Electron");
   options.Get(options::kTitle, &title);
