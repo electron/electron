@@ -203,7 +203,7 @@ bool ShowOpenDialog(atom::NativeWindow* parent_window,
     options |= FOS_ALLOWMULTISELECT;
 
   FileDialog<CShellFileOpenDialog> open_dialog(
-      default_path, title, filters, options);
+      default_path, title, button_label, filters, options);
   if (!open_dialog.Show(parent_window))
     return false;
 
@@ -253,7 +253,7 @@ void ShowOpenDialog(atom::NativeWindow* parent,
   run_state.dialog_thread->message_loop()->PostTask(
       FROM_HERE,
       base::Bind(&RunOpenDialogInNewThread, run_state, parent, title,
-                 default_path, filters, properties, callback));
+                 button_label, default_path, filters, properties, callback));
 }
 
 bool ShowSaveDialog(atom::NativeWindow* parent_window,
@@ -263,7 +263,7 @@ bool ShowSaveDialog(atom::NativeWindow* parent_window,
                     const Filters& filters,
                     base::FilePath* path) {
   FileDialog<CShellFileSaveDialog> save_dialog(
-      default_path, title, filters,
+      default_path, title, button_label, filters,
       FOS_FORCEFILESYSTEM | FOS_PATHMUSTEXIST | FOS_OVERWRITEPROMPT);
   if (!save_dialog.Show(parent_window))
     return false;
@@ -292,7 +292,7 @@ void ShowSaveDialog(atom::NativeWindow* parent,
   run_state.dialog_thread->message_loop()->PostTask(
       FROM_HERE,
       base::Bind(&RunSaveDialogInNewThread, run_state, parent, title,
-                 default_path, filters, callback));
+                 button_label, default_path, filters, callback));
 }
 
 }  // namespace file_dialog

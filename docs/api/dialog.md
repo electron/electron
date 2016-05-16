@@ -28,7 +28,8 @@ The `dialog` module has the following methods:
 * `options` Object
   * `title` String
   * `defaultPath` String
-  * `buttonLabel` String
+  * `buttonLabel` String - Custom label for the confirmation button, when
+    left empty the default label will be used.
   * `filters` Array
   * `properties` Array - Contains which features the dialog should use, can
     contain `openFile`, `openDirectory`, `multiSelections` and
@@ -70,6 +71,8 @@ shown.
 * `options` Object
   * `title` String
   * `defaultPath` String
+  * `buttonLabel` String - Custom label for the confirmation button, when
+    left empty the default label will be used.
   * `filters` Array
 * `callback` Function (optional)
 
