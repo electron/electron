@@ -37,12 +37,16 @@ class FileChooserDialog {
   FileChooserDialog(GtkFileChooserAction action,
                     atom::NativeWindow* parent_window,
                     const std::string& title,
+                    const std::string& button_label,
                     const base::FilePath& default_path,
                     const Filters& filters)
       : dialog_scope_(parent_window),
         filters_(filters) {
     const char* confirm_text = GTK_STOCK_OK;
-    if (action == GTK_FILE_CHOOSER_ACTION_SAVE)
+
+    if (!button_label.empty())
+      confirm_text = button_label.c_str();
+    else if (action == GTK_FILE_CHOOSER_ACTION_SAVE)
       confirm_text = GTK_STOCK_SAVE;
     else if (action == GTK_FILE_CHOOSER_ACTION_OPEN)
       confirm_text = GTK_STOCK_OPEN;
@@ -216,6 +220,7 @@ base::FilePath FileChooserDialog::AddExtensionForFilename(
 
 bool ShowOpenDialog(atom::NativeWindow* parent_window,
                     const std::string& title,
+                    const std::string& button_label,
                     const base::FilePath& default_path,
                     const Filters& filters,
                     int properties,
@@ -223,8 +228,8 @@ bool ShowOpenDialog(atom::NativeWindow* parent_window,
   GtkFileChooserAction action = GTK_FILE_CHOOSER_ACTION_OPEN;
   if (properties & FILE_DIALOG_OPEN_DIRECTORY)
     action = GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER;
-  FileChooserDialog open_dialog(action, parent_window, title, default_path,
-                                filters);
+  FileChooserDialog open_dialog(action, parent_window, title, button_label,
+                                default_path, filters);
   if (properties & FILE_DIALOG_MULTI_SELECTIONS)
     gtk_file_chooser_set_select_multiple(GTK_FILE_CHOOSER(open_dialog.dialog()),
                                          TRUE);
@@ -241,6 +246,7 @@ bool ShowOpenDialog(atom::NativeWindow* parent_window,
 
 void ShowOpenDialog(atom::NativeWindow* parent_window,
                     const std::string& title,
+                    const std::string& button_label,
                     const base::FilePath& default_path,
                     const Filters& filters,
                     int properties,
@@ -249,7 +255,7 @@ void ShowOpenDialog(atom::NativeWindow* parent_window,
   if (properties & FILE_DIALOG_OPEN_DIRECTORY)
     action = GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER;
   FileChooserDialog* open_dialog = new FileChooserDialog(
-      action, parent_window, title, default_path, filters);
+      action, parent_window, title, button_label, default_path, filters);
   if (properties & FILE_DIALOG_MULTI_SELECTIONS)
     gtk_file_chooser_set_select_multiple(
         GTK_FILE_CHOOSER(open_dialog->dialog()), TRUE);
@@ -259,11 +265,12 @@ void ShowOpenDialog(atom::NativeWindow* parent_window,
 
 bool ShowSaveDialog(atom::NativeWindow* parent_window,
                     const std::string& title,
+                    const std::string& button_label,
                     const base::FilePath& default_path,
                     const Filters& filters,
                     base::FilePath* path) {
   FileChooserDialog save_dialog(GTK_FILE_CHOOSER_ACTION_SAVE, parent_window,
-                                title, default_path, filters);
+                                title, button_label, default_path, filters);
   gtk_widget_show_all(save_dialog.dialog());
   int response = gtk_dialog_run(GTK_DIALOG(save_dialog.dialog()));
   if (response == GTK_RESPONSE_ACCEPT) {
@@ -276,12 +283,13 @@ bool ShowSaveDialog(atom::NativeWindow* parent_window,
 
 void ShowSaveDialog(atom::NativeWindow* parent_window,
                     const std::string& title,
+                    const std::string& button_label,
                     const base::FilePath& default_path,
                     const Filters& filters,
                     const SaveDialogCallback& callback) {
   FileChooserDialog* save_dialog = new FileChooserDialog(
-      GTK_FILE_CHOOSER_ACTION_SAVE, parent_window, title, default_path,
-      filters);
+      GTK_FILE_CHOOSER_ACTION_SAVE, parent_window, title, button_label,
+      default_path, filters);
   save_dialog->RunSaveAsynchronous(callback);
 }
 

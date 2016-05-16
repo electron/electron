@@ -84,6 +84,7 @@ void WebDialogHelper::RunFileChooser(content::WebContents* web_contents,
     base::FilePath path;
     if (file_dialog::ShowSaveDialog(window_,
                                     base::UTF16ToUTF8(params.title),
+                                    "",
                                     params.default_file_name,
                                     filters,
                                     &path)) {
@@ -114,6 +115,7 @@ void WebDialogHelper::RunFileChooser(content::WebContents* web_contents,
         prefs::kSelectFileLastDirectory).Append(params.default_file_name);
     if (file_dialog::ShowOpenDialog(window_,
                                     base::UTF16ToUTF8(params.title),
+                                    "",
                                     default_file_path,
                                     filters,
                                     flags,
