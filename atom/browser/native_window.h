@@ -246,17 +246,12 @@ class NativeWindow : public base::SupportsUserData,
   }
 
   bool has_frame() const { return has_frame_; }
+  void set_has_frame(bool has_frame) { has_frame_ = has_frame; }
+
   bool transparent() const { return transparent_; }
   SkRegion* draggable_region() const { return draggable_region_.get(); }
   bool enable_larger_than_screen() const { return enable_larger_than_screen_; }
   gfx::ImageSkia icon() const { return icon_; }
-
-  bool force_using_draggable_region() const {
-    return force_using_draggable_region_;
-  }
-  void set_force_using_draggable_region(bool force) {
-    force_using_draggable_region_ = true;
-  }
 
   void set_has_dialog_attached(bool has_dialog_attached) {
     has_dialog_attached_ = has_dialog_attached;
@@ -298,9 +293,6 @@ class NativeWindow : public base::SupportsUserData,
 
   // Whether window has standard frame.
   bool has_frame_;
-
-  // Force the window to be aware of draggable regions.
-  bool force_using_draggable_region_;
 
   // Whether window is transparent.
   bool transparent_;

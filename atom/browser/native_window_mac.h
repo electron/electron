@@ -91,6 +91,10 @@ class NativeWindowMac : public NativeWindow {
     UpdateDraggableRegionViews(draggable_regions_);
   }
 
+  // Set the attribute of NSWindow while work around a bug of zoom button.
+  void SetStyleMask(bool on, NSUInteger flag);
+  void SetCollectionBehavior(bool on, NSUInteger flag);
+
   bool should_hide_native_toolbar_in_fullscreen() const {
     return should_hide_native_toolbar_in_fullscreen_;
   }
@@ -120,10 +124,6 @@ class NativeWindowMac : public NativeWindow {
   // whehter we can drag.
   void UpdateDraggableRegionViews(const std::vector<DraggableRegion>& regions);
 
-  // Set the attribute of NSWindow while work around a bug of zo0m button.
-  void SetStyleMask(bool on, NSUInteger flag);
-  void SetCollectionBehavior(bool on, NSUInteger flag);
-
   base::scoped_nsobject<AtomNSWindow> window_;
   base::scoped_nsobject<AtomNSWindowDelegate> window_delegate_;
 
@@ -142,6 +142,10 @@ class NativeWindowMac : public NativeWindow {
   // The presentation options before entering kiosk mode.
   NSApplicationPresentationOptions kiosk_options_;
 
+  // Force showing the buttons for frameless window.
+  bool force_show_buttons_;
+
+  // Whether to hide the native toolbar under fullscreen mode.
   bool should_hide_native_toolbar_in_fullscreen_;
 
   DISALLOW_COPY_AND_ASSIGN(NativeWindowMac);

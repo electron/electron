@@ -214,10 +214,22 @@ bool ScopedDisableResize::disable_resize_ = false;
         [[NSToolbar alloc] initWithIdentifier:@"titlebarStylingToolbar"]);
     [toolbar setShowsBaselineSeparator:NO];
     [window setToolbar:toolbar];
+
+    // Set window style to hide the toolbar, otherwise the toolbar will show in
+    // fullscreen mode.
+    shell_->SetStyleMask(true, NSFullSizeContentViewWindowMask);
   }
 }
 
+- (void)windowWillExitFullScreen:(NSNotification*)notification {
+  // Turn off the style for toolbar.
+  if (shell_->should_hide_native_toolbar_in_fullscreen())
+    shell_->SetStyleMask(false, NSFullSizeContentViewWindowMask);
+}
+
 - (void)windowDidExitFullScreen:(NSNotification*)notification {
+  // For certain versions of OS X the fullscreen button will automatically show
+  // after exiting fullscreen mode.
   if (!shell_->has_frame()) {
     NSWindow* window = shell_->GetNativeWindow();
     [[window standardWindowButton:NSWindowFullScreenButton] setHidden:YES];
@@ -391,6 +403,7 @@ NativeWindowMac::NativeWindowMac(
     : NativeWindow(web_contents, options),
       is_kiosk_(false),
       attention_request_id_(0),
+      force_show_buttons_(false),
       should_hide_native_toolbar_in_fullscreen_(false) {
   int width = 800, height = 600;
   options.Get(options::kWidth, &width);
@@ -438,21 +451,16 @@ NativeWindowMac::NativeWindowMac(
   if (closable) {
     styleMask |= NSClosableWindowMask;
   }
+  if ((titleBarStyle == "hidden") || (titleBarStyle == "hidden-inset")) {
+    // The window without titlebar is treated the same with frameless window.
+    set_has_frame(false);
+    force_show_buttons_ = true;
+  }
   if (!useStandardWindow || transparent() || !has_frame()) {
     styleMask |= NSTexturedBackgroundWindowMask;
   }
   if (resizable) {
     styleMask |= NSResizableWindowMask;
-  }
-  if ((titleBarStyle == "hidden") || (titleBarStyle == "hidden-inset")) {
-    styleMask |= NSFullSizeContentViewWindowMask;
-    styleMask |= NSUnifiedTitleAndToolbarWindowMask;
-  }
-  // We capture this because we need to access the option later when
-  // entering/exiting fullscreen and since the options dict is only passed to
-  // the constructor but not stored, let’s store this option this way.
-  if (titleBarStyle == "hidden-inset") {
-    should_hide_native_toolbar_in_fullscreen_ = true;
   }
 
   window_.reset([[AtomNSWindow alloc]
@@ -490,7 +498,7 @@ NativeWindowMac::NativeWindowMac(
   [window_ setReleasedWhenClosed:NO];
 
   // Hide the title bar.
-  if ((titleBarStyle == "hidden") || (titleBarStyle == "hidden-inset")) {
+  if (titleBarStyle == "hidden-inset") {
     [window_ setTitlebarAppearsTransparent:YES];
     [window_ setTitleVisibility:NSWindowTitleHidden];
     if (titleBarStyle == "hidden-inset") {
@@ -498,9 +506,8 @@ NativeWindowMac::NativeWindowMac(
           [[NSToolbar alloc] initWithIdentifier:@"titlebarStylingToolbar"]);
       [toolbar setShowsBaselineSeparator:NO];
       [window_ setToolbar:toolbar];
+      should_hide_native_toolbar_in_fullscreen_ = true;
     }
-    // We should be aware of draggable regions when using hidden titlebar.
-    set_force_using_draggable_region(true);
   }
 
   // On OS X the initial window size doesn't include window frame.
@@ -1013,6 +1020,10 @@ void NativeWindowMac::InstallView() {
     [view setFrame:[content_view_ bounds]];
     [content_view_ addSubview:view];
 
+    if (force_show_buttons_)
+      return;
+
+    // Hide the window buttons.
     [[window_ standardWindowButton:NSWindowZoomButton] setHidden:YES];
     [[window_ standardWindowButton:NSWindowMiniaturizeButton] setHidden:YES];
     [[window_ standardWindowButton:NSWindowCloseButton] setHidden:YES];
@@ -1031,7 +1042,7 @@ void NativeWindowMac::UninstallView() {
 
 void NativeWindowMac::UpdateDraggableRegionViews(
     const std::vector<DraggableRegion>& regions) {
-  if (has_frame() && !force_using_draggable_region())
+  if (has_frame())
     return;
 
   // All ControlRegionViews should be added as children of the WebContentsView,
