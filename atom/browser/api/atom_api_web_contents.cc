@@ -866,7 +866,7 @@ void WebContents::OpenDevTools(mate::Arguments* args) {
     return;
 
   std::string state;
-  if (type_ == WEB_VIEW) {
+  if (type_ == WEB_VIEW || !owner_window()) {
     state = "detach";
   } else if (args && args->Length() == 1) {
     bool detach = false;
