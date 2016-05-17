@@ -833,7 +833,7 @@ describe('browser-window module', function () {
         var extensionPath = path.join(__dirname, 'fixtures', 'devtools-extensions', 'foo')
         BrowserWindow.addDevToolsExtension(extensionPath)
 
-        w.webContents.on('devtools-opened', () => {
+        w.webContents.on('devtools-opened', function () {
           var inputEventIntervalId = setInterval(function () {
             if (w && w.devToolsWebContents) {
               w.devToolsWebContents.sendInputEvent({
