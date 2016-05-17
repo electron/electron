@@ -838,7 +838,7 @@ describe('browser-window module', function () {
             if (w && w.devToolsWebContents) {
               w.devToolsWebContents.executeJavaScript('(' + (function () {
                 var lastPanelId = WebInspector.inspectorView._tabbedPane._tabs.peekLast().id
-                WebInspector.inspectorView.showPanel(lastPanelId);
+                WebInspector.inspectorView.showPanel(lastPanelId)
               }).toString() + ')()')
             } else {
               clearInterval(showPanelIntevalId)
