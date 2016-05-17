@@ -913,6 +913,10 @@ win.webContents.on('did-finish-load', () => {
 
 `WebContents` objects also have the following properties:
 
+### `webContents.id`
+
+The unique ID of this WebContents.
+
 ### `webContents.session`
 
 Returns the [session](session.md) object used by this webContents.

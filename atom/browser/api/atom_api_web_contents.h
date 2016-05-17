@@ -154,6 +154,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   v8::Local<v8::Value> GetOwnerBrowserWindow();
 
   // Properties.
+  int32_t ID() const;
   v8::Local<v8::Value> Session(v8::Isolate* isolate);
   content::WebContents* HostWebContents();
   v8::Local<v8::Value> DevToolsWebContents(v8::Isolate* isolate);
