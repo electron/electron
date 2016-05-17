@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title></title>
+    <script>
+      var sendMessage = `require('electron').ipcRenderer.send('answer', 'extension loaded')`
+      window.chrome.devtools.inspectedWindow.eval(sendMessage, function () {})
+    </script>
+  </head>
+  <body>
+    a custom devtools extension
+  </body>
+</html>
