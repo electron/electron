@@ -142,6 +142,10 @@ class NativeWindowMac : public NativeWindow {
   // The presentation options before entering kiosk mode.
   NSApplicationPresentationOptions kiosk_options_;
 
+  // Force showing the buttons for frameless window.
+  bool force_show_buttons_;
+
+  // Whether to hide the native toolbar under fullscreen mode.
   bool should_hide_native_toolbar_in_fullscreen_;
 
   DISALLOW_COPY_AND_ASSIGN(NativeWindowMac);
