@@ -9,6 +9,7 @@
 #import <Cocoa/Cocoa.h>
 
 #include "atom/common/native_mate_converters/gurl_converter.h"
+#include "atom/browser/mac/dict_util.h"
 #include "base/strings/sys_string_conversions.h"
 #include "net/base/mac/url_conversions.h"
 
@@ -34,7 +35,7 @@ int SystemPreferences::SubscribeNotification(const std::string& name,
       object:nil
       queue:nil
       usingBlock:^(NSNotification* notification) {
-        copied_callback.Run();
+        copied_callback.Run(NSDictionaryToDictionaryValue([notification userInfo]));
       }
   ];
   return request_id;
