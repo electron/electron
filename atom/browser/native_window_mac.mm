@@ -214,10 +214,22 @@ bool ScopedDisableResize::disable_resize_ = false;
         [[NSToolbar alloc] initWithIdentifier:@"titlebarStylingToolbar"]);
     [toolbar setShowsBaselineSeparator:NO];
     [window setToolbar:toolbar];
+
+    // Set window style to hide the toolbar, otherwise the toolbar will show in
+    // fullscreen mode.
+    shell_->SetStyleMask(true, NSFullSizeContentViewWindowMask);
   }
 }
 
+- (void)windowWillExitFullScreen:(NSNotification*)notification {
+  // Turn off the style for toolbar.
+  if (shell_->should_hide_native_toolbar_in_fullscreen())
+    shell_->SetStyleMask(false, NSFullSizeContentViewWindowMask);
+}
+
 - (void)windowDidExitFullScreen:(NSNotification*)notification {
+  // For certain versions of OS X the fullscreen button will automatically show
+  // after exiting fullscreen mode.
   if (!shell_->has_frame()) {
     NSWindow* window = shell_->GetNativeWindow();
     [[window standardWindowButton:NSWindowFullScreenButton] setHidden:YES];
@@ -486,7 +498,7 @@ NativeWindowMac::NativeWindowMac(
   [window_ setReleasedWhenClosed:NO];
 
   // Hide the title bar.
-  if ((titleBarStyle == "hidden") || (titleBarStyle == "hidden-inset")) {
+  if (titleBarStyle == "hidden-inset") {
     [window_ setTitlebarAppearsTransparent:YES];
     [window_ setTitleVisibility:NSWindowTitleHidden];
     if (titleBarStyle == "hidden-inset") {
