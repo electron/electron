@@ -1,4 +1,4 @@
-# Testing with Headless CI Systems (Travis CI, Jenkins)
+# Testing on Headless CI Systems (Travis CI, Jenkins)
 
 Being based on Chromium, Electron requires a display driver to function.
 If Chromium can't find a display driver, Electron will simply fail to launch -
