@@ -8,8 +8,46 @@ From [ChromeDriver - WebDriver for Chrome][chrome-driver]:
 > implements WebDriver's wire protocol for Chromium. It is being developed by
 > members of the Chromium and WebDriver teams.
 
-In order to use `chromedriver` with Electron you have to tell it where to
-find Electron and make it think Electron is the Chrome browser.
+## Setting up Spectron
+
+[Spectron][spectron] is the officially supported ChromeDriver testing framework
+for Electron. It is built on top of [WebdriverIO](http://webdriver.io/) and
+has helpers to access Electron APIs in your tests and bundles the version
+of ChromeDriver for Electron.
+
+```bash
+$ npm install --save-dev spectron
+```
+
+```js
+// A simple test to verify a visible window is opened with a title
+var Application = require('spectron').Application
+var assert = require('assert')
+
+var app = new Application({
+  path: '/Applications/MyApp.app/Contents/MacOS/MyApp'
+})
+
+app.start().then(function () {
+  // Check if the window is visible
+  return app.browserWindow.isVisible()
+}).then(function (isVisible) {
+  // Verify the window is visible
+  assert.equal(isVisible, true)
+}).then(function () {
+  // Get the window's title
+  return app.client.getTitle()
+}).then(function (title) {
+  // Verify the window's title
+  assert.equal(title, 'My App')
+}).then(function () {
+  // Stop the application
+  return app.stop()
+}).catch(function (error) {
+  // Log any failures
+  console.error('Test failed', error.message)
+})
+```
 
 ## Setting up with WebDriverJs
 
@@ -132,3 +170,4 @@ your app's folder. This eliminates the need to copy-paste your app into
 Electron's resource directory.
 
 [chrome-driver]: https://sites.google.com/a/chromium.org/chromedriver/
+[spectron]: http://electron.atom.io/spectron
