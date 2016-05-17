@@ -21,7 +21,8 @@ a Node package for testing with web driver, we will use it as an example.
 First you need to download the `chromedriver` binary, and run it:
 
 ```bash
-$ ./chromedriver
+$ npm install electron-chromedriver
+$ ./node_modules/.bin/chromedriver
 Starting ChromeDriver (v2.10.291558) on port 9515
 Only local connections are allowed.
 ```
@@ -77,7 +78,8 @@ driver.
 First you need to download the `chromedriver` binary, and run it:
 
 ```bash
-$ chromedriver --url-base=wd/hub --port=9515
+$ npm install electron-chromedriver
+$ ./node_modules/.bin/chromedriver --url-base=wd/hub --port=9515
 Starting ChromeDriver (v2.10.291558) on port 9515
 Only local connections are allowed.
 ```
