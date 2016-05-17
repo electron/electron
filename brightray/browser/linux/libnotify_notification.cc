@@ -15,6 +15,7 @@
 namespace brightray {
 
 namespace {
+
 LibNotifyLoader libnotify_loader_;
 
 bool HasCapability(const std::string& capability) {
@@ -35,7 +36,6 @@ bool NotifierSupportsActions() {
 
   static bool notify_has_result = false;
   static bool notify_result = false;
-  GList *capabilities = NULL;
 
   if (notify_has_result)
     return notify_result;
@@ -62,7 +62,8 @@ Notification* Notification::Create(NotificationDelegate* delegate,
 
 // static
 bool LibnotifyNotification::Initialize() {
-  if (!libnotify_loader_.Load("libnotify.so.4") &&
+  if (!libnotify_loader_.Load("libnotify.so.4") &&  // most common one
+      !libnotify_loader_.Load("libnotify.so.5") &&
       !libnotify_loader_.Load("libnotify.so.1") &&
       !libnotify_loader_.Load("libnotify.so")) {
     return false;
