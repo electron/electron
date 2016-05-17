@@ -836,6 +836,7 @@ describe('browser-window module', function () {
         w.webContents.on('devtools-opened', function () {
           var inputEventIntervalId = setInterval(function () {
             if (w && w.devToolsWebContents) {
+              // Switch panels until the custom one is selected and loads
               w.devToolsWebContents.sendInputEvent({
                 type: 'keyDown',
                 keyCode:'[',
