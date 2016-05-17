@@ -379,7 +379,7 @@ void WebContents::MoveContents(content::WebContents* source,
 
 void WebContents::CloseContents(content::WebContents* source) {
   Emit("close");
-  if (type_ == BROWSER_WINDOW)
+  if (type_ == BROWSER_WINDOW && owner_window())
     owner_window()->CloseContents(source);
 }
 
@@ -430,13 +430,13 @@ void WebContents::ExitFullscreenModeForTab(content::WebContents* source) {
 
 void WebContents::RendererUnresponsive(content::WebContents* source) {
   Emit("unresponsive");
-  if (type_ == BROWSER_WINDOW)
+  if (type_ == BROWSER_WINDOW && owner_window())
     owner_window()->RendererUnresponsive(source);
 }
 
 void WebContents::RendererResponsive(content::WebContents* source) {
   Emit("responsive");
-  if (type_ == BROWSER_WINDOW)
+  if (type_ == BROWSER_WINDOW && owner_window())
     owner_window()->RendererResponsive(source);
 }
 
