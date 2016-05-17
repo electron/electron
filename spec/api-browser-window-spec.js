@@ -834,14 +834,14 @@ describe('browser-window module', function () {
         BrowserWindow.addDevToolsExtension(extensionPath)
 
         w.webContents.on('devtools-opened', function () {
-          var inputEventIntervalId = setInterval(function () {
+          var showPanelIntevalId = setInterval(function () {
             if (w && w.devToolsWebContents) {
               w.devToolsWebContents.executeJavaScript('(' + (function () {
                 var lastPanelId = WebInspector.inspectorView._tabbedPane._tabs.peekLast().id
                 WebInspector.inspectorView.showPanel(lastPanelId);
               }).toString() + ')()')
             } else {
-              clearInterval(inputEventIntervalId)
+              clearInterval(showPanelIntevalId)
             }
           }, 100)
         })
