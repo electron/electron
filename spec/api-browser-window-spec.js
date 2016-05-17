@@ -836,16 +836,14 @@ describe('browser-window module', function () {
         w.webContents.on('devtools-opened', function () {
           var inputEventIntervalId = setInterval(function () {
             if (w && w.devToolsWebContents) {
-              // Switch panels until the custom one is selected and loads
-              w.devToolsWebContents.sendInputEvent({
-                type: 'keyDown',
-                keyCode:'[',
-                modifiers: process.platform === 'darwin' ? ['meta'] : ['control']
-              })
+              w.devToolsWebContents.executeJavaScript('(' + (function () {
+                var lastPanelId = WebInspector.inspectorView._tabbedPane._tabs.peekLast().id
+                WebInspector.inspectorView.showPanel(lastPanelId);
+              }).toString() + ')()')
             } else {
               clearInterval(inputEventIntervalId)
             }
-          }, 200)
+          }, 100)
         })
 
         w.loadURL('about:blank')
