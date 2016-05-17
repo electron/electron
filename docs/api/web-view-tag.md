@@ -12,6 +12,9 @@ app. It doesn't have the same permissions as your web page and all interactions
 between your app and embedded content will be asynchronous. This keeps your app
 safe from the embedded content.
 
+For security purpose, `webview` can only be used in `BrowserWindow`s that have
+`nodeIntegration` enabled.
+
 ## Example
 
 To embed a web page in your app, add the `webview` tag to your app's embedder
