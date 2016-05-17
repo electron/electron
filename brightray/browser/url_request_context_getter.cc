@@ -89,6 +89,9 @@ const char kProxyBypassList[] = "proxy-bypass-list";
 // Uses the pac script at the given URL.
 const char kProxyPacUrl[] = "proxy-pac-url";
 
+// Disable HTTP/2 and SPDY/3.1 protocols.
+const char kDisableHttp2[] = "disable-http2";
+
 }  // namespace
 
 
@@ -341,7 +344,12 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     network_session_params.http_auth_handler_factory =
         url_request_context_->http_auth_handler_factory();
     network_session_params.net_log = url_request_context_->net_log();
-    network_session_params.enable_http2 = true;
+
+    // --disable-http2
+    if (command_line.HasSwitch(kDisableHttp2)) {
+      network_session_params.enable_spdy31 = false;
+      network_session_params.enable_http2 = false;
+    }
 
     // --ignore-certificate-errors
     if (command_line.HasSwitch(switches::kIgnoreCertificateErrors))
