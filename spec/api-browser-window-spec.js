@@ -825,25 +825,55 @@ describe('browser-window module', function () {
 
   describe('dev tool extensions', function () {
     describe('BrowserWindow.addDevToolsExtension', function () {
-      it('creates the extension', function (done) {
-        var extensionPath = path.join(__dirname, 'fixtures', 'devtools-extensions', 'foo')
-        BrowserWindow.addDevToolsExtension(extensionPath)
+      beforeEach(function () {
+        BrowserWindow.removeDevToolsExtension('foo')
+      })
 
-        w.webContents.on('devtools-opened', () => {
-          var inputEventIntervalId = setInterval(function () {
-            if (w && w.devToolsWebContents) {
-              w.devToolsWebContents.sendInputEvent({type: 'keyDown', keyCode:'[', modifiers: ['meta']})
-            } else {
-              clearInterval(inputEventIntervalId)
-            }
-          }, 250)
+      describe('when the devtools is docked', function () {
+        it('creates the extension', function (done) {
+          var extensionPath = path.join(__dirname, 'fixtures', 'devtools-extensions', 'foo')
+          BrowserWindow.addDevToolsExtension(extensionPath)
+
+          w.webContents.on('devtools-opened', () => {
+            var inputEventIntervalId = setInterval(function () {
+              if (w && w.devToolsWebContents) {
+                w.devToolsWebContents.sendInputEvent({type: 'keyDown', keyCode:'[', modifiers: ['meta']})
+              } else {
+                clearInterval(inputEventIntervalId)
+              }
+            }, 250)
+          })
+          w.loadURL('about:blank')
+          w.webContents.openDevTools({mode: 'bottom'})
+
+          ipcMain.once('answer', function (event, message) {
+            assert.equal(message, 'extension loaded')
+            done()
+          })
         })
-        w.loadURL('about:blank')
-        w.webContents.openDevTools({mode: 'bottom'})
+      })
 
-        ipcMain.once('answer', function (event, message) {
-          assert.equal(message, 'extension loaded')
-          done()
+      describe('when the devtools is undocked', function () {
+        it('creates the extension', function (done) {
+          var extensionPath = path.join(__dirname, 'fixtures', 'devtools-extensions', 'foo')
+          BrowserWindow.addDevToolsExtension(extensionPath)
+
+          w.webContents.on('devtools-opened', () => {
+            var inputEventIntervalId = setInterval(function () {
+              if (w && w.devToolsWebContents) {
+                w.devToolsWebContents.sendInputEvent({type: 'keyDown', keyCode:'[', modifiers: ['meta']})
+              } else {
+                clearInterval(inputEventIntervalId)
+              }
+            }, 250)
+          })
+          w.loadURL('about:blank')
+          w.webContents.openDevTools({mode: 'undocked'})
+
+          ipcMain.once('answer', function (event, message) {
+            assert.equal(message, 'extension loaded')
+            done()
+          })
         })
       })
     })
