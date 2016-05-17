@@ -836,7 +836,11 @@ describe('browser-window module', function () {
         w.webContents.on('devtools-opened', () => {
           var inputEventIntervalId = setInterval(function () {
             if (w && w.devToolsWebContents) {
-              w.devToolsWebContents.sendInputEvent({type: 'keyDown', keyCode:'[', modifiers: ['meta']})
+              w.devToolsWebContents.sendInputEvent({
+                type: 'keyDown',
+                keyCode:'[',
+                modifiers: process.platform === 'darwin' ? ['meta'] : ['control']
+              })
             } else {
               clearInterval(inputEventIntervalId)
             }
