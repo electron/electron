@@ -274,7 +274,7 @@ WebContents::WebContents(v8::Isolate* isolate,
   }
 
   Observe(web_contents);
-  InitWithWebContents(web_contents);
+  InitWithWebContents(web_contents, session->browser_context());
 
   managed_web_contents()->GetView()->SetDelegate(this);
 
@@ -397,7 +397,7 @@ void WebContents::HandleKeyboardEvent(
   if (event.windowsKeyCode == ui::VKEY_ESCAPE && is_html_fullscreen()) {
     // Escape exits tabbed fullscreen mode.
     ExitFullscreenModeForTab(source);
-  } else if (type_ == BROWSER_WINDOW) {
+  } else if (type_ == BROWSER_WINDOW && owner_window()) {
     owner_window()->HandleKeyboardEvent(source, event);
   } else if (type_ == WEB_VIEW && guest_delegate_) {
     // Send the unhandled keyboard events back to the embedder.

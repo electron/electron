@@ -182,7 +182,9 @@ CommonWebContentsDelegate::~CommonWebContentsDelegate() {
 }
 
 void CommonWebContentsDelegate::InitWithWebContents(
-    content::WebContents* web_contents) {
+    content::WebContents* web_contents,
+    AtomBrowserContext* browser_context) {
+  browser_context_ = browser_context;
   web_contents->SetDelegate(this);
 
   printing::PrintViewManagerBasic::CreateForWebContents(web_contents);
