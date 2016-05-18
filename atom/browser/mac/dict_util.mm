@@ -44,7 +44,7 @@ scoped_ptr<base::ListValue> NSArrayToListValue(NSArray* arr) {
       else
         result->Append(base::Value::CreateNullValue());
     } else {
-      result->Append(base::Value::CreateNullValue());
+      result->AppendString(base::SysNSStringToUTF8([value description]));
     }
   }
 
@@ -73,11 +73,8 @@ scoped_ptr<base::DictionaryValue> NSDictionaryToDictionaryValue(
 
   scoped_ptr<base::DictionaryValue> result(new base::DictionaryValue);
   for (id key in dict) {
-    std::string str_key;
-    if ([key isKindOfClass:[NSString class]])
-      str_key = base::SysNSStringToUTF8(key);
-    else
-      str_key = base::SysNSStringToUTF8([NSString stringWithFormat:@"%p", key]);
+    std::string str_key = base::SysNSStringToUTF8(
+        [key isKindOfClass:[NSString class]] ? key : [key description]);
 
     id value = [dict objectForKey:key];
     if ([value isKindOfClass:[NSString class]]) {
@@ -109,7 +106,9 @@ scoped_ptr<base::DictionaryValue> NSDictionaryToDictionaryValue(
         result->SetWithoutPathExpansion(str_key,
                                         base::Value::CreateNullValue());
     } else {
-      result->SetWithoutPathExpansion(str_key, base::Value::CreateNullValue());
+      result->SetStringWithoutPathExpansion(
+          str_key,
+          base::SysNSStringToUTF8([value description]));
     }
   }
 
