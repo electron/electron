@@ -8,10 +8,6 @@
 #include "content/public/browser/browser_plugin_guest_delegate.h"
 #include "content/public/browser/web_contents_observer.h"
 
-namespace content {
-struct NativeWebKeyboardEvent;
-}
-
 namespace atom {
 
 namespace api {
@@ -48,10 +44,6 @@ class WebViewGuestDelegate : public content::BrowserPluginGuestDelegate,
   // Used to toggle autosize mode for this GuestView, and set both the automatic
   // and normal sizes.
   void SetSize(const SetSizeParams& params);
-
-  // Transfer the keyboard event to embedder.
-  void HandleKeyboardEvent(content::WebContents* source,
-                           const content::NativeWebKeyboardEvent& event);
 
  protected:
   // content::WebContentsObserver:

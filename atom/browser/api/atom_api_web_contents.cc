@@ -399,9 +399,9 @@ void WebContents::HandleKeyboardEvent(
     ExitFullscreenModeForTab(source);
   } else if (type_ == BROWSER_WINDOW && owner_window()) {
     owner_window()->HandleKeyboardEvent(source, event);
-  } else if (type_ == WEB_VIEW && guest_delegate_) {
+  } else if (type_ == WEB_VIEW && embedder_) {
     // Send the unhandled keyboard events back to the embedder.
-    guest_delegate_->HandleKeyboardEvent(source, event);
+    embedder_->HandleKeyboardEvent(source, event);
   }
 }
 
