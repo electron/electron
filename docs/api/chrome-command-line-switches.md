@@ -24,6 +24,10 @@ Ignore the connections limit for `domains` list separated by `,`.
 
 Disables the disk cache for HTTP requests.
 
+## --disable-http2
+
+Disable HTTP/2 and SPDY/3.1 protocols.
+
 ## --remote-debugging-port=`port`
 
 Enables remote debugging over HTTP on the specified `port`.
