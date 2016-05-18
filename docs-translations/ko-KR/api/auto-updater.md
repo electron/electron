@@ -34,6 +34,11 @@ Windows에선 `auto-updater` 모듈을 사용하기 전에 어플리케이션을
 설치해야 합니다. [grunt-electron-installer][installer]를 사용하여 어플리케이션
 인스톨러를 만드는 것을 권장합니다.
 
+Windows에선 `autoUpdater` 모듈을 사용하기 전에 사용자의 장치에 어플리케이션을
+설치해야 합니다. 따라서 [electron-winstaller][installer-lib] 모듈이나
+[grunt-electron-installer][installer] 패키지를 사용하여 어플리케이션 인스톨러를
+만드는 것을 권장합니다.
+
 Squirrel로 생성된 인스톨러는 [Application User Model ID][app-user-model-id]와 함께
 `com.squirrel.PACKAGE_ID.YOUR_EXE_WITHOUT_DOT_EXE`으로 형식화된 바로가기 아이콘을
 생성합니다. `com.squirrel.slack.Slack` 과 `com.squirrel.code.Code`가 그 예시입니다.
@@ -108,6 +113,7 @@ Returns:
 [server-support]: https://github.com/Squirrel/Squirrel.Mac#server-support
 [squirrel-windows]: https://github.com/Squirrel/Squirrel.Windows
 [installer]: https://github.com/electron/grunt-electron-installer
+[installer-lib]: https://github.com/electron/windows-installer
 [app-user-model-id]: https://msdn.microsoft.com/en-us/library/windows/desktop/dd378459(v=vs.85).aspx
 [electron-release-server]: https://github.com/ArekSredzki/electron-release-server
 [squirrel-updates-server]: https://github.com/Aluxian/squirrel-updates-server

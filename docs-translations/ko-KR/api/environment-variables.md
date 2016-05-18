@@ -50,8 +50,4 @@ Electron이 크래시되면, 크래시 정보 창을 표시합니다.
 
 ## `ELECTRON_FORCE_WINDOW_MENU_BAR` _Linux_
 
-Linux의 글로벌 메뉴 막대를 사용하지 않습니다.
-
-## `ELECTRON_HIDE_INTERNAL_MODULES`
-
-`require('ipc')`같은 예전 방식의 빌트인 모듈을 비활성화합니다.
+Linux의 전역 메뉴바를 사용하지 않습니다.

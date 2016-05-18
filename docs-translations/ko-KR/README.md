@@ -21,6 +21,7 @@ Electron에 대해 자주 묻는 질문이 있습니다. 이슈를 생성하기 
 
 * [지원하는 플랫폼](tutorial/supported-platforms.md)
 * [보안](tutorial/security.md)
+* [Electron 버전 관리](tutorial/electron-versioning.md)
 * [어플리케이션 배포](tutorial/application-distribution.md)
 * [Mac 앱스토어 어플리케이션 제출 가이드](tutorial/mac-app-store-submission-guide.md)
 * [Windows 스토어 가이드](tutorial/windows-store-guide.md)
