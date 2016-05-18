@@ -8,7 +8,9 @@ describe('<webview> tag', function () {
   this.timeout(20000)
 
   var fixtures = path.join(__dirname, 'fixtures')
+
   var webview = null
+  let w = null
 
   beforeEach(function () {
     webview = new WebView()
@@ -18,13 +20,34 @@ describe('<webview> tag', function () {
     if (document.body.contains(webview)) {
       document.body.removeChild(webview)
     }
+    if (w) {
+      w.destroy()
+      w = null
+    }
   })
 
   it('works without script tag in page', function (done) {
-    let w = new BrowserWindow({show: false})
+    w = new BrowserWindow({show: false})
     ipcMain.once('pong', function () {
-      w.destroy()
       done()
+    })
+    w.loadURL('file://' + fixtures + '/pages/webview-no-script.html')
+  })
+
+  it('is disabled when nodeIntegration is disabled', function (done) {
+    w = new BrowserWindow({
+      show: false,
+      webPreferences: {
+        nodeIntegration: false,
+        preload: path.join(fixtures, 'module', 'preload-webview.js')
+      },
+    })
+    ipcMain.once('webview', function (event, type) {
+      if (type === 'undefined') {
+        done()
+      } else {
+        done('WebView still exists')
+      }
     })
     w.loadURL('file://' + fixtures + '/pages/webview-no-script.html')
   })
@@ -82,40 +105,6 @@ describe('<webview> tag', function () {
       webview.setAttribute('nodeintegration', 'on')
       webview.src = 'file://' + fixtures + '/pages/post.html'
       document.body.appendChild(webview)
-    })
-
-    it('disables node integration when disabled on the parent BrowserWindow', function (done) {
-      var b = undefined
-
-      ipcMain.once('answer', function (event, typeofProcess) {
-        try {
-          assert.equal(typeofProcess, 'undefined')
-          done()
-        } finally {
-          b.close()
-        }
-      })
-
-      var windowUrl = require('url').format({
-        pathname: `${fixtures}/pages/webview-no-node-integration-on-window.html`,
-        protocol: 'file',
-        query: {
-          p: `${fixtures}/pages/web-view-log-process.html`
-        },
-        slashes: true
-      })
-      var preload = path.join(fixtures, 'module', 'answer.js')
-
-      b = new BrowserWindow({
-        height: 400,
-        width: 400,
-        show: false,
-        webPreferences: {
-          preload: preload,
-          nodeIntegration: false,
-        }
-      })
-      b.loadURL(windowUrl)
     })
 
     it('disables node integration on child windows when it is disabled on the webview', function (done) {
