@@ -17,11 +17,7 @@ upstream node:
 * `process.defaultApp` Boolean - When app is started by being passed as
   parameter to the default app, this value is `true` in the main process,
   otherwise it is `undefined`.
-* `process.getSystemMemoryInfo` - Returns the amount of system memory and free
-  swap space
-* `process.getProcessMemoryInfo` - Returns the amount of actual memory used by
-  Chromium for the current process.
-
+  
 ## Events
 
 ### Event: 'loaded'
