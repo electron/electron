@@ -26,6 +26,9 @@ NSDictionary* DictionaryValueToNSDictionary(const base::DictionaryValue& value) 
 
 scoped_ptr<base::DictionaryValue> NSDictionaryToDictionaryValue(
     NSDictionary* dict) {
+  if (!dict)
+    return nullptr;
+
   NSData* data = [NSJSONSerialization dataWithJSONObject:dict
                                                  options:0
                                                    error:nil];
