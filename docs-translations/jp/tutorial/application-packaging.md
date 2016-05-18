@@ -63,8 +63,8 @@ require('/path/to/example.asar/dir/module.js');
 `BrowserWindow` を使って `asar` アーカイブ内の Web ページを表示することもできます:
 
 ```javascript
-const BrowserWindow = require('electron').BrowserWindow;
-var win = new BrowserWindow({width: 800, height: 600});
+const {BrowserWindow} = require('electron');
+let win = new BrowserWindow({width: 800, height: 600});
 win.loadURL('file:///path/to/example.asar/static/index.html');
 ```
 
@@ -78,7 +78,7 @@ Node API と同様、`asar` アーカイブはディレクトリのように扱�
 ```html
 <script>
 var $ = require('./jquery.min.js');
-$.get('file:///path/to/example.asar/file.txt', function(data) {
+$.get('file:///path/to/example.asar/file.txt', (data) => {
   console.log(data);
 });
 </script>
@@ -89,7 +89,7 @@ $.get('file:///path/to/example.asar/file.txt', function(data) {
 アーカイブのチェックサムを検証する等の幾つかのケースでは、`asar` アーカイブをファイルとして読み込む必要があります。この目的のために、 `asar` サポートしないオリジナルの `fs` API を提供するビルトインの `original-fs` モジュールを使用できます。
 
 ```javascript
-var originalFs = require('original-fs');
+const originalFs = require('original-fs');
 originalFs.readFileSync('/path/to/example.asar');
 ```
 
@@ -146,4 +146,4 @@ $ asar pack app app.asar --unpack *.node
 
 このコマンドを実行した後、`app.asar` とは別に、アンパックされたファイルを含んだ`app.asar.unpacked` フォルダーが生成されます。ユーザーに提供するときには、`app.asar` と一緒にコピーしなければなりません。
 
-[asar]: https://github.com/atom/asar
+[asar]: https://github.com/electron/asar

@@ -4,9 +4,9 @@ Electronで、Chromeブラウザーに同梱される Widevine CDMプラグイ�
 
 ## プラグインを取得する
 
-Electronは、ライセンス的な理由でWidevine CDMプラグインは同梱されません。Widevine CDMプラグインを取得するために、最初に、使用するElectronビルドのChromバージョンとアーキテクチャを合わせた公式のChromeブラウザーをインストールする必要があります。
+Electronは、ライセンス的な理由でWidevine CDMプラグインは同梱されません。Widevine CDMプラグインを取得するために、最初に、使用するElectronビルドのChromeバージョンとアーキテクチャを合わせた公式のChromeブラウザーをインストールする必要があります。
 
-__Note:__ Chromeブラウザの主要バージョンは、Electronが使用するChromeバージョンと同じでなければなりません。そうでなければ、プラグインは、`navigator.plugins`経由でロードされて表示されるにも関わらず動作しません。
+__Note:__ Chromeブラウザのメジャーバージョンは、Electronが使用するChromeバージョンと同じでなければなりません。そうでなければ、プラグインは、`navigator.plugins`経由でロードされて表示されるにも関わらず動作しません。
 
 ### Windows & OS X
 
@@ -39,14 +39,14 @@ app.commandLine.appendSwitch('widevine-cdm-path', '/path/to/widevinecdmadapter.p
 // The version of plugin can be got from `chrome://plugins` page in Chrome.
 app.commandLine.appendSwitch('widevine-cdm-version', '1.4.8.866');
 
-var mainWindow = null;
-app.on('ready', function() {
-  mainWindow = new BrowserWindow({
+let win = null;
+app.on('ready', () => {
+  win = new BrowserWindow({
     webPreferences: {
       // The `plugins` have to be enabled.
       plugins: true
     }
-  })
+  });
 });
 ```
 
