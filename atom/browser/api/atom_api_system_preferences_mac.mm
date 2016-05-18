@@ -8,8 +8,10 @@
 
 #import <Cocoa/Cocoa.h>
 
+#include "atom/browser/mac/dict_util.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "base/strings/sys_string_conversions.h"
+#include "base/values.h"
 #include "net/base/mac/url_conversions.h"
 
 namespace atom {
@@ -25,16 +27,26 @@ std::map<int, id> g_id_map;
 
 }  // namespace
 
-int SystemPreferences::SubscribeNotification(const std::string& name,
-                                             const base::Closure& callback) {
+int SystemPreferences::SubscribeNotification(
+    const std::string& name, const NotificationCallback& callback) {
   int request_id = g_next_id++;
-  __block base::Closure copied_callback = callback;
+  __block NotificationCallback copied_callback = callback;
   g_id_map[request_id] = [[NSDistributedNotificationCenter defaultCenter]
       addObserverForName:base::SysUTF8ToNSString(name)
       object:nil
       queue:nil
       usingBlock:^(NSNotification* notification) {
-        copied_callback.Run();
+        scoped_ptr<base::DictionaryValue> user_info =
+            NSDictionaryToDictionaryValue(notification.userInfo);
+        if (user_info) {
+          copied_callback.Run(
+              base::SysNSStringToUTF8(notification.name),
+              *user_info);
+        } else {
+          copied_callback.Run(
+              base::SysNSStringToUTF8(notification.name),
+              base::DictionaryValue());
+        }
       }
   ];
   return request_id;
