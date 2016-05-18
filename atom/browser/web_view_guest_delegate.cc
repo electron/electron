@@ -95,13 +95,6 @@ void WebViewGuestDelegate::SetSize(const SetSizeParams& params) {
   auto_size_enabled_ = enable_auto_size;
 }
 
-void WebViewGuestDelegate::HandleKeyboardEvent(
-    content::WebContents* source,
-    const content::NativeWebKeyboardEvent& event) {
-  if (embedder_web_contents_)
-    embedder_web_contents_->GetDelegate()->HandleKeyboardEvent(source, event);
-}
-
 void WebViewGuestDelegate::DidCommitProvisionalLoadForFrame(
     content::RenderFrameHost* render_frame_host,
     const GURL& url, ui::PageTransition transition_type) {

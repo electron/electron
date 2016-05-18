@@ -15,7 +15,6 @@
 #include "brightray/browser/inspectable_web_contents.h"
 #include "brightray/browser/inspectable_web_contents_view.h"
 #include "content/public/browser/browser_accessibility_state.h"
-#include "content/public/browser/native_web_keyboard_event.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/render_widget_host_view.h"
@@ -933,27 +932,6 @@ void NativeWindowMac::SetVisibleOnAllWorkspaces(bool visible) {
 bool NativeWindowMac::IsVisibleOnAllWorkspaces() {
   NSUInteger collectionBehavior = [window_ collectionBehavior];
   return collectionBehavior & NSWindowCollectionBehaviorCanJoinAllSpaces;
-}
-
-void NativeWindowMac::HandleKeyboardEvent(
-    content::WebContents*,
-    const content::NativeWebKeyboardEvent& event) {
-  if (event.skip_in_browser ||
-      event.type == content::NativeWebKeyboardEvent::Char)
-    return;
-
-  BOOL handled = [[NSApp mainMenu] performKeyEquivalent:event.os_event];
-  if (!handled && event.os_event.window) {
-    // Handle the cmd+~ shortcut.
-    if ((event.os_event.modifierFlags & NSCommandKeyMask) /* cmd */ &&
-        (event.os_event.keyCode == 50  /* ~ */)) {
-      if (event.os_event.modifierFlags & NSShiftKeyMask) {
-        [NSApp sendAction:@selector(_cycleWindowsReversed:) to:nil from:nil];
-      } else {
-        [NSApp sendAction:@selector(_cycleWindows:) to:nil from:nil];
-      }
-    }
-  }
 }
 
 std::vector<gfx::Rect> NativeWindowMac::CalculateNonDraggableRegions(

@@ -31,14 +31,6 @@
 #include "content/public/browser/security_style_explanations.h"
 #include "storage/browser/fileapi/isolated_context.h"
 
-#if defined(TOOLKIT_VIEWS)
-#include "atom/browser/native_window_views.h"
-#endif
-
-#if defined(USE_X11)
-#include "atom/browser/browser.h"
-#endif
-
 using content::BrowserThread;
 using security_state::SecurityStateModel;
 
@@ -182,7 +174,9 @@ CommonWebContentsDelegate::~CommonWebContentsDelegate() {
 }
 
 void CommonWebContentsDelegate::InitWithWebContents(
-    content::WebContents* web_contents) {
+    content::WebContents* web_contents,
+    AtomBrowserContext* browser_context) {
+  browser_context_ = browser_context;
   web_contents->SetDelegate(this);
 
   printing::PrintViewManagerBasic::CreateForWebContents(web_contents);
@@ -627,23 +621,6 @@ void CommonWebContentsDelegate::OnDevToolsSearchCompleted(
                                     &file_system_path_value,
                                     &file_paths_value);
 }
-
-#if defined(TOOLKIT_VIEWS)
-gfx::ImageSkia CommonWebContentsDelegate::GetDevToolsWindowIcon() {
-  if (!owner_window())
-    return gfx::ImageSkia();
-  return static_cast<views::WidgetDelegate*>(static_cast<NativeWindowViews*>(
-      owner_window()))->GetWindowAppIcon();
-}
-#endif
-
-#if defined(USE_X11)
-void CommonWebContentsDelegate::GetDevToolsWindowWMClass(
-    std::string* name, std::string* class_name) {
-  *class_name = Browser::Get()->GetName();
-  *name = base::ToLowerASCII(*class_name);
-}
-#endif
 
 void CommonWebContentsDelegate::SetHtmlApiFullscreen(bool enter_fullscreen) {
   // Window is already in fullscreen mode, save the state.
