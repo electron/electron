@@ -83,6 +83,10 @@ bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
 
   chrome::RegisterPathProvider();
 
+#if defined(OS_MACOSX)
+  SetUpBundleOverrides();
+#endif
+
   return brightray::MainDelegate::BasicStartupComplete(exit_code);
 }
 

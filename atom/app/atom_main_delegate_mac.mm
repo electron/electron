@@ -7,6 +7,8 @@
 #include "base/mac/bundle_locations.h"
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
+#include "base/mac/foundation_util.h"
+#include "base/mac/scoped_nsautorelease_pool.h"
 #include "base/path_service.h"
 #include "brightray/common/application_info.h"
 #include "brightray/common/mac/main_application_bundle.h"
@@ -46,6 +48,12 @@ void AtomMainDelegate::OverrideChildProcessPath() {
   if (!base::PathExists(helper_path))
     LOG(FATAL) << "Unable to find helper app";
   PathService::Override(content::CHILD_PROCESS_EXE, helper_path);
+}
+
+void AtomMainDelegate::SetUpBundleOverrides() {
+  base::mac::ScopedNSAutoreleasePool pool;
+  NSBundle* base_bundle = brightray::MainApplicationBundle();
+  base::mac::SetBaseBundleID([[base_bundle bundleIdentifier] UTF8String]);
 }
 
 }  // namespace atom
