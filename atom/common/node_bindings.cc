@@ -54,7 +54,6 @@ REFERENCE_MODULE(atom_common_clipboard);
 REFERENCE_MODULE(atom_common_crash_reporter);
 REFERENCE_MODULE(atom_common_native_image);
 REFERENCE_MODULE(atom_common_screen);
-REFERENCE_MODULE(atom_common_process_stats);
 REFERENCE_MODULE(atom_common_shell);
 REFERENCE_MODULE(atom_common_v8_util);
 REFERENCE_MODULE(atom_renderer_ipc);
