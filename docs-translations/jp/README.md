@@ -14,6 +14,7 @@ _リンクになっていないリストは未翻訳のものです。_
 
 * [サポートするプラットフォーム](tutorial/supported-platforms.md)
 * [セキュリティ](tutorial/security.md)
+* [Electronのバージョン管理](tutorial/electron-versioning.md)
 * [アプリケーションの配布](tutorial/application-distribution.md)
 * [Mac App Store 提出ガイド](tutorial/mac-app-store-submission-guide.md)
 * Windows Store Guide (tutorial/windows-store-guide.md)

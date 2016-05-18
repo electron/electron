@@ -42,13 +42,16 @@ Appleから証明書を取得した後、[Application Distribution](application-
   <dict>
     <key>com.apple.security.app-sandbox</key>
     <true/>
-	<key>com.apple.security.temporary-exception.sbpl</key>
-	<string>(allow mach-lookup (global-name-regex #"^org.chromium.Chromium.rohitfork.[0-9]+$"))</string>
+    <key>com.apple.security.application-groups</key>
+    <array>
+      <string>your.bundle.id</string>
+    </array>
   </dict>
 </plist>
 ```
 
-次のスクリプトでアプリを署名します。
+_`your.bundle.id`は`Info.plist`で指定されているあなたのアプリのBundle IDに置き換えてください。_
+そして、次のスクリプトでアプリを署名します。
 
 ```bash
 #!/bin/bash
@@ -86,12 +89,6 @@ OS Xでのアプリのサンドボックス化を行うことが初めてなら�
 ### Appをアップロードする。
 
 アプリに署名後、iTunes ConnectにアップロードするためにApplication Loaderを使用できます。アップロードする前に[created a record][create-record]を確認してください。
-
-### `temporary-exception`の使用について
-
-アプリのサンドボックス化を行った場合、[App Sandbox Temporary Exception Entitlements][temporary-exception]にしたがって、`temporary-exception｀がエンタイトルメントに追加されます。そのため、なぜこのエントリが必要かを説明する必要があります。
-
-アウリケーションがChromiumブラウザに基づいて作られていることを説明する必要があるでしょうが、それでもこの事のためにAppleの審査から落ちる可能性は残っています。
 
 ### アプリケーションを審査に提出
 
