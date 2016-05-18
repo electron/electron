@@ -100,11 +100,6 @@ class NativeWindowMac : public NativeWindow {
   }
 
  protected:
-  // NativeWindow:
-  void HandleKeyboardEvent(
-      content::WebContents*,
-      const content::NativeWebKeyboardEvent&) override;
-
   // Return a vector of non-draggable regions that fill a window of size
   // |width| by |height|, but leave gaps where the window should be draggable.
   std::vector<gfx::Rect> CalculateNonDraggableRegions(

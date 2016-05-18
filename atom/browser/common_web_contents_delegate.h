@@ -84,6 +84,9 @@ class CommonWebContentsDelegate
   content::SecurityStyle GetSecurityStyle(
       content::WebContents* web_contents,
       content::SecurityStyleExplanations* explanations) override;
+  void HandleKeyboardEvent(
+      content::WebContents* source,
+      const content::NativeWebKeyboardEvent& event) override;
 
   // brightray::InspectableWebContentsDelegate:
   void DevToolsSaveToFile(const std::string& url,

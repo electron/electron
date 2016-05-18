@@ -394,14 +394,12 @@ bool WebContents::IsPopupOrPanel(const content::WebContents* source) const {
 void WebContents::HandleKeyboardEvent(
     content::WebContents* source,
     const content::NativeWebKeyboardEvent& event) {
-  if (event.windowsKeyCode == ui::VKEY_ESCAPE && is_html_fullscreen()) {
-    // Escape exits tabbed fullscreen mode.
-    ExitFullscreenModeForTab(source);
-  } else if (type_ == BROWSER_WINDOW && owner_window()) {
-    owner_window()->HandleKeyboardEvent(source, event);
-  } else if (type_ == WEB_VIEW && embedder_) {
+  if (type_ == WEB_VIEW && embedder_) {
     // Send the unhandled keyboard events back to the embedder.
     embedder_->HandleKeyboardEvent(source, event);
+  } else {
+    // Go to the default keyboard handling.
+    CommonWebContentsDelegate::HandleKeyboardEvent(source, event);
   }
 }
 
