@@ -31,6 +31,10 @@ class AtomMainDelegate : public brightray::MainDelegate {
 #endif
 
  private:
+#if defined(OS_MACOSX)
+  void SetUpBundleOverrides();
+#endif
+
   brightray::ContentClient content_client_;
   scoped_ptr<content::ContentBrowserClient> browser_client_;
   scoped_ptr<content::ContentRendererClient> renderer_client_;

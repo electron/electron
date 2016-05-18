@@ -52,11 +52,16 @@ First, you need to prepare two entitlements files.
   <dict>
     <key>com.apple.security.app-sandbox</key>
     <true/>
-    <key>com.apple.security.temporary-exception.sbpl</key>
-    <string>(allow mach-lookup (global-name-regex #"^org.chromium.Chromium.rohitfork.[0-9]+$"))</string>
+    <key>com.apple.security.application-groups</key>
+    <array>
+      <string>your.bundle.id</string>
+    </array>
   </dict>
 </plist>
 ```
+
+_You have to replace `your.bundle.id` with the Bundle ID specified in your app's
+`Info.plist`._
 
 And then sign your app with the following script:
 
@@ -100,23 +105,6 @@ add keys for the permissions needed by your app to the entitlements files.
 After signing your app, you can use Application Loader to upload it to iTunes
 Connect for processing, making sure you have [created a record][create-record]
 before uploading.
-
-### Explain the Usages of `temporary-exception`
-
-When sandboxing your app there was a `temporary-exception` entry added to the
-entitlements, according to the [App Sandbox Temporary Exception
-Entitlements][temporary-exception] documentation, you have to explain why this
-entry is needed:
-
-> Note: If you request a temporary-exception entitlement, be sure to follow the
-guidance regarding entitlements provided on the iTunes Connect website. In
-particular, identify the entitlement and corresponding issue number in the App
-Sandbox Entitlement Usage Information section in iTunes Connect and explain why
-your app needs the exception.
-
-You may explain that your app is built upon Chromium browser, which uses Mach
-port for its multi-process architecture. But there is still probability that
-your app failed the review because of this.
 
 ### Submit Your App for Review
 
