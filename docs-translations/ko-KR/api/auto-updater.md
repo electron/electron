@@ -26,7 +26,7 @@ OS X에선 `auto-updater` 모듈이 [Squirrel.Mac][squirrel-mac]를 기반으로
 서버 사이드 요구 사항은 [서버 지원][server-support]을 참고하세요.
 
 **참고:** Mac OS X에서 자동 업데이트를 지원하려면 반드시 사인이 되어있어야 합니다.
-이것은 `Squirrel.Mac`의 요구사항입니다.
+이것은 `Squirrel.Mac`의 요구 사항입니다.
 
 ### Windows
 

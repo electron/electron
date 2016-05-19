@@ -895,6 +895,10 @@ win.webContents.on('did-finish-load', () => {
 
 `WebContents`객체들은 다음 속성들을 가지고 있습니다:
 
+### `webContents.id`
+
+이 WebContents의 유일 ID.
+
 ### `webContents.session`
 
 이 webContents에서 사용하는 [session](session.md) 객체를 반환합니다.
