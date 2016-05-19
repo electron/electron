@@ -36,7 +36,6 @@ TARGET_BINARIES = {
     'icudtl.dat',
     'libEGL.dll',
     'libGLESv2.dll',
-    'msvcp140.dll',
     'ffmpeg.dll',
     'node.dll',
     'content_resources_200_percent.pak',
@@ -44,8 +43,6 @@ TARGET_BINARIES = {
     'xinput1_3.dll',
     'natives_blob.bin',
     'snapshot_blob.bin',
-    'vccorlib140.dll',
-    'vcruntime140.dll',
   ],
   'linux': [
     PROJECT_NAME,  # 'electron'

@@ -4,10 +4,6 @@
 
 #include "atom/common/asar/archive.h"
 
-#if defined(OS_WIN)
-#include <io.h>
-#endif
-
 #include <string>
 #include <vector>
 
@@ -19,6 +15,10 @@
 #include "base/json/json_reader.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/values.h"
+
+#if defined(OS_WIN)
+#include "atom/node/osfhandle.h"
+#endif
 
 namespace asar {
 
@@ -118,7 +118,7 @@ Archive::Archive(const base::FilePath& path)
     : path_(path),
       file_(path_, base::File::FLAG_OPEN | base::File::FLAG_READ),
 #if defined(OS_WIN)
-      fd_(_open_osfhandle(
+      fd_(node::open_osfhandle(
               reinterpret_cast<intptr_t>(file_.GetPlatformFile()), 0)),
 #elif defined(OS_POSIX)
       fd_(file_.GetPlatformFile()),
@@ -131,7 +131,7 @@ Archive::Archive(const base::FilePath& path)
 Archive::~Archive() {
 #if defined(OS_WIN)
   if (fd_ != -1) {
-    _close(fd_);
+    node::close(fd_);
     // Don't close the handle since we already closed the fd.
     file_.TakePlatformFile();
   }

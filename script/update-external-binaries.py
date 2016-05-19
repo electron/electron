@@ -30,7 +30,6 @@ def main():
     download_and_unzip('Squirrel')
   elif sys.platform in ['cygwin', 'win32']:
     download_and_unzip('directxsdk-' + get_target_arch())
-    download_and_unzip('vs2015-crt-' + get_target_arch())
 
   with open(version_file, 'w') as f:
     f.write(VERSION)

@@ -130,7 +130,17 @@
             },
           }],
           ['OS=="win"', {
+            # Fix passing fd across modules, see |osfhandle.h| for more.
+            'sources': [
+              '<(DEPTH)/atom/node/osfhandle.cc',
+              '<(DEPTH)/atom/node/osfhandle.h',
+            ],
+            'include_dirs': [
+              '<(DEPTH)/atom/node',
+            ],
+            # Node is using networking API but linking with this itself.
             'libraries': [ '-lwinmm.lib' ],
+            # Fix the linking error with icu.
             'conditions': [
               ['libchromiumcontent_component==0', {
                 'variables': {
