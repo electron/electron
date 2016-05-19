@@ -118,7 +118,12 @@
         ],
       }],
       ['_target_name=="node"', {
+        'sources': [
+          '<(DEPTH)/atom/node/osfhandle.cc',
+          '<(DEPTH)/atom/node/osfhandle.h',
+        ],
         'include_dirs': [
+          '<(DEPTH)/atom/node',
           '<(libchromiumcontent_src_dir)/v8',
           '<(libchromiumcontent_src_dir)/v8/include',
         ],
