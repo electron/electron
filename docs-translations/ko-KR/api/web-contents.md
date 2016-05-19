@@ -8,7 +8,7 @@
 접근하는 예시입니다:
 
 ```javascript
-const BrowserWindow = require('electron').BrowserWindow;
+const {BrowserWindow} = require('electron');
 
 let win = new BrowserWindow({width: 800, height: 1500});
 win.loadURL('http://github.com');
@@ -37,8 +37,9 @@ Returns:
 
 이 이벤트는 `did-finish-load`와 비슷하나, 로드가 실패했거나 취소되었을 때 발생합니다.
 예를 들면 `window.stop()`이 실행되었을 때 발생합니다. 발생할 수 있는 전체 에러 코드의
-목록과 설명은 [여기](https://code.google.com/p/chromium/codesearch#chromium/src/net/base/net_error_list.h)서
-확인할 수 있습니다.
+목록과 설명은 [여기서](https://code.google.com/p/chromium/codesearch#chromium/src/net/base/net_error_list.h)
+확인할 수 있습니다. 참고로 리다이렉트 응답은 `errorCode` -3과 함께 발생합니다; 이
+에러는 명시적으로 무시할 수 있습니다.
 
 ### Event: 'did-frame-finish-load'
 
@@ -225,7 +226,7 @@ Returns:
   * `issuerName` String - 인증서 발급자 이름
 * `callback` Function
 
-클라이언트 인증이 요청되었을 때 발생하는 이벤트 입니다.
+클라이언트 인증이 요청되었을 때 발생하는 이벤트입니다.
 
 사용법은 [`app`의 `select-client-certificate` 이벤트](app.md#event-select-client-certificate)와
 같습니다.
@@ -292,7 +293,7 @@ Returns:
 * `image` NativeImage (optional)
 * `scale` Float (optional)
 
-커서 타입이 변경될 때 발생하는 이벤트입니다. `type` 매개변수는 다음 값이 될 수 있습니다:
+커서 종류가 변경될 때 발생하는 이벤트입니다. `type` 인수는 다음 값이 될 수 있습니다:
 `default`, `crosshair`, `pointer`, `text`, `wait`, `help`, `e-resize`, `n-resize`,
 `ne-resize`, `nw-resize`, `s-resize`, `se-resize`, `sw-resize`, `w-resize`,
 `ns-resize`, `ew-resize`, `nesw-resize`, `nwse-resize`, `col-resize`,
@@ -301,9 +302,63 @@ Returns:
 `cell`, `context-menu`, `alias`, `progress`, `nodrop`, `copy`, `none`,
 `not-allowed`, `zoom-in`, `zoom-out`, `grab`, `grabbing`, `custom`.
 
-만약 `type` 매개변수가 `custom` 이고 `image` 매개변수가 `NativeImage`를 통한 커스텀
-커서를 지정했을 때, 해당 이미지로 커서가 변경됩니다. 또한 `scale` 매개변수는 이미지의
+만약 `type` 인수가 `custom` 이고 `image` 인수가 `NativeImage`를 통한 커스텀
+커서를 지정했을 때, 해당 이미지로 커서가 변경됩니다. 또한 `scale` 인수는 이미지의
 크기를 조정합니다.
+
+### Event: 'context-menu'
+
+Returns:
+
+* `event` Event
+* `params` Object
+  * `x` Integer - x 좌표
+  * `y` Integer - y 좌표
+  * `linkURL` String - 컨텍스트 메뉴가 호출된 노드를 둘러싸는 링크의 URL.
+  * `linkText` String - 링크에 연관된 텍스트. 콘텐츠의 링크가 이미지인 경우 빈
+    문자열이 됩니다.
+  * `pageURL` String - 컨텍스트 메뉴가 호출된 상위 수준 페이지의 URL.
+  * `frameURL` String - 컨텍스트 메뉴가 호출된 서브 프레임의 URL.
+  * `srcURL` String - 컨텍스트 메뉴가 호출된 요소에 대한 소스 URL. 요소와 소스 URL은
+    이미지, 오디오, 비디오입니다.
+  * `mediaType` String - 컨텍스트 메뉴가 호출된 노드의 종류. 값은 `none`, `image`,
+    `audio`, `video`, `canvas`, `file` 또는 `plugin`이 될 수 있습니다.
+  * `hasImageContent` Boolean - 컨텍스트 메뉴가 내용이 있는 이미지에서 호출되었는지
+    여부.
+  * `isEditable` Boolean - 컨텍스트를 편집할 수 있는지 여부.
+  * `selectionText` String - 컨텍스트 메뉴가 호출된 부분에 있는 선택된 텍스트.
+  * `titleText` String - 컨텍스트 메뉴가 호출된 선택된 제목 또는 알림 텍스트.
+  * `misspelledWord` String - 만약 있는 경우, 커서가 가르키는 곳에서 발생한 오타.
+  * `frameCharset` String - 메뉴가 호출된 프레임의 문자열 인코딩.
+  * `inputFieldType` String - 컨텍스트 메뉴가 입력 필드에서 호출되었을 때, 그 필드의
+    종류. 값은 `none`, `plainText`, `password`, `other` 중 한 가지가 될 수 있습니다.
+  * `menuSourceType` String - 컨텍스트 메뉴를 호출한 입력 소스. 값은 `none`,
+    `mouse`, `keyboard`, `touch`, `touchMenu` 중 한 가지가 될 수 있습니다.
+  * `mediaFlags` Object - 컨텍스트 메뉴가 호출된 미디어 요소에 대한 플래그. 자세한
+    사항은 아래를 참고하세요.
+  * `editFlags` Object - 이 플래그는 렌더러가 어떤 행동을 이행할 수 있는지 여부를
+    표시합니다. 자세한 사항은 아래를 참고하세요.
+
+`mediaFlags`는 다음과 같은 속성을 가지고 있습니다:
+  * `inError` Boolean - 미디어 객체가 크래시되었는지 여부.
+  * `isPaused` Boolean - 미디어 객체가 일시중지되었는지 여부.
+  * `isMuted` Boolean - 미디어 객체가 음소거되었는지 여부.
+  * `hasAudio` Boolean - 미디어 객체가 오디오를 가지고 있는지 여부.
+  * `isLooping` Boolean - 미디어 객체가 루프중인지 여부.
+  * `isControlsVisible` Boolean - 미디어 객체의 컨트롤이 보이는지 여부.
+  * `canToggleControls` Boolean - 미디어 객체의 컨트롤을 토글할 수 있는지 여부.
+  * `canRotate` Boolean - 미디어 객체를 돌릴 수 있는지 여부.
+
+`editFlags`는 다음과 같은 속성을 가지고 있습니다:
+  * `canUndo` Boolean - 렌더러에서 실행 취소할 수 있는지 여부.
+  * `canRedo` Boolean - 렌더러에서 다시 실행할 수 있는지 여부.
+  * `canCut` Boolean - 렌더러에서 잘라내기를 실행할 수 있는지 여부.
+  * `canCopy` Boolean - 렌더러에서 복사를 실행할 수 있는지 여부.
+  * `canPaste` Boolean - 렌더러에서 붙여넣기를 실행할 수 있는지 여부.
+  * `canDelete` Boolean - 렌더러에서 삭제를 실행할 수 있는지 여부.
+  * `canSelectAll` Boolean - 렌더러에서 모두 선택을 실행할 수 있는지 여부.
+
+새로운 컨텍스트 메뉴의 제어가 필요할 때 발생하는 이벤트입니다.
 
 ## Instance Methods
 
@@ -604,14 +659,14 @@ Chromium의 미리보기 프린팅 커스텀 설정을 이용하여 윈도우의
 ```
 
 ```javascript
-const BrowserWindow = require('electron').BrowserWindow;
+const {BrowserWindow} = require('electron');
 const fs = require('fs');
 
 let win = new BrowserWindow({width: 800, height: 600});
 win.loadURL('http://github.com');
 
 win.webContents.on('did-finish-load', () => {
-  // Use default printing options
+  // 기본 프린트 옵션을 사용합니다
   win.webContents.printToPDF({}, (error, data) => {
     if (error) throw error;
     fs.writeFile('/tmp/print.pdf', data, (error) => {
@@ -648,7 +703,7 @@ win.webContents.on('devtools-opened', () => {
   * `detach` Boolean - 새 창에서 개발자 도구를 엽니다.
   * `mode` String - 개발자 도구 표시 상태를 지정합니다. 옵션은 "right", "bottom",
     "undocked", "detach"가 될 수 있습니다. 기본값은 마지막 표시 상태를
-    사용합니다. `undocked` 모드에선 다시 독을 할 수 있습니다. 하지만 `detach`
+    사용합니다. `undocked` 모드에선 다시 도킹할 수 있습니다. 하지만 `detach`
     모드에선 할 수 없습니다.
 
 개발자 도구를 엽니다.
@@ -674,7 +729,7 @@ win.webContents.on('devtools-opened', () => {
 * `x` Integer
 * `y` Integer
 
-(`x`, `y`)위치의 엘레먼트를 조사합니다.
+(`x`, `y`)위치의 요소를 조사합니다.
 
 ### `webContents.inspectServiceWorker()`
 
@@ -712,7 +767,7 @@ app.on('ready', () => {
 <body>
   <script>
     require('electron').ipcRenderer.on('ping', (event, message) => {
-      console.log(message);  // Prints "whoooooooh!"
+      console.log(message);  // "whoooooooh!" 출력
     });
   </script>
 </body>
@@ -759,7 +814,7 @@ app.on('ready', () => {
 ### `webContents.sendInputEvent(event)`
 
 * `event` Object
-  * `type` String (**required**) - 이벤트의 타입. 다음 값들을 사용할 수 있습니다:
+  * `type` String (**required**) - 이벤트의 종류. 다음 값들을 사용할 수 있습니다:
     `mouseDown`,     `mouseUp`, `mouseEnter`, `mouseLeave`, `contextMenu`,
     `mouseWheel`, `mouseMove`, `keyDown`, `keyUp`, `char`.
   * `modifiers` Array - 이벤트의 수정자(modifier)들에 대한 배열. 다음 값들을 포함
@@ -816,7 +871,7 @@ Input `event`를 웹 페이지로 전송합니다.
 ### `webContents.savePage(fullPath, saveType, callback)`
 
 * `fullPath` String - 전체 파일 경로.
-* `saveType` String - 저장 타입을 지정합니다.
+* `saveType` String - 저장 종류를 지정합니다.
   * `HTMLOnly` - 페이지의 HTML만 저장합니다.
   * `HTMLComplete` - 페이지의 완성된 HTML을 저장합니다.
   * `MHTML` - 페이지의 완성된 HTML을 MHTML로 저장합니다.
@@ -839,6 +894,10 @@ win.webContents.on('did-finish-load', () => {
 ## Instance Properties
 
 `WebContents`객체들은 다음 속성들을 가지고 있습니다:
+
+### `webContents.id`
+
+이 WebContents의 유일 ID.
 
 ### `webContents.session`
 
@@ -898,7 +957,7 @@ win.webContents.debugger.sendCommand('Network.enable');
 
 * `method` String - 메서드 이름, 반드시 원격 디버깅 프로토콜에 의해 정의된 메서드중
   하나가 됩니다.
-* `commandParams` Object (optional) - 요청 매개변수를 표현한 JSON 객체.
+* `commandParams` Object (optional) - 요청 인수를 표현한 JSON 객체.
 * `callback` Function (optional) - 응답
   * `error` Object -  커맨드의 실패를 표시하는 에러 메시지.
   * `result` Object - 원격 디버깅 프로토콜에서 커맨드 설명의 'returns' 속성에 의해
@@ -918,8 +977,7 @@ win.webContents.debugger.sendCommand('Network.enable');
 
 * `event` Event
 * `method` String - 메서드 이름.
-* `params` Object - 원격 디버깅 프로토콜의 'parameters' 속성에서 정의된 이벤트
-  매개변수
+* `params` Object - 원격 디버깅 프로토콜의 'parameters' 속성에서 정의된 이벤트 인수
 
 디버깅 타겟이 관련 이벤트를 발생시킬 때 마다 발생하는 이벤트입니다.
 

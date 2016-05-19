@@ -24,7 +24,7 @@ Windows, Linux 운영체제에서의 `will-finish-launching` 이벤트는 `ready
 `open-file`과 `open-url` 이벤트 리스너를 설정하고 crash reporter와 auto updater를
 시작합니다.
 
-대부분의 경우, 모든 것을 `ready` 이벤트 핸들러로 해결해야 합니다.
+대부분의 경우, 모든 것을 `ready` 이벤트 핸들러 안에서 해결해야 합니다.
 
 ### Event: 'ready'
 
@@ -34,8 +34,9 @@ Electron이 초기화를 끝냈을 때 발생하는 이벤트입니다.
 
 모든 윈도우가 종료되었을 때 발생하는 이벤트입니다.
 
-이 이벤트는 어플리케이션이 완전히 종료되지 않았을 때만 발생합니다.
-만약 사용자가 `Cmd + Q`를 입력했거나 개발자가 `app.quit()`를 호출했다면,
+만약 이 이벤트를 구독하지 않은 상태로 모든 윈도우가 닫혔을 때의 기본 동작은 앱을
+종료하는 것입니다. 하지만, 이 이벤트를 구독하면, 앱을 종료할지 다른 일을 할지 제어할
+수 있습니다. 만약 사용자가 `Cmd + Q`를 입력했거나 개발자가 `app.quit()`를 호출했다면,
 Electron은 먼저 모든 윈도우의 종료를 시도하고 `will-quit` 이벤트를 발생시킵니다.
 그리고 `will-quit` 이벤트가 발생했을 땐 `window-all-closed` 이벤트가 발생하지
 않습니다.
@@ -63,7 +64,7 @@ Returns:
 모든 윈도우들이 종료되고 어플리케이션이 종료되기 시작할 때 발생하는 이벤트입니다.
 `event.preventDefault()` 호출을 통해 어플리케이션의 종료를 방지할 수 있습니다.
 
-`will-quit` 와 `window-all-closed` 이벤트의 차이점을 확인하려면 `window-all-close`
+`will-quit` 와 `window-all-closed` 이벤트의 차이점을 확인하려면 `window-all-closed`
 이벤트의 설명을 참고하세요.
 
 ### Event: 'quit'

@@ -7,8 +7,46 @@
 > 등의 작업을 수행할 수 있습니다. ChromeDriver는 Chromium의 WebDriver wire 프로토콜
 > 스텐드얼론 서버 구현입니다. Chromium 과 WebDriver 팀 멤버에 의해 개발되었습니다.
 
-Electron에서 `chromedriver`를 사옹하려면 드라이버에서 Electron을 찾을 수 있도록 해야
-하며 Electron은 Chrome 브라우저와 비슷하다는 점을 기억해야 합니다.
+## Spectron 설정하기
+
+[Spectron][spectron]은 공식적으로 지원하는 Electron을 위한 ChromeDriver 테스팅
+프레임워크입니다. 이는 [WebdriverIO](http://webdriver.io/)를 기반으로 만들어졌고,
+테스트에서 Electron API에 접근하기 위한 헬퍼를 가지고 있으며 ChromeDriver를 포함하고
+있습니다.
+
+```bash
+$ npm install --save-dev spectron
+```
+
+```js
+// 윈도우가 제목과 함께 보이는지 검증하는 간단한 테스트.
+var Application = require('spectron').Application
+var assert = require('assert')
+
+var app = new Application({
+  path: '/Applications/MyApp.app/Contents/MacOS/MyApp'
+})
+
+app.start().then(function () {
+  // 윈도우가 보이는지 확인합니다.
+  return app.browserWindow.isVisible()
+}).then(function (isVisible) {
+  // 윈도우가 보이는지 검증합니다.
+  assert.equal(isVisible, true)
+}).then(function () {
+  // 윈도우의 제목을 가져옵니다.
+  return app.client.getTitle()
+}).then(function (title) {
+  // 윈도우의 제목을 검증합니다.
+  assert.equal(title, 'My App')
+}).then(function () {
+  // 어플리케이션을 중지합니다.
+  return app.stop()
+}).catch(function (error) {
+  // 테스트의 실패가 있다면 로깅합니다.
+  console.error('Test failed', error.message)
+})
+```
 
 ## WebDriverJs 설정하기
 
@@ -20,7 +58,8 @@ Electron에서 `chromedriver`를 사옹하려면 드라이버에서 Electron을 
 먼저, `chromedriver` 바이너리를 다운로드 받고 실행합니다:
 
 ```bash
-$ ./chromedriver
+$ npm install electron-chromedriver
+$ ./node_modules/.bin/chromedriver
 Starting ChromeDriver (v2.10.291558) on port 9515
 Only local connections are allowed.
 ```
@@ -76,7 +115,8 @@ node 패키지입니다.
 먼저, `chromedriver` 바이너리를 다운로드 받고 실행합니다:
 
 ```bash
-$ chromedriver --url-base=wd/hub --port=9515
+$ npm install electron-chromedriver
+$ ./node_modules/.bin/chromedriver --url-base=wd/hub --port=9515
 Starting ChromeDriver (v2.10.291558) on port 9515
 Only local connections are allowed.
 ```
@@ -127,3 +167,4 @@ client
 디렉터리로 복사하는 불필요한 과정을 생략할 수 있습니다.
 
 [chrome-driver]: https://sites.google.com/a/chromium.org/chromedriver/
+[spectron]: http://electron.atom.io/spectron

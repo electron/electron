@@ -39,6 +39,7 @@ Linux와 Windows에서는 `Command`키가 없으므로 작동하지 않습니다
 * `~`, `!`, `@`, `#`, `$`, etc 와 같은 구두점 기호들
 * `Plus`
 * `Space`
+* `Tab`
 * `Backspace`
 * `Delete`
 * `Insert`
