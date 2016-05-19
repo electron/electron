@@ -22,9 +22,9 @@ Apple. You can follow these [existing guides][nwjs-guide] on web.
 ### Get Team ID
 
 Before signing your app, you need to know the Team ID of your account. To locate
-your Team ID, Sign in to https://developer.apple.com/account/, and click
-Membership in the sidebar. Your Team ID appears in the Membership Information
-section under the team name.
+your Team ID, Sign in to [Apple Developer Center](https://developer.apple.com/account/),
+and click Membership in the sidebar. Your Team ID appears in the Membership
+Information section under the team name.
 
 ### Sign Your App
 
