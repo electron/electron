@@ -92,7 +92,8 @@ will be passed via `callback(filename)`
   * `type` String - Can be `"none"`, `"info"`, `"error"`, `"question"` or
   `"warning"`. On Windows, "question" displays the same icon as "info", unless
   you set an icon using the "icon" option.
-  * `buttons` Array - Array of texts for buttons. On Windows, an empty array will result in one button labeled "OK".
+  * `buttons` Array - Array of texts for buttons. On Windows, an empty array
+    will result in one button labeled "OK".
   * `defaultId` Integer - Index of the button in the buttons array which will
     be selected by default when the message box opens.
   * `title` String - Title of the message box, some platforms will not show it.
