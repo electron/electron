@@ -33,6 +33,48 @@ void Hang() {
     base::PlatformThread::Sleep(base::TimeDelta::FromSeconds(1));
 }
 
+v8::Local<v8::Value> GetProcessMemoryInfo(v8::Isolate* isolate) {
+  mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
+  std::unique_ptr<base::ProcessMetrics> metrics(
+    base::ProcessMetrics::CreateCurrentProcessMetrics());
+
+  dict.Set("workingSetSize",
+    static_cast<double>(metrics->GetWorkingSetSize() >> 10));
+  dict.Set("peakWorkingSetSize",
+    static_cast<double>(metrics->GetPeakWorkingSetSize() >> 10));
+
+  size_t private_bytes, shared_bytes;
+  if (metrics->GetMemoryBytes(&private_bytes, &shared_bytes)) {
+    dict.Set("privateBytes", static_cast<double>(private_bytes >> 10));
+    dict.Set("sharedBytes", static_cast<double>(shared_bytes >> 10));
+  }
+
+  return dict.GetHandle();
+}
+
+v8::Local<v8::Value> GetSystemMemoryInfo(
+    v8::Isolate* isolate,
+    mate::Arguments* args) {
+  mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
+  base::SystemMemoryInfoKB memInfo;
+
+  if (!base::GetSystemMemoryInfo(&memInfo)) {
+    args->ThrowError("Unable to retrieve system memory information");
+    return v8::Undefined(isolate);
+  }
+
+  dict.Set("total", memInfo.total);
+  dict.Set("free", memInfo.free);
+
+  // NB: These return bogus values on OS X
+#if !defined(OS_MACOSX)
+  dict.Set("swapTotal", memInfo.swap_total);
+  dict.Set("swapFree", memInfo.swap_free);
+#endif
+
+  return dict.GetHandle();
+}
+
 // Called when there is a fatal error in V8, we just crash the process here so
 // we can get the stack trace.
 void FatalErrorCallback(const char* location, const char* message) {
@@ -63,6 +105,8 @@ void AtomBindings::BindTo(v8::Isolate* isolate,
   dict.SetMethod("crash", &Crash);
   dict.SetMethod("hang", &Hang);
   dict.SetMethod("log", &Log);
+  dict.SetMethod("getProcessMemoryInfo", &GetProcessMemoryInfo);
+  dict.SetMethod("getSystemMemoryInfo", &GetSystemMemoryInfo);
 #if defined(OS_POSIX)
   dict.SetMethod("setFdLimit", &base::SetFdLimit);
 #endif
