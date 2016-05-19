@@ -682,7 +682,7 @@ Returns the title of the native window.
 **Note:** The title of web page can be different from the title of the native
 window.
 
-### `win.setSheetOffset(offset)` _OS X_
+### `win.setSheetOffset(offsetY)` _OS X_
 
 Changes the attachment point for sheets on Mac OS X. By default, sheets are
 attached just below the window frame, but you may want to display them beneath
@@ -691,6 +691,16 @@ a HTML-rendered toolbar. For example:
 ```javascript
 let toolbarRect = document.getElementById('toolbar').getBoundingClientRect();
 win.setSheetOffset(toolbarRect.height);
+```
+
+### `win.setSheetOffsets(offsetX, offsetY)` _OS X_
+
+Like `win.setSheetOffset` but allows for an offset along the x-axis to be set
+in addition to the y-axis.
+
+```javascript
+let toolbarRect = document.getElementById('toolbar').getBoundingClientRect();
+win.setSheetOffset(toolbarRect.left, toolbarRect.height);
 ```
 
 ### `win.flashFrame(flag)`
