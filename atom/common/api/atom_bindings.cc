@@ -34,14 +34,14 @@ void Hang() {
 }
 
 v8::Local<v8::Value> GetProcessMemoryInfo(v8::Isolate* isolate) {
-  mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
   std::unique_ptr<base::ProcessMetrics> metrics(
-    base::ProcessMetrics::CreateCurrentProcessMetrics());
+      base::ProcessMetrics::CreateCurrentProcessMetrics());
 
+  mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
   dict.Set("workingSetSize",
-    static_cast<double>(metrics->GetWorkingSetSize() >> 10));
+           static_cast<double>(metrics->GetWorkingSetSize() >> 10));
   dict.Set("peakWorkingSetSize",
-    static_cast<double>(metrics->GetPeakWorkingSetSize() >> 10));
+           static_cast<double>(metrics->GetPeakWorkingSetSize() >> 10));
 
   size_t private_bytes, shared_bytes;
   if (metrics->GetMemoryBytes(&private_bytes, &shared_bytes)) {
@@ -52,24 +52,22 @@ v8::Local<v8::Value> GetProcessMemoryInfo(v8::Isolate* isolate) {
   return dict.GetHandle();
 }
 
-v8::Local<v8::Value> GetSystemMemoryInfo(
-    v8::Isolate* isolate,
-    mate::Arguments* args) {
-  mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
-  base::SystemMemoryInfoKB memInfo;
-
-  if (!base::GetSystemMemoryInfo(&memInfo)) {
+v8::Local<v8::Value> GetSystemMemoryInfo(v8::Isolate* isolate,
+                                         mate::Arguments* args) {
+  base::SystemMemoryInfoKB mem_info;
+  if (!base::GetSystemMemoryInfo(&mem_info)) {
     args->ThrowError("Unable to retrieve system memory information");
     return v8::Undefined(isolate);
   }
 
-  dict.Set("total", memInfo.total);
-  dict.Set("free", memInfo.free);
+  mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
+  dict.Set("total", mem_info.total);
+  dict.Set("free", mem_info.free);
 
   // NB: These return bogus values on OS X
 #if !defined(OS_MACOSX)
-  dict.Set("swapTotal", memInfo.swap_total);
-  dict.Set("swapFree", memInfo.swap_free);
+  dict.Set("swapTotal", mem_info.swap_total);
+  dict.Set("swapFree", mem_info.swap_free);
 #endif
 
   return dict.GetHandle();
