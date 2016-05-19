@@ -255,7 +255,7 @@ function loadApplicationPackage (packagePath) {
       app.focus()
       dialog.showErrorBox(
         'Error opening app',
-        'The app provided is not a valid Electron app, please read the docs on how to write one:\n' +
+        'Unable to open or find an Electron app. The docs on how to write an app can be found here:\n' +
         `https://github.com/electron/electron/tree/v${process.versions.electron}/docs
 
 ${e.toString()}`
