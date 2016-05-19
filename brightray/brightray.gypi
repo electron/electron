@@ -54,7 +54,6 @@
     ],
     'msvs_settings': {
       'VCCLCompilerTool': {
-        'RuntimeLibrary': '2',  # /MD (nondebug DLL)
         'AdditionalOptions': ['/MP'],
         'MinimalRebuild': 'false',
         'BufferSecurityCheck': 'true',
@@ -226,6 +225,7 @@
         ],
         'msvs_settings': {
           'VCCLCompilerTool': {
+            'RuntimeLibrary': '2',  # /MD (nondebug DLL)
             'Optimization': '0',  # 0 = /Od
             # See http://msdn.microsoft.com/en-us/library/8wtf2dfz(VS.71).aspx
             'BasicRuntimeChecks': '3',  # 3 = all checks enabled, 0 = off
@@ -236,6 +236,7 @@
         'abstract': 1,
         'msvs_settings': {
           'VCCLCompilerTool': {
+            'RuntimeLibrary': '0',  # /MT (nondebug static)
             # 1, optimizeMinSpace, Minimize Size (/O1)
             'Optimization': '1',
             # 2, favorSize - Favor small code (/Os)
