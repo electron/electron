@@ -19,14 +19,33 @@ how to meet the Mac App Store requirements.
 To submit your app to the Mac App Store, you first must get a certificate from
 Apple. You can follow these [existing guides][nwjs-guide] on web.
 
+### Get Team ID
+
+Before signing your app, you need to know the Team ID of your account. To locate
+your Team ID, Sign in to https://developer.apple.com/account/, and click
+Membership in the sidebar. Your Team ID appears in the Membership Information
+section under the team name.
+
 ### Sign Your App
 
-After getting the certificate from Apple, you can package your app by following
+After finishing the preparation work, you can package your app by following
 [Application Distribution](application-distribution.md), and then proceed to
-signing your app. This step is basically the same with other programs, but the
-key is to sign every dependency of Electron one by one.
+signing your app.
 
-First, you need to prepare two entitlements files.
+First, you have to add a `ElectronTeamID` key to your app's `Info.plist`, which
+has your Team ID as key:
+
+```xml
+<plist version="1.0">
+<dict>
+  ...
+  <key>ElectronTeamID</key>
+  <string>TEAM_ID</string>
+</dict>
+</plist>
+```
+
+Then, you need to prepare two entitlements files.
 
 `child.plist`:
 
@@ -53,15 +72,13 @@ First, you need to prepare two entitlements files.
     <key>com.apple.security.app-sandbox</key>
     <true/>
     <key>com.apple.security.application-groups</key>
-    <array>
-      <string>your.bundle.id</string>
-    </array>
+    <string>TEAM_ID.your.bundle.id</string>
   </dict>
 </plist>
 ```
 
-_You have to replace `your.bundle.id` with the Bundle ID specified in your app's
-`Info.plist`._
+You have to replace `TEAM_ID` with your Team ID, and replace `your.bundle.id`
+with the Bundle ID of your app.
 
 And then sign your app with the following script:
 
