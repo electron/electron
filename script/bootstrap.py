@@ -50,8 +50,9 @@ def main():
     libcc_static_library_path = os.path.join(dist_dir, 'static_library')
 
   if PLATFORM != 'win32':
-    # Download prebuilt clang binaries.
-    update_clang()
+    if not args.disable_clang and args.clang_dir == '':
+      # Download prebuilt clang binaries.
+      update_clang()
 
   setup_python_libs()
   update_node_modules('.')
