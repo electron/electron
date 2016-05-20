@@ -65,8 +65,9 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     `false`.
   * `kiosk` Boolean - The kiosk mode. Default is `false`.
   * `title` String - Default window title. Default is `"Electron"`.
-  * `icon` [NativeImage](native-image.md) - The window icon, when omitted on
-    Windows the executable's icon would be used as window icon.
+  * `icon` [NativeImage](native-image.md) - The window icon. On Windows it is
+    recommended to use `ICO` icons to get best visual effects, you can also
+    leave it undefined so the executable's icon will be used.
   * `show` Boolean - Whether window should be shown when created. Default is
     `true`.
   * `frame` Boolean - Specify `false` to create a
