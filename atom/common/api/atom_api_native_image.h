@@ -53,6 +53,9 @@ class NativeImage : public mate::Wrappable<NativeImage> {
                              v8::Local<v8::ObjectTemplate> prototype);
 
   const gfx::Image& image() const { return image_; }
+#if defined(OS_WIN)
+  HICON hicon() const { return hicon_.get(); }
+#endif
 
  protected:
   NativeImage(v8::Isolate* isolate, const gfx::Image& image);
@@ -88,5 +91,20 @@ class NativeImage : public mate::Wrappable<NativeImage> {
 }  // namespace api
 
 }  // namespace atom
+
+namespace mate {
+
+// A custom converter that allows converting path to NativeImage.
+template<>
+struct Converter<mate::Handle<atom::api::NativeImage>> {
+  static v8::Local<v8::Value> ToV8(
+      v8::Isolate* isolate,
+      const mate::Handle<atom::api::NativeImage>& val);
+  static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
+                     mate::Handle<atom::api::NativeImage>* out);
+};
+
+}  // namespace mate
+
 
 #endif  // ATOM_COMMON_API_ATOM_API_NATIVE_IMAGE_H_

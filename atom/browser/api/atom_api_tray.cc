@@ -9,6 +9,7 @@
 #include "atom/browser/api/atom_api_menu.h"
 #include "atom/browser/browser.h"
 #include "atom/browser/ui/tray_icon.h"
+#include "atom/common/api/atom_api_native_image.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
 #include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
@@ -22,9 +23,10 @@ namespace atom {
 
 namespace api {
 
-Tray::Tray(v8::Isolate* isolate, const gfx::Image& image)
-    : tray_icon_(TrayIcon::Create()) {
-  tray_icon_->SetImage(image);
+Tray::Tray(v8::Isolate* isolate, mate::Handle<NativeImage> image)
+    : image_(isolate, image.ToV8()),
+      tray_icon_(TrayIcon::Create()) {
+  tray_icon_->SetImage(image->image());
   tray_icon_->AddObserver(this);
 }
 
@@ -32,7 +34,8 @@ Tray::~Tray() {
 }
 
 // static
-mate::WrappableBase* Tray::New(v8::Isolate* isolate, const gfx::Image& image) {
+mate::WrappableBase* Tray::New(v8::Isolate* isolate,
+                               mate::Handle<NativeImage> image) {
   if (!Browser::Get()->is_ready()) {
     isolate->ThrowException(v8::Exception::Error(mate::StringToV8(
         isolate, "Cannot create Tray before app is ready")));
@@ -94,23 +97,26 @@ void Tray::OnDragEnded() {
   Emit("drag-end");
 }
 
-void Tray::SetImage(mate::Arguments* args, const gfx::Image& image) {
-  tray_icon_->SetImage(image);
+void Tray::SetImage(v8::Isolate* isolate, mate::Handle<NativeImage> image) {
+  image_.Reset(isolate, image.ToV8());
+  tray_icon_->SetImage(image->image());
 }
 
-void Tray::SetPressedImage(mate::Arguments* args, const gfx::Image& image) {
-  tray_icon_->SetPressedImage(image);
+void Tray::SetPressedImage(v8::Isolate* isolate,
+                           mate::Handle<NativeImage> image) {
+  pressed_image_.Reset(isolate, image.ToV8());
+  tray_icon_->SetPressedImage(image->image());
 }
 
-void Tray::SetToolTip(mate::Arguments* args, const std::string& tool_tip) {
+void Tray::SetToolTip(const std::string& tool_tip) {
   tray_icon_->SetToolTip(tool_tip);
 }
 
-void Tray::SetTitle(mate::Arguments* args, const std::string& title) {
+void Tray::SetTitle(const std::string& title) {
   tray_icon_->SetTitle(title);
 }
 
-void Tray::SetHighlightMode(mate::Arguments* args, bool highlight) {
+void Tray::SetHighlightMode(bool highlight) {
   tray_icon_->SetHighlightMode(highlight);
 }
 
@@ -136,7 +142,7 @@ void Tray::PopUpContextMenu(mate::Arguments* args) {
   tray_icon_->PopUpContextMenu(pos, menu.IsEmpty() ? nullptr : menu->model());
 }
 
-void Tray::SetContextMenu(mate::Arguments* args, Menu* menu) {
+void Tray::SetContextMenu(Menu* menu) {
   tray_icon_->SetContextMenu(menu->model());
 }
 
