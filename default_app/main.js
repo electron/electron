@@ -260,7 +260,7 @@ function loadApplicationPackage (packagePath) {
         buttons: ['OK', 'Learn More']
       }, (response) => {
         if (response === 1) {
-          shell.openExternal(`http://electron.atom.io/docs`)
+          shell.openExternal('http://electron.atom.io/docs')
         }
       })
       process.exit(1)
