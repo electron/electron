@@ -5,14 +5,14 @@
 Certain Electron behaviors are controlled by environment variables because they
 are initialized earlier than the command line flags and the app's code.
 
-Examples on POSIX shells:
+POSIX shell example:
 
 ```bash
 $ export ELECTRON_ENABLE_LOGGING=true
 $ electron
 ```
 
-on Windows console:
+Windows console example:
 
 ```powershell
 > set ELECTRON_ENABLE_LOGGING=true
