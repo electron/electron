@@ -104,11 +104,13 @@ class NativeWindowViews : public NativeWindow,
 
   gfx::AcceleratedWidget GetAcceleratedWidget() override;
 
-  views::Widget* widget() const { return window_.get(); }
-
 #if defined(OS_WIN)
+  void SetIcon(HICON small_icon, HICON app_icon);
+
   TaskbarHost& taskbar_host() { return taskbar_host_; }
 #endif
+
+  views::Widget* widget() const { return window_.get(); }
 
  private:
   // views::WidgetObserver:
@@ -125,8 +127,10 @@ class NativeWindowViews : public NativeWindow,
   bool CanMinimize() const override;
   base::string16 GetWindowTitle() const override;
   bool ShouldHandleSystemCommands() const override;
+#if defined(USE_X11)
   gfx::ImageSkia GetWindowAppIcon() override;
   gfx::ImageSkia GetWindowIcon() override;
+#endif
   views::Widget* GetWidget() override;
   const views::Widget* GetWidget() const override;
   views::View* GetContentsView() override;
@@ -145,7 +149,6 @@ class NativeWindowViews : public NativeWindow,
   // MessageHandlerDelegate:
   bool PreHandleMSG(
       UINT message, WPARAM w_param, LPARAM l_param, LRESULT* result) override;
-
   void HandleSizeEvent(WPARAM w_param, LPARAM l_param);
 #endif
 
@@ -185,6 +188,9 @@ class NativeWindowViews : public NativeWindow,
   // we need to make sure size constraints are restored when window becomes
   // resizable again.
   extensions::SizeConstraints old_size_constraints_;
+
+  // Window icon.
+  gfx::ImageSkia icon_;
 #elif defined(OS_WIN)
   // Weak ref.
   AtomDesktopWindowTreeHostWin* atom_desktop_window_tree_host_win_;
@@ -202,7 +208,6 @@ class NativeWindowViews : public NativeWindow,
 
   // If true we have enabled a11y
   bool enabled_a11y_support_;
-
 #endif
 
   // Handles unhandled keyboard messages coming back from the renderer process.

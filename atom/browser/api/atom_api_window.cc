@@ -9,6 +9,7 @@
 #include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/browser/browser.h"
 #include "atom/browser/native_window.h"
+#include "atom/common/api/atom_api_native_image.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
@@ -99,6 +100,15 @@ Window::Window(v8::Isolate* isolate, const mate::Dictionary& options) {
   window_->InitFromOptions(options);
   window_->AddObserver(this);
   AttachAsUserData(window_.get());
+
+#if defined(OS_WIN)
+  // Sets the window icon.
+  mate::Handle<NativeImage> icon;
+  if (options.Get(options::kIcon, &icon) && !icon.IsEmpty()) {
+    static_cast<NativeWindowViews*>(window_.get())->SetIcon(
+        icon->GetHICON(GetSystemMetrics(SM_CXSMICON)), icon->GetHICON(256));
+  }
+#endif
 }
 
 Window::~Window() {

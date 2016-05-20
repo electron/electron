@@ -251,7 +251,6 @@ class NativeWindow : public base::SupportsUserData,
   bool transparent() const { return transparent_; }
   SkRegion* draggable_region() const { return draggable_region_.get(); }
   bool enable_larger_than_screen() const { return enable_larger_than_screen_; }
-  gfx::ImageSkia icon() const { return icon_; }
 
   void set_has_dialog_attached(bool has_dialog_attached) {
     has_dialog_attached_ = has_dialog_attached;
@@ -306,9 +305,6 @@ class NativeWindow : public base::SupportsUserData,
 
   // Whether window can be resized larger than screen.
   bool enable_larger_than_screen_;
-
-  // Window icon.
-  gfx::ImageSkia icon_;
 
   // The windows has been closed.
   bool is_closed_;

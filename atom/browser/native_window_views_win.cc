@@ -73,6 +73,14 @@ const char* AppCommandToString(int command_id) {
 
 }  // namespace
 
+void NativeWindowViews::SetIcon(HICON small_icon, HICON app_icon) {
+  HWND hwnd = GetAcceleratedWidget();
+  SendMessage(hwnd, WM_SETICON, ICON_SMALL,
+              reinterpret_cast<LPARAM>(small_icon));
+  SendMessage(hwnd, WM_SETICON, ICON_BIG,
+              reinterpret_cast<LPARAM>(app_icon));
+}
+
 bool NativeWindowViews::ExecuteWindowsCommand(int command_id) {
   std::string command = AppCommandToString(command_id);
   NotifyWindowExecuteWindowsCommand(command);

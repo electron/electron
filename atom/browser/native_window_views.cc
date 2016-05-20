@@ -221,6 +221,10 @@ NativeWindowViews::NativeWindowViews(
   std::string window_type;
   if (options.Get(options::kType, &window_type))
     SetWindowType(GetAcceleratedWidget(), window_type);
+
+  // Set window icon.
+  options.Get(options::kIcon, &icon_);
+  window_->UpdateWindowIcon();
 #endif
 
   // Add web view.
@@ -273,7 +277,6 @@ NativeWindowViews::NativeWindowViews(
       use_content_size_)
     size = ContentSizeToWindowSize(size);
 
-  window_->UpdateWindowIcon();
   window_->CenterWindow(size);
   Layout();
 }
@@ -842,13 +845,15 @@ bool NativeWindowViews::ShouldHandleSystemCommands() const {
   return true;
 }
 
+#if defined(USE_X11)
 gfx::ImageSkia NativeWindowViews::GetWindowAppIcon() {
-  return icon();
+  return icon_;
 }
 
 gfx::ImageSkia NativeWindowViews::GetWindowIcon() {
   return GetWindowAppIcon();
 }
+#endif
 
 views::Widget* NativeWindowViews::GetWidget() {
   return window_.get();
