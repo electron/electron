@@ -852,4 +852,19 @@ describe('<webview> tag', function () {
       document.body.appendChild(webview)
     })
   })
+
+  it('inherits the zoomFactor of the parent window', function (done) {
+    w = new BrowserWindow({
+      show: false,
+      webPreferences: {
+        zoomFactor: 1.2
+      }
+    })
+    ipcMain.once('pong', function (event, zoomFactor, zoomLevel) {
+      assert.equal(zoomFactor, 1.2)
+      assert.equal(zoomLevel, 1)
+      done()
+    })
+    w.loadURL('file://' + fixtures + '/pages/webview-zoom-factor.html')
+  })
 })
