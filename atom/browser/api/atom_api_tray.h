@@ -69,8 +69,6 @@ class Tray : public mate::TrackableObject<Tray>,
  private:
   v8::Local<v8::Object> ModifiersToObject(v8::Isolate* isolate, int modifiers);
 
-  v8::Global<v8::Object> image_;
-  v8::Global<v8::Object> pressed_image_;
   v8::Global<v8::Object> menu_;
   scoped_ptr<TrayIcon> tray_icon_;
 

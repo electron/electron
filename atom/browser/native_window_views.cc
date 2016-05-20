@@ -779,12 +779,22 @@ gfx::AcceleratedWidget NativeWindowViews::GetAcceleratedWidget() {
   return GetNativeWindow()->GetHost()->GetAcceleratedWidget();
 }
 
+#if defined(OS_WIN)
+void NativeWindowViews::SetIcon(HICON small_icon, HICON app_icon) {
+  HWND hwnd = GetAcceleratedWidget();
+  SendMessage(hwnd, WM_SETICON, ICON_SMALL,
+              reinterpret_cast<LPARAM>(small_icon));
+  SendMessage(hwnd, WM_SETICON, ICON_BIG,
+              reinterpret_cast<LPARAM>(app_icon));
+}
+#elif defined(USE_X11)
 void NativeWindowViews::SetIcon(const gfx::ImageSkia& icon) {
   views::DesktopWindowTreeHostX11* tree_host =
       views::DesktopWindowTreeHostX11::GetHostForXID(GetAcceleratedWidget());
   static_cast<views::DesktopWindowTreeHost*>(tree_host)->SetWindowIcons(
       icon, icon);
 }
+#endif
 
 void NativeWindowViews::OnWidgetActivationChanged(
     views::Widget* widget, bool active) {

@@ -25,7 +25,6 @@ NotifyIcon::NotifyIcon(NotifyIconHost* host,
       icon_id_(id),
       window_(window),
       message_id_(message),
-      icon_(NULL),
       menu_model_(NULL) {
   NOTIFYICONDATA icon_data;
   InitIconData(&icon_data);
@@ -80,7 +79,7 @@ void NotifyIcon::ResetIcon() {
   InitIconData(&icon_data);
   icon_data.uFlags |= NIF_MESSAGE;
   icon_data.uCallbackMessage = message_id_;
-  icon_data.hIcon = icon_;
+  icon_data.hIcon = icon_.get();
   // If we have an image, then set the NIF_ICON flag, which tells
   // Shell_NotifyIcon() to set the image for the status icon it creates.
   if (icon_data.hIcon)
@@ -92,8 +91,9 @@ void NotifyIcon::ResetIcon() {
 }
 
 void NotifyIcon::SetImage(HICON image) {
+  icon_ = base::win::ScopedHICON(CopyIcon(image));
+
   // Create the icon.
-  icon_ = image;
   NOTIFYICONDATA icon_data;
   InitIconData(&icon_data);
   icon_data.uFlags |= NIF_ICON;

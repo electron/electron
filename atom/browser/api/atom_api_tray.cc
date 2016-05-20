@@ -97,7 +97,6 @@ void Tray::OnDragEnded() {
 }
 
 void Tray::SetImage(v8::Isolate* isolate, mate::Handle<NativeImage> image) {
-  image_.Reset(isolate, image.ToV8());
 #if defined(OS_WIN)
   tray_icon_->SetImage(image->GetHICON(GetSystemMetrics(SM_CXSMICON)));
 #else
@@ -107,7 +106,6 @@ void Tray::SetImage(v8::Isolate* isolate, mate::Handle<NativeImage> image) {
 
 void Tray::SetPressedImage(v8::Isolate* isolate,
                            mate::Handle<NativeImage> image) {
-  pressed_image_.Reset(isolate, image.ToV8());
 #if defined(OS_WIN)
   tray_icon_->SetPressedImage(image->GetHICON(GetSystemMetrics(SM_CXSMICON)));
 #else

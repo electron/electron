@@ -14,6 +14,7 @@
 #include "base/macros.h"
 #include "base/compiler_specific.h"
 #include "base/memory/scoped_ptr.h"
+#include "base/win/scoped_gdi_object.h"
 
 namespace gfx {
 class Point;
@@ -70,7 +71,7 @@ class NotifyIcon : public TrayIcon {
   UINT message_id_;
 
   // The currently-displayed icon for the window.
-  HICON icon_;
+  base::win::ScopedHICON icon_;
 
   // The context menu.
   ui::SimpleMenuModel* menu_model_;
