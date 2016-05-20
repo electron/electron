@@ -253,13 +253,16 @@ function loadApplicationPackage (packagePath) {
   } catch (e) {
     if (e.code === 'MODULE_NOT_FOUND') {
       app.focus()
-      dialog.showErrorBox(
-        'Error opening app',
-        'Unable to open or find an Electron app. The docs on how to write an app can be found here:\n' +
-        `https://github.com/electron/electron/tree/v${process.versions.electron}/docs
-
-${e.toString()}`
-      )
+      dialog.showMessageBox({
+        message: 'Error opening app',
+        detail: 'Unable to open or find an Electron app. Click to learn more on how to write an app.\n\n' +
+            `${e.toString()}`,
+        buttons: ['Learn More', 'OK']
+      }, (response) => {
+        if (response === 0) {
+          shell.openExternal(`https://github.com/electron/electron/tree/v${process.versions.electron}/docs`)
+        }
+      })
       process.exit(1)
     } else {
       console.error('App threw an error when running', e)
