@@ -35,7 +35,7 @@ to optimize file ordering.
 
 ### `ELECTRON_ENABLE_STACK_DUMPING`
 
-When Electron crashes, prints the stack trace to the console.
+Prints the stack trace to the console when Electron crashes.
 
 This environment variable will not work if the `crashReporter` is started.
 
