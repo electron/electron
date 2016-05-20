@@ -255,12 +255,12 @@ function loadApplicationPackage (packagePath) {
       app.focus()
       dialog.showMessageBox({
         message: 'Error opening app',
-        detail: 'Unable to open or find an Electron app. Click to learn more on how to write an app.\n\n' +
+        detail: 'Unable to open or find an Electron app.\n\n' +
             `${e.toString()}`,
-        buttons: ['Learn More', 'OK']
+        buttons: ['OK', 'Learn More']
       }, (response) => {
-        if (response === 0) {
-          shell.openExternal(`https://github.com/electron/electron/tree/v${process.versions.electron}/docs`)
+        if (response === 1) {
+          shell.openExternal(`http://electron.atom.io/docs`)
         }
       })
       process.exit(1)
