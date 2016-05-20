@@ -4,6 +4,10 @@
 
 #include "atom/common/api/atom_api_native_image.h"
 
+#if defined(OS_WIN)
+#include <commctrl.h>
+#endif
+
 #include <string>
 #include <vector>
 
@@ -155,9 +159,9 @@ base::win::ScopedHICON ReadICOFromPath(const base::FilePath& path) {
   }
 
   // Load the icon from file.
-  return base::win::ScopedHICON(static_cast<HICON>(
-      LoadImage(NULL, image_path.value().c_str(), IMAGE_ICON, 0, 0,
-                LR_DEFAULTSIZE | LR_LOADFROMFILE)));
+  HICON icon = NULL;
+  LoadIconMetric(NULL, image_path.value().c_str(), LIM_SMALL, &icon);
+  return base::win::ScopedHICON(icon);
 }
 
 void ReadImageSkiaFromICO(gfx::ImageSkia* image, HICON icon) {
