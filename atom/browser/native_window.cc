@@ -12,7 +12,6 @@
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/window_list.h"
 #include "atom/common/api/api_messages.h"
-#include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/options_switches.h"
 #include "base/files/file_util.h"
@@ -64,9 +63,6 @@ NativeWindow::NativeWindow(
   // Tell the content module to initialize renderer widget with transparent
   // mode.
   ui::GpuSwitchingManager::SetTransparent(transparent_);
-
-  // Read icon before window is created.
-  options.Get(options::kIcon, &icon_);
 
   WindowList::AddWindow(this);
 }

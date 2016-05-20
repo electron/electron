@@ -25,7 +25,12 @@ const appIcon = new Tray(image);
 Currently `PNG` and `JPEG` image formats are supported. `PNG` is recommended
 because of its support for transparency and lossless compression.
 
-On Windows, you can also load an `ICO` icon from a file path.
+On Windows, you can also load `ICO` icons from file paths, to get best visual
+effects it is recommended to include at least followings sizes in the icon:
+
+* 16x16
+* 32x32
+* 256x256
 
 ## High Resolution Image
 

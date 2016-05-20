@@ -28,16 +28,8 @@ bool Converter<gfx::Image>::FromV8(v8::Isolate* isolate,
     return true;
 
   Handle<atom::api::NativeImage> native_image;
-  if (!ConvertFromV8(isolate, val, &native_image)) {
-    // Try converting from file path.
-    base::FilePath path;
-    if (!Converter<base::FilePath>::FromV8(isolate, val, &path))
-      return false;
-
-    native_image = atom::api::NativeImage::CreateFromPath(isolate, path);
-    if (native_image->image().IsEmpty())
-      return false;
-  }
+  if (!ConvertFromV8(isolate, val, &native_image))
+    return false;
 
   *out = native_image->image();
   return true;

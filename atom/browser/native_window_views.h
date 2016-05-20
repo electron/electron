@@ -104,6 +104,12 @@ class NativeWindowViews : public NativeWindow,
 
   gfx::AcceleratedWidget GetAcceleratedWidget() override;
 
+#if defined(OS_WIN)
+  void SetIcon(HICON small_icon, HICON app_icon);
+#elif defined(USE_X11)
+  void SetIcon(const gfx::ImageSkia& icon);
+#endif
+
   views::Widget* widget() const { return window_.get(); }
 
 #if defined(OS_WIN)
@@ -125,8 +131,6 @@ class NativeWindowViews : public NativeWindow,
   bool CanMinimize() const override;
   base::string16 GetWindowTitle() const override;
   bool ShouldHandleSystemCommands() const override;
-  gfx::ImageSkia GetWindowAppIcon() override;
-  gfx::ImageSkia GetWindowIcon() override;
   views::Widget* GetWidget() override;
   const views::Widget* GetWidget() const override;
   views::View* GetContentsView() override;
@@ -145,7 +149,6 @@ class NativeWindowViews : public NativeWindow,
   // MessageHandlerDelegate:
   bool PreHandleMSG(
       UINT message, WPARAM w_param, LPARAM l_param, LRESULT* result) override;
-
   void HandleSizeEvent(WPARAM w_param, LPARAM l_param);
 #endif
 
@@ -202,7 +205,6 @@ class NativeWindowViews : public NativeWindow,
 
   // If true we have enabled a11y
   bool enabled_a11y_support_;
-
 #endif
 
   // Handles unhandled keyboard messages coming back from the renderer process.
