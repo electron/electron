@@ -26,7 +26,11 @@ namespace api {
 Tray::Tray(v8::Isolate* isolate, mate::Handle<NativeImage> image)
     : image_(isolate, image.ToV8()),
       tray_icon_(TrayIcon::Create()) {
+#if defined(OS_WIN)
+  tray_icon_->SetImage(image->GetHICON());
+#else
   tray_icon_->SetImage(image->image());
+#endif
   tray_icon_->AddObserver(this);
 }
 
@@ -99,13 +103,21 @@ void Tray::OnDragEnded() {
 
 void Tray::SetImage(v8::Isolate* isolate, mate::Handle<NativeImage> image) {
   image_.Reset(isolate, image.ToV8());
+#if defined(OS_WIN)
+  tray_icon_->SetImage(image->GetHICON());
+#else
   tray_icon_->SetImage(image->image());
+#endif
 }
 
 void Tray::SetPressedImage(v8::Isolate* isolate,
                            mate::Handle<NativeImage> image) {
   pressed_image_.Reset(isolate, image.ToV8());
+#if defined(OS_WIN)
+  tray_icon_->SetPressedImage(image->GetHICON());
+#else
   tray_icon_->SetPressedImage(image->image());
+#endif
 }
 
 void Tray::SetToolTip(const std::string& tool_tip) {
@@ -122,7 +134,7 @@ void Tray::SetHighlightMode(bool highlight) {
 
 void Tray::DisplayBalloon(mate::Arguments* args,
                           const mate::Dictionary& options) {
-  gfx::Image icon;
+  mate::Handle<NativeImage> icon;
   options.Get("icon", &icon);
   base::string16 title, content;
   if (!options.Get("title", &title) ||
@@ -131,7 +143,13 @@ void Tray::DisplayBalloon(mate::Arguments* args,
     return;
   }
 
-  tray_icon_->DisplayBalloon(icon, title, content);
+#if defined(OS_WIN)
+  tray_icon_->DisplayBalloon(
+      icon.IsEmpty() ? NULL : icon->GetHICON(), title, content);
+#else
+  tray_icon_->DisplayBalloon(
+      icon.IsEmpty() ? gfx::Image() : icon->image(), title, content);
+#endif
 }
 
 void Tray::PopUpContextMenu(mate::Arguments* args) {

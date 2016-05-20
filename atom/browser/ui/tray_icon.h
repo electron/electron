@@ -19,13 +19,19 @@ class TrayIcon {
  public:
   static TrayIcon* Create();
 
+#if defined(OS_WIN)
+  using ImageType = HICON;
+#else
+  using ImageType = const gfx::Image&;
+#endif
+
   virtual ~TrayIcon();
 
   // Sets the image associated with this status icon.
-  virtual void SetImage(const gfx::Image& image) = 0;
+  virtual void SetImage(ImageType image) = 0;
 
   // Sets the image associated with this status icon when pressed.
-  virtual void SetPressedImage(const gfx::Image& image);
+  virtual void SetPressedImage(ImageType image);
 
   // Sets the hover text for this status icon. This is also used as the label
   // for the menu item which is created as a replacement for the status icon
@@ -43,7 +49,7 @@ class TrayIcon {
 
   // Displays a notification balloon with the specified contents.
   // Depending on the platform it might not appear by the icon tray.
-  virtual void DisplayBalloon(const gfx::Image& icon,
+  virtual void DisplayBalloon(ImageType icon,
                               const base::string16& title,
                               const base::string16& contents);
 

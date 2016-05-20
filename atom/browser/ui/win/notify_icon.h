@@ -14,7 +14,6 @@
 #include "base/macros.h"
 #include "base/compiler_specific.h"
 #include "base/memory/scoped_ptr.h"
-#include "base/win/scoped_gdi_object.h"
 
 namespace gfx {
 class Point;
@@ -45,10 +44,10 @@ class NotifyIcon : public TrayIcon {
   UINT message_id() const { return message_id_; }
 
   // Overridden from TrayIcon:
-  void SetImage(const gfx::Image& image) override;
-  void SetPressedImage(const gfx::Image& image) override;
+  void SetImage(HICON image) override;
+  void SetPressedImage(HICON image) override;
   void SetToolTip(const std::string& tool_tip) override;
-  void DisplayBalloon(const gfx::Image& icon,
+  void DisplayBalloon(HICON icon,
                       const base::string16& title,
                       const base::string16& contents) override;
   void PopUpContextMenu(const gfx::Point& pos,
@@ -71,10 +70,7 @@ class NotifyIcon : public TrayIcon {
   UINT message_id_;
 
   // The currently-displayed icon for the window.
-  base::win::ScopedHICON icon_;
-
-  // The currently-displayed icon for the notification balloon.
-  base::win::ScopedHICON balloon_icon_;
+  HICON icon_;
 
   // The context menu.
   ui::SimpleMenuModel* menu_model_;

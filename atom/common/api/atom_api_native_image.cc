@@ -160,11 +160,10 @@ base::win::ScopedHICON ReadICOFromPath(const base::FilePath& path) {
                 LR_DEFAULTSIZE | LR_LOADFROMFILE)));
 }
 
-bool ReadImageSkiaFromICO(gfx::ImageSkia* image, HICON icon) {
+void ReadImageSkiaFromICO(gfx::ImageSkia* image, HICON icon) {
   // Convert the icon from the Windows specific HICON to gfx::ImageSkia.
-  scoped_ptr<SkBitmap> bitmap(IconUtil::  CreateSkBitmapFromHICON(icon));
+  scoped_ptr<SkBitmap> bitmap(IconUtil::CreateSkBitmapFromHICON(icon));
   image->AddRepresentation(gfx::ImageSkiaRep(*bitmap, 1.0f));
-  return true;
 }
 #endif
 
@@ -178,9 +177,9 @@ NativeImage::NativeImage(v8::Isolate* isolate, const gfx::Image& image)
 #if defined(OS_WIN)
 NativeImage::NativeImage(v8::Isolate* isolate, base::win::ScopedHICON&& hicon)
     : hicon_(std::move(hicon)) {
-  if (hicon.get()) {
+  if (hicon_.get()) {
     gfx::ImageSkia image_skia;
-    ReadImageSkiaFromICO(&image_skia, hicon.get());
+    ReadImageSkiaFromICO(&image_skia, hicon_.get());
     image_ = gfx::Image(image_skia);
   }
   Init(isolate);
@@ -188,6 +187,17 @@ NativeImage::NativeImage(v8::Isolate* isolate, base::win::ScopedHICON&& hicon)
 #endif
 
 NativeImage::~NativeImage() {}
+
+#if defined(OS_WIN)
+HICON NativeImage::GetHICON() {
+  if (hicon_.get())
+    return hicon_.get();
+  if (image_.IsEmpty())
+    return NULL;
+  hicon_ = std::move(IconUtil::CreateHICONFromSkBitmap(image_.AsBitmap()));
+  return hicon_.get();
+}
+#endif
 
 v8::Local<v8::Value> NativeImage::ToPNG(v8::Isolate* isolate) {
   scoped_refptr<base::RefCountedMemory> png = image_.As1xPNGBytes();

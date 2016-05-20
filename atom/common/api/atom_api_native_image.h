@@ -52,10 +52,11 @@ class NativeImage : public mate::Wrappable<NativeImage> {
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::ObjectTemplate> prototype);
 
-  const gfx::Image& image() const { return image_; }
 #if defined(OS_WIN)
-  HICON hicon() const { return hicon_.get(); }
+  HICON GetHICON();
 #endif
+
+  const gfx::Image& image() const { return image_; }
 
  protected:
   NativeImage(v8::Isolate* isolate, const gfx::Image& image);
