@@ -255,11 +255,7 @@ gfx::Size NativeWindow::GetMaximumSize() {
   return GetSizeConstraints().GetMaximumSize();
 }
 
-void NativeWindow::SetSheetOffset(const double offsetY) {
-  sheet_offset_y_ = offsetY;
-}
-
-void NativeWindow::SetSheetOffsets(const double offsetX, const double offsetY) {
+void NativeWindow::SetSheetOffset(const double offsetX, const double offsetY) {
   sheet_offset_x_ = offsetX;
   sheet_offset_y_ = offsetY;
 }
