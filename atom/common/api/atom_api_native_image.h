@@ -5,6 +5,7 @@
 #ifndef ATOM_COMMON_API_ATOM_API_NATIVE_IMAGE_H_
 #define ATOM_COMMON_API_ATOM_API_NATIVE_IMAGE_H_
 
+#include <map>
 #include <string>
 
 #include "native_mate/handle.h"
@@ -12,6 +13,7 @@
 #include "ui/gfx/image/image.h"
 
 #if defined(OS_WIN)
+#include "base/files/file_path.h"
 #include "base/win/scoped_gdi_object.h"
 #endif
 
@@ -53,7 +55,7 @@ class NativeImage : public mate::Wrappable<NativeImage> {
                              v8::Local<v8::ObjectTemplate> prototype);
 
 #if defined(OS_WIN)
-  HICON GetHICON();
+  HICON GetHICON(int size);
 #endif
 
   const gfx::Image& image() const { return image_; }
@@ -61,7 +63,7 @@ class NativeImage : public mate::Wrappable<NativeImage> {
  protected:
   NativeImage(v8::Isolate* isolate, const gfx::Image& image);
 #if defined(OS_WIN)
-  NativeImage(v8::Isolate* isolate, base::win::ScopedHICON&& hicon);
+  NativeImage(v8::Isolate* isolate, const base::FilePath& hicon_path);
 #endif
   ~NativeImage() override;
 
@@ -81,7 +83,8 @@ class NativeImage : public mate::Wrappable<NativeImage> {
   bool IsTemplateImage();
 
 #if defined(OS_WIN)
-  base::win::ScopedHICON hicon_;
+  base::FilePath hicon_path_;
+  std::map<int, base::win::ScopedHICON> hicons_;
 #endif
 
   gfx::Image image_;

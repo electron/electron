@@ -24,13 +24,8 @@ namespace atom {
 namespace api {
 
 Tray::Tray(v8::Isolate* isolate, mate::Handle<NativeImage> image)
-    : image_(isolate, image.ToV8()),
-      tray_icon_(TrayIcon::Create()) {
-#if defined(OS_WIN)
-  tray_icon_->SetImage(image->GetHICON());
-#else
-  tray_icon_->SetImage(image->image());
-#endif
+    : tray_icon_(TrayIcon::Create()) {
+  SetImage(isolate, image);
   tray_icon_->AddObserver(this);
 }
 
@@ -104,7 +99,7 @@ void Tray::OnDragEnded() {
 void Tray::SetImage(v8::Isolate* isolate, mate::Handle<NativeImage> image) {
   image_.Reset(isolate, image.ToV8());
 #if defined(OS_WIN)
-  tray_icon_->SetImage(image->GetHICON());
+  tray_icon_->SetImage(image->GetHICON(GetSystemMetrics(SM_CXSMICON)));
 #else
   tray_icon_->SetImage(image->image());
 #endif
@@ -114,7 +109,7 @@ void Tray::SetPressedImage(v8::Isolate* isolate,
                            mate::Handle<NativeImage> image) {
   pressed_image_.Reset(isolate, image.ToV8());
 #if defined(OS_WIN)
-  tray_icon_->SetPressedImage(image->GetHICON());
+  tray_icon_->SetPressedImage(image->GetHICON(GetSystemMetrics(SM_CXSMICON)));
 #else
   tray_icon_->SetPressedImage(image->image());
 #endif
@@ -145,7 +140,8 @@ void Tray::DisplayBalloon(mate::Arguments* args,
 
 #if defined(OS_WIN)
   tray_icon_->DisplayBalloon(
-      icon.IsEmpty() ? NULL : icon->GetHICON(), title, content);
+      icon.IsEmpty() ? NULL : icon->GetHICON(GetSystemMetrics(SM_CXSMICON)),
+      title, content);
 #else
   tray_icon_->DisplayBalloon(
       icon.IsEmpty() ? gfx::Image() : icon->image(), title, content);

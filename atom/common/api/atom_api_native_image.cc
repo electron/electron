@@ -4,10 +4,6 @@
 
 #include "atom/common/api/atom_api_native_image.h"
 
-#if defined(OS_WIN)
-#include <commctrl.h>
-#endif
-
 #include <string>
 #include <vector>
 
@@ -146,7 +142,7 @@ bool IsTemplateFilename(const base::FilePath& path) {
 #endif
 
 #if defined(OS_WIN)
-base::win::ScopedHICON ReadICOFromPath(const base::FilePath& path) {
+base::win::ScopedHICON ReadICOFromPath(int size, const base::FilePath& path) {
   // If file is in asar archive, we extract it to a temp file so LoadImage can
   // load it.
   base::FilePath asar_path, relative_path;
@@ -159,9 +155,9 @@ base::win::ScopedHICON ReadICOFromPath(const base::FilePath& path) {
   }
 
   // Load the icon from file.
-  HICON icon = NULL;
-  LoadIconMetric(NULL, image_path.value().c_str(), LIM_SMALL, &icon);
-  return base::win::ScopedHICON(icon);
+  return base::win::ScopedHICON(static_cast<HICON>(
+      LoadImage(NULL, image_path.value().c_str(), IMAGE_ICON, size, size,
+                LR_LOADFROMFILE)));
 }
 
 void ReadImageSkiaFromICO(gfx::ImageSkia* image, HICON icon) {
@@ -179,13 +175,12 @@ NativeImage::NativeImage(v8::Isolate* isolate, const gfx::Image& image)
 }
 
 #if defined(OS_WIN)
-NativeImage::NativeImage(v8::Isolate* isolate, base::win::ScopedHICON&& hicon)
-    : hicon_(std::move(hicon)) {
-  if (hicon_.get()) {
-    gfx::ImageSkia image_skia;
-    ReadImageSkiaFromICO(&image_skia, hicon_.get());
-    image_ = gfx::Image(image_skia);
-  }
+NativeImage::NativeImage(v8::Isolate* isolate, const base::FilePath& hicon_path)
+    : hicon_path_(hicon_path) {
+  // Use the 256x256 icon as fallback icon.
+  gfx::ImageSkia image_skia;
+  ReadImageSkiaFromICO(&image_skia, GetHICON(256));
+  image_ = gfx::Image(image_skia);
   Init(isolate);
 }
 #endif
@@ -193,13 +188,23 @@ NativeImage::NativeImage(v8::Isolate* isolate, base::win::ScopedHICON&& hicon)
 NativeImage::~NativeImage() {}
 
 #if defined(OS_WIN)
-HICON NativeImage::GetHICON() {
-  if (hicon_.get())
-    return hicon_.get();
+HICON NativeImage::GetHICON(int size) {
+  auto iter = hicons_.find(size);
+  if (iter != hicons_.end())
+    return iter->second.get();
+
+  // First try loading the icon with specified size.
+  if (!hicon_path_.empty()) {
+    hicons_[size] = std::move(ReadICOFromPath(size, hicon_path_));
+    return hicons_[size].get();
+  }
+
+  // Then convert the image to ICO.
   if (image_.IsEmpty())
     return NULL;
-  hicon_ = std::move(IconUtil::CreateHICONFromSkBitmap(image_.AsBitmap()));
-  return hicon_.get();
+  hicons_[size] = std::move(
+      IconUtil::CreateHICONFromSkBitmap(image_.AsBitmap()));
+  return hicons_[size].get();
 }
 #endif
 
@@ -292,9 +297,8 @@ mate::Handle<NativeImage> NativeImage::CreateFromPath(
   base::FilePath image_path = NormalizePath(path);
   if (image_path.MatchesExtension(FILE_PATH_LITERAL(".ico"))) {
 #if defined(OS_WIN)
-    base::win::ScopedHICON hicon = ReadICOFromPath(image_path);
     return mate::CreateHandle(isolate,
-                              new NativeImage(isolate, std::move(hicon)));
+                              new NativeImage(isolate, image_path));
 #endif
   } else {
     gfx::ImageSkia image_skia;
