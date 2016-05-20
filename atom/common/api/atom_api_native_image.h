@@ -11,6 +11,10 @@
 #include "native_mate/wrappable.h"
 #include "ui/gfx/image/image.h"
 
+#if defined(OS_WIN)
+#include "base/win/scoped_gdi_object.h"
+#endif
+
 class GURL;
 
 namespace base {
@@ -52,6 +56,9 @@ class NativeImage : public mate::Wrappable<NativeImage> {
 
  protected:
   NativeImage(v8::Isolate* isolate, const gfx::Image& image);
+#if defined(OS_WIN)
+  NativeImage(v8::Isolate* isolate, base::win::ScopedHICON&& hicon);
+#endif
   ~NativeImage() override;
 
  private:
@@ -68,6 +75,10 @@ class NativeImage : public mate::Wrappable<NativeImage> {
   void SetTemplateImage(bool setAsTemplate);
   // Determine if the image is a template image.
   bool IsTemplateImage();
+
+#if defined(OS_WIN)
+  base::win::ScopedHICON hicon_;
+#endif
 
   gfx::Image image_;
 
