@@ -18,7 +18,7 @@ class Handle {
  public:
   Handle() : object_(NULL) {}
 
-  Handle(v8::Local<v8::Value> wrapper, T* object)
+  Handle(v8::Local<v8::Object> wrapper, T* object)
     : wrapper_(wrapper),
       object_(object) {
   }
@@ -31,11 +31,11 @@ class Handle {
   }
 
   T* operator->() const { return object_; }
-  v8::Local<v8::Value> ToV8() const { return wrapper_; }
+  v8::Local<v8::Object> ToV8() const { return wrapper_; }
   T* get() const { return object_; }
 
  private:
-  v8::Local<v8::Value> wrapper_;
+  v8::Local<v8::Object> wrapper_;
   T* object_;
 };
 
@@ -51,7 +51,7 @@ struct Converter<mate::Handle<T> > {
     if (!Converter<T*>::FromV8(isolate, val, &object)) {
       return false;
     }
-    *out = mate::Handle<T>(val, object);
+    *out = mate::Handle<T>(val->ToObject(), object);
     return true;
   }
 };
