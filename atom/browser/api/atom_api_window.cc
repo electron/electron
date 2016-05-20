@@ -9,7 +9,6 @@
 #include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/browser/browser.h"
 #include "atom/browser/native_window.h"
-#include "atom/common/api/atom_api_native_image.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
@@ -22,8 +21,11 @@
 #include "native_mate/dictionary.h"
 #include "ui/gfx/geometry/rect.h"
 
-#if defined(OS_WIN)
+#if defined(TOOLKIT_VIEWS)
 #include "atom/browser/native_window_views.h"
+#endif
+
+#if defined(OS_WIN)
 #include "atom/browser/ui/win/taskbar_host.h"
 #endif
 
@@ -101,13 +103,11 @@ Window::Window(v8::Isolate* isolate, const mate::Dictionary& options) {
   window_->AddObserver(this);
   AttachAsUserData(window_.get());
 
-#if defined(OS_WIN)
+#if defined(TOOLKIT_VIEWS)
   // Sets the window icon.
   mate::Handle<NativeImage> icon;
-  if (options.Get(options::kIcon, &icon) && !icon.IsEmpty()) {
-    static_cast<NativeWindowViews*>(window_.get())->SetIcon(
-        icon->GetHICON(GetSystemMetrics(SM_CXSMICON)), icon->GetHICON(256));
-  }
+  if (options.Get(options::kIcon, &icon))
+    SetIcon(icon);
 #endif
 }
 
@@ -627,6 +627,18 @@ void Window::ShowDefinitionForSelection() {
 }
 #endif
 
+#if defined(TOOLKIT_VIEWS)
+void Window::SetIcon(mate::Handle<NativeImage> icon) {
+#if defined(OS_WIN)
+  static_cast<NativeWindowViews*>(window_.get())->SetIcon(
+      icon->GetHICON(GetSystemMetrics(SM_CXSMICON)), icon->GetHICON(256));
+#elif defined(USE_X11)
+  static_cast<NativeWindowViews*>(window_.get())->SetIcon(
+      icon->image().AsImageSkia());
+#endif
+}
+#endif
+
 void Window::SetAspectRatio(double aspect_ratio, mate::Arguments* args) {
   gfx::Size extra_size;
   args->GetNext(&extra_size);
@@ -748,6 +760,9 @@ void Window::BuildPrototype(v8::Isolate* isolate,
 #if defined(OS_MACOSX)
       .SetMethod("showDefinitionForSelection",
                  &Window::ShowDefinitionForSelection)
+#endif
+#if defined(TOOLKIT_VIEWS)
+      .SetMethod("setIcon", &Window::SetIcon)
 #endif
       .SetProperty("id", &Window::ID)
       .SetProperty("webContents", &Window::WebContents);

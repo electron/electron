@@ -11,6 +11,7 @@
 #include "atom/browser/ui/views/menu_layout.h"
 #include "atom/common/color_util.h"
 #include "atom/common/draggable_region.h"
+#include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/options_switches.h"
 #include "base/strings/utf_string_conversions.h"
 #include "brightray/browser/inspectable_web_contents.h"
@@ -40,6 +41,7 @@
 #include "chrome/browser/ui/libgtk2ui/unity_service.h"
 #include "ui/base/x/x11_util.h"
 #include "ui/gfx/x/x11_types.h"
+#include "ui/views/widget/desktop_aura/desktop_window_tree_host_x11.h"
 #include "ui/views/window/native_frame_view.h"
 #elif defined(OS_WIN)
 #include "atom/browser/ui/views/win_frame_view.h"
@@ -221,10 +223,6 @@ NativeWindowViews::NativeWindowViews(
   std::string window_type;
   if (options.Get(options::kType, &window_type))
     SetWindowType(GetAcceleratedWidget(), window_type);
-
-  // Set window icon.
-  options.Get(options::kIcon, &icon_);
-  window_->UpdateWindowIcon();
 #endif
 
   // Add web view.
@@ -781,6 +779,13 @@ gfx::AcceleratedWidget NativeWindowViews::GetAcceleratedWidget() {
   return GetNativeWindow()->GetHost()->GetAcceleratedWidget();
 }
 
+void NativeWindowViews::SetIcon(const gfx::ImageSkia& icon) {
+  views::DesktopWindowTreeHostX11* tree_host =
+      views::DesktopWindowTreeHostX11::GetHostForXID(GetAcceleratedWidget());
+  static_cast<views::DesktopWindowTreeHost*>(tree_host)->SetWindowIcons(
+      icon, icon);
+}
+
 void NativeWindowViews::OnWidgetActivationChanged(
     views::Widget* widget, bool active) {
   if (widget != window_.get())
@@ -844,16 +849,6 @@ base::string16 NativeWindowViews::GetWindowTitle() const {
 bool NativeWindowViews::ShouldHandleSystemCommands() const {
   return true;
 }
-
-#if defined(USE_X11)
-gfx::ImageSkia NativeWindowViews::GetWindowAppIcon() {
-  return icon_;
-}
-
-gfx::ImageSkia NativeWindowViews::GetWindowIcon() {
-  return GetWindowAppIcon();
-}
-#endif
 
 views::Widget* NativeWindowViews::GetWidget() {
   return window_.get();

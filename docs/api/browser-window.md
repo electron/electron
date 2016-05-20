@@ -886,6 +886,12 @@ The `flags` is an array that can include following `String`s:
 
 Shows pop-up dictionary that searches the selected word on the page.
 
+### `win.setIcon(icon)` _Windows_ _Linux_
+
+* `icon` [NativeImage](native-image.md)
+
+Changes window icon.
+
 ### `win.setAutoHideMenuBar(hide)`
 
 * `hide` Boolean

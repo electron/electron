@@ -14,6 +14,7 @@
 #include "atom/browser/api/trackable_object.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/native_window_observer.h"
+#include "atom/common/api/atom_api_native_image.h"
 #include "native_mate/handle.h"
 
 class GURL;
@@ -170,6 +171,10 @@ class Window : public mate::TrackableObject<Window>,
 
 #if defined(OS_MACOSX)
   void ShowDefinitionForSelection();
+#endif
+
+#if defined(TOOLKIT_VIEWS)
+  void SetIcon(mate::Handle<NativeImage> icon);
 #endif
 
   void SetVisibleOnAllWorkspaces(bool visible);
