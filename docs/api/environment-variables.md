@@ -2,8 +2,8 @@
 
 > Control application configuration and behavior without changing code.
 
-Some behaviors of Electron are controlled by environment variables, because they
-are initialized earlier than command line and the app's code.
+Certain Electron behaviors are controlled by environment variables because they
+are initialized earlier than the command line flags and the app's code.
 
 Examples on POSIX shells:
 
