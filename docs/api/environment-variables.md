@@ -25,7 +25,7 @@ Starts the process as a normal Node.js process.
 
 ### `ELECTRON_ENABLE_LOGGING`
 
-Prints Chrome's internal logging to console.
+Prints Chrome's internal logging to the console.
 
 ### `ELECTRON_LOG_ASAR_READS`
 
@@ -35,20 +35,20 @@ to optimize file ordering.
 
 ### `ELECTRON_ENABLE_STACK_DUMPING`
 
-When Electron crashed, prints the stack trace to console.
+When Electron crashes, prints the stack trace to the console.
 
-This environment variable will not work if `crashReporter` is started.
+This environment variable will not work if the `crashReporter` is started.
 
 ### `ELECTRON_DEFAULT_ERROR_MODE` _Windows_
 
-Shows Windows's crash dialog when Electron crashed.
+Shows the Windows's crash dialog when Electron crashes.
 
-This environment variable will not work if `crashReporter` is started.
+This environment variable will not work if the `crashReporter` is started.
 
 ### `ELECTRON_NO_ATTACH_CONSOLE` _Windows_
 
-Don't attach to current console session.
+Don't attach to the current console session.
 
 ### `ELECTRON_FORCE_WINDOW_MENU_BAR` _Linux_
 
-Don't use global menu bar on Linux.
+Don't use the global menu bar on Linux.
