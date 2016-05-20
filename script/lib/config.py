@@ -38,10 +38,7 @@ def get_target_arch():
     if e.errno != errno.ENOENT:
       raise
 
-  if PLATFORM == 'win32':
-    return 'ia32'
-  else:
-    return 'x64'
+  return 'x64'
 
 
 def get_chromedriver_version():
