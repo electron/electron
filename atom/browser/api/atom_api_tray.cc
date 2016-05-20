@@ -142,7 +142,8 @@ void Tray::PopUpContextMenu(mate::Arguments* args) {
   tray_icon_->PopUpContextMenu(pos, menu.IsEmpty() ? nullptr : menu->model());
 }
 
-void Tray::SetContextMenu(Menu* menu) {
+void Tray::SetContextMenu(v8::Isolate* isolate, mate::Handle<Menu> menu) {
+  menu_.Reset(isolate, menu.ToV8());
   tray_icon_->SetContextMenu(menu->model());
 }
 
@@ -168,7 +169,7 @@ void Tray::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setHighlightMode", &Tray::SetHighlightMode)
       .SetMethod("displayBalloon", &Tray::DisplayBalloon)
       .SetMethod("popUpContextMenu", &Tray::PopUpContextMenu)
-      .SetMethod("_setContextMenu", &Tray::SetContextMenu);
+      .SetMethod("setContextMenu", &Tray::SetContextMenu);
 }
 
 }  // namespace api

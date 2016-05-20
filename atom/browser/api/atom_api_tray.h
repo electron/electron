@@ -64,13 +64,14 @@ class Tray : public mate::TrackableObject<Tray>,
   void SetHighlightMode(bool highlight);
   void DisplayBalloon(mate::Arguments* args, const mate::Dictionary& options);
   void PopUpContextMenu(mate::Arguments* args);
-  void SetContextMenu(Menu* menu);
+  void SetContextMenu(v8::Isolate* isolate, mate::Handle<Menu> menu);
 
  private:
   v8::Local<v8::Object> ModifiersToObject(v8::Isolate* isolate, int modifiers);
 
   v8::Global<v8::Object> image_;
   v8::Global<v8::Object> pressed_image_;
+  v8::Global<v8::Object> menu_;
   scoped_ptr<TrayIcon> tray_icon_;
 
   DISALLOW_COPY_AND_ASSIGN(Tray);
