@@ -148,6 +148,7 @@ describe('browser-window module', function () {
     it('should emit did-fail-load event for files that do not exist', function (done) {
       w.webContents.on('did-fail-load', function (event, code, desc, url, isMainFrame) {
         assert.equal(code, -6)
+        assert.equal(desc, 'ERR_FILE_NOT_FOUND')
         assert.equal(isMainFrame, true)
         done()
       })

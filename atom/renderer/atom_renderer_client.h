@@ -58,6 +58,11 @@ class AtomRendererClient : public content::ContentRendererClient,
       const std::string& mime_type,
       const GURL& original_url) override;
   void AddKeySystems(std::vector<media::KeySystemInfo>* key_systems) override;
+  void GetNavigationErrorStrings(content::RenderFrame* render_frame,
+                                 const blink::WebURLRequest& failed_request,
+                                 const blink::WebURLError& error,
+                                 std::string* error_html,
+                                 base::string16* error_description) override;
 
   scoped_ptr<NodeBindings> node_bindings_;
   scoped_ptr<AtomBindings> atom_bindings_;
