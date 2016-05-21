@@ -52,7 +52,8 @@ NativeWindow::NativeWindow(
       enable_larger_than_screen_(false),
       is_closed_(false),
       has_dialog_attached_(false),
-      sheet_offset_(0.0),
+      sheet_offset_x_(0.0),
+      sheet_offset_y_(0.0),
       aspect_ratio_(0.0),
       inspectable_web_contents_(inspectable_web_contents),
       weak_factory_(this) {
@@ -250,12 +251,17 @@ gfx::Size NativeWindow::GetMaximumSize() {
   return GetSizeConstraints().GetMaximumSize();
 }
 
-void NativeWindow::SetSheetOffset(const double offset) {
-  sheet_offset_ = offset;
+void NativeWindow::SetSheetOffset(const double offsetX, const double offsetY) {
+  sheet_offset_x_ = offsetX;
+  sheet_offset_y_ = offsetY;
 }
 
-double NativeWindow::GetSheetOffset() {
-  return sheet_offset_;
+double NativeWindow::GetSheetOffsetX() {
+  return sheet_offset_x_;
+}
+
+double NativeWindow::GetSheetOffsetY() {
+  return sheet_offset_y_;
 }
 
 void NativeWindow::SetRepresentedFilename(const std::string& filename) {

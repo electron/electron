@@ -381,8 +381,10 @@ std::vector<int> Window::GetMaximumSize() {
   return result;
 }
 
-void Window::SetSheetOffset(double offset) {
-  window_->SetSheetOffset(offset);
+void Window::SetSheetOffset(double offsetY, mate::Arguments* args) {
+  double offsetX = 0.0;
+  args->GetNext(&offsetX);
+  window_->SetSheetOffset(offsetX, offsetY);
 }
 
 void Window::SetResizable(bool resizable) {
