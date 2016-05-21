@@ -95,6 +95,24 @@ connection, and the endpoint host in a `SOCKS` proxy connection).
 
 Like `--host-rules` but these `rules` only apply to the host resolver.
 
+## --auth-server-whitelist=`url`
+
+A comma-separated list of servers for which integrated authentication is enabled.
+
+For example:
+
+```
+--auth-server-whitelist='*example.com, *foobar.com, *baz'
+```
+
+then any `url` ending with `example.com`, `foobar.com`, `baz` will be considered
+for integrated authentication. Without `*` prefix the url has to match exactly.
+
+## --auth-negotiate-delegate-whitelist=`url`
+
+A comma-separated list of servers for which delegation of user credentials is required.
+Without `*` prefix the url has to match exactly.
+
 ## --ignore-certificate-errors
 
 Ignores certificate related errors.

@@ -67,8 +67,7 @@ AtomBrowserContext::AtomBrowserContext(const std::string& partition,
     : brightray::BrowserContext(partition, in_memory),
       cert_verifier_(new AtomCertVerifier),
       job_factory_(new AtomURLRequestJobFactory),
-      network_delegate_(new AtomNetworkDelegate),
-      allow_ntlm_everywhere_(false) {
+      network_delegate_(new AtomNetworkDelegate) {
 }
 
 AtomBrowserContext::~AtomBrowserContext() {
@@ -193,16 +192,6 @@ void AtomBrowserContext::RegisterPrefs(PrefRegistrySimple* pref_registry) {
   pref_registry->RegisterFilePathPref(prefs::kDownloadDefaultDirectory,
                                       download_dir);
   pref_registry->RegisterDictionaryPref(prefs::kDevToolsFileSystemPaths);
-}
-
-bool AtomBrowserContext::AllowNTLMCredentialsForDomain(const GURL& origin) {
-  if (allow_ntlm_everywhere_)
-    return true;
-  return Delegate::AllowNTLMCredentialsForDomain(origin);
-}
-
-void AtomBrowserContext::AllowNTLMCredentialsForAllDomains(bool should_allow) {
-  allow_ntlm_everywhere_ = should_allow;
 }
 
 }  // namespace atom
