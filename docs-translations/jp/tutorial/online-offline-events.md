@@ -13,7 +13,7 @@ let onlineStatusWindow;
 
 app.on('ready', () => {
   onlineStatusWindow = new BrowserWindow({ width: 0, height: 0, show: false });
-  onlineStatusWindow.loadURL('file://${__dirname}/online-status.html');
+  onlineStatusWindow.loadURL(`file://${__dirname}/online-status.html`);
 });
 ```
 
@@ -51,7 +51,7 @@ let onlineStatusWindow;
 
 app.on('ready', () => {
   onlineStatusWindow = new BrowserWindow({ width: 0, height: 0, show: false });
-  onlineStatusWindow.loadURL('file://${__dirname}/online-status.html');
+  onlineStatusWindow.loadURL(`file://${__dirname}/online-status.html`);
 });
 
 ipcMain.on('online-status-changed', (event, status) => {
