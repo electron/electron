@@ -1,28 +1,31 @@
 #サポートしているChromeコマンドラインスイッチ
 
-ElectronでサポートしているChromeブラウザーで使用できるコマンドラインスイッチをこのページで一覧にしています。[app][app]モジュールの[ready][ready]イベントが出力される前にアプリのメインスクリプトに追加するために[app.commandLine.appendSwitch][append-switch]を使えます。
+> Electronでサポートされているコマンドラインスイッチ
+
+アプリケーションのメインスクリプトで[app.commandLine.appendSwitch][append-switch]を使うことで、[app][app]モジュールの[ready][ready]イベントが発行される前にコマンドラインスイッチを追加できます。
 
 ```javascript
-const app = require('electron').app;
+const {app} = require('electron');
 app.commandLine.appendSwitch('remote-debugging-port', '8315');
 app.commandLine.appendSwitch('host-rules', 'MAP * 127.0.0.1');
 
-app.on('ready', function() {
+app.on('ready', () => {
   // Your code here
 });
 ```
 
-## --client-certificate=`path`
-
-クライアントの証明書ファイルの`path`を設定します。
 
 ## --ignore-connections-limit=`domains`
 
-接続数の制限を無視する`,`で分割した`domains`リスト
+`domains`で指定されたリストは接続数制限を無視します。リストは`,`で区切られます。
 
 ## --disable-http-cache
 
 HTTPリクエストのディスクキャッシュの無効化。
+
+## --disable-http2
+
+HTTP/2 と SPDY/3.1 プロトコルを無効にします。
 
 ## --remote-debugging-port=`port`
 
@@ -42,7 +45,8 @@ $ electron --js-flags="--harmony_proxies --harmony_collections" your-app
 
 ## --proxy-bypass-list=`hosts`
 
-ホスト一覧をセミコロンで分割したプロキシサーバーをバイパスしてするためにElectronに指示します。このフラグは、`--proxy-server`と同時に使われるときのみに影響します。
+プロキシを使用しないサーバーをセミコロンで区切って指定します。
+このフラグは、`--proxy-server`と同時に使われるときのみに影響します。
 
 例:
 
@@ -50,7 +54,7 @@ $ electron --js-flags="--harmony_proxies --harmony_collections" your-app
 app.commandLine.appendSwitch('proxy-bypass-list', '<local>;*.google.com;*foo.com;1.2.3.4:5678')
 ```
 
-ロカールアドレス（`localhost`や`127.0.0.1`など）、`google.com`サブドメイン、`foo.com` サフィックスを含むホスト、`1.2.3.4:5678`を除いてすべてのホストでプロキシサーバーが使われます。
+ローカルアドレス（`localhost`や`127.0.0.1`など）、`google.com`サブドメイン、`foo.com` サフィックスを含むホスト、`1.2.3.4:5678`を除いてすべてのホストでプロキシサーバーが使われます。
 
 ## --proxy-pac-url=`url`
 
@@ -58,7 +62,7 @@ app.commandLine.appendSwitch('proxy-bypass-list', '<local>;*.google.com;*foo.com
 
 ## --no-proxy-server
 
-プロキシサーバーを使わず、常に直接接続します。遠輝ほかのプロキシサーバーフラグを上書きします。
+プロキシサーバーを使わず、常に直接接続します。ほかのプロキシサーバーフラグを上書きします。
 
 ## --host-rules=`rules`
 
@@ -105,17 +109,17 @@ TLSフォールバックを許可する最小のSSL/TLSバージョン ("tls1"�
 
 不可視のページのレンダラープロセスの優先度を下げることからChromiumを防ぎます。
 
-このフラグは、グローバルですべてのレンダラープロセスに有効で、一つのウィンドウだけで無効化したい場合、[playing silent audio][play-silent-audio]をハックして対応します。
+このフラグは、グローバルですべてのレンダラープロセスに有効で、一つのウィンドウだけで無効化したい場合、[無音を再生する][play-silent-audio]というハックで対応します。
 
 ## --enable-logging
 
 コンソールにChromiumのログを出力します。
 
-このスイッチは`app.commandLine.appendSwitch` で使えず、アプリがロードされるよりもパースしますが、同じ効果を受けるために`ELECTRON_ENABLE_LOGGING`を環境変数に設定します。
+ユーザーのアプリが読み込まれる前に解析されるため、`app.commandLine.appendSwitch`では使用できませんが、`ELECTRON_ENABLE_LOGGING`を環境変数に設定すると同じ効果を得ることができます。
 
 ## --v=`log_level`
 
-既定の最大アクティブなV-loggingレベルが付与されています。0が既定です。通常、正の値はV-loggingレベルに使用されます。
+標準のloggingレベルを設定します。0が既定です。通常、V-loggingレベルには正の値が使用されます。
 
 `--enable-logging` が渡された時だけ、このスイッチは動作します。
 
