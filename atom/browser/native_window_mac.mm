@@ -144,8 +144,6 @@ bool ScopedDisableResize::disable_resize_ = false;
     newSize.height =
         roundf((newSize.width - extraWidthPlusFrame) / aspectRatio +
                extraHeightPlusFrame);
-
-    [sender setAspectRatio:NSMakeSize(newSize.width, newSize.height)];
   }
 
   return newSize;
@@ -706,6 +704,27 @@ void NativeWindowMac::SetResizable(bool resizable) {
 
 bool NativeWindowMac::IsResizable() {
   return [window_ styleMask] & NSResizableWindowMask;
+}
+
+void NativeWindowMac::SetAspectRatio(double aspect_ratio,
+    const gfx::Size& extra_size) {
+
+    gfx::Size windowSize = this->GetSize();
+    gfx::Size contentSize = this->GetContentSize();
+
+    double extraWidthPlusFrame =
+        windowSize.width() - contentSize.width() + extra_size.width();
+    double extraHeightPlusFrame =
+        windowSize.height() - contentSize.height() + extra_size.height();
+
+    double width =
+        roundf(([window_ frame].size.height - extraHeightPlusFrame) *
+        aspect_ratio + extraWidthPlusFrame);
+    double height =
+        roundf((width - extraWidthPlusFrame) /
+        aspect_ratio + extraHeightPlusFrame);
+
+    [window_ setAspectRatio:NSMakeSize(width, height)];
 }
 
 void NativeWindowMac::SetMovable(bool movable) {

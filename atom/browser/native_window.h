@@ -190,7 +190,7 @@ class NativeWindow : public base::SupportsUserData,
   // Set the aspect ratio when resizing window.
   double GetAspectRatio();
   gfx::Size GetAspectRatioExtraSize();
-  void SetAspectRatio(double aspect_ratio, const gfx::Size& extra_size);
+  virtual void SetAspectRatio(double aspect_ratio, const gfx::Size& extra_size);
 
   base::WeakPtr<NativeWindow> GetWeakPtr() {
     return weak_factory_.GetWeakPtr();
