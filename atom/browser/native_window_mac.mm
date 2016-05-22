@@ -141,22 +141,11 @@ bool ScopedDisableResize::disable_resize_ = false;
     newSize.width =
         roundf((frameSize.height - extraHeightPlusFrame) * aspectRatio +
                extraWidthPlusFrame);
+    newSize.height =
+        roundf((newSize.width - extraWidthPlusFrame) / aspectRatio +
+               extraHeightPlusFrame);
 
-    // If the new width is less than the frame size use it as the primary
-    // constraint. This ensures that the value returned by this method will
-    // never be larger than the users requested window size.
-    if (newSize.width <= frameSize.width) {
-      newSize.height =
-          roundf((newSize.width - extraWidthPlusFrame) / aspectRatio +
-                 extraHeightPlusFrame);
-    } else {
-      newSize.height =
-          roundf((frameSize.width - extraWidthPlusFrame) / aspectRatio +
-                 extraHeightPlusFrame);
-      newSize.width =
-          roundf((newSize.height - extraHeightPlusFrame) * aspectRatio +
-                 extraWidthPlusFrame);
-    }
+    [sender setAspectRatio:NSMakeSize(newSize.width, newSize.height)];
   }
 
   return newSize;
