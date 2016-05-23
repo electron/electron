@@ -234,7 +234,13 @@ function loadApplicationPackage (packagePath) {
     packagePath = path.resolve(packagePath)
     const packageJsonPath = path.join(packagePath, 'package.json')
     if (fs.existsSync(packageJsonPath)) {
-      const packageJson = JSON.parse(fs.readFileSync(packageJsonPath))
+      let packageJson
+      try {
+        packageJson = JSON.parse(fs.readFileSync(packageJsonPath))
+      } catch (e) {
+        showErrorMessage('Unable to parse package.json, it contains errors.\n\n' +
+          `${e.toString()} in ${packageJsonPath}`)
+      }
       if (packageJson.version) app.setVersion(packageJson.version)
 
       if (packageJson.productName) {
@@ -242,33 +248,46 @@ function loadApplicationPackage (packagePath) {
       } else if (packageJson.name) {
         app.setName(packageJson.name)
       }
-
+      if (!packageJson.main) {
+        showErrorMessage('App is missing \'main\' property in package.json.\n\n' +
+          `See: ${packageJsonPath}`)
+      }
       app.setPath('userData', path.join(app.getPath('appData'), app.getName()))
       app.setPath('userCache', path.join(app.getPath('cache'), app.getName()))
       app.setAppPath(packagePath)
     }
-
+    const Module = require('module')
+    try {
+      Module._resolveFilename(packagePath, module, true)
+    } catch (e) {
+      showErrorMessage('Unable to find Electron app.\n\n' +
+        `See: ${packagePath}`)
+    }
     // Run the app.
-    require('module')._load(packagePath, module, true)
+    Module._load(packagePath, module, true)
   } catch (e) {
     if (e.code === 'MODULE_NOT_FOUND') {
-      app.focus()
-      dialog.showMessageBox({
-        message: 'Error opening app',
-        detail: 'Unable to open or find an Electron app.\n\n' +
-            `${e.toString()}`,
-        buttons: ['OK', 'Learn More']
-      }, (response) => {
-        if (response === 1) {
-          shell.openExternal('http://electron.atom.io/docs')
-        }
-      })
-      process.exit(1)
+      showErrorMessage('Unable to open Electron app.\n\n' +
+        `${e.toString()}`)
     } else {
       console.error('App threw an error when running', e)
       throw e
     }
   }
+}
+
+function showErrorMessage (message) {
+  app.focus()
+  dialog.showMessageBox({
+    message: 'Error opening app',
+    detail: message,
+    buttons: ['OK', 'Learn More']
+  }, (response) => {
+    if (response === 1) {
+      shell.openExternal('http://electron.atom.io/docs')
+    }
+  })
+  process.exit(1)
 }
 
 function loadApplicationByUrl (appUrl) {
