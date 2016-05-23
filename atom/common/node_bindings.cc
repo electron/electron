@@ -21,7 +21,6 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/common/content_paths.h"
 #include "native_mate/dictionary.h"
-#include "third_party/WebKit/public/web/WebScopedMicrotaskSuppression.h"
 
 using content::BrowserThread;
 
@@ -226,8 +225,10 @@ void NodeBindings::UvRunOnce() {
   v8::Context::Scope context_scope(env->context());
 
   // Perform microtask checkpoint after running JavaScript.
-  std::unique_ptr<blink::WebScopedRunV8Script> script_scope(
-      is_browser_ ? nullptr : new blink::WebScopedRunV8Script);
+  std::unique_ptr<v8::MicrotasksScope> script_scope(is_browser_ ?
+      nullptr :
+      new v8::MicrotasksScope(env->isolate(),
+                              v8::MicrotasksScope::kRunMicrotasks));
 
   // Deal with uv events.
   int r = uv_run(uv_loop_, UV_RUN_NOWAIT);

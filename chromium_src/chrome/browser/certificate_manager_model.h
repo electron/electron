@@ -24,7 +24,7 @@ class ResourceContext;
 // manager dialog, and processes changes from the view.
 class CertificateManagerModel {
  public:
-  typedef base::Callback<void(scoped_ptr<CertificateManagerModel>)>
+  typedef base::Callback<void(std::unique_ptr<CertificateManagerModel>)>
       CreationCallback;
 
   // Creates a CertificateManagerModel. The model will be passed to the callback

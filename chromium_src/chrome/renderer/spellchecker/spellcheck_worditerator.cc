@@ -322,7 +322,7 @@ bool SpellcheckWordIterator::Initialize(
   if (rule.empty())
     return false;
 
-  scoped_ptr<base::i18n::BreakIterator> iterator(
+  std::unique_ptr<base::i18n::BreakIterator> iterator(
       new base::i18n::BreakIterator(base::string16(), rule));
   if (!iterator->Init()) {
     // Since we're not passing in any text, the only reason this could fail

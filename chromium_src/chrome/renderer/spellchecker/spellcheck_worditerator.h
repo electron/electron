@@ -167,7 +167,7 @@ class SpellcheckWordIterator {
   const SpellcheckCharAttribute* attribute_;
 
   // The break iterator.
-  scoped_ptr<base::i18n::BreakIterator> iterator_;
+  std::unique_ptr<base::i18n::BreakIterator> iterator_;
 
   DISALLOW_COPY_AND_ASSIGN(SpellcheckWordIterator);
 };

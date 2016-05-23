@@ -129,7 +129,8 @@ void AtomBrowserClient::OverrideSiteInstanceForNavigation(
   if (url.SchemeIs(url::kJavaScriptScheme))
     return;
 
-  *new_instance = content::SiteInstance::CreateForURL(browser_context, url);
+  *new_instance =
+      content::SiteInstance::CreateForURL(browser_context, url).get();
 
   // Remember the original renderer process of the pending renderer process.
   auto current_process = current_instance->GetProcess();

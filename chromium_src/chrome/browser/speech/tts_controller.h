@@ -240,7 +240,7 @@ class Utterance {
 
   // The full options arg passed to tts.speak, which may include fields
   // other than the ones we explicitly parse, below.
-  scoped_ptr<base::Value> options_;
+  std::unique_ptr<base::Value> options_;
 
   // The extension ID of the extension that called speak() and should
   // receive events.

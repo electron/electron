@@ -43,7 +43,7 @@ void StopWorker(int document_cookie) {
 char* CopyPDFDataOnIOThread(
     const PrintHostMsg_DidPreviewDocument_Params& params) {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
-  scoped_ptr<base::SharedMemory> shared_buf(
+  std::unique_ptr<base::SharedMemory> shared_buf(
       new base::SharedMemory(params.metafile_data_handle, true));
   if (!shared_buf->Map(params.data_size))
     return nullptr;

@@ -5,7 +5,7 @@
 #ifndef CHROME_BROWSER_RENDERER_HOST_PEPPER_CHROME_BROWSER_PEPPER_HOST_FACTORY_H_
 #define CHROME_BROWSER_RENDERER_HOST_PEPPER_CHROME_BROWSER_PEPPER_HOST_FACTORY_H_
 
-#include "base/compiler_specific.h"
+#include "base/macros.h"
 #include "ppapi/host/host_factory.h"
 
 namespace content {
@@ -20,7 +20,7 @@ class ChromeBrowserPepperHostFactory : public ppapi::host::HostFactory {
   explicit ChromeBrowserPepperHostFactory(content::BrowserPpapiHost* host);
   ~ChromeBrowserPepperHostFactory() override;
 
-  scoped_ptr<ppapi::host::ResourceHost> CreateResourceHost(
+  std::unique_ptr<ppapi::host::ResourceHost> CreateResourceHost(
       ppapi::host::PpapiHost* host,
       PP_Resource resource,
       PP_Instance instance,

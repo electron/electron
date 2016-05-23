@@ -48,7 +48,7 @@ class RefCountedTempDir
   DISALLOW_COPY_AND_ASSIGN(RefCountedTempDir);
 };
 
-typedef scoped_ptr<base::File, BrowserThread::DeleteOnFileThread>
+typedef std::unique_ptr<base::File, BrowserThread::DeleteOnFileThread>
     ScopedTempFile;
 
 // Wrapper for Emf to keep only file handle in memory, and load actual data only
@@ -389,7 +389,7 @@ void PdfToEmfUtilityProcessHostClient::OnPageDone(bool success,
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
   if (get_page_callbacks_.empty())
     return OnFailed();
-  scoped_ptr<MetafilePlayer> emf;
+  std::unique_ptr<MetafilePlayer> emf;
   GetPageCallbackData& data = get_page_callbacks_.front();
   if (success)
     emf.reset(new LazyEmf(temp_dir_, data.emf().Pass()));
@@ -487,8 +487,8 @@ PdfToEmfConverter::~PdfToEmfConverter() {
 }
 
 // static
-scoped_ptr<PdfToEmfConverter> PdfToEmfConverter::CreateDefault() {
-  return scoped_ptr<PdfToEmfConverter>(new PdfToEmfConverterImpl());
+std::unique_ptr<PdfToEmfConverter> PdfToEmfConverter::CreateDefault() {
+  return std::unique_ptr<PdfToEmfConverter>(new PdfToEmfConverterImpl());
 }
 
 }  // namespace printing

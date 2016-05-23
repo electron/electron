@@ -190,7 +190,7 @@ class ResolveProxyHelper {
 
     // Start the request.
     int result = proxy_service->ResolveProxy(
-        url, net::LOAD_NORMAL, &proxy_info_, completion_callback,
+        url, "GET", net::LOAD_NORMAL, &proxy_info_, completion_callback,
         &pac_req_, nullptr, net::BoundNetLog());
 
     // Completed synchronously.

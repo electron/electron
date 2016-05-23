@@ -261,8 +261,9 @@ WebContents::WebContents(v8::Isolate* isolate,
 
   content::WebContents* web_contents;
   if (is_guest) {
-    content::SiteInstance* site_instance = content::SiteInstance::CreateForURL(
-        session->browser_context(), GURL("chrome-guest://fake-host"));
+    scoped_refptr<content::SiteInstance> site_instance =
+        content::SiteInstance::CreateForURL(
+            session->browser_context(), GURL("chrome-guest://fake-host"));
     content::WebContents::CreateParams params(
         session->browser_context(), site_instance);
     guest_delegate_.reset(new WebViewGuestDelegate);
