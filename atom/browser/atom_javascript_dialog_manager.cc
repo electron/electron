@@ -26,7 +26,7 @@ void AtomJavaScriptDialogManager::RunBeforeUnloadDialog(
     bool is_reload,
     const DialogClosedCallback& callback) {
   // FIXME(zcbenz): the |message_text| is removed, figure out what should we do.
-  callback.Run(true, base::ASCIIToUTF16("FIXME"));
+  callback.Run(false, base::ASCIIToUTF16("This should not be displayed"));
 }
 
 }  // namespace atom
