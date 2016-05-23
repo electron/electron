@@ -443,16 +443,6 @@ Adds `tasks` to the [Tasks][tasks] category of the JumpList on Windows.
   consists of two or more icons, set this value to identify the icon. If an
   icon file consists of one icon, this value is 0.
 
-### `app.allowNTLMCredentialsForAllDomains(allow)`
-
-* `allow` Boolean
-
-Dynamically sets whether to always send credentials for HTTP NTLM or Negotiate
-authentication - normally, Electron will only send NTLM/Kerberos credentials for
-URLs that fall under "Local Intranet" sites (i.e. are in the same domain as you).
-However, this detection often fails when corporate networks are badly configured,
-so this lets you co-opt this behavior and enable it for all URLs.
-
 ### `app.makeSingleInstance(callback)`
 
 * `callback` Function

@@ -36,6 +36,8 @@
 #include "net/base/load_flags.h"
 #include "net/disk_cache/disk_cache.h"
 #include "net/dns/host_cache.h"
+#include "net/http/http_auth_handler_factory.h"
+#include "net/http/http_auth_preferences.h"
 #include "net/proxy/proxy_service.h"
 #include "net/proxy/proxy_config_service_fixed.h"
 #include "net/url_request/url_request_context.h"
@@ -284,6 +286,19 @@ void ClearHostResolverCacheInIO(
   }
 }
 
+void AllowNTLMCredentialsForDomainsInIO(
+    const scoped_refptr<net::URLRequestContextGetter>& context_getter,
+    const std::string& domains) {
+  auto request_context = context_getter->GetURLRequestContext();
+  auto auth_handler = request_context->http_auth_handler_factory();
+  if (auth_handler) {
+    auto auth_preferences = const_cast<net::HttpAuthPreferences*>(
+        auth_handler->http_auth_preferences());
+    if (auth_preferences)
+      auth_preferences->set_server_whitelist(domains);
+  }
+}
+
 }  // namespace
 
 Session::Session(v8::Isolate* isolate, AtomBrowserContext* browser_context)
@@ -432,6 +447,13 @@ void Session::ClearHostResolverCache(mate::Arguments* args) {
                  callback));
 }
 
+void Session::AllowNTLMCredentialsForDomains(const std::string& domains) {
+  BrowserThread::PostTask(BrowserThread::IO, FROM_HERE,
+      base::Bind(&AllowNTLMCredentialsForDomainsInIO,
+                 make_scoped_refptr(browser_context_->GetRequestContext()),
+                 domains));
+}
+
 v8::Local<v8::Value> Session::Cookies(v8::Isolate* isolate) {
   if (cookies_.IsEmpty()) {
     auto handle = atom::api::Cookies::Create(isolate, browser_context());
@@ -487,6 +509,8 @@ void Session::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setPermissionRequestHandler",
                  &Session::SetPermissionRequestHandler)
       .SetMethod("clearHostResolverCache", &Session::ClearHostResolverCache)
+      .SetMethod("allowNTLMCredentialsForDomains",
+                 &Session::AllowNTLMCredentialsForDomains)
       .SetProperty("cookies", &Session::Cookies)
       .SetProperty("webRequest", &Session::WebRequest);
 }

@@ -106,7 +106,6 @@ class App : public AtomBrowserClient::Delegate,
                const base::FilePath& path);
 
   void SetDesktopName(const std::string& desktop_name);
-  void AllowNTLMCredentialsForAllDomains(bool should_allow);
   bool MakeSingleInstance(
       const ProcessSingleton::NotificationCallback& callback);
   std::string GetLocale();

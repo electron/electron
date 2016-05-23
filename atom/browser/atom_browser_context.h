@@ -33,7 +33,6 @@ class AtomBrowserContext : public brightray::BrowserContext {
       const base::FilePath& base_path) override;
   std::unique_ptr<net::CertVerifier> CreateCertVerifier() override;
   net::SSLConfigService* CreateSSLConfigService() override;
-  bool AllowNTLMCredentialsForDomain(const GURL& auth_origin) override;
 
   // content::BrowserContext:
   content::DownloadManagerDelegate* GetDownloadManagerDelegate() override;
@@ -42,8 +41,6 @@ class AtomBrowserContext : public brightray::BrowserContext {
 
   // brightray::BrowserContext:
   void RegisterPrefs(PrefRegistrySimple* pref_registry) override;
-
-  void AllowNTLMCredentialsForAllDomains(bool should_allow);
 
   AtomCertVerifier* cert_verifier() const { return cert_verifier_; }
 
@@ -60,8 +57,6 @@ class AtomBrowserContext : public brightray::BrowserContext {
   AtomCertVerifier* cert_verifier_;
   AtomURLRequestJobFactory* job_factory_;
   AtomNetworkDelegate* network_delegate_;
-
-  bool allow_ntlm_everywhere_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomBrowserContext);
 };

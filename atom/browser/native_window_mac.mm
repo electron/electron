@@ -141,22 +141,9 @@ bool ScopedDisableResize::disable_resize_ = false;
     newSize.width =
         roundf((frameSize.height - extraHeightPlusFrame) * aspectRatio +
                extraWidthPlusFrame);
-
-    // If the new width is less than the frame size use it as the primary
-    // constraint. This ensures that the value returned by this method will
-    // never be larger than the users requested window size.
-    if (newSize.width <= frameSize.width) {
-      newSize.height =
-          roundf((newSize.width - extraWidthPlusFrame) / aspectRatio +
-                 extraHeightPlusFrame);
-    } else {
-      newSize.height =
-          roundf((frameSize.width - extraWidthPlusFrame) / aspectRatio +
-                 extraHeightPlusFrame);
-      newSize.width =
-          roundf((newSize.height - extraHeightPlusFrame) * aspectRatio +
-                 extraWidthPlusFrame);
-    }
+    newSize.height =
+        roundf((newSize.width - extraWidthPlusFrame) / aspectRatio +
+               extraHeightPlusFrame);
   }
 
   return newSize;
@@ -719,6 +706,20 @@ void NativeWindowMac::SetResizable(bool resizable) {
 
 bool NativeWindowMac::IsResizable() {
   return [window_ styleMask] & NSResizableWindowMask;
+}
+
+void NativeWindowMac::SetAspectRatio(double aspect_ratio,
+                                     const gfx::Size& extra_size) {
+    NativeWindow::SetAspectRatio(aspect_ratio, extra_size);
+
+    // We can't just pass the aspect ratio to Cocoa, since our API receives
+    // it as a float, and Cocoa expects an NSRect with explicit width & height
+    // arguments. Instead we derive those args ourselves from the given aspect
+    // ratio.
+    double width = roundf([window_ frame].size.height * aspect_ratio);
+    double height = roundf(width / aspect_ratio);
+
+    [window_ setAspectRatio:NSMakeSize(width, height)];
 }
 
 void NativeWindowMac::SetMovable(bool movable) {
