@@ -52,6 +52,9 @@ bool g_suppress_renderer_process_restart = false;
 // Custom schemes to be registered to handle service worker.
 std::string g_custom_service_worker_schemes = "";
 
+void Noop(scoped_refptr<content::SiteInstance>) {
+}
+
 }  // namespace
 
 // static
@@ -132,6 +135,13 @@ void AtomBrowserClient::OverrideSiteInstanceForNavigation(
   scoped_refptr<content::SiteInstance> site_instance =
       content::SiteInstance::CreateForURL(browser_context, url);
   *new_instance = site_instance.get();
+
+  // Make sure the |site_instance| is not freed when this function returns.
+  // FIXME(zcbenz): We should adjust OverrideSiteInstanceForNavigation's
+  // interface to solve this.
+  content::BrowserThread::PostTask(
+      content::BrowserThread::UI, FROM_HERE,
+      base::Bind(&Noop, base::RetainedRef(site_instance)));
 
   // Remember the original renderer process of the pending renderer process.
   auto current_process = current_instance->GetProcess();
