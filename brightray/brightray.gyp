@@ -259,7 +259,9 @@
                   '-lmfplat.lib',
                   '-lmfuuid.lib',
                   # media.gyp:
+                  '-ldxguid.lib',
                   '-lmfreadwrite.lib',
+                  '-lmfuuid.lib',
                 ],
                 'msvs_settings': {
                   'VCLinkerTool': {
