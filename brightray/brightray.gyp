@@ -275,12 +275,27 @@
                       'usp10.lib',
                       'version.lib',
                       'winspool.lib',
+                      'wtsapi32.lib',
+                      # bluetooth.gyp:
+                      'Bthprops.lib',
+                      'BluetoothApis.lib',
                       # base.gyp:
+                      'cfgmgr32.lib',
                       'powrprof.lib',
+                      'setupapi.lib',
+                      # net_common.gypi:
+                      'crypt32.lib',
+                      'dhcpcsvc.lib',
+                      'rpcrt4.lib',
+                      'secur32.lib',
+                      'urlmon.lib',
+                      'winhttp.lib',
                     ],
                     'DelayLoadDLLs': [
+                      'wtsapi32.dll',
                       # content_common.gypi:
                       'd3d9.dll',
+                      'd3d11.dll',
                       'dxva2.dll',
                       # media.gyp:
                       'mf.dll',
@@ -291,7 +306,16 @@
                       'Bthprops.cpl',
                       'setupapi.dll',
                       # base.gyp:
+                      'cfgmgr32.dll',
                       'powrprof.dll',
+                      'setupapi.dll',
+                      # net_common.gypi:
+                      'crypt32.dll',
+                      'dhcpcsvc.dll',
+                      'rpcrt4.dll',
+                      'secur32.dll',
+                      'urlmon.dll',
+                      'winhttp.dll',
                       # windows runtime
                       'API-MS-WIN-CORE-WINRT-L1-1-0.DLL',
                       'API-MS-WIN-CORE-WINRT-STRING-L1-1-0.DLL',
