@@ -25,7 +25,7 @@ void OnWebNotificationAllowed(
     brightray::BrowserClient* browser_client,
     const SkBitmap& icon,
     const content::PlatformNotificationData& data,
-    scoped_ptr<content::DesktopNotificationDelegate> delegate,
+    std::unique_ptr<content::DesktopNotificationDelegate> delegate,
     base::Closure* cancel_callback,
     bool allowed) {
   if (!allowed)
@@ -33,7 +33,7 @@ void OnWebNotificationAllowed(
   auto presenter = browser_client->GetNotificationPresenter();
   if (!presenter)
     return;
-  scoped_ptr<NotificationDelegateAdapter> adapter(
+  std::unique_ptr<NotificationDelegateAdapter> adapter(
       new NotificationDelegateAdapter(std::move(delegate)));
   auto notification = presenter->CreateNotification(adapter.get());
   if (notification) {
@@ -73,7 +73,7 @@ void PlatformNotificationService::DisplayNotification(
     const GURL& origin,
     const content::PlatformNotificationData& notification_data,
     const content::NotificationResources& notification_resources,
-    scoped_ptr<content::DesktopNotificationDelegate> delegate,
+    std::unique_ptr<content::DesktopNotificationDelegate> delegate,
     base::Closure* cancel_callback) {
   browser_client_->WebNotificationAllowed(
       render_process_id_,

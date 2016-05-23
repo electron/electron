@@ -12,6 +12,7 @@
 #include "browser/network_delegate.h"
 
 #include "base/command_line.h"
+#include "base/memory/ptr_util.h"
 #include "base/strings/string_util.h"
 #include "base/threading/sequenced_worker_pool.h"
 #include "base/threading/worker_pool.h"
@@ -110,11 +111,11 @@ bool URLRequestContextGetter::DelegateURLSecurityManager::CanDelegate
 }
 
 void URLRequestContextGetter::DelegateURLSecurityManager::SetDefaultWhitelist(
-  scoped_ptr<net::HttpAuthFilter> whitelist_default) {
+  std::unique_ptr<net::HttpAuthFilter> whitelist_default) {
 }
 
 void URLRequestContextGetter::DelegateURLSecurityManager::SetDelegateWhitelist(
-  scoped_ptr<net::HttpAuthFilter> whitelist_delegate) {
+  std::unique_ptr<net::HttpAuthFilter> whitelist_delegate) {
 }
 
 URLRequestContextGetter::Delegate::Delegate() :
@@ -124,31 +125,31 @@ std::string URLRequestContextGetter::Delegate::GetUserAgent() {
   return base::EmptyString();
 }
 
-scoped_ptr<net::URLRequestJobFactory>
+std::unique_ptr<net::URLRequestJobFactory>
 URLRequestContextGetter::Delegate::CreateURLRequestJobFactory(
     content::ProtocolHandlerMap* protocol_handlers,
     content::URLRequestInterceptorScopedVector* protocol_interceptors) {
-  scoped_ptr<net::URLRequestJobFactoryImpl> job_factory(new net::URLRequestJobFactoryImpl);
+  std::unique_ptr<net::URLRequestJobFactoryImpl> job_factory(new net::URLRequestJobFactoryImpl);
 
   for (auto it = protocol_handlers->begin(); it != protocol_handlers->end(); ++it)
     job_factory->SetProtocolHandler(
-        it->first, make_scoped_ptr(it->second.release()));
+        it->first, base::WrapUnique(it->second.release()));
   protocol_handlers->clear();
 
   job_factory->SetProtocolHandler(
-      url::kDataScheme, make_scoped_ptr(new net::DataProtocolHandler));
+      url::kDataScheme, base::WrapUnique(new net::DataProtocolHandler));
   job_factory->SetProtocolHandler(
       url::kFileScheme,
-      make_scoped_ptr(new net::FileProtocolHandler(
+      base::WrapUnique(new net::FileProtocolHandler(
           BrowserThread::GetBlockingPool()->GetTaskRunnerWithShutdownBehavior(
               base::SequencedWorkerPool::SKIP_ON_SHUTDOWN))));
 
   // Set up interceptors in the reverse order.
-  scoped_ptr<net::URLRequestJobFactory> top_job_factory = std::move(job_factory);
+  std::unique_ptr<net::URLRequestJobFactory> top_job_factory = std::move(job_factory);
   content::URLRequestInterceptorScopedVector::reverse_iterator i;
   for (i = protocol_interceptors->rbegin(); i != protocol_interceptors->rend(); ++i)
     top_job_factory.reset(new net::URLRequestInterceptingJobFactory(
-        std::move(top_job_factory), make_scoped_ptr(*i)));
+        std::move(top_job_factory), base::WrapUnique(*i)));
   protocol_interceptors->weak_clear();
 
   return top_job_factory;
@@ -165,7 +166,7 @@ URLRequestContextGetter::Delegate::CreateHttpCacheBackendFactory(const base::Fil
       BrowserThread::GetMessageLoopProxyForThread(BrowserThread::CACHE));
 }
 
-scoped_ptr<net::CertVerifier>
+std::unique_ptr<net::CertVerifier>
 URLRequestContextGetter::Delegate::CreateCertVerifier() {
   return net::CertVerifier::CreateDefault();
 }
@@ -246,7 +247,7 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
 
     storage_.reset(new net::URLRequestContextStorage(url_request_context_.get()));
 
-    scoped_refptr<net::CookieStore> cookie_store = nullptr;
+    std::unique_ptr<net::CookieStore> cookie_store = nullptr;
     if (in_memory_) {
       cookie_store = content::CreateCookieStore(content::CookieStoreConfig());
     } else {
@@ -256,22 +257,22 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
           NULL, NULL);
       cookie_store = content::CreateCookieStore(cookie_config);
     }
-    storage_->set_cookie_store(cookie_store.get());
-    storage_->set_channel_id_service(make_scoped_ptr(
+    storage_->set_cookie_store(std::move(cookie_store));
+    storage_->set_channel_id_service(base::WrapUnique(
         new net::ChannelIDService(new net::DefaultChannelIDStore(NULL),
                                   base::WorkerPool::GetTaskRunner(true))));
 
     std::string accept_lang = l10n_util::GetApplicationLocale("");
-    storage_->set_http_user_agent_settings(make_scoped_ptr(
+    storage_->set_http_user_agent_settings(base::WrapUnique(
         new net::StaticHttpUserAgentSettings(
             net::HttpUtil::GenerateAcceptLanguageHeader(accept_lang),
             delegate_->GetUserAgent())));
 
-    scoped_ptr<net::HostResolver> host_resolver(net::HostResolver::CreateDefaultResolver(nullptr));
+    std::unique_ptr<net::HostResolver> host_resolver(net::HostResolver::CreateDefaultResolver(nullptr));
 
     // --host-resolver-rules
     if (command_line.HasSwitch(switches::kHostResolverRules)) {
-      scoped_ptr<net::MappedHostResolver> remapped_resolver(
+      std::unique_ptr<net::MappedHostResolver> remapped_resolver(
           new net::MappedHostResolver(std::move(host_resolver)));
       remapped_resolver->SetRulesFromString(
           command_line.GetSwitchValueASCII(switches::kHostResolverRules));
@@ -323,10 +324,10 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
 
     storage_->set_cert_verifier(delegate_->CreateCertVerifier());
     storage_->set_transport_security_state(
-        make_scoped_ptr(new net::TransportSecurityState));
+        base::WrapUnique(new net::TransportSecurityState));
     storage_->set_ssl_config_service(delegate_->CreateSSLConfigService());
     storage_->set_http_auth_handler_factory(std::move(auth_handler_factory));
-    scoped_ptr<net::HttpServerProperties> server_properties(
+    std::unique_ptr<net::HttpServerProperties> server_properties(
         new net::HttpServerPropertiesImpl);
     storage_->set_http_server_properties(std::move(server_properties));
 
@@ -334,7 +335,6 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     network_session_params.cert_verifier = url_request_context_->cert_verifier();
     network_session_params.proxy_service = url_request_context_->proxy_service();
     network_session_params.ssl_config_service = url_request_context_->ssl_config_service();
-    network_session_params.network_delegate = url_request_context_->network_delegate();
     network_session_params.http_server_properties = url_request_context_->http_server_properties();
     network_session_params.ignore_certificate_errors = false;
     network_session_params.transport_security_state =
@@ -368,7 +368,7 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
 
     http_network_session_.reset(
         new net::HttpNetworkSession(network_session_params));
-    scoped_ptr<net::HttpCache::BackendFactory> backend;
+    std::unique_ptr<net::HttpCache::BackendFactory> backend;
     if (in_memory_) {
       backend = net::HttpCache::DefaultBackend::InMemory(0);
     } else {
@@ -376,14 +376,14 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     }
 
     if (network_controller_handle_) {
-      storage_->set_http_transaction_factory(make_scoped_ptr(
+      storage_->set_http_transaction_factory(base::WrapUnique(
           new net::HttpCache(
-              make_scoped_ptr(new DevToolsNetworkTransactionFactory(
+              base::WrapUnique(new DevToolsNetworkTransactionFactory(
                   network_controller_handle_->GetController(), http_network_session_.get())),
               std::move(backend),
               false)));
     } else {
-      storage_->set_http_transaction_factory(make_scoped_ptr(
+      storage_->set_http_transaction_factory(base::WrapUnique(
           new net::HttpCache(http_network_session_.get(),
                              std::move(backend),
                              false)));

@@ -8,7 +8,6 @@
 #import <Foundation/Foundation.h>
 
 #include "base/mac/scoped_nsobject.h"
-#include "base/memory/scoped_ptr.h"
 #include "browser/notification.h"
 
 namespace brightray {

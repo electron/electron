@@ -76,7 +76,7 @@ void OverrideLinuxAppDataPath() {
   base::FilePath path;
   if (PathService::Get(DIR_APP_DATA, &path))
     return;
-  scoped_ptr<base::Environment> env(base::Environment::Create());
+  std::unique_ptr<base::Environment> env(base::Environment::Create());
   path = base::nix::GetXDGDirectory(env.get(),
                                     base::nix::kXdgConfigHomeEnvVar,
                                     base::nix::kDotConfigDir);

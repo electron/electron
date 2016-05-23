@@ -22,12 +22,12 @@ int PermissionManager::RequestPermission(
     content::PermissionType permission,
     content::RenderFrameHost* render_frame_host,
     const GURL& requesting_origin,
-    const base::Callback<void(content::PermissionStatus)>& callback) {
+    const base::Callback<void(blink::mojom::PermissionStatus)>& callback) {
   if (permission == content::PermissionType::MIDI_SYSEX) {
     content::ChildProcessSecurityPolicy::GetInstance()->
         GrantSendMidiSysExMessage(render_frame_host->GetProcess()->GetID());
   }
-  callback.Run(content::PermissionStatus::GRANTED);
+  callback.Run(blink::mojom::PermissionStatus::GRANTED);
   return kNoPendingOperation;
 }
 
@@ -36,8 +36,8 @@ int PermissionManager::RequestPermissions(
     content::RenderFrameHost* render_frame_host,
     const GURL& requesting_origin,
     const base::Callback<void(
-        const std::vector<content::PermissionStatus>&)>& callback) {
-  std::vector<content::PermissionStatus> permissionStatuses;
+        const std::vector<blink::mojom::PermissionStatus>&)>& callback) {
+  std::vector<blink::mojom::PermissionStatus> permissionStatuses;
 
   for (auto permission : permissions) {
     if (permission == content::PermissionType::MIDI_SYSEX) {
@@ -45,7 +45,7 @@ int PermissionManager::RequestPermissions(
           GrantSendMidiSysExMessage(render_frame_host->GetProcess()->GetID());
     }
 
-    permissionStatuses.push_back(content::PermissionStatus::GRANTED);
+    permissionStatuses.push_back(blink::mojom::PermissionStatus::GRANTED);
   }
 
   callback.Run(permissionStatuses);
@@ -61,11 +61,11 @@ void PermissionManager::ResetPermission(
     const GURL& embedding_origin) {
 }
 
-content::PermissionStatus PermissionManager::GetPermissionStatus(
+blink::mojom::PermissionStatus PermissionManager::GetPermissionStatus(
     content::PermissionType permission,
     const GURL& requesting_origin,
     const GURL& embedding_origin) {
-  return content::PermissionStatus::GRANTED;
+  return blink::mojom::PermissionStatus::GRANTED;
 }
 
 void PermissionManager::RegisterPermissionUsage(
@@ -78,7 +78,7 @@ int PermissionManager::SubscribePermissionStatusChange(
     content::PermissionType permission,
     const GURL& requesting_origin,
     const GURL& embedding_origin,
-    const base::Callback<void(content::PermissionStatus)>& callback) {
+    const base::Callback<void(blink::mojom::PermissionStatus)>& callback) {
   return -1;
 }
 

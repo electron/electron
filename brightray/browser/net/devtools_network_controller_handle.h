@@ -8,7 +8,6 @@
 #include <string>
 
 #include "base/macros.h"
-#include "base/memory/scoped_ptr.h"
 
 namespace brightray {
 
@@ -24,7 +23,7 @@ class DevToolsNetworkControllerHandle {
 
   // Called on the UI thread.
   void SetNetworkState(const std::string& client_id,
-                       scoped_ptr<DevToolsNetworkConditions> conditions);
+                       std::unique_ptr<DevToolsNetworkConditions> conditions);
 
   // Called on the IO thread.
   DevToolsNetworkController* GetController();
@@ -32,9 +31,9 @@ class DevToolsNetworkControllerHandle {
  private:
   void LazyInitialize();
   void SetNetworkStateOnIO(const std::string& client_id,
-                           scoped_ptr<DevToolsNetworkConditions> conditions);
+                           std::unique_ptr<DevToolsNetworkConditions> conditions);
 
-  scoped_ptr<DevToolsNetworkController> controller_;
+  std::unique_ptr<DevToolsNetworkController> controller_;
 
   DISALLOW_COPY_AND_ASSIGN(DevToolsNetworkControllerHandle);
 };

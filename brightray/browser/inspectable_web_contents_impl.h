@@ -162,8 +162,8 @@ class InspectableWebContentsImpl :
 
   bool frontend_loaded_;
   scoped_refptr<content::DevToolsAgentHost> agent_host_;
-  scoped_ptr<content::DevToolsFrontendHost> frontend_host_;
-  scoped_ptr<DevToolsEmbedderMessageDispatcher> embedder_message_dispatcher_;
+  std::unique_ptr<content::DevToolsFrontendHost> frontend_host_;
+  std::unique_ptr<DevToolsEmbedderMessageDispatcher> embedder_message_dispatcher_;
 
   DevToolsContentsResizingStrategy contents_resizing_strategy_;
   gfx::Rect devtools_bounds_;
@@ -176,9 +176,9 @@ class InspectableWebContentsImpl :
 
   PrefService* pref_service_;  // weak reference.
 
-  scoped_ptr<content::WebContents> web_contents_;
-  scoped_ptr<content::WebContents> devtools_web_contents_;
-  scoped_ptr<InspectableWebContentsView> view_;
+  std::unique_ptr<content::WebContents> web_contents_;
+  std::unique_ptr<content::WebContents> devtools_web_contents_;
+  std::unique_ptr<InspectableWebContentsView> view_;
 
   base::WeakPtrFactory<InspectableWebContentsImpl> weak_factory_;
 

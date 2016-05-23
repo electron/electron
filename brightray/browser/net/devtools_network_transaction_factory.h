@@ -6,7 +6,6 @@
 #define BROWSER_DEVTOOLS_NETWORK_TRANSACTION_FACTORY_H_
 
 #include "base/macros.h"
-#include "base/memory/scoped_ptr.h"
 #include "net/base/request_priority.h"
 #include "net/http/http_transaction_factory.h"
 
@@ -23,13 +22,13 @@ class DevToolsNetworkTransactionFactory : public net::HttpTransactionFactory {
 
   // net::HttpTransactionFactory:
   int CreateTransaction(net::RequestPriority priority,
-                        scoped_ptr<net::HttpTransaction>* transaction) override;
+                        std::unique_ptr<net::HttpTransaction>* transaction) override;
   net::HttpCache* GetCache() override;
   net::HttpNetworkSession* GetSession() override;
 
  private:
   DevToolsNetworkController*  controller_;
-  scoped_ptr<net::HttpTransactionFactory> network_layer_;
+  std::unique_ptr<net::HttpTransactionFactory> network_layer_;
 
   DISALLOW_COPY_AND_ASSIGN(DevToolsNetworkTransactionFactory);
 };

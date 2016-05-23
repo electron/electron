@@ -6,7 +6,6 @@
 #define BROWSER_DEVTOOLS_NETWORK_PROTOCOL_HANDLER_H_
 
 #include "base/macros.h"
-#include "base/memory/scoped_ptr.h"
 #include "base/values.h"
 
 namespace content {
@@ -29,17 +28,17 @@ class DevToolsNetworkProtocolHandler {
                                  bool attached);
 
  private:
-  scoped_ptr<base::DictionaryValue> CanEmulateNetworkConditions(
+  std::unique_ptr<base::DictionaryValue> CanEmulateNetworkConditions(
       content::DevToolsAgentHost* agent_host,
       int command_id,
       const base::DictionaryValue* params);
-  scoped_ptr<base::DictionaryValue> EmulateNetworkConditions(
+  std::unique_ptr<base::DictionaryValue> EmulateNetworkConditions(
       content::DevToolsAgentHost* agent_host,
       int command_id,
       const base::DictionaryValue* params);
   void UpdateNetworkState(
       content::DevToolsAgentHost* agent_host,
-      scoped_ptr<DevToolsNetworkConditions> conditions);
+      std::unique_ptr<DevToolsNetworkConditions> conditions);
 
   DISALLOW_COPY_AND_ASSIGN(DevToolsNetworkProtocolHandler);
 };

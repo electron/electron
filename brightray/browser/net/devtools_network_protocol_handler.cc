@@ -59,17 +59,17 @@ bool ParseCommand(const base::DictionaryValue* command,
   return true;
 }
 
-scoped_ptr<base::DictionaryValue>
-CreateSuccessResponse(int id, scoped_ptr<base::DictionaryValue> result) {
-  scoped_ptr<base::DictionaryValue> response(new base::DictionaryValue);
+std::unique_ptr<base::DictionaryValue>
+CreateSuccessResponse(int id, std::unique_ptr<base::DictionaryValue> result) {
+  std::unique_ptr<base::DictionaryValue> response(new base::DictionaryValue);
   response->SetInteger(kId, id);
   response->Set(params::kResult, result.release());
   return response;
 }
 
-scoped_ptr<base::DictionaryValue>
+std::unique_ptr<base::DictionaryValue>
 CreateFailureResponse(int id, const std::string& param) {
-  scoped_ptr<base::DictionaryValue> response(new base::DictionaryValue);
+  std::unique_ptr<base::DictionaryValue> response(new base::DictionaryValue);
   auto error_object = new base::DictionaryValue;
   response->Set(kError, error_object);
   error_object->SetInteger(params::kErrorCode, kErrorInvalidParams);
@@ -108,23 +108,23 @@ base::DictionaryValue* DevToolsNetworkProtocolHandler::HandleCommand(
 void DevToolsNetworkProtocolHandler::DevToolsAgentStateChanged(
     content::DevToolsAgentHost* agent_host,
     bool attached) {
-  scoped_ptr<DevToolsNetworkConditions> conditions;
+  std::unique_ptr<DevToolsNetworkConditions> conditions;
   if (attached)
     conditions.reset(new DevToolsNetworkConditions(false));
   UpdateNetworkState(agent_host, std::move(conditions));
 }
 
-scoped_ptr<base::DictionaryValue>
+std::unique_ptr<base::DictionaryValue>
 DevToolsNetworkProtocolHandler::CanEmulateNetworkConditions(
     content::DevToolsAgentHost* agent_host,
     int id,
     const base::DictionaryValue* params) {
-  scoped_ptr<base::DictionaryValue> result(new base::DictionaryValue);
+  std::unique_ptr<base::DictionaryValue> result(new base::DictionaryValue);
   result->SetBoolean(params::kResult, true);
   return CreateSuccessResponse(id, std::move(result));
 }
 
-scoped_ptr<base::DictionaryValue>
+std::unique_ptr<base::DictionaryValue>
 DevToolsNetworkProtocolHandler::EmulateNetworkConditions(
     content::DevToolsAgentHost* agent_host,
     int id,
@@ -151,18 +151,18 @@ DevToolsNetworkProtocolHandler::EmulateNetworkConditions(
   if (upload_throughput < 0.0)
     upload_throughput = 0.0;
 
-  scoped_ptr<DevToolsNetworkConditions> conditions(
+  std::unique_ptr<DevToolsNetworkConditions> conditions(
       new DevToolsNetworkConditions(offline,
                                     latency,
                                     download_throughput,
                                     upload_throughput));
   UpdateNetworkState(agent_host, std::move(conditions));
-  return scoped_ptr<base::DictionaryValue>();
+  return std::unique_ptr<base::DictionaryValue>();
 }
 
 void DevToolsNetworkProtocolHandler::UpdateNetworkState(
     content::DevToolsAgentHost* agent_host,
-    scoped_ptr<DevToolsNetworkConditions> conditions) {
+    std::unique_ptr<DevToolsNetworkConditions> conditions) {
   auto browser_context =
       static_cast<brightray::BrowserContext*>(agent_host->GetBrowserContext());
   browser_context->network_controller_handle()->SetNetworkState(

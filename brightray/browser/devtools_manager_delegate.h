@@ -34,7 +34,7 @@ class DevToolsManagerDelegate : public content::DevToolsManagerDelegate {
                                        base::DictionaryValue* command) override;
 
  private:
-  scoped_ptr<DevToolsNetworkProtocolHandler> handler_;
+  std::unique_ptr<DevToolsNetworkProtocolHandler> handler_;
 
   DISALLOW_COPY_AND_ASSIGN(DevToolsManagerDelegate);
 };

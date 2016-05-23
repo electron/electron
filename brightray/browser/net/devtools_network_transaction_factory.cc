@@ -30,8 +30,8 @@ DevToolsNetworkTransactionFactory::~DevToolsNetworkTransactionFactory() {
 
 int DevToolsNetworkTransactionFactory::CreateTransaction(
     net::RequestPriority priority,
-    scoped_ptr<net::HttpTransaction>* transaction) {
-  scoped_ptr<net::HttpTransaction> new_transaction;
+    std::unique_ptr<net::HttpTransaction>* transaction) {
+  std::unique_ptr<net::HttpTransaction> new_transaction;
   int rv = network_layer_->CreateTransaction(priority, &new_transaction);
   if (rv != net::OK)
     return rv;

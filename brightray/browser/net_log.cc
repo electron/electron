@@ -14,8 +14,8 @@ namespace brightray {
 
 namespace {
 
-scoped_ptr<base::DictionaryValue> GetConstants() {
-  scoped_ptr<base::DictionaryValue> constants = net::GetNetConstants();
+std::unique_ptr<base::DictionaryValue> GetConstants() {
+  std::unique_ptr<base::DictionaryValue> constants = net::GetNetConstants();
 
   // Adding client information to constants dictionary.
   base::DictionaryValue* client_info = new base::DictionaryValue();
@@ -53,7 +53,7 @@ void NetLog::StartLogging(net::URLRequestContext* url_request_context) {
     return;
   }
 
-  scoped_ptr<base::Value> constants(GetConstants());
+  std::unique_ptr<base::Value> constants(GetConstants());
   write_to_file_observer_.StartObserving(this,
                                          std::move(log_file_),
                                          constants.get(),

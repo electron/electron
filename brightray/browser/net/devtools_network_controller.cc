@@ -24,20 +24,20 @@ DevToolsNetworkController::~DevToolsNetworkController() {
 
 void DevToolsNetworkController::SetNetworkState(
     const std::string& client_id,
-    scoped_ptr<DevToolsNetworkConditions> conditions) {
+    std::unique_ptr<DevToolsNetworkConditions> conditions) {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
 
   DevToolsNetworkInterceptor* interceptor = interceptors_.get(client_id);
   if (!interceptor) {
     if (!conditions)
       return;
-    scoped_ptr<DevToolsNetworkInterceptor> new_interceptor(
+    std::unique_ptr<DevToolsNetworkInterceptor> new_interceptor(
         new DevToolsNetworkInterceptor);
     new_interceptor->UpdateConditions(std::move(conditions));
     interceptors_.set(client_id, std::move(new_interceptor));
   } else {
     if (!conditions) {
-      scoped_ptr<DevToolsNetworkConditions> online_conditions(
+      std::unique_ptr<DevToolsNetworkConditions> online_conditions(
           new DevToolsNetworkConditions(false));
       interceptor->UpdateConditions(std::move(online_conditions));
       interceptors_.erase(client_id);
@@ -57,7 +57,7 @@ void DevToolsNetworkController::SetNetworkState(
 
   bool is_appcache_offline = appcache_interceptor_->IsOffline();
   if (is_appcache_offline != has_offline_interceptors) {
-    scoped_ptr<DevToolsNetworkConditions> appcache_conditions(
+    std::unique_ptr<DevToolsNetworkConditions> appcache_conditions(
         new DevToolsNetworkConditions(has_offline_interceptors));
     appcache_interceptor_->UpdateConditions(std::move(appcache_conditions));
   }

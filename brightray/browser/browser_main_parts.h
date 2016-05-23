@@ -7,7 +7,6 @@
 
 #include "base/compiler_specific.h"
 #include "base/memory/ref_counted.h"
-#include "base/memory/scoped_ptr.h"
 #include "content/public/browser/browser_main_parts.h"
 
 namespace devtools_http_handler {
@@ -53,14 +52,14 @@ class BrowserMainParts : public content::BrowserMainParts {
 #endif
 
   scoped_refptr<BrowserContext> browser_context_;
-  scoped_ptr<devtools_http_handler::DevToolsHttpHandler> devtools_http_handler_;
+  std::unique_ptr<devtools_http_handler::DevToolsHttpHandler> devtools_http_handler_;
 
 #if defined(TOOLKIT_VIEWS)
-  scoped_ptr<ViewsDelegate> views_delegate_;
+  std::unique_ptr<ViewsDelegate> views_delegate_;
 #endif
 
 #if defined(USE_AURA) && defined(USE_X11)
-  scoped_ptr<wm::WMState> wm_state_;
+  std::unique_ptr<wm::WMState> wm_state_;
 #endif
 
   DISALLOW_COPY_AND_ASSIGN(BrowserMainParts);

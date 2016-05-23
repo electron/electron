@@ -5,7 +5,9 @@
 #ifndef BROWSER_NOTIFICATION_DELEGATE_ADAPTER_H_
 #define BROWSER_NOTIFICATION_DELEGATE_ADAPTER_H_
 
-#include "base/memory/scoped_ptr.h"
+#include <memory>
+
+#include "base/macros.h"
 #include "browser/notification_delegate.h"
 
 namespace brightray {
@@ -14,7 +16,7 @@ namespace brightray {
 class NotificationDelegateAdapter : public NotificationDelegate {
  public:
   explicit NotificationDelegateAdapter(
-      scoped_ptr<content::DesktopNotificationDelegate> delegate);
+      std::unique_ptr<content::DesktopNotificationDelegate> delegate);
   ~NotificationDelegateAdapter() override;
 
   // NotificationDelegate:
@@ -26,7 +28,7 @@ class NotificationDelegateAdapter : public NotificationDelegate {
   void NotificationClick() override;
 
  private:
-  scoped_ptr<content::DesktopNotificationDelegate> delegate_;
+  std::unique_ptr<content::DesktopNotificationDelegate> delegate_;
 
   DISALLOW_COPY_AND_ASSIGN(NotificationDelegateAdapter);
 };
