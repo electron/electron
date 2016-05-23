@@ -61,6 +61,11 @@ class BrowserContext : public base::RefCounted<BrowserContext>,
   net::URLRequestContextGetter* CreateRequestContext(
       content::ProtocolHandlerMap* protocol_handlers,
       content::URLRequestInterceptorScopedVector request_interceptors) override;
+  net::URLRequestContextGetter* CreateRequestContextForStoragePartition(
+      const base::FilePath& partition_path,
+      bool in_memory,
+      content::ProtocolHandlerMap* protocol_handlers,
+      content::URLRequestInterceptorScopedVector request_interceptors) override;
 
   net::URLRequestContextGetter* url_request_context_getter() const {
     return url_request_getter_.get();

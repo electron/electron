@@ -143,7 +143,7 @@ net::URLRequestContextGetter* BrowserContext::CreateRequestContext(
   url_request_getter_ = new URLRequestContextGetter(
       this,
       network_controller_handle(),
-      net_log_,
+      &net_log_,
       GetPath(),
       in_memory_,
       BrowserThread::UnsafeGetMessageLoopForThread(BrowserThread::IO),
@@ -223,6 +223,15 @@ content::PermissionManager* BrowserContext::GetPermissionManager() {
 }
 
 content::BackgroundSyncController* BrowserContext::GetBackgroundSyncController() {
+  return nullptr;
+}
+
+net::URLRequestContextGetter*
+BrowserContext::CreateRequestContextForStoragePartition(
+    const base::FilePath& partition_path,
+    bool in_memory,
+    content::ProtocolHandlerMap* protocol_handlers,
+    content::URLRequestInterceptorScopedVector request_interceptors) {
   return nullptr;
 }
 

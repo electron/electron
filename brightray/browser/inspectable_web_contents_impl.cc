@@ -190,7 +190,7 @@ InspectableWebContentsView* CreateInspectableContentsView(
     InspectableWebContentsImpl* inspectable_web_contents_impl);
 
 void InspectableWebContentsImpl::RegisterPrefs(PrefRegistrySimple* registry) {
-  auto bounds_dict = make_std::unique_ptr(new base::DictionaryValue);
+  std::unique_ptr<base::DictionaryValue> bounds_dict(new base::DictionaryValue);
   RectToDictionary(gfx::Rect(0, 0, 800, 600), bounds_dict.get());
   registry->RegisterDictionaryPref(kDevToolsBoundsPref, bounds_dict.release());
   registry->RegisterDoublePref(kDevToolsZoomPref, 0.);
