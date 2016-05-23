@@ -323,6 +323,23 @@ session.fromPartition(partition).setPermissionRequestHandler((webContents, permi
 
 Clears the host resolver cache.
 
+#### `ses.allowNTLMCredentialsForDomains(domains)`
+
+* `domains` String - A comma-seperated list of servers for which
+  integrated authentication is enabled.
+
+Dynamically sets whether to always send credentials for HTTP NTLM or Negotiate
+authentication.
+
+```javascript
+// consider any url ending with `example.com`, `foobar.com`, `baz`
+// for integrated authentication.
+session.defaultSession.allowNTLMCredentialsForDomains('*example.com, *foobar.com, *baz')
+
+// consider all urls for integrated authentication.
+session.defaultSession.allowNTLMCredentialsForDomains('*')
+```
+
 #### `ses.webRequest`
 
 The `webRequest` API set allows to intercept and modify contents of a request at
