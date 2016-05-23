@@ -14,6 +14,7 @@
 #include "base/strings/string16.h"
 #include "atom/browser/browser_observer.h"
 #include "atom/browser/window_list_observer.h"
+#include "native_mate/arguments.h"
 
 #if defined(OS_WIN)
 #include "base/files/file_path.h"
@@ -94,7 +95,8 @@ class Browser : public WindowListObserver {
 
   // Creates an activity and sets it as the one currently in use.
   void SetUserActivity(const std::string& type,
-                       const base::DictionaryValue& user_info);
+                       const base::DictionaryValue& user_info,
+                       mate::Arguments* args);
 
   // Returns the type name of the current user activity.
   std::string GetCurrentActivityType();
