@@ -33,10 +33,10 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
 * `options` Object
   * `width` Integer - Window's width in pixels. Default is `800`.
   * `height` Integer - Window's height in pixels. Default is `600`.
-  * `x` Integer - Window's left offset from screen. Default is to center the
-    window.
-  * `y` Integer - Window's top offset from screen. Default is to center the
-    window.
+  * `x` Integer (**required** if y is used) - Window's left offset from screen.
+    Default is to center the window.
+  * `y` Integer (**required** if x is used) - Window's top offset from screen.
+    Default is to center the window.
   * `useContentSize` Boolean - The `width` and `height` would be used as web
     page's size, which means the actual window's size will include window
     frame's size and be slightly larger. Default is `false`.
