@@ -707,7 +707,7 @@ bool NativeWindowMac::IsResizable() {
 }
 
 void NativeWindowMac::SetAspectRatio(double aspect_ratio,
-    const gfx::Size& extra_size) {
+                                     const gfx::Size& extra_size) {
     NativeWindow::SetAspectRatio(aspect_ratio, extra_size);
 
     // We can't just pass the aspect ratio to Cocoa, since our API receives
