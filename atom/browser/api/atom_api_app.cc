@@ -319,7 +319,7 @@ void App::AllowCertificateError(
 void App::SelectClientCertificate(
     content::WebContents* web_contents,
     net::SSLCertRequestInfo* cert_request_info,
-    scoped_ptr<content::ClientCertificateDelegate> delegate) {
+    std::unique_ptr<content::ClientCertificateDelegate> delegate) {
   std::shared_ptr<content::ClientCertificateDelegate>
       shared_delegate(delegate.release());
   bool prevent_default =
@@ -370,7 +370,7 @@ void App::SetPath(mate::Arguments* args,
 
 void App::SetDesktopName(const std::string& desktop_name) {
 #if defined(OS_LINUX)
-  scoped_ptr<base::Environment> env(base::Environment::Create());
+  std::unique_ptr<base::Environment> env(base::Environment::Create());
   env->SetVar("CHROME_DESKTOP", desktop_name);
 #endif
 }
@@ -413,7 +413,7 @@ void App::ImportCertificate(
     const net::CompletionCallback& callback) {
   auto browser_context = AtomBrowserMainParts::Get()->browser_context();
   if (!certificate_manager_model_) {
-    scoped_ptr<base::DictionaryValue> copy = options.CreateDeepCopy();
+    std::unique_ptr<base::DictionaryValue> copy = options.CreateDeepCopy();
     CertificateManagerModel::Create(browser_context,
         base::Bind(&App::OnCertificateManagerModelCreated,
                    base::Unretained(this),
@@ -427,9 +427,9 @@ void App::ImportCertificate(
 }
 
 void App::OnCertificateManagerModelCreated(
-    scoped_ptr<base::DictionaryValue> options,
+    std::unique_ptr<base::DictionaryValue> options,
     const net::CompletionCallback& callback,
-    scoped_ptr<CertificateManagerModel> model) {
+    std::unique_ptr<CertificateManagerModel> model) {
   certificate_manager_model_ = std::move(model);
   int rv = ImportIntoCertStore(certificate_manager_model_.get(),
                                *(options.get()));

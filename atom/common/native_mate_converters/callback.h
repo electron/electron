@@ -13,7 +13,6 @@
 #include "base/memory/weak_ptr.h"
 #include "native_mate/function_template.h"
 #include "native_mate/scoped_persistent.h"
-#include "third_party/WebKit/public/web/WebScopedMicrotaskSuppression.h"
 
 namespace mate {
 
@@ -49,9 +48,11 @@ struct V8FunctionInvoker<v8::Local<v8::Value>(ArgTypes...)> {
     v8::EscapableHandleScope handle_scope(isolate);
     if (!function.IsAlive())
       return v8::Null(isolate);
-    scoped_ptr<blink::WebScopedRunV8Script> script_scope(
+    std::unique_ptr<v8::MicrotasksScope> script_scope(
         Locker::IsBrowserProcess() ?
-        nullptr : new blink::WebScopedRunV8Script);
+            nullptr :
+            new v8::MicrotasksScope(isolate,
+                                    v8::MicrotasksScope::kRunMicrotasks));
     v8::Local<v8::Function> holder = function.NewHandle(isolate);
     v8::Local<v8::Context> context = holder->CreationContext();
     v8::Context::Scope context_scope(context);
@@ -70,9 +71,11 @@ struct V8FunctionInvoker<void(ArgTypes...)> {
     v8::HandleScope handle_scope(isolate);
     if (!function.IsAlive())
       return;
-    scoped_ptr<blink::WebScopedRunV8Script> script_scope(
+    std::unique_ptr<v8::MicrotasksScope> script_scope(
         Locker::IsBrowserProcess() ?
-        nullptr : new blink::WebScopedRunV8Script);
+            nullptr :
+            new v8::MicrotasksScope(isolate,
+                                    v8::MicrotasksScope::kRunMicrotasks));
     v8::Local<v8::Function> holder = function.NewHandle(isolate);
     v8::Local<v8::Context> context = holder->CreationContext();
     v8::Context::Scope context_scope(context);
@@ -91,9 +94,11 @@ struct V8FunctionInvoker<ReturnType(ArgTypes...)> {
     ReturnType ret = ReturnType();
     if (!function.IsAlive())
       return ret;
-    scoped_ptr<blink::WebScopedRunV8Script> script_scope(
+    std::unique_ptr<v8::MicrotasksScope> script_scope(
         Locker::IsBrowserProcess() ?
-        nullptr : new blink::WebScopedRunV8Script);
+            nullptr :
+            new v8::MicrotasksScope(isolate,
+                                    v8::MicrotasksScope::kRunMicrotasks));
     v8::Local<v8::Function> holder = function.NewHandle(isolate);
     v8::Local<v8::Context> context = holder->CreationContext();
     v8::Context::Scope context_scope(context);

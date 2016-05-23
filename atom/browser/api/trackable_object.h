@@ -123,7 +123,7 @@ class TrackableObject : public TrackableObjectBase,
 
  private:
   static int32_t next_id_;
-  static scoped_ptr<atom::KeyWeakMap<int32_t>> weak_map_;
+  static std::unique_ptr<atom::KeyWeakMap<int32_t>> weak_map_;
 
   DISALLOW_COPY_AND_ASSIGN(TrackableObject);
 };
@@ -132,7 +132,7 @@ template<typename T>
 int32_t TrackableObject<T>::next_id_ = 0;
 
 template<typename T>
-scoped_ptr<atom::KeyWeakMap<int32_t>> TrackableObject<T>::weak_map_;
+std::unique_ptr<atom::KeyWeakMap<int32_t>> TrackableObject<T>::weak_map_;
 
 }  // namespace mate
 

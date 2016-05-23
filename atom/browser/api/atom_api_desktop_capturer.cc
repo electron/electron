@@ -61,9 +61,9 @@ void DesktopCapturer::StartHandling(bool capture_window,
   options.set_disable_effects(false);
 #endif
 
-  scoped_ptr<webrtc::ScreenCapturer> screen_capturer(
+  std::unique_ptr<webrtc::ScreenCapturer> screen_capturer(
       capture_screen ? webrtc::ScreenCapturer::Create(options) : nullptr);
-  scoped_ptr<webrtc::WindowCapturer> window_capturer(
+  std::unique_ptr<webrtc::WindowCapturer> window_capturer(
       capture_window ? webrtc::WindowCapturer::Create(options) : nullptr);
   media_list_.reset(new NativeDesktopMediaList(
       std::move(screen_capturer), std::move(window_capturer)));

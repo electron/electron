@@ -65,7 +65,7 @@
 continueUserActivity:(NSUserActivity*)userActivity
   restorationHandler:(void (^)(NSArray*restorableObjects))restorationHandler {
   std::string activity_type(base::SysNSStringToUTF8(userActivity.activityType));
-  scoped_ptr<base::DictionaryValue> user_info =
+  std::unique_ptr<base::DictionaryValue> user_info =
       atom::NSDictionaryToDictionaryValue(userActivity.userInfo);
   if (!user_info)
     return NO;

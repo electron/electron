@@ -9,15 +9,13 @@
 #include <vector>
 
 #include "content/public/renderer/content_renderer_client.h"
-#include "content/public/renderer/render_process_observer.h"
 
 namespace atom {
 
 class AtomBindings;
 class NodeBindings;
 
-class AtomRendererClient : public content::ContentRendererClient,
-                           public content::RenderProcessObserver {
+class AtomRendererClient : public content::ContentRendererClient {
  public:
   AtomRendererClient();
   virtual ~AtomRendererClient();
@@ -32,9 +30,6 @@ class AtomRendererClient : public content::ContentRendererClient,
     MANUAL_ENABLE_IFRAME,
     DISABLE,
   };
-
-  // content::RenderProcessObserver:
-  void WebKitInitialized() override;
 
   // content::ContentRendererClient:
   void RenderThreadStarted() override;
@@ -64,8 +59,8 @@ class AtomRendererClient : public content::ContentRendererClient,
                                  std::string* error_html,
                                  base::string16* error_description) override;
 
-  scoped_ptr<NodeBindings> node_bindings_;
-  scoped_ptr<AtomBindings> atom_bindings_;
+  std::unique_ptr<NodeBindings> node_bindings_;
+  std::unique_ptr<AtomBindings> atom_bindings_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomRendererClient);
 };

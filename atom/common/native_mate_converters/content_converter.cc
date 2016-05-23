@@ -121,18 +121,18 @@ v8::Local<v8::Value> Converter<ContextMenuParamsWithWebContents>::ToV8(
 }
 
 // static
-bool Converter<content::PermissionStatus>::FromV8(
+bool Converter<blink::mojom::PermissionStatus>::FromV8(
     v8::Isolate* isolate,
     v8::Local<v8::Value> val,
-    content::PermissionStatus* out) {
+    blink::mojom::PermissionStatus* out) {
   bool result;
   if (!ConvertFromV8(isolate, val, &result))
     return false;
 
   if (result)
-    *out = content::PermissionStatus::GRANTED;
+    *out = blink::mojom::PermissionStatus::GRANTED;
   else
-    *out = content::PermissionStatus::DENIED;
+    *out = blink::mojom::PermissionStatus::DENIED;
 
   return true;
 }

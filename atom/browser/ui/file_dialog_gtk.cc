@@ -177,7 +177,7 @@ void FileChooserDialog::AddFilters(const Filters& filters) {
     GtkFileFilter* gtk_filter = gtk_file_filter_new();
 
     for (size_t j = 0; j < filter.second.size(); ++j) {
-      scoped_ptr<std::string> file_extension(
+      std::unique_ptr<std::string> file_extension(
           new std::string("." + filter.second[j]));
       gtk_file_filter_add_custom(
           gtk_filter,

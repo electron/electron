@@ -17,7 +17,7 @@ v8::Local<v8::Value> CallEmitWithArgs(v8::Isolate* isolate,
                                       v8::Local<v8::Object> obj,
                                       ValueVector* args) {
   // Perform microtask checkpoint after running JavaScript.
-  scoped_ptr<blink::WebScopedRunV8Script> script_scope(
+  std::unique_ptr<blink::WebScopedRunV8Script> script_scope(
       Locker::IsBrowserProcess() ?
       nullptr : new blink::WebScopedRunV8Script);
   // Use node::MakeCallback to call the callback, and it will also run pending

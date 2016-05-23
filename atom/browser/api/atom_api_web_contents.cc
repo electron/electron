@@ -155,7 +155,7 @@ struct Converter<net::HttpResponseHeaders*> {
           if (response_headers.GetList(key, &values))
             values->AppendString(value);
         } else {
-          scoped_ptr<base::ListValue> values(new base::ListValue());
+          std::unique_ptr<base::ListValue> values(new base::ListValue());
           values->AppendString(value);
           response_headers.Set(key, std::move(values));
         }
@@ -1125,7 +1125,7 @@ void WebContents::BeginFrameSubscription(
     const FrameSubscriber::FrameCaptureCallback& callback) {
   const auto view = web_contents()->GetRenderWidgetHostView();
   if (view) {
-    scoped_ptr<FrameSubscriber> frame_subscriber(new FrameSubscriber(
+    std::unique_ptr<FrameSubscriber> frame_subscriber(new FrameSubscriber(
         isolate(), view, callback));
     view->BeginFrameSubscription(std::move(frame_subscriber));
   }

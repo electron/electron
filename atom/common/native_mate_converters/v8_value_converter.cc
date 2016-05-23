@@ -288,7 +288,7 @@ base::Value* V8ValueConverter::FromV8Array(
   if (!state->UpdateAndCheckUniqueness(val))
     return base::Value::CreateNullValue().release();
 
-  scoped_ptr<v8::Context::Scope> scope;
+  std::unique_ptr<v8::Context::Scope> scope;
   // If val was created in a different context than our current one, change to
   // that context, but change back after val is converted.
   if (!val->CreationContext().IsEmpty() &&
@@ -335,14 +335,14 @@ base::Value* V8ValueConverter::FromV8Object(
   if (!state->UpdateAndCheckUniqueness(val))
     return base::Value::CreateNullValue().release();
 
-  scoped_ptr<v8::Context::Scope> scope;
+  std::unique_ptr<v8::Context::Scope> scope;
   // If val was created in a different context than our current one, change to
   // that context, but change back after val is converted.
   if (!val->CreationContext().IsEmpty() &&
       val->CreationContext() != isolate->GetCurrentContext())
     scope.reset(new v8::Context::Scope(val->CreationContext()));
 
-  scoped_ptr<base::DictionaryValue> result(new base::DictionaryValue());
+  std::unique_ptr<base::DictionaryValue> result(new base::DictionaryValue());
   v8::Local<v8::Array> property_names(val->GetOwnPropertyNames());
 
   for (uint32_t i = 0; i < property_names->Length(); ++i) {
@@ -371,7 +371,7 @@ base::Value* V8ValueConverter::FromV8Object(
       child_v8 = v8::Null(isolate);
     }
 
-    scoped_ptr<base::Value> child(FromV8ValueImpl(state, child_v8, isolate));
+    std::unique_ptr<base::Value> child(FromV8ValueImpl(state, child_v8, isolate));
     if (!child.get())
       // JSON.stringify skips properties whose values don't serialize, for
       // example undefined and functions. Emulate that behavior.

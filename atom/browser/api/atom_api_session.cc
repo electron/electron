@@ -369,7 +369,7 @@ void Session::SetDownloadPath(const base::FilePath& path) {
 }
 
 void Session::EnableNetworkEmulation(const mate::Dictionary& options) {
-  scoped_ptr<brightray::DevToolsNetworkConditions> conditions;
+  std::unique_ptr<brightray::DevToolsNetworkConditions> conditions;
   bool offline = false;
   double latency, download_throughput, upload_throughput;
   if (options.Get("offline", &offline) && offline) {
@@ -392,7 +392,7 @@ void Session::EnableNetworkEmulation(const mate::Dictionary& options) {
 }
 
 void Session::DisableNetworkEmulation() {
-  scoped_ptr<brightray::DevToolsNetworkConditions> conditions;
+  std::unique_ptr<brightray::DevToolsNetworkConditions> conditions;
   browser_context_->network_controller_handle()->SetNetworkState(
       devtools_network_emulation_client_id_, std::move(conditions));
   browser_context_->network_delegate()->SetDevToolsNetworkEmulationClientId(

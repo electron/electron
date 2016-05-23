@@ -18,7 +18,7 @@ namespace atom {
 
 NSDictionary* DictionaryValueToNSDictionary(const base::DictionaryValue& value);
 
-scoped_ptr<base::DictionaryValue> NSDictionaryToDictionaryValue(
+std::unique_ptr<base::DictionaryValue> NSDictionaryToDictionaryValue(
     NSDictionary* dict);
 
 }  // namespace atom

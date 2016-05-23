@@ -222,7 +222,7 @@ void ShowMessageBox(NativeWindow* parent,
                     const std::string& detail,
                     const gfx::ImageSkia& icon,
                     const MessageBoxCallback& callback) {
-  scoped_ptr<base::Thread> thread(
+  std::unique_ptr<base::Thread> thread(
       new base::Thread(ATOM_PRODUCT_NAME "MessageBoxThread"));
   thread->init_com_with_mta(false);
   if (!thread->Start()) {

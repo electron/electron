@@ -19,7 +19,7 @@ class URLRequestBufferJob : public JsAsker<net::URLRequestSimpleJob> {
   URLRequestBufferJob(net::URLRequest*, net::NetworkDelegate*);
 
   // JsAsker:
-  void StartAsync(scoped_ptr<base::Value> options) override;
+  void StartAsync(std::unique_ptr<base::Value> options) override;
 
   // URLRequestJob:
   void GetResponseInfo(net::HttpResponseInfo* info) override;

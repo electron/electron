@@ -70,7 +70,7 @@ void PowerSaveBlocker::UpdatePowerSaveBlocker() {
   }
 
   if (!power_save_blocker_ || new_blocker_type != current_blocker_type_) {
-    scoped_ptr<content::PowerSaveBlocker> new_blocker =
+    std::unique_ptr<content::PowerSaveBlocker> new_blocker =
         content::PowerSaveBlocker::Create(
             new_blocker_type,
             content::PowerSaveBlocker::kReasonOther,

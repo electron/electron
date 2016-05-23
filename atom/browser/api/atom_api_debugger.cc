@@ -52,7 +52,7 @@ void Debugger::DispatchProtocolMessage(DevToolsAgentHost* agent_host,
                                        const std::string& message) {
   DCHECK(agent_host == agent_host_.get());
 
-  scoped_ptr<base::Value> parsed_message(base::JSONReader::Read(message));
+  std::unique_ptr<base::Value> parsed_message(base::JSONReader::Read(message));
   if (!parsed_message->IsType(base::Value::TYPE_DICTIONARY))
     return;
 

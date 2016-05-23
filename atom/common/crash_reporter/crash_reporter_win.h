@@ -62,7 +62,7 @@ class CrashReporterWin : public CrashReporter {
   google_breakpad::CustomClientInfo custom_info_;
 
   bool skip_system_crash_handler_;
-  scoped_ptr<google_breakpad::ExceptionHandler> breakpad_;
+  std::unique_ptr<google_breakpad::ExceptionHandler> breakpad_;
 
   DISALLOW_COPY_AND_ASSIGN(CrashReporterWin);
 };

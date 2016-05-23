@@ -180,7 +180,7 @@ bool Archive::Init() {
 
   std::string error;
   base::JSONReader reader;
-  scoped_ptr<base::Value> value(reader.ReadToValue(header));
+  std::unique_ptr<base::Value> value(reader.ReadToValue(header));
   if (!value || !value->IsType(base::Value::TYPE_DICTIONARY)) {
     LOG(ERROR) << "Failed to parse header: " << error;
     return false;
@@ -283,7 +283,7 @@ bool Archive::CopyFileOut(const base::FilePath& path, base::FilePath* out) {
     return true;
   }
 
-  scoped_ptr<ScopedTemporaryFile> temp_file(new ScopedTemporaryFile);
+  std::unique_ptr<ScopedTemporaryFile> temp_file(new ScopedTemporaryFile);
   base::FilePath::StringType ext = path.Extension();
   if (!temp_file->InitFromFile(&file_, ext, info.offset, info.size))
     return false;

@@ -25,12 +25,12 @@ class AtomURLRequestJobFactory : public net::URLRequestJobFactory {
   // failure (a ProtocolHandler already exists for |scheme|). On success,
   // URLRequestJobFactory takes ownership of |protocol_handler|.
   bool SetProtocolHandler(
-      const std::string& scheme, scoped_ptr<ProtocolHandler> protocol_handler);
+      const std::string& scheme, std::unique_ptr<ProtocolHandler> protocol_handler);
 
   // Intercepts the ProtocolHandler for a scheme. Returns the original protocol
   // handler on success, otherwise returns NULL.
-  scoped_ptr<ProtocolHandler> ReplaceProtocol(
-      const std::string& scheme, scoped_ptr<ProtocolHandler> protocol_handler);
+  std::unique_ptr<ProtocolHandler> ReplaceProtocol(
+      const std::string& scheme, std::unique_ptr<ProtocolHandler> protocol_handler);
 
   // Returns the protocol handler registered with scheme.
   ProtocolHandler* GetProtocolHandler(const std::string& scheme) const;

@@ -38,7 +38,7 @@ class NodeDebugger : public net::test_server::StreamListenSocket::Delegate {
   // net::test_server::StreamListenSocket::Delegate:
   void DidAccept(
       net::test_server::StreamListenSocket* server,
-      scoped_ptr<net::test_server::StreamListenSocket> socket) override;
+      std::unique_ptr<net::test_server::StreamListenSocket> socket) override;
   void DidRead(net::test_server::StreamListenSocket* socket,
                const char* data,
                int len) override;
@@ -49,8 +49,8 @@ class NodeDebugger : public net::test_server::StreamListenSocket::Delegate {
   uv_async_t weak_up_ui_handle_;
 
   base::Thread thread_;
-  scoped_ptr<net::test_server::StreamListenSocket> server_;
-  scoped_ptr<net::test_server::StreamListenSocket> accepted_socket_;
+  std::unique_ptr<net::test_server::StreamListenSocket> server_;
+  std::unique_ptr<net::test_server::StreamListenSocket> accepted_socket_;
 
   std::string buffer_;
   int content_length_;
