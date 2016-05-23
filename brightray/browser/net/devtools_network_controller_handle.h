@@ -5,6 +5,7 @@
 #ifndef BROWSER_DEVTOOLS_NETWORK_CONTROLLER_HANDLE_H_
 #define BROWSER_DEVTOOLS_NETWORK_CONTROLLER_HANDLE_H_
 
+#include <memory>
 #include <string>
 
 #include "base/macros.h"
