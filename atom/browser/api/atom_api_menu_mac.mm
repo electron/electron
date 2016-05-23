@@ -54,7 +54,7 @@ void MenuMac::PopupAt(Window* window, int x, int y, int positioning_item) {
     CGFloat windowBottom = CGRectGetMinY([view window].frame);
     CGFloat distaceFromBottom = windowBottom + position.y - [menu size].height;
     if (distaceFromBottom < 0)
-      position.y = position.y - distaceFromBottom;
+      position.y = position.y - distaceFromBottom + 4;
   }
 
   // Place the menu left of cursor if it is overflowing off right of screen.
