@@ -230,7 +230,7 @@ describe('node feature', function () {
     })
   })
 
-  describe.only('require("electron")', function () {
+  describe('require("electron")', function () {
     let window = null
 
     beforeEach(function () {
