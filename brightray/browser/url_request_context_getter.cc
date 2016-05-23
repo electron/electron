@@ -93,33 +93,13 @@ const char kProxyPacUrl[] = "proxy-pac-url";
 // Disable HTTP/2 and SPDY/3.1 protocols.
 const char kDisableHttp2[] = "disable-http2";
 
+// Whitelist containing servers for which Integrated Authentication is enabled.
+const char kAuthServerWhitelist[] = "auth-server-whitelist";
+
+// Whitelist containing servers for which Kerberos delegation is allowed.
+const char kAuthNegotiateDelegateWhitelist[] = "auth-negotiate-delegate-whitelist";
+
 }  // namespace
-
-
-URLRequestContextGetter::DelegateURLSecurityManager::DelegateURLSecurityManager
-  (URLRequestContextGetter::Delegate* delegate) :
-  delegate_(delegate) {}
-
-bool URLRequestContextGetter::DelegateURLSecurityManager::CanUseDefaultCredentials
-    (const GURL& auth_origin) const {
-  return delegate_->AllowNTLMCredentialsForDomain(auth_origin);
-}
-
-bool URLRequestContextGetter::DelegateURLSecurityManager::CanDelegate
-    (const GURL& auth_origin) const {
-  return delegate_->CanDelegateURLSecurity(auth_origin);
-}
-
-void URLRequestContextGetter::DelegateURLSecurityManager::SetDefaultWhitelist(
-  std::unique_ptr<net::HttpAuthFilter> whitelist_default) {
-}
-
-void URLRequestContextGetter::DelegateURLSecurityManager::SetDelegateWhitelist(
-  std::unique_ptr<net::HttpAuthFilter> whitelist_delegate) {
-}
-
-URLRequestContextGetter::Delegate::Delegate() :
-  orig_url_sec_mgr_(net::URLSecurityManager::Create()) {}
 
 std::string URLRequestContextGetter::Delegate::GetUserAgent() {
   return base::EmptyString();
@@ -174,15 +154,6 @@ URLRequestContextGetter::Delegate::CreateCertVerifier() {
 net::SSLConfigService* URLRequestContextGetter::Delegate::CreateSSLConfigService() {
   return new net::SSLConfigServiceDefaults;
 }
-
-bool URLRequestContextGetter::Delegate::AllowNTLMCredentialsForDomain(const GURL& auth_origin) {
-  return orig_url_sec_mgr_->CanUseDefaultCredentials(auth_origin);
-}
-
-bool URLRequestContextGetter::Delegate::CanDelegateURLSecurity(const GURL& auth_origin) {
-  return orig_url_sec_mgr_->CanDelegate(auth_origin);
-}
-
 
 URLRequestContextGetter::URLRequestContextGetter(
     Delegate* delegate,
@@ -318,6 +289,19 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
 #else
     http_auth_preferences_.reset(new net::HttpAuthPreferences(schemes));
 #endif
+
+    // --auth-server-whitelist
+    if (command_line.HasSwitch(kAuthServerWhitelist)) {
+      http_auth_preferences_->set_server_whitelist(
+          command_line.GetSwitchValueASCII(kAuthServerWhitelist));
+    }
+
+    // --auth-negotiate-delegate-whitelist
+    if (command_line.HasSwitch(kAuthNegotiateDelegateWhitelist)) {
+      http_auth_preferences_->set_delegate_whitelist(
+          command_line.GetSwitchValueASCII(kAuthNegotiateDelegateWhitelist));
+    }
+
     auto auth_handler_factory =
         net::HttpAuthHandlerRegistryFactory::Create(
             http_auth_preferences_.get(), host_resolver.get());
