@@ -5,6 +5,7 @@
 #ifndef BRIGHTRAY_BROWSER_BROWSER_CLIENT_H_
 #define BRIGHTRAY_BROWSER_BROWSER_CLIENT_H_
 
+#include "browser/net_log.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/content_browser_client.h"
 
@@ -33,13 +34,6 @@ class BrowserClient : public content::ContentBrowserClient {
     callback.Run(true);
   }
 
- protected:
-  // Subclasses should override this to provide their own BrowserMainParts
-  // implementation. The lifetime of the returned instance is managed by the
-  // caller.
-  virtual BrowserMainParts* OverrideCreateBrowserMainParts(
-      const content::MainFunctionParams&);
-
   // Subclasses that override this (e.g., to provide their own protocol
   // handlers) should call this implementation after doing their own work.
   content::BrowserMainParts* CreateBrowserMainParts(
@@ -48,12 +42,21 @@ class BrowserClient : public content::ContentBrowserClient {
   content::PlatformNotificationService* GetPlatformNotificationService() override;
   void GetAdditionalAllowedSchemesForFileSystem(
       std::vector<std::string>* additional_schemes) override;
+  net::NetLog* GetNetLog() override;
   base::FilePath GetDefaultDownloadDirectory() override;
   content::DevToolsManagerDelegate* GetDevToolsManagerDelegate() override;
 
-  BrowserMainParts* browser_main_parts_;
+ protected:
+  // Subclasses should override this to provide their own BrowserMainParts
+  // implementation. The lifetime of the returned instance is managed by the
+  // caller.
+  virtual BrowserMainParts* OverrideCreateBrowserMainParts(
+      const content::MainFunctionParams&);
 
  private:
+  BrowserMainParts* browser_main_parts_;
+  NetLog net_log_;
+
   std::unique_ptr<PlatformNotificationService> notification_service_;
   std::unique_ptr<NotificationPresenter> notification_presenter_;
 

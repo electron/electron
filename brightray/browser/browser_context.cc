@@ -5,6 +5,7 @@
 #include "browser/browser_context.h"
 
 #include "browser/brightray_paths.h"
+#include "browser/browser_client.h"
 #include "browser/inspectable_web_contents_impl.h"
 #include "browser/network_delegate.h"
 #include "browser/permission_manager.h"
@@ -145,7 +146,7 @@ net::URLRequestContextGetter* BrowserContext::CreateRequestContext(
   url_request_getter_ = new URLRequestContextGetter(
       this,
       network_controller_handle(),
-      &net_log_,
+      static_cast<NetLog*>(BrowserClient::Get()->GetNetLog()),
       GetPath(),
       in_memory_,
       BrowserThread::UnsafeGetMessageLoopForThread(BrowserThread::IO),

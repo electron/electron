@@ -7,7 +7,6 @@
 
 #include <map>
 
-#include "browser/net_log.h"
 #include "browser/net/devtools_network_controller_handle.h"
 #include "browser/permission_manager.h"
 #include "browser/url_request_context_getter.h"
@@ -25,7 +24,6 @@ class SpecialStoragePolicy;
 
 namespace brightray {
 
-class NetLog;
 class PermissionManager;
 
 class BrowserContext : public base::RefCounted<BrowserContext>,
@@ -122,7 +120,6 @@ class BrowserContext : public base::RefCounted<BrowserContext>,
   bool in_memory_;
 
   DevToolsNetworkControllerHandle network_controller_handle_;
-  NetLog net_log_;
 
   std::unique_ptr<ResourceContext> resource_context_;
   scoped_refptr<URLRequestContextGetter> url_request_getter_;
