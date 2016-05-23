@@ -110,6 +110,8 @@ BrowserContext::BrowserContext(const std::string& partition, bool in_memory)
   if (!in_memory_ && !partition.empty())
     path_ = path_.Append(FILE_PATH_LITERAL("Partitions"))
                  .Append(base::FilePath::FromUTF8Unsafe(MakePartitionName(partition)));
+
+  content::BrowserContext::Initialize(this, path_);
 }
 
 void BrowserContext::InitPrefs() {
