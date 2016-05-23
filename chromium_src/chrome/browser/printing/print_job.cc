@@ -306,7 +306,7 @@ void PrintJob::OnPdfToEmfPageConverted(int page_number,
 
   // Update the rendered document. It will send notifications to the listener.
   document_->SetPage(page_number,
-                     emf.Pass(),
+                     std::move(emf),
                      scale_factor,
                      ptd_to_emf_state_->page_size(),
                      ptd_to_emf_state_->content_area());

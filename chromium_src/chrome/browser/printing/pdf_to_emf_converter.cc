@@ -58,7 +58,7 @@ typedef std::unique_ptr<base::File, BrowserThread::DeleteOnFileThread>
 class LazyEmf : public MetafilePlayer {
  public:
   LazyEmf(const scoped_refptr<RefCountedTempDir>& temp_dir, ScopedTempFile file)
-      : temp_dir_(temp_dir), file_(file.Pass()) {}
+      : temp_dir_(temp_dir), file_(std::move(file)) {}
   virtual ~LazyEmf() { Close(); }
 
   virtual bool SafePlayback(HDC hdc) const override;
@@ -131,8 +131,8 @@ class PdfToEmfUtilityProcessHostClient
     const PdfToEmfConverter::GetPageCallback& callback() const {
       return callback_;
     }
-    ScopedTempFile emf() { return emf_.Pass(); }
-    void set_emf(ScopedTempFile emf) { emf_ = emf.Pass(); }
+    ScopedTempFile TakeEmf() { return std::move(emf_); }
+    void set_emf(ScopedTempFile emf) { emf_ = std::move(emf); }
 
    private:
     int page_number_;
@@ -203,10 +203,10 @@ ScopedTempFile CreateTempFile(scoped_refptr<RefCountedTempDir>* temp_dir) {
     *temp_dir = new RefCountedTempDir();
   ScopedTempFile file;
   if (!(*temp_dir)->IsValid())
-    return file.Pass();
+    return file;
   base::FilePath path;
   if (!base::CreateTemporaryFileInDir((*temp_dir)->GetPath(), &path))
-    return file.Pass();
+    return file;
   file.reset(new base::File(path,
                             base::File::FLAG_CREATE_ALWAYS |
                             base::File::FLAG_WRITE |
@@ -215,7 +215,7 @@ ScopedTempFile CreateTempFile(scoped_refptr<RefCountedTempDir>* temp_dir) {
                             base::File::FLAG_TEMPORARY));
   if (!file->IsValid())
     file.reset();
-  return file.Pass();
+  return file;
 }
 
 ScopedTempFile CreateTempPdfFile(
@@ -230,7 +230,7 @@ ScopedTempFile CreateTempPdfFile(
     pdf_file.reset();
   }
   pdf_file->Seek(base::File::FROM_BEGIN, 0);
-  return pdf_file.Pass();
+  return pdf_file;
 }
 
 bool LazyEmf::SafePlayback(HDC hdc) const {
@@ -319,12 +319,11 @@ void PdfToEmfUtilityProcessHostClient::OnProcessStarted() {
 
 void PdfToEmfUtilityProcessHostClient::OnTempPdfReady(ScopedTempFile pdf) {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
-  if (!utility_process_host_)
+  if (!utility_process_host_ || !pdf)
     return OnFailed();
-  base::ProcessHandle process = utility_process_host_->GetData().handle;
   // Should reply with OnPageCount().
   Send(new ChromeUtilityMsg_RenderPDFPagesToMetafiles(
-      IPC::GetFileHandleForProcess(pdf->GetPlatformFile(), process, false),
+      IPC::GetPlatformFileForTransit(pdf->GetPlatformFile(), false),
       settings_));
 }
 
@@ -373,12 +372,11 @@ void PdfToEmfUtilityProcessHostClient::OnTempEmfReady(
     GetPageCallbackData* callback_data,
     ScopedTempFile emf) {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
-  if (!utility_process_host_)
+  if (!utility_process_host_ || !emf)
     return OnFailed();
-  base::ProcessHandle process = utility_process_host_->GetData().handle;
   IPC::PlatformFileForTransit transit =
-      IPC::GetFileHandleForProcess(emf->GetPlatformFile(), process, false);
-  callback_data->set_emf(emf.Pass());
+      IPC::GetPlatformFileForTransit(emf->GetPlatformFile(), false);
+  callback_data->set_emf(std::move(emf));
   // Should reply with OnPageDone().
   Send(new ChromeUtilityMsg_RenderPDFPagesToMetafiles_GetPage(
       callback_data->page_number(), transit));
@@ -389,10 +387,16 @@ void PdfToEmfUtilityProcessHostClient::OnPageDone(bool success,
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
   if (get_page_callbacks_.empty())
     return OnFailed();
-  std::unique_ptr<MetafilePlayer> emf;
   GetPageCallbackData& data = get_page_callbacks_.front();
-  if (success)
-    emf.reset(new LazyEmf(temp_dir_, data.emf().Pass()));
+  std::unique_ptr<MetafilePlayer> emf;
+
+  if (success) {
+    ScopedTempFile temp_emf = data.TakeEmf();
+    if (!temp_emf)  // Unexpected message from utility process.
+      return OnFailed();
+    emf.reset(new LazyEmf(temp_dir_, std::move(temp_emf)));
+  }
+
   BrowserThread::PostTask(BrowserThread::UI,
                           FROM_HERE,
                           base::Bind(&PdfToEmfConverterImpl::RunCallback,
