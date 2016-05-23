@@ -23,11 +23,6 @@ describe('crash-reporter module', function () {
     w.destroy()
   })
 
-  // It is not working on 64bit Windows.
-  if (process.platform === 'win32' && process.arch === 'x64') {
-    return
-  }
-
   if (process.mas) {
     return
   }

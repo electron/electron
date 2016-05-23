@@ -440,10 +440,12 @@ DWORD CrashService::AsyncSendDump(void* context) {
       // termination of the service object.
       base::AutoLock lock(info->self->sending_);
       VLOG(1) << "trying to send report for pid = " << info->pid;
+      std::map<std::wstring, std::wstring> file_map;
+      file_map[L"upload_file_minidump"] = info->dump_path;
       google_breakpad::ReportResult send_result
           = info->self->sender_->SendCrashReport(info->self->reporter_url_,
                                                  info->map,
-                                                 info->dump_path,
+                                                 file_map,
                                                  &report_id);
       switch (send_result) {
         case google_breakpad::RESULT_FAILED:
