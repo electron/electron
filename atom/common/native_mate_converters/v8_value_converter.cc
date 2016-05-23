@@ -371,7 +371,8 @@ base::Value* V8ValueConverter::FromV8Object(
       child_v8 = v8::Null(isolate);
     }
 
-    std::unique_ptr<base::Value> child(FromV8ValueImpl(state, child_v8, isolate));
+    std::unique_ptr<base::Value> child(
+        FromV8ValueImpl(state, child_v8, isolate));
     if (!child.get())
       // JSON.stringify skips properties whose values don't serialize, for
       // example undefined and functions. Emulate that behavior.

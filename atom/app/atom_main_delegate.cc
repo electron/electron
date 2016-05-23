@@ -134,7 +134,8 @@ content::ContentUtilityClient* AtomMainDelegate::CreateContentUtilityClient() {
   return utility_client_.get();
 }
 
-std::unique_ptr<brightray::ContentClient> AtomMainDelegate::CreateContentClient() {
+std::unique_ptr<brightray::ContentClient>
+AtomMainDelegate::CreateContentClient() {
   return std::unique_ptr<brightray::ContentClient>(new AtomContentClient);
 }
 

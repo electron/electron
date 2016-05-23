@@ -23,7 +23,8 @@ AtomURLRequestJobFactory::~AtomURLRequestJobFactory() {
 }
 
 bool AtomURLRequestJobFactory::SetProtocolHandler(
-    const std::string& scheme, std::unique_ptr<ProtocolHandler> protocol_handler) {
+    const std::string& scheme,
+    std::unique_ptr<ProtocolHandler> protocol_handler) {
   if (!protocol_handler) {
     ProtocolHandlerMap::iterator it = protocol_handler_map_.find(scheme);
     if (it == protocol_handler_map_.end())
@@ -41,7 +42,8 @@ bool AtomURLRequestJobFactory::SetProtocolHandler(
 }
 
 std::unique_ptr<ProtocolHandler> AtomURLRequestJobFactory::ReplaceProtocol(
-    const std::string& scheme, std::unique_ptr<ProtocolHandler> protocol_handler) {
+    const std::string& scheme,
+    std::unique_ptr<ProtocolHandler> protocol_handler) {
   if (!ContainsKey(protocol_handler_map_, scheme))
     return nullptr;
   ProtocolHandler* original_protocol_handler = protocol_handler_map_[scheme];
