@@ -4,7 +4,6 @@ const fs = require('fs')
 const path = require('path')
 const os = require('os')
 const {remote} = require('electron')
-const {BrowserWindow, ipcMain} = remote
 
 describe('node feature', function () {
   var fixtures = path.join(__dirname, 'fixtures')
@@ -227,35 +226,6 @@ describe('node feature', function () {
   describe('vm.createContext', function () {
     it('should not crash', function () {
       require('vm').runInNewContext('')
-    })
-  })
-
-  describe('require("electron")', function () {
-    let window = null
-
-    beforeEach(function () {
-      if (window != null) {
-        window.destroy()
-      }
-      window = new BrowserWindow({
-        show: false,
-        width: 400,
-        height: 400
-      })
-    })
-
-    afterEach(function () {
-      if (window != null) {
-        window.destroy()
-      }
-      window = null
-    })
-
-    it('always returns the internal electron module', function (done) {
-      ipcMain.once('answer', function () {
-        done()
-      })
-      window.loadURL('file://' + path.join(__dirname, 'fixtures', 'api', 'electron-module-app', 'index.html'))
     })
   })
 })
