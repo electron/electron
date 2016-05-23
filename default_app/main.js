@@ -238,7 +238,7 @@ function loadApplicationPackage (packagePath) {
       try {
         packageJson = JSON.parse(fs.readFileSync(packageJsonPath))
       } catch (e) {
-        showErrorMessage('Unable to parse package.json, it contains errors.\n\n' +
+        showErrorMessage('Unable to parse package.json.\n\n' +
           `${e.toString()} in ${packageJsonPath}`)
       }
       if (packageJson.version) app.setVersion(packageJson.version)
@@ -247,10 +247,6 @@ function loadApplicationPackage (packagePath) {
         app.setName(packageJson.productName)
       } else if (packageJson.name) {
         app.setName(packageJson.name)
-      }
-      if (!packageJson.main) {
-        showErrorMessage('App is missing \'main\' property in package.json.\n\n' +
-          `See: ${packageJsonPath}`)
       }
       app.setPath('userData', path.join(app.getPath('appData'), app.getName()))
       app.setPath('userCache', path.join(app.getPath('cache'), app.getName()))
