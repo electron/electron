@@ -104,7 +104,7 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
                                   node_integration ? "true" : "false");
 
   // The preload scripts.
-  base::ListValue* scripts;
+  base::ListValue* scripts = nullptr;
   base::FilePath::StringType preload;
 
   if (web_preferences.GetString(options::kPreloadScript, &preload) ||
