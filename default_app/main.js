@@ -242,8 +242,10 @@ function loadApplicationPackage (packagePath) {
         showErrorMessage(`Unable to parse ${packageJsonPath}\n\n${e.message}`)
         return
       }
-      if (packageJson.version) app.setVersion(packageJson.version)
 
+      if (packageJson.version) {
+        app.setVersion(packageJson.version)
+      }
       if (packageJson.productName) {
         app.setName(packageJson.productName)
       } else if (packageJson.name) {
