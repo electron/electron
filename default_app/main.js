@@ -1,6 +1,7 @@
 const {app, dialog, shell, Menu} = require('electron')
 
 const fs = require('fs')
+const Module = require('module')
 const path = require('path')
 const repl = require('repl')
 const url = require('url')
@@ -222,7 +223,7 @@ app.once('ready', () => {
 })
 
 if (option.modules.length > 0) {
-  require('module')._preloadModules(option.modules)
+  Module._preloadModules(option.modules)
 }
 
 function loadApplicationPackage (packagePath) {
@@ -238,11 +239,13 @@ function loadApplicationPackage (packagePath) {
       try {
         packageJson = JSON.parse(fs.readFileSync(packageJsonPath))
       } catch (e) {
-        showErrorMessage('Unable to parse package.json.\n\n' +
-          `${e.toString()} in ${packageJsonPath}`)
+        showErrorMessage(`Unable to parse ${packageJsonPath}\n\n${e.message}`)
+        return
       }
-      if (packageJson.version) app.setVersion(packageJson.version)
 
+      if (packageJson.version) {
+        app.setVersion(packageJson.version)
+      }
       if (packageJson.productName) {
         app.setName(packageJson.productName)
       } else if (packageJson.name) {
@@ -252,37 +255,26 @@ function loadApplicationPackage (packagePath) {
       app.setPath('userCache', path.join(app.getPath('cache'), app.getName()))
       app.setAppPath(packagePath)
     }
-    const Module = require('module')
+
     try {
       Module._resolveFilename(packagePath, module, true)
     } catch (e) {
-      showErrorMessage('Unable to find Electron app.\n\n' +
-        `See: ${packagePath}`)
+      showErrorMessage(`Unable to find Electron app at ${packagePath}\n\n${e.message}`)
+      return
     }
+
     // Run the app.
     Module._load(packagePath, module, true)
   } catch (e) {
-    if (e.code === 'MODULE_NOT_FOUND') {
-      showErrorMessage('Unable to open Electron app.\n\n' +
-        `${e.toString()}`)
-    } else {
-      console.error('App threw an error when running', e)
-      throw e
-    }
+    console.error('App threw an error during load')
+    console.error(e.stack || e)
+    throw e
   }
 }
 
 function showErrorMessage (message) {
   app.focus()
-  dialog.showMessageBox({
-    message: 'Error opening app',
-    detail: message,
-    buttons: ['OK', 'Learn More']
-  }, (response) => {
-    if (response === 1) {
-      shell.openExternal('http://electron.atom.io/docs')
-    }
-  })
+  dialog.showErrorBox('Error launching app', message)
   process.exit(1)
 }
 
@@ -313,12 +305,11 @@ if (option.file && !option.webdriver) {
   console.log('v' + process.versions.electron)
   process.exit(0)
 } else if (option.help) {
-  const helpMessage = `Electron v${process.versions.electron} - Cross Platform Desktop Application Shell
+  const helpMessage = `Electron ${process.versions.electron} - Build cross platform desktop apps with JavaScript, HTML, and CSS
 
   Usage: electron [options] [path]
 
-  A path to an Electron application may be specified.
-  The path must be one of the following:
+  A path to an Electron app may be specified. The path must be one of the following:
 
     - index.js file.
     - Folder containing a package.json file.
