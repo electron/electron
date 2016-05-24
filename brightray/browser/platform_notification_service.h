@@ -5,6 +5,7 @@
 #ifndef BROWSER_PLATFORM_NOTIFICATION_SERVICE_H_
 #define BROWSER_PLATFORM_NOTIFICATION_SERVICE_H_
 
+#include "content/public/browser/browser_context.h"
 #include "content/public/browser/platform_notification_service.h"
 
 namespace brightray {
@@ -31,7 +32,7 @@ class PlatformNotificationService
       const GURL& origin,
       const content::PlatformNotificationData& notification_data,
       const content::NotificationResources& notification_resources,
-      scoped_ptr<content::DesktopNotificationDelegate> delegate,
+      std::unique_ptr<content::DesktopNotificationDelegate> delegate,
       base::Closure* cancel_callback) override;
   void DisplayPersistentNotification(
       content::BrowserContext* browser_context,

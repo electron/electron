@@ -54,7 +54,7 @@ class InspectableWebContentsViewViews : public InspectableWebContentsView,
   // Owns us.
   InspectableWebContentsImpl* inspectable_web_contents_;
 
-  scoped_ptr<views::Widget> devtools_window_;
+  std::unique_ptr<views::Widget> devtools_window_;
   views::WebView* devtools_window_web_view_;
   views::WebView* contents_web_view_;
   views::WebView* devtools_web_view_;

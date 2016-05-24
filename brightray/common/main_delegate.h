@@ -5,8 +5,9 @@
 #ifndef BRIGHTRAY_COMMON_MAIN_DELEGATE_H_
 #define BRIGHTRAY_COMMON_MAIN_DELEGATE_H_
 
-#include "base/compiler_specific.h"
-#include "base/memory/scoped_ptr.h"
+#include <memory>
+
+#include "base/macros.h"
 #include "content/public/app/content_main_delegate.h"
 
 namespace base {
@@ -33,11 +34,11 @@ class MainDelegate : public content::ContentMainDelegate {
  protected:
   // Subclasses can override this to provide their own ContentClient
   // implementation.
-  virtual scoped_ptr<ContentClient> CreateContentClient();
+  virtual std::unique_ptr<ContentClient> CreateContentClient();
 
   // Subclasses can override this to provide their own BrowserClient
   // implementation.
-  virtual scoped_ptr<BrowserClient> CreateBrowserClient();
+  virtual std::unique_ptr<BrowserClient> CreateBrowserClient();
 
 #if defined(OS_MACOSX)
   // Subclasses can override this to custom the paths of child process and
@@ -52,8 +53,8 @@ class MainDelegate : public content::ContentMainDelegate {
  private:
   content::ContentBrowserClient* CreateContentBrowserClient() override;
 
-  scoped_ptr<ContentClient> content_client_;
-  scoped_ptr<BrowserClient> browser_client_;
+  std::unique_ptr<ContentClient> content_client_;
+  std::unique_ptr<BrowserClient> browser_client_;
 
   DISALLOW_COPY_AND_ASSIGN(MainDelegate);
 };

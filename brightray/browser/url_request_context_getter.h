@@ -6,7 +6,7 @@
 #define BRIGHTRAY_BROWSER_URL_REQUEST_CONTEXT_GETTER_H_
 
 #include "base/files/file_path.h"
-#include "base/memory/scoped_ptr.h"
+#include "content/public/browser/browser_context.h"
 #include "content/public/browser/content_browser_client.h"
 #include "net/http/http_cache.h"
 #include "net/http/url_security_manager.h"
@@ -40,12 +40,12 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
 
     virtual net::NetworkDelegate* CreateNetworkDelegate() { return NULL; }
     virtual std::string GetUserAgent();
-    virtual scoped_ptr<net::URLRequestJobFactory> CreateURLRequestJobFactory(
+    virtual std::unique_ptr<net::URLRequestJobFactory> CreateURLRequestJobFactory(
         content::ProtocolHandlerMap* protocol_handlers,
         content::URLRequestInterceptorScopedVector* protocol_interceptors);
     virtual net::HttpCache::BackendFactory* CreateHttpCacheBackendFactory(
         const base::FilePath& base_path);
-    virtual scoped_ptr<net::CertVerifier> CreateCertVerifier();
+    virtual std::unique_ptr<net::CertVerifier> CreateCertVerifier();
     virtual net::SSLConfigService* CreateSSLConfigService();
   };
 
@@ -77,13 +77,13 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
   base::MessageLoop* io_loop_;
   base::MessageLoop* file_loop_;
 
-  scoped_ptr<net::ProxyConfigService> proxy_config_service_;
-  scoped_ptr<net::NetworkDelegate> network_delegate_;
-  scoped_ptr<net::URLRequestContextStorage> storage_;
-  scoped_ptr<net::URLRequestContext> url_request_context_;
-  scoped_ptr<net::HostMappingRules> host_mapping_rules_;
-  scoped_ptr<net::HttpAuthPreferences> http_auth_preferences_;
-  scoped_ptr<net::HttpNetworkSession> http_network_session_;
+  std::unique_ptr<net::ProxyConfigService> proxy_config_service_;
+  std::unique_ptr<net::NetworkDelegate> network_delegate_;
+  std::unique_ptr<net::URLRequestContextStorage> storage_;
+  std::unique_ptr<net::URLRequestContext> url_request_context_;
+  std::unique_ptr<net::HostMappingRules> host_mapping_rules_;
+  std::unique_ptr<net::HttpAuthPreferences> http_auth_preferences_;
+  std::unique_ptr<net::HttpNetworkSession> http_network_session_;
   content::ProtocolHandlerMap protocol_handlers_;
   content::URLRequestInterceptorScopedVector protocol_interceptors_;
 

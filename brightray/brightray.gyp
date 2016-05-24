@@ -1,7 +1,7 @@
 {
   'variables': {
     # The libraries brightray will be compiled to.
-    'linux_system_libraries': 'gtk+-2.0 dbus-1 x11 xi xcursor xdamage xrandr xcomposite xext xfixes xrender xtst gconf-2.0 gmodule-2.0 nss'
+    'linux_system_libraries': 'gtk+-2.0 dbus-1 x11 xi xcursor xdamage xrandr xcomposite xext xfixes xrender xtst xscrnsaver gconf-2.0 gmodule-2.0 nss'
   },
   'includes': [
     'filenames.gypi',
@@ -169,7 +169,9 @@
                   # media.gyp:
                   '$(SDKROOT)/System/Library/Frameworks/AudioToolbox.framework',
                   '$(SDKROOT)/System/Library/Frameworks/AudioUnit.framework',
+                  '$(SDKROOT)/System/Library/Frameworks/AVFoundation.framework',
                   '$(SDKROOT)/System/Library/Frameworks/CoreAudio.framework',
+                  '$(SDKROOT)/System/Library/Frameworks/CoreMedia.framework',
                   '$(SDKROOT)/System/Library/Frameworks/CoreMIDI.framework',
                   '$(SDKROOT)/System/Library/Frameworks/CoreVideo.framework',
                   # surface.gyp:
@@ -257,7 +259,9 @@
                   '-lmfplat.lib',
                   '-lmfuuid.lib',
                   # media.gyp:
+                  '-ldxguid.lib',
                   '-lmfreadwrite.lib',
+                  '-lmfuuid.lib',
                 ],
                 'msvs_settings': {
                   'VCLinkerTool': {
@@ -273,12 +277,27 @@
                       'usp10.lib',
                       'version.lib',
                       'winspool.lib',
+                      'wtsapi32.lib',
+                      # bluetooth.gyp:
+                      'Bthprops.lib',
+                      'BluetoothApis.lib',
                       # base.gyp:
+                      'cfgmgr32.lib',
                       'powrprof.lib',
+                      'setupapi.lib',
+                      # net_common.gypi:
+                      'crypt32.lib',
+                      'dhcpcsvc.lib',
+                      'rpcrt4.lib',
+                      'secur32.lib',
+                      'urlmon.lib',
+                      'winhttp.lib',
                     ],
                     'DelayLoadDLLs': [
+                      'wtsapi32.dll',
                       # content_common.gypi:
                       'd3d9.dll',
+                      'd3d11.dll',
                       'dxva2.dll',
                       # media.gyp:
                       'mf.dll',
@@ -289,7 +308,16 @@
                       'Bthprops.cpl',
                       'setupapi.dll',
                       # base.gyp:
+                      'cfgmgr32.dll',
                       'powrprof.dll',
+                      'setupapi.dll',
+                      # net_common.gypi:
+                      'crypt32.dll',
+                      'dhcpcsvc.dll',
+                      'rpcrt4.dll',
+                      'secur32.dll',
+                      'urlmon.dll',
+                      'winhttp.dll',
                       # windows runtime
                       'API-MS-WIN-CORE-WINRT-L1-1-0.DLL',
                       'API-MS-WIN-CORE-WINRT-STRING-L1-1-0.DLL',

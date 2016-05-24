@@ -68,16 +68,6 @@ content::BrowserMainParts* BrowserClient::CreateBrowserMainParts(
   return browser_main_parts_;
 }
 
-net::URLRequestContextGetter* BrowserClient::CreateRequestContext(
-    content::BrowserContext* browser_context,
-    content::ProtocolHandlerMap* protocol_handlers,
-    content::URLRequestInterceptorScopedVector protocol_interceptors) {
-  auto context = static_cast<BrowserContext*>(browser_context);
-  return context->CreateRequestContext(static_cast<NetLog*>(GetNetLog()),
-                                       protocol_handlers,
-                                       std::move(protocol_interceptors));
-}
-
 content::MediaObserver* BrowserClient::GetMediaObserver() {
   return MediaCaptureDevicesDispatcher::GetInstance();
 }

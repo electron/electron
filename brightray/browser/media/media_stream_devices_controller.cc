@@ -43,7 +43,7 @@ MediaStreamDevicesController::~MediaStreamDevicesController() {
   if (!callback_.is_null()) {
     callback_.Run(content::MediaStreamDevices(),
                   content::MEDIA_DEVICE_INVALID_STATE,
-                  scoped_ptr<content::MediaStreamUI>());
+                  std::unique_ptr<content::MediaStreamUI>());
   }
 }
 
@@ -146,7 +146,7 @@ void MediaStreamDevicesController::Accept() {
 
   content::MediaResponseCallback cb = callback_;
   callback_.Reset();
-  cb.Run(devices, content::MEDIA_DEVICE_OK, scoped_ptr<content::MediaStreamUI>());
+  cb.Run(devices, content::MEDIA_DEVICE_OK, std::unique_ptr<content::MediaStreamUI>());
 }
 
 void MediaStreamDevicesController::Deny(content::MediaStreamRequestResult result) {
@@ -154,7 +154,7 @@ void MediaStreamDevicesController::Deny(content::MediaStreamRequestResult result
   callback_.Reset();
   cb.Run(content::MediaStreamDevices(),
          result,
-         scoped_ptr<content::MediaStreamUI>());
+         std::unique_ptr<content::MediaStreamUI>());
 }
 
 void MediaStreamDevicesController::HandleUserMediaRequest() {
@@ -194,7 +194,7 @@ void MediaStreamDevicesController::HandleUserMediaRequest() {
   cb.Run(devices,
          devices.empty() ? content::MEDIA_DEVICE_INVALID_STATE :
                            content::MEDIA_DEVICE_OK,
-         scoped_ptr<content::MediaStreamUI>());
+         std::unique_ptr<content::MediaStreamUI>());
 }
 
 }  // namespace brightray

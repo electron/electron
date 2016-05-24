@@ -39,12 +39,10 @@ class BrowserContext : public base::RefCounted<BrowserContext>,
       const std::string& partition, bool in_memory);
 
   // content::BrowserContext:
-  scoped_ptr<content::ZoomLevelDelegate> CreateZoomLevelDelegate(
+  std::unique_ptr<content::ZoomLevelDelegate> CreateZoomLevelDelegate(
       const base::FilePath& partition_path) override;
   bool IsOffTheRecord() const override;
   net::URLRequestContextGetter* GetRequestContext() override;
-  net::URLRequestContextGetter* GetRequestContextForRenderProcess(
-      int renderer_child_id) override;
   net::URLRequestContextGetter* GetMediaRequestContext() override;
   net::URLRequestContextGetter* GetMediaRequestContextForRenderProcess(
       int renderer_child_id) override;
@@ -58,11 +56,14 @@ class BrowserContext : public base::RefCounted<BrowserContext>,
   content::SSLHostStateDelegate* GetSSLHostStateDelegate() override;
   content::PermissionManager* GetPermissionManager() override;
   content::BackgroundSyncController* GetBackgroundSyncController() override;
-
   net::URLRequestContextGetter* CreateRequestContext(
-      NetLog* net_log,
       content::ProtocolHandlerMap* protocol_handlers,
-      content::URLRequestInterceptorScopedVector protocol_interceptors);
+      content::URLRequestInterceptorScopedVector request_interceptors) override;
+  net::URLRequestContextGetter* CreateRequestContextForStoragePartition(
+      const base::FilePath& partition_path,
+      bool in_memory,
+      content::ProtocolHandlerMap* protocol_handlers,
+      content::URLRequestInterceptorScopedVector request_interceptors) override;
 
   net::URLRequestContextGetter* url_request_context_getter() const {
     return url_request_getter_.get();
@@ -120,11 +121,11 @@ class BrowserContext : public base::RefCounted<BrowserContext>,
 
   DevToolsNetworkControllerHandle network_controller_handle_;
 
-  scoped_ptr<ResourceContext> resource_context_;
+  std::unique_ptr<ResourceContext> resource_context_;
   scoped_refptr<URLRequestContextGetter> url_request_getter_;
   scoped_refptr<storage::SpecialStoragePolicy> storage_policy_;
-  scoped_ptr<PrefService> prefs_;
-  scoped_ptr<PermissionManager> permission_manager_;
+  std::unique_ptr<PrefService> prefs_;
+  std::unique_ptr<PermissionManager> permission_manager_;
 
   base::WeakPtrFactory<BrowserContext> weak_factory_;
 

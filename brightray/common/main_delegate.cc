@@ -4,6 +4,8 @@
 
 #include "common/main_delegate.h"
 
+#include <memory>
+
 #include "browser/browser_client.h"
 #include "common/content_client.h"
 
@@ -21,11 +23,6 @@ namespace {
 // and resources loaded.
 bool SubprocessNeedsResourceBundle(const std::string& process_type) {
   return
-#if defined(OS_WIN) || defined(OS_MACOSX)
-      // Windows needs resources for the default/null plugin.
-      // Mac needs them for the plugin process name.
-      process_type == switches::kPluginProcess ||
-#endif
 #if defined(OS_POSIX) && !defined(OS_MACOSX)
       // The zygote process opens the resources for the renderers.
       process_type == switches::kZygoteProcess ||
@@ -80,8 +77,8 @@ MainDelegate::MainDelegate() {
 MainDelegate::~MainDelegate() {
 }
 
-scoped_ptr<ContentClient> MainDelegate::CreateContentClient() {
-  return make_scoped_ptr(new ContentClient);
+std::unique_ptr<ContentClient> MainDelegate::CreateContentClient() {
+  return std::unique_ptr<ContentClient>(new ContentClient);
 }
 
 bool MainDelegate::BasicStartupComplete(int* exit_code) {
@@ -112,8 +109,8 @@ content::ContentBrowserClient* MainDelegate::CreateContentBrowserClient() {
   return browser_client_.get();
 }
 
-scoped_ptr<BrowserClient> MainDelegate::CreateBrowserClient() {
-  return make_scoped_ptr(new BrowserClient);
+std::unique_ptr<BrowserClient> MainDelegate::CreateBrowserClient() {
+  return std::unique_ptr<BrowserClient>(new BrowserClient);
 }
 
 }  // namespace brightray

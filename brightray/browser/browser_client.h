@@ -6,13 +6,13 @@
 #define BRIGHTRAY_BROWSER_BROWSER_CLIENT_H_
 
 #include "browser/net_log.h"
+#include "content/public/browser/browser_context.h"
 #include "content/public/browser/content_browser_client.h"
 
 namespace brightray {
 
 class BrowserContext;
 class BrowserMainParts;
-class NetLog;
 class NotificationPresenter;
 class PlatformNotificationService;
 
@@ -34,19 +34,8 @@ class BrowserClient : public content::ContentBrowserClient {
     callback.Run(true);
   }
 
- protected:
-  // Subclasses should override this to provide their own BrowserMainParts
-  // implementation. The lifetime of the returned instance is managed by the
-  // caller.
-  virtual BrowserMainParts* OverrideCreateBrowserMainParts(
-      const content::MainFunctionParams&);
-
   // Subclasses that override this (e.g., to provide their own protocol
   // handlers) should call this implementation after doing their own work.
-  net::URLRequestContextGetter* CreateRequestContext(
-      content::BrowserContext* browser_context,
-      content::ProtocolHandlerMap* protocol_handlers,
-      content::URLRequestInterceptorScopedVector protocol_interceptors) override;
   content::BrowserMainParts* CreateBrowserMainParts(
       const content::MainFunctionParams&) override;
   content::MediaObserver* GetMediaObserver() override;
@@ -57,12 +46,19 @@ class BrowserClient : public content::ContentBrowserClient {
   base::FilePath GetDefaultDownloadDirectory() override;
   content::DevToolsManagerDelegate* GetDevToolsManagerDelegate() override;
 
+ protected:
+  // Subclasses should override this to provide their own BrowserMainParts
+  // implementation. The lifetime of the returned instance is managed by the
+  // caller.
+  virtual BrowserMainParts* OverrideCreateBrowserMainParts(
+      const content::MainFunctionParams&);
+
+ private:
   BrowserMainParts* browser_main_parts_;
   NetLog net_log_;
 
- private:
-  scoped_ptr<PlatformNotificationService> notification_service_;
-  scoped_ptr<NotificationPresenter> notification_presenter_;
+  std::unique_ptr<PlatformNotificationService> notification_service_;
+  std::unique_ptr<NotificationPresenter> notification_presenter_;
 
   DISALLOW_COPY_AND_ASSIGN(BrowserClient);
 };

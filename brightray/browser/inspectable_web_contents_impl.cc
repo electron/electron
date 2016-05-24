@@ -190,7 +190,7 @@ InspectableWebContentsView* CreateInspectableContentsView(
     InspectableWebContentsImpl* inspectable_web_contents_impl);
 
 void InspectableWebContentsImpl::RegisterPrefs(PrefRegistrySimple* registry) {
-  auto bounds_dict = make_scoped_ptr(new base::DictionaryValue);
+  std::unique_ptr<base::DictionaryValue> bounds_dict(new base::DictionaryValue);
   RectToDictionary(gfx::Rect(0, 0, 800, 600), bounds_dict.get());
   registry->RegisterDictionaryPref(kDevToolsBoundsPref, bounds_dict.release());
   registry->RegisterDoublePref(kDevToolsZoomPref, 0.);
@@ -412,7 +412,7 @@ void InspectableWebContentsImpl::LoadNetworkResource(
   pending_requests_[fetcher] = callback;
   fetcher->SetRequestContext(browser_context->url_request_context_getter());
   fetcher->SetExtraRequestHeaders(headers);
-  fetcher->SaveResponseWithWriter(scoped_ptr<net::URLFetcherResponseWriter>(
+  fetcher->SaveResponseWithWriter(std::unique_ptr<net::URLFetcherResponseWriter>(
       new ResponseWriter(weak_factory_.GetWeakPtr(), stream_id)));
   fetcher->Start();
 }
@@ -562,7 +562,7 @@ void InspectableWebContentsImpl::HandleMessageFromDevToolsFrontend(const std::st
   base::ListValue* params = &empty_params;
 
   base::DictionaryValue* dict = nullptr;
-  scoped_ptr<base::Value> parsed_message(base::JSONReader::Read(message));
+  std::unique_ptr<base::Value> parsed_message(base::JSONReader::Read(message));
   if (!parsed_message ||
       !parsed_message->GetAsDictionary(&dict) ||
       !dict->GetString(kFrontendHostMethod, &method) ||

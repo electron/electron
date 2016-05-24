@@ -10,6 +10,7 @@
 #include "common/main_delegate.h"
 
 #include "base/command_line.h"
+#include "base/feature_list.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "components/devtools_http_handler/devtools_http_handler.h"
@@ -76,7 +77,7 @@ void OverrideLinuxAppDataPath() {
   base::FilePath path;
   if (PathService::Get(DIR_APP_DATA, &path))
     return;
-  scoped_ptr<base::Environment> env(base::Environment::Create());
+  std::unique_ptr<base::Environment> env(base::Environment::Create());
   path = base::nix::GetXDGDirectory(env.get(),
                                     base::nix::kXdgConfigHomeEnvVar,
                                     base::nix::kDotConfigDir);
@@ -153,6 +154,10 @@ BrowserMainParts::~BrowserMainParts() {
 }
 
 void BrowserMainParts::PreEarlyInitialization() {
+  std::unique_ptr<base::FeatureList> feature_list(new base::FeatureList);
+  feature_list->InitializeFromCommandLine("", "");
+  base::FeatureList::SetInstance(std::move(feature_list));
+
 #if defined(USE_X11)
   views::LinuxUI::SetInstance(BuildGtk2UI());
   OverrideLinuxAppDataPath();

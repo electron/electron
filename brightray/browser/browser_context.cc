@@ -5,6 +5,7 @@
 #include "browser/browser_context.h"
 
 #include "browser/brightray_paths.h"
+#include "browser/browser_client.h"
 #include "browser/inspectable_web_contents_impl.h"
 #include "browser/network_delegate.h"
 #include "browser/permission_manager.h"
@@ -64,16 +65,16 @@ class BrowserContext::ResourceContext : public content::ResourceContext {
     return getter_->GetURLRequestContext();
   }
 
-  scoped_ptr<net::ClientCertStore> CreateClientCertStore() override {
+  std::unique_ptr<net::ClientCertStore> CreateClientCertStore() override {
     #if defined(USE_NSS_CERTS)
-      return scoped_ptr<net::ClientCertStore>(new net::ClientCertStoreNSS(
+      return std::unique_ptr<net::ClientCertStore>(new net::ClientCertStoreNSS(
           net::ClientCertStoreNSS::PasswordDelegateFactory()));
     #elif defined(OS_WIN)
-      return scoped_ptr<net::ClientCertStore>(new net::ClientCertStoreWin());
+      return std::unique_ptr<net::ClientCertStore>(new net::ClientCertStoreWin());
     #elif defined(OS_MACOSX)
-      return scoped_ptr<net::ClientCertStore>(new net::ClientCertStoreMac());
+      return std::unique_ptr<net::ClientCertStore>(new net::ClientCertStoreMac());
     #elif defined(USE_OPENSSL)
-      return scoped_ptr<net::ClientCertStore>();
+      return std::unique_ptr<net::ClientCertStore>();
     #endif
   }
 
@@ -110,6 +111,8 @@ BrowserContext::BrowserContext(const std::string& partition, bool in_memory)
   if (!in_memory_ && !partition.empty())
     path_ = path_.Append(FILE_PATH_LITERAL("Partitions"))
                  .Append(base::FilePath::FromUTF8Unsafe(MakePartitionName(partition)));
+
+  content::BrowserContext::Initialize(this, path_);
 }
 
 void BrowserContext::InitPrefs() {
@@ -137,14 +140,13 @@ void BrowserContext::RegisterInternalPrefs(PrefRegistrySimple* registry) {
 }
 
 net::URLRequestContextGetter* BrowserContext::CreateRequestContext(
-    NetLog* net_log,
     content::ProtocolHandlerMap* protocol_handlers,
     content::URLRequestInterceptorScopedVector protocol_interceptors) {
   DCHECK(!url_request_getter_.get());
   url_request_getter_ = new URLRequestContextGetter(
       this,
       network_controller_handle(),
-      net_log,
+      static_cast<NetLog*>(BrowserClient::Get()->GetNetLog()),
       GetPath(),
       in_memory_,
       BrowserThread::UnsafeGetMessageLoopForThread(BrowserThread::IO),
@@ -163,9 +165,9 @@ base::FilePath BrowserContext::GetPath() const {
   return path_;
 }
 
-scoped_ptr<content::ZoomLevelDelegate> BrowserContext::CreateZoomLevelDelegate(
+std::unique_ptr<content::ZoomLevelDelegate> BrowserContext::CreateZoomLevelDelegate(
     const base::FilePath& partition_path) {
-  return scoped_ptr<content::ZoomLevelDelegate>();
+  return std::unique_ptr<content::ZoomLevelDelegate>();
 }
 
 bool BrowserContext::IsOffTheRecord() const {
@@ -174,11 +176,6 @@ bool BrowserContext::IsOffTheRecord() const {
 
 net::URLRequestContextGetter* BrowserContext::GetRequestContext() {
   return GetDefaultStoragePartition(this)->GetURLRequestContext();
-}
-
-net::URLRequestContextGetter* BrowserContext::GetRequestContextForRenderProcess(
-    int renderer_child_id) {
-  return GetRequestContext();
 }
 
 net::URLRequestContextGetter* BrowserContext::GetMediaRequestContext() {
@@ -229,6 +226,15 @@ content::PermissionManager* BrowserContext::GetPermissionManager() {
 }
 
 content::BackgroundSyncController* BrowserContext::GetBackgroundSyncController() {
+  return nullptr;
+}
+
+net::URLRequestContextGetter*
+BrowserContext::CreateRequestContextForStoragePartition(
+    const base::FilePath& partition_path,
+    bool in_memory,
+    content::ProtocolHandlerMap* protocol_handlers,
+    content::URLRequestInterceptorScopedVector request_interceptors) {
   return nullptr;
 }
 
