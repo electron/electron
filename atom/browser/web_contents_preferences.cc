@@ -5,6 +5,7 @@
 #include "atom/browser/web_contents_preferences.h"
 
 #include <algorithm>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -13,6 +14,7 @@
 #include "atom/common/options_switches.h"
 #include "base/command_line.h"
 #include "base/strings/string_number_conversions.h"
+#include "base/strings/string_split.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/common/content_switches.h"
 #include "content/public/common/web_preferences.h"
@@ -101,13 +103,24 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
   command_line->AppendSwitchASCII(switches::kNodeIntegration,
                                   node_integration ? "true" : "false");
 
-  // The preload script.
-  base::FilePath::StringType preload;
+  // The preload scripts.
+  std::string preload;
   if (web_preferences.GetString(options::kPreloadScript, &preload)) {
-    if (base::FilePath(preload).IsAbsolute())
-      command_line->AppendSwitchNative(switches::kPreloadScript, preload);
-    else
-      LOG(ERROR) << "preload script must have absolute path.";
+    std::vector<std::string> scripts =
+        base::SplitString(preload, ",", base::TRIM_WHITESPACE,
+                          base::SPLIT_WANT_NONEMPTY);
+    std::stringstream validScripts;
+
+    for (std::string script: scripts) {
+      if (base::FilePath((base::FilePath::StringType)script).IsAbsolute())
+        validScripts << script << ",";
+      else
+        LOG(ERROR) << "preload script " << script
+                   << " must have an absolute path.";
+     }
+
+     command_line->AppendSwitchNative(switches::kPreloadScript,
+                                      validScripts.str());
   } else if (web_preferences.GetString(options::kPreloadURL, &preload)) {
     // Translate to file path if there is "preload-url" option.
     base::FilePath preload_path;
