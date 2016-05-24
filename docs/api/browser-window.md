@@ -130,10 +130,10 @@ The `webPreferences` option is an object that can have following properties:
 
 * `nodeIntegration` Boolean - Whether node integration is enabled. Default
   is `true`.
-* `preload` String - A comma separated list of scripts that will be loaded
-  before other scripts run in the page. These script will always have access to
-  node APIs no matter whether node integration is turned on or off. Each comma
-  separated value should be an absolute file path to the script.
+* `preload` Array or String - A list of scripts that will be loaded
+  before other scripts run in the page. These scripts will always have access to
+  node APIs no matter whether node integration is turned on or off. Each value
+  should be an absolute file path to the script.
   When node integration is turned off, the preload scripts can reintroduce
   Node global symbols back to the global scope. See example
   [here](process.md#event-loaded).
