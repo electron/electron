@@ -103,6 +103,9 @@ const char kExperimentalCanvasFeatures[] = "experimentalCanvasFeatures";
 // Opener window's ID.
 const char kOpenerID[] = "openerId";
 
+// Page is hidden.
+const char kHiddenPage[] = "hiddenPage";
+
 // Enable the rubber banding effect.
 const char kScrollBounce[] = "scrollBounce";
 
@@ -146,6 +149,7 @@ const char kPreloadURL[]      = "preload-url";
 const char kNodeIntegration[] = "node-integration";
 const char kGuestInstanceID[] = "guest-instance-id";
 const char kOpenerID[]        = "opener-id";
+const char kHiddenPage[]      = "hidden-page";
 const char kScrollBounce[]    = "scroll-bounce";
 
 // Widevine options

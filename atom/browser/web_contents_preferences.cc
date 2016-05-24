@@ -160,7 +160,14 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
   if (window) {
     bool visible = window->IsVisible() && !window->IsMinimized();
     if (!visible)  // Default state is visible.
-      command_line->AppendSwitch("hidden-page");
+      command_line->AppendSwitch(switches::kHiddenPage);
+  } else {
+    // Inherit initial visibilty state from parent window in webviews
+    bool hidden_page;
+    if (web_preferences.GetBoolean(options::kHiddenPage, &hidden_page) &&
+        hidden_page) {
+      command_line->AppendSwitch(switches::kHiddenPage);
+    }
   }
 }
 

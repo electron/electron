@@ -868,7 +868,7 @@ describe('<webview> tag', function () {
     w.loadURL('file://' + fixtures + '/pages/webview-zoom-factor.html')
   })
 
-  it('has the initial hidden state and receives visibilitychange events', function (done) {
+  it('inherits the parent window hidden state and receives visibilitychange events', function (done) {
     w = new BrowserWindow({
       show: false
     })
