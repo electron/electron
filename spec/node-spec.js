@@ -3,7 +3,7 @@ const child_process = require('child_process')
 const fs = require('fs')
 const path = require('path')
 const os = require('os')
-const remote = require('electron').remote
+const {remote} = require('electron')
 
 describe('node feature', function () {
   var fixtures = path.join(__dirname, 'fixtures')
