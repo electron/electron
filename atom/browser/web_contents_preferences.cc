@@ -109,18 +109,23 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
     std::vector<std::string> scripts =
         base::SplitString(preload, ",", base::TRIM_WHITESPACE,
                           base::SPLIT_WANT_NONEMPTY);
-    std::stringstream validScripts;
+    std::stringstream ss;
 
     for (std::string script: scripts) {
       if (base::FilePath((base::FilePath::StringType)script).IsAbsolute())
-        validScripts << script << ",";
+        ss << script << ",";
       else
         LOG(ERROR) << "preload script " << script
                    << " must have an absolute path.";
      }
 
-     command_line->AppendSwitchNative(switches::kPreloadScript,
-                                      validScripts.str());
+     std::string validScripts = ss.str();
+
+     // Remove the last ",". Can't account for this while we're still
+     // in the loop since we don't know where the last valid script will
+     // be.
+     validScripts.pop_back();
+     command_line->AppendSwitchNative(switches::kPreloadScript, validScripts);
   } else if (web_preferences.GetString(options::kPreloadURL, &preload)) {
     // Translate to file path if there is "preload-url" option.
     base::FilePath preload_path;
