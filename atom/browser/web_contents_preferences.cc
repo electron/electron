@@ -104,28 +104,43 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
                                   node_integration ? "true" : "false");
 
   // The preload scripts.
-  std::string preload;
-  if (web_preferences.GetString(options::kPreloadScript, &preload)) {
-    std::vector<std::string> scripts =
-        base::SplitString(preload, ",", base::TRIM_WHITESPACE,
-                          base::SPLIT_WANT_NONEMPTY);
+  base::ListValue* scripts;
+  base::FilePath::StringType preload;
+
+  if (web_preferences.GetString(options::kPreloadScript, &preload) ||
+      web_preferences.GetList(options::kPreloadScript, &scripts)) {
     std::stringstream ss;
+    std::string tempScript;
+    std::string validScripts;
 
-    for (std::string script: scripts) {
-      if (base::FilePath((base::FilePath::StringType)script).IsAbsolute())
-        ss << script << ",";
+    if (!preload.empty()) {
+      // For backwards compatibility, support a string arg
+      if (base::FilePath(preload).IsAbsolute())
+        ss << preload;
       else
-        LOG(ERROR) << "preload script " << script
+        LOG(ERROR) << "preload script " << preload
                    << " must have an absolute path.";
-     }
 
-     std::string validScripts = ss.str();
+      validScripts = ss.str();
+    } else if (scripts && !scripts->empty()) {
+      for (auto arg: *scripts) {
+        arg->GetAsString(&tempScript);
+        if (base::FilePath((base::FilePath::StringType)tempScript).IsAbsolute())
+          ss << tempScript << ",";
+        else
+          LOG(ERROR) << "preload script " << tempScript
+                     << " must have an absolute path.";
+      }
 
-     // Remove the last ",". Can't account for this while we're still
-     // in the loop since we don't know where the last valid script will
-     // be.
-     validScripts.pop_back();
-     command_line->AppendSwitchNative(switches::kPreloadScript, validScripts);
+      validScripts = ss.str();
+
+      // Remove the last ",". Can't account for this while we're still
+      // in the loop since we don't know where the last valid script will
+      // be.
+      validScripts.pop_back();
+    }
+
+    command_line->AppendSwitchNative(switches::kPreloadScript, validScripts);
   } else if (web_preferences.GetString(options::kPreloadURL, &preload)) {
     // Translate to file path if there is "preload-url" option.
     base::FilePath preload_path;

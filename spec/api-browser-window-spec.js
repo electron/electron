@@ -447,6 +447,7 @@ describe('browser-window module', function () {
           done()
         })
         w.destroy()
+
         w = new BrowserWindow({
           show: false,
           webPreferences: {
@@ -465,9 +466,10 @@ describe('browser-window module', function () {
             done()
         }
 
-        var scripts =
-          path.join(fixtures, 'module', 'preload-script-1.js') + ',' +
+        var scripts = [
+          path.join(fixtures, 'module', 'preload-script-1.js'),
           path.join(fixtures, 'module', 'preload-script-2.js')
+        ]
 
         ipcMain.once('preload-script-1', function (event, test) {
           script1 = true

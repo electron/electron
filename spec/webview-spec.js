@@ -167,9 +167,10 @@ describe('<webview> tag', function () {
           done()
       }
 
-      var scripts =
-        fixtures + '/module' + '/preload-script-1.js' + ',' +
+      var scripts = [
+        fixtures + '/module' + '/preload-script-1.js',
         fixtures + '/module' + '/preload-script-2.js'
+      ]
 
       webview.addEventListener('preload-script-1', function (event, test) {
         script1 = true
