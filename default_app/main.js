@@ -309,8 +309,7 @@ if (option.file && !option.webdriver) {
 
   Usage: electron [options] [path]
 
-  A path to an Electron application may be specified.
-  The path must be one of the following:
+  A path to an Electron app may be specified. The path must be one of the following:
 
     - index.js file.
     - Folder containing a package.json file.
