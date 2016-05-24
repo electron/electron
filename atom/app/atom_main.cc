@@ -105,7 +105,7 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
     base::AtExitManager atexit_manager;
     base::i18n::InitializeICU();
     return atom::NodeMain(argc, argv);
-  } else if (IsEnvSet("ATOM_SHELL_INTERNAL_CRASH_SERVICE")) {
+  } else if (IsEnvSet("ELECTRON_INTERNAL_CRASH_SERVICE")) {
     return crash_service::Main(cmd);
   }
 
