@@ -137,7 +137,7 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
       // Remove the last ",". Can't account for this while we're still
       // in the loop since we don't know where the last valid script will
       // be.
-      validScripts.pop_back();
+      validScripts.erase(validScripts.length() - 1);
     }
 
     command_line->AppendSwitchNative(switches::kPreloadScript, validScripts);
