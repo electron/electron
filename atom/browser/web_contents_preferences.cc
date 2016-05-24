@@ -110,8 +110,8 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
   if (web_preferences.GetString(options::kPreloadScript, &preload) ||
       web_preferences.GetList(options::kPreloadScript, &scripts)) {
     std::stringstream ss;
-    std::string tempScript;
-    std::string validScripts;
+    base::FilePath::StringType tempScript;
+    base::FilePath::StringType validScripts;
 
     if (!preload.empty()) {
       // For backwards compatibility, support a string arg
@@ -125,7 +125,7 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
     } else if (scripts && !scripts->empty()) {
       for (auto arg : *scripts) {
         arg->GetAsString(&tempScript);
-        if (base::FilePath((base::FilePath::StringType)tempScript).IsAbsolute())
+        if (base::FilePath(tempScript).IsAbsolute())
           ss << tempScript << ",";
         else
           LOG(ERROR) << "preload script " << tempScript
