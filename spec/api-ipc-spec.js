@@ -106,6 +106,22 @@ describe('ipc module', function () {
         done()
       })
     })
+
+    it('handles rejections via catch(onRejected)', function (done) {
+      var promise = remote.require(path.join(fixtures, 'module', 'rejected-promise.js'))
+      promise.reject(Promise.resolve(1234)).catch(function (error) {
+        assert.equal(error.message, 'rejected')
+        done()
+      })
+    })
+
+    it('handles rejections via then(onFulfilled, onRejected)', function (done) {
+      var promise = remote.require(path.join(fixtures, 'module', 'rejected-promise.js'))
+      promise.reject(Promise.resolve(1234)).then(function () {}, function (error) {
+        assert.equal(error.message, 'rejected')
+        done()
+      })
+    })
   })
 
   describe('remote webContents', function () {
