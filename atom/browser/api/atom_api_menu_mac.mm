@@ -7,6 +7,8 @@
 #include "atom/browser/native_window.h"
 #include "base/message_loop/message_loop.h"
 #include "base/strings/sys_string_conversions.h"
+#include "brightray/browser/inspectable_web_contents.h"
+#include "brightray/browser/inspectable_web_contents_view.h"
 #include "content/public/browser/web_contents.h"
 
 #include "atom/common/node_includes.h"
@@ -22,14 +24,15 @@ void MenuMac::PopupAt(Window* window, int x, int y, int positioning_item) {
   NativeWindow* native_window = window->window();
   if (!native_window)
     return;
-  content::WebContents* web_contents = native_window->web_contents();
+  brightray::InspectableWebContents* web_contents =
+      native_window->inspectable_web_contents();
   if (!web_contents)
     return;
 
   base::scoped_nsobject<AtomMenuController> menu_controller(
       [[AtomMenuController alloc] initWithModel:model_.get()]);
   NSMenu* menu = [menu_controller menu];
-  NSView* view = web_contents->GetContentNativeView();
+  NSView* view = web_contents->GetView()->GetNativeView();
 
   // Which menu item to show.
   NSMenuItem* item = nil;
@@ -48,15 +51,15 @@ void MenuMac::PopupAt(Window* window, int x, int y, int positioning_item) {
 
   // If no preferred item is specified, try to show all of the menu items.
   if (!positioning_item) {
-    int windowBottom = CGRectGetMinY([view window].frame);
-    int distaceFromBottom = windowBottom + position.y - [menu size].height;
+    CGFloat windowBottom = CGRectGetMinY([view window].frame);
+    CGFloat distaceFromBottom = windowBottom + position.y - [menu size].height;
     if (distaceFromBottom < 0)
-      position.y = position.y - distaceFromBottom;
+      position.y = position.y - distaceFromBottom + 4;
   }
 
   // Place the menu left of cursor if it is overflowing off right of screen.
-  int windowLeft = CGRectGetMinX([view window].frame);
-  int rightmostPoint = windowLeft + position.x + [menu size].width;
+  CGFloat windowLeft = CGRectGetMinX([view window].frame);
+  CGFloat rightmostPoint = windowLeft + position.x + [menu size].width;
   if (rightmostPoint > [[NSScreen mainScreen] visibleFrame].size.width)
     position.x = position.x - [menu size].width;
 
