@@ -5,8 +5,8 @@ Follow the guidelines below for building Electron on Windows.
 ## Prerequisites
 
 * Windows 7 / Server 2008 R2 or higher
-* Visual Studio 2013 with Update 4 - [download VS 2013 Community Edition for
-  free](https://www.visualstudio.com/news/vs2013-community-vs).
+* Visual Studio 2015 - [download VS 2015 Community Edition for
+  free](https://www.visualstudio.com/en-us/products/visual-studio-community-vs.aspx)
 * [Python 2.7](http://www.python.org/download/releases/2.7/)
 * [Node.js](http://nodejs.org/download/)
 * [Git](http://git-scm.com)
@@ -22,8 +22,7 @@ building with Visual Studio will come in the future.
 **Note:** Even though Visual Studio is not used for building, it's still
 **required** because we need the build toolchains it provides.
 
-**Note:** Visual Studio 2015 will not work. Please make sure to get MSVS
-**2013**.
+**Note:** While older versions of Electron required Visual Studio 2013, Electron 1.1 and later does require Visual Studio 2015.
 
 ## Getting the Code
 
@@ -99,7 +98,7 @@ $ python script\test.py -R
 ### Command xxxx not found
 
 If you encountered an error like `Command xxxx not found`, you may try to use
-the `VS2012 Command Prompt` console to execute the build scripts.
+the `VS2015 Command Prompt` console to execute the build scripts.
 
 ### Fatal internal compiler error: C1001
 
@@ -148,4 +147,4 @@ $ mkdir ~\AppData\Roaming\npm
 ### node-gyp is not recognized as an internal or external command
 
 You may get this error if you are using Git Bash for building, you should use
-PowerShell or VS2012 Command Prompt instead.
+PowerShell or VS2015 Command Prompt instead.
