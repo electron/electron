@@ -123,7 +123,7 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
 
       validScripts = ss.str();
     } else if (scripts && !scripts->empty()) {
-      for (auto arg: *scripts) {
+      for (auto arg : *scripts) {
         arg->GetAsString(&tempScript);
         if (base::FilePath((base::FilePath::StringType)tempScript).IsAbsolute())
           ss << tempScript << ",";
