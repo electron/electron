@@ -1,6 +1,7 @@
 const {app, dialog, shell, Menu} = require('electron')
 
 const fs = require('fs')
+const Module = require('module')
 const path = require('path')
 const repl = require('repl')
 const url = require('url')
@@ -222,7 +223,7 @@ app.once('ready', () => {
 })
 
 if (option.modules.length > 0) {
-  require('module')._preloadModules(option.modules)
+  Module._preloadModules(option.modules)
 }
 
 function loadApplicationPackage (packagePath) {
@@ -252,7 +253,7 @@ function loadApplicationPackage (packagePath) {
       app.setPath('userCache', path.join(app.getPath('cache'), app.getName()))
       app.setAppPath(packagePath)
     }
-    const Module = require('module')
+
     try {
       Module._resolveFilename(packagePath, module, true)
     } catch (e) {
