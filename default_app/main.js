@@ -239,8 +239,8 @@ function loadApplicationPackage (packagePath) {
       try {
         packageJson = JSON.parse(fs.readFileSync(packageJsonPath))
       } catch (e) {
-        showErrorMessage('Unable to parse package.json.\n\n' +
-          `${e.toString()} in ${packageJsonPath}`)
+        showErrorMessage(`Unable to parse ${packageJsonPath}\n\n${e.message}`)
+        return
       }
       if (packageJson.version) app.setVersion(packageJson.version)
 
