@@ -34,7 +34,6 @@
 namespace {
 
 const char* kRunAsNode = "ELECTRON_RUN_AS_NODE";
-const char* kOldRunAsNode = "ATOM_SHELL_INTERNAL_RUN_AS_NODE";
 
 bool IsEnvSet(const char* name) {
 #if defined(OS_WIN)
@@ -48,7 +47,7 @@ bool IsEnvSet(const char* name) {
 }
 
 bool IsRunAsNode() {
-  return IsEnvSet(kRunAsNode) || IsEnvSet(kOldRunAsNode);
+  return IsEnvSet(kRunAsNode);
 }
 
 }  // namespace
