@@ -275,15 +275,7 @@ function loadApplicationPackage (packagePath) {
 
 function showErrorMessage (message) {
   app.focus()
-  dialog.showMessageBox({
-    message: 'Error opening app',
-    detail: message,
-    buttons: ['OK', 'Learn More']
-  }, (response) => {
-    if (response === 1) {
-      shell.openExternal('http://electron.atom.io/docs')
-    }
-  })
+  dialog.showErrorBox('Error launching app', message)
   process.exit(1)
 }
 
