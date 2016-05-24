@@ -110,8 +110,8 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
   if (web_preferences.GetString(options::kPreloadScript, &preload) ||
       web_preferences.GetList(options::kPreloadScript, &scripts)) {
     std::stringstream ss;
-    base::FilePath::StringType tempScript;
-    base::FilePath::StringType validScripts;
+    base::FilePath::StringType tempScriptPath;
+    std::string validScripts;
 
     if (!preload.empty()) {
       // For backwards compatibility, support a string arg
@@ -124,11 +124,11 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
       validScripts = ss.str();
     } else if (scripts && !scripts->empty()) {
       for (auto arg : *scripts) {
-        arg->GetAsString(&tempScript);
-        if (base::FilePath(tempScript).IsAbsolute())
-          ss << tempScript << ",";
+        arg->GetAsString(&tempScriptPath);
+        if (base::FilePath(tempScriptPath).IsAbsolute())
+          ss << tempScriptPath << ",";
         else
-          LOG(ERROR) << "preload script " << tempScript
+          LOG(ERROR) << "preload script " << tempScriptPath
                      << " must have an absolute path.";
       }
 
@@ -140,7 +140,9 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
       validScripts.erase(validScripts.length() - 1);
     }
 
-    command_line->AppendSwitchNative(switches::kPreloadScript, validScripts);
+    // Using AppendSwitchASCII to allow passing in a std::string.
+    // Internally AppendSwitchNative gets called and converts it appropriately
+    command_line->AppendSwitchASCII(switches::kPreloadScript, validScripts);
   } else if (web_preferences.GetString(options::kPreloadURL, &preload)) {
     // Translate to file path if there is "preload-url" option.
     base::FilePath preload_path;
