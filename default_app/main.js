@@ -267,7 +267,7 @@ function loadApplicationPackage (packagePath) {
     Module._load(packagePath, module, true)
   } catch (e) {
     console.error('App threw an error during load')
-    console.error(e)
+    console.error(e.stack || e)
     throw e
   }
 }
