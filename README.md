@@ -5,8 +5,6 @@
 [![devDependency Status](https://david-dm.org/electron/electron/dev-status.svg)](https://david-dm.org/electron/electron#info=devDependencies)
 [![Join the Electron Community on Slack](http://atom-slack.herokuapp.com/badge.svg)](http://atom-slack.herokuapp.com/)
 
-:zap: *Formerly known as Atom Shell* :zap:
-
 The Electron framework lets you write cross-platform desktop applications
 using JavaScript, HTML and CSS. It is based on [Node.js](https://nodejs.org/) and
 [Chromium](http://www.chromium.org) and is used in the [Atom
