@@ -21,18 +21,18 @@ def main():
     config = 'R'
 
   if sys.platform == 'darwin':
-    atom_shell = os.path.join(SOURCE_ROOT, 'out', config,
+    electron = os.path.join(SOURCE_ROOT, 'out', config,
                               '{0}.app'.format(PRODUCT_NAME), 'Contents',
                               'MacOS', PRODUCT_NAME)
   elif sys.platform == 'win32':
-    atom_shell = os.path.join(SOURCE_ROOT, 'out', config,
+    electron = os.path.join(SOURCE_ROOT, 'out', config,
                               '{0}.exe'.format(PROJECT_NAME))
   else:
-    atom_shell = os.path.join(SOURCE_ROOT, 'out', config, PROJECT_NAME)
+    electron = os.path.join(SOURCE_ROOT, 'out', config, PROJECT_NAME)
 
   returncode = 0
   try:
-    subprocess.check_call([atom_shell, 'spec'] + sys.argv[1:])
+    subprocess.check_call([electron, 'spec'] + sys.argv[1:])
   except subprocess.CalledProcessError as e:
     returncode = e.returncode
 

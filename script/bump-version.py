@@ -4,7 +4,7 @@ import os
 import re
 import sys
 
-from lib.util import execute, get_atom_shell_version, parse_version, scoped_cwd
+from lib.util import execute, get_electron_version, parse_version, scoped_cwd
 
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
@@ -18,7 +18,7 @@ def main():
   option = sys.argv[1]
   increments = ['major', 'minor', 'patch', 'build']
   if option in increments:
-    version = get_atom_shell_version()
+    version = get_electron_version()
     versions = parse_version(version.split('-')[0])
     versions = increase_version(versions, increments.index(option))
   else:

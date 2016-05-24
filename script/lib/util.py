@@ -187,7 +187,7 @@ def atom_gyp():
     return obj['variables']
 
 
-def get_atom_shell_version():
+def get_electron_version():
   return 'v' + atom_gyp()['version%']
 
 

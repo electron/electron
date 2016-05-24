@@ -18,14 +18,14 @@ def main():
   # Upload the index.json.
   with scoped_cwd(SOURCE_ROOT):
     if sys.platform == 'darwin':
-      atom_shell = os.path.join(OUT_DIR, '{0}.app'.format(PRODUCT_NAME),
+      electron = os.path.join(OUT_DIR, '{0}.app'.format(PRODUCT_NAME),
                                 'Contents', 'MacOS', PRODUCT_NAME)
     elif sys.platform == 'win32':
-      atom_shell = os.path.join(OUT_DIR, '{0}.exe'.format(PROJECT_NAME))
+      electron = os.path.join(OUT_DIR, '{0}.exe'.format(PROJECT_NAME))
     else:
-      atom_shell = os.path.join(OUT_DIR, PROJECT_NAME)
+      electron = os.path.join(OUT_DIR, PROJECT_NAME)
     index_json = os.path.relpath(os.path.join(OUT_DIR, 'index.json'))
-    execute([atom_shell,
+    execute([electron,
              os.path.join('tools', 'dump-version-info.js'),
              index_json])
 
