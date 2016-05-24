@@ -9,6 +9,15 @@ If you're still convinced, press on to...
 ## How to create a full custom release for Electron with surf-build
 
 1. Install [Surf](https://github.com/surf-build/surf), via npm: `npm install -g surf-build@latest`
+
+1. Create a new S3 bucket and create the following empty directory structure:
+
+```
+- atom-shell
+  - symbols
+  - dist
+```
+
 1. Set the following Environment Variables:
 
   * `ATOM_SHELL_GITHUB_TOKEN` - a token that can create releases on GitHub
