@@ -309,7 +309,7 @@ if (option.file && !option.webdriver) {
   console.log('v' + process.versions.electron)
   process.exit(0)
 } else if (option.help) {
-  const helpMessage = `Electron v${process.versions.electron} - Cross Platform Desktop Application Shell
+  const helpMessage = `Electron ${process.versions.electron} - Build cross platform desktop apps with JavaScript, HTML, and CSS
 
   Usage: electron [options] [path]
 
