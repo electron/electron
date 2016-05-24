@@ -257,9 +257,10 @@ function loadApplicationPackage (packagePath) {
     try {
       Module._resolveFilename(packagePath, module, true)
     } catch (e) {
-      showErrorMessage('Unable to find Electron app.\n\n' +
-        `See: ${packagePath}`)
+      showErrorMessage(`Unable to find Electron app at ${packagePath}.\n\n${e.message}`)
+      return
     }
+
     // Run the app.
     Module._load(packagePath, module, true)
   } catch (e) {
