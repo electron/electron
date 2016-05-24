@@ -124,13 +124,17 @@ def copy_license():
 
 
 def strip_binaries():
-  if get_target_arch() == 'arm':
-    strip = 'arm-linux-gnueabihf-strip'
-  else:
-    strip = 'strip'
   for binary in TARGET_BINARIES[PLATFORM]:
     if binary.endswith('.so') or '.' not in binary:
-      execute([strip, os.path.join(DIST_DIR, binary)])
+      strip_binary(os.path.join(DIST_DIR, binary))
+
+
+def strip_binary(binary_path):
+    if get_target_arch() == 'arm':
+      strip = 'arm-linux-gnueabihf-strip'
+    else:
+      strip = 'strip'
+    execute([strip, binary_path])
 
 
 def create_version():
@@ -191,6 +195,10 @@ def create_ffmpeg_zip():
 
   shutil.copy2(os.path.join(CHROMIUM_DIR, '..', 'ffmpeg', ffmpeg_name),
                DIST_DIR)
+
+  if PLATFORM == 'linux':
+    strip_binary(os.path.join(DIST_DIR, ffmpeg_name))
+
   with scoped_cwd(DIST_DIR):
     make_zip(zip_file, [ffmpeg_name, 'LICENSE', 'LICENSES.chromium.html'], [])
 
