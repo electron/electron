@@ -266,13 +266,9 @@ function loadApplicationPackage (packagePath) {
     // Run the app.
     Module._load(packagePath, module, true)
   } catch (e) {
-    if (e.code === 'MODULE_NOT_FOUND') {
-      showErrorMessage('Unable to open Electron app.\n\n' +
-        `${e.toString()}`)
-    } else {
-      console.error('App threw an error when running', e)
-      throw e
-    }
+    console.error('App threw an error during load')
+    console.error(e)
+    throw e
   }
 }
 
