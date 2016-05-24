@@ -205,7 +205,7 @@ int32_t PepperFlashRendererHost::OnDrawGlyphs(
     style |= SkTypeface::kBold;
   if (params.font_desc.italic)
     style |= SkTypeface::kItalic;
-  skia::RefPtr<SkTypeface> typeface = skia::AdoptRef(SkTypeface::CreateFromName(
+  sk_sp<SkTypeface> typeface(SkTypeface::CreateFromName(
       params.font_desc.face.c_str(), static_cast<SkTypeface::Style>(style)));
   if (!typeface)
     return PP_ERROR_FAILED;
@@ -255,7 +255,7 @@ int32_t PepperFlashRendererHost::OnDrawGlyphs(
   paint.setAntiAlias(true);
   paint.setHinting(SkPaint::kFull_Hinting);
   paint.setTextSize(SkIntToScalar(params.font_desc.size));
-  paint.setTypeface(typeface.get());  // Takes a ref and manages lifetime.
+  paint.setTypeface(std::move(typeface));
   if (params.allow_subpixel_aa) {
     paint.setSubpixelText(true);
     paint.setLCDRenderText(true);

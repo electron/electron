@@ -193,7 +193,7 @@ class Window : public mate::TrackableObject<Window>,
 
   api::WebContents* api_web_contents_;
 
-  scoped_ptr<NativeWindow> window_;
+  std::unique_ptr<NativeWindow> window_;
 
   DISALLOW_COPY_AND_ASSIGN(Window);
 };

@@ -51,7 +51,7 @@ void SetWindowType(::Window xwindow, const std::string& type) {
 }
 
 bool ShouldUseGlobalMenuBar() {
-  scoped_ptr<base::Environment> env(base::Environment::Create());
+  std::unique_ptr<base::Environment> env(base::Environment::Create());
   if (env->HasVar("ELECTRON_FORCE_WINDOW_MENU_BAR"))
     return false;
 
@@ -61,7 +61,7 @@ bool ShouldUseGlobalMenuBar() {
   dbus::ObjectProxy* object_proxy =
       bus->GetObjectProxy(DBUS_SERVICE_DBUS, dbus::ObjectPath(DBUS_PATH_DBUS));
   dbus::MethodCall method_call(DBUS_INTERFACE_DBUS, "ListNames");
-  scoped_ptr<dbus::Response> response(object_proxy->CallMethodAndBlock(
+  std::unique_ptr<dbus::Response> response(object_proxy->CallMethodAndBlock(
       &method_call, dbus::ObjectProxy::TIMEOUT_USE_DEFAULT));
   if (!response) {
     bus->ShutdownAndBlock();

@@ -26,12 +26,12 @@ class AtomBrowserContext : public brightray::BrowserContext {
   // brightray::URLRequestContextGetter::Delegate:
   net::NetworkDelegate* CreateNetworkDelegate() override;
   std::string GetUserAgent() override;
-  scoped_ptr<net::URLRequestJobFactory> CreateURLRequestJobFactory(
+  std::unique_ptr<net::URLRequestJobFactory> CreateURLRequestJobFactory(
       content::ProtocolHandlerMap* handlers,
       content::URLRequestInterceptorScopedVector* interceptors) override;
   net::HttpCache::BackendFactory* CreateHttpCacheBackendFactory(
       const base::FilePath& base_path) override;
-  scoped_ptr<net::CertVerifier> CreateCertVerifier() override;
+  std::unique_ptr<net::CertVerifier> CreateCertVerifier() override;
   net::SSLConfigService* CreateSSLConfigService() override;
 
   // content::BrowserContext:
@@ -49,9 +49,9 @@ class AtomBrowserContext : public brightray::BrowserContext {
   AtomNetworkDelegate* network_delegate() const { return network_delegate_; }
 
  private:
-  scoped_ptr<AtomDownloadManagerDelegate> download_manager_delegate_;
-  scoped_ptr<WebViewManager> guest_manager_;
-  scoped_ptr<AtomPermissionManager> permission_manager_;
+  std::unique_ptr<AtomDownloadManagerDelegate> download_manager_delegate_;
+  std::unique_ptr<WebViewManager> guest_manager_;
+  std::unique_ptr<AtomPermissionManager> permission_manager_;
 
   // Managed by brightray::BrowserContext.
   AtomCertVerifier* cert_verifier_;

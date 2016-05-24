@@ -70,7 +70,7 @@ class Tray : public mate::TrackableObject<Tray>,
   v8::Local<v8::Object> ModifiersToObject(v8::Isolate* isolate, int modifiers);
 
   v8::Global<v8::Object> menu_;
-  scoped_ptr<TrayIcon> tray_icon_;
+  std::unique_ptr<TrayIcon> tray_icon_;
 
   DISALLOW_COPY_AND_ASSIGN(Tray);
 };

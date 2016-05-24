@@ -34,8 +34,8 @@ void OnPointerLockResponse(content::WebContents* web_contents, bool allowed) {
 }
 
 void OnPermissionResponse(const base::Callback<void(bool)>& callback,
-                          content::PermissionStatus status) {
-  if (status == content::PermissionStatus::GRANTED)
+                          blink::mojom::PermissionStatus status) {
+  if (status == blink::mojom::PermissionStatus::GRANTED)
     callback.Run(true);
   else
     callback.Run(false);

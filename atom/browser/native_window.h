@@ -263,7 +263,7 @@ class NativeWindow : public base::SupportsUserData,
 
   // Convert draggable regions in raw format to SkRegion format. Caller is
   // responsible for deleting the returned SkRegion instance.
-  scoped_ptr<SkRegion> DraggableRegionsToSkRegion(
+  std::unique_ptr<SkRegion> DraggableRegionsToSkRegion(
       const std::vector<DraggableRegion>& regions);
 
   // Converts between content size to window size.
@@ -299,7 +299,7 @@ class NativeWindow : public base::SupportsUserData,
 
   // For custom drag, the whole window is non-draggable and the draggable region
   // has to been explicitly provided.
-  scoped_ptr<SkRegion> draggable_region_;  // used in custom drag.
+  std::unique_ptr<SkRegion> draggable_region_;  // used in custom drag.
 
   // Minimum and maximum size, stored as content size.
   extensions::SizeConstraints size_constraints_;

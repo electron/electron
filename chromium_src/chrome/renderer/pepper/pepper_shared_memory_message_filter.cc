@@ -43,7 +43,7 @@ void PepperSharedMemoryMessageFilter::OnHostMsgCreateSharedMemory(
     ppapi::proxy::SerializedHandle* plugin_handle) {
   plugin_handle->set_null_shmem();
   *host_handle_id = -1;
-  scoped_ptr<base::SharedMemory> shm(
+  std::unique_ptr<base::SharedMemory> shm(
       content::RenderThread::Get()->HostAllocateSharedMemoryBuffer(size));
   if (!shm.get())
     return;

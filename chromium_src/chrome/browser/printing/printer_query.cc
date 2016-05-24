@@ -85,7 +85,7 @@ void PrinterQuery::GetSettings(
                                margin_type));
 }
 
-void PrinterQuery::SetSettings(scoped_ptr<base::DictionaryValue> new_settings,
+void PrinterQuery::SetSettings(std::unique_ptr<base::DictionaryValue> new_settings,
                                const base::Closure& callback) {
   StartWorker(callback);
 

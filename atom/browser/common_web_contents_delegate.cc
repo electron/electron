@@ -464,7 +464,7 @@ void CommonWebContentsDelegate::DevToolsAddFileSystem(
   FileSystem file_system = CreateFileSystemStruct(GetDevToolsWebContents(),
                                                  file_system_id,
                                                  path.AsUTF8Unsafe());
-  scoped_ptr<base::DictionaryValue> file_system_value(
+  std::unique_ptr<base::DictionaryValue> file_system_value(
       CreateFileSystemValue(file_system));
 
   auto pref_service = GetPrefService(GetDevToolsWebContents());

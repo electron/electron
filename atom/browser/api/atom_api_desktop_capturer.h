@@ -39,7 +39,7 @@ class DesktopCapturer: public mate::EventEmitter<DesktopCapturer>,
   bool OnRefreshFinished() override;
 
  private:
-  scoped_ptr<DesktopMediaList> media_list_;
+  std::unique_ptr<DesktopMediaList> media_list_;
 
   DISALLOW_COPY_AND_ASSIGN(DesktopCapturer);
 };

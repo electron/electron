@@ -132,7 +132,7 @@ void PrintViewManagerBase::OnDidPrintPage(
     }
   }
 
-  scoped_ptr<PdfMetafileSkia> metafile(new PdfMetafileSkia);
+  std::unique_ptr<PdfMetafileSkia> metafile(new PdfMetafileSkia);
   if (metafile_must_be_valid) {
     if (!metafile->InitFromData(shared_buf.memory(), params.data_size)) {
       NOTREACHED() << "Invalid metafile header";

@@ -21,7 +21,6 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/common/content_paths.h"
 #include "native_mate/dictionary.h"
-#include "third_party/WebKit/public/web/WebScopedMicrotaskSuppression.h"
 
 using content::BrowserThread;
 
@@ -79,9 +78,9 @@ void UvNoOp(uv_async_t* handle) {
 // Convert the given vector to an array of C-strings. The strings in the
 // returned vector are only guaranteed valid so long as the vector of strings
 // is not modified.
-scoped_ptr<const char*[]> StringVectorToArgArray(
+std::unique_ptr<const char*[]> StringVectorToArgArray(
     const std::vector<std::string>& vector) {
-  scoped_ptr<const char*[]> array(new const char*[vector.size()]);
+  std::unique_ptr<const char*[]> array(new const char*[vector.size()]);
   for (size_t i = 0; i < vector.size(); ++i) {
     array[i] = vector[i].c_str();
   }
@@ -146,7 +145,7 @@ void NodeBindings::Initialize() {
 #if defined(OS_WIN)
   // uv_init overrides error mode to suppress the default crash dialog, bring
   // it back if user wants to show it.
-  scoped_ptr<base::Environment> env(base::Environment::Create());
+  std::unique_ptr<base::Environment> env(base::Environment::Create());
   if (env->HasVar("ELECTRON_DEFAULT_ERROR_MODE"))
     SetErrorMode(0);
 #endif
@@ -167,7 +166,7 @@ node::Environment* NodeBindings::CreateEnvironment(
   std::string script_path_str = script_path.AsUTF8Unsafe();
   args.insert(args.begin() + 1, script_path_str.c_str());
 
-  scoped_ptr<const char*[]> c_argv = StringVectorToArgArray(args);
+  std::unique_ptr<const char*[]> c_argv = StringVectorToArgArray(args);
   node::Environment* env = node::CreateEnvironment(
       context->GetIsolate(), uv_default_loop(), context,
       args.size(), c_argv.get(), 0, nullptr);
@@ -226,8 +225,10 @@ void NodeBindings::UvRunOnce() {
   v8::Context::Scope context_scope(env->context());
 
   // Perform microtask checkpoint after running JavaScript.
-  scoped_ptr<blink::WebScopedRunV8Script> script_scope(
-      is_browser_ ? nullptr : new blink::WebScopedRunV8Script);
+  std::unique_ptr<v8::MicrotasksScope> script_scope(is_browser_ ?
+      nullptr :
+      new v8::MicrotasksScope(env->isolate(),
+                              v8::MicrotasksScope::kRunMicrotasks));
 
   // Deal with uv events.
   int r = uv_run(uv_loop_, UV_RUN_NOWAIT);

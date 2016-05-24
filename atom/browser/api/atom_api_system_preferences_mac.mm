@@ -36,7 +36,7 @@ int SystemPreferences::SubscribeNotification(
       object:nil
       queue:nil
       usingBlock:^(NSNotification* notification) {
-        scoped_ptr<base::DictionaryValue> user_info =
+        std::unique_ptr<base::DictionaryValue> user_info =
             NSDictionaryToDictionaryValue(notification.userInfo);
         if (user_info) {
           copied_callback.Run(

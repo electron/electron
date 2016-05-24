@@ -281,7 +281,7 @@ PCWSTR Browser::GetAppUserModelID() {
 std::string Browser::GetExecutableFileVersion() const {
   base::FilePath path;
   if (PathService::Get(base::FILE_EXE, &path)) {
-    scoped_ptr<FileVersionInfo> version_info(
+    std::unique_ptr<FileVersionInfo> version_info(
         FileVersionInfo::CreateFileVersionInfo(path));
     return base::UTF16ToUTF8(version_info->product_version());
   }
@@ -292,7 +292,7 @@ std::string Browser::GetExecutableFileVersion() const {
 std::string Browser::GetExecutableFileProductName() const {
   base::FilePath path;
   if (PathService::Get(base::FILE_EXE, &path)) {
-    scoped_ptr<FileVersionInfo> version_info(
+    std::unique_ptr<FileVersionInfo> version_info(
         FileVersionInfo::CreateFileVersionInfo(path));
     return base::UTF16ToUTF8(version_info->product_name());
   }

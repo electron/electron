@@ -51,9 +51,9 @@ class App : public AtomBrowserClient::Delegate,
 
 #if defined(USE_NSS_CERTS)
   void OnCertificateManagerModelCreated(
-      scoped_ptr<base::DictionaryValue> options,
+      std::unique_ptr<base::DictionaryValue> options,
       const net::CompletionCallback& callback,
-      scoped_ptr<CertificateManagerModel> model);
+      std::unique_ptr<CertificateManagerModel> model);
 #endif
 
  protected:
@@ -93,7 +93,7 @@ class App : public AtomBrowserClient::Delegate,
   void SelectClientCertificate(
       content::WebContents* web_contents,
       net::SSLCertRequestInfo* cert_request_info,
-      scoped_ptr<content::ClientCertificateDelegate> delegate) override;
+      std::unique_ptr<content::ClientCertificateDelegate> delegate) override;
 
   // content::GpuDataManagerObserver:
   void OnGpuProcessCrashed(base::TerminationStatus exit_code) override;
@@ -115,10 +115,10 @@ class App : public AtomBrowserClient::Delegate,
                          const net::CompletionCallback& callback);
 #endif
 
-  scoped_ptr<ProcessSingleton> process_singleton_;
+  std::unique_ptr<ProcessSingleton> process_singleton_;
 
 #if defined(USE_NSS_CERTS)
-  scoped_ptr<CertificateManagerModel> certificate_manager_model_;
+  std::unique_ptr<CertificateManagerModel> certificate_manager_model_;
 #endif
 
   DISALLOW_COPY_AND_ASSIGN(App);

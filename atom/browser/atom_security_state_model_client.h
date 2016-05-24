@@ -32,7 +32,7 @@ class AtomSecurityStateModelClient
   friend class content::WebContentsUserData<AtomSecurityStateModelClient>;
 
   content::WebContents* web_contents_;
-  scoped_ptr<security_state::SecurityStateModel> security_state_model_;
+  std::unique_ptr<security_state::SecurityStateModel> security_state_model_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomSecurityStateModelClient);
 };

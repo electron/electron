@@ -99,7 +99,7 @@ void URLRequestFetchJob::BeforeStartInUI(
   }
 }
 
-void URLRequestFetchJob::StartAsync(scoped_ptr<base::Value> options) {
+void URLRequestFetchJob::StartAsync(std::unique_ptr<base::Value> options) {
   if (!options->IsType(base::Value::TYPE_DICTIONARY)) {
     NotifyStartError(net::URLRequestStatus(
           net::URLRequestStatus::FAILED, net::ERR_NOT_IMPLEMENTED));

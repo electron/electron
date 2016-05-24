@@ -37,7 +37,7 @@ class PowerSaveBlocker : public mate::TrackableObject<PowerSaveBlocker> {
   bool Stop(int id);
   bool IsStarted(int id);
 
-  scoped_ptr<content::PowerSaveBlocker> power_save_blocker_;
+  std::unique_ptr<content::PowerSaveBlocker> power_save_blocker_;
 
   // Currnet blocker type used by |power_save_blocker_|
   content::PowerSaveBlocker::PowerSaveBlockerType current_blocker_type_;

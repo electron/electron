@@ -244,10 +244,10 @@ class PrintWebViewHelper
   void SetPrintPagesParams(const PrintMsg_PrintPages_Params& settings);
 
   // WebView used only to print the selection.
-  scoped_ptr<PrepareFrameAndViewForPrint> prep_frame_view_;
+  std::unique_ptr<PrepareFrameAndViewForPrint> prep_frame_view_;
   bool reset_prep_frame_view_;
 
-  scoped_ptr<PrintMsg_PrintPages_Params> print_pages_params_;
+  std::unique_ptr<PrintMsg_PrintPages_Params> print_pages_params_;
   bool is_print_ready_metafile_sent_;
   bool ignore_css_margins_;
 
@@ -343,8 +343,8 @@ class PrintWebViewHelper
     FrameReference source_frame_;
     blink::WebNode source_node_;
 
-    scoped_ptr<PrepareFrameAndViewForPrint> prep_frame_view_;
-    scoped_ptr<PdfMetafileSkia> metafile_;
+    std::unique_ptr<PrepareFrameAndViewForPrint> prep_frame_view_;
+    std::unique_ptr<PdfMetafileSkia> metafile_;
 
     // Total page count in the renderer.
     int total_page_count_;

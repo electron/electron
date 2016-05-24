@@ -113,7 +113,7 @@ class TrackableObject : public TrackableObjectBase,
 
   void AfterInit(v8::Isolate* isolate) override {
     if (!weak_map_) {
-      weak_map_.reset(new atom::KeyWeakMap<int32_t>);
+      weak_map_ = new atom::KeyWeakMap<int32_t>;
     }
     weak_map_id_ = ++next_id_;
     weak_map_->Set(isolate, weak_map_id_, Wrappable<T>::GetWrapper());
@@ -123,7 +123,7 @@ class TrackableObject : public TrackableObjectBase,
 
  private:
   static int32_t next_id_;
-  static scoped_ptr<atom::KeyWeakMap<int32_t>> weak_map_;
+  static atom::KeyWeakMap<int32_t>* weak_map_;  // leaked on purpose
 
   DISALLOW_COPY_AND_ASSIGN(TrackableObject);
 };
@@ -132,7 +132,7 @@ template<typename T>
 int32_t TrackableObject<T>::next_id_ = 0;
 
 template<typename T>
-scoped_ptr<atom::KeyWeakMap<int32_t>> TrackableObject<T>::weak_map_;
+atom::KeyWeakMap<int32_t>* TrackableObject<T>::weak_map_ = nullptr;
 
 }  // namespace mate
 

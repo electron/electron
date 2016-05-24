@@ -170,19 +170,19 @@ class NativeWindowViews : public NativeWindow,
   // Returns the restore state for the window.
   ui::WindowShowState GetRestoredState();
 
-  scoped_ptr<views::Widget> window_;
+  std::unique_ptr<views::Widget> window_;
   views::View* web_view_;  // Managed by inspectable_web_contents_.
 
-  scoped_ptr<MenuBar> menu_bar_;
+  std::unique_ptr<MenuBar> menu_bar_;
   bool menu_bar_autohide_;
   bool menu_bar_visible_;
   bool menu_bar_alt_pressed_;
 
 #if defined(USE_X11)
-  scoped_ptr<GlobalMenuBarX11> global_menu_bar_;
+  std::unique_ptr<GlobalMenuBarX11> global_menu_bar_;
 
   // Handles window state events.
-  scoped_ptr<WindowStateWatcher> window_state_watcher_;
+  std::unique_ptr<WindowStateWatcher> window_state_watcher_;
 
   // The "resizable" flag on Linux is implemented by setting size constraints,
   // we need to make sure size constraints are restored when window becomes
@@ -208,7 +208,7 @@ class NativeWindowViews : public NativeWindow,
 #endif
 
   // Handles unhandled keyboard messages coming back from the renderer process.
-  scoped_ptr<views::UnhandledKeyboardEventHandler> keyboard_event_handler_;
+  std::unique_ptr<views::UnhandledKeyboardEventHandler> keyboard_event_handler_;
 
   // Map from accelerator to menu item's command id.
   accelerator_util::AcceleratorTable accelerator_table_;

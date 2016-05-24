@@ -34,7 +34,7 @@ void HandlerCallback(const BeforeStartCallback& before_start,
   // Pass whatever user passed to the actaul request job.
   V8ValueConverter converter;
   v8::Local<v8::Context> context = args->isolate()->GetCurrentContext();
-  scoped_ptr<base::Value> options(converter.FromV8Value(value, context));
+  std::unique_ptr<base::Value> options(converter.FromV8Value(value, context));
   content::BrowserThread::PostTask(
       content::BrowserThread::IO, FROM_HERE,
       base::Bind(callback, true, base::Passed(&options)));

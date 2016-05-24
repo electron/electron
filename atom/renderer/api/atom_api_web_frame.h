@@ -74,7 +74,7 @@ class WebFrame : public mate::Wrappable<WebFrame> {
   blink::WebCache::ResourceTypeStats GetResourceUsage(v8::Isolate* isolate);
   void ClearCache(v8::Isolate* isolate);
 
-  scoped_ptr<SpellCheckClient> spell_check_client_;
+  std::unique_ptr<SpellCheckClient> spell_check_client_;
 
   blink::WebLocalFrame* web_frame_;
 

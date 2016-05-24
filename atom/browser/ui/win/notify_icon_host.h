@@ -9,8 +9,7 @@
 
 #include <vector>
 
-#include "base/compiler_specific.h"
-#include "base/memory/scoped_ptr.h"
+#include "base/macros.h"
 
 namespace atom {
 

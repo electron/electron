@@ -92,6 +92,8 @@ struct Converter<blink::WebMouseEvent::Button> {
       *out = blink::WebMouseEvent::Button::ButtonMiddle;
     else if (button == "right")
       *out = blink::WebMouseEvent::Button::ButtonRight;
+    else
+      return false;
     return true;
   }
 };
@@ -202,7 +204,8 @@ bool Converter<blink::WebMouseEvent>::FromV8(
     return false;
   if (!dict.Get("x", &out->x) || !dict.Get("y", &out->y))
     return false;
-  dict.Get("button", &out->button);
+  if (!dict.Get("button", &out->button))
+    out->button = blink::WebMouseEvent::Button::ButtonLeft;
   dict.Get("globalX", &out->globalX);
   dict.Get("globalY", &out->globalY);
   dict.Get("movementX", &out->movementX);

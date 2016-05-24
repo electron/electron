@@ -33,14 +33,14 @@ namespace net {
 namespace test_server {
 
 // static
-scoped_ptr<TCPListenSocket> TCPListenSocket::CreateAndListen(
+std::unique_ptr<TCPListenSocket> TCPListenSocket::CreateAndListen(
     const string& ip,
     uint16_t port,
     StreamListenSocket::Delegate* del) {
   SocketDescriptor s = CreateAndBind(ip, port);
   if (s == kInvalidSocket)
-    return scoped_ptr<TCPListenSocket>();
-  scoped_ptr<TCPListenSocket> sock(new TCPListenSocket(s, del));
+    return std::unique_ptr<TCPListenSocket>();
+  std::unique_ptr<TCPListenSocket> sock(new TCPListenSocket(s, del));
   sock->Listen();
   return sock;
 }
@@ -108,7 +108,7 @@ void TCPListenSocket::Accept() {
   SocketDescriptor conn = AcceptSocket();
   if (conn == kInvalidSocket)
     return;
-  scoped_ptr<TCPListenSocket> sock(new TCPListenSocket(conn, socket_delegate_));
+  std::unique_ptr<TCPListenSocket> sock(new TCPListenSocket(conn, socket_delegate_));
 #if defined(OS_POSIX)
   sock->WatchSocket(WAITING_READ);
 #endif

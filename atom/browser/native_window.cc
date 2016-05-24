@@ -527,9 +527,9 @@ void NativeWindow::NotifyWindowMessage(
 }
 #endif
 
-scoped_ptr<SkRegion> NativeWindow::DraggableRegionsToSkRegion(
+std::unique_ptr<SkRegion> NativeWindow::DraggableRegionsToSkRegion(
     const std::vector<DraggableRegion>& regions) {
-  scoped_ptr<SkRegion> sk_region(new SkRegion);
+  std::unique_ptr<SkRegion> sk_region(new SkRegion);
   for (const DraggableRegion& region : regions) {
     sk_region->op(
         region.bounds.x(),

@@ -146,8 +146,8 @@ class CommonWebContentsDelegate
   // Whether window is fullscreened by window api.
   bool native_fullscreen_;
 
-  scoped_ptr<WebDialogHelper> web_dialog_helper_;
-  scoped_ptr<AtomJavaScriptDialogManager> dialog_manager_;
+  std::unique_ptr<WebDialogHelper> web_dialog_helper_;
+  std::unique_ptr<AtomJavaScriptDialogManager> dialog_manager_;
   scoped_refptr<DevToolsFileSystemIndexer> devtools_file_system_indexer_;
 
   // Make sure BrowserContext is alwasys destroyed after WebContents.
@@ -157,7 +157,7 @@ class CommonWebContentsDelegate
   // Notice that web_contents_ must be placed after dialog_manager_, so we can
   // make sure web_contents_ is destroyed before dialog_manager_, otherwise a
   // crash would happen.
-  scoped_ptr<brightray::InspectableWebContents> web_contents_;
+  std::unique_ptr<brightray::InspectableWebContents> web_contents_;
 
   // Maps url to file path, used by the file requests sent from devtools.
   typedef std::map<std::string, base::FilePath> PathsMap;

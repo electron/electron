@@ -110,7 +110,7 @@ class Protocol : public mate::Wrappable<Protocol> {
                                      const Handler& handler) {
     if (job_factory_->IsHandledProtocol(scheme))
       return PROTOCOL_REGISTERED;
-    scoped_ptr<CustomProtocolHandler<RequestJob>> protocol_handler(
+    std::unique_ptr<CustomProtocolHandler<RequestJob>> protocol_handler(
         new CustomProtocolHandler<RequestJob>(
             isolate(), request_context_getter_, handler));
     if (job_factory_->SetProtocolHandler(scheme, std::move(protocol_handler)))
@@ -152,7 +152,7 @@ class Protocol : public mate::Wrappable<Protocol> {
       return PROTOCOL_FAIL;
     if (ContainsKey(original_protocols_, scheme))
       return PROTOCOL_INTERCEPTED;
-    scoped_ptr<CustomProtocolHandler<RequestJob>> protocol_handler(
+    std::unique_ptr<CustomProtocolHandler<RequestJob>> protocol_handler(
         new CustomProtocolHandler<RequestJob>(
             isolate(), request_context_getter_, handler));
     original_protocols_.set(
@@ -176,7 +176,7 @@ class Protocol : public mate::Wrappable<Protocol> {
   // Map that stores the original protocols of schemes.
   using OriginalProtocolsMap = base::ScopedPtrHashMap<
       std::string,
-      scoped_ptr<net::URLRequestJobFactory::ProtocolHandler>>;
+      std::unique_ptr<net::URLRequestJobFactory::ProtocolHandler>>;
   OriginalProtocolsMap original_protocols_;
 
   AtomURLRequestJobFactory* job_factory_;  // weak ref

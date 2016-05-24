@@ -29,7 +29,7 @@ ChromeBrowserPepperHostFactory::ChromeBrowserPepperHostFactory(
 
 ChromeBrowserPepperHostFactory::~ChromeBrowserPepperHostFactory() {}
 
-scoped_ptr<ResourceHost> ChromeBrowserPepperHostFactory::CreateResourceHost(
+std::unique_ptr<ResourceHost> ChromeBrowserPepperHostFactory::CreateResourceHost(
     ppapi::host::PpapiHost* host,
     PP_Resource resource,
     PP_Instance instance,
@@ -38,7 +38,7 @@ scoped_ptr<ResourceHost> ChromeBrowserPepperHostFactory::CreateResourceHost(
 
   // Make sure the plugin is giving us a valid instance for this resource.
   if (!host_->IsValidInstance(instance))
-    return scoped_ptr<ResourceHost>();
+    return std::unique_ptr<ResourceHost>();
 
   // Private interfaces.
   if (host_->GetPpapiHost()->permissions().HasPermission(
@@ -47,7 +47,7 @@ scoped_ptr<ResourceHost> ChromeBrowserPepperHostFactory::CreateResourceHost(
       case PpapiHostMsg_Broker_Create::ID: {
         scoped_refptr<ResourceMessageFilter> broker_filter(
             new PepperBrokerMessageFilter(instance, host_));
-        return scoped_ptr<ResourceHost>(new MessageFilterHost(
+        return std::unique_ptr<ResourceHost>(new MessageFilterHost(
             host_->GetPpapiHost(), instance, resource, broker_filter));
       }
     }
@@ -58,16 +58,16 @@ scoped_ptr<ResourceHost> ChromeBrowserPepperHostFactory::CreateResourceHost(
           ppapi::PERMISSION_FLASH)) {
     switch (message.type()) {
       case PpapiHostMsg_Flash_Create::ID:
-        return scoped_ptr<ResourceHost>(
+        return std::unique_ptr<ResourceHost>(
             new PepperFlashBrowserHost(host_, instance, resource));
       case PpapiHostMsg_FlashClipboard_Create::ID: {
         scoped_refptr<ResourceMessageFilter> clipboard_filter(
             new PepperFlashClipboardMessageFilter);
-        return scoped_ptr<ResourceHost>(new MessageFilterHost(
+        return std::unique_ptr<ResourceHost>(new MessageFilterHost(
             host_->GetPpapiHost(), instance, resource, clipboard_filter));
       }
       case PpapiHostMsg_FlashDRM_Create::ID:
-        return scoped_ptr<ResourceHost>(
+        return std::unique_ptr<ResourceHost>(
             new chrome::PepperFlashDRMHost(host_, instance, resource));
     }
   }
@@ -82,12 +82,12 @@ scoped_ptr<ResourceHost> ChromeBrowserPepperHostFactory::CreateResourceHost(
     PepperIsolatedFileSystemMessageFilter* isolated_fs_filter =
         PepperIsolatedFileSystemMessageFilter::Create(instance, host_);
     if (!isolated_fs_filter)
-      return scoped_ptr<ResourceHost>();
-    return scoped_ptr<ResourceHost>(
+      return std::unique_ptr<ResourceHost>();
+    return std::unique_ptr<ResourceHost>(
         new MessageFilterHost(host, instance, resource, isolated_fs_filter));
   }
 
-  return scoped_ptr<ResourceHost>();
+  return std::unique_ptr<ResourceHost>();
 }
 
 }  // namespace chrome

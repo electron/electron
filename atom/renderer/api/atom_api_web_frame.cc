@@ -158,7 +158,7 @@ void WebFrame::ExecuteJavaScript(const base::string16& code,
   args->GetNext(&has_user_gesture);
   ScriptExecutionCallback::CompletionCallback completion_callback;
   args->GetNext(&completion_callback);
-  scoped_ptr<blink::WebScriptExecutionCallback> callback(
+  std::unique_ptr<blink::WebScriptExecutionCallback> callback(
       new ScriptExecutionCallback(completion_callback));
   web_frame_->requestExecuteScriptAndReturnValue(
       blink::WebScriptSource(code),

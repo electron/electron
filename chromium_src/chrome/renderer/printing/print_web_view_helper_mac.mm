@@ -54,7 +54,7 @@ bool PrintWebViewHelper::RenderPreviewPage(
     int page_number,
     const PrintMsg_Print_Params& print_params) {
   PrintMsg_Print_Params printParams = print_params;
-  scoped_ptr<PdfMetafileSkia> draft_metafile;
+  std::unique_ptr<PdfMetafileSkia> draft_metafile;
   PdfMetafileSkia* initial_render_metafile = print_preview_context_.metafile();
 
   bool render_to_draft = print_preview_context_.IsModifiable() &&

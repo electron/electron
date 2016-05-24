@@ -18,7 +18,7 @@ URLRequestBufferJob::URLRequestBufferJob(
       status_code_(net::HTTP_NOT_IMPLEMENTED) {
 }
 
-void URLRequestBufferJob::StartAsync(scoped_ptr<base::Value> options) {
+void URLRequestBufferJob::StartAsync(std::unique_ptr<base::Value> options) {
   const base::BinaryValue* binary = nullptr;
   if (options->IsType(base::Value::TYPE_DICTIONARY)) {
     base::DictionaryValue* dict =

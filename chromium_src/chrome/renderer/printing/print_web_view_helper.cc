@@ -1169,7 +1169,7 @@ bool PrintWebViewHelper::CopyMetafileDataToSharedMem(
   if (buf_size == 0)
     return false;
 
-  scoped_ptr<base::SharedMemory> shared_buf(
+  std::unique_ptr<base::SharedMemory> shared_buf(
       content::RenderThread::Get()->HostAllocateSharedMemoryBuffer(buf_size));
   if (!shared_buf)
     return false;

@@ -112,7 +112,7 @@ class URLRequestAsarJob : public net::URLRequestJob {
   base::FilePath file_path_;
   Archive::FileInfo file_info_;
 
-  scoped_ptr<net::FileStream> stream_;
+  std::unique_ptr<net::FileStream> stream_;
   FileMetaInfo meta_info_;
   scoped_refptr<base::TaskRunner> file_task_runner_;
 

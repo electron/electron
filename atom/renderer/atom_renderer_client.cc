@@ -95,15 +95,11 @@ AtomRendererClient::AtomRendererClient()
 AtomRendererClient::~AtomRendererClient() {
 }
 
-void AtomRendererClient::WebKitInitialized() {
+void AtomRendererClient::RenderThreadStarted() {
   blink::WebCustomElement::addEmbedderCustomElementName("webview");
   blink::WebCustomElement::addEmbedderCustomElementName("browserplugin");
 
   OverrideNodeArrayBuffer();
-}
-
-void AtomRendererClient::RenderThreadStarted() {
-  content::RenderThread::Get()->AddObserver(this);
 
 #if defined(OS_WIN)
   // Set ApplicationUserModelID in renderer process.

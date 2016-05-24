@@ -112,7 +112,7 @@ void RunCallbackInUI(const base::Closure& callback) {
 }
 
 // Remove cookies from |list| not matching |filter|, and pass it to |callback|.
-void FilterCookies(scoped_ptr<base::DictionaryValue> filter,
+void FilterCookies(std::unique_ptr<base::DictionaryValue> filter,
                    const Cookies::GetCallback& callback,
                    const net::CookieList& list) {
   net::CookieList result;
@@ -125,7 +125,7 @@ void FilterCookies(scoped_ptr<base::DictionaryValue> filter,
 
 // Receives cookies matching |filter| in IO thread.
 void GetCookiesOnIO(scoped_refptr<net::URLRequestContextGetter> getter,
-                    scoped_ptr<base::DictionaryValue> filter,
+                    std::unique_ptr<base::DictionaryValue> filter,
                     const Cookies::GetCallback& callback) {
   std::string url;
   filter->GetString("url", &url);
@@ -157,7 +157,7 @@ void OnSetCookie(const Cookies::SetCallback& callback, bool success) {
 
 // Sets cookie with |details| in IO thread.
 void SetCookieOnIO(scoped_refptr<net::URLRequestContextGetter> getter,
-                   scoped_ptr<base::DictionaryValue> details,
+                   std::unique_ptr<base::DictionaryValue> details,
                    const Cookies::SetCallback& callback) {
   std::string url, name, value, domain, path;
   bool secure = false;
@@ -197,8 +197,8 @@ void SetCookieOnIO(scoped_refptr<net::URLRequestContextGetter> getter,
   GetCookieStore(getter)->SetCookieWithDetailsAsync(
       GURL(url), name, value, domain, path, creation_time,
       expiration_time, last_access_time, secure, http_only,
-      false, false, net::COOKIE_PRIORITY_DEFAULT,
-      base::Bind(OnSetCookie, callback));
+      net::CookieSameSite::DEFAULT_MODE, false,
+      net::COOKIE_PRIORITY_DEFAULT, base::Bind(OnSetCookie, callback));
 }
 
 }  // namespace
@@ -214,7 +214,7 @@ Cookies::~Cookies() {
 
 void Cookies::Get(const base::DictionaryValue& filter,
                   const GetCallback& callback) {
-  scoped_ptr<base::DictionaryValue> copied(filter.CreateDeepCopy());
+  std::unique_ptr<base::DictionaryValue> copied(filter.CreateDeepCopy());
   auto getter = make_scoped_refptr(request_context_getter_);
   content::BrowserThread::PostTask(
       BrowserThread::IO, FROM_HERE,
@@ -231,7 +231,7 @@ void Cookies::Remove(const GURL& url, const std::string& name,
 
 void Cookies::Set(const base::DictionaryValue& details,
                   const SetCallback& callback) {
-  scoped_ptr<base::DictionaryValue> copied(details.CreateDeepCopy());
+  std::unique_ptr<base::DictionaryValue> copied(details.CreateDeepCopy());
   auto getter = make_scoped_refptr(request_context_getter_);
   content::BrowserThread::PostTask(
       BrowserThread::IO, FROM_HERE,

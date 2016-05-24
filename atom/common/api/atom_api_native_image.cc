@@ -76,7 +76,7 @@ bool AddImageSkiaRep(gfx::ImageSkia* image,
                      const unsigned char* data,
                      size_t size,
                      double scale_factor) {
-  scoped_ptr<SkBitmap> decoded(new SkBitmap());
+  std::unique_ptr<SkBitmap> decoded(new SkBitmap());
 
   // Try PNG first.
   if (!gfx::PNGCodec::Decode(data, size, decoded.get()))
@@ -162,7 +162,7 @@ base::win::ScopedHICON ReadICOFromPath(int size, const base::FilePath& path) {
 
 void ReadImageSkiaFromICO(gfx::ImageSkia* image, HICON icon) {
   // Convert the icon from the Windows specific HICON to gfx::ImageSkia.
-  scoped_ptr<SkBitmap> bitmap(IconUtil::CreateSkBitmapFromHICON(icon));
+  std::unique_ptr<SkBitmap> bitmap(IconUtil::CreateSkBitmapFromHICON(icon));
   image->AddRepresentation(gfx::ImageSkiaRep(*bitmap, 1.0f));
 }
 #endif

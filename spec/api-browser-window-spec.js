@@ -476,18 +476,11 @@ describe('browser-window module', function () {
   })
 
   describe('beforeunload handler', function () {
-    it('returning true would not prevent close', function (done) {
+    it('returning undefined would not prevent close', function (done) {
       w.on('closed', function () {
         done()
       })
-      w.loadURL('file://' + path.join(fixtures, 'api', 'close-beforeunload-true.html'))
-    })
-
-    it('returning non-empty string would not prevent close', function (done) {
-      w.on('closed', function () {
-        done()
-      })
-      w.loadURL('file://' + path.join(fixtures, 'api', 'close-beforeunload-string.html'))
+      w.loadURL('file://' + path.join(fixtures, 'api', 'close-beforeunload-undefined.html'))
     })
 
     it('returning false would prevent close', function (done) {

@@ -30,7 +30,7 @@ class URLRequestFetchJob : public JsAsker<net::URLRequestJob>,
  protected:
   // JsAsker:
   void BeforeStartInUI(v8::Isolate*, v8::Local<v8::Value>) override;
-  void StartAsync(scoped_ptr<base::Value> options) override;
+  void StartAsync(std::unique_ptr<base::Value> options) override;
 
   // net::URLRequestJob:
   void Kill() override;
@@ -44,10 +44,10 @@ class URLRequestFetchJob : public JsAsker<net::URLRequestJob>,
 
  private:
   scoped_refptr<net::URLRequestContextGetter> url_request_context_getter_;
-  scoped_ptr<net::URLFetcher> fetcher_;
+  std::unique_ptr<net::URLFetcher> fetcher_;
   scoped_refptr<net::IOBuffer> pending_buffer_;
   int pending_buffer_size_;
-  scoped_ptr<net::HttpResponseInfo> response_info_;
+  std::unique_ptr<net::HttpResponseInfo> response_info_;
 
   DISALLOW_COPY_AND_ASSIGN(URLRequestFetchJob);
 };

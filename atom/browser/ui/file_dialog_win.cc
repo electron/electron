@@ -134,7 +134,7 @@ class FileDialog {
       GetPtr()->SetFolder(folder_item);
   }
 
-  scoped_ptr<T> dialog_;
+  std::unique_ptr<T> dialog_;
 
   DISALLOW_COPY_AND_ASSIGN(FileDialog);
 };
@@ -145,7 +145,7 @@ struct RunState {
 };
 
 bool CreateDialogThread(RunState* run_state) {
-  scoped_ptr<base::Thread> thread(
+  std::unique_ptr<base::Thread> thread(
       new base::Thread(ATOM_PRODUCT_NAME "FileDialogThread"));
   thread->init_com_with_mta(false);
   if (!thread->Start())
