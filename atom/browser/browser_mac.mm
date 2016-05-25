@@ -13,6 +13,8 @@
 #include "base/mac/foundation_util.h"
 #include "base/strings/sys_string_conversions.h"
 #include "brightray/common/application_info.h"
+#include "net/base/mac/url_conversions.h"
+#include "url/gurl.h"
 
 namespace atom {
 
@@ -112,12 +114,16 @@ bool Browser::IsDefaultProtocolClient(const std::string& protocol) {
 void Browser::SetAppUserModelID(const base::string16& name) {
 }
 
-void Browser::SetUserActivity(
-    const std::string& type,
-    const base::DictionaryValue& user_info) {
+void Browser::SetUserActivity(const std::string& type,
+                              const base::DictionaryValue& user_info,
+                              mate::Arguments* args) {
+  std::string url_string;
+  args->GetNext(&url_string);
+
   [[AtomApplication sharedApplication]
       setCurrentActivity:base::SysUTF8ToNSString(type)
-            withUserInfo:DictionaryValueToNSDictionary(user_info)];
+            withUserInfo:DictionaryValueToNSDictionary(user_info)
+          withWebpageURL:net::NSURLWithGURL(GURL(url_string))];
 }
 
 std::string Browser::GetCurrentActivityType() {
@@ -126,9 +132,8 @@ std::string Browser::GetCurrentActivityType() {
   return base::SysNSStringToUTF8(userActivity.activityType);
 }
 
-bool Browser::ContinueUserActivity(
-    const std::string& type,
-    const base::DictionaryValue& user_info) {
+bool Browser::ContinueUserActivity(const std::string& type,
+                                   const base::DictionaryValue& user_info) {
   bool prevent_default = false;
   FOR_EACH_OBSERVER(BrowserObserver,
                     observers_,

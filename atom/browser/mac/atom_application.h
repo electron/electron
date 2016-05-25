@@ -21,6 +21,8 @@
 - (void)setHandlingSendEvent:(BOOL)handlingSendEvent;
 
 - (NSUserActivity*)getCurrentActivity;
-- (void)setCurrentActivity:(NSString*)type withUserInfo:(NSDictionary*)userInfo;
+- (void)setCurrentActivity:(NSString*)type
+              withUserInfo:(NSDictionary*)userInfo
+            withWebpageURL:(NSURL*)webpageURL;
 
 @end
