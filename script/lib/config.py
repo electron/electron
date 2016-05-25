@@ -46,9 +46,10 @@ def get_chromedriver_version():
 
 
 def s3_config():
-  config = (os.environ.get('ELECTRON_S3_BUCKET', ''),
-            os.environ.get('ELECTRON_S3_ACCESS_KEY', ''),
-            os.environ.get('ELECTRON_S3_SECRET_KEY', ''))
+  # TODO Remove ATOM_SHELL_* fallback values
+  config = (os.environ.get('ELECTRON_S3_BUCKET', os.environ.get('ATOM_SHELL_S3_BUCKET', '')),
+            os.environ.get('ELECTRON_S3_ACCESS_KEY',  os.environ.get('ATOM_SHELL_S3_ACCESS_KEY', '')),
+            os.environ.get('ELECTRON_S3_SECRET_KEY', os.environ.get('ATOM_SHELL_S3_SECRET_KEY', '')))
   message = ('Error: Please set the $ELECTRON_S3_BUCKET, '
              '$ELECTRON_S3_ACCESS_KEY, and '
              '$ELECTRON_S3_SECRET_KEY environment variables')
