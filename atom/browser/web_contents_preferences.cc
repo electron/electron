@@ -158,7 +158,7 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
 
   NativeWindow* window = NativeWindow::FromWebContents(web_contents);
 
-  // Inherit initial visibilty state from parent window in webviews
+  // Use parent window for webviews
   if (guest_instance_id && !window) {
     auto manager = WebViewManager::GetWebViewManager(web_contents);
     if (manager) {
