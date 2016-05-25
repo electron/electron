@@ -137,20 +137,21 @@ with `callback(error, cookies)` on complete.
 #### `ses.cookies.set(details, callback)`
 
 * `details` Object
-  * `url` String - Retrieves cookies which are associated with `url`
+  * `url` String - The url to associate the cookie with.
   * `name` String - The name of the cookie. Empty by default if omitted.
   * `value` String - The value of the cookie. Empty by default if omitted.
   * `domain` String - The domain of the cookie. Empty by default if omitted.
   * `path` String - The path of the cookie. Empty by default if omitted.
   * `secure` Boolean - Whether the cookie should be marked as Secure. Defaults to
     false.
-  * `session` Boolean - Whether the cookie should be marked as HttpOnly. Defaults
+  * `session` Boolean - Whether the cookie should be marked as HTTP only. Defaults
     to false.
   * `expirationDate` Double -	The expiration date of the cookie as the number of
-    seconds since the UNIX epoch. If omitted, the cookie becomes a session cookie.
+    seconds since the UNIX epoch. If omitted then the cookie becomes a session
+    cookie and will not be retained between sessions.
 * `callback` Function
 
-Sets the cookie with `details`, `callback` will be called with `callback(error)`
+Sets a cookie with `details`, `callback` will be called with `callback(error)`
 on complete.
 
 #### `ses.cookies.remove(url, name, callback)`
