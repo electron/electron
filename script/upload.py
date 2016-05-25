@@ -9,7 +9,7 @@ import tempfile
 
 from lib.config import PLATFORM, get_target_arch, get_chromedriver_version, \
                        get_platform_key, get_env_var
-from lib.util import atom_gyp, execute, get_electron_version, parse_version, \
+from lib.util import electron_gyp, execute, get_electron_version, parse_version, \
                      scoped_cwd
 from lib.github import GitHub
 
@@ -17,8 +17,8 @@ from lib.github import GitHub
 ELECTRON_REPO = 'electron/electron'
 ELECTRON_VERSION = get_electron_version()
 
-PROJECT_NAME = atom_gyp()['project_name%']
-PRODUCT_NAME = atom_gyp()['product_name%']
+PROJECT_NAME = electron_gyp()['project_name%']
+PRODUCT_NAME = electron_gyp()['product_name%']
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 OUT_DIR = os.path.join(SOURCE_ROOT, 'out', 'R')
@@ -80,7 +80,7 @@ def main():
     # Do not upload other files when passed "-p".
     return
 
-  # Upload atom-shell with GitHub Releases API.
+  # Upload Electron with GitHub Releases API.
   upload_electron(github, release, os.path.join(DIST_DIR, DIST_NAME))
   upload_electron(github, release, os.path.join(DIST_DIR, SYMBOLS_NAME))
   if PLATFORM == 'darwin':

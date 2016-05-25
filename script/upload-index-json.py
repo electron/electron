@@ -4,14 +4,14 @@ import os
 import sys
 
 from lib.config import PLATFORM, s3_config
-from lib.util import atom_gyp, execute, s3put, scoped_cwd
+from lib.util import electron_gyp, execute, s3put, scoped_cwd
 
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 OUT_DIR     = os.path.join(SOURCE_ROOT, 'out', 'D')
 
-PROJECT_NAME = atom_gyp()['project_name%']
-PRODUCT_NAME = atom_gyp()['product_name%']
+PROJECT_NAME = electron_gyp()['project_name%']
+PRODUCT_NAME = electron_gyp()['product_name%']
 
 
 def main():

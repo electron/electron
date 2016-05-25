@@ -12,7 +12,7 @@ from lib.config import LIBCHROMIUMCONTENT_COMMIT, BASE_URL, PLATFORM, \
                        get_target_arch, get_chromedriver_version, \
                        get_platform_key
 from lib.util import scoped_cwd, rm_rf, get_electron_version, make_zip, \
-                     execute, atom_gyp
+                     execute, electron_gyp
 
 
 ELECTRON_VERSION = get_electron_version()
@@ -23,8 +23,8 @@ OUT_DIR = os.path.join(SOURCE_ROOT, 'out', 'R')
 CHROMIUM_DIR = os.path.join(SOURCE_ROOT, 'vendor', 'brightray', 'vendor',
                             'download', 'libchromiumcontent', 'static_library')
 
-PROJECT_NAME = atom_gyp()['project_name%']
-PRODUCT_NAME = atom_gyp()['product_name%']
+PROJECT_NAME = electron_gyp()['project_name%']
+PRODUCT_NAME = electron_gyp()['product_name%']
 
 TARGET_BINARIES = {
   'darwin': [

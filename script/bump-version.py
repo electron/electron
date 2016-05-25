@@ -27,7 +27,7 @@ def main():
   version = '.'.join(versions[:3])
 
   with scoped_cwd(SOURCE_ROOT):
-    update_atom_gyp(version)
+    update_electron_gyp(version)
     update_win_rc(version, versions)
     update_version_h(versions)
     update_info_plist(version)
@@ -42,7 +42,7 @@ def increase_version(versions, index):
   return versions
 
 
-def update_atom_gyp(version):
+def update_electron_gyp(version):
   pattern = re.compile(" *'version%' *: *'[0-9.]+'")
   with open('electron.gyp', 'r') as f:
     lines = f.readlines()
