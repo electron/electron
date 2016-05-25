@@ -30,6 +30,13 @@ bool IsBrowserProcess(base::CommandLine* cmd) {
   return process_type.empty();
 }
 
+#if defined(OS_WIN)
+void InvalidParameterHandler(const wchar_t*, const wchar_t*, const wchar_t*,
+                             unsigned int, uintptr_t) {
+  // noop.
+}
+#endif
+
 }  // namespace
 
 AtomMainDelegate::AtomMainDelegate() {
@@ -85,6 +92,11 @@ bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
 
 #if defined(OS_MACOSX)
   SetUpBundleOverrides();
+#endif
+
+#if defined(OS_WIN)
+  // Ignore invalid parameter errors.
+  _set_invalid_parameter_handler(InvalidParameterHandler);
 #endif
 
   return brightray::MainDelegate::BasicStartupComplete(exit_code);
