@@ -8,6 +8,7 @@
 #include <map>
 
 #include "content/public/browser/browser_plugin_guest_manager.h"
+#include "content/public/browser/web_contents.h"
 
 namespace atom {
 
@@ -21,6 +22,10 @@ class WebViewManager : public content::BrowserPluginGuestManager {
                 content::WebContents* embedder,
                 content::WebContents* web_contents);
   void RemoveGuest(int guest_instance_id);
+
+  content::WebContents* GetEmbedder(int guest_instance_id);
+
+  static WebViewManager* GetWebViewManager(content::WebContents* web_contents);
 
  protected:
   // content::BrowserPluginGuestManager:

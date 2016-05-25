@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "atom/browser/native_window.h"
+#include "atom/browser/web_view_manager.h"
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/options_switches.h"
 #include "base/command_line.h"
@@ -155,19 +156,23 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
     command_line->AppendSwitchASCII(::switches::kEnableBlinkFeatures,
                                     blink_features);
 
-  // The initial visibility state.
   NativeWindow* window = NativeWindow::FromWebContents(web_contents);
+
+  // Inherit initial visibilty state from parent window in webviews
+  if (guest_instance_id && !window) {
+    auto manager = WebViewManager::GetWebViewManager(web_contents);
+    if (manager) {
+      content::WebContents* embedder = manager->GetEmbedder(guest_instance_id);
+      if (embedder)
+        window = NativeWindow::FromWebContents(embedder);
+    }
+  }
+
+  // The initial visibility state.
   if (window) {
     bool visible = window->IsVisible() && !window->IsMinimized();
     if (!visible)  // Default state is visible.
       command_line->AppendSwitch(switches::kHiddenPage);
-  } else {
-    // Inherit initial visibilty state from parent window in webviews
-    bool hidden_page;
-    if (web_preferences.GetBoolean(options::kHiddenPage, &hidden_page) &&
-        hidden_page) {
-      command_line->AppendSwitch(switches::kHiddenPage);
-    }
   }
 }
 

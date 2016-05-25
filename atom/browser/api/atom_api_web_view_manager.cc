@@ -14,22 +14,12 @@ using atom::WebContentsPreferences;
 
 namespace {
 
-atom::WebViewManager* GetWebViewManager(content::WebContents* web_contents) {
-  auto context = web_contents->GetBrowserContext();
-  if (context) {
-    auto manager = context->GetGuestManager();
-    return static_cast<atom::WebViewManager*>(manager);
-  } else {
-    return nullptr;
-  }
-}
-
 void AddGuest(int guest_instance_id,
               int element_instance_id,
               content::WebContents* embedder,
               content::WebContents* guest_web_contents,
               const base::DictionaryValue& options) {
-  auto manager = GetWebViewManager(embedder);
+  auto manager = atom::WebViewManager::GetWebViewManager(embedder);
   if (manager)
     manager->AddGuest(guest_instance_id, element_instance_id, embedder,
                       guest_web_contents);
@@ -38,7 +28,7 @@ void AddGuest(int guest_instance_id,
 }
 
 void RemoveGuest(content::WebContents* embedder, int guest_instance_id) {
-  auto manager = GetWebViewManager(embedder);
+  auto manager = atom::WebViewManager::GetWebViewManager(embedder);
   if (manager)
     manager->RemoveGuest(guest_instance_id);
 }
