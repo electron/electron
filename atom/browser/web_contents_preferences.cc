@@ -156,6 +156,7 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
     command_line->AppendSwitchASCII(::switches::kEnableBlinkFeatures,
                                     blink_features);
 
+  // The initial visibility state.
   NativeWindow* window = NativeWindow::FromWebContents(web_contents);
 
   // Use embedder window for webviews
@@ -168,7 +169,6 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
     }
   }
 
-  // The initial visibility state.
   if (window) {
     bool visible = window->IsVisible() && !window->IsMinimized();
     if (!visible)  // Default state is visible.
