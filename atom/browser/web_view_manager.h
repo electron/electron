@@ -8,7 +8,6 @@
 #include <map>
 
 #include "content/public/browser/browser_plugin_guest_manager.h"
-#include "content/public/browser/web_contents.h"
 
 namespace atom {
 
