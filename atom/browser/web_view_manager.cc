@@ -82,5 +82,4 @@ WebViewManager* WebViewManager::GetWebViewManager(content::WebContents* web_cont
   }
 }
 
-
 }  // namespace atom

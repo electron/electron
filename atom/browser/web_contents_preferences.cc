@@ -172,7 +172,7 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
   if (window) {
     bool visible = window->IsVisible() && !window->IsMinimized();
     if (!visible)  // Default state is visible.
-      command_line->AppendSwitch(switches::kHiddenPage);
+      command_line->AppendSwitch("hidden-page");
   }
 }
 
