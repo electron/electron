@@ -163,7 +163,7 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
   if (guest_instance_id && !window) {
     auto manager = WebViewManager::GetWebViewManager(web_contents);
     if (manager) {
-      content::WebContents* embedder = manager->GetEmbedder(guest_instance_id);
+      auto embedder = manager->GetEmbedder(guest_instance_id);
       if (embedder)
         window = NativeWindow::FromWebContents(embedder);
     }
