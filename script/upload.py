@@ -8,7 +8,7 @@ import sys
 import tempfile
 
 from lib.config import PLATFORM, get_target_arch, get_chromedriver_version, \
-                       get_platform_key
+                       get_platform_key, get_env_var
 from lib.util import atom_gyp, execute, get_electron_version, parse_version, \
                      scoped_cwd
 from lib.github import GitHub
@@ -221,7 +221,7 @@ def publish_release(github, release_id):
 
 
 def auth_token():
-  token = os.environ.get('ELECTRON_GITHUB_TOKEN')
+  token = get_env_var('GITHUB_TOKEN')
   message = ('Error: Please set the $ELECTRON_GITHUB_TOKEN '
              'environment variable, which is your personal token')
   assert token, message
