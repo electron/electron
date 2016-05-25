@@ -77,7 +77,7 @@ WebViewManager* WebViewManager::GetWebViewManager(
   auto context = web_contents->GetBrowserContext();
   if (context) {
     auto manager = context->GetGuestManager();
-    return static_cast<atom::WebViewManager*>(manager);
+    return static_cast<WebViewManager*>(manager);
   } else {
     return nullptr;
   }
