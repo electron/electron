@@ -401,6 +401,13 @@ bool App::MakeSingleInstance(
   }
 }
 
+void App::ReleaseSingleInstance() {
+  if (process_singleton_.get()) {
+    process_singleton_->Cleanup();
+    process_singleton_.reset();
+  }
+}
+
 #if defined(USE_NSS_CERTS)
 void App::ImportCertificate(
     const base::DictionaryValue& options,
@@ -480,7 +487,8 @@ void App::BuildPrototype(
 #if defined(USE_NSS_CERTS)
       .SetMethod("importCertificate", &App::ImportCertificate)
 #endif
-      .SetMethod("makeSingleInstance", &App::MakeSingleInstance);
+      .SetMethod("makeSingleInstance", &App::MakeSingleInstance)
+      .SetMethod("releaseSingleInstance", &App::ReleaseSingleInstance);
 }
 
 }  // namespace api

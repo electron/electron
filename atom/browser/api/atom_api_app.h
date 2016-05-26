@@ -108,6 +108,7 @@ class App : public AtomBrowserClient::Delegate,
   void SetDesktopName(const std::string& desktop_name);
   bool MakeSingleInstance(
       const ProcessSingleton::NotificationCallback& callback);
+  void ReleaseSingleInstance();
   std::string GetLocale();
 
 #if defined(USE_NSS_CERTS)
