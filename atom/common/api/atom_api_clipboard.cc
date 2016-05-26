@@ -154,7 +154,7 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   dict.SetMethod("writeImage", &WriteImage);
   dict.SetMethod("clear", &Clear);
 
-  // TODO Remove in 2.0, deprecate before then with warnings
+  // TODO(kevinsawicki): Remove in 2.0, deprecate before then with warnings
   dict.SetMethod("readRtf", &ReadRtf);
   dict.SetMethod("writeRtf", &WriteRtf);
   dict.SetMethod("readHtml", &ReadHtml);
