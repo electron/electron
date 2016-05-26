@@ -63,6 +63,10 @@ Evaluates the code in the child window.
 
 Focuses the child window (brings the window to front).
 
+### `BrowserWindowProxy.print()`
+
+Invokes the print dialog on the child window.
+
 ### `BrowserWindowProxy.postMessage(message, targetOrigin)`
 
 * `message` String
