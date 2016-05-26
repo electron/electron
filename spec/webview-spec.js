@@ -158,6 +158,35 @@ describe('<webview> tag', function () {
       document.body.appendChild(webview)
     })
 
+    it('loads multiple scripts', function () {
+      var script1 = false;
+      var script2 = false;
+
+      var callback = () => {
+        if (script1 && script2)
+          done()
+      }
+
+      var scripts = [
+        fixtures + '/module' + '/preload-script-1.js',
+        fixtures + '/module' + '/preload-script-2.js'
+      ]
+
+      webview.addEventListener('preload-script-1', function (event, test) {
+        script1 = true
+        callback()
+      })
+
+      webview.addEventListener('preload-script-2', function (event, test) {
+        script2 = true
+        callback()
+      })
+
+      webview.setAttribute('preload', scripts)
+      webview.src = 'file://' + fixtures + '/api/blank.html'
+      document.body.appendChild(webview)
+    })
+
     it('preload script can still use "process" in required modules when nodeintegration is off', function (done) {
       webview.addEventListener('console-message', function (e) {
         assert.equal(e.message, 'object undefined object')

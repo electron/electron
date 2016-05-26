@@ -435,6 +435,8 @@ describe('browser-window module', function () {
   describe('"web-preferences" option', function () {
     afterEach(function () {
       ipcMain.removeAllListeners('answer')
+      ipcMain.removeAllListeners('preload-script-1')
+      ipcMain.removeAllListeners('preload-script-2')
     })
 
     describe('"preload" option', function () {
@@ -445,6 +447,7 @@ describe('browser-window module', function () {
           done()
         })
         w.destroy()
+
         w = new BrowserWindow({
           show: false,
           webPreferences: {
@@ -452,6 +455,41 @@ describe('browser-window module', function () {
           }
         })
         w.loadURL('file://' + path.join(fixtures, 'api', 'preload.html'))
+      })
+
+      it('loads multiple scripts', function (done) {
+        var script1 = false;
+        var script2 = false;
+
+        var callback = () => {
+          if (script1 && script2)
+            done()
+        }
+
+        var scripts = [
+          path.join(fixtures, 'module', 'preload-script-1.js'),
+          path.join(fixtures, 'module', 'preload-script-2.js')
+        ]
+
+        ipcMain.once('preload-script-1', function (event, test) {
+          script1 = true
+          callback()
+        })
+
+        ipcMain.once('preload-script-2', function (event, test) {
+          script2 = true
+          callback()
+        })
+
+        w.destroy()
+        w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            preload: scripts
+          }
+        })
+
+        w.loadURL('file://' + path.join(fixtures, 'api', 'blank.html'))
       })
     })
 

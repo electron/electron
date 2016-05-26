@@ -11,7 +11,7 @@ The `process` object is extended in Electron with following APIs:
 Emitted when Electron has loaded its internal initialization script and is
 beginning to load the web page or the main script.
 
-It can be used by the preload script to add removed Node global symbols back to
+It can be used by the preload scripts to add removed Node global symbols back to
 the global scope when node integration is turned off:
 
 ```javascript
