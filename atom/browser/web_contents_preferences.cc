@@ -131,7 +131,7 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
                                     base::DoubleToString(zoom_factor));
 
   // --guest-instance-id, which is used to identify guest WebContents.
-  int guest_instance_id;
+  int guest_instance_id = 0;
   if (web_preferences.GetInteger(options::kGuestInstanceID, &guest_instance_id))
     command_line->AppendSwitchASCII(switches::kGuestInstanceID,
                                     base::IntToString(guest_instance_id));
