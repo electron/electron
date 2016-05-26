@@ -867,4 +867,25 @@ describe('<webview> tag', function () {
     })
     w.loadURL('file://' + fixtures + '/pages/webview-zoom-factor.html')
   })
+
+  it('inherits the parent window visibility state and receives visibilitychange events', function (done) {
+    w = new BrowserWindow({
+      show: false
+    })
+
+    ipcMain.once('pong', function (event, visibilityState, hidden) {
+      assert.equal(visibilityState, 'hidden')
+      assert.equal(hidden, true)
+
+      w.webContents.send('ELECTRON_RENDERER_WINDOW_VISIBILITY_CHANGE', 'visible')
+
+      ipcMain.once('pong', function (event, visibilityState, hidden) {
+        assert.equal(visibilityState, 'visible')
+        assert.equal(hidden, false)
+        done()
+      })
+    })
+
+    w.loadURL('file://' + fixtures + '/pages/webview-visibilitychange.html')
+  })
 })

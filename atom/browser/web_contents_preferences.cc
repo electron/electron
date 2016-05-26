@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "atom/browser/native_window.h"
+#include "atom/browser/web_view_manager.h"
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/options_switches.h"
 #include "base/command_line.h"
@@ -130,7 +131,7 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
                                     base::DoubleToString(zoom_factor));
 
   // --guest-instance-id, which is used to identify guest WebContents.
-  int guest_instance_id;
+  int guest_instance_id = 0;
   if (web_preferences.GetInteger(options::kGuestInstanceID, &guest_instance_id))
     command_line->AppendSwitchASCII(switches::kGuestInstanceID,
                                     base::IntToString(guest_instance_id));
@@ -157,6 +158,17 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
 
   // The initial visibility state.
   NativeWindow* window = NativeWindow::FromWebContents(web_contents);
+
+  // Use embedder window for webviews
+  if (guest_instance_id && !window) {
+    auto manager = WebViewManager::GetWebViewManager(web_contents);
+    if (manager) {
+      auto embedder = manager->GetEmbedder(guest_instance_id);
+      if (embedder)
+        window = NativeWindow::FromWebContents(embedder);
+    }
+  }
+
   if (window) {
     bool visible = window->IsVisible() && !window->IsMinimized();
     if (!visible)  // Default state is visible.
