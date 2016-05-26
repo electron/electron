@@ -59,8 +59,9 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
   * `fullscreen` Boolean - Whether the window should show in fullscreen. When
     explicity set to `false` the fullscreen button will be hidden or disabled
     on OS X. Default is `false`.
-  * `fullscreenable` Boolean - Whether the maximize/zoom button on OS X should
-    toggle full screen mode or maximize window. Default is `true`.
+  * `fullscreenable` Boolean - Whether the window can be put into fullscreen 
+    mode. On OS X, also whether the maximize/zoom button should toggle full 
+    screen mode or maximize window. Default is `true`.
   * `skipTaskbar` Boolean - Whether to show the window in taskbar. Default is
     `false`.
   * `kiosk` Boolean - The kiosk mode. Default is `false`.
