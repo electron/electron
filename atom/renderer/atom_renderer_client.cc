@@ -11,12 +11,14 @@
 #include "atom/common/api/atom_bindings.h"
 #include "atom/common/api/event_emitter_caller.h"
 #include "atom/common/color_util.h"
+#include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/node_bindings.h"
 #include "atom/common/node_includes.h"
 #include "atom/common/options_switches.h"
 #include "atom/renderer/atom_render_view_observer.h"
 #include "atom/renderer/guest_view_container.h"
 #include "atom/renderer/node_array_buffer_bridge.h"
+#include "atom/renderer/preferences_manager.h"
 #include "base/command_line.h"
 #include "base/strings/utf_string_conversions.h"
 #include "chrome/renderer/media/chrome_key_systems.h"
@@ -29,6 +31,7 @@
 #include "content/public/renderer/render_thread.h"
 #include "content/public/renderer/render_view.h"
 #include "ipc/ipc_message_macros.h"
+#include "native_mate/dictionary.h"
 #include "net/base/net_errors.h"
 #include "third_party/WebKit/public/web/WebCustomElement.h"
 #include "third_party/WebKit/public/web/WebFrameWidget.h"
@@ -85,6 +88,23 @@ class AtomRenderFrameObserver : public content::RenderFrameObserver {
   DISALLOW_COPY_AND_ASSIGN(AtomRenderFrameObserver);
 };
 
+v8::Local<v8::Value> GetRenderProcessPreferences(
+    const PreferencesManager* preferences_manager, v8::Isolate* isolate) {
+  if (preferences_manager->preferences())
+    return mate::ConvertToV8(isolate, *preferences_manager->preferences());
+  else
+    return v8::Null(isolate);
+}
+
+void AddRenderBindings(v8::Isolate* isolate,
+                       v8::Local<v8::Object> process,
+                       const PreferencesManager* preferences_manager) {
+  mate::Dictionary dict(isolate, process);
+  dict.SetMethod(
+      "getRenderProcessPreferences",
+      base::Bind(GetRenderProcessPreferences, preferences_manager));
+}
+
 }  // namespace
 
 AtomRendererClient::AtomRendererClient()
@@ -100,6 +120,8 @@ void AtomRendererClient::RenderThreadStarted() {
   blink::WebCustomElement::addEmbedderCustomElementName("browserplugin");
 
   OverrideNodeArrayBuffer();
+
+  preferences_manager_.reset(new PreferencesManager);
 
 #if defined(OS_WIN)
   // Set ApplicationUserModelID in renderer process.
@@ -201,6 +223,8 @@ void AtomRendererClient::DidCreateScriptContext(
 
   // Add atom-shell extended APIs.
   atom_bindings_->BindTo(env->isolate(), env->process_object());
+  AddRenderBindings(env->isolate(), env->process_object(),
+                    preferences_manager_.get());
 
   // Load everything.
   node_bindings_->LoadEnvironment(env);

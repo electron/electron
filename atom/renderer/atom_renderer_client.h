@@ -13,6 +13,7 @@
 namespace atom {
 
 class AtomBindings;
+class PreferencesManager;
 class NodeBindings;
 
 class AtomRendererClient : public content::ContentRendererClient {
@@ -61,6 +62,7 @@ class AtomRendererClient : public content::ContentRendererClient {
 
   std::unique_ptr<NodeBindings> node_bindings_;
   std::unique_ptr<AtomBindings> atom_bindings_;
+  std::unique_ptr<PreferencesManager> preferences_manager_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomRendererClient);
 };
