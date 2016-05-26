@@ -655,6 +655,11 @@ void WebContents::DevToolsOpened() {
       isolate(), managed_web_contents()->GetDevToolsWebContents());
   devtools_web_contents_.Reset(isolate(), handle.ToV8());
 
+  // Set inspected tabID.
+  base::FundamentalValue tab_id(ID());
+  managed_web_contents()->CallClientFunction(
+      "DevToolsAPI.setInspectedTabId", &tab_id, nullptr, nullptr);
+
   // Inherit owner window in devtools.
   if (owner_window())
     handle->SetOwnerWindow(managed_web_contents()->GetDevToolsWebContents(),
