@@ -7,7 +7,7 @@ import sys
 
 from lib.config import LIBCHROMIUMCONTENT_COMMIT, BASE_URL, PLATFORM, \
                        enable_verbose_mode, is_verbose_mode, get_target_arch
-from lib.util import execute_stdout, get_atom_shell_version, scoped_cwd
+from lib.util import execute_stdout, get_electron_version, scoped_cwd
 
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
@@ -184,7 +184,7 @@ def update_node_modules(dirname, env=None):
 def update_electron_modules(dirname, target_arch):
   env = os.environ.copy()
   env['npm_config_arch']    = target_arch
-  env['npm_config_target']  = get_atom_shell_version()
+  env['npm_config_target']  = get_electron_version()
   env['npm_config_disturl'] = 'https://atom.io/download/atom-shell'
   update_node_modules(dirname, env)
 

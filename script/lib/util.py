@@ -179,7 +179,7 @@ def execute_stdout(argv, env=os.environ):
     execute(argv, env)
 
 
-def atom_gyp():
+def electron_gyp():
   SOURCE_ROOT = os.path.abspath(os.path.join(__file__, '..', '..', '..'))
   gyp = os.path.join(SOURCE_ROOT, 'electron.gyp')
   with open(gyp) as f:
@@ -187,8 +187,8 @@ def atom_gyp():
     return obj['variables']
 
 
-def get_atom_shell_version():
-  return 'v' + atom_gyp()['version%']
+def get_electron_version():
+  return 'v' + electron_gyp()['version%']
 
 
 def parse_version(version):

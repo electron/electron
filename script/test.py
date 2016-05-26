@@ -4,13 +4,13 @@ import os
 import subprocess
 import sys
 
-from lib.util import atom_gyp, rm_rf
+from lib.util import electron_gyp, rm_rf
 
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 
-PROJECT_NAME = atom_gyp()['project_name%']
-PRODUCT_NAME = atom_gyp()['product_name%']
+PROJECT_NAME = electron_gyp()['project_name%']
+PRODUCT_NAME = electron_gyp()['product_name%']
 
 
 def main():
@@ -21,18 +21,18 @@ def main():
     config = 'R'
 
   if sys.platform == 'darwin':
-    atom_shell = os.path.join(SOURCE_ROOT, 'out', config,
+    electron = os.path.join(SOURCE_ROOT, 'out', config,
                               '{0}.app'.format(PRODUCT_NAME), 'Contents',
                               'MacOS', PRODUCT_NAME)
   elif sys.platform == 'win32':
-    atom_shell = os.path.join(SOURCE_ROOT, 'out', config,
+    electron = os.path.join(SOURCE_ROOT, 'out', config,
                               '{0}.exe'.format(PROJECT_NAME))
   else:
-    atom_shell = os.path.join(SOURCE_ROOT, 'out', config, PROJECT_NAME)
+    electron = os.path.join(SOURCE_ROOT, 'out', config, PROJECT_NAME)
 
   returncode = 0
   try:
-    subprocess.check_call([atom_shell, 'spec'] + sys.argv[1:])
+    subprocess.check_call([electron, 'spec'] + sys.argv[1:])
   except subprocess.CalledProcessError as e:
     returncode = e.returncode
 

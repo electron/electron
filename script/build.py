@@ -6,7 +6,7 @@ import subprocess
 import sys
 
 from lib.config import get_target_arch
-from lib.util import atom_gyp, import_vs_env
+from lib.util import electron_gyp, import_vs_env
 
 
 CONFIGURATIONS = ['Release', 'Debug']
@@ -40,7 +40,7 @@ def parse_args():
                       required=False)
   parser.add_argument('-t', '--target',
                       help='Build specified target',
-                      default=atom_gyp()['project_name%'],
+                      default=electron_gyp()['project_name%'],
                       required=False)
   return parser.parse_args()
 
