@@ -9,8 +9,8 @@ import tempfile
 
 from lib.config import PLATFORM, get_target_arch, get_chromedriver_version, \
                        get_platform_key, get_env_var
-from lib.util import electron_gyp, execute, get_electron_version, parse_version, \
-                     scoped_cwd
+from lib.util import electron_gyp, execute, get_electron_version, \
+                     parse_version, scoped_cwd
 from lib.github import GitHub
 
 
