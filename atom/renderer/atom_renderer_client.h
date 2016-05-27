@@ -21,8 +21,10 @@ class AtomRendererClient : public content::ContentRendererClient {
   AtomRendererClient();
   virtual ~AtomRendererClient();
 
-  void DidCreateScriptContext(v8::Handle<v8::Context> context);
-  void WillReleaseScriptContext(v8::Handle<v8::Context> context);
+  void DidCreateScriptContext(
+      v8::Handle<v8::Context> context, content::RenderFrame* render_frame);
+  void WillReleaseScriptContext(
+      v8::Handle<v8::Context> context, content::RenderFrame* render_frame);
 
  private:
   enum NodeIntegration {

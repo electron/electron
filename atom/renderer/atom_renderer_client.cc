@@ -34,6 +34,7 @@
 #include "native_mate/dictionary.h"
 #include "net/base/net_errors.h"
 #include "third_party/WebKit/public/web/WebCustomElement.h"
+#include "third_party/WebKit/public/web/WebDocument.h"
 #include "third_party/WebKit/public/web/WebFrameWidget.h"
 #include "third_party/WebKit/public/web/WebLocalFrame.h"
 #include "third_party/WebKit/public/web/WebPluginParams.h"
@@ -62,6 +63,7 @@ class AtomRenderFrameObserver : public content::RenderFrameObserver {
   AtomRenderFrameObserver(content::RenderFrame* frame,
                           AtomRendererClient* renderer_client)
       : content::RenderFrameObserver(frame),
+        render_frame_(frame),
         world_id_(-1),
         renderer_client_(renderer_client) {}
 
@@ -72,16 +74,17 @@ class AtomRenderFrameObserver : public content::RenderFrameObserver {
     if (world_id_ != -1 && world_id_ != world_id)
       return;
     world_id_ = world_id;
-    renderer_client_->DidCreateScriptContext(context);
+    renderer_client_->DidCreateScriptContext(context, render_frame_);
   }
   void WillReleaseScriptContext(v8::Local<v8::Context> context,
                                 int world_id) override {
     if (world_id_ != world_id)
       return;
-    renderer_client_->WillReleaseScriptContext(context);
+    renderer_client_->WillReleaseScriptContext(context, render_frame_);
   }
 
  private:
+  content::RenderFrame* render_frame_;
   int world_id_;
   AtomRendererClient* renderer_client_;
 
@@ -103,6 +106,11 @@ void AddRenderBindings(v8::Isolate* isolate,
   dict.SetMethod(
       "getRenderProcessPreferences",
       base::Bind(GetRenderProcessPreferences, preferences_manager));
+}
+
+bool IsDevToolsExtension(content::RenderFrame* render_frame) {
+  return static_cast<GURL>(render_frame->GetWebFrame()->document().url())
+      .SchemeIs("chrome-extension");
 }
 
 }  // namespace
@@ -150,15 +158,11 @@ void AtomRendererClient::RenderThreadStarted() {
 void AtomRendererClient::RenderFrameCreated(
     content::RenderFrame* render_frame) {
   new PepperHelper(render_frame);
+  new AtomRenderFrameObserver(render_frame, this);
 
   // Allow file scheme to handle service worker by default.
+  // FIXME(zcbenz): Can this be moved elsewhere?
   blink::WebSecurityPolicy::registerURLSchemeAsAllowingServiceWorkers("file");
-
-  // Only insert node integration for the main frame.
-  if (!render_frame->IsMainFrame())
-    return;
-
-  new AtomRenderFrameObserver(render_frame, this);
 }
 
 void AtomRendererClient::RenderViewCreated(content::RenderView* render_view) {
@@ -187,7 +191,7 @@ void AtomRendererClient::RunScriptsAtDocumentStart(
   render_frame->GetWebFrame()->executeScript(
       blink::WebScriptSource("void 0"));
 
-  // Inform the docuemnt start pharse.
+  // Inform the document start pharse.
   node::Environment* env = node_bindings_->uv_env();
   if (env) {
     v8::HandleScope handle_scope(env->isolate());
@@ -197,7 +201,7 @@ void AtomRendererClient::RunScriptsAtDocumentStart(
 
 void AtomRendererClient::RunScriptsAtDocumentEnd(
     content::RenderFrame* render_frame) {
-  // Inform the docuemnt end pharse.
+  // Inform the document end pharse.
   node::Environment* env = node_bindings_->uv_env();
   if (env) {
     v8::HandleScope handle_scope(env->isolate());
@@ -225,7 +229,12 @@ bool AtomRendererClient::OverrideCreatePlugin(
 }
 
 void AtomRendererClient::DidCreateScriptContext(
-    v8::Handle<v8::Context> context) {
+    v8::Handle<v8::Context> context, content::RenderFrame* render_frame) {
+  // Only allow node integration for the main frame, unless it is a devtools
+  // extension page.
+  if (!render_frame->IsMainFrame() && !IsDevToolsExtension(render_frame))
+    return;
+
   // Whether the node binding has been initialized.
   bool first_time = node_bindings_->uv_env() == nullptr;
 
@@ -256,9 +265,11 @@ void AtomRendererClient::DidCreateScriptContext(
 }
 
 void AtomRendererClient::WillReleaseScriptContext(
-    v8::Handle<v8::Context> context) {
-  node::Environment* env = node::Environment::GetCurrent(context);
-  mate::EmitEvent(env->isolate(), env->process_object(), "exit");
+    v8::Handle<v8::Context> context, content::RenderFrame* render_frame) {
+  if (render_frame->IsMainFrame()) {
+    node::Environment* env = node::Environment::GetCurrent(context);
+    mate::EmitEvent(env->isolate(), env->process_object(), "exit");
+  }
 }
 
 bool AtomRendererClient::ShouldFork(blink::WebLocalFrame* frame,
