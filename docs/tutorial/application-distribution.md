@@ -148,9 +148,9 @@ we appreciate your help.
 2. Create a new S3 bucket and create the following empty directory structure:
 
 ```
-- atom-shell
-  - symbols
-  - dist
+- atom-shell/
+  - symbols/
+  - dist/
 ```
 
 3. Set the following Environment Variables:
