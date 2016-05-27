@@ -4,8 +4,12 @@
 
 #include "atom/browser/api/atom_api_render_process_preferences.h"
 
+#include "atom/browser/atom_browser_client.h"
+#include "atom/browser/native_window.h"
+#include "atom/browser/window_list.h"
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/node_includes.h"
+#include "content/public/browser/render_process_host.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 
@@ -16,6 +20,16 @@ namespace api {
 namespace {
 
 bool IsBrowserWindow(content::RenderProcessHost* process) {
+  content::WebContents* web_contents =
+      static_cast<AtomBrowserClient*>(AtomBrowserClient::Get())->
+          GetWebContentsFromProcessID(process->GetID());
+  if (!web_contents)
+    return false;
+
+  NativeWindow* window = NativeWindow::FromWebContents(web_contents);
+  if (!window)
+    return false;
+
   return true;
 }
 

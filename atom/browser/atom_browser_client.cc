@@ -73,6 +73,17 @@ AtomBrowserClient::AtomBrowserClient() : delegate_(nullptr) {
 AtomBrowserClient::~AtomBrowserClient() {
 }
 
+content::WebContents* AtomBrowserClient::GetWebContentsFromProcessID(
+    int process_id) {
+  // If the process is a pending process, we should use the old one.
+  if (ContainsKey(pending_processes_, process_id))
+    process_id = pending_processes_[process_id];
+
+  // Certain render process will be created with no associated render view,
+  // for example: ServiceWorker.
+  return WebContentsPreferences::GetWebContentsFromProcessID(process_id);
+}
+
 void AtomBrowserClient::RenderProcessWillLaunch(
     content::RenderProcessHost* host) {
   int process_id = host->GetID();
@@ -172,14 +183,7 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
   }
 #endif
 
-  // If the process is a pending process, we should use the old one.
-  if (ContainsKey(pending_processes_, process_id))
-    process_id = pending_processes_[process_id];
-
-  // Certain render process will be created with no associated render view,
-  // for example: ServiceWorker.
-  content::WebContents* web_contents =
-      WebContentsPreferences::GetWebContentsFromProcessID(process_id);
+  content::WebContents* web_contents = GetWebContentsFromProcessID(process_id);
   if (!web_contents)
     return;
 

@@ -29,6 +29,7 @@ class WebContentsPreferences
     : public content::WebContentsUserData<WebContentsPreferences> {
  public:
   // Get WebContents according to process ID.
+  // FIXME(zcbenz): This method does not belong here.
   static content::WebContents* GetWebContentsFromProcessID(int process_id);
 
   // Append command paramters according to |web_contents|'s preferences.
