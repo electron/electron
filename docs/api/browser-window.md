@@ -787,14 +787,6 @@ be called with `callback(image)`. The `image` is an instance of
 [NativeImage](native-image.md) that stores data of the snapshot. Omitting
 `rect` will capture the whole visible page.
 
-### `win.print([options])`
-
-Same as `webContents.print([options])`
-
-### `win.printToPDF(options, callback)`
-
-Same as `webContents.printToPDF(options, callback)`
-
 ### `win.loadURL(url[, options])`
 
 Same as `webContents.loadURL(url[, options])`.

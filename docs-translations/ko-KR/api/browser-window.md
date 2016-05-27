@@ -778,14 +778,6 @@ Windows 메시지 훅을 등록합니다. `callback`은 WndProc에서 메시지�
 `callback(image)` 형식으로 호출됩니다. `image`는 [NativeImage](native-image.md)의
 인스턴스이며 스크린샷 데이터를 담고있습니다. `rect`를 생략하면 페이지 전체를 캡처합니다.
 
-### `win.print([options])`
-
-`webContents.print([options])` API와 같습니다.
-
-### `win.printToPDF(options, callback)`
-
-`webContents.printToPDF(options, callback)` API와 같습니다.
-
 ### `win.loadURL(url[, options])`
 
 `webContents.loadURL(url[, options])` API와 같습니다.
