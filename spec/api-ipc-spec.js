@@ -32,6 +32,12 @@ describe('ipc module', function () {
       assert.equal(a.id, 1127)
     })
 
+    it('should work when object has no prototype', function () {
+      var a = remote.require(path.join(fixtures, 'module', 'no-prototype.js'))
+      assert.deepEqual(a.foo, {})
+      assert.equal(a.bar, 1234)
+    })
+
     it('should search module from the user app', function () {
       comparePaths(path.normalize(remote.process.mainModule.filename), path.resolve(__dirname, 'static', 'main.js'))
       comparePaths(path.normalize(remote.process.mainModule.paths[0]), path.resolve(__dirname, 'static', 'node_modules'))
