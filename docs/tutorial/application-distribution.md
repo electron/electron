@@ -138,14 +138,14 @@ directly into Electron, that either cannot be upstreamed, or has been rejected
 from the official version. As maintainers of Electron, we very much would like
 to make your scenario work, so please try as hard as you can to get your changes
 into the official version of Electron, it will be much much easier on you, and
-we want to help you out!
+we appreciate your help.
 
 #### Creating a Full Custom Electron Release with surf-build
 
 1. Install [Surf](https://github.com/surf-build/surf), via npm:
   `npm install -g surf-build@latest`
 
-1. Create a new S3 bucket and create the following empty directory structure:
+2. Create a new S3 bucket and create the following empty directory structure:
 
 ```
 - atom-shell
@@ -153,7 +153,7 @@ we want to help you out!
   - dist
 ```
 
-1. Set the following Environment Variables:
+3. Set the following Environment Variables:
 
   * `ELECTRON_GITHUB_TOKEN` - a token that can create releases on GitHub
   * `ELECTRON_S3_ACCESS_KEY`, `ELECTRON_S3_BUCKET`, `ELECTRON_S3_SECRET_KEY`
@@ -166,9 +166,9 @@ we want to help you out!
   * `SURF_TEMP` - set to `C:\Temp` on Windows to prevent path too long issues
   * `TARGET_ARCH` - set to `ia32` or `x64`  
 
-1. In `script/upload.py`, you _must_ set `ELECTRON_REPO` to your fork,
+4. In `script/upload.py`, you _must_ set `ELECTRON_REPO` to your fork,
   especially if you are a contributor to Electron proper.
 
-1. `surf-build -r https://github.com/MYORG/electron -s YOUR_COMMIT -n 'surf-PLATFORM-ARCH'`
+5. `surf-build -r https://github.com/MYORG/electron -s YOUR_COMMIT -n 'surf-PLATFORM-ARCH'`
 
-1. Wait a very, very long time.
+6. Wait a very, very long time for the build to complete.
