@@ -155,18 +155,18 @@ we want to help you out!
 
 1. Set the following Environment Variables:
 
-  * `ATOM_SHELL_GITHUB_TOKEN` - a token that can create releases on GitHub
-  * `ATOM_SHELL_S3_ACCESS_KEY`, `ATOM_SHELL_S3_BUCKET`, `ATOM_SHELL_S3_SECRET_KEY`
+  * `ELECTRON_GITHUB_TOKEN` - a token that can create releases on GitHub
+  * `ELECTRON_S3_ACCESS_KEY`, `ELECTRON_S3_BUCKET`, `ELECTRON_S3_SECRET_KEY`
     - the place where you'll upload node.js headers as well as symbols
   * `ELECTRON_RELEASE` - Set to `true` and the upload part will run, leave unset
     and `surf-build` will just do CI-type checks, appropriate to run for every
     pull request.
   * `CI` - Set to `true` or else we'll fail
-  * `GITHUB_TOKEN` - set it to the same as `ATOM_SHELL_GITHUB_TOKEN`
+  * `GITHUB_TOKEN` - set it to the same as `ELECTRON_GITHUB_TOKEN`
   * `SURF_TEMP` - set to `C:\Temp` on Windows to prevent path too long issues
   * `TARGET_ARCH` - set to `ia32` or `x64`  
 
-1. In `script/upload.py`, you _must_ set `ATOM_SHELL_REPO` to your fork,
+1. In `script/upload.py`, you _must_ set `ELECTRON_REPO` to your fork,
   especially if you are a contributor to Electron proper.
 
 1. `surf-build -r https://github.com/MYORG/electron -s YOUR_COMMIT -n 'surf-PLATFORM-ARCH'`
