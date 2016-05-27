@@ -140,7 +140,7 @@ to make your scenario work, so please try as hard as you can to get your changes
 into the official version of Electron, it will be much much easier on you, and
 we appreciate your help.
 
-#### Creating a Full Custom Electron Release with surf-build
+#### Creating a Custom Release with surf-build
 
 1. Install [Surf](https://github.com/surf-build/surf), via npm:
   `npm install -g surf-build@latest`
