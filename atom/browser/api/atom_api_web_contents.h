@@ -124,6 +124,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
   // Send messages to browser.
   bool SendIPCMessage(const base::string16& channel,
                       const base::ListValue& args);
+  bool SendIPCMessageToAll(const base::string16& channel,
+                           const base::ListValue& args);
 
   // Send WebInputEvent to the page.
   void SendInputEvent(v8::Isolate* isolate, v8::Local<v8::Value> input_event);

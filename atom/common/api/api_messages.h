@@ -30,7 +30,8 @@ IPC_SYNC_MESSAGE_ROUTED2_1(AtomViewHostMsg_Message_Sync,
                            base::ListValue /* arguments */,
                            base::string16 /* result (in JSON) */)
 
-IPC_MESSAGE_ROUTED2(AtomViewMsg_Message,
+IPC_MESSAGE_ROUTED3(AtomViewMsg_Message,
+                    bool /* send_to_all */,
                     base::string16 /* channel */,
                     base::ListValue /* arguments */)
 
