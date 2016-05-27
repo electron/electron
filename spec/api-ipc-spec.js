@@ -32,9 +32,10 @@ describe('ipc module', function () {
       assert.equal(a.id, 1127)
     })
 
-    it('should work when object has no prototype', function () {
+    it.only('should work when object has no prototype', function () {
       var a = remote.require(path.join(fixtures, 'module', 'no-prototype.js'))
-      assert.deepEqual(a.foo, {})
+      assert.equal(a.foo.bar, 'baz')
+      assert.equal(a.foo.baz, false)
       assert.equal(a.bar, 1234)
     })
 
