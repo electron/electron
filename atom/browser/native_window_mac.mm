@@ -490,13 +490,11 @@ NativeWindowMac::NativeWindowMac(
   if (titleBarStyle == "hidden-inset") {
     [window_ setTitlebarAppearsTransparent:YES];
     [window_ setTitleVisibility:NSWindowTitleHidden];
-    if (titleBarStyle == "hidden-inset") {
-      base::scoped_nsobject<NSToolbar> toolbar(
-          [[NSToolbar alloc] initWithIdentifier:@"titlebarStylingToolbar"]);
-      [toolbar setShowsBaselineSeparator:NO];
-      [window_ setToolbar:toolbar];
-      should_hide_native_toolbar_in_fullscreen_ = true;
-    }
+    base::scoped_nsobject<NSToolbar> toolbar(
+        [[NSToolbar alloc] initWithIdentifier:@"titlebarStylingToolbar"]);
+    [toolbar setShowsBaselineSeparator:NO];
+    [window_ setToolbar:toolbar];
+    should_hide_native_toolbar_in_fullscreen_ = true;
   }
 
   // On OS X the initial window size doesn't include window frame.
