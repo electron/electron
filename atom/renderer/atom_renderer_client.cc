@@ -186,6 +186,23 @@ void AtomRendererClient::RunScriptsAtDocumentStart(
   // Make sure every page will get a script context created.
   render_frame->GetWebFrame()->executeScript(
       blink::WebScriptSource("void 0"));
+
+  // Inform the docuemnt start pharse.
+  node::Environment* env = node_bindings_->uv_env();
+  if (env) {
+    v8::HandleScope handle_scope(env->isolate());
+    mate::EmitEvent(env->isolate(), env->process_object(), "document-start");
+  }
+}
+
+void AtomRendererClient::RunScriptsAtDocumentEnd(
+    content::RenderFrame* render_frame) {
+  // Inform the docuemnt end pharse.
+  node::Environment* env = node_bindings_->uv_env();
+  if (env) {
+    v8::HandleScope handle_scope(env->isolate());
+    mate::EmitEvent(env->isolate(), env->process_object(), "document-end");
+  }
 }
 
 blink::WebSpeechSynthesizer* AtomRendererClient::OverrideSpeechSynthesizer(
