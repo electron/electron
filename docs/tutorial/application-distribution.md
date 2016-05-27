@@ -166,7 +166,7 @@ we appreciate your help.
   * `SURF_TEMP` - set to `C:\Temp` on Windows to prevent path too long issues
   * `TARGET_ARCH` - set to `ia32` or `x64`  
 
-4. In `script/upload.py`, you _must_ set `ELECTRON_REPO` to your fork,
+4. In `script/upload.py`, you _must_ set `ELECTRON_REPO` to your fork (`MYORG/electron`),
   especially if you are a contributor to Electron proper.
 
 5. `surf-build -r https://github.com/MYORG/electron -s YOUR_COMMIT -n 'surf-PLATFORM-ARCH'`
