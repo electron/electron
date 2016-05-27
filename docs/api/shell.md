@@ -20,13 +20,13 @@ The `shell` module has the following methods:
 
 * `fullPath` String
 
-Show the given file in a file manager. If possible, select the file.
+Show the given file in a file manager. If possible, select the file. Expects `fullPath` to be a fully-specified path (`/users/<username>/path/to/file` or `~/path/to/file`). Relative paths (`./file`) do not work.
 
 ### `shell.openItem(fullPath)`
 
 * `fullPath` String
 
-Open the given file in the desktop's default manner.
+Open the given file in the desktop's default manner. Expects `fullPath` to be a fully-specified path (`/users/<username>/path/to/file`). Relative paths (`./file`) also work. Paths using `~` do not work.
 
 ### `shell.openExternal(url[, options])`
 
