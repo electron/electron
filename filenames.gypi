@@ -49,6 +49,7 @@
       'lib/common/init.js',
       'lib/common/reset-search-paths.js',
       'lib/renderer/chrome-api.js',
+      'lib/renderer/content-scripts-injector.js',
       'lib/renderer/init.js',
       'lib/renderer/inspector.js',
       'lib/renderer/override.js',
