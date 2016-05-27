@@ -34,13 +34,13 @@ console.log(clipboard.readText('selection'));
 
 以纯文本形式向 clipboard 添加内容 .
 
-### `clipboard.readHtml([type])`
+### `clipboard.readHTML([type])`
 
 * `type` String (可选)
 
 返回 clipboard 中的标记内容.
 
-### `clipboard.writeHtml(markup[, type])`
+### `clipboard.writeHTML(markup[, type])`
 
 * `markup` String
 * `type` String (可选)
@@ -60,13 +60,13 @@ console.log(clipboard.readText('selection'));
 
 向 clipboard 中写入 `image` .
 
-### `clipboard.readRtf([type])`
+### `clipboard.readRTF([type])`
 
 * `type` String (可选)
 
 从 clipboard 中返回 RTF 内容. 
 
-### `clipboard.writeRtf(text[, type])`
+### `clipboard.writeRTF(text[, type])`
 
 * `text` String
 * `type` String (可选)

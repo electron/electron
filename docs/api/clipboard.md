@@ -36,13 +36,13 @@ Returns the content in the clipboard as plain text.
 
 Writes the `text` into the clipboard as plain text.
 
-### `clipboard.readHtml([type])`
+### `clipboard.readHTML([type])`
 
 * `type` String (optional)
 
 Returns the content in the clipboard as markup.
 
-### `clipboard.writeHtml(markup[, type])`
+### `clipboard.writeHTML(markup[, type])`
 
 * `markup` String
 * `type` String (optional)
@@ -62,13 +62,13 @@ Returns the content in the clipboard as a [NativeImage](native-image.md).
 
 Writes `image` to the clipboard.
 
-### `clipboard.readRtf([type])`
+### `clipboard.readRTF([type])`
 
 * `type` String (optional)
 
 Returns the content in the clipboard as RTF.
 
-### `clipboard.writeRtf(text[, type])`
+### `clipboard.writeRTF(text[, type])`
 
 * `text` String
 * `type` String (optional)

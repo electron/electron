@@ -37,13 +37,13 @@ console.log(clipboard.readText('selection'));
 
 클립보드에 `plain text`로 문자열을 씁니다.
 
-### `clipboard.readHtml([type])`
+### `clipboard.readHTML([type])`
 
 * `type` String (optional)
 
 클립보드 콘텐츠를 `markup`으로 반환합니다.
 
-### `clipboard.writeHtml(markup[, type])`
+### `clipboard.writeHTML(markup[, type])`
 
 * `markup` String
 * `type` String (optional)
@@ -63,13 +63,13 @@ console.log(clipboard.readText('selection'));
 
 클립보드에 `image`를 씁니다.
 
-### `clipboard.readRtf([type])`
+### `clipboard.readRTF([type])`
 
 * `type` String (optional)
 
 클립보드로부터 RTF 형식으로 콘텐츠를 읽어옵니다.
 
-### `clipboard.writeRtf(text[, type])`
+### `clipboard.writeRTF(text[, type])`
 
 * `text` String
 * `type` String (optional)
