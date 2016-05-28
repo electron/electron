@@ -266,10 +266,9 @@ void AtomRendererClient::DidCreateScriptContext(
 
 void AtomRendererClient::WillReleaseScriptContext(
     v8::Handle<v8::Context> context, content::RenderFrame* render_frame) {
-  if (render_frame->IsMainFrame()) {
-    node::Environment* env = node::Environment::GetCurrent(context);
+  node::Environment* env = node::Environment::GetCurrent(context);
+  if (env)
     mate::EmitEvent(env->isolate(), env->process_object(), "exit");
-  }
 }
 
 bool AtomRendererClient::ShouldFork(blink::WebLocalFrame* frame,
