@@ -1344,6 +1344,8 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   mate::Dictionary dict(isolate, exports);
   dict.SetMethod("create", &atom::api::WebContents::Create);
   dict.SetMethod("_setWrapWebContents", &atom::api::SetWrapWebContents);
+  dict.SetMethod("fromId",
+                 &mate::TrackableObject<atom::api::WebContents>::FromWeakMapID);
 }
 
 }  // namespace
