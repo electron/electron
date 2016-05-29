@@ -150,6 +150,16 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
     command_line->AppendSwitch(switches::kScrollBounce);
 #endif
 
+  // Custom command line switches.
+  const base::ListValue* args;
+  if (web_preferences.GetList("commandLineSwitches", &args)) {
+    for (size_t i = 0; i < args->GetSize(); ++i) {
+      std::string arg;
+      if (args->GetString(i, &arg) && !arg.empty())
+        command_line->AppendSwitch(arg);
+    }
+  }
+
   // Enable blink features.
   std::string blink_features;
   if (web_preferences.GetString(options::kBlinkFeatures, &blink_features))
