@@ -448,7 +448,7 @@ NativeWindowMac::NativeWindowMac(
   if (!useStandardWindow || transparent() || !has_frame()) {
     styleMask |= NSTexturedBackgroundWindowMask;
   }
-  if (resizable) {
+  if (maximizable) {
     styleMask |= NSResizableWindowMask;
   }
 
@@ -512,10 +512,6 @@ NativeWindowMac::NativeWindowMac(
   bool disableAutoHideCursor = false;
   options.Get(options::kDisableAutoHideCursor, &disableAutoHideCursor);
   [window_ setDisableAutoHideCursor:disableAutoHideCursor];
-
-  // Disable zoom button if window is not resizable.
-  if (!maximizable)
-    SetMaximizable(false);
 
   NSView* view = inspectable_web_contents()->GetView()->GetNativeView();
   [view setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
