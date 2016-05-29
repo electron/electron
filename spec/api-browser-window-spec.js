@@ -284,6 +284,21 @@ describe('browser-window module', function () {
     })
   })
 
+  describe('BrowserWindow.setAspectRatio(ratio)', function () {
+    it('resets the behaviour when passing in 0', function (done) {
+      var size = [300, 400]
+      w.setAspectRatio(1/2)
+      w.setAspectRatio(0)
+      w.once('resize', function () {
+        var newSize = w.getSize()
+        assert.equal(newSize[0], size[0])
+        assert.equal(newSize[1], size[1])
+        done()
+      })
+      w.setSize(size[0], size[1])
+    })
+  })
+
   describe('BrowserWindow.setPosition(x, y)', function () {
     it('sets the window position', function (done) {
       var pos = [10, 10]
