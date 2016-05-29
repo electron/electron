@@ -25,9 +25,14 @@ class URLRequestFetchJob : public JsAsker<net::URLRequestJob>,
 
   // Called by response writer.
   void HeadersCompleted();
-  int DataAvailable(net::IOBuffer* buffer, int num_bytes);
+  int DataAvailable(net::IOBuffer* buffer,
+                    int num_bytes,
+                    const net::CompletionCallback& callback);
 
  protected:
+  void StartReading();
+  void ClearPendingBuffer();
+
   // JsAsker:
   void BeforeStartInUI(v8::Isolate*, v8::Local<v8::Value>) override;
   void StartAsync(std::unique_ptr<base::Value> options) override;
@@ -46,8 +51,10 @@ class URLRequestFetchJob : public JsAsker<net::URLRequestJob>,
   scoped_refptr<net::URLRequestContextGetter> url_request_context_getter_;
   std::unique_ptr<net::URLFetcher> fetcher_;
   scoped_refptr<net::IOBuffer> pending_buffer_;
+  scoped_refptr<net::DrainableIOBuffer> drainable_buffer_;
   int pending_buffer_size_;
   std::unique_ptr<net::HttpResponseInfo> response_info_;
+  net::CompletionCallback response_piper_callback_;
 
   DISALLOW_COPY_AND_ASSIGN(URLRequestFetchJob);
 };

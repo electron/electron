@@ -59,7 +59,7 @@ class ResponsePiper : public net::URLFetcherResponseWriter {
       job_->HeadersCompleted();
       first_write_ = false;
     }
-    return job_->DataAvailable(buffer, num_bytes);
+    return job_->DataAvailable(buffer, num_bytes, callback);
   }
   int Finish(const net::CompletionCallback& callback) override {
     return net::OK;
@@ -166,21 +166,23 @@ void URLRequestFetchJob::HeadersCompleted() {
   NotifyHeadersComplete();
 }
 
-int URLRequestFetchJob::DataAvailable(net::IOBuffer* buffer, int num_bytes) {
-  // Do nothing if pending_buffer_ is empty, i.e. there's no ReadRawData()
-  // operation waiting for IO completion.
-  if (!pending_buffer_.get())
+int URLRequestFetchJob::DataAvailable(net::IOBuffer* buffer,
+                                      int num_bytes,
+                                      const net::CompletionCallback& callback) {
+  // Store the data in a drainable IO buffer if pending_buffer_ is empty, i.e.
+  // there's no ReadRawData() operation waiting for IO completion.
+  if (!pending_buffer_.get()) {
+    response_piper_callback_ = callback;
+    drainable_buffer_ = new net::DrainableIOBuffer(buffer, num_bytes);
     return net::ERR_IO_PENDING;
+  }
 
   // pending_buffer_ is set to the IOBuffer instance provided to ReadRawData()
   // by URLRequestJob.
   int bytes_read = std::min(num_bytes, pending_buffer_size_);
   memcpy(pending_buffer_->data(), buffer->data(), bytes_read);
 
-  // Clear the buffers before notifying the read is complete, so that it is
-  // safe for the observer to read.
-  pending_buffer_ = nullptr;
-  pending_buffer_size_ = 0;
+  ClearPendingBuffer();
 
   ReadRawDataComplete(bytes_read);
   return bytes_read;
@@ -191,6 +193,35 @@ void URLRequestFetchJob::Kill() {
   fetcher_.reset();
 }
 
+void URLRequestFetchJob::StartReading() {
+  if (drainable_buffer_.get()) {
+    auto num_bytes = drainable_buffer_->BytesRemaining();
+    if (num_bytes <= 0 && !response_piper_callback_.is_null()) {
+      int size = drainable_buffer_->BytesConsumed();
+      drainable_buffer_ = nullptr;
+      response_piper_callback_.Run(size);
+      response_piper_callback_.Reset();
+      return;
+    }
+
+    int bytes_read = std::min(num_bytes, pending_buffer_size_);
+    memcpy(pending_buffer_->data(), drainable_buffer_->data(), bytes_read);
+
+    drainable_buffer_->DidConsume(bytes_read);
+
+    ClearPendingBuffer();
+
+    ReadRawDataComplete(bytes_read);
+  }
+}
+
+void URLRequestFetchJob::ClearPendingBuffer() {
+  // Clear the buffers before notifying the read is complete, so that it is
+  // safe for the observer to read.
+  pending_buffer_ = nullptr;
+  pending_buffer_size_ = 0;
+}
+
 int URLRequestFetchJob::ReadRawData(net::IOBuffer* dest, int dest_size) {
   if (GetResponseCode() == 204) {
     request()->set_received_response_content_length(prefilter_bytes_read());
@@ -198,6 +229,9 @@ int URLRequestFetchJob::ReadRawData(net::IOBuffer* dest, int dest_size) {
   }
   pending_buffer_ = dest;
   pending_buffer_size_ = dest_size;
+  // Read from drainable_buffer_ if available, i.e. response data became
+  // available before ReadRawData was called.
+  StartReading();
   return net::ERR_IO_PENDING;
 }
 
@@ -229,8 +263,8 @@ void URLRequestFetchJob::OnURLFetchComplete(const net::URLFetcher* source) {
     return;
   }
 
-  pending_buffer_ = nullptr;
-  pending_buffer_size_ = 0;
+  ClearPendingBuffer();
+
   if (fetcher_->GetStatus().is_success())
     ReadRawDataComplete(0);
   else
