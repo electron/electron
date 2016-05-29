@@ -1088,14 +1088,10 @@ void WebContents::TabTraverse(bool reverse) {
   web_contents()->FocusThroughTabTraversal(reverse);
 }
 
-bool WebContents::SendIPCMessage(const base::string16& channel,
+bool WebContents::SendIPCMessage(bool all_frames,
+                                 const base::string16& channel,
                                  const base::ListValue& args) {
-  return Send(new AtomViewMsg_Message(routing_id(), false, channel, args));
-}
-
-bool WebContents::SendIPCMessageToAll(const base::string16& channel,
-                                      const base::ListValue& args) {
-  return Send(new AtomViewMsg_Message(routing_id(), true, channel, args));
+  return Send(new AtomViewMsg_Message(routing_id(), all_frames, channel, args));
 }
 
 void WebContents::SendInputEvent(v8::Isolate* isolate,
@@ -1263,7 +1259,6 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("focus", &WebContents::Focus)
       .SetMethod("tabTraverse", &WebContents::TabTraverse)
       .SetMethod("_send", &WebContents::SendIPCMessage)
-      .SetMethod("_sendToAll", &WebContents::SendIPCMessageToAll)
       .SetMethod("sendInputEvent", &WebContents::SendInputEvent)
       .SetMethod("beginFrameSubscription",
                  &WebContents::BeginFrameSubscription)
