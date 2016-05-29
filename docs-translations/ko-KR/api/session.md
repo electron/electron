@@ -136,17 +136,18 @@ session.defaultSession.cookies.set(cookie, (error) => {
 #### `ses.cookies.set(details, callback)`
 
 * `details` Object
-  * `url` String - `url`에 관련된 쿠키를 가져옵니다.
+  * `url` String - 쿠키에 대한 `url` 링크.
   * `name` String - 쿠키의 이름입니다. 기본적으로 비워두면 생략됩니다.
   * `value` String - 쿠키의 값입니다. 기본적으로 비워두면 생략됩니다.
   * `domain` String - 쿠키의 도메인입니다. 기본적으로 비워두면 생략됩니다.
   * `path` String - 쿠키의 경로입니다. 기본적으로 비워두면 생략됩니다.
   * `secure` Boolean - 쿠키가 안전한 것으로 표시되는지에 대한 여부입니다. 기본값은
     false입니다.
-  * `session` Boolean - 쿠키가 HttpOnly로 표시되는지에 대한 여부입니다. 기본값은
+  * `session` Boolean - 쿠키가 Http 전용으로 표시되는지에 대한 여부입니다. 기본값은
     false입니다.
   * `expirationDate` Double (optional) -	UNIX 시간으로 표시되는 쿠키의 만료일에
-    대한 초 단위 시간입니다. 세션 쿠키에 제공되지 않습니다.
+    대한 초 단위 시간입니다. 생략되면 쿠키가 세션 쿠기가 되며 세션 사이에 유지되지
+    않게 됩니다.
 * `callback` Function
 
 `details` 객체에 따라 쿠키를 설정합니다. 작업이 완료되면 `callback`이

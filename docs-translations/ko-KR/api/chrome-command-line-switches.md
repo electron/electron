@@ -22,11 +22,15 @@ app.on('ready', () => {
 
 ## --disable-http-cache
 
-HTTP 요청 캐시를 비활성화 합니다.
+HTTP 요청 캐시를 비활성화합니다.
+
+## --disable-http2
+
+HTTP/2와 SPDY/3.1 프로토콜을 비활성화합니다.
 
 ## --remote-debugging-port=`port`
 
-지정한 `port`에 HTTP 기반의 리모트 디버거를 활성화 시킵니다. (개발자 도구)
+지정한 `port`에 HTTP 기반의 리모트 디버거를 활성화합니다. (개발자 도구)
 
 ## --js-flags=`flags`
 

@@ -21,7 +21,7 @@ Studio를 사용할 수 없습니다. 하지만 여전히 Electron을 개발할 
 **참고:** Visual Studio가 직접 빌드에 사용되지 않더라도 IDE와 같이 제공된 빌드
 툴체인이 빌드에 **반드시** 사용되므로 여전히 필요합니다.
 
-**참고:** Visual Studio 2013는 사용할 수 없습니다 MSVS **2015** 을 사용하고 있는지
+**참고:** Visual Studio 2013은 사용할 수 없습니다 MSVS **2015** 을 사용하고 있는지
 확인해주세요.
 
 ## 코드 가져오기
@@ -97,7 +97,7 @@ $ python script\test.py -R
 ### Command xxxx not found
 
 만약 `Command xxxx not found`와 같은 형식의 에러가 발생했다면
-`VS2015 Command Prompt` 콘솔로 빌드 스크립트를 실행해볼 필요가 있습니다.
+`VS2015 Command Prompt` 콘솔로 빌드 스크립트를 실행해 보는게 좋습니다.
 
 ### Fatal internal compiler error: C1001
 

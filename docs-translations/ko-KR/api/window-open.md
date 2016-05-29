@@ -59,6 +59,10 @@
 
 자식 윈도우에 포커스를 맞춥니다. (창을 맨 앞으로 가져옵니다)
 
+### `BrowserWindowProxy.print()`
+
+자식 윈도우에 프린트 대화 상자를 호출합니다.
+
 ### `BrowserWindowProxy.postMessage(message, targetOrigin)`
 
 * `message` String

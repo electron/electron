@@ -508,11 +508,13 @@ app.on('ready', () => {
 });
 ```
 
-### `app.setUserActivity(type, userInfo)` _OS X_
+### `app.setUserActivity(type, userInfo[, webpageURL])` _OS X_
 
 * `type` String - 고유하게 activity를 식별합니다.
   [`NSUserActivity.activityType`][activity-type]을 맵핑합니다.
 * `userInfo` Object - 다른 기기에서 사용하기 위해 저장할 앱-특정 상태.
+* `webpageURL` String - 적당한 앱이 기기에 설치되지 않았을 때 브라우저에서 로드할
+  웹 페이지. 스킴은 반드시 `http` 또는 `https`가 되어야 합니다.
 
 `NSUserActivity`를 만들고 현재 activity에 설정합니다. 이 activity는 이후 다른 기기와
 [Handoff][handoff]할 때 자격으로 사용됩니다.

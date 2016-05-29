@@ -36,8 +36,10 @@ win.show();
 
 * `width` Integer - 윈도우의 가로 너비. 기본값은 `800`입니다.
 * `height` Integer - 윈도우의 세로 높이. 기본값은 `600`입니다.
-* `x` Integer - 화면을 기준으로 창 좌측을 오프셋 한 위치. 기본값은 `화면중앙`입니다.
-* `y` Integer - 화면을 기준으로 창 상단을 오프셋 한 위치. 기본값은 `화면중앙`입니다.
+* `x` Integer (**required** y가 사용되면) - 화면을 기준으로 창 좌측을 오프셋 한 위치.
+  기본값은 `화면중앙`입니다.
+* `y` Integer (**required** x가 사용되면) - 화면을 기준으로 창 상단을 오프셋 한 위치.
+  기본값은 `화면중앙`입니다.
 * `useContentSize` Boolean - `width`와 `height`를 웹 페이지의 크기로 사용합니다.
   이 속성을 사용하면 웹 페이지의 크기에 윈도우 프레임 크기가 추가되므로 실제 창은 조금
   더 커질 수 있습니다. 기본값은 `false`입니다.
@@ -676,7 +678,7 @@ let win = new BrowserWindow({width: 800, height: 600});
 
 **참고:** 웹 페이지의 제목과 네이티브 윈도우의 제목은 서로 다를 수 있습니다.
 
-### `win.setSheetOffset(offset)` _OS X_
+### `win.setSheetOffset(offsetY[, offsetX])` _OS X_
 
 Mac OS X에서 시트를 부착할 위치를 지정합니다. 기본적으로 시트는 윈도우의 프레임 바로
 아래의 위치에 부착됩니다. 아마도 이 기능은 보통 다음과 같이 HTML 렌더링된 툴바 밑에
@@ -860,6 +862,12 @@ Linux 플랫폼에선 Unity 데스크톱 환경만 지원합니다. 그리고 �
 ### `win.showDefinitionForSelection()` _OS X_
 
 페이지의 선택된 단어에 대한 사전 검색 결과 팝업을 표시합니다.
+
+### `win.setIcon(icon)` _Windows_ _Linux_
+
+* `icon` [NativeImage](native-image.md)
+
+윈도우 아이콘을 변경합니다.
 
 ### `win.setAutoHideMenuBar(hide)`
 
