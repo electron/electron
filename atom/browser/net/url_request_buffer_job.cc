@@ -8,9 +8,23 @@
 
 #include "atom/common/atom_constants.h"
 #include "base/strings/string_number_conversions.h"
+#include "base/strings/utf_string_conversions.h"
+#include "net/base/mime_util.h"
 #include "net/base/net_errors.h"
 
 namespace atom {
+
+namespace {
+
+std::string GetExtFromURL(const GURL& url) {
+  std::string spec = url.spec();
+  size_t index = spec.find_last_of('.');
+  if (index == std::string::npos || index == spec.size())
+    return std::string();
+  return spec.substr(index + 1, spec.size() - index - 1);
+}
+
+}  // namespace
 
 URLRequestBufferJob::URLRequestBufferJob(
     net::URLRequest* request, net::NetworkDelegate* network_delegate)
@@ -28,6 +42,15 @@ void URLRequestBufferJob::StartAsync(std::unique_ptr<base::Value> options) {
     dict->GetBinary("data", &binary);
   } else if (options->IsType(base::Value::TYPE_BINARY)) {
     options->GetAsBinary(&binary);
+  }
+
+  if (mime_type_.empty()) {
+    std::string ext = GetExtFromURL(request()->url());
+#if defined(OS_WIN)
+    net::GetWellKnownMimeTypeFromExtension(base::UTF8ToUTF16(ext), &mime_type_);
+#else
+    net::GetWellKnownMimeTypeFromExtension(ext, &mime_type_);
+#endif
   }
 
   if (!binary) {

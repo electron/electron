@@ -34,6 +34,9 @@ class AtomBrowserClient : public brightray::BrowserClient,
   using Delegate = content::ContentBrowserClient;
   void set_delegate(Delegate* delegate) { delegate_ = delegate; }
 
+  // Returns the WebContents for pending render processes.
+  content::WebContents* GetWebContentsFromProcessID(int process_id);
+
   // Don't force renderer process to restart for once.
   static void SuppressRendererProcessRestartForOnce();
 

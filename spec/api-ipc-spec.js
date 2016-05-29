@@ -3,11 +3,8 @@
 const assert = require('assert')
 const path = require('path')
 
-const ipcRenderer = require('electron').ipcRenderer
-const remote = require('electron').remote
-
-const ipcMain = remote.require('electron').ipcMain
-const BrowserWindow = remote.require('electron').BrowserWindow
+const {ipcRenderer, remote} = require('electron')
+const {ipcMain, webContents, BrowserWindow} = remote
 
 const comparePaths = function (path1, path2) {
   if (process.platform === 'win32') {
@@ -241,6 +238,30 @@ describe('ipc module', function () {
         done()
       })
       w.loadURL('file://' + path.join(fixtures, 'api', 'send-sync-message.html'))
+    })
+  })
+
+  describe('ipcRenderer.sendTo', function () {
+    let contents = null
+    beforeEach(function () {
+      contents = webContents.create({})
+    })
+    afterEach(function () {
+      ipcRenderer.removeAllListeners('pong')
+      contents.destroy()
+      contents = null
+    })
+
+    it('sends message to WebContents', function (done) {
+      const webContentsId = remote.getCurrentWebContents().id
+      ipcRenderer.once('pong', function (event, id) {
+        assert.equal(webContentsId, id)
+        done()
+      })
+      contents.once('did-finish-load', function () {
+        ipcRenderer.sendTo(contents.id, 'ping', webContentsId)
+      })
+      contents.loadURL('file://' + path.join(fixtures, 'pages', 'ping-pong.html'))
     })
   })
 

@@ -13,6 +13,7 @@
 namespace atom {
 
 class AtomBindings;
+class PreferencesManager;
 class NodeBindings;
 
 class AtomRendererClient : public content::ContentRendererClient {
@@ -20,8 +21,10 @@ class AtomRendererClient : public content::ContentRendererClient {
   AtomRendererClient();
   virtual ~AtomRendererClient();
 
-  void DidCreateScriptContext(v8::Handle<v8::Context> context);
-  void WillReleaseScriptContext(v8::Handle<v8::Context> context);
+  void DidCreateScriptContext(
+      v8::Handle<v8::Context> context, content::RenderFrame* render_frame);
+  void WillReleaseScriptContext(
+      v8::Handle<v8::Context> context, content::RenderFrame* render_frame);
 
  private:
   enum NodeIntegration {
@@ -36,6 +39,7 @@ class AtomRendererClient : public content::ContentRendererClient {
   void RenderFrameCreated(content::RenderFrame*) override;
   void RenderViewCreated(content::RenderView*) override;
   void RunScriptsAtDocumentStart(content::RenderFrame* render_frame) override;
+  void RunScriptsAtDocumentEnd(content::RenderFrame* render_frame) override;
   blink::WebSpeechSynthesizer* OverrideSpeechSynthesizer(
       blink::WebSpeechSynthesizerClient* client) override;
   bool OverrideCreatePlugin(content::RenderFrame* render_frame,
@@ -61,6 +65,7 @@ class AtomRendererClient : public content::ContentRendererClient {
 
   std::unique_ptr<NodeBindings> node_bindings_;
   std::unique_ptr<AtomBindings> atom_bindings_;
+  std::unique_ptr<PreferencesManager> preferences_manager_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomRendererClient);
 };

@@ -655,6 +655,11 @@ void WebContents::DevToolsOpened() {
       isolate(), managed_web_contents()->GetDevToolsWebContents());
   devtools_web_contents_.Reset(isolate(), handle.ToV8());
 
+  // Set inspected tabID.
+  base::FundamentalValue tab_id(ID());
+  managed_web_contents()->CallClientFunction(
+      "DevToolsAPI.setInspectedTabId", &tab_id, nullptr, nullptr);
+
   // Inherit owner window in devtools.
   if (owner_window())
     handle->SetOwnerWindow(managed_web_contents()->GetDevToolsWebContents(),
@@ -1083,9 +1088,10 @@ void WebContents::TabTraverse(bool reverse) {
   web_contents()->FocusThroughTabTraversal(reverse);
 }
 
-bool WebContents::SendIPCMessage(const base::string16& channel,
+bool WebContents::SendIPCMessage(bool all_frames,
+                                 const base::string16& channel,
                                  const base::ListValue& args) {
-  return Send(new AtomViewMsg_Message(routing_id(), channel, args));
+  return Send(new AtomViewMsg_Message(routing_id(), all_frames, channel, args));
 }
 
 void WebContents::SendInputEvent(v8::Isolate* isolate,
@@ -1333,6 +1339,8 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   mate::Dictionary dict(isolate, exports);
   dict.SetMethod("create", &atom::api::WebContents::Create);
   dict.SetMethod("_setWrapWebContents", &atom::api::SetWrapWebContents);
+  dict.SetMethod("fromId",
+                 &mate::TrackableObject<atom::api::WebContents>::FromWeakMapID);
 }
 
 }  // namespace
