@@ -716,14 +716,11 @@ void NativeWindowMac::SetAspectRatio(double aspect_ratio,
                                      const gfx::Size& extra_size) {
     NativeWindow::SetAspectRatio(aspect_ratio, extra_size);
 
-    // We can't just pass the aspect ratio to Cocoa, since our API receives
-    // it as a float, and Cocoa expects an NSRect with explicit width & height
-    // arguments. Instead we derive those args ourselves from the given aspect
-    // ratio.
-    double width = roundf([window_ frame].size.height * aspect_ratio);
-    double height = roundf(width / aspect_ratio);
-
-    [window_ setAspectRatio:NSMakeSize(width, height)];
+    // Reset the behaviour to default if aspect_ratio is set to 0 or less.
+    if (aspect_ratio > 0.0)
+      [window_ setAspectRatio:NSMakeSize(aspect_ratio, 1.0)];
+    else
+      [window_ setResizeIncrements:NSMakeSize(1.0, 1.0)];
 }
 
 void NativeWindowMac::SetMovable(bool movable) {
