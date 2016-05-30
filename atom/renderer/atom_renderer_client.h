@@ -21,6 +21,7 @@ class AtomRendererClient : public content::ContentRendererClient {
   AtomRendererClient();
   virtual ~AtomRendererClient();
 
+  void DidClearWindowObject(content::RenderFrame* render_frame);
   void DidCreateScriptContext(
       v8::Handle<v8::Context> context, content::RenderFrame* render_frame);
   void WillReleaseScriptContext(
