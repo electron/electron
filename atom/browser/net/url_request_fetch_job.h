@@ -9,13 +9,9 @@
 
 #include "atom/browser/net/js_asker.h"
 #include "browser/url_request_context_getter.h"
-#include "net/url_request/url_request_context_getter.h"
 #include "net/url_request/url_fetcher_delegate.h"
-#include "net/url_request/url_request_job.h"
 
 namespace atom {
-
-class AtomBrowserContext;
 
 class URLRequestFetchJob : public JsAsker<net::URLRequestJob>,
                            public net::URLFetcherDelegate,
@@ -30,9 +26,6 @@ class URLRequestFetchJob : public JsAsker<net::URLRequestJob>,
                     const net::CompletionCallback& callback);
 
  protected:
-  void StartReading();
-  void ClearPendingBuffer();
-
   // JsAsker:
   void BeforeStartInUI(v8::Isolate*, v8::Local<v8::Value>) override;
   void StartAsync(std::unique_ptr<base::Value> options) override;
@@ -48,13 +41,23 @@ class URLRequestFetchJob : public JsAsker<net::URLRequestJob>,
   void OnURLFetchComplete(const net::URLFetcher* source) override;
 
  private:
+  int BufferCopy(net::IOBuffer* source, int num_bytes,
+                 net::IOBuffer* target, int target_size);
+  void ClearPendingBuffer();
+  void ClearWriteBuffer();
+
   scoped_refptr<net::URLRequestContextGetter> url_request_context_getter_;
   std::unique_ptr<net::URLFetcher> fetcher_;
-  scoped_refptr<net::IOBuffer> pending_buffer_;
-  scoped_refptr<net::DrainableIOBuffer> drainable_buffer_;
-  int pending_buffer_size_;
   std::unique_ptr<net::HttpResponseInfo> response_info_;
-  net::CompletionCallback response_piper_callback_;
+
+  // Saved arguments passed to ReadRawData.
+  scoped_refptr<net::IOBuffer> pending_buffer_;
+  int pending_buffer_size_;
+
+  // Saved arguments passed to DataAvailable.
+  scoped_refptr<net::IOBuffer> write_buffer_;
+  int write_num_bytes_;
+  net::CompletionCallback write_callback_;
 
   DISALLOW_COPY_AND_ASSIGN(URLRequestFetchJob);
 };

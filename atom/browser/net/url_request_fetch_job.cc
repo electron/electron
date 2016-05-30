@@ -77,7 +77,8 @@ class ResponsePiper : public net::URLFetcherResponseWriter {
 URLRequestFetchJob::URLRequestFetchJob(
     net::URLRequest* request, net::NetworkDelegate* network_delegate)
     : JsAsker<net::URLRequestJob>(request, network_delegate),
-      pending_buffer_size_(0) {
+      pending_buffer_size_(0),
+      write_num_bytes_(0) {
 }
 
 void URLRequestFetchJob::BeforeStartInUI(
@@ -169,22 +170,21 @@ void URLRequestFetchJob::HeadersCompleted() {
 int URLRequestFetchJob::DataAvailable(net::IOBuffer* buffer,
                                       int num_bytes,
                                       const net::CompletionCallback& callback) {
-  // Store the data in a drainable IO buffer if pending_buffer_ is empty, i.e.
-  // there's no ReadRawData() operation waiting for IO completion.
+  // When pending_buffer_ is empty, there's no ReadRawData() operation waiting
+  // for IO completion, we have to save the parameters until the request is
+  // ready to read data.
   if (!pending_buffer_.get()) {
-    response_piper_callback_ = callback;
-    drainable_buffer_ = new net::DrainableIOBuffer(buffer, num_bytes);
+    write_buffer_ = buffer;
+    write_num_bytes_ = num_bytes;
+    write_callback_ = callback;
     return net::ERR_IO_PENDING;
   }
 
-  // pending_buffer_ is set to the IOBuffer instance provided to ReadRawData()
-  // by URLRequestJob.
-  int bytes_read = std::min(num_bytes, pending_buffer_size_);
-  memcpy(pending_buffer_->data(), buffer->data(), bytes_read);
-
-  ClearPendingBuffer();
-
+  // Write data to the pending buffer and clear them after the writing.
+  int bytes_read = BufferCopy(buffer, num_bytes,
+                              pending_buffer_.get(), pending_buffer_size_);
   ReadRawDataComplete(bytes_read);
+  ClearPendingBuffer();
   return bytes_read;
 }
 
@@ -193,46 +193,26 @@ void URLRequestFetchJob::Kill() {
   fetcher_.reset();
 }
 
-void URLRequestFetchJob::StartReading() {
-  if (drainable_buffer_.get()) {
-    auto num_bytes = drainable_buffer_->BytesRemaining();
-    if (num_bytes <= 0 && !response_piper_callback_.is_null()) {
-      int size = drainable_buffer_->BytesConsumed();
-      drainable_buffer_ = nullptr;
-      response_piper_callback_.Run(size);
-      response_piper_callback_.Reset();
-      return;
-    }
-
-    int bytes_read = std::min(num_bytes, pending_buffer_size_);
-    memcpy(pending_buffer_->data(), drainable_buffer_->data(), bytes_read);
-
-    drainable_buffer_->DidConsume(bytes_read);
-
-    ClearPendingBuffer();
-
-    ReadRawDataComplete(bytes_read);
-  }
-}
-
-void URLRequestFetchJob::ClearPendingBuffer() {
-  // Clear the buffers before notifying the read is complete, so that it is
-  // safe for the observer to read.
-  pending_buffer_ = nullptr;
-  pending_buffer_size_ = 0;
-}
-
 int URLRequestFetchJob::ReadRawData(net::IOBuffer* dest, int dest_size) {
   if (GetResponseCode() == 204) {
     request()->set_received_response_content_length(prefilter_bytes_read());
     return net::OK;
   }
-  pending_buffer_ = dest;
-  pending_buffer_size_ = dest_size;
-  // Read from drainable_buffer_ if available, i.e. response data became
-  // available before ReadRawData was called.
-  StartReading();
-  return net::ERR_IO_PENDING;
+
+  // When write_buffer_ is empty, there is no data valable yet, we have to save
+  // the dest buffer util DataAvailable.
+  if (!write_buffer_.get()) {
+    pending_buffer_ = dest;
+    pending_buffer_size_ = dest_size;
+    return net::ERR_IO_PENDING;
+  }
+
+  // Read from the write buffer and clear them after reading.
+  int bytes_read = BufferCopy(write_buffer_.get(), write_num_bytes_,
+                              dest, dest_size);
+  write_callback_.Run(bytes_read);
+  ClearWriteBuffer();
+  return bytes_read;
 }
 
 bool URLRequestFetchJob::GetMimeType(std::string* mime_type) const {
@@ -264,11 +244,30 @@ void URLRequestFetchJob::OnURLFetchComplete(const net::URLFetcher* source) {
   }
 
   ClearPendingBuffer();
+  ClearWriteBuffer();
 
   if (fetcher_->GetStatus().is_success())
     ReadRawDataComplete(0);
   else
     NotifyStartError(fetcher_->GetStatus());
+}
+
+int URLRequestFetchJob::BufferCopy(net::IOBuffer* source, int num_bytes,
+                                   net::IOBuffer* target, int target_size) {
+  int bytes_written = std::min(num_bytes, target_size);
+  memcpy(target->data(), source->data(), bytes_written);
+  return bytes_written;
+}
+
+void URLRequestFetchJob::ClearPendingBuffer() {
+  pending_buffer_ = nullptr;
+  pending_buffer_size_ = 0;
+}
+
+void URLRequestFetchJob::ClearWriteBuffer() {
+  write_buffer_ = nullptr;
+  write_num_bytes_ = 0;
+  write_callback_.Reset();
 }
 
 }  // namespace atom
