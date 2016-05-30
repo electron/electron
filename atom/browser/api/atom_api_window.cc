@@ -633,7 +633,8 @@ void Window::ShowDefinitionForSelection() {
 void Window::SetIcon(mate::Handle<NativeImage> icon) {
 #if defined(OS_WIN)
   static_cast<NativeWindowViews*>(window_.get())->SetIcon(
-      icon->GetHICON(GetSystemMetrics(SM_CXSMICON)), icon->GetHICON(256));
+      icon->GetHICON(GetSystemMetrics(SM_CXSMICON)),
+      icon->GetHICON(GetSystemMetrics(SM_CXICON)));
 #elif defined(USE_X11)
   static_cast<NativeWindowViews*>(window_.get())->SetIcon(
       icon->image().AsImageSkia());

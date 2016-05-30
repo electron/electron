@@ -30,6 +30,7 @@ effects it is recommended to include at least followings sizes in the icon:
 
 * 16x16
 * 32x32
+* 64x64
 * 256x256
 
 ## High Resolution Image
