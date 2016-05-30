@@ -3,8 +3,7 @@ const http = require('http')
 const path = require('path')
 const qs = require('querystring')
 const remote = require('electron').remote
-const BrowserWindow = remote.require('electron').BrowserWindow
-const protocol = remote.require('electron').protocol
+const {BrowserWindow, protocol, webContents} = remote
 
 describe('protocol module', function () {
   var protocolName = 'sp'
@@ -508,6 +507,42 @@ describe('protocol module', function () {
             assert.equal(errorType, 'error')
             done()
           }
+        })
+      })
+    })
+
+    it('loads resource for webContents', function (done) {
+      var contents = null
+      var server = http.createServer(function (req, res) {
+        if (req.url == '/serverRedirect') {
+          res.statusCode = 301
+          res.setHeader('Location', 'http://' + req.rawHeaders[1])
+          res.end()
+        } else {
+          res.end(text)
+        }
+      })
+      server.listen(0, '127.0.0.1', function () {
+        var port = server.address().port
+        var url = `${protocolName}://fake-host`
+        var redirectURL = `http://127.0.0.1:${port}/serverRedirect`
+        var handler = function (request, callback) {
+          callback({
+            url: redirectURL
+          })
+        }
+        protocol.registerHttpProtocol(protocolName, handler, function (error) {
+          if (error) {
+            return done(error)
+          }
+          contents = webContents.create({})
+          contents.on('did-finish-load', function () {
+            assert.equal(contents.getURL(), url)
+            server.close()
+            contents.destroy()
+            done()
+          })
+          contents.loadURL(url)
         })
       })
     })
