@@ -211,6 +211,9 @@ class WebContents : public mate::TrackableObject<WebContents>,
       content::WebContents* web_contents,
       bool user_gesture,
       bool last_unlocked_by_target) override;
+  std::unique_ptr<content::BluetoothChooser> RunBluetoothChooser(
+      content::RenderFrameHost* frame,
+      const content::BluetoothChooser::EventHandler& handler) override;
 
   // content::WebContentsObserver:
   void BeforeUnloadFired(const base::TimeTicks& proceed_time) override;

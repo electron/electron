@@ -167,6 +167,8 @@
       'atom/browser/atom_security_state_model_client.h',
       'atom/browser/atom_speech_recognition_manager_delegate.cc',
       'atom/browser/atom_speech_recognition_manager_delegate.h',
+      'atom/browser/bluetooth_chooser.cc',
+      'atom/browser/bluetooth_chooser.h',
       'atom/browser/bridge_task_runner.cc',
       'atom/browser/bridge_task_runner.h',
       'atom/browser/browser.cc',
