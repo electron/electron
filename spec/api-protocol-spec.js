@@ -511,7 +511,7 @@ describe('protocol module', function () {
       })
     })
 
-    it('loads resource for webContents', function (done) {
+    it('works when target URL redirects', function (done) {
       var contents = null
       var server = http.createServer(function (req, res) {
         if (req.url == '/serverRedirect') {
