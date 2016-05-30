@@ -137,16 +137,14 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
   if (options.Get(options::kAlwaysOnTop, &top) && top) {
     SetAlwaysOnTop(true);
   }
-  // Disable fullscreen button if 'fullscreen' is specified to false.
   bool fullscreenable = true;
   bool fullscreen = false;
-  if (options.Get(options::kFullscreen, &fullscreen) && !fullscreen)
+  if (options.Get(options::kFullscreen, &fullscreen) && !fullscreen) {
+    // Disable fullscreen button if 'fullscreen' is specified to false.
+  #if defined(OS_MACOSX)
     fullscreenable = false;
-  // On Windows, we can only enter fullscreen via API
-  // Ensure that setFullscreen(true) is usable by default
-  #if defined(OS_WIN)
-    fullscreenable = true;
   #endif
+  }
   // Overriden by 'fullscreenable'.
   options.Get(options::kFullScreenable, &fullscreenable);
   SetFullScreenable(fullscreenable);
