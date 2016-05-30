@@ -171,7 +171,7 @@ page is loaded, use the `setUserAgent` method to change the user agent.
 
 If "on", the guest page will have web security disabled.
 
-### partition
+### `partition`
 
 ```html
 <webview src="https://github.com" partition="persist:github"></webview>
@@ -445,8 +445,8 @@ obtained by subscribing to [`found-in-page`](web-view-tag.md#event-found-in-page
 
 * `action` String - Specifies the action to take place when ending
   [`<webview>.findInPage`](web-view-tag.md#webviewtagfindinpage) request.
-  * `clearSelection` - Translate the selection into a normal selection.
-  * `keepSelection` - Clear the selection.
+  * `clearSelection` - Clear the selection.
+  * `keepSelection` - Translate the selection into a normal selection.
   * `activateSelection` - Focus and click the selection node.
 
 Stops any `findInPage` request for the `webview` with the provided `action`.
@@ -457,7 +457,7 @@ Prints `webview`'s web page. Same with `webContents.print([options])`.
 
 ### `<webview>.printToPDF(options, callback)`
 
-Prints webview's web page as PDF, Same with `webContents.printToPDF(options, callback)`
+Prints `webview`'s web page as PDF, Same with `webContents.printToPDF(options, callback)`
 
 ### `<webview>.send(channel[, arg1][, arg2][, ...])`
 
@@ -628,7 +628,7 @@ webview.addEventListener('found-in-page', (e) => {
     webview.stopFindInPage('keepSelection');
 });
 
-const rquestId = webview.findInPage('test');
+const requestId = webview.findInPage('test');
 ```
 
 ### Event: 'new-window'
