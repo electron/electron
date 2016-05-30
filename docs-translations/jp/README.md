@@ -44,7 +44,7 @@ _リンクになっていないリストは未翻訳のものです。_
 ### カスタムDOM要素:
 
 * [`File` Object](api/file-object.md)
-* `<webview>` Tag api/web-view-tag.md
+* [`<webview>` タグ](api/web-view-tag.md)
 * [`window.open` 関数](api/window-open.md)
 
 ### Main Processのモジュール:
