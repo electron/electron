@@ -183,8 +183,8 @@ int URLRequestFetchJob::DataAvailable(net::IOBuffer* buffer,
   // Write data to the pending buffer and clear them after the writing.
   int bytes_read = BufferCopy(buffer, num_bytes,
                               pending_buffer_.get(), pending_buffer_size_);
-  ReadRawDataComplete(bytes_read);
   ClearPendingBuffer();
+  ReadRawDataComplete(bytes_read);
   return bytes_read;
 }
 
@@ -210,8 +210,9 @@ int URLRequestFetchJob::ReadRawData(net::IOBuffer* dest, int dest_size) {
   // Read from the write buffer and clear them after reading.
   int bytes_read = BufferCopy(write_buffer_.get(), write_num_bytes_,
                               dest, dest_size);
-  write_callback_.Run(bytes_read);
+  net::CompletionCallback write_callback = write_callback_;
   ClearWriteBuffer();
+  write_callback.Run(bytes_read);
   return bytes_read;
 }
 
