@@ -12,6 +12,7 @@
 #include "atom/common/chrome_version.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "base/logging.h"
+#include "base/memory/memory_pressure_listener.h"
 #include "base/process/process_metrics.h"
 #include "native_mate/dictionary.h"
 
@@ -84,6 +85,11 @@ void Log(const base::string16& message) {
   std::cout << message << std::flush;
 }
 
+void PurgeMemory() {
+  base::MemoryPressureListener::NotifyMemoryPressure(
+      base::MemoryPressureListener::MEMORY_PRESSURE_LEVEL_CRITICAL);
+}
+
 }  // namespace
 
 
@@ -110,6 +116,7 @@ void AtomBindings::BindTo(v8::Isolate* isolate,
 #endif
   dict.SetMethod("activateUvLoop",
       base::Bind(&AtomBindings::ActivateUVLoop, base::Unretained(this)));
+  dict.SetMethod("purgeMemory", &PurgeMemory);
 
 #if defined(MAS_BUILD)
   dict.Set("mas", true);
