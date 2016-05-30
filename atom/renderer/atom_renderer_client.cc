@@ -68,6 +68,10 @@ class AtomRenderFrameObserver : public content::RenderFrameObserver {
         renderer_client_(renderer_client) {}
 
   // content::RenderFrameObserver:
+  void DidClearWindowObject() override {
+    renderer_client_->DidClearWindowObject(render_frame_);
+  }
+
   void DidCreateScriptContext(v8::Handle<v8::Context> context,
                               int extension_group,
                               int world_id) override {
@@ -185,12 +189,14 @@ void AtomRendererClient::RenderViewCreated(content::RenderView* render_view) {
   }
 }
 
-void AtomRendererClient::RunScriptsAtDocumentStart(
+void AtomRendererClient::DidClearWindowObject(
     content::RenderFrame* render_frame) {
   // Make sure every page will get a script context created.
-  render_frame->GetWebFrame()->executeScript(
-      blink::WebScriptSource("void 0"));
+  render_frame->GetWebFrame()->executeScript(blink::WebScriptSource("void 0"));
+}
 
+void AtomRendererClient::RunScriptsAtDocumentStart(
+    content::RenderFrame* render_frame) {
   // Inform the document start pharse.
   node::Environment* env = node_bindings_->uv_env();
   if (env) {

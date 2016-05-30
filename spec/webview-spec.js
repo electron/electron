@@ -259,6 +259,30 @@ describe('<webview> tag', function () {
       webview.src = 'data:text/html;base64,' + encoded
       document.body.appendChild(webview)
     })
+
+    it('does not break node integration', function (done) {
+      webview.addEventListener('console-message', function (e) {
+        assert.equal(e.message, 'function object object')
+        done()
+      })
+      webview.setAttribute('nodeintegration', 'on')
+      webview.setAttribute('disablewebsecurity', '')
+      webview.src = 'file://' + fixtures + '/pages/d.html'
+      document.body.appendChild(webview)
+    })
+
+    it('does not break preload script', function (done) {
+      var listener = function (e) {
+        assert.equal(e.message, 'function object object')
+        webview.removeEventListener('console-message', listener)
+        done()
+      }
+      webview.addEventListener('console-message', listener)
+      webview.setAttribute('disablewebsecurity', '')
+      webview.setAttribute('preload', fixtures + '/module/preload.js')
+      webview.src = 'file://' + fixtures + '/pages/e.html'
+      document.body.appendChild(webview)
+    })
   })
 
   describe('partition attribute', function () {
