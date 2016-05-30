@@ -102,6 +102,14 @@ MyApp.app/Contents
 
 You can rename the `electron` executable to any name you like.
 
+## Packaging Tools
+
+Apart from packaging your app manually, you can also choose to use third party
+packaging tools to do the work for you:
+
+* [electron-packager](https://github.com/maxogden/electron-packager)
+* [electron-builder](https://github.com/loopline-systems/electron-builder)
+
 ## Rebranding by Rebuilding Electron from Source
 
 It is also possible to rebrand Electron by changing the product name and
@@ -117,14 +125,6 @@ a Grunt task has been created that will handle this automatically:
 This task will automatically handle editing the `.gyp` file, building from
 source, then rebuilding your app's native Node modules to match the new
 executable name.
-
-## Packaging Tools
-
-Apart from packaging your app manually, you can also choose to use third party
-packaging tools to do the work for you:
-
-* [electron-packager](https://github.com/maxogden/electron-packager)
-* [electron-builder](https://github.com/loopline-systems/electron-builder)
 
 ### Creating a Custom Electron Fork
 
