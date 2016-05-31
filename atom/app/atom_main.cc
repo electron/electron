@@ -15,6 +15,7 @@
 #include "atom/app/atom_main_delegate.h"
 #include "atom/common/crash_reporter/win/crash_service_main.h"
 #include "base/environment.h"
+#include "base/process/launch.h"
 #include "base/win/windows_version.h"
 #include "content/public/app/sandbox_helper_win.h"
 #include "sandbox/win/src/sandbox_types.h"
@@ -46,10 +47,6 @@ bool IsEnvSet(const char* name) {
 #endif
 }
 
-bool IsRunAsNode() {
-  return IsEnvSet(kRunAsNode);
-}
-
 }  // namespace
 
 #if defined(OS_WIN)
@@ -57,14 +54,11 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
   int argc = 0;
   wchar_t** wargv = ::CommandLineToArgvW(::GetCommandLineW(), &argc);
 
-  // Make output work in console if we are not in cygiwn.
-  if (!IsEnvSet("TERM") && !IsEnvSet("ELECTRON_NO_ATTACH_CONSOLE")) {
-    AttachConsole(ATTACH_PARENT_PROCESS);
+  bool run_as_node = IsEnvSet(kRunAsNode);
 
-    FILE* dontcare;
-    freopen_s(&dontcare, "CON", "w", stdout);
-    freopen_s(&dontcare, "CON", "w", stderr);
-  }
+  // Make sure the output is printed to console.
+  if (run_as_node || !IsEnvSet("ELECTRON_NO_ATTACH_CONSOLE"))
+    base::RouteStdioToConsole(false);
 
   // Convert argv to to UTF8
   char** argv = new char*[argc];
@@ -100,7 +94,7 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
     }
   }
 
-  if (IsRunAsNode()) {
+  if (run_as_node) {
     // Now that argv conversion is done, we can finally start.
     base::AtExitManager atexit_manager;
     base::i18n::InitializeICU();
@@ -123,7 +117,7 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
 #elif defined(OS_LINUX)  // defined(OS_WIN)
 
 int main(int argc, const char* argv[]) {
-  if (IsRunAsNode()) {
+  if (IsEnvSet(kRunAsNode)) {
     base::i18n::InitializeICU();
     base::AtExitManager atexit_manager;
     return atom::NodeMain(argc, const_cast<char**>(argv));
@@ -140,7 +134,7 @@ int main(int argc, const char* argv[]) {
 #else  // defined(OS_LINUX)
 
 int main(int argc, const char* argv[]) {
-  if (IsRunAsNode()) {
+  if (IsEnvSet(kRunAsNode)) {
     return AtomInitializeICUandStartNode(argc, const_cast<char**>(argv));
   }
 
