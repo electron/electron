@@ -786,12 +786,16 @@ gfx::AcceleratedWidget NativeWindowViews::GetAcceleratedWidget() {
 }
 
 #if defined(OS_WIN)
-void NativeWindowViews::SetIcon(HICON small_icon, HICON app_icon) {
+void NativeWindowViews::SetIcon(HICON window_icon, HICON app_icon) {
+  // We are responsible for storing the images.
+  window_icon_ = base::win::ScopedHICON(CopyIcon(window_icon));
+  app_icon_ = base::win::ScopedHICON(CopyIcon(app_icon));
+
   HWND hwnd = GetAcceleratedWidget();
   SendMessage(hwnd, WM_SETICON, ICON_SMALL,
-              reinterpret_cast<LPARAM>(small_icon));
+              reinterpret_cast<LPARAM>(window_icon_.get()));
   SendMessage(hwnd, WM_SETICON, ICON_BIG,
-              reinterpret_cast<LPARAM>(app_icon));
+              reinterpret_cast<LPARAM>(app_icon_.get()));
 }
 #elif defined(USE_X11)
 void NativeWindowViews::SetIcon(const gfx::ImageSkia& icon) {
