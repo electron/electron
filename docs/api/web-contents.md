@@ -373,6 +373,22 @@ The `editFlags` is an object with the following properties:
 
 Emitted when there is a new context menu that needs to be handled.
 
+### Event: 'select-bluetooth-device'
+
+Returns:
+
+* `event` Event
+* `devices` [Objects]
+  * `deviceName` String
+  * `deviceId` String
+* `callback` Function
+  * `deviceId` String
+
+Emitted when bluetooth device needs to be selected on call to
+`navigator.bluetooth.requestDevice`. If `event.preventDefault` is not called,
+first available device will be selected. `callback` should be called with `deviceId`
+to be selected.
+
 ## Instance Methods
 
 The `webContents` object has the following instance methods:
