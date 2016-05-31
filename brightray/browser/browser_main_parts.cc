@@ -48,6 +48,11 @@
 #include "ui/gfx/platform_font_win.h"
 #endif
 
+#if defined(OS_LINUX)
+#include "device/bluetooth/bluetooth_adapter_factory.h"
+#include "device/bluetooth/dbus/dbus_bluez_manager_wrapper_linux.h"
+#endif
+
 using content::BrowserThread;
 
 namespace brightray {
@@ -219,6 +224,9 @@ void BrowserMainParts::PostMainMessageLoopStart() {
   // if X exits before us.
   ui::SetX11ErrorHandlers(BrowserX11ErrorHandler, BrowserX11IOErrorHandler);
 #endif
+#if defined(OS_LINUX)
+  bluez::DBusBluezManagerWrapperLinux::Initialize();
+#endif
 }
 
 void BrowserMainParts::PostMainMessageLoopRun() {
@@ -242,6 +250,13 @@ int BrowserMainParts::PreCreateThreads() {
 #endif
 #endif
   return 0;
+}
+
+void BrowserMainParts::PostDestroyThreads() {
+#if defined(OS_LINUX)
+  device::BluetoothAdapterFactory::Shutdown();
+  bluez::DBusBluezManagerWrapperLinux::Shutdown();
+#endif
 }
 
 }  // namespace brightray
