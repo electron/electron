@@ -17,6 +17,7 @@
 #if defined(OS_WIN)
 #include "atom/browser/ui/win/message_handler_delegate.h"
 #include "atom/browser/ui/win/taskbar_host.h"
+#include "base/win/scoped_gdi_object.h"
 #endif
 
 namespace views {
@@ -205,6 +206,10 @@ class NativeWindowViews : public NativeWindow,
 
   // If true we have enabled a11y
   bool enabled_a11y_support_;
+
+  // The icons of window and taskbar.
+  base::win::ScopedHICON window_icon_;
+  base::win::ScopedHICON app_icon_;
 #endif
 
   // Handles unhandled keyboard messages coming back from the renderer process.
