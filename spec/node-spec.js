@@ -76,6 +76,19 @@ describe('node feature', function () {
         })
         child.send('message')
       })
+
+      it('pipes stdio', function (done) {
+        let child = child_process.fork(path.join(fixtures, 'module', 'process-stdout.js'), {silent: true})
+        let data = ''
+        child.stdout.on('data', (chunk) => {
+          data += String(chunk)
+        })
+        child.on('exit', (code) => {
+          assert.equal(code, 0)
+          assert.equal(data, 'pipes stdio')
+          done()
+        })
+      })
     })
   })
 
