@@ -63,8 +63,9 @@ win.show();
 * `fullscreen` Boolean - 윈도우의 전체화면 활성화 여부. 이 속성을 명시적으로
   `false`로 지정했을 경우, OS X에선 전체화면 버튼이 숨겨지거나 비활성됩니다. 기본값은
   `false` 입니다.
-* `fullscreenable` Boolean - OS X의 최대화/줌 버튼이 전체화면 모드 또는 윈도우
-  최대화를 토글할 수 있게 할지 여부입니다. 기본값은 `true` 입니다.
+* `fullscreenable` Boolean - 윈도우가 전체화면 모드로 전환될 수 있는지 여부입니다.
+  또한 OS X에선, 최대화/줌 버튼이 전체화면 모드 또는 윈도우 최대화를 실행할지 여부도
+  포함됩니다. 기본값은 `true`입니다.
 * `skipTaskbar` Boolean - 작업표시줄 어플리케이션 아이콘 표시 스킵 여부. 기본값은
   `false`입니다.
 * `kiosk` Boolean - Kiosk(키오스크) 모드. 기본값은 `false`입니다.

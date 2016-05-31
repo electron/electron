@@ -31,7 +31,7 @@ electron/resources/app
 ## asar로 앱 패키징 하기
 
 소스파일 전체를 복사해서 배포하는 것과는 별개로 [asar](https://github.com/electron/asar)
-아카이브를 통해 어플리케이션의 소스코드가 사용자에게 노출되는 것을 방지할 수 있습니다.
+아카이브를 통해 어플리케이션의 소스 코드가 사용자에게 노출되는 것을 방지할 수 있습니다.
 
 `asar` 아카이브를 사용할 땐 단순히 `app` 폴더 대신에 어플리케이션을 패키징한
 `app.asar` 파일로 대체하면됩니다. Electron은 자동으로 `app`폴더 대신 asar 아카이브를
@@ -105,9 +105,17 @@ MyApp.app/Contents
 아이콘은 [.desktop](https://developer.gnome.org/integration-guide/stable/desktop-files.html.en)
 파일을 사용하여 지정할 수 있습니다.
 
-## Electron 소스코드를 다시 빌드하여 리소스 수정하기
+## 패키징 툴
 
-또한 Electron 소스코드를 다시 빌드할 때 어플리케이션 이름을 변경할 수 있습니다.
+어플리케이션을 일일이 수동으로 패키지로 만드는 대신, 서드 파티 패키징 툴을 사용하며
+이러한 작업을 자동화 시킬 수 있습니다:
+
+* [electron-packager](https://github.com/maxogden/electron-packager)
+* [electron-builder](https://github.com/loopline-systems/electron-builder)
+
+## Electron 소스 코드를 다시 빌드하여 리소스 수정하기
+
+또한 Electron 소스 코드를 다시 빌드할 때 어플리케이션 이름을 변경할 수 있습니다.
 
 `GYP_DEFINES` 환경변수를 사용하여 다음과 같이 다시 빌드할 수 있습니다:
 
@@ -131,17 +139,9 @@ $ script/build.py -c Release -t myapp
 
 ### grunt-build-atom-shell
 
-Electron의 소스코드를 수정하고 다시 빌드하는 작업은 상당히 복잡합니다. 일일이
-소스코드를 수정하는 대신 [grunt-build-atom-shell](https://github.com/paulcbetts/grunt-build-atom-shell)을
+Electron의 소스 코드를 수정하고 다시 빌드하는 작업은 상당히 복잡합니다. 일일이
+소스 코드를 수정하는 대신 [grunt-build-atom-shell](https://github.com/paulcbetts/grunt-build-atom-shell)을
 사용하여 빌드를 자동화 시킬 수 있습니다.
 
 이 툴을 사용하면 자동으로 `.gyp`파일을 수정하고 다시 빌드합니다. 그리고 어플리케이션의
 네이티브 Node 모듈 또한 새로운 실행파일 이름으로 일치시킵니다.
-
-## 패키징 툴
-
-어플리케이션을 일일이 수동으로 패키지로 만드는 대신, 서드 파티 패키징 툴을 사용하며
-이러한 작업을 자동화 시킬 수 있습니다:
-
-* [electron-packager](https://github.com/maxogden/electron-packager)
-* [electron-builder](https://github.com/loopline-systems/electron-builder)

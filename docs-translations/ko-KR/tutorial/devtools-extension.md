@@ -13,7 +13,7 @@
 다음 예시는 [React DevTools Extension](https://github.com/facebook/react-devtools)을
 사용합니다.
 
-먼저 소스코드를 다운로드 받습니다:
+먼저 소스 코드를 다운로드 받습니다:
 
 ```bash
 $ cd /some-directory
