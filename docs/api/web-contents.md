@@ -373,6 +373,42 @@ The `editFlags` is an object with the following properties:
 
 Emitted when there is a new context menu that needs to be handled.
 
+### Event: 'select-bluetooth-device'
+
+Returns:
+
+* `event` Event
+* `devices` [Objects]
+  * `deviceName` String
+  * `deviceId` String
+* `callback` Function
+  * `deviceId` String
+
+Emitted when bluetooth device needs to be selected on call to
+`navigator.bluetooth.requestDevice`. To use `navigator.bluetooth` api
+`webBluetooth` should be enabled.  If `event.preventDefault` is not called,
+first available device will be selected. `callback` should be called with
+`deviceId` to be selected, passing empty string to `callback` will
+cancel the request.
+
+```javacript
+app.commandLine.appendSwitch('enable-web-bluetooth')
+
+app.on('ready', () => {
+  webContents.on('select-bluetooth-device', (event, deviceList, callback) => {
+    event.preventDefault()
+    let result = deviceList.find((device) => {
+      return device.deviceName === 'test'
+    })
+    if (!result) {
+      callback('')
+    } else {
+      callback(result.deviceId)
+    }
+  })
+})
+```
+
 ## Instance Methods
 
 The `webContents` object has the following instance methods:
