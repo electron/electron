@@ -8,6 +8,7 @@ The `autoUpdater` module provides an interface for the
 You can quickly launch a multi-platform release server for distributing your
 application by using one of these projects:
 
+- [nuts][nuts]: *A smart release server for your applications, using GitHub as a backend. Auto-updates with Squirrel (Mac & Windows)*
 - [electron-release-server][electron-release-server]: *A fully featured,
   self-hosted release server for electron applications, compatible with
   auto-updater*
@@ -118,3 +119,4 @@ should only be called after `update-downloaded` has been emitted.
 [app-user-model-id]: https://msdn.microsoft.com/en-us/library/windows/desktop/dd378459(v=vs.85).aspx
 [electron-release-server]: https://github.com/ArekSredzki/electron-release-server
 [squirrel-updates-server]: https://github.com/Aluxian/squirrel-updates-server
+[nuts]: https://github.com/GitbookIO/nuts
