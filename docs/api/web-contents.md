@@ -655,7 +655,8 @@ size.
   * `marginsType` Integer - Specifies the type of margins to use. Uses 0 for
     default margin, 1 for no margin, and 2 for minimum margin.
   * `pageSize` String - Specify page size of the generated PDF. Can be `A3`,
-    `A4`, `A5`, `Legal`, `Letter`, `Tabloid` or an Object containing `height` & `width` in Microns.
+    `A4`, `A5`, `Legal`, `Letter`, `Tabloid` or an Object containing `height`
+    and `width` in microns.
   * `printBackground` Boolean - Whether to print CSS backgrounds.
   * `printSelectionOnly` Boolean - Whether to print selection only.
   * `landscape` Boolean - `true` for landscape, `false` for portrait.
@@ -677,6 +678,8 @@ By default, an empty `options` will be regarded as:
   landscape: false
 }
 ```
+
+An example of `webContents.printToPDF`:
 
 ```javascript
 const {BrowserWindow} = require('electron');
