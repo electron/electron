@@ -1,11 +1,11 @@
-// Copyright (c) 2011 The Chromium Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style license that can be
+// Copyright (c) 2016 GitHub, Inc.
+// Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef CHROME_BROWSER_MAC_RELAUNCHER_H_
-#define CHROME_BROWSER_MAC_RELAUNCHER_H_
+#ifndef ATOM_BROWSER_RELAUNCHER_H_
+#define ATOM_BROWSER_RELAUNCHER_H_
 
-// mac_relauncher implements main browser application relaunches on the Mac.
+// relauncher implements main browser application relaunches across platforms.
 // When a browser wants to relaunch itself, it can't simply fork off a new
 // process and exec a new browser from within. That leaves open a window
 // during which two browser applications might be running concurrently. If
@@ -13,7 +13,7 @@
 // especially bad if the user expected the Dock icon to be persistent by
 // choosing Keep in Dock from the icon's contextual menu.
 //
-// mac_relauncher approaches this problem by introducing an intermediate
+// relauncher approaches this problem by introducing an intermediate
 // process (the "relauncher") in between the original browser ("parent") and
 // replacement browser ("relaunched"). The helper executable is used for the
 // relauncher process; because it's an LSUIElement, it doesn't get a Dock
@@ -36,7 +36,7 @@ namespace content {
 struct MainFunctionParams;
 }
 
-namespace mac_relauncher {
+namespace relauncher {
 
 // Relaunches the application using the helper application associated with the
 // currently running instance of Chrome in the parent browser process as the
@@ -64,14 +64,17 @@ bool RelaunchAppWithHelper(const std::string& helper,
                            const std::vector<std::string>& relauncher_args,
                            const std::vector<std::string>& args);
 
-namespace internal {
+// In the relauncher process, performs the necessary synchronization steps
+// with the parent by setting up a kqueue to watch for it to exit, writing a
+// byte to the pipe, and then waiting for the exit notification on the kqueue.
+// If anything fails, this logs a message and returns immediately. In those
+// situations, it can be assumed that something went wrong with the parent
+// process and the best recovery approach is to attempt relaunch anyway.
+void RelauncherSynchronizeWithParent();
 
-// The entry point from ChromeMain into the relauncher process. This is not a
-// user API. Don't call it if your name isn't ChromeMain.
+// The entry point from ChromeMain into the relauncher process.
 int RelauncherMain(const content::MainFunctionParams& main_parameters);
 
-}  // namespace internal
+}  // namespace relauncher
 
-}  // namespace mac_relauncher
-
-#endif  // CHROME_BROWSER_MAC_RELAUNCHER_H_
+#endif  // ATOM_BROWSER_RELAUNCHER_H_

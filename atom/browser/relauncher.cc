@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "chrome/browser/mac/relauncher.h"
+#include "atom/browser/relauncher.h"
 
 #include <ApplicationServices/ApplicationServices.h>
 #include <AvailabilityMacros.h>
@@ -33,7 +33,7 @@
 #include "content/public/common/content_switches.h"
 #include "content/public/common/main_function_params.h"
 
-namespace mac_relauncher {
+namespace relauncher {
 
 namespace {
 
@@ -171,14 +171,6 @@ bool RelaunchAppWithHelper(const std::string& helper,
   return true;
 }
 
-namespace {
-
-// In the relauncher process, performs the necessary synchronization steps
-// with the parent by setting up a kqueue to watch for it to exit, writing a
-// byte to the pipe, and then waiting for the exit notification on the kqueue.
-// If anything fails, this logs a message and returns immediately. In those
-// situations, it can be assumed that something went wrong with the parent
-// process and the best recovery approach is to attempt relaunch anyway.
 void RelauncherSynchronizeWithParent() {
   base::ScopedFD relauncher_sync_fd(kRelauncherSyncFD);
 
@@ -235,10 +227,6 @@ void RelauncherSynchronizeWithParent() {
     return;
   }
 }
-
-}  // namespace
-
-namespace internal {
 
 int RelauncherMain(const content::MainFunctionParams& main_parameters) {
   // CommandLine rearranges the order of the arguments returned by
@@ -360,6 +348,4 @@ int RelauncherMain(const content::MainFunctionParams& main_parameters) {
   return 0;
 }
 
-}  // namespace internal
-
-}  // namespace mac_relauncher
+}  // namespace relauncher

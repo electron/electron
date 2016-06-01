@@ -8,13 +8,13 @@
 #include "atom/browser/mac/atom_application_delegate.h"
 #include "atom/browser/mac/dict_util.h"
 #include "atom/browser/native_window.h"
+#include "atom/browser/relauncher.h"
 #include "atom/browser/window_list.h"
 #include "base/mac/bundle_locations.h"
 #include "base/mac/foundation_util.h"
 #include "base/strings/sys_string_conversions.h"
 #include "brightray/common/application_info.h"
 #include "brightray/common/mac/main_application_bundle.h"
-#include "chrome/browser/mac/relauncher.h"
 #include "net/base/mac/url_conversions.h"
 #include "url/gurl.h"
 
@@ -26,7 +26,7 @@ void Browser::Relaunch(const std::vector<std::string>& args,
   args_with_app.insert(
       args_with_app.begin(),
       app.empty() ? brightray::MainApplicationBundlePath().value() : app);
-  mac_relauncher::RelaunchApp(args_with_app);
+  relauncher::RelaunchApp(args_with_app);
 }
 
 void Browser::Focus() {
