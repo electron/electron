@@ -14,7 +14,7 @@
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/atom_security_state_model_client.h"
-#include "atom/browser/bluetooth_chooser.h"
+#include "atom/browser/lib/bluetooth_chooser.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/net/atom_network_delegate.h"
 #include "atom/browser/web_contents_permission_helper.h"

@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_BLUETOOTH_CHOOSER_H_
-#define ATOM_BROWSER_BLUETOOTH_CHOOSER_H_
+#ifndef ATOM_BROWSER_LIB_BLUETOOTH_CHOOSER_H_
+#define ATOM_BROWSER_LIB_BLUETOOTH_CHOOSER_H_
 
 #include <string>
 #include <vector>
@@ -42,4 +42,4 @@ class BluetoothChooser : public content::BluetoothChooser {
 
 }  // namespace atom
 
-#endif  // ATOM_BROWSER_BLUETOOTH_CHOOSER_H_
+#endif  // ATOM_BROWSER_LIB_BLUETOOTH_CHOOSER_H_
