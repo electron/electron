@@ -21,7 +21,7 @@
 #include "base/command_line.h"
 #include "base/files/file_path.h"
 #include "base/path_service.h"
-#include "base/prefs/pref_registry_simple.h"
+#include "components/prefs/pref_registry_simple.h"
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
 #include "base/threading/sequenced_worker_pool.h"
@@ -46,7 +46,7 @@ namespace {
 
 class NoCacheBackend : public net::HttpCache::BackendFactory {
   int CreateBackend(net::NetLog* net_log,
-                    scoped_ptr<disk_cache::Backend>* backend,
+                    std::unique_ptr<disk_cache::Backend>* backend,
                     const net::CompletionCallback& callback) override {
     return net::ERR_FAILED;
   }
@@ -67,8 +67,7 @@ AtomBrowserContext::AtomBrowserContext(const std::string& partition,
     : brightray::BrowserContext(partition, in_memory),
       cert_verifier_(new AtomCertVerifier),
       job_factory_(new AtomURLRequestJobFactory),
-      network_delegate_(new AtomNetworkDelegate),
-      allow_ntlm_everywhere_(false) {
+      network_delegate_(new AtomNetworkDelegate) {
 }
 
 AtomBrowserContext::~AtomBrowserContext() {
@@ -95,11 +94,11 @@ std::string AtomBrowserContext::GetUserAgent() {
   return content::BuildUserAgentFromProduct(user_agent);
 }
 
-scoped_ptr<net::URLRequestJobFactory>
+std::unique_ptr<net::URLRequestJobFactory>
 AtomBrowserContext::CreateURLRequestJobFactory(
     content::ProtocolHandlerMap* handlers,
     content::URLRequestInterceptorScopedVector* interceptors) {
-  scoped_ptr<AtomURLRequestJobFactory> job_factory(job_factory_);
+  std::unique_ptr<AtomURLRequestJobFactory> job_factory(job_factory_);
 
   for (auto& it : *handlers) {
     job_factory->SetProtocolHandler(it.first,
@@ -134,7 +133,7 @@ AtomBrowserContext::CreateURLRequestJobFactory(
           new net::FtpNetworkLayer(host_resolver))));
 
   // Set up interceptors in the reverse order.
-  scoped_ptr<net::URLRequestJobFactory> top_job_factory =
+  std::unique_ptr<net::URLRequestJobFactory> top_job_factory =
       std::move(job_factory);
   content::URLRequestInterceptorScopedVector::reverse_iterator it;
   for (it = interceptors->rbegin(); it != interceptors->rend(); ++it)
@@ -177,7 +176,7 @@ content::PermissionManager* AtomBrowserContext::GetPermissionManager() {
   return permission_manager_.get();
 }
 
-scoped_ptr<net::CertVerifier> AtomBrowserContext::CreateCertVerifier() {
+std::unique_ptr<net::CertVerifier> AtomBrowserContext::CreateCertVerifier() {
   return make_scoped_ptr(cert_verifier_);
 }
 
@@ -193,16 +192,6 @@ void AtomBrowserContext::RegisterPrefs(PrefRegistrySimple* pref_registry) {
   pref_registry->RegisterFilePathPref(prefs::kDownloadDefaultDirectory,
                                       download_dir);
   pref_registry->RegisterDictionaryPref(prefs::kDevToolsFileSystemPaths);
-}
-
-bool AtomBrowserContext::AllowNTLMCredentialsForDomain(const GURL& origin) {
-  if (allow_ntlm_everywhere_)
-    return true;
-  return Delegate::AllowNTLMCredentialsForDomain(origin);
-}
-
-void AtomBrowserContext::AllowNTLMCredentialsForAllDomains(bool should_allow) {
-  allow_ntlm_everywhere_ = should_allow;
 }
 
 }  // namespace atom

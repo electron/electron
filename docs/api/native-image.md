@@ -10,7 +10,7 @@ image file path as a `String`:
 
 ```javascript
 const appIcon = new Tray('/Users/somebody/images/icon.png');
-let window = new BrowserWindow({icon: '/Users/somebody/images/window.png'});
+let win = new BrowserWindow({icon: '/Users/somebody/images/window.png'});
 ```
 
 Or read the image from the clipboard which returns a `nativeImage`:
@@ -25,7 +25,13 @@ const appIcon = new Tray(image);
 Currently `PNG` and `JPEG` image formats are supported. `PNG` is recommended
 because of its support for transparency and lossless compression.
 
-On Windows, you can also load an `ICO` icon from a file path.
+On Windows, you can also load `ICO` icons from file paths, to get best visual
+effects it is recommended to include at least followings sizes in the icon:
+
+* 16x16
+* 32x32
+* 64x64
+* 256x256
 
 ## High Resolution Image
 
@@ -49,7 +55,7 @@ images/
 
 
 ```javascript
-var appIcon = new Tray('/Users/somebody/images/icon.png');
+let appIcon = new Tray('/Users/somebody/images/icon.png');
 ```
 
 Following suffixes for DPI are also supported:
@@ -118,7 +124,7 @@ The following methods are available on instances of `nativeImage`:
 ```javascript
 const nativeImage = require('electron').nativeImage;
 
-var image = nativeImage.createFromPath('/Users/somebody/images/icon.png');
+let image = nativeImage.createFromPath('/Users/somebody/images/icon.png');
 ```
 
 ### `image.toPng()`

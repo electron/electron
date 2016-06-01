@@ -1,7 +1,7 @@
 Por favor, certifique-se de que está utilizando a documentação que corresponde à sua versão do Electron.
 O número da versão deve ser uma parte da URL da página. Se não for, você provavelmente está utilizando
 a documentação de um branch de desenvolvimento que pode conter mudanças na API que não são compatíveis
-com a sua versão do Electron. Se este for o caso, você pode mudar para uma versão diferente da 
+com a sua versão do Electron. Se este for o caso, você pode mudar para uma versão diferente da
 documentação na lista de [versões disponíveis](http://electron.atom.io/docs/) em atom.io,
 ou se você estiver usando a interface do GitHub, abra o *dropdown* "Switch branches/tags" e
 selecione a *tag* que corresponde à sua versão.
@@ -20,7 +20,7 @@ Existem muitas perguntas comuns que são feitas, verifique antes de criar uma is
 * [Usando Módulos Nativos do Node](tutorial/using-native-node-modules.md)
 * [Depuração do Processo Principal](tutorial/debugging-main-process.md)
 * [Usando Selenium e WebDriver](../../docs/tutorial/using-selenium-and-webdriver.md)
-* [Extensão DevTools](../../docs/tutorial/devtools-extension.md)
+* [Extensão DevTools](tutorial/devtools-extension.md)
 * [Usando o Plugin Pepper Flash](tutorial/using-pepper-flash-plugin.md)
 * [Usando o Plugin Widevine CDM](../../tutorial/using-widevine-cdm-plugin.md)
 

@@ -12,9 +12,9 @@
 #include "chrome/common/print_messages.h"
 #include "printing/metafile_skia_wrapper.h"
 #include "printing/page_size_margins.h"
-#include "skia/ext/platform_device.h"
 #include "third_party/WebKit/public/platform/WebCanvas.h"
 #include "third_party/WebKit/public/web/WebLocalFrame.h"
+#include "third_party/skia/include/core/SkCanvas.h"
 
 namespace printing {
 
@@ -24,8 +24,7 @@ void PrintWebViewHelper::PrintPageInternal(
     const PrintMsg_PrintPage_Params& params,
     WebFrame* frame) {
   PdfMetafileSkia metafile;
-  if (!metafile.Init())
-    return;
+  CHECK(metafile.Init());
 
   int page_number = params.page_number;
   gfx::Size page_size_in_dpi;
@@ -55,7 +54,7 @@ bool PrintWebViewHelper::RenderPreviewPage(
     int page_number,
     const PrintMsg_Print_Params& print_params) {
   PrintMsg_Print_Params printParams = print_params;
-  scoped_ptr<PdfMetafileSkia> draft_metafile;
+  std::unique_ptr<PdfMetafileSkia> draft_metafile;
   PdfMetafileSkia* initial_render_metafile = print_preview_context_.metafile();
 
   bool render_to_draft = print_preview_context_.IsModifiable() &&
@@ -63,12 +62,7 @@ bool PrintWebViewHelper::RenderPreviewPage(
 
   if (render_to_draft) {
     draft_metafile.reset(new PdfMetafileSkia());
-    if (!draft_metafile->Init()) {
-      print_preview_context_.set_error(
-          PREVIEW_ERROR_MAC_DRAFT_METAFILE_INIT_FAILED);
-      LOG(ERROR) << "Draft PdfMetafileSkia Init failed";
-      return false;
-    }
+    CHECK(draft_metafile->Init());
     initial_render_metafile = draft_metafile.get();
   }
 

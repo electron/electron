@@ -111,7 +111,7 @@ class AtomNetworkDelegate : public brightray::NetworkDelegate {
   // Deal with the results of Listener.
   template<typename T>
   void OnListenerResultInIO(
-      uint64_t id, T out, scoped_ptr<base::DictionaryValue> response);
+      uint64_t id, T out, std::unique_ptr<base::DictionaryValue> response);
   template<typename T>
   void OnListenerResultInUI(
       uint64_t id, T out, const base::DictionaryValue& response);

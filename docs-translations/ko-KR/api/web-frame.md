@@ -5,7 +5,7 @@
 다음 예시는 현재 페이지를 200% 줌 합니다:
 
 ```javascript
-var webFrame = require('electron').webFrame;
+const {webFrame} = require('electron');
 
 webFrame.setZoomFactor(2);
 ```
@@ -58,8 +58,8 @@ Input field나 text area에 철자 검사(spell checking) 제공자를 설정합
 [node-spellchecker][spellchecker]를 철자 검사 제공자로 사용하는 예시입니다:
 
 ```javascript
-webFrame.setSpellCheckProvider("en-US", true, {
-  spellCheck: function(text) {
+webFrame.setSpellCheckProvider('en-US', true, {
+  spellCheck(text) {
     return !(require('spellchecker').isMisspelled(text));
   }
 });
@@ -102,5 +102,41 @@ ServiceWorker의 등록과 fetch API를 사용할 수 있도록 지원합니다.
 
 브라우저 윈도우에서 어떤 `requestFullScreen` 같은 HTML API는 사용자의 승인이
 필요합니다. `userGesture`를 `true`로 설정하면 이러한 제약을 제거할 수 있습니다.
+
+### `webFrame.getResourceUsage()`
+
+Blink의 내부 메모리 캐시 사용 정보를 담고있는 객체를 반환합니다.
+
+```javascript
+console.log(webFrame.getResourceUsage())
+```
+
+다음이 출력됩니다:
+
+```javascript
+{
+  images: {
+    count: 22,
+    size: 2549,
+    liveSize: 2542,
+    decodedSize: 478,
+    purgedSize: 0,
+    purgeableSize: 0
+  },
+  cssStyleSheets: { /* same with "images" */ },
+  xslStyleSheets: { /* same with "images" */ },
+  fonts: { /* same with "images" */ },
+  other: { /* same with "images" */ },
+}
+```
+
+### `webFrame.clearCache()`
+
+사용하지 않는 메모리 비우기를 시도합니다. (이전 페이지의 이미지 등)
+
+참고로 맹목적으로 이 메서드를 호출하는 것은 이 빈 캐시를 다시 채워야하기 때문에
+Electron을 느리게 만듭니다. 따라서 이 메서드는 페이지가 예상했던 것 보다 실질적으로 더
+적은 메모리를 사용하게 만드는 어플리케이션 이벤트가 발생했을 때만 호출해야 합니다.
+(i.e. 아주 무거운 페이지에서 거의 빈 페이지로 이동한 후 계속 유지할 경우)
 
 [spellchecker]: https://github.com/atom/node-spellchecker

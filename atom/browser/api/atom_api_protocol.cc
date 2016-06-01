@@ -15,6 +15,7 @@
 #include "atom/common/native_mate_converters/net_converter.h"
 #include "atom/common/node_includes.h"
 #include "native_mate/dictionary.h"
+#include "url/url_util.h"
 
 using content::BrowserThread;
 
@@ -27,11 +28,6 @@ Protocol::Protocol(v8::Isolate* isolate, AtomBrowserContext* browser_context)
       job_factory_(browser_context->job_factory()) {
   CHECK(job_factory_);
   Init(isolate);
-}
-
-void Protocol::RegisterStandardSchemes(
-    const std::vector<std::string>& schemes) {
-  atom::AtomBrowserClient::SetCustomSchemes(schemes);
 }
 
 void Protocol::RegisterServiceWorkerSchemes(
@@ -131,7 +127,6 @@ mate::Handle<Protocol> Protocol::Create(
 void Protocol::BuildPrototype(
     v8::Isolate* isolate, v8::Local<v8::ObjectTemplate> prototype) {
   mate::ObjectTemplateBuilder(isolate, prototype)
-      .SetMethod("registerStandardSchemes", &Protocol::RegisterStandardSchemes)
       .SetMethod("registerServiceWorkerSchemes",
                  &Protocol::RegisterServiceWorkerSchemes)
       .SetMethod("registerStringProtocol",
@@ -161,13 +156,24 @@ void Protocol::BuildPrototype(
 
 namespace {
 
+void RegisterStandardSchemes(
+    const std::vector<std::string>& schemes) {
+  for (const auto& scheme : schemes)
+    url::AddStandardScheme(scheme.c_str(), url::SCHEME_WITHOUT_PORT);
+}
+
+mate::Handle<atom::api::Protocol> CreateProtocol(v8::Isolate* isolate) {
+  auto browser_context = static_cast<atom::AtomBrowserContext*>(
+      atom::AtomBrowserMainParts::Get()->browser_context());
+  return atom::api::Protocol::Create(isolate, browser_context);
+}
+
 void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
-  auto browser_context = static_cast<atom::AtomBrowserContext*>(
-      atom::AtomBrowserMainParts::Get()->browser_context());
-  dict.Set("protocol", atom::api::Protocol::Create(isolate, browser_context));
+  dict.SetMethod("createProtocolObject", base::Bind(&CreateProtocol, isolate));
+  dict.SetMethod("registerStandardSchemes", &RegisterStandardSchemes);
 }
 
 }  // namespace

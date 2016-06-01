@@ -47,7 +47,7 @@ class CrashReporterLinux : public CrashReporter {
                         void* context,
                         const bool succeeded);
 
-  scoped_ptr<google_breakpad::ExceptionHandler> breakpad_;
+  std::unique_ptr<google_breakpad::ExceptionHandler> breakpad_;
   CrashKeyStorage crash_keys_;
 
   uint64_t process_start_time_;

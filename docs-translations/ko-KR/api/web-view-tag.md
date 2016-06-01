@@ -11,6 +11,8 @@
 상호작용이 비동기로 작동한다는 것을 의미합니다. 따라서 임베디드 콘텐츠로부터
 어플리케이션을 안전하게 유지할 수 있습니다.
 
+보안상의 이유로, `webview`는 `nodeIntegration`이 활성화된 `BrowserWindow`에서만 사용할 수 있습니다.
+
 ## 예시
 
 웹 페이지를 어플리케이션에 삽입하려면 `webview` 태그를 사용해 원하는 타겟 페이지에
@@ -29,19 +31,21 @@
 
 ```html
 <script>
-  onload = function() {
-    var webview = document.getElementById("foo");
-    var indicator = document.querySelector(".indicator");
+  onload = () => {
+    const webview = document.getElementById('foo');
+    const indicator = document.querySelector('.indicator');
 
-    var loadstart = function() {
-      indicator.innerText = "loading...";
-    }
-    var loadstop = function() {
-      indicator.innerText = "";
-    }
-    webview.addEventListener("did-start-loading", loadstart);
-    webview.addEventListener("did-stop-loading", loadstop);
-  }
+    const loadstart = () => {
+      indicator.innerText = 'loading...';
+    };
+
+    const loadstop = () => {
+      indicator.innerText = '';
+    };
+
+    webview.addEventListener('did-start-loading', loadstart);
+    webview.addEventListener('did-stop-loading', loadstop);
+  };
 </script>
 ```
 
@@ -205,7 +209,7 @@ API를 사용할 수 있습니다. 이를 지정하면 내부에서 로우레벨
 **예시**
 
 ```javascript
-webview.addEventListener("dom-ready", function() {
+webview.addEventListener('dom-ready', () => {
   webview.openDevTools();
 });
 ```
@@ -450,7 +454,7 @@ Webview 페이지를 PDF 형식으로 인쇄합니다.
 * `args` (optional)
 
 `channel`을 통해 렌더러 프로세스로 비동기 메시지를 보냅니다. 또한 `args`를 지정하여
-임의의 인자를 보낼 수도 있습니다. 렌더러 프로세스는 `ipcRenderer` 모듈의 `channel`
+임의의 인수를 보낼 수도 있습니다. 렌더러 프로세스는 `ipcRenderer` 모듈의 `channel`
 이벤트로 이 메시지를 받아 처리할 수 있습니다.
 
 예시는 [webContents.send](web-contents.md#webcontentssendchannel-args)를 참고하세요.
@@ -588,7 +592,7 @@ Returns:
 콘솔에 다시 로깅하는 예시입니다.
 
 ```javascript
-webview.addEventListener('console-message', function(e) {
+webview.addEventListener('console-message', (e) => {
   console.log('Guest page logged a message:', e.message);
 });
 ```
@@ -608,12 +612,12 @@ Returns:
 사용할 수 있을 때 발생하는 이벤트입니다.
 
 ```javascript
-webview.addEventListener('found-in-page', function(e) {
+webview.addEventListener('found-in-page', (e) => {
   if (e.result.finalUpdate)
-    webview.stopFindInPage("keepSelection");
+    webview.stopFindInPage('keepSelection');
 });
 
-const rquestId = webview.findInPage("test");
+const rquestId = webview.findInPage('test');
 ```
 
 ### Event: 'new-window'
@@ -631,10 +635,12 @@ Returns:
 다음 예시 코드는 새 URL을 시스템의 기본 브라우저로 여는 코드입니다.
 
 ```javascript
-webview.addEventListener('new-window', function(e) {
-  var protocol = require('url').parse(e.url).protocol;
+const {shell} = require('electron');
+
+webview.addEventListener('new-window', (e) => {
+  const protocol = require('url').parse(e.url).protocol;
   if (protocol === 'http:' || protocol === 'https:') {
-    require('electron').shell.openExternal(e.url);
+    shell.openExternal(e.url);
   }
 });
 ```
@@ -687,7 +693,7 @@ Returns:
 이동시키는 예시입니다.
 
 ```javascript
-webview.addEventListener('close', function() {
+webview.addEventListener('close', () => {
   webview.src = 'about:blank';
 });
 ```
@@ -706,7 +712,7 @@ Returns:
 
 ```javascript
 // In embedder page.
-webview.addEventListener('ipc-message', function(event) {
+webview.addEventListener('ipc-message', (event) => {
   console.log(event.channel);
   // Prints "pong"
 });
@@ -715,8 +721,8 @@ webview.send('ping');
 
 ```javascript
 // In guest page.
-var ipcRenderer = require('electron').ipcRenderer;
-ipcRenderer.on('ping', function() {
+const {ipcRenderer} = require('electron');
+ipcRenderer.on('ping', () => {
   ipcRenderer.sendToHost('pong');
 });
 ```

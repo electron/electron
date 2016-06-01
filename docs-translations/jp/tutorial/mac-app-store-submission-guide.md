@@ -2,13 +2,11 @@
 
 v0.34.0から、ElectronはMac App Store (MAS)にパッケージ化したアプリを登録することができます。このガイドでは、MASビルド用の制限とアプリを登録する方法についての情報を提供します。
 
-__Note:__ v0.36.0から、アプリがサンドボックス化された後GPUプロセスを妨害するバグがあるので、このバグが修正されるまでは、v0.35.xを使用することを推奨します。[issue #3871][issue-3871]で、このことに関する追加情報を確認できます。
-
 __Note:__ Mac App Storeにアプリを登録するには、費用が発生する[Apple Developer Program][developer-program]に登録する必要があります。
 
 ## アプリを登録する方法
 
-次の手順は、Mac App Sotreにアプリを登録する簡単な手順を説明します。しかし、これらの手順はAppleによってAppが承認されることを保証するものではありません。Mac App Storeの要件については、Appleの[Submitting Your App][submitting-your-app]ガイドを読んでおく必要があります。
+次の手順は、Mac App Storeにアプリを登録する簡単な手順を説明します。しかし、これらの手順はAppleによってAppが承認されることを保証するものではありません。Mac App Storeの要件については、Appleの[Submitting Your App][submitting-your-app]ガイドを読んでおく必要があります。
 
 ### 証明書の取得
 
@@ -44,11 +42,16 @@ Appleから証明書を取得した後、[Application Distribution](application-
   <dict>
     <key>com.apple.security.app-sandbox</key>
     <true/>
+    <key>com.apple.security.application-groups</key>
+    <array>
+      <string>your.bundle.id</string>
+    </array>
   </dict>
 </plist>
 ```
 
-次のスクリプトでアプリをサインします。
+_`your.bundle.id`は`Info.plist`で指定されているあなたのアプリのBundle IDに置き換えてください。_
+そして、次のスクリプトでアプリを署名します。
 
 ```bash
 #!/bin/bash
@@ -65,26 +68,31 @@ INSTALLER_KEY="3rd Party Mac Developer Installer: Company Name (APPIDENTITY)"
 
 FRAMEWORKS_PATH="$APP_PATH/Contents/Frameworks"
 
-codesign --deep -fs "$APP_KEY" --entitlements child.plist "$FRAMEWORKS_PATH/Electron Framework.framework/Versions/A"
-codesign --deep -fs "$APP_KEY" --entitlements child.plist "$FRAMEWORKS_PATH/$APP Helper.app/"
-codesign --deep -fs "$APP_KEY" --entitlements child.plist "$FRAMEWORKS_PATH/$APP Helper EH.app/"
-codesign --deep -fs "$APP_KEY" --entitlements child.plist "$FRAMEWORKS_PATH/$APP Helper NP.app/"
-if [ -d "$FRAMEWORKS_PATH/Squirrel.framework/Versions/A" ]; then
-  # Signing a non-MAS build.
-  codesign --deep -fs "$APP_KEY" --entitlements child.plist "$FRAMEWORKS_PATH/Mantle.framework/Versions/A"
-  codesign --deep -fs "$APP_KEY" --entitlements child.plist "$FRAMEWORKS_PATH/ReactiveCocoa.framework/Versions/A"
-  codesign --deep -fs "$APP_KEY" --entitlements child.plist "$FRAMEWORKS_PATH/Squirrel.framework/Versions/A"
-fi
-codesign -fs "$APP_KEY" --entitlements parent.plist "$APP_PATH"
+codesign -s "$APP_KEY" -f --entitlements child.plist "$FRAMEWORKS_PATH/Electron Framework.framework/Versions/A/Electron Framework"
+codesign -s "$APP_KEY" -f --entitlements child.plist "$FRAMEWORKS_PATH/Electron Framework.framework/Versions/A/Libraries/libffmpeg.dylib"
+codesign -s "$APP_KEY" -f --entitlements child.plist "$FRAMEWORKS_PATH/Electron Framework.framework/Versions/A/Libraries/libnode.dylib"
+codesign -s "$APP_KEY" -f --entitlements child.plist "$FRAMEWORKS_PATH/Electron Framework.framework"
+codesign -s "$APP_KEY" -f --entitlements child.plist "$FRAMEWORKS_PATH/$APP Helper.app/Contents/MacOS/$APP Helper"
+codesign -s "$APP_KEY" -f --entitlements child.plist "$FRAMEWORKS_PATH/$APP Helper.app/"
+codesign -s "$APP_KEY" -f --entitlements child.plist "$FRAMEWORKS_PATH/$APP Helper EH.app/Contents/MacOS/$APP Helper EH"
+codesign -s "$APP_KEY" -f --entitlements child.plist "$FRAMEWORKS_PATH/$APP Helper EH.app/"
+codesign -s "$APP_KEY" -f --entitlements child.plist "$FRAMEWORKS_PATH/$APP Helper NP.app/Contents/MacOS/$APP Helper NP"
+codesign -s "$APP_KEY" -f --entitlements child.plist "$FRAMEWORKS_PATH/$APP Helper NP.app/"
+codesign -s "$APP_KEY" -f --entitlements child.plist "$APP_PATH/Contents/MacOS/$APP"
+codesign -s "$APP_KEY" -f --entitlements parent.plist "$APP_PATH"
 
 productbuild --component "$APP_PATH" /Applications --sign "$INSTALLER_KEY" "$RESULT_PATH"
 ```
 
-OS Xで、サンドボックスにアプリを新しく追加した場合、基本的な考え方は、Appleの[Enabling App Sandbox][enable-app-sandbox]を読み、エンタイトルメントファイルにアプリに必要なパーミッションキーを追加します。
+OS Xでのアプリのサンドボックス化を行うことが初めてなら、Appleの[Enabling App Sandbox][enable-app-sandbox]を通読し、基本的な考え方を確認してから、、エンタイトルメントファイルにアプリに必要なパーミッションキーを追加します。
 
-### Appをアップロードし、レビューに登録する
+### Appをアップロードする。
 
-アプリに署名後、iTunes ConnectにアップロードするためにApplication Loaderを使用できます。アップロードする前に[created a record][create-record]を確認してください。そして[レビュー用にアプリを登録できます][submit-for-review].
+アプリに署名後、iTunes ConnectにアップロードするためにApplication Loaderを使用できます。アップロードする前に[created a record][create-record]を確認してください。
+
+### アプリケーションを審査に提出
+
+これらのステップを終えた後、[レビュー用にアプリを登録できます][submit-for-review].
 
 ## MAS Buildの制限
 
@@ -131,7 +139,7 @@ Electron は次の暗号アルゴリズムを使用しています:
 * RC5 - http://people.csail.mit.edu/rivest/Rivest-rc5rev.pdf
 * RIPEMD - [ISO/IEC 10118-3](http://webstore.ansi.org/RecordDetail.aspx?sku=ISO%2FIEC%2010118-3:2004)
 
-ERNの同意を取得するには、 [How to legally submit an app to Apple’s App Store when it uses encryption (or how to obtain an ERN)][ern-tutorial]を参照してくだｓだい。
+ERNの同意を取得するには、 [How to legally submit an app to Apple's App Store when it uses encryption (or how to obtain an ERN)][ern-tutorial]を参照してください。
 
 [developer-program]: https://developer.apple.com/support/compare-memberships/
 [submitting-your-app]: https://developer.apple.com/library/mac/documentation/IDEs/Conceptual/AppDistributionGuide/SubmittingYourApp/SubmittingYourApp.html
@@ -142,3 +150,4 @@ ERNの同意を取得するには、 [How to legally submit an app to Apple’s 
 [app-sandboxing]: https://developer.apple.com/app-sandboxing/
 [issue-3871]: https://github.com/electron/electron/issues/3871
 [ern-tutorial]: https://carouselapps.com/2015/12/15/legally-submit-app-apples-app-store-uses-encryption-obtain-ern/
+[temporary-exception]: https://developer.apple.com/library/mac/documentation/Miscellaneous/Reference/EntitlementKeyReference/Chapters/AppSandboxTemporaryExceptionEntitlements.html

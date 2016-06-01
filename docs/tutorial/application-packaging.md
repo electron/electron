@@ -71,7 +71,7 @@ require('/path/to/example.asar/dir/module.js');
 You can also display a web page in an `asar` archive with `BrowserWindow`:
 
 ```javascript
-const { BrowserWindow } = require('electron');
+const {BrowserWindow} = require('electron');
 let win = new BrowserWindow({width: 800, height: 600});
 win.loadURL('file:///path/to/example.asar/static/index.html');
 ```
@@ -85,7 +85,7 @@ For example, to get a file with `$.get`:
 
 ```html
 <script>
-var $ = require('./jquery.min.js');
+let $ = require('./jquery.min.js');
 $.get('file:///path/to/example.asar/file.txt', (data) => {
   console.log(data);
 });
@@ -181,4 +181,4 @@ After running the command, apart from the `app.asar`, there is also an
 `app.asar.unpacked` folder generated which contains the unpacked files, you
 should copy it together with `app.asar` when shipping it to users.
 
-[asar]: https://github.com/atom/asar
+[asar]: https://github.com/electron/asar

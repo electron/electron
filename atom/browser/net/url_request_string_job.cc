@@ -16,7 +16,7 @@ URLRequestStringJob::URLRequestStringJob(
     : JsAsker<net::URLRequestSimpleJob>(request, network_delegate) {
 }
 
-void URLRequestStringJob::StartAsync(scoped_ptr<base::Value> options) {
+void URLRequestStringJob::StartAsync(std::unique_ptr<base::Value> options) {
   if (options->IsType(base::Value::TYPE_DICTIONARY)) {
     base::DictionaryValue* dict =
         static_cast<base::DictionaryValue*>(options.get());

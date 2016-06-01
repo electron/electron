@@ -23,7 +23,7 @@ class AtomPermissionManager : public content::PermissionManager {
   ~AtomPermissionManager() override;
 
   using ResponseCallback =
-      base::Callback<void(content::PermissionStatus)>;
+      base::Callback<void(blink::mojom::PermissionStatus)>;
   using RequestHandler =
       base::Callback<void(content::WebContents*,
                           content::PermissionType,
@@ -37,28 +37,26 @@ class AtomPermissionManager : public content::PermissionManager {
       content::PermissionType permission,
       content::RenderFrameHost* render_frame_host,
       const GURL& requesting_origin,
-      bool user_gesture,
       const ResponseCallback& callback) override;
   int RequestPermissions(
       const std::vector<content::PermissionType>& permissions,
       content::RenderFrameHost* render_frame_host,
       const GURL& requesting_origin,
-      bool user_gesture,
       const base::Callback<void(
-      const std::vector<content::PermissionStatus>&)>& callback) override;
+      const std::vector<blink::mojom::PermissionStatus>&)>& callback) override;
 
  protected:
   void OnPermissionResponse(int request_id,
                             const GURL& url,
                             const ResponseCallback& callback,
-                            content::PermissionStatus status);
+                            blink::mojom::PermissionStatus status);
 
   // content::PermissionManager:
   void CancelPermissionRequest(int request_id) override;
   void ResetPermission(content::PermissionType permission,
                        const GURL& requesting_origin,
                        const GURL& embedding_origin) override;
-  content::PermissionStatus GetPermissionStatus(
+  blink::mojom::PermissionStatus GetPermissionStatus(
       content::PermissionType permission,
       const GURL& requesting_origin,
       const GURL& embedding_origin) override;
@@ -69,7 +67,8 @@ class AtomPermissionManager : public content::PermissionManager {
       content::PermissionType permission,
       const GURL& requesting_origin,
       const GURL& embedding_origin,
-      const base::Callback<void(content::PermissionStatus)>& callback) override;
+      const base::Callback<void(blink::mojom::PermissionStatus)>& callback)
+      override;
   void UnsubscribePermissionStatusChange(int subscription_id) override;
 
  private:

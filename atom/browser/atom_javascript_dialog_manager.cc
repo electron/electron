@@ -13,7 +13,6 @@ namespace atom {
 void AtomJavaScriptDialogManager::RunJavaScriptDialog(
     content::WebContents* web_contents,
     const GURL& origin_url,
-    const std::string& accept_lang,
     content::JavaScriptMessageType javascript_message_type,
     const base::string16& message_text,
     const base::string16& default_prompt_text,
@@ -24,12 +23,10 @@ void AtomJavaScriptDialogManager::RunJavaScriptDialog(
 
 void AtomJavaScriptDialogManager::RunBeforeUnloadDialog(
     content::WebContents* web_contents,
-    const base::string16& message_text,
     bool is_reload,
     const DialogClosedCallback& callback) {
-  bool prevent_reload = message_text.empty() ||
-                        message_text == base::ASCIIToUTF16("false");
-  callback.Run(!prevent_reload, message_text);
+  // FIXME(zcbenz): the |message_text| is removed, figure out what should we do.
+  callback.Run(false, base::ASCIIToUTF16("This should not be displayed"));
 }
 
 }  // namespace atom

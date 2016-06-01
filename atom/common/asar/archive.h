@@ -72,10 +72,10 @@ class Archive {
   base::File file_;
   int fd_;
   uint32_t header_size_;
-  scoped_ptr<base::DictionaryValue> header_;
+  std::unique_ptr<base::DictionaryValue> header_;
 
   // Cached external temporary files.
-  base::ScopedPtrHashMap<base::FilePath, scoped_ptr<ScopedTemporaryFile>>
+  base::ScopedPtrHashMap<base::FilePath, std::unique_ptr<ScopedTemporaryFile>>
       external_files_;
 
   DISALLOW_COPY_AND_ASSIGN(Archive);

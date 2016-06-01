@@ -11,6 +11,10 @@
 #include "base/callback.h"
 #include "native_mate/handle.h"
 
+namespace base {
+class DictionaryValue;
+}
+
 namespace atom {
 
 namespace api {
@@ -22,11 +26,16 @@ class SystemPreferences : public mate::EventEmitter<SystemPreferences> {
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::ObjectTemplate> prototype);
 
+#if defined(OS_MACOSX)
+  using NotificationCallback = base::Callback<
+      void(const std::string&, const base::DictionaryValue&)>;
+#endif
+
 #if defined(OS_WIN)
   bool IsAeroGlassEnabled();
 #elif defined(OS_MACOSX)
   int SubscribeNotification(const std::string& name,
-                            const base::Closure& callback);
+                            const NotificationCallback& callback);
   void UnsubscribeNotification(int id);
   v8::Local<v8::Value> GetUserDefault(const std::string& name,
                                       const std::string& type);

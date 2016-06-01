@@ -37,10 +37,11 @@ LoginHandler::LoginHandler(net::AuthChallengeInfo* auth_info,
       render_frame_id_(0) {
   content::ResourceRequestInfo::ForRequest(request_)->GetAssociatedRenderFrame(
       &render_process_host_id_,  &render_frame_id_);
-  BrowserThread::PostTask(BrowserThread::UI, FROM_HERE,
-                          base::Bind(&Browser::RequestLogin,
-                                     base::Unretained(Browser::Get()),
-                                     make_scoped_refptr(this)));
+  BrowserThread::PostTask(
+      BrowserThread::UI, FROM_HERE,
+      base::Bind(&Browser::RequestLogin,
+                 base::Unretained(Browser::Get()),
+                 base::RetainedRef(make_scoped_refptr(this))));
 }
 
 LoginHandler::~LoginHandler() {

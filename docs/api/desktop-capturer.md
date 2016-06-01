@@ -5,12 +5,12 @@ microphone, camera, or screen.
 
 ```javascript
 // In the renderer process.
-var { desktopCapturer } = require('electron');
+const {desktopCapturer} = require('electron');
 
 desktopCapturer.getSources({types: ['window', 'screen']}, (error, sources) => {
   if (error) throw error;
-  for (var i = 0; i < sources.length; ++i) {
-    if (sources[i].name == "Electron") {
+  for (let i = 0; i < sources.length; ++i) {
+    if (sources[i].name === 'Electron') {
       navigator.webkitGetUserMedia({
         audio: false,
         video: {

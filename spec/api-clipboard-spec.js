@@ -24,20 +24,20 @@ describe('clipboard module', function () {
     })
   })
 
-  describe('clipboard.readHtml()', function () {
+  describe('clipboard.readHTML()', function () {
     it('returns markup correctly', function () {
       var text = '<string>Hi</string>'
       var markup = process.platform === 'darwin' ? "<meta charset='utf-8'><string>Hi</string>" : process.platform === 'linux' ? '<meta http-equiv="content-type" ' + 'content="text/html; charset=utf-8"><string>Hi</string>' : '<string>Hi</string>'
-      clipboard.writeHtml(text)
-      assert.equal(clipboard.readHtml(), markup)
+      clipboard.writeHTML(text)
+      assert.equal(clipboard.readHTML(), markup)
     })
   })
 
-  describe('clipboard.readRtf', function () {
+  describe('clipboard.readRTF', function () {
     it('returns rtf text correctly', function () {
       var rtf = '{\\rtf1\\ansi{\\fonttbl\\f0\\fswiss Helvetica;}\\f0\\pard\nThis is some {\\b bold} text.\\par\n}'
-      clipboard.writeRtf(rtf)
-      assert.equal(clipboard.readRtf(), rtf)
+      clipboard.writeRTF(rtf)
+      assert.equal(clipboard.readRTF(), rtf)
     })
   })
 
@@ -55,8 +55,8 @@ describe('clipboard module', function () {
         image: p
       })
       assert.equal(clipboard.readText(), text)
-      assert.equal(clipboard.readHtml(), markup)
-      assert.equal(clipboard.readRtf(), rtf)
+      assert.equal(clipboard.readHTML(), markup)
+      assert.equal(clipboard.readRTF(), rtf)
       assert.equal(clipboard.readImage().toDataURL(), i.toDataURL())
     })
   })

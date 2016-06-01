@@ -5,7 +5,7 @@
 ## 빌드전 요구 사항
 
 * Windows 7 / Server 2008 R2 또는 최신 버전
-* Visual Studio 2013 Update 4 - [VS 2013 커뮤니티 에디션 무료 다운로드](https://www.visualstudio.com/news/vs2013-community-vs)
+* Visual Studio 2015 - [VS 2015 커뮤니티 에디션 무료 다운로드](https://www.visualstudio.com/en-us/products/visual-studio-community-vs.aspx)
 * [Python 2.7](http://www.python.org/download/releases/2.7/)
 * [Node.js](http://nodejs.org/download/)
 * [Git](http://git-scm.com)
@@ -21,7 +21,7 @@ Studio를 사용할 수 없습니다. 하지만 여전히 Electron을 개발할 
 **참고:** Visual Studio가 직접 빌드에 사용되지 않더라도 IDE와 같이 제공된 빌드
 툴체인이 빌드에 **반드시** 사용되므로 여전히 필요합니다.
 
-**참고:** Visual Studio 2015는 사용할 수 없습니다 MSVS **2013** 을 사용하고 있는지
+**참고:** Visual Studio 2013는 사용할 수 없습니다 MSVS **2015** 을 사용하고 있는지
 확인해주세요.
 
 ## 코드 가져오기
@@ -61,7 +61,7 @@ $ python script\build.py -c D
 ## 64비트 빌드
 
 64비트를 타겟으로 빌드 하려면 부트스트랩 스크립트를 실행할 때 `--target_arch=x64`
-인자를 같이 넘겨주면 됩니다:
+인수를 같이 넘겨주면 됩니다:
 
 ```powershell
 $ python script\bootstrap.py -v --target_arch=x64
@@ -97,7 +97,7 @@ $ python script\test.py -R
 ### Command xxxx not found
 
 만약 `Command xxxx not found`와 같은 형식의 에러가 발생했다면
-`VS2012 Command Prompt` 콘솔로 빌드 스크립트를 실행해볼 필요가 있습니다.
+`VS2015 Command Prompt` 콘솔로 빌드 스크립트를 실행해볼 필요가 있습니다.
 
 ### Fatal internal compiler error: C1001
 
@@ -146,4 +146,4 @@ $ mkdir ~\AppData\Roaming\npm
 ### node-gyp is not recognized as an internal or external command
 
 Git Bash로 빌드 했을 때 이러한 에러가 발생할 수 있습니다. 반드시 PowerShell이나
-VS2012 Command Prompt에서 빌드를 진행해야 합니다.
+VS2015 Command Prompt에서 빌드를 진행해야 합니다.

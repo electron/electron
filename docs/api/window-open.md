@@ -1,4 +1,4 @@
-# The `window.open` function
+# `window.open` Function
 
 > Open a new window and load a URL.
 
@@ -62,6 +62,10 @@ Evaluates the code in the child window.
 ### `BrowserWindowProxy.focus()`
 
 Focuses the child window (brings the window to front).
+
+### `BrowserWindowProxy.print()`
+
+Invokes the print dialog on the child window.
 
 ### `BrowserWindowProxy.postMessage(message, targetOrigin)`
 

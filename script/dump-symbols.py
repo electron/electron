@@ -4,7 +4,7 @@ import os
 import sys
 
 from lib.config import PLATFORM
-from lib.util import atom_gyp, execute, rm_rf
+from lib.util import electron_gyp, execute, rm_rf
 
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
@@ -56,7 +56,7 @@ def register_required_dll():
 
 
 def get_names_from_gyp():
-  variables = atom_gyp()
+  variables = electron_gyp()
   return (variables['project_name%'], variables['product_name%'])
 
 

@@ -60,7 +60,7 @@ bool GetUserMediaDirectory(const std::string& xdg_name,
 // ~/.config/google-chrome/ for official builds.
 // (This also helps us sidestep issues with other apps grabbing ~/.chromium .)
 bool GetDefaultUserDataDirectory(base::FilePath* result) {
-  scoped_ptr<base::Environment> env(base::Environment::Create());
+  std::unique_ptr<base::Environment> env(base::Environment::Create());
   base::FilePath config_dir(GetXDGDirectory(env.get(),
                                             kXdgConfigHomeEnvVar,
                                             kDotConfigDir));
@@ -85,7 +85,7 @@ void GetUserCacheDirectory(const base::FilePath& profile_dir,
   // Default value in cases where any of the following fails.
   *result = profile_dir;
 
-  scoped_ptr<base::Environment> env(base::Environment::Create());
+  std::unique_ptr<base::Environment> env(base::Environment::Create());
 
   base::FilePath cache_dir;
   if (!PathService::Get(base::DIR_CACHE, &cache_dir))

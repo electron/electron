@@ -53,9 +53,16 @@ class GtkMessageBox {
     // Set dialog's icon.
     if (!icon.isNull()) {
       GdkPixbuf* pixbuf = libgtk2ui::GdkPixbufFromSkBitmap(*icon.bitmap());
-      GtkWidget* image = gtk_image_new_from_pixbuf(pixbuf);
+      GtkIconSource* iconsource = gtk_icon_source_new();
+      GtkIconSet* iconset = gtk_icon_set_new();
+      gtk_icon_source_set_pixbuf(iconsource, pixbuf);
+      gtk_icon_set_add_source(iconset, iconsource);
+      GtkWidget* image = gtk_image_new_from_icon_set(iconset,
+                                                     GTK_ICON_SIZE_DIALOG);
       gtk_message_dialog_set_image(GTK_MESSAGE_DIALOG(dialog_), image);
       gtk_widget_show(image);
+      gtk_icon_source_free(iconsource);
+      gtk_icon_set_unref(iconset);
       g_object_unref(pixbuf);
     }
 
@@ -149,7 +156,7 @@ class GtkMessageBox {
 };
 
 void GtkMessageBox::OnResponseDialog(GtkWidget* widget, int response) {
-  gtk_widget_hide_all(dialog_);
+  gtk_widget_hide(dialog_);
 
   if (response < 0)
     callback_.Run(cancel_id_);

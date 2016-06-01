@@ -8,10 +8,10 @@
 예시:
 
 ```javascript
-var app = require('app');
+const {app} = require('electron');
 
-app.on('ready', function() {
-  require('electron').powerMonitor.on('suspend', function() {
+app.on('ready', () => {
+  require('electron').powerMonitor.on('suspend', () => {
     console.log('절전모드로 진입합니다!');
   });
 });

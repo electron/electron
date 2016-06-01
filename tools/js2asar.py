@@ -29,22 +29,10 @@ def copy_files(source_files, output_dir):
 
 
 def call_asar(archive, output_dir):
-  asar = os.path.join(SOURCE_ROOT, 'node_modules', 'asar', 'bin', 'asar')
-  subprocess.check_call([find_node(), asar, 'pack', output_dir, archive])
-
-
-def find_node():
-  WINDOWS_NODE_PATHs = [
-    'C:/Program Files (x86)/nodejs',
-    'C:/Program Files/nodejs',
-  ] + os.environ['PATH'].split(os.pathsep)
-
+  asar = os.path.join(SOURCE_ROOT, 'node_modules', '.bin', 'asar')
   if sys.platform in ['win32', 'cygwin']:
-    for path in WINDOWS_NODE_PATHs:
-      full_path = os.path.join(path, 'node.exe')
-      if os.path.exists(full_path):
-        return full_path
-  return 'node'
+    asar += '.cmd'
+  subprocess.check_call([asar, 'pack', output_dir, archive])
 
 
 def safe_mkdir(path):

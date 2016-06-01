@@ -6,13 +6,13 @@
 
 ```javascript
 // 메인 프로세스에서
-const BrowserWindow = require('electron').BrowserWindow;
+const {BrowserWindow} = require('electron');
 
 // 또는 렌더러 프로세스에서
-const BrowserWindow = require('electron').remote.BrowserWindow;
+const {BrowserWindow} = require('electron').remote;
 
-var win = new BrowserWindow({ width: 800, height: 600, show: false });
-win.on('closed', function() {
+let win = new BrowserWindow({width: 800, height: 600, show: false});
+win.on('closed', () => {
   win = null;
 });
 
@@ -97,6 +97,10 @@ win.show();
 * `webPreferences` Object - 웹 페이지 기능을 설정합니다. 사용할 수 있는 속성은
   아래를 참고하세요.
 
+`minWidth`/`maxWidth`/`minHeight`/`maxHeight`를 통해 최소 또는 최대 윈도우 크기를
+지정한 경우, 이는 사용자만을 제약하며, `setBounds`/`setSize` 또는 `BrowserWindow`의
+생성자에서 크기 제약을 따르지 않는 윈도우 크기를 전달하는 것은 막을 수 없습니다.
+
 `type` 속성에서 사용할 수 있는 값과 동작은 다음과 같으며, 플랫폼에 따라 다릅니다:
 
 * Linux의 경우, `desktop`, `dock`, `toolbar`, `splash`, `notification` 종류를
@@ -161,6 +165,8 @@ win.show();
   활성화합니다. 기본값은 `false`입니다.
 * `directWrite` Boolean - Windows에서 폰트 렌더링을 위해 DirectWrite를
   사용하는지를 지정합니다. 기본값은 `true`입니다.
+* `scrollBounce` Boolean - OS X에서 스크롤 튕기기 효과 (탄성 밴딩)를 활성화 합니다.
+  기본값은 `false`입니다.
 * `blinkFeatures` String - `CSSVariables,KeyboardEventKey`같은 `,`로 구분된
   기능 문자열들의 리스트입니다. 지원하는 전체 기능 문자열들은
   [setFeatureEnabledFromString][blink-feature-string] 함수에서 찾을 수 있습니다.
@@ -188,7 +194,7 @@ Returns:
 
 * `event` Event
 
-문서의 제목이 변경될 때 발생하는 이벤트 입니다. `event.preventDefault()`를 호출하여
+문서의 제목이 변경될 때 발생하는 이벤트입니다. `event.preventDefault()`를 호출하여
 네이티브 윈도우의 제목이 변경되는 것을 방지할 수 있습니다.
 
 ### Event: 'close'
@@ -208,7 +214,7 @@ Electron에선 빈 문자열 또는 `false`를 전달할 경우 윈도우 종료
 예시는 다음과 같습니다:
 
 ```javascript
-window.onbeforeunload = function(e) {
+window.onbeforeunload = (e) => {
   console.log('I do not want to be closed');
 
   // 반드시 문자열을 반환해야 하고 사용자에게 페이지 언로드에 대한 확인 창을 보여주는
@@ -312,7 +318,7 @@ Returns:
 e.g. `APPCOMMAND_BROWSER_BACKWARD` 는 `browser-backward`와 같이 반환됩니다.
 
 ```javascript
-someWindow.on('app-command', function(e, cmd) {
+someWindow.on('app-command', (e, cmd) => {
   // 마우스의 뒤로가기 버튼을 눌렀을 때 뒤로가기 탐색을 실행합니다
   if (cmd === 'browser-backward' && someWindow.webContents.canGoBack()) {
     someWindow.webContents.goBack();
@@ -384,7 +390,7 @@ ID에 해당하는 윈도우를 찾습니다.
 
 ```javascript
 // `win`은 BrowserWindow의 인스턴스입니다
-var win = new BrowserWindow({ width: 800, height: 600 });
+let win = new BrowserWindow({width: 800, height: 600});
 ```
 
 ### `win.webContents`
@@ -677,7 +683,7 @@ Mac OS X에서 시트를 부착할 위치를 지정합니다. 기본적으로 �
 표시하기 위해 사용할 것입니다:
 
 ```javascript
-var toolbarRect = document.getElementById('toolbar').getBoundingClientRect();
+let toolbarRect = document.getElementById('toolbar').getBoundingClientRect();
 win.setSheetOffset(toolbarRect.height);
 ```
 
@@ -771,14 +777,6 @@ Windows 메시지 훅을 등록합니다. `callback`은 WndProc에서 메시지�
 페이지의 스크린샷을 `rect`에 설정한 만큼 캡처합니다. 캡처가 완료되면 `callback`이
 `callback(image)` 형식으로 호출됩니다. `image`는 [NativeImage](native-image.md)의
 인스턴스이며 스크린샷 데이터를 담고있습니다. `rect`를 생략하면 페이지 전체를 캡처합니다.
-
-### `win.print([options])`
-
-`webContents.print([options])` API와 같습니다.
-
-### `win.printToPDF(options, callback)`
-
-`webContents.printToPDF(options, callback)` API와 같습니다.
 
 ### `win.loadURL(url[, options])`
 

@@ -5,7 +5,6 @@
     setTimeout(function() {
       require('electron').remote.getCurrentWindow().emit('onbeforeunload');
     }, 0);
-    return true;
   }
   window.close();
 </script>

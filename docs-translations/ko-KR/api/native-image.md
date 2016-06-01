@@ -9,15 +9,15 @@ Electron은 파일 경로 또는 `nativeImage` 인스턴스를 통해 이미지�
 전달하여 이미지를 사용할 수 있습니다:
 
 ```javascript
-var appIcon = new Tray('/Users/somebody/images/icon.png');
-var window = new BrowserWindow({icon: '/Users/somebody/images/window.png'});
+const appIcon = new Tray('/Users/somebody/images/icon.png');
+let win = new BrowserWindow({icon: '/Users/somebody/images/window.png'});
 ```
 
 이 예시는 클립보드로부터 가져온 `nativeImage`로 트레이 메뉴를 생성합니다:
 
 ```javascript
-var image = clipboard.readImage();
-var appIcon = new Tray(image);
+const image = clipboard.readImage();
+const appIcon = new Tray(image);
 ```
 
 ## 지원하는 포맷
@@ -48,7 +48,7 @@ images/
 
 
 ```javascript
-var appIcon = new Tray('/Users/somebody/images/icon.png');
+let appIcon = new Tray('/Users/somebody/images/icon.png');
 ```
 
 지원하는 DPI 접미사는 다음과 같습니다:
@@ -115,8 +115,7 @@ var appIcon = new Tray('/Users/somebody/images/icon.png');
 
 ```javascript
 const nativeImage = require('electron').nativeImage;
-
-var image = nativeImage.createFromPath('/Users/somebody/images/icon.png');
+let image = nativeImage.createFromPath('/Users/somebody/images/icon.png');
 ```
 
 ### `image.toPng()`

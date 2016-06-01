@@ -6,7 +6,7 @@ The following example shows how to quit the application when the last window is
 closed:
 
 ```javascript
-const { app } = require('electron');
+const {app} = require('electron');
 app.on('window-all-closed', () => {
   app.quit();
 });
@@ -34,10 +34,12 @@ Emitted when Electron has finished initialization.
 
 Emitted when all windows have been closed.
 
-This event is only emitted when the application is not going to quit. If the
-user pressed `Cmd + Q`, or the developer called `app.quit()`, Electron will
-first try to close all the windows and then emit the `will-quit` event, and in
-this case the `window-all-closed` event would not be emitted.
+If you do not subscribe to this event and all windows are closed, the default
+behavior is to quit the app; however, if you subscribe, you control whether the
+app quits or not. If the user pressed `Cmd + Q`, or the developer called
+`app.quit()`, Electron will first try to close all the windows and then emit the
+`will-quit` event, and in this case the `window-all-closed` event would not be
+emitted.
 
 ### Event: 'before-quit'
 
@@ -87,7 +89,8 @@ handle this case (even before the `ready` event is emitted).
 
 You should call `event.preventDefault()` if you want to handle this event.
 
-On Windows, you have to parse `process.argv` (in the main process) to get the filepath.
+On Windows, you have to parse `process.argv` (in the main process) to get the
+filepath.
 
 ### Event: 'open-url' _OS X_
 
@@ -108,8 +111,8 @@ Returns:
 * `event` Event
 * `hasVisibleWindows` Boolean
 
-Emitted when the application is activated, which usually happens when the user clicks on
-the application's dock icon.
+Emitted when the application is activated, which usually happens when the user
+clicks on the application's dock icon.
 
 ### Event: 'continue-activity' _OS X_
 
@@ -175,8 +178,8 @@ certificate you should prevent the default behavior with
 `event.preventDefault()` and call `callback(true)`.
 
 ```javascript
-app.on('certificate-error', function(event, webContents, url, error, certificate, callback) {
-  if (url == "https://github.com") {
+app.on('certificate-error', (event, webContents, url, error, certificate, callback) => {
+  if (url === 'https://github.com') {
     // Verification logic.
     event.preventDefault();
     callback(true);
@@ -206,10 +209,10 @@ and `callback` needs to be called with an entry filtered from the list. Using
 certificate from the store.
 
 ```javascript
-app.on('select-client-certificate', function(event, webContents, url, list, callback) {
+app.on('select-client-certificate', (event, webContents, url, list, callback) => {
   event.preventDefault();
   callback(list[0]);
-})
+});
 ```
 
 ### Event: 'login'
@@ -240,7 +243,7 @@ should prevent the default behavior with `event.preventDefault()` and call
 app.on('login', (event, webContents, request, authInfo, callback) => {
   event.preventDefault();
   callback('username', 'secret');
-})
+});
 ```
 
 ### Event: 'gpu-process-crashed'
@@ -251,7 +254,8 @@ Emitted when the gpu process crashes.
 
 The `app` object has the following methods:
 
-**Note:** Some methods are only available on specific operating systems and are labeled as such.
+**Note:** Some methods are only available on specific operating systems and are
+labeled as such.
 
 ### `app.quit()`
 
@@ -283,7 +287,8 @@ Hides all application windows without minimizing them.
 
 ### `app.show()` _OS X_
 
-Shows application windows after they were hidden. Does not automatically focus them.
+Shows application windows after they were hidden. Does not automatically focus
+them.
 
 ### `app.getAppPath()`
 
@@ -393,15 +398,12 @@ Please refer to [Apple's documentation][CFBundleURLTypes] for details.
 
 The API uses the Windows Registry and LSSetDefaultHandlerForURLScheme internally.
 
-### `app.removeAsDefaultProtocolClient(protocol)` _Windows_
+### `app.removeAsDefaultProtocolClient(protocol)` _OS X_ _Windows_
 
 * `protocol` String - The name of your protocol, without `://`.
 
-This method checks if the current executable as the default handler for a protocol
-(aka URI scheme). If so, it will remove the app as the default handler.
-
-**Note:** On OS X, removing the app will automatically remove the app as the
-default protocol handler.
+This method checks if the current executable as the default handler for a
+protocol (aka URI scheme). If so, it will remove the app as the default handler.
 
 ### `app.isDefaultProtocolClient(protocol)` _OS X_ _Windows_
 
@@ -410,8 +412,11 @@ default protocol handler.
 This method checks if the current executable is the default handler for a protocol
 (aka URI scheme). If so, it will return true. Otherwise, it will return false.
 
-**Note:** On OS X, you can use this method to check if the app has been registered as the default protocol handler for a protocol. You can also verify this by checking `~/Library/Preferences/com.apple.LaunchServices.plist` on the OS X machine.
-Please refer to [Apple's documentation][LSCopyDefaultHandlerForURLScheme] for details.
+**Note:** On OS X, you can use this method to check if the app has been
+registered as the default protocol handler for a protocol. You can also verify
+this by checking `~/Library/Preferences/com.apple.LaunchServices.plist` on the
+OS X machine. Please refer to
+[Apple's documentation][LSCopyDefaultHandlerForURLScheme] for details.
 
 The API uses the Windows Registry and LSCopyDefaultHandlerForURLScheme internally.
 
@@ -437,16 +442,6 @@ Adds `tasks` to the [Tasks][tasks] category of the JumpList on Windows.
 * `iconIndex` Integer - The icon index in the icon file. If an icon file
   consists of two or more icons, set this value to identify the icon. If an
   icon file consists of one icon, this value is 0.
-
-### `app.allowNTLMCredentialsForAllDomains(allow)`
-
-* `allow` Boolean
-
-Dynamically sets whether to always send credentials for HTTP NTLM or Negotiate
-authentication - normally, Electron will only send NTLM/Kerberos credentials for
-URLs that fall under "Local Intranet" sites (i.e. are in the same domain as you).
-However, this detection often fails when corporate networks are badly configured,
-so this lets you co-opt this behavior and enable it for all URLs.
 
 ### `app.makeSingleInstance(callback)`
 
@@ -501,11 +496,18 @@ app.on('ready', () => {
 });
 ```
 
-### `app.setUserActivity(type, userInfo)` _OS X_
+### `app.releaseSingleInstance()`
+
+Releases all locks that were created by `makeSingleInstance`. This will allow
+multiple instances of the application to once again run side by side.
+
+### `app.setUserActivity(type, userInfo[, webpageURL])` _OS X_
 
 * `type` String - Uniquely identifies the activity. Maps to
   [`NSUserActivity.activityType`][activity-type].
 * `userInfo` Object - App-specific state to store for use by another device.
+* `webpageURL` String - The webpage to load in a browser if no suitable app is
+  installed on the resuming device. The scheme must be `http` or `https`.
 
 Creates an `NSUserActivity` and sets it as the current activity. The activity
 is eligible for [Handoff][handoff] to another device afterward.
@@ -565,6 +567,12 @@ Returns an ID representing the request.
 * `id` Integer
 
 Cancel the bounce of `id`.
+
+### `app.dock.downloadFinished(filePath)` _OS X_
+
+* `filePath` String
+
+Bounces the Downloads stack if the filePath is inside the Downloads folder.
 
 ### `app.dock.setBadge(text)` _OS X_
 

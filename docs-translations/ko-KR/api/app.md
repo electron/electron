@@ -5,8 +5,8 @@
 밑의 예시는 마지막 윈도우가 종료되었을 때, 어플리케이션을 종료시키는 예시입니다:
 
 ```javascript
-const app = require('electron').app;
-app.on('window-all-closed', function() {
+const {app} = require('electron');
+app.on('window-all-closed', () => {
   app.quit();
 });
 ```
@@ -24,7 +24,7 @@ Windows, Linux 운영체제에서의 `will-finish-launching` 이벤트는 `ready
 `open-file`과 `open-url` 이벤트 리스너를 설정하고 crash reporter와 auto updater를
 시작합니다.
 
-대부분의 경우, 모든 것을 `ready` 이벤트 핸들러로 해결해야 합니다.
+대부분의 경우, 모든 것을 `ready` 이벤트 핸들러 안에서 해결해야 합니다.
 
 ### Event: 'ready'
 
@@ -34,14 +34,15 @@ Electron이 초기화를 끝냈을 때 발생하는 이벤트입니다.
 
 모든 윈도우가 종료되었을 때 발생하는 이벤트입니다.
 
-이 이벤트는 어플리케이션이 완전히 종료되지 않았을 때만 발생합니다.
-만약 사용자가 `Cmd + Q`를 입력했거나 개발자가 `app.quit()`를 호출했다면,
+만약 이 이벤트를 구독하지 않은 상태로 모든 윈도우가 닫혔을 때의 기본 동작은 앱을
+종료하는 것입니다. 하지만, 이 이벤트를 구독하면, 앱을 종료할지 다른 일을 할지 제어할
+수 있습니다. 만약 사용자가 `Cmd + Q`를 입력했거나 개발자가 `app.quit()`를 호출했다면,
 Electron은 먼저 모든 윈도우의 종료를 시도하고 `will-quit` 이벤트를 발생시킵니다.
 그리고 `will-quit` 이벤트가 발생했을 땐 `window-all-closed` 이벤트가 발생하지
 않습니다.
 
 **역주:** 이 이벤트는 말 그대로 현재 어플리케이션에서 윈도우만 완전히 종료됬을 때
-발생하는 이벤트 입니다. 따라서 어플리케이션을 완전히 종료하려면 이 이벤트에서
+발생하는 이벤트입니다. 따라서 어플리케이션을 완전히 종료하려면 이 이벤트에서
 `app.quit()`를 호출해 주어야 합니다.
 
 ### Event: 'before-quit'
@@ -60,10 +61,10 @@ Returns:
 
 * `event` Event
 
-모든 윈도우들이 종료되고 어플리케이션이 종료되기 시작할 때 발생하는 이벤트 입니다.
+모든 윈도우들이 종료되고 어플리케이션이 종료되기 시작할 때 발생하는 이벤트입니다.
 `event.preventDefault()` 호출을 통해 어플리케이션의 종료를 방지할 수 있습니다.
 
-`will-quit` 와 `window-all-closed` 이벤트의 차이점을 확인하려면 `window-all-close`
+`will-quit` 와 `window-all-closed` 이벤트의 차이점을 확인하려면 `window-all-closed`
 이벤트의 설명을 참고하세요.
 
 ### Event: 'quit'
@@ -114,8 +115,26 @@ Returns:
 * `event` Event
 * `hasVisibleWindows` Boolean
 
-어플리케이션이 활성화 되었을 때 발생하는 이벤트 입니다.
-이 이벤트는 어플리케이션의 dock 아이콘을 클릭했을 때 주로 발생합니다.
+어플리케이션이 활성화 되었을 때 발생하는 이벤트입니다. 이 이벤트는 사용자가
+어플리케이션의 dock 아이콘을 클릭했을 때 주로 발생합니다.
+
+### Event: 'continue-activity' _OS X_
+
+Returns:
+
+* `event` Event
+* `type` String - Activity를 식별하는 문자열.
+  [`NSUserActivity.activityType`][activity-type]을 맵핑합니다.
+* `userInfo` Object - 다른 기기의 activity에서 저장된 앱-특정 상태를 포함합니다.
+
+다른 기기에서 받아온 activity를 재개하려고 할 때 [Handoff][handoff] 하는 동안
+발생하는 이벤트입니다. 이 이벤트를 처리하려면 반드시 `event.preventDefault()`를
+호출해야 합니다.
+
+사용자 activity는 activity의 소스 어플리케이션과 같은 개발자 팀 ID를 가지는
+어플리케이션 안에서만 재개될 수 있고, activity의 타입을 지원합니다. 지원하는
+activity의 타입은 어플리케이션 `Info.plist`의 `NSUserActivityTypes` 키에 열거되어
+있습니다.
 
 ### Event: 'browser-window-blur'
 
@@ -124,7 +143,7 @@ Returns:
 * `event` Event
 * `window` BrowserWindow
 
-[browserWindow](browser-window.md)에 대한 포커스가 사라졌을 때 발생하는 이벤트 입니다.
+[browserWindow](browser-window.md)에 대한 포커스가 사라졌을 때 발생하는 이벤트입니다.
 
 ### Event: 'browser-window-focus'
 
@@ -133,7 +152,7 @@ Returns:
 * `event` Event
 * `window` BrowserWindow
 
-[browserWindow](browser-window.md)에 대한 포커스가 발생했을 때 발생하는 이벤트 입니다.
+[browserWindow](browser-window.md)에 대한 포커스가 발생했을 때 발생하는 이벤트입니다.
 
 **역주:** _포커스_ 는 창을 클릭해서 활성화 시켰을 때를 말합니다.
 
@@ -144,7 +163,7 @@ Returns:
 * `event` Event
 * `window` BrowserWindow
 
-새로운 [browserWindow](browser-window.md)가 생성되었을 때 발생하는 이벤트 입니다.
+새로운 [browserWindow](browser-window.md)가 생성되었을 때 발생하는 이벤트입니다.
 
 ### Event: 'certificate-error'
 
@@ -164,9 +183,9 @@ Returns:
 기본 동작을 방지하고 인증을 승인할 수 있습니다.
 
 ```javascript
-app.on('certificate-error', function(event, webContents, url, error, certificate, callback) {
-  if (url == "https://github.com") {
-    // Verification logic.
+app.on('certificate-error', (event, webContents, url, error, certificate, callback) => {
+  if (url === 'https://github.com') {
+    // 확인 로직.
     event.preventDefault();
     callback(true);
   } else {
@@ -187,7 +206,7 @@ Returns:
   * `issuerName` String - 발급자의 공통 이름
 * `callback` Function
 
-클라이언트 인증이 요청되었을 때 발생하는 이벤트 입니다.
+클라이언트 인증이 요청되었을 때 발생하는 이벤트입니다.
 
 `url`은 클라이언트 인증서를 요청하는 탐색 항목에 해당합니다.
 그리고 `callback`은 목록에서 필터링된 항목과 함께 호출될 필요가 있습니다.
@@ -195,10 +214,10 @@ Returns:
 것을 막습니다.
 
 ```javascript
-app.on('select-client-certificate', function(event, webContents, url, list, callback) {
+app.on('select-client-certificate', (event, webContents, url, list, callback) => {
   event.preventDefault();
   callback(list[0]);
-})
+});
 ```
 
 ### Event: 'login'
@@ -226,10 +245,10 @@ Returns:
 `callback(username, password)` 형태의 콜백을 호출하여 인증을 처리해야 합니다.
 
 ```javascript
-app.on('login', function(event, webContents, request, authInfo, callback) {
+app.on('login', (event, webContents, request, authInfo, callback) => {
   event.preventDefault();
   callback('username', 'secret');
-})
+});
 ```
 
 ### Event: 'gpu-process-crashed'
@@ -383,14 +402,12 @@ npm 모듈 규칙에 따라 대부분의 경우 `package.json`의 `name` 필드�
 
 이 API는 내부적으로 Windows 레지스트리와 LSSetDefaultHandlerForURLScheme를 사용합니다.
 
-### `app.removeAsDefaultProtocolClient(protocol)` _Windows_
+### `app.removeAsDefaultProtocolClient(protocol)` _OS X_ _Windows_
 
 * `protocol` String - 프로토콜의 이름, `://` 제외.
 
 이 메서드는 현재 실행파일이 지정한 프로토콜(URI scheme)에 대해 기본 핸들러인지를
 확인합니다. 만약 그렇다면, 이 메서드는 앱을 기본 핸들러에서 제거합니다.
-
-**참고:** OS X에서는 앱을 제거하면 자동으로 기본 프로토콜 핸들러에서 제거됩니다.
 
 ### `app.isDefaultProtocolClient(protocol)` _OS X_ _Windows_
 
@@ -418,7 +435,7 @@ Windows에서 사용할 수 있는 JumpList의 [Tasks][tasks] 카테고리에 `t
 `Task` Object:
 * `program` String - 실행할 프로그램의 경로.
   보통 현재 작동중인 어플리케이션의 경로인 `process.execPath`를 지정합니다.
-* `arguments` String - `program`이 실행될 때 사용될 명령줄 인자.
+* `arguments` String - `program`이 실행될 때 사용될 명령줄 인수.
 * `title` String - JumpList에 표시할 문자열.
 * `description` String - 이 작업에 대한 설명.
 * `iconPath` String - JumpList에 표시될 아이콘의 절대 경로.
@@ -470,9 +487,9 @@ OS X에선 사용자가 Finder에서 어플리케이션의 두 번째 인스턴�
 인스턴스의 윈도우를 활성화 시키는 예시입니다:
 
 ```javascript
-var myWindow = null;
+let myWindow = null;
 
-var shouldQuit = app.makeSingleInstance(function(commandLine, workingDirectory) {
+const shouldQuit = app.makeSingleInstance((commandLine, workingDirectory) => {
   // 어플리케이션을 중복 실행했습니다. 주 어플리케이션 인스턴스를 활성화 합니다.
   if (myWindow) {
     if (myWindow.isMinimized()) myWindow.restore();
@@ -487,9 +504,22 @@ if (shouldQuit) {
 }
 
 // 윈도우를 생성하고 각종 리소스를 로드하고 작업합니다.
-app.on('ready', function() {
+app.on('ready', () => {
 });
 ```
+
+### `app.setUserActivity(type, userInfo)` _OS X_
+
+* `type` String - 고유하게 activity를 식별합니다.
+  [`NSUserActivity.activityType`][activity-type]을 맵핑합니다.
+* `userInfo` Object - 다른 기기에서 사용하기 위해 저장할 앱-특정 상태.
+
+`NSUserActivity`를 만들고 현재 activity에 설정합니다. 이 activity는 이후 다른 기기와
+[Handoff][handoff]할 때 자격으로 사용됩니다.
+
+### `app.getCurrentActivityType()` _OS X_
+
+현재 작동중인 activity의 타입을 반환합니다.
 
 ### `app.setAppUserModelId(id)` _Windows_
 
@@ -529,7 +559,7 @@ Chrominum의 명령줄에 인수를 추가합니다. 인수는 올바르게 인�
   기본값은 `informational` 입니다.
 
 `critical`이 전달되면 dock 아이콘이 어플리케이션이 활성화되거나 요청이 중지되기 전까지
-통통 튑니다.
+통통 튀는 바운스 효과를 적용합니다.
 
 `informational`이 전달되면 dock 아이콘이 1초만 통통 튑니다. 하지만 어플리케이션이
 활성화되거나 요청이 중지되기 전까지 요청은 계속 활성화로 유지 됩니다.
@@ -540,7 +570,13 @@ Chrominum의 명령줄에 인수를 추가합니다. 인수는 올바르게 인�
 
 * `id` Integer
 
-`app.dock.bounce([type])` 메서드에서 반환한 `id`의 통통 튀는 효과를 취소합니다.
+`app.dock.bounce([type])` 메서드에서 반환한 `id`의 바운스 효과를 취소합니다.
+
+### `app.dock.downloadFinished(filePath)` _OS X_
+
+* `filePath` String
+
+`filePath`가 다운로드 폴더에 들어있다면 다운로드 스택을 바운스합니다.
 
 ### `app.dock.setBadge(text)` _OS X_
 
@@ -577,3 +613,5 @@ dock 아이콘의 `image`를 설정합니다.
 [app-user-model-id]: https://msdn.microsoft.com/en-us/library/windows/desktop/dd378459(v=vs.85).aspx
 [CFBundleURLTypes]: https://developer.apple.com/library/ios/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html#//apple_ref/doc/uid/TP40009249-102207-TPXREF115
 [LSCopyDefaultHandlerForURLScheme]: https://developer.apple.com/library/mac/documentation/Carbon/Reference/LaunchServicesReference/#//apple_ref/c/func/LSCopyDefaultHandlerForURLScheme
+[handoff]: https://developer.apple.com/library/ios/documentation/UserExperience/Conceptual/Handoff/HandoffFundamentals/HandoffFundamentals.html
+[activity-type]: https://developer.apple.com/library/ios/documentation/Foundation/Reference/NSUserActivity_Class/index.html#//apple_ref/occ/instp/NSUserActivity/activityType

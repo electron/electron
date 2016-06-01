@@ -23,6 +23,8 @@ describe('third-party module', function () {
     })
 
     describe('ffi', function () {
+      if (process.platform === 'win32') return
+
       it('does not crash', function () {
         var ffi = require('ffi')
         var libm = ffi.Library('libm', {

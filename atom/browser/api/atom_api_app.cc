@@ -27,6 +27,7 @@
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
 #include "base/path_service.h"
+#include "base/strings/string_util.h"
 #include "brightray/browser/brightray_paths.h"
 #include "chrome/common/chrome_paths.h"
 #include "content/public/browser/client_certificate_delegate.h"
@@ -318,7 +319,7 @@ void App::AllowCertificateError(
 void App::SelectClientCertificate(
     content::WebContents* web_contents,
     net::SSLCertRequestInfo* cert_request_info,
-    scoped_ptr<content::ClientCertificateDelegate> delegate) {
+    std::unique_ptr<content::ClientCertificateDelegate> delegate) {
   std::shared_ptr<content::ClientCertificateDelegate>
       shared_delegate(delegate.release());
   bool prevent_default =
@@ -369,15 +370,9 @@ void App::SetPath(mate::Arguments* args,
 
 void App::SetDesktopName(const std::string& desktop_name) {
 #if defined(OS_LINUX)
-  scoped_ptr<base::Environment> env(base::Environment::Create());
+  std::unique_ptr<base::Environment> env(base::Environment::Create());
   env->SetVar("CHROME_DESKTOP", desktop_name);
 #endif
-}
-
-void App::AllowNTLMCredentialsForAllDomains(bool should_allow) {
-  auto browser_context = static_cast<AtomBrowserContext*>(
-        AtomBrowserMainParts::Get()->browser_context());
-  browser_context->AllowNTLMCredentialsForAllDomains(should_allow);
 }
 
 std::string App::GetLocale() {
@@ -406,13 +401,20 @@ bool App::MakeSingleInstance(
   }
 }
 
+void App::ReleaseSingleInstance() {
+  if (process_singleton_.get()) {
+    process_singleton_->Cleanup();
+    process_singleton_.reset();
+  }
+}
+
 #if defined(USE_NSS_CERTS)
 void App::ImportCertificate(
     const base::DictionaryValue& options,
     const net::CompletionCallback& callback) {
   auto browser_context = AtomBrowserMainParts::Get()->browser_context();
   if (!certificate_manager_model_) {
-    scoped_ptr<base::DictionaryValue> copy = options.CreateDeepCopy();
+    std::unique_ptr<base::DictionaryValue> copy = options.CreateDeepCopy();
     CertificateManagerModel::Create(browser_context,
         base::Bind(&App::OnCertificateManagerModelCreated,
                    base::Unretained(this),
@@ -426,9 +428,9 @@ void App::ImportCertificate(
 }
 
 void App::OnCertificateManagerModelCreated(
-    scoped_ptr<base::DictionaryValue> options,
+    std::unique_ptr<base::DictionaryValue> options,
     const net::CompletionCallback& callback,
-    scoped_ptr<CertificateManagerModel> model) {
+    std::unique_ptr<CertificateManagerModel> model) {
   certificate_manager_model_ = std::move(model);
   int rv = ImportIntoCertStore(certificate_manager_model_.get(),
                                *(options.get()));
@@ -481,13 +483,12 @@ void App::BuildPrototype(
       .SetMethod("setPath", &App::SetPath)
       .SetMethod("getPath", &App::GetPath)
       .SetMethod("setDesktopName", &App::SetDesktopName)
-      .SetMethod("allowNTLMCredentialsForAllDomains",
-                 &App::AllowNTLMCredentialsForAllDomains)
       .SetMethod("getLocale", &App::GetLocale)
 #if defined(USE_NSS_CERTS)
       .SetMethod("importCertificate", &App::ImportCertificate)
 #endif
-      .SetMethod("makeSingleInstance", &App::MakeSingleInstance);
+      .SetMethod("makeSingleInstance", &App::MakeSingleInstance)
+      .SetMethod("releaseSingleInstance", &App::ReleaseSingleInstance);
 }
 
 }  // namespace api
@@ -500,7 +501,8 @@ namespace {
 void AppendSwitch(const std::string& switch_string, mate::Arguments* args) {
   auto command_line = base::CommandLine::ForCurrentProcess();
 
-  if (switch_string == atom::switches::kPpapiFlashPath ||
+  if (base::EndsWith(switch_string, "-path",
+                     base::CompareCase::INSENSITIVE_ASCII) ||
       switch_string == switches::kLogNetLog) {
     base::FilePath path;
     args->GetNext(&path);
@@ -546,6 +548,8 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   dict.SetMethod("dockBounce", &DockBounce);
   dict.SetMethod("dockCancelBounce",
                  base::Bind(&Browser::DockCancelBounce, browser));
+  dict.SetMethod("dockDownloadFinished",
+                 base::Bind(&Browser::DockDownloadFinished, browser));
   dict.SetMethod("dockSetBadgeText",
                  base::Bind(&Browser::DockSetBadgeText, browser));
   dict.SetMethod("dockGetBadgeText",

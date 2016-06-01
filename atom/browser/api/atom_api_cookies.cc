@@ -47,7 +47,7 @@ struct Converter<net::CanonicalCookie> {
     dict.Set("secure", val.IsSecure());
     dict.Set("httpOnly", val.IsHttpOnly());
     dict.Set("session", !val.IsPersistent());
-    if (!val.IsPersistent())
+    if (val.IsPersistent())
       dict.Set("expirationDate", val.ExpiryDate().ToDoubleT());
     return dict.GetHandle();
   }
@@ -112,7 +112,7 @@ void RunCallbackInUI(const base::Closure& callback) {
 }
 
 // Remove cookies from |list| not matching |filter|, and pass it to |callback|.
-void FilterCookies(scoped_ptr<base::DictionaryValue> filter,
+void FilterCookies(std::unique_ptr<base::DictionaryValue> filter,
                    const Cookies::GetCallback& callback,
                    const net::CookieList& list) {
   net::CookieList result;
@@ -125,7 +125,7 @@ void FilterCookies(scoped_ptr<base::DictionaryValue> filter,
 
 // Receives cookies matching |filter| in IO thread.
 void GetCookiesOnIO(scoped_refptr<net::URLRequestContextGetter> getter,
-                    scoped_ptr<base::DictionaryValue> filter,
+                    std::unique_ptr<base::DictionaryValue> filter,
                     const Cookies::GetCallback& callback) {
   std::string url;
   filter->GetString("url", &url);
@@ -133,12 +133,12 @@ void GetCookiesOnIO(scoped_refptr<net::URLRequestContextGetter> getter,
   auto filtered_callback =
       base::Bind(FilterCookies, base::Passed(&filter), callback);
 
-  net::CookieMonster* monster = GetCookieStore(getter)->GetCookieMonster();
   // Empty url will match all url cookies.
   if (url.empty())
-    monster->GetAllCookiesAsync(filtered_callback);
+    GetCookieStore(getter)->GetAllCookiesAsync(filtered_callback);
   else
-    monster->GetAllCookiesForURLAsync(GURL(url), filtered_callback);
+    GetCookieStore(getter)->GetAllCookiesForURLAsync(GURL(url),
+        filtered_callback);
 }
 
 // Removes cookie with |url| and |name| in IO thread.
@@ -157,12 +157,14 @@ void OnSetCookie(const Cookies::SetCallback& callback, bool success) {
 
 // Sets cookie with |details| in IO thread.
 void SetCookieOnIO(scoped_refptr<net::URLRequestContextGetter> getter,
-                   scoped_ptr<base::DictionaryValue> details,
+                   std::unique_ptr<base::DictionaryValue> details,
                    const Cookies::SetCallback& callback) {
   std::string url, name, value, domain, path;
   bool secure = false;
   bool http_only = false;
+  double creation_date;
   double expiration_date;
+  double last_access_date;
   details->GetString("url", &url);
   details->GetString("name", &name);
   details->GetString("value", &value);
@@ -171,6 +173,13 @@ void SetCookieOnIO(scoped_refptr<net::URLRequestContextGetter> getter,
   details->GetBoolean("secure", &secure);
   details->GetBoolean("httpOnly", &http_only);
 
+  base::Time creation_time;
+  if (details->GetDouble("creationDate", &creation_date)) {
+    creation_time = (creation_date == 0) ?
+        base::Time::UnixEpoch() :
+        base::Time::FromDoubleT(creation_date);
+  }
+
   base::Time expiration_time;
   if (details->GetDouble("expirationDate", &expiration_date)) {
     expiration_time = (expiration_date == 0) ?
@@ -178,10 +187,18 @@ void SetCookieOnIO(scoped_refptr<net::URLRequestContextGetter> getter,
         base::Time::FromDoubleT(expiration_date);
   }
 
-  GetCookieStore(getter)->GetCookieMonster()->SetCookieWithDetailsAsync(
-      GURL(url), name, value, domain, path, expiration_time, secure, http_only,
-      false, false, false, net::COOKIE_PRIORITY_DEFAULT,
-      base::Bind(OnSetCookie, callback));
+  base::Time last_access_time;
+  if (details->GetDouble("lastAccessDate", &last_access_date)) {
+    last_access_time = (last_access_date == 0) ?
+        base::Time::UnixEpoch() :
+        base::Time::FromDoubleT(last_access_date);
+  }
+
+  GetCookieStore(getter)->SetCookieWithDetailsAsync(
+      GURL(url), name, value, domain, path, creation_time,
+      expiration_time, last_access_time, secure, http_only,
+      net::CookieSameSite::DEFAULT_MODE, false,
+      net::COOKIE_PRIORITY_DEFAULT, base::Bind(OnSetCookie, callback));
 }
 
 }  // namespace
@@ -197,7 +214,7 @@ Cookies::~Cookies() {
 
 void Cookies::Get(const base::DictionaryValue& filter,
                   const GetCallback& callback) {
-  scoped_ptr<base::DictionaryValue> copied(filter.CreateDeepCopy());
+  std::unique_ptr<base::DictionaryValue> copied(filter.CreateDeepCopy());
   auto getter = make_scoped_refptr(request_context_getter_);
   content::BrowserThread::PostTask(
       BrowserThread::IO, FROM_HERE,
@@ -214,7 +231,7 @@ void Cookies::Remove(const GURL& url, const std::string& name,
 
 void Cookies::Set(const base::DictionaryValue& details,
                   const SetCallback& callback) {
-  scoped_ptr<base::DictionaryValue> copied(details.CreateDeepCopy());
+  std::unique_ptr<base::DictionaryValue> copied(details.CreateDeepCopy());
   auto getter = make_scoped_refptr(request_context_getter_);
   content::BrowserThread::PostTask(
       BrowserThread::IO, FROM_HERE,

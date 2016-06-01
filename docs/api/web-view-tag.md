@@ -1,4 +1,4 @@
-# The `<webview>` tag
+# `<webview>` Tag
 
 > Display external web content in an isolated frame and process.
 
@@ -11,6 +11,9 @@ Unlike an `iframe`, the `webview` runs in a separate process than your
 app. It doesn't have the same permissions as your web page and all interactions
 between your app and embedded content will be asynchronous. This keeps your app
 safe from the embedded content.
+
+For security purpose, `webview` can only be used in `BrowserWindow`s that have
+`nodeIntegration` enabled.
 
 ## Example
 
@@ -37,15 +40,15 @@ and displays a "loading..." message during the load time:
 
     const loadstart = () => {
       indicator.innerText = 'loading...';
-    }
+    };
 
     const loadstop = () => {
       indicator.innerText = '';
-    }
+    };
 
     webview.addEventListener('did-start-loading', loadstart);
     webview.addEventListener('did-stop-loading', loadstop);
-  }
+  };
 </script>
 ```
 
@@ -168,7 +171,7 @@ page is loaded, use the `setUserAgent` method to change the user agent.
 
 If "on", the guest page will have web security disabled.
 
-### partition
+### `partition`
 
 ```html
 <webview src="https://github.com" partition="persist:github"></webview>
@@ -213,7 +216,7 @@ The `webview` tag has the following methods:
 **Example**
 
 ```javascript
-webview.addEventListener("dom-ready", () => {
+webview.addEventListener('dom-ready', () => {
   webview.openDevTools();
 });
 ```
@@ -442,8 +445,8 @@ obtained by subscribing to [`found-in-page`](web-view-tag.md#event-found-in-page
 
 * `action` String - Specifies the action to take place when ending
   [`<webview>.findInPage`](web-view-tag.md#webviewtagfindinpage) request.
-  * `clearSelection` - Translate the selection into a normal selection.
-  * `keepSelection` - Clear the selection.
+  * `clearSelection` - Clear the selection.
+  * `keepSelection` - Translate the selection into a normal selection.
   * `activateSelection` - Focus and click the selection node.
 
 Stops any `findInPage` request for the `webview` with the provided `action`.
@@ -454,7 +457,7 @@ Prints `webview`'s web page. Same with `webContents.print([options])`.
 
 ### `<webview>.printToPDF(options, callback)`
 
-Prints webview's web page as PDF, Same with `webContents.printToPDF(options, callback)`
+Prints `webview`'s web page as PDF, Same with `webContents.printToPDF(options, callback)`
 
 ### `<webview>.send(channel[, arg1][, arg2][, ...])`
 
@@ -600,7 +603,7 @@ The following example code forwards all log messages to the embedder's console
 without regard for log level or other properties.
 
 ```javascript
-webview.addEventListener('console-message', function(e) {
+webview.addEventListener('console-message', (e) => {
   console.log('Guest page logged a message:', e.message);
 });
 ```
@@ -620,12 +623,12 @@ Fired when a result is available for
 [`webview.findInPage`](web-view-tag.md#webviewtagfindinpage) request.
 
 ```javascript
-webview.addEventListener('found-in-page', function(e) {
+webview.addEventListener('found-in-page', (e) => {
   if (e.result.finalUpdate)
-    webview.stopFindInPage("keepSelection");
+    webview.stopFindInPage('keepSelection');
 });
 
-const rquestId = webview.findInPage("test");
+const requestId = webview.findInPage('test');
 ```
 
 ### Event: 'new-window'
@@ -644,7 +647,7 @@ Fired when the guest page attempts to open a new browser window.
 The following example code opens the new url in system's default browser.
 
 ```javascript
-const { shell } = require('electron');
+const {shell} = require('electron');
 
 webview.addEventListener('new-window', (e) => {
   const protocol = require('url').parse(e.url).protocol;
@@ -732,7 +735,7 @@ webview.send('ping');
 
 ```javascript
 // In guest page.
-var { ipcRenderer } = require('electron');
+const {ipcRenderer} = require('electron');
 ipcRenderer.on('ping', () => {
   ipcRenderer.sendToHost('pong');
 });

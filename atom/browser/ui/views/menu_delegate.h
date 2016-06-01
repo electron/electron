@@ -52,8 +52,8 @@ class MenuDelegate : public views::MenuDelegate {
  private:
   MenuBar* menu_bar_;
   int id_;
-  scoped_ptr<views::MenuDelegate> adapter_;
-  scoped_ptr<views::MenuRunner> menu_runner_;
+  std::unique_ptr<views::MenuDelegate> adapter_;
+  std::unique_ptr<views::MenuRunner> menu_runner_;
 
   DISALLOW_COPY_AND_ASSIGN(MenuDelegate);
 };

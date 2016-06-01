@@ -124,7 +124,7 @@ static void AddPepperBasedWidevine(
   }
 
   cdm::AddWidevineWithCodecs(
-      cdm::WIDEVINE, supported_codecs,
+      supported_codecs,
 #if defined(OS_CHROMEOS)
       media::EmeRobustness::HW_SECURE_ALL,  // Maximum audio robustness.
       media::EmeRobustness::HW_SECURE_ALL,  // Maximim video robustness.

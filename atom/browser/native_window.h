@@ -123,8 +123,9 @@ class NativeWindow : public base::SupportsUserData,
   virtual gfx::Size GetMinimumSize();
   virtual void SetMaximumSize(const gfx::Size& size);
   virtual gfx::Size GetMaximumSize();
-  virtual void SetSheetOffset(const double offset);
-  virtual double GetSheetOffset();
+  virtual void SetSheetOffset(const double offsetX, const double offsetY);
+  virtual double GetSheetOffsetX();
+  virtual double GetSheetOffsetY();
   virtual void SetResizable(bool resizable) = 0;
   virtual bool IsResizable() = 0;
   virtual void SetMovable(bool movable) = 0;
@@ -190,7 +191,7 @@ class NativeWindow : public base::SupportsUserData,
   // Set the aspect ratio when resizing window.
   double GetAspectRatio();
   gfx::Size GetAspectRatioExtraSize();
-  void SetAspectRatio(double aspect_ratio, const gfx::Size& extra_size);
+  virtual void SetAspectRatio(double aspect_ratio, const gfx::Size& extra_size);
 
   base::WeakPtr<NativeWindow> GetWeakPtr() {
     return weak_factory_.GetWeakPtr();
@@ -246,17 +247,11 @@ class NativeWindow : public base::SupportsUserData,
   }
 
   bool has_frame() const { return has_frame_; }
+  void set_has_frame(bool has_frame) { has_frame_ = has_frame; }
+
   bool transparent() const { return transparent_; }
   SkRegion* draggable_region() const { return draggable_region_.get(); }
   bool enable_larger_than_screen() const { return enable_larger_than_screen_; }
-  gfx::ImageSkia icon() const { return icon_; }
-
-  bool force_using_draggable_region() const {
-    return force_using_draggable_region_;
-  }
-  void set_force_using_draggable_region(bool force) {
-    force_using_draggable_region_ = true;
-  }
 
   void set_has_dialog_attached(bool has_dialog_attached) {
     has_dialog_attached_ = has_dialog_attached;
@@ -268,7 +263,7 @@ class NativeWindow : public base::SupportsUserData,
 
   // Convert draggable regions in raw format to SkRegion format. Caller is
   // responsible for deleting the returned SkRegion instance.
-  scoped_ptr<SkRegion> DraggableRegionsToSkRegion(
+  std::unique_ptr<SkRegion> DraggableRegionsToSkRegion(
       const std::vector<DraggableRegion>& regions);
 
   // Converts between content size to window size.
@@ -299,24 +294,18 @@ class NativeWindow : public base::SupportsUserData,
   // Whether window has standard frame.
   bool has_frame_;
 
-  // Force the window to be aware of draggable regions.
-  bool force_using_draggable_region_;
-
   // Whether window is transparent.
   bool transparent_;
 
   // For custom drag, the whole window is non-draggable and the draggable region
   // has to been explicitly provided.
-  scoped_ptr<SkRegion> draggable_region_;  // used in custom drag.
+  std::unique_ptr<SkRegion> draggable_region_;  // used in custom drag.
 
   // Minimum and maximum size, stored as content size.
   extensions::SizeConstraints size_constraints_;
 
   // Whether window can be resized larger than screen.
   bool enable_larger_than_screen_;
-
-  // Window icon.
-  gfx::ImageSkia icon_;
 
   // The windows has been closed.
   bool is_closed_;
@@ -328,8 +317,10 @@ class NativeWindow : public base::SupportsUserData,
   // it should be cancelled when we can prove that the window is responsive.
   base::CancelableClosure window_unresposive_closure_;
 
-  // Used to display sheets at the appropriate vertical offset
-  double sheet_offset_;
+  // Used to display sheets at the appropriate horizontal and vertical offsets
+  // on OS X.
+  double sheet_offset_x_;
+  double sheet_offset_y_;
 
   // Used to maintain the aspect ratio of a view which is inside of the
   // content view.

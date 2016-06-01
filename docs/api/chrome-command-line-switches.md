@@ -1,4 +1,4 @@
-# Supported Chrome command line switches
+# Supported Chrome Command Line Switches
 
 > Command line switches supported by Electron.
 
@@ -7,7 +7,7 @@ your app's main script before the [ready][ready] event of the [app][app] module
 is emitted:
 
 ```javascript
-const { app } = require('electron');
+const {app} = require('electron');
 app.commandLine.appendSwitch('remote-debugging-port', '8315');
 app.commandLine.appendSwitch('host-rules', 'MAP * 127.0.0.1');
 
@@ -23,6 +23,10 @@ Ignore the connections limit for `domains` list separated by `,`.
 ## --disable-http-cache
 
 Disables the disk cache for HTTP requests.
+
+## --disable-http2
+
+Disable HTTP/2 and SPDY/3.1 protocols.
 
 ## --remote-debugging-port=`port`
 
@@ -91,6 +95,24 @@ connection, and the endpoint host in a `SOCKS` proxy connection).
 
 Like `--host-rules` but these `rules` only apply to the host resolver.
 
+## --auth-server-whitelist=`url`
+
+A comma-separated list of servers for which integrated authentication is enabled.
+
+For example:
+
+```
+--auth-server-whitelist='*example.com, *foobar.com, *baz'
+```
+
+then any `url` ending with `example.com`, `foobar.com`, `baz` will be considered
+for integrated authentication. Without `*` prefix the url has to match exactly.
+
+## --auth-negotiate-delegate-whitelist=`url`
+
+A comma-separated list of servers for which delegation of user credentials is required.
+Without `*` prefix the url has to match exactly.
+
 ## --ignore-certificate-errors
 
 Ignores certificate related errors.
@@ -109,7 +131,7 @@ Enables net log events to be saved and writes them to `path`.
 
 ## --ssl-version-fallback-min=`version`
 
-Sets the minimum SSL/TLS version ("tls1", "tls1.1" or "tls1.2") that TLS
+Sets the minimum SSL/TLS version (`tls1`, `tls1.1` or `tls1.2`) that TLS
 fallback will accept.
 
 ## --cipher-suite-blacklist=`cipher_suites`

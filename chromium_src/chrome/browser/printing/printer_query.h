@@ -50,7 +50,7 @@ class PrinterQuery : public PrintJobWorkerOwner {
       const base::Closure& callback);
 
   // Updates the current settings with |new_settings| dictionary values.
-  void SetSettings(scoped_ptr<base::DictionaryValue> new_settings,
+  void SetSettings(std::unique_ptr<base::DictionaryValue> new_settings,
                    const base::Closure& callback);
 
   // Stops the worker thread since the client is done with this object.
@@ -73,7 +73,7 @@ class PrinterQuery : public PrintJobWorkerOwner {
   // All the UI is done in a worker thread because many Win32 print functions
   // are blocking and enters a message loop without your consent. There is one
   // worker thread per print job.
-  scoped_ptr<PrintJobWorker> worker_;
+  std::unique_ptr<PrintJobWorker> worker_;
 
   // Cache of the print context settings for access in the UI thread.
   PrintSettings settings_;

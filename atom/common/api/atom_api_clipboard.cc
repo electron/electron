@@ -146,13 +146,19 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   dict.SetMethod("write", &Write);
   dict.SetMethod("readText", &ReadText);
   dict.SetMethod("writeText", &WriteText);
+  dict.SetMethod("readRTF", &ReadRtf);
+  dict.SetMethod("writeRTF", &WriteRtf);
+  dict.SetMethod("readHTML", &ReadHtml);
+  dict.SetMethod("writeHTML", &WriteHtml);
+  dict.SetMethod("readImage", &ReadImage);
+  dict.SetMethod("writeImage", &WriteImage);
+  dict.SetMethod("clear", &Clear);
+
+  // TODO(kevinsawicki): Remove in 2.0, deprecate before then with warnings
   dict.SetMethod("readRtf", &ReadRtf);
   dict.SetMethod("writeRtf", &WriteRtf);
   dict.SetMethod("readHtml", &ReadHtml);
   dict.SetMethod("writeHtml", &WriteHtml);
-  dict.SetMethod("readImage", &ReadImage);
-  dict.SetMethod("writeImage", &WriteImage);
-  dict.SetMethod("clear", &Clear);
 }
 
 }  // namespace

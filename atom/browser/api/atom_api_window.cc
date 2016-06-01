@@ -21,8 +21,11 @@
 #include "native_mate/dictionary.h"
 #include "ui/gfx/geometry/rect.h"
 
-#if defined(OS_WIN)
+#if defined(TOOLKIT_VIEWS)
 #include "atom/browser/native_window_views.h"
+#endif
+
+#if defined(OS_WIN)
 #include "atom/browser/ui/win/taskbar_host.h"
 #endif
 
@@ -52,11 +55,6 @@ namespace api {
 
 namespace {
 
-// This function is implemented in JavaScript
-using DeprecatedOptionsCheckCallback =
-    base::Callback<std::string(v8::Local<v8::Value>)>;
-DeprecatedOptionsCheckCallback g_deprecated_options_check;
-
 void OnCapturePageDone(
     v8::Isolate* isolate,
     const base::Callback<void(const gfx::Image&)>& callback,
@@ -64,52 +62,6 @@ void OnCapturePageDone(
   v8::Locker locker(isolate);
   v8::HandleScope handle_scope(isolate);
   callback.Run(gfx::Image::CreateFrom1xBitmap(bitmap));
-}
-
-// Converts min-width to minWidth, returns false if no conversion is needed.
-bool TranslateOldKey(const std::string& key, std::string* new_key) {
-  if (key.find('-') == std::string::npos)
-    return false;
-  new_key->reserve(key.size());
-  bool next_upper_case = false;
-  for (char c : key) {
-    if (c == '-') {
-      next_upper_case = true;
-    } else if (next_upper_case) {
-      new_key->push_back(base::ToUpperASCII(c));
-      next_upper_case = false;
-    } else {
-      new_key->push_back(c);
-    }
-  }
-  return true;
-}
-
-// Converts min-width to minWidth recursively in the dictionary.
-void TranslateOldOptions(v8::Isolate* isolate, v8::Local<v8::Object> options) {
-  auto context = isolate->GetCurrentContext();
-  auto maybe_keys = options->GetOwnPropertyNames(context);
-  if (maybe_keys.IsEmpty())
-    return;
-  std::vector<std::string> keys;
-  if (!mate::ConvertFromV8(isolate, maybe_keys.ToLocalChecked(), &keys))
-    return;
-  mate::Dictionary dict(isolate, options);
-  for (const auto& key : keys) {
-    v8::Local<v8::Value> value;
-    if (!dict.Get(key, &value))  // Shouldn't happen, but guard it anyway.
-      continue;
-    // Go recursively.
-    v8::Local<v8::Object> sub_options;
-    if (mate::ConvertFromV8(isolate, value, &sub_options))
-      TranslateOldOptions(isolate, sub_options);
-    // Translate key.
-    std::string new_key;
-    if (TranslateOldKey(key, &new_key)) {
-      dict.Set(new_key, value);
-      dict.Delete(key);
-    }
-  }
 }
 
 // Converts binary data to Buffer.
@@ -125,23 +77,12 @@ v8::Local<v8::Value> ToBuffer(v8::Isolate* isolate, void* val, int size) {
 
 
 Window::Window(v8::Isolate* isolate, const mate::Dictionary& options) {
-  // Be compatible with old style field names like min-width.
-  TranslateOldOptions(isolate, options.GetHandle());
-
   // Use options.webPreferences to create WebContents.
   mate::Dictionary web_preferences = mate::Dictionary::CreateEmpty(isolate);
   options.Get(options::kWebPreferences, &web_preferences);
 
-  // Be compatible with old options which are now in web_preferences.
-  v8::Local<v8::Value> value;
-  if (options.Get(options::kNodeIntegration, &value))
-    web_preferences.Set(options::kNodeIntegration, value);
-  if (options.Get(options::kPreloadScript, &value))
-    web_preferences.Set(options::kPreloadScript, value);
-  if (options.Get(options::kZoomFactor, &value))
-    web_preferences.Set(options::kZoomFactor, value);
-
   // Copy the backgroundColor to webContents.
+  v8::Local<v8::Value> value;
   if (options.Get(options::kBackgroundColor, &value))
     web_preferences.Set(options::kBackgroundColor, value);
 
@@ -161,6 +102,13 @@ Window::Window(v8::Isolate* isolate, const mate::Dictionary& options) {
   window_->InitFromOptions(options);
   window_->AddObserver(this);
   AttachAsUserData(window_.get());
+
+#if defined(TOOLKIT_VIEWS)
+  // Sets the window icon.
+  mate::Handle<NativeImage> icon;
+  if (options.Get(options::kIcon, &icon))
+    SetIcon(icon);
+#endif
 }
 
 Window::~Window() {
@@ -304,13 +252,6 @@ mate::WrappableBase* Window::New(v8::Isolate* isolate, mate::Arguments* args) {
     options = mate::Dictionary::CreateEmpty(isolate);
   }
 
-  std::string deprecation_message = g_deprecated_options_check.Run(
-      options.GetHandle());
-  if (deprecation_message.length() > 0) {
-    args->ThrowError(deprecation_message);
-    return nullptr;
-  }
-
   return new Window(isolate, options);
 }
 
@@ -440,8 +381,10 @@ std::vector<int> Window::GetMaximumSize() {
   return result;
 }
 
-void Window::SetSheetOffset(double offset) {
-  window_->SetSheetOffset(offset);
+void Window::SetSheetOffset(double offsetY, mate::Arguments* args) {
+  double offsetX = 0.0;
+  args->GetNext(&offsetX);
+  window_->SetSheetOffset(offsetX, offsetY);
 }
 
 void Window::SetResizable(bool resizable) {
@@ -686,6 +629,19 @@ void Window::ShowDefinitionForSelection() {
 }
 #endif
 
+#if defined(TOOLKIT_VIEWS)
+void Window::SetIcon(mate::Handle<NativeImage> icon) {
+#if defined(OS_WIN)
+  static_cast<NativeWindowViews*>(window_.get())->SetIcon(
+      icon->GetHICON(GetSystemMetrics(SM_CXSMICON)),
+      icon->GetHICON(GetSystemMetrics(SM_CXICON)));
+#elif defined(USE_X11)
+  static_cast<NativeWindowViews*>(window_.get())->SetIcon(
+      icon->image().AsImageSkia());
+#endif
+}
+#endif
+
 void Window::SetAspectRatio(double aspect_ratio, mate::Arguments* args) {
   gfx::Size extra_size;
   args->GetNext(&extra_size);
@@ -808,6 +764,9 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("showDefinitionForSelection",
                  &Window::ShowDefinitionForSelection)
 #endif
+#if defined(TOOLKIT_VIEWS)
+      .SetMethod("setIcon", &Window::SetIcon)
+#endif
       .SetProperty("id", &Window::ID)
       .SetProperty("webContents", &Window::WebContents);
 }
@@ -820,10 +779,6 @@ v8::Local<v8::Value> Window::From(v8::Isolate* isolate,
     return existing->GetWrapper();
   else
     return v8::Null(isolate);
-}
-
-void SetDeprecatedOptionsCheck(const DeprecatedOptionsCheckCallback& callback) {
-  g_deprecated_options_check = callback;
 }
 
 }  // namespace api
@@ -848,8 +803,6 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
 
   mate::Dictionary dict(isolate, exports);
   dict.Set("BrowserWindow", browser_window);
-  dict.SetMethod("_setDeprecatedOptionsCheck",
-                 &atom::api::SetDeprecatedOptionsCheck);
 }
 
 }  // namespace

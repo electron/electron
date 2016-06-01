@@ -3,7 +3,7 @@ const child_process = require('child_process')
 const fs = require('fs')
 const path = require('path')
 const os = require('os')
-const remote = require('electron').remote
+const {remote} = require('electron')
 
 describe('node feature', function () {
   var fixtures = path.join(__dirname, 'fixtures')
@@ -75,6 +75,19 @@ describe('node feature', function () {
           done()
         })
         child.send('message')
+      })
+
+      it('pipes stdio', function (done) {
+        let child = child_process.fork(path.join(fixtures, 'module', 'process-stdout.js'), {silent: true})
+        let data = ''
+        child.stdout.on('data', (chunk) => {
+          data += String(chunk)
+        })
+        child.on('exit', (code) => {
+          assert.equal(code, 0)
+          assert.equal(data, 'pipes stdio')
+          done()
+        })
       })
     })
   })

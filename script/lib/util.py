@@ -16,6 +16,7 @@ import os
 import zipfile
 
 from config import is_verbose_mode
+from env_util import get_vs_env
 
 
 def get_host_arch():
@@ -178,7 +179,7 @@ def execute_stdout(argv, env=os.environ):
     execute(argv, env)
 
 
-def atom_gyp():
+def electron_gyp():
   SOURCE_ROOT = os.path.abspath(os.path.join(__file__, '..', '..', '..'))
   gyp = os.path.join(SOURCE_ROOT, 'electron.gyp')
   with open(gyp) as f:
@@ -186,8 +187,8 @@ def atom_gyp():
     return obj['variables']
 
 
-def get_atom_shell_version():
-  return 'v' + atom_gyp()['version%']
+def get_electron_version():
+  return 'v' + electron_gyp()['version%']
 
 
 def parse_version(version):
@@ -223,3 +224,15 @@ def s3put(bucket, access_key, secret_key, prefix, key_prefix, files):
   ] + files
 
   execute(args, env)
+
+
+def import_vs_env(target_arch):
+  if sys.platform != 'win32':
+    return
+
+  if target_arch == 'ia32':
+    vs_arch = 'amd64_x86'
+  else:
+    vs_arch = 'x86_amd64'
+  env = get_vs_env('14.0', vs_arch)
+  os.environ.update(env)

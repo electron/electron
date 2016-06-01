@@ -5,16 +5,17 @@
 An example of showing a dialog to select multiple files and directories:
 
 ```javascript
-var win = ...;  // BrowserWindow in which to show the dialog
-const { dialog } = require('electron');
-console.log(dialog.showOpenDialog({ properties: [ 'openFile', 'openDirectory', 'multiSelections' ]}));
+let win = ...;  // BrowserWindow in which to show the dialog
+const {dialog} = require('electron');
+
+console.log(dialog.showOpenDialog({properties: ['openFile', 'openDirectory', 'multiSelections']}));
 ```
 
 The Dialog is opened from Electron's main thread. If you want to use the dialog
 object from a renderer process, remember to access it using the remote:
 
 ```javascript
-const { dialog } = require('electron').remote;
+const {dialog} = require('electron').remote;
 ```
 
 ## Methods
@@ -27,6 +28,8 @@ The `dialog` module has the following methods:
 * `options` Object
   * `title` String
   * `defaultPath` String
+  * `buttonLabel` String - Custom label for the confirmation button, when
+    left empty the default label will be used.
   * `filters` Array
   * `properties` Array - Contains which features the dialog should use, can
     contain `openFile`, `openDirectory`, `multiSelections` and
@@ -42,10 +45,10 @@ selected when you want to limit the user to a specific type. For example:
 ```javascript
 {
   filters: [
-    { name: 'Images', extensions: ['jpg', 'png', 'gif'] },
-    { name: 'Movies', extensions: ['mkv', 'avi', 'mp4'] },
-    { name: 'Custom File Type', extensions: ['as'] },
-    { name: 'All Files', extensions: ['*'] }
+    {name: 'Images', extensions: ['jpg', 'png', 'gif']},
+    {name: 'Movies', extensions: ['mkv', 'avi', 'mp4']},
+    {name: 'Custom File Type', extensions: ['as']},
+    {name: 'All Files', extensions: ['*']}
   ]
 }
 ```
@@ -68,6 +71,8 @@ shown.
 * `options` Object
   * `title` String
   * `defaultPath` String
+  * `buttonLabel` String - Custom label for the confirmation button, when
+    left empty the default label will be used.
   * `filters` Array
 * `callback` Function (optional)
 
@@ -87,7 +92,8 @@ will be passed via `callback(filename)`
   * `type` String - Can be `"none"`, `"info"`, `"error"`, `"question"` or
   `"warning"`. On Windows, "question" displays the same icon as "info", unless
   you set an icon using the "icon" option.
-  * `buttons` Array - Array of texts for buttons.
+  * `buttons` Array - Array of texts for buttons. On Windows, an empty array
+    will result in one button labeled "OK".
   * `defaultId` Integer - Index of the button in the buttons array which will
     be selected by default when the message box opens.
   * `title` String - Title of the message box, some platforms will not show it.

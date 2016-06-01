@@ -17,7 +17,7 @@ describe('asar package', function () {
       it('does not leak fd', function () {
         var readCalls = 1
         while (readCalls <= 10000) {
-          fs.readFileSync(path.join(process.resourcesPath, 'electron.asar', 'renderer', 'api', 'ipc.js'))
+          fs.readFileSync(path.join(process.resourcesPath, 'electron.asar', 'renderer', 'api', 'ipc-renderer.js'))
           readCalls++
         }
       })
@@ -552,6 +552,30 @@ describe('asar package', function () {
           done()
         })
         child.send(file)
+      })
+    })
+
+    describe('child_process.exec', function () {
+      var child_process = require('child_process');
+      var echo = path.join(fixtures, 'asar', 'echo.asar', 'echo')
+
+      it('should not try to extract the command if there is a reference to a file inside an .asar', function (done) {
+        child_process.exec('echo ' + echo + ' foo bar', function (error, stdout) {
+          assert.equal(error, null)
+          assert.equal(stdout.toString().replace(/\r/g, ''), echo + ' foo bar\n')
+          done()
+        })
+      })
+    })
+
+    describe('child_process.execSync', function () {
+      var child_process = require('child_process');
+      var echo = path.join(fixtures, 'asar', 'echo.asar', 'echo')
+
+      it('should not try to extract the command if there is a reference to a file inside an .asar', function (done) {
+        var stdout = child_process.execSync('echo ' + echo + ' foo bar')
+        assert.equal(stdout.toString().replace(/\r/g, ''), echo + ' foo bar\n')
+        done()
       })
     })
 

@@ -71,10 +71,6 @@ void RenderParamsFromPrintSettings(const PrintSettings& settings,
   params->margin_top = settings.page_setup_device_units().content_area().y();
   params->margin_left = settings.page_setup_device_units().content_area().x();
   params->dpi = settings.dpi();
-  // Currently hardcoded at 1.25. See PrintSettings' constructor.
-  params->min_shrink = settings.min_shrink();
-  // Currently hardcoded at 2.0. See PrintSettings' constructor.
-  params->max_shrink = settings.max_shrink();
   // Currently hardcoded at 72dpi. See PrintSettings' constructor.
   params->desired_dpi = settings.desired_dpi();
   // Always use an invalid cookie.
@@ -144,7 +140,7 @@ void PrintingMessageFilter::OnDuplicateSection(
     base::SharedMemoryHandle* browser_handle) {
   // Duplicate the handle in this process right now so the memory is kept alive
   // (even if it is not mapped)
-  base::SharedMemory shared_buf(renderer_handle, true, PeerHandle());
+  base::SharedMemory shared_buf(renderer_handle, true);
   shared_buf.GiveToProcess(base::GetCurrentProcessHandle(), browser_handle);
 }
 #endif
@@ -377,7 +373,7 @@ void PrintingMessageFilter::UpdateFileDescriptor(int render_view_id, int fd) {
 void PrintingMessageFilter::OnUpdatePrintSettings(
     int document_cookie, const base::DictionaryValue& job_settings,
     IPC::Message* reply_msg) {
-  scoped_ptr<base::DictionaryValue> new_settings(job_settings.DeepCopy());
+  std::unique_ptr<base::DictionaryValue> new_settings(job_settings.DeepCopy());
 
   scoped_refptr<PrinterQuery> printer_query;
   printer_query = queue_->PopPrinterQuery(document_cookie);

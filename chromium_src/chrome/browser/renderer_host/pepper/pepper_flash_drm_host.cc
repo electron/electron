@@ -21,7 +21,7 @@
 #include "content/public/browser/child_process_security_policy.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/common/pepper_plugin_info.h"
-#include "net/base/net_util.h"
+#include "net/base/network_interfaces.h"
 #include "ppapi/c/pp_errors.h"
 #include "ppapi/host/dispatch_host_message.h"
 #include "ppapi/host/host_message_context.h"

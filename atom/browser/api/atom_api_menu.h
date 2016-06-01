@@ -55,7 +55,7 @@ class Menu : public mate::TrackableObject<Menu>,
                        int x = -1, int y = -1,
                        int positioning_item = 0) = 0;
 
-  scoped_ptr<AtomMenuModel> model_;
+  std::unique_ptr<AtomMenuModel> model_;
   Menu* parent_;
 
  private:

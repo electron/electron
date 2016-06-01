@@ -122,7 +122,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void TabTraverse(bool reverse);
 
   // Send messages to browser.
-  bool SendIPCMessage(const base::string16& channel,
+  bool SendIPCMessage(bool all_frames,
+                      const base::string16& channel,
                       const base::ListValue& args);
 
   // Send WebInputEvent to the page.
@@ -154,6 +155,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   v8::Local<v8::Value> GetOwnerBrowserWindow();
 
   // Properties.
+  int32_t ID() const;
   v8::Local<v8::Value> Session(v8::Isolate* isolate);
   content::WebContents* HostWebContents();
   v8::Local<v8::Value> DevToolsWebContents(v8::Isolate* isolate);
@@ -209,6 +211,9 @@ class WebContents : public mate::TrackableObject<WebContents>,
       content::WebContents* web_contents,
       bool user_gesture,
       bool last_unlocked_by_target) override;
+  std::unique_ptr<content::BluetoothChooser> RunBluetoothChooser(
+      content::RenderFrameHost* frame,
+      const content::BluetoothChooser::EventHandler& handler) override;
 
   // content::WebContentsObserver:
   void BeforeUnloadFired(const base::TimeTicks& proceed_time) override;
@@ -288,7 +293,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   v8::Global<v8::Value> devtools_web_contents_;
   v8::Global<v8::Value> debugger_;
 
-  scoped_ptr<WebViewGuestDelegate> guest_delegate_;
+  std::unique_ptr<WebViewGuestDelegate> guest_delegate_;
 
   // The host webcontents that may contain this webcontents.
   WebContents* embedder_;

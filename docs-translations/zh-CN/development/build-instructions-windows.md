@@ -5,8 +5,8 @@
 ## 前提
 
 * Windows 7 / Server 2008 R2 or higher
-* Visual Studio 2013 with Update 4 - [download VS 2013 Community Edition for
-  free](https://www.visualstudio.com/news/vs2013-community-vs).
+* Visual Studio 2015 - [download VS 2015 Community Edition for
+  free](https://www.visualstudio.com/en-us/products/visual-studio-community-vs.aspx)
 * [Python 2.7](http://www.python.org/download/releases/2.7/)
 * [Node.js](http://nodejs.org/download/)
 * [Git](http://git-scm.com)
@@ -19,8 +19,8 @@
 **注意:** 虽然 Visual Studio 不是用来构建的，但是它仍然
 **必须的** ，因为我们需要它提供的构建工具栏.
 
-**注意:** Visual Studio 2015 不可用. 请确定使用 MSVS
-**2013**.
+**注意:** Visual Studio 2013 不可用. 请确定使用 MSVS
+**2015**.
 
 ## 获取代码
 
@@ -133,4 +133,4 @@ $ mkdir ~\AppData\Roaming\npm
 
 ### node-gyp is not recognized as an internal or external command
 
-如果你使用 Git Bash 来构建，或许会遇到这个错误，可以使用 PowerShell 或 VS2012 Command Prompt 来代替 .
+如果你使用 Git Bash 来构建，或许会遇到这个错误，可以使用 PowerShell 或 VS2015 Command Prompt 来代替 .

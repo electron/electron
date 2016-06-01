@@ -39,6 +39,7 @@
 #include "third_party/WebKit/public/web/WebSettings.h"
 #include "third_party/WebKit/public/web/WebView.h"
 #include "third_party/WebKit/public/web/WebViewClient.h"
+#include "third_party/skia/include/core/SkCanvas.h"
 #include "ui/base/resource/resource_bundle.h"
 
 using content::WebPreferences;
@@ -62,9 +63,9 @@ int GetDPI(const PrintMsg_Print_Params* print_params) {
 bool PrintMsg_Print_Params_IsValid(const PrintMsg_Print_Params& params) {
   return !params.content_size.IsEmpty() && !params.page_size.IsEmpty() &&
          !params.printable_area.IsEmpty() && params.document_cookie &&
-         params.desired_dpi && params.max_shrink && params.min_shrink &&
-         params.dpi && (params.margin_top >= 0) && (params.margin_left >= 0) &&
-         params.dpi > kMinDpi && params.document_cookie != 0;
+         params.desired_dpi && params.dpi && params.margin_top >= 0 &&
+         params.margin_left >= 0 && params.dpi > kMinDpi &&
+         params.document_cookie != 0;
 }
 
 PrintMsg_Print_Params GetCssPrintParams(
@@ -425,8 +426,9 @@ class PrepareFrameAndViewForPrint : public blink::WebViewClient,
       blink::WebLocalFrame* parent,
       blink::WebTreeScopeType scope,
       const blink::WebString& name,
-      blink::WebSandboxFlags sandboxFlags,
-      const blink::WebFrameOwnerProperties& frameOwnerProperties) override;
+      const blink::WebString& unique_name,
+      blink::WebSandboxFlags sandbox_flags,
+      const blink::WebFrameOwnerProperties& frame_owner_properties) override;
   void frameDetached(blink::WebFrame* frame, DetachType type) override;
 
  private:
@@ -491,6 +493,7 @@ void PrepareFrameAndViewForPrint::ResizeForPrinting() {
   // think the page is 125% larger so the size of the page is correct for
   // minimum (default) scaling.
   // This is important for sites that try to fill the page.
+  // The 1.25 value is |printingMinimumShrinkFactor|.
   gfx::Size print_layout_size(web_print_params_.printContentArea.width,
                               web_print_params_.printContentArea.height);
   print_layout_size.set_height(
@@ -573,8 +576,9 @@ blink::WebFrame* PrepareFrameAndViewForPrint::createChildFrame(
     blink::WebLocalFrame* parent,
     blink::WebTreeScopeType scope,
     const blink::WebString& name,
-    blink::WebSandboxFlags sandboxFlags,
-    const blink::WebFrameOwnerProperties& frameOwnerProperties) {
+    const blink::WebString& unique_name,
+    blink::WebSandboxFlags sandbox_flags,
+    const blink::WebFrameOwnerProperties& frame_owner_properties) {
   blink::WebFrame* frame = blink::WebLocalFrame::create(scope, this);
   parent->appendChild(frame);
   return frame;
@@ -1165,7 +1169,7 @@ bool PrintWebViewHelper::CopyMetafileDataToSharedMem(
   if (buf_size == 0)
     return false;
 
-  scoped_ptr<base::SharedMemory> shared_buf(
+  std::unique_ptr<base::SharedMemory> shared_buf(
       content::RenderThread::Get()->HostAllocateSharedMemoryBuffer(buf_size));
   if (!shared_buf)
     return false;
@@ -1263,11 +1267,7 @@ bool PrintWebViewHelper::PrintPreviewContext::CreatePreviewDocument(
   }
 
   metafile_.reset(new PdfMetafileSkia);
-  if (!metafile_->Init()) {
-    set_error(PREVIEW_ERROR_METAFILE_INIT_FAILED);
-    LOG(ERROR) << "PdfMetafileSkia Init failed";
-    return false;
-  }
+  CHECK(metafile_->Init());
 
   current_page_index_ = 0;
   pages_to_render_ = pages;

@@ -5,6 +5,7 @@
 #ifndef CHROME_RENDERER_PEPPER_CHROME_RENDERER_PEPPER_HOST_FACTORY_H_
 #define CHROME_RENDERER_PEPPER_CHROME_RENDERER_PEPPER_HOST_FACTORY_H_
 
+#include "base/macros.h"
 #include "ppapi/host/host_factory.h"
 
 namespace content {
@@ -17,7 +18,7 @@ class ChromeRendererPepperHostFactory : public ppapi::host::HostFactory {
   ~ChromeRendererPepperHostFactory() override;
 
   // HostFactory.
-  scoped_ptr<ppapi::host::ResourceHost> CreateResourceHost(
+  std::unique_ptr<ppapi::host::ResourceHost> CreateResourceHost(
       ppapi::host::PpapiHost* host,
       PP_Resource resource,
       PP_Instance instance,

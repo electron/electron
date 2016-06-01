@@ -12,6 +12,7 @@
 #include "base/strings/utf_string_conversions.h"
 #include "content/public/browser/native_web_keyboard_event.h"
 #include "native_mate/dictionary.h"
+#include "third_party/WebKit/public/web/WebCache.h"
 #include "third_party/WebKit/public/web/WebDeviceEmulationParams.h"
 #include "third_party/WebKit/public/web/WebFindOptions.h"
 #include "third_party/WebKit/public/web/WebInputEvent.h"
@@ -91,6 +92,8 @@ struct Converter<blink::WebMouseEvent::Button> {
       *out = blink::WebMouseEvent::Button::ButtonMiddle;
     else if (button == "right")
       *out = blink::WebMouseEvent::Button::ButtonRight;
+    else
+      return false;
     return true;
   }
 };
@@ -201,7 +204,8 @@ bool Converter<blink::WebMouseEvent>::FromV8(
     return false;
   if (!dict.Get("x", &out->x) || !dict.Get("y", &out->y))
     return false;
-  dict.Get("button", &out->button);
+  if (!dict.Get("button", &out->button))
+    out->button = blink::WebMouseEvent::Button::ButtonLeft;
   dict.Get("globalX", &out->globalX);
   dict.Get("globalY", &out->globalY);
   dict.Get("movementX", &out->movementX);
@@ -382,6 +386,32 @@ v8::Local<v8::Value> MediaFlagsToV8(v8::Isolate* isolate, int mediaFlags) {
   dict.Set("canRotate",
       !!(mediaFlags & blink::WebContextMenuData::MediaCanRotate));
   return mate::ConvertToV8(isolate, dict);
+}
+
+v8::Local<v8::Value> Converter<blink::WebCache::ResourceTypeStat>::ToV8(
+    v8::Isolate* isolate,
+    const blink::WebCache::ResourceTypeStat& stat) {
+  mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
+  dict.Set("count", static_cast<uint32_t>(stat.count));
+  dict.Set("size", static_cast<double>(stat.size));
+  dict.Set("liveSize", static_cast<double>(stat.liveSize));
+  dict.Set("decodedSize", static_cast<double>(stat.decodedSize));
+  dict.Set("purgedSize", static_cast<double>(stat.purgedSize));
+  dict.Set("purgeableSize", static_cast<double>(stat.purgeableSize));
+  return dict.GetHandle();
+}
+
+v8::Local<v8::Value> Converter<blink::WebCache::ResourceTypeStats>::ToV8(
+    v8::Isolate* isolate,
+    const blink::WebCache::ResourceTypeStats& stats) {
+  mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
+  dict.Set("images", stats.images);
+  dict.Set("scripts", stats.scripts);
+  dict.Set("cssStyleSheets", stats.cssStyleSheets);
+  dict.Set("xslStyleSheets", stats.xslStyleSheets);
+  dict.Set("fonts", stats.fonts);
+  dict.Set("other", stats.other);
+  return dict.GetHandle();
 }
 
 }  // namespace mate

@@ -20,6 +20,11 @@ const char kApplicationName[] = "application-name";
 const wchar_t kPipeNameFormat[] = L"\\\\.\\pipe\\$1 Crash Service";
 const wchar_t kStandardLogFile[] = L"operation_log.txt";
 
+void InvalidParameterHandler(const wchar_t*, const wchar_t*, const wchar_t*,
+                             unsigned int, uintptr_t) {
+  // noop.
+}
+
 bool GetCrashServiceDirectory(const std::wstring& application_name,
                               base::FilePath* dir) {
   base::FilePath temp_dir;
@@ -37,6 +42,9 @@ bool GetCrashServiceDirectory(const std::wstring& application_name,
 }  // namespace.
 
 int Main(const wchar_t* cmd) {
+  // Ignore invalid parameter errors.
+  _set_invalid_parameter_handler(InvalidParameterHandler);
+
   // Initialize all Chromium things.
   base::AtExitManager exit_manager;
   base::CommandLine::Init(0, NULL);

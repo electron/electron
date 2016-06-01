@@ -24,17 +24,21 @@ class AtomMainDelegate : public brightray::MainDelegate {
   content::ContentUtilityClient* CreateContentUtilityClient() override;
 
   // brightray::MainDelegate:
-  scoped_ptr<brightray::ContentClient> CreateContentClient() override;
+  std::unique_ptr<brightray::ContentClient> CreateContentClient() override;
 #if defined(OS_MACOSX)
   void OverrideChildProcessPath() override;
   void OverrideFrameworkBundlePath() override;
 #endif
 
  private:
+#if defined(OS_MACOSX)
+  void SetUpBundleOverrides();
+#endif
+
   brightray::ContentClient content_client_;
-  scoped_ptr<content::ContentBrowserClient> browser_client_;
-  scoped_ptr<content::ContentRendererClient> renderer_client_;
-  scoped_ptr<content::ContentUtilityClient> utility_client_;
+  std::unique_ptr<content::ContentBrowserClient> browser_client_;
+  std::unique_ptr<content::ContentRendererClient> renderer_client_;
+  std::unique_ptr<content::ContentUtilityClient> utility_client_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomMainDelegate);
 };

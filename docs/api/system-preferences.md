@@ -13,12 +13,16 @@ This method returns `true` if the system is in Dark Mode, and `false` otherwise.
 * `event` String
 * `callback` Function
 
-Subscribes to native notifications of OS X, `callback` will be called when the
-corresponding `event` happens. The `id` of the subscriber is returned, which can
-be used to unsubscribe the `event`.
+Subscribes to native notifications of OS X, `callback` will be called with
+`callback(event, userInfo)` when the corresponding `event` happens. The
+`userInfo` is an Object that contains the user information dictionary sent
+along with the notification.
+
+The `id` of the subscriber is returned, which can be used to unsubscribe the
+`event`.
 
 Under the hood this API subscribes to `NSDistributedNotificationCenter`,
-possible values of `event` are:
+example values of `event` are:
 
 * `AppleInterfaceThemeChangedNotification`
 * `AppleAquaColorVariantChanged`
@@ -56,7 +60,7 @@ An example of using it to determine if you should create a transparent window or
 not (transparent windows won't work correctly when DWM composition is disabled):
 
 ```javascript
-let browserOptions = { width: 1000, height: 800 };
+let browserOptions = {width: 1000, height: 800};
 
 // Make the window transparent only if the platform supports it.
 if (process.platform !== 'win32' || systemPreferences.isAeroGlassEnabled()) {

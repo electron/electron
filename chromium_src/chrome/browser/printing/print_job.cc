@@ -133,7 +133,7 @@ void PrintJob::StartPrinting() {
                                make_scoped_refptr(this),
                                base::Bind(&PrintJobWorker::StartPrinting,
                                           base::Unretained(worker_.get()),
-                                          document_)));
+                                          base::RetainedRef(document_))));
   // Set the flag right now.
   is_job_pending_ = true;
 
@@ -267,7 +267,7 @@ class PrintJob::PdfToEmfState {
   int pages_in_progress_;
   gfx::Size page_size_;
   gfx::Rect content_area_;
-  scoped_ptr<PdfToEmfConverter> converter_;
+  std::unique_ptr<PdfToEmfConverter> converter_;
 };
 
 void PrintJob::StartPdfToEmfConversion(
@@ -296,7 +296,7 @@ void PrintJob::OnPdfToEmfStarted(int page_count) {
 
 void PrintJob::OnPdfToEmfPageConverted(int page_number,
                                        float scale_factor,
-                                       scoped_ptr<MetafilePlayer> emf) {
+                                       std::unique_ptr<MetafilePlayer> emf) {
   DCHECK(ptd_to_emf_state_);
   if (!document_.get() || !emf) {
     ptd_to_emf_state_.reset();
@@ -306,7 +306,7 @@ void PrintJob::OnPdfToEmfPageConverted(int page_number,
 
   // Update the rendered document. It will send notifications to the listener.
   document_->SetPage(page_number,
-                     emf.Pass(),
+                     std::move(emf),
                      scale_factor,
                      ptd_to_emf_state_->page_size(),
                      ptd_to_emf_state_->content_area());
@@ -335,7 +335,7 @@ void PrintJob::UpdatePrintedDocument(PrintedDocument* new_document) {
                                  make_scoped_refptr(this),
                                  base::Bind(&PrintJobWorker::OnDocumentChanged,
                                             base::Unretained(worker_.get()),
-                                            document_)));
+                                            base::RetainedRef(document_))));
   }
 }
 

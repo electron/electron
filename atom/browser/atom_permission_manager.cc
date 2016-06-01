@@ -40,7 +40,7 @@ void AtomPermissionManager::SetPermissionRequestHandler(
   if (handler.is_null() && !pending_requests_.empty()) {
     for (const auto& request : pending_requests_) {
       if (!WebContentsDestroyed(request.second.render_process_id))
-        request.second.callback.Run(content::PERMISSION_STATUS_DENIED);
+        request.second.callback.Run(blink::mojom::PermissionStatus::DENIED);
     }
     pending_requests_.clear();
   }
@@ -51,7 +51,6 @@ int AtomPermissionManager::RequestPermission(
     content::PermissionType permission,
     content::RenderFrameHost* render_frame_host,
     const GURL& requesting_origin,
-    bool user_gesture,
     const ResponseCallback& response_callback) {
   int process_id = render_frame_host->GetProcess()->GetID();
 
@@ -74,7 +73,7 @@ int AtomPermissionManager::RequestPermission(
     return request_id_;
   }
 
-  response_callback.Run(content::PERMISSION_STATUS_GRANTED);
+  response_callback.Run(blink::mojom::PermissionStatus::GRANTED);
   return kNoPendingOperation;
 }
 
@@ -82,17 +81,16 @@ int AtomPermissionManager::RequestPermissions(
     const std::vector<content::PermissionType>& permissions,
     content::RenderFrameHost* render_frame_host,
     const GURL& requesting_origin,
-    bool user_gesture,
     const base::Callback<void(
-    const std::vector<content::PermissionStatus>&)>& callback) {
+    const std::vector<blink::mojom::PermissionStatus>&)>& callback) {
   // FIXME(zcbenz): Just ignore multiple permissions request for now.
-  std::vector<content::PermissionStatus> permissionStatuses;
+  std::vector<blink::mojom::PermissionStatus> permissionStatuses;
   for (auto permission : permissions) {
     if (permission == content::PermissionType::MIDI_SYSEX) {
       content::ChildProcessSecurityPolicy::GetInstance()->
           GrantSendMidiSysExMessage(render_frame_host->GetProcess()->GetID());
     }
-    permissionStatuses.push_back(content::PERMISSION_STATUS_GRANTED);
+    permissionStatuses.push_back(blink::mojom::PermissionStatus::GRANTED);
   }
   callback.Run(permissionStatuses);
   return kNoPendingOperation;
@@ -102,7 +100,7 @@ void AtomPermissionManager::OnPermissionResponse(
     int request_id,
     const GURL& origin,
     const ResponseCallback& callback,
-    content::PermissionStatus status) {
+    blink::mojom::PermissionStatus status) {
   auto request = pending_requests_.find(request_id);
   if (request != pending_requests_.end()) {
     if (!WebContentsDestroyed(request->second.render_process_id))
@@ -115,7 +113,7 @@ void AtomPermissionManager::CancelPermissionRequest(int request_id) {
   auto request = pending_requests_.find(request_id);
   if (request != pending_requests_.end()) {
     if (!WebContentsDestroyed(request->second.render_process_id))
-      request->second.callback.Run(content::PERMISSION_STATUS_DENIED);
+      request->second.callback.Run(blink::mojom::PermissionStatus::DENIED);
     pending_requests_.erase(request);
   }
 }
@@ -126,11 +124,11 @@ void AtomPermissionManager::ResetPermission(
     const GURL& embedding_origin) {
 }
 
-content::PermissionStatus AtomPermissionManager::GetPermissionStatus(
+blink::mojom::PermissionStatus AtomPermissionManager::GetPermissionStatus(
     content::PermissionType permission,
     const GURL& requesting_origin,
     const GURL& embedding_origin) {
-  return content::PERMISSION_STATUS_GRANTED;
+  return blink::mojom::PermissionStatus::GRANTED;
 }
 
 void AtomPermissionManager::RegisterPermissionUsage(

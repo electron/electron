@@ -3,7 +3,7 @@ const http = require('http')
 const path = require('path')
 const qs = require('querystring')
 const remote = require('electron').remote
-const protocol = remote.require('electron').protocol
+const {BrowserWindow, protocol, webContents} = remote
 
 describe('protocol module', function () {
   var protocolName = 'sp'
@@ -344,6 +344,7 @@ describe('protocol module', function () {
         })
       })
     })
+
     it('sends object as response', function (done) {
       var handler = function (request, callback) {
         callback({
@@ -394,7 +395,7 @@ describe('protocol module', function () {
       var handler = function (request, callback) {
         callback(fakeFilePath)
       }
-      protocol.registerBufferProtocol(protocolName, handler, function (error) {
+      protocol.registerFileProtocol(protocolName, handler, function (error) {
         if (error) {
           return done(error)
         }
@@ -415,7 +416,7 @@ describe('protocol module', function () {
       var handler = function (request, callback) {
         callback(new Date())
       }
-      protocol.registerBufferProtocol(protocolName, handler, function (error) {
+      protocol.registerFileProtocol(protocolName, handler, function (error) {
         if (error) {
           return done(error)
         }
@@ -506,6 +507,42 @@ describe('protocol module', function () {
             assert.equal(errorType, 'error')
             done()
           }
+        })
+      })
+    })
+
+    it('works when target URL redirects', function (done) {
+      var contents = null
+      var server = http.createServer(function (req, res) {
+        if (req.url == '/serverRedirect') {
+          res.statusCode = 301
+          res.setHeader('Location', 'http://' + req.rawHeaders[1])
+          res.end()
+        } else {
+          res.end(text)
+        }
+      })
+      server.listen(0, '127.0.0.1', function () {
+        var port = server.address().port
+        var url = `${protocolName}://fake-host`
+        var redirectURL = `http://127.0.0.1:${port}/serverRedirect`
+        var handler = function (request, callback) {
+          callback({
+            url: redirectURL
+          })
+        }
+        protocol.registerHttpProtocol(protocolName, handler, function (error) {
+          if (error) {
+            return done(error)
+          }
+          contents = webContents.create({})
+          contents.on('did-finish-load', function () {
+            assert.equal(contents.getURL(), url)
+            server.close()
+            contents.destroy()
+            done()
+          })
+          contents.loadURL(url)
         })
       })
     })
@@ -811,6 +848,76 @@ describe('protocol module', function () {
       protocol.uninterceptProtocol('http', function (error) {
         assert.notEqual(error, null)
         done()
+      })
+    })
+  })
+
+  describe('protocol.registerStandardSchemes', function () {
+    const standardScheme = remote.getGlobal('standardScheme')
+    const origin = standardScheme + '://fake-host'
+    const imageURL = origin + '/test.png'
+    const filePath = path.join(__dirname, 'fixtures', 'pages', 'b.html')
+    const fileContent = '<img src="/test.png" />'
+    var w = null
+    var success = null
+
+    beforeEach(function () {
+      w = new BrowserWindow({show: false})
+      success = false
+    })
+
+    afterEach(function (done) {
+      protocol.unregisterProtocol(standardScheme, function () {
+        if (w != null) {
+          w.destroy()
+        }
+        w = null
+        done()
+      })
+    })
+
+    it('resolves relative resources', function (done) {
+      var handler = function (request, callback) {
+        if (request.url === imageURL) {
+          success = true
+          callback()
+        } else {
+          callback(filePath)
+        }
+      }
+      protocol.registerFileProtocol(standardScheme, handler, function (error) {
+        if (error) {
+          return done(error)
+        }
+        w.webContents.on('did-finish-load', function () {
+          assert(success)
+          done()
+        })
+        w.loadURL(origin)
+      })
+    })
+
+    it('resolves absolute resources', function (done) {
+      var handler = function (request, callback) {
+        if (request.url === imageURL) {
+          success = true
+          callback()
+        } else {
+          callback({
+            data: fileContent,
+            mimeType: 'text/html'
+          })
+        }
+      }
+      protocol.registerStringProtocol(standardScheme, handler, function (error) {
+        if (error) {
+          return done(error)
+        }
+        w.webContents.on('did-finish-load', function () {
+          assert(success)
+          done()
+        })
+        w.loadURL(origin)
       })
     })
   })

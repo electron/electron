@@ -11,11 +11,11 @@ import stat
 from lib.config import LIBCHROMIUMCONTENT_COMMIT, BASE_URL, PLATFORM, \
                        get_target_arch, get_chromedriver_version, \
                        get_platform_key
-from lib.util import scoped_cwd, rm_rf, get_atom_shell_version, make_zip, \
-                     execute, atom_gyp
+from lib.util import scoped_cwd, rm_rf, get_electron_version, make_zip, \
+                     execute, electron_gyp
 
 
-ATOM_SHELL_VERSION = get_atom_shell_version()
+ELECTRON_VERSION = get_electron_version()
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 DIST_DIR = os.path.join(SOURCE_ROOT, 'dist')
@@ -23,8 +23,8 @@ OUT_DIR = os.path.join(SOURCE_ROOT, 'out', 'R')
 CHROMIUM_DIR = os.path.join(SOURCE_ROOT, 'vendor', 'brightray', 'vendor',
                             'download', 'libchromiumcontent', 'static_library')
 
-PROJECT_NAME = atom_gyp()['project_name%']
-PRODUCT_NAME = atom_gyp()['product_name%']
+PROJECT_NAME = electron_gyp()['project_name%']
+PRODUCT_NAME = electron_gyp()['product_name%']
 
 TARGET_BINARIES = {
   'darwin': [
@@ -36,8 +36,6 @@ TARGET_BINARIES = {
     'icudtl.dat',
     'libEGL.dll',
     'libGLESv2.dll',
-    'msvcp120.dll',
-    'msvcr120.dll',
     'ffmpeg.dll',
     'node.dll',
     'content_resources_200_percent.pak',
@@ -45,7 +43,6 @@ TARGET_BINARIES = {
     'xinput1_3.dll',
     'natives_blob.bin',
     'snapshot_blob.bin',
-    'vccorlib120.dll',
   ],
   'linux': [
     PROJECT_NAME,  # 'electron'
@@ -89,7 +86,7 @@ def main():
   create_version()
   create_dist_zip()
   create_chrome_binary_zip('chromedriver', get_chromedriver_version())
-  create_chrome_binary_zip('mksnapshot', ATOM_SHELL_VERSION)
+  create_chrome_binary_zip('mksnapshot', ELECTRON_VERSION)
   create_ffmpeg_zip()
   create_symbols_zip()
 
@@ -127,19 +124,23 @@ def copy_license():
 
 
 def strip_binaries():
-  if get_target_arch() == 'arm':
-    strip = 'arm-linux-gnueabihf-strip'
-  else:
-    strip = 'strip'
   for binary in TARGET_BINARIES[PLATFORM]:
     if binary.endswith('.so') or '.' not in binary:
-      execute([strip, os.path.join(DIST_DIR, binary)])
+      strip_binary(os.path.join(DIST_DIR, binary))
+
+
+def strip_binary(binary_path):
+    if get_target_arch() == 'arm':
+      strip = 'arm-linux-gnueabihf-strip'
+    else:
+      strip = 'strip'
+    execute([strip, binary_path])
 
 
 def create_version():
   version_path = os.path.join(SOURCE_ROOT, 'dist', 'version')
   with open(version_path, 'w') as version_file:
-    version_file.write(ATOM_SHELL_VERSION)
+    version_file.write(ELECTRON_VERSION)
 
 
 def create_symbols():
@@ -154,7 +155,7 @@ def create_symbols():
 
 
 def create_dist_zip():
-  dist_name = '{0}-{1}-{2}-{3}.zip'.format(PROJECT_NAME, ATOM_SHELL_VERSION,
+  dist_name = '{0}-{1}-{2}-{3}.zip'.format(PROJECT_NAME, ELECTRON_VERSION,
                                            get_platform_key(),
                                            get_target_arch())
   zip_file = os.path.join(SOURCE_ROOT, 'dist', dist_name)
@@ -182,7 +183,7 @@ def create_chrome_binary_zip(binary, version):
 
 def create_ffmpeg_zip():
   dist_name = 'ffmpeg-{0}-{1}-{2}.zip'.format(
-      ATOM_SHELL_VERSION, get_platform_key(), get_target_arch())
+      ELECTRON_VERSION, get_platform_key(), get_target_arch())
   zip_file = os.path.join(SOURCE_ROOT, 'dist', dist_name)
 
   if PLATFORM == 'darwin':
@@ -194,13 +195,17 @@ def create_ffmpeg_zip():
 
   shutil.copy2(os.path.join(CHROMIUM_DIR, '..', 'ffmpeg', ffmpeg_name),
                DIST_DIR)
+
+  if PLATFORM == 'linux':
+    strip_binary(os.path.join(DIST_DIR, ffmpeg_name))
+
   with scoped_cwd(DIST_DIR):
     make_zip(zip_file, [ffmpeg_name, 'LICENSE', 'LICENSES.chromium.html'], [])
 
 
 def create_symbols_zip():
   dist_name = '{0}-{1}-{2}-{3}-symbols.zip'.format(PROJECT_NAME,
-                                                   ATOM_SHELL_VERSION,
+                                                   ELECTRON_VERSION,
                                                    get_platform_key(),
                                                    get_target_arch())
   zip_file = os.path.join(DIST_DIR, dist_name)
@@ -212,7 +217,7 @@ def create_symbols_zip():
 
   if PLATFORM == 'darwin':
     dsym_name = '{0}-{1}-{2}-{3}-dsym.zip'.format(PROJECT_NAME,
-                                                  ATOM_SHELL_VERSION,
+                                                  ELECTRON_VERSION,
                                                   get_platform_key(),
                                                   get_target_arch())
     with scoped_cwd(DIST_DIR):

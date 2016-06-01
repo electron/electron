@@ -3,29 +3,47 @@ const ChildProcess = require('child_process')
 const https = require('https')
 const fs = require('fs')
 const path = require('path')
-const remote = require('electron').remote
+const {remote} = require('electron')
 
-const app = remote.require('electron').app
-const BrowserWindow = remote.require('electron').BrowserWindow
+const {app, BrowserWindow, ipcMain} = remote
 const isCI = remote.getGlobal('isCi')
 
 describe('electron module', function () {
-  it('allows old style require by default', function () {
-    require('shell')
+  it('does not expose internal modules to require', function () {
+    assert.throws(function () {
+      require('clipboard')
+    }, /Cannot find module 'clipboard'/)
   })
 
-  it('can prevent exposing internal modules to require', function (done) {
-    const electron = require('electron')
-    const clipboard = require('clipboard')
-    assert.equal(typeof clipboard, 'object')
-    electron.hideInternalModules()
-    try {
-      require('clipboard')
-    } catch (err) {
-      assert.equal(err.message, "Cannot find module 'clipboard'")
-      done()
-    }
+  describe('require("electron")', function () {
+    let window = null
+
+    beforeEach(function () {
+      if (window != null) {
+        window.destroy()
+      }
+      window = new BrowserWindow({
+        show: false,
+        width: 400,
+        height: 400
+      })
+    })
+
+    afterEach(function () {
+      if (window != null) {
+        window.destroy()
+      }
+      window = null
+    })
+
+    it('always returns the internal electron module', function (done) {
+      ipcMain.once('answer', function () {
+        done()
+      })
+      window.loadURL('file://' + path.join(__dirname, 'fixtures', 'api', 'electron-module-app', 'index.html'))
+    })
   })
+
 })
 
 describe('app module', function () {

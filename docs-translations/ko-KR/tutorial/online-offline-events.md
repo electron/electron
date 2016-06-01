@@ -6,13 +6,12 @@
 _main.js_
 
 ```javascript
-const electron = require('electron');
-const app = electron.app;
-const BrowserWindow = electron.BrowserWindow;
+const {app, BrowserWindow} = require('electron');
 
-var onlineStatusWindow;
-app.on('ready', function() {
-  onlineStatusWindow = new BrowserWindow({ width: 0, height: 0, show: false });
+let onlineStatusWindow;
+
+app.on('ready', () => {
+  onlineStatusWindow = new BrowserWindow({width: 0, height: 0, show: false});
   onlineStatusWindow.loadURL('file://' + __dirname + '/online-status.html');
 });
 ```
@@ -24,7 +23,7 @@ _online-status.html_
 <html>
 <body>
 <script>
-  var alertOnlineStatus = function() {
+  const alertOnlineStatus = () => {
     window.alert(navigator.onLine ? 'online' : 'offline');
   };
 
@@ -47,18 +46,16 @@ _online-status.html_
 _main.js_
 
 ```javascript
-const electron = require('electron');
-const app = electron.app;
-const ipcMain = electron.ipcMain;
-const BrowserWindow = electron.BrowserWindow;
+const {app, ipcMain, BrowserWindow} = require('electron');
 
-var onlineStatusWindow;
-app.on('ready', function() {
-  onlineStatusWindow = new BrowserWindow({ width: 0, height: 0, show: false });
-  onlineStatusWindow.loadURL('file://' + __dirname + '/online-status.html');
+let onlineStatusWindow;
+
+app.on('ready', () => {
+  onlineStatusWindow = new BrowserWindow({width: 0, height: 0, show: false});
+  onlineStatusWindow.loadURL(`file://${__dirname}/online-status.html`);
 });
 
-ipcMain.on('online-status-changed', function(event, status) {
+ipcMain.on('online-status-changed', (event, status) => {
   console.log(status);
 });
 ```
@@ -70,8 +67,8 @@ _online-status.html_
 <html>
 <body>
 <script>
-  const ipcRenderer = require('electron').ipcRenderer;
-  var updateOnlineStatus = function() {
+  const {ipcRenderer} = require('electron');
+  const updateOnlineStatus = () => {
     ipcRenderer.send('online-status-changed', navigator.onLine ? 'online' : 'offline');
   };
 

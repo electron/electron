@@ -22,7 +22,7 @@
 #include "atom/common/node_includes.h"
 #include "base/files/file_path.h"
 #include "base/guid.h"
-#include "base/prefs/pref_service.h"
+#include "components/prefs/pref_service.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 #include "base/thread_task_runner_handle.h"
@@ -36,6 +36,8 @@
 #include "net/base/load_flags.h"
 #include "net/disk_cache/disk_cache.h"
 #include "net/dns/host_cache.h"
+#include "net/http/http_auth_handler_factory.h"
+#include "net/http/http_auth_preferences.h"
 #include "net/proxy/proxy_service.h"
 #include "net/proxy/proxy_config_service_fixed.h"
 #include "net/url_request/url_request_context.h"
@@ -190,7 +192,7 @@ class ResolveProxyHelper {
 
     // Start the request.
     int result = proxy_service->ResolveProxy(
-        url, net::LOAD_NORMAL, &proxy_info_, completion_callback,
+        url, "GET", net::LOAD_NORMAL, &proxy_info_, completion_callback,
         &pac_req_, nullptr, net::BoundNetLog());
 
     // Completed synchronously.
@@ -284,6 +286,19 @@ void ClearHostResolverCacheInIO(
   }
 }
 
+void AllowNTLMCredentialsForDomainsInIO(
+    const scoped_refptr<net::URLRequestContextGetter>& context_getter,
+    const std::string& domains) {
+  auto request_context = context_getter->GetURLRequestContext();
+  auto auth_handler = request_context->http_auth_handler_factory();
+  if (auth_handler) {
+    auto auth_preferences = const_cast<net::HttpAuthPreferences*>(
+        auth_handler->http_auth_preferences());
+    if (auth_preferences)
+      auth_preferences->set_server_whitelist(domains);
+  }
+}
+
 }  // namespace
 
 Session::Session(v8::Isolate* isolate, AtomBrowserContext* browser_context)
@@ -369,7 +384,7 @@ void Session::SetDownloadPath(const base::FilePath& path) {
 }
 
 void Session::EnableNetworkEmulation(const mate::Dictionary& options) {
-  scoped_ptr<brightray::DevToolsNetworkConditions> conditions;
+  std::unique_ptr<brightray::DevToolsNetworkConditions> conditions;
   bool offline = false;
   double latency, download_throughput, upload_throughput;
   if (options.Get("offline", &offline) && offline) {
@@ -392,7 +407,7 @@ void Session::EnableNetworkEmulation(const mate::Dictionary& options) {
 }
 
 void Session::DisableNetworkEmulation() {
-  scoped_ptr<brightray::DevToolsNetworkConditions> conditions;
+  std::unique_ptr<brightray::DevToolsNetworkConditions> conditions;
   browser_context_->network_controller_handle()->SetNetworkState(
       devtools_network_emulation_client_id_, std::move(conditions));
   browser_context_->network_delegate()->SetDevToolsNetworkEmulationClientId(
@@ -430,6 +445,13 @@ void Session::ClearHostResolverCache(mate::Arguments* args) {
       base::Bind(&ClearHostResolverCacheInIO,
                  make_scoped_refptr(browser_context_->GetRequestContext()),
                  callback));
+}
+
+void Session::AllowNTLMCredentialsForDomains(const std::string& domains) {
+  BrowserThread::PostTask(BrowserThread::IO, FROM_HERE,
+      base::Bind(&AllowNTLMCredentialsForDomainsInIO,
+                 make_scoped_refptr(browser_context_->GetRequestContext()),
+                 domains));
 }
 
 v8::Local<v8::Value> Session::Cookies(v8::Isolate* isolate) {
@@ -487,6 +509,8 @@ void Session::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setPermissionRequestHandler",
                  &Session::SetPermissionRequestHandler)
       .SetMethod("clearHostResolverCache", &Session::ClearHostResolverCache)
+      .SetMethod("allowNTLMCredentialsForDomains",
+                 &Session::AllowNTLMCredentialsForDomains)
       .SetProperty("cookies", &Session::Cookies)
       .SetProperty("webRequest", &Session::WebRequest);
 }

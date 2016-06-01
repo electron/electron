@@ -13,6 +13,9 @@ Electron의 `process` 객체는 기존의 node와는 달리 약간의 차이점�
   빌드일 땐 `undefined`로 지정됩니다.
 * `process.windowsStore` Boolean - 만약 앱이 Windows Store 앱 (appx)으로 작동하고
   있다면, 이 값이 `true`로 지정되며 다른 빌드인 경우엔 `undefined`로 지정됩니다.
+* `process.defaultApp` Boolean - 어플리케이션이 기본 어플리케이션 형식으로 전달되는
+  인수와 함께 실행됐을 때, 메인 프로세스에서 이 값이 `true`가 되며 다른 경우엔
+  `undefined`가 됩니다.
 
 ## Events
 
@@ -26,9 +29,9 @@ Electron 내부 초기화 스크립트의 로드가 완료되고, 웹 페이지�
 
 ```javascript
 // preload.js
-var _setImmediate = setImmediate;
-var _clearImmediate = clearImmediate;
-process.once('loaded', function() {
+const _setImmediate = setImmediate;
+const _clearImmediate = clearImmediate;
+process.once('loaded', () => {
   global.setImmediate = _setImmediate;
   global.clearImmediate = _clearImmediate;
 });

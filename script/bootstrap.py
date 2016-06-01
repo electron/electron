@@ -7,7 +7,7 @@ import sys
 
 from lib.config import LIBCHROMIUMCONTENT_COMMIT, BASE_URL, PLATFORM, \
                        enable_verbose_mode, is_verbose_mode, get_target_arch
-from lib.util import execute_stdout, get_atom_shell_version, scoped_cwd
+from lib.util import execute_stdout, get_electron_version, scoped_cwd
 
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
@@ -50,11 +50,9 @@ def main():
     libcc_static_library_path = os.path.join(dist_dir, 'static_library')
 
   if PLATFORM != 'win32':
-    # Download prebuilt clang binaries.
-    update_clang()
     if not args.disable_clang and args.clang_dir == '':
-      # Build with prebuilt clang.
-      set_clang_env(os.environ)
+      # Download prebuilt clang binaries.
+      update_clang()
 
   setup_python_libs()
   update_node_modules('.')
@@ -67,7 +65,7 @@ def main():
 
   create_chrome_version_h()
   touch_config_gypi()
-  run_update(defines)
+  run_update(defines, args.disable_clang, args.clang_dir)
   update_electron_modules('spec', args.target_arch)
 
 
@@ -125,7 +123,7 @@ def check_root():
 
 
 def update_submodules():
-  execute_stdout(['git', 'submodule', 'sync'])
+  execute_stdout(['git', 'submodule', 'sync', '--recursive'])
   execute_stdout(['git', 'submodule', 'update', '--init', '--recursive'])
 
 
@@ -186,7 +184,7 @@ def update_node_modules(dirname, env=None):
 def update_electron_modules(dirname, target_arch):
   env = os.environ.copy()
   env['npm_config_arch']    = target_arch
-  env['npm_config_target']  = get_atom_shell_version()
+  env['npm_config_target']  = get_electron_version()
   env['npm_config_disturl'] = 'https://atom.io/download/atom-shell'
   update_node_modules(dirname, env)
 
@@ -250,9 +248,14 @@ def touch_config_gypi():
       f.write(content)
 
 
-def run_update(defines):
+def run_update(defines, disable_clang, clang_dir):
+  env = os.environ.copy()
+  if not disable_clang and clang_dir == '':
+    # Build with prebuilt clang.
+    set_clang_env(env)
+
   update = os.path.join(SOURCE_ROOT, 'script', 'update.py')
-  execute_stdout([sys.executable, update, '--defines', defines])
+  execute_stdout([sys.executable, update, '--defines', defines], env)
 
 
 if __name__ == '__main__':

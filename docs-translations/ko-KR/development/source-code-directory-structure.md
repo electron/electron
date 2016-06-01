@@ -60,7 +60,7 @@ Electron
 
 ## Git 서브 모듈 최신 버전으로 유지
 
-Electron 저장소는 몇 가지 외부 벤더 종속성을 가지고 있으며 [/vendor](/vendor)
+Electron 저장소는 몇 가지 외부 벤더 종속성을 가지고 있으며 [/vendor][vendor]
 디렉터리에서 확인할 수 있습니다. 때때로 `git status`를 실행했을 때 아마 다음과 같은
 메시지를 흔히 목격할 것입니다:
 
@@ -84,3 +84,5 @@ git submodule update --init --recursive
 [alias]
 	su = submodule update --init --recursive
 ```
+
+[vendor]: https://github.com/electron/electron/tree/master/vendor

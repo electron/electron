@@ -34,10 +34,12 @@ class AtomBrowserClient : public brightray::BrowserClient,
   using Delegate = content::ContentBrowserClient;
   void set_delegate(Delegate* delegate) { delegate_ = delegate; }
 
+  // Returns the WebContents for pending render processes.
+  content::WebContents* GetWebContentsFromProcessID(int process_id);
+
   // Don't force renderer process to restart for once.
   static void SuppressRendererProcessRestartForOnce();
-  // Custom schemes to be registered to standard.
-  static void SetCustomSchemes(const std::vector<std::string>& schemes);
+
   // Custom schemes to be registered to handle service worker.
   static void SetCustomServiceWorkerSchemes(
       const std::vector<std::string>& schemes);
@@ -74,7 +76,7 @@ class AtomBrowserClient : public brightray::BrowserClient,
   void SelectClientCertificate(
       content::WebContents* web_contents,
       net::SSLCertRequestInfo* cert_request_info,
-      scoped_ptr<content::ClientCertificateDelegate> delegate) override;
+      std::unique_ptr<content::ClientCertificateDelegate> delegate) override;
   void ResourceDispatcherHostCreated() override;
   bool CanCreateWindow(const GURL& opener_url,
                        const GURL& opener_top_level_frame_url,
@@ -107,7 +109,7 @@ class AtomBrowserClient : public brightray::BrowserClient,
   // pending_render_process => current_render_process.
   std::map<int, int> pending_processes_;
 
-  scoped_ptr<AtomResourceDispatcherHostDelegate>
+  std::unique_ptr<AtomResourceDispatcherHostDelegate>
       resource_dispatcher_host_delegate_;
 
   Delegate* delegate_;

@@ -19,13 +19,13 @@ scripts to be able to use those modules.
 The main process script is just like a normal Node.js script:
 
 ```javascript
-const { app, BrowserWindow } = require('electron');
+const {app, BrowserWindow} = require('electron');
 
-let window = null;
+let win = null;
 
 app.on('ready', () => {
-  window = new BrowserWindow({width: 800, height: 600});
-  window.loadURL('https://github.com');
+  win = new BrowserWindow({width: 800, height: 600});
+  win.loadURL('https://github.com');
 });
 ```
 
@@ -37,8 +37,8 @@ extra ability to use node modules:
 <html>
 <body>
 <script>
-  const { remote } = require('electron');
-  console.log(remote.app.getVersion());
+  const {app} = require('electron').remote;
+  console.log(app.getVersion());
 </script>
 </body>
 </html>
@@ -53,7 +53,7 @@ As of 0.37, you can use
 built-in modules.
 
 ```javascript
-const { app, BrowserWindow } = require('electron');
+const {app, BrowserWindow} = require('electron');
 ```
 
 If you need the entire `electron` module, you can require it and then using
@@ -61,7 +61,7 @@ destructuring to access the individual modules from `electron`.
 
 ```javascript
 const electron = require('electron');
-const { app, BrowserWindow } = electron;
+const {app, BrowserWindow} = electron;
 ```
 
 This is equivalent to the following code:
@@ -72,25 +72,5 @@ const app = electron.app;
 const BrowserWindow = electron.BrowserWindow;
 ```
 
-## Disable old styles of using built-in modules
-
-Before v0.35.0, all built-in modules have to be used in the form of
-`require('module-name')`, though it has [many disadvantages][issue-387], we are
-still supporting it for compatibility with old apps.
-
-To disable the old styles completely, you can set the
-`ELECTRON_HIDE_INTERNAL_MODULES` environment variable:
-
-```javascript
-process.env.ELECTRON_HIDE_INTERNAL_MODULES = 'true'
-```
-
-Or call the `hideInternalModules` API:
-
-```javascript
-require('electron').hideInternalModules()
-```
-
 [gui]: https://en.wikipedia.org/wiki/Graphical_user_interface
 [destructuring-assignment]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Destructuring_assignment
-[issue-387]: https://github.com/electron/electron/issues/387

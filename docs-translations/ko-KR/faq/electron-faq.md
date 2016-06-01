@@ -3,16 +3,19 @@
 ## 언제 Electron이 최신 버전의 Chrome으로 업그레이드 되나요?
 
 Electron의 Chrome 버전은 보통 새로운 Chrome 안정 버전이 릴리즈 된 이후 1주 내지 2주
-내로 업데이트됩니다.
+내로 업데이트됩니다. 하지만 이러한 업데이트 주기는 보장되지 않으며 업그레이드에 필요한
+작업의 양에 따라 달라집니다.
 
-또한 우리는 크롬의 안정된 채널만을 이용합니다, 만약 중요한 수정이 베타 또는 개발 채널인
-경우, 우리는 해당 버전 대신 이전 버전을 다시 사용합니다.
+Electron은 크롬이 사용하는 안정된 채널만을 이용합니다, 만약 중요한 수정이 베타 또는
+개발 채널에 패치된 경우, 이전 버전의 채널로 롤백합니다.
+
+자세한 내용은 [보안 설명](../tutorial/security.md)을 참고하세요.
 
 ## Electron은 언제 최신 버전의 Node.js로 업그레이드 하나요?
 
-새로운 버전의 Node.js가 릴리즈 되면, 우리는 보통 Electron을 업그레이드 하기 전에 한
-달 정도 대기합니다. 이렇게 하면 새로운 Node.js 버전을 업데이트 함으로써 발생하는
-버그들을 피할 수 있습니다. 이러한 상황은 자주 발생합니다.
+새로운 버전의 Node.js가 릴리즈 되면, 보통 Electron을 업그레이드 하기 전에 한 달 정도
+대기합니다. 이렇게 하면 새로운 Node.js 버전을 업데이트 함으로써 발생하는 버그들을
+피할 수 있기 때문입니다. 이러한 상황은 자주 발생합니다.
 
 Node.js의 새로운 기능은 보통 V8 업그레이드에서 가져옵니다. Electron은 Chrome
 브라우저에 탑재된 V8을 사용하고 있습니다. 눈부신 새로운 Node.js 버전의 자바스크립트
@@ -59,18 +62,18 @@ console.log(require('remote').getGlobal('sharedObject').someProperty);
 만약 빠르게 고치고 싶다면, 다음과 같이 변수를 전역 변수로 만드는 방법이 있습니다:
 
 ```javascript
-app.on('ready', function() {
-  var tray = new Tray('/path/to/icon.png');
-})
+app.on('ready', () => {
+  const tray = new Tray('/path/to/icon.png');
+});
 ```
 
 를 이렇게:
 
 ```javascript
-var tray = null;
-app.on('ready', function() {
+let tray = null;
+app.on('ready', () => {
   tray = new Tray('/path/to/icon.png');
-})
+});
 ```
 
 ## Electron에서 jQuery/RequireJS/Meteor/AngularJS를 사용할 수 없습니다.
@@ -83,7 +86,7 @@ Node.js가 Electron에 합쳐졌기 때문에, DOM에 `module`, `exports`, `requ
 
 ```javascript
 // 메인 프로세스에서.
-var mainWindow = new BrowserWindow({
+let win = new BrowserWindow({
   webPreferences: {
     nodeIntegration: false
   }

@@ -1,4 +1,4 @@
-# Debugging Electron in Windows
+# Debugging on Windows
 
 If you experience crashes or issues in Electron that you believe are not caused
 by your JavaScript application, but instead by Electron itself, debugging can

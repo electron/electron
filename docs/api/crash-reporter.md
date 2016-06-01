@@ -6,7 +6,7 @@ The following is an example of automatically submitting a crash report to a
 remote server:
 
 ```javascript
-const { crashReporter } = require('electron');
+const {crashReporter} = require('electron');
 
 crashReporter.start({
   productName: 'YourName',
@@ -20,7 +20,7 @@ For setting up a server to accept and process crash reports, you can use
 following projects:
 
 * [socorro](https://github.com/mozilla/socorro)
-* [mini-breakpad-server](https://github.com/atom/mini-breakpad-server)
+* [mini-breakpad-server](https://github.com/electron/mini-breakpad-server)
 
 ## Methods
 

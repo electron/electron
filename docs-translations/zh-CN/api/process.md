@@ -39,7 +39,7 @@ process.once('loaded', function() {
 
 ### `process.hang()`
 
-使当前进程的主线成挂起.
+使当前进程的主线程挂起.
 
 ### `process.setFdLimit(maxDescriptors)` _OS X_ _Linux_
 

@@ -7,7 +7,7 @@
 **注意:** 在渲染进程 / 开发者工具栏, `window.screen` 是一个预设值的 DOM
 属性, 所以这样写 `var screen = require('electron').screen` 将不会工作.
 在我们下面的例子, 我们取代使用可变名字的 `electronScreen`.
-一个例子，创建一个充满真个屏幕的窗口 :
+一个例子，创建一个充满整个屏幕的窗口 :
 
 ```javascript
 const electron = require('electron');

@@ -20,13 +20,32 @@ Electron은 v0.34.0 버전부터 앱 패키지를 Mac App Store(MAS)에 제출�
 앱 스토어에 어플리케이션을 제출하려면, 먼저 Apple로부터 인증서를 취득해야 합니다. 취득
 방법은 웹에서 찾아볼 수 있는 [가이드][nwjs-guide]를 참고하면 됩니다.
 
+### Team ID 얻기
+
+어플리케이션에 서명하기 전에, 먼저 개발 계정의 Team ID를 알아야 합니다. Team ID를
+알아보려면 [Apple Developer Center](https://developer.apple.com/account/)에
+로그인한 후, 사이드바의 Membership을 클릭합니다. Team ID는 Membership Information
+섹션의 팀 이름 밑에 위치합니다.
+
 ### 앱에 서명하기
 
-Apple로부터 인증서를 취득했다면, [어플리케이션 배포](application-distribution.md)
-문서에 따라 어플리케이션을 패키징한 후 어플리케이션에 서명 합니다. 이 절차는 기본적으로
-다른 프로그램과 같습니다. 하지만 키는 Electron 종속성 파일에 각각 따로 서명 해야 합니다.
+준비 작업이 끝난 후, [어플리케이션 배포](application-distribution.md) 문서에 따라
+어플리케이션을 패키징한 후 어플리케이션에 서명 합니다.
 
-첫번째, 다음 두 자격(plist) 파일을 준비합니다.
+먼저, Team ID를 키로 가지고 있는 어플리케이션의 `Info.plist`에 `ElectronTeamID` 키를
+추가해야 합니다:
+
+```xml
+<plist version="1.0">
+<dict>
+  ...
+  <key>ElectronTeamID</key>
+  <string>TEAM_ID</string>
+</dict>
+</plist>
+```
+
+그리고, 다음 두 자격 파일을 준비해야 합니다.
 
 `child.plist`:
 
@@ -52,13 +71,16 @@ Apple로부터 인증서를 취득했다면, [어플리케이션 배포](applica
   <dict>
     <key>com.apple.security.app-sandbox</key>
     <true/>
-    <key>com.apple.security.temporary-exception.sbpl</key>
-    <string>(allow mach-lookup (global-name-regex #"^org.chromium.Chromium.rohitfork.[0-9]+$"))</string>
+    <key>com.apple.security.application-groups</key>
+    <string>TEAM_ID.your.bundle.id</string>
   </dict>
 </plist>
 ```
 
-그리고 다음 스크립트에 따라 어플리케이션에 서명합니다:
+`TEAM_ID` 부분은 Team ID로 치환하고, `your.bundle.id` 부분은 어플리케이션의 Bundle
+ID로 치환해야 합니다.
+
+그리고 다음 스크립트를 통해 어플리케이션에 서명합니다:
 
 ```bash
 #!/bin/bash
@@ -100,22 +122,6 @@ productbuild --component "$APP_PATH" /Applications --sign "$INSTALLER_KEY" "$RES
 어플리케이션 서명을 완료한 후 iTunes Connect에 업로드하기 위해 Application Loader를
 사용할 수 있습니다. 참고로 업로드하기 전에 [레코드][create-record]를 만들었는지
 확인해야 합니다.
-
-### `temporary-exception`의 사용처 설명
-
-어플리케이션을 샌드박싱할 때 `temporary-exception` 엔트리가 자격에 추가되며
-[어플리케이션 샌드박스 임시 예외 적용][temporary-exception] 문서에 따라
-왜 이 엔트리가 필요한지 설명해야 합니다:
-
-> Note: If you request a temporary-exception entitlement, be sure to follow the
-guidance regarding entitlements provided on the iTunes Connect website. In
-particular, identify the entitlement and corresponding issue number in the App
-Sandbox Entitlement Usage Information section in iTunes Connect and explain why
-your app needs the exception.
-
-아마 제출하려는 어플리케이션이 Chromium 브라우저를 기반으로 만들어졌고, 또한
-멀티-프로세스 구조를 위해 Mach 포트를 사용하는 것도 설명해야 할 수 있습니다. 하지만
-여전히 이러한 문제 때문에 어플리케이션 심사에 실패할 수 있습니다.
 
 ### 어플리케이션을 심사에 제출
 

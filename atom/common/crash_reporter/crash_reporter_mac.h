@@ -45,7 +45,7 @@ class CrashReporterMac : public CrashReporter {
   std::vector<UploadReportResult> GetUploadedReports(
       const std::string& path) override;
 
-  scoped_ptr<crashpad::SimpleStringDictionary> simple_string_dictionary_;
+  std::unique_ptr<crashpad::SimpleStringDictionary> simple_string_dictionary_;
 
   DISALLOW_COPY_AND_ASSIGN(CrashReporterMac);
 };

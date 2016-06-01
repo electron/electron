@@ -12,12 +12,11 @@
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/window_list.h"
 #include "atom/common/api/api_messages.h"
-#include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/options_switches.h"
 #include "base/files/file_util.h"
 #include "base/json/json_writer.h"
-#include "base/prefs/pref_service.h"
+#include "components/prefs/pref_service.h"
 #include "base/message_loop/message_loop.h"
 #include "base/strings/utf_string_conversions.h"
 #include "brightray/browser/inspectable_web_contents.h"
@@ -49,12 +48,12 @@ NativeWindow::NativeWindow(
     const mate::Dictionary& options)
     : content::WebContentsObserver(inspectable_web_contents->GetWebContents()),
       has_frame_(true),
-      force_using_draggable_region_(false),
       transparent_(false),
       enable_larger_than_screen_(false),
       is_closed_(false),
       has_dialog_attached_(false),
-      sheet_offset_(0.0),
+      sheet_offset_x_(0.0),
+      sheet_offset_y_(0.0),
       aspect_ratio_(0.0),
       inspectable_web_contents_(inspectable_web_contents),
       weak_factory_(this) {
@@ -65,9 +64,6 @@ NativeWindow::NativeWindow(
   // Tell the content module to initialize renderer widget with transparent
   // mode.
   ui::GpuSwitchingManager::SetTransparent(transparent_);
-
-  // Read icon before window is created.
-  options.Get(options::kIcon, &icon_);
 
   WindowList::AddWindow(this);
 }
@@ -141,11 +137,14 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
   if (options.Get(options::kAlwaysOnTop, &top) && top) {
     SetAlwaysOnTop(true);
   }
-  // Disable fullscreen button if 'fullscreen' is specified to false.
   bool fullscreenable = true;
   bool fullscreen = false;
-  if (options.Get(options::kFullscreen, &fullscreen) && !fullscreen)
+  if (options.Get(options::kFullscreen, &fullscreen) && !fullscreen) {
+    // Disable fullscreen button if 'fullscreen' is specified to false.
+  #if defined(OS_MACOSX)
     fullscreenable = false;
+  #endif
+  }
   // Overriden by 'fullscreenable'.
   options.Get(options::kFullScreenable, &fullscreenable);
   SetFullScreenable(fullscreenable);
@@ -255,12 +254,17 @@ gfx::Size NativeWindow::GetMaximumSize() {
   return GetSizeConstraints().GetMaximumSize();
 }
 
-void NativeWindow::SetSheetOffset(const double offset) {
-  sheet_offset_ = offset;
+void NativeWindow::SetSheetOffset(const double offsetX, const double offsetY) {
+  sheet_offset_x_ = offsetX;
+  sheet_offset_y_ = offsetY;
 }
 
-double NativeWindow::GetSheetOffset() {
-  return sheet_offset_;
+double NativeWindow::GetSheetOffsetX() {
+  return sheet_offset_x_;
+}
+
+double NativeWindow::GetSheetOffsetY() {
+  return sheet_offset_y_;
 }
 
 void NativeWindow::SetRepresentedFilename(const std::string& filename) {
@@ -318,9 +322,9 @@ void NativeWindow::CapturePage(const gfx::Rect& rect,
   // current system, increase the requested bitmap size to capture it all.
   gfx::Size bitmap_size = view_size;
   const gfx::NativeView native_view = view->GetNativeView();
-  gfx::Screen* const screen = gfx::Screen::GetScreenFor(native_view);
   const float scale =
-      screen->GetDisplayNearestWindow(native_view).device_scale_factor();
+      gfx::Screen::GetScreen()->GetDisplayNearestWindow(native_view)
+      .device_scale_factor();
   if (scale > 1.0f)
     bitmap_size = gfx::ScaleToCeiledSize(view_size, scale);
 
@@ -412,7 +416,7 @@ void NativeWindow::RendererUnresponsive(content::WebContents* source) {
   // responsive event soon. This could happen after the whole application had
   // blocked for a while.
   // Also notice that when closing this event would be ignored because we have
-  // explicity started a close timeout counter. This is on purpose because we
+  // explicitly started a close timeout counter. This is on purpose because we
   // don't want the unresponsive event to be sent too early when user is closing
   // the window.
   ScheduleUnresponsiveEvent(50);
@@ -526,9 +530,9 @@ void NativeWindow::NotifyWindowMessage(
 }
 #endif
 
-scoped_ptr<SkRegion> NativeWindow::DraggableRegionsToSkRegion(
+std::unique_ptr<SkRegion> NativeWindow::DraggableRegionsToSkRegion(
     const std::vector<DraggableRegion>& regions) {
-  scoped_ptr<SkRegion> sk_region(new SkRegion);
+  std::unique_ptr<SkRegion> sk_region(new SkRegion);
   for (const DraggableRegion& region : regions) {
     sk_region->op(
         region.bounds.x(),
@@ -573,7 +577,7 @@ bool NativeWindow::OnMessageReceived(const IPC::Message& message) {
 void NativeWindow::UpdateDraggableRegions(
     const std::vector<DraggableRegion>& regions) {
   // Draggable region is not supported for non-frameless window.
-  if (has_frame_ && !force_using_draggable_region_)
+  if (has_frame_)
     return;
   draggable_region_ = DraggableRegionsToSkRegion(regions);
 }

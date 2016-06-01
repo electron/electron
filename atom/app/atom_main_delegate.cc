@@ -30,6 +30,13 @@ bool IsBrowserProcess(base::CommandLine* cmd) {
   return process_type.empty();
 }
 
+#if defined(OS_WIN)
+void InvalidParameterHandler(const wchar_t*, const wchar_t*, const wchar_t*,
+                             unsigned int, uintptr_t) {
+  // noop.
+}
+#endif
+
 }  // namespace
 
 AtomMainDelegate::AtomMainDelegate() {
@@ -61,7 +68,7 @@ bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
 #endif  // !defined(OS_WIN)
 
   // Only enable logging when --enable-logging is specified.
-  scoped_ptr<base::Environment> env(base::Environment::Create());
+  std::unique_ptr<base::Environment> env(base::Environment::Create());
   if (!command_line->HasSwitch(switches::kEnableLogging) &&
       !env->HasVar("ELECTRON_ENABLE_LOGGING")) {
     settings.logging_dest = logging::LOG_NONE;
@@ -83,6 +90,15 @@ bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
 
   chrome::RegisterPathProvider();
 
+#if defined(OS_MACOSX)
+  SetUpBundleOverrides();
+#endif
+
+#if defined(OS_WIN)
+  // Ignore invalid parameter errors.
+  _set_invalid_parameter_handler(InvalidParameterHandler);
+#endif
+
   return brightray::MainDelegate::BasicStartupComplete(exit_code);
 }
 
@@ -90,7 +106,7 @@ void AtomMainDelegate::PreSandboxStartup() {
   brightray::MainDelegate::PreSandboxStartup();
 
   // Set google API key.
-  scoped_ptr<base::Environment> env(base::Environment::Create());
+  std::unique_ptr<base::Environment> env(base::Environment::Create());
   if (!env->HasVar("GOOGLE_API_KEY"))
     env->SetVar("GOOGLE_API_KEY", GOOGLEAPIS_API_KEY);
 
@@ -130,8 +146,9 @@ content::ContentUtilityClient* AtomMainDelegate::CreateContentUtilityClient() {
   return utility_client_.get();
 }
 
-scoped_ptr<brightray::ContentClient> AtomMainDelegate::CreateContentClient() {
-  return scoped_ptr<brightray::ContentClient>(new AtomContentClient);
+std::unique_ptr<brightray::ContentClient>
+AtomMainDelegate::CreateContentClient() {
+  return std::unique_ptr<brightray::ContentClient>(new AtomContentClient);
 }
 
 }  // namespace atom

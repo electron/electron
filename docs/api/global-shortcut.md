@@ -11,12 +11,11 @@ not have the keyboard focus. You should not use this module until the `ready`
 event of the app module is emitted.
 
 ```javascript
-const electron = require('electron');
-const { app, globalShortcut } = electron;
+const {app, globalShortcut} = require('electron');
 
 app.on('ready', () => {
   // Register a 'CommandOrControl+X' shortcut listener.
-  const ret = globalShortcut.register('CommandOrControl+X', function() {
+  const ret = globalShortcut.register('CommandOrControl+X', () => {
     console.log('CommandOrControl+X is pressed');
   });
 

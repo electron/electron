@@ -17,6 +17,7 @@
 #if defined(OS_WIN)
 #include "atom/browser/ui/win/message_handler_delegate.h"
 #include "atom/browser/ui/win/taskbar_host.h"
+#include "base/win/scoped_gdi_object.h"
 #endif
 
 namespace views {
@@ -104,6 +105,12 @@ class NativeWindowViews : public NativeWindow,
 
   gfx::AcceleratedWidget GetAcceleratedWidget() override;
 
+#if defined(OS_WIN)
+  void SetIcon(HICON small_icon, HICON app_icon);
+#elif defined(USE_X11)
+  void SetIcon(const gfx::ImageSkia& icon);
+#endif
+
   views::Widget* widget() const { return window_.get(); }
 
 #if defined(OS_WIN)
@@ -125,8 +132,6 @@ class NativeWindowViews : public NativeWindow,
   bool CanMinimize() const override;
   base::string16 GetWindowTitle() const override;
   bool ShouldHandleSystemCommands() const override;
-  gfx::ImageSkia GetWindowAppIcon() override;
-  gfx::ImageSkia GetWindowIcon() override;
   views::Widget* GetWidget() override;
   const views::Widget* GetWidget() const override;
   views::View* GetContentsView() override;
@@ -145,7 +150,6 @@ class NativeWindowViews : public NativeWindow,
   // MessageHandlerDelegate:
   bool PreHandleMSG(
       UINT message, WPARAM w_param, LPARAM l_param, LRESULT* result) override;
-
   void HandleSizeEvent(WPARAM w_param, LPARAM l_param);
 #endif
 
@@ -167,19 +171,19 @@ class NativeWindowViews : public NativeWindow,
   // Returns the restore state for the window.
   ui::WindowShowState GetRestoredState();
 
-  scoped_ptr<views::Widget> window_;
+  std::unique_ptr<views::Widget> window_;
   views::View* web_view_;  // Managed by inspectable_web_contents_.
 
-  scoped_ptr<MenuBar> menu_bar_;
+  std::unique_ptr<MenuBar> menu_bar_;
   bool menu_bar_autohide_;
   bool menu_bar_visible_;
   bool menu_bar_alt_pressed_;
 
 #if defined(USE_X11)
-  scoped_ptr<GlobalMenuBarX11> global_menu_bar_;
+  std::unique_ptr<GlobalMenuBarX11> global_menu_bar_;
 
   // Handles window state events.
-  scoped_ptr<WindowStateWatcher> window_state_watcher_;
+  std::unique_ptr<WindowStateWatcher> window_state_watcher_;
 
   // The "resizable" flag on Linux is implemented by setting size constraints,
   // we need to make sure size constraints are restored when window becomes
@@ -203,10 +207,13 @@ class NativeWindowViews : public NativeWindow,
   // If true we have enabled a11y
   bool enabled_a11y_support_;
 
+  // The icons of window and taskbar.
+  base::win::ScopedHICON window_icon_;
+  base::win::ScopedHICON app_icon_;
 #endif
 
   // Handles unhandled keyboard messages coming back from the renderer process.
-  scoped_ptr<views::UnhandledKeyboardEventHandler> keyboard_event_handler_;
+  std::unique_ptr<views::UnhandledKeyboardEventHandler> keyboard_event_handler_;
 
   // Map from accelerator to menu item's command id.
   accelerator_util::AcceleratorTable accelerator_table_;

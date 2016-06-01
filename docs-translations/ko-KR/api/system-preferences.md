@@ -14,11 +14,14 @@
 * `event` String
 * `callback` Function
 
-OS X의 네이티브 알림을 구독하며, 해당하는 `event`가 발생하면 `callback`이 호출됩니다.
+OS X의 네이티브 알림을 구독하며, 해당하는 `event`가 발생하면 `callback`이
+`callback(event, userInfo)` 형태로 호출됩니다. `userInfo`는 알림과 함께 전송되는
+사용자 정보 딕셔너리를 포함하는 객체입니다.
+
 구독자의 `id`가 반환되며 `event`를 구독 해제할 때 사용할 수 있습니다.
 
-이 API는 후드에서 `NSDistributedNotificationCenter`를 구독하며, `event`에서 사용
-가능한 값은 다음과 같습니다:
+이 API는 후드에서 `NSDistributedNotificationCenter`를 구독하며, `event`의 예시
+값은 다음과 같습니다:
 
 * `AppleInterfaceThemeChangedNotification`
 * `AppleAquaColorVariantChanged`

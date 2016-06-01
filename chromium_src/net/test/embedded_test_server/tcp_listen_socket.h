@@ -23,7 +23,7 @@ class TCPListenSocket : public StreamListenSocket {
 
   // Listen on port for the specified IP address.  Use 127.0.0.1 to only
   // accept local connections.
-  static scoped_ptr<TCPListenSocket> CreateAndListen(
+  static std::unique_ptr<TCPListenSocket> CreateAndListen(
       const std::string& ip,
       uint16_t port,
       StreamListenSocket::Delegate* del);

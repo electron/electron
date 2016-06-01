@@ -146,7 +146,7 @@ void PrintJobWorker::GetSettings(
 }
 
 void PrintJobWorker::SetSettings(
-    scoped_ptr<base::DictionaryValue> new_settings) {
+    std::unique_ptr<base::DictionaryValue> new_settings) {
   DCHECK(task_runner_->RunsTasksOnCurrentThread());
 
   BrowserThread::PostTask(
@@ -160,7 +160,7 @@ void PrintJobWorker::SetSettings(
 }
 
 void PrintJobWorker::UpdatePrintSettings(
-    scoped_ptr<base::DictionaryValue> new_settings) {
+    std::unique_ptr<base::DictionaryValue> new_settings) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
   PrintingContext::Result result =
       printing_context_->UpdatePrintSettings(*new_settings);
@@ -338,11 +338,9 @@ void PrintJobWorker::OnDocumentDone() {
   }
 
   owner_->PostTask(FROM_HERE,
-                   base::Bind(&NotificationCallback,
-                              make_scoped_refptr(owner_),
+                   base::Bind(&NotificationCallback, base::RetainedRef(owner_),
                               JobEventDetails::DOC_DONE,
-                              document_,
-                              scoped_refptr<PrintedPage>()));
+                              base::RetainedRef(document_), nullptr));
 
   // Makes sure the variables are reinitialized.
   document_ = NULL;
@@ -354,11 +352,9 @@ void PrintJobWorker::SpoolPage(PrintedPage* page) {
 
   // Signal everyone that the page is about to be printed.
   owner_->PostTask(FROM_HERE,
-                   base::Bind(&NotificationCallback,
-                              make_scoped_refptr(owner_),
-                              JobEventDetails::NEW_PAGE,
-                              document_,
-                              make_scoped_refptr(page)));
+                   base::Bind(&NotificationCallback, base::RetainedRef(owner_),
+                              JobEventDetails::NEW_PAGE, base::RetainedRef(document_),
+                              base::RetainedRef(page)));
 
   // Preprocess.
   if (printing_context_->NewPage() != PrintingContext::OK) {
@@ -380,12 +376,11 @@ void PrintJobWorker::SpoolPage(PrintedPage* page) {
   }
 
   // Signal everyone that the page is printed.
-  owner_->PostTask(FROM_HERE,
-                   base::Bind(&NotificationCallback,
-                              make_scoped_refptr(owner_),
-                              JobEventDetails::PAGE_DONE,
-                              document_,
-                              make_scoped_refptr(page)));
+  owner_->PostTask(
+      FROM_HERE,
+      base::Bind(&NotificationCallback, base::RetainedRef(owner_),
+                 JobEventDetails::PAGE_DONE, base::RetainedRef(document_),
+                 base::RetainedRef(page)));
 }
 
 void PrintJobWorker::OnFailure() {
@@ -394,12 +389,11 @@ void PrintJobWorker::OnFailure() {
   // We may loose our last reference by broadcasting the FAILED event.
   scoped_refptr<PrintJobWorkerOwner> handle(owner_);
 
-  owner_->PostTask(FROM_HERE,
-                   base::Bind(&NotificationCallback,
-                              make_scoped_refptr(owner_),
-                              JobEventDetails::FAILED,
-                              document_,
-                              scoped_refptr<PrintedPage>()));
+  owner_->PostTask(
+      FROM_HERE,
+      base::Bind(&NotificationCallback, base::RetainedRef(owner_),
+                 JobEventDetails::FAILED,
+                 base::RetainedRef(document_), nullptr));
   Cancel();
 
   // Makes sure the variables are reinitialized.

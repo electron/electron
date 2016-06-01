@@ -1,16 +1,14 @@
-const electron = require('electron')
-const app = electron.app
-const BrowserWindow = electron.BrowserWindow
+const {app, BrowserWindow} = require('electron')
 
 var mainWindow = null
 
 // Quit when all windows are closed.
-app.on('window-all-closed', function () {
+app.on('window-all-closed', () => {
   app.quit()
 })
 
-exports.load = function (appUrl) {
-  app.on('ready', function () {
+exports.load = (appUrl) => {
+  app.on('ready', () => {
     mainWindow = new BrowserWindow({
       width: 800,
       height: 600,

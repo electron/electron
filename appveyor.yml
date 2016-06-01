@@ -2,6 +2,8 @@
 # http://www.appveyor.com/docs/appveyor-yml
 version: "{build}"
 
+os: Visual Studio 2015
+
 init:
   - git config --global core.autocrlf input
 
@@ -10,7 +12,7 @@ platform:
   - x64
 
 install:
-  - cmd: SET PATH=C:\Program Files (x86)\MSBuild\12.0\bin\;%PATH%
+  - cmd: SET PATH=C:\Program Files (x86)\MSBuild\14.0\bin\;%PATH%
   - cmd: SET PATH=C:\python27;%PATH%
   - cmd: python script/cibuild
 

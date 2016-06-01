@@ -636,14 +636,6 @@ windows上句柄类型为 `HWND` ，OS X `NSView*` ， Linux `Window`.
 
 捕获 `rect` 中的page 的快照.完成后将调用回调函数 `callback` 并返回 `image` . `image` 是存储了快照信息的[NativeImage](native-image.md)实例.如果不设置 `rect` 则将捕获所有可见page.
 
-### `win.print([options])`
-
-类似 `webContents.print([options])`
-
-### `win.printToPDF(options, callback)`
-
-类似 `webContents.printToPDF(options, callback)`
-
 ### `win.loadURL(url[, options])`
 
 类似 `webContents.loadURL(url[, options])`.
@@ -671,7 +663,7 @@ windows上句柄类型为 `HWND` ，OS X `NSView*` ， Linux `Window`.
 
 ### `win.setOverlayIcon(overlay, description)` _Windows 7+_
 
-* `overlay` [NativeImage](native-image.md) - 在底部任务栏右边显示图标. 
+* `overlay` [NativeImage](native-image.md) - 在底部任务栏右边显示图标.
 * `description` String - 描述.
 
 向当前任务栏添加一个 16 x 16 像素的图标，通常用来覆盖一些应用的状态，或者直接来提示用户.

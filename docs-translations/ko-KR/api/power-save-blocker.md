@@ -5,9 +5,9 @@
 예시:
 
 ```javascript
-const powerSaveBlocker = require('electron').powerSaveBlocker;
+const {powerSaveBlocker} = require('electron');
 
-var id = powerSaveBlocker.start('prevent-display-sleep');
+const id = powerSaveBlocker.start('prevent-display-sleep');
 console.log(powerSaveBlocker.isStarted(id));
 
 powerSaveBlocker.stop(id);
