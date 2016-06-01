@@ -385,9 +385,29 @@ Returns:
   * `deviceId` String
 
 Emitted when bluetooth device needs to be selected on call to
-`navigator.bluetooth.requestDevice`. If `event.preventDefault` is not called,
-first available device will be selected. `callback` should be called with `deviceId`
-to be selected.
+`navigator.bluetooth.requestDevice`. To use `navigator.bluetooth` api
+`webBluetooth` should be enabled.  If `event.preventDefault` is not called,
+first available device will be selected. `callback` should be called with
+`deviceId` to be selected, passing empty string to `callback` will
+cancel the request.
+
+```javacript
+app.commandLine.appendSwitch('enable-web-bluetooth')
+
+app.on('ready', () => {
+  webContents.on('select-bluetooth-device', (event, deviceList, callback) => {
+    event.preventDefault()
+    let result = deviceList.find((device) => {
+      return device.deviceName === 'test'
+    })
+    if (!result) {
+      callback('')
+    } else {
+      callback(result.deviceId)
+    }
+  })
+})
+```
 
 ## Instance Methods
 
