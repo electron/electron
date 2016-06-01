@@ -13,10 +13,21 @@
 #include "base/mac/foundation_util.h"
 #include "base/strings/sys_string_conversions.h"
 #include "brightray/common/application_info.h"
+#include "brightray/common/mac/main_application_bundle.h"
+#include "chrome/browser/mac/relauncher.h"
 #include "net/base/mac/url_conversions.h"
 #include "url/gurl.h"
 
 namespace atom {
+
+void Browser::Relaunch(const std::vector<std::string>& args,
+                       const std::string& app) {
+  std::vector<std::string> args_with_app(args);
+  args_with_app.insert(
+      args_with_app.begin(),
+      app.empty() ? brightray::MainApplicationBundlePath().value() : app);
+  mac_relauncher::RelaunchApp(args_with_app);
+}
 
 void Browser::Focus() {
   [[AtomApplication sharedApplication] activateIgnoringOtherApps:YES];

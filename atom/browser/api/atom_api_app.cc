@@ -450,6 +450,7 @@ void App::BuildPrototype(
   mate::ObjectTemplateBuilder(isolate, prototype)
       .SetMethod("quit", base::Bind(&Browser::Quit, browser))
       .SetMethod("exit", base::Bind(&Browser::Exit, browser))
+      .SetMethod("relaunch", base::Bind(&Browser::Relaunch, browser))
       .SetMethod("focus", base::Bind(&Browser::Focus, browser))
       .SetMethod("getVersion", base::Bind(&Browser::GetVersion, browser))
       .SetMethod("setVersion", base::Bind(&Browser::SetVersion, browser))

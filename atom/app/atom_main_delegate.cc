@@ -21,9 +21,17 @@
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/base/resource/resource_bundle.h"
 
+#if defined(OS_MACOSX)
+#include "chrome/browser/mac/relauncher.h"
+#endif
+
 namespace atom {
 
 namespace {
+
+#if defined(OS_MACOSX)
+const char* kRelauncherProcess = "relauncher";
+#endif
 
 bool IsBrowserProcess(base::CommandLine* cmd) {
   std::string process_type = cmd->GetSwitchValueASCII(switches::kProcessType);
@@ -145,6 +153,26 @@ content::ContentUtilityClient* AtomMainDelegate::CreateContentUtilityClient() {
   utility_client_.reset(new AtomContentUtilityClient);
   return utility_client_.get();
 }
+
+#if defined(OS_MACOSX)
+int AtomMainDelegate::RunProcess(
+    const std::string& process_type,
+    const content::MainFunctionParams& main_function_params) {
+  if (process_type == kRelauncherProcess)
+    return mac_relauncher::internal::RelauncherMain(main_function_params);
+  else
+    return -1;
+}
+
+bool AtomMainDelegate::ShouldSendMachPort(const std::string& process_type) {
+  return process_type != kRelauncherProcess;
+}
+
+bool AtomMainDelegate::DelaySandboxInitialization(
+    const std::string& process_type) {
+  return process_type == kRelauncherProcess;
+}
+#endif
 
 std::unique_ptr<brightray::ContentClient>
 AtomMainDelegate::CreateContentClient() {

@@ -29,8 +29,6 @@
 #include "base/process/launch.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/sys_string_conversions.h"
-#include "chrome/browser/mac/install_from_dmg.h"
-#include "chrome/common/chrome_switches.h"
 #include "content/public/common/content_paths.h"
 #include "content/public/common/content_switches.h"
 #include "content/public/common/main_function_params.h"
@@ -66,9 +64,7 @@ const char kPSNArg[] = "-psn_";
 // Returns the "type" argument identifying a relauncher process
 // ("--type=relauncher").
 std::string RelauncherTypeArg() {
-  return base::StringPrintf("--%s=%s",
-                            switches::kProcessType,
-                            switches::kRelauncherProcess);
+  return base::StringPrintf("--%s=%s", switches::kProcessType, "relauncher");
 }
 
 }  // namespace
@@ -292,12 +288,9 @@ int RelauncherMain(const content::MainFunctionParams& main_parameters) {
   // start it in the background.
   bool background = false;
   bool in_relaunch_args = false;
-  std::string dmg_bsd_device_name;
   bool seen_relaunch_executable = false;
   std::string relaunch_executable;
   const std::string relauncher_arg_separator(kRelauncherArgSeparator);
-  const std::string relauncher_dmg_device_arg =
-      base::StringPrintf("--%s=", switches::kRelauncherProcessDMGDevice);
   for (int argv_index = 2; argv_index < argc; ++argv_index) {
     const std::string arg(argv[argv_index]);
 
@@ -311,11 +304,6 @@ int RelauncherMain(const content::MainFunctionParams& main_parameters) {
         in_relaunch_args = true;
       } else if (arg == kRelauncherBackgroundArg) {
         background = true;
-      } else if (arg.compare(0,
-                             relauncher_dmg_device_arg.size(),
-                             relauncher_dmg_device_arg) == 0) {
-        dmg_bsd_device_name.assign(
-            arg.substr(relauncher_dmg_device_arg.size()));
       }
     } else {
       if (!seen_relaunch_executable) {
@@ -368,10 +356,6 @@ int RelauncherMain(const content::MainFunctionParams& main_parameters) {
   // The application should have relaunched (or is in the process of
   // relaunching). From this point on, only clean-up tasks should occur, and
   // failures are tolerable.
-
-  if (!dmg_bsd_device_name.empty()) {
-    EjectAndTrashDiskImage(dmg_bsd_device_name);
-  }
 
   return 0;
 }
