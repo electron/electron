@@ -45,6 +45,7 @@ class BrowserMainParts : public content::BrowserMainParts {
   void PostMainMessageLoopStart() override;
   void PostMainMessageLoopRun() override;
   int PreCreateThreads() override;
+  void PostDestroyThreads() override;
 
  private:
 #if defined(OS_MACOSX)
