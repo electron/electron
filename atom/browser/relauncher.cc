@@ -5,11 +5,7 @@
 #include "atom/browser/relauncher.h"
 
 #include <ApplicationServices/ApplicationServices.h>
-#include <AvailabilityMacros.h>
-#include <crt_externs.h>
-#include <dlfcn.h>
-#include <stddef.h>
-#include <string.h>
+
 #include <sys/event.h>
 #include <sys/time.h>
 #include <sys/types.h>
@@ -18,8 +14,8 @@
 #include <string>
 #include <vector>
 
+#include "atom/common/atom_command_line.h"
 #include "base/files/file_util.h"
-#include "base/files/scoped_file.h"
 #include "base/logging.h"
 #include "base/mac/mac_logging.h"
 #include "base/mac/mac_util.h"
@@ -229,32 +225,9 @@ void RelauncherSynchronizeWithParent() {
 }
 
 int RelauncherMain(const content::MainFunctionParams& main_parameters) {
-  // CommandLine rearranges the order of the arguments returned by
-  // main_parameters.argv(), rendering it impossible to determine which
-  // arguments originally came before kRelauncherArgSeparator and which came
-  // after. It's crucial to distinguish between these because only those
-  // after the separator should be given to the relaunched process; it's also
-  // important to not treat the path to the relaunched process as a "loose"
-  // argument. NXArgc and NXArgv are pointers to the original argc and argv as
-  // passed to main(), so use those. Access them through _NSGetArgc and
-  // _NSGetArgv because NXArgc and NXArgv are normally only available to a
-  // main executable via crt1.o and this code will run from a dylib, and
-  // because of http://crbug.com/139902.
-  const int* argcp = _NSGetArgc();
-  if (!argcp) {
-    NOTREACHED();
-    return 1;
-  }
-  int argc = *argcp;
+  const std::vector<std::string>& argv = atom::AtomCommandLine::argv();
 
-  const char* const* const* argvp = _NSGetArgv();
-  if (!argvp) {
-    NOTREACHED();
-    return 1;
-  }
-  const char* const* argv = *argvp;
-
-  if (argc < 4 || RelauncherTypeArg() != argv[1]) {
+  if (argv.size() < 4 || RelauncherTypeArg() != argv[1]) {
     LOG(ERROR) << "relauncher process invoked with unexpected arguments";
     return 1;
   }
@@ -266,7 +239,7 @@ int RelauncherMain(const content::MainFunctionParams& main_parameters) {
   // RelauncherTypeArg() at argv[1], kRelauncherArgSeparator, or the
   // executable path of the process to be launched.
   base::ScopedCFTypeRef<CFMutableArrayRef> relaunch_args(
-      CFArrayCreateMutable(NULL, argc - 4, &kCFTypeArrayCallBacks));
+      CFArrayCreateMutable(NULL, argv.size() - 4, &kCFTypeArrayCallBacks));
   if (!relaunch_args) {
     LOG(ERROR) << "CFArrayCreateMutable";
     return 1;
@@ -279,8 +252,8 @@ int RelauncherMain(const content::MainFunctionParams& main_parameters) {
   bool seen_relaunch_executable = false;
   std::string relaunch_executable;
   const std::string relauncher_arg_separator(kRelauncherArgSeparator);
-  for (int argv_index = 2; argv_index < argc; ++argv_index) {
-    const std::string arg(argv[argv_index]);
+  for (size_t argv_index = 2; argv_index < argv.size(); ++argv_index) {
+    const std::string& arg(argv[argv_index]);
 
     // Strip any -psn_ arguments, as they apply to a specific process.
     if (arg.compare(0, strlen(kPSNArg), kPSNArg) == 0) {
