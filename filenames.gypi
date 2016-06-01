@@ -420,6 +420,8 @@
       'chromium_src/chrome/browser/extensions/global_shortcut_listener_x11.h',
       'chromium_src/chrome/browser/extensions/global_shortcut_listener_win.cc',
       'chromium_src/chrome/browser/extensions/global_shortcut_listener_win.h',
+      'chromium_src/chrome/browser/mac/relauncher.cc',
+      'chromium_src/chrome/browser/mac/relauncher.h',
       'chromium_src/chrome/browser/media/desktop_media_list.h',
       'chromium_src/chrome/browser/media/desktop_media_list_observer.h',
       'chromium_src/chrome/browser/media/native_desktop_media_list.cc',
