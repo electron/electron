@@ -59,8 +59,7 @@ using StringVector = base::CommandLine::StringVector;
 // successfully. Returns true on success, although some failures can occur
 // after this function returns true if, for example, they occur within the
 // relauncher process. Returns false when the relaunch definitely failed.
-bool RelaunchApp(const base::FilePath& app,
-                 const StringVector& args);
+bool RelaunchApp(const base::FilePath& app, const StringVector& args);
 
 // Identical to RelaunchApp, but uses |helper| as the path to the relauncher
 // process, and allows additional arguments to be supplied to the relauncher
@@ -113,7 +112,6 @@ StringType GetWaitEventName(base::ProcessId pid);
 void RelauncherSynchronizeWithParent();
 
 int LaunchProgram(const StringVector& relauncher_args,
-                  const StringType& program,
                   const StringVector& argv);
 
 }  // namespace internal

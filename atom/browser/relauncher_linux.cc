@@ -53,14 +53,8 @@ void RelauncherSynchronizeWithParent() {
   HANDLE_EINTR(read(usr2_fd, &si, sizeof(si)));
 }
 
-int LaunchProgram(const std::vector<std::string>& relauncher_args,
-                  const std::string& program,
-                  const std::vector<std::string>& args) {
-  std::vector<std::string> argv;
-  argv.reserve(1 + args.size());
-  argv.push_back(program);
-  argv.insert(argv.end(), args.begin(), args.end());
-
+int LaunchProgram(const StringVector& relauncher_args,
+                  const StringVector& argv) {
   base::LaunchOptions options;
   options.allow_new_privs = true;
   options.new_process_group = true;  // detach

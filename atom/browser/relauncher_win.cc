@@ -65,11 +65,10 @@ void RelauncherSynchronizeWithParent() {
 }
 
 int LaunchProgram(const StringVector& relauncher_args,
-                  const StringType& program,
-                  const StringVector& args) {
+                  const StringVector& argv) {
   base::LaunchOptions options;
-  base::Process process = base::LaunchProcess(
-      program + L" " + base::JoinString(args, L" "), options);
+  base::Process process =
+      base::LaunchProcess(base::JoinString(args, L" "), options);
   return process.IsValid() ? 0 : 1;
 }
 

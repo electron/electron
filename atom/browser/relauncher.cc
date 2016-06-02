@@ -34,8 +34,7 @@ const CharType* kRelauncherArgSeparator = FILE_PATH_LITERAL("---");
 
 }  // namespace internal
 
-bool RelaunchApp(const base::FilePath& app,
-                 const StringVector& args) {
+bool RelaunchApp(const base::FilePath& app, const StringVector& args) {
   // Use the currently-running application's helper process. The automatic
   // update feature is careful to leave the currently-running version alone,
   // so this is safe even if the relaunch is the result of an update having
@@ -160,10 +159,9 @@ int RelauncherMain(const content::MainFunctionParams& main_parameters) {
   // Figure out what to execute, what arguments to pass it, and whether to
   // start it in the background.
   bool in_relaunch_args = false;
-  bool seen_relaunch_executable = false;
   StringType relaunch_executable;
   StringVector relauncher_args;
-  StringVector launch_args;
+  StringVector launch_argv;
   for (size_t argv_index = 2; argv_index < argv.size(); ++argv_index) {
     const StringType& arg(argv[argv_index]);
     if (!in_relaunch_args) {
@@ -173,26 +171,16 @@ int RelauncherMain(const content::MainFunctionParams& main_parameters) {
         relauncher_args.push_back(arg);
       }
     } else {
-      if (!seen_relaunch_executable) {
-        // The first argument after kRelauncherBackgroundArg is the path to
-        // the executable file or .app bundle directory. The Launch Services
-        // interface wants this separate from the rest of the arguments. In
-        // the relaunched process, this path will still be visible at argv[0].
-        relaunch_executable.assign(arg);
-        seen_relaunch_executable = true;
-      } else {
-        launch_args.push_back(arg);
-      }
+      launch_argv.push_back(arg);
     }
   }
 
-  if (!seen_relaunch_executable) {
+  if (launch_argv.empty()) {
     LOG(ERROR) << "nothing to relaunch";
     return 1;
   }
 
-  if (internal::LaunchProgram(relauncher_args, relaunch_executable,
-                              launch_args) != 0) {
+  if (internal::LaunchProgram(relauncher_args, launch_argv) != 0) {
     LOG(ERROR) << "failed to launch program";
     return 1;
   }

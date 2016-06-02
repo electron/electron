@@ -4,8 +4,6 @@
 
 #include "atom/browser/relauncher.h"
 
-#include <ApplicationServices/ApplicationServices.h>
-
 #include <sys/event.h>
 #include <sys/time.h>
 #include <sys/types.h>
@@ -13,25 +11,14 @@
 
 #include "base/files/file_util.h"
 #include "base/logging.h"
+#include "base/process/launch.h"
 #include "base/mac/mac_logging.h"
-#include "base/mac/mac_util.h"
-#include "base/mac/scoped_cftyperef.h"
 #include "base/posix/eintr_wrapper.h"
 #include "base/strings/sys_string_conversions.h"
 
 namespace relauncher {
 
 namespace internal {
-
-namespace {
-
-// The beginning of the "process serial number" argument that Launch Services
-// sometimes inserts into command lines. A process serial number is only valid
-// for a single process, so any PSN arguments will be stripped from command
-// lines during relaunch to avoid confusion.
-const char kPSNArg[] = "-psn_";
-
-}  // namespace
 
 void RelauncherSynchronizeWithParent() {
   base::ScopedFD relauncher_sync_fd(kRelauncherSyncFD);
@@ -90,56 +77,12 @@ void RelauncherSynchronizeWithParent() {
   }
 }
 
-int LaunchProgram(const std::vector<std::string>& relauncher_args,
-                  const std::string& program,
-                  const std::vector<std::string>& argv) {
-  // The capacity for relaunch_args is 4 less than argc, because it
-  // won't contain the argv[0] of the relauncher process, the
-  // RelauncherTypeArg() at argv[1], kRelauncherArgSeparator, or the
-  // executable path of the process to be launched.
-  base::ScopedCFTypeRef<CFMutableArrayRef> relaunch_args(
-      CFArrayCreateMutable(NULL, argv.size() - 4, &kCFTypeArrayCallBacks));
-  if (!relaunch_args) {
-    LOG(ERROR) << "CFArrayCreateMutable";
-    return 1;
-  }
-
-  for (const std::string& arg : argv) {
-    // Strip any -psn_ arguments, as they apply to a specific process.
-    if (arg.compare(0, strlen(kPSNArg), kPSNArg) == 0)
-      continue;
-
-    base::ScopedCFTypeRef<CFStringRef> arg_cf(base::SysUTF8ToCFStringRef(arg));
-    if (!arg_cf) {
-      LOG(ERROR) << "base::SysUTF8ToCFStringRef failed for " << arg;
-      return 1;
-    }
-    CFArrayAppendValue(relaunch_args, arg_cf);
-  }
-
-  FSRef app_fsref;
-  if (!base::mac::FSRefFromPath(program, &app_fsref)) {
-    LOG(ERROR) << "base::mac::FSRefFromPath failed for " << program;
-    return 1;
-  }
-
-  LSApplicationParameters ls_parameters = {
-    0,  // version
-    kLSLaunchDefaults | kLSLaunchAndDisplayErrors | kLSLaunchNewInstance,
-    &app_fsref,
-    NULL,  // asyncLaunchRefCon
-    NULL,  // environment
-    relaunch_args,
-    NULL   // initialEvent
-  };
-
-  OSStatus status = LSOpenApplication(&ls_parameters, NULL);
-  if (status != noErr) {
-    OSSTATUS_LOG(ERROR, status) << "LSOpenApplication";
-    return 1;
-  }
-
-  return 0;
+int LaunchProgram(const StringVector& relauncher_args,
+                  const StringVector& argv) {
+  base::LaunchOptions options;
+  options.new_process_group = true;  // detach
+  base::Process process = base::LaunchProcess(argv, options);
+  return process.IsValid() ? 0 : 1;
 }
 
 }  // namespace internal
