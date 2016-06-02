@@ -9,6 +9,7 @@
 #import <Cocoa/Cocoa.h>
 
 #include "atom/browser/mac/dict_util.h"
+#include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/values.h"
@@ -79,6 +80,26 @@ v8::Local<v8::Value> SystemPreferences::GetUserDefault(
   } else if (type == "url") {
     return mate::ConvertToV8(
         isolate(), net::GURLWithNSURL([defaults URLForKey:key]));
+  } else {
+    return v8::Undefined(isolate());
+  }
+}
+
+v8::Local<v8::Value> SystemPreferences::GetGlobalDefault(const std::string& name) {
+  NSUserDefaults* defaults = [NSUserDefaults standardUserDefaults];
+  NSString* key = base::SysUTF8ToNSString(name);
+
+  NSDictionary* globalPrefs = [defaults persistentDomainForName:NSGlobalDomain];
+  id value = [globalPrefs objectForKey:key];
+
+  if ([value isKindOfClass:[NSString class]]) {
+    return mate::StringToV8(isolate(), base::SysNSStringToUTF8(value));
+  } else if ([value isKindOfClass:[NSNumber class]]) {
+    return v8::Integer::New(isolate(), [value integerValue]);
+  } else if ([value isKindOfClass:[NSArray class]]) {
+    return mate::ConvertToV8(isolate(), *NSArrayToListValue(value));
+  } else if ([value isKindOfClass:[NSDictionary class]]) {
+    return mate::ConvertToV8(isolate(), *NSDictionaryToDictionaryValue(value));
   } else {
     return v8::Undefined(isolate());
   }
