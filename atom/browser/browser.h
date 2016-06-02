@@ -55,7 +55,8 @@ class Browser : public WindowListObserver {
   void Shutdown();
 
   // Restart the app.
-  bool Relaunch(const base::FilePath& app,
+  bool Relaunch(bool override_argv,
+                const base::FilePath& app,
                 const relauncher::StringVector& args);
 
   // Focus the application.

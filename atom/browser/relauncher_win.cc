@@ -31,7 +31,7 @@ HANDLE GetParentProcessHandle(base::ProcessHandle handle) {
   }
 
   PROCESS_BASIC_INFORMATION pbi;
-	LONG status = NtQueryInformationProcess(
+  LONG status = NtQueryInformationProcess(
       handle, ProcessBasicInformation,
       &pbi, sizeof(PROCESS_BASIC_INFORMATION), NULL);
   if (!NT_SUCCESS(status)) {

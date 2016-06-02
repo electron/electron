@@ -34,9 +34,21 @@ Browser* Browser::Get() {
   return AtomBrowserMainParts::Get()->browser();
 }
 
-bool Browser::Relaunch(const base::FilePath& app,
+bool Browser::Relaunch(bool override_argv,
+                       const base::FilePath& app,
                        const relauncher::StringVector& args) {
+  if (!override_argv) {
+#if defined(OS_WIN)
+    const relauncher::StringVector& argv = atom::AtomCommandLine::wargv();
+#else
+    const relauncher::StringVector& argv = atom::AtomCommandLine::argv();
+#endif
+    return relauncher::RelaunchApp(argv);
+  }
+
   relauncher::StringVector argv;
+  argv.reserve(1 + args.size());
+
   if (app.empty()) {
     base::FilePath exe_path;
     PathService::Get(base::FILE_EXE, &exe_path);
@@ -44,6 +56,8 @@ bool Browser::Relaunch(const base::FilePath& app,
   } else {
     argv.push_back(app.value());
   }
+
+  argv.insert(argv.end(), args.begin(), args.end());
 
   return relauncher::RelaunchApp(argv);
 }
