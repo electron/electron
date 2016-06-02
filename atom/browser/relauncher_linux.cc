@@ -8,7 +8,6 @@
 #include <sys/prctl.h>
 #include <sys/signalfd.h>
 
-#include "atom/common/atom_command_line.h"
 #include "base/files/file_util.h"
 #include "base/logging.h"
 #include "base/posix/eintr_wrapper.h"

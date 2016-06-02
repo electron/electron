@@ -227,6 +227,7 @@
       'atom/browser/node_debugger.h',
       'atom/browser/relauncher_linux.cc',
       'atom/browser/relauncher_mac.cc',
+      'atom/browser/relauncher_win.cc',
       'atom/browser/relauncher.cc',
       'atom/browser/relauncher.h',
       'atom/browser/render_process_preferences.cc',

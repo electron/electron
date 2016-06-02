@@ -13,6 +13,7 @@
 #include "base/observer_list.h"
 #include "base/strings/string16.h"
 #include "atom/browser/browser_observer.h"
+#include "atom/browser/relauncher.h"
 #include "atom/browser/window_list_observer.h"
 #include "native_mate/arguments.h"
 
@@ -54,8 +55,8 @@ class Browser : public WindowListObserver {
   void Shutdown();
 
   // Restart the app.
-  void Relaunch(const std::vector<std::string>& args,
-                const std::string& app);
+  bool Relaunch(const base::FilePath& app,
+                const relauncher::StringVector& args);
 
   // Focus the application.
   void Focus();

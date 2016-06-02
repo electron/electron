@@ -12,7 +12,7 @@
 #include "base/logging.h"
 #include "base/path_service.h"
 #include "base/process/launch.h"
-#include "base/strings/stringprintf.h"
+#include "base/strings/string_util.h"
 #include "content/public/common/content_paths.h"
 #include "content/public/common/content_switches.h"
 #include "content/public/common/main_function_params.h"
@@ -29,12 +29,13 @@ namespace internal {
 const int kRelauncherSyncFD = STDERR_FILENO + 1;
 #endif
 
-const char* kRelauncherTypeArg = "--type=relauncher";
-const char* kRelauncherArgSeparator = "---";
+const CharType* kRelauncherTypeArg = FILE_PATH_LITERAL("--type=relauncher");
+const CharType* kRelauncherArgSeparator = FILE_PATH_LITERAL("---");
 
 }  // namespace internal
 
-bool RelaunchApp(const std::vector<std::string>& args) {
+bool RelaunchApp(const base::FilePath& app,
+                 const StringVector& args) {
   // Use the currently-running application's helper process. The automatic
   // update feature is careful to leave the currently-running version alone,
   // so this is safe even if the relaunch is the result of an update having
@@ -47,15 +48,16 @@ bool RelaunchApp(const std::vector<std::string>& args) {
     return false;
   }
 
-  std::vector<std::string> relauncher_args;
-  return RelaunchAppWithHelper(child_path.value(), relauncher_args, args);
+  StringVector relauncher_args;
+  return RelaunchAppWithHelper(app, child_path, relauncher_args, args);
 }
 
-bool RelaunchAppWithHelper(const std::string& helper,
-                           const std::vector<std::string>& relauncher_args,
-                           const std::vector<std::string>& args) {
-  std::vector<std::string> relaunch_args;
-  relaunch_args.push_back(helper);
+bool RelaunchAppWithHelper(const base::FilePath& app,
+                           const base::FilePath& helper,
+                           const StringVector& relauncher_args,
+                           const StringVector& args) {
+  StringVector relaunch_args;
+  relaunch_args.push_back(helper.value());
   relaunch_args.push_back(internal::kRelauncherTypeArg);
 
   relaunch_args.insert(relaunch_args.end(),
@@ -63,6 +65,7 @@ bool RelaunchAppWithHelper(const std::string& helper,
 
   relaunch_args.push_back(internal::kRelauncherArgSeparator);
 
+  relaunch_args.push_back(app.value());
   relaunch_args.insert(relaunch_args.end(), args.begin(), args.end());
 
 #if defined(OS_POSIX)
@@ -97,8 +100,12 @@ bool RelaunchAppWithHelper(const std::string& helper,
   base::LaunchOptions options;
 #if defined(OS_POSIX)
   options.fds_to_remap = &fd_map;
+  base::Process process = base::LaunchProcess(relaunch_args, options);
+#elif defined(OS_WIN)
+  base::Process process = base::LaunchProcess(
+      base::JoinString(relaunch_args, L" "), options);
 #endif
-  if (!base::LaunchProcess(relaunch_args, options).IsValid()) {
+  if (!process.IsValid()) {
     LOG(ERROR) << "base::LaunchProcess failed";
     return false;
   }
@@ -106,7 +113,15 @@ bool RelaunchAppWithHelper(const std::string& helper,
   // The relauncher process is now starting up, or has started up. The
   // original parent process continues.
 
-#if defined(OS_POSIX)
+#if defined(OS_WIN)
+  // Synchronize with the relauncher process.
+  StringType name = internal::GetWaitEventName(process.Pid());
+  HANDLE wait_event = ::CreateEventW(NULL, TRUE, FALSE, name.c_str());
+  if (wait_event != NULL) {
+    WaitForSingleObject(wait_event, 1000);
+    CloseHandle(wait_event);
+  }
+#elif defined(OS_POSIX)
   pipe_write_fd.reset();  // close(pipe_fds[1]);
 
   // Synchronize with the relauncher process.
@@ -129,7 +144,11 @@ bool RelaunchAppWithHelper(const std::string& helper,
 }
 
 int RelauncherMain(const content::MainFunctionParams& main_parameters) {
-  const std::vector<std::string>& argv = atom::AtomCommandLine::argv();
+#if defined(OS_WIN)
+  const StringVector& argv = atom::AtomCommandLine::wargv();
+#else
+  const StringVector& argv = atom::AtomCommandLine::argv();
+#endif
 
   if (argv.size() < 4 || argv[1] != internal::kRelauncherTypeArg) {
     LOG(ERROR) << "relauncher process invoked with unexpected arguments";
@@ -142,11 +161,11 @@ int RelauncherMain(const content::MainFunctionParams& main_parameters) {
   // start it in the background.
   bool in_relaunch_args = false;
   bool seen_relaunch_executable = false;
-  std::string relaunch_executable;
-  std::vector<std::string> relauncher_args;
-  std::vector<std::string> launch_args;
+  StringType relaunch_executable;
+  StringVector relauncher_args;
+  StringVector launch_args;
   for (size_t argv_index = 2; argv_index < argv.size(); ++argv_index) {
-    const std::string& arg(argv[argv_index]);
+    const StringType& arg(argv[argv_index]);
     if (!in_relaunch_args) {
       if (arg == internal::kRelauncherArgSeparator) {
         in_relaunch_args = true;

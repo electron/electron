@@ -8,7 +8,6 @@
 
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/native_window.h"
-#include "atom/browser/relauncher.h"
 #include "atom/browser/window_list.h"
 #include "base/files/file_util.h"
 #include "base/message_loop/message_loop.h"
@@ -34,15 +33,15 @@ Browser* Browser::Get() {
   return AtomBrowserMainParts::Get()->browser();
 }
 
-void Browser::Relaunch(const std::vector<std::string>& args,
-                       const std::string& app) {
-  base::FilePath exe_path;
-  PathService::Get(base::FILE_EXE, &exe_path);
-
-  std::vector<std::string> args_with_app(args);
-  args_with_app.insert(args_with_app.begin(),
-                       app.empty() ? exe_path.value() : app);
-  relauncher::RelaunchApp(args_with_app);
+bool Browser::Relaunch(const base::FilePath& app,
+                       const relauncher::StringVector& args) {
+  if (app.empty()) {
+    base::FilePath exe_path;
+    PathService::Get(base::FILE_EXE, &exe_path);
+    return relauncher::RelaunchApp(exe_path, args);
+  } else {
+    return relauncher::RelaunchApp(app, args);
+  }
 }
 
 void Browser::Quit() {

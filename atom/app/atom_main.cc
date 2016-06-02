@@ -111,6 +111,7 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
   params.instance = instance;
   params.sandbox_info = &sandbox_info;
   atom::AtomCommandLine::Init(argc, argv);
+  atom::AtomCommandLine::InitW(argc, wargv);
   return content::ContentMain(params);
 }
 
