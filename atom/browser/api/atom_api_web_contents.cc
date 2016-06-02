@@ -1094,6 +1094,16 @@ void WebContents::StopFindInPage(content::StopFindAction action) {
   web_contents()->StopFinding(action);
 }
 
+void WebContents::ShowDefinitionForSelection() {
+#if defined(OS_WIN)
+  const auto view = web_contents()->GetRenderWidgetHostView();
+  if (view)
+    view->ShowDefinitionForSelection();
+#else
+  NOTIMPLEMENTED();
+#endif
+}
+
 void WebContents::Focus() {
   web_contents()->Focus();
 }
@@ -1289,6 +1299,7 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("_printToPDF", &WebContents::PrintToPDF)
       .SetMethod("addWorkSpace", &WebContents::AddWorkSpace)
       .SetMethod("removeWorkSpace", &WebContents::RemoveWorkSpace)
+      .SetMethod("showDefinitionForSelection", &WebContents::ShowDefinitionForSelection)
       .SetProperty("id", &WebContents::ID)
       .SetProperty("session", &WebContents::Session)
       .SetProperty("hostWebContents", &WebContents::HostWebContents)
