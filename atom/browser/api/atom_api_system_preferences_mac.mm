@@ -67,8 +67,8 @@ v8::Local<v8::Value> SystemPreferences::GetUserDefault(
   NSUserDefaults* defaults = [NSUserDefaults standardUserDefaults];
   NSString* key = base::SysUTF8ToNSString(name);
   if (type == "string") {
-    return mate::StringToV8(
-        isolate(), base::SysNSStringToUTF8([defaults stringForKey:key]));
+    return mate::StringToV8(isolate(),
+      base::SysNSStringToUTF8([defaults stringForKey:key]));
   } else if (type == "boolean") {
     return v8::Boolean::New(isolate(), [defaults boolForKey:key]);
   } else if (type == "float") {
@@ -78,28 +78,14 @@ v8::Local<v8::Value> SystemPreferences::GetUserDefault(
   } else if (type == "double") {
     return v8::Number::New(isolate(), [defaults doubleForKey:key]);
   } else if (type == "url") {
-    return mate::ConvertToV8(
-        isolate(), net::GURLWithNSURL([defaults URLForKey:key]));
-  } else {
-    return v8::Undefined(isolate());
-  }
-}
-
-v8::Local<v8::Value> SystemPreferences::GetGlobalDefault(const std::string& name) {
-  NSUserDefaults* defaults = [NSUserDefaults standardUserDefaults];
-  NSString* key = base::SysUTF8ToNSString(name);
-
-  NSDictionary* globalPrefs = [defaults persistentDomainForName:NSGlobalDomain];
-  id value = [globalPrefs objectForKey:key];
-
-  if ([value isKindOfClass:[NSString class]]) {
-    return mate::StringToV8(isolate(), base::SysNSStringToUTF8(value));
-  } else if ([value isKindOfClass:[NSNumber class]]) {
-    return v8::Integer::New(isolate(), [value integerValue]);
-  } else if ([value isKindOfClass:[NSArray class]]) {
-    return mate::ConvertToV8(isolate(), *NSArrayToListValue(value));
-  } else if ([value isKindOfClass:[NSDictionary class]]) {
-    return mate::ConvertToV8(isolate(), *NSDictionaryToDictionaryValue(value));
+    return mate::ConvertToV8(isolate(),
+      net::GURLWithNSURL([defaults URLForKey:key]));
+  } else if (type == "array") {
+    return mate::ConvertToV8(isolate(),
+      *NSArrayToListValue([defaults arrayForKey:key]));
+  } else if (type == "dictionary") {
+    return mate::ConvertToV8(isolate(),
+      *NSDictionaryToDictionaryValue([defaults dictionaryForKey:key]));
   } else {
     return v8::Undefined(isolate());
   }

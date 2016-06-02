@@ -7,17 +7,12 @@ describe('systemPreferences module', function () {
     return
   }
 
-  it('returns user defaults', function () {
-    assert.notEqual(systemPreferences.getUserDefault('AppleInterfaceStyle', 'string'), null)
-    assert.notEqual(systemPreferences.getUserDefault('AppleAquaColorVariant', 'integer'), null)
-  })
-
-  it('returns defaults under the global domain', function () {
-    let locale = systemPreferences.getGlobalDefault('AppleLocale')
+  it('returns values for known user defaults', function () {
+    let locale = systemPreferences.getUserDefault('AppleLocale', 'string')
     assert.notEqual(locale, null)
     assert(locale.length > 0)
 
-    let languages = systemPreferences.getGlobalDefault('AppleLanguages')
+    let languages = systemPreferences.getUserDefault('AppleLanguages', 'array')
     assert.notEqual(languages, null)
     assert(languages.length > 0)
   })

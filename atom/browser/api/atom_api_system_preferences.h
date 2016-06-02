@@ -39,7 +39,6 @@ class SystemPreferences : public mate::EventEmitter<SystemPreferences> {
   void UnsubscribeNotification(int id);
   v8::Local<v8::Value> GetUserDefault(const std::string& name,
                                       const std::string& type);
-  v8::Local<v8::Value> GetGlobalDefault(const std::string& name);
 #endif
   bool IsDarkMode();
 
