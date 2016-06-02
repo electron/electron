@@ -11,18 +11,24 @@
 #include "base/files/file_util.h"
 #include "base/logging.h"
 #include "base/path_service.h"
-#include "base/posix/eintr_wrapper.h"
 #include "base/process/launch.h"
 #include "base/strings/stringprintf.h"
 #include "content/public/common/content_paths.h"
 #include "content/public/common/content_switches.h"
 #include "content/public/common/main_function_params.h"
 
+#if defined(OS_POSIX)
+#include "base/posix/eintr_wrapper.h"
+#endif
+
 namespace relauncher {
 
 namespace internal {
 
+#if defined(OS_POSIX)
 const int kRelauncherSyncFD = STDERR_FILENO + 1;
+#endif
+
 const char* kRelauncherTypeArg = "--type=relauncher";
 const char* kRelauncherArgSeparator = "---";
 
@@ -59,6 +65,7 @@ bool RelaunchAppWithHelper(const std::string& helper,
 
   relaunch_args.insert(relaunch_args.end(), args.begin(), args.end());
 
+#if defined(OS_POSIX)
   int pipe_fds[2];
   if (HANDLE_EINTR(pipe(pipe_fds)) != 0) {
     PLOG(ERROR) << "pipe";
@@ -85,9 +92,12 @@ bool RelaunchAppWithHelper(const std::string& helper,
   base::FileHandleMappingVector fd_map;
   fd_map.push_back(
       std::make_pair(pipe_write_fd.get(), internal::kRelauncherSyncFD));
+#endif
 
   base::LaunchOptions options;
+#if defined(OS_POSIX)
   options.fds_to_remap = &fd_map;
+#endif
   if (!base::LaunchProcess(relaunch_args, options).IsValid()) {
     LOG(ERROR) << "base::LaunchProcess failed";
     return false;
@@ -96,6 +106,7 @@ bool RelaunchAppWithHelper(const std::string& helper,
   // The relauncher process is now starting up, or has started up. The
   // original parent process continues.
 
+#if defined(OS_POSIX)
   pipe_write_fd.reset();  // close(pipe_fds[1]);
 
   // Synchronize with the relauncher process.
@@ -113,6 +124,7 @@ bool RelaunchAppWithHelper(const std::string& helper,
   // Since a byte has been successfully read from the relauncher process, it's
   // guaranteed to have set up its kqueue monitoring this process for exit.
   // It's safe to exit now.
+#endif
   return true;
 }
 

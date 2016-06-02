@@ -27,8 +27,10 @@ class AtomMainDelegate : public brightray::MainDelegate {
   int RunProcess(
       const std::string& process_type,
       const content::MainFunctionParams& main_function_params) override;
+#if defined(OS_MACOSX)
   bool ShouldSendMachPort(const std::string& process_type) override;
   bool DelaySandboxInitialization(const std::string& process_type) override;
+#endif
 
   // brightray::MainDelegate:
   std::unique_ptr<brightray::ContentClient> CreateContentClient() override;

@@ -158,6 +158,7 @@ int AtomMainDelegate::RunProcess(
     return -1;
 }
 
+#if defined(OS_MACOSX)
 bool AtomMainDelegate::ShouldSendMachPort(const std::string& process_type) {
   return process_type != kRelauncherProcess;
 }
@@ -166,6 +167,7 @@ bool AtomMainDelegate::DelaySandboxInitialization(
     const std::string& process_type) {
   return process_type == kRelauncherProcess;
 }
+#endif
 
 std::unique_ptr<brightray::ContentClient>
 AtomMainDelegate::CreateContentClient() {
