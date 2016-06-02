@@ -391,7 +391,7 @@ first available device will be selected. `callback` should be called with
 `deviceId` to be selected, passing empty string to `callback` will
 cancel the request.
 
-```javacript
+```javascript
 app.commandLine.appendSwitch('enable-web-bluetooth')
 
 app.on('ready', () => {
