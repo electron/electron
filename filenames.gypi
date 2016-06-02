@@ -225,6 +225,7 @@
       'atom/browser/net/url_request_fetch_job.h',
       'atom/browser/node_debugger.cc',
       'atom/browser/node_debugger.h',
+      'atom/browser/relauncher_mac.cc',
       'atom/browser/relauncher.cc',
       'atom/browser/relauncher.h',
       'atom/browser/render_process_preferences.cc',

@@ -153,7 +153,7 @@ int AtomMainDelegate::RunProcess(
     const std::string& process_type,
     const content::MainFunctionParams& main_function_params) {
   if (process_type == kRelauncherProcess)
-    return relauncher::RelauncherMain(main_function_params);
+    return relauncher::internal::RelauncherMain(main_function_params);
   else
     return -1;
 }

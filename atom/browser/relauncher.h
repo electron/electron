@@ -64,6 +64,25 @@ bool RelaunchAppWithHelper(const std::string& helper,
                            const std::vector<std::string>& relauncher_args,
                            const std::vector<std::string>& args);
 
+namespace internal {
+
+// The "magic" file descriptor that the relauncher process' write side of the
+// pipe shows up on. Chosen to avoid conflicting with stdin, stdout, and
+// stderr.
+extern const int kRelauncherSyncFD;
+
+// The "type" argument identifying a relauncher process ("--type=relauncher").
+extern const char* kRelauncherTypeArg;
+
+// The argument separating arguments intended for the relauncher process from
+// those intended for the relaunched process. "---" is chosen instead of "--"
+// because CommandLine interprets "--" as meaning "end of switches", but
+// for many purposes, the relauncher process' CommandLine ought to interpret
+// arguments intended for the relaunched process, to get the correct settings
+// for such things as logging and the user-data-dir in case it affects crash
+// reporting.
+extern const char* kRelauncherArgSeparator;
+
 // In the relauncher process, performs the necessary synchronization steps
 // with the parent by setting up a kqueue to watch for it to exit, writing a
 // byte to the pipe, and then waiting for the exit notification on the kqueue.
@@ -74,6 +93,8 @@ void RelauncherSynchronizeWithParent();
 
 // The entry point from ChromeMain into the relauncher process.
 int RelauncherMain(const content::MainFunctionParams& main_parameters);
+
+}  // namespace internal
 
 }  // namespace relauncher
 
