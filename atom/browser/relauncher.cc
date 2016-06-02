@@ -12,7 +12,6 @@
 #include "base/logging.h"
 #include "base/path_service.h"
 #include "base/process/launch.h"
-#include "base/strings/string_util.h"
 #include "content/public/common/content_paths.h"
 #include "content/public/common/content_switches.h"
 #include "content/public/common/main_function_params.h"
@@ -100,7 +99,7 @@ bool RelaunchAppWithHelper(const base::FilePath& helper,
   base::Process process = base::LaunchProcess(relaunch_argv, options);
 #elif defined(OS_WIN)
   base::Process process = base::LaunchProcess(
-      base::JoinString(relaunch_argv, L" "), options);
+      internal::ArgvToCommandLineString(relaunch_argv), options);
 #endif
   if (!process.IsValid()) {
     LOG(ERROR) << "base::LaunchProcess failed";

@@ -100,6 +100,8 @@ extern const CharType* kRelauncherArgSeparator;
 
 #if defined(OS_WIN)
 StringType GetWaitEventName(base::ProcessId pid);
+
+StringType ArgvToCommandLineString(const StringVector& argv);
 #endif
 
 // In the relauncher process, performs the necessary synchronization steps

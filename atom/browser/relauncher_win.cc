@@ -7,7 +7,6 @@
 #include <windows.h>
 
 #include "base/process/launch.h"
-#include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
 #include "base/win/scoped_handle.h"
 #include "sandbox/win/src/nt_internals.h"
@@ -43,10 +42,62 @@ HANDLE GetParentProcessHandle(base::ProcessHandle handle) {
                        pbi.InheritedFromUniqueProcessId);
 }
 
+StringType AddQuoteForArg(const StringType& arg) {
+  // We follow the quoting rules of CommandLineToArgvW.
+  // http://msdn.microsoft.com/en-us/library/17w5ykft.aspx
+  std::wstring quotable_chars(L" \\\"");
+  if (arg.find_first_of(quotable_chars) == std::wstring::npos) {
+    // No quoting necessary.
+    return arg;
+  }
+
+  std::wstring out;
+  out.push_back(L'"');
+  for (size_t i = 0; i < arg.size(); ++i) {
+    if (arg[i] == '\\') {
+      // Find the extent of this run of backslashes.
+      size_t start = i, end = start + 1;
+      for (; end < arg.size() && arg[end] == '\\'; ++end) {}
+      size_t backslash_count = end - start;
+
+      // Backslashes are escapes only if the run is followed by a double quote.
+      // Since we also will end the string with a double quote, we escape for
+      // either a double quote or the end of the string.
+      if (end == arg.size() || arg[end] == '"') {
+        // To quote, we need to output 2x as many backslashes.
+        backslash_count *= 2;
+      }
+      for (size_t j = 0; j < backslash_count; ++j)
+        out.push_back('\\');
+
+      // Advance i to one before the end to balance i++ in loop.
+      i = end - 1;
+    } else if (arg[i] == '"') {
+      out.push_back('\\');
+      out.push_back('"');
+    } else {
+      out.push_back(arg[i]);
+    }
+  }
+  out.push_back('"');
+
+  return out;
+}
+
 }  // namespace
 
 StringType GetWaitEventName(base::ProcessId pid) {
   return base::StringPrintf(L"%s-%d", kWaitEventName, static_cast<int>(pid));
+}
+
+StringType ArgvToCommandLineString(const StringVector& argv) {
+  StringType command_line;
+  for (const StringType& arg : argv) {
+    if (!command_line.empty())
+      command_line += L' ';
+    command_line += AddQuoteForArg(arg);
+  }
+  return command_line;
 }
 
 void RelauncherSynchronizeWithParent() {
@@ -68,7 +119,7 @@ int LaunchProgram(const StringVector& relauncher_args,
                   const StringVector& argv) {
   base::LaunchOptions options;
   base::Process process =
-      base::LaunchProcess(base::JoinString(argv, L" "), options);
+      base::LaunchProcess(ArgvToCommandLineString(argv), options);
   return process.IsValid() ? 0 : 1;
 }
 
