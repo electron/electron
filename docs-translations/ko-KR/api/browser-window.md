@@ -72,6 +72,12 @@ win.show();
 * `title` String - 기본 윈도우 제목. 기본값은 `"Electron"`입니다.
 * `icon` [NativeImage](native-image.md) - 윈도우 아이콘, 생략하면 실행 파일의
   아이콘이 대신 사용됩니다.
+* `icon` [NativeImage](native-image.md) - 윈도우 아이콘. Windows에선 가장 좋은
+  시각적 효과를 얻기 위해 `ICO`를 사용하는 것을 권장하며, 또한 undefined로 남겨두면
+  실행 파일의 아이콘이 대신 사용됩니다.
+On Windows it is
+  recommended to use `ICO` icons to get best visual effects, you can also
+  leave it undefined so the executable's icon will be used.
 * `show` Boolean - 윈도우가 생성되면 보여줄지 여부. 기본값은 `true`입니다.
 * `frame` Boolean - `false`로 지정하면 창을 [Frameless Window](frameless-window.md)
   형태로 생성합니다. 기본값은 `true`입니다.
@@ -212,19 +218,17 @@ Returns:
 
 보통 창을 닫아야 할지 결정하기 위해 `beforeunload` 이벤트를 사용하려고 할 것입니다.
 이 이벤트는 윈도우 콘텐츠를 새로고칠 때도 발생합니다.
-Electron에선 빈 문자열 또는 `false`를 전달할 경우 윈도우 종료를 취소합니다.
-
+Electron에선 `undefined`가 아닌 이외의 값을 전달할 경우 윈도우 종료를 취소합니다.
 예시는 다음과 같습니다:
 
 ```javascript
 window.onbeforeunload = (e) => {
   console.log('I do not want to be closed');
 
-  // 반드시 문자열을 반환해야 하고 사용자에게 페이지 언로드에 대한 확인 창을 보여주는
-  // 보통의 브라우저와는 달리 Electron은 개발자에게 더 많은 옵션을 제공합니다.
-  // 빈 문자열을 반환하거나 false를 반환하면 페이지 언로드를 방지합니다.
-  // 또한 dialog API를 통해 사용자에게 어플리케이션을 종료할지에 대한 확인 창을
-  // 보여줄 수도 있습니다.
+  // 일반적인 브라우저와는 달리 사용자에게 확인 창을 보여주지 않고, non-void 값을 반환하면
+  // 조용히 닫기를 취소합니다.
+  // Dialog API를 통해 사용자가 어플리케이션을 종료할지 정할 수 있도록 확인 창을 표시하는 것을
+  // 추천합니다.
   e.returnValue = false;
 };
 ```
