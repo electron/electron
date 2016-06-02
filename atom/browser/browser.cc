@@ -9,7 +9,6 @@
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/window_list.h"
-#include "atom/common/atom_command_line.h"
 #include "base/files/file_util.h"
 #include "base/message_loop/message_loop.h"
 #include "base/path_service.h"
@@ -32,34 +31,6 @@ Browser::~Browser() {
 // static
 Browser* Browser::Get() {
   return AtomBrowserMainParts::Get()->browser();
-}
-
-bool Browser::Relaunch(bool override_argv,
-                       const base::FilePath& app,
-                       const relauncher::StringVector& args) {
-  if (!override_argv) {
-#if defined(OS_WIN)
-    const relauncher::StringVector& argv = atom::AtomCommandLine::wargv();
-#else
-    const relauncher::StringVector& argv = atom::AtomCommandLine::argv();
-#endif
-    return relauncher::RelaunchApp(argv);
-  }
-
-  relauncher::StringVector argv;
-  argv.reserve(1 + args.size());
-
-  if (app.empty()) {
-    base::FilePath exe_path;
-    PathService::Get(base::FILE_EXE, &exe_path);
-    argv.push_back(exe_path.value());
-  } else {
-    argv.push_back(app.value());
-  }
-
-  argv.insert(argv.end(), args.begin(), args.end());
-
-  return relauncher::RelaunchApp(argv);
 }
 
 void Browser::Quit() {

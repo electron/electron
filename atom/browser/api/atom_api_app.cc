@@ -14,6 +14,8 @@
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/browser.h"
 #include "atom/browser/login_handler.h"
+#include "atom/browser/relauncher.h"
+#include "atom/common/atom_command_line.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
@@ -408,6 +410,43 @@ void App::ReleaseSingleInstance() {
   }
 }
 
+bool App::Relaunch(mate::Arguments* js_args) {
+  // Parse parameters.
+  bool override_argv = false;
+  base::FilePath exec_path;
+  relauncher::StringVector args;
+
+  mate::Dictionary options;
+  if (js_args->GetNext(&options)) {
+    if (options.Get("execPath", &exec_path) || options.Get("args", &args))
+      override_argv = true;
+  }
+
+  if (!override_argv) {
+#if defined(OS_WIN)
+    const relauncher::StringVector& argv = atom::AtomCommandLine::wargv();
+#else
+    const relauncher::StringVector& argv = atom::AtomCommandLine::argv();
+#endif
+    return relauncher::RelaunchApp(argv);
+  }
+
+  relauncher::StringVector argv;
+  argv.reserve(1 + args.size());
+
+  if (exec_path.empty()) {
+    base::FilePath current_exe_path;
+    PathService::Get(base::FILE_EXE, &current_exe_path);
+    argv.push_back(current_exe_path.value());
+  } else {
+    argv.push_back(exec_path.value());
+  }
+
+  argv.insert(argv.end(), args.begin(), args.end());
+
+  return relauncher::RelaunchApp(argv);
+}
+
 #if defined(USE_NSS_CERTS)
 void App::ImportCertificate(
     const base::DictionaryValue& options,
@@ -450,7 +489,6 @@ void App::BuildPrototype(
   mate::ObjectTemplateBuilder(isolate, prototype)
       .SetMethod("quit", base::Bind(&Browser::Quit, browser))
       .SetMethod("exit", base::Bind(&Browser::Exit, browser))
-      .SetMethod("relaunch", base::Bind(&Browser::Relaunch, browser))
       .SetMethod("focus", base::Bind(&Browser::Focus, browser))
       .SetMethod("getVersion", base::Bind(&Browser::GetVersion, browser))
       .SetMethod("setVersion", base::Bind(&Browser::SetVersion, browser))
@@ -489,7 +527,8 @@ void App::BuildPrototype(
       .SetMethod("importCertificate", &App::ImportCertificate)
 #endif
       .SetMethod("makeSingleInstance", &App::MakeSingleInstance)
-      .SetMethod("releaseSingleInstance", &App::ReleaseSingleInstance);
+      .SetMethod("releaseSingleInstance", &App::ReleaseSingleInstance)
+      .SetMethod("relaunch", &App::Relaunch);
 }
 
 }  // namespace api
