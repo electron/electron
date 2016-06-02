@@ -11,7 +11,6 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "atom/common/atom_command_line.h"
 #include "base/files/file_util.h"
 #include "base/logging.h"
 #include "base/mac/mac_logging.h"
@@ -91,16 +90,9 @@ void RelauncherSynchronizeWithParent() {
   }
 }
 
-int RelauncherMain(const content::MainFunctionParams& main_parameters) {
-  const std::vector<std::string>& argv = atom::AtomCommandLine::argv();
-
-  if (argv.size() < 4 || kRelauncherTypeArg != argv[1]) {
-    LOG(ERROR) << "relauncher process invoked with unexpected arguments";
-    return 1;
-  }
-
-  internal::RelauncherSynchronizeWithParent();
-
+int LaunchProgram(const std::vector<std::string>& relauncher_args,
+                  const std::string& program,
+                  const std::vector<std::string>& argv) {
   // The capacity for relaunch_args is 4 less than argc, because it
   // won't contain the argv[0] of the relauncher process, the
   // RelauncherTypeArg() at argv[1], kRelauncherArgSeparator, or the
@@ -112,50 +104,22 @@ int RelauncherMain(const content::MainFunctionParams& main_parameters) {
     return 1;
   }
 
-  // Figure out what to execute, what arguments to pass it, and whether to
-  // start it in the background.
-  bool in_relaunch_args = false;
-  bool seen_relaunch_executable = false;
-  std::string relaunch_executable;
-  const std::string relauncher_arg_separator(kRelauncherArgSeparator);
-  for (size_t argv_index = 2; argv_index < argv.size(); ++argv_index) {
-    const std::string& arg(argv[argv_index]);
-
+  for (const std::string& arg : argv) {
     // Strip any -psn_ arguments, as they apply to a specific process.
-    if (arg.compare(0, strlen(kPSNArg), kPSNArg) == 0) {
+    if (arg.compare(0, strlen(kPSNArg), kPSNArg) == 0)
       continue;
-    }
 
-    if (!in_relaunch_args && arg == relauncher_arg_separator) {
-      in_relaunch_args = true;
-    } else {
-      if (!seen_relaunch_executable) {
-        // The first argument after kRelauncherBackgroundArg is the path to
-        // the executable file or .app bundle directory. The Launch Services
-        // interface wants this separate from the rest of the arguments. In
-        // the relaunched process, this path will still be visible at argv[0].
-        relaunch_executable.assign(arg);
-        seen_relaunch_executable = true;
-      } else {
-        base::ScopedCFTypeRef<CFStringRef> arg_cf(
-            base::SysUTF8ToCFStringRef(arg));
-        if (!arg_cf) {
-          LOG(ERROR) << "base::SysUTF8ToCFStringRef failed for " << arg;
-          return 1;
-        }
-        CFArrayAppendValue(relaunch_args, arg_cf);
-      }
+    base::ScopedCFTypeRef<CFStringRef> arg_cf(base::SysUTF8ToCFStringRef(arg));
+    if (!arg_cf) {
+      LOG(ERROR) << "base::SysUTF8ToCFStringRef failed for " << arg;
+      return 1;
     }
-  }
-
-  if (!seen_relaunch_executable) {
-    LOG(ERROR) << "nothing to relaunch";
-    return 1;
+    CFArrayAppendValue(relaunch_args, arg_cf);
   }
 
   FSRef app_fsref;
-  if (!base::mac::FSRefFromPath(relaunch_executable, &app_fsref)) {
-    LOG(ERROR) << "base::mac::FSRefFromPath failed for " << relaunch_executable;
+  if (!base::mac::FSRefFromPath(program, &app_fsref)) {
+    LOG(ERROR) << "base::mac::FSRefFromPath failed for " << program;
     return 1;
   }
 
@@ -174,10 +138,6 @@ int RelauncherMain(const content::MainFunctionParams& main_parameters) {
     OSSTATUS_LOG(ERROR, status) << "LSOpenApplication";
     return 1;
   }
-
-  // The application should have relaunched (or is in the process of
-  // relaunching). From this point on, only clean-up tasks should occur, and
-  // failures are tolerable.
 
   return 0;
 }

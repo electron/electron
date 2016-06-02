@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 
+#include "atom/common/atom_command_line.h"
 #include "base/files/file_util.h"
 #include "base/logging.h"
 #include "base/path_service.h"
@@ -113,6 +114,63 @@ bool RelaunchAppWithHelper(const std::string& helper,
   // guaranteed to have set up its kqueue monitoring this process for exit.
   // It's safe to exit now.
   return true;
+}
+
+int RelauncherMain(const content::MainFunctionParams& main_parameters) {
+  const std::vector<std::string>& argv = atom::AtomCommandLine::argv();
+
+  if (argv.size() < 4 || argv[1] != internal::kRelauncherTypeArg) {
+    LOG(ERROR) << "relauncher process invoked with unexpected arguments";
+    return 1;
+  }
+
+  internal::RelauncherSynchronizeWithParent();
+
+  // Figure out what to execute, what arguments to pass it, and whether to
+  // start it in the background.
+  bool in_relaunch_args = false;
+  bool seen_relaunch_executable = false;
+  std::string relaunch_executable;
+  std::vector<std::string> relauncher_args;
+  std::vector<std::string> launch_args;
+  for (size_t argv_index = 2; argv_index < argv.size(); ++argv_index) {
+    const std::string& arg(argv[argv_index]);
+    if (!in_relaunch_args) {
+      if (arg == internal::kRelauncherArgSeparator) {
+        in_relaunch_args = true;
+      } else {
+        relauncher_args.push_back(arg);
+      }
+    } else {
+      if (!seen_relaunch_executable) {
+        // The first argument after kRelauncherBackgroundArg is the path to
+        // the executable file or .app bundle directory. The Launch Services
+        // interface wants this separate from the rest of the arguments. In
+        // the relaunched process, this path will still be visible at argv[0].
+        relaunch_executable.assign(arg);
+        seen_relaunch_executable = true;
+      } else {
+        launch_args.push_back(arg);
+      }
+    }
+  }
+
+  if (!seen_relaunch_executable) {
+    LOG(ERROR) << "nothing to relaunch";
+    return 1;
+  }
+
+  if (internal::LaunchProgram(relauncher_args, relaunch_executable,
+                              launch_args) != 0) {
+    LOG(ERROR) << "failed to launch program";
+    return 1;
+  }
+
+  // The application should have relaunched (or is in the process of
+  // relaunching). From this point on, only clean-up tasks should occur, and
+  // failures are tolerable.
+
+  return 0;
 }
 
 }  // namespace relauncher

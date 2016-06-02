@@ -64,6 +64,9 @@ bool RelaunchAppWithHelper(const std::string& helper,
                            const std::vector<std::string>& relauncher_args,
                            const std::vector<std::string>& args);
 
+// The entry point from ChromeMain into the relauncher process.
+int RelauncherMain(const content::MainFunctionParams& main_parameters);
+
 namespace internal {
 
 // The "magic" file descriptor that the relauncher process' write side of the
@@ -91,8 +94,9 @@ extern const char* kRelauncherArgSeparator;
 // process and the best recovery approach is to attempt relaunch anyway.
 void RelauncherSynchronizeWithParent();
 
-// The entry point from ChromeMain into the relauncher process.
-int RelauncherMain(const content::MainFunctionParams& main_parameters);
+int LaunchProgram(const std::vector<std::string>& relauncher_args,
+                  const std::string& program,
+                  const std::vector<std::string>& argv);
 
 }  // namespace internal
 
