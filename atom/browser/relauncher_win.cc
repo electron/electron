@@ -68,7 +68,7 @@ int LaunchProgram(const StringVector& relauncher_args,
                   const StringVector& argv) {
   base::LaunchOptions options;
   base::Process process =
-      base::LaunchProcess(base::JoinString(args, L" "), options);
+      base::LaunchProcess(base::JoinString(argv, L" "), options);
   return process.IsValid() ? 0 : 1;
 }
 

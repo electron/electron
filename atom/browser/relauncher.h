@@ -59,7 +59,7 @@ using StringVector = base::CommandLine::StringVector;
 // successfully. Returns true on success, although some failures can occur
 // after this function returns true if, for example, they occur within the
 // relauncher process. Returns false when the relaunch definitely failed.
-bool RelaunchApp(const base::FilePath& app, const StringVector& args);
+bool RelaunchApp(const StringVector& argv);
 
 // Identical to RelaunchApp, but uses |helper| as the path to the relauncher
 // process, and allows additional arguments to be supplied to the relauncher
@@ -70,8 +70,7 @@ bool RelaunchApp(const base::FilePath& app, const StringVector& args);
 // able to communicate with one another. This variant can be useful to
 // relaunch the same version of Chrome from another location, using that
 // location's helper.
-bool RelaunchAppWithHelper(const base::FilePath& app,
-                           const base::FilePath& helper,
+bool RelaunchAppWithHelper(const base::FilePath& helper,
                            const StringVector& relauncher_args,
                            const StringVector& args);
 

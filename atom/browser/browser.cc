@@ -9,6 +9,7 @@
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/window_list.h"
+#include "atom/common/atom_command_line.h"
 #include "base/files/file_util.h"
 #include "base/message_loop/message_loop.h"
 #include "base/path_service.h"
@@ -35,13 +36,16 @@ Browser* Browser::Get() {
 
 bool Browser::Relaunch(const base::FilePath& app,
                        const relauncher::StringVector& args) {
+  relauncher::StringVector argv;
   if (app.empty()) {
     base::FilePath exe_path;
     PathService::Get(base::FILE_EXE, &exe_path);
-    return relauncher::RelaunchApp(exe_path, args);
+    argv.push_back(exe_path.value());
   } else {
-    return relauncher::RelaunchApp(app, args);
+    argv.push_back(app.value());
   }
+
+  return relauncher::RelaunchApp(argv);
 }
 
 void Browser::Quit() {

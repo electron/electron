@@ -34,7 +34,7 @@ const CharType* kRelauncherArgSeparator = FILE_PATH_LITERAL("---");
 
 }  // namespace internal
 
-bool RelaunchApp(const base::FilePath& app, const StringVector& args) {
+bool RelaunchApp(const StringVector& argv) {
   // Use the currently-running application's helper process. The automatic
   // update feature is careful to leave the currently-running version alone,
   // so this is safe even if the relaunch is the result of an update having
@@ -48,24 +48,22 @@ bool RelaunchApp(const base::FilePath& app, const StringVector& args) {
   }
 
   StringVector relauncher_args;
-  return RelaunchAppWithHelper(app, child_path, relauncher_args, args);
+  return RelaunchAppWithHelper(child_path, relauncher_args, argv);
 }
 
-bool RelaunchAppWithHelper(const base::FilePath& app,
-                           const base::FilePath& helper,
+bool RelaunchAppWithHelper(const base::FilePath& helper,
                            const StringVector& relauncher_args,
-                           const StringVector& args) {
-  StringVector relaunch_args;
-  relaunch_args.push_back(helper.value());
-  relaunch_args.push_back(internal::kRelauncherTypeArg);
+                           const StringVector& argv) {
+  StringVector relaunch_argv;
+  relaunch_argv.push_back(helper.value());
+  relaunch_argv.push_back(internal::kRelauncherTypeArg);
 
-  relaunch_args.insert(relaunch_args.end(),
+  relaunch_argv.insert(relaunch_argv.end(),
                        relauncher_args.begin(), relauncher_args.end());
 
-  relaunch_args.push_back(internal::kRelauncherArgSeparator);
+  relaunch_argv.push_back(internal::kRelauncherArgSeparator);
 
-  relaunch_args.push_back(app.value());
-  relaunch_args.insert(relaunch_args.end(), args.begin(), args.end());
+  relaunch_argv.insert(relaunch_argv.end(), argv.begin(), argv.end());
 
 #if defined(OS_POSIX)
   int pipe_fds[2];
@@ -99,10 +97,10 @@ bool RelaunchAppWithHelper(const base::FilePath& app,
   base::LaunchOptions options;
 #if defined(OS_POSIX)
   options.fds_to_remap = &fd_map;
-  base::Process process = base::LaunchProcess(relaunch_args, options);
+  base::Process process = base::LaunchProcess(relaunch_argv, options);
 #elif defined(OS_WIN)
   base::Process process = base::LaunchProcess(
-      base::JoinString(relaunch_args, L" "), options);
+      base::JoinString(relaunch_argv, L" "), options);
 #endif
   if (!process.IsValid()) {
     LOG(ERROR) << "base::LaunchProcess failed";
@@ -158,15 +156,15 @@ int RelauncherMain(const content::MainFunctionParams& main_parameters) {
 
   // Figure out what to execute, what arguments to pass it, and whether to
   // start it in the background.
-  bool in_relaunch_args = false;
+  bool in_relauncher_args = false;
   StringType relaunch_executable;
   StringVector relauncher_args;
   StringVector launch_argv;
   for (size_t argv_index = 2; argv_index < argv.size(); ++argv_index) {
     const StringType& arg(argv[argv_index]);
-    if (!in_relaunch_args) {
+    if (!in_relauncher_args) {
       if (arg == internal::kRelauncherArgSeparator) {
-        in_relaunch_args = true;
+        in_relauncher_args = true;
       } else {
         relauncher_args.push_back(arg);
       }
