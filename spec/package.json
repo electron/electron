@@ -13,7 +13,7 @@
     "temp": "0.8.1",
     "walkdir": "0.0.7",
     "ws": "0.7.2",
-    "yargs": "^3.31.0"
+    "yargs": "^4.7.1"
   },
   "optionalDependencies": {
     "ffi": "2.0.0",
