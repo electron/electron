@@ -8,7 +8,7 @@
 * Python 2.7.x. 몇몇 CentOS와 같은 배포판들은 아직도 Python 2.6.x 버전을 사용합니다.
   그래서 먼저 `python -V`를 통해 버전을 확인할 필요가 있습니다.
 * Node.js v0.12.x. Node를 설치하는 방법은 여러 가지가 있습니다. 먼저,
-  [Node.js](http://nodejs.org) 사이트에서 소스코드를 받아 빌드하는 방법입니다.
+  [Node.js](http://nodejs.org) 사이트에서 소스 코드를 받아 빌드하는 방법입니다.
   이렇게 하면 Node를 일반 유저로 홈 디렉터리에 설치할 수 있습니다. 다른 방법으로는
   [NodeSource](https://nodesource.com/blog/nodejs-v012-iojs-and-the-nodesource-linux-repositories)에서
   소스 파일을 받아와 설치할 수 있습니다. 자세한 내용은 [Node.js 설치 방법](https://github.com/joyent/node/wiki/Installation)을
@@ -34,7 +34,7 @@ $ sudo yum install clang dbus-devel gtk2-devel libnotify-devel libgnome-keyring-
 ```
 
 다른 배포판의 경우 pacman 같은 패키지 매니저를 통해 패키지를 설치 할 수 있습니다.
-패키지의 이름은 대부분 위 예시와 비슷할 것입니다. 또는 소스코드를 내려받아
+패키지의 이름은 대부분 위 예시와 비슷할 것입니다. 또는 소스 코드를 내려받아
 직접 빌드하는 방법도 있습니다.
 
 ## 코드 가져오기

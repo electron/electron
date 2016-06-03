@@ -36,8 +36,10 @@ win.show();
 
 * `width` Integer - 윈도우의 가로 너비. 기본값은 `800`입니다.
 * `height` Integer - 윈도우의 세로 높이. 기본값은 `600`입니다.
-* `x` Integer - 화면을 기준으로 창 좌측을 오프셋 한 위치. 기본값은 `화면중앙`입니다.
-* `y` Integer - 화면을 기준으로 창 상단을 오프셋 한 위치. 기본값은 `화면중앙`입니다.
+* `x` Integer (**required** y가 사용되면) - 화면을 기준으로 창 좌측을 오프셋 한 위치.
+  기본값은 `화면중앙`입니다.
+* `y` Integer (**required** x가 사용되면) - 화면을 기준으로 창 상단을 오프셋 한 위치.
+  기본값은 `화면중앙`입니다.
 * `useContentSize` Boolean - `width`와 `height`를 웹 페이지의 크기로 사용합니다.
   이 속성을 사용하면 웹 페이지의 크기에 윈도우 프레임 크기가 추가되므로 실제 창은 조금
   더 커질 수 있습니다. 기본값은 `false`입니다.
@@ -61,14 +63,21 @@ win.show();
 * `fullscreen` Boolean - 윈도우의 전체화면 활성화 여부. 이 속성을 명시적으로
   `false`로 지정했을 경우, OS X에선 전체화면 버튼이 숨겨지거나 비활성됩니다. 기본값은
   `false` 입니다.
-* `fullscreenable` Boolean - OS X의 최대화/줌 버튼이 전체화면 모드 또는 윈도우
-  최대화를 토글할 수 있게 할지 여부입니다. 기본값은 `true` 입니다.
+* `fullscreenable` Boolean - 윈도우가 전체화면 모드로 전환될 수 있는지 여부입니다.
+  또한 OS X에선, 최대화/줌 버튼이 전체화면 모드 또는 윈도우 최대화를 실행할지 여부도
+  포함됩니다. 기본값은 `true`입니다.
 * `skipTaskbar` Boolean - 작업표시줄 어플리케이션 아이콘 표시 스킵 여부. 기본값은
   `false`입니다.
 * `kiosk` Boolean - Kiosk(키오스크) 모드. 기본값은 `false`입니다.
 * `title` String - 기본 윈도우 제목. 기본값은 `"Electron"`입니다.
 * `icon` [NativeImage](native-image.md) - 윈도우 아이콘, 생략하면 실행 파일의
   아이콘이 대신 사용됩니다.
+* `icon` [NativeImage](native-image.md) - 윈도우 아이콘. Windows에선 가장 좋은
+  시각적 효과를 얻기 위해 `ICO`를 사용하는 것을 권장하며, 또한 undefined로 남겨두면
+  실행 파일의 아이콘이 대신 사용됩니다.
+On Windows it is
+  recommended to use `ICO` icons to get best visual effects, you can also
+  leave it undefined so the executable's icon will be used.
 * `show` Boolean - 윈도우가 생성되면 보여줄지 여부. 기본값은 `true`입니다.
 * `frame` Boolean - `false`로 지정하면 창을 [Frameless Window](frameless-window.md)
   형태로 생성합니다. 기본값은 `true`입니다.
@@ -209,19 +218,17 @@ Returns:
 
 보통 창을 닫아야 할지 결정하기 위해 `beforeunload` 이벤트를 사용하려고 할 것입니다.
 이 이벤트는 윈도우 콘텐츠를 새로고칠 때도 발생합니다.
-Electron에선 빈 문자열 또는 `false`를 전달할 경우 윈도우 종료를 취소합니다.
-
+Electron에선 `undefined`가 아닌 이외의 값을 전달할 경우 윈도우 종료를 취소합니다.
 예시는 다음과 같습니다:
 
 ```javascript
 window.onbeforeunload = (e) => {
   console.log('I do not want to be closed');
 
-  // 반드시 문자열을 반환해야 하고 사용자에게 페이지 언로드에 대한 확인 창을 보여주는
-  // 보통의 브라우저와는 달리 Electron은 개발자에게 더 많은 옵션을 제공합니다.
-  // 빈 문자열을 반환하거나 false를 반환하면 페이지 언로드를 방지합니다.
-  // 또한 dialog API를 통해 사용자에게 어플리케이션을 종료할지에 대한 확인 창을
-  // 보여줄 수도 있습니다.
+  // 일반적인 브라우저와는 달리 사용자에게 확인 창을 보여주지 않고, non-void 값을 반환하면
+  // 조용히 닫기를 취소합니다.
+  // Dialog API를 통해 사용자가 어플리케이션을 종료할지 정할 수 있도록 확인 창을 표시하는 것을
+  // 추천합니다.
   e.returnValue = false;
 };
 ```
@@ -676,7 +683,7 @@ let win = new BrowserWindow({width: 800, height: 600});
 
 **참고:** 웹 페이지의 제목과 네이티브 윈도우의 제목은 서로 다를 수 있습니다.
 
-### `win.setSheetOffset(offset)` _OS X_
+### `win.setSheetOffset(offsetY[, offsetX])` _OS X_
 
 Mac OS X에서 시트를 부착할 위치를 지정합니다. 기본적으로 시트는 윈도우의 프레임 바로
 아래의 위치에 부착됩니다. 아마도 이 기능은 보통 다음과 같이 HTML 렌더링된 툴바 밑에
@@ -860,6 +867,12 @@ Linux 플랫폼에선 Unity 데스크톱 환경만 지원합니다. 그리고 �
 ### `win.showDefinitionForSelection()` _OS X_
 
 페이지의 선택된 단어에 대한 사전 검색 결과 팝업을 표시합니다.
+
+### `win.setIcon(icon)` _Windows_ _Linux_
+
+* `icon` [NativeImage](native-image.md)
+
+윈도우 아이콘을 변경합니다.
 
 ### `win.setAutoHideMenuBar(hide)`
 

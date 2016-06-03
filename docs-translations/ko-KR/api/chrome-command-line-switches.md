@@ -22,11 +22,15 @@ app.on('ready', () => {
 
 ## --disable-http-cache
 
-HTTP 요청 캐시를 비활성화 합니다.
+HTTP 요청 캐시를 비활성화합니다.
+
+## --disable-http2
+
+HTTP/2와 SPDY/3.1 프로토콜을 비활성화합니다.
 
 ## --remote-debugging-port=`port`
 
-지정한 `port`에 HTTP 기반의 리모트 디버거를 활성화 시킵니다. (개발자 도구)
+지정한 `port`에 HTTP 기반의 리모트 디버거를 활성화합니다. (개발자 도구)
 
 ## --js-flags=`flags`
 
@@ -90,6 +94,24 @@ resolver, http 프록시 연결의 `CONNECT`, `SOCKS` 프록시 연결의 endpoi
 ## --host-resolver-rules=`rules`
 
 `--host-rules` 플래그와 비슷하지만 이 플래그는 host resolver에만 적용됩니다.
+
+## --auth-server-whitelist=`url`
+
+통합 인증을 사용하도록 설정할 쉼표로 구분된 서버의 리스트.
+
+예를 들어:
+
+```
+--auth-server-whitelist='*example.com, *foobar.com, *baz'
+```
+
+그리고 모든 `example.com`, `foobar.com`, `baz`로 끝나는 `url`은 통합 인증을
+사용하도록 설정됩니다. `*` 접두어가 없다면 url은 정확히 일치해야 합니다.
+
+## --auth-negotiate-delegate-whitelist=`url`
+
+필수적인 사용자 자격 증명을 보내야 할 쉼표로 구분된 서버의 리스트.
+`*` 접두어가 없다면 url은 정확히 일치해야 합니다.
 
 ## --ignore-certificate-errors
 
