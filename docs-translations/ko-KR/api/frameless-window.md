@@ -1,6 +1,8 @@
 # Frameless Window
 
-Frameless Window는 [창 테두리](https://developer.mozilla.org/en-US/docs/Glossary/Chrome)가
+> 툴바, 테두리, 시각적인 "chrome" 없이 윈도우를 엽니다.
+
+Frameless Window는 [창 테두리](https://developer.mozilla.org/ko/docs/Glossary/Chrome)가
 없는 윈도우를 말합니다. 이 기능은 윈도우의 일부분인 툴바와 같이 웹 페이지의 일부분이
 아닌 부분을 보이지 않도록 합니다. [`BrowserWindow`](browser-window.md) 클래스의
 옵션에서 설정할 수 있습니다.
@@ -11,8 +13,8 @@ Frameless Window를 만드려면 [BrowserWindow](browser-window.md) 객체의
 `options` 객체에서 `frame` 옵션을 `false`로 지정하면 됩니다:
 
 ```javascript
-const BrowserWindow = require('electron').BrowserWindow;
-var win = new BrowserWindow({ width: 800, height: 600, frame: false });
+const {BrowserWindow} = require('electron');
+let win = new BrowserWindow({width: 800, height: 600, frame: false});
 ```
 
 ### 최신 OS X에서 사용할 수 있는 대안
@@ -20,10 +22,10 @@ var win = new BrowserWindow({ width: 800, height: 600, frame: false });
 OS X 10.10 Yosemite 이후의 최신 버전부터는 테두리가 없는 창을 만들 때 새로운 방법을
 사용할 수 있습니다. `frame` 옵션을 `false`로 지정하여 제목과 창 구성 요소를 모두
 비활성화하는 대신 새로운 `titleBarStyle` 옵션을 통해 제목만 숨기고 창 구성 요소
-("흔히 신호등으로 알고 있는")의 기능과 창 크기를 그대로 유지할 수 있습니다:
+("신호등 버튼")의 기능과 창 크기를 그대로 유지할 수 있습니다:
 
 ```javascript
-var win = new BrowserWindow({ 'titleBarStyle': 'hidden' });
+let win = new BrowserWindow({titleBarStyle: 'hidden'});
 ```
 
 ## 투명한 창 만들기
@@ -32,17 +34,17 @@ Frameless Window 창의 배경을 투명하게 만들고 싶다면 `transparent`
 바꿔주기만 하면됩니다:
 
 ```javascript
-var win = new BrowserWindow({ transparent: true, frame: false });
+let win = new BrowserWindow({transparent: true, frame: false});
 ```
 
 ### API의 한계
 
 * 투명한 영역을 통과하여 클릭할 수 없습니다. 우리는 이 문제를 해결하기 위해 API를
   제공할 예정이며 자세한 내용은
-  [이슈](https://github.com/atom/electron/issues/1335)를 참고하세요.
+  [이슈](https://github.com/electron/electron/issues/1335)를 참고하세요.
 * 투명한 창은 크기를 조절할 수 없습니다. `resizable` 속성을 `true`로 할 경우 몇몇
   플랫폼에선 크래시가 일어납니다.
-* `blur` 필터는 웹 페이지에서만 적용됩니다. 윈도우 아래 컨텐츠에는 블러 효과를 적용할
+* `blur` 필터는 웹 페이지에서만 적용됩니다. 윈도우 아래 콘텐츠에는 블러 효과를 적용할
   방법이 없습니다. (예시: 유저의 시스템에 열린 다른 어플리케이션)
 * Windows에선 DWM(데스크톱 창 관리자)가 비활성화되어 있을 경우 투명한 창이 작동하지
   않습니다.

@@ -6,10 +6,9 @@ URL에 포함되어 있습니다. 만약 그렇지 않다면, 아마 현재 보�
 수 있습니다. 또한 GitHub 인터페이스의 "Switch branches/tags" 드롭다운 메뉴에서도
 사용 중인 Electron 버전으로 변경할 수 있습니다.
 
-**역주:** 한국어 번역 문서는 `atom.io`에 반영되어 있지 않습니다. 따라서 번역 문서는
-GitHub 프로젝트내에서만 볼 수 있으며 `master` 브랜치의 문서는 현재 개발중인 프로젝트의
-문서입니다. 한국어 번역 문서는 현재 `upstream` 원본 문서의 변경에 따라 최대한 문서의
-버전을 맞추려고 노력하고 있지만 가끔 누락된 번역이 존재할 수 있습니다.
+**역주:** 한국어 번역 문서는 `atom.io`에 반영되어 있지 않습니다. 한국어 번역 문서는
+현재 `upstream` 원본 문서의 변경에 따라 최대한 문서의 버전을 맞추려고 노력하고 있지만
+가끔 누락된 번역이 존재할 수 있습니다.
 
 ## FAQ
 
@@ -21,8 +20,11 @@ Electron에 대해 자주 묻는 질문이 있습니다. 이슈를 생성하기 
 ## 개발 가이드
 
 * [지원하는 플랫폼](tutorial/supported-platforms.md)
+* [보안](tutorial/security.md)
+* [Electron 버전 관리](tutorial/electron-versioning.md)
 * [어플리케이션 배포](tutorial/application-distribution.md)
 * [Mac 앱스토어 어플리케이션 제출 가이드](tutorial/mac-app-store-submission-guide.md)
+* [Windows 스토어 가이드](tutorial/windows-store-guide.md)
 * [어플리케이션 패키징](tutorial/application-packaging.md)
 * [네이티브 Node 모듈 사용하기](tutorial/using-native-node-modules.md)
 * [메인 프로세스 디버깅하기](tutorial/debugging-main-process.md)
@@ -30,6 +32,7 @@ Electron에 대해 자주 묻는 질문이 있습니다. 이슈를 생성하기 
 * [개발자 도구 확장 기능](tutorial/devtools-extension.md)
 * [Pepper 플래시 플러그인 사용하기](tutorial/using-pepper-flash-plugin.md)
 * [Widevine CDM 플러그인 사용하기](tutorial/using-widevine-cdm-plugin.md)
+* [Headless CI 시스템에서 테스팅하기 (Travis, Jenkins)](tutorial/testing-on-headless-ci.md)
 
 ## 튜토리얼
 
@@ -44,7 +47,7 @@ Electron에 대해 자주 묻는 질문이 있습니다. 이슈를 생성하기 
 * [크롬 명령줄 스위치 지원](api/chrome-command-line-switches.md)
 * [환경 변수](api/environment-variables.md)
 
-### 커스텀 DOM elements:
+### 커스텀 DOM 요소:
 
 * [`File` 객체](api/file-object.md)
 * [`<webview>` 태그](api/web-view-tag.md)
@@ -65,10 +68,11 @@ Electron에 대해 자주 묻는 질문이 있습니다. 이슈를 생성하기 
 * [powerSaveBlocker](api/power-save-blocker.md)
 * [protocol](api/protocol.md)
 * [session](api/session.md)
+* [systemPreferences](api/system-preferences.md)
 * [webContents](api/web-contents.md)
 * [Tray](api/tray.md)
 
-### 랜더러 프로세스에서 사용할 수 있는 모듈 (웹 페이지):
+### 렌더러 프로세스에서 사용할 수 있는 모듈 (웹 페이지):
 
 * [desktopCapturer](api/desktop-capturer.md)
 * [ipcRenderer](api/ipc-renderer.md)
@@ -92,4 +96,5 @@ Electron에 대해 자주 묻는 질문이 있습니다. 이슈를 생성하기 
 * [빌드 설명서 (OS X)](development/build-instructions-osx.md)
 * [빌드 설명서 (Windows)](development/build-instructions-windows.md)
 * [빌드 설명서 (Linux)](development/build-instructions-linux.md)
-* [디버거에서 디버그 심볼 서버 설정](development/setting-up-symbol-server.md)
+* [디버그 설명서 (Windows)](development/debug-instructions-windows.md)
+* [디버거 심볼 서버 설정](development/setting-up-symbol-server.md)

@@ -86,7 +86,7 @@ bool WriteReportIDToFile(const std::wstring& dump_path,
   if (!file.is_open())
     return false;
 
-  int64 seconds_since_epoch =
+  int64_t seconds_since_epoch =
       (base::Time::Now() - base::Time::UnixEpoch()).InSeconds();
   std::wstring line = base::Int64ToString16(seconds_since_epoch);
   line += L',';
@@ -211,7 +211,7 @@ bool CrashService::Initialize(const base::string16& application_name,
   std::wstring pipe_name = kTestPipeName;
   int max_reports = -1;
 
-  // The checkpoint file allows CrashReportSender to enforce the the maximum
+  // The checkpoint file allows CrashReportSender to enforce the maximum
   // reports per day quota. Does not seem to serve any other purpose.
   base::FilePath checkpoint_path = operating_dir.Append(kCheckPointFile);
 
@@ -327,7 +327,7 @@ void CrashService::OnClientConnected(void* context,
 
 void CrashService::OnClientExited(void* context,
     const google_breakpad::ClientInfo* client_info) {
-  ProcessingLock lock;
+  ProcessingLock processing_lock;
   VLOG(1) << "client end. pid = " << client_info->pid();
   CrashService* self = static_cast<CrashService*>(context);
   ::InterlockedIncrement(&self->clients_terminated_);
@@ -440,10 +440,12 @@ DWORD CrashService::AsyncSendDump(void* context) {
       // termination of the service object.
       base::AutoLock lock(info->self->sending_);
       VLOG(1) << "trying to send report for pid = " << info->pid;
+      std::map<std::wstring, std::wstring> file_map;
+      file_map[L"upload_file_minidump"] = info->dump_path;
       google_breakpad::ReportResult send_result
           = info->self->sender_->SendCrashReport(info->self->reporter_url_,
                                                  info->map,
-                                                 info->dump_path,
+                                                 file_map,
                                                  &report_id);
       switch (send_result) {
         case google_breakpad::RESULT_FAILED:

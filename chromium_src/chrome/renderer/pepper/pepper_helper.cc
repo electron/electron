@@ -18,9 +18,9 @@ void PepperHelper::DidCreatePepperPlugin(content::RendererPpapiHost* host) {
   // TODO(brettw) figure out how to hook up the host factory. It needs some
   // kind of filter-like system to allow dynamic additions.
   host->GetPpapiHost()->AddHostFactoryFilter(
-      scoped_ptr<ppapi::host::HostFactory>(
+      std::unique_ptr<ppapi::host::HostFactory>(
           new ChromeRendererPepperHostFactory(host)));
   host->GetPpapiHost()->AddInstanceMessageFilter(
-      scoped_ptr<ppapi::host::InstanceMessageFilter>(
+      std::unique_ptr<ppapi::host::InstanceMessageFilter>(
           new PepperSharedMemoryMessageFilter(host)));
 }

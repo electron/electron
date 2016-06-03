@@ -1,27 +1,30 @@
 # DownloadItem
 
-`DownloadItem` is an EventEmitter represents a download item in Electron. It
-is used in `will-download` event of `Session` module, and allows users to
+> Control file downloads from remote sources.
+
+`DownloadItem` is an EventEmitter that represents a download item in Electron.
+It is used in `will-download` event of `Session` module, and allows users to
 control the download item.
 
 ```javascript
 // In the main process.
-win.webContents.session.on('will-download', function(event, item, webContents) {
+win.webContents.session.on('will-download', (event, item, webContents) => {
   // Set the save path, making Electron not to prompt a save dialog.
   item.setSavePath('/tmp/save.pdf');
   console.log(item.getMimeType());
   console.log(item.getFilename());
   console.log(item.getTotalBytes());
-  item.on('updated', function() {
+  item.on('updated', () => {
     console.log('Received bytes: ' + item.getReceivedBytes());
   });
-  item.on('done', function(e, state) {
-    if (state == "completed") {
-      console.log("Download successfully");
+  item.on('done', (e, state) => {
+    if (state === 'completed') {
+      console.log('Download successfully');
     } else {
-      console.log("Download is cancelled or interrupted that can't be resumed");
+      console.log('Download is cancelled or interrupted that can\'t be resumed');
     }
   });
+});
 ```
 
 ## Events

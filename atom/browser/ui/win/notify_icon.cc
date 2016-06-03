@@ -9,7 +9,6 @@
 #include "base/strings/utf_string_conversions.h"
 #include "base/win/windows_version.h"
 #include "third_party/skia/include/core/SkBitmap.h"
-#include "ui/gfx/icon_util.h"
 #include "ui/gfx/image/image.h"
 #include "ui/gfx/geometry/point.h"
 #include "ui/gfx/geometry/rect.h"
@@ -80,7 +79,7 @@ void NotifyIcon::ResetIcon() {
   InitIconData(&icon_data);
   icon_data.uFlags |= NIF_MESSAGE;
   icon_data.uCallbackMessage = message_id_;
-  icon_data.hIcon = icon_.Get();
+  icon_data.hIcon = icon_.get();
   // If we have an image, then set the NIF_ICON flag, which tells
   // Shell_NotifyIcon() to set the image for the status icon it creates.
   if (icon_data.hIcon)
@@ -91,19 +90,20 @@ void NotifyIcon::ResetIcon() {
     LOG(WARNING) << "Unable to re-create status tray icon.";
 }
 
-void NotifyIcon::SetImage(const gfx::Image& image) {
+void NotifyIcon::SetImage(HICON image) {
+  icon_ = base::win::ScopedHICON(CopyIcon(image));
+
   // Create the icon.
   NOTIFYICONDATA icon_data;
   InitIconData(&icon_data);
   icon_data.uFlags |= NIF_ICON;
-  icon_.Set(IconUtil::CreateHICONFromSkBitmap(image.AsBitmap()));
-  icon_data.hIcon = icon_.Get();
+  icon_data.hIcon = image;
   BOOL result = Shell_NotifyIcon(NIM_MODIFY, &icon_data);
   if (!result)
     LOG(WARNING) << "Error setting status tray icon image";
 }
 
-void NotifyIcon::SetPressedImage(const gfx::Image& image) {
+void NotifyIcon::SetPressedImage(HICON image) {
   // Ignore pressed images, since the standard on Windows is to not highlight
   // pressed status icons.
 }
@@ -119,7 +119,7 @@ void NotifyIcon::SetToolTip(const std::string& tool_tip) {
     LOG(WARNING) << "Unable to set tooltip for status tray icon";
 }
 
-void NotifyIcon::DisplayBalloon(const gfx::Image& icon,
+void NotifyIcon::DisplayBalloon(HICON icon,
                                 const base::string16& title,
                                 const base::string16& contents) {
   NOTIFYICONDATA icon_data;
@@ -129,13 +129,8 @@ void NotifyIcon::DisplayBalloon(const gfx::Image& icon,
   wcsncpy_s(icon_data.szInfoTitle, title.c_str(), _TRUNCATE);
   wcsncpy_s(icon_data.szInfo, contents.c_str(), _TRUNCATE);
   icon_data.uTimeout = 0;
-
-  base::win::Version win_version = base::win::GetVersion();
-  if (!icon.IsEmpty() && win_version != base::win::VERSION_PRE_XP) {
-    balloon_icon_.Set(IconUtil::CreateHICONFromSkBitmap(icon.AsBitmap()));
-    icon_data.hBalloonIcon = balloon_icon_.Get();
-    icon_data.dwInfoFlags = NIIF_USER | NIIF_LARGE_ICON;
-  }
+  icon_data.hBalloonIcon = icon;
+  icon_data.dwInfoFlags = NIIF_USER | NIIF_LARGE_ICON;
 
   BOOL result = Shell_NotifyIcon(NIM_MODIFY, &icon_data);
   if (!result)
@@ -155,7 +150,7 @@ void NotifyIcon::PopUpContextMenu(const gfx::Point& pos,
   // Show menu at mouse's position by default.
   gfx::Rect rect(pos, gfx::Size());
   if (pos.IsOrigin())
-    rect.set_origin(gfx::Screen::GetNativeScreen()->GetCursorScreenPoint());
+    rect.set_origin(gfx::Screen::GetScreen()->GetCursorScreenPoint());
 
   views::MenuRunner menu_runner(
       menu_model,

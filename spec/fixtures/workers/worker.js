@@ -1,3 +1,3 @@
-this.onmessage = function(msg) {
-  this.postMessage(msg.data);
-};
+this.onmessage = function (msg) {
+  this.postMessage(msg.data)
+}

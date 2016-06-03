@@ -12,12 +12,11 @@
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/window_list.h"
 #include "atom/common/api/api_messages.h"
-#include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/options_switches.h"
 #include "base/files/file_util.h"
 #include "base/json/json_writer.h"
-#include "base/prefs/pref_service.h"
+#include "components/prefs/pref_service.h"
 #include "base/message_loop/message_loop.h"
 #include "base/strings/utf_string_conversions.h"
 #include "brightray/browser/inspectable_web_contents.h"
@@ -27,6 +26,7 @@
 #include "content/public/browser/plugin_service.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
+#include "content/public/browser/render_widget_host.h"
 #include "content/public/browser/render_widget_host_view.h"
 #include "content/public/common/content_switches.h"
 #include "ipc/ipc_message_macros.h"
@@ -48,11 +48,12 @@ NativeWindow::NativeWindow(
     const mate::Dictionary& options)
     : content::WebContentsObserver(inspectable_web_contents->GetWebContents()),
       has_frame_(true),
-      force_using_draggable_region_(false),
       transparent_(false),
       enable_larger_than_screen_(false),
       is_closed_(false),
       has_dialog_attached_(false),
+      sheet_offset_x_(0.0),
+      sheet_offset_y_(0.0),
       aspect_ratio_(0.0),
       inspectable_web_contents_(inspectable_web_contents),
       weak_factory_(this) {
@@ -63,9 +64,6 @@ NativeWindow::NativeWindow(
   // Tell the content module to initialize renderer widget with transparent
   // mode.
   ui::GpuSwitchingManager::SetTransparent(transparent_);
-
-  // Read icon before window is created.
-  options.Get(options::kIcon, &icon_);
 
   WindowList::AddWindow(this);
 }
@@ -115,6 +113,12 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
   } else {
     SetSizeConstraints(size_constraints);
   }
+#if defined(USE_X11)
+  bool resizable;
+  if (options.Get(options::kResizable, &resizable)) {
+    SetResizable(resizable);
+  }
+#endif
 #if defined(OS_WIN) || defined(USE_X11)
   bool closable;
   if (options.Get(options::kClosable, &closable)) {
@@ -133,12 +137,20 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
   if (options.Get(options::kAlwaysOnTop, &top) && top) {
     SetAlwaysOnTop(true);
   }
-#if defined(OS_MACOSX) || defined(OS_WIN)
-  bool fullscreen;
-  if (options.Get(options::kFullscreen, &fullscreen) && fullscreen) {
+  bool fullscreenable = true;
+  bool fullscreen = false;
+  if (options.Get(options::kFullscreen, &fullscreen) && !fullscreen) {
+    // Disable fullscreen button if 'fullscreen' is specified to false.
+  #if defined(OS_MACOSX)
+    fullscreenable = false;
+  #endif
+  }
+  // Overriden by 'fullscreenable'.
+  options.Get(options::kFullScreenable, &fullscreenable);
+  SetFullScreenable(fullscreenable);
+  if (fullscreen) {
     SetFullScreen(true);
   }
-#endif
   bool skip;
   if (options.Get(options::kSkipTaskbar, &skip) && skip) {
     SetSkipTaskbar(skip);
@@ -150,6 +162,9 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
   std::string color;
   if (options.Get(options::kBackgroundColor, &color)) {
     SetBackgroundColor(color);
+  } else if (!transparent()) {
+    // For normal window, use white as default background.
+    SetBackgroundColor("#FFFF");
   }
   std::string title("Electron");
   options.Get(options::kTitle, &title);
@@ -239,6 +254,19 @@ gfx::Size NativeWindow::GetMaximumSize() {
   return GetSizeConstraints().GetMaximumSize();
 }
 
+void NativeWindow::SetSheetOffset(const double offsetX, const double offsetY) {
+  sheet_offset_x_ = offsetX;
+  sheet_offset_y_ = offsetY;
+}
+
+double NativeWindow::GetSheetOffsetX() {
+  return sheet_offset_x_;
+}
+
+double NativeWindow::GetSheetOffsetY() {
+  return sheet_offset_y_;
+}
+
 void NativeWindow::SetRepresentedFilename(const std::string& filename) {
 }
 
@@ -264,15 +292,15 @@ bool NativeWindow::HasModalDialog() {
 }
 
 void NativeWindow::FocusOnWebView() {
-  web_contents()->GetRenderViewHost()->Focus();
+  web_contents()->GetRenderViewHost()->GetWidget()->Focus();
 }
 
 void NativeWindow::BlurWebView() {
-  web_contents()->GetRenderViewHost()->Blur();
+  web_contents()->GetRenderViewHost()->GetWidget()->Blur();
 }
 
 bool NativeWindow::IsWebViewFocused() {
-  auto host_view = web_contents()->GetRenderViewHost()->GetView();
+  auto host_view = web_contents()->GetRenderViewHost()->GetWidget()->GetView();
   return host_view && host_view->HasFocus();
 }
 
@@ -294,9 +322,9 @@ void NativeWindow::CapturePage(const gfx::Rect& rect,
   // current system, increase the requested bitmap size to capture it all.
   gfx::Size bitmap_size = view_size;
   const gfx::NativeView native_view = view->GetNativeView();
-  gfx::Screen* const screen = gfx::Screen::GetScreenFor(native_view);
   const float scale =
-      screen->GetDisplayNearestWindow(native_view).device_scale_factor();
+      gfx::Screen::GetScreen()->GetDisplayNearestWindow(native_view)
+      .device_scale_factor();
   if (scale > 1.0f)
     bitmap_size = gfx::ScaleToCeiledSize(view_size, scale);
 
@@ -388,7 +416,7 @@ void NativeWindow::RendererUnresponsive(content::WebContents* source) {
   // responsive event soon. This could happen after the whole application had
   // blocked for a while.
   // Also notice that when closing this event would be ignored because we have
-  // explicity started a close timeout counter. This is on purpose because we
+  // explicitly started a close timeout counter. This is on purpose because we
   // don't want the unresponsive event to be sent too early when user is closing
   // the window.
   ScheduleUnresponsiveEvent(50);
@@ -415,6 +443,14 @@ void NativeWindow::NotifyWindowBlur() {
 
 void NativeWindow::NotifyWindowFocus() {
   FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnWindowFocus());
+}
+
+void NativeWindow::NotifyWindowShow() {
+  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnWindowShow());
+}
+
+void NativeWindow::NotifyWindowHide() {
+  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnWindowHide());
 }
 
 void NativeWindow::NotifyWindowMaximize() {
@@ -460,6 +496,11 @@ void NativeWindow::NotifyWindowScrollTouchEnd() {
                     OnWindowScrollTouchEnd());
 }
 
+void NativeWindow::NotifyWindowSwipe(const std::string& direction) {
+  FOR_EACH_OBSERVER(NativeWindowObserver, observers_,
+                    OnWindowSwipe(direction));
+}
+
 void NativeWindow::NotifyWindowLeaveFullScreen() {
   FOR_EACH_OBSERVER(NativeWindowObserver, observers_,
                     OnWindowLeaveFullScreen());
@@ -489,9 +530,9 @@ void NativeWindow::NotifyWindowMessage(
 }
 #endif
 
-scoped_ptr<SkRegion> NativeWindow::DraggableRegionsToSkRegion(
+std::unique_ptr<SkRegion> NativeWindow::DraggableRegionsToSkRegion(
     const std::vector<DraggableRegion>& regions) {
-  scoped_ptr<SkRegion> sk_region(new SkRegion);
+  std::unique_ptr<SkRegion> sk_region(new SkRegion);
   for (const DraggableRegion& region : regions) {
     sk_region->op(
         region.bounds.x(),
@@ -500,7 +541,7 @@ scoped_ptr<SkRegion> NativeWindow::DraggableRegionsToSkRegion(
         region.bounds.bottom(),
         region.draggable ? SkRegion::kUnion_Op : SkRegion::kDifference_Op);
   }
-  return sk_region.Pass();
+  return sk_region;
 }
 
 void NativeWindow::RenderViewCreated(
@@ -536,7 +577,7 @@ bool NativeWindow::OnMessageReceived(const IPC::Message& message) {
 void NativeWindow::UpdateDraggableRegions(
     const std::vector<DraggableRegion>& regions) {
   // Draggable region is not supported for non-frameless window.
-  if (has_frame_ && !force_using_draggable_region_)
+  if (has_frame_)
     return;
   draggable_region_ = DraggableRegionsToSkRegion(regions);
 }
@@ -567,29 +608,6 @@ void NativeWindow::OnCapturePageDone(const CapturePageCallback& callback,
                                      const SkBitmap& bitmap,
                                      content::ReadbackResponse response) {
   callback.Run(bitmap);
-}
-
-SkColor NativeWindow::ParseHexColor(const std::string& name) {
-  auto color = name.substr(1);
-  unsigned length = color.size();
-  SkColor result = (length != 8 ? 0xFF000000 : 0x00000000);
-  unsigned value = 0;
-  if (length != 3 && length != 6 && length != 8)
-    return result;
-  for (unsigned i = 0; i < length; ++i) {
-    if (!base::IsHexDigit(color[i]))
-      return result;
-    value <<= 4;
-    value |= (color[i] < 'A' ? color[i] - '0' : (color[i] - 'A' + 10) & 0xF);
-  }
-  if (length == 6 || length == 8) {
-    result |= value;
-    return result;
-  }
-  result |= (value & 0xF00) << 12 | (value & 0xF00) << 8
-      | (value & 0xF0) << 8 | (value & 0xF0) << 4
-      | (value & 0xF) << 4 | (value & 0xF);
-  return result;
 }
 
 }  // namespace atom

@@ -37,6 +37,7 @@ bool JavascriptEnvironment::Initialize() {
     v8::V8::SetFlagsFromString(js_flags.c_str(), js_flags.size());
 
   gin::IsolateHolder::Initialize(gin::IsolateHolder::kNonStrictMode,
+                                 gin::IsolateHolder::kStableV8Extras,
                                  gin::ArrayBufferAllocator::SharedInstance());
   return true;
 }

@@ -12,7 +12,7 @@ propose changes to this document in a pull request.
 
 ## Submitting Issues
 
-* You can create an issue [here](https://github.com/atom/electron/issues/new),
+* You can create an issue [here](https://github.com/electron/electron/issues/new),
 but before doing that please read the notes below and include as many details as
 possible with your report. If you can, please include:
   * The version of Electron you are using
@@ -22,13 +22,13 @@ possible with your report. If you can, please include:
 * Other things that will help resolve your issue:
   * Screenshots and animated GIFs
   * Error output that appears in your terminal, dev tools or as an alert
-  * Perform a [cursory search](https://github.com/atom/electron/issues?utf8=✓&q=is%3Aissue+)
+  * Perform a [cursory search](https://github.com/electron/electron/issues?utf8=✓&q=is%3Aissue+)
   to see if a similar issue has already been submitted
 
 ## Submitting Pull Requests
 
 * Include screenshots and animated GIFs in your pull request whenever possible.
-* Follow the CoffeeScript, JavaScript, C++ and Python [coding style defined in docs](/docs/development/coding-style.md).
+* Follow the JavaScript, C++, and Python [coding style defined in docs](/docs/development/coding-style.md).
 * Write documentation in [Markdown](https://daringfireball.net/projects/markdown).
   See the [Documentation Styleguide](/docs/styleguide.md).
 * Use short, present tense commit messages. See [Commit Message Styleguide](#git-commit-messages).

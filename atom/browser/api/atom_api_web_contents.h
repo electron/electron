@@ -55,6 +55,9 @@ class WebContents : public mate::TrackableObject<WebContents>,
   static mate::Handle<WebContents> Create(
       v8::Isolate* isolate, const mate::Dictionary& options);
 
+  static void BuildPrototype(v8::Isolate* isolate,
+                             v8::Local<v8::ObjectTemplate> prototype);
+
   int GetID() const;
   bool Equal(const WebContents* web_contents) const;
   void LoadURL(const GURL& url, const mate::Dictionary& options);
@@ -62,6 +65,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   GURL GetURL() const;
   base::string16 GetTitle() const;
   bool IsLoading() const;
+  bool IsLoadingMainFrame() const;
   bool IsWaitingForResponse() const;
   void Stop();
   void ReloadIgnoringCache();
@@ -110,7 +114,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void Unselect();
   void Replace(const base::string16& word);
   void ReplaceMisspelling(const base::string16& word);
-  uint32 FindInPage(mate::Arguments* args);
+  uint32_t FindInPage(mate::Arguments* args);
   void StopFindInPage(content::StopFindAction action);
 
   // Focus.
@@ -118,7 +122,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void TabTraverse(bool reverse);
 
   // Send messages to browser.
-  bool SendIPCMessage(const base::string16& channel,
+  bool SendIPCMessage(bool all_frames,
+                      const base::string16& channel,
                       const base::ListValue& args);
 
   // Send WebInputEvent to the page.
@@ -131,13 +136,17 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   // Methods for creating <webview>.
   void SetSize(const SetSizeParams& params);
-  void SetAllowTransparency(bool allow);
   bool IsGuest() const;
 
   // Callback triggered on permission response.
   void OnEnterFullscreenModeForTab(content::WebContents* source,
                                    const GURL& origin,
                                    bool allowed);
+
+  // Create window with the given disposition.
+  void OnCreateWindow(const GURL& target_url,
+                      const std::string& frame_name,
+                      WindowOpenDisposition disposition);
 
   // Returns the web preferences of current WebContents.
   v8::Local<v8::Value> GetWebPreferences(v8::Isolate* isolate);
@@ -146,35 +155,23 @@ class WebContents : public mate::TrackableObject<WebContents>,
   v8::Local<v8::Value> GetOwnerBrowserWindow();
 
   // Properties.
+  int32_t ID() const;
   v8::Local<v8::Value> Session(v8::Isolate* isolate);
   content::WebContents* HostWebContents();
   v8::Local<v8::Value> DevToolsWebContents(v8::Isolate* isolate);
   v8::Local<v8::Value> Debugger(v8::Isolate* isolate);
 
-  // mate::TrackableObject:
-  static void BuildPrototype(v8::Isolate* isolate,
-                             v8::Local<v8::ObjectTemplate> prototype);
-
  protected:
-  explicit WebContents(content::WebContents* web_contents);
+  WebContents(v8::Isolate* isolate, content::WebContents* web_contents);
   WebContents(v8::Isolate* isolate, const mate::Dictionary& options);
   ~WebContents();
 
   // content::WebContentsDelegate:
   bool AddMessageToConsole(content::WebContents* source,
-                           int32 level,
+                           int32_t level,
                            const base::string16& message,
-                           int32 line_no,
+                           int32_t line_no,
                            const base::string16& source_id) override;
-  bool ShouldCreateWebContents(
-      content::WebContents* web_contents,
-      int route_id,
-      int main_frame_route_id,
-      WindowContainerType window_container_type,
-      const std::string& frame_name,
-      const GURL& target_url,
-      const std::string& partition_id,
-      content::SessionStorageNamespace* session_storage_namespace) override;
   content::WebContents* OpenURLFromTab(
       content::WebContents* source,
       const content::OpenURLParams& params) override;
@@ -202,6 +199,10 @@ class WebContents : public mate::TrackableObject<WebContents>,
                  const gfx::Rect& selection_rect,
                  int active_match_ordinal,
                  bool final_update) override;
+  bool CheckMediaAccessPermission(
+      content::WebContents* web_contents,
+      const GURL& security_origin,
+      content::MediaStreamType type) override;
   void RequestMediaAccessPermission(
       content::WebContents* web_contents,
       const content::MediaStreamRequest& request,
@@ -210,6 +211,9 @@ class WebContents : public mate::TrackableObject<WebContents>,
       content::WebContents* web_contents,
       bool user_gesture,
       bool last_unlocked_by_target) override;
+  std::unique_ptr<content::BluetoothChooser> RunBluetoothChooser(
+      content::RenderFrameHost* frame,
+      const content::BluetoothChooser::EventHandler& handler) override;
 
   // content::WebContentsObserver:
   void BeforeUnloadFired(const base::TimeTicks& proceed_time) override;
@@ -248,9 +252,12 @@ class WebContents : public mate::TrackableObject<WebContents>,
       const std::vector<content::FaviconURL>& urls) override;
   void PluginCrashed(const base::FilePath& plugin_path,
                      base::ProcessId plugin_pid) override;
-  void MediaStartedPlaying() override;
-  void MediaPaused() override;
+  void MediaStartedPlaying(const MediaPlayerId& id) override;
+  void MediaStoppedPlaying(const MediaPlayerId& id) override;
   void DidChangeThemeColor(SkColor theme_color) override;
+
+  // brightray::InspectableWebContentsDelegate:
+  void DevToolsReloadPage() override;
 
   // brightray::InspectableWebContentsViewDelegate:
   void DevToolsFocused() override;
@@ -266,7 +273,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   AtomBrowserContext* GetBrowserContext() const;
 
-  uint32 GetNextRequestId() {
+  uint32_t GetNextRequestId() {
     return ++request_id_;
   }
 
@@ -286,7 +293,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   v8::Global<v8::Value> devtools_web_contents_;
   v8::Global<v8::Value> debugger_;
 
-  scoped_ptr<WebViewGuestDelegate> guest_delegate_;
+  std::unique_ptr<WebViewGuestDelegate> guest_delegate_;
 
   // The host webcontents that may contain this webcontents.
   WebContents* embedder_;
@@ -295,7 +302,10 @@ class WebContents : public mate::TrackableObject<WebContents>,
   Type type_;
 
   // Request id used for findInPage request.
-  uint32 request_id_;
+  uint32_t request_id_;
+
+  // Whether background throttling is disabled.
+  bool background_throttling_;
 
   DISALLOW_COPY_AND_ASSIGN(WebContents);
 };

@@ -1,7 +1,8 @@
 # 빌드 시스템 개요
 
-Electron은 프로젝트 생성을 위해 `gyp`를 사용하며 `ninja`를 이용하여 빌드합니다.
-프로젝트 설정은 `.gyp` 와 `.gypi` 파일에서 볼 수 있습니다.
+Electron은 프로젝트 생성을 위해 [gyp](https://gyp.gsrc.io/)를 사용하며
+[ninja](https://ninja-build.org/)를 이용하여 빌드합니다. 프로젝트 설정은 `.gyp` 와
+`.gypi` 파일에서 볼 수 있습니다.
 
 ## gyp 파일
 

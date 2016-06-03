@@ -27,7 +27,7 @@ bool PrintWebViewHelper::RenderPreviewPage(
   PrintMsg_PrintPage_Params page_params;
   page_params.params = print_params;
   page_params.page_number = page_number;
-  scoped_ptr<PdfMetafileSkia> draft_metafile;
+  std::unique_ptr<PdfMetafileSkia> draft_metafile;
   PdfMetafileSkia* initial_render_metafile = print_preview_context_.metafile();
   if (print_preview_context_.IsModifiable() && is_print_ready_metafile_sent_) {
     draft_metafile.reset(new PdfMetafileSkia);
@@ -95,40 +95,16 @@ bool PrintWebViewHelper::PrintPagesNative(blink::WebFrame* frame,
 
   metafile.FinishDocument();
 
-  // Get the size of the resulting metafile.
-  uint32 buf_size = metafile.GetDataSize();
-  DCHECK_GT(buf_size, 0u);
-
   PrintHostMsg_DidPrintPage_Params printed_page_params;
-  printed_page_params.data_size = 0;
+  if (!CopyMetafileDataToSharedMem(
+          metafile, &printed_page_params.metafile_data_handle)) {
+    return false;
+  }
+
+  printed_page_params.content_area = params.params.printable_area;
+  printed_page_params.data_size = metafile.GetDataSize();
   printed_page_params.document_cookie = params.params.document_cookie;
   printed_page_params.page_size = params.params.page_size;
-  printed_page_params.content_area = params.params.printable_area;
-
-  {
-    base::SharedMemory shared_buf;
-    // Allocate a shared memory buffer to hold the generated metafile data.
-    if (!shared_buf.CreateAndMapAnonymous(buf_size)) {
-      NOTREACHED() << "Buffer allocation failed";
-      return false;
-    }
-
-    // Copy the bits into shared memory.
-    if (!metafile.GetData(shared_buf.memory(), buf_size)) {
-      NOTREACHED() << "GetData() failed";
-      shared_buf.Unmap();
-      return false;
-    }
-    shared_buf.GiveToProcess(base::GetCurrentProcessHandle(),
-                             &printed_page_params.metafile_data_handle);
-    shared_buf.Unmap();
-
-    printed_page_params.data_size = buf_size;
-    Send(new PrintHostMsg_DuplicateSection(
-        routing_id(),
-        printed_page_params.metafile_data_handle,
-        &printed_page_params.metafile_data_handle));
-  }
 
   for (size_t i = 0; i < printed_pages.size(); ++i) {
     printed_page_params.page_number = printed_pages[i];
@@ -182,13 +158,12 @@ void PrintWebViewHelper::PrintPageInternal(
       frame->getPrintPageShrink(params.page_number);
   float scale_factor = css_scale_factor * webkit_page_shrink_factor;
 
-  skia::PlatformCanvas* canvas = metafile->GetVectorCanvasForNewPage(
+  SkCanvas* canvas = metafile->GetVectorCanvasForNewPage(
       page_size, canvas_area, scale_factor);
   if (!canvas)
     return;
 
   MetafileSkiaWrapper::SetMetafileOnCanvas(*canvas, metafile);
-  skia::SetIsDraftMode(*canvas, is_print_ready_metafile_sent_);
 
 #if 0
   if (params.params.display_header_footer) {
@@ -216,24 +191,25 @@ void PrintWebViewHelper::PrintPageInternal(
 }
 
 bool PrintWebViewHelper::CopyMetafileDataToSharedMem(
-    PdfMetafileSkia* metafile,
+    const PdfMetafileSkia& metafile,
     base::SharedMemoryHandle* shared_mem_handle) {
-  uint32 buf_size = metafile->GetDataSize();
+  uint32_t buf_size = metafile.GetDataSize();
+  if (buf_size == 0)
+    return false;
+
   base::SharedMemory shared_buf;
   // Allocate a shared memory buffer to hold the generated metafile data.
-  if (!shared_buf.CreateAndMapAnonymous(buf_size)) {
-    NOTREACHED() << "Buffer allocation failed";
+  if (!shared_buf.CreateAndMapAnonymous(buf_size))
     return false;
-  }
 
   // Copy the bits into shared memory.
-  if (!metafile->GetData(shared_buf.memory(), buf_size)) {
-    NOTREACHED() << "GetData() failed";
-    shared_buf.Unmap();
+  if (!metafile.GetData(shared_buf.memory(), buf_size))
+    return false;
+
+  if (!shared_buf.GiveToProcess(base::GetCurrentProcessHandle(),
+                                shared_mem_handle)) {
     return false;
   }
-  shared_buf.GiveToProcess(base::GetCurrentProcessHandle(), shared_mem_handle);
-  shared_buf.Unmap();
 
   Send(new PrintHostMsg_DuplicateSection(routing_id(), *shared_mem_handle,
                                          shared_mem_handle));

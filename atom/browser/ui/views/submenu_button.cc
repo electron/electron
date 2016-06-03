@@ -26,7 +26,7 @@ base::string16 FilterAccelerator(const base::string16& label) {
 SubmenuButton::SubmenuButton(views::ButtonListener* listener,
                              const base::string16& title,
                              views::MenuButtonListener* menu_button_listener)
-    : views::MenuButton(listener, FilterAccelerator(title),
+    : views::MenuButton(FilterAccelerator(title),
                         menu_button_listener, false),
       accelerator_(0),
       show_underline_(false),
@@ -37,7 +37,7 @@ SubmenuButton::SubmenuButton(views::ButtonListener* listener,
       underline_color_(SK_ColorBLACK) {
 #if defined(OS_LINUX)
   // Dont' use native style border.
-  SetBorder(CreateDefaultBorder().Pass());
+  SetBorder(std::move(CreateDefaultBorder()));
 #endif
 
   if (GetUnderlinePosition(title, &accelerator_, &underline_start_,

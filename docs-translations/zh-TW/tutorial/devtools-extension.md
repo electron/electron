@@ -4,7 +4,7 @@
 
 多數的 DevTools 擴充可以簡單地透過下載原始碼然後使用 `BrowserWindow.addDevToolsExtension` API 來載入它們，已載入的擴充套件會被記住，如此一來你就不用每次建立一個視窗的時候就要呼叫 API。
 
-** 注意: React DevTools 無法使用，參考 [issue](https://github.com/atom/electron/issues/915) **
+** 注意: React DevTools 無法使用，參考 [issue](https://github.com/electron/electron/issues/915) **
 
 例如使用 [React DevTools Extension](https://github.com/facebook/react-devtools)，首先你需要下載它的原始碼：
 

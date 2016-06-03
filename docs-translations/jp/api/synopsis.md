@@ -1,5 +1,7 @@
 # 概要
 
+> どうやってNode.jsとElectronのAPIを使うか。
+
 Electron では全ての [Node.js のビルトインモジュール](http://nodejs.org/api/) 利用可能です。また、サードパーティの Node モジュール ([ネイティブモジュール](../tutorial/using-native-node-modules.md)も含む) も完全にサポートされています。
 
 Electron はネイティブのデスクトップアプリケーション開発のための幾つかの追加のビルトインモジュールも提供しています。メインプロセスでだけ使えるモジュールもあれば、レンダラプロセス(ウェブページ)でだけ使えるモジュール、あるいはメインプロセス、レンダラプロセスどちらでも使えるモジュールもあります。
@@ -9,15 +11,13 @@ Electron はネイティブのデスクトップアプリケーション開発�
 メインプロセススクリプトは普通の Node.js スクリプトのようなものです：
 
 ```javascript
-const electron = require('electron');
-const app = electron.app;
-const BrowserWindow = electron.BrowserWindow;
+const {app, BrowserWindow} = require('electron');
 
-var window = null;
+let win = null;
 
-app.on('ready', function() {
-  window = new BrowserWindow({width: 800, height: 600});
-  window.loadURL('https://github.com');
+app.on('ready', () => {
+  win = new BrowserWindow({width: 800, height: 600});
+  win.loadURL('https://github.com');
 });
 ```
 
@@ -28,8 +28,8 @@ app.on('ready', function() {
 <html>
 <body>
 <script>
-  const remote = require('electron').remote;
-  console.log(remote.app.getVersion());
+  const {app} = require('electron').remote;
+  console.log(app.getVersion());
 </script>
 </body>
 </html>
@@ -39,30 +39,27 @@ app.on('ready', function() {
 
 ## 分割代入
 
-CoffeeScript か Babel を使っているなら、[分割代入][desctructuring-assignment]でビルトインモジュールの使用をより簡単にできます：
+0.37の時点で、 、[分割代入][desctructuring-assignment]でビルトインモジュールの使用をより簡単にできます：
 
 ```javascript
-const {app, BrowserWindow} = require('electron')
+const {app, BrowserWindow} = require('electron');
 ```
 
-しかし、素の JavaScript を使っている場合、Chrome が ES6 を完全サポートするまで待たなければいけません。
-
-## Disable old styles of using built-in modules
-
-v0.35.0 以前は全てのビルトインモジュールは `require('module-name')` の形式で使われなければいけません。この形式は[多くの欠点][issue-387]がありますが、古いアプリケーションとの互換性のためにまだサポートしています。
-
-古い形式を完全に無効にするために、環境変数 `ELECTRON_HIDE_INTERNAL_MODULES` を設定できます：
+もし`electron`モジュール全体が必要であれば、requireして、それぞれのモジュールを`electron`からアクセスすることができます。
 
 ```javascript
-process.env.ELECTRON_HIDE_INTERNAL_MODULES = 'true'
+const electron = require('electron');
+const {app, BrowserWindow} = electron;
 ```
 
-もしくは `hideInternalModules` API を呼んでください：
+これは、次のコードと同じ意味を持ちます。
 
 ```javascript
-require('electron').hideInternalModules()
+const electron = require('electron');
+const app = electron.app;
+const BrowserWindow = electron.BrowserWindow;
 ```
 
 [gui]: https://en.wikipedia.org/wiki/Graphical_user_interface
 [desctructuring-assignment]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Destructuring_assignment
-[issue-387]: https://github.com/atom/electron/issues/387
+[issue-387]: https://github.com/electron/electron/issues/387

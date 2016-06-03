@@ -6,6 +6,7 @@
 /external_binaries/
 /out/
 /vendor/brightray/vendor/download/
+/vendor/debian_wheezy_amd64-sysroot/
 /vendor/debian_wheezy_arm-sysroot/
 /vendor/debian_wheezy_i386-sysroot/
 /vendor/python_26/

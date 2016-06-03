@@ -7,8 +7,6 @@
 
 #include <vector>
 
-#include "base/basictypes.h"
-#include "base/compiler_specific.h"
 #include "base/containers/hash_tables.h"
 #include "content/public/renderer/render_process_observer.h"
 #include "third_party/WebKit/public/platform/WebSpeechSynthesizer.h"

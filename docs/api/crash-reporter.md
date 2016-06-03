@@ -1,12 +1,12 @@
 # crashReporter
 
-The `crash-reporter` module enables sending your app's crash reports.
+> Submit crash reports to a remote server.
 
 The following is an example of automatically submitting a crash report to a
 remote server:
 
 ```javascript
-const crashReporter = require('electron').crashReporter;
+const {crashReporter} = require('electron');
 
 crashReporter.start({
   productName: 'YourName',
@@ -15,6 +15,12 @@ crashReporter.start({
   autoSubmit: true
 });
 ```
+
+For setting up a server to accept and process crash reports, you can use
+following projects:
+
+* [socorro](https://github.com/mozilla/socorro)
+* [mini-breakpad-server](https://github.com/electron/mini-breakpad-server)
 
 ## Methods
 
@@ -54,7 +60,8 @@ ID.
 
 ## crash-reporter Payload
 
-The crash reporter will send the following data to the `submitURL` as `POST`:
+The crash reporter will send the following data to the `submitURL` as
+a `multipart/form-data` `POST`:
 
 * `ver` String - The version of Electron.
 * `platform` String - e.g. 'win32'.
@@ -66,6 +73,6 @@ The crash reporter will send the following data to the `submitURL` as `POST`:
 * `prod` String - Name of the underlying product. In this case Electron.
 * `_companyName` String - The company name in the `crashReporter` `options`
   object.
-* `upload_file_minidump` File - The crash report as file.
+* `upload_file_minidump` File - The crash report in the format of `minidump`.
 * All level one properties of the `extra` object in the `crashReporter`.
   `options` object

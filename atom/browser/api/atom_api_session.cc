@@ -9,9 +9,7 @@
 
 #include "atom/browser/api/atom_api_cookies.h"
 #include "atom/browser/api/atom_api_download_item.h"
-#include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/browser/api/atom_api_web_request.h"
-#include "atom/browser/api/save_page_handler.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/atom_permission_manager.h"
@@ -23,12 +21,13 @@
 #include "atom/common/native_mate_converters/net_converter.h"
 #include "atom/common/node_includes.h"
 #include "base/files/file_path.h"
-#include "base/prefs/pref_service.h"
+#include "base/guid.h"
+#include "components/prefs/pref_service.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 #include "base/thread_task_runner_handle.h"
 #include "brightray/browser/net/devtools_network_conditions.h"
-#include "brightray/browser/net/devtools_network_controller.h"
+#include "brightray/browser/net/devtools_network_controller_handle.h"
 #include "chrome/common/pref_names.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/storage_partition.h"
@@ -37,6 +36,8 @@
 #include "net/base/load_flags.h"
 #include "net/disk_cache/disk_cache.h"
 #include "net/dns/host_cache.h"
+#include "net/http/http_auth_handler_factory.h"
+#include "net/http/http_auth_preferences.h"
 #include "net/proxy/proxy_service.h"
 #include "net/proxy/proxy_config_service_fixed.h"
 #include "net/url_request/url_request_context.h"
@@ -49,12 +50,12 @@ namespace {
 
 struct ClearStorageDataOptions {
   GURL origin;
-  uint32 storage_types = StoragePartition::REMOVE_DATA_MASK_ALL;
-  uint32 quota_types = StoragePartition::QUOTA_MANAGED_STORAGE_MASK_ALL;
+  uint32_t storage_types = StoragePartition::REMOVE_DATA_MASK_ALL;
+  uint32_t quota_types = StoragePartition::QUOTA_MANAGED_STORAGE_MASK_ALL;
 };
 
-uint32 GetStorageMask(const std::vector<std::string>& storage_types) {
-  uint32 storage_mask = 0;
+uint32_t GetStorageMask(const std::vector<std::string>& storage_types) {
+  uint32_t storage_mask = 0;
   for (const auto& it : storage_types) {
     auto type = base::ToLowerASCII(it);
     if (type == "appcache")
@@ -77,8 +78,8 @@ uint32 GetStorageMask(const std::vector<std::string>& storage_types) {
   return storage_mask;
 }
 
-uint32 GetQuotaMask(const std::vector<std::string>& quota_types) {
-  uint32 quota_mask = 0;
+uint32_t GetQuotaMask(const std::vector<std::string>& quota_types) {
+  uint32_t quota_mask = 0;
   for (const auto& it : quota_types) {
     auto type = base::ToLowerASCII(it);
     if (type == "temporary")
@@ -191,7 +192,7 @@ class ResolveProxyHelper {
 
     // Start the request.
     int result = proxy_service->ResolveProxy(
-        url, net::LOAD_NORMAL, &proxy_info_, completion_callback,
+        url, "GET", net::LOAD_NORMAL, &proxy_info_, completion_callback,
         &pac_req_, nullptr, net::BoundNetLog());
 
     // Completed synchronously.
@@ -285,15 +286,30 @@ void ClearHostResolverCacheInIO(
   }
 }
 
+void AllowNTLMCredentialsForDomainsInIO(
+    const scoped_refptr<net::URLRequestContextGetter>& context_getter,
+    const std::string& domains) {
+  auto request_context = context_getter->GetURLRequestContext();
+  auto auth_handler = request_context->http_auth_handler_factory();
+  if (auth_handler) {
+    auto auth_preferences = const_cast<net::HttpAuthPreferences*>(
+        auth_handler->http_auth_preferences());
+    if (auth_preferences)
+      auth_preferences->set_server_whitelist(domains);
+  }
+}
+
 }  // namespace
 
-Session::Session(AtomBrowserContext* browser_context)
-    : browser_context_(browser_context) {
-  AttachAsUserData(browser_context);
-
+Session::Session(v8::Isolate* isolate, AtomBrowserContext* browser_context)
+    : devtools_network_emulation_client_id_(base::GenerateGUID()),
+      browser_context_(browser_context) {
   // Observe DownloadManger to get download notifications.
   content::BrowserContext::GetDownloadManager(browser_context)->
       AddObserver(this);
+
+  Init(isolate);
+  AttachAsUserData(browser_context);
 }
 
 Session::~Session() {
@@ -303,13 +319,15 @@ Session::~Session() {
 
 void Session::OnDownloadCreated(content::DownloadManager* manager,
                                 content::DownloadItem* item) {
-  auto web_contents = item->GetWebContents();
-  if (SavePageHandler::IsSavePageTypes(item->GetMimeType()))
+  if (item->IsSavePackageDownload())
     return;
+
+  v8::Locker locker(isolate());
+  v8::HandleScope handle_scope(isolate());
   bool prevent_default = Emit(
       "will-download",
       DownloadItem::Create(isolate(), item),
-      api::WebContents::CreateFrom(isolate(), web_contents));
+      item->GetWebContents());
   if (prevent_default) {
     item->Cancel(true);
     item->Remove();
@@ -366,7 +384,7 @@ void Session::SetDownloadPath(const base::FilePath& path) {
 }
 
 void Session::EnableNetworkEmulation(const mate::Dictionary& options) {
-  scoped_ptr<brightray::DevToolsNetworkConditions> conditions;
+  std::unique_ptr<brightray::DevToolsNetworkConditions> conditions;
   bool offline = false;
   double latency, download_throughput, upload_throughput;
   if (options.Get("offline", &offline) && offline) {
@@ -381,25 +399,19 @@ void Session::EnableNetworkEmulation(const mate::Dictionary& options) {
                                                  download_throughput,
                                                  upload_throughput));
   }
-  auto controller = browser_context_->GetDevToolsNetworkController();
 
-  BrowserThread::PostTask(BrowserThread::IO, FROM_HERE,
-      base::Bind(&brightray::DevToolsNetworkController::SetNetworkState,
-                 base::Unretained(controller),
-                 std::string(),
-                 base::Passed(&conditions)));
+  browser_context_->network_controller_handle()->SetNetworkState(
+      devtools_network_emulation_client_id_, std::move(conditions));
+  browser_context_->network_delegate()->SetDevToolsNetworkEmulationClientId(
+      devtools_network_emulation_client_id_);
 }
 
 void Session::DisableNetworkEmulation() {
-  scoped_ptr<brightray::DevToolsNetworkConditions> conditions(
-      new brightray::DevToolsNetworkConditions(false));
-  auto controller = browser_context_->GetDevToolsNetworkController();
-
-  BrowserThread::PostTask(BrowserThread::IO, FROM_HERE,
-      base::Bind(&brightray::DevToolsNetworkController::SetNetworkState,
-                 base::Unretained(controller),
-                 std::string(),
-                 base::Passed(&conditions)));
+  std::unique_ptr<brightray::DevToolsNetworkConditions> conditions;
+  browser_context_->network_controller_handle()->SetNetworkState(
+      devtools_network_emulation_client_id_, std::move(conditions));
+  browser_context_->network_delegate()->SetDevToolsNetworkEmulationClientId(
+      std::string());
 }
 
 void Session::SetCertVerifyProc(v8::Local<v8::Value> val,
@@ -435,6 +447,13 @@ void Session::ClearHostResolverCache(mate::Arguments* args) {
                  callback));
 }
 
+void Session::AllowNTLMCredentialsForDomains(const std::string& domains) {
+  BrowserThread::PostTask(BrowserThread::IO, FROM_HERE,
+      base::Bind(&AllowNTLMCredentialsForDomainsInIO,
+                 make_scoped_refptr(browser_context_->GetRequestContext()),
+                 domains));
+}
+
 v8::Local<v8::Value> Session::Cookies(v8::Isolate* isolate) {
   if (cookies_.IsEmpty()) {
     auto handle = atom::api::Cookies::Create(isolate, browser_context());
@@ -458,7 +477,8 @@ mate::Handle<Session> Session::CreateFrom(
   if (existing)
     return mate::CreateHandle(isolate, static_cast<Session*>(existing));
 
-  auto handle = mate::CreateHandle(isolate, new Session(browser_context));
+  auto handle = mate::CreateHandle(
+      isolate, new Session(isolate, browser_context));
   g_wrap_session.Run(handle.ToV8());
   return handle;
 }
@@ -489,20 +509,14 @@ void Session::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setPermissionRequestHandler",
                  &Session::SetPermissionRequestHandler)
       .SetMethod("clearHostResolverCache", &Session::ClearHostResolverCache)
+      .SetMethod("allowNTLMCredentialsForDomains",
+                 &Session::AllowNTLMCredentialsForDomains)
       .SetProperty("cookies", &Session::Cookies)
       .SetProperty("webRequest", &Session::WebRequest);
 }
 
-void ClearWrapSession() {
-  g_wrap_session.Reset();
-}
-
 void SetWrapSession(const WrapSessionCallback& callback) {
   g_wrap_session = callback;
-
-  // Cleanup the wrapper on exit.
-  atom::AtomBrowserMainParts::Get()->RegisterDestructionCallback(
-      base::Bind(ClearWrapSession));
 }
 
 }  // namespace api

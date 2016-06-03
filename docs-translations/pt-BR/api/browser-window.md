@@ -112,10 +112,10 @@ Normalmente você utiliza o manipulador de eventos do `beforeunload` para decidi
 window.onbeforeunload = function(e) {
   console.log('Não quero ser fechada');
 
-  // Diferente de navegadores comuns, nos quais uma string deve ser retornada e 
+  // Diferente de navegadores comuns, nos quais uma string deve ser retornada e
   // o usuário deve confirmar se a janela será fechada, o Electron dá mais opções
   // aos desenvolvedores. Retornar uma string vazia ou false cancela o fechamento.
-  // Você também pode usar a API de diálogo para deixar que o usuário confirme o 
+  // Você também pode usar a API de diálogo para deixar que o usuário confirme o
   // fechamento do aplicativo.
   e.returnValue = false;
 };
@@ -528,14 +528,6 @@ Retorna um boolean indicando se o documento da janela foi editado.
 
 Captura uma imagem da página dentro do `rect`. Após completar, `callback` será chamada com `callback(imagem)`. `imagem` é uma instância de [NativeImage](../../../docs/api/native-image.md) que guarda dados sobre a imagem. Omitir `rect` captura toda a página visível.
 
-### `win.print([options])`
-
-Igual a `webContents.print([options])`
-
-### `win.printToPDF(options, callback)`
-
-Igual a `webContents.printToPDF(options, callback)`
-
 ### `win.loadURL(url[, options])`
 
 Igual a `webContents.loadURL(url[, options])`.
@@ -628,5 +620,3 @@ Define se a janela deve estar visível em todos os *workspaces*.
 Retorna um boolean indicando se a janela está visível em todos os *workspaces*.
 
 **Nota:** Esta API sempre retorna `false` no Windows.
-
-

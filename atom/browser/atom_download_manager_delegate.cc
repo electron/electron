@@ -12,7 +12,7 @@
 #include "atom/browser/ui/file_dialog.h"
 #include "base/bind.h"
 #include "base/files/file_util.h"
-#include "base/prefs/pref_service.h"
+#include "components/prefs/pref_service.h"
 #include "chrome/common/pref_names.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/browser_thread.h"
@@ -60,7 +60,7 @@ void AtomDownloadManagerDelegate::CreateDownloadPath(
 }
 
 void AtomDownloadManagerDelegate::OnDownloadPathGenerated(
-    uint32 download_id,
+    uint32_t download_id,
     const content::DownloadTargetCallback& callback,
     const base::FilePath& default_path) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
@@ -70,12 +70,15 @@ void AtomDownloadManagerDelegate::OnDownloadPathGenerated(
     return;
 
   NativeWindow* window = nullptr;
-  auto relay = NativeWindowRelay::FromWebContents(item->GetWebContents());
+  content::WebContents* web_contents = item->GetWebContents();
+  auto relay = web_contents ? NativeWindowRelay::FromWebContents(web_contents)
+                            : nullptr;
   if (relay)
     window = relay->window.get();
 
   base::FilePath path;
-  if (file_dialog::ShowSaveDialog(window, item->GetURL().spec(), default_path,
+  if (file_dialog::ShowSaveDialog(window, item->GetURL().spec(),
+                                  "", default_path,
                                   file_dialog::Filters(), &path)) {
     // Remember the last selected download directory.
     AtomBrowserContext* browser_context = static_cast<AtomBrowserContext*>(
@@ -160,7 +163,7 @@ bool AtomDownloadManagerDelegate::ShouldOpenDownload(
 
 void AtomDownloadManagerDelegate::GetNextId(
     const content::DownloadIdCallback& callback) {
-  static uint32 next_id = content::DownloadItem::kInvalidId + 1;
+  static uint32_t next_id = content::DownloadItem::kInvalidId + 1;
   callback.Run(next_id++);
 }
 

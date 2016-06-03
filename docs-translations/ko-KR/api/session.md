@@ -1,17 +1,19 @@
 # session
 
+> 브라우저 세션, 쿠키, 캐시, 프록시 설정 등을 관리합니다.
+
 `session` 모듈은 새로운 `Session` 객체를 만드는데 사용할 수 있습니다.
 
 또한 존재하는 [`BrowserWindow`](browser-window.md)의
 [`webContents`](web-contents.md)에서 `session` 속성으로 접근할 수도 있습니다.
 
 ```javascript
-var BrowserWindow = require('browser-window');
+const {BrowserWindow} = require('electron');
 
-var win = new BrowserWindow({ width: 800, height: 600 });
-win.loadURL("http://github.com");
+let win = new BrowserWindow({width: 800, height: 600});
+win.loadURL('http://github.com');
 
-var ses = win.webContents.session;
+let ses = win.webContents.session;
 ```
 
 ## Methods
@@ -44,7 +46,7 @@ var ses = win.webContents.session;
 ```javascript
 const session = require('electron').session;
 
-var ses = session.fromPartition('persist:name');
+const ses = session.fromPartition('persist:name');
  ```
 
 ### Instance Events
@@ -63,9 +65,9 @@ Electron의 `webContents`에서 `item`을 다운로드할 때 발생하는 이�
 틱부터 `item`을 사용할 수 없게 됩니다.
 
 ```javascript
-session.defaultSession.on('will-download', function(event, item, webContents) {
+session.defaultSession.on('will-download', (event, item, webContents) => {
   event.preventDefault();
-  require('request')(item.getURL(), function(data) {
+  require('request')(item.getURL(), (data) => {
     require('fs').writeFileSync('/somewhere', data);
   });
 });
@@ -82,19 +84,19 @@ session.defaultSession.on('will-download', function(event, item, webContents) {
 
 ```javascript
 // 모든 쿠키를 요청합니다.
-session.defaultSession.cookies.get({}, function(error, cookies) {
+session.defaultSession.cookies.get({}, (error, cookies) => {
   console.log(cookies);
 });
 
 // url에 관련된 쿠키를 모두 가져옵니다.
-session.defaultSession.cookies.get({ url : "http://www.github.com" }, function(error, cookies) {
+session.defaultSession.cookies.get({url: 'http://www.github.com'}, (error, cookies) => {
   console.log(cookies);
 });
 
 // 지정한 쿠키 데이터를 설정합니다.
 // 동일한 쿠키가 있으면 해당 쿠키를 덮어씁니다.
-var cookie = { url : "http://www.github.com", name : "dummy_name", value : "dummy" };
-session.defaultSession.cookies.set(cookie, function(error) {
+const cookie = {url: 'http://www.github.com', name: 'dummy_name', value: 'dummy'};
+session.defaultSession.cookies.set(cookie, (error) => {
   if (error)
     console.error(error);
 });
@@ -134,17 +136,18 @@ session.defaultSession.cookies.set(cookie, function(error) {
 #### `ses.cookies.set(details, callback)`
 
 * `details` Object
-  * `url` String - `url`에 관련된 쿠키를 가져옵니다.
+  * `url` String - 쿠키에 대한 `url` 링크.
   * `name` String - 쿠키의 이름입니다. 기본적으로 비워두면 생략됩니다.
   * `value` String - 쿠키의 값입니다. 기본적으로 비워두면 생략됩니다.
   * `domain` String - 쿠키의 도메인입니다. 기본적으로 비워두면 생략됩니다.
   * `path` String - 쿠키의 경로입니다. 기본적으로 비워두면 생략됩니다.
   * `secure` Boolean - 쿠키가 안전한 것으로 표시되는지에 대한 여부입니다. 기본값은
     false입니다.
-  * `session` Boolean - 쿠키가 HttpOnly로 표시되는지에 대한 여부입니다. 기본값은
+  * `session` Boolean - 쿠키가 Http 전용으로 표시되는지에 대한 여부입니다. 기본값은
     false입니다.
   * `expirationDate` Double (optional) -	UNIX 시간으로 표시되는 쿠키의 만료일에
-    대한 초 단위 시간입니다. 세션 쿠키에 제공되지 않습니다.
+    대한 초 단위 시간입니다. 생략되면 쿠키가 세션 쿠기가 되며 세션 사이에 유지되지
+    않게 됩니다.
 * `callback` Function
 
 `details` 객체에 따라 쿠키를 설정합니다. 작업이 완료되면 `callback`이
@@ -282,8 +285,8 @@ window.webContents.session.enableNetworkEmulation({offline: true});
 `setCertificateVerifyProc(null)`을 호출하면 기본 검증 프로세스로 되돌립니다.
 
 ```javascript
-myWindow.webContents.session.setCertificateVerifyProc(function(hostname, cert, callback) {
- if (hostname == 'github.com')
+myWindow.webContents.session.setCertificateVerifyProc((hostname, cert, callback) => {
+ if (hostname === 'github.com')
    callback(true);
  else
    callback(false);
@@ -293,18 +296,18 @@ myWindow.webContents.session.setCertificateVerifyProc(function(hostname, cert, c
 
 * `handler` Function
   * `webContents` Object - [WebContents](web-contents.md) 권한을 요청.
-  * `permission`  String - 'media', 'geolocation', 'notifications',
-    'midiSysex', 'pointerLock', 'fullscreen'의 나열.
-  * `callback`  Function - 권한 허용 및 거부.
+  * `permission` String - 'media', 'geolocation', 'notifications',
+    'midiSysex', 'pointerLock', 'fullscreen', 'openExternal'의 나열.
+  * `callback` Function - 권한 허용 및 거부.
 
 `session`의 권한 요청에 응답을 하는데 사용하는 핸들러를 설정합니다.
 `callback(true)`를 호출하면 권한 제공을 허용하고 `callback(false)`를
 호출하면 권한 제공을 거부합니다.
 
 ```javascript
-session.fromPartition(partition).setPermissionRequestHandler(function(webContents, permission, callback) {
+session.fromPartition(partition).setPermissionRequestHandler((webContents, permission, callback) => {
   if (webContents.getURL() === host) {
-    if (permission == "notifications") {
+    if (permission === 'notifications') {
       callback(false); // 거부됨.
       return;
     }
@@ -320,9 +323,25 @@ session.fromPartition(partition).setPermissionRequestHandler(function(webContent
 
 호스트 리소버(resolver) 캐시를 지웁니다.
 
+#### `ses.allowNTLMCredentialsForDomains(domains)`
+
+* `domains` String - 통합 인증을 사용하도록 설정할 쉼표로 구분된 서버의 리스트.
+
+동적으로 HTTP NTML 또는 Negotiate 인증을 위해 언제나 자격 증명을 보낼지 여부를
+설정합니다.
+
+```javascript
+// 통합 인증을 위해 `example.com`, `foobar.com`, `baz`로 끝나는
+// 모든 url을 지정합니다.
+session.defaultSession.allowNTLMCredentialsForDomains('*example.com, *foobar.com, *baz')
+
+// 통합 인증을 위해 모든 url을 지정합니다.
+session.defaultSession.allowNTLMCredentialsForDomains('*')
+```
+
 #### `ses.webRequest`
 
-`webRequest` API는 생명주기의 다양한 단계에 맞춰 요청 컨텐츠를 가로채거나 변경할 수
+`webRequest` API는 생명주기의 다양한 단계에 맞춰 요청 콘텐츠를 가로채거나 변경할 수
 있도록 합니다.
 
 각 API는 `filter`와 `listener`를 선택적으로 받을 수 있습니다. `listener`는 API의
@@ -338,11 +357,11 @@ session.fromPartition(partition).setPermissionRequestHandler(function(webContent
 
 ```javascript
 // 다음 url에 대한 User Agent를 조작합니다.
-var filter = {
-  urls: ["https://*.github.com/*", "*://electron.github.io"]
+const filter = {
+  urls: ['https://*.github.com/*', '*://electron.github.io']
 };
 
-session.defaultSession.webRequest.onBeforeSendHeaders(filter, function(details, callback) {
+session.defaultSession.webRequest.onBeforeSendHeaders(filter, (details, callback) => {
   details.requestHeaders['User-Agent'] = "MyAgent";
   callback({cancel: false, requestHeaders: details.requestHeaders});
 });
@@ -367,7 +386,7 @@ session.defaultSession.webRequest.onBeforeSendHeaders(filter, function(details, 
 `uploadData`는 `data` 객체의 배열입니다:
 
 * `data` Object
-  * `bytes` Buffer - 전송될 컨텐츠.
+  * `bytes` Buffer - 전송될 콘텐츠.
   * `file` String - 업로드될 파일의 경로.
 
 `callback`은 `response` 객체와 함께 호출되어야 합니다:
@@ -419,7 +438,7 @@ HTTP 요청을 보내기 전 요청 헤더를 사용할 수 있을 때 `listener
   * `timestamp` Double
   * `requestHeaders` Object
 
-#### `ses.webRequest.onHeadersReceived([filter,] listener)`
+#### `ses.webRequest.onHeadersReceived([filter, ]listener)`
 
 * `filter` Object
 * `listener` Function
@@ -444,6 +463,9 @@ HTTP 요청을 보내기 전 요청 헤더를 사용할 수 있을 때 `listener
   * `cancel` Boolean
   * `responseHeaders` Object (optional) - 이 속성이 제공되면 서버는 이 헤더와
     함께 응답합니다.
+  * `statusLine` String (optional) - `responseHeaders`를 덮어쓸 땐, 헤더의 상태를
+    변경하기 위해 반드시 지정되어야 합니다. 그렇지 않은 경우, 기존의 응답 헤더의 상태가
+    사용됩니다.
 
 #### `ses.webRequest.onResponseStarted([filter, ]listener)`
 

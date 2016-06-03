@@ -5,7 +5,6 @@
 #ifndef CHROME_BROWSER_MEDIA_NATIVE_DESKTOP_MEDIA_LIST_H_
 #define CHROME_BROWSER_MEDIA_NATIVE_DESKTOP_MEDIA_LIST_H_
 
-#include "base/basictypes.h"
 #include "base/memory/scoped_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/sequenced_task_runner.h"
@@ -26,8 +25,8 @@ class NativeDesktopMediaList : public DesktopMediaList {
   // types of sources the model should be populated with (e.g. it will only
   // contain windows, if |screen_capturer| is NULL).
   NativeDesktopMediaList(
-      scoped_ptr<webrtc::ScreenCapturer> screen_capturer,
-      scoped_ptr<webrtc::WindowCapturer> window_capturer);
+      std::unique_ptr<webrtc::ScreenCapturer> screen_capturer,
+      std::unique_ptr<webrtc::WindowCapturer> window_capturer);
   ~NativeDesktopMediaList() override;
 
   // DesktopMediaList interface.
@@ -67,8 +66,8 @@ class NativeDesktopMediaList : public DesktopMediaList {
   void OnRefreshFinished();
 
   // Capturers specified in SetCapturers() and passed to the |worker_| later.
-  scoped_ptr<webrtc::ScreenCapturer> screen_capturer_;
-  scoped_ptr<webrtc::WindowCapturer> window_capturer_;
+  std::unique_ptr<webrtc::ScreenCapturer> screen_capturer_;
+  std::unique_ptr<webrtc::WindowCapturer> window_capturer_;
 
   // Time interval between mode updates.
   base::TimeDelta update_period_;
@@ -88,7 +87,7 @@ class NativeDesktopMediaList : public DesktopMediaList {
   // An object that does all the work of getting list of sources on a background
   // thread (see |capture_task_runner_|). Destroyed on |capture_task_runner_|
   // after the model is destroyed.
-  scoped_ptr<Worker> worker_;
+  std::unique_ptr<Worker> worker_;
 
   // Current list of sources.
   std::vector<Source> sources_;

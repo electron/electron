@@ -5,6 +5,8 @@
 #ifndef ATOM_APP_ATOM_MAIN_DELEGATE_H_
 #define ATOM_APP_ATOM_MAIN_DELEGATE_H_
 
+#include <string>
+
 #include "brightray/common/main_delegate.h"
 #include "brightray/common/content_client.h"
 
@@ -22,19 +24,30 @@ class AtomMainDelegate : public brightray::MainDelegate {
   content::ContentBrowserClient* CreateContentBrowserClient() override;
   content::ContentRendererClient* CreateContentRendererClient() override;
   content::ContentUtilityClient* CreateContentUtilityClient() override;
+  int RunProcess(
+      const std::string& process_type,
+      const content::MainFunctionParams& main_function_params) override;
+#if defined(OS_MACOSX)
+  bool ShouldSendMachPort(const std::string& process_type) override;
+  bool DelaySandboxInitialization(const std::string& process_type) override;
+#endif
 
   // brightray::MainDelegate:
-  scoped_ptr<brightray::ContentClient> CreateContentClient() override;
+  std::unique_ptr<brightray::ContentClient> CreateContentClient() override;
 #if defined(OS_MACOSX)
   void OverrideChildProcessPath() override;
   void OverrideFrameworkBundlePath() override;
 #endif
 
  private:
+#if defined(OS_MACOSX)
+  void SetUpBundleOverrides();
+#endif
+
   brightray::ContentClient content_client_;
-  scoped_ptr<content::ContentBrowserClient> browser_client_;
-  scoped_ptr<content::ContentRendererClient> renderer_client_;
-  scoped_ptr<content::ContentUtilityClient> utility_client_;
+  std::unique_ptr<content::ContentBrowserClient> browser_client_;
+  std::unique_ptr<content::ContentRendererClient> renderer_client_;
+  std::unique_ptr<content::ContentUtilityClient> utility_client_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomMainDelegate);
 };

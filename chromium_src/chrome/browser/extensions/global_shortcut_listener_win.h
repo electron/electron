@@ -41,7 +41,7 @@ class GlobalShortcutListenerWin : public GlobalShortcutListener {
   typedef std::map<ui::Accelerator, int> HotkeyIdMap;
   HotkeyIdMap hotkey_ids_;
 
-  scoped_ptr<gfx::SingletonHwndObserver> singleton_hwnd_observer_;
+  std::unique_ptr<gfx::SingletonHwndObserver> singleton_hwnd_observer_;
 
   DISALLOW_COPY_AND_ASSIGN(GlobalShortcutListenerWin);
 };

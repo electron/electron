@@ -6,11 +6,15 @@
 
 #include "atom/browser/mac/atom_application.h"
 #include "atom/browser/mac/atom_application_delegate.h"
+#include "atom/browser/mac/dict_util.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/window_list.h"
+#include "base/mac/bundle_locations.h"
 #include "base/mac/foundation_util.h"
 #include "base/strings/sys_string_conversions.h"
 #include "brightray/common/application_info.h"
+#include "net/base/mac/url_conversions.h"
+#include "url/gurl.h"
 
 namespace atom {
 
@@ -40,7 +44,101 @@ void Browser::ClearRecentDocuments() {
   [[NSDocumentController sharedDocumentController] clearRecentDocuments:nil];
 }
 
+bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol) {
+  NSString* identifier = [base::mac::MainBundle() bundleIdentifier];
+  if (!identifier)
+    return false;
+
+  if (!Browser::IsDefaultProtocolClient(protocol))
+    return false;
+
+  NSString* protocol_ns = [NSString stringWithUTF8String:protocol.c_str()];
+  CFStringRef protocol_cf = base::mac::NSToCFCast(protocol_ns);
+  CFArrayRef bundleList = LSCopyAllHandlersForURLScheme(protocol_cf);
+  if (!bundleList) {
+    return false;
+  }
+  // On Mac OS X, we can't query the default, but the handlers list seems to put
+  // Apple's defaults first, so we'll use the first option that isn't our bundle
+  CFStringRef other = nil;
+  for (CFIndex i = 0; i < CFArrayGetCount(bundleList); i++) {
+    other = (CFStringRef)CFArrayGetValueAtIndex(bundleList, i);
+    if (![identifier isEqualToString: (__bridge NSString *)other]) {
+      break;
+    }
+  }
+
+  OSStatus return_code = LSSetDefaultHandlerForURLScheme(protocol_cf, other);
+  return return_code == noErr;
+}
+
+bool Browser::SetAsDefaultProtocolClient(const std::string& protocol) {
+  if (protocol.empty())
+    return false;
+
+  NSString* identifier = [base::mac::MainBundle() bundleIdentifier];
+  if (!identifier)
+    return false;
+
+  NSString* protocol_ns = [NSString stringWithUTF8String:protocol.c_str()];
+  OSStatus return_code =
+      LSSetDefaultHandlerForURLScheme(base::mac::NSToCFCast(protocol_ns),
+                                      base::mac::NSToCFCast(identifier));
+  return return_code == noErr;
+}
+
+bool Browser::IsDefaultProtocolClient(const std::string& protocol) {
+  if (protocol.empty())
+    return false;
+
+  NSString* identifier = [base::mac::MainBundle() bundleIdentifier];
+  if (!identifier)
+    return false;
+
+  NSString* protocol_ns = [NSString stringWithUTF8String:protocol.c_str()];
+
+  CFStringRef bundle =
+      LSCopyDefaultHandlerForURLScheme(base::mac::NSToCFCast(protocol_ns));
+  NSString* bundleId = static_cast<NSString*>(
+      base::mac::CFTypeRefToNSObjectAutorelease(bundle));
+  if (!bundleId)
+    return false;
+
+  // Ensure the comparison is case-insensitive
+  // as LS does not persist the case of the bundle id.
+  NSComparisonResult result =
+      [bundleId caseInsensitiveCompare:identifier];
+  return result == NSOrderedSame;
+}
+
 void Browser::SetAppUserModelID(const base::string16& name) {
+}
+
+void Browser::SetUserActivity(const std::string& type,
+                              const base::DictionaryValue& user_info,
+                              mate::Arguments* args) {
+  std::string url_string;
+  args->GetNext(&url_string);
+
+  [[AtomApplication sharedApplication]
+      setCurrentActivity:base::SysUTF8ToNSString(type)
+            withUserInfo:DictionaryValueToNSDictionary(user_info)
+          withWebpageURL:net::NSURLWithGURL(GURL(url_string))];
+}
+
+std::string Browser::GetCurrentActivityType() {
+  NSUserActivity* userActivity =
+      [[AtomApplication sharedApplication] getCurrentActivity];
+  return base::SysNSStringToUTF8(userActivity.activityType);
+}
+
+bool Browser::ContinueUserActivity(const std::string& type,
+                                   const base::DictionaryValue& user_info) {
+  bool prevent_default = false;
+  FOR_EACH_OBSERVER(BrowserObserver,
+                    observers_,
+                    OnContinueUserActivity(&prevent_default, type, user_info));
+  return prevent_default;
 }
 
 std::string Browser::GetExecutableFileVersion() const {
@@ -63,6 +161,12 @@ void Browser::DockCancelBounce(int request_id) {
 void Browser::DockSetBadgeText(const std::string& label) {
   NSDockTile *tile = [[AtomApplication sharedApplication] dockTile];
   [tile setBadgeLabel:base::SysUTF8ToNSString(label)];
+}
+
+void Browser::DockDownloadFinished(const std::string& filePath) {
+  [[NSDistributedNotificationCenter defaultCenter]
+      postNotificationName: @"com.apple.DownloadFileFinished"
+                    object: base::SysUTF8ToNSString(filePath)];
 }
 
 std::string Browser::DockGetBadgeText() {

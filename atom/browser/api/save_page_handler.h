@@ -37,8 +37,6 @@ class SavePageHandler : public content::DownloadManager::Observer,
   bool Handle(const base::FilePath& full_path,
               const content::SavePageType& save_type);
 
-  static bool IsSavePageTypes(const std::string& type);
-
  private:
   void Destroy(content::DownloadItem* item);
 

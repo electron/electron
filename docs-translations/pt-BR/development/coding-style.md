@@ -23,4 +23,4 @@ Para CoffeeScript, seguimos o [Guia de Estilo] (https://github.com/styleguide/ja
 
 Ao criar uma nova API, devemos preferencialmente utilizar métodos getters e setters em vez do
 estilo de uma função única do jQuery. Por exemplo, `.getText()` e `.setText(text)` são preferenciais a `.text([text])`. Existe uma
-[discussão](https://github.com/atom/electron/issues/46) sobre este assunto.
+[discussão](https://github.com/electron/electron/issues/46) sobre este assunto.

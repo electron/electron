@@ -43,7 +43,7 @@ de um container de tamanho fixo de pelo menos 25 gigabytes.
 ## Baixando o Código
 
 ```bash
-$ git clone https://github.com/atom/electron.git
+$ git clone https://github.com/electron/electron.git
 ```
 
 ## Bootstrapping

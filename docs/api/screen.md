@@ -1,52 +1,47 @@
 # screen
 
-The `screen` module retrieves information about screen size, displays, cursor
-position, etc. You should not use this module until the `ready` event of the
-`app` module is emitted.
+> Retrieve information about screen size, displays, cursor position, etc.
+
+You cannot not use this module until the `ready` event of the `app` module is
+emitted (by invoking or requiring it).
 
 `screen` is an [EventEmitter](http://nodejs.org/api/events.html#events_class_events_eventemitter).
 
 **Note:** In the renderer / DevTools, `window.screen` is a reserved DOM
-property, so writing `var screen = require('electron').screen` will not work.
+property, so writing `let {screen} = require('electron')` will not work.
 In our examples below, we use `electronScreen` as the variable name instead.
 An example of creating a window that fills the whole screen:
 
 ```javascript
-const electron = require('electron');
-const app = electron.app;
-const BrowserWindow = electron.BrowserWindow;
+const {app, BrowserWindow, screen: electronScreen} = require('electron');
 
-var mainWindow;
+let win;
 
-app.on('ready', function() {
-  var electronScreen = electron.screen;
-  var size = electronScreen.getPrimaryDisplay().workAreaSize;
-  mainWindow = new BrowserWindow({ width: size.width, height: size.height });
+app.on('ready', () => {
+  const {width, height} = electronScreen.getPrimaryDisplay().workAreaSize;
+  win = new BrowserWindow({width, height});
 });
 ```
 
 Another example of creating a window in the external display:
 
 ```javascript
-const electron = require('electron');
-const app = electron.app;
-const BrowserWindow = electron.BrowserWindow;
+const {app, BrowserWindow, screen: electronScreen} = require('electron');
 
-var mainWindow;
+let win;
 
-app.on('ready', function() {
-  var electronScreen = electron.screen;
-  var displays = electronScreen.getAllDisplays();
-  var externalDisplay = null;
-  for (var i in displays) {
-    if (displays[i].bounds.x != 0 || displays[i].bounds.y != 0) {
+app.on('ready', () => {
+  let displays = electronScreen.getAllDisplays();
+  let externalDisplay = null;
+  for (let i in displays) {
+    if (displays[i].bounds.x !== 0 || displays[i].bounds.y !== 0) {
       externalDisplay = displays[i];
       break;
     }
   }
 
   if (externalDisplay) {
-    mainWindow = new BrowserWindow({
+    win = new BrowserWindow({
       x: externalDisplay.bounds.x + 50,
       y: externalDisplay.bounds.y + 50
     });
@@ -62,8 +57,8 @@ a remote, virtual display.
 
 * `display` object
   * `id` Integer - Unique identifier associated with the display.
-  * `rotation` Integer - Can be 0, 1, 2, 3, each represents screen rotation in
-    clock-wise degrees of 0, 90, 180, 270.
+  * `rotation` Integer - Can be 0, 90, 180, 270, represents screen rotation in
+    clock-wise degrees.
   * `scaleFactor` Number - Output device's pixel scale factor.
   * `touchSupport` String - Can be `available`, `unavailable`, `unknown`.
   * `bounds` Object

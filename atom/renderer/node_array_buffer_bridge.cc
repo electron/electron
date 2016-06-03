@@ -4,7 +4,7 @@
 
 #include "atom/renderer/node_array_buffer_bridge.h"
 
-#include "base/basictypes.h"
+#include "base/macros.h"
 #include "atom/common/node_includes.h"
 #include "native_mate/converter.h"
 #include "third_party/WebKit/public/web/WebArrayBuffer.h"
@@ -53,7 +53,7 @@ v8::Local<v8::Uint8Array> BlinkUint8ArrayNew(
       ab, mate::ConvertToV8(isolate, offset), mate::ConvertToV8(isolate, size)
   };
   return v8::Local<v8::Uint8Array>::Cast(constructor->NewInstance(
-      context, arraysize(args), args).ToLocalChecked());
+      context, node::arraysize(args), args).ToLocalChecked());
 }
 
 }  // namespace

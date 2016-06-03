@@ -4,13 +4,13 @@ import os
 import subprocess
 import sys
 
-from lib.util import atom_gyp
+from lib.util import electron_gyp, rm_rf
 
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 
-PROJECT_NAME = atom_gyp()['project_name%']
-PRODUCT_NAME = atom_gyp()['product_name%']
+PROJECT_NAME = electron_gyp()['project_name%']
+PRODUCT_NAME = electron_gyp()['product_name%']
 
 
 def main():
@@ -21,16 +21,29 @@ def main():
     config = 'R'
 
   if sys.platform == 'darwin':
-    atom_shell = os.path.join(SOURCE_ROOT, 'out', config,
+    electron = os.path.join(SOURCE_ROOT, 'out', config,
                               '{0}.app'.format(PRODUCT_NAME), 'Contents',
                               'MacOS', PRODUCT_NAME)
   elif sys.platform == 'win32':
-    atom_shell = os.path.join(SOURCE_ROOT, 'out', config,
+    electron = os.path.join(SOURCE_ROOT, 'out', config,
                               '{0}.exe'.format(PROJECT_NAME))
   else:
-    atom_shell = os.path.join(SOURCE_ROOT, 'out', config, PROJECT_NAME)
+    electron = os.path.join(SOURCE_ROOT, 'out', config, PROJECT_NAME)
 
-  subprocess.check_call([atom_shell, 'spec'] + sys.argv[1:])
+  returncode = 0
+  try:
+    subprocess.check_call([electron, 'spec'] + sys.argv[1:])
+  except subprocess.CalledProcessError as e:
+    returncode = e.returncode
+
+  if os.environ.has_key('OUTPUT_TO_FILE'):
+    output_to_file = os.environ['OUTPUT_TO_FILE']
+    with open(output_to_file, 'r') as f:
+      print f.read()
+    rm_rf(output_to_file)
+
+
+  return returncode
 
 
 if __name__ == '__main__':

@@ -87,7 +87,7 @@ bool TtsPlatformImplWin::Speak(
     //   0.1 -> -10
     //   1.0 -> 0
     //  10.0 -> 10
-    speech_synthesizer_->SetRate(static_cast<int32>(10 * log10(params.rate)));
+    speech_synthesizer_->SetRate(static_cast<int32_t>(10 * log10(params.rate)));
   }
 
   if (params.pitch >= 0.0) {
@@ -102,7 +102,7 @@ bool TtsPlatformImplWin::Speak(
 
   if (params.volume >= 0.0) {
     // The TTS api allows a range of 0 to 100 for speech volume.
-    speech_synthesizer_->SetVolume(static_cast<uint16>(params.volume * 100));
+    speech_synthesizer_->SetVolume(static_cast<uint16_t>(params.volume * 100));
   }
 
   // TODO(dmazzoni): convert SSML to SAPI xml. http://crbug.com/88072

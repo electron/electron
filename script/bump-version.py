@@ -4,7 +4,7 @@ import os
 import re
 import sys
 
-from lib.util import execute, get_atom_shell_version, parse_version, scoped_cwd
+from lib.util import execute, get_electron_version, parse_version, scoped_cwd
 
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
@@ -18,7 +18,7 @@ def main():
   option = sys.argv[1]
   increments = ['major', 'minor', 'patch', 'build']
   if option in increments:
-    version = get_atom_shell_version()
+    version = get_electron_version()
     versions = parse_version(version.split('-')[0])
     versions = increase_version(versions, increments.index(option))
   else:
@@ -27,7 +27,7 @@ def main():
   version = '.'.join(versions[:3])
 
   with scoped_cwd(SOURCE_ROOT):
-    update_atom_gyp(version)
+    update_electron_gyp(version)
     update_win_rc(version, versions)
     update_version_h(versions)
     update_info_plist(version)
@@ -42,15 +42,15 @@ def increase_version(versions, index):
   return versions
 
 
-def update_atom_gyp(version):
+def update_electron_gyp(version):
   pattern = re.compile(" *'version%' *: *'[0-9.]+'")
-  with open('atom.gyp', 'r') as f:
+  with open('electron.gyp', 'r') as f:
     lines = f.readlines()
 
   for i in range(0, len(lines)):
     if pattern.match(lines[i]):
       lines[i] = "    'version%': '{0}',\n".format(version)
-      with open('atom.gyp', 'w') as f:
+      with open('electron.gyp', 'w') as f:
         f.write(''.join(lines))
       return
 

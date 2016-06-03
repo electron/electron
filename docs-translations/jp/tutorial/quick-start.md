@@ -52,48 +52,58 @@ __注記__： `package.json` に `main` が存在しない場合、Electron は 
 `main.js` ではウィンドウを作成してシステムイベントを管理します。典型的な例は次のようになります：
 
 ```javascript
-'use strict';
-
 const electron = require('electron');
-const app = electron.app;  // Module to control application life.
-const BrowserWindow = electron.BrowserWindow;  // Module to create native browser window.
+// アプリケーションを操作するモジュール
+const {app} = electron;
+// ネイティブブラウザウィンドウを作成するモジュール
+const {BrowserWindow} = electron;
 
-// Keep a global reference of the window object, if you don't, the window will
-// be closed automatically when the JavaScript object is garbage collected.
-var mainWindow = null;
+// ウィンドウオブジェクトをグローバル参照をしておくこと。
+// しないと、ガベージコレクタにより自動的に閉じられてしまう。
+let win;
 
-// Quit when all windows are closed.
-app.on('window-all-closed', function() {
-  // On OS X it is common for applications and their menu bar
-  // to stay active until the user quits explicitly with Cmd + Q
-  if (process.platform != 'darwin') {
+function createWindow() {
+  // ブラウザウィンドウの作成
+  win = new BrowserWindow({width: 800, height: 600});
+
+  // アプリケーションのindex.htmlの読み込み
+  win.loadURL(`file://${__dirname}/index.html`);
+
+  // DevToolsを開く
+  win.webContents.openDevTools();
+
+  // ウィンドウが閉じられた時に発行される
+  win.on('closed', () => {
+	// ウィンドウオブジェクトを参照から外す。
+	// もし何個かウィンドウがあるならば、配列として持っておいて、対応するウィンドウのオブジェクトを消去するべき。
+    win = null;
+  });
+}
+
+// このメソッドはElectronが初期化を終えて、ブラウザウィンドウを作成可能になった時に呼び出される。
+// 幾つかのAPIはこのイベントの後でしか使えない。
+app.on('ready', createWindow);
+
+// すべてのウィンドウが閉じられた時にアプリケーションを終了する。
+app.on('window-all-closed', () => {
+  // OS Xでは、Cmd + Q(終了)をユーザーが実行するまではウィンドウが全て閉じられても終了しないでおく。
+  if (process.platform !== 'darwin') {
     app.quit();
   }
 });
 
-// This method will be called when Electron has finished
-// initialization and is ready to create browser windows.
-app.on('ready', function() {
-  // Create the browser window.
-  mainWindow = new BrowserWindow({width: 800, height: 600});
-
-  // and load the index.html of the app.
-  mainWindow.loadURL('file://' + __dirname + '/index.html');
-
-  // Open the DevTools.
-  mainWindow.webContents.openDevTools();
-
-  // Emitted when the window is closed.
-  mainWindow.on('closed', function() {
-    // Dereference the window object, usually you would store windows
-    // in an array if your app supports multi windows, this is the time
-    // when you should delete the corresponding element.
-    mainWindow = null;
-  });
+app.on('activate', () => {
+  // OS X では、ドックをクリックされた時にウィンドウがなければ新しく作成する。
+  if (win === null) {
+    createWindow();
+  }
 });
+
+// このファイルでアプリケーション固有のメインプロセスのコードを読み込むことができる。
+// ファイルを別に分けておいてここでrequireすることもできる。
 ```
 
-最後に表示するウェブページ `index.html` は次のようになります：
+最後に、表示するウェブページ `index.html` は次のようになります：
 
 ```html
 <!DOCTYPE html>
@@ -117,7 +127,9 @@ app.on('ready', function() {
 
 ### electron-prebuilt
 
-`electron-prebuilt` を `npm` でグローバルインストールしているなら、アプリのソースディレクトリ内で以下を実行するだけで済みます：
+[`electron-prebuilt`](https://github.com/electron-userland/electron-prebuilt)は、コンパイル済みのElectronを含んだ`npm`モジュールです。
+
+`npm`でグローバルインストールをしているなら、下記のコマンドをアプリケーションのソースディレクトリで実行するだけで済みます。
 
 ```bash
 electron .
@@ -151,7 +163,7 @@ $ ./electron/electron your-app/
 $ ./Electron.app/Contents/MacOS/Electron your-app/
 ```
 
-`Electron.app` は Electron のリリースパッケージの一部で、[ここ](https://github.com/atom/electron/releases) からダウンロードできます。
+`Electron.app` は Electron のリリースパッケージの一部で、[ここ](https://github.com/electron/electron/releases) からダウンロードできます。
 
 ### Run as a distribution
 
@@ -159,13 +171,13 @@ $ ./Electron.app/Contents/MacOS/Electron your-app/
 
 ### 試してみよう
 
-このチュートリアルのコードは [`atom/electron-quick-start`](https://github.com/atom/electron-quick-start) リポジトリから clone して実行できます。
+このチュートリアルのコードは [`atom/electron-quick-start`](https://github.com/electron/electron-quick-start) リポジトリから clone して実行できます。
 
 **注記**：例を試すには、[Git](https://git-scm.com) と [Node.js](https://nodejs.org/en/download/) ([npm](https://npmjs.org) もこれに含まれています) が必要です。
 
 ```bash
 # Clone the repository
-$ git clone https://github.com/atom/electron-quick-start
+$ git clone https://github.com/electron/electron-quick-start
 # Go into the repository
 $ cd electron-quick-start
 # Install dependencies and run the app

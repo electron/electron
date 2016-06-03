@@ -19,7 +19,7 @@ Like `--debug` but pauses the script on the first line.
 
 ## Use node-inspector for Debugging
 
-__Note:__ Electron doesn't currently work very well
+**Note:** Electron doesn't currently work very well
 with node-inspector, and the main process will crash if you inspect the
 `process` object under node-inspector's console.
 
@@ -40,11 +40,11 @@ $ npm install git+https://git@github.com/enlight/node-pre-gyp.git#detect-electro
 ### 4. Recompile the `node-inspector` `v8` modules for electron (change the target to your electron version number)
 
 ```bash
-$ node_modules/.bin/node-pre-gyp --target=0.36.2 --runtime=electron --fallback-to-build --directory node_modules/v8-debug/ --dist-url=https://atom.io/download/atom-shell reinstall
-$ node_modules/.bin/node-pre-gyp --target=0.36.2 --runtime=electron --fallback-to-build --directory node_modules/v8-profiler/ --dist-url=https://atom.io/download/atom-shell reinstall
+$ node_modules/.bin/node-pre-gyp --target=0.36.11 --runtime=electron --fallback-to-build --directory node_modules/v8-debug/ --dist-url=https://atom.io/download/atom-shell reinstall
+$ node_modules/.bin/node-pre-gyp --target=0.36.11 --runtime=electron --fallback-to-build --directory node_modules/v8-profiler/ --dist-url=https://atom.io/download/atom-shell reinstall
 ```
 
-See also [How to install native modules](how-to-install-native-modules).
+See also [How to install native modules][how-to-install-native-modules].
 
 ### 5. Enable debug mode for Electron
 
@@ -68,9 +68,10 @@ $ ELECTRON_RUN_AS_NODE=true path/to/electron.exe node_modules/node-inspector/bin
 
 ### 7. Load the debugger UI
 
-Open http://127.0.0.1:8080/debug?ws=127.0.0.1:8080&port=5858 in the Chrome browser. You may have to click pause if starting with debug-brk to see the entry line.
+Open http://127.0.0.1:8080/debug?ws=127.0.0.1:8080&port=5858 in the Chrome
+browser. You may have to click pause if starting with debug-brk to see the
+entry line.
 
 [node-inspector]: https://github.com/node-inspector/node-inspector
 [node-gyp-required-tools]: https://github.com/nodejs/node-gyp#installation
 [how-to-install-native-modules]: using-native-node-modules.md#how-to-install-native-modules
-

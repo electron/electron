@@ -1,6 +1,6 @@
-process.on('uncaughtException', function(err) {
-  process.send(err.message);
-});
+process.on('uncaughtException', function (err) {
+  process.send(err.message)
+})
 
-require('runas');
-process.send('ok');
+require('runas')
+process.send('ok')

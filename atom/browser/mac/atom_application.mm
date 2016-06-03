@@ -28,6 +28,20 @@
   handlingSendEvent_ = handlingSendEvent;
 }
 
+- (void)setCurrentActivity:(NSString*)type
+              withUserInfo:(NSDictionary*)userInfo
+            withWebpageURL:(NSURL*)webpageURL {
+  currentActivity_ = base::scoped_nsobject<NSUserActivity>(
+      [[NSUserActivity alloc] initWithActivityType:type]);
+  [currentActivity_ setUserInfo:userInfo];
+  [currentActivity_ setWebpageURL:webpageURL];
+  [currentActivity_ becomeCurrent];
+}
+
+- (NSUserActivity*)getCurrentActivity {
+  return currentActivity_.get();
+}
+
 - (void)awakeFromNib {
   [[NSAppleEventManager sharedAppleEventManager]
       setEventHandler:self

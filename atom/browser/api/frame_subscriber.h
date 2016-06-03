@@ -7,7 +7,10 @@
 
 #include "base/callback.h"
 #include "base/memory/weak_ptr.h"
+#include "content/public/browser/render_widget_host_view.h"
 #include "content/public/browser/render_widget_host_view_frame_subscriber.h"
+#include "content/public/browser/readback_types.h"
+#include "third_party/skia/include/core/SkBitmap.h"
 #include "ui/gfx/geometry/size.h"
 #include "v8/include/v8.h"
 
@@ -20,7 +23,7 @@ class FrameSubscriber : public content::RenderWidgetHostViewFrameSubscriber {
   using FrameCaptureCallback = base::Callback<void(v8::Local<v8::Value>)>;
 
   FrameSubscriber(v8::Isolate* isolate,
-                  const gfx::Size& size,
+                  content::RenderWidgetHostView* view,
                   const FrameCaptureCallback& callback);
 
   bool ShouldCaptureFrame(const gfx::Rect& damage_rect,
@@ -29,11 +32,11 @@ class FrameSubscriber : public content::RenderWidgetHostViewFrameSubscriber {
                           DeliverFrameCallback* callback) override;
 
  private:
-  void OnFrameDelivered(
-      scoped_refptr<media::VideoFrame> frame, base::TimeTicks, bool);
+  void OnFrameDelivered(const FrameCaptureCallback& callback,
+    const SkBitmap& bitmap, content::ReadbackResponse response);
 
   v8::Isolate* isolate_;
-  gfx::Size size_;
+  content::RenderWidgetHostView* view_;
   FrameCaptureCallback callback_;
 
   base::WeakPtrFactory<FrameSubscriber> weak_factory_;

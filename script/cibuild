@@ -32,6 +32,9 @@ LINUX_DEPS_ARM = [
 def main():
   os.environ['CI'] = '1'
 
+  if os.environ.has_key('JANKY_SHA1'):
+    setup_nodenv()
+
   target_arch = 'x64'
   if os.environ.has_key('TARGET_ARCH'):
     target_arch = os.environ['TARGET_ARCH']
@@ -50,11 +53,11 @@ def main():
   if PLATFORM == 'linux':
     os.environ['DISPLAY'] = ':99.0'
 
-  run_script('clean.py')
-
   # CI's npm is not reliable.
   npm = 'npm.cmd' if PLATFORM == 'win32' else 'npm'
   execute([npm, 'install', 'npm@2.12.1'])
+
+  log_versions()
 
   is_release = os.environ.has_key('ELECTRON_RELEASE')
   args = ['--target_arch=' + target_arch]
@@ -62,20 +65,21 @@ def main():
     args += ['--dev']
   run_script('bootstrap.py', args)
 
-  run_script('cpplint.py')
-  run_script('eslint.py')
   if PLATFORM != 'win32':
+    sys.stderr.write('\nRunning `npm run lint`\n')
+    sys.stderr.flush()
+    execute([npm, 'run', 'lint'])
     run_script('pylint.py')
   if is_release:
     run_script('build.py', ['-c', 'R'])
     run_script('create-dist.py')
     run_script('upload.py')
   else:
+    if PLATFORM == 'win32':
+      os.environ['OUTPUT_TO_FILE'] = 'output.log'
     run_script('build.py', ['-c', 'D'])
-    if PLATFORM != 'win32' and target_arch == 'x64':
+    if PLATFORM == 'win32' or target_arch == 'x64':
       run_script('test.py', ['--ci'])
-
-  run_script('clean.py')
 
 
 def run_script(script, args=[]):
@@ -83,6 +87,24 @@ def run_script(script, args=[]):
   sys.stderr.flush()
   script = os.path.join(SOURCE_ROOT, 'script', script)
   subprocess.check_call([sys.executable, script] + args)
+
+
+def log_versions():
+  sys.stderr.write('\nnode --version\n')
+  sys.stderr.flush()
+  subprocess.call(['node', '--version'])
+
+  sys.stderr.write('\nnpm --version\n')
+  sys.stderr.flush()
+  npm = 'npm.cmd' if PLATFORM == 'win32' else 'npm'
+  subprocess.call([npm, '--version'])
+
+
+def setup_nodenv():
+  if os.path.isdir('/usr/local/share/nodenv'):
+    os.environ['NODENV_ROOT'] = '/usr/local/share/nodenv'
+    os.environ['PATH'] = '/usr/local/share/nodenv/bin:/usr/local/share/nodenv/shims:' + os.environ['PATH']
+    os.environ['NODENV_VERSION'] = 'v0.10.21'
 
 
 if __name__ == '__main__':

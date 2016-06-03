@@ -33,13 +33,13 @@ console.log(clipboard.readText('selection'));
 
 プレーンテキストとしてクリップボードに`text`を書き込みます。
 
-### `clipboard.readHtml([type])`
+### `clipboard.readHTML([type])`
 
 * `type` String (optional)
 
 HTMLマークアップとして、クリップボードの内容を返します。
 
-### `clipboard.writeHtml(markup[, type])`
+### `clipboard.writeHTML(markup[, type])`
 
 * `markup` String
 * `type` String (optional)

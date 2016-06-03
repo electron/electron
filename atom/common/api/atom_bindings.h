@@ -7,6 +7,7 @@
 
 #include <list>
 
+#include "base/macros.h"
 #include "base/strings/string16.h"
 #include "v8/include/v8.h"
 #include "vendor/node/deps/uv/include/uv.h"

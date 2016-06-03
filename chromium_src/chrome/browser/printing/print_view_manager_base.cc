@@ -6,7 +6,7 @@
 
 #include "base/bind.h"
 #include "base/memory/scoped_ptr.h"
-#include "base/prefs/pref_service.h"
+#include "components/prefs/pref_service.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/timer/timer.h"
 #include "chrome/browser/browser_process.h"
@@ -132,7 +132,7 @@ void PrintViewManagerBase::OnDidPrintPage(
     }
   }
 
-  scoped_ptr<PdfMetafileSkia> metafile(new PdfMetafileSkia);
+  std::unique_ptr<PdfMetafileSkia> metafile(new PdfMetafileSkia);
   if (metafile_must_be_valid) {
     if (!metafile->InitFromData(shared_buf.memory(), params.data_size)) {
       NOTREACHED() << "Invalid metafile header";
@@ -144,7 +144,7 @@ void PrintViewManagerBase::OnDidPrintPage(
 #if !defined(OS_WIN)
   // Update the rendered document. It will send notifications to the listener.
   document->SetPage(params.page_number,
-                    metafile.Pass(),
+                    std::move(metafile),
                     params.page_size,
                     params.content_area);
 
@@ -305,7 +305,7 @@ void PrintViewManagerBase::ShouldQuitFromInnerMessageLoop() {
       inside_inner_message_loop_) {
     // We are in a message loop created by RenderAllMissingPagesNow. Quit from
     // it.
-    base::MessageLoop::current()->Quit();
+    base::MessageLoop::current()->QuitWhenIdle();
     inside_inner_message_loop_ = false;
   }
 }
@@ -411,9 +411,9 @@ bool PrintViewManagerBase::RunInnerMessageLoop() {
   // memory-bound.
   static const int kPrinterSettingsTimeout = 60000;
   base::OneShotTimer quit_timer;
-  quit_timer.Start(FROM_HERE,
-                   TimeDelta::FromMilliseconds(kPrinterSettingsTimeout),
-                   base::MessageLoop::current(), &base::MessageLoop::Quit);
+  quit_timer.Start(
+      FROM_HERE, TimeDelta::FromMilliseconds(kPrinterSettingsTimeout),
+      base::MessageLoop::current(), &base::MessageLoop::QuitWhenIdle);
 
   inside_inner_message_loop_ = true;
 

@@ -5,7 +5,9 @@
 #ifndef ATOM_COMMON_API_LOCKER_H_
 #define ATOM_COMMON_API_LOCKER_H_
 
-#include "base/memory/scoped_ptr.h"
+#include <memory>
+
+#include "base/macros.h"
 #include "v8/include/v8.h"
 
 namespace mate {
@@ -24,7 +26,7 @@ class Locker {
   void* operator new(size_t size);
   void operator delete(void*, size_t);
 
-  scoped_ptr<v8::Locker> locker_;
+  std::unique_ptr<v8::Locker> locker_;
 
   DISALLOW_COPY_AND_ASSIGN(Locker);
 };

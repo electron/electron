@@ -15,21 +15,21 @@
 ## 코드 가져오기
 
 ```bash
-$ git clone https://github.com/atom/electron.git
+$ git clone https://github.com/electron/electron.git
 ```
 
 ## 부트 스트랩
 
 부트스트랩 스크립트는 필수적인 빌드 종속성 라이브러리들을 모두 다운로드하고 프로젝트
-파일을 생성합니다. 참고로 Electron은 `ninja`를 빌드 툴체인으로 사용하므로 Xcode
-프로젝트는 생성되지 않습니다.
+파일을 생성합니다. 참고로 Electron은 [ninja](https://ninja-build.org/)를 빌드
+툴체인으로 사용하므로 Xcode 프로젝트는 생성되지 않습니다.
 
 ```bash
 $ cd electron
 $ ./script/bootstrap.py -v
 ```
 
-## 빌드 하기
+## 빌드하기
 
 `Release` 와 `Debug` 두 타겟 모두 빌드 합니다:
 

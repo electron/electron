@@ -1,22 +1,22 @@
 ﻿# globalSortcut
 
+> 어플리케이션에 키보드 포커스가 없을 때도 키보드 이벤트를 받을 수 있도록 합니다.
+
 `globalShortcut` 모듈은 운영체제의 전역 키보드 단축키를 등록/해제 하는 방법을
 제공합니다. 이 모듈을 사용하여 사용자가 다양한 작업을 편하게 할 수 있도록 단축키를
 정의 할 수 있습니다.
 
 **참고:** 등록된 단축키는 어플리케이션이 백그라운드로 작동(창이 포커스 되지 않음) 할
-때도 계속해서 작동합니다. 이 모듈은 `app` 모듈의 `ready` 이벤트 이전에 사용할 수
-없습니다.
+때도 계속해서 작동합니다. 이 모듈은 `app` 모듈의 `ready` 이벤트가 발생하기 전까지
+사용할 수 없습니다.
 
 ```javascript
-const electron = require('electron');
-const app = electron.app;
-const globalShortcut = electron.globalShortcut;
+const {app, globalShortcut} = require('electron');
 
-app.on('ready', function() {
-  // 'ctrl+x' 단축키를 리스너에 등록합니다.
-  var ret = globalShortcut.register('ctrl+x', function() {
-    console.log('ctrl+x is pressed');
+app.on('ready', () => {
+  // 'CommandOrControl+X' 단축키를 리스너에 등록합니다.
+  const ret = globalShortcut.register('CommandOrControl+X', () => {
+    console.log('CommandOrControl+X is pressed');
   });
 
   if (!ret) {
@@ -24,12 +24,12 @@ app.on('ready', function() {
   }
 
   // 단축키가 등록되었는지 확인합니다.
-  console.log(globalShortcut.isRegistered('ctrl+x'));
+  console.log(globalShortcut.isRegistered('CommandOrControl+X'));
 });
 
-app.on('will-quit', function() {
+app.on('will-quit', () => {
   // 단축키의 등록을 해제합니다.
-  globalShortcut.unregister('ctrl+x');
+  globalShortcut.unregister('CommandOrControl+X');
 
   // 모든 단축키의 등록을 해제합니다.
   globalShortcut.unregisterAll();

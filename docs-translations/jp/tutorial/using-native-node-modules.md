@@ -4,7 +4,7 @@ Electronは、ネイティブのNodeモジュールをサポートしていま�
 
 ## ネイティブNodeモジュールとの互換性
 
-Nodeが新しいV8バージョンを使用し始めた時、Nativeモジュールは動作しなくなるかもしれません。ElectronでNativeモジュールが動作するかどうかを確認するために、Electronで使用する内部のNodeバージョンがサポートしているかを確認すべきです。ElectronでNodeが使用しているバージョンを確認するには、[releases](https://github.com/atom/electron/releases)ページを見るか、`process.version` (例えば [Quick Start](https://github.com/atom/electron/blob/master/docs/tutorial/quick-start.md)を見てください)を使用してください。
+Nodeが新しいV8バージョンを使用し始めた時、Nativeモジュールは動作しなくなるかもしれません。ElectronでNativeモジュールが動作するかどうかを確認するために、Electronで使用する内部のNodeバージョンがサポートしているかを確認すべきです。ElectronでNodeが使用しているバージョンを確認するには、[releases](https://github.com/electron/electron/releases)ページを見るか、`process.version` (例えば [Quick Start](https://github.com/electron/electron/blob/master/docs/tutorial/quick-start.md)を見てください)を使用してください。
 
 Nodeの複数バージョンを簡単にサポートできるので、あなたのモジュールに [NAN](https://github.com/nodejs/nan/) を使うことを検討してください。古いバージョンからElectronで動作するNodeの新しいバージョンへ移植するのに役立ちます。
 

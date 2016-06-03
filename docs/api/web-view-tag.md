@@ -1,4 +1,6 @@
-# The `<webview>` tag
+# `<webview>` Tag
+
+> Display external web content in an isolated frame and process.
 
 Use the `webview` tag to embed 'guest' content (such as web pages) in your
 Electron app. The guest content is contained within the `webview` container.
@@ -10,6 +12,9 @@ app. It doesn't have the same permissions as your web page and all interactions
 between your app and embedded content will be asynchronous. This keeps your app
 safe from the embedded content.
 
+For security purpose, `webview` can only be used in `BrowserWindow`s that have
+`nodeIntegration` enabled.
+
 ## Example
 
 To embed a web page in your app, add the `webview` tag to your app's embedder
@@ -18,7 +23,7 @@ form, the `webview` tag includes the `src` of the web page and css styles that
 control the appearance of the `webview` container:
 
 ```html
-<webview id="foo" src="https://www.github.com/" style="display:inline-block; width:640px; height:480px"></webview>
+<webview id="foo" src="https://www.github.com/" style="display:inline-flex; width:640px; height:480px"></webview>
 ```
 
 If you want to control the guest content in any way, you can write JavaScript
@@ -29,20 +34,52 @@ and displays a "loading..." message during the load time:
 
 ```html
 <script>
-  onload = function() {
-    var webview = document.getElementById("foo");
-    var indicator = document.querySelector(".indicator");
+  onload = () => {
+    const webview = document.getElementById('foo');
+    const indicator = document.querySelector('.indicator');
 
-    var loadstart = function() {
-      indicator.innerText = "loading...";
-    }
-    var loadstop = function() {
-      indicator.innerText = "";
-    }
-    webview.addEventListener("did-start-loading", loadstart);
-    webview.addEventListener("did-stop-loading", loadstop);
-  }
+    const loadstart = () => {
+      indicator.innerText = 'loading...';
+    };
+
+    const loadstop = () => {
+      indicator.innerText = '';
+    };
+
+    webview.addEventListener('did-start-loading', loadstart);
+    webview.addEventListener('did-stop-loading', loadstop);
+  };
 </script>
+```
+
+## CSS Styling Notes
+
+Please note that the `webview` tag's style uses `display:flex;` internally to
+ensure the child `object` element fills the full height and width of its `webview`
+container when used with traditional and flexbox layouts (since v0.36.11). Please
+do not overwrite the default `display:flex;` CSS property, unless specifying
+`display:inline-flex;` for inline layout.
+
+`webview` has issues being hidden using the `hidden` attribute or using `display: none;`.
+It can cause unusual rendering behaviour within its child `browserplugin` object
+and the web page is reloaded, when the `webview` is un-hidden, as opposed to just
+becoming visible again. The recommended approach is to hide the `webview` using
+CSS by zeroing the `width` & `height` and allowing the element to shrink to the 0px
+dimensions via `flex`.
+
+```html
+<style>
+  webview {
+    display:inline-flex;
+    width:640px;
+    height:480px;
+  }
+  webview.hide {
+    flex: 0 1;
+    width: 0px;
+    height: 0px;
+  }
+</style>
 ```
 
 ## Tag Attributes
@@ -83,6 +120,9 @@ than the minimum values or greater than the maximum.
 
 If "on", the guest page in `webview` will have node integration and can use node
 APIs like `require` and `process` to access low level system resources.
+
+**Note:** Node integration will always be disabled in the `webview` if it is
+disabled on the parent window.
 
 ### `plugins`
 
@@ -131,7 +171,7 @@ page is loaded, use the `setUserAgent` method to change the user agent.
 
 If "on", the guest page will have web security disabled.
 
-### partition
+### `partition`
 
 ```html
 <webview src="https://github.com" partition="persist:github"></webview>
@@ -176,7 +216,7 @@ The `webview` tag has the following methods:
 **Example**
 
 ```javascript
-webview.addEventListener("dom-ready", function() {
+webview.addEventListener('dom-ready', () => {
   webview.openDevTools();
 });
 ```
@@ -279,10 +319,12 @@ Returns a `String` representing the user agent for guest page.
 
 Injects CSS into the guest page.
 
-### `<webview>.executeJavaScript(code, userGesture)`
+### `<webview>.executeJavaScript(code, userGesture, callback)`
 
 * `code` String
 * `userGesture` Boolean - Default `false`.
+* `callback` Function (optional) - Called after script has been executed.
+  * `result`
 
 Evaluates `code` in page. If `userGesture` is set, it will create the user
 gesture context in the page. HTML APIs like `requestFullScreen`, which require
@@ -403,8 +445,8 @@ obtained by subscribing to [`found-in-page`](web-view-tag.md#event-found-in-page
 
 * `action` String - Specifies the action to take place when ending
   [`<webview>.findInPage`](web-view-tag.md#webviewtagfindinpage) request.
-  * `clearSelection` - Translate the selection into a normal selection.
-  * `keepSelection` - Clear the selection.
+  * `clearSelection` - Clear the selection.
+  * `keepSelection` - Translate the selection into a normal selection.
   * `activateSelection` - Focus and click the selection node.
 
 Stops any `findInPage` request for the `webview` with the provided `action`.
@@ -415,7 +457,7 @@ Prints `webview`'s web page. Same with `webContents.print([options])`.
 
 ### `<webview>.printToPDF(options, callback)`
 
-Prints webview's web page as PDF, Same with `webContents.printToPDF(options, callback)`
+Prints `webview`'s web page as PDF, Same with `webContents.printToPDF(options, callback)`
 
 ### `<webview>.send(channel[, arg1][, arg2][, ...])`
 
@@ -469,6 +511,7 @@ Returns:
 * `errorCode` Integer
 * `errorDescription` String
 * `validatedURL` String
+* `isMainFrame` Boolean
 
 This event is like `did-finish-load`, but fired when the load failed or was
 cancelled, e.g. `window.stop()` is invoked.
@@ -500,6 +543,7 @@ Returns:
 * `requestMethod` String
 * `referrer` String
 * `headers` Object
+* `resourceType` String
 
 Fired when details regarding a requested resource is available.
 `status` indicates socket connection to download the resource.
@@ -559,7 +603,7 @@ The following example code forwards all log messages to the embedder's console
 without regard for log level or other properties.
 
 ```javascript
-webview.addEventListener('console-message', function(e) {
+webview.addEventListener('console-message', (e) => {
   console.log('Guest page logged a message:', e.message);
 });
 ```
@@ -571,6 +615,7 @@ Returns:
 * `result` Object
   * `requestId` Integer
   * `finalUpdate` Boolean - Indicates if more responses are to follow.
+  * `activeMatchOrdinal` Integer (optional) - Position of the active match.
   * `matches` Integer (optional) - Number of Matches.
   * `selectionArea` Object (optional) - Coordinates of first match region.
 
@@ -578,12 +623,12 @@ Fired when a result is available for
 [`webview.findInPage`](web-view-tag.md#webviewtagfindinpage) request.
 
 ```javascript
-webview.addEventListener('found-in-page', function(e) {
+webview.addEventListener('found-in-page', (e) => {
   if (e.result.finalUpdate)
-    webview.stopFindInPage("keepSelection");
+    webview.stopFindInPage('keepSelection');
 });
 
-const rquestId = webview.findInPage("test");
+const requestId = webview.findInPage('test');
 ```
 
 ### Event: 'new-window'
@@ -602,8 +647,13 @@ Fired when the guest page attempts to open a new browser window.
 The following example code opens the new url in system's default browser.
 
 ```javascript
-webview.addEventListener('new-window', function(e) {
-  require('electron').shell.openExternal(e.url);
+const {shell} = require('electron');
+
+webview.addEventListener('new-window', (e) => {
+  const protocol = require('url').parse(e.url).protocol;
+  if (protocol === 'http:' || protocol === 'https:') {
+    shell.openExternal(e.url);
+  }
 });
 ```
 
@@ -657,7 +707,7 @@ The following example code navigates the `webview` to `about:blank` when the
 guest attempts to close itself.
 
 ```javascript
-webview.addEventListener('close', function() {
+webview.addEventListener('close', () => {
   webview.src = 'about:blank';
 });
 ```
@@ -676,7 +726,7 @@ between guest page and embedder page:
 
 ```javascript
 // In embedder page.
-webview.addEventListener('ipc-message', function(event) {
+webview.addEventListener('ipc-message', (event) => {
   console.log(event.channel);
   // Prints "pong"
 });
@@ -685,8 +735,8 @@ webview.send('ping');
 
 ```javascript
 // In guest page.
-var ipcRenderer = require('electron').ipcRenderer;
-ipcRenderer.on('ping', function() {
+const {ipcRenderer} = require('electron');
+ipcRenderer.on('ping', () => {
   ipcRenderer.sendToHost('pong');
 });
 ```
@@ -721,6 +771,10 @@ Emitted when media starts playing.
 Emitted when media is paused or done playing.
 
 ### Event: 'did-change-theme-color'
+
+Returns:
+
+* `themeColor` String
 
 Emitted when a page's theme color changes. This is usually due to encountering a meta tag:
 

@@ -11,6 +11,7 @@
 #include "base/memory/scoped_ptr.h"
 #include "native_mate/handle.h"
 #include "native_mate/wrappable.h"
+#include "third_party/WebKit/public/web/WebCache.h"
 
 namespace blink {
 class WebLocalFrame;
@@ -26,13 +27,16 @@ namespace api {
 
 class SpellCheckClient;
 
-class WebFrame : public mate::Wrappable {
+class WebFrame : public mate::Wrappable<WebFrame> {
  public:
   static mate::Handle<WebFrame> Create(v8::Isolate* isolate);
 
+  static void BuildPrototype(v8::Isolate* isolate,
+                             v8::Local<v8::ObjectTemplate> prototype);
+
  private:
-  WebFrame();
-  virtual ~WebFrame();
+  explicit WebFrame(v8::Isolate* isolate);
+  ~WebFrame() override;
 
   void SetName(const std::string& name);
 
@@ -66,11 +70,11 @@ class WebFrame : public mate::Wrappable {
   // Excecuting scripts.
   void ExecuteJavaScript(const base::string16& code, mate::Arguments* args);
 
-  // mate::Wrappable:
-  virtual mate::ObjectTemplateBuilder GetObjectTemplateBuilder(
-      v8::Isolate* isolate);
+  // Resource related methods
+  blink::WebCache::ResourceTypeStats GetResourceUsage(v8::Isolate* isolate);
+  void ClearCache(v8::Isolate* isolate);
 
-  scoped_ptr<SpellCheckClient> spell_check_client_;
+  std::unique_ptr<SpellCheckClient> spell_check_client_;
 
   blink::WebLocalFrame* web_frame_;
 

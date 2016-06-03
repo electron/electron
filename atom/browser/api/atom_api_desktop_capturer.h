@@ -14,18 +14,21 @@ namespace atom {
 
 namespace api {
 
-class DesktopCapturer: public mate::EventEmitter,
+class DesktopCapturer: public mate::EventEmitter<DesktopCapturer>,
                        public DesktopMediaListObserver {
  public:
   static mate::Handle<DesktopCapturer> Create(v8::Isolate* isolate);
+
+  static void BuildPrototype(v8::Isolate* isolate,
+                             v8::Local<v8::ObjectTemplate> prototype);
 
   void StartHandling(bool capture_window,
                      bool capture_screen,
                      const gfx::Size& thumbnail_size);
 
  protected:
-  DesktopCapturer();
-  ~DesktopCapturer();
+  explicit DesktopCapturer(v8::Isolate* isolate);
+  ~DesktopCapturer() override;
 
   // DesktopMediaListObserver overrides.
   void OnSourceAdded(int index) override;
@@ -36,11 +39,7 @@ class DesktopCapturer: public mate::EventEmitter,
   bool OnRefreshFinished() override;
 
  private:
-  // mate::Wrappable:
-  mate::ObjectTemplateBuilder GetObjectTemplateBuilder(
-      v8::Isolate* isolate) override;
-
-  scoped_ptr<DesktopMediaList> media_list_;
+  std::unique_ptr<DesktopMediaList> media_list_;
 
   DISALLOW_COPY_AND_ASSIGN(DesktopCapturer);
 };

@@ -34,4 +34,4 @@ siguientes reglas:
 Al crear una nueva API, nosotros deberíamos preferir usar metodos `get` y `set`
 en vez de usar el estilo de jQuery que utiliza una sola función. Por ejemplo,
 se prefiere `.getText()` y `.setText()` por sobre `.text([text])`. Hay una
-[discusión](https://github.com/atom/electron/issues/46) sobre esto.
+[discusión](https://github.com/electron/electron/issues/46) sobre esto.

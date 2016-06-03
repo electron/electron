@@ -1,27 +1,22 @@
 # Tray
 
-A `Tray` represents an icon in an operating system's notification area, it is
-usually attached with a context menu.
+> Add icons and context menus to the system's notification area.
 
 ```javascript
-const electron = require('electron');
-const app = electron.app;
-const Menu = electron.Menu;
-const Tray = electron.Tray;
+const {app, Menu, Tray} = require('electron');
 
-var appIcon = null;
-app.on('ready', function(){
+let appIcon = null;
+app.on('ready', () => {
   appIcon = new Tray('/path/to/my/icon');
-  var contextMenu = Menu.buildFromTemplate([
-    { label: 'Item1', type: 'radio' },
-    { label: 'Item2', type: 'radio' },
-    { label: 'Item3', type: 'radio', checked: true },
-    { label: 'Item4', type: 'radio' }
+  const contextMenu = Menu.buildFromTemplate([
+    {label: 'Item1', type: 'radio'},
+    {label: 'Item2', type: 'radio'},
+    {label: 'Item3', type: 'radio', checked: true},
+    {label: 'Item4', type: 'radio'}
   ]);
   appIcon.setToolTip('This is my application.');
   appIcon.setContextMenu(contextMenu);
 });
-
 ```
 
 __Platform limitations:__
@@ -34,6 +29,7 @@ __Platform limitations:__
 * When app indicator is used on Linux, the `click` event is ignored.
 * On Linux in order for changes made to individual `MenuItem`s to take effect,
   you have to call `setContextMenu` again. For example:
+* On Windows it is recommended to use `ICO` icons to get best visual effects.
 
 ```javascript
 contextMenu.items[2].checked = false;
@@ -75,7 +71,7 @@ labeled as such.
 
 Emitted when the tray icon is clicked.
 
-__Note:__ The `bounds` payload is only implemented on OS X and Windows.
+**Note:** The `bounds` payload is only implemented on OS X and Windows.
 
 ### Event: 'right-click' _OS X_ _Windows_
 

@@ -13,7 +13,7 @@ namespace atom {
 
 namespace api {
 
-MenuViews::MenuViews() {
+MenuViews::MenuViews(v8::Isolate* isolate) : Menu(isolate) {
 }
 
 void MenuViews::PopupAt(Window* window, int x, int y, int positioning_item) {
@@ -30,7 +30,7 @@ void MenuViews::PopupAt(Window* window, int x, int y, int positioning_item) {
   // (-1, -1) means showing on mouse location.
   gfx::Point location;
   if (x == -1 || y == -1) {
-    location = gfx::Screen::GetNativeScreen()->GetCursorScreenPoint();
+    location = gfx::Screen::GetScreen()->GetCursorScreenPoint();
   } else {
     gfx::Point origin = view->GetViewBounds().origin();
     location = gfx::Point(origin.x() + x, origin.y() + y);
@@ -49,8 +49,8 @@ void MenuViews::PopupAt(Window* window, int x, int y, int positioning_item) {
 }
 
 // static
-mate::Wrappable* Menu::Create() {
-  return new MenuViews();
+mate::WrappableBase* Menu::Create(v8::Isolate* isolate) {
+  return new MenuViews(isolate);
 }
 
 }  // namespace api

@@ -1,8 +1,7 @@
 # Menu
 
-The `menu` class is used to create native menus that can be used as
-application menus and
-[context menus](https://developer.mozilla.org/en-US/docs/Mozilla/Tech/XUL/PopupGuide/ContextMenus).
+> Create native application menus and context menus.
+
 This module is a main process module which can be used in a render process via
 the `remote` module.
 
@@ -16,16 +15,15 @@ the user right clicks the page:
 ```html
 <!-- index.html -->
 <script>
-const remote = require('electron').remote;
-const Menu = remote.Menu;
-const MenuItem = remote.MenuItem;
+const {remote} = require('electron');
+const {Menu, MenuItem} = remote;
 
-var menu = new Menu();
-menu.append(new MenuItem({ label: 'MenuItem1', click: function() { console.log('item 1 clicked'); } }));
-menu.append(new MenuItem({ type: 'separator' }));
-menu.append(new MenuItem({ label: 'MenuItem2', type: 'checkbox', checked: true }));
+const menu = new Menu();
+menu.append(new MenuItem({label: 'MenuItem1', click() { console.log('item 1 clicked'); }}));
+menu.append(new MenuItem({type: 'separator'}));
+menu.append(new MenuItem({label: 'MenuItem2', type: 'checkbox', checked: true}));
 
-window.addEventListener('contextmenu', function (e) {
+window.addEventListener('contextmenu', (e) => {
   e.preventDefault();
   menu.popup(remote.getCurrentWindow());
 }, false);
@@ -36,7 +34,7 @@ An example of creating the application menu in the render process with the
 simple template API:
 
 ```javascript
-var template = [
+const template = [
   {
     label: 'Edit',
     submenu: [
@@ -81,35 +79,24 @@ var template = [
       {
         label: 'Reload',
         accelerator: 'CmdOrCtrl+R',
-        click: function(item, focusedWindow) {
-          if (focusedWindow)
-            focusedWindow.reload();
+        click(item, focusedWindow) {
+          if (focusedWindow) focusedWindow.reload();
         }
       },
       {
         label: 'Toggle Full Screen',
-        accelerator: (function() {
-          if (process.platform == 'darwin')
-            return 'Ctrl+Command+F';
-          else
-            return 'F11';
-        })(),
-        click: function(item, focusedWindow) {
+        accelerator: process.platform === 'darwin' ? 'Ctrl+Command+F' : 'F11',
+        click(item, focusedWindow) {
           if (focusedWindow)
             focusedWindow.setFullScreen(!focusedWindow.isFullScreen());
         }
       },
       {
         label: 'Toggle Developer Tools',
-        accelerator: (function() {
-          if (process.platform == 'darwin')
-            return 'Alt+Command+I';
-          else
-            return 'Ctrl+Shift+I';
-        })(),
-        click: function(item, focusedWindow) {
+        accelerator: process.platform === 'darwin' ? 'Alt+Command+I' : 'Ctrl+Shift+I',
+        click(item, focusedWindow) {
           if (focusedWindow)
-            focusedWindow.toggleDevTools();
+            focusedWindow.webContents.toggleDevTools();
         }
       },
     ]
@@ -136,14 +123,14 @@ var template = [
     submenu: [
       {
         label: 'Learn More',
-        click: function() { require('electron').shell.openExternal('http://electron.atom.io') }
+        click() { require('electron').shell.openExternal('http://electron.atom.io'); }
       },
     ]
   },
 ];
 
-if (process.platform == 'darwin') {
-  var name = require('electron').app.getName();
+if (process.platform === 'darwin') {
+  const name = require('electron').remote.app.getName();
   template.unshift({
     label: name,
     submenu: [
@@ -182,7 +169,7 @@ if (process.platform == 'darwin') {
       {
         label: 'Quit',
         accelerator: 'Command+Q',
-        click: function() { app.quit(); }
+        click() { app.quit(); }
       },
     ]
   });
@@ -198,7 +185,7 @@ if (process.platform == 'darwin') {
   );
 }
 
-var menu = Menu.buildFromTemplate(template);
+const menu = Menu.buildFromTemplate(template);
 Menu.setApplicationMenu(menu);
 ```
 
@@ -227,6 +214,9 @@ Sends the `action` to the first responder of application. This is used for
 emulating default Cocoa menu behaviors, usually you would just use the
 `role` property of `MenuItem`.
 
+See the [OS X Cocoa Event Handling Guide](https://developer.apple.com/library/mac/documentation/Cocoa/Conceptual/EventOverview/EventArchitecture/EventArchitecture.html#//apple_ref/doc/uid/10000060i-CH3-SW7)
+for more information on OS X's native actions.
+
 ### `Menu.buildFromTemplate(template)`
 
 * `template` Array
@@ -237,7 +227,11 @@ Generally, the `template` is just an array of `options` for constructing a
 You can also attach other fields to the element of the `template` and they
 will become properties of the constructed menu items.
 
-### `Menu.popup([browserWindow, x, y, positioningItem])`
+## Instance Methods
+
+The `menu` object has the following instance methods:
+
+### `menu.popup([browserWindow, x, y, positioningItem])`
 
 * `browserWindow` BrowserWindow (optional) - Default is `null`.
 * `x` Number (optional) - Default is -1.
@@ -250,20 +244,24 @@ Pops up this menu as a context menu in the `browserWindow`. You can optionally
 provide a `x, y` coordinate to place the menu at, otherwise it will be placed
 at the current mouse cursor position.
 
-### `Menu.append(menuItem)`
+### `menu.append(menuItem)`
 
 * `menuItem` MenuItem
 
 Appends the `menuItem` to the menu.
 
-### `Menu.insert(pos, menuItem)`
+### `menu.insert(pos, menuItem)`
 
 * `pos` Integer
 * `menuItem` MenuItem
 
 Inserts the `menuItem` to the `pos` position of the menu.
 
-### `Menu.items()`
+## Instance Properties
+
+`menu` objects also have the following properties:
+
+### `menu.items`
 
 Get an array containing the menu's items.
 
@@ -376,5 +374,4 @@ Menu:
 ```
 
 [AboutInformationPropertyListFiles]: https://developer.apple.com/library/ios/documentation/general/Reference/InfoPlistKeyReference/Articles/AboutInformationPropertyListFiles.html
-[setMenu]:
-https://github.com/atom/electron/blob/master/docs/api/browser-window.md#winsetmenumenu-linux-windows
+[setMenu]: https://github.com/electron/electron/blob/master/docs/api/browser-window.md#winsetmenumenu-linux-windows

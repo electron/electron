@@ -19,6 +19,7 @@
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/win/win_util.h"
+#include "base/win/registry.h"
 #include "base/win/windows_version.h"
 #include "atom/common/atom_version.h"
 
@@ -125,6 +126,149 @@ void Browser::SetUserTasks(const std::vector<UserTask>& tasks) {
   destinations->CommitList();
 }
 
+bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol) {
+  if (protocol.empty())
+    return false;
+
+  base::FilePath path;
+  if (!PathService::Get(base::FILE_EXE, &path)) {
+    LOG(ERROR) << "Error getting app exe path";
+    return false;
+  }
+
+  // Main Registry Key
+  HKEY root = HKEY_CURRENT_USER;
+  std::string keyPathStr = "Software\\Classes\\" + protocol;
+  std::wstring keyPath = std::wstring(keyPathStr.begin(), keyPathStr.end());
+
+  // Command Key
+  std::string cmdPathStr = keyPathStr + "\\shell\\open\\command";
+  std::wstring cmdPath = std::wstring(cmdPathStr.begin(), cmdPathStr.end());
+
+  base::win::RegKey key;
+  base::win::RegKey commandKey;
+  if (FAILED(key.Open(root, keyPath.c_str(), KEY_ALL_ACCESS)))
+    // Key doesn't even exist, we can confirm that it is not set
+    return true;
+
+  if (FAILED(commandKey.Open(root, cmdPath.c_str(), KEY_ALL_ACCESS)))
+    // Key doesn't even exist, we can confirm that it is not set
+    return true;
+
+  std::wstring keyVal;
+  if (FAILED(commandKey.ReadValue(L"", &keyVal)))
+    // Default value not set, we can confirm that it is not set
+    return true;
+
+  std::wstring exePath(path.value());
+  std::wstring exe = L"\"" + exePath + L"\" \"%1\"";
+  if (keyVal == exe) {
+    // Let's kill the key
+    if (FAILED(key.DeleteKey(L"shell")))
+      return false;
+
+    return true;
+  } else {
+    return true;
+  }
+}
+
+bool Browser::SetAsDefaultProtocolClient(const std::string& protocol) {
+  // HKEY_CLASSES_ROOT
+  //    $PROTOCOL
+  //       (Default) = "URL:$NAME"
+  //       URL Protocol = ""
+  //       shell
+  //          open
+  //             command
+  //                (Default) = "$COMMAND" "%1"
+  //
+  // However, the "HKEY_CLASSES_ROOT" key can only be written by the
+  // Administrator user. So, we instead write to "HKEY_CURRENT_USER\
+  // Software\Classes", which is inherited by "HKEY_CLASSES_ROOT"
+  // anyway, and can be written by unprivileged users.
+
+  if (protocol.empty())
+    return false;
+
+  base::FilePath path;
+  if (!PathService::Get(base::FILE_EXE, &path)) {
+    LOG(ERROR) << "Error getting app exe path";
+    return false;
+  }
+
+  // Main Registry Key
+  HKEY root = HKEY_CURRENT_USER;
+  std::string keyPathStr = "Software\\Classes\\" + protocol;
+  std::wstring keyPath = std::wstring(keyPathStr.begin(), keyPathStr.end());
+  std::string urlDeclStr = "URL:" + protocol;
+  std::wstring urlDecl = std::wstring(urlDeclStr.begin(), urlDeclStr.end());
+
+  // Command Key
+  std::string cmdPathStr = keyPathStr + "\\shell\\open\\command";
+  std::wstring cmdPath = std::wstring(cmdPathStr.begin(), cmdPathStr.end());
+
+  // Executable Path
+  std::wstring exePath(path.value());
+  std::wstring exe = L"\"" + exePath + L"\" \"%1\"";
+
+  // Write information to registry
+  base::win::RegKey key(root, keyPath.c_str(), KEY_ALL_ACCESS);
+  if (FAILED(key.WriteValue(L"URL Protocol", L"")) ||
+      FAILED(key.WriteValue(L"", urlDecl.c_str())))
+    return false;
+
+  base::win::RegKey commandKey(root, cmdPath.c_str(), KEY_ALL_ACCESS);
+  if (FAILED(commandKey.WriteValue(L"", exe.c_str())))
+    return false;
+
+  return true;
+}
+
+bool Browser::IsDefaultProtocolClient(const std::string& protocol) {
+  if (protocol.empty())
+    return false;
+
+  base::FilePath path;
+  if (!PathService::Get(base::FILE_EXE, &path)) {
+    LOG(ERROR) << "Error getting app exe path";
+    return false;
+  }
+
+  // Main Registry Key
+  HKEY root = HKEY_CURRENT_USER;
+  std::string keyPathStr = "Software\\Classes\\" + protocol;
+  std::wstring keyPath = std::wstring(keyPathStr.begin(), keyPathStr.end());
+
+  // Command Key
+  std::string cmdPathStr = keyPathStr + "\\shell\\open\\command";
+  std::wstring cmdPath = std::wstring(cmdPathStr.begin(), cmdPathStr.end());
+
+  base::win::RegKey key;
+  base::win::RegKey commandKey;
+  if (FAILED(key.Open(root, keyPath.c_str(), KEY_ALL_ACCESS)))
+    // Key doesn't exist, we can confirm that it is not set
+    return false;
+
+  if (FAILED(commandKey.Open(root, cmdPath.c_str(), KEY_ALL_ACCESS)))
+    // Key doesn't exist, we can confirm that it is not set
+    return false;
+
+  std::wstring keyVal;
+  if (FAILED(commandKey.ReadValue(L"", &keyVal)))
+    // Default value not set, we can confirm that it is not set
+    return false;
+
+  std::wstring exePath(path.value());
+  std::wstring exe = L"\"" + exePath + L"\" \"%1\"";
+  if (keyVal == exe) {
+    // Default value is the same as current file path
+    return true;
+  } else {
+    return false;
+  }
+}
+
 PCWSTR Browser::GetAppUserModelID() {
   if (app_user_model_id_.empty()) {
     SetAppUserModelID(base::ReplaceStringPlaceholders(
@@ -137,7 +281,7 @@ PCWSTR Browser::GetAppUserModelID() {
 std::string Browser::GetExecutableFileVersion() const {
   base::FilePath path;
   if (PathService::Get(base::FILE_EXE, &path)) {
-    scoped_ptr<FileVersionInfo> version_info(
+    std::unique_ptr<FileVersionInfo> version_info(
         FileVersionInfo::CreateFileVersionInfo(path));
     return base::UTF16ToUTF8(version_info->product_version());
   }
@@ -148,7 +292,7 @@ std::string Browser::GetExecutableFileVersion() const {
 std::string Browser::GetExecutableFileProductName() const {
   base::FilePath path;
   if (PathService::Get(base::FILE_EXE, &path)) {
-    scoped_ptr<FileVersionInfo> version_info(
+    std::unique_ptr<FileVersionInfo> version_info(
         FileVersionInfo::CreateFileVersionInfo(path));
     return base::UTF16ToUTF8(version_info->product_name());
   }

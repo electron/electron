@@ -14,6 +14,7 @@
 #include "atom/browser/api/trackable_object.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/native_window_observer.h"
+#include "atom/common/api/atom_api_native_image.h"
 #include "native_mate/handle.h"
 
 class GURL;
@@ -38,7 +39,7 @@ class WebContents;
 class Window : public mate::TrackableObject<Window>,
                public NativeWindowObserver {
  public:
-  static mate::Wrappable* New(v8::Isolate* isolate, mate::Arguments* args);
+  static mate::WrappableBase* New(v8::Isolate* isolate, mate::Arguments* args);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::ObjectTemplate> prototype);
@@ -51,13 +52,15 @@ class Window : public mate::TrackableObject<Window>,
 
  protected:
   Window(v8::Isolate* isolate, const mate::Dictionary& options);
-  virtual ~Window();
+  ~Window() override;
 
   // NativeWindowObserver:
   void WillCloseWindow(bool* prevent_default) override;
   void OnWindowClosed() override;
   void OnWindowBlur() override;
   void OnWindowFocus() override;
+  void OnWindowShow() override;
+  void OnWindowHide() override;
   void OnWindowMaximize() override;
   void OnWindowUnmaximize() override;
   void OnWindowMinimize() override;
@@ -67,6 +70,7 @@ class Window : public mate::TrackableObject<Window>,
   void OnWindowMoved() override;
   void OnWindowScrollTouchBegin() override;
   void OnWindowScrollTouchEnd() override;
+  void OnWindowSwipe(const std::string& direction) override;
   void OnWindowEnterFullScreen() override;
   void OnWindowLeaveFullScreen() override;
   void OnWindowEnterHtmlFullScreen() override;
@@ -83,6 +87,7 @@ class Window : public mate::TrackableObject<Window>,
   // APIs for NativeWindow.
   void Close();
   void Focus();
+  void Blur();
   bool IsFocused();
   void Show();
   void ShowInactive();
@@ -106,6 +111,7 @@ class Window : public mate::TrackableObject<Window>,
   std::vector<int> GetMinimumSize();
   void SetMaximumSize(int width, int height);
   std::vector<int> GetMaximumSize();
+  void SetSheetOffset(double offsetY, mate::Arguments* args);
   void SetResizable(bool resizable);
   bool IsResizable();
   void SetMovable(bool movable);
@@ -167,6 +173,10 @@ class Window : public mate::TrackableObject<Window>,
   void ShowDefinitionForSelection();
 #endif
 
+#if defined(TOOLKIT_VIEWS)
+  void SetIcon(mate::Handle<NativeImage> icon);
+#endif
+
   void SetVisibleOnAllWorkspaces(bool visible);
   bool IsVisibleOnAllWorkspaces();
 
@@ -183,7 +193,7 @@ class Window : public mate::TrackableObject<Window>,
 
   api::WebContents* api_web_contents_;
 
-  scoped_ptr<NativeWindow> window_;
+  std::unique_ptr<NativeWindow> window_;
 
   DISALLOW_COPY_AND_ASSIGN(Window);
 };

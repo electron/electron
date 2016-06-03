@@ -6,6 +6,8 @@
 #define ATOM_COMMON_NATIVE_MATE_CONVERTERS_BLINK_CONVERTER_H_
 
 #include "native_mate/converter.h"
+#include "third_party/WebKit/public/web/WebCache.h"
+#include "third_party/WebKit/public/web/WebContextMenuData.h"
 
 namespace blink {
 class WebInputEvent;
@@ -86,6 +88,35 @@ struct Converter<blink::WebFindOptions> {
   static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
                      blink::WebFindOptions* out);
 };
+
+template<>
+struct Converter<blink::WebContextMenuData::MediaType> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+      const blink::WebContextMenuData::MediaType& in);
+};
+
+template<>
+struct Converter<blink::WebContextMenuData::InputFieldType> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+      const blink::WebContextMenuData::InputFieldType& in);
+};
+
+template<>
+struct Converter<blink::WebCache::ResourceTypeStat> {
+  static v8::Local<v8::Value> ToV8(
+      v8::Isolate* isolate,
+      const blink::WebCache::ResourceTypeStat& stat);
+};
+
+template<>
+struct Converter<blink::WebCache::ResourceTypeStats> {
+  static v8::Local<v8::Value> ToV8(
+      v8::Isolate* isolate,
+      const blink::WebCache::ResourceTypeStats& stats);
+};
+
+v8::Local<v8::Value> EditFlagsToV8(v8::Isolate* isolate, int editFlags);
+v8::Local<v8::Value> MediaFlagsToV8(v8::Isolate* isolate, int mediaFlags);
 
 }  // namespace mate
 

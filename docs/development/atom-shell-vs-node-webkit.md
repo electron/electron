@@ -47,4 +47,4 @@ By using the [multi-context](http://strongloop.com/strongblog/whats-new-node-js-
 feature of Node, Electron doesn't introduce a new JavaScript context in web
 pages.
 
-[node-bindings]: https://github.com/atom/electron/tree/master/atom/common
+[node-bindings]: https://github.com/electron/electron/tree/master/atom/common

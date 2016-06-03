@@ -1,17 +1,17 @@
 ﻿# powerMonitor
 
-`power-monitor` 모듈은 PC의 파워 상태를 나타냅니다. (주로 노트북 등에서 사용됩니다)
-이 모듈은 메인 프로세스에서만 사용할 수 있으며, (remote 모듈(RPC)을 사용해도 작동이
-됩니다) 메인 프로세스의 `app` 모듈에서 `ready` 이벤트를 호출하기 전까지 사용할 수
-없습니다.
+> 파워의 상태 변경을 모니터링합니다.
 
-예제:
+이 모듈은 메인 프로세스에서만 사용할 수 있습니다. `app` 모듈의 `ready` 이벤트가
+발생한 이후에만 사용할 수 없습니다.
+
+예시:
 
 ```javascript
-var app = require('app');
+const {app} = require('electron');
 
-app.on('ready', function() {
-  require('electron').powerMonitor.on('suspend', function() {
+app.on('ready', () => {
+  require('electron').powerMonitor.on('suspend', () => {
     console.log('절전모드로 진입합니다!');
   });
 });
@@ -29,10 +29,10 @@ app.on('ready', function() {
 
 시스템의 절전모드가 해제될 때 발생하는 이벤트입니다.
 
-## Event: `on-ac`
+## Event: `on-ac` _Windows_
 
 시스템이 AC 어뎁터 충전기를 사용하기 시작할 때 발생하는 이벤트입니다.
 
-## Event: `on-battery`
+## Event: `on-battery` _Windows_
 
 시스템이 배터리를 사용하기 시작할 때 발생하는 이벤트입니다.

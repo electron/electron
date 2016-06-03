@@ -83,7 +83,7 @@ void TtsMessageFilter::OnInitializeVoiceList() {
 void TtsMessageFilter::OnSpeak(const TtsUtteranceRequest& request) {
   CHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
 
-  scoped_ptr<Utterance> utterance(new Utterance(browser_context_));
+  std::unique_ptr<Utterance> utterance(new Utterance(browser_context_));
   utterance->set_src_id(request.id);
   utterance->set_text(request.text);
   utterance->set_lang(request.lang);

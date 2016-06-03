@@ -34,14 +34,14 @@ class AtomCertVerifier : public net::CertVerifier {
              net::CRLSet* crl_set,
              net::CertVerifyResult* verify_result,
              const net::CompletionCallback& callback,
-             scoped_ptr<Request>* out_req,
+             std::unique_ptr<Request>* out_req,
              const net::BoundNetLog& net_log) override;
   bool SupportsOCSPStapling() override;
 
  private:
   base::Lock lock_;
   VerifyProc verify_proc_;
-  scoped_ptr<net::CertVerifier> default_cert_verifier_;
+  std::unique_ptr<net::CertVerifier> default_cert_verifier_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomCertVerifier);
 };

@@ -31,8 +31,6 @@ class AtomContentUtilityClient : public content::ContentUtilityClient {
   void UtilityThreadStarted() override;
   bool OnMessageReceived(const IPC::Message& message) override;
 
-  static void PreSandboxStartup();
-
   static void set_max_ipc_message_size_for_test(int64_t max_message_size) {
     max_ipc_message_size_ = max_message_size;
   }

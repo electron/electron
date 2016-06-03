@@ -28,7 +28,7 @@
 #include "base/message_loop/message_loop.h"
 #endif
 
-#include "base/basictypes.h"
+#include "base/macros.h"
 #include "base/compiler_specific.h"
 #include "base/memory/scoped_ptr.h"
 #include "net/base/net_export.h"
@@ -58,7 +58,7 @@ class StreamListenSocket :
     // |server| is the original listening Socket, connection is the new
     // Socket that was created.
     virtual void DidAccept(StreamListenSocket* server,
-                           scoped_ptr<StreamListenSocket> connection) = 0;
+                           std::unique_ptr<StreamListenSocket> connection) = 0;
     virtual void DidRead(StreamListenSocket* connection,
                          const char* data,
                          int len) = 0;
@@ -140,7 +140,7 @@ class StreamListenSocketFactory {
   virtual ~StreamListenSocketFactory() {}
 
   // Returns a new instance of StreamListenSocket or NULL if an error occurred.
-  virtual scoped_ptr<StreamListenSocket> CreateAndListen(
+  virtual std::unique_ptr<StreamListenSocket> CreateAndListen(
       StreamListenSocket::Delegate* delegate) const = 0;
 };
 

@@ -4,13 +4,13 @@ import os
 import subprocess
 import sys
 
-from lib.util import atom_gyp
+from lib.util import electron_gyp
 
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 
-PROJECT_NAME = atom_gyp()['project_name%']
-PRODUCT_NAME = atom_gyp()['product_name%']
+PROJECT_NAME = electron_gyp()['project_name%']
+PRODUCT_NAME = electron_gyp()['product_name%']
 
 
 def main():

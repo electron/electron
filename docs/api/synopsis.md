@@ -1,5 +1,7 @@
 # Synopsis
 
+> How to use Node.js and Electron APIs.
+
 All of [Node.js's built-in modules](http://nodejs.org/api/) are available in
 Electron and third-party node modules also fully supported as well (including
 the [native modules](../tutorial/using-native-node-modules.md)).
@@ -11,21 +13,19 @@ both processes.
 
 The basic rule is: if a module is [GUI][gui] or low-level system related, then
 it should be only available in the main process. You need to be familiar with
-the concept of [main process vs. renderer process](../tutorial/quick-start.md#the-main-process) scripts to be
-able to use those modules.
+the concept of [main process vs. renderer process](../tutorial/quick-start.md#the-main-process)
+scripts to be able to use those modules.
 
 The main process script is just like a normal Node.js script:
 
 ```javascript
-const electron = require('electron');
-const app = electron.app;
-const BrowserWindow = electron.BrowserWindow;
+const {app, BrowserWindow} = require('electron');
 
-var window = null;
+let win = null;
 
-app.on('ready', function() {
-  window = new BrowserWindow({width: 800, height: 600});
-  window.loadURL('https://github.com');
+app.on('ready', () => {
+  win = new BrowserWindow({width: 800, height: 600});
+  win.loadURL('https://github.com');
 });
 ```
 
@@ -37,8 +37,8 @@ extra ability to use node modules:
 <html>
 <body>
 <script>
-  const remote = require('electron').remote;
-  console.log(remote.app.getVersion());
+  const {app} = require('electron').remote;
+  console.log(app.getVersion());
 </script>
 </body>
 </html>
@@ -48,36 +48,29 @@ To run your app, read [Run your app](../tutorial/quick-start.md#run-your-app).
 
 ## Destructuring assignment
 
-If you are using CoffeeScript or Babel, you can also use
-[destructuring assignment][desctructuring-assignment] to make it easier to use
-built-in modules:
+As of 0.37, you can use
+[destructuring assignment][destructuring-assignment] to make it easier to use
+built-in modules.
 
 ```javascript
-const {app, BrowserWindow} = require('electron')
+const {app, BrowserWindow} = require('electron');
 ```
 
-However if you are using plain JavaScript, you have to wait until Chrome fully
-supports ES6.
-
-## Disable old styles of using built-in modules
-
-Before v0.35.0, all built-in modules have to be used in the form of
-`require('module-name')`, though it has [many disadvantages][issue-387], we are
-still supporting it for compatibility with old apps.
-
-To disable the old styles completely, you can set the
-`ELECTRON_HIDE_INTERNAL_MODULES` environment variable:
+If you need the entire `electron` module, you can require it and then using
+destructuring to access the individual modules from `electron`.
 
 ```javascript
-process.env.ELECTRON_HIDE_INTERNAL_MODULES = 'true'
+const electron = require('electron');
+const {app, BrowserWindow} = electron;
 ```
 
-Or call the `hideInternalModules` API:
+This is equivalent to the following code:
 
 ```javascript
-require('electron').hideInternalModules()
+const electron = require('electron');
+const app = electron.app;
+const BrowserWindow = electron.BrowserWindow;
 ```
 
 [gui]: https://en.wikipedia.org/wiki/Graphical_user_interface
-[desctructuring-assignment]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Destructuring_assignment
-[issue-387]: https://github.com/atom/electron/issues/387
+[destructuring-assignment]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Destructuring_assignment

@@ -1,15 +1,13 @@
 # powerSaveBlocker
 
-The `powerSaveBlocker` module is used to block the system from entering
-low-power (sleep) mode and thus allowing the app to keep the system and screen
-active.
+> Block the system from entering low-power (sleep) mode.
 
 For example:
 
 ```javascript
-const powerSaveBlocker = require('electron').powerSaveBlocker;
+const {powerSaveBlocker} = require('electron');
 
-var id = powerSaveBlocker.start('prevent-display-sleep');
+const id = powerSaveBlocker.start('prevent-display-sleep');
 console.log(powerSaveBlocker.isStarted(id));
 
 powerSaveBlocker.stop(id);
@@ -31,7 +29,7 @@ The `powerSaveBlocker` module has the following methods:
 Starts preventing the system from entering lower-power mode. Returns an integer
 identifying the power save blocker.
 
-**Note:** `prevent-display-sleep` has higher has precedence over
+**Note:** `prevent-display-sleep` has higher precedence over
 `prevent-app-suspension`. Only the highest precedence type takes effect. In
 other words, `prevent-display-sleep` always takes precedence over
 `prevent-app-suspension`.

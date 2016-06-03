@@ -8,10 +8,6 @@
 #include "content/public/browser/browser_plugin_guest_delegate.h"
 #include "content/public/browser/web_contents_observer.h"
 
-namespace content {
-struct NativeWebKeyboardEvent;
-}
-
 namespace atom {
 
 namespace api {
@@ -28,10 +24,10 @@ struct SetSizeParams {
   SetSizeParams() {}
   ~SetSizeParams() {}
 
-  scoped_ptr<bool> enable_auto_size;
-  scoped_ptr<gfx::Size> min_size;
-  scoped_ptr<gfx::Size> max_size;
-  scoped_ptr<gfx::Size> normal_size;
+  std::unique_ptr<bool> enable_auto_size;
+  std::unique_ptr<gfx::Size> min_size;
+  std::unique_ptr<gfx::Size> max_size;
+  std::unique_ptr<gfx::Size> normal_size;
 };
 
 class WebViewGuestDelegate : public content::BrowserPluginGuestDelegate,
@@ -49,16 +45,8 @@ class WebViewGuestDelegate : public content::BrowserPluginGuestDelegate,
   // and normal sizes.
   void SetSize(const SetSizeParams& params);
 
-  // Sets the transparency of the guest.
-  void SetAllowTransparency(bool allow);
-
-  // Transfer the keyboard event to embedder.
-  void HandleKeyboardEvent(content::WebContents* source,
-                           const content::NativeWebKeyboardEvent& event);
-
  protected:
   // content::WebContentsObserver:
-  void RenderViewReady() override;
   void DidCommitProvisionalLoadForFrame(
       content::RenderFrameHost* render_frame_host,
       const GURL& url, ui::PageTransition transition_type) override;
@@ -84,9 +72,6 @@ class WebViewGuestDelegate : public content::BrowserPluginGuestDelegate,
 
   // Returns the default size of the guestview.
   gfx::Size GetDefaultSize() const;
-
-  // Stores whether the contents of the guest can be transparent.
-  bool guest_opaque_;
 
   // The WebContents that attaches this guest view.
   content::WebContents* embedder_web_contents_;

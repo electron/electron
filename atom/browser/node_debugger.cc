@@ -145,14 +145,14 @@ void NodeDebugger::DebugMessageHandler(const v8::Debug::Message& message) {
 
 void NodeDebugger::DidAccept(
     net::test_server::StreamListenSocket* server,
-    scoped_ptr<net::test_server::StreamListenSocket> socket) {
+    std::unique_ptr<net::test_server::StreamListenSocket> socket) {
   // Only accept one session.
   if (accepted_socket_) {
     socket->Send(std::string("Remote debugging session already active"), true);
     return;
   }
 
-  accepted_socket_ = socket.Pass();
+  accepted_socket_ = std::move(socket);
   SendConnectMessage();
 }
 

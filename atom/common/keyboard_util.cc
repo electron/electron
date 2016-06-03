@@ -3,12 +3,19 @@
 // found in the LICENSE file.
 
 #include <string>
+
 #include "atom/common/keyboard_util.h"
+#include "base/strings/string_number_conversions.h"
+#include "base/strings/string_util.h"
 
 namespace atom {
 
-// Return key code of the char.
+namespace {
+
+// Return key code of the char, and also determine whether the SHIFT key is
+// pressed.
 ui::KeyboardCode KeyboardCodeFromCharCode(base::char16 c, bool* shifted) {
+  c = base::ToLowerASCII(c);
   *shifted = false;
   switch (c) {
     case 0x08: return ui::VKEY_BACK;
@@ -72,28 +79,98 @@ ui::KeyboardCode KeyboardCodeFromCharCode(base::char16 c, bool* shifted) {
   }
 }
 
-// Return key code of the char.
-ui::KeyboardCode KeyboardCodeFromKeyIdentifier(const std::string& chr) {
-  if (chr == "enter")        return ui::VKEY_RETURN;
-  if (chr == "backspace")    return ui::VKEY_BACK;
-  if (chr == "delete")       return ui::VKEY_DELETE;
-  if (chr == "tab")          return ui::VKEY_TAB;
-  if (chr == "escape")       return ui::VKEY_ESCAPE;
-  if (chr == "control")      return ui::VKEY_CONTROL;
-  if (chr == "alt")          return ui::VKEY_MENU;
-  if (chr == "shift")        return ui::VKEY_SHIFT;
-  if (chr == "end")          return ui::VKEY_END;
-  if (chr == "home")         return ui::VKEY_HOME;
-  if (chr == "insert")       return ui::VKEY_INSERT;
-  if (chr == "left")         return ui::VKEY_LEFT;
-  if (chr == "up")           return ui::VKEY_UP;
-  if (chr == "right")        return ui::VKEY_RIGHT;
-  if (chr == "down")         return ui::VKEY_DOWN;
-  if (chr == "pageup")       return ui::VKEY_PRIOR;
-  if (chr == "pagedown")     return ui::VKEY_NEXT;
-  if (chr == "printscreen")  return ui::VKEY_SNAPSHOT;
+// Return key code represented by |str|.
+ui::KeyboardCode KeyboardCodeFromKeyIdentifier(const std::string& s,
+                                               bool* shifted) {
+  std::string str = base::ToLowerASCII(s);
+  if (str == "ctrl" || str == "control") {
+    return ui::VKEY_CONTROL;
+  } else if (str == "super" || str == "cmd" || str == "command" ||
+             str == "meta") {
+    return ui::VKEY_COMMAND;
+  } else if (str == "commandorcontrol" || str == "cmdorctrl") {
+#if defined(OS_MACOSX)
+    return ui::VKEY_COMMAND;
+#else
+    return ui::VKEY_CONTROL;
+#endif
+  } else if (str == "alt" || str == "option") {
+    return ui::VKEY_MENU;
+  } else if (str == "shift") {
+    return ui::VKEY_SHIFT;
+  } else if (str == "altgr") {
+    return ui::VKEY_ALTGR;
+  } else if (str == "plus") {
+    *shifted = true;
+    return ui::VKEY_OEM_PLUS;
+  } else if (str == "tab") {
+    return ui::VKEY_TAB;
+  } else if (str == "space") {
+    return ui::VKEY_SPACE;
+  } else if (str == "backspace") {
+    return ui::VKEY_BACK;
+  } else if (str == "delete") {
+    return ui::VKEY_DELETE;
+  } else if (str == "insert") {
+    return ui::VKEY_INSERT;
+  } else if (str == "enter" || str == "return") {
+    return ui::VKEY_RETURN;
+  } else if (str == "up") {
+    return ui::VKEY_UP;
+  } else if (str == "down") {
+    return ui::VKEY_DOWN;
+  } else if (str == "left") {
+    return ui::VKEY_LEFT;
+  } else if (str == "right") {
+    return ui::VKEY_RIGHT;
+  } else if (str == "home") {
+    return ui::VKEY_HOME;
+  } else if (str == "end") {
+    return ui::VKEY_END;
+  } else if (str == "pageup") {
+    return ui::VKEY_PRIOR;
+  } else if (str == "pagedown") {
+    return ui::VKEY_NEXT;
+  } else if (str == "esc" || str == "escape") {
+    return ui::VKEY_ESCAPE;
+  } else if (str == "volumemute") {
+    return ui::VKEY_VOLUME_MUTE;
+  } else if (str == "volumeup") {
+    return ui::VKEY_VOLUME_UP;
+  } else if (str == "volumedown") {
+    return ui::VKEY_VOLUME_DOWN;
+  } else if (str == "medianexttrack") {
+    return ui::VKEY_MEDIA_NEXT_TRACK;
+  } else if (str == "mediaprevioustrack") {
+    return ui::VKEY_MEDIA_PREV_TRACK;
+  } else if (str == "mediastop") {
+    return ui::VKEY_MEDIA_STOP;
+  } else if (str == "mediaplaypause") {
+    return ui::VKEY_MEDIA_PLAY_PAUSE;
+  } else if (str == "printscreen") {
+    return ui::VKEY_SNAPSHOT;
+  } else if (str.size() > 1 && str[0] == 'f') {
+    // F1 - F24.
+    int n;
+    if (base::StringToInt(str.c_str() + 1, &n) && n > 0 && n < 25) {
+      return static_cast<ui::KeyboardCode>(ui::VKEY_F1 + n - 1);
+    } else {
+      LOG(WARNING) << str << "is not available on keyboard";
+      return ui::VKEY_UNKNOWN;
+    }
+  } else {
+    LOG(WARNING) << "Invalid accelerator token: " << str;
+    return ui::VKEY_UNKNOWN;
+  }
+}
 
-  return ui::VKEY_UNKNOWN;
+}  // namespace
+
+ui::KeyboardCode KeyboardCodeFromStr(const std::string& str, bool* shifted) {
+  if (str.size() == 1)
+    return KeyboardCodeFromCharCode(str[0], shifted);
+  else
+    return KeyboardCodeFromKeyIdentifier(str, shifted);
 }
 
 }  // namespace atom

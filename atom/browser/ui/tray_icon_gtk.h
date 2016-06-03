@@ -32,7 +32,7 @@ class TrayIconGtk : public TrayIcon,
   void OnClick() override;
   bool HasClickAction() override;
 
-  scoped_ptr<views::StatusIconLinux> icon_;
+  std::unique_ptr<views::StatusIconLinux> icon_;
 
   DISALLOW_COPY_AND_ASSIGN(TrayIconGtk);
 };

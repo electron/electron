@@ -8,14 +8,17 @@
 
 3つのオペレーティングシステム全てで、アプリケーションからユーザーに通知を送る手段が提供されています。通知を表示するためにオペレーティングシステムのネイティブ通知APIを使用しする[HTML5 Notification API](https://notifications.spec.whatwg.org/)で、Electronは、開発者に通知を送ることができます。
 
+**注意:** これはHTML5 APIですので、レンダラプロセス内のみで有効です。
+
+
 ```javascript
-var myNotification = new Notification('Title', {
+let myNotification = new Notification('Title', {
   body: 'Lorem Ipsum Dolor Sit Amet'
 });
 
-myNotification.onclick = function () {
-  console.log('Notification clicked')
-}
+myNotification.onclick = () => {
+  console.log('Notification clicked');
+};
 ```
 
 オペレーティングシステム間でコードとユーザ体験は似ていますが、細かい違いがあります。
@@ -88,8 +91,8 @@ const electron = require('electron');
 const app = electron.app;
 const Menu = electron.Menu;
 
-var dockMenu = Menu.buildFromTemplate([
-  { label: 'New Window', click: function() { console.log('New Window'); } },
+const dockMenu = Menu.buildFromTemplate([
+  { label: 'New Window', click() { console.log('New Window'); } },
   { label: 'New Window with Settings', submenu: [
     { label: 'Basic' },
     { label: 'Pro'}
@@ -153,24 +156,24 @@ __Windows Media Playerの縮小表示ツールバー:__
 アプリケーションに縮小表示ツールバーを設定するために、[BrowserWindow.setThumbarButtons][setthumbarbuttons]を使えます:
 
 ```javascript
-const BrowserWindow = require('electron').BrowserWindow;
+const {BrowserWindow} = require('electron');
 const path = require('path');
 
-var win = new BrowserWindow({
+let win = new BrowserWindow({
   width: 800,
   height: 600
 });
 win.setThumbarButtons([
   {
-    tooltip: "button1",
+    tooltip: 'button1',
     icon: path.join(__dirname, 'button1.png'),
-    click: function() { console.log("button2 clicked"); }
+    click() { console.log("button2 clicked"); }
   },
   {
-    tooltip: "button2",
+    tooltip: 'button2',
     icon: path.join(__dirname, 'button2.png'),
-    flags:['enabled', 'dismissonclick'],
-    click: function() { console.log("button2 clicked."); }
+    flags: ['enabled', 'dismissonclick'],
+    click() { console.log("button2 clicked."); }
   }
 ]);
 ```
@@ -189,25 +192,22 @@ __Audaciousのランチャーショートカット:__
 
 ![audacious](https://help.ubuntu.com/community/UnityLaunchersAndDesktopFiles?action=AttachFile&do=get&target=shortcuts.png)
 
-## タスクバーの進行状況バー (Windows & Unity)
+## タスクバーの進行状況バー (Windows, OS X, Unity)
 
 Windowsでは、タスクバーボタンは、進行状況バーを表示するのに使えます。ウィンドウを切り替えることなくウィンドウの進行状況情報をユーザーに提供することができます。
 
+OS Xではプログレスバーはドックアイコンの一部として表示されます。
 Unity DEは、ランチャーに進行状況バーの表示をするのと同様の機能を持っています。
 
 __タスクバーボタン上の進行状況バー:__
 
 ![Taskbar Progress Bar](https://cloud.githubusercontent.com/assets/639601/5081682/16691fda-6f0e-11e4-9676-49b6418f1264.png)
 
-__Unityランチャーでの進行状況バー:__
-
-![Unity Launcher](https://cloud.githubusercontent.com/assets/639601/5081747/4a0a589e-6f0f-11e4-803f-91594716a546.png)
-
 ウィンドウに進行状況バーを設定するために、[BrowserWindow.setProgressBar][setprogressbar] APIを使えます:
 
 ```javascript
-var window = new BrowserWindow({...});
-window.setProgressBar(0.5);
+let win = new BrowserWindow({...});
+win.setProgressBar(0.5);
 ```
 
 ## タスクバーでアイコンをオーバーレイする (Windows)
@@ -223,8 +223,8 @@ __タスクバーボタンでのオーバーレイ:__
 ウィンドウでオーバーレイアイコンを設定するために、[BrowserWindow.setOverlayIcon][setoverlayicon] APIを使用できます。
 
 ```javascript
-var window = new BrowserWindow({...});
-window.setOverlayIcon('path/to/overlay.png', 'Description for overlay');
+let win = new BrowserWindow({...});
+win.setOverlayIcon('path/to/overlay.png', 'Description for overlay');
 ```
 
 ##  Windowのファイル表示 (OS X)
@@ -240,9 +240,9 @@ __Represented file ポップアップメニュー:__
 ウィンドウにrepresented fileを設定するために、[BrowserWindow.setRepresentedFilename][setrepresentedfilename] と [BrowserWindow.setDocumentEdited][setdocumentedited] APIsを使えます:
 
 ```javascript
-var window = new BrowserWindow({...});
-window.setRepresentedFilename('/etc/passwd');
-window.setDocumentEdited(true);
+let win = new BrowserWindow({...});
+win.setRepresentedFilename('/etc/passwd');
+win.setDocumentEdited(true);
 ```
 
 [addrecentdocument]: ../api/app.md#appaddrecentdocumentpath-os-x-windows

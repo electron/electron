@@ -7,7 +7,7 @@
 
 #include <string>
 
-#include "base/basictypes.h"
+#include "base/macros.h"
 #include "base/compiler_specific.h"
 #include "ui/base/glib/glib_signal.h"
 #include "ui/gfx/native_widget_types.h"
@@ -40,7 +40,7 @@ class GlobalMenuBarX11 {
   explicit GlobalMenuBarX11(NativeWindowViews* window);
   virtual ~GlobalMenuBarX11();
 
-  // Creates the object path for DbusemenuServer which is attached to |xid|.
+  // Creates the object path for DbusmenuServer which is attached to |xid|.
   static std::string GetPathForWindow(gfx::AcceleratedWidget xid);
 
   void SetMenu(ui::MenuModel* menu_model);

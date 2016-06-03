@@ -11,29 +11,13 @@
 
 namespace mate {
 
-namespace {
-
-v8::Persistent<v8::ObjectTemplate> template_;
-
-}  // namespace
-
-Event::Event()
+Event::Event(v8::Isolate* isolate)
     : sender_(NULL),
       message_(NULL) {
+  Init(isolate);
 }
 
 Event::~Event() {
-}
-
-ObjectTemplateBuilder Event::GetObjectTemplateBuilder(v8::Isolate* isolate) {
-  if (template_.IsEmpty())
-    template_.Reset(isolate, ObjectTemplateBuilder(isolate)
-        .SetMethod("preventDefault", &Event::PreventDefault)
-        .SetMethod("sendReply", &Event::SendReply)
-        .Build());
-
-  return ObjectTemplateBuilder(
-      isolate, v8::Local<v8::ObjectTemplate>::New(isolate, template_));
 }
 
 void Event::SetSenderAndMessage(content::WebContents* sender,
@@ -52,7 +36,7 @@ void Event::WebContentsDestroyed() {
 }
 
 void Event::PreventDefault(v8::Isolate* isolate) {
-  GetWrapper(isolate)->Set(StringToV8(isolate, "defaultPrevented"),
+  GetWrapper()->Set(StringToV8(isolate, "defaultPrevented"),
                            v8::True(isolate));
 }
 
@@ -61,12 +45,23 @@ bool Event::SendReply(const base::string16& json) {
     return false;
 
   AtomViewHostMsg_Message_Sync::WriteReplyParams(message_, json);
-  return sender_->Send(message_);
+  bool success = sender_->Send(message_);
+  message_ = NULL;
+  sender_ = NULL;
+  return success;
 }
 
 // static
 Handle<Event> Event::Create(v8::Isolate* isolate) {
-  return CreateHandle(isolate, new Event);
+  return mate::CreateHandle(isolate, new Event(isolate));
+}
+
+// static
+void Event::BuildPrototype(
+    v8::Isolate* isolate, v8::Local<v8::ObjectTemplate> prototype) {
+  mate::ObjectTemplateBuilder(isolate, prototype)
+      .SetMethod("preventDefault", &Event::PreventDefault)
+      .SetMethod("sendReply", &Event::SendReply);
 }
 
 }  // namespace mate

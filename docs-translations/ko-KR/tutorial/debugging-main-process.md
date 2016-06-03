@@ -1,6 +1,6 @@
 ﻿# 메인 프로세스 디버깅하기
 
-브라우저 창의 개발자 도구는 웹 페이지 같은 랜더러 프로세스의 스크립트만 디버깅이
+브라우저 창의 개발자 도구는 웹 페이지 같은 렌더러 프로세스의 스크립트만 디버깅이
 가능합니다. 대신 Electron은 메인 프로세스의 디버깅을 위해 `--debug` 과 `--debug-brk`
 스위치들을 제공합니다.
 
@@ -19,7 +19,7 @@
 
 ## node-inspector로 디버깅 하기
 
-__참고:__ Electron은 현재 node-inspector 유틸리티와 호환성 문제가 있습니다. 따라서
+**참고:** Electron은 현재 node-inspector 유틸리티와 호환성 문제가 있습니다. 따라서
 node-inspector 콘솔 내에서 메인 프로세스의 `process` 객체를 탐색할 경우 크래시가
 발생할 수 있습니다.
 
@@ -40,11 +40,11 @@ $ npm install git+https://git@github.com/enlight/node-pre-gyp.git#detect-electro
 ### 4. Electron용 `node-inspector` `v8` 모듈을 재 컴파일 (target을 사용하는 Electron의 버전에 맞춰 변경)
 
 ```bash
-$ node_modules/.bin/node-pre-gyp --target=0.36.2 --runtime=electron --fallback-to-build --directory node_modules/v8-debug/ --dist-url=https://atom.io/download/atom-shell reinstall
-$ node_modules/.bin/node-pre-gyp --target=0.36.2 --runtime=electron --fallback-to-build --directory node_modules/v8-profiler/ --dist-url=https://atom.io/download/atom-shell reinstall
+$ node_modules/.bin/node-pre-gyp --target=0.36.11 --runtime=electron --fallback-to-build --directory node_modules/v8-debug/ --dist-url=https://atom.io/download/atom-shell reinstall
+$ node_modules/.bin/node-pre-gyp --target=0.36.11 --runtime=electron --fallback-to-build --directory node_modules/v8-profiler/ --dist-url=https://atom.io/download/atom-shell reinstall
 ```
 
-또한 [네이티브 모듈을 사용하는 방법](how-to-install-native-modules) 문서도 참고해보세요.
+또한 [네이티브 모듈을 사용하는 방법][how-to-install-native-modules] 문서도 참고해보세요.
 
 ### 5. Electron 디버그 모드 활성화
 

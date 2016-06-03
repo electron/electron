@@ -91,7 +91,7 @@ bool TaskbarHost::SetThumbarButtons(
     if (!button.icon.IsEmpty()) {
       thumb_button.dwMask |= THB_ICON;
       icons[i] = IconUtil::CreateHICONFromSkBitmap(button.icon.AsBitmap());
-      thumb_button.hIcon = icons[i].Get();
+      thumb_button.hIcon = icons[i].get();
     }
 
     // Set tooltip.
@@ -138,8 +138,8 @@ bool TaskbarHost::SetOverlayIcon(
 
   base::win::ScopedHICON icon(
       IconUtil::CreateHICONFromSkBitmap(overlay.AsBitmap()));
-  return SUCCEEDED(
-      taskbar_->SetOverlayIcon(window, icon, base::UTF8ToUTF16(text).c_str()));
+  return SUCCEEDED(taskbar_->SetOverlayIcon(
+      window, icon.get(), base::UTF8ToUTF16(text).c_str()));
 }
 
 bool TaskbarHost::HandleThumbarButtonEvent(int button_id) {

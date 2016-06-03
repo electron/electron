@@ -4,11 +4,7 @@ Since v0.34.0, Electron allows submitting packaged apps to the Mac App Store
 (MAS). This guide provides information on: how to submit your app and the
 limitations of the MAS build.
 
-__Note:__ From v0.36.0 there was a bug preventing GPU process to start after
-the app being sandboxed, so it is recommended to use v0.35.x before this bug
-gets fixed. You can find more about this in [issue #3871][issue-3871].
-
-__Note:__ Submitting an app to Mac App Store requires enrolling [Apple Developer
+**Note:** Submitting an app to Mac App Store requires enrolling [Apple Developer
 Program][developer-program], which costs money.
 
 ## How to Submit Your App
@@ -23,14 +19,33 @@ how to meet the Mac App Store requirements.
 To submit your app to the Mac App Store, you first must get a certificate from
 Apple. You can follow these [existing guides][nwjs-guide] on web.
 
+### Get Team ID
+
+Before signing your app, you need to know the Team ID of your account. To locate
+your Team ID, Sign in to [Apple Developer Center](https://developer.apple.com/account/),
+and click Membership in the sidebar. Your Team ID appears in the Membership
+Information section under the team name.
+
 ### Sign Your App
 
-After getting the certificate from Apple, you can package your app by following
+After finishing the preparation work, you can package your app by following
 [Application Distribution](application-distribution.md), and then proceed to
-signing your app. This step is basically the same with other programs, but the
-key is to sign every dependency of Electron one by one.
+signing your app.
 
-First, you need to prepare two entitlements files.
+First, you have to add a `ElectronTeamID` key to your app's `Info.plist`, which
+has your Team ID as key:
+
+```xml
+<plist version="1.0">
+<dict>
+  ...
+  <key>ElectronTeamID</key>
+  <string>TEAM_ID</string>
+</dict>
+</plist>
+```
+
+Then, you need to prepare two entitlements files.
 
 `child.plist`:
 
@@ -56,9 +71,14 @@ First, you need to prepare two entitlements files.
   <dict>
     <key>com.apple.security.app-sandbox</key>
     <true/>
+    <key>com.apple.security.application-groups</key>
+    <string>TEAM_ID.your.bundle.id</string>
   </dict>
 </plist>
 ```
+
+You have to replace `TEAM_ID` with your Team ID, and replace `your.bundle.id`
+with the Bundle ID of your app.
 
 And then sign your app with the following script:
 
@@ -67,27 +87,31 @@ And then sign your app with the following script:
 
 # Name of your app.
 APP="YourApp"
-# The path of you app to sign.
-APP_PATH="/path/to/YouApp.app"
+# The path of your app to sign.
+APP_PATH="/path/to/YourApp.app"
 # The path to the location you want to put the signed package.
 RESULT_PATH="~/Desktop/$APP.pkg"
 # The name of certificates you requested.
 APP_KEY="3rd Party Mac Developer Application: Company Name (APPIDENTITY)"
 INSTALLER_KEY="3rd Party Mac Developer Installer: Company Name (APPIDENTITY)"
+# The path of your plist files.
+CHILD_PLIST="/path/to/child.plist"
+PARENT_PLIST="/path/to/parent.plist"
 
 FRAMEWORKS_PATH="$APP_PATH/Contents/Frameworks"
 
-codesign --deep -fs "$APP_KEY" --entitlements child.plist "$FRAMEWORKS_PATH/Electron Framework.framework/Versions/A"
-codesign --deep -fs "$APP_KEY" --entitlements child.plist "$FRAMEWORKS_PATH/$APP Helper.app/"
-codesign --deep -fs "$APP_KEY" --entitlements child.plist "$FRAMEWORKS_PATH/$APP Helper EH.app/"
-codesign --deep -fs "$APP_KEY" --entitlements child.plist "$FRAMEWORKS_PATH/$APP Helper NP.app/"
-if [ -d "$FRAMEWORKS_PATH/Squirrel.framework/Versions/A" ]; then
-  # Signing a non-MAS build.
-  codesign --deep -fs "$APP_KEY" --entitlements child.plist "$FRAMEWORKS_PATH/Mantle.framework/Versions/A"
-  codesign --deep -fs "$APP_KEY" --entitlements child.plist "$FRAMEWORKS_PATH/ReactiveCocoa.framework/Versions/A"
-  codesign --deep -fs "$APP_KEY" --entitlements child.plist "$FRAMEWORKS_PATH/Squirrel.framework/Versions/A"
-fi
-codesign -fs "$APP_KEY" --entitlements parent.plist "$APP_PATH"
+codesign -s "$APP_KEY" -f --entitlements "$CHILD_PLIST" "$FRAMEWORKS_PATH/Electron Framework.framework/Versions/A/Electron Framework"
+codesign -s "$APP_KEY" -f --entitlements "$CHILD_PLIST" "$FRAMEWORKS_PATH/Electron Framework.framework/Versions/A/Libraries/libffmpeg.dylib"
+codesign -s "$APP_KEY" -f --entitlements "$CHILD_PLIST" "$FRAMEWORKS_PATH/Electron Framework.framework/Versions/A/Libraries/libnode.dylib"
+codesign -s "$APP_KEY" -f --entitlements "$CHILD_PLIST" "$FRAMEWORKS_PATH/Electron Framework.framework"
+codesign -s "$APP_KEY" -f --entitlements "$CHILD_PLIST" "$FRAMEWORKS_PATH/$APP Helper.app/Contents/MacOS/$APP Helper"
+codesign -s "$APP_KEY" -f --entitlements "$CHILD_PLIST" "$FRAMEWORKS_PATH/$APP Helper.app/"
+codesign -s "$APP_KEY" -f --entitlements "$CHILD_PLIST" "$FRAMEWORKS_PATH/$APP Helper EH.app/Contents/MacOS/$APP Helper EH"
+codesign -s "$APP_KEY" -f --entitlements "$CHILD_PLIST" "$FRAMEWORKS_PATH/$APP Helper EH.app/"
+codesign -s "$APP_KEY" -f --entitlements "$CHILD_PLIST" "$FRAMEWORKS_PATH/$APP Helper NP.app/Contents/MacOS/$APP Helper NP"
+codesign -s "$APP_KEY" -f --entitlements "$CHILD_PLIST" "$FRAMEWORKS_PATH/$APP Helper NP.app/"
+codesign -s "$APP_KEY" -f --entitlements "$CHILD_PLIST" "$APP_PATH/Contents/MacOS/$APP"
+codesign -s "$APP_KEY" -f --entitlements "$PARENT_PLIST" "$APP_PATH"
 
 productbuild --component "$APP_PATH" /Applications --sign "$INSTALLER_KEY" "$RESULT_PATH"
 ```
@@ -96,11 +120,15 @@ If you are new to app sandboxing under OS X, you should also read through
 Apple's [Enabling App Sandbox][enable-app-sandbox] to have a basic idea, then
 add keys for the permissions needed by your app to the entitlements files.
 
-### Upload Your App and Submit for Review
+### Upload Your App
 
 After signing your app, you can use Application Loader to upload it to iTunes
 Connect for processing, making sure you have [created a record][create-record]
-before uploading. Then you can [submit your app for review][submit-for-review].
+before uploading.
+
+### Submit Your App for Review
+
+After these steps, you can [submit your app for review][submit-for-review].
 
 ## Limitations of MAS Build
 
@@ -163,5 +191,5 @@ ERN)][ern-tutorial].
 [create-record]: https://developer.apple.com/library/ios/documentation/LanguagesUtilities/Conceptual/iTunesConnect_Guide/Chapters/CreatingiTunesConnectRecord.html
 [submit-for-review]: https://developer.apple.com/library/ios/documentation/LanguagesUtilities/Conceptual/iTunesConnect_Guide/Chapters/SubmittingTheApp.html
 [app-sandboxing]: https://developer.apple.com/app-sandboxing/
-[issue-3871]: https://github.com/atom/electron/issues/3871
 [ern-tutorial]: https://carouselapps.com/2015/12/15/legally-submit-app-apples-app-store-uses-encryption-obtain-ern/
+[temporary-exception]: https://developer.apple.com/library/mac/documentation/Miscellaneous/Reference/EntitlementKeyReference/Chapters/AppSandboxTemporaryExceptionEntitlements.html

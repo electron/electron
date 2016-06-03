@@ -46,6 +46,14 @@ AtomBrowserMainParts::AtomBrowserMainParts()
 }
 
 AtomBrowserMainParts::~AtomBrowserMainParts() {
+  // Leak the JavascriptEnvironment on exit.
+  // This is to work around the bug that V8 would be waiting for background
+  // tasks to finish on exit, while somehow it waits forever in Electron, more
+  // about this can be found at https://github.com/electron/electron/issues/4767.
+  // On the other handle there is actually no need to gracefully shutdown V8
+  // on exit in the main process, we already ensured all necessary resources get
+  // cleaned up, and it would make quitting faster.
+  ignore_result(js_env_.release());
 }
 
 // static
@@ -98,17 +106,21 @@ void AtomBrowserMainParts::PostEarlyInitialization() {
   node_debugger_.reset(new NodeDebugger(js_env_->isolate()));
 
   // Create the global environment.
-  global_env = node_bindings_->CreateEnvironment(js_env_->context());
+  node::Environment* env =
+      node_bindings_->CreateEnvironment(js_env_->context());
 
   // Make sure node can get correct environment when debugging.
   if (node_debugger_->IsRunning())
-    global_env->AssignToContext(v8::Debug::GetDebugContext());
+    env->AssignToContext(v8::Debug::GetDebugContext());
 
   // Add atom-shell extended APIs.
-  atom_bindings_->BindTo(js_env_->isolate(), global_env->process_object());
+  atom_bindings_->BindTo(js_env_->isolate(), env->process_object());
 
   // Load everything.
-  node_bindings_->LoadEnvironment(global_env);
+  node_bindings_->LoadEnvironment(env);
+
+  // Wrap the uv loop with global env.
+  node_bindings_->set_uv_env(env);
 }
 
 void AtomBrowserMainParts::PreMainMessageLoopRun() {
@@ -124,9 +136,8 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
   // Start idle gc.
   gc_timer_.Start(
       FROM_HERE, base::TimeDelta::FromMinutes(1),
-      base::Bind(base::IgnoreResult(&v8::Isolate::IdleNotification),
-                 base::Unretained(js_env_->isolate()),
-                 1000));
+      base::Bind(&v8::Isolate::LowMemoryNotification,
+                 base::Unretained(js_env_->isolate())));
 
   brightray::BrowserMainParts::PreMainMessageLoopRun();
   bridge_task_runner_->MessageLoopIsReady();
@@ -172,14 +183,6 @@ void AtomBrowserMainParts::PostMainMessageLoopRun() {
     ++iter;
     callback.Run();
   }
-
-  // Destroy JavaScript environment immediately after running destruction
-  // callbacks.
-  gc_timer_.Stop();
-  node_debugger_.reset();
-  atom_bindings_.reset();
-  node_bindings_.reset();
-  js_env_.reset();
 }
 
 }  // namespace atom

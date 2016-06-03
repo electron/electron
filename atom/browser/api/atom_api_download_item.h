@@ -23,15 +23,14 @@ class DownloadItem : public mate::TrackableObject<DownloadItem>,
   static mate::Handle<DownloadItem> Create(v8::Isolate* isolate,
                                            content::DownloadItem* item);
 
-  // mate::TrackableObject:
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::ObjectTemplate> prototype);
 
   void Pause();
   void Resume();
   void Cancel();
-  int64 GetReceivedBytes() const;
-  int64 GetTotalBytes() const;
+  int64_t GetReceivedBytes() const;
+  int64_t GetTotalBytes() const;
   std::string GetMimeType() const;
   bool HasUserGesture() const;
   std::string GetFilename() const;
@@ -41,7 +40,7 @@ class DownloadItem : public mate::TrackableObject<DownloadItem>,
   base::FilePath GetSavePath() const;
 
  protected:
-  explicit DownloadItem(content::DownloadItem* download_item);
+  DownloadItem(v8::Isolate* isolate, content::DownloadItem* download_item);
   ~DownloadItem();
 
   // Override content::DownloadItem::Observer methods

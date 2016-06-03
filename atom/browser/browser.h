@@ -8,12 +8,13 @@
 #include <string>
 #include <vector>
 
-#include "base/basictypes.h"
+#include "base/macros.h"
 #include "base/compiler_specific.h"
 #include "base/observer_list.h"
 #include "base/strings/string16.h"
 #include "atom/browser/browser_observer.h"
 #include "atom/browser/window_list_observer.h"
+#include "native_mate/arguments.h"
 
 #if defined(OS_WIN)
 #include "base/files/file_path.h"
@@ -76,12 +77,33 @@ class Browser : public WindowListObserver {
   // Set the application user model ID.
   void SetAppUserModelID(const base::string16& name);
 
+  // Remove the default protocol handler registry key
+  bool RemoveAsDefaultProtocolClient(const std::string& protocol);
+
+  // Set as default handler for a protocol.
+  bool SetAsDefaultProtocolClient(const std::string& protocol);
+
+  // Query the current state of default handler for a protocol.
+  bool IsDefaultProtocolClient(const std::string& protocol);
+
 #if defined(OS_MACOSX)
   // Hide the application.
   void Hide();
 
   // Show the application.
   void Show();
+
+  // Creates an activity and sets it as the one currently in use.
+  void SetUserActivity(const std::string& type,
+                       const base::DictionaryValue& user_info,
+                       mate::Arguments* args);
+
+  // Returns the type name of the current user activity.
+  std::string GetCurrentActivityType();
+
+  // Resumes an activity via hand-off.
+  bool ContinueUserActivity(const std::string& type,
+                            const base::DictionaryValue& user_info);
 
   // Bounce the dock icon.
   enum BounceType {
@@ -90,6 +112,9 @@ class Browser : public WindowListObserver {
   };
   int DockBounce(BounceType type);
   void DockCancelBounce(int request_id);
+
+  // Bounce the Downloads stack.
+  void DockDownloadFinished(const std::string& filePath);
 
   // Set/Get dock's badge text.
   void DockSetBadgeText(const std::string& label);
@@ -177,10 +202,13 @@ class Browser : public WindowListObserver {
   // Observers of the browser.
   base::ObserverList<BrowserObserver> observers_;
 
+  // Whether `app.exit()` has been called
+  bool is_exiting_;
+
   // Whether "ready" event has been emitted.
   bool is_ready_;
 
-  // The browse is being shutdown.
+  // The browser is being shutdown.
   bool is_shutdown_;
 
   std::string version_override_;

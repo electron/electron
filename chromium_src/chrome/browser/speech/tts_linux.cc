@@ -81,7 +81,7 @@ class TtsPlatformImplLinux : public TtsPlatformImpl {
 
   // Map a string composed of a voicename and module to the voicename. Used to
   // uniquely identify a voice across all available modules.
-  scoped_ptr<std::map<std::string, SPDChromeVoice> > all_native_voices_;
+  std::unique_ptr<std::map<std::string, SPDChromeVoice> > all_native_voices_;
 
   friend struct base::DefaultSingletonTraits<TtsPlatformImplLinux>;
 

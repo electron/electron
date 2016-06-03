@@ -19,7 +19,7 @@ namespace atom {
 
 namespace api {
 
-Menu::Menu()
+Menu::Menu(v8::Isolate* isolate)
     : model_(new AtomMenuModel(this)),
       parent_(NULL) {
 }
@@ -28,7 +28,7 @@ Menu::~Menu() {
 }
 
 void Menu::AfterInit(v8::Isolate* isolate) {
-  mate::Dictionary wrappable(isolate, GetWrapper(isolate));
+  mate::Dictionary wrappable(isolate, GetWrapper());
   mate::Dictionary delegate;
   if (!wrappable.Get("delegate", &delegate))
     return;

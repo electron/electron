@@ -1,7 +1,7 @@
 ﻿# 어플리케이션 패키징
 
 Windows에서 일어나는 긴 경로 이름에 대한 [issues](https://github.com/joyent/node/issues/6960)를
-완화하고 `require` 속도를 약간 빠르게 하며 어플리케이션의 리소스와 소스코드를 좋지 않은
+완화하고 `require` 속도를 약간 빠르게 하며 어플리케이션의 리소스와 소스 코드를 좋지 않은
 사용자로부터 보호하기 위해 어플리케이션을 [asar][asar] 아카이브로 패키징 할 수 있습니다.
 
 ## `asar` 아카이브 생성
@@ -70,8 +70,8 @@ require('/path/to/example.asar/dir/module.js');
 `BrowserWindow` 클래스를 이용해 원하는 웹 페이지도 표시할 수 있습니다:
 
 ```javascript
-const BrowserWindow = require('electron').BrowserWindow;
-var win = new BrowserWindow({width: 800, height: 600});
+const {BrowserWindow} = require('electron');
+let win = new BrowserWindow({width: 800, height: 600});
 win.loadURL('file:///path/to/example.asar/static/index.html');
 ```
 
@@ -84,8 +84,8 @@ win.loadURL('file:///path/to/example.asar/static/index.html');
 
 ```html
 <script>
-var $ = require('./jquery.min.js');
-$.get('file:///path/to/example.asar/file.txt', function(data) {
+let $ = require('./jquery.min.js');
+$.get('file:///path/to/example.asar/file.txt', (data) => {
   console.log(data);
 });
 </script>
@@ -99,7 +99,7 @@ $.get('file:///path/to/example.asar/file.txt', function(data) {
 읽어들입니다:
 
 ```javascript
-var originalFs = require('original-fs');
+const originalFs = require('original-fs');
 originalFs.readFileSync('/path/to/example.asar');
 ```
 
@@ -168,7 +168,7 @@ Node API에는 `child_process.exec`, `child_process.spawn` 그리고
 바이러스로 진단 할 수도 있습니다.
 
 이 문제를 해결하려면 `--unpack` 옵션을 통해 파일을 압축이 풀려진 상태로 유지해야 합니다.
-다음의 예제는 node 네이티브 모듈의 공유 라이브러리를 압축이 풀려진 상태로 유지합니다:
+다음의 예시는 node 네이티브 모듈의 공유 라이브러리를 압축이 풀려진 상태로 유지합니다:
 
 ```bash
 $ asar pack app app.asar --unpack *.node
@@ -179,4 +179,4 @@ $ asar pack app app.asar --unpack *.node
 포함되어 있습니다. 사용자에게 어플리케이션을 배포할 때 반드시 해당 폴더도 같이 배포해야
 합니다.
 
-[asar]: https://github.com/atom/asar
+[asar]: https://github.com/electron/asar

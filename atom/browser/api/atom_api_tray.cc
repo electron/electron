@@ -9,6 +9,7 @@
 #include "atom/browser/api/atom_api_menu.h"
 #include "atom/browser/browser.h"
 #include "atom/browser/ui/tray_icon.h"
+#include "atom/common/api/atom_api_native_image.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
 #include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
@@ -22,9 +23,9 @@ namespace atom {
 
 namespace api {
 
-Tray::Tray(const gfx::Image& image)
+Tray::Tray(v8::Isolate* isolate, mate::Handle<NativeImage> image)
     : tray_icon_(TrayIcon::Create()) {
-  tray_icon_->SetImage(image);
+  SetImage(isolate, image);
   tray_icon_->AddObserver(this);
 }
 
@@ -32,13 +33,14 @@ Tray::~Tray() {
 }
 
 // static
-mate::Wrappable* Tray::New(v8::Isolate* isolate, const gfx::Image& image) {
+mate::WrappableBase* Tray::New(v8::Isolate* isolate,
+                               mate::Handle<NativeImage> image) {
   if (!Browser::Get()->is_ready()) {
     isolate->ThrowException(v8::Exception::Error(mate::StringToV8(
         isolate, "Cannot create Tray before app is ready")));
     return nullptr;
   }
-  return new Tray(image);
+  return new Tray(isolate, image);
 }
 
 void Tray::OnClicked(const gfx::Rect& bounds, int modifiers) {
@@ -94,29 +96,38 @@ void Tray::OnDragEnded() {
   Emit("drag-end");
 }
 
-void Tray::SetImage(mate::Arguments* args, const gfx::Image& image) {
-  tray_icon_->SetImage(image);
+void Tray::SetImage(v8::Isolate* isolate, mate::Handle<NativeImage> image) {
+#if defined(OS_WIN)
+  tray_icon_->SetImage(image->GetHICON(GetSystemMetrics(SM_CXSMICON)));
+#else
+  tray_icon_->SetImage(image->image());
+#endif
 }
 
-void Tray::SetPressedImage(mate::Arguments* args, const gfx::Image& image) {
-  tray_icon_->SetPressedImage(image);
+void Tray::SetPressedImage(v8::Isolate* isolate,
+                           mate::Handle<NativeImage> image) {
+#if defined(OS_WIN)
+  tray_icon_->SetPressedImage(image->GetHICON(GetSystemMetrics(SM_CXSMICON)));
+#else
+  tray_icon_->SetPressedImage(image->image());
+#endif
 }
 
-void Tray::SetToolTip(mate::Arguments* args, const std::string& tool_tip) {
+void Tray::SetToolTip(const std::string& tool_tip) {
   tray_icon_->SetToolTip(tool_tip);
 }
 
-void Tray::SetTitle(mate::Arguments* args, const std::string& title) {
+void Tray::SetTitle(const std::string& title) {
   tray_icon_->SetTitle(title);
 }
 
-void Tray::SetHighlightMode(mate::Arguments* args, bool highlight) {
+void Tray::SetHighlightMode(bool highlight) {
   tray_icon_->SetHighlightMode(highlight);
 }
 
 void Tray::DisplayBalloon(mate::Arguments* args,
                           const mate::Dictionary& options) {
-  gfx::Image icon;
+  mate::Handle<NativeImage> icon;
   options.Get("icon", &icon);
   base::string16 title, content;
   if (!options.Get("title", &title) ||
@@ -125,7 +136,14 @@ void Tray::DisplayBalloon(mate::Arguments* args,
     return;
   }
 
-  tray_icon_->DisplayBalloon(icon, title, content);
+#if defined(OS_WIN)
+  tray_icon_->DisplayBalloon(
+      icon.IsEmpty() ? NULL : icon->GetHICON(GetSystemMetrics(SM_CXSMICON)),
+      title, content);
+#else
+  tray_icon_->DisplayBalloon(
+      icon.IsEmpty() ? gfx::Image() : icon->image(), title, content);
+#endif
 }
 
 void Tray::PopUpContextMenu(mate::Arguments* args) {
@@ -136,7 +154,8 @@ void Tray::PopUpContextMenu(mate::Arguments* args) {
   tray_icon_->PopUpContextMenu(pos, menu.IsEmpty() ? nullptr : menu->model());
 }
 
-void Tray::SetContextMenu(mate::Arguments* args, Menu* menu) {
+void Tray::SetContextMenu(v8::Isolate* isolate, mate::Handle<Menu> menu) {
+  menu_.Reset(isolate, menu.ToV8());
   tray_icon_->SetContextMenu(menu->model());
 }
 
@@ -162,7 +181,7 @@ void Tray::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setHighlightMode", &Tray::SetHighlightMode)
       .SetMethod("displayBalloon", &Tray::DisplayBalloon)
       .SetMethod("popUpContextMenu", &Tray::PopUpContextMenu)
-      .SetMethod("_setContextMenu", &Tray::SetContextMenu);
+      .SetMethod("setContextMenu", &Tray::SetContextMenu);
 }
 
 }  // namespace api

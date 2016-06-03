@@ -1,4 +1,6 @@
-# `File` object
+# `File` Object
+
+> Use the HTML5 `File` API to work natively with files on the filesystem.
 
 The DOM's File interface provides abstraction around native files in order to
 let users work on native files directly with the HTML5 file API. Electron has
@@ -13,16 +15,16 @@ Example on getting a real path from a dragged-onto-the-app file:
 </div>
 
 <script>
-  var holder = document.getElementById('holder');
-  holder.ondragover = function () {
+  const holder = document.getElementById('holder');
+  holder.ondragover = () => {
     return false;
   };
-  holder.ondragleave = holder.ondragend = function () {
+  holder.ondragleave = holder.ondragend = () => {
     return false;
   };
-  holder.ondrop = function (e) {
+  holder.ondrop = (e) => {
     e.preventDefault();
-    var file = e.dataTransfer.files[0];
+    const file = e.dataTransfer.files[0];
     console.log('File you dragged here is', file.path);
     return false;
   };

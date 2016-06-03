@@ -15,14 +15,16 @@ to the user. Electron conveniently allows developers to send notifications with
 the [HTML5 Notification API](https://notifications.spec.whatwg.org/), using
 the currently running operating system's native notification APIs to display it.
 
+**Note:** Since this is an HTML5 API it is only available in the renderer process.
+
 ```javascript
-var myNotification = new Notification('Title', {
+let myNotification = new Notification('Title', {
   body: 'Lorem Ipsum Dolor Sit Amet'
 });
 
-myNotification.onclick = function () {
-  console.log('Notification clicked')
-}
+myNotification.onclick = () => {
+  console.log('Notification clicked');
+};
 ```
 
 While code and user experience across operating systems are similar, there
@@ -51,8 +53,7 @@ GNOME, KDE.
 ### OS X
 
 Notifications are straight-forward on OS X, you should however be aware of
-[Apple's Human Interface guidelines regarding
-notifications](https://developer.apple.com/library/mac/documentation/UserExperience/Conceptual/OSXHIGuidelines/NotificationCenter.html).
+[Apple's Human Interface guidelines regarding notifications](https://developer.apple.com/library/mac/documentation/UserExperience/Conceptual/OSXHIGuidelines/NotificationCenter.html).
 
 Note that notifications are limited to 256 bytes in size - and will be truncated
 if you exceed that limit.
@@ -116,8 +117,8 @@ const electron = require('electron');
 const app = electron.app;
 const Menu = electron.Menu;
 
-var dockMenu = Menu.buildFromTemplate([
-  { label: 'New Window', click: function() { console.log('New Window'); } },
+const dockMenu = Menu.buildFromTemplate([
+  { label: 'New Window', click() { console.log('New Window'); } },
   { label: 'New Window with Settings', submenu: [
     { label: 'Basic' },
     { label: 'Pro'}
@@ -208,24 +209,25 @@ You can use [BrowserWindow.setThumbarButtons][setthumbarbuttons] to set
 thumbnail toolbar in your application:
 
 ```javascript
-const BrowserWindow = require('electron').BrowserWindow;
+const {BrowserWindow} = require('electron');
 const path = require('path');
 
-var win = new BrowserWindow({
+let win = new BrowserWindow({
   width: 800,
   height: 600
 });
+
 win.setThumbarButtons([
   {
-    tooltip: "button1",
+    tooltip: 'button1',
     icon: path.join(__dirname, 'button1.png'),
-    click: function() { console.log("button2 clicked"); }
+    click() { console.log('button2 clicked'); }
   },
   {
-    tooltip: "button2",
+    tooltip: 'button2',
     icon: path.join(__dirname, 'button2.png'),
-    flags:['enabled', 'dismissonclick'],
-    click: function() { console.log("button2 clicked."); }
+    flags: ['enabled', 'dismissonclick'],
+    click() { console.log('button2 clicked.'); }
   }
 ]);
 ```
@@ -246,11 +248,13 @@ __Launcher shortcuts of Audacious:__
 
 ![audacious](https://help.ubuntu.com/community/UnityLaunchersAndDesktopFiles?action=AttachFile&do=get&target=shortcuts.png)
 
-## Progress Bar in Taskbar (Windows & Unity)
+## Progress Bar in Taskbar (Windows, OS X, Unity)
 
 On Windows a taskbar button can be used to display a progress bar. This enables
 a window to provide progress information to the user without the user having to
 switch to the window itself.
+
+On OS X the progress bar will be displayed as a part of the dock icon.
 
 The Unity DE also has a similar feature that allows you to specify the progress
 bar in the launcher.
@@ -259,16 +263,12 @@ __Progress bar in taskbar button:__
 
 ![Taskbar Progress Bar](https://cloud.githubusercontent.com/assets/639601/5081682/16691fda-6f0e-11e4-9676-49b6418f1264.png)
 
-__Progress bar in Unity launcher:__
-
-![Unity Launcher](https://cloud.githubusercontent.com/assets/639601/5081747/4a0a589e-6f0f-11e4-803f-91594716a546.png)
-
 To set the progress bar for a Window, you can use the
 [BrowserWindow.setProgressBar][setprogressbar] API:
 
 ```javascript
-var window = new BrowserWindow({...});
-window.setProgressBar(0.5);
+let win = new BrowserWindow({...});
+win.setProgressBar(0.5);
 ```
 
 ## Icon Overlays in Taskbar (Windows)
@@ -294,8 +294,8 @@ To set the overlay icon for a window, you can use the
 [BrowserWindow.setOverlayIcon][setoverlayicon] API:
 
 ```javascript
-var window = new BrowserWindow({...});
-window.setOverlayIcon('path/to/overlay.png', 'Description for overlay');
+let win = new BrowserWindow({...});
+win.setOverlayIcon('path/to/overlay.png', 'Description for overlay');
 ```
 
 ## Represented File of Window (OS X)
@@ -316,9 +316,9 @@ To set the represented file of window, you can use the
 [BrowserWindow.setDocumentEdited][setdocumentedited] APIs:
 
 ```javascript
-var window = new BrowserWindow({...});
-window.setRepresentedFilename('/etc/passwd');
-window.setDocumentEdited(true);
+let win = new BrowserWindow({...});
+win.setRepresentedFilename('/etc/passwd');
+win.setDocumentEdited(true);
 ```
 
 [addrecentdocument]: ../api/app.md#appaddrecentdocumentpath-os-x-windows

@@ -1,6 +1,6 @@
 # 主进程调试
 
-浏览器窗口的开发工具仅能调试渲染器的进程脚本（比如web 页面）。为了提供一个可以调试主进程
+浏览器窗口的开发工具仅能调试渲染器的进程脚本（比如 web 页面）。为了提供一个可以调试主进程
 的方法，Electron 提供了 `--debug` 和 `--debug-brk` 开关。
 
 ## 命令行开关
@@ -18,7 +18,7 @@
 
 ## 使用 node-inspector 来调试
 
-__备注：__ Electron 目前对 node-inspector支持的不是特别好，
+__备注：__ Electron 目前对 node-inspector 支持的不是特别好，
 如果你通过 node-inspector 的 console 来检查 `process` 对象，主进程就会崩溃。
 
 ### 1. 确认你已经安装了 [node-gyp 所需工具](https://github.com/nodejs/node-gyp#installation)
@@ -41,6 +41,8 @@ $ npm install git+https://git@github.com/enlight/node-pre-gyp.git#detect-electro
 $ node_modules/.bin/node-pre-gyp --target=0.36.2 --runtime=electron --fallback-to-build --directory node_modules/v8-debug/ --dist-url=https://atom.io/download/atom-shell reinstall
 $ node_modules/.bin/node-pre-gyp --target=0.36.2 --runtime=electron --fallback-to-build --directory node_modules/v8-profiler/ --dist-url=https://atom.io/download/atom-shell reinstall
 ```
+
+[How to install native modules][how-to-install-native-modules].
 
 ### 5. 打开 Electron 的调试模式
 

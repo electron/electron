@@ -9,11 +9,15 @@
 
 #include "atom/browser/ui/views/menu_bar.h"
 #include "atom/browser/ui/views/menu_layout.h"
+#include "atom/browser/window_list.h"
+#include "atom/common/color_util.h"
 #include "atom/common/draggable_region.h"
+#include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/options_switches.h"
 #include "base/strings/utf_string_conversions.h"
 #include "brightray/browser/inspectable_web_contents.h"
 #include "brightray/browser/inspectable_web_contents_view.h"
+#include "content/public/browser/browser_thread.h"
 #include "content/public/browser/native_web_keyboard_event.h"
 #include "native_mate/dictionary.h"
 #include "ui/aura/window_tree_host.h"
@@ -38,6 +42,7 @@
 #include "chrome/browser/ui/libgtk2ui/unity_service.h"
 #include "ui/base/x/x11_util.h"
 #include "ui/gfx/x/x11_types.h"
+#include "ui/views/widget/desktop_aura/desktop_window_tree_host_x11.h"
 #include "ui/views/window/native_frame_view.h"
 #elif defined(OS_WIN)
 #include "atom/browser/ui/views/win_frame_view.h"
@@ -117,7 +122,8 @@ NativeWindowViews::NativeWindowViews(
       movable_(true),
       resizable_(true),
       maximizable_(true),
-      minimizable_(true) {
+      minimizable_(true),
+      fullscreenable_(true) {
   options.Get(options::kTitle, &title_);
   options.Get(options::kAutoHideMenuBar, &menu_bar_autohide_);
 
@@ -270,7 +276,6 @@ NativeWindowViews::NativeWindowViews(
       use_content_size_)
     size = ContentSizeToWindowSize(size);
 
-  window_->UpdateWindowIcon();
   window_->CenterWindow(size);
   Layout();
 }
@@ -280,6 +285,11 @@ NativeWindowViews::~NativeWindowViews() {
 }
 
 void NativeWindowViews::Close() {
+  if (!IsClosable()) {
+    WindowList::WindowCloseCancelled(this);
+    return;
+  }
+
   window_->Close();
 }
 
@@ -301,6 +311,8 @@ bool NativeWindowViews::IsFocused() {
 void NativeWindowViews::Show() {
   window_->native_widget_private()->ShowWithWindowState(GetRestoredState());
 
+  NotifyWindowShow();
+
 #if defined(USE_X11)
   if (global_menu_bar_)
     global_menu_bar_->OnWindowMapped();
@@ -310,6 +322,8 @@ void NativeWindowViews::Show() {
 void NativeWindowViews::ShowInactive() {
   window_->ShowInactive();
 
+  NotifyWindowShow();
+
 #if defined(USE_X11)
   if (global_menu_bar_)
     global_menu_bar_->OnWindowMapped();
@@ -318,6 +332,8 @@ void NativeWindowViews::ShowInactive() {
 
 void NativeWindowViews::Hide() {
   window_->Hide();
+
+  NotifyWindowHide();
 
 #if defined(USE_X11)
   if (global_menu_bar_)
@@ -362,6 +378,9 @@ bool NativeWindowViews::IsMinimized() {
 }
 
 void NativeWindowViews::SetFullScreen(bool fullscreen) {
+  if (!IsFullScreenable())
+    return;
+
 #if defined(OS_WIN)
   // There is no native fullscreen state on Windows.
   if (fullscreen) {
@@ -505,11 +524,12 @@ bool NativeWindowViews::IsMaximizable() {
 #endif
 }
 
-void NativeWindowViews::SetFullScreenable(bool maximizable) {
+void NativeWindowViews::SetFullScreenable(bool fullscreenable) {
+  fullscreenable_ = fullscreenable;
 }
 
 bool NativeWindowViews::IsFullScreenable() {
-  return true;
+  return fullscreenable_;
 }
 
 void NativeWindowViews::SetClosable(bool closable) {
@@ -603,14 +623,16 @@ bool NativeWindowViews::IsKiosk() {
 
 void NativeWindowViews::SetBackgroundColor(const std::string& color_name) {
   // web views' background color.
-  SkColor background_color = NativeWindow::ParseHexColor(color_name);
+  SkColor background_color = ParseHexColor(color_name);
   set_background(views::Background::CreateSolidBackground(background_color));
 
 #if defined(OS_WIN)
   // Set the background color of native window.
   HBRUSH brush = CreateSolidBrush(skia::SkColorToCOLORREF(background_color));
   ULONG_PTR previous_brush = SetClassLongPtr(
-      GetAcceleratedWidget(), GCLP_HBRBACKGROUND, (LONG)brush);
+      GetAcceleratedWidget(),
+      GCLP_HBRBACKGROUND,
+      reinterpret_cast<LONG_PTR>(brush));
   if (previous_brush)
     DeleteObject((HBRUSH)previous_brush);
 #endif
@@ -763,15 +785,38 @@ gfx::AcceleratedWidget NativeWindowViews::GetAcceleratedWidget() {
   return GetNativeWindow()->GetHost()->GetAcceleratedWidget();
 }
 
+#if defined(OS_WIN)
+void NativeWindowViews::SetIcon(HICON window_icon, HICON app_icon) {
+  // We are responsible for storing the images.
+  window_icon_ = base::win::ScopedHICON(CopyIcon(window_icon));
+  app_icon_ = base::win::ScopedHICON(CopyIcon(app_icon));
+
+  HWND hwnd = GetAcceleratedWidget();
+  SendMessage(hwnd, WM_SETICON, ICON_SMALL,
+              reinterpret_cast<LPARAM>(window_icon_.get()));
+  SendMessage(hwnd, WM_SETICON, ICON_BIG,
+              reinterpret_cast<LPARAM>(app_icon_.get()));
+}
+#elif defined(USE_X11)
+void NativeWindowViews::SetIcon(const gfx::ImageSkia& icon) {
+  views::DesktopWindowTreeHostX11* tree_host =
+      views::DesktopWindowTreeHostX11::GetHostForXID(GetAcceleratedWidget());
+  static_cast<views::DesktopWindowTreeHost*>(tree_host)->SetWindowIcons(
+      icon, icon);
+}
+#endif
+
 void NativeWindowViews::OnWidgetActivationChanged(
     views::Widget* widget, bool active) {
   if (widget != window_.get())
     return;
 
-  if (active)
-    NotifyWindowFocus();
-  else
-    NotifyWindowBlur();
+  // Post the notification to next tick.
+  content::BrowserThread::PostTask(
+      content::BrowserThread::UI, FROM_HERE,
+      base::Bind(active ? &NativeWindow::NotifyWindowFocus :
+                          &NativeWindow::NotifyWindowBlur,
+                 GetWeakPtr()));
 
   if (active && inspectable_web_contents() &&
       !inspectable_web_contents()->IsDevToolsViewShowing())
@@ -823,14 +868,6 @@ base::string16 NativeWindowViews::GetWindowTitle() const {
 
 bool NativeWindowViews::ShouldHandleSystemCommands() const {
   return true;
-}
-
-gfx::ImageSkia NativeWindowViews::GetWindowAppIcon() {
-  return icon();
-}
-
-gfx::ImageSkia NativeWindowViews::GetWindowIcon() {
-  return GetWindowAppIcon();
 }
 
 views::Widget* NativeWindowViews::GetWidget() {

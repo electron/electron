@@ -7,7 +7,7 @@
 
 #include <vector>
 
-#include "base/basictypes.h"
+#include "base/macros.h"
 #include "base/lazy_instance.h"
 #include "base/observer_list.h"
 

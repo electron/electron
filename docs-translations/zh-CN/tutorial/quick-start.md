@@ -40,7 +40,7 @@ your-app/
 ```
 **注意**：如果 `main` 字段没有在 `package.json` 声明，Electron会优先加载 `index.js`。
 
-`main.js` 应该用于创建窗口和处理系统时间，一个典型的例子如下：
+`main.js` 应该用于创建窗口和处理系统事件，一个典型的例子如下：
 ```javascript
 var app = require('app');  // 控制应用生命周期的模块。
 var BrowserWindow = require('browser-window');  // 创建原生浏览器窗口的模块
@@ -89,7 +89,7 @@ app.on('ready', function() {
   <body>
     <h1>Hello World!</h1>
     We are using io.js <script>document.write(process.version)</script>
-    and Electron <script>document.write(process.versions['electron'])</script>.
+    and Electron <script>document.write(process.versions.electron)</script>.
   </body>
 </html>
 ```
@@ -127,7 +127,7 @@ $ ./Electron.app/Contents/MacOS/Electron your-app/
 在你完成了你的应用后，你可以按照[应用部署][4]指导发布一个版本，并且以已经打包好的形式运行应用。
 
 
-  [1]: https://github.com/atom/electron/blob/master/docs-translations/zh-CN/api/ipc-main-process.md
-  [2]: https://github.com/atom/electron/blob/master/docs-translations/zh-CN/api/remote.md
-  [3]: https://github.com/atom/electron/releases
-  [4]: https://github.com/atom/electron/blob/master/docs-translations/zh-CN/tutorial/application-distribution.md
+  [1]: https://github.com/electron/electron/blob/master/docs-translations/zh-CN/api/ipc-main-process.md
+  [2]: https://github.com/electron/electron/blob/master/docs-translations/zh-CN/api/remote.md
+  [3]: https://github.com/electron/electron/releases
+  [4]: https://github.com/electron/electron/blob/master/docs-translations/zh-CN/tutorial/application-distribution.md

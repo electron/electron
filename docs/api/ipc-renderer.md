@@ -1,5 +1,7 @@
 # ipcRenderer
 
+> Communicate asynchronously from a renderer process to the main process.
+
 The `ipcRenderer` module is an instance of the
 [EventEmitter](https://nodejs.org/api/events.html) class. It provides a few
 methods so you can send synchronous and asynchronous messages from the render
@@ -69,7 +71,7 @@ hence no functions or prototype chain will be included.
 The main process handles it by listening for `channel` with `ipcMain` module,
 and replies by setting `event.returnValue`.
 
-__Note:__ Sending a synchronous message will block the whole renderer process,
+**Note:** Sending a synchronous message will block the whole renderer process,
 unless you know what you are doing you should never use it.
 
 ### `ipcRenderer.sendToHost(channel[, arg1][, arg2][, ...])`

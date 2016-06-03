@@ -4,6 +4,8 @@
     'vendor/brightray/brightray.gypi',
   ],
   'variables': {
+    # Tell crashpad to build as external project.
+    'crashpad_dependencies': 'external',
     # Required by breakpad.
     'os_bsd': 0,
     'chromeos': 0,
@@ -13,7 +15,7 @@
     'openssl_fips': '',
     'openssl_no_asm': 1,
     'node_release_urlbase': 'https://atom.io/download/atom-shell',
-    'node_byteorder': '<!(python -c "import sys; print sys.byteorder")',
+    'node_byteorder': '<!(node <(DEPTH)/tools/get-endianness.js)',
     'node_target_type': 'shared_library',
     'node_install_npm': 'false',
     'node_prefix': '',
@@ -41,11 +43,13 @@
     'target_conditions': [
       ['_target_name in ["libuv", "http_parser", "openssl", "cares", "node", "zlib"]', {
         'msvs_disabled_warnings': [
+          4003,  # not enough actual parameters for macro 'V'
           4013,  # 'free' undefined; assuming extern returning int
           4018,  # signed/unsigned mismatch
           4054,  #
           4055,  # 'type cast' : from data pointer 'void *' to function pointer
           4057,  # 'function' : 'volatile LONG *' differs in indirection to slightly different base types from 'unsigned long *'
+          4065,  # switch statement contains 'default' but no 'case' labels
           4189,  #
           4131,  # uses old-style declarator
           4133,  # incompatible types
@@ -59,7 +63,12 @@
           4232,  # address of dllimport 'free' is not static, identity not guaranteed
           4291,  # no matching operator delete found
           4295,  # array is too small to include a terminating null character
+          4311,  # 'type cast': pointer truncation from 'void *const ' to 'unsigned long'
           4389,  # '==' : signed/unsigned mismatch
+          4456,  # declaration of 'm' hides previous local declaration
+          4457,  # declaration of 'message' hides function parameter
+          4459,  # declaration of 'wq' hides global declaration
+          4477,  # format string '%.*s' requires an argument of type 'int'
           4505,  # unreferenced local function has been removed
           4701,  # potentially uninitialized local variable 'sizew' used
           4703,  # potentially uninitialized local pointer variable 'req' used
@@ -121,36 +130,47 @@
             },
           }],
           ['OS=="win"', {
+            # Fix passing fd across modules, see |osfhandle.h| for more.
+            'sources': [
+              '<(DEPTH)/atom/node/osfhandle.cc',
+              '<(DEPTH)/atom/node/osfhandle.h',
+            ],
+            'include_dirs': [
+              '<(DEPTH)/atom/node',
+            ],
+            # Node is using networking API but linking with this itself.
             'libraries': [ '-lwinmm.lib' ],
+            # Fix the linking error with icu.
             'conditions': [
               ['libchromiumcontent_component==0', {
                 'variables': {
                   'conditions': [
                     ['target_arch=="ia32"', {
                       'reference_symbols': [
-                        '_u_errorName_54',
-                        '_ubidi_setPara_54',
-                        '_ucsdet_getName_54',
-                        '_uidna_openUTS46_54',
-                        '_ulocdata_close_54',
-                        '_unorm_normalize_54',
-                        '_uregex_matches_54',
-                        '_uscript_getCode_54',
-                        '_usearch_setPattern_54',
-                        '?createInstance@Transliterator@icu_54@@SAPAV12@ABVUnicodeString@2@W4UTransDirection@@AAW4UErrorCode@@@Z',
+                        '_u_errorName_56',
+                        '_ubidi_setPara_56',
+                        '_ucsdet_getName_56',
+                        '_uidna_openUTS46_56',
+                        '_ulocdata_close_56',
+                        '_unorm_normalize_56',
+                        '_uregex_matches_56',
+                        '_uscript_getCode_56',
+                        '_uspoof_open_56',
+                        '_usearch_setPattern_56',
+                        '?createInstance@Transliterator@icu_56@@SAPAV12@ABVUnicodeString@2@W4UTransDirection@@AAW4UErrorCode@@@Z',
                       ],
                     }, {
                       'reference_symbols': [
-                        'u_errorName_54',
-                        'ubidi_setPara_54',
-                        'ucsdet_getName_54',
-                        'uidna_openUTS46_54',
-                        'ulocdata_close_54',
-                        'unorm_normalize_54',
-                        'uregex_matches_54',
-                        'uscript_getCode_54',
-                        'usearch_setPattern_54',
-                        '?createInstance@Transliterator@icu_54@@SAPEAV12@AEBVUnicodeString@2@W4UTransDirection@@AEAW4UErrorCode@@@Z',
+                        'u_errorName_56',
+                        'ubidi_setPara_56',
+                        'ucsdet_getName_56',
+                        'uidna_openUTS46_56',
+                        'ulocdata_close_56',
+                        'unorm_normalize_56',
+                        'uregex_matches_56',
+                        'uspoof_open_56',
+                        'usearch_setPattern_56',
+                        '?createInstance@Transliterator@icu_56@@SAPEAV12@AEBVUnicodeString@2@W4UTransDirection@@AEAW4UErrorCode@@@Z',
                       ],
                     }],
                   ],
@@ -227,12 +247,16 @@
     'msvs_cygwin_shell': 0, # Strangely setting it to 1 would make building under cygwin fail.
     'msvs_disabled_warnings': [
       4005,  # (node.h) macro redefinition
+      4091,  # (node_extern.h) '__declspec(dllimport)' : ignored on left of 'node::Environment' when no variable is declared
       4189,  # local variable is initialized but not referenced
       4201,  # (uv.h) nameless struct/union
       4267,  # conversion from 'size_t' to 'int', possible loss of data
+      4302,  # (atldlgs.h) 'type cast': truncation from 'LPCTSTR' to 'WORD'
+      4458,  # (atldlgs.h) declaration of 'dwCommonButtons' hides class member
       4503,  # decorated name length exceeded, name was truncated
       4800,  # (v8.h) forcing value to bool 'true' or 'false'
       4819,  # The file contains a character that cannot be represented in the current code page
+      4838,  # (atlgdi.h) conversion from 'int' to 'UINT' requires a narrowing conversion
       4996,  # (atlapp.h) 'GetVersionExW': was declared deprecated
     ],
   },

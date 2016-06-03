@@ -10,13 +10,13 @@
 #include "base/bind.h"
 #include "base/command_line.h"
 #include "base/files/file_path.h"
+#include "base/files/file_util.h"
 #include "base/process/process.h"
 #include "base/process/process_info.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/time/time.h"
-#include "base/win/metro.h"
 #include "base/win/registry.h"
 #include "base/win/scoped_handle.h"
 #include "base/win/windows_version.h"
@@ -191,6 +191,8 @@ ProcessSingleton::ProcessSingleton(
       user_data_dir_(user_data_dir),
       should_kill_remote_process_callback_(
           base::Bind(&TerminateAppWithError)) {
+  // The user_data_dir may have not been created yet.
+  base::CreateDirectoryAndGetError(user_data_dir, nullptr);
 }
 
 ProcessSingleton::~ProcessSingleton() {

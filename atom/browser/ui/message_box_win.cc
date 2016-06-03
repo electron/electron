@@ -64,7 +64,8 @@ void MapToCommonID(const std::vector<base::string16>& buttons,
       (*button_flags) |= common.button;
     } else {
       // It is a custom button.
-      dialog_buttons->push_back({i + kIDStart, buttons[i].c_str()});
+      dialog_buttons->push_back(
+          {static_cast<int>(i + kIDStart), buttons[i].c_str()});
     }
   }
 }
@@ -102,9 +103,9 @@ int ShowMessageBoxUTF16(HWND parent,
 
   base::win::ScopedHICON hicon;
   if (!icon.isNull()) {
-    hicon.Set(IconUtil::CreateHICONFromSkBitmap(*icon.bitmap()));
+    hicon = IconUtil::CreateHICONFromSkBitmap(*icon.bitmap());
     config.dwFlags |= TDF_USE_HICON_MAIN;
-    config.hMainIcon = hicon.Get();
+    config.hMainIcon = hicon.get();
   } else {
     // Show icon according to dialog's type.
     switch (type) {
@@ -135,7 +136,8 @@ int ShowMessageBoxUTF16(HWND parent,
   std::vector<TASKDIALOG_BUTTON> dialog_buttons;
   if (options & MESSAGE_BOX_NO_LINK) {
     for (size_t i = 0; i < buttons.size(); ++i)
-      dialog_buttons.push_back({i + kIDStart, buttons[i].c_str()});
+      dialog_buttons.push_back(
+          {static_cast<int>(i + kIDStart), buttons[i].c_str()});
   } else {
     MapToCommonID(buttons, &id_map, &config.dwCommonButtons, &dialog_buttons);
   }
@@ -220,7 +222,7 @@ void ShowMessageBox(NativeWindow* parent,
                     const std::string& detail,
                     const gfx::ImageSkia& icon,
                     const MessageBoxCallback& callback) {
-  scoped_ptr<base::Thread> thread(
+  std::unique_ptr<base::Thread> thread(
       new base::Thread(ATOM_PRODUCT_NAME "MessageBoxThread"));
   thread->init_com_with_mta(false);
   if (!thread->Start()) {

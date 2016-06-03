@@ -4,7 +4,7 @@
 
 DevToolsエクステンションのために、ソースコードをダウンローし、`BrowserWindow.addDevToolsExtension` APIを使って読み込みます。読み込んだエクステンションは維持されているので、ウィンドウを作成するとき、毎回APIをコールする必要はありません。
 
-** NOTE: React DevTools は動作しません。issue  https://github.com/atom/electron/issues/915 でフォローしています**
+** NOTE: React DevTools は動作しません。issue  https://github.com/electron/electron/issues/915 をご覧ください **
 
 例えば、[React DevTools Extension](https://github.com/facebook/react-devtools)を使うために、最初にソースコードをダウンロードする必要があります。
 
@@ -22,7 +22,7 @@ const BrowserWindow = require('electron').remote.BrowserWindow;
 BrowserWindow.addDevToolsExtension('/some-directory/react-devtools/shells/chrome');
 ```
 
-エクステンションをアンロードするために、名前と`BrowserWindow.removeDevToolsExtension` APIをコールすると、次回DevToolsを開いた時にはロードされません。
+エクステンションをアンロードするために、`BrowserWindow.removeDevToolsExtension` APIを名前を指定してコールすると、次回DevToolsを開いた時にはロードされません。
 
 ```javascript
 BrowserWindow.removeDevToolsExtension('React Developer Tools');
@@ -34,12 +34,12 @@ BrowserWindow.removeDevToolsExtension('React Developer Tools');
 
 ## バックグラウンドページ
 
-今のところ、ElectronはChromエクステンションのバックグラウンドページ機能に対応していません。そのため、Electronでは、この機能に依存するDevToolsエクステンションは動作しません。
+今のところ、ElectronはChromeエクステンションのバックグラウンドページ機能に対応していません。そのため、Electronでは、この機能に依存するDevToolsエクステンションは動作しません。
 
 ## `chrome.*` APIs
 
 いくつかのChromeエクステンションは、`chrome.*` APIsを使用しており、ElectronでそれらのAPIを実装するための努力をしていますが、すべては実装されていません。
 
-すべては実装されていない`chrome.*` APIについて考えると、もしDevToolsエクステンションが `chrome.devtools.*` 以外のAPIを使用していると、エクステンションは動作しない可能性が非常に高いです。
+すべては実装されていない`chrome.*` APIについて考えると、もしDevToolsエクステンションが `chrome.devtools.*` 以外のAPIを使用していると、エクステンションは動作しない可能性が非常に高いです。うまく動作しないエクステンションがあれば、APIのサポートの追加のために、issue trackerへご報告ください。
 
 [devtools-extension]: https://developer.chrome.com/extensions/devtools

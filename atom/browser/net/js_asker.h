@@ -23,13 +23,16 @@ using JavaScriptHandler =
 
 namespace internal {
 
+using BeforeStartCallback =
+    base::Callback<void(v8::Isolate*, v8::Local<v8::Value>)>;
 using ResponseCallback =
-    base::Callback<void(bool, scoped_ptr<base::Value> options)>;
+    base::Callback<void(bool, std::unique_ptr<base::Value> options)>;
 
 // Ask handler for options in UI thread.
 void AskForOptions(v8::Isolate* isolate,
                    const JavaScriptHandler& handler,
                    net::URLRequest* request,
+                   const BeforeStartCallback& before_start,
                    const ResponseCallback& callback);
 
 // Test whether the |options| means an error.
@@ -54,7 +57,8 @@ class JsAsker : public RequestJob {
   }
 
   // Subclass should do initailze work here.
-  virtual void StartAsync(scoped_ptr<base::Value> options) = 0;
+  virtual void BeforeStartInUI(v8::Isolate*, v8::Local<v8::Value>) {}
+  virtual void StartAsync(std::unique_ptr<base::Value> options) = 0;
 
   net::URLRequestContextGetter* request_context_getter() const {
     return request_context_getter_;
@@ -69,6 +73,8 @@ class JsAsker : public RequestJob {
                    isolate_,
                    handler_,
                    RequestJob::request(),
+                   base::Bind(&JsAsker::BeforeStartInUI,
+                              weak_factory_.GetWeakPtr()),
                    base::Bind(&JsAsker::OnResponse,
                               weak_factory_.GetWeakPtr())));
   }
@@ -78,10 +84,10 @@ class JsAsker : public RequestJob {
 
   // Called when the JS handler has sent the response, we need to decide whether
   // to start, or fail the job.
-  void OnResponse(bool success, scoped_ptr<base::Value> value) {
+  void OnResponse(bool success, std::unique_ptr<base::Value> value) {
     int error = net::ERR_NOT_IMPLEMENTED;
     if (success && value && !internal::IsErrorOptions(value.get(), &error)) {
-      StartAsync(value.Pass());
+      StartAsync(std::move(value));
     } else {
       RequestJob::NotifyStartError(
           net::URLRequestStatus(net::URLRequestStatus::FAILED, error));

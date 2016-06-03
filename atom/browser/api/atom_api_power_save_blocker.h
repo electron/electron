@@ -24,13 +24,12 @@ class PowerSaveBlocker : public mate::TrackableObject<PowerSaveBlocker> {
  public:
   static mate::Handle<PowerSaveBlocker> Create(v8::Isolate* isolate);
 
- protected:
-  PowerSaveBlocker();
-  ~PowerSaveBlocker() override;
+  static void BuildPrototype(v8::Isolate* isolate,
+                             v8::Local<v8::ObjectTemplate> prototype);
 
-  // mate::Wrappable implementations:
-  mate::ObjectTemplateBuilder GetObjectTemplateBuilder(
-      v8::Isolate* isolate) override;
+ protected:
+  explicit PowerSaveBlocker(v8::Isolate* isolate);
+  ~PowerSaveBlocker() override;
 
  private:
   void UpdatePowerSaveBlocker();
@@ -38,7 +37,7 @@ class PowerSaveBlocker : public mate::TrackableObject<PowerSaveBlocker> {
   bool Stop(int id);
   bool IsStarted(int id);
 
-  scoped_ptr<content::PowerSaveBlocker> power_save_blocker_;
+  std::unique_ptr<content::PowerSaveBlocker> power_save_blocker_;
 
   // Currnet blocker type used by |power_save_blocker_|
   content::PowerSaveBlocker::PowerSaveBlockerType current_blocker_type_;

@@ -9,12 +9,16 @@
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/window_list.h"
+#include "base/files/file_util.h"
 #include "base/message_loop/message_loop.h"
+#include "base/path_service.h"
+#include "brightray/browser/brightray_paths.h"
 
 namespace atom {
 
 Browser::Browser()
     : is_quiting_(false),
+      is_exiting_(false),
       is_ready_(false),
       is_shutdown_(false) {
   WindowList::AddObserver(this);
@@ -49,8 +53,11 @@ void Browser::Exit(int code) {
     // Message loop is not ready, quit directly.
     exit(code);
   } else {
-    // Prepare to quit when all windows have been closed..
+    // Prepare to quit when all windows have been closed.
     is_quiting_ = true;
+
+    // Remember this caller so that we don't emit unrelated events.
+    is_exiting_ = true;
 
     // Must destroy windows before quitting, otherwise bad things can happen.
     atom::WindowList* window_list = atom::WindowList::GetInstance();
@@ -135,6 +142,11 @@ void Browser::WillFinishLaunching() {
 }
 
 void Browser::DidFinishLaunching() {
+  // Make sure the userData directory is created.
+  base::FilePath user_data;
+  if (PathService::Get(brightray::DIR_USER_DATA, &user_data))
+    base::CreateDirectoryAndGetError(user_data, nullptr);
+
   is_ready_ = true;
   FOR_EACH_OBSERVER(BrowserObserver, observers_, OnFinishLaunching());
 }
@@ -175,7 +187,9 @@ void Browser::OnWindowCloseCancelled(NativeWindow* window) {
 }
 
 void Browser::OnWindowAllClosed() {
-  if (is_quiting_)
+  if (is_exiting_)
+    Shutdown();
+  else if (is_quiting_)
     NotifyAndShutdown();
   else
     FOR_EACH_OBSERVER(BrowserObserver, observers_, OnWindowAllClosed());

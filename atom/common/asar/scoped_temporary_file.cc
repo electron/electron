@@ -51,7 +51,7 @@ bool ScopedTemporaryFile::Init(const base::FilePath::StringType& ext) {
 
 bool ScopedTemporaryFile::InitFromFile(base::File* src,
                                        const base::FilePath::StringType& ext,
-                                       uint64 offset, uint64 size) {
+                                       uint64_t offset, uint64_t size) {
   if (!src->IsValid())
     return false;
 

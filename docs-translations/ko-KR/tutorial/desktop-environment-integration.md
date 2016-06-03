@@ -14,14 +14,16 @@ Windows, Linux, OS X 운영체제 모두 기본적으로 어플리케이션에�
 통해 개발자가 편리하게 데스크톱 알림을 사용할 수 있는 기능을 제공합니다. 데스크톱 알림은
 운영체제의 네이티브 알림 API를 사용하여 표시합니다.
 
+**참고:** 이 API는 HTML5 API이기 때문에 렌더러 프로세스에서만 사용할 수 있습니다.
+
 ```javascript
-var myNotification = new Notification('Title', {
+let myNotification = new Notification('Title', {
   body: 'Lorem Ipsum Dolor Sit Amet'
 });
 
-myNotification.onclick = function () {
-  console.log('Notification clicked')
-}
+myNotification.onclick = () => {
+  console.log('Notification clicked');
+};
 ```
 
 위 코드를 통해 생성한 데스크톱 알림은 각 운영체제 모두 비슷한 사용자 경험을 제공하지만,
@@ -88,7 +90,7 @@ app.clearRecentDocuments();
 않습니다. 어플리케이션 등록에 관련된 API의 모든 내용은 [Application Registration][app-registration]에서
 찾아볼 수 있습니다.
 
-유저가 JumpList에서 파일을 클릭할 경우 클릭된 파일의 경로가 커맨드 라인 인자로 추가되어
+유저가 JumpList에서 파일을 클릭할 경우 클릭된 파일의 경로가 커맨드 라인 인수로 추가되어
 새로운 인스턴스의 어플리케이션이 실행됩니다.
 
 ### OS X에서 주의할 점
@@ -108,18 +110,17 @@ __Terminal.app의 dock menu:__
 OS X에서만 사용 가능합니다:
 
 ```javascript
-const electron = require('electron');
-const app = electron.app;
-const Menu = electron.Menu;
+const {app, Menu} = require('electron');
 
-var dockMenu = Menu.buildFromTemplate([
-  { label: 'New Window', click: function() { console.log('New Window'); } },
-  { label: 'New Window with Settings', submenu: [
-    { label: 'Basic' },
-    { label: 'Pro'}
+const dockMenu = Menu.buildFromTemplate([
+  {label: 'New Window', click() { console.log('New Window'); }},
+  {label: 'New Window with Settings', submenu: [
+    {label: 'Basic'},
+    {label: 'Pro'}
   ]},
-  { label: 'New Command...'}
+  {label: 'New Command...'}
 ]);
+
 app.dock.setMenu(dockMenu);
 ```
 
@@ -147,7 +148,7 @@ __Internet Explorer의 작업:__
 ![IE](http://i.msdn.microsoft.com/dynimg/IC420539.png)
 
 OS X의 dock menu(진짜 메뉴)와는 달리 Windows의 사용자 작업은 어플리케이션 바로
-가기처럼 작동합니다. 유저가 작업을 클릭할 때 설정한 인자와 함께 새로운 어플리케이션이
+가기처럼 작동합니다. 유저가 작업을 클릭할 때 설정한 인수와 함께 새로운 어플리케이션이
 실행됩니다.
 
 사용자 작업을 설정하려면 [app.setUserTasks][setusertaskstasks] 메서드를 통해 구현할
@@ -166,7 +167,7 @@ app.setUserTasks([
 ]);
 ```
 
-작업 리스트를 비우려면 간단히 `app.setUserTasks` 메서드의 첫번째 인자에 빈 배열을 넣어
+작업 리스트를 비우려면 간단히 `app.setUserTasks` 메서드의 첫번째 인수에 빈 배열을 넣어
 호출하면 됩니다:
 
 ```javascript
@@ -201,24 +202,25 @@ __Windows Media Player의 미리보기 툴바:__
 미리보기 툴바를 설정할 수 있습니다:
 
 ```javascript
-const BrowserWindow = require('electron').BrowserWindow;
+const {BrowserWindow} = require('electron');
 const path = require('path');
 
-var win = new BrowserWindow({
+let win = new BrowserWindow({
   width: 800,
   height: 600
 });
+
 win.setThumbarButtons([
   {
-    tooltip: "button1",
+    tooltip: 'button1',
     icon: path.join(__dirname, 'button1.png'),
-    click: function() { console.log("button2 clicked"); }
+    click() { console.log('button2 clicked'); }
   },
   {
-    tooltip: "button2",
+    tooltip: 'button2',
     icon: path.join(__dirname, 'button2.png'),
     flags:['enabled', 'dismissonclick'],
-    click: function() { console.log("button2 clicked."); }
+    click() { console.log('button2 clicked.'); }
   }
 ]);
 ```
@@ -239,28 +241,26 @@ __Audacious의 런처 숏컷:__
 
 ![audacious](https://help.ubuntu.com/community/UnityLaunchersAndDesktopFiles?action=AttachFile&do=get&target=shortcuts.png)
 
-## Taskbar progress 기능 (Windows & Unity)
+## 작업 표시줄 안의 프로그래스 바 (Windows, OS X, Unity)
 
-Windows에선 태스크바의 어플리케이션 버튼에 progress bar를 추가할 수 있습니다.
+Windows에선 작업 표시줄의 어플리케이션 버튼에 프로그래스 바를 추가할 수 있습니다.
 이 기능은 사용자가 어플리케이션의 창을 열지 않고도 어플리케이션의 작업의 상태 정보를
 시각적으로 보여줄 수 있도록 해줍니다.
 
-또한 Unity DE도 런처에 progress bar를 부착할 수 있습니다.
+OS X에선 프로그래스바가 dock 아이콘의 일부에 표시됩니다.
 
-__태스크바 버튼의 progress bar:__
+또한 Unity DE도 런처에 프로그래스 바를 부착할 수 있습니다.
+
+__작업 표시줄 버튼의 프로그래스 바:__
 
 ![Taskbar Progress Bar](https://cloud.githubusercontent.com/assets/639601/5081682/16691fda-6f0e-11e4-9676-49b6418f1264.png)
-
-__Unity 런처의 progress bar:__
-
-![Unity Launcher](https://cloud.githubusercontent.com/assets/639601/5081747/4a0a589e-6f0f-11e4-803f-91594716a546.png)
 
 이 기능은 [BrowserWindow.setProgressBar][setprogressbar] API를 사용하여 구현할 수
 있습니다:
 
 ```javascript
-var window = new BrowserWindow({...});
-window.setProgressBar(0.5);
+let win = new BrowserWindow({...});
+win.setProgressBar(0.5);
 ```
 
 ## 작업 표시줄의 아이콘 오버레이 (Windows)
@@ -286,8 +286,8 @@ __작업 표시줄 버튼 위의 오버레이:__
 API를 사용할 수 있습니다:
 
 ```javascript
-var window = new BrowserWindow({...});
-window.setOverlayIcon('path/to/overlay.png', 'Description for overlay');
+let win = new BrowserWindow({...});
+win.setOverlayIcon('path/to/overlay.png', 'Description for overlay');
 ```
 
 ## 대표 파일 제시 (OS X)
@@ -305,9 +305,9 @@ __대표 파일 팝업 메뉴:__
 [BrowserWindow.setDocumentEdited][setdocumentedited]를 사용할 수 있습니다:
 
 ```javascript
-var window = new BrowserWindow({...});
-window.setRepresentedFilename('/etc/passwd');
-window.setDocumentEdited(true);
+let win = new BrowserWindow({...});
+win.setRepresentedFilename('/etc/passwd');
+win.setDocumentEdited(true);
 ```
 
 [addrecentdocument]: ../api/app.md#appaddrecentdocumentpath-os-x-windows

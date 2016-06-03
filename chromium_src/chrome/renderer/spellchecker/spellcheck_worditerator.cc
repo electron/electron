@@ -9,7 +9,6 @@
 #include <map>
 #include <string>
 
-#include "base/basictypes.h"
 #include "base/i18n/break_iterator.h"
 #include "base/logging.h"
 #include "base/strings/stringprintf.h"
@@ -323,7 +322,7 @@ bool SpellcheckWordIterator::Initialize(
   if (rule.empty())
     return false;
 
-  scoped_ptr<base::i18n::BreakIterator> iterator(
+  std::unique_ptr<base::i18n::BreakIterator> iterator(
       new base::i18n::BreakIterator(base::string16(), rule));
   if (!iterator->Init()) {
     // Since we're not passing in any text, the only reason this could fail
@@ -332,7 +331,7 @@ bool SpellcheckWordIterator::Initialize(
     NOTREACHED() << "failed to open iterator (broken rules)";
     return false;
   }
-  iterator_ = iterator.Pass();
+  iterator_ = std::move(iterator);
 
   // Set the character attributes so we can normalize the words extracted by
   // this iterator.

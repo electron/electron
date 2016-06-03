@@ -73,7 +73,7 @@
 * [源码目录结构](development/source-code-directory-structure.md)
 * [与 NW.js（原 node-webkit）在技术上的差异](development/atom-shell-vs-node-webkit.md)
 * [构建系统概览](development/build-system-overview.md)
-* [构建步骤（Mac）](development/build-instructions-mac.md)
+* [构建步骤（OS X）](development/build-instructions-osx.md)
 * [构建步骤（Windows）](development/build-instructions-windows.md)
 * [构建步骤（Linux）](development/build-instructions-linux.md)
 * [在调试中使用 Symbol Server](development/setting-up-symbol-server.md)

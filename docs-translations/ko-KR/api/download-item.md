@@ -1,27 +1,30 @@
 # DownloadItem
 
+> 원격 소스로부터의 파일 다운로드를 제어합니다.
+
 `DownloadItem`은 EventEmitter를 상속받았으며 Electron의 다운로드 아이템을 표현합니다.
 이 클래스 객체는 `Session` 모듈의 `will-download` 이벤트에 사용되며 사용자가 다운로드
 아이템을 다룰 수 있도록 도와줍니다.
 
 ```javascript
 // 메인 프로세스
-win.webContents.session.on('will-download', function(event, item, webContents) {
+win.webContents.session.on('will-download', (event, item, webContents) => {
   // Set the save path, making Electron not to prompt a save dialog.
   item.setSavePath('/tmp/save.pdf');
   console.log(item.getMimeType());
   console.log(item.getFilename());
   console.log(item.getTotalBytes());
-  item.on('updated', function() {
+  item.on('updated', () => {
     console.log('Received bytes: ' + item.getReceivedBytes());
   });
-  item.on('done', function(e, state) {
-    if (state == "completed") {
-      console.log("Download successfully");
+  item.on('done', (e, state) => {
+    if (state === 'completed') {
+      console.log('Download successfully');
     } else {
-      console.log("Download is cancelled or interrupted that can't be resumed");
+      console.log('Download is cancelled or interrupted that can\'t be resumed');
     }
   });
+});
 ```
 
 ## Events

@@ -8,7 +8,7 @@ Electron은 라이센스상의 문제로 Widevine CDM 플러그인을 직접 제
 따라서 플러그인을 얻으려면 먼저 사용할 Electron 빌드의 아키텍쳐와 버전에 맞춰 공식
 Chrome 브라우저를 설치해야 합니다.
 
-__참고:__ Chrome 브라우저의 메이저 버전은 Electron에서 사용하는 Chrome 버전과
+**참고:** Chrome 브라우저의 메이저 버전은 Electron에서 사용하는 Chrome 버전과
 같습니다, 만약 그렇지 않다면 `navigator.plugins`가 로드됐더라도 정상적으로 작동하지
 않습니다.
 
@@ -42,7 +42,7 @@ Linux에선 플러그인 바이너리들이 Chrome 브라우저와 함께 제공
 `widevinecdmadapter`의 위치를 전달하고 플러그인의 버전을 `--widevine-cdm-version`
 스위치에 전달해야 합니다.
 
-__참고:__ `widevinecdmadapter` 바이너리가 Electron으로 전달되어도, `widevinecdm`
+**참고:** `widevinecdmadapter` 바이너리가 Electron으로 전달되어도, `widevinecdm`
 바이너리는 옆에 같이 두어야 합니다.
 
 커맨드 라인 스위치들은 `app` 모듈의 `ready` 이벤트가 발생하기 전에 전달되어야 합니다.
@@ -59,14 +59,14 @@ app.commandLine.appendSwitch('widevine-cdm-path', '/path/to/widevinecdmadapter.p
 // 플러그인의 버전은 크롬의 `chrome://plugins` 페이지에서 취득할 수 있습니다.
 app.commandLine.appendSwitch('widevine-cdm-version', '1.4.8.866');
 
-var mainWindow = null;
-app.on('ready', function() {
-  mainWindow = new BrowserWindow({
+let win = null;
+app.on('ready', () => {
+  win = new BrowserWindow({
     webPreferences: {
       // `plugins`은 활성화되어야 합니다.
       plugins: true
     }
-  })
+  });
 });
 ```
 

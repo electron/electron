@@ -7,7 +7,8 @@
 
 #include <string>
 
-#include "base/basictypes.h"
+#include "base/macros.h"
+#include "build/build_config.h"
 
 namespace base {
 class Time;

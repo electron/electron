@@ -5,8 +5,8 @@ al node convencional:
 
 * `process.type` String - El tipo del proceso puede ser `browser` (ej. proceso
    principal) o `renderer`.
-* `process.versions['electron']` String - Versión de Electron.
-* `process.versions['chrome']` String - Versión de Chromium.
+* `process.versions.electron` String - Versión de Electron.
+* `process.versions.chrome` String - Versión de Chromium.
 * `process.resourcesPath` String - Ruta al código fuente JavaScript.
 
 ## Events

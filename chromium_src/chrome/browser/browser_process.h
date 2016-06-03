@@ -12,7 +12,7 @@
 
 #include <string>
 
-#include "base/basictypes.h"
+#include "base/macros.h"
 #include "base/memory/scoped_ptr.h"
 
 namespace printing {
@@ -31,7 +31,7 @@ class BrowserProcess {
   printing::PrintJobManager* print_job_manager();
 
  private:
-  scoped_ptr<printing::PrintJobManager> print_job_manager_;
+  std::unique_ptr<printing::PrintJobManager> print_job_manager_;
 
   DISALLOW_COPY_AND_ASSIGN(BrowserProcess);
 };

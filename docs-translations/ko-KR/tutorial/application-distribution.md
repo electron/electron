@@ -30,8 +30,8 @@ electron/resources/app
 
 ## asar로 앱 패키징 하기
 
-소스파일 전체를 복사해서 배포하는 것과는 별개로 [asar](https://github.com/atom/asar)
-아카이브를 통해 어플리케이션의 소스코드가 사용자에게 노출되는 것을 방지할 수 있습니다.
+소스파일 전체를 복사해서 배포하는 것과는 별개로 [asar](https://github.com/electron/asar)
+아카이브를 통해 어플리케이션의 소스 코드가 사용자에게 노출되는 것을 방지할 수 있습니다.
 
 `asar` 아카이브를 사용할 땐 단순히 `app` 폴더 대신에 어플리케이션을 패키징한
 `app.asar` 파일로 대체하면됩니다. Electron은 자동으로 `app`폴더 대신 asar 아카이브를
@@ -105,9 +105,17 @@ MyApp.app/Contents
 아이콘은 [.desktop](https://developer.gnome.org/integration-guide/stable/desktop-files.html.en)
 파일을 사용하여 지정할 수 있습니다.
 
-## Electron 소스코드를 다시 빌드하여 리소스 수정하기
+## 패키징 툴
 
-또한 Electron 소스코드를 다시 빌드할 때 어플리케이션 이름을 변경할 수 있습니다.
+어플리케이션을 일일이 수동으로 패키지로 만드는 대신, 서드 파티 패키징 툴을 사용하며
+이러한 작업을 자동화 시킬 수 있습니다:
+
+* [electron-packager](https://github.com/maxogden/electron-packager)
+* [electron-builder](https://github.com/loopline-systems/electron-builder)
+
+## Electron 소스 코드를 다시 빌드하여 리소스 수정하기
+
+또한 Electron 소스 코드를 다시 빌드할 때 어플리케이션 이름을 변경할 수 있습니다.
 
 `GYP_DEFINES` 환경변수를 사용하여 다음과 같이 다시 빌드할 수 있습니다:
 
@@ -131,17 +139,56 @@ $ script/build.py -c Release -t myapp
 
 ### grunt-build-atom-shell
 
-Electron의 소스코드를 수정하고 다시 빌드하는 작업은 상당히 복잡합니다. 일일이
-소스코드를 수정하는 대신 [grunt-build-atom-shell](https://github.com/paulcbetts/grunt-build-atom-shell)을
+Electron의 소스 코드를 수정하고 다시 빌드하는 작업은 상당히 복잡합니다. 일일이
+소스 코드를 수정하는 대신 [grunt-build-atom-shell](https://github.com/paulcbetts/grunt-build-atom-shell)을
 사용하여 빌드를 자동화 시킬 수 있습니다.
 
 이 툴을 사용하면 자동으로 `.gyp`파일을 수정하고 다시 빌드합니다. 그리고 어플리케이션의
 네이티브 Node 모듈 또한 새로운 실행파일 이름으로 일치시킵니다.
 
-## 패키징 툴
+### Electron 커스텀 포크 만들기
 
-어플리케이션을 일일이 수동으로 패키지로 만드는 대신, 서드 파티 패키징 툴을 사용하며
-이러한 작업을 자동화 시킬 수 있습니다:
+Electron의 커스텀 포크를 만드는 것은 거의 확실히 앱을 만드는데 있어서 필요한 작업이
+아닐 수 있으며, 심지어 "제품 등급"의 어플리케이션이라도 필요하지 않습니다.
+`electron-packager` 또는 `electron-builder`와 같은 도구를 사용하면 다른 특별한
+과정 없이 Electron을 "Rebrand" 할 수 있습니다.
 
-* [electron-packager](https://github.com/maxogden/electron-packager)
-* [electron-builder](https://github.com/loopline-systems/electron-builder)
+업스트림 단에서 추가될 수 없는 기능이나 이미 공식 버전에서 거부된 기능을 Electron에
+직접적으로 패치하기 위해 커스텀 C++를 추가해야 한다면 Electron을 포크해야 합니다.
+Electron의 개발자로써, Electron을 매우 많은 시나리오에서도 작동하도록 만들려고
+합니다. 따라서 가능한한 변경 사항을 공식 버전의 Electron에 추가할 수 있도록 시도해
+주길 바라며, 당신에겐 아주 아주 쉬운 작업일 것이고 이러한 당신의 도움에 대해 감사하게
+생각합니다.
+
+#### surf-build와 함께 커스텀 릴리즈 만들기
+
+1. npm을 통해 [Surf](https://github.com/surf-build/surf)를 설치합니다:
+  `npm install -g surf-build@latest`
+
+2. 새로운 S3 bucket을 만들고 다음과 같은 빈 디렉토리 구조를 만듭니다:
+
+```
+- atom-shell/
+  - symbols/
+  - dist/
+```
+
+3. 다음의 환경 변수들을 설정합니다:
+
+* `ELECTRON_GITHUB_TOKEN` - GitHub에 릴리즈를 만들 수 있는 토큰.
+* `ELECTRON_S3_ACCESS_KEY`, `ELECTRON_S3_BUCKET`, `ELECTRON_S3_SECRET_KEY` -
+  node.js 헤더 뿐만 아니라 심볼을 업로드할 장소.
+* `ELECTRON_RELEASE` - `true`로 지정하고 업로드 부분이 실행되면, 설정되지 않은
+  부분을 남기고 `surf-build`가 CI-type 확인을 실행합니다. 모든 pull request를
+  실행할 때 적합합니다.
+* `CI` - `true` 또는 다른 것을 지정하면 실패합니다.
+* `GITHUB_TOKEN` -  `ELECTRON_GITHUB_TOKEN`와 같게 설정
+* `SURF_TEMP` - Windows에선 `C:\Temp`로 설정하면 긴 경로 문제를 해결할 수 있습니다.
+* `TARGET_ARCH` - `ia32` 또는 `x64`를 지정.
+
+4. Electron에 기여를 하는 기여자라면, _반드시_ `script/upload.py`에서 포크를 위해
+  `ELECTRON_REPO`를 설정해야 합니다. (`MYORG/electron`)
+
+5. `surf-build -r https://github.com/MYORG/electron -s YOUR_COMMIT -n 'surf-PLATFORM-ARCH'`
+
+6. 빌드가 완료될 때까지 아주 아주 긴 시간을 기다립니다.

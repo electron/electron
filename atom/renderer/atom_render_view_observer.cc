@@ -39,7 +39,11 @@ bool GetIPCObject(v8::Isolate* isolate,
                   v8::Local<v8::Context> context,
                   v8::Local<v8::Object>* ipc) {
   v8::Local<v8::String> key = mate::StringToV8(isolate, "ipc");
-  v8::Local<v8::Value> value = context->Global()->GetHiddenValue(key);
+  v8::Local<v8::Private> privateKey = v8::Private::ForApi(isolate, key);
+  v8::Local<v8::Object> global_object = context->Global();
+  v8::Local<v8::Value> value;
+  if (!global_object->GetPrivate(context, privateKey).ToLocal(&value))
+    return false;
   if (value.IsEmpty() || !value->IsObject())
     return false;
   *ipc = value->ToObject();
@@ -53,6 +57,34 @@ std::vector<v8::Local<v8::Value>> ListValueToVector(
   std::vector<v8::Local<v8::Value>> result;
   mate::ConvertFromV8(isolate, array, &result);
   return result;
+}
+
+void EmitIPCEvent(blink::WebFrame* frame,
+                  const base::string16& channel,
+                  const base::ListValue& args) {
+  if (!frame || frame->isWebRemoteFrame())
+    return;
+
+  v8::Isolate* isolate = blink::mainThreadIsolate();
+  v8::HandleScope handle_scope(isolate);
+
+  v8::Local<v8::Context> context = frame->mainWorldScriptContext();
+  v8::Context::Scope context_scope(context);
+
+  // Only emit IPC event for context with node integration.
+  node::Environment* env = node::Environment::GetCurrent(context);
+  if (!env)
+    return;
+
+  v8::Local<v8::Object> ipc;
+  if (GetIPCObject(isolate, context, &ipc)) {
+    auto args_vector = ListValueToVector(isolate, args);
+    // Insert the Event object, event.sender is ipc.
+    mate::Dictionary event = mate::Dictionary::CreateEmpty(isolate);
+    event.Set("sender", ipc);
+    args_vector.insert(args_vector.begin(), event.GetHandle());
+    mate::EmitEvent(isolate, ipc, channel, args_vector);
+  }
 }
 
 base::StringPiece NetResourceProvider(int key) {
@@ -119,7 +151,8 @@ bool AtomRenderViewObserver::OnMessageReceived(const IPC::Message& message) {
   return handled;
 }
 
-void AtomRenderViewObserver::OnBrowserMessage(const base::string16& channel,
+void AtomRenderViewObserver::OnBrowserMessage(bool send_to_all,
+                                              const base::string16& channel,
                                               const base::ListValue& args) {
   if (!document_created_)
     return;
@@ -131,20 +164,13 @@ void AtomRenderViewObserver::OnBrowserMessage(const base::string16& channel,
   if (!frame || frame->isWebRemoteFrame())
     return;
 
-  v8::Isolate* isolate = blink::mainThreadIsolate();
-  v8::HandleScope handle_scope(isolate);
+  EmitIPCEvent(frame, channel, args);
 
-  v8::Local<v8::Context> context = frame->mainWorldScriptContext();
-  v8::Context::Scope context_scope(context);
-
-  v8::Local<v8::Object> ipc;
-  if (GetIPCObject(isolate, context, &ipc)) {
-    auto args_vector = ListValueToVector(isolate, args);
-    // Insert the Event object, event.sender is ipc.
-    mate::Dictionary event = mate::Dictionary::CreateEmpty(isolate);
-    event.Set("sender", ipc);
-    args_vector.insert(args_vector.begin(), event.GetHandle());
-    mate::EmitEvent(isolate, ipc, channel, args_vector);
+  // Also send the message to all sub-frames.
+  if (send_to_all) {
+    for (blink::WebFrame* child = frame->firstChild(); child;
+         child = child->nextSibling())
+      EmitIPCEvent(child, channel, args);
   }
 }
 

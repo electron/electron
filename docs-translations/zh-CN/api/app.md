@@ -295,6 +295,12 @@ app.on('login', function(event, webContents, request, authInfo, callback) {
 由于 npm 的命名规则，通常 `name` 字段是一个短的小写字符串。但是应用名的完整名称通常是首字母大写的，你应该单独使用一个
 `productName` 字段，用于表示你的应用程序的完整名称。Electron 会优先使用这个字段作为应用名。
 
+### `app.setName(name)`
+
+* `name` String
+
+重写当前应用的名字
+
 ### `app.getLocale()`
 
 返回当前应用程序的语言。

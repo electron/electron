@@ -1,20 +1,33 @@
 {
   "name": "electron",
-  "version": "0.36.8",
+  "version": "1.2.1",
   "devDependencies": {
-    "asar": "^0.10.0",
-    "eslint": "^2.1.0",
-    "request": "*"
+    "asar": "^0.11.0",
+    "request": "*",
+    "standard": "^7.1.0"
   },
   "optionalDependencies": {
     "runas": "^3.0.0"
+  },
+  "standard": {
+    "ignore": [
+      "/out",
+      "/spec",
+      "/vendor"
+    ],
+    "env": {
+      "browser": true
+    }
   },
   "private": true,
   "scripts": {
     "bootstrap": "python ./script/bootstrap.py",
     "build": "python ./script/build.py -c D",
-    "lint": "python ./script/eslint.py && python ./script/cpplint.py",
+    "lint": "npm run lint-js && npm run lint-cpp",
+    "lint-js": "standard && standard spec",
+    "lint-cpp": "python ./script/cpplint.py",
     "preinstall": "node -e 'process.exit(0)'",
+    "repl": "python ./script/start.py --interactive",
     "start": "python ./script/start.py",
     "test": "python ./script/test.py"
   }

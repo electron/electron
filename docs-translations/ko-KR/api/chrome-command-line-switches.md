@@ -1,23 +1,20 @@
 ﻿# 크롬 명령줄 스위치 지원
 
-크롬 명령줄(Command-Line) 스위치는 크롬 브라우저에서 제공되는 추가 옵션이며
-Electron에서도 지원합니다. [app][app]의 [ready][ready]이벤트가 작동하기 전에
-[app.commandLine.appendSwitch][append-switch] API를 사용하면 어플리케이션 내부에서
-스위치를 추가할 수 있습니다:
+> Electron에서 지원하는 커맨드 명령줄 스위치입니다.
+
+어플리케이션 메인 스크립트의 [app][app] 모듈에서 [ready][ready] 이벤트가 실행되기
+전에 [app.commandLine.appendSwitch][append-switch]를 호출하면, 어플리케이션의
+명령줄 옵션을 추가로 지정할 수 있습니다:
 
 ```javascript
-const app = require('electron').app;
+const {app} = require('electron');
 app.commandLine.appendSwitch('remote-debugging-port', '8315');
 app.commandLine.appendSwitch('host-rules', 'MAP * 127.0.0.1');
 
-app.on('ready', function() {
+app.on('ready', () => {
   // Your code here
 });
 ```
-
-## --client-certificate=`path`
-
-`path`를 클라이언트 인증서로 설정합니다.
 
 ## --ignore-connections-limit=`domains`
 
@@ -25,11 +22,15 @@ app.on('ready', function() {
 
 ## --disable-http-cache
 
-HTTP 요청 캐시를 비활성화 합니다.
+HTTP 요청 캐시를 비활성화합니다.
+
+## --disable-http2
+
+HTTP/2와 SPDY/3.1 프로토콜을 비활성화합니다.
 
 ## --remote-debugging-port=`port`
 
-지정한 `port`에 HTTP 기반의 리모트 디버거를 활성화 시킵니다. (개발자 도구)
+지정한 `port`에 HTTP 기반의 리모트 디버거를 활성화합니다. (개발자 도구)
 
 ## --js-flags=`flags`
 
@@ -94,6 +95,24 @@ resolver, http 프록시 연결의 `CONNECT`, `SOCKS` 프록시 연결의 endpoi
 
 `--host-rules` 플래그와 비슷하지만 이 플래그는 host resolver에만 적용됩니다.
 
+## --auth-server-whitelist=`url`
+
+통합 인증을 사용하도록 설정할 쉼표로 구분된 서버의 리스트.
+
+예를 들어:
+
+```
+--auth-server-whitelist='*example.com, *foobar.com, *baz'
+```
+
+그리고 모든 `example.com`, `foobar.com`, `baz`로 끝나는 `url`은 통합 인증을
+사용하도록 설정됩니다. `*` 접두어가 없다면 url은 정확히 일치해야 합니다.
+
+## --auth-negotiate-delegate-whitelist=`url`
+
+필수적인 사용자 자격 증명을 보내야 할 쉼표로 구분된 서버의 리스트.
+`*` 접두어가 없다면 url은 정확히 일치해야 합니다.
+
 ## --ignore-certificate-errors
 
 인증서 에러를 무시합니다.
@@ -112,8 +131,7 @@ Net log 이벤트를 활성화하고 `path`에 로그를 기록합니다.
 
 ## --ssl-version-fallback-min=`version`
 
-TLS fallback에서 사용할 SSL/TLS 최소 버전을 지정합니다. ("tls1", "tls1.1",
-"tls1.2")
+TLS fallback에서 사용할 SSL/TLS 최소 버전을 지정합니다. (`tls1`, `tls1.1`, `tls1.2`)
 
 ## --cipher-suite-blacklist=`cipher_suites`
 
@@ -121,9 +139,9 @@ SSL 암호화를 비활성화할 대상 목록을 지정합니다. (`,`로 구�
 
 ## --disable-renderer-backgrounding
 
-Chromium이 랜더러 프로세스의 보이지 않는 페이지의 우선순위를 낮추는 것을 방지합니다.
+Chromium이 렌더러 프로세스의 보이지 않는 페이지의 우선순위를 낮추는 것을 방지합니다.
 
-이 플래그는 전역적이며 모든 랜더러 프로세스에 적용됩니다. 만약 하나의 윈도우창에만
+이 플래그는 전역적이며 모든 렌더러 프로세스에 적용됩니다. 만약 하나의 윈도우창에만
 스로틀링을 비활성화하고 싶다면 [조용한 오디오를 재생하는][play-silent-audio] 핵을 사용할
 수 있습니다.
 

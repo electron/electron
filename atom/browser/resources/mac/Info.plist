@@ -15,11 +15,11 @@
   <key>CFBundlePackageType</key>
   <string>APPL</string>
   <key>CFBundleIconFile</key>
-  <string>atom.icns</string>
+  <string>electron.icns</string>
   <key>CFBundleVersion</key>
-  <string>0.36.8</string>
+  <string>1.2.1</string>
   <key>CFBundleShortVersionString</key>
-  <string>0.36.8</string>
+  <string>1.2.1</string>
   <key>LSApplicationCategoryType</key>
   <string>public.app-category.developer-tools</string>
   <key>LSMinimumSystemVersion</key>

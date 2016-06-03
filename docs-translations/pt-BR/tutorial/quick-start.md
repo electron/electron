@@ -130,7 +130,7 @@ Finalmente o `index.html` é a página web que você quer mostrar:
   <body>
     <h1>Hello World!</h1>
     Nós estamos usando io.js <script>document.write(process.version)</script>
-    e Electron <script>document.write(process.versions['electron'])</script>.
+    e Electron <script>document.write(process.versions.electron)</script>.
   </body>
 </html>
 ```
@@ -180,7 +180,7 @@ $ ./Electron.app/Contents/MacOS/Electron seu-app/
 ```
 
 `Electron.app` aqui é uma parte do pacote de lançamento do Electron, você pode baixa-lo
-[aqui](https://github.com/atom/electron/releases).
+[aqui](https://github.com/electron/electron/releases).
 
 ### Executar como uma distribuição
 

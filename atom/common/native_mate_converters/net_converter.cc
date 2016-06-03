@@ -25,16 +25,16 @@ namespace mate {
 // static
 v8::Local<v8::Value> Converter<const net::URLRequest*>::ToV8(
     v8::Isolate* isolate, const net::URLRequest* val) {
-  scoped_ptr<base::DictionaryValue> dict(new base::DictionaryValue);
+  std::unique_ptr<base::DictionaryValue> dict(new base::DictionaryValue);
   dict->SetString("method", val->method());
   std::string url;
   if (!val->url_chain().empty()) url = val->url().spec();
   dict->SetStringWithoutPathExpansion("url", url);
   dict->SetString("referrer", val->referrer());
-  scoped_ptr<base::ListValue> list(new base::ListValue);
+  std::unique_ptr<base::ListValue> list(new base::ListValue);
   atom::GetUploadData(list.get(), val);
   if (!list->empty())
-    dict->Set("uploadData", list.Pass());
+    dict->Set("uploadData", std::move(list));
   return mate::ConvertToV8(isolate, *(dict.get()));
 }
 
@@ -74,25 +74,25 @@ void GetUploadData(base::ListValue* upload_data_list,
   const net::UploadDataStream* upload_data = request->get_upload();
   if (!upload_data)
     return;
-  const ScopedVector<net::UploadElementReader>* readers =
+  const std::vector<std::unique_ptr<net::UploadElementReader>>* readers =
       upload_data->GetElementReaders();
   for (const auto& reader : *readers) {
-    scoped_ptr<base::DictionaryValue> upload_data_dict(
+    std::unique_ptr<base::DictionaryValue> upload_data_dict(
         new base::DictionaryValue);
     if (reader->AsBytesReader()) {
       const net::UploadBytesElementReader* bytes_reader =
           reader->AsBytesReader();
-      scoped_ptr<base::Value> bytes(
+      std::unique_ptr<base::Value> bytes(
           base::BinaryValue::CreateWithCopiedBuffer(bytes_reader->bytes(),
                                                     bytes_reader->length()));
-      upload_data_dict->Set("bytes", bytes.Pass());
+      upload_data_dict->Set("bytes", std::move(bytes));
     } else if (reader->AsFileReader()) {
       const net::UploadFileElementReader* file_reader =
           reader->AsFileReader();
       auto file_path = file_reader->path().AsUTF8Unsafe();
       upload_data_dict->SetStringWithoutPathExpansion("file", file_path);
     }
-    upload_data_list->Append(upload_data_dict.Pass());
+    upload_data_list->Append(std::move(upload_data_dict));
   }
 }
 
