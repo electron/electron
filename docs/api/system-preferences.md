@@ -39,7 +39,7 @@ Removes the subscriber with `id`.
 
 * `key` String
 * `type` String - Can be `string`, `boolean`, `integer`, `float`, `double`,
-  `url`.
+  `url`, `array`, `dictionary`
 
 Get the value of `key` in system preferences.
 
@@ -50,6 +50,9 @@ are:
 * `AppleAquaColorVariant: integer`
 * `AppleHighlightColor: string`
 * `AppleShowScrollBars: string`
+* `NSNavRecentPlaces: array`
+* `NSPreferredWebServices: dictionary`
+* `NSUserDictionaryReplacementItems: array`
 
 ### `systemPreferences.isAeroGlassEnabled()` _Windows_
 

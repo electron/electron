@@ -10,8 +10,6 @@
 
 namespace atom {
 
-namespace {
-
 std::unique_ptr<base::ListValue> NSArrayToListValue(NSArray* arr) {
   if (!arr)
     return nullptr;
@@ -50,8 +48,6 @@ std::unique_ptr<base::ListValue> NSArrayToListValue(NSArray* arr) {
 
   return result;
 }
-
-}  // namespace
 
 NSDictionary* DictionaryValueToNSDictionary(const base::DictionaryValue& value) {
   std::string json;
