@@ -380,7 +380,11 @@ Find a window according to its ID.
 Adds DevTools extension located at `path`, and returns extension's name.
 
 The extension will be remembered so you only need to call this API once, this
-API is not for programming use.
+API is not for programming use. If you try to add an extension that has already
+been loaded, this method will not return and instead log a warning to the
+console.
+
+Method will also not return if the extension's manifest is missing or incomplete.
 
 ### `BrowserWindow.removeDevToolsExtension(name)`
 
