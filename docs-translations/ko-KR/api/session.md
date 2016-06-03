@@ -323,6 +323,22 @@ session.fromPartition(partition).setPermissionRequestHandler((webContents, permi
 
 호스트 리소버(resolver) 캐시를 지웁니다.
 
+#### `ses.allowNTLMCredentialsForDomains(domains)`
+
+* `domains` String - 통합 인증을 사용하도록 설정할 쉼표로 구분된 서버의 리스트.
+
+동적으로 HTTP NTML 또는 Negotiate 인증을 위해 언제나 자격 증명을 보낼지 여부를
+설정합니다.
+
+```javascript
+// 통합 인증을 위해 `example.com`, `foobar.com`, `baz`로 끝나는
+// 모든 url을 지정합니다.
+session.defaultSession.allowNTLMCredentialsForDomains('*example.com, *foobar.com, *baz')
+
+// 통합 인증을 위해 모든 url을 지정합니다.
+session.defaultSession.allowNTLMCredentialsForDomains('*')
+```
+
 #### `ses.webRequest`
 
 `webRequest` API는 생명주기의 다양한 단계에 맞춰 요청 콘텐츠를 가로채거나 변경할 수

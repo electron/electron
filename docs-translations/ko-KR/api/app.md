@@ -280,6 +280,32 @@ GPU가 작동하던 중 크래시가 일어났을 때 발생하는 이벤트입�
 모든 윈도우는 사용자의 동의 여부에 상관없이 즉시 종료되며 `before-quit` 이벤트와
 `will-quit` 이벤트가 발생하지 않습니다.
 
+### `app.relaunch([options])`
+
+* `options` Object (optional)
+  * `args` Array (optional)
+  * `execPath` String (optional)
+
+현재 인스턴스가 종료되면 어플리케이션을 재시작합니다.
+
+기본적으로 새 인스턴스는 같은 작업 디렉토리의 것과 함께 현재 인스턴스의 명령줄 인수를
+사용합니다. 만약 `args`가 지정되면, `args`가 기본 명령줄 인수 대신에 전달됩니다.
+`execPath`가 지정되면, 현재 어플리케이션 대신 `execPath`가 실행됩니다.
+
+참고로 이 메서드는 어플리케이션을 종료하지 않으며, 어플리케이션을 다시 시작시키려면
+`app.relaunch`를 호출한 후 `app.quit` 또는 `app.exit`를 실행해주어야 합니다.
+
+`app.relaunch`가 여러 번 호출되면, 현재 인스턴스가 종료된 후 여러 인스턴스가
+시작됩니다.
+
+다음은 현재 인스턴스를 즉시 종료시킨 후 새로운 명령줄 인수를 추가하여 새
+인스턴스의 어플리케이션을 실행하는 예시입니다:
+
+```javascript
+app.relaunch({args: process.argv.slice(1) + ['--relaunch']})
+app.exit(0)
+```
+
 ### `app.focus()`
 
 Linux에선, 첫 번째로 보여지는 윈도우가 포커스됩니다. OS X에선, 어플리케이션을 활성화
@@ -444,16 +470,6 @@ Windows에서 사용할 수 있는 JumpList의 [Tasks][tasks] 카테고리에 `t
 * `iconIndex` Integer - 아이콘 파일의 인덱스. 만약 아이콘 파일이 두 개 이상의
   아이콘을 가지고 있을 경우, 사용할 아이콘의 인덱스를 이 옵션으로 지정해 주어야 합니다.
   단, 아이콘을 하나만 포함하고 있는 경우 0을 지정하면 됩니다.
-
-### `app.allowNTLMCredentialsForAllDomains()`
-
-항상 동적으로 HTTP NTLM 또는 Negotiate 인증에 자격 증명을 보낼 것인지 설정합니다.
-
-기본적으로 Electron은 "로컬 인터넷" 사이트 URL에서 NTLM/Kerberos 자격 증명만을
-보냅니다. (같은 도메인 내에서) 그러나 기업 네트워크가 잘못 구성된 경우 종종 작업에
-실패할 수 있습니다. 이때 이 메서드를 통해 모든 URL을 허용할 수 있습니다.
-
-**참고:** 이 메서드는 `ready` 이벤트가 발생하기 전에 호출해야 합니다.
 
 ### `app.makeSingleInstance(callback)`
 
