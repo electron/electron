@@ -16,7 +16,11 @@ Using the [React Developer Tools][react-devtools] as example:
    string like `fmkadmapgofadopljbjfkapdkoienihi`.
 1. Find out filesystem location used by Chrome for storing extensions:
    * on Windows it is `%LOCALAPPDATA%\Google\Chrome\User Data\Default\Extensions`;
-   * on Linux it is `~/.config/google-chrome/Default/Extensions/`;
+   * on Linux it could be:
+     * `~/.config/google-chrome/Default/Extensions/`
+     * `~/.config/google-chrome-beta/Default/Extensions/`
+     * `~/.config/google-chrome-canary/Default/Extensions/`
+     * `~/.config/chromium/Default/Extensions/`
    * on OS X it is `~/Library/Application Support/Google/Chrome/Default/Extensions`.
 1. Pass the location of the extension to `BrowserWindow.addDevToolsExtension`
    API, for the React Developer Tools, it is something like:
