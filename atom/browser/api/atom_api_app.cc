@@ -418,7 +418,7 @@ bool App::Relaunch(mate::Arguments* js_args) {
 
   mate::Dictionary options;
   if (js_args->GetNext(&options)) {
-    if (options.Get("execPath", &exec_path) || options.Get("args", &args))
+    if (options.Get("execPath", &exec_path) | options.Get("args", &args))
       override_argv = true;
   }
 
