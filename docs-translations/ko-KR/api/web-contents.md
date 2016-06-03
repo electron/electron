@@ -360,6 +360,41 @@ Returns:
 
 새로운 컨텍스트 메뉴의 제어가 필요할 때 발생하는 이벤트입니다.
 
+### Event: 'select-bluetooth-device'
+
+Returns:
+
+* `event` Event
+* `devices` [Objects]
+  * `deviceName` String
+  * `deviceId` String
+* `callback` Function
+  * `deviceId` String
+
+`navigator.bluetooth.requestDevice`의 호출에 의해 블루투스 기기가 선택되어야 할 때
+발생하는 이벤트입니다. `navigator.bluetooth` API를 사용하려면 `webBluetooth`가
+활성화되어 있어야 합니다. 만약 `event.preventDefault`이 호출되지 않으면, 첫 번째로
+사용 가능한 기기가 선택됩니다. `callback`은 반드시 선택될 `deviceId`와 함께
+호출되어야 하며, 빈 문자열을 `callback`에 보내면 요청이 취소됩니다.
+
+```javascript
+app.commandLine.appendSwitch('enable-web-bluetooth')
+
+app.on('ready', () => {
+  webContents.on('select-bluetooth-device', (event, deviceList, callback) => {
+    event.preventDefault()
+    let result = deviceList.find((device) => {
+      return device.deviceName === 'test'
+    })
+    if (!result) {
+      callback('')
+    } else {
+      callback(result.deviceId)
+    }
+  })
+})
+```
+
 ## Instance Methods
 
 `webContents`객체는 다음과 같은 인스턴스 메서드들을 가지고 있습니다.
