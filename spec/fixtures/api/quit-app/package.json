@@ -1,4 +1,4 @@
 {
-  "name": "quit-app",
+  "name": "electron-quit-app",
   "main": "main.js"
 }

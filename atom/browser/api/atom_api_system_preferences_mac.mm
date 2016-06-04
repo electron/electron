@@ -9,6 +9,7 @@
 #import <Cocoa/Cocoa.h>
 
 #include "atom/browser/mac/dict_util.h"
+#include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/values.h"
@@ -66,8 +67,8 @@ v8::Local<v8::Value> SystemPreferences::GetUserDefault(
   NSUserDefaults* defaults = [NSUserDefaults standardUserDefaults];
   NSString* key = base::SysUTF8ToNSString(name);
   if (type == "string") {
-    return mate::StringToV8(
-        isolate(), base::SysNSStringToUTF8([defaults stringForKey:key]));
+    return mate::StringToV8(isolate(),
+      base::SysNSStringToUTF8([defaults stringForKey:key]));
   } else if (type == "boolean") {
     return v8::Boolean::New(isolate(), [defaults boolForKey:key]);
   } else if (type == "float") {
@@ -77,8 +78,14 @@ v8::Local<v8::Value> SystemPreferences::GetUserDefault(
   } else if (type == "double") {
     return v8::Number::New(isolate(), [defaults doubleForKey:key]);
   } else if (type == "url") {
-    return mate::ConvertToV8(
-        isolate(), net::GURLWithNSURL([defaults URLForKey:key]));
+    return mate::ConvertToV8(isolate(),
+      net::GURLWithNSURL([defaults URLForKey:key]));
+  } else if (type == "array") {
+    return mate::ConvertToV8(isolate(),
+      *NSArrayToListValue([defaults arrayForKey:key]));
+  } else if (type == "dictionary") {
+    return mate::ConvertToV8(isolate(),
+      *NSDictionaryToDictionaryValue([defaults dictionaryForKey:key]));
   } else {
     return v8::Undefined(isolate());
   }

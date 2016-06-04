@@ -49,7 +49,7 @@ win.show();
   * `alwaysOnTop` Boolean - 窗口是否总是显示在其他窗口之前. 在 Linux 上无效. 默认为 `false`.
   * `fullscreen` Boolean - 窗口是否可以全屏幕. 当明确设置值为When `false` ，全屏化按钮将会隐藏，在 OS X 将禁用. 默认 `false`.
   * `fullscreenable` Boolean - 在 OS X 上，全屏化按钮是否可用，默认为 `true`.
-  * `skipTaskbar` Boolean - 是否在人物栏中显示窗口. 默认是`false`.
+  * `skipTaskbar` Boolean - 是否在任务栏中显示窗口. 默认是`false`.
   * `kiosk` Boolean - kiosk 方式. 默认为 `false`.
   * `title` String - 窗口默认title. 默认 `"Electron"`.
   * `icon` [NativeImage](native-image.md) - 窗口图标, 如果不设置，窗口将使用可用的默认图标.

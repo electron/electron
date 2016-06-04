@@ -280,6 +280,32 @@ GPU가 작동하던 중 크래시가 일어났을 때 발생하는 이벤트입�
 모든 윈도우는 사용자의 동의 여부에 상관없이 즉시 종료되며 `before-quit` 이벤트와
 `will-quit` 이벤트가 발생하지 않습니다.
 
+### `app.relaunch([options])`
+
+* `options` Object (optional)
+  * `args` Array (optional)
+  * `execPath` String (optional)
+
+현재 인스턴스가 종료되면 어플리케이션을 재시작합니다.
+
+기본적으로 새 인스턴스는 같은 작업 디렉토리의 것과 함께 현재 인스턴스의 명령줄 인수를
+사용합니다. 만약 `args`가 지정되면, `args`가 기본 명령줄 인수 대신에 전달됩니다.
+`execPath`가 지정되면, 현재 어플리케이션 대신 `execPath`가 실행됩니다.
+
+참고로 이 메서드는 어플리케이션을 종료하지 않으며, 어플리케이션을 다시 시작시키려면
+`app.relaunch`를 호출한 후 `app.quit` 또는 `app.exit`를 실행해주어야 합니다.
+
+`app.relaunch`가 여러 번 호출되면, 현재 인스턴스가 종료된 후 여러 인스턴스가
+시작됩니다.
+
+다음은 현재 인스턴스를 즉시 종료시킨 후 새로운 명령줄 인수를 추가하여 새
+인스턴스의 어플리케이션을 실행하는 예시입니다:
+
+```javascript
+app.relaunch({args: process.argv.slice(1) + ['--relaunch']})
+app.exit(0)
+```
+
 ### `app.focus()`
 
 Linux에선, 첫 번째로 보여지는 윈도우가 포커스됩니다. OS X에선, 어플리케이션을 활성화
@@ -370,7 +396,7 @@ npm 모듈 규칙에 따라 대부분의 경우 `package.json`의 `name` 필드�
 
 **참고:** 패키징된 앱을 배포할 때, `locales` 폴더도 같이 배포해야 합니다.
 
-**참고:** Windows에선 `ready` 이벤트가 발생한 이후에 이 메서드를 사용해야 합니다.
+**참고:** Windows에선 `ready` 이벤트가 발생한 이후에 이 메서드를 호출해야 합니다.
 
 ### `app.addRecentDocument(path)` _OS X_ _Windows_
 
@@ -445,16 +471,6 @@ Windows에서 사용할 수 있는 JumpList의 [Tasks][tasks] 카테고리에 `t
   아이콘을 가지고 있을 경우, 사용할 아이콘의 인덱스를 이 옵션으로 지정해 주어야 합니다.
   단, 아이콘을 하나만 포함하고 있는 경우 0을 지정하면 됩니다.
 
-### `app.allowNTLMCredentialsForAllDomains(allow)`
-
-* `allow` Boolean
-
-항상 동적으로 HTTP NTLM 또는 Negotiate 인증에 자격 증명을 보낼 것인지 설정합니다.
-
-기본적으로 Electron은 "로컬 인터넷" 사이트 URL에서 NTLM/Kerberos 자격 증명만을
-보냅니다. (같은 도메인 내에서) 그러나 기업 네트워크가 잘못 구성된 경우 종종 작업에
-실패할 수 있습니다. 이때 이 메서드를 통해 모든 URL을 허용할 수 있습니다.
-
 ### `app.makeSingleInstance(callback)`
 
 * `callback` Function
@@ -508,11 +524,18 @@ app.on('ready', () => {
 });
 ```
 
-### `app.setUserActivity(type, userInfo)` _OS X_
+### `app.releaseSingleInstance()`
+
+모든 `makeSingleInstance`에 의해 생성된 제한을 해제합니다. 이 메서드는 다시 여러
+인스턴스의 어플리케이션이 나란히 실행될 수 있도록 합니다.
+
+### `app.setUserActivity(type, userInfo[, webpageURL])` _OS X_
 
 * `type` String - 고유하게 activity를 식별합니다.
   [`NSUserActivity.activityType`][activity-type]을 맵핑합니다.
 * `userInfo` Object - 다른 기기에서 사용하기 위해 저장할 앱-특정 상태.
+* `webpageURL` String - 적당한 앱이 기기에 설치되지 않았을 때 브라우저에서 로드할
+  웹 페이지. 스킴은 반드시 `http` 또는 `https`가 되어야 합니다.
 
 `NSUserActivity`를 만들고 현재 activity에 설정합니다. 이 activity는 이후 다른 기기와
 [Handoff][handoff]할 때 자격으로 사용됩니다.

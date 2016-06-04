@@ -37,8 +37,8 @@ OS X의 네이티브 알림을 구독하며, 해당하는 `event`가 발생하�
 ### `systemPreferences.getUserDefault(key, type)` _OS X_
 
 * `key` String
-* `type` String - `string`, `boolean`, `integer`, `float`, `double`, `url` 값이
-  될 수 있습니다.
+* `type` String - `string`, `boolean`, `integer`, `float`, `double`, `url`,
+  `array`, `dictionary` 값이 될 수 있습니다.
 
 시스템 설정에서 `key`에 해당하는 값을 가져옵니다.
 
@@ -49,6 +49,9 @@ OS X에선 API가 `NSUserDefaults`를 읽어들입니다. 유명한 `key`와 `ty
 * `AppleAquaColorVariant: integer`
 * `AppleHighlightColor: string`
 * `AppleShowScrollBars: string`
+* `NSNavRecentPlaces: array`
+* `NSPreferredWebServices: dictionary`
+* `NSUserDictionaryReplacementItems: array`
 
 ### `systemPreferences.isAeroGlassEnabled()` _Windows_
 

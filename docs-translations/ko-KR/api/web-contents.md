@@ -360,6 +360,41 @@ Returns:
 
 새로운 컨텍스트 메뉴의 제어가 필요할 때 발생하는 이벤트입니다.
 
+### Event: 'select-bluetooth-device'
+
+Returns:
+
+* `event` Event
+* `devices` [Objects]
+  * `deviceName` String
+  * `deviceId` String
+* `callback` Function
+  * `deviceId` String
+
+`navigator.bluetooth.requestDevice`의 호출에 의해 블루투스 기기가 선택되어야 할 때
+발생하는 이벤트입니다. `navigator.bluetooth` API를 사용하려면 `webBluetooth`가
+활성화되어 있어야 합니다. 만약 `event.preventDefault`이 호출되지 않으면, 첫 번째로
+사용 가능한 기기가 선택됩니다. `callback`은 반드시 선택될 `deviceId`와 함께
+호출되어야 하며, 빈 문자열을 `callback`에 보내면 요청이 취소됩니다.
+
+```javascript
+app.commandLine.appendSwitch('enable-web-bluetooth')
+
+app.on('ready', () => {
+  webContents.on('select-bluetooth-device', (event, deviceList, callback) => {
+    event.preventDefault()
+    let result = deviceList.find((device) => {
+      return device.deviceName === 'test'
+    })
+    if (!result) {
+      callback('')
+    } else {
+      callback(result.deviceId)
+    }
+  })
+})
+```
+
 ## Instance Methods
 
 `webContents`객체는 다음과 같은 인스턴스 메서드들을 가지고 있습니다.
@@ -634,7 +669,8 @@ print기능을 사용하지 않는 경우 전체 바이너리 크기를 줄이�
   * `marginsType` Integer - 사용할 마진의 종류를 지정합니다. 0 부터 2 사이 값을 사용할
     수 있고 각각 기본 마진, 마진 없음, 최소 마진입니다.
   * `pageSize` String - 생성되는 PDF의 페이지 크기를 지정합니다. 값은 `A3`, `A4`,
-    `A5`, `Legal`, `Letter` 와 `Tabloid`가 사용될 수 있습니다.
+    `A5`, `Legal`, `Letter`, `Tabloid` 또는 마이크론 단위의 `height` & `width`가
+    포함된 객체를 사용할 수 있습니다.
   * `printBackground` Boolean - CSS 배경을 프린트할지 여부를 정합니다.
   * `printSelectionOnly` Boolean - 선택된 영역만 프린트할지 여부를 정합니다.
   * `landscape` Boolean - landscape을 위해선 `true`를, portrait를 위해선 `false`를
@@ -657,6 +693,8 @@ Chromium의 미리보기 프린팅 커스텀 설정을 이용하여 윈도우의
   landscape: false
 }
 ```
+
+다음은 `webContents.printToPDF`의 예시입니다:
 
 ```javascript
 const {BrowserWindow} = require('electron');

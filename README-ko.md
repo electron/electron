@@ -7,19 +7,18 @@
 
 ### [Electron](https://github.com/electron/electron/) 한국어 참조 문서
 
-:zap: *이전까지 Atom Shell로 불렸지만, Electron으로 변경되었습니다* :zap:
-
 Electron 프레임워크는 JavaScript, HTML 그리고 CSS를 사용하여
 Cross-Platform 데스크톱 어플리케이션을 개발할 수 있도록 해주는 프레임워크입니다.
 [Node.js](https://nodejs.org/)와 [Chromium](http://www.chromium.org)을 기반으로
 만들어졌으며 [Atom Editor](https://github.com/atom/atom)에 사용되고 있습니다.
+더 많은 어플리케이션은 [이곳](http://electron.atom.io/apps)에서 확인하세요.
 
 Electron에 대한 중요한 알림을 받고 싶다면 Twitter에서
 [@ElectronJS](https://twitter.com/electronjs)를 팔로우 하세요.
 
 이 프로젝트는 기여자 규약인 [행동강령](CODE_OF_CONDUCT.md)을 준수합니다. 따라서 이
 프로젝트의 개발에 참여하려면 이 규약을 지켜야 합니다. 받아들일 수 없는 행위를 발견했을
-경우 atom@github.com로 보고하세요.
+경우 electron@github.com로 보고하세요.
 
 ## 다운로드
 

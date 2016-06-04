@@ -1,6 +1,7 @@
 const assert = require('assert')
 const ChildProcess = require('child_process')
 const https = require('https')
+const net = require('net')
 const fs = require('fs')
 const path = require('path')
 const {remote} = require('electron')
@@ -105,6 +106,55 @@ describe('app module', function () {
         assert.equal(code, 123)
         done()
       })
+    })
+  })
+
+  describe('app.relaunch', function () {
+    let server = null
+    const socketPath = process.platform === 'win32' ?
+      '\\\\.\\pipe\\electron-app-relaunch' :
+      '/tmp/electron-app-relaunch'
+
+    beforeEach(function (done) {
+      fs.unlink(socketPath, (error) => {
+        server = net.createServer()
+        server.listen(socketPath)
+        done()
+      })
+    })
+
+    afterEach(function (done) {
+      server.close(() => {
+        if (process.platform === 'win32') {
+          done()
+        } else {
+          fs.unlink(socketPath, (error) => {
+            done()
+          })
+        }
+      })
+    })
+
+    it('relaunches the app', function (done) {
+      this.timeout(100000)
+      let state = 'none'
+      server.once('error', (error) => {
+        done(error)
+      })
+      server.on('connection', (client) => {
+        client.once('data', function (data) {
+          if (String(data) === 'false' && state === 'none') {
+            state = 'first-launch'
+          } else if (String(data) === 'true' && state === 'first-launch') {
+            done()
+          } else {
+            done(`Unexpected state: ${state}`)
+          }
+        })
+      })
+
+      const appPath = path.join(__dirname, 'fixtures', 'api', 'relaunch')
+      ChildProcess.spawn(remote.process.execPath, [appPath])
     })
   })
 

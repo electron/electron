@@ -433,19 +433,19 @@ Service worker에 대한 개발자 도구를 엽니다.
 
 * `action` String - [`<webview>.findInPage`](web-view-tag.md#webviewtagfindinpage)
   요청이 종료되었을 때 일어날 수 있는 작업을 지정합니다.
-  * `clearSelection` - 선택을 일반 선택으로 변경합니다.
-  * `keepSelection` - 선택을 취소합니다.
+  * `clearSelection` - 선택을 취소합니다.
+  * `keepSelection` - 선택을 일반 선택으로 변경합니다.
   * `activateSelection` - 포커스한 후 선택된 노드를 클릭합니다.
 
 제공된 `action`에 대한 `webContents`의 모든 `findInPage` 요청을 중지합니다.
 
 ### `<webview>.print([options])`
 
-Webview 페이지를 인쇄합니다. `webContents.print([options])` 메서드와 같습니다.
+`webview` 페이지를 인쇄합니다. `webContents.print([options])` 메서드와 같습니다.
 
 ### `<webview>.printToPDF(options, callback)`
 
-Webview 페이지를 PDF 형식으로 인쇄합니다.
+`webview` 페이지를 PDF 형식으로 인쇄합니다.
 `webContents.printToPDF(options, callback)` 메서드와 같습니다.
 
 ### `<webview>.send(channel[, arg1][, arg2][, ...])`
@@ -463,7 +463,7 @@ Webview 페이지를 PDF 형식으로 인쇄합니다.
 
 * `event` Object
 
-페이지에 input `event`를 보냅니다.
+페이지에 입력 `event`를 보냅니다.
 
 `event` 객체에 대해 자세히 알아보려면 [webContents.sendInputEvent](web-contents.md##webcontentssendinputeventevent)를
 참고하세요.
@@ -617,7 +617,7 @@ webview.addEventListener('found-in-page', (e) => {
     webview.stopFindInPage('keepSelection');
 });
 
-const rquestId = webview.findInPage('test');
+const requestId = webview.findInPage('test');
 ```
 
 ### Event: 'new-window'

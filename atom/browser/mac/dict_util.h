@@ -10,7 +10,7 @@
 #include "base/memory/scoped_ptr.h"
 
 namespace base {
-class Value;
+class ListValue;
 class DictionaryValue;
 }
 
@@ -20,6 +20,8 @@ NSDictionary* DictionaryValueToNSDictionary(const base::DictionaryValue& value);
 
 std::unique_ptr<base::DictionaryValue> NSDictionaryToDictionaryValue(
     NSDictionary* dict);
+
+std::unique_ptr<base::ListValue> NSArrayToListValue(NSArray* arr);
 
 }  // namespace atom
 

@@ -276,6 +276,33 @@ Exits immediately with `exitCode`.
 All windows will be closed immediately without asking user and the `before-quit`
 and `will-quit` events will not be emitted.
 
+### `app.relaunch([options])`
+
+* `options` Object (optional)
+  * `args` Array (optional)
+  * `execPath` String (optional)
+
+Relaunches the app when current instance exits.
+
+By default the new instance will use the same working directory and command line
+arguments with current instance. When `args` is specified, the `args` will be
+passed as command line arguments instead. When `execPath` is specified, the
+`execPath` will be executed for relaunch instead of current app.
+
+Note that this method does not quit the app when executed, you have to call
+`app.quit` or `app.exit` after calling `app.relaunch` to make the app restart.
+
+When `app.relaunch` is called for multiple times, multiple instances will be
+started after current instance exited.
+
+An example of restarting current instance immediately and adding a new command
+line argument to the new instance:
+
+```javascript
+app.relaunch({args: process.argv.slice(1) + ['--relaunch']})
+app.exit(0)
+```
+
 ### `app.focus()`
 
 On Linux, focuses on the first visible window. On OS X, makes the application
