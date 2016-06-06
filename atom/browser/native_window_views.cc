@@ -89,6 +89,21 @@ bool IsAltModifier(const content::NativeWebKeyboardEvent& event) {
          (modifiers == (Modifiers::AltKey | Modifiers::IsRight));
 }
 
+#if defined(USE_X11)
+int SendClientEvent(XDisplay* display, ::Window window, const char* msg) {
+  XEvent event = {};
+  event.xclient.type = ClientMessage;
+  event.xclient.send_event = True;
+  event.xclient.message_type = XInternAtom(display, msg, False);
+  event.xclient.window = window;
+  event.xclient.format = 32;
+  XSendEvent(display, DefaultRootWindow(display), False,
+             SubstructureRedirectMask | SubstructureNotifyMask, &event);
+  XFlush(display);
+  return True;
+}
+#endif
+
 class NativeWindowClientView : public views::ClientView {
  public:
   NativeWindowClientView(views::Widget* widget,
@@ -298,10 +313,19 @@ void NativeWindowViews::CloseImmediately() {
 }
 
 void NativeWindowViews::Focus(bool focus) {
-  if (focus)
+  if (focus) {
+#if defined(OS_WIN)
     window_->Activate();
-  else
+#elif defined(USE_X11)
+    // The "Activate" implementation of Chromium is not reliable on Linux.
+    ::Window window = GetAcceleratedWidget();
+    XDisplay* xdisplay = gfx::GetXDisplay();
+    SendClientEvent(xdisplay, window, "_NET_ACTIVE_WINDOW");
+    XMapRaised(xdisplay, window);
+#endif
+  } else {
     window_->Deactivate();
+  }
 }
 
 bool NativeWindowViews::IsFocused() {
