@@ -863,7 +863,7 @@ describe('browser-window module', function () {
           w.webContents.openDevTools({mode: 'bottom'})
 
           ipcMain.once('answer', function (event, message) {
-            assert.equal(message, 'extension loaded')
+            assert.equal(message.runtimeId, 'foo')
             done()
           })
         })
@@ -873,8 +873,8 @@ describe('browser-window module', function () {
         it('creates the extension', function (done) {
           w.webContents.openDevTools({mode: 'undocked'})
 
-          ipcMain.once('answer', function (event, message) {
-            assert.equal(message, 'extension loaded')
+          ipcMain.once('answer', function (event, message, extensionId) {
+            assert.equal(message.runtimeId, 'foo')
             done()
           })
         })
