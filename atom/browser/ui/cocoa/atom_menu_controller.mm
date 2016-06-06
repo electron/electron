@@ -33,7 +33,7 @@ Role kRolesMap[] = {
   { @selector(copy:), "copy" },
   { @selector(paste:), "paste" },
   { @selector(delete:), "delete" },
-  { @selector(pasteAndMatchStyle:), "paste-and-match-style" },
+  { @selector(pasteAndMatchStyle:), "pasteandmatchstyle" },
   { @selector(selectAll:), "selectall" },
   { @selector(performMiniaturize:), "minimize" },
   { @selector(performClose:), "close" },

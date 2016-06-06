@@ -46,7 +46,9 @@ The `role` property can have following values:
 * `cut`
 * `copy`
 * `paste`
+* `pasteandmatchstyle`
 * `selectall`
+* `delete`
 * `minimize` - Minimize current window
 * `close` - Close current window
 
