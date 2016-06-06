@@ -111,7 +111,7 @@ class App : public AtomBrowserClient::Delegate,
       const ProcessSingleton::NotificationCallback& callback);
   void ReleaseSingleInstance();
   bool Relaunch(mate::Arguments* args);
-
+  void DisableHardwareAcceleration(mate::Arguments* args);
 #if defined(USE_NSS_CERTS)
   void ImportCertificate(const base::DictionaryValue& options,
                          const net::CompletionCallback& callback);

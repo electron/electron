@@ -447,6 +447,15 @@ bool App::Relaunch(mate::Arguments* js_args) {
   return relauncher::RelaunchApp(argv);
 }
 
+void App::DisableHardwareAcceleration(mate::Arguments* args) {
+  if (Browser::Get()->is_ready()) {
+    args->ThrowError("app.disableHardwareAcceleration() can only be called "
+                     "before app is ready");
+    return;
+  }
+  content::GpuDataManager::GetInstance()->DisableHardwareAcceleration();
+}
+
 #if defined(USE_NSS_CERTS)
 void App::ImportCertificate(
     const base::DictionaryValue& options,
@@ -528,7 +537,9 @@ void App::BuildPrototype(
 #endif
       .SetMethod("makeSingleInstance", &App::MakeSingleInstance)
       .SetMethod("releaseSingleInstance", &App::ReleaseSingleInstance)
-      .SetMethod("relaunch", &App::Relaunch);
+      .SetMethod("relaunch", &App::Relaunch)
+      .SetMethod("disableHardwareAcceleration",
+                 &App::DisableHardwareAcceleration);
 }
 
 }  // namespace api
