@@ -680,6 +680,15 @@ void NativeWindowViews::SetIgnoreMouseEvents(bool ignore) {
   else
     ex_style &= ~(WS_EX_TRANSPARENT | WS_EX_LAYERED);
   ::SetWindowLong(GetAcceleratedWidget(), GWL_EXSTYLE, ex_style);
+#elif defined(USE_X11)
+  if (ignore) {
+    XRectangle r = {0, 0, 1, 1};
+    XShapeCombineRectangles(gfx::GetXDisplay(), GetAcceleratedWidget(),
+                            ShapeInput, 0, 0, &r, 1, ShapeSet, YXBanded);
+  } else {
+    XShapeCombineMask(gfx::GetXDisplay(), GetAcceleratedWidget(),
+                      ShapeInput, 0, 0, None, ShapeSet);
+  }
 #endif
 }
 
