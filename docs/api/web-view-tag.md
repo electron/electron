@@ -490,6 +490,10 @@ Sends an input `event` to the page.
 See [webContents.sendInputEvent](web-contents.md##webcontentssendinputeventevent)
 for detailed description of `event` object.
 
+### `<webview>.showDefinitionForSelection()` _OS X_
+
+Shows pop-up dictionary that searches the selected word on the page.
+
 ### `<webview>.getWebContents()`
 
 Returns the [WebContents](web-contents.md) associated with this `webview`.
