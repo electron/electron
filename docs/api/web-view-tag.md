@@ -782,6 +782,14 @@ Emitted when a page's theme color changes. This is usually due to encountering a
 <meta name='theme-color' content='#ff0000'>
 ```
 
+### Event: 'update-target-url'
+
+Returns:
+
+* `url` String
+
+Emitted when mouse moves over a link or the keyboard moves the focus to a link.
+
 ### Event: 'devtools-opened'
 
 Emitted when DevTools is opened.
