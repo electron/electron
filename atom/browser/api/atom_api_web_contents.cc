@@ -1365,6 +1365,8 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   dict.SetMethod("_setWrapWebContents", &atom::api::SetWrapWebContents);
   dict.SetMethod("fromId",
                  &mate::TrackableObject<atom::api::WebContents>::FromWeakMapID);
+  dict.SetMethod("getAllWebContents",
+                 &mate::TrackableObject<atom::api::WebContents>::GetAll);
 }
 
 }  // namespace
