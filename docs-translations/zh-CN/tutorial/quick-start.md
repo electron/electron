@@ -19,7 +19,7 @@ Electron 可以让你使用纯 JavaScript 调用丰富的原生 APIs 来创造�
 
 由于在页面里管理原生 GUI 资源是非常危险而且容易造成资源泄露，所以在页面调用 GUI 相关的 APIs 是不被允许的。如果你想在网页里使用 GUI 操作，其对应的渲染进程必须与主进程进行通讯，请求主进程进行相关的 GUI 操作。
 
-在 Electron，我们提供几种方法用于主进程和渲染进程之间的通讯。像 `[ipcRenderer][1]` 和 `[ipcMain][2]` 模块用于发送消息， `[remote][3]` 模块用于 RPC 方式通讯。这些内容都可以在一个 FAQ 中查看 `［how to share data between web pages］[4]`。
+在 Electron，我们提供几种方法用于主进程和渲染进程之间的通讯。像 [ipcRenderer][1] 和 [ipcMain][2] 模块用于发送消息， [remote][3] 模块用于 RPC 方式通讯。这些内容都可以在一个 FAQ 中查看 [how to share data between web pages][4]。
 
 # 打造你第一个 Electron 应用
 大体上，一个 Electron 应用的目录结构如下：
@@ -116,7 +116,7 @@ app.on('activate', () => {
 一旦你创建了最初的 `main.js`， `index.html` 和 `package.json` 这几个文件，你可能会想尝试在本地运行并测试，看看是不是和期望的那样正常运行。
 
 ## electron-prebuilt
-`[electron-prebuilt][5]` 是一个 `npm` 模块，包含所使用的 Electron 预编译版本。 
+[electron-prebuilt][5] 是一个 `npm` 模块，包含所使用的 Electron 预编译版本。 
 如果你已经用 `npm` 全局安装了它，你只需要按照如下方式直接运行你的应用：
 ```bash
 electron .
@@ -140,15 +140,15 @@ $ ./electron/electron your-app/
 ```bash
 $ ./Electron.app/Contents/MacOS/Electron your-app/
 ```
-`Electron.app` 里面是 Electron 发布包，你可以在 `[这里][6]` 下载到。
+`Electron.app` 里面是 Electron 发布包，你可以在 [这里][6] 下载到。
 
 # 以发行版本运行
-在你完成了你的应用后，你可以按照 `[应用部署][7]` 指导发布一个版本，并且以已经打包好的形式运行应用。
+在你完成了你的应用后，你可以按照 [应用部署][7] 指导发布一个版本，并且以已经打包好的形式运行应用。
 
 # 参照下面例子
-复制并且运行这个库 `[atom/electron-quick-start][8]`。
+复制并且运行这个库 [atom/electron-quick-start][8]。
 
-*注意：*运行时需要你的系统已经安装了 `[Git][9]` 和 `[Node.js][10]`（包含 `[npm][11]`）。
+*注意：*运行时需要你的系统已经安装了 [Git][9] 和 [Node.js][10]（包含 [npm][11]）。
 
 ```bash
 # Clone the repository
