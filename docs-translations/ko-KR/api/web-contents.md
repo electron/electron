@@ -284,6 +284,15 @@ Returns:
 <meta name='theme-color' content='#ff0000'>
 ```
 
+### Event: 'update-target-url'
+
+Returns:
+
+* `event` Event
+* `url` URL
+
+마우스나 키보드를 사용해 링크에 포커스를 할 때 발생하는 이벤트입니다.
+
 ### Event: 'cursor-changed'
 
 Returns:
@@ -590,6 +599,12 @@ CSS 코드를 현재 웹 페이지에 삽입합니다.
 * `text` String
 
 웹 페이지에서 `replaceMisspelling` 편집 커맨드를 실행합니다.
+
+### `webContents.insertText(text)`
+
+* `text` String
+
+포커스된 요소에 `text`를 삽입합니다.
 
 ### `webContents.findInPage(text[, options])`
 
