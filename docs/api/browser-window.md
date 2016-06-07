@@ -177,6 +177,10 @@ The `webPreferences` option is an object that can have following properties:
 * `blinkFeatures` String - A list of feature strings separated by `,`, like
   `CSSVariables,KeyboardEventKey`. The full list of supported feature strings
   can be found in the [RuntimeEnabledFeatures.in][blink-feature-string] file.
+* `disableBlinkFeatures` String - A list of feature strings separated by `,`,
+  like `CSSVariables,KeyboardEventKey`. The full list of supported feature
+  strings can be found in the [RuntimeEnabledFeatures.in][blink-feature-string]
+  file.
 * `defaultFontFamily` Object - Sets the default font for the font-family.
   * `standard` String - Defaults to `Times New Roman`.
   * `serif` String - Defaults to `Times New Roman`.
