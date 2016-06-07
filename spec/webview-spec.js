@@ -929,6 +929,7 @@ describe('<webview> tag', function () {
 
     ipcMain.once('answer', function (event, message) {
       assert.equal(message.runtimeId, 'foo')
+      assert.notEqual(message.tabId, w.webContents.id)
       done()
     })
   })
