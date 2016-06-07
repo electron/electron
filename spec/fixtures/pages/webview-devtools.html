@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+  </head>
+  <body>
+    <webview nodeintegration src="./a.html"></webview>
+    <script>
+        var wv = document.querySelector('webview')
+        wv.addEventListener('dom-ready', () => {
+          const webContents = wv.getWebContents()
+          webContents.on('devtools-opened', function () {
+            var showPanelIntevalId = setInterval(function () {
+              if (webContents.devToolsWebContents) {
+                webContents.devToolsWebContents.executeJavaScript('(' + (function () {
+                  var lastPanelId = WebInspector.inspectorView._tabbedPane._tabs.peekLast().id
+                  WebInspector.inspectorView.showPanel(lastPanelId)
+                }).toString() + ')()')
+              } else {
+                clearInterval(showPanelIntevalId)
+              }
+            }, 100)
+          })
+
+          wv.openDevTools()
+        })
+      </script>
+    </script>
+  </body>
+</html>
