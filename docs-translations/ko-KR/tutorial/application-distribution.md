@@ -117,25 +117,7 @@ MyApp.app/Contents
 
 또한 Electron 소스 코드를 다시 빌드할 때 어플리케이션 이름을 변경할 수 있습니다.
 
-`GYP_DEFINES` 환경변수를 사용하여 다음과 같이 다시 빌드할 수 있습니다:
-
-__Windows__
-
-```bash
-> set "GYP_DEFINES=project_name=myapp product_name=MyApp"
-> python script\clean.py
-> python script\bootstrap.py
-> python script\build.py -c R -t myapp
-```
-
-__Bash__
-
-```bash
-$ export GYP_DEFINES="project_name=myapp product_name=MyApp"
-$ script/clean.py
-$ script/bootstrap.py
-$ script/build.py -c Release -t myapp
-```
+`atom.gyp` 파일을 수정하여 다음과 같이 다시 빌드할 수 있습니다:
 
 ### grunt-build-atom-shell
 
@@ -175,16 +157,16 @@ Electron의 개발자로써, Electron을 매우 많은 시나리오에서도 작
 
 3. 다음의 환경 변수들을 설정합니다:
 
-* `ELECTRON_GITHUB_TOKEN` - GitHub에 릴리즈를 만들 수 있는 토큰.
-* `ELECTRON_S3_ACCESS_KEY`, `ELECTRON_S3_BUCKET`, `ELECTRON_S3_SECRET_KEY` -
+ * `ELECTRON_GITHUB_TOKEN` - GitHub에 릴리즈를 만들 수 있는 토큰.
+ * `ELECTRON_S3_ACCESS_KEY`, `ELECTRON_S3_BUCKET`, `ELECTRON_S3_SECRET_KEY` -
   node.js 헤더 뿐만 아니라 심볼을 업로드할 장소.
-* `ELECTRON_RELEASE` - `true`로 지정하고 업로드 부분이 실행되면, 설정되지 않은
+ * `ELECTRON_RELEASE` - `true`로 지정하고 업로드 부분이 실행되면, 설정되지 않은
   부분을 남기고 `surf-build`가 CI-type 확인을 실행합니다. 모든 pull request를
   실행할 때 적합합니다.
-* `CI` - `true` 또는 다른 것을 지정하면 실패합니다.
-* `GITHUB_TOKEN` -  `ELECTRON_GITHUB_TOKEN`와 같게 설정
-* `SURF_TEMP` - Windows에선 `C:\Temp`로 설정하면 긴 경로 문제를 해결할 수 있습니다.
-* `TARGET_ARCH` - `ia32` 또는 `x64`를 지정.
+ * `CI` - `true` 또는 다른 것을 지정하면 실패합니다.
+ * `GITHUB_TOKEN` -  `ELECTRON_GITHUB_TOKEN`와 같게 설정
+ * `SURF_TEMP` - Windows에선 `C:\Temp`로 설정하면 긴 경로 문제를 해결할 수 있습니다.
+ * `TARGET_ARCH` - `ia32` 또는 `x64`를 지정.
 
 4. Electron에 기여를 하는 기여자라면, _반드시_ `script/upload.py`에서 포크를 위해
   `ELECTRON_REPO`를 설정해야 합니다. (`MYORG/electron`)
