@@ -176,8 +176,7 @@ The `webPreferences` option is an object that can have following properties:
   OS X. Default is `false`.
 * `blinkFeatures` String - A list of feature strings separated by `,`, like
   `CSSVariables,KeyboardEventKey`. The full list of supported feature strings
-  can be found in the [setFeatureEnabledFromString][blink-feature-string]
-  function.
+  can be found in the [RuntimeEnabledFeatures.in][blink-feature-string] file.
 * `defaultFontFamily` Object - Sets the default font for the font-family.
   * `standard` String - Defaults to `Times New Roman`.
   * `serif` String - Defaults to `Times New Roman`.
@@ -938,4 +937,4 @@ All mouse events happened in this window will be passed to the window bellow
 this window, but if this window has focus, it will still receive keyboard
 events.
 
-[blink-feature-string]: https://code.google.com/p/chromium/codesearch#chromium/src/out/Debug/gen/blink/platform/RuntimeEnabledFeatures.cpp&sq=package:chromium&type=cs&l=576
+[blink-feature-string]: https://cs.chromium.org/chromium/src/third_party/WebKit/Source/platform/RuntimeEnabledFeatures.in
