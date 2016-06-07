@@ -193,10 +193,16 @@ bool ScopedDisableResize::disable_resize_ = false;
 - (void)windowDidEnterFullScreen:(NSNotification*)notification {
   shell_->NotifyWindowEnterFullScreen();
 
+  // For frameless window we don't set title for normal mode since the title
+  // bar is expected to be empty, but after entering fullscreen mode we have
+  // to set one, because title bar is visible here.
+  NSWindow* window = shell_->GetNativeWindow();
+  if (shell_->transparent() || !shell_->has_frame())
+    [window setTitle:base::SysUTF8ToNSString(shell_->GetTitle())];
+
   // Restore the native toolbar immediately after entering fullscreen, if we do
   // this before leaving fullscreen, traffic light buttons will be jumping.
   if (shell_->should_hide_native_toolbar_in_fullscreen()) {
-    NSWindow* window = shell_->GetNativeWindow();
     base::scoped_nsobject<NSToolbar> toolbar(
         [[NSToolbar alloc] initWithIdentifier:@"titlebarStylingToolbar"]);
     [toolbar setShowsBaselineSeparator:NO];
@@ -209,6 +215,11 @@ bool ScopedDisableResize::disable_resize_ = false;
 }
 
 - (void)windowWillExitFullScreen:(NSNotification*)notification {
+  // Restore the title bar to empty.
+  NSWindow* window = shell_->GetNativeWindow();
+  if (shell_->transparent() || !shell_->has_frame())
+    [window setTitle:@""];
+
   // Turn off the style for toolbar.
   if (shell_->should_hide_native_toolbar_in_fullscreen())
     shell_->SetStyleMask(false, NSFullSizeContentViewWindowMask);
@@ -781,6 +792,8 @@ void NativeWindowMac::Center() {
 }
 
 void NativeWindowMac::SetTitle(const std::string& title) {
+  title_ = title;
+
   // We don't want the title to show in transparent or frameless window.
   if (transparent() || !has_frame())
     return;
@@ -789,7 +802,7 @@ void NativeWindowMac::SetTitle(const std::string& title) {
 }
 
 std::string NativeWindowMac::GetTitle() {
-  return base::SysNSStringToUTF8([window_ title]);
+  return title_;
 }
 
 void NativeWindowMac::FlashFrame(bool flash) {

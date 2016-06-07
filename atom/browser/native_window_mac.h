@@ -139,6 +139,9 @@ class NativeWindowMac : public NativeWindow {
   // The presentation options before entering kiosk mode.
   NSApplicationPresentationOptions kiosk_options_;
 
+  // The window title, for frameless windows we only set title when fullscreen.
+  std::string title_;
+
   // Force showing the buttons for frameless window.
   bool force_show_buttons_;
 
