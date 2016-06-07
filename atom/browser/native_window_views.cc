@@ -672,6 +672,26 @@ bool NativeWindowViews::HasShadow() {
   return wm::GetShadowType(GetNativeWindow()) != wm::SHADOW_TYPE_NONE;
 }
 
+void NativeWindowViews::SetIgnoreMouseEvents(bool ignore) {
+#if defined(OS_WIN)
+  LONG ex_style = ::GetWindowLong(GetAcceleratedWidget(), GWL_EXSTYLE);
+  if (ignore)
+    ex_style |= (WS_EX_TRANSPARENT | WS_EX_LAYERED);
+  else
+    ex_style &= ~(WS_EX_TRANSPARENT | WS_EX_LAYERED);
+  ::SetWindowLong(GetAcceleratedWidget(), GWL_EXSTYLE, ex_style);
+#elif defined(USE_X11)
+  if (ignore) {
+    XRectangle r = {0, 0, 1, 1};
+    XShapeCombineRectangles(gfx::GetXDisplay(), GetAcceleratedWidget(),
+                            ShapeInput, 0, 0, &r, 1, ShapeSet, YXBanded);
+  } else {
+    XShapeCombineMask(gfx::GetXDisplay(), GetAcceleratedWidget(),
+                      ShapeInput, 0, 0, None, ShapeSet);
+  }
+#endif
+}
+
 void NativeWindowViews::SetMenu(ui::MenuModel* menu_model) {
   if (menu_model == nullptr) {
     // Remove accelerators

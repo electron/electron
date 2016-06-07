@@ -928,10 +928,14 @@ Returns whether the window is visible on all workspaces.
 
 **Note:** This API always returns false on Windows.
 
-### `win.setIgnoreMouseEvents(ignore)` _OS X_
+### `win.setIgnoreMouseEvents(ignore)`
 
 * `ignore` Boolean
 
-Ignore all moused events that happened in the window.
+Makes the window ignore all mouse events.
+
+All mouse events happened in this window will be passed to the window bellow
+this window, but if this window has focus, it will still receive keyboard
+events.
 
 [blink-feature-string]: https://code.google.com/p/chromium/codesearch#chromium/src/out/Debug/gen/blink/platform/RuntimeEnabledFeatures.cpp&sq=package:chromium&type=cs&l=576
