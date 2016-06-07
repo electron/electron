@@ -389,6 +389,11 @@ void WebContents::ActivateContents(content::WebContents* source) {
   Emit("activate");
 }
 
+void WebContents::UpdateTargetURL(content::WebContents* source,
+                                  const GURL& url) {
+  Emit("update-target-url", url);
+}
+
 bool WebContents::IsPopupOrPanel(const content::WebContents* source) const {
   return type_ == BROWSER_WINDOW;
 }

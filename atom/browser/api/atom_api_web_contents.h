@@ -182,6 +182,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
                     const gfx::Rect& pos) override;
   void CloseContents(content::WebContents* source) override;
   void ActivateContents(content::WebContents* contents) override;
+  void UpdateTargetURL(content::WebContents* source, const GURL& url) override;
   bool IsPopupOrPanel(const content::WebContents* source) const override;
   void HandleKeyboardEvent(
       content::WebContents* source,
