@@ -65,3 +65,8 @@ The `HOME=~/.electron-gyp` changes where to find development headers. The
 `--target=0.29.1` is version of Electron. The `--dist-url=...` specifies
 where to download the headers. The `--arch=x64` says the module is built for
 64bit system.
+
+### Packaging and signing apps with native modules
+
+Native modules need to be signed. If using electron-osx-sign, be sure to include the path to the built binaries in the argument list (eg electron-osx-sign yourapp/YourApp.app yourapp/YourApp.app/Contents/Resources/app/node_modules/nativemodule/build/release/nativemodule). Also note that native modules may have intermediate files produced which should not be included (as they would also need to be signed). Add --ignore=.+\.o$ to your electron-packager build step to ignore these files (their unsigned inclusion will result in the ITMS-90135 error).
+
