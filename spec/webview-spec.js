@@ -913,7 +913,7 @@ describe('<webview> tag', function () {
     w.loadURL('file://' + fixtures + '/pages/webview-visibilitychange.html')
   })
 
-  it('loads devtools extension registered on the parent window', function (done) {
+  it('loads devtools extensions registered on the parent window', function (done) {
     this.timeout(10000)
 
     w = new BrowserWindow({
