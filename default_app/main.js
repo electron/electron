@@ -81,6 +81,15 @@ app.once('ready', () => {
           role: 'paste'
         },
         {
+          label: 'Paste and Match Style',
+          accelerator: 'Shift+Command+V',
+          role: 'pasteandmatchstyle'
+        },
+        {
+          label: 'Delete',
+          role: 'delete'
+        },
+        {
           label: 'Select All',
           accelerator: 'CmdOrCtrl+A',
           role: 'selectall'
@@ -210,7 +219,21 @@ app.once('ready', () => {
         }
       ]
     })
-    template[3].submenu.push(
+    template[3].submenu = [
+      {
+        label: 'Close',
+        accelerator: 'CmdOrCtrl+W',
+        role: 'close'
+      },
+      {
+        label: 'Minimize',
+        accelerator: 'CmdOrCtrl+M',
+        role: 'minimize'
+      },
+      {
+        label: 'Zoom',
+        role: 'zoom'
+      },
       {
         type: 'separator'
       },
@@ -218,7 +241,7 @@ app.once('ready', () => {
         label: 'Bring All to Front',
         role: 'front'
       }
-    )
+    ]
   }
 
   const menu = Menu.buildFromTemplate(template)
