@@ -864,6 +864,7 @@ describe('browser-window module', function () {
 
           ipcMain.once('answer', function (event, message) {
             assert.equal(message.runtimeId, 'foo')
+            assert.equal(message.tabId, w.webContents.id)
             done()
           })
         })
@@ -875,6 +876,7 @@ describe('browser-window module', function () {
 
           ipcMain.once('answer', function (event, message, extensionId) {
             assert.equal(message.runtimeId, 'foo')
+            assert.equal(message.tabId, w.webContents.id)
             done()
           })
         })
