@@ -8,10 +8,13 @@ const url = require('url')
 
 // Parse command line options.
 const argv = process.argv.slice(1)
-const option = { file: null, help: null, version: null, webdriver: null, modules: [] }
+const option = { file: null, help: null, version: null, abi: null, webdriver: null, modules: [] }
 for (let i = 0; i < argv.length; i++) {
   if (argv[i] === '--version' || argv[i] === '-v') {
     option.version = true
+    break
+  } else if (argv[i] === '--abi') {
+    option.abi = true
     break
   } else if (argv[i].match(/^--app=/)) {
     option.file = argv[i].split('=')[1]
@@ -304,6 +307,9 @@ if (option.file && !option.webdriver) {
 } else if (option.version) {
   console.log('v' + process.versions.electron)
   process.exit(0)
+} else if (option.abi) {
+  console.log(process.versions.modules)
+  process.exit(0)
 } else if (option.help) {
   const helpMessage = `Electron ${process.versions.electron} - Build cross platform desktop apps with JavaScript, HTML, and CSS
 
@@ -321,7 +327,8 @@ if (option.file && !option.webdriver) {
     -h, --help            Print this usage message.
     -i, --interactive     Open a REPL to the main process.
     -r, --require         Module to preload (option can be repeated)
-    -v, --version         Print the version.`
+    -v, --version         Print the version.
+    --abi                 Print the application binary interface.`
   console.log(helpMessage)
   process.exit(0)
 } else if (option.interactive) {
