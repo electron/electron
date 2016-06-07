@@ -1095,7 +1095,7 @@ void WebContents::StopFindInPage(content::StopFindAction action) {
 }
 
 void WebContents::ShowDefinitionForSelection() {
-#if defined(OS_WIN)
+#if defined(OS_MACOSX)
   const auto view = web_contents()->GetRenderWidgetHostView();
   if (view)
     view->ShowDefinitionForSelection();
