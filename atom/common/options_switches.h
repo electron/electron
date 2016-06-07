@@ -58,6 +58,7 @@ extern const char kExperimentalCanvasFeatures[];
 extern const char kOpenerID[];
 extern const char kScrollBounce[];
 extern const char kBlinkFeatures[];
+extern const char kDisableBlinkFeatures[];
 
 }   // namespace options
 

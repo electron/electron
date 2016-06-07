@@ -109,6 +109,9 @@ const char kScrollBounce[] = "scrollBounce";
 // Enable blink features.
 const char kBlinkFeatures[] = "blinkFeatures";
 
+// Disable blink features.
+const char kDisableBlinkFeatures[] = "disableBlinkFeatures";
+
 }  // namespace options
 
 namespace switches {
