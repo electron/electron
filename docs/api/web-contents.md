@@ -957,6 +957,10 @@ win.webContents.on('did-finish-load', () => {
 });
 ```
 
+### `webContents.showDefinitionForSelection()` _OS X_
+
+Shows pop-up dictionary that searches the selected word on the page.
+
 ## Instance Properties
 
 `WebContents` objects also have the following properties:
