@@ -885,7 +885,7 @@ The `flags` is an array that can include following `String`s:
 
 ### `win.showDefinitionForSelection()` _OS X_
 
-Shows pop-up dictionary that searches the selected word on the page.
+Same as `webContents.showDefinitionForSelection()`.
 
 ### `win.setIcon(icon)` _Windows_ _Linux_
 
