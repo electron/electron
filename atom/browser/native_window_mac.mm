@@ -933,17 +933,6 @@ void NativeWindowMac::SetOverlayIcon(const gfx::Image& overlay,
                                      const std::string& description) {
 }
 
-void NativeWindowMac::ShowDefinitionForSelection() {
-  // TODO(kevinsawicki): Deprecate and remove this method in 2.0 in favor of
-  // calling it directly on webContents.
-  if (!web_contents())
-    return;
-  auto rwhv = web_contents()->GetRenderWidgetHostView();
-  if (!rwhv)
-    return;
-  rwhv->ShowDefinitionForSelection();
-}
-
 void NativeWindowMac::SetVisibleOnAllWorkspaces(bool visible) {
   SetCollectionBehavior(visible, NSWindowCollectionBehaviorCanJoinAllSpaces);
 }

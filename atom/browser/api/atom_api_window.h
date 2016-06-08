@@ -169,10 +169,6 @@ class Window : public mate::TrackableObject<Window>,
   void UnhookAllWindowMessages();
 #endif
 
-#if defined(OS_MACOSX)
-  void ShowDefinitionForSelection();
-#endif
-
 #if defined(TOOLKIT_VIEWS)
   void SetIcon(mate::Handle<NativeImage> icon);
 #endif
