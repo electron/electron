@@ -1099,8 +1099,6 @@ void WebContents::ShowDefinitionForSelection() {
   const auto view = web_contents()->GetRenderWidgetHostView();
   if (view)
     view->ShowDefinitionForSelection();
-#else
-  NOTIMPLEMENTED();
 #endif
 }
 
