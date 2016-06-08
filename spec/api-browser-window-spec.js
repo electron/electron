@@ -883,6 +883,45 @@ describe('browser-window module', function () {
       })
     })
 
+    it('works when used with partitions', function (done) {
+      this.timeout(10000)
+
+      if (w != null) {
+        w.destroy()
+      }
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          partition: 'temp'
+        }
+      })
+
+      var extensionPath = path.join(__dirname, 'fixtures', 'devtools-extensions', 'foo')
+      BrowserWindow.removeDevToolsExtension('foo')
+      BrowserWindow.addDevToolsExtension(extensionPath)
+
+      w.webContents.on('devtools-opened', function () {
+        var showPanelIntevalId = setInterval(function () {
+          if (w && w.devToolsWebContents) {
+            w.devToolsWebContents.executeJavaScript('(' + (function () {
+              var lastPanelId = WebInspector.inspectorView._tabbedPane._tabs.peekLast().id
+              WebInspector.inspectorView.showPanel(lastPanelId)
+            }).toString() + ')()')
+          } else {
+            clearInterval(showPanelIntevalId)
+          }
+        }, 100)
+      })
+
+      w.loadURL('about:blank')
+      w.webContents.openDevTools({mode: 'bottom'})
+
+      ipcMain.once('answer', function (event, message) {
+        assert.equal(message.runtimeId, 'foo')
+        done()
+      })
+    })
+
     it('serializes the registered extensions on quit', function () {
       var extensionName = 'foo'
       var extensionPath = path.join(__dirname, 'fixtures', 'devtools-extensions', extensionName)
