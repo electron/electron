@@ -334,10 +334,6 @@ void NativeWindow::CapturePage(const gfx::Rect& rect,
       kBGRA_8888_SkColorType);
 }
 
-void NativeWindow::ShowDefinitionForSelection() {
-  NOTIMPLEMENTED();
-}
-
 void NativeWindow::SetAutoHideMenuBar(bool auto_hide) {
 }
 

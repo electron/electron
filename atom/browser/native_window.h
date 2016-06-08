@@ -179,9 +179,6 @@ class NativeWindow : public base::SupportsUserData,
   virtual void CapturePage(const gfx::Rect& rect,
                            const CapturePageCallback& callback);
 
-  // Show popup dictionary.
-  virtual void ShowDefinitionForSelection();
-
   // Toggle the menu bar.
   virtual void SetAutoHideMenuBar(bool auto_hide);
   virtual bool IsMenuBarAutoHide();
