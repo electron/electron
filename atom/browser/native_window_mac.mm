@@ -933,15 +933,6 @@ void NativeWindowMac::SetOverlayIcon(const gfx::Image& overlay,
                                      const std::string& description) {
 }
 
-void NativeWindowMac::ShowDefinitionForSelection() {
-  if (!web_contents())
-    return;
-  auto rwhv = web_contents()->GetRenderWidgetHostView();
-  if (!rwhv)
-    return;
-  rwhv->ShowDefinitionForSelection();
-}
-
 void NativeWindowMac::SetVisibleOnAllWorkspaces(bool visible) {
   SetCollectionBehavior(visible, NSWindowCollectionBehaviorCanJoinAllSpaces);
 }
