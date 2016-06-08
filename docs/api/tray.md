@@ -29,12 +29,12 @@ __Platform limitations:__
 * When app indicator is used on Linux, the `click` event is ignored.
 * On Linux in order for changes made to individual `MenuItem`s to take effect,
   you have to call `setContextMenu` again. For example:
-* On Windows it is recommended to use `ICO` icons to get best visual effects.
 
 ```javascript
 contextMenu.items[2].checked = false;
 appIcon.setContextMenu(contextMenu);
 ```
+* On Windows it is recommended to use `ICO` icons to get best visual effects.
 
 If you want to keep exact same behaviors on all platforms, you should not
 rely on the `click` event and always attach a context menu to the tray icon.
