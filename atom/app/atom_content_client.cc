@@ -181,20 +181,6 @@ void AtomContentClient::AddAdditionalSchemes(
     std::vector<url::SchemeWithType>* standard_schemes,
     std::vector<url::SchemeWithType>* referrer_schemes,
     std::vector<std::string>* savable_schemes) {
-  // Parse --standard-schemes=scheme1,scheme2
-  auto command_line = base::CommandLine::ForCurrentProcess();
-  std::string custom_schemes = command_line->GetSwitchValueASCII(
-      switches::kStandardSchemes);
-  if (!custom_schemes.empty()) {
-    // Note that url::SchemeWithType requires passing const char*, so we have
-    // to ensure the string still lives after this function exits.
-    static std::vector<std::string> schemes_list;
-    schemes_list = base::SplitString(
-        custom_schemes, ",", base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY);
-    for (const std::string& scheme : schemes_list)
-      standard_schemes->push_back({scheme.c_str(), url::SCHEME_WITHOUT_PORT});
-  }
-
   standard_schemes->push_back({"chrome-extension", url::SCHEME_WITHOUT_PORT});
 }
 
