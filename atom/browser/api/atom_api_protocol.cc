@@ -14,6 +14,9 @@
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/net_converter.h"
 #include "atom/common/node_includes.h"
+#include "atom/common/options_switches.h"
+#include "base/command_line.h"
+#include "base/strings/string_util.h"
 #include "native_mate/dictionary.h"
 #include "url/url_util.h"
 
@@ -160,6 +163,10 @@ void RegisterStandardSchemes(
     const std::vector<std::string>& schemes) {
   for (const auto& scheme : schemes)
     url::AddStandardScheme(scheme.c_str(), url::SCHEME_WITHOUT_PORT);
+
+  auto command_line = base::CommandLine::ForCurrentProcess();
+  command_line->AppendSwitchASCII(atom::switches::kStandardSchemes,
+                                  base::JoinString(schemes, ","));
 }
 
 mate::Handle<atom::api::Protocol> CreateProtocol(v8::Isolate* isolate) {

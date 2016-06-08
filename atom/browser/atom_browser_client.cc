@@ -169,6 +169,14 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
   if (process_type != "renderer")
     return;
 
+  // Copy following switches to child process.
+  static const char* const kCommonSwitchNames[] = {
+    switches::kStandardSchemes,
+  };
+  command_line->CopySwitchesFrom(
+      *base::CommandLine::ForCurrentProcess(),
+      kCommonSwitchNames, arraysize(kCommonSwitchNames));
+
   // The registered service worker schemes.
   if (!g_custom_service_worker_schemes.empty())
     command_line->AppendSwitchASCII(switches::kRegisterServiceWorkerSchemes,
