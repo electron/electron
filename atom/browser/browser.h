@@ -21,6 +21,7 @@
 #endif
 
 namespace base {
+class DictionaryValue;
 class FilePath;
 }
 
@@ -165,7 +166,8 @@ class Browser : public WindowListObserver {
   void DidFinishLaunching();
 
   // Request basic auth login.
-  void RequestLogin(LoginHandler* login_handler);
+  void RequestLogin(LoginHandler* login_handler,
+                    std::unique_ptr<base::DictionaryValue> request_details);
 
   void AddObserver(BrowserObserver* obs) {
     observers_.AddObserver(obs);

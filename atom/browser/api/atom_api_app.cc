@@ -263,13 +263,14 @@ void App::OnContinueUserActivity(
 }
 #endif
 
-void App::OnLogin(LoginHandler* login_handler) {
+void App::OnLogin(LoginHandler* login_handler,
+                  const base::DictionaryValue& request_details) {
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
   bool prevent_default = Emit(
       "login",
       WebContents::CreateFrom(isolate(), login_handler->GetWebContents()),
-      login_handler->request(),
+      request_details,
       login_handler->auth_info(),
       base::Bind(&PassLoginInformation, make_scoped_refptr(login_handler)));
 
