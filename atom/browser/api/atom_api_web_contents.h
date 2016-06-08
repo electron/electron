@@ -59,6 +59,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
                              v8::Local<v8::ObjectTemplate> prototype);
 
   int GetID() const;
+  std::string GetType() const;
   bool Equal(const WebContents* web_contents) const;
   void LoadURL(const GURL& url, const mate::Dictionary& options);
   void DownloadURL(const GURL& url);
