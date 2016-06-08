@@ -70,7 +70,8 @@ class App : public AtomBrowserClient::Delegate,
   void OnActivate(bool has_visible_windows) override;
   void OnWillFinishLaunching() override;
   void OnFinishLaunching() override;
-  void OnLogin(LoginHandler* login_handler) override;
+  void OnLogin(LoginHandler* login_handler,
+               const base::DictionaryValue& request_details) override;
 #if defined(OS_MACOSX)
   void OnContinueUserActivity(
       bool* prevent_default,

@@ -71,18 +71,13 @@ bool MatchesFilterCondition(net::URLRequest* request,
 
 // Overloaded by multiple types to fill the |details| object.
 void ToDictionary(base::DictionaryValue* details, net::URLRequest* request) {
+  FillRequestDetails(details, request);
   details->SetInteger("id", request->identifier());
-  details->SetString("url", request->url().spec());
-  details->SetString("method", request->method());
   details->SetDouble("timestamp", base::Time::Now().ToDoubleT() * 1000);
   auto info = content::ResourceRequestInfo::ForRequest(request);
   details->SetString("resourceType",
                      info ? ResourceTypeToString(info->GetResourceType())
                           : "other");
-  std::unique_ptr<base::ListValue> list(new base::ListValue);
-  GetUploadData(list.get(), request);
-  if (!list->empty())
-    details->Set("uploadData", std::move(list));
 }
 
 void ToDictionary(base::DictionaryValue* details,

@@ -18,6 +18,10 @@
 #include "native_mate/handle.h"
 #include "native_mate/wrappable.h"
 
+namespace base {
+class DictionaryValue;
+}
+
 namespace net {
 class URLRequest;
 class URLRequestContextGetter;
@@ -33,7 +37,7 @@ namespace api {
 class Protocol : public mate::Wrappable<Protocol> {
  public:
   using Handler =
-      base::Callback<void(const net::URLRequest*, v8::Local<v8::Value>)>;
+      base::Callback<void(const base::DictionaryValue&, v8::Local<v8::Value>)>;
   using CompletionCallback = base::Callback<void(v8::Local<v8::Value>)>;
   using BooleanCallback = base::Callback<void(bool)>;
 
