@@ -524,10 +524,6 @@ NativeWindowMac::NativeWindowMac(
   options.Get(options::kDisableAutoHideCursor, &disableAutoHideCursor);
   [window_ setDisableAutoHideCursor:disableAutoHideCursor];
 
-  // Disable zoom button if window is not resizable.
-  if (!maximizable)
-    SetMaximizable(false);
-
   NSView* view = inspectable_web_contents()->GetView()->GetNativeView();
   [view setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
 
@@ -555,6 +551,12 @@ NativeWindowMac::NativeWindowMac(
   }];
 
   InstallView();
+
+  // Disable zoom button if window is not resizable.
+  // Set maximizable state last to ensure zoom button does not get reset
+  // by calls to other APIs.
+  if (!maximizable)
+    SetMaximizable(false);
 }
 
 NativeWindowMac::~NativeWindowMac() {
