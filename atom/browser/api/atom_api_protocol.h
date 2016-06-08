@@ -9,6 +9,7 @@
 #include <map>
 #include <vector>
 
+#include "atom/browser/api/trackable_object.h"
 #include "atom/browser/net/atom_url_request_job_factory.h"
 #include "base/callback.h"
 #include "base/containers/scoped_ptr_hash_map.h"
@@ -16,7 +17,6 @@
 #include "native_mate/arguments.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/handle.h"
-#include "native_mate/wrappable.h"
 
 namespace base {
 class DictionaryValue;
@@ -34,7 +34,7 @@ class AtomURLRequestJobFactory;
 
 namespace api {
 
-class Protocol : public mate::Wrappable<Protocol> {
+class Protocol : public mate::TrackableObject<Protocol> {
  public:
   using Handler =
       base::Callback<void(const base::DictionaryValue&, v8::Local<v8::Value>)>;

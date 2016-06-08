@@ -173,17 +173,10 @@ void RegisterStandardSchemes(
                                   base::JoinString(schemes, ","));
 }
 
-mate::Handle<atom::api::Protocol> CreateProtocol(v8::Isolate* isolate) {
-  auto browser_context = static_cast<atom::AtomBrowserContext*>(
-      atom::AtomBrowserMainParts::Get()->browser_context());
-  return atom::api::Protocol::Create(isolate, browser_context);
-}
-
 void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
-  dict.SetMethod("createProtocolObject", base::Bind(&CreateProtocol, isolate));
   dict.SetMethod("registerStandardSchemes", &RegisterStandardSchemes);
 }
 
