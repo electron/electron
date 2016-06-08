@@ -17,6 +17,7 @@
 #include "atom/common/options_switches.h"
 #include "base/command_line.h"
 #include "base/strings/string_util.h"
+#include "content/public/browser/child_process_security_policy.h"
 #include "native_mate/dictionary.h"
 #include "url/url_util.h"
 
@@ -161,8 +162,11 @@ namespace {
 
 void RegisterStandardSchemes(
     const std::vector<std::string>& schemes) {
-  for (const auto& scheme : schemes)
+  auto policy = content::ChildProcessSecurityPolicy::GetInstance();
+  for (const auto& scheme : schemes) {
     url::AddStandardScheme(scheme.c_str(), url::SCHEME_WITHOUT_PORT);
+    policy->RegisterWebSafeScheme(scheme);
+  }
 
   auto command_line = base::CommandLine::ForCurrentProcess();
   command_line->AppendSwitchASCII(atom::switches::kStandardSchemes,
