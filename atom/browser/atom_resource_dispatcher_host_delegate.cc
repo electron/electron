@@ -31,10 +31,13 @@ void HandleExternalProtocolInUI(
   if (!web_contents)
     return;
 
-  GURL escaped_url(net::EscapeExternalHandlerValue(url.spec()));
-  auto callback = base::Bind(&OnOpenExternal, escaped_url);
   auto permission_helper =
       WebContentsPermissionHelper::FromWebContents(web_contents);
+  if (!permission_helper)
+    return;
+
+  GURL escaped_url(net::EscapeExternalHandlerValue(url.spec()));
+  auto callback = base::Bind(&OnOpenExternal, escaped_url);
   permission_helper->RequestOpenExternalPermission(callback, has_user_gesture);
 }
 
