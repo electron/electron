@@ -749,6 +749,7 @@ std::string WebContents::GetType() const {
     case BROWSER_WINDOW: return "window";
     case WEB_VIEW: return "webview";
     case REMOTE: return "remote";
+    default: return "";
   }
 }
 
