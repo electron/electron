@@ -49,24 +49,24 @@ const {BrowserWindow} = electron;
 
 // 保持一个对于 window 对象的全局引用，如果你不这样做，
 // 当 JavaScript 对象被垃圾回收， window 会被自动地关闭
-let win;
+let mainWindow;
 
 function createWindow() {
   // 创建浏览器窗口。
-  win = new BrowserWindow({width: 800, height: 600});
+  mainWindow = new BrowserWindow({width: 800, height: 600});
 
   // 加载应用的 index.html。
-  win.loadURL(`file://${__dirname}/index.html`);
+  mainWindow.loadURL(`file://${__dirname}/index.html`);
 
   // 启用开发工具。
-  win.webContents.openDevTools();
+  mainWindow.webContents.openDevTools();
 
   // 当 window 被关闭，这个事件会被触发。
-  win.on('closed', () => {
+  mainWindow.on('closed', () => {
     // 取消引用 window 对象，如果你的应用支持多窗口的话，
     // 通常会把多个 window 对象存放在一个数组里面，
     // 与此同时，你应该删除相应的元素。
-    win = null;
+    mainWindow = null;
   });
 }
 
@@ -87,7 +87,7 @@ app.on('window-all-closed', () => {
 app.on('activate', () => {
   // On OS X it's common to re-create a window in the app when the
   // dock icon is clicked and there are no other windows open.
-  if (win === null) {
+  if (mainWindow === null) {
     createWindow();
   }
 });
@@ -146,7 +146,7 @@ $ ./Electron.app/Contents/MacOS/Electron your-app/
 在你完成了你的应用后，你可以按照 [应用部署][7] 指导发布一个版本，并且以已经打包好的形式运行应用。
 
 # 参照下面例子
-复制并且运行这个库 [atom/electron-quick-start][8]。
+复制并且运行这个库 [electron/electron-quick-start][8]。
 
 *注意：*运行时需要你的系统已经安装了 [Git][9] 和 [Node.js][10]（包含 [npm][11]）。
 

@@ -859,11 +859,13 @@ describe('browser-window module', function () {
       })
 
       describe('when the devtools is docked', function () {
-        it('creates the extension', function (done) {
+        it.only('creates the extension', function (done) {
           w.webContents.openDevTools({mode: 'bottom'})
 
           ipcMain.once('answer', function (event, message) {
             assert.equal(message.runtimeId, 'foo')
+            assert.equal(message.tabId, w.webContents.id)
+            assert.equal(message.i18nString, 'foo - bar (baz)')
             assert.deepEqual(message.storageItems, {foo: 'bar'})
             done()
           })
@@ -876,9 +878,49 @@ describe('browser-window module', function () {
 
           ipcMain.once('answer', function (event, message, extensionId) {
             assert.equal(message.runtimeId, 'foo')
+            assert.equal(message.tabId, w.webContents.id)
             done()
           })
         })
+      })
+    })
+
+    it('works when used with partitions', function (done) {
+      this.timeout(10000)
+
+      if (w != null) {
+        w.destroy()
+      }
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          partition: 'temp'
+        }
+      })
+
+      var extensionPath = path.join(__dirname, 'fixtures', 'devtools-extensions', 'foo')
+      BrowserWindow.removeDevToolsExtension('foo')
+      BrowserWindow.addDevToolsExtension(extensionPath)
+
+      w.webContents.on('devtools-opened', function () {
+        var showPanelIntevalId = setInterval(function () {
+          if (w && w.devToolsWebContents) {
+            w.devToolsWebContents.executeJavaScript('(' + (function () {
+              var lastPanelId = WebInspector.inspectorView._tabbedPane._tabs.peekLast().id
+              WebInspector.inspectorView.showPanel(lastPanelId)
+            }).toString() + ')()')
+          } else {
+            clearInterval(showPanelIntevalId)
+          }
+        }, 100)
+      })
+
+      w.loadURL('about:blank')
+      w.webContents.openDevTools({mode: 'bottom'})
+
+      ipcMain.once('answer', function (event, message) {
+        assert.equal(message.runtimeId, 'foo')
+        done()
       })
     })
 

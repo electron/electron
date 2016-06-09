@@ -2,48 +2,69 @@
 
 > Control file downloads from remote sources.
 
-`DownloadItem` is an EventEmitter that represents a download item in Electron.
-It is used in `will-download` event of `Session` module, and allows users to
+`DownloadItem` is an `EventEmitter` that represents a download item in Electron.
+It is used in `will-download` event of `Session` class, and allows users to
 control the download item.
 
 ```javascript
 // In the main process.
 win.webContents.session.on('will-download', (event, item, webContents) => {
   // Set the save path, making Electron not to prompt a save dialog.
-  item.setSavePath('/tmp/save.pdf');
-  console.log(item.getMimeType());
-  console.log(item.getFilename());
-  console.log(item.getTotalBytes());
-  item.on('updated', () => {
-    console.log('Received bytes: ' + item.getReceivedBytes());
-  });
-  item.on('done', (e, state) => {
-    if (state === 'completed') {
-      console.log('Download successfully');
-    } else {
-      console.log('Download is cancelled or interrupted that can\'t be resumed');
+  item.setSavePath('/tmp/save.pdf')
+
+  item.on('updated', (event, state) => {
+    if (state === 'interrupted') {
+      console.log('Download is interrupted but can be resumed')
+    } else if (state === 'progressing') {
+      if (item.isPaused()) {
+        console.log('Download is paused')
+      } else {
+        console.log(`Received bytes: ${item.getReceivedBytes()}`)
+      }
     }
-  });
-});
+  })
+  item.once('done', (event, state) => {
+    if (state === 'completed') {
+      console.log('Download successfully')
+    } else {
+      console.log(`Download failed: ${state}`)
+    }
+  })
+})
 ```
 
 ## Events
 
 ### Event: 'updated'
 
-Emits when the `downloadItem` gets updated.
-
-### Event: 'done'
+Returns:
 
 * `event` Event
 * `state` String
-  * `completed` - The download completed successfully.
-  * `cancelled` - The download has been cancelled.
-  * `interrupted` - An error broke the connection with the file server.
 
-Emits when the download is in a terminal state. This includes a completed
+Emitted when the download has been updated and is not done.
+
+The `state` can be one of following:
+
+* `progressing` - The download is in-progress.
+* `interrupted` - The download has interrupted and can be resumed.
+
+### Event: 'done'
+
+Returns:
+
+* `event` Event
+* `state` String
+
+Emitted when the download is in a terminal state. This includes a completed
 download, a cancelled download(via `downloadItem.cancel()`), and interrupted
 download that can't be resumed.
+
+The `state` can be one of following:
+
+* `completed` - The download completed successfully.
+* `cancelled` - The download has been cancelled.
+* `interrupted` - The download has interrupted and can not resume.
 
 ## Methods
 
@@ -61,9 +82,17 @@ routine to determine the save path(Usually prompts a save dialog).
 
 Pauses the download.
 
+### `downloadItem.isPaused()`
+
+Returns whether the download is paused.
+
 ### `downloadItem.resume()`
 
 Resumes the download that has been paused.
+
+### `downloadItem.canResume()`
+
+Resumes whether the download can resume.
 
 ### `downloadItem.cancel()`
 
@@ -102,3 +131,14 @@ Returns a `Integer` represents the received bytes of the download item.
 
 Returns a `String` represents the Content-Disposition field from the response
 header.
+
+### `downloadItem.getState()`
+
+Returns current state as `String`.
+
+Possible values are:
+
+* `progressing` - The download is in-progress.
+* `completed` - The download completed successfully.
+* `cancelled` - The download has been cancelled.
+* `interrupted` - The download has interrupted.

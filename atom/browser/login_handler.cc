@@ -5,6 +5,8 @@
 #include "atom/browser/login_handler.h"
 
 #include "atom/browser/browser.h"
+#include "atom/common/native_mate_converters/net_converter.h"
+#include "base/values.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/resource_dispatcher_host.h"
@@ -37,11 +39,18 @@ LoginHandler::LoginHandler(net::AuthChallengeInfo* auth_info,
       render_frame_id_(0) {
   content::ResourceRequestInfo::ForRequest(request_)->GetAssociatedRenderFrame(
       &render_process_host_id_,  &render_frame_id_);
+
+  // Fill request details on IO thread.
+  std::unique_ptr<base::DictionaryValue> request_details(
+      new base::DictionaryValue);
+  FillRequestDetails(request_details.get(), request_);
+
   BrowserThread::PostTask(
       BrowserThread::UI, FROM_HERE,
       base::Bind(&Browser::RequestLogin,
                  base::Unretained(Browser::Get()),
-                 base::RetainedRef(make_scoped_refptr(this))));
+                 base::RetainedRef(make_scoped_refptr(this)),
+                 base::Passed(&request_details)));
 }
 
 LoginHandler::~LoginHandler() {

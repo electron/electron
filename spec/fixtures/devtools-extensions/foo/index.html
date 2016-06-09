@@ -13,6 +13,8 @@
       testStorage(function (items) {
         var message = JSON.stringify({
           runtimeId: chrome.runtime.id,
+          tabId: chrome.devtools.inspectedWindow.tabId,
+          i18nString: chrome.i18n.getMessage('foo', ['bar', 'baz']),
           storageItems: items
         })
         var sendMessage = `require('electron').ipcRenderer.send('answer', ${message})`

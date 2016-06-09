@@ -547,3 +547,22 @@ The `listener` will be called with `listener(details)` when an error occurs.
   * `timestamp` Double
   * `fromCache` Boolean
   * `error` String - The error description.
+
+#### `ses.protocol`
+
+Returns an instance of [protocol](protocol.md) module for this session.
+
+```javascript
+const {app, session} = require('electron')
+const path = require('path')
+
+app.on('ready', function () {
+  const protocol = session.fromPartition(partitionName).protocol
+  protocol.registerFileProtocol('atom', function (request, callback) {
+    var url = request.url.substr(7)
+    callback({path: path.normalize(__dirname + '/' + url)})
+  }, function (error) {
+    if (error)
+      console.error('Failed to register protocol')
+  })
+})
