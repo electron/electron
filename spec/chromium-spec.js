@@ -165,6 +165,12 @@ describe('chromium feature', function () {
       var b = window.open('about:blank', '', 'show=no')
       assert.equal(b.closed, false)
       assert.equal(b.constructor.name, 'BrowserWindowProxy')
+
+      // Check that guestId is not writeable
+      assert(b.guestId)
+      b.guestId = 'anotherValue'
+      assert.notEqual(b.guestId, 'anoterValue')
+
       b.close()
     })
 
