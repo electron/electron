@@ -1,8 +1,8 @@
-
 const assert = require('assert')
 const http = require('http')
 const path = require('path')
 const ws = require('ws')
+const url = require('url')
 const remote = require('electron').remote
 
 const BrowserWindow = remote.require('electron').BrowserWindow
@@ -326,6 +326,25 @@ describe('chromium feature', function () {
       }
       window.addEventListener('message', listener)
       b = window.open('file://' + fixtures + '/pages/window-opener-postMessage.html', '', 'show=no')
+    })
+
+    it('works for windows opened from a <webview>', function (done) {
+      const webview = new WebView()
+      webview.addEventListener('console-message', function (e) {
+        webview.remove()
+        assert.equal(e.message, 'message')
+        done()
+      })
+      webview.allowpopups = true
+      webview.src = url.format({
+        pathname: `${fixtures}/pages/webview-opener-postMessage.html`,
+        protocol: 'file',
+        query: {
+          p: `${fixtures}/pages/window-opener-postMessage.html`
+        },
+        slashes: true
+      })
+      document.body.appendChild(webview)
     })
   })
 
