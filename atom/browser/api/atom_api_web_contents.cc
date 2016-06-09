@@ -744,6 +744,15 @@ int WebContents::GetID() const {
   return web_contents()->GetRenderProcessHost()->GetID();
 }
 
+std::string WebContents::GetType() const {
+  switch (type_) {
+    case BROWSER_WINDOW: return "window";
+    case WEB_VIEW: return "webview";
+    case REMOTE: return "remote";
+    default: return "";
+  }
+}
+
 bool WebContents::Equal(const WebContents* web_contents) const {
   return GetID() == web_contents->GetID();
 }
@@ -1287,6 +1296,7 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("endFrameSubscription", &WebContents::EndFrameSubscription)
       .SetMethod("setSize", &WebContents::SetSize)
       .SetMethod("isGuest", &WebContents::IsGuest)
+      .SetMethod("getType", &WebContents::GetType)
       .SetMethod("getWebPreferences", &WebContents::GetWebPreferences)
       .SetMethod("getOwnerBrowserWindow", &WebContents::GetOwnerBrowserWindow)
       .SetMethod("hasServiceWorker", &WebContents::HasServiceWorker)
@@ -1365,6 +1375,8 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   dict.SetMethod("_setWrapWebContents", &atom::api::SetWrapWebContents);
   dict.SetMethod("fromId",
                  &mate::TrackableObject<atom::api::WebContents>::FromWeakMapID);
+  dict.SetMethod("getAllWebContents",
+                 &mate::TrackableObject<atom::api::WebContents>::GetAll);
 }
 
 }  // namespace
