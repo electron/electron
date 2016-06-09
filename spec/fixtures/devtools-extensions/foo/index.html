@@ -6,7 +6,8 @@
     <script>
       var message = JSON.stringify({
         runtimeId: chrome.runtime.id,
-        tabId: chrome.devtools.inspectedWindow.tabId
+        tabId: chrome.devtools.inspectedWindow.tabId,
+        i18nString: chrome.i18n.getMessage('foo', ['bar', 'baz'])
       })
       var sendMessage = `require('electron').ipcRenderer.send('answer', ${message})`
       window.chrome.devtools.inspectedWindow.eval(sendMessage, function () {})

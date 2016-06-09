@@ -63,6 +63,7 @@
       'lib/renderer/api/remote.js',
       'lib/renderer/api/screen.js',
       'lib/renderer/api/web-frame.js',
+      'lib/renderer/extensions/i18n.js',
     ],
     'js2c_sources': [
       'lib/common/asar.js',
