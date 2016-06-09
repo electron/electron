@@ -328,7 +328,7 @@ describe('chromium feature', function () {
       b = window.open('file://' + fixtures + '/pages/window-opener-postMessage.html', '', 'show=no')
     })
 
-    it('works for windows opened from a <webview>', function (done) {
+    it('supports windows opened from a <webview>', function (done) {
       const webview = new WebView()
       webview.addEventListener('console-message', function (e) {
         webview.remove()
