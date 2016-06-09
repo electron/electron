@@ -288,13 +288,6 @@ describe('session module', function () {
       })
     })
 
-    afterEach(function () {
-      if (w != null) {
-        w.destroy()
-      }
-      w = null
-    })
-
     it('handles requests from a partition', function (done) {
       var handler = function (error, callback) {
         callback({
