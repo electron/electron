@@ -6,7 +6,7 @@
     <script>
       function testStorage (callback) {
         chrome.storage.sync.set({foo: 'bar'}, function () {
-          chrome.storage.sync.get([{foo: 'baz'}], callback)
+          chrome.storage.sync.get({foo: 'baz'}, callback)
         })
       }
 
