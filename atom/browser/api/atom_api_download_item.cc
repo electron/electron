@@ -25,6 +25,9 @@ struct Converter<content::DownloadItem::DownloadState> {
                                    content::DownloadItem::DownloadState state) {
     std::string download_state;
     switch (state) {
+      case content::DownloadItem::IN_PROGRESS:
+        download_state = "progressing";
+        break;
       case content::DownloadItem::COMPLETE:
         download_state = "completed";
         break;
@@ -85,7 +88,7 @@ void DownloadItem::OnDownloadUpdated(content::DownloadItem* item) {
     // Destroy the item once item is downloaded.
     base::MessageLoop::current()->PostTask(FROM_HERE, GetDestroyClosure());
   } else {
-    Emit("updated");
+    Emit("updated", item->GetState());
   }
 }
 
@@ -141,6 +144,10 @@ const GURL& DownloadItem::GetURL() const {
   return download_item_->GetURL();
 }
 
+content::DownloadItem::DownloadState DownloadItem::GetState() const {
+  return download_item_->GetState();
+}
+
 void DownloadItem::SetSavePath(const base::FilePath& path) {
   save_path_ = path;
 }
@@ -164,6 +171,7 @@ void DownloadItem::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("getFilename", &DownloadItem::GetFilename)
       .SetMethod("getContentDisposition", &DownloadItem::GetContentDisposition)
       .SetMethod("getURL", &DownloadItem::GetURL)
+      .SetMethod("getState", &DownloadItem::GetState)
       .SetMethod("setSavePath", &DownloadItem::SetSavePath)
       .SetMethod("getSavePath", &DownloadItem::GetSavePath);
 }

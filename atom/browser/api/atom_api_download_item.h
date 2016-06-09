@@ -36,6 +36,7 @@ class DownloadItem : public mate::TrackableObject<DownloadItem>,
   std::string GetFilename() const;
   std::string GetContentDisposition() const;
   const GURL& GetURL() const;
+  content::DownloadItem::DownloadState GetState() const;
   void SetSavePath(const base::FilePath& path);
   base::FilePath GetSavePath() const;
 
