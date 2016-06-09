@@ -396,6 +396,12 @@ Method will also not return if the extension's manifest is missing or incomplete
 
 Remove the DevTools extension whose name is `name`.
 
+### `BrowserWindow.isDevToolsExtensionInstalled(name)`
+
+* `name` String
+
+Returns `true` if the named DevTools extension is installed, `false` otherwise.
+
 ## Instance Properties
 
 Objects created with `new BrowserWindow` have the following properties:
