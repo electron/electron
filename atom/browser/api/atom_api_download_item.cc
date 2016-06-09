@@ -102,8 +102,16 @@ void DownloadItem::Pause() {
   download_item_->Pause();
 }
 
+bool DownloadItem::IsPaused() const {
+  return download_item_->IsPaused();
+}
+
 void DownloadItem::Resume() {
   download_item_->Resume();
+}
+
+bool DownloadItem::CanResume() const {
+  return download_item_->CanResume();
 }
 
 void DownloadItem::Cancel() {
@@ -148,6 +156,10 @@ content::DownloadItem::DownloadState DownloadItem::GetState() const {
   return download_item_->GetState();
 }
 
+bool DownloadItem::IsDone() const {
+  return download_item_->IsDone();
+}
+
 void DownloadItem::SetSavePath(const base::FilePath& path) {
   save_path_ = path;
 }
@@ -162,7 +174,9 @@ void DownloadItem::BuildPrototype(v8::Isolate* isolate,
   mate::ObjectTemplateBuilder(isolate, prototype)
       .MakeDestroyable()
       .SetMethod("pause", &DownloadItem::Pause)
+      .SetMethod("isPaused", &DownloadItem::IsPaused)
       .SetMethod("resume", &DownloadItem::Resume)
+      .SetMethod("canResume", &DownloadItem::CanResume)
       .SetMethod("cancel", &DownloadItem::Cancel)
       .SetMethod("getReceivedBytes", &DownloadItem::GetReceivedBytes)
       .SetMethod("getTotalBytes", &DownloadItem::GetTotalBytes)
@@ -172,6 +186,7 @@ void DownloadItem::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("getContentDisposition", &DownloadItem::GetContentDisposition)
       .SetMethod("getURL", &DownloadItem::GetURL)
       .SetMethod("getState", &DownloadItem::GetState)
+      .SetMethod("isDone", &DownloadItem::IsDone)
       .SetMethod("setSavePath", &DownloadItem::SetSavePath)
       .SetMethod("getSavePath", &DownloadItem::GetSavePath);
 }

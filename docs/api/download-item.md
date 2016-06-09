@@ -78,9 +78,17 @@ routine to determine the save path(Usually prompts a save dialog).
 
 Pauses the download.
 
+### `downloadItem.isPaused()`
+
+Returns whether the download is paused.
+
 ### `downloadItem.resume()`
 
 Resumes the download that has been paused.
+
+### `downloadItem.canResume()`
+
+Resumes whether the download can resume.
 
 ### `downloadItem.cancel()`
 
