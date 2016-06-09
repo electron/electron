@@ -204,7 +204,7 @@ app.once('ready', () => {
           type: 'separator'
         },
         {
-          label: 'Quit',
+          label: 'Quit ' + app.getName(),
           accelerator: 'Command+Q',
           click () { app.quit() }
         }
