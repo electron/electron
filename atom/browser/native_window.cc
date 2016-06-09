@@ -10,6 +10,7 @@
 
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
+#include "atom/browser/browser.h"
 #include "atom/browser/window_list.h"
 #include "atom/common/api/api_messages.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
@@ -166,7 +167,7 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
     // For normal window, use white as default background.
     SetBackgroundColor("#FFFF");
   }
-  std::string title("Electron");
+  std::string title(Browser::Get()->GetName());
   options.Get(options::kTitle, &title);
   SetTitle(title);
 
