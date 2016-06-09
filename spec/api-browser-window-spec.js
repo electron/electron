@@ -859,7 +859,7 @@ describe('browser-window module', function () {
       })
 
       describe('when the devtools is docked', function () {
-        it.only('creates the extension', function (done) {
+        it('creates the extension', function (done) {
           w.webContents.openDevTools({mode: 'bottom'})
 
           ipcMain.once('answer', function (event, message) {
