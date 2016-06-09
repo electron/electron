@@ -120,6 +120,21 @@ productbuild --component "$APP_PATH" /Applications --sign "$INSTALLER_KEY" "$RES
 문서를 참고하여 기본적인 개념을 이해해야 합니다. 그리고 자격(plist) 파일에
 어플리케이션에서 요구하는 권한의 키를 추가합니다.
 
+그 외에 [electron-osx-sign][electron-osx-sign] 모듈을 이용해서 직접 서명할 수도 있습니다.
+
+#### 네이티브 모듈 서명하기
+
+앱 내부에서 사용한 네이티브 모듈들도 서명이 필요합니다.
+electron-osx-sign 을 사용한다면, 앱 실행 인수 목록에 경로를 반드시 지정해야 합니다.
+
+```bash
+electron-osx-sign YourApp.app YourApp.app/Contents/Resources/app/node_modules/nativemodule/build/release/nativemodule
+```
+
+참고할 점은 네이티브 모듈이 의도하지 않았지만 오브젝트 파일(.o)을 포함하는 경우도 있습니다.
+이 경우 오브젝트 파일들의 서명을 해야할 수도 있습니다.
+[electron-packager][electron-packager]를 사용한다면, 빌드 과정에 `--ignore=.+\.o$` 코드를 추가해 해당 파일을 무시해줍시다.
+
 ### 어플리케이션 업로드
 
 어플리케이션 서명을 완료한 후 iTunes Connect에 업로드하기 위해 Application Loader를
@@ -190,6 +205,8 @@ ERN의 승인을 얻는 방법은, 다음 글을 참고하는 것이 좋습니�
 [nwjs-guide]: https://github.com/nwjs/nw.js/wiki/Mac-App-Store-%28MAS%29-Submission-Guideline#first-steps
 [enable-app-sandbox]: https://developer.apple.com/library/ios/documentation/Miscellaneous/Reference/EntitlementKeyReference/Chapters/EnablingAppSandbox.html
 [create-record]: https://developer.apple.com/library/ios/documentation/LanguagesUtilities/Conceptual/iTunesConnect_Guide/Chapters/CreatingiTunesConnectRecord.html
+[electron-osx-sign]: https://github.com/electron-userland/electron-osx-sign
+[electron-packager]: https://github.com/electron-userland/electron-packager
 [submit-for-review]: https://developer.apple.com/library/ios/documentation/LanguagesUtilities/Conceptual/iTunesConnect_Guide/Chapters/SubmittingTheApp.html
 [app-sandboxing]: https://developer.apple.com/app-sandboxing/
 [ern-tutorial]: https://carouselapps.com/2015/12/15/legally-submit-app-apples-app-store-uses-encryption-obtain-ern/
