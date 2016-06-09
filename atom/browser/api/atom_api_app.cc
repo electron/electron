@@ -110,6 +110,8 @@ int GetPathConstant(const std::string& name) {
     return chrome::DIR_USER_PICTURES;
   else if (name == "videos")
     return chrome::DIR_USER_VIDEOS;
+  else if (name == "pepperFlashSystemPlugin")
+    return chrome::FILE_PEPPER_FLASH_SYSTEM_PLUGIN;
   else
     return -1;
 }

@@ -41,6 +41,8 @@ app.on('ready', () => {
 });
 ```
 
+The path to the system wide Pepper Flash plugin can also be obtained by calling `app.getPath('pepperFlashSystemPlugin')`.
+
 ## Enable Flash Plugin in a `<webview>` Tag
 
 Add `plugins` attribute to `<webview>` tag.
