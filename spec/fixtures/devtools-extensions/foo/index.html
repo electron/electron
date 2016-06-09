@@ -4,11 +4,20 @@
     <meta charset="utf-8">
     <title></title>
     <script>
-      var message = JSON.stringify({
-        runtimeId: chrome.runtime.id
+      function testStorage (callback) {
+        chrome.storage.sync.set({foo: 'bar'}, function () {
+          chrome.storage.sync.get([{foo: 'baz'}], callback)
+        })
+      }
+
+      testStorage(function (items) {
+        var message = JSON.stringify({
+          runtimeId: chrome.runtime.id,
+          storageItems: items
+        })
+        var sendMessage = `require('electron').ipcRenderer.send('answer', ${message})`
+        window.chrome.devtools.inspectedWindow.eval(sendMessage, function () {})
       })
-      var sendMessage = `require('electron').ipcRenderer.send('answer', ${message})`
-      window.chrome.devtools.inspectedWindow.eval(sendMessage, function () {})
     </script>
   </head>
   <body>

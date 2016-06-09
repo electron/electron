@@ -864,6 +864,7 @@ describe('browser-window module', function () {
 
           ipcMain.once('answer', function (event, message) {
             assert.equal(message.runtimeId, 'foo')
+            assert.deepEqual(message.storageItems, {foo: 'bar'})
             done()
           })
         })
