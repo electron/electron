@@ -858,6 +858,18 @@ describe('browser-window module', function () {
         w.loadURL('about:blank')
       })
 
+      it('throws errors for missing manifest.json files', function () {
+        assert.throws(function () {
+          BrowserWindow.addDevToolsExtension(path.join(__dirname, 'does-not-exist'))
+        }, /ENOENT: no such file or directory/)
+      })
+
+      it('throws errors for invalid manifest.json files', function () {
+        assert.throws(function () {
+          BrowserWindow.addDevToolsExtension(path.join(__dirname, 'fixtures', 'devtools-extensions', 'bad-manifest'))
+        }, /Unexpected token }/)
+      })
+
       describe('when the devtools is docked', function () {
         it('creates the extension', function (done) {
           w.webContents.openDevTools({mode: 'bottom'})
