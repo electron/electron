@@ -32,7 +32,7 @@ app.on('window-all-closed', function() {
 
 当所有的窗口都被关闭时触发。
 
-这个时间仅在应用还没有退出时才能触发。 如果用户按下了 `Cmd + Q`，
+这个事件仅在应用还没有退出时才能触发。 如果用户按下了 `Cmd + Q`，
 或者开发者调用了 `app.quit()` ，Electron 将会先尝试关闭所有的窗口再触发 `will-quit` 事件，
 在这种情况下 `window-all-closed` 不会被触发。
 
