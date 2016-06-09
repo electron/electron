@@ -12,7 +12,7 @@
 #include "atom/browser/net/url_request_fetch_job.h"
 #include "atom/browser/net/url_request_string_job.h"
 #include "atom/common/native_mate_converters/callback.h"
-#include "atom/common/native_mate_converters/net_converter.h"
+#include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/node_includes.h"
 #include "atom/common/options_switches.h"
 #include "base/command_line.h"
@@ -173,17 +173,10 @@ void RegisterStandardSchemes(
                                   base::JoinString(schemes, ","));
 }
 
-mate::Handle<atom::api::Protocol> CreateProtocol(v8::Isolate* isolate) {
-  auto browser_context = static_cast<atom::AtomBrowserContext*>(
-      atom::AtomBrowserMainParts::Get()->browser_context());
-  return atom::api::Protocol::Create(isolate, browser_context);
-}
-
 void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
-  dict.SetMethod("createProtocolObject", base::Bind(&CreateProtocol, isolate));
   dict.SetMethod("registerStandardSchemes", &RegisterStandardSchemes);
 }
 

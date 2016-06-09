@@ -23,22 +23,6 @@
 namespace mate {
 
 // static
-v8::Local<v8::Value> Converter<const net::URLRequest*>::ToV8(
-    v8::Isolate* isolate, const net::URLRequest* val) {
-  std::unique_ptr<base::DictionaryValue> dict(new base::DictionaryValue);
-  dict->SetString("method", val->method());
-  std::string url;
-  if (!val->url_chain().empty()) url = val->url().spec();
-  dict->SetStringWithoutPathExpansion("url", url);
-  dict->SetString("referrer", val->referrer());
-  std::unique_ptr<base::ListValue> list(new base::ListValue);
-  atom::GetUploadData(list.get(), val);
-  if (!list->empty())
-    dict->Set("uploadData", std::move(list));
-  return mate::ConvertToV8(isolate, *(dict.get()));
-}
-
-// static
 v8::Local<v8::Value> Converter<const net::AuthChallengeInfo*>::ToV8(
     v8::Isolate* isolate, const net::AuthChallengeInfo* val) {
   mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
@@ -68,6 +52,19 @@ v8::Local<v8::Value> Converter<scoped_refptr<net::X509Certificate>>::ToV8(
 }  // namespace mate
 
 namespace atom {
+
+void FillRequestDetails(base::DictionaryValue* details,
+                        const net::URLRequest* request) {
+  details->SetString("method", request->method());
+  std::string url;
+  if (!request->url_chain().empty()) url = request->url().spec();
+  details->SetStringWithoutPathExpansion("url", url);
+  details->SetString("referrer", request->referrer());
+  std::unique_ptr<base::ListValue> list(new base::ListValue);
+  GetUploadData(list.get(), request);
+  if (!list->empty())
+    details->Set("uploadData", std::move(list));
+}
 
 void GetUploadData(base::ListValue* upload_data_list,
                    const net::URLRequest* request) {

@@ -16,8 +16,15 @@ describe('session module', function () {
   var fixtures = path.resolve(__dirname, 'fixtures')
   var w = null
   var url = 'http://127.0.0.1'
+  var partitionName = 'temp'
+  var protocolName = 'sp'
+  const tempProtocol = session.fromPartition(partitionName).protocol
+  const protocol = session.defaultSession.protocol
 
   beforeEach(function () {
+    if (w != null) {
+      w.destroy()
+    }
     w = new BrowserWindow({
       show: false,
       width: 400,
@@ -26,7 +33,10 @@ describe('session module', function () {
   })
 
   afterEach(function () {
-    w.destroy()
+    if (w != null) {
+      w.destroy()
+    }
+    w = null
   })
 
   describe('session.cookies', function () {
@@ -258,6 +268,45 @@ describe('session module', function () {
           assert.equal(totalBytes, mockPDF.length)
           assert.equal(disposition, contentDisposition)
           done()
+        })
+      })
+    })
+  })
+
+  describe('session.protocol', function () {
+    beforeEach(function () {
+      if (w != null) {
+        w.destroy()
+      }
+      w = new BrowserWindow({
+        show: false,
+        width: 400,
+        height: 400,
+        webPreferences: {
+          partition: partitionName
+        }
+      })
+    })
+
+    it('handles requests from a partition', function (done) {
+      var handler = function (error, callback) {
+        callback({
+          data: 'test'
+        })
+      }
+      tempProtocol.registerStringProtocol(protocolName, handler, function (error) {
+        if (error) {
+          return done(error)
+        }
+        protocol.isProtocolHandled(protocolName, function (result) {
+          assert.equal(result, false)
+          tempProtocol.isProtocolHandled(protocolName, function (result) {
+            assert.equal(result, true)
+            w.webContents.on('did-finish-load', function () {
+              done()
+            })
+            w.loadURL(protocolName + "://fake-host")
+          })
         })
       })
     })
