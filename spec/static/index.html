@@ -54,7 +54,7 @@
   if (isCi) {
     mocha.grep = function () {
       try {
-        throw new Error('it.only or describe.only was called')
+        throw new Error('A spec contains a call to it.only or describe.only and should be reverted.')
       } catch (error) {
         console.error(error.stack || error)
       }
