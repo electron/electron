@@ -838,11 +838,11 @@ describe('browser-window module', function () {
 
       beforeEach(function () {
         BrowserWindow.removeDevToolsExtension('foo')
-        assert.equal(BrowserWindow.isDevToolsExtensionInstalled('foo'), false)
+        assert.equal(BrowserWindow.getDevToolsExtensions().hasOwnProperty('foo'), false)
 
         var extensionPath = path.join(__dirname, 'fixtures', 'devtools-extensions', 'foo')
         BrowserWindow.addDevToolsExtension(extensionPath)
-        assert.equal(BrowserWindow.isDevToolsExtensionInstalled('foo'), true)
+        assert.equal(BrowserWindow.getDevToolsExtensions().hasOwnProperty('foo'), true)
 
         w.webContents.on('devtools-opened', function () {
           var showPanelIntevalId = setInterval(function () {
