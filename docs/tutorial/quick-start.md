@@ -177,6 +177,8 @@ If you've installed it locally, then run:
 ./node_modules/.bin/electron .
 ```
 
+To install electron-prebuilt visit https://github.com/electron-userland/electron-prebuilt
+
 ### Manually Downloaded Electron Binary
 
 If you downloaded Electron manually, you can also use the included
