@@ -9,6 +9,7 @@
 #include "atom/browser/native_window.h"
 #include "atom/browser/window_list.h"
 #include "atom/common/native_mate_converters/callback.h"
+#include "atom/common/native_mate_converters/string_map_converter.h"
 #include "atom/common/node_includes.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
@@ -102,7 +103,7 @@ mate::Handle<AutoUpdater> AutoUpdater::Create(v8::Isolate* isolate) {
 void AutoUpdater::BuildPrototype(
     v8::Isolate* isolate, v8::Local<v8::ObjectTemplate> prototype) {
   mate::ObjectTemplateBuilder(isolate, prototype)
-      .SetMethod("setFeedURL", &auto_updater::AutoUpdater::SetFeedURL)
+      .SetMethod("_setFeedURL", &auto_updater::AutoUpdater::SetFeedURL)
       .SetMethod("checkForUpdates", &auto_updater::AutoUpdater::CheckForUpdates)
       .SetMethod("quitAndInstall", &AutoUpdater::QuitAndInstall);
 }

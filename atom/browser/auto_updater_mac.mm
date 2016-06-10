@@ -29,16 +29,22 @@ bool g_update_available = false;
 }
 
 // static
-void AutoUpdater::SetFeedURL(const std::string& feed) {
+void AutoUpdater::SetFeedURL(const std::string& feed,
+                             const HeaderMap& requestHeaders) {
+  Delegate* delegate = GetDelegate();
+  if (!delegate)
+    return;
+
+  NSURL* url = [NSURL URLWithString:base::SysUTF8ToNSString(feed)];
+  NSMutableURLRequest* urlRequest = [NSMutableURLRequest requestWithURL:url];
+
+  for (auto&& it : requestHeaders) {
+    [urlRequest setValue:base::SysUTF8ToNSString(it.second)
+      forHTTPHeaderField:base::SysUTF8ToNSString(it.first)];
+  }
+
   if (g_updater == nil) {
-    Delegate* delegate = GetDelegate();
-    if (!delegate)
-      return;
-
     // Initialize the SQRLUpdater.
-    NSURL* url = [NSURL URLWithString:base::SysUTF8ToNSString(feed)];
-    NSURLRequest* urlRequest = [NSURLRequest requestWithURL:url];
-
     @try {
       g_updater = [[SQRLUpdater alloc] initWithUpdateRequest:urlRequest];
     } @catch (NSException* error) {
@@ -57,6 +63,8 @@ void AutoUpdater::SetFeedURL(const std::string& feed) {
             delegate->OnUpdateAvailable();
         });
     }];
+  } else {
+    g_updater.updateRequest = urlRequest;
   }
 }
 

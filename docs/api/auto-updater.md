@@ -94,12 +94,12 @@ On Windows only `releaseName` is available.
 
 The `autoUpdater` object has the following methods:
 
-### `autoUpdater.setFeedURL(url)`
+### `autoUpdater.setFeedURL(url[, requestHeaders])`
 
 * `url` String
+* `requestHeaders` Object - HTTP request headers (_OS X_)
 
-Sets the `url` and initialize the auto updater. The `url` cannot be changed
-once it is set.
+Sets the `url` and initialize the auto updater.
 
 ### `autoUpdater.checkForUpdates()`
 
