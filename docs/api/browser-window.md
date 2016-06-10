@@ -404,7 +404,7 @@ an Object containing `name` and `version` properties.
 To check if a DevTools extension is installed you can run the following:
 
 ```javascript
-let installed = BrowserWindow.getDevToolsExtesion().hasOwnProperty('devtron')
+let installed = BrowserWindow.getDevToolsExtensions().hasOwnProperty('devtron')
 ```
 
 ## Instance Properties
