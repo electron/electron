@@ -396,11 +396,16 @@ Method will also not return if the extension's manifest is missing or incomplete
 
 Remove the DevTools extension whose name is `name`.
 
-### `BrowserWindow.isDevToolsExtensionInstalled(name)`
+### `BrowserWindow.getDevToolsExtensions()`
 
-* `name` String
+Returns an Object where the keys are the extension names and each value is
+an Object containing `name` and `version` properties.
 
-Returns `true` if the named DevTools extension is installed, `false` otherwise.
+To check if a DevTools extension is installed you can run the following:
+
+```javascript
+let installed = BrowserWindow.getDevToolsExtesion().hasOwnProperty('devtron')
+```
 
 ## Instance Properties
 
