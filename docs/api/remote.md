@@ -80,7 +80,7 @@ exports.withLocalCallback = () => {
 
 ```javascript
 // renderer process
-const mapNumbers = require('remote').require('./mapNumbers');
+const mapNumbers = require('electron').remote.require('./mapNumbers');
 
 const withRendererCb = mapNumbers.withRendererCallback(x => x + 1);
 
