@@ -878,6 +878,7 @@ describe('browser-window module', function () {
             assert.equal(message.runtimeId, 'foo')
             assert.equal(message.tabId, w.webContents.id)
             assert.equal(message.i18nString, 'foo - bar (baz)')
+            assert.deepEqual(message.storageItems, {foo: 'bar'})
             done()
           })
         })
