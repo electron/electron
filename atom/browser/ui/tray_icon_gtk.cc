@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 #include "atom/browser/ui/tray_icon_gtk.h"
-
+#include "atom/browser/browser.h"
 #include "base/guid.h"
 #include "base/strings/utf_string_conversions.h"
 #include "chrome/browser/ui/libgtk2ui/app_indicator_icon.h"
@@ -23,11 +23,12 @@ void TrayIconGtk::SetImage(const gfx::Image& image) {
     icon_->SetImage(image.AsImageSkia());
     return;
   }
-
+  Browser* browser = Browser::Get();
   base::string16 empty;
+  std::string app_name_1 = browser->GetName();
   if (libgtk2ui::AppIndicatorIcon::CouldOpen())
     icon_.reset(new libgtk2ui::AppIndicatorIcon(
-        base::GenerateGUID(), image.AsImageSkia(), empty));
+        app_name_1, image.AsImageSkia(), empty));
   else
     icon_.reset(new libgtk2ui::Gtk2StatusIcon(image.AsImageSkia(), empty));
   icon_->set_delegate(this);
