@@ -623,12 +623,6 @@ void Window::UnhookAllWindowMessages() {
 }
 #endif
 
-#if defined(OS_MACOSX)
-void Window::ShowDefinitionForSelection() {
-  window_->ShowDefinitionForSelection();
-}
-#endif
-
 #if defined(TOOLKIT_VIEWS)
 void Window::SetIcon(mate::Handle<NativeImage> icon) {
 #if defined(OS_WIN)
@@ -759,10 +753,6 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("isWindowMessageHooked", &Window::IsWindowMessageHooked)
       .SetMethod("unhookWindowMessage", &Window::UnhookWindowMessage)
       .SetMethod("unhookAllWindowMessages", &Window::UnhookAllWindowMessages)
-#endif
-#if defined(OS_MACOSX)
-      .SetMethod("showDefinitionForSelection",
-                 &Window::ShowDefinitionForSelection)
 #endif
 #if defined(TOOLKIT_VIEWS)
       .SetMethod("setIcon", &Window::SetIcon)

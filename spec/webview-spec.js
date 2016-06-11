@@ -912,4 +912,25 @@ describe('<webview> tag', function () {
 
     w.loadURL('file://' + fixtures + '/pages/webview-visibilitychange.html')
   })
+
+  it('loads devtools extensions registered on the parent window', function (done) {
+    this.timeout(10000)
+
+    w = new BrowserWindow({
+      show: false
+    })
+
+    BrowserWindow.removeDevToolsExtension('foo')
+
+    var extensionPath = path.join(__dirname, 'fixtures', 'devtools-extensions', 'foo')
+    BrowserWindow.addDevToolsExtension(extensionPath)
+
+    w.loadURL('file://' + fixtures + '/pages/webview-devtools.html')
+
+    ipcMain.once('answer', function (event, message) {
+      assert.equal(message.runtimeId, 'foo')
+      assert.notEqual(message.tabId, w.webContents.id)
+      done()
+    })
+  })
 })

@@ -8,7 +8,7 @@ be found in the `.gyp` and `.gypi` files.
 
 Following `gyp` files contain the main rules for building Electron:
 
-* `atom.gyp` defines how Electron itself is built.
+* `electron.gyp` defines how Electron itself is built.
 * `common.gypi` adjusts the build configurations of Node to make it build
   together with Chromium.
 * `vendor/brightray/brightray.gyp` defines how `brightray` is built and

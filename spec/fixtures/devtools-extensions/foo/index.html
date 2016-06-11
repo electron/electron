@@ -4,8 +4,22 @@
     <meta charset="utf-8">
     <title></title>
     <script>
-      var sendMessage = `require('electron').ipcRenderer.send('answer', 'extension loaded')`
-      window.chrome.devtools.inspectedWindow.eval(sendMessage, function () {})
+      function testStorage (callback) {
+        chrome.storage.sync.set({foo: 'bar'}, function () {
+          chrome.storage.sync.get({foo: 'baz'}, callback)
+        })
+      }
+
+      testStorage(function (items) {
+        var message = JSON.stringify({
+          runtimeId: chrome.runtime.id,
+          tabId: chrome.devtools.inspectedWindow.tabId,
+          i18nString: chrome.i18n.getMessage('foo', ['bar', 'baz']),
+          storageItems: items
+        })
+        var sendMessage = `require('electron').ipcRenderer.send('answer', ${message})`
+        window.chrome.devtools.inspectedWindow.eval(sendMessage, function () {})
+      })
     </script>
   </head>
   <body>

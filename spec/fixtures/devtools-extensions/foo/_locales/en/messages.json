@@ -1,0 +1,10 @@
+{
+  "foo": {
+    "message": "foo - $BAZ$ ($2)",
+    "placeholders": {
+      "baz": {
+        "content": "$1"
+      }
+    }
+  }
+}

@@ -346,6 +346,7 @@ You can request the following paths by the name:
 * `music` Directory for a user's music.
 * `pictures` Directory for a user's pictures.
 * `videos` Directory for a user's videos.
+* `pepperFlashSystemPlugin`  Full path to the system version of the Pepper Flash plugin.
 
 ### `app.setPath(name, path)`
 
@@ -560,6 +561,12 @@ Changes the [Application User Model ID][app-user-model-id] to `id`.
 Imports the certificate in pkcs12 format into the platform certificate store.
 `callback` is called with the `result` of import operation, a value of `0`
 indicates success while any other value indicates failure according to chromium [net_error_list](https://code.google.com/p/chromium/codesearch#chromium/src/net/base/net_error_list.h).
+
+### `app.disableHardwareAcceleration()`
+
+Disables hardware acceleration for current app.
+
+This method can only be called before app is ready.
 
 ### `app.commandLine.appendSwitch(switch[, value])`
 

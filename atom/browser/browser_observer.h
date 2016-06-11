@@ -49,7 +49,8 @@ class BrowserObserver {
   virtual void OnFinishLaunching() {}
 
   // The browser requests HTTP login.
-  virtual void OnLogin(LoginHandler* login_handler) {}
+  virtual void OnLogin(LoginHandler* login_handler,
+                       const base::DictionaryValue& request_details) {}
 
 #if defined(OS_MACOSX)
   // The browser wants to resume a user activity via handoff. (OS X only)

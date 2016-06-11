@@ -166,6 +166,13 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
     command_line->AppendSwitchASCII(::switches::kEnableBlinkFeatures,
                                     blink_features);
 
+  // Disable blink features.
+  std::string disable_blink_features;
+  if (web_preferences.GetString(options::kDisableBlinkFeatures,
+                                &disable_blink_features))
+    command_line->AppendSwitchASCII(::switches::kDisableBlinkFeatures,
+                                    disable_blink_features);
+
   // The initial visibility state.
   NativeWindow* window = NativeWindow::FromWebContents(web_contents);
 

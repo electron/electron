@@ -44,7 +44,7 @@ void HandlerCallback(const BeforeStartCallback& before_start,
 
 void AskForOptions(v8::Isolate* isolate,
                    const JavaScriptHandler& handler,
-                   net::URLRequest* request,
+                   std::unique_ptr<base::DictionaryValue> request_details,
                    const BeforeStartCallback& before_start,
                    const ResponseCallback& callback) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
@@ -53,7 +53,7 @@ void AskForOptions(v8::Isolate* isolate,
   v8::Local<v8::Context> context = isolate->GetCurrentContext();
   v8::Context::Scope context_scope(context);
   handler.Run(
-      request,
+      *(request_details.get()),
       mate::ConvertToV8(isolate,
                         base::Bind(&HandlerCallback, before_start, callback)));
 }

@@ -1,10 +1,10 @@
-Пожалуйста, убедитесь, что вы используете документацию, которые соответствует вашей версии Electron.
-Номер версии должен быть частью адреса страницы. Если это не так, вы
-возможно, используете документацию ветки разработки, которая может содержать изменения api, 
+Пожалуйста, убедитесь, что Вы используете документацию, которая соответствует вашей версии Electron.
+Номер версии должен быть частью адреса страницы. Если это не так, Вы
+возможно, используете документацию ветки разработки, которая может содержать изменения api,
 которые не совместимы с вашей версией Electron. Если это так,
 Вы можете переключиться на другую версию документации в списке
-[доступные версии](http://electron.atom.io/docs/) на atom.io, или 
-если вы используете интерфейс GitHub, откройте список "переключение ветки/тега" и
+[доступные версии](http://electron.atom.io/docs/) на [atom.io](atom.io), или
+если Вы используете интерфейс GitHub, откройте список "переключение ветки/тега" и
 выберите тег, который соответствует вашей версии.
 
 ## Руководства
@@ -13,7 +13,7 @@
 * [Application Distribution](tutorial/application-distribution.md)
 * [Mac App Store Submission Guide](tutorial/mac-app-store-submission-guide.md)
 * [Application Packaging](tutorial/application-packaging.md)
-* [Using Native Node Modules](tutorial/using-native-node-modules.md)
+* [Использование нативных модулей NodeJS](tutorial/using-native-node-modules.md)
 * [Отладка главного процесса](tutorial/debugging-main-process.md)
 * [Использование Selenium и WebDriver](tutorial/using-selenium-and-webdriver.md)
 * [DevTools Extension](tutorial/devtools-extension.md)
@@ -22,8 +22,8 @@
 ## Учебники
 
 * [Быстрый старт](tutorial/quick-start.md)
-* [Desktop Environment Integration](tutorial/desktop-environment-integration.md)
-* [Online/Offline Event Detection](tutorial/online-offline-events.md)
+* [Интеграция рабочего окружения](tutorial/desktop-environment-integration.md)
+* [Определение Онлайн/Оффлайн состояния](tutorial/online-offline-events.md)
 
 ## API References
 
@@ -37,7 +37,7 @@
 * [`<webview>` Tag](api/web-view-tag.md)
 * [`window.open` Function](api/window-open.md)
 
-### Modules for the Main Process:
+### Модули для Main Process:
 
 * [app](api/app.md)
 * [autoUpdater](api/auto-updater.md)
@@ -61,7 +61,7 @@
 * [remote](api/remote.md)
 * [webFrame](api/web-frame.md)
 
-### Modules for Both Processes:
+### Модули для обоих процессов:
 
 * [clipboard](api/clipboard.md)
 * [crashReporter](api/crash-reporter.md)
@@ -72,11 +72,11 @@
 ## Разработка
 
 * [Стиль кодирования](development/coding-style.md)
-* [Source Code Directory Structure](development/source-code-directory-structure.md)
+* [Структура папок с исходным кодом](development/source-code-directory-structure.md)
 * [Technical Differences to NW.js (formerly node-webkit)](development/atom-shell-vs-node-webkit.md)
 * [Обзор системы сборки](development/build-system-overview.md)
 * [Инструкции по сборке (OS X)](development/build-instructions-osx.md)
 * [Инструкции по сборке (Windows)](development/build-instructions-windows.md)
 * [Инструкции по сборке (Linux)](development/build-instructions-linux.md)
 * [Настройка сервера символов для отладчика](development/setting-up-symbol-server.md)
- 
+

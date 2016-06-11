@@ -50,6 +50,18 @@
   var Mocha = require('mocha');
 
   var mocha = new Mocha();
+
+  if (isCi) {
+    mocha.grep = function () {
+      try {
+        throw new Error('A spec contains a call to it.only or describe.only and should be reverted.')
+      } catch (error) {
+        console.error(error.stack || error)
+      }
+      ipcRenderer.send('process.exit', 1)
+    }
+  }
+
   mocha.ui('bdd').reporter(isCi ? 'tap' : 'html');
 
   var query = Mocha.utils.parseQuery(window.location.search || '');

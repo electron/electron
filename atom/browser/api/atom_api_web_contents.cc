@@ -389,6 +389,11 @@ void WebContents::ActivateContents(content::WebContents* source) {
   Emit("activate");
 }
 
+void WebContents::UpdateTargetURL(content::WebContents* source,
+                                  const GURL& url) {
+  Emit("update-target-url", url);
+}
+
 bool WebContents::IsPopupOrPanel(const content::WebContents* source) const {
   return type_ == BROWSER_WINDOW;
 }
@@ -737,6 +742,15 @@ void WebContents::NavigationEntryCommitted(
 
 int WebContents::GetID() const {
   return web_contents()->GetRenderProcessHost()->GetID();
+}
+
+std::string WebContents::GetType() const {
+  switch (type_) {
+    case BROWSER_WINDOW: return "window";
+    case WEB_VIEW: return "webview";
+    case REMOTE: return "remote";
+    default: return "";
+  }
 }
 
 bool WebContents::Equal(const WebContents* web_contents) const {
@@ -1089,6 +1103,14 @@ void WebContents::StopFindInPage(content::StopFindAction action) {
   web_contents()->StopFinding(action);
 }
 
+void WebContents::ShowDefinitionForSelection() {
+#if defined(OS_MACOSX)
+  const auto view = web_contents()->GetRenderWidgetHostView();
+  if (view)
+    view->ShowDefinitionForSelection();
+#endif
+}
+
 void WebContents::Focus() {
   web_contents()->Focus();
 }
@@ -1274,6 +1296,7 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("endFrameSubscription", &WebContents::EndFrameSubscription)
       .SetMethod("setSize", &WebContents::SetSize)
       .SetMethod("isGuest", &WebContents::IsGuest)
+      .SetMethod("getType", &WebContents::GetType)
       .SetMethod("getWebPreferences", &WebContents::GetWebPreferences)
       .SetMethod("getOwnerBrowserWindow", &WebContents::GetOwnerBrowserWindow)
       .SetMethod("hasServiceWorker", &WebContents::HasServiceWorker)
@@ -1284,6 +1307,8 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("_printToPDF", &WebContents::PrintToPDF)
       .SetMethod("addWorkSpace", &WebContents::AddWorkSpace)
       .SetMethod("removeWorkSpace", &WebContents::RemoveWorkSpace)
+      .SetMethod("showDefinitionForSelection",
+                 &WebContents::ShowDefinitionForSelection)
       .SetProperty("id", &WebContents::ID)
       .SetProperty("session", &WebContents::Session)
       .SetProperty("hostWebContents", &WebContents::HostWebContents)
@@ -1350,6 +1375,8 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   dict.SetMethod("_setWrapWebContents", &atom::api::SetWrapWebContents);
   dict.SetMethod("fromId",
                  &mate::TrackableObject<atom::api::WebContents>::FromWeakMapID);
+  dict.SetMethod("getAllWebContents",
+                 &mate::TrackableObject<atom::api::WebContents>::GetAll);
 }
 
 }  // namespace

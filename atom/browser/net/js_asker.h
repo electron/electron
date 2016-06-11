@@ -5,6 +5,7 @@
 #ifndef ATOM_BROWSER_NET_JS_ASKER_H_
 #define ATOM_BROWSER_NET_JS_ASKER_H_
 
+#include "atom/common/native_mate_converters/net_converter.h"
 #include "base/callback.h"
 #include "base/memory/ref_counted.h"
 #include "base/memory/weak_ptr.h"
@@ -19,7 +20,7 @@
 namespace atom {
 
 using JavaScriptHandler =
-    base::Callback<void(const net::URLRequest*, v8::Local<v8::Value>)>;
+    base::Callback<void(const base::DictionaryValue&, v8::Local<v8::Value>)>;
 
 namespace internal {
 
@@ -31,7 +32,7 @@ using ResponseCallback =
 // Ask handler for options in UI thread.
 void AskForOptions(v8::Isolate* isolate,
                    const JavaScriptHandler& handler,
-                   net::URLRequest* request,
+                   std::unique_ptr<base::DictionaryValue> request_details,
                    const BeforeStartCallback& before_start,
                    const ResponseCallback& callback);
 
@@ -67,12 +68,15 @@ class JsAsker : public RequestJob {
  private:
   // RequestJob:
   void Start() override {
+    std::unique_ptr<base::DictionaryValue> request_details(
+        new base::DictionaryValue);
+    FillRequestDetails(request_details.get(), RequestJob::request());
     content::BrowserThread::PostTask(
         content::BrowserThread::UI, FROM_HERE,
         base::Bind(&internal::AskForOptions,
                    isolate_,
                    handler_,
-                   RequestJob::request(),
+                   base::Passed(&request_details),
                    base::Bind(&JsAsker::BeforeStartInUI,
                               weak_factory_.GetWeakPtr()),
                    base::Bind(&JsAsker::OnResponse,

@@ -1,26 +1,36 @@
 # Mac App Store 应用提交向导
 
-自从 v0.34.0, Electron 就允许提交应用包到 Mac App Store
-(MAS) . 这个向导提供的信息有 : 如何提交应用和 MAS 构建的限制.
+自从 v0.34.0，Electron 就允许提交应用包到 Mac App Store
+(MAS)。这个向导提供的信息有: 如何提交应用和 MAS 构建的限制。
 
-__注意:__ 从 v0.36.0，当应用成为沙箱之后，会有一个 bug 阻止 GPU 进程开启 , 所以在这个 bug 修复之前，建议使用 v0.35.x .更多查看 [issue #3871][issue-3871] .
-
-__注意:__ 提交应用到 Mac App Store 需要参加  [Apple Developer
-Program][developer-program] , 这需要花钱.
+__注意:__ 提交应用到 Mac App Store 需要参加 [Apple Developer
+Program][developer-program]，这需要额外花费。
 
 ## 如何提交
 
-下面步骤介绍了一个简单的提交应用到商店方法.然而，这些步骤不能保证你的应用被 Apple 接受；你仍然需要阅读 Apple 的 [Submitting Your App][submitting-your-app] 关于如何满足 Mac App Store 要求的向导.
+下面步骤介绍了一个简单的提交应用到商店方法。然而，这些步骤不能保证你的应用被 Apple 接受；你仍然需要阅读 Apple 的 [Submitting Your App][submitting-your-app] 关于如何满足 Mac App Store 要求的向导。
 
 ### 获得证书
 
-为了提交应用到商店，首先需要从 Apple 获得一个证书.可以遵循  [existing guides][nwjs-guide].
+为了提交应用到商店，首先需要从 Apple 获得一个证书。可以遵循 [现有向导][nwjs-guide]。
 
-### App 签名
+### 软件签名
 
-获得证书之后，你可以使用 [Application Distribution](application-distribution.md) 打包你的应用, 然后前往提交你的应用.这个步骤基本上和其他程序一样，但是这 key 一个个的标识 Electron 的每个依赖.
+获得证书之后，你可以使用 [应用部署](application-distribution.md) 打包你的应用，之后进行提交。
 
-首先，你需要准备2个授权文件 .
+首先，你需要在软件包内的 `Info.plist` 中增添一项 `ElectronTeamID`：
+
+```xml
+<plist version="1.0">
+<dict>
+  ...
+  <key>ElectronTeamID</key>
+  <string>TEAM_ID</string>
+</dict>
+</plist>
+```
+
+之后，你需要准备2个授权文件。
 
 `child.plist`:
 
@@ -46,67 +56,76 @@ Program][developer-program] , 这需要花钱.
   <dict>
     <key>com.apple.security.app-sandbox</key>
     <true/>
+    <key>com.apple.security.application-groups</key>
+    <string>TEAM_ID.your.bundle.id</string>
   </dict>
 </plist>
 ```
 
-然后使用下面的脚本标识你的应用 :
+请注意上述 `TEAM_ID` 对应开发者账户的 Team ID，`your.bundle.id` 对应软件打包时使用的 Bundle ID。
+
+然后使用下面的脚本签名你的应用：
 
 ```bash
 #!/bin/bash
 
-# Name of your app.
+# 应用名称
 APP="YourApp"
-# The path of you app to sign.
-APP_PATH="/path/to/YouApp.app"
-# The path to the location you want to put the signed package.
+# 应用路径
+APP_PATH="/path/to/YourApp.app"
+# 生成安装包路径
 RESULT_PATH="~/Desktop/$APP.pkg"
-# The name of certificates you requested.
+# 开发者应用签名证书
 APP_KEY="3rd Party Mac Developer Application: Company Name (APPIDENTITY)"
 INSTALLER_KEY="3rd Party Mac Developer Installer: Company Name (APPIDENTITY)"
+# 授权文件路径
+CHILD_PLIST="/path/to/child.plist"
+PARENT_PLIST="/path/to/parent.plist"
 
 FRAMEWORKS_PATH="$APP_PATH/Contents/Frameworks"
 
-codesign --deep -fs "$APP_KEY" --entitlements child.plist "$FRAMEWORKS_PATH/Electron Framework.framework/Versions/A"
-codesign --deep -fs "$APP_KEY" --entitlements child.plist "$FRAMEWORKS_PATH/$APP Helper.app/"
-codesign --deep -fs "$APP_KEY" --entitlements child.plist "$FRAMEWORKS_PATH/$APP Helper EH.app/"
-codesign --deep -fs "$APP_KEY" --entitlements child.plist "$FRAMEWORKS_PATH/$APP Helper NP.app/"
-if [ -d "$FRAMEWORKS_PATH/Squirrel.framework/Versions/A" ]; then
-  # Signing a non-MAS build.
-  codesign --deep -fs "$APP_KEY" --entitlements child.plist "$FRAMEWORKS_PATH/Mantle.framework/Versions/A"
-  codesign --deep -fs "$APP_KEY" --entitlements child.plist "$FRAMEWORKS_PATH/ReactiveCocoa.framework/Versions/A"
-  codesign --deep -fs "$APP_KEY" --entitlements child.plist "$FRAMEWORKS_PATH/Squirrel.framework/Versions/A"
-fi
-codesign -fs "$APP_KEY" --entitlements parent.plist "$APP_PATH"
+codesign -s "$APP_KEY" -f --entitlements "$CHILD_PLIST" "$FRAMEWORKS_PATH/Electron Framework.framework/Versions/A/Electron Framework"
+codesign -s "$APP_KEY" -f --entitlements "$CHILD_PLIST" "$FRAMEWORKS_PATH/Electron Framework.framework/Versions/A/Libraries/libffmpeg.dylib"
+codesign -s "$APP_KEY" -f --entitlements "$CHILD_PLIST" "$FRAMEWORKS_PATH/Electron Framework.framework/Versions/A/Libraries/libnode.dylib"
+codesign -s "$APP_KEY" -f --entitlements "$CHILD_PLIST" "$FRAMEWORKS_PATH/Electron Framework.framework"
+codesign -s "$APP_KEY" -f --entitlements "$CHILD_PLIST" "$FRAMEWORKS_PATH/$APP Helper.app/Contents/MacOS/$APP Helper"
+codesign -s "$APP_KEY" -f --entitlements "$CHILD_PLIST" "$FRAMEWORKS_PATH/$APP Helper.app/"
+codesign -s "$APP_KEY" -f --entitlements "$CHILD_PLIST" "$FRAMEWORKS_PATH/$APP Helper EH.app/Contents/MacOS/$APP Helper EH"
+codesign -s "$APP_KEY" -f --entitlements "$CHILD_PLIST" "$FRAMEWORKS_PATH/$APP Helper EH.app/"
+codesign -s "$APP_KEY" -f --entitlements "$CHILD_PLIST" "$FRAMEWORKS_PATH/$APP Helper NP.app/Contents/MacOS/$APP Helper NP"
+codesign -s "$APP_KEY" -f --entitlements "$CHILD_PLIST" "$FRAMEWORKS_PATH/$APP Helper NP.app/"
+codesign -s "$APP_KEY" -f --entitlements "$CHILD_PLIST" "$APP_PATH/Contents/MacOS/$APP"
+codesign -s "$APP_KEY" -f --entitlements "$PARENT_PLIST" "$APP_PATH"
 
 productbuild --component "$APP_PATH" /Applications --sign "$INSTALLER_KEY" "$RESULT_PATH"
 ```
-如果你是 OS X 下的应用沙箱使用新手，应当仔细阅读 Apple 的 [Enabling App Sandbox][enable-app-sandbox] 来有一点基础,然后向授权文件添加你的应用需要的许可 keys .
 
-### 上传你的应用并检查提交 
+如果你是 OS X 下的应用沙箱使用新手，应当仔细阅读 Apple 的 [Enabling App Sandbox][enable-app-sandbox] 了解一些基础，然后在授权文件 (entitlements files) 内添加你的应用需要的许可。
 
-在签名应用之后，可以使用应用 Loader 来上传到 iTunes 链接处理 , 确保在上传之前你已经 [created a record][create-record]. 然后你能 [submit your app for review][submit-for-review].
+### 上传你的应用并检查提交
 
-##  MAS构建限制
+在签名应用之后，你可以使用 Application Loader 上传软件到 iTunes Connect 进行处理。请确保在上传之前你已经 [创建应用记录][create-record]，再 [提交进行审核][submit-for-review]。
 
-为了让你的应用沙箱满足所有条件，在 MAS 构建的时候，下面的模块被禁用了 :
+## MAS 构建限制
+
+为了让你的应用满足沙箱的所有条件，在 MAS 构建的时候，下面的模块已被禁用：
 
 * `crashReporter`
 * `autoUpdater`
 
 并且下面的行为也改变了:
 
-* 一些机子的视频采集功能无效.
-* 某些特征不可访问.
-* Apps 不可识别 DNS 改变.
+* 一些视频采集功能无效。
+* 某些辅助功能无法访问。
+* 应用无法检测 DNS 变化。
 
-也由于应用沙箱的使用方法，应用可以访问的资源被严格限制了 ; 阅读更多信息 [App Sandboxing][app-sandboxing] .
+也由于应用沙箱的使用方法，应用可以访问的资源被严格限制了；阅读更多信息 [App Sandboxing][app-sandboxing]。
 
 ## Electron 使用的加密算法
 
-取决于你所在地方的国家和地区 , Mac App Store 或许需要记录你应用的加密算法 , 甚至要求你提交一个 U.S 加密注册(ERN) 许可的复印件.
+取决于你所在地方的国家和地区，Mac App Store 或许需要记录你应用的加密算法，甚至要求你提交一个 U.S. 加密注册 (ERN) 许可的复印件。
 
-Electron 使用下列加密算法:
+Electron 使用下列加密算法：
 
 * AES - [NIST SP 800-38A](http://csrc.nist.gov/publications/nistpubs/800-38a/sp800-38a.pdf), [NIST SP 800-38D](http://csrc.nist.gov/publications/nistpubs/800-38D/SP-800-38D.pdf), [RFC 3394](http://www.ietf.org/rfc/rfc3394.txt)
 * HMAC - [FIPS 198-1](http://csrc.nist.gov/publications/fips/fips198-1/FIPS-198-1_final.pdf)
@@ -132,9 +151,9 @@ Electron 使用下列加密算法:
 * RC5 - http://people.csail.mit.edu/rivest/Rivest-rc5rev.pdf
 * RIPEMD - [ISO/IEC 10118-3](http://webstore.ansi.org/RecordDetail.aspx?sku=ISO%2FIEC%2010118-3:2004)
 
-如何获取 ERN 许可, 可看这篇文章: [How to legally
+如何获取 ERN 许可, 可看这篇文章：[How to legally
 submit an app to Apple’s App Store when it uses encryption (or how to obtain an
-ERN)][ern-tutorial].
+ERN)][ern-tutorial]。
 
 [developer-program]: https://developer.apple.com/support/compare-memberships/
 [submitting-your-app]: https://developer.apple.com/library/mac/documentation/IDEs/Conceptual/AppDistributionGuide/SubmittingYourApp/SubmittingYourApp.html

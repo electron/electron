@@ -58,6 +58,7 @@ extern const char kExperimentalCanvasFeatures[];
 extern const char kOpenerID[];
 extern const char kScrollBounce[];
 extern const char kBlinkFeatures[];
+extern const char kDisableBlinkFeatures[];
 
 }   // namespace options
 
@@ -70,6 +71,7 @@ extern const char kEnablePlugins[];
 extern const char kPpapiFlashPath[];
 extern const char kPpapiFlashVersion[];
 extern const char kDisableHttpCache[];
+extern const char kStandardSchemes[];
 extern const char kRegisterServiceWorkerSchemes[];
 extern const char kSSLVersionFallbackMin[];
 extern const char kCipherSuiteBlacklist[];

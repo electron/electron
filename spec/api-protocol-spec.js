@@ -919,6 +919,23 @@ describe('protocol module', function () {
         })
         w.loadURL(origin)
       })
+    }),
+
+    it('can have fetch working in it', function (done) {
+      const content = '<html><script>fetch("http://github.com")</script></html>'
+      const handler = function (request, callback) {
+        callback({data: content, mimeType: 'text/html'})
+      }
+      protocol.registerStringProtocol(standardScheme, handler, function (error) {
+        if (error) return done(error)
+        w.webContents.on('crashed', function () {
+          done('WebContents crashed')
+        })
+        w.webContents.on('did-finish-load', function () {
+          done()
+        })
+        w.loadURL(origin)
+      })
     })
   })
 })

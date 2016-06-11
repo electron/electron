@@ -107,7 +107,11 @@ const char kOpenerID[] = "openerId";
 const char kScrollBounce[] = "scrollBounce";
 
 // Enable blink features.
+// TODO(kevinsawicki) Rename to enableBlinkFeatures in 2.0
 const char kBlinkFeatures[] = "blinkFeatures";
+
+// Disable blink features.
+const char kDisableBlinkFeatures[] = "disableBlinkFeatures";
 
 }  // namespace options
 
@@ -124,6 +128,9 @@ const char kPpapiFlashVersion[] = "ppapi-flash-version";
 
 // Disable HTTP cache.
 const char kDisableHttpCache[] = "disable-http-cache";
+
+// The list of standard schemes.
+const char kStandardSchemes[] = "standard-schemes";
 
 // Register schemes to handle service worker.
 const char kRegisterServiceWorkerSchemes[] = "register-service-worker-schemes";

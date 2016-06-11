@@ -76,7 +76,7 @@ exports.withLocalCallback = () => {
 
 ```javascript
 // 렌더러 프로세스
-const mapNumbers = require('remote').require('./mapNumbers');
+const mapNumbers = require('electron').remote.require('./mapNumbers');
 
 const withRendererCb = mapNumbers.withRendererCallback(x => x + 1);
 

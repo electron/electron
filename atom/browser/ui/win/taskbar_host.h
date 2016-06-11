@@ -44,8 +44,8 @@ class TaskbarHost {
   bool HandleThumbarButtonEvent(int button_id);
 
  private:
-  // Initailize the taskbar object.
-  bool InitailizeTaskbar();
+  // Initialize the taskbar object.
+  bool InitializeTaskbar();
 
   using CallbackMap = std::map<int, base::Closure>;
   CallbackMap callback_map_;
