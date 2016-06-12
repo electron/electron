@@ -219,7 +219,7 @@ $ ./Electron.app/Contents/MacOS/Electron your-app/
 [Node.js](https://nodejs.org/en/download/)가 필요합니다. (CLI에서 실행 가능한
   [npm](https://npmjs.org)이 있어야 합니다)
 
-**역주**: `npm`은 보통 Node.js를 설치하면 자동으로 같이 설치됩니다.
+**역자주**: `npm`은 보통 Node.js를 설치하면 자동으로 같이 설치됩니다.
 
 ```bash
 # 저장소를 클론합니다

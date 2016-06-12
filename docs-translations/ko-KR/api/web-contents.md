@@ -289,9 +289,9 @@ Returns:
 Returns:
 
 * `event` Event
-* `url` URL
+* `url` String
 
-마우스나 키보드를 사용해 링크에 포커스를 할 때 발생하는 이벤트입니다.
+마우스나 키보드를 사용해 링크에 포커스할 때 발생하는 이벤트입니다.
 
 ### Event: 'cursor-changed'
 
@@ -943,6 +943,10 @@ win.webContents.on('did-finish-load', () => {
   });
 });
 ```
+
+### `webContents.showDefinitionForSelection()` _OS X_
+
+페이지에서 선택된 단어에 대한 사전 검색 결과 팝업을 표시합니다.
 
 ## Instance Properties
 

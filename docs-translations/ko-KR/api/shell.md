@@ -39,7 +39,7 @@ shell.openExternal('https://github.com');
 mailto: URL은 유저의 기본 이메일 에이전트로 URL을 엽니다.) 애플리케이션이 해당 URL을
 열 수 있을 때 `true`를 반환합니다. 아니라면 `false`를 반환합니다.
 
-**역주:** 탐색기로 폴더만 표시하려면 `'file://경로'`와 같이 지정하여 열 수 있습니다.
+**역자주:** 탐색기로 폴더만 표시하려면 `'file://경로'`와 같이 지정하여 열 수 있습니다.
 
 ### `shell.moveItemToTrash(fullPath)`
 

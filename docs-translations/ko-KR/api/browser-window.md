@@ -867,7 +867,7 @@ Linux 플랫폼에선 Unity 데스크톱 환경만 지원합니다. 그리고 �
 
 ### `win.showDefinitionForSelection()` _OS X_
 
-페이지의 선택된 단어에 대한 사전 검색 결과 팝업을 표시합니다.
+`webContents.showDefinitionForSelection()`와 같습니다.
 
 ### `win.setIcon(icon)` _Windows_ _Linux_
 
@@ -896,7 +896,7 @@ Linux 플랫폼에선 Unity 데스크톱 환경만 지원합니다. 그리고 �
 메뉴 막대의 표시 여부를 설정합니다. 만약 메뉴 막대 자동 숨김 상태라면 여전히 사용자가
 `Alt` 키를 입력하여 메뉴 막대를 표시되도록 할 수 있습니다.
 
-**역주:** 기본 메뉴 막대를 완전히 없애려면 `win.setMenu(null)`를 호출해야 합니다.
+**역자주:** 기본 메뉴 막대를 완전히 없애려면 `win.setMenu(null)`를 호출해야 합니다.
 단순히 이 API를 사용하면 여전히 메뉴에 등록된 핫 키가 작동합니다.
 
 ### `win.isMenuBarVisible()`
@@ -917,10 +917,13 @@ Linux 플랫폼에선 Unity 데스크톱 환경만 지원합니다. 그리고 �
 
 **참고:** 이 API는 Windows에서 언제나 false를 반환합니다.
 
-### `win.setIgnoreMouseEvents(ignore)` _OS X_
+### `win.setIgnoreMouseEvents(ignore)`
 
 * `ignore` Boolean
 
-윈도우에서 일어나는 모든 마우스 이벤트를 무시합니다.
+윈도우가 모든 마우스 이벤트를 무시하게 만듭니다.
+
+이 윈도우에서 일어나는 모든 마우스 이벤트가 이 윈도우 밑의 윈도우로 전달됩니다. 하지만
+이 윈도우가 포커스되어 있다면, 여전히 키보드 이벤트는 받을 수 있습니다.
 
 [blink-feature-string]: https://code.google.com/p/chromium/codesearch#chromium/src/out/Debug/gen/blink/platform/RuntimeEnabledFeatures.cpp&sq=package:chromium&type=cs&l=576

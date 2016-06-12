@@ -198,7 +198,7 @@ Electron은 다음과 같은 암호화 알고리즘을 사용합니다:
 ERN의 승인을 얻는 방법은, 다음 글을 참고하는 것이 좋습니다:
 [애플리케이션이 암호화를 사용할 때, 합법적으로 Apple의 앱 스토어에 제출하는 방법 (또는 ERN의 승인을 얻는 방법)][ern-tutorial].
 
-**역주:** [Mac 앱 배포 가이드 공식 한국어 문서](https://developer.apple.com/osx/distribution/kr/)
+**역자주:** [Mac 앱 배포 가이드 공식 한국어 문서](https://developer.apple.com/osx/distribution/kr/)
 
 [developer-program]: https://developer.apple.com/support/compare-memberships/
 [submitting-your-app]: https://developer.apple.com/library/mac/documentation/IDEs/Conceptual/AppDistributionGuide/SubmittingYourApp/SubmittingYourApp.html

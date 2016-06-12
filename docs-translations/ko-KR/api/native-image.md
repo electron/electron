@@ -101,6 +101,12 @@ let appIcon = new Tray('/Users/somebody/images/icon.png');
 
 `path`로부터 이미지를 로드하여 새로운 `nativeImage` 인스턴스를 만듭니다.
 
+```javascript
+const nativeImage = require('electron').nativeImage;
+
+let image = nativeImage.createFromPath('/Users/somebody/images/icon.png');
+```
+
 ### `nativeImage.createFromBuffer(buffer[, scaleFactor])`
 
 * `buffer` [Buffer][buffer]
@@ -117,12 +123,7 @@ let appIcon = new Tray('/Users/somebody/images/icon.png');
 
 ## Instance Methods
 
-`nativeImage` 인스턴스 객체에서 사용할 수 있는 메서드 입니다:
-
-```javascript
-const nativeImage = require('electron').nativeImage;
-let image = nativeImage.createFromPath('/Users/somebody/images/icon.png');
-```
+`nativeImage` 인스턴스 객체에서 사용할 수 있는 메서드입니다.
 
 ### `image.toPng()`
 

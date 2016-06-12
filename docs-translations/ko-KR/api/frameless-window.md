@@ -13,8 +13,8 @@ Frameless Window를 만드려면 [BrowserWindow](browser-window.md) 객체의
 `options` 객체에서 `frame` 옵션을 `false`로 지정하면 됩니다:
 
 ```javascript
-const {BrowserWindow} = require('electron');
-let win = new BrowserWindow({width: 800, height: 600, frame: false});
+const {BrowserWindow} = require('electron')
+let win = new BrowserWindow({width: 800, height: 600, frame: false})
 ```
 
 ### 최신 OS X에서 사용할 수 있는 대안
@@ -25,7 +25,7 @@ OS X 10.10 Yosemite 이후의 최신 버전부터는 테두리가 없는 창을 
 ("신호등 버튼")의 기능과 창 크기를 그대로 유지할 수 있습니다:
 
 ```javascript
-let win = new BrowserWindow({titleBarStyle: 'hidden'});
+let win = new BrowserWindow({titleBarStyle: 'hidden'})
 ```
 
 ## 투명한 창 만들기
@@ -34,7 +34,7 @@ Frameless Window 창의 배경을 투명하게 만들고 싶다면 `transparent`
 바꿔주기만 하면됩니다:
 
 ```javascript
-let win = new BrowserWindow({transparent: true, frame: false});
+let win = new BrowserWindow({transparent: true, frame: false})
 ```
 
 ### API의 한계
@@ -53,6 +53,16 @@ let win = new BrowserWindow({transparent: true, frame: false});
   `--enable-transparent-visuals --disable-gpu`을 추가해야 합니다. 이 옵션은 GPU의
   사용을 중단하고 윈도우를 생성하는데 ARGB를 사용할 수 있도록 해줍니다.
 * OS X(Mac)에선 네이티브 창에서 보여지는 그림자가 투명한 창에선 보이지 않습니다.
+
+## 클릭이 통과될 수 있는 윈도우
+
+클릭이 통과될 수 있는 윈도우를 만드려면, i.e. 모든 마우스 이벤트를 무시하는 윈도우를
+만드려면, [win.setIgnoreMouseEvents(ignore)][ignore-mouse-events] API를 사용하여
+구현할 수 있습니다:
+
+```javascript
+win.setIgnoreMouseEvents(true)
+```
 
 ## 드래그 가능 위치 지정
 
@@ -101,3 +111,5 @@ Frameless Window에서 텍스트가 선택되는 드래그 동작은 혼란을 �
 드래그 가능 영역에서 오른쪽 클릭 할 경우 시스템 메뉴가 팝업 됩니다. 이러한 이유로
 컨텍스트 메뉴 지정 시 모든 플랫폼에서 정상적으로 작동하게 하려면 커스텀 컨텍스트 메뉴를
 드래그 영역 내에 만들어선 안됩니다.
+
+[ignore-mouse-events]: browser-window.md#winsetignoremouseeventsignore

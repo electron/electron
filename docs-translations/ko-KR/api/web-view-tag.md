@@ -324,7 +324,7 @@ Webview에 웹 페이지 `url`을 로드합니다. `url`은 `http://`, `file://`
 이 옵션을 활성화 시키면 `requestFullScreen`와 같은 HTML API에서 유저의 승인을
 무시하고 개발자가 API를 바로 사용할 수 있도록 허용합니다.
 
-**역주:** 기본적으로 브라우저에선 전체화면, 웹캠, 파일 열기등의 API를 사용하려면 유저의
+**역자주:** 기본적으로 브라우저에선 전체화면, 웹캠, 파일 열기등의 API를 사용하려면 유저의
 승인(이벤트)이 필요합니다.
 
 ### `<webview>.openDevTools()`
@@ -467,6 +467,10 @@ Service worker에 대한 개발자 도구를 엽니다.
 
 `event` 객체에 대해 자세히 알아보려면 [webContents.sendInputEvent](web-contents.md##webcontentssendinputeventevent)를
 참고하세요.
+
+### `<webview>.showDefinitionForSelection()` _OS X_
+
+페이지에서 선택된 단어에 대한 사전 검색 결과 팝업을 표시합니다.
 
 ### `<webview>.getWebContents()`
 
@@ -768,6 +772,15 @@ Returns:
 ```html
 <meta name='theme-color' content='#ff0000'>
 ```
+
+### Event: 'update-target-url'
+
+Returns:
+
+* `url` String
+
+마우스나 키보드를 사용해 링크에 포커스할 때 발생하는 이벤트입니다.
+
 ### Event: 'devtools-opened'
 
 개발자 도구가 열렸을 때 발생하는 이벤트입니다.
