@@ -2,8 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_MAC_DICT_UTIL_H_
-#define ATOM_BROWSER_MAC_DICT_UTIL_H_
+#pragma once
 
 #import <Foundation/Foundation.h>
 
@@ -24,5 +23,3 @@ std::unique_ptr<base::DictionaryValue> NSDictionaryToDictionaryValue(
 std::unique_ptr<base::ListValue> NSArrayToListValue(NSArray* arr);
 
 }  // namespace atom
-
-#endif  // ATOM_BROWSER_MAC_DICT_UTIL_H_

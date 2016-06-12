@@ -2,8 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_ATOM_SPEECH_RECOGNITION_MANAGER_DELEGATE_H_
-#define ATOM_BROWSER_ATOM_SPEECH_RECOGNITION_MANAGER_DELEGATE_H_
+#pragma once
 
 #include <string>
 
@@ -49,5 +48,3 @@ class AtomSpeechRecognitionManagerDelegate
 };
 
 }  // namespace atom
-
-#endif  // ATOM_BROWSER_ATOM_SPEECH_RECOGNITION_MANAGER_DELEGATE_H_

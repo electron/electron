@@ -2,8 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_API_ATOM_API_WEB_REQUEST_H_
-#define ATOM_BROWSER_API_ATOM_API_WEB_REQUEST_H_
+#pragma once
 
 #include "atom/browser/api/trackable_object.h"
 #include "atom/browser/net/atom_network_delegate.h"
@@ -45,5 +44,3 @@ class WebRequest : public mate::TrackableObject<WebRequest> {
 }  // namespace api
 
 }  // namespace atom
-
-#endif  // ATOM_BROWSER_API_ATOM_API_WEB_REQUEST_H_

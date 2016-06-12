@@ -2,8 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_COMMON_NATIVE_MATE_CONVERTERS_NET_CONVERTER_H_
-#define ATOM_COMMON_NATIVE_MATE_CONVERTERS_NET_CONVERTER_H_
+#pragma once
 
 #include "base/memory/ref_counted.h"
 #include "native_mate/converter.h"
@@ -44,5 +43,3 @@ void GetUploadData(base::ListValue* upload_data_list,
                    const net::URLRequest* request);
 
 }  // namespace atom
-
-#endif  // ATOM_COMMON_NATIVE_MATE_CONVERTERS_NET_CONVERTER_H_

@@ -2,8 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_API_SAVE_PAGE_HANDLER_H_
-#define ATOM_BROWSER_API_SAVE_PAGE_HANDLER_H_
+#pragma once
 
 #include <string>
 
@@ -54,5 +53,3 @@ class SavePageHandler : public content::DownloadManager::Observer,
 }  // namespace api
 
 }  // namespace atom
-
-#endif  // ATOM_BROWSER_API_SAVE_PAGE_HANDLER_H_

@@ -2,8 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_COMMON_ASAR_ARCHIVE_H_
-#define ATOM_COMMON_ASAR_ARCHIVE_H_
+#pragma once
 
 #include <vector>
 
@@ -82,5 +81,3 @@ class Archive {
 };
 
 }  // namespace asar
-
-#endif  // ATOM_COMMON_ASAR_ARCHIVE_H_

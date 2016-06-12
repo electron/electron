@@ -2,8 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_RENDER_PROCESS_PREFERENCES_H_
-#define ATOM_BROWSER_RENDER_PROCESS_PREFERENCES_H_
+#pragma once
 
 #include <memory>
 #include <unordered_map>
@@ -57,5 +56,3 @@ class RenderProcessPreferences : public content::NotificationObserver {
 };
 
 }  // namespace atom
-
-#endif  // ATOM_BROWSER_RENDER_PROCESS_PREFERENCES_H_

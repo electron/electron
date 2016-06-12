@@ -2,8 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_WEB_VIEW_MANAGER_H_
-#define ATOM_BROWSER_WEB_VIEW_MANAGER_H_
+#pragma once
 
 #include <map>
 
@@ -66,5 +65,3 @@ class WebViewManager : public content::BrowserPluginGuestManager {
 };
 
 }  // namespace atom
-
-#endif  // ATOM_BROWSER_WEB_VIEW_MANAGER_H_

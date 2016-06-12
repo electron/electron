@@ -2,8 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_COMMON_MOUSE_UTIL_H_
-#define ATOM_COMMON_MOUSE_UTIL_H_
+#pragma once
 
 #include <string>
 #include "content/common/cursors/webcursor.h"
@@ -32,5 +31,3 @@ namespace atom {
 std::string CursorTypeToString(const content::WebCursor::CursorInfo& info);
 
 }  // namespace atom
-
-#endif  // ATOM_COMMON_MOUSE_UTIL_H_

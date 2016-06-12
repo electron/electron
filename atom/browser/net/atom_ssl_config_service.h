@@ -2,8 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_NET_ATOM_SSL_CONFIG_SERVICE_H_
-#define ATOM_BROWSER_NET_ATOM_SSL_CONFIG_SERVICE_H_
+#pragma once
 
 #include "net/ssl/ssl_config_service.h"
 
@@ -24,5 +23,3 @@ class AtomSSLConfigService : public net::SSLConfigService {
 };
 
 }   // namespace atom
-
-#endif  // ATOM_BROWSER_NET_ATOM_SSL_CONFIG_SERVICE_H_

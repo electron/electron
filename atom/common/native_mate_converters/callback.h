@@ -2,8 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_COMMON_NATIVE_MATE_CONVERTERS_CALLBACK_H_
-#define ATOM_COMMON_NATIVE_MATE_CONVERTERS_CALLBACK_H_
+#pragma once
 
 #include <vector>
 
@@ -156,5 +155,3 @@ struct Converter<base::Callback<Sig>> {
 };
 
 }  // namespace mate
-
-#endif  // ATOM_COMMON_NATIVE_MATE_CONVERTERS_CALLBACK_H_

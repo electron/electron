@@ -2,8 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_WEB_DIALOG_HELPER_H_
-#define ATOM_BROWSER_WEB_DIALOG_HELPER_H_
+#pragma once
 
 #include "base/memory/weak_ptr.h"
 
@@ -40,5 +39,3 @@ class WebDialogHelper {
 };
 
 }  // namespace atom
-
-#endif  // ATOM_BROWSER_WEB_DIALOG_HELPER_H_

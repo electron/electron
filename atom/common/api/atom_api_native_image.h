@@ -2,8 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_COMMON_API_ATOM_API_NATIVE_IMAGE_H_
-#define ATOM_COMMON_API_ATOM_API_NATIVE_IMAGE_H_
+#pragma once
 
 #include <map>
 #include <string>
@@ -109,6 +108,3 @@ struct Converter<mate::Handle<atom::api::NativeImage>> {
 };
 
 }  // namespace mate
-
-
-#endif  // ATOM_COMMON_API_ATOM_API_NATIVE_IMAGE_H_

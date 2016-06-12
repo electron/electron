@@ -2,8 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_UI_VIEWS_MENU_DELEGATE_H_
-#define ATOM_BROWSER_UI_VIEWS_MENU_DELEGATE_H_
+#pragma once
 
 #include "base/memory/scoped_ptr.h"
 #include "ui/views/controls/menu/menu_delegate.h"
@@ -59,5 +58,3 @@ class MenuDelegate : public views::MenuDelegate {
 };
 
 }  // namespace atom
-
-#endif  // ATOM_BROWSER_UI_VIEWS_MENU_DELEGATE_H_

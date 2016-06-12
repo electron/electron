@@ -2,8 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_UI_FILE_DIALOG_H_
-#define ATOM_BROWSER_UI_FILE_DIALOG_H_
+#pragma once
 
 #include <string>
 #include <utility>
@@ -66,5 +65,3 @@ void ShowSaveDialog(atom::NativeWindow* parent_window,
                     const SaveDialogCallback& callback);
 
 }  // namespace file_dialog
-
-#endif  // ATOM_BROWSER_UI_FILE_DIALOG_H_

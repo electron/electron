@@ -2,8 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_UTILITY_ATOM_CONTENT_UTILITY_CLIENT_H_
-#define ATOM_UTILITY_ATOM_CONTENT_UTILITY_CLIENT_H_
+#pragma once
 
 #include <set>
 #include <string>
@@ -52,5 +51,3 @@ class AtomContentUtilityClient : public content::ContentUtilityClient {
 };
 
 }  // namespace atom
-
-#endif  // ATOM_UTILITY_ATOM_CONTENT_UTILITY_CLIENT_H_

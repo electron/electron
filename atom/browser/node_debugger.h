@@ -2,8 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_NODE_DEBUGGER_H_
-#define ATOM_BROWSER_NODE_DEBUGGER_H_
+#pragma once
 
 #include <string>
 
@@ -61,5 +60,3 @@ class NodeDebugger : public net::test_server::StreamListenSocket::Delegate {
 };
 
 }  // namespace atom
-
-#endif  // ATOM_BROWSER_NODE_DEBUGGER_H_

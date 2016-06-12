@@ -2,8 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_NATIVE_WINDOW_MAC_H_
-#define ATOM_BROWSER_NATIVE_WINDOW_MAC_H_
+#pragma once
 
 #import <Cocoa/Cocoa.h>
 
@@ -151,5 +150,3 @@ class NativeWindowMac : public NativeWindow {
 };
 
 }  // namespace atom
-
-#endif  // ATOM_BROWSER_NATIVE_WINDOW_MAC_H_

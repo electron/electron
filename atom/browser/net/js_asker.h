@@ -2,8 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_NET_JS_ASKER_H_
-#define ATOM_BROWSER_NET_JS_ASKER_H_
+#pragma once
 
 #include "atom/common/native_mate_converters/net_converter.h"
 #include "base/callback.h"
@@ -108,5 +107,3 @@ class JsAsker : public RequestJob {
 };
 
 }  // namespace atom
-
-#endif  // ATOM_BROWSER_NET_JS_ASKER_H_

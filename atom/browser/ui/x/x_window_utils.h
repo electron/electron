@@ -2,8 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_UI_X_X_WINDOW_UTILS_H_
-#define ATOM_BROWSER_UI_X_X_WINDOW_UTILS_H_
+#pragma once
 
 #include <X11/extensions/XInput2.h>
 #include <X11/extensions/Xrandr.h>
@@ -26,5 +25,3 @@ void SetWindowType(::Window xwindow, const std::string& type);
 bool ShouldUseGlobalMenuBar();
 
 }  // namespace atom
-
-#endif  // ATOM_BROWSER_UI_X_X_WINDOW_UTILS_H_

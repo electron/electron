@@ -2,8 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_API_TRACKABLE_OBJECT_H_
-#define ATOM_BROWSER_API_TRACKABLE_OBJECT_H_
+#pragma once
 
 #include <vector>
 
@@ -135,5 +134,3 @@ template<typename T>
 atom::KeyWeakMap<int32_t>* TrackableObject<T>::weak_map_ = nullptr;
 
 }  // namespace mate
-
-#endif  // ATOM_BROWSER_API_TRACKABLE_OBJECT_H_

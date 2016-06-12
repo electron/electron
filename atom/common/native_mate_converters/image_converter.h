@@ -2,8 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_COMMON_NATIVE_MATE_CONVERTERS_IMAGE_CONVERTER_H_
-#define ATOM_COMMON_NATIVE_MATE_CONVERTERS_IMAGE_CONVERTER_H_
+#pragma once
 
 #include "native_mate/converter.h"
 
@@ -31,5 +30,3 @@ struct Converter<gfx::Image> {
 };
 
 }  // namespace mate
-
-#endif  // ATOM_COMMON_NATIVE_MATE_CONVERTERS_IMAGE_CONVERTER_H_

@@ -2,8 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_UI_ATOM_MENU_MODEL_H_
-#define ATOM_BROWSER_UI_ATOM_MENU_MODEL_H_
+#pragma once
 
 #include <map>
 
@@ -49,5 +48,3 @@ class AtomMenuModel : public ui::SimpleMenuModel {
 };
 
 }  // namespace atom
-
-#endif  // ATOM_BROWSER_UI_ATOM_MENU_MODEL_H_

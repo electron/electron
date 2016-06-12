@@ -2,8 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_API_ATOM_API_POWER_MONITOR_H_
-#define ATOM_BROWSER_API_ATOM_API_POWER_MONITOR_H_
+#pragma once
 
 #include "atom/browser/api/trackable_object.h"
 #include "base/compiler_specific.h"
@@ -38,5 +37,3 @@ class PowerMonitor : public mate::TrackableObject<PowerMonitor>,
 }  // namespace api
 
 }  // namespace atom
-
-#endif  // ATOM_BROWSER_API_ATOM_API_POWER_MONITOR_H_

@@ -2,8 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_COMMON_CRASH_REPORTER_WIN_CRASH_SERVICE_MAIN_H_
-#define ATOM_COMMON_CRASH_REPORTER_WIN_CRASH_SERVICE_MAIN_H_
+#pragma once
 
 namespace crash_service {
 
@@ -11,5 +10,3 @@ namespace crash_service {
 int Main(const wchar_t* cmd_line);
 
 }  // namespace crash_service
-
-#endif  // ATOM_COMMON_CRASH_REPORTER_WIN_CRASH_SERVICE_MAIN_H_

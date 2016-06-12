@@ -2,8 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_UI_WIN_MESSAGE_HANDLER_DELEGATE_H_
-#define ATOM_BROWSER_UI_WIN_MESSAGE_HANDLER_DELEGATE_H_
+#pragma once
 
 #include <windows.h>
 
@@ -22,5 +21,3 @@ class MessageHandlerDelegate {
 };
 
 }  // namespace atom
-
-#endif  // ATOM_BROWSER_UI_WIN_MESSAGE_HANDLER_DELEGATE_H_

@@ -2,8 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_NODE_OSFHANDLE_H_
-#define ATOM_NODE_OSFHANDLE_H_
+#pragma once
 
 #include <windows.h>
 
@@ -24,5 +23,3 @@ NODE_EXTERN int open_osfhandle(intptr_t osfhandle, int flags);
 NODE_EXTERN int close(int fd);
 
 }  // namespace node
-
-#endif  // ATOM_NODE_OSFHANDLE_H_

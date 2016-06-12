@@ -2,8 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_RENDERER_API_ATOM_API_SPELL_CHECK_CLIENT_H_
-#define ATOM_RENDERER_API_ATOM_API_SPELL_CHECK_CLIENT_H_
+#pragma once
 
 #include <string>
 #include <vector>
@@ -87,5 +86,3 @@ class SpellCheckClient : public blink::WebSpellCheckClient {
 }  // namespace api
 
 }  // namespace atom
-
-#endif  // ATOM_RENDERER_API_ATOM_API_SPELL_CHECK_CLIENT_H_

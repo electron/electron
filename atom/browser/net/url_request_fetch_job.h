@@ -2,8 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_NET_URL_REQUEST_FETCH_JOB_H_
-#define ATOM_BROWSER_NET_URL_REQUEST_FETCH_JOB_H_
+#pragma once
 
 #include <string>
 
@@ -63,5 +62,3 @@ class URLRequestFetchJob : public JsAsker<net::URLRequestJob>,
 };
 
 }  // namespace atom
-
-#endif  // ATOM_BROWSER_NET_URL_REQUEST_FETCH_JOB_H_

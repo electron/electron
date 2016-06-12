@@ -2,8 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_VERSION_H
-#define ATOM_VERSION_H
+#pragma once
 
 #define ATOM_MAJOR_VERSION 1
 #define ATOM_MINOR_VERSION 2
@@ -39,5 +38,3 @@
   (( (major) < ATOM_MAJOR_VERSION) \
   || ((major) == ATOM_MAJOR_VERSION && (minor) < ATOM_MINOR_VERSION) \
   || ((major) == ATOM_MAJOR_VERSION && (minor) == ATOM_MINOR_VERSION && (patch) <= ATOM_PATCH_VERSION))
-
-#endif /* ATOM_VERSION_H */

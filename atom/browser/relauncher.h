@@ -2,8 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_RELAUNCHER_H_
-#define ATOM_BROWSER_RELAUNCHER_H_
+#pragma once
 
 // relauncher implements main browser application relaunches across platforms.
 // When a browser wants to relaunch itself, it can't simply fork off a new
@@ -118,5 +117,3 @@ int LaunchProgram(const StringVector& relauncher_args,
 }  // namespace internal
 
 }  // namespace relauncher
-
-#endif  // ATOM_BROWSER_RELAUNCHER_H_
