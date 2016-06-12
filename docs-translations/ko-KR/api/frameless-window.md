@@ -45,7 +45,7 @@ let win = new BrowserWindow({transparent: true, frame: false});
 * 투명한 창은 크기를 조절할 수 없습니다. `resizable` 속성을 `true`로 할 경우 몇몇
   플랫폼에선 크래시가 일어납니다.
 * `blur` 필터는 웹 페이지에서만 적용됩니다. 윈도우 아래 콘텐츠에는 블러 효과를 적용할
-  방법이 없습니다. (예시: 유저의 시스템에 열린 다른 어플리케이션)
+  방법이 없습니다. (예시: 유저의 시스템에 열린 다른 애플리케이션)
 * Windows에선 DWM(데스크톱 창 관리자)가 비활성화되어 있을 경우 투명한 창이 작동하지
   않습니다.
 * Linux를 사용할 경우 [alpha channel doesn't work on some NVidia drivers](https://code.google.com/p/chromium/issues/detail?id=369209)
@@ -56,7 +56,7 @@ let win = new BrowserWindow({transparent: true, frame: false});
 
 ## 드래그 가능 위치 지정
 
-기본적으로 Frameless Window는 드래그 할 수 없습니다. 어플리케이션의 CSS에서 특정
+기본적으로 Frameless Window는 드래그 할 수 없습니다. 애플리케이션의 CSS에서 특정
 범위를 `-webkit-app-region: drag`로 지정하면 OS의 기본 타이틀 바 처럼 드래그 되도록
 할 수 있습니다. 그리고 `-webkit-app-region: no-drag`를 지정해서 드래그 불가능 영역을
 만들 수도 있습니다. 현재 사각형 형태의 범위만 지원합니다.

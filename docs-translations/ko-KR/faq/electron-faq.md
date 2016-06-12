@@ -49,7 +49,7 @@ require('electron').remote.getGlobal('sharedObject').someProperty = 'new value';
 console.log(require('electron').remote.getGlobal('sharedObject').someProperty);
 ```
 
-## 제작한 어플리케이션의 윈도우/트레이가 몇 분 후에나 나타납니다.
+## 제작한 애플리케이션의 윈도우/트레이가 몇 분 후에나 나타납니다.
 
 이러한 문제가 발생하는 이유는 보통 윈도우/트레이를 담은 변수에 가비지 컬렉션이 작동해서
 그럴 가능성이 높습니다.

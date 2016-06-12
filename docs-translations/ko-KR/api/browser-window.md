@@ -66,7 +66,7 @@ win.show();
 * `fullscreenable` Boolean - 윈도우가 전체화면 모드로 전환될 수 있는지 여부입니다.
   또한 OS X에선, 최대화/줌 버튼이 전체화면 모드 또는 윈도우 최대화를 실행할지 여부도
   포함됩니다. 기본값은 `true`입니다.
-* `skipTaskbar` Boolean - 작업표시줄 어플리케이션 아이콘 표시 스킵 여부. 기본값은
+* `skipTaskbar` Boolean - 작업표시줄 애플리케이션 아이콘 표시 스킵 여부. 기본값은
   `false`입니다.
 * `kiosk` Boolean - Kiosk(키오스크) 모드. 기본값은 `false`입니다.
 * `title` String - 기본 윈도우 제목. 기본값은 `"Electron"`입니다.
@@ -85,7 +85,7 @@ On Windows it is
   활성화 되는 동시에 단일 mouse-down 이벤트를 발생시킬지 여부. 기본값은 `false`입니다.
 * `disableAutoHideCursor` Boolean - 타이핑중 자동으로 커서를 숨길지 여부. 기본값은
   `false`입니다.
-* `autoHideMenuBar` Boolean - `Alt`를 누르지 않는 한 어플리케이션 메뉴바를 숨길지
+* `autoHideMenuBar` Boolean - `Alt`를 누르지 않는 한 애플리케이션 메뉴바를 숨길지
   여부. 기본값은 `false`입니다.
 * `enableLargerThanScreen` Boolean - 윈도우 크기가 화면 크기보다 크게 재조정 될
   수 있는지 여부. 기본값은 `false`입니다.
@@ -148,7 +148,7 @@ On Windows it is
     페이지에서 같은 `partition`을 사용할 수 있습니다. 만약 `persist:` 접두어로
     시작하지 않으면 페이지는 인-메모리 세션을 사용합니다. 여러 페이지에서 같은
     `partition`을 지정하면 같은 세션을 공유할 수 있습니다. `partition`을 지정하지
-    않으면 어플리케이션의 기본 세션이 사용됩니다.
+    않으면 애플리케이션의 기본 세션이 사용됩니다.
 * `zoomFactor` Number - 페이지의 기본 줌 값을 지정합니다. 예를 들어 `300%`를
   표현하려면 `3.0`으로 지정합니다. 기본값은 `1.0`입니다.
 * `javascript` Boolean - 자바스크립트를 활성화합니다. 기본값은 `false`입니다.
@@ -227,7 +227,7 @@ window.onbeforeunload = (e) => {
 
   // 일반적인 브라우저와는 달리 사용자에게 확인 창을 보여주지 않고, non-void 값을 반환하면
   // 조용히 닫기를 취소합니다.
-  // Dialog API를 통해 사용자가 어플리케이션을 종료할지 정할 수 있도록 확인 창을 표시하는 것을
+  // Dialog API를 통해 사용자가 애플리케이션을 종료할지 정할 수 있도록 확인 창을 표시하는 것을
   // 추천합니다.
   e.returnValue = false;
 };
@@ -361,7 +361,7 @@ Returns:
 
 ### `BrowserWindow.getFocusedWindow()`
 
-어플리케이션에서 포커스된 윈도우를 반환합니다. 포커스된 윈도우가 없을 경우 `null`을
+애플리케이션에서 포커스된 윈도우를 반환합니다. 포커스된 윈도우가 없을 경우 `null`을
 반환합니다.
 
 ### `BrowserWindow.fromWebContents(webContents)`
@@ -705,7 +705,7 @@ win.setSheetOffset(toolbarRect.height);
 
 * `skip` Boolean
 
-어플리케이션 아이콘을 작업표시줄에 보이지 않도록 설정합니다.
+애플리케이션 아이콘을 작업표시줄에 보이지 않도록 설정합니다.
 
 ### `win.setKiosk(flag)`
 
@@ -804,7 +804,7 @@ Windows 메시지 훅을 등록합니다. `callback`은 WndProc에서 메시지�
 
 * `progress` Double
 
-작업표시줄에 표시되고 있는 어플리케이션 아이콘에 진행 상태를 표시합니다. [0, 1.0]
+작업표시줄에 표시되고 있는 애플리케이션 아이콘에 진행 상태를 표시합니다. [0, 1.0]
 사이의 값을 지정할 수 있습니다.
 
 진행 상태가 < 0 이 되면 진행 상태 표시를 제거합니다.
@@ -821,7 +821,7 @@ Linux 플랫폼에선 Unity 데스크톱 환경만 지원합니다. 그리고 �
 * `description` String - 접근성 설정에 의한 스크린 리더에 제공될 설명입니다
 
 현재 작업표시줄 아이콘에 16 x 16 픽셀 크기의 오버레이를 지정합니다. 보통 이 기능은
-어플리케이션의 여러 상태를 사용자에게 소극적으로 알리기 위한 방법으로 사용됩니다.
+애플리케이션의 여러 상태를 사용자에게 소극적으로 알리기 위한 방법으로 사용됩니다.
 
 ### `win.setHasShadow(hasShadow)` _OS X_
 
