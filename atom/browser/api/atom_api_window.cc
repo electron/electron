@@ -529,6 +529,10 @@ void Window::SetIgnoreMouseEvents(bool ignore) {
   return window_->SetIgnoreMouseEvents(ignore);
 }
 
+void Window::SetIgnoreFocus(bool ignore) {
+  return window_->SetIgnoreFocus(ignore);
+}
+
 void Window::CapturePage(mate::Arguments* args) {
   gfx::Rect rect;
   base::Callback<void(const gfx::Image&)> callback;
@@ -732,6 +736,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setDocumentEdited", &Window::SetDocumentEdited)
       .SetMethod("isDocumentEdited", &Window::IsDocumentEdited)
       .SetMethod("setIgnoreMouseEvents", &Window::SetIgnoreMouseEvents)
+      .SetMethod("setIgnoreFocus", &Window::SetIgnoreFocus)
       .SetMethod("focusOnWebView", &Window::FocusOnWebView)
       .SetMethod("blurWebView", &Window::BlurWebView)
       .SetMethod("isWebViewFocused", &Window::IsWebViewFocused)
