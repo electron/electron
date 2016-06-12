@@ -29,8 +29,8 @@ Node.js의 새로운 기능은 보통 V8 업그레이드에서 가져옵니다. 
 [`sessionStorage`][session-storage], 그리고 [IndexedDB][indexed-db]가 있습니다.
 
 또는 Electron에서만 사용할 수 있는 IPC 시스템을 사용하여 메인 프로세스의 global
-변수에 데이터를 저장한 후 다음과 같이 렌더러 프로세스에서 `remote` 모듈을 사용하여
-접근할 수 있습니다:
+변수에 데이터를 저장한 후 다음과 같이 렌더러 프로세스에서 `electron` 모듈의 `remote`
+속성을 통하여 접근할 수 있습니다:
 
 ```javascript
 // 메인 프로세스에서
@@ -41,12 +41,12 @@ global.sharedObject = {
 
 ```javascript
 // 첫 번째 페이지에서
-require('remote').getGlobal('sharedObject').someProperty = 'new value';
+require('electron').remote.getGlobal('sharedObject').someProperty = 'new value';
 ```
 
 ```javascript
 // 두 번째 페이지에서
-console.log(require('remote').getGlobal('sharedObject').someProperty);
+console.log(require('electron').remote.getGlobal('sharedObject').someProperty);
 ```
 
 ## 제작한 어플리케이션의 윈도우/트레이가 몇 분 후에나 나타납니다.

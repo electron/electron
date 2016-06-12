@@ -46,7 +46,9 @@
 * `cut`
 * `copy`
 * `paste`
+* `pasteandmatchstyle`
 * `selectall`
+* `delete`
 * `minimize` - 현재 윈도우를 최소화합니다
 * `close` - 현재 윈도우를 닫습니다
 

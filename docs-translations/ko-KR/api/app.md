@@ -563,6 +563,12 @@ pkcs12 형식으로된 인증서를 플랫폼 인증서 저장소로 가져옵�
 다른 값은 모두 Chrominum의 [net_error_list](https://code.google.com/p/chromium/codesearch#chromium/src/net/base/net_error_list.h)에
 따라 실패를 의미합니다.
 
+### `app.disableHardwareAcceleration()`
+
+현재 어플리케이션의 하드웨어 가속을 비활성화합니다.
+
+이 메서드는 `app`의 `ready` 이벤트가 발생하기 전에만 호출할 수 있습니다.
+
 ### `app.commandLine.appendSwitch(switch[, value])`
 
 Chrominum의 명령줄에 스위치를 추가합니다. `value`는 추가적인 값을 뜻하며 옵션입니다.
