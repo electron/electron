@@ -41,9 +41,10 @@ API를 사용하여 low-level 수준으로 운영체제와 상호작용할 수 �
 프로세스에서 그 작업을 처리할 수 있도록 메인 프로세스와 통신을 해야 합니다.
 
 Electron에는 메인 프로세스와 렌더러 프로세스 사이에 통신을 할 수 있도록
-[ipcRenderer](../api/ipc-renderer.md)와 [ipcMain](../api/ipc-main.md) 모듈을 제공하고 있습니다.
-또는 [remote](../api/remote.md) 모듈을 사용하여 RPC 스타일로 통신할 수도 있습니다.
-또한 FAQ에서 [다양한 객체를 공유하는 방법](share-data)도 소개하고 있습니다.
+[`ipcRenderer`](../api/ipc-renderer.md)와 [`ipcMain`](../api/ipc-main.md) 모듈을
+제공하고 있습니다. 또는 [remote](../api/remote.md) 모듈을 사용하여 RPC 스타일로
+통신할 수도 있습니다. 또한 FAQ에서 [다양한 객체를 공유하는 방법](share-data)도
+소개하고 있습니다.
 
 ## 첫번째 Electron 앱 만들기
 
