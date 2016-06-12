@@ -39,6 +39,9 @@ app.on('ready', () => {
 });
 ```
 
+`app.getPath('pepperFlashSystemPlugin')` 형태로 호출하면 시스템에 설치된 Pepper
+Flash 플러그인의 경로를 가져올 수도 있습니다.
+
 ## `<webview>` 태그를 이용하여 플러그인을 활성화
 
 `plugins` 속성을 `<webview>` 태그에 추가합니다.

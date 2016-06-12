@@ -351,6 +351,7 @@ Linux에선, 첫 번째로 보여지는 윈도우가 포커스됩니다. OS X에
 * `music` - 사용자의 음악 디렉터리.
 * `pictures` - 사용자의 사진 디렉터리.
 * `videos` - 사용자의 동영상 디렉터리.
+* `pepperFlashSystemPlugin` - 시스템 버전의 Pepper Flash 플러그인의 전체 경로.
 
 ### `app.setPath(name, path)`
 

@@ -539,3 +539,23 @@ HTTP 요청을 보내기 전 요청 헤더를 사용할 수 있을 때 `listener
   * `timestamp` Double
   * `fromCache` Boolean
   * `error` String - 에러 설명.
+
+#### `ses.protocol`
+
+현재 세션의 [protocol](protocol.md) 모듈 인스턴스를 반환합니다.
+
+```javascript
+const {app, session} = require('electron')
+const path = require('path')
+
+app.on('ready', function () {
+  const protocol = session.fromPartition(partitionName).protocol
+  protocol.registerFileProtocol('atom', function (request, callback) {
+    var url = request.url.substr(7)
+    callback({path: path.normalize(__dirname + '/' + url)})
+  }, function (error) {
+    if (error)
+      console.error('Failed to register protocol')
+  })
+})
+```
