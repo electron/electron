@@ -20,10 +20,10 @@ powerSaveBlocker.stop(id);
 ### `powerSaveBlocker.start(type)`
 
 * `type` String - Power save blocker 종류
-  * `prevent-app-suspension` - 저전력 모드 등으로 인한 어플리케이션 작동 중단을
+  * `prevent-app-suspension` - 저전력 모드 등으로 인한 애플리케이션 작동 중단을
     방지합니다. 시스템을 항시 활성화 상태로 만듭니다. 하지만 화면은 자동으로 꺼질 수
     있습니다. 사용 예시: 파일 다운로드, 음악 재생 등.
-  * `prevent-display-sleep`- 슬립 모드 등으로 인한 어플리케이션의 작동 중단을
+  * `prevent-display-sleep`- 슬립 모드 등으로 인한 애플리케이션의 작동 중단을
     방지합니다. 시스템을 항시 활성화 상태로 만들고 슬립 모드(화면 꺼짐)를 방지합니다.
     사용 예시: 비디오 재생 등.
 

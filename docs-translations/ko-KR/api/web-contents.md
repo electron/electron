@@ -289,9 +289,9 @@ Returns:
 Returns:
 
 * `event` Event
-* `url` URL
+* `url` String
 
-마우스나 키보드를 사용해 링크에 포커스를 할 때 발생하는 이벤트입니다.
+마우스나 키보드를 사용해 링크에 포커스할 때 발생하는 이벤트입니다.
 
 ### Event: 'cursor-changed'
 
@@ -674,7 +674,7 @@ ServiceWorker가 존재하면 모두 등록을 해제하고 JS Promise가 만족
 `webContents.print({silent: false, printBackground: false})`를 호출하는 것과
 같습니다.
 
-**참고:** Windows에서의 프린터 API는 `pdf.dll`에 의존합니다. 따라서 어플리케이션이
+**참고:** Windows에서의 프린터 API는 `pdf.dll`에 의존합니다. 따라서 애플리케이션이
 print기능을 사용하지 않는 경우 전체 바이너리 크기를 줄이기 위해 `pdf.dll`을 삭제해도
 됩니다.
 
@@ -943,6 +943,10 @@ win.webContents.on('did-finish-load', () => {
   });
 });
 ```
+
+### `webContents.showDefinitionForSelection()` _OS X_
+
+페이지에서 선택된 단어에 대한 사전 검색 결과 팝업을 표시합니다.
 
 ## Instance Properties
 

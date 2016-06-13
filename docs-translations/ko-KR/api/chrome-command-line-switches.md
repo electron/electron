@@ -2,8 +2,8 @@
 
 > Electron에서 지원하는 커맨드 명령줄 스위치입니다.
 
-어플리케이션 메인 스크립트의 [app][app] 모듈에서 [ready][ready] 이벤트가 실행되기
-전에 [app.commandLine.appendSwitch][append-switch]를 호출하면, 어플리케이션의
+애플리케이션 메인 스크립트의 [app][app] 모듈에서 [ready][ready] 이벤트가 실행되기
+전에 [app.commandLine.appendSwitch][append-switch]를 호출하면, 애플리케이션의
 명령줄 옵션을 추가로 지정할 수 있습니다:
 
 ```javascript
@@ -149,7 +149,7 @@ Chromium이 렌더러 프로세스의 보이지 않는 페이지의 우선순위
 
 Chromium의 로그를 콘솔에 출력합니다.
 
-이 스위치는 어플리케이션이 로드되기 전에 분석 되므로 `app.commandLine.appendSwitch`
+이 스위치는 애플리케이션이 로드되기 전에 분석 되므로 `app.commandLine.appendSwitch`
 메서드에선 사용할 수 없습니다. 하지만 `ELECTRON_ENABLE_LOGGING` 환경 변수를 설정하면
 본 스위치를 지정한 것과 같은 효과를 낼 수 있습니다.
 

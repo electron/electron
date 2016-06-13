@@ -66,7 +66,7 @@ win.show();
 * `fullscreenable` Boolean - 윈도우가 전체화면 모드로 전환될 수 있는지 여부입니다.
   또한 OS X에선, 최대화/줌 버튼이 전체화면 모드 또는 윈도우 최대화를 실행할지 여부도
   포함됩니다. 기본값은 `true`입니다.
-* `skipTaskbar` Boolean - 작업표시줄 어플리케이션 아이콘 표시 스킵 여부. 기본값은
+* `skipTaskbar` Boolean - 작업표시줄 애플리케이션 아이콘 표시 스킵 여부. 기본값은
   `false`입니다.
 * `kiosk` Boolean - Kiosk(키오스크) 모드. 기본값은 `false`입니다.
 * `title` String - 기본 윈도우 제목. 기본값은 `"Electron"`입니다.
@@ -85,7 +85,7 @@ On Windows it is
   활성화 되는 동시에 단일 mouse-down 이벤트를 발생시킬지 여부. 기본값은 `false`입니다.
 * `disableAutoHideCursor` Boolean - 타이핑중 자동으로 커서를 숨길지 여부. 기본값은
   `false`입니다.
-* `autoHideMenuBar` Boolean - `Alt`를 누르지 않는 한 어플리케이션 메뉴바를 숨길지
+* `autoHideMenuBar` Boolean - `Alt`를 누르지 않는 한 애플리케이션 메뉴바를 숨길지
   여부. 기본값은 `false`입니다.
 * `enableLargerThanScreen` Boolean - 윈도우 크기가 화면 크기보다 크게 재조정 될
   수 있는지 여부. 기본값은 `false`입니다.
@@ -148,7 +148,7 @@ On Windows it is
     페이지에서 같은 `partition`을 사용할 수 있습니다. 만약 `persist:` 접두어로
     시작하지 않으면 페이지는 인-메모리 세션을 사용합니다. 여러 페이지에서 같은
     `partition`을 지정하면 같은 세션을 공유할 수 있습니다. `partition`을 지정하지
-    않으면 어플리케이션의 기본 세션이 사용됩니다.
+    않으면 애플리케이션의 기본 세션이 사용됩니다.
 * `zoomFactor` Number - 페이지의 기본 줌 값을 지정합니다. 예를 들어 `300%`를
   표현하려면 `3.0`으로 지정합니다. 기본값은 `1.0`입니다.
 * `javascript` Boolean - 자바스크립트를 활성화합니다. 기본값은 `false`입니다.
@@ -176,9 +176,12 @@ On Windows it is
   사용하는지를 지정합니다. 기본값은 `true`입니다.
 * `scrollBounce` Boolean - OS X에서 스크롤 튕기기 효과 (탄성 밴딩)를 활성화 합니다.
   기본값은 `false`입니다.
-* `blinkFeatures` String - `CSSVariables,KeyboardEventKey`같은 `,`로 구분된
-  기능 문자열들의 리스트입니다. 지원하는 전체 기능 문자열들은
-  [setFeatureEnabledFromString][blink-feature-string] 함수에서 찾을 수 있습니다.
+* `blinkFeatures` String - 활성화 할 `CSSVariables,KeyboardEventKey`같이 `,`로
+  구분된 기능 문자열들의 리스트입니다. [RuntimeEnabledFeatures.in][blink-feature-string]
+  파일에서 찾을 수 있습니다.
+* `disableBlinkFeatures` String - 비활성화 할 `CSSVariables,KeyboardEventKey`같이
+  `,`로 구분된 기능 문자열들의 리스트입니다. [RuntimeEnabledFeatures.in][blink-feature-string]
+  파일에서 찾을 수 있습니다.
 * `defaultFontFamily` Object - font-family의 기본 폰트를 지정합니다.
   * `standard` String - 기본값 `Times New Roman`.
   * `serif` String - 기본값 `Times New Roman`.
@@ -227,7 +230,7 @@ window.onbeforeunload = (e) => {
 
   // 일반적인 브라우저와는 달리 사용자에게 확인 창을 보여주지 않고, non-void 값을 반환하면
   // 조용히 닫기를 취소합니다.
-  // Dialog API를 통해 사용자가 어플리케이션을 종료할지 정할 수 있도록 확인 창을 표시하는 것을
+  // Dialog API를 통해 사용자가 애플리케이션을 종료할지 정할 수 있도록 확인 창을 표시하는 것을
   // 추천합니다.
   e.returnValue = false;
 };
@@ -361,7 +364,7 @@ Returns:
 
 ### `BrowserWindow.getFocusedWindow()`
 
-어플리케이션에서 포커스된 윈도우를 반환합니다. 포커스된 윈도우가 없을 경우 `null`을
+애플리케이션에서 포커스된 윈도우를 반환합니다. 포커스된 윈도우가 없을 경우 `null`을
 반환합니다.
 
 ### `BrowserWindow.fromWebContents(webContents)`
@@ -382,14 +385,26 @@ ID에 해당하는 윈도우를 찾습니다.
 
 `path`에 있는 개발자 도구 확장 기능을 추가합니다. 그리고 확장 기능의 이름을 반환합니다.
 
-확장 기능은 기억됩니다. 따라서 API는 단 한 번만 호출되어야 합니다.
-이 API는 실제 프로그램 작성에 사용할 수 없습니다.
+확장 기능은 기억됩니다. 따라서 API는 단 한 번만 호출되어야 합니다. 이 API는 실제
+프로그램 작성에 사용할 수 없습니다. 만약 이미 로드된 확장 기능을 추가하려 한다면, 이
+메서드는 아무것도 반환하지 않고 콘솔에 경고가 로그됩니다.
 
 ### `BrowserWindow.removeDevToolsExtension(name)`
 
 * `name` String
 
 `name`에 해당하는 개발자 도구 확장 기능을 제거합니다.
+
+### `BrowserWindow.getDevToolsExtensions()`
+
+키는 확장 기능 이름을 값은 `name`과 `version` 속성을 포함하는 객체를 가지는 객체를
+반환합니다.
+
+개발자 도구 확장 기능이 설치되었는지 확인하려면 다음과 같이 실행할 수 있습니다:
+
+```javascript
+let installed = BrowserWindow.getDevToolsExtensions().hasOwnProperty('devtron')
+```
 
 ## Instance Properties
 
@@ -704,7 +719,7 @@ win.setSheetOffset(toolbarRect.height);
 
 * `skip` Boolean
 
-어플리케이션 아이콘을 작업표시줄에 보이지 않도록 설정합니다.
+애플리케이션 아이콘을 작업표시줄에 보이지 않도록 설정합니다.
 
 ### `win.setKiosk(flag)`
 
@@ -803,7 +818,7 @@ Windows 메시지 훅을 등록합니다. `callback`은 WndProc에서 메시지�
 
 * `progress` Double
 
-작업표시줄에 표시되고 있는 어플리케이션 아이콘에 진행 상태를 표시합니다. [0, 1.0]
+작업표시줄에 표시되고 있는 애플리케이션 아이콘에 진행 상태를 표시합니다. [0, 1.0]
 사이의 값을 지정할 수 있습니다.
 
 진행 상태가 < 0 이 되면 진행 상태 표시를 제거합니다.
@@ -820,7 +835,7 @@ Linux 플랫폼에선 Unity 데스크톱 환경만 지원합니다. 그리고 �
 * `description` String - 접근성 설정에 의한 스크린 리더에 제공될 설명입니다
 
 현재 작업표시줄 아이콘에 16 x 16 픽셀 크기의 오버레이를 지정합니다. 보통 이 기능은
-어플리케이션의 여러 상태를 사용자에게 소극적으로 알리기 위한 방법으로 사용됩니다.
+애플리케이션의 여러 상태를 사용자에게 소극적으로 알리기 위한 방법으로 사용됩니다.
 
 ### `win.setHasShadow(hasShadow)` _OS X_
 
@@ -866,7 +881,7 @@ Linux 플랫폼에선 Unity 데스크톱 환경만 지원합니다. 그리고 �
 
 ### `win.showDefinitionForSelection()` _OS X_
 
-페이지의 선택된 단어에 대한 사전 검색 결과 팝업을 표시합니다.
+`webContents.showDefinitionForSelection()`와 같습니다.
 
 ### `win.setIcon(icon)` _Windows_ _Linux_
 
@@ -895,7 +910,7 @@ Linux 플랫폼에선 Unity 데스크톱 환경만 지원합니다. 그리고 �
 메뉴 막대의 표시 여부를 설정합니다. 만약 메뉴 막대 자동 숨김 상태라면 여전히 사용자가
 `Alt` 키를 입력하여 메뉴 막대를 표시되도록 할 수 있습니다.
 
-**역주:** 기본 메뉴 막대를 완전히 없애려면 `win.setMenu(null)`를 호출해야 합니다.
+**역자주:** 기본 메뉴 막대를 완전히 없애려면 `win.setMenu(null)`를 호출해야 합니다.
 단순히 이 API를 사용하면 여전히 메뉴에 등록된 핫 키가 작동합니다.
 
 ### `win.isMenuBarVisible()`
@@ -916,10 +931,13 @@ Linux 플랫폼에선 Unity 데스크톱 환경만 지원합니다. 그리고 �
 
 **참고:** 이 API는 Windows에서 언제나 false를 반환합니다.
 
-### `win.setIgnoreMouseEvents(ignore)` _OS X_
+### `win.setIgnoreMouseEvents(ignore)`
 
 * `ignore` Boolean
 
-윈도우에서 일어나는 모든 마우스 이벤트를 무시합니다.
+윈도우가 모든 마우스 이벤트를 무시하게 만듭니다.
 
-[blink-feature-string]: https://code.google.com/p/chromium/codesearch#chromium/src/out/Debug/gen/blink/platform/RuntimeEnabledFeatures.cpp&sq=package:chromium&type=cs&l=576
+이 윈도우에서 일어나는 모든 마우스 이벤트가 이 윈도우 밑의 윈도우로 전달됩니다. 하지만
+이 윈도우가 포커스되어 있다면, 여전히 키보드 이벤트는 받을 수 있습니다.
+
+[blink-feature-string]: https://cs.chromium.org/chromium/src/third_party/WebKit/Source/platform/RuntimeEnabledFeatures.in

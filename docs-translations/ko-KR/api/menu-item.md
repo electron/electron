@@ -1,6 +1,6 @@
 ﻿# MenuItem
 
-> 네이티브 어플리케이션 메뉴와 컨텍스트 메뉴에 아이템을 추가합니다.
+> 네이티브 애플리케이션 메뉴와 컨텍스트 메뉴에 아이템을 추가합니다.
 
 [`menu`](menu.md)에서 예시를 확인할 수 있습니다.
 
@@ -46,7 +46,9 @@
 * `cut`
 * `copy`
 * `paste`
+* `pasteandmatchstyle`
 * `selectall`
+* `delete`
 * `minimize` - 현재 윈도우를 최소화합니다
 * `close` - 현재 윈도우를 닫습니다
 

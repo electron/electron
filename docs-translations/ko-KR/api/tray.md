@@ -7,14 +7,14 @@ const {app, Menu, Tray} = require('electron');
 
 let appIcon = null;
 app.on('ready', () => {
-  appIcon = new Tray('/path/to/my/icon'); // 현재 어플리케이션 디렉터리를 기준으로 하려면 `__dirname + '/images/tray.png'` 형식으로 입력해야 합니다.
+  appIcon = new Tray('/path/to/my/icon'); // 현재 애플리케이션 디렉터리를 기준으로 하려면 `__dirname + '/images/tray.png'` 형식으로 입력해야 합니다.
   const contextMenu = Menu.buildFromTemplate([
     {label: 'Item1', type: 'radio'},
     {label: 'Item2', type: 'radio'},
     {label: 'Item3', type: 'radio', checked: true},
     {label: 'Item4', type: 'radio'}
   ]);
-  appIcon.setToolTip('이것은 나의 어플리케이션 입니다!');
+  appIcon.setToolTip('이것은 나의 애플리케이션 입니다!');
   appIcon.setContextMenu(contextMenu);
 });
 ```

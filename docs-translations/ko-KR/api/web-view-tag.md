@@ -6,16 +6,16 @@
 사용할 수 있습니다. 게스트 콘텐츠는 `webview` 컨테이너에 담겨 대상 페이지에 삽입되고
 해당 페이지에선 게스트 콘텐츠의 배치 및 렌더링 과정을 조작할 수 있습니다.
 
-`iframe`과는 달리 `webview`는 어플리케이션과 분리된 프로세스에서 작동합니다.
+`iframe`과는 달리 `webview`는 애플리케이션과 분리된 프로세스에서 작동합니다.
 이는 웹 페이지와 같은 권한을 가지지 않고 앱과 임베디드(게스트) 콘텐츠간의 모든
 상호작용이 비동기로 작동한다는 것을 의미합니다. 따라서 임베디드 콘텐츠로부터
-어플리케이션을 안전하게 유지할 수 있습니다.
+애플리케이션을 안전하게 유지할 수 있습니다.
 
 보안상의 이유로, `webview`는 `nodeIntegration`이 활성화된 `BrowserWindow`에서만 사용할 수 있습니다.
 
 ## 예시
 
-웹 페이지를 어플리케이션에 삽입하려면 `webview` 태그를 사용해 원하는 타겟 페이지에
+웹 페이지를 애플리케이션에 삽입하려면 `webview` 태그를 사용해 원하는 타겟 페이지에
 추가하면 됩니다. (게스트 콘텐츠가 앱 페이지에 추가 됩니다) 간단한 예로 `webview`
 태그의 `src` 속성에 페이지를 지정하고 css 스타일을 이용해서 컨테이너의 외관을 설정할
 수 있습니다:
@@ -196,9 +196,19 @@ API를 사용할 수 있습니다. 이를 지정하면 내부에서 로우레벨
 <webview src="https://www.github.com/" blinkfeatures="PreciseMemoryInfo, CSSVariables"></webview>
 ```
 
-활성화할 blink 기능을 지정한 `,`로 구분된 문자열의 리스트입니다. 지원하는 기능 문자열의
-전체 목록은 [setFeatureEnabledFromString][blink-feature-string] 함수에서 찾을 수
-있습니다.
+활성화할 blink 기능을 지정한 `,`로 구분된 문자열의 리스트입니다. 지원하는 기능
+문자열의 전체 목록은 [RuntimeEnabledFeatures.in][blink-feature-string] 파일에서
+찾을 수 있습니다.
+
+### `disableblinkfeatures`
+
+```html
+<webview src="https://www.github.com/" disableblinkfeatures="PreciseMemoryInfo, CSSVariables"></webview>
+```
+
+비활성화할 blink 기능을 지정한 `,`로 구분된 문자열의 리스트입니다. 지원하는 기능
+문자열의 전체 목록은 [RuntimeEnabledFeatures.in][blink-feature-string] 파일에서
+찾을 수 있습니다.
 
 ## Methods
 
@@ -324,7 +334,7 @@ Webview에 웹 페이지 `url`을 로드합니다. `url`은 `http://`, `file://`
 이 옵션을 활성화 시키면 `requestFullScreen`와 같은 HTML API에서 유저의 승인을
 무시하고 개발자가 API를 바로 사용할 수 있도록 허용합니다.
 
-**역주:** 기본적으로 브라우저에선 전체화면, 웹캠, 파일 열기등의 API를 사용하려면 유저의
+**역자주:** 기본적으로 브라우저에선 전체화면, 웹캠, 파일 열기등의 API를 사용하려면 유저의
 승인(이벤트)이 필요합니다.
 
 ### `<webview>.openDevTools()`
@@ -467,6 +477,10 @@ Service worker에 대한 개발자 도구를 엽니다.
 
 `event` 객체에 대해 자세히 알아보려면 [webContents.sendInputEvent](web-contents.md##webcontentssendinputeventevent)를
 참고하세요.
+
+### `<webview>.showDefinitionForSelection()` _OS X_
+
+페이지에서 선택된 단어에 대한 사전 검색 결과 팝업을 표시합니다.
 
 ### `<webview>.getWebContents()`
 
@@ -768,6 +782,15 @@ Returns:
 ```html
 <meta name='theme-color' content='#ff0000'>
 ```
+
+### Event: 'update-target-url'
+
+Returns:
+
+* `url` String
+
+마우스나 키보드를 사용해 링크에 포커스할 때 발생하는 이벤트입니다.
+
 ### Event: 'devtools-opened'
 
 개발자 도구가 열렸을 때 발생하는 이벤트입니다.
@@ -780,4 +803,4 @@ Returns:
 
 개발자 도구가 포커스되거나 열렸을 때 발생하는 이벤트입니다.
 
-[blink-feature-string]: https://code.google.com/p/chromium/codesearch#chromium/src/out/Debug/gen/blink/platform/RuntimeEnabledFeatures.cpp&sq=package:chromium&type=cs&l=527
+[blink-feature-string]: https://cs.chromium.org/chromium/src/third_party/WebKit/Source/platform/RuntimeEnabledFeatures.in

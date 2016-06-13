@@ -1,7 +1,7 @@
 ﻿# Pepper 플래시 플러그인 사용하기
 
 Electron은 Pepper 플래시 플러그인을 지원합니다. Electron에서 Pepper 플래시
-플러그인을 사용하려면 Pepper 플래시 플러그인의 위치를 지정한 후 어플리케이션 내에서
+플러그인을 사용하려면 Pepper 플래시 플러그인의 위치를 지정한 후 애플리케이션 내에서
 활성화 시켜야 합니다.
 
 ## 플래시 플러그인 준비하기
@@ -38,6 +38,9 @@ app.on('ready', () => {
   // 이외의 코드
 });
 ```
+
+`app.getPath('pepperFlashSystemPlugin')` 형태로 호출하면 시스템에 설치된 Pepper
+Flash 플러그인의 경로를 가져올 수도 있습니다.
 
 ## `<webview>` 태그를 이용하여 플러그인을 활성화
 

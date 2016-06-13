@@ -1,6 +1,6 @@
 ﻿# nativeImage
 
-> PNG 또는 JPG 파일을 사용하여 트레이, 독, 어플리케이션 아이콘을 생성합니다.
+> PNG 또는 JPG 파일을 사용하여 트레이, 독, 애플리케이션 아이콘을 생성합니다.
 
 Electron은 파일 경로 또는 `nativeImage` 인스턴스를 통해 이미지를 사용할 수 있는 API를
 가지고 있습니다. `null`을 전달할 경우 빈 이미지가 생성됩니다.
@@ -101,6 +101,12 @@ let appIcon = new Tray('/Users/somebody/images/icon.png');
 
 `path`로부터 이미지를 로드하여 새로운 `nativeImage` 인스턴스를 만듭니다.
 
+```javascript
+const nativeImage = require('electron').nativeImage;
+
+let image = nativeImage.createFromPath('/Users/somebody/images/icon.png');
+```
+
 ### `nativeImage.createFromBuffer(buffer[, scaleFactor])`
 
 * `buffer` [Buffer][buffer]
@@ -117,12 +123,7 @@ let appIcon = new Tray('/Users/somebody/images/icon.png');
 
 ## Instance Methods
 
-`nativeImage` 인스턴스 객체에서 사용할 수 있는 메서드 입니다:
-
-```javascript
-const nativeImage = require('electron').nativeImage;
-let image = nativeImage.createFromPath('/Users/somebody/images/icon.png');
-```
+`nativeImage` 인스턴스 객체에서 사용할 수 있는 메서드입니다.
 
 ### `image.toPng()`
 

@@ -136,7 +136,7 @@ console.log(webFrame.getResourceUsage())
 
 참고로 맹목적으로 이 메서드를 호출하는 것은 이 빈 캐시를 다시 채워야하기 때문에
 Electron을 느리게 만듭니다. 따라서 이 메서드는 페이지가 예상했던 것 보다 실질적으로 더
-적은 메모리를 사용하게 만드는 어플리케이션 이벤트가 발생했을 때만 호출해야 합니다.
+적은 메모리를 사용하게 만드는 애플리케이션 이벤트가 발생했을 때만 호출해야 합니다.
 (i.e. 아주 무거운 페이지에서 거의 빈 페이지로 이동한 후 계속 유지할 경우)
 
 [spellchecker]: https://github.com/atom/node-spellchecker
