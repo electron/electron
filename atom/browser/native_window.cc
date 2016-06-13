@@ -282,6 +282,9 @@ bool NativeWindow::IsDocumentEdited() {
   return false;
 }
 
+void NativeWindow::SetFocusable(bool focusable) {
+}
+
 void NativeWindow::SetMenu(ui::MenuModel* menu) {
 }
 

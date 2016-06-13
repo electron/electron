@@ -692,10 +692,10 @@ void NativeWindowViews::SetIgnoreMouseEvents(bool ignore) {
 #endif
 }
 
-void NativeWindowViews::SetIgnoreFocus(bool ignore) {
+void NativeWindowViews::SetFocusable(bool focusable) {
 #if defined(OS_WIN)
   LONG ex_style = ::GetWindowLong(GetAcceleratedWidget(), GWL_EXSTYLE);
-  if (ignore)
+  if (focusable)
     ex_style |= WS_EX_NOACTIVATE;
   else
     ex_style &= ~WS_EX_NOACTIVATE;

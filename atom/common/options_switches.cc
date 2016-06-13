@@ -75,6 +75,9 @@ const char kBackgroundColor[] = "backgroundColor";
 // Whether the window should have a shadow.
 const char kHasShadow[] = "hasShadow";
 
+// Whether the window can be activated.
+const char kFocusable[] = "focusable";
+
 // The WebPreferences.
 const char kWebPreferences[] = "webPreferences";
 

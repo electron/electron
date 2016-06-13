@@ -490,6 +490,10 @@ NativeWindowMac::NativeWindowMac(
          NSWindowCollectionBehaviorIgnoresCycle)];
   }
 
+  bool focusable;
+  if (options.Get(options::kFocusable, &focusable) && !focusable)
+    [window_ setDisableKeyOrMainWindow:YES];
+
   // Remove non-transparent corners, see http://git.io/vfonD.
   if (!has_frame())
     [window_ setOpaque:NO];
@@ -881,10 +885,6 @@ bool NativeWindowMac::IsDocumentEdited() {
 
 void NativeWindowMac::SetIgnoreMouseEvents(bool ignore) {
   [window_ setIgnoresMouseEvents:ignore];
-}
-
-void NativeWindowMac::SetIgnoreFocus(bool ignore) {
-  [window_ setDisableKeyOrMainWindow:ignore];
 }
 
 bool NativeWindowMac::HasModalDialog() {
