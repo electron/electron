@@ -56,7 +56,9 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     on Linux. Default is `true`.
   * `focusable` Boolean - Whether the window can be focused. Default is
     `true`. On Windows setting `focusable: false` also implies setting
-    `skipTaskbar: true`.
+    `skipTaskbar: true`. On Linux setting `focusable: false` makes the window
+    stop interacting with wm, so the window will always stay on top in all
+    workspaces.
   * `alwaysOnTop` Boolean - Whether the window should always stay on top of
     other windows. Default is `false`.
   * `fullscreen` Boolean - Whether the window should show in fullscreen. When
