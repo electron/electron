@@ -206,6 +206,15 @@ The `menu` class has the following methods:
 Sets `menu` as the application menu on OS X. On Windows and Linux, the `menu`
 will be set as each window's top menu.
 
+**NOTE** if calling from the main process you can not call this function until after you've recevied the `'ready'` event from the application.
+
+```
+app.on('ready', () => {
+  Menu.setApplicationMenu(menu);
+  ...
+});
+```
+
 ### `Menu.sendActionToFirstResponder(action)` _OS X_
 
 * `action` String
