@@ -692,6 +692,17 @@ void NativeWindowViews::SetIgnoreMouseEvents(bool ignore) {
 #endif
 }
 
+void NativeWindowViews::SetIgnoreFocus(bool ignore) {
+#if defined(OS_WIN)
+  LONG ex_style = ::GetWindowLong(GetAcceleratedWidget(), GWL_EXSTYLE);
+  if (ignore)
+    ex_style |= WS_EX_NOACTIVATE;
+  else
+    ex_style &= ~WS_EX_NOACTIVATE;
+  ::SetWindowLong(GetAcceleratedWidget(), GWL_EXSTYLE, ex_style);
+#endif
+}
+
 void NativeWindowViews::SetMenu(ui::MenuModel* menu_model) {
   if (menu_model == nullptr) {
     // Remove accelerators

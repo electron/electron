@@ -953,4 +953,12 @@ All mouse events happened in this window will be passed to the window below
 this window, but if this window has focus, it will still receive keyboard
 events.
 
+### `win.setIgnoreFocus(ignore)` _OS X_ _Windows_
+
+* `ignore` Boolean
+
+Makes the window ignore focus.
+
+On OS X this prevents the window from becoming key and main window.
+
 [blink-feature-string]: https://cs.chromium.org/chromium/src/third_party/WebKit/Source/platform/RuntimeEnabledFeatures.in

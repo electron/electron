@@ -883,6 +883,10 @@ void NativeWindowMac::SetIgnoreMouseEvents(bool ignore) {
   [window_ setIgnoresMouseEvents:ignore];
 }
 
+void NativeWindowMac::SetIgnoreFocus(bool ignore) {
+  [window_ setDisableKeyOrMainWindow:ignore];
+}
+
 bool NativeWindowMac::HasModalDialog() {
   return [window_ attachedSheet] != nil;
 }
