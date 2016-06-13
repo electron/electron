@@ -5,6 +5,7 @@
 #ifndef NATIVE_MATE_CONVERTER_H_
 #define NATIVE_MATE_CONVERTER_H_
 
+#include <map>
 #include <string>
 #include <vector>
 #include <set>
@@ -136,6 +137,11 @@ struct Converter<std::string> {
                      std::string* out);
 };
 
+v8::Local<v8::String> StringToSymbol(v8::Isolate* isolate,
+                                      const base::StringPiece& input);
+
+std::string V8ToString(v8::Local<v8::Value> value);
+
 template<>
 struct Converter<v8::Local<v8::Function> > {
   static bool FromV8(v8::Isolate* isolate,
@@ -255,6 +261,26 @@ struct Converter<std::set<T> > {
   }
 };
 
+template<typename T>
+struct Converter<std::map<std::string, T> > {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     std::map<std::string, T> * out) {
+    if (!val->IsObject())
+      return false;
+
+    v8::Local<v8::Object> dict = val->ToObject();
+    v8::Local<v8::Array> keys = dict->GetOwnPropertyNames();
+    for (uint32_t i = 0; i < keys->Length(); ++i) {
+      v8::Local<v8::Value> key = keys->Get(i);
+      T value;
+      if (Converter<T>::FromV8(isolate, dict->Get(key), &value))
+        (*out)[V8ToString(key)] = std::move(value);
+    }
+    return true;
+  }
+};
+
 // Convenience functions that deduce T.
 template<typename T>
 v8::Local<v8::Value> ConvertToV8(v8::Isolate* isolate, const T& input) {
@@ -303,14 +329,6 @@ bool TryConvertToV8(v8::Isolate* isolate,
                     v8::Local<v8::Value>* output) {
   return ToV8Traits<T>::TryConvertToV8(isolate, input, output);
 }
-inline v8::Local<v8::String> StringToV8(
-    v8::Isolate* isolate,
-    const base::StringPiece& input) {
-  return ConvertToV8(isolate, input).As<v8::String>();
-}
-
-v8::Local<v8::String> StringToSymbol(v8::Isolate* isolate,
-                                      const base::StringPiece& input);
 
 template<typename T>
 bool ConvertFromV8(v8::Isolate* isolate, v8::Local<v8::Value> input,
@@ -318,7 +336,11 @@ bool ConvertFromV8(v8::Isolate* isolate, v8::Local<v8::Value> input,
   return Converter<T>::FromV8(isolate, input, result);
 }
 
-std::string V8ToString(v8::Local<v8::Value> value);
+inline v8::Local<v8::String> StringToV8(
+    v8::Isolate* isolate,
+    const base::StringPiece& input) {
+  return ConvertToV8(isolate, input).As<v8::String>();
+}
 
 }  // namespace mate
 
