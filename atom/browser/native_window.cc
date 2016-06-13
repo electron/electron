@@ -560,6 +560,22 @@ void NativeWindow::BeforeUnloadDialogCancelled() {
   window_unresposive_closure_.Cancel();
 }
 
+void NativeWindow::DidFirstVisuallyNonEmptyPaint() {
+  if (IsVisible())
+    return;
+
+  // When there is a non-empty first paint, resize the RenderWidget to force
+  // Chromium to draw.
+  const auto view = web_contents()->GetRenderWidgetHostView();
+  view->Show();
+  view->SetSize(GetContentSize());
+
+  // Emit the ReadyToShow event in next tick in case of pending drawing work.
+  base::MessageLoop::current()->PostTask(
+      FROM_HERE,
+      base::Bind(&NativeWindow::NotifyReadyToShow, GetWeakPtr()));
+}
+
 bool NativeWindow::OnMessageReceived(const IPC::Message& message) {
   bool handled = true;
   IPC_BEGIN_MESSAGE_MAP(NativeWindow, message)
@@ -599,6 +615,10 @@ void NativeWindow::NotifyWindowUnresponsive() {
     FOR_EACH_OBSERVER(NativeWindowObserver,
                       observers_,
                       OnRendererUnresponsive());
+}
+
+void NativeWindow::NotifyReadyToShow() {
+  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnReadyToShow());
 }
 
 void NativeWindow::OnCapturePageDone(const CapturePageCallback& callback,

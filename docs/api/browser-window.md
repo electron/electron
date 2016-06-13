@@ -4,22 +4,60 @@
 
 ```javascript
 // In the main process.
-const {BrowserWindow} = require('electron');
+const {BrowserWindow} = require('electron')
 
 // Or in the renderer process.
-const {BrowserWindow} = require('electron').remote;
+const {BrowserWindow} = require('electron').remote
 
-let win = new BrowserWindow({width: 800, height: 600, show: false});
+let win = new BrowserWindow({width: 800, height: 600})
 win.on('closed', () => {
-  win = null;
-});
+  win = null
+})
 
-win.loadURL('https://github.com');
-win.show();
+win.loadURL('https://github.com')
 ```
 
-You can also create a window without chrome by using
-[Frameless Window](frameless-window.md) API.
+## Frameless window
+
+To create a window without chrome, or a transparent window in arbitrary shape,
+you can use the [Frameless Window](frameless-window.md) API.
+
+## Showing window gracefully
+
+When loading a page in window directly, users will see the progress of loading
+page, which is not good experience for native app. To make the window display
+without visual flash, there are two solutions for different situations.
+
+### Using `ready-to-show` event
+
+While loading the page, the `ready-to-show` event will be emitted when renderer
+process has done drawing for the first time, showing window after this event
+will have no visual flash:
+
+```javascript
+let win = new BrowserWindow({show: false})
+win.once('ready-to-show', () => {
+  win.show()
+})
+```
+
+This is event is usually emitted after the `did-finish-load` event, but for
+pages with many remote resources, it may be emitted before the `did-finish-load`
+event.
+
+### Setting `backgroundColor`
+
+For a complex app, the `ready-to-show` event could be emitted too late, making
+the app feel slow. In this case, it is recommended to show the window
+immediately, and use a `backgroundColor` close to your app's background:
+
+```javascript
+let win = new BrowserWindow({backgroundColor: '#2e2c29'})
+win.loadURL('https://github.com')
+```
+
+Note that even for apps that use `ready-to-show` event, it is still recommended
+to set `backgroundColor` to make app feel more native.
 
 ## Class: BrowserWindow
 
@@ -270,6 +308,11 @@ Emitted when the window is shown.
 ### Event: 'hide'
 
 Emitted when the window is hidden.
+
+### Event: 'ready-to-show'
+
+Emitted when the web page has been rendered and window can be displayed without
+visual flash.
 
 ### Event: 'maximize'
 

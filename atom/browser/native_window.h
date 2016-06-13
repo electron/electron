@@ -275,6 +275,7 @@ class NativeWindow : public base::SupportsUserData,
   // content::WebContentsObserver:
   void RenderViewCreated(content::RenderViewHost* render_view_host) override;
   void BeforeUnloadDialogCancelled() override;
+  void DidFirstVisuallyNonEmptyPaint() override;
   bool OnMessageReceived(const IPC::Message& message) override;
 
  private:
@@ -283,6 +284,9 @@ class NativeWindow : public base::SupportsUserData,
 
   // Dispatch unresponsive event to observers.
   void NotifyWindowUnresponsive();
+
+  // Dispatch ReadyToShow event to observers.
+  void NotifyReadyToShow();
 
   // Called when CapturePage has done.
   void OnCapturePageDone(const CapturePageCallback& callback,
