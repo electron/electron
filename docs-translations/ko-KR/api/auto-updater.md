@@ -95,11 +95,12 @@ Returns:
 
 `autoUpdater` 객체에서 사용할 수 있는 메서드입니다:
 
-### `autoUpdater.setFeedURL(url)`
+### `autoUpdater.setFeedURL(url[, requestHeaders])`
 
 * `url` String
+* `requestHeaders` Object _OS X_ - HTTP 요청 헤더.
 
-`url`을 설정하고 자동 업데이터를 초기화합니다. `url`은 한번 설정되면 변경할 수 없습니다.
+`url`을 설정하고 자동 업데이터를 초기화합니다.
 
 ### `autoUpdater.checkForUpdates()`
 

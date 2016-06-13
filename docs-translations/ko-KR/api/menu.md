@@ -205,6 +205,8 @@ Menu.setApplicationMenu(menu);
 지정한 `menu`를 애플리케이션 메뉴로 만듭니다. OS X에선 상단바에 표시되며 Windows와
 Linux에선 각 창의 상단에 표시됩니다.
 
+**참고** 이 API는 `app`의 `ready` 이벤트가 발생한 이후에 호출해야 합니다.
+
 ### `Menu.sendActionToFirstResponder(action)` _OS X_
 
 * `action` String

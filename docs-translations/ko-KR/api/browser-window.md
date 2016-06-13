@@ -176,9 +176,12 @@ On Windows it is
   사용하는지를 지정합니다. 기본값은 `true`입니다.
 * `scrollBounce` Boolean - OS X에서 스크롤 튕기기 효과 (탄성 밴딩)를 활성화 합니다.
   기본값은 `false`입니다.
-* `blinkFeatures` String - `CSSVariables,KeyboardEventKey`같은 `,`로 구분된
-  기능 문자열들의 리스트입니다. 지원하는 전체 기능 문자열들은
-  [setFeatureEnabledFromString][blink-feature-string] 함수에서 찾을 수 있습니다.
+* `blinkFeatures` String - 활성화 할 `CSSVariables,KeyboardEventKey`같이 `,`로
+  구분된 기능 문자열들의 리스트입니다. [RuntimeEnabledFeatures.in][blink-feature-string]
+  파일에서 찾을 수 있습니다.
+* `disableBlinkFeatures` String - 비활성화 할 `CSSVariables,KeyboardEventKey`같이
+  `,`로 구분된 기능 문자열들의 리스트입니다. [RuntimeEnabledFeatures.in][blink-feature-string]
+  파일에서 찾을 수 있습니다.
 * `defaultFontFamily` Object - font-family의 기본 폰트를 지정합니다.
   * `standard` String - 기본값 `Times New Roman`.
   * `serif` String - 기본값 `Times New Roman`.
@@ -391,6 +394,17 @@ ID에 해당하는 윈도우를 찾습니다.
 * `name` String
 
 `name`에 해당하는 개발자 도구 확장 기능을 제거합니다.
+
+### `BrowserWindow.getDevToolsExtensions()`
+
+키는 확장 기능 이름을 값은 `name`과 `version` 속성을 포함하는 객체를 가지는 객체를
+반환합니다.
+
+개발자 도구 확장 기능이 설치되었는지 확인하려면 다음과 같이 실행할 수 있습니다:
+
+```javascript
+let installed = BrowserWindow.getDevToolsExtensions().hasOwnProperty('devtron')
+```
 
 ## Instance Properties
 
@@ -926,4 +940,4 @@ Linux 플랫폼에선 Unity 데스크톱 환경만 지원합니다. 그리고 �
 이 윈도우에서 일어나는 모든 마우스 이벤트가 이 윈도우 밑의 윈도우로 전달됩니다. 하지만
 이 윈도우가 포커스되어 있다면, 여전히 키보드 이벤트는 받을 수 있습니다.
 
-[blink-feature-string]: https://code.google.com/p/chromium/codesearch#chromium/src/out/Debug/gen/blink/platform/RuntimeEnabledFeatures.cpp&sq=package:chromium&type=cs&l=576
+[blink-feature-string]: https://cs.chromium.org/chromium/src/third_party/WebKit/Source/platform/RuntimeEnabledFeatures.in

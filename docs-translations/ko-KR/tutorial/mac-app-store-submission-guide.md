@@ -120,20 +120,23 @@ productbuild --component "$APP_PATH" /Applications --sign "$INSTALLER_KEY" "$RES
 문서를 참고하여 기본적인 개념을 이해해야 합니다. 그리고 자격(plist) 파일에
 애플리케이션에서 요구하는 권한의 키를 추가합니다.
 
-그 외에 [electron-osx-sign][electron-osx-sign] 모듈을 이용해서 직접 서명할 수도 있습니다.
 
-#### 네이티브 모듈 서명하기
+그 외에 별로도 [electron-osx-sign][electron-osx-sign] 모듈을 사용하여 직접 서명할
+수도 있습니다.
 
-앱 내부에서 사용한 네이티브 모듈들도 서명이 필요합니다.
-electron-osx-sign 을 사용한다면, 앱 실행 인수 목록에 경로를 반드시 지정해야 합니다.
+#### 네이티브 모듈에 서명하기
+
+앱 내부에서 사용한 네이티브 모듈도 서명이 필요합니다. `electron-osx-sign`을
+사용한다면, 인수 목록에 빌트인 바이너리 경로가 포함되어 있는지 확인해야 합니다:
 
 ```bash
 electron-osx-sign YourApp.app YourApp.app/Contents/Resources/app/node_modules/nativemodule/build/release/nativemodule
 ```
 
-참고할 점은 네이티브 모듈이 의도하지 않았지만 오브젝트 파일(.o)을 포함하는 경우도 있습니다.
-이 경우 오브젝트 파일들의 서명을 해야할 수도 있습니다.
-[electron-packager][electron-packager]를 사용한다면, 빌드 과정에 `--ignore=.+\.o$` 코드를 추가해 해당 파일을 무시해줍시다.
+참고로 네이티브 모듈이 의도하지 않게 중간 파일을 포함하는 경우도 있으며 이 파일은
+포함되어선 안됩니다. (해당 파일에도 서명해야 할 수도 있습니다)
+[electron-packager][electron-packager]를 사용한다면, 빌드 과정에 `--ignore=.+\.o$`
+인수를 추가하여 중간 파일을 무시할 수 있습니다.
 
 ### 애플리케이션 업로드
 

@@ -196,9 +196,19 @@ API를 사용할 수 있습니다. 이를 지정하면 내부에서 로우레벨
 <webview src="https://www.github.com/" blinkfeatures="PreciseMemoryInfo, CSSVariables"></webview>
 ```
 
-활성화할 blink 기능을 지정한 `,`로 구분된 문자열의 리스트입니다. 지원하는 기능 문자열의
-전체 목록은 [setFeatureEnabledFromString][blink-feature-string] 함수에서 찾을 수
-있습니다.
+활성화할 blink 기능을 지정한 `,`로 구분된 문자열의 리스트입니다. 지원하는 기능
+문자열의 전체 목록은 [RuntimeEnabledFeatures.in][blink-feature-string] 파일에서
+찾을 수 있습니다.
+
+### `disableblinkfeatures`
+
+```html
+<webview src="https://www.github.com/" disableblinkfeatures="PreciseMemoryInfo, CSSVariables"></webview>
+```
+
+비활성화할 blink 기능을 지정한 `,`로 구분된 문자열의 리스트입니다. 지원하는 기능
+문자열의 전체 목록은 [RuntimeEnabledFeatures.in][blink-feature-string] 파일에서
+찾을 수 있습니다.
 
 ## Methods
 
@@ -793,4 +803,4 @@ Returns:
 
 개발자 도구가 포커스되거나 열렸을 때 발생하는 이벤트입니다.
 
-[blink-feature-string]: https://code.google.com/p/chromium/codesearch#chromium/src/out/Debug/gen/blink/platform/RuntimeEnabledFeatures.cpp&sq=package:chromium&type=cs&l=527
+[blink-feature-string]: https://cs.chromium.org/chromium/src/third_party/WebKit/Source/platform/RuntimeEnabledFeatures.in
