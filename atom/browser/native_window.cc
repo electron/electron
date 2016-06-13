@@ -153,7 +153,7 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
     SetFullScreen(true);
   }
   bool skip;
-  if (options.Get(options::kSkipTaskbar, &skip) && skip) {
+  if (options.Get(options::kSkipTaskbar, &skip)) {
     SetSkipTaskbar(skip);
   }
   bool kiosk;

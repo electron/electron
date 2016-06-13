@@ -55,7 +55,8 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
   * `closable` Boolean - Whether window is closable. This is not implemented
     on Linux. Default is `true`.
   * `focusable` Boolean - Whether the window can be focused. Default is
-    `true`.
+    `true`. On Windows setting `focusable: false` also implies setting
+    `skipTaskbar: true`.
   * `alwaysOnTop` Boolean - Whether the window should always stay on top of
     other windows. Default is `false`.
   * `fullscreen` Boolean - Whether the window should show in fullscreen. When
@@ -955,10 +956,10 @@ All mouse events happened in this window will be passed to the window below
 this window, but if this window has focus, it will still receive keyboard
 events.
 
-### `win.setActivatable(activatable)` _Windows_
+### `win.setFocusable(focusable)` _Windows_
 
-* `activatable` Boolean
+* `focusable` Boolean
 
-Changes whether the window can be activated.
+Changes whether the window can be focused.
 
 [blink-feature-string]: https://cs.chromium.org/chromium/src/third_party/WebKit/Source/platform/RuntimeEnabledFeatures.in
