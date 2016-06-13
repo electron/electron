@@ -160,6 +160,15 @@ Returns:
 
 Emitted when a new [browserWindow](browser-window.md) is created.
 
+### Event: 'web-contents-created'
+
+Returns:
+
+* `event` Event
+* `webContents` WebContents
+
+Emitted when a new [webContents](web-contents.md) is created.
+
 ### Event: 'certificate-error'
 
 Returns:
