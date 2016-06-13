@@ -309,6 +309,12 @@ function loadApplicationByUrl (appUrl) {
 }
 
 function startRepl () {
+  if (process.platform === 'win32') {
+    console.error('Electron REPL not currently supported on Windows')
+    process.exit(1)
+    return
+  }
+
   repl.start('> ').on('exit', () => {
     process.exit(0)
   })
