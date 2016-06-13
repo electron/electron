@@ -97,7 +97,7 @@ The `autoUpdater` object has the following methods:
 ### `autoUpdater.setFeedURL(url[, requestHeaders])`
 
 * `url` String
-* `requestHeaders` Object - HTTP request headers (_OS X_)
+* `requestHeaders` Object _OS X_ - HTTP request headers.
 
 Sets the `url` and initialize the auto updater.
 
