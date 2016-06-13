@@ -156,6 +156,10 @@ void Window::OnWindowHide() {
   Emit("hide");
 }
 
+void Window::OnReadyToShow() {
+  Emit("ready-to-show");
+}
+
 void Window::OnWindowMaximize() {
   Emit("maximize");
 }

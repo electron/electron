@@ -61,6 +61,7 @@ class Window : public mate::TrackableObject<Window>,
   void OnWindowFocus() override;
   void OnWindowShow() override;
   void OnWindowHide() override;
+  void OnReadyToShow() override;
   void OnWindowMaximize() override;
   void OnWindowUnmaximize() override;
   void OnWindowMinimize() override;
