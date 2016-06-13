@@ -153,7 +153,7 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
     SetFullScreen(true);
   }
   bool skip;
-  if (options.Get(options::kSkipTaskbar, &skip) && skip) {
+  if (options.Get(options::kSkipTaskbar, &skip)) {
     SetSkipTaskbar(skip);
   }
   bool kiosk;
@@ -280,6 +280,9 @@ void NativeWindow::SetDocumentEdited(bool edited) {
 
 bool NativeWindow::IsDocumentEdited() {
   return false;
+}
+
+void NativeWindow::SetFocusable(bool focusable) {
 }
 
 void NativeWindow::SetMenu(ui::MenuModel* menu) {

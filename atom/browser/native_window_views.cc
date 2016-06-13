@@ -181,6 +181,10 @@ NativeWindowViews::NativeWindowViews(
   if (transparent() && !has_frame())
     params.shadow_type = views::Widget::InitParams::SHADOW_TYPE_NONE;
 
+  bool focusable;
+  if (options.Get(options::kFocusable, &focusable) && !focusable)
+    params.activatable = views::Widget::InitParams::ACTIVATABLE_NO;
+
 #if defined(OS_WIN)
   params.native_widget =
       new views::DesktopNativeWidgetAura(window_.get());
@@ -692,14 +696,16 @@ void NativeWindowViews::SetIgnoreMouseEvents(bool ignore) {
 #endif
 }
 
-void NativeWindowViews::SetIgnoreFocus(bool ignore) {
+void NativeWindowViews::SetFocusable(bool focusable) {
 #if defined(OS_WIN)
   LONG ex_style = ::GetWindowLong(GetAcceleratedWidget(), GWL_EXSTYLE);
-  if (ignore)
-    ex_style |= WS_EX_NOACTIVATE;
-  else
+  if (focusable)
     ex_style &= ~WS_EX_NOACTIVATE;
+  else
+    ex_style |= WS_EX_NOACTIVATE;
   ::SetWindowLong(GetAcceleratedWidget(), GWL_EXSTYLE, ex_style);
+  SetSkipTaskbar(!focusable);
+  Focus(false);
 #endif
 }
 

@@ -92,7 +92,7 @@ class NativeWindowViews : public NativeWindow,
   void SetHasShadow(bool has_shadow) override;
   bool HasShadow() override;
   void SetIgnoreMouseEvents(bool ignore) override;
-  void SetIgnoreFocus(bool ignore) override;
+  void SetFocusable(bool focusable) override;
   void SetMenu(ui::MenuModel* menu_model) override;
   gfx::NativeWindow GetNativeWindow() override;
   void SetOverlayIcon(const gfx::Image& overlay,
