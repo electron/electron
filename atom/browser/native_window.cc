@@ -561,6 +561,9 @@ void NativeWindow::BeforeUnloadDialogCancelled() {
 }
 
 void NativeWindow::DidFirstVisuallyNonEmptyPaint() {
+  if (IsVisible())
+    return;
+
   // When there is a non-empty first paint, resize the RenderWidget to force
   // Chromium to draw.
   const auto view = web_contents()->GetRenderWidgetHostView();
