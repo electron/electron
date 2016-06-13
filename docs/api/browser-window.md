@@ -957,8 +957,13 @@ events.
 
 * `ignore` Boolean
 
-Makes the window ignore focus.
+Prevents the window from getting focus.
 
-On OS X this prevents the window from becoming key and main window.
+On OS X this API has to be called before the window shows:
+
+```javascript
+let win = new BrowserWindow({show: false})
+win.setIgnoreFocus(true)
+```
 
 [blink-feature-string]: https://cs.chromium.org/chromium/src/third_party/WebKit/Source/platform/RuntimeEnabledFeatures.in
