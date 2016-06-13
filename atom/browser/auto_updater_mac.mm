@@ -38,34 +38,33 @@ void AutoUpdater::SetFeedURL(const std::string& feed,
   NSURL* url = [NSURL URLWithString:base::SysUTF8ToNSString(feed)];
   NSMutableURLRequest* urlRequest = [NSMutableURLRequest requestWithURL:url];
 
-  for (auto&& it : requestHeaders) {
+  for (const auto& it : requestHeaders) {
     [urlRequest setValue:base::SysUTF8ToNSString(it.second)
       forHTTPHeaderField:base::SysUTF8ToNSString(it.first)];
   }
 
-  if (g_updater == nil) {
-    // Initialize the SQRLUpdater.
-    @try {
-      g_updater = [[SQRLUpdater alloc] initWithUpdateRequest:urlRequest];
-    } @catch (NSException* error) {
-      delegate->OnError(base::SysNSStringToUTF8(error.reason));
-      return;
-    }
+  if (g_updater)
+    [g_updater release];
 
-    [[g_updater rac_valuesForKeyPath:@"state" observer:g_updater]
-      subscribeNext:^(NSNumber *stateNumber) {
-        int state = [stateNumber integerValue];
-        // Dispatching the event on main thread.
-        dispatch_async(dispatch_get_main_queue(), ^{
-          if (state == SQRLUpdaterStateCheckingForUpdate)
-            delegate->OnCheckingForUpdate();
-          else if (state == SQRLUpdaterStateDownloadingUpdate)
-            delegate->OnUpdateAvailable();
-        });
-    }];
-  } else {
-    g_updater.updateRequest = urlRequest;
+  // Initialize the SQRLUpdater.
+  @try {
+    g_updater = [[SQRLUpdater alloc] initWithUpdateRequest:urlRequest];
+  } @catch (NSException* error) {
+    delegate->OnError(base::SysNSStringToUTF8(error.reason));
+    return;
   }
+
+  [[g_updater rac_valuesForKeyPath:@"state" observer:g_updater]
+    subscribeNext:^(NSNumber *stateNumber) {
+      int state = [stateNumber integerValue];
+      // Dispatching the event on main thread.
+      dispatch_async(dispatch_get_main_queue(), ^{
+        if (state == SQRLUpdaterStateCheckingForUpdate)
+          delegate->OnCheckingForUpdate();
+        else if (state == SQRLUpdaterStateDownloadingUpdate)
+          delegate->OnUpdateAvailable();
+      });
+  }];
 }
 
 // static
