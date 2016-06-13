@@ -36,7 +36,7 @@ will have no visual flash:
 
 ```javascript
 let win = new BrowserWindow({show: false})
-win.on('ready-to-show', () => {
+win.once('ready-to-show', () => {
   win.show()
 })
 ```
