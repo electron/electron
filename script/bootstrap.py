@@ -196,7 +196,8 @@ def update_win32_python():
 
 
 def build_libchromiumcontent(verbose, target_arch, defines):
-  args = [os.path.join(SOURCE_ROOT, 'script', 'build-libchromiumcontent.py')]
+  args = [sys.executable,
+          os.path.join(SOURCE_ROOT, 'script', 'build-libchromiumcontent.py')]
   if verbose:
     args += ['-v']
   if defines:
