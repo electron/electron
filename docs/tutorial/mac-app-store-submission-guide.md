@@ -179,7 +179,8 @@ app's Mac App Store build.
 <true/>
 ```
 
-See [Apple documentation](https://developer.apple.com/library/mac/documentation/Miscellaneous/Reference/EntitlementKeyReference/Chapters/EnablingAppSandbox.html#//apple_ref/doc/uid/TP40011195-CH4-SW6).
+See the [Enabling User-Selected File Access documentation][user-selected] for
+more details.
 
 #### dialog.showSaveDialog
 
@@ -188,7 +189,8 @@ See [Apple documentation](https://developer.apple.com/library/mac/documentation/
 <true/>
 ```
 
-See [Apple documentation](https://developer.apple.com/library/mac/documentation/Miscellaneous/Reference/EntitlementKeyReference/Chapters/EnablingAppSandbox.html#//apple_ref/doc/uid/TP40011195-CH4-SW6).
+See the [Enabling User-Selected File Access documentation][user-selected] for
+more details.
 
 ## Cryptographic Algorithms Used by Electron
 
@@ -237,3 +239,4 @@ ERN)][ern-tutorial].
 [app-sandboxing]: https://developer.apple.com/app-sandboxing/
 [ern-tutorial]: https://carouselapps.com/2015/12/15/legally-submit-app-apples-app-store-uses-encryption-obtain-ern/
 [temporary-exception]: https://developer.apple.com/library/mac/documentation/Miscellaneous/Reference/EntitlementKeyReference/Chapters/AppSandboxTemporaryExceptionEntitlements.html
+[user-selected]: https://developer.apple.com/library/mac/documentation/Miscellaneous/Reference/EntitlementKeyReference/Chapters/EnablingAppSandbox.html#//apple_ref/doc/uid/TP40011195-CH4-SW6
