@@ -191,35 +191,28 @@ template<>
 struct Converter<atom::api::WebContents::Type> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    atom::api::WebContents::Type val) {
+    using Type = atom::api::WebContents::Type;
     std::string type = "";
     switch (val) {
-      case atom::api::WebContents::Type::BACKGROUND_PAGE:
-        type = "backgroundPage";
-        break;
-      case atom::api::WebContents::Type::BROWSER_WINDOW:
-        type = "window";
-        break;
-      case atom::api::WebContents::Type::REMOTE:
-        type =  "remote";
-        break;
-      case atom::api::WebContents::Type::WEB_VIEW:
-        type = "webview";
-        break;
-      default:
-        break;
+      case Type::BACKGROUND_PAGE: type = "backgroundPage"; break;
+      case Type::BROWSER_WINDOW: type = "window"; break;
+      case Type::REMOTE: type = "remote"; break;
+      case Type::WEB_VIEW: type = "webview"; break;
+      default: break;
     }
     return mate::ConvertToV8(isolate, type);
   }
 
   static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
                      atom::api::WebContents::Type* out) {
+    using Type = atom::api::WebContents::Type;
     std::string type;
     if (!ConvertFromV8(isolate, val, &type))
       return false;
     if (type == "webview") {
-      *out = atom::api::WebContents::Type::WEB_VIEW;
+      *out = Type::WEB_VIEW;
     } else if (type == "backgroundPage") {
-      *out = atom::api::WebContents::Type::BACKGROUND_PAGE;
+      *out = Type::BACKGROUND_PAGE;
     } else {
       return false;
     }
