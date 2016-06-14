@@ -200,8 +200,20 @@ struct Converter<atom::api::WebContents::Type> {
     }
     return mate::ConvertToV8(isolate, type);
   }
-};
 
+  static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
+                     atom::api::WebContents::Type* out) {
+    std::string type;
+    if (!ConvertFromV8(isolate, val, &type))
+      return false;
+    if (type == "webview") {
+      *out = atom::api::WebContents::Type::WEB_VIEW;
+    } else {
+      return false;
+    }
+    return true;
+  }
+};
 
 }  // namespace mate
 
@@ -254,10 +266,8 @@ WebContents::WebContents(v8::Isolate* isolate,
   // Read options.
   options.Get("backgroundThrottling", &background_throttling_);
 
-  // Whether it is a guest WebContents.
-  bool is_guest = false;
-  options.Get("isGuest", &is_guest);
-  type_ = is_guest ? WEB_VIEW : BROWSER_WINDOW;
+  type_ = BROWSER_WINDOW;
+  options.Get("type", &type_);
 
   // Obtain the session.
   std::string partition;
@@ -277,7 +287,7 @@ WebContents::WebContents(v8::Isolate* isolate,
   session_.Reset(isolate, session.ToV8());
 
   content::WebContents* web_contents;
-  if (is_guest) {
+  if (IsGuest()) {
     scoped_refptr<content::SiteInstance> site_instance =
         content::SiteInstance::CreateForURL(
             session->browser_context(), GURL("chrome-guest://fake-host"));
@@ -306,7 +316,7 @@ WebContents::WebContents(v8::Isolate* isolate,
 
   web_contents->SetUserAgentOverride(GetBrowserContext()->GetUserAgent());
 
-  if (is_guest) {
+  if (IsGuest()) {
     guest_delegate_->Initialize(this);
 
     NativeWindow* owner_window = nullptr;
