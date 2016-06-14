@@ -226,6 +226,7 @@ InspectableWebContentsImpl::InspectableWebContentsImpl(
 }
 
 InspectableWebContentsImpl::~InspectableWebContentsImpl() {
+  Observe(nullptr);
 }
 
 InspectableWebContentsView* InspectableWebContentsImpl::GetView() const {
@@ -618,7 +619,6 @@ void InspectableWebContentsImpl::RenderFrameHostChanged(
 
 void InspectableWebContentsImpl::WebContentsDestroyed() {
   frontend_loaded_ = false;
-  Observe(nullptr);
   Detach();
 
   for (const auto& pair : pending_requests_)
