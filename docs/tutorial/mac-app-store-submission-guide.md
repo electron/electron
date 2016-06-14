@@ -169,8 +169,8 @@ more information.
 ### Additional Entitlements
 
 Depending on which Electron APIs your app uses, you may need to add additional
-entitlements to your `parent.plist` file to be able to use these certain APIs
-from your app's Mac App Store build.
+entitlements to your `parent.plist` file to be able to use these APIs from your
+app's Mac App Store build.
 
 #### dialog.showOpenDialog
 
