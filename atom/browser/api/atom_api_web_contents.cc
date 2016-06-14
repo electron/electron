@@ -193,10 +193,20 @@ struct Converter<atom::api::WebContents::Type> {
                                    atom::api::WebContents::Type val) {
     std::string type = "";
     switch (val) {
-      case atom::api::WebContents::Type::BROWSER_WINDOW: type = "window"; break;
-      case atom::api::WebContents::Type::WEB_VIEW: type = "webview"; break;
-      case atom::api::WebContents::Type::REMOTE: type =  "remote"; break;
-      default: break;
+      case atom::api::WebContents::Type::BACKGROUND_PAGE:
+        type = "backgroundPage";
+        break;
+      case atom::api::WebContents::Type::BROWSER_WINDOW:
+        type = "window";
+        break;
+      case atom::api::WebContents::Type::REMOTE:
+        type =  "remote";
+        break;
+      case atom::api::WebContents::Type::WEB_VIEW:
+        type = "webview";
+        break;
+      default:
+        break;
     }
     return mate::ConvertToV8(isolate, type);
   }
@@ -208,6 +218,8 @@ struct Converter<atom::api::WebContents::Type> {
       return false;
     if (type == "webview") {
       *out = atom::api::WebContents::Type::WEB_VIEW;
+    } else if (type == "backgroundPage") {
+      *out = atom::api::WebContents::Type::BACKGROUND_PAGE;
     } else {
       return false;
     }
