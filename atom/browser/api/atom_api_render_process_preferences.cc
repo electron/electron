@@ -26,7 +26,7 @@ bool IsWebContents(v8::Isolate* isolate, content::RenderProcessHost* process) {
     return false;
 
   auto api_web_contents = WebContents::CreateFrom(isolate, web_contents);
-  return !api_web_contents->IsRemote();
+  return api_web_contents->GetType() != WebContents::Type::REMOTE;
 }
 
 }  // namespace

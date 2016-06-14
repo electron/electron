@@ -187,6 +187,22 @@ struct Converter<content::SavePageType> {
   }
 };
 
+template<>
+struct Converter<atom::api::WebContents::Type> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   atom::api::WebContents::Type val) {
+    std::string type = "";
+    switch (val) {
+      case atom::api::WebContents::Type::BROWSER_WINDOW: type = "window"; break;
+      case atom::api::WebContents::Type::WEB_VIEW: type = "webview"; break;
+      case atom::api::WebContents::Type::REMOTE: type =  "remote"; break;
+      default: break;
+    }
+    return mate::ConvertToV8(isolate, type);
+  }
+};
+
+
 }  // namespace mate
 
 
@@ -744,13 +760,8 @@ int WebContents::GetID() const {
   return web_contents()->GetRenderProcessHost()->GetID();
 }
 
-std::string WebContents::GetType() const {
-  switch (type_) {
-    case BROWSER_WINDOW: return "window";
-    case WEB_VIEW: return "webview";
-    case REMOTE: return "remote";
-    default: return "";
-  }
+WebContents::Type WebContents::GetType() const {
+  return type_;
 }
 
 bool WebContents::Equal(const WebContents* web_contents) const {
@@ -1195,10 +1206,6 @@ void WebContents::SetSize(const SetSizeParams& params) {
 
 bool WebContents::IsGuest() const {
   return type_ == WEB_VIEW;
-}
-
-bool WebContents::IsRemote() const {
-  return type_ == REMOTE;
 }
 
 v8::Local<v8::Value> WebContents::GetWebPreferences(v8::Isolate* isolate) {

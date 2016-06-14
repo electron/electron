@@ -43,6 +43,12 @@ class WebContents : public mate::TrackableObject<WebContents>,
                     public CommonWebContentsDelegate,
                     public content::WebContentsObserver {
  public:
+  enum Type {
+    BROWSER_WINDOW,  // Used by BrowserWindow.
+    WEB_VIEW,  // Used by <webview>.
+    REMOTE,  // Thin wrap around an existing WebContents.
+  };
+
   // For node.js callback function type: function(error, buffer)
   using PrintToPDFCallback =
       base::Callback<void(v8::Local<v8::Value>, v8::Local<v8::Value>)>;
@@ -59,7 +65,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
                              v8::Local<v8::ObjectTemplate> prototype);
 
   int GetID() const;
-  std::string GetType() const;
+  Type GetType() const;
   bool Equal(const WebContents* web_contents) const;
   void LoadURL(const GURL& url, const mate::Dictionary& options);
   void DownloadURL(const GURL& url);
@@ -139,7 +145,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
   // Methods for creating <webview>.
   void SetSize(const SetSizeParams& params);
   bool IsGuest() const;
-  bool IsRemote() const;
 
   // Callback triggered on permission response.
   void OnEnterFullscreenModeForTab(content::WebContents* source,
@@ -269,12 +274,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void DevToolsClosed() override;
 
  private:
-  enum Type {
-    BROWSER_WINDOW,  // Used by BrowserWindow.
-    WEB_VIEW,  // Used by <webview>.
-    REMOTE,  // Thin wrap around an existing WebContents.
-  };
-
   AtomBrowserContext* GetBrowserContext() const;
 
   uint32_t GetNextRequestId() {
