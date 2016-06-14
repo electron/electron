@@ -4,6 +4,7 @@
 
 #include "atom/browser/api/atom_api_render_process_preferences.h"
 
+#include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/browser/atom_browser_client.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/window_list.h"
@@ -19,18 +20,15 @@ namespace api {
 
 namespace {
 
-bool IsBrowserWindow(content::RenderProcessHost* process) {
+bool IsWebContents(v8::Isolate* isolate, content::RenderProcessHost* process) {
   content::WebContents* web_contents =
       static_cast<AtomBrowserClient*>(AtomBrowserClient::Get())->
           GetWebContentsFromProcessID(process->GetID());
   if (!web_contents)
     return false;
 
-  NativeWindow* window = NativeWindow::FromWebContents(web_contents);
-  if (!window)
-    return false;
-
-  return true;
+  auto api_web_contents = WebContents::CreateFrom(isolate, web_contents);
+  return !api_web_contents->IsRemote();
 }
 
 }  // namespace
@@ -63,10 +61,11 @@ void RenderProcessPreferences::BuildPrototype(
 
 // static
 mate::Handle<RenderProcessPreferences>
-RenderProcessPreferences::ForAllBrowserWindow(v8::Isolate* isolate) {
+RenderProcessPreferences::ForAllWebContents(v8::Isolate* isolate) {
   return mate::CreateHandle(
       isolate,
-      new RenderProcessPreferences(isolate, base::Bind(&IsBrowserWindow)));
+      new RenderProcessPreferences(isolate,
+                                   base::Bind(&IsWebContents, isolate)));
 }
 
 }  // namespace api
@@ -78,8 +77,8 @@ namespace {
 void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
   mate::Dictionary dict(context->GetIsolate(), exports);
-  dict.SetMethod("forAllBrowserWindow",
-                 &atom::api::RenderProcessPreferences::ForAllBrowserWindow);
+  dict.SetMethod("forAllWebContents",
+                 &atom::api::RenderProcessPreferences::ForAllWebContents);
 }
 
 }  // namespace

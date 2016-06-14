@@ -1197,6 +1197,10 @@ bool WebContents::IsGuest() const {
   return type_ == WEB_VIEW;
 }
 
+bool WebContents::IsRemote() const {
+  return type_ == REMOTE;
+}
+
 v8::Local<v8::Value> WebContents::GetWebPreferences(v8::Isolate* isolate) {
   WebContentsPreferences* web_preferences =
       WebContentsPreferences::FromWebContents(web_contents());
