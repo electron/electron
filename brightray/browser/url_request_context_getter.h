@@ -40,9 +40,9 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
 
     virtual net::NetworkDelegate* CreateNetworkDelegate() { return NULL; }
     virtual std::string GetUserAgent();
-    virtual std::unique_ptr<net::URLRequestJobFactory> CreateURLRequestJobFactory(
-        content::ProtocolHandlerMap* protocol_handlers,
-        content::URLRequestInterceptorScopedVector* protocol_interceptors);
+    virtual std::unique_ptr<net::URLRequestJobFactory>
+        CreateURLRequestJobFactory(
+            content::ProtocolHandlerMap* protocol_handlers);
     virtual net::HttpCache::BackendFactory* CreateHttpCacheBackendFactory(
         const base::FilePath& base_path);
     virtual std::unique_ptr<net::CertVerifier> CreateCertVerifier();
@@ -66,6 +66,7 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
   scoped_refptr<base::SingleThreadTaskRunner> GetNetworkTaskRunner() const override;
 
   net::HostResolver* host_resolver();
+  net::URLRequestJobFactory* job_factory() const { return job_factory_; }
 
  private:
   Delegate* delegate_;
@@ -86,6 +87,8 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
   std::unique_ptr<net::HttpNetworkSession> http_network_session_;
   content::ProtocolHandlerMap protocol_handlers_;
   content::URLRequestInterceptorScopedVector protocol_interceptors_;
+
+  net::URLRequestJobFactory* job_factory_;  // weak ref
 
   DISALLOW_COPY_AND_ASSIGN(URLRequestContextGetter);
 };

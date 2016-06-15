@@ -107,13 +107,13 @@ std::string URLRequestContextGetter::Delegate::GetUserAgent() {
 
 std::unique_ptr<net::URLRequestJobFactory>
 URLRequestContextGetter::Delegate::CreateURLRequestJobFactory(
-    content::ProtocolHandlerMap* protocol_handlers,
-    content::URLRequestInterceptorScopedVector* protocol_interceptors) {
+    content::ProtocolHandlerMap* protocol_handlers) {
   std::unique_ptr<net::URLRequestJobFactoryImpl> job_factory(new net::URLRequestJobFactoryImpl);
 
-  for (auto it = protocol_handlers->begin(); it != protocol_handlers->end(); ++it)
+  for (auto& it : *protocol_handlers) {
     job_factory->SetProtocolHandler(
-        it->first, base::WrapUnique(it->second.release()));
+        it.first, base::WrapUnique(it.second.release()));
+  }
   protocol_handlers->clear();
 
   job_factory->SetProtocolHandler(
@@ -124,15 +124,7 @@ URLRequestContextGetter::Delegate::CreateURLRequestJobFactory(
           BrowserThread::GetBlockingPool()->GetTaskRunnerWithShutdownBehavior(
               base::SequencedWorkerPool::SKIP_ON_SHUTDOWN))));
 
-  // Set up interceptors in the reverse order.
-  std::unique_ptr<net::URLRequestJobFactory> top_job_factory = std::move(job_factory);
-  content::URLRequestInterceptorScopedVector::reverse_iterator i;
-  for (i = protocol_interceptors->rbegin(); i != protocol_interceptors->rend(); ++i)
-    top_job_factory.reset(new net::URLRequestInterceptingJobFactory(
-        std::move(top_job_factory), base::WrapUnique(*i)));
-  protocol_interceptors->weak_clear();
-
-  return top_job_factory;
+  return std::move(job_factory);
 }
 
 net::HttpCache::BackendFactory*
@@ -172,7 +164,8 @@ URLRequestContextGetter::URLRequestContextGetter(
       in_memory_(in_memory),
       io_loop_(io_loop),
       file_loop_(file_loop),
-      protocol_interceptors_(std::move(protocol_interceptors)) {
+      protocol_interceptors_(std::move(protocol_interceptors)),
+      job_factory_(nullptr) {
   // Must first be created on the UI thread.
   DCHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
 
@@ -373,8 +366,23 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
                              false)));
     }
 
-    storage_->set_job_factory(delegate_->CreateURLRequestJobFactory(
-        &protocol_handlers_, &protocol_interceptors_));
+    std::unique_ptr<net::URLRequestJobFactory> job_factory =
+        delegate_->CreateURLRequestJobFactory(&protocol_handlers_);
+    job_factory_ = job_factory.get();
+
+    // Set up interceptors in the reverse order.
+    std::unique_ptr<net::URLRequestJobFactory> top_job_factory =
+        std::move(job_factory);
+    content::URLRequestInterceptorScopedVector::reverse_iterator it;
+    for (it = protocol_interceptors_.rbegin();
+         it != protocol_interceptors_.rend();
+         ++it) {
+      top_job_factory.reset(new net::URLRequestInterceptingJobFactory(
+          std::move(top_job_factory), make_scoped_ptr(*it)));
+    }
+    protocol_interceptors_.weak_clear();
+
+    storage_->set_job_factory(std::move(top_job_factory));
   }
 
   return url_request_context_.get();

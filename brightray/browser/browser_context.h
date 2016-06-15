@@ -65,7 +65,7 @@ class BrowserContext : public base::RefCounted<BrowserContext>,
       content::ProtocolHandlerMap* protocol_handlers,
       content::URLRequestInterceptorScopedVector request_interceptors) override;
 
-  net::URLRequestContextGetter* url_request_context_getter() const {
+  URLRequestContextGetter* url_request_context_getter() const {
     return url_request_getter_.get();
   }
 
