@@ -157,7 +157,6 @@ class NativeWindowMac : public NativeWindow {
   atom::NativeWindowMac* shell_;
   bool enable_larger_than_screen_;
   BOOL redispatchingEvent_;
-  BOOL eventHandled_;
 }
 @property BOOL acceptsFirstMouse;
 @property BOOL disableAutoHideCursor;
