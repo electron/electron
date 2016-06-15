@@ -18,7 +18,7 @@ describe('session module', function () {
   var url = 'http://127.0.0.1'
   var partitionName = 'temp'
   var protocolName = 'sp'
-  const tempProtocol = session.fromPartition(partitionName).protocol
+  const partitionProtocol = session.fromPartition(partitionName).protocol
   const protocol = session.defaultSession.protocol
 
   beforeEach(function () {
@@ -288,19 +288,23 @@ describe('session module', function () {
       })
     })
 
+    afterEach(function (done) {
+      partitionProtocol.unregisterProtocol(protocolName, () => done())
+    })
+
     it('handles requests from a partition', function (done) {
       var handler = function (error, callback) {
         callback({
           data: 'test'
         })
       }
-      tempProtocol.registerStringProtocol(protocolName, handler, function (error) {
+      partitionProtocol.registerStringProtocol(protocolName, handler, function (error) {
         if (error) {
           return done(error)
         }
         protocol.isProtocolHandled(protocolName, function (result) {
           assert.equal(result, false)
-          tempProtocol.isProtocolHandled(protocolName, function (result) {
+          partitionProtocol.isProtocolHandled(protocolName, function (result) {
             assert.equal(result, true)
             w.webContents.on('did-finish-load', function () {
               done()
