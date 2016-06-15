@@ -20,14 +20,15 @@
 #include "atom/common/options_switches.h"
 #include "base/command_line.h"
 #include "base/files/file_path.h"
+#include "base/memory/ptr_util.h"
 #include "base/path_service.h"
-#include "components/prefs/pref_registry_simple.h"
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
 #include "base/threading/sequenced_worker_pool.h"
 #include "base/threading/worker_pool.h"
 #include "chrome/common/chrome_paths.h"
 #include "chrome/common/pref_names.h"
+#include "components/prefs/pref_registry_simple.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/common/url_constants.h"
 #include "content/public/common/user_agent.h"
@@ -66,7 +67,6 @@ AtomBrowserContext::AtomBrowserContext(const std::string& partition,
                                        bool in_memory)
     : brightray::BrowserContext(partition, in_memory),
       cert_verifier_(new AtomCertVerifier),
-      job_factory_(new AtomURLRequestJobFactory),
       network_delegate_(new AtomNetworkDelegate) {
 }
 
@@ -96,15 +96,15 @@ std::string AtomBrowserContext::GetUserAgent() {
 
 std::unique_ptr<net::URLRequestJobFactory>
 AtomBrowserContext::CreateURLRequestJobFactory(
-    content::ProtocolHandlerMap* handlers,
-    content::URLRequestInterceptorScopedVector* interceptors) {
-  std::unique_ptr<AtomURLRequestJobFactory> job_factory(job_factory_);
+    content::ProtocolHandlerMap* protocol_handlers) {
+  std::unique_ptr<AtomURLRequestJobFactory> job_factory(
+      new AtomURLRequestJobFactory);
 
-  for (auto& it : *handlers) {
+  for (auto& it : *protocol_handlers) {
     job_factory->SetProtocolHandler(it.first,
-                                    make_scoped_ptr(it.second.release()));
+                                    base::WrapUnique(it.second.release()));
   }
-  handlers->clear();
+  protocol_handlers->clear();
 
   job_factory->SetProtocolHandler(
       url::kDataScheme, make_scoped_ptr(new net::DataProtocolHandler));
@@ -132,16 +132,7 @@ AtomBrowserContext::CreateURLRequestJobFactory(
       make_scoped_ptr(new net::FtpProtocolHandler(
           new net::FtpNetworkLayer(host_resolver))));
 
-  // Set up interceptors in the reverse order.
-  std::unique_ptr<net::URLRequestJobFactory> top_job_factory =
-      std::move(job_factory);
-  content::URLRequestInterceptorScopedVector::reverse_iterator it;
-  for (it = interceptors->rbegin(); it != interceptors->rend(); ++it)
-    top_job_factory.reset(new net::URLRequestInterceptingJobFactory(
-        std::move(top_job_factory), make_scoped_ptr(*it)));
-  interceptors->weak_clear();
-
-  return top_job_factory;
+  return std::move(job_factory);
 }
 
 net::HttpCache::BackendFactory*

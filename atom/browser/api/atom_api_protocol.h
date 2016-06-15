@@ -19,14 +19,10 @@
 #include "native_mate/arguments.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/handle.h"
+#include "net/url_request/url_request_context.h"
 
 namespace base {
 class DictionaryValue;
-}
-
-namespace net {
-class URLRequest;
-class URLRequestContextGetter;
 }
 
 namespace atom {
@@ -50,7 +46,10 @@ class Protocol : public mate::TrackableObject<Protocol> {
   Protocol(v8::Isolate* isolate, AtomBrowserContext* browser_context);
 
   AtomURLRequestJobFactory* job_factory() const {
-    return browser_context_->job_factory();
+    request_context_getter_->GetURLRequestContext();  // Force init.
+    return static_cast<AtomURLRequestJobFactory*>(
+        static_cast<brightray::URLRequestContextGetter*>(
+            request_context_getter_.get())->job_factory());
   }
 
   base::WeakPtr<Protocol> GetWeakPtr() {
@@ -123,7 +122,7 @@ class Protocol : public mate::TrackableObject<Protocol> {
       return PROTOCOL_REGISTERED;
     std::unique_ptr<CustomProtocolHandler<RequestJob>> protocol_handler(
         new CustomProtocolHandler<RequestJob>(
-            isolate(), request_context_getter_, handler));
+            isolate(), request_context_getter_.get(), handler));
     if (job_factory()->SetProtocolHandler(scheme, std::move(protocol_handler)))
       return PROTOCOL_OK;
     else
@@ -165,7 +164,7 @@ class Protocol : public mate::TrackableObject<Protocol> {
       return PROTOCOL_INTERCEPTED;
     std::unique_ptr<CustomProtocolHandler<RequestJob>> protocol_handler(
         new CustomProtocolHandler<RequestJob>(
-            isolate(), request_context_getter_, handler));
+            isolate(), request_context_getter_.get(), handler));
     original_protocols_.set(
         scheme,
         job_factory()->ReplaceProtocol(scheme, std::move(protocol_handler)));
@@ -182,8 +181,7 @@ class Protocol : public mate::TrackableObject<Protocol> {
   // Convert error code to string.
   std::string ErrorCodeToString(ProtocolError error);
 
-  scoped_refptr<AtomBrowserContext> browser_context_;
-  net::URLRequestContextGetter* request_context_getter_;
+  scoped_refptr<net::URLRequestContextGetter> request_context_getter_;
 
   // Map that stores the original protocols of schemes.
   using OriginalProtocolsMap = base::ScopedPtrHashMap<
