@@ -152,4 +152,21 @@ class NativeWindowMac : public NativeWindow {
 
 }  // namespace atom
 
+@interface AtomNSWindow : NSWindow {
+ @private
+  atom::NativeWindowMac* shell_;
+  bool enable_larger_than_screen_;
+  BOOL redispatchingEvent_;
+  BOOL eventHandled_;
+}
+@property BOOL acceptsFirstMouse;
+@property BOOL disableAutoHideCursor;
+@property BOOL disableKeyOrMainWindow;
+
+- (void)setShell:(atom::NativeWindowMac*)shell;
+- (void)setEnableLargerThanScreen:(bool)enable;
+- (BOOL)redispatchKeyEvent:(NSEvent*)event;
+- (BOOL)performKeyEquivalent:(NSEvent*)theEvent;
+@end
+
 #endif  // ATOM_BROWSER_NATIVE_WINDOW_MAC_H_

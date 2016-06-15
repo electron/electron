@@ -270,19 +270,6 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 @end
 
-@interface AtomNSWindow : NSWindow {
- @private
-  atom::NativeWindowMac* shell_;
-  bool enable_larger_than_screen_;
-}
-@property BOOL acceptsFirstMouse;
-@property BOOL disableAutoHideCursor;
-@property BOOL disableKeyOrMainWindow;
-
-- (void)setShell:(atom::NativeWindowMac*)shell;
-- (void)setEnableLargerThanScreen:(bool)enable;
-@end
-
 @implementation AtomNSWindow
 
 - (void)setShell:(atom::NativeWindowMac*)shell {
@@ -347,6 +334,38 @@ bool ScopedDisableResize::disable_resize_ = false;
   return !self.disableKeyOrMainWindow;
 }
 
+- (void)sendEvent:(NSEvent*)event {
+  if (!redispatchingEvent_)
+    [super sendEvent:event];
+  else
+    eventHandled_ = NO;
+}
+
+- (BOOL)performKeyEquivalent:(NSEvent*)event {
+  if (redispatchingEvent_)
+    return NO;
+
+  if ([super performKeyEquivalent:event])
+    return YES;
+
+  return NO;
+ }
+
+- (BOOL)redispatchKeyEvent:(NSEvent*)event {
+  NSEventType eventType = [event type];
+  if (eventType != NSKeyDown && eventType != NSKeyUp &&
+      eventType != NSFlagsChanged) {
+    return YES;
+  }
+
+  // Redispatch the event.
+  eventHandled_ = YES;
+  redispatchingEvent_ = YES;
+  [NSApp sendEvent:event];
+  redispatchingEvent_ = NO;
+
+  return eventHandled_;
+}
 @end
 
 @interface ControlRegionView : NSView
