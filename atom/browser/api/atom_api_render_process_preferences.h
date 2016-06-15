@@ -17,7 +17,7 @@ class RenderProcessPreferences
     : public mate::Wrappable<RenderProcessPreferences> {
  public:
   static mate::Handle<RenderProcessPreferences>
-      ForAllBrowserWindow(v8::Isolate* isolate);
+      ForAllWebContents(v8::Isolate* isolate);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::ObjectTemplate> prototype);

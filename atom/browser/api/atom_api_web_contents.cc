@@ -187,6 +187,39 @@ struct Converter<content::SavePageType> {
   }
 };
 
+template<>
+struct Converter<atom::api::WebContents::Type> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   atom::api::WebContents::Type val) {
+    using Type = atom::api::WebContents::Type;
+    std::string type = "";
+    switch (val) {
+      case Type::BACKGROUND_PAGE: type = "backgroundPage"; break;
+      case Type::BROWSER_WINDOW: type = "window"; break;
+      case Type::REMOTE: type = "remote"; break;
+      case Type::WEB_VIEW: type = "webview"; break;
+      default: break;
+    }
+    return mate::ConvertToV8(isolate, type);
+  }
+
+  static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
+                     atom::api::WebContents::Type* out) {
+    using Type = atom::api::WebContents::Type;
+    std::string type;
+    if (!ConvertFromV8(isolate, val, &type))
+      return false;
+    if (type == "webview") {
+      *out = Type::WEB_VIEW;
+    } else if (type == "backgroundPage") {
+      *out = Type::BACKGROUND_PAGE;
+    } else {
+      return false;
+    }
+    return true;
+  }
+};
+
 }  // namespace mate
 
 
@@ -238,10 +271,8 @@ WebContents::WebContents(v8::Isolate* isolate,
   // Read options.
   options.Get("backgroundThrottling", &background_throttling_);
 
-  // Whether it is a guest WebContents.
-  bool is_guest = false;
-  options.Get("isGuest", &is_guest);
-  type_ = is_guest ? WEB_VIEW : BROWSER_WINDOW;
+  type_ = BROWSER_WINDOW;
+  options.Get("type", &type_);
 
   // Obtain the session.
   std::string partition;
@@ -261,7 +292,7 @@ WebContents::WebContents(v8::Isolate* isolate,
   session_.Reset(isolate, session.ToV8());
 
   content::WebContents* web_contents;
-  if (is_guest) {
+  if (IsGuest()) {
     scoped_refptr<content::SiteInstance> site_instance =
         content::SiteInstance::CreateForURL(
             session->browser_context(), GURL("chrome-guest://fake-host"));
@@ -290,7 +321,7 @@ WebContents::WebContents(v8::Isolate* isolate,
 
   web_contents->SetUserAgentOverride(GetBrowserContext()->GetUserAgent());
 
-  if (is_guest) {
+  if (IsGuest()) {
     guest_delegate_->Initialize(this);
 
     NativeWindow* owner_window = nullptr;
@@ -744,13 +775,8 @@ int WebContents::GetID() const {
   return web_contents()->GetRenderProcessHost()->GetID();
 }
 
-std::string WebContents::GetType() const {
-  switch (type_) {
-    case BROWSER_WINDOW: return "window";
-    case WEB_VIEW: return "webview";
-    case REMOTE: return "remote";
-    default: return "";
-  }
+WebContents::Type WebContents::GetType() const {
+  return type_;
 }
 
 bool WebContents::Equal(const WebContents* web_contents) const {
