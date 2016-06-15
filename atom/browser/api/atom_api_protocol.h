@@ -10,9 +10,11 @@
 #include <vector>
 
 #include "atom/browser/api/trackable_object.h"
+#include "atom/browser/atom_browser_context.h"
 #include "atom/browser/net/atom_url_request_job_factory.h"
 #include "base/callback.h"
 #include "base/containers/scoped_ptr_hash_map.h"
+#include "base/memory/weak_ptr.h"
 #include "content/public/browser/browser_thread.h"
 #include "native_mate/arguments.h"
 #include "native_mate/dictionary.h"
@@ -28,9 +30,6 @@ class URLRequestContextGetter;
 }
 
 namespace atom {
-
-class AtomBrowserContext;
-class AtomURLRequestJobFactory;
 
 namespace api {
 
@@ -49,6 +48,14 @@ class Protocol : public mate::TrackableObject<Protocol> {
 
  protected:
   Protocol(v8::Isolate* isolate, AtomBrowserContext* browser_context);
+
+  AtomURLRequestJobFactory* job_factory() const {
+    return browser_context_->job_factory();
+  }
+
+  base::WeakPtr<Protocol> GetWeakPtr() {
+    return weak_factory_.GetWeakPtr();
+  }
 
  private:
   // Possible errors.
@@ -107,17 +114,17 @@ class Protocol : public mate::TrackableObject<Protocol> {
         base::Bind(&Protocol::RegisterProtocolInIO<RequestJob>,
                    base::Unretained(this), scheme, handler),
         base::Bind(&Protocol::OnIOCompleted,
-                   base::Unretained(this), callback));
+                   GetWeakPtr(), callback));
   }
   template<typename RequestJob>
   ProtocolError RegisterProtocolInIO(const std::string& scheme,
                                      const Handler& handler) {
-    if (job_factory_->IsHandledProtocol(scheme))
+    if (job_factory()->IsHandledProtocol(scheme))
       return PROTOCOL_REGISTERED;
     std::unique_ptr<CustomProtocolHandler<RequestJob>> protocol_handler(
         new CustomProtocolHandler<RequestJob>(
             isolate(), request_context_getter_, handler));
-    if (job_factory_->SetProtocolHandler(scheme, std::move(protocol_handler)))
+    if (job_factory()->SetProtocolHandler(scheme, std::move(protocol_handler)))
       return PROTOCOL_OK;
     else
       return PROTOCOL_FAIL;
@@ -144,15 +151,15 @@ class Protocol : public mate::TrackableObject<Protocol> {
         base::Bind(&Protocol::InterceptProtocolInIO<RequestJob>,
                    base::Unretained(this), scheme, handler),
         base::Bind(&Protocol::OnIOCompleted,
-                   base::Unretained(this), callback));
+                   GetWeakPtr(), callback));
   }
   template<typename RequestJob>
   ProtocolError InterceptProtocolInIO(const std::string& scheme,
                                       const Handler& handler) {
-    if (!job_factory_->IsHandledProtocol(scheme))
+    if (!job_factory()->IsHandledProtocol(scheme))
       return PROTOCOL_NOT_REGISTERED;
     // It is possible a protocol is handled but can not be intercepted.
-    if (!job_factory_->HasProtocolHandler(scheme))
+    if (!job_factory()->HasProtocolHandler(scheme))
       return PROTOCOL_FAIL;
     if (ContainsKey(original_protocols_, scheme))
       return PROTOCOL_INTERCEPTED;
@@ -161,7 +168,7 @@ class Protocol : public mate::TrackableObject<Protocol> {
             isolate(), request_context_getter_, handler));
     original_protocols_.set(
         scheme,
-        job_factory_->ReplaceProtocol(scheme, std::move(protocol_handler)));
+        job_factory()->ReplaceProtocol(scheme, std::move(protocol_handler)));
     return PROTOCOL_OK;
   }
 
@@ -175,6 +182,7 @@ class Protocol : public mate::TrackableObject<Protocol> {
   // Convert error code to string.
   std::string ErrorCodeToString(ProtocolError error);
 
+  scoped_refptr<AtomBrowserContext> browser_context_;
   net::URLRequestContextGetter* request_context_getter_;
 
   // Map that stores the original protocols of schemes.
@@ -183,7 +191,7 @@ class Protocol : public mate::TrackableObject<Protocol> {
       std::unique_ptr<net::URLRequestJobFactory::ProtocolHandler>>;
   OriginalProtocolsMap original_protocols_;
 
-  AtomURLRequestJobFactory* job_factory_;  // weak ref
+  base::WeakPtrFactory<Protocol> weak_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(Protocol);
 };

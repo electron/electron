@@ -5,7 +5,6 @@
 #include "atom/browser/api/atom_api_protocol.h"
 
 #include "atom/browser/atom_browser_client.h"
-#include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/net/url_request_async_asar_job.h"
 #include "atom/browser/net/url_request_buffer_job.h"
@@ -28,9 +27,10 @@ namespace atom {
 namespace api {
 
 Protocol::Protocol(v8::Isolate* isolate, AtomBrowserContext* browser_context)
-    : request_context_getter_(browser_context->GetRequestContext()),
-      job_factory_(browser_context->job_factory()) {
-  CHECK(job_factory_);
+    : browser_context_(browser_context),
+      request_context_getter_(browser_context->GetRequestContext()),
+      weak_factory_(this) {
+  CHECK(job_factory());
   Init(isolate);
 }
 
@@ -48,19 +48,19 @@ void Protocol::UnregisterProtocol(
       base::Bind(&Protocol::UnregisterProtocolInIO,
                  base::Unretained(this), scheme),
       base::Bind(&Protocol::OnIOCompleted,
-                 base::Unretained(this), callback));
+                 GetWeakPtr(), callback));
 }
 
 Protocol::ProtocolError Protocol::UnregisterProtocolInIO(
     const std::string& scheme) {
-  if (!job_factory_->HasProtocolHandler(scheme))
+  if (!job_factory()->HasProtocolHandler(scheme))
     return PROTOCOL_NOT_REGISTERED;
-  job_factory_->SetProtocolHandler(scheme, nullptr);
+  job_factory()->SetProtocolHandler(scheme, nullptr);
   return PROTOCOL_OK;
 }
 
 void Protocol::IsProtocolHandled(const std::string& scheme,
-                                    const BooleanCallback& callback) {
+                                 const BooleanCallback& callback) {
   content::BrowserThread::PostTaskAndReplyWithResult(
       content::BrowserThread::IO, FROM_HERE,
       base::Bind(&Protocol::IsProtocolHandledInIO,
@@ -69,7 +69,7 @@ void Protocol::IsProtocolHandled(const std::string& scheme,
 }
 
 bool Protocol::IsProtocolHandledInIO(const std::string& scheme) {
-  return job_factory_->IsHandledProtocol(scheme);
+  return job_factory()->IsHandledProtocol(scheme);
 }
 
 void Protocol::UninterceptProtocol(
@@ -81,15 +81,15 @@ void Protocol::UninterceptProtocol(
       base::Bind(&Protocol::UninterceptProtocolInIO,
                  base::Unretained(this), scheme),
       base::Bind(&Protocol::OnIOCompleted,
-                 base::Unretained(this), callback));
+                 GetWeakPtr(), callback));
 }
 
 Protocol::ProtocolError Protocol::UninterceptProtocolInIO(
     const std::string& scheme) {
   if (!original_protocols_.contains(scheme))
     return PROTOCOL_NOT_INTERCEPTED;
-  job_factory_->ReplaceProtocol(scheme,
-                                original_protocols_.take_and_erase(scheme));
+  job_factory()->ReplaceProtocol(scheme,
+                                 original_protocols_.take_and_erase(scheme));
   return PROTOCOL_OK;
 }
 
