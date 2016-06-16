@@ -25,8 +25,7 @@ void CommonWebContentsDelegate::HandleKeyboardEvent(
 
   NSWindow* window = event.os_event.window;
   if (window && [window isKindOfClass:[AtomNSWindow class]]) {
-    AtomNSWindow* native_window = static_cast<AtomNSWindow*>(window);
-    [native_window redispatchKeyEvent:event.os_event];
+    [((AtomNSWindow*)window) redispatchKeyEvent:event.os_event];
   }
 }
 
