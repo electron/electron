@@ -65,6 +65,7 @@
       'lib/renderer/api/web-frame.js',
       'lib/renderer/extensions/i18n.js',
       'lib/renderer/extensions/storage.js',
+      'lib/renderer/extensions/web-navigation.js',
     ],
     'js2c_sources': [
       'lib/common/asar.js',
