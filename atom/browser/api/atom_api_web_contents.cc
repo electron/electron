@@ -266,13 +266,22 @@ WebContents::WebContents(v8::Isolate* isolate,
 WebContents::WebContents(v8::Isolate* isolate,
                          const mate::Dictionary& options)
     : embedder_(nullptr),
+      type_(BROWSER_WINDOW),
       request_id_(0),
       background_throttling_(true) {
   // Read options.
   options.Get("backgroundThrottling", &background_throttling_);
 
-  type_ = BROWSER_WINDOW;
-  options.Get("type", &type_);
+  // FIXME(zcbenz): We should read "type" parameter for better design, but
+  // on Windows we have encountered a compiler bug that if we read "type"
+  // from |options| and then set |type_|, a memory corruption will happen
+  // and Electron will soon crash.
+  // Remvoe this after we upgraded to use VS 2015 Update 3.
+  bool b = false;
+  if (options.Get("isGuest", &b) && b)
+    type_ = WEB_VIEW;
+  else if (options.Get("isBackgroundPage", &b) && b)
+    type_ = BACKGROUND_PAGE;
 
   // Obtain the session.
   std::string partition;
