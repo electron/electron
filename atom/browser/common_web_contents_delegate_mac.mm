@@ -23,8 +23,9 @@ void CommonWebContentsDelegate::HandleKeyboardEvent(
   if (event.windowsKeyCode == ui::VKEY_ESCAPE && is_html_fullscreen())
     ExitFullscreenModeForTab(source);
 
-  if (event.os_event.window) {
-    AtomNSWindow* native_window = static_cast<AtomNSWindow*>(event.os_event.window);
+  NSWindow* window = event.os_event.window;
+  if (window && [window isKindOfClass:[AtomNSWindow class]]) {
+    AtomNSWindow* native_window = static_cast<AtomNSWindow*>(window);
     [native_window redispatchKeyEvent:event.os_event];
   }
 }
