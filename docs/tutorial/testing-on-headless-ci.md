@@ -34,7 +34,7 @@ xvfb-maybe electron-mocha ./test/*.js
 
 On Travis, your `.travis.yml` should look roughly like this:
 
-```
+```yml
 addons:
   apt:
     packages:
