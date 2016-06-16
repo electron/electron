@@ -50,7 +50,7 @@ let win = new BrowserWindow({transparent: true, frame: false})
 * The `blur` filter only applies to the web page, so there is no way to apply
   blur effect to the content below the window (i.e. other applications open on
   the user's system).
-* On Windows operation systems, transparent windows will not work when DWM is
+* On Windows operating systems, transparent windows will not work when DWM is
   disabled.
 * On Linux users have to put `--enable-transparent-visuals --disable-gpu` in
   the command line to disable GPU and allow ARGB to make transparent window,
