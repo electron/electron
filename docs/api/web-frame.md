@@ -141,7 +141,7 @@ previous navigation).
 
 Note that blindly calling this method probably makes Electron slower since it
 will have to refill these emptied caches, you should only call it if an event
-in your app has occured that makes you think your page is actually using less
+in your app has occurred that makes you think your page is actually using less
 memory (i.e. you have navigated from a super heavy page to a mostly empty one,
 and intend to stay there).
 

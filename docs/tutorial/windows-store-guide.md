@@ -104,7 +104,7 @@ folder.
 Once the expanded AppX files are created, the tool uses the Windows App Packager
 (`MakeAppx.exe`) to create a single-file AppX package from those files on disk.
 Finally, the tool can be used to create a trusted certificate on your computer
-to sign the new AppX pacakge. With the signed AppX package, the CLI can also
+to sign the new AppX package. With the signed AppX package, the CLI can also
 automatically install the package on your machine.
 
 ## Step 3: Using the AppX Package

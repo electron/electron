@@ -325,8 +325,8 @@ Returns:
 
 * `event` Event
 * `params` Object
-  * `x` Integer - x coodinate
-  * `y` Integer - y coodinate
+  * `x` Integer - x coordinate
+  * `y` Integer - y coordinate
   * `linkURL` String - URL of the link that encloses the node the context menu
     was invoked on.
   * `linkText` String - Text associated with the link. May be an empty
