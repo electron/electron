@@ -344,6 +344,11 @@ describe('browser-window module', function () {
           app.dock.setIcon(path.join(fixtures, 'assets', 'logo.png'))
         }
         w.setProgressBar(.5)
+
+        if (process.platform === 'darwin') {
+          app.dock.setIcon(null)
+        }
+        w.setProgressBar(-1)
       })
     })
   })
