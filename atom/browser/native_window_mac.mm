@@ -907,7 +907,9 @@ void NativeWindowMac::SetProgressBar(double progress) {
     NSImageView* image_view = [[NSImageView alloc] init];
     [image_view setImage:[NSApp applicationIconImage]];
     [dock_tile setContentView:image_view];
+  }
 
+  if ([[dock_tile.contentView subviews] count] == 0) {
     NSProgressIndicator* progress_indicator = [[AtomProgressBar alloc]
         initWithFrame:NSMakeRect(0.0f, 0.0f, dock_tile.size.width, 15.0)];
     [progress_indicator setStyle:NSProgressIndicatorBarStyle];
@@ -916,7 +918,7 @@ void NativeWindowMac::SetProgressBar(double progress) {
     [progress_indicator setMinValue:0];
     [progress_indicator setMaxValue:1];
     [progress_indicator setHidden:NO];
-    [image_view addSubview:progress_indicator];
+    [dock_tile.contentView addSubview:progress_indicator];
   }
 
   NSProgressIndicator* progress_indicator =
