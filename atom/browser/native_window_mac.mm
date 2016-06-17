@@ -604,6 +604,10 @@ void NativeWindowMac::Close() {
 }
 
 void NativeWindowMac::CloseImmediately() {
+  // Close all child windows before closing this window.
+  for (NSWindow* child in [window_ childWindows])
+    [child close];
+
   [window_ close];
 }
 
