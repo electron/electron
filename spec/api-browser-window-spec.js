@@ -337,6 +337,22 @@ describe('browser-window module', function () {
     })
   })
 
+  describe('BrowserWindow.setProgressBar(progress)', function () {
+    it('sets the progress', function () {
+      assert.doesNotThrow(function () {
+        if (process.platform === 'darwin') {
+          app.dock.setIcon(path.join(fixtures, 'assets', 'logo.png'))
+        }
+        w.setProgressBar(.5)
+
+        if (process.platform === 'darwin') {
+          app.dock.setIcon(null)
+        }
+        w.setProgressBar(-1)
+      })
+    })
+  })
+
   describe('BrowserWindow.fromId(id)', function () {
     it('returns the window with id', function () {
       assert.equal(w.id, BrowserWindow.fromId(w.id).id)
