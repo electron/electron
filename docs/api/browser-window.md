@@ -438,11 +438,17 @@ console.
 
 Method will also not return if the extension's manifest is missing or incomplete.
 
+**Note:** This API cannot be called before the `ready` event of the `app` module
+is emitted.
+
 ### `BrowserWindow.removeDevToolsExtension(name)`
 
 * `name` String
 
 Remove the DevTools extension whose name is `name`.
+
+**Note:** This API cannot be called before the `ready` event of the `app` module
+is emitted.
 
 ### `BrowserWindow.getDevToolsExtensions()`
 
@@ -454,6 +460,9 @@ To check if a DevTools extension is installed you can run the following:
 ```javascript
 let installed = BrowserWindow.getDevToolsExtensions().hasOwnProperty('devtron')
 ```
+
+**Note:** This API cannot be called before the `ready` event of the `app` module
+is emitted.
 
 ## Instance Properties
 
