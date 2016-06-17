@@ -136,6 +136,8 @@ void Window::OnWindowClosed() {
 
   Emit("closed");
 
+  RemoveFromParentChildWindows();
+
   // Destroy the native class when window is closed.
   base::MessageLoop::current()->PostTask(FROM_HERE, GetDestroyClosure());
 }
@@ -650,13 +652,17 @@ void Window::SetAspectRatio(double aspect_ratio, mate::Arguments* args) {
   window_->SetAspectRatio(aspect_ratio, extra_size);
 }
 
-void Window::SetParentWindow(mate::Arguments* args) {
-  v8::Local<v8::Value> value;
-  NativeWindow* parent;
-  if (args->GetNext(&value) &&
-      mate::ConvertFromV8(isolate(), value, &parent)) {
+void Window::SetParentWindow(v8::Local<v8::Value> value,
+                             mate::Arguments* args) {
+  mate::Handle<Window> parent;
+  if (value->IsNull()) {
+    RemoveFromParentChildWindows();
+    parent_window_.Reset();
+    window_->SetParentWindow(nullptr);
+  } else if (mate::ConvertFromV8(isolate(), value, &parent)) {
     parent_window_.Reset(isolate(), value);
-    window_->SetParentWindow(parent);
+    window_->SetParentWindow(parent->window_.get());
+    parent->child_windows_.Set(isolate(), ID(), GetWrapper());
   } else {
     args->ThrowError("Must pass BrowserWindow instance or null");
   }
@@ -667,6 +673,10 @@ v8::Local<v8::Value> Window::GetParentWindow() {
     return v8::Null(isolate());
   else
     return v8::Local<v8::Value>::New(isolate(), parent_window_);
+}
+
+std::vector<v8::Local<v8::Object>> Window::GetChildWindows() {
+  return child_windows_.Values(isolate());
 }
 
 v8::Local<v8::Value> Window::GetNativeWindowHandle() {
@@ -694,6 +704,15 @@ v8::Local<v8::Value> Window::WebContents(v8::Isolate* isolate) {
     return v8::Local<v8::Value>::New(isolate, web_contents_);
 }
 
+void Window::RemoveFromParentChildWindows() {
+  if (parent_window_.IsEmpty())
+    return;
+
+  mate::Handle<Window> parent;
+  if (mate::ConvertFromV8(isolate(), GetParentWindow(), &parent))
+    parent->child_windows_.Remove(ID());
+}
+
 // static
 void Window::BuildPrototype(v8::Isolate* isolate,
                             v8::Local<v8::ObjectTemplate> prototype) {
@@ -718,6 +737,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setAspectRatio", &Window::SetAspectRatio)
       .SetMethod("setParentWindow", &Window::SetParentWindow)
       .SetMethod("getParentWindow", &Window::GetParentWindow)
+      .SetMethod("getChildWindows", &Window::GetChildWindows)
       .SetMethod("getNativeWindowHandle", &Window::GetNativeWindowHandle)
       .SetMethod("getBounds", &Window::GetBounds)
       .SetMethod("setBounds", &Window::SetBounds)

@@ -14,10 +14,6 @@
 
 namespace atom {
 
-namespace internal {
-
-}  // namespace internal
-
 // Like ES6's WeakMap, but the key is Integer and the value is Weak Pointer.
 template<typename K>
 class KeyWeakMap {
