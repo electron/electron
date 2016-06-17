@@ -279,6 +279,7 @@ bool ScopedDisableResize::disable_resize_ = false;
 @property BOOL acceptsFirstMouse;
 @property BOOL disableAutoHideCursor;
 @property BOOL disableKeyOrMainWindow;
+@property BOOL disableMouseEvents;
 
 - (void)setShell:(atom::NativeWindowMac*)shell;
 - (void)setEnableLargerThanScreen:(bool)enable;
@@ -346,6 +347,29 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 - (BOOL)canBecomeKeyWindow {
   return !self.disableKeyOrMainWindow;
+}
+
+- (void)sendEvent:(NSEvent*)event {
+  // Drop all mouse events.
+  if (self.disableMouseEvents) {
+    switch([event type]) {
+      case NSLeftMouseUp:
+      case NSLeftMouseDown:
+      case NSRightMouseDown:
+      case NSRightMouseUp:
+      case NSOtherMouseUp:
+      case NSLeftMouseDragged:
+      case NSRightMouseDragged:
+      case NSOtherMouseDragged:
+      case NSMouseMoved:
+      case NSScrollWheel:
+        return;
+      default:
+        break;
+    }
+  }
+
+  [super sendEvent:event];
 }
 
 @end
@@ -496,6 +520,7 @@ NativeWindowMac::NativeWindowMac(
                   backing:NSBackingStoreBuffered
                     defer:YES]);
   [window_ setShell:this];
+  [window_ setDisableMouseEvents:NO];
   [window_ setEnableLargerThanScreen:enable_larger_than_screen()];
 
   window_delegate_.reset([[AtomNSWindowDelegate alloc] initWithShell:this]);
@@ -645,6 +670,20 @@ void NativeWindowMac::Hide() {
 
 bool NativeWindowMac::IsVisible() {
   return [window_ isVisible];
+}
+
+void NativeWindowMac::Disable() {
+  [window_ setDisableKeyOrMainWindow:YES];
+  [window_ setDisableMouseEvents:YES];
+}
+
+void NativeWindowMac::Enable() {
+  [window_ setDisableKeyOrMainWindow:NO];
+  [window_ setDisableMouseEvents:NO];
+}
+
+bool NativeWindowMac::IsEnabled() {
+  return ![window_ disableMouseEvents];
 }
 
 void NativeWindowMac::Maximize() {

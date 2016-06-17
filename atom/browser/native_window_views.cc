@@ -373,6 +373,16 @@ bool NativeWindowViews::IsVisible() {
   return window_->IsVisible();
 }
 
+void NativeWindowViews::Disable() {
+}
+
+void NativeWindowViews::Enable() {
+}
+
+bool NativeWindowViews::IsEnabled() {
+  return true;
+}
+
 void NativeWindowViews::Maximize() {
   if (IsVisible())
     window_->Maximize();

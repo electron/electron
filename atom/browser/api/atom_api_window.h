@@ -95,6 +95,9 @@ class Window : public mate::TrackableObject<Window>,
   void ShowInactive();
   void Hide();
   bool IsVisible();
+  void Disable();
+  void Enable();
+  bool IsEnabled();
   void Maximize();
   void Unmaximize();
   bool IsMaximized();

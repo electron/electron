@@ -293,6 +293,18 @@ bool Window::IsVisible() {
   return window_->IsVisible();
 }
 
+void Window::Disable() {
+  window_->Disable();
+}
+
+void Window::Enable() {
+  window_->Enable();
+}
+
+bool Window::IsEnabled() {
+  return window_->IsEnabled();
+}
+
 void Window::Maximize() {
   window_->Maximize();
 }
@@ -726,6 +738,9 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("showInactive", &Window::ShowInactive)
       .SetMethod("hide", &Window::Hide)
       .SetMethod("isVisible", &Window::IsVisible)
+      .SetMethod("enable", &Window::Enable)
+      .SetMethod("disable", &Window::Disable)
+      .SetMethod("isEnabled", &Window::IsEnabled)
       .SetMethod("maximize", &Window::Maximize)
       .SetMethod("unmaximize", &Window::Unmaximize)
       .SetMethod("isMaximized", &Window::IsMaximized)
