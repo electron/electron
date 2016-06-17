@@ -23,7 +23,8 @@ void CommonWebContentsDelegate::HandleKeyboardEvent(
   if (event.windowsKeyCode == ui::VKEY_ESCAPE && is_html_fullscreen())
     ExitFullscreenModeForTab(source);
 
-  [(EventDispatchingWindow*)event.os_event.window redispatchKeyEvent:event.os_event];
+  if (event.os_event.window)
+    [(EventDispatchingWindow*)event.os_event.window redispatchKeyEvent:event.os_event];
 }
 
 }  // namespace atom
