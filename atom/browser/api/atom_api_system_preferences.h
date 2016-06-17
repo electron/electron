@@ -26,14 +26,12 @@ class SystemPreferences : public mate::EventEmitter<SystemPreferences> {
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::ObjectTemplate> prototype);
 
-#if defined(OS_MACOSX)
-  using NotificationCallback = base::Callback<
-      void(const std::string&, const base::DictionaryValue&)>;
-#endif
-
 #if defined(OS_WIN)
   bool IsAeroGlassEnabled();
 #elif defined(OS_MACOSX)
+  using NotificationCallback = base::Callback<
+    void(const std::string&, const base::DictionaryValue&)>;
+
   int SubscribeNotification(const std::string& name,
                             const NotificationCallback& callback);
   void UnsubscribeNotification(int request_id);
@@ -49,11 +47,12 @@ class SystemPreferences : public mate::EventEmitter<SystemPreferences> {
   explicit SystemPreferences(v8::Isolate* isolate);
   ~SystemPreferences() override;
 
+#if defined(OS_MACOSX)
   int DoSubscribeNotification(const std::string& name,
                               const NotificationCallback& callback,
                               bool is_local);
   void DoUnsubscribeNotification(int request_id, bool is_local);
-
+#endif
 
  private:
   DISALLOW_COPY_AND_ASSIGN(SystemPreferences);
