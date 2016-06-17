@@ -94,6 +94,7 @@ class NativeWindowViews : public NativeWindow,
   void SetIgnoreMouseEvents(bool ignore) override;
   void SetFocusable(bool focusable) override;
   void SetMenu(ui::MenuModel* menu_model) override;
+  void SetParentWindow(NativeWindow* parent) override;
   gfx::NativeWindow GetNativeWindow() override;
   void SetOverlayIcon(const gfx::Image& overlay,
                       const std::string& description) override;

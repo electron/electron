@@ -159,6 +159,7 @@ class Window : public mate::TrackableObject<Window>,
   void SetMenuBarVisibility(bool visible);
   bool IsMenuBarVisible();
   void SetAspectRatio(double aspect_ratio, mate::Arguments* args);
+  void SetParentWindow(NativeWindow* parent);
   v8::Local<v8::Value> GetNativeWindowHandle();
 
 #if defined(OS_WIN)

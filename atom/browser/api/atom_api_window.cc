@@ -650,6 +650,10 @@ void Window::SetAspectRatio(double aspect_ratio, mate::Arguments* args) {
   window_->SetAspectRatio(aspect_ratio, extra_size);
 }
 
+void Window::SetParentWindow(NativeWindow* parent) {
+  window_->SetParentWindow(parent);
+}
+
 v8::Local<v8::Value> Window::GetNativeWindowHandle() {
   gfx::AcceleratedWidget handle = window_->GetAcceleratedWidget();
   return ToBuffer(
@@ -697,6 +701,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setFullScreen", &Window::SetFullScreen)
       .SetMethod("isFullScreen", &Window::IsFullscreen)
       .SetMethod("setAspectRatio", &Window::SetAspectRatio)
+      .SetMethod("setParentWindow", &Window::SetParentWindow)
       .SetMethod("getNativeWindowHandle", &Window::GetNativeWindowHandle)
       .SetMethod("getBounds", &Window::GetBounds)
       .SetMethod("setBounds", &Window::SetBounds)

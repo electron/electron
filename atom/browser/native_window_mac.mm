@@ -911,6 +911,16 @@ bool NativeWindowMac::HasModalDialog() {
   return [window_ attachedSheet] != nil;
 }
 
+void NativeWindowMac::SetParentWindow(NativeWindow* parent) {
+  // Remove current parent window.
+  if ([window_ parentWindow])
+    [[window_ parentWindow] removeChildWindow:window_];
+
+  // Set new current window.
+  if (parent)
+    [parent->GetNativeWindow() addChildWindow:window_ ordered:NSWindowAbove];
+}
+
 gfx::NativeWindow NativeWindowMac::GetNativeWindow() {
   return window_;
 }

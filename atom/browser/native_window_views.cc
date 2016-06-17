@@ -772,6 +772,9 @@ void NativeWindowViews::SetMenu(ui::MenuModel* menu_model) {
   Layout();
 }
 
+void NativeWindowViews::SetParentWindow(NativeWindow* parent) {
+}
+
 gfx::NativeWindow NativeWindowViews::GetNativeWindow() {
   return window_->GetNativeWindow();
 }

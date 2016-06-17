@@ -158,6 +158,7 @@ class NativeWindow : public base::SupportsUserData,
   virtual void SetFocusable(bool focusable);
   virtual void SetMenu(ui::MenuModel* menu);
   virtual bool HasModalDialog();
+  virtual void SetParentWindow(NativeWindow* parent) = 0;
   virtual gfx::NativeWindow GetNativeWindow() = 0;
   virtual gfx::AcceleratedWidget GetAcceleratedWidget() = 0;
 
