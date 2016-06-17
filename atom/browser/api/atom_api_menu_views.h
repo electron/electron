@@ -17,7 +17,7 @@ class MenuViews : public Menu {
   explicit MenuViews(v8::Isolate* isolate);
 
  protected:
-  void PopupAt(Window* window, int x, int y, int positioning_item = 0) override;
+  void PopupAt(Window* window, int x, int y, int positioning_item) override;
 
  private:
   DISALLOW_COPY_AND_ASSIGN(MenuViews);
