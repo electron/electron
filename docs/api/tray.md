@@ -197,8 +197,8 @@ Displays a tray balloon.
   * `x` Integer
   * `y` Integer
 
-Popups the context menu of tray icon. When `menu` is passed, the `menu` will
-showed instead of the tray's context menu.
+Pops up the context menu of the tray icon. When `menu` is passed, the `menu` will
+be shown instead of the tray icon's context menu.
 
 The `position` is only available on Windows, and it is (0, 0) by default.
 
