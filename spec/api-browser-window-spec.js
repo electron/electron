@@ -836,6 +836,48 @@ describe('browser-window module', function () {
     })
   })
 
+  describe('parent window', function () {
+    let c = null
+
+    beforeEach(function () {
+      if (c != null) c.destroy()
+      c = new BrowserWindow({show: false})
+    })
+
+    afterEach(function () {
+      if (c != null) c.destroy()
+      c = null
+    })
+
+    describe('win.setParentWindow(parent)', function () {
+      it('sets parent window', function () {
+        assert.equal(w.getParentWindow(), null)
+        assert.equal(c.getParentWindow(), null)
+        c.setParentWindow(w)
+        assert.equal(c.getParentWindow(), w)
+        c.setParentWindow(null)
+        assert.equal(c.getParentWindow(), null)
+      })
+
+      it('adds window to child windows of parent', function () {
+        assert.deepEqual(w.getChildWindows(), [])
+        c.setParentWindow(w)
+        assert.deepEqual(w.getChildWindows(), [c])
+        c.setParentWindow(null)
+        assert.deepEqual(w.getChildWindows(), [])
+      })
+
+      it('removes from child windows of parent when window is closed', function (done) {
+        c.once('closed', () => {
+          assert.deepEqual(w.getChildWindows(), [])
+          done()
+        })
+        c.setParentWindow(w)
+        c.close()
+      })
+    })
+  })
+
   describe('window.webContents.send(channel, args...)', function () {
     it('throws an error when the channel is missing', function () {
       assert.throws(function () {
