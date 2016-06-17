@@ -24,8 +24,8 @@ void CommonWebContentsDelegate::HandleKeyboardEvent(
     ExitFullscreenModeForTab(source);
 
   NSWindow* window = event.os_event.window;
-  if (window && [window isKindOfClass:[AtomNSWindow class]]) {
-    [((AtomNSWindow*)window) redispatchKeyEvent:event.os_event];
+  if ([window respondsToSelector:@selector(redispatchKeyEvent:)]) {
+    [(id)window redispatchKeyEvent:event.os_event];
   }
 }
 
