@@ -10,6 +10,44 @@
 
 using namespace brightray;
 
+@interface EventDispatchingWindow : UnderlayOpenGLHostingWindow {
+ @private
+  BOOL redispatchingEvent_;
+}
+
+- (void)redispatchKeyEvent:(NSEvent*)event;
+
+@end
+
+@implementation EventDispatchingWindow
+
+- (void)sendEvent:(NSEvent*)event {
+  if (!redispatchingEvent_)
+    [super sendEvent:event];
+}
+
+- (BOOL)performKeyEquivalent:(NSEvent*)event {
+  if (redispatchingEvent_)
+    return NO;
+  else
+    return [super performKeyEquivalent:event];
+ }
+
+- (void)redispatchKeyEvent:(NSEvent*)event {
+  NSEventType eventType = [event type];
+  if (eventType != NSKeyDown && eventType != NSKeyUp &&
+      eventType != NSFlagsChanged) {
+    return;
+  }
+
+  // Redispatch the event.
+  redispatchingEvent_ = YES;
+  [NSApp sendEvent:event];
+  redispatchingEvent_ = NO;
+}
+
+@end
+
 @implementation BRYInspectableWebContentsView
 
 - (instancetype)initWithInspectableWebContentsViewMac:(InspectableWebContentsViewMac*)view {
@@ -132,7 +170,7 @@ using namespace brightray;
                      NSMiniaturizableWindowMask | NSResizableWindowMask |
                      NSTexturedBackgroundWindowMask |
                      NSUnifiedTitleAndToolbarWindowMask;
-    devtools_window_.reset([[UnderlayOpenGLHostingWindow alloc]
+    devtools_window_.reset([[EventDispatchingWindow alloc]
         initWithContentRect:NSMakeRect(0, 0, 800, 600)
                   styleMask:styleMask
                     backing:NSBackingStoreBuffered
