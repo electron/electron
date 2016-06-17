@@ -197,7 +197,7 @@ bool ScopedDisableResize::disable_resize_ = false;
   // titlebar is expected to be empty, but after entering fullscreen mode we
   // have to set one, because title bar is visible here.
   NSWindow* window = shell_->GetNativeWindow();
-  if (!shell_->has_frame() &&
+  if ((shell_->transparent() || !shell_->has_frame()) &&
       // FIXME(zcbenz): Showing titlebar for hiddenInset window is weird under
       // fullscreen mode.
       shell_->title_bar_style() != atom::NativeWindowMac::HIDDEN_INSET) {
@@ -221,7 +221,7 @@ bool ScopedDisableResize::disable_resize_ = false;
 - (void)windowWillExitFullScreen:(NSNotification*)notification {
   // Restore the titlebar visibility.
   NSWindow* window = shell_->GetNativeWindow();
-  if (!shell_->has_frame() &&
+  if ((shell_->transparent() || !shell_->has_frame()) &&
       shell_->title_bar_style() != atom::NativeWindowMac::HIDDEN_INSET) {
     [window setTitleVisibility:NSWindowTitleHidden];
   }
@@ -501,8 +501,6 @@ NativeWindowMac::NativeWindowMac(
   [window_ setDelegate:window_delegate_];
 
   if (transparent()) {
-    // Make window has transparent background.
-    [window_ setOpaque:NO];
     // Setting the background color to clear will also hide the shadow.
     [window_ setBackgroundColor:[NSColor clearColor]];
   }
@@ -520,7 +518,7 @@ NativeWindowMac::NativeWindowMac(
   if (options.Get(options::kFocusable, &focusable) && !focusable)
     [window_ setDisableKeyOrMainWindow:YES];
 
-  if (!has_frame()) {
+  if (transparent() || !has_frame()) {
     // Don't show title bar.
     [window_ setTitleVisibility:NSWindowTitleHidden];
     // Remove non-transparent corners, see http://git.io/vfonD.
