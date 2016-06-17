@@ -23,11 +23,8 @@ void CommonWebContentsDelegate::HandleKeyboardEvent(
   if (event.windowsKeyCode == ui::VKEY_ESCAPE && is_html_fullscreen())
     ExitFullscreenModeForTab(source);
 
-  NSWindow* window = event.os_event.window;
-  if (window && [window isKindOfClass:[EventDispatchingWindow class]]) {
-    EventDispatchingWindow* native_window = static_cast<EventDispatchingWindow*>(window);
-    [native_window redispatchKeyEvent:event.os_event];
-  }
+  EventDispatchingWindow* native_window = static_cast<EventDispatchingWindow*>(event.os_event.window);
+  [native_window redispatchKeyEvent:event.os_event];
 }
 
 }  // namespace atom
