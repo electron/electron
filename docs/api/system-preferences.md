@@ -35,6 +35,17 @@ example values of `event` are:
 
 Removes the subscriber with `id`.
 
+### `systemPreferences.subscribeLocalNotification(event, callback)` _OS X_
+
+Same as `subscribeNotification`, but uses `NSNotificationCenter` for local defaults.
+This is necessary for events such as:
+
+* `NSUserDefaultsDidChangeNotification`
+
+### `systemPreferences.unsubscribeLocalNotification(id)` _OS X_
+
+Same as `unsubscribeNotification`, but removes the subscriber from `NSNotificationCenter`.
+
 ### `systemPreferences.getUserDefault(key, type)` _OS X_
 
 * `key` String
