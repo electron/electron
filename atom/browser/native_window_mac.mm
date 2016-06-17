@@ -184,7 +184,7 @@ bool ScopedDisableResize::disable_resize_ = false;
 - (void)windowWillEnterFullScreen:(NSNotification*)notification {
   // Hide the native toolbar before entering fullscreen, so there is no visual
   // artifacts.
-  if (shell_->should_hide_native_toolbar_in_fullscreen()) {
+  if (shell_->title_bar_style() == atom::NativeWindowMac::HIDDEN_INSET) {
     NSWindow* window = shell_->GetNativeWindow();
     [window setToolbar:nil];
   }
@@ -193,16 +193,20 @@ bool ScopedDisableResize::disable_resize_ = false;
 - (void)windowDidEnterFullScreen:(NSNotification*)notification {
   shell_->NotifyWindowEnterFullScreen();
 
-  // For frameless window we don't set title for normal mode since the title
-  // bar is expected to be empty, but after entering fullscreen mode we have
-  // to set one, because title bar is visible here.
+  // For frameless window we don't show set title for normal mode since the
+  // titlebar is expected to be empty, but after entering fullscreen mode we
+  // have to set one, because title bar is visible here.
   NSWindow* window = shell_->GetNativeWindow();
-  if (shell_->transparent() || !shell_->has_frame())
-    [window setTitle:base::SysUTF8ToNSString(shell_->GetTitle())];
+  if (!shell_->has_frame() &&
+      // FIXME(zcbenz): Showing titlebar for hiddenInset window is weird under
+      // fullscreen mode.
+      shell_->title_bar_style() != atom::NativeWindowMac::HIDDEN_INSET) {
+    [window setTitleVisibility:NSWindowTitleVisible];
+  }
 
   // Restore the native toolbar immediately after entering fullscreen, if we do
   // this before leaving fullscreen, traffic light buttons will be jumping.
-  if (shell_->should_hide_native_toolbar_in_fullscreen()) {
+  if (shell_->title_bar_style() == atom::NativeWindowMac::HIDDEN_INSET) {
     base::scoped_nsobject<NSToolbar> toolbar(
         [[NSToolbar alloc] initWithIdentifier:@"titlebarStylingToolbar"]);
     [toolbar setShowsBaselineSeparator:NO];
@@ -215,13 +219,15 @@ bool ScopedDisableResize::disable_resize_ = false;
 }
 
 - (void)windowWillExitFullScreen:(NSNotification*)notification {
-  // Restore the title bar to empty.
+  // Restore the titlebar visibility.
   NSWindow* window = shell_->GetNativeWindow();
-  if (shell_->transparent() || !shell_->has_frame())
-    [window setTitle:@""];
+  if (!shell_->has_frame() &&
+      shell_->title_bar_style() != atom::NativeWindowMac::HIDDEN_INSET) {
+    [window setTitleVisibility:NSWindowTitleHidden];
+  }
 
   // Turn off the style for toolbar.
-  if (shell_->should_hide_native_toolbar_in_fullscreen())
+  if (shell_->title_bar_style() == atom::NativeWindowMac::HIDDEN_INSET)
     shell_->SetStyleMask(false, NSFullSizeContentViewWindowMask);
 }
 
@@ -395,6 +401,29 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 @end
 
+namespace mate {
+
+template<>
+struct Converter<atom::NativeWindowMac::TitleBarStyle> {
+  static bool FromV8(v8::Isolate* isolate, v8::Handle<v8::Value> val,
+                     atom::NativeWindowMac::TitleBarStyle* out) {
+    std::string title_bar_style;
+    if (!ConvertFromV8(isolate, val, &title_bar_style))
+      return false;
+    if (title_bar_style == "hidden") {
+      *out = atom::NativeWindowMac::HIDDEN;
+    } else if (title_bar_style == "hidden-inset" ||  // Deprecate this after 2.0
+               title_bar_style == "hiddenInset") {
+      *out = atom::NativeWindowMac::HIDDEN_INSET;
+    } else {
+      return false;
+    }
+    return true;
+  }
+};
+
+}  // namespace mate
+
 namespace atom {
 
 NativeWindowMac::NativeWindowMac(
@@ -403,8 +432,7 @@ NativeWindowMac::NativeWindowMac(
     : NativeWindow(web_contents, options),
       is_kiosk_(false),
       attention_request_id_(0),
-      force_show_buttons_(false),
-      should_hide_native_toolbar_in_fullscreen_(false) {
+      title_bar_style_(NORMAL) {
   int width = 800, height = 600;
   options.Get(options::kWidth, &width);
   options.Get(options::kHeight, &height);
@@ -429,9 +457,8 @@ NativeWindowMac::NativeWindowMac(
   options.Get(options::kClosable, &closable);
 
   // New title bar styles are available in Yosemite or newer
-  std::string titleBarStyle;
   if (base::mac::IsOSYosemiteOrLater())
-    options.Get(options::kTitleBarStyle, &titleBarStyle);
+    options.Get(options::kTitleBarStyle, &title_bar_style_);
 
   std::string windowType;
   options.Get(options::kType, &windowType);
@@ -451,10 +478,9 @@ NativeWindowMac::NativeWindowMac(
   if (closable) {
     styleMask |= NSClosableWindowMask;
   }
-  if ((titleBarStyle == "hidden") || (titleBarStyle == "hidden-inset")) {
+  if (title_bar_style_ != NORMAL) {
     // The window without titlebar is treated the same with frameless window.
     set_has_frame(false);
-    force_show_buttons_ = true;
   }
   if (!useStandardWindow || transparent() || !has_frame()) {
     styleMask |= NSTexturedBackgroundWindowMask;
@@ -494,22 +520,23 @@ NativeWindowMac::NativeWindowMac(
   if (options.Get(options::kFocusable, &focusable) && !focusable)
     [window_ setDisableKeyOrMainWindow:YES];
 
-  // Remove non-transparent corners, see http://git.io/vfonD.
-  if (!has_frame())
+  if (!has_frame()) {
+    // Don't show title bar.
+    [window_ setTitleVisibility:NSWindowTitleHidden];
+    // Remove non-transparent corners, see http://git.io/vfonD.
     [window_ setOpaque:NO];
+  }
 
   // We will manage window's lifetime ourselves.
   [window_ setReleasedWhenClosed:NO];
 
   // Hide the title bar.
-  if (titleBarStyle == "hidden-inset") {
+  if (title_bar_style_ == HIDDEN_INSET) {
     [window_ setTitlebarAppearsTransparent:YES];
-    [window_ setTitleVisibility:NSWindowTitleHidden];
     base::scoped_nsobject<NSToolbar> toolbar(
         [[NSToolbar alloc] initWithIdentifier:@"titlebarStylingToolbar"]);
     [toolbar setShowsBaselineSeparator:NO];
     [window_ setToolbar:toolbar];
-    should_hide_native_toolbar_in_fullscreen_ = true;
   }
 
   // On OS X the initial window size doesn't include window frame.
@@ -798,16 +825,11 @@ void NativeWindowMac::Center() {
 }
 
 void NativeWindowMac::SetTitle(const std::string& title) {
-  title_ = title;
-
-  if (!transparent() && (has_frame() ||
-      // exception for hidden and hidden-inset
-      force_show_buttons_))
-    [window_ setTitle:base::SysUTF8ToNSString(title)];
+  [window_ setTitle:base::SysUTF8ToNSString(title)];
 }
 
 std::string NativeWindowMac::GetTitle() {
-  return title_;
+  return base::SysNSStringToUTF8([window_ title]);;
 }
 
 void NativeWindowMac::FlashFrame(bool flash) {
@@ -1011,7 +1033,7 @@ void NativeWindowMac::InstallView() {
     [view setFrame:[content_view_ bounds]];
     [content_view_ addSubview:view];
 
-    if (force_show_buttons_)
+    if (title_bar_style_ != NORMAL)
       return;
 
     // Hide the window buttons.
