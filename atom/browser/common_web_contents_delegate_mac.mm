@@ -6,7 +6,7 @@
 
 #import <Cocoa/Cocoa.h>
 
-#include "atom/browser/native_window_mac.h"
+#include "brightray/browser/mac/event_dispatching_window.h"
 #include "content/public/browser/native_web_keyboard_event.h"
 #include "ui/events/keycodes/keyboard_codes.h"
 
@@ -24,8 +24,9 @@ void CommonWebContentsDelegate::HandleKeyboardEvent(
     ExitFullscreenModeForTab(source);
 
   NSWindow* window = event.os_event.window;
-  if ([window respondsToSelector:@selector(redispatchKeyEvent:)]) {
-    [(id)window redispatchKeyEvent:event.os_event];
+  if (window && [window isKindOfClass:[EventDispatchingWindow class]]) {
+    EventDispatchingWindow* native_window = static_cast<EventDispatchingWindow*>(window);
+    [native_window redispatchKeyEvent:event.os_event];
   }
 }
 

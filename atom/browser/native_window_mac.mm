@@ -15,6 +15,7 @@
 #include "base/strings/sys_string_conversions.h"
 #include "brightray/browser/inspectable_web_contents.h"
 #include "brightray/browser/inspectable_web_contents_view.h"
+#include "brightray/browser/mac/event_dispatching_window.h"
 #include "content/public/browser/browser_accessibility_state.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/render_view_host.h"
@@ -270,6 +271,19 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 @end
 
+@interface AtomNSWindow : EventDispatchingWindow {
+ @private
+  atom::NativeWindowMac* shell_;
+  bool enable_larger_than_screen_;
+}
+@property BOOL acceptsFirstMouse;
+@property BOOL disableAutoHideCursor;
+@property BOOL disableKeyOrMainWindow;
+
+- (void)setShell:(atom::NativeWindowMac*)shell;
+- (void)setEnableLargerThanScreen:(bool)enable;
+@end
+
 @implementation AtomNSWindow
 
 - (void)setShell:(atom::NativeWindowMac*)shell {
@@ -334,30 +348,6 @@ bool ScopedDisableResize::disable_resize_ = false;
   return !self.disableKeyOrMainWindow;
 }
 
-- (void)sendEvent:(NSEvent*)event {
-  if (!redispatchingEvent_)
-    [super sendEvent:event];
-}
-
-- (BOOL)performKeyEquivalent:(NSEvent*)event {
-  if (redispatchingEvent_)
-    return NO;
-  else
-    return [super performKeyEquivalent:event];
- }
-
-- (void)redispatchKeyEvent:(NSEvent*)event {
-  NSEventType eventType = [event type];
-  if (eventType != NSKeyDown && eventType != NSKeyUp &&
-      eventType != NSFlagsChanged) {
-    return;
-  }
-
-  // Redispatch the event.
-  redispatchingEvent_ = YES;
-  [NSApp sendEvent:event];
-  redispatchingEvent_ = NO;
-}
 @end
 
 @interface ControlRegionView : NSView
