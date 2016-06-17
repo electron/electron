@@ -89,6 +89,21 @@ bool IsAltModifier(const content::NativeWebKeyboardEvent& event) {
          (modifiers == (Modifiers::AltKey | Modifiers::IsRight));
 }
 
+#if defined(USE_X11)
+int SendClientEvent(XDisplay* display, ::Window window, const char* msg) {
+  XEvent event = {};
+  event.xclient.type = ClientMessage;
+  event.xclient.send_event = True;
+  event.xclient.message_type = XInternAtom(display, msg, False);
+  event.xclient.window = window;
+  event.xclient.format = 32;
+  XSendEvent(display, DefaultRootWindow(display), False,
+             SubstructureRedirectMask | SubstructureNotifyMask, &event);
+  XFlush(display);
+  return True;
+}
+#endif
+
 class NativeWindowClientView : public views::ClientView {
  public:
   NativeWindowClientView(views::Widget* widget,
@@ -165,6 +180,10 @@ NativeWindowViews::NativeWindowViews(
   // transparency and has no standard frame, don't show a shadow for it.
   if (transparent() && !has_frame())
     params.shadow_type = views::Widget::InitParams::SHADOW_TYPE_NONE;
+
+  bool focusable;
+  if (options.Get(options::kFocusable, &focusable) && !focusable)
+    params.activatable = views::Widget::InitParams::ACTIVATABLE_NO;
 
 #if defined(OS_WIN)
   params.native_widget =
@@ -298,10 +317,19 @@ void NativeWindowViews::CloseImmediately() {
 }
 
 void NativeWindowViews::Focus(bool focus) {
-  if (focus)
+  if (focus) {
+#if defined(OS_WIN)
     window_->Activate();
-  else
+#elif defined(USE_X11)
+    // The "Activate" implementation of Chromium is not reliable on Linux.
+    ::Window window = GetAcceleratedWidget();
+    XDisplay* xdisplay = gfx::GetXDisplay();
+    SendClientEvent(xdisplay, window, "_NET_ACTIVE_WINDOW");
+    XMapRaised(xdisplay, window);
+#endif
+  } else {
     window_->Deactivate();
+  }
 }
 
 bool NativeWindowViews::IsFocused() {
@@ -646,6 +674,39 @@ void NativeWindowViews::SetHasShadow(bool has_shadow) {
 
 bool NativeWindowViews::HasShadow() {
   return wm::GetShadowType(GetNativeWindow()) != wm::SHADOW_TYPE_NONE;
+}
+
+void NativeWindowViews::SetIgnoreMouseEvents(bool ignore) {
+#if defined(OS_WIN)
+  LONG ex_style = ::GetWindowLong(GetAcceleratedWidget(), GWL_EXSTYLE);
+  if (ignore)
+    ex_style |= (WS_EX_TRANSPARENT | WS_EX_LAYERED);
+  else
+    ex_style &= ~(WS_EX_TRANSPARENT | WS_EX_LAYERED);
+  ::SetWindowLong(GetAcceleratedWidget(), GWL_EXSTYLE, ex_style);
+#elif defined(USE_X11)
+  if (ignore) {
+    XRectangle r = {0, 0, 1, 1};
+    XShapeCombineRectangles(gfx::GetXDisplay(), GetAcceleratedWidget(),
+                            ShapeInput, 0, 0, &r, 1, ShapeSet, YXBanded);
+  } else {
+    XShapeCombineMask(gfx::GetXDisplay(), GetAcceleratedWidget(),
+                      ShapeInput, 0, 0, None, ShapeSet);
+  }
+#endif
+}
+
+void NativeWindowViews::SetFocusable(bool focusable) {
+#if defined(OS_WIN)
+  LONG ex_style = ::GetWindowLong(GetAcceleratedWidget(), GWL_EXSTYLE);
+  if (focusable)
+    ex_style &= ~WS_EX_NOACTIVATE;
+  else
+    ex_style |= WS_EX_NOACTIVATE;
+  ::SetWindowLong(GetAcceleratedWidget(), GWL_EXSTYLE, ex_style);
+  SetSkipTaskbar(!focusable);
+  Focus(false);
+#endif
 }
 
 void NativeWindowViews::SetMenu(ui::MenuModel* menu_model) {

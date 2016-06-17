@@ -160,6 +160,15 @@ Returns:
 
 Emitted when a new [browserWindow](browser-window.md) is created.
 
+### Event: 'web-contents-created'
+
+Returns:
+
+* `event` Event
+* `webContents` WebContents
+
+Emitted when a new [webContents](web-contents.md) is created.
+
 ### Event: 'certificate-error'
 
 Returns:
@@ -346,6 +355,7 @@ You can request the following paths by the name:
 * `music` Directory for a user's music.
 * `pictures` Directory for a user's pictures.
 * `videos` Directory for a user's videos.
+* `pepperFlashSystemPlugin`  Full path to the system version of the Pepper Flash plugin.
 
 ### `app.setPath(name, path)`
 
@@ -414,7 +424,7 @@ Clears the recent documents list.
 
 This method sets the current executable as the default handler for a protocol
 (aka URI scheme). It allows you to integrate your app deeper into the operating
-system. Once registered, all links with `your-protocol://` will be openend with
+system. Once registered, all links with `your-protocol://` will be opened with
 the current executable. The whole link, including protocol, will be passed to
 your application as a parameter.
 
@@ -560,6 +570,12 @@ Changes the [Application User Model ID][app-user-model-id] to `id`.
 Imports the certificate in pkcs12 format into the platform certificate store.
 `callback` is called with the `result` of import operation, a value of `0`
 indicates success while any other value indicates failure according to chromium [net_error_list](https://code.google.com/p/chromium/codesearch#chromium/src/net/base/net_error_list.h).
+
+### `app.disableHardwareAcceleration()`
+
+Disables hardware acceleration for current app.
+
+This method can only be called before app is ready.
 
 ### `app.commandLine.appendSwitch(switch[, value])`
 

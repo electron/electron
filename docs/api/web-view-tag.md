@@ -205,7 +205,17 @@ If "on", the guest page will be allowed to open new windows.
 
 A list of strings which specifies the blink features to be enabled separated by `,`.
 The full list of supported feature strings can be found in the
-[setFeatureEnabledFromString][blink-feature-string] function.
+[RuntimeEnabledFeatures.in][blink-feature-string] file.
+
+### `disableblinkfeatures`
+
+```html
+<webview src="https://www.github.com/" disableblinkfeatures="PreciseMemoryInfo, CSSVariables"></webview>
+```
+
+A list of strings which specifies the blink features to be disabled separated by `,`.
+The full list of supported feature strings can be found in the
+[RuntimeEnabledFeatures.in][blink-feature-string] file.
 
 ## Methods
 
@@ -479,6 +489,10 @@ Sends an input `event` to the page.
 
 See [webContents.sendInputEvent](web-contents.md##webcontentssendinputeventevent)
 for detailed description of `event` object.
+
+### `<webview>.showDefinitionForSelection()` _OS X_
+
+Shows pop-up dictionary that searches the selected word on the page.
 
 ### `<webview>.getWebContents()`
 
@@ -782,6 +796,14 @@ Emitted when a page's theme color changes. This is usually due to encountering a
 <meta name='theme-color' content='#ff0000'>
 ```
 
+### Event: 'update-target-url'
+
+Returns:
+
+* `url` String
+
+Emitted when mouse moves over a link or the keyboard moves the focus to a link.
+
 ### Event: 'devtools-opened'
 
 Emitted when DevTools is opened.
@@ -794,4 +816,4 @@ Emitted when DevTools is closed.
 
 Emitted when DevTools is focused / opened.
 
-[blink-feature-string]: https://code.google.com/p/chromium/codesearch#chromium/src/out/Debug/gen/blink/platform/RuntimeEnabledFeatures.cpp&sq=package:chromium&type=cs&l=527
+[blink-feature-string]: https://cs.chromium.org/chromium/src/third_party/WebKit/Source/platform/RuntimeEnabledFeatures.in

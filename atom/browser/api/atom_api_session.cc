@@ -9,6 +9,7 @@
 
 #include "atom/browser/api/atom_api_cookies.h"
 #include "atom/browser/api/atom_api_download_item.h"
+#include "atom/browser/api/atom_api_protocol.h"
 #include "atom/browser/api/atom_api_web_request.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
@@ -462,6 +463,14 @@ v8::Local<v8::Value> Session::Cookies(v8::Isolate* isolate) {
   return v8::Local<v8::Value>::New(isolate, cookies_);
 }
 
+v8::Local<v8::Value> Session::Protocol(v8::Isolate* isolate) {
+  if (protocol_.IsEmpty()) {
+    auto handle = atom::api::Protocol::Create(isolate, browser_context());
+    protocol_.Reset(isolate, handle.ToV8());
+  }
+  return v8::Local<v8::Value>::New(isolate, protocol_);
+}
+
 v8::Local<v8::Value> Session::WebRequest(v8::Isolate* isolate) {
   if (web_request_.IsEmpty()) {
     auto handle = atom::api::WebRequest::Create(isolate, browser_context());
@@ -512,6 +521,7 @@ void Session::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("allowNTLMCredentialsForDomains",
                  &Session::AllowNTLMCredentialsForDomains)
       .SetProperty("cookies", &Session::Cookies)
+      .SetProperty("protocol", &Session::Protocol)
       .SetProperty("webRequest", &Session::WebRequest);
 }
 

@@ -56,7 +56,7 @@ This is not bulletproof, but at the least, you should attempt the following:
   (using `webPreferences`)
 * Do not disable `webSecurity`. Disabling it will disable the same-origin policy.
 * Define a [`Content-Security-Policy`](http://www.html5rocks.com/en/tutorials/security/content-security-policy/)
-, and use restrictive rules (ie: `script-src 'self'`)
+, and use restrictive rules (i.e. `script-src 'self'`)
 * [Override and disable `eval`](https://github.com/nylas/N1/blob/0abc5d5defcdb057120d726b271933425b75b415/static/index.js#L6)
 , which allows strings to be executed as code.
 * Do not set `allowDisplayingInsecureContent` to true.

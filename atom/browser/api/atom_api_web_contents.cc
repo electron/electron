@@ -187,6 +187,39 @@ struct Converter<content::SavePageType> {
   }
 };
 
+template<>
+struct Converter<atom::api::WebContents::Type> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   atom::api::WebContents::Type val) {
+    using Type = atom::api::WebContents::Type;
+    std::string type = "";
+    switch (val) {
+      case Type::BACKGROUND_PAGE: type = "backgroundPage"; break;
+      case Type::BROWSER_WINDOW: type = "window"; break;
+      case Type::REMOTE: type = "remote"; break;
+      case Type::WEB_VIEW: type = "webview"; break;
+      default: break;
+    }
+    return mate::ConvertToV8(isolate, type);
+  }
+
+  static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
+                     atom::api::WebContents::Type* out) {
+    using Type = atom::api::WebContents::Type;
+    std::string type;
+    if (!ConvertFromV8(isolate, val, &type))
+      return false;
+    if (type == "webview") {
+      *out = Type::WEB_VIEW;
+    } else if (type == "backgroundPage") {
+      *out = Type::BACKGROUND_PAGE;
+    } else {
+      return false;
+    }
+    return true;
+  }
+};
+
 }  // namespace mate
 
 
@@ -233,15 +266,22 @@ WebContents::WebContents(v8::Isolate* isolate,
 WebContents::WebContents(v8::Isolate* isolate,
                          const mate::Dictionary& options)
     : embedder_(nullptr),
+      type_(BROWSER_WINDOW),
       request_id_(0),
       background_throttling_(true) {
   // Read options.
   options.Get("backgroundThrottling", &background_throttling_);
 
-  // Whether it is a guest WebContents.
-  bool is_guest = false;
-  options.Get("isGuest", &is_guest);
-  type_ = is_guest ? WEB_VIEW : BROWSER_WINDOW;
+  // FIXME(zcbenz): We should read "type" parameter for better design, but
+  // on Windows we have encountered a compiler bug that if we read "type"
+  // from |options| and then set |type_|, a memory corruption will happen
+  // and Electron will soon crash.
+  // Remvoe this after we upgraded to use VS 2015 Update 3.
+  bool b = false;
+  if (options.Get("isGuest", &b) && b)
+    type_ = WEB_VIEW;
+  else if (options.Get("isBackgroundPage", &b) && b)
+    type_ = BACKGROUND_PAGE;
 
   // Obtain the session.
   std::string partition;
@@ -261,7 +301,7 @@ WebContents::WebContents(v8::Isolate* isolate,
   session_.Reset(isolate, session.ToV8());
 
   content::WebContents* web_contents;
-  if (is_guest) {
+  if (IsGuest()) {
     scoped_refptr<content::SiteInstance> site_instance =
         content::SiteInstance::CreateForURL(
             session->browser_context(), GURL("chrome-guest://fake-host"));
@@ -290,7 +330,7 @@ WebContents::WebContents(v8::Isolate* isolate,
 
   web_contents->SetUserAgentOverride(GetBrowserContext()->GetUserAgent());
 
-  if (is_guest) {
+  if (IsGuest()) {
     guest_delegate_->Initialize(this);
 
     NativeWindow* owner_window = nullptr;
@@ -387,6 +427,11 @@ void WebContents::CloseContents(content::WebContents* source) {
 
 void WebContents::ActivateContents(content::WebContents* source) {
   Emit("activate");
+}
+
+void WebContents::UpdateTargetURL(content::WebContents* source,
+                                  const GURL& url) {
+  Emit("update-target-url", url);
 }
 
 bool WebContents::IsPopupOrPanel(const content::WebContents* source) const {
@@ -739,6 +784,10 @@ int WebContents::GetID() const {
   return web_contents()->GetRenderProcessHost()->GetID();
 }
 
+WebContents::Type WebContents::GetType() const {
+  return type_;
+}
+
 bool WebContents::Equal(const WebContents* web_contents) const {
   return GetID() == web_contents->GetID();
 }
@@ -1089,6 +1138,14 @@ void WebContents::StopFindInPage(content::StopFindAction action) {
   web_contents()->StopFinding(action);
 }
 
+void WebContents::ShowDefinitionForSelection() {
+#if defined(OS_MACOSX)
+  const auto view = web_contents()->GetRenderWidgetHostView();
+  if (view)
+    view->ShowDefinitionForSelection();
+#endif
+}
+
 void WebContents::Focus() {
   web_contents()->Focus();
 }
@@ -1274,6 +1331,7 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("endFrameSubscription", &WebContents::EndFrameSubscription)
       .SetMethod("setSize", &WebContents::SetSize)
       .SetMethod("isGuest", &WebContents::IsGuest)
+      .SetMethod("getType", &WebContents::GetType)
       .SetMethod("getWebPreferences", &WebContents::GetWebPreferences)
       .SetMethod("getOwnerBrowserWindow", &WebContents::GetOwnerBrowserWindow)
       .SetMethod("hasServiceWorker", &WebContents::HasServiceWorker)
@@ -1284,6 +1342,8 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("_printToPDF", &WebContents::PrintToPDF)
       .SetMethod("addWorkSpace", &WebContents::AddWorkSpace)
       .SetMethod("removeWorkSpace", &WebContents::RemoveWorkSpace)
+      .SetMethod("showDefinitionForSelection",
+                 &WebContents::ShowDefinitionForSelection)
       .SetProperty("id", &WebContents::ID)
       .SetProperty("session", &WebContents::Session)
       .SetProperty("hostWebContents", &WebContents::HostWebContents)
@@ -1350,6 +1410,8 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   dict.SetMethod("_setWrapWebContents", &atom::api::SetWrapWebContents);
   dict.SetMethod("fromId",
                  &mate::TrackableObject<atom::api::WebContents>::FromWeakMapID);
+  dict.SetMethod("getAllWebContents",
+                 &mate::TrackableObject<atom::api::WebContents>::GetAll);
 }
 
 }  // namespace

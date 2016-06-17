@@ -81,10 +81,12 @@ class Session: public mate::TrackableObject<Session>,
   void ClearHostResolverCache(mate::Arguments* args);
   void AllowNTLMCredentialsForDomains(const std::string& domains);
   v8::Local<v8::Value> Cookies(v8::Isolate* isolate);
+  v8::Local<v8::Value> Protocol(v8::Isolate* isolate);
   v8::Local<v8::Value> WebRequest(v8::Isolate* isolate);
 
   // Cached object.
   v8::Global<v8::Value> cookies_;
+  v8::Global<v8::Value> protocol_;
   v8::Global<v8::Value> web_request_;
 
   // The X-DevTools-Emulate-Network-Conditions-Client-Id.

@@ -83,7 +83,6 @@ class NativeWindowMac : public NativeWindow {
   void SetProgressBar(double progress) override;
   void SetOverlayIcon(const gfx::Image& overlay,
                       const std::string& description) override;
-  void ShowDefinitionForSelection() override;
 
   void SetVisibleOnAllWorkspaces(bool visible) override;
   bool IsVisibleOnAllWorkspaces() override;
@@ -97,9 +96,12 @@ class NativeWindowMac : public NativeWindow {
   void SetStyleMask(bool on, NSUInteger flag);
   void SetCollectionBehavior(bool on, NSUInteger flag);
 
-  bool should_hide_native_toolbar_in_fullscreen() const {
-    return should_hide_native_toolbar_in_fullscreen_;
-  }
+  enum TitleBarStyle {
+    NORMAL,
+    HIDDEN,
+    HIDDEN_INSET,
+  };
+  TitleBarStyle title_bar_style() const { return title_bar_style_; }
 
  protected:
   // Return a vector of non-draggable regions that fill a window of size
@@ -139,8 +141,8 @@ class NativeWindowMac : public NativeWindow {
   // The presentation options before entering kiosk mode.
   NSApplicationPresentationOptions kiosk_options_;
 
-  // Force showing the buttons for frameless window.
-  bool force_show_buttons_;
+  // The "titleBarStyle" option.
+  TitleBarStyle title_bar_style_;
 
   // Whether to hide the native toolbar under fullscreen mode.
   bool should_hide_native_toolbar_in_fullscreen_;

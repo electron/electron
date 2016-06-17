@@ -9,31 +9,29 @@
 #include <map>
 #include <vector>
 
+#include "atom/browser/api/trackable_object.h"
+#include "atom/browser/atom_browser_context.h"
 #include "atom/browser/net/atom_url_request_job_factory.h"
 #include "base/callback.h"
-#include "base/containers/scoped_ptr_hash_map.h"
+#include "base/memory/weak_ptr.h"
 #include "content/public/browser/browser_thread.h"
 #include "native_mate/arguments.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/handle.h"
-#include "native_mate/wrappable.h"
+#include "net/url_request/url_request_context.h"
 
-namespace net {
-class URLRequest;
-class URLRequestContextGetter;
+namespace base {
+class DictionaryValue;
 }
 
 namespace atom {
 
-class AtomBrowserContext;
-class AtomURLRequestJobFactory;
-
 namespace api {
 
-class Protocol : public mate::Wrappable<Protocol> {
+class Protocol : public mate::TrackableObject<Protocol> {
  public:
   using Handler =
-      base::Callback<void(const net::URLRequest*, v8::Local<v8::Value>)>;
+      base::Callback<void(const base::DictionaryValue&, v8::Local<v8::Value>)>;
   using CompletionCallback = base::Callback<void(v8::Local<v8::Value>)>;
   using BooleanCallback = base::Callback<void(bool)>;
 
@@ -76,13 +74,13 @@ class Protocol : public mate::Wrappable<Protocol> {
         net::URLRequest* request,
         net::NetworkDelegate* network_delegate) const override {
       RequestJob* request_job = new RequestJob(request, network_delegate);
-      request_job->SetHandlerInfo(isolate_, request_context_, handler_);
+      request_job->SetHandlerInfo(isolate_, request_context_.get(), handler_);
       return request_job;
     }
 
    private:
     v8::Isolate* isolate_;
-    net::URLRequestContextGetter* request_context_;
+    scoped_refptr<net::URLRequestContextGetter> request_context_;
     Protocol::Handler handler_;
 
     DISALLOW_COPY_AND_ASSIGN(CustomProtocolHandler);
@@ -101,19 +99,24 @@ class Protocol : public mate::Wrappable<Protocol> {
     content::BrowserThread::PostTaskAndReplyWithResult(
         content::BrowserThread::IO, FROM_HERE,
         base::Bind(&Protocol::RegisterProtocolInIO<RequestJob>,
-                   base::Unretained(this), scheme, handler),
+                   request_context_getter_, isolate(), scheme, handler),
         base::Bind(&Protocol::OnIOCompleted,
-                   base::Unretained(this), callback));
+                   GetWeakPtr(), callback));
   }
   template<typename RequestJob>
-  ProtocolError RegisterProtocolInIO(const std::string& scheme,
-                                     const Handler& handler) {
-    if (job_factory_->IsHandledProtocol(scheme))
+  static ProtocolError RegisterProtocolInIO(
+      scoped_refptr<brightray::URLRequestContextGetter> request_context_getter,
+      v8::Isolate* isolate,
+      const std::string& scheme,
+      const Handler& handler) {
+    auto job_factory = static_cast<AtomURLRequestJobFactory*>(
+        request_context_getter->job_factory());
+    if (job_factory->IsHandledProtocol(scheme))
       return PROTOCOL_REGISTERED;
     std::unique_ptr<CustomProtocolHandler<RequestJob>> protocol_handler(
         new CustomProtocolHandler<RequestJob>(
-            isolate(), request_context_getter_, handler));
-    if (job_factory_->SetProtocolHandler(scheme, std::move(protocol_handler)))
+            isolate, request_context_getter.get(), handler));
+    if (job_factory->SetProtocolHandler(scheme, std::move(protocol_handler)))
       return PROTOCOL_OK;
     else
       return PROTOCOL_FAIL;
@@ -121,12 +124,16 @@ class Protocol : public mate::Wrappable<Protocol> {
 
   // Unregister the protocol handler that handles |scheme|.
   void UnregisterProtocol(const std::string& scheme, mate::Arguments* args);
-  ProtocolError UnregisterProtocolInIO(const std::string& scheme);
+  static ProtocolError UnregisterProtocolInIO(
+      scoped_refptr<brightray::URLRequestContextGetter> request_context_getter,
+      const std::string& scheme);
 
   // Whether the protocol has handler registered.
   void IsProtocolHandled(const std::string& scheme,
                          const BooleanCallback& callback);
-  bool IsProtocolHandledInIO(const std::string& scheme);
+  static bool IsProtocolHandledInIO(
+      scoped_refptr<brightray::URLRequestContextGetter> request_context_getter,
+      const std::string& scheme);
 
   // Replace the protocol handler with a new one.
   template<typename RequestJob>
@@ -138,32 +145,36 @@ class Protocol : public mate::Wrappable<Protocol> {
     content::BrowserThread::PostTaskAndReplyWithResult(
         content::BrowserThread::IO, FROM_HERE,
         base::Bind(&Protocol::InterceptProtocolInIO<RequestJob>,
-                   base::Unretained(this), scheme, handler),
+                   request_context_getter_, isolate(), scheme, handler),
         base::Bind(&Protocol::OnIOCompleted,
-                   base::Unretained(this), callback));
+                   GetWeakPtr(), callback));
   }
   template<typename RequestJob>
-  ProtocolError InterceptProtocolInIO(const std::string& scheme,
-                                      const Handler& handler) {
-    if (!job_factory_->IsHandledProtocol(scheme))
+  static ProtocolError InterceptProtocolInIO(
+      scoped_refptr<brightray::URLRequestContextGetter> request_context_getter,
+      v8::Isolate* isolate,
+      const std::string& scheme,
+      const Handler& handler) {
+    auto job_factory = static_cast<AtomURLRequestJobFactory*>(
+        request_context_getter->job_factory());
+    if (!job_factory->IsHandledProtocol(scheme))
       return PROTOCOL_NOT_REGISTERED;
     // It is possible a protocol is handled but can not be intercepted.
-    if (!job_factory_->HasProtocolHandler(scheme))
+    if (!job_factory->HasProtocolHandler(scheme))
       return PROTOCOL_FAIL;
-    if (ContainsKey(original_protocols_, scheme))
-      return PROTOCOL_INTERCEPTED;
     std::unique_ptr<CustomProtocolHandler<RequestJob>> protocol_handler(
         new CustomProtocolHandler<RequestJob>(
-            isolate(), request_context_getter_, handler));
-    original_protocols_.set(
-        scheme,
-        job_factory_->ReplaceProtocol(scheme, std::move(protocol_handler)));
+            isolate, request_context_getter.get(), handler));
+    if (!job_factory->InterceptProtocol(scheme, std::move(protocol_handler)))
+      return PROTOCOL_INTERCEPTED;
     return PROTOCOL_OK;
   }
 
   // Restore the |scheme| to its original protocol handler.
   void UninterceptProtocol(const std::string& scheme, mate::Arguments* args);
-  ProtocolError UninterceptProtocolInIO(const std::string& scheme);
+  static ProtocolError UninterceptProtocolInIO(
+      scoped_refptr<brightray::URLRequestContextGetter> request_context_getter,
+      const std::string& scheme);
 
   // Convert error code to JS exception and call the callback.
   void OnIOCompleted(const CompletionCallback& callback, ProtocolError error);
@@ -171,15 +182,14 @@ class Protocol : public mate::Wrappable<Protocol> {
   // Convert error code to string.
   std::string ErrorCodeToString(ProtocolError error);
 
-  net::URLRequestContextGetter* request_context_getter_;
+  AtomURLRequestJobFactory* GetJobFactoryInIO() const;
 
-  // Map that stores the original protocols of schemes.
-  using OriginalProtocolsMap = base::ScopedPtrHashMap<
-      std::string,
-      std::unique_ptr<net::URLRequestJobFactory::ProtocolHandler>>;
-  OriginalProtocolsMap original_protocols_;
+  base::WeakPtr<Protocol> GetWeakPtr() {
+    return weak_factory_.GetWeakPtr();
+  }
 
-  AtomURLRequestJobFactory* job_factory_;  // weak ref
+  scoped_refptr<brightray::URLRequestContextGetter> request_context_getter_;
+  base::WeakPtrFactory<Protocol> weak_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(Protocol);
 };

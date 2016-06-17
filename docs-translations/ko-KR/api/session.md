@@ -28,7 +28,7 @@ let ses = win.webContents.session;
 
 `partition`이 `persist:`로 시작하면 페이지는 지속성 세션을 사용하며 다른 모든 앱 내의
 페이지에서 같은 `partition`을 사용할 수 있습니다. 만약 `persist:` 접두어로 시작하지
-않으면 페이지는 인-메모리 세션을 사용합니다. `partition`을 지정하지 않으면 어플리케이션의
+않으면 페이지는 인-메모리 세션을 사용합니다. `partition`을 지정하지 않으면 애플리케이션의
 기본 세션이 반환됩니다.
 
 ## Properties
@@ -37,7 +37,7 @@ let ses = win.webContents.session;
 
 ### session.defaultSession
 
-어플리케이션의 기본 세션 객체를 반환합니다.
+애플리케이션의 기본 세션 객체를 반환합니다.
 
 ## Class: Session
 
@@ -244,7 +244,7 @@ proxyURL = [<proxyScheme>"://"]<proxyHost>[":"<proxyPort>]
 
 * `path` String - 다운로드 위치
 
-다운로드 저장 위치를 지정합니다. 기본 다운로드 위치는 각 어플리케이션 데이터 디렉터리의
+다운로드 저장 위치를 지정합니다. 기본 다운로드 위치는 각 애플리케이션 데이터 디렉터리의
 `Downloads` 폴더입니다.
 
 #### `ses.enableNetworkEmulation(options)`
@@ -539,3 +539,23 @@ HTTP 요청을 보내기 전 요청 헤더를 사용할 수 있을 때 `listener
   * `timestamp` Double
   * `fromCache` Boolean
   * `error` String - 에러 설명.
+
+#### `ses.protocol`
+
+현재 세션의 [protocol](protocol.md) 모듈 인스턴스를 반환합니다.
+
+```javascript
+const {app, session} = require('electron')
+const path = require('path')
+
+app.on('ready', function () {
+  const protocol = session.fromPartition(partitionName).protocol
+  protocol.registerFileProtocol('atom', function (request, callback) {
+    var url = request.url.substr(7)
+    callback({path: path.normalize(__dirname + '/' + url)})
+  }, function (error) {
+    if (error)
+      console.error('Failed to register protocol')
+  })
+})
+```

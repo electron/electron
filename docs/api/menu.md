@@ -67,6 +67,15 @@ const template = [
         role: 'paste'
       },
       {
+        label: 'Paste and Match Style',
+        accelerator: 'Shift+Command+V',
+        role: 'pasteandmatchstyle'
+      },
+      {
+        label: 'Delete',
+        role: 'delete'
+      },
+      {
         label: 'Select All',
         accelerator: 'CmdOrCtrl+A',
         role: 'selectall'
@@ -174,7 +183,21 @@ if (process.platform === 'darwin') {
     ]
   });
   // Window menu.
-  template[3].submenu.push(
+  template[3].submenu = [
+    {
+      label: 'Close',
+      accelerator: 'CmdOrCtrl+W',
+      role: 'close'
+    },
+    {
+      label: 'Minimize',
+      accelerator: 'CmdOrCtrl+M',
+      role: 'minimize'
+    },
+    {
+      label: 'Zoom',
+      role: 'zoom'
+    },
     {
       type: 'separator'
     },
@@ -182,7 +205,7 @@ if (process.platform === 'darwin') {
       label: 'Bring All to Front',
       role: 'front'
     }
-  );
+  ];
 }
 
 const menu = Menu.buildFromTemplate(template);
@@ -205,6 +228,12 @@ The `menu` class has the following methods:
 
 Sets `menu` as the application menu on OS X. On Windows and Linux, the `menu`
 will be set as each window's top menu.
+
+**Note:** This API has to be called after the `ready` event of `app` module.
+
+### `Menu.getApplicationMenu()`
+
+Returns the application menu (an instance of `Menu`), if set, or `null`, if not set.
 
 ### `Menu.sendActionToFirstResponder(action)` _OS X_
 

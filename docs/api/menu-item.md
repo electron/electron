@@ -46,7 +46,9 @@ The `role` property can have following values:
 * `cut`
 * `copy`
 * `paste`
+* `pasteandmatchstyle`
 * `selectall`
+* `delete`
 * `minimize` - Minimize current window
 * `close` - Close current window
 
@@ -57,6 +59,7 @@ On OS X `role` can also have following additional values:
 * `hideothers` - Map to the `hideOtherApplications` action
 * `unhide` - Map to the `unhideAllApplications` action
 * `front` - Map to the `arrangeInFront` action
+* `zoom` - Map to the `performZoom` action
 * `window` - The submenu is a "Window" menu
 * `help` - The submenu is a "Help" menu
 * `services` - The submenu is a "Services" menu

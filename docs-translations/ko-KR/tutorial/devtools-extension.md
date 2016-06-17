@@ -1,6 +1,6 @@
 # 개발자 도구 확장 기능
 
-어플리케이션의 디버깅을 쉽게 하기 위해 Electron은 기본적으로
+애플리케이션의 디버깅을 쉽게 하기 위해 Electron은 기본적으로
 [Chrome DevTools Extension][devtools-extension]을 지원합니다.
 
 Electron은 유명한 웹 프레임워크를 디버깅하기 위해 사용할 수 있는 개발자 도구 확장

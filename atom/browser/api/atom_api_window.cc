@@ -156,6 +156,10 @@ void Window::OnWindowHide() {
   Emit("hide");
 }
 
+void Window::OnReadyToShow() {
+  Emit("ready-to-show");
+}
+
 void Window::OnWindowMaximize() {
   Emit("maximize");
 }
@@ -529,6 +533,10 @@ void Window::SetIgnoreMouseEvents(bool ignore) {
   return window_->SetIgnoreMouseEvents(ignore);
 }
 
+void Window::SetFocusable(bool focusable) {
+  return window_->SetFocusable(focusable);
+}
+
 void Window::CapturePage(mate::Arguments* args) {
   gfx::Rect rect;
   base::Callback<void(const gfx::Image&)> callback;
@@ -620,12 +628,6 @@ bool Window::IsWindowMessageHooked(UINT message) {
 
 void Window::UnhookAllWindowMessages() {
   messages_callback_map_.clear();
-}
-#endif
-
-#if defined(OS_MACOSX)
-void Window::ShowDefinitionForSelection() {
-  window_->ShowDefinitionForSelection();
 }
 #endif
 
@@ -738,6 +740,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setDocumentEdited", &Window::SetDocumentEdited)
       .SetMethod("isDocumentEdited", &Window::IsDocumentEdited)
       .SetMethod("setIgnoreMouseEvents", &Window::SetIgnoreMouseEvents)
+      .SetMethod("setFocusable", &Window::SetFocusable)
       .SetMethod("focusOnWebView", &Window::FocusOnWebView)
       .SetMethod("blurWebView", &Window::BlurWebView)
       .SetMethod("isWebViewFocused", &Window::IsWebViewFocused)
@@ -759,10 +762,6 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("isWindowMessageHooked", &Window::IsWindowMessageHooked)
       .SetMethod("unhookWindowMessage", &Window::UnhookWindowMessage)
       .SetMethod("unhookAllWindowMessages", &Window::UnhookAllWindowMessages)
-#endif
-#if defined(OS_MACOSX)
-      .SetMethod("showDefinitionForSelection",
-                 &Window::ShowDefinitionForSelection)
 #endif
 #if defined(TOOLKIT_VIEWS)
       .SetMethod("setIcon", &Window::SetIcon)

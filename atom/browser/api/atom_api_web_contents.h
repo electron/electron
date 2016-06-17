@@ -43,6 +43,13 @@ class WebContents : public mate::TrackableObject<WebContents>,
                     public CommonWebContentsDelegate,
                     public content::WebContentsObserver {
  public:
+  enum Type {
+    BACKGROUND_PAGE,  // A DevTools extension background page.
+    BROWSER_WINDOW,  // Used by BrowserWindow.
+    REMOTE,  // Thin wrap around an existing WebContents.
+    WEB_VIEW,  // Used by <webview>.
+  };
+
   // For node.js callback function type: function(error, buffer)
   using PrintToPDFCallback =
       base::Callback<void(v8::Local<v8::Value>, v8::Local<v8::Value>)>;
@@ -59,6 +66,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
                              v8::Local<v8::ObjectTemplate> prototype);
 
   int GetID() const;
+  Type GetType() const;
   bool Equal(const WebContents* web_contents) const;
   void LoadURL(const GURL& url, const mate::Dictionary& options);
   void DownloadURL(const GURL& url);
@@ -116,6 +124,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void ReplaceMisspelling(const base::string16& word);
   uint32_t FindInPage(mate::Arguments* args);
   void StopFindInPage(content::StopFindAction action);
+  void ShowDefinitionForSelection();
 
   // Focus.
   void Focus();
@@ -182,6 +191,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
                     const gfx::Rect& pos) override;
   void CloseContents(content::WebContents* source) override;
   void ActivateContents(content::WebContents* contents) override;
+  void UpdateTargetURL(content::WebContents* source, const GURL& url) override;
   bool IsPopupOrPanel(const content::WebContents* source) const override;
   void HandleKeyboardEvent(
       content::WebContents* source,
@@ -265,12 +275,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void DevToolsClosed() override;
 
  private:
-  enum Type {
-    BROWSER_WINDOW,  // Used by BrowserWindow.
-    WEB_VIEW,  // Used by <webview>.
-    REMOTE,  // Thin wrap around an existing WebContents.
-  };
-
   AtomBrowserContext* GetBrowserContext() const;
 
   uint32_t GetNextRequestId() {

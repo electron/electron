@@ -4,22 +4,60 @@
 
 ```javascript
 // In the main process.
-const {BrowserWindow} = require('electron');
+const {BrowserWindow} = require('electron')
 
 // Or in the renderer process.
-const {BrowserWindow} = require('electron').remote;
+const {BrowserWindow} = require('electron').remote
 
-let win = new BrowserWindow({width: 800, height: 600, show: false});
+let win = new BrowserWindow({width: 800, height: 600})
 win.on('closed', () => {
-  win = null;
-});
+  win = null
+})
 
-win.loadURL('https://github.com');
-win.show();
+win.loadURL('https://github.com')
 ```
 
-You can also create a window without chrome by using
-[Frameless Window](frameless-window.md) API.
+## Frameless window
+
+To create a window without chrome, or a transparent window in arbitrary shape,
+you can use the [Frameless Window](frameless-window.md) API.
+
+## Showing window gracefully
+
+When loading a page in window directly, users will see the progress of loading
+page, which is not good experience for native app. To make the window display
+without visual flash, there are two solutions for different situations.
+
+### Using `ready-to-show` event
+
+While loading the page, the `ready-to-show` event will be emitted when renderer
+process has done drawing for the first time, showing window after this event
+will have no visual flash:
+
+```javascript
+let win = new BrowserWindow({show: false})
+win.once('ready-to-show', () => {
+  win.show()
+})
+```
+
+This is event is usually emitted after the `did-finish-load` event, but for
+pages with many remote resources, it may be emitted before the `did-finish-load`
+event.
+
+### Setting `backgroundColor`
+
+For a complex app, the `ready-to-show` event could be emitted too late, making
+the app feel slow. In this case, it is recommended to show the window
+immediately, and use a `backgroundColor` close to your app's background:
+
+```javascript
+let win = new BrowserWindow({backgroundColor: '#2e2c29'})
+win.loadURL('https://github.com')
+```
+
+Note that even for apps that use `ready-to-show` event, it is still recommended
+to set `backgroundColor` to make app feel more native.
 
 ## Class: BrowserWindow
 
@@ -54,6 +92,11 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     implemented on Linux. Default is `true`.
   * `closable` Boolean - Whether window is closable. This is not implemented
     on Linux. Default is `true`.
+  * `focusable` Boolean - Whether the window can be focused. Default is
+    `true`. On Windows setting `focusable: false` also implies setting
+    `skipTaskbar: true`. On Linux setting `focusable: false` makes the window
+    stop interacting with wm, so the window will always stay on top in all
+    workspaces.
   * `alwaysOnTop` Boolean - Whether the window should always stay on top of
     other windows. Default is `false`.
   * `fullscreen` Boolean - Whether the window should show in fullscreen. When
@@ -175,9 +218,13 @@ The `webPreferences` option is an object that can have following properties:
 * `scrollBounce` Boolean - Enables scroll bounce (rubber banding) effect on
   OS X. Default is `false`.
 * `blinkFeatures` String - A list of feature strings separated by `,`, like
-  `CSSVariables,KeyboardEventKey`. The full list of supported feature strings
-  can be found in the [setFeatureEnabledFromString][blink-feature-string]
-  function.
+  `CSSVariables,KeyboardEventKey` to enable. The full list of supported feature
+  strings can be found in the [RuntimeEnabledFeatures.in][blink-feature-string]
+  file.
+* `disableBlinkFeatures` String - A list of feature strings separated by `,`,
+  like `CSSVariables,KeyboardEventKey` to disable. The full list of supported
+  feature strings can be found in the
+  [RuntimeEnabledFeatures.in][blink-feature-string] file.
 * `defaultFontFamily` Object - Sets the default font for the font-family.
   * `standard` String - Defaults to `Times New Roman`.
   * `serif` String - Defaults to `Times New Roman`.
@@ -261,6 +308,11 @@ Emitted when the window is shown.
 ### Event: 'hide'
 
 Emitted when the window is hidden.
+
+### Event: 'ready-to-show'
+
+Emitted when the web page has been rendered and window can be displayed without
+visual flash.
 
 ### Event: 'maximize'
 
@@ -380,13 +432,28 @@ Find a window according to its ID.
 Adds DevTools extension located at `path`, and returns extension's name.
 
 The extension will be remembered so you only need to call this API once, this
-API is not for programming use.
+API is not for programming use. If you try to add an extension that has already
+been loaded, this method will not return and instead log a warning to the
+console.
+
+Method will also not return if the extension's manifest is missing or incomplete.
 
 ### `BrowserWindow.removeDevToolsExtension(name)`
 
 * `name` String
 
 Remove the DevTools extension whose name is `name`.
+
+### `BrowserWindow.getDevToolsExtensions()`
+
+Returns an Object where the keys are the extension names and each value is
+an Object containing `name` and `version` properties.
+
+To check if a DevTools extension is installed you can run the following:
+
+```javascript
+let installed = BrowserWindow.getDevToolsExtensions().hasOwnProperty('devtron')
+```
 
 ## Instance Properties
 
@@ -877,7 +944,7 @@ The `flags` is an array that can include following `String`s:
 
 ### `win.showDefinitionForSelection()` _OS X_
 
-Shows pop-up dictionary that searches the selected word on the page.
+Same as `webContents.showDefinitionForSelection()`.
 
 ### `win.setIcon(icon)` _Windows_ _Linux_
 
@@ -924,10 +991,20 @@ Returns whether the window is visible on all workspaces.
 
 **Note:** This API always returns false on Windows.
 
-### `win.setIgnoreMouseEvents(ignore)` _OS X_
+### `win.setIgnoreMouseEvents(ignore)`
 
 * `ignore` Boolean
 
-Ignore all moused events that happened in the window.
+Makes the window ignore all mouse events.
 
-[blink-feature-string]: https://code.google.com/p/chromium/codesearch#chromium/src/out/Debug/gen/blink/platform/RuntimeEnabledFeatures.cpp&sq=package:chromium&type=cs&l=576
+All mouse events happened in this window will be passed to the window below
+this window, but if this window has focus, it will still receive keyboard
+events.
+
+### `win.setFocusable(focusable)` _Windows_
+
+* `focusable` Boolean
+
+Changes whether the window can be focused.
+
+[blink-feature-string]: https://cs.chromium.org/chromium/src/third_party/WebKit/Source/platform/RuntimeEnabledFeatures.in

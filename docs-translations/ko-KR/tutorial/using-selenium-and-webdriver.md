@@ -40,7 +40,7 @@ app.start().then(function () {
   // 윈도우의 제목을 검증합니다.
   assert.equal(title, 'My App')
 }).then(function () {
-  // 어플리케이션을 중지합니다.
+  // 애플리케이션을 중지합니다.
   return app.stop()
 }).catch(function (error) {
   // 테스트의 실패가 있다면 로깅합니다.
@@ -159,11 +159,11 @@ client
 
 ## 작업 환경
 
-따로 Electron을 다시 빌드하지 않는 경우 간단히 어플리케이션을 Electron의 리소스
+따로 Electron을 다시 빌드하지 않는 경우 간단히 애플리케이션을 Electron의 리소스
 디렉터리에 [배치](application-distribution.md)하여 바로 테스트 할 수 있습니다.
 
-또한, Electron 바이너리의 명령줄 인수에 어플리케이션 폴더를 지정하는 방법으로 실행할
-수도 있습니다. 이 방법을 사용하면 어플리케이션 폴더를 Electron의 `resource`
+또한, Electron 바이너리의 명령줄 인수에 애플리케이션 폴더를 지정하는 방법으로 실행할
+수도 있습니다. 이 방법을 사용하면 애플리케이션 폴더를 Electron의 `resource`
 디렉터리로 복사하는 불필요한 과정을 생략할 수 있습니다.
 
 [chrome-driver]: https://sites.google.com/a/chromium.org/chromedriver/

@@ -61,6 +61,7 @@ class Window : public mate::TrackableObject<Window>,
   void OnWindowFocus() override;
   void OnWindowShow() override;
   void OnWindowHide() override;
+  void OnReadyToShow() override;
   void OnWindowMaximize() override;
   void OnWindowUnmaximize() override;
   void OnWindowMinimize() override;
@@ -146,6 +147,7 @@ class Window : public mate::TrackableObject<Window>,
   void SetDocumentEdited(bool edited);
   bool IsDocumentEdited();
   void SetIgnoreMouseEvents(bool ignore);
+  void SetFocusable(bool focusable);
   void CapturePage(mate::Arguments* args);
   void SetProgressBar(double progress);
   void SetOverlayIcon(const gfx::Image& overlay,
@@ -167,10 +169,6 @@ class Window : public mate::TrackableObject<Window>,
   bool IsWindowMessageHooked(UINT message);
   void UnhookWindowMessage(UINT message);
   void UnhookAllWindowMessages();
-#endif
-
-#if defined(OS_MACOSX)
-  void ShowDefinitionForSelection();
 #endif
 
 #if defined(TOOLKIT_VIEWS)

@@ -39,12 +39,12 @@ app.start().then(function () {
 }).then(function (title) {
   // Verify the window's title
   assert.equal(title, 'My App')
-}).then(function () {
-  // Stop the application
-  return app.stop()
 }).catch(function (error) {
   // Log any failures
   console.error('Test failed', error.message)
+}).then(function () {
+  // Stop the application
+  return app.stop()
 })
 ```
 

@@ -1,12 +1,11 @@
-
 const assert = require('assert')
 const http = require('http')
 const path = require('path')
 const ws = require('ws')
+const url = require('url')
 const remote = require('electron').remote
 
-const BrowserWindow = remote.require('electron').BrowserWindow
-const session = remote.require('electron').session
+const {BrowserWindow, session, webContents} = remote
 
 const isCI = remote.getGlobal('isCi')
 
@@ -165,6 +164,12 @@ describe('chromium feature', function () {
       var b = window.open('about:blank', '', 'show=no')
       assert.equal(b.closed, false)
       assert.equal(b.constructor.name, 'BrowserWindowProxy')
+
+      // Check that guestId is not writeable
+      assert(b.guestId)
+      b.guestId = 'anotherValue'
+      assert.notEqual(b.guestId, 'anoterValue')
+
       b.close()
     })
 
@@ -235,7 +240,7 @@ describe('chromium feature', function () {
       else
         targetURL = 'file://' + fixtures + '/pages/base-page.html'
       b = window.open(targetURL)
-      BrowserWindow.fromId(b.guestId).webContents.once('did-finish-load', function () {
+      webContents.fromId(b.guestId).once('did-finish-load', function () {
         assert.equal(b.location, targetURL)
         b.close()
         done()
@@ -246,10 +251,10 @@ describe('chromium feature', function () {
       // Load a page that definitely won't redirect
       var b
       b = window.open('about:blank')
-      BrowserWindow.fromId(b.guestId).webContents.once('did-finish-load', function () {
+      webContents.fromId(b.guestId).once('did-finish-load', function () {
         // When it loads, redirect
         b.location = 'file://' + fixtures + '/pages/base-page.html'
-        BrowserWindow.fromId(b.guestId).webContents.once('did-finish-load', function () {
+        webContents.fromId(b.guestId).once('did-finish-load', function () {
           // After our second redirect, cleanup and callback
           b.close()
           done()
@@ -308,7 +313,7 @@ describe('chromium feature', function () {
       }
       window.addEventListener('message', listener)
       b = window.open('file://' + fixtures + '/pages/window-open-postMessage.html', '', 'show=no')
-      BrowserWindow.fromId(b.guestId).webContents.once('did-finish-load', function () {
+      webContents.fromId(b.guestId).once('did-finish-load', function () {
         b.postMessage('testing', '*')
       })
     })
@@ -326,6 +331,25 @@ describe('chromium feature', function () {
       }
       window.addEventListener('message', listener)
       b = window.open('file://' + fixtures + '/pages/window-opener-postMessage.html', '', 'show=no')
+    })
+
+    it('supports windows opened from a <webview>', function (done) {
+      const webview = new WebView()
+      webview.addEventListener('console-message', function (e) {
+        webview.remove()
+        assert.equal(e.message, 'message')
+        done()
+      })
+      webview.allowpopups = true
+      webview.src = url.format({
+        pathname: `${fixtures}/pages/webview-opener-postMessage.html`,
+        protocol: 'file',
+        query: {
+          p: `${fixtures}/pages/window-opener-postMessage.html`
+        },
+        slashes: true
+      })
+      document.body.appendChild(webview)
     })
   })
 

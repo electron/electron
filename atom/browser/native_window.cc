@@ -10,6 +10,7 @@
 
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
+#include "atom/browser/browser.h"
 #include "atom/browser/window_list.h"
 #include "atom/common/api/api_messages.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
@@ -152,7 +153,7 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
     SetFullScreen(true);
   }
   bool skip;
-  if (options.Get(options::kSkipTaskbar, &skip) && skip) {
+  if (options.Get(options::kSkipTaskbar, &skip)) {
     SetSkipTaskbar(skip);
   }
   bool kiosk;
@@ -166,7 +167,7 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
     // For normal window, use white as default background.
     SetBackgroundColor("#FFFF");
   }
-  std::string title("Electron");
+  std::string title(Browser::Get()->GetName());
   options.Get(options::kTitle, &title);
   SetTitle(title);
 
@@ -281,7 +282,7 @@ bool NativeWindow::IsDocumentEdited() {
   return false;
 }
 
-void NativeWindow::SetIgnoreMouseEvents(bool ignore) {
+void NativeWindow::SetFocusable(bool focusable) {
 }
 
 void NativeWindow::SetMenu(ui::MenuModel* menu) {
@@ -335,10 +336,6 @@ void NativeWindow::CapturePage(const gfx::Rect& rect,
                  weak_factory_.GetWeakPtr(),
                  callback),
       kBGRA_8888_SkColorType);
-}
-
-void NativeWindow::ShowDefinitionForSelection() {
-  NOTIMPLEMENTED();
 }
 
 void NativeWindow::SetAutoHideMenuBar(bool auto_hide) {
@@ -563,6 +560,22 @@ void NativeWindow::BeforeUnloadDialogCancelled() {
   window_unresposive_closure_.Cancel();
 }
 
+void NativeWindow::DidFirstVisuallyNonEmptyPaint() {
+  if (IsVisible())
+    return;
+
+  // When there is a non-empty first paint, resize the RenderWidget to force
+  // Chromium to draw.
+  const auto view = web_contents()->GetRenderWidgetHostView();
+  view->Show();
+  view->SetSize(GetContentSize());
+
+  // Emit the ReadyToShow event in next tick in case of pending drawing work.
+  base::MessageLoop::current()->PostTask(
+      FROM_HERE,
+      base::Bind(&NativeWindow::NotifyReadyToShow, GetWeakPtr()));
+}
+
 bool NativeWindow::OnMessageReceived(const IPC::Message& message) {
   bool handled = true;
   IPC_BEGIN_MESSAGE_MAP(NativeWindow, message)
@@ -602,6 +615,10 @@ void NativeWindow::NotifyWindowUnresponsive() {
     FOR_EACH_OBSERVER(NativeWindowObserver,
                       observers_,
                       OnRendererUnresponsive());
+}
+
+void NativeWindow::NotifyReadyToShow() {
+  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnReadyToShow());
 }
 
 void NativeWindow::OnCapturePageDone(const CapturePageCallback& callback,

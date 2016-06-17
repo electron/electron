@@ -154,7 +154,8 @@ class NativeWindow : public base::SupportsUserData,
   virtual std::string GetRepresentedFilename();
   virtual void SetDocumentEdited(bool edited);
   virtual bool IsDocumentEdited();
-  virtual void SetIgnoreMouseEvents(bool ignore);
+  virtual void SetIgnoreMouseEvents(bool ignore) = 0;
+  virtual void SetFocusable(bool focusable);
   virtual void SetMenu(ui::MenuModel* menu);
   virtual bool HasModalDialog();
   virtual gfx::NativeWindow GetNativeWindow() = 0;
@@ -178,9 +179,6 @@ class NativeWindow : public base::SupportsUserData,
   // done.
   virtual void CapturePage(const gfx::Rect& rect,
                            const CapturePageCallback& callback);
-
-  // Show popup dictionary.
-  virtual void ShowDefinitionForSelection();
 
   // Toggle the menu bar.
   virtual void SetAutoHideMenuBar(bool auto_hide);
@@ -277,6 +275,7 @@ class NativeWindow : public base::SupportsUserData,
   // content::WebContentsObserver:
   void RenderViewCreated(content::RenderViewHost* render_view_host) override;
   void BeforeUnloadDialogCancelled() override;
+  void DidFirstVisuallyNonEmptyPaint() override;
   bool OnMessageReceived(const IPC::Message& message) override;
 
  private:
@@ -285,6 +284,9 @@ class NativeWindow : public base::SupportsUserData,
 
   // Dispatch unresponsive event to observers.
   void NotifyWindowUnresponsive();
+
+  // Dispatch ReadyToShow event to observers.
+  void NotifyReadyToShow();
 
   // Called when CapturePage has done.
   void OnCapturePageDone(const CapturePageCallback& callback,

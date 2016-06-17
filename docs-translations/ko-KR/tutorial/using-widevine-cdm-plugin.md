@@ -19,7 +19,7 @@ Chrome 브라우저에서 `chrome://components/`를 열고 `WidevineCdm`을 찾�
 `APP_DATA/Google/Chrome/WidevineCDM/VERSION/_platform_specific/PLATFORM_ARCH/`
 디렉터리에서 찾을 수 있습니다.
 
-`APP_DATA`는 어플리케이션 데이터를 저장하고 있는 시스템 경로입니다. Windows에선
+`APP_DATA`는 애플리케이션 데이터를 저장하고 있는 시스템 경로입니다. Windows에선
 `%LOCALAPPDATA%`로 접근할 수 있고 OS X에선 `~/Library/Application Support`로
 접근할 수 있습니다. `VERSION`은 `1.4.8.866` 같은 Widevine CDM 플러그인의 버전
 문자열입니다. `PLATFORM`은 플랫폼을 뜻하며 `mac` 또는 `win`이 될 수 있으며 `ARCH`는

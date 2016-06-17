@@ -284,6 +284,15 @@ Returns:
 <meta name='theme-color' content='#ff0000'>
 ```
 
+### Event: 'update-target-url'
+
+Returns:
+
+* `event` Event
+* `url` String
+
+마우스나 키보드를 사용해 링크에 포커스할 때 발생하는 이벤트입니다.
+
 ### Event: 'cursor-changed'
 
 Returns:
@@ -591,6 +600,12 @@ CSS 코드를 현재 웹 페이지에 삽입합니다.
 
 웹 페이지에서 `replaceMisspelling` 편집 커맨드를 실행합니다.
 
+### `webContents.insertText(text)`
+
+* `text` String
+
+포커스된 요소에 `text`를 삽입합니다.
+
 ### `webContents.findInPage(text[, options])`
 
 * `text` String - 찾을 콘텐츠, 반드시 공백이 아니여야 합니다.
@@ -659,7 +674,7 @@ ServiceWorker가 존재하면 모두 등록을 해제하고 JS Promise가 만족
 `webContents.print({silent: false, printBackground: false})`를 호출하는 것과
 같습니다.
 
-**참고:** Windows에서의 프린터 API는 `pdf.dll`에 의존합니다. 따라서 어플리케이션이
+**참고:** Windows에서의 프린터 API는 `pdf.dll`에 의존합니다. 따라서 애플리케이션이
 print기능을 사용하지 않는 경우 전체 바이너리 크기를 줄이기 위해 `pdf.dll`을 삭제해도
 됩니다.
 
@@ -928,6 +943,10 @@ win.webContents.on('did-finish-load', () => {
   });
 });
 ```
+
+### `webContents.showDefinitionForSelection()` _OS X_
+
+페이지에서 선택된 단어에 대한 사전 검색 결과 팝업을 표시합니다.
 
 ## Instance Properties
 

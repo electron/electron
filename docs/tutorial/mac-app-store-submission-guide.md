@@ -120,6 +120,24 @@ If you are new to app sandboxing under OS X, you should also read through
 Apple's [Enabling App Sandbox][enable-app-sandbox] to have a basic idea, then
 add keys for the permissions needed by your app to the entitlements files.
 
+Apart from manually signing your app, you can also choose to use the
+[electron-osx-sign][electron-osx-sign] module to do the job.
+
+#### Sign Native Modules
+
+Native modules used in your app also need to be signed. If using
+electron-osx-sign, be sure to include the path to the built binaries in the
+argument list:
+
+```bash
+electron-osx-sign YourApp.app YourApp.app/Contents/Resources/app/node_modules/nativemodule/build/release/nativemodule
+```
+
+Also note that native modules may have intermediate files produced which should
+not be included (as they would also need to be signed). If you use
+[electron-packager][electron-packager], add `--ignore=.+\.o$` to build step to
+ignore these files.
+
 ### Upload Your App
 
 After signing your app, you can use Application Loader to upload it to iTunes
@@ -147,6 +165,32 @@ and the following behaviors have been changed:
 Also, due to the usage of app sandboxing, the resources which can be accessed by
 the app are strictly limited; you can read [App Sandboxing][app-sandboxing] for
 more information.
+
+### Additional Entitlements
+
+Depending on which Electron APIs your app uses, you may need to add additional
+entitlements to your `parent.plist` file to be able to use these APIs from your
+app's Mac App Store build.
+
+#### dialog.showOpenDialog
+
+```xml
+<key>com.apple.security.files.user-selected.read-only</key>
+<true/>
+```
+
+See the [Enabling User-Selected File Access documentation][user-selected] for
+more details.
+
+#### dialog.showSaveDialog
+
+```xml
+<key>com.apple.security.files.user-selected.read-write</key>
+<true/>
+```
+
+See the [Enabling User-Selected File Access documentation][user-selected] for
+more details.
 
 ## Cryptographic Algorithms Used by Electron
 
@@ -189,7 +233,10 @@ ERN)][ern-tutorial].
 [nwjs-guide]: https://github.com/nwjs/nw.js/wiki/Mac-App-Store-%28MAS%29-Submission-Guideline#first-steps
 [enable-app-sandbox]: https://developer.apple.com/library/ios/documentation/Miscellaneous/Reference/EntitlementKeyReference/Chapters/EnablingAppSandbox.html
 [create-record]: https://developer.apple.com/library/ios/documentation/LanguagesUtilities/Conceptual/iTunesConnect_Guide/Chapters/CreatingiTunesConnectRecord.html
+[electron-osx-sign]: https://github.com/electron-userland/electron-osx-sign
+[electron-packager]: https://github.com/electron-userland/electron-packager
 [submit-for-review]: https://developer.apple.com/library/ios/documentation/LanguagesUtilities/Conceptual/iTunesConnect_Guide/Chapters/SubmittingTheApp.html
 [app-sandboxing]: https://developer.apple.com/app-sandboxing/
 [ern-tutorial]: https://carouselapps.com/2015/12/15/legally-submit-app-apples-app-store-uses-encryption-obtain-ern/
 [temporary-exception]: https://developer.apple.com/library/mac/documentation/Miscellaneous/Reference/EntitlementKeyReference/Chapters/AppSandboxTemporaryExceptionEntitlements.html
+[user-selected]: https://developer.apple.com/library/mac/documentation/Miscellaneous/Reference/EntitlementKeyReference/Chapters/EnablingAppSandbox.html#//apple_ref/doc/uid/TP40011195-CH4-SW6

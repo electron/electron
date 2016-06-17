@@ -2,48 +2,69 @@
 
 > 원격 소스로부터의 파일 다운로드를 제어합니다.
 
-`DownloadItem`은 EventEmitter를 상속받았으며 Electron의 다운로드 아이템을 표현합니다.
-이 클래스 객체는 `Session` 모듈의 `will-download` 이벤트에 사용되며 사용자가 다운로드
-아이템을 다룰 수 있도록 도와줍니다.
+`DownloadItem`은 `EventEmitter`를 상속받았으며 Electron의 다운로드 아이템을
+표현합니다. 이 클래스 객체는 `Session` 클래스의 `will-download` 이벤트에 사용되며
+사용자가 다운로드 아이템을 다룰 수 있도록 도와줍니다.
 
 ```javascript
 // 메인 프로세스
 win.webContents.session.on('will-download', (event, item, webContents) => {
   // Set the save path, making Electron not to prompt a save dialog.
-  item.setSavePath('/tmp/save.pdf');
-  console.log(item.getMimeType());
-  console.log(item.getFilename());
-  console.log(item.getTotalBytes());
-  item.on('updated', () => {
-    console.log('Received bytes: ' + item.getReceivedBytes());
-  });
-  item.on('done', (e, state) => {
-    if (state === 'completed') {
-      console.log('Download successfully');
-    } else {
-      console.log('Download is cancelled or interrupted that can\'t be resumed');
+  item.setSavePath('/tmp/save.pdf')
+
+  item.on('updated', (event, state) => {
+    if (state === 'interrupted') {
+      console.log('Download is interrupted but can be resumed')
+    } else if (state === 'progressing') {
+      if (item.isPaused()) {
+        console.log('Download is paused')
+      } else {
+        console.log(`Received bytes: ${item.getReceivedBytes()}`)
+      }
     }
-  });
-});
+  })
+  item.once('done', (event, state) => {
+    if (state === 'completed') {
+      console.log('Download successfully')
+    } else {
+      console.log(`Download failed: ${state}`)
+    }
+  })
+})
 ```
 
 ## Events
 
 ### Event: 'updated'
 
-`downloadItem`이 갱신될 때 발생하는 이벤트입니다.
-
-### Event: 'done'
+Returns:
 
 * `event` Event
 * `state` String
-  * `completed` - 다운로드가 성공적으로 완료되었습니다.
-  * `cancelled` - 다운로드가 취소되었습니다.
-  * `interrupted` - 다운로드 중 파일 서버로부터의 연결이 끊겼습니다.
+
+다운로드가 업데이트되었으며 아직 끝나지 않았을 때 발생하는 이벤트입니다.
+
+`state`는 다음 중 하나가 될 수 있습니다:
+
+* `progressing` - 다운로드가 진행중입니다.
+* `interrupted` - 다운로드가 중지되었으며 다시 재개할 수 있습니다.
+
+### Event: 'done'
+
+Returns:
+
+* `event` Event
+* `state` String
 
 다운로드가 종료될 때 발생하는 이벤트입니다. 이 이벤트는 다운로드 중 문제가 발생하여
 중단되거나, 모두 성공적으로 완료된 경우, `downloadItem.cancel()` 같은 메서드를 통해
 취소하는 경우의 종료 작업이 모두 포함됩니다.
+
+`state`는 다음 중 하나가 될 수 있습니다:
+
+* `completed` - 다운로드가 성공적으로 완료되었습니다.
+* `cancelled` - 다운로드가 취소되었습니다.
+* `interrupted` - 다운로드가 중지되었으며 다시 재개할 수 있습니다.
 
 ## Methods
 
@@ -61,9 +82,17 @@ win.webContents.session.on('will-download', (event, item, webContents) => {
 
 다운로드를 일시 중지합니다.
 
+### `downloadItem.isPaused()`
+
+다운로드가 일시 중지되었는지 여부를 반환합니다.
+
 ### `downloadItem.resume()`
 
 중디된 다운로드를 재개합니다.
+
+### `downloadItem.canResume()`
+
+다운로드를 재개할 수 있는지 여부를 반환합니다.
 
 ### `downloadItem.cancel()`
 
@@ -101,3 +130,14 @@ win.webContents.session.on('will-download', (event, item, webContents) => {
 ### `downloadItem.getContentDisposition()`
 
 응답 헤더에서 Content-Disposition 필드를 문자열로 반환합니다.
+
+### `downloadItem.getState()`
+
+현재 상태를 `String` 타입으로 가져옵니다.
+
+값은 다음이 될 수 있습니다:
+
+* `progressing` - 다운로드가 진행중입니다.
+* `completed` - 다운로드가 성공적으로 완료되었습니다.
+* `cancelled` - 다운로드가 취소되었습니다.
+* `interrupted` - 다운로드가 중지되었습니다.

@@ -122,6 +122,16 @@ bool IsDevToolsExtension(content::RenderFrame* render_frame) {
 AtomRendererClient::AtomRendererClient()
     : node_bindings_(NodeBindings::Create(false)),
       atom_bindings_(new AtomBindings) {
+  // Parse --standard-schemes=scheme1,scheme2
+  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
+  std::string custom_schemes = command_line->GetSwitchValueASCII(
+      switches::kStandardSchemes);
+  if (!custom_schemes.empty()) {
+    std::vector<std::string> schemes_list = base::SplitString(
+        custom_schemes, ",", base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY);
+    for (const std::string& scheme : schemes_list)
+      url::AddStandardScheme(scheme.c_str(), url::SCHEME_WITHOUT_PORT);
+  }
 }
 
 AtomRendererClient::~AtomRendererClient() {

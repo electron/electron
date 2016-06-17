@@ -75,6 +75,9 @@ const char kBackgroundColor[] = "backgroundColor";
 // Whether the window should have a shadow.
 const char kHasShadow[] = "hasShadow";
 
+// Whether the window can be activated.
+const char kFocusable[] = "focusable";
+
 // The WebPreferences.
 const char kWebPreferences[] = "webPreferences";
 
@@ -107,7 +110,11 @@ const char kOpenerID[] = "openerId";
 const char kScrollBounce[] = "scrollBounce";
 
 // Enable blink features.
+// TODO(kevinsawicki) Rename to enableBlinkFeatures in 2.0
 const char kBlinkFeatures[] = "blinkFeatures";
+
+// Disable blink features.
+const char kDisableBlinkFeatures[] = "disableBlinkFeatures";
 
 }  // namespace options
 
@@ -124,6 +131,9 @@ const char kPpapiFlashVersion[] = "ppapi-flash-version";
 
 // Disable HTTP cache.
 const char kDisableHttpCache[] = "disable-http-cache";
+
+// The list of standard schemes.
+const char kStandardSchemes[] = "standard-schemes";
 
 // Register schemes to handle service worker.
 const char kRegisterServiceWorkerSchemes[] = "register-service-worker-schemes";
