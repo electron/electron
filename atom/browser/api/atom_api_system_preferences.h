@@ -36,7 +36,10 @@ class SystemPreferences : public mate::EventEmitter<SystemPreferences> {
 #elif defined(OS_MACOSX)
   int SubscribeNotification(const std::string& name,
                             const NotificationCallback& callback);
-  void UnsubscribeNotification(int id);
+  void UnsubscribeNotification(int request_id);
+  int SubscribeLocalNotification(const std::string& name,
+                                 const NotificationCallback& callback);
+  void UnsubscribeLocalNotification(int request_id);
   v8::Local<v8::Value> GetUserDefault(const std::string& name,
                                       const std::string& type);
 #endif
@@ -45,6 +48,12 @@ class SystemPreferences : public mate::EventEmitter<SystemPreferences> {
  protected:
   explicit SystemPreferences(v8::Isolate* isolate);
   ~SystemPreferences() override;
+
+  int DoSubscribeNotification(const std::string& name,
+                              const NotificationCallback& callback,
+                              bool is_local);
+  void DoUnsubscribeNotification(int request_id, bool is_local);
+
 
  private:
   DISALLOW_COPY_AND_ASSIGN(SystemPreferences);
