@@ -70,6 +70,14 @@ of argument is notated by either the common types:
 [`Array`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array)
 or a custom type like Electron's [`webContent`](api/web-content.md).
 
+If an argument is unique to certain platforms, those platforms are denoted
+using a space-delimited italicized list following the datatype. Values can be
+`OS X`, `Windows`, or `Linux`.
+
+```
+* `animate` Boolean (optional) _OS X_ _Windows_
+```
+
 ### Events
 
 An example of [event](https://developer.mozilla.org/en-US/docs/Web/API/Event)
