@@ -6,7 +6,6 @@
 #include "browser/mac/event_dispatching_window.h"
 
 #include "content/public/browser/render_widget_host_view.h"
-#import "ui/base/cocoa/underlay_opengl_hosting_window.h"
 #include "ui/gfx/mac/scoped_cocoa_disable_screen_updates.h"
 
 using namespace brightray;
