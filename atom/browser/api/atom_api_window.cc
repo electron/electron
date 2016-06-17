@@ -650,8 +650,23 @@ void Window::SetAspectRatio(double aspect_ratio, mate::Arguments* args) {
   window_->SetAspectRatio(aspect_ratio, extra_size);
 }
 
-void Window::SetParentWindow(NativeWindow* parent) {
-  window_->SetParentWindow(parent);
+void Window::SetParentWindow(mate::Arguments* args) {
+  v8::Local<v8::Value> value;
+  NativeWindow* parent;
+  if (args->GetNext(&value) &&
+      mate::ConvertFromV8(isolate(), value, &parent)) {
+    parent_window_.Reset(isolate(), value);
+    window_->SetParentWindow(parent);
+  } else {
+    args->ThrowError("Must pass BrowserWindow instance or null");
+  }
+}
+
+v8::Local<v8::Value> Window::GetParentWindow() {
+  if (parent_window_.IsEmpty())
+    return v8::Null(isolate());
+  else
+    return v8::Local<v8::Value>::New(isolate(), parent_window_);
 }
 
 v8::Local<v8::Value> Window::GetNativeWindowHandle() {
@@ -702,6 +717,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("isFullScreen", &Window::IsFullscreen)
       .SetMethod("setAspectRatio", &Window::SetAspectRatio)
       .SetMethod("setParentWindow", &Window::SetParentWindow)
+      .SetMethod("getParentWindow", &Window::GetParentWindow)
       .SetMethod("getNativeWindowHandle", &Window::GetNativeWindowHandle)
       .SetMethod("getBounds", &Window::GetBounds)
       .SetMethod("setBounds", &Window::SetBounds)
