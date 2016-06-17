@@ -11,6 +11,16 @@ var shell = require('shell');
 shell.openExternal('https://github.com');
 ```
 
+May be this way
+```javascript
+const electron = require('electron');
+
+const shell = electron.shell;
+
+shell.openExternal('https://github.com');
+```
+
+
 ## Methods
 
 `shell` 模块包含以下函数:
