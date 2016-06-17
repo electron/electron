@@ -20,11 +20,11 @@ for `$DISPLAY`, so no further configuration of your app is required.
 This step can be automated with Paul Betts's
 [xvfb-maybe](https://github.com/paulcbetts/xvfb-maybe): Prepend your test
 commands with `xvfb-maybe` and the little tool will automatically configure
-xvfb, if required by the current system. On Windows or Mac OS X, it will simply
+xvfb, if required by the current system. On Windows or macOS, it will simply
 do nothing.
 
 ```
-## On Windows or OS X, this just invokes electron-mocha
+## On Windows or macOS, this just invokes electron-mocha
 ## On Linux, if we are in a headless environment, this will be equivalent
 ## to xvfb-run electron-mocha ./test/*.js
 xvfb-maybe electron-mocha ./test/*.js

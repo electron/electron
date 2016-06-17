@@ -4,16 +4,16 @@
 
 ## Methods
 
-### `systemPreferences.isDarkMode()` _OS X_
+### `systemPreferences.isDarkMode()` _macOS_
 
 This method returns `true` if the system is in Dark Mode, and `false` otherwise.
 
-### `systemPreferences.subscribeNotification(event, callback)` _OS X_
+### `systemPreferences.subscribeNotification(event, callback)` _macOS_
 
 * `event` String
 * `callback` Function
 
-Subscribes to native notifications of OS X, `callback` will be called with
+Subscribes to native notifications of macOS, `callback` will be called with
 `callback(event, userInfo)` when the corresponding `event` happens. The
 `userInfo` is an Object that contains the user information dictionary sent
 along with the notification.
@@ -29,13 +29,13 @@ example values of `event` are:
 * `AppleColorPreferencesChangedNotification`
 * `AppleShowScrollBarsSettingChanged`
 
-### `systemPreferences.unsubscribeNotification(id)` _OS X_
+### `systemPreferences.unsubscribeNotification(id)` _macOS_
 
 * `id` Integer
 
 Removes the subscriber with `id`.
 
-### `systemPreferences.getUserDefault(key, type)` _OS X_
+### `systemPreferences.getUserDefault(key, type)` _macOS_
 
 * `key` String
 * `type` String - Can be `string`, `boolean`, `integer`, `float`, `double`,
@@ -43,7 +43,7 @@ Removes the subscriber with `id`.
 
 Get the value of `key` in system preferences.
 
-This API reads from `NSUserDefaults` on OS X, some popular `key` and `type`s
+This API reads from `NSUserDefaults` on macOS, some popular `key` and `type`s
 are:
 
 * `AppleInterfaceStyle: string`

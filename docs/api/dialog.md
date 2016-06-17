@@ -103,7 +103,7 @@ will be passed via `callback(filename)`
   * `cancelId` Integer - The value will be returned when user cancels the dialog
     instead of clicking the buttons of the dialog. By default it is the index
     of the buttons that have "cancel" or "no" as label, or 0 if there is no such
-    buttons. On OS X and Windows the index of "Cancel" button will always be
+    buttons. On macOS and Windows the index of "Cancel" button will always be
     used as `cancelId`, not matter whether it is already specified.
   * `noLink` Boolean - On Windows Electron will try to figure out which one of
     the `buttons` are common buttons (like "Cancel" or "Yes"), and show the
@@ -129,7 +129,7 @@ and no GUI dialog will appear.
 
 ## Sheets
 
-On Mac OS X, dialogs are presented as sheets attached to a window if you provide
+On macOS, dialogs are presented as sheets attached to a window if you provide
 a `BrowserWindow` reference in the `browserWindow` parameter, or modals if no
 window is provided.
 

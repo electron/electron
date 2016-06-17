@@ -19,7 +19,7 @@ The `app` object emits the following events:
 ### Event: 'will-finish-launching'
 
 Emitted when the application has finished basic startup. On Windows and Linux,
-the `will-finish-launching` event is the same as the `ready` event; on OS X,
+the `will-finish-launching` event is the same as the `ready` event; on macOS,
 this event represents the `applicationWillFinishLaunching` notification of
 `NSApplication`. You would usually set up listeners for the `open-file` and
 `open-url` events here, and start the crash reporter and auto updater.
@@ -73,7 +73,7 @@ Returns:
 
 Emitted when the application is quitting.
 
-### Event: 'open-file' _OS X_
+### Event: 'open-file' _macOS_
 
 Returns:
 
@@ -92,7 +92,7 @@ You should call `event.preventDefault()` if you want to handle this event.
 On Windows, you have to parse `process.argv` (in the main process) to get the
 filepath.
 
-### Event: 'open-url' _OS X_
+### Event: 'open-url' _macOS_
 
 Returns:
 
@@ -104,7 +104,7 @@ must be registered to be opened by your application.
 
 You should call `event.preventDefault()` if you want to handle this event.
 
-### Event: 'activate' _OS X_
+### Event: 'activate' _macOS_
 
 Returns:
 
@@ -114,7 +114,7 @@ Returns:
 Emitted when the application is activated, which usually happens when the user
 clicks on the application's dock icon.
 
-### Event: 'continue-activity' _OS X_
+### Event: 'continue-activity' _macOS_
 
 Returns:
 
@@ -314,14 +314,14 @@ app.exit(0)
 
 ### `app.focus()`
 
-On Linux, focuses on the first visible window. On OS X, makes the application
+On Linux, focuses on the first visible window. On macOS, makes the application
 the active app. On Windows, focuses on the application's first window.
 
-### `app.hide()` _OS X_
+### `app.hide()` _macOS_
 
 Hides all application windows without minimizing them.
 
-### `app.show()` _OS X_
+### `app.show()` _macOS_
 
 Shows application windows after they were hidden. Does not automatically focus
 them.
@@ -343,7 +343,7 @@ You can request the following paths by the name:
 * `appData` Per-user application data directory, which by default points to:
   * `%APPDATA%` on Windows
   * `$XDG_CONFIG_HOME` or `~/.config` on Linux
-  * `~/Library/Application Support` on OS X
+  * `~/Library/Application Support` on macOS
 * `userData` The directory for storing your app's configuration files, which by
   default it is the `appData` directory appended with your app's name.
 * `temp` Temporary directory.
@@ -403,20 +403,20 @@ Returns the current application locale.
 
 **Note:** On Windows you have to call it after the `ready` events gets emitted.
 
-### `app.addRecentDocument(path)` _OS X_ _Windows_
+### `app.addRecentDocument(path)` _macOS_ _Windows_
 
 * `path` String
 
 Adds `path` to the recent documents list.
 
 This list is managed by the OS. On Windows you can visit the list from the task
-bar, and on OS X you can visit it from dock menu.
+bar, and on macOS you can visit it from dock menu.
 
-### `app.clearRecentDocuments()` _OS X_ _Windows_
+### `app.clearRecentDocuments()` _macOS_ _Windows_
 
 Clears the recent documents list.
 
-### `app.setAsDefaultProtocolClient(protocol)` _OS X_ _Windows_
+### `app.setAsDefaultProtocolClient(protocol)` _macOS_ _Windows_
 
 * `protocol` String - The name of your protocol, without `://`. If you want your
   app to handle `electron://` links, call this method with `electron` as the
@@ -428,31 +428,31 @@ system. Once registered, all links with `your-protocol://` will be opened with
 the current executable. The whole link, including protocol, will be passed to
 your application as a parameter.
 
-**Note:** On OS X, you can only register protocols that have been added to
+**Note:** On macOS, you can only register protocols that have been added to
 your app's `info.plist`, which can not be modified at runtime. You can however
 change the file with a simple text editor or script during build time.
 Please refer to [Apple's documentation][CFBundleURLTypes] for details.
 
 The API uses the Windows Registry and LSSetDefaultHandlerForURLScheme internally.
 
-### `app.removeAsDefaultProtocolClient(protocol)` _OS X_ _Windows_
+### `app.removeAsDefaultProtocolClient(protocol)` _macOS_ _Windows_
 
 * `protocol` String - The name of your protocol, without `://`.
 
 This method checks if the current executable as the default handler for a
 protocol (aka URI scheme). If so, it will remove the app as the default handler.
 
-### `app.isDefaultProtocolClient(protocol)` _OS X_ _Windows_
+### `app.isDefaultProtocolClient(protocol)` _macOS_ _Windows_
 
 * `protocol` String - The name of your protocol, without `://`.
 
 This method checks if the current executable is the default handler for a protocol
 (aka URI scheme). If so, it will return true. Otherwise, it will return false.
 
-**Note:** On OS X, you can use this method to check if the app has been
+**Note:** On macOS, you can use this method to check if the app has been
 registered as the default protocol handler for a protocol. You can also verify
 this by checking `~/Library/Preferences/com.apple.LaunchServices.plist` on the
-OS X machine. Please refer to
+macOS machine. Please refer to
 [Apple's documentation][LSCopyDefaultHandlerForURLScheme] for details.
 
 The API uses the Windows Registry and LSCopyDefaultHandlerForURLScheme internally.
@@ -503,7 +503,7 @@ application and your app should continue loading. And returns `true` if your
 process has sent its parameters to another instance, and you should immediately
 quit.
 
-On OS X the system enforces single instance automatically when users try to open
+On macOS the system enforces single instance automatically when users try to open
 a second instance of your app in Finder, and the `open-file` and `open-url`
 events will be emitted for that. However when users start your app in command
 line the system's single instance mechanism will be bypassed and you have to
@@ -538,7 +538,7 @@ app.on('ready', () => {
 Releases all locks that were created by `makeSingleInstance`. This will allow
 multiple instances of the application to once again run side by side.
 
-### `app.setUserActivity(type, userInfo[, webpageURL])` _OS X_
+### `app.setUserActivity(type, userInfo[, webpageURL])` _macOS_
 
 * `type` String - Uniquely identifies the activity. Maps to
   [`NSUserActivity.activityType`][activity-type].
@@ -549,7 +549,7 @@ multiple instances of the application to once again run side by side.
 Creates an `NSUserActivity` and sets it as the current activity. The activity
 is eligible for [Handoff][handoff] to another device afterward.
 
-### `app.getCurrentActivityType()` _OS X_
+### `app.getCurrentActivityType()` _macOS_
 
 Returns the type of the currently running activity.
 
@@ -591,7 +591,7 @@ correctly.
 
 **Note:** This will not affect `process.argv`.
 
-### `app.dock.bounce([type])` _OS X_
+### `app.dock.bounce([type])` _macOS_
 
 * `type` String (optional) - Can be `critical` or `informational`. The default is
  `informational`
@@ -605,43 +605,43 @@ or the request is canceled.
 
 Returns an ID representing the request.
 
-### `app.dock.cancelBounce(id)` _OS X_
+### `app.dock.cancelBounce(id)` _macOS_
 
 * `id` Integer
 
 Cancel the bounce of `id`.
 
-### `app.dock.downloadFinished(filePath)` _OS X_
+### `app.dock.downloadFinished(filePath)` _macOS_
 
 * `filePath` String
 
 Bounces the Downloads stack if the filePath is inside the Downloads folder.
 
-### `app.dock.setBadge(text)` _OS X_
+### `app.dock.setBadge(text)` _macOS_
 
 * `text` String
 
 Sets the string to be displayed in the dock’s badging area.
 
-### `app.dock.getBadge()` _OS X_
+### `app.dock.getBadge()` _macOS_
 
 Returns the badge string of the dock.
 
-### `app.dock.hide()` _OS X_
+### `app.dock.hide()` _macOS_
 
 Hides the dock icon.
 
-### `app.dock.show()` _OS X_
+### `app.dock.show()` _macOS_
 
 Shows the dock icon.
 
-### `app.dock.setMenu(menu)` _OS X_
+### `app.dock.setMenu(menu)` _macOS_
 
 * `menu` [Menu](menu.md)
 
 Sets the application's [dock menu][dock-menu].
 
-### `app.dock.setIcon(image)` _OS X_
+### `app.dock.setIcon(image)` _macOS_
 
 * `image` [NativeImage](native-image.md)
 
