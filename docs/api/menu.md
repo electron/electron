@@ -231,6 +231,10 @@ will be set as each window's top menu.
 
 **Note:** This API has to be called after the `ready` event of `app` module.
 
+### `Menu.getApplicationMenu()`
+
+Returns the application menu (an instance of `Menu`), if set, or `null`, if not set.
+
 ### `Menu.sendActionToFirstResponder(action)` _OS X_
 
 * `action` String
