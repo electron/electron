@@ -165,7 +165,6 @@ class NativeWindowMac : public NativeWindow {
 - (void)setShell:(atom::NativeWindowMac*)shell;
 - (void)setEnableLargerThanScreen:(bool)enable;
 - (void)redispatchKeyEvent:(NSEvent*)event;
-- (BOOL)performKeyEquivalent:(NSEvent*)theEvent;
 @end
 
 #endif  // ATOM_BROWSER_NATIVE_WINDOW_MAC_H_
