@@ -1035,7 +1035,7 @@ Detaches the debugger from the `webContents`.
 
 Send given command to the debugging target.
 
-#### Event: 'detach'
+### Event: 'detach'
 
 * `event` Event
 * `reason` String - Reason for detaching debugger.
@@ -1043,7 +1043,7 @@ Send given command to the debugging target.
 Emitted when debugging session is terminated. This happens either when
 `webContents` is closed or devtools is invoked for the attached `webContents`.
 
-#### Event: 'message'
+### Event: 'message'
 
 * `event` Event
 * `method` String - Method name.

@@ -47,7 +47,7 @@ var ses = session.fromPartition('persist:name');
 
 实例 `Session` 有以下事件:
 
-#### Event: 'will-download'
+### Event: 'will-download'
 
 * `event` Event
 * `item` [DownloadItem](download-item.md)
@@ -70,7 +70,7 @@ session.defaultSession.on('will-download', function(event, item, webContents) {
 
 实例 `Session` 有以下方法:
 
-#### `ses.cookies`
+### `ses.cookies`
 
 `cookies` 赋予你全力来查询和修改 cookies. 例如:
 
@@ -94,7 +94,7 @@ session.defaultSession.cookies.set(cookie, function(error) {
 });
 ```
 
-#### `ses.cookies.get(filter, callback)`
+### `ses.cookies.get(filter, callback)`
 
 * `filter` Object
   * `url` String (可选) - 与获取 cookies 相关的 
@@ -123,7 +123,7 @@ session.defaultSession.cookies.set(cookie, function(error) {
      cookie .
   *  `expirationDate` Double (可选) - cookie的截至日期，数值为UNIX纪元以来的秒数. 对session cookies 不提供.
 
-#### `ses.cookies.set(details, callback)`
+### `ses.cookies.set(details, callback)`
 
 * `details` Object
   * `url` String - 与获取 cookies 相关的 
@@ -140,7 +140,7 @@ session.defaultSession.cookies.set(cookie, function(error) {
 
 使用 `details` 设置 cookie, 完成时使用 `callback(error)` 掉哟个 `callback` .
 
-#### `ses.cookies.remove(url, name, callback)`
+### `ses.cookies.remove(url, name, callback)`
 
 * `url` String - 与 cookies 相关的 
     `url`.
@@ -149,20 +149,20 @@ session.defaultSession.cookies.set(cookie, function(error) {
 
 删除匹配 `url` 和 `name` 的 cookie, 完成时使用 `callback()`调用`callback`.
 
-#### `ses.getCacheSize(callback)`
+### `ses.getCacheSize(callback)`
 
 * `callback` Function
   * `size` Integer - 单位 bytes 的缓存 size.
 
 返回 session 的当前缓存 size .
 
-#### `ses.clearCache(callback)`
+### `ses.clearCache(callback)`
 
 * `callback` Function - 操作完成时调用
 
 清空 session 的 HTTP 缓存.
 
-#### `ses.clearStorageData([options, ]callback)`
+### `ses.clearStorageData([options, ]callback)`
 
 * `options` Object (可选)
   * `origin` String - 应当遵循 `window.location.origin` 的格式
@@ -176,11 +176,11 @@ session.defaultSession.cookies.set(cookie, function(error) {
 
 清除 web storages 的数据.
 
-#### `ses.flushStorageData()`
+### `ses.flushStorageData()`
 
 将没有写入的 DOMStorage 写入磁盘.
 
-#### `ses.setProxy(config, callback)`
+### `ses.setProxy(config, callback)`
 
 * `config` Object
   * `pacScript` String - 与 PAC 文件相关的 URL.
@@ -219,13 +219,13 @@ proxyURL = [<proxyScheme>"://"]<proxyHost>[":"<proxyPort>]
 
 解析 `url` 的代理信息.当请求完成的时候使用 `callback(proxy)` 调用 `callback`.
 
-#### `ses.setDownloadPath(path)`
+### `ses.setDownloadPath(path)`
 
 * `path` String - 下载地址
 
 设置下载保存地址，默认保存地址为各自 app 应用的 `Downloads`目录.
 
-#### `ses.enableNetworkEmulation(options)`
+### `ses.enableNetworkEmulation(options)`
 
 * `options` Object
   * `offline` Boolean - 是否模拟网络故障.
@@ -247,12 +247,12 @@ window.webContents.session.enableNetworkEmulation({
 window.webContents.session.enableNetworkEmulation({offline: true});
 ```
 
-#### `ses.disableNetworkEmulation()`
+### `ses.disableNetworkEmulation()`
 
 停止所有已经使用 `session` 的活跃模拟网络.
 重置为原始网络类型.
 
-#### `ses.setCertificateVerifyProc(proc)`
+### `ses.setCertificateVerifyProc(proc)`
 
 * `proc` Function
 
@@ -269,7 +269,7 @@ myWindow.webContents.session.setCertificateVerifyProc(function(hostname, cert, c
 });
 ```
 
-#### `ses.setPermissionRequestHandler(handler)`
+### `ses.setPermissionRequestHandler(handler)`
 
 * `handler` Function
   * `webContents` Object - [WebContents](web-contents.md) 请求许可.
@@ -291,13 +291,13 @@ session.fromPartition(partition).setPermissionRequestHandler(function(webContent
 });
 ```
 
-#### `ses.clearHostResolverCache([callback])`
+### `ses.clearHostResolverCache([callback])`
 
 * `callback` Function (可选) - 操作结束调用.
 
 清除主机解析缓存.
 
-#### `ses.webRequest`
+### `ses.webRequest`
 
 在其生命周期的不同阶段，`webRequest` API 设置允许拦截并修改请求内容.
 
@@ -319,7 +319,7 @@ session.defaultSession.webRequest.onBeforeSendHeaders(filter, function(details, 
 });
 ```
 
-#### `ses.webRequest.onBeforeRequest([filter, ]listener)`
+### `ses.webRequest.onBeforeRequest([filter, ]listener)`
 
 * `filter` Object
 * `listener` Function
@@ -347,7 +347,7 @@ session.defaultSession.webRequest.onBeforeSendHeaders(filter, function(details, 
   * `cancel` Boolean (可选)
   * `redirectURL` String (可选) - 原始请求阻止发送或完成，而不是重定向.
 
-#### `ses.webRequest.onBeforeSendHeaders([filter, ]listener)`
+### `ses.webRequest.onBeforeSendHeaders([filter, ]listener)`
 
 * `filter` Object
 * `listener` Function
@@ -369,7 +369,7 @@ session.defaultSession.webRequest.onBeforeSendHeaders(filter, function(details, 
   * `cancel` Boolean (可选)
   * `requestHeaders` Object (可选) - 如果提供了,将使用这些 headers 来创建请求.
 
-#### `ses.webRequest.onSendHeaders([filter, ]listener)`
+### `ses.webRequest.onSendHeaders([filter, ]listener)`
 
 * `filter` Object
 * `listener` Function
@@ -384,7 +384,7 @@ session.defaultSession.webRequest.onBeforeSendHeaders(filter, function(details, 
   * `timestamp` Double
   * `requestHeaders` Object
 
-#### `ses.webRequest.onHeadersReceived([filter,] listener)`
+### `ses.webRequest.onHeadersReceived([filter,] listener)`
 
 * `filter` Object
 * `listener` Function
@@ -408,7 +408,7 @@ session.defaultSession.webRequest.onBeforeSendHeaders(filter, function(details, 
   * `cancel` Boolean
   * `responseHeaders` Object (可选) - 如果提供, 服务器将假定使用这些头来响应.
 
-#### `ses.webRequest.onResponseStarted([filter, ]listener)`
+### `ses.webRequest.onResponseStarted([filter, ]listener)`
 
 * `filter` Object
 * `listener` Function
@@ -427,7 +427,7 @@ session.defaultSession.webRequest.onBeforeSendHeaders(filter, function(details, 
   * `statusCode` Integer
   * `statusLine` String
 
-#### `ses.webRequest.onBeforeRedirect([filter, ]listener)`
+### `ses.webRequest.onBeforeRedirect([filter, ]listener)`
 
 * `filter` Object
 * `listener` Function
@@ -446,7 +446,7 @@ session.defaultSession.webRequest.onBeforeSendHeaders(filter, function(details, 
   * `fromCache` Boolean
   * `responseHeaders` Object
 
-#### `ses.webRequest.onCompleted([filter, ]listener)`
+### `ses.webRequest.onCompleted([filter, ]listener)`
 
 * `filter` Object
 * `listener` Function
@@ -464,7 +464,7 @@ session.defaultSession.webRequest.onBeforeSendHeaders(filter, function(details, 
   * `statusCode` Integer
   * `statusLine` String
 
-#### `ses.webRequest.onErrorOccurred([filter, ]listener)`
+### `ses.webRequest.onErrorOccurred([filter, ]listener)`
 
 * `filter` Object
 * `listener` Function

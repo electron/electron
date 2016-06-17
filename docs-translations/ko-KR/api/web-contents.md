@@ -1022,7 +1022,7 @@ win.webContents.debugger.sendCommand('Network.enable');
 
 지정한 커맨드를 디버깅 대상에게 전송합니다.
 
-#### Event: 'detach'
+### Event: 'detach'
 
 * `event` Event
 * `reason` String - 디버거 분리 사유.
@@ -1030,7 +1030,7 @@ win.webContents.debugger.sendCommand('Network.enable');
 디버깅 세션이 종료될 때 발생하는 이벤트입니다. `webContents`가 닫히거나 개발자 도구가
 부착된 `webContents`에 대해 호출될 때 발생합니다.
 
-#### Event: 'message'
+### Event: 'message'
 
 * `event` Event
 * `method` String - 메서드 이름.

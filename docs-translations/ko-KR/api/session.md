@@ -53,7 +53,7 @@ const ses = session.fromPartition('persist:name');
 
 `Session` 객체는 다음과 같은 이벤트를 가지고 있습니다:
 
-#### Event: 'will-download'
+### Event: 'will-download'
 
 * `event` Event
 * `item` [DownloadItem](download-item.md)
@@ -77,7 +77,7 @@ session.defaultSession.on('will-download', (event, item, webContents) => {
 
 `Session` 객체는 다음과 같은 메서드와 속성을 가지고 있습니다:
 
-#### `ses.cookies`
+### `ses.cookies`
 
 `cookies` 속성은 쿠키를 조작하는 방법을 제공합니다. 예를 들어 다음과 같이 할 수
 있습니다:
@@ -102,7 +102,7 @@ session.defaultSession.cookies.set(cookie, (error) => {
 });
 ```
 
-#### `ses.cookies.get(filter, callback)`
+### `ses.cookies.get(filter, callback)`
 
 * `filter` Object
   * `url` String (optional) - `url`에 해당하는 쿠키를 취득합니다. 이 속성을
@@ -133,7 +133,7 @@ session.defaultSession.cookies.set(cookie, (error) => {
   *  `expirationDate` Double - (Option) UNIX 시간으로 표시되는 쿠키의 만료일에
     대한 초 단위 시간. 세션 쿠키는 지원되지 않음.
 
-#### `ses.cookies.set(details, callback)`
+### `ses.cookies.set(details, callback)`
 
 * `details` Object
   * `url` String - 쿠키에 대한 `url` 링크.
@@ -153,7 +153,7 @@ session.defaultSession.cookies.set(cookie, (error) => {
 `details` 객체에 따라 쿠키를 설정합니다. 작업이 완료되면 `callback`이
 `callback(error)` 형태로 호출됩니다.
 
-#### `ses.cookies.remove(url, name, callback)`
+### `ses.cookies.remove(url, name, callback)`
 
 * `url` String - 쿠키와 관련된 URL입니다.
 * `name` String - 지울 쿠키의 이름입니다.
@@ -162,20 +162,20 @@ session.defaultSession.cookies.set(cookie, (error) => {
 `url`과 `name`에 일치하는 쿠키를 삭제합니다. 작업이 완료되면 `callback`이
 `callback()` 형식으로 호출됩니다.
 
-#### `ses.getCacheSize(callback)`
+### `ses.getCacheSize(callback)`
 
 * `callback` Function
   * `size` Integer - 바이트로 표현된 캐시 크기
 
 세션의 현재 캐시 크기를 반환합니다.
 
-#### `ses.clearCache(callback)`
+### `ses.clearCache(callback)`
 
 * `callback` Function - 작업이 완료되면 호출됩니다.
 
 세션의 HTTP 캐시를 비웁니다.
 
-#### `ses.clearStorageData([options, ]callback)`
+### `ses.clearStorageData([options, ]callback)`
 
 * `options` Object (optional), proprties:
   * `origin` String - `scheme://host:port`와 같은 `window.location.origin` 규칙을
@@ -189,11 +189,11 @@ session.defaultSession.cookies.set(cookie, (error) => {
 
 웹 스토리지의 데이터를 비웁니다.
 
-#### `ses.flushStorageData()`
+### `ses.flushStorageData()`
 
 디스크에 사용되지 않은 DOMStorage 데이터를 모두 덮어씌웁니다.
 
-#### `ses.setProxy(config, callback)`
+### `ses.setProxy(config, callback)`
 
 * `config` Object
   * `pacScript` String - PAC 파일과 관련된 URL입니다.
@@ -240,14 +240,14 @@ proxyURL = [<proxyScheme>"://"]<proxyHost>[":"<proxyPort>]
 `url`의 프록시 정보를 해석합니다. `callback`은 요청이 수행되었을 때
 `callback(proxy)` 형태로 호출됩니다.
 
-#### `ses.setDownloadPath(path)`
+### `ses.setDownloadPath(path)`
 
 * `path` String - 다운로드 위치
 
 다운로드 저장 위치를 지정합니다. 기본 다운로드 위치는 각 애플리케이션 데이터 디렉터리의
 `Downloads` 폴더입니다.
 
-#### `ses.enableNetworkEmulation(options)`
+### `ses.enableNetworkEmulation(options)`
 
 * `options` Object
   * `offline` Boolean - 네트워크의 오프라인 상태 여부
@@ -269,11 +269,11 @@ window.webContents.session.enableNetworkEmulation({
 window.webContents.session.enableNetworkEmulation({offline: true});
 ```
 
-#### `ses.disableNetworkEmulation()`
+### `ses.disableNetworkEmulation()`
 
 활성화된 `session`의 에뮬레이션을 비활성화합니다. 기본 네트워크 설정으로 돌아갑니다.
 
-#### `ses.setCertificateVerifyProc(proc)`
+### `ses.setCertificateVerifyProc(proc)`
 
  * `proc` Function
 
@@ -292,7 +292,7 @@ myWindow.webContents.session.setCertificateVerifyProc((hostname, cert, callback)
    callback(false);
 });
 ```
-#### `ses.setPermissionRequestHandler(handler)`
+### `ses.setPermissionRequestHandler(handler)`
 
 * `handler` Function
   * `webContents` Object - [WebContents](web-contents.md) 권한을 요청.
@@ -317,13 +317,13 @@ session.fromPartition(partition).setPermissionRequestHandler((webContents, permi
 });
 ```
 
-#### `ses.clearHostResolverCache([callback])`
+### `ses.clearHostResolverCache([callback])`
 
 * `callback` Function (optional) - 작업이 완료되면 호출됩니다.
 
 호스트 리소버(resolver) 캐시를 지웁니다.
 
-#### `ses.allowNTLMCredentialsForDomains(domains)`
+### `ses.allowNTLMCredentialsForDomains(domains)`
 
 * `domains` String - 통합 인증을 사용하도록 설정할 쉼표로 구분된 서버의 리스트.
 
@@ -339,7 +339,7 @@ session.defaultSession.allowNTLMCredentialsForDomains('*example.com, *foobar.com
 session.defaultSession.allowNTLMCredentialsForDomains('*')
 ```
 
-#### `ses.webRequest`
+### `ses.webRequest`
 
 `webRequest` API는 생명주기의 다양한 단계에 맞춰 요청 콘텐츠를 가로채거나 변경할 수
 있도록 합니다.
@@ -367,7 +367,7 @@ session.defaultSession.webRequest.onBeforeSendHeaders(filter, (details, callback
 });
 ```
 
-#### `ses.webRequest.onBeforeRequest([filter, ]listener)`
+### `ses.webRequest.onBeforeRequest([filter, ]listener)`
 
 * `filter` Object
 * `listener` Function
@@ -396,7 +396,7 @@ session.defaultSession.webRequest.onBeforeSendHeaders(filter, (details, callback
   * `redirectURL` String (optional) - 원래 요청은 전송과 완료가 방지되지만 이
     속성을 지정하면 해당 URL로 리다이렉트됩니다.
 
-#### `ses.webRequest.onBeforeSendHeaders([filter, ]listener)`
+### `ses.webRequest.onBeforeSendHeaders([filter, ]listener)`
 
 * `filter` Object
 * `listener` Function
@@ -421,7 +421,7 @@ HTTP 요청을 보내기 전 요청 헤더를 사용할 수 있을 때 `listener
   * `requestHeaders` Object (optional) - 이 속성이 제공되면, 요청은 이 헤더로
     만들어 집니다.
 
-#### `ses.webRequest.onSendHeaders([filter, ]listener)`
+### `ses.webRequest.onSendHeaders([filter, ]listener)`
 
 * `filter` Object
 * `listener` Function
@@ -438,7 +438,7 @@ HTTP 요청을 보내기 전 요청 헤더를 사용할 수 있을 때 `listener
   * `timestamp` Double
   * `requestHeaders` Object
 
-#### `ses.webRequest.onHeadersReceived([filter, ]listener)`
+### `ses.webRequest.onHeadersReceived([filter, ]listener)`
 
 * `filter` Object
 * `listener` Function
@@ -467,7 +467,7 @@ HTTP 요청을 보내기 전 요청 헤더를 사용할 수 있을 때 `listener
     변경하기 위해 반드시 지정되어야 합니다. 그렇지 않은 경우, 기존의 응답 헤더의 상태가
     사용됩니다.
 
-#### `ses.webRequest.onResponseStarted([filter, ]listener)`
+### `ses.webRequest.onResponseStarted([filter, ]listener)`
 
 * `filter` Object
 * `listener` Function
@@ -486,7 +486,7 @@ HTTP 요청을 보내기 전 요청 헤더를 사용할 수 있을 때 `listener
   * `statusCode` Integer
   * `statusLine` String
 
-#### `ses.webRequest.onBeforeRedirect([filter, ]listener)`
+### `ses.webRequest.onBeforeRedirect([filter, ]listener)`
 
 * `filter` Object
 * `listener` Function
@@ -506,7 +506,7 @@ HTTP 요청을 보내기 전 요청 헤더를 사용할 수 있을 때 `listener
   * `fromCache` Boolean
   * `responseHeaders` Object
 
-#### `ses.webRequest.onCompleted([filter, ]listener)`
+### `ses.webRequest.onCompleted([filter, ]listener)`
 
 * `filter` Object
 * `listener` Function
@@ -524,7 +524,7 @@ HTTP 요청을 보내기 전 요청 헤더를 사용할 수 있을 때 `listener
   * `statusCode` Integer
   * `statusLine` String
 
-#### `ses.webRequest.onErrorOccurred([filter, ]listener)`
+### `ses.webRequest.onErrorOccurred([filter, ]listener)`
 
 * `filter` Object
 * `listener` Function
@@ -540,7 +540,7 @@ HTTP 요청을 보내기 전 요청 헤더를 사용할 수 있을 때 `listener
   * `fromCache` Boolean
   * `error` String - 에러 설명.
 
-#### `ses.protocol`
+### `ses.protocol`
 
 현재 세션의 [protocol](protocol.md) 모듈 인스턴스를 반환합니다.
 

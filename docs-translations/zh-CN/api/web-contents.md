@@ -846,14 +846,14 @@ win.webContents.debugger.sendCommand("Network.enable");
 
 发送给定命令给调试目标.
 
-#### Event: 'detach'
+### Event: 'detach'
 
 * `event` Event
 * `reason` String - 拆分调试器原因.
 
 在调试 session 结束时发出事件.这在 `webContents` 关闭时或 `webContents` 请求开发者工具栏时发生.
 
-#### Event: 'message'
+### Event: 'message'
 
 * `event` Event
 * `method` String - 方法名.
