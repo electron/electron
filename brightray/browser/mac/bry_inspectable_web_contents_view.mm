@@ -3,50 +3,13 @@
 #include "browser/inspectable_web_contents_impl.h"
 #include "browser/inspectable_web_contents_view_delegate.h"
 #include "browser/inspectable_web_contents_view_mac.h"
+#include "browser/mac/event_dispatching_window.h"
 
 #include "content/public/browser/render_widget_host_view.h"
 #import "ui/base/cocoa/underlay_opengl_hosting_window.h"
 #include "ui/gfx/mac/scoped_cocoa_disable_screen_updates.h"
 
 using namespace brightray;
-
-@interface EventDispatchingWindow : UnderlayOpenGLHostingWindow {
- @private
-  BOOL redispatchingEvent_;
-}
-
-- (void)redispatchKeyEvent:(NSEvent*)event;
-
-@end
-
-@implementation EventDispatchingWindow
-
-- (void)sendEvent:(NSEvent*)event {
-  if (!redispatchingEvent_)
-    [super sendEvent:event];
-}
-
-- (BOOL)performKeyEquivalent:(NSEvent*)event {
-  if (redispatchingEvent_)
-    return NO;
-  else
-    return [super performKeyEquivalent:event];
- }
-
-- (void)redispatchKeyEvent:(NSEvent*)event {
-  NSEventType eventType = [event type];
-  if (eventType != NSKeyDown && eventType != NSKeyUp &&
-      eventType != NSFlagsChanged) {
-    return;
-  }
-
-  // Redispatch the event.
-  redispatchingEvent_ = YES;
-  [NSApp sendEvent:event];
-  redispatchingEvent_ = NO;
-}
-
-@end
 
 @implementation BRYInspectableWebContentsView
 
