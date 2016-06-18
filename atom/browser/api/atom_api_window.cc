@@ -76,7 +76,9 @@ v8::Local<v8::Value> ToBuffer(v8::Isolate* isolate, void* val, int size) {
 }  // namespace
 
 
-Window::Window(v8::Isolate* isolate, const mate::Dictionary& options) {
+Window::Window(v8::Isolate* isolate, const mate::Dictionary& options)
+    : disable_count_(0),
+      is_modal_(false) {
   // Use options.webPreferences to create WebContents.
   mate::Dictionary web_preferences = mate::Dictionary::CreateEmpty(isolate);
   options.Get(options::kWebPreferences, &web_preferences);
@@ -294,11 +296,15 @@ bool Window::IsVisible() {
 }
 
 void Window::Disable() {
-  window_->Disable();
+  ++disable_count_;
+  if (disable_count_ == 1)
+    window_->Disable();
 }
 
 void Window::Enable() {
-  window_->Enable();
+  --disable_count_;
+  if (disable_count_ == 0)
+    window_->Enable();
 }
 
 bool Window::IsEnabled() {
@@ -680,15 +686,41 @@ void Window::SetParentWindow(v8::Local<v8::Value> value,
   }
 }
 
-v8::Local<v8::Value> Window::GetParentWindow() {
+v8::Local<v8::Value> Window::GetParentWindow() const {
   if (parent_window_.IsEmpty())
     return v8::Null(isolate());
   else
     return v8::Local<v8::Value>::New(isolate(), parent_window_);
 }
 
-std::vector<v8::Local<v8::Object>> Window::GetChildWindows() {
+std::vector<v8::Local<v8::Object>> Window::GetChildWindows() const {
   return child_windows_.Values(isolate());
+}
+
+void Window::SetModal(bool modal, mate::Arguments* args) {
+  if (parent_window_.IsEmpty()) {
+    args->ThrowError("setModal can only be called for child window");
+    return;
+  }
+
+  mate::Handle<Window> parent;
+  if (!mate::ConvertFromV8(isolate(), GetParentWindow(), &parent)) {
+    args->ThrowError("Invalid parent window");  // should never happen
+    return;
+  }
+
+  if (modal == is_modal_)
+    return;
+
+  if (modal)
+    parent->Disable();
+  else
+    parent->Enable();
+  is_modal_ = modal;
+}
+
+bool Window::IsModal() const {
+  return is_modal_;
 }
 
 v8::Local<v8::Value> Window::GetNativeWindowHandle() {
@@ -721,8 +753,14 @@ void Window::RemoveFromParentChildWindows() {
     return;
 
   mate::Handle<Window> parent;
-  if (mate::ConvertFromV8(isolate(), GetParentWindow(), &parent))
-    parent->child_windows_.Remove(ID());
+  if (!mate::ConvertFromV8(isolate(), GetParentWindow(), &parent))
+    return;
+
+  parent->child_windows_.Remove(ID());
+  if (IsModal()) {
+    parent->Enable();
+    is_modal_ = false;
+  }
 }
 
 // static
@@ -753,6 +791,8 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setParentWindow", &Window::SetParentWindow)
       .SetMethod("getParentWindow", &Window::GetParentWindow)
       .SetMethod("getChildWindows", &Window::GetChildWindows)
+      .SetMethod("setModal", &Window::SetModal)
+      .SetMethod("isModal", &Window::IsModal)
       .SetMethod("getNativeWindowHandle", &Window::GetNativeWindowHandle)
       .SetMethod("getBounds", &Window::GetBounds)
       .SetMethod("setBounds", &Window::SetBounds)

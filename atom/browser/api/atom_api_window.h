@@ -164,8 +164,10 @@ class Window : public mate::TrackableObject<Window>,
   bool IsMenuBarVisible();
   void SetAspectRatio(double aspect_ratio, mate::Arguments* args);
   void SetParentWindow(v8::Local<v8::Value> value, mate::Arguments* args);
-  v8::Local<v8::Value> GetParentWindow();
-  std::vector<v8::Local<v8::Object>> GetChildWindows();
+  v8::Local<v8::Value> GetParentWindow() const;
+  std::vector<v8::Local<v8::Object>> GetChildWindows() const;
+  void SetModal(bool modal, mate::Arguments* args);
+  bool IsModal() const;
   v8::Local<v8::Value> GetNativeWindowHandle();
 
 #if defined(OS_WIN)
@@ -188,7 +190,7 @@ class Window : public mate::TrackableObject<Window>,
   int32_t ID() const;
   v8::Local<v8::Value> WebContents(v8::Isolate* isolate);
 
-  // Helpers.
+  // Remove this window from parent window's |child_windows_|.
   void RemoveFromParentChildWindows();
 
 #if defined(OS_WIN)
@@ -200,6 +202,12 @@ class Window : public mate::TrackableObject<Window>,
   v8::Global<v8::Value> menu_;
   v8::Global<v8::Value> parent_window_;
   KeyWeakMap<int> child_windows_;
+
+  // How many times the Disable has been called.
+  int disable_count_;
+
+  // Is current window modal.
+  bool is_modal_;
 
   api::WebContents* api_web_contents_;
 
