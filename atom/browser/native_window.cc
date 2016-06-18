@@ -292,6 +292,12 @@ bool NativeWindow::HasModalDialog() {
   return has_dialog_attached_;
 }
 
+void NativeWindow::BeginSheet(NativeWindow* sheet) {
+}
+
+void NativeWindow::EndSheet(NativeWindow* sheet) {
+}
+
 void NativeWindow::FocusOnWebView() {
   web_contents()->GetRenderViewHost()->GetWidget()->Focus();
 }

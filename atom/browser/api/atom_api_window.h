@@ -168,6 +168,8 @@ class Window : public mate::TrackableObject<Window>,
   std::vector<v8::Local<v8::Object>> GetChildWindows() const;
   void SetModal(bool modal, mate::Arguments* args);
   bool IsModal() const;
+  void BeginSheet(mate::Handle<Window> sheet, mate::Arguments* args);
+  void EndSheet(mate::Handle<Window> sheet);
   v8::Local<v8::Value> GetNativeWindowHandle();
 
 #if defined(OS_WIN)

@@ -964,6 +964,18 @@ void NativeWindowMac::SetParentWindow(NativeWindow* parent) {
     [parent->GetNativeWindow() addChildWindow:window_ ordered:NSWindowAbove];
 }
 
+void NativeWindowMac::BeginSheet(NativeWindow* sheet) {
+  [window_ beginSheet:sheet->GetNativeWindow()
+    completionHandler:^(NSModalResponse) {
+  }];
+}
+
+void NativeWindowMac::EndSheet(NativeWindow* sheet) {
+  sheet->Hide();
+  [window_ endSheet:sheet->GetNativeWindow()];
+  sheet->CloseImmediately();
+}
+
 gfx::NativeWindow NativeWindowMac::GetNativeWindow() {
   return window_;
 }

@@ -162,6 +162,8 @@ class NativeWindow : public base::SupportsUserData,
   virtual void SetMenu(ui::MenuModel* menu);
   virtual bool HasModalDialog();
   virtual void SetParentWindow(NativeWindow* parent) = 0;
+  virtual void BeginSheet(NativeWindow* sheet);
+  virtual void EndSheet(NativeWindow* sheet);
   virtual gfx::NativeWindow GetNativeWindow() = 0;
   virtual gfx::AcceleratedWidget GetAcceleratedWidget() = 0;
 

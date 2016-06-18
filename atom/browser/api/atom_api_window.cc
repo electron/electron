@@ -723,6 +723,18 @@ bool Window::IsModal() const {
   return is_modal_;
 }
 
+void Window::BeginSheet(mate::Handle<Window> sheet, mate::Arguments* args) {
+  if (sheet->IsVisible()) {
+    args->ThrowError("Sheet window must not be visible");
+    return;
+  }
+  window_->BeginSheet(sheet->window_.get());
+}
+
+void Window::EndSheet(mate::Handle<Window> sheet) {
+  window_->EndSheet(sheet->window_.get());
+}
+
 v8::Local<v8::Value> Window::GetNativeWindowHandle() {
   gfx::AcceleratedWidget handle = window_->GetAcceleratedWidget();
   return ToBuffer(
@@ -793,6 +805,8 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("getChildWindows", &Window::GetChildWindows)
       .SetMethod("setModal", &Window::SetModal)
       .SetMethod("isModal", &Window::IsModal)
+      .SetMethod("beginSheet", &Window::BeginSheet)
+      .SetMethod("endSheet", &Window::EndSheet)
       .SetMethod("getNativeWindowHandle", &Window::GetNativeWindowHandle)
       .SetMethod("getBounds", &Window::GetBounds)
       .SetMethod("setBounds", &Window::SetBounds)
