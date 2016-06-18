@@ -876,6 +876,57 @@ describe('browser-window module', function () {
         c.close()
       })
     })
+
+    describe('win.setModal(modal)', function () {
+      it('disables parent window', function () {
+        assert.equal(w.isEnabled(), true)
+        c.setParentWindow(w)
+        c.setModal(true)
+        assert.equal(w.isEnabled(), false)
+      })
+
+      it('enables parent window when closed', function (done) {
+        c.once('closed', () => {
+          assert.equal(w.isEnabled(), true)
+          done()
+        })
+        c.setParentWindow(w)
+        c.setModal(true)
+        c.close()
+      })
+
+      it('enables parent window when setting not modal', function () {
+        assert.equal(w.isEnabled(), true)
+        c.setParentWindow(w)
+        c.setModal(true)
+        assert.equal(w.isEnabled(), false)
+        c.setModal(false)
+        assert.equal(w.isEnabled(), true)
+      })
+
+      it('enables parent window when removing parent', function () {
+        assert.equal(w.isEnabled(), true)
+        c.setParentWindow(w)
+        c.setModal(true)
+        assert.equal(w.isEnabled(), false)
+        c.setParentWindow(null)
+        assert.equal(w.isEnabled(), true)
+      })
+
+      it('disables parent window recursively', function () {
+        let c2 = new BrowserWindow({show: false})
+        c.setParentWindow(w)
+        c.setModal(true)
+        c2.setParentWindow(w)
+        c2.setModal(true)
+        assert.equal(w.isEnabled(), false)
+        c.setModal(false)
+        assert.equal(w.isEnabled(), false)
+        c2.setModal(false)
+        assert.equal(w.isEnabled(), true)
+        c2.destroy()
+      })
+    })
   })
 
   describe('window.webContents.send(channel, args...)', function () {
