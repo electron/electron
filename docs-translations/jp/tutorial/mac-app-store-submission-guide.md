@@ -84,7 +84,7 @@ codesign -s "$APP_KEY" -f --entitlements parent.plist "$APP_PATH"
 productbuild --component "$APP_PATH" /Applications --sign "$INSTALLER_KEY" "$RESULT_PATH"
 ```
 
-OS Xでのアプリのサンドボックス化を行うことが初めてなら、Appleの[Enabling App Sandbox][enable-app-sandbox]を通読し、基本的な考え方を確認してから、、エンタイトルメントファイルにアプリに必要なパーミッションキーを追加します。
+macOSでのアプリのサンドボックス化を行うことが初めてなら、Appleの[Enabling App Sandbox][enable-app-sandbox]を通読し、基本的な考え方を確認してから、、エンタイトルメントファイルにアプリに必要なパーミッションキーを追加します。
 
 ### Appをアップロードする。
 

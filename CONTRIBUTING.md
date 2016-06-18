@@ -65,7 +65,7 @@ possible with your report. If you can, please include:
   * :non-potable_water: `:non-potable_water:` when plugging memory leaks
   * :memo: `:memo:` when writing docs
   * :penguin: `:penguin:` when fixing something on Linux
-  * :apple: `:apple:` when fixing something on Mac OS
+  * :apple: `:apple:` when fixing something on macOS
   * :checkered_flag: `:checkered_flag:` when fixing something on Windows
   * :bug: `:bug:` when fixing a bug
   * :fire: `:fire:` when removing code or files

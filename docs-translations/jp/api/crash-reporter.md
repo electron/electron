@@ -37,7 +37,7 @@ crashReporter.start({
 
 他の`crashReporter`APIを使用する前にこのメソッドをコールする必要があります。
 
-**Note:** OS Xでは、Electronは、WindowsとLinux上の`breakpad` とは異なる、新しい`crashpad`クライアントを使用します。クラッシュ収集機能を有効にするために、メインプロセスや、クラッシュレポートを収集したいそれぞれのレンダラープロセスで、`crashpad`を初期化するために`crashReporter.start`APIをコールする必要があります。
+**Note:** macOSでは、Electronは、WindowsとLinux上の`breakpad` とは異なる、新しい`crashpad`クライアントを使用します。クラッシュ収集機能を有効にするために、メインプロセスや、クラッシュレポートを収集したいそれぞれのレンダラープロセスで、`crashpad`を初期化するために`crashReporter.start`APIをコールする必要があります。
 
 ### `crashReporter.getLastCrashReport()`
 

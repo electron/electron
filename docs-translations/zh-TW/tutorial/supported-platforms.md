@@ -2,9 +2,9 @@
 
 Electron 已支援以下平台：
 
-### OS X
+### macOS
 
-OS X 系統只有 64 位元的執行檔，且 OS X 的最低版本要求為 OS X 10.8。
+macOS 系統只有 64 位元的執行檔，且 macOS 的最低版本要求為 macOS 10.8。
 
 ### Windows
 

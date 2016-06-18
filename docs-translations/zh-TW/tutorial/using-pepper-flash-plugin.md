@@ -4,7 +4,7 @@ Electron 現在支援 Pepper Flash 外掛，要在 Electron 中使用 Pepper Fla
 
 ## 準備一份 Flash 外掛
 
-在 OS X 和 Linux 上，Pepper Flash 外掛的細節可以透過查看 Chrome 瀏覽器中的 `chrome://plugins` 來得知，它的位置和版本對於 Electron 的 Pepper Flash 支援都有很大的幫助，你可以把它複製一份到別的位置。
+在 macOS 和 Linux 上，Pepper Flash 外掛的細節可以透過查看 Chrome 瀏覽器中的 `chrome://plugins` 來得知，它的位置和版本對於 Electron 的 Pepper Flash 支援都有很大的幫助，你可以把它複製一份到別的位置。
 
 ## 加入 Electron 開關
 
@@ -16,7 +16,7 @@ Electron 命定列或是在應用程式的 ready 事件之前使用 `app.command
 ```javascript
 // 指定 Flash 路徑
 // Windows 中可能是 /path/to/pepflashplayer.dll
-// OS X 中 /path/to/PepperFlashPlayer.plugin
+// macOS 中 /path/to/PepperFlashPlayer.plugin
 // Linux 中 /path/to/libpepflashplayer.so
 app.commandLine.appendSwitch('ppapi-flash-path', '/path/to/libpepflashplayer.so');
 

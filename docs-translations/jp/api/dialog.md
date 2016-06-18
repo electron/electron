@@ -10,7 +10,7 @@ const dialog = require('electron').dialog;
 console.log(dialog.showOpenDialog({ properties: [ 'openFile', 'openDirectory', 'multiSelections' ]}));
 ```
 
-**Note for OS X**: シートとしてダイアログを表示したい場合、唯一しなければならないことは、`browserWindow`パラメーターを参照する`BrowserWindow`を提供することです。
+**Note for macOS**: シートとしてダイアログを表示したい場合、唯一しなければならないことは、`browserWindow`パラメーターを参照する`BrowserWindow`を提供することです。
 
 ## メソッド
 
@@ -73,7 +73,7 @@ console.log(dialog.showOpenDialog({ properties: [ 'openFile', 'openDirectory', '
   * `message` String - メッセージボックスのコンテンツ。
   * `detail` String - メッセージの外部情報
   * `icon` [NativeImage](native-image.md)
-  * `cancelId` Integer - ダイアログのボタンをクリックする代わりにユーザーがダイアログをキャンセルしたときに返す値です。既定では、ラベルの "cancel"や"no"を持つボタンのインデックスまたは、そのようなボタンが無ければ0を返します。OS XやWindowsでは、 すでに指定されているかどうかは関係なく、"Cancel"ボタンのインデックスはいつでも `cancelId`が使われます。
+  * `cancelId` Integer - ダイアログのボタンをクリックする代わりにユーザーがダイアログをキャンセルしたときに返す値です。既定では、ラベルの "cancel"や"no"を持つボタンのインデックスまたは、そのようなボタンが無ければ0を返します。macOSやWindowsでは、 すでに指定されているかどうかは関係なく、"Cancel"ボタンのインデックスはいつでも `cancelId`が使われます。
   * `noLink` Boolean - Windowsでは、Electronは、 ("Cancel" または "Yes"のような)共通ボタンである`buttons`の一つを見つけようとし、ダイアログ内のコマンドリンクとして表示します。この挙動が気に入らない場合は、 `noLink` を `true`に設定できます。
 * `callback` Function
 

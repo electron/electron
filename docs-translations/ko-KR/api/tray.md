@@ -71,9 +71,9 @@ appIcon.setContextMenu(contextMenu);
 
 트레이 아이콘이 클릭될 때 발생하는 이벤트입니다.
 
-**참고:** `bounds`는 OS X 와 Windows에서만 작동합니다.
+**참고:** `bounds`는 macOS 와 Windows에서만 작동합니다.
 
-### Event: 'right-click' _OS X_ _Windows_
+### Event: 'right-click' _macOS_ _Windows_
 
 * `event` Event
   * `altKey` Boolean
@@ -88,7 +88,7 @@ appIcon.setContextMenu(contextMenu);
 
 트레이 아이콘을 오른쪽 클릭될 때 호출 됩니다.
 
-### Event: 'double-click' _OS X_ _Windows_
+### Event: 'double-click' _macOS_ _Windows_
 
 * `event` Event
   * `altKey` Boolean
@@ -115,26 +115,26 @@ appIcon.setContextMenu(contextMenu);
 
 풍선 팝업이 시간이 지나 사라지거나 유저가 클릭하여 닫을 때 발생하는 이벤트입니다.
 
-### Event: 'drop' _OS X_
+### Event: 'drop' _macOS_
 
 드래그 가능한 아이템이 트레이 아이콘에 드롭되면 발생하는 이벤트입니다.
 
-### Event: 'drop-files' _OS X_
+### Event: 'drop-files' _macOS_
 
 * `event`
 * `files` Array - 드롭된 파일의 경로
 
 트레이 아이콘에 파일이 드롭되면 발생하는 이벤트입니다.
 
-### Event: 'drag-enter' _OS X_
+### Event: 'drag-enter' _macOS_
 
 트레이 아이콘에 드래그 작업이 시작될 때 발생하는 이벤트입니다.
 
-### Event: 'drag-leave' _OS X_
+### Event: 'drag-leave' _macOS_
 
 트레이 아이콘에 드래그 작업이 종료될 때 발생하는 이벤트입니다.
 
-### Event: 'drag-end' _OS X_
+### Event: 'drag-end' _macOS_
 
 트레이 아이콘에 드래그 작업이 종료되거나 다른 위치에서 종료될 때 발생하는 이벤트입니다.
 
@@ -154,7 +154,7 @@ appIcon.setContextMenu(contextMenu);
 
 `image`를 사용하여 트레이 아이콘의 이미지를 설정합니다.
 
-### `Tray.setPressedImage(image)` _OS X_
+### `Tray.setPressedImage(image)` _macOS_
 
 * `image` [NativeImage](native-image.md)
 
@@ -166,13 +166,13 @@ appIcon.setContextMenu(contextMenu);
 
 트레이 아이콘의 툴팁 텍스트를 설정합니다.
 
-### `Tray.setTitle(title)` _OS X_
+### `Tray.setTitle(title)` _macOS_
 
 * `title` String
 
 상태바에서 트레이 아이콘 옆에 표시되는 제목 텍스트를 설정합니다.
 
-### `Tray.setHighlightMode(highlight)` _OS X_
+### `Tray.setHighlightMode(highlight)` _macOS_
 
 * `highlight` Boolean
 
@@ -188,7 +188,7 @@ appIcon.setContextMenu(contextMenu);
 
 트레이에 풍선 팝업을 생성합니다.
 
-### `Tray.popUpContextMenu([menu, position])` _OS X_ _Windows_
+### `Tray.popUpContextMenu([menu, position])` _macOS_ _Windows_
 
 * `menu` Menu (optional)
 * `position` Object (optional) - 팝업 메뉴의 위치

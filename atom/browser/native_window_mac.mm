@@ -232,7 +232,7 @@ bool ScopedDisableResize::disable_resize_ = false;
 }
 
 - (void)windowDidExitFullScreen:(NSNotification*)notification {
-  // For certain versions of OS X the fullscreen button will automatically show
+  // For certain versions of macOS the fullscreen button will automatically show
   // after exiting fullscreen mode.
   if (!shell_->has_frame()) {
     NSWindow* window = shell_->GetNativeWindow();
@@ -537,7 +537,7 @@ NativeWindowMac::NativeWindowMac(
     [window_ setToolbar:toolbar];
   }
 
-  // On OS X the initial window size doesn't include window frame.
+  // On macOS the initial window size doesn't include window frame.
   bool use_content_size = false;
   options.Get(options::kUseContentSize, &use_content_size);
   if (!has_frame() || !use_content_size)
@@ -1041,7 +1041,7 @@ void NativeWindowMac::InstallView() {
     [[window_ standardWindowButton:NSWindowMiniaturizeButton] setHidden:YES];
     [[window_ standardWindowButton:NSWindowCloseButton] setHidden:YES];
 
-    // Some third-party OS X utilities check the zoom button's enabled state to
+    // Some third-party macOS utilities check the zoom button's enabled state to
     // determine whether to show custom UI on hover, so we disable it here to
     // prevent them from doing so in a frameless app window.
     [[window_ standardWindowButton:NSWindowZoomButton] setEnabled:NO];
@@ -1111,7 +1111,7 @@ void NativeWindowMac::SetStyleMask(bool on, NSUInteger flag) {
   else
     [window_ setStyleMask:[window_ styleMask] & (~flag)];
   // Change style mask will make the zoom button revert to default, probably
-  // a bug of Cocoa or OS X.
+  // a bug of Cocoa or macOS.
   if (!zoom_button_enabled)
     SetMaximizable(false);
 }
@@ -1123,7 +1123,7 @@ void NativeWindowMac::SetCollectionBehavior(bool on, NSUInteger flag) {
   else
     [window_ setCollectionBehavior:[window_ collectionBehavior] & (~flag)];
   // Change collectionBehavior will make the zoom button revert to default,
-  // probably a bug of Cocoa or OS X.
+  // probably a bug of Cocoa or macOS.
   if (!zoom_button_enabled)
     SetMaximizable(false);
 }

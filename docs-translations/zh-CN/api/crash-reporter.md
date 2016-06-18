@@ -37,7 +37,7 @@ crashReporter.start({
 
 只可以在使用其它 `crashReporter` APIs 之前使用这个方法.
 
-**注意:** 在 OS X, Electron 使用一个新的 `crashpad` 客户端, 与 Windows 和 Linux 的 `breakpad` 不同. 为了开启崩溃点搜集，你需要在主进程和其它每个你需要搜集崩溃报告的渲染进程中调用  `crashReporter.start` API 来初始化 `crashpad`.
+**注意:** 在 macOS, Electron 使用一个新的 `crashpad` 客户端, 与 Windows 和 Linux 的 `breakpad` 不同. 为了开启崩溃点搜集，你需要在主进程和其它每个你需要搜集崩溃报告的渲染进程中调用  `crashReporter.start` API 来初始化 `crashpad`.
 
 ### `crashReporter.getLastCrashReport()`
 

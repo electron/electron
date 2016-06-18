@@ -4,17 +4,17 @@
 
 ## Methods
 
-### `systemPreferences.isDarkMode()` _OS X_
+### `systemPreferences.isDarkMode()` _macOS_
 
 이 메서드는 시스템이 어두운 모드 상태인 경우 `true`를 반환하고 아닐 경우 `false`를
 반환합니다.
 
-### `systemPreferences.subscribeNotification(event, callback)` _OS X_
+### `systemPreferences.subscribeNotification(event, callback)` _macOS_
 
 * `event` String
 * `callback` Function
 
-OS X의 네이티브 알림을 구독하며, 해당하는 `event`가 발생하면 `callback`이
+macOS의 네이티브 알림을 구독하며, 해당하는 `event`가 발생하면 `callback`이
 `callback(event, userInfo)` 형태로 호출됩니다. `userInfo`는 알림과 함께 전송되는
 사용자 정보 딕셔너리를 포함하는 객체입니다.
 
@@ -28,13 +28,13 @@ OS X의 네이티브 알림을 구독하며, 해당하는 `event`가 발생하�
 * `AppleColorPreferencesChangedNotification`
 * `AppleShowScrollBarsSettingChanged`
 
-### `systemPreferences.unsubscribeNotification(id)` _OS X_
+### `systemPreferences.unsubscribeNotification(id)` _macOS_
 
 * `id` Integer
 
 `id`와 함께 구독자를 제거합니다.
 
-### `systemPreferences.getUserDefault(key, type)` _OS X_
+### `systemPreferences.getUserDefault(key, type)` _macOS_
 
 * `key` String
 * `type` String - `string`, `boolean`, `integer`, `float`, `double`, `url`,
@@ -42,7 +42,7 @@ OS X의 네이티브 알림을 구독하며, 해당하는 `event`가 발생하�
 
 시스템 설정에서 `key`에 해당하는 값을 가져옵니다.
 
-OS X에선 API가 `NSUserDefaults`를 읽어들입니다. 유명한 `key`와 `type`은 다음과
+macOS에선 API가 `NSUserDefaults`를 읽어들입니다. 유명한 `key`와 `type`은 다음과
 같습니다:
 
 * `AppleInterfaceStyle: string`

@@ -320,7 +320,7 @@ class NativeWindow : public base::SupportsUserData,
   base::CancelableClosure window_unresposive_closure_;
 
   // Used to display sheets at the appropriate horizontal and vertical offsets
-  // on OS X.
+  // on macOS.
   double sheet_offset_x_;
   double sheet_offset_y_;
 

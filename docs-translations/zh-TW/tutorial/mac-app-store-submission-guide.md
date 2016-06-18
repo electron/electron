@@ -74,7 +74,7 @@ codesign  -fs "$APP_KEY" --entitlements parent.plist "$APP_PATH"
 productbuild --component "$APP_PATH" /Applications --sign "$INSTALLER_KEY" "$RESULT_PATH"
 ```
 
-如果你是第一次使用 OS X 下的應用程式沙盒(app sandboxing)，你應該也要閱讀 Apple 的 [Enabling App Sandbox][enable-app-sandbox] 以具備基本概念，然後把你的應用程式會用到的 key 的權限都加入管理權現的檔案中。
+如果你是第一次使用 macOS 下的應用程式沙盒(app sandboxing)，你應該也要閱讀 Apple 的 [Enabling App Sandbox][enable-app-sandbox] 以具備基本概念，然後把你的應用程式會用到的 key 的權限都加入管理權現的檔案中。
 
 ### 上傳你的應用程式和提交檢視
 

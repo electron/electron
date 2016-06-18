@@ -1,10 +1,10 @@
 # 应用部署
 
 为了使用 Electron 部署你的应用程序，你存放应用程序的文件夹需要叫做 `app` 并且需要放在 Electron 的
-资源文件夹下（在 OS X 中是指 `Electron.app/Contents/Resources/`，在 Linux 和 Windows 中是指 `resources/`）
+资源文件夹下（在 macOS 中是指 `Electron.app/Contents/Resources/`，在 Linux 和 Windows 中是指 `resources/`）
 就像这样：
 
-在 OS X 中:
+在 macOS 中:
 
 ```text
 electron/Electron.app/Contents/Resources/app/
@@ -33,7 +33,7 @@ electron/resources/app
 然后将其放到 Electron 的资源文件夹下，然后 Electron 就会试图读取这个库文件并从中启动。
 如下所示：
 
-在 OS X 中:
+在 macOS 中:
 
 ```text
 electron/Electron.app/Contents/Resources/
@@ -59,7 +59,7 @@ electron/resources/
 [rcedit](https://github.com/atom/rcedit)
 编辑它的 icon 和其他信息。
 
-### OS X
+### macOS
 
 你可以将 `Electron.app` 改成任意你喜欢的名字，然后你也需要修改这些文件中的
 `CFBundleDisplayName`， `CFBundleIdentifier` 以及 `CFBundleName` 字段。

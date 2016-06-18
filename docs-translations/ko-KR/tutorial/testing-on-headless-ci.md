@@ -18,11 +18,11 @@ Electron의 Chromium은 자동적으로 `$DISPLAY` 변수를 찾습니다. 따�
 다른 설정이 필요하지 않습니다. 이러한 작업은 Paul Betts의
 [xvfb-maybe](https://github.com/paulcbetts/xvfb-maybe)를 통해 자동화 할 수
 있습니다: `xvfb-maybe`를 테스트 커맨드 앞에 추가하고 현재 시스템에서 요구하면
-이 작은 툴이 자동적으로 xvfb를 설정합니다. Windows와 Mac OS X에선 간단히 아무 작업도
+이 작은 툴이 자동적으로 xvfb를 설정합니다. Windows와 macOS에선 간단히 아무 작업도
 하지 않습니다.
 
 ```
-## Windows와 OS X에선, 그저 electron-mocha를 호출합니다
+## Windows와 macOS에선, 그저 electron-mocha를 호출합니다
 ## Linux에선, 현재 headless 환경에 있는 경우
 ## xvfb-run electron-mocha ./test/*.js와 같습니다
 xvfb-maybe electron-mocha ./test/*.js

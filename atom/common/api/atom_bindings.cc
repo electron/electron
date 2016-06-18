@@ -64,7 +64,7 @@ v8::Local<v8::Value> GetSystemMemoryInfo(v8::Isolate* isolate,
   dict.Set("total", mem_info.total);
   dict.Set("free", mem_info.free);
 
-  // NB: These return bogus values on OS X
+  // NB: These return bogus values on macOS
 #if !defined(OS_MACOSX)
   dict.Set("swapTotal", mem_info.swap_total);
   dict.Set("swapFree", mem_info.swap_free);

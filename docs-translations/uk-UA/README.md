@@ -77,7 +77,7 @@
 * [Source Code Directory Structure](development/source-code-directory-structure.md)
 * [Technical Differences to NW.js (formerly node-webkit)](development/atom-shell-vs-node-webkit.md)
 * [Build System Overview](development/build-system-overview.md)
-* [Build Instructions (OS X)](development/build-instructions-osx.md)
+* [Build Instructions (macOS)](development/build-instructions-osx.md)
 * [Build Instructions (Windows)](development/build-instructions-windows.md)
 * [Build Instructions (Linux)](development/build-instructions-linux.md)
 * [Setting Up Symbol Server in debugger](development/setting-up-symbol-server.md)

@@ -22,7 +22,7 @@ Electron에 대한 중요한 알림을 받고 싶다면 Twitter에서
 
 ## 다운로드
 
-Linux, Windows, OS X 용으로 미리 빌드된 Electron 바이너리와 디버그 심볼이 준비되어
+Linux, Windows, macOS 용으로 미리 빌드된 Electron 바이너리와 디버그 심볼이 준비되어
 있습니다. [releases](https://github.com/electron/electron/releases) 페이지에서
 받아 볼 수 있습니다.
 

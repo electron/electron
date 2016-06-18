@@ -780,7 +780,7 @@ describe('browser-window module', function () {
     })
 
     describe('fullscreenable state', function () {
-      // Only implemented on OS X.
+      // Only implemented on macOS.
       if (process.platform !== 'darwin') return
 
       it('can be changed with fullscreenable option', function () {

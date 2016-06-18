@@ -944,7 +944,7 @@ win.webContents.on('did-finish-load', () => {
 });
 ```
 
-### `webContents.showDefinitionForSelection()` _OS X_
+### `webContents.showDefinitionForSelection()` _macOS_
 
 페이지에서 선택된 단어에 대한 사전 검색 결과 팝업을 표시합니다.
 

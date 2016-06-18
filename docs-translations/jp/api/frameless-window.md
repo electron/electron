@@ -11,9 +11,9 @@ const BrowserWindow = require('electron').BrowserWindow;
 var win = new BrowserWindow({ width: 800, height: 600, frame: false });
 ```
 
-### OS Xでの別の方法
+### macOSでの別の方法
 
-Mac OS X 10.10 Yosemite以降では、Chrome無しのウィンドウを指定する方法があります。`frame`を`false`に設定しタイトルバーとウィンドウコントロールの両方を無効にする代わりに、タイトルバーを隠しコンテンツをフルウィンドウサイズに広げたいけど、標準的なウィンドウ操作用にウィンドウコントロール("トラフィックライト")を維持したいかもしれません。新しい`titleBarStyle`オプションを指定することで、そうできます。
+macOS 10.10 Yosemite以降では、Chrome無しのウィンドウを指定する方法があります。`frame`を`false`に設定しタイトルバーとウィンドウコントロールの両方を無効にする代わりに、タイトルバーを隠しコンテンツをフルウィンドウサイズに広げたいけど、標準的なウィンドウ操作用にウィンドウコントロール("トラフィックライト")を維持したいかもしれません。新しい`titleBarStyle`オプションを指定することで、そうできます。
 
 ```javascript
 var win = new BrowserWindow({ 'titleBarStyle': 'hidden' });

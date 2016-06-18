@@ -14,10 +14,10 @@ Jenkins 或者类似的系统上测试基于Electron的应用时，需要进行�
 然后创建一个虚拟的xvfb屏幕并且导出一个指向他的名为`DISPLAY`的环境变量。Electron中的Chromium
 会自动的去寻找`$DISPLAY`，所以你的应用不需要再去进行配置。这一步可以通过Paul Betts's的
 [xvfb-maybe](https://github.com/paulcbetts/xvfb-maybe)实现自动化：如果系统需要，在`xvfb-maybe`前加上你的测试命令
-然后这个小工具会自动的设置xvfb。在Windows或者Mac OS X系统下，它不会执行任何东西。
+然后这个小工具会自动的设置xvfb。在Windows或者macOS系统下，它不会执行任何东西。
 
 ```
-## On Windows or OS X, this just invokes electron-mocha
+## On Windows or macOS, this just invokes electron-mocha
 ## On Linux, if we are in a headless environment, this will be equivalent
 ## to xvfb-run electron-mocha ./test/*.js
 xvfb-maybe electron-mocha ./test/*.js

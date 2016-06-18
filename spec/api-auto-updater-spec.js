@@ -21,7 +21,7 @@ if (!process.mas) {
     })
 
     describe('setFeedURL', function () {
-      it('emits an error on Mac OS X when the application is unsigned', function (done) {
+      it('emits an error on macOS when the application is unsigned', function (done) {
         if (process.platform !== 'darwin') {
           return done()
         }

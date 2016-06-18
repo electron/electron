@@ -26,7 +26,7 @@ Estas son las maneras en las que construimos la documentación de Electron.
 - Argumentos opcionales son denotados cuando se llaman en listas.
 - Delimitador de línea de 80-columnas.
 - Métodos específicos de Plataformas son denotados en itálicas seguidas por la cabecera del método.
-  - ```### `method(foo, bar)` _OS X_```
+  - ```### `method(foo, bar)` _macOS_```
 - Preferir 'en el ___ proceso' en lugar de 'sobre el'
 
 ### Traducciones de la Documentación

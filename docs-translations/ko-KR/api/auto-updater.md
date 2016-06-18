@@ -21,13 +21,13 @@ Squirrel.Mac 와 Squirrel.Windows를 위한 간단한 node.js 기반 서버입�
 `autoUpdater`는 기본적으로 모든 플랫폼에 대해 같은 API를 제공하지만, 여전히 플랫폼별로
 약간씩 다른 점이 있습니다.
 
-### OS X
+### macOS
 
-OS X에선 `auto-updater` 모듈이 [Squirrel.Mac][squirrel-mac]를 기반으로 작동합니다.
+macOS에선 `auto-updater` 모듈이 [Squirrel.Mac][squirrel-mac]를 기반으로 작동합니다.
 따라서 이 모듈을 작동시키기 위해 특별히 준비해야 할 작업은 없습니다.
 서버 사이드 요구 사항은 [서버 지원][server-support]을 참고하세요.
 
-**참고:** Mac OS X에서 자동 업데이트를 지원하려면 반드시 사인이 되어있어야 합니다.
+**참고:** macOS에서 자동 업데이트를 지원하려면 반드시 사인이 되어있어야 합니다.
 이것은 `Squirrel.Mac`의 요구 사항입니다.
 
 ### Windows
@@ -47,7 +47,7 @@ Squirrel로 생성된 인스톨러는 [Application User Model ID][app-user-model
 `app.setAppUserModelId` API를 통해 애플리케이션 ID를 동일하게 유지해야 합니다. 그렇지
 않으면 Windows 작업 표시줄에 애플리케이션을 고정할 때 제대로 적용되지 않을 수 있습니다.
 
-서버 사이드 요구 사항 또한 OS X와 다르게 적용됩니다. 자세한 내용은
+서버 사이드 요구 사항 또한 macOS와 다르게 적용됩니다. 자세한 내용은
 [Squirrel.Windows][squirrel-windows]를 참고하세요.
 
 ### Linux
@@ -98,7 +98,7 @@ Returns:
 ### `autoUpdater.setFeedURL(url[, requestHeaders])`
 
 * `url` String
-* `requestHeaders` Object _OS X_ - HTTP 요청 헤더.
+* `requestHeaders` Object _macOS_ - HTTP 요청 헤더.
 
 `url`을 설정하고 자동 업데이터를 초기화합니다.
 

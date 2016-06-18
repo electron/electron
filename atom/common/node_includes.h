@@ -22,7 +22,7 @@
 #undef DISALLOW_COPY_AND_ASSIGN
 #undef NO_RETURN
 #undef arraysize
-#undef debug_string  // This is defined in OS X 10.9 SDK in AssertMacros.h.
+#undef debug_string  // This is defined in macOS 10.9 SDK in AssertMacros.h.
 #include "vendor/node/src/env.h"
 #include "vendor/node/src/env-inl.h"
 #include "vendor/node/src/node.h"

@@ -63,7 +63,7 @@ antes de distribuí-lo aos usuários.
 Você pode renomear `electron.exe` para o nome que desejar e editar o seu ícone e outras
 informações com ferramentas como [rcedit](https://github.com/atom/rcedit).
 
-### OS X
+### macOS
 
 Você pode renomear `Electron.app` para o nome que desejar e também pode mudar o nome
 do `CFBundleDisplayName`, `CFBundleIdentifier` e os campos em `CFBundleName`

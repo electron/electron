@@ -74,7 +74,7 @@ Causes the main thread of the current process crash.
 
 Causes the main thread of the current process hang.
 
-### `process.setFdLimit(maxDescriptors)` _OS X_ _Linux_
+### `process.setFdLimit(maxDescriptors)` _macOS_ _Linux_
 
 * `maxDescriptors` Integer
 
@@ -133,7 +133,7 @@ On Windows / Linux:
 
 현재 프로세스의 주 스레드를 중단시킵니다.
 
-### `process.setFdLimit(maxDescriptors)` _OS X_ _Linux_
+### `process.setFdLimit(maxDescriptors)` _macOS_ _Linux_
 
 * `maxDescriptors` Integer
 

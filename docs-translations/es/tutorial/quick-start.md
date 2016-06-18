@@ -74,7 +74,7 @@ var mainWindow = null;
 
 // Salir de todas las ventanas cuando se cierren.
 app.on('window-all-closed', function() {
-  // En OS X es común que las aplicaciones y su barra de menú
+  // En macOS es común que las aplicaciones y su barra de menú
   // se mantengan activas hasta que el usuario cierre la aplicación
   // explícitamente utilizando Cmd + Q
   if (process.platform != 'darwin') {
@@ -139,7 +139,7 @@ En Linux:
 $ ./electron/electron your-app/
 ```
 
-En OS X:
+En macOS:
 
 ```bash
 $ ./Electron.app/Contents/MacOS/Electron your-app/
