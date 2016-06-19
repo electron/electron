@@ -453,7 +453,8 @@ namespace atom {
 
 NativeWindowMac::NativeWindowMac(
     brightray::InspectableWebContents* web_contents,
-    const mate::Dictionary& options)
+    const mate::Dictionary& options,
+    NativeWindow* parent)
     : NativeWindow(web_contents, options),
       is_kiosk_(false),
       attention_request_id_(0),
@@ -525,6 +526,10 @@ NativeWindowMac::NativeWindowMac(
 
   window_delegate_.reset([[AtomNSWindowDelegate alloc] initWithShell:this]);
   [window_ setDelegate:window_delegate_];
+
+  if (parent) {
+    SetParentWindow(parent);
+  }
 
   if (transparent()) {
     // Setting the background color to clear will also hide the shadow.
@@ -1197,8 +1202,9 @@ void NativeWindowMac::SetCollectionBehavior(bool on, NSUInteger flag) {
 // static
 NativeWindow* NativeWindow::Create(
     brightray::InspectableWebContents* inspectable_web_contents,
-    const mate::Dictionary& options) {
-  return new NativeWindowMac(inspectable_web_contents, options);
+    const mate::Dictionary& options,
+    NativeWindow* parent) {
+  return new NativeWindowMac(inspectable_web_contents, options, parent);
 }
 
 }  // namespace atom

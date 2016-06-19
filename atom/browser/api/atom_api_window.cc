@@ -97,9 +97,16 @@ Window::Window(v8::Isolate* isolate, const mate::Dictionary& options)
   mate::Dictionary(isolate, web_contents->GetWrapper()).Set(
       "browserWindowOptions", options);
 
+  // The parent window.
+  mate::Handle<Window> parent;
+  if (options.Get("parent", &parent))
+    parent_window_.Reset(isolate, parent.ToV8());
+
   // Creates BrowserWindow.
-  window_.reset(NativeWindow::Create(web_contents->managed_web_contents(),
-                                     options));
+  window_.reset(NativeWindow::Create(
+      web_contents->managed_web_contents(),
+      options,
+      parent.IsEmpty() ? nullptr : parent->window_.get()));
   web_contents->SetOwnerWindow(window_.get());
   window_->InitFromOptions(options);
   window_->AddObserver(this);
@@ -120,6 +127,17 @@ Window::~Window() {
   // Destroy the native window in next tick because the native code might be
   // iterating all windows.
   base::MessageLoop::current()->DeleteSoon(FROM_HERE, window_.release());
+}
+
+void Window::AfterInit(v8::Isolate* isolate) {
+  mate::TrackableObject<Window>::AfterInit(isolate);
+
+  // We can only append this window to parent window's child windows after this
+  // window's JS wrapper gets initialized.
+  mate::Handle<Window> parent;
+  if (!parent_window_.IsEmpty() &&
+      mate::ConvertFromV8(isolate, GetParentWindow(), &parent))
+    parent->child_windows_.Set(isolate, ID(), GetWrapper());
 }
 
 void Window::WillCloseWindow(bool* prevent_default) {

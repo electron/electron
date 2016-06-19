@@ -81,7 +81,8 @@ class NativeWindow : public base::SupportsUserData,
   // managing the window's live.
   static NativeWindow* Create(
       brightray::InspectableWebContents* inspectable_web_contents,
-      const mate::Dictionary& options);
+      const mate::Dictionary& options,
+      NativeWindow* parent = nullptr);
 
   // Find a window from its WebContents
   static NativeWindow* FromWebContents(content::WebContents* web_contents);

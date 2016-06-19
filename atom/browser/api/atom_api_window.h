@@ -55,6 +55,9 @@ class Window : public mate::TrackableObject<Window>,
   Window(v8::Isolate* isolate, const mate::Dictionary& options);
   ~Window() override;
 
+  // TrackableObject:
+  void AfterInit(v8::Isolate* isolate) override;
+
   // NativeWindowObserver:
   void WillCloseWindow(bool* prevent_default) override;
   void OnWindowClosed() override;

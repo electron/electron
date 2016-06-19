@@ -849,7 +849,32 @@ describe('browser-window module', function () {
       c = null
     })
 
+    describe('parent option', function () {
+      beforeEach(function () {
+        if (c != null) c.destroy()
+        c = new BrowserWindow({show: false, parent: w})
+      })
+
+      it('sets parent window', function () {
+        assert.equal(c.getParentWindow(), w)
+      })
+
+      it('adds window to child windows of parent', function () {
+        assert.deepEqual(w.getChildWindows(), [c])
+      })
+
+      it('removes from child windows of parent when window is closed', function (done) {
+        c.once('closed', () => {
+          assert.deepEqual(w.getChildWindows(), [])
+          done()
+        })
+        c.close()
+      })
+    })
+
     describe('win.setParentWindow(parent)', function () {
+      if (process.platform !== 'darwin') return
+
       it('sets parent window', function () {
         assert.equal(w.getParentWindow(), null)
         assert.equal(c.getParentWindow(), null)

@@ -42,7 +42,8 @@ class NativeWindowViews : public NativeWindow,
                           public views::WidgetObserver {
  public:
   NativeWindowViews(brightray::InspectableWebContents* inspectable_web_contents,
-                    const mate::Dictionary& options);
+                    const mate::Dictionary& options,
+                    NativeWindow* parent);
   ~NativeWindowViews() override;
 
   // NativeWindow:
