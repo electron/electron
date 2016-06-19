@@ -634,10 +634,6 @@ void NativeWindowMac::Close() {
 }
 
 void NativeWindowMac::CloseImmediately() {
-  // Close all child windows before closing this window.
-  for (NSWindow* child in [window_ childWindows])
-    [child close];
-
   [window_ close];
 }
 
@@ -979,6 +975,9 @@ void NativeWindowMac::EndSheet(NativeWindow* sheet) {
   sheet->Hide();
   [window_ endSheet:sheet->GetNativeWindow()];
   sheet->CloseImmediately();
+}
+
+void NativeWindowMac::SetModal(bool modal) {
 }
 
 gfx::NativeWindow NativeWindowMac::GetNativeWindow() {

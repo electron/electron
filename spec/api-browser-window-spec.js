@@ -868,7 +868,7 @@ describe('browser-window module', function () {
     })
 
     describe('win.setParentWindow(parent)', function () {
-      if (process.platform !== 'darwin') return
+      if (process.platform === 'win32') return
 
       beforeEach(function () {
         if (c != null) c.destroy()

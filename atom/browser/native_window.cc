@@ -403,6 +403,9 @@ void NativeWindow::CloseContents(content::WebContents* source) {
   inspectable_web_contents_ = nullptr;
   Observe(nullptr);
 
+  FOR_EACH_OBSERVER(NativeWindowObserver, observers_,
+                    WillDestoryNativeObject());
+
   // When the web contents is gone, close the window immediately, but the
   // memory will not be freed until you call delete.
   // In this way, it would be safe to manage windows via smart pointers. If you

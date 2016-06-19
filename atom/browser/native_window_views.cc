@@ -187,10 +187,10 @@ NativeWindowViews::NativeWindowViews(
   if (options.Get(options::kFocusable, &focusable) && !focusable)
     params.activatable = views::Widget::InitParams::ACTIVATABLE_NO;
 
+#if defined(OS_WIN)
   if (parent)
     params.parent = parent->GetNativeWindow();
 
-#if defined(OS_WIN)
   params.native_widget =
       new views::DesktopNativeWidgetAura(window_.get());
   atom_desktop_window_tree_host_win_ = new AtomDesktopWindowTreeHostWin(
@@ -248,6 +248,9 @@ NativeWindowViews::NativeWindowViews(
   std::string window_type;
   if (options.Get(options::kType, &window_type))
     SetWindowType(GetAcceleratedWidget(), window_type);
+
+  if (parent)
+    SetParentWindow(parent);
 #endif
 
   // Add web view.
@@ -379,15 +382,25 @@ bool NativeWindowViews::IsVisible() {
 }
 
 void NativeWindowViews::Disable() {
+#if defined(OS_WIN)
   ::EnableWindow(GetAcceleratedWidget(), FALSE);
+#elif defined(USE_X11)
+#endif
 }
 
 void NativeWindowViews::Enable() {
+#if defined(OS_WIN)
   ::EnableWindow(GetAcceleratedWidget(), TRUE);
+#elif defined(USE_X11)
+#endif
 }
 
 bool NativeWindowViews::IsEnabled() {
+#if defined(OS_WIN)
   return ::IsWindowEnabled(GetAcceleratedWidget());
+#else
+  return false;
+#endif
 }
 
 void NativeWindowViews::Maximize() {
@@ -790,9 +803,14 @@ void NativeWindowViews::SetMenu(ui::MenuModel* menu_model) {
 }
 
 void NativeWindowViews::SetParentWindow(NativeWindow* parent) {
+#if defined(USE_X11)
+  XDisplay* xdisplay = gfx::GetXDisplay();
+  XSetTransientForHint(
+      xdisplay, GetAcceleratedWidget(),
+      parent? parent->GetAcceleratedWidget() : DefaultRootWindow(xdisplay));
+#elif defined(OS_WIN) && defined(DEBUG)
   // Should work, but does not, it seems that the views toolkit doesn't support
   // reparenting on desktop.
-#if defined(DEBUG)
   if (parent) {
     ::SetParent(GetAcceleratedWidget(), parent->GetAcceleratedWidget());
     views::Widget::ReparentNativeView(GetNativeWindow(),
@@ -801,9 +819,18 @@ void NativeWindowViews::SetParentWindow(NativeWindow* parent) {
   } else {
     if (!GetNativeWindow()->parent())
       return;
+    ::SetParent(GetAcceleratedWidget(), NULL);
     views::Widget::ReparentNativeView(GetNativeWindow(), nullptr);
     wm::RemoveTransientChild(GetNativeWindow()->parent(), GetNativeWindow());
   }
+#endif
+}
+
+void NativeWindowViews::SetModal(bool modal) {
+#if defined(USE_X11)
+  SetWMSpecState(GetAcceleratedWidget(), modal,
+                 GetAtom("_NET_WM_STATE_MODAL"));
+  SetWindowType(GetAcceleratedWidget(), modal ? "dialog" : "normal");
 #endif
 }
 

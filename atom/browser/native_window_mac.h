@@ -85,6 +85,7 @@ class NativeWindowMac : public NativeWindow {
   void SetParentWindow(NativeWindow* parent) override;
   void BeginSheet(NativeWindow* sheet) override;
   void EndSheet(NativeWindow* sheet) override;
+  void SetModal(bool modal) override;
   gfx::NativeWindow GetNativeWindow() override;
   gfx::AcceleratedWidget GetAcceleratedWidget() override;
   void SetProgressBar(double progress) override;
