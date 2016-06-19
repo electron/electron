@@ -620,7 +620,7 @@ void NativeWindow::ScheduleUnresponsiveEvent(int ms) {
 void NativeWindow::NotifyWindowUnresponsive() {
   window_unresposive_closure_.Cancel();
 
-  if (!is_closed_ && !HasModalDialog())
+  if (!is_closed_ && !HasModalDialog() && IsEnabled())
     FOR_EACH_OBSERVER(NativeWindowObserver,
                       observers_,
                       OnRendererUnresponsive());
