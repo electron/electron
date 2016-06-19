@@ -10,6 +10,10 @@
 #include "content/public/browser/native_web_keyboard_event.h"
 #include "ui/events/keycodes/keyboard_codes.h"
 
+@interface NSWindow (EventDispatchingWindow)
+- (void)redispatchKeyEvent:(NSEvent*)event;
+@end
+
 namespace atom {
 
 void CommonWebContentsDelegate::HandleKeyboardEvent(
@@ -24,7 +28,7 @@ void CommonWebContentsDelegate::HandleKeyboardEvent(
     ExitFullscreenModeForTab(source);
 
   if (event.os_event.window)
-    [(EventDispatchingWindow*)event.os_event.window redispatchKeyEvent:event.os_event];
+    [event.os_event.window redispatchKeyEvent:event.os_event];
 }
 
 }  // namespace atom
