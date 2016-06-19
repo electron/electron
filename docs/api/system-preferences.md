@@ -2,6 +2,11 @@
 
 > Get system preferences.
 
+```javascript
+const {systemPreferences} = require('electron');
+console.log(systemPreferences.isDarkMode());
+```
+
 ## Methods
 
 ### `systemPreferences.isDarkMode()` _macOS_
