@@ -3,9 +3,9 @@
 #include "browser/inspectable_web_contents_impl.h"
 #include "browser/inspectable_web_contents_view_delegate.h"
 #include "browser/inspectable_web_contents_view_mac.h"
+#include "browser/mac/event_dispatching_window.h"
 
 #include "content/public/browser/render_widget_host_view.h"
-#import "ui/base/cocoa/underlay_opengl_hosting_window.h"
 #include "ui/gfx/mac/scoped_cocoa_disable_screen_updates.h"
 
 using namespace brightray;
@@ -132,7 +132,7 @@ using namespace brightray;
                      NSMiniaturizableWindowMask | NSResizableWindowMask |
                      NSTexturedBackgroundWindowMask |
                      NSUnifiedTitleAndToolbarWindowMask;
-    devtools_window_.reset([[UnderlayOpenGLHostingWindow alloc]
+    devtools_window_.reset([[EventDispatchingWindow alloc]
         initWithContentRect:NSMakeRect(0, 0, 800, 600)
                   styleMask:styleMask
                     backing:NSBackingStoreBuffered

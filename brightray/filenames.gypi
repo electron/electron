@@ -35,6 +35,8 @@
       'browser/mac/bry_inspectable_web_contents_view.mm',
       'browser/mac/cocoa_notification.h',
       'browser/mac/cocoa_notification.mm',
+      'browser/mac/event_dispatching_window.h',
+      'browser/mac/event_dispatching_window.mm',
       'browser/mac/notification_center_delegate.h',
       'browser/mac/notification_center_delegate.mm',
       'browser/mac/notification_presenter_mac.h',
