@@ -32,6 +32,8 @@ class WindowStateWatcher;
 
 #if defined(OS_WIN)
 class AtomDesktopWindowTreeHostWin;
+#elif defined(USE_X11)
+class EventDisabler;
 #endif
 
 class NativeWindowViews : public NativeWindow,
@@ -192,6 +194,9 @@ class NativeWindowViews : public NativeWindow,
 
   // Handles window state events.
   std::unique_ptr<WindowStateWatcher> window_state_watcher_;
+
+  // To disable the mouse events.
+  std::unique_ptr<EventDisabler> event_disabler_;
 
   // The "resizable" flag on Linux is implemented by setting size constraints,
   // we need to make sure size constraints are restored when window becomes

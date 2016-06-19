@@ -37,6 +37,7 @@
 #include "atom/browser/ui/views/global_menu_bar_x11.h"
 #include "atom/browser/ui/views/frameless_view.h"
 #include "atom/browser/ui/views/native_frame_view.h"
+#include "atom/browser/ui/x/event_disabler.h"
 #include "atom/browser/ui/x/window_state_watcher.h"
 #include "atom/browser/ui/x/x_window_utils.h"
 #include "base/strings/string_util.h"
@@ -385,6 +386,10 @@ void NativeWindowViews::Disable() {
 #if defined(OS_WIN)
   ::EnableWindow(GetAcceleratedWidget(), FALSE);
 #elif defined(USE_X11)
+  event_disabler_.reset(new EventDisabler);
+  views::DesktopWindowTreeHostX11* tree_host =
+      views::DesktopWindowTreeHostX11::GetHostForXID(GetAcceleratedWidget());
+  tree_host->AddEventRewriter(event_disabler_.get());
 #endif
 }
 
@@ -392,14 +397,18 @@ void NativeWindowViews::Enable() {
 #if defined(OS_WIN)
   ::EnableWindow(GetAcceleratedWidget(), TRUE);
 #elif defined(USE_X11)
+  views::DesktopWindowTreeHostX11* tree_host =
+      views::DesktopWindowTreeHostX11::GetHostForXID(GetAcceleratedWidget());
+  tree_host->RemoveEventRewriter(event_disabler_.get());
+  event_disabler_.reset();
 #endif
 }
 
 bool NativeWindowViews::IsEnabled() {
 #if defined(OS_WIN)
   return ::IsWindowEnabled(GetAcceleratedWidget());
-#else
-  return false;
+#elif defined(USE_X11)
+  return !event_disabler_.get();
 #endif
 }
 
