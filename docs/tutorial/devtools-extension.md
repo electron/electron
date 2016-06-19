@@ -45,7 +45,7 @@ Following Devtools Extensions are tested and guaranteed to work in Electron:
 
 ### What should I do if a DevTools Extension is not working?
 
-Fist please make sure the extension is still being maintained, some extensions
+First please make sure the extension is still being maintained, some extensions
 can not even work for recent versions of Chrome browser, and we are not able to
 do anything for them.
 
