@@ -32,7 +32,7 @@ xvfb-maybe electron-mocha ./test/*.js
 
 Travis에선, `.travis.yml`이 대충 다음과 같이 되어야 합니다:
 
-```
+```yml
 addons:
   apt:
     packages:

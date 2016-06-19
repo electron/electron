@@ -59,6 +59,7 @@ OS X에서의 `role`은 다음 값을 추가로 가질 수 있습니다:
 * `hideothers` - `hideOtherApplications` 액션에 대응
 * `unhide` - `unhideAllApplications` 액션에 대응
 * `front` - `arrangeInFront` 액션에 대응
+* `zoom` - `performZoom` 액션에 대응
 * `window` - 부 메뉴를 가지는 "Window" 메뉴
 * `help` - 부 메뉴를 가지는 "Help" 메뉴
 * `services` - 부 메뉴를 가지는 "Services" 메뉴

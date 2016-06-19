@@ -165,6 +165,15 @@ Returns:
 
 새로운 [browserWindow](browser-window.md)가 생성되었을 때 발생하는 이벤트입니다.
 
+### Event: 'web-contents-created'
+
+Returns:
+
+* `event` Event
+* `webContents` WebContents
+
+새로운 [webContents](web-contents.md)가 생성되었을 때 발생하는 이벤트입니다.
+
 ### Event: 'certificate-error'
 
 Returns:

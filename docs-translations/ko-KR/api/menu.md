@@ -66,6 +66,15 @@ const template = [
         role: 'paste'
       },
       {
+        label: 'Paste and Match Style',
+        accelerator: 'Shift+Command+V',
+        role: 'pasteandmatchstyle'
+      },
+      {
+        label: 'Delete',
+        role: 'delete'
+      },
+      {
         label: 'Select All',
         accelerator: 'CmdOrCtrl+A',
         role: 'selectall'
@@ -173,7 +182,21 @@ if (process.platform === 'darwin') {
     ]
   });
   // Window menu.
-  template[3].submenu.push(
+  template[3].submenu = [
+    {
+      label: 'Close',
+      accelerator: 'CmdOrCtrl+W',
+      role: 'close'
+    },
+    {
+      label: 'Minimize',
+      accelerator: 'CmdOrCtrl+M',
+      role: 'minimize'
+    },
+    {
+      label: 'Zoom',
+      role: 'zoom'
+    },
     {
       type: 'separator'
     },
@@ -181,7 +204,7 @@ if (process.platform === 'darwin') {
       label: 'Bring All to Front',
       role: 'front'
     }
-  );
+  ];
 }
 
 const menu = Menu.buildFromTemplate(template);
@@ -206,6 +229,11 @@ Menu.setApplicationMenu(menu);
 Linux에선 각 창의 상단에 표시됩니다.
 
 **참고** 이 API는 `app`의 `ready` 이벤트가 발생한 이후에 호출해야 합니다.
+
+### `Menu.getApplicationMenu()`
+
+설정되어있는 어플리케이션 메뉴를 반환합니다. (`Menu`의 인스턴스) 만약 없다면 `null`을
+반환합니다.
 
 ### `Menu.sendActionToFirstResponder(action)` _OS X_
 

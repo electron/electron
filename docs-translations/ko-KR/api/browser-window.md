@@ -58,6 +58,11 @@ win.show();
   않습니다. 기본값은 `true` 입니다.
 * `closable` Boolean - 윈도우를 닫을 수 있는지 여부. Linux에선 구현되어있지 않습니다.
   기본값은 `true` 입니다.
+* `focusable` Boolean - 윈도우가 포커스될 수 있는지 여부입니다. 기본값은
+  `true`입니다. Windows에선 `focusable: false`를 설정함으로써 암시적으로
+  `skipTaskbar: true`도 설정됩니다. Linux에선 `focusable: false`를 설정함으로써
+  윈도우가 wm과 함께 반응을 중지하며 모든 작업 영역에서 윈도우가 언제나 최상단에 있게
+  됩니다.
 * `alwaysOnTop` Boolean - 윈도우이 언제나 다른 창들 위에 유지되는지 여부.
   기본값은 `false`입니다.
 * `fullscreen` Boolean - 윈도우의 전체화면 활성화 여부. 이 속성을 명시적으로
@@ -389,11 +394,15 @@ ID에 해당하는 윈도우를 찾습니다.
 프로그램 작성에 사용할 수 없습니다. 만약 이미 로드된 확장 기능을 추가하려 한다면, 이
 메서드는 아무것도 반환하지 않고 콘솔에 경고가 로그됩니다.
 
+**참고:** 이 API는 `app` 모듈의 `ready` 이벤트가 발생하기 전까지 사용할 수 없습니다.
+
 ### `BrowserWindow.removeDevToolsExtension(name)`
 
 * `name` String
 
 `name`에 해당하는 개발자 도구 확장 기능을 제거합니다.
+
+**참고:** 이 API는 `app` 모듈의 `ready` 이벤트가 발생하기 전까지 사용할 수 없습니다.
 
 ### `BrowserWindow.getDevToolsExtensions()`
 
@@ -405,6 +414,8 @@ ID에 해당하는 윈도우를 찾습니다.
 ```javascript
 let installed = BrowserWindow.getDevToolsExtensions().hasOwnProperty('devtron')
 ```
+
+**참고:** 이 API는 `app` 모듈의 `ready` 이벤트가 발생하기 전까지 사용할 수 없습니다.
 
 ## Instance Properties
 
@@ -939,5 +950,11 @@ Linux 플랫폼에선 Unity 데스크톱 환경만 지원합니다. 그리고 �
 
 이 윈도우에서 일어나는 모든 마우스 이벤트가 이 윈도우 밑의 윈도우로 전달됩니다. 하지만
 이 윈도우가 포커스되어 있다면, 여전히 키보드 이벤트는 받을 수 있습니다.
+
+### `win.setFocusable(focusable)` _Windows_
+
+* `focusable` Boolean
+
+윈도우가 포커스될 수 있는지 여부를 변경합니다.
 
 [blink-feature-string]: https://cs.chromium.org/chromium/src/third_party/WebKit/Source/platform/RuntimeEnabledFeatures.in
