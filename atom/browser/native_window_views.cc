@@ -29,6 +29,7 @@
 #include "ui/views/window/client_view.h"
 #include "ui/views/widget/native_widget_private.h"
 #include "ui/views/widget/widget.h"
+#include "ui/wm/core/window_util.h"
 #include "ui/wm/core/shadow_types.h"
 
 #if defined(USE_X11)
@@ -783,6 +784,21 @@ void NativeWindowViews::SetMenu(ui::MenuModel* menu_model) {
 }
 
 void NativeWindowViews::SetParentWindow(NativeWindow* parent) {
+  // Should work, but does not, it seems that the views toolkit doesn't support
+  // reparenting on desktop.
+#if defined(DEBUG)
+  if (parent) {
+    ::SetParent(GetAcceleratedWidget(), parent->GetAcceleratedWidget());
+    views::Widget::ReparentNativeView(GetNativeWindow(),
+                                      parent->GetNativeWindow());
+    wm::AddTransientChild(parent->GetNativeWindow(), GetNativeWindow());
+  } else {
+    if (!GetNativeWindow()->parent())
+      return;
+    views::Widget::ReparentNativeView(GetNativeWindow(), nullptr);
+    wm::RemoveTransientChild(GetNativeWindow()->parent(), GetNativeWindow());
+  }
+#endif
 }
 
 gfx::NativeWindow NativeWindowViews::GetNativeWindow() {
