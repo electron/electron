@@ -38,7 +38,7 @@ El objeto `process` tiene los siguientes métodos:
 Interrumpe el hilo principal del proceso actual.
 
 
-### process.setFdLimit(maxDescriptors) _OS X_ _Linux_
+### process.setFdLimit(maxDescriptors) _macOS_ _Linux_
 
 * `maxDescriptors` Integer
 

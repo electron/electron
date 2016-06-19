@@ -17,9 +17,9 @@ const {BrowserWindow} = require('electron')
 let win = new BrowserWindow({width: 800, height: 600, frame: false})
 ```
 
-### 최신 OS X에서 사용할 수 있는 대안
+### 최신 macOS에서 사용할 수 있는 대안
 
-OS X 10.10 Yosemite 이후의 최신 버전부터는 테두리가 없는 창을 만들 때 새로운 방법을
+macOS 10.10 Yosemite 이후의 최신 버전부터는 테두리가 없는 창을 만들 때 새로운 방법을
 사용할 수 있습니다. `frame` 옵션을 `false`로 지정하여 제목과 창 구성 요소를 모두
 비활성화하는 대신 새로운 `titleBarStyle` 옵션을 통해 제목만 숨기고 창 구성 요소
 ("신호등 버튼")의 기능과 창 크기를 그대로 유지할 수 있습니다:
@@ -52,7 +52,7 @@ let win = new BrowserWindow({transparent: true, frame: false})
   upstream 버그가 있는 관계로 투명한 창 기능을 사용하려면 CLI 옵션에
   `--enable-transparent-visuals --disable-gpu`을 추가해야 합니다. 이 옵션은 GPU의
   사용을 중단하고 윈도우를 생성하는데 ARGB를 사용할 수 있도록 해줍니다.
-* OS X(Mac)에선 네이티브 창에서 보여지는 그림자가 투명한 창에선 보이지 않습니다.
+* macOS(Mac)에선 네이티브 창에서 보여지는 그림자가 투명한 창에선 보이지 않습니다.
 
 ## 클릭이 통과될 수 있는 윈도우
 

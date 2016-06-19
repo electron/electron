@@ -6,7 +6,7 @@ and then enable it in your application.
 
 ## Prepare a Copy of Flash Plugin
 
-On OS X and Linux, the details of the Pepper Flash plugin can be found by
+On macOS and Linux, the details of the Pepper Flash plugin can be found by
 navigating to `chrome://plugins` in the Chrome browser. Its location and version
 are useful for Electron's Pepper Flash support. You can also copy it to another
 location.

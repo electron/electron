@@ -3,10 +3,10 @@
 Electron 애플리케이션을 배포하는 방법은 간단합니다.
 
 먼저 폴더 이름을 `app`로 지정한 후 Electron 리소스 디렉터리에 폴더를 통째로 집어넣기만
-하면 됩니다. 리소스 디렉터리는 OS X의 경우: `Electron.app/Contents/Resources/`
+하면 됩니다. 리소스 디렉터리는 macOS의 경우: `Electron.app/Contents/Resources/`
 Windows와 Linux의 경우: `resources/` 입니다.
 
-OS X의 경우:
+macOS의 경우:
 
 ```text
 electron/Electron.app/Contents/Resources/app/
@@ -37,7 +37,7 @@ electron/resources/app
 `app.asar` 파일로 대체하면됩니다. Electron은 자동으로 `app`폴더 대신 asar 아카이브를
 기반으로 애플리케이션을 실행합니다.
 
-OS X의 경우:
+macOS의 경우:
 
 ```text
 electron/Electron.app/Contents/Resources/
@@ -62,7 +62,7 @@ electron/resources/
 [rcedit](https://github.com/atom/rcedit)를 통해 `electron.exe`을 원하는 이름으로
 변경할 수 있고, 또한 아이콘과 기타 정보도 변경할 수 있습니다.
 
-### OS X
+### macOS
 
 `Electron.app`을 원하는 이름으로 변경할 수 있습니다. 그리고 다음 표시된 애플리케이션
 내부 파일에서 `CFBundleDisplayName`, `CFBundleIdentifier` 그리고 `CFBundleName`

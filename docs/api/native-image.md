@@ -81,7 +81,7 @@ mixed with other content to create the desired final appearance.
 The most common case is to use template images for a menu bar icon so it can
 adapt to both light and dark menu bars.
 
-**Note:** Template image is only supported on OS X.
+**Note:** Template image is only supported on macOS.
 
 To mark an image as a template image, its filename should end with the word
 `Template`. For example:
@@ -141,10 +141,10 @@ Returns a [Buffer][buffer] that contains the image's `JPEG` encoded data.
 
 Returns the data URL of the image.
 
-### `image.getNativeHandle()` _OS X_
+### `image.getNativeHandle()` _macOS_
 
 Returns a [Buffer][buffer] that stores C pointer to underlying native handle of
-the image. On OS X, a pointer to `NSImage` instance would be returned.
+the image. On macOS, a pointer to `NSImage` instance would be returned.
 
 Notice that the returned pointer is a weak pointer to the underlying native
 image instead of a copy, so you _must_ ensure that the associated

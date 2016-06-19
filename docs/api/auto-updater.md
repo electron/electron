@@ -20,13 +20,13 @@ application by using one of these projects:
 Though `autoUpdater` provides a uniform API for different platforms, there are
 still some subtle differences on each platform.
 
-### OS X
+### macOS
 
-On OS X, the `autoUpdater` module is built upon [Squirrel.Mac][squirrel-mac],
+On macOS, the `autoUpdater` module is built upon [Squirrel.Mac][squirrel-mac],
 meaning you don't need any special setup to make it work. For server-side
 requirements, you can read [Server Support][server-support].
 
-**Note:** Your application must be signed for automatic updates on Mac OS X.
+**Note:** Your application must be signed for automatic updates on macOS.
 This is a requirement of `Squirrel.Mac`.
 
 ### Windows
@@ -42,7 +42,7 @@ The installer generated with Squirrel will create a shortcut icon with an
 same ID for your app with `app.setAppUserModelId` API, otherwise Windows will
 not be able to pin your app properly in task bar.
 
-The server-side setup is also different from OS X. You can read the documents of
+The server-side setup is also different from macOS. You can read the documents of
 [Squirrel.Windows][squirrel-windows] to get more details.
 
 ### Linux
@@ -96,7 +96,7 @@ The `autoUpdater` object has the following methods:
 ### `autoUpdater.setFeedURL(url[, requestHeaders])`
 
 * `url` String
-* `requestHeaders` Object _OS X_ - HTTP request headers.
+* `requestHeaders` Object _macOS_ - HTTP request headers.
 
 Sets the `url` and initialize the auto updater.
 

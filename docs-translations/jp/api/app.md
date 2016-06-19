@@ -17,7 +17,7 @@ app.on('window-all-closed', function() {
 
 ### イベント: 'will-finish-launching'
 
-アプリケーションの基礎起動が終わったときに出力されます。Windows と Linuxでは、 `will-finish-launching` イベントと`ready`イベントは同じです。OS Xでは、`NSApplication`の `applicationWillFinishLaunching` 通知をに相当します。通常、`open-file`と`open-url` 用のリスナーの設定、クラッシュレポートの開始、自動アップデートをします。
+アプリケーションの基礎起動が終わったときに出力されます。Windows と Linuxでは、 `will-finish-launching` イベントと`ready`イベントは同じです。macOSでは、`NSApplication`の `applicationWillFinishLaunching` 通知をに相当します。通常、`open-file`と`open-url` 用のリスナーの設定、クラッシュレポートの開始、自動アップデートをします。
 
 ほとんどの場合、 `ready` イベントハンドラーですべてをするべきです。
 
@@ -58,7 +58,7 @@ Electronの初期化が終わった時に出力します。
 
 アプリケーションが終了したときに出力されます。
 
-### イベント: 'open-file' _OS X_
+### イベント: 'open-file' _macOS_
 
 戻り値:
 
@@ -71,7 +71,7 @@ Electronの初期化が終わった時に出力します。
 
 Windowsでは、ファイルパスを取得するために、 `process.argv` をパースする必要があります。
 
-### イベント: 'open-url' _OS X_
+### イベント: 'open-url' _macOS_
 
 戻り値:
 
@@ -82,7 +82,7 @@ Windowsでは、ファイルパスを取得するために、 `process.argv` を
 
 このイベントをハンドルしたい場合は、`event.preventDefault()`をコールすべきです。
 
-### イベント: 'activate' _OS X_
+### イベント: 'activate' _macOS_
 
 戻り値:
 
@@ -237,7 +237,7 @@ gpu プロセスがクラッシュしたときに出力されます。
 * `appData` 既定で示すユーザーごとのアプリケーションディレクトリ
   * `%APPDATA%` Windows上
   * `$XDG_CONFIG_HOME` or `~/.config` Linux上
-  * `~/Library/Application Support` OS X上
+  * `~/Library/Application Support` macOS上
 * `userData` アプリの設定ファイルを格納するディレクトリで、既定では`appData` ディレクトリ配下のアプリ名ディレクトリです
 * `temp` 一時ディレクトリ
 * `exe` 現在の実行ファイル
@@ -274,15 +274,15 @@ gpu プロセスがクラッシュしたときに出力されます。
 
 現在のアプリケーションのロケールを戻します。
 
-### `app.addRecentDocument(path)` _OS X_ _Windows_
+### `app.addRecentDocument(path)` _macOS_ _Windows_
 
 * `path` String
 
 最近のドキュメント一覧に`path`を追加します。
 
-この一覧はOSが管理しています。Windowsではタスクバーからこの一覧を見れ、OS Xではdockメニューから見れます。
+この一覧はOSが管理しています。Windowsではタスクバーからこの一覧を見れ、macOSではdockメニューから見れます。
 
-### `app.clearRecentDocuments()` _OS X_ _Windows_
+### `app.clearRecentDocuments()` _macOS_ _Windows_
 
 最近のドキュメント一覧をクリアします。
 
@@ -321,7 +321,7 @@ The `callback` は、 `app`の`ready` イベントの出力後に実行するこ
 
 プロセスがアプリケーションのプライマリインスタンスでアプリがロードし続けるなら、このメソッドは `false`を戻します。プロセスがほかのインスタンスにパラメーターを送信し、`true`を戻すと、直ちに終了します。
 
-OS Xは、ユーザーがFinderで2つ目のアプリインスタンスを開いたり、`open-file` 、 `open-url`イベントが出力しようとすると、システムが自動的にシングルインスタンスを強制します。しかし、コマンドラインでアプリを開始するとシステムのシングルインスタンスメカニズムは無視されるので、シングルインスタンスを強制するためには、このメソッドを使う必要があります。
+macOSは、ユーザーがFinderで2つ目のアプリインスタンスを開いたり、`open-file` 、 `open-url`イベントが出力しようとすると、システムが自動的にシングルインスタンスを強制します。しかし、コマンドラインでアプリを開始するとシステムのシングルインスタンスメカニズムは無視されるので、シングルインスタンスを強制するためには、このメソッドを使う必要があります。
 
 2つ目のインスタンスを起動するとき、メインのインスタンスのウィンドウをアクティブにする例
 
@@ -392,7 +392,7 @@ Chromiumのコマンドダインに引数を追加します。引数は正しく
 
 **Note:** `process.argv`に影響しません。
 
-### `app.dock.bounce([type])` _OS X_
+### `app.dock.bounce([type])` _macOS_
 
 * `type` String (optional) - `critical` または `informational`を指定できます。既定では、 `informational`です。
 
@@ -402,37 +402,37 @@ Chromiumのコマンドダインに引数を追加します。引数は正しく
 
 リクエストを示すIDを戻します。
 
-### `app.dock.cancelBounce(id)` _OS X_
+### `app.dock.cancelBounce(id)` _macOS_
 
 * `id` Integer
 
 `id`のバウンスをキャンセルします。
 
-### `app.dock.setBadge(text)` _OS X_
+### `app.dock.setBadge(text)` _macOS_
 
 * `text` String
 
 dockのバッジエリアで表示する文字列を設定します。
 
-### `app.dock.getBadge()` _OS X_
+### `app.dock.getBadge()` _macOS_
 
 dockのバッジ文字列を戻します。
 
-### `app.dock.hide()` _OS X_
+### `app.dock.hide()` _macOS_
 
 dock アイコンを隠します。
 
-### `app.dock.show()` _OS X_
+### `app.dock.show()` _macOS_
 
 dock アイコンを表示します。
 
-### `app.dock.setMenu(menu)` _OS X_
+### `app.dock.setMenu(menu)` _macOS_
 
 * `menu` Menu
 
 アプリケーションの[dock menu][dock-menu]を設定します。
 
-### `app.dock.setIcon(image)` _OS X_
+### `app.dock.setIcon(image)` _macOS_
 
 * `image` [NativeImage](native-image.md)
 

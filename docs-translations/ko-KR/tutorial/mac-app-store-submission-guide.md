@@ -116,7 +116,7 @@ codesign -s "$APP_KEY" -f --entitlements "$PARENT_PLIST" "$APP_PATH"
 productbuild --component "$APP_PATH" /Applications --sign "$INSTALLER_KEY" "$RESULT_PATH"
 ```
 
-만약 OS X의 샌드박스 개념에 대해 처음 접한다면 Apple의 [Enabling App Sandbox][enable-app-sandbox]
+만약 macOS의 샌드박스 개념에 대해 처음 접한다면 Apple의 [Enabling App Sandbox][enable-app-sandbox]
 문서를 참고하여 기본적인 개념을 이해해야 합니다. 그리고 자격(plist) 파일에
 애플리케이션에서 요구하는 권한의 키를 추가합니다.
 

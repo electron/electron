@@ -1,9 +1,9 @@
 #Instrucciones de Compilación (Mac)
-Siga las siguientes pautas para la construcción de Electron en OS X.
+Siga las siguientes pautas para la construcción de Electron en macOS.
 
 #Requisitos previos 
 
-      `OS X >= 10.8`
+      `macOS >= 10.8`
       `Xcode >= 5.1`
       `node.js (external)`
 
@@ -36,7 +36,7 @@ Después de la construcción está hecho, usted puede encontrar `Electron.app` b
 
 #Soporte de 32bit
 
-Electron sólo puede construirse para un objetivo de 64 bits en OS X y no hay un plan para apoyar a 32 bit OS X en el futuro.
+Electron sólo puede construirse para un objetivo de 64 bits en macOS y no hay un plan para apoyar a 32 bit macOS en el futuro.
 
 #Pruebas
 

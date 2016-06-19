@@ -61,10 +61,10 @@ win.show();
 * `alwaysOnTop` Boolean - 윈도우이 언제나 다른 창들 위에 유지되는지 여부.
   기본값은 `false`입니다.
 * `fullscreen` Boolean - 윈도우의 전체화면 활성화 여부. 이 속성을 명시적으로
-  `false`로 지정했을 경우, OS X에선 전체화면 버튼이 숨겨지거나 비활성됩니다. 기본값은
+  `false`로 지정했을 경우, macOS에선 전체화면 버튼이 숨겨지거나 비활성됩니다. 기본값은
   `false` 입니다.
 * `fullscreenable` Boolean - 윈도우가 전체화면 모드로 전환될 수 있는지 여부입니다.
-  또한 OS X에선, 최대화/줌 버튼이 전체화면 모드 또는 윈도우 최대화를 실행할지 여부도
+  또한 macOS에선, 최대화/줌 버튼이 전체화면 모드 또는 윈도우 최대화를 실행할지 여부도
   포함됩니다. 기본값은 `true`입니다.
 * `skipTaskbar` Boolean - 작업표시줄 애플리케이션 아이콘 표시 스킵 여부. 기본값은
   `false`입니다.
@@ -92,16 +92,16 @@ On Windows it is
 * `backgroundColor` String - `#66CD00` 와 `#FFF`, `#80FFFFFF` (알파 지원됨) 같이
   16진수로 표현된 윈도우의 배경 색. 기본값은 `#FFF` (white).
 * `hasShadow` Boolean - 윈도우가 그림자를 가질지 여부를 지정합니다. 이 속성은
-  OS X에서만 구현되어 있습니다. 기본값은 `true`입니다.
+  macOS에서만 구현되어 있습니다. 기본값은 `true`입니다.
 * `darkTheme` Boolean - 설정에 상관 없이 무조건 어두운 윈도우 테마를 사용합니다.
   몇몇 GTK+3 데스크톱 환경에서만 작동합니다. 기본값은 `false`입니다.
 * `transparent` Boolean - 윈도우를 [투명화](frameless-window.md)합니다. 기본값은
   `false`입니다.
 * `type` String - 특정 플랫폼에만 적용되는 윈도우의 종류를 지정합니다. 기본값은
   일반 윈도우 입니다. 사용할 수 있는 창의 종류는 아래를 참고하세요.
-* `standardWindow` Boolean - OS X의 표준 윈도우를 텍스쳐 윈도우 대신 사용합니다.
+* `standardWindow` Boolean - macOS의 표준 윈도우를 텍스쳐 윈도우 대신 사용합니다.
   기본 값은 `true`입니다.
-* `titleBarStyle` String, OS X - 윈도우 타이틀 바 스타일을 지정합니다. 자세한 사항은
+* `titleBarStyle` String, macOS - 윈도우 타이틀 바 스타일을 지정합니다. 자세한 사항은
   아래를 참고하세요.
 * `webPreferences` Object - 웹 페이지 기능을 설정합니다. 사용할 수 있는 속성은
   아래를 참고하세요.
@@ -114,14 +114,14 @@ On Windows it is
 
 * Linux의 경우, `desktop`, `dock`, `toolbar`, `splash`, `notification` 종류를
   사용할 수 있습니다.
-* OS X의 경우, `desktop`, `textured` 종류를 사용할 수 있습니다.
+* macOS의 경우, `desktop`, `textured` 종류를 사용할 수 있습니다.
   * `textured`는 창에 메탈 그라디언트 외관(`NSTexturedBackgroundWindowMask`)을
     설정합니다.
   * `desktop`은 데스크탑 배경 레벨(`kCGDesktopWindowLevel - 1`)에 윈도우를
     배치합니다. 참고로 이렇게 만들어진 윈도우는 포커스, 키보드, 마우스 이벤트를 받을
     수 없습니다. 하지만 편법으로 `globalShortcut`을 통해 키 입력을 받을 수 있습니다.
 
-`titleBarStyle` 속성은 OS X 10.10 Yosemite 이후 버전만 지원하며, 다음 3가지 종류의
+`titleBarStyle` 속성은 macOS 10.10 Yosemite 이후 버전만 지원하며, 다음 3가지 종류의
 값을 사용할 수 있습니다:
 
 * `default` 또는 미지정: 표준 Mac 회색 불투명 스타일을 사용합니다.
@@ -174,7 +174,7 @@ On Windows it is
   활성화합니다. 기본값은 `false`입니다.
 * `directWrite` Boolean - Windows에서 폰트 렌더링을 위해 DirectWrite를
   사용하는지를 지정합니다. 기본값은 `true`입니다.
-* `scrollBounce` Boolean - OS X에서 스크롤 튕기기 효과 (탄성 밴딩)를 활성화 합니다.
+* `scrollBounce` Boolean - macOS에서 스크롤 튕기기 효과 (탄성 밴딩)를 활성화 합니다.
   기본값은 `false`입니다.
 * `blinkFeatures` String - 활성화 할 `CSSVariables,KeyboardEventKey`같이 `,`로
   구분된 기능 문자열들의 리스트입니다. [RuntimeEnabledFeatures.in][blink-feature-string]
@@ -289,9 +289,9 @@ window.onbeforeunload = (e) => {
 
 윈도우가 새로운 위치로 이동될 때 발생하는 이벤트입니다.
 
-__참고__: OS X에선 이 이벤트가 그저 `moved` 이벤트의 별칭(alias)으로 사용됩니다.
+__참고__: macOS에선 이 이벤트가 그저 `moved` 이벤트의 별칭(alias)으로 사용됩니다.
 
-### Event: 'moved' _OS X_
+### Event: 'moved' _macOS_
 
 윈도우가 새로운 위치로 이동되었을 때 발생하는 이벤트입니다. (한 번만)
 
@@ -336,15 +336,15 @@ someWindow.on('app-command', (e, cmd) => {
 });
 ```
 
-### Event: 'scroll-touch-begin' _OS X_
+### Event: 'scroll-touch-begin' _macOS_
 
 스크롤 휠 이벤트가 동작하기 시작했을 때 발생하는 이벤트입니다.
 
-### Event: 'scroll-touch-end' _OS X_
+### Event: 'scroll-touch-end' _macOS_
 
 스크롤 휠 이벤트가 동작을 멈췄을 때 발생하는 이벤트입니다.
 
-### Event: 'swipe' _OS X_
+### Event: 'swipe' _macOS_
 
 Returns:
 
@@ -507,7 +507,7 @@ let win = new BrowserWindow({width: 800, height: 600});
 
 윈도우가 전체화면 모드 상태인지 여부를 반환합니다.
 
-### `win.setAspectRatio(aspectRatio[, extraSize])` _OS X_
+### `win.setAspectRatio(aspectRatio[, extraSize])` _macOS_
 
 * `aspectRatio` 유지하려 하는 콘텐츠 뷰 일부의 종횡비
 * `extraSize` Object (optional) - 종횡비를 유지하는 동안 포함되지 않을 엑스트라 크기.
@@ -535,7 +535,7 @@ let win = new BrowserWindow({width: 800, height: 600});
   * `width` Integer
   * `height` Integer
 
-* `animate` Boolean (optional) _OS X_
+* `animate` Boolean (optional) _macOS_
 
 윈도우를 지정한 `width`, `height`, `x`, `y`로 크기 재조정 및 이동합니다.
 
@@ -547,7 +547,7 @@ let win = new BrowserWindow({width: 800, height: 600});
 
 * `width` Integer
 * `height` Integer
-* `animate` Boolean (optional) _OS X_
+* `animate` Boolean (optional) _macOS_
 
 `width`와 `height` 값으로 윈도우 크기를 재조정합니다. (너비, 높이)
 
@@ -559,7 +559,7 @@ let win = new BrowserWindow({width: 800, height: 600});
 
 * `width` Integer
 * `height` Integer
-* `animate` Boolean (optional) _OS X_
+* `animate` Boolean (optional) _macOS_
 
 윈도우 클라이언트 영역(웹 페이지)의 크기를 `width`, `height`로 재조정합니다.
 
@@ -599,38 +599,38 @@ let win = new BrowserWindow({width: 800, height: 600});
 
 사용자에 의해 윈도우의 크기가 재조정될 수 있는지 여부를 반환합니다.
 
-### `win.setMovable(movable)` _OS X_ _Windows_
+### `win.setMovable(movable)` _macOS_ _Windows_
 
 * `movable` Boolean
 
 사용자에 의해 윈도우를 이동시킬 수 있는지 여부를 지정합니다. Linux에선 아무 일도
 일어나지 않습니다.
 
-### `win.isMovable()` _OS X_ _Windows_
+### `win.isMovable()` _macOS_ _Windows_
 
 사용자에 의해 윈도우를 이동시킬 수 있는지 여부를 반환합니다. Linux에선 항상 `true`를
 반환합니다.
 
-### `win.setMinimizable(minimizable)` _OS X_ _Windows_
+### `win.setMinimizable(minimizable)` _macOS_ _Windows_
 
 * `minimizable` Boolean
 
 사용자에 의해 윈도우를 최소화시킬 수 있는지 여부를 지정합니다. Linux에선 아무 일도
 일어나지 않습니다.
 
-### `win.isMinimizable()` _OS X_ _Windows_
+### `win.isMinimizable()` _macOS_ _Windows_
 
 사용자에 의해 윈도우를 최소화시킬 수 있는지 여부를 반환합니다. Linux에선 항상 `true`를
 반환합니다.
 
-### `win.setMaximizable(maximizable)` _OS X_ _Windows_
+### `win.setMaximizable(maximizable)` _macOS_ _Windows_
 
 * `maximizable` Boolean
 
 사용자에 의해 윈도우를 최대화시킬 수 있는지 여부를 지정합니다. Linux에선 아무 일도
 일어나지 않습니다.
 
-### `win.isMaximizable()` _OS X_ _Windows_
+### `win.isMaximizable()` _macOS_ _Windows_
 
 사용자에 의해 윈도우를 최대화시킬 수 있는지 여부를 반환합니다. Linux에선 항상 `true`를
 반환합니다.
@@ -647,14 +647,14 @@ let win = new BrowserWindow({width: 800, height: 600});
 최대화/줌 버튼이 전체화면 모드 또는 윈도우 최대화를 토글할 수 있게 할지 여부를
 반환합니다.
 
-### `win.setClosable(closable)` _OS X_ _Windows_
+### `win.setClosable(closable)` _macOS_ _Windows_
 
 * `closable` Boolean
 
 사용자에 의해 윈도우가 수동적으로 닫힐 수 있는지 여부를 지정합니다. Linux에선 아무 일도
 일어나지 않습니다.
 
-### `win.isClosable()` _OS X_ _Windows_
+### `win.isClosable()` _macOS_ _Windows_
 
 사용자에 의해 윈도우가 수동적으로 닫힐 수 있는지 여부를 반환합니다. Linux에선 항상
 `true`를 반환합니다.
@@ -678,7 +678,7 @@ let win = new BrowserWindow({width: 800, height: 600});
 
 * `x` Integer
 * `y` Integer
-* `animate` Boolean (optional) _OS X_
+* `animate` Boolean (optional) _macOS_
 
 윈도우의 위치를 `x`, `y`로 이동합니다.
 
@@ -698,9 +698,9 @@ let win = new BrowserWindow({width: 800, height: 600});
 
 **참고:** 웹 페이지의 제목과 네이티브 윈도우의 제목은 서로 다를 수 있습니다.
 
-### `win.setSheetOffset(offsetY[, offsetX])` _OS X_
+### `win.setSheetOffset(offsetY[, offsetX])` _macOS_
 
-Mac OS X에서 시트를 부착할 위치를 지정합니다. 기본적으로 시트는 윈도우의 프레임 바로
+macOS에서 시트를 부착할 위치를 지정합니다. 기본적으로 시트는 윈도우의 프레임 바로
 아래의 위치에 부착됩니다. 아마도 이 기능은 보통 다음과 같이 HTML 렌더링된 툴바 밑에
 표시하기 위해 사용할 것입니다:
 
@@ -735,7 +735,7 @@ Kiosk(키오스크) 모드를 설정합니다.
 
 `Buffer` 상의 플랫폼에 따른 윈도우 핸들을 반환합니다.
 
-핸들의 타입에 따라 적절히 캐스팅됩니다. Windows의 `HWND`, OS X의 `NSView*`, Linux의
+핸들의 타입에 따라 적절히 캐스팅됩니다. Windows의 `HWND`, macOS의 `NSView*`, Linux의
 `Window` (`unsigned long`)를 예로 들 수 있습니다.
 
 ### `win.hookWindowMessage(message, callback)` _Windows_
@@ -762,24 +762,24 @@ Windows 메시지 훅을 등록합니다. `callback`은 WndProc에서 메시지�
 
 모든 메시지 훅을 등록 해제합니다.
 
-### `win.setRepresentedFilename(filename)` _OS X_
+### `win.setRepresentedFilename(filename)` _macOS_
 
 * `filename` String
 
 윈도우 대표 파일의 경로명을 설정합니다. 파일의 아이콘이 윈도우 타이틀 바에 표시됩니다.
 
-### `win.getRepresentedFilename()` _OS X_
+### `win.getRepresentedFilename()` _macOS_
 
 윈도우 대표 파일의 경로명을 반환합니다.
 
-### `win.setDocumentEdited(edited)` _OS X_
+### `win.setDocumentEdited(edited)` _macOS_
 
 * `edited` Boolean
 
 윈도우의 문서가 변경되었는지 여부를 설정합니다. 그리고 `true`로 설정했을 때 타이틀 바의
 아이콘이 회색으로 표시됩니다.
 
-### `win.isDocumentEdited()` _OS X_
+### `win.isDocumentEdited()` _macOS_
 
 윈도우의 문서가 변경되었는지 여부를 반환합니다.
 
@@ -837,14 +837,14 @@ Linux 플랫폼에선 Unity 데스크톱 환경만 지원합니다. 그리고 �
 현재 작업표시줄 아이콘에 16 x 16 픽셀 크기의 오버레이를 지정합니다. 보통 이 기능은
 애플리케이션의 여러 상태를 사용자에게 소극적으로 알리기 위한 방법으로 사용됩니다.
 
-### `win.setHasShadow(hasShadow)` _OS X_
+### `win.setHasShadow(hasShadow)` _macOS_
 
 * `hasShadow` (Boolean)
 
 윈도우가 그림자를 가질지 여부를 지정합니다. Windows와 Linux에선 아무 일도 일어나지
 않습니다.
 
-### `win.hasShadow()` _OS X_
+### `win.hasShadow()` _macOS_
 
 윈도우가 그림자를 가지고 있는지 여부를 반환합니다. Windows와 Linux에선 항상 `true`를
 반환합니다.
@@ -879,7 +879,7 @@ Linux 플랫폼에선 Unity 데스크톱 환경만 지원합니다. 그리고 �
       눌려지지 않은 상태를 유지합니다. 이 값은 버튼을 알림의 용도로 사용하기 위해
       만들어졌습니다.
 
-### `win.showDefinitionForSelection()` _OS X_
+### `win.showDefinitionForSelection()` _macOS_
 
 `webContents.showDefinitionForSelection()`와 같습니다.
 

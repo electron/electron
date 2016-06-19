@@ -38,7 +38,7 @@
 * `minimize` - 現在のウィンドウの最小化
 * `close` - 現在のウィンドウを閉じます
 
-OS Xでは、`role`は次の追加の値を取れます:
+macOSでは、`role`は次の追加の値を取れます:
 
 * `about` - `orderFrontStandardAboutPanel`動作に紐づけられます
 * `hide` - `hide`動作に紐づけられます

@@ -12,13 +12,13 @@ Accelerator는 `+` 문자를 통해 여러 혼합키와 키코드를 결합할 �
 ## 플랫폼에 관련하여 주의할 점
 
 Linux와 Windows에서는 `Command`키가 없으므로 작동하지 않습니다. 대신에
-`CommandOrControl`을 사용하면 OS X의 `Command`와 Linux, Windows의 `Control` 모두
+`CommandOrControl`을 사용하면 macOS의 `Command`와 Linux, Windows의 `Control` 모두
 지원할 수 있습니다.
 
-`Option` 대신 `Alt`을 사용하는게 좋습니다. `Option` 키는 OS X에만 있으므로
+`Option` 대신 `Alt`을 사용하는게 좋습니다. `Option` 키는 macOS에만 있으므로
 모든 플랫폼에서 사용할 수 있는 `Alt` 키를 권장합니다.
 
-`Super`키는 Windows와 Linux 에서는 `윈도우`키를, OS X에서는 `Cmd`키로 맵핑됩니다.
+`Super`키는 Windows와 Linux 에서는 `윈도우`키를, macOS에서는 `Cmd`키로 맵핑됩니다.
 
 ## 사용 가능한 혼합키
 

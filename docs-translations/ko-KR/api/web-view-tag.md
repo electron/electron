@@ -478,7 +478,7 @@ Service worker에 대한 개발자 도구를 엽니다.
 `event` 객체에 대해 자세히 알아보려면 [webContents.sendInputEvent](web-contents.md##webcontentssendinputeventevent)를
 참고하세요.
 
-### `<webview>.showDefinitionForSelection()` _OS X_
+### `<webview>.showDefinitionForSelection()` _macOS_
 
 페이지에서 선택된 단어에 대한 사전 검색 결과 팝업을 표시합니다.
 

@@ -4,7 +4,7 @@
 
 このガイドでは、Electron APIでデスクトップ環境にアプリケーションを統合する方法を説明します。
 
-## 通知 (Windows, Linux, OS X)
+## 通知 (Windows, Linux, macOS)
 
 3つのオペレーティングシステム全てで、アプリケーションからユーザーに通知を送る手段が提供されています。通知を表示するためにオペレーティングシステムのネイティブ通知APIを使用しする[HTML5 Notification API](https://notifications.spec.whatwg.org/)で、Electronは、開発者に通知を送ることができます。
 
@@ -36,15 +36,15 @@ Model ID][app-user-model-id]で、アプリへのショートカットはスタ�
 
 通知は、`libnotify`を使用して送信されます。[デスクトップ通知仕様][notification-spec]に対応したデスクトップ環境上（Cinnamon、Enlightenment、Unity、GNOME、KDEなど）で通知を表示できます。
 
-### OS X
+### macOS
 
-通知は、そのままOS Xに通知されます。しかし、[通知に関するAppleのヒューマンインターフェイスガイドライン（英語版）](https://developer.apple.com/library/mac/documentation/UserExperience/Conceptual/OSXHIGuidelines/NotificationCenter.html)を知っておくべきです。
+通知は、そのままmacOSに通知されます。しかし、[通知に関するAppleのヒューマンインターフェイスガイドライン（英語版）](https://developer.apple.com/library/mac/documentation/UserExperience/Conceptual/OSXHIGuidelines/NotificationCenter.html)を知っておくべきです。
 
 通知は、256バイトサイズに制限されており、制限を超えていた場合、通知が破棄されます。
 
-## 最近のドキュメント (Windows と OS X)
+## 最近のドキュメント (Windows と macOS)
 
-Windows と OS Xは、ジャンプリストやドックメニュー経由で、アプリケーションが開いた最近のドキュメント一覧に簡単にアクセスできます。
+Windows と macOSは、ジャンプリストやドックメニュー経由で、アプリケーションが開いた最近のドキュメント一覧に簡単にアクセスできます。
 
 __JumpList:__
 
@@ -72,19 +72,19 @@ Windows で、この機能を使用できるようにするために、アプリ
 
 ユーザーがジャンプリストからファイルをクリックしたとき、アプリケーションの新しいインスタンスは、コマンドライン引数にファイルのパスを渡して開始します。
 
-### OS X 留意点
+### macOS 留意点
 
 ファイルが最近のドキュメントメニューからリクエストされた時、 `app` モジュールの `open-file` イベントが発行されます。
 
-## ドックメニュー (OS X)のカスタマイズ
+## ドックメニュー (macOS)のカスタマイズ
 
-通常アプリケーションで使用する共通機能用のショートカットを含める、ドック用のカスタムメニューをOS Xでは指定できます。
+通常アプリケーションで使用する共通機能用のショートカットを含める、ドック用のカスタムメニューをmacOSでは指定できます。
 
 __Dock menu of Terminal.app:__
 
 <img src="https://cloud.githubusercontent.com/assets/639601/5069962/6032658a-6e9c-11e4-9953-aa84006bdfff.png" height="354" width="341" >
 
-カスタムドックメニューを設定するために、OS Xのみに提供されている `app.dock.setMenu` APIを使用できます。
+カスタムドックメニューを設定するために、macOSのみに提供されている `app.dock.setMenu` APIを使用できます。
 
 ```javascript
 const electron = require('electron');
@@ -115,7 +115,7 @@ __Internet Explorerのタスク:__
 
 ![IE](http://i.msdn.microsoft.com/dynimg/IC420539.png)
 
-実際のメニューであるOS Xのドックメニューとは異なり、ユーザーがタスクをクリックしたとき、Windowsではユーザータスクはアプリケーションのショートカットのように動作し、プログラムは指定された引数を実行します。
+実際のメニューであるmacOSのドックメニューとは異なり、ユーザーがタスクをクリックしたとき、Windowsではユーザータスクはアプリケーションのショートカットのように動作し、プログラムは指定された引数を実行します。
 
 アプリケーション用のユーザータスクを設定するために、[app.setUserTasks][setusertaskstasks] APIを使用できます:
 
@@ -192,11 +192,11 @@ __Audaciousのランチャーショートカット:__
 
 ![audacious](https://help.ubuntu.com/community/UnityLaunchersAndDesktopFiles?action=AttachFile&do=get&target=shortcuts.png)
 
-## タスクバーの進行状況バー (Windows, OS X, Unity)
+## タスクバーの進行状況バー (Windows, macOS, Unity)
 
 Windowsでは、タスクバーボタンは、進行状況バーを表示するのに使えます。ウィンドウを切り替えることなくウィンドウの進行状況情報をユーザーに提供することができます。
 
-OS Xではプログレスバーはドックアイコンの一部として表示されます。
+macOSではプログレスバーはドックアイコンの一部として表示されます。
 Unity DEは、ランチャーに進行状況バーの表示をするのと同様の機能を持っています。
 
 __タスクバーボタン上の進行状況バー:__
@@ -227,9 +227,9 @@ let win = new BrowserWindow({...});
 win.setOverlayIcon('path/to/overlay.png', 'Description for overlay');
 ```
 
-##  Windowのファイル表示 (OS X)
+##  Windowのファイル表示 (macOS)
 
-OS Xでは、ウィンドウがrepresented fileを設定でき、タイトルバー上にファイルのアイコンを表示でき、タイトル上でCommand-クリックまたはControl-クリックをすると、パスがポップアップ表示されます。
+macOSでは、ウィンドウがrepresented fileを設定でき、タイトルバー上にファイルのアイコンを表示でき、タイトル上でCommand-クリックまたはControl-クリックをすると、パスがポップアップ表示されます。
 
 ウィンドウの編集状態を設定できるように、このウィンドウのドキュメントが変更されたかどうかをファイルのアイコンで示せます。
 

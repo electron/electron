@@ -8,13 +8,13 @@ Electronは、ライセンス的な理由でWidevine CDMプラグインは同梱
 
 __Note:__ Chromeブラウザのメジャーバージョンは、Electronが使用するChromeバージョンと同じでなければなりません。そうでなければ、プラグインは、`navigator.plugins`経由でロードされて表示されるにも関わらず動作しません。
 
-### Windows & OS X
+### Windows & macOS
 
 Chromeブラウザーで、`chrome://components/`を開き、 `WidevineCdm` を探し、それが最新であることを確認し、`APP_DATA/Google/Chrome/WidevineCDM/VERSION/_platform_specific/PLATFORM_ARCH/`ディレクトリからすべてのプラグインバイナリを探します。
 
-`APP_DATA` は、アプリデータを格納するシステムロケーションです。Windowsでは`%LOCALAPPDATA%`、OS Xでは`~/Library/Application Support`です。`VERSION` は、Widevine CDM プラグインのバージョン文字列で、 `1.4.8.866`のような文字列が格納されます。`PLATFORM` は、 `mac` か `win`です。`ARCH` は `x86` か `x64`です。
+`APP_DATA` は、アプリデータを格納するシステムロケーションです。Windowsでは`%LOCALAPPDATA%`、macOSでは`~/Library/Application Support`です。`VERSION` は、Widevine CDM プラグインのバージョン文字列で、 `1.4.8.866`のような文字列が格納されます。`PLATFORM` は、 `mac` か `win`です。`ARCH` は `x86` か `x64`です。
 
-Windowsでは、`widevinecdm.dll` と `widevinecdmadapter.dll`が必要で、OS Xでは、`libwidevinecdm.dylib` と `widevinecdmadapter.plugin`です。任意の場所にコピーできますが、一緒に配置する必要があります。
+Windowsでは、`widevinecdm.dll` と `widevinecdmadapter.dll`が必要で、macOSでは、`libwidevinecdm.dylib` と `widevinecdmadapter.plugin`です。任意の場所にコピーできますが、一緒に配置する必要があります。
 
 ### Linux
 
@@ -32,7 +32,7 @@ __Note:__ `widevinecdmadapter` バイナリはElectronにパスが通ってい�
 
 ```javascript
 // You have to pass the filename of `widevinecdmadapter` here, it is
-// * `widevinecdmadapter.plugin` on OS X,
+// * `widevinecdmadapter.plugin` on macOS,
 // * `libwidevinecdmadapter.so` on Linux,
 // * `widevinecdmadapter.dll` on Windows.
 app.commandLine.appendSwitch('widevine-cdm-path', '/path/to/widevinecdmadapter.plugin');

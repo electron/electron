@@ -75,7 +75,7 @@
 * [Структура папок с исходным кодом](development/source-code-directory-structure.md)
 * [Technical Differences to NW.js (formerly node-webkit)](development/atom-shell-vs-node-webkit.md)
 * [Обзор системы сборки](development/build-system-overview.md)
-* [Инструкции по сборке (OS X)](development/build-instructions-osx.md)
+* [Инструкции по сборке (macOS)](development/build-instructions-osx.md)
 * [Инструкции по сборке (Windows)](development/build-instructions-windows.md)
 * [Инструкции по сборке (Linux)](development/build-instructions-linux.md)
 * [Настройка сервера символов для отладчика](development/setting-up-symbol-server.md)

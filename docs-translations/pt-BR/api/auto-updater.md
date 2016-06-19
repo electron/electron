@@ -6,9 +6,9 @@ Este módulo oferece uma interface para o framework de atualização automática
 
 Embora o `autoUpdater` ofereça uma API uniforme para diferentes plataformas, existem diferenças sutis em cada plataforma.
 
-### OS X
+### macOS
 
-No OS X, o módulo `autoUpdater` é construído sobre o [Squirrel.Mac][squirrel-mac], o que significa que você não precisa de nenhuma configuração especial para fazê-lo funcionar. Para requerimentos de servidor, você pode ler [Server Support][server-support].
+No macOS, o módulo `autoUpdater` é construído sobre o [Squirrel.Mac][squirrel-mac], o que significa que você não precisa de nenhuma configuração especial para fazê-lo funcionar. Para requerimentos de servidor, você pode ler [Server Support][server-support].
 
 ### Windows
 
@@ -16,7 +16,7 @@ No Windows, você deve instalar seu aplicativo na máquina de um usuário antes 
 
 O instalador gerado com Squirrel irá criar um ícone de atalho com um [Application User Model ID][app-user-model-id] no formato `com.squirrel.PACKAGE_ID.YOUR_EXE_WITHOUT_DOT_EXE`, por exemplo: `com.squirrel.slack.Slack` e `com.squirrel.code.Code`. Você precisa usar o mesmo ID para seu aplicativo a API `app.setAppUserModelId`, senão o Windows não conseguirá fixar seu aplicativo corretamente na barra de tarefas.
 
-A configuração do servidor também é diferente do OS X. Você pode ler a documentação do [Squirrel.Windows][squirrel-windows] para mais detalhes.
+A configuração do servidor também é diferente do macOS. Você pode ler a documentação do [Squirrel.Windows][squirrel-windows] para mais detalhes.
 
 ### Linux
 

@@ -24,7 +24,7 @@ Electron Dokümantasyonunu geliştirmek için aşağıdaki yöntemleri takip edi
 - Optional arguments are denoted when called out in list.
 - Line length is 80-column wrapped.
 - Platform specific methods are noted in italics following method header.
- - ```### `method(foo, bar)` _OS X_```
+ - ```### `method(foo, bar)` _macOS_```
 - Prefer 'in the ___ process' over 'on'
 
 ### Dokümantasyon Çevirisi

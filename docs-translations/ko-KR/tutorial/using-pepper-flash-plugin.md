@@ -19,7 +19,7 @@ Electron은 Pepper 플래시 플러그인을 지원합니다. Electron에서 Pep
 ```javascript
 // 플래시 플러그인의 위치를 설정합니다.
 // Windows의 경우, /path/to/pepflashplayer.dll 또는 main.js에 존재하는 경우 pepflashplayer.dll
-// OS X의 경우, /path/to/PepperFlashPlayer.plugin
+// macOS의 경우, /path/to/PepperFlashPlayer.plugin
 // Linux의 경우, /path/to/libpepflashplayer.so
 app.commandLine.appendSwitch('ppapi-flash-path', '/path/to/libpepflashplayer.so');
 

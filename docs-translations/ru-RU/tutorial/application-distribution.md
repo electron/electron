@@ -1,11 +1,11 @@
 # Распространение приложения
 
 Чтобы разпространять ваше приложение на Electron, папка с вашим приложением
-должна называться `app` и находиться в папке ресурсов Electron (в OS X это
+должна называться `app` и находиться в папке ресурсов Electron (в macOS это
 `Electron.app/Contents/Resources/`, в Linux и Windows - `resources/`),
 вот так:
 
-Для OS X:
+Для macOS:
 
 ```text
 electron/Electron.app/Contents/Resources/app/
@@ -38,7 +38,7 @@ electron/resources/app
 после чего Electron попробует считать ресурсы и запустить архив.
 
 
-Для OS X:
+Для macOS:
 
 ```text
 electron/Electron.app/Contents/Resources/
@@ -64,7 +64,7 @@ electron/resources/
 Вы можете переименовать `electron.exe` как пожелаете и поменять иконку и прочую
 информацию приложениями вроде [rcedit](https://github.com/atom/rcedit).
 
-### OS X
+### macOS
 
 Вы можете переименовать `Electron.app` как пожелаете, а также изменить
 поля `CFBundleDisplayName`, `CFBundleIdentifier` и `CFBundleName` в следующих

@@ -1,11 +1,11 @@
 # Application Distribution
 
 To distribute your app with Electron, the folder containing your app should be
-named `app` and placed under Electron's resources directory (on OS X it is
+named `app` and placed under Electron's resources directory (on macOS it is
 `Electron.app/Contents/Resources/` and on Linux and Windows it is `resources/`),
 like this:
 
-On OS X:
+On macOS:
 
 ```text
 electron/Electron.app/Contents/Resources/app/
@@ -37,7 +37,7 @@ To use an `asar` archive to replace the `app` folder, you need to rename the
 archive to `app.asar`, and put it under Electron's resources directory like
 below, and Electron will then try to read the archive and start from it.
 
-On OS X:
+On macOS:
 
 ```text
 electron/Electron.app/Contents/Resources/
@@ -63,7 +63,7 @@ before distributing it to users.
 You can rename `electron.exe` to any name you like, and edit its icon and other
 information with tools like [rcedit](https://github.com/atom/rcedit).
 
-### OS X
+### macOS
 
 You can rename `Electron.app` to any name you want, and you also have to rename
 the `CFBundleDisplayName`, `CFBundleIdentifier` and `CFBundleName` fields in

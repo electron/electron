@@ -6,9 +6,9 @@
 
 虽然 `autoUpdater` 模块提供了一套各平台通用的接口，但是在每个平台间依然会有一些微小的差异。
 
-### OS X
+### macOS
 
-在 OS X 上，`autoUpdater` 模块依靠的是内置的 [Squirrel.Mac][squirrel-mac]，这意味着你不需要依靠其他的设置就能使用。关于
+在 macOS 上，`autoUpdater` 模块依靠的是内置的 [Squirrel.Mac][squirrel-mac]，这意味着你不需要依靠其他的设置就能使用。关于
 更新服务器的配置，你可以通过阅读 [Server Support][server-support] 这篇文章来了解。
 
 ### Windows
@@ -19,7 +19,7 @@ Squirrel 自动生成的安装向导会生成一个带 [Application User Model I
 Application User Model ID 的格式是 `com.squirrel.PACKAGE_ID.YOUR_EXE_WITHOUT_DOT_EXE`, 比如
 像 `com.squirrel.slack.Slack` 和 `com.squirrel.code.Code` 这样的。你应该在自己的应用中使用 `app.setAppUserModelId` 方法设置相同的 API，不然 Windows 将不能正确地把你的应用固定在任务栏上。
 
-服务器端的配置和 OS X 也是不一样的，你可以阅读 [Squirrel.Windows][squirrel-windows] 这个文档来获得详细信息。
+服务器端的配置和 macOS 也是不一样的，你可以阅读 [Squirrel.Windows][squirrel-windows] 这个文档来获得详细信息。
 
 ### Linux
 
