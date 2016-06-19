@@ -114,7 +114,7 @@ Uncaught TypeError: Cannot read property 'setZoomLevel' of undefined
 console.log(require.resolve('electron'));
 ```
 
-确认以下它是不是像下面这样的：
+确认一下它是不是像下面这样的：
 
 ```
 "/path/to/Electron.app/Contents/Resources/atom.asar/renderer/api/lib/exports/electron.js"
