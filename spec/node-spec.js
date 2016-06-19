@@ -225,7 +225,7 @@ describe('node feature', function () {
       process.stdout.write('test')
     })
 
-    xit('should have isTTY defined', function () {
+    it('should have isTTY defined', function () {
       assert.equal(typeof process.stdout.isTTY, 'boolean')
     })
   })
