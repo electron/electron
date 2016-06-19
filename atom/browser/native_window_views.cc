@@ -187,6 +187,9 @@ NativeWindowViews::NativeWindowViews(
   if (options.Get(options::kFocusable, &focusable) && !focusable)
     params.activatable = views::Widget::InitParams::ACTIVATABLE_NO;
 
+  if (parent)
+    params.parent = parent->GetNativeWindow();
+
 #if defined(OS_WIN)
   params.native_widget =
       new views::DesktopNativeWidgetAura(window_.get());
@@ -376,13 +379,15 @@ bool NativeWindowViews::IsVisible() {
 }
 
 void NativeWindowViews::Disable() {
+  ::EnableWindow(GetAcceleratedWidget(), FALSE);
 }
 
 void NativeWindowViews::Enable() {
+  ::EnableWindow(GetAcceleratedWidget(), TRUE);
 }
 
 bool NativeWindowViews::IsEnabled() {
-  return true;
+  return ::IsWindowEnabled(GetAcceleratedWidget());
 }
 
 void NativeWindowViews::Maximize() {
