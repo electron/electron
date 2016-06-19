@@ -15,6 +15,7 @@
 #include "base/strings/sys_string_conversions.h"
 #include "brightray/browser/inspectable_web_contents.h"
 #include "brightray/browser/inspectable_web_contents_view.h"
+#include "brightray/browser/mac/event_dispatching_window.h"
 #include "content/public/browser/browser_accessibility_state.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/render_view_host.h"
@@ -270,7 +271,7 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 @end
 
-@interface AtomNSWindow : NSWindow {
+@interface AtomNSWindow : EventDispatchingWindow {
  @private
   atom::NativeWindowMac* shell_;
   bool enable_larger_than_screen_;
