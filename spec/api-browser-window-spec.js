@@ -841,7 +841,7 @@ describe('browser-window module', function () {
 
     beforeEach(function () {
       if (c != null) c.destroy()
-      c = new BrowserWindow({show: false})
+      c = new BrowserWindow({show: false, parent: w})
     })
 
     afterEach(function () {
@@ -850,11 +850,6 @@ describe('browser-window module', function () {
     })
 
     describe('parent option', function () {
-      beforeEach(function () {
-        if (c != null) c.destroy()
-        c = new BrowserWindow({show: false, parent: w})
-      })
-
       it('sets parent window', function () {
         assert.equal(c.getParentWindow(), w)
       })
@@ -874,6 +869,11 @@ describe('browser-window module', function () {
 
     describe('win.setParentWindow(parent)', function () {
       if (process.platform !== 'darwin') return
+
+      beforeEach(function () {
+        if (c != null) c.destroy()
+        c = new BrowserWindow({show: false})
+      })
 
       it('sets parent window', function () {
         assert.equal(w.getParentWindow(), null)
@@ -905,7 +905,6 @@ describe('browser-window module', function () {
     describe('win.setModal(modal)', function () {
       it('disables parent window', function () {
         assert.equal(w.isEnabled(), true)
-        c.setParentWindow(w)
         c.setModal(true)
         assert.equal(w.isEnabled(), false)
       })
@@ -915,14 +914,12 @@ describe('browser-window module', function () {
           assert.equal(w.isEnabled(), true)
           done()
         })
-        c.setParentWindow(w)
         c.setModal(true)
         c.close()
       })
 
       it('enables parent window when setting not modal', function () {
         assert.equal(w.isEnabled(), true)
-        c.setParentWindow(w)
         c.setModal(true)
         assert.equal(w.isEnabled(), false)
         c.setModal(false)
@@ -930,8 +927,9 @@ describe('browser-window module', function () {
       })
 
       it('enables parent window when removing parent', function () {
+        if (process.platform !== 'darwin') return
+
         assert.equal(w.isEnabled(), true)
-        c.setParentWindow(w)
         c.setModal(true)
         assert.equal(w.isEnabled(), false)
         c.setParentWindow(null)
@@ -939,10 +937,8 @@ describe('browser-window module', function () {
       })
 
       it('disables parent window recursively', function () {
-        let c2 = new BrowserWindow({show: false})
-        c.setParentWindow(w)
+        let c2 = new BrowserWindow({show: false, parent: w})
         c.setModal(true)
-        c2.setParentWindow(w)
         c2.setModal(true)
         assert.equal(w.isEnabled(), false)
         c.setModal(false)
