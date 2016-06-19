@@ -837,9 +837,10 @@ void NativeWindowViews::SetParentWindow(NativeWindow* parent) {
 
 void NativeWindowViews::SetModal(bool modal) {
 #if defined(USE_X11)
+  SetWindowType(GetAcceleratedWidget(), modal ? "dialog" : "normal");
+  Show();
   SetWMSpecState(GetAcceleratedWidget(), modal,
                  GetAtom("_NET_WM_STATE_MODAL"));
-  SetWindowType(GetAcceleratedWidget(), modal ? "dialog" : "normal");
 #endif
 }
 
