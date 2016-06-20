@@ -59,6 +59,53 @@ win.loadURL('https://github.com')
 Note that even for apps that use `ready-to-show` event, it is still recommended
 to set `backgroundColor` to make app feel more native.
 
+## Parent and child windows
+
+By using `parent` option, you can create child windows:
+
+```javascript
+let top = new BrowserWindow()
+let child = new BrowserWindow({parent: top})
+```
+
+The `child` window will always show on top of the `top` window.
+
+### Modal windows
+
+A modal window is a child window that disables parent window, to turn a child
+window into modal window, you need to call `win.setModal(true)`:
+
+```javascript
+let child = new BrowserWindow({parent: top, show: false})
+child.loadURL('https://github.com')
+child.setModal(true)
+child.once('ready-to-show', () => {
+  child.show()
+})
+```
+
+### Sheets
+
+On macOS it is uncommon to use modal windows for tasks, a more native way is to
+show window as sheet by calling `win.beginSheet(sheet)` API:
+
+```javascript
+let child = new BrowserWindow({show: false})
+child.loadURL('https://github.com')
+child.once('ready-to-show', () => {
+  top.beginSheet(child)
+})
+```
+
+### Platform notices
+
+* On macOS the child window will keep the relative position to parent window
+  when parent window moves, while on Windows and Linux child windows will not
+  move.
+* On macOS the `setModal` has to be called before the child window shows.
+* On Windows it is not supported to change parent window dynamically.
+* On Linux the type of modal windows will be changed to `dialog`.
+
 ## Class: BrowserWindow
 
 `BrowserWindow` is an
@@ -116,6 +163,7 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     `true`.
   * `frame` Boolean - Specify `false` to create a
     [Frameless Window](frameless-window.md). Default is `true`.
+  * `parent` BrowserWindow - Parent window.
   * `acceptFirstMouse` Boolean - Whether the web view accepts a single
     mouse-down event that simultaneously activates the window. Default is
     `false`.
@@ -531,6 +579,33 @@ Hides the window.
 ### `win.isVisible()`
 
 Returns a boolean, whether the window is visible to the user.
+
+### `win.setModal(modal)`
+
+* `modal` Boolean
+
+Sets current window as modal window.
+
+It can only be called for child windows.
+
+### `win.isModal()`
+
+Returns whether current window is a modal window.
+
+### `win.beginSheet(sheet)` _macOS_
+
+* `sheet` BrowserWindow
+
+Shows `sheet` as a sheet for current window, when there is already a sheet
+showing, this call will be queued.
+
+It can only be called for top-level windows.
+
+### `win.endSheet(sheet)` _macOS_
+
+* `sheet` BrowserWindow
+
+Dismisses the `sheet`.
 
 ### `win.maximize()`
 
@@ -1017,3 +1092,18 @@ events.
 Changes whether the window can be focused.
 
 [blink-feature-string]: https://cs.chromium.org/chromium/src/third_party/WebKit/Source/platform/RuntimeEnabledFeatures.in
+
+### `win.setParentWindow(parent)` _Linux_ _macOS_
+
+* `parent` BrowserWindow
+
+Sets `parent` as current window's parent window, passing `null` will turn
+current window into a top-level window.
+
+### `win.getParentWindow()`
+
+Returns the parent window.
+
+### `win.getChildWindows()`
+
+Returns all child windows.
