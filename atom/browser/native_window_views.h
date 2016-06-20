@@ -57,7 +57,6 @@ class NativeWindowViews : public NativeWindow,
   void ShowInactive() override;
   void Hide() override;
   bool IsVisible() override;
-  void SetEnabled(bool enable) override;
   bool IsEnabled() override;
   void Maximize() override;
   void Unmaximize() override;
@@ -100,7 +99,6 @@ class NativeWindowViews : public NativeWindow,
   void SetFocusable(bool focusable) override;
   void SetMenu(ui::MenuModel* menu_model) override;
   void SetParentWindow(NativeWindow* parent) override;
-  void SetModal(bool modal) override;
   gfx::NativeWindow GetNativeWindow() override;
   void SetOverlayIcon(const gfx::Image& overlay,
                       const std::string& description) override;
@@ -119,6 +117,8 @@ class NativeWindowViews : public NativeWindow,
 #elif defined(USE_X11)
   void SetIcon(const gfx::ImageSkia& icon);
 #endif
+
+  void SetEnabled(bool enable);
 
   views::Widget* widget() const { return window_.get(); }
 
@@ -229,6 +229,9 @@ class NativeWindowViews : public NativeWindow,
 
   // Map from accelerator to menu item's command id.
   accelerator_util::AcceleratorTable accelerator_table_;
+
+  // How many times the Disable has been called.
+  int disable_count_;
 
   bool use_content_size_;
   bool movable_;

@@ -326,14 +326,6 @@ bool Window::IsVisible() {
   return window_->IsVisible();
 }
 
-void Window::Disable() {
-  window_->Disable();
-}
-
-void Window::Enable() {
-  window_->Enable();
-}
-
 bool Window::IsEnabled() {
   return window_->IsEnabled();
 }
@@ -767,8 +759,6 @@ void Window::RemoveFromParentChildWindows() {
     return;
 
   parent->child_windows_.Remove(ID());
-  if (IsModal())
-    parent->Enable();
 }
 
 // static
@@ -784,8 +774,6 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("showInactive", &Window::ShowInactive)
       .SetMethod("hide", &Window::Hide)
       .SetMethod("isVisible", &Window::IsVisible)
-      .SetMethod("enable", &Window::Enable)
-      .SetMethod("disable", &Window::Disable)
       .SetMethod("isEnabled", &Window::IsEnabled)
       .SetMethod("maximize", &Window::Maximize)
       .SetMethod("unmaximize", &Window::Unmaximize)
@@ -796,7 +784,9 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setFullScreen", &Window::SetFullScreen)
       .SetMethod("isFullScreen", &Window::IsFullscreen)
       .SetMethod("setAspectRatio", &Window::SetAspectRatio)
+#if !defined(OS_WIN)
       .SetMethod("setParentWindow", &Window::SetParentWindow)
+#endif
       .SetMethod("getParentWindow", &Window::GetParentWindow)
       .SetMethod("getChildWindows", &Window::GetChildWindows)
       .SetMethod("isModal", &Window::IsModal)

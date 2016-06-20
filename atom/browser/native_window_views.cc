@@ -129,13 +129,14 @@ NativeWindowViews::NativeWindowViews(
     brightray::InspectableWebContents* web_contents,
     const mate::Dictionary& options,
     NativeWindow* parent)
-    : NativeWindow(web_contents, options),
+    : NativeWindow(web_contents, options, parent),
       window_(new views::Widget),
       web_view_(inspectable_web_contents()->GetView()->GetView()),
       menu_bar_autohide_(false),
       menu_bar_visible_(false),
       menu_bar_alt_pressed_(false),
       keyboard_event_handler_(new views::UnhandledKeyboardEventHandler),
+      disable_count_(0),
       use_content_size_(false),
       movable_(true),
       resizable_(true),
@@ -242,16 +243,24 @@ NativeWindowViews::NativeWindowViews(
     state_atom_list.push_back(GetAtom("_NET_WM_STATE_FULLSCREEN"));
   }
 
+  std::string window_type;
+  options.Get(options::kType, &window_type);
+
+  if (parent) {
+    SetParentWindow(parent);
+    // Force using dialog type for child window.
+    window_type = "dialog";
+    // Modal window needs the _NET_WM_STATE_MODAL hint.
+    if (is_modal())
+      state_atom_list.push_back(GetAtom("_NET_WM_STATE_MODAL"));
+  }
+
   ui::SetAtomArrayProperty(GetAcceleratedWidget(), "_NET_WM_STATE", "ATOM",
                            state_atom_list);
 
   // Set the _NET_WM_WINDOW_TYPE.
-  std::string window_type;
-  if (options.Get(options::kType, &window_type))
+  if (!window_type.empty())
     SetWindowType(GetAcceleratedWidget(), window_type);
-
-  if (parent)
-    SetParentWindow(parent);
 #endif
 
   // Add web view.
@@ -346,6 +355,9 @@ bool NativeWindowViews::IsFocused() {
 }
 
 void NativeWindowViews::Show() {
+  if (is_modal() && NativeWindow::parent())
+    static_cast<NativeWindowViews*>(NativeWindow::parent())->SetEnabled(false);
+
   window_->native_widget_private()->ShowWithWindowState(GetRestoredState());
 
   NotifyWindowShow();
@@ -368,6 +380,9 @@ void NativeWindowViews::ShowInactive() {
 }
 
 void NativeWindowViews::Hide() {
+  if (is_modal() && NativeWindow::parent())
+    static_cast<NativeWindowViews*>(NativeWindow::parent())->SetEnabled(true);
+
   window_->Hide();
 
   NotifyWindowHide();
@@ -380,22 +395,6 @@ void NativeWindowViews::Hide() {
 
 bool NativeWindowViews::IsVisible() {
   return window_->IsVisible();
-}
-
-void NativeWindowViews::SetEnabled(bool enable) {
-#if defined(OS_WIN)
-  ::EnableWindow(GetAcceleratedWidget(), enable);
-#elif defined(USE_X11)
-  views::DesktopWindowTreeHostX11* tree_host =
-      views::DesktopWindowTreeHostX11::GetHostForXID(GetAcceleratedWidget());
-  if (enable) {
-    tree_host->RemoveEventRewriter(event_disabler_.get());
-    event_disabler_.reset();
-  } else {
-    event_disabler_.reset(new EventDisabler);
-    tree_host->AddEventRewriter(event_disabler_.get());
-  }
-#endif
 }
 
 bool NativeWindowViews::IsEnabled() {
@@ -831,16 +830,6 @@ void NativeWindowViews::SetParentWindow(NativeWindow* parent) {
 #endif
 }
 
-void NativeWindowViews::SetModal(bool modal) {
-  NativeWindow::SetModal(modal);
-#if defined(USE_X11)
-  SetWindowType(GetAcceleratedWidget(), modal ? "dialog" : "normal");
-  Show();
-  SetWMSpecState(GetAcceleratedWidget(), modal,
-                 GetAtom("_NET_WM_STATE_MODAL"));
-#endif
-}
-
 gfx::NativeWindow NativeWindowViews::GetNativeWindow() {
   return window_->GetNativeWindow();
 }
@@ -936,6 +925,33 @@ void NativeWindowViews::SetIcon(const gfx::ImageSkia& icon) {
 }
 #endif
 
+void NativeWindowViews::SetEnabled(bool enable) {
+  // Handle multiple calls of SetEnabled correctly.
+  if (enable) {
+    --disable_count_;
+    if (disable_count_ != 0)
+      return;
+  } else {
+    ++disable_count_;
+    if (disable_count_ != 1)
+      return;
+  }
+
+#if defined(OS_WIN)
+  ::EnableWindow(GetAcceleratedWidget(), enable);
+#elif defined(USE_X11)
+  views::DesktopWindowTreeHostX11* tree_host =
+      views::DesktopWindowTreeHostX11::GetHostForXID(GetAcceleratedWidget());
+  if (enable) {
+    tree_host->RemoveEventRewriter(event_disabler_.get());
+    event_disabler_.reset();
+  } else {
+    event_disabler_.reset(new EventDisabler);
+    tree_host->AddEventRewriter(event_disabler_.get());
+  }
+#endif
+}
+
 void NativeWindowViews::OnWidgetActivationChanged(
     views::Widget* widget, bool active) {
   if (widget != window_.get())
@@ -969,6 +985,15 @@ void NativeWindowViews::OnWidgetBoundsChanged(
 }
 
 void NativeWindowViews::DeleteDelegate() {
+  if (is_modal() && NativeWindow::parent()) {
+    NativeWindowViews* parent =
+        static_cast<NativeWindowViews*>(NativeWindow::parent());
+    // Enable parent window after current window gets closed.
+    parent->SetEnabled(true);
+    // Focus on parent window.
+    parent->Focus(true);
+  }
+
   NotifyWindowClosed();
 }
 
