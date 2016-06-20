@@ -275,7 +275,18 @@ describe('app module', function () {
       w = new BrowserWindow({
         show: false
       })
-      w.emit('blur')
+    })
+
+    it('should emit web-contents-created event when a webContents is created', function (done) {
+      app.once('web-contents-created', function (e, webContents) {
+        setImmediate(function () {
+          assert.equal(w.webContents.id, webContents.id)
+          done()
+        })
+      })
+      w = new BrowserWindow({
+        show: false
+      })
     })
   })
 })

@@ -9,46 +9,44 @@
 상속 받았습니다.
 
 **참고:** 렌더러 / DevTools에선 이미 DOM 속성이 `window.screen`을 가지고 있으므로
-`screen = require('screen')` 형식으로 모듈을 사용할 수 없습니다. 아래의 예시와 같이
-`electronScreen` 같은 이름으로 모듈 이름을 대체하여 사용해야 합니다.
+`screen = require('screen')` 형식으로 모듈을 사용할 수 없습니다.
 
 다음 예시는 화면 전체를 채우는 윈도우 창을 생성합니다:
 
-```javascript
-const {app, BrowserWindow, screen: electronScreen} = require('electron');
 
-let win;
+```javascript
+const electron = require('electron')
+const {app, BrowserWindow} = electron
+
+let win
 
 app.on('ready', () => {
-  let {width, height} = electronScreen.getPrimaryDisplay().workAreaSize;
-  win = new BrowserWindow({width, height});
+  const {width, height} = electron.screen.getPrimaryDisplay().workAreaSize
+  win = new BrowserWindow({width, height})
 });
 ```
 
 다음 예시는 확장 디스플레이에 윈도우를 생성합니다:
 
 ```javascript
-const {app, BrowserWindow, screen: electronScreen} = require('electron');
+const electron = require('electron')
+const {app, BrowserWindow} = require('electron')
 
-let win;
+let win
 
 app.on('ready', () => {
-  let displays = electronScreen.getAllDisplays();
-  let externalDisplay = null;
-  for (let i in displays) {
-    if (displays[i].bounds.x !== 0 || displays[i].bounds.y !== 0) {
-      externalDisplay = displays[i];
-      break;
-    }
-  }
+  let displays = electron.screen.getAllDisplays()
+  let externalDisplay = displays.find((display) => {
+    return display.bounds.x !== 0 || display.bounds.y !== 0
+  })
 
   if (externalDisplay) {
     win = new BrowserWindow({
       x: externalDisplay.bounds.x + 50,
       y: externalDisplay.bounds.y + 50
-    });
+    })
   }
-});
+})
 ```
 
 ## `Display` 객체

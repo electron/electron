@@ -124,7 +124,7 @@
         ],
         'conditions': [
           ['OS=="mac" and libchromiumcontent_component==0', {
-            # -all_load is the "whole-archive" on OS X.
+            # -all_load is the "whole-archive" on macOS.
             'xcode_settings': {
               'OTHER_LDFLAGS': [ '-Wl,-all_load' ],
             },

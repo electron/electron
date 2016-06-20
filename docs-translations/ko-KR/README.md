@@ -6,7 +6,7 @@ URL에 포함되어 있습니다. 만약 그렇지 않다면, 아마 현재 보�
 수 있습니다. 또한 GitHub 인터페이스의 "Switch branches/tags" 드롭다운 메뉴에서도
 사용 중인 Electron 버전으로 변경할 수 있습니다.
 
-**역주:** 한국어 번역 문서는 `atom.io`에 반영되어 있지 않습니다. 한국어 번역 문서는
+**역자주:** 한국어 번역 문서는 `atom.io`에 반영되어 있지 않습니다. 한국어 번역 문서는
 현재 `upstream` 원본 문서의 변경에 따라 최대한 문서의 버전을 맞추려고 노력하고 있지만
 가끔 누락된 번역이 존재할 수 있습니다.
 
@@ -22,10 +22,10 @@ Electron에 대해 자주 묻는 질문이 있습니다. 이슈를 생성하기 
 * [지원하는 플랫폼](tutorial/supported-platforms.md)
 * [보안](tutorial/security.md)
 * [Electron 버전 관리](tutorial/electron-versioning.md)
-* [어플리케이션 배포](tutorial/application-distribution.md)
-* [Mac 앱스토어 어플리케이션 제출 가이드](tutorial/mac-app-store-submission-guide.md)
+* [애플리케이션 배포](tutorial/application-distribution.md)
+* [Mac 앱스토어 애플리케이션 제출 가이드](tutorial/mac-app-store-submission-guide.md)
 * [Windows 스토어 가이드](tutorial/windows-store-guide.md)
-* [어플리케이션 패키징](tutorial/application-packaging.md)
+* [애플리케이션 패키징](tutorial/application-packaging.md)
 * [네이티브 Node 모듈 사용하기](tutorial/using-native-node-modules.md)
 * [메인 프로세스 디버깅하기](tutorial/debugging-main-process.md)
 * [Selenium 과 WebDriver 사용하기](tutorial/using-selenium-and-webdriver.md)
@@ -93,7 +93,7 @@ Electron에 대해 자주 묻는 질문이 있습니다. 이슈를 생성하기 
 * [소스 코드 디렉터리 구조](development/source-code-directory-structure.md)
 * [NW.js(node-webkit)와 기술적으로 다른점](development/atom-shell-vs-node-webkit.md)
 * [빌드 시스템 개요](development/build-system-overview.md)
-* [빌드 설명서 (OS X)](development/build-instructions-osx.md)
+* [빌드 설명서 (macOS)](development/build-instructions-osx.md)
 * [빌드 설명서 (Windows)](development/build-instructions-windows.md)
 * [빌드 설명서 (Linux)](development/build-instructions-linux.md)
 * [디버그 설명서 (Windows)](development/debug-instructions-windows.md)

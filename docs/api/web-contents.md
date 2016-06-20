@@ -325,8 +325,8 @@ Returns:
 
 * `event` Event
 * `params` Object
-  * `x` Integer - x coodinate
-  * `y` Integer - y coodinate
+  * `x` Integer - x coordinate
+  * `y` Integer - y coordinate
   * `linkURL` String - URL of the link that encloses the node the context menu
     was invoked on.
   * `linkText` String - Text associated with the link. May be an empty
@@ -957,7 +957,7 @@ win.webContents.on('did-finish-load', () => {
 });
 ```
 
-### `webContents.showDefinitionForSelection()` _OS X_
+### `webContents.showDefinitionForSelection()` _macOS_
 
 Shows pop-up dictionary that searches the selected word on the page.
 

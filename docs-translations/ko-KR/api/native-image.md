@@ -1,6 +1,6 @@
 ﻿# nativeImage
 
-> PNG 또는 JPG 파일을 사용하여 트레이, 독, 어플리케이션 아이콘을 생성합니다.
+> PNG 또는 JPG 파일을 사용하여 트레이, 독, 애플리케이션 아이콘을 생성합니다.
 
 Electron은 파일 경로 또는 `nativeImage` 인스턴스를 통해 이미지를 사용할 수 있는 API를
 가지고 있습니다. `null`을 전달할 경우 빈 이미지가 생성됩니다.
@@ -79,7 +79,7 @@ let appIcon = new Tray('/Users/somebody/images/icon.png');
 가장 일반적으로 템플릿 이미지는 밝고 어두운 테마 색상으로 변경할 수 있는 메뉴 바 아이콘
 등에 사용되고 있습니다.
 
-**참고:** 템플릿 이미지는 OS X 운영체제만 지원합니다.
+**참고:** 템플릿 이미지는 macOS 운영체제만 지원합니다.
 
 템플릿 이미지를 지정하려면 다음 예시와 같이 파일명에 `Template` 문자열을 추가해야
 합니다:
@@ -101,6 +101,12 @@ let appIcon = new Tray('/Users/somebody/images/icon.png');
 
 `path`로부터 이미지를 로드하여 새로운 `nativeImage` 인스턴스를 만듭니다.
 
+```javascript
+const nativeImage = require('electron').nativeImage;
+
+let image = nativeImage.createFromPath('/Users/somebody/images/icon.png');
+```
+
 ### `nativeImage.createFromBuffer(buffer[, scaleFactor])`
 
 * `buffer` [Buffer][buffer]
@@ -117,12 +123,7 @@ let appIcon = new Tray('/Users/somebody/images/icon.png');
 
 ## Instance Methods
 
-`nativeImage` 인스턴스 객체에서 사용할 수 있는 메서드 입니다:
-
-```javascript
-const nativeImage = require('electron').nativeImage;
-let image = nativeImage.createFromPath('/Users/somebody/images/icon.png');
-```
+`nativeImage` 인스턴스 객체에서 사용할 수 있는 메서드입니다.
 
 ### `image.toPng()`
 
@@ -138,10 +139,10 @@ let image = nativeImage.createFromPath('/Users/somebody/images/icon.png');
 
 이미지를 data URL로 반환합니다.
 
-### `image.getNativeHandle()` _OS X_
+### `image.getNativeHandle()` _macOS_
 
 이미지의 네이티브 핸들 밑에 있는 C 포인터를 담은 [Buffer][buffer]을 반환합니다.
-OS X에선, `NSImage` 인스턴스가 반환됩니다.
+macOS에선, `NSImage` 인스턴스가 반환됩니다.
 
 참고로 반환된 포인터는 복사본이 아닌 네이티브 이미지의 밑에 있는 약한 포인터이며,
 따라서 반드시 관련된 `nativeImage` 인스턴스가 확실하게 유지되고 있는지를 인지해야

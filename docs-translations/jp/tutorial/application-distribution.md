@@ -1,9 +1,9 @@
 # アプリケーションの配布
 
-Electronでアプリケーションを配布するために、アプリケーションを`app` という名前のディレクトリにし、Electronのリソースディレクトリ(OS X では
+Electronでアプリケーションを配布するために、アプリケーションを`app` という名前のディレクトリにし、Electronのリソースディレクトリ(macOS では
 `Electron.app/Contents/Resources/` 、Linux と Windows では `resources/`)配下に置くべきです,
 
-OS X:
+macOS:
 
 ```text
 electron/Electron.app/Contents/Resources/app/
@@ -29,7 +29,7 @@ electron/resources/app
 
 `app` フォルダの代わりに `asar` アーカイブを使用するためには、アーカイブファイルを `app.asar` という名前に変更し、Electron のリソースディレクトリに以下のように配置する必要があります。すると、Electron はアーカイブを読み込もうとし、それを開始します。
 
-OS X:
+macOS:
 
 ```text
 electron/Electron.app/Contents/Resources/
@@ -54,7 +54,7 @@ Electronにバンドルした後、ユーザーに配布する前に、 Electron
 `electron.exe`を任意の名前に変更でき、[rcedit](https://github.com/atom/rcedit)
 のようなツールでアイコンやその他の情報を編集できます。
 
-### OS X
+### macOS
 
 `Electron.app` を任意の名前に変更でき、次のファイルの `CFBundleDisplayName`と `CFBundleIdentifier`、 `CFBundleName`のフィールドの名前を変更する必要があります。
 

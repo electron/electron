@@ -95,9 +95,16 @@ Window::Window(v8::Isolate* isolate, const mate::Dictionary& options) {
   mate::Dictionary(isolate, web_contents->GetWrapper()).Set(
       "browserWindowOptions", options);
 
+  // The parent window.
+  mate::Handle<Window> parent;
+  if (options.Get("parent", &parent))
+    parent_window_.Reset(isolate, parent.ToV8());
+
   // Creates BrowserWindow.
-  window_.reset(NativeWindow::Create(web_contents->managed_web_contents(),
-                                     options));
+  window_.reset(NativeWindow::Create(
+      web_contents->managed_web_contents(),
+      options,
+      parent.IsEmpty() ? nullptr : parent->window_.get()));
   web_contents->SetOwnerWindow(window_.get());
   window_->InitFromOptions(options);
   window_->AddObserver(this);
@@ -120,8 +127,30 @@ Window::~Window() {
   base::MessageLoop::current()->DeleteSoon(FROM_HERE, window_.release());
 }
 
+void Window::AfterInit(v8::Isolate* isolate) {
+  mate::TrackableObject<Window>::AfterInit(isolate);
+
+  // We can only append this window to parent window's child windows after this
+  // window's JS wrapper gets initialized.
+  mate::Handle<Window> parent;
+  if (!parent_window_.IsEmpty() &&
+      mate::ConvertFromV8(isolate, GetParentWindow(), &parent))
+    parent->child_windows_.Set(isolate, ID(), GetWrapper());
+}
+
 void Window::WillCloseWindow(bool* prevent_default) {
   *prevent_default = Emit("close");
+}
+
+void Window::WillDestoryNativeObject() {
+  // Close all child windows before closing current window.
+  v8::Locker locker(isolate());
+  v8::HandleScope handle_scope(isolate());
+  for (v8::Local<v8::Value> value : child_windows_.Values(isolate())) {
+    mate::Handle<Window> child;
+    if (mate::ConvertFromV8(isolate(), value, &child))
+      child->window_->CloseImmediately();
+  }
 }
 
 void Window::OnWindowClosed() {
@@ -135,6 +164,8 @@ void Window::OnWindowClosed() {
   MarkDestroyed();
 
   Emit("closed");
+
+  RemoveFromParentChildWindows();
 
   // Destroy the native class when window is closed.
   base::MessageLoop::current()->PostTask(FROM_HERE, GetDestroyClosure());
@@ -154,6 +185,10 @@ void Window::OnWindowShow() {
 
 void Window::OnWindowHide() {
   Emit("hide");
+}
+
+void Window::OnReadyToShow() {
+  Emit("ready-to-show");
 }
 
 void Window::OnWindowMaximize() {
@@ -276,6 +311,10 @@ void Window::Show() {
 }
 
 void Window::ShowInactive() {
+  // This method doesn't make sense for modal window..
+  if (IsModal())
+    return;
+
   window_->ShowInactive();
 }
 
@@ -285,6 +324,10 @@ void Window::Hide() {
 
 bool Window::IsVisible() {
   return window_->IsVisible();
+}
+
+bool Window::IsEnabled() {
+  return window_->IsEnabled();
 }
 
 void Window::Maximize() {
@@ -529,6 +572,10 @@ void Window::SetIgnoreMouseEvents(bool ignore) {
   return window_->SetIgnoreMouseEvents(ignore);
 }
 
+void Window::SetFocusable(bool focusable) {
+  return window_->SetFocusable(focusable);
+}
+
 void Window::CapturePage(mate::Arguments* args) {
   gfx::Rect rect;
   base::Callback<void(const gfx::Image&)> callback;
@@ -642,6 +689,42 @@ void Window::SetAspectRatio(double aspect_ratio, mate::Arguments* args) {
   window_->SetAspectRatio(aspect_ratio, extra_size);
 }
 
+void Window::SetParentWindow(v8::Local<v8::Value> value,
+                             mate::Arguments* args) {
+  if (IsModal()) {
+    args->ThrowError("Can not be called for modal window");
+    return;
+  }
+
+  mate::Handle<Window> parent;
+  if (value->IsNull()) {
+    RemoveFromParentChildWindows();
+    parent_window_.Reset();
+    window_->SetParentWindow(nullptr);
+  } else if (mate::ConvertFromV8(isolate(), value, &parent)) {
+    parent_window_.Reset(isolate(), value);
+    window_->SetParentWindow(parent->window_.get());
+    parent->child_windows_.Set(isolate(), ID(), GetWrapper());
+  } else {
+    args->ThrowError("Must pass BrowserWindow instance or null");
+  }
+}
+
+v8::Local<v8::Value> Window::GetParentWindow() const {
+  if (parent_window_.IsEmpty())
+    return v8::Null(isolate());
+  else
+    return v8::Local<v8::Value>::New(isolate(), parent_window_);
+}
+
+std::vector<v8::Local<v8::Object>> Window::GetChildWindows() const {
+  return child_windows_.Values(isolate());
+}
+
+bool Window::IsModal() const {
+  return window_->is_modal();
+}
+
 v8::Local<v8::Value> Window::GetNativeWindowHandle() {
   gfx::AcceleratedWidget handle = window_->GetAcceleratedWidget();
   return ToBuffer(
@@ -667,6 +750,17 @@ v8::Local<v8::Value> Window::WebContents(v8::Isolate* isolate) {
     return v8::Local<v8::Value>::New(isolate, web_contents_);
 }
 
+void Window::RemoveFromParentChildWindows() {
+  if (parent_window_.IsEmpty())
+    return;
+
+  mate::Handle<Window> parent;
+  if (!mate::ConvertFromV8(isolate(), GetParentWindow(), &parent))
+    return;
+
+  parent->child_windows_.Remove(ID());
+}
+
 // static
 void Window::BuildPrototype(v8::Isolate* isolate,
                             v8::Local<v8::ObjectTemplate> prototype) {
@@ -680,6 +774,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("showInactive", &Window::ShowInactive)
       .SetMethod("hide", &Window::Hide)
       .SetMethod("isVisible", &Window::IsVisible)
+      .SetMethod("isEnabled", &Window::IsEnabled)
       .SetMethod("maximize", &Window::Maximize)
       .SetMethod("unmaximize", &Window::Unmaximize)
       .SetMethod("isMaximized", &Window::IsMaximized)
@@ -689,6 +784,12 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setFullScreen", &Window::SetFullScreen)
       .SetMethod("isFullScreen", &Window::IsFullscreen)
       .SetMethod("setAspectRatio", &Window::SetAspectRatio)
+#if !defined(OS_WIN)
+      .SetMethod("setParentWindow", &Window::SetParentWindow)
+#endif
+      .SetMethod("getParentWindow", &Window::GetParentWindow)
+      .SetMethod("getChildWindows", &Window::GetChildWindows)
+      .SetMethod("isModal", &Window::IsModal)
       .SetMethod("getNativeWindowHandle", &Window::GetNativeWindowHandle)
       .SetMethod("getBounds", &Window::GetBounds)
       .SetMethod("setBounds", &Window::SetBounds)
@@ -732,6 +833,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setDocumentEdited", &Window::SetDocumentEdited)
       .SetMethod("isDocumentEdited", &Window::IsDocumentEdited)
       .SetMethod("setIgnoreMouseEvents", &Window::SetIgnoreMouseEvents)
+      .SetMethod("setFocusable", &Window::SetFocusable)
       .SetMethod("focusOnWebView", &Window::FocusOnWebView)
       .SetMethod("blurWebView", &Window::BlurWebView)
       .SetMethod("isWebViewFocused", &Window::IsWebViewFocused)

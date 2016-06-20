@@ -17,7 +17,8 @@ void AutoUpdater::SetDelegate(Delegate* delegate) {
 }
 
 #if !defined(OS_MACOSX) || defined(MAS_BUILD)
-void AutoUpdater::SetFeedURL(const std::string& url) {
+void AutoUpdater::SetFeedURL(const std::string& url,
+                             const HeaderMap& requestHeaders) {
 }
 
 void AutoUpdater::CheckForUpdates() {

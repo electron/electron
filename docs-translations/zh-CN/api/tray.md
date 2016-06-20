@@ -68,9 +68,9 @@ appIcon.setContextMenu(contextMenu);
 
 当tray icon被点击的时候发出事件.
 
-__注意:__ `bounds` 只在 OS X 和 Windows 上起效.
+__注意:__ `bounds` 只在 macOS 和 Windows 上起效.
 
-### Event: 'right-click' _OS X_ _Windows_
+### Event: 'right-click' _macOS_ _Windows_
 
 * `event` Event
   * `altKey` Boolean
@@ -85,7 +85,7 @@ __注意:__ `bounds` 只在 OS X 和 Windows 上起效.
 
 当tray icon被鼠标右键点击的时候发出事件.
 
-### Event: 'double-click' _OS X_ _Windows_
+### Event: 'double-click' _macOS_ _Windows_
 
 * `event` Event
   * `altKey` Boolean
@@ -112,27 +112,27 @@ __注意:__ `bounds` 只在 OS X 和 Windows 上起效.
 
 当tray 气泡关闭的时候发出事件，因为超时或人为关闭.
 
-### Event: 'drop' _OS X_
+### Event: 'drop' _macOS_
 
 当tray icon上的任何可拖动项被删除的时候发出事件.
 
-### Event: 'drop-files' _OS X_
+### Event: 'drop-files' _macOS_
 
 * `event`
 * `files` Array - 已删除文件的路径.
 
 当tray icon上的可拖动文件被删除的时候发出事件.
 
-### Event: 'drag-enter' _OS X_
+### Event: 'drag-enter' _macOS_
 
 当一个拖动操作进入tray icon的时候发出事件.
 
-### Event: 'drag-leave' _OS X_
+### Event: 'drag-leave' _macOS_
 
 当一个拖动操作离开tray icon的时候发出事件.
 Emitted when a drag operation exits the tray icon.
 
-### Event: 'drag-end' _OS X_
+### Event: 'drag-end' _macOS_
 
 当一个拖动操作在tray icon上或其它地方停止拖动的时候发出事件.
 
@@ -152,11 +152,11 @@ Emitted when a drag operation exits the tray icon.
 
 让 `image` 与 tray icon 关联起来.
 
-### `Tray.setPressedImage(image)` _OS X_
+### `Tray.setPressedImage(image)` _macOS_
 
 * `image` [NativeImage](native-image.md)
 
-当在 OS X 上按压 tray icon 的时候， 让 `image` 与 tray icon 关联起来.
+当在 macOS 上按压 tray icon 的时候， 让 `image` 与 tray icon 关联起来.
 
 ### `Tray.setToolTip(toolTip)`
 
@@ -164,13 +164,13 @@ Emitted when a drag operation exits the tray icon.
 
 为 tray icon 设置 hover text.
 
-### `Tray.setTitle(title)` _OS X_
+### `Tray.setTitle(title)` _macOS_
 
 * `title` String
 
 在状态栏沿着 tray icon 设置标题.
 
-### `Tray.setHighlightMode(highlight)` _OS X_
+### `Tray.setHighlightMode(highlight)` _macOS_
 
 * `highlight` Boolean
 
@@ -185,7 +185,7 @@ Emitted when a drag operation exits the tray icon.
 
 展示一个 tray balloon.
 
-### `Tray.popUpContextMenu([menu, position])` _OS X_ _Windows_
+### `Tray.popUpContextMenu([menu, position])` _macOS_ _Windows_
 
 * `menu` Menu (optional)
 * `position` Object (可选) - 上托位置.

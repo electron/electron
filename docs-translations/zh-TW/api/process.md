@@ -15,7 +15,7 @@
 
 會導致目前行程的主執行緒停住
 
-## process.setFdLimit(maxDescriptors) _OS X_ _Linux_
+## process.setFdLimit(maxDescriptors) _macOS_ _Linux_
 
 * `maxDescriptors` Integer
 

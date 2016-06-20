@@ -71,9 +71,9 @@ labeled as such.
 
 Emitted when the tray icon is clicked.
 
-**Note:** The `bounds` payload is only implemented on OS X and Windows.
+**Note:** The `bounds` payload is only implemented on macOS and Windows.
 
-### Event: 'right-click' _OS X_ _Windows_
+### Event: 'right-click' _macOS_ _Windows_
 
 * `event` Event
   * `altKey` Boolean
@@ -88,7 +88,7 @@ Emitted when the tray icon is clicked.
 
 Emitted when the tray icon is right clicked.
 
-### Event: 'double-click' _OS X_ _Windows_
+### Event: 'double-click' _macOS_ _Windows_
 
 * `event` Event
   * `altKey` Boolean
@@ -116,26 +116,26 @@ Emitted when the tray balloon is clicked.
 Emitted when the tray balloon is closed because of timeout or user manually
 closes it.
 
-### Event: 'drop' _OS X_
+### Event: 'drop' _macOS_
 
 Emitted when any dragged items are dropped on the tray icon.
 
-### Event: 'drop-files' _OS X_
+### Event: 'drop-files' _macOS_
 
 * `event`
 * `files` Array - the file path of dropped files.
 
 Emitted when dragged files are dropped in the tray icon.
 
-### Event: 'drag-enter' _OS X_
+### Event: 'drag-enter' _macOS_
 
 Emitted when a drag operation enters the tray icon.
 
-### Event: 'drag-leave' _OS X_
+### Event: 'drag-leave' _macOS_
 
 Emitted when a drag operation exits the tray icon.
 
-### Event: 'drag-end' _OS X_
+### Event: 'drag-end' _macOS_
 
 Emitted when a drag operation ends on the tray or ends at another location.
 
@@ -156,11 +156,11 @@ Destroys the tray icon immediately.
 
 Sets the `image` associated with this tray icon.
 
-### `Tray.setPressedImage(image)` _OS X_
+### `Tray.setPressedImage(image)` _macOS_
 
 * `image` [NativeImage](native-image.md)
 
-Sets the `image` associated with this tray icon when pressed on OS X.
+Sets the `image` associated with this tray icon when pressed on macOS.
 
 ### `Tray.setToolTip(toolTip)`
 
@@ -168,13 +168,13 @@ Sets the `image` associated with this tray icon when pressed on OS X.
 
 Sets the hover text for this tray icon.
 
-### `Tray.setTitle(title)` _OS X_
+### `Tray.setTitle(title)` _macOS_
 
 * `title` String
 
 Sets the title displayed aside of the tray icon in the status bar.
 
-### `Tray.setHighlightMode(highlight)` _OS X_
+### `Tray.setHighlightMode(highlight)` _macOS_
 
 * `highlight` Boolean
 
@@ -190,15 +190,15 @@ when the tray icon is clicked. Defaults to true.
 
 Displays a tray balloon.
 
-### `Tray.popUpContextMenu([menu, position])` _OS X_ _Windows_
+### `Tray.popUpContextMenu([menu, position])` _macOS_ _Windows_
 
 * `menu` Menu (optional)
 * `position` Object (optional) - The pop up position.
   * `x` Integer
   * `y` Integer
 
-Popups the context menu of tray icon. When `menu` is passed, the `menu` will
-showed instead of the tray's context menu.
+Pops up the context menu of the tray icon. When `menu` is passed, the `menu` will
+be shown instead of the tray icon's context menu.
 
 The `position` is only available on Windows, and it is (0, 0) by default.
 

@@ -6,7 +6,7 @@ Electron은 모든 [Node.js의 built-in 모듈](http://nodejs.org/api/)과 third
 node 모듈을 완벽하게 지원합니다. ([네이티브 모듈](../tutorial/using-native-node-modules.md)
 포함)
 
-또한 Electron은 네이티브 데스크톱 어플리케이션을 개발 할 수 있도록 추가적인 built-in
+또한 Electron은 네이티브 데스크톱 애플리케이션을 개발 할 수 있도록 추가적인 built-in
 모듈을 제공합니다. 몇몇 모듈은 메인 프로세스에서만 사용할 수 있고 어떤 모듈은 렌더러
 프로세스(웹 페이지)에서만 사용할 수 있습니다. 또한 두 프로세스 모두 사용할 수 있는
 모듈도 있습니다.
@@ -43,7 +43,7 @@ app.on('ready', () => {
 </html>
 ```
 
-어플리케이션을 실행하려면 [앱 실행하기](../tutorial/quick-start.md#앱 실행하기)
+애플리케이션을 실행하려면 [앱 실행하기](../tutorial/quick-start.md#앱 실행하기)
 문서를 참고하기 바랍니다.
 
 ## 분리 할당

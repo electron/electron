@@ -10,9 +10,9 @@ acceleratorは、キーボードショートカットを示す文字列です。
 ## プラットフォームの留意点
 
 
-OS Xでは`Command` キー、LinuxとWindowsでは`Control` キーを意味する`CommandOrControl`はいくつかのacceleratorを定義しますが、LinuxとWindowsでは、`Command` キーは何の効果もありません。
+macOSでは`Command` キー、LinuxとWindowsでは`Control` キーを意味する`CommandOrControl`はいくつかのacceleratorを定義しますが、LinuxとWindowsでは、`Command` キーは何の効果もありません。
 
- `Super` キーは、WindowsとLinuxでは `Windows` キーに、OS Xでは、`Cmd` キーに関連付けられます。
+ `Super` キーは、WindowsとLinuxでは `Windows` キーに、macOSでは、`Cmd` キーに関連付けられます。
 
 ## 提供されている修飾語句
 

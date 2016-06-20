@@ -19,7 +19,7 @@ behavior to electron@github.com.
 
 ## Downloads
 
-Prebuilt binaries and debug symbols of Electron for Linux, Windows and OS X can
+Prebuilt binaries and debug symbols of Electron for Linux, Windows and macOS can
 be found on the [releases](https://github.com/electron/electron/releases) page.
 
 You can also use [`npm`](https://docs.npmjs.com/) to install prebuilt electron

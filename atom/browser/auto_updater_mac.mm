@@ -29,35 +29,42 @@ bool g_update_available = false;
 }
 
 // static
-void AutoUpdater::SetFeedURL(const std::string& feed) {
-  if (g_updater == nil) {
-    Delegate* delegate = GetDelegate();
-    if (!delegate)
-      return;
+void AutoUpdater::SetFeedURL(const std::string& feed,
+                             const HeaderMap& requestHeaders) {
+  Delegate* delegate = GetDelegate();
+  if (!delegate)
+    return;
 
-    // Initialize the SQRLUpdater.
-    NSURL* url = [NSURL URLWithString:base::SysUTF8ToNSString(feed)];
-    NSURLRequest* urlRequest = [NSURLRequest requestWithURL:url];
+  NSURL* url = [NSURL URLWithString:base::SysUTF8ToNSString(feed)];
+  NSMutableURLRequest* urlRequest = [NSMutableURLRequest requestWithURL:url];
 
-    @try {
-      g_updater = [[SQRLUpdater alloc] initWithUpdateRequest:urlRequest];
-    } @catch (NSException* error) {
-      delegate->OnError(base::SysNSStringToUTF8(error.reason));
-      return;
-    }
-
-    [[g_updater rac_valuesForKeyPath:@"state" observer:g_updater]
-      subscribeNext:^(NSNumber *stateNumber) {
-        int state = [stateNumber integerValue];
-        // Dispatching the event on main thread.
-        dispatch_async(dispatch_get_main_queue(), ^{
-          if (state == SQRLUpdaterStateCheckingForUpdate)
-            delegate->OnCheckingForUpdate();
-          else if (state == SQRLUpdaterStateDownloadingUpdate)
-            delegate->OnUpdateAvailable();
-        });
-    }];
+  for (const auto& it : requestHeaders) {
+    [urlRequest setValue:base::SysUTF8ToNSString(it.second)
+      forHTTPHeaderField:base::SysUTF8ToNSString(it.first)];
   }
+
+  if (g_updater)
+    [g_updater release];
+
+  // Initialize the SQRLUpdater.
+  @try {
+    g_updater = [[SQRLUpdater alloc] initWithUpdateRequest:urlRequest];
+  } @catch (NSException* error) {
+    delegate->OnError(base::SysNSStringToUTF8(error.reason));
+    return;
+  }
+
+  [[g_updater rac_valuesForKeyPath:@"state" observer:g_updater]
+    subscribeNext:^(NSNumber *stateNumber) {
+      int state = [stateNumber integerValue];
+      // Dispatching the event on main thread.
+      dispatch_async(dispatch_get_main_queue(), ^{
+        if (state == SQRLUpdaterStateCheckingForUpdate)
+          delegate->OnCheckingForUpdate();
+        else if (state == SQRLUpdaterStateDownloadingUpdate)
+          delegate->OnUpdateAvailable();
+      });
+  }];
 }
 
 // static

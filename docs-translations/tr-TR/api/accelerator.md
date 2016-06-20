@@ -12,10 +12,10 @@ Hızlandırıcılar `+` karakteriyle birden fazla niteleyici ile kombinlenebilir
 ## Platform bilgileri
 
 Linux ve Windows'ta `Command` tuşu herhangi bir etki göstermez. Bunun yerine
-`CommandOrControl` niteleyicisini kullanın. Bu işlem OS X'te `Command`,
+`CommandOrControl` niteleyicisini kullanın. Bu işlem macOS'te `Command`,
 Linux ve Windows'ta `Control` tuşunun işlevini sağlar. `Alt` ise tüm platformlarda mevcuttur.
 
-`Super` tuşu Windows ve Linux'te `Windows` tuşuna, OS X'te ise `Cmd` tuşuna eşleştirilmiştir.
+`Super` tuşu Windows ve Linux'te `Windows` tuşuna, macOS'te ise `Cmd` tuşuna eşleştirilmiştir.
 
 ## Mevcut düzenleyiciler
 

@@ -46,7 +46,8 @@ namespace atom {
 
 NativeWindow::NativeWindow(
     brightray::InspectableWebContents* inspectable_web_contents,
-    const mate::Dictionary& options)
+    const mate::Dictionary& options,
+    NativeWindow* parent)
     : content::WebContentsObserver(inspectable_web_contents->GetWebContents()),
       has_frame_(true),
       transparent_(false),
@@ -56,11 +57,16 @@ NativeWindow::NativeWindow(
       sheet_offset_x_(0.0),
       sheet_offset_y_(0.0),
       aspect_ratio_(0.0),
+      parent_(parent),
+      is_modal_(false),
       inspectable_web_contents_(inspectable_web_contents),
       weak_factory_(this) {
   options.Get(options::kFrame, &has_frame_);
   options.Get(options::kTransparent, &transparent_);
   options.Get(options::kEnableLargerThanScreen, &enable_larger_than_screen_);
+
+  if (parent)
+    options.Get("modal", &is_modal_);
 
   // Tell the content module to initialize renderer widget with transparent
   // mode.
@@ -153,7 +159,7 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
     SetFullScreen(true);
   }
   bool skip;
-  if (options.Get(options::kSkipTaskbar, &skip) && skip) {
+  if (options.Get(options::kSkipTaskbar, &skip)) {
     SetSkipTaskbar(skip);
   }
   bool kiosk;
@@ -282,11 +288,18 @@ bool NativeWindow::IsDocumentEdited() {
   return false;
 }
 
+void NativeWindow::SetFocusable(bool focusable) {
+}
+
 void NativeWindow::SetMenu(ui::MenuModel* menu) {
 }
 
 bool NativeWindow::HasModalDialog() {
   return has_dialog_attached_;
+}
+
+void NativeWindow::SetParentWindow(NativeWindow* parent) {
+  parent_ = parent;
 }
 
 void NativeWindow::FocusOnWebView() {
@@ -393,6 +406,9 @@ void NativeWindow::CloseContents(content::WebContents* source) {
   inspectable_web_contents_->GetView()->SetDelegate(nullptr);
   inspectable_web_contents_ = nullptr;
   Observe(nullptr);
+
+  FOR_EACH_OBSERVER(NativeWindowObserver, observers_,
+                    WillDestoryNativeObject());
 
   // When the web contents is gone, close the window immediately, but the
   // memory will not be freed until you call delete.
@@ -557,6 +573,22 @@ void NativeWindow::BeforeUnloadDialogCancelled() {
   window_unresposive_closure_.Cancel();
 }
 
+void NativeWindow::DidFirstVisuallyNonEmptyPaint() {
+  if (IsVisible())
+    return;
+
+  // When there is a non-empty first paint, resize the RenderWidget to force
+  // Chromium to draw.
+  const auto view = web_contents()->GetRenderWidgetHostView();
+  view->Show();
+  view->SetSize(GetContentSize());
+
+  // Emit the ReadyToShow event in next tick in case of pending drawing work.
+  base::MessageLoop::current()->PostTask(
+      FROM_HERE,
+      base::Bind(&NativeWindow::NotifyReadyToShow, GetWeakPtr()));
+}
+
 bool NativeWindow::OnMessageReceived(const IPC::Message& message) {
   bool handled = true;
   IPC_BEGIN_MESSAGE_MAP(NativeWindow, message)
@@ -592,10 +624,14 @@ void NativeWindow::ScheduleUnresponsiveEvent(int ms) {
 void NativeWindow::NotifyWindowUnresponsive() {
   window_unresposive_closure_.Cancel();
 
-  if (!is_closed_ && !HasModalDialog())
+  if (!is_closed_ && !HasModalDialog() && IsEnabled())
     FOR_EACH_OBSERVER(NativeWindowObserver,
                       observers_,
                       OnRendererUnresponsive());
+}
+
+void NativeWindow::NotifyReadyToShow() {
+  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnReadyToShow());
 }
 
 void NativeWindow::OnCapturePageDone(const CapturePageCallback& callback,

@@ -79,6 +79,12 @@ void AutoUpdater::OnWindowAllClosed() {
   QuitAndInstall();
 }
 
+void AutoUpdater::SetFeedURL(const std::string& url, mate::Arguments* args) {
+  auto_updater::AutoUpdater::HeaderMap headers;
+  args->GetNext(&headers);
+  auto_updater::AutoUpdater::SetFeedURL(url, headers);
+}
+
 void AutoUpdater::QuitAndInstall() {
   // If we don't have any window then quitAndInstall immediately.
   WindowList* window_list = WindowList::GetInstance();
@@ -102,8 +108,8 @@ mate::Handle<AutoUpdater> AutoUpdater::Create(v8::Isolate* isolate) {
 void AutoUpdater::BuildPrototype(
     v8::Isolate* isolate, v8::Local<v8::ObjectTemplate> prototype) {
   mate::ObjectTemplateBuilder(isolate, prototype)
-      .SetMethod("setFeedURL", &auto_updater::AutoUpdater::SetFeedURL)
       .SetMethod("checkForUpdates", &auto_updater::AutoUpdater::CheckForUpdates)
+      .SetMethod("setFeedURL", &AutoUpdater::SetFeedURL)
       .SetMethod("quitAndInstall", &AutoUpdater::QuitAndInstall);
 }
 

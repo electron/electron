@@ -6,22 +6,61 @@
 
 ```javascript
 // 메인 프로세스에서
-const {BrowserWindow} = require('electron');
+const {BrowserWindow} = require('electron')
 
 // 또는 렌더러 프로세스에서
-const {BrowserWindow} = require('electron').remote;
+const {BrowserWindow} = require('electron').remote
 
-let win = new BrowserWindow({width: 800, height: 600, show: false});
+let win = new BrowserWindow({width: 800, height: 600})
 win.on('closed', () => {
   win = null;
-});
+})
 
 win.loadURL('https://github.com');
-win.show();
 ```
 
-또한 [Frameless Window](frameless-window.md) API를 사용하여 창 테두리가 없는 윈도우
-창을 생성할 수 있습니다.
+## Frameless 윈도우
+
+Frameless 윈도우를 만들거나 일정한 모양의 투명한 윈도우를 만드려면,
+[Frameless 윈도우](frameless-window.md) API를 사용할 수 있습니다.
+
+## 우아하게 윈도우 표시하기
+
+윈도우에서 페이지를 로딩할 때, 사용자는 페이지가 로드되는 모습을 볼 것입니다.
+네이티브 어플리케이션으로써 좋지 않은 경험입니다. 윈도우가 시각적인 깜빡임 없이
+표시되도록 만드려면, 서로 다른 상황을 위해 두 가지 방법이 있습니다.
+
+### `ready-to-show` 이벤트 사용하기
+
+페이지가 로딩되는 동안, `ready-to-show` 이벤트가 랜더러 프로세스가 랜더링이 완료되었을
+때 처음으로 발생합니다. 이 이벤트 이후로 윈도우를 표시하면 시각적인 깜빡임 없이 표시할
+수 있습니다.
+
+```javascript
+let win = new BrowserWindow({show: false})
+win.once('ready-to-show', () => {
+  win.show()
+})
+```
+
+이 이벤트는 보통 `did-finish-load` 이벤트 이후에 발생하지만, 페이지가 너무 많은 외부
+리소스를 가지고 있다면, `did-finish-load` 이벤트가 발생하기 이전에 발생할 수도
+있습니다.
+
+### `backgroundColor` 설정하기
+
+복잡한 어플리케이션에선, `ready-to-show` 이벤트가 너무 늦게 발생할 수 있습니다.
+이는 사용자가 어플리케이션이 느리다고 생각할 수 있습니다. 이러한 경우 어플리케이션
+윈도우를 바로 보이도록 하고 어플리케이션의 배경과 가까운 배경색을 `backgroundColor`을
+통해 설정합니다:
+
+```javascript
+let win = new BrowserWindow({backgroundColor: '#2e2c29'})
+win.loadURL('https://github.com')
+```
+
+참고로 `ready-to-show` 이벤트를 사용하더라도 어플리케이션을 네이티브 느낌이 나도록
+하기 위해 `backgroundColor`도 같이 설정하는 것을 권장합니다.
 
 ## Class: BrowserWindow
 
@@ -58,15 +97,20 @@ win.show();
   않습니다. 기본값은 `true` 입니다.
 * `closable` Boolean - 윈도우를 닫을 수 있는지 여부. Linux에선 구현되어있지 않습니다.
   기본값은 `true` 입니다.
+* `focusable` Boolean - 윈도우가 포커스될 수 있는지 여부입니다. 기본값은
+  `true`입니다. Windows에선 `focusable: false`를 설정함으로써 암시적으로
+  `skipTaskbar: true`도 설정됩니다. Linux에선 `focusable: false`를 설정함으로써
+  윈도우가 wm과 함께 반응을 중지하며 모든 작업 영역에서 윈도우가 언제나 최상단에 있게
+  됩니다.
 * `alwaysOnTop` Boolean - 윈도우이 언제나 다른 창들 위에 유지되는지 여부.
   기본값은 `false`입니다.
 * `fullscreen` Boolean - 윈도우의 전체화면 활성화 여부. 이 속성을 명시적으로
-  `false`로 지정했을 경우, OS X에선 전체화면 버튼이 숨겨지거나 비활성됩니다. 기본값은
+  `false`로 지정했을 경우, macOS에선 전체화면 버튼이 숨겨지거나 비활성됩니다. 기본값은
   `false` 입니다.
 * `fullscreenable` Boolean - 윈도우가 전체화면 모드로 전환될 수 있는지 여부입니다.
-  또한 OS X에선, 최대화/줌 버튼이 전체화면 모드 또는 윈도우 최대화를 실행할지 여부도
+  또한 macOS에선, 최대화/줌 버튼이 전체화면 모드 또는 윈도우 최대화를 실행할지 여부도
   포함됩니다. 기본값은 `true`입니다.
-* `skipTaskbar` Boolean - 작업표시줄 어플리케이션 아이콘 표시 스킵 여부. 기본값은
+* `skipTaskbar` Boolean - 작업표시줄 애플리케이션 아이콘 표시 스킵 여부. 기본값은
   `false`입니다.
 * `kiosk` Boolean - Kiosk(키오스크) 모드. 기본값은 `false`입니다.
 * `title` String - 기본 윈도우 제목. 기본값은 `"Electron"`입니다.
@@ -85,23 +129,23 @@ On Windows it is
   활성화 되는 동시에 단일 mouse-down 이벤트를 발생시킬지 여부. 기본값은 `false`입니다.
 * `disableAutoHideCursor` Boolean - 타이핑중 자동으로 커서를 숨길지 여부. 기본값은
   `false`입니다.
-* `autoHideMenuBar` Boolean - `Alt`를 누르지 않는 한 어플리케이션 메뉴바를 숨길지
+* `autoHideMenuBar` Boolean - `Alt`를 누르지 않는 한 애플리케이션 메뉴바를 숨길지
   여부. 기본값은 `false`입니다.
 * `enableLargerThanScreen` Boolean - 윈도우 크기가 화면 크기보다 크게 재조정 될
   수 있는지 여부. 기본값은 `false`입니다.
 * `backgroundColor` String - `#66CD00` 와 `#FFF`, `#80FFFFFF` (알파 지원됨) 같이
   16진수로 표현된 윈도우의 배경 색. 기본값은 `#FFF` (white).
 * `hasShadow` Boolean - 윈도우가 그림자를 가질지 여부를 지정합니다. 이 속성은
-  OS X에서만 구현되어 있습니다. 기본값은 `true`입니다.
+  macOS에서만 구현되어 있습니다. 기본값은 `true`입니다.
 * `darkTheme` Boolean - 설정에 상관 없이 무조건 어두운 윈도우 테마를 사용합니다.
   몇몇 GTK+3 데스크톱 환경에서만 작동합니다. 기본값은 `false`입니다.
 * `transparent` Boolean - 윈도우를 [투명화](frameless-window.md)합니다. 기본값은
   `false`입니다.
 * `type` String - 특정 플랫폼에만 적용되는 윈도우의 종류를 지정합니다. 기본값은
   일반 윈도우 입니다. 사용할 수 있는 창의 종류는 아래를 참고하세요.
-* `standardWindow` Boolean - OS X의 표준 윈도우를 텍스쳐 윈도우 대신 사용합니다.
+* `standardWindow` Boolean - macOS의 표준 윈도우를 텍스쳐 윈도우 대신 사용합니다.
   기본 값은 `true`입니다.
-* `titleBarStyle` String, OS X - 윈도우 타이틀 바 스타일을 지정합니다. 자세한 사항은
+* `titleBarStyle` String, macOS - 윈도우 타이틀 바 스타일을 지정합니다. 자세한 사항은
   아래를 참고하세요.
 * `webPreferences` Object - 웹 페이지 기능을 설정합니다. 사용할 수 있는 속성은
   아래를 참고하세요.
@@ -114,14 +158,14 @@ On Windows it is
 
 * Linux의 경우, `desktop`, `dock`, `toolbar`, `splash`, `notification` 종류를
   사용할 수 있습니다.
-* OS X의 경우, `desktop`, `textured` 종류를 사용할 수 있습니다.
+* macOS의 경우, `desktop`, `textured` 종류를 사용할 수 있습니다.
   * `textured`는 창에 메탈 그라디언트 외관(`NSTexturedBackgroundWindowMask`)을
     설정합니다.
   * `desktop`은 데스크탑 배경 레벨(`kCGDesktopWindowLevel - 1`)에 윈도우를
     배치합니다. 참고로 이렇게 만들어진 윈도우는 포커스, 키보드, 마우스 이벤트를 받을
     수 없습니다. 하지만 편법으로 `globalShortcut`을 통해 키 입력을 받을 수 있습니다.
 
-`titleBarStyle` 속성은 OS X 10.10 Yosemite 이후 버전만 지원하며, 다음 3가지 종류의
+`titleBarStyle` 속성은 macOS 10.10 Yosemite 이후 버전만 지원하며, 다음 3가지 종류의
 값을 사용할 수 있습니다:
 
 * `default` 또는 미지정: 표준 Mac 회색 불투명 스타일을 사용합니다.
@@ -148,7 +192,7 @@ On Windows it is
     페이지에서 같은 `partition`을 사용할 수 있습니다. 만약 `persist:` 접두어로
     시작하지 않으면 페이지는 인-메모리 세션을 사용합니다. 여러 페이지에서 같은
     `partition`을 지정하면 같은 세션을 공유할 수 있습니다. `partition`을 지정하지
-    않으면 어플리케이션의 기본 세션이 사용됩니다.
+    않으면 애플리케이션의 기본 세션이 사용됩니다.
 * `zoomFactor` Number - 페이지의 기본 줌 값을 지정합니다. 예를 들어 `300%`를
   표현하려면 `3.0`으로 지정합니다. 기본값은 `1.0`입니다.
 * `javascript` Boolean - 자바스크립트를 활성화합니다. 기본값은 `false`입니다.
@@ -174,11 +218,14 @@ On Windows it is
   활성화합니다. 기본값은 `false`입니다.
 * `directWrite` Boolean - Windows에서 폰트 렌더링을 위해 DirectWrite를
   사용하는지를 지정합니다. 기본값은 `true`입니다.
-* `scrollBounce` Boolean - OS X에서 스크롤 튕기기 효과 (탄성 밴딩)를 활성화 합니다.
+* `scrollBounce` Boolean - macOS에서 스크롤 튕기기 효과 (탄성 밴딩)를 활성화 합니다.
   기본값은 `false`입니다.
-* `blinkFeatures` String - `CSSVariables,KeyboardEventKey`같은 `,`로 구분된
-  기능 문자열들의 리스트입니다. 지원하는 전체 기능 문자열들은
-  [setFeatureEnabledFromString][blink-feature-string] 함수에서 찾을 수 있습니다.
+* `blinkFeatures` String - 활성화 할 `CSSVariables,KeyboardEventKey`같이 `,`로
+  구분된 기능 문자열들의 리스트입니다. [RuntimeEnabledFeatures.in][blink-feature-string]
+  파일에서 찾을 수 있습니다.
+* `disableBlinkFeatures` String - 비활성화 할 `CSSVariables,KeyboardEventKey`같이
+  `,`로 구분된 기능 문자열들의 리스트입니다. [RuntimeEnabledFeatures.in][blink-feature-string]
+  파일에서 찾을 수 있습니다.
 * `defaultFontFamily` Object - font-family의 기본 폰트를 지정합니다.
   * `standard` String - 기본값 `Times New Roman`.
   * `serif` String - 기본값 `Times New Roman`.
@@ -227,7 +274,7 @@ window.onbeforeunload = (e) => {
 
   // 일반적인 브라우저와는 달리 사용자에게 확인 창을 보여주지 않고, non-void 값을 반환하면
   // 조용히 닫기를 취소합니다.
-  // Dialog API를 통해 사용자가 어플리케이션을 종료할지 정할 수 있도록 확인 창을 표시하는 것을
+  // Dialog API를 통해 사용자가 애플리케이션을 종료할지 정할 수 있도록 확인 창을 표시하는 것을
   // 추천합니다.
   e.returnValue = false;
 };
@@ -262,6 +309,11 @@ window.onbeforeunload = (e) => {
 
 윈도우가 숨겨진 상태일 때 발생하는 이벤트입니다.
 
+### Event: 'ready-to-show'
+
+웹 페이지가 완전히 랜더링되어 윈도우가 시각적인 깜빡임없이 컨텐츠를 보여줄 수 있을 때
+발생하는 이벤트입니다.
+
 ### Event: 'maximize'
 
 윈도우가 최대화됐을 때 발생하는 이벤트입니다.
@@ -286,9 +338,9 @@ window.onbeforeunload = (e) => {
 
 윈도우가 새로운 위치로 이동될 때 발생하는 이벤트입니다.
 
-__참고__: OS X에선 이 이벤트가 그저 `moved` 이벤트의 별칭(alias)으로 사용됩니다.
+__참고__: macOS에선 이 이벤트가 그저 `moved` 이벤트의 별칭(alias)으로 사용됩니다.
 
-### Event: 'moved' _OS X_
+### Event: 'moved' _macOS_
 
 윈도우가 새로운 위치로 이동되었을 때 발생하는 이벤트입니다. (한 번만)
 
@@ -333,15 +385,15 @@ someWindow.on('app-command', (e, cmd) => {
 });
 ```
 
-### Event: 'scroll-touch-begin' _OS X_
+### Event: 'scroll-touch-begin' _macOS_
 
 스크롤 휠 이벤트가 동작하기 시작했을 때 발생하는 이벤트입니다.
 
-### Event: 'scroll-touch-end' _OS X_
+### Event: 'scroll-touch-end' _macOS_
 
 스크롤 휠 이벤트가 동작을 멈췄을 때 발생하는 이벤트입니다.
 
-### Event: 'swipe' _OS X_
+### Event: 'swipe' _macOS_
 
 Returns:
 
@@ -361,7 +413,7 @@ Returns:
 
 ### `BrowserWindow.getFocusedWindow()`
 
-어플리케이션에서 포커스된 윈도우를 반환합니다. 포커스된 윈도우가 없을 경우 `null`을
+애플리케이션에서 포커스된 윈도우를 반환합니다. 포커스된 윈도우가 없을 경우 `null`을
 반환합니다.
 
 ### `BrowserWindow.fromWebContents(webContents)`
@@ -382,14 +434,32 @@ ID에 해당하는 윈도우를 찾습니다.
 
 `path`에 있는 개발자 도구 확장 기능을 추가합니다. 그리고 확장 기능의 이름을 반환합니다.
 
-확장 기능은 기억됩니다. 따라서 API는 단 한 번만 호출되어야 합니다.
-이 API는 실제 프로그램 작성에 사용할 수 없습니다.
+확장 기능은 기억됩니다. 따라서 API는 단 한 번만 호출되어야 합니다. 이 API는 실제
+프로그램 작성에 사용할 수 없습니다. 만약 이미 로드된 확장 기능을 추가하려 한다면, 이
+메서드는 아무것도 반환하지 않고 콘솔에 경고가 로그됩니다.
+
+**참고:** 이 API는 `app` 모듈의 `ready` 이벤트가 발생하기 전까지 사용할 수 없습니다.
 
 ### `BrowserWindow.removeDevToolsExtension(name)`
 
 * `name` String
 
 `name`에 해당하는 개발자 도구 확장 기능을 제거합니다.
+
+**참고:** 이 API는 `app` 모듈의 `ready` 이벤트가 발생하기 전까지 사용할 수 없습니다.
+
+### `BrowserWindow.getDevToolsExtensions()`
+
+키는 확장 기능 이름을 값은 `name`과 `version` 속성을 포함하는 객체를 가지는 객체를
+반환합니다.
+
+개발자 도구 확장 기능이 설치되었는지 확인하려면 다음과 같이 실행할 수 있습니다:
+
+```javascript
+let installed = BrowserWindow.getDevToolsExtensions().hasOwnProperty('devtron')
+```
+
+**참고:** 이 API는 `app` 모듈의 `ready` 이벤트가 발생하기 전까지 사용할 수 없습니다.
 
 ## Instance Properties
 
@@ -492,7 +562,7 @@ let win = new BrowserWindow({width: 800, height: 600});
 
 윈도우가 전체화면 모드 상태인지 여부를 반환합니다.
 
-### `win.setAspectRatio(aspectRatio[, extraSize])` _OS X_
+### `win.setAspectRatio(aspectRatio[, extraSize])` _macOS_
 
 * `aspectRatio` 유지하려 하는 콘텐츠 뷰 일부의 종횡비
 * `extraSize` Object (optional) - 종횡비를 유지하는 동안 포함되지 않을 엑스트라 크기.
@@ -520,7 +590,7 @@ let win = new BrowserWindow({width: 800, height: 600});
   * `width` Integer
   * `height` Integer
 
-* `animate` Boolean (optional) _OS X_
+* `animate` Boolean (optional) _macOS_
 
 윈도우를 지정한 `width`, `height`, `x`, `y`로 크기 재조정 및 이동합니다.
 
@@ -532,7 +602,7 @@ let win = new BrowserWindow({width: 800, height: 600});
 
 * `width` Integer
 * `height` Integer
-* `animate` Boolean (optional) _OS X_
+* `animate` Boolean (optional) _macOS_
 
 `width`와 `height` 값으로 윈도우 크기를 재조정합니다. (너비, 높이)
 
@@ -544,7 +614,7 @@ let win = new BrowserWindow({width: 800, height: 600});
 
 * `width` Integer
 * `height` Integer
-* `animate` Boolean (optional) _OS X_
+* `animate` Boolean (optional) _macOS_
 
 윈도우 클라이언트 영역(웹 페이지)의 크기를 `width`, `height`로 재조정합니다.
 
@@ -584,38 +654,38 @@ let win = new BrowserWindow({width: 800, height: 600});
 
 사용자에 의해 윈도우의 크기가 재조정될 수 있는지 여부를 반환합니다.
 
-### `win.setMovable(movable)` _OS X_ _Windows_
+### `win.setMovable(movable)` _macOS_ _Windows_
 
 * `movable` Boolean
 
 사용자에 의해 윈도우를 이동시킬 수 있는지 여부를 지정합니다. Linux에선 아무 일도
 일어나지 않습니다.
 
-### `win.isMovable()` _OS X_ _Windows_
+### `win.isMovable()` _macOS_ _Windows_
 
 사용자에 의해 윈도우를 이동시킬 수 있는지 여부를 반환합니다. Linux에선 항상 `true`를
 반환합니다.
 
-### `win.setMinimizable(minimizable)` _OS X_ _Windows_
+### `win.setMinimizable(minimizable)` _macOS_ _Windows_
 
 * `minimizable` Boolean
 
 사용자에 의해 윈도우를 최소화시킬 수 있는지 여부를 지정합니다. Linux에선 아무 일도
 일어나지 않습니다.
 
-### `win.isMinimizable()` _OS X_ _Windows_
+### `win.isMinimizable()` _macOS_ _Windows_
 
 사용자에 의해 윈도우를 최소화시킬 수 있는지 여부를 반환합니다. Linux에선 항상 `true`를
 반환합니다.
 
-### `win.setMaximizable(maximizable)` _OS X_ _Windows_
+### `win.setMaximizable(maximizable)` _macOS_ _Windows_
 
 * `maximizable` Boolean
 
 사용자에 의해 윈도우를 최대화시킬 수 있는지 여부를 지정합니다. Linux에선 아무 일도
 일어나지 않습니다.
 
-### `win.isMaximizable()` _OS X_ _Windows_
+### `win.isMaximizable()` _macOS_ _Windows_
 
 사용자에 의해 윈도우를 최대화시킬 수 있는지 여부를 반환합니다. Linux에선 항상 `true`를
 반환합니다.
@@ -632,14 +702,14 @@ let win = new BrowserWindow({width: 800, height: 600});
 최대화/줌 버튼이 전체화면 모드 또는 윈도우 최대화를 토글할 수 있게 할지 여부를
 반환합니다.
 
-### `win.setClosable(closable)` _OS X_ _Windows_
+### `win.setClosable(closable)` _macOS_ _Windows_
 
 * `closable` Boolean
 
 사용자에 의해 윈도우가 수동적으로 닫힐 수 있는지 여부를 지정합니다. Linux에선 아무 일도
 일어나지 않습니다.
 
-### `win.isClosable()` _OS X_ _Windows_
+### `win.isClosable()` _macOS_ _Windows_
 
 사용자에 의해 윈도우가 수동적으로 닫힐 수 있는지 여부를 반환합니다. Linux에선 항상
 `true`를 반환합니다.
@@ -663,7 +733,7 @@ let win = new BrowserWindow({width: 800, height: 600});
 
 * `x` Integer
 * `y` Integer
-* `animate` Boolean (optional) _OS X_
+* `animate` Boolean (optional) _macOS_
 
 윈도우의 위치를 `x`, `y`로 이동합니다.
 
@@ -683,9 +753,9 @@ let win = new BrowserWindow({width: 800, height: 600});
 
 **참고:** 웹 페이지의 제목과 네이티브 윈도우의 제목은 서로 다를 수 있습니다.
 
-### `win.setSheetOffset(offsetY[, offsetX])` _OS X_
+### `win.setSheetOffset(offsetY[, offsetX])` _macOS_
 
-Mac OS X에서 시트를 부착할 위치를 지정합니다. 기본적으로 시트는 윈도우의 프레임 바로
+macOS에서 시트를 부착할 위치를 지정합니다. 기본적으로 시트는 윈도우의 프레임 바로
 아래의 위치에 부착됩니다. 아마도 이 기능은 보통 다음과 같이 HTML 렌더링된 툴바 밑에
 표시하기 위해 사용할 것입니다:
 
@@ -704,7 +774,7 @@ win.setSheetOffset(toolbarRect.height);
 
 * `skip` Boolean
 
-어플리케이션 아이콘을 작업표시줄에 보이지 않도록 설정합니다.
+애플리케이션 아이콘을 작업표시줄에 보이지 않도록 설정합니다.
 
 ### `win.setKiosk(flag)`
 
@@ -720,7 +790,7 @@ Kiosk(키오스크) 모드를 설정합니다.
 
 `Buffer` 상의 플랫폼에 따른 윈도우 핸들을 반환합니다.
 
-핸들의 타입에 따라 적절히 캐스팅됩니다. Windows의 `HWND`, OS X의 `NSView*`, Linux의
+핸들의 타입에 따라 적절히 캐스팅됩니다. Windows의 `HWND`, macOS의 `NSView*`, Linux의
 `Window` (`unsigned long`)를 예로 들 수 있습니다.
 
 ### `win.hookWindowMessage(message, callback)` _Windows_
@@ -747,24 +817,24 @@ Windows 메시지 훅을 등록합니다. `callback`은 WndProc에서 메시지�
 
 모든 메시지 훅을 등록 해제합니다.
 
-### `win.setRepresentedFilename(filename)` _OS X_
+### `win.setRepresentedFilename(filename)` _macOS_
 
 * `filename` String
 
 윈도우 대표 파일의 경로명을 설정합니다. 파일의 아이콘이 윈도우 타이틀 바에 표시됩니다.
 
-### `win.getRepresentedFilename()` _OS X_
+### `win.getRepresentedFilename()` _macOS_
 
 윈도우 대표 파일의 경로명을 반환합니다.
 
-### `win.setDocumentEdited(edited)` _OS X_
+### `win.setDocumentEdited(edited)` _macOS_
 
 * `edited` Boolean
 
 윈도우의 문서가 변경되었는지 여부를 설정합니다. 그리고 `true`로 설정했을 때 타이틀 바의
 아이콘이 회색으로 표시됩니다.
 
-### `win.isDocumentEdited()` _OS X_
+### `win.isDocumentEdited()` _macOS_
 
 윈도우의 문서가 변경되었는지 여부를 반환합니다.
 
@@ -803,7 +873,7 @@ Windows 메시지 훅을 등록합니다. `callback`은 WndProc에서 메시지�
 
 * `progress` Double
 
-작업표시줄에 표시되고 있는 어플리케이션 아이콘에 진행 상태를 표시합니다. [0, 1.0]
+작업표시줄에 표시되고 있는 애플리케이션 아이콘에 진행 상태를 표시합니다. [0, 1.0]
 사이의 값을 지정할 수 있습니다.
 
 진행 상태가 < 0 이 되면 진행 상태 표시를 제거합니다.
@@ -820,16 +890,16 @@ Linux 플랫폼에선 Unity 데스크톱 환경만 지원합니다. 그리고 �
 * `description` String - 접근성 설정에 의한 스크린 리더에 제공될 설명입니다
 
 현재 작업표시줄 아이콘에 16 x 16 픽셀 크기의 오버레이를 지정합니다. 보통 이 기능은
-어플리케이션의 여러 상태를 사용자에게 소극적으로 알리기 위한 방법으로 사용됩니다.
+애플리케이션의 여러 상태를 사용자에게 소극적으로 알리기 위한 방법으로 사용됩니다.
 
-### `win.setHasShadow(hasShadow)` _OS X_
+### `win.setHasShadow(hasShadow)` _macOS_
 
 * `hasShadow` (Boolean)
 
 윈도우가 그림자를 가질지 여부를 지정합니다. Windows와 Linux에선 아무 일도 일어나지
 않습니다.
 
-### `win.hasShadow()` _OS X_
+### `win.hasShadow()` _macOS_
 
 윈도우가 그림자를 가지고 있는지 여부를 반환합니다. Windows와 Linux에선 항상 `true`를
 반환합니다.
@@ -864,9 +934,9 @@ Linux 플랫폼에선 Unity 데스크톱 환경만 지원합니다. 그리고 �
       눌려지지 않은 상태를 유지합니다. 이 값은 버튼을 알림의 용도로 사용하기 위해
       만들어졌습니다.
 
-### `win.showDefinitionForSelection()` _OS X_
+### `win.showDefinitionForSelection()` _macOS_
 
-페이지의 선택된 단어에 대한 사전 검색 결과 팝업을 표시합니다.
+`webContents.showDefinitionForSelection()`와 같습니다.
 
 ### `win.setIcon(icon)` _Windows_ _Linux_
 
@@ -895,7 +965,7 @@ Linux 플랫폼에선 Unity 데스크톱 환경만 지원합니다. 그리고 �
 메뉴 막대의 표시 여부를 설정합니다. 만약 메뉴 막대 자동 숨김 상태라면 여전히 사용자가
 `Alt` 키를 입력하여 메뉴 막대를 표시되도록 할 수 있습니다.
 
-**역주:** 기본 메뉴 막대를 완전히 없애려면 `win.setMenu(null)`를 호출해야 합니다.
+**역자주:** 기본 메뉴 막대를 완전히 없애려면 `win.setMenu(null)`를 호출해야 합니다.
 단순히 이 API를 사용하면 여전히 메뉴에 등록된 핫 키가 작동합니다.
 
 ### `win.isMenuBarVisible()`
@@ -916,10 +986,19 @@ Linux 플랫폼에선 Unity 데스크톱 환경만 지원합니다. 그리고 �
 
 **참고:** 이 API는 Windows에서 언제나 false를 반환합니다.
 
-### `win.setIgnoreMouseEvents(ignore)` _OS X_
+### `win.setIgnoreMouseEvents(ignore)`
 
 * `ignore` Boolean
 
-윈도우에서 일어나는 모든 마우스 이벤트를 무시합니다.
+윈도우가 모든 마우스 이벤트를 무시하게 만듭니다.
 
-[blink-feature-string]: https://code.google.com/p/chromium/codesearch#chromium/src/out/Debug/gen/blink/platform/RuntimeEnabledFeatures.cpp&sq=package:chromium&type=cs&l=576
+이 윈도우에서 일어나는 모든 마우스 이벤트가 이 윈도우 밑의 윈도우로 전달됩니다. 하지만
+이 윈도우가 포커스되어 있다면, 여전히 키보드 이벤트는 받을 수 있습니다.
+
+### `win.setFocusable(focusable)` _Windows_
+
+* `focusable` Boolean
+
+윈도우가 포커스될 수 있는지 여부를 변경합니다.
+
+[blink-feature-string]: https://cs.chromium.org/chromium/src/third_party/WebKit/Source/platform/RuntimeEnabledFeatures.in

@@ -68,7 +68,7 @@
   * :non-potable_water: `:non-potable_water:` 메모리 누수를 연결했을 때
   * :memo: `:memo:` 문서를 작성했을 때
   * :penguin: `:penguin:` Linux에 대한 패치를 했을 때
-  * :apple: `:apple:` Mac OS에 대한 패치를 했을 때
+  * :apple: `:apple:` macOS에 대한 패치를 했을 때
   * :checkered_flag: `:checkered_flag:` Windows에 대한 패치를 했을 때
   * :bug: `:bug:` 버그를 고쳤을 때
   * :fire: `:fire:` 코드 또는 파일을 삭제했을 때

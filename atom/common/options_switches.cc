@@ -66,7 +66,7 @@ const char kType[] = "type";
 // Disable auto-hiding cursor.
 const char kDisableAutoHideCursor[] = "disableAutoHideCursor";
 
-// Use the OS X's standard window instead of the textured window.
+// Use the macOS' standard window instead of the textured window.
 const char kStandardWindow[] = "standardWindow";
 
 // Default browser window background color.
@@ -74,6 +74,9 @@ const char kBackgroundColor[] = "backgroundColor";
 
 // Whether the window should have a shadow.
 const char kHasShadow[] = "hasShadow";
+
+// Whether the window can be activated.
+const char kFocusable[] = "focusable";
 
 // The WebPreferences.
 const char kWebPreferences[] = "webPreferences";

@@ -52,18 +52,19 @@ The `role` property can have following values:
 * `minimize` - Minimize current window
 * `close` - Close current window
 
-On OS X `role` can also have following additional values:
+On macOS `role` can also have following additional values:
 
 * `about` - Map to the `orderFrontStandardAboutPanel` action
 * `hide` - Map to the `hide` action
 * `hideothers` - Map to the `hideOtherApplications` action
 * `unhide` - Map to the `unhideAllApplications` action
 * `front` - Map to the `arrangeInFront` action
+* `zoom` - Map to the `performZoom` action
 * `window` - The submenu is a "Window" menu
 * `help` - The submenu is a "Help" menu
 * `services` - The submenu is a "Services" menu
 
-When specifying `role` on OS X, `label` and `accelerator` are the only options
+When specifying `role` on macOS, `label` and `accelerator` are the only options
 that will affect the MenuItem. All other options will be ignored.
 
 ## Instance Properties

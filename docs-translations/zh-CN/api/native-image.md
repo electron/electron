@@ -63,7 +63,7 @@ var appIcon = new Tray('/Users/somebody/images/icon.png');
 
 最常见的用力是将模板图片用到菜单栏图片上，所以它可以同时适应亮、黑不同的菜单栏.
 
-**注意:** 模板图片只在 OS X 上可用.
+**注意:** 模板图片只在 macOS 上可用.
 
 为了将图片标识为一个模板图片，它的文件名应当以 `Template` 结尾. 例如:
 
@@ -121,9 +121,9 @@ var image = nativeImage.createFromPath('/Users/somebody/images/icon.png');
 
 返回图片数据的 URL.
 
-### `image.getNativeHandle()` _OS X_
+### `image.getNativeHandle()` _macOS_
 
-返回一个保存了 c 指针的 [Buffer][buffer] 来潜在处理原始图像.在OS X, 将会返回一个 `NSImage` 指针实例.
+返回一个保存了 c 指针的 [Buffer][buffer] 来潜在处理原始图像.在macOS, 将会返回一个 `NSImage` 指针实例.
 
 注意那返回的指针是潜在原始图像的弱指针，而不是一个复制，你_必须_ 确保与 `nativeImage` 的关联不间断 .
 

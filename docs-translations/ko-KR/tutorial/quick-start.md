@@ -3,8 +3,8 @@
 ## 소개
 
 Electron은 자바스크립트와 함께 제공된 풍부한 네이티브 API를 사용하여 멋진 데스크탑
-어플리케이션을 만들 수 있도록 해주는 프레임워크입니다. 이 프레임워크의 Node.js는 웹
-서버 개발이 아닌 데스크탑 어플리케이션 개발에 초점을 맞췄습니다.
+애플리케이션을 만들 수 있도록 해주는 프레임워크입니다. 이 프레임워크의 Node.js는 웹
+서버 개발이 아닌 데스크탑 애플리케이션 개발에 초점을 맞췄습니다.
 
 이 말은 Electron이 GUI 라이브러리의 자바스크립트 바인딩이라는 뜻이 아닙니다. 대신,
 Electron은 웹 페이지의 GUI를 사용합니다. 쉽게 말해 Electron은 자바스크립트를 사용하여
@@ -41,9 +41,10 @@ API를 사용하여 low-level 수준으로 운영체제와 상호작용할 수 �
 프로세스에서 그 작업을 처리할 수 있도록 메인 프로세스와 통신을 해야 합니다.
 
 Electron에는 메인 프로세스와 렌더러 프로세스 사이에 통신을 할 수 있도록
-[ipcRenderer](../api/ipc-renderer.md)와 [ipcMain](../api/ipc-main.md) 모듈을 제공하고 있습니다.
-또는 [remote](../api/remote.md) 모듈을 사용하여 RPC 스타일로 통신할 수도 있습니다.
-또한 FAQ에서 [다양한 객체를 공유하는 방법](share-data)도 소개하고 있습니다.
+[`ipcRenderer`](../api/ipc-renderer.md)와 [`ipcMain`](../api/ipc-main.md) 모듈을
+제공하고 있습니다. 또는 [remote](../api/remote.md) 모듈을 사용하여 RPC 스타일로
+통신할 수도 있습니다. 또한 FAQ에서 [다양한 객체를 공유하는 방법](share-data)도
+소개하고 있습니다.
 
 ## 첫번째 Electron 앱 만들기
 
@@ -76,7 +77,7 @@ __알림__: 만약 `main` 필드가 `package.json`에 설정되어 있지 않으
 
 ```javascript
 const electron = require('electron');
-// 어플리케이션 생명주기를 조작 하는 모듈.
+// 애플리케이션 생명주기를 조작 하는 모듈.
 const {app} = electron;
 // 네이티브 브라우저 창을 만드는 모듈.
 const {BrowserWindow} = electron;
@@ -109,9 +110,9 @@ function createWindow () {
 // 사용할 수 있습니다.
 app.on('ready', createWindow);
 
-// 모든 창이 닫히면 어플리케이션 종료.
+// 모든 창이 닫히면 애플리케이션 종료.
 app.on('window-all-closed', () => {
-  // OS X의 대부분의 어플리케이션은 유저가 Cmd + Q 커맨드로 확실하게
+  // macOS의 대부분의 애플리케이션은 유저가 Cmd + Q 커맨드로 확실하게
   // 종료하기 전까지 메뉴바에 남아 계속 실행됩니다.
   if (process.platform !== 'darwin') {
     app.quit();
@@ -119,14 +120,14 @@ app.on('window-all-closed', () => {
 });
 
 app.on('activate', () => {
-  // OS X에선 보통 독 아이콘이 클릭되고 나서도
+  // macOS에선 보통 독 아이콘이 클릭되고 나서도
   // 열린 윈도우가 없으면, 새로운 윈도우를 다시 만듭니다.
   if (win === null) {
     createWindow();
   }
 });
 
-// 이 파일엔 제작할 어플리케이션에 특화된 메인 프로세스 코드를
+// 이 파일엔 제작할 애플리케이션에 특화된 메인 프로세스 코드를
 // 포함할 수 있습니다. 또한 파일을 분리하여 require하는 방법으로
 // 코드를 작성할 수도 있습니다.
 ```
@@ -142,7 +143,7 @@ app.on('activate', () => {
   </head>
   <body>
     <h1>헬로 월드!</h1>
-    이 어플리케이션은 node <script>document.write(process.version)</script>,
+    이 애플리케이션은 node <script>document.write(process.version)</script>,
     Chrome <script>document.write(process.versions.chrome)</script>,
     Electron <script>document.write(process.versions.electron)</script>을 사용합니다.
   </body>
@@ -151,7 +152,7 @@ app.on('activate', () => {
 
 ## 앱 실행하기
 
-앱을 작성한 후 [어플리케이션 배포](application-distribution.md) 가이드를 따라 앱을
+앱을 작성한 후 [애플리케이션 배포](application-distribution.md) 가이드를 따라 앱을
 패키징 하고 패키징한 앱을 실행할 수 있습니다. 또한 Electron 실행파일을 다운로드 받아
 바로 실행해 볼 수도 있습니다.
 
@@ -160,7 +161,7 @@ app.on('activate', () => {
 [`electron-prebuilt`](https://github.com/electron-userland/electron-prebuilt)는
 Electron의 미리 컴파일된 바이너리를 포함하는 `npm` 모듈입니다.
 
-만약 `npm`을 통해 전역에 이 모듈을 설치했다면, 어플리케이션 소스 디렉터리에서 다음
+만약 `npm`을 통해 전역에 이 모듈을 설치했다면, 애플리케이션 소스 디렉터리에서 다음
 명령을 실행하면 바로 실행할 수 있습니다:
 
 ```bash
@@ -195,18 +196,18 @@ $ .\electron\electron.exe your-app\
 $ ./electron/electron your-app/
 ```
 
-#### OS X
+#### macOS
 
 ```bash
 $ ./Electron.app/Contents/MacOS/Electron your-app/
 ```
 
-어플리케이션 실행파일은 `Electron`의 release 패키지에 포함되어 있습니다.
+애플리케이션 실행파일은 `Electron`의 release 패키지에 포함되어 있습니다.
 [여기](https://github.com/electron/electron/releases)에서 다운로드 받을 수 있습니다.
 
 ### 배포용 실행 파일 만들기
 
-어플리케이션 작성을 모두 끝냈다면 [어플리케이션 배포](application-distribution.md)
+애플리케이션 작성을 모두 끝냈다면 [애플리케이션 배포](application-distribution.md)
 가이드를 통해 제작한 앱을 패키징하고 배포할 수 있습니다.
 
 ### 미리 작성된 앱 실행하기
@@ -218,14 +219,14 @@ $ ./Electron.app/Contents/MacOS/Electron your-app/
 [Node.js](https://nodejs.org/en/download/)가 필요합니다. (CLI에서 실행 가능한
   [npm](https://npmjs.org)이 있어야 합니다)
 
-**역주**: `npm`은 보통 Node.js를 설치하면 자동으로 같이 설치됩니다.
+**역자주**: `npm`은 보통 Node.js를 설치하면 자동으로 같이 설치됩니다.
 
 ```bash
 # 저장소를 클론합니다
 $ git clone https://github.com/electron/electron-quick-start
 # 저장소 안으로 들어갑니다
 $ cd electron-quick-start
-# 어플리케이션의 종속성 모듈을 설치한 후 실행합니다
+# 애플리케이션의 종속성 모듈을 설치한 후 실행합니다
 $ npm install && npm start
 ```
 

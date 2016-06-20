@@ -6,7 +6,7 @@
     'clang%': 1,
 
     'variables': {
-      # The minimum OS X SDK version to use.
+      # The minimum macOS SDK version to use.
       'mac_sdk_min%': '10.10',
 
       # Set ARM architecture version.

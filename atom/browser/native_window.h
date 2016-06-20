@@ -81,7 +81,8 @@ class NativeWindow : public base::SupportsUserData,
   // managing the window's live.
   static NativeWindow* Create(
       brightray::InspectableWebContents* inspectable_web_contents,
-      const mate::Dictionary& options);
+      const mate::Dictionary& options,
+      NativeWindow* parent = nullptr);
 
   // Find a window from its WebContents
   static NativeWindow* FromWebContents(content::WebContents* web_contents);
@@ -97,6 +98,7 @@ class NativeWindow : public base::SupportsUserData,
   virtual void ShowInactive() = 0;
   virtual void Hide() = 0;
   virtual bool IsVisible() = 0;
+  virtual bool IsEnabled() = 0;
   virtual void Maximize() = 0;
   virtual void Unmaximize() = 0;
   virtual bool IsMaximized() = 0;
@@ -155,8 +157,10 @@ class NativeWindow : public base::SupportsUserData,
   virtual void SetDocumentEdited(bool edited);
   virtual bool IsDocumentEdited();
   virtual void SetIgnoreMouseEvents(bool ignore) = 0;
+  virtual void SetFocusable(bool focusable);
   virtual void SetMenu(ui::MenuModel* menu);
   virtual bool HasModalDialog();
+  virtual void SetParentWindow(NativeWindow* parent);
   virtual gfx::NativeWindow GetNativeWindow() = 0;
   virtual gfx::AcceleratedWidget GetAcceleratedWidget() = 0;
 
@@ -254,9 +258,13 @@ class NativeWindow : public base::SupportsUserData,
     has_dialog_attached_ = has_dialog_attached;
   }
 
+  NativeWindow* parent() const { return parent_; }
+  bool is_modal() const { return is_modal_; }
+
  protected:
   NativeWindow(brightray::InspectableWebContents* inspectable_web_contents,
-               const mate::Dictionary& options);
+               const mate::Dictionary& options,
+               NativeWindow* parent);
 
   // Convert draggable regions in raw format to SkRegion format. Caller is
   // responsible for deleting the returned SkRegion instance.
@@ -274,6 +282,7 @@ class NativeWindow : public base::SupportsUserData,
   // content::WebContentsObserver:
   void RenderViewCreated(content::RenderViewHost* render_view_host) override;
   void BeforeUnloadDialogCancelled() override;
+  void DidFirstVisuallyNonEmptyPaint() override;
   bool OnMessageReceived(const IPC::Message& message) override;
 
  private:
@@ -282,6 +291,9 @@ class NativeWindow : public base::SupportsUserData,
 
   // Dispatch unresponsive event to observers.
   void NotifyWindowUnresponsive();
+
+  // Dispatch ReadyToShow event to observers.
+  void NotifyReadyToShow();
 
   // Called when CapturePage has done.
   void OnCapturePageDone(const CapturePageCallback& callback,
@@ -315,7 +327,7 @@ class NativeWindow : public base::SupportsUserData,
   base::CancelableClosure window_unresposive_closure_;
 
   // Used to display sheets at the appropriate horizontal and vertical offsets
-  // on OS X.
+  // on macOS.
   double sheet_offset_x_;
   double sheet_offset_y_;
 
@@ -323,6 +335,12 @@ class NativeWindow : public base::SupportsUserData,
   // content view.
   double aspect_ratio_;
   gfx::Size aspect_ratio_extraSize_;
+
+  // The parent window, it is guaranteed to be valid during this window's life.
+  NativeWindow* parent_;
+
+  // Is this a modal window.
+  bool is_modal_;
 
   // The page this window is viewing.
   brightray::InspectableWebContents* inspectable_web_contents_;

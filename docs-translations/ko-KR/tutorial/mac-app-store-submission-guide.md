@@ -1,38 +1,38 @@
-# Mac 앱 스토어 어플리케이션 제출 가이드
+# Mac 앱 스토어 애플리케이션 제출 가이드
 
 Electron은 v0.34.0 버전부터 앱 패키지를 Mac App Store(MAS)에 제출할 수 있게
-되었습니다. 이 가이드는 어플리케이션을 앱 스토어에 등록하는 방법과 빌드의 한계에 대한
+되었습니다. 이 가이드는 애플리케이션을 앱 스토어에 등록하는 방법과 빌드의 한계에 대한
 설명을 제공합니다.
 
-**참고:** Mac App Store에 어플리케이션을 등록하려면
+**참고:** Mac App Store에 애플리케이션을 등록하려면
 [Apple Developer Program][developer-program]에 등록되어 있어야 하며 비용이 발생할
 수 있습니다.
 
-## 앱 스토어에 어플리케이션을 등록하는 방법
+## 앱 스토어에 애플리케이션을 등록하는 방법
 
-다음 몇 가지 간단한 절차에 따라 앱 스토어에 어플리케이션을 등록하는 방법을 알아봅니다.
+다음 몇 가지 간단한 절차에 따라 앱 스토어에 애플리케이션을 등록하는 방법을 알아봅니다.
 한가지, 이 절차는 제출한 앱이 Apple로부터 승인되는 것을 보장하지 않습니다. 따라서
 여전히 Apple의 [Submitting Your App][submitting-your-app] 가이드를 숙지하고 있어야
 하며 앱 스토어 제출 요구 사항을 확실히 인지하고 있어야 합니다.
 
 ### 인증서 취득
 
-앱 스토어에 어플리케이션을 제출하려면, 먼저 Apple로부터 인증서를 취득해야 합니다. 취득
+앱 스토어에 애플리케이션을 제출하려면, 먼저 Apple로부터 인증서를 취득해야 합니다. 취득
 방법은 웹에서 찾아볼 수 있는 [가이드][nwjs-guide]를 참고하면 됩니다.
 
 ### Team ID 얻기
 
-어플리케이션에 서명하기 전에, 먼저 개발 계정의 Team ID를 알아야 합니다. Team ID를
+애플리케이션에 서명하기 전에, 먼저 개발 계정의 Team ID를 알아야 합니다. Team ID를
 알아보려면 [Apple Developer Center](https://developer.apple.com/account/)에
 로그인한 후, 사이드바의 Membership을 클릭합니다. Team ID는 Membership Information
 섹션의 팀 이름 밑에 위치합니다.
 
 ### 앱에 서명하기
 
-준비 작업이 끝난 후, [어플리케이션 배포](application-distribution.md) 문서에 따라
-어플리케이션을 패키징한 후 어플리케이션에 서명 합니다.
+준비 작업이 끝난 후, [애플리케이션 배포](application-distribution.md) 문서에 따라
+애플리케이션을 패키징한 후 애플리케이션에 서명합니다.
 
-먼저, Team ID를 키로 가지고 있는 어플리케이션의 `Info.plist`에 `ElectronTeamID` 키를
+먼저, Team ID를 키로 가지고 있는 애플리케이션의 `Info.plist`에 `ElectronTeamID` 키를
 추가해야 합니다:
 
 ```xml
@@ -77,17 +77,17 @@ Electron은 v0.34.0 버전부터 앱 패키지를 Mac App Store(MAS)에 제출�
 </plist>
 ```
 
-`TEAM_ID` 부분은 Team ID로 치환하고, `your.bundle.id` 부분은 어플리케이션의 Bundle
+`TEAM_ID` 부분은 Team ID로 치환하고, `your.bundle.id` 부분은 애플리케이션의 Bundle
 ID로 치환해야 합니다.
 
-그리고 다음 스크립트를 통해 어플리케이션에 서명합니다:
+그리고 다음 스크립트를 통해 애플리케이션에 서명합니다:
 
 ```bash
 #!/bin/bash
 
-# 어플리케이션의 이름.
+# 애플리케이션의 이름.
 APP="YourApp"
-# 서명할 어플리케이션의 경로.
+# 서명할 애플리케이션의 경로.
 APP_PATH="/path/to/YourApp.app"
 # 서명된 패키지의 출력 경로.
 RESULT_PATH="~/Desktop/$APP.pkg"
@@ -116,38 +116,41 @@ codesign -s "$APP_KEY" -f --entitlements "$PARENT_PLIST" "$APP_PATH"
 productbuild --component "$APP_PATH" /Applications --sign "$INSTALLER_KEY" "$RESULT_PATH"
 ```
 
-만약 OS X의 샌드박스 개념에 대해 처음 접한다면 Apple의 [Enabling App Sandbox][enable-app-sandbox]
+만약 macOS의 샌드박스 개념에 대해 처음 접한다면 Apple의 [Enabling App Sandbox][enable-app-sandbox]
 문서를 참고하여 기본적인 개념을 이해해야 합니다. 그리고 자격(plist) 파일에
-어플리케이션에서 요구하는 권한의 키를 추가합니다.
+애플리케이션에서 요구하는 권한의 키를 추가합니다.
 
-그 외에 [electron-osx-sign][electron-osx-sign] 모듈을 이용해서 직접 서명할 수도 있습니다.
 
-#### 네이티브 모듈 서명하기
+그 외에 별로도 [electron-osx-sign][electron-osx-sign] 모듈을 사용하여 직접 서명할
+수도 있습니다.
 
-앱 내부에서 사용한 네이티브 모듈들도 서명이 필요합니다.
-electron-osx-sign 을 사용한다면, 앱 실행 인수 목록에 경로를 반드시 지정해야 합니다.
+#### 네이티브 모듈에 서명하기
+
+앱 내부에서 사용한 네이티브 모듈도 서명이 필요합니다. `electron-osx-sign`을
+사용한다면, 인수 목록에 빌트인 바이너리 경로가 포함되어 있는지 확인해야 합니다:
 
 ```bash
 electron-osx-sign YourApp.app YourApp.app/Contents/Resources/app/node_modules/nativemodule/build/release/nativemodule
 ```
 
-참고할 점은 네이티브 모듈이 의도하지 않았지만 오브젝트 파일(.o)을 포함하는 경우도 있습니다.
-이 경우 오브젝트 파일들의 서명을 해야할 수도 있습니다.
-[electron-packager][electron-packager]를 사용한다면, 빌드 과정에 `--ignore=.+\.o$` 코드를 추가해 해당 파일을 무시해줍시다.
+참고로 네이티브 모듈이 의도하지 않게 중간 파일을 포함하는 경우도 있으며 이 파일은
+포함되어선 안됩니다. (해당 파일에도 서명해야 할 수도 있습니다)
+[electron-packager][electron-packager]를 사용한다면, 빌드 과정에 `--ignore=.+\.o$`
+인수를 추가하여 중간 파일을 무시할 수 있습니다.
 
-### 어플리케이션 업로드
+### 애플리케이션 업로드
 
-어플리케이션 서명을 완료한 후 iTunes Connect에 업로드하기 위해 Application Loader를
+애플리케이션 서명을 완료한 후 iTunes Connect에 업로드하기 위해 Application Loader를
 사용할 수 있습니다. 참고로 업로드하기 전에 [레코드][create-record]를 만들었는지
 확인해야 합니다.
 
-### 어플리케이션을 심사에 제출
+### 애플리케이션을 심사에 제출
 
-위 과정을 마치면 [어플리케이션을 심사를 위해 제출][submit-for-review]할 수 있습니다.
+위 과정을 마치면 [애플리케이션을 심사를 위해 제출][submit-for-review]할 수 있습니다.
 
 ## MAS 빌드의 한계
 
-모든 어플리케이션 샌드박스에 대한 요구 사항을 충족시키기 위해, 다음 모듈들은 MAS
+모든 애플리케이션 샌드박스에 대한 요구 사항을 충족시키기 위해, 다음 모듈들은 MAS
 빌드에서 비활성화됩니다:
 
 * `crashReporter`
@@ -157,15 +160,38 @@ electron-osx-sign YourApp.app YourApp.app/Contents/Resources/app/node_modules/na
 
 * 비디오 캡쳐 기능은 몇몇 장치에서 작동하지 않을 수 있습니다.
 * 특정 접근성 기능이 작동하지 않을 수 있습니다.
-* 어플리케이션이 DNS의 변경을 감지하지 못할 수 있습니다.
+* 애플리케이션이 DNS의 변경을 감지하지 못할 수 있습니다.
 
-또한 어플리케이션 샌드박스 개념으로 인해 어플리케이션에서 접근할 수 있는 리소스는
+또한 애플리케이션 샌드박스 개념으로 인해 애플리케이션에서 접근할 수 있는 리소스는
 엄격하게 제한되어 있습니다. 자세한 내용은 [앱 샌드박싱][app-sandboxing] 문서를
 참고하세요.
 
+### 추가적인 권한
+
+Mac 앱 스토어 빌드를 위해 앱에서 사용하는 Electron API에 따라 `parent.plist` 파일에
+추가적인 기능에 대한 권한을 추가해야 할 수도 있습니다.
+
+#### dialog.showOpenDialog
+
+```xml
+<key>com.apple.security.files.user-selected.read-only</key>
+<true/>
+```
+
+자세한 내용은 [User-Selected 파일 접근 활성화 문서][user-selected]를 참고하세요.
+
+#### dialog.showSaveDialog
+
+```xml
+<key>com.apple.security.files.user-selected.read-write</key>
+<true/>
+```
+
+자세한 내용은 [User-Selected 파일 접근 활성화 문서][user-selected]를 참고하세요.
+
 ## Electron에서 사용하는 암호화 알고리즘
 
-국가와 살고 있는 지역에 따라, 맥 앱스토어는 제출한 어플리케이션에서 사용하는 암호화
+국가와 살고 있는 지역에 따라, 맥 앱스토어는 제출한 애플리케이션에서 사용하는 암호화
 알고리즘의 문서를 요구할 수 있습니다. 심지어 U.S. Encryption Registration (ERN)의
 승인 사본을 제출하라고 할 수도 있습니다.
 
@@ -196,9 +222,9 @@ Electron은 다음과 같은 암호화 알고리즘을 사용합니다:
 * RIPEMD - [ISO/IEC 10118-3](http://webstore.ansi.org/RecordDetail.aspx?sku=ISO%2FIEC%2010118-3:2004)
 
 ERN의 승인을 얻는 방법은, 다음 글을 참고하는 것이 좋습니다:
-[어플리케이션이 암호화를 사용할 때, 합법적으로 Apple의 앱 스토어에 제출하는 방법 (또는 ERN의 승인을 얻는 방법)][ern-tutorial].
+[애플리케이션이 암호화를 사용할 때, 합법적으로 Apple의 앱 스토어에 제출하는 방법 (또는 ERN의 승인을 얻는 방법)][ern-tutorial].
 
-**역주:** [Mac 앱 배포 가이드 공식 한국어 문서](https://developer.apple.com/osx/distribution/kr/)
+**역자주:** [Mac 앱 배포 가이드 공식 한국어 문서](https://developer.apple.com/osx/distribution/kr/)
 
 [developer-program]: https://developer.apple.com/support/compare-memberships/
 [submitting-your-app]: https://developer.apple.com/library/mac/documentation/IDEs/Conceptual/AppDistributionGuide/SubmittingYourApp/SubmittingYourApp.html
@@ -211,3 +237,4 @@ ERN의 승인을 얻는 방법은, 다음 글을 참고하는 것이 좋습니�
 [app-sandboxing]: https://developer.apple.com/app-sandboxing/
 [ern-tutorial]: https://carouselapps.com/2015/12/15/legally-submit-app-apples-app-store-uses-encryption-obtain-ern/
 [temporary-exception]: https://developer.apple.com/library/mac/documentation/Miscellaneous/Reference/EntitlementKeyReference/Chapters/AppSandboxTemporaryExceptionEntitlements.html
+[user-selected]: https://developer.apple.com/library/mac/documentation/Miscellaneous/Reference/EntitlementKeyReference/Chapters/EnablingAppSandbox.html#//apple_ref/doc/uid/TP40011195-CH4-SW6]

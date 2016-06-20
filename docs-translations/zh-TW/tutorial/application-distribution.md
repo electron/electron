@@ -1,8 +1,8 @@
 # 應用程式部署
 
-要部屬你的 Electron 應用程式，你需要把你的應用程式資料夾命名為 `app`，並放置於 Electron 的資源目錄下 (在 OS X 中位在 `Electron.app/Contents/Resources/`  而 Linux 和 Windows 的是在 `resources/`)，例如：
+要部屬你的 Electron 應用程式，你需要把你的應用程式資料夾命名為 `app`，並放置於 Electron 的資源目錄下 (在 macOS 中位在 `Electron.app/Contents/Resources/`  而 Linux 和 Windows 的是在 `resources/`)，例如：
 
-OS X:
+macOS:
 
 ```text
 electron/Electron.app/Contents/Resources/app/
@@ -28,7 +28,7 @@ electron/resources/app
 
 要使用 `asar` 壓縮檔來取代 `app` 資料夾，你需要重新命名該壓縮檔為 `app.asar`，然後如下所示把它放到 Electron 的資源目錄中，接著 Electron 就會試著讀取壓縮檔並從它開始執行。
 
-OS X:
+macOS:
 
 ```text
 electron/Electron.app/Contents/Resources/
@@ -53,7 +53,7 @@ electron/resources/
 你可以重新命名 `electron.exe` 為任何你喜歡的名稱，然後透過像是 [rcedit](https://github.com/atom/rcedit)
 的工具來編輯它的圖示(icon)和其他資訊。
 
-### OS X
+### macOS
 
 你可以重新命名 `Electron.app` 為任何你喜歡的名稱，另外你也需要重新命名下列檔案中的 `CFBundleDisplayName`、`CFBundleIdentifier` 和 `CFBundleName` 欄位：
 

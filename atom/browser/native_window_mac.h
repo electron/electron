@@ -22,7 +22,8 @@ namespace atom {
 class NativeWindowMac : public NativeWindow {
  public:
   NativeWindowMac(brightray::InspectableWebContents* inspectable_web_contents,
-                  const mate::Dictionary& options);
+                  const mate::Dictionary& options,
+                  NativeWindow* parent);
   ~NativeWindowMac() override;
 
   // NativeWindow:
@@ -34,6 +35,7 @@ class NativeWindowMac : public NativeWindow {
   void ShowInactive() override;
   void Hide() override;
   bool IsVisible() override;
+  bool IsEnabled() override;
   void Maximize() override;
   void Unmaximize() override;
   bool IsMaximized() override;
@@ -78,6 +80,7 @@ class NativeWindowMac : public NativeWindow {
   bool IsDocumentEdited() override;
   void SetIgnoreMouseEvents(bool ignore) override;
   bool HasModalDialog() override;
+  void SetParentWindow(NativeWindow* parent) override;
   gfx::NativeWindow GetNativeWindow() override;
   gfx::AcceleratedWidget GetAcceleratedWidget() override;
   void SetProgressBar(double progress) override;
@@ -96,9 +99,12 @@ class NativeWindowMac : public NativeWindow {
   void SetStyleMask(bool on, NSUInteger flag);
   void SetCollectionBehavior(bool on, NSUInteger flag);
 
-  bool should_hide_native_toolbar_in_fullscreen() const {
-    return should_hide_native_toolbar_in_fullscreen_;
-  }
+  enum TitleBarStyle {
+    NORMAL,
+    HIDDEN,
+    HIDDEN_INSET,
+  };
+  TitleBarStyle title_bar_style() const { return title_bar_style_; }
 
  protected:
   // Return a vector of non-draggable regions that fill a window of size
@@ -138,14 +144,8 @@ class NativeWindowMac : public NativeWindow {
   // The presentation options before entering kiosk mode.
   NSApplicationPresentationOptions kiosk_options_;
 
-  // The window title, for frameless windows we only set title when fullscreen.
-  std::string title_;
-
-  // Force showing the buttons for frameless window.
-  bool force_show_buttons_;
-
-  // Whether to hide the native toolbar under fullscreen mode.
-  bool should_hide_native_toolbar_in_fullscreen_;
+  // The "titleBarStyle" option.
+  TitleBarStyle title_bar_style_;
 
   DISALLOW_COPY_AND_ASSIGN(NativeWindowMac);
 };

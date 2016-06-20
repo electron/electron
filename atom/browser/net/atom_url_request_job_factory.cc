@@ -5,6 +5,7 @@
 
 #include "atom/browser/net/atom_url_request_job_factory.h"
 
+#include "base/memory/ptr_util.h"
 #include "base/stl_util.h"
 #include "content/public/browser/browser_thread.h"
 #include "net/base/load_flags.h"
@@ -41,14 +42,24 @@ bool AtomURLRequestJobFactory::SetProtocolHandler(
   return true;
 }
 
-std::unique_ptr<ProtocolHandler> AtomURLRequestJobFactory::ReplaceProtocol(
+bool AtomURLRequestJobFactory::InterceptProtocol(
     const std::string& scheme,
     std::unique_ptr<ProtocolHandler> protocol_handler) {
-  if (!ContainsKey(protocol_handler_map_, scheme))
-    return nullptr;
+  if (!ContainsKey(protocol_handler_map_, scheme) ||
+      ContainsKey(original_protocols_, scheme))
+    return false;
   ProtocolHandler* original_protocol_handler = protocol_handler_map_[scheme];
   protocol_handler_map_[scheme] = protocol_handler.release();
-  return make_scoped_ptr(original_protocol_handler);
+  original_protocols_.set(scheme, base::WrapUnique(original_protocol_handler));
+  return true;
+}
+
+bool AtomURLRequestJobFactory::UninterceptProtocol(const std::string& scheme) {
+  if (!original_protocols_.contains(scheme))
+    return false;
+  protocol_handler_map_[scheme] =
+      original_protocols_.take_and_erase(scheme).release();
+  return true;
 }
 
 ProtocolHandler* AtomURLRequestJobFactory::GetProtocolHandler(

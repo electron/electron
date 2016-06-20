@@ -74,7 +74,7 @@ Causes the main thread of the current process crash.
 
 Causes the main thread of the current process hang.
 
-### `process.setFdLimit(maxDescriptors)` _OS X_ _Linux_
+### `process.setFdLimit(maxDescriptors)` _macOS_ _Linux_
 
 * `maxDescriptors` Integer
 

@@ -58,7 +58,7 @@ bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol) {
   if (!bundleList) {
     return false;
   }
-  // On Mac OS X, we can't query the default, but the handlers list seems to put
+  // On macOS, we can't query the default, but the handlers list seems to put
   // Apple's defaults first, so we'll use the first option that isn't our bundle
   CFStringRef other = nil;
   for (CFIndex i = 0; i < CFArrayGetCount(bundleList); i++) {

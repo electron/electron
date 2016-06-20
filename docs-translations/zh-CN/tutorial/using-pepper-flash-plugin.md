@@ -5,7 +5,7 @@ Electron 现在支持 Pepper Flash 插件。要在 Electron 里面使用 Pepper 
 
 ## 保留一份 Flash 插件的副本
 
-在 OS X 和 Linux 上，你可以在 Chrome 浏览器的 `chrome://plugins` 页面上找到 Pepper
+在 macOS 和 Linux 上，你可以在 Chrome 浏览器的 `chrome://plugins` 页面上找到 Pepper
 Flash 的插件信息。插件的路径和版本会对 Election 对其的支持有帮助。你也可以把插件
 复制到另一个路径以保留一份副本。
 
@@ -19,7 +19,7 @@ Flash 的插件信息。插件的路径和版本会对 Election 对其的支持�
 ```javascript
 // Specify flash path. 设置 flash 路径
 // On Windows, it might be /path/to/pepflashplayer.dll
-// On OS X, /path/to/PepperFlashPlayer.plugin
+// On macOS, /path/to/PepperFlashPlayer.plugin
 // On Linux, /path/to/libpepflashplayer.so
 app.commandLine.appendSwitch('ppapi-flash-path', '/path/to/libpepflashplayer.so');
 

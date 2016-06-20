@@ -85,7 +85,7 @@
     productbuild --component "$APP_PATH" /Applications --sign "$INSTALLER_KEY" "$RESULT_PATH"
 ```
 
-Если вы только начали разрабатывать под Mac OS X, то мы советуем Вам прочитать [App SandBox](https://developer.apple.com/library/ios/documentation/Miscellaneous/Reference/EntitlementKeyReference/Chapters/EnablingAppSandbox.html "Ссылка для новичков в разработке приложений для Mac OS X")
+Если вы только начали разрабатывать под macOS, то мы советуем Вам прочитать [App SandBox](https://developer.apple.com/library/ios/documentation/Miscellaneous/Reference/EntitlementKeyReference/Chapters/EnablingAppSandbox.html "Ссылка для новичков в разработке приложений для macOS")
 
 ## Обновление приложения
 

@@ -1,6 +1,6 @@
 ﻿# Menu
 
-> 네이티브 어플리케이션 메뉴와 컨텍스트 메뉴를 생성합니다.
+> 네이티브 애플리케이션 메뉴와 컨텍스트 메뉴를 생성합니다.
 
 이 모듈은 메인 프로세스용 모듈이지만 `remote` 모듈을 통해 렌더러 프로세스에서도 사용할
 수 있습니다.
@@ -30,7 +30,7 @@ window.addEventListener('contextmenu', (e) => {
 ```
 
 또 하나의 예를 들자면 다음 예시는 렌더러 프로세스에서 template API를 사용하여
-어플리케이션 메뉴를 만듭니다:
+애플리케이션 메뉴를 만듭니다:
 
 ```javascript
 const template = [
@@ -64,6 +64,15 @@ const template = [
         label: 'Paste',
         accelerator: 'CmdOrCtrl+V',
         role: 'paste'
+      },
+      {
+        label: 'Paste and Match Style',
+        accelerator: 'Shift+Command+V',
+        role: 'pasteandmatchstyle'
+      },
+      {
+        label: 'Delete',
+        role: 'delete'
       },
       {
         label: 'Select All',
@@ -173,7 +182,21 @@ if (process.platform === 'darwin') {
     ]
   });
   // Window menu.
-  template[3].submenu.push(
+  template[3].submenu = [
+    {
+      label: 'Close',
+      accelerator: 'CmdOrCtrl+W',
+      role: 'close'
+    },
+    {
+      label: 'Minimize',
+      accelerator: 'CmdOrCtrl+M',
+      role: 'minimize'
+    },
+    {
+      label: 'Zoom',
+      role: 'zoom'
+    },
     {
       type: 'separator'
     },
@@ -181,7 +204,7 @@ if (process.platform === 'darwin') {
       label: 'Bring All to Front',
       role: 'front'
     }
-  );
+  ];
 }
 
 const menu = Menu.buildFromTemplate(template);
@@ -202,18 +225,25 @@ Menu.setApplicationMenu(menu);
 
 * `menu` Menu
 
-지정한 `menu`를 어플리케이션 메뉴로 만듭니다. OS X에선 상단바에 표시되며 Windows와
+지정한 `menu`를 애플리케이션 메뉴로 만듭니다. macOS에선 상단바에 표시되며 Windows와
 Linux에선 각 창의 상단에 표시됩니다.
 
-### `Menu.sendActionToFirstResponder(action)` _OS X_
+**참고** 이 API는 `app`의 `ready` 이벤트가 발생한 이후에 호출해야 합니다.
+
+### `Menu.getApplicationMenu()`
+
+설정되어있는 어플리케이션 메뉴를 반환합니다. (`Menu`의 인스턴스) 만약 없다면 `null`을
+반환합니다.
+
+### `Menu.sendActionToFirstResponder(action)` _macOS_
 
 * `action` String
 
-`action`을 어플리케이션의 first responder에 전달합니다. 이 메서드는 Cocoa 메뉴
+`action`을 애플리케이션의 first responder에 전달합니다. 이 메서드는 Cocoa 메뉴
 동작을 에뮬레이트 하는데 사용되며 보통 `MenuItem`의 `role` 속성에 사용됩니다.
 
-OS X의 네이티브 액션에 대해 자세히 알아보려면
-[OS X Cocoa Event Handling Guide](https://developer.apple.com/library/mac/documentation/Cocoa/Conceptual/EventOverview/EventArchitecture/EventArchitecture.html#//apple_ref/doc/uid/10000060i-CH3-SW7)
+macOS의 네이티브 액션에 대해 자세히 알아보려면
+[macOS Cocoa Event Handling Guide](https://developer.apple.com/library/mac/documentation/Cocoa/Conceptual/EventOverview/EventArchitecture/EventArchitecture.html#//apple_ref/doc/uid/10000060i-CH3-SW7)
 문서를 참고하세요.
 
 ### `Menu.buildFromTemplate(template)`
@@ -235,13 +265,13 @@ OS X의 네이티브 액션에 대해 자세히 알아보려면
 * `browserWindow` BrowserWindow (optional) - 기본값은 `null`입니다.
 * `x` Number (optional) - 기본값은 -1입니다.
 * `y` Number (만약 `x`를 지정한 경우 **필수 항목**) - 기본값은 -1입니다.
-* `positioningItem` Number (optional) _OS X_ - 메뉴 팝업 시 마우스 커서에 바로
+* `positioningItem` Number (optional) _macOS_ - 메뉴 팝업 시 마우스 커서에 바로
   위치시킬 메뉴 아이템의 인덱스. 기본값은 -1입니다.
 
 메뉴를 `browserWindow` 내부 팝업으로 표시합니다. 옵션으로 메뉴를 표시할 `(x,y)`
 좌표를 지정할 수 있습니다. 따로 좌표를 지정하지 않은 경우 마우스 커서 위치에 표시됩니다.
 `positioningItem` 속성은 메뉴 팝업 시 마우스 커서에 바로 위치시킬 메뉴 아이템의
-인덱스입니다. (OS X에서만 지원합니다)
+인덱스입니다. (macOS에서만 지원합니다)
 
 ### `menu.append(menuItem)`
 
@@ -264,15 +294,15 @@ OS X의 네이티브 액션에 대해 자세히 알아보려면
 
 메뉴가 가지고 있는 메뉴 아이템들의 배열입니다.
 
-## OS X 어플리케이션 메뉴에 대해 알아 둬야 할 것들
+## macOS 애플리케이션 메뉴에 대해 알아 둬야 할 것들
 
-OS X에선 Windows, Linux와 달리 완전히 다른 어플리케이션 메뉴 스타일을 가지고 있습니다.
-그래서 어플리케이션을 네이티브처럼 작동할 수 있도록 하기 위해 다음 몇 가지 유의 사항을
+macOS에선 Windows, Linux와 달리 완전히 다른 애플리케이션 메뉴 스타일을 가지고 있습니다.
+그래서 애플리케이션을 네이티브처럼 작동할 수 있도록 하기 위해 다음 몇 가지 유의 사항을
 숙지해야 합니다.
 
 ### 기본 메뉴
 
-OS X엔 `Services`나 `Windows`와 같은 많은 시스템 지정 기본 메뉴가 있습니다. 기본
+macOS엔 `Services`나 `Windows`와 같은 많은 시스템 지정 기본 메뉴가 있습니다. 기본
 메뉴를 만들려면 반드시 다음 리스트 중 한 가지를 선택하여 메뉴의 `role`로 지정해야
 합니다. 그러면 Electron이 자동으로 인식하여 해당 메뉴를 기본 메뉴로 만듭니다:
 
@@ -282,14 +312,14 @@ OS X엔 `Services`나 `Windows`와 같은 많은 시스템 지정 기본 메뉴�
 
 ### 메뉴 아이템 기본 동작
 
-OS X는 몇가지 메뉴 아이템에 대해 `About xxx`, `Hide xxx`, `Hide Others`와 같은
+macOS는 몇가지 메뉴 아이템에 대해 `About xxx`, `Hide xxx`, `Hide Others`와 같은
 기본 동작을 제공하고 있습니다. 메뉴 아이템의 기본 동작을 지정하려면 반드시 메뉴
 아이템의 `role` 속성을 지정해야 합니다.
 
 ### 메인 메뉴의 이름
 
-OS X에선 지정한 어플리케이션 메뉴에 상관없이 메뉴의 첫번째 라벨은 언제나 어플리케이션의
-이름이 됩니다. 어플리케이션 이름을 변경하려면 앱 번들내의 `Info.plist` 파일을 수정해야
+macOS에선 지정한 애플리케이션 메뉴에 상관없이 메뉴의 첫번째 라벨은 언제나 애플리케이션의
+이름이 됩니다. 애플리케이션 이름을 변경하려면 앱 번들내의 `Info.plist` 파일을 수정해야
 합니다. 자세한 내용은 [About Information Property List Files][AboutInformationPropertyListFiles] 문서를 참고하세요.
 
 ## 지정한 브라우저 윈도우에 메뉴 설정 (*Linux* *Windows*)

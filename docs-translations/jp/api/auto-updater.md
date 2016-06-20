@@ -6,9 +6,9 @@
 
 `autoUpdater`は、異なるプラットフォーム用に統一したAPIを提供していますが、それぞれのプラットフォーム上で、まだ多少の差があります。
 
-### OS X
+### macOS
 
-OS Xでは、 `autoUpdater` モジュールは、[Squirrel.Mac][squirrel-mac]上に構築されていて、動作させるのに特別な設定が不要であることを意味します。サーバーサイドの要件は、[Server Support][server-support]を読んでください。
+macOSでは、 `autoUpdater` モジュールは、[Squirrel.Mac][squirrel-mac]上に構築されていて、動作させるのに特別な設定が不要であることを意味します。サーバーサイドの要件は、[Server Support][server-support]を読んでください。
 
 ### Windows
 
@@ -16,7 +16,7 @@ Windowsでは、auto-updaterを使う前に、ユーザーのPCにアプリを�
 
 Squirrelで生成されたインストーラーは、`com.squirrel.PACKAGE_ID.YOUR_EXE_WITHOUT_DOT_EXE`のフォーマット（例えば、`com.squirrel.slack.Slack` と `com.squirrel.code.Code`）で[Application User Model ID][app-user-model-id]とショートカットアイコンを作成します。`app.setAppUserModelId`APIで同じIDを使う必要があります。同じIDでないと、Windowsはタスクバーに適切にピン止めすることができません。
 
-サーバーサイドのセットアップは、OS Xと異なります。詳細は、[Squirrel.Windows][squirrel-windows] を参照してください。
+サーバーサイドのセットアップは、macOSと異なります。詳細は、[Squirrel.Windows][squirrel-windows] を参照してください。
 
 ### Linux
 

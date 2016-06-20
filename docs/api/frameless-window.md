@@ -18,9 +18,9 @@ const {BrowserWindow} = require('electron')
 let win = new BrowserWindow({width: 800, height: 600, frame: false})
 ```
 
-### Alternatives on OS X
+### Alternatives on macOS
 
-On Mac OS X 10.10 Yosemite and newer, there's an alternative way to specify
+On macOS 10.10 Yosemite and newer, there's an alternative way to specify
 a chromeless window. Instead of setting `frame` to `false` which disables
 both the titlebar and window controls, you may want to have the title bar
 hidden and your content extend to the full window size, yet still preserve
@@ -50,7 +50,7 @@ let win = new BrowserWindow({transparent: true, frame: false})
 * The `blur` filter only applies to the web page, so there is no way to apply
   blur effect to the content below the window (i.e. other applications open on
   the user's system).
-* On Windows operation systems, transparent windows will not work when DWM is
+* On Windows operating systems, transparent windows will not work when DWM is
   disabled.
 * On Linux users have to put `--enable-transparent-visuals --disable-gpu` in
   the command line to disable GPU and allow ARGB to make transparent window,

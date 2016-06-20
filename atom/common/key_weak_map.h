@@ -14,10 +14,6 @@
 
 namespace atom {
 
-namespace internal {
-
-}  // namespace internal
-
 // Like ES6's WeakMap, but the key is Integer and the value is Weak Pointer.
 template<typename K>
 class KeyWeakMap {
@@ -57,7 +53,7 @@ class KeyWeakMap {
   }
 
   // Returns all objects.
-  std::vector<v8::Local<v8::Object>> Values(v8::Isolate* isolate) {
+  std::vector<v8::Local<v8::Object>> Values(v8::Isolate* isolate) const {
     std::vector<v8::Local<v8::Object>> keys;
     keys.reserve(map_.size());
     for (const auto& iter : map_) {

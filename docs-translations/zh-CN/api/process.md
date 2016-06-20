@@ -41,7 +41,7 @@ process.once('loaded', function() {
 
 使当前进程的主线程挂起.
 
-### `process.setFdLimit(maxDescriptors)` _OS X_ _Linux_
+### `process.setFdLimit(maxDescriptors)` _macOS_ _Linux_
 
 * `maxDescriptors` Integer
 

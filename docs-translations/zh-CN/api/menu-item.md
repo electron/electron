@@ -36,7 +36,7 @@
 * `minimize` - 最小化当前窗口
 * `close` - 关闭当前窗口
 
-在 OS X 上，`role` 还可以有以下值：
+在 macOS 上，`role` 还可以有以下值：
 
 * `about` - 匹配 `orderFrontStandardAboutPanel` 行为
 * `hide` - 匹配 `hide` 行为

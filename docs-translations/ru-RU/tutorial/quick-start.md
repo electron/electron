@@ -113,7 +113,7 @@ app.on('ready', createWindow)
 
 // Выйти, если все окна закрыты
 app.on('window-all-closed', function () {
-  //На OS X приложение и его строка меню обычно остаются активными,
+  //На macOS приложение и его строка меню обычно остаются активными,
   //пока пользователь не завершит их с помощью `Cmd + Q`.
   if (process.platform !== 'darwin') {
     app.quit()
@@ -121,7 +121,7 @@ app.on('window-all-closed', function () {
 })
 
 app.on('activate', function () {
-  //На OS X приложение обычно пересоздаёт окно, когда
+  //На macOS приложение обычно пересоздаёт окно, когда
   //пользователь кликает на его иконку в доке, если не открыто
   //других окон.
   if (mainWindow === null) {
@@ -192,7 +192,7 @@ $ .\electron\electron.exe your-app\
 $ ./electron/electron your-app/
 ```
 
-#### OS X
+#### macOS
 
 ```bash
 $ ./Electron.app/Contents/MacOS/Electron your-app/

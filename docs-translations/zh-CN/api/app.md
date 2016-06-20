@@ -18,7 +18,7 @@ app.on('window-all-closed', function() {
 ### 事件：'will-finish-launching'
 
 当应用程序完成基础的启动的时候被触发。在 Windows 和 Linux 中，
-`will-finish-launching` 事件与 `ready` 事件是相同的； 在 OS X 中，
+`will-finish-launching` 事件与 `ready` 事件是相同的； 在 macOS 中，
 这个时间相当于 `NSApplication` 中的 `applicationWillFinishLaunching` 提示。
 你应该经常在这里为 `open-file` 和 `open-url` 设置监听器，并启动崩溃报告和自动更新。
 
@@ -65,7 +65,7 @@ app.on('window-all-closed', function() {
 
 当应用程序正在退出时触发。
 
-### 事件：'open-file' _OS X_
+### 事件：'open-file' _macOS_
 
 返回：
 
@@ -79,7 +79,7 @@ app.on('window-all-closed', function() {
 如果你想处理这个事件，你应该调用 `event.preventDefault()` 。
 在 Windows系统中, 你需要通过解析 process.argv 来获取文件路径。
 
-### 事件：'open-url' _OS X_
+### 事件：'open-url' _macOS_
 
 返回：
 
@@ -90,7 +90,7 @@ app.on('window-all-closed', function() {
 
 如果你想处理这个事件，你应该调用 `event.preventDefault()` 。
 
-### 事件：'activate' _OS X_
+### 事件：'activate' _macOS_
 
 返回：
 
@@ -225,11 +225,11 @@ app.on('login', function(event, webContents, request, authInfo, callback) {
 
 这个方法保证了所有的 `beforeunload` 和 `unload` 事件处理器被正确执行。假如一个窗口的 `beforeunload` 事件处理器返回 `false`，那么整个应用可能会取消退出。
 
-### `app.hide()` _OS X_
+### `app.hide()` _macOS_
 
 隐藏所有的应用窗口，不是最小化.
 
-### `app.show()` _OS X_
+### `app.show()` _macOS_
 
 隐藏后重新显示所有的窗口，不会自动选中他们。
 
@@ -257,7 +257,7 @@ app.on('login', function(event, webContents, request, authInfo, callback) {
 * `appData` 当前用户的应用数据文件夹，默认对应：
   * `%APPDATA%` Windows 中
   * `$XDG_CONFIG_HOME` or `~/.config` Linux 中
-  * `~/Library/Application Support` OS X 中
+  * `~/Library/Application Support` macOS 中
 * `userData` 储存你应用程序设置文件的文件夹，默认是 `appData` 文件夹附加应用的名称
 * `temp` 临时文件夹
 * `exe` 当前的可执行文件
@@ -305,15 +305,15 @@ app.on('login', function(event, webContents, request, authInfo, callback) {
 
 返回当前应用程序的语言。
 
-### `app.addRecentDocument(path)`  _OS X_ _Windows_
+### `app.addRecentDocument(path)`  _macOS_ _Windows_
 
 * `path` String
 
 在最近访问的文档列表中添加 `path`。
 
-这个列表由操作系统进行管理。在 Windows 中您可以通过任务条进行访问，在 OS X 中你可以通过 dock 菜单进行访问。
+这个列表由操作系统进行管理。在 Windows 中您可以通过任务条进行访问，在 macOS 中你可以通过 dock 菜单进行访问。
 
-### `app.clearRecentDocuments()` _OS X_ _Windows_
+### `app.clearRecentDocuments()` _macOS_ _Windows_
 
 清除最近访问的文档列表。
 
@@ -358,7 +358,7 @@ app.on('login', function(event, webContents, request, authInfo, callback) {
 
 如果当前实例为第一个实例，那么在这个方法将会返回 `false` 来保证它继续运行。否则将会返回 `true` 来让它立刻退出。
 
-在 OS X 中，如果用户通过 Finder、`open-file` 或者 `open-url` 打开应用，系统会强制确保只有一个实例在运行。但是如果用户是通过
+在 macOS 中，如果用户通过 Finder、`open-file` 或者 `open-url` 打开应用，系统会强制确保只有一个实例在运行。但是如果用户是通过
 命令行打开，这个系统机制会被忽略，所以你仍然需要靠这个方法来保证应用为单实例运行的。
 
 下面是一个简单的例子。我们可以通过这个例子了解如何确保应用为单实例运行状态。
@@ -432,7 +432,7 @@ if (browserOptions.transparent) {
 
 **注意** 这个方法不会影响 `process.argv`。
 
-### `app.dock.bounce([type])` _OS X_
+### `app.dock.bounce([type])` _macOS_
 
 * `type` String - 可选参数，可以是 `critical` 或 `informational`。默认为 `informational`。
 
@@ -442,37 +442,37 @@ if (browserOptions.transparent) {
 
 这个方法返回的返回值表示这个请求的 ID。
 
-### `app.dock.cancelBounce(id)` _OS X_
+### `app.dock.cancelBounce(id)` _macOS_
 
 * `id` Integer
 
 取消这个 `id` 对应的请求。
 
-### `app.dock.setBadge(text)` _OS X_
+### `app.dock.setBadge(text)` _macOS_
 
 * `text` String
 
 设置应用在 dock 中显示的字符串。
 
-### `app.dock.getBadge()` _OS X_
+### `app.dock.getBadge()` _macOS_
 
 返回应用在 dock 中显示的字符串。
 
-### `app.dock.hide()` _OS X_
+### `app.dock.hide()` _macOS_
 
 隐藏应用在 dock 中的图标。
 
-### `app.dock.show()` _OS X_
+### `app.dock.show()` _macOS_
 
 显示应用在 dock 中的图标。
 
-### `app.dock.setMenu(menu)` _OS X_
+### `app.dock.setMenu(menu)` _macOS_
 
 * `menu` [Menu](menu.md)
 
 设置应用的 [dock 菜单][dock-menu].
 
-### `app.dock.setIcon(image)` _OS X_
+### `app.dock.setIcon(image)` _macOS_
 
 * `image` [NativeImage](native-image.md)
 

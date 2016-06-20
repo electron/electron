@@ -9,10 +9,10 @@
 
 ## 运行平台相关的提示
 
-在 Linux 和 Windows 上，`Command` 键并不存在，因此我们通常用 `CommandOrControl` 来表示“在 OS X 下为 `Command` 键，但在
+在 Linux 和 Windows 上，`Command` 键并不存在，因此我们通常用 `CommandOrControl` 来表示“在 macOS 下为 `Command` 键，但在
 Linux 和 Windows 下为 `Control` 键。
 
-`Super` 键是指 Linux 和 Windows 上的 `Windows` 键，但是在 OS X 下为 `Command` 键。
+`Super` 键是指 Linux 和 Windows 上的 `Windows` 键，但是在 macOS 下为 `Command` 键。
 
 ## 可用的功能按键
 

@@ -40,7 +40,7 @@ O objeto `process` tem os seguintes métodos:
 
 Faz com que o *thread* principal do processo congele.
 
-### `process.setFdLimit(maxDescriptors)` _OS X_ _Linux_
+### `process.setFdLimit(maxDescriptors)` _macOS_ _Linux_
 
 * `maxDescriptors` Integer
 

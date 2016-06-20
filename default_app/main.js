@@ -3,7 +3,6 @@ const {app, dialog, shell, Menu} = require('electron')
 const fs = require('fs')
 const Module = require('module')
 const path = require('path')
-const repl = require('repl')
 const url = require('url')
 
 // Parse command line options.
@@ -79,6 +78,15 @@ app.once('ready', () => {
           label: 'Paste',
           accelerator: 'CmdOrCtrl+V',
           role: 'paste'
+        },
+        {
+          label: 'Paste and Match Style',
+          accelerator: 'Shift+Command+V',
+          role: 'pasteandmatchstyle'
+        },
+        {
+          label: 'Delete',
+          role: 'delete'
         },
         {
           label: 'Select All',
@@ -210,7 +218,21 @@ app.once('ready', () => {
         }
       ]
     })
-    template[3].submenu.push(
+    template[3].submenu = [
+      {
+        label: 'Close',
+        accelerator: 'CmdOrCtrl+W',
+        role: 'close'
+      },
+      {
+        label: 'Minimize',
+        accelerator: 'CmdOrCtrl+M',
+        role: 'minimize'
+      },
+      {
+        label: 'Zoom',
+        role: 'zoom'
+      },
       {
         type: 'separator'
       },
@@ -218,7 +240,7 @@ app.once('ready', () => {
         label: 'Bring All to Front',
         role: 'front'
       }
-    )
+    ]
   }
 
   const menu = Menu.buildFromTemplate(template)
@@ -286,6 +308,13 @@ function loadApplicationByUrl (appUrl) {
 }
 
 function startRepl () {
+  if (process.platform === 'win32') {
+    console.error('Electron REPL not currently supported on Windows')
+    process.exit(1)
+    return
+  }
+
+  const repl = require('repl')
   repl.start('> ').on('exit', () => {
     process.exit(0)
   })
