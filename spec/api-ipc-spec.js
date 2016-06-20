@@ -132,10 +132,6 @@ describe('ipc module', function () {
         done(reason)
       })
 
-      window.addEventListener('unhandledrejection', function (event) {
-        done(event.reason)
-      })
-
       var promise = remote.require(path.join(fixtures, 'module', 'unhandled-rejection.js'))
       promise.reject().then(function () {
         done(new Error('Promise was not rejected'))
@@ -147,6 +143,7 @@ describe('ipc module', function () {
 
     it('emits unhandled rejection events in the renderer process', function (done) {
       window.addEventListener('unhandledrejection', function (event) {
+        event.preventDefault()
         assert.equal(event.reason.message, 'rejected')
         done()
       })
