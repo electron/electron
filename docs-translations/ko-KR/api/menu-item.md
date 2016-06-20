@@ -52,18 +52,19 @@
 * `minimize` - 현재 윈도우를 최소화합니다
 * `close` - 현재 윈도우를 닫습니다
 
-OS X에서의 `role`은 다음 값을 추가로 가질 수 있습니다:
+macOS에서의 `role`은 다음 값을 추가로 가질 수 있습니다:
 
 * `about` - `orderFrontStandardAboutPanel` 액션에 대응
 * `hide` - `hide` 액션에 대응
 * `hideothers` - `hideOtherApplications` 액션에 대응
 * `unhide` - `unhideAllApplications` 액션에 대응
 * `front` - `arrangeInFront` 액션에 대응
+* `zoom` - `performZoom` 액션에 대응
 * `window` - 부 메뉴를 가지는 "Window" 메뉴
 * `help` - 부 메뉴를 가지는 "Help" 메뉴
 * `services` - 부 메뉴를 가지는 "Services" 메뉴
 
-OS X에서는 `role`을 지정할 때, `label`과 `accelerator`만 MenuItem에 효과가
+macOS에서는 `role`을 지정할 때, `label`과 `accelerator`만 MenuItem에 효과가
 적용되도록 변경되며, 다른 옵션들은 모두 무시됩니다.
 
 ## Instance Properties

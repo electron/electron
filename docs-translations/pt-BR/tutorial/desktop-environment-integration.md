@@ -8,9 +8,9 @@ menu customizado na dock.
 Este guia explica como integrar suas aplicações no ambiente desktop com a API
 do Electron.
 
-## Documentos Recentes (Windows & OS X)
+## Documentos Recentes (Windows & macOS)
 
-O Windows e o OS X disponibilizam um acesso fácil para a lista de arquivos
+O Windows e o macOS disponibilizam um acesso fácil para a lista de arquivos
 abertos recentemente pela aplicação através do JumpList ou Dock Menu respectivamente.
 
 __JumpList:__
@@ -48,14 +48,14 @@ Quando um usuário clica em um arquivo na JumpList, uma nova instância da sua a
 deve ser iniciada com o caminho do arquivo adicionado como um argumento de
 linha de comando.
 
-### Notas para OS X
+### Notas para macOS
 
 Quando um arquivo for requisitado pelo menu de documentos recentes, o evento `open-file`
 do módulo `app` irá ser emitido.
 
-## Dock Menu customizado (OS X)
+## Dock Menu customizado (macOS)
 
-OS X permite que desenvolvedores especifiquem um menu customizado para a dock,
+macOS permite que desenvolvedores especifiquem um menu customizado para a dock,
 que normalmente contém alguns atalhos para as funcionalidades mais utilizadas
 da sua aplicação.
 
@@ -64,7 +64,7 @@ __Dock menu do Terminal.app:__
 <img src="https://cloud.githubusercontent.com/assets/639601/5069962/6032658a-6e9c-11e4-9953-aa84006bdfff.png" height="354" width="341" >
 
 Para criar seu Dock Menu customizado, você pode usar a API `app.dock.setMenu`,
-ela está disponível apenas no OS X:
+ela está disponível apenas no macOS:
 
 ```javascript
 var app = require('app');
@@ -106,7 +106,7 @@ __Tarefas do Internet Explorer:__
 
 ![IE](http://i.msdn.microsoft.com/dynimg/IC420539.png)
 
-Ao contrário do Menu Dock no OS X que é um verdadeiro menu, tarefas do usuário no Windows
+Ao contrário do Menu Dock no macOS que é um verdadeiro menu, tarefas do usuário no Windows
 funcionam como atalhos, de uma forma que quando o usuário clica em uma tarefa, um programa
 deve ser executado com os argumentos especificados.
 
@@ -226,9 +226,9 @@ var window = new BrowserWindow({...});
 window.setProgressBar(0.5);
 ```
 
-## Representação do arquivo na janela (OS X)
+## Representação do arquivo na janela (macOS)
 
-No OS X, uma janela pode possuir a representação de um arquivo na barra de título,
+No macOS, uma janela pode possuir a representação de um arquivo na barra de título,
 permitindo que ao usuário acionar um Command-Click ou Control-Click sobre o título da janela,
 uma pop-up de navegação entre arquivos é exibida.
 

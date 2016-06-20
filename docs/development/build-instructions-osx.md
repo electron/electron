@@ -1,10 +1,10 @@
-# Build Instructions (OS X)
+# Build Instructions (macOS)
 
-Follow the guidelines below for building Electron on OS X.
+Follow the guidelines below for building Electron on macOS.
 
 ## Prerequisites
 
-* OS X >= 10.8
+* macOS >= 10.8
 * [Xcode](https://developer.apple.com/technologies/tools/) >= 5.1
 * [node.js](http://nodejs.org) (external)
 
@@ -48,8 +48,8 @@ After building is done, you can find `Electron.app` under `out/D`.
 
 ## 32bit Support
 
-Electron can only be built for a 64bit target on OS X and there is no plan to
-support 32bit OS X in future.
+Electron can only be built for a 64bit target on macOS and there is no plan to
+support 32bit macOS in future.
 
 ## Tests
 

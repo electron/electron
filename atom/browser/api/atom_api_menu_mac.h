@@ -19,7 +19,7 @@ class MenuMac : public Menu {
  protected:
   explicit MenuMac(v8::Isolate* isolate);
 
-  void PopupAt(Window* window, int x, int y, int positioning_item = 0) override;
+  void PopupAt(Window* window, int x, int y, int positioning_item) override;
 
   base::scoped_nsobject<AtomMenuController> menu_controller_;
 

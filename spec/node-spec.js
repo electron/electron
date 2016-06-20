@@ -5,6 +5,8 @@ const path = require('path')
 const os = require('os')
 const {remote} = require('electron')
 
+const isCI = remote.getGlobal('isCi')
+
 describe('node feature', function () {
   var fixtures = path.join(__dirname, 'fixtures')
 
@@ -225,7 +227,9 @@ describe('node feature', function () {
       process.stdout.write('test')
     })
 
-    xit('should have isTTY defined', function () {
+    it('should have isTTY defined', function () {
+      if (isCI) return
+
       assert.equal(typeof process.stdout.isTTY, 'boolean')
     })
   })

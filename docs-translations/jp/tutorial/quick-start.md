@@ -86,14 +86,14 @@ app.on('ready', createWindow);
 
 // すべてのウィンドウが閉じられた時にアプリケーションを終了する。
 app.on('window-all-closed', () => {
-  // OS Xでは、Cmd + Q(終了)をユーザーが実行するまではウィンドウが全て閉じられても終了しないでおく。
+  // macOSでは、Cmd + Q(終了)をユーザーが実行するまではウィンドウが全て閉じられても終了しないでおく。
   if (process.platform !== 'darwin') {
     app.quit();
   }
 });
 
 app.on('activate', () => {
-  // OS X では、ドックをクリックされた時にウィンドウがなければ新しく作成する。
+  // macOS では、ドックをクリックされた時にウィンドウがなければ新しく作成する。
   if (win === null) {
     createWindow();
   }
@@ -157,7 +157,7 @@ $ .\electron\electron.exe your-app\
 $ ./electron/electron your-app/
 ```
 
-#### OS X
+#### macOS
 
 ```bash
 $ ./Electron.app/Contents/MacOS/Electron your-app/

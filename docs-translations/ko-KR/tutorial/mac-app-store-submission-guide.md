@@ -116,7 +116,7 @@ codesign -s "$APP_KEY" -f --entitlements "$PARENT_PLIST" "$APP_PATH"
 productbuild --component "$APP_PATH" /Applications --sign "$INSTALLER_KEY" "$RESULT_PATH"
 ```
 
-만약 OS X의 샌드박스 개념에 대해 처음 접한다면 Apple의 [Enabling App Sandbox][enable-app-sandbox]
+만약 macOS의 샌드박스 개념에 대해 처음 접한다면 Apple의 [Enabling App Sandbox][enable-app-sandbox]
 문서를 참고하여 기본적인 개념을 이해해야 합니다. 그리고 자격(plist) 파일에
 애플리케이션에서 요구하는 권한의 키를 추가합니다.
 
@@ -166,6 +166,29 @@ electron-osx-sign YourApp.app YourApp.app/Contents/Resources/app/node_modules/na
 엄격하게 제한되어 있습니다. 자세한 내용은 [앱 샌드박싱][app-sandboxing] 문서를
 참고하세요.
 
+### 추가적인 권한
+
+Mac 앱 스토어 빌드를 위해 앱에서 사용하는 Electron API에 따라 `parent.plist` 파일에
+추가적인 기능에 대한 권한을 추가해야 할 수도 있습니다.
+
+#### dialog.showOpenDialog
+
+```xml
+<key>com.apple.security.files.user-selected.read-only</key>
+<true/>
+```
+
+자세한 내용은 [User-Selected 파일 접근 활성화 문서][user-selected]를 참고하세요.
+
+#### dialog.showSaveDialog
+
+```xml
+<key>com.apple.security.files.user-selected.read-write</key>
+<true/>
+```
+
+자세한 내용은 [User-Selected 파일 접근 활성화 문서][user-selected]를 참고하세요.
+
 ## Electron에서 사용하는 암호화 알고리즘
 
 국가와 살고 있는 지역에 따라, 맥 앱스토어는 제출한 애플리케이션에서 사용하는 암호화
@@ -214,3 +237,4 @@ ERN의 승인을 얻는 방법은, 다음 글을 참고하는 것이 좋습니�
 [app-sandboxing]: https://developer.apple.com/app-sandboxing/
 [ern-tutorial]: https://carouselapps.com/2015/12/15/legally-submit-app-apples-app-store-uses-encryption-obtain-ern/
 [temporary-exception]: https://developer.apple.com/library/mac/documentation/Miscellaneous/Reference/EntitlementKeyReference/Chapters/AppSandboxTemporaryExceptionEntitlements.html
+[user-selected]: https://developer.apple.com/library/mac/documentation/Miscellaneous/Reference/EntitlementKeyReference/Chapters/EnablingAppSandbox.html#//apple_ref/doc/uid/TP40011195-CH4-SW6]

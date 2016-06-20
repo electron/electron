@@ -33,7 +33,7 @@ class BrowserObserver {
   virtual void OnQuit() {}
 
   // The browser has opened a file by double clicking in Finder or dragging the
-  // file to the Dock icon. (OS X only)
+  // file to the Dock icon. (macOS only)
   virtual void OnOpenFile(bool* prevent_default,
                           const std::string& file_path) {}
 
@@ -53,7 +53,7 @@ class BrowserObserver {
                        const base::DictionaryValue& request_details) {}
 
 #if defined(OS_MACOSX)
-  // The browser wants to resume a user activity via handoff. (OS X only)
+  // The browser wants to resume a user activity via handoff. (macOS only)
   virtual void OnContinueUserActivity(
       bool* prevent_default,
       const std::string& type,

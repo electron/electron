@@ -282,6 +282,11 @@ void AtomRendererClient::DidCreateScriptContext(
 
 void AtomRendererClient::WillReleaseScriptContext(
     v8::Handle<v8::Context> context, content::RenderFrame* render_frame) {
+  // Only allow node integration for the main frame, unless it is a devtools
+  // extension page.
+  if (!render_frame->IsMainFrame() && !IsDevToolsExtension(render_frame))
+    return;
+
   node::Environment* env = node::Environment::GetCurrent(context);
   if (env)
     mate::EmitEvent(env->isolate(), env->process_object(), "exit");

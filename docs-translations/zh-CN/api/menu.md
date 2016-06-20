@@ -211,16 +211,16 @@ Menu.setApplicationMenu(menu);
 
 * `menu` Menu
 
-在 OS X 上设置应用菜单 `menu` .
+在 macOS 上设置应用菜单 `menu` .
 在windows 和 linux，是为每个窗口都在其顶部设置菜单 `menu`.
 
-### `Menu.sendActionToFirstResponder(action)` _OS X_
+### `Menu.sendActionToFirstResponder(action)` _macOS_
 
 * `action` String
 
 发送 `action` 给应用的第一个响应器.这个用来模仿 Cocoa 菜单的默认行为，通常你只需要使用 `MenuItem` 的属性 `role`.
 
-查看更多 OS X 的原生 action [OS X Cocoa Event Handling Guide](https://developer.apple.com/library/mac/documentation/Cocoa/Conceptual/EventOverview/EventArchitecture/EventArchitecture.html#//apple_ref/doc/uid/10000060i-CH3-SW7) .
+查看更多 macOS 的原生 action [macOS Cocoa Event Handling Guide](https://developer.apple.com/library/mac/documentation/Cocoa/Conceptual/EventOverview/EventArchitecture/EventArchitecture.html#//apple_ref/doc/uid/10000060i-CH3-SW7) .
 
 ### `Menu.buildFromTemplate(template)`
 
@@ -239,7 +239,7 @@ Menu.setApplicationMenu(menu);
 * `browserWindow` BrowserWindow (可选) - 默认为 `null`.
 * `x` Number (可选) - 默认为 -1.
 * `y` Number (**必须** 如果x设置了) - 默认为 -1.
-* `positioningItem` Number (可选) _OS X_ - 在指定坐标鼠标位置下面的菜单项的索引. 默认为
+* `positioningItem` Number (可选) _macOS_ - 在指定坐标鼠标位置下面的菜单项的索引. 默认为
   -1.
 
 在 `browserWindow` 中弹出 context menu .你可以选择性地提供指定的 `x, y` 来设置菜单应该放在哪里,否则它将默认地放在当前鼠标的位置.
@@ -261,13 +261,13 @@ Menu.setApplicationMenu(menu);
 
 获取一个菜单项数组.
 
-## OS X Application 上的菜单的注意事项
+## macOS Application 上的菜单的注意事项
 
-相对于windows 和 linux, OS X 上的应用菜单是完全不同的style，这里是一些注意事项，来让你的菜单项更原生化.
+相对于windows 和 linux, macOS 上的应用菜单是完全不同的style，这里是一些注意事项，来让你的菜单项更原生化.
 
 ### 标准菜单
 
-在 OS X 上，有很多系统定义的标准菜单，例如  `Services` and
+在 macOS 上，有很多系统定义的标准菜单，例如  `Services` and
 `Windows` 菜单.为了让你的应用更标准化，你可以为你的菜单的 `role` 设置值，然后 electron 将会识别他们并且让你的菜单更标准:
 
 * `window`
@@ -276,12 +276,12 @@ Menu.setApplicationMenu(menu);
 
 ### 标准菜单项行为
 
-OS X 为一些菜单项提供了标准的行为方法，例如 `About xxx`,
+macOS 为一些菜单项提供了标准的行为方法，例如 `About xxx`,
 `Hide xxx`, and `Hide Others`. 为了让你的菜单项的行为更标准化，你应该为菜单项设置 `role` 属性.
 
 ### 主菜单名
 
-在 OS X ，无论你设置的什么标签，应用菜单的第一个菜单项的标签始终未你的应用名字.想要改变它的话，你必须通过修改应用绑定的 `Info.plist` 文件来修改应用名字.更多信息参考[About Information
+在 macOS ，无论你设置的什么标签，应用菜单的第一个菜单项的标签始终未你的应用名字.想要改变它的话，你必须通过修改应用绑定的 `Info.plist` 文件来修改应用名字.更多信息参考[About Information
 Property List Files][AboutInformationPropertyListFiles] .
 
 ## 为制定浏览器窗口设置菜单 (*Linux* *Windows*)

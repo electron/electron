@@ -27,7 +27,7 @@ La documentation d'Electron a été écrite en suivant les règles ci-dessous :
 - Les arguments optionnels sont indiqués quand appelés dans la liste.
 - La longueur des lignes ne dépasse pas 80 caractères.
 - Les méthodes spécifiques à une plateforme sont notées en italique.
- - ```### `method(foo, bar)` _OS X_```
+ - ```### `method(foo, bar)` _macOS_```
 - Préférer 'in the ___ process' au lieu de 'on'
 
 ### Traductions de la Documentation

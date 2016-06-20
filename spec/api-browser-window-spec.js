@@ -780,7 +780,7 @@ describe('browser-window module', function () {
     })
 
     describe('fullscreenable state', function () {
-      // Only implemented on OS X.
+      // Only implemented on macOS.
       if (process.platform !== 'darwin') return
 
       it('can be changed with fullscreenable option', function () {
@@ -832,6 +832,110 @@ describe('browser-window module', function () {
         assert.equal(w.hasShadow(), false)
         w.setHasShadow(true)
         assert.equal(w.hasShadow(), true)
+      })
+    })
+  })
+
+  describe('parent window', function () {
+    let c = null
+
+    beforeEach(function () {
+      if (c != null) c.destroy()
+      c = new BrowserWindow({show: false, parent: w})
+    })
+
+    afterEach(function () {
+      if (c != null) c.destroy()
+      c = null
+    })
+
+    describe('parent option', function () {
+      it('sets parent window', function () {
+        assert.equal(c.getParentWindow(), w)
+      })
+
+      it('adds window to child windows of parent', function () {
+        assert.deepEqual(w.getChildWindows(), [c])
+      })
+
+      it('removes from child windows of parent when window is closed', function (done) {
+        c.once('closed', () => {
+          assert.deepEqual(w.getChildWindows(), [])
+          done()
+        })
+        c.close()
+      })
+    })
+
+    describe('win.setParentWindow(parent)', function () {
+      if (process.platform === 'win32') return
+
+      beforeEach(function () {
+        if (c != null) c.destroy()
+        c = new BrowserWindow({show: false})
+      })
+
+      it('sets parent window', function () {
+        assert.equal(w.getParentWindow(), null)
+        assert.equal(c.getParentWindow(), null)
+        c.setParentWindow(w)
+        assert.equal(c.getParentWindow(), w)
+        c.setParentWindow(null)
+        assert.equal(c.getParentWindow(), null)
+      })
+
+      it('adds window to child windows of parent', function () {
+        assert.deepEqual(w.getChildWindows(), [])
+        c.setParentWindow(w)
+        assert.deepEqual(w.getChildWindows(), [c])
+        c.setParentWindow(null)
+        assert.deepEqual(w.getChildWindows(), [])
+      })
+
+      it('removes from child windows of parent when window is closed', function (done) {
+        c.once('closed', () => {
+          assert.deepEqual(w.getChildWindows(), [])
+          done()
+        })
+        c.setParentWindow(w)
+        c.close()
+      })
+    })
+
+    describe('modal option', function () {
+      // The isEnabled API is not reliable on macOS.
+      if (process.platform === 'darwin') return
+
+      beforeEach(function () {
+        if (c != null) c.destroy()
+        c = new BrowserWindow({show: false, parent: w, modal: true})
+      })
+
+      it('disables parent window', function () {
+        assert.equal(w.isEnabled(), true)
+        c.show()
+        assert.equal(w.isEnabled(), false)
+      })
+
+      it('enables parent window when closed', function (done) {
+        c.once('closed', () => {
+          assert.equal(w.isEnabled(), true)
+          done()
+        })
+        c.show()
+        c.close()
+      })
+
+      it('disables parent window recursively', function () {
+        let c2 = new BrowserWindow({show: false, parent: w, modal: true})
+        c.show()
+        assert.equal(w.isEnabled(), false)
+        c2.show()
+        assert.equal(w.isEnabled(), false)
+        c.destroy()
+        assert.equal(w.isEnabled(), false)
+        c2.destroy()
+        assert.equal(w.isEnabled(), true)
       })
     })
   })

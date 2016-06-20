@@ -1,15 +1,15 @@
-# Frameless Window
+# Frameless 윈도우
 
 > 툴바, 테두리, 시각적인 "chrome" 없이 윈도우를 엽니다.
 
-Frameless Window는 [창 테두리](https://developer.mozilla.org/ko/docs/Glossary/Chrome)가
+Frameless 윈도우는 [창 테두리](https://developer.mozilla.org/ko/docs/Glossary/Chrome)가
 없는 윈도우를 말합니다. 이 기능은 윈도우의 일부분인 툴바와 같이 웹 페이지의 일부분이
 아닌 부분을 보이지 않도록 합니다. [`BrowserWindow`](browser-window.md) 클래스의
 옵션에서 설정할 수 있습니다.
 
-## Frameless Window 만들기
+## Frameless 윈도우 만들기
 
-Frameless Window를 만드려면 [BrowserWindow](browser-window.md) 객체의
+Frameless 윈도우를 만드려면 [BrowserWindow](browser-window.md) 객체의
 `options` 객체에서 `frame` 옵션을 `false`로 지정하면 됩니다:
 
 ```javascript
@@ -17,9 +17,9 @@ const {BrowserWindow} = require('electron')
 let win = new BrowserWindow({width: 800, height: 600, frame: false})
 ```
 
-### 최신 OS X에서 사용할 수 있는 대안
+### 최신 macOS에서 사용할 수 있는 대안
 
-OS X 10.10 Yosemite 이후의 최신 버전부터는 테두리가 없는 창을 만들 때 새로운 방법을
+macOS 10.10 Yosemite 이후의 최신 버전부터는 테두리가 없는 창을 만들 때 새로운 방법을
 사용할 수 있습니다. `frame` 옵션을 `false`로 지정하여 제목과 창 구성 요소를 모두
 비활성화하는 대신 새로운 `titleBarStyle` 옵션을 통해 제목만 숨기고 창 구성 요소
 ("신호등 버튼")의 기능과 창 크기를 그대로 유지할 수 있습니다:
@@ -30,7 +30,7 @@ let win = new BrowserWindow({titleBarStyle: 'hidden'})
 
 ## 투명한 창 만들기
 
-Frameless Window 창의 배경을 투명하게 만들고 싶다면 `transparent` 옵션을 `true`로
+Frameless 윈도우 창의 배경을 투명하게 만들고 싶다면 `transparent` 옵션을 `true`로
 바꿔주기만 하면됩니다:
 
 ```javascript
@@ -52,7 +52,7 @@ let win = new BrowserWindow({transparent: true, frame: false})
   upstream 버그가 있는 관계로 투명한 창 기능을 사용하려면 CLI 옵션에
   `--enable-transparent-visuals --disable-gpu`을 추가해야 합니다. 이 옵션은 GPU의
   사용을 중단하고 윈도우를 생성하는데 ARGB를 사용할 수 있도록 해줍니다.
-* OS X(Mac)에선 네이티브 창에서 보여지는 그림자가 투명한 창에선 보이지 않습니다.
+* macOS(Mac)에선 네이티브 창에서 보여지는 그림자가 투명한 창에선 보이지 않습니다.
 
 ## 클릭이 통과될 수 있는 윈도우
 
@@ -66,7 +66,7 @@ win.setIgnoreMouseEvents(true)
 
 ## 드래그 가능 위치 지정
 
-기본적으로 Frameless Window는 드래그 할 수 없습니다. 애플리케이션의 CSS에서 특정
+기본적으로 Frameless 윈도우는 드래그 할 수 없습니다. 애플리케이션의 CSS에서 특정
 범위를 `-webkit-app-region: drag`로 지정하면 OS의 기본 타이틀 바 처럼 드래그 되도록
 할 수 있습니다. 그리고 `-webkit-app-region: no-drag`를 지정해서 드래그 불가능 영역을
 만들 수도 있습니다. 현재 사각형 형태의 범위만 지원합니다.
@@ -93,7 +93,7 @@ button {
 
 ## 텍스트 선택
 
-Frameless Window에서 텍스트가 선택되는 드래그 동작은 혼란을 야기할 수 있습니다. 예를
+Frameless 윈도우에서 텍스트가 선택되는 드래그 동작은 혼란을 야기할 수 있습니다. 예를
 들어 타이틀 바를 드래그 할 때 타이틀 바의 텍스트를 실수로 선택할 수 있습니다. 이를
 방지하기 위해 다음과 같이 드래그 영역의 텍스트 선택 기능을 비활성화해야 할 필요가
 있습니다:

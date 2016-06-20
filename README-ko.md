@@ -8,10 +8,10 @@
 ### [Electron](https://github.com/electron/electron/) 한국어 참조 문서
 
 Electron 프레임워크는 JavaScript, HTML 그리고 CSS를 사용하여
-Cross-Platform 데스크톱 어플리케이션을 개발할 수 있도록 해주는 프레임워크입니다.
+Cross-Platform 데스크톱 애플리케이션을 개발할 수 있도록 해주는 프레임워크입니다.
 [Node.js](https://nodejs.org/)와 [Chromium](http://www.chromium.org)을 기반으로
 만들어졌으며 [Atom Editor](https://github.com/atom/atom)에 사용되고 있습니다.
-더 많은 어플리케이션은 [이곳](http://electron.atom.io/apps)에서 확인하세요.
+더 많은 애플리케이션은 [이곳](http://electron.atom.io/apps)에서 확인하세요.
 
 Electron에 대한 중요한 알림을 받고 싶다면 Twitter에서
 [@ElectronJS](https://twitter.com/electronjs)를 팔로우 하세요.
@@ -22,7 +22,7 @@ Electron에 대한 중요한 알림을 받고 싶다면 Twitter에서
 
 ## 다운로드
 
-Linux, Windows, OS X 용으로 미리 빌드된 Electron 바이너리와 디버그 심볼이 준비되어
+Linux, Windows, macOS 용으로 미리 빌드된 Electron 바이너리와 디버그 심볼이 준비되어
 있습니다. [releases](https://github.com/electron/electron/releases) 페이지에서
 받아 볼 수 있습니다.
 
@@ -77,4 +77,4 @@ npm install electron-prebuilt --save-dev
 - [`electron-jp`](https://electron-jp-slackin.herokuapp.com/) *(일본)* 커뮤니티
 
 [awesome-electron](https://github.com/sindresorhus/awesome-electron) 프로젝트에
-커뮤니티가 운영중인 유용한 예시 어플리케이션과 도구, 리소스가 있으니 참고하기 바랍니다.
+커뮤니티가 운영중인 유용한 예시 애플리케이션과 도구, 리소스가 있으니 참고하기 바랍니다.

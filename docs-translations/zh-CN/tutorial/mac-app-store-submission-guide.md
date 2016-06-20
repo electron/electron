@@ -100,7 +100,7 @@ codesign -s "$APP_KEY" -f --entitlements "$PARENT_PLIST" "$APP_PATH"
 productbuild --component "$APP_PATH" /Applications --sign "$INSTALLER_KEY" "$RESULT_PATH"
 ```
 
-如果你是 OS X 下的应用沙箱使用新手，应当仔细阅读 Apple 的 [Enabling App Sandbox][enable-app-sandbox] 了解一些基础，然后在授权文件 (entitlements files) 内添加你的应用需要的许可。
+如果你是 macOS 下的应用沙箱使用新手，应当仔细阅读 Apple 的 [Enabling App Sandbox][enable-app-sandbox] 了解一些基础，然后在授权文件 (entitlements files) 内添加你的应用需要的许可。
 
 ### 上传你的应用并检查提交
 

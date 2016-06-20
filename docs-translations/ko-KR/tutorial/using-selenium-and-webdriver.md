@@ -39,12 +39,12 @@ app.start().then(function () {
 }).then(function (title) {
   // 윈도우의 제목을 검증합니다.
   assert.equal(title, 'My App')
-}).then(function () {
-  // 애플리케이션을 중지합니다.
-  return app.stop()
 }).catch(function (error) {
   // 테스트의 실패가 있다면 로깅합니다.
   console.error('Test failed', error.message)
+}).then(function () {
+  // 애플리케이션을 중지합니다.
+  return app.stop()
 })
 ```
 

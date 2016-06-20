@@ -1,10 +1,10 @@
-# Build Instructions (OS X)
+# Build Instructions (macOS)
 
-遵循下面的引导，在 OS X 上构建 Electron .
+遵循下面的引导，在 macOS 上构建 Electron .
 
 ## 前提
 
-* OS X >= 10.8
+* macOS >= 10.8
 * [Xcode](https://developer.apple.com/technologies/tools/) >= 5.1
 * [node.js](http://nodejs.org) (外部)
 
@@ -45,7 +45,7 @@ $ ./script/build.py -c D
 
 ## 32位支持
 
-在 OS X 上，构建 Electron 只支持 64位的，不支持 32位的 .
+在 macOS 上，构建 Electron 只支持 64位的，不支持 32位的 .
 
 ## 测试
 

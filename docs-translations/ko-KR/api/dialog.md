@@ -105,7 +105,7 @@ const {dialog} = require('electron').remote;
   * `cancelId` Integer - 유저가 대화 상자의 버튼을 클릭하지 않고 대화 상자를 취소했을
     때 반환되는 버튼의 인덱스입니다. 기본적으로 버튼 리스트가 "cancel" 또는 "no"
     라벨을 가지고 있을 때 해당 버튼의 인덱스를 반환합니다. 따로 두 라벨이 지정되지
-    않은 경우 0을 반환합니다. OS X와 Windows에선 `cancelId` 지정 여부에 상관없이
+    않은 경우 0을 반환합니다. macOS와 Windows에선 `cancelId` 지정 여부에 상관없이
     "Cancel" 버튼이 언제나 `cancelId`로 지정됩니다.
   * `noLink` Boolean - Windows에서 Electron은 ("Cancel"이나 "Yes"와 같은) 흔히
     사용되는 버튼을 찾으려고 시도하고 대화 상자 내에서 해당 버튼을 커맨드 링크처럼
@@ -117,7 +117,7 @@ const {dialog} = require('electron').remote;
 지정한 창을 사용할 수 없습니다. 완료 시 유저가 선택한 버튼의 인덱스를 반환합니다.
 
 **역자주:** 부정을 표현하는 "아니오", "취소"와 같은 한글 단어는 지원되지 않습니다. 만약
-OS X 또는 Windows에서 "확인", "취소"와 같은 순서로 버튼을 지정하게 될 때 Alt + f4로
+macOS 또는 Windows에서 "확인", "취소"와 같은 순서로 버튼을 지정하게 될 때 Alt + f4로
 해당 대화 상자를 끄게 되면 "확인"을 누른 것으로 판단되어 버립니다. 이를 해결하려면
 "Cancel"을 대신 사용하거나 BrowserWindow API를 사용하여 대화 상자를 직접 구현해야
 합니다.
@@ -136,7 +136,7 @@ Linux에서 `ready` 이벤트가 발생하기 전에 이 API를 호출할 경우
 
 ## Sheets
 
-Mac OS X에선, `browserWindow` 인수에 `BrowserWindow` 객체 참조를 전달하면 대화
+macOS에선, `browserWindow` 인수에 `BrowserWindow` 객체 참조를 전달하면 대화
 상자가 해당 윈도우에 시트처럼 표시되도록 표현할 수 있습니다. 윈도우의 객체 참조가
 제공되지 않으면 모달 형태로 표시됩니다.
 

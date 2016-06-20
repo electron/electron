@@ -47,8 +47,8 @@ win.show();
   * `maximizable` Boolean - 窗口是否可以最大化. 在 Linux 上无效. 默认为 `true`.
   * `closable` Boolean - 窗口是否可以关闭. 在 Linux 上无效. 默认为 `true`.
   * `alwaysOnTop` Boolean - 窗口是否总是显示在其他窗口之前. 在 Linux 上无效. 默认为 `false`.
-  * `fullscreen` Boolean - 窗口是否可以全屏幕. 当明确设置值为When `false` ，全屏化按钮将会隐藏，在 OS X 将禁用. 默认 `false`.
-  * `fullscreenable` Boolean - 在 OS X 上，全屏化按钮是否可用，默认为 `true`.
+  * `fullscreen` Boolean - 窗口是否可以全屏幕. 当明确设置值为When `false` ，全屏化按钮将会隐藏，在 macOS 将禁用. 默认 `false`.
+  * `fullscreenable` Boolean - 在 macOS 上，全屏化按钮是否可用，默认为 `true`.
   * `skipTaskbar` Boolean - 是否在任务栏中显示窗口. 默认是`false`.
   * `kiosk` Boolean - kiosk 方式. 默认为 `false`.
   * `title` String - 窗口默认title. 默认 `"Electron"`.
@@ -62,7 +62,7 @@ win.show();
   * `enableLargerThanScreen` Boolean - 是否允许允许改变窗口大小大于屏幕. 默认是 `false`.
   * `backgroundColor` String -窗口的 background color 值为十六进制,如 `#66CD00` 或 `#FFF` 或 `#80FFFFFF` (支持透明度). 默认为在 Linux 和 Windows 上为
     `#000` (黑色) , Mac上为 `#FFF`(或透明).
-  * `hasShadow` Boolean - 窗口是否有阴影. 只在 OS X 上有效. 默认为 `true`.
+  * `hasShadow` Boolean - 窗口是否有阴影. 只在 macOS 上有效. 默认为 `true`.
   * `darkTheme` Boolean - 为窗口使用 dark 主题, 只在一些拥有 GTK+3 桌面环境上有效. 默认为 `false`.
   * `transparent` Boolean - 窗口 [透明](frameless-window.md).
     默认为 `false`.
@@ -74,13 +74,13 @@ win.show();
 
 * Linux, 可用值为 `desktop`, `dock`, `toolbar`, `splash`,
   `notification`.
-* OS X, 可用值为 `desktop`, `textured`.
+* macOS, 可用值为 `desktop`, `textured`.
   * `textured` type 添加金属梯度效果
     (`NSTexturedBackgroundWindowMask`).
   * `desktop` 设置窗口在桌面背景窗口水平
     (`kCGDesktopWindowLevel - 1`). 注意桌面窗口不可聚焦, 不可不支持键盘和鼠标事件, 但是可以使用 `globalShortcut` 来解决输入问题.
 
-`titleBarStyle` 只在 OS X 10.10 Yosemite 或更新版本上支持.
+`titleBarStyle` 只在 macOS 10.10 Yosemite 或更新版本上支持.
 可用值:
 
 * `default` 以及无值, 显示在 Mac 标题栏上为不透明的标准灰色.
@@ -206,9 +206,9 @@ window.onbeforeunload = function(e) {
 
 在窗口移动的时候触发.
 
-注意：在 OS X 中别名为 `moved`.
+注意：在 macOS 中别名为 `moved`.
 
-### Event: 'moved' _OS X_
+### Event: 'moved' _macOS_
 
 在窗口移动的时候触发.
 
@@ -242,11 +242,11 @@ someWindow.on('app-command', function(e, cmd) {
 });
 ```
 
-### Event: 'scroll-touch-begin' _OS X_
+### Event: 'scroll-touch-begin' _macOS_
 
 在滚动条事件开始的时候触发.
 
-### Event: 'scroll-touch-end' _OS X_
+### Event: 'scroll-touch-end' _macOS_
 
 在滚动条事件结束的时候触发.
 
@@ -379,7 +379,7 @@ var win = new BrowserWindow({ width: 800, height: 600 });
 
 返回 boolean, 窗口是否全屏化.
 
-### `win.setAspectRatio(aspectRatio[, extraSize])` _OS X_
+### `win.setAspectRatio(aspectRatio[, extraSize])` _macOS_
 
 * `aspectRatio` 维持部分视图内容窗口的高宽比值.
 * `extraSize` Object (可选) - 维持高宽比值时不包含的额外size.
@@ -398,7 +398,7 @@ var win = new BrowserWindow({ width: 800, height: 600 });
   * `y` Integer
   * `width` Integer
   * `height` Integer
-* `animate` Boolean (可选) _OS X_
+* `animate` Boolean (可选) _macOS_
 
 重新设置窗口的宽高值，并且移动到指定的 `x`, `y` 位置.
 
@@ -410,7 +410,7 @@ var win = new BrowserWindow({ width: 800, height: 600 });
 
 * `width` Integer
 * `height` Integer
-* `animate` Boolean (可选) _OS X_
+* `animate` Boolean (可选) _macOS_
 
 重新设置窗口的宽高值.
 
@@ -422,7 +422,7 @@ var win = new BrowserWindow({ width: 800, height: 600 });
 
 * `width` Integer
 * `height` Integer
-* `animate` Boolean (可选) _OS X_
+* `animate` Boolean (可选) _macOS_
 
 重新设置窗口客户端的宽高值（例如网页界面）.
 
@@ -462,33 +462,33 @@ var win = new BrowserWindow({ width: 800, height: 600 });
 
 返回 boolean,窗口是否可以被用户改变size.
 
-### `win.setMovable(movable)` _OS X_ _Windows_
+### `win.setMovable(movable)` _macOS_ _Windows_
 
 * `movable` Boolean
 
 设置窗口是否可以被用户拖动. Linux 无效.
 
-### `win.isMovable()` _OS X_ _Windows_
+### `win.isMovable()` _macOS_ _Windows_
 
 返回 boolean,窗口是否可以被用户拖动. Linux 总是返回 `true`.
 
-### `win.setMinimizable(minimizable)` _OS X_ _Windows_
+### `win.setMinimizable(minimizable)` _macOS_ _Windows_
 
 * `minimizable` Boolean
 
 设置窗口是否可以最小化. Linux 无效.
 
-### `win.isMinimizable()` _OS X_ _Windows_
+### `win.isMinimizable()` _macOS_ _Windows_
 
 返回 boolean,窗口是否可以最小化. Linux 总是返回 `true`.
 
-### `win.setMaximizable(maximizable)` _OS X_ _Windows_
+### `win.setMaximizable(maximizable)` _macOS_ _Windows_
 
 * `maximizable` Boolean
 
 设置窗口是否可以最大化. Linux 无效.
 
-### `win.isMaximizable()` _OS X_ _Windows_
+### `win.isMaximizable()` _macOS_ _Windows_
 
 返回 boolean,窗口是否可以最大化. Linux 总是返回 `true`.
 
@@ -502,13 +502,13 @@ var win = new BrowserWindow({ width: 800, height: 600 });
 
 返回 boolean,点击最大化按钮是否可以全屏或最大化窗口.
 
-### `win.setClosable(closable)` _OS X_ _Windows_
+### `win.setClosable(closable)` _macOS_ _Windows_
 
 * `closable` Boolean
 
 设置窗口是否可以人为关闭. Linux 无效.
 
-### `win.isClosable()` _OS X_ _Windows_
+### `win.isClosable()` _macOS_ _Windows_
 
 返回 boolean,窗口是否可以人为关闭. Linux 总是返回 `true`.
 
@@ -530,7 +530,7 @@ var win = new BrowserWindow({ width: 800, height: 600 });
 
 * `x` Integer
 * `y` Integer
-* `animate` Boolean (可选) _OS X_
+* `animate` Boolean (可选) _macOS_
 
 移动窗口到对应的 `x` and `y` 坐标.
 
@@ -576,7 +576,7 @@ var win = new BrowserWindow({ width: 800, height: 600 });
 
 以 `Buffer` 形式返回这个具体平台的窗口的句柄.
 
-windows上句柄类型为 `HWND` ，OS X `NSView*` ， Linux `Window`.
+windows上句柄类型为 `HWND` ，macOS `NSView*` ， Linux `Window`.
 
 ### `win.hookWindowMessage(message, callback)` _Windows_
 
@@ -601,23 +601,23 @@ windows上句柄类型为 `HWND` ，OS X `NSView*` ， Linux `Window`.
 
 窗口消息全部不拦截.
 
-### `win.setRepresentedFilename(filename)` _OS X_
+### `win.setRepresentedFilename(filename)` _macOS_
 
 * `filename` String
 
 设置窗口当前文件路径，并且将这个文件的图标放在窗口标题栏上.
 
-### `win.getRepresentedFilename()` _OS X_
+### `win.getRepresentedFilename()` _macOS_
 
 获取窗口当前文件路径.
 
-### `win.setDocumentEdited(edited)` _OS X_
+### `win.setDocumentEdited(edited)` _macOS_
 
 * `edited` Boolean
 
 明确指出窗口文档是否可以编辑，如果可以编辑则将标题栏的图标变成灰色.
 
-### `win.isDocumentEdited()` _OS X_
+### `win.isDocumentEdited()` _macOS_
 
 返回 boolean,当前窗口文档是否可编辑.
 
@@ -668,13 +668,13 @@ windows上句柄类型为 `HWND` ，OS X `NSView*` ， Linux `Window`.
 
 向当前任务栏添加一个 16 x 16 像素的图标，通常用来覆盖一些应用的状态，或者直接来提示用户.
 
-### `win.setHasShadow(hasShadow)` _OS X_
+### `win.setHasShadow(hasShadow)` _macOS_
 
 * `hasShadow` (Boolean)
 
 设置窗口是否应该有阴影.在Windows和Linux系统无效.
 
-### `win.hasShadow()` _OS X_
+### `win.hasShadow()` _macOS_
 
 返回 boolean,设置窗口是否有阴影.在Windows和Linux系统始终返回
 `true`.
@@ -704,7 +704,7 @@ windows上句柄类型为 `HWND` ，OS X `NSView*` ， Linux `Window`.
 * `hidden` - button 对用户不可见.
 * `noninteractive` - button 可用但是不可响应; 也不显示按下的状态. 它的值意味着这是一个在通知单使用 button 的实例.
 
-### `win.showDefinitionForSelection()` _OS X_
+### `win.showDefinitionForSelection()` _macOS_
 
 在界面查找选中文字时显示弹出字典.
 
@@ -744,7 +744,7 @@ windows上句柄类型为 `HWND` ，OS X `NSView*` ， Linux `Window`.
 
 **注意:** 在 windows上始终返回 false.
 
-### `win.setIgnoreMouseEvents(ignore)` _OS X_
+### `win.setIgnoreMouseEvents(ignore)` _macOS_
 
 * `ignore` Boolean
 

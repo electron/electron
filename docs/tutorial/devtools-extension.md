@@ -21,7 +21,7 @@ Using the [React Developer Tools][react-devtools] as example:
      * `~/.config/google-chrome-beta/Default/Extensions/`
      * `~/.config/google-chrome-canary/Default/Extensions/`
      * `~/.config/chromium/Default/Extensions/`
-   * on OS X it is `~/Library/Application Support/Google/Chrome/Default/Extensions`.
+   * on macOS it is `~/Library/Application Support/Google/Chrome/Default/Extensions`.
 1. Pass the location of the extension to `BrowserWindow.addDevToolsExtension`
    API, for the React Developer Tools, it is something like:
    `~/Library/Application Support/Google/Chrome/Default/Extensions/fmkadmapgofadopljbjfkapdkoienihi/0.14.10_0`
@@ -45,7 +45,7 @@ Following Devtools Extensions are tested and guaranteed to work in Electron:
 
 ### What should I do if a DevTools Extension is not working?
 
-Fist please make sure the extension is still being maintained, some extensions
+First please make sure the extension is still being maintained, some extensions
 can not even work for recent versions of Chrome browser, and we are not able to
 do anything for them.
 

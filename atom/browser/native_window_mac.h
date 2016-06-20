@@ -22,7 +22,8 @@ namespace atom {
 class NativeWindowMac : public NativeWindow {
  public:
   NativeWindowMac(brightray::InspectableWebContents* inspectable_web_contents,
-                  const mate::Dictionary& options);
+                  const mate::Dictionary& options,
+                  NativeWindow* parent);
   ~NativeWindowMac() override;
 
   // NativeWindow:
@@ -34,6 +35,7 @@ class NativeWindowMac : public NativeWindow {
   void ShowInactive() override;
   void Hide() override;
   bool IsVisible() override;
+  bool IsEnabled() override;
   void Maximize() override;
   void Unmaximize() override;
   bool IsMaximized() override;
@@ -78,6 +80,7 @@ class NativeWindowMac : public NativeWindow {
   bool IsDocumentEdited() override;
   void SetIgnoreMouseEvents(bool ignore) override;
   bool HasModalDialog() override;
+  void SetParentWindow(NativeWindow* parent) override;
   gfx::NativeWindow GetNativeWindow() override;
   gfx::AcceleratedWidget GetAcceleratedWidget() override;
   void SetProgressBar(double progress) override;
@@ -143,9 +146,6 @@ class NativeWindowMac : public NativeWindow {
 
   // The "titleBarStyle" option.
   TitleBarStyle title_bar_style_;
-
-  // Whether to hide the native toolbar under fullscreen mode.
-  bool should_hide_native_toolbar_in_fullscreen_;
 
   DISALLOW_COPY_AND_ASSIGN(NativeWindowMac);
 };

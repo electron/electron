@@ -10,7 +10,7 @@ const dialog = require('electron').dialog;
 console.log(dialog.showOpenDialog({ properties: [ 'openFile', 'openDirectory', 'multiSelections' ]}));
 ```
 
-**OS X 上的注意事项**: 如果你想像sheets一样展示对话框，只需要在`browserWindow` 参数中提供一个 `BrowserWindow` 的引用对象.
+**macOS 上的注意事项**: 如果你想像sheets一样展示对话框，只需要在`browserWindow` 参数中提供一个 `BrowserWindow` 的引用对象.
 
 ## 方法
 
@@ -79,7 +79,7 @@ console.log(dialog.showOpenDialog({ properties: [ 'openFile', 'openDirectory', '
   * `message` String - message box 内容.
   * `detail` String - 额外信息.
   * `icon` [NativeImage](native-image.md)
-  * `cancelId` Integer - 当用户关闭对话框的时候，不是通过点击对话框的button，就返回值.默认值为对应 "cancel" 或 "no" 标签button 的索引值, 或者如果没有这种button，就返回0. 在 OS X 和  Windows 上， "Cancel" button 的索引值将一直是 `cancelId`, 不管之前是不是特别指出的.
+  * `cancelId` Integer - 当用户关闭对话框的时候，不是通过点击对话框的button，就返回值.默认值为对应 "cancel" 或 "no" 标签button 的索引值, 或者如果没有这种button，就返回0. 在 macOS 和  Windows 上， "Cancel" button 的索引值将一直是 `cancelId`, 不管之前是不是特别指出的.
   * `noLink` Boolean - 在 Windows ，Electron 将尝试识别哪个button 是普通 button (如 "Cancel" 或 "Yes"), 然后再对话框中以链接命令(command links)方式展现其它的 button . 这能让对话框展示得很炫酷.如果你不喜欢这种效果，你可以设置 `noLink` 为 `true`.
 * `callback` Function
 

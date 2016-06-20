@@ -88,7 +88,7 @@ var mainWindow = null;
 
 // Sair quando todas as janelas estiverem fechadas.
 app.on('window-all-closed', function() {
-  // No OS X é comum para as aplicações na barra de menu
+  // No macOS é comum para as aplicações na barra de menu
   // continuarem ativas até que o usuário saia explicitamente
   // com Cmd + Q
   if (process.platform != 'darwin') {
@@ -173,7 +173,7 @@ $ .\electron\electron.exe seu-app\
 $ ./electron/electron seu-app/
 ```
 
-#### OS X
+#### macOS
 
 ```bash
 $ ./Electron.app/Contents/MacOS/Electron seu-app/

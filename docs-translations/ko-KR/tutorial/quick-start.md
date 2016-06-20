@@ -112,7 +112,7 @@ app.on('ready', createWindow);
 
 // 모든 창이 닫히면 애플리케이션 종료.
 app.on('window-all-closed', () => {
-  // OS X의 대부분의 애플리케이션은 유저가 Cmd + Q 커맨드로 확실하게
+  // macOS의 대부분의 애플리케이션은 유저가 Cmd + Q 커맨드로 확실하게
   // 종료하기 전까지 메뉴바에 남아 계속 실행됩니다.
   if (process.platform !== 'darwin') {
     app.quit();
@@ -120,7 +120,7 @@ app.on('window-all-closed', () => {
 });
 
 app.on('activate', () => {
-  // OS X에선 보통 독 아이콘이 클릭되고 나서도
+  // macOS에선 보통 독 아이콘이 클릭되고 나서도
   // 열린 윈도우가 없으면, 새로운 윈도우를 다시 만듭니다.
   if (win === null) {
     createWindow();
@@ -196,7 +196,7 @@ $ .\electron\electron.exe your-app\
 $ ./electron/electron your-app/
 ```
 
-#### OS X
+#### macOS
 
 ```bash
 $ ./Electron.app/Contents/MacOS/Electron your-app/

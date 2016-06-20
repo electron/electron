@@ -12,7 +12,7 @@ Chrome 브라우저를 설치해야 합니다.
 같습니다, 만약 그렇지 않다면 `navigator.plugins`가 로드됐더라도 정상적으로 작동하지
 않습니다.
 
-### Windows & OS X
+### Windows & macOS
 
 Chrome 브라우저에서 `chrome://components/`를 열고 `WidevineCdm`을 찾은 후 확실히
 최신버전인지 확인합니다. 여기까지 하면 모든 플러그인 바이너리를
@@ -20,13 +20,13 @@ Chrome 브라우저에서 `chrome://components/`를 열고 `WidevineCdm`을 찾�
 디렉터리에서 찾을 수 있습니다.
 
 `APP_DATA`는 애플리케이션 데이터를 저장하고 있는 시스템 경로입니다. Windows에선
-`%LOCALAPPDATA%`로 접근할 수 있고 OS X에선 `~/Library/Application Support`로
+`%LOCALAPPDATA%`로 접근할 수 있고 macOS에선 `~/Library/Application Support`로
 접근할 수 있습니다. `VERSION`은 `1.4.8.866` 같은 Widevine CDM 플러그인의 버전
 문자열입니다. `PLATFORM`은 플랫폼을 뜻하며 `mac` 또는 `win`이 될 수 있으며 `ARCH`는
 아키텍쳐를 뜻하고 `x86` 또는 `x64`가 될 수 있습니다.
 
 Windows에선 `widevinecdm.dll` 와 `widevinecdmadapter.dll` 같은 바이너리를
-요구하며 OS X에선 `libwidevinecdm.dylib`와 `widevinecdmadapter.plugin` 바이너리를
+요구하며 macOS에선 `libwidevinecdm.dylib`와 `widevinecdmadapter.plugin` 바이너리를
 요구합니다. 원하는 곳에 이들을 복사해 놓을 수 있습니다. 하지만 반드시 바이너리는 같은
 위치에 두어야 합니다.
 
@@ -52,7 +52,7 @@ Linux에선 플러그인 바이너리들이 Chrome 브라우저와 함께 제공
 
 ```javascript
 // `widevinecdmadapter`의 파일 이름을 이곳에 전달해야 합니다. 파일 이름은
-// * OS X에선 `widevinecdmadapter.plugin`로 지정합니다,
+// * macOS에선 `widevinecdmadapter.plugin`로 지정합니다,
 // * Linux에선 `libwidevinecdmadapter.so`로 지정합니다,
 // * Windows에선 `widevinecdmadapter.dll`로 지정합니다.
 app.commandLine.appendSwitch('widevine-cdm-path', '/path/to/widevinecdmadapter.plugin');

@@ -31,7 +31,7 @@ shell.openExternal('https://github.com');
 ### `shell.openExternal(url[, options])`
 
 * `url` String
-* `options` Object (optional) _OS X_
+* `options` Object (optional) _macOS_
   * `activate` Boolean - `true`로 설정하면 애플리케이션을 바로 활성화 상태로
     실행합니다. 기본값은 `true`입니다.
 

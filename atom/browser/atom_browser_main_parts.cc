@@ -148,7 +148,7 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
 #endif
 
 #if !defined(OS_MACOSX)
-  // The corresponding call in OS X is in AtomApplicationDelegate.
+  // The corresponding call in macOS is in AtomApplicationDelegate.
   Browser::Get()->WillFinishLaunching();
   Browser::Get()->DidFinishLaunching();
 #endif

@@ -79,7 +79,7 @@ Bir problem(issue) bildirmeden önce sıkça sorulan sorulara göz atın:
 * [Kaynak Kod Dizin Yapısı](https://github.com/electron/electron/tree/master/docs/development/source-code-directory-structure.md)
 * [NW.js(node-webkit adıyla bilinen) İle Arasındaki Teknik Farklılıklar](https://github.com/electron/electron/tree/master/docs/development/atom-shell-vs-node-webkit.md)
 * [Build Sisyem Genel Bakış](https://github.com/electron/electron/tree/master/docs/development/build-system-overview.md)
-* [(OS X) Build Komutları](https://github.com/electron/electron/tree/master/docs/development/build-instructions-osx.md)
+* [(macOS) Build Komutları](https://github.com/electron/electron/tree/master/docs/development/build-instructions-osx.md)
 * [(Windows) Build Komutları](https://github.com/electron/electron/tree/master/docs/development/build-instructions-windows.md)
 * [(Linux) Build Komutları](https://github.com/electron/electron/tree/master/docs/development/build-instructions-linux.md)
 * [(Windows) Hata Ayıklama Komutları](https://github.com/electron/electron/tree/master/docs/development/debug-instructions-windows.md)

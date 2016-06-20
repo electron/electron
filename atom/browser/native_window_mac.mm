@@ -15,6 +15,7 @@
 #include "base/strings/sys_string_conversions.h"
 #include "brightray/browser/inspectable_web_contents.h"
 #include "brightray/browser/inspectable_web_contents_view.h"
+#include "brightray/browser/mac/event_dispatching_window.h"
 #include "content/public/browser/browser_accessibility_state.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/render_view_host.h"
@@ -232,7 +233,7 @@ bool ScopedDisableResize::disable_resize_ = false;
 }
 
 - (void)windowDidExitFullScreen:(NSNotification*)notification {
-  // For certain versions of OS X the fullscreen button will automatically show
+  // For certain versions of macOS the fullscreen button will automatically show
   // after exiting fullscreen mode.
   if (!shell_->has_frame()) {
     NSWindow* window = shell_->GetNativeWindow();
@@ -270,7 +271,7 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 @end
 
-@interface AtomNSWindow : NSWindow {
+@interface AtomNSWindow : EventDispatchingWindow {
  @private
   atom::NativeWindowMac* shell_;
   bool enable_larger_than_screen_;
@@ -428,8 +429,9 @@ namespace atom {
 
 NativeWindowMac::NativeWindowMac(
     brightray::InspectableWebContents* web_contents,
-    const mate::Dictionary& options)
-    : NativeWindow(web_contents, options),
+    const mate::Dictionary& options,
+    NativeWindow* parent)
+    : NativeWindow(web_contents, options, parent),
       is_kiosk_(false),
       attention_request_id_(0),
       title_bar_style_(NORMAL) {
@@ -500,6 +502,11 @@ NativeWindowMac::NativeWindowMac(
   window_delegate_.reset([[AtomNSWindowDelegate alloc] initWithShell:this]);
   [window_ setDelegate:window_delegate_];
 
+  // Only use native parent window for non-modal windows.
+  if (parent && !is_modal()) {
+    SetParentWindow(parent);
+  }
+
   if (transparent()) {
     // Setting the background color to clear will also hide the shadow.
     [window_ setBackgroundColor:[NSColor clearColor]];
@@ -537,7 +544,7 @@ NativeWindowMac::NativeWindowMac(
     [window_ setToolbar:toolbar];
   }
 
-  // On OS X the initial window size doesn't include window frame.
+  // On macOS the initial window size doesn't include window frame.
   bool use_content_size = false;
   options.Get(options::kUseContentSize, &use_content_size);
   if (!has_frame() || !use_content_size)
@@ -594,6 +601,12 @@ NativeWindowMac::~NativeWindowMac() {
 }
 
 void NativeWindowMac::Close() {
+  // When this is a sheet showing, performClose won't work.
+  if (is_modal() && parent() && IsVisible()) {
+    CloseImmediately();
+    return;
+  }
+
   if (!IsClosable()) {
     WindowList::WindowCloseCancelled(this);
     return;
@@ -623,6 +636,12 @@ bool NativeWindowMac::IsFocused() {
 }
 
 void NativeWindowMac::Show() {
+  if (is_modal() && parent()) {
+    [parent()->GetNativeWindow() beginSheet:window_
+                          completionHandler:^(NSModalResponse) {}];
+    return;
+  }
+
   // This method is supposed to put focus on window, however if the app does not
   // have focus then "makeKeyAndOrderFront" will only show the window.
   [NSApp activateIgnoringOtherApps:YES];
@@ -635,11 +654,21 @@ void NativeWindowMac::ShowInactive() {
 }
 
 void NativeWindowMac::Hide() {
+  if (is_modal() && parent()) {
+    [window_ orderOut:nil];
+    [parent()->GetNativeWindow() endSheet:window_];
+    return;
+  }
+
   [window_ orderOut:nil];
 }
 
 bool NativeWindowMac::IsVisible() {
   return [window_ isVisible];
+}
+
+bool NativeWindowMac::IsEnabled() {
+  return [window_ attachedSheet] == nil;
 }
 
 void NativeWindowMac::Maximize() {
@@ -910,6 +939,21 @@ bool NativeWindowMac::HasModalDialog() {
   return [window_ attachedSheet] != nil;
 }
 
+void NativeWindowMac::SetParentWindow(NativeWindow* parent) {
+  if (is_modal())
+    return;
+
+  NativeWindow::SetParentWindow(parent);
+
+  // Remove current parent window.
+  if ([window_ parentWindow])
+    [[window_ parentWindow] removeChildWindow:window_];
+
+  // Set new current window.
+  if (parent)
+    [parent->GetNativeWindow() addChildWindow:window_ ordered:NSWindowAbove];
+}
+
 gfx::NativeWindow NativeWindowMac::GetNativeWindow() {
   return window_;
 }
@@ -1041,7 +1085,7 @@ void NativeWindowMac::InstallView() {
     [[window_ standardWindowButton:NSWindowMiniaturizeButton] setHidden:YES];
     [[window_ standardWindowButton:NSWindowCloseButton] setHidden:YES];
 
-    // Some third-party OS X utilities check the zoom button's enabled state to
+    // Some third-party macOS utilities check the zoom button's enabled state to
     // determine whether to show custom UI on hover, so we disable it here to
     // prevent them from doing so in a frameless app window.
     [[window_ standardWindowButton:NSWindowZoomButton] setEnabled:NO];
@@ -1111,7 +1155,7 @@ void NativeWindowMac::SetStyleMask(bool on, NSUInteger flag) {
   else
     [window_ setStyleMask:[window_ styleMask] & (~flag)];
   // Change style mask will make the zoom button revert to default, probably
-  // a bug of Cocoa or OS X.
+  // a bug of Cocoa or macOS.
   if (!zoom_button_enabled)
     SetMaximizable(false);
 }
@@ -1123,7 +1167,7 @@ void NativeWindowMac::SetCollectionBehavior(bool on, NSUInteger flag) {
   else
     [window_ setCollectionBehavior:[window_ collectionBehavior] & (~flag)];
   // Change collectionBehavior will make the zoom button revert to default,
-  // probably a bug of Cocoa or OS X.
+  // probably a bug of Cocoa or macOS.
   if (!zoom_button_enabled)
     SetMaximizable(false);
 }
@@ -1131,8 +1175,9 @@ void NativeWindowMac::SetCollectionBehavior(bool on, NSUInteger flag) {
 // static
 NativeWindow* NativeWindow::Create(
     brightray::InspectableWebContents* inspectable_web_contents,
-    const mate::Dictionary& options) {
-  return new NativeWindowMac(inspectable_web_contents, options);
+    const mate::Dictionary& options,
+    NativeWindow* parent) {
+  return new NativeWindowMac(inspectable_web_contents, options, parent);
 }
 
 }  // namespace atom

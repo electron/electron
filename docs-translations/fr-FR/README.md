@@ -85,7 +85,7 @@ dans la FAQ :
 * [Hiérarchie du Code Source](development/source-code-directory-structure.md)
 * [Différences Techniques par rapport à NW.js (anciennement node-webkit)](development/atom-shell-vs-node-webkit.md)
 * [Aperçu du Système de Build](development/build-system-overview.md)
-* [Instructions de Build (OS X)](development/build-instructions-osx.md)
+* [Instructions de Build (macOS)](development/build-instructions-osx.md)
 * [Instructions de Build (Windows)](development/build-instructions-windows.md)
 * [Instructions de Build (Linux)](development/build-instructions-linux.md)
 * [Installer un Serveur de Symbol dans le debugger](development/setting-up-symbol-server.md)

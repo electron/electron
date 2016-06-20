@@ -12,9 +12,9 @@
 
 namespace {
 
-// By default, OS X sets 4px to tray image as left and right padding margin.
+// By default, macOS sets 4px to tray image as left and right padding margin.
 const CGFloat kHorizontalMargin = 4;
-// OS X tends to make the title 2px lower.
+// macOS tends to make the title 2px lower.
 const CGFloat kVerticalTitleMargin = 2;
 
 }  //  namespace

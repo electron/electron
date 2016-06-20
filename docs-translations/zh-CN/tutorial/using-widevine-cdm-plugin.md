@@ -8,17 +8,17 @@ Electron 没有为 Widevine CDM 插件 配制许可 reasons, 为了获得它，�
 
 __注意:__ Chrome 浏览器的主要版本必须和 Electron 使用的版本一样，否则插件不会有效，虽然 `navigator.plugins` 会显示你已经安装了它 .
 
-### Windows & OS X
+### Windows & macOS
 
 在 Chrome 浏览器中打开 `chrome://components/` ，找到 `WidevineCdm` 并且确定它更新到最新版本，然后你可以从 `APP_DATA/Google/Chrome/WidevineCDM/VERSION/_platform_specific/PLATFORM_ARCH/` 路径找到所有的插件二进制文件 .
 
 `APP_DATA` 是系统存放数据的地方，在 Windows 上它是
-`%LOCALAPPDATA%`, 在 OS X 上它是 `~/Library/Application Support`. `VERSION` 是
+`%LOCALAPPDATA%`, 在 macOS 上它是 `~/Library/Application Support`. `VERSION` 是
 Widevine CDM 插件的版本字符串, 类似 `1.4.8.866`. `PLATFORM` 是 `mac` 或
 `win`. `ARCH` 是 `x86` 或 `x64`.
 
 在 Windows，必要的二进制文件是 `widevinecdm.dll` and
-`widevinecdmadapter.dll`, 在 OS X ，它们是 `libwidevinecdm.dylib` 和
+`widevinecdmadapter.dll`, 在 macOS ，它们是 `libwidevinecdm.dylib` 和
 `widevinecdmadapter.plugin`. 你可以将它们复制到任何你喜欢的地方，但是它们必须要放在一起.
 
 ### Linux
@@ -38,7 +38,7 @@ __注意:__ 虽然只有 `widevinecdmadapter` 的二进制文件传递给了  El
 
 ```javascript
 // You have to pass the filename of `widevinecdmadapter` here, it is
-// * `widevinecdmadapter.plugin` on OS X,
+// * `widevinecdmadapter.plugin` on macOS,
 // * `libwidevinecdmadapter.so` on Linux,
 // * `widevinecdmadapter.dll` on Windows.
 app.commandLine.appendSwitch('widevine-cdm-path', '/path/to/widevinecdmadapter.plugin');

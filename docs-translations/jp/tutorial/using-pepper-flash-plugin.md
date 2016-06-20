@@ -5,7 +5,7 @@ Electronは、Pepper Flashプラグインをサポートしています。Electr
 
 ## Flash プラグインのコピー準備
 
-OS XとLinuxでは、Pepper Flashプラグインの詳細は、Chromeブラウザーで、`chrome://plugins` にアクセスして確認できます。そこで表示されるパスとバージョンは、ElectronのPepper Flashサポートに役立ちます。それを別のパスにコピーすることができます。
+macOSとLinuxでは、Pepper Flashプラグインの詳細は、Chromeブラウザーで、`chrome://plugins` にアクセスして確認できます。そこで表示されるパスとバージョンは、ElectronのPepper Flashサポートに役立ちます。それを別のパスにコピーすることができます。
 
 ## Electron スイッチの追加
 
@@ -16,7 +16,7 @@ OS XとLinuxでは、Pepper Flashプラグインの詳細は、Chromeブラウ�
 ```javascript
 // Specify flash path.
 // On Windows, it might be /path/to/pepflashplayer.dll
-// On OS X, /path/to/PepperFlashPlayer.plugin
+// On macOS, /path/to/PepperFlashPlayer.plugin
 // On Linux, /path/to/libpepflashplayer.so
 app.commandLine.appendSwitch('ppapi-flash-path', '/path/to/libpepflashplayer.so');
 

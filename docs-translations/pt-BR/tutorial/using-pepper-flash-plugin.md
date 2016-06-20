@@ -6,7 +6,7 @@ habilitado em sua aplicação.
 
 ## Prepare uma cópia do plugin Flash
 
-Tanto no OS X como no Linux, os detalhes do plugin Pepper Flash podem ser
+Tanto no macOS como no Linux, os detalhes do plugin Pepper Flash podem ser
 encontrados navegando por `chrome://plugins` no navegador Chrome. Essa
 localização e versão são úteis para o suporte do plugin Electron's Pepper Flash.
 Você pode também copiar para outra localização.
@@ -36,7 +36,7 @@ app.on('window-all-closed', function() {
 
 // Epecifica o caminho do flash.
 // No Windows, deve ser /path/to/pepflashplayer.dll
-// No OS X, /path/to/PepperFlashPlayer.plugin
+// No macOS, /path/to/PepperFlashPlayer.plugin
 // No Linux, /path/to/libpepflashplayer.so
 app.commandLine.appendSwitch('ppapi-flash-path', '/path/to/libpepflashplayer.so');
 

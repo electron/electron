@@ -68,7 +68,7 @@ var mainWindow = null;
 
 // 當所有窗口被關閉了，退出。
 app.on('window-all-closed', function() {
-  // 在OS X 上，通常使用者在明確地按下 Cmd + Q 之前
+  // 在macOS 上，通常使用者在明確地按下 Cmd + Q 之前
   // 應用會保持活動狀態
   if (process.platform != 'darwin') {
     app.quit();
@@ -147,7 +147,7 @@ $ .\electron\electron.exe your-app\
 $ ./electron/electron your-app/
 ```
 
-### OS X
+### macOS
 
 ``` bash
 $ ./Electron.app/Contents/MacOS/Electron your-app/

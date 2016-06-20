@@ -66,7 +66,7 @@
 * [โครงสร้างไดเรคทอรี่ของซอร์สโค้ด](development/source-code-directory-structure.md)
 * [ความแตกต่างทางเทคนิคจาก NW.js (หรือ node-webkit)](development/atom-shell-vs-node-webkit.md)
 * [ภาพรวมการสร้างระบบ](development/build-system-overview.md)
-* [ขั้นตอนการสร้าง (OS X)](development/build-instructions-osx.md)
+* [ขั้นตอนการสร้าง (macOS)](development/build-instructions-osx.md)
 * [ขั้นตอนการสร้าง (Windows)](development/build-instructions-windows.md)
 * [ขั้นตอนการสร้าง (Linux)](development/build-instructions-linux.md)
 * [Setting Up Symbol Server in debugger](development/setting-up-symbol-server.md)

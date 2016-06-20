@@ -35,7 +35,7 @@ describe('nativeImage module', () => {
       assert.equal(image.getSize().width, 538)
     })
 
-    it('Gets an NSImage pointer on OS X', () => {
+    it('Gets an NSImage pointer on macOS', () => {
       if (process.platform !== 'darwin') return
 
       const imagePath = `${path.join(__dirname, 'fixtures', 'api')}${path.sep}..${path.sep}${path.join('assets', 'logo.png')}`

@@ -18,9 +18,9 @@ const {BrowserWindow} = require('electron')
 let win = new BrowserWindow({width: 800, height: 600, frame: false})
 ```
 
-### Alternatives on OS X
+### Alternatives on macOS
 
-On Mac OS X 10.10 Yosemite and newer, there's an alternative way to specify
+On macOS 10.10 Yosemite and newer, there's an alternative way to specify
 a chromeless window. Instead of setting `frame` to `false` which disables
 both the titlebar and window controls, you may want to have the title bar
 hidden and your content extend to the full window size, yet still preserve

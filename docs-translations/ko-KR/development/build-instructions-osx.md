@@ -1,10 +1,10 @@
-﻿# 빌드 설명서 (OS X)
+﻿# 빌드 설명서 (macOS)
 
-이 가이드는 OS X 운영체제에서 Electron을 빌드하는 방법을 설명합니다.
+이 가이드는 macOS 운영체제에서 Electron을 빌드하는 방법을 설명합니다.
 
 ## 빌드전 요구 사항
 
-* OS X >= 10.8
+* macOS >= 10.8
 * [Xcode](https://developer.apple.com/technologies/tools/) >= 5.1
 * [node.js](http://nodejs.org) (external)
 
@@ -47,7 +47,7 @@ $ ./script/build.py -c D
 
 ## 32비트 지원
 
-Electron은 현재 OS X 64비트만 지원하고 있습니다. 그리고 앞으로도 OS X 32비트는 지원할
+Electron은 현재 macOS 64비트만 지원하고 있습니다. 그리고 앞으로도 macOS 32비트는 지원할
 계획이 없습니다.
 
 ## 테스트

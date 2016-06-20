@@ -3,7 +3,6 @@ const {app, dialog, shell, Menu} = require('electron')
 const fs = require('fs')
 const Module = require('module')
 const path = require('path')
-const repl = require('repl')
 const url = require('url')
 
 // Parse command line options.
@@ -315,6 +314,7 @@ function startRepl () {
     return
   }
 
+  const repl = require('repl')
   repl.start('> ').on('exit', () => {
     process.exit(0)
   })
