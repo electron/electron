@@ -126,6 +126,20 @@ describe('ipc module', function () {
         done()
       })
     })
+
+    it('does not emit unhandled rejection events in the main process', function (done) {
+      remote.process.on('unhandledRejection', function (reason) {
+        done(reason)
+      })
+
+      var promise = remote.require(path.join(fixtures, 'module', 'unhandled-rejection.js'))
+      promise.reject().then(function () {
+        done(new Error('Promise was not rejected'))
+      }).catch(function (error) {
+        assert.equal(error.message, 'rejected')
+        done()
+      })
+    })
   })
 
   describe('remote webContents', function () {
