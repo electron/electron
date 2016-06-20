@@ -77,8 +77,7 @@ v8::Local<v8::Value> ToBuffer(v8::Isolate* isolate, void* val, int size) {
 
 
 Window::Window(v8::Isolate* isolate, const mate::Dictionary& options)
-    : disable_count_(0),
-      is_modal_(false) {
+    : is_modal_(false) {
   // Use options.webPreferences to create WebContents.
   mate::Dictionary web_preferences = mate::Dictionary::CreateEmpty(isolate);
   options.Get(options::kWebPreferences, &web_preferences);
@@ -325,15 +324,11 @@ bool Window::IsVisible() {
 }
 
 void Window::Disable() {
-  ++disable_count_;
-  if (disable_count_ == 1)
-    window_->Disable();
+  window_->Disable();
 }
 
 void Window::Enable() {
-  --disable_count_;
-  if (disable_count_ == 0)
-    window_->Enable();
+  window_->Enable();
 }
 
 bool Window::IsEnabled() {

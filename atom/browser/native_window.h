@@ -98,8 +98,9 @@ class NativeWindow : public base::SupportsUserData,
   virtual void ShowInactive() = 0;
   virtual void Hide() = 0;
   virtual bool IsVisible() = 0;
-  virtual void Disable() = 0;
-  virtual void Enable() = 0;
+  virtual void Disable();
+  virtual void Enable();
+  virtual void SetEnabled(bool enable) = 0;  // should not be used
   virtual bool IsEnabled() = 0;
   virtual void Maximize() = 0;
   virtual void Unmaximize() = 0;
@@ -336,6 +337,9 @@ class NativeWindow : public base::SupportsUserData,
   // content view.
   double aspect_ratio_;
   gfx::Size aspect_ratio_extraSize_;
+
+  // How many times the Disable has been called.
+  int disable_count_;
 
   // The page this window is viewing.
   brightray::InspectableWebContents* inspectable_web_contents_;

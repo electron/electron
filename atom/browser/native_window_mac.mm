@@ -673,14 +673,9 @@ bool NativeWindowMac::IsVisible() {
   return [window_ isVisible];
 }
 
-void NativeWindowMac::Disable() {
-  [window_ setDisableKeyOrMainWindow:YES];
-  [window_ setDisableMouseEvents:YES];
-}
-
-void NativeWindowMac::Enable() {
-  [window_ setDisableKeyOrMainWindow:NO];
-  [window_ setDisableMouseEvents:NO];
+void NativeWindowMac::SetEnabled(bool enable) {
+  [window_ setDisableKeyOrMainWindow:!enable];
+  [window_ setDisableMouseEvents:!enable];
 }
 
 bool NativeWindowMac::IsEnabled() {

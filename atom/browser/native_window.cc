@@ -56,6 +56,7 @@ NativeWindow::NativeWindow(
       sheet_offset_x_(0.0),
       sheet_offset_y_(0.0),
       aspect_ratio_(0.0),
+      disable_count_(0),
       inspectable_web_contents_(inspectable_web_contents),
       weak_factory_(this) {
   options.Get(options::kFrame, &has_frame_);
@@ -176,6 +177,18 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
   options.Get(options::kShow, &show);
   if (show)
     Show();
+}
+
+void NativeWindow::Disable() {
+  ++disable_count_;
+  if (disable_count_ == 1)
+    SetEnabled(false);
+}
+
+void NativeWindow::Enable() {
+  --disable_count_;
+  if (disable_count_ == 0)
+    SetEnabled(true);
 }
 
 void NativeWindow::SetSize(const gfx::Size& size, bool animate) {

@@ -209,9 +209,6 @@ class Window : public mate::TrackableObject<Window>,
   v8::Global<v8::Value> parent_window_;
   KeyWeakMap<int> child_windows_;
 
-  // How many times the Disable has been called.
-  int disable_count_;
-
   // Is current window modal.
   bool is_modal_;
 

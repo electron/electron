@@ -382,25 +382,19 @@ bool NativeWindowViews::IsVisible() {
   return window_->IsVisible();
 }
 
-void NativeWindowViews::Disable() {
+void NativeWindowViews::SetEnabled(bool enable) {
 #if defined(OS_WIN)
-  ::EnableWindow(GetAcceleratedWidget(), FALSE);
-#elif defined(USE_X11)
-  event_disabler_.reset(new EventDisabler);
-  views::DesktopWindowTreeHostX11* tree_host =
-      views::DesktopWindowTreeHostX11::GetHostForXID(GetAcceleratedWidget());
-  tree_host->AddEventRewriter(event_disabler_.get());
-#endif
-}
-
-void NativeWindowViews::Enable() {
-#if defined(OS_WIN)
-  ::EnableWindow(GetAcceleratedWidget(), TRUE);
+  ::EnableWindow(GetAcceleratedWidget(), enable);
 #elif defined(USE_X11)
   views::DesktopWindowTreeHostX11* tree_host =
       views::DesktopWindowTreeHostX11::GetHostForXID(GetAcceleratedWidget());
-  tree_host->RemoveEventRewriter(event_disabler_.get());
-  event_disabler_.reset();
+  if (enable) {
+    tree_host->RemoveEventRewriter(event_disabler_.get());
+    event_disabler_.reset();
+  } else {
+    event_disabler_.reset(new EventDisabler);
+    tree_host->AddEventRewriter(event_disabler_.get());
+  }
 #endif
 }
 
