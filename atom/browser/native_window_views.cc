@@ -806,6 +806,8 @@ void NativeWindowViews::SetMenu(ui::MenuModel* menu_model) {
 }
 
 void NativeWindowViews::SetParentWindow(NativeWindow* parent) {
+  NativeWindow::SetParentWindow(parent);
+
 #if defined(USE_X11)
   XDisplay* xdisplay = gfx::GetXDisplay();
   XSetTransientForHint(
@@ -830,6 +832,7 @@ void NativeWindowViews::SetParentWindow(NativeWindow* parent) {
 }
 
 void NativeWindowViews::SetModal(bool modal) {
+  NativeWindow::SetModal(modal);
 #if defined(USE_X11)
   SetWindowType(GetAcceleratedWidget(), modal ? "dialog" : "normal");
   Show();

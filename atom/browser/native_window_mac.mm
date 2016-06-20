@@ -455,7 +455,7 @@ NativeWindowMac::NativeWindowMac(
     brightray::InspectableWebContents* web_contents,
     const mate::Dictionary& options,
     NativeWindow* parent)
-    : NativeWindow(web_contents, options),
+    : NativeWindow(web_contents, options, parent),
       is_kiosk_(false),
       attention_request_id_(0),
       title_bar_style_(NORMAL) {
@@ -527,7 +527,8 @@ NativeWindowMac::NativeWindowMac(
   window_delegate_.reset([[AtomNSWindowDelegate alloc] initWithShell:this]);
   [window_ setDelegate:window_delegate_];
 
-  if (parent) {
+  // Only use native parent window for non-modal windows.
+  if (parent && !is_modal()) {
     SetParentWindow(parent);
   }
 
@@ -625,6 +626,12 @@ NativeWindowMac::~NativeWindowMac() {
 }
 
 void NativeWindowMac::Close() {
+  // When this is a sheet showing, performClose won't work.
+  if (is_modal() && parent() && IsVisible()) {
+    CloseImmediately();
+    return;
+  }
+
   if (!IsClosable()) {
     WindowList::WindowCloseCancelled(this);
     return;
@@ -654,6 +661,12 @@ bool NativeWindowMac::IsFocused() {
 }
 
 void NativeWindowMac::Show() {
+  if (is_modal() && parent()) {
+    [parent()->GetNativeWindow() beginSheet:window_
+                          completionHandler:^(NSModalResponse) {}];
+    return;
+  }
+
   // This method is supposed to put focus on window, however if the app does not
   // have focus then "makeKeyAndOrderFront" will only show the window.
   [NSApp activateIgnoringOtherApps:YES];
@@ -666,6 +679,12 @@ void NativeWindowMac::ShowInactive() {
 }
 
 void NativeWindowMac::Hide() {
+  if (is_modal() && parent()) {
+    [window_ orderOut:nil];
+    [parent()->GetNativeWindow() endSheet:window_];
+    return;
+  }
+
   [window_ orderOut:nil];
 }
 
@@ -679,7 +698,7 @@ void NativeWindowMac::SetEnabled(bool enable) {
 }
 
 bool NativeWindowMac::IsEnabled() {
-  return ![window_ disableMouseEvents];
+  return [window_ attachedSheet] == nil;
 }
 
 void NativeWindowMac::Maximize() {
@@ -951,6 +970,11 @@ bool NativeWindowMac::HasModalDialog() {
 }
 
 void NativeWindowMac::SetParentWindow(NativeWindow* parent) {
+  if (is_modal())
+    return;
+
+  NativeWindow::SetParentWindow(parent);
+
   // Remove current parent window.
   if ([window_ parentWindow])
     [[window_ parentWindow] removeChildWindow:window_];
@@ -958,21 +982,6 @@ void NativeWindowMac::SetParentWindow(NativeWindow* parent) {
   // Set new current window.
   if (parent)
     [parent->GetNativeWindow() addChildWindow:window_ ordered:NSWindowAbove];
-}
-
-void NativeWindowMac::BeginSheet(NativeWindow* sheet) {
-  [window_ beginSheet:sheet->GetNativeWindow()
-    completionHandler:^(NSModalResponse) {
-  }];
-}
-
-void NativeWindowMac::EndSheet(NativeWindow* sheet) {
-  sheet->Hide();
-  [window_ endSheet:sheet->GetNativeWindow()];
-  sheet->CloseImmediately();
-}
-
-void NativeWindowMac::SetModal(bool modal) {
 }
 
 gfx::NativeWindow NativeWindowMac::GetNativeWindow() {

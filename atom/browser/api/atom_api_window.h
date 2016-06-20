@@ -170,10 +170,7 @@ class Window : public mate::TrackableObject<Window>,
   void SetParentWindow(v8::Local<v8::Value> value, mate::Arguments* args);
   v8::Local<v8::Value> GetParentWindow() const;
   std::vector<v8::Local<v8::Object>> GetChildWindows() const;
-  void SetModal(bool modal, mate::Arguments* args);
   bool IsModal() const;
-  void BeginSheet(mate::Handle<Window> sheet, mate::Arguments* args);
-  void EndSheet(mate::Handle<Window> sheet);
   v8::Local<v8::Value> GetNativeWindowHandle();
 
 #if defined(OS_WIN)
@@ -208,9 +205,6 @@ class Window : public mate::TrackableObject<Window>,
   v8::Global<v8::Value> menu_;
   v8::Global<v8::Value> parent_window_;
   KeyWeakMap<int> child_windows_;
-
-  // Is current window modal.
-  bool is_modal_;
 
   api::WebContents* api_web_contents_;
 

@@ -902,10 +902,18 @@ describe('browser-window module', function () {
       })
     })
 
-    describe('win.setModal(modal)', function () {
+    describe('modal option', function () {
+      // The isEnabled API is not reliable on macOS.
+      if (process.platform === 'darwin') return
+
+      beforeEach(function () {
+        if (c != null) c.destroy()
+        c = new BrowserWindow({show: false, parent: w, modal: true})
+      })
+
       it('disables parent window', function () {
         assert.equal(w.isEnabled(), true)
-        c.setModal(true)
+        c.show()
         assert.equal(w.isEnabled(), false)
       })
 
@@ -914,38 +922,20 @@ describe('browser-window module', function () {
           assert.equal(w.isEnabled(), true)
           done()
         })
-        c.setModal(true)
+        c.show()
         c.close()
       })
 
-      it('enables parent window when setting not modal', function () {
-        assert.equal(w.isEnabled(), true)
-        c.setModal(true)
-        assert.equal(w.isEnabled(), false)
-        c.setModal(false)
-        assert.equal(w.isEnabled(), true)
-      })
-
-      it('enables parent window when removing parent', function () {
-        if (process.platform !== 'darwin') return
-
-        assert.equal(w.isEnabled(), true)
-        c.setModal(true)
-        assert.equal(w.isEnabled(), false)
-        c.setParentWindow(null)
-        assert.equal(w.isEnabled(), true)
-      })
-
       it('disables parent window recursively', function () {
-        let c2 = new BrowserWindow({show: false, parent: w})
-        c.setModal(true)
-        c2.setModal(true)
+        let c2 = new BrowserWindow({show: false, parent: w, modal: true})
+        c.show()
         assert.equal(w.isEnabled(), false)
-        c.setModal(false)
+        c2.show()
         assert.equal(w.isEnabled(), false)
-        c2.setModal(false)
-        assert.equal(w.isEnabled(), true)
+        c.destroy()
+        assert.equal(w.isEnabled(), false)
         c2.destroy()
+        assert.equal(w.isEnabled(), true)
       })
     })
   })

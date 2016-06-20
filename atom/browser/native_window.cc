@@ -46,7 +46,8 @@ namespace atom {
 
 NativeWindow::NativeWindow(
     brightray::InspectableWebContents* inspectable_web_contents,
-    const mate::Dictionary& options)
+    const mate::Dictionary& options,
+    NativeWindow* parent)
     : content::WebContentsObserver(inspectable_web_contents->GetWebContents()),
       has_frame_(true),
       transparent_(false),
@@ -57,11 +58,16 @@ NativeWindow::NativeWindow(
       sheet_offset_y_(0.0),
       aspect_ratio_(0.0),
       disable_count_(0),
+      parent_(parent),
+      is_modal_(false),
       inspectable_web_contents_(inspectable_web_contents),
       weak_factory_(this) {
   options.Get(options::kFrame, &has_frame_);
   options.Get(options::kTransparent, &transparent_);
   options.Get(options::kEnableLargerThanScreen, &enable_larger_than_screen_);
+
+  if (parent)
+    options.Get("modal", &is_modal_);
 
   // Tell the content module to initialize renderer widget with transparent
   // mode.
@@ -305,10 +311,8 @@ bool NativeWindow::HasModalDialog() {
   return has_dialog_attached_;
 }
 
-void NativeWindow::BeginSheet(NativeWindow* sheet) {
-}
-
-void NativeWindow::EndSheet(NativeWindow* sheet) {
+void NativeWindow::SetParentWindow(NativeWindow* parent) {
+  parent_ = parent;
 }
 
 void NativeWindow::FocusOnWebView() {
