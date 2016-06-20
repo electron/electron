@@ -117,7 +117,7 @@ Emitted when any dragged items are dropped on the tray icon.
 
 #### Event: 'drop-files' _macOS_
 
-* `event`
+* `event` Event
 * `files` Array - the file path of dropped files.
 
 Emitted when dragged files are dropped in the tray icon.
