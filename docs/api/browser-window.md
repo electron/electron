@@ -72,39 +72,25 @@ The `child` window will always show on top of the `top` window.
 
 ### Modal windows
 
-A modal window is a child window that disables parent window, to turn a child
-window into modal window, you need to call `win.setModal(true)`:
+A modal window is a child window that disables parent window, to create a modal
+window, you have to set both `parent` and `modal` options:
 
 ```javascript
-let child = new BrowserWindow({parent: top, show: false})
+let child = new BrowserWindow({parent: top, modal: true, show: false})
 child.loadURL('https://github.com')
-child.setModal(true)
 child.once('ready-to-show', () => {
   child.show()
 })
 ```
 
-### Sheets
-
-On macOS it is uncommon to use modal windows for tasks, a more native way is to
-show window as sheet by calling `win.beginSheet(sheet)` API:
-
-```javascript
-let child = new BrowserWindow({show: false})
-child.loadURL('https://github.com')
-child.once('ready-to-show', () => {
-  top.beginSheet(child)
-})
-```
-
 ### Platform notices
 
-* On macOS the child window will keep the relative position to parent window
+* On macOS the child windows will keep the relative position to parent window
   when parent window moves, while on Windows and Linux child windows will not
   move.
-* On macOS the `setModal` has to be called before the child window shows.
 * On Windows it is not supported to change parent window dynamically.
 * On Linux the type of modal windows will be changed to `dialog`.
+* On Linux many desktop environments do not support hiding a modal window.
 
 ## Class: BrowserWindow
 
@@ -163,7 +149,9 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     `true`.
   * `frame` Boolean - Specify `false` to create a
     [Frameless Window](frameless-window.md). Default is `true`.
-  * `parent` BrowserWindow - Parent window.
+  * `parent` BrowserWindow - Specify parent window. Default is `null`.
+  * `modal` Boolean - Whether this is a modal window. This only works when the
+    window is a child window. Default is `false`.
   * `acceptFirstMouse` Boolean - Whether the web view accepts a single
     mouse-down event that simultaneously activates the window. Default is
     `false`.
@@ -580,32 +568,9 @@ Hides the window.
 
 Returns a boolean, whether the window is visible to the user.
 
-### `win.setModal(modal)`
-
-* `modal` Boolean
-
-Sets current window as modal window.
-
-It can only be called for child windows.
-
 ### `win.isModal()`
 
 Returns whether current window is a modal window.
-
-### `win.beginSheet(sheet)` _macOS_
-
-* `sheet` BrowserWindow
-
-Shows `sheet` as a sheet for current window, when there is already a sheet
-showing, this call will be queued.
-
-It can only be called for top-level windows.
-
-### `win.endSheet(sheet)` _macOS_
-
-* `sheet` BrowserWindow
-
-Dismisses the `sheet`.
 
 ### `win.maximize()`
 
