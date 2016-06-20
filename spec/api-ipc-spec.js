@@ -128,7 +128,7 @@ describe('ipc module', function () {
     })
 
     it('does not emit unhandled rejection events in the main process', function (done) {
-      remote.process.on('unhandledRejection', function (reason) {
+      remote.process.once('unhandledRejection', function (reason) {
         done(reason)
       })
 
