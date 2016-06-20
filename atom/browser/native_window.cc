@@ -46,7 +46,8 @@ namespace atom {
 
 NativeWindow::NativeWindow(
     brightray::InspectableWebContents* inspectable_web_contents,
-    const mate::Dictionary& options)
+    const mate::Dictionary& options,
+    NativeWindow* parent)
     : content::WebContentsObserver(inspectable_web_contents->GetWebContents()),
       has_frame_(true),
       transparent_(false),
@@ -56,11 +57,16 @@ NativeWindow::NativeWindow(
       sheet_offset_x_(0.0),
       sheet_offset_y_(0.0),
       aspect_ratio_(0.0),
+      parent_(parent),
+      is_modal_(false),
       inspectable_web_contents_(inspectable_web_contents),
       weak_factory_(this) {
   options.Get(options::kFrame, &has_frame_);
   options.Get(options::kTransparent, &transparent_);
   options.Get(options::kEnableLargerThanScreen, &enable_larger_than_screen_);
+
+  if (parent)
+    options.Get("modal", &is_modal_);
 
   // Tell the content module to initialize renderer widget with transparent
   // mode.
@@ -292,6 +298,10 @@ bool NativeWindow::HasModalDialog() {
   return has_dialog_attached_;
 }
 
+void NativeWindow::SetParentWindow(NativeWindow* parent) {
+  parent_ = parent;
+}
+
 void NativeWindow::FocusOnWebView() {
   web_contents()->GetRenderViewHost()->GetWidget()->Focus();
 }
@@ -396,6 +406,9 @@ void NativeWindow::CloseContents(content::WebContents* source) {
   inspectable_web_contents_->GetView()->SetDelegate(nullptr);
   inspectable_web_contents_ = nullptr;
   Observe(nullptr);
+
+  FOR_EACH_OBSERVER(NativeWindowObserver, observers_,
+                    WillDestoryNativeObject());
 
   // When the web contents is gone, close the window immediately, but the
   // memory will not be freed until you call delete.
@@ -611,7 +624,7 @@ void NativeWindow::ScheduleUnresponsiveEvent(int ms) {
 void NativeWindow::NotifyWindowUnresponsive() {
   window_unresposive_closure_.Cancel();
 
-  if (!is_closed_ && !HasModalDialog())
+  if (!is_closed_ && !HasModalDialog() && IsEnabled())
     FOR_EACH_OBSERVER(NativeWindowObserver,
                       observers_,
                       OnRendererUnresponsive());

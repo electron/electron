@@ -59,6 +59,39 @@ win.loadURL('https://github.com')
 Note that even for apps that use `ready-to-show` event, it is still recommended
 to set `backgroundColor` to make app feel more native.
 
+## Parent and child windows
+
+By using `parent` option, you can create child windows:
+
+```javascript
+let top = new BrowserWindow()
+let child = new BrowserWindow({parent: top})
+```
+
+The `child` window will always show on top of the `top` window.
+
+### Modal windows
+
+A modal window is a child window that disables parent window, to create a modal
+window, you have to set both `parent` and `modal` options:
+
+```javascript
+let child = new BrowserWindow({parent: top, modal: true, show: false})
+child.loadURL('https://github.com')
+child.once('ready-to-show', () => {
+  child.show()
+})
+```
+
+### Platform notices
+
+* On macOS the child windows will keep the relative position to parent window
+  when parent window moves, while on Windows and Linux child windows will not
+  move.
+* On Windows it is not supported to change parent window dynamically.
+* On Linux the type of modal windows will be changed to `dialog`.
+* On Linux many desktop environments do not support hiding a modal window.
+
 ## Class: BrowserWindow
 
 `BrowserWindow` is an
@@ -116,6 +149,9 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     `true`.
   * `frame` Boolean - Specify `false` to create a
     [Frameless Window](frameless-window.md). Default is `true`.
+  * `parent` BrowserWindow - Specify parent window. Default is `null`.
+  * `modal` Boolean - Whether this is a modal window. This only works when the
+    window is a child window. Default is `false`.
   * `acceptFirstMouse` Boolean - Whether the web view accepts a single
     mouse-down event that simultaneously activates the window. Default is
     `false`.
@@ -531,6 +567,10 @@ Hides the window.
 ### `win.isVisible()`
 
 Returns a boolean, whether the window is visible to the user.
+
+### `win.isModal()`
+
+Returns whether current window is a modal window.
 
 ### `win.maximize()`
 
@@ -1017,3 +1057,18 @@ events.
 Changes whether the window can be focused.
 
 [blink-feature-string]: https://cs.chromium.org/chromium/src/third_party/WebKit/Source/platform/RuntimeEnabledFeatures.in
+
+### `win.setParentWindow(parent)` _Linux_ _macOS_
+
+* `parent` BrowserWindow
+
+Sets `parent` as current window's parent window, passing `null` will turn
+current window into a top-level window.
+
+### `win.getParentWindow()`
+
+Returns the parent window.
+
+### `win.getChildWindows()`
+
+Returns all child windows.

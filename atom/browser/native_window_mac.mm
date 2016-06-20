@@ -429,8 +429,9 @@ namespace atom {
 
 NativeWindowMac::NativeWindowMac(
     brightray::InspectableWebContents* web_contents,
-    const mate::Dictionary& options)
-    : NativeWindow(web_contents, options),
+    const mate::Dictionary& options,
+    NativeWindow* parent)
+    : NativeWindow(web_contents, options, parent),
       is_kiosk_(false),
       attention_request_id_(0),
       title_bar_style_(NORMAL) {
@@ -500,6 +501,11 @@ NativeWindowMac::NativeWindowMac(
 
   window_delegate_.reset([[AtomNSWindowDelegate alloc] initWithShell:this]);
   [window_ setDelegate:window_delegate_];
+
+  // Only use native parent window for non-modal windows.
+  if (parent && !is_modal()) {
+    SetParentWindow(parent);
+  }
 
   if (transparent()) {
     // Setting the background color to clear will also hide the shadow.
@@ -595,6 +601,12 @@ NativeWindowMac::~NativeWindowMac() {
 }
 
 void NativeWindowMac::Close() {
+  // When this is a sheet showing, performClose won't work.
+  if (is_modal() && parent() && IsVisible()) {
+    CloseImmediately();
+    return;
+  }
+
   if (!IsClosable()) {
     WindowList::WindowCloseCancelled(this);
     return;
@@ -624,6 +636,12 @@ bool NativeWindowMac::IsFocused() {
 }
 
 void NativeWindowMac::Show() {
+  if (is_modal() && parent()) {
+    [parent()->GetNativeWindow() beginSheet:window_
+                          completionHandler:^(NSModalResponse) {}];
+    return;
+  }
+
   // This method is supposed to put focus on window, however if the app does not
   // have focus then "makeKeyAndOrderFront" will only show the window.
   [NSApp activateIgnoringOtherApps:YES];
@@ -636,11 +654,21 @@ void NativeWindowMac::ShowInactive() {
 }
 
 void NativeWindowMac::Hide() {
+  if (is_modal() && parent()) {
+    [window_ orderOut:nil];
+    [parent()->GetNativeWindow() endSheet:window_];
+    return;
+  }
+
   [window_ orderOut:nil];
 }
 
 bool NativeWindowMac::IsVisible() {
   return [window_ isVisible];
+}
+
+bool NativeWindowMac::IsEnabled() {
+  return [window_ attachedSheet] == nil;
 }
 
 void NativeWindowMac::Maximize() {
@@ -911,6 +939,21 @@ bool NativeWindowMac::HasModalDialog() {
   return [window_ attachedSheet] != nil;
 }
 
+void NativeWindowMac::SetParentWindow(NativeWindow* parent) {
+  if (is_modal())
+    return;
+
+  NativeWindow::SetParentWindow(parent);
+
+  // Remove current parent window.
+  if ([window_ parentWindow])
+    [[window_ parentWindow] removeChildWindow:window_];
+
+  // Set new current window.
+  if (parent)
+    [parent->GetNativeWindow() addChildWindow:window_ ordered:NSWindowAbove];
+}
+
 gfx::NativeWindow NativeWindowMac::GetNativeWindow() {
   return window_;
 }
@@ -1132,8 +1175,9 @@ void NativeWindowMac::SetCollectionBehavior(bool on, NSUInteger flag) {
 // static
 NativeWindow* NativeWindow::Create(
     brightray::InspectableWebContents* inspectable_web_contents,
-    const mate::Dictionary& options) {
-  return new NativeWindowMac(inspectable_web_contents, options);
+    const mate::Dictionary& options,
+    NativeWindow* parent) {
+  return new NativeWindowMac(inspectable_web_contents, options, parent);
 }
 
 }  // namespace atom
