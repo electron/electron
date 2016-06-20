@@ -57,7 +57,7 @@ request와 기여는 언제나 환영합니다.
 * `webSecurity`를 비활성화하지 않습니다. 이 옵션을 비활성화하면 동일-출처 정책도
   비활성화됩니다.
 * [`Content-Security-Policy`](http://www.html5rocks.com/en/tutorials/security/content-security-policy/)
-  를 정의하고, 한정적인 규칙을 사용하세요 (ie: `script-src 'self'`)
+  를 정의하고, 한정적인 규칙을 사용하세요 (i.e. `script-src 'self'`)
 * 문자열을 코드로 실행할 수 있는
   [`eval`을 덮어쓰고 비활성화](https://github.com/nylas/N1/blob/0abc5d5defcdb057120d726b271933425b75b415/static/index.js#L6)하세요.
 * `allowDisplayingInsecureContent`를 `true`로 설정하지 마세요.

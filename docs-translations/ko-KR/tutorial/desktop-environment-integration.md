@@ -214,7 +214,7 @@ win.setThumbarButtons([
   {
     tooltip: 'button1',
     icon: path.join(__dirname, 'button1.png'),
-    click() { console.log('button2 clicked'); }
+    click() { console.log('button1 clicked'); }
   },
   {
     tooltip: 'button2',

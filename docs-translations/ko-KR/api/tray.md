@@ -196,7 +196,7 @@ appIcon.setContextMenu(contextMenu);
   * `y` Integer
 
 트레이 아이콘의 컨텍스트 메뉴를 팝업시킵니다. `menu`가 전달되면, `menu`가 트레이
-메뉴의 컨텍스트 메뉴 대신 표시됩니다.
+아이콘의 컨텍스트 메뉴 대신 표시됩니다.
 
 `position`은 Windows에서만 사용할 수 있으며 기본값은 (0, 0)입니다.
 

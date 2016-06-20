@@ -13,18 +13,30 @@ Electron은 Pepper 플래시 플러그인을 지원합니다. Electron에서 Pep
 ## Electron 스위치 추가
 
 플러그인을 사용하려면 Electron 커맨드 라인에 `--ppapi-flash-path` 와
-`ppapi-flash-version` 플래그를 `app`의 `ready` 이벤트가 발생하기 전에 추가해야
+`--ppapi-flash-version` 플래그를 `app`의 `ready` 이벤트가 발생하기 전에 추가해야
 합니다. 그리고 `browser-window`에 `plugins` 옵션을 활성화해야 합니다.
 
+예를 들면:
+
 ```javascript
-// 플래시 플러그인의 위치를 설정합니다.
-// Windows의 경우, /path/to/pepflashplayer.dll 또는 main.js에 존재하는 경우 pepflashplayer.dll
-// macOS의 경우, /path/to/PepperFlashPlayer.plugin
-// Linux의 경우, /path/to/libpepflashplayer.so
-app.commandLine.appendSwitch('ppapi-flash-path', '/path/to/libpepflashplayer.so');
+// 플래시 플러그인의 위치를 설정합니다. main.js와 위치가 같다고 가정할 때:
+let pluginName
+switch (process.platform) {
+  case 'win32':
+    pluginName = 'pepflashplayer.dll'
+    break
+  case 'darwin':
+    pluginName = 'PepperFlashPlayer.plugin'
+    break
+  case 'linux':
+    pluginName = 'libpepflashplayer.so'
+    break
+}
+
+app.commandLine.appendSwitch('ppapi-flash-path', path.join(__dirname, pluginName))
 
 // 선택적인으로 플래시 플레이어의 버전을 설정합니다. 예시로는, v17.0.0.169
-app.commandLine.appendSwitch('ppapi-flash-version', '17.0.0.169');
+app.commandLine.appendSwitch('ppapi-flash-version', '17.0.0.169')
 
 app.on('ready', () => {
   win = new BrowserWindow({
@@ -33,14 +45,15 @@ app.on('ready', () => {
     webPreferences: {
       plugins: true
     }
-  });
-  win.loadURL(`file://${__dirname}/index.html`);
+  })
+  win.loadURL(`file://${__dirname}/index.html`)
   // 이외의 코드
 });
 ```
 
-`app.getPath('pepperFlashSystemPlugin')` 형태로 호출하면 시스템에 설치된 Pepper
-Flash 플러그인의 경로를 가져올 수도 있습니다.
+직접 플러그인을 삽입하는 대신 시스템의 Pepper Flash 플러그인을 사용할 수도 있습니다.
+시스템상의 플러그인의 경로는 `app.getPath('pepperFlashSystemPlugin')`로 불러올 수
+있습니다.
 
 ## `<webview>` 태그를 이용하여 플러그인을 활성화
 
@@ -59,3 +72,6 @@ Flash 플러그인의 경로를 가져올 수도 있습니다.
 Pepper 플래시 플러그인의 구조는 Electron과 일치해야 합니다. Windows에서 자주
 발생하는 문제는 32비트 버전의 플래시 플레이어를 64비트 버전의 Electron에서 사용하는
 것입니다.
+
+Windows에선 `--ppapi-flash-path`로 전달되는 경로의 분리자로 `\`를 사용해야 합니다.
+POSIX-스타일 경로는 작동하지 않을 것입니다.

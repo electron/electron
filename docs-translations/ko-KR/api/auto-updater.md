@@ -11,7 +11,7 @@
 - [nuts][nuts]: *애플리케이션을 위한 똑똑한 릴리즈 서버이며 GitHub를 백엔드로
   사용합니다. Squirrel을 통해 자동 업데이트를 지원합니다. (Mac & Windows)*
 - [electron-release-server][electron-release-server]: *완벽하게 모든 기능을
-지원하는 electron 애플리케이션을 위한 자가 호스트 릴리즈 서버입니다. auto-updater와
+지원하는 electron 애플리케이션을 위한 자가 호스트 릴리즈 서버입니다. autoUpdater와
 호환됩니다*
 - [squirrel-updates-server][squirrel-updates-server]: *GitHub 릴리즈를 사용하는
 Squirrel.Mac 와 Squirrel.Windows를 위한 간단한 node.js 기반 서버입니다*
@@ -23,7 +23,7 @@ Squirrel.Mac 와 Squirrel.Windows를 위한 간단한 node.js 기반 서버입�
 
 ### macOS
 
-macOS에선 `auto-updater` 모듈이 [Squirrel.Mac][squirrel-mac]를 기반으로 작동합니다.
+macOS에선 `autoUpdater`가 [Squirrel.Mac][squirrel-mac]를 기반으로 작동합니다.
 따라서 이 모듈을 작동시키기 위해 특별히 준비해야 할 작업은 없습니다.
 서버 사이드 요구 사항은 [서버 지원][server-support]을 참고하세요.
 
@@ -32,9 +32,11 @@ macOS에선 `auto-updater` 모듈이 [Squirrel.Mac][squirrel-mac]를 기반으�
 
 ### Windows
 
-Windows에선 `auto-updater` 모듈을 사용하기 전에 애플리케이션을 사용자의 장치에
-설치해야 합니다. [grunt-electron-installer][installer]를 사용하여 애플리케이션
-인스톨러를 만드는 것을 권장합니다.
+Windows에선 `autoUpdater`를 사용하기 전에 애플리케이션을 사용자의 장치에
+설치해야 합니다. [electron-winstaller][installer-lib],
+[electron-builder][electron-builder-lib] 또는
+[grunt-electron-installer][installer]를 사용하여 애플리케이션 인스톨러를 만드는 것을
+권장합니다.
 
 Windows에선 `autoUpdater` 모듈을 사용하기 전에 사용자의 장치에 애플리케이션을
 설치해야 합니다. 따라서 [electron-winstaller][installer-lib] 모듈이나
@@ -52,7 +54,7 @@ Squirrel로 생성된 인스톨러는 [Application User Model ID][app-user-model
 
 ### Linux
 
-Linux는 따로 `auto-updater`를 지원하지 않습니다.
+Linux는 따로 `autoUpdater`를 지원하지 않습니다.
 각 배포판의 패키지 관리자를 통해 애플리케이션 업데이트를 제공하는 것을 권장합니다.
 
 ## Events
@@ -117,6 +119,7 @@ Returns:
 [squirrel-windows]: https://github.com/Squirrel/Squirrel.Windows
 [installer]: https://github.com/electron/grunt-electron-installer
 [installer-lib]: https://github.com/electron/windows-installer
+[electron-builder-lib]: https://github.com/electron-userland/electron-builder
 [app-user-model-id]: https://msdn.microsoft.com/en-us/library/windows/desktop/dd378459(v=vs.85).aspx
 [electron-release-server]: https://github.com/ArekSredzki/electron-release-server
 [squirrel-updates-server]: https://github.com/Aluxian/squirrel-updates-server

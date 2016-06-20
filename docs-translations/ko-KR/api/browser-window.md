@@ -6,22 +6,61 @@
 
 ```javascript
 // 메인 프로세스에서
-const {BrowserWindow} = require('electron');
+const {BrowserWindow} = require('electron')
 
 // 또는 렌더러 프로세스에서
-const {BrowserWindow} = require('electron').remote;
+const {BrowserWindow} = require('electron').remote
 
-let win = new BrowserWindow({width: 800, height: 600, show: false});
+let win = new BrowserWindow({width: 800, height: 600})
 win.on('closed', () => {
   win = null;
-});
+})
 
 win.loadURL('https://github.com');
-win.show();
 ```
 
-또한 [Frameless Window](frameless-window.md) API를 사용하여 창 테두리가 없는 윈도우
-창을 생성할 수 있습니다.
+## Frameless 윈도우
+
+Frameless 윈도우를 만들거나 일정한 모양의 투명한 윈도우를 만드려면,
+[Frameless 윈도우](frameless-window.md) API를 사용할 수 있습니다.
+
+## 우아하게 윈도우 표시하기
+
+윈도우에서 페이지를 로딩할 때, 사용자는 페이지가 로드되는 모습을 볼 것입니다.
+네이티브 어플리케이션으로써 좋지 않은 경험입니다. 윈도우가 시각적인 깜빡임 없이
+표시되도록 만드려면, 서로 다른 상황을 위해 두 가지 방법이 있습니다.
+
+### `ready-to-show` 이벤트 사용하기
+
+페이지가 로딩되는 동안, `ready-to-show` 이벤트가 랜더러 프로세스가 랜더링이 완료되었을
+때 처음으로 발생합니다. 이 이벤트 이후로 윈도우를 표시하면 시각적인 깜빡임 없이 표시할
+수 있습니다.
+
+```javascript
+let win = new BrowserWindow({show: false})
+win.once('ready-to-show', () => {
+  win.show()
+})
+```
+
+이 이벤트는 보통 `did-finish-load` 이벤트 이후에 발생하지만, 페이지가 너무 많은 외부
+리소스를 가지고 있다면, `did-finish-load` 이벤트가 발생하기 이전에 발생할 수도
+있습니다.
+
+### `backgroundColor` 설정하기
+
+복잡한 어플리케이션에선, `ready-to-show` 이벤트가 너무 늦게 발생할 수 있습니다.
+이는 사용자가 어플리케이션이 느리다고 생각할 수 있습니다. 이러한 경우 어플리케이션
+윈도우를 바로 보이도록 하고 어플리케이션의 배경과 가까운 배경색을 `backgroundColor`을
+통해 설정합니다:
+
+```javascript
+let win = new BrowserWindow({backgroundColor: '#2e2c29'})
+win.loadURL('https://github.com')
+```
+
+참고로 `ready-to-show` 이벤트를 사용하더라도 어플리케이션을 네이티브 느낌이 나도록
+하기 위해 `backgroundColor`도 같이 설정하는 것을 권장합니다.
 
 ## Class: BrowserWindow
 
@@ -58,6 +97,11 @@ win.show();
   않습니다. 기본값은 `true` 입니다.
 * `closable` Boolean - 윈도우를 닫을 수 있는지 여부. Linux에선 구현되어있지 않습니다.
   기본값은 `true` 입니다.
+* `focusable` Boolean - 윈도우가 포커스될 수 있는지 여부입니다. 기본값은
+  `true`입니다. Windows에선 `focusable: false`를 설정함으로써 암시적으로
+  `skipTaskbar: true`도 설정됩니다. Linux에선 `focusable: false`를 설정함으로써
+  윈도우가 wm과 함께 반응을 중지하며 모든 작업 영역에서 윈도우가 언제나 최상단에 있게
+  됩니다.
 * `alwaysOnTop` Boolean - 윈도우이 언제나 다른 창들 위에 유지되는지 여부.
   기본값은 `false`입니다.
 * `fullscreen` Boolean - 윈도우의 전체화면 활성화 여부. 이 속성을 명시적으로
@@ -265,6 +309,11 @@ window.onbeforeunload = (e) => {
 
 윈도우가 숨겨진 상태일 때 발생하는 이벤트입니다.
 
+### Event: 'ready-to-show'
+
+웹 페이지가 완전히 랜더링되어 윈도우가 시각적인 깜빡임없이 컨텐츠를 보여줄 수 있을 때
+발생하는 이벤트입니다.
+
 ### Event: 'maximize'
 
 윈도우가 최대화됐을 때 발생하는 이벤트입니다.
@@ -389,11 +438,15 @@ ID에 해당하는 윈도우를 찾습니다.
 프로그램 작성에 사용할 수 없습니다. 만약 이미 로드된 확장 기능을 추가하려 한다면, 이
 메서드는 아무것도 반환하지 않고 콘솔에 경고가 로그됩니다.
 
+**참고:** 이 API는 `app` 모듈의 `ready` 이벤트가 발생하기 전까지 사용할 수 없습니다.
+
 ### `BrowserWindow.removeDevToolsExtension(name)`
 
 * `name` String
 
 `name`에 해당하는 개발자 도구 확장 기능을 제거합니다.
+
+**참고:** 이 API는 `app` 모듈의 `ready` 이벤트가 발생하기 전까지 사용할 수 없습니다.
 
 ### `BrowserWindow.getDevToolsExtensions()`
 
@@ -405,6 +458,8 @@ ID에 해당하는 윈도우를 찾습니다.
 ```javascript
 let installed = BrowserWindow.getDevToolsExtensions().hasOwnProperty('devtron')
 ```
+
+**참고:** 이 API는 `app` 모듈의 `ready` 이벤트가 발생하기 전까지 사용할 수 없습니다.
 
 ## Instance Properties
 
@@ -939,5 +994,11 @@ Linux 플랫폼에선 Unity 데스크톱 환경만 지원합니다. 그리고 �
 
 이 윈도우에서 일어나는 모든 마우스 이벤트가 이 윈도우 밑의 윈도우로 전달됩니다. 하지만
 이 윈도우가 포커스되어 있다면, 여전히 키보드 이벤트는 받을 수 있습니다.
+
+### `win.setFocusable(focusable)` _Windows_
+
+* `focusable` Boolean
+
+윈도우가 포커스될 수 있는지 여부를 변경합니다.
 
 [blink-feature-string]: https://cs.chromium.org/chromium/src/third_party/WebKit/Source/platform/RuntimeEnabledFeatures.in
