@@ -4,7 +4,7 @@
 
 #include "atom/browser/ui/file_dialog.h"
 
-#include "atom/browser/native_window.h"
+#include "atom/browser/native_window_views.h"
 #include "base/callback.h"
 #include "base/files/file_util.h"
 #include "base/strings/string_util.h"
@@ -40,7 +40,8 @@ class FileChooserDialog {
                     const std::string& button_label,
                     const base::FilePath& default_path,
                     const Filters& filters)
-      : dialog_scope_(parent_window),
+      : parent_(static_cast<atom::NativeWindowViews*>(parent_window)),
+        dialog_scope_(parent_window),
         filters_(filters) {
     const char* confirm_text = GTK_STOCK_OK;
 
@@ -58,9 +59,10 @@ class FileChooserDialog {
         GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
         confirm_text, GTK_RESPONSE_ACCEPT,
         NULL);
-    if (parent_window) {
-      gfx::NativeWindow window = parent_window->GetNativeWindow();
-      libgtk2ui::SetGtkTransientForAura(dialog_, window);
+    if (parent_) {
+      parent_->SetEnabled(false);
+      libgtk2ui::SetGtkTransientForAura(dialog_, parent_->GetNativeWindow());
+      gtk_window_set_modal(GTK_WINDOW(dialog_), TRUE);
     }
 
     if (action == GTK_FILE_CHOOSER_ACTION_SAVE)
@@ -68,8 +70,6 @@ class FileChooserDialog {
                                                      TRUE);
     if (action != GTK_FILE_CHOOSER_ACTION_OPEN)
       gtk_file_chooser_set_create_folders(GTK_FILE_CHOOSER(dialog_), TRUE);
-
-    gtk_window_set_modal(GTK_WINDOW(dialog_), TRUE);
 
     if (!default_path.empty()) {
       if (base::DirectoryExists(default_path)) {
@@ -89,6 +89,8 @@ class FileChooserDialog {
 
   virtual ~FileChooserDialog() {
     gtk_widget_destroy(dialog_);
+    if (parent_)
+      parent_->SetEnabled(true);
   }
 
   void RunAsynchronous() {
@@ -143,6 +145,7 @@ class FileChooserDialog {
   void AddFilters(const Filters& filters);
   base::FilePath AddExtensionForFilename(const gchar* filename) const;
 
+  atom::NativeWindowViews* parent_;
   atom::NativeWindow::DialogScope dialog_scope_;
 
   GtkWidget* dialog_;
