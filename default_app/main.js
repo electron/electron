@@ -214,7 +214,7 @@ app.once('ready', () => {
         {
           label: 'Quit ' + app.getName(),
           accelerator: 'Command+Q',
-          click () { app.quit() }
+          role: 'quit'
         }
       ]
     })
