@@ -51,6 +51,7 @@ The `role` property can have following values:
 * `delete`
 * `minimize` - Minimize current window
 * `close` - Close current window
+* `quit`- Quit the application
 
 On macOS `role` can also have following additional values:
 

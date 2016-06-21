@@ -214,7 +214,7 @@ app.once('ready', () => {
         {
           label: 'Quit ' + app.getName(),
           accelerator: 'Command+Q',
-          click () { app.quit() }
+          role: 'quit'
         }
       ]
     })
@@ -241,6 +241,18 @@ app.once('ready', () => {
         role: 'front'
       }
     ]
+  }
+
+  if (process.platform === 'win32') {
+    template.unshift({
+      label: 'File',
+      submenu: [
+        {
+          label: 'Exit',
+          role: 'quit'
+        }
+      ]
+    })
   }
 
   const menu = Menu.buildFromTemplate(template)
