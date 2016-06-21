@@ -139,8 +139,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void SendInputEvent(v8::Isolate* isolate, v8::Local<v8::Value> input_event);
 
   // Subscribe to the frame updates.
-  void BeginFrameSubscription(
-      const FrameSubscriber::FrameCaptureCallback& callback);
+  void BeginFrameSubscription(mate::Arguments* args);
   void EndFrameSubscription();
 
   // Methods for creating <webview>.

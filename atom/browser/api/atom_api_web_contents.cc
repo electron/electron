@@ -1195,11 +1195,18 @@ void WebContents::SendInputEvent(v8::Isolate* isolate,
 }
 
 void WebContents::BeginFrameSubscription(
-    const FrameSubscriber::FrameCaptureCallback& callback) {
+  mate::Arguments* args) {
+  FrameSubscriber::FrameCaptureCallback callback;
+  if (!args->GetNext(&callback))
+    return;
+
+  bool only_damaged = false;
+  args->GetNext(&only_damaged);
+
   const auto view = web_contents()->GetRenderWidgetHostView();
   if (view) {
     std::unique_ptr<FrameSubscriber> frame_subscriber(new FrameSubscriber(
-        isolate(), view, callback));
+        isolate(), view, callback, only_damaged));
     view->BeginFrameSubscription(std::move(frame_subscriber));
   }
 }
