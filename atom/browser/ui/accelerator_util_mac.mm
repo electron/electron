@@ -29,6 +29,10 @@ void SetPlatformAccelerator(ui::Accelerator* accelerator) {
     modifiers ^= NSShiftKeyMask;
   }
 
+  if (character == NSDeleteFunctionKey) {
+    character = NSDeleteCharacter;
+  }
+
   NSString* characters =
       [[[NSString alloc] initWithCharacters:&character length:1] autorelease];
 
