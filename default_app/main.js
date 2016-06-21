@@ -243,6 +243,18 @@ app.once('ready', () => {
     ]
   }
 
+  if (process.platform === 'win32') {
+    template.unshift({
+      label: 'File',
+      submenu: [
+        {
+          label: 'Exit',
+          role: 'quit'
+        }
+      ]
+    })
+  }
+
   const menu = Menu.buildFromTemplate(template)
   Menu.setApplicationMenu(menu)
 })
