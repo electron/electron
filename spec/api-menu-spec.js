@@ -372,4 +372,17 @@ describe('menu module', function () {
       }, /Unknown menu item type: not-a-type/)
     })
   })
+
+  describe('MenuItem with submenu type and missing submenu', function () {
+    it('throws an exception', function () {
+      assert.throws(function () {
+        var menu = Menu.buildFromTemplate([
+          {
+            label: 'text',
+            type: 'submenu'
+          }
+        ])
+      }, /Invalid submenu/)
+    })
+  })
 })
