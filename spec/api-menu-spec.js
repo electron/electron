@@ -1,10 +1,7 @@
 const assert = require('assert')
 
-const remote = require('electron').remote
-const ipcRenderer = require('electron').ipcRenderer
-
-const Menu = remote.require('electron').Menu
-const MenuItem = remote.require('electron').MenuItem
+const {ipcRenderer, remote} = require('electron')
+const {Menu, MenuItem} = remote
 
 describe('menu module', function () {
   describe('Menu.buildFromTemplate', function () {
