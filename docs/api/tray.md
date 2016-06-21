@@ -3,20 +3,20 @@
 > Add icons and context menus to the system's notification area.
 
 ```javascript
-const {app, Menu, Tray} = require('electron');
+const {app, Menu, Tray} = require('electron')
 
-let appIcon = null;
+let appIcon = null
 app.on('ready', () => {
-  appIcon = new Tray('/path/to/my/icon');
+  appIcon = new Tray('/path/to/my/icon')
   const contextMenu = Menu.buildFromTemplate([
     {label: 'Item1', type: 'radio'},
     {label: 'Item2', type: 'radio'},
     {label: 'Item3', type: 'radio', checked: true},
     {label: 'Item4', type: 'radio'}
   ]);
-  appIcon.setToolTip('This is my application.');
-  appIcon.setContextMenu(contextMenu);
-});
+  appIcon.setToolTip('This is my application.')
+  appIcon.setContextMenu(contextMenu)
+})
 ```
 
 __Platform limitations:__
@@ -207,5 +207,15 @@ The `position` is only available on Windows, and it is (0, 0) by default.
 * `menu` Menu
 
 Sets the context menu for this icon.
+
+### `Tray.getBounds()` _macOS_ _Windows_
+
+Returns the `bounds` of this tray icon as `Object`.
+
+* `bounds` Object
+  * `x` Integer
+  * `y` Integer
+  * `width` Integer
+  * `height` Integer
 
 [event-emitter]: http://nodejs.org/api/events.html#events_class_events_eventemitter
