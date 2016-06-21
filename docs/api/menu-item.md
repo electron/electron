@@ -52,6 +52,7 @@ The `role` property can have following values:
 * `minimize` - Minimize current window
 * `close` - Close current window
 * `quit`- Quit the application
+* `togglefullscreen`- Toggle full screen mode on the current window
 
 On macOS `role` can also have following additional values:
 
