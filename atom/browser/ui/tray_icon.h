@@ -60,8 +60,12 @@ class TrayIcon {
   // Set the context menu for this icon.
   virtual void SetContextMenu(ui::SimpleMenuModel* menu_model) = 0;
 
+  // Returns the bounds of tray icon.
+  virtual gfx::Rect GetBounds();
+
   void AddObserver(TrayIconObserver* obs) { observers_.AddObserver(obs); }
   void RemoveObserver(TrayIconObserver* obs) { observers_.RemoveObserver(obs); }
+
   void NotifyClicked(const gfx::Rect& = gfx::Rect(), int modifiers = 0);
   void NotifyDoubleClicked(const gfx::Rect& = gfx::Rect(), int modifiers = 0);
   void NotifyBalloonShow();

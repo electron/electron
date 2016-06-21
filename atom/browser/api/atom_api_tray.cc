@@ -159,6 +159,10 @@ void Tray::SetContextMenu(v8::Isolate* isolate, mate::Handle<Menu> menu) {
   tray_icon_->SetContextMenu(menu->model());
 }
 
+gfx::Rect Tray::GetBounds() {
+  return tray_icon_->GetBounds();
+}
+
 v8::Local<v8::Object> Tray::ModifiersToObject(v8::Isolate* isolate,
                                               int modifiers) {
   mate::Dictionary obj(isolate, v8::Object::New(isolate));
@@ -181,7 +185,8 @@ void Tray::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setHighlightMode", &Tray::SetHighlightMode)
       .SetMethod("displayBalloon", &Tray::DisplayBalloon)
       .SetMethod("popUpContextMenu", &Tray::PopUpContextMenu)
-      .SetMethod("setContextMenu", &Tray::SetContextMenu);
+      .SetMethod("setContextMenu", &Tray::SetContextMenu)
+      .SetMethod("getBounds", &Tray::GetBounds);
 }
 
 }  // namespace api
