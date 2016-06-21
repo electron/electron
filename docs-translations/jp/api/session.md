@@ -70,7 +70,7 @@ session.defaultSession.on('will-download', function(event, item, webContents) {
 
 `Session`のインスタンス上で次のメソッドが提供されています:
 
-### `ses.cookies`
+#### `ses.cookies`
 
 `cookies`は、cookiesに問い合わせしたり、修正をできるようにします。例：
 
@@ -94,7 +94,7 @@ session.defaultSession.cookies.set(cookie, function(error) {
 });
 ```
 
-### `ses.cookies.get(filter, callback)`
+#### `ses.cookies.get(filter, callback)`
 
 * `filter` Object
   * `url` String (オプション) - `url`に関連付けられているcookiesを取得します。空の場合すべてのurlのcookiesを取得します
@@ -122,7 +122,7 @@ session.defaultSession.cookies.set(cookie, function(error) {
 
 cookieの有効期限をUNIX時間で何秒かを示します。セッションcookiesは提供されません。
 
-### `ses.cookies.set(details, callback)`
+#### `ses.cookies.set(details, callback)`
 
 * `details` Object
   * `url` String - `url`に関連付けられているcookiesを取得します。
@@ -137,7 +137,7 @@ cookieの有効期限をUNIX時間で何秒かを示します。セッションc
 
 `details`でcookieを設定し、完了すると`callback(error)`で`callback`がコールされます。
 
-### `ses.cookies.remove(url, name, callback)`
+#### `ses.cookies.remove(url, name, callback)`
 
 * `url` String - cookieに関連付けられているURL
 * `name` String - 削除するcookieの名前
@@ -145,20 +145,20 @@ cookieの有効期限をUNIX時間で何秒かを示します。セッションc
 
 `url` と `name`と一致するcookiesを削除し、完了すると`callback`が、`callback()`でコールされます。
 
-### `ses.getCacheSize(callback)`
+#### `ses.getCacheSize(callback)`
 
 * `callback` Function
   * `size` Integer - 使用しているキャッシュサイズバイト数
 
 現在のセッションのキャッシュサイズを返します。
 
-### `ses.clearCache(callback)`
+#### `ses.clearCache(callback)`
 
 * `callback` Function - 操作が完了したら、コールされます。
 
 セッションのHTTPキャッシュをクリアします。
 
-### `ses.clearStorageData([options, ]callback)`
+#### `ses.clearStorageData([options, ]callback)`
 
 * `options` Object (オプション)
   * `origin` String - `window.location.origin`の説明で、`scheme://host:port`に従う
@@ -171,11 +171,11 @@ cookieの有効期限をUNIX時間で何秒かを示します。セッションc
 
 ウェブストレージのデータをクリアします。
 
-### `ses.flushStorageData()`
+#### `ses.flushStorageData()`
 
 書き込まれていないDOMStorageデータをディスクに書き込みます。
 
-### `ses.setProxy(config, callback)`
+#### `ses.setProxy(config, callback)`
 
 * `config` Object
   * `pacScript` String - PACファイルに関連付けらえたURL
@@ -213,13 +213,13 @@ proxyURL = [<proxyScheme>"://"]<proxyHost>[":"<proxyPort>]
 
 `url`をプロキシ情報で解決します。リクエストが実行された時、`callback(proxy)`で `callback`がコールされます。
 
-### `ses.setDownloadPath(path)`
+#### `ses.setDownloadPath(path)`
 
 * `path` String - ダウンロード場所
 
 ダウンロードの保存ディレクトリを設定します。既定では、ダウンロードディレクトリは、個別のアプリフォルダー下の`Downloads`です。
 
-### `ses.enableNetworkEmulation(options)`
+#### `ses.enableNetworkEmulation(options)`
 
 * `options` Object
   * `offline` Boolean - ネットワーク停止を再現するかどうか
@@ -241,11 +241,11 @@ window.webContents.session.enableNetworkEmulation({
 window.webContents.session.enableNetworkEmulation({offline: true});
 ```
 
-### `ses.disableNetworkEmulation()`
+#### `ses.disableNetworkEmulation()`
 
 `session`ですでに有効になっているネットワークエミュレーションを無効化します。オリジナルのネットワーク設定にリセットします。
 
-### `ses.setCertificateVerifyProc(proc)`
+#### `ses.setCertificateVerifyProc(proc)`
 
 * `proc` Function
 
@@ -262,7 +262,7 @@ myWindow.webContents.session.setCertificateVerifyProc(function(hostname, cert, c
 });
 ```
 
-### `ses.webRequest`
+#### `ses.webRequest`
 
 `webRequest`APIセットをインターセプトし、そのライフタイムの様々な段階でリクエストの内容を変更できます。
 
@@ -284,7 +284,7 @@ session.defaultSession.webRequest.onBeforeSendHeaders(filter, function(details, 
 });
 ```
 
-### `ses.webRequest.onBeforeRequest([filter, ]listener)`
+#### `ses.webRequest.onBeforeRequest([filter, ]listener)`
 
 * `filter` Object
 * `listener` Function
@@ -312,7 +312,7 @@ session.defaultSession.webRequest.onBeforeSendHeaders(filter, function(details, 
   * `cancel` Boolean (オプション)
   * `redirectURL` String (オプション) - オリジナルリクエストが送信もしくは完了するのを中断し、代わりに付与したURLにリダイレクトします。
 
-### `ses.webRequest.onBeforeSendHeaders([filter, ]listener)`
+#### `ses.webRequest.onBeforeSendHeaders([filter, ]listener)`
 
 * `filter` Object
 * `listener` Function
@@ -334,7 +334,7 @@ The `callback` has to be called with an `response` object:
   * `cancel` Boolean (オプション)
   * `requestHeaders` Object (オプション) - 付与されると、リクエストはそれらのヘッダーで作成されます。
 
-### `ses.webRequest.onSendHeaders([filter, ]listener)`
+#### `ses.webRequest.onSendHeaders([filter, ]listener)`
 
 * `filter` Object
 * `listener` Function
@@ -349,7 +349,7 @@ The `callback` has to be called with an `response` object:
   * `timestamp` Double
   * `requestHeaders` Object
 
-### `ses.webRequest.onHeadersReceived([filter,] listener)`
+#### `ses.webRequest.onHeadersReceived([filter,] listener)`
 
 * `filter` Object
 * `listener` Function
@@ -373,7 +373,7 @@ The `callback` has to be called with an `response` object:
   * `cancel` Boolean
   * `responseHeaders` Object (オプション) - 付与されていると、これらのヘッダーでサーバーはレスポンスしたと仮定します。
 
-### `ses.webRequest.onResponseStarted([filter, ]listener)`
+#### `ses.webRequest.onResponseStarted([filter, ]listener)`
 
 * `filter` Object
 * `listener` Function
@@ -391,7 +391,7 @@ The `callback` has to be called with an `response` object:
   * `statusCode` Integer
   * `statusLine` String
 
-### `ses.webRequest.onBeforeRedirect([filter, ]listener)`
+#### `ses.webRequest.onBeforeRedirect([filter, ]listener)`
 
 * `filter` Object
 * `listener` Function
@@ -410,7 +410,7 @@ The `callback` has to be called with an `response` object:
   * `fromCache` Boolean
   * `responseHeaders` Object
 
-### `ses.webRequest.onCompleted([filter, ]listener)`
+#### `ses.webRequest.onCompleted([filter, ]listener)`
 
 * `filter` Object
 * `listener` Function
@@ -428,7 +428,7 @@ The `callback` has to be called with an `response` object:
   * `statusCode` Integer
   * `statusLine` String
 
-### `ses.webRequest.onErrorOccurred([filter, ]listener)`
+#### `ses.webRequest.onErrorOccurred([filter, ]listener)`
 
 * `filter` Object
 * `listener` Function
