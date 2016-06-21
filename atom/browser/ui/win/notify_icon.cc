@@ -13,6 +13,7 @@
 #include "ui/gfx/geometry/point.h"
 #include "ui/gfx/geometry/rect.h"
 #include "ui/gfx/screen.h"
+#include "ui/gfx/win/dpi.h"
 #include "ui/views/controls/menu/menu_runner.h"
 
 namespace atom {
@@ -165,7 +166,7 @@ gfx::Rect NotifyIcon::GetBounds() {
 
   RECT rect = { 0 };
   Shell_NotifyIconGetRect(&icon_id, &rect);
-  return gfx::Rect(rect);
+  return gfx::win::ScreenToDIPRect(gfx::Rect(rect));
 }
 
 void NotifyIcon::InitIconData(NOTIFYICONDATA* icon_data) {
