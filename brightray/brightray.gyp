@@ -36,14 +36,13 @@
       'conditions': [
         # Link with libraries of libchromiumcontent.
         ['OS=="linux" and libchromiumcontent_component==0', {
-          # On Linux we have to use "--whole-archive" to force executable
-          # to include all symbols, otherwise we will have plenty of
+          # On Linux we have to use "--start-group" or we will have plenty of
           # unresolved symbols errors.
-          'direct_dependent_settings': {
-            'ldflags': [
-              '-Wl,--whole-archive',
+          'link_settings': {
+            'libraries': [
+              '-Wl,--start-group',
               '<@(libchromiumcontent_libraries)',
-              '-Wl,--no-whole-archive',
+              '-Wl,--end-group'
             ],
           }
         }, {  # (Release build on Linux)
