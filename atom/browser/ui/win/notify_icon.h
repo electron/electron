@@ -54,6 +54,7 @@ class NotifyIcon : public TrayIcon {
   void PopUpContextMenu(const gfx::Point& pos,
                         ui::SimpleMenuModel* menu_model) override;
   void SetContextMenu(ui::SimpleMenuModel* menu_model) override;
+  gfx::Rect GetBounds() override;
 
  private:
   void InitIconData(NOTIFYICONDATA* icon_data);
