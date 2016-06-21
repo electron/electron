@@ -112,9 +112,7 @@ app.once('ready', () => {
         },
         {
           label: 'Toggle Developer Tools',
-          accelerator: (() => {
-            return (process.platform === 'darwin') ? 'Alt+Command+I' : 'Ctrl+Shift+I'
-          })(),
+          accelerator: process.platform === 'darwin' ? 'Alt+Command+I' : 'Ctrl+Shift+I',
           click (item, focusedWindow) {
             if (focusedWindow) focusedWindow.toggleDevTools()
           }
