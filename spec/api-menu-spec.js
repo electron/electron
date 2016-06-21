@@ -359,4 +359,17 @@ describe('menu module', function () {
       }
     })
   })
+
+  describe('MenuItem with invalid type', function () {
+    it('throws an exception', function () {
+      assert.throws(function () {
+        var menu = Menu.buildFromTemplate([
+          {
+            label: 'text',
+            type: 'not-a-type'
+          }
+        ])
+      }, /Unknown menu item type: not-a-type/)
+    })
+  })
 })
