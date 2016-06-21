@@ -17,8 +17,8 @@ FrameSubscriber::FrameSubscriber(v8::Isolate* isolate,
                                  content::RenderWidgetHostView* view,
                                  const FrameCaptureCallback& callback,
                                  const bool& only_damaged)
-    : isolate_(isolate), view_(view), only_damaged_(only_damaged),
-      callback_(callback), weak_factory_(this) {
+    : isolate_(isolate), view_(view), callback_(callback),
+      only_damaged_(only_damaged), weak_factory_(this) {
 }
 
 bool FrameSubscriber::ShouldCaptureFrame(
