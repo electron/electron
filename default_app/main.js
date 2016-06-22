@@ -86,6 +86,7 @@ app.once('ready', () => {
         },
         {
           label: 'Delete',
+          accelerator: 'Delete',
           role: 'delete'
         },
         {
