@@ -341,6 +341,23 @@ session.defaultSession.allowNTLMCredentialsForDomains('*example.com, *foobar.com
 session.defaultSession.allowNTLMCredentialsForDomains('*')
 ```
 
+#### `ses.setUserAgent(userAgent[, acceptLanguages])`
+
+* `userAgent` String
+* `acceptLanguages` String (optional)
+
+Overrides the `userAgent` and `acceptLanguages` for this session.
+
+The `acceptLanguages` must a comma separated ordered list of language codes, for
+example `"en-US,fr,de,ko,zh-CN,ja"`.
+
+This doesn't affect existing `WebContents`, and each `WebContents` can use
+`webContents.setUserAgent` to override the session-wide user agent.
+
+#### `ses.getUserAgent()`
+
+Returns a `String` representing the user agent for this session.
+
 #### `ses.webRequest`
 
 The `webRequest` API set allows to intercept and modify contents of a request at
