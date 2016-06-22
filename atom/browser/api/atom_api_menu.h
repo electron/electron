@@ -90,7 +90,7 @@ class Menu : public mate::TrackableObject<Menu>,
   base::Callback<bool(int)> is_enabled_;
   base::Callback<bool(int)> is_visible_;
   base::Callback<v8::Local<v8::Value>(int)> get_accelerator_;
-  base::Callback<void(int)> execute_command_;
+  base::Callback<void(v8::Local<v8::Value>, int)> execute_command_;
   base::Callback<void()> menu_will_show_;
 
   DISALLOW_COPY_AND_ASSIGN(Menu);
