@@ -27,14 +27,10 @@ class WMState;
 
 namespace brightray {
 
-class BrowserContext;
-
 class BrowserMainParts : public content::BrowserMainParts {
  public:
   BrowserMainParts();
   ~BrowserMainParts();
-
-  BrowserContext* browser_context() { return browser_context_.get(); }
 
  protected:
   // content::BrowserMainParts:
@@ -52,7 +48,6 @@ class BrowserMainParts : public content::BrowserMainParts {
   void InitializeMainNib();
 #endif
 
-  scoped_refptr<BrowserContext> browser_context_;
   std::unique_ptr<devtools_http_handler::DevToolsHttpHandler> devtools_http_handler_;
 
 #if defined(TOOLKIT_VIEWS)

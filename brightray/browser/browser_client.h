@@ -23,7 +23,6 @@ class BrowserClient : public content::ContentBrowserClient {
   BrowserClient();
   ~BrowserClient();
 
-  BrowserContext* browser_context();
   BrowserMainParts* browser_main_parts() { return browser_main_parts_; }
 
   NotificationPresenter* GetNotificationPresenter();

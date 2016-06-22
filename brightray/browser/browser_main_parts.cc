@@ -206,8 +206,6 @@ void BrowserMainParts::PreMainMessageLoopStart() {
 }
 
 void BrowserMainParts::PreMainMessageLoopRun() {
-  browser_context_ = BrowserContext::From("", false);
-
   content::WebUIControllerFactory::RegisterFactory(
       WebUIControllerFactory::GetInstance());
 
@@ -230,8 +228,6 @@ void BrowserMainParts::PostMainMessageLoopStart() {
 }
 
 void BrowserMainParts::PostMainMessageLoopRun() {
-  browser_context_ = nullptr;
-
 #if defined(USE_X11)
   // Unset the X11 error handlers. The X11 error handlers log the errors using a
   // |PostTask()| on the message-loop. But since the message-loop is in the

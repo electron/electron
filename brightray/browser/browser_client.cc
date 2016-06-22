@@ -38,10 +38,6 @@ BrowserClient::BrowserClient()
 BrowserClient::~BrowserClient() {
 }
 
-BrowserContext* BrowserClient::browser_context() {
-  return browser_main_parts_->browser_context();
-}
-
 NotificationPresenter* BrowserClient::GetNotificationPresenter() {
   #if defined(OS_WIN)
   // Bail out if on Windows 7 or even lower, no operating will follow
