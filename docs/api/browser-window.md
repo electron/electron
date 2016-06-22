@@ -546,7 +546,7 @@ Focus on the window.
 
 ### `win.blur()`
 
-Remove focus on the window.
+Remove focus from the window.
 
 ### `win.isFocused()`
 
