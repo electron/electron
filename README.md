@@ -72,6 +72,6 @@ forums
 - [`electron-br`](https://electron-br.slack.com) *(Brazilian Portuguese)*
 - [`electron-kr`](http://www.meetup.com/electron-kr/) *(Korean)*
 - [`electron-jp`](https://electron-jp-slackin.herokuapp.com/) *(Japanese)*
-
+- [`electron-tr`](http://www.meetup.com/Electron-JS-Istanbul/) *(Turkish)*
 Check out [awesome-electron](https://github.com/sindresorhus/awesome-electron)
 for a community maintained list of useful example apps, tools and resources.
