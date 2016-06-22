@@ -103,7 +103,6 @@ app.once('ready', () => {
       ]
     },
     {
-      label: 'Window',
       role: 'window',
       submenu: [
         {
@@ -115,7 +114,6 @@ app.once('ready', () => {
       ]
     },
     {
-      label: 'Help',
       role: 'help',
       submenu: [
         {
