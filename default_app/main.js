@@ -151,14 +151,12 @@ app.once('ready', () => {
       label: 'Electron',
       submenu: [
         {
-          label: 'About Electron',
           role: 'about'
         },
         {
           type: 'separator'
         },
         {
-          label: 'Services',
           role: 'services',
           submenu: []
         },
@@ -166,49 +164,36 @@ app.once('ready', () => {
           type: 'separator'
         },
         {
-          label: 'Hide Electron',
-          accelerator: 'Command+H',
           role: 'hide'
         },
         {
-          label: 'Hide Others',
-          accelerator: 'Command+Alt+H',
           role: 'hideothers'
         },
         {
-          label: 'Show All',
           role: 'unhide'
         },
         {
           type: 'separator'
         },
         {
-          label: 'Quit ' + app.getName(),
-          accelerator: 'Command+Q',
           role: 'quit'
         }
       ]
     })
     template[3].submenu = [
       {
-        label: 'Close',
-        accelerator: 'CmdOrCtrl+W',
         role: 'close'
       },
       {
-        label: 'Minimize',
-        accelerator: 'CmdOrCtrl+M',
         role: 'minimize'
       },
       {
-        label: 'Zoom',
         role: 'zoom'
       },
       {
         type: 'separator'
       },
       {
-        label: 'Bring All to Front',
         role: 'front'
       }
     ]
@@ -219,7 +204,6 @@ app.once('ready', () => {
       label: 'File',
       submenu: [
         {
-          label: 'Exit',
           role: 'quit'
         }
       ]
