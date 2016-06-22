@@ -941,6 +941,11 @@ void NativeWindowMac::SetIgnoreMouseEvents(bool ignore) {
   [window_ setIgnoresMouseEvents:ignore];
 }
 
+void NativeWindowMac::SetContentProtection(bool enable) {
+  [window_ setSharingType:enable ? NSWindowSharingNone
+                                 : NSWindowSharingReadOnly];
+}
+
 bool NativeWindowMac::HasModalDialog() {
   return [window_ attachedSheet] != nil;
 }

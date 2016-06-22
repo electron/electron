@@ -153,6 +153,7 @@ class Window : public mate::TrackableObject<Window>,
   void SetDocumentEdited(bool edited);
   bool IsDocumentEdited();
   void SetIgnoreMouseEvents(bool ignore);
+  void SetContentProtection(bool enable);
   void SetFocusable(bool focusable);
   void CapturePage(mate::Arguments* args);
   void SetProgressBar(double progress);
