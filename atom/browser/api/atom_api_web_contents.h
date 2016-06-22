@@ -81,7 +81,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void GoForward();
   void GoToOffset(int offset);
   bool IsCrashed() const;
-  void SetUserAgent(const std::string& user_agent);
+  void SetUserAgent(const std::string& user_agent, mate::Arguments* args);
   std::string GetUserAgent();
   void InsertCSS(const std::string& css);
   bool SavePage(const base::FilePath& full_file_path,

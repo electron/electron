@@ -88,12 +88,15 @@ AtomBrowserContext::AtomBrowserContext(const std::string& partition,
 AtomBrowserContext::~AtomBrowserContext() {
 }
 
+void AtomBrowserContext::SetUserAgent(const std::string& user_agent) {
+  user_agent_ = user_agent;
+}
+
 net::NetworkDelegate* AtomBrowserContext::CreateNetworkDelegate() {
   return network_delegate_;
 }
 
 std::string AtomBrowserContext::GetUserAgent() {
-  LOG(ERROR) << "GetUserAgent";
   return user_agent_;
 }
 

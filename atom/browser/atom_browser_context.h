@@ -22,6 +22,8 @@ class AtomBrowserContext : public brightray::BrowserContext {
   AtomBrowserContext(const std::string& partition, bool in_memory);
   ~AtomBrowserContext() override;
 
+  void SetUserAgent(const std::string& user_agent);
+
   // brightray::URLRequestContextGetter::Delegate:
   net::NetworkDelegate* CreateNetworkDelegate() override;
   std::string GetUserAgent() override;
