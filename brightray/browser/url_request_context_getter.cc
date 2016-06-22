@@ -172,6 +172,9 @@ URLRequestContextGetter::URLRequestContextGetter(
   if (protocol_handlers)
     std::swap(protocol_handlers_, *protocol_handlers);
 
+  if (delegate_)
+    user_agent_ = delegate_->GetUserAgent();
+
   // We must create the proxy config service on the UI loop on Linux because it
   // must synchronously run on the glib message loop. This will be passed to
   // the URLRequestContextStorage on the IO thread in GetURLRequestContext().
@@ -230,7 +233,7 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     storage_->set_http_user_agent_settings(base::WrapUnique(
         new net::StaticHttpUserAgentSettings(
             net::HttpUtil::GenerateAcceptLanguageHeader(accept_lang),
-            delegate_->GetUserAgent())));
+            user_agent_)));
 
     std::unique_ptr<net::HostResolver> host_resolver(net::HostResolver::CreateDefaultResolver(nullptr));
 

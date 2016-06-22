@@ -78,6 +78,8 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
   base::MessageLoop* io_loop_;
   base::MessageLoop* file_loop_;
 
+  std::string user_agent_;
+
   std::unique_ptr<net::ProxyConfigService> proxy_config_service_;
   std::unique_ptr<net::NetworkDelegate> network_delegate_;
   std::unique_ptr<net::URLRequestContextStorage> storage_;
