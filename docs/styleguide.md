@@ -72,10 +72,10 @@ or a custom type like Electron's [`webContent`](api/web-content.md).
 
 If an argument is unique to certain platforms, those platforms are denoted
 using a space-delimited italicized list following the datatype. Values can be
-`OS X`, `Windows`, or `Linux`.
+`macOS`, `Windows`, or `Linux`.
 
 ```
-* `animate` Boolean (optional) _OS X_ _Windows_
+* `animate` Boolean (optional) _macOS_ _Windows_
 ```
 
 ### Events
