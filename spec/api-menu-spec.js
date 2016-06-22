@@ -417,6 +417,10 @@ describe('menu module', function () {
       var item = new MenuItem({role: 'help'})
       assert.equal(item.label, 'Help')
       assert.equal(item.accelerator, undefined)
+
+      var item = new MenuItem({role: 'about'})
+      assert.equal(item.label, 'About Electron Test')
+      assert.equal(item.accelerator, undefined)
     })
   })
 })
