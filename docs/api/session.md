@@ -566,3 +566,4 @@ app.on('ready', function () {
       console.error('Failed to register protocol')
   })
 })
+```
