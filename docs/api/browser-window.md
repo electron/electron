@@ -542,11 +542,11 @@ the [close event](#event-close).
 
 ### `win.focus()`
 
-Focus on the window.
+Focuses on the window.
 
 ### `win.blur()`
 
-Remove focus from the window.
+Removes focus from the window.
 
 ### `win.isFocused()`
 
