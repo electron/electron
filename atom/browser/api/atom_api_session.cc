@@ -41,8 +41,10 @@
 #include "net/http/http_auth_preferences.h"
 #include "net/proxy/proxy_service.h"
 #include "net/proxy/proxy_config_service_fixed.h"
+#include "net/url_request/static_http_user_agent_settings.h"
 #include "net/url_request/url_request_context.h"
 #include "net/url_request/url_request_context_getter.h"
+#include "ui/base/l10n/l10n_util.h"
 
 using content::BrowserThread;
 using content::StoragePartition;
@@ -91,6 +93,15 @@ uint32_t GetQuotaMask(const std::vector<std::string>& quota_types) {
       quota_mask |= StoragePartition::QUOTA_MANAGED_STORAGE_MASK_SYNCABLE;
   }
   return quota_mask;
+}
+
+void SetUserAgentInIO(scoped_refptr<net::URLRequestContextGetter> getter,
+                      const std::string& accept_lang,
+                      const std::string& user_agent) {
+  getter->GetURLRequestContext()->set_http_user_agent_settings(
+      new net::StaticHttpUserAgentSettings(
+          net::HttpUtil::GenerateAcceptLanguageHeader(accept_lang),
+          user_agent));
 }
 
 }  // namespace
@@ -455,6 +466,23 @@ void Session::AllowNTLMCredentialsForDomains(const std::string& domains) {
                  domains));
 }
 
+void Session::SetUserAgent(const std::string& user_agent,
+                           mate::Arguments* args) {
+  browser_context_->SetUserAgent(user_agent);
+
+  std::string accept_lang = l10n_util::GetApplicationLocale("");
+  args->GetNext(&accept_lang);
+
+  auto getter = browser_context_->GetRequestContext();
+  getter->GetNetworkTaskRunner()->PostTask(
+      FROM_HERE,
+      base::Bind(&SetUserAgentInIO, getter, accept_lang, user_agent));
+}
+
+std::string Session::GetUserAgent() {
+  return browser_context_->GetUserAgent();
+}
+
 v8::Local<v8::Value> Session::Cookies(v8::Isolate* isolate) {
   if (cookies_.IsEmpty()) {
     auto handle = atom::api::Cookies::Create(isolate, browser_context());
@@ -520,6 +548,8 @@ void Session::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("clearHostResolverCache", &Session::ClearHostResolverCache)
       .SetMethod("allowNTLMCredentialsForDomains",
                  &Session::AllowNTLMCredentialsForDomains)
+      .SetMethod("setUserAgent", &Session::SetUserAgent)
+      .SetMethod("getUserAgent", &Session::GetUserAgent)
       .SetProperty("cookies", &Session::Cookies)
       .SetProperty("protocol", &Session::Protocol)
       .SetProperty("webRequest", &Session::WebRequest);

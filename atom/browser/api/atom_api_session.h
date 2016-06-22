@@ -57,15 +57,7 @@ class Session: public mate::TrackableObject<Session>,
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::ObjectTemplate> prototype);
 
- protected:
-  Session(v8::Isolate* isolate, AtomBrowserContext* browser_context);
-  ~Session();
-
-  // content::DownloadManager::Observer:
-  void OnDownloadCreated(content::DownloadManager* manager,
-                         content::DownloadItem* item) override;
-
- private:
+  // Methods.
   void ResolveProxy(const GURL& url, ResolveProxyCallback callback);
   template<CacheAction action>
   void DoCacheAction(const net::CompletionCallback& callback);
@@ -80,10 +72,21 @@ class Session: public mate::TrackableObject<Session>,
                                    mate::Arguments* args);
   void ClearHostResolverCache(mate::Arguments* args);
   void AllowNTLMCredentialsForDomains(const std::string& domains);
+  void SetUserAgent(const std::string& user_agent, mate::Arguments* args);
+  std::string GetUserAgent();
   v8::Local<v8::Value> Cookies(v8::Isolate* isolate);
   v8::Local<v8::Value> Protocol(v8::Isolate* isolate);
   v8::Local<v8::Value> WebRequest(v8::Isolate* isolate);
 
+ protected:
+  Session(v8::Isolate* isolate, AtomBrowserContext* browser_context);
+  ~Session();
+
+  // content::DownloadManager::Observer:
+  void OnDownloadCreated(content::DownloadManager* manager,
+                         content::DownloadItem* item) override;
+
+ private:
   // Cached object.
   v8::Global<v8::Value> cookies_;
   v8::Global<v8::Value> protocol_;

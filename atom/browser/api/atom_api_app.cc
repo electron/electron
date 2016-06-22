@@ -463,10 +463,11 @@ void App::DisableHardwareAcceleration(mate::Arguments* args) {
 void App::ImportCertificate(
     const base::DictionaryValue& options,
     const net::CompletionCallback& callback) {
-  auto browser_context = AtomBrowserMainParts::Get()->browser_context();
+  auto browser_context = brightray::BrowserContext::From("", false);
   if (!certificate_manager_model_) {
     std::unique_ptr<base::DictionaryValue> copy = options.CreateDeepCopy();
-    CertificateManagerModel::Create(browser_context,
+    CertificateManagerModel::Create(
+        browser_context.get(),
         base::Bind(&App::OnCertificateManagerModelCreated,
                    base::Unretained(this),
                    base::Passed(&copy),

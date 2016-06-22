@@ -61,11 +61,9 @@
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 #include "net/http/http_response_headers.h"
-#include "net/url_request/static_http_user_agent_settings.h"
 #include "net/url_request/url_request_context.h"
 #include "third_party/WebKit/public/web/WebInputEvent.h"
 #include "third_party/WebKit/public/web/WebFindOptions.h"
-#include "ui/base/l10n/l10n_util.h"
 
 #include "atom/common/node_includes.h"
 
@@ -75,15 +73,6 @@ struct PrintSettings {
   bool silent;
   bool print_background;
 };
-
-void SetUserAgentInIO(scoped_refptr<net::URLRequestContextGetter> getter,
-                      std::string accept_lang,
-                      std::string user_agent) {
-  getter->GetURLRequestContext()->set_http_user_agent_settings(
-      new net::StaticHttpUserAgentSettings(
-          net::HttpUtil::GenerateAcceptLanguageHeader(accept_lang),
-          user_agent));
-}
 
 }  // namespace
 
@@ -811,7 +800,7 @@ void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
 
   std::string user_agent;
   if (options.Get("userAgent", &user_agent))
-    SetUserAgent(user_agent);
+    web_contents()->SetUserAgentOverride(user_agent);
 
   std::string extra_headers;
   if (options.Get("extraHeaders", &extra_headers))
@@ -898,14 +887,9 @@ bool WebContents::IsCrashed() const {
   return web_contents()->IsCrashed();
 }
 
-void WebContents::SetUserAgent(const std::string& user_agent) {
+void WebContents::SetUserAgent(const std::string& user_agent,
+                               mate::Arguments* args) {
   web_contents()->SetUserAgentOverride(user_agent);
-  scoped_refptr<net::URLRequestContextGetter> getter =
-      web_contents()->GetBrowserContext()->GetRequestContext();
-
-  auto accept_lang = l10n_util::GetApplicationLocale("");
-  getter->GetNetworkTaskRunner()->PostTask(FROM_HERE,
-      base::Bind(&SetUserAgentInIO, getter, accept_lang, user_agent));
 }
 
 std::string WebContents::GetUserAgent() {
