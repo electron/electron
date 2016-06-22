@@ -91,7 +91,7 @@ app.once('ready', () => {
           }
         },
         {
-          role: 'togglefullscreen',
+          role: 'togglefullscreen'
         },
         {
           label: 'Toggle Developer Tools',
