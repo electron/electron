@@ -8,6 +8,7 @@
 #include "native_mate/arguments.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
+#include "ui/events/event_constants.h"
 
 namespace mate {
 
@@ -63,6 +64,15 @@ v8::Local<v8::Object> CreateCustomEvent(
   (void)event->SetPrototype(custom_event->CreationContext(), custom_event);
   mate::Dictionary(isolate, event).Set("sender", object);
   return event;
+}
+
+v8::Local<v8::Object> CreateEventFromFlags(v8::Isolate* isolate, int flags) {
+  mate::Dictionary obj = mate::Dictionary::CreateEmpty(isolate);
+  obj.Set("shiftKey", static_cast<bool>(flags & ui::EF_SHIFT_DOWN));
+  obj.Set("ctrlKey", static_cast<bool>(flags & ui::EF_CONTROL_DOWN));
+  obj.Set("altKey", static_cast<bool>(flags & ui::EF_ALT_DOWN));
+  obj.Set("metaKey", static_cast<bool>(flags & ui::EF_COMMAND_DOWN));
+  return obj.GetHandle();
 }
 
 }  // namespace internal
