@@ -231,7 +231,7 @@ describe('menu module', function () {
           }
         }
       ])
-      menu.delegate.executeCommand(menu.items[0].commandId)
+      menu.delegate.executeCommand({}, menu.items[0].commandId)
     })
   })
 
@@ -244,7 +244,7 @@ describe('menu module', function () {
         }
       ])
       assert.equal(menu.items[0].checked, false)
-      menu.delegate.executeCommand(menu.items[0].commandId)
+      menu.delegate.executeCommand({}, menu.items[0].commandId)
       assert.equal(menu.items[0].checked, true)
     })
 
@@ -255,9 +255,9 @@ describe('menu module', function () {
           type: 'radio'
         }
       ])
-      menu.delegate.executeCommand(menu.items[0].commandId)
+      menu.delegate.executeCommand({}, menu.items[0].commandId)
       assert.equal(menu.items[0].checked, true)
-      menu.delegate.executeCommand(menu.items[0].commandId)
+      menu.delegate.executeCommand({}, menu.items[0].commandId)
       assert.equal(menu.items[0].checked, true)
     })
 

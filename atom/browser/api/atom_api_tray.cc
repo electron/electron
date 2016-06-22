@@ -16,7 +16,6 @@
 #include "atom/common/node_includes.h"
 #include "native_mate/constructor.h"
 #include "native_mate/dictionary.h"
-#include "ui/events/event_constants.h"
 #include "ui/gfx/image/image.h"
 
 namespace atom {
@@ -44,24 +43,15 @@ mate::WrappableBase* Tray::New(v8::Isolate* isolate,
 }
 
 void Tray::OnClicked(const gfx::Rect& bounds, int modifiers) {
-  v8::Locker locker(isolate());
-  v8::HandleScope handle_scope(isolate());
-  EmitCustomEvent("click",
-                  ModifiersToObject(isolate(), modifiers), bounds);
+  EmitWithFlags("click", modifiers, bounds);
 }
 
 void Tray::OnDoubleClicked(const gfx::Rect& bounds, int modifiers) {
-  v8::Locker locker(isolate());
-  v8::HandleScope handle_scope(isolate());
-  EmitCustomEvent("double-click",
-                  ModifiersToObject(isolate(), modifiers), bounds);
+  EmitWithFlags("double-click", modifiers, bounds);
 }
 
 void Tray::OnRightClicked(const gfx::Rect& bounds, int modifiers) {
-  v8::Locker locker(isolate());
-  v8::HandleScope handle_scope(isolate());
-  EmitCustomEvent("right-click",
-                  ModifiersToObject(isolate(), modifiers), bounds);
+  EmitWithFlags("right-click", modifiers, bounds);
 }
 
 void Tray::OnBalloonShow() {
@@ -161,16 +151,6 @@ void Tray::SetContextMenu(v8::Isolate* isolate, mate::Handle<Menu> menu) {
 
 gfx::Rect Tray::GetBounds() {
   return tray_icon_->GetBounds();
-}
-
-v8::Local<v8::Object> Tray::ModifiersToObject(v8::Isolate* isolate,
-                                              int modifiers) {
-  mate::Dictionary obj(isolate, v8::Object::New(isolate));
-  obj.Set("shiftKey", static_cast<bool>(modifiers & ui::EF_SHIFT_DOWN));
-  obj.Set("ctrlKey", static_cast<bool>(modifiers & ui::EF_CONTROL_DOWN));
-  obj.Set("altKey", static_cast<bool>(modifiers & ui::EF_ALT_DOWN));
-  obj.Set("metaKey", static_cast<bool>(modifiers & ui::EF_COMMAND_DOWN));
-  return obj.GetHandle();
 }
 
 // static

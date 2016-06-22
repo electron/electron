@@ -2,7 +2,7 @@
 
 > Add items to native application menus and context menus.
 
-See [`menu`](menu.md) for examples.
+See [`Menu`](menu.md) for examples.
 
 ## Class: MenuItem
 
@@ -11,12 +11,12 @@ Create a new `MenuItem` with the following method:
 ### new MenuItem(options)
 
 * `options` Object
-  * `click` Function - Will be called with `click(menuItem, browserWindow)` when
-     the menu item is clicked
-  * `role` String - Define the action of the menu item; when specified the
-     `click` property will be ignored
+  * `click` Function - Will be called with
+    `click(menuItem, browserWindow, event)` when the menu item is clicked.
+  * `role` String - Define the action of the menu item, when specified the
+    `click` property will be ignored.
   * `type` String - Can be `normal`, `separator`, `submenu`, `checkbox` or
-     `radio`
+    `radio`.
   * `label` String
   * `sublabel` String
   * `accelerator` [Accelerator](accelerator.md)
@@ -25,15 +25,15 @@ Create a new `MenuItem` with the following method:
     unclickable.
   * `visible` Boolean - If false, the menu item will be entirely hidden.
   * `checked` Boolean - Should only be specified for `checkbox` or `radio` type
-      menu items.
+    menu items.
   * `submenu` Menu - Should be specified for `submenu` type menu items. If
-     `submenu` is specified, the `type: 'submenu'` can be omitted. If the value
-     is not a `Menu` then it will be automatically converted to one using
-     `Menu.buildFromTemplate`.
+    `submenu` is specified, the `type: 'submenu'` can be omitted. If the value
+    is not a `Menu` then it will be automatically converted to one using
+    `Menu.buildFromTemplate`.
   * `id` String - Unique within a single menu. If defined then it can be used
-     as a reference to this item by the position attribute.
+    as a reference to this item by the position attribute.
   * `position` String - This field allows fine-grained definition of the
-     specific location within a given menu.
+    specific location within a given menu.
 
 It is best to specify `role` for any menu item that matches a standard role,
 rather than trying to manually implement the behavior in a `click` function.
@@ -69,19 +69,29 @@ On macOS `role` can also have following additional values:
 When specifying `role` on macOS, `label` and `accelerator` are the only options
 that will affect the MenuItem. All other options will be ignored.
 
-## Instance Properties
+### Instance Properties
 
-The following properties (and no others) can be updated on an existing `MenuItem`:
+The following properties are available on instances of `MenuItem`:
 
-  * `enabled` Boolean
-  * `visible` Boolean
-  * `checked` Boolean
+#### `menuItem.enabled`
 
-Their meanings are as described above.
+A Boolean indicating whether the item is enabled, this property can be
+dynamically changed.
 
-A `checkbox` menu item will toggle its `checked` property on and off when
-selected. You can add a `click` function to do additional work.
+#### `menuItem.visible`
+
+A Boolean indicating whether the item is visible, this property can be
+dynamically changed.
+
+#### `menuItem.checked`
+
+A Boolean indicating whether the item is checked, this property can be
+dynamically changed.
+
+A `checkbox` menu item will toggle the `checked` property on and off when
+selected.
 
 A `radio` menu item will turn on its `checked` property when clicked, and
-will turn off that property for all adjacent items in the same menu. Again,
-you can add a `click` function for additional behavior.
+will turn off that property for all adjacent items in the same menu.
+
+You can add a `click` function for additional behavior.
