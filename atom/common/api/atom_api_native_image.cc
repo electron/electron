@@ -344,14 +344,17 @@ mate::Handle<NativeImage> NativeImage::CreateFromDataURL(
 void NativeImage::BuildPrototype(
     v8::Isolate* isolate, v8::Local<v8::ObjectTemplate> prototype) {
   mate::ObjectTemplateBuilder(isolate, prototype)
-      .SetMethod("toPng", &NativeImage::ToPNG)
-      .SetMethod("toJpeg", &NativeImage::ToJPEG)
+      .SetMethod("toPNG", &NativeImage::ToPNG)
+      .SetMethod("toJPEG", &NativeImage::ToJPEG)
       .SetMethod("getNativeHandle", &NativeImage::GetNativeHandle)
       .SetMethod("toDataURL", &NativeImage::ToDataURL)
       .SetMethod("isEmpty", &NativeImage::IsEmpty)
       .SetMethod("getSize", &NativeImage::GetSize)
       .SetMethod("setTemplateImage", &NativeImage::SetTemplateImage)
-      .SetMethod("isTemplateImage", &NativeImage::IsTemplateImage);
+      .SetMethod("isTemplateImage", &NativeImage::IsTemplateImage)
+      // TODO(kevinsawicki): Remove in 2.0, deprecate before then with warnings
+      .SetMethod("toPng", &NativeImage::ToPNG)
+      .SetMethod("toJpeg", &NativeImage::ToJPEG);
 }
 
 }  // namespace api
