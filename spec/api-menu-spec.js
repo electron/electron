@@ -1,10 +1,7 @@
 const assert = require('assert')
 
-const remote = require('electron').remote
-const ipcRenderer = require('electron').ipcRenderer
-
-const Menu = remote.require('electron').Menu
-const MenuItem = remote.require('electron').MenuItem
+const {ipcRenderer, remote} = require('electron')
+const {Menu, MenuItem} = remote
 
 describe('menu module', function () {
   describe('Menu.buildFromTemplate', function () {
@@ -357,6 +354,32 @@ describe('menu module', function () {
       for (i = q = 13; q <= 20; i = ++q) {
         assert.equal(menu.items[i].checked, false)
       }
+    })
+  })
+
+  describe('MenuItem with invalid type', function () {
+    it('throws an exception', function () {
+      assert.throws(function () {
+        var menu = Menu.buildFromTemplate([
+          {
+            label: 'text',
+            type: 'not-a-type'
+          }
+        ])
+      }, /Unknown menu item type: not-a-type/)
+    })
+  })
+
+  describe('MenuItem with submenu type and missing submenu', function () {
+    it('throws an exception', function () {
+      assert.throws(function () {
+        var menu = Menu.buildFromTemplate([
+          {
+            label: 'text',
+            type: 'submenu'
+          }
+        ])
+      }, /Invalid submenu/)
     })
   })
 })
