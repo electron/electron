@@ -357,10 +357,23 @@ describe('menu module', function () {
     })
   })
 
+  describe('MenuItem command id', function () {
+    it('cannot be overwritten', function () {
+      var item = new MenuItem({
+        label: 'item'
+      })
+
+      var commandId = item.commandId
+      assert(commandId != null)
+      item.commandId = '' + commandId + '-modified'
+      assert.equal(item.commandId, commandId)
+    })
+  })
+
   describe('MenuItem with invalid type', function () {
     it('throws an exception', function () {
       assert.throws(function () {
-        var menu = Menu.buildFromTemplate([
+        Menu.buildFromTemplate([
           {
             label: 'text',
             type: 'not-a-type'
@@ -373,7 +386,7 @@ describe('menu module', function () {
   describe('MenuItem with submenu type and missing submenu', function () {
     it('throws an exception', function () {
       assert.throws(function () {
-        var menu = Menu.buildFromTemplate([
+        Menu.buildFromTemplate([
           {
             label: 'text',
             type: 'submenu'
