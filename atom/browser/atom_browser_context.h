@@ -47,6 +47,7 @@ class AtomBrowserContext : public brightray::BrowserContext {
   std::unique_ptr<AtomDownloadManagerDelegate> download_manager_delegate_;
   std::unique_ptr<WebViewManager> guest_manager_;
   std::unique_ptr<AtomPermissionManager> permission_manager_;
+  std::string user_agent_;
 
   // Managed by brightray::BrowserContext.
   AtomCertVerifier* cert_verifier_;
