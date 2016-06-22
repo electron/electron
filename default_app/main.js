@@ -107,18 +107,12 @@ app.once('ready', () => {
         },
         {
           label: 'Toggle Full Screen',
-          accelerator: (() => {
-            return (process.platform === 'darwin') ? 'Ctrl+Command+F' : 'F11'
-          })(),
-          click (item, focusedWindow) {
-            if (focusedWindow) focusedWindow.setFullScreen(!focusedWindow.isFullScreen())
-          }
+          role: 'togglefullscreen',
+          accelerator: process.platform === 'darwin' ? 'Ctrl+Command+F' : 'F11'
         },
         {
           label: 'Toggle Developer Tools',
-          accelerator: (() => {
-            return (process.platform === 'darwin') ? 'Alt+Command+I' : 'Ctrl+Shift+I'
-          })(),
+          accelerator: process.platform === 'darwin' ? 'Alt+Command+I' : 'Ctrl+Shift+I',
           click (item, focusedWindow) {
             if (focusedWindow) focusedWindow.toggleDevTools()
           }
