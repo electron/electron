@@ -70,6 +70,7 @@ bool ScopedDisableResize::disable_resize_ = false;
 @interface AtomNSWindowDelegate : NSObject<NSWindowDelegate> {
  @private
   atom::NativeWindowMac* shell_;
+  bool is_zooming_;
 }
 - (id)initWithShell:(atom::NativeWindowMac*)shell;
 @end
@@ -79,6 +80,7 @@ bool ScopedDisableResize::disable_resize_ = false;
 - (id)initWithShell:(atom::NativeWindowMac*)shell {
   if ((self = [super init])) {
     shell_ = shell;
+    is_zooming_ = false;
   }
   return self;
 }
@@ -172,14 +174,18 @@ bool ScopedDisableResize::disable_resize_ = false;
 }
 
 - (BOOL)windowShouldZoom:(NSWindow*)window toFrame:(NSRect)newFrame {
-  // Cocoa doen't have concept of maximize/unmaximize, so wee need to emulate
-  // them by calculating size change when zooming.
-  if (newFrame.size.width < [window frame].size.width ||
-      newFrame.size.height < [window frame].size.height)
-    shell_->NotifyWindowUnmaximize();
-  else
-    shell_->NotifyWindowMaximize();
+  is_zooming_ = true;
   return YES;
+}
+
+- (void)windowDidEndLiveResize:(NSNotification*)notification {
+  if (is_zooming_) {
+    if (shell_->IsMaximized())
+      shell_->NotifyWindowMaximize();
+    else
+      shell_->NotifyWindowUnmaximize();
+    is_zooming_ = false;
+  }
 }
 
 - (void)windowWillEnterFullScreen:(NSNotification*)notification {
