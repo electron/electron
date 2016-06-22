@@ -1050,6 +1050,13 @@ All mouse events happened in this window will be passed to the window below
 this window, but if this window has focus, it will still receive keyboard
 events.
 
+### `win.setContentProtection(enable)` _macOS_ _Windows_
+
+Prevents the window contents from being captured by other apps.
+
+On macOS it sets the NSWindow's sharingType to NSWindowSharingNone.
+On Windows it calls SetWindowDisplayAffinity with WDA_MONITOR.
+
 ### `win.setFocusable(focusable)` _Windows_
 
 * `focusable` Boolean

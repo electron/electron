@@ -96,6 +96,7 @@ class NativeWindowViews : public NativeWindow,
   void SetHasShadow(bool has_shadow) override;
   bool HasShadow() override;
   void SetIgnoreMouseEvents(bool ignore) override;
+  void SetContentProtection(bool enable) override;
   void SetFocusable(bool focusable) override;
   void SetMenu(ui::MenuModel* menu_model) override;
   void SetParentWindow(NativeWindow* parent) override;

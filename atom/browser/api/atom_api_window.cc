@@ -572,6 +572,10 @@ void Window::SetIgnoreMouseEvents(bool ignore) {
   return window_->SetIgnoreMouseEvents(ignore);
 }
 
+void Window::SetContentProtection(bool enable) {
+  return window_->SetContentProtection(enable);
+}
+
 void Window::SetFocusable(bool focusable) {
   return window_->SetFocusable(focusable);
 }
@@ -833,6 +837,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setDocumentEdited", &Window::SetDocumentEdited)
       .SetMethod("isDocumentEdited", &Window::IsDocumentEdited)
       .SetMethod("setIgnoreMouseEvents", &Window::SetIgnoreMouseEvents)
+      .SetMethod("setContentProtection", &Window::SetContentProtection)
       .SetMethod("setFocusable", &Window::SetFocusable)
       .SetMethod("focusOnWebView", &Window::FocusOnWebView)
       .SetMethod("blurWebView", &Window::BlurWebView)

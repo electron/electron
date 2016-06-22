@@ -728,6 +728,13 @@ void NativeWindowViews::SetIgnoreMouseEvents(bool ignore) {
 #endif
 }
 
+void NativeWindowViews::SetContentProtection(bool enable) {
+#if defined(OS_WIN)
+  DWORD affinity = enable ? WDA_MONITOR : WDA_NONE;
+  ::SetWindowDisplayAffinity(GetAcceleratedWidget(), affinity);
+#endif
+}
+
 void NativeWindowViews::SetFocusable(bool focusable) {
 #if defined(OS_WIN)
   LONG ex_style = ::GetWindowLong(GetAcceleratedWidget(), GWL_EXSTYLE);
