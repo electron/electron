@@ -395,4 +395,28 @@ describe('menu module', function () {
       }, /Invalid submenu/)
     })
   })
+
+  describe('MenuItem role', function () {
+    it('includes a default label and accelerator', function () {
+      var item = new MenuItem({role: 'close'})
+      assert.equal(item.label, 'Close')
+      assert.equal(item.accelerator, 'CmdOrCtrl+W')
+
+      var item = new MenuItem({role: 'close', label: 'Other'})
+      assert.equal(item.label, 'Other')
+      assert.equal(item.accelerator, 'CmdOrCtrl+W')
+
+      var item = new MenuItem({role: 'close', accelerator: 'D'})
+      assert.equal(item.label, 'Close')
+      assert.equal(item.accelerator, 'D')
+
+      var item = new MenuItem({role: 'close', label: 'C', accelerator: 'D'})
+      assert.equal(item.label, 'C')
+      assert.equal(item.accelerator, 'D')
+
+      var item = new MenuItem({role: 'help'})
+      assert.equal(item.label, 'Help')
+      assert.equal(item.accelerator, undefined)
+    })
+  })
 })
