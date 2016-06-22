@@ -52,46 +52,30 @@ app.once('ready', () => {
       label: 'Edit',
       submenu: [
         {
-          label: 'Undo',
-          accelerator: 'CmdOrCtrl+Z',
           role: 'undo'
         },
         {
-          label: 'Redo',
-          accelerator: 'Shift+CmdOrCtrl+Z',
           role: 'redo'
         },
         {
           type: 'separator'
         },
         {
-          label: 'Cut',
-          accelerator: 'CmdOrCtrl+X',
           role: 'cut'
         },
         {
-          label: 'Copy',
-          accelerator: 'CmdOrCtrl+C',
           role: 'copy'
         },
         {
-          label: 'Paste',
-          accelerator: 'CmdOrCtrl+V',
           role: 'paste'
         },
         {
-          label: 'Paste and Match Style',
-          accelerator: 'Shift+Command+V',
           role: 'pasteandmatchstyle'
         },
         {
-          label: 'Delete',
-          accelerator: 'Delete',
           role: 'delete'
         },
         {
-          label: 'Select All',
-          accelerator: 'CmdOrCtrl+A',
           role: 'selectall'
         }
       ]
@@ -107,9 +91,7 @@ app.once('ready', () => {
           }
         },
         {
-          label: 'Toggle Full Screen',
           role: 'togglefullscreen',
-          accelerator: process.platform === 'darwin' ? 'Ctrl+Command+F' : 'F11'
         },
         {
           label: 'Toggle Developer Tools',
@@ -125,13 +107,9 @@ app.once('ready', () => {
       role: 'window',
       submenu: [
         {
-          label: 'Minimize',
-          accelerator: 'CmdOrCtrl+M',
           role: 'minimize'
         },
         {
-          label: 'Close',
-          accelerator: 'CmdOrCtrl+W',
           role: 'close'
         }
       ]
