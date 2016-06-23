@@ -57,6 +57,11 @@ describe('Module._nodeModulePaths', function () {
         path.join(process.resourcesPath, 'node_modules')
       ])
 
+      modulePath = process.resourcesPath + '-foo'
+      let nodeModulePaths = Module._nodeModulePaths(modulePath)
+      assert(nodeModulePaths.includes(path.join(modulePath, 'node_modules')))
+      assert(nodeModulePaths.includes(path.join(modulePath, '..', 'node_modules')))
+
       modulePath = path.join(process.resourcesPath, 'foo')
       assert.deepEqual(Module._nodeModulePaths(modulePath), [
         path.join(process.resourcesPath, 'foo', 'node_modules'),
