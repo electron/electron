@@ -52,46 +52,30 @@ app.once('ready', () => {
       label: 'Edit',
       submenu: [
         {
-          label: 'Undo',
-          accelerator: 'CmdOrCtrl+Z',
           role: 'undo'
         },
         {
-          label: 'Redo',
-          accelerator: 'Shift+CmdOrCtrl+Z',
           role: 'redo'
         },
         {
           type: 'separator'
         },
         {
-          label: 'Cut',
-          accelerator: 'CmdOrCtrl+X',
           role: 'cut'
         },
         {
-          label: 'Copy',
-          accelerator: 'CmdOrCtrl+C',
           role: 'copy'
         },
         {
-          label: 'Paste',
-          accelerator: 'CmdOrCtrl+V',
           role: 'paste'
         },
         {
-          label: 'Paste and Match Style',
-          accelerator: 'Shift+Command+V',
           role: 'pasteandmatchstyle'
         },
         {
-          label: 'Delete',
-          accelerator: 'Delete',
           role: 'delete'
         },
         {
-          label: 'Select All',
-          accelerator: 'CmdOrCtrl+A',
           role: 'selectall'
         }
       ]
@@ -107,9 +91,7 @@ app.once('ready', () => {
           }
         },
         {
-          label: 'Toggle Full Screen',
-          role: 'togglefullscreen',
-          accelerator: process.platform === 'darwin' ? 'Ctrl+Command+F' : 'F11'
+          role: 'togglefullscreen'
         },
         {
           label: 'Toggle Developer Tools',
@@ -121,23 +103,17 @@ app.once('ready', () => {
       ]
     },
     {
-      label: 'Window',
       role: 'window',
       submenu: [
         {
-          label: 'Minimize',
-          accelerator: 'CmdOrCtrl+M',
           role: 'minimize'
         },
         {
-          label: 'Close',
-          accelerator: 'CmdOrCtrl+W',
           role: 'close'
         }
       ]
     },
     {
-      label: 'Help',
       role: 'help',
       submenu: [
         {
@@ -175,14 +151,12 @@ app.once('ready', () => {
       label: 'Electron',
       submenu: [
         {
-          label: 'About Electron',
           role: 'about'
         },
         {
           type: 'separator'
         },
         {
-          label: 'Services',
           role: 'services',
           submenu: []
         },
@@ -190,49 +164,36 @@ app.once('ready', () => {
           type: 'separator'
         },
         {
-          label: 'Hide Electron',
-          accelerator: 'Command+H',
           role: 'hide'
         },
         {
-          label: 'Hide Others',
-          accelerator: 'Command+Alt+H',
           role: 'hideothers'
         },
         {
-          label: 'Show All',
           role: 'unhide'
         },
         {
           type: 'separator'
         },
         {
-          label: 'Quit ' + app.getName(),
-          accelerator: 'Command+Q',
           role: 'quit'
         }
       ]
     })
     template[3].submenu = [
       {
-        label: 'Close',
-        accelerator: 'CmdOrCtrl+W',
         role: 'close'
       },
       {
-        label: 'Minimize',
-        accelerator: 'CmdOrCtrl+M',
         role: 'minimize'
       },
       {
-        label: 'Zoom',
         role: 'zoom'
       },
       {
         type: 'separator'
       },
       {
-        label: 'Bring All to Front',
         role: 'front'
       }
     ]
@@ -243,7 +204,6 @@ app.once('ready', () => {
       label: 'File',
       submenu: [
         {
-          label: 'Exit',
           role: 'quit'
         }
       ]

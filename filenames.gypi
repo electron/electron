@@ -21,6 +21,7 @@
       'lib/browser/api/ipc-main.js',
       'lib/browser/api/menu.js',
       'lib/browser/api/menu-item.js',
+      'lib/browser/api/menu-item-roles.js',
       'lib/browser/api/navigation-controller.js',
       'lib/browser/api/power-monitor.js',
       'lib/browser/api/power-save-blocker.js',
