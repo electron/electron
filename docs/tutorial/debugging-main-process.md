@@ -11,7 +11,7 @@ Use the following command line switches to debug Electron's main process:
 ### `--debug=[port]`
 
 When this switch is used Electron will listen for V8 debugger protocol
-messages on `port`. The default `port` is `5858`.
+messages on the `port`. The default `port` is `5858`.
 
 ### `--debug-brk=[port]`
 
@@ -19,11 +19,11 @@ Like `--debug` but pauses the script on the first line.
 
 ## Use node-inspector for Debugging
 
-**Note:** Electron doesn't currently work very well
-with node-inspector, and the main process will crash if you inspect the
-`process` object under node-inspector's console.
+**Note:** Electron doesn't currently work very well with node-inspector, and the
+main process will crash if you inspect the `process` object under
+node-inspector's console.
 
-### 1. Make sure you have [node-gyp required tools][node-gyp-required-tools] installed
+### 1. Install the [node-gyp required tools][node-gyp-required-tools]
 
 ### 2. Install [node-inspector][node-inspector]
 
@@ -62,7 +62,7 @@ or, to pause your script on the first line:
 $ electron --debug-brk=5858 your/app
 ```
 
-### 6. Start the [node-inspector][node-inspector] server using electron
+### 6. Start the [node-inspector][node-inspector] server using Electron
 
 ```bash
 $ ELECTRON_RUN_AS_NODE=true path/to/electron.exe node_modules/node-inspector/bin/inspector.js
@@ -71,7 +71,7 @@ $ ELECTRON_RUN_AS_NODE=true path/to/electron.exe node_modules/node-inspector/bin
 ### 7. Load the debugger UI
 
 Open http://127.0.0.1:8080/debug?ws=127.0.0.1:8080&port=5858 in the Chrome
-browser. You may have to click pause if starting with debug-brk to see the
+browser. You may have to click pause if starting with `debug-brk` to see the
 entry line.
 
 [node-inspector]: https://github.com/node-inspector/node-inspector
