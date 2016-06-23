@@ -295,17 +295,21 @@ describe('session module', function () {
       partitionProtocol.unregisterProtocol(protocolName, () => done())
     })
 
-    it('handles requests from a partition', function (done) {
+    it('does not affect defaultSession', function (done) {
       protocol.isProtocolHandled(protocolName, function (result) {
         assert.equal(result, false)
         partitionProtocol.isProtocolHandled(protocolName, function (result) {
           assert.equal(result, true)
-          w.webContents.on('did-finish-load', function () {
-            done()
-          })
-          w.loadURL(protocolName + "://fake-host")
+          done()
         })
       })
+    })
+
+    it('handles requests from partition', function (done) {
+      w.webContents.on('did-finish-load', function () {
+        done()
+      })
+      w.loadURL(`${protocolName}://fake-host`)
     })
   })
 })
