@@ -31,10 +31,10 @@ with node-inspector, and the main process will crash if you inspect the
 $ npm install node-inspector
 ```
 
-### 3. Install a patched version of `node-pre-gyp`
+### 3. Install [node-pre-gyp][node-pre-gyp]
 
 ```bash
-$ npm install git+https://git@github.com/enlight/node-pre-gyp.git#detect-electron-runtime-in-find
+$ npm install node-pre-gyp
 ```
 
 ### 4. Recompile the `node-inspector` `v8` modules for electron (change the target to your electron version number)
@@ -73,5 +73,6 @@ browser. You may have to click pause if starting with debug-brk to see the
 entry line.
 
 [node-inspector]: https://github.com/node-inspector/node-inspector
+[node-pre-gyp]: https://github.com/mapbox/node-pre-gyp
 [node-gyp-required-tools]: https://github.com/nodejs/node-gyp#installation
 [how-to-install-native-modules]: using-native-node-modules.md#how-to-install-native-modules
