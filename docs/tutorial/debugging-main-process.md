@@ -37,11 +37,13 @@ $ npm install node-inspector
 $ npm install node-pre-gyp
 ```
 
-### 4. Recompile the `node-inspector` `v8` modules for electron (change the target to your electron version number)
+### 4. Recompile the `node-inspector` `v8` modules for Electron
+
+**Note:** Update the target argument to be your Electron version number
 
 ```bash
-$ node_modules/.bin/node-pre-gyp --target=0.36.11 --runtime=electron --fallback-to-build --directory node_modules/v8-debug/ --dist-url=https://atom.io/download/atom-shell reinstall
-$ node_modules/.bin/node-pre-gyp --target=0.36.11 --runtime=electron --fallback-to-build --directory node_modules/v8-profiler/ --dist-url=https://atom.io/download/atom-shell reinstall
+$ node_modules/.bin/node-pre-gyp --target=1.2.5 --runtime=electron --fallback-to-build --directory node_modules/v8-debug/ --dist-url=https://atom.io/download/atom-shell reinstall
+$ node_modules/.bin/node-pre-gyp --target=1.2.5 --runtime=electron --fallback-to-build --directory node_modules/v8-profiler/ --dist-url=https://atom.io/download/atom-shell reinstall
 ```
 
 See also [How to install native modules][how-to-install-native-modules].
