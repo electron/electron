@@ -275,7 +275,7 @@ describe('session module', function () {
     const partitionProtocol = session.fromPartition(partitionName).protocol
     const protocol = session.defaultSession.protocol
     const handler = function (error, callback) {
-      callback({data: 'test'})
+      callback({data: 'test', mimeType: 'text/html'})
     }
 
     beforeEach(function (done) {
