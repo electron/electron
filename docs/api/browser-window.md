@@ -945,7 +945,7 @@ convey some sort of application status or to passively notify the user.
 
 ### `win.setHasShadow(hasShadow)` _macOS_
 
-* `hasShadow` (Boolean)
+* `hasShadow` Boolean
 
 Sets whether the window should have a shadow. On Windows and Linux does
 nothing.
