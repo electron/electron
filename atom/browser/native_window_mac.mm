@@ -205,6 +205,7 @@ bool ScopedDisableResize::disable_resize_ = false;
   // have to set one, because title bar is visible here.
   NSWindow* window = shell_->GetNativeWindow();
   if ((shell_->transparent() || !shell_->has_frame()) &&
+      base::mac::IsOSYosemiteOrLater() &&
       // FIXME(zcbenz): Showing titlebar for hiddenInset window is weird under
       // fullscreen mode.
       shell_->title_bar_style() != atom::NativeWindowMac::HIDDEN_INSET) {
@@ -229,6 +230,7 @@ bool ScopedDisableResize::disable_resize_ = false;
   // Restore the titlebar visibility.
   NSWindow* window = shell_->GetNativeWindow();
   if ((shell_->transparent() || !shell_->has_frame()) &&
+      base::mac::IsOSYosemiteOrLater() &&
       shell_->title_bar_style() != atom::NativeWindowMac::HIDDEN_INSET) {
     [window setTitleVisibility:NSWindowTitleHidden];
   }
@@ -532,8 +534,10 @@ NativeWindowMac::NativeWindowMac(
     [window_ setDisableKeyOrMainWindow:YES];
 
   if (transparent() || !has_frame()) {
-    // Don't show title bar.
-    [window_ setTitleVisibility:NSWindowTitleHidden];
+    if (base::mac::IsOSYosemiteOrLater()) {
+      // Don't show title bar.
+      [window_ setTitleVisibility:NSWindowTitleHidden];
+    }
     // Remove non-transparent corners, see http://git.io/vfonD.
     [window_ setOpaque:NO];
   }
@@ -858,6 +862,11 @@ void NativeWindowMac::Center() {
 }
 
 void NativeWindowMac::SetTitle(const std::string& title) {
+  // For macOS <= 10.9, the setTitleVisibility API is not available, we have
+  // to avoid calling setTitle for frameless window.
+  if (!base::mac::IsOSYosemiteOrLater() && (transparent() || !has_frame()))
+    return;
+
   [window_ setTitle:base::SysUTF8ToNSString(title)];
 }
 
