@@ -226,10 +226,8 @@ void NodeBindings::UvRunOnce() {
   v8::Context::Scope context_scope(env->context());
 
   // Perform microtask checkpoint after running JavaScript.
-  std::unique_ptr<v8::MicrotasksScope> script_scope(is_browser_ ?
-      nullptr :
-      new v8::MicrotasksScope(env->isolate(),
-                              v8::MicrotasksScope::kRunMicrotasks));
+  v8::MicrotasksScope script_scope(env->isolate(),
+                                   v8::MicrotasksScope::kRunMicrotasks);
 
   // Deal with uv events.
   int r = uv_run(uv_loop_, UV_RUN_NOWAIT);

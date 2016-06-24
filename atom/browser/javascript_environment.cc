@@ -7,6 +7,7 @@
 #include <string>
 
 #include "base/command_line.h"
+#include "base/message_loop/message_loop.h"
 #include "content/public/common/content_switches.h"
 #include "gin/array_buffer.h"
 #include "gin/v8_initializer.h"
@@ -21,6 +22,14 @@ JavascriptEnvironment::JavascriptEnvironment()
       handle_scope_(isolate_),
       context_(isolate_, v8::Context::New(isolate_)),
       context_scope_(v8::Local<v8::Context>::New(isolate_, context_)) {
+}
+
+void JavascriptEnvironment::OnMessageLoopCreated() {
+  isolate_holder_.AddRunMicrotasksObserver();
+}
+
+void JavascriptEnvironment::OnMessageLoopDestroying() {
+  isolate_holder_.RemoveRunMicrotasksObserver();
 }
 
 bool JavascriptEnvironment::Initialize() {
