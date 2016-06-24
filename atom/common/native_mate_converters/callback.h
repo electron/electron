@@ -48,11 +48,8 @@ struct V8FunctionInvoker<v8::Local<v8::Value>(ArgTypes...)> {
     v8::EscapableHandleScope handle_scope(isolate);
     if (!function.IsAlive())
       return v8::Null(isolate);
-    std::unique_ptr<v8::MicrotasksScope> script_scope(
-        Locker::IsBrowserProcess() ?
-            nullptr :
-            new v8::MicrotasksScope(isolate,
-                                    v8::MicrotasksScope::kRunMicrotasks));
+    v8::MicrotasksScope script_scope(isolate,
+                                     v8::MicrotasksScope::kRunMicrotasks);
     v8::Local<v8::Function> holder = function.NewHandle(isolate);
     v8::Local<v8::Context> context = holder->CreationContext();
     v8::Context::Scope context_scope(context);
@@ -71,11 +68,8 @@ struct V8FunctionInvoker<void(ArgTypes...)> {
     v8::HandleScope handle_scope(isolate);
     if (!function.IsAlive())
       return;
-    std::unique_ptr<v8::MicrotasksScope> script_scope(
-        Locker::IsBrowserProcess() ?
-            nullptr :
-            new v8::MicrotasksScope(isolate,
-                                    v8::MicrotasksScope::kRunMicrotasks));
+    v8::MicrotasksScope script_scope(isolate,
+                                     v8::MicrotasksScope::kRunMicrotasks);
     v8::Local<v8::Function> holder = function.NewHandle(isolate);
     v8::Local<v8::Context> context = holder->CreationContext();
     v8::Context::Scope context_scope(context);
@@ -94,11 +88,8 @@ struct V8FunctionInvoker<ReturnType(ArgTypes...)> {
     ReturnType ret = ReturnType();
     if (!function.IsAlive())
       return ret;
-    std::unique_ptr<v8::MicrotasksScope> script_scope(
-        Locker::IsBrowserProcess() ?
-            nullptr :
-            new v8::MicrotasksScope(isolate,
-                                    v8::MicrotasksScope::kRunMicrotasks));
+    v8::MicrotasksScope script_scope(isolate,
+                                     v8::MicrotasksScope::kRunMicrotasks);
     v8::Local<v8::Function> holder = function.NewHandle(isolate);
     v8::Local<v8::Context> context = holder->CreationContext();
     v8::Context::Scope context_scope(context);

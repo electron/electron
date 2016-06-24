@@ -14,6 +14,9 @@ class JavascriptEnvironment {
  public:
   JavascriptEnvironment();
 
+  void OnMessageLoopCreated();
+  void OnMessageLoopDestroying();
+
   v8::Isolate* isolate() const { return isolate_; }
   v8::Local<v8::Context> context() const {
     return v8::Local<v8::Context>::New(isolate_, context_);
