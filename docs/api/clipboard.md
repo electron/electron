@@ -78,7 +78,8 @@ Writes the `text` into the clipboard in RTF.
 ### `clipboard.readBookmark()`
 
 Returns an Object containing `title` and `url` string keys representing the
-bookmark in clipboard.
+bookmark in the clipboard. The `title` and `url` values will be empty strings
+when the bookmark is unavailable.
 
 ### `clipboard.writeBookmark(title, url[, type])`
 
