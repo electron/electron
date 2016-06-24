@@ -1,12 +1,12 @@
 # Electron Documentation Styleguide
 
-These are the ways that we construct the Electron documentation.
+These are the guidelines for writing Electron documentation.
 
 ## Titles
 
 Each page has only one `#`-level title on the top, following chapters in the
 same page must have `##`-level titles, and sub-chapters need to increase the
-number of `#` in title according to its nesting depth.
+number of `#` in the title according to its nesting depth.
 
 For the page's title, all words must be capitalized, for other chapters, only
 the first word has to be capitalized.
@@ -43,10 +43,9 @@ For API references, there are exceptions to this rule.
 
 ## Markdown rules
 
-* Use `bash` instead of `cmd` in code blocks (because of syntax highlighter).
-* Line length is 80-column wrapped.
-* No nesting lists more than 2 levels (unfortunately because of markdown
-  renderer).
+* Use `bash` instead of `cmd` in code blocks (due to the syntax highlighter).
+* Lines should be wrapped at 80 columns.
+* No nesting lists more than 2 levels (due to the markdown renderer).
 
 ## Picking words
 
@@ -55,12 +54,12 @@ For API references, there are exceptions to this rule.
 
 ## API references
 
-Following rules only apply to documentations of APIs.
+The following rules only apply to the documentation of APIs.
 
 ### Page title
 
 Each page must use the actual object name returned by `require('electron')`
-as name, like `BrowserWindow`, `autoUpdater`, `session`.
+as the title, such as `BrowserWindow`, `autoUpdater`, `session`, etc.
 
 Under the page tile must be a one-line description starting with `>`.
 
@@ -78,7 +77,7 @@ Using `session` as example:
 For modules that are not classes, their methods and events must be listed under
 `## Methods` and `## Events` chapters.
 
-Using `autoUpdater` as example:
+Using `autoUpdater` as an example:
 
 ```markdown
 # autoUpdater
@@ -94,17 +93,17 @@ Using `autoUpdater` as example:
 
 ### Classes
 
-For APIs that exists as classes, or for classes that are parts of modules, they
-must listed under `## Class: TheClassName` chapter. One page can have multiple
+For APIs that exists as classes, or for classes that are part of modules, they
+must listed under a `## Class: TheClassName` chapter. One page can have multiple
 classes.
 
 If the class has constructors, they must be listed with `###`-level titles.
 
 The methods, events and properties of a class must be listed under
-`### Instance Methods`, `### Instance Events` and `Instance Properties`
+`### Instance Methods`, `### Instance Events`, and `Instance Properties`
 chapters.
 
-Using `Session`, `Cookies` classes as example:
+Using `Session`, `Cookies` classes as an example:
 
 ```markdown
 # session
@@ -140,7 +139,7 @@ Using `Session`, `Cookies` classes as example:
 
 ### Methods
 
-The chapter of method must be in the following form:
+The methods chapter must be in the following form:
 
 ```markdown
 ### `objectName.methodName(required[, optional]))`
@@ -153,13 +152,14 @@ The chapter of method must be in the following form:
 ```
 
 The title can be `###` or `####`-levels depending on whether it is a method of
-module or class.
+a module or a class.
 
 For modules, the `objectName` is the module's name, for classes, it must be the
-name of instance of the class, and must not be same with the module's name.
+name of the instance of the class, and must not be the same as the module's
+name.
 
-For example, the methods of `Session` class under `session` module must use
-`ses` as `objectName`.
+For example, the methods of the `Session` class under the `session` module must
+use `ses` as the `objectName`.
 
 The optional arguments are notated by brackets surrounding the optional argument
 as well as the comma required if this optional argument follows another
@@ -167,29 +167,30 @@ argument.
 
 Below the method is more detailed information on each of the arguments. The type
 of argument is notated by either the common types:
-[`String`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String),
-[`Number`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number),
-[`Object`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object),
-[`Array`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array)
-or a custom type like Electron's [`WebContent`](api/web-content.md).
+
+- [`String`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String)
+- [`Number`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number)
+- [`Object`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object)
+- [`Array`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array)
+- Or a custom type like Electron's [`WebContent`](api/web-content.md)
 
 If an argument or a method is unique to certain platforms, those platforms are
 denoted using a space-delimited italicized list following the datatype. Values
 can be `macOS`, `Windows`, or `Linux`.
 
-``` markdown
+```markdown
 * `animate` Boolean (optional) _macOS_ _Windows_
 ```
 
-For argument with `Array` type, it must be classified what elements the array
-may include in the description below.
+For any argument with `Array` type, it must be classified what elements the
+array may include in the description below.
 
-For argument with `Function` type, the description should make it clear how it
-may be called and list the types of the arguments that passed to it.
+For any argument with `Function` type, the description should make it clear how
+it may be called and list the types of the arguments that will be passed to it.
 
 ### Events
 
-The chapter of event must be in following form:
+The events chapter must be in following form:
 
 ```markdown
 ### Event: 'wake-up'
@@ -203,13 +204,13 @@ Returns:
 ```
 
 The title can be `###` or `####`-levels depending on whether it is an event of
-module or class.
+a module or a class.
 
-The arguments of an event have the same rules with methods.
+The arguments of an event have the same rules as methods.
 
 ### Properties
 
-The chapter of property must be in following form:
+The properties chapter must be in following form:
 
 ```markdown
 ### session.defaultSession
@@ -219,7 +220,7 @@ The chapter of property must be in following form:
 ```
 
 The title can be `###` or `####`-levels depending on whether it is a property of
-module or class.
+a module or a class.
 
 ## Documentation Translations
 
