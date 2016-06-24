@@ -75,9 +75,7 @@ Returns the content in the clipboard as RTF.
 
 Writes the `text` into the clipboard in RTF.
 
-### `clipboard.readBookmark([type])`
-
-* `type` String (optional)
+### `clipboard.readBookmark()`
 
 Returns an Object containing `title` and `url` string keys representing the
 bookmark in clipboard.
