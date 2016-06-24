@@ -58,16 +58,19 @@ describe('clipboard module', function () {
       var p = path.join(fixtures, 'assets', 'logo.png')
       var i = nativeImage.createFromPath(p)
       var markup = process.platform === 'darwin' ? "<meta charset='utf-8'><b>Hi</b>" : process.platform === 'linux' ? '<meta http-equiv="content-type" ' + 'content="text/html; charset=utf-8"><b>Hi</b>' : '<b>Hi</b>'
+      var bookmark = {title: 'a title', url: 'test'}
       clipboard.write({
         text: 'test',
         html: '<b>Hi</b>',
         rtf: '{\\rtf1\\utf8 text}',
+        bookmark: 'a title',
         image: p
       })
       assert.equal(clipboard.readText(), text)
       assert.equal(clipboard.readHTML(), markup)
       assert.equal(clipboard.readRTF(), rtf)
       assert.equal(clipboard.readImage().toDataURL(), i.toDataURL())
+      assert.deepEqual(clipboard.readBookmark(), bookmark)
     })
   })
 })

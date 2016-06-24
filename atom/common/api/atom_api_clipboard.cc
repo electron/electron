@@ -54,11 +54,15 @@ std::string Read(const std::string& format_string,
 void Write(const mate::Dictionary& data,
            mate::Arguments* args) {
   ui::ScopedClipboardWriter writer(GetClipboardType(args));
-  base::string16 text, html;
+  base::string16 text, html, bookmark;
   gfx::Image image;
 
-  if (data.Get("text", &text))
+  if (data.Get("text", &text)) {
     writer.WriteText(text);
+
+    if (data.Get("bookmark", &bookmark))
+      writer.WriteBookmark(bookmark, base::UTF16ToUTF8(text));
+  }
 
   if (data.Get("rtf", &text)) {
     std::string rtf = base::UTF16ToUTF8(text);
