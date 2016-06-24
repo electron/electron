@@ -339,9 +339,9 @@ Returns:
     was invoked on. Elements with source URLs are images, audio and video.
   * `mediaType` String - Type of the node the context menu was invoked on. Can
     be `none`, `image`, `audio`, `video`, `canvas`, `file` or `plugin`.
-  * `hasImageContent` Boolean - Wether the context menu was invoked on an image
+  * `hasImageContent` Boolean - Whether the context menu was invoked on an image
     which has non-empty contents.
-  * `isEditable` Boolean - Wether the context is editable.
+  * `isEditable` Boolean - Whether the context is editable.
   * `selectionText` String - Text of the selection that the context menu was
     invoked on.
   * `titleText` String - Title or alt text of the selection that the context
@@ -356,29 +356,31 @@ Returns:
     Can be `none`, `mouse`, `keyboard`, `touch`, `touchMenu`.
   * `mediaFlags` Object - The flags for the media element the context menu was
     invoked on. See more about this below.
-  * `editFlags` Object - These flags indicate wether the renderer believes it is
+  * `editFlags` Object - These flags indicate whether the renderer believes it is
     able to perform the corresponding action. See more about this below.
 
 The `mediaFlags` is an object with the following properties:
-  * `inError` Boolean - Wether the media element has crashed.
-  * `isPaused` Boolean - Wether the media element is paused.
-  * `isMuted` Boolean - Wether the media element is muted.
-  * `hasAudio` Boolean - Wether the media element has audio.
-  * `isLooping` Boolean - Wether the media element is looping.
-  * `isControlsVisible` Boolean - Wether the media element's controls are
-    visible.
-  * `canToggleControls` Boolean - Wether the media element's controls are
-    toggleable.
-  * `canRotate` Boolean - Wether the media element can be rotated.
+
+* `inError` Boolean - Whether the media element has crashed.
+* `isPaused` Boolean - Whether the media element is paused.
+* `isMuted` Boolean - Whether the media element is muted.
+* `hasAudio` Boolean - Whether the media element has audio.
+* `isLooping` Boolean - Whether the media element is looping.
+* `isControlsVisible` Boolean - Whether the media element's controls are
+  visible.
+* `canToggleControls` Boolean - Whether the media element's controls are
+  toggleable.
+* `canRotate` Boolean - Whether the media element can be rotated.
 
 The `editFlags` is an object with the following properties:
-  * `canUndo` Boolean - Wether the renderer believes it can undo.
-  * `canRedo` Boolean - Wether the renderer believes it can redo.
-  * `canCut` Boolean - Wether the renderer believes it can cut.
-  * `canCopy` Boolean - Wether the renderer believes it can copy
-  * `canPaste` Boolean - Wether the renderer believes it can paste.
-  * `canDelete` Boolean - Wether the renderer believes it can delete.
-  * `canSelectAll` Boolean - Wether the renderer believes it can select all.
+
+* `canUndo` Boolean - Whether the renderer believes it can undo.
+* `canRedo` Boolean - Whether the renderer believes it can redo.
+* `canCut` Boolean - Whether the renderer believes it can cut.
+* `canCopy` Boolean - Whether the renderer believes it can copy
+* `canPaste` Boolean - Whether the renderer believes it can paste.
+* `canDelete` Boolean - Whether the renderer believes it can delete.
+* `canSelectAll` Boolean - Whether the renderer believes it can select all.
 
 Emitted when there is a new context menu that needs to be handled.
 

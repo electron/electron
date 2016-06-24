@@ -217,7 +217,7 @@ Menu.setApplicationMenu(menu);
 
 새로운 메뉴를 생성합니다.
 
-### Methods
+## Methods
 
 `menu` 클래스는 다음과 같은 메서드를 가지고 있습니다:
 

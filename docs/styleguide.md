@@ -51,14 +51,12 @@ Here are some tips for understanding Electron documentation syntax.
 An example of [method](https://developer.mozilla.org/en-US/docs/Glossary/Method)
 documentation:
 
----
-
+```
 `methodName(required[, optional]))`
 
-* `require` String (**required**)
+* `required` String (**required**)
 * `optional` Integer
-
----
+```
 
 The method name is followed by the arguments it takes. Optional arguments are
 notated by brackets surrounding the optional argument as well as the comma
@@ -72,20 +70,26 @@ of argument is notated by either the common types:
 [`Array`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array)
 or a custom type like Electron's [`webContent`](api/web-content.md).
 
+If an argument is unique to certain platforms, those platforms are denoted
+using a space-delimited italicized list following the datatype. Values can be
+`macOS`, `Windows`, or `Linux`.
+
+```
+* `animate` Boolean (optional) _macOS_ _Windows_
+```
+
 ### Events
 
 An example of [event](https://developer.mozilla.org/en-US/docs/Web/API/Event)
 documentation:
 
----
-
+```
 Event: 'wake-up'
 
 Returns:
 
 * `time` String
-
----
+```
 
 The event is a string that is used after a `.on` listener method. If it returns
 a value it and its type is noted below. If you were to listen and respond to
@@ -93,6 +97,6 @@ this event it might look something like this:
 
 ```javascript
 Alarm.on('wake-up', (time) => {
-  console.log(time);
-});
+  console.log(time)
+})
 ```
