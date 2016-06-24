@@ -185,6 +185,8 @@ class Invoker<IndicesHolder<indices...>, ArgTypes...>
 
   template <typename ReturnType>
   void DispatchToCallback(base::Callback<ReturnType(ArgTypes...)> callback) {
+    v8::MicrotasksScope script_scope(
+        args_->isolate(), v8::MicrotasksScope::kRunMicrotasks);
     args_->Return(callback.Run(ArgumentHolder<indices, ArgTypes>::value...));
   }
 
@@ -192,6 +194,8 @@ class Invoker<IndicesHolder<indices...>, ArgTypes...>
   // expression to foo. As a result, we must specialize the case of Callbacks
   // that have the void return type.
   void DispatchToCallback(base::Callback<void(ArgTypes...)> callback) {
+    v8::MicrotasksScope script_scope(
+        args_->isolate(), v8::MicrotasksScope::kRunMicrotasks);
     callback.Run(ArgumentHolder<indices, ArgTypes>::value...);
   }
 
