@@ -35,6 +35,10 @@ DSYM_NAME = '{0}-{1}-{2}-{3}-dsym.zip'.format(PROJECT_NAME,
                                               ELECTRON_VERSION,
                                               get_platform_key(),
                                               get_target_arch())
+PDB_NAME = '{0}-{1}-{2}-{3}-pdb.zip'.format(PROJECT_NAME,
+                                            ELECTRON_VERSION,
+                                            get_platform_key(),
+                                            get_target_arch())
 
 
 def main():
@@ -85,6 +89,8 @@ def main():
   upload_electron(github, release, os.path.join(DIST_DIR, SYMBOLS_NAME))
   if PLATFORM == 'darwin':
     upload_electron(github, release, os.path.join(DIST_DIR, DSYM_NAME))
+  elif PLATFORM == 'win32':
+    upload_electron(github, release, os.path.join(DIST_DIR, PDB_NAME))
 
   # Upload free version of ffmpeg.
   ffmpeg = 'ffmpeg-{0}-{1}-{2}.zip'.format(
