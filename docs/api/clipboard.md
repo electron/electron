@@ -111,6 +111,7 @@ Reads `data` from the clipboard.
   * `text` String
   * `html` String
   * `image` [NativeImage](native-image.md)
+  * `rtf` String
 * `type` String (optional)
 
 ```javascript
