@@ -6,7 +6,7 @@ These are the guidelines for writing Electron documentation.
 
 * Each page must have a single `#`-level title at the top.
 * Chapters in the same page must have `##`-level titles.
-* Sub-chapters need to increase the number of `#` in the title according to its
+* Sub-chapters need to increase the number of `#` in the title according to their
   nesting depth.
 * All words in the page's title must be capitalized.
 * Only the first word of a chapter title must be capitalized.
@@ -69,7 +69,6 @@ Using `session` as example:
 # session
 
 > Manage browser sessions, cookies, cache, proxy settings, etc.
-
 ```
 
 ### Module methods and events
@@ -97,9 +96,9 @@ Using `autoUpdater` as an example:
   `## Class: TheClassName` chapter.
 - One page can have multiple classes.
 - The constructors must be listed with `###`-level titles.
-- The methods must be listed under a `### Instance Methods` chapter.
-- The events must be listed under a `### Instance Events` chapter.
-- The properties must be listed under a `Instance Properties` chapter.
+- The methods must be listed under an `### Instance Methods` chapter.
+- The events must be listed under an `### Instance Events` chapter.
+- The properties must be listed under an `### Instance Properties` chapter.
 
 Using the `Session` and `Cookies` classes as an example:
 
@@ -146,22 +145,25 @@ The methods chapter must be in the following form:
 * `optional` Integer (optional)
 
 ...
-
 ```
 
 The title can be `###` or `####`-levels depending on whether it is a method of
 a module or a class.
 
-For modules, the `objectName` is the module's name, for classes, it must be the
+For modules, the `objectName` is the module's name. For classes, it must be the
 name of the instance of the class, and must not be the same as the module's
 name.
 
 For example, the methods of the `Session` class under the `session` module must
 use `ses` as the `objectName`.
 
-The optional arguments are notated by brackets surrounding the optional argument
+The optional arguments are notated by square brackets `[]` surrounding the optional argument
 as well as the comma required if this optional argument follows another
-argument.
+argument:
+
+```
+required[, optional]
+```
 
 Below the method is more detailed information on each of the arguments. The type
 of argument is notated by either the common types:
@@ -181,7 +183,7 @@ can be `macOS`, `Windows`, or `Linux`.
 * `animate` Boolean (optional) _macOS_ _Windows_
 ```
 
-`Array` type arguments must be classified what elements the array may include in
+`Array` type arguments must specify what elements the array may include in
 the description below.
 
 The description for `Function` type arguments should make it clear how it may be
@@ -199,7 +201,6 @@ Returns:
 * `time` String
 
 ...
-
 ```
 
 The title can be `###` or `####`-levels depending on whether it is an event of
@@ -215,7 +216,6 @@ The properties chapter must be in following form:
 ### session.defaultSession
 
 ...
-
 ```
 
 The title can be `###` or `####`-levels depending on whether it is a property of
