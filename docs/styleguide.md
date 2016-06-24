@@ -4,12 +4,12 @@ These are the guidelines for writing Electron documentation.
 
 ## Titles
 
-Each page has only one `#`-level title on the top, following chapters in the
-same page must have `##`-level titles, and sub-chapters need to increase the
-number of `#` in the title according to its nesting depth.
-
-For the page's title, all words must be capitalized, for other chapters, only
-the first word has to be capitalized.
+* Each page must have a single `#`-level title at the top.
+* Chapters in the same page must have `##`-level titles.
+* Sub-chapters need to increase the number of `#` in the title according to its
+  nesting depth.
+* All words in the page's title must be capitalized.
+* Only the first word of a chapter title must be capitalized.
 
 Using `Quick Start` as example:
 
@@ -59,7 +59,7 @@ The following rules only apply to the documentation of APIs.
 ### Page title
 
 Each page must use the actual object name returned by `require('electron')`
-as the title, such as `BrowserWindow`, `autoUpdater`, `session`, etc.
+as the title, such as `BrowserWindow`, `autoUpdater`, and `session`.
 
 Under the page tile must be a one-line description starting with `>`.
 
@@ -75,7 +75,7 @@ Using `session` as example:
 ### Module methods and events
 
 For modules that are not classes, their methods and events must be listed under
-`## Methods` and `## Events` chapters.
+the `## Methods` and `## Events` chapters.
 
 Using `autoUpdater` as an example:
 
@@ -93,17 +93,15 @@ Using `autoUpdater` as an example:
 
 ### Classes
 
-For APIs that exists as classes, or for classes that are part of modules, they
-must listed under a `## Class: TheClassName` chapter. One page can have multiple
-classes.
+- API classes or classes that are part of modules must be listed under a
+  `## Class: TheClassName` chapter.
+- One page can have multiple classes.
+- The constructors must be listed with `###`-level titles.
+- The methods must be listed under a `### Instance Methods` chapter.
+- The events must be listed under a `### Instance Events` chapter.
+- The properties must be listed under a `Instance Properties` chapter.
 
-If the class has constructors, they must be listed with `###`-level titles.
-
-The methods, events and properties of a class must be listed under
-`### Instance Methods`, `### Instance Events`, and `Instance Properties`
-chapters.
-
-Using `Session`, `Cookies` classes as an example:
+Using the `Session` and `Cookies` classes as an example:
 
 ```markdown
 # session
@@ -182,11 +180,11 @@ can be `macOS`, `Windows`, or `Linux`.
 * `animate` Boolean (optional) _macOS_ _Windows_
 ```
 
-For any argument with `Array` type, it must be classified what elements the
-array may include in the description below.
+`Array` type arguments must be classified what elements the array may include in
+the description below.
 
-For any argument with `Function` type, the description should make it clear how
-it may be called and list the types of the arguments that will be passed to it.
+The description for `Function` type arguments should make it clear how it may be
+called and list the types of the parameters that will be passed to it.
 
 ### Events
 
@@ -206,7 +204,7 @@ Returns:
 The title can be `###` or `####`-levels depending on whether it is an event of
 a module or a class.
 
-The arguments of an event have the same rules as methods.
+The arguments of an event follow the same rules as methods.
 
 ### Properties
 
