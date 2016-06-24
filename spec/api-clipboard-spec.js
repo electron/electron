@@ -46,7 +46,13 @@ describe('clipboard module', function () {
       clipboard.writeBookmark('a title', 'http://electron.atom.io')
       assert.deepEqual(clipboard.readBookmark(), {
         title: 'a title',
-        url: 'https://electron.atom.io'
+        url: 'http://electron.atom.io'
+      })
+
+      clipboard.writeText('no bookmark')
+      assert.deepEqual(clipboard.readBookmark(), {
+        title: '',
+        url: ''
       })
     })
   })
