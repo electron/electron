@@ -41,6 +41,16 @@ describe('clipboard module', function () {
     })
   })
 
+  describe('clipboard.readBookmark', function () {
+    it('returns title and url', function () {
+      clipboard.writeBookmark('a title', 'http://electron.atom.io')
+      assert.deepEqual(clipboard.readBookmark(), {
+        title: 'a title',
+        url: 'https://electron.atom.io'
+      })
+    })
+  })
+
   describe('clipboard.write()', function () {
     it('returns data correctly', function () {
       var text = 'test'
