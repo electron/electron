@@ -41,6 +41,24 @@ describe('clipboard module', function () {
     })
   })
 
+  describe('clipboard.readBookmark', function () {
+    it('returns title and url', function () {
+      if (process.platform === 'linux') return
+
+      clipboard.writeBookmark('a title', 'http://electron.atom.io')
+      assert.deepEqual(clipboard.readBookmark(), {
+        title: 'a title',
+        url: 'http://electron.atom.io'
+      })
+
+      clipboard.writeText('no bookmark')
+      assert.deepEqual(clipboard.readBookmark(), {
+        title: '',
+        url: ''
+      })
+    })
+  })
+
   describe('clipboard.write()', function () {
     it('returns data correctly', function () {
       var text = 'test'
@@ -48,16 +66,22 @@ describe('clipboard module', function () {
       var p = path.join(fixtures, 'assets', 'logo.png')
       var i = nativeImage.createFromPath(p)
       var markup = process.platform === 'darwin' ? "<meta charset='utf-8'><b>Hi</b>" : process.platform === 'linux' ? '<meta http-equiv="content-type" ' + 'content="text/html; charset=utf-8"><b>Hi</b>' : '<b>Hi</b>'
+      var bookmark = {title: 'a title', url: 'test'}
       clipboard.write({
         text: 'test',
         html: '<b>Hi</b>',
         rtf: '{\\rtf1\\utf8 text}',
+        bookmark: 'a title',
         image: p
       })
       assert.equal(clipboard.readText(), text)
       assert.equal(clipboard.readHTML(), markup)
       assert.equal(clipboard.readRTF(), rtf)
       assert.equal(clipboard.readImage().toDataURL(), i.toDataURL())
+
+      if (process.platform !== 'linux') {
+        assert.deepEqual(clipboard.readBookmark(), bookmark)
+      }
     })
   })
 })
