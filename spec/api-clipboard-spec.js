@@ -43,6 +43,8 @@ describe('clipboard module', function () {
 
   describe('clipboard.readBookmark', function () {
     it('returns title and url', function () {
+      if (process.platform === 'linux') return
+
       clipboard.writeBookmark('a title', 'http://electron.atom.io')
       assert.deepEqual(clipboard.readBookmark(), {
         title: 'a title',
@@ -76,7 +78,10 @@ describe('clipboard module', function () {
       assert.equal(clipboard.readHTML(), markup)
       assert.equal(clipboard.readRTF(), rtf)
       assert.equal(clipboard.readImage().toDataURL(), i.toDataURL())
-      assert.deepEqual(clipboard.readBookmark(), bookmark)
+
+      if (process.platform !== 'linux') {
+        assert.deepEqual(clipboard.readBookmark(), bookmark)
+      }
     })
   })
 })
