@@ -137,7 +137,8 @@ void UnregisterNonABICompliantCodeRange(void* start) {
 
 }  // namespace
 
-CrashReporterWin::CrashReporterWin() {
+CrashReporterWin::CrashReporterWin()
+    : skip_system_crash_handler_(false) {
 }
 
 CrashReporterWin::~CrashReporterWin() {
