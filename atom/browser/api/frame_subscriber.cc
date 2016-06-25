@@ -16,13 +16,13 @@ namespace api {
 FrameSubscriber::FrameSubscriber(v8::Isolate* isolate,
                                  content::RenderWidgetHostView* view,
                                  const FrameCaptureCallback& callback,
-                                 const bool& only_damaged)
+                                 bool only_dirty)
     : isolate_(isolate), view_(view), callback_(callback),
-      only_damaged_(only_damaged), weak_factory_(this) {
+      only_dirty_(only_dirty), weak_factory_(this) {
 }
 
 bool FrameSubscriber::ShouldCaptureFrame(
-    const gfx::Rect& damage_rect,
+    const gfx::Rect& dirty_rect,
     base::TimeTicks present_time,
     scoped_refptr<media::VideoFrame>* storage,
     DeliverFrameCallback* callback) {
@@ -30,12 +30,12 @@ bool FrameSubscriber::ShouldCaptureFrame(
   if (!view_ || !host)
     return false;
 
-  if (damage_rect.width() == 0 || damage_rect.height() == 0)
+  if (dirty_rect.IsEmpty())
     return false;
 
   gfx::Rect rect = gfx::Rect(view_->GetVisibleViewportSize());
-  if (only_damaged_)
-    rect = damage_rect;
+  if (only_dirty_)
+    rect = dirty_rect;
 
   host->CopyFromBackingStore(
       rect,

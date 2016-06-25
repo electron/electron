@@ -26,7 +26,7 @@ class FrameSubscriber : public content::RenderWidgetHostViewFrameSubscriber {
   FrameSubscriber(v8::Isolate* isolate,
                   content::RenderWidgetHostView* view,
                   const FrameCaptureCallback& callback,
-                  const bool& only_damaged);
+                  bool only_dirty);
 
   bool ShouldCaptureFrame(const gfx::Rect& damage_rect,
                           base::TimeTicks present_time,
@@ -41,7 +41,7 @@ class FrameSubscriber : public content::RenderWidgetHostViewFrameSubscriber {
   v8::Isolate* isolate_;
   content::RenderWidgetHostView* view_;
   FrameCaptureCallback callback_;
-  bool only_damaged_;
+  bool only_dirty_;
 
   base::WeakPtrFactory<FrameSubscriber> weak_factory_;
 

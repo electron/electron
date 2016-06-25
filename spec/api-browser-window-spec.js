@@ -603,20 +603,41 @@ describe('browser-window module', function () {
   })
 
   describe('beginFrameSubscription method', function () {
-    this.timeout(20000)
+    it('subscribes to frame updates', function (done) {
+      this.timeout(20000)
 
-    it('subscribes frame updates', function (done) {
-      let called = false
-      w.loadURL('file://' + fixtures + '/api/blank.html')
-      w.webContents.beginFrameSubscription(function (data) {
-        // This callback might be called twice.
-        if (called) return
-        called = true
-
-        assert.notEqual(data.length, 0)
-        w.webContents.endFrameSubscription()
-        done()
+      w.loadURL('file://' + fixtures + '/api/frame-subscriber.html')
+      w.webContents.on('dom-ready', function () {
+        w.webContents.beginFrameSubscription(function (data) {
+          assert.notEqual(data.length, 0)
+          w.webContents.endFrameSubscription()
+          done()
+        })
       })
+    })
+
+    it('subscribes to frame updates (only dirty rectangle)', function (done) {
+      this.timeout(20000)
+
+      w.loadURL('file://' + fixtures + '/api/frame-subscriber.html')
+      w.webContents.on('dom-ready', function () {
+        w.webContents.beginFrameSubscription(true, function (data) {
+          assert.notEqual(data.length, 0)
+          w.webContents.endFrameSubscription()
+          done()
+        })
+      })
+    })
+
+    it('throws error when subscriber is not well defined', function (done) {
+      this.timeout(20000)
+
+      w.loadURL('file://' + fixtures + '/api/frame-subscriber.html')
+      try{
+        w.webContents.beginFrameSubscription(true, true)
+      } catch(e) {
+        done()
+      }
     })
   })
 

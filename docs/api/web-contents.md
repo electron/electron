@@ -917,13 +917,13 @@ For the `mouseWheel` event, the `event` object also have following properties:
 * `hasPreciseScrollingDeltas` Boolean
 * `canScroll` Boolean
 
-### `webContents.beginFrameSubscription(callback, onlyDamaged)`
+### `webContents.beginFrameSubscription([onlyDirty ,]callback)`
 
+* `onlyDirty` Boolean
 * `callback` Function
-* `onlyDamaged` Boolean
 
 Begin subscribing for presentation events and captured frames, the `callback`
-will be called with `callback(frameBuffer, damagedRect)` when there is a
+will be called with `callback(frameBuffer, dirtyRect)` when there is a
 presentation event.
 
 The `frameBuffer` is a `Buffer` that contains raw pixel data. On most machines,
@@ -932,9 +932,9 @@ representation depends on the endianness of the processor (most modern
 processors are little-endian, on machines with big-endian processors the data
 is in 32bit ARGB format).
 
-The `damagedRect` is an object with `x, y, width, height` properties that
-describes which part of the page was repainted. If `onlyDamaged` is set to
-`true`, `frameBuffer` will only contain the repainted area. `onlyDamaged`
+The `dirtyRect` is an object with `x, y, width, height` properties that
+describes which part of the page was repainted. If `onlyDirty` is set to
+`true`, `frameBuffer` will only contain the repainted area. `onlyDirty`
 defaults to `false`.
 
 ### `webContents.endFrameSubscription()`
