@@ -1182,11 +1182,20 @@ void WebContents::SendInputEvent(v8::Isolate* isolate,
 }
 
 void WebContents::BeginFrameSubscription(
-    const FrameSubscriber::FrameCaptureCallback& callback) {
+  mate::Arguments* args) {
+  FrameSubscriber::FrameCaptureCallback callback;
+  bool only_dirty = false;
+
+  if (!args->GetNext(&callback)) {
+    args->GetNext(&only_dirty);
+    if (!args->GetNext(&callback))
+      args->ThrowTypeError("'callback' must be defined");
+  }
+
   const auto view = web_contents()->GetRenderWidgetHostView();
   if (view) {
     std::unique_ptr<FrameSubscriber> frame_subscriber(new FrameSubscriber(
-        isolate(), view, callback));
+        isolate(), view, callback, only_dirty));
     view->BeginFrameSubscription(std::move(frame_subscriber));
   }
 }

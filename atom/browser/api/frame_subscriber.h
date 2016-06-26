@@ -20,11 +20,13 @@ namespace api {
 
 class FrameSubscriber : public content::RenderWidgetHostViewFrameSubscriber {
  public:
-  using FrameCaptureCallback = base::Callback<void(v8::Local<v8::Value>)>;
+  using FrameCaptureCallback =
+    base::Callback<void(v8::Local<v8::Value>, v8::Local<v8::Value>)>;
 
   FrameSubscriber(v8::Isolate* isolate,
                   content::RenderWidgetHostView* view,
-                  const FrameCaptureCallback& callback);
+                  const FrameCaptureCallback& callback,
+                  bool only_dirty);
 
   bool ShouldCaptureFrame(const gfx::Rect& damage_rect,
                           base::TimeTicks present_time,
@@ -33,11 +35,13 @@ class FrameSubscriber : public content::RenderWidgetHostViewFrameSubscriber {
 
  private:
   void OnFrameDelivered(const FrameCaptureCallback& callback,
-    const SkBitmap& bitmap, content::ReadbackResponse response);
+    const gfx::Rect& damage_rect, const SkBitmap& bitmap,
+    content::ReadbackResponse response);
 
   v8::Isolate* isolate_;
   content::RenderWidgetHostView* view_;
   FrameCaptureCallback callback_;
+  bool only_dirty_;
 
   base::WeakPtrFactory<FrameSubscriber> weak_factory_;
 
