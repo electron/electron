@@ -44,7 +44,10 @@ describe('browser-window module', function () {
     w = new BrowserWindow({
       show: false,
       width: 400,
-      height: 400
+      height: 400,
+      webPreferences: {
+        backgroundThrottling: false
+      }
     })
   })
 
@@ -603,12 +606,20 @@ describe('browser-window module', function () {
   })
 
   describe('beginFrameSubscription method', function () {
-    it('subscribes to frame updates', function (done) {
-      this.timeout(20000)
+    // This test is too slow, only test it on CI.
+    if (!isCI) return
 
+    this.timeout(20000)
+
+    it('subscribes to frame updates', function (done) {
+      let called = false
       w.loadURL('file://' + fixtures + '/api/frame-subscriber.html')
       w.webContents.on('dom-ready', function () {
         w.webContents.beginFrameSubscription(function (data) {
+          // This callback might be called twice.
+          if (called) return
+          called = true
+
           assert.notEqual(data.length, 0)
           w.webContents.endFrameSubscription()
           done()
@@ -617,11 +628,14 @@ describe('browser-window module', function () {
     })
 
     it('subscribes to frame updates (only dirty rectangle)', function (done) {
-      this.timeout(20000)
-
+      let called = false
       w.loadURL('file://' + fixtures + '/api/frame-subscriber.html')
       w.webContents.on('dom-ready', function () {
         w.webContents.beginFrameSubscription(true, function (data) {
+          // This callback might be called twice.
+          if (called) return
+          called = true
+
           assert.notEqual(data.length, 0)
           w.webContents.endFrameSubscription()
           done()
@@ -630,10 +644,8 @@ describe('browser-window module', function () {
     })
 
     it('throws error when subscriber is not well defined', function (done) {
-      this.timeout(20000)
-
       w.loadURL('file://' + fixtures + '/api/frame-subscriber.html')
-      try{
+      try {
         w.webContents.beginFrameSubscription(true, true)
       } catch(e) {
         done()

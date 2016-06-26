@@ -921,7 +921,7 @@ For the `mouseWheel` event, the `event` object also have following properties:
 
 ### `webContents.beginFrameSubscription([onlyDirty ,]callback)`
 
-* `onlyDirty` Boolean
+* `onlyDirty` Boolean (optional) - Defaults to `false`
 * `callback` Function
 
 Begin subscribing for presentation events and captured frames, the `callback`
