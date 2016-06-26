@@ -149,14 +149,14 @@ class Browser : public WindowListObserver {
   // one from app's name.
   // The returned string managed by Browser, and should not be modified.
   PCWSTR GetAppUserModelID();
-#endif // defined(OS_WIN)
+#endif  // defined(OS_WIN)
 
 #if defined(OS_LINUX)
   // Set/Get unity dock's badge counter.
   bool UnityLauncherAvailable();
   void UnityLauncherSetBadgeCount(int count);
   int UnityLauncherGetBadgeCount();
-#endif // defined(OS_LINUX)
+#endif  // defined(OS_LINUX)
 
   // Tell the application to open a file.
   bool OpenFile(const std::string& file_path);
