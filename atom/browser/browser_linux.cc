@@ -60,8 +60,10 @@ bool Browser::UnityLauncherAvailable() {
 }
 
 void Browser::UnityLauncherSetBadgeCount(int count) {
-  current_badge_count_ = count;
-  unity::SetDownloadCount(count);
+  if (UnityLauncherAvailable()) {
+    current_badge_count_ = count;
+    unity::SetDownloadCount(count);
+  }
 }
 
 int Browser::UnityLauncherGetBadgeCount() {
