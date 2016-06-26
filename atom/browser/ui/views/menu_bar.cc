@@ -145,8 +145,10 @@ void MenuBar::OnMenuButtonClicked(views::MenuButton* source,
 
   int id = source->tag();
   ui::MenuModel::ItemType type = menu_model_->GetTypeAt(id);
-  if (type != ui::MenuModel::TYPE_SUBMENU)
+  if (type != ui::MenuModel::TYPE_SUBMENU) {
+    menu_model_->ActivatedAt(id, 0);
     return;
+  }
 
   MenuDelegate menu_delegate(this);
   menu_delegate.RunMenu(menu_model_->GetSubmenuModelAt(id), source);
