@@ -1181,15 +1181,14 @@ void WebContents::SendInputEvent(v8::Isolate* isolate,
       isolate, "Invalid event object")));
 }
 
-void WebContents::BeginFrameSubscription(
-  mate::Arguments* args) {
-  FrameSubscriber::FrameCaptureCallback callback;
+void WebContents::BeginFrameSubscription(mate::Arguments* args) {
   bool only_dirty = false;
+  FrameSubscriber::FrameCaptureCallback callback;
 
+  args->GetNext(&only_dirty);
   if (!args->GetNext(&callback)) {
-    args->GetNext(&only_dirty);
-    if (!args->GetNext(&callback))
-      args->ThrowTypeError("'callback' must be defined");
+    args->ThrowError();
+    return;
   }
 
   const auto view = web_contents()->GetRenderWidgetHostView();
