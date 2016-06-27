@@ -40,7 +40,7 @@ Emitido quando está verificando se uma atualização foi inicializada.
 
 ### Evento: 'update-available'
 
-Emitido quando há uma atualização disponível. A autalização é baixada automaticamente.
+Emitido quando há uma atualização disponível. A atualização é baixada automaticamente.
 
 ### Evento: 'update-not-available'
 
