@@ -64,7 +64,7 @@ Existem muitas perguntas comuns que são feitas, verifique antes de criar uma is
 
 ### Módulos para o Processo Renderizador:
 
-* [DesktopCapturer](../../docs/api/desktop-capturer)
+* [DesktopCapturer](../../docs/api/desktop-capturer.md)
 * [ipcRenderer](../../docs/api/ipc-renderer.md)
 * [remote](../../docs/api/remote.md)
 * [webFrame](../../docs/api/web-frame.md)
