@@ -31,8 +31,6 @@ class AtomMenuModel : public ui::SimpleMenuModel {
   void SetRole(int index, const base::string16& role);
   base::string16 GetRoleAt(int index);
 
-  ui::MenuModel* GetTrayModel();
-
   // ui::SimpleMenuModel:
   void MenuClosed() override;
 

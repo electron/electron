@@ -4,7 +4,6 @@
 
 #include "atom/browser/ui/atom_menu_model.h"
 
-#include "atom/browser/ui/menu_model_context.h"
 #include "base/stl_util.h"
 
 namespace atom {
