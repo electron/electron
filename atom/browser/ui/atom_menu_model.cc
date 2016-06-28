@@ -14,7 +14,7 @@ bool AtomMenuModel::Delegate::GetAcceleratorForCommandId(
 }
 
 void AtomMenuModel::Delegate::ExecuteCommand(int command_id, int flags) {
-  return RunCommand(command_id, flags, "");
+  RunCommand(command_id, flags, "");
 }
 
 AtomMenuModel::AtomMenuModel(Delegate* delegate)
