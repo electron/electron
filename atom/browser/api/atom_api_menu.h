@@ -20,7 +20,7 @@ namespace atom {
 namespace api {
 
 class Menu : public mate::TrackableObject<Menu>,
-             public MenuModelDelegate {
+             public AtomMenuModel::Delegate {
  public:
   static mate::WrappableBase* Create(v8::Isolate* isolate);
 

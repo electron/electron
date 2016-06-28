@@ -253,8 +253,6 @@
       'atom/browser/ui/message_box_gtk.cc',
       'atom/browser/ui/message_box_mac.mm',
       'atom/browser/ui/message_box_win.cc',
-      'atom/browser/ui/menu_model_delegate.h',
-      'atom/browser/ui/menu_model_delegate.cc',
       'atom/browser/ui/menu_model_context.h',
       'atom/browser/ui/menu_model_context.cc',
       'atom/browser/ui/tray_icon.cc',

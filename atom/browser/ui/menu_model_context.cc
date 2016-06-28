@@ -4,7 +4,6 @@
 
 #include "atom/browser/ui/menu_model_context.h"
 
-#include "atom/browser/ui/menu_model_delegate.h"
 #include "base/memory/ptr_util.h"
 
 namespace atom {
@@ -67,7 +66,7 @@ bool MenuModelContext::IsItemDynamicAt(int index) const {
 
 bool MenuModelContext::GetAcceleratorAt(int index,
                                         ui::Accelerator* accelerator) const {
-  MenuModelDelegate* delegate = model_->GetDelegate();
+  AtomMenuModel::Delegate* delegate = model_->GetDelegate();
   if (delegate) {
     return delegate->GetCommandAccelerator(GetCommandIdAt(index),
                                            accelerator,

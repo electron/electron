@@ -8,7 +8,12 @@
 
 namespace atom {
 
-AtomMenuModel::AtomMenuModel(MenuModelDelegate* delegate)
+bool AtomMenuModel::Delegate::GetAcceleratorForCommandId(
+    int command_id, ui::Accelerator* accelerator) {
+  return GetCommandAccelerator(command_id, accelerator, "");
+}
+
+AtomMenuModel::AtomMenuModel(Delegate* delegate)
     : ui::SimpleMenuModel(delegate),
       delegate_(delegate) {
 }
