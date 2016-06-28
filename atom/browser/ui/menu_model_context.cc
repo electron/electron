@@ -3,7 +3,9 @@
 // found in the LICENSE file.
 
 #include "atom/browser/ui/menu_model_context.h"
+
 #include "atom/browser/ui/menu_model_delegate.h"
+#include "base/memory/ptr_util.h"
 
 namespace atom {
 
@@ -84,13 +86,12 @@ bool MenuModelContext::IsVisibleAt(int index) const {
 
 ui::MenuModel* MenuModelContext::GetSubmenuModelAt(int index) const {
   if (ContainsKey(submenu_models_, index)) {
-    return submenu_models_.at(index).get();
+    return submenu_models_.get(index);
   } else {
-    ui::MenuModel* submenu_model = model_->GetSubmenuModelAt(index);
-    atom::AtomMenuModel* model = static_cast<atom::AtomMenuModel*>(submenu_model);
-    const std::shared_ptr<ui::MenuModel> model_context(new MenuModelContext(name_, model));
-    submenu_models_[index] = model_context;
-    return model_context.get();
+    atom::AtomMenuModel* model = static_cast<atom::AtomMenuModel*>(model_->GetSubmenuModelAt(index));
+    MenuModelContext* model_context = new MenuModelContext(name_, model);
+    submenu_models_.set(index, base::WrapUnique(model_context));
+    return model_context;
   }
 };
 

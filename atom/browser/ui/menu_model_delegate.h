@@ -14,7 +14,7 @@ class MenuModelDelegate : public ui::SimpleMenuModel::Delegate {
   virtual ~MenuModelDelegate() {}
   virtual bool GetCommandAccelerator(int command_id,
                                      ui::Accelerator* accelerator,
-                                     const std::string& context);
+                                     const std::string& context) = 0;
 
   bool GetAcceleratorForCommandId(int command_id,
                                   ui::Accelerator* accelerator) override;

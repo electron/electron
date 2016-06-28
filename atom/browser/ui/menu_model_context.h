@@ -5,10 +5,10 @@
 #ifndef ATOM_BROWSER_UI_MENU_MODEL_CONTEXT_H_
 #define ATOM_BROWSER_UI_MENU_MODEL_CONTEXT_H_
 
-#include <unordered_map>
 #include <string>
 
 #include "atom/browser/ui/atom_menu_model.h"
+#include "base/containers/scoped_ptr_hash_map.h"
 #include "ui/base/models/menu_model.h"
 
 namespace atom {
@@ -46,7 +46,7 @@ class MenuModelContext : public ui::MenuModel {
  private:
   std::string name_;
   AtomMenuModel* model_;
-  mutable std::unordered_map<int, std::shared_ptr<ui::MenuModel>> submenu_models_;
+  mutable base::ScopedPtrHashMap<int, std::unique_ptr<ui::MenuModel>> submenu_models_;
 
   DISALLOW_COPY_AND_ASSIGN(MenuModelContext);
 };
