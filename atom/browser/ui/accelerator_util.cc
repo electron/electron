@@ -14,7 +14,7 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_split.h"
 #include "base/strings/string_util.h"
-#include "ui/base/models/simple_menu_model.h"
+#include "ui/base/models/menu_model.h"
 
 namespace accelerator_util {
 

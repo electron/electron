@@ -10,7 +10,7 @@
 
 #include "atom/browser/ui/tray_icon_observer.h"
 #include "base/observer_list.h"
-#include "ui/base/models/simple_menu_model.h"
+#include "ui/base/models/menu_model.h"
 #include "ui/gfx/geometry/rect.h"
 
 namespace atom {
