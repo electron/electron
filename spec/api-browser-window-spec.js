@@ -1025,7 +1025,7 @@ describe('browser-window module', function () {
         }, /Unexpected token }/)
       })
 
-      describe.only('when the devtools is docked', function () {
+      describe('when the devtools is docked', function () {
         it('creates the extension', function (done) {
           w.webContents.openDevTools({mode: 'bottom'})
 
