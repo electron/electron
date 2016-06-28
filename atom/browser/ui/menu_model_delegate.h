@@ -5,6 +5,8 @@
 #ifndef ATOM_BROWSER_UI_MENU_MODEL_DELEGATE_H_
 #define ATOM_BROWSER_UI_MENU_MODEL_DELEGATE_H_
 
+#include <string>
+
 #include "ui/base/models/simple_menu_model.h"
 
 namespace atom {

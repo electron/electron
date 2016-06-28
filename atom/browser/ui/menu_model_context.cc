@@ -78,11 +78,11 @@ bool MenuModelContext::GetAcceleratorAt(int index,
 
 bool MenuModelContext::IsItemCheckedAt(int index) const {
   return model_->IsItemCheckedAt(index);
-};
+}
 
 int MenuModelContext::GetGroupIdAt(int index) const {
   return model_->GetGroupIdAt(index);
-};
+}
 
 bool MenuModelContext::GetIconAt(int index, gfx::Image* icon) {
   return model_->GetIconAt(index, icon);
@@ -105,12 +105,13 @@ ui::MenuModel* MenuModelContext::GetSubmenuModelAt(int index) const {
   if (ContainsKey(submenu_models_, index)) {
     return submenu_models_.get(index);
   } else {
-    atom::AtomMenuModel* model = static_cast<atom::AtomMenuModel*>(model_->GetSubmenuModelAt(index));
-    MenuModelContext* model_context = new MenuModelContext(name_, model);
+    auto model = static_cast<atom::AtomMenuModel*>(
+        model_->GetSubmenuModelAt(index));
+    auto model_context = new MenuModelContext(name_, model);
     submenu_models_.set(index, base::WrapUnique(model_context));
     return model_context;
   }
-};
+}
 
 void MenuModelContext::HighlightChangedTo(int index) {
   model_->HighlightChangedTo(index);
@@ -134,7 +135,7 @@ void MenuModelContext::MenuClosed() {
 
 void MenuModelContext::SetMenuModelDelegate(ui::MenuModelDelegate* delegate) {
   model_->SetMenuModelDelegate(delegate);
-};
+}
 
 ui::MenuModelDelegate* MenuModelContext::GetMenuModelDelegate() const {
   return model_->GetMenuModelDelegate();

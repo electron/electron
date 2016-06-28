@@ -141,7 +141,8 @@ void Tray::PopUpContextMenu(mate::Arguments* args) {
   args->GetNext(&menu);
   gfx::Point pos;
   args->GetNext(&pos);
-  tray_icon_->PopUpContextMenu(pos, menu.IsEmpty() ? nullptr : menu->ModelForLocation("tray"));
+  tray_icon_->PopUpContextMenu(pos,
+      menu.IsEmpty() ? nullptr : menu->ModelForLocation("tray"));
 }
 
 void Tray::SetContextMenu(v8::Isolate* isolate, mate::Handle<Menu> menu) {

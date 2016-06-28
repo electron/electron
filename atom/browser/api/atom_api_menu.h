@@ -61,8 +61,11 @@ class Menu : public mate::TrackableObject<Menu>,
                        int positioning_item = 0) = 0;
 
   std::unique_ptr<AtomMenuModel> model_;
-  base::ScopedPtrHashMap<std::string, std::unique_ptr<ui::MenuModel>> model_contexts_;
   Menu* parent_;
+
+  using ModelContextsMap = base::ScopedPtrHashMap<
+      std::string, std::unique_ptr<ui::MenuModel>>;
+  ModelContextsMap model_contexts_;
 
  private:
   void InsertItemAt(int index, int command_id, const base::string16& label);

@@ -53,11 +53,14 @@ class MenuModelContext : public ui::MenuModel {
  private:
   std::string name_;
   AtomMenuModel* model_;
-  mutable base::ScopedPtrHashMap<int, std::unique_ptr<ui::MenuModel>> submenu_models_;
+
+  using SubmenuModelsMap = base::ScopedPtrHashMap<
+      <int, std::unique_ptr<ui::MenuModel>>;
+  mutable SubmenuModelsMap submenu_models_;
 
   DISALLOW_COPY_AND_ASSIGN(MenuModelContext);
 };
 
 }  // namespace atom
 
-#endif  // ATOM_BROWSER_UI_ATOM_MENU_MODEL_H_
+#endif  // ATOM_BROWSER_UI_MENU_MODEL_CONTEXT_H_

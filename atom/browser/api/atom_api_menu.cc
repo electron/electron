@@ -46,7 +46,7 @@ ui::MenuModel* Menu::ModelForLocation(const std::string& location) {
   if (ContainsKey(model_contexts_, location)) {
     return model_contexts_.get(location);
   } else {
-    MenuModelContext* model_context = new MenuModelContext(location, model());
+    auto model_context = new MenuModelContext(location, model());
     model_contexts_.set(location, base::WrapUnique(model_context));
     return model_context;
   }
