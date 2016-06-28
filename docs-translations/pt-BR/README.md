@@ -55,7 +55,7 @@ Existem muitas perguntas comuns que são feitas, verifique antes de criar uma is
 * [ipcMain](../../docs/api/ipc-main-process.md)
 * [Menu](../../docs/api/menu.md)
 * [MenuItem](../../docs/api/menu-item.md)
-* [powerMonitor](../../docs/api/power-monitor.md)
+* [powerMonitor](api/power-monitor.md)
 * [powerSaveBlocker](../../docs/api/power-save-blocker.md)
 * [protocol](../../docs/api/protocol.md)
 * [session](../../docs/api/session.md)
