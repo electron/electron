@@ -6,6 +6,7 @@
 #define ATOM_BROWSER_UI_ATOM_MENU_MODEL_H_
 
 #include <map>
+#include <string>
 
 #include "base/observer_list.h"
 #include "ui/base/models/simple_menu_model.h"
