@@ -30,14 +30,6 @@ base::string16 AtomMenuModel::GetRoleAt(int index) {
     return base::string16();
 }
 
-ui::MenuModel* AtomMenuModel::GetTrayModel() {
-  if (!tray_model_) {
-    tray_model_.reset(new MenuModelContext("tray", this));
-  }
-  return tray_model_.get();
-}
-
-
 void AtomMenuModel::MenuClosed() {
   ui::SimpleMenuModel::MenuClosed();
   FOR_EACH_OBSERVER(Observer, observers_, MenuClosed());

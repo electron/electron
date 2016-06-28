@@ -9,6 +9,7 @@
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
+#include "base/memory/ptr_util.h"
 #include "native_mate/constructor.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
@@ -40,6 +41,17 @@ void Menu::AfterInit(v8::Isolate* isolate) {
   delegate.Get("executeCommand", &execute_command_);
   delegate.Get("menuWillShow", &menu_will_show_);
 }
+
+ui::MenuModel* Menu::ModelForLocation(const std::string& location) {
+  if (ContainsKey(model_contexts_, location)) {
+    return model_contexts_.get(location);
+  } else {
+    MenuModelContext* model_context = new MenuModelContext(location, model());
+    model_contexts_.set(location, base::WrapUnique(model_context));
+    return model_context;
+  }
+}
+
 
 bool Menu::IsCommandIdChecked(int command_id) const {
   return is_checked_.Run(command_id);

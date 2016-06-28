@@ -41,7 +41,6 @@ class AtomMenuModel : public ui::SimpleMenuModel {
  private:
   MenuModelDelegate* delegate_;  // weak ref.
 
-  std::unique_ptr<ui::MenuModel> tray_model_;
   std::map<int, base::string16> roles_;  // command id -> role
   base::ObserverList<Observer> observers_;
 

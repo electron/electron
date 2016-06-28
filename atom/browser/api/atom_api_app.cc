@@ -583,7 +583,7 @@ int DockBounce(const std::string& type) {
 }
 
 void DockSetMenu(atom::api::Menu* menu) {
-  Browser::Get()->DockSetMenu(menu->model());
+  Browser::Get()->DockSetMenu(menu->ModelForLocation("dock"));
 }
 #endif
 

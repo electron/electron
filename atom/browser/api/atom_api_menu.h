@@ -10,7 +10,9 @@
 #include "atom/browser/api/atom_api_window.h"
 #include "atom/browser/api/trackable_object.h"
 #include "atom/browser/ui/atom_menu_model.h"
+#include "atom/browser/ui/menu_model_context.h"
 #include "base/callback.h"
+#include "base/containers/scoped_ptr_hash_map.h"
 #include "base/memory/scoped_ptr.h"
 
 namespace atom {
@@ -35,6 +37,8 @@ class Menu : public mate::TrackableObject<Menu>,
 
   AtomMenuModel* model() const { return model_.get(); }
 
+  ui::MenuModel* ModelForLocation(const std::string& location);
+
  protected:
   explicit Menu(v8::Isolate* isolate);
   ~Menu() override;
@@ -57,6 +61,7 @@ class Menu : public mate::TrackableObject<Menu>,
                        int positioning_item = 0) = 0;
 
   std::unique_ptr<AtomMenuModel> model_;
+  base::ScopedPtrHashMap<std::string, std::unique_ptr<ui::MenuModel>> model_contexts_;
   Menu* parent_;
 
  private:
