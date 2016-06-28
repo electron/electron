@@ -10,10 +10,7 @@
 #include "atom/browser/api/atom_api_window.h"
 #include "atom/browser/api/trackable_object.h"
 #include "atom/browser/ui/atom_menu_model.h"
-#include "atom/browser/ui/menu_model_context.h"
 #include "base/callback.h"
-#include "base/containers/scoped_ptr_hash_map.h"
-#include "base/memory/scoped_ptr.h"
 
 namespace atom {
 

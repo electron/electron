@@ -5,11 +5,11 @@
 #include "atom/browser/api/atom_api_menu.h"
 
 #include "atom/browser/native_window.h"
+#include "atom/browser/ui/menu_model_context.h"
 #include "atom/common/native_mate_converters/accelerator_converter.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
-#include "base/memory/ptr_util.h"
 #include "native_mate/constructor.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
