@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_UI_MENU_MODEL_CONTEXT_H_
-#define ATOM_BROWSER_UI_MENU_MODEL_CONTEXT_H_
+#ifndef ATOM_BROWSER_UI_MENU_LOCATION_H_
+#define ATOM_BROWSER_UI_MENU_LOCATION_H_
 
 #include <string>
 
@@ -13,10 +13,10 @@
 
 namespace atom {
 
-class MenuModelContext : public ui::MenuModel {
+class MenuLocation : public ui::MenuModel {
  public:
-  explicit MenuModelContext(std::string name, atom::AtomMenuModel* model);
-  virtual ~MenuModelContext();
+  explicit MenuLocation(std::string location, atom::AtomMenuModel* model);
+  virtual ~MenuLocation();
 
   // Defer to atom::AtomMenuModel
   void AddObserver(atom::AtomMenuModel::Observer* obs);
@@ -51,16 +51,16 @@ class MenuModelContext : public ui::MenuModel {
   ui::MenuModelDelegate* GetMenuModelDelegate() const override;
 
  private:
-  std::string name_;
+  std::string location_;
   AtomMenuModel* model_;
 
   using SubmenuModelsMap = base::ScopedPtrHashMap<
       int, std::unique_ptr<ui::MenuModel>>;
   mutable SubmenuModelsMap submenu_models_;
 
-  DISALLOW_COPY_AND_ASSIGN(MenuModelContext);
+  DISALLOW_COPY_AND_ASSIGN(MenuLocation);
 };
 
 }  // namespace atom
 
-#endif  // ATOM_BROWSER_UI_MENU_MODEL_CONTEXT_H_
+#endif  // ATOM_BROWSER_UI_MENU_LOCATION_H_

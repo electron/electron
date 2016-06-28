@@ -5,7 +5,7 @@
 #include "atom/browser/api/atom_api_menu.h"
 
 #include "atom/browser/native_window.h"
-#include "atom/browser/ui/menu_model_context.h"
+#include "atom/browser/ui/menu_location.h"
 #include "atom/common/native_mate_converters/accelerator_converter.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/image_converter.h"
@@ -44,28 +44,28 @@ void Menu::AfterInit(v8::Isolate* isolate) {
 
 ui::MenuModel* Menu::GetContextModel() {
   if (!context_menu_model_) {
-    context_menu_model_.reset(new MenuModelContext("context", model()));
+    context_menu_model_.reset(new MenuLocation("context", model()));
   }
   return context_menu_model_.get();
 }
 
 ui::MenuModel* Menu::GetApplicationModel() {
   if (!application_menu_model_) {
-    application_menu_model_.reset(new MenuModelContext("application", model()));
+    application_menu_model_.reset(new MenuLocation("application", model()));
   }
   return application_menu_model_.get();
 }
 
 ui::MenuModel* Menu::GetDockModel() {
   if (!dock_menu_model_) {
-    dock_menu_model_.reset(new MenuModelContext("dock", model()));
+    dock_menu_model_.reset(new MenuLocation("dock", model()));
   }
   return dock_menu_model_.get();
 }
 
 ui::MenuModel* Menu::GetTrayModel() {
   if (!tray_menu_model_) {
-    tray_menu_model_.reset(new MenuModelContext("tray", model()));
+    tray_menu_model_.reset(new MenuLocation("tray", model()));
   }
   return tray_menu_model_.get();
 }

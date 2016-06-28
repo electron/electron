@@ -5,7 +5,7 @@
 
 #import "atom/browser/ui/cocoa/atom_menu_controller.h"
 
-#include "atom/browser/ui/menu_model_context.h"
+#include "atom/browser/ui/menu_location.h"
 #include "base/logging.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/strings/utf_string_conversions.h"
@@ -127,7 +127,7 @@ Role kRolesMap[] = {
 - (void)addItemToMenu:(NSMenu*)menu
               atIndex:(NSInteger)index
             fromModel:(ui::MenuModel*)ui_model {
-  atom::MenuModelContext* model = static_cast<atom::MenuModelContext*>(ui_model);
+  atom::MenuLocation* model = static_cast<atom::MenuLocation*>(ui_model);
 
   base::string16 label16 = model->GetLabelAt(index);
   NSString* label = l10n_util::FixUpWindowsStyleLabel(label16);
