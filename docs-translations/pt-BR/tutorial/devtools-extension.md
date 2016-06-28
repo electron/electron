@@ -41,6 +41,6 @@ Atualmente o Electron não suporta páginas em segundo plano nas extensões do C
 
 Algumas extensões do Chrome podem usar a API `chrome.*`. Apesar de um esforço na implementação destas APIs no Electron, elas ainda não estão finalizadas.
 
-Dado que nem todas as funções `chrome.*` esstão implementadas, algumas extensões que utilizam `chrome.devtools.*` podem não funcionar. Você pode reportar este erro no issue tracker para que possamos adicionar suporte a essas APIs.
+Dado que nem todas as funções `chrome.*` estão implementadas, algumas extensões que utilizam `chrome.devtools.*` podem não funcionar. Você pode reportar este erro no issue tracker para que possamos adicionar suporte a essas APIs.
 
 [devtools-extension]: https://developer.chrome.com/extensions/devtools
