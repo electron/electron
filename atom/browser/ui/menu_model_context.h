@@ -16,7 +16,14 @@ namespace atom {
 class MenuModelContext : public ui::MenuModel {
  public:
   explicit MenuModelContext(std::string name, atom::AtomMenuModel* model);
+  virtual ~MenuModelContext();
 
+  // Defer to atom::AtomMenuModel
+  void AddObserver(atom::AtomMenuModel::Observer* obs);
+  void RemoveObserver(atom::AtomMenuModel::Observer* obs);
+  base::string16 GetRoleAt(int index);
+
+  // ui::MenuModel:
   bool HasIcons() const override;
   int GetItemCount() const override;
   ItemType GetTypeAt(int index) const override;

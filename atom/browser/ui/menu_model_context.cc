@@ -14,6 +14,21 @@ MenuModelContext::MenuModelContext(std::string name, AtomMenuModel* model)
       model_(model) {
 }
 
+MenuModelContext::~MenuModelContext() {
+}
+
+void MenuModelContext::AddObserver(atom::AtomMenuModel::Observer* obs) {
+  return model_->AddObserver(obs);
+}
+
+void MenuModelContext::RemoveObserver(atom::AtomMenuModel::Observer* obs) {
+  model_->RemoveObserver(obs);
+}
+
+base::string16 MenuModelContext::GetRoleAt(int index) {
+  return model_->GetRoleAt(index);
+}
+
 bool MenuModelContext::HasIcons() const {
   return model_->HasIcons();
 }
