@@ -21,9 +21,14 @@ class AtomMenuModel : public ui::SimpleMenuModel {
     virtual bool GetCommandAccelerator(int command_id,
                                        ui::Accelerator* accelerator,
                                        const std::string& context) = 0;
+    virtual void RunCommand(int command_id,
+                            int flags,
+                            const std::string& context) = 0;
 
+    // ui::SimpleMenuModel::Delegate:
     bool GetAcceleratorForCommandId(int command_id,
                                     ui::Accelerator* accelerator) override;
+    void ExecuteCommand(int command_id, int flags) override;
   };
 
   class Observer {

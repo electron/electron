@@ -50,11 +50,15 @@ class Menu : public mate::TrackableObject<Menu>,
   bool IsCommandIdChecked(int command_id) const override;
   bool IsCommandIdEnabled(int command_id) const override;
   bool IsCommandIdVisible(int command_id) const override;
+  void MenuWillShow(ui::SimpleMenuModel* source) override;
+
+  // atom::AtomMenuModel::Delegate:
   bool GetCommandAccelerator(int command_id,
                              ui::Accelerator* accelerator,
                              const std::string& context) override;
-  void ExecuteCommand(int command_id, int event_flags) override;
-  void MenuWillShow(ui::SimpleMenuModel* source) override;
+  void RunCommand(int command_id,
+                  int event_flags,
+                  const std::string& context) override;
 
   virtual void PopupAt(Window* window,
                        int x = -1, int y = -1,
@@ -99,7 +103,7 @@ class Menu : public mate::TrackableObject<Menu>,
   base::Callback<bool(int)> is_enabled_;
   base::Callback<bool(int)> is_visible_;
   base::Callback<v8::Local<v8::Value>(int, std::string)> get_accelerator_;
-  base::Callback<void(v8::Local<v8::Value>, int)> execute_command_;
+  base::Callback<void(v8::Local<v8::Value>, int, std::string)> execute_command_;
   base::Callback<void()> menu_will_show_;
 
   DISALLOW_COPY_AND_ASSIGN(Menu);

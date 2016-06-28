@@ -91,11 +91,13 @@ bool Menu::GetCommandAccelerator(int command_id,
   return mate::ConvertFromV8(isolate(), val, accelerator);
 }
 
-
-void Menu::ExecuteCommand(int command_id, int flags) {
+void Menu::RunCommand(int command_id,
+                      int flags,
+                      const std::string& context) {
   execute_command_.Run(
       mate::internal::CreateEventFromFlags(isolate(), flags),
-      command_id);
+      command_id,
+      context);
 }
 
 void Menu::MenuWillShow(ui::SimpleMenuModel* source) {

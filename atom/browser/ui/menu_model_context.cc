@@ -117,11 +117,13 @@ void MenuModelContext::HighlightChangedTo(int index) {
 }
 
 void MenuModelContext::ActivatedAt(int index) {
-  model_->ActivatedAt(index);
+  ActivatedAt(index, 0);
 }
 
 void MenuModelContext::ActivatedAt(int index, int event_flags) {
-  model_->ActivatedAt(index, event_flags);
+  AtomMenuModel::Delegate* delegate = model_->GetDelegate();
+  if (delegate)
+    delegate->RunCommand(GetCommandIdAt(index), event_flags, name_);
 }
 
 void MenuModelContext::MenuWillShow() {
