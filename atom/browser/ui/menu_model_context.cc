@@ -69,7 +69,9 @@ bool MenuModelContext::GetAcceleratorAt(int index,
                                         ui::Accelerator* accelerator) const {
   MenuModelDelegate* delegate = model_->GetDelegate();
   if (delegate) {
-    return delegate->GetCommandAccelerator(index, accelerator, name_);
+    return delegate->GetCommandAccelerator(GetCommandIdAt(index),
+                                           accelerator,
+                                           name_);
   }
   return false;
 }
