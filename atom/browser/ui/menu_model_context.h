@@ -55,7 +55,7 @@ class MenuModelContext : public ui::MenuModel {
   AtomMenuModel* model_;
 
   using SubmenuModelsMap = base::ScopedPtrHashMap<
-      <int, std::unique_ptr<ui::MenuModel>>;
+      int, std::unique_ptr<ui::MenuModel>>;
   mutable SubmenuModelsMap submenu_models_;
 
   DISALLOW_COPY_AND_ASSIGN(MenuModelContext);

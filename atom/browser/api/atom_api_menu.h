@@ -37,7 +37,10 @@ class Menu : public mate::TrackableObject<Menu>,
 
   AtomMenuModel* model() const { return model_.get(); }
 
-  ui::MenuModel* ModelForLocation(const std::string& location);
+  ui::MenuModel* GetContextModel();
+  ui::MenuModel* GetApplicationModel();
+  ui::MenuModel* GetDockModel();
+  ui::MenuModel* GetTrayModel();
 
  protected:
   explicit Menu(v8::Isolate* isolate);
@@ -61,11 +64,11 @@ class Menu : public mate::TrackableObject<Menu>,
                        int positioning_item = 0) = 0;
 
   std::unique_ptr<AtomMenuModel> model_;
+  std::unique_ptr<ui::MenuModel> application_menu_model_;
+  std::unique_ptr<ui::MenuModel> context_menu_model_;
+  std::unique_ptr<ui::MenuModel> dock_menu_model_;
+  std::unique_ptr<ui::MenuModel> tray_menu_model_;
   Menu* parent_;
-
-  using ModelContextsMap = base::ScopedPtrHashMap<
-      std::string, std::unique_ptr<ui::MenuModel>>;
-  ModelContextsMap model_contexts_;
 
  private:
   void InsertItemAt(int index, int command_id, const base::string16& label);

@@ -42,16 +42,33 @@ void Menu::AfterInit(v8::Isolate* isolate) {
   delegate.Get("menuWillShow", &menu_will_show_);
 }
 
-ui::MenuModel* Menu::ModelForLocation(const std::string& location) {
-  if (ContainsKey(model_contexts_, location)) {
-    return model_contexts_.get(location);
-  } else {
-    auto model_context = new MenuModelContext(location, model());
-    model_contexts_.set(location, base::WrapUnique(model_context));
-    return model_context;
+ui::MenuModel* Menu::GetContextModel() {
+  if (!context_menu_model_) {
+    context_menu_model_.reset(new MenuModelContext("context", model()));
   }
+  return context_menu_model_.get();
 }
 
+ui::MenuModel* Menu::GetApplicationModel() {
+  if (!application_menu_model_) {
+    application_menu_model_.reset(new MenuModelContext("application", model()));
+  }
+  return application_menu_model_.get();
+}
+
+ui::MenuModel* Menu::GetDockModel() {
+  if (!dock_menu_model_) {
+    dock_menu_model_.reset(new MenuModelContext("dock", model()));
+  }
+  return dock_menu_model_.get();
+}
+
+ui::MenuModel* Menu::GetTrayModel() {
+  if (!tray_menu_model_) {
+    tray_menu_model_.reset(new MenuModelContext("tray", model()));
+  }
+  return tray_menu_model_.get();
+}
 
 bool Menu::IsCommandIdChecked(int command_id) const {
   return is_checked_.Run(command_id);
