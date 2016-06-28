@@ -65,7 +65,7 @@ bool MenuLocation::IsItemDynamicAt(int index) const {
 }
 
 bool MenuLocation::GetAcceleratorAt(int index,
-                                        ui::Accelerator* accelerator) const {
+                                    ui::Accelerator* accelerator) const {
   AtomMenuModel::Delegate* delegate = model_->GetDelegate();
   if (delegate) {
     return delegate->GetCommandAccelerator(GetCommandIdAt(index),
@@ -87,8 +87,7 @@ bool MenuLocation::GetIconAt(int index, gfx::Image* icon) {
   return model_->GetIconAt(index, icon);
 }
 
-ui::ButtonMenuItemModel* MenuLocation::GetButtonMenuItemAt(
-    int index) const {
+ui::ButtonMenuItemModel* MenuLocation::GetButtonMenuItemAt(int index) const {
   return model_->GetButtonMenuItemAt(index);
 }
 
