@@ -1025,7 +1025,7 @@ describe('browser-window module', function () {
         }, /Unexpected token }/)
       })
 
-      describe('when the devtools is docked', function () {
+      describe.only('when the devtools is docked', function () {
         it('creates the extension', function (done) {
           w.webContents.openDevTools({mode: 'bottom'})
 
@@ -1033,7 +1033,10 @@ describe('browser-window module', function () {
             assert.equal(message.runtimeId, 'foo')
             assert.equal(message.tabId, w.webContents.id)
             assert.equal(message.i18nString, 'foo - bar (baz)')
-            assert.deepEqual(message.storageItems, {foo: 'bar'})
+            assert.deepEqual(message.storageItems, {
+              local: {hello: 'world'},
+              sync: {foo: 'bar'}
+            })
             done()
           })
         })
