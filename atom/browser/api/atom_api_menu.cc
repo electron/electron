@@ -100,7 +100,7 @@ void Menu::InsertSubMenuAt(int index,
                            const base::string16& label,
                            Menu* menu) {
   menu->parent_ = this;
-  model_->InsertSubMenuAt(index, command_id, label, menu->model_.get());
+  model_->InsertSubMenuAt(index, command_id, label, menu->model());
 }
 
 void Menu::SetIcon(int index, const gfx::Image& image) {
