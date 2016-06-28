@@ -53,13 +53,15 @@ bool Menu::IsCommandIdVisible(int command_id) const {
   return is_visible_.Run(command_id);
 }
 
-bool Menu::GetAcceleratorForCommandId(int command_id,
-                                      ui::Accelerator* accelerator) {
+bool Menu::GetCommandAccelerator(int command_id,
+                                 ui::Accelerator* accelerator,
+                                 const std::string& context) {
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
-  v8::Local<v8::Value> val = get_accelerator_.Run(command_id);
+  v8::Local<v8::Value> val = get_accelerator_.Run(command_id, context);
   return mate::ConvertFromV8(isolate(), val, accelerator);
 }
+
 
 void Menu::ExecuteCommand(int command_id, int flags) {
   execute_command_.Run(

@@ -4,11 +4,12 @@
 
 #include "atom/browser/ui/atom_menu_model.h"
 
+#include "atom/browser/ui/menu_model_context.h"
 #include "base/stl_util.h"
 
 namespace atom {
 
-AtomMenuModel::AtomMenuModel(Delegate* delegate)
+AtomMenuModel::AtomMenuModel(MenuModelDelegate* delegate)
     : ui::SimpleMenuModel(delegate),
       delegate_(delegate) {
 }
@@ -28,6 +29,14 @@ base::string16 AtomMenuModel::GetRoleAt(int index) {
   else
     return base::string16();
 }
+
+ui::MenuModel* AtomMenuModel::GetTrayModel() {
+  if (!tray_model_) {
+    tray_model_.reset(new MenuModelContext("tray", this));
+  }
+  return tray_model_.get();
+}
+
 
 void AtomMenuModel::MenuClosed() {
   ui::SimpleMenuModel::MenuClosed();

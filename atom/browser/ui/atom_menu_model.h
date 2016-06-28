@@ -7,18 +7,13 @@
 
 #include <map>
 
+#include "atom/browser/ui/menu_model_delegate.h"
 #include "base/observer_list.h"
-#include "ui/base/models/simple_menu_model.h"
 
 namespace atom {
 
 class AtomMenuModel : public ui::SimpleMenuModel {
  public:
-  class Delegate : public ui::SimpleMenuModel::Delegate {
-   public:
-    virtual ~Delegate() {}
-  };
-
   class Observer {
    public:
     virtual ~Observer() {}
@@ -27,7 +22,7 @@ class AtomMenuModel : public ui::SimpleMenuModel {
     virtual void MenuClosed() {}
   };
 
-  explicit AtomMenuModel(Delegate* delegate);
+  explicit AtomMenuModel(MenuModelDelegate* delegate);
   virtual ~AtomMenuModel();
 
   void AddObserver(Observer* obs) { observers_.AddObserver(obs); }
@@ -36,12 +31,17 @@ class AtomMenuModel : public ui::SimpleMenuModel {
   void SetRole(int index, const base::string16& role);
   base::string16 GetRoleAt(int index);
 
+  ui::MenuModel* GetTrayModel();
+
   // ui::SimpleMenuModel:
   void MenuClosed() override;
 
- private:
-  Delegate* delegate_;  // weak ref.
+  MenuModelDelegate* GetDelegate() { return delegate_; }
 
+ private:
+  MenuModelDelegate* delegate_;  // weak ref.
+
+  std::unique_ptr<ui::MenuModel> tray_model_;
   std::map<int, base::string16> roles_;  // command id -> role
   base::ObserverList<Observer> observers_;
 
