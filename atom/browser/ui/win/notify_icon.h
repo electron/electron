@@ -52,8 +52,8 @@ class NotifyIcon : public TrayIcon {
                       const base::string16& title,
                       const base::string16& contents) override;
   void PopUpContextMenu(const gfx::Point& pos,
-                        ui::SimpleMenuModel* menu_model) override;
-  void SetContextMenu(ui::SimpleMenuModel* menu_model) override;
+                        ui::MenuModel* menu_model) override;
+  void SetContextMenu(ui::MenuModel* menu_model) override;
   gfx::Rect GetBounds() override;
 
  private:
@@ -75,7 +75,7 @@ class NotifyIcon : public TrayIcon {
   base::win::ScopedHICON icon_;
 
   // The context menu.
-  ui::SimpleMenuModel* menu_model_;
+  ui::MenuModel* menu_model_;
 
   DISALLOW_COPY_AND_ASSIGN(NotifyIcon);
 };
