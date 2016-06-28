@@ -52,7 +52,7 @@ Existem muitas perguntas comuns que são feitas, verifique antes de criar uma is
 * [contentTracing](../../docs/api/content-tracing.md)
 * [dialog](../../docs/api/dialog.md)
 * [globalShortcut](../../docs/api/global-shortcut.md)
-* [ipcMain](../../docs/api/ipc-main-process.md)
+* [ipcMain](../../docs/api/ipc-main.md)
 * [Menu](../../docs/api/menu.md)
 * [MenuItem](../../docs/api/menu-item.md)
 * [powerMonitor](api/power-monitor.md)
