@@ -9,7 +9,7 @@
 
 #include <string>
 
-#include "atom/browser/ui/atom_menu_model.h"
+#include "atom/browser/ui/menu_model_context.h"
 #include "atom/browser/ui/tray_icon.h"
 #include "base/mac/scoped_nsobject.h"
 

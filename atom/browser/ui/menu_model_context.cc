@@ -18,7 +18,7 @@ MenuModelContext::~MenuModelContext() {
 }
 
 void MenuModelContext::AddObserver(atom::AtomMenuModel::Observer* obs) {
-  return model_->AddObserver(obs);
+  model_->AddObserver(obs);
 }
 
 void MenuModelContext::RemoveObserver(atom::AtomMenuModel::Observer* obs) {
