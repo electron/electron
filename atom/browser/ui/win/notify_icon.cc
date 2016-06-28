@@ -134,8 +134,9 @@ void NotifyIcon::DisplayBalloon(HICON icon,
 void NotifyIcon::PopUpContextMenu(const gfx::Point& pos,
                                   ui::SimpleMenuModel* menu_model) {
   // Returns if context menu isn't set.
-  if (!menu_model)
+  if (!menu_model && !menu_model_)
     return;
+
   // Set our window as the foreground window, so the context menu closes when
   // we click away from it.
   if (!SetForegroundWindow(window_))
@@ -147,7 +148,7 @@ void NotifyIcon::PopUpContextMenu(const gfx::Point& pos,
     rect.set_origin(gfx::Screen::GetScreen()->GetCursorScreenPoint());
 
   views::MenuRunner menu_runner(
-      menu_model,
+      menu_model ? menu_model : menu_model_,
       views::MenuRunner::CONTEXT_MENU | views::MenuRunner::HAS_MNEMONICS);
   ignore_result(menu_runner.RunMenuAt(
       NULL, NULL, rect, views::MENU_ANCHOR_TOPLEFT, ui::MENU_SOURCE_MOUSE));

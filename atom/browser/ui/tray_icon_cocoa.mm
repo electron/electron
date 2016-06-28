@@ -263,7 +263,7 @@ const CGFloat kVerticalTitleMargin = 2;
   }
 
   if (menuController_ && ![menuController_ isMenuOpen]) {
-    // Redraw the dray icon to show highlight if it is enabled.
+    // Redraw the tray icon to show highlight if it is enabled.
     [self setNeedsDisplay:YES];
     [statusItem_ popUpStatusItemMenu:[menuController_ menu]];
     // The popUpStatusItemMenu returns only after the showing menu is closed.
