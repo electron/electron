@@ -1004,7 +1004,7 @@ describe('browser-window module', function () {
                 var lastPanelId = WebInspector.inspectorView._tabbedPane._tabs.peekLast().id
                 WebInspector.inspectorView.showPanel(lastPanelId)
               }
-              w.devToolsWebContents.executeJavaScript('(' + showLastPanel.toString() + ')()')
+              w.devToolsWebContents.executeJavaScript(`(${showLastPanel})()`)
             } else {
               clearInterval(showPanelIntevalId)
             }
@@ -1080,7 +1080,7 @@ describe('browser-window module', function () {
               var lastPanelId = WebInspector.inspectorView._tabbedPane._tabs.peekLast().id
               WebInspector.inspectorView.showPanel(lastPanelId)
             }
-            w.devToolsWebContents.executeJavaScript('(' + showLastPanel.toString() + ')()')
+            w.devToolsWebContents.executeJavaScript(`(${showLastPanel})()`)
           } else {
             clearInterval(showPanelIntevalId)
           }
