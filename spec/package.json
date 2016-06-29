@@ -27,7 +27,8 @@
       "serviceworker": true
     },
     "globals": [
-      "WebView"
+      "WebView",
+      "WebInspector"
     ]
   }
 }
