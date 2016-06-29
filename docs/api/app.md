@@ -647,6 +647,31 @@ Sets the application's [dock menu][dock-menu].
 
 Sets the `image` associated with this dock icon.
 
+### `app.launcher.setBadgeCount(count)` _Linux_
+* `count` Integer
+
+Sets the number to be displayed next to the app icon in the Unity launcher.
+Setting the count to `0` will hide the badge.
+
+**Note:** This feature is currently only supported on Ubuntu Unity. Calling this function has no effect when the application is running in a different environment.
+
+**Note:** You need to specify the .desktop file name to the `desktopName` field in package.json. By default, it will assume `app.getName().desktop` in packaged apps.
+
+### `app.launcher.getBadgeCount()` _Linux_
+
+Returns the current value displayed in the counter badge next to the launcher icon.
+
+**Note:** As `setBadgeCount` only supports Ubuntu Unity, the value will be 0 when the application is running in a different environment.
+
+### `app.launcher.isUnityRunning()` _Linux_
+
+This method checks if the current desktop environment is Unity and returns `true` in this case.
+
+### `app.launcher.isCounterBadgeAvailable()` _Linux_
+
+This method checks if the current desktop environment supports an app icon counter badge and returns `true` in this case.
+
+
 [dock-menu]:https://developer.apple.com/library/mac/documentation/Carbon/Conceptual/customizing_docktile/concepts/dockconcepts.html#//apple_ref/doc/uid/TP30000986-CH2-TPXREF103
 [tasks]:http://msdn.microsoft.com/en-us/library/windows/desktop/dd378460(v=vs.85).aspx#tasks
 [app-user-model-id]: https://msdn.microsoft.com/en-us/library/windows/desktop/dd378459(v=vs.85).aspx

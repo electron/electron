@@ -10,6 +10,7 @@
 #include "atom/browser/window_list.h"
 #include "atom/common/atom_version.h"
 #include "brightray/common/application_info.h"
+#include "chrome/browser/ui/libgtk2ui/unity_service.h"
 
 namespace atom {
 
@@ -52,6 +53,21 @@ std::string Browser::GetExecutableFileVersion() const {
 
 std::string Browser::GetExecutableFileProductName() const {
   return brightray::GetApplicationName();
+}
+
+bool Browser::UnityLauncherAvailable() {
+  return unity::IsRunning();
+}
+
+void Browser::UnityLauncherSetBadgeCount(int count) {
+  if (UnityLauncherAvailable()) {
+    current_badge_count_ = count;
+    unity::SetDownloadCount(count);
+  }
+}
+
+int Browser::UnityLauncherGetBadgeCount() {
+  return current_badge_count_;
 }
 
 }  // namespace atom

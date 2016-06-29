@@ -614,6 +614,16 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   dict.SetMethod("dockSetMenu", &DockSetMenu);
   dict.SetMethod("dockSetIcon", base::Bind(&Browser::DockSetIcon, browser));
 #endif
+
+#if defined(OS_LINUX)
+  auto browser = base::Unretained(Browser::Get());
+  dict.SetMethod("unityLauncherAvailable",
+                  base::Bind(&Browser::UnityLauncherAvailable, browser));
+  dict.SetMethod("unityLauncherSetBadgeCount",
+                  base::Bind(&Browser::UnityLauncherSetBadgeCount, browser));
+  dict.SetMethod("unityLauncherGetBadgeCount",
+                  base::Bind(&Browser::UnityLauncherGetBadgeCount, browser));
+#endif
 }
 
 }  // namespace
