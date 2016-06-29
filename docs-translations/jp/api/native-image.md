@@ -112,11 +112,11 @@ const nativeImage = require('electron').nativeImage;
 var image = nativeImage.createFromPath('/Users/somebody/images/icon.png');
 ```
 
-### `image.toPng()`
+### `image.toPNG()`
 
 `PNG`エンコードされた画像を含む[Buffer][buffer]を返します。
 
-### `image.toJpeg(quality)`
+### `image.toJPEG(quality)`
 
 * `quality` Integer (**required**) - Between 0 - 100.
 
