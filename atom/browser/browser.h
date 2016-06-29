@@ -223,7 +223,9 @@ class Browser : public WindowListObserver {
   std::string version_override_;
   std::string name_override_;
 
+#if defined(OS_LINUX)
   int current_badge_count_ = 0;
+#endif
 
 #if defined(OS_WIN)
   base::string16 app_user_model_id_;
