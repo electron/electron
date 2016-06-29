@@ -56,7 +56,7 @@ class MenuLocation : public ui::MenuModel {
 
   using SubmenuModelsMap = base::ScopedPtrHashMap<
       int, std::unique_ptr<ui::MenuModel>>;
-  mutable SubmenuModelsMap submenu_models_;
+  mutable SubmenuModelsMap submenu_models_;  // command id -> model
 
   DISALLOW_COPY_AND_ASSIGN(MenuLocation);
 };

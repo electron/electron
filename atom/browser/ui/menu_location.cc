@@ -100,13 +100,14 @@ bool MenuLocation::IsVisibleAt(int index) const {
 }
 
 ui::MenuModel* MenuLocation::GetSubmenuModelAt(int index) const {
-  if (ContainsKey(submenu_models_, index)) {
-    return submenu_models_.get(index);
+  int command_id = GetCommandIdAt(index);
+  if (ContainsKey(submenu_models_, command_id)) {
+    return submenu_models_.get(command_id);
   } else {
     auto model = static_cast<atom::AtomMenuModel*>(
         model_->GetSubmenuModelAt(index));
     auto model_context = new MenuLocation(location_, model);
-    submenu_models_.set(index, base::WrapUnique(model_context));
+    submenu_models_.set(command_id, base::WrapUnique(model_context));
     return model_context;
   }
 }
