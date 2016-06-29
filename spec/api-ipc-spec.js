@@ -80,9 +80,9 @@ describe('ipc module', function () {
 
     it('is referenced by its members', function () {
       let stringify = remote.getGlobal('JSON').stringify
-      gc();
+      global.gc()
       stringify({})
-    });
+    })
   })
 
   describe('remote value in browser', function () {
@@ -90,15 +90,15 @@ describe('ipc module', function () {
 
     it('keeps its constructor name for objects', function () {
       var buf = new Buffer('test')
-      var print_name = remote.require(print)
-      assert.equal(print_name.print(buf), 'Buffer')
+      var printName = remote.require(print)
+      assert.equal(printName.print(buf), 'Buffer')
     })
 
     it('supports instanceof Date', function () {
       var now = new Date()
-      var print_name = remote.require(print)
-      assert.equal(print_name.print(now), 'Date')
-      assert.deepEqual(print_name.echo(now), now)
+      var printName = remote.require(print)
+      assert.equal(printName.print(now), 'Date')
+      assert.deepEqual(printName.echo(now), now)
     })
   })
 
@@ -200,9 +200,9 @@ describe('ipc module', function () {
     it('is referenced by methods in prototype chain', function () {
       let method = derived.method
       derived = null
-      gc()
+      global.gc()
       assert.equal(method(), 'method')
-    });
+    })
   })
 
   describe('ipc.sender.send', function () {

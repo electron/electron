@@ -1,5 +1,5 @@
 const assert = require('assert')
-const child_process = require('child_process')
+const ChildProcess = require('child_process')
 const fs = require('fs')
 const path = require('path')
 
@@ -536,7 +536,7 @@ describe('asar package', function () {
 
     describe('child_process.fork', function () {
       it('opens a normal js file', function (done) {
-        var child = child_process.fork(path.join(fixtures, 'asar', 'a.asar', 'ping.js'))
+        var child = ChildProcess.fork(path.join(fixtures, 'asar', 'a.asar', 'ping.js'))
         child.on('message', function (msg) {
           assert.equal(msg, 'message')
           done()
@@ -546,7 +546,7 @@ describe('asar package', function () {
 
       it('supports asar in the forked js', function (done) {
         var file = path.join(fixtures, 'asar', 'a.asar', 'file1')
-        var child = child_process.fork(path.join(fixtures, 'module', 'asar.js'))
+        var child = ChildProcess.fork(path.join(fixtures, 'module', 'asar.js'))
         child.on('message', function (content) {
           assert.equal(content, fs.readFileSync(file).toString())
           done()
@@ -556,11 +556,10 @@ describe('asar package', function () {
     })
 
     describe('child_process.exec', function () {
-      var child_process = require('child_process');
       var echo = path.join(fixtures, 'asar', 'echo.asar', 'echo')
 
       it('should not try to extract the command if there is a reference to a file inside an .asar', function (done) {
-        child_process.exec('echo ' + echo + ' foo bar', function (error, stdout) {
+        ChildProcess.exec('echo ' + echo + ' foo bar', function (error, stdout) {
           assert.equal(error, null)
           assert.equal(stdout.toString().replace(/\r/g, ''), echo + ' foo bar\n')
           done()
@@ -569,24 +568,22 @@ describe('asar package', function () {
     })
 
     describe('child_process.execSync', function () {
-      var child_process = require('child_process');
       var echo = path.join(fixtures, 'asar', 'echo.asar', 'echo')
 
       it('should not try to extract the command if there is a reference to a file inside an .asar', function (done) {
-        var stdout = child_process.execSync('echo ' + echo + ' foo bar')
+        var stdout = ChildProcess.execSync('echo ' + echo + ' foo bar')
         assert.equal(stdout.toString().replace(/\r/g, ''), echo + ' foo bar\n')
         done()
       })
     })
 
     describe('child_process.execFile', function () {
-      var echo, execFile, execFileSync, ref2
+      var echo, execFile, execFileSync
       if (process.platform !== 'darwin') {
         return
       }
-      ref2 = require('child_process')
-      execFile = ref2.execFile
-      execFileSync = ref2.execFileSync
+      execFile = ChildProcess.execFile
+      execFileSync = ChildProcess.execFileSync
       echo = path.join(fixtures, 'asar', 'echo.asar', 'echo')
 
       it('executes binaries', function (done) {
@@ -785,7 +782,7 @@ describe('asar package', function () {
     })
 
     it('is available in forked scripts', function (done) {
-      var child = child_process.fork(path.join(fixtures, 'module', 'original-fs.js'))
+      var child = ChildProcess.fork(path.join(fixtures, 'module', 'original-fs.js'))
       child.on('message', function (msg) {
         assert.equal(msg, 'object')
         done()

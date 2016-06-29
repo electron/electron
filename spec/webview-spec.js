@@ -40,7 +40,7 @@ describe('<webview> tag', function () {
       webPreferences: {
         nodeIntegration: false,
         preload: path.join(fixtures, 'module', 'preload-webview.js')
-      },
+      }
     })
     ipcMain.once('webview', function (event, type) {
       if (type === 'undefined') {
@@ -776,13 +776,12 @@ describe('<webview> tag', function () {
   })
 
   describe('permission-request event', function () {
-    function setUpRequestHandler (webview, requested_permission, completed) {
+    function setUpRequestHandler (webview, requestedPermission, completed) {
       var listener = function (webContents, permission, callback) {
         if (webContents.getId() === webview.getId()) {
-          assert.equal(permission, requested_permission)
+          assert.equal(permission, requestedPermission)
           callback(false)
-          if (completed)
-            completed()
+          if (completed) completed()
         }
       }
       session.fromPartition(webview.partition).setPermissionRequestHandler(listener)
@@ -855,7 +854,7 @@ describe('<webview> tag', function () {
         'did-get-response-details.html': 'mainFrame',
         'logo.png': 'image'
       }
-      var responses = 0;
+      var responses = 0
       webview.addEventListener('did-get-response-details', function (event) {
         responses++
         var fileName = event.newURL.slice(event.newURL.lastIndexOf('/') + 1)

@@ -1,5 +1,5 @@
 const assert = require('assert')
-const child_process = require('child_process')
+const ChildProcess = require('child_process')
 const fs = require('fs')
 const path = require('path')
 const os = require('os')
@@ -13,7 +13,7 @@ describe('node feature', function () {
   describe('child_process', function () {
     describe('child_process.fork', function () {
       it('works in current process', function (done) {
-        var child = child_process.fork(path.join(fixtures, 'module', 'ping.js'))
+        var child = ChildProcess.fork(path.join(fixtures, 'module', 'ping.js'))
         child.on('message', function (msg) {
           assert.equal(msg, 'message')
           done()
@@ -23,7 +23,7 @@ describe('node feature', function () {
 
       it('preserves args', function (done) {
         var args = ['--expose_gc', '-test', '1']
-        var child = child_process.fork(path.join(fixtures, 'module', 'process_args.js'), args)
+        var child = ChildProcess.fork(path.join(fixtures, 'module', 'process_args.js'), args)
         child.on('message', function (msg) {
           assert.deepEqual(args, msg.slice(2))
           done()
@@ -32,7 +32,7 @@ describe('node feature', function () {
       })
 
       it('works in forked process', function (done) {
-        var child = child_process.fork(path.join(fixtures, 'module', 'fork_ping.js'))
+        var child = ChildProcess.fork(path.join(fixtures, 'module', 'fork_ping.js'))
         child.on('message', function (msg) {
           assert.equal(msg, 'message')
           done()
@@ -41,7 +41,7 @@ describe('node feature', function () {
       })
 
       it('works in forked process when options.env is specifed', function (done) {
-        var child = child_process.fork(path.join(fixtures, 'module', 'fork_ping.js'), [], {
+        var child = ChildProcess.fork(path.join(fixtures, 'module', 'fork_ping.js'), [], {
           path: process.env['PATH']
         })
         child.on('message', function (msg) {
@@ -62,7 +62,7 @@ describe('node feature', function () {
       })
 
       it('has String::localeCompare working in script', function (done) {
-        var child = child_process.fork(path.join(fixtures, 'module', 'locale-compare.js'))
+        var child = ChildProcess.fork(path.join(fixtures, 'module', 'locale-compare.js'))
         child.on('message', function (msg) {
           assert.deepEqual(msg, [0, -1, 1])
           done()
@@ -71,7 +71,7 @@ describe('node feature', function () {
       })
 
       it('has setImmediate working in script', function (done) {
-        var child = child_process.fork(path.join(fixtures, 'module', 'set-immediate.js'))
+        var child = ChildProcess.fork(path.join(fixtures, 'module', 'set-immediate.js'))
         child.on('message', function (msg) {
           assert.equal(msg, 'ok')
           done()
@@ -80,7 +80,7 @@ describe('node feature', function () {
       })
 
       it('pipes stdio', function (done) {
-        let child = child_process.fork(path.join(fixtures, 'module', 'process-stdout.js'), {silent: true})
+        let child = ChildProcess.fork(path.join(fixtures, 'module', 'process-stdout.js'), {silent: true})
         let data = ''
         child.stdout.on('data', (chunk) => {
           data += String(chunk)
@@ -183,7 +183,7 @@ describe('node feature', function () {
     it('emit error when connect to a socket path without listeners', function (done) {
       var socketPath = path.join(os.tmpdir(), 'atom-shell-test.sock')
       var script = path.join(fixtures, 'module', 'create_socket.js')
-      var child = child_process.fork(script, [socketPath])
+      var child = ChildProcess.fork(script, [socketPath])
       child.on('exit', function (code) {
         assert.equal(code, 0)
         var client = require('net').connect(socketPath)
@@ -213,8 +213,10 @@ describe('node feature', function () {
     })
 
     it('does not crash when creating large Buffers', function () {
-      new Buffer(new Array(4096).join(' '));
-      new Buffer(new Array(4097).join(' '));
+      var buffer = new Buffer(new Array(4096).join(' '))
+      assert.equal(buffer.length, 4096)
+      buffer = new Buffer(new Array(4097).join(' '))
+      assert.equal(buffer.length, 4097)
     })
   })
 
