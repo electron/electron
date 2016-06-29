@@ -344,17 +344,17 @@ session.defaultSession.allowNTLMCredentialsForDomains('*')
 * `userAgent` String
 * `acceptLanguages` String (optional)
 
-Overrides the `userAgent` and `acceptLanguages` for this session.
+현재 세션에 대해 `userAgent`와 `acceptLanguages`를 덮어씁니다.
 
-The `acceptLanguages` must a comma separated ordered list of language codes, for
-example `"en-US,fr,de,ko,zh-CN,ja"`.
+`acceptLanguages`는 반드시 쉼표로 구분된 순서에 맞춘 언어 코드의 리스트여야 하며
+예를 들면 `"en-US,fr,de,ko,zh-CN,ja"` 입니다.
 
-This doesn't affect existing `WebContents`, and each `WebContents` can use
-`webContents.setUserAgent` to override the session-wide user agent.
+이는 현재 존재하는 `WebContents`에 적용되지 않으며 각 `WebContents`는
+`webContents.setUserAgent`를 사용하여 세션 전체의 유저 에이전트를 덮어쓸 수 있습니다.
 
 #### `ses.getUserAgent()`
 
-Returns a `String` representing the user agent for this session.
+현재 세션에 대한 유저 에이전트를 표현하는 `String`을 반환합니다.
 
 #### `ses.webRequest`
 

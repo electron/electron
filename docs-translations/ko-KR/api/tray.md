@@ -202,7 +202,7 @@ appIcon.setContextMenu(contextMenu)
 
 ### `tray.getBounds()` _macOS_ _Windows_
 
-Returns the `bounds` of this tray icon as `Object`.
+이 트레이 아이콘의 `bounds`를 `Object` 형식으로 반환합니다.
 
 * `bounds` Object
   * `x` Integer

@@ -71,9 +71,9 @@ Electron 문서 구조를 이해하는 데 참고할 수 있는 유용한 도움
 와 같은 일반적으로 쓰이는 타입 중 하나를 받거나 Electron의 [`webContent`](api/web-content.md)
 같은 커스텀 타입을 받습니다.
 
-If an argument is unique to certain platforms, those platforms are denoted
-using a space-delimited italicized list following the datatype. Values can be
-`OS X`, `Windows`, or `Linux`.
+만약 인수가 특정 플랫폼에 대해서만 적용된다면, 해당하는 플랫폼들을 공백-구분된 이텔릭체
+리스트를 데이터 타입 뒤에 표기합니다. 값은 `OS X`, `Windows` 또는 `Linux`가 될 수
+있습니다.
 
 ```
 * `animate` Boolean (optional) _OS X_ _Windows_

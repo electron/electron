@@ -997,10 +997,10 @@ Linux 플랫폼에선 Unity 데스크톱 환경만 지원합니다. 그리고 �
 
 ### `win.setContentProtection(enable)` _macOS_ _Windows_
 
-Prevents the window contents from being captured by other apps.
+윈도우 콘텐츠가 외부 어플리케이션에 의해 캡쳐되는 것을 막습니다.
 
-On macOS it sets the NSWindow's sharingType to NSWindowSharingNone.
-On Windows it calls SetWindowDisplayAffinity with WDA_MONITOR.
+macOS에선 NSWindow의 sharingType을 NSWindowSharingNone로 설정합니다.
+Windows에선 WDA_MONITOR와 함께 SetWindowDisplayAffinity를 호출합니다.
 
 ### `win.setFocusable(focusable)` _Windows_
 

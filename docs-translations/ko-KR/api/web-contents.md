@@ -921,10 +921,9 @@ Input `event`를 웹 페이지로 전송합니다.
 프로세서에선 little-endian 방식을 사용하므로 위의 포맷을 그대로 표현합니다. 하지만
 몇몇 프로세서는 big-endian 방식을 사용하는데, 이 경우 32비트 ARGB 포맷을 사용합니다)
 
-The `dirtyRect` is an object with `x, y, width, height` properties that
-describes which part of the page was repainted. If `onlyDirty` is set to
-`true`, `frameBuffer` will only contain the repainted area. `onlyDirty`
-defaults to `false`.
+`dirtyRect`는 페이지의 어떤 부분이 다시 그려졌는지를 표현하는 `x, y, width, height`
+속성을 포함하는 객체입니다. 만약 `onlyDirty`가 `true`로 지정되어 있으면,
+`frameBuffer`가 다시 그려진 부분만 포함합니다. `onlyDirty`의 기본값은 `false`입니다.
 
 ### `webContents.endFrameSubscription()`
 

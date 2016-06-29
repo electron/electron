@@ -78,9 +78,8 @@ console.log(clipboard.readText('selection'));
 
 ### `clipboard.readBookmark()` _macOS_ _Windows_
 
-Returns an Object containing `title` and `url` keys representing the bookmark in
-the clipboard. The `title` and `url` values will be empty strings when the
-bookmark is unavailable.
+클립보드로부터 북마크 형식으로 표현된 `title`와 `url` 키를 담은 객체를 반환합니다.
+`title`과 `url` 값들은 북마크를 사용할 수 없을 때 빈 문자열을 포함합니다.
 
 ### `clipboard.writeBookmark(title, url[, type])` _macOS_ _Windows_
 
@@ -88,7 +87,7 @@ bookmark is unavailable.
 * `url` String
 * `type` String (optional)
 
-Writes the `title` and `url` into the clipboard as a bookmark.
+`title`과 `url`을 클립보드에 북마크 형식으로 씁니다.
 
 ### `clipboard.clear([type])`
 
