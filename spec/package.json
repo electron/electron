@@ -21,6 +21,7 @@
   },
   "standard": {
     "env": {
+      "browser": true,
       "mocha": true,
       "jquery": true,
       "serviceworker": true
