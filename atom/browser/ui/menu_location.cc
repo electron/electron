@@ -66,7 +66,7 @@ bool MenuLocation::IsItemDynamicAt(int index) const {
 
 bool MenuLocation::GetAcceleratorAt(int index,
                                     ui::Accelerator* accelerator) const {
-  AtomMenuModel::Delegate* delegate = model_->GetDelegate();
+  auto delegate = model_->GetDelegate();
   if (delegate) {
     return delegate->GetCommandAccelerator(GetCommandIdAt(index),
                                            accelerator,
@@ -100,7 +100,7 @@ bool MenuLocation::IsVisibleAt(int index) const {
 }
 
 ui::MenuModel* MenuLocation::GetSubmenuModelAt(int index) const {
-  int command_id = GetCommandIdAt(index);
+  auto command_id = GetCommandIdAt(index);
   if (ContainsKey(submenu_models_, command_id)) {
     return submenu_models_.get(command_id);
   } else {
@@ -121,7 +121,7 @@ void MenuLocation::ActivatedAt(int index) {
 }
 
 void MenuLocation::ActivatedAt(int index, int event_flags) {
-  AtomMenuModel::Delegate* delegate = model_->GetDelegate();
+  auto delegate = model_->GetDelegate();
   if (delegate)
     delegate->RunCommand(GetCommandIdAt(index), event_flags, location_);
 }
