@@ -30,7 +30,7 @@ struct Converter<atom::api::Cookies::Error> {
     if (val == atom::api::Cookies::SUCCESS)
       return v8::Null(isolate);
     else
-      return v8::Exception::Error(StringToV8(isolate, "failed"));
+      return v8::Exception::Error(StringToV8(isolate, "Setting cookie failed"));
   }
 };
 
