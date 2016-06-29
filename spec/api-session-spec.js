@@ -285,7 +285,7 @@ describe('session module', function () {
     const protocolName = 'sp'
     const partitionProtocol = session.fromPartition(partitionName).protocol
     const protocol = session.defaultSession.protocol
-    const handler = function (error, callback) {
+    const handler = function (ignoredError, callback) {
       callback({data: 'test', mimeType: 'text/html'})
     }
 
@@ -298,7 +298,7 @@ describe('session module', function () {
         }
       })
       partitionProtocol.registerStringProtocol(protocolName, handler, function (error) {
-        done(error ? error : undefined)
+        done(error != null ? error : undefined)
       })
     })
 

@@ -4,7 +4,7 @@
   "devDependencies": {
     "asar": "^0.11.0",
     "request": "*",
-    "standard": "^7.1.0"
+    "standard": "^7.1.2"
   },
   "optionalDependencies": {
     "runas": "^3.0.0"
@@ -24,7 +24,7 @@
     "bootstrap": "python ./script/bootstrap.py",
     "build": "python ./script/build.py -c D",
     "lint": "npm run lint-js && npm run lint-cpp",
-    "lint-js": "standard && standard spec",
+    "lint-js": "standard && cd spec && standard",
     "lint-cpp": "python ./script/cpplint.py",
     "preinstall": "node -e 'process.exit(0)'",
     "repl": "python ./script/start.py --interactive",

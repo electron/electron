@@ -514,7 +514,7 @@ describe('protocol module', function () {
     it('works when target URL redirects', function (done) {
       var contents = null
       var server = http.createServer(function (req, res) {
-        if (req.url == '/serverRedirect') {
+        if (req.url === '/serverRedirect') {
           res.statusCode = 301
           res.setHeader('Location', 'http://' + req.rawHeaders[1])
           res.end()
@@ -919,7 +919,7 @@ describe('protocol module', function () {
         })
         w.loadURL(origin)
       })
-    }),
+    })
 
     it('can have fetch working in it', function (done) {
       const content = '<html><script>fetch("http://github.com")</script></html>'
