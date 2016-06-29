@@ -214,9 +214,9 @@ describe('node feature', function () {
 
     it('does not crash when creating large Buffers', function () {
       var buffer = new Buffer(new Array(4096).join(' '))
-      assert.equal(buffer.length, 4096)
+      assert.equal(buffer.length, 4095)
       buffer = new Buffer(new Array(4097).join(' '))
-      assert.equal(buffer.length, 4097)
+      assert.equal(buffer.length, 4096)
     })
   })
 
