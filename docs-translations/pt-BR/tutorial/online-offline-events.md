@@ -1,8 +1,8 @@
 # Online/Offline Event Detection
 
-Os eventos de detecão Online e Offile podem ser implementados no processo
+Os eventos de detecção Online e Offline podem ser implementados no processo
 de renderização utilizando a API padrão do HTML, como é mostrado no exemplo
-a seguir.
+a seguir:
 
 _main.js_
 
@@ -41,7 +41,7 @@ Pode haver casos onde você também deseja responder a estes eventos no processo
 Mas o processo principal não consegue detectar esses eventos diretamente, pois não possui
 um objeto `navigator`. Utilizando a ferramentas para comunicação entre processos, os eventos
 podem ser direcionados para o processo principal e manipulados quando necessário. Você
-pode ver isto no exemplo abaixo.
+pode ver isto no exemplo abaixo:
 
 _main.js_
 
