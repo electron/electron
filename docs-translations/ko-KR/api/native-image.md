@@ -125,11 +125,11 @@ let image = nativeImage.createFromPath('/Users/somebody/images/icon.png');
 
 `nativeImage` 인스턴스 객체에서 사용할 수 있는 메서드입니다.
 
-### `image.toPng()`
+### `image.toPNG()`
 
 `PNG` 이미지를 인코딩한 데이터를 [Buffer][buffer]로 반환합니다.
 
-### `image.toJpeg(quality)`
+### `image.toJPEG(quality)`
 
 * `quality` Integer (**required**) 0 - 100 사이의 값
 

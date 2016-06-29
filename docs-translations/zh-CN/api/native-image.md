@@ -107,11 +107,11 @@ const nativeImage = require('electron').nativeImage;
 var image = nativeImage.createFromPath('/Users/somebody/images/icon.png');
 ```
 
-### `image.toPng()`
+### `image.toPNG()`
 
 返回一个 [Buffer][buffer] ，它包含了图片的 `PNG` 编码数据.
 
-### `image.toJpeg(quality)`
+### `image.toJPEG(quality)`
 
 * `quality` Integer (**必须**) - 在 0 - 100 之间.
 
