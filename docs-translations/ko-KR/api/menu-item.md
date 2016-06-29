@@ -11,8 +11,8 @@
 ### new MenuItem(options)
 
 * `options` Object
-  * `click` Function - 메뉴 아이템이 클릭될 때 `click(menuItem, browserWindow)`
-    형태로 호출 되는 콜백 함수
+  * `click` Function - 메뉴 아이템이 클릭될 때 `click(menuItem, browserWindow,
+    event)` 형태로 호출 되는 콜백 함수
   * `role` String - 메뉴 아이템의 액션을 정의합니다; 이 속성을 지정하면 `click`
     속성이 무시됩니다.
   * `type` String - `MenuItem`의 타입 `normal`, `separator`, `submenu`,
@@ -39,6 +39,9 @@
 함수로 일일이 구현하려 시도하는 것 보다 더 좋을 수 있습니다. 빌트-인 `role` 동작은
 더 좋은 네이티브 경험을 제공할 것입니다.
 
+`role`을 사용하는 동안에는 `label`과 `accelerator`는 필수가 아니며 각 플랫폼에 대해
+적합한 값이 기본값으로 사용됩니다.
+
 `role` 속성은 다음 값을 가질 수 있습니다:
 
 * `undo`
@@ -51,6 +54,8 @@
 * `delete`
 * `minimize` - 현재 윈도우를 최소화합니다
 * `close` - 현재 윈도우를 닫습니다
+* `quit`- 애플리케이션을 닫습니다
+* `togglefullscreen` - 현재 윈도우에서 전체 화면 모드를 토글합니다
 
 macOS에서의 `role`은 다음 값을 추가로 가질 수 있습니다:
 

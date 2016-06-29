@@ -894,7 +894,7 @@ Linux 플랫폼에선 Unity 데스크톱 환경만 지원합니다. 그리고 �
 
 ### `win.setHasShadow(hasShadow)` _macOS_
 
-* `hasShadow` (Boolean)
+* `hasShadow` Boolean
 
 윈도우가 그림자를 가질지 여부를 지정합니다. Windows와 Linux에선 아무 일도 일어나지
 않습니다.
@@ -994,6 +994,13 @@ Linux 플랫폼에선 Unity 데스크톱 환경만 지원합니다. 그리고 �
 
 이 윈도우에서 일어나는 모든 마우스 이벤트가 이 윈도우 밑의 윈도우로 전달됩니다. 하지만
 이 윈도우가 포커스되어 있다면, 여전히 키보드 이벤트는 받을 수 있습니다.
+
+### `win.setContentProtection(enable)` _macOS_ _Windows_
+
+Prevents the window contents from being captured by other apps.
+
+On macOS it sets the NSWindow's sharingType to NSWindowSharingNone.
+On Windows it calls SetWindowDisplayAffinity with WDA_MONITOR.
 
 ### `win.setFocusable(focusable)` _Windows_
 

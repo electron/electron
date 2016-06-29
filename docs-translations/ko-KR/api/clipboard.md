@@ -76,6 +76,20 @@ console.log(clipboard.readText('selection'));
 
 클립보드에 `text`를 RTF 형식으로 씁니다.
 
+### `clipboard.readBookmark()` _macOS_ _Windows_
+
+Returns an Object containing `title` and `url` keys representing the bookmark in
+the clipboard. The `title` and `url` values will be empty strings when the
+bookmark is unavailable.
+
+### `clipboard.writeBookmark(title, url[, type])` _macOS_ _Windows_
+
+* `title` String
+* `url` String
+* `type` String (optional)
+
+Writes the `title` and `url` into the clipboard as a bookmark.
+
 ### `clipboard.clear([type])`
 
 * `type` String (optional)
@@ -110,6 +124,8 @@ console.log(clipboard.has('<p>selection</p>'));
   * `text` String
   * `html` String
   * `image` [NativeImage](native-image.md)
+  * `rtf` String
+  * `bookmark` String - `text`에 있는 URL의 텍스트.
 * `type` String (optional)
 
 ```javascript

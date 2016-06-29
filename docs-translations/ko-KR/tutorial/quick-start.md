@@ -212,7 +212,7 @@ $ ./Electron.app/Contents/MacOS/Electron your-app/
 
 ### 미리 작성된 앱 실행하기
 
-[`atom/electron-quick-start`](https://github.com/electron/electron-quick-start)
+[`electron/electron-quick-start`](https://github.com/electron/electron-quick-start)
 저장소를 클론하면 이 문서에서 작성한 예시 앱을 바로 실행해 볼 수 있습니다.
 
 **참고**: 이 예시를 실행시키려면 [Git](https://git-scm.com)과

@@ -232,7 +232,7 @@ proxyURL = [<proxyScheme>"://"]<proxyHost>[":"<proxyPort>]
 * `http=foopy;socks=foopy2` - http:// URL에 `foopy` HTTP 프록시를 사용합니다.
   그리고 `socks4://foopy2` 프록시를 다른 모든 URL에 사용합니다.
 
-### `app.resolveProxy(url, callback)`
+#### `ses.resolveProxy(url, callback)`
 
 * `url` URL
 * `callback` Function
@@ -338,6 +338,23 @@ session.defaultSession.allowNTLMCredentialsForDomains('*example.com, *foobar.com
 // 통합 인증을 위해 모든 url을 지정합니다.
 session.defaultSession.allowNTLMCredentialsForDomains('*')
 ```
+
+#### `ses.setUserAgent(userAgent[, acceptLanguages])`
+
+* `userAgent` String
+* `acceptLanguages` String (optional)
+
+Overrides the `userAgent` and `acceptLanguages` for this session.
+
+The `acceptLanguages` must a comma separated ordered list of language codes, for
+example `"en-US,fr,de,ko,zh-CN,ja"`.
+
+This doesn't affect existing `WebContents`, and each `WebContents` can use
+`webContents.setUserAgent` to override the session-wide user agent.
+
+#### `ses.getUserAgent()`
+
+Returns a `String` representing the user agent for this session.
 
 #### `ses.webRequest`
 
