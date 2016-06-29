@@ -69,6 +69,17 @@ describe('session module', function () {
       })
     })
 
+    it('calls back with an error when setting a cookie with missing required fields', function (done) {
+      session.defaultSession.cookies.set({
+        url: '',
+        name: '1',
+        value: '1'
+      }, function (error) {
+        assert.equal(error.message, 'Setting cookie failed')
+        done()
+      })
+    })
+
     it('should over-write the existent cookie', function (done) {
       session.defaultSession.cookies.set({
         url: url,
