@@ -647,6 +647,33 @@ dock 아이콘을 표시합니다.
 
 dock 아이콘의 `image`를 설정합니다.
 
+### `app.launcher.setBadgeCount(count)` _Linux_
+* `count` Integer
+
+Unity 런처에서 앱 아이콘 옆에 표시될 숫자를 설정합니다. `0`으로 설정하면 뱃지를
+숨깁니다.
+
+**참고:** 이 기능은 현재 Ubuntu Unity에서만 사용할 수 있습니다. 다른 환경에서 이
+함수를 호출하는 것은 아무런 효과가 없습니다.
+
+**참고:** 이 기능을 사용하려면 `package.json`의 `desktopName` 필드에 `.desktop` 파일 이름을 설정해야 합니다. 기본적으로 패키징된 애플리케이션의 `app.getName().desktop`을 사용합니다.
+
+### `app.launcher.getBadgeCount()` _Linux_
+
+런처 아이콘 옆 배지의 카운터에 표시된 현재 값을 반환합니다.
+
+**참고:** `setBadgeCount`가 Ubuntu Unity에서만 지원하기 때문에, 애플리케이션이 다른
+플랫폼에서 돌아가고 있다면 이 메서드는 `0`을 반환합니다.
+
+### `app.launcher.isUnityRunning()` _Linux_
+
+현재 데스크톱 환경이 Unity인지 여부를 반환합니다. Unity가 맞다면 `true`를 반환합니다.
+
+### `app.launcher.isCounterBadgeAvailable()` _Linux_
+
+현재 데스크톱 환경이 애플리케이션 아이콘 카운터 뱃지를 사용할 수 있는지 여부를
+반환합니다. 사용할 수 있다면 `true`를 반환합니다.
+
 [dock-menu]:https://developer.apple.com/library/mac/documentation/Carbon/Conceptual/customizing_docktile/concepts/dockconcepts.html#//apple_ref/doc/uid/TP30000986-CH2-TPXREF103
 [tasks]:http://msdn.microsoft.com/en-us/library/windows/desktop/dd378460(v=vs.85).aspx#tasks
 [app-user-model-id]: https://msdn.microsoft.com/en-us/library/windows/desktop/dd378459(v=vs.85).aspx

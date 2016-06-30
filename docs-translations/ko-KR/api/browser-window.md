@@ -62,6 +62,38 @@ win.loadURL('https://github.com')
 참고로 `ready-to-show` 이벤트를 사용하더라도 어플리케이션을 네이티브 느낌이 나도록
 하기 위해 `backgroundColor`도 같이 설정하는 것을 권장합니다.
 
+## 부모와 자식 윈도우
+
+`parent` 옵션을 사용하면 자식 윈도우를 만들 수 있습니다:
+
+```javascript
+let top = new BrowserWindow()
+let child = new BrowserWindow({parent: top})
+```
+
+`child` 윈도우는 언제나 `top` 윈도우의 상위에 표시됩니다.
+
+### 모달 윈도우
+
+모달 윈도우는 부모 윈도우를 비활성화 시키는 자식 윈도우입니다. 모달 윈도우를 만드려면 `parent`, `modal` 옵션을 동시에 설정해야 합니다:
+
+```javascript
+let child = new BrowserWindow({parent: top, modal: true, show: false})
+child.loadURL('https://github.com')
+child.once('ready-to-show', () => {
+  child.show()
+})
+```
+
+### 플랫폼별 특이사항
+
+* On macOS the child windows will keep the relative position to parent window
+  when parent window moves, while on Windows and Linux child windows will not
+  move.
+* On Windows it is not supported to change parent window dynamically.
+* On Linux the type of modal windows will be changed to `dialog`.
+* On Linux many desktop environments do not support hiding a modal window.
+
 ## Class: BrowserWindow
 
 `BrowserWindow`는 [EventEmitter](http://nodejs.org/api/events.html#events_class_events_eventemitter)를
@@ -125,6 +157,9 @@ On Windows it is
 * `show` Boolean - 윈도우가 생성되면 보여줄지 여부. 기본값은 `true`입니다.
 * `frame` Boolean - `false`로 지정하면 창을 [Frameless Window](frameless-window.md)
   형태로 생성합니다. 기본값은 `true`입니다.
+* `parent` BrowserWindow - 부모 윈도우를 설정합니다. 기본 값은 `null`입니다.
+* `modal` Boolean - 이 윈도우가 모달 윈도우인지 여부를 설정합니다. 이 옵션은 자식
+  윈도우에서만 작동합니다. 기본값은 `false`입니다.
 * `acceptFirstMouse` Boolean - 윈도우가 비활성화 상태일 때 내부 콘텐츠 클릭 시
   활성화 되는 동시에 단일 mouse-down 이벤트를 발생시킬지 여부. 기본값은 `false`입니다.
 * `disableAutoHideCursor` Boolean - 타이핑중 자동으로 커서를 숨길지 여부. 기본값은
@@ -527,6 +562,10 @@ let win = new BrowserWindow({width: 800, height: 600});
 ### `win.isVisible()`
 
 윈도우가 사용자에게 표시되고 있는지 여부를 반환합니다.
+
+### `win.isModal()`
+
+현재 윈도우가 모달 윈도우인지 여부를 반환합니다.
 
 ### `win.maximize()`
 
@@ -1007,5 +1046,20 @@ Windows에선 WDA_MONITOR와 함께 SetWindowDisplayAffinity를 호출합니다.
 * `focusable` Boolean
 
 윈도우가 포커스될 수 있는지 여부를 변경합니다.
+
+### `win.setParentWindow(parent)` _Linux_ _macOS_
+
+* `parent` BrowserWindow
+
+`parent` 인수를 현재 윈도우의 부모 윈도우로 설정합니다. `null`로 설정하면
+현재 윈도우를 상위 윈도우로 전환합니다.
+
+### `win.getParentWindow()`
+
+모든 부모 윈도우를 반환합니다.
+
+### `win.getChildWindows()`
+
+모든 자식 윈도우를 반환합니다.
 
 [blink-feature-string]: https://cs.chromium.org/chromium/src/third_party/WebKit/Source/platform/RuntimeEnabledFeatures.in
