@@ -2,6 +2,11 @@
 
 > 시스템 설정을 가져옵니다.
 
+```javascript
+const {systemPreferences} = require('electron');
+console.log(systemPreferences.isDarkMode());
+```
+
 ## Methods
 
 ### `systemPreferences.isDarkMode()` _macOS_
@@ -33,6 +38,17 @@ macOS의 네이티브 알림을 구독하며, 해당하는 `event`가 발생하�
 * `id` Integer
 
 `id`와 함께 구독자를 제거합니다.
+
+### `systemPreferences.subscribeLocalNotification(event, callback)` _macOS_
+
+`subscribeNotification`와 같지만, 로컬 기본값으로 `NSNotificationCenter`를
+사용합니다. 다음과 같은 이벤트에 필수적입니다:
+
+* `NSUserDefaultsDidChangeNotification`
+
+### `systemPreferences.unsubscribeLocalNotification(id)` _macOS_
+
+`unsubscribeNotification`와 같지만, `NSNotificationCenter`에서 구독자를 제거합니다.
 
 ### `systemPreferences.getUserDefault(key, type)` _macOS_
 

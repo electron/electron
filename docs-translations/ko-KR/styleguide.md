@@ -53,14 +53,12 @@ Electron 문서 구조를 이해하는 데 참고할 수 있는 유용한 도움
 [Method](https://developer.mozilla.org/ko/docs/Glossary/Method) 문서의
 예시입니다:
 
----
-
+```
 `methodName(required[, optional]))`
 
-* `require` String (**required**)
+* `required` String (**required**)
 * `optional` Integer
-
----
+```
 
 메서드 이름은 인수가 무엇을 받는지에 따라 결정됩니다. 선택적 인수는 브라켓([, ])으로
 묶어 이 인수가 다른 인수뒤에서 선택적으로 사용될 수 있다는 것을 표시합니다.
@@ -73,19 +71,25 @@ Electron 문서 구조를 이해하는 데 참고할 수 있는 유용한 도움
 와 같은 일반적으로 쓰이는 타입 중 하나를 받거나 Electron의 [`webContent`](api/web-content.md)
 같은 커스텀 타입을 받습니다.
 
+만약 인수가 특정 플랫폼에 대해서만 적용된다면, 해당하는 플랫폼들을 공백-구분된 이텔릭체
+리스트를 데이터 타입 뒤에 표기합니다. 값은 `OS X`, `Windows` 또는 `Linux`가 될 수
+있습니다.
+
+```
+* `animate` Boolean (optional) _OS X_ _Windows_
+```
+
 ### Events
 
 [Event](https://developer.mozilla.org/ko/docs/Web/API/Event) 문서의 예시입니다:
 
----
-
+```
 Event: 'wake-up'
 
 Returns:
 
 * `time` String
-
----
+```
 
 이벤트는 `.on` 리스너 메서드로 사용할 수 있습니다. 만약 이벤트에서 값을 반환한다면
 문서에서 표시된 대로 일정한 타입의 값을 반환합니다. 이벤트를 처리하거나 응답하려 한다면
@@ -94,5 +98,5 @@ Returns:
 ```javascript
 Alarm.on('wake-up', (time) => {
   console.log(time)
-});
+})
 ```
