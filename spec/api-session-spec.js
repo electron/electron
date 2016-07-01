@@ -316,7 +316,7 @@ describe('session module', function () {
       })
     })
 
-    it('handles requests from partition', function (done) {
+    xit('handles requests from partition', function (done) {
       w.webContents.on('did-finish-load', function () {
         done()
       })
