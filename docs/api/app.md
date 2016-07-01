@@ -582,7 +582,7 @@ This method can only be called before app is ready.
 * `count` Integer
 
 Sets the counter badge for current app. Setting the count to `0` will hide the
-badge.
+badge. Returns `true` when the call succeeded, otherwise returns `false`.
 
 On macOS it shows on the dock icon. On Linux it only works for Unity launcher,
 

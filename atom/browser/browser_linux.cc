@@ -47,9 +47,14 @@ bool Browser::IsDefaultProtocolClient(const std::string& protocol) {
   return false;
 }
 
-void Browser::SetBadgeCount(int count) {
-  current_badge_count_ = count;
-  unity::SetDownloadCount(count);
+bool Browser::SetBadgeCount(int count) {
+  if (IsUnityRunning()) {
+    unity::SetDownloadCount(count);
+    current_badge_count_ = count;
+    return true;
+  } else {
+    return false;
+  }
 }
 
 std::string Browser::GetExecutableFileVersion() const {

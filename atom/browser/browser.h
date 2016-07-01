@@ -88,7 +88,7 @@ class Browser : public WindowListObserver {
   bool IsDefaultProtocolClient(const std::string& protocol);
 
   // Set/Get the badge count.
-  void SetBadgeCount(int count);
+  bool SetBadgeCount(int count);
   int GetBadgeCount();
 
 #if defined(OS_MACOSX)

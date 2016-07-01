@@ -285,10 +285,17 @@ describe('app module', function () {
     })
   })
 
-  describe('app.getBadgeCount API', function () {
+  describe('app.setBadgeCount API', function () {
+    const shouldFail = process.platform === 'win32' ||
+                       (process.platform === 'linux' && app.isUnityRunning())
+
+    it('returns false when failed', function () {
+      assert.equal(app.setBadgeCount(42), !shouldFail)
+    })
+
     it('should set a badge count', function () {
       app.setBadgeCount(42)
-      assert.equal(app.getBadgeCount(), 42)
+      assert.equal(app.getBadgeCount(), shouldFail ? 0 : 42)
     })
   })
 })
