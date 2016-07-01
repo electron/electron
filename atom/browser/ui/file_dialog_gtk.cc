@@ -211,7 +211,9 @@ base::FilePath FileChooserDialog::AddExtensionForFilename(
 
   const auto& extensions = filters_[i].second;
   for (const auto& extension : extensions) {
-    if (extension == "*" || path.MatchesExtension("." + extension))
+    if (extension == "*" ||
+        base::EndsWith(path.value(), "." + extension,
+                       base::CompareCase::INSENSITIVE_ASCII))
       return path;
   }
 
