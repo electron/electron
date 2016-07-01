@@ -586,8 +586,8 @@ badge. Returns `true` when the call succeeded, otherwise returns `false`.
 
 On macOS it shows on the dock icon. On Linux it only works for Unity launcher,
 
-**Note:** Unity launcher requires the exsistence of `.desktop` file to work, for
-more please read [Desktop Environment Integration][unity-requiremnt]
+**Note:** Unity launcher requires the exsistence of a `.desktop` file to work,
+for more information please read [Desktop Environment Integration][unity-requiremnt].
 
 ### `app.getBadgeCount()` _Linux_ _macOS_
 
