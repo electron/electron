@@ -92,13 +92,13 @@ Using `autoUpdater` as an example:
 
 ### Classes
 
-- API classes or classes that are part of modules must be listed under a
+* API classes or classes that are part of modules must be listed under a
   `## Class: TheClassName` chapter.
-- One page can have multiple classes.
-- The constructors must be listed with `###`-level titles.
-- The methods must be listed under an `### Instance Methods` chapter.
-- The events must be listed under an `### Instance Events` chapter.
-- The properties must be listed under an `### Instance Properties` chapter.
+* One page can have multiple classes.
+* The constructors must be listed with `###`-level titles.
+* The methods must be listed under an `### Instance Methods` chapter.
+* The events must be listed under an `### Instance Events` chapter.
+* The properties must be listed under an `### Instance Properties` chapter.
 
 Using the `Session` and `Cookies` classes as an example:
 
@@ -168,12 +168,12 @@ required[, optional]
 Below the method is more detailed information on each of the arguments. The type
 of argument is notated by either the common types:
 
-- [`String`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String)
-- [`Number`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number)
-- [`Object`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object)
-- [`Array`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array)
-- [`Boolean`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean)
-- Or a custom type like Electron's [`WebContent`](api/web-content.md)
+* [`String`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String)
+* [`Number`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number)
+* [`Object`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object)
+* [`Array`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array)
+* [`Boolean`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean)
+* Or a custom type like Electron's [`WebContent`](api/web-content.md)
 
 If an argument or a method is unique to certain platforms, those platforms are
 denoted using a space-delimited italicized list following the datatype. Values
