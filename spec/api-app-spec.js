@@ -285,36 +285,10 @@ describe('app module', function () {
     })
   })
 
-  describe('app.launcher API', function () {
-    it('should be available on linux', function () {
-      if (process.platform !== 'linux') {
-        assert.equal(app.launcher, undefined)
-      } else {
-        assert.notEqual(app.launcher, undefined)
-      }
-    })
-
-    it('should be possible to set a badge count on supported environments', function () {
-      if (process.platform === 'linux' &&
-          app.launcher.isCounterBadgeAvailable()) {
-        app.launcher.setBadgeCount(42)
-        assert.equal(app.launcher.getBadgeCount(), 42)
-      }
-    })
-
-    it('should be possible to set a badge count on unity', function () {
-      if (process.platform === 'linux' &&
-          app.launcher.isUnityRunning()) {
-        assert.equal(app.launcher.isCounterBadgeAvailable(), true)
-      }
-    })
-
-    it('should not be possible to set a badge counter on unsupported environments', function () {
-      if (process.platform === 'linux' &&
-          !app.launcher.isCounterBadgeAvailable()) {
-        app.launcher.setBadgeCount(42)
-        assert.equal(app.launcher.getBadgeCount(), 0)
-      }
+  describe('app.getBadgeCount API', function () {
+    it('should set a badge count', function () {
+      app.setBadgeCount(42)
+      assert.equal(app.getBadgeCount(), 42)
     })
   })
 })

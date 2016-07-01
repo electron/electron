@@ -520,6 +520,8 @@ void App::BuildPrototype(
                  base::Bind(&Browser::SetAsDefaultProtocolClient, browser))
       .SetMethod("removeAsDefaultProtocolClient",
                  base::Bind(&Browser::RemoveAsDefaultProtocolClient, browser))
+      .SetMethod("setBadgeCount", base::Bind(&Browser::SetBadgeCount, browser))
+      .SetMethod("getBadgeCount", base::Bind(&Browser::GetBadgeCount, browser))
 #if defined(OS_MACOSX)
       .SetMethod("hide", base::Bind(&Browser::Hide, browser))
       .SetMethod("show", base::Bind(&Browser::Show, browser))
@@ -529,8 +531,11 @@ void App::BuildPrototype(
                  base::Bind(&Browser::GetCurrentActivityType, browser))
 #endif
 #if defined(OS_WIN)
-      .SetMethod("setUserTasks",
-                 base::Bind(&Browser::SetUserTasks, browser))
+      .SetMethod("setUserTasks", base::Bind(&Browser::SetUserTasks, browser))
+#endif
+#if defined(OS_LINUX)
+      .SetMethod("isUnityRunning",
+                 base::Bind(&Browser::IsUnityRunning, browser))
 #endif
       .SetMethod("setPath", &App::SetPath)
       .SetMethod("getPath", &App::GetPath)
@@ -613,16 +618,6 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   dict.SetMethod("dockShow", base::Bind(&Browser::DockShow, browser));
   dict.SetMethod("dockSetMenu", &DockSetMenu);
   dict.SetMethod("dockSetIcon", base::Bind(&Browser::DockSetIcon, browser));
-#endif
-
-#if defined(OS_LINUX)
-  auto browser = base::Unretained(Browser::Get());
-  dict.SetMethod("unityLauncherAvailable",
-                  base::Bind(&Browser::UnityLauncherAvailable, browser));
-  dict.SetMethod("unityLauncherSetBadgeCount",
-                  base::Bind(&Browser::UnityLauncherSetBadgeCount, browser));
-  dict.SetMethod("unityLauncherGetBadgeCount",
-                  base::Bind(&Browser::UnityLauncherGetBadgeCount, browser));
 #endif
 }
 

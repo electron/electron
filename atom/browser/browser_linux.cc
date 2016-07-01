@@ -47,6 +47,11 @@ bool Browser::IsDefaultProtocolClient(const std::string& protocol) {
   return false;
 }
 
+void Browser::SetBadgeCount(int count) {
+  current_badge_count_ = count;
+  unity::SetDownloadCount(count);
+}
+
 std::string Browser::GetExecutableFileVersion() const {
   return brightray::GetApplicationVersion();
 }
@@ -55,19 +60,8 @@ std::string Browser::GetExecutableFileProductName() const {
   return brightray::GetApplicationName();
 }
 
-bool Browser::UnityLauncherAvailable() {
+bool Browser::IsUnityRunning() {
   return unity::IsRunning();
-}
-
-void Browser::UnityLauncherSetBadgeCount(int count) {
-  if (UnityLauncherAvailable()) {
-    current_badge_count_ = count;
-    unity::SetDownloadCount(count);
-  }
-}
-
-int Browser::UnityLauncherGetBadgeCount() {
-  return current_badge_count_;
 }
 
 }  // namespace atom

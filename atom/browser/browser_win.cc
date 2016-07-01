@@ -269,6 +269,10 @@ bool Browser::IsDefaultProtocolClient(const std::string& protocol) {
   }
 }
 
+void Browser::SetBadgeCount(int count) {
+  current_badge_count_ = count;
+}
+
 PCWSTR Browser::GetAppUserModelID() {
   if (app_user_model_id_.empty()) {
     SetAppUserModelID(base::ReplaceStringPlaceholders(
