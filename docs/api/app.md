@@ -396,7 +396,7 @@ Overrides the current application's name.
 
 ### `app.getLocale()`
 
-Returns the current application locale.
+Returns the current application locale. Possible return values are documented [here](../faq/app-locale.md)
 
 **Note:** When distributing your packaged app, you have to also ship the
 `locales` folder.
