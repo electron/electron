@@ -287,7 +287,7 @@ describe('app module', function () {
 
   describe('app.setBadgeCount API', function () {
     const shouldFail = process.platform === 'win32' ||
-                       (process.platform === 'linux' && app.isUnityRunning())
+                       (process.platform === 'linux' && !app.isUnityRunning())
 
     it('returns false when failed', function () {
       assert.equal(app.setBadgeCount(42), !shouldFail)

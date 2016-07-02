@@ -11,8 +11,8 @@
 #include "atom/browser/window_list.h"
 #include "base/mac/bundle_locations.h"
 #include "base/mac/foundation_util.h"
-#include "base/strings/sys_string_conversions.h"
 #include "base/strings/string_number_conversions.h"
+#include "base/strings/sys_string_conversions.h"
 #include "brightray/common/application_info.h"
 #include "net/base/mac/url_conversions.h"
 #include "url/gurl.h"
@@ -117,7 +117,7 @@ void Browser::SetAppUserModelID(const base::string16& name) {
 
 bool Browser::SetBadgeCount(int count) {
   DockSetBadgeText(count != 0 ? base::IntToString(count) : "");
-  current_badge_count_ = count;
+  badge_count_ = count;
   return true;
 }
 

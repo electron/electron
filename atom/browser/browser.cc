@@ -119,7 +119,7 @@ void Browser::SetName(const std::string& name) {
 }
 
 int Browser::GetBadgeCount() {
-  return current_badge_count_;
+  return badge_count_;
 }
 
 bool Browser::OpenFile(const std::string& file_path) {
