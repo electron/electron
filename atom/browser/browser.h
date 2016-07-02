@@ -25,16 +25,13 @@ class DictionaryValue;
 class FilePath;
 }
 
-namespace ui {
-class MenuModel;
-}
-
 namespace gfx {
 class Image;
 }
 
 namespace atom {
 
+class AtomMenuModel;
 class LoginHandler;
 
 // This class is used for control application-wide operations.
@@ -130,7 +127,7 @@ class Browser : public WindowListObserver {
   void DockShow();
 
   // Set docks' menu.
-  void DockSetMenu(ui::MenuModel* model);
+  void DockSetMenu(AtomMenuModel* model);
 
   // Set docks' icon.
   void DockSetIcon(const gfx::Image& image);

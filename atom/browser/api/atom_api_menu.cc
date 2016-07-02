@@ -53,11 +53,14 @@ bool Menu::IsCommandIdVisible(int command_id) const {
   return is_visible_.Run(command_id);
 }
 
-bool Menu::GetAcceleratorForCommandId(int command_id,
-                                      ui::Accelerator* accelerator) {
+bool Menu::GetAcceleratorForCommandIdWithParams(
+    int command_id,
+    bool use_default_accelerator,
+    ui::Accelerator* accelerator) const {
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
-  v8::Local<v8::Value> val = get_accelerator_.Run(command_id);
+  v8::Local<v8::Value> val = get_accelerator_.Run(
+      command_id, use_default_accelerator);
   return mate::ConvertFromV8(isolate(), val, accelerator);
 }
 

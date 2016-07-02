@@ -46,8 +46,10 @@ class Menu : public mate::TrackableObject<Menu>,
   bool IsCommandIdChecked(int command_id) const override;
   bool IsCommandIdEnabled(int command_id) const override;
   bool IsCommandIdVisible(int command_id) const override;
-  bool GetAcceleratorForCommandId(int command_id,
-                                  ui::Accelerator* accelerator) override;
+  bool GetAcceleratorForCommandIdWithParams(
+      int command_id,
+      bool use_default_accelerator,
+      ui::Accelerator* accelerator) const override;
   void ExecuteCommand(int command_id, int event_flags) override;
   void MenuWillShow(ui::SimpleMenuModel* source) override;
 
@@ -89,7 +91,7 @@ class Menu : public mate::TrackableObject<Menu>,
   base::Callback<bool(int)> is_checked_;
   base::Callback<bool(int)> is_enabled_;
   base::Callback<bool(int)> is_visible_;
-  base::Callback<v8::Local<v8::Value>(int)> get_accelerator_;
+  base::Callback<v8::Local<v8::Value>(int, bool)> get_accelerator_;
   base::Callback<void(v8::Local<v8::Value>, int)> execute_command_;
   base::Callback<void()> menu_will_show_;
 

@@ -11,8 +11,8 @@
 #include "base/mac/scoped_nsobject.h"
 #include "base/strings/string16.h"
 
-namespace ui {
-class MenuModel;
+namespace atom {
+class AtomMenuModel;
 }
 
 // A controller for the cross-platform menu model. The menu that's created
@@ -23,24 +23,20 @@ class MenuModel;
 // as it only maintains weak references.
 @interface AtomMenuController : NSObject<NSMenuDelegate> {
  @protected
-  ui::MenuModel* model_;  // weak
+  atom::AtomMenuModel* model_;  // weak
   base::scoped_nsobject<NSMenu> menu_;
   BOOL isMenuOpen_;
+  BOOL useDefaultAccelerator_;
 }
 
-@property(nonatomic, assign) ui::MenuModel* model;
-
-// NIB-based initializer. This does not create a menu. Clients can set the
-// properties of the object and the menu will be created upon the first call to
-// |-menu|. Note that the menu will be immutable after creation.
-- (id)init;
+@property(nonatomic, assign) atom::AtomMenuModel* model;
 
 // Builds a NSMenu from the pre-built model (must not be nil). Changes made
 // to the contents of the model after calling this will not be noticed.
-- (id)initWithModel:(ui::MenuModel*)model;
+- (id)initWithModel:(atom::AtomMenuModel*)model useDefaultAccelerator:(BOOL)use;
 
 // Populate current NSMenu with |model|.
-- (void)populateWithModel:(ui::MenuModel*)model;
+- (void)populateWithModel:(atom::AtomMenuModel*)model;
 
 // Programmatically close the constructed menu.
 - (void)cancel;
