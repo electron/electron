@@ -100,9 +100,7 @@ class AtomBrowserClient : public brightray::BrowserClient,
       const content::MainFunctionParams&) override;
   void WebNotificationAllowed(
       int render_process_id,
-      const base::Callback<void(bool)>& callback) override;
-  bool WebContentsAudioMuted(
-    int render_process_id) override;
+      const base::Callback<void(bool, bool)>& callback) override;
 
   // content::RenderProcessHostObserver:
   void RenderProcessHostDestroyed(content::RenderProcessHost* host) override;
