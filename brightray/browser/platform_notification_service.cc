@@ -22,12 +22,12 @@ void RemoveNotification(base::WeakPtr<Notification> notification) {
 }
 
 void OnWebNotificationAllowed(
-    int render_process_id,
     brightray::BrowserClient* browser_client,
     const SkBitmap& icon,
     const content::PlatformNotificationData& data,
     std::unique_ptr<content::DesktopNotificationDelegate> delegate,
     base::Closure* cancel_callback,
+    bool audio_muted,
     bool allowed) {
   if (!allowed)
     return;
@@ -38,12 +38,9 @@ void OnWebNotificationAllowed(
       new NotificationDelegateAdapter(std::move(delegate)));
   auto notification = presenter->CreateNotification(adapter.get());
   if (notification) {
-    bool silent = data.silent;
-    if (!silent) {
-      silent = browser_client->WebContentsAudioMuted(render_process_id);
-    }
     ignore_result(adapter.release());  // it will release itself automatically.
-    notification->Show(data.title, data.body, data.tag, data.icon, icon, silent);
+    notification->Show(data.title, data.body, data.tag, data.icon, icon,
+                       audio_muted ? true : data.silent);
     *cancel_callback = base::Bind(&RemoveNotification, notification);
   }
 }
@@ -83,7 +80,6 @@ void PlatformNotificationService::DisplayNotification(
   browser_client_->WebNotificationAllowed(
       render_process_id_,
       base::Bind(&OnWebNotificationAllowed,
-                 render_process_id_,
                  browser_client_,
                  notification_resources.notification_icon,
                  notification_data,
