@@ -33,6 +33,10 @@ class BrowserClient : public content::ContentBrowserClient {
     callback.Run(true);
   }
 
+  virtual bool WebContentsAudioMuted(int render_process_id) {
+    return false;
+  }
+
   // Subclasses that override this (e.g., to provide their own protocol
   // handlers) should call this implementation after doing their own work.
   content::BrowserMainParts* CreateBrowserMainParts(
