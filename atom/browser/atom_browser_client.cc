@@ -303,6 +303,13 @@ void AtomBrowserClient::WebNotificationAllowed(
   permission_helper->RequestWebNotificationPermission(callback);
 }
 
+bool AtomBrowserClient::WebContentsAudioMuted(
+  int render_process_id) {
+    content::WebContents* web_contents =
+        WebContentsPreferences::GetWebContentsFromProcessID(render_process_id);
+    return web_contents->IsAudioMuted();
+  }
+
 void AtomBrowserClient::RenderProcessHostDestroyed(
     content::RenderProcessHost* host) {
   int process_id = host->GetID();
