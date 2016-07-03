@@ -943,6 +943,16 @@ defaults to `false`.
 
 End subscribing for frame presentation events.
 
+### `webContents.startDrag(item)`
+
+* `item` object
+  * `file` String
+  * `icon` [NativeImage](native-image.md)
+
+Sets the `item` as dragging item for current drag-drop operation, `file` is the
+absolute path of the file to be dragged, and `icon` is the image showing under
+the cursor when dragging.
+
 ### `webContents.savePage(fullPath, saveType, callback)`
 
 * `fullPath` String - The full file path.
