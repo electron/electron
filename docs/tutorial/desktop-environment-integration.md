@@ -329,11 +329,14 @@ app, you need to call `webContents.startDrag(item)` API on `ondragstart` event.
 
 In web page:
 
-```javascript
-document.getElementById('targetItem').ondragstart = (event) => {
-  event.preventDefault()
-  ipcRenderer.send('ondragstart', '/path/to/item')
-}
+```html
+<a href="#" id="drag">item</a>
+<script type="text/javascript" charset="utf-8">
+  document.getElementById('drag').ondragstart = (event) => {
+    event.preventDefault()
+    ipcRenderer.send('ondragstart', '/path/to/item')
+  }
+</script>
 ```
 
 In the main process:
