@@ -39,6 +39,8 @@ class WebViewGuestDelegate;
 
 namespace api {
 
+class NativeImage;
+
 class WebContents : public mate::TrackableObject<WebContents>,
                     public CommonWebContentsDelegate,
                     public content::WebContentsObserver {
@@ -141,6 +143,9 @@ class WebContents : public mate::TrackableObject<WebContents>,
   // Subscribe to the frame updates.
   void BeginFrameSubscription(mate::Arguments* args);
   void EndFrameSubscription();
+
+  // Dragging native items.
+  void StartDrag(const base::FilePath& file, mate::Handle<NativeImage> image);
 
   // Methods for creating <webview>.
   void SetSize(const SetSizeParams& params);
