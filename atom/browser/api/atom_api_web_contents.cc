@@ -1206,11 +1206,34 @@ void WebContents::EndFrameSubscription() {
     view->EndFrameSubscription();
 }
 
-void WebContents::StartDrag(const base::FilePath& file,
-                            mate::Handle<NativeImage> image) {
+void WebContents::StartDrag(const mate::Dictionary& item,
+                            mate::Arguments* args) {
   base::MessageLoop::ScopedNestableTaskAllower allow(
       base::MessageLoop::current());
-  DragItem(file, image->image(), web_contents()->GetNativeView());
+
+  base::FilePath file;
+  std::vector<base::FilePath> files;
+  if (!item.Get("files", &files) && item.Get("file", &file)) {
+    files.push_back(file);
+  }
+
+  mate::Handle<NativeImage> icon;
+  if (!item.Get("icon", &icon) && !file.empty()) {
+    // TODO(zcbenz): Set default icon from file.
+  }
+
+  // Error checking.
+  if (icon.IsEmpty()) {
+    args->ThrowError("icon must be set");
+    return;
+  }
+
+  // Start dragging.
+  if (!files.empty()) {
+    DragFileItems(files, icon->image(), web_contents()->GetNativeView());
+  } else {
+    args->ThrowError("There is nothing to drag");
+  }
 }
 
 void WebContents::OnCursorChange(const content::WebCursor& cursor) {

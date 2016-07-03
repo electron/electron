@@ -13,9 +13,11 @@ namespace atom {
 namespace {
 
 // Write information about the file being dragged to the pasteboard.
-void AddFileToPasteboard(NSPasteboard* pasteboard, const base::FilePath& path) {
-  NSString* file = base::SysUTF8ToNSString(path.value());
-  NSArray* fileList = [NSArray arrayWithObject:file];
+void AddFilesToPasteboard(NSPasteboard* pasteboard,
+                          const std::vector<base::FilePath>& files) {
+  NSMutableArray* fileList = [NSMutableArray array];
+  for (const base::FilePath& file : files)
+    [fileList addObject:base::SysUTF8ToNSString(file.value())];
   [pasteboard declareTypes:[NSArray arrayWithObject:NSFilenamesPboardType]
                      owner:nil];
   [pasteboard setPropertyList:fileList forType:NSFilenamesPboardType];
@@ -23,11 +25,11 @@ void AddFileToPasteboard(NSPasteboard* pasteboard, const base::FilePath& path) {
 
 }  // namespace
 
-void DragItem(const base::FilePath& path,
-              const gfx::Image& icon,
-              gfx::NativeView view) {
+void DragFileItems(const std::vector<base::FilePath>& files,
+                   const gfx::Image& icon,
+                   gfx::NativeView view) {
   NSPasteboard* pasteboard = [NSPasteboard pasteboardWithName:NSDragPboard];
-  AddFileToPasteboard(pasteboard, path);
+  AddFilesToPasteboard(pasteboard, files);
 
   // Synthesize a drag event, since we don't have access to the actual event
   // that initiated a drag (possibly consumed by the Web UI, for example).

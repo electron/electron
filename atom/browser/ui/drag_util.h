@@ -5,6 +5,8 @@
 #ifndef ATOM_BROWSER_UI_DRAG_UTIL_H_
 #define ATOM_BROWSER_UI_DRAG_UTIL_H_
 
+#include <vector>
+
 #include "ui/gfx/image/image.h"
 
 namespace base {
@@ -13,9 +15,9 @@ class FilePath;
 
 namespace atom {
 
-void DragItem(const base::FilePath& path,
-              const gfx::Image& icon,
-              gfx::NativeView view);
+void DragFileItems(const std::vector<base::FilePath>& files,
+                   const gfx::Image& icon,
+                   gfx::NativeView view);
 
 }  // namespace atom
 
