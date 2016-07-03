@@ -321,6 +321,32 @@ win.setRepresentedFilename('/etc/passwd');
 win.setDocumentEdited(true);
 ```
 
+## Dragging files out of the window
+
+For certain kinds of apps that manipulate on files, it is important to be able
+to drag files from Electron to other apps. To implement this feature in your
+app, you need to call `webContents.startDrag(item)` API on `ondragstart` event.
+
+In web page:
+
+```javascript
+document.getElementById('targetItem').ondragstart = (event) => {
+  event.preventDefault()
+  ipcRenderer.send('ondragstart', '/path/to/item')
+}
+```
+
+In the main process:
+
+```javascript
+ipcMain.on('ondragstart', (event, filePath) => {
+  event.sender.startDrag({
+    file: filePath,
+    icon: '/path/to/icon.png'
+  })
+})
+```
+
 [addrecentdocument]: ../api/app.md#appaddrecentdocumentpath-os-x-windows
 [clearrecentdocuments]: ../api/app.md#appclearrecentdocuments-os-x-windows
 [setusertaskstasks]: ../api/app.md#appsetusertaskstasks-windows
