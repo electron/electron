@@ -1208,9 +1208,6 @@ void WebContents::EndFrameSubscription() {
 
 void WebContents::StartDrag(const mate::Dictionary& item,
                             mate::Arguments* args) {
-  base::MessageLoop::ScopedNestableTaskAllower allow(
-      base::MessageLoop::current());
-
   base::FilePath file;
   std::vector<base::FilePath> files;
   if (!item.Get("files", &files) && item.Get("file", &file)) {
@@ -1230,6 +1227,8 @@ void WebContents::StartDrag(const mate::Dictionary& item,
 
   // Start dragging.
   if (!files.empty()) {
+    base::MessageLoop::ScopedNestableTaskAllower allow(
+        base::MessageLoop::current());
     DragFileItems(files, icon->image(), web_contents()->GetNativeView());
   } else {
     args->ThrowError("There is nothing to drag");
