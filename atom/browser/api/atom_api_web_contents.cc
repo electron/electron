@@ -17,6 +17,7 @@
 #include "atom/browser/lib/bluetooth_chooser.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/net/atom_network_delegate.h"
+#include "atom/browser/ui/drag_util.h"
 #include "atom/browser/web_contents_permission_helper.h"
 #include "atom/browser/web_contents_preferences.h"
 #include "atom/browser/web_view_guest_delegate.h"
@@ -1205,6 +1206,35 @@ void WebContents::EndFrameSubscription() {
     view->EndFrameSubscription();
 }
 
+void WebContents::StartDrag(const mate::Dictionary& item,
+                            mate::Arguments* args) {
+  base::FilePath file;
+  std::vector<base::FilePath> files;
+  if (!item.Get("files", &files) && item.Get("file", &file)) {
+    files.push_back(file);
+  }
+
+  mate::Handle<NativeImage> icon;
+  if (!item.Get("icon", &icon) && !file.empty()) {
+    // TODO(zcbenz): Set default icon from file.
+  }
+
+  // Error checking.
+  if (icon.IsEmpty()) {
+    args->ThrowError("icon must be set");
+    return;
+  }
+
+  // Start dragging.
+  if (!files.empty()) {
+    base::MessageLoop::ScopedNestableTaskAllower allow(
+        base::MessageLoop::current());
+    DragFileItems(files, icon->image(), web_contents()->GetNativeView());
+  } else {
+    args->ThrowError("There is nothing to drag");
+  }
+}
+
 void WebContents::OnCursorChange(const content::WebCursor& cursor) {
   content::WebCursor::CursorInfo info;
   cursor.GetCursorInfo(&info);
@@ -1324,6 +1354,7 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("beginFrameSubscription",
                  &WebContents::BeginFrameSubscription)
       .SetMethod("endFrameSubscription", &WebContents::EndFrameSubscription)
+      .SetMethod("startDrag", &WebContents::StartDrag)
       .SetMethod("setSize", &WebContents::SetSize)
       .SetMethod("isGuest", &WebContents::IsGuest)
       .SetMethod("getType", &WebContents::GetType)

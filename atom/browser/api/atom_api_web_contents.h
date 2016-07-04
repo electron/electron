@@ -142,6 +142,9 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void BeginFrameSubscription(mate::Arguments* args);
   void EndFrameSubscription();
 
+  // Dragging native items.
+  void StartDrag(const mate::Dictionary& item, mate::Arguments* args);
+
   // Methods for creating <webview>.
   void SetSize(const SetSizeParams& params);
   bool IsGuest() const;
