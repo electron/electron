@@ -174,27 +174,6 @@ bool BrowserContext::IsOffTheRecord() const {
   return in_memory_;
 }
 
-net::URLRequestContextGetter* BrowserContext::GetRequestContext() {
-  return GetDefaultStoragePartition(this)->GetURLRequestContext();
-}
-
-net::URLRequestContextGetter* BrowserContext::GetMediaRequestContext() {
-  return GetRequestContext();
-}
-
-net::URLRequestContextGetter*
-    BrowserContext::GetMediaRequestContextForRenderProcess(
-        int renderer_child_id) {
-  return GetRequestContext();
-}
-
-net::URLRequestContextGetter*
-    BrowserContext::GetMediaRequestContextForStoragePartition(
-        const base::FilePath& partition_path,
-        bool in_memory) {
-  return GetRequestContext();
-}
-
 content::ResourceContext* BrowserContext::GetResourceContext() {
   return resource_context_.get();
 }
@@ -235,6 +214,18 @@ BrowserContext::CreateRequestContextForStoragePartition(
     bool in_memory,
     content::ProtocolHandlerMap* protocol_handlers,
     content::URLRequestInterceptorScopedVector request_interceptors) {
+  return nullptr;
+}
+
+net::URLRequestContextGetter*
+BrowserContext::CreateMediaRequestContext() {
+  return url_request_getter_.get();
+}
+
+net::URLRequestContextGetter*
+BrowserContext::CreateMediaRequestContextForStoragePartition(
+    const base::FilePath& partition_path,
+    bool in_memory) {
   return nullptr;
 }
 

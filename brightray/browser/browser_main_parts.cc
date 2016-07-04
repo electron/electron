@@ -21,7 +21,7 @@
 #include "ui/base/l10n/l10n_util.h"
 
 #if defined(USE_AURA)
-#include "ui/gfx/screen.h"
+#include "ui/display/screen.h"
 #include "ui/views/widget/desktop_aura/desktop_screen.h"
 #endif
 
@@ -238,8 +238,8 @@ void BrowserMainParts::PostMainMessageLoopRun() {
 
 int BrowserMainParts::PreCreateThreads() {
 #if defined(USE_AURA)
-  gfx::Screen* screen = views::CreateDesktopScreen();
-  gfx::Screen::SetScreenInstance(screen);
+  display::Screen* screen = views::CreateDesktopScreen();
+  display::Screen::SetScreenInstance(screen);
 #if defined(USE_X11)
   views::LinuxUI::instance()->UpdateDeviceScaleFactor(
       screen->GetPrimaryDisplay().device_scale_factor());

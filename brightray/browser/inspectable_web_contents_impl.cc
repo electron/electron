@@ -5,25 +5,22 @@
 
 #include "browser/inspectable_web_contents_impl.h"
 
+#include "base/json/json_reader.h"
+#include "base/json/json_writer.h"
+#include "base/metrics/histogram.h"
+#include "base/strings/pattern.h"
+#include "base/strings/stringprintf.h"
+#include "base/strings/utf_string_conversions.h"
+#include "base/values.h"
 #include "browser/browser_client.h"
 #include "browser/browser_context.h"
 #include "browser/browser_main_parts.h"
 #include "browser/inspectable_web_contents_delegate.h"
 #include "browser/inspectable_web_contents_view.h"
 #include "browser/inspectable_web_contents_view_delegate.h"
-
-#include "base/json/json_reader.h"
-#include "base/json/json_writer.h"
-#include "base/metrics/histogram.h"
-
 #include "components/prefs/pref_service.h"
 #include "components/prefs/scoped_user_pref_update.h"
 #include "components/prefs/pref_registry_simple.h"
-
-#include "base/strings/pattern.h"
-#include "base/strings/stringprintf.h"
-#include "base/strings/utf_string_conversions.h"
-#include "base/values.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/host_zoom_map.h"
 #include "content/public/browser/render_frame_host.h"
@@ -33,7 +30,8 @@
 #include "net/http/http_response_headers.h"
 #include "net/url_request/url_fetcher.h"
 #include "net/url_request/url_fetcher_response_writer.h"
-#include "ui/gfx/screen.h"
+#include "ui/display/display.h"
+#include "ui/display/screen.h"
 
 namespace brightray {
 
@@ -214,7 +212,7 @@ InspectableWebContentsImpl::InspectableWebContentsImpl(
       devtools_bounds_.set_height(600);
       devtools_bounds_.set_width(800);
     }
-    gfx::Rect display = gfx::Screen::GetScreen()
+    gfx::Rect display = display::Screen::GetScreen()
         ->GetDisplayNearestWindow(web_contents->GetNativeView()).bounds();
     if (!IsPointInRect(devtools_bounds_.origin(), display)) {
       devtools_bounds_.set_x(display.x() + (display.width() - devtools_bounds_.width()) / 2);
@@ -361,7 +359,7 @@ void InspectableWebContentsImpl::ActivateWindow() {
 }
 
 void InspectableWebContentsImpl::CloseWindow() {
-  GetDevToolsWebContents()->DispatchBeforeUnload(false);
+  GetDevToolsWebContents()->DispatchBeforeUnload();
 }
 
 void InspectableWebContentsImpl::LoadCompleted() {
