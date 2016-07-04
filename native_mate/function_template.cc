@@ -9,8 +9,9 @@ namespace mate {
 namespace internal {
 
 CallbackHolderBase::CallbackHolderBase(v8::Isolate* isolate)
-    : MATE_PERSISTENT_INIT(isolate, v8_ref_, MATE_EXTERNAL_NEW(isolate, this)) {
-  MATE_PERSISTENT_SET_WEAK(v8_ref_, this, &CallbackHolderBase::WeakCallback);
+    : v8_ref_(isolate, v8::External::New(isolate, this)) {
+  v8_ref_.SetWeak(this, &CallbackHolderBase::FirstWeakCallback,
+                  v8::WeakCallbackType::kParameter);
 }
 
 CallbackHolderBase::~CallbackHolderBase() {
@@ -18,16 +19,20 @@ CallbackHolderBase::~CallbackHolderBase() {
 }
 
 v8::Local<v8::External> CallbackHolderBase::GetHandle(v8::Isolate* isolate) {
-  return MATE_PERSISTENT_TO_LOCAL(v8::External, isolate, v8_ref_);
+  return v8::Local<v8::External>::New(isolate, v8_ref_);
 }
 
 // static
-MATE_WEAK_CALLBACK(CallbackHolderBase::WeakCallback,
-                   v8::External,
-                   CallbackHolderBase) {
-  MATE_WEAK_CALLBACK_INIT(CallbackHolderBase);
-  MATE_PERSISTENT_RESET(self->v8_ref_);
-  delete self;
+void CallbackHolderBase::FirstWeakCallback(
+    const v8::WeakCallbackInfo<CallbackHolderBase>& data) {
+  data.GetParameter()->v8_ref_.Reset();
+  data.SetSecondPassCallback(SecondWeakCallback);
+}
+
+// static
+void CallbackHolderBase::SecondWeakCallback(
+    const v8::WeakCallbackInfo<CallbackHolderBase>& data) {
+  delete data.GetParameter();
 }
 
 }  // namespace internal
