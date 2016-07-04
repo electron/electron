@@ -354,7 +354,7 @@ template<Session::CacheAction action>
 void Session::DoCacheAction(const net::CompletionCallback& callback) {
   BrowserThread::PostTask(BrowserThread::IO, FROM_HERE,
       base::Bind(&DoCacheActionInIO,
-                 make_scoped_refptr(browser_context_->url_request_context_getter()),
+                 make_scoped_refptr(browser_context_->GetRequestContext()),
                  action,
                  callback));
 }
@@ -385,7 +385,7 @@ void Session::FlushStorageData() {
 
 void Session::SetProxy(const net::ProxyConfig& config,
                        const base::Closure& callback) {
-  auto getter = browser_context_->url_request_context_getter();
+  auto getter = browser_context_->GetRequestContext();
   BrowserThread::PostTask(BrowserThread::IO, FROM_HERE,
       base::Bind(&SetProxyInIO, base::Unretained(getter), config, callback));
 }
@@ -455,14 +455,14 @@ void Session::ClearHostResolverCache(mate::Arguments* args) {
 
   BrowserThread::PostTask(BrowserThread::IO, FROM_HERE,
       base::Bind(&ClearHostResolverCacheInIO,
-                 make_scoped_refptr(browser_context_->url_request_context_getter()),
+                 make_scoped_refptr(browser_context_->GetRequestContext()),
                  callback));
 }
 
 void Session::AllowNTLMCredentialsForDomains(const std::string& domains) {
   BrowserThread::PostTask(BrowserThread::IO, FROM_HERE,
       base::Bind(&AllowNTLMCredentialsForDomainsInIO,
-                 make_scoped_refptr(browser_context_->url_request_context_getter()),
+                 make_scoped_refptr(browser_context_->GetRequestContext()),
                  domains));
 }
 
@@ -473,7 +473,7 @@ void Session::SetUserAgent(const std::string& user_agent,
   std::string accept_lang = l10n_util::GetApplicationLocale("");
   args->GetNext(&accept_lang);
 
-  auto getter = browser_context_->url_request_context_getter();
+  auto getter = browser_context_->GetRequestContext();
   getter->GetNetworkTaskRunner()->PostTask(
       FROM_HERE,
       base::Bind(&SetUserAgentInIO, getter, accept_lang, user_agent));

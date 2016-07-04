@@ -36,7 +36,7 @@ bool Converter<gfx::Point>::FromV8(v8::Isolate* isolate,
 }
 
 v8::Local<v8::Value> Converter<gfx::Size>::ToV8(v8::Isolate* isolate,
-                                                  const gfx::Size& val) {
+                                                const gfx::Size& val) {
   mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
   dict.SetHidden("simple", true);
   dict.Set("width", val.width());
@@ -97,8 +97,8 @@ struct Converter<display::Display::TouchSupport> {
   }
 };
 
-v8::Local<v8::Value> Converter<display::Display>::ToV8(v8::Isolate* isolate,
-                                                    const display::Display& val) {
+v8::Local<v8::Value> Converter<display::Display>::ToV8(
+    v8::Isolate* isolate, const display::Display& val) {
   mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
   dict.SetHidden("simple", true);
   dict.Set("id", val.id());
