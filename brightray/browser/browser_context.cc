@@ -115,6 +115,12 @@ BrowserContext::BrowserContext(const std::string& partition, bool in_memory)
   content::BrowserContext::Initialize(this, path_);
 }
 
+BrowserContext::~BrowserContext() {
+  BrowserThread::DeleteSoon(BrowserThread::IO,
+                            FROM_HERE,
+                            resource_context_.release());
+}
+
 void BrowserContext::InitPrefs() {
   auto prefs_path = GetPath().Append(FILE_PATH_LITERAL("Preferences"));
   PrefServiceFactory prefs_factory;
@@ -129,14 +135,13 @@ void BrowserContext::InitPrefs() {
   prefs_ = prefs_factory.Create(registry.get());
 }
 
-BrowserContext::~BrowserContext() {
-  BrowserThread::DeleteSoon(BrowserThread::IO,
-                            FROM_HERE,
-                            resource_context_.release());
-}
-
 void BrowserContext::RegisterInternalPrefs(PrefRegistrySimple* registry) {
   InspectableWebContentsImpl::RegisterPrefs(registry);
+}
+
+URLRequestContextGetter* BrowserContext::GetRequestContext() {
+  return static_cast<URLRequestContextGetter*>(
+      GetDefaultStoragePartition(this)->GetURLRequestContext());
 }
 
 net::URLRequestContextGetter* BrowserContext::CreateRequestContext(

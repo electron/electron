@@ -38,6 +38,9 @@ class BrowserContext : public base::RefCounted<BrowserContext>,
   static scoped_refptr<BrowserContext> Create(
       const std::string& partition, bool in_memory);
 
+  // Get the request context, if there is no one, create it.
+  URLRequestContextGetter* GetRequestContext();
+
   // content::BrowserContext:
   std::unique_ptr<content::ZoomLevelDelegate> CreateZoomLevelDelegate(
       const base::FilePath& partition_path) override;
