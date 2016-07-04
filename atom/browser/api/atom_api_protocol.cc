@@ -27,7 +27,7 @@ namespace atom {
 namespace api {
 
 Protocol::Protocol(v8::Isolate* isolate, AtomBrowserContext* browser_context)
-    : request_context_getter_(browser_context->url_request_context_getter()),
+    : request_context_getter_(browser_context->GetRequestContext()),
       weak_factory_(this) {
   Init(isolate);
 }
