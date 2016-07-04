@@ -113,29 +113,29 @@ AtomBrowserContext::CreateURLRequestJobFactory(
   protocol_handlers->clear();
 
   job_factory->SetProtocolHandler(
-      url::kDataScheme, make_scoped_ptr(new net::DataProtocolHandler));
+      url::kDataScheme, base::WrapUnique(new net::DataProtocolHandler));
   job_factory->SetProtocolHandler(
-      url::kFileScheme, make_scoped_ptr(new asar::AsarProtocolHandler(
+      url::kFileScheme, base::WrapUnique(new asar::AsarProtocolHandler(
           BrowserThread::GetBlockingPool()->GetTaskRunnerWithShutdownBehavior(
               base::SequencedWorkerPool::SKIP_ON_SHUTDOWN))));
   job_factory->SetProtocolHandler(
       url::kHttpScheme,
-      make_scoped_ptr(new HttpProtocolHandler(url::kHttpScheme)));
+      base::WrapUnique(new HttpProtocolHandler(url::kHttpScheme)));
   job_factory->SetProtocolHandler(
       url::kHttpsScheme,
-      make_scoped_ptr(new HttpProtocolHandler(url::kHttpsScheme)));
+      base::WrapUnique(new HttpProtocolHandler(url::kHttpsScheme)));
   job_factory->SetProtocolHandler(
       url::kWsScheme,
-      make_scoped_ptr(new HttpProtocolHandler(url::kWsScheme)));
+      base::WrapUnique(new HttpProtocolHandler(url::kWsScheme)));
   job_factory->SetProtocolHandler(
       url::kWssScheme,
-      make_scoped_ptr(new HttpProtocolHandler(url::kWssScheme)));
+      base::WrapUnique(new HttpProtocolHandler(url::kWssScheme)));
 
   auto host_resolver =
       url_request_context_getter()->GetURLRequestContext()->host_resolver();
   job_factory->SetProtocolHandler(
       url::kFtpScheme,
-      make_scoped_ptr(new net::FtpProtocolHandler(
+      base::WrapUnique(new net::FtpProtocolHandler(
           new net::FtpNetworkLayer(host_resolver))));
 
   return std::move(job_factory);
@@ -174,7 +174,7 @@ content::PermissionManager* AtomBrowserContext::GetPermissionManager() {
 }
 
 std::unique_ptr<net::CertVerifier> AtomBrowserContext::CreateCertVerifier() {
-  return make_scoped_ptr(cert_verifier_);
+  return base::WrapUnique(cert_verifier_);
 }
 
 net::SSLConfigService* AtomBrowserContext::CreateSSLConfigService() {

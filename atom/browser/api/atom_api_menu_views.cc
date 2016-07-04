@@ -6,7 +6,7 @@
 
 #include "atom/browser/native_window_views.h"
 #include "content/public/browser/render_widget_host_view.h"
-#include "ui/gfx/screen.h"
+#include "ui/display/screen.h"
 #include "ui/views/controls/menu/menu_runner.h"
 
 namespace atom {
@@ -30,7 +30,7 @@ void MenuViews::PopupAt(Window* window, int x, int y, int positioning_item) {
   // (-1, -1) means showing on mouse location.
   gfx::Point location;
   if (x == -1 || y == -1) {
-    location = gfx::Screen::GetScreen()->GetCursorScreenPoint();
+    location = display::Screen::GetScreen()->GetCursorScreenPoint();
   } else {
     gfx::Point origin = view->GetViewBounds().origin();
     location = gfx::Point(origin.x() + x, origin.y() + y);

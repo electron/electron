@@ -4,6 +4,7 @@
 
 #include "atom/browser/api/atom_api_cookies.h"
 
+#include "atom/browser/atom_browser_context.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
@@ -204,8 +205,8 @@ void SetCookieOnIO(scoped_refptr<net::URLRequestContextGetter> getter,
 }  // namespace
 
 Cookies::Cookies(v8::Isolate* isolate,
-                 content::BrowserContext* browser_context)
-      : request_context_getter_(browser_context->GetRequestContext()) {
+                 AtomBrowserContext* browser_context)
+      : request_context_getter_(browser_context->url_request_context_getter()) {
   Init(isolate);
 }
 
@@ -241,7 +242,7 @@ void Cookies::Set(const base::DictionaryValue& details,
 // static
 mate::Handle<Cookies> Cookies::Create(
     v8::Isolate* isolate,
-    content::BrowserContext* browser_context) {
+    AtomBrowserContext* browser_context) {
   return mate::CreateHandle(isolate, new Cookies(isolate, browser_context));
 }
 

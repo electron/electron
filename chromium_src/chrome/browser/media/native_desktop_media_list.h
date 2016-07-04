@@ -5,7 +5,6 @@
 #ifndef CHROME_BROWSER_MEDIA_NATIVE_DESKTOP_MEDIA_LIST_H_
 #define CHROME_BROWSER_MEDIA_NATIVE_DESKTOP_MEDIA_LIST_H_
 
-#include "base/memory/scoped_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/sequenced_task_runner.h"
 #include "chrome/browser/media/desktop_media_list.h"

@@ -37,7 +37,7 @@
 #include "ui/gfx/geometry/rect.h"
 #include "ui/gfx/geometry/size.h"
 #include "ui/gfx/geometry/size_conversions.h"
-#include "ui/gfx/screen.h"
+#include "ui/display/screen.h"
 #include "ui/gl/gpu_switching_manager.h"
 
 DEFINE_WEB_CONTENTS_USER_DATA_KEY(atom::NativeWindowRelay);
@@ -334,7 +334,7 @@ void NativeWindow::CapturePage(const gfx::Rect& rect,
   gfx::Size bitmap_size = view_size;
   const gfx::NativeView native_view = view->GetNativeView();
   const float scale =
-      gfx::Screen::GetScreen()->GetDisplayNearestWindow(native_view)
+      display::Screen::GetScreen()->GetDisplayNearestWindow(native_view)
       .device_scale_factor();
   if (scale > 1.0f)
     bitmap_size = gfx::ScaleToCeiledSize(view_size, scale);
@@ -394,7 +394,7 @@ void NativeWindow::RequestToClosePage() {
     ScheduleUnresponsiveEvent(5000);
 
   if (web_contents()->NeedToFireBeforeUnload())
-    web_contents()->DispatchBeforeUnload(false);
+    web_contents()->DispatchBeforeUnload();
   else
     web_contents()->Close();
 }

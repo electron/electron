@@ -5,13 +5,13 @@
 #ifndef ATOM_BROWSER_API_ATOM_API_MENU_H_
 #define ATOM_BROWSER_API_ATOM_API_MENU_H_
 
+#include <memory>
 #include <string>
 
 #include "atom/browser/api/atom_api_window.h"
 #include "atom/browser/api/trackable_object.h"
 #include "atom/browser/ui/atom_menu_model.h"
 #include "base/callback.h"
-#include "base/memory/scoped_ptr.h"
 
 namespace atom {
 

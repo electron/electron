@@ -81,7 +81,7 @@ bool AddImageSkiaRep(gfx::ImageSkia* image,
   // Try PNG first.
   if (!gfx::PNGCodec::Decode(data, size, decoded.get()))
     // Try JPEG.
-    decoded.reset(gfx::JPEGCodec::Decode(data, size));
+    decoded = gfx::JPEGCodec::Decode(data, size);
 
   if (!decoded)
     return false;

@@ -180,10 +180,10 @@ bool URLRequestAsarJob::IsRedirectResponse(GURL* location,
 #endif
 }
 
-net::Filter* URLRequestAsarJob::SetupFilter() const {
+std::unique_ptr<net::Filter> URLRequestAsarJob::SetupFilter() const {
   // Bug 9936 - .svgz files needs to be decompressed.
   return base::LowerCaseEqualsASCII(file_path_.Extension(), ".svgz")
-      ? net::Filter::GZipFactory() : NULL;
+      ? net::Filter::GZipFactory() : nullptr;
 }
 
 bool URLRequestAsarJob::GetMimeType(std::string* mime_type) const {

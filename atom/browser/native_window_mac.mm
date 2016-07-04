@@ -724,11 +724,6 @@ void NativeWindowMac::SetFullScreen(bool fullscreen) {
   if (fullscreen == IsFullscreen())
     return;
 
-  if (!base::mac::IsOSLionOrLater()) {
-    LOG(ERROR) << "Fullscreen mode is only supported above Lion";
-    return;
-  }
-
   [window_ toggleFullScreen:nil];
 }
 

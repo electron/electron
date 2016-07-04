@@ -6,7 +6,7 @@
 #define ATOM_BROWSER_API_ATOM_API_MENU_VIEWS_H_
 
 #include "atom/browser/api/atom_api_menu.h"
-#include "ui/gfx/screen.h"
+#include "ui/display/screen.h"
 
 namespace atom {
 

@@ -12,7 +12,7 @@
 #include "ui/gfx/image/image.h"
 #include "ui/gfx/geometry/point.h"
 #include "ui/gfx/geometry/rect.h"
-#include "ui/gfx/screen.h"
+#include "ui/display/screen.h"
 #include "ui/gfx/win/dpi.h"
 #include "ui/views/controls/menu/menu_runner.h"
 
@@ -145,7 +145,7 @@ void NotifyIcon::PopUpContextMenu(const gfx::Point& pos,
   // Show menu at mouse's position by default.
   gfx::Rect rect(pos, gfx::Size());
   if (pos.IsOrigin())
-    rect.set_origin(gfx::Screen::GetScreen()->GetCursorScreenPoint());
+    rect.set_origin(display::Screen::GetScreen()->GetCursorScreenPoint());
 
   views::MenuRunner menu_runner(
       menu_model != nullptr ? menu_model : menu_model_,

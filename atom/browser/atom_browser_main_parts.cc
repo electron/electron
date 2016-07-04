@@ -15,7 +15,7 @@
 #include "atom/common/node_bindings.h"
 #include "atom/common/node_includes.h"
 #include "base/command_line.h"
-#include "base/thread_task_runner_handle.h"
+#include "base/threading/thread_task_runner_handle.h"
 #include "chrome/browser/browser_process.h"
 #include "v8/include/v8-debug.h"
 

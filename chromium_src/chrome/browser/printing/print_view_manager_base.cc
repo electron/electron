@@ -4,8 +4,9 @@
 
 #include "chrome/browser/printing/print_view_manager_base.h"
 
+#include <memory>
+
 #include "base/bind.h"
-#include "base/memory/scoped_ptr.h"
 #include "components/prefs/pref_service.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/timer/timer.h"

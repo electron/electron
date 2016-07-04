@@ -5,7 +5,8 @@
 #ifndef ATOM_BROWSER_UI_VIEWS_MENU_DELEGATE_H_
 #define ATOM_BROWSER_UI_VIEWS_MENU_DELEGATE_H_
 
-#include "base/memory/scoped_ptr.h"
+#include <memory>
+
 #include "ui/views/controls/menu/menu_delegate.h"
 
 namespace views {

@@ -4,7 +4,8 @@
 
 #include "chrome/renderer/pepper/pepper_shared_memory_message_filter.h"
 
-#include "base/memory/scoped_ptr.h"
+#include <memory>
+
 #include "base/memory/shared_memory.h"
 #include "base/process/process_handle.h"
 #include "content/public/common/content_client.h"

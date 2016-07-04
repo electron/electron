@@ -9,7 +9,7 @@
 #include "ui/events/cocoa/cocoa_event_utils.h"
 #include "ui/gfx/image/image.h"
 #include "ui/gfx/mac/coordinate_conversion.h"
-#include "ui/gfx/screen.h"
+#include "ui/display/screen.h"
 
 namespace {
 

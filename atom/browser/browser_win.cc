@@ -13,7 +13,6 @@
 #include "base/base_paths.h"
 #include "base/file_version_info.h"
 #include "base/files/file_path.h"
-#include "base/memory/scoped_ptr.h"
 #include "base/path_service.h"
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"

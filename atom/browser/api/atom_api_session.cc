@@ -26,7 +26,7 @@
 #include "components/prefs/pref_service.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
-#include "base/thread_task_runner_handle.h"
+#include "base/threading/thread_task_runner_handle.h"
 #include "brightray/browser/net/devtools_network_conditions.h"
 #include "brightray/browser/net/devtools_network_controller_handle.h"
 #include "chrome/common/pref_names.h"
@@ -175,7 +175,7 @@ class ResolveProxyHelper {
       : callback_(callback),
         original_thread_(base::ThreadTaskRunnerHandle::Get()) {
     scoped_refptr<net::URLRequestContextGetter> context_getter =
-        browser_context->GetRequestContext();
+        browser_context->url_request_context_getter();
     context_getter->GetNetworkTaskRunner()->PostTask(
         FROM_HERE,
         base::Bind(&ResolveProxyHelper::ResolveProxy,
@@ -278,7 +278,7 @@ void SetProxyInIO(net::URLRequestContextGetter* getter,
                   const net::ProxyConfig& config,
                   const base::Closure& callback) {
   auto proxy_service = getter->GetURLRequestContext()->proxy_service();
-  proxy_service->ResetConfigService(make_scoped_ptr(
+  proxy_service->ResetConfigService(base::WrapUnique(
       new net::ProxyConfigServiceFixed(config)));
   // Refetches and applies the new pac script if provided.
   proxy_service->ForceReloadProxyConfig();
@@ -354,7 +354,7 @@ template<Session::CacheAction action>
 void Session::DoCacheAction(const net::CompletionCallback& callback) {
   BrowserThread::PostTask(BrowserThread::IO, FROM_HERE,
       base::Bind(&DoCacheActionInIO,
-                 make_scoped_refptr(browser_context_->GetRequestContext()),
+                 make_scoped_refptr(browser_context_->url_request_context_getter()),
                  action,
                  callback));
 }
@@ -385,7 +385,7 @@ void Session::FlushStorageData() {
 
 void Session::SetProxy(const net::ProxyConfig& config,
                        const base::Closure& callback) {
-  auto getter = browser_context_->GetRequestContext();
+  auto getter = browser_context_->url_request_context_getter();
   BrowserThread::PostTask(BrowserThread::IO, FROM_HERE,
       base::Bind(&SetProxyInIO, base::Unretained(getter), config, callback));
 }
@@ -455,14 +455,14 @@ void Session::ClearHostResolverCache(mate::Arguments* args) {
 
   BrowserThread::PostTask(BrowserThread::IO, FROM_HERE,
       base::Bind(&ClearHostResolverCacheInIO,
-                 make_scoped_refptr(browser_context_->GetRequestContext()),
+                 make_scoped_refptr(browser_context_->url_request_context_getter()),
                  callback));
 }
 
 void Session::AllowNTLMCredentialsForDomains(const std::string& domains) {
   BrowserThread::PostTask(BrowserThread::IO, FROM_HERE,
       base::Bind(&AllowNTLMCredentialsForDomainsInIO,
-                 make_scoped_refptr(browser_context_->GetRequestContext()),
+                 make_scoped_refptr(browser_context_->url_request_context_getter()),
                  domains));
 }
 
@@ -473,7 +473,7 @@ void Session::SetUserAgent(const std::string& user_agent,
   std::string accept_lang = l10n_util::GetApplicationLocale("");
   args->GetNext(&accept_lang);
 
-  auto getter = browser_context_->GetRequestContext();
+  auto getter = browser_context_->url_request_context_getter();
   getter->GetNetworkTaskRunner()->PostTask(
       FROM_HERE,
       base::Bind(&SetUserAgentInIO, getter, accept_lang, user_agent));

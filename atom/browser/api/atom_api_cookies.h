@@ -16,15 +16,13 @@ namespace base {
 class DictionaryValue;
 }
 
-namespace content {
-class BrowserContext;
-}
-
 namespace net {
 class URLRequestContextGetter;
 }
 
 namespace atom {
+
+class AtomBrowserContext;
 
 namespace api {
 
@@ -39,14 +37,14 @@ class Cookies : public mate::TrackableObject<Cookies> {
   using SetCallback = base::Callback<void(Error)>;
 
   static mate::Handle<Cookies> Create(v8::Isolate* isolate,
-                                      content::BrowserContext* browser_context);
+                                      AtomBrowserContext* browser_context);
 
   // mate::TrackableObject:
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::ObjectTemplate> prototype);
 
  protected:
-  Cookies(v8::Isolate* isolate, content::BrowserContext* browser_context);
+  Cookies(v8::Isolate* isolate, AtomBrowserContext* browser_context);
   ~Cookies() override;
 
   void Get(const base::DictionaryValue& filter, const GetCallback& callback);

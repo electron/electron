@@ -10,7 +10,6 @@
 
 #include "atom/common/crash_reporter/crash_reporter.h"
 #include "base/compiler_specific.h"
-#include "base/memory/scoped_ptr.h"
 #include "vendor/breakpad/src/client/windows/handler/exception_handler.h"
 
 namespace base {

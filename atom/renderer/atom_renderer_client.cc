@@ -317,11 +317,6 @@ content::BrowserPluginDelegate* AtomRendererClient::CreateBrowserPluginDelegate(
   }
 }
 
-void AtomRendererClient::AddKeySystems(
-    std::vector<media::KeySystemInfo>* key_systems) {
-  AddChromeKeySystems(key_systems);
-}
-
 void AtomRendererClient::GetNavigationErrorStrings(
     content::RenderFrame* render_frame,
     const blink::WebURLRequest& failed_request,
@@ -332,6 +327,11 @@ void AtomRendererClient::GetNavigationErrorStrings(
     return;
 
   *error_description = base::UTF8ToUTF16(net::ErrorToShortString(error.reason));
+}
+
+void AtomRendererClient::AddSupportedKeySystems(
+    std::vector<std::unique_ptr<::media::KeySystemProperties>>* key_systems) {
+  AddChromeKeySystems(key_systems);
 }
 
 }  // namespace atom
