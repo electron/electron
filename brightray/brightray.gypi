@@ -42,6 +42,7 @@
         '-Wno-missing-field-initializers',
         '-Wno-deprecated-declarations',
         '-Wno-unneeded-internal-declaration',
+        '-Wno-inconsistent-missing-override',
       ],
     },
     'msvs_configuration_attributes': {
