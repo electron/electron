@@ -5,6 +5,7 @@
 #ifndef ATOM_COMMON_CRASH_REPORTER_CRASH_REPORTER_WIN_H_
 #define ATOM_COMMON_CRASH_REPORTER_CRASH_REPORTER_WIN_H_
 
+#include <memory>
 #include <string>
 #include <vector>
 

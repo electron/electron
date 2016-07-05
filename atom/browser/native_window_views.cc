@@ -51,7 +51,7 @@
 #include "atom/browser/ui/win/atom_desktop_window_tree_host_win.h"
 #include "skia/ext/skia_utils_win.h"
 #include "ui/base/win/shell.h"
-#include "ui/gfx/win/dpi.h"
+#include "ui/display/win/screen_win.h"
 #include "ui/views/widget/desktop_aura/desktop_native_widget_aura.h"
 #endif
 
@@ -1093,9 +1093,11 @@ gfx::Size NativeWindowViews::ContentSizeToWindowSize(const gfx::Size& size) {
 
   gfx::Size window_size(size);
 #if defined(OS_WIN)
-  gfx::Rect dpi_bounds =
-      gfx::Rect(gfx::Point(), gfx::win::DIPToScreenSize(size));
-  gfx::Rect window_bounds = gfx::win::ScreenToDIPRect(
+  HWND hwnd = GetAcceleratedWidget();
+  gfx::Rect dpi_bounds = gfx::Rect(
+      gfx::Point(), display::win::ScreenWin::DIPToScreenSize(hwnd, size));
+  gfx::Rect window_bounds = display::win::ScreenWin::ScreenToDIPRect(
+      hwnd,
       window_->non_client_view()->GetWindowBoundsForClientBounds(dpi_bounds));
   window_size = window_bounds.size();
 #endif
@@ -1111,16 +1113,16 @@ gfx::Size NativeWindowViews::WindowSizeToContentSize(const gfx::Size& size) {
 
   gfx::Size content_size(size);
 #if defined(OS_WIN)
-  content_size = gfx::win::DIPToScreenSize(content_size);
+  HWND hwnd = GetAcceleratedWidget();
+  content_size = display::win::ScreenWin::DIPToScreenSize(hwnd, content_size);
   RECT rect;
   SetRectEmpty(&rect);
-  HWND hwnd = GetAcceleratedWidget();
   DWORD style = ::GetWindowLong(hwnd, GWL_STYLE);
   DWORD ex_style = ::GetWindowLong(hwnd, GWL_EXSTYLE);
   AdjustWindowRectEx(&rect, style, FALSE, ex_style);
   content_size.set_width(content_size.width() - (rect.right - rect.left));
   content_size.set_height(content_size.height() - (rect.bottom - rect.top));
-  content_size = gfx::win::ScreenToDIPSize(content_size);
+  content_size = display::win::ScreenWin::ScreenToDIPSize(hwnd, content_size);
 #endif
 
   if (menu_bar_ && menu_bar_visible_)
