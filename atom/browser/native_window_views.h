@@ -49,6 +49,7 @@ class NativeWindowViews : public NativeWindow,
   ~NativeWindowViews() override;
 
   // NativeWindow:
+  void RenderViewCreated(content::RenderViewHost*) override;
   void Close() override;
   void CloseImmediately() override;
   void Focus(bool focus) override;

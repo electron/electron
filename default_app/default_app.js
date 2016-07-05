@@ -18,5 +18,10 @@ exports.load = (appUrl) => {
     })
     mainWindow.loadURL(appUrl)
     mainWindow.focus()
+    mainWindow.webContents.on('dom-ready', () => {
+      mainWindow.webContents.beginFrameSubscription(() => {
+        console.log("asd")
+      })
+    })
   })
 }
