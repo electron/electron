@@ -335,6 +335,10 @@ void NativeWindowViews::CloseImmediately() {
 }
 
 void NativeWindowViews::Focus(bool focus) {
+  // For hidden window focus() should do nothing.
+  if (!IsVisible())
+    return;
+
   if (focus) {
 #if defined(OS_WIN)
     window_->Activate();
