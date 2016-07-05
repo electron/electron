@@ -19,6 +19,7 @@
 #include "media/base/media_resources.h"
 #include "net/proxy/proxy_resolver_v8.h"
 #include "ui/base/l10n/l10n_util.h"
+#include "ui/base/material_design/material_design_controller.h"
 
 #if defined(USE_AURA)
 #include "ui/display/display.h"
@@ -176,6 +177,8 @@ void BrowserMainParts::PreEarlyInitialization() {
 }
 
 void BrowserMainParts::ToolkitInitialized() {
+  ui::MaterialDesignController::Initialize();
+
 #if defined(USE_AURA) && defined(USE_X11)
   views::LinuxUI::instance()->Initialize();
   wm_state_.reset(new wm::WMState);
