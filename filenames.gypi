@@ -206,6 +206,8 @@
       'atom/browser/native_window_mac.h',
       'atom/browser/native_window_mac.mm',
       'atom/browser/native_window_observer.h',
+      'atom/browser/osr_window.cc',
+      'atom/browser/osr_window.h',
       'atom/browser/net/asar/asar_protocol_handler.cc',
       'atom/browser/net/asar/asar_protocol_handler.h',
       'atom/browser/net/asar/url_request_asar_job.cc',

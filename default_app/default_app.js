@@ -24,5 +24,10 @@ exports.load = (appUrl) => {
     mainWindow = new BrowserWindow(options)
     mainWindow.loadURL(appUrl)
     mainWindow.focus()
+    mainWindow.webContents.on('dom-ready', () => {
+      mainWindow.webContents.beginFrameSubscription(() => {
+        console.log("asd")
+      })
+    })
   })
 }

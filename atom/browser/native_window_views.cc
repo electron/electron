@@ -57,6 +57,15 @@
 #include "ui/views/widget/desktop_aura/desktop_native_widget_aura.h"
 #endif
 
+#include <iostream>
+#include "atom/browser/osr_window.h"
+#include "content/public/browser/render_widget_host.h"
+#include "content/public/browser/render_view_host.h"
+#include "content/public/browser/context_factory.h"
+#include "base/single_thread_task_runner.h"
+#include "base/threading/thread.h"
+#include "ui/gfx/native_widget_types.h"
+
 namespace atom {
 
 namespace {
@@ -333,6 +342,21 @@ NativeWindowViews::NativeWindowViews(
 
 NativeWindowViews::~NativeWindowViews() {
   window_->RemoveObserver(this);
+}
+
+void NativeWindowViews::RenderViewCreated(
+    content::RenderViewHost* render_view_host) {
+  std::cout << "NativeWindowViews::RenderViewCreated" << std::endl;
+  NativeWindow::RenderViewCreated(render_view_host);
+
+  content::RenderWidgetHostImpl* impl = content::RenderWidgetHostImpl::FromID(
+      render_view_host->GetProcess()->GetID(),
+      render_view_host->GetRoutingID());
+  if (impl) {
+    ui::Layer* layer = widget()->GetCompositor()->root_layer();
+    ui::Compositor* compositor_ = widget()->GetCompositor();
+    compositor_->RequestNewOutputSurface();
+  }
 }
 
 void NativeWindowViews::Close() {
