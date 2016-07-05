@@ -37,7 +37,6 @@
 #include "ui/gfx/geometry/rect.h"
 #include "ui/gfx/geometry/size.h"
 #include "ui/gfx/geometry/size_conversions.h"
-#include "ui/gfx/screen.h"
 #include "ui/gl/gpu_switching_manager.h"
 
 DEFINE_WEB_CONTENTS_USER_DATA_KEY(atom::NativeWindowRelay);
@@ -313,39 +312,6 @@ void NativeWindow::BlurWebView() {
 bool NativeWindow::IsWebViewFocused() {
   auto host_view = web_contents()->GetRenderViewHost()->GetWidget()->GetView();
   return host_view && host_view->HasFocus();
-}
-
-void NativeWindow::CapturePage(const gfx::Rect& rect,
-                               const CapturePageCallback& callback) {
-  const auto view = web_contents()->GetRenderWidgetHostView();
-  const auto host = view ? view->GetRenderWidgetHost() : nullptr;
-  if (!view || !host) {
-    callback.Run(SkBitmap());
-    return;
-  }
-
-  // Capture full page if user doesn't specify a |rect|.
-  const gfx::Size view_size = rect.IsEmpty() ? view->GetViewBounds().size() :
-                                               rect.size();
-
-  // By default, the requested bitmap size is the view size in screen
-  // coordinates.  However, if there's more pixel detail available on the
-  // current system, increase the requested bitmap size to capture it all.
-  gfx::Size bitmap_size = view_size;
-  const gfx::NativeView native_view = view->GetNativeView();
-  const float scale =
-      gfx::Screen::GetScreen()->GetDisplayNearestWindow(native_view)
-      .device_scale_factor();
-  if (scale > 1.0f)
-    bitmap_size = gfx::ScaleToCeiledSize(view_size, scale);
-
-  host->CopyFromBackingStore(
-      gfx::Rect(rect.origin(), view_size),
-      bitmap_size,
-      base::Bind(&NativeWindow::OnCapturePageDone,
-                 weak_factory_.GetWeakPtr(),
-                 callback),
-      kBGRA_8888_SkColorType);
 }
 
 void NativeWindow::SetAutoHideMenuBar(bool auto_hide) {
@@ -632,12 +598,6 @@ void NativeWindow::NotifyWindowUnresponsive() {
 
 void NativeWindow::NotifyReadyToShow() {
   FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnReadyToShow());
-}
-
-void NativeWindow::OnCapturePageDone(const CapturePageCallback& callback,
-                                     const SkBitmap& bitmap,
-                                     content::ReadbackResponse response) {
-  callback.Run(bitmap);
 }
 
 }  // namespace atom

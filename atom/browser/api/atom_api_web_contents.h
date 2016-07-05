@@ -54,6 +54,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
   using PrintToPDFCallback =
       base::Callback<void(v8::Local<v8::Value>, v8::Local<v8::Value>)>;
 
+  using CapturePageCallback = base::Callback<void(const SkBitmap& bitmap)>;
+
   // Create from an existing WebContents.
   static mate::Handle<WebContents> CreateFrom(
       v8::Isolate* isolate, content::WebContents* web_contents);
@@ -145,6 +147,10 @@ class WebContents : public mate::TrackableObject<WebContents>,
   // Dragging native items.
   void StartDrag(const mate::Dictionary& item, mate::Arguments* args);
 
+  // Captures the page with |rect|, |callback| would be called when capturing is
+  // done.
+  void CapturePage(mate::Arguments* args);
+
   // Methods for creating <webview>.
   void SetSize(const SetSizeParams& params);
   bool IsGuest() const;
@@ -158,6 +164,11 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void OnCreateWindow(const GURL& target_url,
                       const std::string& frame_name,
                       WindowOpenDisposition disposition);
+
+  // Called when CapturePage is done.
+  void OnCapturePageDone(base::Callback<void(const gfx::Image&)>,
+                         const SkBitmap& bitmap,
+                         content::ReadbackResponse response);
 
   // Returns the web preferences of current WebContents.
   v8::Local<v8::Value> GetWebPreferences(v8::Isolate* isolate);

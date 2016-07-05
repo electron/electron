@@ -155,7 +155,6 @@ class Window : public mate::TrackableObject<Window>,
   void SetIgnoreMouseEvents(bool ignore);
   void SetContentProtection(bool enable);
   void SetFocusable(bool focusable);
-  void CapturePage(mate::Arguments* args);
   void SetProgressBar(double progress);
   void SetOverlayIcon(const gfx::Image& overlay,
                       const std::string& description);
