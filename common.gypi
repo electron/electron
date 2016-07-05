@@ -158,6 +158,7 @@
                         '_uspoof_open_56',
                         '_usearch_setPattern_56',
                         '?createInstance@Transliterator@icu_56@@SAPAV12@ABVUnicodeString@2@W4UTransDirection@@AAW4UErrorCode@@@Z',
+                        '??0MeasureFormat@icu_56@@QAE@ABVLocale@1@W4UMeasureFormatWidth@@AAW4UErrorCode@@@Z',
                       ],
                     }, {
                       'reference_symbols': [
@@ -171,6 +172,7 @@
                         'uspoof_open_56',
                         'usearch_setPattern_56',
                         '?createInstance@Transliterator@icu_56@@SAPEAV12@AEBVUnicodeString@2@W4UTransDirection@@AEAW4UErrorCode@@@Z',
+                        '??0MeasureFormat@icu_56@@QEAA@AEBVLocale@1@W4UMeasureFormatWidth@@AEAW4UErrorCode@@@Z',
                       ],
                     }],
                   ],
