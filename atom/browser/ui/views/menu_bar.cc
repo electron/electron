@@ -58,7 +58,7 @@ MenuBar::MenuBar()
 MenuBar::~MenuBar() {
 }
 
-void MenuBar::SetMenu(ui::MenuModel* model) {
+void MenuBar::SetMenu(AtomMenuModel* model) {
   menu_model_ = model;
   RemoveAllChildViews(true);
 
@@ -105,7 +105,7 @@ int MenuBar::GetItemCount() const {
 }
 
 bool MenuBar::GetMenuButtonFromScreenPoint(const gfx::Point& point,
-                                           ui::MenuModel** menu_model,
+                                           AtomMenuModel** menu_model,
                                            views::MenuButton** button) {
   gfx::Point location(point);
   views::View::ConvertPointFromScreen(this, &location);
@@ -117,7 +117,7 @@ bool MenuBar::GetMenuButtonFromScreenPoint(const gfx::Point& point,
   for (int i = 0; i < child_count(); ++i) {
     views::View* view = child_at(i);
     if (view->bounds().Contains(location) &&
-        (menu_model_->GetTypeAt(i) == ui::MenuModel::TYPE_SUBMENU)) {
+        (menu_model_->GetTypeAt(i) == AtomMenuModel::TYPE_SUBMENU)) {
       *menu_model = menu_model_->GetSubmenuModelAt(i);
       *button = static_cast<views::MenuButton*>(view);
       return true;
@@ -144,8 +144,8 @@ void MenuBar::OnMenuButtonClicked(views::MenuButton* source,
     return;
 
   int id = source->tag();
-  ui::MenuModel::ItemType type = menu_model_->GetTypeAt(id);
-  if (type != ui::MenuModel::TYPE_SUBMENU) {
+  AtomMenuModel::ItemType type = menu_model_->GetTypeAt(id);
+  if (type != AtomMenuModel::TYPE_SUBMENU) {
     menu_model_->ActivatedAt(id, 0);
     return;
   }

@@ -45,4 +45,9 @@ void AtomMenuModel::MenuClosed() {
   FOR_EACH_OBSERVER(Observer, observers_, MenuClosed());
 }
 
+AtomMenuModel* AtomMenuModel::GetSubmenuModelAt(int index) {
+  return static_cast<AtomMenuModel*>(
+    ui::SimpleMenuModel::GetSubmenuModelAt(index));
+}
+
 }  // namespace atom

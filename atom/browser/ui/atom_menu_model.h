@@ -28,7 +28,7 @@ class AtomMenuModel : public ui::SimpleMenuModel {
     bool GetAcceleratorForCommandId(int command_id,
                                     ui::Accelerator* accelerator) {
       return GetAcceleratorForCommandIdWithParams(
-          command_id, true, accelerator);
+          command_id, false, accelerator);
     }
   };
 
@@ -54,6 +54,9 @@ class AtomMenuModel : public ui::SimpleMenuModel {
 
   // ui::SimpleMenuModel:
   void MenuClosed() override;
+
+  using SimpleMenuModel::GetSubmenuModelAt;
+  AtomMenuModel* GetSubmenuModelAt(int index);
 
  private:
   Delegate* delegate_;  // weak ref.
