@@ -150,19 +150,15 @@ bool Browser::ContinueUserActivity(const std::string& type,
   return prevent_default;
 }
 
-v8::Local<v8::Value> Browser::GetLoginItemLaunchStatus(mate::Arguments* args) {
-  mate::Dictionary dict = mate::Dictionary::CreateEmpty(args->isolate());
-  dict.Set("loginItem", base::mac::WasLaunchedAsLoginOrResumeItem());
-  dict.Set("hidden", base::mac::WasLaunchedAsHiddenLoginItem());
-  dict.Set("restoreState", base::mac::WasLaunchedAsLoginItemRestoreState());
-  return dict.GetHandle();
-}
-
 v8::Local<v8::Value> Browser::GetLoginItemStatus(mate::Arguments* args) {
   bool hidden = false;
   mate::Dictionary dict = mate::Dictionary::CreateEmpty(args->isolate());
-  dict.Set("loginItem", base::mac::CheckLoginItemStatus(&hidden));
-  dict.Set("hidden", hidden);
+  dict.Set("openAtLogin", base::mac::CheckLoginItemStatus(&hidden));
+  dict.Set("openAsHidden", hidden);
+  dict.Set("restoreState", base::mac::WasLaunchedAsLoginItemRestoreState());
+  dict.Set("openedAtLogin", base::mac::WasLaunchedAsLoginOrResumeItem());
+  dict.Set("openedAsHidden", base::mac::WasLaunchedAsHiddenLoginItem());
+
   return dict.GetHandle();
 }
 

@@ -527,8 +527,6 @@ void App::BuildPrototype(
       .SetMethod("show", base::Bind(&Browser::Show, browser))
       .SetMethod("setUserActivity",
                  base::Bind(&Browser::SetUserActivity, browser))
-      .SetMethod("getLoginItemLaunchStatus",
-                 base::Bind(&Browser::GetLoginItemLaunchStatus, browser))
       .SetMethod("getLoginItemStatus",
                  base::Bind(&Browser::GetLoginItemStatus, browser))
       .SetMethod("setAsLoginItem",
