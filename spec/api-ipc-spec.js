@@ -35,8 +35,9 @@ describe('ipc module', function () {
       assert.equal(a.foo.bar, 'baz')
       assert.equal(a.foo.baz, false)
       assert.equal(a.bar, 1234)
+      assert.equal(a.anonymous.constructor.name, '')
       assert.equal(a.getConstructorName(Object.create(null)), '')
-      assert.equal(a.getConstructorName(new (class {})), '')
+      assert.equal(a.getConstructorName(new class {}), '')
     })
 
     it('should search module from the user app', function () {
