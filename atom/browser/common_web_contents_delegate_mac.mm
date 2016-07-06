@@ -27,6 +27,11 @@ void CommonWebContentsDelegate::HandleKeyboardEvent(
   if (event.windowsKeyCode == ui::VKEY_ESCAPE && is_html_fullscreen())
     ExitFullscreenModeForTab(source);
 
+  // Send the event to the menu before sending it to the window
+  if (event.os_event.type == NSKeyDown &&
+      [[NSApp mainMenu] performKeyEquivalent:event.os_event])
+    return;
+
   if (event.os_event.window)
     [event.os_event.window redispatchKeyEvent:event.os_event];
 }
