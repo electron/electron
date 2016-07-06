@@ -1272,7 +1272,9 @@ void WebContents::CapturePage(mate::Arguments* args) {
   host->CopyFromBackingStore(
       gfx::Rect(rect.origin(), view_size),
       bitmap_size,
-      base::Bind(&WebContents::OnCapturePageDone, base::Unretained(this), callback),
+      base::Bind(&WebContents::OnCapturePageDone,
+                base::Unretained(this),
+                callback),
       kBGRA_8888_SkColorType);
 }
 
