@@ -598,6 +598,33 @@ Returns the current value displayed in the counter badge.
 
 Returns whether current desktop environment is Unity launcher.
 
+### `app.getLoginItemStatus()` _macOS_
+
+Return an Object with the login item status the app.
+
+* `openAtLogin` Boolean - `true` if the app is set to open at login.
+* `openAsHidden` Boolean - `true` if the app is set to open as hidden at login.
+* `openedAtLogin` Boolean - `true` if the app was opened at login automatically.
+* `openedAsHidden` Boolean - `true` if the app was opened as a hidden login
+  item. This indicates that the app should not open any windows at startup.
+* `restoreState` Boolean - `true` if the app was opened as a login item that
+  should restore the state from the previous session. This indicates that the
+  app should restore the windows that were open the last time the app was
+  closed.
+
+### `app.setAsLoginItem([openAsHidden])` _macOS_
+
+Set the app as a login item. This will cause the app to be opened automatically
+on login.
+
+* `openAsHidden` Boolean - `true` to hide the app when opened. Defaults to
+  `false`.
+
+### `app.removeAsLoginItem()` _macOS_
+
+Removes the app as a login item. The app will no longer be opened automatically
+on login.
+
 ### `app.commandLine.appendSwitch(switch[, value])`
 
 Append a switch (with optional `value`) to Chromium's command line.
