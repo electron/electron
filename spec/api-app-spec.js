@@ -298,4 +298,33 @@ describe('app module', function () {
       assert.equal(app.getBadgeCount(), shouldFail ? 0 : 42)
     })
   })
+
+  describe('app.getLoginItemStatus API', function () {
+    if (process.platform !== 'darwin') return
+
+    afterEach(function () {
+      app.removeAsLoginItem()
+      assert.equal(app.getLoginItemStatus().loginItem, false)
+    })
+
+    it('returns the login item status of the app', function () {
+      app.setAsLoginItem(true)
+      assert.equal(app.getLoginItemStatus().loginItem, true)
+      assert.equal(app.getLoginItemStatus().hidden, true)
+
+      app.setAsLoginItem(false)
+      assert.equal(app.getLoginItemStatus().loginItem, true)
+      assert.equal(app.getLoginItemStatus().hidden, false)
+    })
+  })
+
+  describe('app.getLoginItemLaunchStatus API', function () {
+    if (process.platform !== 'darwin') return
+
+    it('returns the login item status launch of the app', function () {
+      assert.equal(app.getLoginItemLaunchStatus().loginItem, false)
+      assert.equal(app.getLoginItemLaunchStatus().hidden, false)
+      assert.equal(app.getLoginItemLaunchStatus().restoreState, false)
+    })
+  })
 })
