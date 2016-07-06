@@ -54,8 +54,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
   using PrintToPDFCallback =
       base::Callback<void(v8::Local<v8::Value>, v8::Local<v8::Value>)>;
 
-  using CapturePageCallback = base::Callback<void(const SkBitmap& bitmap)>;
-
   // Create from an existing WebContents.
   static mate::Handle<WebContents> CreateFrom(
       v8::Isolate* isolate, content::WebContents* web_contents);
