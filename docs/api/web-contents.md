@@ -664,6 +664,20 @@ webContents.on('found-in-page', (event, result) => {
 const requestId = webContents.findInPage('api');
 ```
 
+### `webContents.capturePage([rect, ]callback)`
+
+* `rect` Object (optional) - The area of the page to be captured
+  * `x` Integer
+  * `y` Integer
+  * `width` Integer
+  * `height` Integer
+* `callback` Function
+
+Captures a snapshot of the page within `rect`. Upon completion `callback` will
+be called with `callback(image)`. The `image` is an instance of
+[NativeImage](native-image.md) that stores data of the snapshot. Omitting
+`rect` will capture the whole visible page.
+
 ### `webContents.hasServiceWorker(callback)`
 
 * `callback` Function
