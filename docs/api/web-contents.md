@@ -649,8 +649,8 @@ the request can be obtained by subscribing to
 
 * `action` String - Specifies the action to take place when ending
   [`webContents.findInPage`](web-contents.md#webcontentfindinpage) request.
-  * `clearSelection` - Translate the selection into a normal selection.
-  * `keepSelection` - Clear the selection.
+  * `clearSelection` - Clear the selection.
+  * `keepSelection` - Translate the selection into a normal selection.
   * `activateSelection` - Focus and click the selection node.
 
 Stops any `findInPage` request for the `webContents` with the provided `action`.
