@@ -756,6 +756,17 @@ gfx::Rect NativeWindowMac::GetBounds() {
   return bounds;
 }
 
+void NativeWindowMac::SetSize(const gfx::Size& size, bool animate) {
+  gfx::Size minSize = GetMinimumSize();
+  gfx::Size maxSize = GetMaximumSize();
+  // Bound the supplied width and height values with max and min sizes
+  int bWidth = fmax(minSize.width(), size.width());
+  bWidth = maxSize.width() == 0 ? bWidth : fmin(maxSize.width(), bWidth);
+  int bHeight = fmax(minSize.height(), size.height());
+  bHeight = maxSize.height() == 0 ? bHeight : fmin(maxSize.height(), bHeight);
+  SetBounds(gfx::Rect(GetPosition(), gfx::Size(bWidth, bHeight)), animate);
+}
+
 void NativeWindowMac::SetContentSizeConstraints(
     const extensions::SizeConstraints& size_constraints) {
   auto convertSize = [this](const gfx::Size& size) {
