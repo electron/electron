@@ -13,6 +13,7 @@
 #include "ui/gfx/geometry/point.h"
 #include "ui/gfx/geometry/rect.h"
 #include "ui/gfx/screen.h"
+#include "ui/gfx/win/dpi.h"
 #include "ui/views/controls/menu/menu_runner.h"
 
 namespace atom {
@@ -48,26 +49,19 @@ NotifyIcon::~NotifyIcon() {
 void NotifyIcon::HandleClickEvent(int modifiers,
                                   bool left_mouse_click,
                                   bool double_button_click) {
-  NOTIFYICONIDENTIFIER icon_id;
-  memset(&icon_id, 0, sizeof(NOTIFYICONIDENTIFIER));
-  icon_id.uID = icon_id_;
-  icon_id.hWnd = window_;
-  icon_id.cbSize = sizeof(NOTIFYICONIDENTIFIER);
-
-  RECT rect = { 0 };
-  Shell_NotifyIconGetRect(&icon_id, &rect);
+  gfx::Rect bounds = GetBounds();
 
   if (left_mouse_click) {
     if (double_button_click)  // double left click
-      NotifyDoubleClicked(gfx::Rect(rect), modifiers);
+      NotifyDoubleClicked(bounds, modifiers);
     else  // single left click
-      NotifyClicked(gfx::Rect(rect), modifiers);
+      NotifyClicked(bounds, modifiers);
     return;
   } else if (!double_button_click) {  // single right click
     if (menu_model_)
       PopUpContextMenu(gfx::Point(), menu_model_);
     else
-      NotifyRightClicked(gfx::Rect(rect), modifiers);
+      NotifyRightClicked(bounds, modifiers);
   }
 }
 
@@ -140,8 +134,9 @@ void NotifyIcon::DisplayBalloon(HICON icon,
 void NotifyIcon::PopUpContextMenu(const gfx::Point& pos,
                                   ui::SimpleMenuModel* menu_model) {
   // Returns if context menu isn't set.
-  if (!menu_model)
+  if (menu_model == nullptr && menu_model_ == nullptr)
     return;
+
   // Set our window as the foreground window, so the context menu closes when
   // we click away from it.
   if (!SetForegroundWindow(window_))
@@ -153,7 +148,7 @@ void NotifyIcon::PopUpContextMenu(const gfx::Point& pos,
     rect.set_origin(gfx::Screen::GetScreen()->GetCursorScreenPoint());
 
   views::MenuRunner menu_runner(
-      menu_model,
+      menu_model != nullptr ? menu_model : menu_model_,
       views::MenuRunner::CONTEXT_MENU | views::MenuRunner::HAS_MNEMONICS);
   ignore_result(menu_runner.RunMenuAt(
       NULL, NULL, rect, views::MENU_ANCHOR_TOPLEFT, ui::MENU_SOURCE_MOUSE));
@@ -161,6 +156,18 @@ void NotifyIcon::PopUpContextMenu(const gfx::Point& pos,
 
 void NotifyIcon::SetContextMenu(ui::SimpleMenuModel* menu_model) {
   menu_model_ = menu_model;
+}
+
+gfx::Rect NotifyIcon::GetBounds() {
+  NOTIFYICONIDENTIFIER icon_id;
+  memset(&icon_id, 0, sizeof(NOTIFYICONIDENTIFIER));
+  icon_id.uID = icon_id_;
+  icon_id.hWnd = window_;
+  icon_id.cbSize = sizeof(NOTIFYICONIDENTIFIER);
+
+  RECT rect = { 0 };
+  Shell_NotifyIconGetRect(&icon_id, &rect);
+  return gfx::win::ScreenToDIPRect(gfx::Rect(rect));
 }
 
 void NotifyIcon::InitIconData(NOTIFYICONDATA* icon_data) {

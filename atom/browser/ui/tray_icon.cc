@@ -30,6 +30,10 @@ void TrayIcon::PopUpContextMenu(const gfx::Point& pos,
                                 ui::SimpleMenuModel* menu_model) {
 }
 
+gfx::Rect TrayIcon::GetBounds() {
+  return gfx::Rect();
+}
+
 void TrayIcon::NotifyClicked(const gfx::Rect& bounds, int modifiers) {
   FOR_EACH_OBSERVER(TrayIconObserver, observers_, OnClicked(bounds, modifiers));
 }

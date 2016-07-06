@@ -17,6 +17,7 @@
 #include "atom/browser/lib/bluetooth_chooser.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/net/atom_network_delegate.h"
+#include "atom/browser/ui/drag_util.h"
 #include "atom/browser/web_contents_permission_helper.h"
 #include "atom/browser/web_contents_preferences.h"
 #include "atom/browser/web_view_guest_delegate.h"
@@ -61,11 +62,9 @@
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 #include "net/http/http_response_headers.h"
-#include "net/url_request/static_http_user_agent_settings.h"
 #include "net/url_request/url_request_context.h"
 #include "third_party/WebKit/public/web/WebInputEvent.h"
 #include "third_party/WebKit/public/web/WebFindOptions.h"
-#include "ui/base/l10n/l10n_util.h"
 
 #include "atom/common/node_includes.h"
 
@@ -75,15 +74,6 @@ struct PrintSettings {
   bool silent;
   bool print_background;
 };
-
-void SetUserAgentInIO(scoped_refptr<net::URLRequestContextGetter> getter,
-                      std::string accept_lang,
-                      std::string user_agent) {
-  getter->GetURLRequestContext()->set_http_user_agent_settings(
-      new net::StaticHttpUserAgentSettings(
-          net::HttpUtil::GenerateAcceptLanguageHeader(accept_lang),
-          user_agent));
-}
 
 }  // namespace
 
@@ -618,7 +608,10 @@ void WebContents::DidFailProvisionalLoad(
     bool was_ignored_by_handler) {
   bool is_main_frame = !render_frame_host->GetParent();
   Emit("did-fail-provisional-load", code, description, url, is_main_frame);
-  Emit("did-fail-load", code, description, url, is_main_frame);
+
+  // Do not emit "did-fail-load" for canceled requests.
+  if (code != net::ERR_ABORTED)
+    Emit("did-fail-load", code, description, url, is_main_frame);
 }
 
 void WebContents::DidFailLoad(content::RenderFrameHost* render_frame_host,
@@ -811,7 +804,7 @@ void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
 
   std::string user_agent;
   if (options.Get("userAgent", &user_agent))
-    SetUserAgent(user_agent);
+    web_contents()->SetUserAgentOverride(user_agent);
 
   std::string extra_headers;
   if (options.Get("extraHeaders", &extra_headers))
@@ -898,14 +891,9 @@ bool WebContents::IsCrashed() const {
   return web_contents()->IsCrashed();
 }
 
-void WebContents::SetUserAgent(const std::string& user_agent) {
+void WebContents::SetUserAgent(const std::string& user_agent,
+                               mate::Arguments* args) {
   web_contents()->SetUserAgentOverride(user_agent);
-  scoped_refptr<net::URLRequestContextGetter> getter =
-      web_contents()->GetBrowserContext()->GetRequestContext();
-
-  auto accept_lang = l10n_util::GetApplicationLocale("");
-  getter->GetNetworkTaskRunner()->PostTask(FROM_HERE,
-      base::Bind(&SetUserAgentInIO, getter, accept_lang, user_agent));
 }
 
 std::string WebContents::GetUserAgent() {
@@ -1194,15 +1182,14 @@ void WebContents::SendInputEvent(v8::Isolate* isolate,
       isolate, "Invalid event object")));
 }
 
-void WebContents::BeginFrameSubscription(
-  mate::Arguments* args) {
-  FrameSubscriber::FrameCaptureCallback callback;
+void WebContents::BeginFrameSubscription(mate::Arguments* args) {
   bool only_dirty = false;
+  FrameSubscriber::FrameCaptureCallback callback;
 
+  args->GetNext(&only_dirty);
   if (!args->GetNext(&callback)) {
-    args->GetNext(&only_dirty);
-    if (!args->GetNext(&callback))
-      args->ThrowTypeError("'callback' must be defined");
+    args->ThrowError();
+    return;
   }
 
   const auto view = web_contents()->GetRenderWidgetHostView();
@@ -1217,6 +1204,35 @@ void WebContents::EndFrameSubscription() {
   const auto view = web_contents()->GetRenderWidgetHostView();
   if (view)
     view->EndFrameSubscription();
+}
+
+void WebContents::StartDrag(const mate::Dictionary& item,
+                            mate::Arguments* args) {
+  base::FilePath file;
+  std::vector<base::FilePath> files;
+  if (!item.Get("files", &files) && item.Get("file", &file)) {
+    files.push_back(file);
+  }
+
+  mate::Handle<NativeImage> icon;
+  if (!item.Get("icon", &icon) && !file.empty()) {
+    // TODO(zcbenz): Set default icon from file.
+  }
+
+  // Error checking.
+  if (icon.IsEmpty()) {
+    args->ThrowError("icon must be set");
+    return;
+  }
+
+  // Start dragging.
+  if (!files.empty()) {
+    base::MessageLoop::ScopedNestableTaskAllower allow(
+        base::MessageLoop::current());
+    DragFileItems(files, icon->image(), web_contents()->GetNativeView());
+  } else {
+    args->ThrowError("There is nothing to drag");
+  }
 }
 
 void WebContents::OnCursorChange(const content::WebCursor& cursor) {
@@ -1338,6 +1354,7 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("beginFrameSubscription",
                  &WebContents::BeginFrameSubscription)
       .SetMethod("endFrameSubscription", &WebContents::EndFrameSubscription)
+      .SetMethod("startDrag", &WebContents::StartDrag)
       .SetMethod("setSize", &WebContents::SetSize)
       .SetMethod("isGuest", &WebContents::IsGuest)
       .SetMethod("getType", &WebContents::GetType)

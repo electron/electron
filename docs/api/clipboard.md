@@ -75,6 +75,20 @@ Returns the content in the clipboard as RTF.
 
 Writes the `text` into the clipboard in RTF.
 
+### `clipboard.readBookmark()` _macOS_ _Windows_
+
+Returns an Object containing `title` and `url` keys representing the bookmark in
+the clipboard. The `title` and `url` values will be empty strings when the
+bookmark is unavailable.
+
+### `clipboard.writeBookmark(title, url[, type])` _macOS_ _Windows_
+
+* `title` String
+* `url` String
+* `type` String (optional)
+
+Writes the `title` and `url` into the clipboard as a bookmark.
+
 ### `clipboard.clear([type])`
 
 * `type` String (optional)
@@ -111,6 +125,8 @@ Reads `data` from the clipboard.
   * `text` String
   * `html` String
   * `image` [NativeImage](native-image.md)
+  * `rtf` String
+  * `bookmark` String - The title of the url at `text`.
 * `type` String (optional)
 
 ```javascript

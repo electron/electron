@@ -106,9 +106,6 @@ Window::Window(v8::Isolate* isolate, const mate::Dictionary& options) {
       options,
       parent.IsEmpty() ? nullptr : parent->window_.get()));
   web_contents->SetOwnerWindow(window_.get());
-  window_->InitFromOptions(options);
-  window_->AddObserver(this);
-  AttachAsUserData(window_.get());
 
 #if defined(TOOLKIT_VIEWS)
   // Sets the window icon.
@@ -116,6 +113,10 @@ Window::Window(v8::Isolate* isolate, const mate::Dictionary& options) {
   if (options.Get(options::kIcon, &icon))
     SetIcon(icon);
 #endif
+
+  window_->InitFromOptions(options);
+  window_->AddObserver(this);
+  AttachAsUserData(window_.get());
 }
 
 Window::~Window() {
@@ -572,6 +573,10 @@ void Window::SetIgnoreMouseEvents(bool ignore) {
   return window_->SetIgnoreMouseEvents(ignore);
 }
 
+void Window::SetContentProtection(bool enable) {
+  return window_->SetContentProtection(enable);
+}
+
 void Window::SetFocusable(bool focusable) {
   return window_->SetFocusable(focusable);
 }
@@ -833,6 +838,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setDocumentEdited", &Window::SetDocumentEdited)
       .SetMethod("isDocumentEdited", &Window::IsDocumentEdited)
       .SetMethod("setIgnoreMouseEvents", &Window::SetIgnoreMouseEvents)
+      .SetMethod("setContentProtection", &Window::SetContentProtection)
       .SetMethod("setFocusable", &Window::SetFocusable)
       .SetMethod("focusOnWebView", &Window::FocusOnWebView)
       .SetMethod("blurWebView", &Window::BlurWebView)

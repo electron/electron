@@ -152,6 +152,10 @@ def create_symbols():
     dsyms = glob.glob(os.path.join(OUT_DIR, '*.dSYM'))
     for dsym in dsyms:
       shutil.copytree(dsym, os.path.join(DIST_DIR, os.path.basename(dsym)))
+  elif PLATFORM == 'win32':
+    pdbs = glob.glob(os.path.join(OUT_DIR, '*.pdb'))
+    for pdb in pdbs:
+      shutil.copy2(pdb, DIST_DIR)
 
 
 def create_dist_zip():
@@ -223,6 +227,14 @@ def create_symbols_zip():
     with scoped_cwd(DIST_DIR):
       dsyms = glob.glob('*.dSYM')
       make_zip(os.path.join(DIST_DIR, dsym_name), licenses, dsyms)
+  elif PLATFORM == 'win32':
+    pdb_name = '{0}-{1}-{2}-{3}-pdb.zip'.format(PROJECT_NAME,
+                                                ELECTRON_VERSION,
+                                                get_platform_key(),
+                                                get_target_arch())
+    with scoped_cwd(DIST_DIR):
+      pdbs = glob.glob('*.pdb')
+      make_zip(os.path.join(DIST_DIR, pdb_name), pdbs + licenses, [])
 
 
 if __name__ == '__main__':

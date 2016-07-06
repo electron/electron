@@ -2,7 +2,7 @@
 
 > 네이티브 애플리케이션 메뉴와 컨텍스트 메뉴에 아이템을 추가합니다.
 
-[`menu`](menu.md)에서 예시를 확인할 수 있습니다.
+[`Menu`](menu.md)에서 예시를 확인할 수 있습니다.
 
 ## Class: MenuItem
 
@@ -11,9 +11,9 @@
 ### new MenuItem(options)
 
 * `options` Object
-  * `click` Function - 메뉴 아이템이 클릭될 때 `click(menuItem, browserWindow)`
-    형태로 호출 되는 콜백 함수
-  * `role` String - 메뉴 아이템의 액션을 정의합니다; 이 속성을 지정하면 `click`
+  * `click` Function - 메뉴 아이템이 클릭될 때 `click(menuItem, browserWindow,
+    event)` 형태로 호출 되는 콜백 함수.
+  * `role` String - 메뉴 아이템의 액션을 정의합니다. 이 속성을 지정하면 `click`
     속성이 무시됩니다.
   * `type` String - `MenuItem`의 타입 `normal`, `separator`, `submenu`,
     `checkbox` 또는 `radio`를 사용할 수 있습니다. 만약 값이 `Menu`가 아니면
@@ -39,6 +39,9 @@
 함수로 일일이 구현하려 시도하는 것 보다 더 좋을 수 있습니다. 빌트-인 `role` 동작은
 더 좋은 네이티브 경험을 제공할 것입니다.
 
+`role`을 사용하는 동안에는 `label`과 `accelerator`는 필수가 아니며 각 플랫폼에 대해
+적합한 값이 기본값으로 사용됩니다.
+
 `role` 속성은 다음 값을 가질 수 있습니다:
 
 * `undo`
@@ -51,6 +54,8 @@
 * `delete`
 * `minimize` - 현재 윈도우를 최소화합니다
 * `close` - 현재 윈도우를 닫습니다
+* `quit`- 애플리케이션을 닫습니다
+* `togglefullscreen` - 현재 윈도우에서 전체 화면 모드를 토글합니다
 
 macOS에서의 `role`은 다음 값을 추가로 가질 수 있습니다:
 
@@ -67,20 +72,28 @@ macOS에서의 `role`은 다음 값을 추가로 가질 수 있습니다:
 macOS에서는 `role`을 지정할 때, `label`과 `accelerator`만 MenuItem에 효과가
 적용되도록 변경되며, 다른 옵션들은 모두 무시됩니다.
 
-## Instance Properties
+### Instance Properties
 
-다음 속성들은 존재하는 `MenuItem`에서 계속 변경될 수 있습니다:
+다음은 `MenuItem`의 인스턴스에서 사용할 수 있는 속성입니다:
 
-  * `enabled` Boolean
-  * `visible` Boolean
-  * `checked` Boolean
+#### `menuItem.enabled`
 
-이 속성들의 의미는 위 옵션에서 설명한 것과 같습니다.
+아이템이 활성화되어있는지 여부를 표시하는 Boolean 값입니다. 이 속성은 동적으로 변경될
+수 있습니다.
 
-`checkbox` 메뉴 아이템은 선택될 때 해당 아이템의 `checked` 속성을 통해 활성화 그리고
-비활성화 상태인지를 표시합니다. 또한 `click` 함수를 지정하여 추가적인 작업을 할 수도
-있습니다.
+#### `menuItem.visible`
 
-`radio` 메뉴 아이템은 클릭되었을 때 `checked` 속성을 활성화 합니다. 그리고 같은
-메뉴의 인접한 모든 다른 아이템은 비활성화됩니다. 또한 `click` 함수를 지정하여 추가적인
-작업을 할 수도 있습니다.
+아이템이 보여지고있는지 여부를 표시하는 Boolean 값입니다. 이 속성은 동적으로 변경될
+수 있습니다.
+
+#### `menuItem.checked`
+
+아이템이 선택되어있는지 여부를 반환하는 Boolean 값입니다. 이 속성은 동적으로 변경될
+수 있습니다.
+
+`checkbox` 메뉴 아이템은 선택되면 `checked` 속성을 토글합니다.
+
+`radio` 메뉴 아이템은 클릭되었을 때 `checked` 속성을 활성화 합니다. 그리고
+같은 메뉴의 모든 인접한 아이템에 대한 속성이 꺼집니다.
+
+추가적인 작업을 위해 `click` 함수를 추가할 수도 있습니다.

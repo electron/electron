@@ -396,7 +396,8 @@ Overrides the current application's name.
 
 ### `app.getLocale()`
 
-Returns the current application locale.
+Returns the current application locale. Possible return values are documented
+[here](app-locales.md).
 
 **Note:** When distributing your packaged app, you have to also ship the
 `locales` folder.
@@ -577,6 +578,26 @@ Disables hardware acceleration for current app.
 
 This method can only be called before app is ready.
 
+### `app.setBadgeCount(count)` _Linux_ _macOS_
+
+* `count` Integer
+
+Sets the counter badge for current app. Setting the count to `0` will hide the
+badge. Returns `true` when the call succeeded, otherwise returns `false`.
+
+On macOS it shows on the dock icon. On Linux it only works for Unity launcher,
+
+**Note:** Unity launcher requires the exsistence of a `.desktop` file to work,
+for more information please read [Desktop Environment Integration][unity-requiremnt].
+
+### `app.getBadgeCount()` _Linux_ _macOS_
+
+Returns the current value displayed in the counter badge.
+
+### `app.isUnityRunning()` _Linux_
+
+Returns whether current desktop environment is Unity launcher.
+
 ### `app.commandLine.appendSwitch(switch[, value])`
 
 Append a switch (with optional `value`) to Chromium's command line.
@@ -654,3 +675,4 @@ Sets the `image` associated with this dock icon.
 [LSCopyDefaultHandlerForURLScheme]: https://developer.apple.com/library/mac/documentation/Carbon/Reference/LaunchServicesReference/#//apple_ref/c/func/LSCopyDefaultHandlerForURLScheme
 [handoff]: https://developer.apple.com/library/ios/documentation/UserExperience/Conceptual/Handoff/HandoffFundamentals/HandoffFundamentals.html
 [activity-type]: https://developer.apple.com/library/ios/documentation/Foundation/Reference/NSUserActivity_Class/index.html#//apple_ref/occ/instp/NSUserActivity/activityType
+[unity-requiremnt]: ../tutorial/desktop-environment-integration.md#unity-launcher-shortcuts-linux

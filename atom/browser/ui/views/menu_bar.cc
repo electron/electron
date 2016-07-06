@@ -50,14 +50,7 @@ void GetMenuBarColor(SkColor* enabled, SkColor* disabled, SkColor* highlight,
 MenuBar::MenuBar()
     : background_color_(kDefaultColor),
       menu_model_(NULL) {
-#if defined(OS_WIN)
-  background_color_ = color_utils::GetSysSkColor(COLOR_MENUBAR);
-#elif defined(USE_X11)
-  GetMenuBarColor(&enabled_color_, &disabled_color_, &highlight_color_,
-                  &hover_color_, &background_color_);
-#endif
-
-  set_background(views::Background::CreateSolidBackground(background_color_));
+  UpdateMenuBarColor();
   SetLayoutManager(new views::BoxLayout(
       views::BoxLayout::kHorizontal, 0, 0, 0));
 }
@@ -152,11 +145,27 @@ void MenuBar::OnMenuButtonClicked(views::MenuButton* source,
 
   int id = source->tag();
   ui::MenuModel::ItemType type = menu_model_->GetTypeAt(id);
-  if (type != ui::MenuModel::TYPE_SUBMENU)
+  if (type != ui::MenuModel::TYPE_SUBMENU) {
+    menu_model_->ActivatedAt(id, 0);
     return;
+  }
 
   MenuDelegate menu_delegate(this);
   menu_delegate.RunMenu(menu_model_->GetSubmenuModelAt(id), source);
+}
+
+void MenuBar::OnNativeThemeChanged(const ui::NativeTheme* theme) {
+  UpdateMenuBarColor();
+}
+
+void MenuBar::UpdateMenuBarColor() {
+#if defined(OS_WIN)
+  background_color_ = color_utils::GetSysSkColor(COLOR_MENUBAR);
+#elif defined(USE_X11)
+  GetMenuBarColor(&enabled_color_, &disabled_color_, &highlight_color_,
+                  &hover_color_, &background_color_);
+#endif
+  set_background(views::Background::CreateSolidBackground(background_color_));
 }
 
 }  // namespace atom

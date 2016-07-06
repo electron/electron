@@ -54,11 +54,15 @@ std::string Read(const std::string& format_string,
 void Write(const mate::Dictionary& data,
            mate::Arguments* args) {
   ui::ScopedClipboardWriter writer(GetClipboardType(args));
-  base::string16 text, html;
+  base::string16 text, html, bookmark;
   gfx::Image image;
 
-  if (data.Get("text", &text))
+  if (data.Get("text", &text)) {
     writer.WriteText(text);
+
+    if (data.Get("bookmark", &bookmark))
+      writer.WriteBookmark(bookmark, base::UTF16ToUTF8(text));
+  }
 
   if (data.Get("rtf", &text)) {
     std::string rtf = base::UTF16ToUTF8(text);
@@ -122,6 +126,23 @@ void WriteHtml(const base::string16& html, mate::Arguments* args) {
   writer.WriteHTML(html, std::string());
 }
 
+v8::Local<v8::Value> ReadBookmark(mate::Arguments* args) {
+  base::string16 title;
+  std::string url;
+  mate::Dictionary dict = mate::Dictionary::CreateEmpty(args->isolate());
+  ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
+  clipboard->ReadBookmark(&title, &url);
+  dict.Set("title", title);
+  dict.Set("url", url);
+  return dict.GetHandle();
+}
+
+void WriteBookmark(const base::string16& title, const std::string& url,
+                   mate::Arguments* args) {
+  ui::ScopedClipboardWriter writer(GetClipboardType(args));
+  writer.WriteBookmark(title, url);
+}
+
 gfx::Image ReadImage(mate::Arguments* args) {
   ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
   SkBitmap bitmap = clipboard->ReadImage(GetClipboardType(args));
@@ -150,6 +171,8 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   dict.SetMethod("writeRTF", &WriteRtf);
   dict.SetMethod("readHTML", &ReadHtml);
   dict.SetMethod("writeHTML", &WriteHtml);
+  dict.SetMethod("readBookmark", &ReadBookmark);
+  dict.SetMethod("writeBookmark", &WriteBookmark);
   dict.SetMethod("readImage", &ReadImage);
   dict.SetMethod("writeImage", &WriteImage);
   dict.SetMethod("clear", &Clear);

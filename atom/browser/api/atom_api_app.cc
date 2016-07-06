@@ -463,10 +463,11 @@ void App::DisableHardwareAcceleration(mate::Arguments* args) {
 void App::ImportCertificate(
     const base::DictionaryValue& options,
     const net::CompletionCallback& callback) {
-  auto browser_context = AtomBrowserMainParts::Get()->browser_context();
+  auto browser_context = brightray::BrowserContext::From("", false);
   if (!certificate_manager_model_) {
     std::unique_ptr<base::DictionaryValue> copy = options.CreateDeepCopy();
-    CertificateManagerModel::Create(browser_context,
+    CertificateManagerModel::Create(
+        browser_context.get(),
         base::Bind(&App::OnCertificateManagerModelCreated,
                    base::Unretained(this),
                    base::Passed(&copy),
@@ -519,6 +520,8 @@ void App::BuildPrototype(
                  base::Bind(&Browser::SetAsDefaultProtocolClient, browser))
       .SetMethod("removeAsDefaultProtocolClient",
                  base::Bind(&Browser::RemoveAsDefaultProtocolClient, browser))
+      .SetMethod("setBadgeCount", base::Bind(&Browser::SetBadgeCount, browser))
+      .SetMethod("getBadgeCount", base::Bind(&Browser::GetBadgeCount, browser))
 #if defined(OS_MACOSX)
       .SetMethod("hide", base::Bind(&Browser::Hide, browser))
       .SetMethod("show", base::Bind(&Browser::Show, browser))
@@ -528,8 +531,11 @@ void App::BuildPrototype(
                  base::Bind(&Browser::GetCurrentActivityType, browser))
 #endif
 #if defined(OS_WIN)
-      .SetMethod("setUserTasks",
-                 base::Bind(&Browser::SetUserTasks, browser))
+      .SetMethod("setUserTasks", base::Bind(&Browser::SetUserTasks, browser))
+#endif
+#if defined(OS_LINUX)
+      .SetMethod("isUnityRunning",
+                 base::Bind(&Browser::IsUnityRunning, browser))
 #endif
       .SetMethod("setPath", &App::SetPath)
       .SetMethod("getPath", &App::GetPath)

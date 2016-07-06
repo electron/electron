@@ -68,16 +68,7 @@ AtomBrowserContext::AtomBrowserContext(const std::string& partition,
     : brightray::BrowserContext(partition, in_memory),
       cert_verifier_(new AtomCertVerifier),
       network_delegate_(new AtomNetworkDelegate) {
-}
-
-AtomBrowserContext::~AtomBrowserContext() {
-}
-
-net::NetworkDelegate* AtomBrowserContext::CreateNetworkDelegate() {
-  return network_delegate_;
-}
-
-std::string AtomBrowserContext::GetUserAgent() {
+  // Construct user agent string.
   Browser* browser = Browser::Get();
   std::string name = RemoveWhitespace(browser->GetName());
   std::string user_agent;
@@ -91,7 +82,22 @@ std::string AtomBrowserContext::GetUserAgent() {
         browser->GetVersion().c_str(),
         CHROME_VERSION_STRING);
   }
-  return content::BuildUserAgentFromProduct(user_agent);
+  user_agent_ = content::BuildUserAgentFromProduct(user_agent);
+}
+
+AtomBrowserContext::~AtomBrowserContext() {
+}
+
+void AtomBrowserContext::SetUserAgent(const std::string& user_agent) {
+  user_agent_ = user_agent;
+}
+
+net::NetworkDelegate* AtomBrowserContext::CreateNetworkDelegate() {
+  return network_delegate_;
+}
+
+std::string AtomBrowserContext::GetUserAgent() {
+  return user_agent_;
 }
 
 std::unique_ptr<net::URLRequestJobFactory>

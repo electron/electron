@@ -95,7 +95,7 @@ app.on('ready', function () {
     width: 800,
     height: 600,
     webPreferences: {
-      backgroundThrottling: false,
+      backgroundThrottling: false
     }
   })
   window.loadURL(url.format({
@@ -119,9 +119,9 @@ app.on('ready', function () {
   // For session's download test, listen 'will-download' event in browser, and
   // reply the result to renderer for verifying
   var downloadFilePath = path.join(__dirname, '..', 'fixtures', 'mock.pdf')
-  ipcMain.on('set-download-option', function (event, need_cancel, prevent_default) {
+  ipcMain.on('set-download-option', function (event, needCancel, preventDefault) {
     window.webContents.session.once('will-download', function (e, item) {
-      if (prevent_default) {
+      if (preventDefault) {
         e.preventDefault()
         const url = item.getURL()
         const filename = item.getFilename()
@@ -144,7 +144,7 @@ app.on('ready', function () {
             item.getContentDisposition(),
             item.getFilename())
         })
-        if (need_cancel) item.cancel()
+        if (needCancel) item.cancel()
       }
     })
     event.returnValue = 'done'

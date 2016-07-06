@@ -157,6 +157,7 @@ class NativeWindow : public base::SupportsUserData,
   virtual void SetDocumentEdited(bool edited);
   virtual bool IsDocumentEdited();
   virtual void SetIgnoreMouseEvents(bool ignore) = 0;
+  virtual void SetContentProtection(bool enable) = 0;
   virtual void SetFocusable(bool focusable);
   virtual void SetMenu(ui::MenuModel* menu);
   virtual bool HasModalDialog();

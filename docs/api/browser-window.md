@@ -542,11 +542,11 @@ the [close event](#event-close).
 
 ### `win.focus()`
 
-Focus on the window.
+Focuses on the window.
 
 ### `win.blur()`
 
-Remove focus on the window.
+Removes focus from the window.
 
 ### `win.isFocused()`
 
@@ -945,7 +945,7 @@ convey some sort of application status or to passively notify the user.
 
 ### `win.setHasShadow(hasShadow)` _macOS_
 
-* `hasShadow` (Boolean)
+* `hasShadow` Boolean
 
 Sets whether the window should have a shadow. On Windows and Linux does
 nothing.
@@ -1049,6 +1049,13 @@ Makes the window ignore all mouse events.
 All mouse events happened in this window will be passed to the window below
 this window, but if this window has focus, it will still receive keyboard
 events.
+
+### `win.setContentProtection(enable)` _macOS_ _Windows_
+
+Prevents the window contents from being captured by other apps.
+
+On macOS it sets the NSWindow's sharingType to NSWindowSharingNone.
+On Windows it calls SetWindowDisplayAffinity with WDA_MONITOR.
 
 ### `win.setFocusable(focusable)` _Windows_
 

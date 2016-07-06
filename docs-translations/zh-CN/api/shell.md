@@ -6,7 +6,7 @@
 在用户默认浏览器中打开URL的示例:
 
 ```javascript
-var shell = require('shell');
+const {shell} = require('electron');
 
 shell.openExternal('https://github.com');
 ```

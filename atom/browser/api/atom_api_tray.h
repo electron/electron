@@ -65,10 +65,9 @@ class Tray : public mate::TrackableObject<Tray>,
   void DisplayBalloon(mate::Arguments* args, const mate::Dictionary& options);
   void PopUpContextMenu(mate::Arguments* args);
   void SetContextMenu(v8::Isolate* isolate, mate::Handle<Menu> menu);
+  gfx::Rect GetBounds();
 
  private:
-  v8::Local<v8::Object> ModifiersToObject(v8::Isolate* isolate, int modifiers);
-
   v8::Global<v8::Object> menu_;
   std::unique_ptr<TrayIcon> tray_icon_;
 

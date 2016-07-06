@@ -287,20 +287,21 @@ brightray::BrowserMainParts* AtomBrowserClient::OverrideCreateBrowserMainParts(
 
 void AtomBrowserClient::WebNotificationAllowed(
     int render_process_id,
-    const base::Callback<void(bool)>& callback) {
+    const base::Callback<void(bool, bool)>& callback) {
   content::WebContents* web_contents =
       WebContentsPreferences::GetWebContentsFromProcessID(render_process_id);
   if (!web_contents) {
-    callback.Run(false);
+    callback.Run(false, false);
     return;
   }
   auto permission_helper =
       WebContentsPermissionHelper::FromWebContents(web_contents);
   if (!permission_helper) {
-    callback.Run(false);
+    callback.Run(false, false);
     return;
   }
-  permission_helper->RequestWebNotificationPermission(callback);
+  permission_helper->RequestWebNotificationPermission(
+      base::Bind(callback, web_contents->IsAudioMuted()));
 }
 
 void AtomBrowserClient::RenderProcessHostDestroyed(

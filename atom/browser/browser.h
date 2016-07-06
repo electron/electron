@@ -87,6 +87,10 @@ class Browser : public WindowListObserver {
   // Query the current state of default handler for a protocol.
   bool IsDefaultProtocolClient(const std::string& protocol);
 
+  // Set/Get the badge count.
+  bool SetBadgeCount(int count);
+  int GetBadgeCount();
+
 #if defined(OS_MACOSX)
   // Hide the application.
   void Hide();
@@ -149,7 +153,12 @@ class Browser : public WindowListObserver {
   // one from app's name.
   // The returned string managed by Browser, and should not be modified.
   PCWSTR GetAppUserModelID();
-#endif
+#endif  // defined(OS_WIN)
+
+#if defined(OS_LINUX)
+  // Whether Unity launcher is running.
+  bool IsUnityRunning();
+#endif  // defined(OS_LINUX)
 
   // Tell the application to open a file.
   bool OpenFile(const std::string& file_path);
@@ -215,6 +224,8 @@ class Browser : public WindowListObserver {
 
   std::string version_override_;
   std::string name_override_;
+
+  int badge_count_ = 0;
 
 #if defined(OS_WIN)
   base::string16 app_user_model_id_;

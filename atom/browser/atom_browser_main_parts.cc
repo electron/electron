@@ -124,6 +124,8 @@ void AtomBrowserMainParts::PostEarlyInitialization() {
 }
 
 void AtomBrowserMainParts::PreMainMessageLoopRun() {
+  js_env_->OnMessageLoopCreated();
+
   // Run user's main script before most things get initialized, so we can have
   // a chance to setup everything.
   node_bindings_->PrepareMessageLoop();
@@ -168,6 +170,8 @@ void AtomBrowserMainParts::PostMainMessageLoopStart() {
 
 void AtomBrowserMainParts::PostMainMessageLoopRun() {
   brightray::BrowserMainParts::PostMainMessageLoopRun();
+
+  js_env_->OnMessageLoopDestroying();
 
 #if defined(OS_MACOSX)
   FreeAppDelegate();

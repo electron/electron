@@ -8,6 +8,7 @@
 #include "base/strings/sys_string_conversions.h"
 #include "ui/events/cocoa/cocoa_event_utils.h"
 #include "ui/gfx/image/image.h"
+#include "ui/gfx/mac/coordinate_conversion.h"
 #include "ui/gfx/screen.h"
 
 namespace {
@@ -236,13 +237,13 @@ const CGFloat kVerticalTitleMargin = 2;
   // Single click event.
   if (event.clickCount == 1)
     trayIcon_->NotifyClicked(
-        [self getBoundsFromEvent:event],
+        gfx::ScreenRectFromNSRect(event.window.frame),
         ui::EventFlagsFromModifiers([event modifierFlags]));
 
   // Double click event.
   if (event.clickCount == 2)
     trayIcon_->NotifyDoubleClicked(
-        [self getBoundsFromEvent:event],
+        gfx::ScreenRectFromNSRect(event.window.frame),
         ui::EventFlagsFromModifiers([event modifierFlags]));
 
   [self setNeedsDisplay:YES];
@@ -262,7 +263,7 @@ const CGFloat kVerticalTitleMargin = 2;
   }
 
   if (menuController_ && ![menuController_ isMenuOpen]) {
-    // Redraw the dray icon to show highlight if it is enabled.
+    // Redraw the tray icon to show highlight if it is enabled.
     [self setNeedsDisplay:YES];
     [statusItem_ popUpStatusItemMenu:[menuController_ menu]];
     // The popUpStatusItemMenu returns only after the showing menu is closed.
@@ -273,7 +274,7 @@ const CGFloat kVerticalTitleMargin = 2;
 
 - (void)rightMouseUp:(NSEvent*)event {
   trayIcon_->NotifyRightClicked(
-      [self getBoundsFromEvent:event],
+      gfx::ScreenRectFromNSRect(event.window.frame),
       ui::EventFlagsFromModifiers([event modifierFlags]));
 }
 
@@ -324,13 +325,6 @@ const CGFloat kVerticalTitleMargin = 2;
   return isHighlightEnable_ && (inMouseEventSequence_ || isMenuOpen);
 }
 
-- (gfx::Rect)getBoundsFromEvent:(NSEvent*)event {
-  NSRect frame = event.window.frame;
-  gfx::Rect bounds(frame.origin.x, 0, NSWidth(frame), NSHeight(frame));
-  NSScreen* screen = [[NSScreen screens] objectAtIndex:0];
-  bounds.set_y(NSHeight([screen frame]) - NSMaxY(frame));
-  return bounds;
-}
 @end
 
 namespace atom {
@@ -384,6 +378,15 @@ void TrayIconCocoa::SetContextMenu(ui::SimpleMenuModel* menu_model) {
   // Create native menu.
   menu_.reset([[AtomMenuController alloc] initWithModel:menu_model]);
   [status_item_view_ setMenuController:menu_.get()];
+}
+
+gfx::Rect TrayIconCocoa::GetBounds() {
+  auto bounds = gfx::ScreenRectFromNSRect([status_item_view_ window].frame);
+  // Calling [window frame] immediately after the view gets created will have
+  // negative |y| sometimes.
+  if (bounds.y() < 0)
+    bounds.set_y(0);
+  return bounds;
 }
 
 void TrayIconCocoa::MenuClosed() {

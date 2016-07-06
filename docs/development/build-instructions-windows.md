@@ -12,7 +12,7 @@ Follow the guidelines below for building Electron on Windows.
 * [Git](http://git-scm.com)
 
 If you don't currently have a Windows installation,
-[modern.ie](https://www.modern.ie/en-us/virtualization-tools#downloads)
+[dev.microsoftedge.com](https://developer.microsoft.com/en-us/microsoft-edge/tools/vms/)
 has timebombed versions of Windows that you can use to build Electron.
 
 Building Electron is done entirely with command-line scripts and cannot be done

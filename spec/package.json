@@ -21,12 +21,14 @@
   },
   "standard": {
     "env": {
+      "browser": true,
       "mocha": true,
       "jquery": true,
       "serviceworker": true
     },
     "globals": [
-      "WebView"
+      "WebView",
+      "WebInspector"
     ]
   }
 }

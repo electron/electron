@@ -30,6 +30,7 @@ v8::Local<v8::Object> CreateCustomEvent(
     v8::Isolate* isolate,
     v8::Local<v8::Object> object,
     v8::Local<v8::Object> event);
+v8::Local<v8::Object> CreateEventFromFlags(v8::Isolate* isolate, int flags);
 
 }  // namespace internal
 
@@ -52,6 +53,16 @@ class EventEmitter : public Wrappable<T> {
     return EmitWithEvent(
         name,
         internal::CreateCustomEvent(isolate(), GetWrapper(), event), args...);
+  }
+
+  // this.emit(name, new Event(flags), args...);
+  template<typename... Args>
+  bool EmitWithFlags(const base::StringPiece& name,
+                     int flags,
+                     const Args&... args) {
+    return EmitCustomEvent(
+        name,
+        internal::CreateEventFromFlags(isolate(), flags), args...);
   }
 
   // this.emit(name, new Event(), args...);

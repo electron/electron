@@ -60,9 +60,11 @@ class MenuBar : public views::View,
   void OnMenuButtonClicked(views::MenuButton* source,
                            const gfx::Point& point,
                            const ui::Event* event) override;
-
+  void OnNativeThemeChanged(const ui::NativeTheme* theme) override;
 
  private:
+  void UpdateMenuBarColor();
+
   SkColor background_color_;
 
 #if defined(USE_X11)

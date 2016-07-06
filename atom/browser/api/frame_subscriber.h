@@ -35,7 +35,7 @@ class FrameSubscriberRenderWidgetHostView
 class FrameSubscriber : public content::RenderWidgetHostViewFrameSubscriber {
  public:
   using FrameCaptureCallback =
-    base::Callback<void(v8::Local<v8::Value>, v8::Local<v8::Value>)>;
+      base::Callback<void(v8::Local<v8::Value>, v8::Local<v8::Value>)>;
 
   FrameSubscriber(v8::Isolate* isolate,
                   content::RenderWidgetHostView* view,
@@ -52,8 +52,9 @@ class FrameSubscriber : public content::RenderWidgetHostViewFrameSubscriber {
     std::unique_ptr<cc::CopyOutputResult> result);
 
   void OnFrameDelivered(const FrameCaptureCallback& callback,
-    const gfx::Rect& damage_rect, const SkBitmap& bitmap,
-    content::ReadbackResponse response);
+                        const gfx::Rect& damage_rect,
+                        const SkBitmap& bitmap,
+                        content::ReadbackResponse response);
 
   v8::Isolate* isolate_;
   content::RenderWidgetHostView* view_;

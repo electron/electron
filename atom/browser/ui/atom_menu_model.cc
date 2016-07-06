@@ -17,12 +17,14 @@ AtomMenuModel::~AtomMenuModel() {
 }
 
 void AtomMenuModel::SetRole(int index, const base::string16& role) {
-  roles_[index] = role;
+  int command_id = GetCommandIdAt(index);
+  roles_[command_id] = role;
 }
 
 base::string16 AtomMenuModel::GetRoleAt(int index) {
-  if (ContainsKey(roles_, index))
-    return roles_[index];
+  int command_id = GetCommandIdAt(index);
+  if (ContainsKey(roles_, command_id))
+    return roles_[command_id];
   else
     return base::string16();
 }

@@ -61,8 +61,10 @@ bool Menu::GetAcceleratorForCommandId(int command_id,
   return mate::ConvertFromV8(isolate(), val, accelerator);
 }
 
-void Menu::ExecuteCommand(int command_id, int event_flags) {
-  execute_command_.Run(command_id);
+void Menu::ExecuteCommand(int command_id, int flags) {
+  execute_command_.Run(
+      mate::internal::CreateEventFromFlags(isolate(), flags),
+      command_id);
 }
 
 void Menu::MenuWillShow(ui::SimpleMenuModel* source) {

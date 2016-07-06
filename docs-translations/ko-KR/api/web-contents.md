@@ -349,23 +349,25 @@ Returns:
     표시합니다. 자세한 사항은 아래를 참고하세요.
 
 `mediaFlags`는 다음과 같은 속성을 가지고 있습니다:
-  * `inError` Boolean - 미디어 객체가 크래시되었는지 여부.
-  * `isPaused` Boolean - 미디어 객체가 일시중지되었는지 여부.
-  * `isMuted` Boolean - 미디어 객체가 음소거되었는지 여부.
-  * `hasAudio` Boolean - 미디어 객체가 오디오를 가지고 있는지 여부.
-  * `isLooping` Boolean - 미디어 객체가 루프중인지 여부.
-  * `isControlsVisible` Boolean - 미디어 객체의 컨트롤이 보이는지 여부.
-  * `canToggleControls` Boolean - 미디어 객체의 컨트롤을 토글할 수 있는지 여부.
-  * `canRotate` Boolean - 미디어 객체를 돌릴 수 있는지 여부.
+
+* `inError` Boolean - 미디어 객체가 크래시되었는지 여부.
+* `isPaused` Boolean - 미디어 객체가 일시중지되었는지 여부.
+* `isMuted` Boolean - 미디어 객체가 음소거되었는지 여부.
+* `hasAudio` Boolean - 미디어 객체가 오디오를 가지고 있는지 여부.
+* `isLooping` Boolean - 미디어 객체가 루프중인지 여부.
+* `isControlsVisible` Boolean - 미디어 객체의 컨트롤이 보이는지 여부.
+* `canToggleControls` Boolean - 미디어 객체의 컨트롤을 토글할 수 있는지 여부.
+* `canRotate` Boolean - 미디어 객체를 돌릴 수 있는지 여부.
 
 `editFlags`는 다음과 같은 속성을 가지고 있습니다:
-  * `canUndo` Boolean - 렌더러에서 실행 취소할 수 있는지 여부.
-  * `canRedo` Boolean - 렌더러에서 다시 실행할 수 있는지 여부.
-  * `canCut` Boolean - 렌더러에서 잘라내기를 실행할 수 있는지 여부.
-  * `canCopy` Boolean - 렌더러에서 복사를 실행할 수 있는지 여부.
-  * `canPaste` Boolean - 렌더러에서 붙여넣기를 실행할 수 있는지 여부.
-  * `canDelete` Boolean - 렌더러에서 삭제를 실행할 수 있는지 여부.
-  * `canSelectAll` Boolean - 렌더러에서 모두 선택을 실행할 수 있는지 여부.
+
+* `canUndo` Boolean - 렌더러에서 실행 취소할 수 있는지 여부.
+* `canRedo` Boolean - 렌더러에서 다시 실행할 수 있는지 여부.
+* `canCut` Boolean - 렌더러에서 잘라내기를 실행할 수 있는지 여부.
+* `canCopy` Boolean - 렌더러에서 복사를 실행할 수 있는지 여부.
+* `canPaste` Boolean - 렌더러에서 붙여넣기를 실행할 수 있는지 여부.
+* `canDelete` Boolean - 렌더러에서 삭제를 실행할 수 있는지 여부.
+* `canSelectAll` Boolean - 렌더러에서 모두 선택을 실행할 수 있는지 여부.
 
 새로운 컨텍스트 메뉴의 제어가 필요할 때 발생하는 이벤트입니다.
 
@@ -904,18 +906,24 @@ Input `event`를 웹 페이지로 전송합니다.
 * `hasPreciseScrollingDeltas` Boolean
 * `canScroll` Boolean
 
-### `webContents.beginFrameSubscription(callback)`
+### `webContents.beginFrameSubscription([onlyDirty ,]callback)`
 
+* `onlyDirty` Boolean (optional) - 기본값은 `false`입니다.
 * `callback` Function
 
 캡처된 프레임과 프레젠테이션 이벤트를 구독하기 시작합니다. `callback`은
-프레젠테이션 이벤트가 발생했을 때 `callback(frameBuffer)` 형태로 호출됩니다.
+프레젠테이션 이벤트가 발생했을 때 `callback(frameBuffer, dirtyRect)` 형태로
+호출됩니다.
 
 `frameBuffer`는 raw 픽셀 데이터를 가지고 있는 `Buffer` 객체입니다. 많은 장치에서
 32비트 BGRA 포맷을 사용하여 효율적으로 픽셀 데이터를 저장합니다. 하지만 실질적인
 데이터 저장 방식은 프로세서의 엔디안 방식에 따라서 달라집니다. (따라서 현대의 많은
 프로세서에선 little-endian 방식을 사용하므로 위의 포맷을 그대로 표현합니다. 하지만
 몇몇 프로세서는 big-endian 방식을 사용하는데, 이 경우 32비트 ARGB 포맷을 사용합니다)
+
+`dirtyRect`는 페이지의 어떤 부분이 다시 그려졌는지를 표현하는 `x, y, width, height`
+속성을 포함하는 객체입니다. 만약 `onlyDirty`가 `true`로 지정되어 있으면,
+`frameBuffer`가 다시 그려진 부분만 포함합니다. `onlyDirty`의 기본값은 `false`입니다.
 
 ### `webContents.endFrameSubscription()`
 
