@@ -140,6 +140,12 @@ class Browser : public WindowListObserver {
 
   // Get login item status of app
   v8::Local<v8::Value> GetLoginItemStatus(mate::Arguments* args);
+
+  // Set app as a login item
+  void SetAsLoginItem(mate::Arguments* args);
+
+  // Remove app as a login item
+  void RemoveAsLoginItem();
 #endif  // defined(OS_MACOSX)
 
 #if defined(OS_WIN)

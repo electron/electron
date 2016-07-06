@@ -166,6 +166,16 @@ v8::Local<v8::Value> Browser::GetLoginItemStatus(mate::Arguments* args) {
   return dict.GetHandle();
 }
 
+void Browser::SetAsLoginItem(mate::Arguments* args) {
+  bool hidden = false;
+  args->GetNext(&hidden);
+  base::mac::AddToLoginItems(hidden);
+}
+
+void Browser::RemoveAsLoginItem() {
+  base::mac::RemoveFromLoginItems();
+}
+
 std::string Browser::GetExecutableFileVersion() const {
   return brightray::GetApplicationVersion();
 }

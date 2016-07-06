@@ -531,6 +531,10 @@ void App::BuildPrototype(
                  base::Bind(&Browser::GetLoginItemLaunchStatus, browser))
       .SetMethod("getLoginItemStatus",
                  base::Bind(&Browser::GetLoginItemStatus, browser))
+      .SetMethod("setAsLoginItem",
+                 base::Bind(&Browser::SetAsLoginItem, browser))
+      .SetMethod("removeAsLoginItem",
+                 base::Bind(&Browser::RemoveAsLoginItem, browser))
 #endif
 #if defined(OS_WIN)
       .SetMethod("setUserTasks", base::Bind(&Browser::SetUserTasks, browser))
