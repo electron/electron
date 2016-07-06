@@ -600,7 +600,7 @@ Returns whether current desktop environment is Unity launcher.
 
 ### `app.getLoginItemStatus()` _macOS_
 
-Return an Object with the login item status the app.
+Return an Object with the login item status of the app.
 
 * `openAtLogin` Boolean - `true` if the app is set to open at login.
 * `openAsHidden` Boolean - `true` if the app is set to open as hidden at login.
@@ -615,15 +615,17 @@ Return an Object with the login item status the app.
 ### `app.setAsLoginItem([openAsHidden])` _macOS_
 
 Set the app as a login item. This will cause the app to be opened automatically
-on login.
+at login.
 
-* `openAsHidden` Boolean - `true` to hide the app when opened. Defaults to
-  `false`.
+* `openAsHidden` Boolean - `true` to open the app as hidden. Defaults to
+  `false`. The user can edit this setting from the System Preferences so
+  `app.getLoginItemStatus().openedAsHidden` should be checked when the app
+  is opened to know the current value.
 
 ### `app.removeAsLoginItem()` _macOS_
 
 Removes the app as a login item. The app will no longer be opened automatically
-on login.
+at login.
 
 ### `app.commandLine.appendSwitch(switch[, value])`
 
