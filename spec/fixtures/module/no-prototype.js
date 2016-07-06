@@ -4,7 +4,7 @@ foo.baz = false
 module.exports = {
   foo: foo,
   bar: 1234,
-  baz: function () {
-    return 'hello'
+  getConstructorName: function (value) {
+    return value.constructor.name
   }
 }
