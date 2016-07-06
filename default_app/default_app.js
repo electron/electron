@@ -1,6 +1,7 @@
 const {app, BrowserWindow} = require('electron')
+const path = require('path')
 
-var mainWindow = null
+let mainWindow = null
 
 // Quit when all windows are closed.
 app.on('window-all-closed', () => {
@@ -9,13 +10,18 @@ app.on('window-all-closed', () => {
 
 exports.load = (appUrl) => {
   app.on('ready', () => {
-    mainWindow = new BrowserWindow({
+    const options = {
       width: 800,
       height: 600,
       autoHideMenuBar: true,
       backgroundColor: '#FFFFFF',
       useContentSize: true
-    })
+    }
+    if (process.platform === 'linux') {
+      options.icon = path.join(__dirname, 'icon.png')
+    }
+
+    mainWindow = new BrowserWindow(options)
     mainWindow.loadURL(appUrl)
     mainWindow.focus()
   })
