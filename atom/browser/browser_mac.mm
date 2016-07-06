@@ -158,6 +158,14 @@ v8::Local<v8::Value> Browser::GetLoginItemLaunchStatus(mate::Arguments* args) {
   return dict.GetHandle();
 }
 
+v8::Local<v8::Value> Browser::GetLoginItemStatus(mate::Arguments* args) {
+  bool hidden = false;
+  mate::Dictionary dict = mate::Dictionary::CreateEmpty(args->isolate());
+  dict.Set("loginItem", base::mac::CheckLoginItemStatus(&hidden));
+  dict.Set("hidden", hidden);
+  return dict.GetHandle();
+}
+
 std::string Browser::GetExecutableFileVersion() const {
   return brightray::GetApplicationVersion();
 }

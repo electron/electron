@@ -529,6 +529,8 @@ void App::BuildPrototype(
                  base::Bind(&Browser::SetUserActivity, browser))
       .SetMethod("getLoginItemLaunchStatus",
                  base::Bind(&Browser::GetLoginItemLaunchStatus, browser))
+      .SetMethod("getLoginItemStatus",
+                 base::Bind(&Browser::GetLoginItemStatus, browser))
 #endif
 #if defined(OS_WIN)
       .SetMethod("setUserTasks", base::Bind(&Browser::SetUserTasks, browser))

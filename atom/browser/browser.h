@@ -135,7 +135,11 @@ class Browser : public WindowListObserver {
   // Set docks' icon.
   void DockSetIcon(const gfx::Image& image);
 
+  // Get login item status of current app launch
   v8::Local<v8::Value> GetLoginItemLaunchStatus(mate::Arguments* args);
+
+  // Get login item status of app
+  v8::Local<v8::Value> GetLoginItemStatus(mate::Arguments* args);
 #endif  // defined(OS_MACOSX)
 
 #if defined(OS_WIN)
