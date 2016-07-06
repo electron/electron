@@ -163,11 +163,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
                       const std::string& frame_name,
                       WindowOpenDisposition disposition);
 
-  // Called when CapturePage is done.
-  void OnCapturePageDone(base::Callback<void(const gfx::Image&)>,
-                         const SkBitmap& bitmap,
-                         content::ReadbackResponse response);
-
   // Returns the web preferences of current WebContents.
   v8::Local<v8::Value> GetWebPreferences(v8::Isolate* isolate);
 

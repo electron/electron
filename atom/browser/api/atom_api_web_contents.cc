@@ -239,6 +239,13 @@ content::ServiceWorkerContext* GetServiceWorkerContext(
   return storage_partition->GetServiceWorkerContext();
 }
 
+// Called when CapturePage is done.
+void OnCapturePageDone(base::Callback<void(const gfx::Image&)> callback,
+                       const SkBitmap& bitmap,
+                       content::ReadbackResponse response) {
+  callback.Run(gfx::Image::CreateFrom1xBitmap(bitmap));
+}
+
 }  // namespace
 
 WebContents::WebContents(v8::Isolate* isolate,
@@ -1272,19 +1279,8 @@ void WebContents::CapturePage(mate::Arguments* args) {
   host->CopyFromBackingStore(
       gfx::Rect(rect.origin(), view_size),
       bitmap_size,
-      base::Bind(&WebContents::OnCapturePageDone,
-                base::Unretained(this),
-                callback),
+      base::Bind(&OnCapturePageDone, callback),
       kBGRA_8888_SkColorType);
-}
-
-void WebContents::OnCapturePageDone(
-    base::Callback<void(const gfx::Image&)> callback,
-    const SkBitmap& bitmap,
-    content::ReadbackResponse response) {
-  v8::Locker locker(isolate());
-  v8::HandleScope handle_scope(isolate());
-  callback.Run(gfx::Image::CreateFrom1xBitmap(bitmap));
 }
 
 void WebContents::OnCursorChange(const content::WebCursor& cursor) {
