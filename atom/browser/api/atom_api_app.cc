@@ -527,8 +527,8 @@ void App::BuildPrototype(
       .SetMethod("show", base::Bind(&Browser::Show, browser))
       .SetMethod("setUserActivity",
                  base::Bind(&Browser::SetUserActivity, browser))
-      .SetMethod("getCurrentActivityType",
-                 base::Bind(&Browser::GetCurrentActivityType, browser))
+      .SetMethod("getLoginItemLaunchStatus",
+                 base::Bind(&Browser::GetLoginItemLaunchStatus, browser))
 #endif
 #if defined(OS_WIN)
       .SetMethod("setUserTasks", base::Bind(&Browser::SetUserTasks, browser))

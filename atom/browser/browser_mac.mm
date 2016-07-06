@@ -11,9 +11,11 @@
 #include "atom/browser/window_list.h"
 #include "base/mac/bundle_locations.h"
 #include "base/mac/foundation_util.h"
+#include "base/mac/mac_util.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/sys_string_conversions.h"
 #include "brightray/common/application_info.h"
+#include "native_mate/dictionary.h"
 #include "net/base/mac/url_conversions.h"
 #include "url/gurl.h"
 
@@ -146,6 +148,14 @@ bool Browser::ContinueUserActivity(const std::string& type,
                     observers_,
                     OnContinueUserActivity(&prevent_default, type, user_info));
   return prevent_default;
+}
+
+v8::Local<v8::Value> Browser::GetLoginItemLaunchStatus(mate::Arguments* args) {
+  mate::Dictionary dict = mate::Dictionary::CreateEmpty(args->isolate());
+  dict.Set("loginItem", base::mac::WasLaunchedAsLoginOrResumeItem());
+  dict.Set("hidden", base::mac::WasLaunchedAsHiddenLoginItem());
+  dict.Set("restoreState", base::mac::WasLaunchedAsLoginItemRestoreState());
+  return dict.GetHandle();
 }
 
 std::string Browser::GetExecutableFileVersion() const {
