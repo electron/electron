@@ -6,6 +6,7 @@
 #define ATOM_BROWSER_UI_ATOM_MENU_MODEL_H_
 
 #include <map>
+#include <string>
 
 #include "base/observer_list.h"
 #include "ui/base/models/simple_menu_model.h"
@@ -17,6 +18,17 @@ class AtomMenuModel : public ui::SimpleMenuModel {
   class Delegate : public ui::SimpleMenuModel::Delegate {
    public:
     virtual ~Delegate() {}
+    virtual bool GetCommandAccelerator(int command_id,
+                                       ui::Accelerator* accelerator,
+                                       const std::string& context) = 0;
+    virtual void RunCommand(int command_id,
+                            int flags,
+                            const std::string& context) = 0;
+
+    // ui::SimpleMenuModel::Delegate:
+    bool GetAcceleratorForCommandId(int command_id,
+                                    ui::Accelerator* accelerator) override;
+    void ExecuteCommand(int command_id, int flags) override;
   };
 
   class Observer {
@@ -38,6 +50,8 @@ class AtomMenuModel : public ui::SimpleMenuModel {
 
   // ui::SimpleMenuModel:
   void MenuClosed() override;
+
+  Delegate* GetDelegate() { return delegate_; }
 
  private:
   Delegate* delegate_;  // weak ref.

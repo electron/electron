@@ -602,7 +602,7 @@ void Window::SetMenu(v8::Isolate* isolate, v8::Local<v8::Value> value) {
       mate::V8ToString(value->ToObject()->GetConstructorName()) == "Menu" &&
       mate::ConvertFromV8(isolate, value, &menu)) {
     menu_.Reset(isolate, menu.ToV8());
-    window_->SetMenu(menu->model());
+    window_->SetMenu(menu->GetApplicationModel());
   } else if (value->IsNull()) {
     menu_.Reset();
     window_->SetMenu(nullptr);

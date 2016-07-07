@@ -11,7 +11,6 @@
 #include "atom/browser/api/trackable_object.h"
 #include "atom/browser/ui/atom_menu_model.h"
 #include "base/callback.h"
-#include "base/memory/scoped_ptr.h"
 
 namespace atom {
 
@@ -35,6 +34,11 @@ class Menu : public mate::TrackableObject<Menu>,
 
   AtomMenuModel* model() const { return model_.get(); }
 
+  ui::MenuModel* GetContextModel();
+  ui::MenuModel* GetApplicationModel();
+  ui::MenuModel* GetDockModel();
+  ui::MenuModel* GetTrayModel();
+
  protected:
   explicit Menu(v8::Isolate* isolate);
   ~Menu() override;
@@ -46,16 +50,25 @@ class Menu : public mate::TrackableObject<Menu>,
   bool IsCommandIdChecked(int command_id) const override;
   bool IsCommandIdEnabled(int command_id) const override;
   bool IsCommandIdVisible(int command_id) const override;
-  bool GetAcceleratorForCommandId(int command_id,
-                                  ui::Accelerator* accelerator) override;
-  void ExecuteCommand(int command_id, int event_flags) override;
   void MenuWillShow(ui::SimpleMenuModel* source) override;
+
+  // atom::AtomMenuModel::Delegate:
+  bool GetCommandAccelerator(int command_id,
+                             ui::Accelerator* accelerator,
+                             const std::string& context) override;
+  void RunCommand(int command_id,
+                  int event_flags,
+                  const std::string& context) override;
 
   virtual void PopupAt(Window* window,
                        int x = -1, int y = -1,
                        int positioning_item = 0) = 0;
 
   std::unique_ptr<AtomMenuModel> model_;
+  std::unique_ptr<ui::MenuModel> application_menu_model_;
+  std::unique_ptr<ui::MenuModel> context_menu_model_;
+  std::unique_ptr<ui::MenuModel> dock_menu_model_;
+  std::unique_ptr<ui::MenuModel> tray_menu_model_;
   Menu* parent_;
 
  private:
@@ -89,8 +102,8 @@ class Menu : public mate::TrackableObject<Menu>,
   base::Callback<bool(int)> is_checked_;
   base::Callback<bool(int)> is_enabled_;
   base::Callback<bool(int)> is_visible_;
-  base::Callback<v8::Local<v8::Value>(int)> get_accelerator_;
-  base::Callback<void(v8::Local<v8::Value>, int)> execute_command_;
+  base::Callback<v8::Local<v8::Value>(int, std::string)> get_accelerator_;
+  base::Callback<void(v8::Local<v8::Value>, int, std::string)> execute_command_;
   base::Callback<void()> menu_will_show_;
 
   DISALLOW_COPY_AND_ASSIGN(Menu);

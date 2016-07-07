@@ -9,7 +9,7 @@
 
 #include <string>
 
-#include "atom/browser/ui/atom_menu_model.h"
+#include "atom/browser/ui/menu_location.h"
 #include "atom/browser/ui/tray_icon.h"
 #include "base/mac/scoped_nsobject.h"
 
@@ -30,8 +30,8 @@ class TrayIconCocoa : public TrayIcon,
   void SetTitle(const std::string& title) override;
   void SetHighlightMode(bool highlight) override;
   void PopUpContextMenu(const gfx::Point& pos,
-                        ui::SimpleMenuModel* menu_model) override;
-  void SetContextMenu(ui::SimpleMenuModel* menu_model) override;
+                        ui::MenuModel* menu_model) override;
+  void SetContextMenu(ui::MenuModel* menu_model) override;
   gfx::Rect GetBounds() override;
 
  protected:

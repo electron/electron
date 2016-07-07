@@ -27,7 +27,7 @@ void TrayIcon::DisplayBalloon(ImageType icon,
 }
 
 void TrayIcon::PopUpContextMenu(const gfx::Point& pos,
-                                ui::SimpleMenuModel* menu_model) {
+                                ui::MenuModel* menu_model) {
 }
 
 gfx::Rect TrayIcon::GetBounds() {

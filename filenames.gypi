@@ -257,6 +257,8 @@
       'atom/browser/ui/message_box_gtk.cc',
       'atom/browser/ui/message_box_mac.mm',
       'atom/browser/ui/message_box_win.cc',
+      'atom/browser/ui/menu_location.h',
+      'atom/browser/ui/menu_location.cc',
       'atom/browser/ui/tray_icon.cc',
       'atom/browser/ui/tray_icon.h',
       'atom/browser/ui/tray_icon_gtk.cc',

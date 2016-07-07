@@ -132,7 +132,7 @@ void NotifyIcon::DisplayBalloon(HICON icon,
 }
 
 void NotifyIcon::PopUpContextMenu(const gfx::Point& pos,
-                                  ui::SimpleMenuModel* menu_model) {
+                                  ui::MenuModel* menu_model) {
   // Returns if context menu isn't set.
   if (menu_model == nullptr && menu_model_ == nullptr)
     return;
@@ -154,7 +154,7 @@ void NotifyIcon::PopUpContextMenu(const gfx::Point& pos,
       NULL, NULL, rect, views::MENU_ANCHOR_TOPLEFT, ui::MENU_SOURCE_MOUSE));
 }
 
-void NotifyIcon::SetContextMenu(ui::SimpleMenuModel* menu_model) {
+void NotifyIcon::SetContextMenu(ui::MenuModel* menu_model) {
   menu_model_ = menu_model;
 }
 

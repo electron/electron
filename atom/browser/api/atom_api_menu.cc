@@ -5,6 +5,7 @@
 #include "atom/browser/api/atom_api_menu.h"
 
 #include "atom/browser/native_window.h"
+#include "atom/browser/ui/menu_location.h"
 #include "atom/common/native_mate_converters/accelerator_converter.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/image_converter.h"
@@ -41,6 +42,34 @@ void Menu::AfterInit(v8::Isolate* isolate) {
   delegate.Get("menuWillShow", &menu_will_show_);
 }
 
+ui::MenuModel* Menu::GetContextModel() {
+  if (!context_menu_model_) {
+    context_menu_model_.reset(new MenuLocation("context", model()));
+  }
+  return context_menu_model_.get();
+}
+
+ui::MenuModel* Menu::GetApplicationModel() {
+  if (!application_menu_model_) {
+    application_menu_model_.reset(new MenuLocation("application", model()));
+  }
+  return application_menu_model_.get();
+}
+
+ui::MenuModel* Menu::GetDockModel() {
+  if (!dock_menu_model_) {
+    dock_menu_model_.reset(new MenuLocation("dock", model()));
+  }
+  return dock_menu_model_.get();
+}
+
+ui::MenuModel* Menu::GetTrayModel() {
+  if (!tray_menu_model_) {
+    tray_menu_model_.reset(new MenuLocation("tray", model()));
+  }
+  return tray_menu_model_.get();
+}
+
 bool Menu::IsCommandIdChecked(int command_id) const {
   return is_checked_.Run(command_id);
 }
@@ -53,18 +82,22 @@ bool Menu::IsCommandIdVisible(int command_id) const {
   return is_visible_.Run(command_id);
 }
 
-bool Menu::GetAcceleratorForCommandId(int command_id,
-                                      ui::Accelerator* accelerator) {
+bool Menu::GetCommandAccelerator(int command_id,
+                                 ui::Accelerator* accelerator,
+                                 const std::string& context) {
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
-  v8::Local<v8::Value> val = get_accelerator_.Run(command_id);
+  v8::Local<v8::Value> val = get_accelerator_.Run(command_id, context);
   return mate::ConvertFromV8(isolate(), val, accelerator);
 }
 
-void Menu::ExecuteCommand(int command_id, int flags) {
+void Menu::RunCommand(int command_id,
+                      int flags,
+                      const std::string& context) {
   execute_command_.Run(
       mate::internal::CreateEventFromFlags(isolate(), flags),
-      command_id);
+      command_id,
+      context);
 }
 
 void Menu::MenuWillShow(ui::SimpleMenuModel* source) {
@@ -98,7 +131,7 @@ void Menu::InsertSubMenuAt(int index,
                            const base::string16& label,
                            Menu* menu) {
   menu->parent_ = this;
-  model_->InsertSubMenuAt(index, command_id, label, menu->model_.get());
+  model_->InsertSubMenuAt(index, command_id, label, menu->model());
 }
 
 void Menu::SetIcon(int index, const gfx::Image& image) {

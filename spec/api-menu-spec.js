@@ -400,27 +400,23 @@ describe('menu module', function () {
     it('includes a default label and accelerator', function () {
       var item = new MenuItem({role: 'close'})
       assert.equal(item.label, 'Close')
-      assert.equal(item.accelerator, 'CommandOrControl+W')
+      assert.equal(item.accelerator, undefined)
+      assert.equal(item.getDefaultRoleAccelerator(), 'CommandOrControl+W')
 
-      item = new MenuItem({role: 'close', label: 'Other'})
+      item = new MenuItem({role: 'close', label: 'Other', accelerator: 'D'})
       assert.equal(item.label, 'Other')
-      assert.equal(item.accelerator, 'CommandOrControl+W')
-
-      item = new MenuItem({role: 'close', accelerator: 'D'})
-      assert.equal(item.label, 'Close')
       assert.equal(item.accelerator, 'D')
-
-      item = new MenuItem({role: 'close', label: 'C', accelerator: 'D'})
-      assert.equal(item.label, 'C')
-      assert.equal(item.accelerator, 'D')
+      assert.equal(item.getDefaultRoleAccelerator(), 'CommandOrControl+W')
 
       item = new MenuItem({role: 'help'})
       assert.equal(item.label, 'Help')
       assert.equal(item.accelerator, undefined)
+      assert.equal(item.getDefaultRoleAccelerator(), undefined)
 
       item = new MenuItem({role: 'hide'})
       assert.equal(item.label, 'Hide Electron Test')
-      assert.equal(item.accelerator, 'Command+H')
+      assert.equal(item.accelerator, undefined)
+      assert.equal(item.getDefaultRoleAccelerator(), 'Command+H')
     })
   })
 })

@@ -38,7 +38,7 @@ void MenuViews::PopupAt(Window* window, int x, int y, int positioning_item) {
 
   // Show the menu.
   views::MenuRunner menu_runner(
-      model(),
+      GetContextModel(),
       views::MenuRunner::CONTEXT_MENU | views::MenuRunner::HAS_MNEMONICS);
   ignore_result(menu_runner.RunMenuAt(
       static_cast<NativeWindowViews*>(window->window())->widget(),

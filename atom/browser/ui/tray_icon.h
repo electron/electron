@@ -10,7 +10,7 @@
 
 #include "atom/browser/ui/tray_icon_observer.h"
 #include "base/observer_list.h"
-#include "ui/base/models/simple_menu_model.h"
+#include "ui/base/models/menu_model.h"
 #include "ui/gfx/geometry/rect.h"
 
 namespace atom {
@@ -55,10 +55,10 @@ class TrayIcon {
 
   // Popups the menu.
   virtual void PopUpContextMenu(const gfx::Point& pos,
-                                ui::SimpleMenuModel* menu_model);
+                                ui::MenuModel* menu_model);
 
   // Set the context menu for this icon.
-  virtual void SetContextMenu(ui::SimpleMenuModel* menu_model) = 0;
+  virtual void SetContextMenu(ui::MenuModel* menu_model) = 0;
 
   // Returns the bounds of tray icon.
   virtual gfx::Rect GetBounds();

@@ -249,7 +249,7 @@ const CGFloat kVerticalTitleMargin = 2;
   [self setNeedsDisplay:YES];
 }
 
-- (void)popUpContextMenu:(ui::SimpleMenuModel*)menu_model {
+- (void)popUpContextMenu:(ui::MenuModel*)menu_model {
   // Show a custom menu.
   if (menu_model) {
     base::scoped_nsobject<AtomMenuController> menuController(
@@ -365,15 +365,15 @@ void TrayIconCocoa::SetHighlightMode(bool highlight) {
 }
 
 void TrayIconCocoa::PopUpContextMenu(const gfx::Point& pos,
-                                     ui::SimpleMenuModel* menu_model) {
+                                     ui::MenuModel* menu_model) {
   [status_item_view_ popUpContextMenu:menu_model];
 }
 
-void TrayIconCocoa::SetContextMenu(ui::SimpleMenuModel* menu_model) {
+void TrayIconCocoa::SetContextMenu(ui::MenuModel* menu_model) {
   // Substribe to MenuClosed event.
   if (menu_model_)
     menu_model_->RemoveObserver(this);
-  static_cast<AtomMenuModel*>(menu_model)->AddObserver(this);
+  static_cast<MenuLocation*>(menu_model)->AddObserver(this);
 
   // Create native menu.
   menu_.reset([[AtomMenuController alloc] initWithModel:menu_model]);

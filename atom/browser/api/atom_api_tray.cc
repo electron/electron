@@ -141,12 +141,13 @@ void Tray::PopUpContextMenu(mate::Arguments* args) {
   args->GetNext(&menu);
   gfx::Point pos;
   args->GetNext(&pos);
-  tray_icon_->PopUpContextMenu(pos, menu.IsEmpty() ? nullptr : menu->model());
+  tray_icon_->PopUpContextMenu(pos,
+      menu.IsEmpty() ? nullptr : menu->GetTrayModel());
 }
 
 void Tray::SetContextMenu(v8::Isolate* isolate, mate::Handle<Menu> menu) {
   menu_.Reset(isolate, menu.ToV8());
-  tray_icon_->SetContextMenu(menu->model());
+  tray_icon_->SetContextMenu(menu->GetTrayModel());
 }
 
 gfx::Rect Tray::GetBounds() {
