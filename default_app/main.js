@@ -197,9 +197,7 @@ app.once('ready', () => {
         role: 'front'
       }
     ]
-  }
-
-  if (process.platform === 'win32') {
+  } else {
     template.unshift({
       label: 'File',
       submenu: [
