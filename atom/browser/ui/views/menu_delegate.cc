@@ -30,10 +30,10 @@ void MenuDelegate::RunMenu(AtomMenuModel* model, views::MenuButton* button) {
                    button->height() - 1);
 
   id_ = button->tag();
-  adapter_.reset(new atom::MenuModelAdapter(model));
+  adapter_.reset(new MenuModelAdapter(model));
 
   views::MenuItemView* item = new views::MenuItemView(this);
-  static_cast<atom::MenuModelAdapter*>(adapter_.get())->BuildMenu(item);
+  static_cast<MenuModelAdapter*>(adapter_.get())->BuildMenu(item);
 
   menu_runner_.reset(new views::MenuRunner(
       item,
