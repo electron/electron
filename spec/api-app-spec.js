@@ -315,8 +315,8 @@ describe('app module', function () {
       assert.deepEqual(app.getLoginItemSettings(), {
         openAtLogin: true,
         openAsHidden: false,
-        openedAtLogin: false,
-        openedAsHidden: false,
+        wasOpenedAtLogin: false,
+        wasOpenedAsHidden: false,
         restoreState: false
       })
 
@@ -324,8 +324,8 @@ describe('app module', function () {
       assert.deepEqual(app.getLoginItemSettings(), {
         openAtLogin: true,
         openAsHidden: true,
-        openedAtLogin: false,
-        openedAsHidden: false,
+        wasOpenedAtLogin: false,
+        wasOpenedAsHidden: false,
         restoreState: false
       })
 
@@ -333,8 +333,8 @@ describe('app module', function () {
       assert.deepEqual(app.getLoginItemSettings(), {
         openAtLogin: false,
         openAsHidden: false,
-        openedAtLogin: false,
-        openedAsHidden: false,
+        wasOpenedAtLogin: false,
+        wasOpenedAsHidden: false,
         restoreState: false
       })
     })

@@ -91,8 +91,8 @@ struct Converter<Browser::LoginItemSettings> {
     dict.Set("openAtLogin", val.open_at_login);
     dict.Set("openAsHidden", val.open_as_hidden);
     dict.Set("restoreState", val.restore_state);
-    dict.Set("openedAtLogin", val.opened_at_login);
-    dict.Set("openedAsHidden", val.opened_as_hidden);
+    dict.Set("wasOpenedAtLogin", val.opened_at_login);
+    dict.Set("wasOpenedAsHidden", val.opened_as_hidden);
     return dict.GetHandle();
   }
 };
