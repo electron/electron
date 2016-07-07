@@ -706,10 +706,6 @@ up system's default printer and default settings for printing.
 Calling `window.print()` in web page is equivalent to calling
 `webContents.print({silent: false, printBackground: false})`.
 
-**Note:** On Windows, the print API relies on `pdf.dll`. If your application
-doesn't need the print feature, you can safely remove `pdf.dll` to reduce binary
-size.
-
 ### `webContents.printToPDF(options, callback)`
 
 * `options` Object
