@@ -160,11 +160,10 @@ Browser::LoginItemSettings Browser::GetLoginItemSettings() {
 }
 
 void Browser::SetLoginItemSettings(LoginItemSettings settings) {
-  if (settings.open_at_login) {
+  if (settings.open_at_login)
     base::mac::AddToLoginItems(settings.open_as_hidden);
-  } else {
+  else
     base::mac::RemoveFromLoginItems();
-  }
 }
 
 std::string Browser::GetExecutableFileVersion() const {
