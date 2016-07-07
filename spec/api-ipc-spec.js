@@ -31,9 +31,13 @@ describe('ipc module', function () {
 
     it('should work when object has no prototype', function () {
       var a = remote.require(path.join(fixtures, 'module', 'no-prototype.js'))
+      assert.equal(a.foo.constructor.name, '')
       assert.equal(a.foo.bar, 'baz')
       assert.equal(a.foo.baz, false)
       assert.equal(a.bar, 1234)
+      assert.equal(a.anonymous.constructor.name, '')
+      assert.equal(a.getConstructorName(Object.create(null)), '')
+      assert.equal(a.getConstructorName(new (class {})), '')
     })
 
     it('should search module from the user app', function () {
