@@ -598,29 +598,32 @@ Returns the current value displayed in the counter badge.
 
 Returns whether current desktop environment is Unity launcher.
 
-### `app.getLoginItemStatus()` _macOS_
+### `app.getLoginItemSettings()` _macOS_
 
 Return an Object with the login item status of the app.
 
 * `openAtLogin` Boolean - `true` if the app is set to open at login.
 * `openAsHidden` Boolean - `true` if the app is set to open as hidden at login.
-* `openedAtLogin` Boolean - `true` if the app was opened at login automatically.
-* `openedAsHidden` Boolean - `true` if the app was opened as a hidden login
+* `wasOpenedAtLogin` Boolean - `true` if the app was opened at login
+  automatically.
+* `wasOpenedAsHidden` Boolean - `true` if the app was opened as a hidden login
   item. This indicates that the app should not open any windows at startup.
 * `restoreState` Boolean - `true` if the app was opened as a login item that
   should restore the state from the previous session. This indicates that the
   app should restore the windows that were open the last time the app was
   closed.
 
-### `app.setAsLoginItem([openAsHidden])` _macOS_
+### `app.setLoginItemSettings(settings)` _macOS_
 
-Set the app as a login item. This will cause the app to be opened automatically
-at login.
+* `settings` Object
+  * `openAtLogin` Boolean - `true` to open the app at login, `false` to remove
+    the app as a login item. Defaults to `false`.
+  * `openAsHidden` Boolean - `true` to open the app as hidden. Defaults to
+    `false`. The user can edit this setting from the System Preferences so
+    `app.getLoginItemStatus().wasOpenedAsHidden` should be checked when the app
+    is opened to know the current value.
 
-* `openAsHidden` Boolean - `true` to open the app as hidden. Defaults to
-  `false`. The user can edit this setting from the System Preferences so
-  `app.getLoginItemStatus().openedAsHidden` should be checked when the app
-  is opened to know the current value.
+Set the app's as a login item settings.
 
 ### `app.removeAsLoginItem()` _macOS_
 
