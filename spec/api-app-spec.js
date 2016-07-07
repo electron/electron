@@ -299,28 +299,44 @@ describe('app module', function () {
     })
   })
 
-  describe('app.getLoginItemStatus API', function () {
+  describe('app.get/setLoginItemSettings API', function () {
     if (process.platform !== 'darwin') return
 
     beforeEach(function () {
-      assert.equal(app.getLoginItemStatus().openedAtLogin, false)
-      assert.equal(app.getLoginItemStatus().openedAsHidden, false)
-      assert.equal(app.getLoginItemStatus().restoreState, false)
+      app.setLoginItemSettings({openAtLogin: false})
     })
 
     afterEach(function () {
-      app.removeAsLoginItem()
-      assert.equal(app.getLoginItemStatus().openAtLogin, false)
+      app.setLoginItemSettings({openAtLogin: false})
     })
 
     it('returns the login item status of the app', function () {
-      app.setAsLoginItem(true)
-      assert.equal(app.getLoginItemStatus().openAtLogin, true)
-      assert.equal(app.getLoginItemStatus().openAsHidden, true)
+      app.setLoginItemSettings({openAtLogin: true})
+      assert.deepEqual(app.getLoginItemSettings(), {
+        openAtLogin: true,
+        openAsHidden: false,
+        openedAtLogin: false,
+        openedAsHidden: false,
+        restoreState: false
+      })
 
-      app.setAsLoginItem(false)
-      assert.equal(app.getLoginItemStatus().openAtLogin, true)
-      assert.equal(app.getLoginItemStatus().openAsHidden, false)
+      app.setLoginItemSettings({openAtLogin: true, openAsHidden: true})
+      assert.deepEqual(app.getLoginItemSettings(), {
+        openAtLogin: true,
+        openAsHidden: true,
+        openedAtLogin: false,
+        openedAsHidden: false,
+        restoreState: false
+      })
+
+      app.setLoginItemSettings({})
+      assert.deepEqual(app.getLoginItemSettings(), {
+        openAtLogin: false,
+        openAsHidden: false,
+        openedAtLogin: false,
+        openedAsHidden: false,
+        restoreState: false
+      })
     })
   })
 })

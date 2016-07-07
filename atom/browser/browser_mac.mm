@@ -15,7 +15,6 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/sys_string_conversions.h"
 #include "brightray/common/application_info.h"
-#include "native_mate/dictionary.h"
 #include "net/base/mac/url_conversions.h"
 #include "url/gurl.h"
 
@@ -150,26 +149,22 @@ bool Browser::ContinueUserActivity(const std::string& type,
   return prevent_default;
 }
 
-v8::Local<v8::Value> Browser::GetLoginItemStatus(mate::Arguments* args) {
-  bool hidden = false;
-  mate::Dictionary dict = mate::Dictionary::CreateEmpty(args->isolate());
-  dict.Set("openAtLogin", base::mac::CheckLoginItemStatus(&hidden));
-  dict.Set("openAsHidden", hidden);
-  dict.Set("restoreState", base::mac::WasLaunchedAsLoginItemRestoreState());
-  dict.Set("openedAtLogin", base::mac::WasLaunchedAsLoginOrResumeItem());
-  dict.Set("openedAsHidden", base::mac::WasLaunchedAsHiddenLoginItem());
-
-  return dict.GetHandle();
+Browser::LoginItemSettings Browser::GetLoginItemSettings() {
+  LoginItemSettings settings;
+  settings.open_at_login = base::mac::CheckLoginItemStatus(
+      &settings.open_as_hidden);
+  settings.restore_state = base::mac::WasLaunchedAsLoginItemRestoreState();
+  settings.opened_at_login = base::mac::WasLaunchedAsLoginOrResumeItem();
+  settings.opened_as_hidden = base::mac::WasLaunchedAsHiddenLoginItem();
+  return settings;
 }
 
-void Browser::SetAsLoginItem(mate::Arguments* args) {
-  bool hidden = false;
-  args->GetNext(&hidden);
-  base::mac::AddToLoginItems(hidden);
-}
-
-void Browser::RemoveAsLoginItem() {
-  base::mac::RemoveFromLoginItems();
+void Browser::SetLoginItemSettings(LoginItemSettings settings) {
+  if (settings.open_at_login) {
+    base::mac::AddToLoginItems(settings.open_as_hidden);
+  } else {
+    base::mac::RemoveFromLoginItems();
+  }
 }
 
 std::string Browser::GetExecutableFileVersion() const {

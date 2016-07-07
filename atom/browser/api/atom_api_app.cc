@@ -71,6 +71,33 @@ struct Converter<Browser::UserTask> {
 };
 #endif
 
+#if defined(OS_MACOSX)
+template<>
+struct Converter<Browser::LoginItemSettings> {
+  static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
+                     Browser::LoginItemSettings* out) {
+    mate::Dictionary dict;
+    if (!ConvertFromV8(isolate, val, &dict))
+      return false;
+
+    dict.Get("openAtLogin", &(out->open_at_login));
+    dict.Get("openAsHidden", &(out->open_as_hidden));
+    return true;
+  }
+
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   Browser::LoginItemSettings val) {
+    mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
+    dict.Set("openAtLogin", val.open_at_login);
+    dict.Set("openAsHidden", val.open_as_hidden);
+    dict.Set("restoreState", val.restore_state);
+    dict.Set("openedAtLogin", val.opened_at_login);
+    dict.Set("openedAsHidden", val.opened_as_hidden);
+    return dict.GetHandle();
+  }
+};
+#endif
+
 }  // namespace mate
 
 
@@ -529,12 +556,10 @@ void App::BuildPrototype(
                  base::Bind(&Browser::SetUserActivity, browser))
       .SetMethod("getCurrentActivityType",
                  base::Bind(&Browser::GetCurrentActivityType, browser))
-      .SetMethod("getLoginItemStatus",
-                 base::Bind(&Browser::GetLoginItemStatus, browser))
-      .SetMethod("setAsLoginItem",
-                 base::Bind(&Browser::SetAsLoginItem, browser))
-      .SetMethod("removeAsLoginItem",
-                 base::Bind(&Browser::RemoveAsLoginItem, browser))
+      .SetMethod("getLoginItemSettings",
+                 base::Bind(&Browser::GetLoginItemSettings, browser))
+      .SetMethod("setLoginItemSettings",
+                 base::Bind(&Browser::SetLoginItemSettings, browser))
 #endif
 #if defined(OS_WIN)
       .SetMethod("setUserTasks", base::Bind(&Browser::SetUserTasks, browser))
