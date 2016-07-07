@@ -229,7 +229,7 @@ function loadApplicationPackage (packagePath) {
     if (fs.existsSync(packageJsonPath)) {
       let packageJson
       try {
-        packageJson = JSON.parse(fs.readFileSync(packageJsonPath))
+        packageJson = require(packageJsonPath)
       } catch (e) {
         showErrorMessage(`Unable to parse ${packageJsonPath}\n\n${e.message}`)
         return
