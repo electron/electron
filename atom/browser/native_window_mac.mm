@@ -737,13 +737,21 @@ bool NativeWindowMac::IsFullscreen() const {
 }
 
 void NativeWindowMac::SetBounds(const gfx::Rect& bounds, bool animate) {
+  gfx::Size bSize = gfx::Size(bounds.width(), bounds.height());
+  bSize.SetToMax(GetMinimumSize());
+
+  gfx::Size maxSize = GetMaximumSize();
+  maxSize = gfx::Size(maxSize.width() == 0 ? bSize.width() : maxSize.width(),
+    maxSize.height() == 0 ? bSize.height() : maxSize.height());
+  bSize.SetToMin(maxSize);
+
   NSRect cocoa_bounds = NSMakeRect(bounds.x(), 0,
-                                   bounds.width(),
-                                   bounds.height());
+                                   bSize.width(),
+                                   bSize.height());
   // Flip coordinates based on the primary screen.
   NSScreen* screen = [[NSScreen screens] objectAtIndex:0];
   cocoa_bounds.origin.y =
-      NSHeight([screen frame]) - bounds.height() - bounds.y();
+      NSHeight([screen frame]) - bSize.height() - bounds.y();
 
   [window_ setFrame:cocoa_bounds display:YES animate:animate];
 }
