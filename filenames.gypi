@@ -75,6 +75,7 @@
     ],
     'default_app_sources': [
       'default_app/default_app.js',
+      'default_app/icon.png',
       'default_app/index.html',
       'default_app/main.js',
       'default_app/package.json',
