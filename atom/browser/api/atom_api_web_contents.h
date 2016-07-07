@@ -145,6 +145,10 @@ class WebContents : public mate::TrackableObject<WebContents>,
   // Dragging native items.
   void StartDrag(const mate::Dictionary& item, mate::Arguments* args);
 
+  // Captures the page with |rect|, |callback| would be called when capturing is
+  // done.
+  void CapturePage(mate::Arguments* args);
+
   // Methods for creating <webview>.
   void SetSize(const SetSizeParams& params);
   bool IsGuest() const;

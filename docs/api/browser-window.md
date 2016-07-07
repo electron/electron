@@ -892,17 +892,7 @@ Whether the window's document has been edited.
 
 ### `win.capturePage([rect, ]callback)`
 
-* `rect` Object (optional) - The area of page to be captured
-  * `x` Integer
-  * `y` Integer
-  * `width` Integer
-  * `height` Integer
-* `callback` Function
-
-Captures a snapshot of the page within `rect`. Upon completion `callback` will
-be called with `callback(image)`. The `image` is an instance of
-[NativeImage](native-image.md) that stores data of the snapshot. Omitting
-`rect` will capture the whole visible page.
+Same as `webContents.capturePage([rect, ]callback)`.
 
 ### `win.loadURL(url[, options])`
 

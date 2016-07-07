@@ -54,8 +54,6 @@ struct DraggableRegion;
 class NativeWindow : public base::SupportsUserData,
                      public content::WebContentsObserver {
  public:
-  using CapturePageCallback = base::Callback<void(const SkBitmap& bitmap)>;
-
   class DialogScope {
    public:
     explicit DialogScope(NativeWindow* window)
@@ -179,11 +177,6 @@ class NativeWindow : public base::SupportsUserData,
   virtual void BlurWebView();
   virtual bool IsWebViewFocused();
 
-  // Captures the page with |rect|, |callback| would be called when capturing is
-  // done.
-  virtual void CapturePage(const gfx::Rect& rect,
-                           const CapturePageCallback& callback);
-
   // Toggle the menu bar.
   virtual void SetAutoHideMenuBar(bool auto_hide);
   virtual bool IsMenuBarAutoHide();
@@ -295,11 +288,6 @@ class NativeWindow : public base::SupportsUserData,
 
   // Dispatch ReadyToShow event to observers.
   void NotifyReadyToShow();
-
-  // Called when CapturePage has done.
-  void OnCapturePageDone(const CapturePageCallback& callback,
-                         const SkBitmap& bitmap,
-                         content::ReadbackResponse response);
 
   // Whether window has standard frame.
   bool has_frame_;

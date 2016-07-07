@@ -65,6 +65,7 @@
 #include "net/url_request/url_request_context.h"
 #include "third_party/WebKit/public/web/WebInputEvent.h"
 #include "third_party/WebKit/public/web/WebFindOptions.h"
+#include "ui/gfx/screen.h"
 
 #include "atom/common/node_includes.h"
 
@@ -236,6 +237,13 @@ content::ServiceWorkerContext* GetServiceWorkerContext(
     return nullptr;
 
   return storage_partition->GetServiceWorkerContext();
+}
+
+// Called when CapturePage is done.
+void OnCapturePageDone(base::Callback<void(const gfx::Image&)> callback,
+                       const SkBitmap& bitmap,
+                       content::ReadbackResponse response) {
+  callback.Run(gfx::Image::CreateFrom1xBitmap(bitmap));
 }
 
 }  // namespace
@@ -1235,6 +1243,45 @@ void WebContents::StartDrag(const mate::Dictionary& item,
   }
 }
 
+void WebContents::CapturePage(mate::Arguments* args) {
+  gfx::Rect rect;
+  base::Callback<void(const gfx::Image&)> callback;
+
+  if (!(args->Length() == 1 && args->GetNext(&callback)) &&
+      !(args->Length() == 2 && args->GetNext(&rect)
+                            && args->GetNext(&callback))) {
+    args->ThrowError();
+    return;
+  }
+
+  const auto view = web_contents()->GetRenderWidgetHostView();
+  const auto host = view ? view->GetRenderWidgetHost() : nullptr;
+  if (!view || !host) {
+    callback.Run(gfx::Image());
+    return;
+  }
+
+  // Capture full page if user doesn't specify a |rect|.
+  const gfx::Size view_size = rect.IsEmpty() ? view->GetViewBounds().size() :
+                                               rect.size();
+
+  // By default, the requested bitmap size is the view size in screen
+  // coordinates.  However, if there's more pixel detail available on the
+  // current system, increase the requested bitmap size to capture it all.
+  gfx::Size bitmap_size = view_size;
+  const gfx::NativeView native_view = view->GetNativeView();
+  const float scale =
+      gfx::Screen::GetScreen()->GetDisplayNearestWindow(native_view)
+      .device_scale_factor();
+  if (scale > 1.0f)
+    bitmap_size = gfx::ScaleToCeiledSize(view_size, scale);
+
+  host->CopyFromBackingStore(gfx::Rect(rect.origin(), view_size),
+                             bitmap_size,
+                             base::Bind(&OnCapturePageDone, callback),
+                             kBGRA_8888_SkColorType);
+}
+
 void WebContents::OnCursorChange(const content::WebCursor& cursor) {
   content::WebCursor::CursorInfo info;
   cursor.GetCursorInfo(&info);
@@ -1370,6 +1417,7 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("removeWorkSpace", &WebContents::RemoveWorkSpace)
       .SetMethod("showDefinitionForSelection",
                  &WebContents::ShowDefinitionForSelection)
+      .SetMethod("capturePage", &WebContents::CapturePage)
       .SetProperty("id", &WebContents::ID)
       .SetProperty("session", &WebContents::Session)
       .SetProperty("hostWebContents", &WebContents::HostWebContents)
