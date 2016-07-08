@@ -66,8 +66,8 @@ an issue:
 * [protocol](api/protocol.md)
 * [session](api/session.md)
 * [systemPreferences](api/system-preferences.md)
-* [webContents](api/web-contents.md)
 * [Tray](api/tray.md)
+* [webContents](api/web-contents.md)
 
 ### Modules for the Renderer Process (Web Page):
 
