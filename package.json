@@ -4,6 +4,7 @@
   "devDependencies": {
     "asar": "^0.11.0",
     "electabul": "~0.0.4",
+    "electron-docs-linter": "^1.0.1",
     "request": "*",
     "standard": "^7.1.2",
     "standard-markdown": "^1.2.1"
