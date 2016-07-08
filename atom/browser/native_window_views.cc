@@ -748,7 +748,7 @@ void NativeWindowViews::SetFocusable(bool focusable) {
 #endif
 }
 
-void NativeWindowViews::SetMenu(ui::MenuModel* menu_model) {
+void NativeWindowViews::SetMenu(AtomMenuModel* menu_model) {
   if (menu_model == nullptr) {
     // Remove accelerators
     accelerator_table_.clear();
@@ -1182,7 +1182,7 @@ bool NativeWindowViews::AcceleratorPressed(const ui::Accelerator& accelerator) {
       &accelerator_table_, accelerator);
 }
 
-void NativeWindowViews::RegisterAccelerators(ui::MenuModel* menu_model) {
+void NativeWindowViews::RegisterAccelerators(AtomMenuModel* menu_model) {
   // Clear previous accelerators.
   views::FocusManager* focus_manager = GetFocusManager();
   accelerator_table_.clear();

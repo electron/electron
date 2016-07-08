@@ -5,10 +5,10 @@
 #include "atom/browser/ui/views/menu_delegate.h"
 
 #include "atom/browser/ui/views/menu_bar.h"
+#include "atom/browser/ui/views/menu_model_adapter.h"
 #include "content/public/browser/browser_thread.h"
 #include "ui/views/controls/button/menu_button.h"
 #include "ui/views/controls/menu/menu_item_view.h"
-#include "ui/views/controls/menu/menu_model_adapter.h"
 #include "ui/views/controls/menu/menu_runner.h"
 #include "ui/views/widget/widget.h"
 
@@ -22,7 +22,7 @@ MenuDelegate::MenuDelegate(MenuBar* menu_bar)
 MenuDelegate::~MenuDelegate() {
 }
 
-void MenuDelegate::RunMenu(ui::MenuModel* model, views::MenuButton* button) {
+void MenuDelegate::RunMenu(AtomMenuModel* model, views::MenuButton* button) {
   gfx::Point screen_loc;
   views::View::ConvertPointToScreen(button, &screen_loc);
   // Subtract 1 from the height to make the popup flush with the button border.
@@ -30,10 +30,10 @@ void MenuDelegate::RunMenu(ui::MenuModel* model, views::MenuButton* button) {
                    button->height() - 1);
 
   id_ = button->tag();
-  adapter_.reset(new views::MenuModelAdapter(model));
+  adapter_.reset(new MenuModelAdapter(model));
 
   views::MenuItemView* item = new views::MenuItemView(this);
-  static_cast<views::MenuModelAdapter*>(adapter_.get())->BuildMenu(item);
+  static_cast<MenuModelAdapter*>(adapter_.get())->BuildMenu(item);
 
   menu_runner_.reset(new views::MenuRunner(
       item,
@@ -102,7 +102,7 @@ views::MenuItemView* MenuDelegate::GetSiblingMenu(
     bool* has_mnemonics,
     views::MenuButton**) {
   views::MenuButton* button;
-  ui::MenuModel* model;
+  AtomMenuModel* model;
   if (menu_bar_->GetMenuButtonFromScreenPoint(screen_point, &model, &button) &&
       button->tag() != id_) {
     DCHECK(menu_runner_->IsRunning());

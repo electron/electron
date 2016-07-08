@@ -98,7 +98,7 @@ class NativeWindowViews : public NativeWindow,
   void SetIgnoreMouseEvents(bool ignore) override;
   void SetContentProtection(bool enable) override;
   void SetFocusable(bool focusable) override;
-  void SetMenu(ui::MenuModel* menu_model) override;
+  void SetMenu(AtomMenuModel* menu_model) override;
   void SetParentWindow(NativeWindow* parent) override;
   gfx::NativeWindow GetNativeWindow() override;
   void SetOverlayIcon(const gfx::Image& overlay,
@@ -176,7 +176,7 @@ class NativeWindowViews : public NativeWindow,
   bool AcceleratorPressed(const ui::Accelerator& accelerator) override;
 
   // Register accelerators supported by the menu model.
-  void RegisterAccelerators(ui::MenuModel* menu_model);
+  void RegisterAccelerators(AtomMenuModel* menu_model);
 
   // Returns the restore state for the window.
   ui::WindowShowState GetRestoredState();

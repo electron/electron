@@ -275,6 +275,8 @@
       'atom/browser/ui/views/menu_delegate.h',
       'atom/browser/ui/views/menu_layout.cc',
       'atom/browser/ui/views/menu_layout.h',
+      'atom/browser/ui/views/menu_model_adapter.cc',
+      'atom/browser/ui/views/menu_model_adapter.h',
       'atom/browser/ui/views/native_frame_view.cc',
       'atom/browser/ui/views/native_frame_view.h',
       'atom/browser/ui/views/submenu_button.cc',

@@ -5,15 +5,12 @@
 #ifndef ATOM_BROWSER_UI_VIEWS_MENU_DELEGATE_H_
 #define ATOM_BROWSER_UI_VIEWS_MENU_DELEGATE_H_
 
+#include "atom/browser/ui/atom_menu_model.h"
 #include "base/memory/scoped_ptr.h"
 #include "ui/views/controls/menu/menu_delegate.h"
 
 namespace views {
 class MenuRunner;
-}
-
-namespace ui {
-class MenuModel;
 }
 
 namespace atom {
@@ -25,7 +22,7 @@ class MenuDelegate : public views::MenuDelegate {
   explicit MenuDelegate(MenuBar* menu_bar);
   virtual ~MenuDelegate();
 
-  void RunMenu(ui::MenuModel* model, views::MenuButton* button);
+  void RunMenu(AtomMenuModel* model, views::MenuButton* button);
 
  protected:
   // views::MenuDelegate:

@@ -12,14 +12,9 @@
 
 @implementation AtomApplicationDelegate
 
-- (id)init {
-  self = [super init];
-  menu_controller_.reset([[AtomMenuController alloc] init]);
-  return self;
-}
-
-- (void)setApplicationDockMenu:(ui::MenuModel*)model {
-  [menu_controller_ populateWithModel:model];
+- (void)setApplicationDockMenu:(atom::AtomMenuModel*)model {
+  menu_controller_.reset([[AtomMenuController alloc] initWithModel:model
+                                             useDefaultAccelerator:NO]);
 }
 
 - (void)applicationWillFinishLaunching:(NSNotification*)notify {
@@ -34,7 +29,10 @@
 }
 
 - (NSMenu*)applicationDockMenu:(NSApplication*)sender {
-  return [menu_controller_ menu];
+  if (menu_controller_)
+    return [menu_controller_ menu];
+  else
+    return nil;
 }
 
 - (BOOL)application:(NSApplication*)sender
