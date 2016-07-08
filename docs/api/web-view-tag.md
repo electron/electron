@@ -491,7 +491,7 @@ examples.
 
 Sends an input `event` to the page.
 
-See [webContents.sendInputEvent](web-contents.md##webcontentssendinputeventevent)
+See [webContents.sendInputEvent](web-contents.md#webcontentssendinputeventevent)
 for detailed description of `event` object.
 
 ### `<webview>.showDefinitionForSelection()` _macOS_
