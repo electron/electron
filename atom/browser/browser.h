@@ -92,6 +92,14 @@ class Browser : public WindowListObserver {
   int GetBadgeCount();
 
 #if defined(OS_MACOSX)
+  struct LoginItemSettings {
+    bool open_at_login = false;
+    bool open_as_hidden = false;
+    bool restore_state = false;
+    bool opened_at_login = false;
+    bool opened_as_hidden = false;
+  };
+
   // Hide the application.
   void Hide();
 
@@ -134,6 +142,12 @@ class Browser : public WindowListObserver {
 
   // Set docks' icon.
   void DockSetIcon(const gfx::Image& image);
+
+  // Get login item settings of app
+  LoginItemSettings GetLoginItemSettings();
+
+  // Set login item settings of app
+  void SetLoginItemSettings(LoginItemSettings settings);
 #endif  // defined(OS_MACOSX)
 
 #if defined(OS_WIN)

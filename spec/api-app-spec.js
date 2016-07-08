@@ -298,4 +298,45 @@ describe('app module', function () {
       assert.equal(app.getBadgeCount(), shouldFail ? 0 : 42)
     })
   })
+
+  describe('app.get/setLoginItemSettings API', function () {
+    if (process.platform !== 'darwin') return
+
+    beforeEach(function () {
+      app.setLoginItemSettings({openAtLogin: false})
+    })
+
+    afterEach(function () {
+      app.setLoginItemSettings({openAtLogin: false})
+    })
+
+    it('returns the login item status of the app', function () {
+      app.setLoginItemSettings({openAtLogin: true})
+      assert.deepEqual(app.getLoginItemSettings(), {
+        openAtLogin: true,
+        openAsHidden: false,
+        wasOpenedAtLogin: false,
+        wasOpenedAsHidden: false,
+        restoreState: false
+      })
+
+      app.setLoginItemSettings({openAtLogin: true, openAsHidden: true})
+      assert.deepEqual(app.getLoginItemSettings(), {
+        openAtLogin: true,
+        openAsHidden: true,
+        wasOpenedAtLogin: false,
+        wasOpenedAsHidden: false,
+        restoreState: false
+      })
+
+      app.setLoginItemSettings({})
+      assert.deepEqual(app.getLoginItemSettings(), {
+        openAtLogin: false,
+        openAsHidden: false,
+        wasOpenedAtLogin: false,
+        wasOpenedAsHidden: false,
+        restoreState: false
+      })
+    })
+  })
 })

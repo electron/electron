@@ -11,6 +11,7 @@
 #include "atom/browser/window_list.h"
 #include "base/mac/bundle_locations.h"
 #include "base/mac/foundation_util.h"
+#include "base/mac/mac_util.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/sys_string_conversions.h"
 #include "brightray/common/application_info.h"
@@ -146,6 +147,23 @@ bool Browser::ContinueUserActivity(const std::string& type,
                     observers_,
                     OnContinueUserActivity(&prevent_default, type, user_info));
   return prevent_default;
+}
+
+Browser::LoginItemSettings Browser::GetLoginItemSettings() {
+  LoginItemSettings settings;
+  settings.open_at_login = base::mac::CheckLoginItemStatus(
+      &settings.open_as_hidden);
+  settings.restore_state = base::mac::WasLaunchedAsLoginItemRestoreState();
+  settings.opened_at_login = base::mac::WasLaunchedAsLoginOrResumeItem();
+  settings.opened_as_hidden = base::mac::WasLaunchedAsHiddenLoginItem();
+  return settings;
+}
+
+void Browser::SetLoginItemSettings(LoginItemSettings settings) {
+  if (settings.open_at_login)
+    base::mac::AddToLoginItems(settings.open_as_hidden);
+  else
+    base::mac::RemoveFromLoginItems();
 }
 
 std::string Browser::GetExecutableFileVersion() const {
