@@ -6,7 +6,7 @@ const lint = require('electron-docs-linter')
 const args = process.argv.slice(2)
 const docsPath = path.join(__dirname, '../docs/api')
 const targetVersion = args[0]
-const outFile = path.join(__dirname, '../electron.json')
+const outFile = path.join(__dirname, '../docs/api.json')
 
 if (!targetVersion) {
   console.error(`Usage: ./script/lint-docs.js <targetVersion>`)
