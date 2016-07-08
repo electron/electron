@@ -1,4 +1,6 @@
-# Possible Values of `app.getLocale()`
+# Locales
+
+> The values for locale returned by `app.getLocale()`.
 
 Electron uses Chromium's `l10n_util` library to fetch the locale. Possible
 values are listed below:
