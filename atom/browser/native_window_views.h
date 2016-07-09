@@ -220,6 +220,9 @@ class NativeWindowViews : public NativeWindow,
   // If true we have enabled a11y
   bool enabled_a11y_support_;
 
+  // Whether to show the WS_THICKFRAME style.
+  bool thick_frame_;
+
   // The icons of window and taskbar.
   base::win::ScopedHICON window_icon_;
   base::win::ScopedHICON app_icon_;
