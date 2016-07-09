@@ -700,7 +700,7 @@ when the JS promise is rejected.
   * `printBackground` Boolean - Also prints the background color and image of
     the web page. Default is `false`.
 
-Prints window's web page. When `silent` is set to `false`, Electron will pick
+Prints window's web page. When `silent` is set to `true`, Electron will pick
 up system's default printer and default settings for printing.
 
 Calling `window.print()` in web page is equivalent to calling
