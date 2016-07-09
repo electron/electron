@@ -20,7 +20,7 @@ typedef net::URLRequestJobFactory::ProtocolHandler ProtocolHandler;
 AtomURLRequestJobFactory::AtomURLRequestJobFactory() {}
 
 AtomURLRequestJobFactory::~AtomURLRequestJobFactory() {
-  STLDeleteValues(&protocol_handler_map_);
+  Clear();
 }
 
 bool AtomURLRequestJobFactory::SetProtocolHandler(
@@ -75,6 +75,10 @@ ProtocolHandler* AtomURLRequestJobFactory::GetProtocolHandler(
 bool AtomURLRequestJobFactory::HasProtocolHandler(
     const std::string& scheme) const {
   return ContainsKey(protocol_handler_map_, scheme);
+}
+
+void AtomURLRequestJobFactory::Clear() {
+  STLDeleteValues(&protocol_handler_map_);
 }
 
 net::URLRequestJob* AtomURLRequestJobFactory::MaybeCreateJobWithProtocolHandler(

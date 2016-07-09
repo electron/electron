@@ -26,11 +26,29 @@ namespace atom {
 
 namespace api {
 
+namespace {
+
+// Clear protocol handlers in IO thread.
+void ClearJobFactoryInIO(
+    scoped_refptr<brightray::URLRequestContextGetter> request_context_getter) {
+  auto job_factory = static_cast<AtomURLRequestJobFactory*>(
+      request_context_getter->job_factory());
+  job_factory->Clear();
+}
+
+}  // namespace
+
 Protocol::Protocol(v8::Isolate* isolate, AtomBrowserContext* browser_context)
     : request_context_getter_(static_cast<brightray::URLRequestContextGetter*>(
           browser_context->GetRequestContext())),
       weak_factory_(this) {
   Init(isolate);
+}
+
+Protocol::~Protocol() {
+  content::BrowserThread::PostTask(
+      content::BrowserThread::IO, FROM_HERE,
+      base::Bind(ClearJobFactoryInIO, request_context_getter_));
 }
 
 void Protocol::RegisterServiceWorkerSchemes(

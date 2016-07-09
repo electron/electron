@@ -25,7 +25,6 @@ const char* kGeolocationProviderURL =
 }  // namespace
 
 AtomAccessTokenStore::AtomAccessTokenStore() {
-  LOG(ERROR) << "AtomAccessTokenStore";
   content::GeolocationProvider::GetInstance()->UserDidOptIntoLocationServices();
 }
 
