@@ -223,6 +223,9 @@ class NativeWindowViews : public NativeWindow,
   // Whether to show the WS_THICKFRAME style.
   bool thick_frame_;
 
+  // The bounds of window before maximize/fullscreen.
+  gfx::Rect restore_bounds_;
+
   // The icons of window and taskbar.
   base::win::ScopedHICON window_icon_;
   base::win::ScopedHICON app_icon_;

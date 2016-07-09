@@ -421,7 +421,7 @@ void NativeWindowViews::Maximize() {
 #if defined(OS_WIN)
   // For window without WS_THICKFRAME style, we can not call Maximize().
   if (!thick_frame_) {
-    last_normal_bounds_ = GetBounds();
+    restore_bounds_ = GetBounds();
     auto display =
         gfx::Screen::GetScreen()->GetDisplayNearestPoint(GetPosition());
     SetBounds(display.work_area(), false);
@@ -439,7 +439,7 @@ void NativeWindowViews::Maximize() {
 void NativeWindowViews::Unmaximize() {
 #if defined(OS_WIN)
   if (!thick_frame_) {
-    SetBounds(last_normal_bounds_, false);
+    SetBounds(restore_bounds_, false);
     return;
   }
 #endif
@@ -484,12 +484,12 @@ void NativeWindowViews::SetFullScreen(bool fullscreen) {
   // For window without WS_THICKFRAME style, we can not call SetFullscreen().
   if (!thick_frame_) {
     if (fullscreen) {
-      last_normal_bounds_ = GetBounds();
+      restore_bounds_ = GetBounds();
       auto display =
           gfx::Screen::GetScreen()->GetDisplayNearestPoint(GetPosition());
       SetBounds(display.bounds(), false);
     } else {
-      SetBounds(last_normal_bounds_, false);
+      SetBounds(restore_bounds_, false);
     }
     return;
   }
