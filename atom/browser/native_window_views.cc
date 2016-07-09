@@ -23,6 +23,7 @@
 #include "ui/aura/window_tree_host.h"
 #include "ui/base/hit_test.h"
 #include "ui/gfx/image/image.h"
+#include "ui/gfx/screen.h"
 #include "ui/views/background.h"
 #include "ui/views/controls/webview/unhandled_keyboard_event_handler.h"
 #include "ui/views/controls/webview/webview.h"
@@ -278,13 +279,6 @@ NativeWindowViews::NativeWindowViews(
   AddChildView(web_view_);
 
 #if defined(OS_WIN)
-  // Save initial window state.
-  if (fullscreen)
-    last_window_state_ = ui::SHOW_STATE_FULLSCREEN;
-  else
-    last_window_state_ = ui::SHOW_STATE_NORMAL;
-  last_normal_size_ = gfx::Size(widget_size_);
-
   if (!has_frame()) {
     // Set Window style so that we get a minimize and maximize animation when
     // frameless.
@@ -324,6 +318,15 @@ NativeWindowViews::NativeWindowViews(
 
   window_->CenterWindow(size);
   Layout();
+
+#if defined(OS_WIN)
+  // Save initial window state.
+  if (fullscreen)
+    last_window_state_ = ui::SHOW_STATE_FULLSCREEN;
+  else
+    last_window_state_ = ui::SHOW_STATE_NORMAL;
+  last_normal_bounds_ = GetBounds();
+#endif
 }
 
 NativeWindowViews::~NativeWindowViews() {
@@ -415,6 +418,17 @@ bool NativeWindowViews::IsEnabled() {
 }
 
 void NativeWindowViews::Maximize() {
+#if defined(OS_WIN)
+  // For window without WS_THICKFRAME style, we can not call Maximize().
+  if (!thick_frame_) {
+    restore_bounds_ = GetBounds();
+    auto display =
+        gfx::Screen::GetScreen()->GetDisplayNearestPoint(GetPosition());
+    SetBounds(display.work_area(), false);
+    return;
+  }
+#endif
+
   if (IsVisible())
     window_->Maximize();
   else
@@ -423,6 +437,13 @@ void NativeWindowViews::Maximize() {
 }
 
 void NativeWindowViews::Unmaximize() {
+#if defined(OS_WIN)
+  if (!thick_frame_) {
+    SetBounds(restore_bounds_, false);
+    return;
+  }
+#endif
+
   window_->Restore();
 }
 
@@ -459,6 +480,20 @@ void NativeWindowViews::SetFullScreen(bool fullscreen) {
     last_window_state_ = ui::SHOW_STATE_NORMAL;
     NotifyWindowLeaveFullScreen();
   }
+
+  // For window without WS_THICKFRAME style, we can not call SetFullscreen().
+  if (!thick_frame_) {
+    if (fullscreen) {
+      restore_bounds_ = GetBounds();
+      auto display =
+          gfx::Screen::GetScreen()->GetDisplayNearestPoint(GetPosition());
+      SetBounds(display.bounds(), false);
+    } else {
+      SetBounds(restore_bounds_, false);
+    }
+    return;
+  }
+
   // We set the new value after notifying, so we can handle the size event
   // correctly.
   window_->SetFullscreen(fullscreen);
@@ -475,8 +510,7 @@ bool NativeWindowViews::IsFullscreen() const {
   return window_->IsFullscreen();
 }
 
-void NativeWindowViews::SetBounds(const gfx::Rect& bounds,
-    bool animate = false) {
+void NativeWindowViews::SetBounds(const gfx::Rect& bounds, bool animate) {
 #if defined(USE_X11)
   // On Linux the minimum and maximum size should be updated with window size
   // when window is not resizable.

@@ -212,7 +212,7 @@ class NativeWindowViews : public NativeWindow,
   // to receive the wrong size (#2498). To circumvent that, we keep tabs on the
   // size of the window while in the normal state (not maximized, minimized or
   // fullscreen), so we restore it correctly.
-  gfx::Size last_normal_size_;
+  gfx::Rect last_normal_bounds_;
 
   // In charge of running taskbar related APIs.
   TaskbarHost taskbar_host_;
@@ -222,6 +222,9 @@ class NativeWindowViews : public NativeWindow,
 
   // Whether to show the WS_THICKFRAME style.
   bool thick_frame_;
+
+  // The bounds of window before maximize/fullscreen.
+  gfx::Rect restore_bounds_;
 
   // The icons of window and taskbar.
   base::win::ScopedHICON window_icon_;

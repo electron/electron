@@ -140,7 +140,7 @@ void NativeWindowViews::HandleSizeEvent(WPARAM w_param, LPARAM l_param) {
     case SIZE_RESTORED:
       if (last_window_state_ == ui::SHOW_STATE_NORMAL) {
         // Window was resized so we save it's new size.
-        last_normal_size_ = GetSize();
+        last_normal_bounds_ = GetBounds();
       } else {
         switch (last_window_state_) {
           case ui::SHOW_STATE_MAXIMIZED:
@@ -148,7 +148,7 @@ void NativeWindowViews::HandleSizeEvent(WPARAM w_param, LPARAM l_param) {
 
             // When the window is restored we resize it to the previous known
             // normal size.
-            NativeWindow::SetSize(last_normal_size_);
+            SetBounds(last_normal_bounds_, false);
 
             NotifyWindowUnmaximize();
             break;
@@ -161,7 +161,7 @@ void NativeWindowViews::HandleSizeEvent(WPARAM w_param, LPARAM l_param) {
 
               // When the window is restored we resize it to the previous known
               // normal size.
-              NativeWindow::SetSize(last_normal_size_);
+              SetBounds(last_normal_bounds_, false);
 
               NotifyWindowRestore();
             }
