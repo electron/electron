@@ -23,6 +23,7 @@
 #include "ui/aura/window_tree_host.h"
 #include "ui/base/hit_test.h"
 #include "ui/gfx/image/image.h"
+#include "ui/gfx/screen.h"
 #include "ui/views/background.h"
 #include "ui/views/controls/webview/unhandled_keyboard_event_handler.h"
 #include "ui/views/controls/webview/webview.h"
@@ -415,6 +416,16 @@ bool NativeWindowViews::IsEnabled() {
 }
 
 void NativeWindowViews::Maximize() {
+#if defined(OS_WIN)
+  // For window without WS_THICKFRAME style, we can not call Maximize().
+  if (!thick_frame_) {
+    auto display =
+        gfx::Screen::GetScreen()->GetDisplayNearestPoint(GetPosition());
+    SetBounds(display.work_area(), false);
+    return;
+  }
+#endif
+
   if (IsVisible())
     window_->Maximize();
   else
@@ -459,6 +470,15 @@ void NativeWindowViews::SetFullScreen(bool fullscreen) {
     last_window_state_ = ui::SHOW_STATE_NORMAL;
     NotifyWindowLeaveFullScreen();
   }
+
+  // For window without WS_THICKFRAME style, we can not call Maximize().
+  if (!thick_frame_) {
+    auto display =
+        gfx::Screen::GetScreen()->GetDisplayNearestPoint(GetPosition());
+    SetBounds(display.bounds(), false);
+    return;
+  }
+
   // We set the new value after notifying, so we can handle the size event
   // correctly.
   window_->SetFullscreen(fullscreen);
@@ -475,8 +495,7 @@ bool NativeWindowViews::IsFullscreen() const {
   return window_->IsFullscreen();
 }
 
-void NativeWindowViews::SetBounds(const gfx::Rect& bounds,
-    bool animate = false) {
+void NativeWindowViews::SetBounds(const gfx::Rect& bounds, bool animate) {
 #if defined(USE_X11)
   // On Linux the minimum and maximum size should be updated with window size
   // when window is not resizable.
