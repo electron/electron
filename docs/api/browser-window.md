@@ -174,6 +174,9 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     this below.
   * `titleBarStyle` String - The style of window title bar. See more about this
     below.
+  * `thickFrame` Boolean - Use `WS_THICKFRAME` style for frameless windows on
+    Windows, which adds standard window frame. Setting it to `false` will remove
+    window shadow and window animations. Default is `true`.
   * `webPreferences` Object - Settings of web page's features. See more about
     this below.
 
