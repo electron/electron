@@ -12,7 +12,7 @@ select the tag that matches your version.
 There are questions that are asked quite often, check this out before creating
 an issue:
 
-* [Electron FAQ](faq/electron-faq.md)
+* [Electron FAQ](faq.md)
 
 ## Guides
 
