@@ -135,6 +135,10 @@ NativeWindowViews::NativeWindowViews(
       menu_bar_autohide_(false),
       menu_bar_visible_(false),
       menu_bar_alt_pressed_(false),
+#if defined(OS_WIN)
+      enabled_a11y_support_(false),
+      thick_frame_(true),
+#endif
       keyboard_event_handler_(new views::UnhandledKeyboardEventHandler),
       disable_count_(0),
       use_content_size_(false),
@@ -152,6 +156,11 @@ NativeWindowViews::NativeWindowViews(
   options.Get(options::kResizable, &resizable_);
   options.Get(options::kMinimizable, &minimizable_);
   options.Get(options::kMaximizable, &maximizable_);
+
+  // Transparent window must not have thick frame.
+  options.Get("thickFrame", &thick_frame_);
+  if (transparent())
+    thick_frame_ = false;
 #endif
 
   if (enable_larger_than_screen())
@@ -287,13 +296,13 @@ NativeWindowViews::NativeWindowViews(
     if (maximizable_)
       frame_style |= WS_MAXIMIZEBOX;
     // We should not show a frame for transparent window.
-    if (transparent())
+    if (!thick_frame_)
       frame_style &= ~(WS_THICKFRAME | WS_CAPTION);
     ::SetWindowLong(GetAcceleratedWidget(), GWL_STYLE, frame_style);
   }
 
-  if (transparent()) {
-    // Transparent window on Windows has to have WS_EX_COMPOSITED style.
+  if (!thick_frame_) {
+    // Window without thick frame has to have WS_EX_COMPOSITED style.
     LONG ex_style = ::GetWindowLong(GetAcceleratedWidget(), GWL_EXSTYLE);
     ex_style |= WS_EX_COMPOSITED;
     ::SetWindowLong(GetAcceleratedWidget(), GWL_EXSTYLE, ex_style);
@@ -513,7 +522,7 @@ void NativeWindowViews::SetContentSizeConstraints(
 
 void NativeWindowViews::SetResizable(bool resizable) {
 #if defined(OS_WIN)
-  if (!transparent())
+  if (thick_frame_)
     FlipWindowStyle(GetAcceleratedWidget(), resizable, WS_THICKFRAME);
 #elif defined(USE_X11)
   if (resizable != resizable_) {
@@ -536,7 +545,11 @@ void NativeWindowViews::SetResizable(bool resizable) {
 
 bool NativeWindowViews::IsResizable() {
 #if defined(OS_WIN)
-  return ::GetWindowLong(GetAcceleratedWidget(), GWL_STYLE) & WS_THICKFRAME;
+  if (thick_frame_) {
+    return ::GetWindowLong(GetAcceleratedWidget(), GWL_STYLE) & WS_THICKFRAME;
+  } else {
+    return CanResize();
+  }
 #else
   return CanResize();
 #endif
