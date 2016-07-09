@@ -284,7 +284,7 @@ NativeWindowViews::NativeWindowViews(
     last_window_state_ = ui::SHOW_STATE_FULLSCREEN;
   else
     last_window_state_ = ui::SHOW_STATE_NORMAL;
-  last_normal_size_ = gfx::Size(widget_size_);
+  last_normal_size_ = widget_size_;
 
   if (!has_frame()) {
     // Set Window style so that we get a minimize and maximize animation when
@@ -419,6 +419,7 @@ void NativeWindowViews::Maximize() {
 #if defined(OS_WIN)
   // For window without WS_THICKFRAME style, we can not call Maximize().
   if (!thick_frame_) {
+    last_normal_size_ = GetSize();
     auto display =
         gfx::Screen::GetScreen()->GetDisplayNearestPoint(GetPosition());
     SetBounds(display.work_area(), false);
@@ -434,6 +435,13 @@ void NativeWindowViews::Maximize() {
 }
 
 void NativeWindowViews::Unmaximize() {
+#if defined(OS_WIN)
+  if (!thick_frame_) {
+    NativeWindow::SetSize(last_normal_size_);
+    return;
+  }
+#endif
+
   window_->Restore();
 }
 
@@ -471,11 +479,16 @@ void NativeWindowViews::SetFullScreen(bool fullscreen) {
     NotifyWindowLeaveFullScreen();
   }
 
-  // For window without WS_THICKFRAME style, we can not call Maximize().
+  // For window without WS_THICKFRAME style, we can not call SetFullscreen().
   if (!thick_frame_) {
-    auto display =
-        gfx::Screen::GetScreen()->GetDisplayNearestPoint(GetPosition());
-    SetBounds(display.bounds(), false);
+    if (fullscreen) {
+      last_normal_size_ = GetSize();
+      auto display =
+          gfx::Screen::GetScreen()->GetDisplayNearestPoint(GetPosition());
+      SetBounds(display.bounds(), false);
+    } else {
+      NativeWindow::SetSize(last_normal_size_);
+    }
     return;
   }
 
