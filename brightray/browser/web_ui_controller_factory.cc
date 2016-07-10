@@ -54,7 +54,7 @@ content::WebUIController* WebUIControllerFactory::CreateWebUIControllerForURL(
     auto browser_context = web_ui->GetWebContents()->GetBrowserContext();
     return new DevToolsUI(browser_context, web_ui);
   }
-  return NULL;
+  return nullptr;
 }
 
 }  // namespace brightray

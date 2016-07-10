@@ -73,7 +73,7 @@ void MediaStreamDevicesController::Accept() {
   if (microphone_requested_ || webcam_requested_) {
     switch (request_.request_type) {
       case content::MEDIA_OPEN_DEVICE_PEPPER_ONLY: {
-        const content::MediaStreamDevice* device = NULL;
+        const content::MediaStreamDevice* device = nullptr;
         // For open device request pick the desired device or fall back to the
         // first available of the given type.
         if (request_.audio_type == content::MEDIA_DEVICE_AUDIO_CAPTURE) {
