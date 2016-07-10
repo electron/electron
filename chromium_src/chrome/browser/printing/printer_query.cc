@@ -122,7 +122,7 @@ bool PrinterQuery::is_callback_pending() const {
 }
 
 bool PrinterQuery::is_valid() const {
-  return worker_.get() != NULL;
+  return worker_.get() != nullptr;
 }
 
 }  // namespace printing

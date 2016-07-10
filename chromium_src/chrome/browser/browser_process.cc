@@ -7,7 +7,7 @@
 #include "chrome/browser/printing/print_job_manager.h"
 #include "ui/base/l10n/l10n_util.h"
 
-BrowserProcess* g_browser_process = NULL;
+BrowserProcess* g_browser_process = nullptr;
 
 BrowserProcess::BrowserProcess() {
   g_browser_process = this;
@@ -16,7 +16,7 @@ BrowserProcess::BrowserProcess() {
 }
 
 BrowserProcess::~BrowserProcess() {
-  g_browser_process = NULL;
+  g_browser_process = nullptr;
 }
 
 std::string BrowserProcess::GetApplicationLocale() {

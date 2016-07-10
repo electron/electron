@@ -123,7 +123,7 @@ int StreamListenSocket::GetPeerAddress(IPEndPoint* address) const {
 }
 
 SocketDescriptor StreamListenSocket::AcceptSocket() {
-  SocketDescriptor conn = HANDLE_EINTR(accept(socket_, NULL, NULL));
+  SocketDescriptor conn = HANDLE_EINTR(accept(socket_, nullptr, nullptr));
   if (conn == kInvalidSocket)
     LOG(ERROR) << "Error accepting connection.";
   else

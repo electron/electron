@@ -62,9 +62,9 @@ gfx::NativeView PrintingContextDelegate::GetParentView() {
   content::RenderViewHost* view =
       content::RenderViewHost::FromID(render_process_id_, render_view_id_);
   if (!view)
-    return NULL;
+    return nullptr;
   content::WebContents* wc = content::WebContents::FromRenderViewHost(view);
-  return wc ? wc->GetNativeView() : NULL;
+  return wc ? wc->GetNativeView() : nullptr;
 }
 
 std::string PrintingContextDelegate::GetAppLocale() {
@@ -343,7 +343,7 @@ void PrintJobWorker::OnDocumentDone() {
                               base::RetainedRef(document_), nullptr));
 
   // Makes sure the variables are reinitialized.
-  document_ = NULL;
+  document_ = nullptr;
 }
 
 void PrintJobWorker::SpoolPage(PrintedPage* page) {
@@ -397,7 +397,7 @@ void PrintJobWorker::OnFailure() {
   Cancel();
 
   // Makes sure the variables are reinitialized.
-  document_ = NULL;
+  document_ = nullptr;
   page_number_ = PageNumber::npos();
 }
 

@@ -162,7 +162,7 @@ v8::Local<v8::Value> V8ValueConverter::ToV8Array(
   v8::Local<v8::Array> result(v8::Array::New(isolate, val->GetSize()));
 
   for (size_t i = 0; i < val->GetSize(); ++i) {
-    const base::Value* child = NULL;
+    const base::Value* child = nullptr;
     CHECK(val->Get(i, &child));
 
     v8::Local<v8::Value> child_v8 = ToV8ValueImpl(isolate, child);
@@ -214,7 +214,7 @@ base::Value* V8ValueConverter::FromV8ValueImpl(
 
   FromV8ValueState::Level state_level(state);
   if (state->HasReachedMaxRecursionDepth())
-    return NULL;
+    return nullptr;
 
   if (val->IsNull())
     return base::Value::CreateNullValue().release();
@@ -235,7 +235,7 @@ base::Value* V8ValueConverter::FromV8ValueImpl(
 
   if (val->IsUndefined())
     // JSON.stringify ignores undefined.
-    return NULL;
+    return nullptr;
 
   if (val->IsDate()) {
     v8::Date* date = v8::Date::Cast(*val);
@@ -265,7 +265,7 @@ base::Value* V8ValueConverter::FromV8ValueImpl(
   if (val->IsFunction()) {
     if (!function_allowed_)
       // JSON.stringify refuses to convert function(){}.
-      return NULL;
+      return nullptr;
     return FromV8Object(val->ToObject(), state, isolate);
   }
 
@@ -278,7 +278,7 @@ base::Value* V8ValueConverter::FromV8ValueImpl(
   }
 
   LOG(ERROR) << "Unexpected v8 value type encountered.";
-  return NULL;
+  return nullptr;
 }
 
 base::Value* V8ValueConverter::FromV8Array(

@@ -394,7 +394,7 @@ void PrintViewManagerBase::ReleasePrintJob() {
                     content::Source<PrintJob>(print_job_.get()));
   print_job_->DisconnectSource();
   // Don't close the worker thread.
-  print_job_ = NULL;
+  print_job_ = nullptr;
 }
 
 bool PrintViewManagerBase::RunInnerMessageLoop() {

@@ -17,7 +17,7 @@ base::LazyInstance<base::ObserverList<WindowListObserver>>::Leaky
     WindowList::observers_ = LAZY_INSTANCE_INITIALIZER;
 
 // static
-WindowList* WindowList::instance_ = NULL;
+WindowList* WindowList::instance_ = nullptr;
 
 // static
 WindowList* WindowList::GetInstance() {

@@ -220,7 +220,7 @@ void NativeDesktopMediaList::Worker::Refresh(
 
 webrtc::SharedMemory* NativeDesktopMediaList::Worker::CreateSharedMemory(
     size_t size) {
-  return NULL;
+  return nullptr;
 }
 
 void NativeDesktopMediaList::Worker::OnCaptureCompleted(
@@ -236,7 +236,7 @@ NativeDesktopMediaList::NativeDesktopMediaList(
       update_period_(base::TimeDelta::FromMilliseconds(kDefaultUpdatePeriod)),
       thumbnail_size_(100, 100),
       view_dialog_id_(-1),
-      observer_(NULL),
+      observer_(nullptr),
       weak_factory_(this) {
   base::SequencedWorkerPool* worker_pool = BrowserThread::GetBlockingPool();
   capture_task_runner_ = worker_pool->GetSequencedTaskRunner(

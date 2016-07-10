@@ -41,7 +41,7 @@ scoped_refptr<PrinterQuery> PrintQueriesQueue::PopPrinterQuery(
       return current_query;
     }
   }
-  return NULL;
+  return nullptr;
 }
 
 scoped_refptr<PrinterQuery> PrintQueriesQueue::CreatePrinterQuery(
@@ -90,7 +90,7 @@ void PrintJobManager::Shutdown() {
   StopJobs(true);
   if (queue_.get())
     queue_->Shutdown();
-  queue_ = NULL;
+  queue_ = nullptr;
 }
 
 void PrintJobManager::StopJobs(bool wait_for_finish) {

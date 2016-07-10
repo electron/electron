@@ -115,10 +115,10 @@ TtsControllerImpl* TtsControllerImpl::GetInstance() {
 }
 
 TtsControllerImpl::TtsControllerImpl()
-    : current_utterance_(NULL),
+    : current_utterance_(nullptr),
       paused_(false),
-      platform_impl_(NULL),
-      tts_engine_delegate_(NULL) {
+      platform_impl_(nullptr),
+      tts_engine_delegate_(nullptr) {
 }
 
 TtsControllerImpl::~TtsControllerImpl() {
@@ -206,7 +206,7 @@ void TtsControllerImpl::SpeakNow(Utterance* utterance) {
     if (!sends_end_event) {
       utterance->Finish();
       delete utterance;
-      current_utterance_ = NULL;
+      current_utterance_ = nullptr;
       SpeakNextUtterance();
     }
 #endif
@@ -222,7 +222,7 @@ void TtsControllerImpl::SpeakNow(Utterance* utterance) {
         voice,
         utterance->continuous_parameters());
     if (!success)
-      current_utterance_ = NULL;
+      current_utterance_ = nullptr;
 
     // If the native voice wasn't able to process this speech, see if
     // the browser has built-in TTS that isn't loaded yet.
@@ -323,7 +323,7 @@ void TtsControllerImpl::GetVoices(content::BrowserContext* browser_context,
 }
 
 bool TtsControllerImpl::IsSpeaking() {
-  return current_utterance_ != NULL || GetPlatformImpl()->IsSpeaking();
+  return current_utterance_ != nullptr || GetPlatformImpl()->IsSpeaking();
 }
 
 void TtsControllerImpl::FinishCurrentUtterance() {
@@ -332,7 +332,7 @@ void TtsControllerImpl::FinishCurrentUtterance() {
       current_utterance_->OnTtsEvent(TTS_EVENT_INTERRUPTED, kInvalidCharIndex,
                                      std::string());
     delete current_utterance_;
-    current_utterance_ = NULL;
+    current_utterance_ = nullptr;
   }
 }
 
