@@ -61,9 +61,8 @@ void PrintQueriesQueue::Shutdown() {
   // Stop all pending queries, requests to generate print preview do not have
   // corresponding PrintJob, so any pending preview requests are not covered
   // by PrintJobManager::StopJobs and should be stopped explicitly.
-  for (auto itr = queries_to_stop.begin(); itr != queries_to_stop.end();
-       ++itr) {
-    (*itr)->PostTask(FROM_HERE, base::Bind(&PrinterQuery::StopWorker, *itr));
+  for (auto& itr : queries_to_stop) {
+    itr->PostTask(FROM_HERE, base::Bind(&PrinterQuery::StopWorker, itr));
   }
 }
 
@@ -99,11 +98,11 @@ void PrintJobManager::StopJobs(bool wait_for_finish) {
   PrintJobs to_stop;
   to_stop.swap(current_jobs_);
 
-  for (auto job = to_stop.begin(); job != to_stop.end(); ++job) {
+  for (const auto& job : to_stop) {
     // Wait for two minutes for the print job to be spooled.
     if (wait_for_finish)
-      (*job)->FlushJob(base::TimeDelta::FromMinutes(2));
-    (*job)->Stop();
+      job->FlushJob(base::TimeDelta::FromMinutes(2));
+    job->Stop();
   }
 }
 

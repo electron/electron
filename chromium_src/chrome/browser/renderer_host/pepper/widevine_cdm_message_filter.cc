@@ -43,16 +43,14 @@ void WidevineCdmMessageFilter::OnIsInternalPluginAvailableForMimeType(
   std::vector<WebPluginInfo> plugins;
   PluginService::GetInstance()->GetInternalPlugins(&plugins);
 
-  for (size_t i = 0; i < plugins.size(); ++i) {
-    const WebPluginInfo& plugin = plugins[i];
+  for (auto& plugin : plugins) {
     const std::vector<content::WebPluginMimeType>& mime_types =
         plugin.mime_types;
-    for (size_t j = 0; j < mime_types.size(); ++j) {
-
-      if (mime_types[j].mime_type == mime_type) {
+    for (const auto& j : mime_types) {
+      if (j.mime_type == mime_type) {
         *is_available = true;
-        *additional_param_names = mime_types[j].additional_param_names;
-        *additional_param_values = mime_types[j].additional_param_values;
+        *additional_param_names = j.additional_param_names;
+        *additional_param_values = j.additional_param_values;
         return;
       }
     }

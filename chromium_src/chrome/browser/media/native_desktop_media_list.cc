@@ -152,12 +152,12 @@ void NativeDesktopMediaList::Worker::Refresh(
   if (window_capturer_) {
     webrtc::WindowCapturer::WindowList windows;
     if (window_capturer_->GetWindowList(&windows)) {
-      for (auto it = windows.begin(); it != windows.end(); ++it) {
+      for (auto& window : windows) {
         // Skip the picker dialog window.
-        if (it->id != view_dialog_id) {
+        if (window.id != view_dialog_id) {
           sources.push_back(SourceDescription(
-              DesktopMediaID(DesktopMediaID::TYPE_WINDOW, it->id),
-              base::UTF8ToUTF16(it->title)));
+              DesktopMediaID(DesktopMediaID::TYPE_WINDOW, window.id),
+              base::UTF8ToUTF16(window.title)));
         }
       }
     }
@@ -296,8 +296,8 @@ void NativeDesktopMediaList::OnSourcesList(
     const std::vector<SourceDescription>& new_sources) {
   typedef std::set<content::DesktopMediaID> SourceSet;
   SourceSet new_source_set;
-  for (size_t i = 0; i < new_sources.size(); ++i) {
-    new_source_set.insert(new_sources[i].id);
+  for (const auto& new_source : new_sources) {
+    new_source_set.insert(new_source.id);
   }
   // Iterate through the old sources to find the removed sources.
   for (size_t i = 0; i < sources_.size(); ++i) {
@@ -310,8 +310,8 @@ void NativeDesktopMediaList::OnSourcesList(
   // Iterate through the new sources to find the added sources.
   if (new_sources.size() > sources_.size()) {
     SourceSet old_source_set;
-    for (size_t i = 0; i < sources_.size(); ++i) {
-      old_source_set.insert(sources_[i].id);
+    for (auto& source : sources_) {
+      old_source_set.insert(source.id);
     }
 
     for (size_t i = 0; i < new_sources.size(); ++i) {

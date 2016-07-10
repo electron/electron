@@ -87,16 +87,16 @@ void GlobalShortcutListener::SetShortcutHandlingSuspended(bool suspended) {
     return;
 
   shortcut_handling_suspended_ = suspended;
-  for (auto it = accelerator_map_.begin(); it != accelerator_map_.end(); ++it) {
+  for (auto& it : accelerator_map_) {
     // On Linux, when shortcut handling is suspended we cannot simply early
     // return in NotifyKeyPressed (similar to what we do for non-global
     // shortcuts) because we'd eat the keyboard event thereby preventing the
     // user from setting the shortcut. Therefore we must unregister while
     // handling is suspended and register when handling resumes.
     if (shortcut_handling_suspended_)
-      UnregisterAcceleratorImpl(it->first);
+      UnregisterAcceleratorImpl(it.first);
     else
-      RegisterAcceleratorImpl(it->first);
+      RegisterAcceleratorImpl(it.first);
   }
 }
 

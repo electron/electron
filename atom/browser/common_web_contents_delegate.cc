@@ -435,8 +435,8 @@ void CommonWebContentsDelegate::DevToolsRequestFileSystems() {
   }
 
   base::ListValue file_system_value;
-  for (size_t i = 0; i < file_systems.size(); ++i)
-    file_system_value.Append(CreateFileSystemValue(file_systems[i]));
+  for (auto& file_system : file_systems)
+    file_system_value.Append(CreateFileSystemValue(file_system));
   web_contents_->CallClientFunction("DevToolsAPI.fileSystemsLoaded",
                                     &file_system_value, nullptr, nullptr);
 }
@@ -610,8 +610,8 @@ void CommonWebContentsDelegate::OnDevToolsSearchCompleted(
     const std::string& file_system_path,
     const std::vector<std::string>& file_paths) {
   base::ListValue file_paths_value;
-  for (auto it(file_paths.begin()); it != file_paths.end(); ++it) {
-    file_paths_value.AppendString(*it);
+  for (const auto& file_path : file_paths) {
+    file_paths_value.AppendString(file_path);
   }
   base::FundamentalValue request_id_value(request_id);
   base::StringValue file_system_path_value(file_system_path);

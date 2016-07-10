@@ -118,8 +118,8 @@ std::string StripTrailingWildcard(const std::string& path) {
 namespace extensions {
 // static
 bool URLPattern::IsValidSchemeForExtensions(const std::string& scheme) {
-  for (size_t i = 0; i < arraysize(kValidSchemes); ++i) {
-    if (scheme == kValidSchemes[i])
+  for (auto& kValidScheme : kValidSchemes) {
+    if (scheme == kValidScheme)
       return true;
   }
   return false;
@@ -543,8 +543,8 @@ bool URLPattern::Contains(const URLPattern& other) const {
 
 bool URLPattern::MatchesAnyScheme(
     const std::vector<std::string>& schemes) const {
-  for (auto i = schemes.begin(); i != schemes.end(); ++i) {
-    if (MatchesScheme(*i))
+  for (const auto& scheme : schemes) {
+    if (MatchesScheme(scheme))
       return true;
   }
 
@@ -553,8 +553,8 @@ bool URLPattern::MatchesAnyScheme(
 
 bool URLPattern::MatchesAllSchemes(
     const std::vector<std::string>& schemes) const {
-  for (auto i = schemes.begin(); i != schemes.end(); ++i) {
-    if (!MatchesScheme(*i))
+  for (const auto& scheme : schemes) {
+    if (!MatchesScheme(scheme))
       return false;
   }
 
@@ -584,9 +584,9 @@ std::vector<std::string> URLPattern::GetExplicitSchemes() const {
     return result;
   }
 
-  for (size_t i = 0; i < arraysize(kValidSchemes); ++i) {
-    if (MatchesScheme(kValidSchemes[i])) {
-      result.push_back(kValidSchemes[i]);
+  for (auto& kValidScheme : kValidSchemes) {
+    if (MatchesScheme(kValidScheme)) {
+      result.push_back(kValidScheme);
     }
   }
 

@@ -820,9 +820,9 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessWithTimeout(
   to_send.append(current_dir.value());
 
   const std::vector<std::string>& argv = atom::AtomCommandLine::argv();
-  for (auto it = argv.begin(); it != argv.end(); ++it) {
+  for (const auto& it : argv) {
     to_send.push_back(kTokenDelimiter);
-    to_send.append(*it);
+    to_send.append(it);
   }
 
   // Send the message

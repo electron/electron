@@ -980,10 +980,10 @@ bool PrintWebViewHelper::PrintPagesNative(blink::WebFrame* frame,
       PrintPageInternal(page_params, frame);
     }
   } else {
-    for (size_t i = 0; i < params.pages.size(); ++i) {
-      if (params.pages[i] >= page_count)
+    for (int page : params.pages) {
+      if (page >= page_count)
         break;
-      page_params.page_number = params.pages[i];
+      page_params.page_number = page;
       PrintPageInternal(page_params, frame);
     }
   }
