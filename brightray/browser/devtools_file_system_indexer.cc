@@ -160,7 +160,7 @@ void Index::SetTrigramsForFile(const FilePath& file_path,
                                const Time& time) {
   DCHECK_CURRENTLY_ON(BrowserThread::FILE);
   FileId file_id = GetFileId(file_path);
-  vector<Trigram>::const_iterator it = index.begin();
+  auto it = index.begin();
   for (; it != index.end(); ++it) {
     Trigram trigram = *it;
     index_[trigram].push_back(file_id);

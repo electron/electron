@@ -20,7 +20,7 @@ namespace {
 const content::MediaStreamDevice* FindDeviceWithId(
     const content::MediaStreamDevices& devices,
     const std::string& device_id) {
-  content::MediaStreamDevices::const_iterator iter = devices.begin();
+  auto iter = devices.begin();
   for (; iter != devices.end(); ++iter) {
     if (iter->id == device_id) {
       return &(*iter);
@@ -30,7 +30,7 @@ const content::MediaStreamDevice* FindDeviceWithId(
 }
 
 const MediaStreamDevices& EmptyDevices() {
-  static MediaStreamDevices* devices = new MediaStreamDevices;
+  static auto* devices = new MediaStreamDevices;
   return *devices;
 }
 

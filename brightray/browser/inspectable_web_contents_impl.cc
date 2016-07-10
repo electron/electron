@@ -167,7 +167,7 @@ int ResponseWriter::Initialize(const net::CompletionCallback& callback) {
 int ResponseWriter::Write(net::IOBuffer* buffer,
                           int num_bytes,
                           const net::CompletionCallback& callback) {
-  base::FundamentalValue* id = new base::FundamentalValue(stream_id_);
+  auto* id = new base::FundamentalValue(stream_id_);
   base::StringValue* chunk =
       new base::StringValue(std::string(buffer->data(), num_bytes));
 
@@ -683,11 +683,11 @@ void InspectableWebContentsImpl::DidStartNavigationToPendingEntry(
 
 void InspectableWebContentsImpl::OnURLFetchComplete(const net::URLFetcher* source) {
   DCHECK(source);
-  PendingRequestsMap::iterator it = pending_requests_.find(source);
+  auto it = pending_requests_.find(source);
   DCHECK(it != pending_requests_.end());
 
   base::DictionaryValue response;
-  base::DictionaryValue* headers = new base::DictionaryValue();
+  auto* headers = new base::DictionaryValue();
   net::HttpResponseHeaders* rh = source->GetResponseHeaders();
   response.SetInteger("statusCode", rh ? rh->response_code() : 200);
   response.Set("headers", headers);

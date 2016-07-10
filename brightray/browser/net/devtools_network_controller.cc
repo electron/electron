@@ -47,7 +47,7 @@ void DevToolsNetworkController::SetNetworkState(
   }
 
   bool has_offline_interceptors = false;
-  InterceptorMap::iterator it = interceptors_.begin();
+  auto it = interceptors_.begin();
   for (; it != interceptors_.end(); ++it) {
     if (it->second->IsOffline()) {
       has_offline_interceptors = true;
