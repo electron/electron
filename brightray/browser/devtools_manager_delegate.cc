@@ -89,7 +89,7 @@ class DevToolsDelegate :
     public devtools_http_handler::DevToolsHttpHandlerDelegate {
  public:
   DevToolsDelegate();
-  virtual ~DevToolsDelegate();
+  ~DevToolsDelegate() override;
 
   // devtools_http_handler::DevToolsHttpHandlerDelegate.
   std::string GetDiscoveryPageHTML() override;
