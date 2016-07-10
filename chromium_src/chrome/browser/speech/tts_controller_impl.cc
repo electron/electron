@@ -115,10 +115,10 @@ TtsControllerImpl* TtsControllerImpl::GetInstance() {
 }
 
 TtsControllerImpl::TtsControllerImpl()
-    : current_utterance_(nullptr),
+    : current_utterance_(NULL),
       paused_(false),
-      platform_impl_(nullptr),
-      tts_engine_delegate_(nullptr) {
+      platform_impl_(NULL),
+      tts_engine_delegate_(NULL) {
 }
 
 TtsControllerImpl::~TtsControllerImpl() {
@@ -206,7 +206,7 @@ void TtsControllerImpl::SpeakNow(Utterance* utterance) {
     if (!sends_end_event) {
       utterance->Finish();
       delete utterance;
-      current_utterance_ = nullptr;
+      current_utterance_ = NULL;
       SpeakNextUtterance();
     }
 #endif
@@ -222,7 +222,7 @@ void TtsControllerImpl::SpeakNow(Utterance* utterance) {
         voice,
         utterance->continuous_parameters());
     if (!success)
-      current_utterance_ = nullptr;
+      current_utterance_ = NULL;
 
     // If the native voice wasn't able to process this speech, see if
     // the browser has built-in TTS that isn't loaded yet.
@@ -323,7 +323,7 @@ void TtsControllerImpl::GetVoices(content::BrowserContext* browser_context,
 }
 
 bool TtsControllerImpl::IsSpeaking() {
-  return current_utterance_ != nullptr || GetPlatformImpl()->IsSpeaking();
+  return current_utterance_ != NULL || GetPlatformImpl()->IsSpeaking();
 }
 
 void TtsControllerImpl::FinishCurrentUtterance() {
@@ -332,7 +332,7 @@ void TtsControllerImpl::FinishCurrentUtterance() {
       current_utterance_->OnTtsEvent(TTS_EVENT_INTERRUPTED, kInvalidCharIndex,
                                      std::string());
     delete current_utterance_;
-    current_utterance_ = nullptr;
+    current_utterance_ = NULL;
   }
 }
 
@@ -415,8 +415,11 @@ int TtsControllerImpl::GetMatchingVoice(
 
       if (utterance->required_event_types().size() > 0) {
         bool has_all_required_event_types = true;
-        for (auto iter : utterance->required_event_types()) {
-          if (voice.events.find(iter) == voice.events.end()) {
+        for (std::set<TtsEventType>::const_iterator iter =
+                 utterance->required_event_types().begin();
+             iter != utterance->required_event_types().end();
+             ++iter) {
+          if (voice.events.find(*iter) == voice.events.end()) {
             has_all_required_event_types = false;
             break;
           }
@@ -433,8 +436,10 @@ int TtsControllerImpl::GetMatchingVoice(
 }
 
 void TtsControllerImpl::VoicesChanged() {
-  for (auto voices_changed_delegate : voices_changed_delegates_) {
-    voices_changed_delegate->OnVoicesChanged();
+  for (std::set<VoicesChangedDelegate*>::iterator iter =
+           voices_changed_delegates_.begin();
+       iter != voices_changed_delegates_.end(); ++iter) {
+    (*iter)->OnVoicesChanged();
   }
 }
 

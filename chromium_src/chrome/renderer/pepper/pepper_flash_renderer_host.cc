@@ -115,7 +115,7 @@ bool IsSimpleHeader(const std::string& lower_case_header_name,
                                     &lower_case_mime_type,
                                     &lower_case_charset,
                                     &had_charset,
-                                    nullptr);
+                                    NULL);
     return lower_case_mime_type == "application/x-www-form-urlencoded" ||
            lower_case_mime_type == "multipart/form-data" ||
            lower_case_mime_type == "text/plain";

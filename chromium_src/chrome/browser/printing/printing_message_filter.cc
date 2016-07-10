@@ -246,7 +246,7 @@ content::WebContents* PrintingMessageFilter::GetWebContentsForRenderView(
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
   content::RenderViewHost* view = content::RenderViewHost::FromID(
       render_process_id_, render_view_id);
-  return view ? content::WebContents::FromRenderViewHost(view) : nullptr;
+  return view ? content::WebContents::FromRenderViewHost(view) : NULL;
 }
 
 void PrintingMessageFilter::OnGetDefaultPrintSettings(IPC::Message* reply_msg) {

@@ -26,7 +26,7 @@ PepperIsolatedFileSystemMessageFilter::Create(PP_Instance instance,
   int unused_render_frame_id;
   if (!host->GetRenderFrameIDsForInstance(
           instance, &render_process_id, &unused_render_frame_id)) {
-    return nullptr;
+    return NULL;
   }
   return new PepperIsolatedFileSystemMessageFilter(
       render_process_id,

@@ -32,8 +32,8 @@ void PrintQueriesQueue::QueuePrinterQuery(PrinterQuery* job) {
 scoped_refptr<PrinterQuery> PrintQueriesQueue::PopPrinterQuery(
     int document_cookie) {
   base::AutoLock lock(lock_);
-  for (auto itr = queued_queries_.begin(); itr != queued_queries_.end();
-       ++itr) {
+  for (PrinterQueries::iterator itr = queued_queries_.begin();
+       itr != queued_queries_.end(); ++itr) {
     if ((*itr)->cookie() == document_cookie && !(*itr)->is_callback_pending()) {
       scoped_refptr<printing::PrinterQuery> current_query(*itr);
       queued_queries_.erase(itr);
@@ -41,7 +41,7 @@ scoped_refptr<PrinterQuery> PrintQueriesQueue::PopPrinterQuery(
       return current_query;
     }
   }
-  return nullptr;
+  return NULL;
 }
 
 scoped_refptr<PrinterQuery> PrintQueriesQueue::CreatePrinterQuery(
@@ -61,8 +61,9 @@ void PrintQueriesQueue::Shutdown() {
   // Stop all pending queries, requests to generate print preview do not have
   // corresponding PrintJob, so any pending preview requests are not covered
   // by PrintJobManager::StopJobs and should be stopped explicitly.
-  for (auto& itr : queries_to_stop) {
-    itr->PostTask(FROM_HERE, base::Bind(&PrinterQuery::StopWorker, itr));
+  for (PrinterQueries::iterator itr = queries_to_stop.begin();
+       itr != queries_to_stop.end(); ++itr) {
+    (*itr)->PostTask(FROM_HERE, base::Bind(&PrinterQuery::StopWorker, *itr));
   }
 }
 
@@ -89,7 +90,7 @@ void PrintJobManager::Shutdown() {
   StopJobs(true);
   if (queue_.get())
     queue_->Shutdown();
-  queue_ = nullptr;
+  queue_ = NULL;
 }
 
 void PrintJobManager::StopJobs(bool wait_for_finish) {
@@ -98,11 +99,12 @@ void PrintJobManager::StopJobs(bool wait_for_finish) {
   PrintJobs to_stop;
   to_stop.swap(current_jobs_);
 
-  for (const auto& job : to_stop) {
+  for (PrintJobs::const_iterator job = to_stop.begin(); job != to_stop.end();
+       ++job) {
     // Wait for two minutes for the print job to be spooled.
     if (wait_for_finish)
-      job->FlushJob(base::TimeDelta::FromMinutes(2));
-    job->Stop();
+      (*job)->FlushJob(base::TimeDelta::FromMinutes(2));
+    (*job)->Stop();
   }
 }
 

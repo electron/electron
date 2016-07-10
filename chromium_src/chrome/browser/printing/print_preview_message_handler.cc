@@ -48,7 +48,7 @@ char* CopyPDFDataOnIOThread(
   if (!shared_buf->Map(params.data_size))
     return nullptr;
   char* memory_pdf_data = static_cast<char*>(shared_buf->memory());
-  auto* pdf_data = new char[params.data_size];
+  char* pdf_data = new char[params.data_size];
   memcpy(pdf_data, memory_pdf_data, params.data_size);
   return pdf_data;
 }

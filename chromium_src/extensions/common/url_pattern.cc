@@ -118,8 +118,8 @@ std::string StripTrailingWildcard(const std::string& path) {
 namespace extensions {
 // static
 bool URLPattern::IsValidSchemeForExtensions(const std::string& scheme) {
-  for (auto& kValidScheme : kValidSchemes) {
-    if (scheme == kValidScheme)
+  for (size_t i = 0; i < arraysize(kValidSchemes); ++i) {
+    if (scheme == kValidSchemes[i])
       return true;
   }
   return false;
@@ -346,7 +346,7 @@ bool URLPattern::SetPort(const std::string& port) {
 
 bool URLPattern::MatchesURL(const GURL& test) const {
   const GURL* test_url = &test;
-  bool has_inner_url = test.inner_url() != nullptr;
+  bool has_inner_url = test.inner_url() != NULL;
 
   if (has_inner_url) {
     if (!test.SchemeIsFileSystem())
@@ -370,7 +370,7 @@ bool URLPattern::MatchesURL(const GURL& test) const {
 
 bool URLPattern::MatchesSecurityOrigin(const GURL& test) const {
   const GURL* test_url = &test;
-  bool has_inner_url = test.inner_url() != nullptr;
+  bool has_inner_url = test.inner_url() != NULL;
 
   if (has_inner_url) {
     if (!test.SchemeIsFileSystem())
@@ -543,8 +543,9 @@ bool URLPattern::Contains(const URLPattern& other) const {
 
 bool URLPattern::MatchesAnyScheme(
     const std::vector<std::string>& schemes) const {
-  for (const auto& scheme : schemes) {
-    if (MatchesScheme(scheme))
+  for (std::vector<std::string>::const_iterator i = schemes.begin();
+       i != schemes.end(); ++i) {
+    if (MatchesScheme(*i))
       return true;
   }
 
@@ -553,8 +554,9 @@ bool URLPattern::MatchesAnyScheme(
 
 bool URLPattern::MatchesAllSchemes(
     const std::vector<std::string>& schemes) const {
-  for (const auto& scheme : schemes) {
-    if (!MatchesScheme(scheme))
+  for (std::vector<std::string>::const_iterator i = schemes.begin();
+       i != schemes.end(); ++i) {
+    if (!MatchesScheme(*i))
       return false;
   }
 
@@ -584,9 +586,9 @@ std::vector<std::string> URLPattern::GetExplicitSchemes() const {
     return result;
   }
 
-  for (auto& kValidScheme : kValidSchemes) {
-    if (MatchesScheme(kValidScheme)) {
-      result.push_back(kValidScheme);
+  for (size_t i = 0; i < arraysize(kValidSchemes); ++i) {
+    if (MatchesScheme(kValidSchemes[i])) {
+      result.push_back(kValidSchemes[i]);
     }
   }
 

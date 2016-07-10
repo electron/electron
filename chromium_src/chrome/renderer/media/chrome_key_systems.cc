@@ -112,13 +112,13 @@ static void AddPepperBasedWidevine(
   supported_codecs |= media::EME_CODEC_MP4_AAC;
 #endif  // defined(USE_PROPRIETARY_CODECS)
 
-  for (auto& codec : codecs) {
-    if (codec == kCdmSupportedCodecVp8)
+  for (size_t i = 0; i < codecs.size(); ++i) {
+    if (codecs[i] == kCdmSupportedCodecVp8)
       supported_codecs |= media::EME_CODEC_WEBM_VP8;
-    if (codec == kCdmSupportedCodecVp9)
+    if (codecs[i] == kCdmSupportedCodecVp9)
       supported_codecs |= media::EME_CODEC_WEBM_VP9;
 #if defined(USE_PROPRIETARY_CODECS)
-    if (codec == kCdmSupportedCodecAvc1)
+    if (codecs[i] == kCdmSupportedCodecAvc1)
       supported_codecs |= media::EME_CODEC_MP4_AVC1;
 #endif  // defined(USE_PROPRIETARY_CODECS)
   }

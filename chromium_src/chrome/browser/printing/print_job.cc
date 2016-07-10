@@ -38,7 +38,7 @@ void HoldRefCallback(const scoped_refptr<printing::PrintJobWorkerOwner>& owner,
 namespace printing {
 
 PrintJob::PrintJob()
-    : source_(nullptr),
+    : source_(NULL),
       worker_(),
       settings_(),
       is_job_pending_(false),
@@ -71,8 +71,10 @@ void PrintJob::Initialize(PrintJobWorkerOwner* job,
   worker_.reset(job->DetachWorker(this));
   settings_ = job->settings();
 
-  auto* new_doc =
-      new PrintedDocument(settings_, source_, job->cookie(),
+  PrintedDocument* new_doc =
+      new PrintedDocument(settings_,
+                          source_,
+                          job->cookie(),
                           content::BrowserThread::GetBlockingPool());
   new_doc->set_page_count(page_count);
   UpdatePrintedDocument(new_doc);
@@ -104,7 +106,7 @@ void PrintJob::GetSettingsDone(const PrintSettings& new_settings,
 
 PrintJobWorker* PrintJob::DetachWorker(PrintJobWorkerOwner* new_owner) {
   NOTREACHED();
-  return nullptr;
+  return NULL;
 }
 
 const PrintSettings& PrintJob::settings() const {
@@ -137,7 +139,7 @@ void PrintJob::StartPrinting() {
 
   // Tell everyone!
   scoped_refptr<JobEventDetails> details(
-      new JobEventDetails(JobEventDetails::NEW_DOC, document_.get(), nullptr));
+      new JobEventDetails(JobEventDetails::NEW_DOC, document_.get(), NULL));
   content::NotificationService::current()->Notify(
       chrome::NOTIFICATION_PRINT_JOB_EVENT,
       content::Source<PrintJob>(this),
@@ -161,7 +163,7 @@ void PrintJob::Stop() {
     ControlledWorkerShutdown();
   } else {
     // Flush the cached document.
-    UpdatePrintedDocument(nullptr);
+    UpdatePrintedDocument(NULL);
   }
 }
 
@@ -181,7 +183,7 @@ void PrintJob::Cancel() {
   }
   // Make sure a Cancel() is broadcast.
   scoped_refptr<JobEventDetails> details(
-      new JobEventDetails(JobEventDetails::FAILED, nullptr, nullptr));
+      new JobEventDetails(JobEventDetails::FAILED, NULL, NULL));
   content::NotificationService::current()->Notify(
       chrome::NOTIFICATION_PRINT_JOB_EVENT,
       content::Source<PrintJob>(this),
@@ -205,7 +207,7 @@ bool PrintJob::FlushJob(base::TimeDelta timeout) {
 }
 
 void PrintJob::DisconnectSource() {
-  source_ = nullptr;
+  source_ = NULL;
   if (document_.get())
     document_->DisconnectSource();
 }
@@ -386,7 +388,7 @@ void PrintJob::OnDocumentDone() {
   Stop();
 
   scoped_refptr<JobEventDetails> details(
-      new JobEventDetails(JobEventDetails::JOB_DONE, document_.get(), nullptr));
+      new JobEventDetails(JobEventDetails::JOB_DONE, document_.get(), NULL));
   content::NotificationService::current()->Notify(
       chrome::NOTIFICATION_PRINT_JOB_EVENT,
       content::Source<PrintJob>(this),
@@ -432,7 +434,7 @@ void PrintJob::ControlledWorkerShutdown() {
 
   is_job_pending_ = false;
   registrar_.RemoveAll();
-  UpdatePrintedDocument(nullptr);
+  UpdatePrintedDocument(NULL);
 }
 
 void PrintJob::HoldUntilStopIsCalled() {

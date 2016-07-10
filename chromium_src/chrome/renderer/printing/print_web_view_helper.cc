@@ -110,8 +110,8 @@ PrintMsg_Print_Params GetCssPrintParams(
 
   // Invalid page size and/or margins. We just use the default setting.
   if (new_content_width < 1 || new_content_height < 1) {
-    CHECK(frame != nullptr);
-    page_css_params = GetCssPrintParams(nullptr, page_index, page_params);
+    CHECK(frame != NULL);
+    page_css_params = GetCssPrintParams(NULL, page_index, page_params);
     return page_css_params;
   }
 
@@ -254,7 +254,7 @@ void ComputeWebKitPrintParamsInDesiredDpi(
 
 blink::WebPlugin* GetPlugin(const blink::WebFrame* frame) {
   return frame->document().isPluginDocument() ?
-         frame->document().to<blink::WebPluginDocument>().plugin() : nullptr;
+         frame->document().to<blink::WebPluginDocument>().plugin() : NULL;
 }
 
 bool PrintingNodeOrPdfFrame(const blink::WebFrame* frame,
@@ -323,7 +323,7 @@ FrameReference::FrameReference(blink::WebLocalFrame* frame) {
 }
 
 FrameReference::FrameReference() {
-  Reset(nullptr);
+  Reset(NULL);
 }
 
 FrameReference::~FrameReference() {
@@ -334,20 +334,20 @@ void FrameReference::Reset(blink::WebLocalFrame* frame) {
     view_ = frame->view();
     frame_ = frame;
   } else {
-    view_ = nullptr;
-    frame_ = nullptr;
+    view_ = NULL;
+    frame_ = NULL;
   }
 }
 
 blink::WebLocalFrame* FrameReference::GetFrame() {
-  if (view_ == nullptr || frame_ == nullptr)
-    return nullptr;
-  for (blink::WebFrame* frame = view_->mainFrame(); frame != nullptr;
+  if (view_ == NULL || frame_ == NULL)
+    return NULL;
+  for (blink::WebFrame* frame = view_->mainFrame(); frame != NULL;
            frame = frame->traverseNext(false)) {
     if (frame == frame_)
       return frame_;
   }
-  return nullptr;
+  return NULL;
 }
 
 blink::WebView* FrameReference::view() {
@@ -477,7 +477,7 @@ PrepareFrameAndViewForPrint::PrepareFrameAndViewForPrint(
     frame->printBegin(web_print_params_, node_to_print_);
     print_params = CalculatePrintParamsForCss(frame, 0, print_params,
                                               ignore_css_margins, fit_to_page,
-                                              nullptr);
+                                              NULL);
     frame->printEnd();
   }
   ComputeWebKitPrintParamsInDesiredDpi(print_params, &web_print_params_);
@@ -623,7 +623,7 @@ void PrepareFrameAndViewForPrint::FinishPrinting() {
       web_view->close();
     }
   }
-  frame_.Reset(nullptr);
+  frame_.Reset(NULL);
   on_ready_.Reset();
 }
 
@@ -980,10 +980,10 @@ bool PrintWebViewHelper::PrintPagesNative(blink::WebFrame* frame,
       PrintPageInternal(page_params, frame);
     }
   } else {
-    for (int page : params.pages) {
-      if (page >= page_count)
+    for (size_t i = 0; i < params.pages.size(); ++i) {
+      if (params.pages[i] >= page_count)
         break;
-      page_params.page_number = page;
+      page_params.page_number = params.pages[i];
       PrintPageInternal(page_params, frame);
     }
   }

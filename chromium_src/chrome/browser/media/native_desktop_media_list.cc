@@ -152,12 +152,13 @@ void NativeDesktopMediaList::Worker::Refresh(
   if (window_capturer_) {
     webrtc::WindowCapturer::WindowList windows;
     if (window_capturer_->GetWindowList(&windows)) {
-      for (auto& window : windows) {
+      for (webrtc::WindowCapturer::WindowList::iterator it = windows.begin();
+           it != windows.end(); ++it) {
         // Skip the picker dialog window.
-        if (window.id != view_dialog_id) {
+        if (it->id != view_dialog_id) {
           sources.push_back(SourceDescription(
-              DesktopMediaID(DesktopMediaID::TYPE_WINDOW, window.id),
-              base::UTF8ToUTF16(window.title)));
+              DesktopMediaID(DesktopMediaID::TYPE_WINDOW, it->id),
+              base::UTF8ToUTF16(it->title)));
         }
       }
     }
@@ -198,7 +199,7 @@ void NativeDesktopMediaList::Worker::Refresh(
       new_image_hashes[source.id] = frame_hash;
 
       // Scale the image only if it has changed.
-      auto it = image_hashes_.find(source.id);
+      ImageHashesMap::iterator it = image_hashes_.find(source.id);
       if (it == image_hashes_.end() || it->second != frame_hash) {
         gfx::ImageSkia thumbnail =
             ScaleDesktopFrame(std::move(current_frame_), thumbnail_size);
@@ -219,7 +220,7 @@ void NativeDesktopMediaList::Worker::Refresh(
 
 webrtc::SharedMemory* NativeDesktopMediaList::Worker::CreateSharedMemory(
     size_t size) {
-  return nullptr;
+  return NULL;
 }
 
 void NativeDesktopMediaList::Worker::OnCaptureCompleted(
@@ -235,7 +236,7 @@ NativeDesktopMediaList::NativeDesktopMediaList(
       update_period_(base::TimeDelta::FromMilliseconds(kDefaultUpdatePeriod)),
       thumbnail_size_(100, 100),
       view_dialog_id_(-1),
-      observer_(nullptr),
+      observer_(NULL),
       weak_factory_(this) {
   base::SequencedWorkerPool* worker_pool = BrowserThread::GetBlockingPool();
   capture_task_runner_ = worker_pool->GetSequencedTaskRunner(
@@ -296,8 +297,8 @@ void NativeDesktopMediaList::OnSourcesList(
     const std::vector<SourceDescription>& new_sources) {
   typedef std::set<content::DesktopMediaID> SourceSet;
   SourceSet new_source_set;
-  for (const auto& new_source : new_sources) {
-    new_source_set.insert(new_source.id);
+  for (size_t i = 0; i < new_sources.size(); ++i) {
+    new_source_set.insert(new_sources[i].id);
   }
   // Iterate through the old sources to find the removed sources.
   for (size_t i = 0; i < sources_.size(); ++i) {
@@ -310,8 +311,8 @@ void NativeDesktopMediaList::OnSourcesList(
   // Iterate through the new sources to find the added sources.
   if (new_sources.size() > sources_.size()) {
     SourceSet old_source_set;
-    for (auto& source : sources_) {
-      old_source_set.insert(source.id);
+    for (size_t i = 0; i < sources_.size(); ++i) {
+      old_source_set.insert(sources_[i].id);
     }
 
     for (size_t i = 0; i < new_sources.size(); ++i) {

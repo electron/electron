@@ -38,10 +38,10 @@ void HoldRefCallback(const scoped_refptr<printing::PrintJobWorkerOwner>& owner,
 class PrintingContextDelegate : public PrintingContext::Delegate {
  public:
   PrintingContextDelegate(int render_process_id, int render_view_id);
-  ~PrintingContextDelegate() override;
+  virtual ~PrintingContextDelegate();
 
-  gfx::NativeView GetParentView() override;
-  std::string GetAppLocale() override;
+  virtual gfx::NativeView GetParentView() override;
+  virtual std::string GetAppLocale() override;
 
  private:
   int render_process_id_;
@@ -62,9 +62,9 @@ gfx::NativeView PrintingContextDelegate::GetParentView() {
   content::RenderViewHost* view =
       content::RenderViewHost::FromID(render_process_id_, render_view_id_);
   if (!view)
-    return nullptr;
+    return NULL;
   content::WebContents* wc = content::WebContents::FromRenderViewHost(view);
-  return wc ? wc->GetNativeView() : nullptr;
+  return wc ? wc->GetNativeView() : NULL;
 }
 
 std::string PrintingContextDelegate::GetAppLocale() {
@@ -75,7 +75,7 @@ void NotificationCallback(PrintJobWorkerOwner* print_job,
                           JobEventDetails::Type detail_type,
                           PrintedDocument* document,
                           PrintedPage* page) {
-  auto* details = new JobEventDetails(detail_type, document, page);
+  JobEventDetails* details = new JobEventDetails(detail_type, document, page);
   content::NotificationService::current()->Notify(
       chrome::NOTIFICATION_PRINT_JOB_EVENT,
       // We know that is is a PrintJob object in this circumstance.
@@ -343,7 +343,7 @@ void PrintJobWorker::OnDocumentDone() {
                               base::RetainedRef(document_), nullptr));
 
   // Makes sure the variables are reinitialized.
-  document_ = nullptr;
+  document_ = NULL;
 }
 
 void PrintJobWorker::SpoolPage(PrintedPage* page) {
@@ -397,7 +397,7 @@ void PrintJobWorker::OnFailure() {
   Cancel();
 
   // Makes sure the variables are reinitialized.
-  document_ = nullptr;
+  document_ = NULL;
   page_number_ = PageNumber::npos();
 }
 
