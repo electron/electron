@@ -30,7 +30,7 @@ const content::MediaStreamDevice* FindDeviceWithId(
 }
 
 const MediaStreamDevices& EmptyDevices() {
-  static auto* devices = new MediaStreamDevices;
+  static MediaStreamDevices* devices = new MediaStreamDevices;
   return *devices;
 }
 
