@@ -38,10 +38,10 @@ void HoldRefCallback(const scoped_refptr<printing::PrintJobWorkerOwner>& owner,
 class PrintingContextDelegate : public PrintingContext::Delegate {
  public:
   PrintingContextDelegate(int render_process_id, int render_view_id);
-  virtual ~PrintingContextDelegate();
+  ~PrintingContextDelegate() override;
 
-  virtual gfx::NativeView GetParentView() override;
-  virtual std::string GetAppLocale() override;
+  gfx::NativeView GetParentView() override;
+  std::string GetAppLocale() override;
 
  private:
   int render_process_id_;
