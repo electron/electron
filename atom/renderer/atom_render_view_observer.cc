@@ -132,7 +132,7 @@ void AtomRenderViewObserver::DraggableRegionsChanged(blink::WebFrame* frame) {
   blink::WebVector<blink::WebDraggableRegion> webregions =
       frame->document().draggableRegions();
   std::vector<DraggableRegion> regions;
-  for (auto& webregion : webregions) {
+  for (const auto& webregion : webregions) {
     DraggableRegion region;
     region.bounds = webregion.bounds;
     region.draggable = webregion.draggable;

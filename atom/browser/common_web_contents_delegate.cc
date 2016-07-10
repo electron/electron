@@ -435,7 +435,7 @@ void CommonWebContentsDelegate::DevToolsRequestFileSystems() {
   }
 
   base::ListValue file_system_value;
-  for (auto& file_system : file_systems)
+  for (const auto& file_system : file_systems)
     file_system_value.Append(CreateFileSystemValue(file_system));
   web_contents_->CallClientFunction("DevToolsAPI.fileSystemsLoaded",
                                     &file_system_value, nullptr, nullptr);

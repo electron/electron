@@ -241,7 +241,7 @@ void OnGetBackend(disk_cache::Backend** backend_ptr,
     } else if (action == Session::CacheAction::STATS) {
       base::StringPairs stats;
       (*backend_ptr)->GetStats(&stats);
-      for (auto& stat : stats) {
+      for (const auto& stat : stats) {
         if (stat.first == "Current size") {
           int current_size;
           base::StringToInt(stat.second, &current_size);
