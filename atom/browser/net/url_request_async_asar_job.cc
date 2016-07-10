@@ -40,7 +40,7 @@ void URLRequestAsyncAsarJob::StartAsync(std::unique_ptr<base::Value> options) {
 
 void URLRequestAsyncAsarJob::GetResponseInfo(net::HttpResponseInfo* info) {
   std::string status("HTTP/1.1 200 OK");
-  net::HttpResponseHeaders* headers = new net::HttpResponseHeaders(status);
+  auto* headers = new net::HttpResponseHeaders(status);
 
   headers->AddHeader(kCORSHeader);
   info->headers = headers;

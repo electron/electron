@@ -21,7 +21,7 @@ UvTaskRunner::~UvTaskRunner() {
 bool UvTaskRunner::PostDelayedTask(const tracked_objects::Location& from_here,
                                    const base::Closure& task,
                                    base::TimeDelta delay) {
-  uv_timer_t* timer = new uv_timer_t;
+  auto* timer = new uv_timer_t;
   timer->data = this;
   uv_timer_init(loop_, timer);
   uv_timer_start(timer, UvTaskRunner::OnTimeout, delay.InMilliseconds(), 0);

@@ -71,10 +71,8 @@ void PrintJob::Initialize(PrintJobWorkerOwner* job,
   worker_.reset(job->DetachWorker(this));
   settings_ = job->settings();
 
-  PrintedDocument* new_doc =
-      new PrintedDocument(settings_,
-                          source_,
-                          job->cookie(),
+  auto* new_doc =
+      new PrintedDocument(settings_, source_, job->cookie(),
                           content::BrowserThread::GetBlockingPool());
   new_doc->set_page_count(page_count);
   UpdatePrintedDocument(new_doc);

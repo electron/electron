@@ -86,9 +86,7 @@ std::string ReadDataFromPickle(const base::string16& format,
 bool WriteDataToPickle(const std::map<base::string16, std::string>& data,
                        base::Pickle* pickle) {
   pickle->WriteUInt32(data.size());
-  for (std::map<base::string16, std::string>::const_iterator it = data.begin();
-       it != data.end();
-       ++it) {
+  for (auto it = data.begin(); it != data.end(); ++it) {
     if (!pickle->WriteString16(it->first))
       return false;
     if (!pickle->WriteString(it->second))

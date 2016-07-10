@@ -53,7 +53,7 @@ void GlobalShortcutListener::UnregisterAccelerator(
   if (IsShortcutHandlingSuspended())
     return;
 
-  AcceleratorMap::iterator it = accelerator_map_.find(accelerator);
+  auto it = accelerator_map_.find(accelerator);
   // We should never get asked to unregister something that we didn't register.
   DCHECK(it != accelerator_map_.end());
   // The caller should call this function with the right observer.
@@ -70,10 +70,10 @@ void GlobalShortcutListener::UnregisterAccelerators(Observer* observer) {
   if (IsShortcutHandlingSuspended())
     return;
 
-  AcceleratorMap::iterator it = accelerator_map_.begin();
+  auto it = accelerator_map_.begin();
   while (it != accelerator_map_.end()) {
     if (it->second == observer) {
-      AcceleratorMap::iterator to_remove = it++;
+      auto to_remove = it++;
       UnregisterAccelerator(to_remove->first, observer);
     } else {
       ++it;
@@ -87,9 +87,7 @@ void GlobalShortcutListener::SetShortcutHandlingSuspended(bool suspended) {
     return;
 
   shortcut_handling_suspended_ = suspended;
-  for (AcceleratorMap::iterator it = accelerator_map_.begin();
-       it != accelerator_map_.end();
-       ++it) {
+  for (auto it = accelerator_map_.begin(); it != accelerator_map_.end(); ++it) {
     // On Linux, when shortcut handling is suspended we cannot simply early
     // return in NotifyKeyPressed (similar to what we do for non-global
     // shortcuts) because we'd eat the keyboard event thereby preventing the
@@ -108,7 +106,7 @@ bool GlobalShortcutListener::IsShortcutHandlingSuspended() const {
 
 void GlobalShortcutListener::NotifyKeyPressed(
     const ui::Accelerator& accelerator) {
-  AcceleratorMap::iterator iter = accelerator_map_.find(accelerator);
+  auto iter = accelerator_map_.find(accelerator);
   if (iter == accelerator_map_.end()) {
     // This should never occur, because if it does, we have failed to unregister
     // or failed to clean up the map after unregistering the shortcut.

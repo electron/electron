@@ -94,7 +94,7 @@ FileSystem CreateFileSystemStruct(
 }
 
 base::DictionaryValue* CreateFileSystemValue(const FileSystem& file_system) {
-  base::DictionaryValue* file_system_value = new base::DictionaryValue();
+  auto* file_system_value = new base::DictionaryValue();
   file_system_value->SetString("fileSystemName", file_system.file_system_name);
   file_system_value->SetString("rootURL", file_system.root_url);
   file_system_value->SetString("fileSystemPath", file_system.file_system_path);
@@ -377,7 +377,7 @@ content::SecurityStyle CommonWebContentsDelegate::GetSecurityStyle(
 void CommonWebContentsDelegate::DevToolsSaveToFile(
     const std::string& url, const std::string& content, bool save_as) {
   base::FilePath path;
-  PathsMap::iterator it = saved_files_.find(url);
+  auto it = saved_files_.find(url);
   if (it != saved_files_.end() && !save_as) {
     path = it->second;
   } else {
@@ -402,7 +402,7 @@ void CommonWebContentsDelegate::DevToolsSaveToFile(
 
 void CommonWebContentsDelegate::DevToolsAppendToFile(
     const std::string& url, const std::string& content) {
-  PathsMap::iterator it = saved_files_.find(url);
+  auto it = saved_files_.find(url);
   if (it == saved_files_.end())
     return;
 
@@ -610,8 +610,7 @@ void CommonWebContentsDelegate::OnDevToolsSearchCompleted(
     const std::string& file_system_path,
     const std::vector<std::string>& file_paths) {
   base::ListValue file_paths_value;
-  for (std::vector<std::string>::const_iterator it(file_paths.begin());
-       it != file_paths.end(); ++it) {
+  for (auto it(file_paths.begin()); it != file_paths.end(); ++it) {
     file_paths_value.AppendString(*it);
   }
   base::FundamentalValue request_id_value(request_id);

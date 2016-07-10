@@ -75,7 +75,7 @@ void NotificationCallback(PrintJobWorkerOwner* print_job,
                           JobEventDetails::Type detail_type,
                           PrintedDocument* document,
                           PrintedPage* page) {
-  JobEventDetails* details = new JobEventDetails(detail_type, document, page);
+  auto* details = new JobEventDetails(detail_type, document, page);
   content::NotificationService::current()->Notify(
       chrome::NOTIFICATION_PRINT_JOB_EVENT,
       // We know that is is a PrintJob object in this circumstance.

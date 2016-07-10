@@ -579,9 +579,7 @@ void ProcessSingleton::LinuxWatcher::OnFileCanReadWithoutBlocking(int fd) {
   }
   int rv = base::SetNonBlocking(connection_socket);
   DCHECK_EQ(0, rv) << "Failed to make non-blocking socket.";
-  SocketReader* reader = new SocketReader(this,
-                                          ui_message_loop_,
-                                          connection_socket);
+  auto* reader = new SocketReader(this, ui_message_loop_, connection_socket);
   readers_.insert(reader);
 }
 
@@ -822,8 +820,7 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessWithTimeout(
   to_send.append(current_dir.value());
 
   const std::vector<std::string>& argv = atom::AtomCommandLine::argv();
-  for (std::vector<std::string>::const_iterator it = argv.begin();
-      it != argv.end(); ++it) {
+  for (auto it = argv.begin(); it != argv.end(); ++it) {
     to_send.push_back(kTokenDelimiter);
     to_send.append(*it);
   }

@@ -55,7 +55,7 @@ class V8ValueConverter::FromV8ValueState {
     // hash. Different hash obviously means different objects, but two objects
     // in a couple of thousands could have the same identity hash.
     std::pair<Iterator, Iterator> range = unique_map_.equal_range(hash);
-    for (Iterator it = range.first; it != range.second; ++it) {
+    for (auto it = range.first; it != range.second; ++it) {
       // Operator == for handles actually compares the underlying objects.
       if (it->second == handle)
         return false;
@@ -295,7 +295,7 @@ base::Value* V8ValueConverter::FromV8Array(
       val->CreationContext() != isolate->GetCurrentContext())
     scope.reset(new v8::Context::Scope(val->CreationContext()));
 
-  base::ListValue* result = new base::ListValue();
+  auto* result = new base::ListValue();
 
   // Only fields with integer keys are carried over to the ListValue.
   for (uint32_t i = 0; i < val->Length(); ++i) {

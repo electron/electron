@@ -152,8 +152,7 @@ void NativeDesktopMediaList::Worker::Refresh(
   if (window_capturer_) {
     webrtc::WindowCapturer::WindowList windows;
     if (window_capturer_->GetWindowList(&windows)) {
-      for (webrtc::WindowCapturer::WindowList::iterator it = windows.begin();
-           it != windows.end(); ++it) {
+      for (auto it = windows.begin(); it != windows.end(); ++it) {
         // Skip the picker dialog window.
         if (it->id != view_dialog_id) {
           sources.push_back(SourceDescription(
@@ -199,7 +198,7 @@ void NativeDesktopMediaList::Worker::Refresh(
       new_image_hashes[source.id] = frame_hash;
 
       // Scale the image only if it has changed.
-      ImageHashesMap::iterator it = image_hashes_.find(source.id);
+      auto it = image_hashes_.find(source.id);
       if (it == image_hashes_.end() || it->second != frame_hash) {
         gfx::ImageSkia thumbnail =
             ScaleDesktopFrame(std::move(current_frame_), thumbnail_size);
