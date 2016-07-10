@@ -167,6 +167,9 @@ v8::Local<v8::Value> Converter<content::PermissionType>::ToV8(
     return StringToV8(isolate, "fullscreen");
   else if (val == (content::PermissionType)(PermissionType::OPEN_EXTERNAL))
     return StringToV8(isolate, "openExternal");
+  else if (val == (content::PermissionType)
+      (PermissionType::PROTOCOL_REGISTRATION))
+    return StringToV8(isolate, "protocolRegistration");
 
   return StringToV8(isolate, "unknown");
 }

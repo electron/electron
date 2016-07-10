@@ -10,4 +10,5 @@ extern const char kSelectFileLastDirectory[];
 extern const char kDownloadDefaultDirectory[];
 extern const char kDevToolsFileSystemPaths[];
 extern const char kApplicationLocale[];
+extern const char kRegisteredProtocolHandlers[];
 }  // namespace prefs

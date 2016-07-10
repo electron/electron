@@ -99,4 +99,13 @@ void WebContentsPermissionHelper::RequestOpenExternalPermission(
                     user_gesture);
 }
 
+void WebContentsPermissionHelper::RequestProtocolRegistrationPermission(
+    const base::Callback<void(bool)>& callback,
+    bool user_gesture) {
+  RequestPermission((content::PermissionType)
+      (PermissionType::PROTOCOL_REGISTRATION),
+                    callback,
+                    user_gesture);
+}
+
 }  // namespace atom

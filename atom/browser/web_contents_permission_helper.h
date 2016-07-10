@@ -21,6 +21,7 @@ class WebContentsPermissionHelper
     POINTER_LOCK = static_cast<int>(content::PermissionType::NUM) + 1,
     FULLSCREEN,
     OPEN_EXTERNAL,
+    PROTOCOL_REGISTRATION,
   };
 
   void RequestFullscreenPermission(
@@ -32,6 +33,9 @@ class WebContentsPermissionHelper
       const base::Callback<void(bool)>& callback);
   void RequestPointerLockPermission(bool user_gesture);
   void RequestOpenExternalPermission(
+      const base::Callback<void(bool)>& callback,
+      bool user_gesture);
+  void RequestProtocolRegistrationPermission(
       const base::Callback<void(bool)>& callback,
       bool user_gesture);
 

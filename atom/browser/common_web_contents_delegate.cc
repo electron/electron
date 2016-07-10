@@ -11,16 +11,23 @@
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_javascript_dialog_manager.h"
 #include "atom/browser/atom_security_state_model_client.h"
+#include "atom/browser/browser.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/ui/file_dialog.h"
+#include "atom/browser/web_contents_permission_helper.h"
 #include "atom/browser/web_dialog_helper.h"
 #include "atom/common/atom_constants.h"
 #include "base/files/file_util.h"
 #include "components/prefs/pref_service.h"
 #include "components/prefs/scoped_user_pref_update.h"
+#include "components/pref_registry/pref_registry_syncable.h"
+#include "components/user_prefs/user_prefs.h"
+#include "chrome/browser/custom_handlers/protocol_handler_registry.h"
+#include "chrome/browser/custom_handlers/protocol_handler_registry_factory.h"
 #include "chrome/browser/printing/print_preview_message_handler.h"
 #include "chrome/browser/printing/print_view_manager_basic.h"
 #include "chrome/browser/ui/browser_dialogs.h"
+#include "chrome/common/custom_handlers/protocol_handler.h"
 #include "chrome/common/pref_names.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/child_process_security_policy.h"
@@ -199,6 +206,74 @@ void CommonWebContentsDelegate::InitWithWebContents(
   extensions::ExtensionsAPIClient::Get()->
       AttachWebContentsHelpers(web_contents);
 #endif
+}
+
+void OnRegisterProtocol(AtomBrowserContext* browser_context,
+    const ProtocolHandler &handler,
+    bool allowed) {
+  ProtocolHandlerRegistry* registry =
+    ProtocolHandlerRegistryFactory::GetForBrowserContext(browser_context);
+  if (allowed) {
+    // Ensure the app is invoked in the first place
+    if (!Browser::Get()->IsDefaultProtocolClient(handler.protocol())) {
+      Browser::Get()->SetAsDefaultProtocolClient(handler.protocol());
+    }
+    registry->OnAcceptRegisterProtocolHandler(handler);
+  } else {
+    registry->OnDenyRegisterProtocolHandler(handler);
+  }
+}
+
+// Register a new handler for URL requests with the given scheme.
+// |user_gesture| is true if the registration is made in the context of a user
+// gesture.
+void CommonWebContentsDelegate::RegisterProtocolHandler(
+    content::WebContents* web_contents,
+  const std::string& protocol,
+  const GURL& url,
+  bool user_gesture) {
+  content::BrowserContext* context = web_contents->GetBrowserContext();
+  if (context->IsOffTheRecord())
+      return;
+
+  ProtocolHandler handler =
+      ProtocolHandler::CreateProtocolHandler(protocol, url);
+
+  ProtocolHandlerRegistry* registry =
+      ProtocolHandlerRegistryFactory::GetForBrowserContext(
+          browser_context_.get());
+  if (registry->IsRegistered(handler))
+      return;
+
+  auto permission_helper =
+      WebContentsPermissionHelper::FromWebContents(web_contents);
+  if (!permission_helper)
+      return;
+
+  AtomBrowserContext* browser_context =
+      static_cast<AtomBrowserContext*>(browser_context_.get());
+  auto callback = base::Bind(&OnRegisterProtocol, browser_context, handler);
+  permission_helper->RequestProtocolRegistrationPermission(callback,
+      user_gesture);
+}
+
+// Unregister the registered handler for URL requests with the given scheme.
+// |user_gesture| is true if the registration is made in the context of a user
+// gesture.
+void CommonWebContentsDelegate::UnregisterProtocolHandler(
+    content::WebContents* web_contents,
+  const std::string& protocol,
+  const GURL& url,
+  bool user_gesture) {
+  if (Browser::Get()->IsDefaultProtocolClient(protocol)) {
+    Browser::Get()->RemoveAsDefaultProtocolClient(protocol);
+  }
+  ProtocolHandler handler =
+      ProtocolHandler::CreateProtocolHandler(protocol, url);
+  ProtocolHandlerRegistry* registry =
+      ProtocolHandlerRegistryFactory::GetForBrowserContext(
+          browser_context_.get());
+  registry->RemoveHandler(handler);
 }
 
 void CommonWebContentsDelegate::SetOwnerWindow(NativeWindow* owner_window) {

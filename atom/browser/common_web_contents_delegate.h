@@ -32,6 +32,22 @@ class CommonWebContentsDelegate
   CommonWebContentsDelegate();
   virtual ~CommonWebContentsDelegate();
 
+  // Register a new handler for URL requests with the given scheme.
+  // |user_gesture| is true if the registration is made in the context of a user
+  // gesture.
+  void RegisterProtocolHandler(content::WebContents* web_contents,
+                               const std::string& protocol,
+                               const GURL& url,
+                               bool user_gesture) override;
+
+  // Unregister the registered handler for URL requests with the given scheme.
+  // |user_gesture| is true if the registration is made in the context of a user
+  // gesture.
+  void UnregisterProtocolHandler(content::WebContents* web_contents,
+                                 const std::string& protocol,
+                                 const GURL& url,
+                                 bool user_gesture) override;
+
   // Creates a InspectableWebContents object and takes onwership of
   // |web_contents|.
   void InitWithWebContents(content::WebContents* web_contents,

@@ -7,6 +7,8 @@
 #include "atom/browser/net/atom_url_request_job_factory.h"
 #include "brave/browser/brave_permission_manager.h"
 #include "chrome/browser/chrome_notification_types.h"
+#include "chrome/browser/custom_handlers/protocol_handler_registry.h"
+#include "chrome/browser/custom_handlers/protocol_handler_registry_factory.h"
 #include "components/keyed_service/content/browser_context_dependency_manager.h"
 #include "components/prefs/json_pref_store.h"
 #include "components/prefs/pref_change_registrar.h"
@@ -146,7 +148,14 @@ BraveBrowserContext::CreateURLRequestJobFactory(
       extensions::CreateExtensionProtocolHandler(IsOffTheRecord(),
                                                  extension_info_map));
 #endif
-  return job_factory;
+
+  scoped_ptr<ProtocolHandlerRegistry::JobInterceptorFactory>
+    protocol_handler_interceptor =
+        ProtocolHandlerRegistryFactory::GetForBrowserContext(this)
+          ->CreateJobInterceptorFactory();
+
+  protocol_handler_interceptor->Chain(std::move(job_factory));
+  return std::move(protocol_handler_interceptor);
 }
 
 void BraveBrowserContext::RegisterPrefs(PrefRegistrySimple* pref_registry) {
@@ -192,6 +201,8 @@ void BraveBrowserContext::RegisterPrefs(PrefRegistrySimple* pref_registry) {
     factory.set_user_prefs(pref_store);
     user_prefs_ = factory.CreateSyncable(pref_registry_.get());
     user_prefs::UserPrefs::Set(this, user_prefs_.get());
+
+    ProtocolHandlerRegistry::RegisterProfilePrefs(pref_registry_.get());
   }
 
   if (async) {

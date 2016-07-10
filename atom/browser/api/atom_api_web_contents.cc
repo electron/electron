@@ -47,6 +47,8 @@
 #include "brightray/browser/inspectable_web_contents_view.h"
 #include "chrome/browser/printing/print_view_manager_basic.h"
 #include "chrome/browser/printing/print_preview_message_handler.h"
+#include "chrome/browser/custom_handlers/protocol_handler_registry.h"
+#include "chrome/browser/custom_handlers/protocol_handler_registry_factory.h"
 #include "content/browser/renderer_host/render_widget_host_impl.h"
 #include "content/public/browser/browser_plugin_guest_manager.h"
 #include "content/browser/web_contents/web_contents_impl.h"
@@ -384,10 +386,15 @@ bool WebContents::ShouldCreateWebContents(
     const GURL& target_url,
     const std::string& partition_id,
     content::SessionStorageNamespace* session_storage_namespace) {
+
+  ProtocolHandlerRegistry* registry =
+    ProtocolHandlerRegistryFactory::GetForBrowserContext(GetBrowserContext());
+  GURL translated_url = registry->TranslateUrl(target_url);
+
   if (IsGuest()) {
     return true;
   } else {
-    Emit("-new-window", target_url, frame_name, NEW_FOREGROUND_TAB);
+    Emit("-new-window", translated_url, frame_name, NEW_FOREGROUND_TAB);
   }
 
   return false;
@@ -502,11 +509,15 @@ content::WebContents* WebContents::OpenURLFromTab(
   if (params.disposition == SUPPRESS_OPEN)
     return nullptr;
 
+  ProtocolHandlerRegistry* registry =
+    ProtocolHandlerRegistryFactory::GetForBrowserContext(GetBrowserContext());
+  GURL translated_url = registry->TranslateUrl(params.url);
+
   if (params.disposition != CURRENT_TAB) {
     if (type_ == BROWSER_WINDOW || type_ == OFF_SCREEN)
-      Emit("-new-window", params.url, "", params.disposition);
+      Emit("-new-window", translated_url, "", params.disposition);
     else
-      Emit("new-window", params.url, "", params.disposition);
+      Emit("new-window", translated_url, "", params.disposition);
     return nullptr;
   }
 
@@ -1684,6 +1695,12 @@ int32_t WebContents::ID() const {
 }
 
 v8::Local<v8::Value> WebContents::Session(v8::Isolate* isolate) {
+  if (session_.IsEmpty()) {
+    auto context =
+        static_cast<AtomBrowserContext*>(web_contents()->GetBrowserContext());
+    auto session = Session::CreateFrom(isolate, context);
+    session_.Reset(isolate, session.ToV8());
+  }
   return v8::Local<v8::Value>::New(isolate, session_);
 }
 

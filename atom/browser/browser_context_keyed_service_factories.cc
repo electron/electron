@@ -4,6 +4,7 @@
 
 #include "atom/browser/browser_context_keyed_service_factories.h"
 
+#include "chrome/browser/custom_handlers/protocol_handler_registry_factory.h"
 #if defined(ENABLE_EXTENSIONS)
 #include "atom/browser/extensions/atom_extension_system_factory.h"
 #include "extensions/browser/api/alarms/alarm_manager.h"
@@ -31,6 +32,7 @@
 namespace atom {
 
 void EnsureBrowserContextKeyedServiceFactoriesBuilt() {
+  ProtocolHandlerRegistryFactory::GetInstance();
 #if defined(ENABLE_EXTENSIONS)
   // keep AtomExtensionsBrowserClient::RegisterExtensionFunctions in sync
   extensions::AlarmManager::GetFactoryInstance();
