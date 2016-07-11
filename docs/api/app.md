@@ -611,22 +611,24 @@ Returns the current value displayed in the counter badge.
 
 Returns whether current desktop environment is Unity launcher.
 
-### `app.getLoginItemSettings()` _macOS_
+### `app.getLoginItemSettings()` _macOS_ _Windows_
 
 Return an Object with the login item settings of the app.
 
 * `openAtLogin` Boolean - `true` if the app is set to open at login.
 * `openAsHidden` Boolean - `true` if the app is set to open as hidden at login.
+  This setting is only supported on macOS.
 * `wasOpenedAtLogin` Boolean - `true` if the app was opened at login
-  automatically.
+  automatically. This setting is only supported on macOS.
 * `wasOpenedAsHidden` Boolean - `true` if the app was opened as a hidden login
   item. This indicates that the app should not open any windows at startup.
+  This setting is only supported on macOS.
 * `restoreState` Boolean - `true` if the app was opened as a login item that
   should restore the state from the previous session. This indicates that the
   app should restore the windows that were open the last time the app was
-  closed.
+  closed. This setting is only supported on macOS.
 
-### `app.setLoginItemSettings(settings)` _macOS_
+### `app.setLoginItemSettings(settings)` _macOS_ _Windows_
 
 * `settings` Object
   * `openAtLogin` Boolean - `true` to open the app at login, `false` to remove
@@ -634,7 +636,8 @@ Return an Object with the login item settings of the app.
   * `openAsHidden` Boolean - `true` to open the app as hidden. Defaults to
     `false`. The user can edit this setting from the System Preferences so
     `app.getLoginItemStatus().wasOpenedAsHidden` should be checked when the app
-    is opened to know the current value.
+    is opened to know the current value. This setting is only supported on
+    macOS.
 
 Set the app's login item settings.
 
