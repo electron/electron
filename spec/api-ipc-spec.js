@@ -76,7 +76,7 @@ describe('ipc module', function () {
         [null]
       ])
 
-      var objectA = {}
+      objectA = {}
       objectA.foo = objectA
       assert.deepEqual(a.returnArgs(objectA), [
         {foo: null}
