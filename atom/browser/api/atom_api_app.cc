@@ -588,7 +588,7 @@ void App::BuildPrototype(
       .SetMethod("makeSingleInstance", &App::MakeSingleInstance)
       .SetMethod("releaseSingleInstance", &App::ReleaseSingleInstance)
       .SetMethod("relaunch", &App::Relaunch)
-      .SetMethod("IsAccessibilitySupportEnabled",
+      .SetMethod("isAccessibilitySupportEnabled",
                  &App::IsAccessibilitySupportEnabled)
       .SetMethod("disableHardwareAcceleration",
                  &App::DisableHardwareAcceleration);
