@@ -24,7 +24,6 @@
 #include "base/win/scoped_com_initializer.h"
 #include "base/win/scoped_comptr.h"
 #include "base/win/windows_version.h"
-#include "net/base/escape.h"
 #include "ui/base/win/shell.h"
 #include "url/gurl.h"
 
