@@ -10,6 +10,7 @@
 #include <shlobj.h>
 
 #include "atom/browser/native_window_views.h"
+#include "atom/browser/unresponsive_suppressor.h"
 #include "base/files/file_util.h"
 #include "base/i18n/case_conversion.h"
 #include "base/strings/string_util.h"
@@ -108,7 +109,7 @@ class FileDialog {
   }
 
   bool Show(atom::NativeWindow* parent_window) {
-    atom::NativeWindow::DialogScope dialog_scope(parent_window);
+    atom::UnresponsiveSuppressor suppressor;
     HWND window = parent_window ? static_cast<atom::NativeWindowViews*>(
         parent_window)->GetAcceleratedWidget() :
         NULL;

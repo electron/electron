@@ -960,10 +960,6 @@ void NativeWindowMac::SetContentProtection(bool enable) {
                                  : NSWindowSharingReadOnly];
 }
 
-bool NativeWindowMac::HasModalDialog() {
-  return [window_ attachedSheet] != nil;
-}
-
 void NativeWindowMac::SetParentWindow(NativeWindow* parent) {
   if (is_modal())
     return;

@@ -299,6 +299,8 @@
       'atom/browser/ui/x/window_state_watcher.h',
       'atom/browser/ui/x/x_window_utils.cc',
       'atom/browser/ui/x/x_window_utils.h',
+      'atom/browser/unresponsive_suppressor.cc',
+      'atom/browser/unresponsive_suppressor.h',
       'atom/browser/web_contents_permission_helper.cc',
       'atom/browser/web_contents_permission_helper.h',
       'atom/browser/web_contents_preferences.cc',

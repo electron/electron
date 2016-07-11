@@ -51,26 +51,7 @@ struct DraggableRegion;
 class NativeWindow : public base::SupportsUserData,
                      public content::WebContentsObserver {
  public:
-  class DialogScope {
-   public:
-    explicit DialogScope(NativeWindow* window)
-        : window_(window) {
-      if (window_ != NULL)
-        window_->set_has_dialog_attached(true);
-    }
-
-    ~DialogScope() {
-      if (window_ != NULL)
-        window_->set_has_dialog_attached(false);
-    }
-
-   private:
-    NativeWindow* window_;
-
-    DISALLOW_COPY_AND_ASSIGN(DialogScope);
-  };
-
-  virtual ~NativeWindow();
+  ~NativeWindow() override;
 
   // Create window with existing WebContents, the caller is responsible for
   // managing the window's live.
@@ -155,7 +136,6 @@ class NativeWindow : public base::SupportsUserData,
   virtual void SetContentProtection(bool enable) = 0;
   virtual void SetFocusable(bool focusable);
   virtual void SetMenu(AtomMenuModel* menu);
-  virtual bool HasModalDialog();
   virtual void SetParentWindow(NativeWindow* parent);
   virtual gfx::NativeWindow GetNativeWindow() = 0;
   virtual gfx::AcceleratedWidget GetAcceleratedWidget() = 0;
@@ -245,10 +225,6 @@ class NativeWindow : public base::SupportsUserData,
   SkRegion* draggable_region() const { return draggable_region_.get(); }
   bool enable_larger_than_screen() const { return enable_larger_than_screen_; }
 
-  void set_has_dialog_attached(bool has_dialog_attached) {
-    has_dialog_attached_ = has_dialog_attached;
-  }
-
   NativeWindow* parent() const { return parent_; }
   bool is_modal() const { return is_modal_; }
 
@@ -304,9 +280,6 @@ class NativeWindow : public base::SupportsUserData,
 
   // The windows has been closed.
   bool is_closed_;
-
-  // There is a dialog that has been attached to window.
-  bool has_dialog_attached_;
 
   // Closure that would be called when window is unresponsive when closing,
   // it should be cancelled when we can prove that the window is responsive.
