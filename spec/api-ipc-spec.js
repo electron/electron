@@ -70,6 +70,12 @@ describe('ipc module', function () {
         {bar: [1, 2, 3]}
       ])
 
+      objectA = {foo: 'bar'}
+      assert.deepEqual(a.returnArgs({foo: objectA}, {bar: objectA}), [
+        {foo: {foo: 'bar'}},
+        {bar: {foo: 'bar'}}
+      ])
+
       arrayA = []
       arrayA.push(arrayA)
       assert.deepEqual(a.returnArgs(arrayA), [
@@ -78,14 +84,16 @@ describe('ipc module', function () {
 
       objectA = {}
       objectA.foo = objectA
+      objectA.bar = 'baz'
       assert.deepEqual(a.returnArgs(objectA), [
-        {foo: null}
+        {foo: null, bar: 'baz'}
       ])
 
       objectA = {}
       objectA.foo = {bar: objectA}
+      objectA.bar = 'baz'
       assert.deepEqual(a.returnArgs(objectA), [
-        {foo: {bar: null}}
+        {foo: {bar: null}, bar: 'baz'}
       ])
     })
   })
