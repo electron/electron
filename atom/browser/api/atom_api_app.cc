@@ -282,8 +282,8 @@ void App::OnFinishLaunching() {
   Emit("ready");
 }
 
-void App::OnAccessibilityChanged() {
-  Emit("accessibility-changed", IsAccessible());
+void App::OnAccessibilitySupportChanged() {
+  Emit("accessibility-support-changed", IsAccessibilitySupportEnabled());
 }
 
 #if defined(OS_MACOSX)
@@ -491,7 +491,7 @@ void App::DisableHardwareAcceleration(mate::Arguments* args) {
   content::GpuDataManager::GetInstance()->DisableHardwareAcceleration();
 }
 
-bool App::IsAccessible() {
+bool App::IsAccessibilitySupportEnabled() {
   auto ax_state = content::BrowserAccessibilityState::GetInstance();
   return ax_state->IsAccessibleBrowser();
 }
@@ -588,7 +588,8 @@ void App::BuildPrototype(
       .SetMethod("makeSingleInstance", &App::MakeSingleInstance)
       .SetMethod("releaseSingleInstance", &App::ReleaseSingleInstance)
       .SetMethod("relaunch", &App::Relaunch)
-      .SetMethod("isAccessible", &App::IsAccessible)
+      .SetMethod("IsAccessibilitySupportEnabled",
+                 &App::IsAccessibilitySupportEnabled)
       .SetMethod("disableHardwareAcceleration",
                  &App::DisableHardwareAcceleration);
 }

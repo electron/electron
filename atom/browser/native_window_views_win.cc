@@ -99,7 +99,7 @@ bool NativeWindowViews::PreHandleMSG(
         if (axState && !axState->IsAccessibleBrowser()) {
           axState->OnScreenReaderDetected();
           enabled_a11y_support_ = true;
-          Browser::Get()->OnAccessibilityChanged();
+          Browser::Get()->OnAccessibilitySupportChanged();
         }
       }
 

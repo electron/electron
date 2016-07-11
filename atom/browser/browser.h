@@ -185,7 +185,7 @@ class Browser : public WindowListObserver {
   void WillFinishLaunching();
   void DidFinishLaunching();
 
-  void OnAccessibilityChanged();
+  void OnAccessibilitySupportChanged();
 
   // Request basic auth login.
   void RequestLogin(LoginHandler* login_handler,

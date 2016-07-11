@@ -155,8 +155,10 @@ void Browser::DidFinishLaunching() {
   FOR_EACH_OBSERVER(BrowserObserver, observers_, OnFinishLaunching());
 }
 
-void Browser::OnAccessibilityChanged() {
-  FOR_EACH_OBSERVER(BrowserObserver, observers_, OnAccessibilityChanged());
+void Browser::OnAccessibilitySupportChanged() {
+  FOR_EACH_OBSERVER(BrowserObserver,
+                    observers_,
+                    OnAccessibilitySupportChanged());
 }
 
 void Browser::RequestLogin(
