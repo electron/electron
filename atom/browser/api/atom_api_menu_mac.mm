@@ -5,6 +5,7 @@
 #import "atom/browser/api/atom_api_menu_mac.h"
 
 #include "atom/browser/native_window.h"
+#include "atom/browser/unresponsive_suppressor.h"
 #include "base/message_loop/message_loop.h"
 #include "base/strings/sys_string_conversions.h"
 #include "brightray/browser/inspectable_web_contents.h"
@@ -66,6 +67,9 @@ void MenuMac::PopupAt(Window* window, int x, int y, int positioning_item) {
   CGFloat screenRight = CGRectGetMaxX([view window].screen.frame);
   if (rightmostMenuPoint > screenRight)
     position.x = position.x - [menu size].width;
+
+  // Don't emit unresponsive event when showing menu.
+  atom::UnresponsiveSuppressor suppressor;
 
   // Show the menu.
   [menu popUpMenuPositioningItem:item atLocation:position inView:view];
