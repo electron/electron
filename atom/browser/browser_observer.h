@@ -53,7 +53,7 @@ class BrowserObserver {
                        const base::DictionaryValue& request_details) {}
 
   // The browser's accessibility suppport has changed.
-  virtual void OnAccessibilitySupportChanged() {};
+  virtual void OnAccessibilitySupportChanged() {}
 
 #if defined(OS_MACOSX)
   // The browser wants to resume a user activity via handoff. (macOS only)
