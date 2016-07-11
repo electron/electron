@@ -2,6 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+#include "atom/browser/browser.h"
 #include "atom/browser/native_window_views.h"
 #include "content/public/browser/browser_accessibility_state.h"
 
@@ -98,6 +99,7 @@ bool NativeWindowViews::PreHandleMSG(
         if (axState && !axState->IsAccessibleBrowser()) {
           axState->OnScreenReaderDetected();
           enabled_a11y_support_ = true;
+          Browser::Get()->OnAccessibilityChanged();
         }
       }
 
