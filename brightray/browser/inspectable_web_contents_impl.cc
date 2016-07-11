@@ -91,6 +91,14 @@ bool IsPointInRect(const gfx::Point& point, const gfx::Rect& rect) {
          point.y() > rect.y() && point.y() < (rect.height() + rect.y());
 }
 
+bool IsPointInScreen(const gfx::Point& point) {
+  for (const auto& display : gfx::Screen::GetScreen()->GetAllDisplays()) {
+    if (IsPointInRect(point, display.bounds()))
+      return true;
+  }
+  return false;
+}
+
 void SetZoomLevelForWebContents(content::WebContents* web_contents,
                                 double level) {
   content::HostZoomMap::SetZoomLevel(web_contents, level);
@@ -214,9 +222,9 @@ InspectableWebContentsImpl::InspectableWebContentsImpl(
       devtools_bounds_.set_height(600);
       devtools_bounds_.set_width(800);
     }
-    gfx::Rect display = gfx::Screen::GetScreen()
-        ->GetDisplayNearestWindow(web_contents->GetNativeView()).bounds();
-    if (!IsPointInRect(devtools_bounds_.origin(), display)) {
+    if (!IsPointInScreen(devtools_bounds_.origin())) {
+      gfx::Rect display = gfx::Screen::GetScreen()->
+          GetDisplayNearestWindow(web_contents->GetNativeView()).bounds();
       devtools_bounds_.set_x(display.x() + (display.width() - devtools_bounds_.width()) / 2);
       devtools_bounds_.set_y(display.y() + (display.height() - devtools_bounds_.height()) / 2);
     }
