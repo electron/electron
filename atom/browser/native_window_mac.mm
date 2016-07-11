@@ -1098,6 +1098,9 @@ void NativeWindowMac::InstallView() {
     [view setFrame:[content_view_ bounds]];
     [content_view_ addSubview:view];
 
+    // The fullscreen button should always be hidden for frameless window.
+    [[window_ standardWindowButton:NSWindowFullScreenButton] setHidden:YES];
+
     if (title_bar_style_ != NORMAL)
       return;
 
