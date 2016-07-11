@@ -83,6 +83,8 @@
   } else {
     ax_state->DisableAccessibility();
   }
+
+  atom::Browser::Get()->OnAccessibilityChanged();
 }
 
 @end
