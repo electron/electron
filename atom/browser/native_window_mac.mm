@@ -737,6 +737,10 @@ bool NativeWindowMac::IsFullscreen() const {
 }
 
 void NativeWindowMac::SetBounds(const gfx::Rect& bounds, bool animate) {
+  // Do nothing if in fullscreen mode.
+  if (IsFullscreen())
+    return;
+
   // Check size constraints since setFrame does not check it.
   gfx::Size size = bounds.size();
   size.SetToMax(GetMinimumSize());
