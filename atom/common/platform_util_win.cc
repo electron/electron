@@ -24,8 +24,9 @@
 #include "base/win/scoped_com_initializer.h"
 #include "base/win/scoped_comptr.h"
 #include "base/win/windows_version.h"
-#include "url/gurl.h"
+#include "net/base/escape.h"
 #include "ui/base/win/shell.h"
+#include "url/gurl.h"
 
 namespace {
 
@@ -301,30 +302,13 @@ void OpenItem(const base::FilePath& full_path) {
     ui::win::OpenFileViaShell(full_path);
 }
 
-bool OpenExternal(const GURL& url, bool activate) {
+bool OpenExternal(const base::string16& url, bool activate) {
   // Quote the input scheme to be sure that the command does not have
   // parameters unexpected by the external program. This url should already
   // have been escaped.
-  std::string escaped_url = url.spec();
-  escaped_url.insert(0, "\"");
-  escaped_url += "\"";
+  base::string16 escaped_url = L"\"" + url + L"\"";
 
-  // According to Mozilla in uriloader/exthandler/win/nsOSHelperAppService.cpp:
-  // "Some versions of windows (Win2k before SP3, Win XP before SP1) crash in
-  // ShellExecute on long URLs (bug 161357 on bugzilla.mozilla.org). IE 5 and 6
-  // support URLS of 2083 chars in length, 2K is safe."
-  const size_t kMaxURLLength = 2048;
-  if (escaped_url.length() > kMaxURLLength) {
-    NOTREACHED();
-    return false;
-  }
-
-  if (base::win::GetVersion() < base::win::VERSION_WIN7) {
-    if (!ValidateShellCommandForScheme(url.scheme()))
-      return false;
-  }
-
-  if (reinterpret_cast<ULONG_PTR>(ShellExecuteA(NULL, "open",
+  if (reinterpret_cast<ULONG_PTR>(ShellExecuteW(NULL, L"open",
                                                 escaped_url.c_str(), NULL, NULL,
                                                 SW_SHOWNORMAL)) <= 32) {
     // We fail to execute the call. We could display a message to the user.
