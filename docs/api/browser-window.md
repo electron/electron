@@ -197,6 +197,7 @@ supported values are:
     (`kCGDesktopWindowLevel - 1`). Note that desktop window will not receive
     focus, keyboard or mouse events, but you can use `globalShortcut` to receive
     input sparingly.
+* On Windows, possible types are `toolbar`,
 
 The `titleBarStyle` option is only supported on macOS 10.10 Yosemite and newer.
 Possible values are:

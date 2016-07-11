@@ -224,6 +224,9 @@ NativeWindowViews::NativeWindowViews(
   bool fullscreen = false;
   options.Get(options::kFullscreen, &fullscreen);
 
+  std::string window_type;
+  options.Get(options::kType, &window_type);
+
 #if defined(USE_X11)
   // Start monitoring window states.
   window_state_watcher_.reset(new WindowStateWatcher(this));
@@ -252,9 +255,6 @@ NativeWindowViews::NativeWindowViews(
   if (fullscreen) {
     state_atom_list.push_back(GetAtom("_NET_WM_STATE_FULLSCREEN"));
   }
-
-  std::string window_type;
-  options.Get(options::kType, &window_type);
 
   if (parent) {
     SetParentWindow(parent);
@@ -295,12 +295,13 @@ NativeWindowViews::NativeWindowViews(
     ::SetWindowLong(GetAcceleratedWidget(), GWL_STYLE, frame_style);
   }
 
-  if (!thick_frame_) {
-    // Window without thick frame has to have WS_EX_COMPOSITED style.
-    LONG ex_style = ::GetWindowLong(GetAcceleratedWidget(), GWL_EXSTYLE);
+  LONG ex_style = ::GetWindowLong(GetAcceleratedWidget(), GWL_EXSTYLE);
+  // Window without thick frame has to have WS_EX_COMPOSITED style.
+  if (!thick_frame_)
     ex_style |= WS_EX_COMPOSITED;
-    ::SetWindowLong(GetAcceleratedWidget(), GWL_EXSTYLE, ex_style);
-  }
+  if (window_type == "toolbar")
+    ex_style |= WS_EX_TOOLWINDOW;
+  ::SetWindowLong(GetAcceleratedWidget(), GWL_EXSTYLE, ex_style);
 #endif
 
   // TODO(zcbenz): This was used to force using native frame on Windows 2003, we
