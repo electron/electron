@@ -52,6 +52,9 @@ class BrowserObserver {
   virtual void OnLogin(LoginHandler* login_handler,
                        const base::DictionaryValue& request_details) {}
 
+  // The browser's accessibility state has changed.
+  virtual void OnAccessibilityChanged() {};
+
 #if defined(OS_MACOSX)
   // The browser wants to resume a user activity via handoff. (macOS only)
   virtual void OnContinueUserActivity(
