@@ -504,6 +504,12 @@ void NativeWindowViews::SetFullScreen(bool fullscreen) {
   else
     window_->native_widget_private()->ShowWithWindowState(
         ui::SHOW_STATE_FULLSCREEN);
+
+  // Auto-hide menubar when in fullscreen.
+  if (fullscreen)
+    SetMenuBarVisibility(false);
+  else
+    SetMenuBarVisibility(!menu_bar_autohide_);
 #endif
 }
 
