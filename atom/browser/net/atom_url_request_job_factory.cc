@@ -27,7 +27,7 @@ bool AtomURLRequestJobFactory::SetProtocolHandler(
     const std::string& scheme,
     std::unique_ptr<ProtocolHandler> protocol_handler) {
   if (!protocol_handler) {
-    ProtocolHandlerMap::iterator it = protocol_handler_map_.find(scheme);
+    auto it = protocol_handler_map_.find(scheme);
     if (it == protocol_handler_map_.end())
       return false;
 
@@ -66,7 +66,7 @@ ProtocolHandler* AtomURLRequestJobFactory::GetProtocolHandler(
     const std::string& scheme) const {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
 
-  ProtocolHandlerMap::const_iterator it = protocol_handler_map_.find(scheme);
+  auto it = protocol_handler_map_.find(scheme);
   if (it == protocol_handler_map_.end())
     return nullptr;
   return it->second;
@@ -87,7 +87,7 @@ net::URLRequestJob* AtomURLRequestJobFactory::MaybeCreateJobWithProtocolHandler(
     net::NetworkDelegate* network_delegate) const {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
 
-  ProtocolHandlerMap::const_iterator it = protocol_handler_map_.find(scheme);
+  auto it = protocol_handler_map_.find(scheme);
   if (it == protocol_handler_map_.end())
     return nullptr;
   return it->second->MaybeCreateJob(request, network_delegate);

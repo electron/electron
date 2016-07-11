@@ -30,9 +30,9 @@ bool StringToAccelerator(const std::string& shortcut,
   // Now, parse it into an accelerator.
   int modifiers = ui::EF_NONE;
   ui::KeyboardCode key = ui::VKEY_UNKNOWN;
-  for (size_t i = 0; i < tokens.size(); i++) {
+  for (const auto& token : tokens) {
     bool shifted = false;
-    ui::KeyboardCode code = atom::KeyboardCodeFromStr(tokens[i], &shifted);
+    ui::KeyboardCode code = atom::KeyboardCodeFromStr(token, &shifted);
     if (shifted)
       modifiers |= ui::EF_SHIFT_DOWN;
     switch (code) {

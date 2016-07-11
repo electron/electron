@@ -241,10 +241,10 @@ void OnGetBackend(disk_cache::Backend** backend_ptr,
     } else if (action == Session::CacheAction::STATS) {
       base::StringPairs stats;
       (*backend_ptr)->GetStats(&stats);
-      for (size_t i = 0; i < stats.size(); ++i) {
-        if (stats[i].first == "Current size") {
+      for (const auto& stat : stats) {
+        if (stat.first == "Current size") {
           int current_size;
-          base::StringToInt(stats[i].second, &current_size);
+          base::StringToInt(stat.second, &current_size);
           RunCallbackInUI(callback, current_size);
           break;
         }
@@ -266,7 +266,7 @@ void DoCacheActionInIO(
 
   // Call GetBackend and make the backend's ptr accessable in OnGetBackend.
   using BackendPtr = disk_cache::Backend*;
-  BackendPtr* backend_ptr = new BackendPtr(nullptr);
+  auto* backend_ptr = new BackendPtr(nullptr);
   net::CompletionCallback on_get_backend =
       base::Bind(&OnGetBackend, base::Owned(backend_ptr), action, callback);
   int rv = http_cache->GetBackend(backend_ptr, on_get_backend);

@@ -43,7 +43,7 @@ void RelauncherSynchronizeWithParent() {
 
   struct kevent change = { 0 };
   EV_SET(&change, parent_pid, EVFILT_PROC, EV_ADD, NOTE_EXIT, 0, NULL);
-  if (kevent(kq.get(), &change, 1, NULL, 0, NULL) == -1) {
+  if (kevent(kq.get(), &change, 1, nullptr, 0, nullptr) == -1) {
     PLOG(ERROR) << "kevent (add)";
     return;
   }
@@ -58,7 +58,7 @@ void RelauncherSynchronizeWithParent() {
   // write above to complete. The parent process is now free to exit. Wait for
   // that to happen.
   struct kevent event;
-  int events = kevent(kq.get(), NULL, 0, &event, 1, NULL);
+  int events = kevent(kq.get(), nullptr, 0, &event, 1, nullptr);
   if (events != 1) {
     if (events < 0) {
       PLOG(ERROR) << "kevent (monitor)";

@@ -21,7 +21,7 @@ namespace api {
 
 Menu::Menu(v8::Isolate* isolate)
     : model_(new AtomMenuModel(this)),
-      parent_(NULL) {
+      parent_(nullptr) {
 }
 
 Menu::~Menu() {
