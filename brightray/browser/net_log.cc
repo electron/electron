@@ -18,7 +18,7 @@ std::unique_ptr<base::DictionaryValue> GetConstants() {
   std::unique_ptr<base::DictionaryValue> constants = net::GetNetConstants();
 
   // Adding client information to constants dictionary.
-  base::DictionaryValue* client_info = new base::DictionaryValue();
+  auto* client_info = new base::DictionaryValue();
   client_info->SetString(
       "command_line",
       base::CommandLine::ForCurrentProcess()->GetCommandLineString());
