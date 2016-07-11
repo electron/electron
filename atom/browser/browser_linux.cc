@@ -60,7 +60,7 @@ bool Browser::SetBadgeCount(int count) {
 void Browser::SetLoginItemSettings(LoginItemSettings settings) {
 }
 
-LoginItemSettings Browser::GetLoginItemSettings() {
+Browser::LoginItemSettings Browser::GetLoginItemSettings() {
   return LoginItemSettings();
 }
 
