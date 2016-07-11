@@ -44,6 +44,25 @@ describe('ipc module', function () {
       comparePaths(path.normalize(remote.process.mainModule.filename), path.resolve(__dirname, 'static', 'main.js'))
       comparePaths(path.normalize(remote.process.mainModule.paths[0]), path.resolve(__dirname, 'static', 'node_modules'))
     })
+
+    it('handles circular references in arrays and objects', function () {
+      var a = remote.require(path.join(fixtures, 'module', 'circular.js'))
+      var array1 = ['foo']
+      var array2 = [array1, 'bar']
+      array1.push(array2)
+      assert.deepEqual(a.returnArgs(array1, array2), [
+        ['foo', [[], 'bar']],
+        []
+      ])
+
+      var object1 = {foo: 'bar'}
+      var object2 = {baz: object1}
+      object1.object2 = object2
+      assert.deepEqual(a.returnArgs(object1, object2), [
+        {foo: 'bar', object2: {baz: {foo: 'bar', object2: null}}},
+        {baz: null}
+      ])
+    })
   })
 
   describe('remote.createFunctionWithReturnValue', function () {
