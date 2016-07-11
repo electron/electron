@@ -274,10 +274,47 @@ bool Browser::SetBadgeCount(int count) {
 }
 
 void Browser::SetLoginItemSettings(LoginItemSettings settings) {
+  base::FilePath path;
+  if (!PathService::Get(base::FILE_EXE, &path)) {
+    LOG(ERROR) << "Error getting app exe path";
+    return;
+  }
+
+  // Main Registry Key
+  HKEY root = HKEY_CURRENT_USER;
+  std::string keyPathStr = "Software\\Microsoft\\Windows\\CurrentVersion\\Run";
+  std::wstring keyPath = std::wstring(keyPathStr.begin(), keyPathStr.end());
+
+  // Executable Path
+  std::wstring exePath(path.value());
+  base::win::RegKey key(root, keyPath.c_str(), KEY_ALL_ACCESS);
+
+  if (settings.open_at_login)
+    key.WriteValue(GetAppUserModelID(), exePath.c_str());
+  else {
+    key.DeleteValue(GetAppUserModelID())
+  }
 }
 
 LoginItemSettings Browser::GetLoginItemSettings() {
-  return LoginItemSettings();
+  LoginItemSettings settings;
+
+  base::FilePath path;
+  if (!PathService::Get(base::FILE_EXE, &path)) {
+    LOG(ERROR) << "Error getting app exe path";
+    return;
+  }
+
+  // Main Registry Key
+  HKEY root = HKEY_CURRENT_USER;
+  std::string keyPathStr = "Software\\Microsoft\\Windows\\CurrentVersion\\Run";
+  std::wstring keyPath = std::wstring(keyPathStr.begin(), keyPathStr.end());
+
+  // Executable Path
+  std::wstring exePath(path.value());
+  base::win::RegKey key(root, keyPath.c_str(), KEY_ALL_ACCESS);
+
+  settings.open_at_login = key.HasValue(GetAppUserModelID());
 }
 
 
