@@ -11,6 +11,7 @@
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/browser.h"
+#include "atom/browser/unresponsive_suppressor.h"
 #include "atom/browser/window_list.h"
 #include "atom/common/api/api_messages.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
@@ -52,7 +53,6 @@ NativeWindow::NativeWindow(
       transparent_(false),
       enable_larger_than_screen_(false),
       is_closed_(false),
-      has_dialog_attached_(false),
       sheet_offset_x_(0.0),
       sheet_offset_y_(0.0),
       aspect_ratio_(0.0),
@@ -291,10 +291,6 @@ void NativeWindow::SetFocusable(bool focusable) {
 }
 
 void NativeWindow::SetMenu(AtomMenuModel* menu) {
-}
-
-bool NativeWindow::HasModalDialog() {
-  return has_dialog_attached_;
 }
 
 void NativeWindow::SetParentWindow(NativeWindow* parent) {
@@ -590,7 +586,7 @@ void NativeWindow::ScheduleUnresponsiveEvent(int ms) {
 void NativeWindow::NotifyWindowUnresponsive() {
   window_unresposive_closure_.Cancel();
 
-  if (!is_closed_ && !HasModalDialog() && IsEnabled())
+  if (!is_closed_ && !IsUnresponsiveEventSuppressed() && IsEnabled())
     FOR_EACH_OBSERVER(NativeWindowObserver,
                       observers_,
                       OnRendererUnresponsive());

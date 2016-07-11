@@ -6,6 +6,7 @@
 
 #include "atom/browser/browser.h"
 #include "atom/browser/native_window_views.h"
+#include "atom/browser/unresponsive_suppressor.h"
 #include "base/callback.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
@@ -35,8 +36,7 @@ class GtkMessageBox {
                 const std::string& message,
                 const std::string& detail,
                 const gfx::ImageSkia& icon)
-      : dialog_scope_(parent_window),
-        cancel_id_(cancel_id),
+      : cancel_id_(cancel_id),
         parent_(static_cast<NativeWindowViews*>(parent_window)) {
     // Create dialog.
     dialog_ = gtk_message_dialog_new(
@@ -147,7 +147,7 @@ class GtkMessageBox {
   CHROMEGTK_CALLBACK_1(GtkMessageBox, void, OnResponseDialog, int);
 
  private:
-  atom::NativeWindow::DialogScope dialog_scope_;
+  atom::UnresponsiveSuppressor unresponsive_suppressor_;
 
   // The id to return when the dialog is closed without pressing buttons.
   int cancel_id_;

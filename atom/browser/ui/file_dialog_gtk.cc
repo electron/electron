@@ -5,6 +5,7 @@
 #include "atom/browser/ui/file_dialog.h"
 
 #include "atom/browser/native_window_views.h"
+#include "atom/browser/unresponsive_suppressor.h"
 #include "base/callback.h"
 #include "base/files/file_util.h"
 #include "base/strings/string_util.h"
@@ -41,7 +42,6 @@ class FileChooserDialog {
                     const base::FilePath& default_path,
                     const Filters& filters)
       : parent_(static_cast<atom::NativeWindowViews*>(parent_window)),
-        dialog_scope_(parent_window),
         filters_(filters) {
     const char* confirm_text = GTK_STOCK_OK;
 
@@ -153,7 +153,7 @@ class FileChooserDialog {
   base::FilePath AddExtensionForFilename(const gchar* filename) const;
 
   atom::NativeWindowViews* parent_;
-  atom::NativeWindow::DialogScope dialog_scope_;
+  atom::UnresponsiveSuppressor unresponsive_suppressor_;
 
   GtkWidget* dialog_;
 
