@@ -47,20 +47,45 @@ describe('ipc module', function () {
 
     it('handles circular references in arrays and objects', function () {
       var a = remote.require(path.join(fixtures, 'module', 'circular.js'))
-      var array1 = ['foo']
-      var array2 = [array1, 'bar']
-      array1.push(array2)
-      assert.deepEqual(a.returnArgs(array1, array2), [
-        ['foo', [[], 'bar']],
-        []
+
+      var arrayA = ['foo']
+      var arrayB = [arrayA, 'bar']
+      arrayA.push(arrayB)
+      assert.deepEqual(a.returnArgs(arrayA, arrayB), [
+        ['foo', [null, 'bar']],
+        [['foo', null], 'bar']
       ])
 
-      var object1 = {foo: 'bar'}
-      var object2 = {baz: object1}
-      object1.object2 = object2
-      assert.deepEqual(a.returnArgs(object1, object2), [
-        {foo: 'bar', object2: {baz: {foo: 'bar', object2: null}}},
-        {baz: null}
+      var objectA = {foo: 'bar'}
+      var objectB = {baz: objectA}
+      objectA.objectB = objectB
+      assert.deepEqual(a.returnArgs(objectA, objectB), [
+        {foo: 'bar', objectB: {baz: null}},
+        {baz: {foo: 'bar', objectB: null}}
+      ])
+
+      arrayA = [1, 2, 3]
+      assert.deepEqual(a.returnArgs({foo: arrayA}, {bar: arrayA}), [
+        {foo: [1, 2, 3]},
+        {bar: [1, 2, 3]}
+      ])
+
+      arrayA = []
+      arrayA.push(arrayA)
+      assert.deepEqual(a.returnArgs(arrayA), [
+        [null]
+      ])
+
+      var objectA = {}
+      objectA.foo = objectA
+      assert.deepEqual(a.returnArgs(objectA), [
+        {foo: null}
+      ])
+
+      objectA = {}
+      objectA.foo = {bar: objectA}
+      assert.deepEqual(a.returnArgs(objectA), [
+        {foo: {bar: null}}
       ])
     })
   })
