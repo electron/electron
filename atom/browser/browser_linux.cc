@@ -57,6 +57,13 @@ bool Browser::SetBadgeCount(int count) {
   }
 }
 
+void Browser::SetLoginItemSettings(LoginItemSettings settings) {
+}
+
+LoginItemSettings Browser::GetLoginItemSettings() {
+  return LoginItemSettings();
+}
+
 std::string Browser::GetExecutableFileVersion() const {
   return brightray::GetApplicationVersion();
 }

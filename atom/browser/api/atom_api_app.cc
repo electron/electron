@@ -559,6 +559,10 @@ void App::BuildPrototype(
                  base::Bind(&Browser::RemoveAsDefaultProtocolClient, browser))
       .SetMethod("setBadgeCount", base::Bind(&Browser::SetBadgeCount, browser))
       .SetMethod("getBadgeCount", base::Bind(&Browser::GetBadgeCount, browser))
+      .SetMethod("getLoginItemSettings",
+                 base::Bind(&Browser::GetLoginItemSettings, browser))
+      .SetMethod("setLoginItemSettings",
+                 base::Bind(&Browser::SetLoginItemSettings, browser))
 #if defined(OS_MACOSX)
       .SetMethod("hide", base::Bind(&Browser::Hide, browser))
       .SetMethod("show", base::Bind(&Browser::Show, browser))
@@ -566,10 +570,6 @@ void App::BuildPrototype(
                  base::Bind(&Browser::SetUserActivity, browser))
       .SetMethod("getCurrentActivityType",
                  base::Bind(&Browser::GetCurrentActivityType, browser))
-      .SetMethod("getLoginItemSettings",
-                 base::Bind(&Browser::GetLoginItemSettings, browser))
-      .SetMethod("setLoginItemSettings",
-                 base::Bind(&Browser::SetLoginItemSettings, browser))
 #endif
 #if defined(OS_WIN)
       .SetMethod("setUserTasks", base::Bind(&Browser::SetUserTasks, browser))

@@ -273,6 +273,14 @@ bool Browser::SetBadgeCount(int count) {
   return false;
 }
 
+void Browser::SetLoginItemSettings(LoginItemSettings settings) {
+}
+
+LoginItemSettings Browser::GetLoginItemSettings() {
+  return LoginItemSettings();
+}
+
+
 PCWSTR Browser::GetAppUserModelID() {
   if (app_user_model_id_.empty()) {
     SetAppUserModelID(base::ReplaceStringPlaceholders(
