@@ -800,13 +800,13 @@ bool NativeWindowMac::IsResizable() {
 
 void NativeWindowMac::SetAspectRatio(double aspect_ratio,
                                      const gfx::Size& extra_size) {
-    NativeWindow::SetAspectRatio(aspect_ratio, extra_size);
+  NativeWindow::SetAspectRatio(aspect_ratio, extra_size);
 
-    // Reset the behaviour to default if aspect_ratio is set to 0 or less.
-    if (aspect_ratio > 0.0)
-      [window_ setAspectRatio:NSMakeSize(aspect_ratio, 1.0)];
-    else
-      [window_ setResizeIncrements:NSMakeSize(1.0, 1.0)];
+  // Reset the behaviour to default if aspect_ratio is set to 0 or less.
+  if (aspect_ratio > 0.0)
+    [window_ setAspectRatio:NSMakeSize(aspect_ratio, 1.0)];
+  else
+    [window_ setResizeIncrements:NSMakeSize(1.0, 1.0)];
 }
 
 void NativeWindowMac::SetMovable(bool movable) {
