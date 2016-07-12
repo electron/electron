@@ -30,13 +30,14 @@ class BrowserContext : public base::RefCounted<BrowserContext>,
                        public content::BrowserContext,
                        public brightray::URLRequestContextGetter::Delegate {
  public:
-  // Get or Create the BrowserContext according to its |partition| and |in_memory|.
-  static scoped_refptr<BrowserContext> From(
+  // Get the BrowserContext according to its |partition| and |in_memory|,
+  // empty pointer when be returned when there is no matching BrowserContext.
+  static scoped_refptr<BrowserContext> Get(
       const std::string& partition, bool in_memory);
 
-  // Create a new BrowserContext, embedders should implement it on their own.
-  static scoped_refptr<BrowserContext> Create(
-      const std::string& partition, bool in_memory);
+  base::WeakPtr<BrowserContext> GetWeakPtr() {
+    return weak_factory_.GetWeakPtr();
+  }
 
   // content::BrowserContext:
   std::unique_ptr<content::ZoomLevelDelegate> CreateZoomLevelDelegate(

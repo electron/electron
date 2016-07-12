@@ -85,16 +85,13 @@ class BrowserContext::ResourceContext : public content::ResourceContext {
 BrowserContext::BrowserContextMap BrowserContext::browser_context_map_;
 
 // static
-scoped_refptr<BrowserContext> BrowserContext::From(
+scoped_refptr<BrowserContext> BrowserContext::Get(
     const std::string& partition, bool in_memory) {
   PartitionKey key(partition, in_memory);
   if (browser_context_map_[key].get())
     return make_scoped_refptr(browser_context_map_[key].get());
 
-  auto browser_context = BrowserContext::Create(partition, in_memory);
-  browser_context->InitPrefs();
-  browser_context_map_[key] = browser_context->weak_factory_.GetWeakPtr();
-  return browser_context;
+  return nullptr;
 }
 
 BrowserContext::BrowserContext(const std::string& partition, bool in_memory)
@@ -112,7 +109,10 @@ BrowserContext::BrowserContext(const std::string& partition, bool in_memory)
     path_ = path_.Append(FILE_PATH_LITERAL("Partitions"))
                  .Append(base::FilePath::FromUTF8Unsafe(MakePartitionName(partition)));
 
+  InitPrefs();
   content::BrowserContext::Initialize(this, path_);
+
+  browser_context_map_[PartitionKey(partition, in_memory)] = GetWeakPtr();
 }
 
 void BrowserContext::InitPrefs() {
