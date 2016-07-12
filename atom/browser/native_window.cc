@@ -209,7 +209,7 @@ gfx::Size NativeWindow::GetContentSize() {
 
 void NativeWindow::SetSizeConstraints(
     const extensions::SizeConstraints& window_constraints) {
-  extensions::SizeConstraints content_constraints;
+  extensions::SizeConstraints content_constraints(GetContentSizeConstraints());
   if (window_constraints.HasMaximumSize())
     content_constraints.set_maximum_size(
         WindowSizeToContentSize(window_constraints.GetMaximumSize()));
