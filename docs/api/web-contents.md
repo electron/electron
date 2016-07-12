@@ -211,7 +211,12 @@ Returns:
 * `error` String - The error code
 * `certificate` Object
   * `data` Buffer - PEM encoded data
-  * `issuerName` String
+  * `issuerName` String - Issuer's Common Name
+  * `subjectName` String - Subject's Common Name
+  * `serialNumber` - DER encoded data
+  * `validStart` Integer - Start date of the certificate being valid
+  * `validExpiry` Integer - End date of the certificate being valid
+  * `fingerprint` String - Fingerprint of the certificate
 * `callback` Function
 
 Emitted when failed to verify the `certificate` for `url`.
@@ -228,6 +233,11 @@ Returns:
 * `certificateList` [Objects]
   * `data` Buffer - PEM encoded data
   * `issuerName` String - Issuer's Common Name
+  * `subjectName` String - Subject's Common Name
+  * `serialNumber` - DER encoded data
+  * `validStart` Integer - Start date of the certificate being valid
+  * `validExpiry` Integer - End date of the certificate being valid
+  * `fingerprint` String - Fingerprint of the certificate
 * `callback` Function
 
 Emitted when a client certificate is requested.

@@ -46,6 +46,12 @@ v8::Local<v8::Value> Converter<scoped_refptr<net::X509Certificate>>::ToV8(
                                    encoded_data.size()).ToLocalChecked();
   dict.Set("data", buffer);
   dict.Set("issuerName", val->issuer().GetDisplayName());
+  dict.Set("subjectName", val->subject().GetDisplayName());
+  dict.Set("serialNumber", val->serial_number());
+  dict.Set("validStart", val->valid_start().ToDoubleT());
+  dict.Set("validExpiry", val->valid_expiry().ToDoubleT());
+  dict.Set("fingerprint", net::HashValue(val->fingerprint()).ToString());
+
   return dict.GetHandle();
 }
 
