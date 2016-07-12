@@ -402,7 +402,7 @@ npm 모듈 규칙에 따라 대부분의 경우 `package.json`의 `name` 필드�
 ### `app.getLocale()`
 
 현재 애플리케이션의 [로케일](https://ko.wikipedia.org/wiki/%EB%A1%9C%EC%BC%80%EC%9D%BC)을
-반환합니다.
+반환합니다. 반환될 수 있는 값은 [여기](locales.md)에서 찾아볼 수 있습니다.
 
 **참고:** 패키징된 앱을 배포할 때, `locales` 폴더도 같이 배포해야 합니다.
 

@@ -475,7 +475,7 @@ Service worker에 대한 개발자 도구를 엽니다.
 
 페이지에 입력 `event`를 보냅니다.
 
-`event` 객체에 대해 자세히 알아보려면 [webContents.sendInputEvent](web-contents.md##webcontentssendinputeventevent)를
+`event` 객체에 대해 자세히 알아보려면 [webContents.sendInputEvent](web-contents.md#webcontentssendinputeventevent)를
 참고하세요.
 
 ### `<webview>.showDefinitionForSelection()` _macOS_

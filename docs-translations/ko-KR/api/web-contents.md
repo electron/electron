@@ -633,8 +633,8 @@ CSS 코드를 현재 웹 페이지에 삽입합니다.
 
 * `action` String - [`webContents.findInPage`](web-contents.md#webcontentfindinpage)
   요청이 종료되었을 때 일어날 수 있는 작업을 지정합니다.
-  * `clearSelection` - 선택을 일반 선택으로 변경합니다.
-  * `keepSelection` - 선택을 취소합니다.
+  * `clearSelection` - 선택을 취소합니다.
+  * `keepSelection` - 선택을 일반 선택으로 변경합니다.
   * `activateSelection` - 포커스한 후 선택된 노드를 클릭합니다.
 
 제공된 `action`에 대한 `webContents`의 모든 `findInPage` 요청을 중지합니다.
@@ -669,16 +669,12 @@ ServiceWorker가 존재하면 모두 등록을 해제하고 JS Promise가 만족
   * `printBackground` Boolean - 웹 페이지의 배경 색과 이미지를 출력합니다. 기본값은
   	`false`입니다.
 
-윈도우의 웹 페이지를 프린트합니다. `silent`가 `false`로 지정되어있을 땐, Electron이
+윈도우의 웹 페이지를 프린트합니다. `silent`가 `true`로 지정되어있을 땐, Electron이
 시스템의 기본 프린터와 기본 프린터 설정을 가져옵니다.
 
 웹 페이지에서 `window.print()`를 호출하는 것은
 `webContents.print({silent: false, printBackground: false})`를 호출하는 것과
 같습니다.
-
-**참고:** Windows에서의 프린터 API는 `pdf.dll`에 의존합니다. 따라서 애플리케이션이
-print기능을 사용하지 않는 경우 전체 바이너리 크기를 줄이기 위해 `pdf.dll`을 삭제해도
-됩니다.
 
 ### `webContents.printToPDF(options, callback)`
 

@@ -199,6 +199,7 @@ On Windows it is
   * `desktop`은 데스크탑 배경 레벨(`kCGDesktopWindowLevel - 1`)에 윈도우를
     배치합니다. 참고로 이렇게 만들어진 윈도우는 포커스, 키보드, 마우스 이벤트를 받을
     수 없습니다. 하지만 편법으로 `globalShortcut`을 통해 키 입력을 받을 수 있습니다.
+* Windows의 경우, 가능한 타입으론 `toolbar`가 있습니다.
 
 `titleBarStyle` 속성은 macOS 10.10 Yosemite 이후 버전만 지원하며, 다음 3가지 종류의
 값을 사용할 수 있습니다:
