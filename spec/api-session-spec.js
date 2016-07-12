@@ -35,6 +35,12 @@ describe('session module', function () {
     w = null
   })
 
+  describe('session.defaultSession', function () {
+    it('returns the default session', function () {
+      assert.equal(session.defaultSession, session.fromPartition(''))
+    })
+  })
+
   describe('session.cookies', function () {
     it('should get cookies', function (done) {
       var server = http.createServer(function (req, res) {
