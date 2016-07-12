@@ -47,7 +47,7 @@ In Electron, we have several ways to communicate between the main process and
 renderer processes. Like [`ipcRenderer`](../api/ipc-renderer.md) and
 [`ipcMain`](../api/ipc-main.md) modules for sending messages, and the
 [remote](../api/remote.md) module for RPC style communication. There is also
-an FAQ entry on [how to share data between web pages][share-data].
+an FAQ entry on [how to share data between web pages](../faq.md/#how-to-share-data-between-web-pages).
 
 ## Write your First Electron App
 
