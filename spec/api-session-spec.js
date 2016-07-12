@@ -41,7 +41,7 @@ describe('session module', function () {
     })
   })
 
-  describe('session.cookies', function () {
+  describe('ses.cookies', function () {
     it('should get cookies', function (done) {
       var server = http.createServer(function (req, res) {
         res.setHeader('Set-Cookie', ['0=0'])
@@ -147,7 +147,7 @@ describe('session module', function () {
     })
   })
 
-  describe('session.clearStorageData(options)', function () {
+  describe('ses.clearStorageData(options)', function () {
     fixtures = path.resolve(__dirname, 'fixtures')
     it('clears localstorage data', function (done) {
       ipcMain.on('count', function (event, count) {
@@ -169,7 +169,7 @@ describe('session module', function () {
     })
   })
 
-  describe('session will-download event', function () {
+  describe('will-download event', function () {
     var w = null
 
     beforeEach(function () {
@@ -286,7 +286,7 @@ describe('session module', function () {
     })
   })
 
-  describe('session.protocol', function () {
+  describe('ses.protocol', function () {
     const partitionName = 'temp'
     const protocolName = 'sp'
     const partitionProtocol = session.fromPartition(partitionName).protocol
