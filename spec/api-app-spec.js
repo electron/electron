@@ -339,4 +339,10 @@ describe('app module', function () {
       })
     })
   })
+
+  describe('isAccessibilitySupportEnabled API', function () {
+    it('returns whether the Chrome has accessibility APIs enabled', function () {
+      assert.equal(typeof app.isAccessibilitySupportEnabled(), 'boolean')
+    })
+  })
 })

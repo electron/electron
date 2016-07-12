@@ -185,6 +185,8 @@ class Browser : public WindowListObserver {
   void WillFinishLaunching();
   void DidFinishLaunching();
 
+  void OnAccessibilitySupportChanged();
+
   // Request basic auth login.
   void RequestLogin(LoginHandler* login_handler,
                     std::unique_ptr<base::DictionaryValue> request_details);

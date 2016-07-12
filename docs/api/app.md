@@ -259,6 +259,19 @@ app.on('login', (event, webContents, request, authInfo, callback) => {
 
 Emitted when the gpu process crashes.
 
+### Event: 'accessibility-support-changed' _macOS_ _Windows_
+
+Returns:
+
+* `event` Event
+* `accessibilitySupportEnabled` Boolean - `true` when Chrome's accessibility
+  support is enabled, `false` otherwise.
+
+Emitted when Chrome's accessibility support changes. This event fires when
+assistive technologies, such as screen readers, are enabled or disabled.
+See https://www.chromium.org/developers/design-documents/accessibility for more
+details.
+
 ## Methods
 
 The `app` object has the following methods:
@@ -624,6 +637,14 @@ Return an Object with the login item settings of the app.
     is opened to know the current value.
 
 Set the app's login item settings.
+
+### `app.isAccessibilitySupportEnabled()` _macOS_ _Windows_
+
+Returns a `Boolean`, `true` if Chrome's accessibility support is enabled,
+`false` otherwise. This API will return `true` if the use of assistive
+technologies, such as screen readers, has been detected. See
+https://www.chromium.org/developers/design-documents/accessibility for more
+details.
 
 ### `app.commandLine.appendSwitch(switch[, value])`
 

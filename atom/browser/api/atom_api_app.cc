@@ -32,6 +32,7 @@
 #include "base/strings/string_util.h"
 #include "brightray/browser/brightray_paths.h"
 #include "chrome/common/chrome_paths.h"
+#include "content/public/browser/browser_accessibility_state.h"
 #include "content/public/browser/client_certificate_delegate.h"
 #include "content/public/browser/gpu_data_manager.h"
 #include "content/public/browser/render_frame_host.h"
@@ -281,6 +282,10 @@ void App::OnFinishLaunching() {
   Emit("ready");
 }
 
+void App::OnAccessibilitySupportChanged() {
+  Emit("accessibility-support-changed", IsAccessibilitySupportEnabled());
+}
+
 #if defined(OS_MACOSX)
 void App::OnContinueUserActivity(
     bool* prevent_default,
@@ -486,6 +491,11 @@ void App::DisableHardwareAcceleration(mate::Arguments* args) {
   content::GpuDataManager::GetInstance()->DisableHardwareAcceleration();
 }
 
+bool App::IsAccessibilitySupportEnabled() {
+  auto ax_state = content::BrowserAccessibilityState::GetInstance();
+  return ax_state->IsAccessibleBrowser();
+}
+
 #if defined(USE_NSS_CERTS)
 void App::ImportCertificate(
     const base::DictionaryValue& options,
@@ -578,6 +588,8 @@ void App::BuildPrototype(
       .SetMethod("makeSingleInstance", &App::MakeSingleInstance)
       .SetMethod("releaseSingleInstance", &App::ReleaseSingleInstance)
       .SetMethod("relaunch", &App::Relaunch)
+      .SetMethod("isAccessibilitySupportEnabled",
+                 &App::IsAccessibilitySupportEnabled)
       .SetMethod("disableHardwareAcceleration",
                  &App::DisableHardwareAcceleration);
 }
