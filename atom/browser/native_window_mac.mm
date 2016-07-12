@@ -241,13 +241,6 @@ bool ScopedDisableResize::disable_resize_ = false;
 }
 
 - (void)windowDidExitFullScreen:(NSNotification*)notification {
-  // For certain versions of macOS the fullscreen button will automatically show
-  // after exiting fullscreen mode.
-  if (!shell_->has_frame()) {
-    NSWindow* window = shell_->GetNativeWindow();
-    [[window standardWindowButton:NSWindowFullScreenButton] setHidden:YES];
-  }
-
   shell_->NotifyWindowLeaveFullScreen();
 }
 
@@ -724,11 +717,6 @@ void NativeWindowMac::SetFullScreen(bool fullscreen) {
   if (fullscreen == IsFullscreen())
     return;
 
-  if (!base::mac::IsOSLionOrLater()) {
-    LOG(ERROR) << "Fullscreen mode is only supported above Lion";
-    return;
-  }
-
   [window_ toggleFullScreen:nil];
 }
 
@@ -1082,7 +1070,10 @@ void NativeWindowMac::UpdateDraggableRegions(
 
 void NativeWindowMac::InstallView() {
   // Make sure the bottom corner is rounded: http://crbug.com/396264.
-  [[window_ contentView] setWantsLayer:YES];
+  // But do not enable it on OS X 10.9 for transparent window, otherwise a
+  // semi-transparent frame would show.
+  if (!(transparent() && base::mac::IsOSMavericks()))
+    [[window_ contentView] setWantsLayer:YES];
 
   NSView* view = inspectable_web_contents()->GetView()->GetNativeView();
   if (has_frame()) {
