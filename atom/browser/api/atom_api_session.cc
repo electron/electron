@@ -164,6 +164,8 @@ namespace api {
 
 namespace {
 
+const char kPersistPrefix[] = "persist:";
+
 // The wrapSession funtion which is implemented in JavaScript
 using WrapSessionCallback = base::Callback<void(v8::Local<v8::Value>)>;
 WrapSessionCallback g_wrap_session;
@@ -534,10 +536,19 @@ mate::Handle<Session> Session::CreateFrom(
 
 // static
 mate::Handle<Session> Session::FromPartition(
-    v8::Isolate* isolate, const std::string& partition, bool in_memory) {
-  auto browser_context = brightray::BrowserContext::From(partition, in_memory);
-  return CreateFrom(isolate,
-                    static_cast<AtomBrowserContext*>(browser_context.get()));
+    v8::Isolate* isolate, const std::string& partition) {
+  scoped_refptr<brightray::BrowserContext> browser_context;
+  if (partition.empty()) {
+    browser_context = brightray::BrowserContext::From("", false);
+  } else if (base::StartsWith(partition, kPersistPrefix,
+                              base::CompareCase::SENSITIVE)) {
+    std::string name = partition.substr(8);
+    browser_context = brightray::BrowserContext::From(name, false);
+  } else {
+    browser_context = brightray::BrowserContext::From(partition, true);
+  }
+  return CreateFrom(
+      isolate, static_cast<AtomBrowserContext*>(browser_context.get()));
 }
 
 // static
@@ -578,13 +589,12 @@ void SetWrapSession(const WrapSessionCallback& callback) {
 namespace {
 
 v8::Local<v8::Value> FromPartition(
-    const std::string& partition, bool in_memory, mate::Arguments* args) {
+    const std::string& partition, mate::Arguments* args) {
   if (!atom::Browser::Get()->is_ready()) {
     args->ThrowError("Session can only be received when app is ready");
     return v8::Null(args->isolate());
   }
-  return atom::api::Session::FromPartition(
-      args->isolate(), partition, in_memory).ToV8();
+  return atom::api::Session::FromPartition(args->isolate(), partition).ToV8();
 }
 
 void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,

@@ -285,16 +285,11 @@ WebContents::WebContents(v8::Isolate* isolate,
   std::string partition;
   mate::Handle<api::Session> session;
   if (options.Get("session", &session)) {
-  } else if (options.Get("partition", &partition) && !partition.empty()) {
-    bool in_memory = true;
-    if (base::StartsWith(partition, "persist:", base::CompareCase::SENSITIVE)) {
-      in_memory = false;
-      partition = partition.substr(8);
-    }
-    session = Session::FromPartition(isolate, partition, in_memory);
+  } else if (options.Get("partition", &partition)) {
+    session = Session::FromPartition(isolate, partition);
   } else {
     // Use the default session if not specified.
-    session = Session::FromPartition(isolate, "", false);
+    session = Session::FromPartition(isolate, "");
   }
   session_.Reset(isolate, session.ToV8());
 

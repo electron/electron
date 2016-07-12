@@ -47,9 +47,9 @@ class Session: public mate::TrackableObject<Session>,
   static mate::Handle<Session> CreateFrom(
       v8::Isolate* isolate, AtomBrowserContext* browser_context);
 
-  // Gets the Session of |partition| and |in_memory|.
+  // Gets the Session of |partition|.
   static mate::Handle<Session> FromPartition(
-      v8::Isolate* isolate, const std::string& partition, bool in_memory);
+      v8::Isolate* isolate, const std::string& partition);
 
   AtomBrowserContext* browser_context() const { return browser_context_.get(); }
 
