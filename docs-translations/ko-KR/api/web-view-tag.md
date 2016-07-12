@@ -458,6 +458,11 @@ Service worker에 대한 개발자 도구를 엽니다.
 `webview` 페이지를 PDF 형식으로 인쇄합니다.
 `webContents.printToPDF(options, callback)` 메서드와 같습니다.
 
+### `<webview>.capturePage([rect, ]callback)`
+
+`webview`의 페이지의 스냅샷을 캡쳐합니다.
+`webContents.printToPDF(options, callback)` 메서드와 같습니다.
+
 ### `<webview>.send(channel[, arg1][, arg2][, ...])`
 
 * `channel` String

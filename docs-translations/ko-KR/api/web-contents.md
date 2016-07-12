@@ -648,6 +648,19 @@ webContents.on('found-in-page', (event, result) => {
 const requestId = webContents.findInPage('api');
 ```
 
+### `webContents.capturePage([rect, ]callback)`
+
+* `rect` Object (optional) - 캡쳐할 페이지의 영역
+  * `x` Integer
+  * `y` Integer
+  * `width` Integer
+  * `height` Integer
+* `callback` Function
+
+페이지의 스크린샷을 `rect`에 설정한 만큼 캡처합니다. 캡처가 완료되면 `callback`이
+`callback(image)` 형식으로 호출됩니다. `image`는 [NativeImage](native-image.md)의
+인스턴스이며 스크린샷 데이터를 담고있습니다. `rect`를 생략하면 페이지 전체를 캡처합니다.
+
 ### `webContents.hasServiceWorker(callback)`
 
 * `callback` Function
@@ -924,6 +937,16 @@ Input `event`를 웹 페이지로 전송합니다.
 ### `webContents.endFrameSubscription()`
 
 프레임 프레젠테이션 이벤트들에 대한 구독을 중지합니다.
+
+### `webContents.startDrag(item)`
+
+* `item` object
+  * `file` String
+  * `icon` [NativeImage](native-image.md)
+
+현재 진행중인 드래그-드롭에 `item`을 드래그 중인 아이템으로 설정합니다. `file`은
+드래그될 파일의 절대 경로입니다. 그리고 `icon`은 드래그 도중 커서 밑에 표시될
+이미지입니다.
 
 ### `webContents.savePage(fullPath, saveType, callback)`
 

@@ -182,6 +182,9 @@ On Windows it is
   기본 값은 `true`입니다.
 * `titleBarStyle` String, macOS - 윈도우 타이틀 바 스타일을 지정합니다. 자세한 사항은
   아래를 참고하세요.
+* `thickFrame` Boolean - Windows에서 테두리 없는 윈도우를 위해 표준 윈도우 프레임을
+  추가하는 `WS_THICKFRAME` 스타일을 사용합니다. `false`로 지정하면 윈도우의 그림자와
+  애니메이션을 삭제합니다. 기본값은 `true`입니다.
 * `webPreferences` Object - 웹 페이지 기능을 설정합니다. 사용할 수 있는 속성은
   아래를 참고하세요.
 
@@ -884,16 +887,7 @@ Windows 메시지 훅을 등록합니다. `callback`은 WndProc에서 메시지�
 
 ### `win.capturePage([rect, ]callback)`
 
-* `rect` Object (optional) - 캡쳐할 페이지의 영역
-  * `x` Integer
-  * `y` Integer
-  * `width` Integer
-  * `height` Integer
-* `callback` Function
-
-페이지의 스크린샷을 `rect`에 설정한 만큼 캡처합니다. 캡처가 완료되면 `callback`이
-`callback(image)` 형식으로 호출됩니다. `image`는 [NativeImage](native-image.md)의
-인스턴스이며 스크린샷 데이터를 담고있습니다. `rect`를 생략하면 페이지 전체를 캡처합니다.
+`webContents.capturePage([rect, ]callback)`와 같습니다.
 
 ### `win.loadURL(url[, options])`
 
