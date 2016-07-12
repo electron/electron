@@ -48,7 +48,8 @@ class AtomBrowserContext : public brightray::BrowserContext {
   AtomNetworkDelegate* network_delegate() const { return network_delegate_; }
 
  protected:
-  AtomBrowserContext(const std::string& partition, bool in_memory);
+  AtomBrowserContext(const std::string& partition, bool in_memory,
+                     const base::DictionaryValue& options);
   ~AtomBrowserContext() override;
 
  private:
@@ -56,6 +57,7 @@ class AtomBrowserContext : public brightray::BrowserContext {
   std::unique_ptr<WebViewManager> guest_manager_;
   std::unique_ptr<AtomPermissionManager> permission_manager_;
   std::string user_agent_;
+  bool use_cache_;
 
   // Managed by brightray::BrowserContext.
   AtomNetworkDelegate* network_delegate_;
