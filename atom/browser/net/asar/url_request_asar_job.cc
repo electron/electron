@@ -145,7 +145,7 @@ int URLRequestAsarJob::ReadRawData(net::IOBuffer* dest, int dest_size) {
                          dest_size,
                          base::Bind(&URLRequestAsarJob::DidRead,
                                     weak_ptr_factory_.GetWeakPtr(),
-                                    make_scoped_refptr(dest)));
+                                    base::RetainedRef(dest)));
   if (rv >= 0) {
     remaining_bytes_ -= rv;
     DCHECK_GE(remaining_bytes_, 0);

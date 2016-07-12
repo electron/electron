@@ -31,6 +31,8 @@ class AtomContentClient : public brightray::ContentClient {
       std::vector<content::PepperPluginInfo>* plugins) override;
   void AddServiceWorkerSchemes(
       std::set<std::string>* service_worker_schemes) override;
+  void AddSecureSchemesAndOrigins(std::set<std::string>* schemes,
+                                          std::set<GURL>* origins) override;
 
  private:
   DISALLOW_COPY_AND_ASSIGN(AtomContentClient);

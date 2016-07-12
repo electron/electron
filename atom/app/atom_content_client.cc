@@ -23,6 +23,11 @@
 #include "ui/base/l10n/l10n_util.h"
 #include "url/url_constants.h"
 
+#if defined(ENABLE_EXTENSIONS)
+#include "content/public/common/url_constants.h"
+#include "extensions/common/constants.h"
+#endif
+
 #if defined(WIDEVINE_CDM_AVAILABLE) && defined(ENABLE_PEPPER_CDMS)
 #include "chrome/common/widevine_cdm_constants.h"
 #endif
@@ -184,6 +189,16 @@ void AtomContentClient::AddAdditionalSchemes(
   standard_schemes->push_back({"chrome-extension", url::SCHEME_WITHOUT_PORT});
 }
 
+void AtomContentClient::AddSecureSchemesAndOrigins(
+    std::set<std::string>* schemes,
+    std::set<GURL>* origins) {
+#if defined(ENABLE_EXTENSIONS)
+  schemes->insert(content::kChromeUIScheme);
+  schemes->insert(extensions::kExtensionScheme);
+  schemes->insert(extensions::kExtensionResourceScheme);
+#endif
+}
+
 void AtomContentClient::AddPepperPlugins(
     std::vector<content::PepperPluginInfo>* plugins) {
   AddPepperFlashFromCommandLine(plugins);
@@ -202,6 +217,9 @@ void AtomContentClient::AddServiceWorkerSchemes(
       service_worker_schemes->insert(scheme);
   }
   service_worker_schemes->insert(url::kFileScheme);
+#if defined(ENABLE_EXTENSIONS)
+  service_worker_schemes->insert(extensions::kExtensionScheme);
+#endif
 }
 
 }  // namespace atom

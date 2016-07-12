@@ -7,6 +7,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "atom/renderer/guest_view_container.h"
 #include "native_mate/handle.h"
@@ -47,6 +48,7 @@ class WebFrame : public mate::Wrappable<WebFrame> {
 
   void SetZoomLevelLimits(double min_level, double max_level);
 
+  v8::Local<v8::Value> GetContentWindow(int guest_instance_id);
   v8::Local<v8::Value> RegisterEmbedderCustomElement(
       const base::string16& name, v8::Local<v8::Object> options);
   void RegisterElementResizeCallback(
@@ -66,6 +68,10 @@ class WebFrame : public mate::Wrappable<WebFrame> {
 
   // Editing.
   void InsertText(const std::string& text);
+
+  // Set values in the main world global namespace
+  void SetGlobal(const std::vector<v8::Local<v8::String>> path,
+                  v8::Local<v8::Object> value);
 
   // Excecuting scripts.
   void ExecuteJavaScript(const base::string16& code, mate::Arguments* args);

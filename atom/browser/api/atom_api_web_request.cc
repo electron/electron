@@ -4,13 +4,13 @@
 
 #include "atom/browser/api/atom_api_web_request.h"
 
-#include <string>
-
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/net/atom_network_delegate.h"
 #include "atom/common/native_mate_converters/callback.h"
+#include "atom/common/native_mate_converters/file_path_converter.h"
+#include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/net_converter.h"
-#include "atom/common/native_mate_converters/value_converter.h"
+#include "base/files/file_path.h"
 #include "content/public/browser/browser_thread.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
@@ -20,13 +20,34 @@ using content::BrowserThread;
 namespace mate {
 
 template<>
-struct Converter<extensions::URLPattern> {
+struct Converter<URLPattern> {
   static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
-                     extensions::URLPattern* out) {
+                     URLPattern* out) {
     std::string pattern;
     if (!ConvertFromV8(isolate, val, &pattern))
       return false;
-    return out->Parse(pattern) == extensions::URLPattern::PARSE_SUCCESS;
+    return out->Parse(pattern) == URLPattern::PARSE_SUCCESS;
+  }
+};
+
+template<>
+struct Converter<net::URLFetcher::RequestType> {
+  static bool FromV8(v8::Isolate* isolate, v8::Handle<v8::Value> val,
+                     net::URLFetcher::RequestType* out) {
+    std::string type = base::ToLowerASCII(V8ToString(val));
+    if (type == "get")
+      *out = net::URLFetcher::RequestType::GET;
+    else if (type == "post")
+      *out = net::URLFetcher::RequestType::POST;
+    else if (type == "head")
+      *out = net::URLFetcher::RequestType::HEAD;
+    else if (type == "delete_request")
+      *out = net::URLFetcher::RequestType::DELETE_REQUEST;
+    else if (type == "put")
+      *out = net::URLFetcher::RequestType::PUT;
+    else if (type == "patch")
+      *out = net::URLFetcher::RequestType::PATCH;
+    return true;
   }
 };
 
@@ -43,6 +64,59 @@ WebRequest::WebRequest(v8::Isolate* isolate,
 }
 
 WebRequest::~WebRequest() {
+}
+
+void WebRequest::OnURLFetchComplete(
+    const net::URLFetcher* source) {
+  std::string response;
+  source->GetResponseAsString(&response);
+  int response_code = source->GetResponseCode();
+  net::HttpResponseHeaders* headers = source->GetResponseHeaders();
+  FetchCallback callback = fetchers_[source];
+  callback.Run(response_code, response, headers);
+  fetchers_.erase(source);
+}
+
+void WebRequest::Fetch(mate::Arguments* args) {
+  GURL url;
+  if (!args->GetNext(&url)) {
+    args->ThrowError();
+    return;
+  }
+
+  net::URLFetcher::RequestType request_type;
+  if (!args->GetNext(&request_type)) {
+    args->ThrowError();
+    return;
+  }
+
+  net::HttpRequestHeaders* headers = nullptr;
+  if (!args->GetNext(&headers)) {
+    args->ThrowError();
+    return;
+  }
+
+  base::FilePath path;
+  if (!args->GetNext(&path)) {
+    // ignore optional argument
+  }
+
+  FetchCallback callback;
+  if (!args->GetNext(&callback)) {
+    args->ThrowError();
+    return;
+  }
+
+  net::URLFetcher* fetcher = net::URLFetcher::Create(url, request_type, this)
+      .release();
+  fetcher->SetRequestContext(browser_context_->GetRequestContext());
+  fetcher->SetExtraRequestHeaders(headers->ToString());
+  if (!path.empty())
+    fetcher->SaveResponseToFileAtPath(
+        path,
+        BrowserThread::GetMessageLoopProxyForThread(BrowserThread::FILE));
+  fetcher->Start();
+  fetchers_[fetcher] = FetchCallback(callback);
 }
 
 template<AtomNetworkDelegate::SimpleEvent type>
@@ -114,7 +188,9 @@ void WebRequest::BuildPrototype(v8::Isolate* isolate,
                     AtomNetworkDelegate::kOnCompleted>)
       .SetMethod("onErrorOccurred",
                  &WebRequest::SetSimpleListener<
-                    AtomNetworkDelegate::kOnErrorOccurred>);
+                    AtomNetworkDelegate::kOnErrorOccurred>)
+      .SetMethod("fetch",
+                 &WebRequest::Fetch);
 }
 
 }  // namespace api

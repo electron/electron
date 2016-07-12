@@ -19,13 +19,9 @@
 #include "net/http/http_response_headers.h"
 #include "content/public/browser/resource_request_info.h"
 
-namespace extensions {
-class URLPattern;
-}
-
 namespace atom {
 
-using URLPatterns = std::set<extensions::URLPattern>;
+using URLPatterns = std::set<URLPattern>;
 
 const char* ResourceTypeToString(content::ResourceType type);
 

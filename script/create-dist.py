@@ -42,6 +42,10 @@ TARGET_BINARIES = {
     'content_resources_200_percent.pak',
     'ui_resources_200_percent.pak',
     'views_resources_200_percent.pak',
+    'extensions_resources.pak',
+    'extensions_renderer_resources.pak',
+    'extensions_api_resources.pak',
+    'atom_resources.pak',
     'xinput1_3.dll',
     'natives_blob.bin',
     'snapshot_blob.bin',
@@ -58,6 +62,10 @@ TARGET_BINARIES = {
     'views_resources_200_percent.pak',
     'natives_blob.bin',
     'snapshot_blob.bin',
+    'extensions_resources.pak',
+    'extensions_renderer_resources.pak',
+    'extensions_api_resources.pak',
+    'atom_resources.pak',
   ],
 }
 TARGET_DIRECTORIES = {

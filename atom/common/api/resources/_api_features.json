@@ -1,0 +1,72 @@
+{
+  "ipc": {
+    "channel": "stable",
+    "extension_types": ["extension", "legacy_packaged_app"],
+    "contexts": [
+      "content_script",
+      "blessed_extension"
+    ]
+  },
+  "webFrame": {
+    "channel": "stable",
+    "extension_types": ["extension", "legacy_packaged_app"],
+    "contexts": [
+      "content_script",
+      "blessed_extension"
+    ]
+  },
+  "tabs": {
+    "channel": "stable",
+    "extension_types": ["extension", "legacy_packaged_app"],
+    "contexts": ["blessed_extension"]
+  },
+  "browserAction": {
+    "channel": "stable",
+    "contexts": ["blessed_extension"]
+  },
+  "contextMenus": {
+    "channel": "stable",
+    "contexts": ["blessed_extension"]
+  },
+  "privacy": {
+    "channel": "stable",
+    "contexts": ["blessed_extension"]
+  },
+  "windows": {
+    "channel": "stable",
+    "contexts": ["blessed_extension"]
+  },
+  "extension": {
+    "channel": "stable",
+    "extension_types": ["extension", "legacy_packaged_app"],
+    "contexts": ["blessed_extension"]
+  },
+  "extension.getURL": {
+    "contexts": ["blessed_extension", "unblessed_extension", "content_script"]
+  },
+  "extension.getViews": {
+    "channel": "stable",
+    "contexts": ["blessed_extension"],
+    "extension_types": ["extension", "legacy_packaged_app"]
+  },
+  "extension.inIncognitoContext": {
+    "contexts": ["blessed_extension", "unblessed_extension", "content_script"]
+  },
+  "extension.lastError": {
+    "contexts": ["blessed_extension", "unblessed_extension", "content_script"]
+  },
+  "extension.onRequest": {
+    "contexts": ["blessed_extension", "unblessed_extension", "content_script"]
+  },
+  "extension.sendRequest": {
+    "contexts": ["blessed_extension", "unblessed_extension", "content_script"]
+  },
+  "contentSettings": {
+    "dependencies": ["permission:contentSettings"],
+    "contexts": ["blessed_extension"]
+  },
+  "contentSettings.get": {
+    "dependencies": ["permission:contentSettings"],
+    "contexts": ["blessed_extension", "content_script"]
+  }
+}

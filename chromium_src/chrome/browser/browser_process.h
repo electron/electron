@@ -15,6 +15,12 @@
 
 #include "base/macros.h"
 
+#if defined(ENABLE_EXTENSIONS)
+namespace extensions {
+class ExtensionsBrowserClient;
+}
+#endif
+
 namespace printing {
 class PrintJobManager;
 }
@@ -30,9 +36,14 @@ class BrowserProcess {
 
   printing::PrintJobManager* print_job_manager();
 
+  bool IsShuttingDown();
+  void StartTearDown();
  private:
   std::unique_ptr<printing::PrintJobManager> print_job_manager_;
-
+#if defined(ENABLE_EXTENSIONS)
+  std::unique_ptr<extensions::ExtensionsBrowserClient> extensions_browser_client_;
+#endif
+  bool tearing_down_;
   DISALLOW_COPY_AND_ASSIGN(BrowserProcess);
 };
 

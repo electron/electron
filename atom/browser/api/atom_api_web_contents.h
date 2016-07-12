@@ -12,6 +12,8 @@
 #include "atom/browser/api/save_page_handler.h"
 #include "atom/browser/api/trackable_object.h"
 #include "atom/browser/common_web_contents_delegate.h"
+#include "atom/common/options_switches.h"
+#include "content/common/view_messages.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "content/public/common/favicon_url.h"
 #include "content/common/cursors/webcursor.h"
@@ -27,9 +29,27 @@ class InspectableWebContents;
 }
 
 namespace mate {
+
+template<>
+struct Converter<WindowOpenDisposition> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   WindowOpenDisposition val) {
+    std::string disposition = "other";
+    switch (val) {
+      case CURRENT_TAB: disposition = "default"; break;
+      case NEW_FOREGROUND_TAB: disposition = "foreground-tab"; break;
+      case NEW_BACKGROUND_TAB: disposition = "background-tab"; break;
+      case NEW_POPUP: disposition = "new-popup"; break;
+      case NEW_WINDOW: disposition = "new-window"; break;
+      default: disposition = "other"; break;
+    }
+    return mate::ConvertToV8(isolate, disposition);
+  }
+};
+
 class Arguments;
 class Dictionary;
-}
+}  // namespace mate
 
 namespace atom {
 
@@ -63,6 +83,12 @@ class WebContents : public mate::TrackableObject<WebContents>,
   static mate::Handle<WebContents> Create(
       v8::Isolate* isolate, const mate::Dictionary& options);
 
+  // Create a new WebContents with CreateParams
+  static mate::Handle<WebContents> CreateWithParams(
+      v8::Isolate* isolate,
+      const mate::Dictionary& options,
+      const content::WebContents::CreateParams& params);
+
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
 
@@ -70,6 +96,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   Type GetType() const;
   bool Equal(const WebContents* web_contents) const;
   void LoadURL(const GURL& url, const mate::Dictionary& options);
+  void Reload(bool ignore_cache);
   void DownloadURL(const GURL& url);
   GURL GetURL() const;
   base::string16 GetTitle() const;
@@ -81,6 +108,17 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void GoBack();
   void GoForward();
   void GoToOffset(int offset);
+  bool CanGoToOffset(int offset) const;
+  bool CanGoBack() const;
+  bool CanGoForward() const;
+  void GoToIndex(int index);
+  const GURL& GetURLAtIndex(int index) const;
+  int GetCurrentEntryIndex() const;
+  int GetLastCommittedEntryIndex() const;
+  int GetEntryCount() const;
+  const std::string& GetWebRTCIPHandlingPolicy() const;
+  void SetWebRTCIPHandlingPolicy(const std::string webrtc_ip_handling_policy);
+  void ShowRepostFormWarningDialog(content::WebContents* source) override;
   bool IsCrashed() const;
   void SetUserAgent(const std::string& user_agent, mate::Arguments* args);
   std::string GetUserAgent();
@@ -102,6 +140,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void SetAudioMuted(bool muted);
   bool IsAudioMuted();
   void Print(mate::Arguments* args);
+  int GetContentWindowId();
+  void ResumeLoadingCreatedWebContents();
 
   // Print current page as PDF.
   void PrintToPDF(const base::DictionaryValue& setting,
@@ -132,6 +172,13 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void Focus();
   bool IsFocused() const;
   void TabTraverse(bool reverse);
+  void SetActive(bool active);
+
+#if defined(ENABLE_EXTENSIONS)
+  bool ExecuteScriptInTab(const std::string code_string,
+      const std::string extension_id,
+      const mate::Dictionary& options);
+#endif
 
   // Send messages to browser.
   bool SendIPCMessage(bool all_frames,
@@ -190,7 +237,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
  protected:
   WebContents(v8::Isolate* isolate, content::WebContents* web_contents);
-  WebContents(v8::Isolate* isolate, const mate::Dictionary& options);
+  WebContents(v8::Isolate* isolate, const mate::Dictionary& options,
+              const content::WebContents::CreateParams* create_params = NULL);
   ~WebContents();
 
   // content::WebContentsDelegate:
@@ -199,6 +247,29 @@ class WebContents : public mate::TrackableObject<WebContents>,
                            const base::string16& message,
                            int32_t line_no,
                            const base::string16& source_id) override;
+  bool ShouldCreateWebContents(
+      content::WebContents* web_contents,
+      int32_t route_id,
+      int32_t main_frame_route_id,
+      int32_t main_frame_widget_route_id,
+      WindowContainerType window_container_type,
+      const std::string& frame_name,
+      const GURL& target_url,
+      const std::string& partition_id,
+      content::SessionStorageNamespace* session_storage_namespace) override;
+  void WebContentsCreated(content::WebContents* source_contents,
+                          int opener_render_frame_id,
+                          const std::string& frame_name,
+                          const GURL& target_url,
+                          content::WebContents* new_contents) override;
+  void AddNewContents(content::WebContents* source,
+                      content::WebContents* new_contents,
+                      WindowOpenDisposition disposition,
+                      const gfx::Rect& initial_rect,
+                      bool user_gesture,
+                      bool* was_blocked) override;
+  bool ShouldResumeRequestsForCreatedWindow() override;
+  bool IsAttached();
   content::WebContents* OpenURLFromTab(
       content::WebContents* source,
       const content::OpenURLParams& params) override;
@@ -210,6 +281,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void CloseContents(content::WebContents* source) override;
   void ActivateContents(content::WebContents* contents) override;
   void UpdateTargetURL(content::WebContents* source, const GURL& url) override;
+  void LoadProgressChanged(content::WebContents* source,
+                                   double progress) override;
   bool IsPopupOrPanel(const content::WebContents* source) const override;
   void HandleKeyboardEvent(
       content::WebContents* source,
@@ -239,9 +312,9 @@ class WebContents : public mate::TrackableObject<WebContents>,
       content::WebContents* web_contents,
       bool user_gesture,
       bool last_unlocked_by_target) override;
-  std::unique_ptr<content::BluetoothChooser> RunBluetoothChooser(
-      content::RenderFrameHost* frame,
-      const content::BluetoothChooser::EventHandler& handler) override;
+  // std::unique_ptr<content::BluetoothChooser> RunBluetoothChooser(
+  //     content::RenderFrameHost* frame,
+  //     const content::BluetoothChooser::EventHandler& handler) override;
 
   // content::WebContentsObserver:
   void BeforeUnloadFired(const base::TimeTicks& proceed_time) override;
@@ -249,6 +322,15 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void RenderProcessGone(base::TerminationStatus status) override;
   void DocumentLoadedInFrame(
       content::RenderFrameHost* render_frame_host) override;
+  void DidStartProvisionalLoadForFrame(
+      content::RenderFrameHost* render_frame_host,
+      const GURL& validated_url,
+      bool is_error_page,
+      bool is_iframe_srcdoc) override;
+  void DidCommitProvisionalLoadForFrame(
+      content::RenderFrameHost* render_frame_host,
+      const GURL& url,
+      ui::PageTransition transition_type) override;
   void DidFinishLoad(content::RenderFrameHost* render_frame_host,
                      const GURL& validated_url) override;
   void DidFailLoad(content::RenderFrameHost* render_frame_host,
@@ -320,8 +402,17 @@ class WebContents : public mate::TrackableObject<WebContents>,
   // Request id used for findInPage request.
   uint32_t request_id_;
 
+  // When a new tab is created asynchronously, stores the LoadURLParams
+  // needed to continue loading the page once the tab is ready.
+  std::unique_ptr<content::NavigationController::LoadURLParams>
+    delayed_load_url_params_;
+
   // Whether background throttling is disabled.
   bool background_throttling_;
+
+  // When a new tab is created asynchronously, stores the OpenURLParams needed
+  // to continue loading the page once the tab is ready.
+  scoped_ptr<content::OpenURLParams> delayed_open_url_params_;
 
   DISALLOW_COPY_AND_ASSIGN(WebContents);
 };

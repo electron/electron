@@ -1,0 +1,18 @@
+{
+  "contentSettings": {
+    "channel": "stable",
+    "extension_types": ["extension", "legacy_packaged_app"]
+  },
+  "nativeMessaging": {
+    "channel": "stable",
+    "extension_types": [
+      "extension", "legacy_packaged_app", "platform_app"
+    ]
+  },
+  "management": [
+    {
+      "channel": "stable",
+      "extension_types": ["extension", "legacy_packaged_app"]
+    }
+  ]
+}

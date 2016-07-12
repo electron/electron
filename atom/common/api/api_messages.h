@@ -41,3 +41,7 @@ IPC_MESSAGE_ROUTED1(AtomViewHostMsg_UpdateDraggableRegions,
 
 // Update renderer process preferences.
 IPC_MESSAGE_CONTROL1(AtomMsg_UpdatePreferences, base::ListValue)
+
+// Update renderer content settings
+IPC_MESSAGE_CONTROL1(AtomMsg_UpdateContentSettings, base::DictionaryValue)
+

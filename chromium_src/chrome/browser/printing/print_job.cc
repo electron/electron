@@ -130,7 +130,7 @@ void PrintJob::StartPrinting() {
   // Real work is done in PrintJobWorker::StartPrinting().
   worker_->PostTask(FROM_HERE,
                     base::Bind(&HoldRefCallback,
-                               make_scoped_refptr(this),
+                               base::RetainedRef(this),
                                base::Bind(&PrintJobWorker::StartPrinting,
                                           base::Unretained(worker_.get()),
                                           base::RetainedRef(document_))));
@@ -332,7 +332,7 @@ void PrintJob::UpdatePrintedDocument(PrintedDocument* new_document) {
     // Sync the document with the worker.
     worker_->PostTask(FROM_HERE,
                       base::Bind(&HoldRefCallback,
-                                 make_scoped_refptr(this),
+                                 base::RetainedRef(this),
                                  base::Bind(&PrintJobWorker::OnDocumentChanged,
                                             base::Unretained(worker_.get()),
                                             base::RetainedRef(document_))));

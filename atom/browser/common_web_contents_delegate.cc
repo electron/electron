@@ -31,6 +31,15 @@
 #include "content/public/browser/security_style_explanations.h"
 #include "storage/browser/fileapi/isolated_context.h"
 
+#if defined(ENABLE_EXTENSIONS)
+#include "atom/browser/api/atom_api_window.h"
+#include "atom/browser/extensions/tab_helper.h"
+#include "chrome/browser/chrome_notification_types.h"
+#include "content/public/browser/notification_service.h"
+#include "content/public/browser/notification_source.h"
+#include "extensions/browser/api/extensions_api_client.h"
+#endif
+
 using content::BrowserThread;
 using security_state::SecurityStateModel;
 
@@ -185,6 +194,11 @@ void CommonWebContentsDelegate::InitWithWebContents(
   // Create InspectableWebContents.
   web_contents_.reset(brightray::InspectableWebContents::Create(web_contents));
   web_contents_->SetDelegate(this);
+
+#if defined(ENABLE_EXTENSIONS)
+  extensions::ExtensionsAPIClient::Get()->
+      AttachWebContentsHelpers(web_contents);
+#endif
 }
 
 void CommonWebContentsDelegate::SetOwnerWindow(NativeWindow* owner_window) {
@@ -196,6 +210,22 @@ void CommonWebContentsDelegate::SetOwnerWindow(
   owner_window_ = owner_window->GetWeakPtr();
   NativeWindowRelay* relay = new NativeWindowRelay(owner_window_);
   web_contents->SetUserData(relay->key, relay);
+#if defined(ENABLE_EXTENSIONS)
+  auto tab_helper = extensions::TabHelper::FromWebContents(web_contents);
+  if (!tab_helper)
+    return;
+
+  int32_t id =
+      api::Window::TrackableObject::GetIDFromWrappedClass(owner_window);
+  if (id > 0) {
+    tab_helper->SetWindowId(id);
+
+    content::NotificationService::current()->Notify(
+      chrome::NOTIFICATION_TAB_PARENTED,
+      content::Source<content::WebContents>(web_contents),
+      content::NotificationService::NoDetails());
+  }
+#endif
 }
 
 void CommonWebContentsDelegate::DestroyWebContents() {
@@ -219,13 +249,23 @@ content::WebContents* CommonWebContentsDelegate::OpenURLFromTab(
     content::WebContents* source,
     const content::OpenURLParams& params) {
   content::NavigationController::LoadURLParams load_url_params(params.url);
+  load_url_params.source_site_instance = params.source_site_instance;
   load_url_params.referrer = params.referrer;
+  load_url_params.frame_tree_node_id = params.frame_tree_node_id;
+  load_url_params.redirect_chain = params.redirect_chain;
   load_url_params.transition_type = params.transition;
   load_url_params.extra_headers = params.extra_headers;
   load_url_params.should_replace_current_entry =
-      params.should_replace_current_entry;
+    params.should_replace_current_entry;
   load_url_params.is_renderer_initiated = params.is_renderer_initiated;
-  load_url_params.should_clear_history_list = true;
+
+  // Only allows the browser-initiated navigation to use POST.
+  if (params.uses_post && !params.is_renderer_initiated) {
+    load_url_params.load_type =
+      content::NavigationController::LOAD_TYPE_BROWSER_INITIATED_HTTP_POST;
+    load_url_params.browser_initiated_post_data =
+      params.browser_initiated_post_data;
+  }
 
   source->GetController().LoadURLWithParams(load_url_params);
   return source;

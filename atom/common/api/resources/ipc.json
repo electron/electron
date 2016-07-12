@@ -1,0 +1,72 @@
+[
+  {
+    "namespace": "ipc",
+    "description": "none",
+    "functions": [
+      {
+        "name": "send",
+        "nocompile": true,
+        "type": "function",
+        "description": "none",
+        "allowAmbiguousOptionalArguments": true,
+        "parameters": [
+          {
+            "type": "string",
+            "name": "message"
+          }
+        ],
+        "returns": {
+          "type": "object"
+        }
+      },
+      {
+        "name": "sendSync",
+        "nocompile": true,
+        "type": "function",
+        "description": "none",
+        "allowAmbiguousOptionalArguments": true,
+        "parameters": [
+          {
+            "type": "string",
+            "name": "message"
+          }
+        ],
+        "returns": {
+          "type": "object"
+        }
+      },
+      {
+        "name": "sendToHost",
+        "nocompile": true,
+        "type": "function",
+        "description": "none",
+        "allowAmbiguousOptionalArguments": true,
+        "parameters": [
+          {
+            "type": "string",
+            "name": "message"
+          }
+        ],
+        "returns": {
+          "type": "object"
+        }
+      },
+      {
+        "name": "on",
+        "nocompile": true,
+        "type": "function",
+        "description": "none",
+        "allowAmbiguousOptionalArguments": true,
+        "parameters": [
+          {
+            "type": "string",
+            "name": "message"
+          }
+        ],
+        "returns": {
+          "type": "object"
+        }
+      }
+    ]
+  }
+]

@@ -30,11 +30,17 @@
 #include "base/files/file_util.h"
 #include "base/path_service.h"
 #include "base/strings/string_util.h"
+#include "brave/browser/brave_content_browser_client.h"
 #include "brightray/browser/brightray_paths.h"
+#include "chrome/browser/chrome_notification_types.h"
 #include "chrome/common/chrome_paths.h"
 #include "content/public/browser/browser_accessibility_state.h"
+#include "content/public/browser/browser_thread.h"
 #include "content/public/browser/client_certificate_delegate.h"
 #include "content/public/browser/gpu_data_manager.h"
+#include "content/public/browser/navigation_details.h"
+#include "content/public/browser/notification_service.h"
+#include "content/public/browser/notification_types.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/common/content_switches.h"
 #include "native_mate/dictionary.h"
@@ -45,6 +51,10 @@
 
 #if defined(OS_WIN)
 #include "base/strings/utf_string_conversions.h"
+#endif
+
+#if defined(ENABLE_EXTENSIONS)
+#include "atom/browser/api/atom_api_extension.h"
 #endif
 
 using atom::Browser;
@@ -224,15 +234,42 @@ int ImportIntoCertStore(
 }  // namespace
 
 App::App(v8::Isolate* isolate) {
-  static_cast<AtomBrowserClient*>(AtomBrowserClient::Get())->set_delegate(this);
+  static_cast<brave::BraveContentBrowserClient*>(
+    brave::BraveContentBrowserClient::Get())->set_delegate(this);
   Browser::Get()->AddObserver(this);
   content::GpuDataManager::GetInstance()->AddObserver(this);
   Init(isolate);
+  registrar_.Add(this,
+                 content::NOTIFICATION_WEB_CONTENTS_RENDER_VIEW_HOST_CREATED,
+                 content::NotificationService::AllBrowserContextsAndSources());
+}
+
+// TOOD(bridiver) - move this to api_extension?
+void App::Observe(
+    int type, const content::NotificationSource& source,
+    const content::NotificationDetails& details) {
+  switch (type) {
+    case content::NOTIFICATION_WEB_CONTENTS_RENDER_VIEW_HOST_CREATED: {
+#if defined(ENABLE_EXTENSIONS)
+      content::WebContents* web_contents =
+          content::Source<content::WebContents>(source).ptr();
+      auto browser_context = web_contents->GetBrowserContext();
+      auto url = web_contents->GetURL();
+
+      // make sure background pages get a webcontents
+      // api wrapper so they can communicate via IPC
+      if (Extension::IsBackgroundPageUrl(url, browser_context)) {
+        WebContents::CreateFrom(isolate(), web_contents);
+      }
+#endif
+      break;
+    }
+  }
 }
 
 App::~App() {
-  static_cast<AtomBrowserClient*>(AtomBrowserClient::Get())->set_delegate(
-      nullptr);
+  static_cast<brave::BraveContentBrowserClient*>(
+    brave::BraveContentBrowserClient::Get())->set_delegate(nullptr);
   Browser::Get()->RemoveObserver(this);
   content::GpuDataManager::GetInstance()->RemoveObserver(this);
 }
@@ -301,11 +338,46 @@ void App::OnLogin(LoginHandler* login_handler,
       WebContents::CreateFrom(isolate(), login_handler->GetWebContents()),
       request_details,
       login_handler->auth_info(),
-      base::Bind(&PassLoginInformation, make_scoped_refptr(login_handler)));
+      base::Bind(&PassLoginInformation, base::RetainedRef(login_handler)));
 
   // Default behavior is to always cancel the auth.
   if (!prevent_default)
     login_handler->CancelAuth();
+}
+
+bool App::CanCreateWindow(const GURL& opener_url,
+                     const GURL& opener_top_level_frame_url,
+                     const GURL& source_origin,
+                     WindowContainerType container_type,
+                     const std::string& frame_name,
+                     const GURL& target_url,
+                     const content::Referrer& referrer,
+                     WindowOpenDisposition disposition,
+                     const blink::WebWindowFeatures& features,
+                     bool user_gesture,
+                     bool opener_suppressed,
+                     content::ResourceContext* context,
+                     int render_process_id,
+                     int opener_render_view_id,
+                     int opener_render_frame_id,
+                     bool* no_javascript_access) {
+  // just a reminder that we are on the IO thread
+  // and need to be careful about v8 isolate usage
+  DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
+
+  *no_javascript_access = false;
+
+  if (container_type == WINDOW_CONTAINER_TYPE_BACKGROUND) {
+    return true;
+  }
+
+  // this will override allowpopups we need some way to integerate
+  // it so we can turn popup blocking off if desired
+  if (!user_gesture) {
+    return false;
+  }
+
+  return true;
 }
 
 void App::OnCreateWindow(const GURL& target_url,
@@ -410,7 +482,13 @@ void App::SetDesktopName(const std::string& desktop_name) {
 }
 
 std::string App::GetLocale() {
-  return l10n_util::GetApplicationLocale("");
+  return static_cast<brave::BraveContentBrowserClient*>(
+      brave::BraveContentBrowserClient::Get())->GetApplicationLocale();
+}
+
+void App::SetLocale(std::string locale) {
+  static_cast<brave::BraveContentBrowserClient*>(
+      brave::BraveContentBrowserClient::Get())->SetApplicationLocale(locale);
 }
 
 bool App::MakeSingleInstance(
@@ -580,6 +658,7 @@ void App::BuildPrototype(
       .SetMethod("getPath", &App::GetPath)
       .SetMethod("setDesktopName", &App::SetDesktopName)
       .SetMethod("getLocale", &App::GetLocale)
+      .SetMethod("setLocale", &App::SetLocale)
 #if defined(USE_NSS_CERTS)
       .SetMethod("importCertificate", &App::ImportCertificate)
 #endif

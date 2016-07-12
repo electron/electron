@@ -58,7 +58,7 @@ int AtomCertVerifier::Verify(
 
   BrowserThread::PostTask(
       BrowserThread::UI, FROM_HERE,
-      base::Bind(verify_proc_, hostname, make_scoped_refptr(cert),
+      base::Bind(verify_proc_, hostname, base::RetainedRef(cert),
                  base::Bind(OnResult, verify_result, callback)));
   return net::ERR_IO_PENDING;
 }

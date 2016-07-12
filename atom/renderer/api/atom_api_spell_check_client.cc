@@ -150,8 +150,15 @@ bool SpellCheckClient::SpellCheckWord(const base::string16& word_to_check) {
 
   v8::HandleScope handle_scope(isolate_);
   v8::Local<v8::Value> word = mate::ConvertToV8(isolate_, word_to_check);
+  v8::TryCatch try_catch(isolate_);
   v8::Local<v8::Value> result = spell_check_.NewHandle()->Call(
       provider_.NewHandle(), 1, &word);
+
+  // this can happen if the page navigates away
+  // while the spell check provider is running
+  if (try_catch.HasCaught() || try_catch.HasTerminated()) {
+    return true;
+  }
 
   if (result->IsBoolean())
     return result->BooleanValue();

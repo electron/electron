@@ -247,6 +247,7 @@
             'msvs_disabled_warnings': [
               # unreferenced local function has been removed.
               4505,
+              4456,
             ],
           }],  # OS=="win"
         ],
@@ -260,6 +261,7 @@
       4201,  # (uv.h) nameless struct/union
       4267,  # conversion from 'size_t' to 'int', possible loss of data
       4302,  # (atldlgs.h) 'type cast': truncation from 'LPCTSTR' to 'WORD'
+      4456,
       4458,  # (atldlgs.h) declaration of 'dwCommonButtons' hides class member
       4503,  # decorated name length exceeded, name was truncated
       4800,  # (v8.h) forcing value to bool 'true' or 'false'

@@ -12,7 +12,6 @@
 #include "atom/renderer/api/atom_api_spell_check_client.h"
 #include "base/memory/memory_pressure_listener.h"
 #include "content/public/renderer/render_frame.h"
-#include "content/public/renderer/render_view.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 #include "third_party/WebKit/public/web/WebCache.h"
@@ -21,7 +20,10 @@
 #include "third_party/WebKit/public/web/WebScriptExecutionCallback.h"
 #include "third_party/WebKit/public/web/WebScriptSource.h"
 #include "third_party/WebKit/public/web/WebSecurityPolicy.h"
+#include "third_party/WebKit/public/web/WebKit.h"
 #include "third_party/WebKit/public/web/WebView.h"
+#include "content/renderer/browser_plugin/browser_plugin_manager.h"
+#include "content/renderer/browser_plugin/browser_plugin.h"
 
 #include "atom/common/node_includes.h"
 
@@ -71,7 +73,6 @@ void WebFrame::SetName(const std::string& name) {
 
 double WebFrame::SetZoomLevel(double level) {
   double ret = web_frame_->view()->setZoomLevel(level);
-  mate::EmitEvent(isolate(), GetWrapper(), "zoom-level-changed", ret);
   return ret;
 }
 
@@ -92,6 +93,21 @@ void WebFrame::SetZoomLevelLimits(double min_level, double max_level) {
   web_frame_->view()->setDefaultPageScaleLimits(min_level, max_level);
 }
 
+v8::Local<v8::Value> WebFrame::GetContentWindow(int content_window_id) {
+  content::RenderView* view =
+    content::RenderView::FromRoutingID(content_window_id);
+  blink::WebFrame* frame = view->GetWebView()->mainFrame();
+
+  v8::Local<v8::Value> window;
+  if (frame->isWebLocalFrame()) {
+    window = frame->mainWorldScriptContext()->Global();
+  } else {
+    window =
+        frame->toWebRemoteFrame()->deprecatedMainWorldScriptContext()->Global();
+  }
+  return window;
+}
+
 v8::Local<v8::Value> WebFrame::RegisterEmbedderCustomElement(
     const base::string16& name, v8::Local<v8::Object> options) {
   blink::WebExceptionCode c = 0;
@@ -107,7 +123,23 @@ void WebFrame::RegisterElementResizeCallback(
 }
 
 void WebFrame::AttachGuest(int id) {
+  // This is a workaround for a strange issue on windows with background tabs
+  // libchromiumcontent doesn't appear to be making the check for
+  // params.disposition == NEW_BACKGROUND_TAB in WebContentsImpl
+  // This results in the BrowserPluginGuest trying to access the native
+  // window before it's actually ready.
+  //
+  // It's also possible that the guest is being treated as
+  // visible because the "embedder", which is the same for all tabs
+  // in the window, is always visible.
+  //
+  // This hack works around the issue by always
+  // marking it as hidden while attaching
+  content::BrowserPluginManager::Get()->GetBrowserPlugin(id)->
+    updateVisibility(false);
   content::RenderFrame::FromWebFrame(web_frame_)->AttachGuest(id);
+  content::BrowserPluginManager::Get()->GetBrowserPlugin(id)->
+    updateVisibility(true);
 }
 
 void WebFrame::SetSpellCheckProvider(mate::Arguments* args,
@@ -152,8 +184,36 @@ void WebFrame::InsertText(const std::string& text) {
   web_frame_->insertText(blink::WebString::fromUTF8(text));
 }
 
+//
+void WebFrame::SetGlobal(const std::vector<v8::Local<v8::String>> path,
+                          v8::Local<v8::Object> value) {
+  v8::Isolate* isolate = blink::mainThreadIsolate();
+  v8::Isolate::Scope isolate_scope(isolate);
+  v8::Local<v8::Context> context = web_frame_->mainWorldScriptContext();
+  v8::Context::Scope context_scope(context);
+
+  v8::Handle<v8::Object> obj;
+  for (std::vector<v8::Handle<v8::String>>::const_iterator iter =
+             path.begin();
+         iter != path.end();
+         ++iter) {
+    if (iter == path.begin()) {
+      obj = v8::Handle<v8::Object>::Cast(context->Global()->Get(*iter));
+    } else if (iter == path.end()-1) {
+      obj->Set(*iter, value);
+    } else {
+      obj = v8::Handle<v8::Object>::Cast(obj->Get(*iter));
+    }
+  }
+}
+
 void WebFrame::ExecuteJavaScript(const base::string16& code,
                                  mate::Arguments* args) {
+  v8::Isolate* isolate = blink::mainThreadIsolate();
+  v8::Isolate::Scope isolate_scope(isolate);
+  v8::Local<v8::Context> context = web_frame_->mainWorldScriptContext();
+  v8::Context::Scope context_scope(context);
+
   bool has_user_gesture = false;
   args->GetNext(&has_user_gesture);
   ScriptExecutionCallback::CompletionCallback completion_callback;
@@ -210,8 +270,10 @@ void WebFrame::BuildPrototype(
                  &WebFrame::RegisterURLSchemeAsPrivileged)
       .SetMethod("insertText", &WebFrame::InsertText)
       .SetMethod("executeJavaScript", &WebFrame::ExecuteJavaScript)
+      .SetMethod("setGlobal", &WebFrame::SetGlobal)
       .SetMethod("getResourceUsage", &WebFrame::GetResourceUsage)
-      .SetMethod("clearCache", &WebFrame::ClearCache);
+      .SetMethod("clearCache", &WebFrame::ClearCache)
+      .SetMethod("getContentWindow", &WebFrame::GetContentWindow);
 }
 
 }  // namespace api

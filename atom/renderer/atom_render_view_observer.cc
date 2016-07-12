@@ -10,6 +10,7 @@
 // Put this before event_emitter_caller.h to have string16 support.
 #include "atom/common/native_mate_converters/string16_converter.h"
 
+#include "atom/browser/web_contents_preferences.h"
 #include "atom/common/api/api_messages.h"
 #include "atom/common/api/event_emitter_caller.h"
 #include "atom/common/native_mate_converters/value_converter.h"
@@ -142,6 +143,10 @@ void AtomRenderViewObserver::DraggableRegionsChanged(blink::WebFrame* frame) {
 }
 
 bool AtomRenderViewObserver::OnMessageReceived(const IPC::Message& message) {
+  // only handle messages for node renderers and non-extension processes
+  if (!WebContentsPreferences::run_node())
+    return false;
+
   bool handled = true;
   IPC_BEGIN_MESSAGE_MAP(AtomRenderViewObserver, message)
     IPC_MESSAGE_HANDLER(AtomViewMsg_Message, OnBrowserMessage)

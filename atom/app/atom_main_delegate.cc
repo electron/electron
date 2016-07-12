@@ -6,6 +6,7 @@
 
 #include <string>
 #include <iostream>
+#include <vector>
 
 #include "atom/app/atom_content_client.h"
 #include "atom/browser/atom_browser_client.h"
@@ -17,10 +18,17 @@
 #include "base/debug/stack_trace.h"
 #include "base/environment.h"
 #include "base/logging.h"
+#include "base/path_service.h"
 #include "chrome/common/chrome_paths.h"
 #include "content/public/common/content_switches.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/base/resource/resource_bundle.h"
+#include "ui/base/ui_base_switches.h"
+
+#if defined(ENABLE_EXTENSIONS)
+#include "brave/browser/brave_content_browser_client.h"
+#include "brave/renderer/brave_content_renderer_client.h"
+#endif
 
 namespace atom {
 
@@ -29,7 +37,7 @@ namespace {
 const char* kRelauncherProcess = "relauncher";
 
 bool IsBrowserProcess(base::CommandLine* cmd) {
-  std::string process_type = cmd->GetSwitchValueASCII(switches::kProcessType);
+  std::string process_type = cmd->GetSwitchValueASCII(::switches::kProcessType);
   return process_type.empty();
 }
 
@@ -72,7 +80,7 @@ bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
 
   // Only enable logging when --enable-logging is specified.
   std::unique_ptr<base::Environment> env(base::Environment::Create());
-  if (!command_line->HasSwitch(switches::kEnableLogging) &&
+  if (!command_line->HasSwitch(::switches::kEnableLogging) &&
       !env->HasVar("ELECTRON_ENABLE_LOGGING")) {
     settings.logging_dest = logging::LOG_NONE;
     logging::SetMinLogLevel(logging::LOG_NUM_SEVERITIES);
@@ -105,9 +113,56 @@ bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
   return brightray::MainDelegate::BasicStartupComplete(exit_code);
 }
 
+void LoadExtensionResources() {
+  // create a shared resource bundle if one does not already exist
+  if (!ui::ResourceBundle::HasSharedInstance()) {
+    std::string locale = base::CommandLine::ForCurrentProcess()->
+                              GetSwitchValueASCII(::switches::kLang);
+    ui::ResourceBundle::InitSharedInstanceWithLocale(
+      locale, nullptr, ui::ResourceBundle::DO_NOT_LOAD_COMMON_RESOURCES);
+  }
+
+  std::vector<base::FilePath> pak_resource_paths;
+#if defined(OS_MACOSX)
+  pak_resource_paths.push_back(
+            GetResourcesPakFilePathByName("extensions_resources"));
+  pak_resource_paths.push_back(
+            GetResourcesPakFilePathByName("extensions_renderer_resources"));
+  pak_resource_paths.push_back(
+            GetResourcesPakFilePathByName("atom_resources"));
+  pak_resource_paths.push_back(
+            GetResourcesPakFilePathByName("extensions_api_resources"));
+#else
+  base::FilePath pak_dir;
+  PathService::Get(base::DIR_MODULE, &pak_dir);
+
+  // Append returns a new FilePath
+  pak_resource_paths.push_back(
+    pak_dir.Append(FILE_PATH_LITERAL("extensions_resources.pak")));
+  pak_resource_paths.push_back(
+    pak_dir.Append(FILE_PATH_LITERAL("extensions_renderer_resources.pak")));
+  pak_resource_paths.push_back(
+    pak_dir.Append(FILE_PATH_LITERAL("atom_resources.pak")));
+  pak_resource_paths.push_back(
+    pak_dir.Append(FILE_PATH_LITERAL("extensions_api_resources.pak")));
+#endif
+
+  ui::ResourceBundle& bundle = ui::ResourceBundle::GetSharedInstance();
+
+  for (std::vector<base::FilePath>::const_iterator
+      path = pak_resource_paths.begin();
+      path != pak_resource_paths.end();
+      ++path) {
+    bundle.AddDataPackFromPath(*path, ui::GetSupportedScaleFactors()[0]);
+  }
+}
+
 void AtomMainDelegate::PreSandboxStartup() {
   brightray::MainDelegate::PreSandboxStartup();
 
+#if defined(ENABLE_EXTENSIONS)
+  LoadExtensionResources();
+#endif
   // Set google API key.
   std::unique_ptr<base::Environment> env(base::Environment::Create());
   if (!env->HasVar("GOOGLE_API_KEY"))
@@ -115,17 +170,20 @@ void AtomMainDelegate::PreSandboxStartup() {
 
   auto command_line = base::CommandLine::ForCurrentProcess();
   std::string process_type = command_line->GetSwitchValueASCII(
-      switches::kProcessType);
+      ::switches::kProcessType);
 
   // Only append arguments for browser process.
   if (!IsBrowserProcess(command_line))
     return;
 
-  // Disable renderer sandbox for most of node's functions.
-  command_line->AppendSwitch(switches::kNoSandbox);
+#if defined(OS_LINUX)
+  // always disable the sandbox on linux for now
+  // https://github.com/brave/browser-laptop/issues/715
+  command_line->AppendSwitch(::switches::kNoSandbox);
+#endif
 
   // Allow file:// URIs to read other file:// URIs by default.
-  command_line->AppendSwitch(switches::kAllowFileAccessFromFiles);
+  command_line->AppendSwitch(::switches::kAllowFileAccessFromFiles);
 
 #if defined(OS_MACOSX)
   // Enable AVFoundation.
@@ -134,13 +192,21 @@ void AtomMainDelegate::PreSandboxStartup() {
 }
 
 content::ContentBrowserClient* AtomMainDelegate::CreateContentBrowserClient() {
-  browser_client_.reset(new AtomBrowserClient);
+#if defined(ENABLE_EXTENSIONS)
+  browser_client_.reset(new brave::BraveContentBrowserClient);
+#else
+  renderer_client_.reset(new AtomBrowserClient);
+#endif
   return browser_client_.get();
 }
 
 content::ContentRendererClient*
     AtomMainDelegate::CreateContentRendererClient() {
+#if defined(ENABLE_EXTENSIONS)
+  renderer_client_.reset(new brave::BraveContentRendererClient);
+#else
   renderer_client_.reset(new AtomRendererClient);
+#endif
   return renderer_client_.get();
 }
 

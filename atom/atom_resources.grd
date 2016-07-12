@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<grit latest_public_release="0" current_release="1">
+  <outputs>
+    <output filename="grit/atom_resources.h" type="rc_header">
+      <emit emit_type='prepend'></emit>
+    </output>
+    <output filename="atom_resources.pak" type="data_package" />
+  </outputs>
+  <release seq="1">
+    <includes>
+      <include name="IDR_ATOM_API_FEATURES" file="common\api\resources\_api_features.json" type="BINDATA" />
+
+      <include name="IDR_ATOM_PERMISSION_FEATURES" file="common\api\resources\_permission_features.json" type="BINDATA" />
+
+      <include name="IDR_ATOM_BROWSER_ACTION_BINDINGS_JS" file="common\api\resources\browser_action_bindings.js" type="BINDATA" />
+
+      <include name="IDR_ATOM_CONTENT_SETTINGS_BINDINGS_JS" file="common\api\resources\content_settings_bindings.js" type="BINDATA" />
+
+      <include name="IDR_ATOM_CONTEXT_MENUS_BINDINGS_JS" file="common\api\resources\context_menus_bindings.js" type="BINDATA" />
+
+      <include name="IDR_ATOM_EVENT_EMITTER_JS" file="common\api\resources\event_emitter.js" type="BINDATA" />
+      <include name="IDR_ATOM_IPC_INTERNAL_JS" file="common\api\resources\ipc_utils.js" type="BINDATA" />
+
+      <include name="IDR_ATOM_EXTENSION_API_JSON_IPC" file="common\api\resources\ipc.json" type="BINDATA" />
+
+      <include name="IDR_ATOM_EXTENSION_API_JSON_WEB_FRAME" file="common\api\resources\web_frame.json" type="BINDATA" />
+
+      <include name="IDR_ATOM_IPC_BINDINGS_JS" file="common\api\resources\ipc_bindings.js" type="BINDATA" />
+
+      <include name="IDR_ATOM_PRIVACY_BINDINGS_JS" file="common\api\resources\privacy_bindings.js" type="BINDATA" />
+
+      <include name="IDR_ATOM_TABS_BINDINGS_JS" file="common\api\resources\tabs_bindings.js" type="BINDATA" />
+
+      <include name="IDR_ATOM_WEB_FRAME_BINDINGS_JS" file="common\api\resources\web_frame_bindings.js" type="BINDATA" />
+
+      <include name="IDR_ATOM_WINDOWS_BINDINGS_JS" file="common\api\resources\windows_bindings.js" type="BINDATA" />
+    </includes>
+  </release>
+</grit>

@@ -12,6 +12,8 @@
 
 namespace atom {
 
+base::FilePath GetResourcesPakFilePathByName(const std::string resource_name);
+
 class AtomMainDelegate : public brightray::MainDelegate {
  public:
   AtomMainDelegate();

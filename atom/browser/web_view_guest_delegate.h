@@ -5,6 +5,7 @@
 #ifndef ATOM_BROWSER_WEB_VIEW_GUEST_DELEGATE_H_
 #define ATOM_BROWSER_WEB_VIEW_GUEST_DELEGATE_H_
 
+#include "content/public/browser/web_contents.h"
 #include "content/public/browser/browser_plugin_guest_delegate.h"
 #include "content/public/browser/web_contents_observer.h"
 
@@ -36,6 +37,9 @@ class WebViewGuestDelegate : public content::BrowserPluginGuestDelegate,
   WebViewGuestDelegate();
   ~WebViewGuestDelegate() override;
 
+  content::WebContents* CreateNewGuestWindow(
+      const content::WebContents::CreateParams& create_params) override;
+
   void Initialize(api::WebContents* api_web_contents);
 
   // Called when the WebContents is going to be destroyed.
@@ -45,13 +49,28 @@ class WebViewGuestDelegate : public content::BrowserPluginGuestDelegate,
   // and normal sizes.
   void SetSize(const SetSizeParams& params);
 
+  // Returns the routing ID of the guest proxy in the owner's renderer process.
+  // This value is only valid after attachment or first navigation.
+  int proxy_routing_id() const { return guest_proxy_routing_id_; }
+
+  bool IsAttached();
+
  protected:
   // content::WebContentsObserver:
   void DidFinishNavigation(
       content::NavigationHandle* navigation_handle) override;
+  void DidStartProvisionalLoadForFrame(
+      content::RenderFrameHost* render_frame_host,
+      const GURL& validated_url,
+      bool is_error_page,
+      bool is_iframe_srcdoc) override;
+  void DidCommitProvisionalLoadForFrame(
+      content::RenderFrameHost* render_frame_host,
+      const GURL& url, ui::PageTransition transition_type) override;
 
   // content::BrowserPluginGuestDelegate:
   void DidAttach(int guest_proxy_routing_id) final;
+  void DidDetach() final;
   content::WebContents* GetOwnerWebContents() const final;
   void GuestSizeChanged(const gfx::Size& new_size) final;
   void SetGuestHost(content::GuestHost* guest_host) final;
@@ -59,6 +78,8 @@ class WebViewGuestDelegate : public content::BrowserPluginGuestDelegate,
                   int element_instance_id,
                   bool is_full_page_plugin,
                   const base::Closure& completion_callback) final;
+
+
 
  private:
   // This method is invoked when the contents auto-resized to give the container
@@ -101,6 +122,8 @@ class WebViewGuestDelegate : public content::BrowserPluginGuestDelegate,
   bool is_full_page_plugin_;
 
   api::WebContents* api_web_contents_;
+
+  int guest_proxy_routing_id_;
 
   DISALLOW_COPY_AND_ASSIGN(WebViewGuestDelegate);
 };

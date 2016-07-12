@@ -11,10 +11,9 @@
 #include "atom/browser/native_window.h"
 #include "atom/browser/web_view_manager.h"
 #include "atom/common/native_mate_converters/value_converter.h"
-#include "atom/common/options_switches.h"
-#include "base/command_line.h"
 #include "base/strings/string_number_conversions.h"
 #include "content/public/browser/render_process_host.h"
+#include "content/public/browser/render_view_host.h"
 #include "content/public/common/content_switches.h"
 #include "content/public/common/web_preferences.h"
 #include "native_mate/dictionary.h"
@@ -67,7 +66,16 @@ content::WebContents* WebContentsPreferences::GetWebContentsFromProcessID(
     if (web_contents->GetRenderProcessHost()->GetID() == process_id)
       return web_contents;
   }
-  return nullptr;
+  // Also try to get the webview from RenderViewHost::FromID because
+  // not all web contents have preferences created (devtools).
+  content::WebContents* web_contents = nullptr;
+  // The default routing id of WebContents.
+  int kDefaultRoutingID = 1;
+  auto rvh = content::RenderViewHost::FromID(process_id, kDefaultRoutingID);
+  if (rvh) {
+    web_contents = content::WebContents::FromRenderViewHost(rvh);
+  }
+  return web_contents;
 }
 
 // static

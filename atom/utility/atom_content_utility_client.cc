@@ -20,6 +20,9 @@
 #include "chrome/utility/printing_handler_win.h"
 #endif
 
+#if defined(ENABLE_EXTENSIONS)
+#include "atom/common/extensions/atom_extensions_client.h"
+#endif
 
 namespace {
 
@@ -38,6 +41,10 @@ AtomContentUtilityClient::AtomContentUtilityClient()
     : filter_messages_(false) {
 #if defined(OS_WIN)
   handlers_.push_back(new printing::PrintingHandlerWin());
+#endif
+#if defined(ENABLE_EXTENSIONS)
+  extensions::ExtensionsClient::Set(
+      extensions::AtomExtensionsClient::GetInstance());
 #endif
 }
 

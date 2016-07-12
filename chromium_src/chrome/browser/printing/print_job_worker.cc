@@ -131,7 +131,7 @@ void PrintJobWorker::GetSettings(
   if (ask_user_for_settings) {
     BrowserThread::PostTask(
         BrowserThread::UI, FROM_HERE,
-        base::Bind(&HoldRefCallback, make_scoped_refptr(owner_),
+        base::Bind(&HoldRefCallback, base::RetainedRef(owner_),
                    base::Bind(&PrintJobWorker::GetSettingsWithUI,
                               base::Unretained(this),
                               document_page_count,
@@ -139,7 +139,7 @@ void PrintJobWorker::GetSettings(
   } else {
     BrowserThread::PostTask(
         BrowserThread::UI, FROM_HERE,
-        base::Bind(&HoldRefCallback, make_scoped_refptr(owner_),
+        base::Bind(&HoldRefCallback, base::RetainedRef(owner_),
                    base::Bind(&PrintJobWorker::UseDefaultSettings,
                               base::Unretained(this))));
   }
@@ -153,7 +153,7 @@ void PrintJobWorker::SetSettings(
       BrowserThread::UI,
       FROM_HERE,
       base::Bind(&HoldRefCallback,
-                 make_scoped_refptr(owner_),
+                 base::RetainedRef(owner_),
                  base::Bind(&PrintJobWorker::UpdatePrintSettings,
                             base::Unretained(this),
                             base::Passed(&new_settings))));
@@ -180,7 +180,7 @@ void PrintJobWorker::GetSettingsDone(PrintingContext::Result result) {
   // PrintJob will create the new PrintedDocument.
   owner_->PostTask(FROM_HERE,
                    base::Bind(&PrintJobWorkerOwner::GetSettingsDone,
-                              make_scoped_refptr(owner_),
+                              base::RetainedRef(owner_),
                               printing_context_->settings(),
                               result));
 }
@@ -200,7 +200,7 @@ void PrintJobWorker::GetSettingsWithUI(
 void PrintJobWorker::GetSettingsWithUIDone(PrintingContext::Result result) {
   PostTask(FROM_HERE,
            base::Bind(&HoldRefCallback,
-                      make_scoped_refptr(owner_),
+                      base::RetainedRef(owner_),
                       base::Bind(&PrintJobWorker::GetSettingsDone,
                                  base::Unretained(this),
                                  result)));
