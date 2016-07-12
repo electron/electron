@@ -11,6 +11,7 @@
 #include "atom/browser/api/atom_api_download_item.h"
 #include "atom/browser/api/atom_api_protocol.h"
 #include "atom/browser/api/atom_api_web_request.h"
+#include "atom/browser/browser.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/atom_permission_manager.h"
@@ -576,11 +577,21 @@ void SetWrapSession(const WrapSessionCallback& callback) {
 
 namespace {
 
+v8::Local<v8::Value> FromPartition(
+    const std::string& partition, bool in_memory, mate::Arguments* args) {
+  if (!atom::Browser::Get()->is_ready()) {
+    args->ThrowError("Session can only be received when app is ready");
+    return v8::Null(args->isolate());
+  }
+  return atom::api::Session::FromPartition(
+      args->isolate(), partition, in_memory).ToV8();
+}
+
 void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
-  dict.SetMethod("fromPartition", &atom::api::Session::FromPartition);
+  dict.SetMethod("fromPartition", &FromPartition);
   dict.SetMethod("_setWrapSession", &atom::api::SetWrapSession);
 }
 
