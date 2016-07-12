@@ -44,4 +44,6 @@ __4. 다중 컨텍스트__
 Node의 [다중 컨텍스트](http://strongloop.com/strongblog/whats-new-node-js-v0-12-multiple-context-execution/)를
 사용하기 때문에 Electron은 웹 페이지의 새로운 JavaScript 컨텍스트를 생성하지 않습니다.
 
+참고: NW.js는 0.13 버전부터 선택적으로 다중 컨텍스트를 지원합니다.
+
 [node-bindings]: https://github.com/electron/electron/tree/master/atom/common

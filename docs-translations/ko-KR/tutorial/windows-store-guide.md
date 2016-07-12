@@ -61,18 +61,14 @@ npm install -g electron-windows-store
 │   ├── am.pak
 │   ├── ar.pak
 │   ├── [...]
-├── msvcp120.dll
-├── msvcr120.dll
 ├── natives_blob.bin
 ├── node.dll
-├── pdf.dll
 ├── resources
 │   ├── app
 │   └── atom.asar
 ├── snapshot_blob.bin
 ├── squirrel.exe
 ├── ui_resources_200_percent.pak
-├── vccorlib120.dll
 └── xinput1_3.dll
 ```
 

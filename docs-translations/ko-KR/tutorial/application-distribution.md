@@ -110,8 +110,8 @@ MyApp.app/Contents
 애플리케이션을 일일이 수동으로 패키지로 만드는 대신, 서드 파티 패키징 툴을 사용하며
 이러한 작업을 자동화 시킬 수 있습니다:
 
-* [electron-packager](https://github.com/maxogden/electron-packager)
-* [electron-builder](https://github.com/loopline-systems/electron-builder)
+* [electron-builder](https://github.com/electron-userland/electron-builder)
+* [electron-packager](https://github.com/electron-userland/electron-packager)
 
 ## Electron 소스 코드를 다시 빌드하여 리소스 수정하기
 
