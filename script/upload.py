@@ -16,7 +16,7 @@ from lib.util import electron_gyp, execute, get_electron_version, \
 from lib.github import GitHub
 
 
-ELECTRON_REPO = 'electron/electron'
+ELECTRON_REPO = 'brave/electron'
 ELECTRON_VERSION = get_electron_version()
 
 PROJECT_NAME = electron_gyp()['project_name%']

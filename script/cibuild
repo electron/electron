@@ -62,7 +62,7 @@ def main():
 
   # CI's npm is not reliable.
   npm = 'npm.cmd' if PLATFORM == 'win32' else 'npm'
-  execute([npm, 'install', 'npm@2.12.1'])
+  execute([npm, 'install', 'npm@3.3.12'])
 
   log_versions()
 
@@ -72,11 +72,7 @@ def main():
     args += ['--dev']
   run_script('bootstrap.py', args)
 
-  if PLATFORM != 'win32':
-    sys.stderr.write('\nRunning `npm run lint`\n')
-    sys.stderr.flush()
-    execute([npm, 'run', 'lint'])
-    run_script('pylint.py')
+  run_script('cpplint.py')
   if is_release:
     run_script('build.py', ['-c', 'R'])
     run_script('create-dist.py')
