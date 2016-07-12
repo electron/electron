@@ -19,9 +19,11 @@ class WebViewManager;
 class AtomBrowserContext : public brightray::BrowserContext {
  public:
   // Get or create the BrowserContext according to its |partition| and
-  // |in_memory|.
+  // |in_memory|. The |options| will be passed to constructor when there is no
+  // existing BrowserContext.
   static scoped_refptr<AtomBrowserContext> From(
-      const std::string& partition, bool in_memory);
+      const std::string& partition, bool in_memory,
+      const base::DictionaryValue& options = base::DictionaryValue());
 
   void SetUserAgent(const std::string& user_agent);
 

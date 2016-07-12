@@ -8,6 +8,7 @@
 #include <string>
 
 #include "atom/browser/api/trackable_object.h"
+#include "base/values.h"
 #include "content/public/browser/download_manager.h"
 #include "native_mate/handle.h"
 #include "net/base/completion_callback.h"
@@ -49,7 +50,8 @@ class Session: public mate::TrackableObject<Session>,
 
   // Gets the Session of |partition|.
   static mate::Handle<Session> FromPartition(
-      v8::Isolate* isolate, const std::string& partition);
+      v8::Isolate* isolate, const std::string& partition,
+      const base::DictionaryValue& options = base::DictionaryValue());
 
   AtomBrowserContext* browser_context() const { return browser_context_.get(); }
 

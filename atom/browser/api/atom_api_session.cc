@@ -21,6 +21,7 @@
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/net_converter.h"
+#include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/node_includes.h"
 #include "base/files/file_path.h"
 #include "base/guid.h"
@@ -536,16 +537,17 @@ mate::Handle<Session> Session::CreateFrom(
 
 // static
 mate::Handle<Session> Session::FromPartition(
-    v8::Isolate* isolate, const std::string& partition) {
+    v8::Isolate* isolate, const std::string& partition,
+    const base::DictionaryValue& options) {
   scoped_refptr<AtomBrowserContext> browser_context;
   if (partition.empty()) {
-    browser_context = AtomBrowserContext::From("", false);
+    browser_context = AtomBrowserContext::From("", false, options);
   } else if (base::StartsWith(partition, kPersistPrefix,
                               base::CompareCase::SENSITIVE)) {
     std::string name = partition.substr(8);
-    browser_context = AtomBrowserContext::From(name, false);
+    browser_context = AtomBrowserContext::From(name, false, options);
   } else {
-    browser_context = AtomBrowserContext::From(partition, true);
+    browser_context = AtomBrowserContext::From(partition, true, options);
   }
   return CreateFrom(isolate, browser_context.get());
 }
@@ -593,7 +595,10 @@ v8::Local<v8::Value> FromPartition(
     args->ThrowError("Session can only be received when app is ready");
     return v8::Null(args->isolate());
   }
-  return atom::api::Session::FromPartition(args->isolate(), partition).ToV8();
+  base::DictionaryValue options;
+  args->GetNext(&options);
+  return atom::api::Session::FromPartition(
+      args->isolate(), partition, options).ToV8();
 }
 
 void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
