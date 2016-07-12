@@ -44,6 +44,58 @@ describe('ipc module', function () {
       comparePaths(path.normalize(remote.process.mainModule.filename), path.resolve(__dirname, 'static', 'main.js'))
       comparePaths(path.normalize(remote.process.mainModule.paths[0]), path.resolve(__dirname, 'static', 'node_modules'))
     })
+
+    it('handles circular references in arrays and objects', function () {
+      var a = remote.require(path.join(fixtures, 'module', 'circular.js'))
+
+      var arrayA = ['foo']
+      var arrayB = [arrayA, 'bar']
+      arrayA.push(arrayB)
+      assert.deepEqual(a.returnArgs(arrayA, arrayB), [
+        ['foo', [null, 'bar']],
+        [['foo', null], 'bar']
+      ])
+
+      var objectA = {foo: 'bar'}
+      var objectB = {baz: objectA}
+      objectA.objectB = objectB
+      assert.deepEqual(a.returnArgs(objectA, objectB), [
+        {foo: 'bar', objectB: {baz: null}},
+        {baz: {foo: 'bar', objectB: null}}
+      ])
+
+      arrayA = [1, 2, 3]
+      assert.deepEqual(a.returnArgs({foo: arrayA}, {bar: arrayA}), [
+        {foo: [1, 2, 3]},
+        {bar: [1, 2, 3]}
+      ])
+
+      objectA = {foo: 'bar'}
+      assert.deepEqual(a.returnArgs({foo: objectA}, {bar: objectA}), [
+        {foo: {foo: 'bar'}},
+        {bar: {foo: 'bar'}}
+      ])
+
+      arrayA = []
+      arrayA.push(arrayA)
+      assert.deepEqual(a.returnArgs(arrayA), [
+        [null]
+      ])
+
+      objectA = {}
+      objectA.foo = objectA
+      objectA.bar = 'baz'
+      assert.deepEqual(a.returnArgs(objectA), [
+        {foo: null, bar: 'baz'}
+      ])
+
+      objectA = {}
+      objectA.foo = {bar: objectA}
+      objectA.bar = 'baz'
+      assert.deepEqual(a.returnArgs(objectA), [
+        {foo: {bar: null}, bar: 'baz'}
+      ])
+    })
   })
 
   describe('remote.createFunctionWithReturnValue', function () {
