@@ -29,6 +29,8 @@ Tray::Tray(v8::Isolate* isolate, mate::Handle<NativeImage> image)
 }
 
 Tray::~Tray() {
+  // Destroy the native tray in next tick.
+  base::MessageLoop::current()->DeleteSoon(FROM_HERE, tray_icon_.release());
 }
 
 // static
