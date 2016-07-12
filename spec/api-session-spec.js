@@ -3,12 +3,8 @@ const http = require('http')
 const path = require('path')
 const fs = require('fs')
 
-const ipcRenderer = require('electron').ipcRenderer
-const remote = require('electron').remote
-
-const ipcMain = remote.ipcMain
-const session = remote.session
-const BrowserWindow = remote.BrowserWindow
+const {ipcRenderer, remote} = require('electron')
+const {ipcMain, session, webContents, BrowserWindow} = remote
 
 describe('session module', function () {
   this.timeout(10000)
@@ -38,6 +34,23 @@ describe('session module', function () {
   describe('session.defaultSession', function () {
     it('returns the default session', function () {
       assert.equal(session.defaultSession, session.fromPartition(''))
+    })
+  })
+
+  describe('session.fromPartition(partition, options)', function () {
+    it('returns existing session with same partition', function () {
+      assert.equal(session.fromPartition('test'), session.fromPartition('test'))
+    })
+
+    it('created session is ref-counted', function () {
+      const partition = 'test2'
+      const userAgent = 'test-agent'
+      const ses1 = session.fromPartition(partition)
+      ses1.setUserAgent(userAgent)
+      assert.equal(ses1.getUserAgent(), userAgent)
+      ses1.destroy()
+      const ses2 = session.fromPartition(partition)
+      assert.notEqual(ses2.getUserAgent(), userAgent)
     })
   })
 
