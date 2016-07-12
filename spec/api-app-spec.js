@@ -300,7 +300,7 @@ describe('app module', function () {
   })
 
   describe('app.get/setLoginItemSettings API', function () {
-    if (process.platform !== 'darwin') return
+    if (process.platform === 'linux') return
 
     beforeEach(function () {
       app.setLoginItemSettings({openAtLogin: false})
@@ -323,7 +323,7 @@ describe('app module', function () {
       app.setLoginItemSettings({openAtLogin: true, openAsHidden: true})
       assert.deepEqual(app.getLoginItemSettings(), {
         openAtLogin: true,
-        openAsHidden: true,
+        openAsHidden: process.platform === 'darwin', // Only available on macOS
         wasOpenedAtLogin: false,
         wasOpenedAsHidden: false,
         restoreState: false
