@@ -537,18 +537,17 @@ mate::Handle<Session> Session::CreateFrom(
 // static
 mate::Handle<Session> Session::FromPartition(
     v8::Isolate* isolate, const std::string& partition) {
-  scoped_refptr<brightray::BrowserContext> browser_context;
+  scoped_refptr<AtomBrowserContext> browser_context;
   if (partition.empty()) {
-    browser_context = brightray::BrowserContext::From("", false);
+    browser_context = AtomBrowserContext::From("", false);
   } else if (base::StartsWith(partition, kPersistPrefix,
                               base::CompareCase::SENSITIVE)) {
     std::string name = partition.substr(8);
-    browser_context = brightray::BrowserContext::From(name, false);
+    browser_context = AtomBrowserContext::From(name, false);
   } else {
-    browser_context = brightray::BrowserContext::From(partition, true);
+    browser_context = AtomBrowserContext::From(partition, true);
   }
-  return CreateFrom(
-      isolate, static_cast<AtomBrowserContext*>(browser_context.get()));
+  return CreateFrom(isolate, browser_context.get());
 }
 
 // static

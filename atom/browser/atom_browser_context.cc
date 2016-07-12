@@ -190,14 +190,14 @@ void AtomBrowserContext::RegisterPrefs(PrefRegistrySimple* pref_registry) {
   pref_registry->RegisterDictionaryPref(prefs::kDevToolsFileSystemPaths);
 }
 
-}  // namespace atom
-
-namespace brightray {
-
 // static
-scoped_refptr<BrowserContext> BrowserContext::Create(
+scoped_refptr<AtomBrowserContext> AtomBrowserContext::From(
     const std::string& partition, bool in_memory) {
-  return make_scoped_refptr(new atom::AtomBrowserContext(partition, in_memory));
+  auto browser_context = brightray::BrowserContext::Get(partition, in_memory);
+  if (browser_context)
+    return static_cast<AtomBrowserContext*>(browser_context.get());
+
+  return new AtomBrowserContext(partition, in_memory);
 }
 
-}  // namespace brightray
+}  // namespace atom
