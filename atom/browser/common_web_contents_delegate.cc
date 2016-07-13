@@ -8,6 +8,8 @@
 #include <string>
 #include <vector>
 
+#include <iostream>
+
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_javascript_dialog_manager.h"
 #include "atom/browser/atom_security_state_model_client.h"
@@ -30,6 +32,10 @@
 #include "content/public/browser/security_style_explanation.h"
 #include "content/public/browser/security_style_explanations.h"
 #include "storage/browser/fileapi/isolated_context.h"
+
+#include "content/browser/web_contents/web_contents_impl.h"
+#include "atom/browser/osr_window.h"
+#include "atom/browser/native_window_views.h"
 
 using content::BrowserThread;
 using security_state::SecurityStateModel;
@@ -182,18 +188,26 @@ void CommonWebContentsDelegate::InitWithWebContents(
   printing::PrintViewManagerBasic::CreateForWebContents(web_contents);
   printing::PrintPreviewMessageHandler::CreateForWebContents(web_contents);
 
+  content::WebContentsImpl* impl =
+    reinterpret_cast<content::WebContentsImpl*>(web_contents);
+
+  impl->SetView(new OffScreenWebContentsView);
+  std::cout << "end" << std::endl;
   // Create InspectableWebContents.
-  web_contents_.reset(brightray::InspectableWebContents::Create(web_contents));
-  web_contents_->SetDelegate(this);
+  /*web_contents_.reset(brightray::InspectableWebContents::Create(web_contents));
+  web_contents_->SetDelegate(this);*/
+  std::cout << "end" << std::endl;
 }
 
 void CommonWebContentsDelegate::SetOwnerWindow(NativeWindow* owner_window) {
+  std::cout << "SetOwnerWindow" << std::endl;
   SetOwnerWindow(GetWebContents(), owner_window);
 }
 
 void CommonWebContentsDelegate::SetOwnerWindow(
     content::WebContents* web_contents, NativeWindow* owner_window) {
   owner_window_ = owner_window->GetWeakPtr();
+
   NativeWindowRelay* relay = new NativeWindowRelay(owner_window_);
   web_contents->SetUserData(relay->key, relay);
 }

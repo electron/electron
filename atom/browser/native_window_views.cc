@@ -339,9 +339,12 @@ void NativeWindowViews::RenderViewCreated(
       render_view_host->GetProcess()->GetID(),
       render_view_host->GetRoutingID());
   if (impl) {
-    ui::Layer* layer = widget()->GetCompositor()->root_layer();
-    ui::Compositor* compositor_ = widget()->GetCompositor();
-    compositor_->RequestNewOutputSurface();
+    //auto win = new OffScreenWindow(impl);
+
+    /*auto view = widget()->GetContentsView();
+    view->AcquireLayer();
+    view->SetLayer(win->DelegatedFrameHostGetLayer());
+    win->DelegatedFrameHostGetLayer()->set_delegate(view);*/
   }
 }
 
