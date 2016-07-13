@@ -287,6 +287,21 @@ describe('browser-window module', function () {
     })
   })
 
+  describe('BrowserWindow.setMinimum/MaximumSize(width, height)', function () {
+    it('sets the maximum and minimum size of the window', function () {
+      assert.deepEqual(w.getMinimumSize(), [0, 0])
+      assert.deepEqual(w.getMaximumSize(), [0, 0])
+
+      w.setMinimumSize(100, 100)
+      assert.deepEqual(w.getMinimumSize(), [100, 100])
+      assert.deepEqual(w.getMaximumSize(), [0, 0])
+
+      w.setMaximumSize(900, 600)
+      assert.deepEqual(w.getMinimumSize(), [100, 100])
+      assert.deepEqual(w.getMaximumSize(), [900, 600])
+    })
+  })
+
   describe('BrowserWindow.setAspectRatio(ratio)', function () {
     it('resets the behaviour when passing in 0', function (done) {
       var size = [300, 400]
