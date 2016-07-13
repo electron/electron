@@ -262,11 +262,11 @@ Get an array containing the menu's items.
 ## Notes on macOS Application Menu
 
 macOS has a completely different style of application menu from Windows and
-Linux, here are some notes on making your app's menu more native-like.
+Linux. Here are some notes on making your app's menu more native-like.
 
 ### Standard Menus
 
-On macOS there are many system defined standard menus, like the `Services` and
+On macOS there are many system-defined standard menus, like the `Services` and
 `Windows` menus. To make your menu a standard menu, you should set your menu's
 `role` to one of following and Electron will recognize them and make them
 become standard menus:
@@ -283,15 +283,16 @@ action, you should set the `role` attribute of the menu item.
 
 ### Main Menu's Name
 
-On macOS the label of application menu's first item is always your app's name,
-no matter what label you set. To change it you have to change your app's name
-by modifying your app bundle's `Info.plist` file. See [About Information
-Property List Files][AboutInformationPropertyListFiles] for more information.
+On macOS the label of the application menu's first item is always your app's
+name, no matter what label you set. To change it, modify your app bundle's
+`Info.plist` file. See
+[About Information Property List Files][AboutInformationPropertyListFiles]
+for more information.
 
 ## Setting Menu for Specific Browser Window (*Linux* *Windows*)
 
 The [`setMenu` method][setMenu] of browser windows can set the menu of certain
-browser window.
+browser windows.
 
 ## Menu Item Position
 
