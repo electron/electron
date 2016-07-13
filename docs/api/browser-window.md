@@ -291,7 +291,7 @@ Returns:
 * `event` Event
 
 Emitted when the document changed its title, calling `event.preventDefault()`
-would prevent the native window's title to change.
+will prevent the native window's title from changing.
 
 #### Event: 'close'
 
@@ -323,7 +323,7 @@ window.onbeforeunload = (e) => {
 #### Event: 'closed'
 
 Emitted when the window is closed. After you have received this event you should
-remove the reference to the window and avoid using it anymore.
+remove the reference to the window and avoid using it any more.
 
 #### Event: 'unresponsive'
 
@@ -352,7 +352,7 @@ Emitted when the window is hidden.
 #### Event: 'ready-to-show'
 
 Emitted when the web page has been rendered and window can be displayed without
-visual flash.
+a visual flash.
 
 #### Event: 'maximize'
 
@@ -360,7 +360,7 @@ Emitted when window is maximized.
 
 #### Event: 'unmaximize'
 
-Emitted when the window exits from maximized state.
+Emitted when the window exits from a maximized state.
 
 #### Event: 'minimize'
 
@@ -368,15 +368,15 @@ Emitted when the window is minimized.
 
 #### Event: 'restore'
 
-Emitted when the window is restored from minimized state.
+Emitted when the window is restored from a minimized state.
 
 #### Event: 'resize'
 
-Emitted when the window is getting resized.
+Emitted when the window is being resized.
 
 #### Event: 'move'
 
-Emitted when the window is getting moved to a new position.
+Emitted when the window is being moved to a new position.
 
 __Note__: On macOS this event is just an alias of `moved`.
 
@@ -386,19 +386,19 @@ Emitted once when the window is moved to a new position.
 
 #### Event: 'enter-full-screen'
 
-Emitted when the window enters full screen state.
+Emitted when the window enters a full-screen state.
 
 #### Event: 'leave-full-screen'
 
-Emitted when the window leaves full screen state.
+Emitted when the window leaves a full-screen state.
 
 #### Event: 'enter-html-full-screen'
 
-Emitted when the window enters full screen state triggered by html api.
+Emitted when the window enters a full-screen state triggered by HTML API.
 
 #### Event: 'leave-html-full-screen'
 
-Emitted when the window leaves full screen state triggered by html api.
+Emitted when the window leaves a full-screen state triggered by HTML API.
 
 #### Event: 'app-command' _Windows_
 
@@ -411,8 +411,8 @@ Emitted when an [App Command](https://msdn.microsoft.com/en-us/library/windows/d
 is invoked. These are typically related to keyboard media keys or browser
 commands, as well as the "Back" button built into some mice on Windows.
 
-Commands are lowercased with underscores replaced with hyphens and the
-`APPCOMMAND_` prefix stripped off.
+Commands are lowercased, underscores are replaced with hyphens, and the
+`APPCOMMAND_` prefix is stripped off.
 e.g. `APPCOMMAND_BROWSER_BACKWARD` is emitted as `browser-backward`.
 
 ```javascript
@@ -476,7 +476,7 @@ API is not for programming use. If you try to add an extension that has already
 been loaded, this method will not return and instead log a warning to the
 console.
 
-Method will also not return if the extension's manifest is missing or incomplete.
+The method will also not return if the extension's manifest is missing or incomplete.
 
 **Note:** This API cannot be called before the `ready` event of the `app` module
 is emitted.
@@ -485,7 +485,7 @@ is emitted.
 
 * `name` String
 
-Remove the DevTools extension whose name is `name`.
+Remove a DevTools extension by name.
 
 **Note:** This API cannot be called before the `ready` event of the `app` module
 is emitted.
@@ -515,7 +515,7 @@ let win = new BrowserWindow({width: 800, height: 600});
 
 ### `win.webContents`
 
-The `WebContents` object this window owns, all web page related events and
+The `WebContents` object this window owns. All web page related events and
 operations will be done via it.
 
 See the [`webContents` documentation](web-contents.md) for its methods and
@@ -523,7 +523,7 @@ events.
 
 ### `win.id`
 
-The unique ID of this window.
+The unique ID of the window.
 
 ## Instance Methods
 
@@ -540,8 +540,8 @@ for this window, but it guarantees the `closed` event will be emitted.
 
 ### `win.close()`
 
-Try to close the window, this has the same effect with user manually clicking
-the close button of the window. The web page may cancel the close though, see
+Try to close the window. This has the same effect as a user manually clicking
+the close button of the window. The web page may cancel the close though. See
 the [close event](#event-close).
 
 ### `win.focus()`
@@ -574,7 +574,7 @@ Returns a boolean, whether the window is visible to the user.
 
 ### `win.isModal()`
 
-Returns whether current window is a modal window.
+Returns a boolean, whether current window is a modal window.
 
 ### `win.maximize()`
 
@@ -613,14 +613,14 @@ Returns a boolean, whether the window is in fullscreen mode.
 
 ### `win.setAspectRatio(aspectRatio[, extraSize])` _macOS_
 
-* `aspectRatio` The aspect ratio we want to maintain for some portion of the
+* `aspectRatio` The aspect ratio to maintain for some portion of the
 content view.
 * `extraSize` Object (optional) - The extra size not to be included while
 maintaining the aspect ratio.
   * `width` Integer
   * `height` Integer
 
-This will have a window maintain an aspect ratio. The extra size allows a
+This will make a window maintain an aspect ratio. The extra size allows a
 developer to have space, specified in pixels, not included within the aspect
 ratio calculations. This API already takes into account the difference between a
 window's size and its content size.
