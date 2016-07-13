@@ -4,7 +4,7 @@ const path = require('path')
 const fs = require('fs')
 
 const {ipcRenderer, remote} = require('electron')
-const {ipcMain, session, webContents, BrowserWindow} = remote
+const {ipcMain, session, BrowserWindow} = remote
 
 describe('session module', function () {
   this.timeout(10000)
