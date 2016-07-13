@@ -277,14 +277,14 @@ The `webPreferences` option is an object that can have the following properties:
 * `backgroundThrottling` Boolean - Whether to throttle animations and timers
   when the page becomes background. Defaults to `true`.
 
-## Instance Events
+### Instance Events
 
 Instances of `BrowserWindow` emit the following events:
 
 **Note:** Some events are only available on specific operating systems and are
 labeled as such.
 
-### Event: 'page-title-updated'
+#### Event: 'page-title-updated'
 
 Returns:
 
@@ -293,7 +293,7 @@ Returns:
 Emitted when the document changed its title, calling `event.preventDefault()`
 would prevent the native window's title to change.
 
-### Event: 'close'
+#### Event: 'close'
 
 Returns:
 
@@ -320,87 +320,87 @@ window.onbeforeunload = (e) => {
 };
 ```
 
-### Event: 'closed'
+#### Event: 'closed'
 
 Emitted when the window is closed. After you have received this event you should
 remove the reference to the window and avoid using it anymore.
 
-### Event: 'unresponsive'
+#### Event: 'unresponsive'
 
 Emitted when the web page becomes unresponsive.
 
-### Event: 'responsive'
+#### Event: 'responsive'
 
 Emitted when the unresponsive web page becomes responsive again.
 
-### Event: 'blur'
+#### Event: 'blur'
 
 Emitted when the window loses focus.
 
-### Event: 'focus'
+#### Event: 'focus'
 
 Emitted when the window gains focus.
 
-### Event: 'show'
+#### Event: 'show'
 
 Emitted when the window is shown.
 
-### Event: 'hide'
+#### Event: 'hide'
 
 Emitted when the window is hidden.
 
-### Event: 'ready-to-show'
+#### Event: 'ready-to-show'
 
 Emitted when the web page has been rendered and window can be displayed without
 visual flash.
 
-### Event: 'maximize'
+#### Event: 'maximize'
 
 Emitted when window is maximized.
 
-### Event: 'unmaximize'
+#### Event: 'unmaximize'
 
 Emitted when the window exits from maximized state.
 
-### Event: 'minimize'
+#### Event: 'minimize'
 
 Emitted when the window is minimized.
 
-### Event: 'restore'
+#### Event: 'restore'
 
 Emitted when the window is restored from minimized state.
 
-### Event: 'resize'
+#### Event: 'resize'
 
 Emitted when the window is getting resized.
 
-### Event: 'move'
+#### Event: 'move'
 
 Emitted when the window is getting moved to a new position.
 
 __Note__: On macOS this event is just an alias of `moved`.
 
-### Event: 'moved' _macOS_
+#### Event: 'moved' _macOS_
 
 Emitted once when the window is moved to a new position.
 
-### Event: 'enter-full-screen'
+#### Event: 'enter-full-screen'
 
 Emitted when the window enters full screen state.
 
-### Event: 'leave-full-screen'
+#### Event: 'leave-full-screen'
 
 Emitted when the window leaves full screen state.
 
-### Event: 'enter-html-full-screen'
+#### Event: 'enter-html-full-screen'
 
 Emitted when the window enters full screen state triggered by html api.
 
-### Event: 'leave-html-full-screen'
+#### Event: 'leave-html-full-screen'
 
 Emitted when the window leaves full screen state triggered by html api.
 
-### Event: 'app-command' _Windows_
+#### Event: 'app-command' _Windows_
 
 Returns:
 
@@ -424,15 +424,15 @@ someWindow.on('app-command', (e, cmd) => {
 });
 ```
 
-### Event: 'scroll-touch-begin' _macOS_
+#### Event: 'scroll-touch-begin' _macOS_
 
 Emitted when scroll wheel event phase has begun.
 
-### Event: 'scroll-touch-end' _macOS_
+#### Event: 'scroll-touch-end' _macOS_
 
 Emitted when scroll wheel event phase has ended.
 
-### Event: 'swipe' _macOS_
+#### Event: 'swipe' _macOS_
 
 Returns:
 
