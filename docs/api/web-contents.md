@@ -463,6 +463,10 @@ let currentURL = win.webContents.getURL();
 
 Returns the title of the current web page.
 
+### `webContents.isFocused()`
+
+Returns a Boolean, whether the web page is focused.
+
 ### `webContents.isLoading()`
 
 Returns whether web page is still loading resources.
