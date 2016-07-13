@@ -27,7 +27,7 @@
 #include "content/browser/renderer_host/render_widget_host_impl.h"
 #include "atom/browser/osr_window.h"
 
-#include "content/browser/renderer_host/render_widget_host_view_aura.h"
+#include "content/public/browser/web_contents.h"
 
 namespace atom {
 
@@ -201,6 +201,9 @@ content::RenderViewHost* AtomRenderViewHostFactory::CreateRenderViewHost(
   int32_t main_frame_routing_id,
   bool swapped_out) {
 
+  std::cout << delegate << std::endl;
+  std::cout << widget_delegate << std::endl;
+
   auto widget_host_impl = new content::RenderWidgetHostImpl(
     widget_delegate, instance->GetProcess(), routing_id, false);
 
@@ -208,7 +211,7 @@ content::RenderViewHost* AtomRenderViewHostFactory::CreateRenderViewHost(
     base::WrapUnique(widget_host_impl), delegate, main_frame_routing_id,
     swapped_out, true);
 
-  new OffScreenWindow(widget_host_impl);
+  //new OffScreenWindow(widget_host_impl);
 
   return view_host_impl;
 }

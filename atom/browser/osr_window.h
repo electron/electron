@@ -27,40 +27,84 @@
 
 #include <windows.h>
 #include "ui/gfx/win/window_impl.h"
+#include "content/browser/web_contents/web_contents_view.h"
+#include "atom/browser/native_window_views.h"
 
 namespace atom {
 
-class AtomCompositorHostWin : public gfx::WindowImpl {
- public:
-  AtomCompositorHostWin() {
-    // Create a hidden 1x1 borderless window.
-    set_window_style(WS_POPUP | WS_SYSMENU);
-    Init(NULL, gfx::Rect(0, 0, 1, 1));
-  }
+class OffScreenWebContentsView : public content::WebContentsView {
+public:
+  OffScreenWebContentsView();
+  ~OffScreenWebContentsView();
 
-  ~AtomCompositorHostWin() override {
-    DestroyWindow(hwnd());
-  }
+  gfx::NativeView GetNativeView() const;
+  gfx::NativeView GetContentNativeView() const;
+  gfx::NativeWindow GetTopLevelNativeWindow() const;
 
- private:
-  CR_BEGIN_MSG_MAP_EX(CompositorHostWin)
-    CR_MSG_WM_PAINT(OnPaint)
-  CR_END_MSG_MAP()
+  void GetContainerBounds(gfx::Rect* out) const;
+  void SizeContents(const gfx::Size& size);
+  void Focus();
+  void SetInitialFocus();
+  void StoreFocus();
+  void RestoreFocus();
+  content::DropData* GetDropData() const;
+  gfx::Rect GetViewBounds() const;
 
-  void OnPaint(HDC dc) {
-    ValidateRect(hwnd(), NULL);
+  void CreateView(
+      const gfx::Size& initial_size, gfx::NativeView context);
+
+  content::RenderWidgetHostViewBase* CreateViewForWidget(
+      content::RenderWidgetHost* render_widget_host, bool is_guest_view_hack);
+  content::RenderWidgetHostViewBase* CreateViewForPopupWidget(
+      content::RenderWidgetHost* render_widget_host);
+
+  void SetPageTitle(const base::string16& title);
+  void RenderViewCreated(content::RenderViewHost* host);
+  void RenderViewSwappedIn(content::RenderViewHost* host);
+  void SetOverscrollControllerEnabled(bool enabled);
+private:
+  content::RenderWidgetHostViewBase* view_;
+};
+
+class OffScreenOutputDevice : public cc::SoftwareOutputDevice {
+public:
+  OffScreenOutputDevice();
+  ~OffScreenOutputDevice();
+
+
+  void saveSkBitmapToBMPFile(const SkBitmap& skBitmap, const char* path);
+  void Resize(const gfx::Size& pixel_size, float scale_factor) override;
+  SkCanvas* BeginPaint(const gfx::Rect& damage_rect) override;
+  void EndPaint() override;
+
+private:
+  std::unique_ptr<SkCanvas> canvas_;
+  std::unique_ptr<SkBitmap> bitmap_;
+  gfx::Rect pending_damage_rect_;
+
+  DISALLOW_COPY_AND_ASSIGN(OffScreenOutputDevice);
+};
+
+class AtomCompositorDelegate : public ui::CompositorDelegate {
+public:
+  AtomCompositorDelegate() {};
+  ~AtomCompositorDelegate() {};
+
+  std::unique_ptr<cc::SoftwareOutputDevice> CreateSoftwareOutputDevice(
+      ui::Compositor* compositor) {
+    return std::unique_ptr<cc::SoftwareOutputDevice>(new OffScreenOutputDevice);
   }
 };
 
 class OffScreenWindow
     : public content::RenderWidgetHostViewBase,
       public content::DelegatedFrameHostClient,
-      public cc::BeginFrameObserver,
-      public ui::LayerDelegate,
-      public ui::LayerOwner {
+      public ui::CompositorDelegate {
 public:
   OffScreenWindow(content::RenderWidgetHost*);
   ~OffScreenWindow();
+
+  void CreatePlatformWidget();
 
 //content::RenderWidgetHostView
   bool OnMessageReceived(const IPC::Message&) override;
@@ -87,6 +131,7 @@ public:
   bool GetScreenColorProfile(std::vector<char>*);
 
 //content::RenderWidgetHostViewBase
+  void OnSwapCompositorFrame(uint32_t, std::unique_ptr<cc::CompositorFrame>);
   void ClearCompositorFrame(void);
   void InitAsPopup(content::RenderWidgetHostView *, const gfx::Rect &);
   void InitAsFullscreen(content::RenderWidgetHostView *);
@@ -119,6 +164,8 @@ public:
   void UnlockCompositingSurface(void);
   void ImeCompositionRangeChanged(
     const gfx::Range &, const std::vector<gfx::Rect>&);
+  gfx::Size GetPhysicalBackingSize() const override;
+  gfx::Size GetRequestedRendererSize() const override;
 
 //content::DelegatedFrameHostClient
   int DelegatedFrameHostGetGpuMemoryBufferClientId(void) const;
@@ -137,69 +184,29 @@ public:
   void DelegatedFrameHostUpdateVSyncParameters(
     const base::TimeTicks &, const base::TimeDelta &);
 
-//cc::BeginFrameObserver
-  void OnBeginFrame(const cc::BeginFrameArgs &);
-  const cc::BeginFrameArgs & LastUsedBeginFrameArgs(void) const;
-  void OnBeginFrameSourcePausedChanged(bool);
-  void AsValueInto(base::trace_event::TracedValue *) const;
-
-  gfx::Size GetPhysicalBackingSize() const;
-  void UpdateScreenInfo(gfx::NativeView view);
-  gfx::Size GetRequestedRendererSize() const;
-  void OnSwapCompositorFrame(uint32_t, cc::CompositorFrame);
-  uint32_t SurfaceIdNamespaceAtPoint(
-    cc::SurfaceHittestDelegate* delegate,
-    const gfx::Point& point,
-    gfx::Point* transformed_point);
-  uint32_t GetSurfaceIdNamespace();
-
-  void OnPaintLayer(const ui::PaintContext &);
-  void OnDelegatedFrameDamage(const gfx::Rect &);
-  void OnDeviceScaleFactorChanged(float);
-  base::Closure PrepareForLayerBoundsChange();
-  void OnBoundsChanged();
-
-  void OnSetNeedsBeginFrames(bool);
-  void SendSwapCompositorFrame(cc::CompositorFrame *);
+  std::unique_ptr<cc::SoftwareOutputDevice> CreateSoftwareOutputDevice(
+      ui::Compositor* compositor);
+  void OnSetNeedsBeginFrames(bool enabled);
 private:
-  content::RenderWidgetHostImpl* host_;
-  content::DelegatedFrameHost* delegated_frame_host_;
+  content::RenderWidgetHostImpl* render_widget_host_;
+
+  std::unique_ptr<content::DelegatedFrameHost> delegated_frame_host_;
+  std::unique_ptr<ui::Compositor> compositor_;
+  gfx::AcceleratedWidget compositor_widget_;
+  std::unique_ptr<ui::Layer> root_layer_;
+
+  float scale_factor_;
+  bool is_showing_;
   gfx::Vector2dF last_scroll_offset_;
-  bool focus_;
   gfx::Size size_;
-  float scale_;
 
-  cc::BeginFrameSource* begin_frame_source_;
-  cc::BeginFrameArgs last_begin_frame_args_;
-  bool needs_begin_frames_;
+#if defined(OS_WIN)
+  std::unique_ptr<gfx::WindowImpl> window_;
+#endif
 
-  base::Thread* thread_;
-  ui::Compositor* compositor_;
+  base::WeakPtrFactory<OffScreenWindow> weak_ptr_factory_;
+  DISALLOW_COPY_AND_ASSIGN(OffScreenWindow);
 };
-
-class OffScreenOutputSurface : public cc::OutputSurface {
-public:
-  OffScreenOutputSurface(
-    std::unique_ptr<cc::SoftwareOutputDevice>);
-  ~OffScreenOutputSurface();
-
-  void SwapBuffers(cc::CompositorFrame *);
-  bool BindToClient(cc::OutputSurfaceClient *);
-};
-
-class OffScreenOutputDevice : public cc::SoftwareOutputDevice {
-public:
-  OffScreenOutputDevice();
-  ~OffScreenOutputDevice();
-
-  void Resize(const gfx::Size& pixel_size, float scale_factor);
-  SkCanvas* BeginPaint(const gfx::Rect& damage_rect);
-  void EndPaint();
-  void DiscardBackbuffer();
-  void EnsureBackbuffer();
-  gfx::VSyncProvider* GetVSyncProvider();
-};
-
 
 }  // namespace atom
 
