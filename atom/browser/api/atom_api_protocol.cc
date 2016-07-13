@@ -27,18 +27,21 @@ namespace atom {
 
 namespace api {
 
+// TODO(bridiver)
+// https://github.com/electron/electron/commit/1beba5bdc086671bed9205faa694817f5a07c6ad
+// causes a hang on shutdown
 namespace {
 
 // List of registered custom standard schemes.
 std::vector<std::string> g_standard_schemes;
 
-// Clear protocol handlers in IO thread.
-void ClearJobFactoryInIO(
-    scoped_refptr<brightray::URLRequestContextGetter> request_context_getter) {
-  auto job_factory = static_cast<AtomURLRequestJobFactory*>(
-      request_context_getter->job_factory());
-  job_factory->Clear();
-}
+// // Clear protocol handlers in IO thread.
+// void ClearJobFactoryInIO(
+//   scoped_refptr<brightray::URLRequestContextGetter> request_context_getter) {
+//   auto job_factory = static_cast<AtomURLRequestJobFactory*>(
+//       request_context_getter->job_factory());
+//   job_factory->Clear();
+// }
 
 }  // namespace
 
@@ -66,9 +69,9 @@ Protocol::Protocol(v8::Isolate* isolate, AtomBrowserContext* browser_context)
 }
 
 Protocol::~Protocol() {
-  content::BrowserThread::PostTask(
-      content::BrowserThread::IO, FROM_HERE,
-      base::Bind(ClearJobFactoryInIO, request_context_getter_));
+  // content::BrowserThread::PostTask(
+  //     content::BrowserThread::IO, FROM_HERE,
+  //     base::Bind(ClearJobFactoryInIO, request_context_getter_));
 }
 
 void Protocol::RegisterServiceWorkerSchemes(

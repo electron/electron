@@ -148,6 +148,9 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
 
   EnsureBrowserContextKeyedServiceFactoriesBuilt();
 
+  // TODO(bridiver) temporary workaround for crash caused by
+  // https://github.com/brave/brightray/commit/e26f8073df2b20ba2169ffb082c5f135d542313b
+  browser_context_ = brightray::BrowserContext::From("", false);
   brightray::BrowserMainParts::PreMainMessageLoopRun();
   bridge_task_runner_->MessageLoopIsReady();
   bridge_task_runner_ = nullptr;
@@ -176,6 +179,7 @@ void AtomBrowserMainParts::PostMainMessageLoopStart() {
 }
 
 void AtomBrowserMainParts::PostMainMessageLoopRun() {
+  browser_context_ = nullptr;
   brightray::BrowserMainParts::PostMainMessageLoopRun();
 
   js_env_->OnMessageLoopDestroying();

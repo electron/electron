@@ -15,6 +15,10 @@
 
 class BrowserProcess;
 
+namespace brightray {
+class BrowserContext;
+}
+
 namespace atom {
 
 class AtomBindings;
@@ -66,6 +70,8 @@ class AtomBrowserMainParts : public brightray::BrowserMainParts {
 #if defined(OS_MACOSX)
   void FreeAppDelegate();
 #endif
+
+  scoped_refptr<brightray::BrowserContext> browser_context_;
 
   // A fake BrowserProcess object that used to feed the source code from chrome.
   std::unique_ptr<BrowserProcess> fake_browser_process_;
