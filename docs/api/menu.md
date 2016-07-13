@@ -183,11 +183,11 @@ Menu.setApplicationMenu(menu);
 
 Creates a new menu.
 
-## Methods
+### Static Methods
 
-The `menu` class has the following methods:
+The `menu` class has the following static methods:
 
-### `Menu.setApplicationMenu(menu)`
+#### `Menu.setApplicationMenu(menu)`
 
 * `menu` Menu
 
@@ -196,11 +196,11 @@ will be set as each window's top menu.
 
 **Note:** This API has to be called after the `ready` event of `app` module.
 
-### `Menu.getApplicationMenu()`
+#### `Menu.getApplicationMenu()`
 
 Returns the application menu (an instance of `Menu`), if set, or `null`, if not set.
 
-### `Menu.sendActionToFirstResponder(action)` _macOS_
+#### `Menu.sendActionToFirstResponder(action)` _macOS_
 
 * `action` String
 
@@ -211,7 +211,7 @@ emulating default Cocoa menu behaviors, usually you would just use the
 See the [macOS Cocoa Event Handling Guide](https://developer.apple.com/library/mac/documentation/Cocoa/Conceptual/EventOverview/EventArchitecture/EventArchitecture.html#//apple_ref/doc/uid/10000060i-CH3-SW7)
 for more information on macOS' native actions.
 
-### `Menu.buildFromTemplate(template)`
+#### `Menu.buildFromTemplate(template)`
 
 * `template` Array
 
@@ -221,11 +221,11 @@ Generally, the `template` is just an array of `options` for constructing a
 You can also attach other fields to the element of the `template` and they
 will become properties of the constructed menu items.
 
-## Instance Methods
+### Instance Methods
 
 The `menu` object has the following instance methods:
 
-### `menu.popup([browserWindow, x, y, positioningItem])`
+#### `menu.popup([browserWindow, x, y, positioningItem])`
 
 * `browserWindow` BrowserWindow (optional) - Default is `null`.
 * `x` Number (optional) - Default is -1.
@@ -238,35 +238,35 @@ Pops up this menu as a context menu in the `browserWindow`. You can optionally
 provide a `x, y` coordinate to place the menu at, otherwise it will be placed
 at the current mouse cursor position.
 
-### `menu.append(menuItem)`
+#### `menu.append(menuItem)`
 
 * `menuItem` MenuItem
 
 Appends the `menuItem` to the menu.
 
-### `menu.insert(pos, menuItem)`
+#### `menu.insert(pos, menuItem)`
 
 * `pos` Integer
 * `menuItem` MenuItem
 
 Inserts the `menuItem` to the `pos` position of the menu.
 
-## Instance Properties
+### Instance Properties
 
 `menu` objects also have the following properties:
 
-### `menu.items`
+#### `menu.items`
 
 Get an array containing the menu's items.
 
 ## Notes on macOS Application Menu
 
 macOS has a completely different style of application menu from Windows and
-Linux, here are some notes on making your app's menu more native-like.
+Linux. Here are some notes on making your app's menu more native-like.
 
 ### Standard Menus
 
-On macOS there are many system defined standard menus, like the `Services` and
+On macOS there are many system-defined standard menus, like the `Services` and
 `Windows` menus. To make your menu a standard menu, you should set your menu's
 `role` to one of following and Electron will recognize them and make them
 become standard menus:
@@ -283,15 +283,16 @@ action, you should set the `role` attribute of the menu item.
 
 ### Main Menu's Name
 
-On macOS the label of application menu's first item is always your app's name,
-no matter what label you set. To change it you have to change your app's name
-by modifying your app bundle's `Info.plist` file. See [About Information
-Property List Files][AboutInformationPropertyListFiles] for more information.
+On macOS the label of the application menu's first item is always your app's
+name, no matter what label you set. To change it, modify your app bundle's
+`Info.plist` file. See
+[About Information Property List Files][AboutInformationPropertyListFiles]
+for more information.
 
 ## Setting Menu for Specific Browser Window (*Linux* *Windows*)
 
 The [`setMenu` method][setMenu] of browser windows can set the menu of certain
-browser window.
+browser windows.
 
 ## Menu Item Position
 
