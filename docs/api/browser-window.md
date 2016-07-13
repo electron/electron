@@ -181,12 +181,12 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     this below.
 
 When setting minimum or maximum window size with `minWidth`/`maxWidth`/
-`minHeight`/`maxHeight`, it only constrains the users, it won't prevent you from
+`minHeight`/`maxHeight`, it only constrains the users. It won't prevent you from
 passing a size that does not follow size constraints to `setBounds`/`setSize` or
 to the constructor of `BrowserWindow`.
 
-The possible values and behaviors of `type` option are platform dependent,
-supported values are:
+The possible values and behaviors of the `type` option are platform dependent.
+Possible values are:
 
 * On Linux, possible types are `desktop`, `dock`, `toolbar`, `splash`,
   `notification`.
@@ -210,7 +210,7 @@ Possible values are:
 * `hidden-inset` results in a hidden title bar with an alternative look
   where the traffic light buttons are slightly more inset from the window edge.
 
-The `webPreferences` option is an object that can have following properties:
+The `webPreferences` option is an object that can have the following properties:
 
 * `nodeIntegration` Boolean - Whether node integration is enabled. Default
   is `true`.
@@ -224,24 +224,24 @@ The `webPreferences` option is an object that can have following properties:
 * `session` [Session](session.md#class-session) - Sets the session used by the
   page. Instead of passing the Session object directly, you can also choose to
   use the `partition` option instead, which accepts a partition string. When
-  both `session` and `partition` are provided, `session` would be preferred.
+  both `session` and `partition` are provided, `session` will be preferred.
   Default is the default session.
 * `partition` String - Sets the session used by the page according to the
   session's partition string. If `partition` starts with `persist:`, the page
   will use a persistent session available to all pages in the app with the
-  same `partition`. if there is no `persist:` prefix, the page will use an
+  same `partition`. If there is no `persist:` prefix, the page will use an
   in-memory session. By assigning the same `partition`, multiple pages can share
   the same session. Default is the default session.
 * `zoomFactor` Number - The default zoom factor of the page, `3.0` represents
   `300%`. Default is `1.0`.
 * `javascript` Boolean - Enables JavaScript support. Default is `true`.
-* `webSecurity` Boolean - When setting `false`, it will disable the
-  same-origin policy (Usually using testing websites by people), and set
+* `webSecurity` Boolean - When `false`, it will disable the
+  same-origin policy (usually using testing websites by people), and set
   `allowDisplayingInsecureContent` and `allowRunningInsecureContent` to
   `true` if these two options are not set by user. Default is `true`.
 * `allowDisplayingInsecureContent` Boolean - Allow an https page to display
   content like images from http URLs. Default is `false`.
-* `allowRunningInsecureContent` Boolean - Allow a https page to run
+* `allowRunningInsecureContent` Boolean - Allow an https page to run
   JavaScript, CSS or plugins from http URLs. Default is `false`.
 * `images` Boolean - Enables image support. Default is `true`.
 * `textAreasAreResizable` Boolean - Make TextArea elements resizable. Default
