@@ -441,9 +441,9 @@ Returns:
 
 Emitted on 3-finger swipe. Possible directions are `up`, `right`, `down`, `left`.
 
-## Methods
+## Static Methods
 
-The `BrowserWindow` object has the following methods:
+The `BrowserWindow` class has the following static methods:
 
 ### `BrowserWindow.getAllWindows()`
 
