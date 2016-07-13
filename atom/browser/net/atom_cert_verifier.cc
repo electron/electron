@@ -36,7 +36,6 @@ AtomCertVerifier::~AtomCertVerifier() {
 }
 
 void AtomCertVerifier::SetVerifyProc(const VerifyProc& proc) {
-  base::AutoLock auto_lock(lock_);
   verify_proc_ = proc;
 }
 
@@ -52,20 +51,14 @@ int AtomCertVerifier::Verify(
     const net::BoundNetLog& net_log) {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
 
-  VerifyProc proc;
-  {
-    base::AutoLock auto_lock(lock_);
-    proc = verify_proc_;
-  }
-
-  if (proc.is_null())
+  if (verify_proc_.is_null())
     return default_cert_verifier_->Verify(
         cert, hostname, ocsp_response, flags, crl_set, verify_result, callback,
         out_req, net_log);
 
   BrowserThread::PostTask(
       BrowserThread::UI, FROM_HERE,
-      base::Bind(proc, hostname, make_scoped_refptr(cert),
+      base::Bind(verify_proc_, hostname, make_scoped_refptr(cert),
                  base::Bind(OnResult, verify_result, callback)));
   return net::ERR_IO_PENDING;
 }
