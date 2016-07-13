@@ -41,33 +41,37 @@ origin preference.
 The `BrowserWindowProxy` object is returned from `window.open` and provides
 limited functionality with the child window.
 
-### `BrowserWindowProxy.blur()`
+### Instance Methods
+
+The `BrowserWindowProxy` object has the following instance methods:
+
+#### `BrowserWindowProxy.blur()`
 
 Removes focus from the child window.
 
-### `BrowserWindowProxy.close()`
+#### `BrowserWindowProxy.close()`
 
 Forcefully closes the child window without calling its unload event.
 
-### `BrowserWindowProxy.closed`
+#### `BrowserWindowProxy.closed`
 
 Set to true after the child window gets closed.
 
-### `BrowserWindowProxy.eval(code)`
+#### `BrowserWindowProxy.eval(code)`
 
 * `code` String
 
 Evaluates the code in the child window.
 
-### `BrowserWindowProxy.focus()`
+#### `BrowserWindowProxy.focus()`
 
 Focuses the child window (brings the window to front).
 
-### `BrowserWindowProxy.print()`
+#### `BrowserWindowProxy.print()`
 
 Invokes the print dialog on the child window.
 
-### `BrowserWindowProxy.postMessage(message, targetOrigin)`
+#### `BrowserWindowProxy.postMessage(message, targetOrigin)`
 
 * `message` String
 * `targetOrigin` String
