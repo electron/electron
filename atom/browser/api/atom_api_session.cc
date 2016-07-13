@@ -285,6 +285,14 @@ void SetProxyInIO(net::URLRequestContextGetter* getter,
   RunCallbackInUI(callback);
 }
 
+void SetCertVerifyProcInIO(
+    const scoped_refptr<net::URLRequestContextGetter>& context_getter,
+    const AtomCertVerifier::VerifyProc& proc) {
+  auto request_context = context_getter->GetURLRequestContext();
+  static_cast<AtomCertVerifier*>(request_context->cert_verifier())->
+      SetVerifyProc(proc);
+}
+
 void ClearHostResolverCacheInIO(
     const scoped_refptr<net::URLRequestContextGetter>& context_getter,
     const base::Closure& callback) {
@@ -434,7 +442,10 @@ void Session::SetCertVerifyProc(v8::Local<v8::Value> val,
     return;
   }
 
-  browser_context_->cert_verifier()->SetVerifyProc(proc);
+  BrowserThread::PostTask(BrowserThread::IO, FROM_HERE,
+      base::Bind(&SetCertVerifyProcInIO,
+                 make_scoped_refptr(browser_context_->GetRequestContext()),
+                 proc));
 }
 
 void Session::SetPermissionRequestHandler(v8::Local<v8::Value> val,
