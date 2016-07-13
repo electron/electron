@@ -277,9 +277,9 @@ The `webPreferences` option is an object that can have the following properties:
 * `backgroundThrottling` Boolean - Whether to throttle animations and timers
   when the page becomes background. Defaults to `true`.
 
-## Events
+## Instance Events
 
-The `BrowserWindow` object emits the following events:
+Instances of `BrowserWindow` emit the following events:
 
 **Note:** Some events are only available on specific operating systems and are
 labeled as such.
