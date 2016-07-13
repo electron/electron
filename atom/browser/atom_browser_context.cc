@@ -66,7 +66,6 @@ std::string RemoveWhitespace(const std::string& str) {
 AtomBrowserContext::AtomBrowserContext(const std::string& partition,
                                        bool in_memory)
     : brightray::BrowserContext(partition, in_memory),
-      cert_verifier_(new AtomCertVerifier),
       network_delegate_(new AtomNetworkDelegate) {
   // Construct user agent string.
   Browser* browser = Browser::Get();
@@ -174,7 +173,7 @@ content::PermissionManager* AtomBrowserContext::GetPermissionManager() {
 }
 
 std::unique_ptr<net::CertVerifier> AtomBrowserContext::CreateCertVerifier() {
-  return make_scoped_ptr(cert_verifier_);
+  return std::unique_ptr<net::CertVerifier>(new AtomCertVerifier);
 }
 
 net::SSLConfigService* AtomBrowserContext::CreateSSLConfigService() {

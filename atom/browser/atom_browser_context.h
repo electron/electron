@@ -12,7 +12,6 @@
 namespace atom {
 
 class AtomDownloadManagerDelegate;
-class AtomCertVerifier;
 class AtomNetworkDelegate;
 class AtomPermissionManager;
 class WebViewManager;
@@ -42,7 +41,6 @@ class AtomBrowserContext : public brightray::BrowserContext {
   // brightray::BrowserContext:
   void RegisterPrefs(PrefRegistrySimple* pref_registry) override;
 
-  AtomCertVerifier* cert_verifier() const { return cert_verifier_; }
   AtomNetworkDelegate* network_delegate() const { return network_delegate_; }
 
  private:
@@ -52,7 +50,6 @@ class AtomBrowserContext : public brightray::BrowserContext {
   std::string user_agent_;
 
   // Managed by brightray::BrowserContext.
-  AtomCertVerifier* cert_verifier_;
   AtomNetworkDelegate* network_delegate_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomBrowserContext);
