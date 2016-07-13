@@ -225,4 +225,18 @@ $ cd electron-quick-start
 $ npm install && npm start
 ```
 
+### Typescript Example
+Clone and run the code in this tutorial by using the [`a904guy/electron-typescript-quick-start`](https://github.com/a904guy/electron-typescript-quick-start)
+repository.
+
+```bash
+# Clone the repository
+$ git clone https://github.com/a904guy/electron-typescript-quick-start.git
+# Go into the repository
+$ cd electron-typescript-quick-start
+# Install dependencies and run the app
+npm install && npm run install;
+npm start;
+```
+
 [share-data]: ../faq.md#how-to-share-data-between-web-pages
