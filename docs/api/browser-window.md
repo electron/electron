@@ -441,31 +441,31 @@ Returns:
 
 Emitted on 3-finger swipe. Possible directions are `up`, `right`, `down`, `left`.
 
-## Static Methods
+### Static Methods
 
 The `BrowserWindow` class has the following static methods:
 
-### `BrowserWindow.getAllWindows()`
+#### `BrowserWindow.getAllWindows()`
 
 Returns an array of all opened browser windows.
 
-### `BrowserWindow.getFocusedWindow()`
+#### `BrowserWindow.getFocusedWindow()`
 
 Returns the window that is focused in this application, otherwise returns `null`.
 
-### `BrowserWindow.fromWebContents(webContents)`
+#### `BrowserWindow.fromWebContents(webContents)`
 
 * `webContents` [WebContents](web-contents.md)
 
 Find a window according to the `webContents` it owns.
 
-### `BrowserWindow.fromId(id)`
+#### `BrowserWindow.fromId(id)`
 
 * `id` Integer
 
 Find a window according to its ID.
 
-### `BrowserWindow.addDevToolsExtension(path)`
+#### `BrowserWindow.addDevToolsExtension(path)`
 
 * `path` String
 
@@ -481,7 +481,7 @@ Method will also not return if the extension's manifest is missing or incomplete
 **Note:** This API cannot be called before the `ready` event of the `app` module
 is emitted.
 
-### `BrowserWindow.removeDevToolsExtension(name)`
+#### `BrowserWindow.removeDevToolsExtension(name)`
 
 * `name` String
 
@@ -490,7 +490,7 @@ Remove the DevTools extension whose name is `name`.
 **Note:** This API cannot be called before the `ready` event of the `app` module
 is emitted.
 
-### `BrowserWindow.getDevToolsExtensions()`
+#### `BrowserWindow.getDevToolsExtensions()`
 
 Returns an Object where the keys are the extension names and each value is
 an Object containing `name` and `version` properties.
