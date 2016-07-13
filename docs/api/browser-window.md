@@ -279,7 +279,7 @@ The `webPreferences` option is an object that can have the following properties:
 
 ### Instance Events
 
-Instances of `BrowserWindow` emit the following events:
+Objects created with `new BrowserWindow` emit the following events:
 
 **Note:** Some events are only available on specific operating systems and are
 labeled as such.
