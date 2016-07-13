@@ -30,7 +30,7 @@ SRV*c:\code\symbols\*http://msdl.microsoft.com/download/symbols;SRV*c:\code\symb
 
 ## Troubleshooting: Symbols will not load
 
-在 Windbg 中输入下列命令，打印出未什么 symbols 没有加载 :
+在 Windbg 中输入下列命令，打印出为什么 symbols 没有加载 :
 
 ```
 > !sym noisy
