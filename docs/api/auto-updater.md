@@ -100,6 +100,10 @@ The `autoUpdater` object has the following methods:
 
 Sets the `url` and initialize the auto updater.
 
+### `autoUpdater.getFeedURL()`
+
+Returns the current update feed URL.
+
 ### `autoUpdater.checkForUpdates()`
 
 Asks the server whether there is an update. You must call `setFeedURL` before
