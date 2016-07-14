@@ -8,8 +8,7 @@ be used to extend the ability of devtools for debugging popular web frameworks.
 This document outlines the process for manually loading an extension.
 You may also try
 [electron-devtools-installer](https://github.com/GPMDP/electron-devtools-installer),
-a third-party tool the downloads the chrome extension directly from the
-Chrome WebStore.
+a third-party tool that downloads extensions directly from the Chrome WebStore.
 
 To load an extension in Electron, you need to download it in Chrome browser,
 locate its filesystem path, and then load it by calling the
