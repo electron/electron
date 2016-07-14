@@ -497,7 +497,7 @@ bool App::IsAccessibilitySupportEnabled() {
 void App::ImportCertificate(
     const base::DictionaryValue& options,
     const net::CompletionCallback& callback) {
-  auto browser_context = brightray::BrowserContext::From("", false);
+  auto browser_context = AtomBrowserContext::From("", false);
   if (!certificate_manager_model_) {
     std::unique_ptr<base::DictionaryValue> copy = options.CreateDeepCopy();
     CertificateManagerModel::Create(

@@ -11,6 +11,7 @@
 #include "atom/browser/api/atom_api_download_item.h"
 #include "atom/browser/api/atom_api_protocol.h"
 #include "atom/browser/api/atom_api_web_request.h"
+#include "atom/browser/browser.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/atom_permission_manager.h"
@@ -20,6 +21,7 @@
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/net_converter.h"
+#include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/node_includes.h"
 #include "base/files/file_path.h"
 #include "base/guid.h"
@@ -162,6 +164,8 @@ namespace atom {
 namespace api {
 
 namespace {
+
+const char kPersistPrefix[] = "persist:";
 
 // The wrapSession funtion which is implemented in JavaScript
 using WrapSessionCallback = base::Callback<void(v8::Local<v8::Value>)>;
@@ -533,10 +537,19 @@ mate::Handle<Session> Session::CreateFrom(
 
 // static
 mate::Handle<Session> Session::FromPartition(
-    v8::Isolate* isolate, const std::string& partition, bool in_memory) {
-  auto browser_context = brightray::BrowserContext::From(partition, in_memory);
-  return CreateFrom(isolate,
-                    static_cast<AtomBrowserContext*>(browser_context.get()));
+    v8::Isolate* isolate, const std::string& partition,
+    const base::DictionaryValue& options) {
+  scoped_refptr<AtomBrowserContext> browser_context;
+  if (partition.empty()) {
+    browser_context = AtomBrowserContext::From("", false, options);
+  } else if (base::StartsWith(partition, kPersistPrefix,
+                              base::CompareCase::SENSITIVE)) {
+    std::string name = partition.substr(8);
+    browser_context = AtomBrowserContext::From(name, false, options);
+  } else {
+    browser_context = AtomBrowserContext::From(partition, true, options);
+  }
+  return CreateFrom(isolate, browser_context.get());
 }
 
 // static
@@ -576,11 +589,23 @@ void SetWrapSession(const WrapSessionCallback& callback) {
 
 namespace {
 
+v8::Local<v8::Value> FromPartition(
+    const std::string& partition, mate::Arguments* args) {
+  if (!atom::Browser::Get()->is_ready()) {
+    args->ThrowError("Session can only be received when app is ready");
+    return v8::Null(args->isolate());
+  }
+  base::DictionaryValue options;
+  args->GetNext(&options);
+  return atom::api::Session::FromPartition(
+      args->isolate(), partition, options).ToV8();
+}
+
 void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
-  dict.SetMethod("fromPartition", &atom::api::Session::FromPartition);
+  dict.SetMethod("fromPartition", &FromPartition);
   dict.SetMethod("_setWrapSession", &atom::api::SetWrapSession);
 }
 

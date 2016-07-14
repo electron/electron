@@ -46,7 +46,7 @@ void AtomAccessTokenStore::SaveAccessToken(const GURL& server_url,
 }
 
 void AtomAccessTokenStore::GetRequestContextOnUIThread() {
-  auto browser_context = brightray::BrowserContext::From("", false);
+  auto browser_context = AtomBrowserContext::From("", false);
   request_context_getter_ = browser_context->GetRequestContext();
 }
 
