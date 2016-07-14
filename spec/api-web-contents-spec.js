@@ -4,7 +4,7 @@ const assert = require('assert')
 const path = require('path')
 
 const {remote} = require('electron')
-const {BrowserWindow, webContents, getCurrentWindow} = remote
+const {BrowserWindow, webContents} = remote
 
 var isCi = remote.getGlobal('isCi')
 
@@ -57,7 +57,7 @@ describe('webContents module', function () {
     }
 
     it('returns the focused web contents', function (done) {
-      var specWebContents = getCurrentWindow().webContents
+      var specWebContents = remote.getCurrentWebContents()
       assert.equal(specWebContents.getId(), webContents.getFocusedWebContents().getId())
 
       specWebContents.on('devtools-opened', function () {
