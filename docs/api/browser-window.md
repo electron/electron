@@ -987,7 +987,11 @@ The `flags` is an array that can include following `String`s:
 
 #### `win.setThumbnailClip(region)` _Windows_
 
-* `region` - Object with `x`, `y`, `width`, and `height` properties.
+* `region` - Object
+  * `x` Integer - x-position of region
+  * `y` Integer - y-position of region
+  * `width` Integer - width of region
+  * `height` Integer - height of region
 
 Sets the region of the window to show as the thumbnail image displayed when
 hovering over the window in the taskbar.
