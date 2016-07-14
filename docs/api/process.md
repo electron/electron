@@ -104,10 +104,7 @@ that all statistics are reported in Kilobytes.
   system.
 * `free` - The total amount of memory not being used by applications or disk
   cache.
-
-On Windows / Linux:
-
-* `swapTotal` - The total amount of swap memory in Kilobytes available to the
-  system.
-* `swapFree` - The free amount of swap memory in Kilobytes available to the
-  system.
+* `swapTotal` Integer - The total amount of swap memory in Kilobytes available to the
+  system.  _Windows_ _Linux_
+* `swapFree` Integer - The free amount of swap memory in Kilobytes available to the
+  system.  _Windows_ _Linux_
