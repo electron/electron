@@ -47,6 +47,7 @@
 #include "content/public/browser/native_web_keyboard_event.h"
 #include "content/public/browser/navigation_details.h"
 #include "content/public/browser/navigation_entry.h"
+#include "content/public/browser/navigation_handle.h"
 #include "content/public/browser/plugin_service.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
@@ -603,20 +604,6 @@ void WebContents::DidFinishLoad(content::RenderFrameHost* render_frame_host,
     Emit("did-finish-load");
 }
 
-void WebContents::DidFailProvisionalLoad(
-    content::RenderFrameHost* render_frame_host,
-    const GURL& url,
-    int code,
-    const base::string16& description,
-    bool was_ignored_by_handler) {
-  bool is_main_frame = !render_frame_host->GetParent();
-  Emit("did-fail-provisional-load", code, description, url, is_main_frame);
-
-  // Do not emit "did-fail-load" for canceled requests.
-  if (code != net::ERR_ABORTED)
-    Emit("did-fail-load", code, description, url, is_main_frame);
-}
-
 void WebContents::DidFailLoad(content::RenderFrameHost* render_frame_host,
                               const GURL& url,
                               int error_code,
@@ -660,13 +647,27 @@ void WebContents::DidGetRedirectForResourceRequest(
        details.headers.get());
 }
 
-void WebContents::DidNavigateMainFrame(
-    const content::LoadCommittedDetails& details,
-    const content::FrameNavigateParams& params) {
-  if (details.is_navigation_to_different_page())
-    Emit("did-navigate", params.url);
-  else if (details.is_in_page)
-    Emit("did-navigate-in-page", params.url);
+void WebContents::DidFinishNavigation(
+    content::NavigationHandle* navigation_handle) {
+  bool is_main_frame = navigation_handle->IsInMainFrame();
+  if (navigation_handle->HasCommitted() && !navigation_handle->IsErrorPage()) {
+    auto url = navigation_handle->GetURL();
+    bool is_in_page = navigation_handle->IsSamePage();
+    if (is_main_frame && !is_in_page) {
+      Emit("did-navigate", url);
+    } else if (is_in_page) {
+      Emit("did-navigate-in-page", url);
+    }
+  } else {
+    auto url = navigation_handle->GetURL();
+    int code = navigation_handle->GetNetErrorCode();
+    auto description = net::ErrorToShortString(code);
+    Emit("did-fail-provisional-load", code, description, url, is_main_frame);
+
+    // Do not emit "did-fail-load" for canceled requests.
+    if (code != net::ERR_ABORTED)
+      Emit("did-fail-load", code, description, url, is_main_frame);
+  }
 }
 
 void WebContents::TitleWasSet(content::NavigationEntry* entry,
