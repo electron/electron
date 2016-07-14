@@ -420,6 +420,20 @@ app.on('ready', () => {
 })
 ```
 
+## Static Methods
+
+The `webContents` class has the following static methods:
+
+#### `webContents.getAllWebContents()`
+
+Returns an array of all web contents. This will contain web contents for all
+windows, webviews, opened devtools, and devtools extension background pages.
+
+#### `webContents.getFocusedWebContents()`
+
+Returns the web contents that is focused in this application, otherwise
+returns `null`.
+
 ## Instance Methods
 
 The `webContents` object has the following instance methods:
