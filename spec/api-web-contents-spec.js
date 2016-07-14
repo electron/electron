@@ -6,11 +6,11 @@ const path = require('path')
 const {remote} = require('electron')
 const {BrowserWindow, webContents} = remote
 
-var isCi = remote.getGlobal('isCi')
+const isCi = remote.getGlobal('isCi')
 
 describe('webContents module', function () {
-  var fixtures = path.resolve(__dirname, 'fixtures')
-  var w = null
+  const fixtures = path.resolve(__dirname, 'fixtures')
+  let w
 
   beforeEach(function () {
     if (w != null) {
@@ -57,7 +57,7 @@ describe('webContents module', function () {
     }
 
     it('returns the focused web contents', function (done) {
-      var specWebContents = remote.getCurrentWebContents()
+      const specWebContents = remote.getCurrentWebContents()
       assert.equal(specWebContents.getId(), webContents.getFocusedWebContents().getId())
 
       specWebContents.on('devtools-opened', function () {
