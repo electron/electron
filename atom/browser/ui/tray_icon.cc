@@ -68,6 +68,10 @@ void TrayIcon::NotifyDropFiles(const std::vector<std::string>& files) {
   FOR_EACH_OBSERVER(TrayIconObserver, observers_, OnDropFiles(files));
 }
 
+void TrayIcon::NotifyDropText(const std::string& text) {
+  FOR_EACH_OBSERVER(TrayIconObserver, observers_, OnDropText(text));
+}
+
 void TrayIcon::NotifyDragEntered() {
   FOR_EACH_OBSERVER(TrayIconObserver, observers_, OnDragEntered());
 }

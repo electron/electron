@@ -74,6 +74,10 @@ void Tray::OnDropFiles(const std::vector<std::string>& files) {
   Emit("drop-files", files);
 }
 
+void Tray::OnDropText(const std::string& text) {
+  Emit("drop-text", text);
+}
+
 void Tray::OnDragEntered() {
   Emit("drag-enter");
 }

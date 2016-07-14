@@ -53,6 +53,7 @@ class Tray : public mate::TrackableObject<Tray>,
   void OnBalloonClosed() override;
   void OnDrop() override;
   void OnDropFiles(const std::vector<std::string>& files) override;
+  void OnDropText(const std::string& text) override;
   void OnDragEntered() override;
   void OnDragExited() override;
   void OnDragEnded() override;

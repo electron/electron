@@ -44,7 +44,10 @@ const CGFloat kVerticalTitleMargin = 2;
   inMouseEventSequence_ = NO;
 
   if ((self = [super initWithFrame: CGRectZero])) {
-    [self registerForDraggedTypes: @[NSFilenamesPboardType]];
+    [self registerForDraggedTypes: @[
+      NSFilenamesPboardType,
+      NSStringPboardType,
+    ]];
 
     // Create the status item.
     NSStatusItem * item = [[NSStatusBar systemStatusBar]
@@ -306,7 +309,12 @@ const CGFloat kVerticalTitleMargin = 2;
       dropFiles.push_back(base::SysNSStringToUTF8(file));
     trayIcon_->NotifyDropFiles(dropFiles);
     return YES;
+  } else if ([[pboard types] containsObject:NSStringPboardType]) {
+    NSString* dropText = [pboard stringForType:NSStringPboardType];
+    trayIcon_->NotifyDropText(base::SysNSStringToUTF8(dropText));
+    return YES;
   }
+
   return NO;
 }
 
