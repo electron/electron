@@ -131,6 +131,7 @@
       'atom/browser/api/atom_api_tray.h',
       'atom/browser/api/atom_api_web_contents.cc',
       'atom/browser/api/atom_api_web_contents.h',
+      'atom/browser/api/atom_api_web_contents_mac.mm',
       'atom/browser/api/atom_api_web_request.cc',
       'atom/browser/api/atom_api_web_request.h',
       'atom/browser/api/atom_api_web_view_manager.cc',

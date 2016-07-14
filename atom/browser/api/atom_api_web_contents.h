@@ -67,6 +67,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   int GetID() const;
   Type GetType() const;
+  bool IsFocused() const;
   bool Equal(const WebContents* web_contents) const;
   void LoadURL(const GURL& url, const mate::Dictionary& options);
   void DownloadURL(const GURL& url);

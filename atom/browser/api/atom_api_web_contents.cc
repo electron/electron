@@ -784,6 +784,13 @@ WebContents::Type WebContents::GetType() const {
   return type_;
 }
 
+#if !defined(OS_MACOSX)
+bool WebContents::IsFocused() const {
+  auto view = web_contents()->GetRenderWidgetHostView();
+  return view && view->HasFocus();
+}
+#endif
+
 bool WebContents::Equal(const WebContents* web_contents) const {
   return GetID() == web_contents->GetID();
 }
@@ -1413,6 +1420,7 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("showDefinitionForSelection",
                  &WebContents::ShowDefinitionForSelection)
       .SetMethod("capturePage", &WebContents::CapturePage)
+      .SetMethod("isFocused", &WebContents::IsFocused)
       .SetProperty("id", &WebContents::ID)
       .SetProperty("session", &WebContents::Session)
       .SetProperty("hostWebContents", &WebContents::HostWebContents)
