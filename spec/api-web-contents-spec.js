@@ -36,12 +36,15 @@ describe('webContents module', function () {
   describe('getAllWebContents() API', function () {
     it('returns an array of web contents', function (done) {
       w.webContents.on('devtools-opened', function () {
-        assert.equal(webContents.getAllWebContents().length, 4)
+        const all = webContents.getAllWebContents().sort(function (a, b) {
+          return a.getId() - b.getId()
+        })
 
-        assert.equal(webContents.getAllWebContents()[0].getType(), 'remote')
-        assert.equal(webContents.getAllWebContents()[1].getType(), 'webview')
-        assert.equal(webContents.getAllWebContents()[2].getType(), 'window')
-        assert.equal(webContents.getAllWebContents()[3].getType(), 'window')
+        assert.equal(all.length, 4)
+        assert.equal(all[0].getType(), 'window')
+        assert.equal(all[1].getType(), 'window')
+        assert.equal(all[2].getType(), 'remote')
+        assert.equal(all[3].getType(), 'webview')
 
         done()
       })
