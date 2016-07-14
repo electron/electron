@@ -3,7 +3,10 @@
 const assert = require('assert')
 const path = require('path')
 
-const {BrowserWindow, webContents} = require('electron').remote
+const {remote} = require('electron')
+const {BrowserWindow, webContents, getCurrentWindow} = remote
+
+var isCi = remote.getGlobal('isCi')
 
 describe('webContents module', function () {
   var fixtures = path.resolve(__dirname, 'fixtures')
@@ -45,6 +48,29 @@ describe('webContents module', function () {
 
       w.loadURL('file://' + path.join(fixtures, 'pages', 'webview-zoom-factor.html'))
       w.webContents.openDevTools()
+    })
+  })
+
+  describe('getFocusedWebContents() API', function () {
+    if (isCi) {
+      return
+    }
+
+    it('returns the focused web contents', function (done) {
+      var specWebContents = getCurrentWindow().webContents
+      assert.equal(specWebContents.getId(), webContents.getFocusedWebContents().getId())
+
+      specWebContents.on('devtools-opened', function () {
+        assert.equal(specWebContents.devToolsWebContents.getId(), webContents.getFocusedWebContents().getId())
+        specWebContents.closeDevTools()
+      })
+
+      specWebContents.on('devtools-closed', function () {
+        assert.equal(specWebContents.getId(), webContents.getFocusedWebContents().getId())
+        done()
+      })
+
+      specWebContents.openDevTools()
     })
   })
 })
