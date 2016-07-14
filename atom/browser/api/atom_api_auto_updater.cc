@@ -79,10 +79,6 @@ void AutoUpdater::OnWindowAllClosed() {
   QuitAndInstall();
 }
 
-std::string AutoUpdater::GetFeedURL() {
-  return "";
-}
-
 void AutoUpdater::SetFeedURL(const std::string& url, mate::Arguments* args) {
   auto_updater::AutoUpdater::HeaderMap headers;
   args->GetNext(&headers);
