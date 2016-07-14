@@ -25,7 +25,12 @@ SQRLUpdater* g_updater = nil;
 namespace {
 
 bool g_update_available = false;
+std::string update_url_ = "";
 
+}
+
+std::string AutoUpdater::GetFeedURL() {
+  return update_url_;
 }
 
 // static
@@ -34,6 +39,8 @@ void AutoUpdater::SetFeedURL(const std::string& feed,
   Delegate* delegate = GetDelegate();
   if (!delegate)
     return;
+
+  update_url_ = feed;
 
   NSURL* url = [NSURL URLWithString:base::SysUTF8ToNSString(feed)];
   NSMutableURLRequest* urlRequest = [NSMutableURLRequest requestWithURL:url];
