@@ -86,13 +86,13 @@ limit, whichever is lower for the current process.
 Returns an object giving memory usage statistics about the current process. Note
 that all statistics are reported in Kilobytes.
 
-* `workingSetSize` - The amount of memory currently pinned to actual physical
+* `workingSetSize` Integer - The amount of memory currently pinned to actual physical
   RAM.
-* `peakWorkingSetSize` - The maximum amount of memory that has ever been pinned
+* `peakWorkingSetSize` Integer - The maximum amount of memory that has ever been pinned
   to actual physical RAM.
-* `privateBytes` - The amount of memory not shared by other processes, such as
+* `privateBytes` Integer - The amount of memory not shared by other processes, such as
   JS heap or HTML content.
-* `sharedBytes` - The amount of memory shared between processes, typically
+* `sharedBytes` Integer - The amount of memory shared between processes, typically
   memory consumed by the Electron code itself
 
 ### `process.getSystemMemoryInfo()`
@@ -100,9 +100,9 @@ that all statistics are reported in Kilobytes.
 Returns an object giving memory usage statistics about the entire system. Note
 that all statistics are reported in Kilobytes.
 
-* `total` - The total amount of physical memory in Kilobytes available to the
+* `total` Integer - The total amount of physical memory in Kilobytes available to the
   system.
-* `free` - The total amount of memory not being used by applications or disk
+* `free` Integer - The total amount of memory not being used by applications or disk
   cache.
 * `swapTotal` Integer - The total amount of swap memory in Kilobytes available to the
   system.  _Windows_ _Linux_
