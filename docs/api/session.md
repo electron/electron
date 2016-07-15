@@ -98,7 +98,7 @@ Returns the session's current cache size.
 
 Clears the session’s HTTP cache.
 
-#### `ses.clearStorageData([options, ]callback)`
+#### `ses.clearStorageData([options, callback])`
 
 * `options` Object (optional)
   * `origin` String - Should follow `window.location.origin`’s representation
@@ -108,7 +108,7 @@ Clears the session’s HTTP cache.
     `shadercache`, `websql`, `serviceworkers`
   * `quotas` Array - The types of quotas to clear, can contain:
     `temporary`, `persistent`, `syncable`.
-* `callback` Function - Called when operation is done.
+* `callback` Function (optional) - Called when operation is done.
 
 Clears the data of web storages.
 
