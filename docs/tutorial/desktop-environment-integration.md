@@ -36,7 +36,7 @@ are fine differences.
 * On Windows 8.1 and Windows 8, a shortcut to your app, with a [Application User
 Model ID][app-user-model-id], must be installed to the Start screen. Note,
 however, that it does not need to be pinned to the Start screen.
-* On Windows 7 and below, notifications are not supported. You can however send
+* On Windows 7, notifications are not supported. You can however send
 "balloon notifications" using the [Tray API][tray-balloon].
 
 Furthermore, the maximum length for the notification body is 250 characters,
