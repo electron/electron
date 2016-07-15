@@ -4,7 +4,8 @@
     "extension_types": ["extension", "legacy_packaged_app"],
     "contexts": [
       "content_script",
-      "blessed_extension"
+      "blessed_extension",
+      "unblessed_extension"
     ]
   },
   "webFrame": {
