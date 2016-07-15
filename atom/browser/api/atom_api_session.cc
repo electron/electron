@@ -324,9 +324,8 @@ void AllowNTLMCredentialsForDomainsInIO(
 }
 
 void OnClearStorageDataDone(const base::Closure& callback) {
-  if(callback.is_null())
-    return;
-  callback.Run();
+  if (!callback.is_null())
+    callback.Run();
 }
 
 }  // namespace
@@ -380,17 +379,17 @@ void Session::DoCacheAction(const net::CompletionCallback& callback) {
 void Session::ClearStorageData(mate::Arguments* args) {
   // clearStorageData([options, callback])
   ClearStorageDataOptions options;
-  args->GetNext(&options);
-
   base::Closure callback;
-  args->GetNext(&callback);  
- 
+  args->GetNext(&options);
+  args->GetNext(&callback);
+
   auto storage_partition =
       content::BrowserContext::GetStoragePartition(browser_context(), nullptr);
   storage_partition->ClearData(
       options.storage_types, options.quota_types, options.origin,
       content::StoragePartition::OriginMatcherFunction(),
-      base::Time(), base::Time::Max(), base::Bind(&OnClearStorageDataDone, callback));
+      base::Time(), base::Time::Max(),
+      base::Bind(&OnClearStorageDataDone, callback));
 }
 
 void Session::FlushStorageData() {
