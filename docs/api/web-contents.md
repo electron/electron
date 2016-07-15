@@ -19,6 +19,12 @@ let contents = win.webContents;
 
 ## Methods
 
+These methods can be accessed from the `webContents` module:
+
+```js
+const {webContents} = require('electron');
+```
+
 ### `webContents.getAllWebContents()`
 
 Returns an array of all web contents. This will contain web contents for all
