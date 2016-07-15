@@ -75,6 +75,7 @@ class TrayIcon {
                           int modifiers = 0);
   void NotifyDrop();
   void NotifyDropFiles(const std::vector<std::string>& files);
+  void NotifyDropText(const std::string& text);
   void NotifyDragEntered();
   void NotifyDragExited();
   void NotifyDragEnded();

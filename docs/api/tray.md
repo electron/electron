@@ -122,6 +122,13 @@ Emitted when any dragged items are dropped on the tray icon.
 
 Emitted when dragged files are dropped in the tray icon.
 
+#### Event: 'drop-text' _macOS_
+
+* `event` Event
+* `text` String - the dropped text string
+
+Emitted when dragged text is dropped in the tray icon.
+
 #### Event: 'drag-enter' _macOS_
 
 Emitted when a drag operation enters the tray icon.
