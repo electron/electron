@@ -926,7 +926,7 @@ On Linux platform, only supports Unity desktop environment, you need to specify
 the `*.desktop` file name to `desktopName` field in `package.json`. By default,
 it will assume `app.getName().desktop`.
 
-#### `win.setOverlayIcon(overlay, description)` _Windows 7+_
+#### `win.setOverlayIcon(overlay, description)` _Windows_
 
 * `overlay` [NativeImage](native-image.md) - the icon to display on the bottom
 right corner of the taskbar icon. If this parameter is `null`, the overlay is
@@ -949,7 +949,7 @@ nothing.
 Returns whether the window has a shadow. On Windows and Linux always returns
 `true`.
 
-#### `win.setThumbarButtons(buttons)` _Windows 7+_
+#### `win.setThumbarButtons(buttons)` _Windows_
 
 * `buttons` Array
 
