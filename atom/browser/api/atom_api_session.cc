@@ -323,6 +323,12 @@ void AllowNTLMCredentialsForDomainsInIO(
   }
 }
 
+void OnClearStorageDataDone(const base::Closure& callback) {
+  if(callback.is_null())
+    return;
+  callback.Run();
+}
+
 }  // namespace
 
 Session::Session(v8::Isolate* isolate, AtomBrowserContext* browser_context)
@@ -372,21 +378,19 @@ void Session::DoCacheAction(const net::CompletionCallback& callback) {
 }
 
 void Session::ClearStorageData(mate::Arguments* args) {
-  // clearStorageData([options, ]callback)
+  // clearStorageData([options, callback])
   ClearStorageDataOptions options;
   args->GetNext(&options);
-  base::Closure callback;
-  if (!args->GetNext(&callback)) {
-    args->ThrowError();
-    return;
-  }
 
+  base::Closure callback;
+  args->GetNext(&callback);  
+ 
   auto storage_partition =
       content::BrowserContext::GetStoragePartition(browser_context(), nullptr);
   storage_partition->ClearData(
       options.storage_types, options.quota_types, options.origin,
       content::StoragePartition::OriginMatcherFunction(),
-      base::Time(), base::Time::Max(), callback);
+      base::Time(), base::Time::Max(), base::Bind(&OnClearStorageDataDone, callback));
 }
 
 void Session::FlushStorageData() {
