@@ -179,6 +179,7 @@ class Window : public mate::TrackableObject<Window>,
   bool IsWindowMessageHooked(UINT message);
   void UnhookWindowMessage(UINT message);
   void UnhookAllWindowMessages();
+  bool SetThumbnailClip(const gfx::Rect& region);
 #endif
 
 #if defined(TOOLKIT_VIEWS)

@@ -985,6 +985,17 @@ The `flags` is an array that can include following `String`s:
   button state is drawn. This value is intended for instances where the button
   is used in a notification.
 
+#### `win.setThumbnailClip(region)` _Windows_
+
+* `region` - Object
+  * `x` Integer - x-position of region
+  * `y` Integer - y-position of region
+  * `width` Integer - width of region
+  * `height` Integer - height of region
+
+Sets the region of the window to show as the thumbnail image displayed when
+hovering over the window in the taskbar.
+
 #### `win.showDefinitionForSelection()` _macOS_
 
 Same as `webContents.showDefinitionForSelection()`.

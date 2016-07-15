@@ -649,6 +649,12 @@ bool Window::IsWindowMessageHooked(UINT message) {
 void Window::UnhookAllWindowMessages() {
   messages_callback_map_.clear();
 }
+
+bool Window::SetThumbnailClip(const gfx::Rect& region) {
+  auto window = static_cast<NativeWindowViews*>(window_.get());
+  return window->taskbar_host().SetThumbnailClip(
+      window_->GetAcceleratedWidget(), region);
+}
 #endif
 
 #if defined(TOOLKIT_VIEWS)
@@ -836,6 +842,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("isWindowMessageHooked", &Window::IsWindowMessageHooked)
       .SetMethod("unhookWindowMessage", &Window::UnhookWindowMessage)
       .SetMethod("unhookAllWindowMessages", &Window::UnhookAllWindowMessages)
+      .SetMethod("setThumbnailClip", &Window::SetThumbnailClip)
 #endif
 #if defined(TOOLKIT_VIEWS)
       .SetMethod("setIcon", &Window::SetIcon)
