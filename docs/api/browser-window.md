@@ -994,7 +994,9 @@ The `flags` is an array that can include following `String`s:
   * `height` Integer - height of region
 
 Sets the region of the window to show as the thumbnail image displayed when
-hovering over the window in the taskbar.
+hovering over the window in the taskbar. You can reset the thumbnail to be
+the entire window by specifying an empty region:
+`{x: 0, y: 0, width: 0, height: 0}`.
 
 #### `win.showDefinitionForSelection()` _macOS_
 
