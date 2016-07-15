@@ -16,7 +16,7 @@ try {
   // do nothing
 }
 
-var platform = process.env.npm_config_platform
+var platform = process.env.npm_config_platform || os.platform()
 
 function onerror (err) {
   throw err
