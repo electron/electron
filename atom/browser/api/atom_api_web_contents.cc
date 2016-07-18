@@ -1194,10 +1194,28 @@ void WebContents::BeginFrameSubscription(mate::Arguments* args) {
 
   const auto view = web_contents()->GetRenderWidgetHostView();
   if (view) {
-    std::unique_ptr<FrameSubscriber> frame_subscriber(new FrameSubscriber(
-        isolate(), view, callback, only_dirty));
-    view->BeginFrameSubscription(std::move(frame_subscriber));
+    // std::unique_ptr<FrameSubscriber> frame_subscriber(new FrameSubscriber(
+    //     isolate(), view, callback, only_dirty));
+    // view->BeginFrameSubscription(std::move(frame_subscriber));
+    paint_isolate_ = args->isolate();
+
+    auto v = static_cast<OffScreenWindow *>(view);
+    paint_callback_ = base::Bind(&WebContents::OnPaint,
+      base::Unretained(this));
+    v->SetPaintCallback(&paint_callback_);
   }
+}
+
+void WebContents::OnPaint(
+    const gfx::Rect& damage_rect,
+    int bitmap_width,
+    int bitmap_height,
+    void* bitmap_pixels) {
+
+  v8::MaybeLocal<v8::Object> buffer = node::Buffer::New(paint_isolate_
+    , (char *)bitmap_pixels, sizeof(bitmap_pixels));
+
+  Emit("paint", damage_rect, bitmap_width, bitmap_height, buffer.ToLocalChecked());
 }
 
 void WebContents::EndFrameSubscription() {

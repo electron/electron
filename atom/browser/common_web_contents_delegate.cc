@@ -191,11 +191,12 @@ void CommonWebContentsDelegate::InitWithWebContents(
   content::WebContentsImpl* impl =
     reinterpret_cast<content::WebContentsImpl*>(web_contents);
 
-  impl->SetView(new OffScreenWebContentsView);
   std::cout << "end" << std::endl;
   // Create InspectableWebContents.
-  /*web_contents_.reset(brightray::InspectableWebContents::Create(web_contents));
-  web_contents_->SetDelegate(this);*/
+  web_contents_.reset(brightray::InspectableWebContents::Create(web_contents));
+  web_contents_->SetDelegate(this);
+
+  impl->SetView(new OffScreenWebContentsView);
   std::cout << "end" << std::endl;
 }
 

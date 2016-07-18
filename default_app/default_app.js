@@ -23,5 +23,9 @@ exports.load = (appUrl) => {
         console.log("asd")
       })
     })
+
+    mainWindow.webContents.on('paint', (e, rect, w, h, data) => {
+      console.log('ELECTRON EVENT', rect, w, h, data)
+    })
   })
 }

@@ -207,6 +207,7 @@
       'atom/browser/osr_window.cc',
       'atom/browser/osr_window.h',
       'atom/browser/osr_window_win.cc',
+      'atom/browser/osr_window_mac.mm',
       'atom/browser/net/asar/asar_protocol_handler.cc',
       'atom/browser/net/asar/asar_protocol_handler.h',
       'atom/browser/net/asar/url_request_asar_job.cc',

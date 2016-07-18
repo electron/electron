@@ -4,6 +4,7 @@
 
 #include "atom/browser/osr_window.h"
 #include "third_party/WebKit/public/platform/WebScreenInfo.h"
+#include "content/browser/compositor/gl_helper.h"
 #include "content/browser/renderer_host/render_widget_host_impl.h"
 #include "content/browser/renderer_host/render_widget_host_delegate.h"
 #include "content/public/browser/render_widget_host_view_frame_subscriber.h"
@@ -24,6 +25,31 @@
 #include "third_party/skia/include/core/SkSurface.h"
 #include "third_party/skia/include/core/SkPixmap.h"
 #include "cc/output/output_surface_client.h"
+#include "cc/output/copy_output_request.h"
+
+#include "base/callback_helpers.h"
+#include "base/location.h"
+#include "base/logging.h"
+#include "content/public/browser/browser_thread.h"
+#include "cc/scheduler/delay_based_time_source.h"
+
+// const float kDefaultScaleFactor = 1.0;
+
+// The maximum number of retry counts if frame capture fails.
+const int kFrameRetryLimit = 2;
+
+// When accelerated compositing is enabled and a widget resize is pending,
+// we delay further resizes of the UI. The following constant is the maximum
+// length of time that we should delay further UI resizes while waiting for a
+// resized frame from a renderer.
+// const int kResizeLockTimeoutMs = 67;
+
+#define CEF_UIT content::BrowserThread::UI
+#define CEF_POST_TASK(id, task) \
+    content::BrowserThread::PostTask(id, FROM_HERE, task)
+#define CEF_POST_DELAYED_TASK(id, task, delay_ms) \
+    content::BrowserThread::PostDelayedTask(id, FROM_HERE, task, \
+        base::TimeDelta::FromMilliseconds(delay_ms))
 
 namespace atom {
 
@@ -166,10 +192,21 @@ void OffScreenWebContentsView::SetOverscrollControllerEnabled(bool enabled){
   std::cout << "SetOverscrollControllerEnabled" << std::endl;
 }
 
+#if defined(OS_MACOSX)
+void OffScreenWebContentsView::SetAllowOtherViews(bool allow) {
+}
 
+bool OffScreenWebContentsView::GetAllowOtherViews() const {
+  return false;
+}
 
+bool OffScreenWebContentsView::IsEventTracking() const {
+  return false;
+}
 
-
+void OffScreenWebContentsView::CloseTabAfterEventTracking() {
+}
+#endif  // defined(OS_MACOSX)
 
 OffScreenOutputDevice::OffScreenOutputDevice() {
   std::cout << "OffScreenOutputDevice" << std::endl;
@@ -215,99 +252,6 @@ SkCanvas* OffScreenOutputDevice::BeginPaint(const gfx::Rect& damage_rect) {
   return canvas_.get();
 }
 
-void OffScreenOutputDevice::saveSkBitmapToBMPFile(const SkBitmap& skBitmap, const char* path){
-    typedef unsigned char UINT8;
-    typedef signed char SINT8;
-    typedef unsigned short UINT16;
-    typedef signed short SINT16;
-    typedef unsigned int UINT32;
-    typedef signed int SINT32;
-
-    struct BMP_FILEHDR // BMP file header
-    {
-        UINT32 bfSize; // size of file
-        UINT16 bfReserved1;
-        UINT16 bfReserved2;
-        UINT32 bfOffBits; // pointer to the pixmap bits
-    };
-
-    struct BMP_INFOHDR // BMP information header
-    {
-        UINT32 biSize; // size of this struct
-        UINT32 biWidth; // pixmap width
-        UINT32 biHeight; // pixmap height
-        UINT16 biPlanes; // should be 1
-        UINT16 biBitCount; // number of bits per pixel
-        UINT32 biCompression; // compression method
-        UINT32 biSizeImage; // size of image
-        UINT32 biXPelsPerMeter; // horizontal resolution
-        UINT32 biYPelsPerMeter; // vertical resolution
-        UINT32 biClrUsed; // number of colors used
-        UINT32 biClrImportant; // number of important colors
-    };
-    #define BitmapColorGetA(color) (((color) >> 24) & 0xFF)
-    #define BitmapColorGetR(color) (((color) >> 16) & 0xFF)
-    #define BitmapColorGetG(color) (((color) >> 8) & 0xFF)
-    #define BitmapColorGetB(color) (((color) >> 0) & 0xFF)
-
-    int bmpWidth = skBitmap.width();
-    int bmpHeight = skBitmap.height();
-    int stride = skBitmap.rowBytes();
-    char* m_pmap = (char*)skBitmap.getPixels();
-    //virtual PixelFormat& GetPixelFormat() =0; //assume pf is ARGB;
-    FILE* fp = fopen(path, "wb");
-    if(!fp){
-        printf("saveSkBitmapToBMPFile: fopen %s Error!\n", path);
-    }
-    SINT32 bpl=bmpWidth*4;
-    // BMP file header.
-    BMP_FILEHDR fhdr;
-    fputc('B', fp);
-    fputc('M', fp);
-    fhdr.bfReserved1=fhdr.bfReserved2=0;
-    fhdr.bfOffBits=14+40; // File header size + header size.
-    fhdr.bfSize=fhdr.bfOffBits+bpl*bmpHeight;
-    fwrite(&fhdr, 1, 12, fp);
-
-    // BMP header.
-    BMP_INFOHDR bhdr;
-    bhdr.biSize=40;
-    bhdr.biBitCount=32;
-    bhdr.biCompression=0; // RGB Format.
-    bhdr.biPlanes=1;
-    bhdr.biWidth=bmpWidth;
-    bhdr.biHeight=bmpHeight;
-    bhdr.biClrImportant=0;
-    bhdr.biClrUsed=0;
-    bhdr.biXPelsPerMeter=2384;
-    bhdr.biYPelsPerMeter=2384;
-    bhdr.biSizeImage=bpl*bmpHeight;
-    fwrite(&bhdr, 1, 40, fp);
-
-    // BMP data.
-    //for(UINT32 y=0; y<m_height; y++)
-    for(SINT32 y=bmpHeight-1; y>=0; y--)
-    {
-        SINT32 base=y*stride;
-        for(SINT32 x=0; x<(SINT32)bmpWidth; x++)
-        {
-            UINT32 i=base+x*4;
-            UINT32 pixelData = *(UINT32*)(m_pmap+i);
-            UINT8 b1=BitmapColorGetB(pixelData);
-            UINT8 g1=BitmapColorGetG(pixelData);
-            UINT8 r1=BitmapColorGetR(pixelData);
-            UINT8 a1=BitmapColorGetA(pixelData);
-            r1=r1*a1/255;
-            g1=g1*a1/255;
-            b1=b1*a1/255;
-            UINT32 temp=(a1<<24)|(r1<<16)|(g1<<8)|b1;//a bmp pixel in little endian is B、G、R、A
-            fwrite(&temp, 4, 1, fp);
-        }
-    }
-    fflush(fp);
-    fclose(fp);
-}
-
 void OffScreenOutputDevice::EndPaint() {
   std::cout << "EndPaint" << std::endl;
 
@@ -322,19 +266,351 @@ void OffScreenOutputDevice::EndPaint() {
   //saveSkBitmapToBMPFile(*(bitmap_.get()), "test.bmp");
 
   uint8_t* pixels = reinterpret_cast<uint8_t*>(bitmap_->getPixels());
-  for (int i = 0; i<4; i++) {
+  for (int i = 0; i<16; i++) {
     int x = static_cast<int>(pixels[i]);
     std::cout << std::hex << x << std::dec << std::endl;
   }
 }
 
+// Used for managing copy requests when GPU compositing is enabled. Based on
+// RendererOverridesHandler::InnerSwapCompositorFrame and
+// DelegatedFrameHost::CopyFromCompositingSurface.
+class CefCopyFrameGenerator {
+ public:
+  CefCopyFrameGenerator(int frame_rate_threshold_ms,
+                        OffScreenWindow* view)
+    : frame_rate_threshold_ms_(frame_rate_threshold_ms),
+      view_(view),
+      frame_pending_(false),
+      frame_in_progress_(false),
+      frame_retry_count_(0),
+      weak_ptr_factory_(this) {
+  }
+
+  void GenerateCopyFrame(
+      bool force_frame,
+      const gfx::Rect& damage_rect) {
+    if (force_frame && !frame_pending_)
+      frame_pending_ = true;
+
+    // No frame needs to be generated at this time.
+    if (!frame_pending_)
+      return;
+
+    // Keep track of |damage_rect| for when the next frame is generated.
+    if (!damage_rect.IsEmpty())
+      pending_damage_rect_.Union(damage_rect);
+
+    // Don't attempt to generate a frame while one is currently in-progress.
+    if (frame_in_progress_)
+      return;
+    frame_in_progress_ = true;
+
+    // Don't exceed the frame rate threshold.
+    const int64_t frame_rate_delta =
+        (base::TimeTicks::Now() - frame_start_time_).InMilliseconds();
+    if (frame_rate_delta < frame_rate_threshold_ms_) {
+      // Generate the frame after the necessary time has passed.
+      CEF_POST_DELAYED_TASK(CEF_UIT,
+          base::Bind(&CefCopyFrameGenerator::InternalGenerateCopyFrame,
+                     weak_ptr_factory_.GetWeakPtr()),
+          frame_rate_threshold_ms_ - frame_rate_delta);
+      return;
+    }
+
+    InternalGenerateCopyFrame();
+  }
+
+  bool frame_pending() const { return frame_pending_; }
+
+  void set_frame_rate_threshold_ms(int frame_rate_threshold_ms) {
+    frame_rate_threshold_ms_ = frame_rate_threshold_ms;
+  }
+
+ private:
+  void InternalGenerateCopyFrame() {
+    frame_pending_ = false;
+    frame_start_time_ = base::TimeTicks::Now();
+
+    if (!view_->render_widget_host())
+      return;
+
+    const gfx::Rect damage_rect = pending_damage_rect_;
+    pending_damage_rect_.SetRect(0, 0, 0, 0);
+
+    // The below code is similar in functionality to
+    // DelegatedFrameHost::CopyFromCompositingSurface but we reuse the same
+    // SkBitmap in the GPU codepath and avoid scaling where possible.
+    std::unique_ptr<cc::CopyOutputRequest> request =
+        cc::CopyOutputRequest::CreateRequest(base::Bind(
+            &CefCopyFrameGenerator::CopyFromCompositingSurfaceHasResult,
+            weak_ptr_factory_.GetWeakPtr(),
+            gfx::Rect(view_->GetPhysicalBackingSize())));
+
+    // request->set_area(gfx::Rect(view_->GetPhysicalBackingSize()));
+
+    view_->DelegatedFrameHostGetLayer()->RequestCopyOfOutput(
+        std::move(request));
+  }
+
+  void CopyFromCompositingSurfaceHasResult(
+      const gfx::Rect& damage_rect,
+      std::unique_ptr<cc::CopyOutputResult> result) {
+    std::cout << "has result" << std::endl;
+    if (result->IsEmpty() || result->size().IsEmpty() ||
+        !view_->render_widget_host()) {
+      OnCopyFrameCaptureFailure(damage_rect);
+      return;
+    }
+
+    if (result->HasTexture()) {
+      PrepareTextureCopyOutputResult(damage_rect, std::move(result));
+      return;
+    }
+
+    DCHECK(result->HasBitmap());
+    PrepareBitmapCopyOutputResult(damage_rect, std::move(result));
+  }
+
+  void PrepareTextureCopyOutputResult(
+      const gfx::Rect& damage_rect,
+      std::unique_ptr<cc::CopyOutputResult> result) {
+    DCHECK(result->HasTexture());
+    base::ScopedClosureRunner scoped_callback_runner(
+        base::Bind(&CefCopyFrameGenerator::OnCopyFrameCaptureFailure,
+                   weak_ptr_factory_.GetWeakPtr(),
+                   damage_rect));
+
+    const gfx::Size& result_size = result->size();
+    SkIRect bitmap_size;
+    if (bitmap_)
+      bitmap_->getBounds(&bitmap_size);
+
+    if (!bitmap_ ||
+        bitmap_size.width() != result_size.width() ||
+        bitmap_size.height() != result_size.height()) {
+      // Create a new bitmap if the size has changed.
+      bitmap_.reset(new SkBitmap);
+      bitmap_->allocN32Pixels(result_size.width(),
+                              result_size.height(),
+                              true);
+      if (bitmap_->drawsNothing())
+        return;
+    }
+
+    content::ImageTransportFactory* factory =
+        content::ImageTransportFactory::GetInstance();
+    content::GLHelper* gl_helper = factory->GetGLHelper();
+    if (!gl_helper)
+      return;
+
+    std::unique_ptr<SkAutoLockPixels> bitmap_pixels_lock(
+        new SkAutoLockPixels(*bitmap_));
+    uint8_t* pixels = static_cast<uint8_t*>(bitmap_->getPixels());
+
+    cc::TextureMailbox texture_mailbox;
+    std::unique_ptr<cc::SingleReleaseCallback> release_callback;
+    result->TakeTexture(&texture_mailbox, &release_callback);
+    DCHECK(texture_mailbox.IsTexture());
+    if (!texture_mailbox.IsTexture())
+      return;
+
+    ignore_result(scoped_callback_runner.Release());
+
+    gl_helper->CropScaleReadbackAndCleanMailbox(
+        texture_mailbox.mailbox(),
+        texture_mailbox.sync_token(),
+        result_size,
+        gfx::Rect(result_size),
+        result_size,
+        pixels,
+        kN32_SkColorType,
+        base::Bind(
+            &CefCopyFrameGenerator::CopyFromCompositingSurfaceFinishedProxy,
+            weak_ptr_factory_.GetWeakPtr(),
+            base::Passed(&release_callback),
+            damage_rect,
+            base::Passed(&bitmap_),
+            base::Passed(&bitmap_pixels_lock)),
+        content::GLHelper::SCALER_QUALITY_FAST);
+  }
+
+  static void CopyFromCompositingSurfaceFinishedProxy(
+      base::WeakPtr<CefCopyFrameGenerator> generator,
+      std::unique_ptr<cc::SingleReleaseCallback> release_callback,
+      const gfx::Rect& damage_rect,
+      std::unique_ptr<SkBitmap> bitmap,
+      std::unique_ptr<SkAutoLockPixels> bitmap_pixels_lock,
+      bool result) {
+    // This method may be called after the view has been deleted.
+    gpu::SyncToken sync_token;
+    if (result) {
+      content::GLHelper* gl_helper =
+          content::ImageTransportFactory::GetInstance()->GetGLHelper();
+      if (gl_helper)
+        gl_helper->GenerateSyncToken(&sync_token);
+    }
+    const bool lost_resource = !sync_token.HasData();
+    release_callback->Run(sync_token, lost_resource);
+
+    if (generator) {
+      generator->CopyFromCompositingSurfaceFinished(
+          damage_rect, std::move(bitmap), std::move(bitmap_pixels_lock),
+          result);
+    } else {
+      bitmap_pixels_lock.reset();
+      bitmap.reset();
+    }
+  }
+
+  void CopyFromCompositingSurfaceFinished(
+      const gfx::Rect& damage_rect,
+      std::unique_ptr<SkBitmap> bitmap,
+      std::unique_ptr<SkAutoLockPixels> bitmap_pixels_lock,
+      bool result) {
+    // Restore ownership of the bitmap to the view.
+    DCHECK(!bitmap_);
+    bitmap_ = std::move(bitmap);
+
+    if (result) {
+      OnCopyFrameCaptureSuccess(damage_rect, *bitmap_,
+                                std::move(bitmap_pixels_lock));
+    } else {
+      bitmap_pixels_lock.reset();
+      OnCopyFrameCaptureFailure(damage_rect);
+    }
+  }
+
+  void PrepareBitmapCopyOutputResult(
+      const gfx::Rect& damage_rect,
+      std::unique_ptr<cc::CopyOutputResult> result) {
+    DCHECK(result->HasBitmap());
+    std::unique_ptr<SkBitmap> source = result->TakeBitmap();
+    DCHECK(source);
+    if (source) {
+      std::unique_ptr<SkAutoLockPixels> bitmap_pixels_lock(
+          new SkAutoLockPixels(*source));
+      OnCopyFrameCaptureSuccess(damage_rect, *source,
+                                std::move(bitmap_pixels_lock));
+    } else {
+      OnCopyFrameCaptureFailure(damage_rect);
+    }
+  }
+
+  void OnCopyFrameCaptureFailure(
+      const gfx::Rect& damage_rect) {
+    // Retry with the same |damage_rect|.
+    pending_damage_rect_.Union(damage_rect);
+
+    const bool force_frame = (++frame_retry_count_ <= kFrameRetryLimit);
+    OnCopyFrameCaptureCompletion(force_frame);
+  }
+
+  void OnCopyFrameCaptureSuccess(
+      const gfx::Rect& damage_rect,
+      const SkBitmap& bitmap,
+      std::unique_ptr<SkAutoLockPixels> bitmap_pixels_lock) {
+
+
+    // view_->OnPaint(damage_rect, bitmap.width(), bitmap.height(),
+    //                bitmap.getPixels());
+
+    uint8_t* pixels = reinterpret_cast<uint8_t*>(bitmap.getPixels());
+    for (int i = 0; i<4; i++) {
+      int x = static_cast<int>(pixels[i]);
+      std::cout << std::hex << x << std::dec << std::endl;
+    }
+    if (view_->paintCallback) {
+      std::cout << "FRAME COPY ARRIVED" << std::endl;
+      view_->paintCallback->Run(damage_rect, bitmap.width(), bitmap.height(),
+                pixels);
+    }
+
+    bitmap_pixels_lock.reset();
+
+    // Reset the frame retry count on successful frame generation.
+    if (frame_retry_count_ > 0)
+      frame_retry_count_ = 0;
+
+    OnCopyFrameCaptureCompletion(false);
+  }
+
+  void OnCopyFrameCaptureCompletion(bool force_frame) {
+    frame_in_progress_ = false;
+
+    if (frame_pending_) {
+      // Another frame was requested while the current frame was in-progress.
+      // Generate the pending frame now.
+      CEF_POST_TASK(CEF_UIT,
+          base::Bind(&CefCopyFrameGenerator::GenerateCopyFrame,
+                     weak_ptr_factory_.GetWeakPtr(),
+                     force_frame,
+                     gfx::Rect()));
+    }
+  }
+
+  int frame_rate_threshold_ms_;
+  OffScreenWindow* view_;
+
+  base::TimeTicks frame_start_time_;
+  bool frame_pending_;
+  bool frame_in_progress_;
+  int frame_retry_count_;
+  std::unique_ptr<SkBitmap> bitmap_;
+  gfx::Rect pending_damage_rect_;
+
+  base::WeakPtrFactory<CefCopyFrameGenerator> weak_ptr_factory_;
+
+  DISALLOW_COPY_AND_ASSIGN(CefCopyFrameGenerator);
+};
+
+// Used to control the VSync rate in subprocesses when BeginFrame scheduling is
+// enabled.
+class CefBeginFrameTimer : public cc::DelayBasedTimeSourceClient {
+ public:
+  CefBeginFrameTimer(int frame_rate_threshold_ms,
+                     const base::Closure& callback)
+      : callback_(callback) {
+    time_source_ = cc::DelayBasedTimeSource::Create(
+        base::TimeDelta::FromMilliseconds(frame_rate_threshold_ms),
+        content::BrowserThread::GetMessageLoopProxyForThread(CEF_UIT).get());
+    time_source_->SetClient(this);
+  }
+
+  void SetActive(bool active) {
+    time_source_->SetActive(active);
+  }
+
+  bool IsActive() const {
+    return time_source_->Active();
+  }
+
+  void SetFrameRateThresholdMs(int frame_rate_threshold_ms) {
+    time_source_->SetTimebaseAndInterval(
+        base::TimeTicks::Now(),
+        base::TimeDelta::FromMilliseconds(frame_rate_threshold_ms));
+  }
+
+ private:
+  // cc::TimerSourceClient implementation.
+  void OnTimerTick() override {
+    callback_.Run();
+  }
+
+  const base::Closure callback_;
+  std::unique_ptr<cc::DelayBasedTimeSource> time_source_;
+
+  DISALLOW_COPY_AND_ASSIGN(CefBeginFrameTimer);
+};
+
 OffScreenWindow::OffScreenWindow(content::RenderWidgetHost* host)
   : render_widget_host_(content::RenderWidgetHostImpl::From(host)),
-    delegated_frame_host_(new content::DelegatedFrameHost(this)),
-    compositor_widget_(gfx::kNullAcceleratedWidget),
+    frame_rate_threshold_ms_(0),
     scale_factor_(1.0f),
     is_showing_(!render_widget_host_->is_hidden()),
     size_(gfx::Size(800, 600)),
+    delegated_frame_host_(new content::DelegatedFrameHost(this)),
+    compositor_widget_(gfx::kNullAcceleratedWidget),
     weak_ptr_factory_(this) {
   DCHECK(render_widget_host_);
   std::cout << "OffScreenWindow" << std::endl;
@@ -344,16 +620,61 @@ OffScreenWindow::OffScreenWindow(content::RenderWidgetHost* host)
 
   CreatePlatformWidget();
 
-  compositor_.reset(new ui::Compositor(content::GetContextFactory(),
-    base::ThreadTaskRunnerHandle::Get()));
+#if !defined(OS_MACOSX)
+  // On OS X the ui::Compositor is created/owned by the platform view.
+  compositor_.reset(
+      new ui::Compositor(content::GetContextFactory(),
+                         base::ThreadTaskRunnerHandle::Get()));
   compositor_->SetAcceleratedWidget(compositor_widget_);
-  compositor_->SetDelegate(this);
+#endif
+  // compositor_->SetDelegate(this);
   compositor_->SetRootLayer(root_layer_.get());
+
+  frame_rate_threshold_ms_ = 1000 / 24;
+  begin_frame_timer_.reset(new CefBeginFrameTimer(
+      frame_rate_threshold_ms_,
+      base::Bind(&OffScreenWindow::OnBeginFrameTimerTick,
+                 weak_ptr_factory_.GetWeakPtr())));
+
+  // begin_frame_timer_->SetActive(true);
+}
+
+void OffScreenWindow::OnBeginFrameTimerTick() {
+  const base::TimeTicks frame_time = base::TimeTicks::Now();
+  const base::TimeDelta vsync_period =
+      base::TimeDelta::FromMilliseconds(frame_rate_threshold_ms_);
+  SendBeginFrame(frame_time, vsync_period);
+
+  std::cout << "tickkkk" << std::endl;
+  // copy_frame_generator_->GenerateCopyFrame(true, damage_rect);
+}
+
+void OffScreenWindow::SendBeginFrame(base::TimeTicks frame_time,
+                                                base::TimeDelta vsync_period) {
+  base::TimeTicks display_time = frame_time + vsync_period;
+
+  // TODO(brianderson): Use adaptive draw-time estimation.
+  base::TimeDelta estimated_browser_composite_time =
+      base::TimeDelta::FromMicroseconds(
+          (1.0f * base::Time::kMicrosecondsPerSecond) / (3.0f * 60));
+
+  base::TimeTicks deadline = display_time - estimated_browser_composite_time;
+
+  render_widget_host_->Send(new ViewMsg_BeginFrame(
+      render_widget_host_->GetRoutingID(),
+      cc::BeginFrameArgs::Create(BEGINFRAME_FROM_HERE, frame_time, deadline,
+                                 vsync_period, cc::BeginFrameArgs::NORMAL)));
+}
+
+void OffScreenWindow::SetPaintCallback(const OnPaintCallback *callback) {
+  paintCallback.reset(callback);
 }
 
 OffScreenWindow::~OffScreenWindow() {
   std::cout << "~OffScreenWindow" << std::endl;
-  if (is_showing_) delegated_frame_host_->WasHidden();
+
+  if (is_showing_)
+    delegated_frame_host_->WasHidden();
   delegated_frame_host_->ResetCompositor();
 
   delegated_frame_host_.reset(NULL);
@@ -447,7 +768,8 @@ void OffScreenWindow::Show() {
     return;
 
   is_showing_ = true;
-  if (render_widget_host_) render_widget_host_->WasShown(ui::LatencyInfo());
+  if (render_widget_host_)
+    render_widget_host_->WasShown(ui::LatencyInfo());
   delegated_frame_host_->SetCompositor(compositor_.get());
   delegated_frame_host_->WasShown(ui::LatencyInfo());
 }
@@ -457,7 +779,8 @@ void OffScreenWindow::Hide() {
   if (!is_showing_)
     return;
 
-  if (render_widget_host_) render_widget_host_->WasHidden();
+  if (render_widget_host_)
+    render_widget_host_->WasHidden();
   delegated_frame_host_->WasHidden();
   delegated_frame_host_->ResetCompositor();
   is_showing_ = false;
@@ -512,9 +835,43 @@ void OffScreenWindow::OnSwapCompositorFrame(
     last_scroll_offset_ = frame->metadata.root_scroll_offset;
   }
 
+  if (!copy_frame_generator_.get()) {
+    copy_frame_generator_.reset(
+        new CefCopyFrameGenerator(frame_rate_threshold_ms_, this));
+  }
+
+  // Determine the damage rectangle for the current frame. This is the same
+  // calculation that SwapDelegatedFrame uses.
+  // cc::RenderPass* root_pass =
+  //     frame->delegated_frame_data->render_pass_list.back().get();
+  // gfx::Size frame_size = root_pass->output_rect.size();
+  // gfx::Rect damage_rect =
+  //     gfx::ToEnclosingRect(gfx::RectF(root_pass->damage_rect));
+  // damage_rect.Intersect(gfx::Rect(frame_size));
+  gfx::Rect damage_rect = gfx::Rect(GetVisibleViewportSize());
+
   if (frame->delegated_frame_data)
-    delegated_frame_host_->SwapDelegatedFrame(
-      output_surface_id, std::move(frame));
+    delegated_frame_host_->SwapDelegatedFrame(output_surface_id,
+                                                std::move(frame));
+
+  // Request a copy of the last compositor frame which will eventually call
+  // OnPaint asynchronously.
+  std::cout << "FRAME COPY REQUESTED" << std::endl;
+  copy_frame_generator_->GenerateCopyFrame(true, damage_rect);
+
+  // gfx::Rect rect = gfx::Rect(GetVisibleViewportSize());
+  // // The below code is similar in functionality to
+  // // DelegatedFrameHost::CopyFromCompositingSurface but we reuse the same
+  // // SkBitmap in the GPU codepath and avoid scaling where possible.
+  // std::unique_ptr<cc::CopyOutputRequest> request =
+  //     cc::CopyOutputRequest::CreateRequest(base::Bind(
+  //         &OffScreenWindow::CopyFromCompositingSurfaceHasResult,
+  //         weak_ptr_factory_.GetWeakPtr(),
+  //         rect));
+  //
+  // request->set_area(gfx::Rect(GetPhysicalBackingSize()));
+  // DelegatedFrameHostGetLayer()->RequestCopyOfOutput(
+  //     std::move(request));
 }
 
 void OffScreenWindow::ClearCompositorFrame() {

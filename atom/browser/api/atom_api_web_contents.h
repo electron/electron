@@ -18,6 +18,8 @@
 #include "native_mate/handle.h"
 #include "ui/gfx/image/image.h"
 
+#include "atom/browser/osr_window.h"
+
 namespace blink {
 struct WebDeviceEmulationParams;
 }
@@ -141,6 +143,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   // Subscribe to the frame updates.
   void BeginFrameSubscription(mate::Arguments* args);
   void EndFrameSubscription();
+  void OnPaint(const gfx::Rect&, int, int, void*);
 
   // Dragging native items.
   void StartDrag(const mate::Dictionary& item, mate::Arguments* args);
@@ -279,6 +282,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
  private:
   AtomBrowserContext* GetBrowserContext() const;
 
+  OffScreenWindow::OnPaintCallback paint_callback_;
+
   uint32_t GetNextRequestId() {
     return ++request_id_;
   }
@@ -298,6 +303,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
   v8::Global<v8::Value> session_;
   v8::Global<v8::Value> devtools_web_contents_;
   v8::Global<v8::Value> debugger_;
+
+  v8::Isolate* paint_isolate_;
 
   std::unique_ptr<WebViewGuestDelegate> guest_delegate_;
 

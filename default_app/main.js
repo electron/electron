@@ -331,5 +331,5 @@ if (option.file && !option.webdriver) {
   startRepl()
 } else {
   const indexPath = path.join(__dirname, '/index.html')
-  loadApplicationByUrl(`file://${indexPath}`)
+  loadApplicationByUrl(`https://vimeo.com/channels/staffpicks/174711575#t=7s`)
 }
