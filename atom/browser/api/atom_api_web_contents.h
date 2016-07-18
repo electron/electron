@@ -294,6 +294,9 @@ class WebContents : public mate::TrackableObject<WebContents>,
                              const base::ListValue& args,
                              IPC::Message* message);
 
+  // Called when the hosted view gets graphical updates.
+  void OnViewPainted();
+
   v8::Global<v8::Value> session_;
   v8::Global<v8::Value> devtools_web_contents_;
   v8::Global<v8::Value> debugger_;

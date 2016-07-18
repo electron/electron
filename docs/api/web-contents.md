@@ -448,6 +448,10 @@ app.on('ready', () => {
 })
 ```
 
+#### Event: 'view-painted'
+
+Emitted when a page's view is repainted.
+
 ### Instance Methods
 
 #### `contents.loadURL(url[, options])`
