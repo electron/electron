@@ -74,7 +74,8 @@ bool FrameSubscriber::ShouldCaptureFrame(
       base::Bind(&FrameSubscriber::ReadbackResultAsBitmap,
       base::Unretained(this)));
 
-  surface->RequestCopyOfOutput(std::move(request));
+  // surface->RequestCopyOfOutput(std::move(request));
+  std::cout << request.get() << surface << std::endl;
   return false;
 }
 

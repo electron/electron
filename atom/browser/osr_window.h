@@ -25,43 +25,78 @@
 #include "cc/output/output_surface_client.h"
 #include "cc/scheduler/begin_frame_source.h"
 
+#include "content/browser/web_contents/web_contents_view.h"
+// #include "atom/browser/native_window_views.h"
+
+#if defined(OS_WIN)
 #include <windows.h>
 #include "ui/gfx/win/window_impl.h"
-#include "content/browser/web_contents/web_contents_view.h"
-#include "atom/browser/native_window_views.h"
+#endif
+
+#if defined(OS_MACOSX)
+#include "content/browser/renderer_host/browser_compositor_view_mac.h"
+#include "ui/accelerated_widget_mac/accelerated_widget_mac.h"
+#endif
+
+#if defined(OS_MACOSX)
+#ifdef __OBJC__
+@class CALayer;
+@class NSWindow;
+@class NSTextInputContext;
+#else
+class CALayer;
+class NSWindow;
+class NSTextInputContext;
+#endif
+#endif
+
+#if defined(OS_MACOSX)
+class AcceleratedWidgetMacNSViewHelper;
+#endif
 
 namespace atom {
+
+class CefCopyFrameGenerator;
+class CefBeginFrameTimer;
 
 class OffScreenWebContentsView : public content::WebContentsView {
 public:
   OffScreenWebContentsView();
   ~OffScreenWebContentsView();
 
-  gfx::NativeView GetNativeView() const;
-  gfx::NativeView GetContentNativeView() const;
-  gfx::NativeWindow GetTopLevelNativeWindow() const;
+  gfx::NativeView GetNativeView() const override;
+  gfx::NativeView GetContentNativeView() const override;
+  gfx::NativeWindow GetTopLevelNativeWindow() const override;
 
-  void GetContainerBounds(gfx::Rect* out) const;
-  void SizeContents(const gfx::Size& size);
-  void Focus();
-  void SetInitialFocus();
-  void StoreFocus();
-  void RestoreFocus();
-  content::DropData* GetDropData() const;
-  gfx::Rect GetViewBounds() const;
+  void GetContainerBounds(gfx::Rect* out) const override;
+  void SizeContents(const gfx::Size& size) override;
+  void Focus() override;
+  void SetInitialFocus() override;
+  void StoreFocus() override;
+  void RestoreFocus() override;
+  content::DropData* GetDropData() const override;
+  gfx::Rect GetViewBounds() const override;
 
   void CreateView(
-      const gfx::Size& initial_size, gfx::NativeView context);
+      const gfx::Size& initial_size, gfx::NativeView context) override;
 
   content::RenderWidgetHostViewBase* CreateViewForWidget(
-      content::RenderWidgetHost* render_widget_host, bool is_guest_view_hack);
+      content::RenderWidgetHost* render_widget_host, bool is_guest_view_hack) override;
   content::RenderWidgetHostViewBase* CreateViewForPopupWidget(
-      content::RenderWidgetHost* render_widget_host);
+      content::RenderWidgetHost* render_widget_host) override;
 
-  void SetPageTitle(const base::string16& title);
-  void RenderViewCreated(content::RenderViewHost* host);
-  void RenderViewSwappedIn(content::RenderViewHost* host);
-  void SetOverscrollControllerEnabled(bool enabled);
+  void SetPageTitle(const base::string16& title) override;
+  void RenderViewCreated(content::RenderViewHost* host) override;
+  void RenderViewSwappedIn(content::RenderViewHost* host) override;
+  void SetOverscrollControllerEnabled(bool enabled) override;
+
+#if defined(OS_MACOSX)
+  void SetAllowOtherViews(bool allow) override;
+  bool GetAllowOtherViews() const override;
+  bool IsEventTracking() const override;
+  void CloseTabAfterEventTracking() override;
+#endif
+
 private:
   content::RenderWidgetHostViewBase* view_;
 };
@@ -72,7 +107,7 @@ public:
   ~OffScreenOutputDevice();
 
 
-  void saveSkBitmapToBMPFile(const SkBitmap& skBitmap, const char* path);
+  // void saveSkBitmapToBMPFile(const SkBitmap& skBitmap, const char* path);
   void Resize(const gfx::Size& pixel_size, float scale_factor) override;
   SkCanvas* BeginPaint(const gfx::Rect& damage_rect) override;
   void EndPaint() override;
@@ -91,16 +126,22 @@ public:
   ~AtomCompositorDelegate() {};
 
   std::unique_ptr<cc::SoftwareOutputDevice> CreateSoftwareOutputDevice(
-      ui::Compositor* compositor) {
+      ui::Compositor* compositor) override {
     return std::unique_ptr<cc::SoftwareOutputDevice>(new OffScreenOutputDevice);
   }
 };
 
 class OffScreenWindow
-    : public content::RenderWidgetHostViewBase,
-      public content::DelegatedFrameHostClient,
-      public ui::CompositorDelegate {
+  : public content::RenderWidgetHostViewBase,
+  #if defined(OS_MACOSX)
+    public ui::AcceleratedWidgetMacNSView,
+  #endif
+    public ui::CompositorDelegate,
+    public content::DelegatedFrameHostClient {
 public:
+  typedef base::Callback<void(const gfx::Rect&,int,int,void*)>
+      OnPaintCallback;
+
   OffScreenWindow(content::RenderWidgetHost*);
   ~OffScreenWindow();
 
@@ -108,100 +149,164 @@ public:
 
 //content::RenderWidgetHostView
   bool OnMessageReceived(const IPC::Message&) override;
-  void InitAsChild(gfx::NativeView);
-  content::RenderWidgetHost* GetRenderWidgetHost(void) const;
-  void SetSize(const gfx::Size &);
-  void SetBounds(const gfx::Rect &);
-  gfx::Vector2dF GetLastScrollOffset(void) const;
-  gfx::NativeView GetNativeView(void) const;
-  gfx::NativeViewId GetNativeViewId(void) const;
-  gfx::NativeViewAccessible GetNativeViewAccessible(void);
+  void InitAsChild(gfx::NativeView) override;
+  content::RenderWidgetHost* GetRenderWidgetHost(void) const override;
+  void SetSize(const gfx::Size &) override;
+  void SetBounds(const gfx::Rect &) override;
+  gfx::Vector2dF GetLastScrollOffset(void) const override;
+  gfx::NativeView GetNativeView(void) const override;
+  gfx::NativeViewId GetNativeViewId(void) const override;
+  gfx::NativeViewAccessible GetNativeViewAccessible(void) override;
   ui::TextInputClient* GetTextInputClient() override;
-  void Focus(void);
-  bool HasFocus(void) const;
-  bool IsSurfaceAvailableForCopy(void) const;
-  void Show(void);
-  void Hide(void);
-  bool IsShowing(void);
-  gfx::Rect GetViewBounds(void) const;
+  void Focus(void) override;
+  bool HasFocus(void) const override;
+  bool IsSurfaceAvailableForCopy(void) const override;
+  void Show(void) override;
+  void Hide(void) override;
+  bool IsShowing(void) override;
+  gfx::Rect GetViewBounds(void) const override;
   gfx::Size GetVisibleViewportSize() const override;
   void SetInsets(const gfx::Insets&) override;
-  bool LockMouse(void);
-  void UnlockMouse(void);
-  bool GetScreenColorProfile(std::vector<char>*);
+  bool LockMouse(void) override;
+  void UnlockMouse(void) override;
+  bool GetScreenColorProfile(std::vector<char>*) override;
+
+#if defined(OS_MACOSX)
+  void SetActive(bool active) override;
+  void ShowDefinitionForSelection() override;
+  bool SupportsSpeech() const override;
+  void SpeakSelection() override;
+  bool IsSpeaking() const override;
+  void StopSpeaking() override;
+#endif  // defined(OS_MACOSX)
 
 //content::RenderWidgetHostViewBase
-  void OnSwapCompositorFrame(uint32_t, std::unique_ptr<cc::CompositorFrame>);
-  void ClearCompositorFrame(void);
-  void InitAsPopup(content::RenderWidgetHostView *, const gfx::Rect &);
-  void InitAsFullscreen(content::RenderWidgetHostView *);
-  void UpdateCursor(const content::WebCursor &);
-  void SetIsLoading(bool);
-  void TextInputStateChanged(const ViewHostMsg_TextInputState_Params &);
-  void ImeCancelComposition(void);
-  void RenderProcessGone(base::TerminationStatus,int);
-  void Destroy(void);
-  void SetTooltipText(const base::string16 &);
-  void SelectionBoundsChanged(const ViewHostMsg_SelectionBounds_Params &);
+  void OnSwapCompositorFrame(uint32_t, std::unique_ptr<cc::CompositorFrame>) override;
+  void ClearCompositorFrame(void) override;
+  void InitAsPopup(content::RenderWidgetHostView *, const gfx::Rect &) override;
+  void InitAsFullscreen(content::RenderWidgetHostView *) override;
+  void UpdateCursor(const content::WebCursor &) override;
+  void SetIsLoading(bool) override;
+  void TextInputStateChanged(const ViewHostMsg_TextInputState_Params &) override;
+  void ImeCancelComposition(void) override;
+  void RenderProcessGone(base::TerminationStatus,int) override;
+  void Destroy(void) override;
+  void SetTooltipText(const base::string16 &) override;
+
+#if defined(OS_MACOSX)
+  void SelectionChanged(const base::string16& text,
+                        size_t offset,
+                        const gfx::Range& range) override;
+#endif
+
+  void SelectionBoundsChanged(const ViewHostMsg_SelectionBounds_Params &) override;
   void CopyFromCompositingSurface(const gfx::Rect &,
     const gfx::Size &,
     const content::ReadbackRequestCallback &,
-    const SkColorType);
+    const SkColorType) override;
   void CopyFromCompositingSurfaceToVideoFrame(
     const gfx::Rect &,
     const scoped_refptr<media::VideoFrame> &,
     const base::Callback<void (const gfx::Rect &, bool),
-    base::internal::CopyMode::Copyable> &);
-  bool CanCopyToVideoFrame(void) const;
+    base::internal::CopyMode::Copyable> &) override;
+  bool CanCopyToVideoFrame(void) const override;
   void BeginFrameSubscription(
-    std::unique_ptr<content::RenderWidgetHostViewFrameSubscriber>);
-  void EndFrameSubscription();
-  bool HasAcceleratedSurface(const gfx::Size &);
-  void GetScreenInfo(blink::WebScreenInfo *);
+    std::unique_ptr<content::RenderWidgetHostViewFrameSubscriber>) override;
+  void EndFrameSubscription() override;
+  bool HasAcceleratedSurface(const gfx::Size &) override;
+  void GetScreenInfo(blink::WebScreenInfo *) override;
   bool GetScreenColorProfile(blink::WebVector<char>*);
-  gfx::Rect GetBoundsInRootWindow(void);
-  void LockCompositingSurface(void);
-  void UnlockCompositingSurface(void);
+  gfx::Rect GetBoundsInRootWindow(void) override;
+  void LockCompositingSurface(void) override;
+  void UnlockCompositingSurface(void) override;
   void ImeCompositionRangeChanged(
-    const gfx::Range &, const std::vector<gfx::Rect>&);
+    const gfx::Range &, const std::vector<gfx::Rect>&) override;
   gfx::Size GetPhysicalBackingSize() const override;
   gfx::Size GetRequestedRendererSize() const override;
 
 //content::DelegatedFrameHostClient
   int DelegatedFrameHostGetGpuMemoryBufferClientId(void) const;
-  ui::Layer *DelegatedFrameHostGetLayer(void) const;
-  bool DelegatedFrameHostIsVisible(void) const;
-  SkColor DelegatedFrameHostGetGutterColor(SkColor) const;
-  gfx::Size DelegatedFrameHostDesiredSizeInDIP(void) const;
-  bool DelegatedFrameCanCreateResizeLock(void) const;
-  std::unique_ptr<content::ResizeLock> DelegatedFrameHostCreateResizeLock(bool);
-  void DelegatedFrameHostResizeLockWasReleased(void);
+  ui::Layer *DelegatedFrameHostGetLayer(void) const override;
+  bool DelegatedFrameHostIsVisible(void) const override;
+  SkColor DelegatedFrameHostGetGutterColor(SkColor) const override;
+  gfx::Size DelegatedFrameHostDesiredSizeInDIP(void) const override;
+  bool DelegatedFrameCanCreateResizeLock(void) const override;
+  std::unique_ptr<content::ResizeLock> DelegatedFrameHostCreateResizeLock(bool) override;
+  void DelegatedFrameHostResizeLockWasReleased(void) override;
   void DelegatedFrameHostSendCompositorSwapAck(
-    int, const cc::CompositorFrameAck &);
+    int, const cc::CompositorFrameAck &) override;
   void DelegatedFrameHostSendReclaimCompositorResources(
-    int, const cc::CompositorFrameAck &);
-  void DelegatedFrameHostOnLostCompositorResources(void);
+    int, const cc::CompositorFrameAck &) override;
+  void DelegatedFrameHostOnLostCompositorResources(void) override;
   void DelegatedFrameHostUpdateVSyncParameters(
-    const base::TimeTicks &, const base::TimeDelta &);
+    const base::TimeTicks &, const base::TimeDelta &) override;
 
   std::unique_ptr<cc::SoftwareOutputDevice> CreateSoftwareOutputDevice(
-      ui::Compositor* compositor);
+      ui::Compositor* compositor) override;
   void OnSetNeedsBeginFrames(bool enabled);
+
+#if defined(OS_MACOSX)
+  // AcceleratedWidgetMacNSView implementation.
+  NSView* AcceleratedWidgetGetNSView() const override;
+  void AcceleratedWidgetGetVSyncParameters(
+      base::TimeTicks* timebase, base::TimeDelta* interval) const override;
+  void AcceleratedWidgetSwapCompleted() override;
+#endif  // defined(OS_MACOSX)
+
+  ui::Compositor* compositor() const { return compositor_.get(); }
+  content::RenderWidgetHostImpl* render_widget_host() const
+      { return render_widget_host_; }
+
+  void OnBeginFrameTimerTick();
+  void SendBeginFrame(base::TimeTicks frame_time,
+                      base::TimeDelta vsync_period);
+
+  std::unique_ptr<const OnPaintCallback> paintCallback;
+  void SetPaintCallback(const OnPaintCallback*);
 private:
   content::RenderWidgetHostImpl* render_widget_host_;
 
-  std::unique_ptr<content::DelegatedFrameHost> delegated_frame_host_;
-  std::unique_ptr<ui::Compositor> compositor_;
-  gfx::AcceleratedWidget compositor_widget_;
-  std::unique_ptr<ui::Layer> root_layer_;
+  std::unique_ptr<CefCopyFrameGenerator> copy_frame_generator_;
+  std::unique_ptr<CefBeginFrameTimer> begin_frame_timer_;
+
+  int frame_rate_threshold_ms_;
 
   float scale_factor_;
   bool is_showing_;
   gfx::Vector2dF last_scroll_offset_;
   gfx::Size size_;
 
+  std::unique_ptr<content::DelegatedFrameHost> delegated_frame_host_;
+  std::unique_ptr<ui::Compositor> compositor_;
+  gfx::AcceleratedWidget compositor_widget_;
+  std::unique_ptr<ui::Layer> root_layer_;
+
 #if defined(OS_WIN)
   std::unique_ptr<gfx::WindowImpl> window_;
+#elif defined(OS_MACOSX)
+  NSWindow* window_;
+  CALayer* background_layer_;
+  std::unique_ptr<content::BrowserCompositorMac> browser_compositor_;
+#elif defined(USE_X11)
+  CefWindowX11* window_;
+  std::unique_ptr<ui::XScopedCursor> invisible_cursor_;
+#endif
+
+#if defined(OS_MACOSX)
+  NSTextInputContext* text_input_context_osr_mac_;
+
+  // Selected text on the renderer.
+  std::string selected_text_;
+
+  // The current composition character range and its bounds.
+  gfx::Range composition_range_;
+  std::vector<gfx::Rect> composition_bounds_;
+
+  // The current caret bounds.
+  gfx::Rect caret_rect_;
+
+  // The current first selection bounds.
+  gfx::Rect first_selection_rect_;
 #endif
 
   base::WeakPtrFactory<OffScreenWindow> weak_ptr_factory_;
