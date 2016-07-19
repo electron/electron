@@ -345,7 +345,7 @@ class CefCopyFrameGenerator {
         cc::CopyOutputRequest::CreateRequest(base::Bind(
             &CefCopyFrameGenerator::CopyFromCompositingSurfaceHasResult,
             weak_ptr_factory_.GetWeakPtr(),
-            gfx::Rect(view_->GetPhysicalBackingSize())));
+            damage_rect));
 
     // request->set_area(gfx::Rect(view_->GetPhysicalBackingSize()));
 
@@ -842,13 +842,13 @@ void OffScreenWindow::OnSwapCompositorFrame(
 
   // Determine the damage rectangle for the current frame. This is the same
   // calculation that SwapDelegatedFrame uses.
-  // cc::RenderPass* root_pass =
-  //     frame->delegated_frame_data->render_pass_list.back().get();
-  // gfx::Size frame_size = root_pass->output_rect.size();
-  // gfx::Rect damage_rect =
-  //     gfx::ToEnclosingRect(gfx::RectF(root_pass->damage_rect));
-  // damage_rect.Intersect(gfx::Rect(frame_size));
-  gfx::Rect damage_rect = gfx::Rect(GetVisibleViewportSize());
+  cc::RenderPass* root_pass =
+      frame->delegated_frame_data->render_pass_list.back().get();
+  gfx::Size frame_size = root_pass->output_rect.size();
+  gfx::Rect damage_rect =
+      gfx::ToEnclosingRect(gfx::RectF(root_pass->damage_rect));
+  damage_rect.Intersect(gfx::Rect(frame_size));
+  // gfx::Rect damage_rect = gfx::Rect(GetVisibleViewportSize());
 
   if (frame->delegated_frame_data)
     delegated_frame_host_->SwapDelegatedFrame(output_surface_id,
