@@ -63,16 +63,7 @@ content::WebContents* WebViewGuestDelegate::CreateNewGuestWindow(
   mate::Dictionary options = mate::Dictionary::CreateEmpty(isolate);
   options.Set("isGuest", true);
 
-  // get the next guest id and assign it to options and webPreferences
-  node::Environment* env = node::Environment::GetCurrent(isolate);
-  auto next_instance_id_event = v8::Local<v8::Object>::Cast(
-                                          mate::Event::Create(isolate).ToV8());
-  mate::EmitEvent(isolate,
-                  env->process_object(),
-                  "ELECTRON_GUEST_VIEW_MANAGER_NEXT_INSTANCE_ID",
-                  next_instance_id_event);
-  int guest_instance_id = next_instance_id_event->Get(
-                      mate::StringToV8(isolate, "returnValue"))->NumberValue();
+  int guest_instance_id = GetNextInstanceId();
   options.Set(options::kGuestInstanceID, guest_instance_id);
 
   // TODO(bridiver) should we create a new site instance
@@ -94,18 +85,41 @@ content::WebContents* WebViewGuestDelegate::CreateNewGuestWindow(
   mate::Handle<api::WebContents> new_api_web_contents =
           api::WebContents::CreateWithParams(isolate, options, params);
   content::WebContents* web_contents = new_api_web_contents->GetWebContents();
+  RegisterGuest(new_api_web_contents, guest_instance_id);
 
-  // register the guest so we can find it in the new window
+  return web_contents;
+}
+
+void WebViewGuestDelegate::RegisterGuest(mate::Handle<api::WebContents> guest,
+    int guest_instance_id) {
+  auto isolate = api_web_contents_->isolate();
+  v8::HandleScope handle_scope(isolate);
+
   auto add_guest_event =
             v8::Local<v8::Object>::Cast(mate::Event::Create(isolate).ToV8());
+  node::Environment* env = node::Environment::GetCurrent(isolate);
   mate::EmitEvent(isolate,
                   env->process_object(),
                   "ELECTRON_GUEST_VIEW_MANAGER_REGISTER_GUEST",
                   add_guest_event,
-                  new_api_web_contents,
+                  guest,
                   guest_instance_id);
+}
 
-  return web_contents;
+int WebViewGuestDelegate::GetNextInstanceId() {
+  auto isolate = api_web_contents_->isolate();
+  v8::HandleScope handle_scope(isolate);
+
+  // get the next guest id and assign it to options and webPreferences
+  auto next_instance_id_event = v8::Local<v8::Object>::Cast(
+                                          mate::Event::Create(isolate).ToV8());
+  node::Environment* env = node::Environment::GetCurrent(isolate);
+  mate::EmitEvent(isolate,
+                  env->process_object(),
+                  "ELECTRON_GUEST_VIEW_MANAGER_NEXT_INSTANCE_ID",
+                  next_instance_id_event);
+  return next_instance_id_event->Get(
+                      mate::StringToV8(isolate, "returnValue"))->NumberValue();
 }
 
 void WebViewGuestDelegate::SetSize(const SetSizeParams& params) {

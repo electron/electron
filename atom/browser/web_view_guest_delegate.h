@@ -55,6 +55,9 @@ class WebViewGuestDelegate : public content::BrowserPluginGuestDelegate,
 
   bool IsAttached();
 
+  void RegisterGuest(mate::Handle<api::WebContents> guest,
+      int guest_instance_id);
+  int GetNextInstanceId();
  protected:
   // content::WebContentsObserver:
   void DidFinishNavigation(

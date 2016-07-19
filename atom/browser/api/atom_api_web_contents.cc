@@ -982,8 +982,13 @@ void WebContents::Reload(bool ignore_cache) {
 
 void WebContents::ResumeLoadingCreatedWebContents() {
   if (delayed_open_url_params_.get()) {
-    OpenURLFromTab(web_contents(), *delayed_open_url_params_.get());
-    delayed_open_url_params_.reset(nullptr);
+    if (delayed_open_url_params_->url ==
+        web_contents()->GetLastCommittedURL()) {
+      web_contents()->GetController().LoadIfNecessary();
+    } else {
+      OpenURLFromTab(web_contents(), *delayed_open_url_params_.get());
+      delayed_open_url_params_.reset(nullptr);
+    }
     return;
   }
   GetWebContents()->ResumeLoadingCreatedWebContents();
@@ -1434,6 +1439,51 @@ bool WebContents::IsFocused() const {
 }
 #endif
 
+mate::Handle<WebContents> WebContents::Clone(const mate::Dictionary& options) {
+  v8::Locker locker(isolate());
+  v8::HandleScope handle_scope(isolate());
+
+  mate::Dictionary cloneOptions(options);
+
+  int guest_instance_id = -1;
+  if (IsGuest()) {
+    cloneOptions.Set("isGuest", true);
+    cloneOptions.Set("embedder", embedder_);
+    guest_instance_id = guest_delegate_->GetNextInstanceId();
+    cloneOptions.Set(options::kGuestInstanceID, guest_instance_id);
+  }
+
+  mate::Handle<api::Session> session;
+  if (!cloneOptions.Get("session", &session)) {
+    session = atom::api::Session::CreateFrom(isolate(),
+        static_cast<AtomBrowserContext*>(
+            web_contents()->GetBrowserContext()));
+    cloneOptions.Set("session", session);
+  }
+
+  GURL delayed_load_url;
+  if (!cloneOptions.Get("delayedLoadUrl", &delayed_load_url)) {
+    cloneOptions.Set("delayedLoadUrl", GetURL());
+  }
+
+  content::WebContents::CreateParams create_params(
+      session->browser_context(),
+      web_contents()->GetSiteInstance());
+  auto clone = new WebContents(isolate(), cloneOptions, &create_params);
+  clone->web_contents()->GetController().CopyStateFrom(
+      web_contents()->GetController());
+
+  auto handle = mate::CreateHandle(
+      isolate(), clone);
+  g_wrap_web_contents.Run(handle.ToV8());
+
+  if (IsGuest()) {
+    guest_delegate_->RegisterGuest(handle, guest_instance_id);
+  }
+
+  return handle;
+}
+
 void WebContents::SetActive(bool active) {
   if (Emit("set-active", active))
     return;
@@ -1786,6 +1836,7 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("stopFindInPage", &WebContents::StopFindInPage)
       .SetMethod("focus", &WebContents::Focus)
       .SetMethod("isFocused", &WebContents::IsFocused)
+      .SetMethod("clone", &WebContents::Clone)
       .SetMethod("tabTraverse", &WebContents::TabTraverse)
       .SetMethod("_send", &WebContents::SendIPCMessage)
       .SetMethod("sendInputEvent", &WebContents::SendInputEvent)

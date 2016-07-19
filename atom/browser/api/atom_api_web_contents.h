@@ -167,6 +167,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void StopFindInPage(content::StopFindAction action);
   void ShowDefinitionForSelection();
   void CopyImageAt(int x, int y);
+  mate::Handle<WebContents> Clone(const mate::Dictionary& options);
 
   // Focus.
   void Focus();
