@@ -6,19 +6,18 @@
 
 #include <string>
 #include <vector>
-#include <iomanip>
 
 #include "atom/common/node_includes.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "base/values.h"
+#include "base/strings/string_number_conversions.h"
 #include "native_mate/dictionary.h"
 #include "net/base/upload_bytes_element_reader.h"
 #include "net/base/upload_data_stream.h"
 #include "net/base/upload_element_reader.h"
 #include "net/base/upload_file_element_reader.h"
 #include "net/cert/x509_certificate.h"
-#include "net/der/parse_values.h"
 #include "net/http/http_response_headers.h"
 #include "net/url_request/url_request.h"
 
@@ -49,14 +48,8 @@ v8::Local<v8::Value> Converter<scoped_refptr<net::X509Certificate>>::ToV8(
   dict.Set("data", buffer);
   dict.Set("issuerName", val->issuer().GetDisplayName());
   dict.Set("subjectName", val->subject().GetDisplayName());
-  uint64_t serial_number;
-  if (net::der::ParseUint64(net::der::Input(&val->serial_number()), &serial_number)) {
-    std::stringstream stream;
-    stream << std::hex << serial_number;
-    dict.Set("serialNumber", stream.str());
-  } else {
-    dict.Set("serialNumber", std::string());
-  }
+  dict.Set("serialNumber", base::HexEncode(val->serial_number().data(),
+                                           val->serial_number().size()));
   dict.Set("validStart", val->valid_start().ToDoubleT());
   dict.Set("validExpiry", val->valid_expiry().ToDoubleT());
   dict.Set("fingerprint",
