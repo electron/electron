@@ -46,13 +46,11 @@ struct Converter<net::HttpResponseHeaders*> {
 };
 
 template<>
-struct Converter<net::HttpRequestHeaders*> {
+struct Converter<net::HttpRequestHeaders> {
   static bool FromV8(v8::Isolate* isolate, v8::Handle<v8::Value> val,
-                     net::HttpRequestHeaders** out) {
-    std::unique_ptr<net::HttpRequestHeaders>
-        request_headers(new net::HttpRequestHeaders);
-    *out = request_headers.release();
-
+                     net::HttpRequestHeaders* out) {
+    net::HttpRequestHeaders request_headers;
+    *out = request_headers;
     base::DictionaryValue headers;
     if (!ConvertFromV8(isolate, val, &headers))
       return false;
@@ -63,13 +61,16 @@ struct Converter<net::HttpRequestHeaders*> {
       if (!it.value().GetAsString(&value))
         continue;
 
-      (*out)->SetHeader(it.key(), value);
+      out->SetHeader(it.key(), value);
     }
     return true;
   }
 };
 
+class Dictionary;
+
 }  // namespace mate
+
 namespace atom {
 
 class AtomBrowserContext;
@@ -89,9 +90,8 @@ class WebRequest : public mate::TrackableObject<WebRequest>,
   WebRequest(v8::Isolate* isolate, AtomBrowserContext* browser_context);
   ~WebRequest() override;
 
-  typedef base::Callback<void(int response_code,
-                            const std::string& response,
-                            net::HttpResponseHeaders* headers)> FetchCallback;
+  typedef base::Callback<void(
+      v8::Local<v8::Value>, mate::Dictionary, std::string)> FetchCallback;
   void Fetch(mate::Arguments* args);
   void OnURLFetchComplete(const net::URLFetcher* source) override;
 

@@ -68,49 +68,64 @@ WebRequest::~WebRequest() {
 
 void WebRequest::OnURLFetchComplete(
     const net::URLFetcher* source) {
-  std::string response;
-  source->GetResponseAsString(&response);
+  mate::Dictionary response = mate::Dictionary::CreateEmpty(isolate());
   int response_code = source->GetResponseCode();
-  net::HttpResponseHeaders* headers = source->GetResponseHeaders();
+  response.Set("statusCode", response_code);
+
+  std::string body;
+  v8::Local<v8::Value> err = v8::Null(isolate());
+  if (response_code == net::URLFetcher::ResponseCode::RESPONSE_CODE_INVALID) {
+    base::DictionaryValue dict;
+    dict.SetInteger("errorCode", source->GetStatus().error());
+    err = mate::ConvertToV8(isolate(), dict);
+  } else {
+    response.Set("headers", source->GetResponseHeaders());
+    source->GetResponseAsString(&body);
+  }
+
   FetchCallback callback = fetchers_[source];
-  callback.Run(response_code, response, headers);
+  // error, response, body
+  callback.Run(err, response, body);
   fetchers_.erase(source);
 }
 
 void WebRequest::Fetch(mate::Arguments* args) {
   GURL url;
   if (!args->GetNext(&url)) {
-    args->ThrowError();
+    args->ThrowError("invalid url parameter");
     return;
   }
 
-  net::URLFetcher::RequestType request_type;
-  if (!args->GetNext(&request_type)) {
-    args->ThrowError();
-    return;
-  }
-
-  net::HttpRequestHeaders* headers = nullptr;
-  if (!args->GetNext(&headers)) {
-    args->ThrowError();
-    return;
-  }
-
+  net::URLFetcher::RequestType request_type = net::URLFetcher::RequestType::GET;
+  net::HttpRequestHeaders headers;
   base::FilePath path;
-  if (!args->GetNext(&path)) {
-    // ignore optional argument
+  std::string payload;
+  std::string payload_content_type;
+  mate::Dictionary dict;
+  if (args->GetNext(&dict)) {
+    dict.Get("method", &request_type);
+    dict.Get("headers", &headers);
+    dict.Get("path", &path);
+    if (dict.Get("payload", &payload)) {
+      if (!dict.Get("payload_content_type", &payload_content_type)) {
+        args->ThrowError("payload_content_type is required for payload");
+      }
+    }
   }
 
   FetchCallback callback;
   if (!args->GetNext(&callback)) {
-    args->ThrowError();
+    args->ThrowError("invalid callback parameter");
     return;
   }
 
   net::URLFetcher* fetcher = net::URLFetcher::Create(url, request_type, this)
       .release();
   fetcher->SetRequestContext(browser_context_->GetRequestContext());
-  fetcher->SetExtraRequestHeaders(headers->ToString());
+  if (!payload.empty())
+    fetcher->SetUploadData(payload, payload_content_type);
+  if (!headers.IsEmpty())
+    fetcher->SetExtraRequestHeaders(headers.ToString());
   if (!path.empty())
     fetcher->SaveResponseToFileAtPath(
         path,
