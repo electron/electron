@@ -25,9 +25,6 @@
 #include "cc/output/output_surface_client.h"
 #include "cc/scheduler/begin_frame_source.h"
 
-#include "content/browser/web_contents/web_contents_view.h"
-// #include "atom/browser/native_window_views.h"
-
 #if defined(OS_WIN)
 #include <windows.h>
 #include "ui/gfx/win/window_impl.h"
@@ -37,6 +34,8 @@
 #include "content/browser/renderer_host/browser_compositor_view_mac.h"
 #include "ui/accelerated_widget_mac/accelerated_widget_mac.h"
 #endif
+
+#include "atom/browser/osr_output_device.h"
 
 #if defined(OS_MACOSX)
 #ifdef __OBJC__
@@ -58,78 +57,6 @@ namespace atom {
 
 class CefCopyFrameGenerator;
 class CefBeginFrameTimer;
-
-class OffScreenWebContentsView : public content::WebContentsView {
-public:
-  OffScreenWebContentsView();
-  ~OffScreenWebContentsView();
-
-  gfx::NativeView GetNativeView() const override;
-  gfx::NativeView GetContentNativeView() const override;
-  gfx::NativeWindow GetTopLevelNativeWindow() const override;
-
-  void GetContainerBounds(gfx::Rect* out) const override;
-  void SizeContents(const gfx::Size& size) override;
-  void Focus() override;
-  void SetInitialFocus() override;
-  void StoreFocus() override;
-  void RestoreFocus() override;
-  content::DropData* GetDropData() const override;
-  gfx::Rect GetViewBounds() const override;
-
-  void CreateView(
-      const gfx::Size& initial_size, gfx::NativeView context) override;
-
-  content::RenderWidgetHostViewBase* CreateViewForWidget(
-      content::RenderWidgetHost* render_widget_host, bool is_guest_view_hack) override;
-  content::RenderWidgetHostViewBase* CreateViewForPopupWidget(
-      content::RenderWidgetHost* render_widget_host) override;
-
-  void SetPageTitle(const base::string16& title) override;
-  void RenderViewCreated(content::RenderViewHost* host) override;
-  void RenderViewSwappedIn(content::RenderViewHost* host) override;
-  void SetOverscrollControllerEnabled(bool enabled) override;
-
-#if defined(OS_MACOSX)
-  void SetAllowOtherViews(bool allow) override;
-  bool GetAllowOtherViews() const override;
-  bool IsEventTracking() const override;
-  void CloseTabAfterEventTracking() override;
-#endif
-
-private:
-  content::RenderWidgetHostViewBase* view_;
-};
-
-class OffScreenOutputDevice : public cc::SoftwareOutputDevice {
-public:
-  OffScreenOutputDevice();
-  ~OffScreenOutputDevice();
-
-
-  // void saveSkBitmapToBMPFile(const SkBitmap& skBitmap, const char* path);
-  void Resize(const gfx::Size& pixel_size, float scale_factor) override;
-  SkCanvas* BeginPaint(const gfx::Rect& damage_rect) override;
-  void EndPaint() override;
-
-private:
-  std::unique_ptr<SkCanvas> canvas_;
-  std::unique_ptr<SkBitmap> bitmap_;
-  gfx::Rect pending_damage_rect_;
-
-  DISALLOW_COPY_AND_ASSIGN(OffScreenOutputDevice);
-};
-
-class AtomCompositorDelegate : public ui::CompositorDelegate {
-public:
-  AtomCompositorDelegate() {};
-  ~AtomCompositorDelegate() {};
-
-  std::unique_ptr<cc::SoftwareOutputDevice> CreateSoftwareOutputDevice(
-      ui::Compositor* compositor) override {
-    return std::unique_ptr<cc::SoftwareOutputDevice>(new OffScreenOutputDevice);
-  }
-};
 
 class OffScreenWindow
   : public content::RenderWidgetHostViewBase,

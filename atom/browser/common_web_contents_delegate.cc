@@ -34,7 +34,7 @@
 #include "storage/browser/fileapi/isolated_context.h"
 
 #include "content/browser/web_contents/web_contents_impl.h"
-#include "atom/browser/osr_window.h"
+#include "atom/browser/osr_web_contents_view.h"
 #include "atom/browser/native_window_views.h"
 
 using content::BrowserThread;
