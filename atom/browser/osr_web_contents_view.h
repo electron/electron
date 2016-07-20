@@ -5,20 +5,6 @@
 #ifndef ATOM_BROWSER_OSR_WEB_CONTENTS_VIEW_H_
 #define ATOM_BROWSER_OSR_WEB_CONTENTS_VIEW_H_
 
-// #include "content/browser/renderer_host/render_widget_host_view_base.h"
-// #include "content/browser/renderer_host/delegated_frame_host.h"
-// #include "content/browser/renderer_host/resize_lock.h"
-// #include "third_party/WebKit/public/platform/WebVector.h"
-// #include "cc/scheduler/begin_frame_source.h"
-// #include "content/browser/renderer_host/render_widget_host_impl.h"
-// #include "cc/output/compositor_frame.h"
-// #include "ui/gfx/geometry/point.h"
-// #include "base/threading/thread.h"
-// #include "ui/compositor/compositor.h"
-// #include "ui/compositor/layer_delegate.h"
-// #include "ui/compositor/layer_owner.h"
-// #include "ui/base/ime/text_input_client.h"
-
 #include "content/browser/web_contents/web_contents_view.h"
 
 namespace atom {
@@ -65,6 +51,7 @@ public:
 private:
   content::RenderWidgetHostViewBase* view_;
 };
+
 }  // namespace atom
 
 #endif  // ATOM_BROWSER_OSR_WEB_CONTENTS_VIEW_H_
