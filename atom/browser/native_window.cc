@@ -38,7 +38,6 @@
 #include "ui/gfx/geometry/rect.h"
 #include "ui/gfx/geometry/size.h"
 #include "ui/gfx/geometry/size_conversions.h"
-#include "ui/display/screen.h"
 #include "ui/gl/gpu_switching_manager.h"
 
 DEFINE_WEB_CONTENTS_USER_DATA_KEY(atom::NativeWindowRelay);
