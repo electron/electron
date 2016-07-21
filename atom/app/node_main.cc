@@ -7,13 +7,14 @@
 #include "atom/app/uv_task_runner.h"
 #include "atom/browser/javascript_environment.h"
 #include "atom/browser/node_debugger.h"
-#include "atom/common/node_includes.h"
 #include "base/command_line.h"
 #include "base/feature_list.h"
 #include "base/thread_task_runner_handle.h"
 #include "gin/array_buffer.h"
 #include "gin/public/isolate_holder.h"
 #include "gin/v8_initializer.h"
+
+#include "atom/common/node_includes.h"
 
 namespace atom {
 

@@ -12,7 +12,8 @@
 #include "base/memory/scoped_ptr.h"
 #include "base/values.h"
 #include "native_mate/dictionary.h"
-#include "vendor/node/src/node_buffer.h"
+
+#include "atom/common/node_includes.h"
 
 namespace atom {
 
