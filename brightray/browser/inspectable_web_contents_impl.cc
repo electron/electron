@@ -90,7 +90,7 @@ bool IsPointInRect(const gfx::Point& point, const gfx::Rect& rect) {
 }
 
 bool IsPointInScreen(const gfx::Point& point) {
-  for (const auto& display : gfx::Screen::GetScreen()->GetAllDisplays()) {
+  for (const auto& display : display::Screen::GetScreen()->GetAllDisplays()) {
     if (IsPointInRect(point, display.bounds()))
       return true;
   }
@@ -221,7 +221,7 @@ InspectableWebContentsImpl::InspectableWebContentsImpl(
       devtools_bounds_.set_width(800);
     }
     if (!IsPointInScreen(devtools_bounds_.origin())) {
-      gfx::Rect display = gfx::Screen::GetScreen()->
+      gfx::Rect display = display::Screen::GetScreen()->
           GetDisplayNearestWindow(web_contents->GetNativeView()).bounds();
       devtools_bounds_.set_x(display.x() + (display.width() - devtools_bounds_.width()) / 2);
       devtools_bounds_.set_y(display.y() + (display.height() - devtools_bounds_.height()) / 2);
