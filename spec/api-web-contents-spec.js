@@ -63,12 +63,12 @@ describe('webContents module', function () {
       const specWebContents = remote.getCurrentWebContents()
       assert.equal(specWebContents.getId(), webContents.getFocusedWebContents().getId())
 
-      specWebContents.on('devtools-opened', function () {
+      specWebContents.once('devtools-opened', function () {
         assert.equal(specWebContents.devToolsWebContents.getId(), webContents.getFocusedWebContents().getId())
         specWebContents.closeDevTools()
       })
 
-      specWebContents.on('devtools-closed', function () {
+      specWebContents.once('devtools-closed', function () {
         assert.equal(specWebContents.getId(), webContents.getFocusedWebContents().getId())
         done()
       })
