@@ -52,6 +52,7 @@
 #include "skia/ext/skia_utils_win.h"
 #include "ui/base/win/shell.h"
 #include "ui/display/win/screen_win.h"
+#include "ui/display/screen.h"
 #include "ui/views/widget/desktop_aura/desktop_native_widget_aura.h"
 #endif
 
@@ -427,7 +428,7 @@ void NativeWindowViews::Maximize() {
   if (!thick_frame_) {
     restore_bounds_ = GetBounds();
     auto display =
-        gfx::Screen::GetScreen()->GetDisplayNearestPoint(GetPosition());
+        display::Screen::GetScreen()->GetDisplayNearestPoint(GetPosition());
     SetBounds(display.work_area(), false);
     return;
   }
@@ -490,7 +491,7 @@ void NativeWindowViews::SetFullScreen(bool fullscreen) {
     if (fullscreen) {
       restore_bounds_ = GetBounds();
       auto display =
-          gfx::Screen::GetScreen()->GetDisplayNearestPoint(GetPosition());
+          display::Screen::GetScreen()->GetDisplayNearestPoint(GetPosition());
       SetBounds(display.bounds(), false);
     } else {
       SetBounds(restore_bounds_, false);
