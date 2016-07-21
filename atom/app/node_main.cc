@@ -70,7 +70,7 @@ int NodeMain(int argc, char *argv[]) {
     exit_code = node::EmitExit(env);
     node::RunAtExit(env);
 
-    env->Dispose();
+    node::FreeEnvironment(env);
   }
 
   v8::V8::Dispose();
