@@ -116,6 +116,9 @@ NodeBindings::NodeBindings(bool is_browser)
 NodeBindings::~NodeBindings() {
   // Quit the embed thread.
   embed_closed_ = true;
+  // node never started
+  if (!uv_env_)
+    return;
   uv_sem_post(&embed_sem_);
   WakeupEmbedThread();
 

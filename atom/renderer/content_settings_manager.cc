@@ -21,7 +21,8 @@ ContentSettingsManager::ContentSettingsManager() {
 }
 
 ContentSettingsManager::~ContentSettingsManager() {
-  content::RenderThread::Get()->RemoveObserver(this);
+  if (content::RenderThread::Get())
+    content::RenderThread::Get()->RemoveObserver(this);
 }
 
 // static
