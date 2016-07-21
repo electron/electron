@@ -367,7 +367,7 @@ Returns:
     was invoked on. Elements with source URLs are images, audio and video.
   * `mediaType` String - Type of the node the context menu was invoked on. Can
     be `none`, `image`, `audio`, `video`, `canvas`, `file` or `plugin`.
-  * `hasImageContent` Boolean - Whether the context menu was invoked on an image
+  * `hasImageContents` Boolean - Whether the context menu was invoked on an image
     which has non-empty contents.
   * `isEditable` Boolean - Whether the context is editable.
   * `selectionText` String - Text of the selection that the context menu was
