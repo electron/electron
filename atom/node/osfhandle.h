@@ -7,8 +7,6 @@
 
 #include <windows.h>
 
-#include "node_extern.h"
-
 namespace node {
 
 // The _open_osfhandle and _close functions on Windows are provided by the
@@ -20,8 +18,8 @@ namespace node {
 // we always create fd in one instance of VC++ library.
 // Followings wrappers are compiled in node.dll, and all code in electron.exe
 // should call these wrappers instead of calling _open_osfhandle directly.
-NODE_EXTERN int open_osfhandle(intptr_t osfhandle, int flags);
-NODE_EXTERN int close(int fd);
+__declspec(dllexport) int open_osfhandle(intptr_t osfhandle, int flags);
+__declspec(dllexport) int close(int fd);
 
 }  // namespace node
 
