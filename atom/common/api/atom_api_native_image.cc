@@ -63,10 +63,10 @@ float GetScaleFactorFromPath(const base::FilePath& path) {
 
   // We don't try to convert string to float here because it is very very
   // expensive.
-  for (unsigned i = 0; i < node::arraysize(kScaleFactorPairs); ++i) {
-    if (base::EndsWith(filename, kScaleFactorPairs[i].name,
+  for (const auto& kScaleFactorPair : kScaleFactorPairs) {
+    if (base::EndsWith(filename, kScaleFactorPair.name,
                        base::CompareCase::INSENSITIVE_ASCII))
-      return kScaleFactorPairs[i].scale;
+      return kScaleFactorPair.scale;
   }
 
   return 1.0f;

@@ -58,8 +58,7 @@ bool AtomContentUtilityClient::OnMessageReceived(
     IPC_MESSAGE_UNHANDLED(handled = false)
   IPC_END_MESSAGE_MAP()
 
-  for (Handlers::iterator it = handlers_.begin();
-       !handled && it != handlers_.end(); ++it) {
+  for (auto it = handlers_.begin(); !handled && it != handlers_.end(); ++it) {
     handled = (*it)->OnMessageReceived(message);
   }
 

@@ -25,7 +25,7 @@ namespace {
 struct DummyClass { bool crash; };
 
 void Crash() {
-  static_cast<DummyClass*>(NULL)->crash = true;
+  static_cast<DummyClass*>(nullptr)->crash = true;
 }
 
 void Hang() {

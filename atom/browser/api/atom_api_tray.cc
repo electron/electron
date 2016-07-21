@@ -29,6 +29,8 @@ Tray::Tray(v8::Isolate* isolate, mate::Handle<NativeImage> image)
 }
 
 Tray::~Tray() {
+  // Destroy the native tray in next tick.
+  base::MessageLoop::current()->DeleteSoon(FROM_HERE, tray_icon_.release());
 }
 
 // static
@@ -72,6 +74,10 @@ void Tray::OnDrop() {
 
 void Tray::OnDropFiles(const std::vector<std::string>& files) {
   Emit("drop-files", files);
+}
+
+void Tray::OnDropText(const std::string& text) {
+  Emit("drop-text", text);
 }
 
 void Tray::OnDragEntered() {

@@ -25,16 +25,13 @@ class DictionaryValue;
 class FilePath;
 }
 
-namespace ui {
-class MenuModel;
-}
-
 namespace gfx {
 class Image;
 }
 
 namespace atom {
 
+class AtomMenuModel;
 class LoginHandler;
 
 // This class is used for control application-wide operations.
@@ -91,6 +88,17 @@ class Browser : public WindowListObserver {
   bool SetBadgeCount(int count);
   int GetBadgeCount();
 
+  // Set/Get the login item settings of the app
+  struct LoginItemSettings {
+    bool open_at_login = false;
+    bool open_as_hidden = false;
+    bool restore_state = false;
+    bool opened_at_login = false;
+    bool opened_as_hidden = false;
+  };
+  void SetLoginItemSettings(LoginItemSettings settings);
+  LoginItemSettings GetLoginItemSettings();
+
 #if defined(OS_MACOSX)
   // Hide the application.
   void Hide();
@@ -130,7 +138,7 @@ class Browser : public WindowListObserver {
   void DockShow();
 
   // Set docks' menu.
-  void DockSetMenu(ui::MenuModel* model);
+  void DockSetMenu(AtomMenuModel* model);
 
   // Set docks' icon.
   void DockSetIcon(const gfx::Image& image);
@@ -173,6 +181,8 @@ class Browser : public WindowListObserver {
   // Tell the application the loading has been done.
   void WillFinishLaunching();
   void DidFinishLaunching();
+
+  void OnAccessibilitySupportChanged();
 
   // Request basic auth login.
   void RequestLogin(LoginHandler* login_handler,

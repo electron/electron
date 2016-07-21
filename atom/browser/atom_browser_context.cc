@@ -63,10 +63,10 @@ std::string RemoveWhitespace(const std::string& str) {
 
 }  // namespace
 
-AtomBrowserContext::AtomBrowserContext(const std::string& partition,
-                                       bool in_memory)
+AtomBrowserContext::AtomBrowserContext(
+    const std::string& partition, bool in_memory,
+    const base::DictionaryValue& options)
     : brightray::BrowserContext(partition, in_memory),
-      cert_verifier_(new AtomCertVerifier),
       network_delegate_(new AtomNetworkDelegate) {
   // Construct user agent string.
   Browser* browser = Browser::Get();
@@ -83,6 +83,10 @@ AtomBrowserContext::AtomBrowserContext(const std::string& partition,
         CHROME_VERSION_STRING);
   }
   user_agent_ = content::BuildUserAgentFromProduct(user_agent);
+
+  // Read options.
+  use_cache_ = true;
+  options.GetBoolean("cache", &use_cache_);
 }
 
 AtomBrowserContext::~AtomBrowserContext() {
@@ -145,7 +149,7 @@ net::HttpCache::BackendFactory*
 AtomBrowserContext::CreateHttpCacheBackendFactory(
     const base::FilePath& base_path) {
   base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
-  if (command_line->HasSwitch(switches::kDisableHttpCache))
+  if (!use_cache_ || command_line->HasSwitch(switches::kDisableHttpCache))
     return new NoCacheBackend;
   else
     return brightray::BrowserContext::CreateHttpCacheBackendFactory(base_path);
@@ -174,7 +178,7 @@ content::PermissionManager* AtomBrowserContext::GetPermissionManager() {
 }
 
 std::unique_ptr<net::CertVerifier> AtomBrowserContext::CreateCertVerifier() {
-  return base::WrapUnique(cert_verifier_);
+  return base::WrapUnique(new AtomCertVerifier);
 }
 
 net::SSLConfigService* AtomBrowserContext::CreateSSLConfigService() {
@@ -191,14 +195,15 @@ void AtomBrowserContext::RegisterPrefs(PrefRegistrySimple* pref_registry) {
   pref_registry->RegisterDictionaryPref(prefs::kDevToolsFileSystemPaths);
 }
 
-}  // namespace atom
-
-namespace brightray {
-
 // static
-scoped_refptr<BrowserContext> BrowserContext::Create(
-    const std::string& partition, bool in_memory) {
-  return make_scoped_refptr(new atom::AtomBrowserContext(partition, in_memory));
+scoped_refptr<AtomBrowserContext> AtomBrowserContext::From(
+    const std::string& partition, bool in_memory,
+    const base::DictionaryValue& options) {
+  auto browser_context = brightray::BrowserContext::Get(partition, in_memory);
+  if (browser_context)
+    return static_cast<AtomBrowserContext*>(browser_context.get());
+
+  return new AtomBrowserContext(partition, in_memory, options);
 }
 
-}  // namespace brightray
+}  // namespace atom

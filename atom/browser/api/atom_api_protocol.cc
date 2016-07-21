@@ -6,6 +6,7 @@
 
 #include "atom/browser/atom_browser_client.h"
 #include "atom/browser/atom_browser_main_parts.h"
+#include "atom/browser/browser.h"
 #include "atom/browser/net/url_request_async_asar_job.h"
 #include "atom/browser/net/url_request_buffer_job.h"
 #include "atom/browser/net/url_request_fetch_job.h"
@@ -26,10 +27,28 @@ namespace atom {
 
 namespace api {
 
+namespace {
+
+// Clear protocol handlers in IO thread.
+void ClearJobFactoryInIO(
+    scoped_refptr<brightray::URLRequestContextGetter> request_context_getter) {
+  auto job_factory = static_cast<AtomURLRequestJobFactory*>(
+      request_context_getter->job_factory());
+  job_factory->Clear();
+}
+
+}  // namespace
+
 Protocol::Protocol(v8::Isolate* isolate, AtomBrowserContext* browser_context)
     : request_context_getter_(browser_context->GetRequestContext()),
       weak_factory_(this) {
   Init(isolate);
+}
+
+Protocol::~Protocol() {
+  content::BrowserThread::PostTask(
+      content::BrowserThread::IO, FROM_HERE,
+      base::Bind(ClearJobFactoryInIO, request_context_getter_));
 }
 
 void Protocol::RegisterServiceWorkerSchemes(
@@ -173,7 +192,13 @@ void Protocol::BuildPrototype(
 namespace {
 
 void RegisterStandardSchemes(
-    const std::vector<std::string>& schemes) {
+    const std::vector<std::string>& schemes, mate::Arguments* args) {
+  if (atom::Browser::Get()->is_ready()) {
+    args->ThrowError("protocol.registerStandardSchemes should be called before "
+                     "app is ready");
+    return;
+  }
+
   auto policy = content::ChildProcessSecurityPolicy::GetInstance();
   for (const auto& scheme : schemes) {
     url::AddStandardScheme(scheme.c_str(), url::SCHEME_WITHOUT_PORT);

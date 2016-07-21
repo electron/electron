@@ -12,7 +12,7 @@ select the tag that matches your version.
 There are questions that are asked quite often, check this out before creating
 an issue:
 
-* [Electron FAQ](faq/electron-faq.md)
+* [Electron FAQ](faq.md)
 
 ## Guides
 
@@ -66,8 +66,8 @@ an issue:
 * [protocol](api/protocol.md)
 * [session](api/session.md)
 * [systemPreferences](api/system-preferences.md)
-* [webContents](api/web-contents.md)
 * [Tray](api/tray.md)
+* [webContents](api/web-contents.md)
 
 ### Modules for the Renderer Process (Web Page):
 

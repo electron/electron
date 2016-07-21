@@ -225,4 +225,8 @@ $ cd electron-quick-start
 $ npm install && npm start
 ```
 
-[share-data]: ../faq/electron-faq.md#how-to-share-data-between-web-pages
+For more example apps, see the
+[list of boilerplates](http://electron.atom.io/community/#boilerplates)
+created by the awesome electron community.
+
+[share-data]: ../faq.md#how-to-share-data-between-web-pages

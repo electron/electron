@@ -25,7 +25,7 @@ class TrayIconGtk : public TrayIcon,
   // TrayIcon:
   void SetImage(const gfx::Image& image) override;
   void SetToolTip(const std::string& tool_tip) override;
-  void SetContextMenu(ui::SimpleMenuModel* menu_model) override;
+  void SetContextMenu(AtomMenuModel* menu_model) override;
 
  private:
   // views::StatusIconLinux::Delegate:

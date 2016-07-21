@@ -5,6 +5,7 @@
 #include "atom/browser/ui/file_dialog.h"
 
 #include "atom/browser/native_window_views.h"
+#include "atom/browser/unresponsive_suppressor.h"
 #include "base/callback.h"
 #include "base/files/file_util.h"
 #include "base/strings/string_util.h"
@@ -41,7 +42,6 @@ class FileChooserDialog {
                     const base::FilePath& default_path,
                     const Filters& filters)
       : parent_(static_cast<atom::NativeWindowViews*>(parent_window)),
-        dialog_scope_(parent_window),
         filters_(filters) {
     const char* confirm_text = GTK_STOCK_OK;
 
@@ -87,10 +87,17 @@ class FileChooserDialog {
       AddFilters(filters);
   }
 
-  virtual ~FileChooserDialog() {
+  ~FileChooserDialog() {
     gtk_widget_destroy(dialog_);
     if (parent_)
       parent_->SetEnabled(true);
+  }
+
+  void SetupProperties(int properties) {
+    if (properties & FILE_DIALOG_MULTI_SELECTIONS)
+      gtk_file_chooser_set_select_multiple(GTK_FILE_CHOOSER(dialog()), TRUE);
+    if (properties & FILE_DIALOG_SHOW_HIDDEN_FILES)
+      g_object_set(dialog(), "show-hidden", TRUE, NULL);
   }
 
   void RunAsynchronous() {
@@ -146,7 +153,7 @@ class FileChooserDialog {
   base::FilePath AddExtensionForFilename(const gchar* filename) const;
 
   atom::NativeWindowViews* parent_;
-  atom::NativeWindow::DialogScope dialog_scope_;
+  atom::UnresponsiveSuppressor unresponsive_suppressor_;
 
   GtkWidget* dialog_;
 
@@ -235,9 +242,7 @@ bool ShowOpenDialog(atom::NativeWindow* parent_window,
     action = GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER;
   FileChooserDialog open_dialog(action, parent_window, title, button_label,
                                 default_path, filters);
-  if (properties & FILE_DIALOG_MULTI_SELECTIONS)
-    gtk_file_chooser_set_select_multiple(GTK_FILE_CHOOSER(open_dialog.dialog()),
-                                         TRUE);
+  open_dialog.SetupProperties(properties);
 
   gtk_widget_show_all(open_dialog.dialog());
   int response = gtk_dialog_run(GTK_DIALOG(open_dialog.dialog()));
@@ -261,10 +266,7 @@ void ShowOpenDialog(atom::NativeWindow* parent_window,
     action = GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER;
   FileChooserDialog* open_dialog = new FileChooserDialog(
       action, parent_window, title, button_label, default_path, filters);
-  if (properties & FILE_DIALOG_MULTI_SELECTIONS)
-    gtk_file_chooser_set_select_multiple(
-        GTK_FILE_CHOOSER(open_dialog->dialog()), TRUE);
-
+  open_dialog->SetupProperties(properties);
   open_dialog->RunOpenAsynchronous(callback);
 }
 

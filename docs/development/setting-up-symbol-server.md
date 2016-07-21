@@ -52,5 +52,5 @@ Type the following commands in Windbg to print why symbols are not loading:
 
 ```
 > !sym noisy
-> .reload /f chromiumcontent.dll
+> .reload /f electron.exe
 ```

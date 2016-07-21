@@ -15,7 +15,7 @@ URL에 포함되어 있습니다. 만약 그렇지 않다면, 아마 현재 보�
 Electron에 대해 자주 묻는 질문이 있습니다. 이슈를 생성하기 전에 다음 문서를 먼저
 확인해 보세요:
 
-* [Electron FAQ](faq/electron-faq.md)
+* [Electron FAQ](faq.md)
 
 ## 개발 가이드
 
@@ -69,8 +69,8 @@ Electron에 대해 자주 묻는 질문이 있습니다. 이슈를 생성하기 
 * [protocol](api/protocol.md)
 * [session](api/session.md)
 * [systemPreferences](api/system-preferences.md)
-* [webContents](api/web-contents.md)
 * [Tray](api/tray.md)
+* [webContents](api/web-contents.md)
 
 ### 렌더러 프로세스에서 사용할 수 있는 모듈 (웹 페이지):
 

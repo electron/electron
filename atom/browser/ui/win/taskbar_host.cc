@@ -142,6 +142,22 @@ bool TaskbarHost::SetOverlayIcon(
       window, icon.get(), base::UTF8ToUTF16(text).c_str()));
 }
 
+bool TaskbarHost::SetThumbnailClip(HWND window, const gfx::Rect& region) {
+  if (!InitializeTaskbar())
+    return false;
+
+  if (region.IsEmpty()) {
+    return SUCCEEDED(taskbar_->SetThumbnailClip(window, NULL));
+  } else {
+    RECT rect;
+    rect.left = region.x();
+    rect.right = region.right();
+    rect.top = region.y();
+    rect.bottom = region.bottom();
+    return SUCCEEDED(taskbar_->SetThumbnailClip(window, &rect));
+  }
+}
+
 bool TaskbarHost::HandleThumbarButtonEvent(int button_id) {
   if (ContainsKey(callback_map_, button_id)) {
     auto callback = callback_map_[button_id];

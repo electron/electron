@@ -29,9 +29,25 @@ base::string16 AtomMenuModel::GetRoleAt(int index) {
     return base::string16();
 }
 
+bool AtomMenuModel::GetAcceleratorAtWithParams(
+    int index,
+    bool use_default_accelerator,
+    ui::Accelerator* accelerator) const {
+  if (delegate_) {
+    return delegate_->GetAcceleratorForCommandIdWithParams(
+        GetCommandIdAt(index), use_default_accelerator, accelerator);
+  }
+  return false;
+}
+
 void AtomMenuModel::MenuClosed() {
   ui::SimpleMenuModel::MenuClosed();
   FOR_EACH_OBSERVER(Observer, observers_, MenuClosed());
+}
+
+AtomMenuModel* AtomMenuModel::GetSubmenuModelAt(int index) {
+  return static_cast<AtomMenuModel*>(
+      ui::SimpleMenuModel::GetSubmenuModelAt(index));
 }
 
 }  // namespace atom

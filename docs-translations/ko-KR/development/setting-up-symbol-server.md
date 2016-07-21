@@ -48,5 +48,5 @@ Windbg에서 다음의 커맨드를 입력하여 왜 심볼이 로드되지 않�
 
 ```
 > !sym noisy
-> .reload /f chromiumcontent.dll
+> .reload /f electron.exe
 ```

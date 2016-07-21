@@ -14,7 +14,6 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_split.h"
 #include "base/strings/string_util.h"
-#include "ui/base/models/simple_menu_model.h"
 
 namespace accelerator_util {
 
@@ -31,9 +30,9 @@ bool StringToAccelerator(const std::string& shortcut,
   // Now, parse it into an accelerator.
   int modifiers = ui::EF_NONE;
   ui::KeyboardCode key = ui::VKEY_UNKNOWN;
-  for (size_t i = 0; i < tokens.size(); i++) {
+  for (const auto& token : tokens) {
     bool shifted = false;
-    ui::KeyboardCode code = atom::KeyboardCodeFromStr(tokens[i], &shifted);
+    ui::KeyboardCode code = atom::KeyboardCodeFromStr(token, &shifted);
     if (shifted)
       modifiers |= ui::EF_SHIFT_DOWN;
     switch (code) {
@@ -69,16 +68,17 @@ bool StringToAccelerator(const std::string& shortcut,
   return true;
 }
 
-void GenerateAcceleratorTable(AcceleratorTable* table, ui::MenuModel* model) {
+void GenerateAcceleratorTable(AcceleratorTable* table,
+                              atom::AtomMenuModel* model) {
   int count = model->GetItemCount();
   for (int i = 0; i < count; ++i) {
-    ui::MenuModel::ItemType type = model->GetTypeAt(i);
-    if (type == ui::MenuModel::TYPE_SUBMENU) {
-      ui::MenuModel* submodel = model->GetSubmenuModelAt(i);
+    atom::AtomMenuModel::ItemType type = model->GetTypeAt(i);
+    if (type == atom::AtomMenuModel::TYPE_SUBMENU) {
+      auto submodel = model->GetSubmenuModelAt(i);
       GenerateAcceleratorTable(table, submodel);
     } else {
       ui::Accelerator accelerator;
-      if (model->GetAcceleratorAt(i, &accelerator)) {
+      if (model->GetAcceleratorAtWithParams(i, true, &accelerator)) {
         MenuItem item = { i, model };
         (*table)[accelerator] = item;
       }

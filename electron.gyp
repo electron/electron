@@ -4,7 +4,7 @@
     'product_name%': 'Electron',
     'company_name%': 'GitHub, Inc',
     'company_abbr%': 'github',
-    'version%': '1.2.5',
+    'version%': '1.2.8',
   },
   'includes': [
     'filenames.gypi',
@@ -207,6 +207,9 @@
         'vendor/node/node.gyp:node',
       ],
       'defines': [
+        # We need to access internal implementations of Node.
+        'NODE_WANT_INTERNALS=1',
+        'NODE_SHARED_MODE',
         # This is defined in skia/skia_common.gypi.
         'SK_SUPPORT_LEGACY_GETTOPDEVICE',
         # Disable warnings for g_settings_list_schemas.

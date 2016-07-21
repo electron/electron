@@ -3,12 +3,8 @@ const http = require('http')
 const path = require('path')
 const fs = require('fs')
 
-const ipcRenderer = require('electron').ipcRenderer
-const remote = require('electron').remote
-
-const ipcMain = remote.ipcMain
-const session = remote.session
-const BrowserWindow = remote.BrowserWindow
+const {ipcRenderer, remote} = require('electron')
+const {ipcMain, session, BrowserWindow} = remote
 
 describe('session module', function () {
   this.timeout(10000)
@@ -35,7 +31,30 @@ describe('session module', function () {
     w = null
   })
 
-  describe('session.cookies', function () {
+  describe('session.defaultSession', function () {
+    it('returns the default session', function () {
+      assert.equal(session.defaultSession, session.fromPartition(''))
+    })
+  })
+
+  describe('session.fromPartition(partition, options)', function () {
+    it('returns existing session with same partition', function () {
+      assert.equal(session.fromPartition('test'), session.fromPartition('test'))
+    })
+
+    it('created session is ref-counted', function () {
+      const partition = 'test2'
+      const userAgent = 'test-agent'
+      const ses1 = session.fromPartition(partition)
+      ses1.setUserAgent(userAgent)
+      assert.equal(ses1.getUserAgent(), userAgent)
+      ses1.destroy()
+      const ses2 = session.fromPartition(partition)
+      assert.notEqual(ses2.getUserAgent(), userAgent)
+    })
+  })
+
+  describe('ses.cookies', function () {
     it('should get cookies', function (done) {
       var server = http.createServer(function (req, res) {
         res.setHeader('Set-Cookie', ['0=0'])
@@ -141,7 +160,7 @@ describe('session module', function () {
     })
   })
 
-  describe('session.clearStorageData(options)', function () {
+  describe('ses.clearStorageData(options)', function () {
     fixtures = path.resolve(__dirname, 'fixtures')
     it('clears localstorage data', function (done) {
       ipcMain.on('count', function (event, count) {
@@ -163,7 +182,7 @@ describe('session module', function () {
     })
   })
 
-  describe('session will-download event', function () {
+  describe('will-download event', function () {
     var w = null
 
     beforeEach(function () {
@@ -280,7 +299,7 @@ describe('session module', function () {
     })
   })
 
-  describe('session.protocol', function () {
+  describe('ses.protocol', function () {
     const partitionName = 'temp'
     const protocolName = 'sp'
     const partitionProtocol = session.fromPartition(partitionName).protocol

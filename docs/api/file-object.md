@@ -24,8 +24,9 @@ Example on getting a real path from a dragged-onto-the-app file:
   };
   holder.ondrop = (e) => {
     e.preventDefault();
-    const file = e.dataTransfer.files[0];
-    console.log('File you dragged here is', file.path);
+    for (let f of e.dataTransfer.files) {
+      console.log('File(s) you dragged here: ', f.path);
+    }
     return false;
   };
 </script>

@@ -25,7 +25,6 @@ const char* kGeolocationProviderURL =
 }  // namespace
 
 AtomAccessTokenStore::AtomAccessTokenStore() {
-  LOG(ERROR) << "AtomAccessTokenStore";
   content::GeolocationProvider::GetInstance()->UserDidOptIntoLocationServices();
 }
 
@@ -47,8 +46,8 @@ void AtomAccessTokenStore::SaveAccessToken(const GURL& server_url,
 }
 
 void AtomAccessTokenStore::GetRequestContextOnUIThread() {
-  auto browser_context = brightray::BrowserContext::From("", false);
-  request_context_getter_ = browser_context->url_request_context_getter();
+  auto browser_context = AtomBrowserContext::From("", false);
+  request_context_getter_ = browser_context->GetRequestContext();
 }
 
 void AtomAccessTokenStore::RespondOnOriginatingThread(

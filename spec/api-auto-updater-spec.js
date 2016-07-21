@@ -33,5 +33,22 @@ if (!process.mas) {
         autoUpdater.setFeedURL('')
       })
     })
+
+    describe('getFeedURL', function () {
+      it('returns a falsey value by default', function () {
+        assert.ok(!autoUpdater.getFeedURL())
+      })
+
+      it('correctly fetches the previously set FeedURL', function (done) {
+        if (process.platform !== 'win32') {
+          return done()
+        }
+
+        const updateURL = 'https://fake-update.electron.io'
+        autoUpdater.setFeedURL(updateURL)
+        assert.equal(autoUpdater.getFeedURL(), updateURL)
+        done()
+      })
+    })
   })
 }

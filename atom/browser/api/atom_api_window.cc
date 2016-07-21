@@ -55,15 +55,6 @@ namespace api {
 
 namespace {
 
-void OnCapturePageDone(
-    v8::Isolate* isolate,
-    const base::Callback<void(const gfx::Image&)>& callback,
-    const SkBitmap& bitmap) {
-  v8::Locker locker(isolate);
-  v8::HandleScope handle_scope(isolate);
-  callback.Run(gfx::Image::CreateFrom1xBitmap(bitmap));
-}
-
 // Converts binary data to Buffer.
 v8::Local<v8::Value> ToBuffer(v8::Isolate* isolate, void* val, int size) {
   auto buffer = node::Buffer::Copy(isolate, static_cast<char*>(val), size);
@@ -581,21 +572,6 @@ void Window::SetFocusable(bool focusable) {
   return window_->SetFocusable(focusable);
 }
 
-void Window::CapturePage(mate::Arguments* args) {
-  gfx::Rect rect;
-  base::Callback<void(const gfx::Image&)> callback;
-
-  if (!(args->Length() == 1 && args->GetNext(&callback)) &&
-      !(args->Length() == 2 && args->GetNext(&rect)
-                            && args->GetNext(&callback))) {
-    args->ThrowError();
-    return;
-  }
-
-  window_->CapturePage(
-      rect, base::Bind(&OnCapturePageDone, args->isolate(), callback));
-}
-
 void Window::SetProgressBar(double progress) {
   window_->SetProgressBar(progress);
 }
@@ -672,6 +648,12 @@ bool Window::IsWindowMessageHooked(UINT message) {
 
 void Window::UnhookAllWindowMessages() {
   messages_callback_map_.clear();
+}
+
+bool Window::SetThumbnailClip(const gfx::Rect& region) {
+  auto window = static_cast<NativeWindowViews*>(window_.get());
+  return window->taskbar_host().SetThumbnailClip(
+      window_->GetAcceleratedWidget(), region);
 }
 #endif
 
@@ -843,7 +825,6 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("focusOnWebView", &Window::FocusOnWebView)
       .SetMethod("blurWebView", &Window::BlurWebView)
       .SetMethod("isWebViewFocused", &Window::IsWebViewFocused)
-      .SetMethod("capturePage", &Window::CapturePage)
       .SetMethod("setProgressBar", &Window::SetProgressBar)
       .SetMethod("setOverlayIcon", &Window::SetOverlayIcon)
       .SetMethod("setThumbarButtons", &Window::SetThumbarButtons)
@@ -861,6 +842,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("isWindowMessageHooked", &Window::IsWindowMessageHooked)
       .SetMethod("unhookWindowMessage", &Window::UnhookWindowMessage)
       .SetMethod("unhookAllWindowMessages", &Window::UnhookAllWindowMessages)
+      .SetMethod("setThumbnailClip", &Window::SetThumbnailClip)
 #endif
 #if defined(TOOLKIT_VIEWS)
       .SetMethod("setIcon", &Window::SetIcon)

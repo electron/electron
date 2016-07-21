@@ -111,7 +111,7 @@ void URLRequestAsarJob::Start() {
     if (rv != net::ERR_IO_PENDING)
       DidOpen(rv);
   } else if (type_ == TYPE_FILE) {
-    FileMetaInfo* meta_info = new FileMetaInfo();
+    auto* meta_info = new FileMetaInfo();
     file_task_runner_->PostTaskAndReply(
         FROM_HERE,
         base::Bind(&URLRequestAsarJob::FetchMetaInfo, file_path_,
@@ -224,7 +224,7 @@ int URLRequestAsarJob::GetResponseCode() const {
 
 void URLRequestAsarJob::GetResponseInfo(net::HttpResponseInfo* info) {
   std::string status("HTTP/1.1 200 OK");
-  net::HttpResponseHeaders* headers = new net::HttpResponseHeaders(status);
+  auto* headers = new net::HttpResponseHeaders(status);
 
   headers->AddHeader(atom::kCORSHeader);
   info->headers = headers;
@@ -338,7 +338,7 @@ void URLRequestAsarJob::DidRead(scoped_refptr<net::IOBuffer> buf, int result) {
     DCHECK_GE(remaining_bytes_, 0);
   }
 
-  buf = NULL;
+  buf = nullptr;
 
   ReadRawDataComplete(result);
 }

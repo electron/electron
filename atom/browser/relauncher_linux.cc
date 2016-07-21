@@ -4,11 +4,13 @@
 
 #include "atom/browser/relauncher.h"
 
+#include <fcntl.h>
 #include <signal.h>
 #include <sys/prctl.h>
 #include <sys/signalfd.h>
 
 #include "base/files/file_util.h"
+#include "base/files/scoped_file.h"
 #include "base/logging.h"
 #include "base/posix/eintr_wrapper.h"
 #include "base/process/launch.h"
@@ -55,9 +57,17 @@ void RelauncherSynchronizeWithParent() {
 
 int LaunchProgram(const StringVector& relauncher_args,
                   const StringVector& argv) {
+  // Redirect the stdout of child process to /dev/null, otherwise after
+  // relaunch the child process will raise exception when writing to stdout.
+  base::ScopedFD devnull(HANDLE_EINTR(open("/dev/null", O_WRONLY)));
+  base::FileHandleMappingVector no_stdout;
+  no_stdout.push_back(std::make_pair(devnull.get(), STDERR_FILENO));
+  no_stdout.push_back(std::make_pair(devnull.get(), STDOUT_FILENO));
+
   base::LaunchOptions options;
   options.allow_new_privs = true;
   options.new_process_group = true;  // detach
+  options.fds_to_remap = &no_stdout;
   base::Process process = base::LaunchProcess(argv, options);
   return process.IsValid() ? 0 : 1;
 }

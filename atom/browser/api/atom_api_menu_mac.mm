@@ -5,6 +5,7 @@
 #import "atom/browser/api/atom_api_menu_mac.h"
 
 #include "atom/browser/native_window.h"
+#include "atom/browser/unresponsive_suppressor.h"
 #include "base/message_loop/message_loop.h"
 #include "base/strings/sys_string_conversions.h"
 #include "brightray/browser/inspectable_web_contents.h"
@@ -30,7 +31,8 @@ void MenuMac::PopupAt(Window* window, int x, int y, int positioning_item) {
     return;
 
   base::scoped_nsobject<AtomMenuController> menu_controller(
-      [[AtomMenuController alloc] initWithModel:model_.get()]);
+      [[AtomMenuController alloc] initWithModel:model_.get()
+                          useDefaultAccelerator:NO]);
   NSMenu* menu = [menu_controller menu];
   NSView* view = web_contents->GetView()->GetNativeView();
 
@@ -66,6 +68,9 @@ void MenuMac::PopupAt(Window* window, int x, int y, int positioning_item) {
   if (rightmostMenuPoint > screenRight)
     position.x = position.x - [menu size].width;
 
+  // Don't emit unresponsive event when showing menu.
+  atom::UnresponsiveSuppressor suppressor;
+
   // Show the menu.
   [menu popUpMenuPositioningItem:item atLocation:position inView:view];
 }
@@ -74,7 +79,8 @@ void MenuMac::PopupAt(Window* window, int x, int y, int positioning_item) {
 void Menu::SetApplicationMenu(Menu* base_menu) {
   MenuMac* menu = static_cast<MenuMac*>(base_menu);
   base::scoped_nsobject<AtomMenuController> menu_controller(
-      [[AtomMenuController alloc] initWithModel:menu->model_.get()]);
+      [[AtomMenuController alloc] initWithModel:menu->model_.get()
+                          useDefaultAccelerator:YES]);
   [NSApp setMainMenu:[menu_controller menu]];
 
   // Ensure the menu_controller_ is destroyed after main menu is set.

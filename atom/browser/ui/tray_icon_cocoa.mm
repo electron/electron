@@ -44,7 +44,10 @@ const CGFloat kVerticalTitleMargin = 2;
   inMouseEventSequence_ = NO;
 
   if ((self = [super initWithFrame: CGRectZero])) {
-    [self registerForDraggedTypes: @[NSFilenamesPboardType]];
+    [self registerForDraggedTypes: @[
+      NSFilenamesPboardType,
+      NSStringPboardType,
+    ]];
 
     // Create the status item.
     NSStatusItem * item = [[NSStatusBar systemStatusBar]
@@ -249,11 +252,12 @@ const CGFloat kVerticalTitleMargin = 2;
   [self setNeedsDisplay:YES];
 }
 
-- (void)popUpContextMenu:(ui::SimpleMenuModel*)menu_model {
+- (void)popUpContextMenu:(atom::AtomMenuModel*)menu_model {
   // Show a custom menu.
   if (menu_model) {
     base::scoped_nsobject<AtomMenuController> menuController(
-        [[AtomMenuController alloc] initWithModel:menu_model]);
+        [[AtomMenuController alloc] initWithModel:menu_model
+                            useDefaultAccelerator:NO]);
     forceHighlight_ = YES;  // Should highlight when showing menu.
     [self setNeedsDisplay:YES];
     [statusItem_ popUpStatusItemMenu:[menuController menu]];
@@ -306,7 +310,12 @@ const CGFloat kVerticalTitleMargin = 2;
       dropFiles.push_back(base::SysNSStringToUTF8(file));
     trayIcon_->NotifyDropFiles(dropFiles);
     return YES;
+  } else if ([[pboard types] containsObject:NSStringPboardType]) {
+    NSString* dropText = [pboard stringForType:NSStringPboardType];
+    trayIcon_->NotifyDropText(base::SysNSStringToUTF8(dropText));
+    return YES;
   }
+
   return NO;
 }
 
@@ -365,18 +374,19 @@ void TrayIconCocoa::SetHighlightMode(bool highlight) {
 }
 
 void TrayIconCocoa::PopUpContextMenu(const gfx::Point& pos,
-                                     ui::SimpleMenuModel* menu_model) {
+                                     AtomMenuModel* menu_model) {
   [status_item_view_ popUpContextMenu:menu_model];
 }
 
-void TrayIconCocoa::SetContextMenu(ui::SimpleMenuModel* menu_model) {
+void TrayIconCocoa::SetContextMenu(AtomMenuModel* menu_model) {
   // Substribe to MenuClosed event.
   if (menu_model_)
     menu_model_->RemoveObserver(this);
-  static_cast<AtomMenuModel*>(menu_model)->AddObserver(this);
+  menu_model->AddObserver(this);
 
   // Create native menu.
-  menu_.reset([[AtomMenuController alloc] initWithModel:menu_model]);
+  menu_.reset([[AtomMenuController alloc] initWithModel:menu_model
+                                  useDefaultAccelerator:NO]);
   [status_item_view_ setMenuController:menu_.get()];
 }
 

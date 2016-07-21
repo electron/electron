@@ -197,9 +197,7 @@ app.once('ready', () => {
         role: 'front'
       }
     ]
-  }
-
-  if (process.platform === 'win32') {
+  } else {
     template.unshift({
       label: 'File',
       submenu: [
@@ -229,7 +227,7 @@ function loadApplicationPackage (packagePath) {
     if (fs.existsSync(packageJsonPath)) {
       let packageJson
       try {
-        packageJson = JSON.parse(fs.readFileSync(packageJsonPath))
+        packageJson = require(packageJsonPath)
       } catch (e) {
         showErrorMessage(`Unable to parse ${packageJsonPath}\n\n${e.message}`)
         return

@@ -272,6 +272,39 @@ bool Browser::SetBadgeCount(int count) {
   return false;
 }
 
+void Browser::SetLoginItemSettings(LoginItemSettings settings) {
+  std::wstring keyPath = L"Software\\Microsoft\\Windows\\CurrentVersion\\Run";
+  base::win::RegKey key(HKEY_CURRENT_USER, keyPath.c_str(), KEY_ALL_ACCESS);
+
+  if (settings.open_at_login) {
+    base::FilePath path;
+    if (PathService::Get(base::FILE_EXE, &path)) {
+      std::wstring exePath(path.value());
+      key.WriteValue(GetAppUserModelID(), exePath.c_str());
+    }
+  } else {
+    key.DeleteValue(GetAppUserModelID());
+  }
+}
+
+Browser::LoginItemSettings Browser::GetLoginItemSettings() {
+  LoginItemSettings settings;
+  std::wstring keyPath = L"Software\\Microsoft\\Windows\\CurrentVersion\\Run";
+  base::win::RegKey key(HKEY_CURRENT_USER, keyPath.c_str(), KEY_ALL_ACCESS);
+  std::wstring keyVal;
+
+  if (!FAILED(key.ReadValue(GetAppUserModelID(), &keyVal))) {
+    base::FilePath path;
+    if (PathService::Get(base::FILE_EXE, &path)) {
+      std::wstring exePath(path.value());
+      settings.open_at_login = keyVal == exePath;
+    }
+  }
+
+  return settings;
+}
+
+
 PCWSTR Browser::GetAppUserModelID() {
   if (app_user_model_id_.empty()) {
     SetAppUserModelID(base::ReplaceStringPlaceholders(

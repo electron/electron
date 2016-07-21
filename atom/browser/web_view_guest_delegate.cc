@@ -7,6 +7,7 @@
 #include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "content/public/browser/guest_host.h"
+#include "content/public/browser/navigation_handle.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/render_widget_host.h"
@@ -95,10 +96,13 @@ void WebViewGuestDelegate::SetSize(const SetSizeParams& params) {
   auto_size_enabled_ = enable_auto_size;
 }
 
-void WebViewGuestDelegate::DidCommitProvisionalLoadForFrame(
-    content::RenderFrameHost* render_frame_host,
-    const GURL& url, ui::PageTransition transition_type) {
-  api_web_contents_->Emit("load-commit", url, !render_frame_host->GetParent());
+void WebViewGuestDelegate::DidFinishNavigation(
+    content::NavigationHandle* navigation_handle) {
+  if (navigation_handle->HasCommitted() && !navigation_handle->IsErrorPage()) {
+    auto is_main_frame = navigation_handle->IsInMainFrame();
+    auto url = navigation_handle->GetURL();
+    api_web_contents_->Emit("load-commit", url, is_main_frame);
+  }
 }
 
 void WebViewGuestDelegate::DidAttach(int guest_proxy_routing_id) {

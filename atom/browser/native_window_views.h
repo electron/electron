@@ -98,7 +98,7 @@ class NativeWindowViews : public NativeWindow,
   void SetIgnoreMouseEvents(bool ignore) override;
   void SetContentProtection(bool enable) override;
   void SetFocusable(bool focusable) override;
-  void SetMenu(ui::MenuModel* menu_model) override;
+  void SetMenu(AtomMenuModel* menu_model) override;
   void SetParentWindow(NativeWindow* parent) override;
   gfx::NativeWindow GetNativeWindow() override;
   void SetOverlayIcon(const gfx::Image& overlay,
@@ -176,7 +176,7 @@ class NativeWindowViews : public NativeWindow,
   bool AcceleratorPressed(const ui::Accelerator& accelerator) override;
 
   // Register accelerators supported by the menu model.
-  void RegisterAccelerators(ui::MenuModel* menu_model);
+  void RegisterAccelerators(AtomMenuModel* menu_model);
 
   // Returns the restore state for the window.
   ui::WindowShowState GetRestoredState();
@@ -212,13 +212,19 @@ class NativeWindowViews : public NativeWindow,
   // to receive the wrong size (#2498). To circumvent that, we keep tabs on the
   // size of the window while in the normal state (not maximized, minimized or
   // fullscreen), so we restore it correctly.
-  gfx::Size last_normal_size_;
+  gfx::Rect last_normal_bounds_;
 
   // In charge of running taskbar related APIs.
   TaskbarHost taskbar_host_;
 
   // If true we have enabled a11y
   bool enabled_a11y_support_;
+
+  // Whether to show the WS_THICKFRAME style.
+  bool thick_frame_;
+
+  // The bounds of window before maximize/fullscreen.
+  gfx::Rect restore_bounds_;
 
   // The icons of window and taskbar.
   base::win::ScopedHICON window_icon_;

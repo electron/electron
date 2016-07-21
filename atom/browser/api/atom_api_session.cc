@@ -11,6 +11,7 @@
 #include "atom/browser/api/atom_api_download_item.h"
 #include "atom/browser/api/atom_api_protocol.h"
 #include "atom/browser/api/atom_api_web_request.h"
+#include "atom/browser/browser.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/atom_permission_manager.h"
@@ -20,6 +21,7 @@
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/net_converter.h"
+#include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/node_includes.h"
 #include "base/files/file_path.h"
 #include "base/guid.h"
@@ -163,6 +165,8 @@ namespace api {
 
 namespace {
 
+const char kPersistPrefix[] = "persist:";
+
 // The wrapSession funtion which is implemented in JavaScript
 using WrapSessionCallback = base::Callback<void(v8::Local<v8::Value>)>;
 WrapSessionCallback g_wrap_session;
@@ -241,10 +245,10 @@ void OnGetBackend(disk_cache::Backend** backend_ptr,
     } else if (action == Session::CacheAction::STATS) {
       base::StringPairs stats;
       (*backend_ptr)->GetStats(&stats);
-      for (size_t i = 0; i < stats.size(); ++i) {
-        if (stats[i].first == "Current size") {
+      for (const auto& stat : stats) {
+        if (stat.first == "Current size") {
           int current_size;
-          base::StringToInt(stats[i].second, &current_size);
+          base::StringToInt(stat.second, &current_size);
           RunCallbackInUI(callback, current_size);
           break;
         }
@@ -266,7 +270,7 @@ void DoCacheActionInIO(
 
   // Call GetBackend and make the backend's ptr accessable in OnGetBackend.
   using BackendPtr = disk_cache::Backend*;
-  BackendPtr* backend_ptr = new BackendPtr(nullptr);
+  auto* backend_ptr = new BackendPtr(nullptr);
   net::CompletionCallback on_get_backend =
       base::Bind(&OnGetBackend, base::Owned(backend_ptr), action, callback);
   int rv = http_cache->GetBackend(backend_ptr, on_get_backend);
@@ -283,6 +287,14 @@ void SetProxyInIO(net::URLRequestContextGetter* getter,
   // Refetches and applies the new pac script if provided.
   proxy_service->ForceReloadProxyConfig();
   RunCallbackInUI(callback);
+}
+
+void SetCertVerifyProcInIO(
+    const scoped_refptr<net::URLRequestContextGetter>& context_getter,
+    const AtomCertVerifier::VerifyProc& proc) {
+  auto request_context = context_getter->GetURLRequestContext();
+  static_cast<AtomCertVerifier*>(request_context->cert_verifier())->
+      SetVerifyProc(proc);
 }
 
 void ClearHostResolverCacheInIO(
@@ -309,6 +321,11 @@ void AllowNTLMCredentialsForDomainsInIO(
     if (auth_preferences)
       auth_preferences->set_server_whitelist(domains);
   }
+}
+
+void OnClearStorageDataDone(const base::Closure& callback) {
+  if (!callback.is_null())
+    callback.Run();
 }
 
 }  // namespace
@@ -360,21 +377,19 @@ void Session::DoCacheAction(const net::CompletionCallback& callback) {
 }
 
 void Session::ClearStorageData(mate::Arguments* args) {
-  // clearStorageData([options, ]callback)
+  // clearStorageData([options, callback])
   ClearStorageDataOptions options;
-  args->GetNext(&options);
   base::Closure callback;
-  if (!args->GetNext(&callback)) {
-    args->ThrowError();
-    return;
-  }
+  args->GetNext(&options);
+  args->GetNext(&callback);
 
   auto storage_partition =
       content::BrowserContext::GetStoragePartition(browser_context(), nullptr);
   storage_partition->ClearData(
       options.storage_types, options.quota_types, options.origin,
       content::StoragePartition::OriginMatcherFunction(),
-      base::Time(), base::Time::Max(), callback);
+      base::Time(), base::Time::Max(),
+      base::Bind(&OnClearStorageDataDone, callback));
 }
 
 void Session::FlushStorageData() {
@@ -434,7 +449,10 @@ void Session::SetCertVerifyProc(v8::Local<v8::Value> val,
     return;
   }
 
-  browser_context_->cert_verifier()->SetVerifyProc(proc);
+  BrowserThread::PostTask(BrowserThread::IO, FROM_HERE,
+      base::Bind(&SetCertVerifyProcInIO,
+                 make_scoped_refptr(browser_context_->GetRequestContext()),
+                 proc));
 }
 
 void Session::SetPermissionRequestHandler(v8::Local<v8::Value> val,
@@ -522,10 +540,19 @@ mate::Handle<Session> Session::CreateFrom(
 
 // static
 mate::Handle<Session> Session::FromPartition(
-    v8::Isolate* isolate, const std::string& partition, bool in_memory) {
-  auto browser_context = brightray::BrowserContext::From(partition, in_memory);
-  return CreateFrom(isolate,
-                    static_cast<AtomBrowserContext*>(browser_context.get()));
+    v8::Isolate* isolate, const std::string& partition,
+    const base::DictionaryValue& options) {
+  scoped_refptr<AtomBrowserContext> browser_context;
+  if (partition.empty()) {
+    browser_context = AtomBrowserContext::From("", false, options);
+  } else if (base::StartsWith(partition, kPersistPrefix,
+                              base::CompareCase::SENSITIVE)) {
+    std::string name = partition.substr(8);
+    browser_context = AtomBrowserContext::From(name, false, options);
+  } else {
+    browser_context = AtomBrowserContext::From(partition, true, options);
+  }
+  return CreateFrom(isolate, browser_context.get());
 }
 
 // static
@@ -565,11 +592,23 @@ void SetWrapSession(const WrapSessionCallback& callback) {
 
 namespace {
 
+v8::Local<v8::Value> FromPartition(
+    const std::string& partition, mate::Arguments* args) {
+  if (!atom::Browser::Get()->is_ready()) {
+    args->ThrowError("Session can only be received when app is ready");
+    return v8::Null(args->isolate());
+  }
+  base::DictionaryValue options;
+  args->GetNext(&options);
+  return atom::api::Session::FromPartition(
+      args->isolate(), partition, options).ToV8();
+}
+
 void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
-  dict.SetMethod("fromPartition", &atom::api::Session::FromPartition);
+  dict.SetMethod("fromPartition", &FromPartition);
   dict.SetMethod("_setWrapSession", &atom::api::SetWrapSession);
 }
 

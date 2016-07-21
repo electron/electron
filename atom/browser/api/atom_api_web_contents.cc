@@ -47,6 +47,7 @@
 #include "content/public/browser/native_web_keyboard_event.h"
 #include "content/public/browser/navigation_details.h"
 #include "content/public/browser/navigation_entry.h"
+#include "content/public/browser/navigation_handle.h"
 #include "content/public/browser/plugin_service.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
@@ -65,6 +66,7 @@
 #include "net/url_request/url_request_context.h"
 #include "third_party/WebKit/public/web/WebInputEvent.h"
 #include "third_party/WebKit/public/web/WebFindOptions.h"
+#include "ui/gfx/screen.h"
 
 #include "atom/common/node_includes.h"
 
@@ -238,6 +240,13 @@ content::ServiceWorkerContext* GetServiceWorkerContext(
   return storage_partition->GetServiceWorkerContext();
 }
 
+// Called when CapturePage is done.
+void OnCapturePageDone(base::Callback<void(const gfx::Image&)> callback,
+                       const SkBitmap& bitmap,
+                       content::ReadbackResponse response) {
+  callback.Run(gfx::Image::CreateFrom1xBitmap(bitmap));
+}
+
 }  // namespace
 
 WebContents::WebContents(v8::Isolate* isolate,
@@ -277,16 +286,11 @@ WebContents::WebContents(v8::Isolate* isolate,
   std::string partition;
   mate::Handle<api::Session> session;
   if (options.Get("session", &session)) {
-  } else if (options.Get("partition", &partition) && !partition.empty()) {
-    bool in_memory = true;
-    if (base::StartsWith(partition, "persist:", base::CompareCase::SENSITIVE)) {
-      in_memory = false;
-      partition = partition.substr(8);
-    }
-    session = Session::FromPartition(isolate, partition, in_memory);
+  } else if (options.Get("partition", &partition)) {
+    session = Session::FromPartition(isolate, partition);
   } else {
     // Use the default session if not specified.
-    session = Session::FromPartition(isolate, "", false);
+    session = Session::FromPartition(isolate, "");
   }
   session_.Reset(isolate, session.ToV8());
 
@@ -600,20 +604,6 @@ void WebContents::DidFinishLoad(content::RenderFrameHost* render_frame_host,
     Emit("did-finish-load");
 }
 
-void WebContents::DidFailProvisionalLoad(
-    content::RenderFrameHost* render_frame_host,
-    const GURL& url,
-    int code,
-    const base::string16& description,
-    bool was_ignored_by_handler) {
-  bool is_main_frame = !render_frame_host->GetParent();
-  Emit("did-fail-provisional-load", code, description, url, is_main_frame);
-
-  // Do not emit "did-fail-load" for canceled requests.
-  if (code != net::ERR_ABORTED)
-    Emit("did-fail-load", code, description, url, is_main_frame);
-}
-
 void WebContents::DidFailLoad(content::RenderFrameHost* render_frame_host,
                               const GURL& url,
                               int error_code,
@@ -657,13 +647,27 @@ void WebContents::DidGetRedirectForResourceRequest(
        details.headers.get());
 }
 
-void WebContents::DidNavigateMainFrame(
-    const content::LoadCommittedDetails& details,
-    const content::FrameNavigateParams& params) {
-  if (details.is_navigation_to_different_page())
-    Emit("did-navigate", params.url);
-  else if (details.is_in_page)
-    Emit("did-navigate-in-page", params.url);
+void WebContents::DidFinishNavigation(
+    content::NavigationHandle* navigation_handle) {
+  bool is_main_frame = navigation_handle->IsInMainFrame();
+  if (navigation_handle->HasCommitted() && !navigation_handle->IsErrorPage()) {
+    auto url = navigation_handle->GetURL();
+    bool is_in_page = navigation_handle->IsSamePage();
+    if (is_main_frame && !is_in_page) {
+      Emit("did-navigate", url);
+    } else if (is_in_page) {
+      Emit("did-navigate-in-page", url);
+    }
+  } else {
+    auto url = navigation_handle->GetURL();
+    int code = navigation_handle->GetNetErrorCode();
+    auto description = net::ErrorToShortString(code);
+    Emit("did-fail-provisional-load", code, description, url, is_main_frame);
+
+    // Do not emit "did-fail-load" for canceled requests.
+    if (code != net::ERR_ABORTED)
+      Emit("did-fail-load", code, description, url, is_main_frame);
+  }
 }
 
 void WebContents::TitleWasSet(content::NavigationEntry* entry,
@@ -677,10 +681,10 @@ void WebContents::TitleWasSet(content::NavigationEntry* entry,
 void WebContents::DidUpdateFaviconURL(
     const std::vector<content::FaviconURL>& urls) {
   std::set<GURL> unique_urls;
-  for (auto iter = urls.begin(); iter != urls.end(); ++iter) {
-    if (iter->icon_type != content::FaviconURL::FAVICON)
+  for (const auto& iter : urls) {
+    if (iter.icon_type != content::FaviconURL::FAVICON)
       continue;
-    const GURL& url = iter->icon_url;
+    const GURL& url = iter.icon_url;
     if (url.is_valid())
       unique_urls.insert(url);
   }
@@ -780,6 +784,13 @@ int WebContents::GetID() const {
 WebContents::Type WebContents::GetType() const {
   return type_;
 }
+
+#if !defined(OS_MACOSX)
+bool WebContents::IsFocused() const {
+  auto view = web_contents()->GetRenderWidgetHostView();
+  return view && view->HasFocus();
+}
+#endif
 
 bool WebContents::Equal(const WebContents* web_contents) const {
   return GetID() == web_contents->GetID();
@@ -1235,6 +1246,45 @@ void WebContents::StartDrag(const mate::Dictionary& item,
   }
 }
 
+void WebContents::CapturePage(mate::Arguments* args) {
+  gfx::Rect rect;
+  base::Callback<void(const gfx::Image&)> callback;
+
+  if (!(args->Length() == 1 && args->GetNext(&callback)) &&
+      !(args->Length() == 2 && args->GetNext(&rect)
+                            && args->GetNext(&callback))) {
+    args->ThrowError();
+    return;
+  }
+
+  const auto view = web_contents()->GetRenderWidgetHostView();
+  const auto host = view ? view->GetRenderWidgetHost() : nullptr;
+  if (!view || !host) {
+    callback.Run(gfx::Image());
+    return;
+  }
+
+  // Capture full page if user doesn't specify a |rect|.
+  const gfx::Size view_size = rect.IsEmpty() ? view->GetViewBounds().size() :
+                                               rect.size();
+
+  // By default, the requested bitmap size is the view size in screen
+  // coordinates.  However, if there's more pixel detail available on the
+  // current system, increase the requested bitmap size to capture it all.
+  gfx::Size bitmap_size = view_size;
+  const gfx::NativeView native_view = view->GetNativeView();
+  const float scale =
+      gfx::Screen::GetScreen()->GetDisplayNearestWindow(native_view)
+      .device_scale_factor();
+  if (scale > 1.0f)
+    bitmap_size = gfx::ScaleToCeiledSize(view_size, scale);
+
+  host->CopyFromBackingStore(gfx::Rect(rect.origin(), view_size),
+                             bitmap_size,
+                             base::Bind(&OnCapturePageDone, callback),
+                             kBGRA_8888_SkColorType);
+}
+
 void WebContents::OnCursorChange(const content::WebCursor& cursor) {
   content::WebCursor::CursorInfo info;
   cursor.GetCursorInfo(&info);
@@ -1370,6 +1420,8 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("removeWorkSpace", &WebContents::RemoveWorkSpace)
       .SetMethod("showDefinitionForSelection",
                  &WebContents::ShowDefinitionForSelection)
+      .SetMethod("capturePage", &WebContents::CapturePage)
+      .SetMethod("isFocused", &WebContents::IsFocused)
       .SetProperty("id", &WebContents::ID)
       .SetProperty("session", &WebContents::Session)
       .SetProperty("hostWebContents", &WebContents::HostWebContents)

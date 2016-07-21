@@ -50,7 +50,7 @@ void TrayIconGtk::SetToolTip(const std::string& tool_tip) {
   icon_->SetToolTip(base::UTF8ToUTF16(tool_tip));
 }
 
-void TrayIconGtk::SetContextMenu(ui::SimpleMenuModel* menu_model) {
+void TrayIconGtk::SetContextMenu(AtomMenuModel* menu_model) {
   icon_->UpdatePlatformContextMenu(menu_model);
 }
 

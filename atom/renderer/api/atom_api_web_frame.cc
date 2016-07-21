@@ -39,7 +39,7 @@ class ScriptExecutionCallback : public blink::WebScriptExecutionCallback {
 
   explicit ScriptExecutionCallback(const CompletionCallback& callback)
       : callback_(callback) {}
-  ~ScriptExecutionCallback() {}
+  ~ScriptExecutionCallback() override {}
 
   void completed(
       const blink::WebVector<v8::Local<v8::Value>>& result) override {
