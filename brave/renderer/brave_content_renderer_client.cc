@@ -27,7 +27,7 @@ BraveContentRendererClient::BraveContentRendererClient() {
 }
 
 void BraveContentRendererClient::RenderThreadStarted() {
-  content_settings_manager_.reset(atom::ContentSettingsManager::GetInstance());
+  content_settings_manager_ = atom::ContentSettingsManager::GetInstance();
   AtomRendererClient::RenderThreadStarted();
 #if defined(ENABLE_EXTENSIONS)
   extensions::AtomExtensionsRendererClient::GetInstance()->
@@ -44,7 +44,7 @@ void BraveContentRendererClient::RenderFrameCreated(
 #endif
   new atom::ContentSettingsClient(render_frame,
                                   ext_dispatcher,
-                                  content_settings_manager_.get());
+                                  content_settings_manager_);
 #if defined(ENABLE_EXTENSIONS)
   extensions::AtomExtensionsRendererClient::GetInstance()->RenderFrameCreated(
     render_frame);

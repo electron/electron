@@ -45,7 +45,7 @@ class BraveContentRendererClient : public atom::AtomRendererClient {
     GURL* new_url) override;
 
  private:
-  std::unique_ptr<atom::ContentSettingsManager> content_settings_manager_;
+  atom::ContentSettingsManager* content_settings_manager_;  // not owned
 
   DISALLOW_COPY_AND_ASSIGN(BraveContentRendererClient);
 };
