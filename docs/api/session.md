@@ -121,6 +121,8 @@ Writes any unwritten DOMStorage data to disk.
 * `config` Object
   * `pacScript` String - The URL associated with the PAC file.
   * `proxyRules` String - Rules indicating which proxies to use.
+  * `proxyBypassRules` String - Rules indicating which URLs should
+    bypass the proxy settings.
 * `callback` Function - Called when operation is done.
 
 Sets the proxy settings.
@@ -152,6 +154,43 @@ For example:
   proxy if `foopy` is unavailable.
 * `http=foopy;socks=foopy2` -  Use HTTP proxy `foopy` for http URLs, and use
   `socks4://foopy2` for all other URLs.
+
+The `proxyBypassRules` is a comma separated list of rules described below:
+
+* `[ URL_SCHEME "://" ] HOSTNAME_PATTERN [ ":" <port> ]`
+
+   Match all hostnames that match the pattern HOSTNAME_PATTERN.
+
+   Examples:
+     "foobar.com", "*foobar.com", "*.foobar.com", "*foobar.com:99",
+     "https://x.*.y.com:99"
+
+ * `"." HOSTNAME_SUFFIX_PATTERN [ ":" PORT ]`
+
+   Match a particular domain suffix.
+
+   Examples:
+     ".google.com", ".com", "http://.google.com"
+
+* `[ SCHEME "://" ] IP_LITERAL [ ":" PORT ]`
+
+   Match URLs which are IP address literals.
+
+   Examples:
+     "127.0.1", "[0:0::1]", "[::1]", "http://[::1]:99"
+
+*  `IP_LITERAL "/" PREFIX_LENGHT_IN_BITS`
+
+   Match any URL that is to an IP literal that falls between the
+   given range. IP range is specified using CIDR notation.
+
+   Examples:
+     "192.168.1.1/16", "fefe:13::abc/33".
+
+*  `<local>`
+
+   Match local addresses. The meaning of `<local>` is whether the
+   host matches one of: "127.0.0.1", "::1", "localhost".
 
 ### `ses.resolveProxy(url, callback)`
 
