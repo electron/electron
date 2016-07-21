@@ -65,7 +65,7 @@
 * [Estructura de los directorios del Código Fuente](development/source-code-directory-structure.md)
 * [Diferencias Técnicas con NW.js (anteriormente conocido como node-webkit)](development/atom-shell-vs-node-webkit.md)
 * [Repaso del Sistema de Compilación](development/build-system-overview.md)
-* [Instrucciones de Compilación (Mac)](development/build-instructions-osx.md)
+* [Instrucciones de Compilación (macOS)](development/build-instructions-osx.md)
 * [Instrucciones de Compilación (Windows)](development/build-instructions-windows.md)
 * [Instrucciones de Compilación (Linux)](development/build-instructions-linux.md)
 * [Configurando un Servidor de Símbolos en el depurador](development/setting-up-symbol-server.md)
