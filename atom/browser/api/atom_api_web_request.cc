@@ -14,6 +14,7 @@
 #include "content/public/browser/browser_thread.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
+#include "v8/include/v8.h"
 
 using content::BrowserThread;
 
@@ -85,7 +86,9 @@ void WebRequest::OnURLFetchComplete(
 
   FetchCallback callback = fetchers_[source];
   // error, response, body
-  callback.Run(err, response, body);
+  const uint8_t* data = reinterpret_cast<const uint8_t*>(body.c_str());
+  callback.Run(err, response, v8::String::NewFromOneByte(isolate(),
+      data, v8::NewStringType::kNormal, body.length()).ToLocalChecked());
   fetchers_.erase(source);
 }
 
