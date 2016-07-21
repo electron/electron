@@ -221,12 +221,12 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
       auto cookie_config = content::CookieStoreConfig(
           base_path_.Append(FILE_PATH_LITERAL("Cookies")),
           content::CookieStoreConfig::EPHEMERAL_SESSION_COOKIES,
-          NULL, NULL);
+          nullptr, nullptr);
       cookie_store = content::CreateCookieStore(cookie_config);
     }
     storage_->set_cookie_store(std::move(cookie_store));
     storage_->set_channel_id_service(base::WrapUnique(
-        new net::ChannelIDService(new net::DefaultChannelIDStore(NULL),
+        new net::ChannelIDService(new net::DefaultChannelIDStore(nullptr),
                                   base::WorkerPool::GetTaskRunner(true))));
 
     std::string accept_lang = l10n_util::GetApplicationLocale("");
@@ -270,7 +270,7 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
               new net::ProxyScriptFetcherImpl(url_request_context_.get()),
               dhcp_factory.Create(url_request_context_.get()),
               host_resolver.get(),
-              NULL,
+              nullptr,
               url_request_context_->network_delegate()));
     }
 

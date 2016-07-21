@@ -14,7 +14,6 @@
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_ui.h"
 
-using content::WebContents;
 
 namespace brightray {
 
@@ -114,7 +113,7 @@ class BundledDataSource : public content::URLDataSource {
   }
 
  private:
-  virtual ~BundledDataSource() {}
+  ~BundledDataSource() override {}
   DISALLOW_COPY_AND_ASSIGN(BundledDataSource);
 };
 

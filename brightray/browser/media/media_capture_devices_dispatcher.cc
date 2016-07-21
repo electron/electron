@@ -20,13 +20,13 @@ namespace {
 const content::MediaStreamDevice* FindDeviceWithId(
     const content::MediaStreamDevices& devices,
     const std::string& device_id) {
-  content::MediaStreamDevices::const_iterator iter = devices.begin();
+  auto iter = devices.begin();
   for (; iter != devices.end(); ++iter) {
     if (iter->id == device_id) {
       return &(*iter);
     }
   }
-  return NULL;
+  return nullptr;
 }
 
 const MediaStreamDevices& EmptyDevices() {
@@ -100,7 +100,7 @@ MediaCaptureDevicesDispatcher::GetFirstAvailableAudioDevice() {
   DCHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
   const content::MediaStreamDevices& audio_devices = GetAudioCaptureDevices();
   if (audio_devices.empty())
-    return NULL;
+    return nullptr;
   return &(*audio_devices.begin());
 }
 
@@ -119,7 +119,7 @@ MediaCaptureDevicesDispatcher::GetFirstAvailableVideoDevice() {
   DCHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
   const content::MediaStreamDevices& video_devices = GetVideoCaptureDevices();
   if (video_devices.empty())
-    return NULL;
+    return nullptr;
   return &(*video_devices.begin());
 }
 

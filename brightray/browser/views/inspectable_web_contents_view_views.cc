@@ -142,7 +142,9 @@ bool InspectableWebContentsViewViews::IsDevToolsViewShowing() {
 }
 
 bool InspectableWebContentsViewViews::IsDevToolsViewFocused() {
-  if (devtools_web_view_)
+  if (devtools_window_web_view_)
+    return devtools_window_web_view_->HasFocus();
+  else if (devtools_web_view_)
     return devtools_web_view_->HasFocus();
   else
     return false;

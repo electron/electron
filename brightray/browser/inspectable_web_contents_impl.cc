@@ -89,6 +89,14 @@ bool IsPointInRect(const gfx::Point& point, const gfx::Rect& rect) {
          point.y() > rect.y() && point.y() < (rect.height() + rect.y());
 }
 
+bool IsPointInScreen(const gfx::Point& point) {
+  for (const auto& display : gfx::Screen::GetScreen()->GetAllDisplays()) {
+    if (IsPointInRect(point, display.bounds()))
+      return true;
+  }
+  return false;
+}
+
 void SetZoomLevelForWebContents(content::WebContents* web_contents,
                                 double level) {
   content::HostZoomMap::SetZoomLevel(web_contents, level);
@@ -165,7 +173,7 @@ int ResponseWriter::Initialize(const net::CompletionCallback& callback) {
 int ResponseWriter::Write(net::IOBuffer* buffer,
                           int num_bytes,
                           const net::CompletionCallback& callback) {
-  base::FundamentalValue* id = new base::FundamentalValue(stream_id_);
+  auto* id = new base::FundamentalValue(stream_id_);
   base::StringValue* chunk =
       new base::StringValue(std::string(buffer->data(), num_bytes));
 
@@ -212,9 +220,9 @@ InspectableWebContentsImpl::InspectableWebContentsImpl(
       devtools_bounds_.set_height(600);
       devtools_bounds_.set_width(800);
     }
-    gfx::Rect display = display::Screen::GetScreen()
-        ->GetDisplayNearestWindow(web_contents->GetNativeView()).bounds();
-    if (!IsPointInRect(devtools_bounds_.origin(), display)) {
+    if (!IsPointInScreen(devtools_bounds_.origin())) {
+      gfx::Rect display = gfx::Screen::GetScreen()->
+          GetDisplayNearestWindow(web_contents->GetNativeView()).bounds();
       devtools_bounds_.set_x(display.x() + (display.width() - devtools_bounds_.width()) / 2);
       devtools_bounds_.set_y(display.y() + (display.height() - devtools_bounds_.height()) / 2);
     }
@@ -681,11 +689,11 @@ void InspectableWebContentsImpl::DidStartNavigationToPendingEntry(
 
 void InspectableWebContentsImpl::OnURLFetchComplete(const net::URLFetcher* source) {
   DCHECK(source);
-  PendingRequestsMap::iterator it = pending_requests_.find(source);
+  auto it = pending_requests_.find(source);
   DCHECK(it != pending_requests_.end());
 
   base::DictionaryValue response;
-  base::DictionaryValue* headers = new base::DictionaryValue();
+  auto* headers = new base::DictionaryValue();
   net::HttpResponseHeaders* rh = source->GetResponseHeaders();
   response.SetInteger("statusCode", rh ? rh->response_code() : 200);
   response.Set("headers", headers);
