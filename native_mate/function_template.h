@@ -223,7 +223,7 @@ struct Dispatcher<ReturnType(ArgTypes...)> {
       const v8::FunctionCallbackInfo<v8::Value>& info) {
     Arguments args(info);
     v8::Local<v8::External> v8_holder;
-    CHECK(args.GetData(&v8_holder));
+    args.GetData(&v8_holder);
     CallbackHolderBase* holder_base = reinterpret_cast<CallbackHolderBase*>(
         v8_holder->Value());
 
