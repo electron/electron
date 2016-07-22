@@ -356,7 +356,7 @@ void NativeWindow::RequestToClosePage() {
     ScheduleUnresponsiveEvent(5000);
 
   if (web_contents()->NeedToFireBeforeUnload())
-    web_contents()->DispatchBeforeUnload(false);
+    web_contents()->DispatchBeforeUnload();
   else
     web_contents()->Close();
 }

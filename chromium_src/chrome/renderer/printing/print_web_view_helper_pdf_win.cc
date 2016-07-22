@@ -4,8 +4,9 @@
 
 #include "chrome/renderer/printing/print_web_view_helper.h"
 
+#include <memory>
+
 #include "base/logging.h"
-#include "base/memory/scoped_ptr.h"
 #include "base/process/process_handle.h"
 #include "chrome/common/print_messages.h"
 #include "content/public/renderer/render_thread.h"

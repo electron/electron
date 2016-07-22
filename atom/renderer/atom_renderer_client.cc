@@ -315,8 +315,8 @@ content::BrowserPluginDelegate* AtomRendererClient::CreateBrowserPluginDelegate(
   }
 }
 
-void AtomRendererClient::AddKeySystems(
-    std::vector<media::KeySystemInfo>* key_systems) {
+void AtomRendererClient::AddSupportedKeySystems(
+    std::vector<std::unique_ptr<::media::KeySystemProperties>>* key_systems) {
   AddChromeKeySystems(key_systems);
 }
 

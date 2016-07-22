@@ -5,11 +5,11 @@
 #include "atom/common/native_mate_converters/v8_value_converter.h"
 
 #include <map>
+#include <memory>
 #include <string>
 #include <utility>
 
 #include "base/logging.h"
-#include "base/memory/scoped_ptr.h"
 #include "base/values.h"
 #include "native_mate/dictionary.h"
 

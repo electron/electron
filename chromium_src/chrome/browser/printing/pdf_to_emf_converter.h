@@ -5,9 +5,10 @@
 #ifndef CHROME_BROWSER_PRINTING_PDF_TO_EMF_CONVERTER_H_
 #define CHROME_BROWSER_PRINTING_PDF_TO_EMF_CONVERTER_H_
 
+#include <memory>
+
 #include "base/callback.h"
 #include "base/memory/ref_counted_memory.h"
-#include "base/memory/scoped_ptr.h"
 
 namespace base {
 class FilePath;

@@ -6,9 +6,9 @@
 #define ATOM_BROWSER_API_ATOM_API_POWER_SAVE_BLOCKER_H_
 
 #include <map>
+#include <memory>
 
 #include "atom/browser/api/trackable_object.h"
-#include "base/memory/scoped_ptr.h"
 #include "content/public/browser/power_save_blocker.h"
 #include "native_mate/handle.h"
 

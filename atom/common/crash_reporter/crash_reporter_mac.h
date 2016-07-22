@@ -10,7 +10,6 @@
 
 #include "atom/common/crash_reporter/crash_reporter.h"
 #include "base/compiler_specific.h"
-#include "base/memory/scoped_ptr.h"
 #include "base/strings/string_piece.h"
 #include "vendor/crashpad/client/simple_string_dictionary.h"
 

@@ -5,12 +5,12 @@
 #ifndef ATOM_COMMON_CRASH_REPORTER_CRASH_REPORTER_LINUX_H_
 #define ATOM_COMMON_CRASH_REPORTER_CRASH_REPORTER_LINUX_H_
 
+#include <memory>
 #include <string>
 
 #include "atom/common/crash_reporter/crash_reporter.h"
 #include "atom/common/crash_reporter/linux/crash_dump_handler.h"
 #include "base/compiler_specific.h"
-#include "base/memory/scoped_ptr.h"
 
 namespace base {
 template <typename T> struct DefaultSingletonTraits;

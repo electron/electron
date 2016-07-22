@@ -10,7 +10,6 @@
 #include "atom/browser/api/event_emitter.h"
 #include "atom/common/key_weak_map.h"
 #include "base/bind.h"
-#include "base/memory/scoped_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "native_mate/object_template_builder.h"
 

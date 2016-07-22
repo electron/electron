@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <string>
 
+#include "base/memory/ptr_util.h"
 #include "base/strings/string_util.h"
 #include "native_mate/dictionary.h"
 #include "net/base/io_buffer.h"
@@ -132,7 +133,7 @@ void URLRequestFetchJob::StartAsync(std::unique_ptr<base::Value> options) {
     request_type = GetRequestType(method);
 
   fetcher_ = net::URLFetcher::Create(formated_url, request_type, this);
-  fetcher_->SaveResponseWithWriter(make_scoped_ptr(new ResponsePiper(this)));
+  fetcher_->SaveResponseWithWriter(base::WrapUnique(new ResponsePiper(this)));
 
   // A request context getter is passed by the user.
   if (url_request_context_getter_)
