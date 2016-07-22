@@ -670,6 +670,33 @@ void InspectableWebContentsImpl::CloseContents(content::WebContents* source) {
   CloseDevTools();
 }
 
+content::ColorChooser* InspectableWebContentsImpl::OpenColorChooser(
+    content::WebContents* source,
+    SkColor color,
+    const std::vector<content::ColorSuggestion>& suggestions) {
+  auto delegate = web_contents_->GetDelegate();
+  if (delegate)
+    return delegate->OpenColorChooser(source, color, suggestions);
+  return nullptr;
+}
+
+void InspectableWebContentsImpl::RunFileChooser(
+    content::WebContents* source,
+    const content::FileChooserParams& params) {
+  auto delegate = web_contents_->GetDelegate();
+  if (delegate)
+    delegate->RunFileChooser(source, params);
+}
+
+void InspectableWebContentsImpl::EnumerateDirectory(
+    content::WebContents* source,
+    int request_id,
+    const base::FilePath& path) {
+  auto delegate = web_contents_->GetDelegate();
+  if (delegate)
+    delegate->EnumerateDirectory(source, request_id, path);
+}
+
 void InspectableWebContentsImpl::OnWebContentsFocused() {
 #if defined(TOOLKIT_VIEWS)
   if (view_->GetDelegate())
