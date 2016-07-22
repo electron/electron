@@ -9,15 +9,15 @@ For example, when creating a tray or setting a window's icon, you can pass an
 image file path as a `String`:
 
 ```javascript
-const appIcon = new Tray('/Users/somebody/images/icon.png');
-let win = new BrowserWindow({icon: '/Users/somebody/images/window.png'});
+const appIcon = new Tray('/Users/somebody/images/icon.png')
+let win = new BrowserWindow({icon: '/Users/somebody/images/window.png'})
 ```
 
 Or read the image from the clipboard which returns a `nativeImage`:
 
 ```javascript
-const image = clipboard.readImage();
-const appIcon = new Tray(image);
+const image = clipboard.readImage()
+const appIcon = new Tray(image)
 ```
 
 ## Supported Formats
@@ -55,7 +55,7 @@ images/
 
 
 ```javascript
-let appIcon = new Tray('/Users/somebody/images/icon.png');
+let appIcon = new Tray('/Users/somebody/images/icon.png')
 ```
 
 Following suffixes for DPI are also supported:
@@ -105,8 +105,8 @@ Creates an empty `NativeImage` instance.
 Creates a new `NativeImage` instance from a file located at `path`.
 
 ```javascript
-const nativeImage = require('electron').nativeImage;
-let image = nativeImage.createFromPath('/Users/somebody/images/icon.png');
+const {nativeImage} = require('electron')
+let image = nativeImage.createFromPath('/Users/somebody/images/icon.png')
 ```
 
 ### `nativeImage.createFromBuffer(buffer[, scaleFactor])`
