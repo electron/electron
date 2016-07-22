@@ -33,8 +33,8 @@
 #include "content/public/browser/security_style_explanations.h"
 #include "storage/browser/fileapi/isolated_context.h"
 
-#include "content/browser/web_contents/web_contents_impl.h"
-#include "atom/browser/osr_web_contents_view.h"
+// #include "content/browser/web_contents/web_contents_impl.h"
+// #include "atom/browser/osr_web_contents_view.h"
 #include "atom/browser/native_window_views.h"
 
 using content::BrowserThread;
@@ -188,15 +188,15 @@ void CommonWebContentsDelegate::InitWithWebContents(
   printing::PrintViewManagerBasic::CreateForWebContents(web_contents);
   printing::PrintPreviewMessageHandler::CreateForWebContents(web_contents);
 
-  content::WebContentsImpl* impl =
-    reinterpret_cast<content::WebContentsImpl*>(web_contents);
+  // content::WebContentsImpl* impl =
+  //   reinterpret_cast<content::WebContentsImpl*>(web_contents);
 
   std::cout << "end" << std::endl;
   // Create InspectableWebContents.
   web_contents_.reset(brightray::InspectableWebContents::Create(web_contents));
   web_contents_->SetDelegate(this);
 
-  impl->SetView(new OffScreenWebContentsView);
+  // impl->SetView(new OffScreenWebContentsView);
   std::cout << "end" << std::endl;
 }
 
