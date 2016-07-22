@@ -214,19 +214,28 @@ void WebContentsPreferences::OverrideWebkitPrefs(
     prefs->javascript_enabled = b;
   if (self->web_preferences_.GetBoolean("images", &b))
     prefs->images_enabled = b;
+  if (self->web_preferences_.GetBoolean("domPasteEnabled", &b))
+    prefs->dom_paste_enabled = b;
+  if (self->web_preferences_.GetBoolean("javascriptCanAccessClipboard", &b))
+    prefs->javascript_can_access_clipboard = b;
   if (self->web_preferences_.GetBoolean("textAreasAreResizable", &b))
     prefs->text_areas_are_resizable = b;
   if (self->web_preferences_.GetBoolean("webgl", &b))
     prefs->experimental_webgl_enabled = b;
-  if (self->web_preferences_.GetBoolean("webSecurity", &b)) {
+  if (self->web_preferences_.GetBoolean("webSecurity", &b))
     prefs->web_security_enabled = b;
-    prefs->allow_displaying_insecure_content = !b;
-    prefs->allow_running_insecure_content = !b;
-  }
+  if (self->web_preferences_.GetBoolean("allowFileAccessFromFileUrls", &b))
+    prefs->allow_file_access_from_file_urls = b;
+  if (self->web_preferences_.GetBoolean("allowUniversalAccessFromFileUrls", &b))
+    prefs->allow_universal_access_from_file_urls = b;
   if (self->web_preferences_.GetBoolean("allowDisplayingInsecureContent", &b))
     prefs->allow_displaying_insecure_content = b;
   if (self->web_preferences_.GetBoolean("allowRunningInsecureContent", &b))
     prefs->allow_running_insecure_content = b;
+  if (self->web_preferences_.GetBoolean("hyperlinkAuditingEnabled", &b))
+    prefs->hyperlink_auditing_enabled = b;
+  if (self->web_preferences_.GetBoolean("touchEnabled", &b))
+    prefs->touch_enabled = b;
   const base::DictionaryValue* fonts = nullptr;
   if (self->web_preferences_.GetDictionary("defaultFontFamily", &fonts)) {
     base::string16 font;

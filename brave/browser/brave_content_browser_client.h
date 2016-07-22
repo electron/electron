@@ -35,6 +35,8 @@ class BraveContentBrowserClient : public atom::AtomBrowserClient {
   void AppendExtraCommandLineSwitches(base::CommandLine* command_line,
                                       int child_process_id) override;
   content::PlatformNotificationService* GetPlatformNotificationService() override;
+  void OverrideWebkitPrefs(content::RenderViewHost* host,
+      content::WebPreferences* prefs) override;
   bool CanCreateWindow(const GURL& opener_url,
                        const GURL& opener_top_level_frame_url,
                        const GURL& source_origin,

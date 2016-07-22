@@ -9,6 +9,7 @@
 #include "brave/browser/notifications/platform_notification_service_impl.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/render_process_host.h"
+#include "content/public/common/web_preferences.h"
 #include "ui/base/l10n/l10n_util.h"
 
 #if defined(ENABLE_EXTENSIONS)
@@ -130,6 +131,15 @@ content::PlatformNotificationService*
 BraveContentBrowserClient::GetPlatformNotificationService() {
   return PlatformNotificationServiceImpl::GetInstance();
 }
+
+void BraveContentBrowserClient::OverrideWebkitPrefs(
+    content::RenderViewHost* host, content::WebPreferences* prefs) {
+  prefs->hyperlink_auditing_enabled = false;
+  // Custom preferences of guest page.
+  auto web_contents = content::WebContents::FromRenderViewHost(host);
+  atom::WebContentsPreferences::OverrideWebkitPrefs(web_contents, prefs);
+}
+
 
 void BraveContentBrowserClient::SiteInstanceGotProcess(
     content::SiteInstance* site_instance) {

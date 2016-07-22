@@ -119,7 +119,6 @@ void AtomBrowserClient::OverrideWebkitPrefs(
   prefs->experimental_webgl_enabled = true;
   prefs->allow_displaying_insecure_content = false;
   prefs->allow_running_insecure_content = false;
-  prefs->default_minimum_page_scale_factor = 1.f;
 
   // Custom preferences of guest page.
   auto web_contents = content::WebContents::FromRenderViewHost(host);
