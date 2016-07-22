@@ -90,7 +90,28 @@ double WebFrame::GetZoomFactor() const {
 }
 
 void WebFrame::SetZoomLevelLimits(double min_level, double max_level) {
-  web_frame_->view()->setDefaultPageScaleLimits(min_level, max_level);
+  web_frame_->view()->zoomLimitsChanged(min_level, max_level);
+}
+
+float WebFrame::GetPageScaleFactor() {
+  return web_frame_->view()->pageScaleFactor();
+}
+
+void WebFrame::SetPageScaleFactor(float factor) {
+  web_frame_->view()->setPageScaleFactor(factor);
+}
+
+void WebFrame::SetPageScaleLimits(float min_scale, float max_scale) {
+  web_frame_->view()->setDefaultPageScaleLimits(min_scale, max_scale);
+  web_frame_->view()->setIgnoreViewportTagScaleLimits(true);
+}
+
+float WebFrame::GetTextZoomFactor() {
+  return web_frame_->view()->textZoomFactor();
+}
+
+void WebFrame::SetTextZoomFactor(float factor) {
+  web_frame_->view()->setTextZoomFactor(factor);
 }
 
 v8::Local<v8::Value> WebFrame::GetContentWindow(int content_window_id) {
@@ -256,6 +277,11 @@ void WebFrame::BuildPrototype(
       .SetMethod("setZoomFactor", &WebFrame::SetZoomFactor)
       .SetMethod("getZoomFactor", &WebFrame::GetZoomFactor)
       .SetMethod("setZoomLevelLimits", &WebFrame::SetZoomLevelLimits)
+      .SetMethod("getPageScaleFactor", &WebFrame::GetPageScaleFactor)
+      .SetMethod("setPageScaleFactor", &WebFrame::SetPageScaleFactor)
+      .SetMethod("setPageScaleLimits", &WebFrame::SetPageScaleLimits)
+      .SetMethod("getTextZoomFactor", &WebFrame::GetTextZoomFactor)
+      .SetMethod("setTextZoomFactor", &WebFrame::SetTextZoomFactor)
       .SetMethod("registerEmbedderCustomElement",
                  &WebFrame::RegisterEmbedderCustomElement)
       .SetMethod("registerElementResizeCallback",
