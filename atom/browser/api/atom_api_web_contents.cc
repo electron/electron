@@ -974,6 +974,7 @@ bool WebContents::Equal(const WebContents* web_contents) const {
 }
 
 void WebContents::Reload(bool ignore_cache) {
+  web_contents()->UserGestureDone();
   if (ignore_cache)
     web_contents()->GetController().ReloadBypassingCache(true);
   else
@@ -1019,6 +1020,7 @@ void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
   if (options.Get("extraHeaders", &extra_headers))
     params.extra_headers = extra_headers;
 
+  web_contents()->UserGestureDone();
   params.transition_type = ui::PAGE_TRANSITION_TYPED;
   params.override_user_agent = content::NavigationController::UA_OVERRIDE_TRUE;
   web_contents()->GetController().LoadURLWithParams(params);
