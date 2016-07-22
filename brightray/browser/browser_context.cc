@@ -115,6 +115,12 @@ BrowserContext::BrowserContext(const std::string& partition, bool in_memory)
   browser_context_map_[PartitionKey(partition, in_memory)] = GetWeakPtr();
 }
 
+BrowserContext::~BrowserContext() {
+  BrowserThread::DeleteSoon(BrowserThread::IO,
+                            FROM_HERE,
+                            resource_context_.release());
+}
+
 void BrowserContext::InitPrefs() {
   auto prefs_path = GetPath().Append(FILE_PATH_LITERAL("Preferences"));
   PrefServiceFactory prefs_factory;
@@ -129,14 +135,13 @@ void BrowserContext::InitPrefs() {
   prefs_ = prefs_factory.Create(registry.get());
 }
 
-BrowserContext::~BrowserContext() {
-  BrowserThread::DeleteSoon(BrowserThread::IO,
-                            FROM_HERE,
-                            resource_context_.release());
-}
-
 void BrowserContext::RegisterInternalPrefs(PrefRegistrySimple* registry) {
   InspectableWebContentsImpl::RegisterPrefs(registry);
+}
+
+URLRequestContextGetter* BrowserContext::GetRequestContext() {
+  return static_cast<URLRequestContextGetter*>(
+      GetDefaultStoragePartition(this)->GetURLRequestContext());
 }
 
 net::URLRequestContextGetter* BrowserContext::CreateRequestContext(
@@ -172,27 +177,6 @@ std::unique_ptr<content::ZoomLevelDelegate> BrowserContext::CreateZoomLevelDeleg
 
 bool BrowserContext::IsOffTheRecord() const {
   return in_memory_;
-}
-
-net::URLRequestContextGetter* BrowserContext::GetRequestContext() {
-  return GetDefaultStoragePartition(this)->GetURLRequestContext();
-}
-
-net::URLRequestContextGetter* BrowserContext::GetMediaRequestContext() {
-  return GetRequestContext();
-}
-
-net::URLRequestContextGetter*
-    BrowserContext::GetMediaRequestContextForRenderProcess(
-        int renderer_child_id) {
-  return GetRequestContext();
-}
-
-net::URLRequestContextGetter*
-    BrowserContext::GetMediaRequestContextForStoragePartition(
-        const base::FilePath& partition_path,
-        bool in_memory) {
-  return GetRequestContext();
 }
 
 content::ResourceContext* BrowserContext::GetResourceContext() {
@@ -235,6 +219,18 @@ BrowserContext::CreateRequestContextForStoragePartition(
     bool in_memory,
     content::ProtocolHandlerMap* protocol_handlers,
     content::URLRequestInterceptorScopedVector request_interceptors) {
+  return nullptr;
+}
+
+net::URLRequestContextGetter*
+BrowserContext::CreateMediaRequestContext() {
+  return url_request_getter_.get();
+}
+
+net::URLRequestContextGetter*
+BrowserContext::CreateMediaRequestContextForStoragePartition(
+    const base::FilePath& partition_path,
+    bool in_memory) {
   return nullptr;
 }
 

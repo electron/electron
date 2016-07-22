@@ -35,14 +35,6 @@
       'MACOSX_DEPLOYMENT_TARGET': '10.8',
       'RUN_CLANG_STATIC_ANALYZER': 'YES',
       'USE_HEADER_MAP': 'NO',
-      'WARNING_CFLAGS': [
-        '-Wall',
-        '-Wextra',
-        '-Wno-unused-parameter',
-        '-Wno-missing-field-initializers',
-        '-Wno-deprecated-declarations',
-        '-Wno-unneeded-internal-declaration',
-      ],
     },
     'msvs_configuration_attributes': {
       'OutputDirectory': '<(DEPTH)\\build\\$(ConfigurationName)',
@@ -91,24 +83,6 @@
         ],
       },
     },
-    'msvs_disabled_warnings': [
-      4100, # unreferenced formal parameter
-      4121, # alignment of a member was sensitive to packing
-      4127, # conditional expression is constant
-      4189, # local variable is initialized but not referenced
-      4244, # 'initializing' : conversion from 'double' to 'size_t', possible loss of data
-      4245, # 'initializing' : conversion from 'int' to 'const net::QuicVersionTag', signed/unsigned mismatch
-      4251, # class 'std::xx' needs to have dll-interface.
-      4310, # cast truncates constant value
-      4355, # 'this' : used in base member initializer list
-      4480, # nonstandard extension used: specifying underlying type for enum
-      4481, # nonstandard extension used: override specifier 'override'
-      4510, # default constructor could not be generated
-      4512, # assignment operator could not be generated
-      4610, # user defined constructor required
-      4702, # unreachable code
-      4819, # The file contains a character that cannot be represented in the current code page
-    ],
     'configurations': {
       # The "Debug" and "Release" configurations are not actually used.
       'Debug': {},
@@ -341,5 +315,46 @@
         ],
       }],
     ],  # target_conditions
+    # Ignored compiler warnings of Chromium.
+    'conditions': [
+      ['OS=="mac"', {
+        'xcode_settings': {
+          'WARNING_CFLAGS': [
+            '-Wall',
+            '-Wextra',
+            '-Wno-unused-parameter',
+            '-Wno-missing-field-initializers',
+            '-Wno-deprecated-declarations',
+            '-Wno-unneeded-internal-declaration',
+            '-Wno-inconsistent-missing-override',
+          ],
+        },
+      }],
+      ['OS=="linux"', {
+        'cflags': [
+          '-Wno-inconsistent-missing-override',
+        ],
+      }],
+      ['OS=="win"', {
+        'msvs_disabled_warnings': [
+          4100, # unreferenced formal parameter
+          4121, # alignment of a member was sensitive to packing
+          4127, # conditional expression is constant
+          4189, # local variable is initialized but not referenced
+          4244, # 'initializing' : conversion from 'double' to 'size_t', possible loss of data
+          4245, # 'initializing' : conversion from 'int' to 'const net::QuicVersionTag', signed/unsigned mismatch
+          4251, # class 'std::xx' needs to have dll-interface.
+          4310, # cast truncates constant value
+          4355, # 'this' : used in base member initializer list
+          4480, # nonstandard extension used: specifying underlying type for enum
+          4481, # nonstandard extension used: override specifier 'override'
+          4510, # default constructor could not be generated
+          4512, # assignment operator could not be generated
+          4610, # user defined constructor required
+          4702, # unreachable code
+          4819, # The file contains a character that cannot be represented in the current code page
+        ],
+      }],
+    ],  # conditions
   },  # target_defaults
 }

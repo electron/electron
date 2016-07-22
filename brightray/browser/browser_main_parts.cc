@@ -19,9 +19,11 @@
 #include "media/base/media_resources.h"
 #include "net/proxy/proxy_resolver_v8.h"
 #include "ui/base/l10n/l10n_util.h"
+#include "ui/base/material_design/material_design_controller.h"
 
 #if defined(USE_AURA)
-#include "ui/gfx/screen.h"
+#include "ui/display/display.h"
+#include "ui/display/screen.h"
 #include "ui/views/widget/desktop_aura/desktop_screen.h"
 #endif
 
@@ -33,7 +35,7 @@
 #include "base/environment.h"
 #include "base/path_service.h"
 #include "base/nix/xdg_util.h"
-#include "base/thread_task_runner_handle.h"
+#include "base/threading/thread_task_runner_handle.h"
 #include "browser/brightray_paths.h"
 #include "chrome/browser/ui/libgtk2ui/gtk2_ui.h"
 #include "ui/base/x/x11_util.h"
@@ -175,6 +177,8 @@ void BrowserMainParts::PreEarlyInitialization() {
 }
 
 void BrowserMainParts::ToolkitInitialized() {
+  ui::MaterialDesignController::Initialize();
+
 #if defined(USE_AURA) && defined(USE_X11)
   views::LinuxUI::instance()->Initialize();
   wm_state_.reset(new wm::WMState);
@@ -238,8 +242,8 @@ void BrowserMainParts::PostMainMessageLoopRun() {
 
 int BrowserMainParts::PreCreateThreads() {
 #if defined(USE_AURA)
-  gfx::Screen* screen = views::CreateDesktopScreen();
-  gfx::Screen::SetScreenInstance(screen);
+  display::Screen* screen = views::CreateDesktopScreen();
+  display::Screen::SetScreenInstance(screen);
 #if defined(USE_X11)
   views::LinuxUI::instance()->UpdateDeviceScaleFactor(
       screen->GetPrimaryDisplay().device_scale_factor());

@@ -39,16 +39,13 @@ class BrowserContext : public base::RefCounted<BrowserContext>,
     return weak_factory_.GetWeakPtr();
   }
 
+  // Get the request context, if there is no one, create it.
+  URLRequestContextGetter* GetRequestContext();
+
   // content::BrowserContext:
   std::unique_ptr<content::ZoomLevelDelegate> CreateZoomLevelDelegate(
       const base::FilePath& partition_path) override;
   bool IsOffTheRecord() const override;
-  net::URLRequestContextGetter* GetRequestContext() override;
-  net::URLRequestContextGetter* GetMediaRequestContext() override;
-  net::URLRequestContextGetter* GetMediaRequestContextForRenderProcess(
-      int renderer_child_id) override;
-  net::URLRequestContextGetter* GetMediaRequestContextForStoragePartition(
-      const base::FilePath& partition_path, bool in_memory) override;
   content::ResourceContext* GetResourceContext() override;
   content::DownloadManagerDelegate* GetDownloadManagerDelegate() override;
   content::BrowserPluginGuestManager* GetGuestManager() override;
@@ -65,6 +62,10 @@ class BrowserContext : public base::RefCounted<BrowserContext>,
       bool in_memory,
       content::ProtocolHandlerMap* protocol_handlers,
       content::URLRequestInterceptorScopedVector request_interceptors) override;
+  net::URLRequestContextGetter* CreateMediaRequestContext() override;
+  net::URLRequestContextGetter* CreateMediaRequestContextForStoragePartition(
+      const base::FilePath& partition_path,
+      bool in_memory) override;
 
   URLRequestContextGetter* url_request_context_getter() const {
     return url_request_getter_.get();
