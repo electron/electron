@@ -126,7 +126,7 @@ void WebRequest::Fetch(mate::Arguments* args) {
       .release();
   fetcher->SetRequestContext(browser_context_->GetRequestContext());
   if (!payload.empty())
-    fetcher->SetUploadData(payload, payload_content_type);
+    fetcher->SetUploadData(payload_content_type, payload);
   if (!headers.IsEmpty())
     fetcher->SetExtraRequestHeaders(headers.ToString());
   if (!path.empty())
