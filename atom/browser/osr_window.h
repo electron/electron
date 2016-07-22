@@ -190,11 +190,17 @@ public:
 
   std::unique_ptr<const OnPaintCallback> paintCallback;
   void SetPaintCallback(const OnPaintCallback*);
+
 private:
+  void SetFrameRate();
+  void ResizeRootLayer();
+
   content::RenderWidgetHostImpl* render_widget_host_;
 
   std::unique_ptr<CefCopyFrameGenerator> copy_frame_generator_;
   std::unique_ptr<CefBeginFrameTimer> begin_frame_timer_;
+
+  OffScreenOutputDevice* software_output_device_;
 
   int frame_rate_threshold_ms_;
 

@@ -66,6 +66,9 @@
 #include "third_party/WebKit/public/web/WebInputEvent.h"
 #include "third_party/WebKit/public/web/WebFindOptions.h"
 
+#include "content/browser/web_contents/web_contents_impl.h"
+#include "atom/browser/osr_web_contents_view.h"
+
 #include "atom/common/node_includes.h"
 
 namespace {
@@ -304,6 +307,10 @@ WebContents::WebContents(v8::Isolate* isolate,
     content::WebContents::CreateParams params(session->browser_context());
     web_contents = content::WebContents::Create(params);
   }
+
+  content::WebContentsImpl* impl =
+    reinterpret_cast<content::WebContentsImpl*>(web_contents);
+  impl->SetView(new OffScreenWebContentsView);
 
   Observe(web_contents);
   InitWithWebContents(web_contents, session->browser_context());

@@ -19,10 +19,13 @@
 #include "content/public/common/web_preferences.h"
 #include "native_mate/dictionary.h"
 #include "net/base/filename_util.h"
+#include "cc/base/switches.h"
 
 #if defined(OS_WIN)
 #include "ui/gfx/switches.h"
 #endif
+
+#include <iostream>
 
 DEFINE_WEB_CONTENTS_USER_DATA_KEY(atom::WebContentsPreferences);
 
@@ -191,6 +194,11 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
     if (!visible)  // Default state is visible.
       command_line->AppendSwitch("hidden-page");
   }
+
+  command_line->AppendSwitch(cc::switches::kEnableBeginFrameScheduling);
+  command_line->AppendSwitch(cc::switches::kShowFPSCounter);
+  // command_line->AppendSwitch("disable-gpu");
+  // command_line->AppendSwitch("disable-gpu-compositing");
 }
 
 // static
