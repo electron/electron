@@ -37,7 +37,7 @@ managers such as pacman. Or one can compile from source code.
 ## Getting the Code
 
 ```bash
-$ git clone https://github.com/electron/electron.git
+$ git clone https://github.com/brave/electron.git
 ```
 
 ## Bootstrapping
