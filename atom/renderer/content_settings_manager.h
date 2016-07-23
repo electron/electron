@@ -11,7 +11,7 @@
 #include "atom/renderer/content_settings_observer.h"
 #include "base/values.h"
 #include "components/content_settings/core/common/content_settings.h"
-#include "content/public/renderer/render_process_observer.h"
+#include "content/public/renderer/render_thread_observer.h"
 
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/callback.h"
@@ -44,7 +44,7 @@ struct Converter<ContentSetting> {
 
 namespace atom {
 
-class ContentSettingsManager : public content::RenderProcessObserver {
+class ContentSettingsManager : public content::RenderThreadObserver {
  public:
   ContentSettingsManager();
   ~ContentSettingsManager() override;

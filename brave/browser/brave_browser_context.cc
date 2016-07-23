@@ -42,8 +42,9 @@ using content::BrowserThread;
 namespace brave {
 
 BraveBrowserContext::BraveBrowserContext(const std::string& partition,
-                                       bool in_memory)
-    : atom::AtomBrowserContext(partition, in_memory),
+                                       bool in_memory,
+                                       const base::DictionaryValue& options)
+    : atom::AtomBrowserContext(partition, in_memory, options),
       pref_registry_(new user_prefs::PrefRegistrySyncable),
 #if defined(ENABLE_EXTENSIONS)
       network_delegate_(new extensions::AtomExtensionsNetworkDelegate(this)),
@@ -149,7 +150,7 @@ BraveBrowserContext::CreateURLRequestJobFactory(
                                                  extension_info_map));
 #endif
 
-  scoped_ptr<ProtocolHandlerRegistry::JobInterceptorFactory>
+  std::unique_ptr<ProtocolHandlerRegistry::JobInterceptorFactory>
     protocol_handler_interceptor =
         ProtocolHandlerRegistryFactory::GetForBrowserContext(this)
           ->CreateJobInterceptorFactory();
@@ -248,10 +249,14 @@ namespace brightray {
 
 // TODO(bridiver) find a better way to do this
 // static
+/*
 scoped_refptr<BrowserContext> BrowserContext::Create(
-    const std::string& partition, bool in_memory) {
-  return make_scoped_refptr(new brave::BraveBrowserContext(partition, in_memory));
+    const std::string& partition, bool in_memory,
+    const base::DictionaryValue& options) {
+  return make_scoped_refptr(
+      new brave::BraveBrowserContext(partition, in_memory, options));
 }
+*/
 
 }  // namespace brightray
 

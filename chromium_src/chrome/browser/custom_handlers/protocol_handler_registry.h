@@ -19,7 +19,6 @@
 #include <vector>
 
 #include "base/macros.h"
-#include "base/memory/scoped_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/sequenced_task_runner_helpers.h"
 #include "base/values.h"
@@ -71,7 +70,7 @@ class ProtocolHandlerRegistry : public KeyedService {
 
     // |job_factory| is set as the URLRequestJobFactory where requests are
     // forwarded if JobInterceptorFactory decides to pass on them.
-    void Chain(scoped_ptr<net::URLRequestJobFactory> job_factory);
+    void Chain(std::unique_ptr<net::URLRequestJobFactory> job_factory);
 
     // URLRequestJobFactory implementation.
     net::URLRequestJob* MaybeCreateJobWithProtocolHandler(
@@ -95,7 +94,7 @@ class ProtocolHandlerRegistry : public KeyedService {
    private:
     // When JobInterceptorFactory decides to pass on particular requests,
     // they're forwarded to the chained URLRequestJobFactory, |job_factory_|.
-    scoped_ptr<URLRequestJobFactory> job_factory_;
+    std::unique_ptr<URLRequestJobFactory> job_factory_;
     // |io_thread_delegate_| performs the actual job creation decisions by
     // mirroring the ProtocolHandlerRegistry on the IO thread.
     scoped_refptr<IOThreadDelegate> io_thread_delegate_;
@@ -113,7 +112,7 @@ class ProtocolHandlerRegistry : public KeyedService {
 
   // Returns a net::URLRequestJobFactory suitable for use on the IO thread, but
   // is initialized on the UI thread.
-  scoped_ptr<JobInterceptorFactory> CreateJobInterceptorFactory();
+  std::unique_ptr<JobInterceptorFactory> CreateJobInterceptorFactory();
 
   // Called when a site tries to register as a protocol handler. If the request
   // can be handled silently by the registry - either to ignore the request
@@ -321,7 +320,7 @@ class ProtocolHandlerRegistry : public KeyedService {
   content::BrowserContext* context_;
 
   // The Delegate that registers / deregisters external handlers on our behalf.
-  scoped_ptr<Delegate> delegate_;
+  std::unique_ptr<Delegate> delegate_;
 
   // If false then registered protocol handlers will not be used to handle
   // requests.

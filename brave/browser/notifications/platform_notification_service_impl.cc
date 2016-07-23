@@ -85,18 +85,18 @@ PlatformNotificationServiceImpl::PlatformNotificationServiceImpl() {}
 
 PlatformNotificationServiceImpl::~PlatformNotificationServiceImpl() {}
 
-blink::WebNotificationPermission PlatformNotificationServiceImpl::CheckPermissionOnUIThread(
+blink::mojom::PermissionStatus PlatformNotificationServiceImpl::CheckPermissionOnUIThread(
     content::BrowserContext* browser_context,
     const GURL& origin,
     int render_process_id) {
-  return blink::WebNotificationPermissionAllowed;
+  return blink::mojom::PermissionStatus::GRANTED;
 }
 
-blink::WebNotificationPermission PlatformNotificationServiceImpl::CheckPermissionOnIOThread(
+blink::mojom::PermissionStatus PlatformNotificationServiceImpl::CheckPermissionOnIOThread(
     content::ResourceContext* resource_context,
     const GURL& origin,
     int render_process_id) {
-  return blink::WebNotificationPermissionAllowed;
+  return blink::mojom::PermissionStatus::GRANTED;
 }
 
 void PlatformNotificationServiceImpl::DisplayNotification(

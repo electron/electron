@@ -141,7 +141,6 @@ void ChromeExtensionMessageFilter::OpenChannelToExtensionOnUIThread(
 
 void ChromeExtensionMessageFilter::OnOpenChannelToNativeApp(
     int routing_id,
-    const std::string& source_extension_id,
     const std::string& native_app_name,
     int* port_id) {
   int port2_id;
@@ -151,13 +150,12 @@ void ChromeExtensionMessageFilter::OnOpenChannelToNativeApp(
       BrowserThread::UI, FROM_HERE,
       base::Bind(
           &ChromeExtensionMessageFilter::OpenChannelToNativeAppOnUIThread,
-          this, routing_id, port2_id, source_extension_id, native_app_name));
+          this, routing_id, port2_id, native_app_name));
 }
 
 void ChromeExtensionMessageFilter::OpenChannelToNativeAppOnUIThread(
     int source_routing_id,
     int receiver_port_id,
-    const std::string& source_extension_id,
     const std::string& native_app_name) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
   if (browser_context_) {
@@ -165,7 +163,6 @@ void ChromeExtensionMessageFilter::OpenChannelToNativeAppOnUIThread(
         ->OpenChannelToNativeApp(render_process_id_,
                                  source_routing_id,
                                  receiver_port_id,
-                                 source_extension_id,
                                  native_app_name);
   }
 }

@@ -504,7 +504,7 @@ ContentVerifier* AtomExtensionSystem::content_verifier() {
 
 std::unique_ptr<ExtensionSet> AtomExtensionSystem::GetDependentExtensions(
     const Extension* extension) {
-  return make_scoped_ptr(new ExtensionSet());
+  return base::WrapUnique(new ExtensionSet());
 }
 
 void AtomExtensionSystem::InstallUpdate(const std::string& extension_id,

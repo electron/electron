@@ -340,6 +340,11 @@ class WebContents : public mate::TrackableObject<WebContents>,
                    int error_code,
                    const base::string16& error_description,
                    bool was_ignored_by_handler) override;
+  void DidFailProvisionalLoad(content::RenderFrameHost* render_frame_host,
+                              const GURL& validated_url,
+                              int error_code,
+                              const base::string16& error_description,
+                              bool was_ignored_by_handler) override;
   void DidStartLoading() override;
   void DidStopLoading() override;
   void DidGetResourceResponseStart(
@@ -414,7 +419,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   // When a new tab is created asynchronously, stores the OpenURLParams needed
   // to continue loading the page once the tab is ready.
-  scoped_ptr<content::OpenURLParams> delayed_open_url_params_;
+  std::unique_ptr<content::OpenURLParams> delayed_open_url_params_;
 
   DISALLOW_COPY_AND_ASSIGN(WebContents);
 };

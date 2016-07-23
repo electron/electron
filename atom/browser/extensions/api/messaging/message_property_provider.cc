@@ -9,7 +9,7 @@
 #include "base/json/json_writer.h"
 #include "base/logging.h"
 #include "base/strings/string_piece.h"
-#include "base/thread_task_runner_handle.h"
+#include "base/threading/thread_task_runner_handle.h"
 #include "base/values.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/browser_thread.h"
@@ -22,6 +22,7 @@
 #include "net/url_request/url_request_context.h"
 #include "net/url_request/url_request_context_getter.h"
 #include "url/gurl.h"
+#include "atom/browser/atom_browser_context.h"
 
 namespace extensions {
 
@@ -38,7 +39,8 @@ void MessagePropertyProvider::GetChannelID(
     return;
   }
   scoped_refptr<net::URLRequestContextGetter> request_context_getter(
-      browser_context->GetRequestContext());
+      static_cast<atom::AtomBrowserContext*>(browser_context)
+          ->GetRequestContext());
   content::BrowserThread::PostTask(content::BrowserThread::IO, FROM_HERE,
       base::Bind(&MessagePropertyProvider::GetChannelIDOnIOThread,
                  base::ThreadTaskRunnerHandle::Get(),

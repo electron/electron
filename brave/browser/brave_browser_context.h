@@ -25,7 +25,8 @@ class BravePermissionManager;
 
 class BraveBrowserContext : public atom::AtomBrowserContext {
  public:
-  BraveBrowserContext(const std::string& partition, bool in_memory);
+  BraveBrowserContext(const std::string& partition,
+      bool in_memory, const base::DictionaryValue& options);
   ~BraveBrowserContext() override;
 
   static BraveBrowserContext*

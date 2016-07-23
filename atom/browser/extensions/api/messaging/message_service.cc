@@ -9,6 +9,7 @@
 #include <utility>
 
 #include "atom/browser/extensions/api/messaging/extension_message_port.h"
+#include "extensions/browser/extension_web_contents_observer.h"
 #include "atom/browser/extensions/atom_extensions_browser_client.h"
 #include "atom/browser/extensions/atom_extension_system.h"
 #include "atom/browser/extensions/tab_helper.h"
@@ -353,7 +354,6 @@ void MessageService::OpenChannelToNativeApp(
     int source_process_id,
     int source_routing_id,
     int receiver_port_id,
-    const std::string& source_extension_id,
     const std::string& native_app_name) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
 
@@ -362,17 +362,20 @@ void MessageService::OpenChannelToNativeApp(
   if (!source)
     return;
 
-  ExtensionService* extension_service =
-      ExtensionSystem::Get(source->GetProcess()
-          ->GetBrowserContext())->extension_service();
-  bool has_permission = false;
-  if (extension_service) {
-    const Extension* extension =
-        extension_service->GetExtensionById(source_extension_id, false);
-    has_permission = extension &&
-                     extension->permissions_data()->HasAPIPermission(
-                         APIPermission::kNativeMessaging);
-  }
+  content::WebContents* web_contents =
+      content::WebContents::FromRenderFrameHost(source);
+  ExtensionWebContentsObserver* extension_web_contents_observer =
+      web_contents ?
+          ExtensionWebContentsObserver::GetForWebContents(web_contents) :
+          nullptr;
+  const Extension* extension =
+      extension_web_contents_observer ?
+          extension_web_contents_observer->GetExtensionFromFrame(source, true) :
+          nullptr;
+
+  bool has_permission = extension &&
+      extension->permissions_data()->HasAPIPermission(
+          APIPermission::kNativeMessaging);
 
   if (!has_permission) {
     DispatchOnDisconnect(source, receiver_port_id, kMissingPermissionError);

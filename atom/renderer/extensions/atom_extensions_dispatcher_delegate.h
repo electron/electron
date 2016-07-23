@@ -9,7 +9,6 @@
 #include <string>
 #include "base/macros.h"
 #include "extensions/renderer/dispatcher_delegate.h"
-#include "base/memory/scoped_ptr.h"
 
 namespace content {
 class RenderViewObserver;

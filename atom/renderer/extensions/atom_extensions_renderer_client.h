@@ -5,8 +5,9 @@
 #ifndef ATOM_RENDERER_EXTENSIONS_ATOM_EXTENSIONS_RENDERER_CLIENT_H_
 #define ATOM_RENDERER_EXTENSIONS_ATOM_EXTENSIONS_RENDERER_CLIENT_H_
 
+#include <memory>
+
 #include "base/macros.h"
-#include "base/memory/scoped_ptr.h"
 #include "extensions/renderer/extensions_renderer_client.h"
 #include "ui/base/page_transition_types.h"
 

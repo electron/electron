@@ -13,7 +13,6 @@
 #include "atom/browser/extensions/api/messaging/message_property_provider.h"
 #include "base/compiler_specific.h"
 #include "base/macros.h"
-#include "base/memory/scoped_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/values.h"
 #include "extensions/browser/api/messaging/native_message_host.h"
@@ -161,7 +160,6 @@ class MessageService : public BrowserContextKeyedAPI {
       int source_process_id,
       int source_routing_id,
       int receiver_port_id,
-      const std::string& source_extension_id,
       const std::string& native_app_name);
 
   // Mark the given port as opened by the frame identified by

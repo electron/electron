@@ -78,7 +78,6 @@
 #include "third_party/WebKit/public/web/WebFindOptions.h"
 #include "ui/display/screen.h"
 #include "ui/base/l10n/l10n_util.h"
-#include "ui/gfx/screen.h"
 
 #include "atom/common/node_includes.h"
 
@@ -564,7 +563,8 @@ void WebContents::ActivateContents(content::WebContents* source) {
 
 void WebContents::UpdateTargetURL(content::WebContents* source,
                                   const GURL& url) {
-  const gfx::Point& location = gfx::Screen::GetScreen()->GetCursorScreenPoint();
+  const gfx::Point& location =
+      display::Screen::GetScreen()->GetCursorScreenPoint();
   const gfx::Rect& bounds = web_contents()->GetContainerBounds();
   int x = location.x() - bounds.x();
   int y = location.y() - bounds.y();

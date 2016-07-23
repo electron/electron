@@ -69,12 +69,10 @@ class ChromeExtensionMessageFilter : public content::BrowserMessageFilter,
       const std::string& channel_name,
       bool include_tls_channel_id);
   void OnOpenChannelToNativeApp(int routing_id,
-                                const std::string& source_extension_id,
                                 const std::string& native_app_name,
                                 int* port_id);
   void OpenChannelToNativeAppOnUIThread(int source_routing_id,
                                         int receiver_port_id,
-                                        const std::string& source_extension_id,
                                         const std::string& native_app_name);
   void OnOpenChannelToTab(int routing_id,
                           const ExtensionMsg_TabTargetConnectionInfo& info,

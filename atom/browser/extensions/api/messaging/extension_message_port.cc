@@ -198,18 +198,18 @@ void ExtensionMessagePort::DispatchOnConnect(
   info.guest_process_id = guest_process_id;
   info.guest_render_frame_routing_id = guest_render_frame_routing_id;
 
-  SendToPort(make_scoped_ptr(new ExtensionMsg_DispatchOnConnect(
+  SendToPort(base::WrapUnique(new ExtensionMsg_DispatchOnConnect(
       MSG_ROUTING_NONE, port_id_, channel_name, source, info, tls_channel_id)));
 }
 
 void ExtensionMessagePort::DispatchOnDisconnect(
     const std::string& error_message) {
-  SendToPort(make_scoped_ptr(new ExtensionMsg_DispatchOnDisconnect(
+  SendToPort(base::WrapUnique(new ExtensionMsg_DispatchOnDisconnect(
       MSG_ROUTING_NONE, port_id_, error_message)));
 }
 
 void ExtensionMessagePort::DispatchOnMessage(const Message& message) {
-  SendToPort(make_scoped_ptr(new ExtensionMsg_DeliverMessage(
+  SendToPort(base::WrapUnique(new ExtensionMsg_DeliverMessage(
       MSG_ROUTING_NONE, port_id_, message)));
 }
 

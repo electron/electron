@@ -57,7 +57,7 @@ class AtomManagementAPIDelegate : public ManagementAPIDelegate {
       const std::string& manifest_str) const override {
     NOTIMPLEMENTED();
   }
-  scoped_ptr<InstallPromptDelegate> SetEnabledFunctionDelegate(
+  std::unique_ptr<InstallPromptDelegate> SetEnabledFunctionDelegate(
       content::WebContents* web_contents,
       content::BrowserContext* browser_context,
       const Extension* extension,
@@ -65,7 +65,8 @@ class AtomManagementAPIDelegate : public ManagementAPIDelegate {
     NOTIMPLEMENTED();
     return base::WrapUnique(install_prompt_delegate_);
   }
-  scoped_ptr<RequirementsChecker> CreateRequirementsChecker() const override {
+  std::unique_ptr<RequirementsChecker>
+      CreateRequirementsChecker() const override {
     return base::WrapUnique(new AtomRequirementsChecker());
   }
 
@@ -84,7 +85,7 @@ class AtomManagementAPIDelegate : public ManagementAPIDelegate {
   }
 
   // Used to show a confirmation dialog when uninstalling |target_extension|.
-  scoped_ptr<UninstallDialogDelegate> UninstallFunctionDelegate(
+  std::unique_ptr<UninstallDialogDelegate> UninstallFunctionDelegate(
       ManagementUninstallFunctionBase* function,
       const Extension* target_extension,
       bool show_programmatic_uninstall_ui) const override {
@@ -118,7 +119,7 @@ class AtomManagementAPIDelegate : public ManagementAPIDelegate {
   }
 
   // Creates a bookmark app for |launch_url|.
-  scoped_ptr<AppForLinkDelegate> GenerateAppForLinkFunctionDelegate(
+  std::unique_ptr<AppForLinkDelegate> GenerateAppForLinkFunctionDelegate(
       ManagementGenerateAppForLinkFunction* function,
       content::BrowserContext* context,
       const std::string& title,
