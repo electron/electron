@@ -27,7 +27,7 @@ building with Visual Studio will come in the future.
 ## Getting the Code
 
 ```powershell
-$ git clone https://github.com/electron/electron.git
+$ git clone https://github.com/brave/electron.git
 ```
 
 ## Bootstrapping
