@@ -91,8 +91,14 @@ void AtomSecurityStateModelClient::GetVisibleSecurityState(
   state->connection_status = ssl.connection_status;
   state->security_bits = ssl.security_bits;
   state->sct_verify_statuses.clear();
-  for (const auto& sct : ssl.signed_certificate_timestamp_ids)
-    state->sct_verify_statuses.push_back(sct.status);
+  state->sct_verify_statuses.insert(state->sct_verify_statuses.end(),
+                                    ssl.num_unknown_scts,
+                                    net::ct::SCT_STATUS_LOG_UNKNOWN);
+  state->sct_verify_statuses.insert(state->sct_verify_statuses.end(),
+                                    ssl.num_invalid_scts,
+                                    net::ct::SCT_STATUS_INVALID);
+  state->sct_verify_statuses.insert(state->sct_verify_statuses.end(),
+                                    ssl.num_valid_scts, net::ct::SCT_STATUS_OK);
   state->displayed_mixed_content =
       (ssl.content_status & content::SSLStatus::DISPLAYED_INSECURE_CONTENT)
           ? true

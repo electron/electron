@@ -70,30 +70,30 @@ function createWindow() {
   });
 }
 
-// This method will be called when Electron has finished
-// initialization and is ready to create browser windows.
-// Some APIs can only be used after this event occurs.
+// Electron 会在初始化后并准备
+// 创建浏览器窗口时，调用这个函数。
+// 部分 API 在 ready 事件触发后才能使用。
 app.on('ready', createWindow);
 
-// Quit when all windows are closed.
+// 当全部窗口关闭时退出。
 app.on('window-all-closed', () => {
-  // On macOS it is common for applications and their menu bar
-  // to stay active until the user quits explicitly with Cmd + Q
+  // 在 macOS 上，除非用户用 Cmd + Q 确定地退出，
+  // 否则绝大部分应用及其菜单栏会保持激活。
   if (process.platform !== 'darwin') {
     app.quit();
   }
 });
 
 app.on('activate', () => {
-  // On macOS it's common to re-create a window in the app when the
-  // dock icon is clicked and there are no other windows open.
+  // 在 macOS 上，当点击 dock 图标并且该应用没有打开的窗口时，
+  // 绝大部分应用会重新创建一个窗口。
   if (mainWindow === null) {
     createWindow();
   }
 });
 
-// In this file you can include the rest of your app's specific main process
-// code. You can also put them in separate files and require them here.
+// 在这文件，你可以续写应用剩下主进程代码。
+// 也可以拆分成几个文件，然后用 require 导入。
 ```
 最后，你想展示的 `index.html` ：
 ```html
@@ -151,11 +151,11 @@ $ ./Electron.app/Contents/MacOS/Electron your-app/
 *注意：*运行时需要你的系统已经安装了 [Git][9] 和 [Node.js][10]（包含 [npm][11]）。
 
 ```bash
-# Clone the repository
+# 克隆这仓库
 $ git clone https://github.com/electron/electron-quick-start
-# Go into the repository
+# 进入仓库
 $ cd electron-quick-start
-# Install dependencies and run the app
+# 安装依赖库并运行应用
 $ npm install && npm start
 ```
   [1]: https://github.com/electron/electron/blob/v1.1.3/docs/api/ipc-renderer.md

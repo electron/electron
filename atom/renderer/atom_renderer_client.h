@@ -57,7 +57,9 @@ class AtomRendererClient : public content::ContentRendererClient {
       content::RenderFrame* render_frame,
       const std::string& mime_type,
       const GURL& original_url) override;
-  void AddKeySystems(std::vector<media::KeySystemInfo>* key_systems) override;
+  void AddSupportedKeySystems(
+      std::vector<std::unique_ptr<::media::KeySystemProperties>>* key_systems)
+      override;
 
   std::unique_ptr<NodeBindings> node_bindings_;
   std::unique_ptr<AtomBindings> atom_bindings_;

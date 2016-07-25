@@ -4,10 +4,11 @@
 
 #include "chrome/common/chrome_paths_internal.h"
 
+#include <memory>
+
 #include "base/base_paths.h"
 #include "base/environment.h"
 #include "base/files/file_util.h"
-#include "base/memory/scoped_ptr.h"
 #include "base/nix/xdg_util.h"
 #include "base/path_service.h"
 #include "chrome/common/chrome_paths.h"

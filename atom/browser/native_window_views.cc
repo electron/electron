@@ -23,7 +23,6 @@
 #include "ui/aura/window_tree_host.h"
 #include "ui/base/hit_test.h"
 #include "ui/gfx/image/image.h"
-#include "ui/gfx/screen.h"
 #include "ui/views/background.h"
 #include "ui/views/controls/webview/unhandled_keyboard_event_handler.h"
 #include "ui/views/controls/webview/webview.h"
@@ -52,7 +51,9 @@
 #include "atom/browser/ui/win/atom_desktop_window_tree_host_win.h"
 #include "skia/ext/skia_utils_win.h"
 #include "ui/base/win/shell.h"
-#include "ui/gfx/win/dpi.h"
+#include "ui/display/win/screen_win.h"
+#include "ui/display/display.h"
+#include "ui/display/screen.h"
 #include "ui/views/widget/desktop_aura/desktop_native_widget_aura.h"
 #endif
 
@@ -348,6 +349,10 @@ void NativeWindowViews::CloseImmediately() {
 }
 
 void NativeWindowViews::Focus(bool focus) {
+  // For hidden window focus() should do nothing.
+  if (!IsVisible())
+    return;
+
   if (focus) {
 #if defined(OS_WIN)
     window_->Activate();
@@ -424,7 +429,7 @@ void NativeWindowViews::Maximize() {
   if (!thick_frame_) {
     restore_bounds_ = GetBounds();
     auto display =
-        gfx::Screen::GetScreen()->GetDisplayNearestPoint(GetPosition());
+        display::Screen::GetScreen()->GetDisplayNearestPoint(GetPosition());
     SetBounds(display.work_area(), false);
     return;
   }
@@ -487,7 +492,7 @@ void NativeWindowViews::SetFullScreen(bool fullscreen) {
     if (fullscreen) {
       restore_bounds_ = GetBounds();
       auto display =
-          gfx::Screen::GetScreen()->GetDisplayNearestPoint(GetPosition());
+          display::Screen::GetScreen()->GetDisplayNearestPoint(GetPosition());
       SetBounds(display.bounds(), false);
     } else {
       SetBounds(restore_bounds_, false);
@@ -1147,9 +1152,11 @@ gfx::Size NativeWindowViews::ContentSizeToWindowSize(const gfx::Size& size) {
 
   gfx::Size window_size(size);
 #if defined(OS_WIN)
-  gfx::Rect dpi_bounds =
-      gfx::Rect(gfx::Point(), gfx::win::DIPToScreenSize(size));
-  gfx::Rect window_bounds = gfx::win::ScreenToDIPRect(
+  HWND hwnd = GetAcceleratedWidget();
+  gfx::Rect dpi_bounds = gfx::Rect(
+      gfx::Point(), display::win::ScreenWin::DIPToScreenSize(hwnd, size));
+  gfx::Rect window_bounds = display::win::ScreenWin::ScreenToDIPRect(
+      hwnd,
       window_->non_client_view()->GetWindowBoundsForClientBounds(dpi_bounds));
   window_size = window_bounds.size();
 #endif
@@ -1165,16 +1172,16 @@ gfx::Size NativeWindowViews::WindowSizeToContentSize(const gfx::Size& size) {
 
   gfx::Size content_size(size);
 #if defined(OS_WIN)
-  content_size = gfx::win::DIPToScreenSize(content_size);
+  HWND hwnd = GetAcceleratedWidget();
+  content_size = display::win::ScreenWin::DIPToScreenSize(hwnd, content_size);
   RECT rect;
   SetRectEmpty(&rect);
-  HWND hwnd = GetAcceleratedWidget();
   DWORD style = ::GetWindowLong(hwnd, GWL_STYLE);
   DWORD ex_style = ::GetWindowLong(hwnd, GWL_EXSTYLE);
   AdjustWindowRectEx(&rect, style, FALSE, ex_style);
   content_size.set_width(content_size.width() - (rect.right - rect.left));
   content_size.set_height(content_size.height() - (rect.bottom - rect.top));
-  content_size = gfx::win::ScreenToDIPSize(content_size);
+  content_size = display::win::ScreenWin::ScreenToDIPSize(hwnd, content_size);
 #endif
 
   if (menu_bar_ && menu_bar_visible_)

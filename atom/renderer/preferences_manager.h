@@ -8,11 +8,11 @@
 #include <memory>
 
 #include "base/values.h"
-#include "content/public/renderer/render_process_observer.h"
+#include "content/public/renderer/render_thread_observer.h"
 
 namespace atom {
 
-class PreferencesManager : public content::RenderProcessObserver {
+class PreferencesManager : public content::RenderThreadObserver {
  public:
   PreferencesManager();
   ~PreferencesManager() override;

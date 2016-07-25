@@ -5,10 +5,10 @@
 #ifndef ATOM_RENDERER_API_ATOM_API_WEB_FRAME_H_
 #define ATOM_RENDERER_API_ATOM_API_WEB_FRAME_H_
 
+#include <memory>
 #include <string>
 
 #include "atom/renderer/guest_view_container.h"
-#include "base/memory/scoped_ptr.h"
 #include "native_mate/handle.h"
 #include "native_mate/wrappable.h"
 #include "third_party/WebKit/public/web/WebCache.h"

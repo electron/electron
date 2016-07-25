@@ -19,7 +19,6 @@
 #include "base/win/windows_version.h"
 #include "content/public/app/sandbox_helper_win.h"
 #include "sandbox/win/src/sandbox_types.h"
-#include "ui/gfx/win/dpi.h"
 #elif defined(OS_LINUX)  // defined(OS_WIN)
 #include "atom/app/atom_main_delegate.h"  // NOLINT
 #include "content/public/app/content_main.h"

@@ -40,8 +40,7 @@ void ClearJobFactoryInIO(
 }  // namespace
 
 Protocol::Protocol(v8::Isolate* isolate, AtomBrowserContext* browser_context)
-    : request_context_getter_(static_cast<brightray::URLRequestContextGetter*>(
-          browser_context->GetRequestContext())),
+    : request_context_getter_(browser_context->GetRequestContext()),
       weak_factory_(this) {
   Init(isolate);
 }

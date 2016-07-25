@@ -142,19 +142,24 @@ describe('ipc module', function () {
   })
 
   describe('remote value in browser', function () {
-    var print = path.join(fixtures, 'module', 'print_name.js')
+    const print = path.join(fixtures, 'module', 'print_name.js')
+    const printName = remote.require(print)
 
     it('keeps its constructor name for objects', function () {
-      var buf = new Buffer('test')
-      var printName = remote.require(print)
+      const buf = new Buffer('test')
       assert.equal(printName.print(buf), 'Buffer')
     })
 
     it('supports instanceof Date', function () {
-      var now = new Date()
-      var printName = remote.require(print)
+      const now = new Date()
       assert.equal(printName.print(now), 'Date')
       assert.deepEqual(printName.echo(now), now)
+    })
+
+    it('supports TypedArray', function () {
+      const values = [1, 2, 3, 4]
+      const typedArray = printName.typedArray(values)
+      assert.deepEqual(values, typedArray)
     })
   })
 

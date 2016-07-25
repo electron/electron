@@ -50,11 +50,6 @@ void AtomSpeechRecognitionManagerDelegate::OnAudioLevelsChange(
     int session_id, float volume, float noise_volume) {
 }
 
-void AtomSpeechRecognitionManagerDelegate::GetDiagnosticInformation(
-    bool* can_report_metrics, std::string* hardware_info) {
-  *can_report_metrics = false;
-}
-
 void AtomSpeechRecognitionManagerDelegate::CheckRecognitionIsAllowed(
     int session_id,
     base::Callback<void(bool ask_user, bool is_allowed)> callback) {

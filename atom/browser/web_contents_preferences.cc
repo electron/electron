@@ -79,12 +79,6 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
   base::DictionaryValue& web_preferences = self->web_preferences_;
 
   bool b;
-#if defined(OS_WIN)
-  // Check if DirectWrite is disabled.
-  if (web_preferences.GetBoolean(options::kDirectWrite, &b) && !b)
-    command_line->AppendSwitch(::switches::kDisableDirectWrite);
-#endif
-
   // Check if plugins are enabled.
   if (web_preferences.GetBoolean("plugins", &b) && b)
     command_line->AppendSwitch(switches::kEnablePlugins);

@@ -231,9 +231,9 @@ Returns:
   * `data` Buffer - PEM encoded data
   * `issuerName` String - Issuer's Common Name
   * `subjectName` String - Subject's Common Name
-  * `serialNumber` - DER encoded data
-  * `validStart` Integer - Start date of the certificate being valid
-  * `validExpiry` Integer - End date of the certificate being valid
+  * `serialNumber` String - Hex value represented string
+  * `validStart` Integer - Start date of the certificate being valid in seconds
+  * `validExpiry` Integer - End date of the certificate being valid in seconds
   * `fingerprint` String - Fingerprint of the certificate
 * `callback` Function
 
@@ -252,9 +252,9 @@ Returns:
   * `data` Buffer - PEM encoded data
   * `issuerName` String - Issuer's Common Name
   * `subjectName` String - Subject's Common Name
-  * `serialNumber` - DER encoded data
-  * `validStart` Integer - Start date of the certificate being valid
-  * `validExpiry` Integer - End date of the certificate being valid
+  * `serialNumber` String - Hex value represented string
+  * `validStart` Integer - Start date of the certificate being valid in seconds
+  * `validExpiry` Integer - End date of the certificate being valid in seconds
   * `fingerprint` String - Fingerprint of the certificate
 * `callback` Function
 
@@ -367,7 +367,7 @@ Returns:
     was invoked on. Elements with source URLs are images, audio and video.
   * `mediaType` String - Type of the node the context menu was invoked on. Can
     be `none`, `image`, `audio`, `video`, `canvas`, `file` or `plugin`.
-  * `hasImageContent` Boolean - Whether the context menu was invoked on an image
+  * `hasImageContents` Boolean - Whether the context menu was invoked on an image
     which has non-empty contents.
   * `isEditable` Boolean - Whether the context is editable.
   * `selectionText` String - Text of the selection that the context menu was
@@ -447,6 +447,10 @@ app.on('ready', () => {
   })
 })
 ```
+
+#### Event: 'view-painted'
+
+Emitted when a page's view is repainted.
 
 ### Instance Methods
 

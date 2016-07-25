@@ -28,7 +28,7 @@
 #include "components/prefs/pref_service.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
-#include "base/thread_task_runner_handle.h"
+#include "base/threading/thread_task_runner_handle.h"
 #include "brightray/browser/net/devtools_network_conditions.h"
 #include "brightray/browser/net/devtools_network_controller_handle.h"
 #include "chrome/common/pref_names.h"
@@ -133,7 +133,7 @@ struct Converter<net::ProxyConfig> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      net::ProxyConfig* out) {
-    std::string proxy_rules;
+    std::string proxy_rules, proxy_bypass_rules;
     GURL pac_url;
     mate::Dictionary options;
     // Fallback to previous API when passed String.
@@ -143,6 +143,7 @@ struct Converter<net::ProxyConfig> {
     } else if (ConvertFromV8(isolate, val, &options)) {
       options.Get("pacScript", &pac_url);
       options.Get("proxyRules", &proxy_rules);
+      options.Get("proxyBypassRules", &proxy_bypass_rules);
     } else {
       return false;
     }
@@ -152,6 +153,7 @@ struct Converter<net::ProxyConfig> {
       out->set_pac_url(pac_url);
     } else {
       out->proxy_rules().ParseFromString(proxy_rules);
+      out->proxy_rules().bypass_rules.ParseFromString(proxy_bypass_rules);
     }
     return true;
   }
@@ -179,7 +181,7 @@ class ResolveProxyHelper {
       : callback_(callback),
         original_thread_(base::ThreadTaskRunnerHandle::Get()) {
     scoped_refptr<net::URLRequestContextGetter> context_getter =
-        browser_context->GetRequestContext();
+        browser_context->url_request_context_getter();
     context_getter->GetNetworkTaskRunner()->PostTask(
         FROM_HERE,
         base::Bind(&ResolveProxyHelper::ResolveProxy,
@@ -282,7 +284,7 @@ void SetProxyInIO(net::URLRequestContextGetter* getter,
                   const net::ProxyConfig& config,
                   const base::Closure& callback) {
   auto proxy_service = getter->GetURLRequestContext()->proxy_service();
-  proxy_service->ResetConfigService(make_scoped_ptr(
+  proxy_service->ResetConfigService(base::WrapUnique(
       new net::ProxyConfigServiceFixed(config)));
   // Refetches and applies the new pac script if provided.
   proxy_service->ForceReloadProxyConfig();

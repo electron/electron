@@ -95,7 +95,7 @@ $.get('file:///path/to/example.asar/file.txt', (data) => {
 ### Treating an `asar` Archive as a Normal File
 
 For some cases like verifying the `asar` archive's checksum, we need to read the
-content of `asar` archive as file. For this purpose you can use the built-in
+content of an `asar` archive as a file. For this purpose you can use the built-in
 `original-fs` module which provides original `fs` APIs without `asar` support:
 
 ```javascript
@@ -111,7 +111,7 @@ process.noAsar = true;
 fs.readFileSync('/path/to/example.asar');
 ```
 
-## Limitations on Node API
+## Limitations of the Node API
 
 Even though we tried hard to make `asar` archives in the Node API work like
 directories as much as possible, there are still limitations due to the

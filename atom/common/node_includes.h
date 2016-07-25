@@ -19,6 +19,7 @@
 #undef CHECK_GT
 #undef CHECK_LE
 #undef CHECK_LT
+#undef UNLIKELY
 #undef DISALLOW_COPY_AND_ASSIGN
 #undef NO_RETURN
 #undef arraysize

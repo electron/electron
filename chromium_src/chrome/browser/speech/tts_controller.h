@@ -5,12 +5,12 @@
 #ifndef CHROME_BROWSER_SPEECH_TTS_CONTROLLER_H_
 #define CHROME_BROWSER_SPEECH_TTS_CONTROLLER_H_
 
+#include <memory>
 #include <queue>
 #include <set>
 #include <string>
 #include <vector>
 
-#include "base/memory/scoped_ptr.h"
 #include "base/memory/singleton.h"
 #include "base/memory/weak_ptr.h"
 #include "url/gurl.h"

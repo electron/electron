@@ -5,12 +5,12 @@
 #ifndef ATOM_BROWSER_API_ATOM_API_TRAY_H_
 #define ATOM_BROWSER_API_ATOM_API_TRAY_H_
 
+#include <memory>
 #include <string>
 #include <vector>
 
 #include "atom/browser/api/trackable_object.h"
 #include "atom/browser/ui/tray_icon_observer.h"
-#include "base/memory/scoped_ptr.h"
 #include "native_mate/handle.h"
 
 namespace gfx {

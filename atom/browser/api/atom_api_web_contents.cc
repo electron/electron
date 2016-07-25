@@ -66,7 +66,7 @@
 #include "net/url_request/url_request_context.h"
 #include "third_party/WebKit/public/web/WebInputEvent.h"
 #include "third_party/WebKit/public/web/WebFindOptions.h"
-#include "ui/gfx/screen.h"
+#include "ui/display/screen.h"
 
 #include "atom/common/node_includes.h"
 
@@ -733,6 +733,7 @@ bool WebContents::OnMessageReceived(const IPC::Message& message) {
     IPC_MESSAGE_HANDLER(AtomViewHostMsg_Message, OnRendererMessage)
     IPC_MESSAGE_HANDLER_DELAY_REPLY(AtomViewHostMsg_Message_Sync,
                                     OnRendererMessageSync)
+    IPC_MESSAGE_HANDLER(AtomViewHostMsg_DidCommitCompositorFrame, OnViewPainted)
     IPC_MESSAGE_HANDLER_CODE(ViewHostMsg_SetCursor, OnCursorChange,
       handled = false)
     IPC_MESSAGE_UNHANDLED(handled = false)
@@ -1274,7 +1275,7 @@ void WebContents::CapturePage(mate::Arguments* args) {
   gfx::Size bitmap_size = view_size;
   const gfx::NativeView native_view = view->GetNativeView();
   const float scale =
-      gfx::Screen::GetScreen()->GetDisplayNearestWindow(native_view)
+      display::Screen::GetScreen()->GetDisplayNearestWindow(native_view)
       .device_scale_factor();
   if (scale > 1.0f)
     bitmap_size = gfx::ScaleToCeiledSize(view_size, scale);
@@ -1296,6 +1297,10 @@ void WebContents::OnCursorChange(const content::WebCursor& cursor) {
   } else {
     Emit("cursor-changed", CursorTypeToString(info));
   }
+}
+
+void WebContents::OnViewPainted() {
+  Emit("view-painted");
 }
 
 void WebContents::SetSize(const SetSizeParams& params) {

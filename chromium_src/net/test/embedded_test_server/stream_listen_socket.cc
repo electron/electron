@@ -4,6 +4,8 @@
 
 #include "net/test/embedded_test_server/stream_listen_socket.h"
 
+#include <memory>
+
 #if defined(OS_WIN)
 // winsock2.h must be included first in order to ensure it is included before
 // windows.h.
@@ -20,7 +22,6 @@
 #include "base/files/file_util.h"
 #include "base/logging.h"
 #include "base/memory/ref_counted.h"
-#include "base/memory/scoped_ptr.h"
 #include "base/posix/eintr_wrapper.h"
 #include "base/sys_byteorder.h"
 #include "base/threading/platform_thread.h"

@@ -5,14 +5,15 @@
 #include "atom/common/native_mate_converters/v8_value_converter.h"
 
 #include <map>
+#include <memory>
 #include <string>
 #include <utility>
 
 #include "base/logging.h"
-#include "base/memory/scoped_ptr.h"
 #include "base/values.h"
 #include "native_mate/dictionary.h"
-#include "vendor/node/src/node_buffer.h"
+
+#include "atom/common/node_includes.h"
 
 namespace atom {
 
@@ -110,32 +111,31 @@ base::Value* V8ValueConverter::FromV8Value(
 
 v8::Local<v8::Value> V8ValueConverter::ToV8ValueImpl(
      v8::Isolate* isolate, const base::Value* value) const {
-  CHECK(value);
   switch (value->GetType()) {
     case base::Value::TYPE_NULL:
       return v8::Null(isolate);
 
     case base::Value::TYPE_BOOLEAN: {
       bool val = false;
-      CHECK(value->GetAsBoolean(&val));
+      value->GetAsBoolean(&val);
       return v8::Boolean::New(isolate, val);
     }
 
     case base::Value::TYPE_INTEGER: {
       int val = 0;
-      CHECK(value->GetAsInteger(&val));
+      value->GetAsInteger(&val);
       return v8::Integer::New(isolate, val);
     }
 
     case base::Value::TYPE_DOUBLE: {
       double val = 0.0;
-      CHECK(value->GetAsDouble(&val));
+      value->GetAsDouble(&val);
       return v8::Number::New(isolate, val);
     }
 
     case base::Value::TYPE_STRING: {
       std::string val;
-      CHECK(value->GetAsString(&val));
+      value->GetAsString(&val);
       return v8::String::NewFromUtf8(
           isolate, val.c_str(), v8::String::kNormalString, val.length());
     }
@@ -163,10 +163,9 @@ v8::Local<v8::Value> V8ValueConverter::ToV8Array(
 
   for (size_t i = 0; i < val->GetSize(); ++i) {
     const base::Value* child = nullptr;
-    CHECK(val->Get(i, &child));
+    val->Get(i, &child);
 
     v8::Local<v8::Value> child_v8 = ToV8ValueImpl(isolate, child);
-    CHECK(!child_v8.IsEmpty());
 
     v8::TryCatch try_catch;
     result->Set(static_cast<uint32_t>(i), child_v8);
@@ -186,7 +185,6 @@ v8::Local<v8::Value> V8ValueConverter::ToV8Object(
        !iter.IsAtEnd(); iter.Advance()) {
     const std::string& key = iter.key();
     v8::Local<v8::Value> child_v8 = ToV8ValueImpl(isolate, &iter.value());
-    CHECK(!child_v8.IsEmpty());
 
     v8::TryCatch try_catch;
     result.Set(key, child_v8);
@@ -210,8 +208,6 @@ base::Value* V8ValueConverter::FromV8ValueImpl(
     FromV8ValueState* state,
     v8::Local<v8::Value> val,
     v8::Isolate* isolate) const {
-  CHECK(!val.IsEmpty());
-
   FromV8ValueState::Level state_level(state);
   if (state->HasReachedMaxRecursionDepth())
     return nullptr;

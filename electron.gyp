@@ -4,7 +4,7 @@
     'product_name%': 'Electron',
     'company_name%': 'GitHub, Inc',
     'company_abbr%': 'github',
-    'version%': '1.2.7',
+    'version%': '1.3.0',
   },
   'includes': [
     'filenames.gypi',
@@ -150,9 +150,11 @@
                 '<(libchromiumcontent_dir)/libEGL.dll',
                 '<(libchromiumcontent_dir)/libGLESv2.dll',
                 '<(libchromiumcontent_dir)/icudtl.dat',
+                '<(libchromiumcontent_dir)/blink_image_resources_200_percent.pak',
                 '<(libchromiumcontent_dir)/content_resources_200_percent.pak',
                 '<(libchromiumcontent_dir)/content_shell.pak',
                 '<(libchromiumcontent_dir)/ui_resources_200_percent.pak',
+                '<(libchromiumcontent_dir)/views_resources_200_percent.pak',
                 '<(libchromiumcontent_dir)/natives_blob.bin',
                 '<(libchromiumcontent_dir)/snapshot_blob.bin',
                 'external_binaries/d3dcompiler_47.dll',
@@ -207,6 +209,9 @@
         'vendor/node/node.gyp:node',
       ],
       'defines': [
+        # We need to access internal implementations of Node.
+        'NODE_WANT_INTERNALS=1',
+        'NODE_SHARED_MODE',
         # This is defined in skia/skia_common.gypi.
         'SK_SUPPORT_LEGACY_GETTOPDEVICE',
         # Disable warnings for g_settings_list_schemas.

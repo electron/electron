@@ -342,4 +342,31 @@ describe('session module', function () {
       w.loadURL(`${protocolName}://fake-host`)
     })
   })
+
+  describe('ses.setProxy(options, callback)', function () {
+    it('allows configuring proxy settings', function (done) {
+      const config = {
+        proxyRules: 'http=myproxy:80'
+      }
+      session.defaultSession.setProxy(config, function () {
+        session.defaultSession.resolveProxy('http://localhost', function (proxy) {
+          assert.equal(proxy, 'PROXY myproxy:80')
+          done()
+        })
+      })
+    })
+
+    it('allows bypassing proxy settings', function (done) {
+      const config = {
+        proxyRules: 'http=myproxy:80',
+        proxyBypassRules: '<local>'
+      }
+      session.defaultSession.setProxy(config, function () {
+        session.defaultSession.resolveProxy('http://localhost', function (proxy) {
+          assert.equal(proxy, 'DIRECT')
+          done()
+        })
+      })
+    })
+  })
 })
