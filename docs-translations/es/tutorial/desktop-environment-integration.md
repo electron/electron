@@ -57,7 +57,7 @@ __Menú dock de Terminal.app:__
 
 <img src="https://cloud.githubusercontent.com/assets/639601/5069962/6032658a-6e9c-11e4-9953-aa84006bdfff.png" height="354" width="341" >
 
-Para establecer tu menú dock, puedes utilizar la API `app.dock.setMenu`, la cual sólo está disponible para OSX:
+Para establecer tu menú dock, puedes utilizar la API `app.dock.setMenu`, la cual sólo está disponible para macOS:
 
 ```javascript
 var app = require('app');
