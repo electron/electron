@@ -540,6 +540,14 @@ describe('asar package', function () {
     })
 
     describe('fs.access', function () {
+      it('accesses a normal file', function (done) {
+        var p = path.join(fixtures, 'asar', 'a.asar', 'file1')
+        fs.access(p, function (err) {
+          assert(err == null)
+          done()
+        })
+      })
+
       it('throws an error when called with write mode', function (done) {
         var p = path.join(fixtures, 'asar', 'a.asar', 'file1')
         fs.access(p, fs.constants.R_OK | fs.constants.W_OK, function (err) {
@@ -566,6 +574,13 @@ describe('asar package', function () {
     })
 
     describe('fs.accessSync', function () {
+      it('accesses a normal file', function () {
+        var p = path.join(fixtures, 'asar', 'a.asar', 'file1')
+        assert.doesNotThrow(function () {
+          fs.accessSync(p)
+        })
+      })
+
       it('throws an error when called with write mode', function () {
         var p = path.join(fixtures, 'asar', 'a.asar', 'file1')
         assert.throws(function () {
