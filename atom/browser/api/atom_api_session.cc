@@ -133,7 +133,7 @@ struct Converter<net::ProxyConfig> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      net::ProxyConfig* out) {
-    std::string proxy_rules;
+    std::string proxy_rules, proxy_bypass_rules;
     GURL pac_url;
     mate::Dictionary options;
     // Fallback to previous API when passed String.
@@ -143,6 +143,7 @@ struct Converter<net::ProxyConfig> {
     } else if (ConvertFromV8(isolate, val, &options)) {
       options.Get("pacScript", &pac_url);
       options.Get("proxyRules", &proxy_rules);
+      options.Get("proxyBypassRules", &proxy_bypass_rules);
     } else {
       return false;
     }
@@ -152,6 +153,7 @@ struct Converter<net::ProxyConfig> {
       out->set_pac_url(pac_url);
     } else {
       out->proxy_rules().ParseFromString(proxy_rules);
+      out->proxy_rules().bypass_rules.ParseFromString(proxy_bypass_rules);
     }
     return true;
   }
