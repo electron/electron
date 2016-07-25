@@ -44,7 +44,6 @@
       'lib/common/api/deprecate.js',
       'lib/common/api/deprecations.js',
       'lib/common/api/is-promise.js',
-      'lib/common/api/is-typed-array.js',
       'lib/common/api/exports/electron.js',
       'lib/common/api/native-image.js',
       'lib/common/api/shell.js',
