@@ -62,10 +62,16 @@ void InitializeResourceBundle(const std::string& locale) {
   bundle.AddDataPackFromPath(path, ui::GetSupportedScaleFactors()[0]);
 #if defined(OS_WIN)
   bundle.AddDataPackFromPath(
-      pak_dir.Append(FILE_PATH_LITERAL("ui_resources_200_percent.pak")),
+      pak_dir.Append(FILE_PATH_LITERAL("blink_image_resources_200_percent.pak")),
       ui::SCALE_FACTOR_200P);
   bundle.AddDataPackFromPath(
       pak_dir.Append(FILE_PATH_LITERAL("content_resources_200_percent.pak")),
+      ui::SCALE_FACTOR_200P);
+  bundle.AddDataPackFromPath(
+      pak_dir.Append(FILE_PATH_LITERAL("ui_resources_200_percent.pak")),
+      ui::SCALE_FACTOR_200P);
+  bundle.AddDataPackFromPath(
+      pak_dir.Append(FILE_PATH_LITERAL("views_resources_200_percent.pak")),
       ui::SCALE_FACTOR_200P);
 #endif
 }
