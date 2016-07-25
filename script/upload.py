@@ -203,20 +203,29 @@ def create_release_draft(github, tag):
 
 
 def upload_electron(github, release, file_path):
-  # Delete the original file before uploading in CI.
+  checksum_path = '{}.sha256sum'.format(file_path)
+  # Delete the original file & its checksum before uploading in CI.
+  filename = os.path.basename(file_path)
+  checksum_filename = os.path.basename(checksum_path)
   if os.environ.has_key('CI'):
     try:
       for asset in release['assets']:
-        if asset['name'] == os.path.basename(file_path):
+        if asset['name'] in [filename, checksum_filename]:
           github.repos(ELECTRON_REPO).releases.assets(asset['id']).delete()
-          break
     except Exception:
       pass
 
   # Upload the file.
-  params = {'name': os.path.basename(file_path)}
-  headers = {'Content-Type': 'application/zip'}
-  with open(file_path, 'rb') as f:
+  upload_asset_to_github(github, release, file_path, 'application/zip')
+
+  # Upload the file's checksum.
+  upload_asset_to_github(github, release, checksum_path, 'text/plain')
+
+
+def upload_asset_to_github(github, release, asset_path, content_type):
+  params = {'name': os.path.dirname(asset_path)}
+  headers = {'Content-Type': content_type}
+  with open(asset_path) as f:
     github.repos(ELECTRON_REPO).releases(release['id']).assets.post(
         params=params, headers=headers, data=f, verify=False)
 

@@ -3,6 +3,7 @@
 import atexit
 import contextlib
 import errno
+import hashlib
 import platform
 import re
 import shutil
@@ -129,6 +130,19 @@ def make_zip(zip_file_path, files, dirs):
         for f in filenames:
           zip_file.write(os.path.join(root, f))
     zip_file.close()
+  make_zip_sha256_checksum(zip_file_path)
+
+
+def make_zip_sha256_checksum(zip_file_path):
+  checksum_path = '{}.sha256sum'.format(zip_file_path)
+  safe_unlink(checksum_path)
+  sha256 = hashlib.sha256()
+  with open(zip_file_path, 'rb') as f:
+    sha256.update(f.read())
+
+  zip_basename = os.path.basename(zip_file_path)
+  with open(checksum_path, 'w') as checksum:
+    checksum.write('{} *{}'.format(sha256.hexdigest(), zip_basename))
 
 
 def rm_rf(path):
