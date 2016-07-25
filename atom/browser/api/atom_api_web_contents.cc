@@ -71,6 +71,9 @@
 #include "content/browser/web_contents/web_contents_impl.h"
 #include "atom/browser/osr_web_contents_view.h"
 
+#include "content/browser/web_contents/web_contents_impl.h"
+#include "atom/browser/osr_web_contents_view.h"
+
 #include "atom/common/node_includes.h"
 
 namespace {
