@@ -164,4 +164,17 @@ void OffScreenWebContentsView::CloseTabAfterEventTracking() {
 }
 #endif  // defined(OS_MACOSX)
 
+void OffScreenWebContentsView::StartDragging(
+    const content::DropData& drop_data,
+    blink::WebDragOperationsMask allowed_ops,
+    const gfx::ImageSkia& image,
+    const gfx::Vector2d& image_offset,
+    const content::DragEventSourceInfo& event_info) {
+}
+
+void OffScreenWebContentsView::UpdateDragCursor(
+    blink::WebDragOperation operation) {
+}
+
+
 }  // namespace atom

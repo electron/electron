@@ -17,6 +17,7 @@
 #include "ui/compositor/layer.h"
 #include "ui/compositor/layer_type.h"
 #include "base/location.h"
+#include "base/time/time.h"
 #include "ui/gfx/native_widget_types.h"
 #include <iostream>
 #include <chrono>
@@ -32,6 +33,8 @@
 #include "base/logging.h"
 #include "content/public/browser/browser_thread.h"
 #include "cc/scheduler/delay_based_time_source.h"
+
+#include "content/common/host_shared_bitmap_manager.h"
 
 // const float kDefaultScaleFactor = 1.0;
 
@@ -66,6 +69,7 @@ class CefCopyFrameGenerator {
       frame_in_progress_(false),
       frame_retry_count_(0),
       weak_ptr_factory_(this) {
+    last_time_ = base::Time::Now();
   }
 
   void GenerateCopyFrame(
@@ -83,8 +87,10 @@ class CefCopyFrameGenerator {
       pending_damage_rect_.Union(damage_rect);
 
     // Don't attempt to generate a frame while one is currently in-progress.
-    if (frame_in_progress_)
+    if (frame_in_progress_) {
+      // std::cout << "FRAME IN PROGRESS" << std::endl;
       return;
+    }
     frame_in_progress_ = true;
 
     // Don't exceed the frame rate threshold.
@@ -198,6 +204,14 @@ class CefCopyFrameGenerator {
 
     ignore_result(scoped_callback_runner.Release());
 
+    // base::Time now = base::Time::Now();
+    // std::cout << "delta: " << (now - last_time_).InMilliseconds() << " ms" << std::endl;
+    // last_time_ = now;
+    // frame_in_progress_ = false;
+    // if (view_->paintCallback) {
+    //   view_->paintCallback->Run(damage_rect, bitmap_->width(), bitmap_->height(),
+    //             pixels);
+    // }
     gl_helper->CropScaleReadbackAndCleanMailbox(
         texture_mailbox.mailbox(),
         texture_mailbox.sync_token(),
@@ -293,6 +307,10 @@ class CefCopyFrameGenerator {
       std::unique_ptr<SkAutoLockPixels> bitmap_pixels_lock) {
 
     uint8_t* pixels = reinterpret_cast<uint8_t*>(bitmap.getPixels());
+
+    base::Time now = base::Time::Now();
+    // std::cout << "delta: " << (now - last_time_).InMilliseconds() << " ms" << std::endl;
+    last_time_ = now;
     // for (int i = 0; i<4; i++) {
     //   int x = static_cast<int>(pixels[i]);
     // std::cout << std::hex << x << std::dec << std::endl;
@@ -327,6 +345,8 @@ class CefCopyFrameGenerator {
 
   int frame_rate_threshold_ms_;
   OffScreenWindow* view_;
+
+  base::Time last_time_;
 
   base::TimeTicks frame_start_time_;
   bool frame_pending_;
@@ -393,6 +413,8 @@ OffScreenWindow::OffScreenWindow(content::RenderWidgetHost* host)
   // std::cout << "OffScreenWindow" << std::endl;
   render_widget_host_->SetView(this);
 
+  last_time_ = base::Time::Now();
+
   root_layer_.reset(new ui::Layer(ui::LAYER_SOLID_COLOR));
 
   CreatePlatformWidget();
@@ -406,6 +428,11 @@ OffScreenWindow::OffScreenWindow(content::RenderWidgetHost* host)
 #endif
   // compositor_->SetDelegate(this);
   compositor_->SetRootLayer(root_layer_.get());
+
+  ResizeRootLayer();
+
+  std::unique_ptr<cc::SharedBitmap> sbp = content::HostSharedBitmapManager::current()->AllocateSharedBitmap(gfx::Size(800, 600));
+  printf("shared bitmap: %p\n", sbp.get());
 }
 
 void OffScreenWindow::ResizeRootLayer() {
@@ -614,7 +641,9 @@ bool OffScreenWindow::GetScreenColorProfile(std::vector<char>*) {
 void OffScreenWindow::OnSwapCompositorFrame(
   uint32_t output_surface_id,
   std::unique_ptr<cc::CompositorFrame> frame) {
-  // std::cout << "OnSwapCompositorFrame" << std::endl;
+  base::Time now = base::Time::Now();
+  // std::cout << "OnSwapCompositorFrame " << (now - last_time_).InMilliseconds()  << " ms" << std::endl;
+  last_time_ = now;
 
   // std::cout << output_surface_id << std::endl;
 
@@ -622,9 +651,8 @@ void OffScreenWindow::OnSwapCompositorFrame(
     last_scroll_offset_ = frame->metadata.root_scroll_offset;
   }
 
-  if (!frame->delegated_frame_data) {
+  if (!frame->delegated_frame_data)
     return;
-  }
 
   if (software_output_device_) {
     // if (!begin_frame_timer_.get()) {
@@ -650,9 +678,8 @@ void OffScreenWindow::OnSwapCompositorFrame(
       gfx::ToEnclosingRect(gfx::RectF(root_pass->damage_rect));
   damage_rect.Intersect(gfx::Rect(frame_size));
 
-  if (frame->delegated_frame_data)
-    delegated_frame_host_->SwapDelegatedFrame(output_surface_id,
-                                                std::move(frame));
+  delegated_frame_host_->SwapDelegatedFrame(output_surface_id,
+                                              std::move(frame));
 
   // Request a copy of the last compositor frame which will eventually call
   // OnPaint asynchronously.
@@ -887,10 +914,10 @@ void OffScreenWindow::OnSetNeedsBeginFrames(bool enabled) {
 
 void OffScreenWindow::SetFrameRate() {
   // Only set the frame rate one time.
-  if (frame_rate_threshold_ms_ != 0)
-    return;
+  // if (frame_rate_threshold_ms_ != 0)
+  //   return;
 
-  const int frame_rate = 120;
+  const int frame_rate = 60;
   frame_rate_threshold_ms_ = 1000 / frame_rate;
 
   // Configure the VSync interval for the browser process.

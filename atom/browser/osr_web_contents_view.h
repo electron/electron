@@ -5,11 +5,13 @@
 #ifndef ATOM_BROWSER_OSR_WEB_CONTENTS_VIEW_H_
 #define ATOM_BROWSER_OSR_WEB_CONTENTS_VIEW_H_
 
+#include "content/browser/renderer_host/render_view_host_delegate_view.h"
 #include "content/browser/web_contents/web_contents_view.h"
 
 namespace atom {
 
-class OffScreenWebContentsView : public content::WebContentsView {
+class OffScreenWebContentsView : public content::WebContentsView,
+                                 public content::RenderViewHostDelegateView {
 public:
   OffScreenWebContentsView();
   ~OffScreenWebContentsView();
@@ -47,6 +49,15 @@ public:
   bool IsEventTracking() const override;
   void CloseTabAfterEventTracking() override;
 #endif
+
+  // RenderViewHostDelegateView methods.
+  void StartDragging(
+      const content::DropData& drop_data,
+      blink::WebDragOperationsMask allowed_ops,
+      const gfx::ImageSkia& image,
+      const gfx::Vector2d& image_offset,
+      const content::DragEventSourceInfo& event_info) override;
+  void UpdateDragCursor(blink::WebDragOperation operation) override;
 
 private:
   content::RenderWidgetHostViewBase* view_;

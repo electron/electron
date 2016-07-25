@@ -14,6 +14,7 @@
 #include "cc/output/compositor_frame.h"
 #include "ui/gfx/geometry/point.h"
 #include "base/threading/thread.h"
+#include "base/time/time.h"
 #include "ui/compositor/compositor.h"
 #include "ui/compositor/layer_delegate.h"
 #include "ui/compositor/layer_owner.h"
@@ -203,6 +204,8 @@ private:
   OffScreenOutputDevice* software_output_device_;
 
   int frame_rate_threshold_ms_;
+
+  base::Time last_time_;
 
   float scale_factor_;
   bool is_showing_;
