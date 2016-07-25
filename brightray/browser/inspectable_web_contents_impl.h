@@ -153,6 +153,15 @@ class InspectableWebContentsImpl :
   void HandleKeyboardEvent(
       content::WebContents*, const content::NativeWebKeyboardEvent&) override;
   void CloseContents(content::WebContents* source) override;
+  content::ColorChooser* OpenColorChooser(
+      content::WebContents* source,
+      SkColor color,
+      const std::vector<content::ColorSuggestion>& suggestions) override;
+  void RunFileChooser(content::WebContents* source,
+                      const content::FileChooserParams& params) override;
+  void EnumerateDirectory(content::WebContents* source,
+                          int request_id,
+                          const base::FilePath& path) override;
 
   // net::URLFetcherDelegate:
   void OnURLFetchComplete(const net::URLFetcher* source) override;
