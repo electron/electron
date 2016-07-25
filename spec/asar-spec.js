@@ -534,6 +534,32 @@ describe('asar package', function () {
       })
     })
 
+    describe('fs.access', function () {
+      it('throws an error when called with write mode', function (done) {
+        var p = path.join(fixtures, 'asar', 'a.asar', 'file1')
+        fs.access(p, fs.constants.R_OK | fs.constants.W_OK, function (err) {
+          assert.equal(err.code, 'EACCES')
+          done()
+        })
+      })
+
+      it('throws an error when called on non-existent file', function (done) {
+        var p = path.join(fixtures, 'asar', 'a.asar', 'not-exist')
+        fs.access(p, function (err) {
+          assert.equal(err.code, 'ENOENT')
+          done()
+        })
+      })
+
+      it('allows write mode for unpacked files', function (done) {
+        var p = path.join(fixtures, 'asar', 'unpack.asar', 'a.txt')
+        fs.access(p, fs.constants.R_OK | fs.constants.W_OK, function (err) {
+          assert(err == null)
+          done()
+        })
+      })
+    })
+
     describe('child_process.fork', function () {
       it('opens a normal js file', function (done) {
         var child = ChildProcess.fork(path.join(fixtures, 'asar', 'a.asar', 'ping.js'))
