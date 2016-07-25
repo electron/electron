@@ -159,7 +159,7 @@ describe('ipc module', function () {
     it('supports TypedArray', function () {
       const values = [1, 2, 3, 4]
       const typedArray = printName.typedArray(values)
-      assert.equal(values.toString(), typedArray.toString())
+      assert.deepEqual(values, typedArray)
     })
   })
 
