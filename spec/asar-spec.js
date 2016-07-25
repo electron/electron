@@ -13,6 +13,11 @@ describe('asar package', function () {
   var fixtures = path.join(__dirname, 'fixtures')
 
   describe('node api', function () {
+    it('supports paths specified as a Buffer', function () {
+      var file = new Buffer(path.join(fixtures, 'asar', 'a.asar', 'file1'))
+      assert.equal(fs.existsSync(file), true)
+    })
+
     describe('fs.readFileSync', function () {
       it('does not leak fd', function () {
         var readCalls = 1
