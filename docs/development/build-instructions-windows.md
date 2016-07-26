@@ -69,6 +69,14 @@ $ python script\bootstrap.py -v --target_arch=ia32
 
 The other building steps are exactly the same.
 
+## Visual Studio project
+
+To generate a Visual Studio project, you can pass the `--msvs` parameter:
+
+```powershell
+$ python script\bootstrap.py --msvs
+```
+
 ## Tests
 
 Test your changes conform to the project coding style using:
