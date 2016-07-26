@@ -15,7 +15,7 @@ The Dialog is opened from Electron's main thread. If you want to use the dialog
 object from a renderer process, remember to access it using the remote:
 
 ```javascript
-const {dialog} = require('electron').remote;
+const {dialog} = require('electron').remote.dialog;
 ```
 
 ## Methods
