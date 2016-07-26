@@ -121,7 +121,10 @@ bool NativeWindowViews::PreHandleMSG(
         ::GetWindowRect(GetAcceleratedWidget(), (LPRECT)l_param);
       return false;
     }
-
+    case WM_MOVE: {
+      last_normal_bounds_ = GetBounds();
+      return false;
+    }
     default:
       return false;
   }
