@@ -6,10 +6,10 @@ The following example shows how to quit the application when the last window is
 closed:
 
 ```javascript
-const {app} = require('electron');
+const {app} = require('electron')
 app.on('window-all-closed', () => {
-  app.quit();
-});
+  app.quit()
+})
 ```
 
 ## Events
@@ -192,15 +192,17 @@ certificate you should prevent the default behavior with
 `event.preventDefault()` and call `callback(true)`.
 
 ```javascript
+const {app} = require('electron')
+
 app.on('certificate-error', (event, webContents, url, error, certificate, callback) => {
   if (url === 'https://github.com') {
     // Verification logic.
-    event.preventDefault();
-    callback(true);
+    event.preventDefault()
+    callback(true)
   } else {
-    callback(false);
+    callback(false)
   }
-});
+})
 ```
 
 ### Event: 'select-client-certificate'
@@ -228,10 +230,12 @@ and `callback` needs to be called with an entry filtered from the list. Using
 certificate from the store.
 
 ```javascript
+const {app} = require('electron')
+
 app.on('select-client-certificate', (event, webContents, url, list, callback) => {
-  event.preventDefault();
-  callback(list[0]);
-});
+  event.preventDefault()
+  callback(list[0])
+})
 ```
 
 ### Event: 'login'
@@ -259,10 +263,12 @@ should prevent the default behavior with `event.preventDefault()` and call
 `callback(username, password)` with the credentials.
 
 ```javascript
+const {app} = require('electron')
+
 app.on('login', (event, webContents, request, authInfo, callback) => {
-  event.preventDefault();
-  callback('username', 'secret');
-});
+  event.preventDefault()
+  callback('username', 'secret')
+})
 ```
 
 ### Event: 'gpu-process-crashed'
@@ -331,6 +337,8 @@ An example of restarting current instance immediately and adding a new command
 line argument to the new instance:
 
 ```javascript
+const {app} = require('electron')
+
 app.relaunch({args: process.argv.slice(1) + ['--relaunch']})
 app.exit(0)
 ```
@@ -537,24 +545,24 @@ An example of activating the window of primary instance when a second instance
 starts:
 
 ```javascript
-let myWindow = null;
+const {app} = require('electron')
+let myWindow = null
 
 const shouldQuit = app.makeSingleInstance((commandLine, workingDirectory) => {
   // Someone tried to run a second instance, we should focus our window.
   if (myWindow) {
-    if (myWindow.isMinimized()) myWindow.restore();
-    myWindow.focus();
+    if (myWindow.isMinimized()) myWindow.restore()
+    myWindow.focus()
   }
-});
+})
 
 if (shouldQuit) {
-  app.quit();
-  return;
+  app.quit()
 }
 
 // Create myWindow, load the rest of the app, etc...
 app.on('ready', () => {
-});
+})
 ```
 
 ### `app.releaseSingleInstance()`

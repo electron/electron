@@ -1,4 +1,4 @@
-# session
+ # session
 
 > Manage browser sessions, cookies, cache, proxy settings, etc.
 
@@ -8,12 +8,13 @@ You can also access the `session` of existing pages by using the `session`
 property of [`WebContents`](web-contents.md), or from the `session` module.
 
 ```javascript
-const {session, BrowserWindow} = require('electron')
+const {BrowserWindow} = require('electron')
 
 let win = new BrowserWindow({width: 800, height: 600})
 win.loadURL('http://github.com')
 
 const ses = win.webContents.session
+console.log(ses.getUserAgent())
 ```
 
 ## Methods
@@ -52,9 +53,9 @@ Returns the default session object of the app.
 You can create a `Session` object in the `session` module:
 
 ```javascript
-const session = require('electron').session;
-
-const ses = session.fromPartition('persist:name');
+const {session} = require('electron')
+const ses = session.fromPartition('persist:name')
+console.log(ses.getUserAgent())
 ```
 
 ### Instance Events
@@ -73,12 +74,13 @@ Calling `event.preventDefault()` will cancel the download and `item` will not be
 available from next tick of the process.
 
 ```javascript
+const {session} = require('electron')
 session.defaultSession.on('will-download', (event, item, webContents) => {
-  event.preventDefault();
+  event.preventDefault()
   require('request')(item.getURL(), (data) => {
-    require('fs').writeFileSync('/somewhere', data);
-  });
-});
+    require('fs').writeFileSync('/somewhere', data)
+  })
+})
 ```
 
 ### Instance Methods
@@ -220,13 +222,13 @@ Emulates network with the given configuration for the `session`.
 ```javascript
 // To emulate a GPRS connection with 50kbps throughput and 500 ms latency.
 window.webContents.session.enableNetworkEmulation({
-    latency: 500,
-    downloadThroughput: 6400,
-    uploadThroughput: 6400
-});
+  latency: 500,
+  downloadThroughput: 6400,
+  uploadThroughput: 6400
+})
 
 // To emulate a network outage.
-window.webContents.session.enableNetworkEmulation({offline: true});
+window.webContents.session.enableNetworkEmulation({offline: true})
 ```
 
 #### `ses.disableNetworkEmulation()`
@@ -247,12 +249,12 @@ Calling `setCertificateVerifyProc(null)` will revert back to default certificate
 verify proc.
 
 ```javascript
-myWindow.webContents.session.setCertificateVerifyProc((hostname, cert, callback) => {
-  if (hostname === 'github.com')
-    callback(true);
-  else
-    callback(false);
-});
+const {BrowserWindow} = require('electron')
+let win = new BrowserWindow()
+
+win.webContents.session.setCertificateVerifyProc((hostname, cert, callback) => {
+  callback(hostname === 'github.com')
+})
 ```
 
 #### `ses.setPermissionRequestHandler(handler)`
@@ -267,16 +269,14 @@ Sets the handler which can be used to respond to permission requests for the `se
 Calling `callback(true)` will allow the permission and `callback(false)` will reject it.
 
 ```javascript
-session.fromPartition(partition).setPermissionRequestHandler((webContents, permission, callback) => {
-  if (webContents.getURL() === host) {
-    if (permission === 'notifications') {
-      callback(false); // denied.
-      return;
-    }
+const {session} = require('electron')
+session.fromPartition('some-partition').setPermissionRequestHandler((webContents, permission, callback) => {
+  if (webContents.getURL() === 'some-host' && permission === 'notifications') {
+    return callback(false) // denied.
   }
 
-  callback(true);
-});
+  callback(true)
+})
 ```
 
 #### `ses.clearHostResolverCache([callback])`
@@ -294,6 +294,7 @@ Dynamically sets whether to always send credentials for HTTP NTLM or Negotiate
 authentication.
 
 ```javascript
+const {session} = require('electron')
 // consider any url ending with `example.com`, `foobar.com`, `baz`
 // for integrated authentication.
 session.defaultSession.allowNTLMCredentialsForDomains('*example.com, *foobar.com, *baz')
@@ -340,13 +341,12 @@ const {app, session} = require('electron')
 const path = require('path')
 
 app.on('ready', function () {
-  const protocol = session.fromPartition(partitionName).protocol
+  const protocol = session.fromPartition('some-partition').protocol
   protocol.registerFileProtocol('atom', function (request, callback) {
     var url = request.url.substr(7)
-    callback({path: path.normalize(__dirname + '/' + url)})
+    callback({path: path.normalize(`${__dirname}/${url}`)})
   }, function (error) {
-    if (error)
-      console.error('Failed to register protocol')
+    if (error) console.error('Failed to register protocol')
   })
 })
 ```
@@ -359,22 +359,23 @@ The `Cookies` class gives you ability to query and modify cookies. Instances of
 For example:
 
 ```javascript
+const {session} = require('electron')
+
 // Query all cookies.
 session.defaultSession.cookies.get({}, (error, cookies) => {
-  console.log(cookies)
+  console.log(error, cookies)
 })
 
 // Query all cookies associated with a specific url.
 session.defaultSession.cookies.get({url: 'http://www.github.com'}, (error, cookies) => {
-  console.log(cookies)
+  console.log(error, cookies)
 })
 
 // Set a cookie with the given cookie data;
 // may overwrite equivalent cookies if they exist.
 const cookie = {url: 'http://www.github.com', name: 'dummy_name', value: 'dummy'}
 session.defaultSession.cookies.set(cookie, (error) => {
-  if (error)
-    console.error(error)
+  if (error) console.error(error)
 })
 ```
 
@@ -464,13 +465,15 @@ called with an `response` object when `listener` has done its work.
 An example of adding `User-Agent` header for requests:
 
 ```javascript
+const {session} = require('electron')
+
 // Modify the user agent for all requests to the following urls.
 const filter = {
   urls: ['https://*.github.com/*', '*://electron.github.io']
 }
 
 session.defaultSession.webRequest.onBeforeSendHeaders(filter, (details, callback) => {
-  details.requestHeaders['User-Agent'] = "MyAgent"
+  details.requestHeaders['User-Agent'] = 'MyAgent'
   callback({cancel: false, requestHeaders: details.requestHeaders})
 })
 ```

@@ -6,14 +6,14 @@ The following is an example of automatically submitting a crash report to a
 remote server:
 
 ```javascript
-const {crashReporter} = require('electron');
+const {crashReporter} = require('electron')
 
 crashReporter.start({
   productName: 'YourName',
   companyName: 'YourCompany',
   submitURL: 'https://your-domain.com/url-to-submit',
   autoSubmit: true
-});
+})
 ```
 
 For setting up a server to accept and process crash reports, you can use

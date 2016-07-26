@@ -8,10 +8,10 @@ title is `Electron`:
 
 ```javascript
 // In the renderer process.
-const {desktopCapturer} = require('electron');
+const {desktopCapturer} = require('electron')
 
 desktopCapturer.getSources({types: ['window', 'screen']}, (error, sources) => {
-  if (error) throw error;
+  if (error) throw error
   for (let i = 0; i < sources.length; ++i) {
     if (sources[i].name === 'Electron') {
       navigator.webkitGetUserMedia({
@@ -26,18 +26,18 @@ desktopCapturer.getSources({types: ['window', 'screen']}, (error, sources) => {
             maxHeight: 720
           }
         }
-      }, handleStream, handleError);
-      return;
+      }, handleStream, handleError)
+      return
     }
   }
-});
+})
 
 function handleStream(stream) {
-  document.querySelector('video').src = URL.createObjectURL(stream);
+  document.querySelector('video').src = URL.createObjectURL(stream)
 }
 
 function handleError(e) {
-  console.log(e);
+  console.log(e)
 }
 ```
 

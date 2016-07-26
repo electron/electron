@@ -5,9 +5,9 @@
 An example of zooming current page to 200%.
 
 ```javascript
-const {webFrame} = require('electron');
+const {webFrame} = require('electron')
 
-webFrame.setZoomFactor(2);
+webFrame.setZoomFactor(2)
 ```
 
 ## Methods
@@ -58,11 +58,12 @@ whether the word passed is correctly spelled.
 An example of using [node-spellchecker][spellchecker] as provider:
 
 ```javascript
+const {webFrame} = require('electron')
 webFrame.setSpellCheckProvider('en-US', true, {
-  spellCheck(text) {
-    return !(require('spellchecker').isMisspelled(text));
+  spellCheck (text) {
+    return !(require('spellchecker').isMisspelled(text))
   }
-});
+})
 ```
 
 ### `webFrame.registerURLSchemeAsSecure(scheme)`
@@ -112,12 +113,13 @@ Returns an object describing usage information of Blink's internal memory
 caches.
 
 ```javascript
+const {webFrame} = require('electron')
 console.log(webFrame.getResourceUsage())
 ```
 
 This will generate:
 
-```javascript
+```
 {
   images: {
     count: 22,
@@ -130,8 +132,8 @@ This will generate:
   cssStyleSheets: { /* same with "images" */ },
   xslStyleSheets: { /* same with "images" */ },
   fonts: { /* same with "images" */ },
-  other: { /* same with "images" */ },
-}
+  other: { /* same with "images" */ }
+})
 ```
 
 ### `webFrame.clearCache()`
