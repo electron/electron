@@ -192,6 +192,7 @@ void CrashReporterWin::InitBreakpad(const std::string& product_name,
 #ifdef _WIN64
   // Hook up V8 to breakpad.
   if (!code_range_registered_) {
+    code_range_registered_ = true;
     // gin::Debug::SetCodeRangeCreatedCallback only runs the callback when
     // Isolate is just created, so we have to manually run following code here.
     void* code_range = nullptr;
@@ -199,7 +200,6 @@ void CrashReporterWin::InitBreakpad(const std::string& product_name,
     v8::Isolate::GetCurrent()->GetCodeRange(&code_range, &size);
     if (code_range && size &&
         RegisterNonABICompliantCodeRange(code_range, size)) {
-      code_range_registered_ = true;
       gin::Debug::SetCodeRangeDeletedCallback(
           UnregisterNonABICompliantCodeRange);
     }
