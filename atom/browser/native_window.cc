@@ -40,6 +40,11 @@
 #include "ui/gfx/geometry/size_conversions.h"
 #include "ui/gl/gpu_switching_manager.h"
 
+#if defined(OS_LINUX) || defined(OS_WIN)
+#include "content/public/common/renderer_preferences.h"
+#include "ui/gfx/font_render_params.h"
+#endif
+
 DEFINE_WEB_CONTENTS_USER_DATA_KEY(atom::NativeWindowRelay);
 
 namespace atom {
@@ -66,6 +71,21 @@ NativeWindow::NativeWindow(
 
   if (parent)
     options.Get("modal", &is_modal_);
+
+#if defined(OS_LINUX) || defined(OS_WIN)
+  content::RendererPreferences* prefs =
+      web_contents()->GetMutableRendererPrefs();
+
+  // Update font settings.
+  CR_DEFINE_STATIC_LOCAL(const gfx::FontRenderParams, params,
+      (gfx::GetFontRenderParams(gfx::FontRenderParamsQuery(), NULL)));
+  prefs->should_antialias_text = params.antialiasing;
+  prefs->use_subpixel_positioning = params.subpixel_positioning;
+  prefs->hinting = params.hinting;
+  prefs->use_autohinter = params.autohinter;
+  prefs->use_bitmaps = params.use_bitmaps;
+  prefs->subpixel_rendering = params.subpixel_rendering;
+#endif
 
   // Tell the content module to initialize renderer widget with transparent
   // mode.
