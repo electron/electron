@@ -138,7 +138,8 @@ void UnregisterNonABICompliantCodeRange(void* start) {
 }  // namespace
 
 CrashReporterWin::CrashReporterWin()
-    : skip_system_crash_handler_(false) {
+    : skip_system_crash_handler_(false),
+      code_range_registered_(false) {
 }
 
 CrashReporterWin::~CrashReporterWin() {
@@ -189,19 +190,20 @@ void CrashReporterWin::InitBreakpad(const std::string& product_name,
     LOG(ERROR) << "Cannot initialize out-of-process crash handler";
 
 #ifdef _WIN64
-  bool registered = false;
   // Hook up V8 to breakpad.
-  {
+  if (!code_range_registered_) {
     // gin::Debug::SetCodeRangeCreatedCallback only runs the callback when
     // Isolate is just created, so we have to manually run following code here.
     void* code_range = nullptr;
     size_t size = 0;
     v8::Isolate::GetCurrent()->GetCodeRange(&code_range, &size);
-    if (code_range && size)
-      registered = RegisterNonABICompliantCodeRange(code_range, size);
+    if (code_range && size &&
+        RegisterNonABICompliantCodeRange(code_range, size)) {
+      code_range_registered_ = true;
+      gin::Debug::SetCodeRangeDeletedCallback(
+          UnregisterNonABICompliantCodeRange);
+    }
   }
-  if (registered)
-    gin::Debug::SetCodeRangeDeletedCallback(UnregisterNonABICompliantCodeRange);
 #endif
 }
 
