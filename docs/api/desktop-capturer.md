@@ -46,7 +46,7 @@ passed to [`navigator.webkitGetUserMedia`] must include
 `chromeMediaSource: 'desktop'`, and `audio: false`.
 
 To capture both audio and video from the entire desktop the constraints passed
-to [`navigator.webkitGetUserMedia`] must include `chromeMediaSource: "screen"`,
+to [`navigator.webkitGetUserMedia`] must include `chromeMediaSource: 'screen'`,
 and `audio: true`, but should not include a `chromeMediaSourceId` constraint.
 
 ## Methods
