@@ -73,12 +73,11 @@ NativeWindow::NativeWindow(
     options.Get("modal", &is_modal_);
 
 #if defined(OS_LINUX) || defined(OS_WIN)
-  content::RendererPreferences* prefs =
-      web_contents()->GetMutableRendererPrefs();
+  auto* prefs = web_contents()->GetMutableRendererPrefs();
 
   // Update font settings.
   CR_DEFINE_STATIC_LOCAL(const gfx::FontRenderParams, params,
-      (gfx::GetFontRenderParams(gfx::FontRenderParamsQuery(), NULL)));
+      (gfx::GetFontRenderParams(gfx::FontRenderParamsQuery(), nullptr)));
   prefs->should_antialias_text = params.antialiasing;
   prefs->use_subpixel_positioning = params.subpixel_positioning;
   prefs->hinting = params.hinting;
