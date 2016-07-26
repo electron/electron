@@ -109,7 +109,6 @@ BrowserContext::BrowserContext(const std::string& partition, bool in_memory)
     path_ = path_.Append(FILE_PATH_LITERAL("Partitions"))
                  .Append(base::FilePath::FromUTF8Unsafe(MakePartitionName(partition)));
 
-  InitPrefs();
   content::BrowserContext::Initialize(this, path_);
 
   browser_context_map_[PartitionKey(partition, in_memory)] = GetWeakPtr();
