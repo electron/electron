@@ -19,6 +19,7 @@
 #include "native_mate/dictionary.h"
 #include "native_mate/handle.h"
 #include "net/url_request/url_request_context.h"
+#include "chrome/common/custom_handlers/protocol_handler.h"
 
 namespace base {
 class DictionaryValue;
@@ -179,6 +180,13 @@ class Protocol : public mate::TrackableObject<Protocol> {
   static ProtocolError UninterceptProtocolInIO(
       scoped_refptr<brightray::URLRequestContextGetter> request_context_getter,
       const std::string& scheme);
+
+  const base::ListValue* GetNavigatorHandlers(const std::string &partition);
+  void UnregisterNavigatorHandler(const std::string &partition,
+      const std::string& scheme,
+      const std::string& spec);
+  bool IsNavigatorProtocolHandled(const std::string &partition,
+      const std::string &scheme);
 
   // Convert error code to JS exception and call the callback.
   void OnIOCompleted(const CompletionCallback& callback, ProtocolError error);

@@ -12,6 +12,7 @@
 #include "atom/browser/net/url_request_fetch_job.h"
 #include "atom/browser/net/url_request_string_job.h"
 #include "atom/common/native_mate_converters/callback.h"
+#include "atom/common/native_mate_converters/v8_value_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/node_includes.h"
 #include "atom/common/options_switches.h"
@@ -20,6 +21,23 @@
 #include "content/public/browser/child_process_security_policy.h"
 #include "native_mate/dictionary.h"
 #include "url/url_util.h"
+#include "chrome/browser/custom_handlers/protocol_handler_registry.h"
+#include "chrome/browser/custom_handlers/protocol_handler_registry_factory.h"
+
+namespace mate {
+
+template<>
+struct Converter<const base::ListValue*> {
+  static v8::Local<v8::Value> ToV8(
+      v8::Isolate* isolate,
+      const base::ListValue* val) {
+    std::unique_ptr<atom::V8ValueConverter>
+        converter(new atom::V8ValueConverter);
+    return converter->ToV8Value(val, isolate->GetCurrentContext());
+  }
+};
+
+}  // namespace mate
 
 using content::BrowserThread;
 
@@ -140,6 +158,51 @@ Protocol::ProtocolError Protocol::UninterceptProtocolInIO(
           PROTOCOL_OK : PROTOCOL_NOT_INTERCEPTED;
 }
 
+const base::ListValue*
+Protocol::GetNavigatorHandlers(const std::string& partition) {
+  auto browser_context = brightray::BrowserContext::From(partition, false);
+  ProtocolHandlerRegistry* registry =
+      ProtocolHandlerRegistryFactory::GetForBrowserContext(
+          browser_context.get());
+  std::vector<std::string> protocols;
+  registry->GetRegisteredProtocols(&protocols);
+
+  auto* result = new base::ListValue();
+  std::for_each(protocols.begin(),
+                protocols.end(),
+                [&registry, &result] (const std::string &protocol) {
+                  ProtocolHandler handler = registry->GetHandlerFor(protocol);
+                  auto* dict = new base::DictionaryValue();
+                  dict->SetString("protocol", handler.protocol());
+                  dict->SetString("location", handler.url().spec());
+                  result->Append(dict);
+                });
+
+
+  return result;
+}
+
+void Protocol::UnregisterNavigatorHandler(const std::string& partition,
+                                          const std::string& scheme,
+                                          const std::string& spec) {
+  ProtocolHandler handler =
+      ProtocolHandler::CreateProtocolHandler(scheme, GURL(spec));
+  auto browser_context = brightray::BrowserContext::From(partition, false);
+  ProtocolHandlerRegistry* registry =
+      ProtocolHandlerRegistryFactory::GetForBrowserContext(
+          browser_context.get());
+  registry->RemoveHandler(handler);
+}
+
+bool Protocol::IsNavigatorProtocolHandled(const std::string& partition,
+                                          const std::string& scheme) {
+  auto browser_context = brightray::BrowserContext::From(partition, false);
+  ProtocolHandlerRegistry* registry =
+      ProtocolHandlerRegistryFactory::GetForBrowserContext(
+          browser_context.get());
+  return registry->IsHandledProtocol(scheme);
+}
+
 void Protocol::OnIOCompleted(
     const CompletionCallback& callback, ProtocolError error) {
   // The completion callback is optional.
@@ -206,7 +269,13 @@ void Protocol::BuildPrototype(
                  &Protocol::InterceptProtocol<URLRequestAsyncAsarJob>)
       .SetMethod("interceptHttpProtocol",
                  &Protocol::InterceptProtocol<URLRequestFetchJob>)
-      .SetMethod("uninterceptProtocol", &Protocol::UninterceptProtocol);
+      .SetMethod("uninterceptProtocol", &Protocol::UninterceptProtocol)
+      .SetMethod("isNavigatorProtocolHandled",
+                 &Protocol::IsNavigatorProtocolHandled)
+      .SetMethod("getNavigatorHandlers",
+                 &Protocol::GetNavigatorHandlers)
+      .SetMethod("unregisterNavigatorHandler",
+                 &Protocol::UnregisterNavigatorHandler);
 }
 
 }  // namespace api
