@@ -1146,6 +1146,12 @@ void WebContents::ShowDefinitionForSelection() {
 #endif
 }
 
+void WebContents::CopyImageAt(int x, int y) {
+  const auto host = web_contents()->GetRenderViewHost();
+  if (host)
+    host->CopyImageAt(x, y);
+}
+
 void WebContents::Focus() {
   web_contents()->Focus();
 }
@@ -1425,6 +1431,7 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("removeWorkSpace", &WebContents::RemoveWorkSpace)
       .SetMethod("showDefinitionForSelection",
                  &WebContents::ShowDefinitionForSelection)
+      .SetMethod("copyImageAt", &WebContents::CopyImageAt)
       .SetMethod("capturePage", &WebContents::CapturePage)
       .SetMethod("isFocused", &WebContents::IsFocused)
       .SetProperty("id", &WebContents::ID)
