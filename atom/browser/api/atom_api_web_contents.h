@@ -113,6 +113,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   bool CanGoForward() const;
   void GoToIndex(int index);
   const GURL& GetURLAtIndex(int index) const;
+  const base::string16 GetTitleAtIndex(int index) const;
   int GetCurrentEntryIndex() const;
   int GetLastCommittedEntryIndex() const;
   int GetEntryCount() const;
