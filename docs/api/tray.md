@@ -173,12 +173,15 @@ Sets the hover text for this tray icon.
 
 Sets the title displayed aside of the tray icon in the status bar.
 
-#### `tray.setHighlightMode(highlight)` _macOS_
+#### `tray.setHighlightMode(mode)` _macOS_
 
-* `highlight` Boolean
+* `mode` String highlight mode with one of the following values:
+  * `'selection'` - Highlight the tray icon when it is clicked and also when
+    its context menu is open. This is the default.
+  * `'always'` - Always highlight the tray icon.
+  * `'never'` - Never highlight the tray icon.
 
-Sets whether the tray icon's background becomes highlighted (in blue)
-when the tray icon is clicked. Defaults to true.
+Sets when the tray's icon background becomes highlighted (in blue).
 
 #### `tray.displayBalloon(options)` _Windows_
 
