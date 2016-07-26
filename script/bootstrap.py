@@ -65,7 +65,7 @@ def main():
 
   create_chrome_version_h()
   touch_config_gypi()
-  run_update(defines, args.disable_clang, args.clang_dir)
+  run_update(defines, args.msvs, args.disable_clang, args.clang_dir)
   update_electron_modules('spec', args.target_arch)
 
 
@@ -86,6 +86,8 @@ def parse_args():
                       action='store_true',
                       help='Run non-interactively by assuming "yes" to all ' \
                            'prompts.')
+  parser.add_argument('--msvs', action='store_true',
+                      help='Generate Visual Studio project')
   parser.add_argument('--target_arch', default=get_target_arch(),
                       help='Manually specify the arch to build for')
   parser.add_argument('--clang_dir', default='', help='Path to clang binaries')
@@ -249,14 +251,19 @@ def touch_config_gypi():
       f.write(content)
 
 
-def run_update(defines, disable_clang, clang_dir):
+def run_update(defines, msvs, disable_clang, clang_dir):
   env = os.environ.copy()
   if not disable_clang and clang_dir == '':
     # Build with prebuilt clang.
     set_clang_env(env)
 
-  update = os.path.join(SOURCE_ROOT, 'script', 'update.py')
-  execute_stdout([sys.executable, update, '--defines', defines], env)
+  args = [sys.executable, os.path.join(SOURCE_ROOT, 'script', 'update.py')]
+  if defines:
+    args += ['--defines', defines]
+  if msvs:
+    args += ['--msvs']
+
+  execute_stdout(args, env)
 
 
 if __name__ == '__main__':
