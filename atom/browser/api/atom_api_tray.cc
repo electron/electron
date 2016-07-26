@@ -40,9 +40,9 @@ struct Converter<atom::TrayIcon::HighlightMode> {
     }
 
     // Support old boolean parameter
-    bool hightlight;
-    if (ConvertFromV8(isolate, val, &hightlight)) {
-      if (hightlight)
+    bool highlight;
+    if (ConvertFromV8(isolate, val, &highlight)) {
+      if (highlight)
         *out = atom::TrayIcon::HighlightMode::SELECTION;
       else
         *out = atom::TrayIcon::HighlightMode::NEVER;
