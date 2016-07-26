@@ -65,7 +65,7 @@ def main():
 
   create_chrome_version_h()
   touch_config_gypi()
-  run_update(defines, args.msvs, args.disable_clang, args.clang_dir)
+  run_update(defines, args.msvs)
   update_electron_modules('spec', args.target_arch)
 
 
@@ -251,19 +251,14 @@ def touch_config_gypi():
       f.write(content)
 
 
-def run_update(defines, msvs, disable_clang, clang_dir):
-  env = os.environ.copy()
-  if not disable_clang and clang_dir == '':
-    # Build with prebuilt clang.
-    set_clang_env(env)
-
+def run_update(defines, msvs):
   args = [sys.executable, os.path.join(SOURCE_ROOT, 'script', 'update.py')]
   if defines:
     args += ['--defines', defines]
   if msvs:
     args += ['--msvs']
 
-  execute_stdout(args, env)
+  execute_stdout(args)
 
 
 if __name__ == '__main__':
