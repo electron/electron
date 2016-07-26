@@ -32,11 +32,11 @@ desktopCapturer.getSources({types: ['window', 'screen']}, (error, sources) => {
   }
 })
 
-function handleStream(stream) {
+function handleStream (stream) {
   document.querySelector('video').src = URL.createObjectURL(stream)
 }
 
-function handleError(e) {
+function handleError (e) {
   console.log(e)
 }
 ```
