@@ -28,6 +28,8 @@ def parse_args():
   parser = argparse.ArgumentParser(description='Update build configurations')
   parser.add_argument('--defines', default='',
                       help='The definetions passed to gyp')
+  parser.add_argument('--msvs', action='store_true',
+                      help='Generate Visual Studio project')
   return parser.parse_args()
 
 
@@ -86,7 +88,11 @@ def run_gyp(target_arch, component):
     if define:
       defines += ['-D' + define]
 
-  return subprocess.call([python, gyp, '-f', 'ninja', '--depth', '.',
+  generator = 'ninja'
+  if args.msvs:
+    generator = 'msvs-ninja'
+
+  return subprocess.call([python, gyp, '-f', generator, '--depth', '.',
                           'electron.gyp', '-Icommon.gypi'] + defines, env=env)
 
 
