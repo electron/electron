@@ -4,7 +4,7 @@
 
 #include "atom/browser/osr_window.h"
 #include "third_party/WebKit/public/platform/WebScreenInfo.h"
-#include "content/browser/compositor/gl_helper.h"
+#include "components/display_compositor/gl_helper.h"
 #include "content/browser/renderer_host/render_widget_host_impl.h"
 #include "content/browser/renderer_host/render_widget_host_delegate.h"
 #include "content/public/browser/render_widget_host_view_frame_subscriber.h"
@@ -187,7 +187,7 @@ class CefCopyFrameGenerator {
 
     content::ImageTransportFactory* factory =
         content::ImageTransportFactory::GetInstance();
-    content::GLHelper* gl_helper = factory->GetGLHelper();
+    display_compositor::GLHelper* gl_helper = factory->GetGLHelper();
     if (!gl_helper)
       return;
 
@@ -227,7 +227,7 @@ class CefCopyFrameGenerator {
             damage_rect,
             base::Passed(&bitmap_),
             base::Passed(&bitmap_pixels_lock)),
-        content::GLHelper::SCALER_QUALITY_FAST);
+        display_compositor::GLHelper::SCALER_QUALITY_FAST);
   }
 
   static void CopyFromCompositingSurfaceFinishedProxy(
@@ -240,7 +240,7 @@ class CefCopyFrameGenerator {
     // This method may be called after the view has been deleted.
     gpu::SyncToken sync_token;
     if (result) {
-      content::GLHelper* gl_helper =
+      display_compositor::GLHelper* gl_helper =
           content::ImageTransportFactory::GetInstance()->GetGLHelper();
       if (gl_helper)
         gl_helper->GenerateSyncToken(&sync_token);
@@ -550,11 +550,6 @@ gfx::NativeView OffScreenWindow::GetNativeView() const {
   return gfx::NativeView();
 }
 
-gfx::NativeViewId OffScreenWindow::GetNativeViewId() const {
-  // std::cout << "GetNativeViewId" << std::endl;
-  return gfx::NativeViewId();
-}
-
 gfx::NativeViewAccessible OffScreenWindow::GetNativeViewAccessible() {
   // std::cout << "GetNativeViewAccessible" << std::endl;
   return gfx::NativeViewAccessible();
@@ -710,7 +705,7 @@ void OffScreenWindow::SetIsLoading(bool loading) {
 }
 
 void OffScreenWindow::TextInputStateChanged(
-  const ViewHostMsg_TextInputState_Params &) {
+  const content::TextInputState& params) {
   // std::cout << "TextInputStateChanged" << std::endl;
 }
 
@@ -893,16 +888,16 @@ void OffScreenWindow::DelegatedFrameHostUpdateVSyncParameters(
   render_widget_host_->UpdateVSyncParameters(timebase, interval);
 }
 
-std::unique_ptr<cc::SoftwareOutputDevice>
-OffScreenWindow::CreateSoftwareOutputDevice(
-    ui::Compositor* compositor) {
-  DCHECK_EQ(compositor_.get(), compositor);
-  DCHECK(!copy_frame_generator_);
-  DCHECK(!software_output_device_);
-  std::cout << "CREATED" << std::endl;
-  software_output_device_ = new OffScreenOutputDevice();
-  return base::WrapUnique(software_output_device_);
-}
+// std::unique_ptr<cc::SoftwareOutputDevice>
+// OffScreenWindow::CreateSoftwareOutputDevice(
+//     ui::Compositor* compositor) {
+//   DCHECK_EQ(compositor_.get(), compositor);
+//   DCHECK(!copy_frame_generator_);
+//   DCHECK(!software_output_device_);
+//   std::cout << "CREATED" << std::endl;
+//   software_output_device_ = new OffScreenOutputDevice();
+//   return base::WrapUnique(software_output_device_);
+// }
 
 void OffScreenWindow::OnSetNeedsBeginFrames(bool enabled) {
   SetFrameRate();
@@ -937,6 +932,14 @@ void OffScreenWindow::SetFrameRate() {
         base::Bind(&OffScreenWindow::OnBeginFrameTimerTick,
                    weak_ptr_factory_.GetWeakPtr())));
   }
+}
+
+void OffScreenWindow::SetBeginFrameSource(
+    cc::BeginFrameSource* source) {
+}
+
+bool OffScreenWindow::IsAutoResizeEnabled() const {
+  return false;
 }
 
 }  // namespace atom

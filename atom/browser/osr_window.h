@@ -50,10 +50,6 @@ class NSTextInputContext;
 #endif
 #endif
 
-#if defined(OS_MACOSX)
-class AcceleratedWidgetMacNSViewHelper;
-#endif
-
 namespace atom {
 
 class CefCopyFrameGenerator;
@@ -64,7 +60,7 @@ class OffScreenWindow
   #if defined(OS_MACOSX)
     public ui::AcceleratedWidgetMacNSView,
   #endif
-    public ui::CompositorDelegate,
+    // public ui::CompositorDelegate,
     public content::DelegatedFrameHostClient {
 public:
   typedef base::Callback<void(const gfx::Rect&,int,int,void*)>
@@ -75,7 +71,7 @@ public:
 
   void CreatePlatformWidget();
 
-//content::RenderWidgetHostView
+  // content::RenderWidgetHostView
   bool OnMessageReceived(const IPC::Message&) override;
   void InitAsChild(gfx::NativeView) override;
   content::RenderWidgetHost* GetRenderWidgetHost(void) const override;
@@ -83,7 +79,6 @@ public:
   void SetBounds(const gfx::Rect &) override;
   gfx::Vector2dF GetLastScrollOffset(void) const override;
   gfx::NativeView GetNativeView(void) const override;
-  gfx::NativeViewId GetNativeViewId(void) const override;
   gfx::NativeViewAccessible GetNativeViewAccessible(void) override;
   ui::TextInputClient* GetTextInputClient() override;
   void Focus(void) override;
@@ -100,6 +95,7 @@ public:
   bool GetScreenColorProfile(std::vector<char>*) override;
 
 #if defined(OS_MACOSX)
+  ui::AcceleratedWidgetMac* GetAcceleratedWidgetMac() const override;
   void SetActive(bool active) override;
   void ShowDefinitionForSelection() override;
   bool SupportsSpeech() const override;
@@ -108,14 +104,14 @@ public:
   void StopSpeaking() override;
 #endif  // defined(OS_MACOSX)
 
-//content::RenderWidgetHostViewBase
+  // content::RenderWidgetHostViewBase
   void OnSwapCompositorFrame(uint32_t, std::unique_ptr<cc::CompositorFrame>) override;
   void ClearCompositorFrame(void) override;
   void InitAsPopup(content::RenderWidgetHostView *, const gfx::Rect &) override;
   void InitAsFullscreen(content::RenderWidgetHostView *) override;
   void UpdateCursor(const content::WebCursor &) override;
   void SetIsLoading(bool) override;
-  void TextInputStateChanged(const ViewHostMsg_TextInputState_Params &) override;
+  void TextInputStateChanged(const content::TextInputState& params) override;
   void ImeCancelComposition(void) override;
   void RenderProcessGone(base::TerminationStatus,int) override;
   void Destroy(void) override;
@@ -152,7 +148,7 @@ public:
   gfx::Size GetPhysicalBackingSize() const override;
   gfx::Size GetRequestedRendererSize() const override;
 
-//content::DelegatedFrameHostClient
+  // content::DelegatedFrameHostClient
   int DelegatedFrameHostGetGpuMemoryBufferClientId(void) const;
   ui::Layer *DelegatedFrameHostGetLayer(void) const override;
   bool DelegatedFrameHostIsVisible(void) const override;
@@ -168,9 +164,12 @@ public:
   void DelegatedFrameHostOnLostCompositorResources(void) override;
   void DelegatedFrameHostUpdateVSyncParameters(
     const base::TimeTicks &, const base::TimeDelta &) override;
+  void SetBeginFrameSource(cc::BeginFrameSource* source) override;
 
-  std::unique_ptr<cc::SoftwareOutputDevice> CreateSoftwareOutputDevice(
-      ui::Compositor* compositor) override;
+  bool IsAutoResizeEnabled() const;
+
+  // std::unique_ptr<cc::SoftwareOutputDevice> CreateSoftwareOutputDevice(
+  //     ui::Compositor* compositor) override;
   void OnSetNeedsBeginFrames(bool enabled);
 
 #if defined(OS_MACOSX)

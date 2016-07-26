@@ -13,6 +13,13 @@
 #include "ui/accelerated_widget_mac/accelerated_widget_mac.h"
 #include "ui/events/latency_info.h"
 
+ui::AcceleratedWidgetMac* atom::OffScreenWindow::GetAcceleratedWidgetMac()
+    const {
+  if (browser_compositor_)
+    return browser_compositor_->accelerated_widget_mac();
+  return nullptr;
+}
+
 NSView* atom::OffScreenWindow::AcceleratedWidgetGetNSView() const {
   return [window_ contentView];
 }
