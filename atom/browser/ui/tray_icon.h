@@ -43,9 +43,13 @@ class TrayIcon {
   // only works on macOS.
   virtual void SetTitle(const std::string& title);
 
-  // Sets whether the status icon is highlighted when it is clicked. This only
-  // works on macOS.
-  virtual void SetHighlightMode(bool highlight);
+  // Sets the status icon highlight mode. This only works on macOS.
+  enum HighlightMode {
+    ALWAYS,  // Always highlight the tray icon
+    NEVER,  // Never highlight the tray icon
+    SELECTION  // Highlight the tray icon when clicked or the menu is opened
+  };
+  virtual void SetHighlightMode(HighlightMode mode);
 
   // Displays a notification balloon with the specified contents.
   // Depending on the platform it might not appear by the icon tray.

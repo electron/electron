@@ -27,7 +27,7 @@ class TrayIconCocoa : public TrayIcon,
   void SetPressedImage(const gfx::Image& image) override;
   void SetToolTip(const std::string& tool_tip) override;
   void SetTitle(const std::string& title) override;
-  void SetHighlightMode(bool highlight) override;
+  void SetHighlightMode(TrayIcon::HighlightMode mode) override;
   void PopUpContextMenu(const gfx::Point& pos,
                         AtomMenuModel* menu_model) override;
   void SetContextMenu(AtomMenuModel* menu_model) override;

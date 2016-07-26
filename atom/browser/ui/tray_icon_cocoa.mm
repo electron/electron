@@ -23,7 +23,7 @@ const CGFloat kVerticalTitleMargin = 2;
 @interface StatusItemView : NSView {
   atom::TrayIconCocoa* trayIcon_; // weak
   AtomMenuController* menuController_; // weak
-  BOOL isHighlightEnable_;
+  atom::TrayIcon::HighlightMode highlight_mode_;
   BOOL forceHighlight_;
   BOOL inMouseEventSequence_;
   base::scoped_nsobject<NSImage> image_;
@@ -39,7 +39,7 @@ const CGFloat kVerticalTitleMargin = 2;
 - (id)initWithImage:(NSImage*)image icon:(atom::TrayIconCocoa*)icon {
   image_.reset([image copy]);
   trayIcon_ = icon;
-  isHighlightEnable_ = YES;
+  highlight_mode_ = atom::TrayIcon::HighlightMode::SELECTION;
   forceHighlight_ = NO;
   inMouseEventSequence_ = NO;
 
@@ -192,8 +192,9 @@ const CGFloat kVerticalTitleMargin = 2;
   alternateImage_.reset([image copy]);
 }
 
-- (void)setHighlight:(BOOL)highlight {
-  isHighlightEnable_ = highlight;
+- (void)setHighlight:(atom::TrayIcon::HighlightMode)mode {
+  highlight_mode_ = mode;
+  [self setNeedsDisplay:YES];
 }
 
 - (void)setTitle:(NSString*)title {
@@ -328,10 +329,15 @@ const CGFloat kVerticalTitleMargin = 2;
 }
 
 - (BOOL)shouldHighlight {
-  if (isHighlightEnable_ && forceHighlight_)
-    return true;
-  BOOL isMenuOpen = menuController_ && [menuController_ isMenuOpen];
-  return isHighlightEnable_ && (inMouseEventSequence_ || isMenuOpen);
+  switch (highlight_mode_) {
+    case atom::TrayIcon::HighlightMode::ALWAYS:
+      return true;
+    case atom::TrayIcon::HighlightMode::NEVER:
+      return false;
+    case atom::TrayIcon::HighlightMode::SELECTION:
+      BOOL isMenuOpen = menuController_ && [menuController_ isMenuOpen];
+      return forceHighlight_ || inMouseEventSequence_ || isMenuOpen;
+  }
 }
 
 @end
@@ -369,8 +375,8 @@ void TrayIconCocoa::SetTitle(const std::string& title) {
   [status_item_view_ setTitle:base::SysUTF8ToNSString(title)];
 }
 
-void TrayIconCocoa::SetHighlightMode(bool highlight) {
-  [status_item_view_ setHighlight:highlight];
+void TrayIconCocoa::SetHighlightMode(TrayIcon::HighlightMode mode) {
+  [status_item_view_ setHighlight:mode];
 }
 
 void TrayIconCocoa::PopUpContextMenu(const gfx::Point& pos,
