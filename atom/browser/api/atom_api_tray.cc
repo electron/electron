@@ -40,6 +40,7 @@ struct Converter<atom::TrayIcon::HighlightMode> {
     }
 
     // Support old boolean parameter
+    // TODO(kevinsawicki): Remove in 2.0, deprecate before then with warnings
     bool highlight;
     if (ConvertFromV8(isolate, val, &highlight)) {
       if (highlight)
