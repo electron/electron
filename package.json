@@ -24,7 +24,7 @@
   "scripts": {
     "bootstrap": "python ./script/bootstrap.py",
     "build": "python ./script/build.py -c D",
-    "lint": "npm run lint-js && npm run lint-cpp",
+    "lint": "npm run lint-js && npm run lint-cpp && npm run lint-docs",
     "lint-js": "standard && cd spec && standard",
     "lint-cpp": "python ./script/cpplint.py",
     "lint-docs": "standard-markdown docs",
