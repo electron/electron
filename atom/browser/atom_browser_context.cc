@@ -87,6 +87,9 @@ AtomBrowserContext::AtomBrowserContext(
   // Read options.
   use_cache_ = true;
   options.GetBoolean("cache", &use_cache_);
+
+  // Initialize Pref Registry in brightray.
+  InitPrefs();
 }
 
 AtomBrowserContext::~AtomBrowserContext() {
