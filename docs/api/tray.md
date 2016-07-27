@@ -202,6 +202,10 @@ const {BrowserWindow, Tray} = require('electron')
 
 const win = new BrowserWindow({width: 800, height: 600})
 const tray = new Tray('/path/to/my/icon')
+
+tray.on('click', () => {
+  win.isVisible() ? win.hide() : win.show()
+})
 win.on('show', () => {
   tray.setHighlightMode('always')
 })
