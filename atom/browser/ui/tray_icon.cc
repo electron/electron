@@ -18,7 +18,7 @@ void TrayIcon::SetPressedImage(ImageType image) {
 void TrayIcon::SetTitle(const std::string& title) {
 }
 
-void TrayIcon::SetHighlightMode(bool highlight) {
+void TrayIcon::SetHighlightMode(TrayIcon::HighlightMode mode) {
 }
 
 void TrayIcon::DisplayBalloon(ImageType icon,
