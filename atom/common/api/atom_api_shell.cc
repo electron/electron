@@ -14,10 +14,8 @@
 #if defined(OS_WIN)
 #include "base/win/scoped_com_initializer.h"
 #include "base/win/shortcut.h"
-#endif
 
 namespace mate {
-
 
 template<>
 struct Converter<base::win::ShortcutOperation> {
@@ -38,8 +36,8 @@ struct Converter<base::win::ShortcutOperation> {
   }
 };
 
-
 }  // namespace mate
+#endif
 
 namespace {
 
