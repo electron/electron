@@ -23,6 +23,7 @@ class AtomExtensionsNetworkDelegate : public atom::AtomNetworkDelegate {
   explicit AtomExtensionsNetworkDelegate(
       content::BrowserContext* browser_context);
   ~AtomExtensionsNetworkDelegate() override;
+  void set_extension_info_map(extensions::InfoMap* extension_info_map);
 
   static void SetAcceptAllCookies(bool accept);
 
@@ -64,15 +65,12 @@ class AtomExtensionsNetworkDelegate : public atom::AtomNetworkDelegate {
       const net::AuthChallengeInfo& auth_info,
       const AuthCallback& callback,
       net::AuthCredentials* credentials) override;
-  extensions::InfoMap* info_map() {
-    return AtomExtensionSystemFactory::GetInstance()->
-        GetForBrowserContext(browser_context_)->info_map();
-  }
   void RunCallback(base::Callback<int(void)> internal_callback,
                     const uint64_t request_id,
                     int previous_result);
 
   content::BrowserContext* browser_context_;
+  scoped_refptr<extensions::InfoMap> extension_info_map_;
   std::map<uint64_t, net::CompletionCallback> callbacks_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomExtensionsNetworkDelegate);

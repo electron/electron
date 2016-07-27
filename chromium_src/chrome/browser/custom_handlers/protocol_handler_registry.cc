@@ -7,7 +7,7 @@
  * some functionality is removed so that it doesn't use shell
  * handling, which we handle separately in electron code.
  * ProtocolHandlerRegistry::TranslateUrl was also added.
- * This was originally forked with 51.0.2704.106.  Diff against
+ * This was originally forked with 52.0.2743.86.  Diff against
  * a version of that file for a full list of changes.
  */
 
@@ -23,7 +23,7 @@
 #include "base/macros.h"
 #include "build/build_config.h"
 #include "chrome/browser/chrome_notification_types.h"
-//#include "chrome/browser/profiles/profile_io_data.h"
+#include "chrome/browser/profiles/profile_io_data.h"
 #include "chrome/common/custom_handlers/protocol_handler.h"
 #include "chrome/common/pref_names.h"
 #include "chrome/grit/generated_resources.h"
@@ -54,17 +54,18 @@ const ProtocolHandler& LookupHandler(
 
 // If true default protocol handlers will be removed if the OS level
 // registration for a protocol is no longer Chrome.
-bool ShouldRemoveHandlersNotInOS() {
-#if defined(OS_LINUX)
-  // We don't do this on Linux as the OS registration there is not reliable,
-  // and Chrome OS doesn't have any notion of OS registration.
-  // TODO(benwells): When Linux support is more reliable remove this
-  // difference (http://crbug.com/88255).
-  return false;
-#else
-  return true;
-#endif
-}
+// bool ShouldRemoveHandlersNotInOS() {
+// #if defined(OS_LINUX)
+//   // We don't do this on Linux as the OS registration there is not reliable,
+//   // and Chrome OS doesn't have any notion of OS registration.
+//   // TODO(benwells): When Linux support is more reliable remove this
+//   // difference (http://crbug.com/88255).
+//   return false;
+// #else
+//   return shell_integration::GetDefaultWebClientSetPermission() !=
+//          shell_integration::SET_DEFAULT_NOT_ALLOWED;
+// #endif
+// }
 
 }  // namespace
 
@@ -258,9 +259,24 @@ bool ProtocolHandlerRegistry::Delegate::IsExternalHandlerRegistered(
     const std::string& protocol) {
   // NOTE(koz): This function is safe to call from any thread, despite living
   // in ProfileIOData.
-  // return ProfileIOData::IsHandledProtocol(protocol);
-  return false;
+  return ProfileIOData::IsHandledProtocol(protocol);
 }
+
+// scoped_refptr<shell_integration::DefaultProtocolClientWorker>
+// ProtocolHandlerRegistry::Delegate::CreateShellWorker(
+//     const shell_integration::DefaultWebClientWorkerCallback& callback,
+//     const std::string& protocol) {
+//   return new shell_integration::DefaultProtocolClientWorker(callback, protocol);
+// }
+
+// void ProtocolHandlerRegistry::Delegate::RegisterWithOSAsDefaultClient(
+//     const std::string& protocol, ProtocolHandlerRegistry* registry) {
+//   // The worker pointer is reference counted. While it is running, the
+//   // message loops of the FILE and UI thread will hold references to it
+//   // and it will be automatically freed once all its tasks have finished.
+//   CreateShellWorker(registry->GetDefaultWebClientCallback(protocol), protocol)
+//       ->StartSetAsDefault();
+// }
 
 // ProtocolHandlerRegistry -----------------------------------------------------
 
@@ -391,20 +407,38 @@ void ProtocolHandlerRegistry::InitProtocolSettings() {
   is_loaded_ = true;
   is_loading_ = true;
 
-  Enable();
+  PrefService* prefs = user_prefs::UserPrefs::Get(context_);
+  if (prefs->HasPrefPath(prefs::kCustomHandlersEnabled)) {
+    if (prefs->GetBoolean(prefs::kCustomHandlersEnabled)) {
+      Enable();
+    } else {
+      Disable();
+    }
+  }
 
+  RegisterProtocolHandlersFromPref(prefs::kPolicyRegisteredProtocolHandlers,
+                                   POLICY);
   RegisterProtocolHandlersFromPref(prefs::kRegisteredProtocolHandlers, USER);
+  IgnoreProtocolHandlersFromPref(prefs::kPolicyIgnoredProtocolHandlers, POLICY);
+  IgnoreProtocolHandlersFromPref(prefs::kIgnoredProtocolHandlers, USER);
 
   is_loading_ = false;
 
   // For each default protocol handler, check that we are still registered
   // with the OS as the default application.
-  if (ShouldRemoveHandlersNotInOS()) {
-    for (ProtocolHandlerMap::const_iterator p = default_handlers_.begin();
-         p != default_handlers_.end(); ++p) {
-      ProtocolHandler handler = p->second;
-    }
-  }
+  // if (ShouldRemoveHandlersNotInOS()) {
+  //   for (ProtocolHandlerMap::const_iterator p = default_handlers_.begin();
+  //        p != default_handlers_.end(); ++p) {
+  //     ProtocolHandler handler = p->second;
+  //     // The worker pointer is reference counted. While it is running the
+  //     // message loops of the FILE and UI thread will hold references to it
+  //     // and it will be automatically freed once all its tasks have finished.
+  //     delegate_
+  //         ->CreateShellWorker(GetDefaultWebClientCallback(handler.protocol()),
+  //                             handler.protocol())
+  //         ->StartSetAsDefault();
+  //   }
+  // }
 }
 
 int ProtocolHandlerRegistry::GetHandlerIndex(const std::string& scheme) const {
@@ -434,6 +468,11 @@ ProtocolHandlerRegistry::GetHandlersFor(
     return ProtocolHandlerList();
   }
   return p->second;
+}
+
+ProtocolHandlerRegistry::ProtocolHandlerList
+ProtocolHandlerRegistry::GetIgnoredHandlers() {
+  return ignored_protocol_handlers_;
 }
 
 void ProtocolHandlerRegistry::GetRegisteredProtocols(
@@ -471,6 +510,12 @@ bool ProtocolHandlerRegistry::IsRegistered(
 bool ProtocolHandlerRegistry::IsRegisteredByUser(
     const ProtocolHandler& handler) {
   return HandlerExists(handler, &user_protocol_handlers_);
+}
+
+bool ProtocolHandlerRegistry::HasPolicyRegisteredHandler(
+    const std::string& scheme) {
+  return (policy_protocol_handlers_.find(scheme) !=
+          policy_protocol_handlers_.end());
 }
 
 bool ProtocolHandlerRegistry::IsIgnored(const ProtocolHandler& handler) const {
@@ -514,25 +559,27 @@ bool ProtocolHandlerRegistry::HasIgnoredEquivalent(
   return false;
 }
 
+void ProtocolHandlerRegistry::RemoveIgnoredHandler(
+    const ProtocolHandler& handler) {
+  DCHECK_CURRENTLY_ON(BrowserThread::UI);
+  bool should_notify = false;
+  if (HandlerExists(handler, ignored_protocol_handlers_) &&
+      HandlerExists(handler, user_ignored_protocol_handlers_)) {
+    EraseHandler(handler, &user_ignored_protocol_handlers_);
+    Save();
+    if (!HandlerExists(handler, policy_ignored_protocol_handlers_)) {
+      EraseHandler(handler, &ignored_protocol_handlers_);
+      should_notify = true;
+    }
+  }
+  if (should_notify)
+    NotifyChanged();
+}
+
 bool ProtocolHandlerRegistry::IsHandledProtocol(
     const std::string& scheme) const {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
   return enabled_ && !GetHandlerFor(scheme).IsEmpty();
-}
-
-GURL ProtocolHandlerRegistry::TranslateUrl(
-    const GURL& url) const {
-  DCHECK_CURRENTLY_ON(BrowserThread::UI);
-  ProtocolHandler handler = LookupHandler(default_handlers_,
-                                          url.scheme());
-  if (handler.IsEmpty())
-    return url;
-
-  GURL translated_url(handler.TranslateUrl(url));
-  if (!translated_url.is_valid())
-    return url;
-
-  return translated_url;
 }
 
 void ProtocolHandlerRegistry::RemoveHandler(
@@ -633,6 +680,10 @@ void ProtocolHandlerRegistry::Shutdown() {
 void ProtocolHandlerRegistry::RegisterProfilePrefs(
     user_prefs::PrefRegistrySyncable* registry) {
   registry->RegisterListPref(prefs::kRegisteredProtocolHandlers);
+  registry->RegisterListPref(prefs::kIgnoredProtocolHandlers);
+  registry->RegisterListPref(prefs::kPolicyRegisteredProtocolHandlers);
+  registry->RegisterListPref(prefs::kPolicyIgnoredProtocolHandlers);
+  registry->RegisterBooleanPref(prefs::kCustomHandlersEnabled, true);
 }
 
 ProtocolHandlerRegistry::~ProtocolHandlerRegistry() {
@@ -656,10 +707,15 @@ void ProtocolHandlerRegistry::Save() {
   }
   std::unique_ptr<base::Value> registered_protocol_handlers(
       EncodeRegisteredHandlers());
+  std::unique_ptr<base::Value> ignored_protocol_handlers(
+      EncodeIgnoredHandlers());
   PrefService* prefs = user_prefs::UserPrefs::Get(context_);
 
   prefs->Set(prefs::kRegisteredProtocolHandlers,
       *registered_protocol_handlers);
+  prefs->Set(prefs::kIgnoredProtocolHandlers,
+      *ignored_protocol_handlers);
+  prefs->SetBoolean(prefs::kCustomHandlersEnabled, enabled_);
 }
 
 const ProtocolHandlerRegistry::ProtocolHandlerList*
@@ -675,6 +731,12 @@ ProtocolHandlerRegistry::GetHandlerList(
 
 void ProtocolHandlerRegistry::SetDefault(const ProtocolHandler& handler) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
+  // ProtocolHandlerMap::const_iterator p = default_handlers_.find(
+  //     handler.protocol());
+  // // If we're not loading, and we are setting a default for a new protocol,
+  // // register with the OS.
+  // if (!is_loading_ && p == default_handlers_.end())
+  //     delegate_->RegisterWithOSAsDefaultClient(handler.protocol(), this);
   default_handlers_.erase(handler.protocol());
   default_handlers_.insert(std::make_pair(handler.protocol(), handler));
   PromoteHandler(handler);
@@ -715,6 +777,18 @@ base::Value* ProtocolHandlerRegistry::EncodeRegisteredHandlers() {
     }
   }
   return protocol_handlers;
+}
+
+base::Value* ProtocolHandlerRegistry::EncodeIgnoredHandlers() {
+  DCHECK_CURRENTLY_ON(BrowserThread::UI);
+  base::ListValue* handlers = new base::ListValue();
+  for (ProtocolHandlerList::iterator i =
+           user_ignored_protocol_handlers_.begin();
+       i != user_ignored_protocol_handlers_.end();
+       ++i) {
+    handlers->Append(i->Encode());
+  }
+  return handlers;
 }
 
 void ProtocolHandlerRegistry::NotifyChanged() {
@@ -832,12 +906,29 @@ void ProtocolHandlerRegistry::EraseHandler(const ProtocolHandler& handler,
   list->erase(std::find(list->begin(), list->end(), handler));
 }
 
+// void ProtocolHandlerRegistry::OnSetAsDefaultProtocolClientFinished(
+//     const std::string& protocol,
+//     shell_integration::DefaultWebClientState state) {
+//   if (ShouldRemoveHandlersNotInOS() &&
+//       state == shell_integration::NOT_DEFAULT) {
+//     ClearDefault(protocol);
+//   }
+// }
+
 void ProtocolHandlerRegistry::AddPredefinedHandler(
     const ProtocolHandler& handler) {
   DCHECK(!is_loaded_);  // Must be called prior InitProtocolSettings.
   RegisterProtocolHandler(handler, USER);
   SetDefault(handler);
 }
+
+// shell_integration::DefaultWebClientWorkerCallback
+// ProtocolHandlerRegistry::GetDefaultWebClientCallback(
+//     const std::string& protocol) {
+//   return base::Bind(
+//       &ProtocolHandlerRegistry::OnSetAsDefaultProtocolClientFinished,
+//       weak_ptr_factory_.GetWeakPtr(), protocol);
+// }
 
 std::unique_ptr<ProtocolHandlerRegistry::JobInterceptorFactory>
 ProtocolHandlerRegistry::CreateJobInterceptorFactory() {
@@ -847,4 +938,19 @@ ProtocolHandlerRegistry::CreateJobInterceptorFactory() {
   // on the IO thread (this is checked).
   return std::unique_ptr<JobInterceptorFactory>(
       new JobInterceptorFactory(io_thread_delegate_.get()));
+}
+
+GURL ProtocolHandlerRegistry::TranslateUrl(
+    const GURL& url) const {
+  DCHECK_CURRENTLY_ON(BrowserThread::UI);
+  ProtocolHandler handler = LookupHandler(default_handlers_,
+                                          url.scheme());
+  if (handler.IsEmpty())
+    return url;
+
+  GURL translated_url(handler.TranslateUrl(url));
+  if (!translated_url.is_valid())
+    return url;
+
+  return translated_url;
 }

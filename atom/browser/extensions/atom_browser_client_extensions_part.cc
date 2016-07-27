@@ -188,7 +188,7 @@ void AtomBrowserClientExtensionsPart::SetApplicationLocale(std::string locale) {
 }
 
 // static
-void AtomBrowserClientExtensionsPart::RegisteryProfilePrefs(
+void AtomBrowserClientExtensionsPart::RegisterProfilePrefs(
     PrefRegistrySimple* registry) {
   registry->RegisterDictionaryPref("content_settings");
   registry->RegisterStringPref(prefs::kApplicationLocale,

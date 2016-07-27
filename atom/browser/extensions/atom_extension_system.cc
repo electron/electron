@@ -443,8 +443,7 @@ void AtomExtensionSystem::Shutdown() {
 }
 
 void AtomExtensionSystem::InitForRegularProfile(bool extensions_enabled) {
-  CHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
-
+  DCHECK(!browser_context_->IsOffTheRecord());
   if (shared_user_script_master() || extension_service())
     return;  // Already initialized.
 

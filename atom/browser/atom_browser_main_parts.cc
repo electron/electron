@@ -146,10 +146,9 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
       base::Bind(&v8::Isolate::LowMemoryNotification,
                  base::Unretained(js_env_->isolate())));
 
+  // PreProfileInit
   EnsureBrowserContextKeyedServiceFactoriesBuilt();
 
-  // TODO(bridiver) temporary workaround for crash caused by
-  // https://github.com/brave/brightray/commit/e26f8073df2b20ba2169ffb082c5f135d542313b
   browser_context_ = AtomBrowserContext::From("", false);
   brightray::BrowserMainParts::PreMainMessageLoopRun();
   bridge_task_runner_->MessageLoopIsReady();

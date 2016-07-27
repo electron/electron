@@ -55,8 +55,9 @@ BraveBrowserContext::BraveBrowserContext(const std::string& partition,
   if (in_memory) {
     original_context_ = static_cast<BraveBrowserContext*>(
         atom::AtomBrowserContext::From(partition, false).get());
-    original_context()->otr_context_ = this;
+    original_context_->otr_context_ = this;
   }
+  InitPrefs();
 }
 
 BraveBrowserContext::~BraveBrowserContext() {
@@ -178,8 +179,11 @@ void BraveBrowserContext::RegisterPrefs(PrefRegistrySimple* pref_registry) {
           extension_prefs, overlay_pref_names_));
     user_prefs::UserPrefs::Set(this, user_prefs_.get());
   } else {
+    // TODO(bridiver) - is this necessary or is it covered by
+    // BrowserContextDependencyManager
+    ProtocolHandlerRegistry::RegisterProfilePrefs(pref_registry_.get());
 #if defined(ENABLE_EXTENSIONS)
-    extensions::AtomBrowserClientExtensionsPart::RegisteryProfilePrefs(
+    extensions::AtomBrowserClientExtensionsPart::RegisterProfilePrefs(
         pref_registry_.get());
     extensions::ExtensionPrefs::RegisterProfilePrefs(pref_registry_.get());
 #endif
@@ -202,8 +206,6 @@ void BraveBrowserContext::RegisterPrefs(PrefRegistrySimple* pref_registry) {
     factory.set_user_prefs(pref_store);
     user_prefs_ = factory.CreateSyncable(pref_registry_.get());
     user_prefs::UserPrefs::Set(this, user_prefs_.get());
-
-    ProtocolHandlerRegistry::RegisterProfilePrefs(pref_registry_.get());
   }
 
   if (async) {
@@ -215,17 +217,17 @@ void BraveBrowserContext::RegisterPrefs(PrefRegistrySimple* pref_registry) {
 }
 
 void BraveBrowserContext::OnPrefsLoaded(bool success) {
-  if (!success)
-    return;
+  CHECK(success);
 
   BrowserContextDependencyManager::GetInstance()->
       CreateBrowserContextServices(this);
 
   if (!IsOffTheRecord()) {
 #if defined(ENABLE_EXTENSIONS)
-    if (extensions::ExtensionsBrowserClient::Get()) {
-      extensions::ExtensionSystem::Get(this)->InitForRegularProfile(true);
-    }
+    extensions::ExtensionSystem::Get(this)->InitForRegularProfile(true);
+    static_cast<extensions::AtomExtensionsNetworkDelegate*>(network_delegate_)->
+        set_extension_info_map(
+            extensions::ExtensionSystem::Get(this)->info_map());
 #endif
     content::BrowserContext::GetDefaultStoragePartition(this)->
         GetDOMStorageContext()->SetSaveSessionStorageOnDisk();
@@ -256,9 +258,7 @@ scoped_refptr<AtomBrowserContext> AtomBrowserContext::From(
   if (browser_context)
     return static_cast<AtomBrowserContext*>(browser_context.get());
 
-  auto context = new brave::BraveBrowserContext(partition, in_memory, options);
-  context->InitPrefs();
-  return context;
+  return new brave::BraveBrowserContext(partition, in_memory, options);
 }
 
 }  // namespace brightray

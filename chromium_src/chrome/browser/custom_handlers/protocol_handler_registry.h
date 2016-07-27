@@ -7,7 +7,7 @@
  * some functionality is removed so that it doesn't use shell
  * handling, which we handle separately in electron code.
  * ProtocolHandlerRegistry::TranslateUrl was also added.
- * This was originally forked with 51.0.2704.106.  Diff against
+ * This was originally forked with 52.0.2743.82.  Diff against
  * a version of that file for a full list of changes.
  */
 
@@ -15,6 +15,7 @@
 #define CHROME_BROWSER_CUSTOM_HANDLERS_PROTOCOL_HANDLER_REGISTRY_H_
 
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -22,7 +23,8 @@
 #include "base/memory/weak_ptr.h"
 #include "base/sequenced_task_runner_helpers.h"
 #include "base/values.h"
-#include "atom/browser/atom_browser_context.h"
+#include "chrome/browser/profiles/profile.h"
+// #include "chrome/browser/shell_integration.h"
 #include "chrome/common/custom_handlers/protocol_handler.h"
 #include "components/keyed_service/core/keyed_service.h"
 #include "content/public/browser/browser_thread.h"
@@ -35,6 +37,11 @@ namespace user_prefs {
 class PrefRegistrySyncable;
 }
 
+// This is where handlers for protocols registered with
+// navigator.registerProtocolHandler() are registered. Each Profile owns an
+// instance of this class, which is initialized on browser start through
+// Profile::InitRegisteredProtocolHandlers(), and they should be the only
+// instances of this class.
 class ProtocolHandlerRegistry : public KeyedService {
  public:
   enum HandlerSource {
@@ -51,6 +58,13 @@ class ProtocolHandlerRegistry : public KeyedService {
     virtual void RegisterExternalHandler(const std::string& protocol);
     virtual void DeregisterExternalHandler(const std::string& protocol);
     virtual bool IsExternalHandlerRegistered(const std::string& protocol);
+    // virtual scoped_refptr<shell_integration::DefaultProtocolClientWorker>
+    // CreateShellWorker(
+    //     const shell_integration::DefaultWebClientWorkerCallback& callback,
+    //     const std::string& protocol);
+    // virtual void RegisterWithOSAsDefaultClient(
+    //     const std::string& protocol,
+    //     ProtocolHandlerRegistry* registry);
   };
 
   // Forward declaration of the internal implementation class.
@@ -157,6 +171,9 @@ class ProtocolHandlerRegistry : public KeyedService {
   // Get the list of protocol handlers for the given scheme.
   ProtocolHandlerList GetHandlersFor(const std::string& scheme) const;
 
+  // Get the list of ignored protocol handlers.
+  ProtocolHandlerList GetIgnoredHandlers();
+
   // Yields a list of the protocols that have handlers registered in this
   // registry.
   void GetRegisteredProtocols(std::vector<std::string>* output) const;
@@ -172,6 +189,10 @@ class ProtocolHandlerRegistry : public KeyedService {
   // by the user.
   bool IsRegisteredByUser(const ProtocolHandler& handler);
 
+  // Returns true if the scheme has at least one handler that is registered by
+  // policy.
+  bool HasPolicyRegisteredHandler(const std::string& scheme);
+
   // Returns true if an identical protocol handler is being ignored.
   bool IsIgnored(const ProtocolHandler& handler) const;
 
@@ -180,6 +201,9 @@ class ProtocolHandlerRegistry : public KeyedService {
 
   // Returns true if an equivalent protocol handler is being ignored.
   bool HasIgnoredEquivalent(const ProtocolHandler& handler) const;
+
+  // Causes the given protocol handler to not be ignored anymore.
+  void RemoveIgnoredHandler(const ProtocolHandler& handler);
 
   // Returns true if the protocol has a default protocol handler.
   bool IsHandledProtocol(const std::string& scheme) const;
@@ -218,6 +242,11 @@ class ProtocolHandlerRegistry : public KeyedService {
   // load command was issued, otherwise the command will be ignored.
   void AddPredefinedHandler(const ProtocolHandler& handler);
 
+  // Gets the callback for DefaultProtocolClientWorker. Allows the Delegate to
+  // create the worker on behalf of ProtocolHandlerRegistry.
+  // shell_integration::DefaultWebClientWorkerCallback GetDefaultWebClientCallback(
+  //     const std::string& protocol);
+
  private:
   friend class base::DeleteHelper<ProtocolHandlerRegistry>;
   friend struct content::BrowserThread::DeleteOnThread<
@@ -253,6 +282,10 @@ class ProtocolHandlerRegistry : public KeyedService {
   // Returns a JSON list of protocol handlers. The caller is responsible for
   // deleting this Value.
   base::Value* EncodeRegisteredHandlers();
+
+  // Returns a JSON list of ignored protocol handlers. The caller is
+  // responsible for deleting this Value.
+  base::Value* EncodeIgnoredHandlers();
 
   // Sends a notification of the given type to the NotificationService.
   void NotifyChanged();
@@ -292,6 +325,12 @@ class ProtocolHandlerRegistry : public KeyedService {
 
   // Erases the handler that is guaranteed to exist from the list.
   void EraseHandler(const ProtocolHandler& handler, ProtocolHandlerList* list);
+
+  // Called with the default state when the default protocol client worker is
+  // done.
+  // void OnSetAsDefaultProtocolClientFinished(
+  //     const std::string& protocol,
+  //     shell_integration::DefaultWebClientState state);
 
   // Map from protocols (strings) to protocol handlers.
   ProtocolHandlerMultiMap protocol_handlers_;

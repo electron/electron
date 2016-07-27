@@ -49,7 +49,7 @@ class AtomBrowserClientExtensionsPart {
                                  const GURL& to_url,
                                  bool* result);
 
-  static void RegisteryProfilePrefs(PrefRegistrySimple* registry);
+  static void RegisterProfilePrefs(PrefRegistrySimple* registry);
 
   static void SetApplicationLocale(std::string);
 
