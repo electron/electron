@@ -281,7 +281,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
  private:
   AtomBrowserContext* GetBrowserContext() const;
 
-  OffScreenWindow::OnPaintCallback paint_callback_;
+  atom::OnPaintCallback paint_callback_;
 
   uint32_t GetNextRequestId() {
     return ++request_id_;

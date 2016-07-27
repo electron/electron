@@ -65,9 +65,6 @@ class OffScreenWindow
     public ui::CompositorDelegate,
     public content::DelegatedFrameHostClient {
 public:
-  typedef base::Callback<void(const gfx::Rect&,int,int,void*)>
-      OnPaintCallback;
-
   OffScreenWindow(content::RenderWidgetHost*, NativeWindow*);
   ~OffScreenWindow();
 
@@ -190,8 +187,8 @@ public:
   void SendBeginFrame(base::TimeTicks frame_time,
                       base::TimeDelta vsync_period);
 
-  std::unique_ptr<const OnPaintCallback> paintCallback;
-  void SetPaintCallback(const OnPaintCallback*);
+  std::unique_ptr<const atom::OnPaintCallback> paintCallback;
+  void SetPaintCallback(const atom::OnPaintCallback*);
 
 private:
   void SetFrameRate();

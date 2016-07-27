@@ -8,15 +8,20 @@
 #include "cc/output/software_output_device.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "third_party/skia/include/core/SkCanvas.h"
+#include "base/callback.h"
 
 #include "content/browser/web_contents/web_contents_view.h"
 
 namespace atom {
+  
+typedef base::Callback<void(const gfx::Rect&,int,int,void*)> OnPaintCallback;
 
 class OffScreenOutputDevice : public cc::SoftwareOutputDevice {
 public:
   OffScreenOutputDevice();
   ~OffScreenOutputDevice();
+  
+  void SetPaintCallback(const OnPaintCallback*);
 
   // void saveSkBitmapToBMPFile(const SkBitmap& skBitmap, const char* path);
   void Resize(const gfx::Size& pixel_size, float scale_factor) override;
@@ -24,11 +29,15 @@ public:
   SkCanvas* BeginPaint(const gfx::Rect& damage_rect) override;
 
   void EndPaint() override;
+  
+  void OnPaint(const gfx::Rect& damage_rect);
 
 private:
   std::unique_ptr<SkCanvas> canvas_;
   std::unique_ptr<SkBitmap> bitmap_;
   gfx::Rect pending_damage_rect_;
+  
+  std::unique_ptr<const atom::OnPaintCallback> callback_;
 
   DISALLOW_COPY_AND_ASSIGN(OffScreenOutputDevice);
 };

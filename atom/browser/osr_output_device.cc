@@ -8,12 +8,16 @@
 
 namespace atom {
 
-OffScreenOutputDevice::OffScreenOutputDevice() {
+OffScreenOutputDevice::OffScreenOutputDevice() : callback_(nullptr) {
   std::cout << "OffScreenOutputDevice" << std::endl;
 }
 
 OffScreenOutputDevice::~OffScreenOutputDevice() {
   std::cout << "~OffScreenOutputDevice" << std::endl;
+}
+
+void OffScreenOutputDevice::SetPaintCallback(const OnPaintCallback* callback) {
+  callback_.reset(callback);
 }
 
 void OffScreenOutputDevice::Resize(
@@ -43,7 +47,7 @@ void OffScreenOutputDevice::Resize(
 }
 
 SkCanvas* OffScreenOutputDevice::BeginPaint(const gfx::Rect& damage_rect) {
-  std::cout << "BeginPaint" << std::endl;
+  // std::cout << "BeginPaint" << std::endl;
   DCHECK(canvas_.get());
   DCHECK(bitmap_.get());
 
@@ -53,7 +57,7 @@ SkCanvas* OffScreenOutputDevice::BeginPaint(const gfx::Rect& damage_rect) {
 }
 
 void OffScreenOutputDevice::EndPaint() {
-  std::cout << "EndPaint" << std::endl;
+  // std::cout << "EndPaint" << std::endl;
 
   DCHECK(canvas_.get());
   DCHECK(bitmap_.get());
@@ -62,14 +66,35 @@ void OffScreenOutputDevice::EndPaint() {
 
   cc::SoftwareOutputDevice::EndPaint();
 
-  SkAutoLockPixels bitmap_pixels_lock(*bitmap_.get());
-  //saveSkBitmapToBMPFile(*(bitmap_.get()), "test.bmp");
+  OnPaint(damage_rect_);
 
-  uint8_t* pixels = reinterpret_cast<uint8_t*>(bitmap_->getPixels());
-  for (int i = 0; i<16; i++) {
-    int x = static_cast<int>(pixels[i]);
-    std::cout << std::hex << x << std::dec << std::endl;
+  // SkAutoLockPixels bitmap_pixels_lock(*bitmap_.get());
+  // saveSkBitmapToBMPFile(*(bitmap_.get()), "test.bmp");
+
+  // uint8_t* pixels = reinterpret_cast<uint8_t*>(bitmap_->getPixels());
+  // for (int i = 0; i<16; i++) {
+  //   int x = static_cast<int>(pixels[i]);
+  //   std::cout << std::hex << x << std::dec << std::endl;
+  // }
+}
+
+
+void OffScreenOutputDevice::OnPaint(const gfx::Rect& damage_rect) {
+  gfx::Rect rect = damage_rect;
+  if (!pending_damage_rect_.IsEmpty()) {
+    rect.Union(pending_damage_rect_);
+    pending_damage_rect_.SetRect(0, 0, 0, 0);
   }
+
+  rect.Intersect(gfx::Rect(viewport_pixel_size_));
+  if (rect.IsEmpty())
+    return;
+
+  SkAutoLockPixels bitmap_pixels_lock(*bitmap_.get());
+  // std::cout << "Paint" << std::endl;
+  if (callback_.get())
+    callback_->Run(rect, bitmap_->width(), bitmap_->height(),
+                   bitmap_->getPixels());
 }
 
 }  // namespace atom

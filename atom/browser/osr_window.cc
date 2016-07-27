@@ -487,8 +487,10 @@ void OffScreenWindow::SendBeginFrame(base::TimeTicks frame_time,
   // std::cout << "sent begin frame" << std::endl;
 }
 
-void OffScreenWindow::SetPaintCallback(const OnPaintCallback *callback) {
+void OffScreenWindow::SetPaintCallback(const OnPaintCallback* callback) {
   paintCallback.reset(callback);
+  if (software_output_device_) 
+    software_output_device_->SetPaintCallback(paintCallback.get());
 }
 
 OffScreenWindow::~OffScreenWindow() {
@@ -551,13 +553,7 @@ gfx::Vector2dF OffScreenWindow::GetLastScrollOffset() const {
 
 gfx::NativeView OffScreenWindow::GetNativeView() const {
   // std::cout << "GetNativeView" << std::endl;
-#if defined(OS_MACOSX)
   return gfx::NativeView();
-#elif
-  auto widget = views::Widget::GetWidgetForNativeWindow(
-    native_window_->GetNativeWindow());
-  return widget->GetNativeView();
-#endif
 }
 
 gfx::NativeViewAccessible OffScreenWindow::GetNativeViewAccessible() {
