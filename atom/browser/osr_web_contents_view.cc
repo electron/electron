@@ -9,12 +9,17 @@
 
 namespace atom {
 
-OffScreenWebContentsView::OffScreenWebContentsView() {
+OffScreenWebContentsView::OffScreenWebContentsView() : web_contents_(nullptr) {
   // std::cout << "OffScreenWebContentsView" << std::endl;
   //std::this_thread::sleep_for(std::chrono::milliseconds(10000));
 }
 OffScreenWebContentsView::~OffScreenWebContentsView() {
   // std::cout << "~OffScreenWebContentsView" << std::endl;
+}
+
+void OffScreenWebContentsView::SetWebContents(
+    content::WebContents* web_contents) {
+  web_contents_ = web_contents;
 }
 
 // Returns the native widget that contains the contents of the tab.
@@ -93,6 +98,7 @@ gfx::Rect OffScreenWebContentsView::GetViewBounds() const{
 
 void OffScreenWebContentsView::CreateView(
     const gfx::Size& initial_size, gfx::NativeView context){
+      std::cout << context << std::endl;
   // std::cout << "CreateView" << std::endl;
   // std::cout << initial_size.width() << "x" << initial_size.height() << std::endl;
 }
@@ -109,7 +115,8 @@ content::RenderWidgetHostViewBase*
   OffScreenWebContentsView::CreateViewForWidget(
     content::RenderWidgetHost* render_widget_host, bool is_guest_view_hack){
   // std::cout << "CreateViewForWidget" << std::endl;
-  view_ = new OffScreenWindow(render_widget_host);
+  auto relay = NativeWindowRelay::FromWebContents(web_contents_);
+  view_ = new OffScreenWindow(render_widget_host, relay->window.get());
   return view_;
 }
 
@@ -118,7 +125,8 @@ content::RenderWidgetHostViewBase*
   OffScreenWebContentsView::CreateViewForPopupWidget(
     content::RenderWidgetHost* render_widget_host){
   // std::cout << "CreateViewForPopupWidget" << std::endl;
-  view_ = new OffScreenWindow(render_widget_host);
+  auto relay = NativeWindowRelay::FromWebContents(web_contents_);
+  view_ = new OffScreenWindow(render_widget_host, relay->window.get());
   return view_;
 }
 

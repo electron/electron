@@ -313,10 +313,12 @@ WebContents::WebContents(v8::Isolate* isolate,
   } else {
     content::WebContents::CreateParams params(session->browser_context());
 
-    params.view = new OffScreenWebContentsView();
-    params.delegate_view = (content::RenderViewHostDelegateView *)params.view;
+    auto view = new OffScreenWebContentsView();
+    params.view = view;
+    params.delegate_view = view;
 
     web_contents = content::WebContents::Create(params);
+		view->SetWebContents(web_contents);
   }
 
   Observe(web_contents);

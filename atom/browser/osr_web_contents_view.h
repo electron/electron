@@ -7,6 +7,7 @@
 
 #include "content/browser/renderer_host/render_view_host_delegate_view.h"
 #include "content/browser/web_contents/web_contents_view.h"
+#include "content/public/browser/web_contents.h"
 
 namespace atom {
 
@@ -15,6 +16,8 @@ class OffScreenWebContentsView : public content::WebContentsView,
 public:
   OffScreenWebContentsView();
   ~OffScreenWebContentsView();
+  
+  void SetWebContents(content::WebContents*);
 
   gfx::NativeView GetNativeView() const override;
   gfx::NativeView GetContentNativeView() const override;
@@ -61,6 +64,7 @@ public:
 
 private:
   content::RenderWidgetHostViewBase* view_;
+  content::WebContents* web_contents_;
 };
 
 }  // namespace atom

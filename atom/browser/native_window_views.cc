@@ -1257,13 +1257,13 @@ void NativeWindowViews::HandleKeyboardEvent(
   }
 }
 
-gfx::Size NativeWindowViews::GetMinimumSize() {
+/*gfx::Size NativeWindowViews::GetMinimumSize() {
   return NativeWindow::GetMinimumSize();
 }
 
 gfx::Size NativeWindowViews::GetMaximumSize() {
   return NativeWindow::GetMaximumSize();
-}
+}*/
 
 bool NativeWindowViews::AcceleratorPressed(const ui::Accelerator& accelerator) {
   return accelerator_util::TriggerAcceleratorTableCommand(

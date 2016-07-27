@@ -5,6 +5,8 @@
 #ifndef ATOM_BROWSER_OSR_WINDOW_H_
 #define ATOM_BROWSER_OSR_WINDOW_H_
 
+#include "atom/browser/native_window.h"
+
 #include "content/browser/renderer_host/render_widget_host_view_base.h"
 #include "content/browser/renderer_host/delegated_frame_host.h"
 #include "content/browser/renderer_host/resize_lock.h"
@@ -66,7 +68,7 @@ public:
   typedef base::Callback<void(const gfx::Rect&,int,int,void*)>
       OnPaintCallback;
 
-  OffScreenWindow(content::RenderWidgetHost*);
+  OffScreenWindow(content::RenderWidgetHost*, NativeWindow*);
   ~OffScreenWindow();
 
   void CreatePlatformWidget();
@@ -196,6 +198,7 @@ private:
   void ResizeRootLayer();
 
   content::RenderWidgetHostImpl* render_widget_host_;
+  NativeWindow* native_window_;
 
   std::unique_ptr<CefCopyFrameGenerator> copy_frame_generator_;
   std::unique_ptr<CefBeginFrameTimer> begin_frame_timer_;

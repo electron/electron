@@ -19,6 +19,7 @@
 #include "base/location.h"
 #include "base/time/time.h"
 #include "ui/gfx/native_widget_types.h"
+#include "ui/views/widget/widget.h"
 #include <iostream>
 #include <chrono>
 #include <thread>
@@ -399,8 +400,10 @@ class CefBeginFrameTimer : public cc::DelayBasedTimeSourceClient {
   DISALLOW_COPY_AND_ASSIGN(CefBeginFrameTimer);
 };
 
-OffScreenWindow::OffScreenWindow(content::RenderWidgetHost* host)
+OffScreenWindow::OffScreenWindow(
+  content::RenderWidgetHost* host, NativeWindow* native_window)
   : render_widget_host_(content::RenderWidgetHostImpl::From(host)),
+    native_window_(native_window),
     software_output_device_(NULL),
     frame_rate_threshold_ms_(0),
     scale_factor_(1.0f),
@@ -417,7 +420,8 @@ OffScreenWindow::OffScreenWindow(content::RenderWidgetHost* host)
 
   root_layer_.reset(new ui::Layer(ui::LAYER_SOLID_COLOR));
 
-  CreatePlatformWidget();
+  //CreatePlatformWidget();
+  compositor_widget_ = native_window_->GetAcceleratedWidget();
 
 #if !defined(OS_MACOSX)
   // On OS X the ui::Compositor is created/owned by the platform view.
@@ -547,7 +551,9 @@ gfx::Vector2dF OffScreenWindow::GetLastScrollOffset() const {
 
 gfx::NativeView OffScreenWindow::GetNativeView() const {
   // std::cout << "GetNativeView" << std::endl;
-  return gfx::NativeView();
+  auto widget = views::Widget::GetWidgetForNativeWindow(
+    native_window_->GetNativeWindow());
+  return widget->GetNativeView();
 }
 
 gfx::NativeViewAccessible OffScreenWindow::GetNativeViewAccessible() {
