@@ -316,6 +316,7 @@ class CefCopyFrameGenerator {
     //   int x = static_cast<int>(pixels[i]);
     // std::cout << std::hex << x << std::dec << std::endl;
     // }
+    TRACE_EVENT0("electron", "OffScreenWindow::OnPaint");
     if (view_->paintCallback) {
       view_->paintCallback->Run(damage_rect, bitmap.width(), bitmap.height(),
                 pixels);
@@ -420,11 +421,13 @@ OffScreenWindow::OffScreenWindow(
 
   root_layer_.reset(new ui::Layer(ui::LAYER_SOLID_COLOR));
 
-  //CreatePlatformWidget();
-  compositor_widget_ = native_window_->GetAcceleratedWidget();
+#if defined(OS_MACOSX)
+  CreatePlatformWidget();
+#endif
 
 #if !defined(OS_MACOSX)
   // On OS X the ui::Compositor is created/owned by the platform view.
+  compositor_widget_ = native_window_->GetAcceleratedWidget();
   compositor_.reset(
       new ui::Compositor(content::GetContextFactory(),
                          base::ThreadTaskRunnerHandle::Get()));
@@ -434,9 +437,6 @@ OffScreenWindow::OffScreenWindow(
   compositor_->SetRootLayer(root_layer_.get());
 
   ResizeRootLayer();
-
-  std::unique_ptr<cc::SharedBitmap> sbp = content::HostSharedBitmapManager::current()->AllocateSharedBitmap(gfx::Size(800, 600));
-  printf("shared bitmap: %p\n", sbp.get());
 }
 
 void OffScreenWindow::ResizeRootLayer() {
@@ -551,9 +551,13 @@ gfx::Vector2dF OffScreenWindow::GetLastScrollOffset() const {
 
 gfx::NativeView OffScreenWindow::GetNativeView() const {
   // std::cout << "GetNativeView" << std::endl;
+#if defined(OS_MACOSX)
+  return gfx::NativeView();
+#elif
   auto widget = views::Widget::GetWidgetForNativeWindow(
     native_window_->GetNativeWindow());
   return widget->GetNativeView();
+#endif
 }
 
 gfx::NativeViewAccessible OffScreenWindow::GetNativeViewAccessible() {
@@ -642,9 +646,10 @@ bool OffScreenWindow::GetScreenColorProfile(std::vector<char>*) {
 void OffScreenWindow::OnSwapCompositorFrame(
   uint32_t output_surface_id,
   std::unique_ptr<cc::CompositorFrame> frame) {
-  base::Time now = base::Time::Now();
+  // base::Time now = base::Time::Now();
   // std::cout << "OnSwapCompositorFrame " << (now - last_time_).InMilliseconds()  << " ms" << std::endl;
-  last_time_ = now;
+  // last_time_ = now;
+  TRACE_EVENT0("electron", "OffScreenWindow::OnSwapCompositorFrame");
 
   // std::cout << output_surface_id << std::endl;
 
