@@ -160,7 +160,7 @@ Protocol::ProtocolError Protocol::UninterceptProtocolInIO(
 
 const base::ListValue*
 Protocol::GetNavigatorHandlers(const std::string& partition) {
-  auto browser_context = brightray::BrowserContext::From(partition, false);
+  auto browser_context = atom::AtomBrowserContext::From(partition, false);
   ProtocolHandlerRegistry* registry =
       ProtocolHandlerRegistryFactory::GetForBrowserContext(
           browser_context.get());
@@ -187,7 +187,7 @@ void Protocol::UnregisterNavigatorHandler(const std::string& partition,
                                           const std::string& spec) {
   ProtocolHandler handler =
       ProtocolHandler::CreateProtocolHandler(scheme, GURL(spec));
-  auto browser_context = brightray::BrowserContext::From(partition, false);
+  auto browser_context = atom::AtomBrowserContext::From(partition, false);
   ProtocolHandlerRegistry* registry =
       ProtocolHandlerRegistryFactory::GetForBrowserContext(
           browser_context.get());
@@ -196,7 +196,7 @@ void Protocol::UnregisterNavigatorHandler(const std::string& partition,
 
 bool Protocol::IsNavigatorProtocolHandled(const std::string& partition,
                                           const std::string& scheme) {
-  auto browser_context = brightray::BrowserContext::From(partition, false);
+  auto browser_context = atom::AtomBrowserContext::From(partition, false);
   ProtocolHandlerRegistry* registry =
       ProtocolHandlerRegistryFactory::GetForBrowserContext(
           browser_context.get());
