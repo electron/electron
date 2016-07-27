@@ -193,6 +193,19 @@ Sets the title displayed aside of the tray icon in the status bar.
 
 Sets when the tray's icon background becomes highlighted (in blue).
 
+**Note:** You can use `highlightMode` with a [`BrowserWindow`](browser-window.md)
+by toggling between `'never'` and `'always'` modes when the window visibility
+changes.
+
+```js
+win.on('show', () => {
+  tray.setHighlightMode('always')
+})
+win.on('hide', () => {
+  tray.setHighlightMode('never')
+})
+```
+
 #### `tray.displayBalloon(options)` _Windows_
 
 * `options` Object
