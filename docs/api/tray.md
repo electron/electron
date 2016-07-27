@@ -198,6 +198,10 @@ by toggling between `'never'` and `'always'` modes when the window visibility
 changes.
 
 ```js
+const {BrowserWindow, Tray} = require('electron')
+
+const win = new BrowserWindow({width: 800, height: 600})
+const tray = new Tray('/path/to/my/icon')
 win.on('show', () => {
   tray.setHighlightMode('always')
 })
