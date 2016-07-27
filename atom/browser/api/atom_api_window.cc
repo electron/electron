@@ -74,14 +74,6 @@ Window::Window(v8::Isolate* isolate, const mate::Dictionary& options) {
   mate::Dictionary web_preferences = mate::Dictionary::CreateEmpty(isolate);
   options.Get(options::kWebPreferences, &web_preferences);
   
-  bool b;
-  if (options.Get("disableGPU", &b) && b) {
-    base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
-    
-    command_line->AppendSwitch(::switches::kDisableGpu);
-    command_line->AppendSwitch(::switches::kDisableGpuCompositing);
-  }
-
   // Copy the backgroundColor to webContents.
   v8::Local<v8::Value> value;
   if (options.Get(options::kBackgroundColor, &value))

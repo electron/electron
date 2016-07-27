@@ -25,8 +25,6 @@
 #include "ui/gfx/switches.h"
 #endif
 
-#include <iostream>
-
 DEFINE_WEB_CONTENTS_USER_DATA_KEY(atom::WebContentsPreferences);
 
 namespace atom {

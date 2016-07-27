@@ -344,24 +344,6 @@ NativeWindowViews::~NativeWindowViews() {
   window_->RemoveObserver(this);
 }
 
-void NativeWindowViews::RenderViewCreated(
-    content::RenderViewHost* render_view_host) {
-  std::cout << "NativeWindowViews::RenderViewCreated" << std::endl;
-  NativeWindow::RenderViewCreated(render_view_host);
-
-  content::RenderWidgetHostImpl* impl = content::RenderWidgetHostImpl::FromID(
-      render_view_host->GetProcess()->GetID(),
-      render_view_host->GetRoutingID());
-  if (impl) {
-    //auto win = new OffScreenWindow(impl);
-
-    /*auto view = widget()->GetContentsView();
-    view->AcquireLayer();
-    view->SetLayer(win->DelegatedFrameHostGetLayer());
-    win->DelegatedFrameHostGetLayer()->set_delegate(view);*/
-  }
-}
-
 void NativeWindowViews::Close() {
   if (!IsClosable()) {
     WindowList::WindowCloseCancelled(this);

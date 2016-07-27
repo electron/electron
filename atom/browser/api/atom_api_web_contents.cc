@@ -287,6 +287,9 @@ WebContents::WebContents(v8::Isolate* isolate,
     type_ = WEB_VIEW;
   else if (options.Get("isBackgroundPage", &b) && b)
     type_ = BACKGROUND_PAGE;
+    
+  bool offscreen = false;
+  options.Get("offScreen", &offscreen);
 
   // Obtain the session.
   std::string partition;
@@ -310,8 +313,8 @@ WebContents::WebContents(v8::Isolate* isolate,
     guest_delegate_.reset(new WebViewGuestDelegate);
     params.guest_delegate = guest_delegate_.get();
     web_contents = content::WebContents::Create(params);
-  } else {
-    content::WebContents::CreateParams params(session->browser_context());
+  } else if(offscreen) {
+		content::WebContents::CreateParams params(session->browser_context());
 
     auto view = new OffScreenWebContentsView();
     params.view = view;
@@ -319,6 +322,9 @@ WebContents::WebContents(v8::Isolate* isolate,
 
     web_contents = content::WebContents::Create(params);
 		view->SetWebContents(web_contents);
+	} else {
+		content::WebContents::CreateParams params(session->browser_context());
+    web_contents = content::WebContents::Create(params);
   }
 
   Observe(web_contents);
