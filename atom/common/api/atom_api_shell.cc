@@ -98,37 +98,18 @@ mate::Dictionary ReadShortcutLink(v8::Isolate* isolate,
   using base::win::ShortcutProperties;
   mate::Dictionary options = mate::Dictionary::CreateEmpty(isolate);
   base::win::ScopedCOMInitializer com_initializer;
-  // We have to call ResolveShortcutProperties one by one for each property
-  // because the API doesn't allow us to only get existing properties.
   base::win::ShortcutProperties properties;
-  if (base::win::ResolveShortcutProperties(
-          path, ShortcutProperties::PROPERTIES_TARGET, &properties)) {
-    options.Set("target", properties.target);
-  } else {
-    // No need to continue if it doesn't even have a target.
+  if (!base::win::ResolveShortcutProperties(
+          path, ShortcutProperties::PROPERTIES_ALL, &properties)) {
     return options;
   }
-  if (base::win::ResolveShortcutProperties(
-          path, ShortcutProperties::PROPERTIES_WORKING_DIR, &properties)) {
-    options.Set("cwd", properties.working_dir);
-  }
-  if (base::win::ResolveShortcutProperties(
-          path, ShortcutProperties::PROPERTIES_ARGUMENTS, &properties)) {
-    options.Set("args", properties.arguments);
-  }
-  if (base::win::ResolveShortcutProperties(
-          path, ShortcutProperties::PROPERTIES_DESCRIPTION, &properties)) {
-    options.Set("description", properties.description);
-  }
-  if (base::win::ResolveShortcutProperties(
-          path, ShortcutProperties::PROPERTIES_ICON, &properties)) {
-    options.Set("icon", properties.icon);
-    options.Set("iconIndex", properties.icon_index);
-  }
-  if (base::win::ResolveShortcutProperties(
-          path, ShortcutProperties::PROPERTIES_ICON, &properties)) {
-    options.Set("appUserModelId", properties.app_id);
-  }
+  options.Set("target", properties.target);
+  options.Set("cwd", properties.working_dir);
+  options.Set("args", properties.arguments);
+  options.Set("description", properties.description);
+  options.Set("icon", properties.icon);
+  options.Set("iconIndex", properties.icon_index);
+  options.Set("appUserModelId", properties.app_id);
   return options;
 }
 #endif
