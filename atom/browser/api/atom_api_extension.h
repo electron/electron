@@ -54,7 +54,7 @@ class Extension : public content::NotificationObserver {
   static bool IsBackgroundPageUrl(GURL url,
                                     content::BrowserContext* browser_context);
   static bool IsBackgroundPageWebContents(content::WebContents* web_contents);
-  static bool IsBackgroundPage(WebContents* web_contents);
+  static bool IsBackgroundPage(const WebContents* web_contents);
 
   static v8::Local<v8::Value> TabValue(v8::Isolate* isolate,
                                          WebContents* web_contents);

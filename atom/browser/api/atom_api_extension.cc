@@ -242,7 +242,7 @@ bool Extension::IsBackgroundPageWebContents(
 }
 
 // static
-bool Extension::IsBackgroundPage(WebContents* web_contents) {
+bool Extension::IsBackgroundPage(const WebContents* web_contents) {
   return IsBackgroundPageWebContents(web_contents->web_contents());
 }
 
