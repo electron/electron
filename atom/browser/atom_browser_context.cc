@@ -208,14 +208,14 @@ void AtomBrowserContext::RegisterPrefs(PrefRegistrySimple* pref_registry) {
 }
 
 // static
-scoped_refptr<AtomBrowserContext> AtomBrowserContext::From(
-    const std::string& partition, bool in_memory,
-    const base::DictionaryValue& options) {
-  auto browser_context = brightray::BrowserContext::Get(partition, in_memory);
-  if (browser_context)
-    return static_cast<AtomBrowserContext*>(browser_context.get());
+// scoped_refptr<AtomBrowserContext> AtomBrowserContext::From(
+//     const std::string& partition, bool in_memory,
+//     const base::DictionaryValue& options) {
+//   auto browser_context = brightray::BrowserContext::Get(partition, in_memory);
+//   if (browser_context)
+//     return static_cast<AtomBrowserContext*>(browser_context.get());
 
-  return new AtomBrowserContext(partition, in_memory, options);
-}
+//   return new AtomBrowserContext(partition, in_memory, options);
+// }
 
 }  // namespace atom

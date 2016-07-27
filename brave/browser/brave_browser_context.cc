@@ -54,7 +54,7 @@ BraveBrowserContext::BraveBrowserContext(const std::string& partition,
       partition_(partition) {
   if (in_memory) {
     original_context_ = static_cast<BraveBrowserContext*>(
-        BraveBrowserContext::From(partition, false).get());
+        atom::AtomBrowserContext::From(partition, false).get());
     original_context()->otr_context_ = this;
   }
 }
@@ -245,18 +245,21 @@ content::ResourceContext* BraveBrowserContext::GetResourceContext() {
 
 }  // namespace brave
 
-namespace brightray {
+namespace atom {
 
 // TODO(bridiver) find a better way to do this
 // static
-/*
-scoped_refptr<BrowserContext> BrowserContext::Create(
+scoped_refptr<AtomBrowserContext> AtomBrowserContext::From(
     const std::string& partition, bool in_memory,
     const base::DictionaryValue& options) {
-  return make_scoped_refptr(
-      new brave::BraveBrowserContext(partition, in_memory, options));
+  auto browser_context = brightray::BrowserContext::Get(partition, in_memory);
+  if (browser_context)
+    return static_cast<AtomBrowserContext*>(browser_context.get());
+
+  auto context = new brave::BraveBrowserContext(partition, in_memory, options);
+  context->InitPrefs();
+  return context;
 }
-*/
 
 }  // namespace brightray
 

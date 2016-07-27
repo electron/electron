@@ -581,9 +581,11 @@ mate::Handle<Session> Session::FromPartition(
   } else if (base::StartsWith(partition, kPersistPrefix,
                               base::CompareCase::SENSITIVE)) {
     std::string name = partition.substr(8);
-    browser_context = AtomBrowserContext::From(name, false, options);
+    browser_context = AtomBrowserContext::From(
+        name == "default" ? "" : name, false, options);
   } else {
-    browser_context = AtomBrowserContext::From(partition, true, options);
+    browser_context = AtomBrowserContext::From(
+        partition == "default" ? "" : partition, true, options);
   }
   return CreateFrom(isolate,
                     static_cast<AtomBrowserContext*>(browser_context.get()));
