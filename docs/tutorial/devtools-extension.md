@@ -29,7 +29,10 @@ Using the [React Developer Tools][react-devtools] as example:
    * on macOS it is `~/Library/Application Support/Google/Chrome/Default/Extensions`.
 1. Pass the location of the extension to `BrowserWindow.addDevToolsExtension`
    API, for the React Developer Tools, it is something like:
-   `~/Library/Application Support/Google/Chrome/Default/Extensions/fmkadmapgofadopljbjfkapdkoienihi/0.14.10_0`
+   `~/Library/Application Support/Google/Chrome/Default/Extensions/fmkadmapgofadopljbjfkapdkoienihi/0.15.0_0`
+
+**Note:** The `BrowserWindow.addDevToolsExtension` API cannot be called before the
+ready event of the app module is emitted.
 
 The name of the extension is returned by `BrowserWindow.addDevToolsExtension`,
 and you can pass the name of the extension to the `BrowserWindow.removeDevToolsExtension`
