@@ -10,23 +10,18 @@
 
 namespace atom {
 
-OffScreenOutputDevice::OffScreenOutputDevice(const OnPaintCallback& callback)
-    : callback_(callback),
+OffScreenOutputDevice::OffScreenOutputDevice(bool transparent,
+  const OnPaintCallback& callback)
+    : transparent_(transparent),
+      callback_(callback),
       active_(false) {
   DCHECK(!callback_.is_null());
 }
 
-OffScreenOutputDevice::~OffScreenOutputDevice() {
-  std::cout << "~OffScreenOutputDevice" << std::endl;
-}
-
-void OffScreenOutputDevice::SetPaintCallback(const OnPaintCallback* callback) {
-  callback_.reset(callback);
-}
+OffScreenOutputDevice::~OffScreenOutputDevice() { }
 
 void OffScreenOutputDevice::Resize(
   const gfx::Size& pixel_size, float scale_factor) {
-  std::cout << "Resize" << std::endl;
   std::cout << pixel_size.width() << "x" << pixel_size.height() << std::endl;
 
   scale_factor_ = scale_factor;
@@ -38,14 +33,15 @@ void OffScreenOutputDevice::Resize(
   bitmap_.reset(new SkBitmap);
   bitmap_->allocN32Pixels(viewport_pixel_size_.width(),
                           viewport_pixel_size_.height(),
-                          false);
+                          !transparent_);
   if (bitmap_->drawsNothing()) {
-    std::cout << "drawsNothing" << std::endl;
     NOTREACHED();
     bitmap_.reset(NULL);
     return;
   }
-  bitmap_->eraseARGB(0, 0, 0, 0);
+
+  if (transparent_)
+    bitmap_->eraseARGB(0, 0, 0, 0);
 
   canvas_.reset(new SkCanvas(*bitmap_.get()));
 }

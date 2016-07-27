@@ -309,7 +309,6 @@ class CefCopyFrameGenerator {
 
     uint8_t* pixels = reinterpret_cast<uint8_t*>(bitmap.getPixels());
 
-    std::cout << "ASDADASDA" << std::endl;
     view_->OnPaint(damage_rect, bitmap.width(), bitmap.height(), pixels);
 
     // Reset the frame retry count on successful frame generation.
@@ -476,8 +475,6 @@ void OffScreenWindow::SendBeginFrame(base::TimeTicks frame_time,
 
 void OffScreenWindow::SetPaintCallback(const OnPaintCallback* callback) {
   paintCallback.reset(callback);
-  if (software_output_device_) 
-    software_output_device_->SetPaintCallback(paintCallback.get());
 }
 
 OffScreenWindow::~OffScreenWindow() {
@@ -880,8 +877,8 @@ std::unique_ptr<cc::SoftwareOutputDevice>
   DCHECK_EQ(compositor_.get(), compositor);
   DCHECK(!copy_frame_generator_);
   DCHECK(!software_output_device_);
-  std::cout << "CREATEEEEE" << std::endl;
-  software_output_device_ = new OffScreenOutputDevice(
+
+  software_output_device_ = new OffScreenOutputDevice(true,
       base::Bind(&OffScreenWindow::OnPaint,
                  weak_ptr_factory_.GetWeakPtr()));
   return base::WrapUnique(software_output_device_);
