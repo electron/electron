@@ -134,6 +134,26 @@ void AtomBrowserClient::OverrideSiteInstanceForNavigation(
     content::SiteInstance* current_instance,
     const GURL& url,
     content::SiteInstance** new_instance) {
+
+  content::WebContents* web_contents =
+      GetWebContentsFromProcessID(current_instance->GetProcess()->GetID());
+  // processes with no disabled may not have a web_contents with the
+  // id that GetWebContentsFromProcessID looks for
+  if (!web_contents)
+    return;
+  WebContentsPreferences* web_contents_prefs =
+      WebContentsPreferences::FromWebContents(web_contents);
+
+  if (web_contents_prefs) {
+    auto web_preferences = web_contents_prefs->web_preferences();
+    bool node_integration = true;
+    web_preferences->GetBoolean(options::kNodeIntegration, &node_integration);
+    if (!node_integration) {
+      // only renderers with node integration need to be restarted
+      return;
+    }
+  }
+
   if (g_suppress_renderer_process_restart) {
     g_suppress_renderer_process_restart = false;
     return;
