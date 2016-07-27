@@ -626,6 +626,13 @@ Executes the editing command `cut` in web page.
 
 Executes the editing command `copy` in web page.
 
+### `contents.copyImageAt(x, y)`
+
+* `x` Integer
+* `y` Integer
+
+Copy the image at the given position to the clipboard.
+
 #### `contents.paste()`
 
 Executes the editing command `paste` in web page.
