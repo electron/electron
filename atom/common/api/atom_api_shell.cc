@@ -93,15 +93,16 @@ bool WriteShortcutLink(const base::FilePath& shortcut_path,
       shortcut_path, properties, operation);
 }
 
-mate::Dictionary ReadShortcutLink(v8::Isolate* isolate,
-                                  const base::FilePath& path) {
+v8::Local<v8::Value> ReadShortcutLink(mate::Arguments* args,
+                                      const base::FilePath& path) {
   using base::win::ShortcutProperties;
-  mate::Dictionary options = mate::Dictionary::CreateEmpty(isolate);
+  mate::Dictionary options = mate::Dictionary::CreateEmpty(args->isolate());
   base::win::ScopedCOMInitializer com_initializer;
   base::win::ShortcutProperties properties;
   if (!base::win::ResolveShortcutProperties(
           path, ShortcutProperties::PROPERTIES_ALL, &properties)) {
-    return options;
+    args->ThrowError("Failed to read shortcut link");
+    return v8::Null(args->isolate());
   }
   options.Set("target", properties.target);
   options.Set("cwd", properties.working_dir);
@@ -110,7 +111,7 @@ mate::Dictionary ReadShortcutLink(v8::Isolate* isolate,
   options.Set("icon", properties.icon);
   options.Set("iconIndex", properties.icon_index);
   options.Set("appUserModelId", properties.app_id);
-  return options;
+  return options.GetHandle();
 }
 #endif
 
