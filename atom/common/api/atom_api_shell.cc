@@ -12,6 +12,7 @@
 #include "native_mate/dictionary.h"
 
 #if defined(OS_WIN)
+#include "base/win/scoped_com_initializer.h"
 #include "base/win/shortcut.h"
 #endif
 
@@ -87,6 +88,7 @@ bool WriteShortcutLink(const base::FilePath& shortcut_path,
   if (options.Get("appUserModelId", &str))
     properties.set_app_id(str);
 
+  base::win::ScopedCOMInitializer com_initializer;
   return base::win::CreateOrUpdateShortcutLink(
       shortcut_path, properties, operation);
 }
@@ -95,6 +97,7 @@ mate::Dictionary ReadShortcutLink(v8::Isolate* isolate,
                                   const base::FilePath& path) {
   using base::win::ShortcutProperties;
   mate::Dictionary options = mate::Dictionary::CreateEmpty(isolate);
+  base::win::ScopedCOMInitializer com_initializer;
   // We have to call ResolveShortcutProperties one by one for each property
   // because the API doesn't allow us to only get existing properties.
   base::win::ShortcutProperties properties;
