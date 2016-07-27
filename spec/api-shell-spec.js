@@ -4,7 +4,7 @@ const path = require('path')
 const os = require('os')
 const {shell} = require('electron')
 
-describe('shell module', function() {
+describe('shell module', function () {
   if (process.platform !== 'win32') return
 
   const fixtures = path.resolve(__dirname, 'fixtures')
@@ -34,7 +34,7 @@ describe('shell module', function() {
   describe('shell.writeShortcutLink(shortcutPath[, operation], options)', function () {
     const tmpShortcut = path.join(os.tmpdir(), `${Date.now()}.lnk`)
 
-    afterEach(function() {
+    afterEach(function () {
       fs.unlinkSync(tmpShortcut)
     })
 
