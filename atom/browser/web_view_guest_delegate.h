@@ -60,8 +60,6 @@ class WebViewGuestDelegate : public content::BrowserPluginGuestDelegate,
   int GetNextInstanceId();
  protected:
   // content::WebContentsObserver:
-  void DidFinishNavigation(
-      content::NavigationHandle* navigation_handle) override;
   void DidStartProvisionalLoadForFrame(
       content::RenderFrameHost* render_frame_host,
       const GURL& validated_url,

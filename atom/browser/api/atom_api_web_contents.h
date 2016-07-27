@@ -352,8 +352,9 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void DidGetRedirectForResourceRequest(
       content::RenderFrameHost* render_frame_host,
       const content::ResourceRedirectDetails& details) override;
-  void DidFinishNavigation(
-      content::NavigationHandle* navigation_handle) override;
+  void DidNavigateMainFrame(
+      const content::LoadCommittedDetails& details,
+      const content::FrameNavigateParams& params) override;
   bool OnMessageReceived(const IPC::Message& message) override;
   void WebContentsDestroyed() override;
   void NavigationEntryCommitted(

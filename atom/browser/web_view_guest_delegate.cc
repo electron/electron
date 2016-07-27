@@ -175,15 +175,6 @@ void WebViewGuestDelegate::SetSize(const SetSizeParams& params) {
   auto_size_enabled_ = enable_auto_size;
 }
 
-void WebViewGuestDelegate::DidFinishNavigation(
-    content::NavigationHandle* navigation_handle) {
-  if (navigation_handle->HasCommitted() && !navigation_handle->IsErrorPage()) {
-    auto is_main_frame = navigation_handle->IsInMainFrame();
-    auto url = navigation_handle->GetURL();
-    api_web_contents_->Emit("load-commit", url, is_main_frame);
-  }
-}
-
 void WebViewGuestDelegate::DidStartProvisionalLoadForFrame(
       content::RenderFrameHost* render_frame_host,
       const GURL& url,

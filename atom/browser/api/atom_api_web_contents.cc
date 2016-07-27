@@ -827,27 +827,13 @@ void WebContents::DidGetRedirectForResourceRequest(
        details.headers.get());
 }
 
-void WebContents::DidFinishNavigation(
-    content::NavigationHandle* navigation_handle) {
-  bool is_main_frame = navigation_handle->IsInMainFrame();
-  if (navigation_handle->HasCommitted() && !navigation_handle->IsErrorPage()) {
-    auto url = navigation_handle->GetURL();
-    bool is_in_page = navigation_handle->IsSamePage();
-    if (is_main_frame && !is_in_page) {
-      Emit("did-navigate", url);
-    } else if (is_in_page) {
-      Emit("did-navigate-in-page", url);
-    }
-  } else {
-    auto url = navigation_handle->GetURL();
-    int code = navigation_handle->GetNetErrorCode();
-    auto description = net::ErrorToShortString(code);
-    Emit("did-fail-provisional-load", code, description, url, is_main_frame);
-
-    // Do not emit "did-fail-load" for canceled requests.
-    if (code != net::ERR_ABORTED)
-      Emit("did-fail-load", code, description, url, is_main_frame);
-  }
+void WebContents::DidNavigateMainFrame(
+    const content::LoadCommittedDetails& details,
+    const content::FrameNavigateParams& params) {
+  if (details.is_navigation_to_different_page())
+    Emit("did-navigate", params.url);
+  else if (details.is_in_page)
+    Emit("did-navigate-in-page", params.url);
 }
 
 void WebContents::TitleWasSet(content::NavigationEntry* entry,
