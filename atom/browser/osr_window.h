@@ -62,7 +62,7 @@ class OffScreenWindow
   #if defined(OS_MACOSX)
     public ui::AcceleratedWidgetMacNSView,
   #endif
-    // public ui::CompositorDelegate,
+    public ui::CompositorDelegate,
     public content::DelegatedFrameHostClient {
 public:
   typedef base::Callback<void(const gfx::Rect&,int,int,void*)>
@@ -170,8 +170,8 @@ public:
 
   bool IsAutoResizeEnabled() const;
 
-  // std::unique_ptr<cc::SoftwareOutputDevice> CreateSoftwareOutputDevice(
-  //     ui::Compositor* compositor) override;
+  std::unique_ptr<cc::SoftwareOutputDevice> CreateSoftwareOutputDevice(
+      ui::Compositor* compositor) override;
   void OnSetNeedsBeginFrames(bool enabled);
 
 #if defined(OS_MACOSX)

@@ -1,5 +1,10 @@
-const {app, BrowserWindow} = require('electron')
+const {app, BrowserWindow, contentTracing} = require('electron')
 const path = require('path')
+
+const options = {
+  categoryFilter: '*',
+  traceOptions: 'record-until-full,enable-sampling'
+};
 
 let mainWindow1 = null
 let mainWindow2 = null
@@ -18,6 +23,7 @@ app.on('window-all-closed', () => {
 exports.load = (appUrl) => {
   app.on('ready', () => {
     mainWindow1 = new BrowserWindow({
+      disableGPU: true,
       width: 800,
       height: 600,
       autoHideMenuBar: true,
@@ -44,35 +50,46 @@ exports.load = (appUrl) => {
 
       start1 = end1
     })
+    
+    /*contentTracing.startRecording(options, () => {
+      console.log('Tracing started');
 
-    // mainWindow2 = new BrowserWindow({
-    //   width: 800,
-    //   height: 600,
-    //   autoHideMenuBar: true,
-    //   backgroundColor: '#FFFFFF',
-    //   useContentSize: true,
-    //   webPreferences: {
-    //     nodeIntegration: false
-    //   }
-    // })
-    // mainWindow2.loadURL(appUrl)
-    // mainWindow2.focus()
-    // mainWindow2.webContents.on('dom-ready', () => {
-    //   mainWindow2.webContents.beginFrameSubscription(() => {
-    //     console.log("asd")
-    //   })
-    // })
-    //
-    // var start2, end2
-    // start2 = +new Date();
-    // mainWindow2.webContents.on('paint', (e, rect, w, h, data) => {
-    //   end2 = +new Date();
-    //
-    //   const d = end2 - start2
-    //   console.log(`browser #2: ${d < 10 ? ` ${d}` : d} ms`)
-    //
-    //   start2 = end2
-    // })
+      setTimeout(() => {
+        contentTracing.stopRecording('', (path) => {
+          console.log('Tracing data recorded to ' + path);
+        });
+      }, 5000);
+    });*/
+
+    mainWindow2 = new BrowserWindow({
+      //disableGPU: false,
+      width: 800,
+      height: 600,
+      autoHideMenuBar: true,
+      backgroundColor: '#FFFFFF',
+      useContentSize: true,
+      webPreferences: {
+        nodeIntegration: false
+      }
+    })
+    mainWindow2.loadURL('http://mrdoob.com/lab/javascript/requestanimationframe/')
+    mainWindow2.focus()
+    mainWindow2.webContents.on('dom-ready', () => {
+      mainWindow2.webContents.beginFrameSubscription(() => {
+        console.log("asd")
+      })
+    })
+    
+    var start2, end2
+    start2 = +new Date();
+    mainWindow2.webContents.on('paint', (e, rect, w, h, data) => {
+      end2 = +new Date();
+    
+      const d = end2 - start2
+      // console.log(`browser #2: ${d < 10 ? ` ${d}` : d} ms`)
+    
+      start2 = end2
+    })
     //
     // mainWindow3 = new BrowserWindow({
     //   width: 800,

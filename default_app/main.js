@@ -329,5 +329,6 @@ if (option.file && !option.webdriver) {
   startRepl()
 } else {
   const indexPath = path.join(__dirname, '/index.html')
-  loadApplicationByUrl(`http://mrdoob.com/lab/javascript/requestanimationframe/`)
+  loadApplicationByUrl(`http://www.e-try.com/black.htm`)
+  //loadApplicationByUrl(`http://mrdoob.com/lab/javascript/requestanimationframe/`)
 }

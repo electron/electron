@@ -430,7 +430,7 @@ OffScreenWindow::OffScreenWindow(
                          base::ThreadTaskRunnerHandle::Get()));
   compositor_->SetAcceleratedWidget(compositor_widget_);
 #endif
-  // compositor_->SetDelegate(this);
+  compositor_->SetDelegate(this);
   compositor_->SetRootLayer(root_layer_.get());
 
   ResizeRootLayer();
@@ -894,16 +894,15 @@ void OffScreenWindow::DelegatedFrameHostUpdateVSyncParameters(
   render_widget_host_->UpdateVSyncParameters(timebase, interval);
 }
 
-// std::unique_ptr<cc::SoftwareOutputDevice>
-// OffScreenWindow::CreateSoftwareOutputDevice(
-//     ui::Compositor* compositor) {
-//   DCHECK_EQ(compositor_.get(), compositor);
-//   DCHECK(!copy_frame_generator_);
-//   DCHECK(!software_output_device_);
-//   std::cout << "CREATED" << std::endl;
-//   software_output_device_ = new OffScreenOutputDevice();
-//   return base::WrapUnique(software_output_device_);
-// }
+std::unique_ptr<cc::SoftwareOutputDevice> 
+    OffScreenWindow::CreateSoftwareOutputDevice(ui::Compositor* compositor) {
+  DCHECK_EQ(compositor_.get(), compositor);
+  DCHECK(!copy_frame_generator_);
+  DCHECK(!software_output_device_);
+  std::cout << "CREATED" << std::endl;
+  software_output_device_ = new OffScreenOutputDevice();
+  return base::WrapUnique(software_output_device_);
+}
 
 void OffScreenWindow::OnSetNeedsBeginFrames(bool enabled) {
   SetFrameRate();

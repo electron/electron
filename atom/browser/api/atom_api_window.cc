@@ -16,7 +16,9 @@
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/node_includes.h"
 #include "atom/common/options_switches.h"
+#include "base/command_line.h"
 #include "content/public/browser/render_process_host.h"
+#include "content/public/common/content_switches.h"
 #include "native_mate/constructor.h"
 #include "native_mate/dictionary.h"
 #include "ui/gfx/geometry/rect.h"
@@ -71,6 +73,14 @@ Window::Window(v8::Isolate* isolate, const mate::Dictionary& options) {
   // Use options.webPreferences to create WebContents.
   mate::Dictionary web_preferences = mate::Dictionary::CreateEmpty(isolate);
   options.Get(options::kWebPreferences, &web_preferences);
+  
+  bool b;
+  if (options.Get("disableGPU", &b) && b) {
+    base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
+    
+    command_line->AppendSwitch(::switches::kDisableGpu);
+    command_line->AppendSwitch(::switches::kDisableGpuCompositing);
+  }
 
   // Copy the backgroundColor to webContents.
   v8::Local<v8::Value> value;
