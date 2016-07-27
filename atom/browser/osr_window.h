@@ -54,8 +54,8 @@ class NSTextInputContext;
 
 namespace atom {
 
-class CefCopyFrameGenerator;
-class CefBeginFrameTimer;
+class AtomCopyFrameGenerator;
+class AtomBeginFrameTimer;
 
 class OffScreenWindow
   : public content::RenderWidgetHostViewBase,
@@ -202,8 +202,8 @@ private:
   content::RenderWidgetHostImpl* render_widget_host_;
   NativeWindow* native_window_;
 
-  std::unique_ptr<CefCopyFrameGenerator> copy_frame_generator_;
-  std::unique_ptr<CefBeginFrameTimer> begin_frame_timer_;
+  std::unique_ptr<AtomCopyFrameGenerator> copy_frame_generator_;
+  std::unique_ptr<AtomBeginFrameTimer> begin_frame_timer_;
 
   OffScreenOutputDevice* software_output_device_;
 

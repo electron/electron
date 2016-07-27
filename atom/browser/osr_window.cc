@@ -57,12 +57,9 @@ const int kFrameRetryLimit = 2;
 
 namespace atom {
 
-// Used for managing copy requests when GPU compositing is enabled. Based on
-// RendererOverridesHandler::InnerSwapCompositorFrame and
-// DelegatedFrameHost::CopyFromCompositingSurface.
-class CefCopyFrameGenerator {
+class AtomCopyFrameGenerator {
  public:
-  CefCopyFrameGenerator(int frame_rate_threshold_ms,
+  AtomCopyFrameGenerator(int frame_rate_threshold_ms,
                         OffScreenWindow* view)
     : frame_rate_threshold_ms_(frame_rate_threshold_ms),
       view_(view),
@@ -89,7 +86,6 @@ class CefCopyFrameGenerator {
 
     // Don't attempt to generate a frame while one is currently in-progress.
     if (frame_in_progress_) {
-      // std::cout << "FRAME IN PROGRESS" << std::endl;
       return;
     }
     frame_in_progress_ = true;
@@ -100,7 +96,7 @@ class CefCopyFrameGenerator {
     if (frame_rate_delta < frame_rate_threshold_ms_) {
       // Generate the frame after the necessary time has passed.
       CEF_POST_DELAYED_TASK(CEF_UIT,
-          base::Bind(&CefCopyFrameGenerator::InternalGenerateCopyFrame,
+          base::Bind(&AtomCopyFrameGenerator::InternalGenerateCopyFrame,
                      weak_ptr_factory_.GetWeakPtr()),
           frame_rate_threshold_ms_ - frame_rate_delta);
       return;
@@ -131,7 +127,7 @@ class CefCopyFrameGenerator {
     // SkBitmap in the GPU codepath and avoid scaling where possible.
     std::unique_ptr<cc::CopyOutputRequest> request =
         cc::CopyOutputRequest::CreateRequest(base::Bind(
-            &CefCopyFrameGenerator::CopyFromCompositingSurfaceHasResult,
+            &AtomCopyFrameGenerator::CopyFromCompositingSurfaceHasResult,
             weak_ptr_factory_.GetWeakPtr(),
             damage_rect));
 
@@ -165,7 +161,7 @@ class CefCopyFrameGenerator {
       std::unique_ptr<cc::CopyOutputResult> result) {
     DCHECK(result->HasTexture());
     base::ScopedClosureRunner scoped_callback_runner(
-        base::Bind(&CefCopyFrameGenerator::OnCopyFrameCaptureFailure,
+        base::Bind(&AtomCopyFrameGenerator::OnCopyFrameCaptureFailure,
                    weak_ptr_factory_.GetWeakPtr(),
                    damage_rect));
 
@@ -205,14 +201,6 @@ class CefCopyFrameGenerator {
 
     ignore_result(scoped_callback_runner.Release());
 
-    // base::Time now = base::Time::Now();
-    // std::cout << "delta: " << (now - last_time_).InMilliseconds() << " ms" << std::endl;
-    // last_time_ = now;
-    // frame_in_progress_ = false;
-    // if (view_->paintCallback) {
-    //   view_->paintCallback->Run(damage_rect, bitmap_->width(), bitmap_->height(),
-    //             pixels);
-    // }
     gl_helper->CropScaleReadbackAndCleanMailbox(
         texture_mailbox.mailbox(),
         texture_mailbox.sync_token(),
@@ -222,7 +210,7 @@ class CefCopyFrameGenerator {
         pixels,
         kN32_SkColorType,
         base::Bind(
-            &CefCopyFrameGenerator::CopyFromCompositingSurfaceFinishedProxy,
+            &AtomCopyFrameGenerator::CopyFromCompositingSurfaceFinishedProxy,
             weak_ptr_factory_.GetWeakPtr(),
             base::Passed(&release_callback),
             damage_rect,
@@ -232,7 +220,7 @@ class CefCopyFrameGenerator {
   }
 
   static void CopyFromCompositingSurfaceFinishedProxy(
-      base::WeakPtr<CefCopyFrameGenerator> generator,
+      base::WeakPtr<AtomCopyFrameGenerator> generator,
       std::unique_ptr<cc::SingleReleaseCallback> release_callback,
       const gfx::Rect& damage_rect,
       std::unique_ptr<SkBitmap> bitmap,
@@ -325,7 +313,7 @@ class CefCopyFrameGenerator {
       // Another frame was requested while the current frame was in-progress.
       // Generate the pending frame now.
       CEF_POST_TASK(CEF_UIT,
-          base::Bind(&CefCopyFrameGenerator::GenerateCopyFrame,
+          base::Bind(&AtomCopyFrameGenerator::GenerateCopyFrame,
                      weak_ptr_factory_.GetWeakPtr(),
                      force_frame,
                      gfx::Rect()));
@@ -344,16 +332,16 @@ class CefCopyFrameGenerator {
   std::unique_ptr<SkBitmap> bitmap_;
   gfx::Rect pending_damage_rect_;
 
-  base::WeakPtrFactory<CefCopyFrameGenerator> weak_ptr_factory_;
+  base::WeakPtrFactory<AtomCopyFrameGenerator> weak_ptr_factory_;
 
-  DISALLOW_COPY_AND_ASSIGN(CefCopyFrameGenerator);
+  DISALLOW_COPY_AND_ASSIGN(AtomCopyFrameGenerator);
 };
 
 // Used to control the VSync rate in subprocesses when BeginFrame scheduling is
 // enabled.
-class CefBeginFrameTimer : public cc::DelayBasedTimeSourceClient {
+class AtomBeginFrameTimer : public cc::DelayBasedTimeSourceClient {
  public:
-  CefBeginFrameTimer(int frame_rate_threshold_ms,
+  AtomBeginFrameTimer(int frame_rate_threshold_ms,
                      const base::Closure& callback)
       : callback_(callback) {
     time_source_ = cc::DelayBasedTimeSource::Create(
@@ -385,7 +373,7 @@ class CefBeginFrameTimer : public cc::DelayBasedTimeSourceClient {
   const base::Closure callback_;
   std::unique_ptr<cc::DelayBasedTimeSource> time_source_;
 
-  DISALLOW_COPY_AND_ASSIGN(CefBeginFrameTimer);
+  DISALLOW_COPY_AND_ASSIGN(AtomBeginFrameTimer);
 };
 
 OffScreenWindow::OffScreenWindow(
@@ -648,7 +636,7 @@ void OffScreenWindow::OnSwapCompositorFrame(
     } else {
       if (!copy_frame_generator_.get()) {
         copy_frame_generator_.reset(
-            new CefCopyFrameGenerator(frame_rate_threshold_ms_, this));
+            new AtomCopyFrameGenerator(frame_rate_threshold_ms_, this));
       }
 
       cc::RenderPass* root_pass =
@@ -915,7 +903,7 @@ void OffScreenWindow::SetFrameRate() {
   if (begin_frame_timer_.get()) {
     begin_frame_timer_->SetFrameRateThresholdMs(frame_rate_threshold_ms_);
   } else {
-    begin_frame_timer_.reset(new CefBeginFrameTimer(
+    begin_frame_timer_.reset(new AtomBeginFrameTimer(
         frame_rate_threshold_ms_,
         base::Bind(&OffScreenWindow::OnBeginFrameTimerTick,
                    weak_ptr_factory_.GetWeakPtr())));
