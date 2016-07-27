@@ -11,6 +11,35 @@
 #include "atom/common/node_includes.h"
 #include "native_mate/dictionary.h"
 
+#if defined(OS_WIN)
+#include "base/win/shortcut.h"
+#endif
+
+namespace mate {
+
+
+template<>
+struct Converter<base::win::ShortcutOperation> {
+  static bool FromV8(v8::Isolate* isolate, v8::Handle<v8::Value> val,
+                     base::win::ShortcutOperation* out) {
+    std::string operation;
+    if (!ConvertFromV8(isolate, val, & operation))
+      return false;
+    if (operation.empty() || operation == "create")
+      *out = base::win::SHORTCUT_CREATE_ALWAYS;
+    else if (operation == "update")
+      *out = base::win::SHORTCUT_UPDATE_EXISTING;
+    else if (operation == "replace")
+      *out = base::win::SHORTCUT_REPLACE_EXISTING;
+    else
+      return false;
+    return true;
+  }
+};
+
+
+}  // namespace mate
+
 namespace {
 
 bool OpenExternal(
@@ -30,6 +59,77 @@ bool OpenExternal(
   return platform_util::OpenExternal(url, activate);
 }
 
+#if defined(OS_WIN)
+bool WriteShortcutLink(const base::FilePath& shortcut_path,
+                       mate::Arguments* args) {
+  base::win::ShortcutOperation operation = base::win::SHORTCUT_CREATE_ALWAYS;
+  args->GetNext(&operation);
+  mate::Dictionary options = mate::Dictionary::CreateEmpty(args->isolate());
+  if (!args->GetNext(&options)) {
+    args->ThrowError();
+    return false;
+  }
+
+  base::win::ShortcutProperties properties;
+  base::FilePath path;
+  base::string16 str;
+  int index;
+  if (options.Get("target", &path))
+    properties.set_target(path);
+  if (options.Get("cwd", &path))
+    properties.set_working_dir(path);
+  if (options.Get("args", &str))
+    properties.set_arguments(str);
+  if (options.Get("description", &str))
+    properties.set_description(str);
+  if (options.Get("icon", &path) && options.Get("iconIndex", &index))
+    properties.set_icon(path, index);
+  if (options.Get("appUserModelId", &str))
+    properties.set_app_id(str);
+
+  return base::win::CreateOrUpdateShortcutLink(
+      shortcut_path, properties, operation);
+}
+
+mate::Dictionary ReadShortcutLink(v8::Isolate* isolate,
+                                  const base::FilePath& path) {
+  using base::win::ShortcutProperties;
+  mate::Dictionary options = mate::Dictionary::CreateEmpty(isolate);
+  // We have to call ResolveShortcutProperties one by one for each property
+  // because the API doesn't allow us to only get existing properties.
+  base::win::ShortcutProperties properties;
+  if (base::win::ResolveShortcutProperties(
+          path, ShortcutProperties::PROPERTIES_TARGET, &properties)) {
+    options.Set("target", properties.target);
+  } else {
+    // No need to continue if it doesn't even have a target.
+    return options;
+  }
+  if (base::win::ResolveShortcutProperties(
+          path, ShortcutProperties::PROPERTIES_WORKING_DIR, &properties)) {
+    options.Set("cwd", properties.working_dir);
+  }
+  if (base::win::ResolveShortcutProperties(
+          path, ShortcutProperties::PROPERTIES_ARGUMENTS, &properties)) {
+    options.Set("args", properties.arguments);
+  }
+  if (base::win::ResolveShortcutProperties(
+          path, ShortcutProperties::PROPERTIES_DESCRIPTION, &properties)) {
+    options.Set("description", properties.description);
+  }
+  if (base::win::ResolveShortcutProperties(
+          path, ShortcutProperties::PROPERTIES_ICON, &properties)) {
+    options.Set("icon", properties.icon);
+    options.Set("iconIndex", properties.icon_index);
+  }
+  if (base::win::ResolveShortcutProperties(
+          path, ShortcutProperties::PROPERTIES_ICON, &properties)) {
+    options.Set("appUserModelId", properties.app_id);
+  }
+  return options;
+}
+#endif
+
 void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
   mate::Dictionary dict(context->GetIsolate(), exports);
@@ -38,6 +138,10 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   dict.SetMethod("openExternal", &OpenExternal);
   dict.SetMethod("moveItemToTrash", &platform_util::MoveItemToTrash);
   dict.SetMethod("beep", &platform_util::Beep);
+#if defined(OS_WIN)
+  dict.SetMethod("writeShortcutLink", &WriteShortcutLink);
+  dict.SetMethod("readShortcutLink", &ReadShortcutLink);
+#endif
 }
 
 }  // namespace
