@@ -190,6 +190,11 @@ public:
   std::unique_ptr<const atom::OnPaintCallback> paintCallback;
   void SetPaintCallback(const atom::OnPaintCallback*);
 
+  void OnPaint(const gfx::Rect& damage_rect,
+               int bitmap_width,
+               int bitmap_height,
+               void* bitmap_pixels);
+
 private:
   void SetFrameRate();
   void ResizeRootLayer();

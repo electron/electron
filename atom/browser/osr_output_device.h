@@ -5,12 +5,11 @@
 #ifndef ATOM_BROWSER_OSR_OUTPUT_DEVICE_H_
 #define ATOM_BROWSER_OSR_OUTPUT_DEVICE_H_
 
+#include "base/callback.h"
 #include "cc/output/software_output_device.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "third_party/skia/include/core/SkCanvas.h"
 #include "base/callback.h"
-
-#include "content/browser/web_contents/web_contents_view.h"
 
 namespace atom {
   
@@ -18,7 +17,10 @@ typedef base::Callback<void(const gfx::Rect&,int,int,void*)> OnPaintCallback;
 
 class OffScreenOutputDevice : public cc::SoftwareOutputDevice {
 public:
-  OffScreenOutputDevice();
+  typedef base::Callback<void(const gfx::Rect&,int,int,void*)>
+      OnPaintCallback;
+
+  OffScreenOutputDevice(const OnPaintCallback& callback);
   ~OffScreenOutputDevice();
   
   void SetPaintCallback(const OnPaintCallback*);
@@ -32,7 +34,15 @@ public:
   
   void OnPaint(const gfx::Rect& damage_rect);
 
+  void SetActive(bool active);
+
+  void OnPaint(const gfx::Rect& damage_rect);
+
 private:
+  const OnPaintCallback callback_;
+
+  bool active_;
+
   std::unique_ptr<SkCanvas> canvas_;
   std::unique_ptr<SkBitmap> bitmap_;
   gfx::Rect pending_damage_rect_;

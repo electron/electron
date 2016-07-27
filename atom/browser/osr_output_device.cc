@@ -5,11 +5,15 @@
 #include "atom/browser/osr_output_device.h"
 
 #include <iostream>
+#include "third_party/skia/include/core/SkDevice.h"
+#include "ui/gfx/skia_util.h"
 
 namespace atom {
 
-OffScreenOutputDevice::OffScreenOutputDevice() : callback_(nullptr) {
-  std::cout << "OffScreenOutputDevice" << std::endl;
+OffScreenOutputDevice::OffScreenOutputDevice(const OnPaintCallback& callback)
+    : callback_(callback),
+      active_(false) {
+  DCHECK(!callback_.is_null());
 }
 
 OffScreenOutputDevice::~OffScreenOutputDevice() {
@@ -66,18 +70,19 @@ void OffScreenOutputDevice::EndPaint() {
 
   cc::SoftwareOutputDevice::EndPaint();
 
-  OnPaint(damage_rect_);
-
-  // SkAutoLockPixels bitmap_pixels_lock(*bitmap_.get());
-  // saveSkBitmapToBMPFile(*(bitmap_.get()), "test.bmp");
-
-  // uint8_t* pixels = reinterpret_cast<uint8_t*>(bitmap_->getPixels());
-  // for (int i = 0; i<16; i++) {
-  //   int x = static_cast<int>(pixels[i]);
-  //   std::cout << std::hex << x << std::dec << std::endl;
-  // }
+  if (active_)
+    OnPaint(damage_rect_);
 }
 
+void OffScreenOutputDevice::SetActive(bool active) {
+  if (active == active_)
+    return;
+  active_ = active;
+
+  // Call OnPaint immediately if deactivated while a damage rect is pending.
+  if (!active_ && !pending_damage_rect_.IsEmpty())
+    OnPaint(pending_damage_rect_);
+}
 
 void OffScreenOutputDevice::OnPaint(const gfx::Rect& damage_rect) {
   gfx::Rect rect = damage_rect;
@@ -91,10 +96,9 @@ void OffScreenOutputDevice::OnPaint(const gfx::Rect& damage_rect) {
     return;
 
   SkAutoLockPixels bitmap_pixels_lock(*bitmap_.get());
-  // std::cout << "Paint" << std::endl;
-  if (callback_.get())
-    callback_->Run(rect, bitmap_->width(), bitmap_->height(),
-                   bitmap_->getPixels());
+
+  callback_.Run(rect, bitmap_->width(), bitmap_->height(),
+                bitmap_->getPixels());
 }
 
 }  // namespace atom

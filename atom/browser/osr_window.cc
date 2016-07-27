@@ -309,20 +309,8 @@ class CefCopyFrameGenerator {
 
     uint8_t* pixels = reinterpret_cast<uint8_t*>(bitmap.getPixels());
 
-    base::Time now = base::Time::Now();
-    // std::cout << "delta: " << (now - last_time_).InMilliseconds() << " ms" << std::endl;
-    last_time_ = now;
-    // for (int i = 0; i<4; i++) {
-    //   int x = static_cast<int>(pixels[i]);
-    // std::cout << std::hex << x << std::dec << std::endl;
-    // }
-    TRACE_EVENT0("electron", "OffScreenWindow::OnPaint");
-    if (view_->paintCallback) {
-      view_->paintCallback->Run(damage_rect, bitmap.width(), bitmap.height(),
-                pixels);
-    }
-
-    bitmap_pixels_lock.reset();
+    std::cout << "ASDADASDA" << std::endl;
+    view_->OnPaint(damage_rect, bitmap.width(), bitmap.height(), pixels);
 
     // Reset the frame retry count on successful frame generation.
     if (frame_retry_count_ > 0)
@@ -414,7 +402,6 @@ OffScreenWindow::OffScreenWindow(
     compositor_widget_(gfx::kNullAcceleratedWidget),
     weak_ptr_factory_(this) {
   DCHECK(render_widget_host_);
-  // std::cout << "OffScreenWindow" << std::endl;
   render_widget_host_->SetView(this);
 
   last_time_ = base::Time::Now();
@@ -653,40 +640,33 @@ void OffScreenWindow::OnSwapCompositorFrame(
     last_scroll_offset_ = frame->metadata.root_scroll_offset;
   }
 
-  if (!frame->delegated_frame_data)
-    return;
+  if (frame->delegated_frame_data) {
+    if (software_output_device_) {
+      if (!begin_frame_timer_.get()) {
+        software_output_device_->SetActive(true);
+      }
 
-  if (software_output_device_) {
-    // if (!begin_frame_timer_.get()) {
-    //   software_output_device_->SetActive(true);
-    // }
+      delegated_frame_host_->SwapDelegatedFrame(output_surface_id,
+                                                std::move(frame));
+    } else {
+      if (!copy_frame_generator_.get()) {
+        copy_frame_generator_.reset(
+            new CefCopyFrameGenerator(frame_rate_threshold_ms_, this));
+      }
 
-    delegated_frame_host_->SwapDelegatedFrame(output_surface_id,
-                                              std::move(frame));
-    return;
+      cc::RenderPass* root_pass =
+          frame->delegated_frame_data->render_pass_list.back().get();
+      gfx::Size frame_size = root_pass->output_rect.size();
+      gfx::Rect damage_rect =
+          gfx::ToEnclosingRect(gfx::RectF(root_pass->damage_rect));
+      damage_rect.Intersect(gfx::Rect(frame_size));
+
+      delegated_frame_host_->SwapDelegatedFrame(output_surface_id,
+                                                std::move(frame));
+
+      copy_frame_generator_->GenerateCopyFrame(true, damage_rect);
+    }
   }
-
-  if (!copy_frame_generator_.get()) {
-    copy_frame_generator_.reset(
-        new CefCopyFrameGenerator(frame_rate_threshold_ms_, this));
-  }
-
-  // Determine the damage rectangle for the current frame. This is the same
-  // calculation that SwapDelegatedFrame uses.
-  cc::RenderPass* root_pass =
-      frame->delegated_frame_data->render_pass_list.back().get();
-  gfx::Size frame_size = root_pass->output_rect.size();
-  gfx::Rect damage_rect =
-      gfx::ToEnclosingRect(gfx::RectF(root_pass->damage_rect));
-  damage_rect.Intersect(gfx::Rect(frame_size));
-
-  delegated_frame_host_->SwapDelegatedFrame(output_surface_id,
-                                              std::move(frame));
-
-  // Request a copy of the last compositor frame which will eventually call
-  // OnPaint asynchronously.
-  // std::cout << "FRAME COPY REQUESTED" << std::endl;
-  copy_frame_generator_->GenerateCopyFrame(true, damage_rect);
 }
 
 void OffScreenWindow::ClearCompositorFrame() {
@@ -895,13 +875,15 @@ void OffScreenWindow::DelegatedFrameHostUpdateVSyncParameters(
   render_widget_host_->UpdateVSyncParameters(timebase, interval);
 }
 
-std::unique_ptr<cc::SoftwareOutputDevice> 
+std::unique_ptr<cc::SoftwareOutputDevice>
     OffScreenWindow::CreateSoftwareOutputDevice(ui::Compositor* compositor) {
   DCHECK_EQ(compositor_.get(), compositor);
   DCHECK(!copy_frame_generator_);
   DCHECK(!software_output_device_);
-  std::cout << "CREATED" << std::endl;
-  software_output_device_ = new OffScreenOutputDevice();
+  std::cout << "CREATEEEEE" << std::endl;
+  software_output_device_ = new OffScreenOutputDevice(
+      base::Bind(&OffScreenWindow::OnPaint,
+                 weak_ptr_factory_.GetWeakPtr()));
   return base::WrapUnique(software_output_device_);
 }
 
@@ -910,6 +892,9 @@ void OffScreenWindow::OnSetNeedsBeginFrames(bool enabled) {
 
   begin_frame_timer_->SetActive(enabled);
 
+  if (software_output_device_) {
+    software_output_device_->SetActive(enabled);
+  }
   // std::cout << "OnSetNeedsBeginFrames" << enabled << std::endl;
 }
 
@@ -946,6 +931,18 @@ void OffScreenWindow::SetBeginFrameSource(
 
 bool OffScreenWindow::IsAutoResizeEnabled() const {
   return false;
+}
+
+void OffScreenWindow::OnPaint(
+    const gfx::Rect& damage_rect,
+    int bitmap_width,
+    int bitmap_height,
+    void* bitmap_pixels) {
+  TRACE_EVENT0("electron", "OffScreenWindow::OnPaint");
+
+  if (paintCallback) {
+    paintCallback->Run(damage_rect, bitmap_width, bitmap_height, bitmap_pixels);
+  }
 }
 
 }  // namespace atom
