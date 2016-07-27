@@ -9,12 +9,13 @@ the [`BrowserWindow`](browser-window.md) object. An example of accessing the
 `webContents` object:
 
 ```javascript
-const {BrowserWindow} = require('electron');
+const {BrowserWindow} = require('electron')
 
-let win = new BrowserWindow({width: 800, height: 1500});
-win.loadURL('http://github.com');
+let win = new BrowserWindow({width: 800, height: 1500})
+win.loadURL('http://github.com')
 
-let contents = win.webContents;
+let contents = win.webContents
+console.log(contents)
 ```
 
 ## Methods
@@ -22,7 +23,8 @@ let contents = win.webContents;
 These methods can be accessed from the `webContents` module:
 
 ```js
-const {webContents} = require('electron');
+const {webContents} = require('electron')
+console.log(webContents)
 ```
 
 ### `webContents.getAllWebContents()`
@@ -431,6 +433,7 @@ first available device will be selected. `callback` should be called with
 cancel the request.
 
 ```javascript
+const {app, webContents} = require('electron')
 app.commandLine.appendSwitch('enable-web-bluetooth')
 
 app.on('ready', () => {
@@ -467,8 +470,9 @@ e.g. the `http://` or `file://`. If the load should bypass http cache then
 use the `pragma` header to achieve it.
 
 ```javascript
-const options = {extraHeaders: 'pragma: no-cache\n'};
-webContents.loadURL(url, options);
+const {webContents} = require('electron')
+const options = {extraHeaders: 'pragma: no-cache\n'}
+webContents.loadURL('https://github.com', options)
 ```
 
 #### `contents.downloadURL(url)`
@@ -483,10 +487,12 @@ Initiates a download of the resource at `url` without navigating. The
 Returns URL of the current web page.
 
 ```javascript
-let win = new BrowserWindow({width: 800, height: 600});
-win.loadURL('http://github.com');
+const {BrowserWindow} = require('electron')
+let win = new BrowserWindow({width: 800, height: 600})
+win.loadURL('http://github.com')
 
-let currentURL = win.webContents.getURL();
+let currentURL = win.webContents.getURL()
+console.log(currentURL)
 ```
 
 #### `contents.getTitle()`
@@ -690,12 +696,13 @@ the request can be obtained by subscribing to
 Stops any `findInPage` request for the `webContents` with the provided `action`.
 
 ```javascript
+const {webContents} = require('electron')
 webContents.on('found-in-page', (event, result) => {
-  if (result.finalUpdate)
-    webContents.stopFindInPage('clearSelection');
-});
+  if (result.finalUpdate) webContents.stopFindInPage('clearSelection')
+})
 
-const requestId = webContents.findInPage('api');
+const requestId = webContents.findInPage('api')
+console.log(requestId)
 ```
 
 #### `contents.capturePage([rect, ]callback)`
@@ -761,7 +768,7 @@ The `callback` will be called with `callback(error, data)` on completion. The
 
 By default, an empty `options` will be regarded as:
 
-```javascript
+```
 {
   marginsType: 0,
   printBackground: false,
@@ -773,23 +780,22 @@ By default, an empty `options` will be regarded as:
 An example of `webContents.printToPDF`:
 
 ```javascript
-const {BrowserWindow} = require('electron');
-const fs = require('fs');
+const {BrowserWindow} = require('electron')
+const fs = require('fs')
 
-let win = new BrowserWindow({width: 800, height: 600});
-win.loadURL('http://github.com');
+let win = new BrowserWindow({width: 800, height: 600})
+win.loadURL('http://github.com')
 
 win.webContents.on('did-finish-load', () => {
   // Use default printing options
   win.webContents.printToPDF({}, (error, data) => {
-    if (error) throw error;
+    if (error) throw error
     fs.writeFile('/tmp/print.pdf', data, (error) => {
-      if (error)
-        throw error;
-      console.log('Write PDF successfully.');
-    });
-  });
-});
+      if (error) throw error
+      console.log('Write PDF successfully.')
+    })
+  })
+})
 ```
 
 #### `contents.addWorkSpace(path)`
@@ -800,9 +806,11 @@ Adds the specified path to DevTools workspace. Must be used after DevTools
 creation:
 
 ```javascript
+const {BrowserWindow} = require('electron')
+let win = new BrowserWindow()
 win.webContents.on('devtools-opened', () => {
-  win.webContents.addWorkSpace(__dirname);
-});
+  win.webContents.addWorkSpace(__dirname)
+})
 ```
 
 #### `contents.removeWorkSpace(path)`
@@ -863,15 +871,16 @@ An example of sending messages from the main process to the renderer process:
 
 ```javascript
 // In the main process.
-let win = null;
+const {app, BrowserWindow} = require('electron')
+let win = null
 
 app.on('ready', () => {
-  win = new BrowserWindow({width: 800, height: 600});
-  win.loadURL(`file://${__dirname}/index.html`);
+  win = new BrowserWindow({width: 800, height: 600})
+  win.loadURL(`file://${__dirname}/index.html`)
   win.webContents.on('did-finish-load', () => {
-    win.webContents.send('ping', 'whoooooooh!');
-  });
-});
+    win.webContents.send('ping', 'whoooooooh!')
+  })
+})
 ```
 
 ```html
@@ -880,8 +889,8 @@ app.on('ready', () => {
 <body>
   <script>
     require('electron').ipcRenderer.on('ping', (event, message) => {
-      console.log(message);  // Prints "whoooooooh!"
-    });
+      console.log(message)  // Prints 'whoooooooh!'
+    })
   </script>
 </body>
 </html>
@@ -1010,14 +1019,16 @@ the cursor when dragging.
 Returns true if the process of saving page has been initiated successfully.
 
 ```javascript
-win.loadURL('https://github.com');
+const {BrowserWindow} = require('electron')
+let win = new BrowserWindow()
+
+win.loadURL('https://github.com')
 
 win.webContents.on('did-finish-load', () => {
   win.webContents.savePage('/tmp/test.html', 'HTMLComplete', (error) => {
-    if (!error)
-      console.log('Save page successfully');
-  });
-});
+    if (!error) console.log('Save page successfully')
+  })
+})
 ```
 
 #### `contents.showDefinitionForSelection()` _macOS_
@@ -1054,24 +1065,28 @@ Get the debugger instance for this webContents.
 Debugger API serves as an alternate transport for [remote debugging protocol][rdp].
 
 ```javascript
+const {BrowserWindow} = require('electron')
+let win = new BrowserWindow()
+
 try {
-  win.webContents.debugger.attach('1.1');
-} catch(err) {
-  console.log('Debugger attach failed : ', err);
-};
+  win.webContents.debugger.attach('1.1')
+} catch (err) {
+  console.log('Debugger attach failed : ', err)
+}
 
 win.webContents.debugger.on('detach', (event, reason) => {
-  console.log('Debugger detached due to : ', reason);
-});
+  console.log('Debugger detached due to : ', reason)
+})
 
 win.webContents.debugger.on('message', (event, method, params) => {
   if (method === 'Network.requestWillBeSent') {
-    if (params.request.url === 'https://www.github.com')
-      win.webContents.debugger.detach();
+    if (params.request.url === 'https://www.github.com') {
+      win.webContents.debugger.detach()
+    }
   }
-});
+})
 
-win.webContents.debugger.sendCommand('Network.enable');
+win.webContents.debugger.sendCommand('Network.enable')
 ```
 
 ### Instance Methods

@@ -8,11 +8,13 @@ event of the `app` module is emitted.
 For example:
 
 ```javascript
+const {app} = require('electron')
+
 app.on('ready', () => {
   require('electron').powerMonitor.on('suspend', () => {
-    console.log('The system is going to sleep');
-  });
-});
+    console.log('The system is going to sleep')
+  })
+})
 ```
 
 ## Events

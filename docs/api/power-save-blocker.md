@@ -5,12 +5,12 @@
 For example:
 
 ```javascript
-const {powerSaveBlocker} = require('electron');
+const {powerSaveBlocker} = require('electron')
 
-const id = powerSaveBlocker.start('prevent-display-sleep');
-console.log(powerSaveBlocker.isStarted(id));
+const id = powerSaveBlocker.start('prevent-display-sleep')
+console.log(powerSaveBlocker.isStarted(id))
 
-powerSaveBlocker.stop(id);
+powerSaveBlocker.stop(id)
 ```
 
 ## Methods

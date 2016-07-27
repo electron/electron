@@ -51,29 +51,29 @@ $ asar list /path/to/example.asar
 Read a file in the `asar` archive:
 
 ```javascript
-const fs = require('fs');
-fs.readFileSync('/path/to/example.asar/file.txt');
+const fs = require('fs')
+fs.readFileSync('/path/to/example.asar/file.txt')
 ```
 
 List all files under the root of the archive:
 
 ```javascript
-const fs = require('fs');
-fs.readdirSync('/path/to/example.asar');
+const fs = require('fs')
+fs.readdirSync('/path/to/example.asar')
 ```
 
 Use a module from the archive:
 
 ```javascript
-require('/path/to/example.asar/dir/module.js');
+require('/path/to/example.asar/dir/module.js')
 ```
 
 You can also display a web page in an `asar` archive with `BrowserWindow`:
 
 ```javascript
-const {BrowserWindow} = require('electron');
-let win = new BrowserWindow({width: 800, height: 600});
-win.loadURL('file:///path/to/example.asar/static/index.html');
+const {BrowserWindow} = require('electron')
+let win = new BrowserWindow({width: 800, height: 600})
+win.loadURL('file:///path/to/example.asar/static/index.html')
 ```
 
 ### Web API
@@ -85,10 +85,10 @@ For example, to get a file with `$.get`:
 
 ```html
 <script>
-let $ = require('./jquery.min.js');
+let $ = require('./jquery.min.js')
 $.get('file:///path/to/example.asar/file.txt', (data) => {
-  console.log(data);
-});
+  console.log(data)
+})
 </script>
 ```
 
@@ -99,16 +99,17 @@ content of an `asar` archive as a file. For this purpose you can use the built-i
 `original-fs` module which provides original `fs` APIs without `asar` support:
 
 ```javascript
-const originalFs = require('original-fs');
-originalFs.readFileSync('/path/to/example.asar');
+const originalFs = require('original-fs')
+originalFs.readFileSync('/path/to/example.asar')
 ```
 
 You can also set `process.noAsar` to `true` to disable the support for `asar` in
 the `fs` module:
 
 ```javascript
-process.noAsar = true;
-fs.readFileSync('/path/to/example.asar');
+const fs = require('fs')
+process.noAsar = true
+fs.readFileSync('/path/to/example.asar')
 ```
 
 ## Limitations of the Node API
