@@ -37,6 +37,6 @@
     "cibuild-windows": "rm -Rf node_mdules && python ./script/cibuild --target_arch=x64",
     "cibuild-windows-ia32": "rm -Rf node_mdules && python ./script/cibuild --target_arch=ia32",
     "test": "python ./script/test.py",
-    "install": "npm run build && rsync -avz --delete out/D/Brave.app ../browser-laptop/node_modules/electron-prebuilt/dist/"
+    "browser-build": "npm run build && rsync -avz --delete out/D/Brave.app ../browser-laptop/node_modules/electron-prebuilt/dist/"
   }
 }
