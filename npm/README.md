@@ -13,7 +13,7 @@ Electron is a JavaScript runtime that bundles Node.js and Chromium. You use it s
 Download and install the latest build of electron for your OS and add it to your projects `package.json` as a `devDependency`:
 
 ```
-npm install electron-prebuilt --save-dev
+npm install electron --save-dev
 ```
 
 This is the preferred way to use electron, as it doesn't require users to install electron globally.
@@ -21,13 +21,13 @@ This is the preferred way to use electron, as it doesn't require users to instal
 You can also use the `-g` flag (global) to symlink it into your PATH:
 
 ```
-npm install -g electron-prebuilt
+npm install -g electron
 ```
 
 If that command fails with an `EACCESS` error you may have to run it again with `sudo`:
 
 ```
-sudo npm install -g electron-prebuilt
+sudo npm install -g electron
 ```
 
 Now you can just run `electron` to run electron:
@@ -40,7 +40,7 @@ If you need to use an HTTP proxy you can [set these environment variables](https
 
 If you want to change the architecture that is downloaded (e.g., `ia32` on an `x64` machine), you can use the `--arch` flag with npm install or set the `npm_config_arch` environment variable:
 ```
-npm install --arch=ia32 electron-prebuilt
+npm install --arch=ia32 electron
 ```
 
 ## About
@@ -71,11 +71,12 @@ Find more at the [awesome-electron](https://github.com/sindresorhus/awesome-elec
 
 ## Programmatic usage
 
-Most people use this from the command line, but if you require `electron-prebuilt` inside your node app it will return the file path to the binary.
-Use this to spawn electron from node scripts.
+Most people use this from the command line, but if you require `electron` inside
+your **node app** (not your electron app) it will return the file path to the
+binary. Use this to spawn electron from node scripts:
 
 ``` js
-var electron = require('electron-prebuilt')
+var electron = require('electron')
 var proc = require('child_process')
 
 // will something similar to print /Users/maf/.../Electron
