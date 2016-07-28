@@ -13,6 +13,9 @@ namespace atom {
 namespace api {
 
 bool WebContents::IsFocused() const {
+  auto view = web_contents()->GetRenderWidgetHostView();
+  if (!view) return false;
+
   if (GetType() != BACKGROUND_PAGE) {
     auto window = web_contents()->GetTopLevelNativeWindow();
     // On Mac the render widget host view does not lose focus when the window
@@ -21,8 +24,7 @@ bool WebContents::IsFocused() const {
       return false;
   }
 
-  auto view = web_contents()->GetRenderWidgetHostView();
-  return view && view->HasFocus();
+  return view->HasFocus();
 }
 
 }  // namespace api
