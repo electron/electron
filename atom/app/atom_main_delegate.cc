@@ -22,13 +22,6 @@
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/base/resource/resource_bundle.h"
 
-#include "base/memory/ptr_util.h"
-#include "content/browser/renderer_host/render_view_host_impl.h"
-#include "content/browser/renderer_host/render_widget_host_impl.h"
-#include "atom/browser/osr_window.h"
-
-#include "content/public/browser/web_contents.h"
-
 namespace atom {
 
 namespace {
@@ -109,8 +102,6 @@ bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
   _set_invalid_parameter_handler(InvalidParameterHandler);
 #endif
 
-  render_view_host_factory_.reset(new AtomRenderViewHostFactory);
-
   return brightray::MainDelegate::BasicStartupComplete(exit_code);
 }
 
@@ -181,39 +172,6 @@ bool AtomMainDelegate::DelaySandboxInitialization(
 std::unique_ptr<brightray::ContentClient>
 AtomMainDelegate::CreateContentClient() {
   return std::unique_ptr<brightray::ContentClient>(new AtomContentClient);
-}
-
-AtomRenderViewHostFactory::AtomRenderViewHostFactory() {
-  //std::cout << "AtomRenderViewHostFactory" << std::endl;
-  content::RenderViewHostFactory::UnregisterFactory();
-  content::RenderViewHostFactory::RegisterFactory( this );
-}
-
-AtomRenderViewHostFactory::~AtomRenderViewHostFactory() {
-  //std::cout << "~AtomRenderViewHostFactory" << std::endl;
-}
-
-content::RenderViewHost* AtomRenderViewHostFactory::CreateRenderViewHost(
-  content::SiteInstance* instance,
-  content::RenderViewHostDelegate* delegate,
-  content::RenderWidgetHostDelegate* widget_delegate,
-  int32_t routing_id,
-  int32_t main_frame_routing_id,
-  bool swapped_out) {
-
-  std::cout << delegate << std::endl;
-  std::cout << widget_delegate << std::endl;
-
-  auto widget_host_impl = new content::RenderWidgetHostImpl(
-    widget_delegate, instance->GetProcess(), routing_id, false);
-
-  auto view_host_impl = new content::RenderViewHostImpl(instance,
-    base::WrapUnique(widget_host_impl), delegate, main_frame_routing_id,
-    swapped_out, true);
-
-  //new OffScreenWindow(widget_host_impl);
-
-  return view_host_impl;
 }
 
 }  // namespace atom

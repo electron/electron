@@ -87,6 +87,8 @@ AtomBrowserContext::AtomBrowserContext(
   // Read options.
   use_cache_ = true;
   options.GetBoolean("cache", &use_cache_);
+  
+  InitPrefs();
 }
 
 AtomBrowserContext::~AtomBrowserContext() {

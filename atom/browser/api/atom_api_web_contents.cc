@@ -196,6 +196,7 @@ struct Converter<atom::api::WebContents::Type> {
       case Type::BROWSER_WINDOW: type = "window"; break;
       case Type::REMOTE: type = "remote"; break;
       case Type::WEB_VIEW: type = "webview"; break;
+      case Type::OFF_SCREEN: type = "offscreen"; break;
       default: break;
     }
     return mate::ConvertToV8(isolate, type);
@@ -211,6 +212,8 @@ struct Converter<atom::api::WebContents::Type> {
       *out = Type::WEB_VIEW;
     } else if (type == "backgroundPage") {
       *out = Type::BACKGROUND_PAGE;
+    } else if (type == "offscreen") {
+      *out = Type::OFF_SCREEN;
     } else {
       return false;
     }
@@ -287,9 +290,8 @@ WebContents::WebContents(v8::Isolate* isolate,
     type_ = WEB_VIEW;
   else if (options.Get("isBackgroundPage", &b) && b)
     type_ = BACKGROUND_PAGE;
-    
-  bool offscreen = false;
-  options.Get("offScreen", &offscreen);
+  else if (options.Get("offscreen", &b) && b)
+    type_ = OFF_SCREEN;  
 
   // Obtain the session.
   std::string partition;
@@ -313,7 +315,7 @@ WebContents::WebContents(v8::Isolate* isolate,
     guest_delegate_.reset(new WebViewGuestDelegate);
     params.guest_delegate = guest_delegate_.get();
     web_contents = content::WebContents::Create(params);
-  } else if(offscreen) {
+  } else if(IsOffScreen()) {
 		content::WebContents::CreateParams params(session->browser_context());
 
     auto view = new OffScreenWebContentsView();
@@ -382,7 +384,7 @@ bool WebContents::AddMessageToConsole(content::WebContents* source,
                                       const base::string16& message,
                                       int32_t line_no,
                                       const base::string16& source_id) {
-  if (type_ == BROWSER_WINDOW) {
+  if ((type_ == BROWSER_WINDOW || type_ == OFF_SCREEN)) {
     return false;
   } else {
     Emit("console-message", level, message, line_no, source_id);
@@ -393,7 +395,7 @@ bool WebContents::AddMessageToConsole(content::WebContents* source,
 void WebContents::OnCreateWindow(const GURL& target_url,
                                  const std::string& frame_name,
                                  WindowOpenDisposition disposition) {
-  if (type_ == BROWSER_WINDOW)
+  if ((type_ == BROWSER_WINDOW || type_ == OFF_SCREEN))
     Emit("-new-window", target_url, frame_name, disposition);
   else
     Emit("new-window", target_url, frame_name, disposition);
@@ -403,7 +405,7 @@ content::WebContents* WebContents::OpenURLFromTab(
     content::WebContents* source,
     const content::OpenURLParams& params) {
   if (params.disposition != CURRENT_TAB) {
-    if (type_ == BROWSER_WINDOW)
+    if ((type_ == BROWSER_WINDOW || type_ == OFF_SCREEN))
       Emit("-new-window", params.url, "", params.disposition);
     else
       Emit("new-window", params.url, "", params.disposition);
@@ -420,7 +422,7 @@ content::WebContents* WebContents::OpenURLFromTab(
 void WebContents::BeforeUnloadFired(content::WebContents* tab,
                                     bool proceed,
                                     bool* proceed_to_fire_unload) {
-  if (type_ == BROWSER_WINDOW)
+  if ((type_ == BROWSER_WINDOW || type_ == OFF_SCREEN))
     *proceed_to_fire_unload = proceed;
   else
     *proceed_to_fire_unload = true;
@@ -433,7 +435,7 @@ void WebContents::MoveContents(content::WebContents* source,
 
 void WebContents::CloseContents(content::WebContents* source) {
   Emit("close");
-  if (type_ == BROWSER_WINDOW && owner_window())
+  if ((type_ == BROWSER_WINDOW || type_ == OFF_SCREEN) && owner_window())
     owner_window()->CloseContents(source);
 }
 
@@ -487,13 +489,13 @@ void WebContents::ExitFullscreenModeForTab(content::WebContents* source) {
 
 void WebContents::RendererUnresponsive(content::WebContents* source) {
   Emit("unresponsive");
-  if (type_ == BROWSER_WINDOW && owner_window())
+  if ((type_ == BROWSER_WINDOW || type_ == OFF_SCREEN) && owner_window())
     owner_window()->RendererUnresponsive(source);
 }
 
 void WebContents::RendererResponsive(content::WebContents* source) {
   Emit("responsive");
-  if (type_ == BROWSER_WINDOW && owner_window())
+  if ((type_ == BROWSER_WINDOW || type_ == OFF_SCREEN) && owner_window())
     owner_window()->RendererResponsive(source);
 }
 
@@ -1346,6 +1348,10 @@ void WebContents::SetSize(const SetSizeParams& params) {
 
 bool WebContents::IsGuest() const {
   return type_ == WEB_VIEW;
+}
+
+bool WebContents::IsOffScreen() const {
+  return type_ == OFF_SCREEN;
 }
 
 v8::Local<v8::Value> WebContents::GetWebPreferences(v8::Isolate* isolate) {
