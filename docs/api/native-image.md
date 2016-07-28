@@ -35,6 +35,8 @@ quality it is recommended to include at least the following sizes in the icon:
 
 * 16x16
 * 32x32
+* 40x40
+* 48x48
 * 64x64
 * 256x256
 
