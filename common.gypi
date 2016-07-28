@@ -260,9 +260,10 @@
       4189,  # local variable is initialized but not referenced
       4201,  # (uv.h) nameless struct/union
       4267,  # conversion from 'size_t' to 'int', possible loss of data
+      4273,  # http://crbug.com/154421
       4302,  # (atldlgs.h) 'type cast': truncation from 'LPCTSTR' to 'WORD'
       4456,
-      4457,
+      4457,  # http://crbug.com/154421
       4458,  # (atldlgs.h) declaration of 'dwCommonButtons' hides class member
       4503,  # decorated name length exceeded, name was truncated
       4800,  # (v8.h) forcing value to bool 'true' or 'false'
