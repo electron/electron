@@ -29,6 +29,7 @@
           '<(libchromiumcontent_src_dir)/third_party/skia/include/config',
           '<(libchromiumcontent_src_dir)/third_party/icu/source/common',
           '<(libchromiumcontent_src_dir)/third_party/mojo/src',
+          '<(libchromiumcontent_src_dir)/third_party/khronos',
           '<(libchromiumcontent_src_dir)/third_party/WebKit',
           '<(libchromiumcontent_dir)/gen',
         ],
