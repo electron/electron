@@ -12,13 +12,20 @@ executing JavaScript programs. For more info you can read [this intro blog post]
 
 ## Installation
 
-Download and install the latest build of electron for your OS and add it to your projects `package.json` as a `devDependency`:
+**Note** As of version 1.3.1, this package is published to npm under two names:
+`electron` and `electron-prebuilt`. You can currently use either name, but
+`electron` is recommended, as the `electron-prebuilt` name is deprecated, and
+will only be published until the end of 2016.
+
+Download and install the latest build of electron for your OS and add it to your
+project's `package.json` as a `devDependency`:
 
 ```
 npm install electron --save-dev
 ```
 
-This is the preferred way to use electron, as it doesn't require users to install electron globally.
+This is the preferred way to use electron, as it doesn't require users to
+install electron globally.
 
 You can also use the `-g` flag (global) to symlink it into your PATH:
 
