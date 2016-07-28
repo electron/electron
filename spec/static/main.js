@@ -142,7 +142,8 @@ app.on('ready', function () {
             item.getReceivedBytes(),
             item.getTotalBytes(),
             item.getContentDisposition(),
-            item.getFilename())
+            item.getFilename(),
+            item.getSavePath())
         })
         if (needCancel) item.cancel()
       }

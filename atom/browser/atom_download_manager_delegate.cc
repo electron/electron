@@ -85,6 +85,14 @@ void AtomDownloadManagerDelegate::OnDownloadPathGenerated(
         download_manager_->GetBrowserContext());
     browser_context->prefs()->SetFilePath(prefs::kDownloadDefaultDirectory,
                                           path.DirName());
+
+    v8::Isolate* isolate = v8::Isolate::GetCurrent();
+    v8::Locker locker(isolate);
+    v8::HandleScope handle_scope(isolate);
+    api::DownloadItem* download_item = api::DownloadItem::FromWrappedClass(
+        isolate, item);
+    if (download_item)
+      download_item->SetSavePath(path);
   }
 
   // Running the DownloadTargetCallback with an empty FilePath signals that the
