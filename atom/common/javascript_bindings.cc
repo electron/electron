@@ -124,7 +124,7 @@ void JavascriptBindings::OnDestruct() {
 void JavascriptBindings::GetBinding(
       const v8::FunctionCallbackInfo<v8::Value>& args) {
   blink::WebLocalFrame* frame = context()->web_frame();
-  CHECK(frame);
+  DCHECK(frame);
 
   v8::Isolate* isolate = args.GetIsolate();
   v8::HandleScope handle_scope(isolate);

@@ -143,7 +143,7 @@ void BraveContentBrowserClient::OverrideWebkitPrefs(
 
 void BraveContentBrowserClient::SiteInstanceGotProcess(
     content::SiteInstance* site_instance) {
-  CHECK(site_instance->HasProcess());
+  DCHECK(site_instance->HasProcess());
 
   auto browser_context = site_instance->GetBrowserContext();
   if (!browser_context)

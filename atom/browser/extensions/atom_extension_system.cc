@@ -169,7 +169,7 @@ const Extension* AtomExtensionSystem::Shared::GetInstalledExtension(
 
 void AtomExtensionSystem::Shared::EnableExtension(
     const std::string& extension_id) {
-  CHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
+  DCHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
 
   if (IsExtensionEnabled(extension_id))
     return;
@@ -192,7 +192,7 @@ void AtomExtensionSystem::Shared::EnableExtension(
 
 void AtomExtensionSystem::Shared::DisableExtension(
       const std::string& extension_id, int disable_reasons) {
-  CHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
+  DCHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
 
   // The extension may have been disabled already. Just add the disable reasons.
   if (!IsExtensionEnabled(extension_id)) {

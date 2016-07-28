@@ -317,7 +317,7 @@ bool AtomExtensionsBrowserClient::IsIncognitoEnabled(
 bool AtomExtensionsBrowserClient::CanExtensionCrossIncognito(
     const Extension* extension,
     content::BrowserContext* context) const {
-  CHECK(extension);
+  DCHECK(extension);
   return IsExtensionIncognitoEnabled(extension->id(), context) &&
          !IncognitoInfo::IsSplitMode(extension);
 }
