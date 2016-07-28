@@ -6,7 +6,9 @@
 
 Install [electron](https://github.com/electron/electron) prebuilt binaries for command-line use using npm. This module helps you easily install the `electron` command for use on the command line without having to compile anything.
 
-Electron is a JavaScript runtime that bundles Node.js and Chromium. You use it similar to the `node` command on the command line for executing JavaScript programs. For more info you can read [this intro blog post](http://maxogden.com/electron-fundamentals.html) or dive into the [Electron documentation](https://github.com/electron/electron/tree/master/docs)
+[Electron](http://electron.atom.io) is a JavaScript runtime that bundles Node.js
+and Chromium. You use it similar to the `node` command on the command line for
+executing JavaScript programs. For more info you can read [this intro blog post](http://maxogden.com/electron-fundamentals.html) or dive into the [Electron documentation](http://electron.atom.io/docs)
 
 ## Installation
 
