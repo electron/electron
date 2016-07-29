@@ -46,6 +46,9 @@
 #include "extensions/browser/pref_names.h"
 #include "extensions/browser/updater/null_extension_cache.h"
 #include "extensions/browser/url_request_util.h"
+#include "extensions/common/features/behavior_feature.h"
+#include "extensions/common/features/feature.h"
+#include "extensions/common/features/feature_provider.h"
 #include "extensions/common/manifest_handlers/incognito_info.h"
 #include "ui/base/resource/resource_bundle.h"
 
@@ -60,6 +63,13 @@
 #include "net/url_request/url_request_simple_job.h"
 
 namespace {
+
+bool IsWhitelistedForIncognito(const extensions::Extension* extension) {
+  const extensions::Feature* feature =
+      extensions::FeatureProvider::GetBehaviorFeature(
+          extensions::BehaviorFeature::kWhitelistedForIncognito);
+  return feature && feature->IsAvailableToExtension(extension).is_available();
+}
 
 net::HttpResponseHeaders* BuildHttpHeaders(
     const std::string& content_security_policy,
@@ -295,10 +305,7 @@ bool AtomExtensionsBrowserClient::IsGuestSession(
 bool AtomExtensionsBrowserClient::IsIncognitoEnabled(
       const std::string& extension_id,
       content::BrowserContext* context) {
-  auto original_context =
-      static_cast<brave::BraveBrowserContext*>(context)->original_context();
-
-  auto registry = ExtensionRegistry::Get(original_context);
+  auto registry = ExtensionRegistry::Get(context);
   if (!registry)
     return false;
 
@@ -307,10 +314,16 @@ bool AtomExtensionsBrowserClient::IsIncognitoEnabled(
   if (extension) {
     if (!util::CanBeIncognitoEnabled(extension))
       return false;
-    if (extension->location() == Manifest::COMPONENT)
+    if (extension->location() == Manifest::COMPONENT ||
+        extension->location() == Manifest::EXTERNAL_COMPONENT) {
+      return true;
+    }
+    if (IsWhitelistedForIncognito(extension))
       return true;
   }
 
+  // TODO(bridiver)
+  // ExtensionPrefs::Get(context)->IsIncognitoEnabled(extension_id);
   return true;
 }
 

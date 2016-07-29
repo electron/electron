@@ -4,6 +4,7 @@
 
 #include "atom/browser/extensions/shared_user_script_master.h"
 
+#include "atom/browser/extensions/atom_extensions_browser_client.h"
 #include "chrome/common/extensions/manifest_handlers/content_scripts_handler.h"
 #include "extensions/browser/extension_registry.h"
 #include "extensions/common/host_id.h"
@@ -38,13 +39,18 @@ void SharedUserScriptMaster::OnExtensionUnloaded(
 
 const std::set<UserScript> SharedUserScriptMaster::GetScriptsMetadata(
     const Extension* extension) {
+  bool incognito_enabled =
+      AtomExtensionsBrowserClient::IsIncognitoEnabled(
+          extension->id(), browser_context_);
   const UserScriptList& script_list =
       ContentScriptsInfo::GetContentScripts(extension);
   std::set<UserScript> script_set;
   for (UserScriptList::const_iterator it = script_list.begin();
        it != script_list.end();
        ++it) {
-    script_set.insert(*it);
+    UserScript script = *it;
+    script.set_incognito_enabled(incognito_enabled);
+    script_set.insert(script);
   }
 
   return script_set;
