@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_OSR_WINDOW_H_
-#define ATOM_BROWSER_OSR_WINDOW_H_
+#ifndef ATOM_BROWSER_OSR_RENDER_WIDGET_HOST_VIEW_H_
+#define ATOM_BROWSER_OSR_RENDER_WIDGET_HOST_VIEW_H_
 
 #include "atom/browser/native_window.h"
 
@@ -57,7 +57,7 @@ namespace atom {
 class AtomCopyFrameGenerator;
 class AtomBeginFrameTimer;
 
-class OffScreenWindow
+class OffScreenRenderWidgetHostView
   : public content::RenderWidgetHostViewBase,
   #if defined(OS_MACOSX)
     public ui::AcceleratedWidgetMacNSView,
@@ -65,8 +65,8 @@ class OffScreenWindow
     public ui::CompositorDelegate,
     public content::DelegatedFrameHostClient {
 public:
-  OffScreenWindow(content::RenderWidgetHost*, NativeWindow*);
-  ~OffScreenWindow();
+  OffScreenRenderWidgetHostView(content::RenderWidgetHost*, NativeWindow*);
+  ~OffScreenRenderWidgetHostView();
 
   void CreatePlatformWidget();
 
@@ -187,7 +187,6 @@ public:
   void SendBeginFrame(base::TimeTicks frame_time,
                       base::TimeDelta vsync_period);
 
-  std::unique_ptr<const atom::OnPaintCallback> paintCallback;
   void SetPaintCallback(const atom::OnPaintCallback*);
 
   void OnPaint(const gfx::Rect& damage_rect,
@@ -206,6 +205,8 @@ private:
   std::unique_ptr<AtomBeginFrameTimer> begin_frame_timer_;
 
   OffScreenOutputDevice* software_output_device_;
+
+  std::unique_ptr<const atom::OnPaintCallback> callback_;
 
   int frame_rate_threshold_ms_;
 
@@ -249,10 +250,10 @@ private:
   gfx::Rect first_selection_rect_;
 #endif
 
-  base::WeakPtrFactory<OffScreenWindow> weak_ptr_factory_;
-  DISALLOW_COPY_AND_ASSIGN(OffScreenWindow);
+  base::WeakPtrFactory<OffScreenRenderWidgetHostView> weak_ptr_factory_;
+  DISALLOW_COPY_AND_ASSIGN(OffScreenRenderWidgetHostView);
 };
 
 }  // namespace atom
 
-#endif  // ATOM_BROWSER_OSR_WINDOW_H_
+#endif  // ATOM_BROWSER_OSR_RENDER_WIDGET_HOST_VIEW_H_

@@ -1,4 +1,4 @@
-#include "atom/browser/osr_window.h"
+#include "atom/browser/osr_render_widget_host_view.h"
 
 #include <algorithm>
 #include <limits>
@@ -13,47 +13,47 @@
 #include "ui/accelerated_widget_mac/accelerated_widget_mac.h"
 #include "ui/events/latency_info.h"
 
-ui::AcceleratedWidgetMac* atom::OffScreenWindow::GetAcceleratedWidgetMac()
+ui::AcceleratedWidgetMac* atom::OffScreenRenderWidgetHostView::GetAcceleratedWidgetMac()
     const {
   if (browser_compositor_)
     return browser_compositor_->accelerated_widget_mac();
   return nullptr;
 }
 
-NSView* atom::OffScreenWindow::AcceleratedWidgetGetNSView() const {
+NSView* atom::OffScreenRenderWidgetHostView::AcceleratedWidgetGetNSView() const {
   return [window_ contentView];
 }
 
-void atom::OffScreenWindow::AcceleratedWidgetGetVSyncParameters(
+void atom::OffScreenRenderWidgetHostView::AcceleratedWidgetGetVSyncParameters(
     base::TimeTicks* timebase, base::TimeDelta* interval) const {
   *timebase = base::TimeTicks();
   *interval = base::TimeDelta();
 }
 
-void atom::OffScreenWindow::AcceleratedWidgetSwapCompleted() {
+void atom::OffScreenRenderWidgetHostView::AcceleratedWidgetSwapCompleted() {
 }
 
-void atom::OffScreenWindow::SetActive(bool active) {
+void atom::OffScreenRenderWidgetHostView::SetActive(bool active) {
 }
 
-void atom::OffScreenWindow::ShowDefinitionForSelection() {
+void atom::OffScreenRenderWidgetHostView::ShowDefinitionForSelection() {
 }
 
-bool atom::OffScreenWindow::SupportsSpeech() const {
+bool atom::OffScreenRenderWidgetHostView::SupportsSpeech() const {
   return false;
 }
 
-void atom::OffScreenWindow::SpeakSelection() {
+void atom::OffScreenRenderWidgetHostView::SpeakSelection() {
 }
 
-bool atom::OffScreenWindow::IsSpeaking() const {
+bool atom::OffScreenRenderWidgetHostView::IsSpeaking() const {
   return false;
 }
 
-void atom::OffScreenWindow::StopSpeaking() {
+void atom::OffScreenRenderWidgetHostView::StopSpeaking() {
 }
 
-void atom::OffScreenWindow::SelectionChanged(
+void atom::OffScreenRenderWidgetHostView::SelectionChanged(
     const base::string16& text,
     size_t offset,
     const gfx::Range& range) {
@@ -74,7 +74,7 @@ void atom::OffScreenWindow::SelectionChanged(
   RenderWidgetHostViewBase::SelectionChanged(text, offset, range);
 }
 
-void atom::OffScreenWindow::CreatePlatformWidget() {
+void atom::OffScreenRenderWidgetHostView::CreatePlatformWidget() {
   // Create a borderless non-visible 1x1 window.
   window_ = [[NSWindow alloc] initWithContentRect:NSMakeRect(0, 0, 1, 1)
                                         styleMask:NSBorderlessWindowMask
@@ -102,7 +102,7 @@ void atom::OffScreenWindow::CreatePlatformWidget() {
   browser_compositor_->Unsuspend();
 }
 
-// void atom::OffScreenWindow::PlatformDestroyCompositorWidget() {
+// void atom::OffScreenRenderWidgetHostView::PlatformDestroyCompositorWidget() {
 //   DCHECK(window_);
 //
 //   browser_compositor_->Destroy();

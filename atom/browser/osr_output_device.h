@@ -17,8 +17,6 @@ typedef base::Callback<void(const gfx::Rect&,int,int,void*)> OnPaintCallback;
 
 class OffScreenOutputDevice : public cc::SoftwareOutputDevice {
 public:
-  typedef base::Callback<void(const gfx::Rect&,int,int,void*)>
-      OnPaintCallback;
 
   OffScreenOutputDevice(bool transparent, const OnPaintCallback& callback);
   ~OffScreenOutputDevice();

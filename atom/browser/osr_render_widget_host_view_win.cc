@@ -4,7 +4,7 @@
 
 #include <windows.h>
 
-#include "atom/browser/osr_window.h"
+#include "atom/browser/osr_render_widget_host_view.h"
 
 namespace atom {
 
@@ -32,7 +32,7 @@ private:
   DISALLOW_COPY_AND_ASSIGN(DummyWindowWin);
 };
 
-void OffScreenWindow::CreatePlatformWidget() {
+void OffScreenRenderWidgetHostView::CreatePlatformWidget() {
   DCHECK(!window_);
   window_.reset(new DummyWindowWin());
   compositor_widget_ = window_->hwnd();

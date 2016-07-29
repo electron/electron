@@ -4,9 +4,9 @@
 
 #include "atom/browser/api/atom_api_web_contents.h"
 
-// @interface NSWindow
-// - (BOOL)isKeyWindow;
-// @end
+@interface NSWindow
+- (BOOL)isKeyWindow;
+@end
 
 namespace atom {
 

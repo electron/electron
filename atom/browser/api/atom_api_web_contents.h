@@ -18,7 +18,7 @@
 #include "native_mate/handle.h"
 #include "ui/gfx/image/image.h"
 
-#include "atom/browser/osr_window.h"
+#include "atom/browser/osr_output_device.h"
 
 namespace blink {
 struct WebDeviceEmulationParams;
@@ -145,7 +145,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   // Subscribe to the frame updates.
   void BeginFrameSubscription(mate::Arguments* args);
   void EndFrameSubscription();
-  void OnPaint(const gfx::Rect&, int, int, void*);
+  void OnPaint(v8::Isolate*, const gfx::Rect&, int, int, void*);
 
   // Dragging native items.
   void StartDrag(const mate::Dictionary& item, mate::Arguments* args);
@@ -157,7 +157,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   // Methods for creating <webview>.
   void SetSize(const SetSizeParams& params);
   bool IsGuest() const;
-  
+
   bool IsOffScreen() const;
 
   // Callback triggered on permission response.
@@ -272,6 +272,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void MediaStartedPlaying(const MediaPlayerId& id) override;
   void MediaStoppedPlaying(const MediaPlayerId& id) override;
   void DidChangeThemeColor(SkColor theme_color) override;
+  void RenderViewReady() override;
 
   // brightray::InspectableWebContentsDelegate:
   void DevToolsReloadPage() override;
@@ -308,8 +309,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
   v8::Global<v8::Value> session_;
   v8::Global<v8::Value> devtools_web_contents_;
   v8::Global<v8::Value> debugger_;
-
-  v8::Isolate* paint_isolate_;
 
   std::unique_ptr<WebViewGuestDelegate> guest_delegate_;
 

@@ -14,9 +14,10 @@ namespace atom {
 class OffScreenWebContentsView : public content::WebContentsView,
                                  public content::RenderViewHostDelegateView {
 public:
+
   OffScreenWebContentsView();
   ~OffScreenWebContentsView();
-  
+
   void SetWebContents(content::WebContents*);
 
   gfx::NativeView GetNativeView() const override;

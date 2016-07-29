@@ -57,8 +57,6 @@
 #include "ui/views/widget/desktop_aura/desktop_native_widget_aura.h"
 #endif
 
-#include <iostream>
-#include "atom/browser/osr_window.h"
 #include "content/public/browser/render_widget_host.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/context_factory.h"

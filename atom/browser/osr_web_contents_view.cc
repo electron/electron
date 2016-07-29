@@ -4,17 +4,16 @@
 
 #include "atom/browser/osr_web_contents_view.h"
 
-#include "atom/browser/osr_window.h"
+#include "atom/browser/osr_render_widget_host_view.h"
 #include <iostream>
 
 namespace atom {
 
-OffScreenWebContentsView::OffScreenWebContentsView() : web_contents_(nullptr) {
-  // std::cout << "OffScreenWebContentsView" << std::endl;
-  //std::this_thread::sleep_for(std::chrono::milliseconds(10000));
+OffScreenWebContentsView::OffScreenWebContentsView():
+    web_contents_(nullptr) {
 }
+
 OffScreenWebContentsView::~OffScreenWebContentsView() {
-  // std::cout << "~OffScreenWebContentsView" << std::endl;
 }
 
 void OffScreenWebContentsView::SetWebContents(
@@ -114,9 +113,9 @@ void OffScreenWebContentsView::CreateView(
 content::RenderWidgetHostViewBase*
   OffScreenWebContentsView::CreateViewForWidget(
     content::RenderWidgetHost* render_widget_host, bool is_guest_view_hack){
-  // std::cout << "CreateViewForWidget" << std::endl;
   auto relay = NativeWindowRelay::FromWebContents(web_contents_);
-  view_ = new OffScreenWindow(render_widget_host, relay->window.get());
+  view_ = new OffScreenRenderWidgetHostView(render_widget_host,
+    relay->window.get());
   return view_;
 }
 
@@ -124,9 +123,9 @@ content::RenderWidgetHostViewBase*
 content::RenderWidgetHostViewBase*
   OffScreenWebContentsView::CreateViewForPopupWidget(
     content::RenderWidgetHost* render_widget_host){
-  // std::cout << "CreateViewForPopupWidget" << std::endl;
   auto relay = NativeWindowRelay::FromWebContents(web_contents_);
-  view_ = new OffScreenWindow(render_widget_host, relay->window.get());
+  view_ = new OffScreenRenderWidgetHostView(render_widget_host,
+    relay->window.get());
   return view_;
 }
 

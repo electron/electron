@@ -70,9 +70,7 @@
 
 #include "content/browser/web_contents/web_contents_impl.h"
 #include "atom/browser/osr_web_contents_view.h"
-
-#include "content/browser/web_contents/web_contents_impl.h"
-#include "atom/browser/osr_web_contents_view.h"
+#include "atom/browser/osr_render_widget_host_view.h"
 
 #include "atom/common/node_includes.h"
 
@@ -291,7 +289,7 @@ WebContents::WebContents(v8::Isolate* isolate,
   else if (options.Get("isBackgroundPage", &b) && b)
     type_ = BACKGROUND_PAGE;
   else if (options.Get("offscreen", &b) && b)
-    type_ = OFF_SCREEN;  
+    type_ = OFF_SCREEN;
 
   // Obtain the session.
   std::string partition;
@@ -316,16 +314,19 @@ WebContents::WebContents(v8::Isolate* isolate,
     params.guest_delegate = guest_delegate_.get();
     web_contents = content::WebContents::Create(params);
   } else if(IsOffScreen()) {
-		content::WebContents::CreateParams params(session->browser_context());
+    content::WebContents::CreateParams params(session->browser_context());
 
     auto view = new OffScreenWebContentsView();
     params.view = view;
     params.delegate_view = view;
 
     web_contents = content::WebContents::Create(params);
-		view->SetWebContents(web_contents);
-	} else {
-		content::WebContents::CreateParams params(session->browser_context());
+    view->SetWebContents(web_contents);
+
+    paint_callback_ = base::Bind(&WebContents::OnPaint, base::Unretained(this),
+      isolate);
+  } else {
+    content::WebContents::CreateParams params(session->browser_context());
     web_contents = content::WebContents::Create(params);
   }
 
@@ -399,6 +400,14 @@ void WebContents::OnCreateWindow(const GURL& target_url,
     Emit("-new-window", target_url, frame_name, disposition);
   else
     Emit("new-window", target_url, frame_name, disposition);
+}
+
+void WebContents::RenderViewReady() {
+  if (IsOffScreen()) {
+    const auto rwhv = web_contents()->GetRenderWidgetHostView();
+    auto osr_rwhv = static_cast<OffScreenRenderWidgetHostView *>(rwhv);
+    osr_rwhv->SetPaintCallback(&paint_callback_);
+  }
 }
 
 content::WebContents* WebContents::OpenURLFromTab(
@@ -1226,28 +1235,10 @@ void WebContents::BeginFrameSubscription(mate::Arguments* args) {
 
   const auto view = web_contents()->GetRenderWidgetHostView();
   if (view) {
-    // std::unique_ptr<FrameSubscriber> frame_subscriber(new FrameSubscriber(
-    //     isolate(), view, callback, only_dirty));
-    // view->BeginFrameSubscription(std::move(frame_subscriber));
-    paint_isolate_ = args->isolate();
-
-    auto v = static_cast<OffScreenWindow *>(view);
-    paint_callback_ = base::Bind(&WebContents::OnPaint,
-      base::Unretained(this));
-    v->SetPaintCallback(&paint_callback_);
+    std::unique_ptr<FrameSubscriber> frame_subscriber(new FrameSubscriber(
+        isolate(), view, callback, only_dirty));
+    view->BeginFrameSubscription(std::move(frame_subscriber));
   }
-}
-
-void WebContents::OnPaint(
-    const gfx::Rect& damage_rect,
-    int bitmap_width,
-    int bitmap_height,
-    void* bitmap_pixels) {
-
-  v8::MaybeLocal<v8::Object> buffer = node::Buffer::New(paint_isolate_
-    , (char *)bitmap_pixels, sizeof(bitmap_pixels));
-
-  Emit("paint", damage_rect, bitmap_width, bitmap_height, buffer.ToLocalChecked());
 }
 
 void WebContents::EndFrameSubscription() {
@@ -1394,6 +1385,19 @@ v8::Local<v8::Value> WebContents::Debugger(v8::Isolate* isolate) {
     debugger_.Reset(isolate, handle.ToV8());
   }
   return v8::Local<v8::Value>::New(isolate, debugger_);
+}
+
+void WebContents::OnPaint(
+    v8::Isolate* isolate,
+    const gfx::Rect& damage_rect,
+    int bitmap_width,
+    int bitmap_height,
+    void* bitmap_pixels) {
+  v8::MaybeLocal<v8::Object> buffer = node::Buffer::New(isolate
+    , (char *)bitmap_pixels, sizeof(bitmap_pixels));
+
+  Emit("paint", damage_rect, bitmap_width, bitmap_height,
+       buffer.ToLocalChecked());
 }
 
 // static
