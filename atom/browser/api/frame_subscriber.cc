@@ -48,46 +48,21 @@ bool FrameSubscriber::ShouldCaptureFrame(
   if (!view_ || !host)
     return false;
 
-  /*if (dirty_rect.IsEmpty())
-    return false;*/
+  if (dirty_rect.IsEmpty())
+    return false;
 
   gfx::Rect rect = gfx::Rect(view_->GetVisibleViewportSize());
   if (only_dirty_)
     rect = dirty_rect;
 
-  /*host->CopyFromBackingStore(
+  host->CopyFromBackingStore(
       rect,
       rect.size(),
       base::Bind(&FrameSubscriber::OnFrameDelivered,
                  weak_factory_.GetWeakPtr(), callback_, rect),
-      kBGRA_8888_SkColorType);*/
+      kBGRA_8888_SkColorType);
 
-  const auto base = reinterpret_cast<content::RenderWidgetHostViewBase*>(
-    view_);
-  content::ImageTransportFactory* itf =
-    content::ImageTransportFactory::GetInstance();
-  cc::SurfaceManager* sfm = itf->GetSurfaceManager();
-  cc::Surface* surface = sfm->GetSurfaceForId(base->SurfaceIdForTesting());
-
-  std::unique_ptr<cc::CopyOutputRequest> request =
-    cc::CopyOutputRequest::CreateBitmapRequest(
-      base::Bind(&FrameSubscriber::ReadbackResultAsBitmap,
-      base::Unretained(this)));
-
-  // surface->RequestCopyOfOutput(std::move(request));
-  std::cout << request.get() << surface << std::endl;
   return false;
-}
-
-void FrameSubscriber::ReadbackResultAsBitmap(
-  std::unique_ptr<cc::CopyOutputResult> result) {
-  std::unique_ptr<SkBitmap> bitmap = result->TakeBitmap();
-
-  SkAutoPixmapUnlock res;
-  if (!bitmap->requestLock(&res))
-    return;
-
-  std::cout << res.pixmap().addr() << std::endl;
 }
 
 void FrameSubscriber::OnFrameDelivered(const FrameCaptureCallback& callback,
