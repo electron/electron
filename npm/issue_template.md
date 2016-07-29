@@ -1,6 +1,6 @@
-If there is an existing Electron issue for this, please link it here:
+If you're having an issue _installing_ Electron, this is the place to report it.
 
-https://github.com/atom/electron/issues
+If you're having an issue _using_ Electron, please report it at https://github.com/electron/electron/issues
 
-Describe your problem:
-
+* Electron version:
+* Operating system:
