@@ -60,7 +60,7 @@ void InitializeResourceBundle(const std::string& locale) {
 
   ui::ResourceBundle& bundle = ui::ResourceBundle::GetSharedInstance();
   bundle.AddDataPackFromPath(path, ui::GetSupportedScaleFactors()[0]);
-#if defined(OS_WIN)
+#if !defined(OS_MACOSX)
   bundle.AddDataPackFromPath(
       pak_dir.Append(FILE_PATH_LITERAL("blink_image_resources_200_percent.pak")),
       ui::SCALE_FACTOR_200P);
