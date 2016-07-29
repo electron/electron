@@ -743,7 +743,7 @@ bool WebContents::OnMessageReceived(const IPC::Message& message) {
 }
 
 // There are three ways of destroying a webContents:
-// 1. call webContents.destory();
+// 1. call webContents.destroy();
 // 2. garbage collection;
 // 3. user closes the window of webContents;
 // For webview only #1 will happen, for BrowserWindow both #1 and #3 may
