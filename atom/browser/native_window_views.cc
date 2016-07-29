@@ -544,6 +544,10 @@ gfx::Rect NativeWindowViews::GetBounds() {
   return window_->GetWindowBoundsInScreen();
 }
 
+gfx::Rect NativeWindowViews::GetContentBounds() {
+  return window_->GetClientAreaBoundsInScreen();
+}
+
 gfx::Size NativeWindowViews::GetContentSize() {
 #if defined(OS_WIN)
   if (IsMinimized())

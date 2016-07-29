@@ -91,6 +91,7 @@ class NativeWindow : public base::SupportsUserData,
   virtual gfx::Point GetPosition();
   virtual void SetContentSize(const gfx::Size& size, bool animate = false);
   virtual gfx::Size GetContentSize();
+  virtual gfx::Rect GetContentBounds() = 0;
   virtual void SetSizeConstraints(
       const extensions::SizeConstraints& size_constraints);
   virtual extensions::SizeConstraints GetSizeConstraints();

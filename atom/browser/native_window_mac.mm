@@ -753,6 +753,14 @@ gfx::Rect NativeWindowMac::GetBounds() {
   return bounds;
 }
 
+gfx::Rect NativeWindowMac::GetContentBounds() {
+  NSRect frame = [window_ convertRectToScreen:[[window_ contentView] frame]];
+  gfx::Rect bounds(frame.origin.x, 0, NSWidth(frame), NSHeight(frame));
+  NSScreen* screen = [[NSScreen screens] objectAtIndex:0];
+  bounds.set_y(NSHeight([screen frame]) - NSMaxY(frame));
+  return bounds;
+}
+
 void NativeWindowMac::SetContentSizeConstraints(
     const extensions::SizeConstraints& size_constraints) {
   auto convertSize = [this](const gfx::Size& size) {

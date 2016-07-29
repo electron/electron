@@ -112,6 +112,7 @@ class Window : public mate::TrackableObject<Window>,
   std::vector<int> GetSize();
   void SetContentSize(int width, int height, mate::Arguments* args);
   std::vector<int> GetContentSize();
+  gfx::Rect GetContentBounds();
   void SetMinimumSize(int width, int height);
   std::vector<int> GetMinimumSize();
   void SetMaximumSize(int width, int height);
