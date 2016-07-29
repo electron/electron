@@ -669,6 +669,11 @@ Resizes and moves the window to `width`, `height`, `x`, `y`.
 
 Returns an object that contains window's width, height, x and y values.
 
+#### `win.getContentBounds()`
+
+Returns an object that contains the window's client area (e.g. the web page)
+width, height, x and y values.
+
 #### `win.setSize(width, height[, animate])`
 
 * `width` Integer
