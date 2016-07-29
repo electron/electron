@@ -15,18 +15,15 @@
 #include "content/browser/renderer_host/render_widget_host_impl.h"
 #include "cc/output/compositor_frame.h"
 #include "ui/gfx/geometry/point.h"
+#include "base/process/kill.h"
 #include "base/threading/thread.h"
 #include "base/time/time.h"
 #include "ui/compositor/compositor.h"
 #include "ui/compositor/layer_delegate.h"
 #include "ui/compositor/layer_owner.h"
 #include "ui/base/ime/text_input_client.h"
-#include "base/process/kill.h"
 
-#include "cc/output/software_output_device.h"
-#include "cc/output/output_surface.h"
-#include "cc/output/output_surface_client.h"
-#include "cc/scheduler/begin_frame_source.h"
+#include "atom/browser/osr_output_device.h"
 
 #if defined(OS_WIN)
 #include <windows.h>
@@ -37,8 +34,6 @@
 #include "content/browser/renderer_host/browser_compositor_view_mac.h"
 #include "ui/accelerated_widget_mac/accelerated_widget_mac.h"
 #endif
-
-#include "atom/browser/osr_output_device.h"
 
 #if defined(OS_MACOSX)
 #ifdef __OBJC__
@@ -57,18 +52,19 @@ namespace atom {
 class AtomCopyFrameGenerator;
 class AtomBeginFrameTimer;
 
-class OffScreenRenderWidgetHostView
-  : public content::RenderWidgetHostViewBase,
-  #if defined(OS_MACOSX)
-    public ui::AcceleratedWidgetMacNSView,
-  #endif
-    public ui::CompositorDelegate,
-    public content::DelegatedFrameHostClient {
+class OffScreenRenderWidgetHostView:
+  public content::RenderWidgetHostViewBase,
+#if defined(OS_MACOSX)
+  public ui::AcceleratedWidgetMacNSView,
+#endif
+  public ui::CompositorDelegate,
+  public content::DelegatedFrameHostClient {
 public:
   OffScreenRenderWidgetHostView(content::RenderWidgetHost*, NativeWindow*);
   ~OffScreenRenderWidgetHostView();
 
   void CreatePlatformWidget();
+  void DestroyPlatformWidget();
 
   // content::RenderWidgetHostView
   bool OnMessageReceived(const IPC::Message&) override;

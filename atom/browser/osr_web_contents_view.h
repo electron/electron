@@ -54,7 +54,7 @@ public:
   void CloseTabAfterEventTracking() override;
 #endif
 
-  // RenderViewHostDelegateView methods.
+  // content::RenderViewHostDelegateView
   void StartDragging(
       const content::DropData& drop_data,
       blink::WebDragOperationsMask allowed_ops,

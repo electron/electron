@@ -102,18 +102,20 @@ void atom::OffScreenRenderWidgetHostView::CreatePlatformWidget() {
   browser_compositor_->Unsuspend();
 }
 
-// void atom::OffScreenRenderWidgetHostView::PlatformDestroyCompositorWidget() {
-//   DCHECK(window_);
-//
-//   browser_compositor_->Destroy();
-//
-//   [window_ close];
-//   window_ = nil;
-//   [background_layer_ release];
-//   background_layer_ = nil;
-//
-//   browser_compositor_.reset();
-//
-//   delete accelerated_widget_helper_;
-//   accelerated_widget_helper_ = nullptr;
-// }
+void atom::OffScreenRenderWidgetHostView::DestroyPlatformWidget() {
+  DCHECK(window_);
+
+  ui::Compositor* compositor = compositor_.release();
+  ALLOW_UNUSED_LOCAL(compositor);
+
+  [window_ close];
+  window_ = nil;
+  [background_layer_ release];
+  background_layer_ = nil;
+
+  browser_compositor_->accelerated_widget_mac()->ResetNSView();
+  browser_compositor_->compositor()->SetVisible(false);
+  browser_compositor_->compositor()->SetScaleAndSize(1.0, gfx::Size(0, 0));
+  browser_compositor_->compositor()->SetRootLayer(NULL);
+  content::BrowserCompositorMac::Recycle(std::move(browser_compositor_));
+}

@@ -17,42 +17,22 @@
 #include "base/single_thread_task_runner.h"
 #include "ui/compositor/layer.h"
 #include "ui/compositor/layer_type.h"
+#include "base/callback_helpers.h"
 #include "base/location.h"
 #include "base/time/time.h"
 #include "ui/gfx/native_widget_types.h"
 #include "ui/views/widget/widget.h"
-#include <iostream>
-#include <chrono>
-#include <thread>
-
-#include "third_party/skia/include/core/SkSurface.h"
-#include "third_party/skia/include/core/SkPixmap.h"
-#include "cc/output/output_surface_client.h"
 #include "cc/output/copy_output_request.h"
-
-#include "base/callback_helpers.h"
-#include "base/location.h"
-#include "base/logging.h"
-#include "content/public/browser/browser_thread.h"
 #include "cc/scheduler/delay_based_time_source.h"
+#include "content/public/browser/browser_thread.h"
+
+#include <iostream>
 
 const float kDefaultScaleFactor = 1.0;
 
-// The maximum number of retry counts if frame capture fails.
 const int kFrameRetryLimit = 2;
 
-// When accelerated compositing is enabled and a widget resize is pending,
-// we delay further resizes of the UI. The following constant is the maximum
-// length of time that we should delay further UI resizes while waiting for a
-// resized frame from a renderer.
 // const int kResizeLockTimeoutMs = 67;
-
-#define CEF_UIT content::BrowserThread::UI
-#define CEF_POST_TASK(id, task) \
-    content::BrowserThread::PostTask(id, FROM_HERE, task)
-#define CEF_POST_DELAYED_TASK(id, task, delay_ms) \
-    content::BrowserThread::PostDelayedTask(id, FROM_HERE, task, \
-        base::TimeDelta::FromMilliseconds(delay_ms))
 
 namespace atom {
 
@@ -75,29 +55,25 @@ class AtomCopyFrameGenerator {
     if (force_frame && !frame_pending_)
       frame_pending_ = true;
 
-    // No frame needs to be generated at this time.
     if (!frame_pending_)
       return;
 
-    // Keep track of |damage_rect| for when the next frame is generated.
     if (!damage_rect.IsEmpty())
       pending_damage_rect_.Union(damage_rect);
 
-    // Don't attempt to generate a frame while one is currently in-progress.
     if (frame_in_progress_) {
       return;
     }
     frame_in_progress_ = true;
 
-    // Don't exceed the frame rate threshold.
     const int64_t frame_rate_delta =
         (base::TimeTicks::Now() - frame_start_time_).InMilliseconds();
     if (frame_rate_delta < frame_rate_threshold_ms_) {
-      // Generate the frame after the necessary time has passed.
-      CEF_POST_DELAYED_TASK(CEF_UIT,
-          base::Bind(&AtomCopyFrameGenerator::InternalGenerateCopyFrame,
-                     weak_ptr_factory_.GetWeakPtr()),
-          frame_rate_threshold_ms_ - frame_rate_delta);
+      content::BrowserThread::PostDelayedTask(content::BrowserThread::UI,
+        FROM_HERE,
+        base::Bind(&AtomCopyFrameGenerator::InternalGenerateCopyFrame,
+        weak_ptr_factory_.GetWeakPtr()), base::TimeDelta::FromMilliseconds(
+        frame_rate_threshold_ms_ - frame_rate_delta));
       return;
     }
 
@@ -121,9 +97,6 @@ class AtomCopyFrameGenerator {
     const gfx::Rect damage_rect = pending_damage_rect_;
     pending_damage_rect_.SetRect(0, 0, 0, 0);
 
-    // The below code is similar in functionality to
-    // DelegatedFrameHost::CopyFromCompositingSurface but we reuse the same
-    // SkBitmap in the GPU codepath and avoid scaling where possible.
     std::unique_ptr<cc::CopyOutputRequest> request =
         cc::CopyOutputRequest::CreateRequest(base::Bind(
             &AtomCopyFrameGenerator::CopyFromCompositingSurfaceHasResult,
@@ -139,7 +112,6 @@ class AtomCopyFrameGenerator {
   void CopyFromCompositingSurfaceHasResult(
       const gfx::Rect& damage_rect,
       std::unique_ptr<cc::CopyOutputResult> result) {
-    // std::cout << "has result" << std::endl;
     if (result->IsEmpty() || result->size().IsEmpty() ||
         !view_->render_widget_host()) {
       OnCopyFrameCaptureFailure(damage_rect);
@@ -172,7 +144,6 @@ class AtomCopyFrameGenerator {
     if (!bitmap_ ||
         bitmap_size.width() != result_size.width() ||
         bitmap_size.height() != result_size.height()) {
-      // Create a new bitmap if the size has changed.
       bitmap_.reset(new SkBitmap);
       bitmap_->allocN32Pixels(result_size.width(),
                               result_size.height(),
@@ -225,7 +196,6 @@ class AtomCopyFrameGenerator {
       std::unique_ptr<SkBitmap> bitmap,
       std::unique_ptr<SkAutoLockPixels> bitmap_pixels_lock,
       bool result) {
-    // This method may be called after the view has been deleted.
     gpu::SyncToken sync_token;
     if (result) {
       display_compositor::GLHelper* gl_helper =
@@ -251,7 +221,6 @@ class AtomCopyFrameGenerator {
       std::unique_ptr<SkBitmap> bitmap,
       std::unique_ptr<SkAutoLockPixels> bitmap_pixels_lock,
       bool result) {
-    // Restore ownership of the bitmap to the view.
     DCHECK(!bitmap_);
     bitmap_ = std::move(bitmap);
 
@@ -282,7 +251,6 @@ class AtomCopyFrameGenerator {
 
   void OnCopyFrameCaptureFailure(
       const gfx::Rect& damage_rect) {
-    // Retry with the same |damage_rect|.
     pending_damage_rect_.Union(damage_rect);
 
     const bool force_frame = (++frame_retry_count_ <= kFrameRetryLimit);
@@ -293,12 +261,10 @@ class AtomCopyFrameGenerator {
       const gfx::Rect& damage_rect,
       const SkBitmap& bitmap,
       std::unique_ptr<SkAutoLockPixels> bitmap_pixels_lock) {
-
     uint8_t* pixels = reinterpret_cast<uint8_t*>(bitmap.getPixels());
 
     view_->OnPaint(damage_rect, bitmap.width(), bitmap.height(), pixels);
 
-    // Reset the frame retry count on successful frame generation.
     if (frame_retry_count_ > 0)
       frame_retry_count_ = 0;
 
@@ -309,13 +275,11 @@ class AtomCopyFrameGenerator {
     frame_in_progress_ = false;
 
     if (frame_pending_) {
-      // Another frame was requested while the current frame was in-progress.
-      // Generate the pending frame now.
-      CEF_POST_TASK(CEF_UIT,
-          base::Bind(&AtomCopyFrameGenerator::GenerateCopyFrame,
-                     weak_ptr_factory_.GetWeakPtr(),
-                     force_frame,
-                     gfx::Rect()));
+      content::BrowserThread::PostTask(content::BrowserThread::UI, FROM_HERE,
+        base::Bind(&AtomCopyFrameGenerator::GenerateCopyFrame,
+                   weak_ptr_factory_.GetWeakPtr(),
+                   force_frame,
+                   gfx::Rect()));
     }
   }
 
@@ -336,8 +300,6 @@ class AtomCopyFrameGenerator {
   DISALLOW_COPY_AND_ASSIGN(AtomCopyFrameGenerator);
 };
 
-// Used to control the VSync rate in subprocesses when BeginFrame scheduling is
-// enabled.
 class AtomBeginFrameTimer : public cc::DelayBasedTimeSourceClient {
  public:
   AtomBeginFrameTimer(int frame_rate_threshold_ms,
@@ -345,7 +307,7 @@ class AtomBeginFrameTimer : public cc::DelayBasedTimeSourceClient {
       : callback_(callback) {
     time_source_ = cc::DelayBasedTimeSource::Create(
         base::TimeDelta::FromMilliseconds(frame_rate_threshold_ms),
-        content::BrowserThread::GetMessageLoopProxyForThread(CEF_UIT).get());
+        content::BrowserThread::GetMessageLoopProxyForThread(content::BrowserThread::UI).get());
     time_source_->SetClient(this);
   }
 
@@ -364,7 +326,6 @@ class AtomBeginFrameTimer : public cc::DelayBasedTimeSourceClient {
   }
 
  private:
-  // cc::TimerSourceClient implementation.
   void OnTimerTick() override {
     callback_.Run();
   }
@@ -398,7 +359,6 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
 #endif
 
 #if !defined(OS_MACOSX)
-  // On OS X the ui::Compositor is created/owned by the platform view.
   compositor_widget_ = native_window_->GetAcceleratedWidget();
   compositor_.reset(
       new ui::Compositor(content::GetContextFactory(),
@@ -411,27 +371,38 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
   ResizeRootLayer();
 }
 
+OffScreenRenderWidgetHostView::~OffScreenRenderWidgetHostView() {
+  if (is_showing_)
+    delegated_frame_host_->WasHidden();
+  delegated_frame_host_->ResetCompositor();
+
+  DestroyPlatformWidget();
+
+  if (copy_frame_generator_.get())
+    copy_frame_generator_.reset(NULL);
+
+  delegated_frame_host_.reset(NULL);
+  compositor_.reset(NULL);
+  root_layer_.reset(NULL);
+}
+
+
 void OffScreenRenderWidgetHostView::ResizeRootLayer() {
   SetFrameRate();
 
-  // const float orgScaleFactor = scale_factor_;
-  // SetDeviceScaleFactor();
-  // const bool scaleFactorDidChange = (orgScaleFactor != scale_factor_);
-  //
-  // gfx::Size size;
-  // if (!IsPopupWidget())
-  //   size = GetViewBounds().size();
-  // else
-  //   size = popup_position_.size();
-  //
-  // if (!scaleFactorDidChange && size == root_layer_->bounds().size())
-  //   return;
-  //
-  // const gfx::Size& size_in_pixels =
-  //     gfx::ConvertSizeToPixel(scale_factor_, size);
-  //
-  // root_layer_->SetBounds(gfx::Rect(size));
-  // compositor_->SetScaleAndSize(scale_factor_, size_in_pixels);
+  const float orgScaleFactor = scale_factor_;
+  const bool scaleFactorDidChange = (orgScaleFactor != scale_factor_);
+
+  gfx::Size size = GetViewBounds().size();
+
+  if (!scaleFactorDidChange && size == root_layer_->bounds().size())
+    return;
+
+  const gfx::Size& size_in_pixels =
+      gfx::ConvertSizeToPixel(scale_factor_, size);
+
+  root_layer_->SetBounds(gfx::Rect(size));
+  compositor_->SetScaleAndSize(scale_factor_, size_in_pixels);
 }
 
 void OffScreenRenderWidgetHostView::OnBeginFrameTimerTick() {
@@ -445,7 +416,6 @@ void OffScreenRenderWidgetHostView::SendBeginFrame(base::TimeTicks frame_time,
                                                 base::TimeDelta vsync_period) {
   base::TimeTicks display_time = frame_time + vsync_period;
 
-  // TODO(brianderson): Use adaptive draw-time estimation.
   base::TimeDelta estimated_browser_composite_time =
       base::TimeDelta::FromMicroseconds(
           (1.0f * base::Time::kMicrosecondsPerSecond) / (3.0f * 60));
@@ -458,25 +428,13 @@ void OffScreenRenderWidgetHostView::SendBeginFrame(base::TimeTicks frame_time,
                                  vsync_period, cc::BeginFrameArgs::NORMAL)));
 }
 
-void OffScreenRenderWidgetHostView::SetPaintCallback(const OnPaintCallback* callback) {
+void OffScreenRenderWidgetHostView::SetPaintCallback(
+    const OnPaintCallback* callback) {
   callback_.reset(callback);
 }
 
-OffScreenRenderWidgetHostView::~OffScreenRenderWidgetHostView() {
-  // std::cout << "~OffScreenRenderWidgetHostView" << std::endl;
-
-  if (is_showing_)
-    delegated_frame_host_->WasHidden();
-  delegated_frame_host_->ResetCompositor();
-
-  delegated_frame_host_.reset(NULL);
-  compositor_.reset(NULL);
-  root_layer_.reset(NULL);
-}
-
-bool OffScreenRenderWidgetHostView::OnMessageReceived(const IPC::Message& message) {
-  // std::cout << "OnMessageReceived" << std::endl;
-
+bool OffScreenRenderWidgetHostView::OnMessageReceived(
+    const IPC::Message& message) {
   bool handled = true;
   IPC_BEGIN_MESSAGE_MAP(OffScreenRenderWidgetHostView, message)
     IPC_MESSAGE_HANDLER(ViewHostMsg_SetNeedsBeginFrames,
@@ -490,19 +448,15 @@ bool OffScreenRenderWidgetHostView::OnMessageReceived(const IPC::Message& messag
 }
 
 void OffScreenRenderWidgetHostView::InitAsChild(gfx::NativeView) {
-  // std::cout << "InitAsChild" << std::endl;
 }
 
-content::RenderWidgetHost* OffScreenRenderWidgetHostView::GetRenderWidgetHost() const {
-  // std::cout << "GetRenderWidgetHost" << std::endl;
+content::RenderWidgetHost* OffScreenRenderWidgetHostView::GetRenderWidgetHost()
+    const {
   return render_widget_host_;
 }
 
 void OffScreenRenderWidgetHostView::SetSize(const gfx::Size& size) {
-  // std::cout << "SetSize" << std::endl;
   size_ = size;
-
-  // std::cout << size.width() << "x" << size.height() << std::endl;
 
   const gfx::Size& size_in_pixels =
     gfx::ConvertSizeToPixel(scale_factor_, size);
@@ -512,45 +466,37 @@ void OffScreenRenderWidgetHostView::SetSize(const gfx::Size& size) {
 }
 
 void OffScreenRenderWidgetHostView::SetBounds(const gfx::Rect& new_bounds) {
-  // std::cout << "SetBounds" << std::endl;
 }
 
 gfx::Vector2dF OffScreenRenderWidgetHostView::GetLastScrollOffset() const {
-  // std::cout << "GetLastScrollOffset" << std::endl;
   return last_scroll_offset_;
 }
 
 gfx::NativeView OffScreenRenderWidgetHostView::GetNativeView() const {
-  // std::cout << "GetNativeView" << std::endl;
   return gfx::NativeView();
 }
 
-gfx::NativeViewAccessible OffScreenRenderWidgetHostView::GetNativeViewAccessible() {
-  // std::cout << "GetNativeViewAccessible" << std::endl;
+gfx::NativeViewAccessible
+  OffScreenRenderWidgetHostView::GetNativeViewAccessible() {
   return gfx::NativeViewAccessible();
 }
 
 ui::TextInputClient* OffScreenRenderWidgetHostView::GetTextInputClient() {
-  // std::cout << "GetTextInputClient" << std::endl;
   return nullptr;
 }
 
 void OffScreenRenderWidgetHostView::Focus() {
-  // std::cout << "Focus" << std::endl;
 }
 
 bool OffScreenRenderWidgetHostView::HasFocus() const {
-  // std::cout << "HasFocus" << std::endl;
   return false;
 }
 
 bool OffScreenRenderWidgetHostView::IsSurfaceAvailableForCopy() const {
-  // std::cout << "IsSurfaceAvailableForCopy" << std::endl;
   return delegated_frame_host_->CanCopyToBitmap();
 }
 
 void OffScreenRenderWidgetHostView::Show() {
-  // std::cout << "Show" << std::endl;
   if (is_showing_)
     return;
 
@@ -562,7 +508,6 @@ void OffScreenRenderWidgetHostView::Show() {
 }
 
 void OffScreenRenderWidgetHostView::Hide() {
-  // std::cout << "Hide" << std::endl;
   if (!is_showing_)
     return;
 
@@ -574,49 +519,36 @@ void OffScreenRenderWidgetHostView::Hide() {
 }
 
 bool OffScreenRenderWidgetHostView::IsShowing() {
-  // std::cout << "IsShowing" << std::endl;
   return is_showing_;
 }
 
 gfx::Rect OffScreenRenderWidgetHostView::GetViewBounds() const {
-  // std::cout << "GetViewBounds" << std::endl;
-  // std::cout << size_.width() << "x" << size_.height() << std::endl;
   return gfx::Rect(size_);
 }
 
 gfx::Size OffScreenRenderWidgetHostView::GetVisibleViewportSize() const {
-  // std::cout << "GetVisibleViewportSize" << std::endl;
-  // std::cout << size_.width() << "x" << size_.height() << std::endl;
   return size_;
 }
 
 void OffScreenRenderWidgetHostView::SetInsets(const gfx::Insets& insets) {
-  // std::cout << "SetInsets" << std::endl;
 }
 
 bool OffScreenRenderWidgetHostView::LockMouse() {
-  // std::cout << "LockMouse" << std::endl;
   return false;
 }
 
 void OffScreenRenderWidgetHostView::UnlockMouse() {
-  // std::cout << "UnlockMouse" << std::endl;
 }
 
 bool OffScreenRenderWidgetHostView::GetScreenColorProfile(std::vector<char>*) {
-  // std::cout << "GetScreenColorProfile" << std::endl;
   return false;
 }
 
 void OffScreenRenderWidgetHostView::OnSwapCompositorFrame(
   uint32_t output_surface_id,
   std::unique_ptr<cc::CompositorFrame> frame) {
-  // base::Time now = base::Time::Now();
-  // std::cout << "OnSwapCompositorFrame " << (now - last_time_).InMilliseconds()  << " ms" << std::endl;
-  // last_time_ = now;
-  TRACE_EVENT0("electron", "OffScreenRenderWidgetHostView::OnSwapCompositorFrame");
-
-  // std::cout << output_surface_id << std::endl;
+  TRACE_EVENT0("electron",
+    "OffScreenRenderWidgetHostView::OnSwapCompositorFrame");
 
   if (frame->metadata.root_scroll_offset != last_scroll_offset_) {
     last_scroll_offset_ = frame->metadata.root_scroll_offset;
@@ -652,59 +584,48 @@ void OffScreenRenderWidgetHostView::OnSwapCompositorFrame(
 }
 
 void OffScreenRenderWidgetHostView::ClearCompositorFrame() {
-  // std::cout << "ClearCompositorFrame" << std::endl;
   delegated_frame_host_->ClearDelegatedFrame();
 }
 
 void OffScreenRenderWidgetHostView::InitAsPopup(
   content::RenderWidgetHostView *, const gfx::Rect &) {
-  // std::cout << "InitAsPopup" << std::endl;
 }
 
-void OffScreenRenderWidgetHostView::InitAsFullscreen(content::RenderWidgetHostView *) {
-  // std::cout << "InitAsFullscreen" << std::endl;
+void OffScreenRenderWidgetHostView::InitAsFullscreen(
+  content::RenderWidgetHostView *) {
 }
 
 void OffScreenRenderWidgetHostView::UpdateCursor(const content::WebCursor &) {
-  // std::cout << "UpdateCursor" << std::endl;
 }
 
 void OffScreenRenderWidgetHostView::SetIsLoading(bool loading) {
-  // std::cout << "SetIsLoading" << std::endl;
 }
 
 void OffScreenRenderWidgetHostView::TextInputStateChanged(
   const content::TextInputState& params) {
-  // std::cout << "TextInputStateChanged" << std::endl;
 }
 
 void OffScreenRenderWidgetHostView::ImeCancelComposition() {
-  // std::cout << "ImeCancelComposition" << std::endl;
 }
 
 void OffScreenRenderWidgetHostView::RenderProcessGone(base::TerminationStatus,int) {
-  // std::cout << "RenderProcessGone" << std::endl;
   Destroy();
 }
 
 void OffScreenRenderWidgetHostView::Destroy() {
-  // std::cout << "Destroy" << std::endl;
 }
 
 void OffScreenRenderWidgetHostView::SetTooltipText(const base::string16 &) {
-  // std::cout << "SetTooltipText" << std::endl;
 }
 
 void OffScreenRenderWidgetHostView::SelectionBoundsChanged(
   const ViewHostMsg_SelectionBounds_Params &) {
-  // std::cout << "SelectionBoundsChanged" << std::endl;
 }
 
 void OffScreenRenderWidgetHostView::CopyFromCompositingSurface(const gfx::Rect& src_subrect,
   const gfx::Size& dst_size,
   const content::ReadbackRequestCallback& callback,
   const SkColorType preferred_color_type) {
-  // std::cout << "CopyFromCompositingSurface" << std::endl;
   delegated_frame_host_->CopyFromCompositingSurface(
     src_subrect, dst_size, callback, preferred_color_type);
 }
@@ -713,35 +634,28 @@ void OffScreenRenderWidgetHostView::CopyFromCompositingSurfaceToVideoFrame(
   const gfx::Rect& src_subrect,
   const scoped_refptr<media::VideoFrame>& target,
   const base::Callback<void (const gfx::Rect&, bool)>& callback) {
-  // std::cout << "CopyFromCompositingSurfaceToVideoFrame" << std::endl;
   delegated_frame_host_->CopyFromCompositingSurfaceToVideoFrame(
     src_subrect, target, callback);
 }
 
 bool OffScreenRenderWidgetHostView::CanCopyToVideoFrame() const {
-  // std::cout << "CanCopyToVideoFrame" << std::endl;
   return delegated_frame_host_->CanCopyToVideoFrame();
 }
 
 void OffScreenRenderWidgetHostView::BeginFrameSubscription(
   std::unique_ptr<content::RenderWidgetHostViewFrameSubscriber> subscriber) {
-  // std::cout << "BeginFrameSubscription" << std::endl;
   delegated_frame_host_->BeginFrameSubscription(std::move(subscriber));
 }
 
 void OffScreenRenderWidgetHostView::EndFrameSubscription() {
-  // std::cout << "EndFrameSubscription" << std::endl;
   delegated_frame_host_->EndFrameSubscription();
 }
 
 bool OffScreenRenderWidgetHostView::HasAcceleratedSurface(const gfx::Size &) {
-  // std::cout << "HasAcceleratedSurface" << std::endl;
   return false;
 }
 
 void OffScreenRenderWidgetHostView::GetScreenInfo(blink::WebScreenInfo* results) {
-  // std::cout << "GetScreenInfo" << std::endl;
-  // std::cout << size_.width() << "x" << size_.height() << std::endl;
   results->rect = gfx::Rect(size_);
   results->availableRect = gfx::Rect(size_);
   results->depth = 24;
@@ -752,86 +666,68 @@ void OffScreenRenderWidgetHostView::GetScreenInfo(blink::WebScreenInfo* results)
 }
 
 bool OffScreenRenderWidgetHostView::GetScreenColorProfile(blink::WebVector<char>*) {
-  // std::cout << "GetScreenColorProfile" << std::endl;
   return false;
 }
 
 gfx::Rect OffScreenRenderWidgetHostView::GetBoundsInRootWindow() {
-  // std::cout << "GetBoundsInRootWindow" << std::endl;
-  // std::cout << size_.width() << "x" << size_.height() << std::endl;
   return gfx::Rect(size_);
 }
 
 void OffScreenRenderWidgetHostView::LockCompositingSurface() {
-  // std::cout << "LockCompositingSurface" << std::endl;
 }
 
 void OffScreenRenderWidgetHostView::UnlockCompositingSurface() {
-  // std::cout << "UnlockCompositingSurface" << std::endl;
 }
 
 void OffScreenRenderWidgetHostView::ImeCompositionRangeChanged(
   const gfx::Range &, const std::vector<gfx::Rect>&) {
-  // std::cout << "ImeCompositionRangeChanged" << std::endl;
 }
 
 gfx::Size OffScreenRenderWidgetHostView::GetPhysicalBackingSize() const {
-  // std::cout << "GetPhysicalBackingSize" << std::endl;
   return size_;
 }
 
 gfx::Size OffScreenRenderWidgetHostView::GetRequestedRendererSize() const {
-  // std::cout << "GetRequestedRendererSize" << std::endl;
   return size_;
 }
 
 int OffScreenRenderWidgetHostView::DelegatedFrameHostGetGpuMemoryBufferClientId() const {
-  // std::cout << "DelegatedFrameHostGetGpuMemoryBufferClientId" << std::endl;
   return render_widget_host_->GetProcess()->GetID();
 }
 
 ui::Layer* OffScreenRenderWidgetHostView::DelegatedFrameHostGetLayer() const {
-  // std::cout << "DelegatedFrameHostGetLayer" << std::endl;
   return const_cast<ui::Layer*>(root_layer_.get());
 }
 
 bool OffScreenRenderWidgetHostView::DelegatedFrameHostIsVisible() const {
-  // std::cout << "DelegatedFrameHostIsVisible" << std::endl;
-  // std::cout << !render_widget_host_->is_hidden() << std::endl;
   return !render_widget_host_->is_hidden();
 }
 
-SkColor OffScreenRenderWidgetHostView::DelegatedFrameHostGetGutterColor(SkColor color) const {
-  // std::cout << "DelegatedFrameHostGetGutterColor" << std::endl;
+SkColor OffScreenRenderWidgetHostView::DelegatedFrameHostGetGutterColor(
+    SkColor color) const {
   return color;
 }
 
-gfx::Size OffScreenRenderWidgetHostView::DelegatedFrameHostDesiredSizeInDIP() const {
-  // std::cout << "DelegatedFrameHostDesiredSizeInDIP" << std::endl;
-  // std::cout << size_.width() << "x" << size_.height() << std::endl;
+gfx::Size OffScreenRenderWidgetHostView::DelegatedFrameHostDesiredSizeInDIP()
+  const {
   return size_;
 }
 
 bool OffScreenRenderWidgetHostView::DelegatedFrameCanCreateResizeLock() const {
-  // std::cout << "DelegatedFrameCanCreateResizeLock" << std::endl;
   return false;
 }
 
 std::unique_ptr<content::ResizeLock>
   OffScreenRenderWidgetHostView::DelegatedFrameHostCreateResizeLock(bool) {
-  // std::cout << "DelegatedFrameHostCreateResizeLock" << std::endl;
   return nullptr;
 }
 
 void OffScreenRenderWidgetHostView::DelegatedFrameHostResizeLockWasReleased() {
-  // std::cout << "DelegatedFrameHostResizeLockWasReleased" << std::endl;
   return render_widget_host_->WasResized();
 }
 
 void OffScreenRenderWidgetHostView::DelegatedFrameHostSendCompositorSwapAck(
   int output_surface_id, const cc::CompositorFrameAck& ack) {
-  // std::cout << "DelegatedFrameHostSendCompositorSwapAck" << std::endl;
-  // std::cout << output_surface_id << std::endl;
   render_widget_host_->Send(new ViewMsg_SwapCompositorFrameAck(
     render_widget_host_->GetRoutingID(),
     output_surface_id, ack));
@@ -839,21 +735,17 @@ void OffScreenRenderWidgetHostView::DelegatedFrameHostSendCompositorSwapAck(
 
 void OffScreenRenderWidgetHostView::DelegatedFrameHostSendReclaimCompositorResources(
   int output_surface_id, const cc::CompositorFrameAck& ack) {
-  // std::cout << "DelegatedFrameHostSendReclaimCompositorResources" << std::endl;
-  // std::cout << output_surface_id << std::endl;
   render_widget_host_->Send(new ViewMsg_ReclaimCompositorResources(
     render_widget_host_->GetRoutingID(),
     output_surface_id, ack));
 }
 
 void OffScreenRenderWidgetHostView::DelegatedFrameHostOnLostCompositorResources() {
-  // std::cout << "DelegatedFrameHostOnLostCompositorResources" << std::endl;
   render_widget_host_->ScheduleComposite();
 }
 
 void OffScreenRenderWidgetHostView::DelegatedFrameHostUpdateVSyncParameters(
   const base::TimeTicks& timebase, const base::TimeDelta& interval) {
-  // std::cout << "DelegatedFrameHostUpdateVSyncParameters" << std::endl;
   render_widget_host_->UpdateVSyncParameters(timebase, interval);
 }
 
@@ -877,18 +769,15 @@ void OffScreenRenderWidgetHostView::OnSetNeedsBeginFrames(bool enabled) {
   if (software_output_device_) {
     software_output_device_->SetActive(enabled);
   }
-  // std::cout << "OnSetNeedsBeginFrames" << enabled << std::endl;
 }
 
 void OffScreenRenderWidgetHostView::SetFrameRate() {
-  // Only set the frame rate one time.
-  // if (frame_rate_threshold_ms_ != 0)
-  //   return;
+  if (frame_rate_threshold_ms_ != 0)
+    return;
 
   const int frame_rate = 60;
   frame_rate_threshold_ms_ = 1000 / frame_rate;
 
-  // Configure the VSync interval for the browser process.
   compositor_->vsync_manager()->SetAuthoritativeVSyncInterval(
       base::TimeDelta::FromMilliseconds(frame_rate_threshold_ms_));
 

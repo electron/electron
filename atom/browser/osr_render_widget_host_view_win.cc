@@ -38,4 +38,9 @@ void OffScreenRenderWidgetHostView::CreatePlatformWidget() {
   compositor_widget_ = window_->hwnd();
 }
 
+void OffScreenRenderWidgetHostView::DestroyPlatformWidget() {
+  window_.reset(NULL);
+  compositor_widget_ = gfx::kNullAcceleratedWidget;
+}
+
 }  // namespace atom
