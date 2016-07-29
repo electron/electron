@@ -545,9 +545,7 @@ gfx::Rect NativeWindowViews::GetBounds() {
 }
 
 gfx::Rect NativeWindowViews::GetContentBounds() {
-  gfx::Rect bounds = window_->GetClientAreaBoundsInScreen();
-  bounds.set_size(GetContentSize());
-  return bounds;
+  return web_view_->GetBoundsInScreen();
 }
 
 gfx::Size NativeWindowViews::GetContentSize() {
