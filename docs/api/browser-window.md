@@ -627,7 +627,7 @@ Returns a boolean, whether the window is in fullscreen mode.
 
 #### `win.setAspectRatio(aspectRatio[, extraSize])` _macOS_
 
-* `aspectRatio` The aspect ratio to maintain for some portion of the
+* `aspectRatio` Float - The aspect ratio to maintain for some portion of the
 content view.
 * `extraSize` Object (optional) - The extra size not to be included while
 maintaining the aspect ratio.
@@ -819,6 +819,9 @@ Returns the title of the native window.
 window.
 
 #### `win.setSheetOffset(offsetY[, offsetX])` _macOS_
+
+* `offsetY` Float
+* `offsetX` Float (optional)
 
 Changes the attachment point for sheets on macOS. By default, sheets are
 attached just below the window frame, but you may want to display them beneath

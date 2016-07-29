@@ -918,7 +918,7 @@ app.on('ready', () => {
     (screenPosition == mobile) (default: `{x: 0, y: 0}`)
   * `x` Integer - Set the x axis offset from top left corner
   * `y` Integer - Set the y axis offset from top left corner
-* `deviceScaleFactor` Integer - Set the device scale factor (if zero defaults to
+* `deviceScaleFactor` Float - Set the device scale factor (if zero defaults to
     original device scale factor) (default: `0`)
 * `viewSize` Object - Set the emulated view size (empty means no override)
   * `width` Integer - Set the emulated view width
