@@ -7,6 +7,7 @@
 #include <map>
 #include <utility>
 #include "atom/browser/extensions/atom_extension_api_frame_id_map_helper.h"
+#include "atom/browser/extensions/atom_extension_web_contents_observer.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_view_host.h"
@@ -47,6 +48,8 @@ TabHelper::TabHelper(content::WebContents* contents)
   RenderViewCreated(contents->GetRenderViewHost());
   contents->ForEachFrame(
       base::Bind(&TabHelper::SetTabId, base::Unretained(this)));
+
+  AtomExtensionWebContentsObserver::CreateForWebContents(contents);
 }
 
 TabHelper::~TabHelper() {
