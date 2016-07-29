@@ -332,6 +332,8 @@ describe('browser-window module', function () {
       var after = w.getContentSize()
       assert.equal(after[0], size[0])
       assert.equal(after[1], size[1])
+      assert.equal(w.getContentBounds().width, size[0])
+      assert.equal(w.getContentBounds().height, size[1])
     })
 
     it('works for framless window', function () {
@@ -347,6 +349,8 @@ describe('browser-window module', function () {
       var after = w.getContentSize()
       assert.equal(after[0], size[0])
       assert.equal(after[1], size[1])
+      assert.equal(w.getContentBounds().width, size[0])
+      assert.equal(w.getContentBounds().height, size[1])
     })
   })
 
