@@ -403,11 +403,11 @@ void WebContents::OnCreateWindow(const GURL& target_url,
 }
 
 void WebContents::RenderViewReady() {
-  if (IsOffScreen()) {
-    const auto rwhv = web_contents()->GetRenderWidgetHostView();
-    auto osr_rwhv = static_cast<OffScreenRenderWidgetHostView *>(rwhv);
-    osr_rwhv->SetPaintCallback(&paint_callback_);
-  }
+  // if (IsOffScreen()) {
+  //   const auto rwhv = web_contents()->GetRenderWidgetHostView();
+  //   auto osr_rwhv = static_cast<OffScreenRenderWidgetHostView *>(rwhv);
+  //   osr_rwhv->SetPaintCallback(&paint_callback_);
+  // }
 }
 
 content::WebContents* WebContents::OpenURLFromTab(
@@ -444,6 +444,13 @@ void WebContents::MoveContents(content::WebContents* source,
 
 void WebContents::CloseContents(content::WebContents* source) {
   Emit("close");
+
+  if (IsOffScreen()) {
+    const auto osr_rwhv = static_cast<OffScreenRenderWidgetHostView*>(
+      web_contents()->GetRenderWidgetHostView());
+    osr_rwhv->SetPainting(false);
+  }
+
   if ((type_ == BROWSER_WINDOW || type_ == OFF_SCREEN) && owner_window())
     owner_window()->CloseContents(source);
 }
@@ -620,8 +627,15 @@ void WebContents::DidChangeThemeColor(SkColor theme_color) {
 
 void WebContents::DocumentLoadedInFrame(
     content::RenderFrameHost* render_frame_host) {
-  if (!render_frame_host->GetParent())
+  if (!render_frame_host->GetParent()) {
+    if (IsOffScreen()) {
+      const auto rwhv = web_contents()->GetRenderWidgetHostView();
+      auto osr_rwhv = static_cast<OffScreenRenderWidgetHostView *>(rwhv);
+      osr_rwhv->SetPaintCallback(&paint_callback_);
+    }
+
     Emit("dom-ready");
+  }
 }
 
 void WebContents::DidFinishLoad(content::RenderFrameHost* render_frame_host,
@@ -1400,6 +1414,49 @@ void WebContents::OnPaint(
        buffer.ToLocalChecked());
 }
 
+void WebContents::StartPainting() {
+  if (IsOffScreen()) {
+    const auto osr_rwhv = static_cast<OffScreenRenderWidgetHostView*>(
+      web_contents()->GetRenderWidgetHostView());
+    osr_rwhv->SetPainting(true);
+  }
+}
+
+void WebContents::StopPainting() {
+  if (IsOffScreen()) {
+    const auto osr_rwhv = static_cast<OffScreenRenderWidgetHostView*>(
+      web_contents()->GetRenderWidgetHostView());
+    osr_rwhv->SetPainting(false);
+  }
+}
+
+bool WebContents::IsPainting() const {
+  if (IsOffScreen()) {
+    const auto osr_rwhv = static_cast<OffScreenRenderWidgetHostView*>(
+      web_contents()->GetRenderWidgetHostView());
+    return osr_rwhv->IsPainting();
+  }
+
+  return false;
+}
+
+void WebContents::SetFrameRate(int frame_rate) {
+  if (IsOffScreen()) {
+    const auto osr_rwhv = static_cast<OffScreenRenderWidgetHostView*>(
+      web_contents()->GetRenderWidgetHostView());
+    osr_rwhv->SetFrameRate(frame_rate);
+  }
+}
+
+int WebContents::GetFrameRate() const {
+  if (IsOffScreen()) {
+    const auto osr_rwhv = static_cast<OffScreenRenderWidgetHostView*>(
+      web_contents()->GetRenderWidgetHostView());
+    return osr_rwhv->GetFrameRate();
+  }
+  return 0;
+}
+
 // static
 void WebContents::BuildPrototype(v8::Isolate* isolate,
                                  v8::Local<v8::ObjectTemplate> prototype) {
@@ -1473,6 +1530,12 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
                  &WebContents::ShowDefinitionForSelection)
       .SetMethod("capturePage", &WebContents::CapturePage)
       .SetMethod("isFocused", &WebContents::IsFocused)
+      .SetMethod("isOffScreen", &WebContents::IsOffScreen)
+      .SetMethod("startPainting", &WebContents::StartPainting)
+      .SetMethod("stopPainting", &WebContents::StopPainting)
+      .SetMethod("isPainting", &WebContents::IsPainting)
+      .SetMethod("setFrameRate", &WebContents::SetFrameRate)
+      .SetMethod("getFrameRate", &WebContents::GetFrameRate)
       .SetProperty("id", &WebContents::ID)
       .SetProperty("session", &WebContents::Session)
       .SetProperty("hostWebContents", &WebContents::HostWebContents)

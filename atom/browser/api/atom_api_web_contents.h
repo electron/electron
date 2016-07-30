@@ -145,7 +145,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
   // Subscribe to the frame updates.
   void BeginFrameSubscription(mate::Arguments* args);
   void EndFrameSubscription();
-  void OnPaint(v8::Isolate*, const gfx::Rect&, int, int, void*);
 
   // Dragging native items.
   void StartDrag(const mate::Dictionary& item, mate::Arguments* args);
@@ -158,7 +157,14 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void SetSize(const SetSizeParams& params);
   bool IsGuest() const;
 
+  // Methods for offscreen rendering
+  void OnPaint(v8::Isolate*, const gfx::Rect&, int, int, void*);
   bool IsOffScreen() const;
+  void StartPainting();
+  void StopPainting();
+  bool IsPainting() const;
+  void SetFrameRate(int);
+  int GetFrameRate() const;
 
   // Callback triggered on permission response.
   void OnEnterFullscreenModeForTab(content::WebContents* source,

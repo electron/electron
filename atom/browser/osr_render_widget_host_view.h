@@ -63,9 +63,6 @@ public:
   OffScreenRenderWidgetHostView(content::RenderWidgetHost*, NativeWindow*);
   ~OffScreenRenderWidgetHostView();
 
-  void CreatePlatformWidget();
-  void DestroyPlatformWidget();
-
   // content::RenderWidgetHostView
   bool OnMessageReceived(const IPC::Message&) override;
   void InitAsChild(gfx::NativeView) override;
@@ -183,6 +180,9 @@ public:
   void SendBeginFrame(base::TimeTicks frame_time,
                       base::TimeDelta vsync_period);
 
+  void CreatePlatformWidget();
+  void DestroyPlatformWidget();
+
   void SetPaintCallback(const atom::OnPaintCallback*);
 
   void OnPaint(const gfx::Rect& damage_rect,
@@ -190,8 +190,13 @@ public:
                int bitmap_height,
                void* bitmap_pixels);
 
+  void SetPainting(bool);
+  bool IsPainting() const;
+
+  void SetFrameRate(int);
+  int GetFrameRate() const;
 private:
-  void SetFrameRate();
+  void SetupFrameRate(bool);
   void ResizeRootLayer();
 
   content::RenderWidgetHostImpl* render_widget_host_;
@@ -202,8 +207,9 @@ private:
 
   OffScreenOutputDevice* software_output_device_;
 
-  std::unique_ptr<const atom::OnPaintCallback> callback_;
+  const atom::OnPaintCallback* callback_;
 
+  int frame_rate_;
   int frame_rate_threshold_ms_;
 
   base::Time last_time_;
@@ -212,6 +218,7 @@ private:
   bool is_showing_;
   gfx::Vector2dF last_scroll_offset_;
   gfx::Size size_;
+  bool painting_;
 
   std::unique_ptr<content::DelegatedFrameHost> delegated_frame_host_;
   std::unique_ptr<ui::Compositor> compositor_;

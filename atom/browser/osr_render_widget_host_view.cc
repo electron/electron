@@ -61,9 +61,9 @@ class AtomCopyFrameGenerator {
     if (!damage_rect.IsEmpty())
       pending_damage_rect_.Union(damage_rect);
 
-    if (frame_in_progress_) {
+    if (frame_in_progress_)
       return;
-    }
+
     frame_in_progress_ = true;
 
     const int64_t frame_rate_delta =
@@ -340,10 +340,13 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
   content::RenderWidgetHost* host, NativeWindow* native_window): render_widget_host_(content::RenderWidgetHostImpl::From(host)),
     native_window_(native_window),
     software_output_device_(NULL),
+    callback_(nullptr),
+    frame_rate_(60),
     frame_rate_threshold_ms_(0),
     scale_factor_(kDefaultScaleFactor),
     is_showing_(!render_widget_host_->is_hidden()),
     size_(native_window->GetSize()),
+    painting_(true),
     delegated_frame_host_(new content::DelegatedFrameHost(this)),
     compositor_widget_(gfx::kNullAcceleratedWidget),
     weak_ptr_factory_(this) {
@@ -388,7 +391,7 @@ OffScreenRenderWidgetHostView::~OffScreenRenderWidgetHostView() {
 
 
 void OffScreenRenderWidgetHostView::ResizeRootLayer() {
-  SetFrameRate();
+  SetupFrameRate(false);
 
   const float orgScaleFactor = scale_factor_;
   const bool scaleFactorDidChange = (orgScaleFactor != scale_factor_);
@@ -430,7 +433,7 @@ void OffScreenRenderWidgetHostView::SendBeginFrame(base::TimeTicks frame_time,
 
 void OffScreenRenderWidgetHostView::SetPaintCallback(
     const OnPaintCallback* callback) {
-  callback_.reset(callback);
+  callback_ = callback;
 }
 
 bool OffScreenRenderWidgetHostView::OnMessageReceived(
@@ -549,6 +552,9 @@ void OffScreenRenderWidgetHostView::OnSwapCompositorFrame(
   std::unique_ptr<cc::CompositorFrame> frame) {
   TRACE_EVENT0("electron",
     "OffScreenRenderWidgetHostView::OnSwapCompositorFrame");
+
+  if (!painting_)
+    return;
 
   if (frame->metadata.root_scroll_offset != last_scroll_offset_) {
     last_scroll_offset_ = frame->metadata.root_scroll_offset;
@@ -762,21 +768,20 @@ std::unique_ptr<cc::SoftwareOutputDevice>
 }
 
 void OffScreenRenderWidgetHostView::OnSetNeedsBeginFrames(bool enabled) {
-  SetFrameRate();
+  SetupFrameRate(false);
 
-  begin_frame_timer_->SetActive(enabled);
+  begin_frame_timer_->SetActive(painting_ && enabled);
 
   if (software_output_device_) {
     software_output_device_->SetActive(enabled);
   }
 }
 
-void OffScreenRenderWidgetHostView::SetFrameRate() {
-  if (frame_rate_threshold_ms_ != 0)
+void OffScreenRenderWidgetHostView::SetupFrameRate(bool force) {
+  if (!force && frame_rate_threshold_ms_ != 0)
     return;
 
-  const int frame_rate = 60;
-  frame_rate_threshold_ms_ = 1000 / frame_rate;
+  frame_rate_threshold_ms_ = 1000 / frame_rate_;
 
   compositor_->vsync_manager()->SetAuthoritativeVSyncInterval(
       base::TimeDelta::FromMilliseconds(frame_rate_threshold_ms_));
@@ -811,9 +816,36 @@ void OffScreenRenderWidgetHostView::OnPaint(
     void* bitmap_pixels) {
   TRACE_EVENT0("electron", "OffScreenRenderWidgetHostView::OnPaint");
 
-  if (callback_) {
+  if (callback_ != nullptr) {
     callback_->Run(damage_rect, bitmap_width, bitmap_height, bitmap_pixels);
   }
+}
+
+void OffScreenRenderWidgetHostView::SetPainting(bool painting) {
+  painting_ = painting;
+
+  if (begin_frame_timer_.get()) {
+    begin_frame_timer_->SetActive(painting);
+  }
+}
+
+bool OffScreenRenderWidgetHostView::IsPainting() const {
+  return painting_;
+}
+
+void OffScreenRenderWidgetHostView::SetFrameRate(int frame_rate) {
+  if (frame_rate <= 0)
+    frame_rate = 1;
+  if (frame_rate > 60)
+    frame_rate = 60;
+
+  frame_rate_ = frame_rate;
+
+  SetupFrameRate(true);
+}
+
+int OffScreenRenderWidgetHostView::GetFrameRate() const {
+  return frame_rate_;
 }
 
 }  // namespace atom
