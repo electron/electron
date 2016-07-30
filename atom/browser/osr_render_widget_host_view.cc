@@ -1,4 +1,4 @@
-// Copyright (c) 2013 GitHub, Inc.
+// Copyright (c) 2016 GitHub, Inc.
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
@@ -26,13 +26,9 @@
 #include "cc/scheduler/delay_based_time_source.h"
 #include "content/public/browser/browser_thread.h"
 
-#include <iostream>
-
 const float kDefaultScaleFactor = 1.0;
 
 const int kFrameRetryLimit = 2;
-
-// const int kResizeLockTimeoutMs = 67;
 
 namespace atom {
 
