@@ -3,9 +3,7 @@
 // found in the LICENSE file.
 
 #include "atom/browser/osr_web_contents_view.h"
-
 #include "atom/browser/osr_render_widget_host_view.h"
-#include <iostream>
 
 namespace atom {
 
@@ -21,138 +19,79 @@ void OffScreenWebContentsView::SetWebContents(
   web_contents_ = web_contents;
 }
 
-// Returns the native widget that contains the contents of the tab.
-gfx::NativeView OffScreenWebContentsView::GetNativeView() const{
-  // std::cout << "GetNativeView" << std::endl;
+gfx::NativeView OffScreenWebContentsView::GetNativeView() const {
   return gfx::NativeView();
 }
 
-// Returns the native widget with the main content of the tab (i.e. the main
-// render view host, though there may be many popups in the tab as children of
-// the container).
-gfx::NativeView OffScreenWebContentsView::GetContentNativeView() const{
-  // std::cout << "GetContentNativeView" << std::endl;
+gfx::NativeView OffScreenWebContentsView::GetContentNativeView() const {
   return gfx::NativeView();
 }
 
-// Returns the outermost native view. This will be used as the parent for
-// dialog boxes.
-gfx::NativeWindow OffScreenWebContentsView::GetTopLevelNativeWindow() const{
-  // std::cout << "GetTopLevelNativeWindow" << std::endl;
+gfx::NativeWindow OffScreenWebContentsView::GetTopLevelNativeWindow() const {
   return gfx::NativeWindow();
 }
 
-// Computes the rectangle for the native widget that contains the contents of
-// the tab in the screen coordinate system.
-void OffScreenWebContentsView::GetContainerBounds(gfx::Rect* out) const{
-  // std::cout << "GetContainerBounds" << std::endl;
+void OffScreenWebContentsView::GetContainerBounds(gfx::Rect* out) const {
   *out = GetViewBounds();
 }
 
-// TODO(brettw) this is a hack. It's used in two places at the time of this
-// writing: (1) when render view hosts switch, we need to size the replaced
-// one to be correct, since it wouldn't have known about sizes that happened
-// while it was hidden; (2) in constrained windows.
-//
-// (1) will be fixed once interstitials are cleaned up. (2) seems like it
-// should be cleaned up or done some other way, since this works for normal
-// WebContents without the special code.
-void OffScreenWebContentsView::SizeContents(const gfx::Size& size){
-  // std::cout << "SizeContents" << std::endl;
+void OffScreenWebContentsView::SizeContents(const gfx::Size& size) {
 }
 
-// Sets focus to the native widget for this tab.
-void OffScreenWebContentsView::Focus(){
-  // std::cout << "OffScreenWebContentsView::Focus" << std::endl;
+void OffScreenWebContentsView::Focus() {
 }
 
-// Sets focus to the appropriate element when the WebContents is shown the
-// first time.
-void OffScreenWebContentsView::SetInitialFocus(){
-  // std::cout << "SetInitialFocus" << std::endl;
+void OffScreenWebContentsView::SetInitialFocus() {
 }
 
-// Stores the currently focused view.
-void OffScreenWebContentsView::StoreFocus(){
-  // std::cout << "StoreFocus" << std::endl;
+void OffScreenWebContentsView::StoreFocus() {
 }
 
-// Restores focus to the last focus view. If StoreFocus has not yet been
-// invoked, SetInitialFocus is invoked.
-void OffScreenWebContentsView::RestoreFocus(){
-  // std::cout << "RestoreFocus" << std::endl;
+void OffScreenWebContentsView::RestoreFocus() {
 }
 
-// Returns the current drop data, if any.
-content::DropData* OffScreenWebContentsView::GetDropData() const{
-  // std::cout << "GetDropData" << std::endl;
+content::DropData* OffScreenWebContentsView::GetDropData() const {
   return nullptr;
 }
 
-// Get the bounds of the View, relative to the parent.
-gfx::Rect OffScreenWebContentsView::GetViewBounds() const{
-  // std::cout << "OffScreenWebContentsView::GetViewBounds" << std::endl;
+gfx::Rect OffScreenWebContentsView::GetViewBounds() const {
   return view_ ? view_->GetViewBounds() : gfx::Rect();
 }
 
-void OffScreenWebContentsView::CreateView(
-    const gfx::Size& initial_size, gfx::NativeView context){
-      std::cout << context << std::endl;
-  // std::cout << "CreateView" << std::endl;
-  // std::cout << initial_size.width() << "x" << initial_size.height() << std::endl;
+void OffScreenWebContentsView::CreateView(const gfx::Size& initial_size,
+                                          gfx::NativeView context) {
 }
 
-// Sets up the View that holds the rendered web page, receives messages for
-// it and contains page plugins. The host view should be sized to the current
-// size of the WebContents.
-//
-// |is_guest_view_hack| is temporary hack and will be removed once
-// RenderWidgetHostViewGuest is not dependent on platform view.
-// TODO(lazyboy): Remove |is_guest_view_hack| once http://crbug.com/330264 is
-// fixed.
 content::RenderWidgetHostViewBase*
   OffScreenWebContentsView::CreateViewForWidget(
-    content::RenderWidgetHost* render_widget_host, bool is_guest_view_hack){
+    content::RenderWidgetHost* render_widget_host, bool is_guest_view_hack) {
   auto relay = NativeWindowRelay::FromWebContents(web_contents_);
   view_ = new OffScreenRenderWidgetHostView(render_widget_host,
     relay->window.get());
   return view_;
 }
 
-// Creates a new View that holds a popup and receives messages for it.
 content::RenderWidgetHostViewBase*
   OffScreenWebContentsView::CreateViewForPopupWidget(
-    content::RenderWidgetHost* render_widget_host){
+    content::RenderWidgetHost* render_widget_host) {
   auto relay = NativeWindowRelay::FromWebContents(web_contents_);
   view_ = new OffScreenRenderWidgetHostView(render_widget_host,
     relay->window.get());
   return view_;
 }
 
-// Sets the page title for the native widgets corresponding to the view. This
-// is not strictly necessary and isn't expected to be displayed anywhere, but
-// can aid certain debugging tools such as Spy++ on Windows where you are
-// trying to find a specific window.
-void OffScreenWebContentsView::SetPageTitle(const base::string16& title){
-  // std::cout << "SetPageTitle" << std::endl;
-  // std::cout << title << std::endl;
+void OffScreenWebContentsView::SetPageTitle(const base::string16& title) {
 }
 
-// Invoked when the WebContents is notified that the RenderView has been
-// fully created.
-void OffScreenWebContentsView::RenderViewCreated(content::RenderViewHost* host){
-  // std::cout << "RenderViewCreated" << std::endl;
+void OffScreenWebContentsView::RenderViewCreated(
+    content::RenderViewHost* host) {
 }
 
-// Invoked when the WebContents is notified that the RenderView has been
-// swapped in.
-void OffScreenWebContentsView::RenderViewSwappedIn(content::RenderViewHost* host){
-  // std::cout << "RenderViewSwappedIn" << std::endl;
+void OffScreenWebContentsView::RenderViewSwappedIn(
+    content::RenderViewHost* host) {
 }
 
-// Invoked to enable/disable overscroll gesture navigation.
-void OffScreenWebContentsView::SetOverscrollControllerEnabled(bool enabled){
-  // std::cout << "SetOverscrollControllerEnabled" << std::endl;
+void OffScreenWebContentsView::SetOverscrollControllerEnabled(bool enabled) {
 }
 
 #if defined(OS_MACOSX)
@@ -182,6 +121,5 @@ void OffScreenWebContentsView::StartDragging(
 void OffScreenWebContentsView::UpdateDragCursor(
     blink::WebDragOperation operation) {
 }
-
 
 }  // namespace atom
