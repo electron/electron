@@ -189,8 +189,6 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
 
   command_line->AppendSwitch(cc::switches::kEnableBeginFrameScheduling);
   command_line->AppendSwitch(cc::switches::kShowFPSCounter);
-  // command_line->AppendSwitch("disable-gpu");
-  // command_line->AppendSwitch("disable-gpu-compositing");
 }
 
 // static

@@ -174,6 +174,36 @@ logging level for all code in the source files under a `foo/bar` directory.
 
 This switch only works when `--enable-logging` is also passed.
 
+## --disable-gpu
+
+Disables the use of the GPU in the renderer process. If this is set with the
+`--disable-gpu-compositing` switch, *offscreen rendering* will use a software
+output device, which has much better overall performance but lacks of WebGL
+and 3D CSS support.
+
+## --disable-gpu-compositing
+
+Disables the use of the GPU compositing in the renderer process. This should be
+set with the `--disable-gpu` switch for *offscreen rendering*.
+
+``` javascript
+const {app, BrowserWindow} = require('electron');
+
+app.commandLine.appendSwitch('disable-gpu');
+app.commandLine.appendSwitch('disable-gpu-compositing');
+
+let win = new BrowserWindow({
+  webPreferences: {
+    offscreen: true
+  }
+});
+win.loadURL('http://github.com');
+
+win.webContents.on('paint', (event, dirty, data) => {
+  updateBitmap(dirty, data);
+});
+```
+
 [app]: app.md
 [append-switch]: app.md#appcommandlineappendswitchswitch-value
 [ready]: app.md#event-ready

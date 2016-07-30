@@ -1396,8 +1396,8 @@ void WebContents::OnPaint(
   v8::MaybeLocal<v8::Object> buffer = node::Buffer::New(isolate
     , (char *)bitmap_pixels, sizeof(bitmap_pixels));
 
-  Emit("paint", damage_rect, bitmap_width, bitmap_height,
-       buffer.ToLocalChecked());
+  const gfx::Size bitmap_size = gfx::Size(bitmap_width, bitmap_height);
+  Emit("paint", damage_rect, buffer.ToLocalChecked(), bitmap_size);
 }
 
 void WebContents::StartPainting() {
