@@ -402,14 +402,6 @@ void WebContents::OnCreateWindow(const GURL& target_url,
     Emit("new-window", target_url, frame_name, disposition);
 }
 
-void WebContents::RenderViewReady() {
-  // if (IsOffScreen()) {
-  //   const auto rwhv = web_contents()->GetRenderWidgetHostView();
-  //   auto osr_rwhv = static_cast<OffScreenRenderWidgetHostView *>(rwhv);
-  //   osr_rwhv->SetPaintCallback(&paint_callback_);
-  // }
-}
-
 content::WebContents* WebContents::OpenURLFromTab(
     content::WebContents* source,
     const content::OpenURLParams& params) {
@@ -444,12 +436,6 @@ void WebContents::MoveContents(content::WebContents* source,
 
 void WebContents::CloseContents(content::WebContents* source) {
   Emit("close");
-
-  if (IsOffScreen()) {
-    const auto osr_rwhv = static_cast<OffScreenRenderWidgetHostView*>(
-      web_contents()->GetRenderWidgetHostView());
-    osr_rwhv->SetPainting(false);
-  }
 
   if ((type_ == BROWSER_WINDOW || type_ == OFF_SCREEN) && owner_window())
     owner_window()->CloseContents(source);

@@ -619,6 +619,7 @@ void OffScreenRenderWidgetHostView::RenderProcessGone(base::TerminationStatus,in
 }
 
 void OffScreenRenderWidgetHostView::Destroy() {
+  delete this;
 }
 
 void OffScreenRenderWidgetHostView::SetTooltipText(const base::string16 &) {
@@ -740,7 +741,7 @@ void OffScreenRenderWidgetHostView::DelegatedFrameHostSendCompositorSwapAck(
 }
 
 void OffScreenRenderWidgetHostView::DelegatedFrameHostSendReclaimCompositorResources(
-  int output_surface_id, const cc::CompositorFrameAck& ack) {
+    int output_surface_id, const cc::CompositorFrameAck& ack) {
   render_widget_host_->Send(new ViewMsg_ReclaimCompositorResources(
     render_widget_host_->GetRoutingID(),
     output_surface_id, ack));
