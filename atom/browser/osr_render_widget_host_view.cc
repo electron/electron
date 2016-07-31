@@ -431,11 +431,6 @@ void OffScreenRenderWidgetHostView::SendBeginFrame(base::TimeTicks frame_time,
                                  vsync_period, cc::BeginFrameArgs::NORMAL)));
 }
 
-void OffScreenRenderWidgetHostView::SetPaintCallback(
-    const OnPaintCallback* callback) {
-  callback_ = callback;
-}
-
 bool OffScreenRenderWidgetHostView::OnMessageReceived(
     const IPC::Message& message) {
   bool handled = true;
@@ -448,6 +443,11 @@ bool OffScreenRenderWidgetHostView::OnMessageReceived(
   if (!handled)
     return content::RenderWidgetHostViewBase::OnMessageReceived(message);
   return handled;
+}
+
+void OffScreenRenderWidgetHostView::SetPaintCallback(
+    const OnPaintCallback* callback) {
+  callback_ = callback;
 }
 
 void OffScreenRenderWidgetHostView::InitAsChild(gfx::NativeView) {
@@ -492,7 +492,7 @@ void OffScreenRenderWidgetHostView::Focus() {
 }
 
 bool OffScreenRenderWidgetHostView::HasFocus() const {
-  return false;
+  return true;
 }
 
 bool OffScreenRenderWidgetHostView::IsSurfaceAvailableForCopy() const {
@@ -554,8 +554,8 @@ void OffScreenRenderWidgetHostView::OnSwapCompositorFrame(
   TRACE_EVENT0("electron",
     "OffScreenRenderWidgetHostView::OnSwapCompositorFrame");
 
-  if (!painting_)
-    return;
+  // if (!painting_)
+  //   return;
 
   if (frame->metadata.root_scroll_offset != last_scroll_offset_) {
     last_scroll_offset_ = frame->metadata.root_scroll_offset;
@@ -585,7 +585,8 @@ void OffScreenRenderWidgetHostView::OnSwapCompositorFrame(
       delegated_frame_host_->SwapDelegatedFrame(output_surface_id,
                                                 std::move(frame));
 
-      copy_frame_generator_->GenerateCopyFrame(true, damage_rect);
+      if (painting_)
+        copy_frame_generator_->GenerateCopyFrame(true, damage_rect);
     }
   }
 }
@@ -782,7 +783,7 @@ std::unique_ptr<cc::SoftwareOutputDevice>
 void OffScreenRenderWidgetHostView::OnSetNeedsBeginFrames(bool enabled) {
   SetupFrameRate(false);
 
-  begin_frame_timer_->SetActive(painting_ && enabled);
+  begin_frame_timer_->SetActive(enabled);
 
   if (software_output_device_) {
     software_output_device_->SetActive(enabled);
@@ -835,10 +836,6 @@ void OffScreenRenderWidgetHostView::OnPaint(
 
 void OffScreenRenderWidgetHostView::SetPainting(bool painting) {
   painting_ = painting;
-
-  if (begin_frame_timer_.get()) {
-    begin_frame_timer_->SetActive(painting);
-  }
 
   if (software_output_device_) {
     software_output_device_->SetActive(painting);

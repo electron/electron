@@ -16,18 +16,21 @@ exports.load = (appUrl) => {
     mainWindow = new BrowserWindow({
       width: 800,
       height: 600,
+      show: false,
       autoHideMenuBar: true,
       backgroundColor: '#FFFFFF',
       useContentSize: true,
       webPreferences: {
         offscreen: true,
-        nodeIntegration: false
+        nodeIntegration: false,
+        backgroundThrottling: false
       }
     })
-    mainWindow.loadURL('file:///Volumes/Elements/dev/electron/spec/fixtures/api/offscreen-rendering.html')
+    mainWindow.loadURL(appUrl)
     mainWindow.focus()
 
     mainWindow.webContents.on('dom-ready', () => {
+      mainWindow.webContents.setFrameRate(10)
       let ping = true
       setInterval(() => {
         if (ping) {
