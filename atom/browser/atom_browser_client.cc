@@ -202,7 +202,7 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
 void AtomBrowserClient::DidCreatePpapiPlugin(
     content::BrowserPpapiHost* host) {
   host->GetPpapiHost()->AddHostFactoryFilter(
-      make_scoped_ptr(new chrome::ChromeBrowserPepperHostFactory(host)));
+      base::WrapUnique(new chrome::ChromeBrowserPepperHostFactory(host)));
 }
 
 content::QuotaPermissionContext*
@@ -287,20 +287,21 @@ brightray::BrowserMainParts* AtomBrowserClient::OverrideCreateBrowserMainParts(
 
 void AtomBrowserClient::WebNotificationAllowed(
     int render_process_id,
-    const base::Callback<void(bool)>& callback) {
+    const base::Callback<void(bool, bool)>& callback) {
   content::WebContents* web_contents =
       WebContentsPreferences::GetWebContentsFromProcessID(render_process_id);
   if (!web_contents) {
-    callback.Run(false);
+    callback.Run(false, false);
     return;
   }
   auto permission_helper =
       WebContentsPermissionHelper::FromWebContents(web_contents);
   if (!permission_helper) {
-    callback.Run(false);
+    callback.Run(false, false);
     return;
   }
-  permission_helper->RequestWebNotificationPermission(callback);
+  permission_helper->RequestWebNotificationPermission(
+      base::Bind(callback, web_contents->IsAudioMuted()));
 }
 
 void AtomBrowserClient::RenderProcessHostDestroyed(

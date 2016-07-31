@@ -1,10 +1,7 @@
 const assert = require('assert')
 
-const remote = require('electron').remote
-const ipcRenderer = require('electron').ipcRenderer
-
-const Menu = remote.require('electron').Menu
-const MenuItem = remote.require('electron').MenuItem
+const {ipcRenderer, remote} = require('electron')
+const {Menu, MenuItem} = remote
 
 describe('menu module', function () {
   describe('Menu.buildFromTemplate', function () {
@@ -231,7 +228,7 @@ describe('menu module', function () {
           }
         }
       ])
-      menu.delegate.executeCommand(menu.items[0].commandId)
+      menu.delegate.executeCommand({}, menu.items[0].commandId)
     })
   })
 
@@ -244,7 +241,7 @@ describe('menu module', function () {
         }
       ])
       assert.equal(menu.items[0].checked, false)
-      menu.delegate.executeCommand(menu.items[0].commandId)
+      menu.delegate.executeCommand({}, menu.items[0].commandId)
       assert.equal(menu.items[0].checked, true)
     })
 
@@ -255,9 +252,9 @@ describe('menu module', function () {
           type: 'radio'
         }
       ])
-      menu.delegate.executeCommand(menu.items[0].commandId)
+      menu.delegate.executeCommand({}, menu.items[0].commandId)
       assert.equal(menu.items[0].checked, true)
-      menu.delegate.executeCommand(menu.items[0].commandId)
+      menu.delegate.executeCommand({}, menu.items[0].commandId)
       assert.equal(menu.items[0].checked, true)
     })
 
@@ -357,6 +354,69 @@ describe('menu module', function () {
       for (i = q = 13; q <= 20; i = ++q) {
         assert.equal(menu.items[i].checked, false)
       }
+    })
+  })
+
+  describe('MenuItem command id', function () {
+    it('cannot be overwritten', function () {
+      var item = new MenuItem({
+        label: 'item'
+      })
+
+      var commandId = item.commandId
+      assert(commandId != null)
+      item.commandId = '' + commandId + '-modified'
+      assert.equal(item.commandId, commandId)
+    })
+  })
+
+  describe('MenuItem with invalid type', function () {
+    it('throws an exception', function () {
+      assert.throws(function () {
+        Menu.buildFromTemplate([
+          {
+            label: 'text',
+            type: 'not-a-type'
+          }
+        ])
+      }, /Unknown menu item type: not-a-type/)
+    })
+  })
+
+  describe('MenuItem with submenu type and missing submenu', function () {
+    it('throws an exception', function () {
+      assert.throws(function () {
+        Menu.buildFromTemplate([
+          {
+            label: 'text',
+            type: 'submenu'
+          }
+        ])
+      }, /Invalid submenu/)
+    })
+  })
+
+  describe('MenuItem role', function () {
+    it('includes a default label and accelerator', function () {
+      var item = new MenuItem({role: 'close'})
+      assert.equal(item.label, process.platform === 'darwin' ? 'Close Window' : 'Close')
+      assert.equal(item.accelerator, undefined)
+      assert.equal(item.getDefaultRoleAccelerator(), 'CommandOrControl+W')
+
+      item = new MenuItem({role: 'close', label: 'Other', accelerator: 'D'})
+      assert.equal(item.label, 'Other')
+      assert.equal(item.accelerator, 'D')
+      assert.equal(item.getDefaultRoleAccelerator(), 'CommandOrControl+W')
+
+      item = new MenuItem({role: 'help'})
+      assert.equal(item.label, 'Help')
+      assert.equal(item.accelerator, undefined)
+      assert.equal(item.getDefaultRoleAccelerator(), undefined)
+
+      item = new MenuItem({role: 'hide'})
+      assert.equal(item.label, 'Hide Electron Test')
+      assert.equal(item.accelerator, undefined)
+      assert.equal(item.getDefaultRoleAccelerator(), 'Command+H')
     })
   })
 })

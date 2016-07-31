@@ -1,4 +1,5 @@
 const assert = require('assert')
+const Module = require('module')
 const path = require('path')
 const temp = require('temp')
 
@@ -44,6 +45,57 @@ describe('third-party module', function () {
           done()
         })
       })
+    })
+  })
+})
+
+describe('Module._nodeModulePaths', function () {
+  describe('when the path is inside the resources path', function () {
+    it('does not include paths outside of the resources path', function () {
+      let modulePath = process.resourcesPath
+      assert.deepEqual(Module._nodeModulePaths(modulePath), [
+        path.join(process.resourcesPath, 'node_modules')
+      ])
+
+      modulePath = process.resourcesPath + '-foo'
+      let nodeModulePaths = Module._nodeModulePaths(modulePath)
+      assert(nodeModulePaths.includes(path.join(modulePath, 'node_modules')))
+      assert(nodeModulePaths.includes(path.join(modulePath, '..', 'node_modules')))
+
+      modulePath = path.join(process.resourcesPath, 'foo')
+      assert.deepEqual(Module._nodeModulePaths(modulePath), [
+        path.join(process.resourcesPath, 'foo', 'node_modules'),
+        path.join(process.resourcesPath, 'node_modules')
+      ])
+
+      modulePath = path.join(process.resourcesPath, 'node_modules', 'foo')
+      assert.deepEqual(Module._nodeModulePaths(modulePath), [
+        path.join(process.resourcesPath, 'node_modules', 'foo', 'node_modules'),
+        path.join(process.resourcesPath, 'node_modules')
+      ])
+
+      modulePath = path.join(process.resourcesPath, 'node_modules', 'foo', 'bar')
+      assert.deepEqual(Module._nodeModulePaths(modulePath), [
+        path.join(process.resourcesPath, 'node_modules', 'foo', 'bar', 'node_modules'),
+        path.join(process.resourcesPath, 'node_modules', 'foo', 'node_modules'),
+        path.join(process.resourcesPath, 'node_modules')
+      ])
+
+      modulePath = path.join(process.resourcesPath, 'node_modules', 'foo', 'node_modules', 'bar')
+      assert.deepEqual(Module._nodeModulePaths(modulePath), [
+        path.join(process.resourcesPath, 'node_modules', 'foo', 'node_modules', 'bar', 'node_modules'),
+        path.join(process.resourcesPath, 'node_modules', 'foo', 'node_modules'),
+        path.join(process.resourcesPath, 'node_modules')
+      ])
+    })
+  })
+
+  describe('when the path is outside the resources path', function () {
+    it('includes paths outside of the resources path', function () {
+      let modulePath = path.resolve('/foo')
+      assert.deepEqual(Module._nodeModulePaths(modulePath), [
+        path.join(modulePath, 'node_modules')
+      ])
     })
   })
 })

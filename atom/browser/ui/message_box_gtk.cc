@@ -5,7 +5,8 @@
 #include "atom/browser/ui/message_box.h"
 
 #include "atom/browser/browser.h"
-#include "atom/browser/native_window.h"
+#include "atom/browser/native_window_views.h"
+#include "atom/browser/unresponsive_suppressor.h"
 #include "base/callback.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
@@ -35,8 +36,8 @@ class GtkMessageBox {
                 const std::string& message,
                 const std::string& detail,
                 const gfx::ImageSkia& icon)
-      : dialog_scope_(parent_window),
-        cancel_id_(cancel_id) {
+      : cancel_id_(cancel_id),
+        parent_(static_cast<NativeWindowViews*>(parent_window)) {
     // Create dialog.
     dialog_ = gtk_message_dialog_new(
         nullptr,  // parent
@@ -75,14 +76,17 @@ class GtkMessageBox {
     }
 
     // Parent window.
-    if (parent_window) {
-      gfx::NativeWindow window = parent_window->GetNativeWindow();
-      libgtk2ui::SetGtkTransientForAura(dialog_, window);
+    if (parent_) {
+      parent_->SetEnabled(false);
+      libgtk2ui::SetGtkTransientForAura(dialog_, parent_->GetNativeWindow());
+      gtk_window_set_modal(GTK_WINDOW(dialog_), TRUE);
     }
   }
 
   ~GtkMessageBox() {
     gtk_widget_destroy(dialog_);
+    if (parent_)
+      parent_->SetEnabled(true);
   }
 
   GtkMessageType GetMessageType(MessageBoxType type) {
@@ -123,7 +127,6 @@ class GtkMessageBox {
   }
 
   int RunSynchronous() {
-    gtk_window_set_modal(GTK_WINDOW(dialog_), TRUE);
     Show();
     int response = gtk_dialog_run(GTK_DIALOG(dialog_));
     if (response < 0)
@@ -144,11 +147,12 @@ class GtkMessageBox {
   CHROMEGTK_CALLBACK_1(GtkMessageBox, void, OnResponseDialog, int);
 
  private:
-  atom::NativeWindow::DialogScope dialog_scope_;
+  atom::UnresponsiveSuppressor unresponsive_suppressor_;
 
   // The id to return when the dialog is closed without pressing buttons.
   int cancel_id_;
 
+  NativeWindowViews* parent_;
   GtkWidget* dialog_;
   MessageBoxCallback callback_;
 

@@ -18,5 +18,4 @@ describe('systemPreferences module', function () {
       assert(languages.length > 0)
     })
   })
-
 })

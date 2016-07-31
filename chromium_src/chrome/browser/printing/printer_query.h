@@ -5,9 +5,10 @@
 #ifndef CHROME_BROWSER_PRINTING_PRINTER_QUERY_H_
 #define CHROME_BROWSER_PRINTING_PRINTER_QUERY_H_
 
+#include <memory>
+
 #include "base/callback.h"
 #include "base/compiler_specific.h"
-#include "base/memory/scoped_ptr.h"
 #include "chrome/browser/printing/print_job_worker_owner.h"
 #include "printing/print_job_constants.h"
 

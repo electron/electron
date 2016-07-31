@@ -35,6 +35,13 @@ def main():
   if os.environ.has_key('JANKY_SHA1'):
     setup_nodenv()
 
+  # Ignore the CXX and CC env in CI.
+  try:
+    del os.environ['CC']
+    del os.environ['CXX']
+  except KeyError:
+    pass
+
   target_arch = 'x64'
   if os.environ.has_key('TARGET_ARCH'):
     target_arch = os.environ['TARGET_ARCH']

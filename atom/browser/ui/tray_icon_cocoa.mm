@@ -8,7 +8,8 @@
 #include "base/strings/sys_string_conversions.h"
 #include "ui/events/cocoa/cocoa_event_utils.h"
 #include "ui/gfx/image/image.h"
-#include "ui/gfx/screen.h"
+#include "ui/gfx/mac/coordinate_conversion.h"
+#include "ui/display/screen.h"
 
 namespace {
 
@@ -22,7 +23,7 @@ const CGFloat kVerticalTitleMargin = 2;
 @interface StatusItemView : NSView {
   atom::TrayIconCocoa* trayIcon_; // weak
   AtomMenuController* menuController_; // weak
-  BOOL isHighlightEnable_;
+  atom::TrayIcon::HighlightMode highlight_mode_;
   BOOL forceHighlight_;
   BOOL inMouseEventSequence_;
   base::scoped_nsobject<NSImage> image_;
@@ -38,12 +39,15 @@ const CGFloat kVerticalTitleMargin = 2;
 - (id)initWithImage:(NSImage*)image icon:(atom::TrayIconCocoa*)icon {
   image_.reset([image copy]);
   trayIcon_ = icon;
-  isHighlightEnable_ = YES;
+  highlight_mode_ = atom::TrayIcon::HighlightMode::SELECTION;
   forceHighlight_ = NO;
   inMouseEventSequence_ = NO;
 
   if ((self = [super initWithFrame: CGRectZero])) {
-    [self registerForDraggedTypes: @[NSFilenamesPboardType]];
+    [self registerForDraggedTypes: @[
+      NSFilenamesPboardType,
+      NSStringPboardType,
+    ]];
 
     // Create the status item.
     NSStatusItem * item = [[NSStatusBar systemStatusBar]
@@ -188,8 +192,9 @@ const CGFloat kVerticalTitleMargin = 2;
   alternateImage_.reset([image copy]);
 }
 
-- (void)setHighlight:(BOOL)highlight {
-  isHighlightEnable_ = highlight;
+- (void)setHighlight:(atom::TrayIcon::HighlightMode)mode {
+  highlight_mode_ = mode;
+  [self setNeedsDisplay:YES];
 }
 
 - (void)setTitle:(NSString*)title {
@@ -236,23 +241,24 @@ const CGFloat kVerticalTitleMargin = 2;
   // Single click event.
   if (event.clickCount == 1)
     trayIcon_->NotifyClicked(
-        [self getBoundsFromEvent:event],
+        gfx::ScreenRectFromNSRect(event.window.frame),
         ui::EventFlagsFromModifiers([event modifierFlags]));
 
   // Double click event.
   if (event.clickCount == 2)
     trayIcon_->NotifyDoubleClicked(
-        [self getBoundsFromEvent:event],
+        gfx::ScreenRectFromNSRect(event.window.frame),
         ui::EventFlagsFromModifiers([event modifierFlags]));
 
   [self setNeedsDisplay:YES];
 }
 
-- (void)popUpContextMenu:(ui::SimpleMenuModel*)menu_model {
+- (void)popUpContextMenu:(atom::AtomMenuModel*)menu_model {
   // Show a custom menu.
   if (menu_model) {
     base::scoped_nsobject<AtomMenuController> menuController(
-        [[AtomMenuController alloc] initWithModel:menu_model]);
+        [[AtomMenuController alloc] initWithModel:menu_model
+                            useDefaultAccelerator:NO]);
     forceHighlight_ = YES;  // Should highlight when showing menu.
     [self setNeedsDisplay:YES];
     [statusItem_ popUpStatusItemMenu:[menuController menu]];
@@ -262,7 +268,7 @@ const CGFloat kVerticalTitleMargin = 2;
   }
 
   if (menuController_ && ![menuController_ isMenuOpen]) {
-    // Redraw the dray icon to show highlight if it is enabled.
+    // Redraw the tray icon to show highlight if it is enabled.
     [self setNeedsDisplay:YES];
     [statusItem_ popUpStatusItemMenu:[menuController_ menu]];
     // The popUpStatusItemMenu returns only after the showing menu is closed.
@@ -273,7 +279,7 @@ const CGFloat kVerticalTitleMargin = 2;
 
 - (void)rightMouseUp:(NSEvent*)event {
   trayIcon_->NotifyRightClicked(
-      [self getBoundsFromEvent:event],
+      gfx::ScreenRectFromNSRect(event.window.frame),
       ui::EventFlagsFromModifiers([event modifierFlags]));
 }
 
@@ -305,7 +311,12 @@ const CGFloat kVerticalTitleMargin = 2;
       dropFiles.push_back(base::SysNSStringToUTF8(file));
     trayIcon_->NotifyDropFiles(dropFiles);
     return YES;
+  } else if ([[pboard types] containsObject:NSStringPboardType]) {
+    NSString* dropText = [pboard stringForType:NSStringPboardType];
+    trayIcon_->NotifyDropText(base::SysNSStringToUTF8(dropText));
+    return YES;
   }
+
   return NO;
 }
 
@@ -318,19 +329,17 @@ const CGFloat kVerticalTitleMargin = 2;
 }
 
 - (BOOL)shouldHighlight {
-  if (isHighlightEnable_ && forceHighlight_)
-    return true;
-  BOOL isMenuOpen = menuController_ && [menuController_ isMenuOpen];
-  return isHighlightEnable_ && (inMouseEventSequence_ || isMenuOpen);
+  switch (highlight_mode_) {
+    case atom::TrayIcon::HighlightMode::ALWAYS:
+      return true;
+    case atom::TrayIcon::HighlightMode::NEVER:
+      return false;
+    case atom::TrayIcon::HighlightMode::SELECTION:
+      BOOL isMenuOpen = menuController_ && [menuController_ isMenuOpen];
+      return forceHighlight_ || inMouseEventSequence_ || isMenuOpen;
+  }
 }
 
-- (gfx::Rect)getBoundsFromEvent:(NSEvent*)event {
-  NSRect frame = event.window.frame;
-  gfx::Rect bounds(frame.origin.x, 0, NSWidth(frame), NSHeight(frame));
-  NSScreen* screen = [[NSScreen screens] objectAtIndex:0];
-  bounds.set_y(NSHeight([screen frame]) - NSMaxY(frame));
-  return bounds;
-}
 @end
 
 namespace atom {
@@ -366,24 +375,34 @@ void TrayIconCocoa::SetTitle(const std::string& title) {
   [status_item_view_ setTitle:base::SysUTF8ToNSString(title)];
 }
 
-void TrayIconCocoa::SetHighlightMode(bool highlight) {
-  [status_item_view_ setHighlight:highlight];
+void TrayIconCocoa::SetHighlightMode(TrayIcon::HighlightMode mode) {
+  [status_item_view_ setHighlight:mode];
 }
 
 void TrayIconCocoa::PopUpContextMenu(const gfx::Point& pos,
-                                     ui::SimpleMenuModel* menu_model) {
+                                     AtomMenuModel* menu_model) {
   [status_item_view_ popUpContextMenu:menu_model];
 }
 
-void TrayIconCocoa::SetContextMenu(ui::SimpleMenuModel* menu_model) {
+void TrayIconCocoa::SetContextMenu(AtomMenuModel* menu_model) {
   // Substribe to MenuClosed event.
   if (menu_model_)
     menu_model_->RemoveObserver(this);
-  static_cast<AtomMenuModel*>(menu_model)->AddObserver(this);
+  menu_model->AddObserver(this);
 
   // Create native menu.
-  menu_.reset([[AtomMenuController alloc] initWithModel:menu_model]);
+  menu_.reset([[AtomMenuController alloc] initWithModel:menu_model
+                                  useDefaultAccelerator:NO]);
   [status_item_view_ setMenuController:menu_.get()];
+}
+
+gfx::Rect TrayIconCocoa::GetBounds() {
+  auto bounds = gfx::ScreenRectFromNSRect([status_item_view_ window].frame);
+  // Calling [window frame] immediately after the view gets created will have
+  // negative |y| sometimes.
+  if (bounds.y() < 0)
+    bounds.set_y(0);
+  return bounds;
 }
 
 void TrayIconCocoa::MenuClosed() {

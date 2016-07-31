@@ -3,12 +3,8 @@ const http = require('http')
 const path = require('path')
 const fs = require('fs')
 
-const ipcRenderer = require('electron').ipcRenderer
-const remote = require('electron').remote
-
-const ipcMain = remote.ipcMain
-const session = remote.session
-const BrowserWindow = remote.BrowserWindow
+const {ipcRenderer, remote} = require('electron')
+const {ipcMain, session, BrowserWindow} = remote
 
 describe('session module', function () {
   this.timeout(10000)
@@ -16,10 +12,6 @@ describe('session module', function () {
   var fixtures = path.resolve(__dirname, 'fixtures')
   var w = null
   var url = 'http://127.0.0.1'
-  var partitionName = 'temp'
-  var protocolName = 'sp'
-  const partitionProtocol = session.fromPartition(partitionName).protocol
-  const protocol = session.defaultSession.protocol
 
   beforeEach(function () {
     if (w != null) {
@@ -39,7 +31,30 @@ describe('session module', function () {
     w = null
   })
 
-  describe('session.cookies', function () {
+  describe('session.defaultSession', function () {
+    it('returns the default session', function () {
+      assert.equal(session.defaultSession, session.fromPartition(''))
+    })
+  })
+
+  describe('session.fromPartition(partition, options)', function () {
+    it('returns existing session with same partition', function () {
+      assert.equal(session.fromPartition('test'), session.fromPartition('test'))
+    })
+
+    it('created session is ref-counted', function () {
+      const partition = 'test2'
+      const userAgent = 'test-agent'
+      const ses1 = session.fromPartition(partition)
+      ses1.setUserAgent(userAgent)
+      assert.equal(ses1.getUserAgent(), userAgent)
+      ses1.destroy()
+      const ses2 = session.fromPartition(partition)
+      assert.notEqual(ses2.getUserAgent(), userAgent)
+    })
+  })
+
+  describe('ses.cookies', function () {
     it('should get cookies', function (done) {
       var server = http.createServer(function (req, res) {
         res.setHeader('Set-Cookie', ['0=0'])
@@ -70,6 +85,17 @@ describe('session module', function () {
             done('Can not find cookie')
           })
         })
+      })
+    })
+
+    it('calls back with an error when setting a cookie with missing required fields', function (done) {
+      session.defaultSession.cookies.set({
+        url: '',
+        name: '1',
+        value: '1'
+      }, function (error) {
+        assert.equal(error.message, 'Setting cookie failed')
+        done()
       })
     })
 
@@ -134,7 +160,7 @@ describe('session module', function () {
     })
   })
 
-  describe('session.clearStorageData(options)', function () {
+  describe('ses.clearStorageData(options)', function () {
     fixtures = path.resolve(__dirname, 'fixtures')
     it('clears localstorage data', function (done) {
       ipcMain.on('count', function (event, count) {
@@ -156,7 +182,7 @@ describe('session module', function () {
     })
   })
 
-  describe('session will-download event', function () {
+  describe('will-download event', function () {
     var w = null
 
     beforeEach(function () {
@@ -213,9 +239,10 @@ describe('session module', function () {
       res.end(mockPDF)
       downloadServer.close()
     })
-    var assertDownload = function (event, state, url, mimeType, receivedBytes, totalBytes, disposition, filename, port) {
+    var assertDownload = function (event, state, url, mimeType, receivedBytes, totalBytes, disposition, filename, port, savePath) {
       assert.equal(state, 'completed')
       assert.equal(filename, 'mock.pdf')
+      assert.equal(savePath, path.join(__dirname, 'fixtures', 'mock.pdf'))
       assert.equal(url, 'http://127.0.0.1:' + port + '/')
       assert.equal(mimeType, 'application/pdf')
       assert.equal(receivedBytes, mockPDF.length)
@@ -230,8 +257,8 @@ describe('session module', function () {
         var port = downloadServer.address().port
         ipcRenderer.sendSync('set-download-option', false, false)
         w.loadURL(url + ':' + port)
-        ipcRenderer.once('download-done', function (event, state, url, mimeType, receivedBytes, totalBytes, disposition, filename) {
-          assertDownload(event, state, url, mimeType, receivedBytes, totalBytes, disposition, filename, port)
+        ipcRenderer.once('download-done', function (event, state, url, mimeType, receivedBytes, totalBytes, disposition, filename, savePath) {
+          assertDownload(event, state, url, mimeType, receivedBytes, totalBytes, disposition, filename, port, savePath)
           done()
         })
       })
@@ -246,8 +273,8 @@ describe('session module', function () {
         webview.addEventListener('did-finish-load', function () {
           webview.downloadURL(url + ':' + port + '/')
         })
-        ipcRenderer.once('download-done', function (event, state, url, mimeType, receivedBytes, totalBytes, disposition, filename) {
-          assertDownload(event, state, url, mimeType, receivedBytes, totalBytes, disposition, filename, port)
+        ipcRenderer.once('download-done', function (event, state, url, mimeType, receivedBytes, totalBytes, disposition, filename, savePath) {
+          assertDownload(event, state, url, mimeType, receivedBytes, totalBytes, disposition, filename, port, savePath)
           document.body.removeChild(webview)
           done()
         })
@@ -273,18 +300,25 @@ describe('session module', function () {
     })
   })
 
-  describe('session.protocol', function () {
-    beforeEach(function () {
-      if (w != null) {
-        w.destroy()
-      }
+  describe('ses.protocol', function () {
+    const partitionName = 'temp'
+    const protocolName = 'sp'
+    const partitionProtocol = session.fromPartition(partitionName).protocol
+    const protocol = session.defaultSession.protocol
+    const handler = function (ignoredError, callback) {
+      callback({data: 'test', mimeType: 'text/html'})
+    }
+
+    beforeEach(function (done) {
+      if (w != null) w.destroy()
       w = new BrowserWindow({
         show: false,
-        width: 400,
-        height: 400,
         webPreferences: {
           partition: partitionName
         }
+      })
+      partitionProtocol.registerStringProtocol(protocolName, handler, function (error) {
+        done(error != null ? error : undefined)
       })
     })
 
@@ -292,25 +326,46 @@ describe('session module', function () {
       partitionProtocol.unregisterProtocol(protocolName, () => done())
     })
 
-    it('handles requests from a partition', function (done) {
-      var handler = function (error, callback) {
-        callback({
-          data: 'test'
+    it('does not affect defaultSession', function (done) {
+      protocol.isProtocolHandled(protocolName, function (result) {
+        assert.equal(result, false)
+        partitionProtocol.isProtocolHandled(protocolName, function (result) {
+          assert.equal(result, true)
+          done()
         })
+      })
+    })
+
+    xit('handles requests from partition', function (done) {
+      w.webContents.on('did-finish-load', function () {
+        done()
+      })
+      w.loadURL(`${protocolName}://fake-host`)
+    })
+  })
+
+  describe('ses.setProxy(options, callback)', function () {
+    it('allows configuring proxy settings', function (done) {
+      const config = {
+        proxyRules: 'http=myproxy:80'
       }
-      partitionProtocol.registerStringProtocol(protocolName, handler, function (error) {
-        if (error) {
-          return done(error)
-        }
-        protocol.isProtocolHandled(protocolName, function (result) {
-          assert.equal(result, false)
-          partitionProtocol.isProtocolHandled(protocolName, function (result) {
-            assert.equal(result, true)
-            w.webContents.on('did-finish-load', function () {
-              done()
-            })
-            w.loadURL(protocolName + "://fake-host")
-          })
+      session.defaultSession.setProxy(config, function () {
+        session.defaultSession.resolveProxy('http://localhost', function (proxy) {
+          assert.equal(proxy, 'PROXY myproxy:80')
+          done()
+        })
+      })
+    })
+
+    it('allows bypassing proxy settings', function (done) {
+      const config = {
+        proxyRules: 'http=myproxy:80',
+        proxyBypassRules: '<local>'
+      }
+      session.defaultSession.setProxy(config, function () {
+        session.defaultSession.resolveProxy('http://localhost', function (proxy) {
+          assert.equal(proxy, 'DIRECT')
+          done()
         })
       })
     })

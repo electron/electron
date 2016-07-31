@@ -7,8 +7,9 @@
 #include "native_mate/dictionary.h"
 #include "ui/gfx/geometry/point.h"
 #include "ui/gfx/geometry/rect.h"
-#include "ui/gfx/screen.h"
 #include "ui/gfx/geometry/size.h"
+#include "ui/display/display.h"
+#include "ui/display/screen.h"
 
 namespace mate {
 
@@ -35,7 +36,7 @@ bool Converter<gfx::Point>::FromV8(v8::Isolate* isolate,
 }
 
 v8::Local<v8::Value> Converter<gfx::Size>::ToV8(v8::Isolate* isolate,
-                                                  const gfx::Size& val) {
+                                                const gfx::Size& val) {
   mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
   dict.SetHidden("simple", true);
   dict.Set("width", val.width());
@@ -82,13 +83,13 @@ bool Converter<gfx::Rect>::FromV8(v8::Isolate* isolate,
 }
 
 template<>
-struct Converter<gfx::Display::TouchSupport> {
+struct Converter<display::Display::TouchSupport> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                    const gfx::Display::TouchSupport& val) {
+                                    const display::Display::TouchSupport& val) {
     switch (val) {
-      case gfx::Display::TOUCH_SUPPORT_AVAILABLE:
+      case display::Display::TOUCH_SUPPORT_AVAILABLE:
         return StringToV8(isolate, "available");
-      case gfx::Display::TOUCH_SUPPORT_UNAVAILABLE:
+      case display::Display::TOUCH_SUPPORT_UNAVAILABLE:
         return StringToV8(isolate, "unavailable");
       default:
         return StringToV8(isolate, "unknown");
@@ -96,8 +97,8 @@ struct Converter<gfx::Display::TouchSupport> {
   }
 };
 
-v8::Local<v8::Value> Converter<gfx::Display>::ToV8(v8::Isolate* isolate,
-                                                    const gfx::Display& val) {
+v8::Local<v8::Value> Converter<display::Display>::ToV8(
+    v8::Isolate* isolate, const display::Display& val) {
   mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
   dict.SetHidden("simple", true);
   dict.Set("id", val.id());

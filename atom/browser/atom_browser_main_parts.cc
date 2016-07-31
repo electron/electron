@@ -15,7 +15,7 @@
 #include "atom/common/node_bindings.h"
 #include "atom/common/node_includes.h"
 #include "base/command_line.h"
-#include "base/thread_task_runner_handle.h"
+#include "base/threading/thread_task_runner_handle.h"
 #include "chrome/browser/browser_process.h"
 #include "v8/include/v8-debug.h"
 
@@ -32,7 +32,7 @@ void Erase(T* container, typename T::iterator iter) {
 }
 
 // static
-AtomBrowserMainParts* AtomBrowserMainParts::self_ = NULL;
+AtomBrowserMainParts* AtomBrowserMainParts::self_ = nullptr;
 
 AtomBrowserMainParts::AtomBrowserMainParts()
     : fake_browser_process_(new BrowserProcess),
@@ -124,6 +124,8 @@ void AtomBrowserMainParts::PostEarlyInitialization() {
 }
 
 void AtomBrowserMainParts::PreMainMessageLoopRun() {
+  js_env_->OnMessageLoopCreated();
+
   // Run user's main script before most things get initialized, so we can have
   // a chance to setup everything.
   node_bindings_->PrepareMessageLoop();
@@ -168,6 +170,8 @@ void AtomBrowserMainParts::PostMainMessageLoopStart() {
 
 void AtomBrowserMainParts::PostMainMessageLoopRun() {
   brightray::BrowserMainParts::PostMainMessageLoopRun();
+
+  js_env_->OnMessageLoopDestroying();
 
 #if defined(OS_MACOSX)
   FreeAppDelegate();

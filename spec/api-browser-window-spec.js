@@ -23,9 +23,9 @@ describe('browser-window module', function () {
 
   before(function (done) {
     server = http.createServer(function (req, res) {
-      function respond() { res.end(''); }
+      function respond () { res.end('') }
       setTimeout(respond, req.url.includes('slow') ? 200 : 0)
-    });
+    })
     server.listen(0, '127.0.0.1', function () {
       server.url = 'http://127.0.0.1:' + server.address().port
       done()
@@ -44,7 +44,10 @@ describe('browser-window module', function () {
     w = new BrowserWindow({
       show: false,
       width: 400,
-      height: 400
+      height: 400,
+      webPreferences: {
+        backgroundThrottling: false
+      }
     })
   })
 
@@ -125,7 +128,7 @@ describe('browser-window module', function () {
         'did-get-response-details.html': 'mainFrame',
         'logo.png': 'image'
       }
-      var responses = 0;
+      var responses = 0
       w.webContents.on('did-get-response-details', function (event, status, newUrl, oldUrl, responseCode, method, referrer, headers, resourceType) {
         responses++
         var fileName = newUrl.slice(newUrl.lastIndexOf('/') + 1)
@@ -284,10 +287,25 @@ describe('browser-window module', function () {
     })
   })
 
+  describe('BrowserWindow.setMinimum/MaximumSize(width, height)', function () {
+    it('sets the maximum and minimum size of the window', function () {
+      assert.deepEqual(w.getMinimumSize(), [0, 0])
+      assert.deepEqual(w.getMaximumSize(), [0, 0])
+
+      w.setMinimumSize(100, 100)
+      assert.deepEqual(w.getMinimumSize(), [100, 100])
+      assert.deepEqual(w.getMaximumSize(), [0, 0])
+
+      w.setMaximumSize(900, 600)
+      assert.deepEqual(w.getMinimumSize(), [100, 100])
+      assert.deepEqual(w.getMaximumSize(), [900, 600])
+    })
+  })
+
   describe('BrowserWindow.setAspectRatio(ratio)', function () {
     it('resets the behaviour when passing in 0', function (done) {
       var size = [300, 400]
-      w.setAspectRatio(1/2)
+      w.setAspectRatio(1 / 2)
       w.setAspectRatio(0)
       w.once('resize', function () {
         var newSize = w.getSize()
@@ -343,7 +361,7 @@ describe('browser-window module', function () {
         if (process.platform === 'darwin') {
           app.dock.setIcon(path.join(fixtures, 'assets', 'logo.png'))
         }
-        w.setProgressBar(.5)
+        w.setProgressBar(0.5)
 
         if (process.platform === 'darwin') {
           app.dock.setIcon(null)
@@ -430,7 +448,7 @@ describe('browser-window module', function () {
     })
   })
 
-  describe('"enableLargerThanScreen" option', function () {
+  describe('enableLargerThanScreen" option', function () {
     if (process.platform === 'linux') {
       return
     }
@@ -603,12 +621,20 @@ describe('browser-window module', function () {
   })
 
   describe('beginFrameSubscription method', function () {
-    it('subscribes to frame updates', function (done) {
-      this.timeout(20000)
+    // This test is too slow, only test it on CI.
+    if (!isCI) return
 
+    this.timeout(20000)
+
+    it('subscribes to frame updates', function (done) {
+      let called = false
       w.loadURL('file://' + fixtures + '/api/frame-subscriber.html')
       w.webContents.on('dom-ready', function () {
         w.webContents.beginFrameSubscription(function (data) {
+          // This callback might be called twice.
+          if (called) return
+          called = true
+
           assert.notEqual(data.length, 0)
           w.webContents.endFrameSubscription()
           done()
@@ -617,11 +643,14 @@ describe('browser-window module', function () {
     })
 
     it('subscribes to frame updates (only dirty rectangle)', function (done) {
-      this.timeout(20000)
-
+      let called = false
       w.loadURL('file://' + fixtures + '/api/frame-subscriber.html')
       w.webContents.on('dom-ready', function () {
         w.webContents.beginFrameSubscription(true, function (data) {
+          // This callback might be called twice.
+          if (called) return
+          called = true
+
           assert.notEqual(data.length, 0)
           w.webContents.endFrameSubscription()
           done()
@@ -630,12 +659,10 @@ describe('browser-window module', function () {
     })
 
     it('throws error when subscriber is not well defined', function (done) {
-      this.timeout(20000)
-
       w.loadURL('file://' + fixtures + '/api/frame-subscriber.html')
-      try{
+      try {
         w.webContents.beginFrameSubscription(true, true)
-      } catch(e) {
+      } catch (e) {
         done()
       }
     })
@@ -702,7 +729,7 @@ describe('browser-window module', function () {
 
     describe('loading main frame state', function () {
       it('is true when the main frame is loading', function (done) {
-        w.webContents.on('did-start-loading', function() {
+        w.webContents.on('did-start-loading', function () {
           assert.equal(w.webContents.isLoadingMainFrame(), true)
           done()
         })
@@ -710,9 +737,9 @@ describe('browser-window module', function () {
       })
 
       it('is false when only a subframe is loading', function (done) {
-        w.webContents.once('did-finish-load', function() {
+        w.webContents.once('did-finish-load', function () {
           assert.equal(w.webContents.isLoadingMainFrame(), false)
-          w.webContents.on('did-start-loading', function() {
+          w.webContents.on('did-start-loading', function () {
             assert.equal(w.webContents.isLoadingMainFrame(), false)
             done()
           })
@@ -726,9 +753,9 @@ describe('browser-window module', function () {
       })
 
       it('is true when navigating to pages from the same origin', function (done) {
-        w.webContents.once('did-finish-load', function() {
+        w.webContents.once('did-finish-load', function () {
           assert.equal(w.webContents.isLoadingMainFrame(), false)
-          w.webContents.on('did-start-loading', function() {
+          w.webContents.on('did-start-loading', function () {
             assert.equal(w.webContents.isLoadingMainFrame(), true)
             done()
           })
@@ -988,10 +1015,11 @@ describe('browser-window module', function () {
         w.webContents.on('devtools-opened', function () {
           var showPanelIntevalId = setInterval(function () {
             if (w && w.devToolsWebContents) {
-              w.devToolsWebContents.executeJavaScript('(' + (function () {
+              var showLastPanel = function () {
                 var lastPanelId = WebInspector.inspectorView._tabbedPane._tabs.peekLast().id
                 WebInspector.inspectorView.showPanel(lastPanelId)
-              }).toString() + ')()')
+              }
+              w.devToolsWebContents.executeJavaScript(`(${showLastPanel})()`)
             } else {
               clearInterval(showPanelIntevalId)
             }
@@ -1021,7 +1049,10 @@ describe('browser-window module', function () {
             assert.equal(message.runtimeId, 'foo')
             assert.equal(message.tabId, w.webContents.id)
             assert.equal(message.i18nString, 'foo - bar (baz)')
-            assert.deepEqual(message.storageItems, {foo: 'bar'})
+            assert.deepEqual(message.storageItems, {
+              local: {hello: 'world'},
+              sync: {foo: 'bar'}
+            })
             done()
           })
         })
@@ -1060,10 +1091,11 @@ describe('browser-window module', function () {
       w.webContents.on('devtools-opened', function () {
         var showPanelIntevalId = setInterval(function () {
           if (w && w.devToolsWebContents) {
-            w.devToolsWebContents.executeJavaScript('(' + (function () {
+            var showLastPanel = function () {
               var lastPanelId = WebInspector.inspectorView._tabbedPane._tabs.peekLast().id
               WebInspector.inspectorView.showPanel(lastPanelId)
-            }).toString() + ')()')
+            }
+            w.devToolsWebContents.executeJavaScript(`(${showLastPanel})()`)
           } else {
             clearInterval(showPanelIntevalId)
           }
@@ -1112,14 +1144,14 @@ describe('browser-window module', function () {
     })
 
     it('works after page load and during subframe load', function (done) {
-      w.webContents.once('did-finish-load', function() {
+      w.webContents.once('did-finish-load', function () {
         // initiate a sub-frame load, then try and execute script during it
         w.webContents.executeJavaScript(`
           var iframe = document.createElement('iframe')
           iframe.src = '${server.url}/slow'
           document.body.appendChild(iframe)
-        `, function() {
-          w.webContents.executeJavaScript(`console.log('hello')`, function() {
+        `, function () {
+          w.webContents.executeJavaScript('console.log(\'hello\')', function () {
             done()
           })
         })
@@ -1128,7 +1160,7 @@ describe('browser-window module', function () {
     })
 
     it('executes after page load', function (done) {
-      w.webContents.executeJavaScript(code, function(result) {
+      w.webContents.executeJavaScript(code, function (result) {
         assert.equal(result, expected)
         done()
       })

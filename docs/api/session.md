@@ -1,36 +1,44 @@
-# session
+ # session
 
 > Manage browser sessions, cookies, cache, proxy settings, etc.
 
 The `session` module can be used to create new `Session` objects.
 
 You can also access the `session` of existing pages by using the `session`
-property of [`webContents`](web-contents.md) which is a property of
-[`BrowserWindow`](browser-window.md).
+property of [`WebContents`](web-contents.md), or from the `session` module.
 
 ```javascript
-const {BrowserWindow} = require('electron');
+const {BrowserWindow} = require('electron')
 
-let win = new BrowserWindow({width: 800, height: 600});
-win.loadURL('http://github.com');
+let win = new BrowserWindow({width: 800, height: 600})
+win.loadURL('http://github.com')
 
-const ses = win.webContents.session;
+const ses = win.webContents.session
+console.log(ses.getUserAgent())
 ```
 
 ## Methods
 
 The `session` module has the following methods:
 
-### session.fromPartition(partition)
+### session.fromPartition(partition[, options])
 
 * `partition` String
+* `options` Object
+  * `cache` Boolean - Whether to enable cache.
 
-Returns a new `Session` instance from `partition` string.
+Returns a `Session` instance from `partition` string. When there is an existing
+`Session` with the same `partition`, it will be returned; othewise a new
+`Session` instance will be created with `options`.
 
 If `partition` starts with `persist:`, the page will use a persistent session
 available to all pages in the app with the same `partition`. if there is no
 `persist:` prefix, the page will use an in-memory session. If the `partition` is
 empty then default session of the app will be returned.
+
+To create a `Session` with `options`, you have to ensure the `Session` with the
+`partition` has never been used before. There is no way to change the `options`
+of an existing `Session` object.
 
 ## Properties
 
@@ -45,9 +53,9 @@ Returns the default session object of the app.
 You can create a `Session` object in the `session` module:
 
 ```javascript
-const session = require('electron').session;
-
-const ses = session.fromPartition('persist:name');
+const {session} = require('electron')
+const ses = session.fromPartition('persist:name')
+console.log(ses.getUserAgent())
 ```
 
 ### Instance Events
@@ -66,102 +74,18 @@ Calling `event.preventDefault()` will cancel the download and `item` will not be
 available from next tick of the process.
 
 ```javascript
+const {session} = require('electron')
 session.defaultSession.on('will-download', (event, item, webContents) => {
-  event.preventDefault();
+  event.preventDefault()
   require('request')(item.getURL(), (data) => {
-    require('fs').writeFileSync('/somewhere', data);
-  });
-});
+    require('fs').writeFileSync('/somewhere', data)
+  })
+})
 ```
 
 ### Instance Methods
 
 The following methods are available on instances of `Session`:
-
-#### `ses.cookies`
-
-The `cookies` gives you ability to query and modify cookies. For example:
-
-```javascript
-// Query all cookies.
-session.defaultSession.cookies.get({}, (error, cookies) => {
-  console.log(cookies);
-});
-
-// Query all cookies associated with a specific url.
-session.defaultSession.cookies.get({url: 'http://www.github.com'}, (error, cookies) => {
-  console.log(cookies);
-});
-
-// Set a cookie with the given cookie data;
-// may overwrite equivalent cookies if they exist.
-const cookie = {url: 'http://www.github.com', name: 'dummy_name', value: 'dummy'};
-session.defaultSession.cookies.set(cookie, (error) => {
-  if (error)
-    console.error(error);
-});
-```
-
-#### `ses.cookies.get(filter, callback)`
-
-* `filter` Object
-  * `url` String (optional) - Retrieves cookies which are associated with
-    `url`. Empty implies retrieving cookies of all urls.
-  * `name` String (optional) - Filters cookies by name.
-  * `domain` String (optional) - Retrieves cookies whose domains match or are
-    subdomains of `domains`
-  * `path` String (optional) - Retrieves cookies whose path matches `path`.
-  * `secure` Boolean (optional) - Filters cookies by their Secure property.
-  * `session` Boolean (optional) - Filters out session or persistent cookies.
-* `callback` Function
-
-Sends a request to get all cookies matching `details`, `callback` will be called
-with `callback(error, cookies)` on complete.
-
-`cookies` is an Array of `cookie` objects.
-
-* `cookie` Object
-  *  `name` String - The name of the cookie.
-  *  `value` String - The value of the cookie.
-  *  `domain` String - The domain of the cookie.
-  *  `hostOnly` String - Whether the cookie is a host-only cookie.
-  *  `path` String - The path of the cookie.
-  *  `secure` Boolean - Whether the cookie is marked as secure.
-  *  `httpOnly` Boolean - Whether the cookie is marked as HTTP only.
-  *  `session` Boolean - Whether the cookie is a session cookie or a persistent
-     cookie with an expiration date.
-  *  `expirationDate` Double (optional) - The expiration date of the cookie as
-     the number of seconds since the UNIX epoch. Not provided for session
-     cookies.
-
-#### `ses.cookies.set(details, callback)`
-
-* `details` Object
-  * `url` String - The url to associate the cookie with.
-  * `name` String - The name of the cookie. Empty by default if omitted.
-  * `value` String - The value of the cookie. Empty by default if omitted.
-  * `domain` String - The domain of the cookie. Empty by default if omitted.
-  * `path` String - The path of the cookie. Empty by default if omitted.
-  * `secure` Boolean - Whether the cookie should be marked as Secure. Defaults to
-    false.
-  * `session` Boolean - Whether the cookie should be marked as HTTP only. Defaults
-    to false.
-  * `expirationDate` Double -	The expiration date of the cookie as the number of
-    seconds since the UNIX epoch. If omitted then the cookie becomes a session
-    cookie and will not be retained between sessions.
-* `callback` Function
-
-Sets a cookie with `details`, `callback` will be called with `callback(error)`
-on complete.
-
-#### `ses.cookies.remove(url, name, callback)`
-
-* `url` String - The URL associated with the cookie.
-* `name` String - The name of cookie to remove.
-* `callback` Function
-
-Removes the cookies matching `url` and `name`, `callback` will called with
-`callback()` on complete.
 
 #### `ses.getCacheSize(callback)`
 
@@ -176,7 +100,7 @@ Returns the session's current cache size.
 
 Clears the session’s HTTP cache.
 
-#### `ses.clearStorageData([options, ]callback)`
+#### `ses.clearStorageData([options, callback])`
 
 * `options` Object (optional)
   * `origin` String - Should follow `window.location.origin`’s representation
@@ -186,7 +110,7 @@ Clears the session’s HTTP cache.
     `shadercache`, `websql`, `serviceworkers`
   * `quotas` Array - The types of quotas to clear, can contain:
     `temporary`, `persistent`, `syncable`.
-* `callback` Function - Called when operation is done.
+* `callback` Function (optional) - Called when operation is done.
 
 Clears the data of web storages.
 
@@ -199,6 +123,8 @@ Writes any unwritten DOMStorage data to disk.
 * `config` Object
   * `pacScript` String - The URL associated with the PAC file.
   * `proxyRules` String - Rules indicating which proxies to use.
+  * `proxyBypassRules` String - Rules indicating which URLs should
+    bypass the proxy settings.
 * `callback` Function - Called when operation is done.
 
 Sets the proxy settings.
@@ -231,6 +157,43 @@ For example:
 * `http=foopy;socks=foopy2` -  Use HTTP proxy `foopy` for http URLs, and use
   `socks4://foopy2` for all other URLs.
 
+The `proxyBypassRules` is a comma separated list of rules described below:
+
+* `[ URL_SCHEME "://" ] HOSTNAME_PATTERN [ ":" <port> ]`
+
+   Match all hostnames that match the pattern HOSTNAME_PATTERN.
+
+   Examples:
+     "foobar.com", "*foobar.com", "*.foobar.com", "*foobar.com:99",
+     "https://x.*.y.com:99"
+
+ * `"." HOSTNAME_SUFFIX_PATTERN [ ":" PORT ]`
+
+   Match a particular domain suffix.
+
+   Examples:
+     ".google.com", ".com", "http://.google.com"
+
+* `[ SCHEME "://" ] IP_LITERAL [ ":" PORT ]`
+
+   Match URLs which are IP address literals.
+
+   Examples:
+     "127.0.1", "[0:0::1]", "[::1]", "http://[::1]:99"
+
+*  `IP_LITERAL "/" PREFIX_LENGHT_IN_BITS`
+
+   Match any URL that is to an IP literal that falls between the
+   given range. IP range is specified using CIDR notation.
+
+   Examples:
+     "192.168.1.1/16", "fefe:13::abc/33".
+
+*  `<local>`
+
+   Match local addresses. The meaning of `<local>` is whether the
+   host matches one of: "127.0.0.1", "::1", "localhost".
+
 ### `ses.resolveProxy(url, callback)`
 
 * `url` URL
@@ -259,13 +222,13 @@ Emulates network with the given configuration for the `session`.
 ```javascript
 // To emulate a GPRS connection with 50kbps throughput and 500 ms latency.
 window.webContents.session.enableNetworkEmulation({
-    latency: 500,
-    downloadThroughput: 6400,
-    uploadThroughput: 6400
-});
+  latency: 500,
+  downloadThroughput: 6400,
+  uploadThroughput: 6400
+})
 
 // To emulate a network outage.
-window.webContents.session.enableNetworkEmulation({offline: true});
+window.webContents.session.enableNetworkEmulation({offline: true})
 ```
 
 #### `ses.disableNetworkEmulation()`
@@ -286,12 +249,12 @@ Calling `setCertificateVerifyProc(null)` will revert back to default certificate
 verify proc.
 
 ```javascript
-myWindow.webContents.session.setCertificateVerifyProc((hostname, cert, callback) => {
-  if (hostname === 'github.com')
-    callback(true);
-  else
-    callback(false);
-});
+const {BrowserWindow} = require('electron')
+let win = new BrowserWindow()
+
+win.webContents.session.setCertificateVerifyProc((hostname, cert, callback) => {
+  callback(hostname === 'github.com')
+})
 ```
 
 #### `ses.setPermissionRequestHandler(handler)`
@@ -306,16 +269,14 @@ Sets the handler which can be used to respond to permission requests for the `se
 Calling `callback(true)` will allow the permission and `callback(false)` will reject it.
 
 ```javascript
-session.fromPartition(partition).setPermissionRequestHandler((webContents, permission, callback) => {
-  if (webContents.getURL() === host) {
-    if (permission === 'notifications') {
-      callback(false); // denied.
-      return;
-    }
+const {session} = require('electron')
+session.fromPartition('some-partition').setPermissionRequestHandler((webContents, permission, callback) => {
+  if (webContents.getURL() === 'some-host' && permission === 'notifications') {
+    return callback(false) // denied.
   }
 
-  callback(true);
-});
+  callback(true)
+})
 ```
 
 #### `ses.clearHostResolverCache([callback])`
@@ -333,6 +294,7 @@ Dynamically sets whether to always send credentials for HTTP NTLM or Negotiate
 authentication.
 
 ```javascript
+const {session} = require('electron')
 // consider any url ending with `example.com`, `foobar.com`, `baz`
 // for integrated authentication.
 session.defaultSession.allowNTLMCredentialsForDomains('*example.com, *foobar.com, *baz')
@@ -341,15 +303,157 @@ session.defaultSession.allowNTLMCredentialsForDomains('*example.com, *foobar.com
 session.defaultSession.allowNTLMCredentialsForDomains('*')
 ```
 
+#### `ses.setUserAgent(userAgent[, acceptLanguages])`
+
+* `userAgent` String
+* `acceptLanguages` String (optional)
+
+Overrides the `userAgent` and `acceptLanguages` for this session.
+
+The `acceptLanguages` must a comma separated ordered list of language codes, for
+example `"en-US,fr,de,ko,zh-CN,ja"`.
+
+This doesn't affect existing `WebContents`, and each `WebContents` can use
+`webContents.setUserAgent` to override the session-wide user agent.
+
+#### `ses.getUserAgent()`
+
+Returns a `String` representing the user agent for this session.
+
+### Instance Properties
+
+The following properties are available on instances of `Session`:
+
+#### `ses.cookies`
+
+Returns an instance of `Cookies` class for this session.
+
 #### `ses.webRequest`
 
-The `webRequest` API set allows to intercept and modify contents of a request at
-various stages of its lifetime.
+Returns an instance of `WebRequest` class for this session.
 
-Each API accepts an optional `filter` and a `listener`, the `listener` will be
-called with `listener(details)` when the API's event has happened, the `details`
-is an object that describes the request. Passing `null` as `listener` will
-unsubscribe from the event.
+#### `ses.protocol`
+
+Returns an instance of [protocol](protocol.md) module for this session.
+
+```javascript
+const {app, session} = require('electron')
+const path = require('path')
+
+app.on('ready', function () {
+  const protocol = session.fromPartition('some-partition').protocol
+  protocol.registerFileProtocol('atom', function (request, callback) {
+    var url = request.url.substr(7)
+    callback({path: path.normalize(`${__dirname}/${url}`)})
+  }, function (error) {
+    if (error) console.error('Failed to register protocol')
+  })
+})
+```
+
+## Class: Cookies
+
+The `Cookies` class gives you ability to query and modify cookies. Instances of
+`Cookies` class must be received by using `cookies` property of `Session` class.
+
+For example:
+
+```javascript
+const {session} = require('electron')
+
+// Query all cookies.
+session.defaultSession.cookies.get({}, (error, cookies) => {
+  console.log(error, cookies)
+})
+
+// Query all cookies associated with a specific url.
+session.defaultSession.cookies.get({url: 'http://www.github.com'}, (error, cookies) => {
+  console.log(error, cookies)
+})
+
+// Set a cookie with the given cookie data;
+// may overwrite equivalent cookies if they exist.
+const cookie = {url: 'http://www.github.com', name: 'dummy_name', value: 'dummy'}
+session.defaultSession.cookies.set(cookie, (error) => {
+  if (error) console.error(error)
+})
+```
+
+### Instance Methods
+
+The following methods are available on instances of `Cookies`:
+
+#### `cookies.get(filter, callback)`
+
+* `filter` Object
+  * `url` String (optional) - Retrieves cookies which are associated with
+    `url`. Empty implies retrieving cookies of all urls.
+  * `name` String (optional) - Filters cookies by name.
+  * `domain` String (optional) - Retrieves cookies whose domains match or are
+    subdomains of `domains`
+  * `path` String (optional) - Retrieves cookies whose path matches `path`.
+  * `secure` Boolean (optional) - Filters cookies by their Secure property.
+  * `session` Boolean (optional) - Filters out session or persistent cookies.
+* `callback` Function
+
+Sends a request to get all cookies matching `details`, `callback` will be called
+with `callback(error, cookies)` on complete.
+
+`cookies` is an Array of `cookie` objects.
+
+* `cookie` Object
+  *  `name` String - The name of the cookie.
+  *  `value` String - The value of the cookie.
+  *  `domain` String - The domain of the cookie.
+  *  `hostOnly` String - Whether the cookie is a host-only cookie.
+  *  `path` String - The path of the cookie.
+  *  `secure` Boolean - Whether the cookie is marked as secure.
+  *  `httpOnly` Boolean - Whether the cookie is marked as HTTP only.
+  *  `session` Boolean - Whether the cookie is a session cookie or a persistent
+     cookie with an expiration date.
+  *  `expirationDate` Double (optional) - The expiration date of the cookie as
+     the number of seconds since the UNIX epoch. Not provided for session
+     cookies.
+
+#### `cookies.set(details, callback)`
+
+* `details` Object
+  * `url` String - The url to associate the cookie with.
+  * `name` String - The name of the cookie. Empty by default if omitted.
+  * `value` String - The value of the cookie. Empty by default if omitted.
+  * `domain` String - The domain of the cookie. Empty by default if omitted.
+  * `path` String - The path of the cookie. Empty by default if omitted.
+  * `secure` Boolean - Whether the cookie should be marked as Secure. Defaults to
+    false.
+  * `httpOnly` Boolean - Whether the cookie should be marked as HTTP only.
+    Defaults to false.
+  * `expirationDate` Double -	The expiration date of the cookie as the number of
+    seconds since the UNIX epoch. If omitted then the cookie becomes a session
+    cookie and will not be retained between sessions.
+* `callback` Function
+
+Sets a cookie with `details`, `callback` will be called with `callback(error)`
+on complete.
+
+#### `cookies.remove(url, name, callback)`
+
+* `url` String - The URL associated with the cookie.
+* `name` String - The name of cookie to remove.
+* `callback` Function
+
+Removes the cookies matching `url` and `name`, `callback` will called with
+`callback()` on complete.
+
+## Class: WebRequest
+
+The `WebRequest` class allows to intercept and modify contents of a request at
+various stages of its lifetime. Instances of `WebRequest` class must be received
+by using `webRequest` property of `Session` class.
+
+The methods of `WebRequest` accept an optional `filter` and a `listener`, the
+`listener` will be called with `listener(details)` when the API's event has
+happened, the `details` is an object that describes the request. Passing `null`
+as `listener` will unsubscribe from the event.
 
 The `filter` is an object that has an `urls` property, which is an Array of URL
 patterns that will be used to filter out the requests that do not match the URL
@@ -358,19 +462,27 @@ patterns. If the `filter` is omitted then all requests will be matched.
 For certain events the `listener` is passed with a `callback`, which should be
 called with an `response` object when `listener` has done its work.
 
+An example of adding `User-Agent` header for requests:
+
 ```javascript
+const {session} = require('electron')
+
 // Modify the user agent for all requests to the following urls.
 const filter = {
   urls: ['https://*.github.com/*', '*://electron.github.io']
-};
+}
 
 session.defaultSession.webRequest.onBeforeSendHeaders(filter, (details, callback) => {
-  details.requestHeaders['User-Agent'] = "MyAgent";
-  callback({cancel: false, requestHeaders: details.requestHeaders});
-});
+  details.requestHeaders['User-Agent'] = 'MyAgent'
+  callback({cancel: false, requestHeaders: details.requestHeaders})
+})
 ```
 
-#### `ses.webRequest.onBeforeRequest([filter, ]listener)`
+### Instance Methods
+
+The following methods are available on instances of `WebRequest`:
+
+#### `webRequest.onBeforeRequest([filter, ]listener)`
 
 * `filter` Object
 * `listener` Function
@@ -400,7 +512,7 @@ The `callback` has to be called with an `response` object:
   * `redirectURL` String (optional) - The original request is prevented from
     being sent or completed, and is instead redirected to the given URL.
 
-#### `ses.webRequest.onBeforeSendHeaders([filter, ]listener)`
+#### `webRequest.onBeforeSendHeaders([filter, ]listener)`
 
 * `filter` Object
 * `listener` Function
@@ -425,7 +537,7 @@ The `callback` has to be called with an `response` object:
   * `requestHeaders` Object (optional) - When provided, request will be made
     with these headers.
 
-#### `ses.webRequest.onSendHeaders([filter, ]listener)`
+#### `webRequest.onSendHeaders([filter, ]listener)`
 
 * `filter` Object
 * `listener` Function
@@ -442,7 +554,7 @@ response are visible by the time this listener is fired.
   * `timestamp` Double
   * `requestHeaders` Object
 
-#### `ses.webRequest.onHeadersReceived([filter,]listener)`
+#### `webRequest.onHeadersReceived([filter,]listener)`
 
 * `filter` Object
 * `listener` Function
@@ -471,7 +583,7 @@ The `callback` has to be called with an `response` object:
     `responseHeaders` to change header status otherwise original response
     header's status will be used.
 
-#### `ses.webRequest.onResponseStarted([filter, ]listener)`
+#### `webRequest.onResponseStarted([filter, ]listener)`
 
 * `filter` Object
 * `listener` Function
@@ -492,7 +604,7 @@ and response headers are available.
   * `statusCode` Integer
   * `statusLine` String
 
-#### `ses.webRequest.onBeforeRedirect([filter, ]listener)`
+#### `webRequest.onBeforeRedirect([filter, ]listener)`
 
 * `filter` Object
 * `listener` Function
@@ -513,7 +625,7 @@ redirect is about to occur.
   * `fromCache` Boolean
   * `responseHeaders` Object
 
-#### `ses.webRequest.onCompleted([filter, ]listener)`
+#### `webRequest.onCompleted([filter, ]listener)`
 
 * `filter` Object
 * `listener` Function
@@ -532,7 +644,7 @@ completed.
   * `statusCode` Integer
   * `statusLine` String
 
-#### `ses.webRequest.onErrorOccurred([filter, ]listener)`
+#### `webRequest.onErrorOccurred([filter, ]listener)`
 
 * `filter` Object
 * `listener` Function
@@ -547,22 +659,3 @@ The `listener` will be called with `listener(details)` when an error occurs.
   * `timestamp` Double
   * `fromCache` Boolean
   * `error` String - The error description.
-
-#### `ses.protocol`
-
-Returns an instance of [protocol](protocol.md) module for this session.
-
-```javascript
-const {app, session} = require('electron')
-const path = require('path')
-
-app.on('ready', function () {
-  const protocol = session.fromPartition(partitionName).protocol
-  protocol.registerFileProtocol('atom', function (request, callback) {
-    var url = request.url.substr(7)
-    callback({path: path.normalize(__dirname + '/' + url)})
-  }, function (error) {
-    if (error)
-      console.error('Failed to register protocol')
-  })
-})

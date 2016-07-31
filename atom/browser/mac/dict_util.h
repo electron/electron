@@ -5,9 +5,9 @@
 #ifndef ATOM_BROWSER_MAC_DICT_UTIL_H_
 #define ATOM_BROWSER_MAC_DICT_UTIL_H_
 
-#import <Foundation/Foundation.h>
+#include <memory>
 
-#include "base/memory/scoped_ptr.h"
+#import <Foundation/Foundation.h>
 
 namespace base {
 class ListValue;

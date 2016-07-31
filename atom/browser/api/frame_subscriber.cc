@@ -5,8 +5,8 @@
 #include "atom/browser/api/frame_subscriber.h"
 
 #include "base/bind.h"
-#include "atom/common/node_includes.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
+#include "atom/common/node_includes.h"
 #include "content/public/browser/render_widget_host.h"
 
 namespace atom {
@@ -17,8 +17,11 @@ FrameSubscriber::FrameSubscriber(v8::Isolate* isolate,
                                  content::RenderWidgetHostView* view,
                                  const FrameCaptureCallback& callback,
                                  bool only_dirty)
-    : isolate_(isolate), view_(view), callback_(callback),
-      only_dirty_(only_dirty), weak_factory_(this) {
+    : isolate_(isolate),
+      view_(view),
+      callback_(callback),
+      only_dirty_(only_dirty),
+      weak_factory_(this) {
 }
 
 bool FrameSubscriber::ShouldCaptureFrame(
@@ -48,8 +51,9 @@ bool FrameSubscriber::ShouldCaptureFrame(
 }
 
 void FrameSubscriber::OnFrameDelivered(const FrameCaptureCallback& callback,
-  const gfx::Rect& damage_rect, const SkBitmap& bitmap,
-  content::ReadbackResponse response) {
+                                       const gfx::Rect& damage_rect,
+                                       const SkBitmap& bitmap,
+                                       content::ReadbackResponse response) {
   if (response != content::ReadbackResponse::READBACK_SUCCESS)
     return;
 
@@ -67,7 +71,7 @@ void FrameSubscriber::OnFrameDelivered(const FrameCaptureCallback& callback,
     rgb_arr_size);
 
   v8::Local<v8::Value> damage =
-    mate::Converter<gfx::Rect>::ToV8(isolate_, damage_rect);
+      mate::Converter<gfx::Rect>::ToV8(isolate_, damage_rect);
 
   callback_.Run(buffer.ToLocalChecked(), damage);
 }

@@ -8,6 +8,7 @@
 #include <string>
 
 #include "atom/browser/api/trackable_object.h"
+#include "base/values.h"
 #include "content/public/browser/download_manager.h"
 #include "native_mate/handle.h"
 #include "net/base/completion_callback.h"
@@ -47,9 +48,10 @@ class Session: public mate::TrackableObject<Session>,
   static mate::Handle<Session> CreateFrom(
       v8::Isolate* isolate, AtomBrowserContext* browser_context);
 
-  // Gets the Session of |partition| and |in_memory|.
+  // Gets the Session of |partition|.
   static mate::Handle<Session> FromPartition(
-      v8::Isolate* isolate, const std::string& partition, bool in_memory);
+      v8::Isolate* isolate, const std::string& partition,
+      const base::DictionaryValue& options = base::DictionaryValue());
 
   AtomBrowserContext* browser_context() const { return browser_context_.get(); }
 
@@ -57,15 +59,7 @@ class Session: public mate::TrackableObject<Session>,
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::ObjectTemplate> prototype);
 
- protected:
-  Session(v8::Isolate* isolate, AtomBrowserContext* browser_context);
-  ~Session();
-
-  // content::DownloadManager::Observer:
-  void OnDownloadCreated(content::DownloadManager* manager,
-                         content::DownloadItem* item) override;
-
- private:
+  // Methods.
   void ResolveProxy(const GURL& url, ResolveProxyCallback callback);
   template<CacheAction action>
   void DoCacheAction(const net::CompletionCallback& callback);
@@ -80,10 +74,21 @@ class Session: public mate::TrackableObject<Session>,
                                    mate::Arguments* args);
   void ClearHostResolverCache(mate::Arguments* args);
   void AllowNTLMCredentialsForDomains(const std::string& domains);
+  void SetUserAgent(const std::string& user_agent, mate::Arguments* args);
+  std::string GetUserAgent();
   v8::Local<v8::Value> Cookies(v8::Isolate* isolate);
   v8::Local<v8::Value> Protocol(v8::Isolate* isolate);
   v8::Local<v8::Value> WebRequest(v8::Isolate* isolate);
 
+ protected:
+  Session(v8::Isolate* isolate, AtomBrowserContext* browser_context);
+  ~Session();
+
+  // content::DownloadManager::Observer:
+  void OnDownloadCreated(content::DownloadManager* manager,
+                         content::DownloadItem* item) override;
+
+ private:
   // Cached object.
   v8::Global<v8::Value> cookies_;
   v8::Global<v8::Value> protocol_;

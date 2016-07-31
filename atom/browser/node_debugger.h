@@ -5,9 +5,9 @@
 #ifndef ATOM_BROWSER_NODE_DEBUGGER_H_
 #define ATOM_BROWSER_NODE_DEBUGGER_H_
 
+#include <memory>
 #include <string>
 
-#include "base/memory/scoped_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/threading/thread.h"
 #include "net/test/embedded_test_server/stream_listen_socket.h"

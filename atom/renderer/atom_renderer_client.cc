@@ -20,7 +20,6 @@
 #include "atom/renderer/node_array_buffer_bridge.h"
 #include "atom/renderer/preferences_manager.h"
 #include "base/command_line.h"
-#include "base/strings/utf_string_conversions.h"
 #include "chrome/renderer/media/chrome_key_systems.h"
 #include "chrome/renderer/pepper/pepper_helper.h"
 #include "chrome/renderer/printing/print_web_view_helper.h"
@@ -32,7 +31,6 @@
 #include "content/public/renderer/render_view.h"
 #include "ipc/ipc_message_macros.h"
 #include "native_mate/dictionary.h"
-#include "net/base/net_errors.h"
 #include "third_party/WebKit/public/web/WebCustomElement.h"
 #include "third_party/WebKit/public/web/WebDocument.h"
 #include "third_party/WebKit/public/web/WebFrameWidget.h"
@@ -317,21 +315,9 @@ content::BrowserPluginDelegate* AtomRendererClient::CreateBrowserPluginDelegate(
   }
 }
 
-void AtomRendererClient::AddKeySystems(
-    std::vector<media::KeySystemInfo>* key_systems) {
+void AtomRendererClient::AddSupportedKeySystems(
+    std::vector<std::unique_ptr<::media::KeySystemProperties>>* key_systems) {
   AddChromeKeySystems(key_systems);
-}
-
-void AtomRendererClient::GetNavigationErrorStrings(
-    content::RenderFrame* render_frame,
-    const blink::WebURLRequest& failed_request,
-    const blink::WebURLError& error,
-    std::string* error_html,
-    base::string16* error_description) {
-  if (!error_description)
-    return;
-
-  *error_description = base::UTF8ToUTF16(net::ErrorToShortString(error.reason));
 }
 
 }  // namespace atom

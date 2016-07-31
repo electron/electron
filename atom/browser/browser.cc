@@ -118,6 +118,10 @@ void Browser::SetName(const std::string& name) {
   name_override_ = name;
 }
 
+int Browser::GetBadgeCount() {
+  return badge_count_;
+}
+
 bool Browser::OpenFile(const std::string& file_path) {
   bool prevent_default = false;
   FOR_EACH_OBSERVER(BrowserObserver,
@@ -149,6 +153,12 @@ void Browser::DidFinishLaunching() {
 
   is_ready_ = true;
   FOR_EACH_OBSERVER(BrowserObserver, observers_, OnFinishLaunching());
+}
+
+void Browser::OnAccessibilitySupportChanged() {
+  FOR_EACH_OBSERVER(BrowserObserver,
+                    observers_,
+                    OnAccessibilitySupportChanged());
 }
 
 void Browser::RequestLogin(

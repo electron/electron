@@ -2,6 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+#include "atom/browser/browser.h"
 #include "atom/browser/native_window_views.h"
 #include "content/public/browser/browser_accessibility_state.h"
 
@@ -98,6 +99,7 @@ bool NativeWindowViews::PreHandleMSG(
         if (axState && !axState->IsAccessibleBrowser()) {
           axState->OnScreenReaderDetected();
           enabled_a11y_support_ = true;
+          Browser::Get()->OnAccessibilitySupportChanged();
         }
       }
 
@@ -119,7 +121,10 @@ bool NativeWindowViews::PreHandleMSG(
         ::GetWindowRect(GetAcceleratedWidget(), (LPRECT)l_param);
       return false;
     }
-
+    case WM_MOVE: {
+      last_normal_bounds_ = GetBounds();
+      return false;
+    }
     default:
       return false;
   }
@@ -140,7 +145,7 @@ void NativeWindowViews::HandleSizeEvent(WPARAM w_param, LPARAM l_param) {
     case SIZE_RESTORED:
       if (last_window_state_ == ui::SHOW_STATE_NORMAL) {
         // Window was resized so we save it's new size.
-        last_normal_size_ = GetSize();
+        last_normal_bounds_ = GetBounds();
       } else {
         switch (last_window_state_) {
           case ui::SHOW_STATE_MAXIMIZED:
@@ -148,7 +153,7 @@ void NativeWindowViews::HandleSizeEvent(WPARAM w_param, LPARAM l_param) {
 
             // When the window is restored we resize it to the previous known
             // normal size.
-            NativeWindow::SetSize(last_normal_size_);
+            SetBounds(last_normal_bounds_, false);
 
             NotifyWindowUnmaximize();
             break;
@@ -161,7 +166,7 @@ void NativeWindowViews::HandleSizeEvent(WPARAM w_param, LPARAM l_param) {
 
               // When the window is restored we resize it to the previous known
               // normal size.
-              NativeWindow::SetSize(last_normal_size_);
+              SetBounds(last_normal_bounds_, false);
 
               NotifyWindowRestore();
             }

@@ -67,6 +67,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   int GetID() const;
   Type GetType() const;
+  bool IsFocused() const;
   bool Equal(const WebContents* web_contents) const;
   void LoadURL(const GURL& url, const mate::Dictionary& options);
   void DownloadURL(const GURL& url);
@@ -81,7 +82,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void GoForward();
   void GoToOffset(int offset);
   bool IsCrashed() const;
-  void SetUserAgent(const std::string& user_agent);
+  void SetUserAgent(const std::string& user_agent, mate::Arguments* args);
   std::string GetUserAgent();
   void InsertCSS(const std::string& css);
   bool SavePage(const base::FilePath& full_file_path,
@@ -125,6 +126,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   uint32_t FindInPage(mate::Arguments* args);
   void StopFindInPage(content::StopFindAction action);
   void ShowDefinitionForSelection();
+  void CopyImageAt(int x, int y);
 
   // Focus.
   void Focus();
@@ -141,6 +143,13 @@ class WebContents : public mate::TrackableObject<WebContents>,
   // Subscribe to the frame updates.
   void BeginFrameSubscription(mate::Arguments* args);
   void EndFrameSubscription();
+
+  // Dragging native items.
+  void StartDrag(const mate::Dictionary& item, mate::Arguments* args);
+
+  // Captures the page with |rect|, |callback| would be called when capturing is
+  // done.
+  void CapturePage(mate::Arguments* args);
 
   // Methods for creating <webview>.
   void SetSize(const SetSizeParams& params);
@@ -237,11 +246,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
                    int error_code,
                    const base::string16& error_description,
                    bool was_ignored_by_handler) override;
-  void DidFailProvisionalLoad(content::RenderFrameHost* render_frame_host,
-                              const GURL& validated_url,
-                              int error_code,
-                              const base::string16& error_description,
-                              bool was_ignored_by_handler) override;
   void DidStartLoading() override;
   void DidStopLoading() override;
   void DidGetResourceResponseStart(
@@ -249,9 +253,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void DidGetRedirectForResourceRequest(
       content::RenderFrameHost* render_frame_host,
       const content::ResourceRedirectDetails& details) override;
-  void DidNavigateMainFrame(
-      const content::LoadCommittedDetails& details,
-      const content::FrameNavigateParams& params) override;
+  void DidFinishNavigation(
+      content::NavigationHandle* navigation_handle) override;
   bool OnMessageReceived(const IPC::Message& message) override;
   void WebContentsDestroyed() override;
   void NavigationEntryCommitted(
@@ -291,6 +294,9 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void OnRendererMessageSync(const base::string16& channel,
                              const base::ListValue& args,
                              IPC::Message* message);
+
+  // Called when the hosted view gets graphical updates.
+  void OnViewPainted();
 
   v8::Global<v8::Value> session_;
   v8::Global<v8::Value> devtools_web_contents_;

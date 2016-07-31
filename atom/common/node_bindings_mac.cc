@@ -54,7 +54,8 @@ void NodeBindingsMac::PollEvents() {
   // Wait for new libuv events.
   int r;
   do {
-    r = select(fd + 1, &readset, NULL, NULL, timeout == -1 ? NULL : &tv);
+    r = select(fd + 1, &readset, nullptr, nullptr,
+               timeout == -1 ? nullptr : &tv);
   } while (r == -1 && errno == EINTR);
 }
 

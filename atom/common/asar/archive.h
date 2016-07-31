@@ -5,12 +5,12 @@
 #ifndef ATOM_COMMON_ASAR_ARCHIVE_H_
 #define ATOM_COMMON_ASAR_ARCHIVE_H_
 
+#include <memory>
 #include <vector>
 
 #include "base/containers/scoped_ptr_hash_map.h"
 #include "base/files/file.h"
 #include "base/files/file_path.h"
-#include "base/memory/scoped_ptr.h"
 
 namespace base {
 class DictionaryValue;

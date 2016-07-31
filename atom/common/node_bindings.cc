@@ -11,7 +11,6 @@
 #include "atom/common/api/locker.h"
 #include "atom/common/atom_command_line.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
-#include "atom/common/node_includes.h"
 #include "base/command_line.h"
 #include "base/base_paths.h"
 #include "base/environment.h"
@@ -21,6 +20,8 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/common/content_paths.h"
 #include "native_mate/dictionary.h"
+
+#include "atom/common/node_includes.h"
 
 using content::BrowserThread;
 
@@ -216,7 +217,6 @@ void NodeBindings::UvRunOnce() {
   DCHECK(!is_browser_ || BrowserThread::CurrentlyOn(BrowserThread::UI));
 
   node::Environment* env = uv_env();
-  CHECK(env);
 
   // Use Locker in browser process.
   mate::Locker locker(env->isolate());
@@ -226,10 +226,8 @@ void NodeBindings::UvRunOnce() {
   v8::Context::Scope context_scope(env->context());
 
   // Perform microtask checkpoint after running JavaScript.
-  std::unique_ptr<v8::MicrotasksScope> script_scope(is_browser_ ?
-      nullptr :
-      new v8::MicrotasksScope(env->isolate(),
-                              v8::MicrotasksScope::kRunMicrotasks));
+  v8::MicrotasksScope script_scope(env->isolate(),
+                                   v8::MicrotasksScope::kRunMicrotasks);
 
   // Deal with uv events.
   int r = uv_run(uv_loop_, UV_RUN_NOWAIT);

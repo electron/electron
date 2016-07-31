@@ -6,16 +6,25 @@
     <script>
       function testStorage (callback) {
         chrome.storage.sync.set({foo: 'bar'}, function () {
-          chrome.storage.sync.get({foo: 'baz'}, callback)
+          chrome.storage.sync.get({foo: 'baz'}, function (syncItems) {
+            chrome.storage.local.set({hello: 'world'}, function () {
+              chrome.storage.local.get(null, function(localItems) {
+                callback(syncItems, localItems)
+              })
+            })
+          })
         })
       }
 
-      testStorage(function (items) {
+      testStorage(function (syncItems, localItems) {
         var message = JSON.stringify({
           runtimeId: chrome.runtime.id,
           tabId: chrome.devtools.inspectedWindow.tabId,
           i18nString: chrome.i18n.getMessage('foo', ['bar', 'baz']),
-          storageItems: items
+          storageItems: {
+            local: localItems,
+            sync: syncItems
+          }
         })
         var sendMessage = `require('electron').ipcRenderer.send('answer', ${message})`
         window.chrome.devtools.inspectedWindow.eval(sendMessage, function () {})

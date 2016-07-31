@@ -5,13 +5,13 @@
 #ifndef ATOM_BROWSER_API_ATOM_API_MENU_H_
 #define ATOM_BROWSER_API_ATOM_API_MENU_H_
 
+#include <memory>
 #include <string>
 
 #include "atom/browser/api/atom_api_window.h"
 #include "atom/browser/api/trackable_object.h"
 #include "atom/browser/ui/atom_menu_model.h"
 #include "base/callback.h"
-#include "base/memory/scoped_ptr.h"
 
 namespace atom {
 
@@ -46,8 +46,10 @@ class Menu : public mate::TrackableObject<Menu>,
   bool IsCommandIdChecked(int command_id) const override;
   bool IsCommandIdEnabled(int command_id) const override;
   bool IsCommandIdVisible(int command_id) const override;
-  bool GetAcceleratorForCommandId(int command_id,
-                                  ui::Accelerator* accelerator) override;
+  bool GetAcceleratorForCommandIdWithParams(
+      int command_id,
+      bool use_default_accelerator,
+      ui::Accelerator* accelerator) const override;
   void ExecuteCommand(int command_id, int event_flags) override;
   void MenuWillShow(ui::SimpleMenuModel* source) override;
 
@@ -89,8 +91,8 @@ class Menu : public mate::TrackableObject<Menu>,
   base::Callback<bool(int)> is_checked_;
   base::Callback<bool(int)> is_enabled_;
   base::Callback<bool(int)> is_visible_;
-  base::Callback<v8::Local<v8::Value>(int)> get_accelerator_;
-  base::Callback<void(int)> execute_command_;
+  base::Callback<v8::Local<v8::Value>(int, bool)> get_accelerator_;
+  base::Callback<void(v8::Local<v8::Value>, int)> execute_command_;
   base::Callback<void()> menu_will_show_;
 
   DISALLOW_COPY_AND_ASSIGN(Menu);

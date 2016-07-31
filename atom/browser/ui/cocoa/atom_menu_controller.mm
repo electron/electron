@@ -38,6 +38,8 @@ Role kRolesMap[] = {
   { @selector(performMiniaturize:), "minimize" },
   { @selector(performClose:), "close" },
   { @selector(performZoom:), "zoom" },
+  { @selector(terminate:), "quit" },
+  { @selector(toggleFullScreen:), "togglefullscreen" },
 };
 
 }  // namespace
@@ -46,15 +48,11 @@ Role kRolesMap[] = {
 
 @synthesize model = model_;
 
-- (id)init {
-  if ((self = [super init]))
-    [self menu];
-  return self;
-}
-
-- (id)initWithModel:(ui::MenuModel*)model {
+- (id)initWithModel:(atom::AtomMenuModel*)model useDefaultAccelerator:(BOOL)use {
   if ((self = [super init])) {
     model_ = model;
+    isMenuOpen_ = NO;
+    useDefaultAccelerator_ = use;
     [self menu];
   }
   return self;
@@ -71,7 +69,7 @@ Role kRolesMap[] = {
   [super dealloc];
 }
 
-- (void)populateWithModel:(ui::MenuModel*)model {
+- (void)populateWithModel:(atom::AtomMenuModel*)model {
   if (!menu_)
     return;
 
@@ -80,7 +78,7 @@ Role kRolesMap[] = {
 
   const int count = model->GetItemCount();
   for (int index = 0; index < count; index++) {
-    if (model->GetTypeAt(index) == ui::MenuModel::TYPE_SEPARATOR)
+    if (model->GetTypeAt(index) == atom::AtomMenuModel::TYPE_SEPARATOR)
       [self addSeparatorToMenu:menu_ atIndex:index];
     else
       [self addItemToMenu:menu_ atIndex:index fromModel:model];
@@ -97,12 +95,12 @@ Role kRolesMap[] = {
 
 // Creates a NSMenu from the given model. If the model has submenus, this can
 // be invoked recursively.
-- (NSMenu*)menuFromModel:(ui::MenuModel*)model {
+- (NSMenu*)menuFromModel:(atom::AtomMenuModel*)model {
   NSMenu* menu = [[[NSMenu alloc] initWithTitle:@""] autorelease];
 
   const int count = model->GetItemCount();
   for (int index = 0; index < count; index++) {
-    if (model->GetTypeAt(index) == ui::MenuModel::TYPE_SEPARATOR)
+    if (model->GetTypeAt(index) == atom::AtomMenuModel::TYPE_SEPARATOR)
       [self addSeparatorToMenu:menu atIndex:index];
     else
       [self addItemToMenu:menu atIndex:index fromModel:model];
@@ -124,9 +122,7 @@ Role kRolesMap[] = {
 // associated with the entry in the model identified by |modelIndex|.
 - (void)addItemToMenu:(NSMenu*)menu
               atIndex:(NSInteger)index
-            fromModel:(ui::MenuModel*)ui_model {
-  atom::AtomMenuModel* model = static_cast<atom::AtomMenuModel*>(ui_model);
-
+            fromModel:(atom::AtomMenuModel*)model {
   base::string16 label16 = model->GetLabelAt(index);
   NSString* label = l10n_util::FixUpWindowsStyleLabel(label16);
   base::scoped_nsobject<NSMenuItem> item(
@@ -139,12 +135,13 @@ Role kRolesMap[] = {
   if (model->GetIconAt(index, &icon) && !icon.IsEmpty())
     [item setImage:icon.ToNSImage()];
 
-  ui::MenuModel::ItemType type = model->GetTypeAt(index);
-  if (type == ui::MenuModel::TYPE_SUBMENU) {
+  atom::AtomMenuModel::ItemType type = model->GetTypeAt(index);
+  if (type == atom::AtomMenuModel::TYPE_SUBMENU) {
     // Recursively build a submenu from the sub-model at this index.
     [item setTarget:nil];
     [item setAction:nil];
-    ui::MenuModel* submenuModel = model->GetSubmenuModelAt(index);
+    atom::AtomMenuModel* submenuModel = static_cast<atom::AtomMenuModel*>(
+        model->GetSubmenuModelAt(index));
     NSMenu* submenu = [self menuFromModel:submenuModel];
     [submenu setTitle:[item title]];
     [item setSubmenu:submenu];
@@ -168,7 +165,8 @@ Role kRolesMap[] = {
     NSValue* modelObject = [NSValue valueWithPointer:model];
     [item setRepresentedObject:modelObject];  // Retains |modelObject|.
     ui::Accelerator accelerator;
-    if (model->GetAcceleratorAt(index, &accelerator)) {
+    if (model->GetAcceleratorAtWithParams(
+            index, useDefaultAccelerator_, &accelerator)) {
       const ui::PlatformAcceleratorCocoa* platformAccelerator =
           static_cast<const ui::PlatformAcceleratorCocoa*>(
               accelerator.platform_accelerator());
@@ -204,8 +202,8 @@ Role kRolesMap[] = {
     return NO;
 
   NSInteger modelIndex = [item tag];
-  ui::MenuModel* model =
-      static_cast<ui::MenuModel*>(
+  atom::AtomMenuModel* model =
+      static_cast<atom::AtomMenuModel*>(
           [[(id)item representedObject] pointerValue]);
   DCHECK(model);
   if (model) {
@@ -232,8 +230,8 @@ Role kRolesMap[] = {
 // item chosen.
 - (void)itemSelected:(id)sender {
   NSInteger modelIndex = [sender tag];
-  ui::MenuModel* model =
-      static_cast<ui::MenuModel*>(
+  atom::AtomMenuModel* model =
+      static_cast<atom::AtomMenuModel*>(
           [[sender representedObject] pointerValue]);
   DCHECK(model);
   if (model) {

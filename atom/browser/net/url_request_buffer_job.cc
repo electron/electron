@@ -72,7 +72,7 @@ void URLRequestBufferJob::GetResponseInfo(net::HttpResponseInfo* info) {
   status.append(" ");
   status.append(net::GetHttpReasonPhrase(status_code_));
   status.append("\0\0", 2);
-  net::HttpResponseHeaders* headers = new net::HttpResponseHeaders(status);
+  auto* headers = new net::HttpResponseHeaders(status);
 
   headers->AddHeader(kCORSHeader);
 

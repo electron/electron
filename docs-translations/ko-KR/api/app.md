@@ -264,6 +264,19 @@ app.on('login', (event, webContents, request, authInfo, callback) => {
 
 GPU가 작동하던 중 크래시가 일어났을 때 발생하는 이벤트입니다.
 
+### Event: 'accessibility-support-changed' _macOS_ _Windows_
+
+Returns:
+
+* `event` Event
+* `accessibilitySupportEnabled` Boolean - Chrome의 접근성 지원이 활성화되어있으면
+  `true`를 반환하고 아니라면 `false`를 반환합니다.
+
+Chrome의 접근성 지원이 변경될 때 발생하는 이벤트입니다. 이 이벤트는 스크린 리더와 같은
+접근성 기술이 활성화되거나 비활성화될 때 발생합니다.
+자세한 내용은 https://www.chromium.org/developers/design-documents/accessibility 를
+참고하세요.
+
 ## Methods
 
 `app` 객체는 다음과 같은 메서드를 가지고 있습니다:
@@ -402,7 +415,7 @@ npm 모듈 규칙에 따라 대부분의 경우 `package.json`의 `name` 필드�
 ### `app.getLocale()`
 
 현재 애플리케이션의 [로케일](https://ko.wikipedia.org/wiki/%EB%A1%9C%EC%BC%80%EC%9D%BC)을
-반환합니다.
+반환합니다. 반환될 수 있는 값은 [여기](locales.md)에서 찾아볼 수 있습니다.
 
 **참고:** 패키징된 앱을 배포할 때, `locales` 폴더도 같이 배포해야 합니다.
 
@@ -579,6 +592,33 @@ pkcs12 형식으로된 인증서를 플랫폼 인증서 저장소로 가져옵�
 
 이 메서드는 `app`의 `ready` 이벤트가 발생하기 전에만 호출할 수 있습니다.
 
+### `app.setBadgeCount(count)` _Linux_ _macOS_
+
+* `count` Integer
+
+현재 앱에 대해 카운터 뱃지를 설정합니다. count를 `0`으로 설정하면 뱃지를 숨깁니다.
+호출이 성공적으로 끝나면 `true`를 반환하고 아닌 경우 `false`를 반환합니다.
+
+macOS에선 독 아이콘에 표시됩니다. Linux에선 Unity 런처에서만 작동합니다.
+
+**참고:** Unity 런처는 이 기능을 작동하기 위해 `.desktop` 파일을 필요로 합니다.
+이에 대한 자세한 내용은 [데스크톱 환경 통합][unity-requiremnt]을 참고하세요.
+
+### `app.getBadgeCount()` _Linux_ _macOS_
+
+현재 카운터 뱃지에 표시중인 값을 반환합니다.
+
+### `app.isUnityRunning()` _Linux_
+
+현재 데스크톱 환경이 Unity인지 여부를 반환합니다.
+
+### `app.isAccessibilitySupportEnabled()` _macOS_ _Windows_
+
+`Boolean` 값을 반환하며 Chrome의 접근성 지원이 활성화되어있으면 `true`를 그렇지
+않다면 `false`를 반환합니다. 이 API는 사용할 수 있는 스크린 리더와 같은 접근성 기술이
+감지되었을 때 `true`를 반환합니다. 자세한 내용은
+https://www.chromium.org/developers/design-documents/accessibility 를 참고하세요.
+
 ### `app.commandLine.appendSwitch(switch[, value])`
 
 Chrominum의 명령줄에 스위치를 추가합니다. `value`는 추가적인 값을 뜻하며 옵션입니다.
@@ -647,6 +687,32 @@ dock 아이콘을 표시합니다.
 
 dock 아이콘의 `image`를 설정합니다.
 
+### `app.getLoginItemSettings()` _macOS_
+
+앱의 로그인 항목 설정을 객체로 반환합니다.
+
+* `openAtLogin` Boolean - 앱이 로그인시 열리도록 설정되어있는 경우 `true`를 반환.
+* `openAsHidden` Boolean - 앱이 로구인시 숨겨진 채로 열리도록 설정되어있는 경우
+  `true`를 반환.
+* `wasOpenedAtLogin` Boolean - 자동으로 로그인할 때 애플리케이션이 열려있었는지 여부.
+* `wasOpenedAsHidden` Boolean - 앱이 숨겨진 로그인 항목처럼 열려있었는지 여부.
+  이는 앱이 시작시 어떤 윈도우도 열지 않을 것을 표시합니다.
+* `restoreState` Boolean - 앱이 이전 세션에서 상태를 복원하여 로그인 항목처럼
+  열려있었는지 여부. 이는 앱이 마지막으로 종료되었던 때에 열려있었던 윈도우를 복원하는
+  것을 표시합니다.
+
+### `app.setLoginItemSettings(settings)` _macOS_
+
+* `settings` Object
+  * `openAtLogin` Boolean - `true`로 지정하면 로그인시 애플리케이션을 열도록 하며
+    `false`로 지정시 로그인 항목에서 삭제합니다.
+  * `openAsHidden` Boolean - `true`로 지정하면 애플리케이션을 숨겨진 채로 열도록
+    합니다. 기본값은 `false`입니다. 사용자가 시스템 설정에서 이 설정을 변경할 수
+    있으며 앱이 열렸을 때 현재 값을 확인하려면
+    `app.getLoginItemStatus().wasOpenedAsHidden`를 확인해야 합니다.
+
+앱의 로그인 항목 설정을 지정합니다.
+
 [dock-menu]:https://developer.apple.com/library/mac/documentation/Carbon/Conceptual/customizing_docktile/concepts/dockconcepts.html#//apple_ref/doc/uid/TP30000986-CH2-TPXREF103
 [tasks]:http://msdn.microsoft.com/en-us/library/windows/desktop/dd378460(v=vs.85).aspx#tasks
 [app-user-model-id]: https://msdn.microsoft.com/en-us/library/windows/desktop/dd378459(v=vs.85).aspx
@@ -654,3 +720,4 @@ dock 아이콘의 `image`를 설정합니다.
 [LSCopyDefaultHandlerForURLScheme]: https://developer.apple.com/library/mac/documentation/Carbon/Reference/LaunchServicesReference/#//apple_ref/c/func/LSCopyDefaultHandlerForURLScheme
 [handoff]: https://developer.apple.com/library/ios/documentation/UserExperience/Conceptual/Handoff/HandoffFundamentals/HandoffFundamentals.html
 [activity-type]: https://developer.apple.com/library/ios/documentation/Foundation/Reference/NSUserActivity_Class/index.html#//apple_ref/occ/instp/NSUserActivity/activityType
+[unity-requiremnt]: ../tutorial/desktop-environment-integration.md#unity-launcher-shortcuts-linux

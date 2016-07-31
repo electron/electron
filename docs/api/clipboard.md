@@ -5,16 +5,17 @@
 The following example shows how to write a string to the clipboard:
 
 ```javascript
-const {clipboard} = require('electron');
-clipboard.writeText('Example String');
+const {clipboard} = require('electron')
+clipboard.writeText('Example String')
 ```
 
 On X Window systems, there is also a selection clipboard. To manipulate it
 you need to pass `selection` to each method:
 
 ```javascript
-clipboard.writeText('Example String', 'selection');
-console.log(clipboard.readText('selection'));
+const {clipboard} = require('electron')
+clipboard.writeText('Example String', 'selection')
+console.log(clipboard.readText('selection'))
 ```
 
 ## Methods
@@ -75,6 +76,20 @@ Returns the content in the clipboard as RTF.
 
 Writes the `text` into the clipboard in RTF.
 
+### `clipboard.readBookmark()` _macOS_ _Windows_
+
+Returns an Object containing `title` and `url` keys representing the bookmark in
+the clipboard. The `title` and `url` values will be empty strings when the
+bookmark is unavailable.
+
+### `clipboard.writeBookmark(title, url[, type])` _macOS_ _Windows_
+
+* `title` String
+* `url` String
+* `type` String (optional)
+
+Writes the `title` and `url` into the clipboard as a bookmark.
+
 ### `clipboard.clear([type])`
 
 * `type` String (optional)
@@ -95,7 +110,8 @@ Returns an array of supported formats for the clipboard `type`.
 Returns whether the clipboard supports the format of specified `data`.
 
 ```javascript
-console.log(clipboard.has('<p>selection</p>'));
+const {clipboard} = require('electron')
+console.log(clipboard.has('<p>selection</p>'))
 ```
 
 ### `clipboard.read(data[, type])` _Experimental_
@@ -111,9 +127,12 @@ Reads `data` from the clipboard.
   * `text` String
   * `html` String
   * `image` [NativeImage](native-image.md)
+  * `rtf` String
+  * `bookmark` String - The title of the url at `text`.
 * `type` String (optional)
 
 ```javascript
-clipboard.write({text: 'test', html: "<b>test</b>"});
+const {clipboard} = require('electron')
+clipboard.write({text: 'test', html: '<b>test</b>'})
 ```
 Writes `data` to the clipboard.

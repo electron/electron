@@ -239,23 +239,17 @@ bool CrashService::Initialize(const base::string16& application_name,
   }
 
   SECURITY_ATTRIBUTES security_attributes = {0};
-  SECURITY_ATTRIBUTES* security_attributes_actual = NULL;
+  SECURITY_DESCRIPTOR* security_descriptor =
+      reinterpret_cast<SECURITY_DESCRIPTOR*>(
+          GetSecurityDescriptorForLowIntegrity());
+  DCHECK(security_descriptor != NULL);
 
-  if (base::win::GetVersion() >= base::win::VERSION_VISTA) {
-    SECURITY_DESCRIPTOR* security_descriptor =
-        reinterpret_cast<SECURITY_DESCRIPTOR*>(
-            GetSecurityDescriptorForLowIntegrity());
-    DCHECK(security_descriptor != NULL);
-
-    security_attributes.nLength = sizeof(security_attributes);
-    security_attributes.lpSecurityDescriptor = security_descriptor;
-    security_attributes.bInheritHandle = FALSE;
-
-    security_attributes_actual = &security_attributes;
-  }
+  security_attributes.nLength = sizeof(security_attributes);
+  security_attributes.lpSecurityDescriptor = security_descriptor;
+  security_attributes.bInheritHandle = FALSE;
 
   // Create the OOP crash generator object.
-  dumper_ = new CrashGenerationServer(pipe_name, security_attributes_actual,
+  dumper_ = new CrashGenerationServer(pipe_name, &security_attributes,
                                       &CrashService::OnClientConnected, this,
                                       &CrashService::OnClientDumpRequest, this,
                                       &CrashService::OnClientExited, this,

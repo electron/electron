@@ -5,6 +5,12 @@
 #ifndef ATOM_COMMON_PLATFORM_UTIL_H_
 #define ATOM_COMMON_PLATFORM_UTIL_H_
 
+#include "build/build_config.h"
+
+#if defined(OS_WIN)
+#include "base/strings/string16.h"
+#endif
+
 class GURL;
 
 namespace base {
@@ -23,7 +29,13 @@ void OpenItem(const base::FilePath& full_path);
 
 // Open the given external protocol URL in the desktop's default manner.
 // (For example, mailto: URLs in the default mail user agent.)
-bool OpenExternal(const GURL& url, bool activate);
+bool OpenExternal(
+#if defined(OS_WIN)
+    const base::string16& url,
+#else
+    const GURL& url,
+#endif
+    bool activate);
 
 // Move a file to trash.
 bool MoveItemToTrash(const base::FilePath& full_path);

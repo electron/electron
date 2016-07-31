@@ -7,8 +7,8 @@
 #include <utility>
 
 #include "atom/browser/atom_browser_context.h"
-#include "atom/browser/atom_browser_main_parts.h"
 #include "atom/common/google_api_key.h"
+#include "content/public/browser/browser_thread.h"
 #include "content/public/browser/geolocation_provider.h"
 
 namespace atom {
@@ -33,21 +33,35 @@ AtomAccessTokenStore::~AtomAccessTokenStore() {
 
 void AtomAccessTokenStore::LoadAccessTokens(
     const LoadAccessTokensCallback& callback) {
-  AccessTokenMap access_token_map;
-
-  // Equivelent to access_token_map[kGeolocationProviderURL].
-  // Somehow base::string16 is causing compilation errors when used in a pair
-  // of std::map on Linux, this can work around it.
-  std::pair<GURL, base::string16> token_pair;
-  token_pair.first = GURL(kGeolocationProviderURL);
-  access_token_map.insert(token_pair);
-
-  auto browser_context = AtomBrowserMainParts::Get()->browser_context();
-  callback.Run(access_token_map, browser_context->url_request_context_getter());
+  content::BrowserThread::PostTaskAndReply(
+      content::BrowserThread::UI,
+      FROM_HERE,
+      base::Bind(&AtomAccessTokenStore::GetRequestContextOnUIThread, this),
+      base::Bind(&AtomAccessTokenStore::RespondOnOriginatingThread,
+                 this, callback));
 }
 
 void AtomAccessTokenStore::SaveAccessToken(const GURL& server_url,
                                            const base::string16& access_token) {
+}
+
+void AtomAccessTokenStore::GetRequestContextOnUIThread() {
+  auto browser_context = AtomBrowserContext::From("", false);
+  request_context_getter_ = browser_context->GetRequestContext();
+}
+
+void AtomAccessTokenStore::RespondOnOriginatingThread(
+    const LoadAccessTokensCallback& callback) {
+  // Equivelent to access_token_map[kGeolocationProviderURL].
+  // Somehow base::string16 is causing compilation errors when used in a pair
+  // of std::map on Linux, this can work around it.
+  AccessTokenMap access_token_map;
+  std::pair<GURL, base::string16> token_pair;
+  token_pair.first = GURL(kGeolocationProviderURL);
+  access_token_map.insert(token_pair);
+
+  callback.Run(access_token_map, request_context_getter_.get());
+  request_context_getter_ = nullptr;
 }
 
 }  // namespace atom

@@ -44,6 +44,7 @@ class AutoUpdater : public mate::EventEmitter<AutoUpdater>,
   void OnWindowAllClosed() override;
 
  private:
+  std::string GetFeedURL();
   void SetFeedURL(const std::string& url, mate::Arguments* args);
   void QuitAndInstall();
 

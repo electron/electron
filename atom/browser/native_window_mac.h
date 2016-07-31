@@ -79,7 +79,7 @@ class NativeWindowMac : public NativeWindow {
   void SetDocumentEdited(bool edited) override;
   bool IsDocumentEdited() override;
   void SetIgnoreMouseEvents(bool ignore) override;
-  bool HasModalDialog() override;
+  void SetContentProtection(bool enable) override;
   void SetParentWindow(NativeWindow* parent) override;
   gfx::NativeWindow GetNativeWindow() override;
   gfx::AcceleratedWidget GetAcceleratedWidget() override;

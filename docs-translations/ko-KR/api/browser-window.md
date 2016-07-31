@@ -62,6 +62,38 @@ win.loadURL('https://github.com')
 참고로 `ready-to-show` 이벤트를 사용하더라도 어플리케이션을 네이티브 느낌이 나도록
 하기 위해 `backgroundColor`도 같이 설정하는 것을 권장합니다.
 
+## 부모와 자식 윈도우
+
+`parent` 옵션을 사용하면 자식 윈도우를 만들 수 있습니다:
+
+```javascript
+let top = new BrowserWindow()
+let child = new BrowserWindow({parent: top})
+```
+
+`child` 윈도우는 언제나 `top` 윈도우의 상위에 표시됩니다.
+
+### 모달 윈도우
+
+모달 윈도우는 부모 윈도우를 비활성화 시키는 자식 윈도우입니다. 모달 윈도우를 만드려면 `parent`, `modal` 옵션을 동시에 설정해야 합니다:
+
+```javascript
+let child = new BrowserWindow({parent: top, modal: true, show: false})
+child.loadURL('https://github.com')
+child.once('ready-to-show', () => {
+  child.show()
+})
+```
+
+### 플랫폼별 특이사항
+
+* On macOS the child windows will keep the relative position to parent window
+  when parent window moves, while on Windows and Linux child windows will not
+  move.
+* On Windows it is not supported to change parent window dynamically.
+* On Linux the type of modal windows will be changed to `dialog`.
+* On Linux many desktop environments do not support hiding a modal window.
+
 ## Class: BrowserWindow
 
 `BrowserWindow`는 [EventEmitter](http://nodejs.org/api/events.html#events_class_events_eventemitter)를
@@ -125,6 +157,9 @@ On Windows it is
 * `show` Boolean - 윈도우가 생성되면 보여줄지 여부. 기본값은 `true`입니다.
 * `frame` Boolean - `false`로 지정하면 창을 [Frameless Window](frameless-window.md)
   형태로 생성합니다. 기본값은 `true`입니다.
+* `parent` BrowserWindow - 부모 윈도우를 설정합니다. 기본 값은 `null`입니다.
+* `modal` Boolean - 이 윈도우가 모달 윈도우인지 여부를 설정합니다. 이 옵션은 자식
+  윈도우에서만 작동합니다. 기본값은 `false`입니다.
 * `acceptFirstMouse` Boolean - 윈도우가 비활성화 상태일 때 내부 콘텐츠 클릭 시
   활성화 되는 동시에 단일 mouse-down 이벤트를 발생시킬지 여부. 기본값은 `false`입니다.
 * `disableAutoHideCursor` Boolean - 타이핑중 자동으로 커서를 숨길지 여부. 기본값은
@@ -147,6 +182,9 @@ On Windows it is
   기본 값은 `true`입니다.
 * `titleBarStyle` String, macOS - 윈도우 타이틀 바 스타일을 지정합니다. 자세한 사항은
   아래를 참고하세요.
+* `thickFrame` Boolean - Windows에서 테두리 없는 윈도우를 위해 표준 윈도우 프레임을
+  추가하는 `WS_THICKFRAME` 스타일을 사용합니다. `false`로 지정하면 윈도우의 그림자와
+  애니메이션을 삭제합니다. 기본값은 `true`입니다.
 * `webPreferences` Object - 웹 페이지 기능을 설정합니다. 사용할 수 있는 속성은
   아래를 참고하세요.
 
@@ -164,6 +202,7 @@ On Windows it is
   * `desktop`은 데스크탑 배경 레벨(`kCGDesktopWindowLevel - 1`)에 윈도우를
     배치합니다. 참고로 이렇게 만들어진 윈도우는 포커스, 키보드, 마우스 이벤트를 받을
     수 없습니다. 하지만 편법으로 `globalShortcut`을 통해 키 입력을 받을 수 있습니다.
+* Windows의 경우, 가능한 타입으론 `toolbar`가 있습니다.
 
 `titleBarStyle` 속성은 macOS 10.10 Yosemite 이후 버전만 지원하며, 다음 3가지 종류의
 값을 사용할 수 있습니다:
@@ -528,6 +567,10 @@ let win = new BrowserWindow({width: 800, height: 600});
 
 윈도우가 사용자에게 표시되고 있는지 여부를 반환합니다.
 
+### `win.isModal()`
+
+현재 윈도우가 모달 윈도우인지 여부를 반환합니다.
+
 ### `win.maximize()`
 
 윈도우를 최대화 시킵니다.
@@ -844,16 +887,7 @@ Windows 메시지 훅을 등록합니다. `callback`은 WndProc에서 메시지�
 
 ### `win.capturePage([rect, ]callback)`
 
-* `rect` Object (optional) - 캡쳐할 페이지의 영역
-  * `x` Integer
-  * `y` Integer
-  * `width` Integer
-  * `height` Integer
-* `callback` Function
-
-페이지의 스크린샷을 `rect`에 설정한 만큼 캡처합니다. 캡처가 완료되면 `callback`이
-`callback(image)` 형식으로 호출됩니다. `image`는 [NativeImage](native-image.md)의
-인스턴스이며 스크린샷 데이터를 담고있습니다. `rect`를 생략하면 페이지 전체를 캡처합니다.
+`webContents.capturePage([rect, ]callback)`와 같습니다.
 
 ### `win.loadURL(url[, options])`
 
@@ -894,7 +928,7 @@ Linux 플랫폼에선 Unity 데스크톱 환경만 지원합니다. 그리고 �
 
 ### `win.setHasShadow(hasShadow)` _macOS_
 
-* `hasShadow` (Boolean)
+* `hasShadow` Boolean
 
 윈도우가 그림자를 가질지 여부를 지정합니다. Windows와 Linux에선 아무 일도 일어나지
 않습니다.
@@ -995,10 +1029,32 @@ Linux 플랫폼에선 Unity 데스크톱 환경만 지원합니다. 그리고 �
 이 윈도우에서 일어나는 모든 마우스 이벤트가 이 윈도우 밑의 윈도우로 전달됩니다. 하지만
 이 윈도우가 포커스되어 있다면, 여전히 키보드 이벤트는 받을 수 있습니다.
 
+### `win.setContentProtection(enable)` _macOS_ _Windows_
+
+윈도우 콘텐츠가 외부 어플리케이션에 의해 캡쳐되는 것을 막습니다.
+
+macOS에선 NSWindow의 sharingType을 NSWindowSharingNone로 설정합니다.
+Windows에선 WDA_MONITOR와 함께 SetWindowDisplayAffinity를 호출합니다.
+
 ### `win.setFocusable(focusable)` _Windows_
 
 * `focusable` Boolean
 
 윈도우가 포커스될 수 있는지 여부를 변경합니다.
+
+### `win.setParentWindow(parent)` _Linux_ _macOS_
+
+* `parent` BrowserWindow
+
+`parent` 인수를 현재 윈도우의 부모 윈도우로 설정합니다. `null`로 설정하면
+현재 윈도우를 상위 윈도우로 전환합니다.
+
+### `win.getParentWindow()`
+
+모든 부모 윈도우를 반환합니다.
+
+### `win.getChildWindows()`
+
+모든 자식 윈도우를 반환합니다.
 
 [blink-feature-string]: https://cs.chromium.org/chromium/src/third_party/WebKit/Source/platform/RuntimeEnabledFeatures.in

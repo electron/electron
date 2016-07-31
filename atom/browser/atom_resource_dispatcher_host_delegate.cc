@@ -7,6 +7,7 @@
 #include "atom/browser/login_handler.h"
 #include "atom/browser/web_contents_permission_helper.h"
 #include "atom/common/platform_util.h"
+#include "base/strings/utf_string_conversions.h"
 #include "content/public/browser/browser_thread.h"
 #include "net/base/escape.h"
 #include "url/gurl.h"
@@ -20,7 +21,13 @@ namespace {
 void OnOpenExternal(const GURL& escaped_url,
                     bool allowed) {
   if (allowed)
-    platform_util::OpenExternal(escaped_url, true);
+    platform_util::OpenExternal(
+#if defined(OS_WIN)
+        base::UTF8ToUTF16(escaped_url.spec()),
+#else
+        escaped_url,
+#endif
+        true);
 }
 
 void HandleExternalProtocolInUI(

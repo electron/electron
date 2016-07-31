@@ -51,6 +51,7 @@ describe('protocol module', function () {
         }
         $.ajax({
           url: protocolName + '://fake-host',
+          cache: false,
           success: function (data) {
             assert.equal(data, text)
             done()
@@ -69,6 +70,7 @@ describe('protocol module', function () {
         }
         $.ajax({
           url: protocolName + '://fake-host',
+          cache: false,
           success: function () {
             return done('request succeeded but it should not')
           },
@@ -92,6 +94,7 @@ describe('protocol module', function () {
         }
         $.ajax({
           url: protocolName + '://fake-host',
+          cache: false,
           success: function (data) {
             assert.equal(data, text)
             done()
@@ -124,6 +127,7 @@ describe('protocol module', function () {
         }
         $.ajax({
           url: protocolName + '://fake-host',
+          cache: false,
           success: function (data) {
             assert.equal(data, text)
             done()
@@ -145,6 +149,7 @@ describe('protocol module', function () {
         }
         $.ajax({
           url: protocolName + '://fake-host',
+          cache: false,
           success: function (data, status, request) {
             assert.equal(data, text)
             assert.equal(request.getResponseHeader('Access-Control-Allow-Origin'), '*')
@@ -170,6 +175,7 @@ describe('protocol module', function () {
         }
         $.ajax({
           url: protocolName + '://fake-host',
+          cache: false,
           success: function (data) {
             assert.equal(data, text)
             done()
@@ -191,6 +197,7 @@ describe('protocol module', function () {
         }
         $.ajax({
           url: protocolName + '://fake-host',
+          cache: false,
           success: function () {
             done('request succeeded but it should not')
           },
@@ -216,6 +223,7 @@ describe('protocol module', function () {
         }
         $.ajax({
           url: protocolName + '://fake-host',
+          cache: false,
           success: function (data) {
             assert.equal(data, text)
             done()
@@ -238,6 +246,7 @@ describe('protocol module', function () {
         }
         $.ajax({
           url: protocolName + '://fake-host',
+          cache: false,
           success: function (data, status, request) {
             assert.equal(data, text)
             assert.equal(request.getResponseHeader('Access-Control-Allow-Origin'), '*')
@@ -263,6 +272,7 @@ describe('protocol module', function () {
         }
         $.ajax({
           url: protocolName + '://fake-host',
+          cache: false,
           success: function (data) {
             assert.equal(data, text)
             done()
@@ -284,6 +294,7 @@ describe('protocol module', function () {
         }
         $.ajax({
           url: protocolName + '://fake-host',
+          cache: false,
           success: function () {
             done('request succeeded but it should not')
           },
@@ -312,6 +323,7 @@ describe('protocol module', function () {
         }
         $.ajax({
           url: protocolName + '://fake-host',
+          cache: false,
           success: function (data) {
             assert.equal(data, String(fileContent))
             return done()
@@ -333,6 +345,7 @@ describe('protocol module', function () {
         }
         $.ajax({
           url: protocolName + '://fake-host',
+          cache: false,
           success: function (data, status, request) {
             assert.equal(data, String(fileContent))
             assert.equal(request.getResponseHeader('Access-Control-Allow-Origin'), '*')
@@ -357,6 +370,7 @@ describe('protocol module', function () {
         }
         $.ajax({
           url: protocolName + '://fake-host',
+          cache: false,
           success: function (data) {
             assert.equal(data, String(fileContent))
             done()
@@ -379,6 +393,7 @@ describe('protocol module', function () {
         }
         $.ajax({
           url: protocolName + '://fake-host',
+          cache: false,
           success: function (data) {
             assert.equal(data, String(normalContent))
             done()
@@ -401,6 +416,7 @@ describe('protocol module', function () {
         }
         $.ajax({
           url: protocolName + '://fake-host',
+          cache: false,
           success: function () {
             done('request succeeded but it should not')
           },
@@ -422,6 +438,7 @@ describe('protocol module', function () {
         }
         $.ajax({
           url: protocolName + '://fake-host',
+          cache: false,
           success: function () {
             done('request succeeded but it should not')
           },
@@ -455,6 +472,7 @@ describe('protocol module', function () {
           }
           $.ajax({
             url: protocolName + '://fake-host',
+            cache: false,
             success: function (data) {
               assert.equal(data, text)
               done()
@@ -479,6 +497,7 @@ describe('protocol module', function () {
         }
         $.ajax({
           url: protocolName + '://fake-host',
+          cache: false,
           success: function () {
             done('request succeeded but it should not')
           },
@@ -500,6 +519,7 @@ describe('protocol module', function () {
         }
         $.ajax({
           url: protocolName + '://fake-host',
+          cache: false,
           success: function () {
             done('request succeeded but it should not')
           },
@@ -514,7 +534,7 @@ describe('protocol module', function () {
     it('works when target URL redirects', function (done) {
       var contents = null
       var server = http.createServer(function (req, res) {
-        if (req.url == '/serverRedirect') {
+        if (req.url === '/serverRedirect') {
           res.statusCode = 301
           res.setHeader('Location', 'http://' + req.rawHeaders[1])
           res.end()
@@ -634,6 +654,7 @@ describe('protocol module', function () {
         }
         $.ajax({
           url: 'http://fake-host',
+          cache: false,
           success: function (data) {
             assert.equal(data, text)
             done()
@@ -655,6 +676,7 @@ describe('protocol module', function () {
         }
         $.ajax({
           url: 'http://fake-host',
+          cache: false,
           success: function () {
             done('request succeeded but it should not')
           },
@@ -678,6 +700,7 @@ describe('protocol module', function () {
         }
         $.ajax({
           url: 'http://fake-host',
+          cache: false,
           success: function (data) {
             assert.equal(data, text)
             done()
@@ -702,6 +725,7 @@ describe('protocol module', function () {
         }
         $.ajax({
           url: 'http://fake-host',
+          cache: false,
           success: function (data) {
             assert.equal(typeof data, 'object')
             assert.equal(data.value, 1)
@@ -727,6 +751,7 @@ describe('protocol module', function () {
         }
         $.ajax({
           url: 'http://fake-host',
+          cache: false,
           type: 'POST',
           data: postData,
           success: function (data) {
@@ -752,6 +777,7 @@ describe('protocol module', function () {
         }
         $.ajax({
           url: 'http://fake-host',
+          cache: false,
           success: function (data) {
             assert.equal(data, text)
             done()
@@ -774,6 +800,7 @@ describe('protocol module', function () {
         }
         $.ajax({
           url: 'http://fake-host',
+          cache: false,
           type: 'POST',
           data: postData,
           success: function (data) {
@@ -821,6 +848,7 @@ describe('protocol module', function () {
           }
           $.ajax({
             url: 'http://fake-host',
+            cache: false,
             type: 'POST',
             data: postData,
             success: function (data) {
@@ -919,7 +947,7 @@ describe('protocol module', function () {
         })
         w.loadURL(origin)
       })
-    }),
+    })
 
     it('can have fetch working in it', function (done) {
       const content = '<html><script>fetch("http://github.com")</script></html>'

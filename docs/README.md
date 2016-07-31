@@ -12,7 +12,7 @@ select the tag that matches your version.
 There are questions that are asked quite often, check this out before creating
 an issue:
 
-* [Electron FAQ](faq/electron-faq.md)
+* [Electron FAQ](faq.md)
 
 ## Guides
 
@@ -66,8 +66,8 @@ an issue:
 * [protocol](api/protocol.md)
 * [session](api/session.md)
 * [systemPreferences](api/system-preferences.md)
-* [webContents](api/web-contents.md)
 * [Tray](api/tray.md)
+* [webContents](api/web-contents.md)
 
 ### Modules for the Renderer Process (Web Page):
 
@@ -93,5 +93,6 @@ an issue:
 * [Build Instructions (macOS)](development/build-instructions-osx.md)
 * [Build Instructions (Windows)](development/build-instructions-windows.md)
 * [Build Instructions (Linux)](development/build-instructions-linux.md)
-* [Debug Instructions (Windows)](development/debug-instructions-windows.md)
+* [Debug Instructions (macOS)](development/debug-instructions-windows.md)
+* [Debug Instructions (Windows)](development/debug-instructions-macos.md)
 * [Setting Up Symbol Server in debugger](development/setting-up-symbol-server.md)

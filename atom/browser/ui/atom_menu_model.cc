@@ -17,19 +17,37 @@ AtomMenuModel::~AtomMenuModel() {
 }
 
 void AtomMenuModel::SetRole(int index, const base::string16& role) {
-  roles_[index] = role;
+  int command_id = GetCommandIdAt(index);
+  roles_[command_id] = role;
 }
 
 base::string16 AtomMenuModel::GetRoleAt(int index) {
-  if (ContainsKey(roles_, index))
-    return roles_[index];
+  int command_id = GetCommandIdAt(index);
+  if (ContainsKey(roles_, command_id))
+    return roles_[command_id];
   else
     return base::string16();
+}
+
+bool AtomMenuModel::GetAcceleratorAtWithParams(
+    int index,
+    bool use_default_accelerator,
+    ui::Accelerator* accelerator) const {
+  if (delegate_) {
+    return delegate_->GetAcceleratorForCommandIdWithParams(
+        GetCommandIdAt(index), use_default_accelerator, accelerator);
+  }
+  return false;
 }
 
 void AtomMenuModel::MenuClosed() {
   ui::SimpleMenuModel::MenuClosed();
   FOR_EACH_OBSERVER(Observer, observers_, MenuClosed());
+}
+
+AtomMenuModel* AtomMenuModel::GetSubmenuModelAt(int index) {
+  return static_cast<AtomMenuModel*>(
+      ui::SimpleMenuModel::GetSubmenuModelAt(index));
 }
 
 }  // namespace atom

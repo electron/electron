@@ -8,12 +8,12 @@ módulos nativos.
 ## Compatibilidade de Módulos Nativos do Node
 
 Módulos nativos podem quebrar quando utilizar a nova versão do Node, V8.
-Para ter certeza que o módulo que você está interessado em trabalhar com o 
+Para ter certeza que o módulo que você está interessado em trabalhar com o
 Electron, você deve checar se a versão do Node utilizada é compatível com a
 usada pelo Electron.
 Você pode verificar qual versão do Node foi utilizada no Electron olhando na
 página [releases](https://github.com/electron/electron/releases) ou usando
-`process.version` (veja [Quick Start](https://github.com/electron/electron/blob/master/docs/tutorial/quick-start.md)
+`process.version` (veja em [Introdução](quick-start.md)
 por exemplo).
 
 Considere usar [NAN](https://github.com/nodejs/nan/) para seus próprios

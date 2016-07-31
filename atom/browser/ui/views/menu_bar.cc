@@ -50,14 +50,7 @@ void GetMenuBarColor(SkColor* enabled, SkColor* disabled, SkColor* highlight,
 MenuBar::MenuBar()
     : background_color_(kDefaultColor),
       menu_model_(NULL) {
-#if defined(OS_WIN)
-  background_color_ = color_utils::GetSysSkColor(COLOR_MENUBAR);
-#elif defined(USE_X11)
-  GetMenuBarColor(&enabled_color_, &disabled_color_, &highlight_color_,
-                  &hover_color_, &background_color_);
-#endif
-
-  set_background(views::Background::CreateSolidBackground(background_color_));
+  UpdateMenuBarColor();
   SetLayoutManager(new views::BoxLayout(
       views::BoxLayout::kHorizontal, 0, 0, 0));
 }
@@ -65,7 +58,7 @@ MenuBar::MenuBar()
 MenuBar::~MenuBar() {
 }
 
-void MenuBar::SetMenu(ui::MenuModel* model) {
+void MenuBar::SetMenu(AtomMenuModel* model) {
   menu_model_ = model;
   RemoveAllChildViews(true);
 
@@ -112,7 +105,7 @@ int MenuBar::GetItemCount() const {
 }
 
 bool MenuBar::GetMenuButtonFromScreenPoint(const gfx::Point& point,
-                                           ui::MenuModel** menu_model,
+                                           AtomMenuModel** menu_model,
                                            views::MenuButton** button) {
   gfx::Point location(point);
   views::View::ConvertPointFromScreen(this, &location);
@@ -124,7 +117,7 @@ bool MenuBar::GetMenuButtonFromScreenPoint(const gfx::Point& point,
   for (int i = 0; i < child_count(); ++i) {
     views::View* view = child_at(i);
     if (view->bounds().Contains(location) &&
-        (menu_model_->GetTypeAt(i) == ui::MenuModel::TYPE_SUBMENU)) {
+        (menu_model_->GetTypeAt(i) == AtomMenuModel::TYPE_SUBMENU)) {
       *menu_model = menu_model_->GetSubmenuModelAt(i);
       *button = static_cast<views::MenuButton*>(view);
       return true;
@@ -151,12 +144,28 @@ void MenuBar::OnMenuButtonClicked(views::MenuButton* source,
     return;
 
   int id = source->tag();
-  ui::MenuModel::ItemType type = menu_model_->GetTypeAt(id);
-  if (type != ui::MenuModel::TYPE_SUBMENU)
+  AtomMenuModel::ItemType type = menu_model_->GetTypeAt(id);
+  if (type != AtomMenuModel::TYPE_SUBMENU) {
+    menu_model_->ActivatedAt(id, 0);
     return;
+  }
 
   MenuDelegate menu_delegate(this);
   menu_delegate.RunMenu(menu_model_->GetSubmenuModelAt(id), source);
+}
+
+void MenuBar::OnNativeThemeChanged(const ui::NativeTheme* theme) {
+  UpdateMenuBarColor();
+}
+
+void MenuBar::UpdateMenuBarColor() {
+#if defined(OS_WIN)
+  background_color_ = color_utils::GetSysSkColor(COLOR_MENUBAR);
+#elif defined(USE_X11)
+  GetMenuBarColor(&enabled_color_, &disabled_color_, &highlight_color_,
+                  &hover_color_, &background_color_);
+#endif
+  set_background(views::Background::CreateSolidBackground(background_color_));
 }
 
 }  // namespace atom

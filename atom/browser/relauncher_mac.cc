@@ -43,7 +43,7 @@ void RelauncherSynchronizeWithParent() {
 
   struct kevent change = { 0 };
   EV_SET(&change, parent_pid, EVFILT_PROC, EV_ADD, NOTE_EXIT, 0, NULL);
-  if (kevent(kq.get(), &change, 1, NULL, 0, NULL) == -1) {
+  if (kevent(kq.get(), &change, 1, nullptr, 0, nullptr) == -1) {
     PLOG(ERROR) << "kevent (add)";
     return;
   }
@@ -58,7 +58,7 @@ void RelauncherSynchronizeWithParent() {
   // write above to complete. The parent process is now free to exit. Wait for
   // that to happen.
   struct kevent event;
-  int events = kevent(kq.get(), NULL, 0, &event, 1, NULL);
+  int events = kevent(kq.get(), nullptr, 0, &event, 1, nullptr);
   if (events != 1) {
     if (events < 0) {
       PLOG(ERROR) << "kevent (monitor)";
@@ -79,8 +79,16 @@ void RelauncherSynchronizeWithParent() {
 
 int LaunchProgram(const StringVector& relauncher_args,
                   const StringVector& argv) {
+  // Redirect the stdout of child process to /dev/null, otherwise after
+  // relaunch the child process will raise exception when writing to stdout.
+  base::ScopedFD devnull(HANDLE_EINTR(open("/dev/null", O_WRONLY)));
+  base::FileHandleMappingVector no_stdout;
+  no_stdout.push_back(std::make_pair(devnull.get(), STDERR_FILENO));
+  no_stdout.push_back(std::make_pair(devnull.get(), STDOUT_FILENO));
+
   base::LaunchOptions options;
   options.new_process_group = true;  // detach
+  options.fds_to_remap = &no_stdout;
   base::Process process = base::LaunchProcess(argv, options);
   return process.IsValid() ? 0 : 1;
 }

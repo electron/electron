@@ -39,6 +39,9 @@ class AtomURLRequestJobFactory : public net::URLRequestJobFactory {
   // Whether the protocol handler is registered by the job factory.
   bool HasProtocolHandler(const std::string& scheme) const;
 
+  // Clear all protocol handlers.
+  void Clear();
+
   // URLRequestJobFactory implementation
   net::URLRequestJob* MaybeCreateJobWithProtocolHandler(
       const std::string& scheme,

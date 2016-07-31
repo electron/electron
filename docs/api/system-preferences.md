@@ -3,8 +3,8 @@
 > Get system preferences.
 
 ```javascript
-const {systemPreferences} = require('electron');
-console.log(systemPreferences.isDarkMode());
+const {systemPreferences} = require('electron')
+console.log(systemPreferences.isDarkMode())
 ```
 
 ## Methods
@@ -40,6 +40,17 @@ example values of `event` are:
 
 Removes the subscriber with `id`.
 
+### `systemPreferences.subscribeLocalNotification(event, callback)` _macOS_
+
+Same as `subscribeNotification`, but uses `NSNotificationCenter` for local defaults.
+This is necessary for events such as:
+
+* `NSUserDefaultsDidChangeNotification`
+
+### `systemPreferences.unsubscribeLocalNotification(id)` _macOS_
+
+Same as `unsubscribeNotification`, but removes the subscriber from `NSNotificationCenter`.
+
 ### `systemPreferences.getUserDefault(key, type)` _macOS_
 
 * `key` String
@@ -68,23 +79,24 @@ An example of using it to determine if you should create a transparent window or
 not (transparent windows won't work correctly when DWM composition is disabled):
 
 ```javascript
-let browserOptions = {width: 1000, height: 800};
+const {BrowserWindow, systemPreferences} = require('electron')
+let browserOptions = {width: 1000, height: 800}
 
 // Make the window transparent only if the platform supports it.
 if (process.platform !== 'win32' || systemPreferences.isAeroGlassEnabled()) {
-  browserOptions.transparent = true;
-  browserOptions.frame = false;
+  browserOptions.transparent = true
+  browserOptions.frame = false
 }
 
 // Create the window.
-let win = new BrowserWindow(browserOptions);
+let win = new BrowserWindow(browserOptions)
 
 // Navigate.
 if (browserOptions.transparent) {
-  win.loadURL('file://' + __dirname + '/index.html');
+  win.loadURL(`file://${__dirname}/index.html`)
 } else {
   // No transparency, so we load a fallback that uses basic styles.
-  win.loadURL('file://' + __dirname + '/fallback.html');
+  win.loadURL(`file://${__dirname}/fallback.html`)
 }
 ```
 

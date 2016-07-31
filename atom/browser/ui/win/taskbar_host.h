@@ -13,6 +13,7 @@
 
 #include "base/callback.h"
 #include "base/win/scoped_comptr.h"
+#include "ui/gfx/geometry/rect.h"
 #include "ui/gfx/image/image.h"
 
 namespace atom {
@@ -39,6 +40,9 @@ class TaskbarHost {
   // Set the overlay icon in taskbar.
   bool SetOverlayIcon(
       HWND window, const gfx::Image& overlay, const std::string& text);
+
+  // Set the region of the window to show as a thumbnail in taskbar.
+  bool TaskbarHost::SetThumbnailClip(HWND window, const gfx::Rect& region);
 
   // Called by the window that there is a button in thumbar clicked.
   bool HandleThumbarButtonEvent(int button_id);

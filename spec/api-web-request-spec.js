@@ -7,7 +7,7 @@ const session = remote.session
 describe('webRequest module', function () {
   var ses = session.defaultSession
   var server = http.createServer(function (req, res) {
-    if (req.url == '/serverRedirect') {
+    if (req.url === '/serverRedirect') {
       res.statusCode = 301
       res.setHeader('Location', 'http://' + req.rawHeaders[1])
       res.end()
@@ -308,7 +308,7 @@ describe('webRequest module', function () {
       ses.webRequest.onHeadersReceived(function (details, callback) {
         var responseHeaders = details.responseHeaders
         callback({
-          responseHeaders: responseHeaders,
+          responseHeaders: responseHeaders
         })
       })
       $.ajax({
@@ -328,7 +328,7 @@ describe('webRequest module', function () {
         var responseHeaders = details.responseHeaders
         callback({
           responseHeaders: responseHeaders,
-          statusLine: "HTTP/1.1 404 Not Found"
+          statusLine: 'HTTP/1.1 404 Not Found'
         })
       })
       $.ajax({

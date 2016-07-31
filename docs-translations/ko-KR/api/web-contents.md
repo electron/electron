@@ -349,23 +349,25 @@ Returns:
     표시합니다. 자세한 사항은 아래를 참고하세요.
 
 `mediaFlags`는 다음과 같은 속성을 가지고 있습니다:
-  * `inError` Boolean - 미디어 객체가 크래시되었는지 여부.
-  * `isPaused` Boolean - 미디어 객체가 일시중지되었는지 여부.
-  * `isMuted` Boolean - 미디어 객체가 음소거되었는지 여부.
-  * `hasAudio` Boolean - 미디어 객체가 오디오를 가지고 있는지 여부.
-  * `isLooping` Boolean - 미디어 객체가 루프중인지 여부.
-  * `isControlsVisible` Boolean - 미디어 객체의 컨트롤이 보이는지 여부.
-  * `canToggleControls` Boolean - 미디어 객체의 컨트롤을 토글할 수 있는지 여부.
-  * `canRotate` Boolean - 미디어 객체를 돌릴 수 있는지 여부.
+
+* `inError` Boolean - 미디어 객체가 크래시되었는지 여부.
+* `isPaused` Boolean - 미디어 객체가 일시중지되었는지 여부.
+* `isMuted` Boolean - 미디어 객체가 음소거되었는지 여부.
+* `hasAudio` Boolean - 미디어 객체가 오디오를 가지고 있는지 여부.
+* `isLooping` Boolean - 미디어 객체가 루프중인지 여부.
+* `isControlsVisible` Boolean - 미디어 객체의 컨트롤이 보이는지 여부.
+* `canToggleControls` Boolean - 미디어 객체의 컨트롤을 토글할 수 있는지 여부.
+* `canRotate` Boolean - 미디어 객체를 돌릴 수 있는지 여부.
 
 `editFlags`는 다음과 같은 속성을 가지고 있습니다:
-  * `canUndo` Boolean - 렌더러에서 실행 취소할 수 있는지 여부.
-  * `canRedo` Boolean - 렌더러에서 다시 실행할 수 있는지 여부.
-  * `canCut` Boolean - 렌더러에서 잘라내기를 실행할 수 있는지 여부.
-  * `canCopy` Boolean - 렌더러에서 복사를 실행할 수 있는지 여부.
-  * `canPaste` Boolean - 렌더러에서 붙여넣기를 실행할 수 있는지 여부.
-  * `canDelete` Boolean - 렌더러에서 삭제를 실행할 수 있는지 여부.
-  * `canSelectAll` Boolean - 렌더러에서 모두 선택을 실행할 수 있는지 여부.
+
+* `canUndo` Boolean - 렌더러에서 실행 취소할 수 있는지 여부.
+* `canRedo` Boolean - 렌더러에서 다시 실행할 수 있는지 여부.
+* `canCut` Boolean - 렌더러에서 잘라내기를 실행할 수 있는지 여부.
+* `canCopy` Boolean - 렌더러에서 복사를 실행할 수 있는지 여부.
+* `canPaste` Boolean - 렌더러에서 붙여넣기를 실행할 수 있는지 여부.
+* `canDelete` Boolean - 렌더러에서 삭제를 실행할 수 있는지 여부.
+* `canSelectAll` Boolean - 렌더러에서 모두 선택을 실행할 수 있는지 여부.
 
 새로운 컨텍스트 메뉴의 제어가 필요할 때 발생하는 이벤트입니다.
 
@@ -631,8 +633,8 @@ CSS 코드를 현재 웹 페이지에 삽입합니다.
 
 * `action` String - [`webContents.findInPage`](web-contents.md#webcontentfindinpage)
   요청이 종료되었을 때 일어날 수 있는 작업을 지정합니다.
-  * `clearSelection` - 선택을 일반 선택으로 변경합니다.
-  * `keepSelection` - 선택을 취소합니다.
+  * `clearSelection` - 선택을 취소합니다.
+  * `keepSelection` - 선택을 일반 선택으로 변경합니다.
   * `activateSelection` - 포커스한 후 선택된 노드를 클릭합니다.
 
 제공된 `action`에 대한 `webContents`의 모든 `findInPage` 요청을 중지합니다.
@@ -645,6 +647,19 @@ webContents.on('found-in-page', (event, result) => {
 
 const requestId = webContents.findInPage('api');
 ```
+
+### `webContents.capturePage([rect, ]callback)`
+
+* `rect` Object (optional) - 캡쳐할 페이지의 영역
+  * `x` Integer
+  * `y` Integer
+  * `width` Integer
+  * `height` Integer
+* `callback` Function
+
+페이지의 스크린샷을 `rect`에 설정한 만큼 캡처합니다. 캡처가 완료되면 `callback`이
+`callback(image)` 형식으로 호출됩니다. `image`는 [NativeImage](native-image.md)의
+인스턴스이며 스크린샷 데이터를 담고있습니다. `rect`를 생략하면 페이지 전체를 캡처합니다.
 
 ### `webContents.hasServiceWorker(callback)`
 
@@ -667,16 +682,12 @@ ServiceWorker가 존재하면 모두 등록을 해제하고 JS Promise가 만족
   * `printBackground` Boolean - 웹 페이지의 배경 색과 이미지를 출력합니다. 기본값은
   	`false`입니다.
 
-윈도우의 웹 페이지를 프린트합니다. `silent`가 `false`로 지정되어있을 땐, Electron이
+윈도우의 웹 페이지를 프린트합니다. `silent`가 `true`로 지정되어있을 땐, Electron이
 시스템의 기본 프린터와 기본 프린터 설정을 가져옵니다.
 
 웹 페이지에서 `window.print()`를 호출하는 것은
 `webContents.print({silent: false, printBackground: false})`를 호출하는 것과
 같습니다.
-
-**참고:** Windows에서의 프린터 API는 `pdf.dll`에 의존합니다. 따라서 애플리케이션이
-print기능을 사용하지 않는 경우 전체 바이너리 크기를 줄이기 위해 `pdf.dll`을 삭제해도
-됩니다.
 
 ### `webContents.printToPDF(options, callback)`
 
@@ -904,12 +915,14 @@ Input `event`를 웹 페이지로 전송합니다.
 * `hasPreciseScrollingDeltas` Boolean
 * `canScroll` Boolean
 
-### `webContents.beginFrameSubscription(callback)`
+### `webContents.beginFrameSubscription([onlyDirty ,]callback)`
 
+* `onlyDirty` Boolean (optional) - 기본값은 `false`입니다.
 * `callback` Function
 
 캡처된 프레임과 프레젠테이션 이벤트를 구독하기 시작합니다. `callback`은
-프레젠테이션 이벤트가 발생했을 때 `callback(frameBuffer)` 형태로 호출됩니다.
+프레젠테이션 이벤트가 발생했을 때 `callback(frameBuffer, dirtyRect)` 형태로
+호출됩니다.
 
 `frameBuffer`는 raw 픽셀 데이터를 가지고 있는 `Buffer` 객체입니다. 많은 장치에서
 32비트 BGRA 포맷을 사용하여 효율적으로 픽셀 데이터를 저장합니다. 하지만 실질적인
@@ -917,9 +930,23 @@ Input `event`를 웹 페이지로 전송합니다.
 프로세서에선 little-endian 방식을 사용하므로 위의 포맷을 그대로 표현합니다. 하지만
 몇몇 프로세서는 big-endian 방식을 사용하는데, 이 경우 32비트 ARGB 포맷을 사용합니다)
 
+`dirtyRect`는 페이지의 어떤 부분이 다시 그려졌는지를 표현하는 `x, y, width, height`
+속성을 포함하는 객체입니다. 만약 `onlyDirty`가 `true`로 지정되어 있으면,
+`frameBuffer`가 다시 그려진 부분만 포함합니다. `onlyDirty`의 기본값은 `false`입니다.
+
 ### `webContents.endFrameSubscription()`
 
 프레임 프레젠테이션 이벤트들에 대한 구독을 중지합니다.
+
+### `webContents.startDrag(item)`
+
+* `item` object
+  * `file` String
+  * `icon` [NativeImage](native-image.md)
+
+현재 진행중인 드래그-드롭에 `item`을 드래그 중인 아이템으로 설정합니다. `file`은
+드래그될 파일의 절대 경로입니다. 그리고 `icon`은 드래그 도중 커서 밑에 표시될
+이미지입니다.
 
 ### `webContents.savePage(fullPath, saveType, callback)`
 

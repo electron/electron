@@ -70,6 +70,7 @@ bool ScopedDisableResize::disable_resize_ = false;
 @interface AtomNSWindowDelegate : NSObject<NSWindowDelegate> {
  @private
   atom::NativeWindowMac* shell_;
+  bool is_zooming_;
 }
 - (id)initWithShell:(atom::NativeWindowMac*)shell;
 @end
@@ -79,6 +80,7 @@ bool ScopedDisableResize::disable_resize_ = false;
 - (id)initWithShell:(atom::NativeWindowMac*)shell {
   if ((self = [super init])) {
     shell_ = shell;
+    is_zooming_ = false;
   }
   return self;
 }
@@ -172,14 +174,18 @@ bool ScopedDisableResize::disable_resize_ = false;
 }
 
 - (BOOL)windowShouldZoom:(NSWindow*)window toFrame:(NSRect)newFrame {
-  // Cocoa doen't have concept of maximize/unmaximize, so wee need to emulate
-  // them by calculating size change when zooming.
-  if (newFrame.size.width < [window frame].size.width ||
-      newFrame.size.height < [window frame].size.height)
-    shell_->NotifyWindowUnmaximize();
-  else
-    shell_->NotifyWindowMaximize();
+  is_zooming_ = true;
   return YES;
+}
+
+- (void)windowDidEndLiveResize:(NSNotification*)notification {
+  if (is_zooming_) {
+    if (shell_->IsMaximized())
+      shell_->NotifyWindowMaximize();
+    else
+      shell_->NotifyWindowUnmaximize();
+    is_zooming_ = false;
+  }
 }
 
 - (void)windowWillEnterFullScreen:(NSNotification*)notification {
@@ -199,6 +205,7 @@ bool ScopedDisableResize::disable_resize_ = false;
   // have to set one, because title bar is visible here.
   NSWindow* window = shell_->GetNativeWindow();
   if ((shell_->transparent() || !shell_->has_frame()) &&
+      base::mac::IsOSYosemiteOrLater() &&
       // FIXME(zcbenz): Showing titlebar for hiddenInset window is weird under
       // fullscreen mode.
       shell_->title_bar_style() != atom::NativeWindowMac::HIDDEN_INSET) {
@@ -223,6 +230,7 @@ bool ScopedDisableResize::disable_resize_ = false;
   // Restore the titlebar visibility.
   NSWindow* window = shell_->GetNativeWindow();
   if ((shell_->transparent() || !shell_->has_frame()) &&
+      base::mac::IsOSYosemiteOrLater() &&
       shell_->title_bar_style() != atom::NativeWindowMac::HIDDEN_INSET) {
     [window setTitleVisibility:NSWindowTitleHidden];
   }
@@ -233,13 +241,6 @@ bool ScopedDisableResize::disable_resize_ = false;
 }
 
 - (void)windowDidExitFullScreen:(NSNotification*)notification {
-  // For certain versions of macOS the fullscreen button will automatically show
-  // after exiting fullscreen mode.
-  if (!shell_->has_frame()) {
-    NSWindow* window = shell_->GetNativeWindow();
-    [[window standardWindowButton:NSWindowFullScreenButton] setHidden:YES];
-  }
-
   shell_->NotifyWindowLeaveFullScreen();
 }
 
@@ -526,8 +527,10 @@ NativeWindowMac::NativeWindowMac(
     [window_ setDisableKeyOrMainWindow:YES];
 
   if (transparent() || !has_frame()) {
-    // Don't show title bar.
-    [window_ setTitleVisibility:NSWindowTitleHidden];
+    if (base::mac::IsOSYosemiteOrLater()) {
+      // Don't show title bar.
+      [window_ setTitleVisibility:NSWindowTitleHidden];
+    }
     // Remove non-transparent corners, see http://git.io/vfonD.
     [window_ setOpaque:NO];
   }
@@ -714,11 +717,6 @@ void NativeWindowMac::SetFullScreen(bool fullscreen) {
   if (fullscreen == IsFullscreen())
     return;
 
-  if (!base::mac::IsOSLionOrLater()) {
-    LOG(ERROR) << "Fullscreen mode is only supported above Lion";
-    return;
-  }
-
   [window_ toggleFullScreen:nil];
 }
 
@@ -727,13 +725,22 @@ bool NativeWindowMac::IsFullscreen() const {
 }
 
 void NativeWindowMac::SetBounds(const gfx::Rect& bounds, bool animate) {
-  NSRect cocoa_bounds = NSMakeRect(bounds.x(), 0,
-                                   bounds.width(),
-                                   bounds.height());
+  // Do nothing if in fullscreen mode.
+  if (IsFullscreen())
+    return;
+
+  // Check size constraints since setFrame does not check it.
+  gfx::Size size = bounds.size();
+  size.SetToMax(GetMinimumSize());
+  gfx::Size max_size = GetMaximumSize();
+  if (!max_size.IsEmpty())
+    size.SetToMin(max_size);
+
+  NSRect cocoa_bounds = NSMakeRect(bounds.x(), 0, size.width(), size.height());
   // Flip coordinates based on the primary screen.
   NSScreen* screen = [[NSScreen screens] objectAtIndex:0];
   cocoa_bounds.origin.y =
-      NSHeight([screen frame]) - bounds.height() - bounds.y();
+      NSHeight([screen frame]) - size.height() - bounds.y();
 
   [window_ setFrame:cocoa_bounds display:YES animate:animate];
 }
@@ -785,13 +792,13 @@ bool NativeWindowMac::IsResizable() {
 
 void NativeWindowMac::SetAspectRatio(double aspect_ratio,
                                      const gfx::Size& extra_size) {
-    NativeWindow::SetAspectRatio(aspect_ratio, extra_size);
+  NativeWindow::SetAspectRatio(aspect_ratio, extra_size);
 
-    // Reset the behaviour to default if aspect_ratio is set to 0 or less.
-    if (aspect_ratio > 0.0)
-      [window_ setAspectRatio:NSMakeSize(aspect_ratio, 1.0)];
-    else
-      [window_ setResizeIncrements:NSMakeSize(1.0, 1.0)];
+  // Reset the behaviour to default if aspect_ratio is set to 0 or less.
+  if (aspect_ratio > 0.0)
+    [window_ setAspectRatio:NSMakeSize(aspect_ratio, 1.0)];
+  else
+    [window_ setResizeIncrements:NSMakeSize(1.0, 1.0)];
 }
 
 void NativeWindowMac::SetMovable(bool movable) {
@@ -852,6 +859,11 @@ void NativeWindowMac::Center() {
 }
 
 void NativeWindowMac::SetTitle(const std::string& title) {
+  // For macOS <= 10.9, the setTitleVisibility API is not available, we have
+  // to avoid calling setTitle for frameless window.
+  if (!base::mac::IsOSYosemiteOrLater() && (transparent() || !has_frame()))
+    return;
+
   [window_ setTitle:base::SysUTF8ToNSString(title)];
 }
 
@@ -935,8 +947,9 @@ void NativeWindowMac::SetIgnoreMouseEvents(bool ignore) {
   [window_ setIgnoresMouseEvents:ignore];
 }
 
-bool NativeWindowMac::HasModalDialog() {
-  return [window_ attachedSheet] != nil;
+void NativeWindowMac::SetContentProtection(bool enable) {
+  [window_ setSharingType:enable ? NSWindowSharingNone
+                                 : NSWindowSharingReadOnly];
 }
 
 void NativeWindowMac::SetParentWindow(NativeWindow* parent) {
@@ -1057,7 +1070,10 @@ void NativeWindowMac::UpdateDraggableRegions(
 
 void NativeWindowMac::InstallView() {
   // Make sure the bottom corner is rounded: http://crbug.com/396264.
-  [[window_ contentView] setWantsLayer:YES];
+  // But do not enable it on OS X 10.9 for transparent window, otherwise a
+  // semi-transparent frame would show.
+  if (!(transparent() && base::mac::IsOSMavericks()))
+    [[window_ contentView] setWantsLayer:YES];
 
   NSView* view = inspectable_web_contents()->GetView()->GetNativeView();
   if (has_frame()) {
@@ -1076,6 +1092,9 @@ void NativeWindowMac::InstallView() {
 
     [view setFrame:[content_view_ bounds]];
     [content_view_ addSubview:view];
+
+    // The fullscreen button should always be hidden for frameless window.
+    [[window_ standardWindowButton:NSWindowFullScreenButton] setHidden:YES];
 
     if (title_bar_style_ != NORMAL)
       return;

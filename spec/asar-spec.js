@@ -1,5 +1,5 @@
 const assert = require('assert')
-const child_process = require('child_process')
+const ChildProcess = require('child_process')
 const fs = require('fs')
 const path = require('path')
 
@@ -13,6 +13,11 @@ describe('asar package', function () {
   var fixtures = path.join(__dirname, 'fixtures')
 
   describe('node api', function () {
+    it('supports paths specified as a Buffer', function () {
+      var file = new Buffer(path.join(fixtures, 'asar', 'a.asar', 'file1'))
+      assert.equal(fs.existsSync(file), true)
+    })
+
     describe('fs.readFileSync', function () {
       it('does not leak fd', function () {
         var readCalls = 1
@@ -534,9 +539,73 @@ describe('asar package', function () {
       })
     })
 
+    describe('fs.access', function () {
+      it('accesses a normal file', function (done) {
+        var p = path.join(fixtures, 'asar', 'a.asar', 'file1')
+        fs.access(p, function (err) {
+          assert(err == null)
+          done()
+        })
+      })
+
+      it('throws an error when called with write mode', function (done) {
+        var p = path.join(fixtures, 'asar', 'a.asar', 'file1')
+        fs.access(p, fs.constants.R_OK | fs.constants.W_OK, function (err) {
+          assert.equal(err.code, 'EACCES')
+          done()
+        })
+      })
+
+      it('throws an error when called on non-existent file', function (done) {
+        var p = path.join(fixtures, 'asar', 'a.asar', 'not-exist')
+        fs.access(p, function (err) {
+          assert.equal(err.code, 'ENOENT')
+          done()
+        })
+      })
+
+      it('allows write mode for unpacked files', function (done) {
+        var p = path.join(fixtures, 'asar', 'unpack.asar', 'a.txt')
+        fs.access(p, fs.constants.R_OK | fs.constants.W_OK, function (err) {
+          assert(err == null)
+          done()
+        })
+      })
+    })
+
+    describe('fs.accessSync', function () {
+      it('accesses a normal file', function () {
+        var p = path.join(fixtures, 'asar', 'a.asar', 'file1')
+        assert.doesNotThrow(function () {
+          fs.accessSync(p)
+        })
+      })
+
+      it('throws an error when called with write mode', function () {
+        var p = path.join(fixtures, 'asar', 'a.asar', 'file1')
+        assert.throws(function () {
+          fs.accessSync(p, fs.constants.R_OK | fs.constants.W_OK)
+        }, /EACCES/)
+      })
+
+      it('throws an error when called on non-existent file', function () {
+        var p = path.join(fixtures, 'asar', 'a.asar', 'not-exist')
+        assert.throws(function () {
+          fs.accessSync(p)
+        }, /ENOENT/)
+      })
+
+      it('allows write mode for unpacked files', function () {
+        var p = path.join(fixtures, 'asar', 'unpack.asar', 'a.txt')
+        assert.doesNotThrow(function () {
+          fs.accessSync(p, fs.constants.R_OK | fs.constants.W_OK)
+        })
+      })
+    })
+
     describe('child_process.fork', function () {
       it('opens a normal js file', function (done) {
-        var child = child_process.fork(path.join(fixtures, 'asar', 'a.asar', 'ping.js'))
+        var child = ChildProcess.fork(path.join(fixtures, 'asar', 'a.asar', 'ping.js'))
         child.on('message', function (msg) {
           assert.equal(msg, 'message')
           done()
@@ -546,7 +615,7 @@ describe('asar package', function () {
 
       it('supports asar in the forked js', function (done) {
         var file = path.join(fixtures, 'asar', 'a.asar', 'file1')
-        var child = child_process.fork(path.join(fixtures, 'module', 'asar.js'))
+        var child = ChildProcess.fork(path.join(fixtures, 'module', 'asar.js'))
         child.on('message', function (content) {
           assert.equal(content, fs.readFileSync(file).toString())
           done()
@@ -556,11 +625,10 @@ describe('asar package', function () {
     })
 
     describe('child_process.exec', function () {
-      var child_process = require('child_process');
       var echo = path.join(fixtures, 'asar', 'echo.asar', 'echo')
 
       it('should not try to extract the command if there is a reference to a file inside an .asar', function (done) {
-        child_process.exec('echo ' + echo + ' foo bar', function (error, stdout) {
+        ChildProcess.exec('echo ' + echo + ' foo bar', function (error, stdout) {
           assert.equal(error, null)
           assert.equal(stdout.toString().replace(/\r/g, ''), echo + ' foo bar\n')
           done()
@@ -569,24 +637,22 @@ describe('asar package', function () {
     })
 
     describe('child_process.execSync', function () {
-      var child_process = require('child_process');
       var echo = path.join(fixtures, 'asar', 'echo.asar', 'echo')
 
       it('should not try to extract the command if there is a reference to a file inside an .asar', function (done) {
-        var stdout = child_process.execSync('echo ' + echo + ' foo bar')
+        var stdout = ChildProcess.execSync('echo ' + echo + ' foo bar')
         assert.equal(stdout.toString().replace(/\r/g, ''), echo + ' foo bar\n')
         done()
       })
     })
 
     describe('child_process.execFile', function () {
-      var echo, execFile, execFileSync, ref2
+      var echo, execFile, execFileSync
       if (process.platform !== 'darwin') {
         return
       }
-      ref2 = require('child_process')
-      execFile = ref2.execFile
-      execFileSync = ref2.execFileSync
+      execFile = ChildProcess.execFile
+      execFileSync = ChildProcess.execFileSync
       echo = path.join(fixtures, 'asar', 'echo.asar', 'echo')
 
       it('executes binaries', function (done) {
@@ -785,7 +851,7 @@ describe('asar package', function () {
     })
 
     it('is available in forked scripts', function (done) {
-      var child = child_process.fork(path.join(fixtures, 'module', 'original-fs.js'))
+      var child = ChildProcess.fork(path.join(fixtures, 'module', 'original-fs.js'))
       child.on('message', function (msg) {
         assert.equal(msg, 'object')
         done()

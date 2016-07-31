@@ -20,14 +20,14 @@ typedef net::URLRequestJobFactory::ProtocolHandler ProtocolHandler;
 AtomURLRequestJobFactory::AtomURLRequestJobFactory() {}
 
 AtomURLRequestJobFactory::~AtomURLRequestJobFactory() {
-  STLDeleteValues(&protocol_handler_map_);
+  Clear();
 }
 
 bool AtomURLRequestJobFactory::SetProtocolHandler(
     const std::string& scheme,
     std::unique_ptr<ProtocolHandler> protocol_handler) {
   if (!protocol_handler) {
-    ProtocolHandlerMap::iterator it = protocol_handler_map_.find(scheme);
+    auto it = protocol_handler_map_.find(scheme);
     if (it == protocol_handler_map_.end())
       return false;
 
@@ -66,7 +66,7 @@ ProtocolHandler* AtomURLRequestJobFactory::GetProtocolHandler(
     const std::string& scheme) const {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
 
-  ProtocolHandlerMap::const_iterator it = protocol_handler_map_.find(scheme);
+  auto it = protocol_handler_map_.find(scheme);
   if (it == protocol_handler_map_.end())
     return nullptr;
   return it->second;
@@ -77,13 +77,17 @@ bool AtomURLRequestJobFactory::HasProtocolHandler(
   return ContainsKey(protocol_handler_map_, scheme);
 }
 
+void AtomURLRequestJobFactory::Clear() {
+  STLDeleteValues(&protocol_handler_map_);
+}
+
 net::URLRequestJob* AtomURLRequestJobFactory::MaybeCreateJobWithProtocolHandler(
     const std::string& scheme,
     net::URLRequest* request,
     net::NetworkDelegate* network_delegate) const {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
 
-  ProtocolHandlerMap::const_iterator it = protocol_handler_map_.find(scheme);
+  auto it = protocol_handler_map_.find(scheme);
   if (it == protocol_handler_map_.end())
     return nullptr;
   return it->second->MaybeCreateJob(request, network_delegate);

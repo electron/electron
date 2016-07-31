@@ -12,7 +12,7 @@ Follow the guidelines below for building Electron on Windows.
 * [Git](http://git-scm.com)
 
 If you don't currently have a Windows installation,
-[modern.ie](https://www.modern.ie/en-us/virtualization-tools#downloads)
+[dev.microsoftedge.com](https://developer.microsoft.com/en-us/microsoft-edge/tools/vms/)
 has timebombed versions of Windows that you can use to build Electron.
 
 Building Electron is done entirely with command-line scripts and cannot be done
@@ -58,16 +58,24 @@ $ python script\build.py -c D
 After building is done, you can find `electron.exe` under `out\D` (debug
 target) or under `out\R` (release target).
 
-## 64bit Build
+## 32bit Build
 
-To build for the 64bit target, you need to pass `--target_arch=x64` when running
-the bootstrap script:
+To build for the 32bit target, you need to pass `--target_arch=ia32` when
+running the bootstrap script:
 
 ```powershell
-$ python script\bootstrap.py -v --target_arch=x64
+$ python script\bootstrap.py -v --target_arch=ia32
 ```
 
 The other building steps are exactly the same.
+
+## Visual Studio project
+
+To generate a Visual Studio project, you can pass the `--msvs` parameter:
+
+```powershell
+$ python script\bootstrap.py --msvs
+```
 
 ## Tests
 

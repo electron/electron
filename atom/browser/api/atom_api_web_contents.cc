@@ -17,6 +17,7 @@
 #include "atom/browser/lib/bluetooth_chooser.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/net/atom_network_delegate.h"
+#include "atom/browser/ui/drag_util.h"
 #include "atom/browser/web_contents_permission_helper.h"
 #include "atom/browser/web_contents_preferences.h"
 #include "atom/browser/web_view_guest_delegate.h"
@@ -46,6 +47,7 @@
 #include "content/public/browser/native_web_keyboard_event.h"
 #include "content/public/browser/navigation_details.h"
 #include "content/public/browser/navigation_entry.h"
+#include "content/public/browser/navigation_handle.h"
 #include "content/public/browser/plugin_service.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
@@ -61,11 +63,10 @@
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 #include "net/http/http_response_headers.h"
-#include "net/url_request/static_http_user_agent_settings.h"
 #include "net/url_request/url_request_context.h"
 #include "third_party/WebKit/public/web/WebInputEvent.h"
 #include "third_party/WebKit/public/web/WebFindOptions.h"
-#include "ui/base/l10n/l10n_util.h"
+#include "ui/display/screen.h"
 
 #include "atom/common/node_includes.h"
 
@@ -75,15 +76,6 @@ struct PrintSettings {
   bool silent;
   bool print_background;
 };
-
-void SetUserAgentInIO(scoped_refptr<net::URLRequestContextGetter> getter,
-                      std::string accept_lang,
-                      std::string user_agent) {
-  getter->GetURLRequestContext()->set_http_user_agent_settings(
-      new net::StaticHttpUserAgentSettings(
-          net::HttpUtil::GenerateAcceptLanguageHeader(accept_lang),
-          user_agent));
-}
 
 }  // namespace
 
@@ -248,6 +240,13 @@ content::ServiceWorkerContext* GetServiceWorkerContext(
   return storage_partition->GetServiceWorkerContext();
 }
 
+// Called when CapturePage is done.
+void OnCapturePageDone(base::Callback<void(const gfx::Image&)> callback,
+                       const SkBitmap& bitmap,
+                       content::ReadbackResponse response) {
+  callback.Run(gfx::Image::CreateFrom1xBitmap(bitmap));
+}
+
 }  // namespace
 
 WebContents::WebContents(v8::Isolate* isolate,
@@ -287,16 +286,11 @@ WebContents::WebContents(v8::Isolate* isolate,
   std::string partition;
   mate::Handle<api::Session> session;
   if (options.Get("session", &session)) {
-  } else if (options.Get("partition", &partition) && !partition.empty()) {
-    bool in_memory = true;
-    if (base::StartsWith(partition, "persist:", base::CompareCase::SENSITIVE)) {
-      in_memory = false;
-      partition = partition.substr(8);
-    }
-    session = Session::FromPartition(isolate, partition, in_memory);
+  } else if (options.Get("partition", &partition)) {
+    session = Session::FromPartition(isolate, partition);
   } else {
     // Use the default session if not specified.
-    session = Session::FromPartition(isolate, "", false);
+    session = Session::FromPartition(isolate, "");
   }
   session_.Reset(isolate, session.ToV8());
 
@@ -610,17 +604,6 @@ void WebContents::DidFinishLoad(content::RenderFrameHost* render_frame_host,
     Emit("did-finish-load");
 }
 
-void WebContents::DidFailProvisionalLoad(
-    content::RenderFrameHost* render_frame_host,
-    const GURL& url,
-    int code,
-    const base::string16& description,
-    bool was_ignored_by_handler) {
-  bool is_main_frame = !render_frame_host->GetParent();
-  Emit("did-fail-provisional-load", code, description, url, is_main_frame);
-  Emit("did-fail-load", code, description, url, is_main_frame);
-}
-
 void WebContents::DidFailLoad(content::RenderFrameHost* render_frame_host,
                               const GURL& url,
                               int error_code,
@@ -664,13 +647,27 @@ void WebContents::DidGetRedirectForResourceRequest(
        details.headers.get());
 }
 
-void WebContents::DidNavigateMainFrame(
-    const content::LoadCommittedDetails& details,
-    const content::FrameNavigateParams& params) {
-  if (details.is_navigation_to_different_page())
-    Emit("did-navigate", params.url);
-  else if (details.is_in_page)
-    Emit("did-navigate-in-page", params.url);
+void WebContents::DidFinishNavigation(
+    content::NavigationHandle* navigation_handle) {
+  bool is_main_frame = navigation_handle->IsInMainFrame();
+  if (navigation_handle->HasCommitted() && !navigation_handle->IsErrorPage()) {
+    auto url = navigation_handle->GetURL();
+    bool is_in_page = navigation_handle->IsSamePage();
+    if (is_main_frame && !is_in_page) {
+      Emit("did-navigate", url);
+    } else if (is_in_page) {
+      Emit("did-navigate-in-page", url);
+    }
+  } else {
+    auto url = navigation_handle->GetURL();
+    int code = navigation_handle->GetNetErrorCode();
+    auto description = net::ErrorToShortString(code);
+    Emit("did-fail-provisional-load", code, description, url, is_main_frame);
+
+    // Do not emit "did-fail-load" for canceled requests.
+    if (code != net::ERR_ABORTED)
+      Emit("did-fail-load", code, description, url, is_main_frame);
+  }
 }
 
 void WebContents::TitleWasSet(content::NavigationEntry* entry,
@@ -684,10 +681,10 @@ void WebContents::TitleWasSet(content::NavigationEntry* entry,
 void WebContents::DidUpdateFaviconURL(
     const std::vector<content::FaviconURL>& urls) {
   std::set<GURL> unique_urls;
-  for (auto iter = urls.begin(); iter != urls.end(); ++iter) {
-    if (iter->icon_type != content::FaviconURL::FAVICON)
+  for (const auto& iter : urls) {
+    if (iter.icon_type != content::FaviconURL::FAVICON)
       continue;
-    const GURL& url = iter->icon_url;
+    const GURL& url = iter.icon_url;
     if (url.is_valid())
       unique_urls.insert(url);
   }
@@ -736,6 +733,7 @@ bool WebContents::OnMessageReceived(const IPC::Message& message) {
     IPC_MESSAGE_HANDLER(AtomViewHostMsg_Message, OnRendererMessage)
     IPC_MESSAGE_HANDLER_DELAY_REPLY(AtomViewHostMsg_Message_Sync,
                                     OnRendererMessageSync)
+    IPC_MESSAGE_HANDLER(AtomViewHostMsg_DidCommitCompositorFrame, OnViewPainted)
     IPC_MESSAGE_HANDLER_CODE(ViewHostMsg_SetCursor, OnCursorChange,
       handled = false)
     IPC_MESSAGE_UNHANDLED(handled = false)
@@ -745,7 +743,7 @@ bool WebContents::OnMessageReceived(const IPC::Message& message) {
 }
 
 // There are three ways of destroying a webContents:
-// 1. call webContents.destory();
+// 1. call webContents.destroy();
 // 2. garbage collection;
 // 3. user closes the window of webContents;
 // For webview only #1 will happen, for BrowserWindow both #1 and #3 may
@@ -788,6 +786,13 @@ WebContents::Type WebContents::GetType() const {
   return type_;
 }
 
+#if !defined(OS_MACOSX)
+bool WebContents::IsFocused() const {
+  auto view = web_contents()->GetRenderWidgetHostView();
+  return view && view->HasFocus();
+}
+#endif
+
 bool WebContents::Equal(const WebContents* web_contents) const {
   return GetID() == web_contents->GetID();
 }
@@ -811,7 +816,7 @@ void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
 
   std::string user_agent;
   if (options.Get("userAgent", &user_agent))
-    SetUserAgent(user_agent);
+    web_contents()->SetUserAgentOverride(user_agent);
 
   std::string extra_headers;
   if (options.Get("extraHeaders", &extra_headers))
@@ -898,14 +903,9 @@ bool WebContents::IsCrashed() const {
   return web_contents()->IsCrashed();
 }
 
-void WebContents::SetUserAgent(const std::string& user_agent) {
+void WebContents::SetUserAgent(const std::string& user_agent,
+                               mate::Arguments* args) {
   web_contents()->SetUserAgentOverride(user_agent);
-  scoped_refptr<net::URLRequestContextGetter> getter =
-      web_contents()->GetBrowserContext()->GetRequestContext();
-
-  auto accept_lang = l10n_util::GetApplicationLocale("");
-  getter->GetNetworkTaskRunner()->PostTask(FROM_HERE,
-      base::Bind(&SetUserAgentInIO, getter, accept_lang, user_agent));
 }
 
 std::string WebContents::GetUserAgent() {
@@ -1146,6 +1146,12 @@ void WebContents::ShowDefinitionForSelection() {
 #endif
 }
 
+void WebContents::CopyImageAt(int x, int y) {
+  const auto host = web_contents()->GetRenderViewHost();
+  if (host)
+    host->CopyImageAt(x, y);
+}
+
 void WebContents::Focus() {
   web_contents()->Focus();
 }
@@ -1194,15 +1200,14 @@ void WebContents::SendInputEvent(v8::Isolate* isolate,
       isolate, "Invalid event object")));
 }
 
-void WebContents::BeginFrameSubscription(
-  mate::Arguments* args) {
-  FrameSubscriber::FrameCaptureCallback callback;
+void WebContents::BeginFrameSubscription(mate::Arguments* args) {
   bool only_dirty = false;
+  FrameSubscriber::FrameCaptureCallback callback;
 
+  args->GetNext(&only_dirty);
   if (!args->GetNext(&callback)) {
-    args->GetNext(&only_dirty);
-    if (!args->GetNext(&callback))
-      args->ThrowTypeError("'callback' must be defined");
+    args->ThrowError();
+    return;
   }
 
   const auto view = web_contents()->GetRenderWidgetHostView();
@@ -1219,6 +1224,74 @@ void WebContents::EndFrameSubscription() {
     view->EndFrameSubscription();
 }
 
+void WebContents::StartDrag(const mate::Dictionary& item,
+                            mate::Arguments* args) {
+  base::FilePath file;
+  std::vector<base::FilePath> files;
+  if (!item.Get("files", &files) && item.Get("file", &file)) {
+    files.push_back(file);
+  }
+
+  mate::Handle<NativeImage> icon;
+  if (!item.Get("icon", &icon) && !file.empty()) {
+    // TODO(zcbenz): Set default icon from file.
+  }
+
+  // Error checking.
+  if (icon.IsEmpty()) {
+    args->ThrowError("icon must be set");
+    return;
+  }
+
+  // Start dragging.
+  if (!files.empty()) {
+    base::MessageLoop::ScopedNestableTaskAllower allow(
+        base::MessageLoop::current());
+    DragFileItems(files, icon->image(), web_contents()->GetNativeView());
+  } else {
+    args->ThrowError("There is nothing to drag");
+  }
+}
+
+void WebContents::CapturePage(mate::Arguments* args) {
+  gfx::Rect rect;
+  base::Callback<void(const gfx::Image&)> callback;
+
+  if (!(args->Length() == 1 && args->GetNext(&callback)) &&
+      !(args->Length() == 2 && args->GetNext(&rect)
+                            && args->GetNext(&callback))) {
+    args->ThrowError();
+    return;
+  }
+
+  const auto view = web_contents()->GetRenderWidgetHostView();
+  const auto host = view ? view->GetRenderWidgetHost() : nullptr;
+  if (!view || !host) {
+    callback.Run(gfx::Image());
+    return;
+  }
+
+  // Capture full page if user doesn't specify a |rect|.
+  const gfx::Size view_size = rect.IsEmpty() ? view->GetViewBounds().size() :
+                                               rect.size();
+
+  // By default, the requested bitmap size is the view size in screen
+  // coordinates.  However, if there's more pixel detail available on the
+  // current system, increase the requested bitmap size to capture it all.
+  gfx::Size bitmap_size = view_size;
+  const gfx::NativeView native_view = view->GetNativeView();
+  const float scale =
+      display::Screen::GetScreen()->GetDisplayNearestWindow(native_view)
+      .device_scale_factor();
+  if (scale > 1.0f)
+    bitmap_size = gfx::ScaleToCeiledSize(view_size, scale);
+
+  host->CopyFromBackingStore(gfx::Rect(rect.origin(), view_size),
+                             bitmap_size,
+                             base::Bind(&OnCapturePageDone, callback),
+                             kBGRA_8888_SkColorType);
+}
+
 void WebContents::OnCursorChange(const content::WebCursor& cursor) {
   content::WebCursor::CursorInfo info;
   cursor.GetCursorInfo(&info);
@@ -1230,6 +1303,10 @@ void WebContents::OnCursorChange(const content::WebCursor& cursor) {
   } else {
     Emit("cursor-changed", CursorTypeToString(info));
   }
+}
+
+void WebContents::OnViewPainted() {
+  Emit("view-painted");
 }
 
 void WebContents::SetSize(const SetSizeParams& params) {
@@ -1338,6 +1415,7 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("beginFrameSubscription",
                  &WebContents::BeginFrameSubscription)
       .SetMethod("endFrameSubscription", &WebContents::EndFrameSubscription)
+      .SetMethod("startDrag", &WebContents::StartDrag)
       .SetMethod("setSize", &WebContents::SetSize)
       .SetMethod("isGuest", &WebContents::IsGuest)
       .SetMethod("getType", &WebContents::GetType)
@@ -1353,6 +1431,9 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("removeWorkSpace", &WebContents::RemoveWorkSpace)
       .SetMethod("showDefinitionForSelection",
                  &WebContents::ShowDefinitionForSelection)
+      .SetMethod("copyImageAt", &WebContents::CopyImageAt)
+      .SetMethod("capturePage", &WebContents::CapturePage)
+      .SetMethod("isFocused", &WebContents::IsFocused)
       .SetProperty("id", &WebContents::ID)
       .SetProperty("session", &WebContents::Session)
       .SetProperty("hostWebContents", &WebContents::HostWebContents)

@@ -97,7 +97,6 @@ class NativeDesktopMediaList::Worker
   typedef std::map<DesktopMediaID, uint32> ImageHashesMap;
 
   // webrtc::DesktopCapturer::Callback interface.
-  webrtc::SharedMemory* CreateSharedMemory(size_t size) override;
   void OnCaptureCompleted(webrtc::DesktopFrame* frame) override;
 
   base::WeakPtr<NativeDesktopMediaList> media_list_;
@@ -216,11 +215,6 @@ void NativeDesktopMediaList::Worker::Refresh(
   BrowserThread::PostTask(
       BrowserThread::UI, FROM_HERE,
       base::Bind(&NativeDesktopMediaList::OnRefreshFinished, media_list_));
-}
-
-webrtc::SharedMemory* NativeDesktopMediaList::Worker::CreateSharedMemory(
-    size_t size) {
-  return NULL;
 }
 
 void NativeDesktopMediaList::Worker::OnCaptureCompleted(
