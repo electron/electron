@@ -1,4 +1,4 @@
-// Copyright (c) 2013 GitHub, Inc.
+// Copyright (c) 2016 GitHub, Inc.
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
@@ -20,10 +20,10 @@ public:
 
   void SetWebContents(content::WebContents*);
 
+  // content::WebContentsView
   gfx::NativeView GetNativeView() const override;
   gfx::NativeView GetContentNativeView() const override;
   gfx::NativeWindow GetTopLevelNativeWindow() const override;
-
   void GetContainerBounds(gfx::Rect* out) const override;
   void SizeContents(const gfx::Size& size) override;
   void Focus() override;
@@ -32,16 +32,13 @@ public:
   void RestoreFocus() override;
   content::DropData* GetDropData() const override;
   gfx::Rect GetViewBounds() const override;
-
   void CreateView(
       const gfx::Size& initial_size, gfx::NativeView context) override;
-
   content::RenderWidgetHostViewBase* CreateViewForWidget(
       content::RenderWidgetHost* render_widget_host,
       bool is_guest_view_hack) override;
   content::RenderWidgetHostViewBase* CreateViewForPopupWidget(
       content::RenderWidgetHost* render_widget_host) override;
-
   void SetPageTitle(const base::string16& title) override;
   void RenderViewCreated(content::RenderViewHost* host) override;
   void RenderViewSwappedIn(content::RenderViewHost* host) override;

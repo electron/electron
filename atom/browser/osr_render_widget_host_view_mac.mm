@@ -1,17 +1,13 @@
-#include "atom/browser/osr_render_widget_host_view.h"
+// Copyright (c) 2016 GitHub, Inc.
+// Use of this source code is governed by the MIT license that can be
+// found in the LICENSE file.
 
-#include <algorithm>
-#include <limits>
-#include <utility>
-#include <iostream>
+#include "atom/browser/osr_render_widget_host_view.h"
 
 #import <Cocoa/Cocoa.h>
 
-#include "base/compiler_specific.h"
 #include "base/strings/utf_string_conversions.h"
-#include "content/common/view_messages.h"
 #include "ui/accelerated_widget_mac/accelerated_widget_mac.h"
-#include "ui/events/latency_info.h"
 
 ui::AcceleratedWidgetMac* atom::OffScreenRenderWidgetHostView::GetAcceleratedWidgetMac()
     const {
@@ -20,7 +16,8 @@ ui::AcceleratedWidgetMac* atom::OffScreenRenderWidgetHostView::GetAcceleratedWid
   return nullptr;
 }
 
-NSView* atom::OffScreenRenderWidgetHostView::AcceleratedWidgetGetNSView() const {
+NSView* atom::OffScreenRenderWidgetHostView::AcceleratedWidgetGetNSView()
+    const {
   return [window_ contentView];
 }
 
@@ -75,13 +72,11 @@ void atom::OffScreenRenderWidgetHostView::SelectionChanged(
 }
 
 void atom::OffScreenRenderWidgetHostView::CreatePlatformWidget() {
-  // Create a borderless non-visible 1x1 window.
   window_ = [[NSWindow alloc] initWithContentRect:NSMakeRect(0, 0, 1, 1)
                                         styleMask:NSBorderlessWindowMask
                                           backing:NSBackingStoreBuffered
                                             defer:NO];
 
-  // Create a CALayer which is used by BrowserCompositorViewMac for rendering.
   background_layer_ = [[[CALayer alloc] init] retain];
   [background_layer_ setBackgroundColor:CGColorGetConstantColor(kCGColorClear)];
   NSView* content_view = [window_ contentView];
@@ -95,9 +90,6 @@ void atom::OffScreenRenderWidgetHostView::CreatePlatformWidget() {
   browser_compositor_->accelerated_widget_mac()->SetNSView(this);
   browser_compositor_->compositor()->SetVisible(true);
 
-  // CEF needs the browser compositor to remain responsive whereas normal
-  // rendering on OS X does not. This effectively reverts the changes from
-  // https://crbug.com/463988#c6
   compositor_->SetLocksWillTimeOut(true);
   browser_compositor_->Unsuspend();
 }

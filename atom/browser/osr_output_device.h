@@ -1,4 +1,4 @@
-// Copyright (c) 2013 GitHub, Inc.
+// Copyright (c) 2016 GitHub, Inc.
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
@@ -9,7 +9,6 @@
 #include "cc/output/software_output_device.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "third_party/skia/include/core/SkCanvas.h"
-#include "base/callback.h"
 
 namespace atom {
 

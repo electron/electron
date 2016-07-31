@@ -1,18 +1,17 @@
-// Copyright (c) 2013 GitHub, Inc.
+// Copyright (c) 2016 GitHub, Inc.
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
 #include "atom/browser/osr_output_device.h"
 
-#include <iostream>
 #include "third_party/skia/include/core/SkDevice.h"
 #include "ui/gfx/skia_util.h"
 
 namespace atom {
 
 OffScreenOutputDevice::OffScreenOutputDevice(bool transparent,
-  const OnPaintCallback& callback)
-    : transparent_(transparent),
+    const OnPaintCallback& callback):
+      transparent_(transparent),
       callback_(callback),
       active_(false) {
   DCHECK(!callback_.is_null());
@@ -21,9 +20,7 @@ OffScreenOutputDevice::OffScreenOutputDevice(bool transparent,
 OffScreenOutputDevice::~OffScreenOutputDevice() { }
 
 void OffScreenOutputDevice::Resize(
-  const gfx::Size& pixel_size, float scale_factor) {
-  std::cout << pixel_size.width() << "x" << pixel_size.height() << std::endl;
-
+    const gfx::Size& pixel_size, float scale_factor) {
   scale_factor_ = scale_factor;
 
   if (viewport_pixel_size_ == pixel_size) return;
@@ -47,7 +44,6 @@ void OffScreenOutputDevice::Resize(
 }
 
 SkCanvas* OffScreenOutputDevice::BeginPaint(const gfx::Rect& damage_rect) {
-  // std::cout << "BeginPaint" << std::endl;
   DCHECK(canvas_.get());
   DCHECK(bitmap_.get());
 
@@ -57,8 +53,6 @@ SkCanvas* OffScreenOutputDevice::BeginPaint(const gfx::Rect& damage_rect) {
 }
 
 void OffScreenOutputDevice::EndPaint() {
-  // std::cout << "EndPaint" << std::endl;
-
   DCHECK(canvas_.get());
   DCHECK(bitmap_.get());
 
@@ -75,7 +69,6 @@ void OffScreenOutputDevice::SetActive(bool active) {
     return;
   active_ = active;
 
-  // Call OnPaint immediately if deactivated while a damage rect is pending.
   if (!active_ && !pending_damage_rect_.IsEmpty())
     OnPaint(pending_damage_rect_);
 }
