@@ -9,7 +9,7 @@
 namespace atom {
 
 class DummyWindowWin : public gfx::WindowImpl {
-public:
+ public:
   DummyWindowWin() {
     // Create a hidden 1x1 borderless window.
     set_window_style(WS_POPUP | WS_SYSMENU);
@@ -20,7 +20,7 @@ public:
     DestroyWindow(hwnd());
   }
 
-private:
+ private:
   CR_BEGIN_MSG_MAP_EX(DummyWindowWin)
     CR_MSG_WM_PAINT(OnPaint)
   CR_END_MSG_MAP()

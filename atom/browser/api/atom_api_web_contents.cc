@@ -313,7 +313,7 @@ WebContents::WebContents(v8::Isolate* isolate,
     guest_delegate_.reset(new WebViewGuestDelegate);
     params.guest_delegate = guest_delegate_.get();
     web_contents = content::WebContents::Create(params);
-  } else if(IsOffScreen()) {
+  } else if (IsOffScreen()) {
     content::WebContents::CreateParams params(session->browser_context());
 
     auto view = new OffScreenWebContentsView();
@@ -1322,8 +1322,6 @@ void WebContents::OnCursorChange(const content::WebCursor& cursor) {
   if (cursor.IsCustom()) {
     Emit("cursor-changed", CursorTypeToString(info),
       gfx::Image::CreateFrom1xBitmap(info.custom_image),
-      gfx::Rect(info.custom_image.width(), info.custom_image.height()),
-      info.hotspot,
       info.image_scale_factor);
   } else {
     Emit("cursor-changed", CursorTypeToString(info));
@@ -1395,8 +1393,8 @@ void WebContents::OnPaint(
     int bitmap_width,
     int bitmap_height,
     void* bitmap_pixels) {
-  v8::MaybeLocal<v8::Object> buffer = node::Buffer::New(isolate
-    , (char *)bitmap_pixels, sizeof(bitmap_pixels));
+  v8::MaybeLocal<v8::Object> buffer = node::Buffer::New(isolate,
+    reinterpret_cast<char *>(bitmap_pixels), sizeof(bitmap_pixels));
 
   const gfx::Size bitmap_size = gfx::Size(bitmap_width, bitmap_height);
   Emit("paint", damage_rect, buffer.ToLocalChecked(), bitmap_size);

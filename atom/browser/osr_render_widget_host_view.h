@@ -5,6 +5,9 @@
 #ifndef ATOM_BROWSER_OSR_RENDER_WIDGET_HOST_VIEW_H_
 #define ATOM_BROWSER_OSR_RENDER_WIDGET_HOST_VIEW_H_
 
+#include <string>
+#include <vector>
+
 #include "atom/browser/native_window.h"
 
 #include "content/browser/renderer_host/render_widget_host_view_base.h"
@@ -59,7 +62,7 @@ class OffScreenRenderWidgetHostView:
 #endif
   public ui::CompositorDelegate,
   public content::DelegatedFrameHostClient {
-public:
+ public:
   OffScreenRenderWidgetHostView(content::RenderWidgetHost*, NativeWindow*);
   ~OffScreenRenderWidgetHostView();
 
@@ -97,15 +100,17 @@ public:
 #endif  // defined(OS_MACOSX)
 
   // content::RenderWidgetHostViewBase
-  void OnSwapCompositorFrame(uint32_t, std::unique_ptr<cc::CompositorFrame>) override;
+  void OnSwapCompositorFrame(uint32_t, std::unique_ptr<cc::CompositorFrame>)
+    override;
   void ClearCompositorFrame(void) override;
-  void InitAsPopup(content::RenderWidgetHostView *, const gfx::Rect &) override;
+  void InitAsPopup(content::RenderWidgetHostView *rwhv, const gfx::Rect& rect)
+    override;
   void InitAsFullscreen(content::RenderWidgetHostView *) override;
   void UpdateCursor(const content::WebCursor &) override;
-  void SetIsLoading(bool) override;
+  void SetIsLoading(bool is_loading) override;
   void TextInputStateChanged(const content::TextInputState& params) override;
   void ImeCancelComposition(void) override;
-  void RenderProcessGone(base::TerminationStatus,int) override;
+  void RenderProcessGone(base::TerminationStatus, int) override;
   void Destroy(void) override;
   void SetTooltipText(const base::string16 &) override;
 
@@ -115,7 +120,8 @@ public:
                         const gfx::Range& range) override;
 #endif
 
-  void SelectionBoundsChanged(const ViewHostMsg_SelectionBounds_Params &) override;
+  void SelectionBoundsChanged(const ViewHostMsg_SelectionBounds_Params &)
+    override;
   void CopyFromCompositingSurface(const gfx::Rect &,
     const gfx::Size &,
     const content::ReadbackRequestCallback &,
@@ -123,7 +129,7 @@ public:
   void CopyFromCompositingSurfaceToVideoFrame(
     const gfx::Rect &,
     const scoped_refptr<media::VideoFrame> &,
-    const base::Callback<void (const gfx::Rect &, bool),
+    const base::Callback<void(const gfx::Rect &, bool),
     base::internal::CopyMode::Copyable> &) override;
   bool CanCopyToVideoFrame(void) const override;
   void BeginFrameSubscription(
@@ -147,7 +153,8 @@ public:
   SkColor DelegatedFrameHostGetGutterColor(SkColor) const override;
   gfx::Size DelegatedFrameHostDesiredSizeInDIP(void) const override;
   bool DelegatedFrameCanCreateResizeLock(void) const override;
-  std::unique_ptr<content::ResizeLock> DelegatedFrameHostCreateResizeLock(bool) override;
+  std::unique_ptr<content::ResizeLock> DelegatedFrameHostCreateResizeLock(
+    bool defer_compositor_lock) override;
   void DelegatedFrameHostResizeLockWasReleased(void) override;
   void DelegatedFrameHostSendCompositorSwapAck(
     int, const cc::CompositorFrameAck &) override;
@@ -190,13 +197,13 @@ public:
                int bitmap_height,
                void* bitmap_pixels);
 
-  void SetPainting(bool);
+  void SetPainting(bool painting);
   bool IsPainting() const;
 
-  void SetFrameRate(int);
+  void SetFrameRate(int frame_rate);
   int GetFrameRate() const;
 private:
-  void SetupFrameRate(bool);
+  void SetupFrameRate(bool force);
   void ResizeRootLayer();
 
   content::RenderWidgetHostImpl* render_widget_host_;

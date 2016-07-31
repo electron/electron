@@ -13,8 +13,7 @@ namespace atom {
 
 class OffScreenWebContentsView : public content::WebContentsView,
                                  public content::RenderViewHostDelegateView {
-public:
-
+ public:
   OffScreenWebContentsView();
   ~OffScreenWebContentsView();
 
@@ -60,7 +59,7 @@ public:
       const content::DragEventSourceInfo& event_info) override;
   void UpdateDragCursor(blink::WebDragOperation operation) override;
 
-private:
+ private:
   content::RenderWidgetHostViewBase* view_;
   content::WebContents* web_contents_;
 };

@@ -50,7 +50,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
     BROWSER_WINDOW,  // Used by BrowserWindow.
     REMOTE,  // Thin wrap around an existing WebContents.
     WEB_VIEW,  // Used by <webview>.
-    OFF_SCREEN, // Used for offscreen rendering
+    OFF_SCREEN,  // Used for offscreen rendering
   };
 
   // For node.js callback function type: function(error, buffer)
@@ -163,7 +163,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void StartPainting();
   void StopPainting();
   bool IsPainting() const;
-  void SetFrameRate(int);
+  void SetFrameRate(int frame_rate);
   int GetFrameRate() const;
 
   // Callback triggered on permission response.

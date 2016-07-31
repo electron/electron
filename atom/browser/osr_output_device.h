@@ -12,11 +12,10 @@
 
 namespace atom {
 
-typedef base::Callback<void(const gfx::Rect&,int,int,void*)> OnPaintCallback;
+typedef base::Callback<void(const gfx::Rect&, int, int, void*)> OnPaintCallback;
 
 class OffScreenOutputDevice : public cc::SoftwareOutputDevice {
-public:
-
+ public:
   OffScreenOutputDevice(bool transparent, const OnPaintCallback& callback);
   ~OffScreenOutputDevice();
 
@@ -30,7 +29,7 @@ public:
 
   void OnPaint(const gfx::Rect& damage_rect);
 
-private:
+ private:
   const bool transparent_;
   const OnPaintCallback callback_;
 

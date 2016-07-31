@@ -4,6 +4,8 @@
 
 #include "atom/browser/osr_render_widget_host_view.h"
 
+#include <vector>
+
 #include "third_party/WebKit/public/platform/WebScreenInfo.h"
 #include "components/display_compositor/gl_helper.h"
 #include "content/browser/renderer_host/render_widget_host_impl.h"
@@ -303,7 +305,8 @@ class AtomBeginFrameTimer : public cc::DelayBasedTimeSourceClient {
       : callback_(callback) {
     time_source_ = cc::DelayBasedTimeSource::Create(
         base::TimeDelta::FromMilliseconds(frame_rate_threshold_ms),
-        content::BrowserThread::GetMessageLoopProxyForThread(content::BrowserThread::UI).get());
+        content::BrowserThread::GetMessageLoopProxyForThread(
+          content::BrowserThread::UI).get());
     time_source_->SetClient(this);
   }
 
@@ -333,7 +336,8 @@ class AtomBeginFrameTimer : public cc::DelayBasedTimeSourceClient {
 };
 
 OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
-  content::RenderWidgetHost* host, NativeWindow* native_window): render_widget_host_(content::RenderWidgetHostImpl::From(host)),
+  content::RenderWidgetHost* host, NativeWindow* native_window):
+    render_widget_host_(content::RenderWidgetHostImpl::From(host)),
     native_window_(native_window),
     software_output_device_(NULL),
     callback_(nullptr),
@@ -610,7 +614,8 @@ void OffScreenRenderWidgetHostView::TextInputStateChanged(
 void OffScreenRenderWidgetHostView::ImeCancelComposition() {
 }
 
-void OffScreenRenderWidgetHostView::RenderProcessGone(base::TerminationStatus,int) {
+void OffScreenRenderWidgetHostView::RenderProcessGone(base::TerminationStatus,
+    int) {
   Destroy();
 }
 
@@ -625,18 +630,19 @@ void OffScreenRenderWidgetHostView::SelectionBoundsChanged(
   const ViewHostMsg_SelectionBounds_Params &) {
 }
 
-void OffScreenRenderWidgetHostView::CopyFromCompositingSurface(const gfx::Rect& src_subrect,
-  const gfx::Size& dst_size,
-  const content::ReadbackRequestCallback& callback,
-  const SkColorType preferred_color_type) {
+void OffScreenRenderWidgetHostView::CopyFromCompositingSurface(
+    const gfx::Rect& src_subrect,
+    const gfx::Size& dst_size,
+    const content::ReadbackRequestCallback& callback,
+    const SkColorType preferred_color_type) {
   delegated_frame_host_->CopyFromCompositingSurface(
     src_subrect, dst_size, callback, preferred_color_type);
 }
 
 void OffScreenRenderWidgetHostView::CopyFromCompositingSurfaceToVideoFrame(
-  const gfx::Rect& src_subrect,
-  const scoped_refptr<media::VideoFrame>& target,
-  const base::Callback<void (const gfx::Rect&, bool)>& callback) {
+    const gfx::Rect& src_subrect,
+    const scoped_refptr<media::VideoFrame>& target,
+    const base::Callback<void(const gfx::Rect&, bool)>& callback) {
   delegated_frame_host_->CopyFromCompositingSurfaceToVideoFrame(
     src_subrect, target, callback);
 }
@@ -658,7 +664,8 @@ bool OffScreenRenderWidgetHostView::HasAcceleratedSurface(const gfx::Size &) {
   return false;
 }
 
-void OffScreenRenderWidgetHostView::GetScreenInfo(blink::WebScreenInfo* results) {
+void OffScreenRenderWidgetHostView::GetScreenInfo(
+    blink::WebScreenInfo* results) {
   results->rect = gfx::Rect(size_);
   results->availableRect = gfx::Rect(size_);
   results->depth = 24;
@@ -668,7 +675,8 @@ void OffScreenRenderWidgetHostView::GetScreenInfo(blink::WebScreenInfo* results)
   results->orientationType = blink::WebScreenOrientationLandscapePrimary;
 }
 
-bool OffScreenRenderWidgetHostView::GetScreenColorProfile(blink::WebVector<char>*) {
+bool OffScreenRenderWidgetHostView::GetScreenColorProfile(
+    blink::WebVector<char>*) {
   return false;
 }
 
@@ -694,7 +702,9 @@ gfx::Size OffScreenRenderWidgetHostView::GetRequestedRendererSize() const {
   return size_;
 }
 
-int OffScreenRenderWidgetHostView::DelegatedFrameHostGetGpuMemoryBufferClientId() const {
+int OffScreenRenderWidgetHostView::
+  DelegatedFrameHostGetGpuMemoryBufferClientId()
+    const {
   return render_widget_host_->GetProcess()->GetID();
 }
 
@@ -721,7 +731,8 @@ bool OffScreenRenderWidgetHostView::DelegatedFrameCanCreateResizeLock() const {
 }
 
 std::unique_ptr<content::ResizeLock>
-  OffScreenRenderWidgetHostView::DelegatedFrameHostCreateResizeLock(bool) {
+  OffScreenRenderWidgetHostView::DelegatedFrameHostCreateResizeLock(
+      bool defer_compositor_lock) {
   return nullptr;
 }
 
@@ -736,14 +747,16 @@ void OffScreenRenderWidgetHostView::DelegatedFrameHostSendCompositorSwapAck(
     output_surface_id, ack));
 }
 
-void OffScreenRenderWidgetHostView::DelegatedFrameHostSendReclaimCompositorResources(
+void OffScreenRenderWidgetHostView::
+  DelegatedFrameHostSendReclaimCompositorResources(
     int output_surface_id, const cc::CompositorFrameAck& ack) {
   render_widget_host_->Send(new ViewMsg_ReclaimCompositorResources(
     render_widget_host_->GetRoutingID(),
     output_surface_id, ack));
 }
 
-void OffScreenRenderWidgetHostView::DelegatedFrameHostOnLostCompositorResources() {
+void OffScreenRenderWidgetHostView::
+  DelegatedFrameHostOnLostCompositorResources() {
   render_widget_host_->ScheduleComposite();
 }
 
@@ -753,7 +766,8 @@ void OffScreenRenderWidgetHostView::DelegatedFrameHostUpdateVSyncParameters(
 }
 
 std::unique_ptr<cc::SoftwareOutputDevice>
-    OffScreenRenderWidgetHostView::CreateSoftwareOutputDevice(ui::Compositor* compositor) {
+  OffScreenRenderWidgetHostView::CreateSoftwareOutputDevice(
+    ui::Compositor* compositor) {
   DCHECK_EQ(compositor_.get(), compositor);
   DCHECK(!copy_frame_generator_);
   DCHECK(!software_output_device_);

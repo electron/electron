@@ -9,7 +9,6 @@
 #include "atom/common/node_includes.h"
 #include "content/public/browser/render_widget_host.h"
 
-#include <iostream>
 #include "content/browser/compositor/image_transport_factory.h"
 #include "cc/surfaces/surface_manager.h"
 #include "cc/surfaces/surface.h"
@@ -18,14 +17,6 @@
 namespace atom {
 
 namespace api {
-
-FrameSubscriberRenderWidgetHostView::FrameSubscriberRenderWidgetHostView() {
-  std::cout << "FrameSubscriberRenderWidgetHostView" << std::endl;
-}
-
-FrameSubscriberRenderWidgetHostView::~FrameSubscriberRenderWidgetHostView() {
-  std::cout << "~FrameSubscriberRenderWidgetHostView" << std::endl;
-}
 
 FrameSubscriber::FrameSubscriber(v8::Isolate* isolate,
                                  content::RenderWidgetHostView* view,

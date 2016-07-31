@@ -22,16 +22,6 @@ namespace atom {
 
 namespace api {
 
-class FrameSubscriberRenderWidgetHostView
- : public content::RenderWidgetHostViewBase {
- public:
-
-  FrameSubscriberRenderWidgetHostView();
-  ~FrameSubscriberRenderWidgetHostView();
-
-  cc::SurfaceId SurfaceId();
-};
-
 class FrameSubscriber : public content::RenderWidgetHostViewFrameSubscriber {
  public:
   using FrameCaptureCallback =
