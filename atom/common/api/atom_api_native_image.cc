@@ -25,6 +25,7 @@
 #include "ui/gfx/geometry/size.h"
 #include "ui/gfx/image/image_skia.h"
 #include "ui/gfx/image/image_util.h"
+#include "third_party/skia/include/core/SkPixelRef.h"
 
 #if defined(OS_WIN)
 #include "atom/common/asar/archive.h"
@@ -219,6 +220,14 @@ v8::Local<v8::Value> NativeImage::ToPNG(v8::Isolate* isolate) {
                             static_cast<size_t>(png->size())).ToLocalChecked();
 }
 
+v8::Local<v8::Value> NativeImage::ToRawBuffer(v8::Isolate* isolate) {
+  const SkBitmap* bitmap = image_.ToSkBitmap();
+  SkPixelRef* ref = bitmap->pixelRef();
+  return node::Buffer::Copy(isolate,
+                            reinterpret_cast<const char*>(ref->pixels()),
+                            bitmap->getSafeSize()).ToLocalChecked();
+}
+
 v8::Local<v8::Value> NativeImage::ToJPEG(v8::Isolate* isolate, int quality) {
   std::vector<unsigned char> output;
   gfx::JPEG1xEncodedDataFromImage(image_, quality, &output);
@@ -350,6 +359,7 @@ void NativeImage::BuildPrototype(
   mate::ObjectTemplateBuilder(isolate, prototype)
       .SetMethod("toPNG", &NativeImage::ToPNG)
       .SetMethod("toJPEG", &NativeImage::ToJPEG)
+      .SetMethod("toBUFFER", &NativeImage::ToRawBuffer)
       .SetMethod("getNativeHandle", &NativeImage::GetNativeHandle)
       .SetMethod("toDataURL", &NativeImage::ToDataURL)
       .SetMethod("isEmpty", &NativeImage::IsEmpty)
