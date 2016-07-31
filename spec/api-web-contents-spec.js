@@ -38,14 +38,13 @@ describe('webContents module', function () {
       w.webContents.on('devtools-opened', function () {
         const all = webContents.getAllWebContents().sort(function (a, b) {
           return a.getId() - b.getId()
-        })
+        }).filter(function (wc) { return wc.getType() !== 'offscreen' })
 
-        assert.equal(all.length, 5)
+        assert.equal(all.length, 4)
         assert.equal(all[0].getType(), 'window')
-        assert.equal(all[1].getType(), 'offscreen')
-        assert.equal(all[2].getType(), 'window')
-        assert.equal(all[3].getType(), 'remote')
-        assert.equal(all[4].getType(), 'webview')
+        assert.equal(all[1].getType(), 'window')
+        assert.equal(all[2].getType(), 'remote')
+        assert.equal(all[3].getType(), 'webview')
 
         done()
       })
