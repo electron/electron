@@ -32,7 +32,7 @@ exports.load = (appUrl) => {
       backgroundColor: '#FFFFFF',
       useContentSize: true,
       webPreferences: {
-        offscreen: true,
+        // offscreen: true,
         nodeIntegration: false
       }
     })
@@ -81,7 +81,7 @@ exports.load = (appUrl) => {
       console.log(`browser #2: ${d < 10 ? ` ${d}` : d} ms`)
 
       start2 = end2
-    })*/
+    })
 
     mainWindow3 = new BrowserWindow({
       width: 800,

@@ -1059,6 +1059,10 @@ win.webContents.on('did-finish-load', () => {
 
 Shows pop-up dictionary that searches the selected word on the page.
 
+#### `contents.isOffscreen()`
+
+Indicates whether *offscreen rendering* is enabled.
+
 #### `contents.startPainting()`
 
 If *offscreen rendering* is enabled and not painting, start painting.

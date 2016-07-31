@@ -1516,7 +1516,7 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
                  &WebContents::ShowDefinitionForSelection)
       .SetMethod("capturePage", &WebContents::CapturePage)
       .SetMethod("isFocused", &WebContents::IsFocused)
-      .SetMethod("isOffScreen", &WebContents::IsOffScreen)
+      .SetMethod("isOffscreen", &WebContents::IsOffScreen)
       .SetMethod("startPainting", &WebContents::StartPainting)
       .SetMethod("stopPainting", &WebContents::StopPainting)
       .SetMethod("isPainting", &WebContents::IsPainting)

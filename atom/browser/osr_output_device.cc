@@ -17,7 +17,8 @@ OffScreenOutputDevice::OffScreenOutputDevice(bool transparent,
   DCHECK(!callback_.is_null());
 }
 
-OffScreenOutputDevice::~OffScreenOutputDevice() { }
+OffScreenOutputDevice::~OffScreenOutputDevice() {
+}
 
 void OffScreenOutputDevice::Resize(
     const gfx::Size& pixel_size, float scale_factor) {
