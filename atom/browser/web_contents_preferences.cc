@@ -188,7 +188,6 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
   }
 
   command_line->AppendSwitch(cc::switches::kEnableBeginFrameScheduling);
-  command_line->AppendSwitch(cc::switches::kShowFPSCounter);
 }
 
 // static
