@@ -508,6 +508,7 @@ void OffScreenRenderWidgetHostView::Show() {
     render_widget_host_->WasShown(ui::LatencyInfo());
   delegated_frame_host_->SetCompositor(compositor_.get());
   delegated_frame_host_->WasShown(ui::LatencyInfo());
+  compositor_->ScheduleFullRedraw();
 }
 
 void OffScreenRenderWidgetHostView::Hide() {
