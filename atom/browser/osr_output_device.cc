@@ -70,8 +70,9 @@ void OffScreenOutputDevice::SetActive(bool active) {
     return;
   active_ = active;
 
-  if (!active_ && !pending_damage_rect_.IsEmpty())
-    OnPaint(pending_damage_rect_);
+  if (active_)
+    OnPaint(gfx::Rect(0, 0, viewport_pixel_size_.width(),
+      viewport_pixel_size_.height()));
 }
 
 void OffScreenOutputDevice::OnPaint(const gfx::Rect& damage_rect) {

@@ -1,19 +1,7 @@
-const {app, BrowserWindow, contentTracing} = require('electron')
+const {app, BrowserWindow} = require('electron')
 const path = require('path')
 
-const options = {
-  categoryFilter: '*',
-  traceOptions: 'record-until-full,enable-sampling'
-};
-
-let mainWindow1 = null
-let mainWindow2 = null
-let mainWindow3 = null
-let mainWindow4 = null
-let mainWindow5 = null
-let mainWindow6 = null
-let mainWindow7 = null
-let mainWindow8 = null
+let mainWindow = null
 
 app.commandLine.appendSwitch('--disable-gpu');
 app.commandLine.appendSwitch('--disable-gpu-compositing');
@@ -25,65 +13,7 @@ app.on('window-all-closed', () => {
 
 exports.load = (appUrl) => {
   app.on('ready', () => {
-    mainWindow1 = new BrowserWindow({
-      width: 800,
-      height: 600,
-      autoHideMenuBar: true,
-      backgroundColor: '#FFFFFF',
-      useContentSize: true,
-      webPreferences: {
-        // offscreen: true,
-        nodeIntegration: false
-      }
-    })
-    mainWindow1.loadURL(appUrl)
-    mainWindow1.focus()
-    var start1, end1
-    start1 = +new Date();
-    mainWindow1.webContents.on('paint', (e, rect, w, h, data) => {
-      end1 = +new Date();
-
-      const d = end1 - start1
-      console.log(`browser #1: ${d < 10 ? ` ${d}` : d} ms`)
-
-      start1 = end1
-    })
-
-    /*contentTracing.startRecording(options, () => {
-      console.log('Tracing started');
-
-      setTimeout(() => {
-        contentTracing.stopRecording('', (path) => {
-          console.log('Tracing data recorded to ' + path);
-        });
-      }, 5000);
-    });*/
-
-    mainWindow2 = new BrowserWindow({
-      width: 800,
-      height: 600,
-      autoHideMenuBar: true,
-      backgroundColor: '#FFFFFF',
-      useContentSize: true,
-      webPreferences: {
-        nodeIntegration: false
-      }
-    })
-    mainWindow2.loadURL("http://4danatomy.com")
-    mainWindow2.focus()
-
-    var start2, end2
-    start2 = +new Date();
-    mainWindow2.webContents.on('paint', (e, rect, w, h, data) => {
-      end2 = +new Date();
-
-      const d = end2 - start2
-      console.log(`browser #2: ${d < 10 ? ` ${d}` : d} ms`)
-
-      start2 = end2
-    })
-
-    mainWindow3 = new BrowserWindow({
+    mainWindow = new BrowserWindow({
       width: 800,
       height: 600,
       autoHideMenuBar: true,
@@ -94,143 +24,28 @@ exports.load = (appUrl) => {
         nodeIntegration: false
       }
     })
-    mainWindow3.loadURL(appUrl)
-    mainWindow3.focus()
+    mainWindow.loadURL('file:///Volumes/Elements/dev/electron/spec/fixtures/api/offscreen-rendering.html')
+    mainWindow.focus()
 
-    var start3, end3
-    start3 = +new Date();
-    mainWindow3.webContents.on('paint', (e, rect, w, h, data) => {
-      end3 = +new Date();
+    mainWindow.webContents.on('dom-ready', () => {
+      let ping = true
+      setInterval(() => {
+        if (ping) {
+          mainWindow.webContents.startPainting()
+        } else {
+          mainWindow.webContents.stopPainting()
+        }
 
-      const d = end3 - start3
-      console.log(`browser #3: ${d < 10 ? ` ${d}` : d} ms`)
-
-      start3 = end3
+        ping = !ping
+      }, 3000)
     })
 
-    mainWindow4 = new BrowserWindow({
-      width: 800,
-      height: 600,
-      autoHideMenuBar: true,
-      backgroundColor: '#FFFFFF',
-      useContentSize: true,
-      webPreferences: {
-        offscreen: true,
-        nodeIntegration: false
-      }
-    })
-    mainWindow4.loadURL(appUrl)
-    mainWindow4.focus()
+    setInterval(() => {
+      console.log(mainWindow.webContents.isPainting())
+    }, 500)
 
-    var start4, end4
-    start4 = +new Date();
-    mainWindow4.webContents.on('paint', (e, rect, w, h, data) => {
-      end4 = +new Date();
-
-      const d = end4 - start4
-      console.log(`browser #4: ${d < 10 ? ` ${d}` : d} ms`)
-
-      start4 = end4
-    })
-
-    mainWindow5 = new BrowserWindow({
-      width: 800,
-      height: 600,
-      autoHideMenuBar: true,
-      backgroundColor: '#FFFFFF',
-      useContentSize: true,
-      webPreferences: {
-        offscreen: true,
-        nodeIntegration: false
-      }
-    })
-    mainWindow5.loadURL(appUrl)
-    mainWindow5.focus()
-
-    var start5, end5
-    start5 = +new Date();
-    mainWindow5.webContents.on('paint', (e, rect, w, h, data) => {
-      end5 = +new Date();
-
-      const d = end5 - start5
-      console.log(`browser #5: ${d < 10 ? ` ${d}` : d} ms`)
-
-      start5 = end5
-    })
-
-    mainWindow6 = new BrowserWindow({
-      width: 800,
-      height: 600,
-      autoHideMenuBar: true,
-      backgroundColor: '#FFFFFF',
-      useContentSize: true,
-      webPreferences: {
-        offscreen: true,
-        nodeIntegration: false
-      }
-    })
-    mainWindow6.loadURL(appUrl)
-    mainWindow6.focus()
-
-    var start6, end6
-    start6 = +new Date();
-    mainWindow6.webContents.on('paint', (e, rect, w, h, data) => {
-      end6 = +new Date();
-
-      const d = end6 - start6
-      console.log(`browser #6: ${d < 10 ? ` ${d}` : d} ms`)
-
-      start6 = end6
-    })
-
-    mainWindow7 = new BrowserWindow({
-      width: 800,
-      height: 600,
-      autoHideMenuBar: true,
-      backgroundColor: '#FFFFFF',
-      useContentSize: true,
-      webPreferences: {
-        offscreen: true,
-        nodeIntegration: false
-      }
-    })
-    mainWindow7.loadURL(appUrl)
-    mainWindow7.focus()
-
-    var start7, end7
-    start7 = +new Date();
-    mainWindow7.webContents.on('paint', (e, rect, w, h, data) => {
-      end7 = +new Date();
-
-      const d = end7 - start7
-      console.log(`browser #7: ${d < 10 ? ` ${d}` : d} ms`)
-
-      start7 = end7
-    })
-
-    mainWindow8 = new BrowserWindow({
-      width: 800,
-      height: 600,
-      autoHideMenuBar: true,
-      backgroundColor: '#FFFFFF',
-      useContentSize: true,
-      webPreferences: {
-        offscreen: true,
-        nodeIntegration: false
-      }
-    })
-    mainWindow8.loadURL(appUrl)
-    mainWindow8.focus()
-
-    var start8, end8
-    start8 = +new Date();
-    mainWindow8.webContents.on('paint', (e, rect, w, h, data) => {
-      end8 = +new Date();
-
-      const d = end8 - start8
-      console.log(`browser #8: ${d < 10 ? ` ${d}` : d} ms`)
-
-      start8 = end8
+    mainWindow.webContents.on('paint', (e, rect, data) => {
+      console.log('painting', data.length)
     })
   })
 }

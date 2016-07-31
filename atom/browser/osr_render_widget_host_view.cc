@@ -839,6 +839,10 @@ void OffScreenRenderWidgetHostView::SetPainting(bool painting) {
   if (begin_frame_timer_.get()) {
     begin_frame_timer_->SetActive(painting);
   }
+
+  if (software_output_device_) {
+    software_output_device_->SetActive(painting);
+  }
 }
 
 bool OffScreenRenderWidgetHostView::IsPainting() const {
