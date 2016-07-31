@@ -176,9 +176,10 @@ bool Converter<blink::WebKeyboardEvent>::FromV8(
   out->setKeyIdentifierFromWindowsKeyCode();
   if ((out->type == blink::WebInputEvent::Char ||
        out->type == blink::WebInputEvent::RawKeyDown) &&
-      str.size() == 1) {
-    out->text[0] = str[0];
-    out->unmodifiedText[0] = str[0];
+      str.size() <= 2) {
+    base::string16 code = base::UTF8ToUTF16(str);
+    out->text[0] = code[0];
+    out->unmodifiedText[0] = code[0];
   }
   return true;
 }
