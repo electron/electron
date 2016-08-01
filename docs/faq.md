@@ -36,17 +36,17 @@ renderers through the `remote` property of `electron` module:
 // In the main process.
 global.sharedObject = {
   someProperty: 'default value'
-};
+}
 ```
 
 ```javascript
 // In page 1.
-require('electron').remote.getGlobal('sharedObject').someProperty = 'new value';
+require('electron').remote.getGlobal('sharedObject').someProperty = 'new value'
 ```
 
 ```javascript
 // In page 2.
-console.log(require('electron').remote.getGlobal('sharedObject').someProperty);
+console.log(require('electron').remote.getGlobal('sharedObject').someProperty)
 ```
 
 ## My app's window/tray disappeared after a few minutes.
@@ -63,18 +63,22 @@ If you want a quick fix, you can make the variables global by changing your
 code from this:
 
 ```javascript
+const {app, Tray} = require('electron')
 app.on('ready', () => {
-  const tray = new Tray('/path/to/icon.png');
-});
+  const tray = new Tray('/path/to/icon.png')
+  tray.setTitle('hello world')
+})
 ```
 
 to this:
 
 ```javascript
-let tray = null;
+const {app, Tray} = require('electron')
+let tray = null
 app.on('ready', () => {
-  tray = new Tray('/path/to/icon.png');
-});
+  tray = new Tray('/path/to/icon.png')
+  tray.setTitle('hello world')
+})
 ```
 
 ## I can not use jQuery/RequireJS/Meteor/AngularJS in Electron.
@@ -87,11 +91,13 @@ To solve this, you can turn off node integration in Electron:
 
 ```javascript
 // In the main process.
+const {BrowserWindow} = require('electron')
 let win = new BrowserWindow({
   webPreferences: {
     nodeIntegration: false
   }
-});
+})
+win.show()
 ```
 
 But if you want to keep the abilities of using Node.js and Electron APIs, you
@@ -114,7 +120,7 @@ delete window.module;
 When using Electron's built-in module you might encounter an error like this:
 
 ```
-> require('electron').webFrame.setZoomFactor(1.0);
+> require('electron').webFrame.setZoomFactor(1.0)
 Uncaught TypeError: Cannot read property 'setZoomLevel' of undefined
 ```
 
@@ -125,7 +131,7 @@ To verify whether you are using the correct built-in module, you can print the
 path of the `electron` module:
 
 ```javascript
-console.log(require.resolve('electron'));
+console.log(require.resolve('electron'))
 ```
 
 and then check if it is in the following form:

@@ -399,7 +399,7 @@ describe('menu module', function () {
   describe('MenuItem role', function () {
     it('includes a default label and accelerator', function () {
       var item = new MenuItem({role: 'close'})
-      assert.equal(item.label, 'Close')
+      assert.equal(item.label, process.platform === 'darwin' ? 'Close Window' : 'Close')
       assert.equal(item.accelerator, undefined)
       assert.equal(item.getDefaultRoleAccelerator(), 'CommandOrControl+W')
 

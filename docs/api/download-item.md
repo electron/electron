@@ -8,6 +8,8 @@ control the download item.
 
 ```javascript
 // In the main process.
+const {BrowserWindow} = require('electron')
+let win = new BrowserWindow()
 win.webContents.session.on('will-download', (event, item, webContents) => {
   // Set the save path, making Electron not to prompt a save dialog.
   item.setSavePath('/tmp/save.pdf')
@@ -77,6 +79,12 @@ The `downloadItem` object has the following methods:
 The API is only available in session's `will-download` callback function.
 If user doesn't set the save path via the API, Electron will use the original
 routine to determine the save path(Usually prompts a save dialog).
+
+### `downloadItem.getSavePath()`
+
+Returns the save path of the download item. This will be either the path
+set via `downloadItem.setSavePath(path)` or the path selected from the shown
+save dialog.
 
 ### `downloadItem.pause()`
 

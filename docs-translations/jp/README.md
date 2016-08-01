@@ -25,7 +25,7 @@ _リンクになっていないリストは未翻訳のものです。_
 * [DevTools エクステンション](tutorial/devtools-extension.md)
 * [Pepper Flashプラグインを使用する](tutorial/using-pepper-flash-plugin.md)
 * [Widevine CDMプラグインを使用する](tutorial/using-widevine-cdm-plugin.md)
-* Testing on Headless CI Systems (Travis, Jenkins) (tutorial/testing-on-headless-ci.md)
+* [継続的インテグレーションシステムによるテスト(Travis, Jenkins)](tutorial/testing-on-headless-ci.md)
 
 
 # チュートリアル

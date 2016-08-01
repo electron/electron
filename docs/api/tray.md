@@ -13,7 +13,7 @@ app.on('ready', () => {
     {label: 'Item2', type: 'radio'},
     {label: 'Item3', type: 'radio', checked: true},
     {label: 'Item4', type: 'radio'}
-  ]);
+  ])
   tray.setToolTip('This is my application.')
   tray.setContextMenu(contextMenu)
 })
@@ -31,8 +31,18 @@ __Platform limitations:__
   you have to call `setContextMenu` again. For example:
 
 ```javascript
-contextMenu.items[2].checked = false;
-appIcon.setContextMenu(contextMenu);
+const {Menu, Tray} = require('electron')
+const appIcon = new Tray('/path/to/my/icon')
+const contextMenu = Menu.buildFromTemplate([
+  {label: 'Item1', type: 'radio'},
+  {label: 'Item2', type: 'radio'}
+])
+
+// Make a change to the context menu
+contextMenu.items[2].checked = false
+
+// Call this again for Linux because we modified the context menu
+appIcon.setContextMenu(contextMenu)
 ```
 * On Windows it is recommended to use `ICO` icons to get best visual effects.
 
@@ -173,12 +183,36 @@ Sets the hover text for this tray icon.
 
 Sets the title displayed aside of the tray icon in the status bar.
 
-#### `tray.setHighlightMode(highlight)` _macOS_
+#### `tray.setHighlightMode(mode)` _macOS_
 
-* `highlight` Boolean
+* `mode` String highlight mode with one of the following values:
+  * `'selection'` - Highlight the tray icon when it is clicked and also when
+    its context menu is open. This is the default.
+  * `'always'` - Always highlight the tray icon.
+  * `'never'` - Never highlight the tray icon.
 
-Sets whether the tray icon's background becomes highlighted (in blue)
-when the tray icon is clicked. Defaults to true.
+Sets when the tray's icon background becomes highlighted (in blue).
+
+**Note:** You can use `highlightMode` with a [`BrowserWindow`](browser-window.md)
+by toggling between `'never'` and `'always'` modes when the window visibility
+changes.
+
+```js
+const {BrowserWindow, Tray} = require('electron')
+
+const win = new BrowserWindow({width: 800, height: 600})
+const tray = new Tray('/path/to/my/icon')
+
+tray.on('click', () => {
+  win.isVisible() ? win.hide() : win.show()
+})
+win.on('show', () => {
+  tray.setHighlightMode('always')
+})
+win.on('hide', () => {
+  tray.setHighlightMode('never')
+})
+```
 
 #### `tray.displayBalloon(options)` _Windows_
 

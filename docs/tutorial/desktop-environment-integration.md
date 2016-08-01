@@ -20,11 +20,11 @@ the currently running operating system's native notification APIs to display it.
 ```javascript
 let myNotification = new Notification('Title', {
   body: 'Lorem Ipsum Dolor Sit Amet'
-});
+})
 
 myNotification.onclick = () => {
-  console.log('Notification clicked');
-};
+  console.log('Notification clicked')
+}
 ```
 
 While code and user experience across operating systems are similar, there
@@ -75,14 +75,16 @@ To add a file to recent documents, you can use the
 [app.addRecentDocument][addrecentdocument] API:
 
 ```javascript
-app.addRecentDocument('/Users/USERNAME/Desktop/work.type');
+const {app} = require('electron')
+app.addRecentDocument('/Users/USERNAME/Desktop/work.type')
 ```
 
 And you can use [app.clearRecentDocuments][clearrecentdocuments] API to empty
 the recent documents list:
 
 ```javascript
-app.clearRecentDocuments();
+const {app} = require('electron')
+app.clearRecentDocuments()
 ```
 
 ### Windows Notes
@@ -113,19 +115,17 @@ To set your custom dock menu, you can use the `app.dock.setMenu` API, which is
 only available on macOS:
 
 ```javascript
-const electron = require('electron');
-const app = electron.app;
-const Menu = electron.Menu;
+const {app, Menu} = require('electron')
 
 const dockMenu = Menu.buildFromTemplate([
-  { label: 'New Window', click() { console.log('New Window'); } },
-  { label: 'New Window with Settings', submenu: [
-    { label: 'Basic' },
-    { label: 'Pro'}
+  {label: 'New Window', click () { console.log('New Window') }},
+  {label: 'New Window with Settings', submenu: [
+    {label: 'Basic'},
+    {label: 'Pro'}
   ]},
-  { label: 'New Command...'}
-]);
-app.dock.setMenu(dockMenu);
+  {label: 'New Command...'}
+])
+app.dock.setMenu(dockMenu)
 ```
 
 ## User Tasks (Windows)
@@ -162,6 +162,7 @@ To set user tasks for your application, you can use
 [app.setUserTasks][setusertaskstasks] API:
 
 ```javascript
+const {app} = require('electron')
 app.setUserTasks([
   {
     program: process.execPath,
@@ -171,13 +172,14 @@ app.setUserTasks([
     title: 'New Window',
     description: 'Create a new window'
   }
-]);
+])
 ```
 
 To clean your tasks list, just call `app.setUserTasks` with an empty array:
 
 ```javascript
-app.setUserTasks([]);
+const {app} = require('electron')
+app.setUserTasks([])
 ```
 
 The user tasks will still show even after your application closes, so the icon
@@ -209,34 +211,36 @@ You can use [BrowserWindow.setThumbarButtons][setthumbarbuttons] to set
 thumbnail toolbar in your application:
 
 ```javascript
-const {BrowserWindow} = require('electron');
-const path = require('path');
+const {BrowserWindow} = require('electron')
+const path = require('path')
 
 let win = new BrowserWindow({
   width: 800,
   height: 600
-});
+})
 
 win.setThumbarButtons([
   {
     tooltip: 'button1',
     icon: path.join(__dirname, 'button1.png'),
-    click() { console.log('button1 clicked'); }
+    click () { console.log('button1 clicked') }
   },
   {
     tooltip: 'button2',
     icon: path.join(__dirname, 'button2.png'),
     flags: ['enabled', 'dismissonclick'],
-    click() { console.log('button2 clicked.'); }
+    click () { console.log('button2 clicked.') }
   }
-]);
+])
 ```
 
 To clean thumbnail toolbar buttons, just call `BrowserWindow.setThumbarButtons`
 with an empty array:
 
 ```javascript
-win.setThumbarButtons([]);
+const {BrowserWindow} = require('electron')
+let win = new BrowserWindow()
+win.setThumbarButtons([])
 ```
 
 ## Unity Launcher Shortcuts (Linux)
@@ -267,8 +271,9 @@ To set the progress bar for a Window, you can use the
 [BrowserWindow.setProgressBar][setprogressbar] API:
 
 ```javascript
-let win = new BrowserWindow({...});
-win.setProgressBar(0.5);
+const {BrowserWindow} = require('electron')
+let win = new BrowserWindow()
+win.setProgressBar(0.5)
 ```
 
 ## Icon Overlays in Taskbar (Windows)
@@ -294,8 +299,9 @@ To set the overlay icon for a window, you can use the
 [BrowserWindow.setOverlayIcon][setoverlayicon] API:
 
 ```javascript
-let win = new BrowserWindow({...});
-win.setOverlayIcon('path/to/overlay.png', 'Description for overlay');
+const {BrowserWindow} = require('electron')
+let win = new BrowserWindow()
+win.setOverlayIcon('path/to/overlay.png', 'Description for overlay')
 ```
 
 ## Represented File of Window (macOS)
@@ -316,9 +322,10 @@ To set the represented file of window, you can use the
 [BrowserWindow.setDocumentEdited][setdocumentedited] APIs:
 
 ```javascript
-let win = new BrowserWindow({...});
-win.setRepresentedFilename('/etc/passwd');
-win.setDocumentEdited(true);
+const {BrowserWindow} = require('electron')
+let win = new BrowserWindow()
+win.setRepresentedFilename('/etc/passwd')
+win.setDocumentEdited(true)
 ```
 
 ## Dragging files out of the window
@@ -342,6 +349,7 @@ In web page:
 In the main process:
 
 ```javascript
+const {ipcMain} = require('electron')
 ipcMain.on('ondragstart', (event, filePath) => {
   event.sender.startDrag({
     file: filePath,

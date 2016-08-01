@@ -129,6 +129,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   uint32_t FindInPage(mate::Arguments* args);
   void StopFindInPage(content::StopFindAction action);
   void ShowDefinitionForSelection();
+  void CopyImageAt(int x, int y);
 
   // Focus.
   void Focus();

@@ -8,7 +8,7 @@
 * [Xcode](https://developer.apple.com/technologies/tools/) >= 5.1
 * [node.js](http://nodejs.org) (外部)
 
-如果你通过 Homebrew 使用 Python 下载，需要安装下面的 Python 模块:
+如果你目前使用的Python是通过 Homebrew 安装的，则你还需要安装如下Python模块:
 
 * pyobjc
 

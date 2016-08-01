@@ -32,7 +32,8 @@ void CommonWebContentsDelegate::HandleKeyboardEvent(
       [[NSApp mainMenu] performKeyEquivalent:event.os_event])
     return;
 
-  if (event.os_event.window)
+  if (event.os_event.window &&
+      [event.os_event.window isKindOfClass:[EventDispatchingWindow class]])
     [event.os_event.window redispatchKeyEvent:event.os_event];
 }
 

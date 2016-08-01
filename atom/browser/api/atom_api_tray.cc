@@ -8,7 +8,6 @@
 
 #include "atom/browser/api/atom_api_menu.h"
 #include "atom/browser/browser.h"
-#include "atom/browser/ui/tray_icon.h"
 #include "atom/common/api/atom_api_native_image.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
 #include "atom/common/native_mate_converters/image_converter.h"
@@ -17,6 +16,45 @@
 #include "native_mate/constructor.h"
 #include "native_mate/dictionary.h"
 #include "ui/gfx/image/image.h"
+
+namespace mate {
+
+template<>
+struct Converter<atom::TrayIcon::HighlightMode> {
+  static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
+                     atom::TrayIcon::HighlightMode* out) {
+    std::string mode;
+    if (ConvertFromV8(isolate, val, &mode)) {
+      if (mode == "always") {
+        *out = atom::TrayIcon::HighlightMode::ALWAYS;
+        return true;
+      }
+      if (mode == "selection") {
+        *out = atom::TrayIcon::HighlightMode::SELECTION;
+        return true;
+      }
+      if (mode == "never") {
+        *out = atom::TrayIcon::HighlightMode::NEVER;
+        return true;
+      }
+    }
+
+    // Support old boolean parameter
+    // TODO(kevinsawicki): Remove in 2.0, deprecate before then with warnings
+    bool highlight;
+    if (ConvertFromV8(isolate, val, &highlight)) {
+      if (highlight)
+        *out = atom::TrayIcon::HighlightMode::SELECTION;
+      else
+        *out = atom::TrayIcon::HighlightMode::NEVER;
+      return true;
+    }
+
+    return false;
+  }
+};
+}  // namespace mate
+
 
 namespace atom {
 
@@ -117,8 +155,8 @@ void Tray::SetTitle(const std::string& title) {
   tray_icon_->SetTitle(title);
 }
 
-void Tray::SetHighlightMode(bool highlight) {
-  tray_icon_->SetHighlightMode(highlight);
+void Tray::SetHighlightMode(TrayIcon::HighlightMode mode) {
+  tray_icon_->SetHighlightMode(mode);
 }
 
 void Tray::DisplayBalloon(mate::Arguments* args,

@@ -239,9 +239,10 @@ describe('session module', function () {
       res.end(mockPDF)
       downloadServer.close()
     })
-    var assertDownload = function (event, state, url, mimeType, receivedBytes, totalBytes, disposition, filename, port) {
+    var assertDownload = function (event, state, url, mimeType, receivedBytes, totalBytes, disposition, filename, port, savePath) {
       assert.equal(state, 'completed')
       assert.equal(filename, 'mock.pdf')
+      assert.equal(savePath, path.join(__dirname, 'fixtures', 'mock.pdf'))
       assert.equal(url, 'http://127.0.0.1:' + port + '/')
       assert.equal(mimeType, 'application/pdf')
       assert.equal(receivedBytes, mockPDF.length)
@@ -256,8 +257,8 @@ describe('session module', function () {
         var port = downloadServer.address().port
         ipcRenderer.sendSync('set-download-option', false, false)
         w.loadURL(url + ':' + port)
-        ipcRenderer.once('download-done', function (event, state, url, mimeType, receivedBytes, totalBytes, disposition, filename) {
-          assertDownload(event, state, url, mimeType, receivedBytes, totalBytes, disposition, filename, port)
+        ipcRenderer.once('download-done', function (event, state, url, mimeType, receivedBytes, totalBytes, disposition, filename, savePath) {
+          assertDownload(event, state, url, mimeType, receivedBytes, totalBytes, disposition, filename, port, savePath)
           done()
         })
       })
@@ -272,8 +273,8 @@ describe('session module', function () {
         webview.addEventListener('did-finish-load', function () {
           webview.downloadURL(url + ':' + port + '/')
         })
-        ipcRenderer.once('download-done', function (event, state, url, mimeType, receivedBytes, totalBytes, disposition, filename) {
-          assertDownload(event, state, url, mimeType, receivedBytes, totalBytes, disposition, filename, port)
+        ipcRenderer.once('download-done', function (event, state, url, mimeType, receivedBytes, totalBytes, disposition, filename, savePath) {
+          assertDownload(event, state, url, mimeType, receivedBytes, totalBytes, disposition, filename, port, savePath)
           document.body.removeChild(webview)
           done()
         })

@@ -9,15 +9,20 @@ For example, when creating a tray or setting a window's icon, you can pass an
 image file path as a `String`:
 
 ```javascript
+const {BrowserWindow, Tray} = require('electron')
+
 const appIcon = new Tray('/Users/somebody/images/icon.png')
 let win = new BrowserWindow({icon: '/Users/somebody/images/window.png'})
+console.log(appIcon, win)
 ```
 
 Or read the image from the clipboard which returns a `nativeImage`:
 
 ```javascript
+const {clipboard, Tray} = require('electron')
 const image = clipboard.readImage()
 const appIcon = new Tray(image)
+console.log(appIcon)
 ```
 
 ## Supported Formats
@@ -30,6 +35,8 @@ quality it is recommended to include at least the following sizes in the icon:
 
 * 16x16
 * 32x32
+* 40x40
+* 48x48
 * 64x64
 * 256x256
 
@@ -55,7 +62,9 @@ images/
 
 
 ```javascript
+const {Tray} = require('electron')
 let appIcon = new Tray('/Users/somebody/images/icon.png')
+console.log(appIcon)
 ```
 
 Following suffixes for DPI are also supported:
@@ -105,8 +114,10 @@ Creates an empty `NativeImage` instance.
 Creates a new `NativeImage` instance from a file located at `path`.
 
 ```javascript
-const {nativeImage} = require('electron')
+const nativeImage = require('electron').nativeImage
+
 let image = nativeImage.createFromPath('/Users/somebody/images/icon.png')
+console.log(image)
 ```
 
 ### `nativeImage.createFromBuffer(buffer[, scaleFactor])`

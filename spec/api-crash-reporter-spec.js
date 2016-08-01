@@ -88,5 +88,19 @@ describe('crash-reporter module', function () {
         })
       }, /companyName is a required option to crashReporter\.start/)
     })
+
+    it('can be called multiple times', function () {
+      assert.doesNotThrow(function () {
+        crashReporter.start({
+          companyName: 'Umbrella Corporation',
+          submitURL: 'http://127.0.0.1/crashes'
+        })
+
+        crashReporter.start({
+          companyName: 'Umbrella Corporation 2',
+          submitURL: 'http://127.0.0.1/more-crashes'
+        })
+      })
+    })
   })
 })

@@ -110,18 +110,26 @@ bool NativeWindowViews::PreHandleMSG(
       if (HIWORD(w_param) == THBN_CLICKED)
         return taskbar_host_.HandleThumbarButtonEvent(LOWORD(w_param));
       return false;
-
-    case WM_SIZE:
+    case WM_SIZE: {
+      consecutive_moves_ = false;
       // Handle window state change.
       HandleSizeEvent(w_param, l_param);
       return false;
-
+    }
     case WM_MOVING: {
       if (!movable_)
         ::GetWindowRect(GetAcceleratedWidget(), (LPRECT)l_param);
       return false;
     }
-
+    case WM_MOVE: {
+      if (last_window_state_ == ui::SHOW_STATE_NORMAL) {
+        if (consecutive_moves_)
+          last_normal_bounds_ = last_normal_bounds_candidate_;
+        last_normal_bounds_candidate_ = GetBounds();
+        consecutive_moves_ = true;
+      }
+      return false;
+    }
     default:
       return false;
   }

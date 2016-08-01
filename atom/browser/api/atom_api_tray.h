@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "atom/browser/api/trackable_object.h"
+#include "atom/browser/ui/tray_icon.h"
 #include "atom/browser/ui/tray_icon_observer.h"
 #include "native_mate/handle.h"
 
@@ -62,7 +63,7 @@ class Tray : public mate::TrackableObject<Tray>,
   void SetPressedImage(v8::Isolate* isolate, mate::Handle<NativeImage> image);
   void SetToolTip(const std::string& tool_tip);
   void SetTitle(const std::string& title);
-  void SetHighlightMode(bool highlight);
+  void SetHighlightMode(TrayIcon::HighlightMode mode);
   void DisplayBalloon(mate::Arguments* args, const mate::Dictionary& options);
   void PopUpContextMenu(mate::Arguments* args);
   void SetContextMenu(v8::Isolate* isolate, mate::Handle<Menu> menu);

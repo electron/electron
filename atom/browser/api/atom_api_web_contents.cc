@@ -772,7 +772,7 @@ bool WebContents::OnMessageReceived(const IPC::Message& message) {
 }
 
 // There are three ways of destroying a webContents:
-// 1. call webContents.destory();
+// 1. call webContents.destroy();
 // 2. garbage collection;
 // 3. user closes the window of webContents;
 // For webview only #1 will happen, for BrowserWindow both #1 and #3 may
@@ -1175,6 +1175,12 @@ void WebContents::ShowDefinitionForSelection() {
 #endif
 }
 
+void WebContents::CopyImageAt(int x, int y) {
+  const auto host = web_contents()->GetRenderViewHost();
+  if (host)
+    host->CopyImageAt(x, y);
+}
+
 void WebContents::Focus() {
   web_contents()->Focus();
 }
@@ -1518,6 +1524,7 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("removeWorkSpace", &WebContents::RemoveWorkSpace)
       .SetMethod("showDefinitionForSelection",
                  &WebContents::ShowDefinitionForSelection)
+      .SetMethod("copyImageAt", &WebContents::CopyImageAt)
       .SetMethod("capturePage", &WebContents::CapturePage)
       .SetMethod("isFocused", &WebContents::IsFocused)
       .SetMethod("isOffscreen", &WebContents::IsOffScreen)
