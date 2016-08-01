@@ -9,12 +9,14 @@
 #include "content/browser/web_contents/web_contents_view.h"
 #include "content/public/browser/web_contents.h"
 
+#include "atom/browser/osr_render_widget_host_view.h"
+
 namespace atom {
 
 class OffScreenWebContentsView : public content::WebContentsView,
                                  public content::RenderViewHostDelegateView {
  public:
-  OffScreenWebContentsView();
+  OffScreenWebContentsView(bool transparent);
   ~OffScreenWebContentsView();
 
   void SetWebContents(content::WebContents*);
@@ -60,7 +62,9 @@ class OffScreenWebContentsView : public content::WebContentsView,
   void UpdateDragCursor(blink::WebDragOperation operation) override;
 
  private:
-  content::RenderWidgetHostViewBase* view_;
+  const bool transparent_;
+
+  OffScreenRenderWidgetHostView* view_;
   content::WebContents* web_contents_;
 };
 

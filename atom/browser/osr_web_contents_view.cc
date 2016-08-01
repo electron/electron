@@ -3,12 +3,12 @@
 // found in the LICENSE file.
 
 #include "atom/browser/osr_web_contents_view.h"
-#include "atom/browser/osr_render_widget_host_view.h"
 
 namespace atom {
 
-OffScreenWebContentsView::OffScreenWebContentsView():
-    web_contents_(nullptr) {
+OffScreenWebContentsView::OffScreenWebContentsView(bool transparent):
+  transparent_(transparent),
+  web_contents_(nullptr) {
 }
 
 OffScreenWebContentsView::~OffScreenWebContentsView() {
@@ -66,7 +66,7 @@ content::RenderWidgetHostViewBase*
   OffScreenWebContentsView::CreateViewForWidget(
     content::RenderWidgetHost* render_widget_host, bool is_guest_view_hack) {
   auto relay = NativeWindowRelay::FromWebContents(web_contents_);
-  view_ = new OffScreenRenderWidgetHostView(render_widget_host,
+  view_ = new OffScreenRenderWidgetHostView(transparent_, render_widget_host,
     relay->window.get());
   return view_;
 }
@@ -75,7 +75,7 @@ content::RenderWidgetHostViewBase*
   OffScreenWebContentsView::CreateViewForPopupWidget(
     content::RenderWidgetHost* render_widget_host) {
   auto relay = NativeWindowRelay::FromWebContents(web_contents_);
-  view_ = new OffScreenRenderWidgetHostView(render_widget_host,
+  view_ = new OffScreenRenderWidgetHostView(transparent_, render_widget_host,
     relay->window.get());
   return view_;
 }
@@ -85,6 +85,8 @@ void OffScreenWebContentsView::SetPageTitle(const base::string16& title) {
 
 void OffScreenWebContentsView::RenderViewCreated(
     content::RenderViewHost* host) {
+  if (view_)
+    view_->InstallTransparency();
 }
 
 void OffScreenWebContentsView::RenderViewSwappedIn(

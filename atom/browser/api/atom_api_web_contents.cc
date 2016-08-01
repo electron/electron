@@ -314,9 +314,12 @@ WebContents::WebContents(v8::Isolate* isolate,
     params.guest_delegate = guest_delegate_.get();
     web_contents = content::WebContents::Create(params);
   } else if (IsOffScreen()) {
+    bool transparent = false;
+    options.Get("transparent", &transparent);
+
     content::WebContents::CreateParams params(session->browser_context());
 
-    auto view = new OffScreenWebContentsView();
+    auto view = new OffScreenWebContentsView(transparent);
     params.view = view;
     params.delegate_view = view;
 

@@ -9,7 +9,8 @@
 #include "base/strings/utf_string_conversions.h"
 #include "ui/accelerated_widget_mac/accelerated_widget_mac.h"
 
-ui::AcceleratedWidgetMac* atom::OffScreenRenderWidgetHostView::GetAcceleratedWidgetMac()
+ui::AcceleratedWidgetMac*
+  atom::OffScreenRenderWidgetHostView::GetAcceleratedWidgetMac()
     const {
   if (browser_compositor_)
     return browser_compositor_->accelerated_widget_mac();

@@ -336,13 +336,15 @@ class AtomBeginFrameTimer : public cc::DelayBasedTimeSourceClient {
 };
 
 OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
-  content::RenderWidgetHost* host, NativeWindow* native_window):
+  const bool transparent, content::RenderWidgetHost* host,
+  NativeWindow* native_window):
     render_widget_host_(content::RenderWidgetHostImpl::From(host)),
     native_window_(native_window),
     software_output_device_(NULL),
     callback_(nullptr),
     frame_rate_(60),
     frame_rate_threshold_ms_(0),
+    transparent_(transparent),
     scale_factor_(kDefaultScaleFactor),
     is_showing_(!render_widget_host_->is_hidden()),
     size_(native_window->GetSize()),
@@ -528,6 +530,17 @@ bool OffScreenRenderWidgetHostView::IsShowing() {
 
 gfx::Rect OffScreenRenderWidgetHostView::GetViewBounds() const {
   return gfx::Rect(size_);
+}
+
+void OffScreenRenderWidgetHostView::SetBackgroundColor(SkColor color) {
+  if (transparent_)
+    color = SkColorSetARGB(SK_AlphaTRANSPARENT, 0, 0, 0);
+
+  content::RenderWidgetHostViewBase::SetBackgroundColor(color);
+
+  const bool opaque = !transparent_ && GetBackgroundOpaque();
+  if (render_widget_host_)
+    render_widget_host_->SetBackgroundOpaque(opaque);
 }
 
 gfx::Size OffScreenRenderWidgetHostView::GetVisibleViewportSize() const {
@@ -765,6 +778,15 @@ void OffScreenRenderWidgetHostView::DelegatedFrameHostUpdateVSyncParameters(
   render_widget_host_->UpdateVSyncParameters(timebase, interval);
 }
 
+bool OffScreenRenderWidgetHostView::InstallTransparency() {
+  if (transparent_) {
+    SetBackgroundColor(SkColor());
+    compositor_->SetHostHasTransparentBackground(true);
+    return true;
+  }
+  return false;
+}
+
 std::unique_ptr<cc::SoftwareOutputDevice>
   OffScreenRenderWidgetHostView::CreateSoftwareOutputDevice(
     ui::Compositor* compositor) {
@@ -772,7 +794,7 @@ std::unique_ptr<cc::SoftwareOutputDevice>
   DCHECK(!copy_frame_generator_);
   DCHECK(!software_output_device_);
 
-  software_output_device_ = new OffScreenOutputDevice(true,
+  software_output_device_ = new OffScreenOutputDevice(transparent_,
       base::Bind(&OffScreenRenderWidgetHostView::OnPaint,
                  weak_ptr_factory_.GetWeakPtr()));
   return base::WrapUnique(software_output_device_);

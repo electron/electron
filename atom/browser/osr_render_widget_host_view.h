@@ -63,7 +63,8 @@ class OffScreenRenderWidgetHostView:
   public ui::CompositorDelegate,
   public content::DelegatedFrameHostClient {
  public:
-  OffScreenRenderWidgetHostView(content::RenderWidgetHost*, NativeWindow*);
+  OffScreenRenderWidgetHostView(const bool transparent,
+    content::RenderWidgetHost*, NativeWindow*);
   ~OffScreenRenderWidgetHostView();
 
   // content::RenderWidgetHostView
@@ -85,6 +86,7 @@ class OffScreenRenderWidgetHostView:
   gfx::Rect GetViewBounds(void) const override;
   gfx::Size GetVisibleViewportSize() const override;
   void SetInsets(const gfx::Insets&) override;
+  void SetBackgroundColor(SkColor color) override;
   bool LockMouse(void) override;
   void UnlockMouse(void) override;
   bool GetScreenColorProfile(std::vector<char>*) override;
@@ -165,6 +167,8 @@ class OffScreenRenderWidgetHostView:
     const base::TimeTicks &, const base::TimeDelta &) override;
   void SetBeginFrameSource(cc::BeginFrameSource* source) override;
 
+  bool InstallTransparency();
+
   bool IsAutoResizeEnabled() const;
 
   std::unique_ptr<cc::SoftwareOutputDevice> CreateSoftwareOutputDevice(
@@ -221,6 +225,7 @@ private:
 
   base::Time last_time_;
 
+  const bool transparent_;
   float scale_factor_;
   bool is_showing_;
   gfx::Vector2dF last_scroll_offset_;
