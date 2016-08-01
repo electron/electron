@@ -4,6 +4,7 @@
 
 #include "atom/browser/api/atom_api_session.h"
 
+#include <map>
 #include <string>
 #include <vector>
 
@@ -172,6 +173,9 @@ const char kPersistPrefix[] = "persist:";
 // The wrapSession funtion which is implemented in JavaScript
 using WrapSessionCallback = base::Callback<void(v8::Local<v8::Value>)>;
 WrapSessionCallback g_wrap_session;
+
+// Referenced session objects.
+std::map<uint32_t, v8::Global<v8::Object>> g_sessions;
 
 class ResolveProxyHelper {
  public:
@@ -346,6 +350,7 @@ Session::Session(v8::Isolate* isolate, AtomBrowserContext* browser_context)
 Session::~Session() {
   content::BrowserContext::GetDownloadManager(browser_context())->
       RemoveObserver(this);
+  g_sessions.erase(weak_map_id());
 }
 
 void Session::OnDownloadCreated(content::DownloadManager* manager,
@@ -537,6 +542,12 @@ mate::Handle<Session> Session::CreateFrom(
   auto handle = mate::CreateHandle(
       isolate, new Session(isolate, browser_context));
   g_wrap_session.Run(handle.ToV8());
+
+  // The Sessions should never be garbage collected, since the common pattern is
+  // to use partition strings, instead of using the Session object directly.
+  g_sessions[handle->weak_map_id()] =
+      v8::Global<v8::Object>(isolate, handle.ToV8());
+
   return handle;
 }
 

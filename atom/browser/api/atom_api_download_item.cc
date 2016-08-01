@@ -11,7 +11,6 @@
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/node_includes.h"
-#include "base/memory/linked_ptr.h"
 #include "base/message_loop/message_loop.h"
 #include "base/strings/utf_string_conversions.h"
 #include "native_mate/dictionary.h"
@@ -56,7 +55,7 @@ namespace {
 using WrapDownloadItemCallback = base::Callback<void(v8::Local<v8::Value>)>;
 WrapDownloadItemCallback g_wrap_download_item;
 
-std::map<uint32_t, linked_ptr<v8::Global<v8::Value>>> g_download_item_objects;
+std::map<uint32_t, v8::Global<v8::Object>> g_download_item_objects;
 
 }  // namespace
 
@@ -76,9 +75,7 @@ DownloadItem::~DownloadItem() {
   }
 
   // Remove from the global map.
-  auto iter = g_download_item_objects.find(weak_map_id());
-  if (iter != g_download_item_objects.end())
-    g_download_item_objects.erase(iter);
+  g_download_item_objects.erase(weak_map_id());
 }
 
 void DownloadItem::OnDownloadUpdated(content::DownloadItem* item) {
@@ -202,8 +199,8 @@ mate::Handle<DownloadItem> DownloadItem::Create(
   g_wrap_download_item.Run(handle.ToV8());
 
   // Reference this object in case it got garbage collected.
-  g_download_item_objects[handle->weak_map_id()] = make_linked_ptr(
-      new v8::Global<v8::Value>(isolate, handle.ToV8()));
+  g_download_item_objects[handle->weak_map_id()] =
+      v8::Global<v8::Object>(isolate, handle.ToV8());
   return handle;
 }
 
