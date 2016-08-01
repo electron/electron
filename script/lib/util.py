@@ -16,8 +16,11 @@ import urllib2
 import os
 import zipfile
 
-from config import is_verbose_mode
+from config import is_verbose_mode, s3_config
 from env_util import get_vs_env
+
+BOTO_DIR = os.path.abspath(os.path.join(__file__, '..', '..', '..', 'vendor',
+                                        'boto'))
 
 
 def get_host_arch():
@@ -130,10 +133,11 @@ def make_zip(zip_file_path, files, dirs):
         for f in filenames:
           zip_file.write(os.path.join(root, f))
     zip_file.close()
-  make_zip_sha256_checksum(zip_file_path)
+  upload_zip_sha256_checksum(zip_file_path)
 
 
-def make_zip_sha256_checksum(zip_file_path):
+def upload_zip_sha256_checksum(zip_file_path):
+  bucket, access_key, secret_key = s3_config()
   checksum_path = '{}.sha256sum'.format(zip_file_path)
   safe_unlink(checksum_path)
   sha256 = hashlib.sha256()
@@ -143,6 +147,8 @@ def make_zip_sha256_checksum(zip_file_path):
   zip_basename = os.path.basename(zip_file_path)
   with open(checksum_path, 'w') as checksum:
     checksum.write('{} *{}'.format(sha256.hexdigest(), zip_basename))
+  s3put(bucket, access_key, secret_key, os.path.dirname(checksum_path),
+      'atom-shell/tmp', [checksum_path])
 
 
 def rm_rf(path):
@@ -216,28 +222,39 @@ def parse_version(version):
     return vs + ['0'] * (4 - len(vs))
 
 
-def s3put(bucket, access_key, secret_key, prefix, key_prefix, files):
-  env = os.environ.copy()
-  BOTO_DIR = os.path.abspath(os.path.join(__file__, '..', '..', '..', 'vendor',
-                                          'boto'))
-  env['PYTHONPATH'] = os.path.pathsep.join([
-    env.get('PYTHONPATH', ''),
+def boto_path_dirs():
+  return [
     os.path.join(BOTO_DIR, 'build', 'lib'),
-    os.path.join(BOTO_DIR, 'build', 'lib.linux-x86_64-2.7')])
+    os.path.join(BOTO_DIR, 'build', 'lib.linux-x86_64-2.7')
+  ]
 
-  boto = os.path.join(BOTO_DIR, 'bin', 's3put')
+
+def run_boto_script(access_key, secret_key, script_name, *args):
+  env = os.environ.copy()
+  env['AWS_ACCESS_KEY_ID'] = access_key
+  env['AWS_SECRET_ACCESS_KEY'] = secret_key
+  env['PYTHONPATH'] = os.path.pathsep.join(
+      [env.get('PYTHONPATH', '')] + boto_path_dirs())
+
+  boto = os.path.join(BOTO_DIR, 'bin', script_name)
+
   args = [
     sys.executable,
-    boto,
+    boto
+  ] + args
+
+  execute(args, env)
+
+
+def s3put(bucket, access_key, secret_key, prefix, key_prefix, files):
+  args = [
     '--bucket', bucket,
-    '--access_key', access_key,
-    '--secret_key', secret_key,
     '--prefix', prefix,
     '--key_prefix', key_prefix,
     '--grant', 'public-read'
   ] + files
 
-  execute(args, env)
+  run_boto_script(access_key, secret_key, 's3put', *args)
 
 
 def import_vs_env(target_arch):
