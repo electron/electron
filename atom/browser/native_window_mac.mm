@@ -10,6 +10,7 @@
 #include "atom/common/color_util.h"
 #include "atom/common/draggable_region.h"
 #include "atom/common/options_switches.h"
+#include "atom/common/platform_util.h"
 #include "base/mac/mac_util.h"
 #include "base/mac/scoped_cftyperef.h"
 #include "base/strings/sys_string_conversions.h"
@@ -575,6 +576,9 @@ NativeWindowMac::NativeWindowMac(
         return event;
 
       if (!web_contents)
+        return event;
+
+      if (!platform_util::IsSwipeTrackingFromScrollEventsEnabled())
         return event;
 
       if (!began && (([event phase] == NSEventPhaseMayBegin) ||

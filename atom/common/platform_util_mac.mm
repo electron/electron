@@ -11,6 +11,7 @@
 #include "base/files/file_util.h"
 #include "base/logging.h"
 #include "base/mac/mac_logging.h"
+#import "base/mac/sdk_forward_declarations.h"
 #include "base/mac/scoped_aedesc.h"
 #include "base/strings/sys_string_conversions.h"
 #include "net/base/mac/url_conversions.h"
@@ -166,6 +167,12 @@ bool MoveItemToTrash(const base::FilePath& full_path) {
 
 void Beep() {
   NSBeep();
+}
+
+bool IsSwipeTrackingFromScrollEventsEnabled() {
+  SEL selector = @selector(isSwipeTrackingFromScrollEventsEnabled);
+  return [NSEvent respondsToSelector:selector]
+    && [NSEvent performSelector:selector];
 }
 
 }  // namespace platform_util
