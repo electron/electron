@@ -220,13 +220,7 @@ def run_boto_script(access_key, secret_key, script_name, *args):
       [env.get('PYTHONPATH', '')] + boto_path_dirs())
 
   boto = os.path.join(BOTO_DIR, 'bin', script_name)
-
-  args = [
-    sys.executable,
-    boto
-  ] + args
-
-  execute(args, env)
+  execute([sys.executable, boto] + list(args), env)
 
 
 def s3put(bucket, access_key, secret_key, prefix, key_prefix, files):
