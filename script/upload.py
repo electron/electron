@@ -206,10 +206,10 @@ def create_release_draft(github, tag):
 
 
 def release_electron_checksums(github, release):
-  checksums = run_python_script(
-      'merge-electron-checksums.py', '-v', ELECTRON_VERSION)
-  upload_io_to_github(github, release,
-      'SHASUMS256.txt', StringIO(checksums), 'text/plain')
+  checksums = run_python_script('merge-electron-checksums.py',
+                                '-v', ELECTRON_VERSION)
+  upload_io_to_github(github, release, 'SHASUMS256.txt',
+                      StringIO(checksums.decode('utf-8')), 'text/plain')
 
 
 def upload_electron(github, release, file_path):
