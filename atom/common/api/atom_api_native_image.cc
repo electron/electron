@@ -220,7 +220,7 @@ v8::Local<v8::Value> NativeImage::ToPNG(v8::Isolate* isolate) {
                             static_cast<size_t>(png->size())).ToLocalChecked();
 }
 
-v8::Local<v8::Value> NativeImage::ToRawBuffer(v8::Isolate* isolate) {
+v8::Local<v8::Value> NativeImage::ToBitmap(v8::Isolate* isolate) {
   const SkBitmap* bitmap = image_.ToSkBitmap();
   SkPixelRef* ref = bitmap->pixelRef();
   return node::Buffer::Copy(isolate,
@@ -359,7 +359,7 @@ void NativeImage::BuildPrototype(
   mate::ObjectTemplateBuilder(isolate, prototype)
       .SetMethod("toPNG", &NativeImage::ToPNG)
       .SetMethod("toJPEG", &NativeImage::ToJPEG)
-      .SetMethod("toBUFFER", &NativeImage::ToRawBuffer)
+      .SetMethod("toBitmap", &NativeImage::ToBitmap)
       .SetMethod("getNativeHandle", &NativeImage::GetNativeHandle)
       .SetMethod("toDataURL", &NativeImage::ToDataURL)
       .SetMethod("isEmpty", &NativeImage::IsEmpty)

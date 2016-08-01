@@ -70,7 +70,7 @@ class NativeImage : public mate::Wrappable<NativeImage> {
  private:
   v8::Local<v8::Value> ToPNG(v8::Isolate* isolate);
   v8::Local<v8::Value> ToJPEG(v8::Isolate* isolate, int quality);
-  v8::Local<v8::Value> ToRawBuffer(v8::Isolate* isolate);
+  v8::Local<v8::Value> ToBitmap(v8::Isolate* isolate);
   v8::Local<v8::Value> GetNativeHandle(
     v8::Isolate* isolate,
     mate::Arguments* args);
