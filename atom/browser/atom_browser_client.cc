@@ -42,6 +42,10 @@
 #include "ui/base/l10n/l10n_util.h"
 #include "v8/include/v8.h"
 
+#if defined(ENABLE_EXTENSIONS)
+#include "extensions/common/constants.h"
+#endif
+
 namespace atom {
 
 namespace {
@@ -155,6 +159,11 @@ void AtomBrowserClient::OverrideSiteInstanceForNavigation(
   //     return;
   //   }
   // }
+#if defined(ENABLE_EXTENSIONS)
+  if (url.SchemeIs(extensions::kExtensionScheme)) {
+    g_suppress_renderer_process_restart = false;
+  }
+#endif
 
   if (g_suppress_renderer_process_restart) {
     g_suppress_renderer_process_restart = false;
