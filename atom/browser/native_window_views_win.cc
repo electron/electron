@@ -110,7 +110,6 @@ bool NativeWindowViews::PreHandleMSG(
       if (HIWORD(w_param) == THBN_CLICKED)
         return taskbar_host_.HandleThumbarButtonEvent(LOWORD(w_param));
       return false;
-
     case WM_SIZE: {
       consecutive_moves_ = false;
       // Handle window state change.
@@ -124,7 +123,7 @@ bool NativeWindowViews::PreHandleMSG(
     }
     case WM_MOVE: {
       if (last_window_state_ == ui::SHOW_STATE_NORMAL) {
-        if(consecutive_moves_)
+        if (consecutive_moves_)
           last_normal_bounds_ = last_normal_bounds_candidate_;
         last_normal_bounds_candidate_ = GetBounds();
         consecutive_moves_ = true;
