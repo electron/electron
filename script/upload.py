@@ -2,16 +2,17 @@
 
 import argparse
 import errno
-from io import StringIO
+import hashlib
 import os
 import subprocess
 import sys
 import tempfile
 
+from io import StringIO
 from lib.config import PLATFORM, get_target_arch, get_chromedriver_version, \
-                       get_platform_key, get_env_var
+                       get_platform_key, get_env_var, s3_config
 from lib.util import electron_gyp, execute, get_electron_version, \
-                     parse_version, scoped_cwd
+                     parse_version, scoped_cwd, s3put
 from lib.github import GitHub
 
 
@@ -227,12 +228,29 @@ def upload_electron(github, release, file_path):
   with open(file_path, 'rb') as f:
     upload_io_to_github(github, release, name, f, 'application/zip')
 
+  # Upload the checksum file.
+  upload_sha256_checksum(release['tag'], file_path)
+
 
 def upload_io_to_github(github, release, name, io, content_type):
   params = {'name': name}
   headers = {'Content-Type': content_type}
   github.repos(ELECTRON_REPO).releases(release['id']).assets.post(
       params=params, headers=headers, data=io, verify=False)
+
+
+def upload_sha256_checksum(version, file_path):
+  bucket, access_key, secret_key = s3_config()
+  checksum_path = '{}.sha256sum'.format(file_path)
+  sha256 = hashlib.sha256()
+  with open(file_path, 'rb') as f:
+    sha256.update(f.read())
+
+  filename = os.path.basename(file_path)
+  with open(checksum_path, 'w') as checksum:
+    checksum.write('{} *{}'.format(sha256.hexdigest(), filename))
+  s3put(bucket, access_key, secret_key, os.path.dirname(checksum_path),
+        'atom-shell/tmp/{0}'.format(version), [checksum_path])
 
 
 def publish_release(github, release_id):
