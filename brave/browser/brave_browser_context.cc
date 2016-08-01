@@ -29,6 +29,7 @@
 #include "atom/browser/extensions/atom_browser_client_extensions_part.h"
 #include "atom/browser/extensions/atom_extension_system_factory.h"
 #include "atom/browser/extensions/atom_extensions_network_delegate.h"
+#include "extensions/browser/api/web_request/web_request_api.h"
 #include "extensions/browser/extension_pref_store.h"
 #include "extensions/browser/extension_pref_value_map_factory.h"
 #include "extensions/browser/extension_prefs.h"
@@ -38,6 +39,24 @@
 #endif
 
 using content::BrowserThread;
+
+#if defined(ENABLE_EXTENSIONS)
+namespace {
+
+void NotifyOTRProfileCreatedOnIOThread(void* original_profile,
+                                       void* otr_profile) {
+  extensions::ExtensionWebRequestEventRouter::GetInstance()
+      ->OnOTRBrowserContextCreated(original_profile, otr_profile);
+}
+
+void NotifyOTRProfileDestroyedOnIOThread(void* original_profile,
+                                         void* otr_profile) {
+  extensions::ExtensionWebRequestEventRouter::GetInstance()
+      ->OnOTRBrowserContextDestroyed(original_profile, otr_profile);
+}
+
+}  // namespace
+#endif
 
 namespace brave {
 
@@ -58,6 +77,16 @@ BraveBrowserContext::BraveBrowserContext(const std::string& partition,
     original_context_->otr_context_ = this;
   }
   InitPrefs();
+
+#if defined(ENABLE_EXTENSIONS)
+  if (in_memory) {
+    BrowserThread::PostTask(
+        BrowserThread::IO, FROM_HERE,
+        base::Bind(&NotifyOTRProfileCreatedOnIOThread,
+          base::Unretained(original_context_),
+          base::Unretained(this)));
+  }
+#endif
 }
 
 BraveBrowserContext::~BraveBrowserContext() {
@@ -84,6 +113,12 @@ BraveBrowserContext::~BraveBrowserContext() {
     if (prefs_loaded) {
       user_prefs_->CommitPendingWrite();
     }
+  } else {
+#if defined(ENABLE_EXTENSIONS)
+  BrowserThread::PostTask(
+      BrowserThread::IO, FROM_HERE,
+      base::Bind(&NotifyOTRProfileDestroyedOnIOThread, base::Unretained(original_context_), base::Unretained(this)));
+#endif
   }
 
   if (otr_context_.get()) {
