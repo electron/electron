@@ -4,6 +4,7 @@
 
 #include "atom/common/native_mate_converters/blink_converter.h"
 
+#include <algorithm>
 #include <string>
 #include <vector>
 
@@ -175,11 +176,18 @@ bool Converter<blink::WebKeyboardEvent>::FromV8(
     out->modifiers |= blink::WebInputEvent::ShiftKey;
   out->setKeyIdentifierFromWindowsKeyCode();
   if ((out->type == blink::WebInputEvent::Char ||
-       out->type == blink::WebInputEvent::RawKeyDown) &&
-      str.size() <= 2) {
-    base::string16 code = base::UTF8ToUTF16(str);
-    out->text[0] = code[0];
-    out->unmodifiedText[0] = code[0];
+       out->type == blink::WebInputEvent::RawKeyDown)) {
+    // Make sure to not read beyond the buffer in case some bad code doesn't
+    // NULL-terminate it (this is called from plugins).
+    size_t text_length_cap = blink::WebKeyboardEvent::textLengthCap;
+    base::string16 text16 = base::UTF8ToUTF16(str);
+
+    memset(out->text, 0, text_length_cap);
+    memset(out->unmodifiedText, 0, text_length_cap);
+    for (size_t i = 0; i < std::min(text_length_cap, text16.size()); ++i) {
+      out->text[i] = text16[i];
+      out->unmodifiedText[i] = text16[i];
+    }
   }
   return true;
 }
