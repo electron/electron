@@ -492,7 +492,7 @@ void OffScreenRenderWidgetHostView::Focus() {
 }
 
 bool OffScreenRenderWidgetHostView::HasFocus() const {
-  return true;
+  return false;
 }
 
 bool OffScreenRenderWidgetHostView::IsSurfaceAvailableForCopy() const {
@@ -553,9 +553,6 @@ void OffScreenRenderWidgetHostView::OnSwapCompositorFrame(
   std::unique_ptr<cc::CompositorFrame> frame) {
   TRACE_EVENT0("electron",
     "OffScreenRenderWidgetHostView::OnSwapCompositorFrame");
-
-  // if (!painting_)
-  //   return;
 
   if (frame->metadata.root_scroll_offset != last_scroll_offset_) {
     last_scroll_offset_ = frame->metadata.root_scroll_offset;
