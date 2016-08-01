@@ -159,7 +159,8 @@ ui::KeyboardCode KeyboardCodeFromKeyIdentifier(const std::string& s,
       return ui::VKEY_UNKNOWN;
     }
   } else {
-    LOG(WARNING) << "Invalid accelerator token: " << str;
+    if (str.size() > 2)
+      LOG(WARNING) << "Invalid accelerator token: " << str;
     return ui::VKEY_UNKNOWN;
   }
 }

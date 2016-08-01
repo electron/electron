@@ -1299,7 +1299,9 @@ void WebContents::OnCursorChange(const content::WebCursor& cursor) {
   if (cursor.IsCustom()) {
     Emit("cursor-changed", CursorTypeToString(info),
       gfx::Image::CreateFrom1xBitmap(info.custom_image),
-      info.image_scale_factor);
+      info.image_scale_factor,
+      gfx::Size(info.custom_image.width(), info.custom_image.height()),
+      info.hotspot);
   } else {
     Emit("cursor-changed", CursorTypeToString(info));
   }
