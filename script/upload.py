@@ -224,12 +224,11 @@ def upload_electron(github, release, file_path):
       pass
 
   # Upload the file.
-  name = os.path.dirname(file_path)
   with open(file_path, 'rb') as f:
-    upload_io_to_github(github, release, name, f, 'application/zip')
+    upload_io_to_github(github, release, filename, f, 'application/zip')
 
   # Upload the checksum file.
-  upload_sha256_checksum(release['tag'], file_path)
+  upload_sha256_checksum(release['tag_name'], file_path)
 
 
 def upload_io_to_github(github, release, name, io, content_type):
