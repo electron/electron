@@ -116,6 +116,8 @@ void OffScreenWebContentsView::StartDragging(
     const gfx::ImageSkia& image,
     const gfx::Vector2d& image_offset,
     const content::DragEventSourceInfo& event_info) {
+  if (web_contents_)
+    web_contents_->SystemDragEnded();
 }
 
 void OffScreenWebContentsView::UpdateDragCursor(

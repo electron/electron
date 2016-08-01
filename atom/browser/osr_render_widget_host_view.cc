@@ -593,7 +593,8 @@ void OffScreenRenderWidgetHostView::ClearCompositorFrame() {
 }
 
 void OffScreenRenderWidgetHostView::InitAsPopup(
-  content::RenderWidgetHostView *, const gfx::Rect &) {
+    content::RenderWidgetHostView* parent_host_view, const gfx::Rect& pos) {
+  printf("popup, parent: %p\n", parent_host_view);
 }
 
 void OffScreenRenderWidgetHostView::InitAsFullscreen(
