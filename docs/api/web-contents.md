@@ -332,7 +332,13 @@ Returns:
 * `event` Event
 * `type` String
 * `image` NativeImage (optional)
-* `scale` Float (optional)
+* `scale` Float (optional) - scaling factor for the custom cursor
+* `size` Object (optional) - the size of the `image`
+  * `width` Integer
+  * `height` Integer
+* `hotspot` Object (optional) - coordinates of the custom cursor's hotspot
+  * `x` Integer - x coordinate
+  * `y` Integer - y coordinate
 
 Emitted when the cursor's type changes. The `type` parameter can be `default`,
 `crosshair`, `pointer`, `text`, `wait`, `help`, `e-resize`, `n-resize`,
@@ -344,8 +350,8 @@ Emitted when the cursor's type changes. The `type` parameter can be `default`,
 `not-allowed`, `zoom-in`, `zoom-out`, `grab`, `grabbing`, `custom`.
 
 If the `type` parameter is `custom`, the `image` parameter will hold the custom
-cursor image in a `NativeImage`, and the `scale` will hold scaling information
-for the image.
+cursor image in a `NativeImage`, and `scale`, `size` and `hotspot` will hold 
+additional information about the custom cursor.
 
 #### Event: 'context-menu'
 

@@ -141,6 +141,10 @@ Returns a [Buffer][buffer] that contains the image's `PNG` encoded data.
 
 Returns a [Buffer][buffer] that contains the image's `JPEG` encoded data.
 
+#### `image.toBitmap()`
+
+Returns a [Buffer][buffer] that contains the image's raw pixel data.
+
 #### `image.toDataURL()`
 
 Returns the data URL of the image.
