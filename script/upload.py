@@ -247,7 +247,7 @@ def upload_sha256_checksum(version, file_path):
 
   filename = os.path.basename(file_path)
   with open(checksum_path, 'w') as checksum:
-    checksum.write('{} *{}'.format(sha256.hexdigest(), filename))
+    checksum.write('{}  {}'.format(sha256.hexdigest(), filename))
   s3put(bucket, access_key, secret_key, os.path.dirname(checksum_path),
         'atom-shell/tmp/{0}'.format(version), [checksum_path])
 
