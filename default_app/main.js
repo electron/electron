@@ -91,9 +91,6 @@ app.once('ready', () => {
           }
         },
         {
-          role: 'togglefullscreen'
-        },
-        {
           label: 'Toggle Developer Tools',
           accelerator: process.platform === 'darwin' ? 'Alt+Command+I' : 'Ctrl+Shift+I',
           click (item, focusedWindow) {
@@ -133,6 +130,12 @@ app.once('ready', () => {
               })
             }
           }
+        },
+        {
+          type: 'separator'
+        },
+        {
+          role: 'togglefullscreen'
         }
       ]
     },
