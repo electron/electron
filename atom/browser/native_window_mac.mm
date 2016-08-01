@@ -429,13 +429,14 @@ struct Converter<atom::NativeWindowMac::TitleBarStyle> {
 namespace atom {
 
 NativeWindowMac::NativeWindowMac(
-    brightray::InspectableWebContents* web_contents,
+    brightray::InspectableWebContents* iWeb_contents,
     const mate::Dictionary& options,
     NativeWindow* parent)
-    : NativeWindow(web_contents, options, parent),
+    : NativeWindow(iWeb_contents, options, parent),
       is_kiosk_(false),
       attention_request_id_(0),
-      title_bar_style_(NORMAL) {
+      title_bar_style_(NORMAL),
+      is_edge_(false) {
   int width = 800, height = 600;
   options.Get(options::kWidth, &width);
   options.Get(options::kHeight, &height);
@@ -574,17 +575,19 @@ NativeWindowMac::NativeWindowMac(
       if ([[event window] windowNumber] != [window_ windowNumber])
         return event;
 
-      if (!web_contents)
+      if (!iWeb_contents)
         return event;
 
-      if (!began && (([event phase] == NSEventPhaseMayBegin) ||
-                     ([event phase] == NSEventPhaseBegan))) {
+      if (!began && is_edge_ && (([event phase] == NSEventPhaseMayBegin) ||
+                                  ([event phase] == NSEventPhaseBegan))) {
         this->NotifyWindowScrollTouchBegin();
         began = YES;
+        is_edge_ = false;
       } else if (began && (([event phase] == NSEventPhaseEnded) ||
                            ([event phase] == NSEventPhaseCancelled))) {
         this->NotifyWindowScrollTouchEnd();
         began = NO;
+        is_edge_ = false;
       }
       return event;
   }];
@@ -594,6 +597,26 @@ NativeWindowMac::NativeWindowMac(
   // Set maximizable state last to ensure zoom button does not get reset
   // by calls to other APIs.
   SetMaximizable(maximizable);
+
+  RegisterInputEventObserver(web_contents()->GetRenderViewHost());
+}
+void NativeWindowMac::RegisterInputEventObserver(
+    content::RenderViewHost* host) {
+  if (host != nullptr)
+    host->GetWidget()->AddInputEventObserver(this);
+}
+
+void NativeWindowMac::UnregisterInputEventObserver(
+    content::RenderViewHost* host) {
+  if (host != nullptr)
+    host->GetWidget()->RemoveInputEventObserver(this);
+}
+
+void NativeWindowMac::RenderViewHostChanged(
+    content::RenderViewHost* old_host,
+    content::RenderViewHost* new_host) {
+  UnregisterInputEventObserver(old_host);
+  RegisterInputEventObserver(new_host);
 }
 
 NativeWindowMac::~NativeWindowMac() {
@@ -1195,6 +1218,20 @@ void NativeWindowMac::SetCollectionBehavior(bool on, NSUInteger flag) {
   // Change collectionBehavior will make the zoom button revert to default,
   // probably a bug of Cocoa or macOS.
   SetMaximizable(was_maximizable);
+}
+
+void NativeWindowMac::OnInputEvent(const blink::WebInputEvent& event) {
+  switch (event.type) {
+    case blink::WebInputEvent::GestureScrollBegin:
+    case blink::WebInputEvent::GestureScrollUpdate:
+    case blink::WebInputEvent::GestureScrollEnd:
+      {
+        is_edge_ = true;
+        break;
+      }
+    default:
+      break;
+  }
 }
 
 // static
