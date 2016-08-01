@@ -3,7 +3,6 @@
 import atexit
 import contextlib
 import errno
-import hashlib
 import platform
 import re
 import shutil
@@ -16,7 +15,7 @@ import urllib2
 import os
 import zipfile
 
-from config import is_verbose_mode, s3_config
+from config import is_verbose_mode
 from env_util import get_vs_env
 
 BOTO_DIR = os.path.abspath(os.path.join(__file__, '..', '..', '..', 'vendor',
@@ -133,22 +132,6 @@ def make_zip(zip_file_path, files, dirs):
         for f in filenames:
           zip_file.write(os.path.join(root, f))
     zip_file.close()
-  upload_zip_sha256_checksum(zip_file_path)
-
-
-def upload_zip_sha256_checksum(zip_file_path):
-  bucket, access_key, secret_key = s3_config()
-  checksum_path = '{}.sha256sum'.format(zip_file_path)
-  safe_unlink(checksum_path)
-  sha256 = hashlib.sha256()
-  with open(zip_file_path, 'rb') as f:
-    sha256.update(f.read())
-
-  zip_basename = os.path.basename(zip_file_path)
-  with open(checksum_path, 'w') as checksum:
-    checksum.write('{} *{}'.format(sha256.hexdigest(), zip_basename))
-  s3put(bucket, access_key, secret_key, os.path.dirname(checksum_path),
-      'atom-shell/tmp', [checksum_path])
 
 
 def rm_rf(path):
@@ -237,13 +220,7 @@ def run_boto_script(access_key, secret_key, script_name, *args):
       [env.get('PYTHONPATH', '')] + boto_path_dirs())
 
   boto = os.path.join(BOTO_DIR, 'bin', script_name)
-
-  args = [
-    sys.executable,
-    boto
-  ] + args
-
-  execute(args, env)
+  execute([sys.executable, boto] + list(args), env)
 
 
 def s3put(bucket, access_key, secret_key, prefix, key_prefix, files):
