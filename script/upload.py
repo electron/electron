@@ -126,8 +126,8 @@ def parse_args():
 
 
 def run_python_script(script, *args):
-  script_path = os.path.join(SOURCE_ROOT, 'script', script),
-  return execute([sys.executable, script_path] + args)
+  script_path = os.path.join(SOURCE_ROOT, 'script', script)
+  return execute([sys.executable, script_path] + list(args))
 
 
 def get_electron_build_version():
