@@ -22,7 +22,7 @@ class WebRequest : public mate::TrackableObject<WebRequest> {
                                          AtomBrowserContext* browser_context);
 
   static void BuildPrototype(v8::Isolate* isolate,
-                             v8::Local<v8::ObjectTemplate> prototype);
+                             v8::Local<v8::FunctionTemplate> prototype);
 
  protected:
   WebRequest(v8::Isolate* isolate, AtomBrowserContext* browser_context);

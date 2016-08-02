@@ -39,7 +39,7 @@ class Debugger: public mate::TrackableObject<Debugger>,
 
   // mate::TrackableObject:
   static void BuildPrototype(v8::Isolate* isolate,
-                             v8::Local<v8::ObjectTemplate> prototype);
+                             v8::Local<v8::FunctionTemplate> prototype);
 
  protected:
   Debugger(v8::Isolate* isolate, content::WebContents* web_contents);

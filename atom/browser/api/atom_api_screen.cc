@@ -113,8 +113,9 @@ v8::Local<v8::Value> Screen::Create(v8::Isolate* isolate) {
 
 // static
 void Screen::BuildPrototype(
-    v8::Isolate* isolate, v8::Local<v8::ObjectTemplate> prototype) {
-  mate::ObjectTemplateBuilder(isolate, prototype)
+    v8::Isolate* isolate, v8::Local<v8::FunctionTemplate> prototype) {
+  prototype->SetClassName(mate::StringToV8(isolate, "Screen"));
+  mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("getCursorScreenPoint", &Screen::GetCursorScreenPoint)
       .SetMethod("getPrimaryDisplay", &Screen::GetPrimaryDisplay)
       .SetMethod("getAllDisplays", &Screen::GetAllDisplays)
@@ -128,10 +129,14 @@ void Screen::BuildPrototype(
 
 namespace {
 
+using atom::api::Screen;
+
 void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
-  mate::Dictionary dict(context->GetIsolate(), exports);
-  dict.Set("screen", atom::api::Screen::Create(context->GetIsolate()));
+  v8::Isolate* isolate = context->GetIsolate();
+  mate::Dictionary dict(isolate, exports);
+  dict.Set("screen", Screen::Create(isolate));
+  dict.Set("Screen", Screen::GetConstructor(isolate)->GetFunction());
 }
 
 }  // namespace

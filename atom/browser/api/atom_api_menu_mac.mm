@@ -18,7 +18,8 @@ namespace atom {
 
 namespace api {
 
-MenuMac::MenuMac(v8::Isolate* isolate) : Menu(isolate) {
+MenuMac::MenuMac(v8::Isolate* isolate, v8::Local<v8::Object> wrapper)
+    : Menu(isolate, wrapper) {
 }
 
 void MenuMac::PopupAt(Window* window, int x, int y, int positioning_item) {
@@ -94,8 +95,8 @@ void Menu::SendActionToFirstResponder(const std::string& action) {
 }
 
 // static
-mate::WrappableBase* Menu::Create(v8::Isolate* isolate) {
-  return new MenuMac(isolate);
+mate::WrappableBase* Menu::New(mate::Arguments* args) {
+  return new MenuMac(args->isolate(), args->GetThis());
 }
 
 }  // namespace api

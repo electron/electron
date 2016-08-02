@@ -28,7 +28,7 @@ class Screen : public mate::EventEmitter<Screen>,
   static v8::Local<v8::Value> Create(v8::Isolate* isolate);
 
   static void BuildPrototype(v8::Isolate* isolate,
-                             v8::Local<v8::ObjectTemplate> prototype);
+                             v8::Local<v8::FunctionTemplate> prototype);
 
  protected:
   Screen(v8::Isolate* isolate, display::Screen* screen);

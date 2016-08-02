@@ -41,7 +41,7 @@ class Cookies : public mate::TrackableObject<Cookies> {
 
   // mate::TrackableObject:
   static void BuildPrototype(v8::Isolate* isolate,
-                             v8::Local<v8::ObjectTemplate> prototype);
+                             v8::Local<v8::FunctionTemplate> prototype);
 
  protected:
   Cookies(v8::Isolate* isolate, AtomBrowserContext* browser_context);

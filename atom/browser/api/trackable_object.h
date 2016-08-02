@@ -44,7 +44,6 @@ class TrackableObjectBase {
   static base::Closure RegisterDestructionCallback(const base::Closure& c);
 
   int32_t weak_map_id_;
-  base::SupportsUserData* wrapped_;
 
  private:
   void Destroy();
@@ -110,14 +109,13 @@ class TrackableObject : public TrackableObjectBase,
     RemoveFromWeakMap();
   }
 
-  void AfterInit(v8::Isolate* isolate) override {
+  void InitWith(v8::Isolate* isolate, v8::Local<v8::Object> wrapper) override {
+    WrappableBase::InitWith(isolate, wrapper);
     if (!weak_map_) {
       weak_map_ = new atom::KeyWeakMap<int32_t>;
     }
     weak_map_id_ = ++next_id_;
-    weak_map_->Set(isolate, weak_map_id_, Wrappable<T>::GetWrapper());
-    if (wrapped_)
-      AttachAsUserData(wrapped_);
+    weak_map_->Set(isolate, weak_map_id_, wrapper);
   }
 
  private:

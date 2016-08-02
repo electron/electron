@@ -25,7 +25,7 @@ class PowerSaveBlocker : public mate::TrackableObject<PowerSaveBlocker> {
   static mate::Handle<PowerSaveBlocker> Create(v8::Isolate* isolate);
 
   static void BuildPrototype(v8::Isolate* isolate,
-                             v8::Local<v8::ObjectTemplate> prototype);
+                             v8::Local<v8::FunctionTemplate> prototype);
 
  protected:
   explicit PowerSaveBlocker(v8::Isolate* isolate);

@@ -40,10 +40,10 @@ class WebContents;
 class Window : public mate::TrackableObject<Window>,
                public NativeWindowObserver {
  public:
-  static mate::WrappableBase* New(v8::Isolate* isolate, mate::Arguments* args);
+  static mate::WrappableBase* New(mate::Arguments* args);
 
   static void BuildPrototype(v8::Isolate* isolate,
-                             v8::Local<v8::ObjectTemplate> prototype);
+                             v8::Local<v8::FunctionTemplate> prototype);
 
   // Returns the BrowserWindow object from |native_window|.
   static v8::Local<v8::Value> From(v8::Isolate* isolate,
@@ -52,11 +52,9 @@ class Window : public mate::TrackableObject<Window>,
   NativeWindow* window() const { return window_.get(); }
 
  protected:
-  Window(v8::Isolate* isolate, const mate::Dictionary& options);
+  Window(v8::Isolate* isolate, v8::Local<v8::Object> wrapper,
+         const mate::Dictionary& options);
   ~Window() override;
-
-  // TrackableObject:
-  void AfterInit(v8::Isolate* isolate) override;
 
   // NativeWindowObserver:
   void WillCloseWindow(bool* prevent_default) override;

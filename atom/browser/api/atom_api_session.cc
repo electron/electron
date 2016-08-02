@@ -170,10 +170,6 @@ namespace {
 
 const char kPersistPrefix[] = "persist:";
 
-// The wrapSession funtion which is implemented in JavaScript
-using WrapSessionCallback = base::Callback<void(v8::Local<v8::Value>)>;
-WrapSessionCallback g_wrap_session;
-
 // Referenced session objects.
 std::map<uint32_t, v8::Global<v8::Object>> g_sessions;
 
@@ -541,7 +537,6 @@ mate::Handle<Session> Session::CreateFrom(
 
   auto handle = mate::CreateHandle(
       isolate, new Session(isolate, browser_context));
-  g_wrap_session.Run(handle.ToV8());
 
   // The Sessions should never be garbage collected, since the common pattern is
   // to use partition strings, instead of using the Session object directly.
@@ -570,8 +565,9 @@ mate::Handle<Session> Session::FromPartition(
 
 // static
 void Session::BuildPrototype(v8::Isolate* isolate,
-                             v8::Local<v8::ObjectTemplate> prototype) {
-  mate::ObjectTemplateBuilder(isolate, prototype)
+                             v8::Local<v8::FunctionTemplate> prototype) {
+  prototype->SetClassName(mate::StringToV8(isolate, "Session"));
+  mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .MakeDestroyable()
       .SetMethod("resolveProxy", &Session::ResolveProxy)
       .SetMethod("getCacheSize", &Session::DoCacheAction<CacheAction::STATS>)
@@ -595,15 +591,13 @@ void Session::BuildPrototype(v8::Isolate* isolate,
       .SetProperty("webRequest", &Session::WebRequest);
 }
 
-void SetWrapSession(const WrapSessionCallback& callback) {
-  g_wrap_session = callback;
-}
-
 }  // namespace api
 
 }  // namespace atom
 
 namespace {
+
+using atom::api::Session;
 
 v8::Local<v8::Value> FromPartition(
     const std::string& partition, mate::Arguments* args) {
@@ -613,16 +607,15 @@ v8::Local<v8::Value> FromPartition(
   }
   base::DictionaryValue options;
   args->GetNext(&options);
-  return atom::api::Session::FromPartition(
-      args->isolate(), partition, options).ToV8();
+  return Session::FromPartition(args->isolate(), partition, options).ToV8();
 }
 
 void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
+  dict.Set("Session", Session::GetConstructor(isolate)->GetFunction());
   dict.SetMethod("fromPartition", &FromPartition);
-  dict.SetMethod("_setWrapSession", &atom::api::SetWrapSession);
 }
 
 }  // namespace

@@ -58,8 +58,9 @@ Handle<Event> Event::Create(v8::Isolate* isolate) {
 
 // static
 void Event::BuildPrototype(
-    v8::Isolate* isolate, v8::Local<v8::ObjectTemplate> prototype) {
-  mate::ObjectTemplateBuilder(isolate, prototype)
+    v8::Isolate* isolate, v8::Local<v8::FunctionTemplate> prototype) {
+  prototype->SetClassName(mate::StringToV8(isolate, "Event"));
+  mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("preventDefault", &Event::PreventDefault)
       .SetMethod("sendReply", &Event::SendReply);
 }

@@ -52,7 +52,7 @@ class NativeImage : public mate::Wrappable<NativeImage> {
       v8::Isolate* isolate, const GURL& url);
 
   static void BuildPrototype(v8::Isolate* isolate,
-                             v8::Local<v8::ObjectTemplate> prototype);
+                             v8::Local<v8::FunctionTemplate> prototype);
 
 #if defined(OS_WIN)
   HICON GetHICON(int size);

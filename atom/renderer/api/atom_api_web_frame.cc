@@ -187,8 +187,9 @@ void WebFrame::ClearCache(v8::Isolate* isolate) {
 
 // static
 void WebFrame::BuildPrototype(
-    v8::Isolate* isolate, v8::Local<v8::ObjectTemplate> prototype) {
-  mate::ObjectTemplateBuilder(isolate, prototype)
+    v8::Isolate* isolate, v8::Local<v8::FunctionTemplate> prototype) {
+  prototype->SetClassName(mate::StringToV8(isolate, "WebFrame"));
+  mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("setName", &WebFrame::SetName)
       .SetMethod("setZoomLevel", &WebFrame::SetZoomLevel)
       .SetMethod("getZoomLevel", &WebFrame::GetZoomLevel)
@@ -219,11 +220,14 @@ void WebFrame::BuildPrototype(
 
 namespace {
 
+using atom::api::WebFrame;
+
 void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
-  dict.Set("webFrame", atom::api::WebFrame::Create(isolate));
+  dict.Set("webFrame", WebFrame::Create(isolate));
+  dict.Set("WebFrame", WebFrame::GetConstructor(isolate)->GetFunction());
 }
 
 }  // namespace

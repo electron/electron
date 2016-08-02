@@ -67,7 +67,8 @@ v8::Local<v8::Value> ToBuffer(v8::Isolate* isolate, void* val, int size) {
 }  // namespace
 
 
-Window::Window(v8::Isolate* isolate, const mate::Dictionary& options) {
+Window::Window(v8::Isolate* isolate, v8::Local<v8::Object> wrapper,
+               const mate::Dictionary& options) {
   // Use options.webPreferences to create WebContents.
   mate::Dictionary web_preferences = mate::Dictionary::CreateEmpty(isolate);
   options.Get(options::kWebPreferences, &web_preferences);
@@ -107,7 +108,14 @@ Window::Window(v8::Isolate* isolate, const mate::Dictionary& options) {
 
   window_->InitFromOptions(options);
   window_->AddObserver(this);
+
+  InitWith(isolate, wrapper);
   AttachAsUserData(window_.get());
+
+  // We can only append this window to parent window's child windows after this
+  // window's JS wrapper gets initialized.
+  if (!parent.IsEmpty())
+    parent->child_windows_.Set(isolate, ID(), wrapper);
 }
 
 Window::~Window() {
@@ -117,17 +125,6 @@ Window::~Window() {
   // Destroy the native window in next tick because the native code might be
   // iterating all windows.
   base::MessageLoop::current()->DeleteSoon(FROM_HERE, window_.release());
-}
-
-void Window::AfterInit(v8::Isolate* isolate) {
-  mate::TrackableObject<Window>::AfterInit(isolate);
-
-  // We can only append this window to parent window's child windows after this
-  // window's JS wrapper gets initialized.
-  mate::Handle<Window> parent;
-  if (!parent_window_.IsEmpty() &&
-      mate::ConvertFromV8(isolate, GetParentWindow(), &parent))
-    parent->child_windows_.Set(isolate, ID(), GetWrapper());
 }
 
 void Window::WillCloseWindow(bool* prevent_default) {
@@ -262,10 +259,9 @@ void Window::OnWindowMessage(UINT message, WPARAM w_param, LPARAM l_param) {
 #endif
 
 // static
-mate::WrappableBase* Window::New(v8::Isolate* isolate, mate::Arguments* args) {
+mate::WrappableBase* Window::New(mate::Arguments* args) {
   if (!Browser::Get()->is_ready()) {
-    isolate->ThrowException(v8::Exception::Error(mate::StringToV8(
-        isolate, "Cannot create BrowserWindow before app is ready")));
+    args->ThrowError("Cannot create BrowserWindow before app is ready");
     return nullptr;
   }
 
@@ -276,10 +272,10 @@ mate::WrappableBase* Window::New(v8::Isolate* isolate, mate::Arguments* args) {
 
   mate::Dictionary options;
   if (!(args->Length() == 1 && args->GetNext(&options))) {
-    options = mate::Dictionary::CreateEmpty(isolate);
+    options = mate::Dictionary::CreateEmpty(args->isolate());
   }
 
-  return new Window(isolate, options);
+  return new Window(args->isolate(), args->GetThis(), options);
 }
 
 void Window::Close() {
@@ -750,8 +746,9 @@ void Window::RemoveFromParentChildWindows() {
 
 // static
 void Window::BuildPrototype(v8::Isolate* isolate,
-                            v8::Local<v8::ObjectTemplate> prototype) {
-  mate::ObjectTemplateBuilder(isolate, prototype)
+                            v8::Local<v8::FunctionTemplate> prototype) {
+  prototype->SetClassName(mate::StringToV8(isolate, "BrowserWindow"));
+  mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .MakeDestroyable()
       .SetMethod("close", &Window::Close)
       .SetMethod("focus", &Window::Focus)
@@ -873,9 +870,10 @@ using atom::api::Window;
 void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
-  v8::Local<v8::Function> constructor = mate::CreateConstructor<Window>(
-      isolate, "BrowserWindow", base::Bind(&Window::New));
-  mate::Dictionary browser_window(isolate, constructor);
+  Window::SetConstructor(isolate, base::Bind(&Window::New));
+
+  mate::Dictionary browser_window(
+      isolate, Window::GetConstructor(isolate)->GetFunction());
   browser_window.SetMethod("fromId",
                            &mate::TrackableObject<Window>::FromWeakMapID);
   browser_window.SetMethod("getAllWindows",
