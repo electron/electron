@@ -616,6 +616,28 @@ Mute the audio on the current web page.
 
 Returns whether this page has been muted.
 
+#### `contents.setZoomFactor(factor)`
+
+* `factor` Number - Zoom factor.
+
+Changes the zoom factor to the specified factor. Zoom factor is
+zoom percent divided by 100, so 300% = 3.0.
+
+#### `contents.setZoomLevel(level)`
+
+* `level` Number - Zoom level
+
+Changes the zoom level to the specified level. The original size is 0 and each
+increment above or below represents zooming 20% larger or smaller to default
+limits of 300% and 50% of original size, respectively.
+
+#### `contents.setZoomLevelLimits(minimumLevel, maximumLevel)`
+
+* `minimumLevel` Number
+* `maximumLevel` Number
+
+Sets the maximum and minimum zoom level.`
+
 #### `contents.undo()`
 
 Executes the editing command `undo` in web page.
