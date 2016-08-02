@@ -7,10 +7,13 @@ var glob = require('glob')
 var Instrumenter = require('istanbul').Instrumenter
 var mkdirp = require('mkdirp')
 var path = require('path')
+var rimraf = require('rimraf')
 
 var instrumenter = new Instrumenter()
 var outputPath = path.join(__dirname, '..', '..', 'out', 'coverage')
 var libPath = path.join(__dirname, '..', '..', 'lib')
+
+rimraf.sync(path.join(outputPath, 'lib'))
 
 glob.sync('**/*.js', {cwd: libPath}).forEach(function (relativePath) {
   var rawPath = path.join(libPath, relativePath)
