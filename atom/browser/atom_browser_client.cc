@@ -153,7 +153,8 @@ void AtomBrowserClient::OverrideSiteInstanceForNavigation(
   // if (web_contents_prefs) {
   //   auto web_preferences = web_contents_prefs->web_preferences();
   //   bool node_integration = true;
-  //   web_preferences->GetBoolean(options::kNodeIntegration, &node_integration);
+  //   web_preferences->GetBoolean(options::kNodeIntegration,
+  //       &node_integration);
   //   if (!node_integration) {
   //     // only renderers with node integration need to be restarted
   //     return;
