@@ -24,6 +24,7 @@
   "scripts": {
     "bootstrap": "python ./script/bootstrap.py",
     "build": "python ./script/build.py -c D",
+    "coverage": "npm run instrument-code-coverage && npm run test -- --use-instrumented-asar",
     "instrument-code-coverage": "node ./spec/coverage/instrument.js",
     "lint": "npm run lint-js && npm run lint-cpp && npm run lint-docs",
     "lint-js": "standard && cd spec && standard",

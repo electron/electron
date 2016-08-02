@@ -83,7 +83,7 @@
       Mocha.utils.highlightTags('code');
       if (isCi)
         ipcRenderer.send('process.exit', runner.failures);
-      require('./coverage').generate()
+      require('../coverage/reporter').generateReport()
     });
   });
 })();

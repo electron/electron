@@ -33,7 +33,7 @@ const addUnrequiredFiles = (coverage) => {
 }
 
 // Generate a code coverage report in out/coverage/lcov-report
-exports.generate = () => {
+exports.generateReport = () => {
   const coverage = window.__coverage__
   if (coverage == null) return
 
@@ -48,28 +48,4 @@ exports.generate = () => {
   const reporter = new Reporter(null, outputPath)
   reporter.addAll(['text', 'lcov'])
   reporter.write(collector, true, function () {})
-}
-
-// Generate an instrumented .asar file for all the files in lib/ and save it
-// to out/coverage/electron-instrumented.asar
-exports.instrument = () => {
-  const instrumenter = new Instrumenter()
-
-  glob.sync('**/*.js', {cwd: libPath}).forEach(function (relativePath) {
-    const rawPath = path.join(libPath, relativePath)
-    const raw = fs.readFileSync(rawPath, 'utf8')
-
-    const generatedPath = path.join(outputPath, 'lib', relativePath)
-    const generated = instrumenter.instrumentSync(raw, rawPath)
-    mkdirp.sync(path.dirname(generatedPath))
-    fs.writeFileSync(generatedPath, generated)
-  })
-
-  const asarPath = path.join(outputPath, 'electron-instrumented.asar')
-  asar.createPackageWithOptions(path.join(outputPath, 'lib'), asarPath, {}, function (error) {
-    if (error) {
-      console.error(error.stack || error)
-      process.exit(1)
-    }
-  })
 }

@@ -22,7 +22,7 @@ glob.sync('**/*.js', {cwd: libPath}).forEach(function (relativePath) {
   fs.writeFileSync(generatedPath, generated)
 })
 
-var asarPath = path.join(outputPath, 'electron-instrumented.asar')
+var asarPath = path.join(outputPath, 'electron.asar')
 asar.createPackageWithOptions(path.join(outputPath, 'lib'), asarPath, {}, function (error) {
   if (error) {
     console.error(error.stack || error)
