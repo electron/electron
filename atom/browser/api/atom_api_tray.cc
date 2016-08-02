@@ -60,10 +60,13 @@ namespace atom {
 
 namespace api {
 
-Tray::Tray(v8::Isolate* isolate, mate::Handle<NativeImage> image)
+Tray::Tray(v8::Isolate* isolate, v8::Local<v8::Object> wrapper,
+           mate::Handle<NativeImage> image)
     : tray_icon_(TrayIcon::Create()) {
   SetImage(isolate, image);
   tray_icon_->AddObserver(this);
+
+  InitWith(isolate, wrapper);
 }
 
 Tray::~Tray() {
@@ -72,14 +75,13 @@ Tray::~Tray() {
 }
 
 // static
-mate::WrappableBase* Tray::New(v8::Isolate* isolate,
-                               mate::Handle<NativeImage> image) {
+mate::WrappableBase* Tray::New(mate::Handle<NativeImage> image,
+                               mate::Arguments* args) {
   if (!Browser::Get()->is_ready()) {
-    isolate->ThrowException(v8::Exception::Error(mate::StringToV8(
-        isolate, "Cannot create Tray before app is ready")));
+    args->ThrowError("Cannot create Tray before app is ready");
     return nullptr;
   }
-  return new Tray(isolate, image);
+  return new Tray(args->isolate(), args->GetThis(), image);
 }
 
 void Tray::OnClicked(const gfx::Rect& bounds, int modifiers) {

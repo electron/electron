@@ -19,9 +19,10 @@ namespace atom {
 
 namespace api {
 
-Menu::Menu(v8::Isolate* isolate)
+Menu::Menu(v8::Isolate* isolate, v8::Local<v8::Object> wrapper)
     : model_(new AtomMenuModel(this)),
       parent_(nullptr) {
+  InitWith(isolate, wrapper);
 }
 
 Menu::~Menu() {
@@ -189,7 +190,7 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   using atom::api::Menu;
   v8::Isolate* isolate = context->GetIsolate();
   v8::Local<v8::Function> constructor = mate::CreateConstructor<Menu>(
-      isolate, "Menu", base::Bind(&Menu::Create));
+      isolate, "Menu", base::Bind(&Menu::New));
   mate::Dictionary dict(isolate, exports);
   dict.Set("Menu", static_cast<v8::Local<v8::Value>>(constructor));
 #if defined(OS_MACOSX)

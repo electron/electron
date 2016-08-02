@@ -14,7 +14,8 @@ namespace atom {
 
 namespace api {
 
-MenuViews::MenuViews(v8::Isolate* isolate) : Menu(isolate) {
+MenuViews::MenuViews(v8::Isolate* isolate, v8::Local<v8::Object> wrapper)
+    : Menu(isolate, wrapper) {
 }
 
 void MenuViews::PopupAt(Window* window, int x, int y, int positioning_item) {
@@ -53,8 +54,8 @@ void MenuViews::PopupAt(Window* window, int x, int y, int positioning_item) {
 }
 
 // static
-mate::WrappableBase* Menu::Create(v8::Isolate* isolate) {
-  return new MenuViews(isolate);
+mate::WrappableBase* Menu::New(mate::Arguments* args) {
+  return new MenuViews(args->isolate(), args->GetThis());
 }
 
 }  // namespace api
