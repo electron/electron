@@ -222,14 +222,15 @@ void Tray::BuildPrototype(v8::Isolate* isolate,
 
 namespace {
 
+using atom::api::Tray;
+
 void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
-  using atom::api::Tray;
   v8::Isolate* isolate = context->GetIsolate();
-  v8::Local<v8::Function> constructor = mate::CreateConstructor<Tray>(
-      isolate, "Tray", base::Bind(&Tray::New));
+  Tray::SetConstructor(isolate, "Tray", base::Bind(&Tray::New));
+
   mate::Dictionary dict(isolate, exports);
-  dict.Set("Tray", static_cast<v8::Local<v8::Value>>(constructor));
+  dict.Set("Tray", Tray::GetConstructor(isolate));
 }
 
 }  // namespace

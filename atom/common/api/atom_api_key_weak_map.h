@@ -8,6 +8,7 @@
 #include "atom/common/key_weak_map.h"
 #include "native_mate/object_template_builder.h"
 #include "native_mate/handle.h"
+#include "native_mate/wrappable.h"
 
 namespace atom {
 

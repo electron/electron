@@ -869,9 +869,9 @@ using atom::api::Window;
 void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
-  v8::Local<v8::Function> constructor = mate::CreateConstructor<Window>(
-      isolate, "BrowserWindow", base::Bind(&Window::New));
-  mate::Dictionary browser_window(isolate, constructor);
+  Window::SetConstructor(isolate, "BrowserWindow", base::Bind(&Window::New));
+
+  mate::Dictionary browser_window(isolate, Window::GetConstructor(isolate));
   browser_window.SetMethod("fromId",
                            &mate::TrackableObject<Window>::FromWeakMapID);
   browser_window.SetMethod("getAllWindows",

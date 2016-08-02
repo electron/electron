@@ -185,14 +185,15 @@ void Menu::BuildPrototype(v8::Isolate* isolate,
 
 namespace {
 
+using atom::api::Menu;
+
 void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
-  using atom::api::Menu;
   v8::Isolate* isolate = context->GetIsolate();
-  v8::Local<v8::Function> constructor = mate::CreateConstructor<Menu>(
-      isolate, "Menu", base::Bind(&Menu::New));
+  Menu::SetConstructor(isolate, "Menu", base::Bind(&Menu::New));
+
   mate::Dictionary dict(isolate, exports);
-  dict.Set("Menu", static_cast<v8::Local<v8::Value>>(constructor));
+  dict.Set("Menu", Menu::GetConstructor(isolate));
 #if defined(OS_MACOSX)
   dict.SetMethod("setApplicationMenu", &Menu::SetApplicationMenu);
   dict.SetMethod("sendActionToFirstResponder",
