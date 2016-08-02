@@ -49,7 +49,6 @@ class WrappableBase {
 
  protected:
   // Called after the "_init" method gets called in JavaScript.
-  // FIXME(zcbenz): Should remove this.
   virtual void AfterInit(v8::Isolate* isolate) {}
 
   // Bind the C++ class to the JS wrapper.
@@ -80,17 +79,18 @@ class Wrappable : public WrappableBase {
   void Init(v8::Isolate* isolate) {
     // Fill the object template.
     if (!templ_) {
-      v8::Local<v8::ObjectTemplate> templ = v8::ObjectTemplate::New(isolate);
-      T::BuildPrototype(isolate, templ);
-      templ_ = new v8::Global<v8::ObjectTemplate>(isolate, templ);
+      v8::Local<v8::FunctionTemplate> templ = v8::FunctionTemplate::New(isolate);
+      T::BuildPrototype(isolate, templ->PrototypeTemplate());
+      templ_ = new v8::Global<v8::FunctionTemplate>(isolate, templ);
     }
 
     v8::Local<v8::Object> wrapper;
-    v8::Local<v8::ObjectTemplate> templ = v8::Local<v8::ObjectTemplate>::New(
-        isolate, *templ_);
+    v8::Local<v8::FunctionTemplate> templ =
+        v8::Local<v8::FunctionTemplate>::New(isolate, *templ_);
     // |wrapper| may be empty in some extreme cases, e.g., when
     // Object.prototype.constructor is overwritten.
-    if (!templ->NewInstance(isolate->GetCurrentContext()).ToLocal(&wrapper)) {
+    if (!templ->PrototypeTemplate()->NewInstance(
+          isolate->GetCurrentContext()).ToLocal(&wrapper)) {
       // The current wrappable object will be no longer managed by V8. Delete
       // this now.
       delete this;
@@ -100,14 +100,14 @@ class Wrappable : public WrappableBase {
   }
 
  private:
-  static v8::Global<v8::ObjectTemplate>* templ_;  // Leaked on purpose
+  static v8::Global<v8::FunctionTemplate>* templ_;  // Leaked on purpose
 
   DISALLOW_COPY_AND_ASSIGN(Wrappable);
 };
 
 // static
 template<typename T>
-v8::Global<v8::ObjectTemplate>* Wrappable<T>::templ_ = nullptr;
+v8::Global<v8::FunctionTemplate>* Wrappable<T>::templ_ = nullptr;
 
 // This converter handles any subclass of Wrappable.
 template <typename T>
