@@ -230,7 +230,7 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   Tray::SetConstructor(isolate, "Tray", base::Bind(&Tray::New));
 
   mate::Dictionary dict(isolate, exports);
-  dict.Set("Tray", Tray::GetConstructor(isolate));
+  dict.Set("Tray", Tray::GetConstructor(isolate)->GetFunction());
 }
 
 }  // namespace

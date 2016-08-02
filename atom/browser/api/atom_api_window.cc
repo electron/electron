@@ -871,7 +871,8 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   v8::Isolate* isolate = context->GetIsolate();
   Window::SetConstructor(isolate, "BrowserWindow", base::Bind(&Window::New));
 
-  mate::Dictionary browser_window(isolate, Window::GetConstructor(isolate));
+  mate::Dictionary browser_window(
+      isolate, Window::GetConstructor(isolate)->GetFunction());
   browser_window.SetMethod("fromId",
                            &mate::TrackableObject<Window>::FromWeakMapID);
   browser_window.SetMethod("getAllWindows",

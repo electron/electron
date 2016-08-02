@@ -193,7 +193,7 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   Menu::SetConstructor(isolate, "Menu", base::Bind(&Menu::New));
 
   mate::Dictionary dict(isolate, exports);
-  dict.Set("Menu", Menu::GetConstructor(isolate));
+  dict.Set("Menu", Menu::GetConstructor(isolate)->GetFunction());
 #if defined(OS_MACOSX)
   dict.SetMethod("setApplicationMenu", &Menu::SetApplicationMenu);
   dict.SetMethod("sendActionToFirstResponder",
