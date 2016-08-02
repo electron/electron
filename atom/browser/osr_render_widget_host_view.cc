@@ -381,7 +381,9 @@ OffScreenRenderWidgetHostView::~OffScreenRenderWidgetHostView() {
     delegated_frame_host_->WasHidden();
   delegated_frame_host_->ResetCompositor();
 
+#if defined(OS_MACOSX)
   DestroyPlatformWidget();
+#endif
 
   if (copy_frame_generator_.get())
     copy_frame_generator_.reset(NULL);

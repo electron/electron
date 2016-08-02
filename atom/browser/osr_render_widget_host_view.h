@@ -237,18 +237,10 @@ private:
   gfx::AcceleratedWidget compositor_widget_;
   std::unique_ptr<ui::Layer> root_layer_;
 
-#if defined(OS_WIN)
-  std::unique_ptr<gfx::WindowImpl> window_;
-#elif defined(OS_MACOSX)
+#if defined(OS_MACOSX)
   NSWindow* window_;
   CALayer* background_layer_;
   std::unique_ptr<content::BrowserCompositorMac> browser_compositor_;
-#elif defined(USE_X11)
-  CefWindowX11* window_;
-  std::unique_ptr<ui::XScopedCursor> invisible_cursor_;
-#endif
-
-#if defined(OS_MACOSX)
   NSTextInputContext* text_input_context_osr_mac_;
 
   // Selected text on the renderer.
