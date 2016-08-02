@@ -180,12 +180,6 @@ class Constructor {
   DISALLOW_COPY_AND_ASSIGN(Constructor);
 };
 
-
-template<typename T>
-WrappableBase* NewOperatorFactory() {
-  return new T;
-}
-
 template<typename T, typename Sig>
 v8::Local<v8::Function> CreateConstructor(
     v8::Isolate* isolate,
