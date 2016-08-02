@@ -16,7 +16,7 @@ namespace atom {
 class OffScreenWebContentsView : public content::WebContentsView,
                                  public content::RenderViewHostDelegateView {
  public:
-  OffScreenWebContentsView(bool transparent);
+  explicit OffScreenWebContentsView(bool transparent);
   ~OffScreenWebContentsView();
 
   void SetWebContents(content::WebContents*);
