@@ -26,12 +26,10 @@ class Wrappable : public WrappableBase {
 
   template<typename Sig>
   static void SetConstructor(v8::Isolate* isolate,
-                             const std::string& name,
                              const base::Callback<Sig>& constructor) {
     v8::Local<v8::FunctionTemplate> templ = CreateFunctionTemplate(
         isolate, base::Bind(&internal::InvokeNew<Sig>, constructor));
     templ->InstanceTemplate()->SetInternalFieldCount(1);
-    templ->SetClassName(StringToV8(isolate, name));
     T::BuildPrototype(isolate, templ);
     templ_ = new v8::Global<v8::FunctionTemplate>(isolate, templ);
   }
