@@ -27,13 +27,13 @@ class Wrappable : public WrappableBase {
   template<typename Sig>
   static void SetConstructor(v8::Isolate* isolate,
                              const std::string& name,
-                             const base::Callback<Sig>& factory) {
-    v8::Local<v8::FunctionTemplate> constructor = CreateFunctionTemplate(
-        isolate, base::Bind(&internal::InvokeNew<Sig>, factory));
-    constructor->InstanceTemplate()->SetInternalFieldCount(1);
-    constructor->SetClassName(StringToV8(isolate, name));
-    T::BuildPrototype(isolate, constructor->PrototypeTemplate());
-    templ_ = new v8::Global<v8::FunctionTemplate>(isolate, constructor);
+                             const base::Callback<Sig>& constructor) {
+    v8::Local<v8::FunctionTemplate> templ = CreateFunctionTemplate(
+        isolate, base::Bind(&internal::InvokeNew<Sig>, constructor));
+    templ->InstanceTemplate()->SetInternalFieldCount(1);
+    templ->SetClassName(StringToV8(isolate, name));
+    T::BuildPrototype(isolate, templ);
+    templ_ = new v8::Global<v8::FunctionTemplate>(isolate, templ);
   }
 
   static v8::Local<v8::FunctionTemplate> GetConstructor(v8::Isolate* isolate) {
@@ -41,7 +41,7 @@ class Wrappable : public WrappableBase {
     if (!templ_) {
       v8::Local<v8::FunctionTemplate> templ = v8::FunctionTemplate::New(isolate);
       templ->InstanceTemplate()->SetInternalFieldCount(1);
-      T::BuildPrototype(isolate, templ->PrototypeTemplate());
+      T::BuildPrototype(isolate, templ);
       templ_ = new v8::Global<v8::FunctionTemplate>(isolate, templ);
     }
     return v8::Local<v8::FunctionTemplate>::New(isolate, *templ_);
