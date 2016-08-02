@@ -64,9 +64,9 @@ exports.generateReport = () => {
 }
 
 // Save coverage data from the browser window with the given pid
-const saveCoverageData = (coverage, pid) => {
+const saveCoverageData = (webContents, coverage, pid) => {
   if (coverage && pid) {
-    const dataPath = path.join(outputPath, 'data', `${pid}-${Date.now()}.json`)
+    const dataPath = path.join(outputPath, 'data', `${pid || webContents.getId()}-${webContents.getType()}-${Date.now()}.json`)
     mkdirp.sync(path.dirname(dataPath))
     fs.writeFileSync(dataPath, JSON.stringify(coverage))
   }
@@ -75,7 +75,7 @@ const saveCoverageData = (coverage, pid) => {
 const getCoverageFromWebContents = (webContents, callback) => {
   webContents.executeJavaScript('[window.__coverage__, window.process && window.process.pid]', (results) => {
     const coverage = results[0]
-    const pid = results[1] || webContents.getId()
+    const pid = results[1]
     callback(coverage, pid)
   })
 }
@@ -91,7 +91,7 @@ const patchBrowserWindow = () => {
     }
 
     getCoverageFromWebContents(this.webContents, (coverage, pid) => {
-      saveCoverageData(coverage, pid)
+      saveCoverageData(this.webContents, coverage, pid)
       destroy.call(this)
     })
   }
@@ -102,7 +102,7 @@ const saveCoverageOnBeforeUnload = () => {
   const {app, ipcMain} = require('electron')
 
   ipcMain.on('save-coverage', function (event, coverage, pid) {
-    saveCoverageData(coverage, pid || event.sender.getId())
+    saveCoverageData(event.sender, coverage, pid)
   })
 
   app.on('web-contents-created', function (event, webContents) {
