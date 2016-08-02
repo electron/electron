@@ -63,6 +63,10 @@ ipcMain.on('echo', function (event, msg) {
   event.returnValue = msg
 })
 
+ipcMain.on('get-coverage', function(event) {
+  event.returnValue = global.__coverage__
+})
+
 global.isCi = !!argv.ci
 if (global.isCi) {
   process.removeAllListeners('uncaughtException')

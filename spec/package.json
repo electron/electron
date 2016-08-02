@@ -5,9 +5,11 @@
   "version": "0.1.0",
   "devDependencies": {
     "basic-auth": "^1.0.0",
+    "glob": "^7.0.5",
     "graceful-fs": "3.0.5",
-    "mocha": "2.1.0",
+    "istanbul": "^0.4.4",
     "mkdirp": "0.5.1",
+    "mocha": "2.1.0",
     "multiparty": "4.1.2",
     "q": "0.9.7",
     "temp": "0.8.1",
