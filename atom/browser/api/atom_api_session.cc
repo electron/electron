@@ -113,6 +113,11 @@ void SetUserAgentInIO(scoped_refptr<net::URLRequestContextGetter> getter,
           user_agent));
 }
 
+void SetEnableBrotliInIO(scoped_refptr<net::URLRequestContextGetter> getter,
+                         bool enabled) {
+  getter->GetURLRequestContext()->set_enable_brotli(enabled);
+}
+
 }  // namespace
 
 namespace mate {
@@ -511,6 +516,13 @@ std::string Session::GetUserAgent() {
   return browser_context_->GetUserAgent();
 }
 
+void Session::SetEnableBrotli(bool enabled) {
+  auto getter = browser_context_->GetRequestContext();
+  getter->GetNetworkTaskRunner()->PostTask(
+      FROM_HERE,
+      base::Bind(&SetEnableBrotliInIO, getter, enabled));
+}
+
 v8::Local<v8::Value> Session::Cookies(v8::Isolate* isolate) {
   if (cookies_.IsEmpty()) {
     auto handle = atom::api::Cookies::Create(isolate, browser_context());
@@ -614,6 +626,7 @@ void Session::BuildPrototype(v8::Isolate* isolate,
                  &Session::AllowNTLMCredentialsForDomains)
       .SetMethod("setUserAgent", &Session::SetUserAgent)
       .SetMethod("getUserAgent", &Session::GetUserAgent)
+      .SetMethod("setEnableBrotli", &Session::SetEnableBrotli)
       .SetMethod("equal", &Session::Equal)
       .SetProperty("userPrefs", &Session::UserPrefs)
       .SetProperty("cookies", &Session::Cookies)
