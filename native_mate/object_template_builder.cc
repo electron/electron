@@ -10,7 +10,6 @@ ObjectTemplateBuilder::ObjectTemplateBuilder(
     v8::Isolate* isolate,
     v8::Local<v8::ObjectTemplate> templ)
     : isolate_(isolate), template_(templ) {
-  template_->SetInternalFieldCount(1);
 }
 
 ObjectTemplateBuilder::~ObjectTemplateBuilder() {

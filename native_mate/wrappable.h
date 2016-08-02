@@ -80,6 +80,7 @@ class Wrappable : public WrappableBase {
     // Fill the object template.
     if (!templ_) {
       v8::Local<v8::FunctionTemplate> templ = v8::FunctionTemplate::New(isolate);
+      templ->InstanceTemplate()->SetInternalFieldCount(1);
       T::BuildPrototype(isolate, templ->PrototypeTemplate());
       templ_ = new v8::Global<v8::FunctionTemplate>(isolate, templ);
     }
@@ -89,8 +90,8 @@ class Wrappable : public WrappableBase {
         v8::Local<v8::FunctionTemplate>::New(isolate, *templ_);
     // |wrapper| may be empty in some extreme cases, e.g., when
     // Object.prototype.constructor is overwritten.
-    if (!templ->PrototypeTemplate()->NewInstance(
-          isolate->GetCurrentContext()).ToLocal(&wrapper)) {
+    if (!templ->InstanceTemplate()->NewInstance(
+            isolate->GetCurrentContext()).ToLocal(&wrapper)) {
       // The current wrappable object will be no longer managed by V8. Delete
       // this now.
       delete this;
