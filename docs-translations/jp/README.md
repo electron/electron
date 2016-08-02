@@ -85,7 +85,7 @@ _リンクになっていないリストは未翻訳のものです。_
 ## 開発
 
 
-* Coding Style (development/coding-style.md)
+* [コーディング規約](development/coding-style.md)
 * Source Code Directory Structure (development/source-code-directory-structure.md)
 * Technical Differences to NW.js  (formerly node-webkit)(development/atom-shell-vs-node-webkit.md)
 * Build System Overview (development/build-system-overview.md)
