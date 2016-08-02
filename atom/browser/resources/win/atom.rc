@@ -56,8 +56,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,3,1,0
- PRODUCTVERSION 1,3,1,0
+ FILEVERSION 1,3,2,0
+ PRODUCTVERSION 1,3,2,0
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -74,12 +74,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "GitHub, Inc."
             VALUE "FileDescription", "Electron"
-            VALUE "FileVersion", "1.3.1"
+            VALUE "FileVersion", "1.3.2"
             VALUE "InternalName", "electron.exe"
             VALUE "LegalCopyright", "Copyright (C) 2015 GitHub, Inc. All rights reserved."
             VALUE "OriginalFilename", "electron.exe"
             VALUE "ProductName", "Electron"
-            VALUE "ProductVersion", "1.3.1"
+            VALUE "ProductVersion", "1.3.2"
             VALUE "SquirrelAwareVersion", "1"
         END
     END
