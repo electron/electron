@@ -8,7 +8,7 @@
 #include "base/callback.h"
 #include "base/logging.h"
 #include "native_mate/arguments.h"
-#include "native_mate/wrappable.h"
+#include "native_mate/wrappable_base.h"
 #include "v8/include/v8.h"
 
 namespace mate {

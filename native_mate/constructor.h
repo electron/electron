@@ -10,13 +10,9 @@
 #define NATIVE_MATE_WRAPPABLE_CLASS_H_
 
 #include "base/bind.h"
-#include "base/compiler_specific.h"
-#include "native_mate/wrappable.h"
 #include "native_mate/function_template.h"
 
 namespace mate {
-
-class WrappableBase;
 
 namespace internal {
 
@@ -120,75 +116,32 @@ inline WrappableBase* InvokeFactory(
   return callback.Run(a1, a2, a3, a4, a5, a6);
 };
 
-}  // namespace internal
-
-
-template<typename T, typename Sig>
-class Constructor {
- public:
-  typedef base::Callback<Sig> WrappableFactoryFunction;
-
-  Constructor(const base::StringPiece& name) : name_(name) {}
-  virtual ~Constructor() {
-    MATE_PERSISTENT_RESET(constructor_);
-  }
-
-  v8::Local<v8::FunctionTemplate> GetFunctionTemplate(
-      v8::Isolate* isolate, const WrappableFactoryFunction& factory) {
-    if (constructor_.IsEmpty()) {
-      v8::Local<v8::FunctionTemplate> constructor = CreateFunctionTemplate(
-          isolate, base::Bind(&Constructor::New, factory));
-      constructor->InstanceTemplate()->SetInternalFieldCount(1);
-      constructor->SetClassName(StringToV8(isolate, name_));
-      T::BuildPrototype(isolate, constructor->PrototypeTemplate());
-      MATE_PERSISTENT_ASSIGN(v8::FunctionTemplate, isolate, constructor_,
-                             constructor);
-    }
-
-    return MATE_PERSISTENT_TO_LOCAL(
-        v8::FunctionTemplate, isolate, constructor_);
-  }
-
- private:
-  static MATE_METHOD_RETURN_TYPE New(const WrappableFactoryFunction& factory,
-                                     v8::Isolate* isolate, Arguments* args) {
-    if (!args->IsConstructCall()) {
-      args->ThrowError("Requires constructor call");
-      MATE_METHOD_RETURN_UNDEFINED();
-    }
-
-    WrappableBase* object;
-    {
-      // Don't continue if the constructor throws an exception.
-      v8::TryCatch try_catch;
-      object = internal::InvokeFactory(args, factory);
-      if (try_catch.HasCaught()) {
-        try_catch.ReThrow();
-        MATE_METHOD_RETURN_UNDEFINED();
-      }
-    }
-
-    if (!object)
-      args->ThrowError();
-
+template<typename Sig>
+MATE_METHOD_RETURN_TYPE InvokeNew(const base::Callback<Sig>& factory,
+                                  v8::Isolate* isolate, Arguments* args) {
+  if (!args->IsConstructCall()) {
+    args->ThrowError("Requires constructor call");
     MATE_METHOD_RETURN_UNDEFINED();
   }
 
-  base::StringPiece name_;
-  v8::Global<v8::FunctionTemplate> constructor_;
+  WrappableBase* object;
+  {
+    // Don't continue if the constructor throws an exception.
+    v8::TryCatch try_catch;
+    object = internal::InvokeFactory(args, factory);
+    if (try_catch.HasCaught()) {
+      try_catch.ReThrow();
+      MATE_METHOD_RETURN_UNDEFINED();
+    }
+  }
 
-  DISALLOW_COPY_AND_ASSIGN(Constructor);
-};
+  if (!object)
+    args->ThrowError();
 
-template<typename T, typename Sig>
-v8::Local<v8::Function> CreateConstructor(
-    v8::Isolate* isolate,
-    const base::StringPiece& name,
-    const base::Callback<Sig>& callback) {
-  v8::Local<v8::FunctionTemplate> constructor =
-      Constructor<T, Sig>(name).GetFunctionTemplate(isolate, callback);
-  return constructor->GetFunction();
+  MATE_METHOD_RETURN_UNDEFINED();
 }
+
+}  // namespace internal
 
 }  // namespace mate
 

@@ -22,6 +22,7 @@
       'native_mate/try_catch.h',
       'native_mate/wrappable.cc',
       'native_mate/wrappable.h',
+      'native_mate/wrappable_base.h',
     ],
   },
 }
