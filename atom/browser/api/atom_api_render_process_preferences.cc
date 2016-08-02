@@ -54,6 +54,8 @@ void RenderProcessPreferences::RemoveEntry(int id) {
 // static
 void RenderProcessPreferences::BuildPrototype(
     v8::Isolate* isolate, v8::Local<v8::FunctionTemplate> prototype) {
+  prototype->SetClassName(
+      mate::StringToV8(isolate, "RenderProcessPreferences"));
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("addEntry", &RenderProcessPreferences::AddEntry)
       .SetMethod("removeEntry", &RenderProcessPreferences::RemoveEntry);

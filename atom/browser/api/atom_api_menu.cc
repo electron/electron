@@ -156,6 +156,7 @@ bool Menu::IsVisibleAt(int index) const {
 // static
 void Menu::BuildPrototype(v8::Isolate* isolate,
                           v8::Local<v8::FunctionTemplate> prototype) {
+  prototype->SetClassName(mate::StringToV8(isolate, "Menu"));
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .MakeDestroyable()
       .SetMethod("insertItem", &Menu::InsertItemAt)
@@ -190,7 +191,7 @@ using atom::api::Menu;
 void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
-  Menu::SetConstructor(isolate, "Menu", base::Bind(&Menu::New));
+  Menu::SetConstructor(isolate, base::Bind(&Menu::New));
 
   mate::Dictionary dict(isolate, exports);
   dict.Set("Menu", Menu::GetConstructor(isolate)->GetFunction());

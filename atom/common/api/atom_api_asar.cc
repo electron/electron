@@ -30,6 +30,7 @@ class Archive : public mate::Wrappable<Archive> {
 
   static void BuildPrototype(
       v8::Isolate* isolate, v8::Local<v8::FunctionTemplate> prototype) {
+    prototype->SetClassName(mate::StringToV8(isolate, "Archive"));
     mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
         .SetProperty("path", &Archive::GetPath)
         .SetMethod("getFileInfo", &Archive::GetFileInfo)

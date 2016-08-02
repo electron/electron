@@ -747,6 +747,7 @@ void Window::RemoveFromParentChildWindows() {
 // static
 void Window::BuildPrototype(v8::Isolate* isolate,
                             v8::Local<v8::FunctionTemplate> prototype) {
+  prototype->SetClassName(mate::StringToV8(isolate, "BrowserWindow"));
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .MakeDestroyable()
       .SetMethod("close", &Window::Close)
@@ -869,7 +870,7 @@ using atom::api::Window;
 void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
-  Window::SetConstructor(isolate, "BrowserWindow", base::Bind(&Window::New));
+  Window::SetConstructor(isolate, base::Bind(&Window::New));
 
   mate::Dictionary browser_window(
       isolate, Window::GetConstructor(isolate)->GetFunction());

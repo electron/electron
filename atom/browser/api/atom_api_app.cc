@@ -532,6 +532,7 @@ mate::Handle<App> App::Create(v8::Isolate* isolate) {
 // static
 void App::BuildPrototype(
     v8::Isolate* isolate, v8::Local<v8::FunctionTemplate> prototype) {
+  prototype->SetClassName(mate::StringToV8(isolate, "App"));
   auto browser = base::Unretained(Browser::Get());
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("quit", base::Bind(&Browser::Quit, browser))

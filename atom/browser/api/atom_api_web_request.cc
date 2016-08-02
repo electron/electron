@@ -89,6 +89,7 @@ mate::Handle<WebRequest> WebRequest::Create(
 // static
 void WebRequest::BuildPrototype(v8::Isolate* isolate,
                                 v8::Local<v8::FunctionTemplate> prototype) {
+  prototype->SetClassName(mate::StringToV8(isolate, "WebRequest"));
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("onBeforeRequest",
                  &WebRequest::SetResponseListener<

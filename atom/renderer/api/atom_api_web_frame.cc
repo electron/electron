@@ -188,6 +188,7 @@ void WebFrame::ClearCache(v8::Isolate* isolate) {
 // static
 void WebFrame::BuildPrototype(
     v8::Isolate* isolate, v8::Local<v8::FunctionTemplate> prototype) {
+  prototype->SetClassName(mate::StringToV8(isolate, "WebFrame"));
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("setName", &WebFrame::SetName)
       .SetMethod("setZoomLevel", &WebFrame::SetZoomLevel)

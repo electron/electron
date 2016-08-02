@@ -571,6 +571,7 @@ mate::Handle<Session> Session::FromPartition(
 // static
 void Session::BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype) {
+  prototype->SetClassName(mate::StringToV8(isolate, "Session"));
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .MakeDestroyable()
       .SetMethod("resolveProxy", &Session::ResolveProxy)

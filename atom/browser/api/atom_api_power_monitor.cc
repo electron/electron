@@ -53,7 +53,7 @@ v8::Local<v8::Value> PowerMonitor::Create(v8::Isolate* isolate) {
 // static
 void PowerMonitor::BuildPrototype(
     v8::Isolate* isolate, v8::Local<v8::FunctionTemplate> prototype) {
-  mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate());
+  prototype->SetClassName(mate::StringToV8(isolate, "PowerMonitor"));
 }
 
 }  // namespace api

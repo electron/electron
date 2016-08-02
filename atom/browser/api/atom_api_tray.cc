@@ -202,6 +202,7 @@ gfx::Rect Tray::GetBounds() {
 // static
 void Tray::BuildPrototype(v8::Isolate* isolate,
                           v8::Local<v8::FunctionTemplate> prototype) {
+  prototype->SetClassName(mate::StringToV8(isolate, "Tray"));
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .MakeDestroyable()
       .SetMethod("setImage", &Tray::SetImage)
@@ -227,7 +228,7 @@ using atom::api::Tray;
 void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
-  Tray::SetConstructor(isolate, "Tray", base::Bind(&Tray::New));
+  Tray::SetConstructor(isolate, base::Bind(&Tray::New));
 
   mate::Dictionary dict(isolate, exports);
   dict.Set("Tray", Tray::GetConstructor(isolate)->GetFunction());
