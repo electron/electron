@@ -54,7 +54,7 @@ class WrappableBase {
 
   // Bind the C++ class to the JS wrapper.
   // This method should only be called by classes using Constructor.
-  void InitWith(v8::Isolate* isolate, v8::Local<v8::Object> wrapper);
+  virtual void InitWith(v8::Isolate* isolate, v8::Local<v8::Object> wrapper);
 
  private:
   friend struct internal::Destroyable;
