@@ -123,7 +123,7 @@ inline WrappableBase* InvokeFactory(
 }  // namespace internal
 
 
-template<typename Sig>
+template<typename T, typename Sig>
 class Constructor {
  public:
   typedef base::Callback<Sig> WrappableFactoryFunction;
@@ -140,6 +140,7 @@ class Constructor {
           isolate, base::Bind(&Constructor::New, factory));
       constructor->InstanceTemplate()->SetInternalFieldCount(1);
       constructor->SetClassName(StringToV8(isolate, name_));
+      T::BuildPrototype(isolate, constructor->PrototypeTemplate());
       MATE_PERSISTENT_ASSIGN(v8::FunctionTemplate, isolate, constructor_,
                              constructor);
     }
@@ -167,9 +168,7 @@ class Constructor {
       }
     }
 
-    if (object)
-      object->InitWith(isolate, args->GetThis());
-    else
+    if (!object)
       args->ThrowError();
 
     MATE_METHOD_RETURN_UNDEFINED();
@@ -193,8 +192,7 @@ v8::Local<v8::Function> CreateConstructor(
     const base::StringPiece& name,
     const base::Callback<Sig>& callback) {
   v8::Local<v8::FunctionTemplate> constructor =
-      Constructor<Sig>(name).GetFunctionTemplate(isolate, callback);
-  T::BuildPrototype(isolate, constructor->PrototypeTemplate());
+      Constructor<T, Sig>(name).GetFunctionTemplate(isolate, callback);
   return constructor->GetFunction();
 }
 

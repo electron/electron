@@ -47,13 +47,14 @@ class WrappableBase {
   // Returns the Isolate this object is created in.
   v8::Isolate* isolate() const { return isolate_; }
 
-  // Bind the C++ class to the JS wrapper.
-  void InitWith(v8::Isolate* isolate, v8::Local<v8::Object> wrapper);
-
  protected:
   // Called after the "_init" method gets called in JavaScript.
   // FIXME(zcbenz): Should remove this.
   virtual void AfterInit(v8::Isolate* isolate) {}
+
+  // Bind the C++ class to the JS wrapper.
+  // This method should only be called by classes using Constructor.
+  void InitWith(v8::Isolate* isolate, v8::Local<v8::Object> wrapper);
 
  private:
   friend struct internal::Destroyable;
@@ -74,6 +75,7 @@ class Wrappable : public WrappableBase {
  public:
   Wrappable() {}
 
+ protected:
   // Init the class with T::BuildPrototype.
   void Init(v8::Isolate* isolate) {
     // Fill the object template.
