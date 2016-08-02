@@ -84,6 +84,8 @@ app.on('window-all-closed', function () {
   app.quit()
 })
 
+require('../coverage/reporter').setupCoverage()
+
 app.on('ready', function () {
   // Test if using protocol module would crash.
   electron.protocol.registerStringProtocol('test-if-crashes', function () {})

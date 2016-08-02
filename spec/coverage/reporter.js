@@ -3,6 +3,7 @@ const fs = require('fs')
 const glob = require('glob')
 const mkdirp = require('mkdirp')
 const path = require('path')
+const rimraf = require('rimraf')
 const {Collector, Instrumenter, Reporter} = require('istanbul')
 
 const outputPath = path.join(__dirname, '..', '..', 'out', 'coverage')
@@ -32,6 +33,16 @@ const addUnrequiredFiles = (coverage) => {
   })
 }
 
+// Add coverage data to collector for all opened browser windows
+const addBrowserWindowsData = (collector) => {
+  const dataPath = path.join(outputPath, 'data')
+  glob.sync('*.json', {cwd: dataPath}).map(function (relativePath) {
+    return path.join(dataPath, relativePath)
+  }).forEach(function (filePath) {
+    collector.add(JSON.parse(fs.readFileSync(filePath)));
+  })
+}
+
 // Generate a code coverage report in out/coverage/lcov-report
 exports.generateReport = () => {
   const coverage = window.__coverage__
@@ -45,7 +56,38 @@ exports.generateReport = () => {
   const {ipcRenderer} = require('electron')
   collector.add(ipcRenderer.sendSync('get-coverage'))
 
+  addBrowserWindowsData(collector)
+
   const reporter = new Reporter(null, outputPath)
   reporter.addAll(['text', 'lcov'])
   reporter.write(collector, true, function () {})
+}
+
+const saveCoverageData = (webContents, callback) => {
+  webContents.executeJavaScript('[global.__coverage__, global.process && global.process.pid]', function (results) {
+    const coverage = results[0]
+    const pid = results[1]
+    if (coverage && pid) {
+      const dataPath = path.join(outputPath, 'data', `${pid}-${Date.now()}.json`)
+      mkdirp.sync(path.dirname(dataPath))
+      fs.writeFileSync(dataPath, JSON.stringify(coverage, null, 2))
+      callback()
+    }
+  })
+}
+
+exports.setupCoverage = () => {
+  const coverage = global.__coverage__
+  if (coverage == null) return
+
+  rimraf.sync(path.join(outputPath, 'data'))
+
+  const {BrowserWindow} = require('electron')
+
+  const originalDestroy = BrowserWindow.prototype.destroy
+  BrowserWindow.prototype.destroy = function () {
+    saveCoverageData(this.webContents, () => {
+      originalDestroy.call(this)
+    })
+  }
 }
