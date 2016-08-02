@@ -80,6 +80,13 @@ const getCoverageFromWebContents = (webContents, callback) => {
   })
 }
 
+const saveWebContentsCoverage = (webContents, callback) => {
+  getCoverageFromWebContents(webContents, (coverage, pid) => {
+    saveCoverageData(webContents, coverage, pid)
+    callback()
+  })
+}
+
 // Save coverage data when a BrowserWindow is closed manually
 const patchBrowserWindow = () => {
   const {BrowserWindow} = require('electron')
@@ -90,9 +97,14 @@ const patchBrowserWindow = () => {
       return destroy.call(this)
     }
 
-    getCoverageFromWebContents(this.webContents, (coverage, pid) => {
-      saveCoverageData(this.webContents, coverage, pid)
-      destroy.call(this)
+    saveWebContentsCoverage(this.webContents, () => {
+      if (this.devToolsWebContents) {
+        saveWebContentsCoverage(this.devToolsWebContents, () => {
+          destroy.call(this)
+        })
+      } else {
+        destroy.call(this)
+      }
     })
   }
 }
