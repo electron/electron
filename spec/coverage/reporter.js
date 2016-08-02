@@ -73,9 +73,9 @@ const saveCoverageData = (coverage, pid) => {
 }
 
 const getCoverageFromWebContents = (webContents, callback) => {
-  webContents.executeJavaScript('[global.__coverage__, global.process && global.process.pid]', (results) => {
+  webContents.executeJavaScript('[window.__coverage__, window.process && window.process.pid]', (results) => {
     const coverage = results[0]
-    const pid = results[1]
+    const pid = results[1] || webContents.getId()
     callback(coverage, pid)
   })
 }
@@ -102,13 +102,13 @@ const saveCoverageOnBeforeUnload = () => {
   const {app, ipcMain} = require('electron')
 
   ipcMain.on('save-coverage', function (event, coverage, pid) {
-    saveCoverageData(coverage, pid)
+    saveCoverageData(coverage, pid || event.sender.getId())
   })
 
   app.on('web-contents-created', function (event, webContents) {
     webContents.executeJavaScript(`
       window.addEventListener('beforeunload', function () {
-        require('electron').ipcRenderer.send('save-coverage', global.__coverage__, process && process.pid)
+        require('electron').ipcRenderer.send('save-coverage', window.__coverage__, window.process && window.process.pid)
       })
     `)
   })
