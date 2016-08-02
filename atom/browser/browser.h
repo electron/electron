@@ -136,6 +136,7 @@ class Browser : public WindowListObserver {
   // Hide/Show dock.
   void DockHide();
   void DockShow();
+  bool DockIsVisible();
 
   // Set docks' menu.
   void DockSetMenu(AtomMenuModel* model);

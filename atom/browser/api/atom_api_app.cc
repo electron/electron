@@ -656,6 +656,7 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                  base::Bind(&Browser::DockGetBadgeText, browser));
   dict.SetMethod("dockHide", base::Bind(&Browser::DockHide, browser));
   dict.SetMethod("dockShow", base::Bind(&Browser::DockShow, browser));
+  dict.SetMethod("dockIsVisible", base::Bind(&Browser::DockIsVisible, browser));
   dict.SetMethod("dockSetMenu", &DockSetMenu);
   dict.SetMethod("dockSetIcon", base::Bind(&Browser::DockSetIcon, browser));
 #endif

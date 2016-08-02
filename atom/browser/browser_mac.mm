@@ -208,6 +208,12 @@ void Browser::DockHide() {
   TransformProcessType(&psn, kProcessTransformToUIElementApplication);
 }
 
+bool Browser::DockIsVisible() {
+  // Because DockShow has a slight delay this may not be true immediately
+  // after that call.
+  return ([[NSRunningApplication currentApplication] activationPolicy] == NSApplicationActivationPolicyRegular);
+}
+
 void Browser::DockShow() {
   BOOL active = [[NSRunningApplication currentApplication] isActive];
   ProcessSerialNumber psn = { 0, kCurrentProcess };

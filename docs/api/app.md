@@ -725,6 +725,12 @@ Hides the dock icon.
 
 Shows the dock icon.
 
+### `app.dock.isVisible()` _macOS_
+
+Returns whether the dock icon is visible.
+The `app.dock.show()` call is asynchronous so this method might not
+return true immediately after that call.
+
 ### `app.dock.setMenu(menu)` _macOS_
 
 * `menu` [Menu](menu.md)
