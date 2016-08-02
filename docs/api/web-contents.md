@@ -625,7 +625,10 @@ zoom percent divided by 100, so 300% = 3.0.
 
 #### `contents.getZoomFactor(callback)`
 
-`callback` is called with the current zoom factor
+* `callback` Function
+
+Sends a request to get current zoom factor, the `callback` will be called with
+`callback(zoomFactor)`.
 
 #### `contents.setZoomLevel(level)`
 
@@ -637,7 +640,10 @@ limits of 300% and 50% of original size, respectively.
 
 #### `contents.getZoomLevel(callback)`
 
-`callback` is called with the current zoom level
+* `callback` Function
+
+Sends a request to get current zoom level, the `callback` will be called with
+`callback(zoomLevel)`.
 
 #### `contents.setZoomLevelLimits(minimumLevel, maximumLevel)`
 
