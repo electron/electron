@@ -23,14 +23,6 @@ namespace atom {
 
 namespace api {
 
-namespace {
-
-// The wrapDebugger funtion which is implemented in JavaScript.
-using WrapDebuggerCallback = base::Callback<void(v8::Local<v8::Value>)>;
-WrapDebuggerCallback g_wrap_debugger;
-
-}  // namespace
-
 Debugger::Debugger(v8::Isolate* isolate, content::WebContents* web_contents)
     : web_contents_(web_contents),
       previous_request_id_(0) {
@@ -151,10 +143,7 @@ void Debugger::SendCommand(mate::Arguments* args) {
 mate::Handle<Debugger> Debugger::Create(
     v8::Isolate* isolate,
     content::WebContents* web_contents) {
-  auto handle = mate::CreateHandle(
-      isolate, new Debugger(isolate, web_contents));
-  g_wrap_debugger.Run(handle.ToV8());
-  return handle;
+  return mate::CreateHandle(isolate, new Debugger(isolate, web_contents));
 }
 
 // static
@@ -168,21 +157,19 @@ void Debugger::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("sendCommand", &Debugger::SendCommand);
 }
 
-void SetWrapDebugger(const WrapDebuggerCallback& callback) {
-  g_wrap_debugger = callback;
-}
-
 }  // namespace api
 
 }  // namespace atom
 
 namespace {
 
+using atom::api::Debugger;
+
 void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
-  mate::Dictionary dict(isolate, exports);
-  dict.SetMethod("_setWrapDebugger", &atom::api::SetWrapDebugger);
+  mate::Dictionary(isolate, exports)
+      .Set("Debugger", Debugger::GetConstructor(isolate)->GetFunction());
 }
 
 }  // namespace

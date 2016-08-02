@@ -122,11 +122,14 @@ void AutoUpdater::BuildPrototype(
 
 namespace {
 
+using atom::api::AutoUpdater;
+
 void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
-  dict.Set("autoUpdater", atom::api::AutoUpdater::Create(isolate));
+  dict.Set("autoUpdater", AutoUpdater::Create(isolate));
+  dict.Set("AutoUpdater", AutoUpdater::GetConstructor(isolate)->GetFunction());
 }
 
 }  // namespace

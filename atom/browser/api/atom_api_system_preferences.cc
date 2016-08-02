@@ -69,11 +69,15 @@ void SystemPreferences::BuildPrototype(
 
 namespace {
 
+using atom::api::SystemPreferences;
+
 void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
-  dict.Set("systemPreferences", atom::api::SystemPreferences::Create(isolate));
+  dict.Set("systemPreferences", SystemPreferences::Create(isolate));
+  dict.Set("SystemPreferences",
+           SystemPreferences::GetConstructor(isolate)->GetFunction());
 }
 
 }  // namespace

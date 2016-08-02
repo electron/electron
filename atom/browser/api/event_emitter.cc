@@ -16,9 +16,6 @@ namespace mate {
 
 namespace {
 
-// The prototype of Node's EventEmitter.
-v8::Persistent<v8::Object> g_event_emitter_prototype;
-
 v8::Persistent<v8::ObjectTemplate> event_template;
 
 void PreventDefault(mate::Arguments* args) {
@@ -80,29 +77,6 @@ v8::Local<v8::Object> CreateEventFromFlags(v8::Isolate* isolate, int flags) {
   return obj.GetHandle();
 }
 
-void InheritFromEventEmitter(v8::Isolate* isolate,
-                             v8::Local<v8::FunctionTemplate> constructor) {
-}
-
-void SetEventEmitterPrototype(v8::Isolate* isolate,
-                              v8::Local<v8::Object> prototype) {
-  g_event_emitter_prototype.Reset(isolate, prototype);
-}
-
 }  // namespace internal
 
 }  // namespace mate
-
-
-namespace {
-
-void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
-                v8::Local<v8::Context> context, void* priv) {
-  mate::Dictionary(context->GetIsolate(), exports)
-      .SetMethod("setEventEmitterPrototype",
-                 &mate::internal::SetEventEmitterPrototype);
-}
-
-}  // namespace
-
-NODE_MODULE_CONTEXT_AWARE_BUILTIN(atom_browser_event_emitter, Initialize)

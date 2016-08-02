@@ -129,10 +129,14 @@ void Screen::BuildPrototype(
 
 namespace {
 
+using atom::api::Screen;
+
 void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
-  mate::Dictionary dict(context->GetIsolate(), exports);
-  dict.Set("screen", atom::api::Screen::Create(context->GetIsolate()));
+  v8::Isolate* isolate = context->GetIsolate();
+  mate::Dictionary dict(isolate, exports);
+  dict.Set("screen", Screen::Create(isolate));
+  dict.Set("Screen", Screen::GetConstructor(isolate)->GetFunction());
 }
 
 }  // namespace

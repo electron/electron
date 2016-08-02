@@ -51,10 +51,6 @@ namespace api {
 
 namespace {
 
-// The wrapDownloadItem funtion which is implemented in JavaScript
-using WrapDownloadItemCallback = base::Callback<void(v8::Local<v8::Value>)>;
-WrapDownloadItemCallback g_wrap_download_item;
-
 std::map<uint32_t, v8::Global<v8::Object>> g_download_item_objects;
 
 }  // namespace
@@ -197,16 +193,11 @@ mate::Handle<DownloadItem> DownloadItem::Create(
     return mate::CreateHandle(isolate, static_cast<DownloadItem*>(existing));
 
   auto handle = mate::CreateHandle(isolate, new DownloadItem(isolate, item));
-  g_wrap_download_item.Run(handle.ToV8());
 
   // Reference this object in case it got garbage collected.
   g_download_item_objects[handle->weak_map_id()] =
       v8::Global<v8::Object>(isolate, handle.ToV8());
   return handle;
-}
-
-void SetWrapDownloadItem(const WrapDownloadItemCallback& callback) {
-  g_wrap_download_item = callback;
 }
 
 }  // namespace api
@@ -218,8 +209,9 @@ namespace {
 void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
-  mate::Dictionary dict(isolate, exports);
-  dict.SetMethod("_setWrapDownloadItem", &atom::api::SetWrapDownloadItem);
+  mate::Dictionary(isolate, exports)
+      .Set("DownloadItem",
+           atom::api::DownloadItem::GetConstructor(isolate)->GetFunction());
 }
 
 }  // namespace

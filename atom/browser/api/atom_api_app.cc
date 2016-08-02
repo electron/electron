@@ -639,6 +639,7 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   auto command_line = base::CommandLine::ForCurrentProcess();
 
   mate::Dictionary dict(isolate, exports);
+  dict.Set("App", atom::api::App::GetConstructor(isolate)->GetFunction());
   dict.Set("app", atom::api::App::Create(isolate));
   dict.SetMethod("appendSwitch", &AppendSwitch);
   dict.SetMethod("appendArgument",
