@@ -32,6 +32,9 @@ v8::Local<v8::Object> CreateCustomEvent(
     v8::Local<v8::Object> event);
 v8::Local<v8::Object> CreateEventFromFlags(v8::Isolate* isolate, int flags);
 
+void InheritFromEventEmitter(v8::Isolate* isolate,
+                             v8::Local<v8::FunctionTemplate> constructor);
+
 }  // namespace internal
 
 // Provide helperers to emit event in JavaScript.
@@ -86,6 +89,11 @@ class EventEmitter : public Wrappable<T> {
 
  protected:
   EventEmitter() {}
+
+  static void InheritFromEventEmitter(
+      v8::Isolate* isolate, v8::Local<v8::FunctionTemplate> constructor) {
+    internal::InheritFromEventEmitter(isolate, constructor);
+  }
 
  private:
   // this.emit(name, event, args...);
