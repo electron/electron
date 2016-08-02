@@ -69,7 +69,8 @@ ContentSetting ContentSettingsManager::GetSetting(
   return GetContentSettingFromRules(primary_url,
                                     secondary_url,
                                     content_type,
-                                    true);
+                                    content_type != "runInsecureContent"
+                                      ? true : false);
 }
 
 std::vector<std::string> ContentSettingsManager::GetContentTypes() {
