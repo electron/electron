@@ -24,7 +24,7 @@ class DownloadItem : public mate::TrackableObject<DownloadItem>,
                                            content::DownloadItem* item);
 
   static void BuildPrototype(v8::Isolate* isolate,
-                             v8::Local<v8::ObjectTemplate> prototype);
+                             v8::Local<v8::FunctionTemplate> prototype);
 
   void Pause();
   bool IsPaused() const;

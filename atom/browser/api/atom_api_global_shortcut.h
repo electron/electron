@@ -24,7 +24,7 @@ class GlobalShortcut : public extensions::GlobalShortcutListener::Observer,
   static mate::Handle<GlobalShortcut> Create(v8::Isolate* isolate);
 
   static void BuildPrototype(v8::Isolate* isolate,
-                             v8::Local<v8::ObjectTemplate> prototype);
+                             v8::Local<v8::FunctionTemplate> prototype);
 
  protected:
   explicit GlobalShortcut(v8::Isolate* isolate);

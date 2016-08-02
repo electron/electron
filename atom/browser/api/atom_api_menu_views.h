@@ -14,7 +14,7 @@ namespace api {
 
 class MenuViews : public Menu {
  public:
-  explicit MenuViews(v8::Isolate* isolate);
+  MenuViews(v8::Isolate* isolate, v8::Local<v8::Object> wrapper);
 
  protected:
   void PopupAt(Window* window, int x, int y, int positioning_item) override;

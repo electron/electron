@@ -44,8 +44,9 @@ mate::Handle<SystemPreferences> SystemPreferences::Create(
 
 // static
 void SystemPreferences::BuildPrototype(
-    v8::Isolate* isolate, v8::Local<v8::ObjectTemplate> prototype) {
-  mate::ObjectTemplateBuilder(isolate, prototype)
+    v8::Isolate* isolate, v8::Local<v8::FunctionTemplate> prototype) {
+  prototype->SetClassName(mate::StringToV8(isolate, "SystemPreferences"));
+  mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
 #if defined(OS_WIN)
       .SetMethod("isAeroGlassEnabled", &SystemPreferences::IsAeroGlassEnabled)
 #elif defined(OS_MACOSX)
@@ -68,11 +69,15 @@ void SystemPreferences::BuildPrototype(
 
 namespace {
 
+using atom::api::SystemPreferences;
+
 void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
-  dict.Set("systemPreferences", atom::api::SystemPreferences::Create(isolate));
+  dict.Set("systemPreferences", SystemPreferences::Create(isolate));
+  dict.Set("SystemPreferences",
+           SystemPreferences::GetConstructor(isolate)->GetFunction());
 }
 
 }  // namespace

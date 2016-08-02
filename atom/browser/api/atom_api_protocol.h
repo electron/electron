@@ -39,7 +39,7 @@ class Protocol : public mate::TrackableObject<Protocol> {
       v8::Isolate* isolate, AtomBrowserContext* browser_context);
 
   static void BuildPrototype(v8::Isolate* isolate,
-                             v8::Local<v8::ObjectTemplate> prototype);
+                             v8::Local<v8::FunctionTemplate> prototype);
 
  protected:
   Protocol(v8::Isolate* isolate, AtomBrowserContext* browser_context);

@@ -10,6 +10,8 @@
 #include "native_mate/object_template_builder.h"
 #include "ui/events/event_constants.h"
 
+#include "atom/common/node_includes.h"
+
 namespace mate {
 
 namespace {

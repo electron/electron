@@ -66,7 +66,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
       v8::Isolate* isolate, const mate::Dictionary& options);
 
   static void BuildPrototype(v8::Isolate* isolate,
-                             v8::Local<v8::ObjectTemplate> prototype);
+                             v8::Local<v8::FunctionTemplate> prototype);
 
   int GetID() const;
   Type GetType() const;

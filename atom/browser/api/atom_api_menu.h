@@ -20,10 +20,10 @@ namespace api {
 class Menu : public mate::TrackableObject<Menu>,
              public AtomMenuModel::Delegate {
  public:
-  static mate::WrappableBase* Create(v8::Isolate* isolate);
+  static mate::WrappableBase* New(mate::Arguments* args);
 
   static void BuildPrototype(v8::Isolate* isolate,
-                             v8::Local<v8::ObjectTemplate> prototype);
+                             v8::Local<v8::FunctionTemplate> prototype);
 
 #if defined(OS_MACOSX)
   // Set the global menubar.
@@ -36,7 +36,7 @@ class Menu : public mate::TrackableObject<Menu>,
   AtomMenuModel* model() const { return model_.get(); }
 
  protected:
-  explicit Menu(v8::Isolate* isolate);
+  Menu(v8::Isolate* isolate, v8::Local<v8::Object> wrapper);
   ~Menu() override;
 
   // mate::Wrappable:

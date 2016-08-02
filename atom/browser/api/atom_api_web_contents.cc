@@ -228,10 +228,6 @@ namespace api {
 
 namespace {
 
-// The wrapWebContents function which is implemented in JavaScript
-using WrapWebContentsCallback = base::Callback<void(v8::Local<v8::Value>)>;
-WrapWebContentsCallback g_wrap_web_contents;
-
 content::ServiceWorkerContext* GetServiceWorkerContext(
     const content::WebContents* web_contents) {
   auto context = web_contents->GetBrowserContext();
@@ -1458,8 +1454,9 @@ int WebContents::GetFrameRate() const {
 
 // static
 void WebContents::BuildPrototype(v8::Isolate* isolate,
-                                 v8::Local<v8::ObjectTemplate> prototype) {
-  mate::ObjectTemplateBuilder(isolate, prototype)
+                                 v8::Local<v8::FunctionTemplate> prototype) {
+  prototype->SetClassName(mate::StringToV8(isolate, "WebContents"));
+  mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .MakeDestroyable()
       .SetMethod("getId", &WebContents::GetID)
       .SetMethod("equal", &WebContents::Equal)
@@ -1569,41 +1566,32 @@ mate::Handle<WebContents> WebContents::CreateFrom(
     return mate::CreateHandle(isolate, static_cast<WebContents*>(existing));
 
   // Otherwise create a new WebContents wrapper object.
-  auto handle = mate::CreateHandle(
-      isolate, new WebContents(isolate, web_contents));
-  g_wrap_web_contents.Run(handle.ToV8());
-  return handle;
+  return mate::CreateHandle(isolate, new WebContents(isolate, web_contents));
 }
 
 // static
 mate::Handle<WebContents> WebContents::Create(
     v8::Isolate* isolate, const mate::Dictionary& options) {
-  auto handle = mate::CreateHandle(isolate, new WebContents(isolate, options));
-  g_wrap_web_contents.Run(handle.ToV8());
-  return handle;
-}
-
-void SetWrapWebContents(const WrapWebContentsCallback& callback) {
-  g_wrap_web_contents = callback;
+  return mate::CreateHandle(isolate, new WebContents(isolate, options));
 }
 
 }  // namespace api
 
 }  // namespace atom
 
-
 namespace {
+
+using atom::api::WebContents;
 
 void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
-  dict.SetMethod("create", &atom::api::WebContents::Create);
-  dict.SetMethod("_setWrapWebContents", &atom::api::SetWrapWebContents);
-  dict.SetMethod("fromId",
-                 &mate::TrackableObject<atom::api::WebContents>::FromWeakMapID);
+  dict.Set("WebContents", WebContents::GetConstructor(isolate)->GetFunction());
+  dict.SetMethod("create", &WebContents::Create);
+  dict.SetMethod("fromId", &mate::TrackableObject<WebContents>::FromWeakMapID);
   dict.SetMethod("getAllWebContents",
-                 &mate::TrackableObject<atom::api::WebContents>::GetAll);
+                 &mate::TrackableObject<WebContents>::GetAll);
 }
 
 }  // namespace

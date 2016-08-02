@@ -74,8 +74,9 @@ mate::Handle<GlobalShortcut> GlobalShortcut::Create(v8::Isolate* isolate) {
 
 // static
 void GlobalShortcut::BuildPrototype(
-    v8::Isolate* isolate, v8::Local<v8::ObjectTemplate> prototype) {
-  mate::ObjectTemplateBuilder(isolate, prototype)
+    v8::Isolate* isolate, v8::Local<v8::FunctionTemplate> prototype) {
+  prototype->SetClassName(mate::StringToV8(isolate, "GlobalShortcut"));
+  mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("register", &GlobalShortcut::Register)
       .SetMethod("isRegistered", &GlobalShortcut::IsRegistered)
       .SetMethod("unregister", &GlobalShortcut::Unregister)

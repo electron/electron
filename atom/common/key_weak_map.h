@@ -9,7 +9,7 @@
 #include <utility>
 #include <vector>
 
-#include "base/memory/linked_ptr.h"
+#include "base/macros.h"
 #include "v8/include/v8.h"
 
 namespace atom {
@@ -26,16 +26,16 @@ class KeyWeakMap {
 
   KeyWeakMap() {}
   virtual ~KeyWeakMap() {
-    for (const auto& p : map_)
-      p.second.second->ClearWeak();
+    for (auto& p : map_)
+      p.second.second.ClearWeak();
   }
 
   // Sets the object to WeakMap with the given |key|.
   void Set(v8::Isolate* isolate, const K& key, v8::Local<v8::Object> object) {
-    auto value = make_linked_ptr(new v8::Global<v8::Object>(isolate, object));
     KeyObject key_object = {key, this};
-    auto& p = map_[key] = std::make_pair(key_object, value);
-    value->SetWeak(&(p.first), OnObjectGC, v8::WeakCallbackType::kParameter);
+    auto& p = map_[key] =
+        std::make_pair(key_object, v8::Global<v8::Object>(isolate, object));
+    p.second.SetWeak(&(p.first), OnObjectGC, v8::WeakCallbackType::kParameter);
   }
 
   // Gets the object from WeakMap by its |key|.
@@ -44,7 +44,7 @@ class KeyWeakMap {
     if (iter == map_.end())
       return v8::MaybeLocal<v8::Object>();
     else
-      return v8::Local<v8::Object>::New(isolate, *(iter->second.second));
+      return v8::Local<v8::Object>::New(isolate, iter->second.second);
   }
 
   // Whethere there is an object with |key| in this WeakMap.
@@ -56,10 +56,8 @@ class KeyWeakMap {
   std::vector<v8::Local<v8::Object>> Values(v8::Isolate* isolate) const {
     std::vector<v8::Local<v8::Object>> keys;
     keys.reserve(map_.size());
-    for (const auto& iter : map_) {
-      const auto& value = *(iter.second.second);
-      keys.emplace_back(v8::Local<v8::Object>::New(isolate, value));
-    }
+    for (const auto& it : map_)
+      keys.emplace_back(v8::Local<v8::Object>::New(isolate, it.second.second));
     return keys;
   }
 
@@ -69,7 +67,7 @@ class KeyWeakMap {
     if (iter == map_.end())
       return;
 
-    iter->second.second->ClearWeak();
+    iter->second.second.ClearWeak();
     map_.erase(iter);
   }
 
@@ -82,7 +80,7 @@ class KeyWeakMap {
 
   // Map of stored objects.
   std::unordered_map<
-      K, std::pair<KeyObject, linked_ptr<v8::Global<v8::Object>>>> map_;
+      K, std::pair<KeyObject, v8::Global<v8::Object>>> map_;
 
   DISALLOW_COPY_AND_ASSIGN(KeyWeakMap);
 };

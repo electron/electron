@@ -18,6 +18,9 @@ import zipfile
 from config import is_verbose_mode
 from env_util import get_vs_env
 
+BOTO_DIR = os.path.abspath(os.path.join(__file__, '..', '..', '..', 'vendor',
+                                        'boto'))
+
 
 def get_host_arch():
   """Returns the host architecture with a predictable string."""
@@ -202,28 +205,33 @@ def parse_version(version):
     return vs + ['0'] * (4 - len(vs))
 
 
-def s3put(bucket, access_key, secret_key, prefix, key_prefix, files):
-  env = os.environ.copy()
-  BOTO_DIR = os.path.abspath(os.path.join(__file__, '..', '..', '..', 'vendor',
-                                          'boto'))
-  env['PYTHONPATH'] = os.path.pathsep.join([
-    env.get('PYTHONPATH', ''),
+def boto_path_dirs():
+  return [
     os.path.join(BOTO_DIR, 'build', 'lib'),
-    os.path.join(BOTO_DIR, 'build', 'lib.linux-x86_64-2.7')])
+    os.path.join(BOTO_DIR, 'build', 'lib.linux-x86_64-2.7')
+  ]
 
-  boto = os.path.join(BOTO_DIR, 'bin', 's3put')
+
+def run_boto_script(access_key, secret_key, script_name, *args):
+  env = os.environ.copy()
+  env['AWS_ACCESS_KEY_ID'] = access_key
+  env['AWS_SECRET_ACCESS_KEY'] = secret_key
+  env['PYTHONPATH'] = os.path.pathsep.join(
+      [env.get('PYTHONPATH', '')] + boto_path_dirs())
+
+  boto = os.path.join(BOTO_DIR, 'bin', script_name)
+  execute([sys.executable, boto] + list(args), env)
+
+
+def s3put(bucket, access_key, secret_key, prefix, key_prefix, files):
   args = [
-    sys.executable,
-    boto,
     '--bucket', bucket,
-    '--access_key', access_key,
-    '--secret_key', secret_key,
     '--prefix', prefix,
     '--key_prefix', key_prefix,
     '--grant', 'public-read'
   ] + files
 
-  execute(args, env)
+  run_boto_script(access_key, secret_key, 's3put', *args)
 
 
 def import_vs_env(target_arch):
