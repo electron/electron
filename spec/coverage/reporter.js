@@ -63,16 +63,51 @@ exports.generateReport = () => {
   reporter.write(collector, true, function () {})
 }
 
-const saveCoverageData = (webContents, callback) => {
-  webContents.executeJavaScript('[global.__coverage__, global.process && global.process.pid]', function (results) {
+// Save coverage data from the browser window with the given pid
+const saveCoverageData = (coverage, pid) => {
+  if (coverage && pid) {
+    const dataPath = path.join(outputPath, 'data', `${pid}-${Date.now()}.json`)
+    mkdirp.sync(path.dirname(dataPath))
+    fs.writeFileSync(dataPath, JSON.stringify(coverage))
+  }
+}
+
+const getCoverageFromWebContents = (webContents, callback) => {
+  webContents.executeJavaScript('[global.__coverage__, global.process && global.process.pid]', (results) => {
     const coverage = results[0]
     const pid = results[1]
-    if (coverage && pid) {
-      const dataPath = path.join(outputPath, 'data', `${pid}-${Date.now()}.json`)
-      mkdirp.sync(path.dirname(dataPath))
-      fs.writeFileSync(dataPath, JSON.stringify(coverage, null, 2))
-      callback()
-    }
+    callback(coverage, pid)
+  })
+}
+
+// Save coverage data when a BrowserWindow is closed manually
+const patchBrowserWindow = () => {
+  const {BrowserWindow} = require('electron')
+
+  const {destroy} = BrowserWindow.prototype
+  BrowserWindow.prototype.destroy = function () {
+    if (this.isDestroyed()) return destroy.call(this)
+    getCoverageFromWebContents(this.webContents, (coverage, pid) => {
+      saveCoverageData(coverage, pid)
+      destroy.call(this)
+    })
+  }
+}
+
+// Save coverage data when beforeunload fires on the webContent's window object
+const saveCoverageOnBeforeUnload = () => {
+  const {app, ipcMain} = require('electron')
+
+  ipcMain.on('save-coverage', function (event, coverage, pid) {
+    saveCoverageData(coverage, pid)
+  })
+
+  app.on('web-contents-created', function (event, webContents) {
+    webContents.executeJavaScript(`
+      window.addEventListener('beforeunload', function () {
+        require('electron').ipcRenderer.send('save-coverage', global.__coverage__, process && process.pid)
+      })
+    `)
   })
 }
 
@@ -81,13 +116,6 @@ exports.setupCoverage = () => {
   if (coverage == null) return
 
   rimraf.sync(path.join(outputPath, 'data'))
-
-  const {BrowserWindow} = require('electron')
-
-  const originalDestroy = BrowserWindow.prototype.destroy
-  BrowserWindow.prototype.destroy = function () {
-    saveCoverageData(this.webContents, () => {
-      originalDestroy.call(this)
-    })
-  }
+  patchBrowserWindow()
+  saveCoverageOnBeforeUnload()
 }
