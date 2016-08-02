@@ -39,7 +39,7 @@ class Tray : public mate::TrackableObject<Tray>,
                                   mate::Arguments* args);
 
   static void BuildPrototype(v8::Isolate* isolate,
-                             v8::Local<v8::ObjectTemplate> prototype);
+                             v8::Local<v8::FunctionTemplate> prototype);
 
  protected:
   Tray(v8::Isolate* isolate, v8::Local<v8::Object> wrapper,

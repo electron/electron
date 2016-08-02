@@ -24,7 +24,7 @@ class SystemPreferences : public mate::EventEmitter<SystemPreferences> {
   static mate::Handle<SystemPreferences> Create(v8::Isolate* isolate);
 
   static void BuildPrototype(v8::Isolate* isolate,
-                             v8::Local<v8::ObjectTemplate> prototype);
+                             v8::Local<v8::FunctionTemplate> prototype);
 
 #if defined(OS_WIN)
   bool IsAeroGlassEnabled();

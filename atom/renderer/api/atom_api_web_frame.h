@@ -32,7 +32,7 @@ class WebFrame : public mate::Wrappable<WebFrame> {
   static mate::Handle<WebFrame> Create(v8::Isolate* isolate);
 
   static void BuildPrototype(v8::Isolate* isolate,
-                             v8::Local<v8::ObjectTemplate> prototype);
+                             v8::Local<v8::FunctionTemplate> prototype);
 
  private:
   explicit WebFrame(v8::Isolate* isolate);

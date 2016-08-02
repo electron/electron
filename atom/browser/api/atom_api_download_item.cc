@@ -167,8 +167,8 @@ base::FilePath DownloadItem::GetSavePath() const {
 
 // static
 void DownloadItem::BuildPrototype(v8::Isolate* isolate,
-                                  v8::Local<v8::ObjectTemplate> prototype) {
-  mate::ObjectTemplateBuilder(isolate, prototype)
+                                  v8::Local<v8::FunctionTemplate> prototype) {
+  mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .MakeDestroyable()
       .SetMethod("pause", &DownloadItem::Pause)
       .SetMethod("isPaused", &DownloadItem::IsPaused)

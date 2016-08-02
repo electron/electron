@@ -40,7 +40,7 @@ class App : public AtomBrowserClient::Delegate,
   static mate::Handle<App> Create(v8::Isolate* isolate);
 
   static void BuildPrototype(v8::Isolate* isolate,
-                             v8::Local<v8::ObjectTemplate> prototype);
+                             v8::Local<v8::FunctionTemplate> prototype);
 
   // Called when window with disposition needs to be created.
   void OnCreateWindow(const GURL& target_url,

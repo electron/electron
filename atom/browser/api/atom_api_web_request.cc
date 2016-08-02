@@ -88,8 +88,8 @@ mate::Handle<WebRequest> WebRequest::Create(
 
 // static
 void WebRequest::BuildPrototype(v8::Isolate* isolate,
-                                v8::Local<v8::ObjectTemplate> prototype) {
-  mate::ObjectTemplateBuilder(isolate, prototype)
+                                v8::Local<v8::FunctionTemplate> prototype) {
+  mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("onBeforeRequest",
                  &WebRequest::SetResponseListener<
                     AtomNetworkDelegate::kOnBeforeRequest>)

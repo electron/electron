@@ -24,7 +24,7 @@ class AutoUpdater : public mate::EventEmitter<AutoUpdater>,
   static mate::Handle<AutoUpdater> Create(v8::Isolate* isolate);
 
   static void BuildPrototype(v8::Isolate* isolate,
-                             v8::Local<v8::ObjectTemplate> prototype);
+                             v8::Local<v8::FunctionTemplate> prototype);
 
  protected:
   explicit AutoUpdater(v8::Isolate* isolate);

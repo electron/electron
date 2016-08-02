@@ -155,8 +155,8 @@ bool Menu::IsVisibleAt(int index) const {
 
 // static
 void Menu::BuildPrototype(v8::Isolate* isolate,
-                          v8::Local<v8::ObjectTemplate> prototype) {
-  mate::ObjectTemplateBuilder(isolate, prototype)
+                          v8::Local<v8::FunctionTemplate> prototype) {
+  mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .MakeDestroyable()
       .SetMethod("insertItem", &Menu::InsertItemAt)
       .SetMethod("insertCheckItem", &Menu::InsertCheckItemAt)

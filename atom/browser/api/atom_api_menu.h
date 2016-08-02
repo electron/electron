@@ -23,7 +23,7 @@ class Menu : public mate::TrackableObject<Menu>,
   static mate::WrappableBase* New(mate::Arguments* args);
 
   static void BuildPrototype(v8::Isolate* isolate,
-                             v8::Local<v8::ObjectTemplate> prototype);
+                             v8::Local<v8::FunctionTemplate> prototype);
 
 #if defined(OS_MACOSX)
   // Set the global menubar.
