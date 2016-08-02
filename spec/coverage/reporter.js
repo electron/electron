@@ -86,7 +86,10 @@ const patchBrowserWindow = () => {
 
   const {destroy} = BrowserWindow.prototype
   BrowserWindow.prototype.destroy = function () {
-    if (this.isDestroyed()) return destroy.call(this)
+    if (this.isDestroyed() || !this.getURL()) {
+      return destroy.call(this)
+    }
+
     getCoverageFromWebContents(this.webContents, (coverage, pid) => {
       saveCoverageData(coverage, pid)
       destroy.call(this)
