@@ -212,7 +212,6 @@
       'atom/browser/osr_output_device.h',
       'atom/browser/osr_render_widget_host_view.cc',
       'atom/browser/osr_render_widget_host_view.h',
-      'atom/browser/osr_render_widget_host_view_win.cc',
       'atom/browser/osr_render_widget_host_view_mac.mm',
       'atom/browser/net/asar/asar_protocol_handler.cc',
       'atom/browser/net/asar/asar_protocol_handler.h',
