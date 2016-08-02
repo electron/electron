@@ -144,6 +144,8 @@ std::string V8ToString(v8::Local<v8::Value> value);
 
 template<>
 struct Converter<v8::Local<v8::Function> > {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                    v8::Local<v8::Function> val);
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      v8::Local<v8::Function>* out);

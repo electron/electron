@@ -36,13 +36,7 @@ class Wrappable : public WrappableBase {
     templ_ = new v8::Global<v8::FunctionTemplate>(isolate, constructor);
   }
 
-  static v8::Local<v8::Object> GetConstructor(v8::Isolate* isolate) {
-    return v8::Local<v8::FunctionTemplate>::New(isolate, *templ_)->GetFunction();
-  }
-
- protected:
-  // Init the class with T::BuildPrototype.
-  void Init(v8::Isolate* isolate) {
+  static v8::Local<v8::FunctionTemplate> GetConstructor(v8::Isolate* isolate) {
     // Fill the object template.
     if (!templ_) {
       v8::Local<v8::FunctionTemplate> templ = v8::FunctionTemplate::New(isolate);
@@ -50,12 +44,17 @@ class Wrappable : public WrappableBase {
       T::BuildPrototype(isolate, templ->PrototypeTemplate());
       templ_ = new v8::Global<v8::FunctionTemplate>(isolate, templ);
     }
+    return v8::Local<v8::FunctionTemplate>::New(isolate, *templ_);
+  }
 
-    v8::Local<v8::Object> wrapper;
-    v8::Local<v8::FunctionTemplate> templ =
-        v8::Local<v8::FunctionTemplate>::New(isolate, *templ_);
+ protected:
+  // Init the class with T::BuildPrototype.
+  void Init(v8::Isolate* isolate) {
+    v8::Local<v8::FunctionTemplate> templ = GetConstructor(isolate);
+
     // |wrapper| may be empty in some extreme cases, e.g., when
     // Object.prototype.constructor is overwritten.
+    v8::Local<v8::Object> wrapper;
     if (!templ->InstanceTemplate()->NewInstance(
             isolate->GetCurrentContext()).ToLocal(&wrapper)) {
       // The current wrappable object will be no longer managed by V8. Delete
