@@ -59,6 +59,8 @@ void SystemPreferences::BuildPrototype(
       .SetMethod("unsubscribeLocalNotification",
                  &SystemPreferences::UnsubscribeLocalNotification)
       .SetMethod("getUserDefault", &SystemPreferences::GetUserDefault)
+      .SetMethod("isSwipeTrackingFromScrollEventsEnabled",
+                 &SystemPreferences::IsSwipeTrackingFromScrollEventsEnabled)
 #endif
       .SetMethod("isDarkMode", &SystemPreferences::IsDarkMode);
 }

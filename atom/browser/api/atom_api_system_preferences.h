@@ -40,6 +40,10 @@ class SystemPreferences : public mate::EventEmitter<SystemPreferences> {
   void UnsubscribeLocalNotification(int request_id);
   v8::Local<v8::Value> GetUserDefault(const std::string& name,
                                       const std::string& type);
+  // On 10.7+, back and forward swipe gestures can be triggered using a scroll
+  // gesture, if enabled in System Preferences. This function returns true if
+  // the feature is supported and enabled, and false otherwise.
+  bool IsSwipeTrackingFromScrollEventsEnabled();
 #endif
   bool IsDarkMode();
 
