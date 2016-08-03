@@ -129,14 +129,6 @@
       e.preventDefault();
       return false;
     };
-
-    document.onload = () => {
-      var a = false
-      setInterval(function () {
-        document.body.querySelector('.container').style.background = a ? 'red' : 'blue'
-        a = !a
-      }, 200)
-    }
   </script>
 
   <div class="header">
