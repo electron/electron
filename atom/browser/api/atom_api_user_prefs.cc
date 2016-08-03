@@ -95,6 +95,13 @@ void UserPrefs::RegisterIntegerPref(const std::string& path,
     browser_context()->AddOverlayPref(path);
 }
 
+void UserPrefs::RegisterDoublePref(const std::string& path,
+    double default_value, bool overlay) {
+  browser_context()->pref_registry()->RegisterDoublePref(path, default_value);
+  if (overlay)
+    browser_context()->AddOverlayPref(path);
+}
+
 std::string UserPrefs::GetStringPref(const std::string& path) {
   return browser_context()->user_prefs()->GetString(path);
 }
@@ -114,6 +121,10 @@ bool UserPrefs::GetBooleanPref(const std::string& path) {
 
 int UserPrefs::GetIntegerPref(const std::string& path) {
   return browser_context()->user_prefs()->GetInteger(path);
+}
+
+double UserPrefs::GetDoublePref(const std::string& path) {
+  return browser_context()->user_prefs()->GetDouble(path);
 }
 
 void UserPrefs::SetStringPref(const std::string& path,
@@ -138,7 +149,21 @@ void UserPrefs::SetBooleanPref(const std::string& path,
 
 void UserPrefs::SetIntegerPref(const std::string& path,
     int value) {
-  browser_context()->user_prefs()->SetBoolean(path, value);
+  browser_context()->user_prefs()->SetInteger(path, value);
+}
+
+void UserPrefs::SetDoublePref(const std::string& path,
+    double value) {
+  browser_context()->user_prefs()->SetDouble(path, value);
+}
+
+double UserPrefs::GetDefaultZoomLevel() {
+  return browser_context()->GetZoomLevelPrefs()->GetDefaultZoomLevelPref();
+}
+
+void UserPrefs::SetDefaultZoomLevel(double zoom) {
+  if (!browser_context()->IsOffTheRecord())
+    browser_context()->GetZoomLevelPrefs()->SetDefaultZoomLevelPref(zoom);
 }
 
 // static
@@ -157,7 +182,7 @@ void UserPrefs::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("registerListPref", &UserPrefs::RegisterListPref)
       .SetMethod("registerBooleanPref", &UserPrefs::RegisterBooleanPref)
       .SetMethod("registerIntegerPref", &UserPrefs::RegisterIntegerPref)
-      // .SetMethod("registerDoublePref", &UserPrefs::RegisterDoublePref)
+      .SetMethod("registerDoublePref", &UserPrefs::RegisterDoublePref)
       // .SetMethod("registerFilePathPref", &UserPrefs::RegisterFilePathPref)
 
       .SetMethod("getStringPref", &UserPrefs::GetStringPref)
@@ -165,16 +190,19 @@ void UserPrefs::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("getListPref", &UserPrefs::GetListPref)
       .SetMethod("getBooleanPref", &UserPrefs::GetBooleanPref)
       .SetMethod("getIntegerPref", &UserPrefs::GetIntegerPref)
-      // .SetMethod("getDoublePref", &UserPrefs::GetDoublePref)
+      .SetMethod("getDoublePref", &UserPrefs::GetDoublePref)
       // .SetMethod("getFilePathPref", &UserPrefs::GetFilePathPref)
 
       .SetMethod("setStringPref", &UserPrefs::SetStringPref)
       .SetMethod("setDictionaryPref", &UserPrefs::SetDictionaryPref)
       .SetMethod("setListPref", &UserPrefs::SetListPref)
       .SetMethod("setBooleanPref", &UserPrefs::SetBooleanPref)
-      .SetMethod("setIntegerPref", &UserPrefs::SetIntegerPref);
-      // .SetMethod("setDoublePref", &UserPrefs::SetDoublePref)
+      .SetMethod("setIntegerPref", &UserPrefs::SetIntegerPref)
+      .SetMethod("setDoublePref", &UserPrefs::SetDoublePref)
       // .SetMethod("setFilePathPref", &UserPrefs::SetFilePathPref)
+
+      .SetMethod("getDefaultZoomLevel", &UserPrefs::GetDefaultZoomLevel)
+      .SetMethod("setDefaultZoomLevel", &UserPrefs::SetDefaultZoomLevel);
 }
 
 }  // namespace api

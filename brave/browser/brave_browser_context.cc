@@ -9,6 +9,7 @@
 #include "chrome/browser/chrome_notification_types.h"
 #include "chrome/browser/custom_handlers/protocol_handler_registry.h"
 #include "chrome/browser/custom_handlers/protocol_handler_registry_factory.h"
+#include "chrome/common/pref_names.h"
 #include "components/keyed_service/content/browser_context_dependency_manager.h"
 #include "components/prefs/json_pref_store.h"
 #include "components/prefs/pref_change_registrar.h"
@@ -17,6 +18,7 @@
 #include "components/syncable_prefs/pref_service_syncable.h"
 #include "components/syncable_prefs/pref_service_syncable_factory.h"
 #include "components/user_prefs/user_prefs.h"
+#include "components/ui/zoom/zoom_event_manager.h"
 #include "content/public/browser/notification_service.h"
 #include "content/public/browser/notification_source.h"
 #include "content/public/browser/browser_thread.h"
@@ -39,6 +41,7 @@
 #endif
 
 using content::BrowserThread;
+using content::HostZoomMap;
 
 #if defined(ENABLE_EXTENSIONS)
 namespace {
@@ -78,15 +81,16 @@ BraveBrowserContext::BraveBrowserContext(const std::string& partition,
   }
   InitPrefs();
 
-#if defined(ENABLE_EXTENSIONS)
   if (in_memory) {
+    TrackZoomLevelsFromParent();
+#if defined(ENABLE_EXTENSIONS)
     BrowserThread::PostTask(
         BrowserThread::IO, FROM_HERE,
         base::Bind(&NotifyOTRProfileCreatedOnIOThread,
           base::Unretained(original_context_),
           base::Unretained(this)));
-  }
 #endif
+  }
 }
 
 BraveBrowserContext::~BraveBrowserContext() {
@@ -161,6 +165,66 @@ BraveBrowserContext* BraveBrowserContext::otr_context() {
   return nullptr;
 }
 
+void BraveBrowserContext::TrackZoomLevelsFromParent() {
+  DCHECK_NE(true, IsOffTheRecord());
+
+  // Here we only want to use zoom levels stored in the main-context's default
+  // storage partition. We're not interested in zoom levels in special
+  // partitions, e.g. those used by WebViewGuests.
+  HostZoomMap* host_zoom_map = HostZoomMap::GetDefaultForBrowserContext(this);
+  HostZoomMap* parent_host_zoom_map =
+      HostZoomMap::GetDefaultForBrowserContext(original_context_);
+  host_zoom_map->CopyFrom(parent_host_zoom_map);
+  // Observe parent profile's HostZoomMap changes so they can also be applied
+  // to this profile's HostZoomMap.
+  track_zoom_subscription_ = parent_host_zoom_map->AddZoomLevelChangedCallback(
+      base::Bind(&BraveBrowserContext::OnParentZoomLevelChanged,
+                 base::Unretained(this)));
+  if (!original_context_->GetZoomLevelPrefs())
+    return;
+
+  // Also track changes to the parent profile's default zoom level.
+  parent_default_zoom_level_subscription_ =
+      original_context_->GetZoomLevelPrefs()->RegisterDefaultZoomLevelCallback(
+          base::Bind(&BraveBrowserContext::UpdateDefaultZoomLevel,
+                     base::Unretained(this)));
+}
+
+ChromeZoomLevelPrefs* BraveBrowserContext::GetZoomLevelPrefs() {
+  return static_cast<ChromeZoomLevelPrefs*>(
+      GetDefaultStoragePartition(this)->GetZoomLevelDelegate());
+}
+
+void BraveBrowserContext::OnParentZoomLevelChanged(
+    const HostZoomMap::ZoomLevelChange& change) {
+  HostZoomMap* host_zoom_map = HostZoomMap::GetDefaultForBrowserContext(this);
+  switch (change.mode) {
+    case HostZoomMap::ZOOM_CHANGED_TEMPORARY_ZOOM:
+      return;
+    case HostZoomMap::ZOOM_CHANGED_FOR_HOST:
+      host_zoom_map->SetZoomLevelForHost(change.host, change.zoom_level);
+      return;
+    case HostZoomMap::ZOOM_CHANGED_FOR_SCHEME_AND_HOST:
+      host_zoom_map->SetZoomLevelForHostAndScheme(change.scheme,
+          change.host,
+          change.zoom_level);
+      return;
+    case HostZoomMap::PAGE_SCALE_IS_ONE_CHANGED:
+      return;
+  }
+}
+
+void BraveBrowserContext::UpdateDefaultZoomLevel() {
+  HostZoomMap* host_zoom_map = HostZoomMap::GetDefaultForBrowserContext(this);
+  double default_zoom_level =
+      original_context_->GetZoomLevelPrefs()->GetDefaultZoomLevelPref();
+  host_zoom_map->SetDefaultZoomLevel(default_zoom_level);
+  // HostZoomMap does not trigger zoom notification events when the default
+  // zoom level is set, so we need to do it here.
+  ui_zoom::ZoomEventManager::GetForBrowserContext(this)
+      ->OnDefaultZoomLevelChanged();
+}
+
 content::PermissionManager* BraveBrowserContext::GetPermissionManager() {
   if (!permission_manager_.get())
     permission_manager_.reset(new BravePermissionManager);
@@ -214,6 +278,8 @@ void BraveBrowserContext::RegisterPrefs(PrefRegistrySimple* pref_registry) {
           extension_prefs, overlay_pref_names_));
     user_prefs::UserPrefs::Set(this, user_prefs_.get());
   } else {
+    pref_registry_->RegisterDictionaryPref(prefs::kPartitionDefaultZoomLevel);
+    pref_registry_->RegisterDictionaryPref(prefs::kPartitionPerHostZoomLevels);
     // TODO(bridiver) - is this necessary or is it covered by
     // BrowserContextDependencyManager
     ProtocolHandlerRegistry::RegisterProfilePrefs(pref_registry_.get());
@@ -278,6 +344,13 @@ void BraveBrowserContext::OnPrefsLoaded(bool success) {
 content::ResourceContext* BraveBrowserContext::GetResourceContext() {
   content::BrowserContext::EnsureResourceContextInitialized(this);
   return brightray::BrowserContext::GetResourceContext();
+}
+
+std::unique_ptr<content::ZoomLevelDelegate>
+BraveBrowserContext::CreateZoomLevelDelegate(const base::FilePath& partition_path) {
+  return base::WrapUnique(new ChromeZoomLevelPrefs(
+      GetPrefs(), GetPath(), partition_path,
+      ui_zoom::ZoomEventManager::GetForBrowserContext(this)->GetWeakPtr()));
 }
 
 }  // namespace brave

@@ -8,6 +8,8 @@
 #include <string>
 #include <vector>
 #include "atom/browser/atom_browser_context.h"
+#include "content/public/browser/host_zoom_map.h"
+#include "chrome/browser/ui/zoom/chrome_zoom_level_prefs.h"
 
 class PrefChangeRegistrar;
 
@@ -29,6 +31,10 @@ class BraveBrowserContext : public atom::AtomBrowserContext {
       bool in_memory, const base::DictionaryValue& options);
   ~BraveBrowserContext() override;
 
+  std::unique_ptr<content::ZoomLevelDelegate> CreateZoomLevelDelegate(
+      const base::FilePath& partition_path) override;
+
+
   static BraveBrowserContext*
       FromBrowserContext(content::BrowserContext* browser_context);
 
@@ -38,6 +44,8 @@ class BraveBrowserContext : public atom::AtomBrowserContext {
 
   // brightray::BrowserContext:
   void RegisterPrefs(PrefRegistrySimple* pref_registry) override;
+
+  ChromeZoomLevelPrefs* GetZoomLevelPrefs();
 
   // content::BrowserContext:
   net::NetworkDelegate* CreateNetworkDelegate() override;
@@ -57,6 +65,9 @@ class BraveBrowserContext : public atom::AtomBrowserContext {
   syncable_prefs::PrefServiceSyncable* user_prefs() const {
     return user_prefs_.get(); }
 
+  syncable_prefs::PrefServiceSyncable* GetPrefs() const {
+    return user_prefs_.get(); }
+
   PrefChangeRegistrar* user_prefs_change_registrar() const {
     return user_prefs_registrar_.get(); }
 
@@ -67,10 +78,18 @@ class BraveBrowserContext : public atom::AtomBrowserContext {
 
  private:
   void OnPrefsLoaded(bool success);
+  void TrackZoomLevelsFromParent();
+  void OnParentZoomLevelChanged(
+      const content::HostZoomMap::ZoomLevelChange& change);
+  void UpdateDefaultZoomLevel();
   scoped_refptr<user_prefs::PrefRegistrySyncable> pref_registry_;
   std::unique_ptr<syncable_prefs::PrefServiceSyncable> user_prefs_;
   std::unique_ptr<PrefChangeRegistrar> user_prefs_registrar_;
   std::vector<const char*> overlay_pref_names_;
+
+  std::unique_ptr<content::HostZoomMap::Subscription> track_zoom_subscription_;
+    std::unique_ptr<ChromeZoomLevelPrefs::DefaultZoomLevelSubscription>
+        parent_default_zoom_level_subscription_;
 
   std::unique_ptr<BravePermissionManager> permission_manager_;
 

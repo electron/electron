@@ -48,12 +48,15 @@ class UserPrefs : public mate::TrackableObject<UserPrefs> {
       bool default_value, bool overlay);
   void RegisterIntegerPref(const std::string& path,
       int default_value, bool overlay);
+  void RegisterDoublePref(const std::string& path,
+      double default_value, bool overlay);
 
   std::string GetStringPref(const std::string& path);
   const base::DictionaryValue* GetDictionaryPref(const std::string& path);
   const base::ListValue* GetListPref(const std::string& path);
   bool GetBooleanPref(const std::string& path);
   int GetIntegerPref(const std::string& path);
+  double GetDoublePref(const std::string& path);
 
   void SetStringPref(const std::string& path, const std::string& value);
   void SetDictionaryPref(const std::string& path,
@@ -61,6 +64,7 @@ class UserPrefs : public mate::TrackableObject<UserPrefs> {
   void SetListPref(const std::string& path, const base::ListValue& value);
   void SetBooleanPref(const std::string& path, bool value);
   void SetIntegerPref(const std::string& path, int value);
+  void SetDoublePref(const std::string& path, double value);
 
   void SetDefaultStringPref(const std::string& path, const std::string& value);
   void SetDefaultDictionaryPref(const std::string& path,
@@ -69,6 +73,10 @@ class UserPrefs : public mate::TrackableObject<UserPrefs> {
                           const base::ListValue& value);
   void SetDefaultBooleanPref(const std::string& path, bool value);
   void SetDefaultIntegerPref(const std::string& path, int value);
+  void SetDefaultDoublePref(const std::string& path, double value);
+
+  double GetDefaultZoomLevel();
+  void SetDefaultZoomLevel(double zoom);
 
   brave::BraveBrowserContext* browser_context() {
     return static_cast<brave::BraveBrowserContext*>(browser_context_);

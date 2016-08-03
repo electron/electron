@@ -31,4 +31,11 @@ const char kPolicyIgnoredProtocolHandlers[] =
 // specified.
 const char kCustomHandlersEnabled[] = "custom_handlers.enabled";
 
+// Double that indicates the default zoom level.
+const char kPartitionDefaultZoomLevel[] = "partition.default_zoom_level";
+
+// Dictionary that maps hostnames to zoom levels.  Hosts not in this pref will
+// be displayed at the default zoom level.
+const char kPartitionPerHostZoomLevels[] = "partition.per_host_zoom_levels";
+
 }  // namespace prefs

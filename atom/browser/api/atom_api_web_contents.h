@@ -176,6 +176,12 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void TabTraverse(bool reverse);
   void SetActive(bool active);
 
+  // Zoom
+  void SetZoomLevel(double zoom);
+  void ZoomIn();
+  void ZoomOut();
+  void ZoomReset();
+
 #if defined(ENABLE_EXTENSIONS)
   bool ExecuteScriptInTab(const std::string code_string,
       const std::string extension_id,

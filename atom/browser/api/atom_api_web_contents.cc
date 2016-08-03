@@ -49,6 +49,8 @@
 #include "chrome/browser/printing/print_preview_message_handler.h"
 #include "chrome/browser/custom_handlers/protocol_handler_registry.h"
 #include "chrome/browser/custom_handlers/protocol_handler_registry_factory.h"
+#include "components/ui/zoom/page_zoom.h"
+#include "components/ui/zoom/zoom_controller.h"
 #include "content/browser/renderer_host/render_widget_host_impl.h"
 #include "content/public/browser/browser_plugin_guest_manager.h"
 #include "content/browser/web_contents/web_contents_impl.h"
@@ -324,6 +326,8 @@ WebContents::WebContents(v8::Isolate* isolate,
   WebContentsPermissionHelper::CreateForWebContents(web_contents);
   // Intialize security state client.
   AtomSecurityStateModelClient::CreateForWebContents(web_contents);
+  // Initialize zoom state controller
+  ui_zoom::ZoomController::CreateForWebContents(web_contents);
 
   web_contents->SetUserAgentOverride(GetBrowserContext()->GetUserAgent());
 
@@ -1741,6 +1745,30 @@ v8::Local<v8::Value> WebContents::GetOwnerBrowserWindow() {
     return v8::Null(isolate());
 }
 
+void WebContents::SetZoomLevel(double zoom) {
+  ui_zoom::ZoomController* zoom_controller =
+      ui_zoom::ZoomController::FromWebContents(web_contents());
+  if (!zoom_controller)
+    return;
+
+  zoom_controller->SetZoomLevel(zoom);
+}
+
+void WebContents::ZoomIn() {
+  ui_zoom::PageZoom::Zoom(web_contents(),
+                          content::PAGE_ZOOM_IN);
+}
+
+void WebContents::ZoomOut() {
+  ui_zoom::PageZoom::Zoom(web_contents(),
+                          content::PAGE_ZOOM_OUT);
+}
+
+void WebContents::ZoomReset() {
+  ui_zoom::PageZoom::Zoom(web_contents(),
+                          content::PAGE_ZOOM_RESET);
+}
+
 int32_t WebContents::ID() const {
   return weak_map_id();
 }
@@ -1876,6 +1904,14 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
                   &WebContents::SetWebRTCIPHandlingPolicy)
       .SetMethod("getWebRTCIPHandlingPolicy",
                   &WebContents::GetWebRTCIPHandlingPolicy)
+      .SetMethod("setZoomLevel",
+                  &WebContents::SetZoomLevel)
+      .SetMethod("zoomIn",
+                  &WebContents::ZoomIn)
+      .SetMethod("zoomOut",
+                  &WebContents::ZoomOut)
+      .SetMethod("zoomReset",
+                  &WebContents::ZoomReset)
 #if defined(ENABLE_EXTENSIONS)
       .SetMethod("executeScriptInTab", &WebContents::ExecuteScriptInTab)
 #endif

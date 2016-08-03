@@ -16,4 +16,7 @@ extern const char kIgnoredProtocolHandlers[];
 extern const char kPolicyRegisteredProtocolHandlers[];
 extern const char kPolicyIgnoredProtocolHandlers[];
 extern const char kCustomHandlersEnabled[];
+
+extern const char kPartitionDefaultZoomLevel[];
+extern const char kPartitionPerHostZoomLevels[];
 }  // namespace prefs
