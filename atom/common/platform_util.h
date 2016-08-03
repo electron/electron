@@ -42,13 +42,6 @@ bool MoveItemToTrash(const base::FilePath& full_path);
 
 void Beep();
 
-#if defined(OS_MACOSX)
-// On 10.7+, back and forward swipe gestures can be triggered using a scroll
-// gesture, if enabled in System Preferences. This function returns true if
-// the feature is supported and enabled, and false otherwise.
-bool IsSwipeTrackingFromScrollEventsEnabled();
-#endif
-
 }  // namespace platform_util
 
 #endif  // ATOM_COMMON_PLATFORM_UTIL_H_

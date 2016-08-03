@@ -13,6 +13,10 @@ console.log(systemPreferences.isDarkMode())
 
 This method returns `true` if the system is in Dark Mode, and `false` otherwise.
 
+### `systemPreferences.isSwipeTrackingFromScrollEventsEnabled()` _macOS_
+
+This method returns `true` if the Swipe between pages setting is on, and `false` otherwise.
+
 ### `systemPreferences.subscribeNotification(event, callback)` _macOS_
 
 * `event` String
