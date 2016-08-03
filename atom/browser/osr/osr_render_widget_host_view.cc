@@ -259,9 +259,9 @@ class AtomCopyFrameGenerator {
       const gfx::Rect& damage_rect,
       const SkBitmap& bitmap,
       std::unique_ptr<SkAutoLockPixels> bitmap_pixels_lock) {
-    uint8_t* pixels = reinterpret_cast<uint8_t*>(bitmap.getPixels());
-
-    view_->OnPaint(damage_rect, bitmap.width(), bitmap.height(), pixels);
+    view_->OnPaint(damage_rect,
+                   gfx::Size(bitmap.width(), bitmap.height()),
+                   bitmap.getPixels());
 
     if (frame_retry_count_ > 0)
       frame_retry_count_ = 0;
@@ -845,15 +845,12 @@ bool OffScreenRenderWidgetHostView::IsAutoResizeEnabled() const {
 
 void OffScreenRenderWidgetHostView::OnPaint(
     const gfx::Rect& damage_rect,
-    int bitmap_width,
-    int bitmap_height,
+    const gfx::Size& bitmap_size,
     void* bitmap_pixels) {
   TRACE_EVENT0("electron", "OffScreenRenderWidgetHostView::OnPaint");
 
-  if (!callback_.is_null()) {
-    callback_.Run(damage_rect, gfx::Size(bitmap_width, bitmap_height),
-                  bitmap_pixels);
-  }
+  if (!callback_.is_null())
+    callback_.Run(damage_rect, bitmap_size, bitmap_pixels);
 }
 
 void OffScreenRenderWidgetHostView::SetPainting(bool painting) {

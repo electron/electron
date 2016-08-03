@@ -12,26 +12,25 @@
 
 namespace atom {
 
-typedef base::Callback<void(const gfx::Rect&, int, int, void*)> OnPaintCallback;
+typedef base::Callback<void(const gfx::Rect&,
+                            const gfx::Size&, void*)> OnPaintCallback;
 
 class OffScreenOutputDevice : public cc::SoftwareOutputDevice {
  public:
   OffScreenOutputDevice(bool transparent, const OnPaintCallback& callback);
   ~OffScreenOutputDevice();
 
+  // cc::SoftwareOutputDevice:
   void Resize(const gfx::Size& pixel_size, float scale_factor) override;
-
   SkCanvas* BeginPaint(const gfx::Rect& damage_rect) override;
-
   void EndPaint() override;
 
   void SetActive(bool active);
-
   void OnPaint(const gfx::Rect& damage_rect);
 
  private:
   const bool transparent_;
-  const OnPaintCallback callback_;
+  OnPaintCallback callback_;
 
   bool active_;
 

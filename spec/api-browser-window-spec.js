@@ -1244,8 +1244,8 @@ describe('browser-window module', function () {
           assert.equal(w.webContents.getFrameRate(), 60)
           done()
         })
+        w.loadURL('file://' + fixtures + '/api/offscreen-rendering.html')
       })
-      w.loadURL('file://' + fixtures + '/api/offscreen-rendering.html')
     })
 
     describe('window.webContents.setFrameRate(frameRate)', function () {

@@ -190,7 +190,7 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
   // Use frame scheduling for offscreen renderers.
   // TODO(zcbenz): Remove this after Chrome 54, on which it becomes default.
   bool offscreen;
-  if (web_preferences.Get("offscreen", &offscreen) && offscreen)
+  if (web_preferences.GetBoolean("offscreen", &offscreen) && offscreen)
     command_line->AppendSwitch(cc::switches::kEnableBeginFrameScheduling);
 }
 

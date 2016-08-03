@@ -314,8 +314,9 @@ WebContents::WebContents(v8::Isolate* isolate,
     options.Get("transparent", &transparent);
 
     content::WebContents::CreateParams params(session->browser_context());
-    params.view = new OffScreenWebContentsView(transparent);
-    params.delegate_view = params.view;
+    auto* view = new OffScreenWebContentsView(transparent);
+    params.view = view;
+    params.delegate_view = view;
 
     web_contents = content::WebContents::Create(params);
     view->SetWebContents(web_contents);
@@ -609,9 +610,9 @@ void WebContents::DocumentLoadedInFrame(
     content::RenderFrameHost* render_frame_host) {
   if (!render_frame_host->GetParent()) {
     if (IsOffScreen()) {
-      const auto* rwhv = web_contents()->GetRenderWidgetHostView();
+      auto* rwhv = web_contents()->GetRenderWidgetHostView();
       static_cast<OffScreenRenderWidgetHostView*>(rwhv)->SetPaintCallback(
-          base::Bind(&WebContents::OnPaint, base::Unretained(this), isolate));
+          base::Bind(&WebContents::OnPaint, base::Unretained(this)));
     }
 
     Emit("dom-ready");
@@ -1347,19 +1348,20 @@ bool WebContents::IsOffScreen() const {
   return type_ == OFF_SCREEN;
 }
 
-void WebContents::OnPaint(v8::Isolate* isolate, const gfx::Rect& dirty_rect,
-                          const gfx::Size& bitmap_size, void* bitmap_pixels) {
+void WebContents::OnPaint(const gfx::Rect& dirty_rect,
+                          const gfx::Size& bitmap_size,
+                          void* bitmap_pixels) {
   v8::MaybeLocal<v8::Object> buffer = node::Buffer::New(
-      isolate, reinterpret_cast<char*>(bitmap_pixels), sizeof(bitmap_pixels));
+      isolate(), reinterpret_cast<char*>(bitmap_pixels), sizeof(bitmap_pixels));
   if (!buffer.IsEmpty())
-    Emit("paint", damage_rect, buffer.ToLocalChecked(), bitmap_size);
+    Emit("paint", dirty_rect, buffer.ToLocalChecked(), bitmap_size);
 }
 
 void WebContents::StartPainting() {
   if (!IsOffScreen())
     return;
 
-  const auto* osr_rwhv = static_cast<OffScreenRenderWidgetHostView*>(
+  auto* osr_rwhv = static_cast<OffScreenRenderWidgetHostView*>(
       web_contents()->GetRenderWidgetHostView());
   if (osr_rwhv) {
     osr_rwhv->SetPainting(true);
@@ -1371,7 +1373,7 @@ void WebContents::StopPainting() {
   if (!IsOffScreen())
     return;
 
-  const auto* osr_rwhv = static_cast<OffScreenRenderWidgetHostView*>(
+  auto* osr_rwhv = static_cast<OffScreenRenderWidgetHostView*>(
       web_contents()->GetRenderWidgetHostView());
   if (osr_rwhv) {
     osr_rwhv->SetPainting(false);
@@ -1392,7 +1394,7 @@ void WebContents::SetFrameRate(int frame_rate) {
   if (!IsOffScreen())
     return;
 
-  const auto* osr_rwhv = static_cast<OffScreenRenderWidgetHostView*>(
+  auto* osr_rwhv = static_cast<OffScreenRenderWidgetHostView*>(
       web_contents()->GetRenderWidgetHostView());
   if (osr_rwhv)
     osr_rwhv->SetFrameRate(frame_rate);

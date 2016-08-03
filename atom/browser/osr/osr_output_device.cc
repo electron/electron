@@ -10,10 +10,10 @@
 namespace atom {
 
 OffScreenOutputDevice::OffScreenOutputDevice(bool transparent,
-    const OnPaintCallback& callback):
-      transparent_(transparent),
-      callback_(callback),
-      active_(false) {
+                                             const OnPaintCallback& callback)
+  : transparent_(transparent),
+    callback_(callback),
+    active_(false) {
   DCHECK(!callback_.is_null());
 }
 
@@ -27,21 +27,21 @@ void OffScreenOutputDevice::Resize(
   if (viewport_pixel_size_ == pixel_size) return;
   viewport_pixel_size_ = pixel_size;
 
-  canvas_.reset(NULL);
+  canvas_.reset();
   bitmap_.reset(new SkBitmap);
   bitmap_->allocN32Pixels(viewport_pixel_size_.width(),
                           viewport_pixel_size_.height(),
                           !transparent_);
   if (bitmap_->drawsNothing()) {
     NOTREACHED();
-    bitmap_.reset(NULL);
+    bitmap_.reset();
     return;
   }
 
   if (transparent_)
     bitmap_->eraseARGB(0, 0, 0, 0);
 
-  canvas_.reset(new SkCanvas(*bitmap_.get()));
+  canvas_.reset(new SkCanvas(*bitmap_));
 }
 
 SkCanvas* OffScreenOutputDevice::BeginPaint(const gfx::Rect& damage_rect) {
@@ -71,8 +71,7 @@ void OffScreenOutputDevice::SetActive(bool active) {
   active_ = active;
 
   if (active_)
-    OnPaint(gfx::Rect(0, 0, viewport_pixel_size_.width(),
-      viewport_pixel_size_.height()));
+    OnPaint(gfx::Rect(viewport_pixel_size_));
 }
 
 void OffScreenOutputDevice::OnPaint(const gfx::Rect& damage_rect) {
@@ -86,9 +85,8 @@ void OffScreenOutputDevice::OnPaint(const gfx::Rect& damage_rect) {
   if (rect.IsEmpty())
     return;
 
-  SkAutoLockPixels bitmap_pixels_lock(*bitmap_.get());
-
-  callback_.Run(rect, bitmap_->width(), bitmap_->height(),
+  SkAutoLockPixels bitmap_pixels_lock(*bitmap_);
+  callback_.Run(rect, gfx::Size(bitmap_->width(), bitmap_->height()),
                 bitmap_->getPixels());
 }
 

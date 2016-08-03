@@ -198,8 +198,7 @@ class OffScreenRenderWidgetHostView:
   void SetPaintCallback(const OnPaintCallback& callback);
 
   void OnPaint(const gfx::Rect& damage_rect,
-               int bitmap_width,
-               int bitmap_height,
+               const gfx::Size& bitmap_size,
                void* bitmap_pixels);
 
   void SetPainting(bool painting);
@@ -219,7 +218,7 @@ private:
 
   OffScreenOutputDevice* software_output_device_;
 
-  const OnPaintCallback callback_;
+  OnPaintCallback callback_;
 
   int frame_rate_;
   int frame_rate_threshold_ms_;
