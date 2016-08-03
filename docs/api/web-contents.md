@@ -352,7 +352,7 @@ Emitted when the cursor's type changes. The `type` parameter can be `default`,
 `not-allowed`, `zoom-in`, `zoom-out`, `grab`, `grabbing`, `custom`.
 
 If the `type` parameter is `custom`, the `image` parameter will hold the custom
-cursor image in a `NativeImage`, and `scale`, `size` and `hotspot` will hold 
+cursor image in a `NativeImage`, and `scale`, `size` and `hotspot` will hold
 additional information about the custom cursor.
 
 #### Event: 'context-menu'
@@ -535,6 +535,10 @@ console.log(currentURL)
 #### `contents.getTitle()`
 
 Returns the title of the current web page.
+
+#### `contents.isDestroyed()`
+
+Returns a Boolean, whether the web page is destroyed.
 
 #### `contents.isFocused()`
 
