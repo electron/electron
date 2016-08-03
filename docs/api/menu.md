@@ -2,28 +2,13 @@
 
 > Create native application menus and context menus.
 
-This module is a main process module which can be used in a render process via
-the `remote` module.
-
-Each menu consists of multiple [menu items](menu-item.md) and each menu item can
-have a submenu.
-
-## Process Difference Notice
-
-Due to Menu and MenuItem can be used in two processes, the way they are included is slightly different.
-
-### Main process
-```
-const {Menu, MenuItem} = require('electron');
-```
-
-### Render process
-```
-const {remote} = require('electron')
-const {Menu, MenuItem} = remote;
-```
+Each `Menu` consists of multiple [`MenuItem`](menu-item.md)s and each `MenuItem`
+can have a submenu.
 
 ## Examples
+
+The `Menu` class is only available in the main process, but you can also use it
+in the render process via the [`remote`](remote.md) module.
 
 ### Main process
 
@@ -181,14 +166,14 @@ Menu.setApplicationMenu(menu)
 ### Render process
 
 Below is an example of creating a menu dynamically in a web page
-(render process) by using the [remote](remote.md) module, and showing it when
+(render process) by using the [`remote`](remote.md) module, and showing it when
 the user right clicks the page:
 
 ```html
 <!-- index.html -->
 <script>
 const {remote} = require('electron')
-const {Menu, MenuItem} = remote;
+const {Menu, MenuItem} = remote
 
 const menu = new Menu()
 menu.append(new MenuItem({label: 'MenuItem1', click() { console.log('item 1 clicked') }}))
@@ -201,7 +186,6 @@ window.addEventListener('contextmenu', (e) => {
 }, false)
 </script>
 ```
-
 
 ## Class: Menu
 
