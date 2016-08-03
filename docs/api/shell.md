@@ -59,7 +59,7 @@ Play the beep sound.
     exist.
 * `options` Object
   * `target` String - The target to launch from this shortcut.
-  * `cwd` String (optional) - The target to launch from this shortcut. Default
+  * `cwd` String (optional) - The working directory. Default
     is empty.
   * `args` String (optional) - The arguments to be applied to `target` when
     launching from this shortcut. Default is empty.
