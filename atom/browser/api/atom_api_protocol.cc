@@ -17,6 +17,7 @@
 #include "atom/common/options_switches.h"
 #include "base/command_line.h"
 #include "base/strings/string_util.h"
+#include "brightray/common/switches.h"
 #include "content/public/browser/child_process_security_policy.h"
 #include "native_mate/dictionary.h"
 #include "url/url_util.h"
@@ -208,6 +209,8 @@ void RegisterStandardSchemes(
 
   auto command_line = base::CommandLine::ForCurrentProcess();
   command_line->AppendSwitchASCII(atom::switches::kStandardSchemes,
+                                  base::JoinString(schemes, ","));
+  command_line->AppendSwitchASCII(brightray::switches::kCookieableSchemes,
                                   base::JoinString(schemes, ","));
 }
 
