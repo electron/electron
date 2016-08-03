@@ -379,6 +379,13 @@ OffScreenRenderWidgetHostView::~OffScreenRenderWidgetHostView() {
 #if defined(OS_MACOSX)
   DestroyPlatformWidget();
 #endif
+
+  if (copy_frame_generator_.get())
+    copy_frame_generator_.reset(NULL);
+
+  delegated_frame_host_.reset(NULL);
+  compositor_.reset(NULL);
+  root_layer_.reset(NULL);
 }
 
 void OffScreenRenderWidgetHostView::OnBeginFrameTimerTick() {
