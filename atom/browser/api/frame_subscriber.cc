@@ -9,11 +9,6 @@
 #include "atom/common/node_includes.h"
 #include "content/public/browser/render_widget_host.h"
 
-#include "content/browser/compositor/image_transport_factory.h"
-#include "cc/surfaces/surface_manager.h"
-#include "cc/surfaces/surface.h"
-#include "cc/output/copy_output_request.h"
-
 namespace atom {
 
 namespace api {
@@ -35,7 +30,6 @@ bool FrameSubscriber::ShouldCaptureFrame(
     scoped_refptr<media::VideoFrame>* storage,
     DeliverFrameCallback* callback) {
   const auto host = view_ ? view_->GetRenderWidgetHost() : nullptr;
-
   if (!view_ || !host)
     return false;
 

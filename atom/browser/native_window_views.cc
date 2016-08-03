@@ -57,13 +57,6 @@
 #include "ui/views/widget/desktop_aura/desktop_native_widget_aura.h"
 #endif
 
-#include "content/public/browser/render_widget_host.h"
-#include "content/public/browser/render_view_host.h"
-#include "content/public/browser/context_factory.h"
-#include "base/single_thread_task_runner.h"
-#include "base/threading/thread.h"
-#include "ui/gfx/native_widget_types.h"
-
 namespace atom {
 
 namespace {
@@ -1237,13 +1230,13 @@ void NativeWindowViews::HandleKeyboardEvent(
   }
 }
 
-/*gfx::Size NativeWindowViews::GetMinimumSize() {
+gfx::Size NativeWindowViews::GetMinimumSize() {
   return NativeWindow::GetMinimumSize();
 }
 
 gfx::Size NativeWindowViews::GetMaximumSize() {
   return NativeWindow::GetMaximumSize();
-}*/
+}
 
 bool NativeWindowViews::AcceleratorPressed(const ui::Accelerator& accelerator) {
   return accelerator_util::TriggerAcceleratorTableCommand(
