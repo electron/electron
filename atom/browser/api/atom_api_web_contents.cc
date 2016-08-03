@@ -1354,7 +1354,7 @@ void WebContents::OnPaint(const gfx::Rect& dirty_rect,
   mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate());
   dict.Set("width", bitmap_size.width());
   dict.Set("height", bitmap_size.height());
-  dict.Set("pixel", pixel_size);
+  dict.Set("bytesPerPixel", pixel_size);
 
   if (!buffer.IsEmpty())
     Emit("paint", dirty_rect, buffer.ToLocalChecked(), dict);

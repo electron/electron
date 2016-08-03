@@ -381,11 +381,11 @@ OffScreenRenderWidgetHostView::~OffScreenRenderWidgetHostView() {
 #endif
 
   if (copy_frame_generator_.get())
-    copy_frame_generator_.reset(NULL);
+    copy_frame_generator_.reset(nullptr);
 
-  delegated_frame_host_.reset(NULL);
-  compositor_.reset(NULL);
-  root_layer_.reset(NULL);
+  delegated_frame_host_.reset(nullptr);
+  compositor_.reset(nullptr);
+  root_layer_.reset(nullptr);
 }
 
 void OffScreenRenderWidgetHostView::OnBeginFrameTimerTick() {
