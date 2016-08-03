@@ -195,7 +195,7 @@ class OffScreenRenderWidgetHostView:
   void CreatePlatformWidget();
   void DestroyPlatformWidget();
 
-  void SetPaintCallback(const atom::OnPaintCallback*);
+  void SetPaintCallback(const OnPaintCallback& callback);
 
   void OnPaint(const gfx::Rect& damage_rect,
                int bitmap_width,
@@ -219,7 +219,7 @@ private:
 
   OffScreenOutputDevice* software_output_device_;
 
-  const atom::OnPaintCallback* callback_;
+  const OnPaintCallback callback_;
 
   int frame_rate_;
   int frame_rate_threshold_ms_;

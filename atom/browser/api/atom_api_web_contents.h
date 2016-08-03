@@ -12,7 +12,6 @@
 #include "atom/browser/api/save_page_handler.h"
 #include "atom/browser/api/trackable_object.h"
 #include "atom/browser/common_web_contents_delegate.h"
-#include "atom/browser/osr/osr_output_device.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "content/public/common/favicon_url.h"
 #include "content/common/cursors/webcursor.h"
@@ -69,7 +68,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   int GetID() const;
   Type GetType() const;
-  bool IsFocused() const;
   bool Equal(const WebContents* web_contents) const;
   void LoadURL(const GURL& url, const mate::Dictionary& options);
   void DownloadURL(const GURL& url);
@@ -132,6 +130,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   // Focus.
   void Focus();
+  bool IsFocused() const;
   void TabTraverse(bool reverse);
 
   // Send messages to browser.
@@ -158,8 +157,9 @@ class WebContents : public mate::TrackableObject<WebContents>,
   bool IsGuest() const;
 
   // Methods for offscreen rendering
-  void OnPaint(v8::Isolate*, const gfx::Rect&, int, int, void*);
   bool IsOffScreen() const;
+  void OnPaint(v8::Isolate* isolate, const gfx::Rect& dirty_rect,
+               const gfx::Size& bitmap_size, void* bitmap_pixels);
   void StartPainting();
   void StopPainting();
   bool IsPainting() const;
@@ -289,8 +289,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
  private:
   AtomBrowserContext* GetBrowserContext() const;
-
-  atom::OnPaintCallback paint_callback_;
 
   uint32_t GetNextRequestId() {
     return ++request_id_;

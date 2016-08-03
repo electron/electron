@@ -17,6 +17,7 @@
 #include "atom/browser/lib/bluetooth_chooser.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/net/atom_network_delegate.h"
+#include "atom/browser/osr/osr_output_device.h"
 #include "atom/browser/osr/osr_web_contents_view.h"
 #include "atom/browser/osr/osr_render_widget_host_view.h"
 #include "atom/browser/ui/drag_util.h"
@@ -313,16 +314,11 @@ WebContents::WebContents(v8::Isolate* isolate,
     options.Get("transparent", &transparent);
 
     content::WebContents::CreateParams params(session->browser_context());
-
-    auto view = new OffScreenWebContentsView(transparent);
-    params.view = view;
-    params.delegate_view = view;
+    params.view = new OffScreenWebContentsView(transparent);
+    params.delegate_view = params.view;
 
     web_contents = content::WebContents::Create(params);
     view->SetWebContents(web_contents);
-
-    paint_callback_ = base::Bind(&WebContents::OnPaint, base::Unretained(this),
-      isolate);
   } else {
     content::WebContents::CreateParams params(session->browser_context());
     web_contents = content::WebContents::Create(params);
@@ -383,7 +379,7 @@ bool WebContents::AddMessageToConsole(content::WebContents* source,
                                       const base::string16& message,
                                       int32_t line_no,
                                       const base::string16& source_id) {
-  if ((type_ == BROWSER_WINDOW || type_ == OFF_SCREEN)) {
+  if (type_ == BROWSER_WINDOW || type_ == OFF_SCREEN) {
     return false;
   } else {
     Emit("console-message", level, message, line_no, source_id);
@@ -394,7 +390,7 @@ bool WebContents::AddMessageToConsole(content::WebContents* source,
 void WebContents::OnCreateWindow(const GURL& target_url,
                                  const std::string& frame_name,
                                  WindowOpenDisposition disposition) {
-  if ((type_ == BROWSER_WINDOW || type_ == OFF_SCREEN))
+  if (type_ == BROWSER_WINDOW || type_ == OFF_SCREEN)
     Emit("-new-window", target_url, frame_name, disposition);
   else
     Emit("new-window", target_url, frame_name, disposition);
@@ -404,7 +400,7 @@ content::WebContents* WebContents::OpenURLFromTab(
     content::WebContents* source,
     const content::OpenURLParams& params) {
   if (params.disposition != CURRENT_TAB) {
-    if ((type_ == BROWSER_WINDOW || type_ == OFF_SCREEN))
+    if (type_ == BROWSER_WINDOW || type_ == OFF_SCREEN)
       Emit("-new-window", params.url, "", params.disposition);
     else
       Emit("new-window", params.url, "", params.disposition);
@@ -421,7 +417,7 @@ content::WebContents* WebContents::OpenURLFromTab(
 void WebContents::BeforeUnloadFired(content::WebContents* tab,
                                     bool proceed,
                                     bool* proceed_to_fire_unload) {
-  if ((type_ == BROWSER_WINDOW || type_ == OFF_SCREEN))
+  if (type_ == BROWSER_WINDOW || type_ == OFF_SCREEN)
     *proceed_to_fire_unload = proceed;
   else
     *proceed_to_fire_unload = true;
@@ -613,9 +609,9 @@ void WebContents::DocumentLoadedInFrame(
     content::RenderFrameHost* render_frame_host) {
   if (!render_frame_host->GetParent()) {
     if (IsOffScreen()) {
-      const auto rwhv = web_contents()->GetRenderWidgetHostView();
-      auto osr_rwhv = static_cast<OffScreenRenderWidgetHostView *>(rwhv);
-      osr_rwhv->SetPaintCallback(&paint_callback_);
+      const auto* rwhv = web_contents()->GetRenderWidgetHostView();
+      static_cast<OffScreenRenderWidgetHostView*>(rwhv)->SetPaintCallback(
+          base::Bind(&WebContents::OnPaint, base::Unretained(this), isolate));
     }
 
     Emit("dom-ready");
@@ -812,13 +808,6 @@ int WebContents::GetID() const {
 WebContents::Type WebContents::GetType() const {
   return type_;
 }
-
-#if !defined(OS_MACOSX)
-bool WebContents::IsFocused() const {
-  auto view = web_contents()->GetRenderWidgetHostView();
-  return view && view->HasFocus();
-}
-#endif
 
 bool WebContents::Equal(const WebContents* web_contents) const {
   return GetID() == web_contents->GetID();
@@ -1183,6 +1172,13 @@ void WebContents::Focus() {
   web_contents()->Focus();
 }
 
+#if !defined(OS_MACOSX)
+bool WebContents::IsFocused() const {
+  auto view = web_contents()->GetRenderWidgetHostView();
+  return view && view->HasFocus();
+}
+#endif
+
 void WebContents::TabTraverse(bool reverse) {
   web_contents()->FocusThroughTabTraversal(reverse);
 }
@@ -1351,6 +1347,67 @@ bool WebContents::IsOffScreen() const {
   return type_ == OFF_SCREEN;
 }
 
+void WebContents::OnPaint(v8::Isolate* isolate, const gfx::Rect& dirty_rect,
+                          const gfx::Size& bitmap_size, void* bitmap_pixels) {
+  v8::MaybeLocal<v8::Object> buffer = node::Buffer::New(
+      isolate, reinterpret_cast<char*>(bitmap_pixels), sizeof(bitmap_pixels));
+  if (!buffer.IsEmpty())
+    Emit("paint", damage_rect, buffer.ToLocalChecked(), bitmap_size);
+}
+
+void WebContents::StartPainting() {
+  if (!IsOffScreen())
+    return;
+
+  const auto* osr_rwhv = static_cast<OffScreenRenderWidgetHostView*>(
+      web_contents()->GetRenderWidgetHostView());
+  if (osr_rwhv) {
+    osr_rwhv->SetPainting(true);
+    osr_rwhv->Show();
+  }
+}
+
+void WebContents::StopPainting() {
+  if (!IsOffScreen())
+    return;
+
+  const auto* osr_rwhv = static_cast<OffScreenRenderWidgetHostView*>(
+      web_contents()->GetRenderWidgetHostView());
+  if (osr_rwhv) {
+    osr_rwhv->SetPainting(false);
+    osr_rwhv->Hide();
+  }
+}
+
+bool WebContents::IsPainting() const {
+  if (!IsOffScreen())
+    return false;
+
+  const auto* osr_rwhv = static_cast<OffScreenRenderWidgetHostView*>(
+      web_contents()->GetRenderWidgetHostView());
+  return osr_rwhv && osr_rwhv->IsPainting();
+}
+
+void WebContents::SetFrameRate(int frame_rate) {
+  if (!IsOffScreen())
+    return;
+
+  const auto* osr_rwhv = static_cast<OffScreenRenderWidgetHostView*>(
+      web_contents()->GetRenderWidgetHostView());
+  if (osr_rwhv)
+    osr_rwhv->SetFrameRate(frame_rate);
+}
+
+int WebContents::GetFrameRate() const {
+  if (!IsOffScreen())
+    return 0;
+
+  const auto* osr_rwhv = static_cast<OffScreenRenderWidgetHostView*>(
+      web_contents()->GetRenderWidgetHostView());
+  return osr_rwhv ? osr_rwhv->GetFrameRate() : 0;
+}
+
+
 v8::Local<v8::Value> WebContents::GetWebPreferences(v8::Isolate* isolate) {
   WebContentsPreferences* web_preferences =
       WebContentsPreferences::FromWebContents(web_contents());
@@ -1391,64 +1448,6 @@ v8::Local<v8::Value> WebContents::Debugger(v8::Isolate* isolate) {
     debugger_.Reset(isolate, handle.ToV8());
   }
   return v8::Local<v8::Value>::New(isolate, debugger_);
-}
-
-void WebContents::OnPaint(
-    v8::Isolate* isolate,
-    const gfx::Rect& damage_rect,
-    int bitmap_width,
-    int bitmap_height,
-    void* bitmap_pixels) {
-  v8::MaybeLocal<v8::Object> buffer = node::Buffer::New(isolate,
-    reinterpret_cast<char *>(bitmap_pixels), sizeof(bitmap_pixels));
-
-  const gfx::Size bitmap_size = gfx::Size(bitmap_width, bitmap_height);
-  Emit("paint", damage_rect, buffer.ToLocalChecked(), bitmap_size);
-}
-
-void WebContents::StartPainting() {
-  if (IsOffScreen()) {
-    const auto osr_rwhv = static_cast<OffScreenRenderWidgetHostView*>(
-      web_contents()->GetRenderWidgetHostView());
-    osr_rwhv->SetPainting(true);
-    osr_rwhv->Show();
-  }
-}
-
-void WebContents::StopPainting() {
-  if (IsOffScreen()) {
-    const auto osr_rwhv = static_cast<OffScreenRenderWidgetHostView*>(
-      web_contents()->GetRenderWidgetHostView());
-    osr_rwhv->SetPainting(false);
-    osr_rwhv->Hide();
-  }
-}
-
-bool WebContents::IsPainting() const {
-  if (IsOffScreen()) {
-    const auto osr_rwhv = static_cast<OffScreenRenderWidgetHostView*>(
-      web_contents()->GetRenderWidgetHostView());
-    return osr_rwhv->IsPainting();
-  }
-
-  return false;
-}
-
-void WebContents::SetFrameRate(int frame_rate) {
-  if (IsOffScreen()) {
-    const auto osr_rwhv = static_cast<OffScreenRenderWidgetHostView*>(
-      web_contents()->GetRenderWidgetHostView());
-    osr_rwhv->SetFrameRate(frame_rate);
-  }
-}
-
-int WebContents::GetFrameRate() const {
-  if (IsOffScreen()) {
-    const auto osr_rwhv = static_cast<OffScreenRenderWidgetHostView*>(
-      web_contents()->GetRenderWidgetHostView());
-    return osr_rwhv->GetFrameRate();
-  }
-  return 0;
 }
 
 // static
@@ -1501,6 +1500,7 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("findInPage", &WebContents::FindInPage)
       .SetMethod("stopFindInPage", &WebContents::StopFindInPage)
       .SetMethod("focus", &WebContents::Focus)
+      .SetMethod("isFocused", &WebContents::IsFocused)
       .SetMethod("tabTraverse", &WebContents::TabTraverse)
       .SetMethod("_send", &WebContents::SendIPCMessage)
       .SetMethod("sendInputEvent", &WebContents::SendInputEvent)
@@ -1510,6 +1510,12 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("startDrag", &WebContents::StartDrag)
       .SetMethod("setSize", &WebContents::SetSize)
       .SetMethod("isGuest", &WebContents::IsGuest)
+      .SetMethod("isOffscreen", &WebContents::IsOffScreen)
+      .SetMethod("startPainting", &WebContents::StartPainting)
+      .SetMethod("stopPainting", &WebContents::StopPainting)
+      .SetMethod("isPainting", &WebContents::IsPainting)
+      .SetMethod("setFrameRate", &WebContents::SetFrameRate)
+      .SetMethod("getFrameRate", &WebContents::GetFrameRate)
       .SetMethod("getType", &WebContents::GetType)
       .SetMethod("getWebPreferences", &WebContents::GetWebPreferences)
       .SetMethod("getOwnerBrowserWindow", &WebContents::GetOwnerBrowserWindow)
@@ -1525,13 +1531,6 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
                  &WebContents::ShowDefinitionForSelection)
       .SetMethod("copyImageAt", &WebContents::CopyImageAt)
       .SetMethod("capturePage", &WebContents::CapturePage)
-      .SetMethod("isFocused", &WebContents::IsFocused)
-      .SetMethod("isOffscreen", &WebContents::IsOffScreen)
-      .SetMethod("startPainting", &WebContents::StartPainting)
-      .SetMethod("stopPainting", &WebContents::StopPainting)
-      .SetMethod("isPainting", &WebContents::IsPainting)
-      .SetMethod("setFrameRate", &WebContents::SetFrameRate)
-      .SetMethod("getFrameRate", &WebContents::GetFrameRate)
       .SetProperty("id", &WebContents::ID)
       .SetProperty("session", &WebContents::Session)
       .SetProperty("hostWebContents", &WebContents::HostWebContents)

@@ -301,7 +301,7 @@ class AtomCopyFrameGenerator {
 class AtomBeginFrameTimer : public cc::DelayBasedTimeSourceClient {
  public:
   AtomBeginFrameTimer(int frame_rate_threshold_ms,
-                     const base::Closure& callback)
+                      const base::Closure& callback)
       : callback_(callback) {
     time_source_ = cc::DelayBasedTimeSource::Create(
         base::TimeDelta::FromMilliseconds(frame_rate_threshold_ms),
@@ -341,7 +341,6 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
     render_widget_host_(content::RenderWidgetHostImpl::From(host)),
     native_window_(native_window),
     software_output_device_(NULL),
-    callback_(nullptr),
     frame_rate_(60),
     frame_rate_threshold_ms_(0),
     transparent_(transparent),
@@ -450,7 +449,7 @@ bool OffScreenRenderWidgetHostView::OnMessageReceived(
 }
 
 void OffScreenRenderWidgetHostView::SetPaintCallback(
-    const OnPaintCallback* callback) {
+    const OnPaintCallback& callback) {
   callback_ = callback;
 }
 
@@ -851,8 +850,9 @@ void OffScreenRenderWidgetHostView::OnPaint(
     void* bitmap_pixels) {
   TRACE_EVENT0("electron", "OffScreenRenderWidgetHostView::OnPaint");
 
-  if (callback_ != nullptr) {
-    callback_->Run(damage_rect, bitmap_width, bitmap_height, bitmap_pixels);
+  if (!callback_.is_null()) {
+    callback_.Run(damage_rect, gfx::Size(bitmap_width, bitmap_height),
+                  bitmap_pixels);
   }
 }
 
