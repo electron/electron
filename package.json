@@ -3,7 +3,7 @@
   "version": "1.3.2",
   "devDependencies": {
     "asar": "^0.11.0",
-    "electabul": "~0.0.3",
+    "electabul": "~0.0.4",
     "request": "*",
     "standard": "^7.1.2",
     "standard-markdown": "^1.1.1"
