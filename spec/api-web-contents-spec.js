@@ -38,7 +38,7 @@ describe('webContents module', function () {
       w.webContents.on('devtools-opened', function () {
         const all = webContents.getAllWebContents().sort(function (a, b) {
           return a.getId() - b.getId()
-        }).filter(function (wc) { return wc.getType() !== 'offscreen' })
+        })
 
         assert.equal(all.length, 4)
         assert.equal(all[0].getType(), 'window')
