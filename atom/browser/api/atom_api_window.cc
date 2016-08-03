@@ -16,7 +16,9 @@
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/node_includes.h"
 #include "atom/common/options_switches.h"
+#include "base/command_line.h"
 #include "content/public/browser/render_process_host.h"
+#include "content/public/common/content_switches.h"
 #include "native_mate/constructor.h"
 #include "native_mate/dictionary.h"
 #include "ui/gfx/geometry/rect.h"
@@ -77,6 +79,10 @@ Window::Window(v8::Isolate* isolate, v8::Local<v8::Object> wrapper,
   v8::Local<v8::Value> value;
   if (options.Get(options::kBackgroundColor, &value))
     web_preferences.Set(options::kBackgroundColor, value);
+
+  v8::Local<v8::Value> transparent;
+  if (options.Get("transparent", &transparent))
+    web_preferences.Set("transparent", transparent);
 
   // Creates the WebContents used by BrowserWindow.
   auto web_contents = WebContents::Create(isolate, web_preferences);

@@ -18,6 +18,8 @@
 #include "native_mate/handle.h"
 #include "ui/gfx/image/image.h"
 
+#include "atom/browser/osr_output_device.h"
+
 namespace blink {
 struct WebDeviceEmulationParams;
 }
@@ -48,6 +50,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
     BROWSER_WINDOW,  // Used by BrowserWindow.
     REMOTE,  // Thin wrap around an existing WebContents.
     WEB_VIEW,  // Used by <webview>.
+    OFF_SCREEN,  // Used for offscreen rendering
   };
 
   // For node.js callback function type: function(error, buffer)
@@ -154,6 +157,15 @@ class WebContents : public mate::TrackableObject<WebContents>,
   // Methods for creating <webview>.
   void SetSize(const SetSizeParams& params);
   bool IsGuest() const;
+
+  // Methods for offscreen rendering
+  void OnPaint(v8::Isolate*, const gfx::Rect&, int, int, void*);
+  bool IsOffScreen() const;
+  void StartPainting();
+  void StopPainting();
+  bool IsPainting() const;
+  void SetFrameRate(int frame_rate);
+  int GetFrameRate() const;
 
   // Callback triggered on permission response.
   void OnEnterFullscreenModeForTab(content::WebContents* source,
@@ -278,6 +290,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
  private:
   AtomBrowserContext* GetBrowserContext() const;
+
+  atom::OnPaintCallback paint_callback_;
 
   uint32_t GetNextRequestId() {
     return ++request_id_;

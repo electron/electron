@@ -1167,4 +1167,156 @@ describe('browser-window module', function () {
       w.loadURL(server.url)
     })
   })
+
+  describe('offscreen rendering', function () {
+    it('creates offscreen window', function (done) {
+      this.timeout(10000)
+      let w_ = new BrowserWindow({
+        show: false,
+        width: 400,
+        height: 400,
+        webPreferences: {
+          backgroundThrottling: false,
+          offscreen: true
+        }
+      })
+      w_.loadURL('file://' + fixtures + '/api/offscreen-rendering.html')
+      w_.webContents.once('paint', function (event, rect, data, size) {
+        assert.notEqual(data.length, 0)
+        done()
+      })
+    })
+
+    describe('window.webContents.isOffscreen', function () {
+      it('has offscreen type', function () {
+        let w_ = new BrowserWindow({
+          show: false,
+          width: 400,
+          height: 400,
+          webPreferences: {
+            backgroundThrottling: false,
+            offscreen: true
+          }
+        })
+        w_.loadURL('file://' + fixtures + '/api/offscreen-rendering.html')
+        assert.equal(w_.webContents.isOffscreen(), true)
+      })
+
+      it('is a regular window', function () {
+        assert.equal(w.webContents.isOffscreen(), false)
+      })
+    })
+
+    describe('window.webContents.isPainting', function () {
+      it('is currently painting', function (done) {
+        this.timeout(10000)
+        let w_ = new BrowserWindow({
+          show: false,
+          width: 400,
+          height: 400,
+          webPreferences: {
+            backgroundThrottling: false,
+            offscreen: true
+          }
+        })
+        w_.loadURL('file://' + fixtures + '/api/offscreen-rendering.html')
+        w_.webContents.once('paint', function (event, rect, data, size) {
+          assert.equal(w_.webContents.isPainting(), true)
+          done()
+        })
+      })
+    })
+
+    describe('window.webContents.stopPainting', function () {
+      it('stops painting', function (done) {
+        this.timeout(10000)
+        let w_ = new BrowserWindow({
+          show: false,
+          width: 400,
+          height: 400,
+          webPreferences: {
+            backgroundThrottling: false,
+            offscreen: true
+          }
+        })
+        w_.loadURL('file://' + fixtures + '/api/offscreen-rendering.html')
+
+        w_.webContents.on('dom-ready', function () {
+          w_.webContents.stopPainting()
+          assert.equal(w_.webContents.isPainting(), false)
+          done()
+        })
+      })
+    })
+
+    describe('window.webContents.startPainting', function () {
+      it('starts painting', function (done) {
+        this.timeout(10000)
+        let w_ = new BrowserWindow({
+          show: false,
+          width: 400,
+          height: 400,
+          webPreferences: {
+            backgroundThrottling: false,
+            offscreen: true
+          }
+        })
+        w_.loadURL('file://' + fixtures + '/api/offscreen-rendering.html')
+
+        w_.webContents.on('dom-ready', function () {
+          w_.webContents.stopPainting()
+          w_.webContents.startPainting()
+          w_.webContents.once('paint', function (event, rect, data, size) {
+            assert.equal(w_.webContents.isPainting(), true)
+            done()
+          })
+        })
+      })
+    })
+
+    describe('window.webContents.getFrameRate', function () {
+      it('has default frame rate', function (done) {
+        this.timeout(10000)
+        let w_ = new BrowserWindow({
+          show: false,
+          width: 400,
+          height: 400,
+          webPreferences: {
+            backgroundThrottling: false,
+            offscreen: true
+          }
+        })
+        w_.loadURL('file://' + fixtures + '/api/offscreen-rendering.html')
+
+        w_.webContents.once('paint', function (event, rect, data, size) {
+          assert.equal(w_.webContents.getFrameRate(), 60)
+          done()
+        })
+      })
+    })
+
+    describe('window.webContents.setFrameRate', function () {
+      it('has custom frame rate', function (done) {
+        this.timeout(10000)
+        let w_ = new BrowserWindow({
+          show: false,
+          width: 400,
+          height: 400,
+          webPreferences: {
+            backgroundThrottling: false,
+            offscreen: true
+          }
+        })
+        w_.loadURL('file://' + fixtures + '/api/offscreen-rendering.html')
+
+        w_.webContents.on('dom-ready', function () {
+          w_.webContents.setFrameRate(30)
+          w_.webContents.once('paint', function (event, rect, data, size) {
+            assert.equal(w_.webContents.getFrameRate(), 30)
+            done()
+          })
+        })
+      })
+    })
+  })
 })

@@ -283,6 +283,8 @@ The `webPreferences` option is an object that can have the following properties:
 * `defaultEncoding` String - Defaults to `ISO-8859-1`.
 * `backgroundThrottling` Boolean - Whether to throttle animations and timers
   when the page becomes background. Defaults to `true`.
+* `offscreen` Boolean - Whether to enable offscreen rendering for the browser
+  window. Defaults to `false`.
 
 ### Instance Events
 

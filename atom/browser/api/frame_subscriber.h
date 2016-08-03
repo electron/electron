@@ -14,6 +14,10 @@
 #include "ui/gfx/geometry/size.h"
 #include "v8/include/v8.h"
 
+#include "content/browser/renderer_host/render_widget_host_view_base.h"
+#include "cc/surfaces/surface_id.h"
+#include "cc/output/copy_output_result.h"
+
 namespace atom {
 
 namespace api {
@@ -34,6 +38,9 @@ class FrameSubscriber : public content::RenderWidgetHostViewFrameSubscriber {
                           DeliverFrameCallback* callback) override;
 
  private:
+  void ReadbackResultAsBitmap(
+    std::unique_ptr<cc::CopyOutputResult> result);
+
   void OnFrameDelivered(const FrameCaptureCallback& callback,
                         const gfx::Rect& damage_rect,
                         const SkBitmap& bitmap,

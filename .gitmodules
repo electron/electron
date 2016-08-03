@@ -1,6 +1,6 @@
 [submodule "vendor/brightray"]
 	path = vendor/brightray
-	url = https://github.com/electron/brightray.git
+url=https://github.com/MaxWhere/brightray
 [submodule "vendor/node"]
 	path = vendor/node
 	url = https://github.com/electron/node.git
