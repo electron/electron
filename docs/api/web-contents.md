@@ -461,6 +461,41 @@ app.on('ready', () => {
 
 Emitted when a page's view is repainted.
 
+#### Event: 'paint'
+
+Returns:
+
+* `event` Event
+* `dirtyRect` Object
+  * `x` Number - the x coordinate on the bitmap
+  * `y` Number - the y coordinate on the bitmap
+  * `width` Number - the width of the dirty area
+  * `height` Number - the height of the dirty area
+* `data` Buffer - the bitmap data of the dirty rect
+* `bitmapSize` Object
+  * `width` Number - the width of the whole bitmap
+  * `height` Number - the height of the whole bitmap
+
+Emitted when a new frame is generated. Only the dirty area is passed in the
+buffer.
+
+```javascript
+const {BrowserWindow} = require('electron')
+
+let win = new BrowserWindow({
+  width: 800,
+  height: 1500,
+  webPreferences: {
+    offscreen: true
+  }
+})
+win.loadURL('http://github.com')
+
+win.webContents.on('paint', (event, dirty, data) => {
+  // updateBitmap(dirty, data)
+})
+```
+
 ### Instance Methods
 
 #### `contents.loadURL(url[, options])`
@@ -1083,6 +1118,31 @@ win.webContents.on('did-finish-load', () => {
 #### `contents.showDefinitionForSelection()` _macOS_
 
 Shows pop-up dictionary that searches the selected word on the page.
+
+#### `contents.isOffscreen()`
+
+Indicates whether *offscreen rendering* is enabled.
+
+#### `contents.startPainting()`
+
+If *offscreen rendering* is enabled and not painting, start painting.
+
+#### `contents.stopPainting()`
+
+If *offscreen rendering* is enabled and painting, stop painting.
+
+#### `contents.isPainting()`
+
+If *offscreen rendering* is enabled returns whether it is currently painting.
+
+#### `contents.setFrameRate(fps)`
+
+If *offscreen rendering* is enabled sets the frame rate to the specified number.
+Only values between 1 and 60 are accepted.
+
+#### `contents.getFrameRate()`
+
+If *offscreen rendering* is enabled returns the current frame rate.
 
 ### Instance Properties
 

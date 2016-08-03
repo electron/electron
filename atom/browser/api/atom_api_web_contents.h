@@ -48,6 +48,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
     BROWSER_WINDOW,  // Used by BrowserWindow.
     REMOTE,  // Thin wrap around an existing WebContents.
     WEB_VIEW,  // Used by <webview>.
+    OFF_SCREEN,  // Used for offscreen rendering
   };
 
   // For node.js callback function type: function(error, buffer)
@@ -67,7 +68,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   int GetID() const;
   Type GetType() const;
-  bool IsFocused() const;
   bool Equal(const WebContents* web_contents) const;
   void LoadURL(const GURL& url, const mate::Dictionary& options);
   void DownloadURL(const GURL& url);
@@ -130,6 +130,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   // Focus.
   void Focus();
+  bool IsFocused() const;
   void TabTraverse(bool reverse);
 
   // Send messages to browser.
@@ -154,6 +155,17 @@ class WebContents : public mate::TrackableObject<WebContents>,
   // Methods for creating <webview>.
   void SetSize(const SetSizeParams& params);
   bool IsGuest() const;
+
+  // Methods for offscreen rendering
+  bool IsOffScreen() const;
+  void OnPaint(const gfx::Rect& dirty_rect,
+               const gfx::Size& bitmap_size,
+               void* bitmap_pixels);
+  void StartPainting();
+  void StopPainting();
+  bool IsPainting() const;
+  void SetFrameRate(int frame_rate);
+  int GetFrameRate() const;
 
   // Callback triggered on permission response.
   void OnEnterFullscreenModeForTab(content::WebContents* source,

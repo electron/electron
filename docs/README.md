@@ -30,6 +30,7 @@ an issue:
 * [Using Pepper Flash Plugin](tutorial/using-pepper-flash-plugin.md)
 * [Using Widevine CDM Plugin](tutorial/using-widevine-cdm-plugin.md)
 * [Testing on Headless CI Systems (Travis, Jenkins)](tutorial/testing-on-headless-ci.md)
+* [Offscreen Rendering](tutorial/offscreen-rendering.md)
 
 ## Tutorials
 
