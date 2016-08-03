@@ -681,7 +681,7 @@ Sends a request to get current zoom level, the `callback` will be called with
 * `minimumLevel` Number
 * `maximumLevel` Number
 
-Sets the maximum and minimum zoom level.`
+Sets the maximum and minimum zoom level.
 
 #### `contents.undo()`
 
