@@ -5,6 +5,7 @@ const fs = require('fs')
 const path = require('path')
 const os = require('os')
 const http = require('http')
+const {closeWindow} = require('./window-helpers')
 
 const remote = require('electron').remote
 const screen = require('electron').screen
@@ -38,9 +39,6 @@ describe('browser-window module', function () {
   })
 
   beforeEach(function () {
-    if (w != null) {
-      w.destroy()
-    }
     w = new BrowserWindow({
       show: false,
       width: 400,
@@ -52,10 +50,7 @@ describe('browser-window module', function () {
   })
 
   afterEach(function () {
-    if (w != null) {
-      w.destroy()
-    }
-    w = null
+    return closeWindow(w).then(function () { w = null })
   })
 
   describe('BrowserWindow.close()', function () {

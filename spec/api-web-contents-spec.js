@@ -2,6 +2,7 @@
 
 const assert = require('assert')
 const path = require('path')
+const {closeWindow} = require('./window-helpers')
 
 const {remote} = require('electron')
 const {BrowserWindow, webContents} = remote
@@ -13,9 +14,6 @@ describe('webContents module', function () {
   let w
 
   beforeEach(function () {
-    if (w != null) {
-      w.destroy()
-    }
     w = new BrowserWindow({
       show: false,
       width: 400,
@@ -27,10 +25,7 @@ describe('webContents module', function () {
   })
 
   afterEach(function () {
-    if (w != null) {
-      w.destroy()
-    }
-    w = null
+    return closeWindow(w).then(function () { w = null })
   })
 
   describe('getAllWebContents() API', function () {
