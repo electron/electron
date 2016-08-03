@@ -232,7 +232,7 @@ void NodeBindings::UvRunOnce() {
 
   // Deal with uv events.
   int r = uv_run(uv_loop_, UV_RUN_NOWAIT);
-  if (r == 0 || uv_loop_->stop_flag != 0)
+  if (r == 0)
     message_loop_->QuitWhenIdle();  // Quit from uv.
 
   // Tell the worker thread to continue polling.
