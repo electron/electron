@@ -382,7 +382,7 @@ void ContentSettingsClient::DidRunInsecureContent(GURL resouce_url) {
 
     auto rv = render_frame()->GetRenderView();
     rv->Send(new AtomViewHostMsg_Message(rv->GetRoutingID(),
-        base::UTF8ToUTF16("did-display-insecure-content"), args));
+        base::UTF8ToUTF16("did-run-insecure-content"), args));
 }
 
 
