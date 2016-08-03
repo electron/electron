@@ -8,29 +8,26 @@ the `remote` module.
 Each menu consists of multiple [menu items](menu-item.md) and each menu item can
 have a submenu.
 
-Below is an example of creating a menu dynamically in a web page
-(render process) by using the [remote](remote.md) module, and showing it when
-the user right clicks the page:
+## Process Difference Notice
 
-```html
-<!-- index.html -->
-<script>
-const {remote} = require('electron')
-const {Menu, MenuItem} = remote;
+Due to Menu and MenuItem can be used in two processes, the way they are included is slightly different.
 
-const menu = new Menu()
-menu.append(new MenuItem({label: 'MenuItem1', click() { console.log('item 1 clicked') }}))
-menu.append(new MenuItem({type: 'separator'}))
-menu.append(new MenuItem({label: 'MenuItem2', type: 'checkbox', checked: true}))
-
-window.addEventListener('contextmenu', (e) => {
-  e.preventDefault()
-  menu.popup(remote.getCurrentWindow())
-}, false)
-</script>
+### Main process
+```
+const {Menu, MenuItem} = require('electron');
 ```
 
-An example of creating the application menu in the render process with the
+### Render process
+```
+const {remote} = require('electron')
+const {Menu, MenuItem} = remote;
+```
+
+## Examples
+
+### Main process
+
+An example of creating the application menu in the main process with the
 simple template API:
 
 ```javascript
@@ -180,6 +177,31 @@ if (process.platform === 'darwin') {
 const menu = Menu.buildFromTemplate(template)
 Menu.setApplicationMenu(menu)
 ```
+
+### Render process
+
+Below is an example of creating a menu dynamically in a web page
+(render process) by using the [remote](remote.md) module, and showing it when
+the user right clicks the page:
+
+```html
+<!-- index.html -->
+<script>
+const {remote} = require('electron')
+const {Menu, MenuItem} = remote;
+
+const menu = new Menu()
+menu.append(new MenuItem({label: 'MenuItem1', click() { console.log('item 1 clicked') }}))
+menu.append(new MenuItem({type: 'separator'}))
+menu.append(new MenuItem({label: 'MenuItem2', type: 'checkbox', checked: true}))
+
+window.addEventListener('contextmenu', (e) => {
+  e.preventDefault()
+  menu.popup(remote.getCurrentWindow())
+}, false)
+</script>
+```
+
 
 ## Class: Menu
 
