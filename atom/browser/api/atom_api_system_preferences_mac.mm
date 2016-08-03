@@ -11,7 +11,6 @@
 #include "atom/browser/mac/dict_util.h"
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
-#import "base/mac/sdk_forward_declarations.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/values.h"
 #include "net/base/mac/url_conversions.h"
@@ -125,8 +124,8 @@ bool SystemPreferences::IsDarkMode() {
 
 bool SystemPreferences::IsSwipeTrackingFromScrollEventsEnabled() {
   SEL selector = @selector(isSwipeTrackingFromScrollEventsEnabled);
-  return [NSEvent respondsToSelector:selector]
-    && [NSEvent performSelector:selector];
+  return [NSEvent respondsToSelector:selector] &&
+         [NSEvent performSelector:selector];
 }
 
 }  // namespace api
