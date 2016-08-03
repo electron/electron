@@ -997,6 +997,7 @@ describe('browser-window module', function () {
 
   describe('dev tool extensions', function () {
     describe('BrowserWindow.addDevToolsExtension', function () {
+      let showPanelIntevalId
       this.timeout(10000)
 
       beforeEach(function () {
@@ -1008,7 +1009,7 @@ describe('browser-window module', function () {
         assert.equal(BrowserWindow.getDevToolsExtensions().hasOwnProperty('foo'), true)
 
         w.webContents.on('devtools-opened', function () {
-          var showPanelIntevalId = setInterval(function () {
+          showPanelIntevalId = setInterval(function () {
             if (w && w.devToolsWebContents) {
               var showLastPanel = function () {
                 var lastPanelId = WebInspector.inspectorView._tabbedPane._tabs.peekLast().id
@@ -1022,6 +1023,10 @@ describe('browser-window module', function () {
         })
 
         w.loadURL('about:blank')
+      })
+
+      afterEach(function () {
+        clearInterval(showPanelIntevalId)
       })
 
       it('throws errors for missing manifest.json files', function () {

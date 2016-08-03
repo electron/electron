@@ -13,11 +13,12 @@
   // Disable use of deprecated functions.
   process.throwDeprecation = true;
 
-  // Check if we are running in CI.
+  var path = require('path');
   var electron = require ('electron');
   var remote = electron.remote;
   var ipcRenderer = electron.ipcRenderer;
 
+  // Check if we are running in CI.
   var isCi = remote.getGlobal('isCi')
 
   if (!isCi) {
@@ -46,6 +47,8 @@
       }
     });
   }
+
+  var Coverage = require('electabul').Coverage;
 
   var Mocha = require('mocha');
 
@@ -81,9 +84,17 @@
   walker.on('end', function() {
     var runner = mocha.run(function() {
       Mocha.utils.highlightTags('code');
+
+      var coverage = new Coverage({
+        libPath: path.join(__dirname, '..', '..', 'lib'),
+        outputPath: path.join(__dirname, '..', '..', 'out', 'coverage'),
+        formats: ['text', 'lcov']
+      });
+      coverage.addCoverage(ipcRenderer.sendSync('get-main-process-coverage'))
+      coverage.generateReport()
+
       if (isCi)
         ipcRenderer.send('process.exit', runner.failures);
-      require('../coverage/reporter').generateReport()
     });
   });
 })();

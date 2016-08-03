@@ -8,6 +8,7 @@ const dialog = electron.dialog
 const BrowserWindow = electron.BrowserWindow
 const protocol = electron.protocol
 
+const Coverage = require('electabul').Coverage
 const fs = require('fs')
 const path = require('path')
 const url = require('url')
@@ -63,8 +64,13 @@ ipcMain.on('echo', function (event, msg) {
   event.returnValue = msg
 })
 
-ipcMain.on('get-coverage', function(event) {
-  event.returnValue = global.__coverage__
+const coverage = new Coverage({
+  outputPath: path.join(__dirname, '..', '..', 'out', 'coverage')
+})
+coverage.setup()
+
+ipcMain.on('get-main-process-coverage', function (event) {
+  event.returnValue = global.__coverage__ || null
 })
 
 global.isCi = !!argv.ci
@@ -83,8 +89,6 @@ protocol.registerStandardSchemes([global.standardScheme])
 app.on('window-all-closed', function () {
   app.quit()
 })
-
-require('../coverage/reporter').setupCoverage()
 
 app.on('ready', function () {
   // Test if using protocol module would crash.
