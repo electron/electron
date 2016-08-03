@@ -171,8 +171,8 @@ class NativeWindowViews : public NativeWindow,
       const content::NativeWebKeyboardEvent& event) override;
 
   // views::View:
-  gfx::Size GetMinimumSize() const override;
-  gfx::Size GetMaximumSize() const override;
+  gfx::Size GetMinimumSize() override;
+  gfx::Size GetMaximumSize() override;
   bool AcceleratorPressed(const ui::Accelerator& accelerator) override;
 
   // Register accelerators supported by the menu model.
