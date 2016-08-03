@@ -29,7 +29,7 @@ var paths = {
   win32: 'dist/electron.exe'
 }
 
-if (!paths[platform]) throw new Error('Unknown platform: ' + platform)
+if (!paths[platform]) throw new Error('Electron builds are not available on platform: ' + platform)
 
 if (installedVersion === version && fs.existsSync(path.join(__dirname, paths[platform]))) {
   process.exit(0)
