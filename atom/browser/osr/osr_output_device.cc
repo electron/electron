@@ -87,7 +87,7 @@ void OffScreenOutputDevice::OnPaint(const gfx::Rect& damage_rect) {
 
   SkAutoLockPixels bitmap_pixels_lock(*bitmap_);
   callback_.Run(rect, gfx::Size(bitmap_->width(), bitmap_->height()),
-                bitmap_->getPixels());
+                bitmap_->bytesPerPixel(), bitmap_->getPixels());
 }
 
 }  // namespace atom

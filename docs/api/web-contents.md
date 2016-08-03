@@ -352,7 +352,7 @@ Emitted when the cursor's type changes. The `type` parameter can be `default`,
 `not-allowed`, `zoom-in`, `zoom-out`, `grab`, `grabbing`, `custom`.
 
 If the `type` parameter is `custom`, the `image` parameter will hold the custom
-cursor image in a `NativeImage`, and `scale`, `size` and `hotspot` will hold 
+cursor image in a `NativeImage`, and `scale`, `size` and `hotspot` will hold
 additional information about the custom cursor.
 
 #### Event: 'context-menu'
@@ -471,6 +471,7 @@ Returns:
 * `bitmapSize` Object
   * `width` Number - the width of the whole bitmap
   * `height` Number - the height of the whole bitmap
+  * `pixel` Number - The number of bytes per pixel
 
 Emitted when a new frame is generated. Only the dirty area is passed in the
 buffer.

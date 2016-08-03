@@ -262,7 +262,7 @@ class AtomCopyFrameGenerator {
       std::unique_ptr<SkAutoLockPixels> bitmap_pixels_lock) {
     view_->OnPaint(damage_rect,
                    gfx::Size(bitmap.width(), bitmap.height()),
-                   bitmap.getPixels());
+                   bitmap.bytesPerPixel(), bitmap.getPixels());
 
     if (frame_retry_count_ > 0)
       frame_retry_count_ = 0;
@@ -791,11 +791,12 @@ void OffScreenRenderWidgetHostView::SetPaintCallback(
 void OffScreenRenderWidgetHostView::OnPaint(
     const gfx::Rect& damage_rect,
     const gfx::Size& bitmap_size,
+    const int pixel_size,
     void* bitmap_pixels) {
   TRACE_EVENT0("electron", "OffScreenRenderWidgetHostView::OnPaint");
 
   if (!callback_.is_null())
-    callback_.Run(damage_rect, bitmap_size, bitmap_pixels);
+    callback_.Run(damage_rect, bitmap_size, pixel_size, bitmap_pixels);
 }
 
 void OffScreenRenderWidgetHostView::SetPainting(bool painting) {
