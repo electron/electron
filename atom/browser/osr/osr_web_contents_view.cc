@@ -6,9 +6,9 @@
 
 namespace atom {
 
-OffScreenWebContentsView::OffScreenWebContentsView(bool transparent):
-  transparent_(transparent),
-  web_contents_(nullptr) {
+OffScreenWebContentsView::OffScreenWebContentsView(bool transparent)
+    : transparent_(transparent),
+      web_contents_(nullptr) {
 }
 
 OffScreenWebContentsView::~OffScreenWebContentsView() {
@@ -67,7 +67,7 @@ content::RenderWidgetHostViewBase*
     content::RenderWidgetHost* render_widget_host, bool is_guest_view_hack) {
   auto relay = NativeWindowRelay::FromWebContents(web_contents_);
   view_ = new OffScreenRenderWidgetHostView(transparent_, render_widget_host,
-    relay->window.get());
+                                            relay->window.get());
   return view_;
 }
 
@@ -76,7 +76,7 @@ content::RenderWidgetHostViewBase*
     content::RenderWidgetHost* render_widget_host) {
   auto relay = NativeWindowRelay::FromWebContents(web_contents_);
   view_ = new OffScreenRenderWidgetHostView(transparent_, render_widget_host,
-    relay->window.get());
+                                            relay->window.get());
   return view_;
 }
 

@@ -43,11 +43,9 @@
 #ifdef __OBJC__
 @class CALayer;
 @class NSWindow;
-@class NSTextInputContext;
 #else
 class CALayer;
 class NSWindow;
-class NSTextInputContext;
 #endif
 #endif
 
@@ -56,19 +54,20 @@ namespace atom {
 class AtomCopyFrameGenerator;
 class AtomBeginFrameTimer;
 
-class OffScreenRenderWidgetHostView:
-  public content::RenderWidgetHostViewBase,
+class OffScreenRenderWidgetHostView
+    : public content::RenderWidgetHostViewBase,
 #if defined(OS_MACOSX)
-  public ui::AcceleratedWidgetMacNSView,
+      public ui::AcceleratedWidgetMacNSView,
 #endif
-  public ui::CompositorDelegate,
-  public content::DelegatedFrameHostClient {
+      public ui::CompositorDelegate,
+      public content::DelegatedFrameHostClient {
  public:
-  OffScreenRenderWidgetHostView(const bool transparent,
-    content::RenderWidgetHost*, NativeWindow*);
-  ~OffScreenRenderWidgetHostView();
+  OffScreenRenderWidgetHostView(bool transparent,
+                                content::RenderWidgetHost* render_widget_host,
+                                NativeWindow* native_window);
+  ~OffScreenRenderWidgetHostView() override;
 
-  // content::RenderWidgetHostView
+  // content::RenderWidgetHostView:
   bool OnMessageReceived(const IPC::Message&) override;
   void InitAsChild(gfx::NativeView) override;
   content::RenderWidgetHost* GetRenderWidgetHost(void) const override;
@@ -91,7 +90,6 @@ class OffScreenRenderWidgetHostView:
   bool LockMouse(void) override;
   void UnlockMouse(void) override;
   bool GetScreenColorProfile(std::vector<char>*) override;
-
 #if defined(OS_MACOSX)
   ui::AcceleratedWidgetMac* GetAcceleratedWidgetMac() const override;
   void SetActive(bool active) override;
@@ -102,7 +100,7 @@ class OffScreenRenderWidgetHostView:
   void StopSpeaking() override;
 #endif  // defined(OS_MACOSX)
 
-  // content::RenderWidgetHostViewBase
+  // content::RenderWidgetHostViewBase:
   void OnSwapCompositorFrame(uint32_t, std::unique_ptr<cc::CompositorFrame>)
     override;
   void ClearCompositorFrame(void) override;
@@ -116,13 +114,11 @@ class OffScreenRenderWidgetHostView:
   void RenderProcessGone(base::TerminationStatus, int) override;
   void Destroy(void) override;
   void SetTooltipText(const base::string16 &) override;
-
 #if defined(OS_MACOSX)
   void SelectionChanged(const base::string16& text,
                         size_t offset,
                         const gfx::Range& range) override;
 #endif
-
   void SelectionBoundsChanged(const ViewHostMsg_SelectionBounds_Params &)
     override;
   void CopyFromCompositingSurface(const gfx::Rect &,
@@ -149,7 +145,7 @@ class OffScreenRenderWidgetHostView:
   gfx::Size GetPhysicalBackingSize() const override;
   gfx::Size GetRequestedRendererSize() const override;
 
-  // content::DelegatedFrameHostClient
+  // content::DelegatedFrameHostClient:
   int DelegatedFrameHostGetGpuMemoryBufferClientId(void) const;
   ui::Layer *DelegatedFrameHostGetLayer(void) const override;
   bool DelegatedFrameHostIsVisible(void) const override;
@@ -168,35 +164,32 @@ class OffScreenRenderWidgetHostView:
     const base::TimeTicks &, const base::TimeDelta &) override;
   void SetBeginFrameSource(cc::BeginFrameSource* source) override;
 
-  bool InstallTransparency();
-
-  bool IsAutoResizeEnabled() const;
-
+  // ui::CompositorDelegate:
   std::unique_ptr<cc::SoftwareOutputDevice> CreateSoftwareOutputDevice(
       ui::Compositor* compositor) override;
+
+  bool InstallTransparency();
+  bool IsAutoResizeEnabled() const;
   void OnSetNeedsBeginFrames(bool enabled);
 
 #if defined(OS_MACOSX)
-  // AcceleratedWidgetMacNSView implementation.
+  // ui::AcceleratedWidgetMacNSView:
   NSView* AcceleratedWidgetGetNSView() const override;
   void AcceleratedWidgetGetVSyncParameters(
       base::TimeTicks* timebase, base::TimeDelta* interval) const override;
   void AcceleratedWidgetSwapCompleted() override;
 #endif  // defined(OS_MACOSX)
 
-  ui::Compositor* compositor() const { return compositor_.get(); }
-  content::RenderWidgetHostImpl* render_widget_host() const
-      { return render_widget_host_; }
-
   void OnBeginFrameTimerTick();
   void SendBeginFrame(base::TimeTicks frame_time,
                       base::TimeDelta vsync_period);
 
+#if defined(OS_MACOSX)
   void CreatePlatformWidget();
   void DestroyPlatformWidget();
+#endif
 
   void SetPaintCallback(const OnPaintCallback& callback);
-
   void OnPaint(const gfx::Rect& damage_rect,
                const gfx::Size& bitmap_size,
                void* bitmap_pixels);
@@ -206,16 +199,18 @@ class OffScreenRenderWidgetHostView:
 
   void SetFrameRate(int frame_rate);
   int GetFrameRate() const;
-private:
+
+  ui::Compositor* compositor() const { return compositor_.get(); }
+  content::RenderWidgetHostImpl* render_widget_host() const
+      { return render_widget_host_; }
+
+ private:
   void SetupFrameRate(bool force);
   void ResizeRootLayer();
 
+  // Weak ptrs.
   content::RenderWidgetHostImpl* render_widget_host_;
   NativeWindow* native_window_;
-
-  std::unique_ptr<AtomCopyFrameGenerator> copy_frame_generator_;
-  std::unique_ptr<AtomBeginFrameTimer> begin_frame_timer_;
-
   OffScreenOutputDevice* software_output_device_;
 
   OnPaintCallback callback_;
@@ -232,32 +227,24 @@ private:
   gfx::Size size_;
   bool painting_;
 
-  std::unique_ptr<content::DelegatedFrameHost> delegated_frame_host_;
-  std::unique_ptr<ui::Compositor> compositor_;
-  gfx::AcceleratedWidget compositor_widget_;
   std::unique_ptr<ui::Layer> root_layer_;
+  std::unique_ptr<ui::Compositor> compositor_;
+  std::unique_ptr<content::DelegatedFrameHost> delegated_frame_host_;
+
+  std::unique_ptr<AtomCopyFrameGenerator> copy_frame_generator_;
+  std::unique_ptr<AtomBeginFrameTimer> begin_frame_timer_;
 
 #if defined(OS_MACOSX)
   NSWindow* window_;
   CALayer* background_layer_;
   std::unique_ptr<content::BrowserCompositorMac> browser_compositor_;
-  NSTextInputContext* text_input_context_osr_mac_;
 
   // Selected text on the renderer.
   std::string selected_text_;
-
-  // The current composition character range and its bounds.
-  gfx::Range composition_range_;
-  std::vector<gfx::Rect> composition_bounds_;
-
-  // The current caret bounds.
-  gfx::Rect caret_rect_;
-
-  // The current first selection bounds.
-  gfx::Rect first_selection_rect_;
 #endif
 
   base::WeakPtrFactory<OffScreenRenderWidgetHostView> weak_ptr_factory_;
+
   DISALLOW_COPY_AND_ASSIGN(OffScreenRenderWidgetHostView);
 };
 

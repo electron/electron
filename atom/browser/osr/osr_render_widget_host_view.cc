@@ -6,27 +6,25 @@
 
 #include <vector>
 
-#include "third_party/WebKit/public/platform/WebScreenInfo.h"
+#include "base/callback_helpers.h"
+#include "base/location.h"
+#include "base/memory/ptr_util.h"
+#include "base/single_thread_task_runner.h"
+#include "base/time/time.h"
+#include "cc/output/copy_output_request.h"
+#include "cc/scheduler/delay_based_time_source.h"
 #include "components/display_compositor/gl_helper.h"
 #include "content/browser/renderer_host/render_widget_host_impl.h"
 #include "content/browser/renderer_host/render_widget_host_delegate.h"
-#include "content/public/browser/render_widget_host_view_frame_subscriber.h"
-#include "ui/events/latency_info.h"
 #include "content/common/view_messages.h"
-#include "ui/gfx/geometry/dip_util.h"
-#include "base/memory/ptr_util.h"
+#include "content/public/browser/browser_thread.h"
 #include "content/public/browser/context_factory.h"
-#include "base/single_thread_task_runner.h"
+#include "content/public/browser/render_widget_host_view_frame_subscriber.h"
 #include "ui/compositor/layer.h"
 #include "ui/compositor/layer_type.h"
-#include "base/callback_helpers.h"
-#include "base/location.h"
-#include "base/time/time.h"
+#include "ui/events/latency_info.h"
+#include "ui/gfx/geometry/dip_util.h"
 #include "ui/gfx/native_widget_types.h"
-#include "ui/views/widget/widget.h"
-#include "cc/output/copy_output_request.h"
-#include "cc/scheduler/delay_based_time_source.h"
-#include "content/public/browser/browser_thread.h"
 
 const float kDefaultScaleFactor = 1.0;
 
@@ -336,38 +334,33 @@ class AtomBeginFrameTimer : public cc::DelayBasedTimeSourceClient {
 };
 
 OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
-  const bool transparent, content::RenderWidgetHost* host,
-  NativeWindow* native_window):
-    render_widget_host_(content::RenderWidgetHostImpl::From(host)),
-    native_window_(native_window),
-    software_output_device_(NULL),
-    frame_rate_(60),
-    frame_rate_threshold_ms_(0),
-    transparent_(transparent),
-    scale_factor_(kDefaultScaleFactor),
-    is_showing_(!render_widget_host_->is_hidden()),
-    size_(native_window->GetSize()),
-    painting_(true),
-    delegated_frame_host_(new content::DelegatedFrameHost(this)),
-    compositor_widget_(gfx::kNullAcceleratedWidget),
-    weak_ptr_factory_(this) {
+    bool transparent,
+    content::RenderWidgetHost* host,
+    NativeWindow* native_window)
+    : render_widget_host_(content::RenderWidgetHostImpl::From(host)),
+      native_window_(native_window),
+      software_output_device_(nullptr),
+      frame_rate_(60),
+      frame_rate_threshold_ms_(0),
+      last_time_(base::Time::Now()),
+      transparent_(transparent),
+      scale_factor_(kDefaultScaleFactor),
+      is_showing_(!render_widget_host_->is_hidden()),
+      size_(native_window->GetSize()),
+      painting_(true),
+      root_layer_(new ui::Layer(ui::LAYER_SOLID_COLOR)),
+      delegated_frame_host_(new content::DelegatedFrameHost(this)),
+      weak_ptr_factory_(this) {
   DCHECK(render_widget_host_);
   render_widget_host_->SetView(this);
 
-  last_time_ = base::Time::Now();
-
-  root_layer_.reset(new ui::Layer(ui::LAYER_SOLID_COLOR));
-
 #if defined(OS_MACOSX)
   CreatePlatformWidget();
-#endif
-
-#if !defined(OS_MACOSX)
-  compositor_widget_ = native_window_->GetAcceleratedWidget();
+#else
   compositor_.reset(
       new ui::Compositor(content::GetContextFactory(),
                          base::ThreadTaskRunnerHandle::Get()));
-  compositor_->SetAcceleratedWidget(compositor_widget_);
+  compositor_->SetAcceleratedWidget(native_window_->GetAcceleratedWidget());
 #endif
   compositor_->SetDelegate(this);
   compositor_->SetRootLayer(root_layer_.get());
@@ -383,32 +376,6 @@ OffScreenRenderWidgetHostView::~OffScreenRenderWidgetHostView() {
 #if defined(OS_MACOSX)
   DestroyPlatformWidget();
 #endif
-
-  if (copy_frame_generator_.get())
-    copy_frame_generator_.reset(NULL);
-
-  delegated_frame_host_.reset(NULL);
-  compositor_.reset(NULL);
-  root_layer_.reset(NULL);
-}
-
-
-void OffScreenRenderWidgetHostView::ResizeRootLayer() {
-  SetupFrameRate(false);
-
-  const float orgScaleFactor = scale_factor_;
-  const bool scaleFactorDidChange = (orgScaleFactor != scale_factor_);
-
-  gfx::Size size = GetViewBounds().size();
-
-  if (!scaleFactorDidChange && size == root_layer_->bounds().size())
-    return;
-
-  const gfx::Size& size_in_pixels =
-      gfx::ConvertSizeToPixel(scale_factor_, size);
-
-  root_layer_->SetBounds(gfx::Rect(size));
-  compositor_->SetScaleAndSize(scale_factor_, size_in_pixels);
 }
 
 void OffScreenRenderWidgetHostView::OnBeginFrameTimerTick() {
@@ -418,8 +385,8 @@ void OffScreenRenderWidgetHostView::OnBeginFrameTimerTick() {
   SendBeginFrame(frame_time, vsync_period);
 }
 
-void OffScreenRenderWidgetHostView::SendBeginFrame(base::TimeTicks frame_time,
-                                                base::TimeDelta vsync_period) {
+void OffScreenRenderWidgetHostView::SendBeginFrame(
+    base::TimeTicks frame_time, base::TimeDelta vsync_period) {
   base::TimeTicks display_time = frame_time + vsync_period;
 
   base::TimeDelta estimated_browser_composite_time =
@@ -446,11 +413,6 @@ bool OffScreenRenderWidgetHostView::OnMessageReceived(
   if (!handled)
     return content::RenderWidgetHostViewBase::OnMessageReceived(message);
   return handled;
-}
-
-void OffScreenRenderWidgetHostView::SetPaintCallback(
-    const OnPaintCallback& callback) {
-  callback_ = callback;
 }
 
 void OffScreenRenderWidgetHostView::InitAsChild(gfx::NativeView) {
@@ -483,7 +445,7 @@ gfx::NativeView OffScreenRenderWidgetHostView::GetNativeView() const {
 }
 
 gfx::NativeViewAccessible
-  OffScreenRenderWidgetHostView::GetNativeViewAccessible() {
+OffScreenRenderWidgetHostView::GetNativeViewAccessible() {
   return gfx::NativeViewAccessible();
 }
 
@@ -608,7 +570,6 @@ void OffScreenRenderWidgetHostView::ClearCompositorFrame() {
 
 void OffScreenRenderWidgetHostView::InitAsPopup(
     content::RenderWidgetHostView* parent_host_view, const gfx::Rect& pos) {
-  printf("popup, parent: %p\n", parent_host_view);
 }
 
 void OffScreenRenderWidgetHostView::InitAsFullscreen(
@@ -779,13 +740,8 @@ void OffScreenRenderWidgetHostView::DelegatedFrameHostUpdateVSyncParameters(
   render_widget_host_->UpdateVSyncParameters(timebase, interval);
 }
 
-bool OffScreenRenderWidgetHostView::InstallTransparency() {
-  if (transparent_) {
-    SetBackgroundColor(SkColor());
-    compositor_->SetHostHasTransparentBackground(true);
-    return true;
-  }
-  return false;
+void OffScreenRenderWidgetHostView::SetBeginFrameSource(
+    cc::BeginFrameSource* source) {
 }
 
 std::unique_ptr<cc::SoftwareOutputDevice>
@@ -801,6 +757,19 @@ std::unique_ptr<cc::SoftwareOutputDevice>
   return base::WrapUnique(software_output_device_);
 }
 
+bool OffScreenRenderWidgetHostView::InstallTransparency() {
+  if (transparent_) {
+    SetBackgroundColor(SkColor());
+    compositor_->SetHostHasTransparentBackground(true);
+    return true;
+  }
+  return false;
+}
+
+bool OffScreenRenderWidgetHostView::IsAutoResizeEnabled() const {
+  return false;
+}
+
 void OffScreenRenderWidgetHostView::OnSetNeedsBeginFrames(bool enabled) {
   SetupFrameRate(false);
 
@@ -811,36 +780,9 @@ void OffScreenRenderWidgetHostView::OnSetNeedsBeginFrames(bool enabled) {
   }
 }
 
-void OffScreenRenderWidgetHostView::SetupFrameRate(bool force) {
-  if (!force && frame_rate_threshold_ms_ != 0)
-    return;
-
-  frame_rate_threshold_ms_ = 1000 / frame_rate_;
-
-  compositor_->vsync_manager()->SetAuthoritativeVSyncInterval(
-      base::TimeDelta::FromMilliseconds(frame_rate_threshold_ms_));
-
-  if (copy_frame_generator_.get()) {
-    copy_frame_generator_->set_frame_rate_threshold_ms(
-        frame_rate_threshold_ms_);
-  }
-
-  if (begin_frame_timer_.get()) {
-    begin_frame_timer_->SetFrameRateThresholdMs(frame_rate_threshold_ms_);
-  } else {
-    begin_frame_timer_.reset(new AtomBeginFrameTimer(
-        frame_rate_threshold_ms_,
-        base::Bind(&OffScreenRenderWidgetHostView::OnBeginFrameTimerTick,
-                   weak_ptr_factory_.GetWeakPtr())));
-  }
-}
-
-void OffScreenRenderWidgetHostView::SetBeginFrameSource(
-    cc::BeginFrameSource* source) {
-}
-
-bool OffScreenRenderWidgetHostView::IsAutoResizeEnabled() const {
-  return false;
+void OffScreenRenderWidgetHostView::SetPaintCallback(
+    const OnPaintCallback& callback) {
+  callback_ = callback;
 }
 
 void OffScreenRenderWidgetHostView::OnPaint(
@@ -878,6 +820,48 @@ void OffScreenRenderWidgetHostView::SetFrameRate(int frame_rate) {
 
 int OffScreenRenderWidgetHostView::GetFrameRate() const {
   return frame_rate_;
+}
+
+void OffScreenRenderWidgetHostView::SetupFrameRate(bool force) {
+  if (!force && frame_rate_threshold_ms_ != 0)
+    return;
+
+  frame_rate_threshold_ms_ = 1000 / frame_rate_;
+
+  compositor_->vsync_manager()->SetAuthoritativeVSyncInterval(
+      base::TimeDelta::FromMilliseconds(frame_rate_threshold_ms_));
+
+  if (copy_frame_generator_.get()) {
+    copy_frame_generator_->set_frame_rate_threshold_ms(
+        frame_rate_threshold_ms_);
+  }
+
+  if (begin_frame_timer_.get()) {
+    begin_frame_timer_->SetFrameRateThresholdMs(frame_rate_threshold_ms_);
+  } else {
+    begin_frame_timer_.reset(new AtomBeginFrameTimer(
+        frame_rate_threshold_ms_,
+        base::Bind(&OffScreenRenderWidgetHostView::OnBeginFrameTimerTick,
+                   weak_ptr_factory_.GetWeakPtr())));
+  }
+}
+
+void OffScreenRenderWidgetHostView::ResizeRootLayer() {
+  SetupFrameRate(false);
+
+  const float orgScaleFactor = scale_factor_;
+  const bool scaleFactorDidChange = (orgScaleFactor != scale_factor_);
+
+  gfx::Size size = GetViewBounds().size();
+
+  if (!scaleFactorDidChange && size == root_layer_->bounds().size())
+    return;
+
+  const gfx::Size& size_in_pixels =
+      gfx::ConvertSizeToPixel(scale_factor_, size);
+
+  root_layer_->SetBounds(gfx::Rect(size));
+  compositor_->SetScaleAndSize(scale_factor_, size_in_pixels);
 }
 
 }  // namespace atom

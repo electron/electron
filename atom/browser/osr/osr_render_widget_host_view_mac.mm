@@ -10,8 +10,7 @@
 #include "ui/accelerated_widget_mac/accelerated_widget_mac.h"
 
 ui::AcceleratedWidgetMac*
-  atom::OffScreenRenderWidgetHostView::GetAcceleratedWidgetMac()
-    const {
+atom::OffScreenRenderWidgetHostView::GetAcceleratedWidgetMac() const {
   if (browser_compositor_)
     return browser_compositor_->accelerated_widget_mac();
   return nullptr;

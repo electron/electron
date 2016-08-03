@@ -63,6 +63,7 @@ class OffScreenWebContentsView : public content::WebContentsView,
  private:
   const bool transparent_;
 
+  // Weak refs.
   OffScreenRenderWidgetHostView* view_;
   content::WebContents* web_contents_;
 };
