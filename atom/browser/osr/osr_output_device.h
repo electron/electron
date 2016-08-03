@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_OSR_OUTPUT_DEVICE_H_
-#define ATOM_BROWSER_OSR_OUTPUT_DEVICE_H_
+#ifndef ATOM_BROWSER_OSR_OSR_OUTPUT_DEVICE_H_
+#define ATOM_BROWSER_OSR_OSR_OUTPUT_DEVICE_H_
 
 #include "base/callback.h"
 #include "cc/output/software_output_device.h"
@@ -44,4 +44,4 @@ class OffScreenOutputDevice : public cc::SoftwareOutputDevice {
 
 }  // namespace atom
 
-#endif  // ATOM_BROWSER_OSR_OUTPUT_DEVICE_H_
+#endif  // ATOM_BROWSER_OSR_OSR_OUTPUT_DEVICE_H_

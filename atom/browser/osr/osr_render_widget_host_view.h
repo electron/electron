@@ -2,34 +2,35 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_OSR_RENDER_WIDGET_HOST_VIEW_H_
-#define ATOM_BROWSER_OSR_RENDER_WIDGET_HOST_VIEW_H_
+#ifndef ATOM_BROWSER_OSR_OSR_RENDER_WIDGET_HOST_VIEW_H_
+#define ATOM_BROWSER_OSR_OSR_RENDER_WIDGET_HOST_VIEW_H_
 
 #include <string>
 #include <vector>
 
-#include "atom/browser/native_window.h"
+#if defined(OS_WIN)
+#include <windows.h>
+#endif
 
-#include "content/browser/renderer_host/render_widget_host_view_base.h"
-#include "content/browser/renderer_host/delegated_frame_host.h"
-#include "content/browser/renderer_host/resize_lock.h"
-#include "third_party/WebKit/public/platform/WebVector.h"
-#include "cc/scheduler/begin_frame_source.h"
-#include "content/browser/renderer_host/render_widget_host_impl.h"
-#include "cc/output/compositor_frame.h"
-#include "ui/gfx/geometry/point.h"
+#include "atom/browser/native_window.h"
+#include "atom/browser/osr/osr_output_device.h"
 #include "base/process/kill.h"
 #include "base/threading/thread.h"
 #include "base/time/time.h"
+#include "cc/scheduler/begin_frame_source.h"
+#include "cc/output/compositor_frame.h"
+#include "content/browser/renderer_host/delegated_frame_host.h"
+#include "content/browser/renderer_host/render_widget_host_impl.h"
+#include "content/browser/renderer_host/render_widget_host_view_base.h"
+#include "content/browser/renderer_host/resize_lock.h"
 #include "ui/compositor/compositor.h"
 #include "ui/compositor/layer_delegate.h"
 #include "ui/compositor/layer_owner.h"
 #include "ui/base/ime/text_input_client.h"
-
-#include "atom/browser/osr_output_device.h"
+#include "ui/gfx/geometry/point.h"
+#include "third_party/WebKit/public/platform/WebVector.h"
 
 #if defined(OS_WIN)
-#include <windows.h>
 #include "ui/gfx/win/window_impl.h"
 #endif
 
@@ -263,4 +264,4 @@ private:
 
 }  // namespace atom
 
-#endif  // ATOM_BROWSER_OSR_RENDER_WIDGET_HOST_VIEW_H_
+#endif  // ATOM_BROWSER_OSR_OSR_RENDER_WIDGET_HOST_VIEW_H_

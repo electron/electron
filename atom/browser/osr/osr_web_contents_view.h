@@ -2,14 +2,13 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_OSR_WEB_CONTENTS_VIEW_H_
-#define ATOM_BROWSER_OSR_WEB_CONTENTS_VIEW_H_
+#ifndef ATOM_BROWSER_OSR_OSR_WEB_CONTENTS_VIEW_H_
+#define ATOM_BROWSER_OSR_OSR_WEB_CONTENTS_VIEW_H_
 
+#include "atom/browser/osr/osr_render_widget_host_view.h"
 #include "content/browser/renderer_host/render_view_host_delegate_view.h"
 #include "content/browser/web_contents/web_contents_view.h"
 #include "content/public/browser/web_contents.h"
-
-#include "atom/browser/osr_render_widget_host_view.h"
 
 namespace atom {
 
@@ -70,4 +69,4 @@ class OffScreenWebContentsView : public content::WebContentsView,
 
 }  // namespace atom
 
-#endif  // ATOM_BROWSER_OSR_WEB_CONTENTS_VIEW_H_
+#endif  // ATOM_BROWSER_OSR_OSR_WEB_CONTENTS_VIEW_H_

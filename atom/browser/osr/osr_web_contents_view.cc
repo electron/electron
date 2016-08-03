@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/osr_web_contents_view.h"
+#include "atom/browser/osr/osr_web_contents_view.h"
 
 namespace atom {
 

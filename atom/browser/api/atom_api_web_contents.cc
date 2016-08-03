@@ -17,6 +17,8 @@
 #include "atom/browser/lib/bluetooth_chooser.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/net/atom_network_delegate.h"
+#include "atom/browser/osr/osr_web_contents_view.h"
+#include "atom/browser/osr/osr_render_widget_host_view.h"
 #include "atom/browser/ui/drag_util.h"
 #include "atom/browser/web_contents_permission_helper.h"
 #include "atom/browser/web_contents_preferences.h"
@@ -42,6 +44,7 @@
 #include "chrome/browser/printing/print_view_manager_basic.h"
 #include "chrome/browser/printing/print_preview_message_handler.h"
 #include "content/browser/renderer_host/render_widget_host_impl.h"
+#include "content/browser/web_contents/web_contents_impl.h"
 #include "content/common/view_messages.h"
 #include "content/public/browser/favicon_status.h"
 #include "content/public/browser/native_web_keyboard_event.h"
@@ -67,10 +70,6 @@
 #include "third_party/WebKit/public/web/WebInputEvent.h"
 #include "third_party/WebKit/public/web/WebFindOptions.h"
 #include "ui/display/screen.h"
-
-#include "content/browser/web_contents/web_contents_impl.h"
-#include "atom/browser/osr_web_contents_view.h"
-#include "atom/browser/osr_render_widget_host_view.h"
 
 #include "atom/common/node_includes.h"
 
