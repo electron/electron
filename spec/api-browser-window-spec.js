@@ -58,7 +58,7 @@ describe('browser-window module', function () {
       w.webContents.on('did-finish-load', function () {
         w.close()
       })
-      w.on('closed', function () {
+      w.once('closed', function () {
         var test = path.join(fixtures, 'api', 'unload')
         var content = fs.readFileSync(test)
         fs.unlinkSync(test)
@@ -69,7 +69,7 @@ describe('browser-window module', function () {
     })
 
     it('should emit beforeunload handler', function (done) {
-      w.on('onbeforeunload', function () {
+      w.once('onbeforeunload', function () {
         done()
       })
       w.webContents.on('did-finish-load', function () {
@@ -81,7 +81,7 @@ describe('browser-window module', function () {
 
   describe('window.close()', function () {
     it('should emit unload handler', function (done) {
-      w.on('closed', function () {
+      w.once('closed', function () {
         var test = path.join(fixtures, 'api', 'close')
         var content = fs.readFileSync(test)
         fs.unlinkSync(test)
@@ -92,7 +92,7 @@ describe('browser-window module', function () {
     })
 
     it('should emit beforeunload handler', function (done) {
-      w.on('onbeforeunload', function () {
+      w.once('onbeforeunload', function () {
         done()
       })
       w.loadURL('file://' + path.join(fixtures, 'api', 'close-beforeunload-false.html'))
@@ -521,21 +521,21 @@ describe('browser-window module', function () {
 
   describe('beforeunload handler', function () {
     it('returning undefined would not prevent close', function (done) {
-      w.on('closed', function () {
+      w.once('closed', function () {
         done()
       })
       w.loadURL('file://' + path.join(fixtures, 'api', 'close-beforeunload-undefined.html'))
     })
 
     it('returning false would prevent close', function (done) {
-      w.on('onbeforeunload', function () {
+      w.once('onbeforeunload', function () {
         done()
       })
       w.loadURL('file://' + path.join(fixtures, 'api', 'close-beforeunload-false.html'))
     })
 
     it('returning empty string would prevent close', function (done) {
-      w.on('onbeforeunload', function () {
+      w.once('onbeforeunload', function () {
         done()
       })
       w.loadURL('file://' + path.join(fixtures, 'api', 'close-beforeunload-empty-string.html'))
