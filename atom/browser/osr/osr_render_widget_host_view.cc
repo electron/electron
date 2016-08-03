@@ -26,11 +26,14 @@
 #include "ui/gfx/geometry/dip_util.h"
 #include "ui/gfx/native_widget_types.h"
 
-const float kDefaultScaleFactor = 1.0;
+namespace atom {
 
+namespace {
+
+const float kDefaultScaleFactor = 1.0;
 const int kFrameRetryLimit = 2;
 
-namespace atom {
+}  // namespace
 
 class AtomCopyFrameGenerator {
  public:
