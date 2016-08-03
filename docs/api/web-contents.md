@@ -480,7 +480,7 @@ Emitted when a new frame is generated. Only the dirty area is passed in the
 buffer.
 
 ```javascript
-const {BrowserWindow} = require('electron');
+const {BrowserWindow} = require('electron')
 
 let win = new BrowserWindow({
   width: 800,
@@ -488,12 +488,12 @@ let win = new BrowserWindow({
   webPreferences: {
     offscreen: true
   }
-});
-win.loadURL('http://github.com');
+})
+win.loadURL('http://github.com')
 
 win.webContents.on('paint', (event, dirty, data) => {
-  updateBitmap(dirty, data);
-});
+  // updateBitmap(dirty, data)
+})
 ```
 
 ### Instance Methods

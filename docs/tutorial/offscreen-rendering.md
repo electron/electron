@@ -26,20 +26,21 @@ mode that WebGL and 3D CSS animations are supported.
 This mode uses a software output device for rendering in the CPU, so the frame
 generation is much faster, thus this mode is preferred over the GPU accelerated
 one. To enable this mode GPU acceleration has to be disabled like this:
-``` javascript
-const {app} = require('electron');
 
-app.commandLine.appendSwitch('disable-gpu');
-app.commandLine.appendSwitch('disable-gpu-compositing');
+``` javascript
+const {app} = require('electron')
+
+app.commandLine.appendSwitch('disable-gpu')
+app.commandLine.appendSwitch('disable-gpu-compositing')
 ```
 
 ## Usage
 
 ``` javascript
-const {app, BrowserWindow} = require('electron');
+const {app, BrowserWindow} = require('electron')
 
-app.commandLine.appendSwitch('disable-gpu');
-app.commandLine.appendSwitch('disable-gpu-compositing');
+app.commandLine.appendSwitch('disable-gpu')
+app.commandLine.appendSwitch('disable-gpu-compositing')
 
 let win = new BrowserWindow({
   width: 800,
@@ -47,12 +48,12 @@ let win = new BrowserWindow({
   webPreferences: {
     offscreen: true
   }
-});
-win.loadURL('http://github.com');
+})
+win.loadURL('http://github.com')
 
-win.webContents.setFrameRate(30);
+win.webContents.setFrameRate(30)
 
 win.webContents.on('paint', (event, dirty, data) => {
-  updateBitmap(dirty, data);
-});
+  // updateBitmap(dirty, data)
+})
 ```
