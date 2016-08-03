@@ -187,7 +187,11 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
       command_line->AppendSwitch("hidden-page");
   }
 
-  command_line->AppendSwitch(cc::switches::kEnableBeginFrameScheduling);
+  // Use frame scheduling for offscreen renderers.
+  // TODO(zcbenz): Remove this after Chrome 54, on which it becomes default.
+  bool offscreen;
+  if (web_preferences.Get("offscreen", &offscreen) && offscreen)
+    command_line->AppendSwitch(cc::switches::kEnableBeginFrameScheduling);
 }
 
 // static
