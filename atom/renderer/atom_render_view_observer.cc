@@ -141,10 +141,6 @@ void AtomRenderViewObserver::DraggableRegionsChanged(blink::WebFrame* frame) {
   Send(new AtomViewHostMsg_UpdateDraggableRegions(routing_id(), regions));
 }
 
-void AtomRenderViewObserver::DidCommitCompositorFrame() {
-  Send(new AtomViewHostMsg_DidCommitCompositorFrame(routing_id()));
-}
-
 bool AtomRenderViewObserver::OnMessageReceived(const IPC::Message& message) {
   bool handled = true;
   IPC_BEGIN_MESSAGE_MAP(AtomRenderViewObserver, message)
