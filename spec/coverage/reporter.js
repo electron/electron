@@ -117,6 +117,10 @@ const saveCoverageOnBeforeUnload = () => {
     saveCoverageData(event.sender, coverage, pid)
   })
 
+  ipcMain.on('report-coverage', function (event, message) {
+    saveCoverageData(event.sender, message.coverage, `${message.pid}-extension`)
+  })
+
   app.on('web-contents-created', function (event, webContents) {
     webContents.executeJavaScript(`
       window.addEventListener('beforeunload', function () {
