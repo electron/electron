@@ -757,7 +757,6 @@ bool WebContents::OnMessageReceived(const IPC::Message& message) {
     IPC_MESSAGE_HANDLER(AtomViewHostMsg_Message, OnRendererMessage)
     IPC_MESSAGE_HANDLER_DELAY_REPLY(AtomViewHostMsg_Message_Sync,
                                     OnRendererMessageSync)
-    IPC_MESSAGE_HANDLER(AtomViewHostMsg_DidCommitCompositorFrame, OnViewPainted)
     IPC_MESSAGE_HANDLER_CODE(ViewHostMsg_SetCursor, OnCursorChange,
       handled = false)
     IPC_MESSAGE_UNHANDLED(handled = false)
@@ -1329,10 +1328,6 @@ void WebContents::OnCursorChange(const content::WebCursor& cursor) {
   } else {
     Emit("cursor-changed", CursorTypeToString(info));
   }
-}
-
-void WebContents::OnViewPainted() {
-  Emit("view-painted");
 }
 
 void WebContents::SetSize(const SetSizeParams& params) {
