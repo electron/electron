@@ -753,14 +753,6 @@ gfx::Rect NativeWindowMac::GetBounds() {
   return bounds;
 }
 
-gfx::Rect NativeWindowMac::GetContentBounds() {
-  NSRect frame = [window_ convertRectToScreen:[[window_ contentView] frame]];
-  gfx::Rect bounds(frame.origin.x, 0, NSWidth(frame), NSHeight(frame));
-  NSScreen* screen = [[NSScreen screens] objectAtIndex:0];
-  bounds.set_y(NSHeight([screen frame]) - NSMaxY(frame));
-  return bounds;
-}
-
 void NativeWindowMac::SetContentSizeConstraints(
     const extensions::SizeConstraints& size_constraints) {
   auto convertSize = [this](const gfx::Size& size) {
@@ -1051,22 +1043,25 @@ std::vector<gfx::Rect> NativeWindowMac::CalculateNonDraggableRegions(
   return result;
 }
 
-gfx::Size NativeWindowMac::ContentSizeToWindowSize(const gfx::Size& size) {
-  if (!has_frame())
-    return size;
-
-  NSRect content = NSMakeRect(0, 0, size.width(), size.height());
-  NSRect frame = [window_ frameRectForContentRect:content];
-  return gfx::Size(frame.size);
+gfx::Rect NativeWindowMac::ContentBoundsToWindowBounds(
+    const gfx::Rect& bounds) {
+  if (has_frame())
+    return gfx::Rect([window_ frameRectForContentRect:bounds.ToCGRect()]);
+  else
+    return bounds;
 }
 
-gfx::Size NativeWindowMac::WindowSizeToContentSize(const gfx::Size& size) {
-  if (!has_frame())
-    return size;
-
-  NSRect frame = NSMakeRect(0, 0, size.width(), size.height());
-  NSRect content = [window_ contentRectForFrameRect:frame];
-  return gfx::Size(content.size);
+gfx::Rect NativeWindowMac::WindowBoundsToContentBounds(
+    const gfx::Rect& bounds) {
+  if (has_frame()) {
+    gfx::Rect content_bounds(
+        [window_ contentRectForFrameRect:bounds.ToCGRect()]);
+    int frame_height = bounds.height() - content_bounds.height();
+    content_bounds.set_y(content_bounds.y() + frame_height);
+    return content_bounds;
+  } else {
+    return bounds;
+  }
 }
 
 void NativeWindowMac::UpdateDraggableRegions(

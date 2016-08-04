@@ -165,8 +165,8 @@ class NativeWindowViews : public NativeWindow,
 #endif
 
   // NativeWindow:
-  gfx::Size ContentSizeToWindowSize(const gfx::Size& size) override;
-  gfx::Size WindowSizeToContentSize(const gfx::Size& size) override;
+  gfx::Rect ContentBoundsToWindowBounds(const gfx::Rect& bounds) override;
+  gfx::Rect WindowBoundsToContentBounds(const gfx::Rect& bounds) override;
   void HandleKeyboardEvent(
       content::WebContents*,
       const content::NativeWebKeyboardEvent& event) override;

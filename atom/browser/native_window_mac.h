@@ -46,7 +46,6 @@ class NativeWindowMac : public NativeWindow {
   bool IsFullscreen() const override;
   void SetBounds(const gfx::Rect& bounds, bool animate = false) override;
   gfx::Rect GetBounds() override;
-  gfx::Rect GetContentBounds() override;
   void SetContentSizeConstraints(
       const extensions::SizeConstraints& size_constraints) override;
   void SetResizable(bool resizable) override;
@@ -115,8 +114,8 @@ class NativeWindowMac : public NativeWindow {
 
  private:
   // NativeWindow:
-  gfx::Size ContentSizeToWindowSize(const gfx::Size& size) override;
-  gfx::Size WindowSizeToContentSize(const gfx::Size& size) override;
+  gfx::Rect ContentBoundsToWindowBounds(const gfx::Rect& bounds);
+  gfx::Rect WindowBoundsToContentBounds(const gfx::Rect& bounds);
   void UpdateDraggableRegions(
       const std::vector<DraggableRegion>& regions) override;
 
