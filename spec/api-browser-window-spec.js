@@ -711,6 +711,7 @@ describe('browser-window module', function () {
         w.destroy()
         w = new BrowserWindow({show: false, resizable: false})
         assert.equal(w.isResizable(), false)
+        assert.equal(w.isMaximizable(), true)
       })
 
       it('can be changed with setResizable method', function () {
@@ -819,6 +820,15 @@ describe('browser-window module', function () {
         assert.equal(w.isMaximizable(), false)
         w.setClosable(false)
         assert.equal(w.isMaximizable(), false)
+
+        w.setMaximizable(true)
+        assert.equal(w.isMaximizable(), true)
+        w.setClosable(true)
+        assert.equal(w.isMaximizable(), true)
+        w.setFullScreenable(false)
+        assert.equal(w.isMaximizable(), true)
+        w.setResizable(false)
+        assert.equal(w.isMaximizable(), true)
       })
     })
 
