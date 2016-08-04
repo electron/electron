@@ -88,6 +88,9 @@ AtomBrowserContext::AtomBrowserContext(
   use_cache_ = true;
   options.GetBoolean("cache", &use_cache_);
 
+  // Default schemes that should support cookies.
+  cookieable_schemes_ = {"http", "https", "ws", "wss"};
+
   // Initialize Pref Registry in brightray.
   InitPrefs();
 }
@@ -97,6 +100,13 @@ AtomBrowserContext::~AtomBrowserContext() {
 
 void AtomBrowserContext::SetUserAgent(const std::string& user_agent) {
   user_agent_ = user_agent;
+}
+
+void AtomBrowserContext::SetCookieableSchemes(
+    const std::vector<std::string>& schemes) {
+  if (!schemes.empty())
+    cookieable_schemes_.insert(cookieable_schemes_.end(),
+                               schemes.begin(), schemes.end());
 }
 
 net::NetworkDelegate* AtomBrowserContext::CreateNetworkDelegate() {
@@ -186,6 +196,10 @@ std::unique_ptr<net::CertVerifier> AtomBrowserContext::CreateCertVerifier() {
 
 net::SSLConfigService* AtomBrowserContext::CreateSSLConfigService() {
   return new AtomSSLConfigService;
+}
+
+std::vector<std::string> AtomBrowserContext::GetCookieableSchemes() {
+  return cookieable_schemes_;
 }
 
 void AtomBrowserContext::RegisterPrefs(PrefRegistrySimple* pref_registry) {
