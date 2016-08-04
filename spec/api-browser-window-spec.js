@@ -352,7 +352,7 @@ describe('browser-window module', function () {
 
   describe('BrowserWindow.setContentBounds(bounds)', function () {
     it('sets the content size and position', function (done) {
-      var bounds = {x: 60, y: 60, width: 250, height: 250}
+      var bounds = {x: 10, y: 10, width: 250, height: 250}
       w.once('resize', function () {
         assert.deepEqual(w.getContentBounds(), bounds)
         done()
@@ -368,7 +368,7 @@ describe('browser-window module', function () {
         width: 300,
         height: 300
       })
-      var bounds = {x: 60, y: 60, width: 250, height: 250}
+      var bounds = {x: 10, y: 10, width: 250, height: 250}
       w.once('resize', function () {
         assert.deepEqual(w.getContentBounds(), bounds)
         done()
