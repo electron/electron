@@ -14,7 +14,6 @@
 
 #include "base/command_line.h"
 #include "base/memory/ptr_util.h"
-#include "base/strings/string_split.h"
 #include "base/strings/string_util.h"
 #include "base/threading/sequenced_worker_pool.h"
 #include "base/threading/worker_pool.h"
@@ -172,26 +171,16 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     storage_.reset(new net::URLRequestContextStorage(url_request_context_.get()));
 
     std::unique_ptr<net::CookieStore> cookie_store = nullptr;
-    std::vector<std::string> default_cookieable_schemes = {"http", "https", "ws", "wss"};
-    auto schemes_string = command_line.GetSwitchValueASCII(switches::kCookieableSchemes);
-    if (!schemes_string.empty()) {
-      auto additional_cookieable_schemes = base::SplitString(schemes_string, ",",
-                                                             base::TRIM_WHITESPACE,
-                                                             base::SPLIT_WANT_NONEMPTY);
-      default_cookieable_schemes.insert(default_cookieable_schemes.end(),
-                                        additional_cookieable_schemes.begin(),
-                                        additional_cookieable_schemes.end());
-    }
     if (in_memory_) {
       auto cookie_config = content::CookieStoreConfig();
-      cookie_config.cookieable_schemes = default_cookieable_schemes;
+      cookie_config.cookieable_schemes = delegate_->GetCookieableSchemes();
       cookie_store = content::CreateCookieStore(cookie_config);
     } else {
       auto cookie_config = content::CookieStoreConfig(
           base_path_.Append(FILE_PATH_LITERAL("Cookies")),
           content::CookieStoreConfig::EPHEMERAL_SESSION_COOKIES,
           nullptr, nullptr);
-      cookie_config.cookieable_schemes = default_cookieable_schemes;
+      cookie_config.cookieable_schemes = delegate_->GetCookieableSchemes();
       cookie_store = content::CreateCookieStore(cookie_config);
     }
     storage_->set_cookie_store(std::move(cookie_store));

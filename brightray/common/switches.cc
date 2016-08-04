@@ -49,9 +49,6 @@ const char kAuthServerWhitelist[] = "auth-server-whitelist";
 // Whitelist containing servers for which Kerberos delegation is allowed.
 const char kAuthNegotiateDelegateWhitelist[] = "auth-negotiate-delegate-whitelist";
 
-// Comma separated list of schemes that should support cookies.
-const char kCookieableSchemes[] = "cookieable-schemes";
-
 }  // namespace switches
 
 }  // namespace brightray

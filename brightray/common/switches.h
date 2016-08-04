@@ -17,7 +17,6 @@ extern const char kProxyPacUrl[];
 extern const char kDisableHttp2[];
 extern const char kAuthServerWhitelist[];
 extern const char kAuthNegotiateDelegateWhitelist[];
-extern const char kCookieableSchemes[];
 
 }  // namespace switches
 
