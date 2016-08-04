@@ -206,6 +206,7 @@
       'atom/browser/native_window_mac.h',
       'atom/browser/native_window_mac.mm',
       'atom/browser/native_window_observer.h',
+      'atom/browser/osr/osr_web_contents_view_mac.mm',
       'atom/browser/osr/osr_web_contents_view.cc',
       'atom/browser/osr/osr_web_contents_view.h',
       'atom/browser/osr/osr_output_device.cc',

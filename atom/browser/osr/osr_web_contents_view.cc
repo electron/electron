@@ -11,9 +11,15 @@ OffScreenWebContentsView::OffScreenWebContentsView(
     : transparent_(transparent),
       callback_(callback),
       web_contents_(nullptr) {
+#if defined(OS_MACOSX)
+  PlatformCreate();
+#endif
 }
 
 OffScreenWebContentsView::~OffScreenWebContentsView() {
+#if defined(OS_MACOSX)
+  PlatformDestroy();
+#endif
 }
 
 void OffScreenWebContentsView::SetWebContents(
@@ -21,6 +27,7 @@ void OffScreenWebContentsView::SetWebContents(
   web_contents_ = web_contents;
 }
 
+#if !defined(OS_MACOSX)
 gfx::NativeView OffScreenWebContentsView::GetNativeView() const {
   return gfx::NativeView();
 }
@@ -32,6 +39,7 @@ gfx::NativeView OffScreenWebContentsView::GetContentNativeView() const {
 gfx::NativeWindow OffScreenWebContentsView::GetTopLevelNativeWindow() const {
   return gfx::NativeWindow();
 }
+#endif
 
 void OffScreenWebContentsView::GetContainerBounds(gfx::Rect* out) const {
   *out = GetViewBounds();
