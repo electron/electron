@@ -163,11 +163,16 @@ Returns a [Buffer][buffer] that contains the image's `JPEG` encoded data.
 
 #### `image.toBitmap()`
 
-Returns a [Buffer][buffer] that contains the image's raw pixel data.
+Returns a [Buffer][buffer] that contains a copy of the image's raw pixel data.
 
 #### `image.toDataURL()`
 
 Returns the data URL of the image.
+
+#### `image.getBitmap()`
+
+Returns a [Buffer][buffer] that contains the image's raw pixel data. The pixel 
+data is not owned by the `Buffer` object.
 
 #### `image.getNativeHandle()` _macOS_
 
