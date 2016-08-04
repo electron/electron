@@ -1128,7 +1128,9 @@ void NativeWindowMac::UpdateDraggableRegionViews(
   NSInteger webViewWidth = NSWidth([webView bounds]);
   NSInteger webViewHeight = NSHeight([webView bounds]);
 
-  [webView setMouseDownCanMoveWindow:YES];
+  if ([webView respondsToSelector:@selector(setMouseDownCanMoveWindow:)]) {
+    [webView setMouseDownCanMoveWindow:YES];
+  }
 
   // Remove all ControlRegionViews that are added last time.
   // Note that [webView subviews] returns the view's mutable internal array and
