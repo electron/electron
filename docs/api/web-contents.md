@@ -473,9 +473,11 @@ Emitted when a new frame is generated. Only the dirty area is passed in the
 buffer.
 
 ```javascript
+const {BrowserWindow} = require('electron')
+
 let win = new BrowserWindow({webPreferences: {offscreen: true}})
 win.webContents.on('paint', (event, dirty, image) => {
-  fs.writeSync('frame.png', image.toPNG())
+  // updateBitmap(dirty, image.toBitmap())
 })
 win.loadURL('http://github.com')
 ```

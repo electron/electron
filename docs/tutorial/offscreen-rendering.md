@@ -46,7 +46,7 @@ app.once('ready', () => {
   })
   win.loadURL('http://github.com')
   win.webContents.on('paint', (event, dirty, image) => {
-    fs.writeSync('frame.png', image.toPNG())
+    // updateBitmap(dirty, image.toBitmap())
   })
   win.webContents.setFrameRate(30)
 })
