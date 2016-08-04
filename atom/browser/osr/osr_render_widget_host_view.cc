@@ -260,9 +260,7 @@ class AtomCopyFrameGenerator {
       const gfx::Rect& damage_rect,
       const SkBitmap& bitmap,
       std::unique_ptr<SkAutoLockPixels> bitmap_pixels_lock) {
-    view_->OnPaint(damage_rect,
-                   gfx::Size(bitmap.width(), bitmap.height()),
-                   bitmap.bytesPerPixel(), bitmap.getPixels());
+    view_->OnPaint(damage_rect, bitmap);
 
     if (frame_retry_count_ > 0)
       frame_retry_count_ = 0;
@@ -756,7 +754,8 @@ std::unique_ptr<cc::SoftwareOutputDevice>
   DCHECK(!copy_frame_generator_);
   DCHECK(!software_output_device_);
 
-  software_output_device_ = new OffScreenOutputDevice(transparent_,
+  software_output_device_ = new OffScreenOutputDevice(
+      transparent_,
       base::Bind(&OffScreenRenderWidgetHostView::OnPaint,
                  weak_ptr_factory_.GetWeakPtr()));
   return base::WrapUnique(software_output_device_);
@@ -786,12 +785,9 @@ void OffScreenRenderWidgetHostView::OnSetNeedsBeginFrames(bool enabled) {
 }
 
 void OffScreenRenderWidgetHostView::OnPaint(
-    const gfx::Rect& damage_rect,
-    const gfx::Size& bitmap_size,
-    int pixel_size,
-    void* bitmap_pixels) {
+    const gfx::Rect& damage_rect, const SkBitmap& bitmap) {
   TRACE_EVENT0("electron", "OffScreenRenderWidgetHostView::OnPaint");
-  callback_.Run(damage_rect, bitmap_size, pixel_size, bitmap_pixels);
+  callback_.Run(damage_rect, bitmap);
 }
 
 void OffScreenRenderWidgetHostView::SetPainting(bool painting) {

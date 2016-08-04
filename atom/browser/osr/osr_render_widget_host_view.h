@@ -190,10 +190,7 @@ class OffScreenRenderWidgetHostView
   void DestroyPlatformWidget();
 #endif
 
-  void OnPaint(const gfx::Rect& damage_rect,
-               const gfx::Size& bitmap_size,
-               int pixel_size,
-               void* bitmap_pixels);
+  void OnPaint(const gfx::Rect& damage_rect, const SkBitmap& bitmap);
 
   void SetPainting(bool painting);
   bool IsPainting() const;
