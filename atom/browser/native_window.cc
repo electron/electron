@@ -256,7 +256,7 @@ extensions::SizeConstraints NativeWindow::GetSizeConstraints() {
   if (content_constraints.HasMaximumSize()) {
     gfx::Rect max_bounds = ContentBoundsToWindowBounds(
         gfx::Rect(content_constraints.GetMaximumSize()));
-    content_constraints.set_maximum_size(max_bounds.size());
+    window_constraints.set_maximum_size(max_bounds.size());
   }
   if (content_constraints.HasMinimumSize()) {
     gfx::Rect min_bounds = ContentBoundsToWindowBounds(
