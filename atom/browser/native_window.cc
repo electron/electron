@@ -219,9 +219,7 @@ gfx::Point NativeWindow::GetPosition() {
 }
 
 void NativeWindow::SetContentSize(const gfx::Size& size, bool animate) {
-  gfx::Rect bounds = GetContentBounds();
-  bounds.set_size(size);
-  SetSize(ContentBoundsToWindowBounds(bounds).size(), animate);
+  SetSize(ContentBoundsToWindowBounds(gfx::Rect(size)).size(), animate);
 }
 
 gfx::Size NativeWindow::GetContentSize() {
