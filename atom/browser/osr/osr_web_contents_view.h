@@ -10,17 +10,25 @@
 #include "content/browser/web_contents/web_contents_view.h"
 #include "content/public/browser/web_contents.h"
 
+#if defined(OS_MACOSX)
+#ifdef __OBJC__
+@class OffScreenView;
+#else
+class OffScreenView;
+#endif
+#endif
+
 namespace atom {
 
 class OffScreenWebContentsView : public content::WebContentsView,
                                  public content::RenderViewHostDelegateView {
  public:
-  explicit OffScreenWebContentsView(bool transparent);
+  OffScreenWebContentsView(bool transparent, const OnPaintCallback& callback);
   ~OffScreenWebContentsView();
 
   void SetWebContents(content::WebContents*);
 
-  // content::WebContentsView
+  // content::WebContentsView:
   gfx::NativeView GetNativeView() const override;
   gfx::NativeView GetContentNativeView() const override;
   gfx::NativeWindow GetTopLevelNativeWindow() const override;
@@ -61,11 +69,21 @@ class OffScreenWebContentsView : public content::WebContentsView,
   void UpdateDragCursor(blink::WebDragOperation operation) override;
 
  private:
+#if defined(OS_MACOSX)
+  void PlatformCreate();
+  void PlatformDestroy();
+#endif
+
   const bool transparent_;
+  OnPaintCallback callback_;
 
   // Weak refs.
   OffScreenRenderWidgetHostView* view_;
   content::WebContents* web_contents_;
+
+#if defined(OS_MACOSX)
+  OffScreenView* offScreenView_;
+#endif
 };
 
 }  // namespace atom

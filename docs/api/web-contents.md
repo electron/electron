@@ -471,7 +471,6 @@ Returns:
 * `bitmapSize` Object
   * `width` Number - the width of the whole bitmap
   * `height` Number - the height of the whole bitmap
-  * `bytesPerPixel` Number - The number of bytes per pixel in the bitmap
 
 Emitted when a new frame is generated. Only the dirty area is passed in the
 buffer.
