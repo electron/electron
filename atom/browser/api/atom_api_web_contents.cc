@@ -1337,15 +1337,10 @@ bool WebContents::IsOffScreen() const {
   return type_ == OFF_SCREEN;
 }
 
-void WebContents::OnPaint(const gfx::Rect& dirty_rect,
-                          const SkBitmap& bitmap) {
-  v8::MaybeLocal<v8::Object> buffer = node::Buffer::Copy(
-      isolate(),
-      reinterpret_cast<char*>(bitmap.getPixels()), bitmap.getSize());
-  if (!buffer.IsEmpty()) {
-    Emit("paint", dirty_rect, buffer.ToLocalChecked(),
-         gfx::Size(bitmap.width(), bitmap.height()));
-  }
+void WebContents::OnPaint(const gfx::Rect& dirty_rect, const SkBitmap& bitmap) {
+  mate::Handle<NativeImage> image =
+      NativeImage::Create(isolate(), gfx::Image::CreateFrom1xBitmap(bitmap));
+  Emit("paint", dirty_rect, image);
 }
 
 void WebContents::StartPainting() {
