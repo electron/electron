@@ -1045,10 +1045,15 @@ std::vector<gfx::Rect> NativeWindowMac::CalculateNonDraggableRegions(
 
 gfx::Rect NativeWindowMac::ContentBoundsToWindowBounds(
     const gfx::Rect& bounds) {
-  if (has_frame())
-    return gfx::Rect([window_ frameRectForContentRect:bounds.ToCGRect()]);
-  else
+  if (has_frame()) {
+    gfx::Rect window_bounds(
+        [window_ frameRectForContentRect:bounds.ToCGRect()]);
+    int frame_height = window_bounds.height() - bounds.height();
+    window_bounds.set_y(window_bounds.y() - frame_height);
+    return window_bounds;
+  } else {
     return bounds;
+  }
 }
 
 gfx::Rect NativeWindowMac::WindowBoundsToContentBounds(

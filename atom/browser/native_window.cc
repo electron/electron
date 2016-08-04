@@ -228,6 +228,10 @@ gfx::Size NativeWindow::GetContentSize() {
   return GetContentBounds().size();
 }
 
+void NativeWindow::SetContentBounds(const gfx::Rect& bounds, bool animate) {
+  SetBounds(ContentBoundsToWindowBounds(bounds), animate);
+}
+
 gfx::Rect NativeWindow::GetContentBounds() {
   return WindowBoundsToContentBounds(GetBounds());
 }
