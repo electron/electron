@@ -192,6 +192,7 @@ class OffScreenRenderWidgetHostView
   void SetPaintCallback(const OnPaintCallback& callback);
   void OnPaint(const gfx::Rect& damage_rect,
                const gfx::Size& bitmap_size,
+               const int pixel_size,
                void* bitmap_pixels);
 
   void SetPainting(bool painting);
