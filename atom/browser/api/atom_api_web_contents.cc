@@ -1345,16 +1345,15 @@ bool WebContents::IsOffScreen() const {
 
 void WebContents::OnPaint(const gfx::Rect& dirty_rect,
                           const gfx::Size& bitmap_size,
-                          const int pixel_size,
+                          int pixel_size,
                           void* bitmap_pixels) {
-  v8::MaybeLocal<v8::Object> buffer = node::Buffer::New(
+  v8::MaybeLocal<v8::Object> buffer = node::Buffer::Copy(
       isolate(), reinterpret_cast<char*>(bitmap_pixels),
-      pixel_size * dirty_rect.width() * dirty_rect.height());
+      pixel_size * bitmap_size.width() * bitmap_size.height());
 
   mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate());
   dict.Set("width", bitmap_size.width());
   dict.Set("height", bitmap_size.height());
-  dict.Set("bytesPerPixel", pixel_size);
 
   if (!buffer.IsEmpty())
     Emit("paint", dirty_rect, buffer.ToLocalChecked(), dict);
@@ -1367,8 +1366,8 @@ void WebContents::StartPainting() {
   auto* osr_rwhv = static_cast<OffScreenRenderWidgetHostView*>(
       web_contents()->GetRenderWidgetHostView());
   if (osr_rwhv) {
-    osr_rwhv->SetPainting(true);
     osr_rwhv->Show();
+    osr_rwhv->SetPainting(true);
   }
 }
 
