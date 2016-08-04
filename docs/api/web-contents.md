@@ -352,7 +352,7 @@ Emitted when the cursor's type changes. The `type` parameter can be `default`,
 `not-allowed`, `zoom-in`, `zoom-out`, `grab`, `grabbing`, `custom`.
 
 If the `type` parameter is `custom`, the `image` parameter will hold the custom
-cursor image in a `NativeImage`, and `scale`, `size` and `hotspot` will hold 
+cursor image in a `NativeImage`, and `scale`, `size` and `hotspot` will hold
 additional information about the custom cursor.
 
 #### Event: 'context-menu'
@@ -463,14 +463,11 @@ Returns:
 
 * `event` Event
 * `dirtyRect` Object
-  * `x` Number - the x coordinate on the bitmap
-  * `y` Number - the y coordinate on the bitmap
-  * `width` Number - the width of the dirty area
-  * `height` Number - the height of the dirty area
-* `data` Buffer - the bitmap data of the dirty rect
-* `bitmapSize` Object
-  * `width` Number - the width of the whole bitmap
-  * `height` Number - the height of the whole bitmap
+  * `x` Integer - The x coordinate on the image.
+  * `y` Integer - The y coordinate on the image.
+  * `width` Integer - The width of the dirty area.
+  * `height` Integer - The height of the dirty area.
+* `image` [NativeImage](native-image.md) - The image data of the dirty rect
 
 Emitted when a new frame is generated. Only the dirty area is passed in the
 buffer.
@@ -478,18 +475,11 @@ buffer.
 ```javascript
 const {BrowserWindow} = require('electron')
 
-let win = new BrowserWindow({
-  width: 800,
-  height: 1500,
-  webPreferences: {
-    offscreen: true
-  }
+let win = new BrowserWindow({webPreferences: {offscreen: true}})
+win.webContents.on('paint', (event, dirty, image) => {
+  // updateBitmap(dirty, image.toBitmap())
 })
 win.loadURL('http://github.com')
-
-win.webContents.on('paint', (event, dirty, data) => {
-  // updateBitmap(dirty, data)
-})
 ```
 
 ### Instance Methods
@@ -535,6 +525,10 @@ console.log(currentURL)
 #### `contents.getTitle()`
 
 Returns the title of the current web page.
+
+#### `contents.isDestroyed()`
+
+Returns a Boolean, whether the web page is destroyed.
 
 #### `contents.isFocused()`
 
@@ -681,7 +675,7 @@ Sends a request to get current zoom level, the `callback` will be called with
 * `minimumLevel` Number
 * `maximumLevel` Number
 
-Sets the maximum and minimum zoom level.`
+Sets the maximum and minimum zoom level.
 
 #### `contents.undo()`
 

@@ -87,9 +87,9 @@ _リンクになっていないリストは未翻訳のものです。_
 
 * [コーディング規約](development/coding-style.md)
 * Source Code Directory Structure (development/source-code-directory-structure.md)
-* Technical Differences to NW.js  (formerly node-webkit)(development/atom-shell-vs-node-webkit.md)
+* [NW.js(node-webkit) との技術的違い](development/atom-shell-vs-node-webkit.md)
 * Build System Overview (development/build-system-overview.md)
-* Build Instructions (macOS) (development/build-instructions-osx.md)
+* [ビルド方法(macOS)](development/build-instructions-osx.md)
 * Build Instructions (Windows) (development/build-instructions-windows.md)
 * Build Instructions (Linux) (development/build-instructions-linux.md)
 * Debug Instructions (Windows) (development/debug-instructions-windows.md)

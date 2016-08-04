@@ -73,10 +73,6 @@ namespace atom {
 
 namespace {
 
-// Empty callback for async handle.
-void UvNoOp(uv_async_t* handle) {
-}
-
 // Convert the given vector to an array of C-strings. The strings in the
 // returned vector are only guaranteed valid so long as the vector of strings
 // is not modified.
@@ -201,7 +197,7 @@ void NodeBindings::PrepareMessageLoop() {
 
   // Add dummy handle for libuv, otherwise libuv would quit when there is
   // nothing to do.
-  uv_async_init(uv_loop_, &dummy_uv_handle_, UvNoOp);
+  uv_async_init(uv_loop_, &dummy_uv_handle_, nullptr);
 
   // Start worker that will interrupt main loop when having uv events.
   uv_sem_init(&embed_sem_, 0);
@@ -236,7 +232,7 @@ void NodeBindings::UvRunOnce() {
 
   // Deal with uv events.
   int r = uv_run(uv_loop_, UV_RUN_NOWAIT);
-  if (r == 0 || uv_loop_->stop_flag != 0)
+  if (r == 0)
     message_loop_->QuitWhenIdle();  // Quit from uv.
 
   // Tell the worker thread to continue polling.

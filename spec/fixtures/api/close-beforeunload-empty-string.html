@@ -1,11 +1,17 @@
 <html>
 <body>
 <script type="text/javascript" charset="utf-8">
+  // Only prevent unload on the first window close
+  var unloadPrevented = false;
   window.onbeforeunload = function() {
     setTimeout(function() {
       require('electron').remote.getCurrentWindow().emit('onbeforeunload');
     }, 0);
-    return '';
+
+    if (!unloadPrevented) {
+      unloadPrevented = true;
+      return '';
+    }
   }
   window.close();
 </script>

@@ -17,6 +17,7 @@
 #include "base/command_line.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "chrome/browser/browser_process.h"
+#include "content/public/browser/child_process_security_policy.h"
 #include "v8/include/v8-debug.h"
 
 #if defined(USE_X11)
@@ -43,6 +44,9 @@ AtomBrowserMainParts::AtomBrowserMainParts()
       gc_timer_(true, true) {
   DCHECK(!self_) << "Cannot have two AtomBrowserMainParts";
   self_ = this;
+  // Register extension scheme as web safe scheme.
+  content::ChildProcessSecurityPolicy::GetInstance()->
+      RegisterWebSafeScheme("chrome-extension");
 }
 
 AtomBrowserMainParts::~AtomBrowserMainParts() {

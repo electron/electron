@@ -572,6 +572,10 @@ Removes focus from the window.
 
 Returns a boolean, whether the window is focused.
 
+#### `win.isDestroyed()`
+
+Returns a boolean, whether the window is destroyed.
+
 #### `win.show()`
 
 Shows and gives focus to the window.

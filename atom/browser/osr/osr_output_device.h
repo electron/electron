@@ -12,8 +12,7 @@
 
 namespace atom {
 
-typedef base::Callback<void(const gfx::Rect&,
-                            const gfx::Size&, void*)> OnPaintCallback;
+typedef base::Callback<void(const gfx::Rect&, const SkBitmap&)> OnPaintCallback;
 
 class OffScreenOutputDevice : public cc::SoftwareOutputDevice {
  public:

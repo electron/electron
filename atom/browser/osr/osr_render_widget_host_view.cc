@@ -260,9 +260,7 @@ class AtomCopyFrameGenerator {
       const gfx::Rect& damage_rect,
       const SkBitmap& bitmap,
       std::unique_ptr<SkAutoLockPixels> bitmap_pixels_lock) {
-    view_->OnPaint(damage_rect,
-                   gfx::Size(bitmap.width(), bitmap.height()),
-                   bitmap.getPixels());
+    view_->OnPaint(damage_rect, bitmap);
 
     if (frame_retry_count_ > 0)
       frame_retry_count_ = 0;
@@ -338,15 +336,17 @@ class AtomBeginFrameTimer : public cc::DelayBasedTimeSourceClient {
 
 OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
     bool transparent,
+    const OnPaintCallback& callback,
     content::RenderWidgetHost* host,
     NativeWindow* native_window)
     : render_widget_host_(content::RenderWidgetHostImpl::From(host)),
       native_window_(native_window),
       software_output_device_(nullptr),
+      transparent_(transparent),
+      callback_(callback),
       frame_rate_(60),
       frame_rate_threshold_ms_(0),
       last_time_(base::Time::Now()),
-      transparent_(transparent),
       scale_factor_(kDefaultScaleFactor),
       is_showing_(!render_widget_host_->is_hidden()),
       size_(native_window->GetSize()),
@@ -754,7 +754,8 @@ std::unique_ptr<cc::SoftwareOutputDevice>
   DCHECK(!copy_frame_generator_);
   DCHECK(!software_output_device_);
 
-  software_output_device_ = new OffScreenOutputDevice(transparent_,
+  software_output_device_ = new OffScreenOutputDevice(
+      transparent_,
       base::Bind(&OffScreenRenderWidgetHostView::OnPaint,
                  weak_ptr_factory_.GetWeakPtr()));
   return base::WrapUnique(software_output_device_);
@@ -783,19 +784,10 @@ void OffScreenRenderWidgetHostView::OnSetNeedsBeginFrames(bool enabled) {
   }
 }
 
-void OffScreenRenderWidgetHostView::SetPaintCallback(
-    const OnPaintCallback& callback) {
-  callback_ = callback;
-}
-
 void OffScreenRenderWidgetHostView::OnPaint(
-    const gfx::Rect& damage_rect,
-    const gfx::Size& bitmap_size,
-    void* bitmap_pixels) {
+    const gfx::Rect& damage_rect, const SkBitmap& bitmap) {
   TRACE_EVENT0("electron", "OffScreenRenderWidgetHostView::OnPaint");
-
-  if (!callback_.is_null())
-    callback_.Run(damage_rect, bitmap_size, bitmap_pixels);
+  callback_.Run(damage_rect, bitmap);
 }
 
 void OffScreenRenderWidgetHostView::SetPainting(bool painting) {
