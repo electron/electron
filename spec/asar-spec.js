@@ -2,6 +2,7 @@ const assert = require('assert')
 const ChildProcess = require('child_process')
 const fs = require('fs')
 const path = require('path')
+const {closeWindow} = require('./window-helpers')
 
 const nativeImage = require('electron').nativeImage
 const remote = require('electron').remote
@@ -794,8 +795,8 @@ describe('asar package', function () {
 
     it('sets __dirname correctly', function (done) {
       after(function () {
-        w.destroy()
         ipcMain.removeAllListeners('dirname')
+        return closeWindow(w).then(function () { w = null })
       })
 
       var w = new BrowserWindow({
@@ -818,8 +819,8 @@ describe('asar package', function () {
 
     it('loads script tag in html', function (done) {
       after(function () {
-        w.destroy()
         ipcMain.removeAllListeners('ping')
+        return closeWindow(w).then(function () { w = null })
       })
 
       var w = new BrowserWindow({

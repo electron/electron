@@ -1,5 +1,6 @@
 const assert = require('assert')
 const path = require('path')
+const {closeWindow} = require('./window-helpers')
 const BrowserWindow = require('electron').remote.BrowserWindow
 
 describe('debugger module', function () {
@@ -7,9 +8,6 @@ describe('debugger module', function () {
   var w = null
 
   beforeEach(function () {
-    if (w != null) {
-      w.destroy()
-    }
     w = new BrowserWindow({
       show: false,
       width: 400,
@@ -18,10 +16,7 @@ describe('debugger module', function () {
   })
 
   afterEach(function () {
-    if (w != null) {
-      w.destroy()
-    }
-    w = null
+    return closeWindow(w).then(function () { w = null })
   })
 
   describe('debugger.attach', function () {

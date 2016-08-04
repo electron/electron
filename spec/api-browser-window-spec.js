@@ -5,6 +5,7 @@ const fs = require('fs')
 const path = require('path')
 const os = require('os')
 const http = require('http')
+const {closeWindow} = require('./window-helpers')
 
 const remote = require('electron').remote
 const screen = require('electron').screen
@@ -38,9 +39,6 @@ describe('browser-window module', function () {
   })
 
   beforeEach(function () {
-    if (w != null) {
-      w.destroy()
-    }
     w = new BrowserWindow({
       show: false,
       width: 400,
@@ -52,10 +50,7 @@ describe('browser-window module', function () {
   })
 
   afterEach(function () {
-    if (w != null) {
-      w.destroy()
-    }
-    w = null
+    return closeWindow(w).then(function () { w = null })
   })
 
   describe('BrowserWindow.close()', function () {
@@ -63,7 +58,7 @@ describe('browser-window module', function () {
       w.webContents.on('did-finish-load', function () {
         w.close()
       })
-      w.on('closed', function () {
+      w.once('closed', function () {
         var test = path.join(fixtures, 'api', 'unload')
         var content = fs.readFileSync(test)
         fs.unlinkSync(test)
@@ -74,7 +69,7 @@ describe('browser-window module', function () {
     })
 
     it('should emit beforeunload handler', function (done) {
-      w.on('onbeforeunload', function () {
+      w.once('onbeforeunload', function () {
         done()
       })
       w.webContents.on('did-finish-load', function () {
@@ -86,7 +81,7 @@ describe('browser-window module', function () {
 
   describe('window.close()', function () {
     it('should emit unload handler', function (done) {
-      w.on('closed', function () {
+      w.once('closed', function () {
         var test = path.join(fixtures, 'api', 'close')
         var content = fs.readFileSync(test)
         fs.unlinkSync(test)
@@ -97,7 +92,7 @@ describe('browser-window module', function () {
     })
 
     it('should emit beforeunload handler', function (done) {
-      w.on('onbeforeunload', function () {
+      w.once('onbeforeunload', function () {
         done()
       })
       w.loadURL('file://' + path.join(fixtures, 'api', 'close-beforeunload-false.html'))
@@ -526,21 +521,21 @@ describe('browser-window module', function () {
 
   describe('beforeunload handler', function () {
     it('returning undefined would not prevent close', function (done) {
-      w.on('closed', function () {
+      w.once('closed', function () {
         done()
       })
       w.loadURL('file://' + path.join(fixtures, 'api', 'close-beforeunload-undefined.html'))
     })
 
     it('returning false would prevent close', function (done) {
-      w.on('onbeforeunload', function () {
+      w.once('onbeforeunload', function () {
         done()
       })
       w.loadURL('file://' + path.join(fixtures, 'api', 'close-beforeunload-false.html'))
     })
 
     it('returning empty string would prevent close', function (done) {
-      w.on('onbeforeunload', function () {
+      w.once('onbeforeunload', function () {
         done()
       })
       w.loadURL('file://' + path.join(fixtures, 'api', 'close-beforeunload-empty-string.html'))
@@ -1002,6 +997,7 @@ describe('browser-window module', function () {
 
   describe('dev tool extensions', function () {
     describe('BrowserWindow.addDevToolsExtension', function () {
+      let showPanelIntevalId
       this.timeout(10000)
 
       beforeEach(function () {
@@ -1013,7 +1009,7 @@ describe('browser-window module', function () {
         assert.equal(BrowserWindow.getDevToolsExtensions().hasOwnProperty('foo'), true)
 
         w.webContents.on('devtools-opened', function () {
-          var showPanelIntevalId = setInterval(function () {
+          showPanelIntevalId = setInterval(function () {
             if (w && w.devToolsWebContents) {
               var showLastPanel = function () {
                 var lastPanelId = WebInspector.inspectorView._tabbedPane._tabs.peekLast().id
@@ -1027,6 +1023,10 @@ describe('browser-window module', function () {
         })
 
         w.loadURL('about:blank')
+      })
+
+      afterEach(function () {
+        clearInterval(showPanelIntevalId)
       })
 
       it('throws errors for missing manifest.json files', function () {

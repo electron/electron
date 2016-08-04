@@ -2,6 +2,7 @@ const assert = require('assert')
 const http = require('http')
 const path = require('path')
 const fs = require('fs')
+const {closeWindow} = require('./window-helpers')
 
 const {ipcRenderer, remote} = require('electron')
 const {ipcMain, session, BrowserWindow} = remote
@@ -14,9 +15,6 @@ describe('session module', function () {
   var url = 'http://127.0.0.1'
 
   beforeEach(function () {
-    if (w != null) {
-      w.destroy()
-    }
     w = new BrowserWindow({
       show: false,
       width: 400,
@@ -25,10 +23,7 @@ describe('session module', function () {
   })
 
   afterEach(function () {
-    if (w != null) {
-      w.destroy()
-    }
-    w = null
+    return closeWindow(w).then(function () { w = null })
   })
 
   describe('session.defaultSession', function () {
@@ -194,7 +189,7 @@ describe('session module', function () {
     })
 
     afterEach(function () {
-      w.destroy()
+      return closeWindow(w).then(function () { w = null })
     })
 
     it('can cancel default download behavior', function (done) {

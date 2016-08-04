@@ -2,6 +2,7 @@
 
 const assert = require('assert')
 const path = require('path')
+const {closeWindow} = require('./window-helpers')
 
 const {ipcRenderer, remote} = require('electron')
 const {ipcMain, webContents, BrowserWindow} = remote
@@ -16,6 +17,12 @@ const comparePaths = function (path1, path2) {
 
 describe('ipc module', function () {
   var fixtures = path.join(__dirname, 'fixtures')
+
+  var w = null
+
+  afterEach(function () {
+    return closeWindow(w).then(function () { w = null })
+  })
 
   describe('remote.require', function () {
     it('should returns same object for the same module', function () {
@@ -302,19 +309,18 @@ describe('ipc module', function () {
     it('does not crash when reply is not sent and browser is destroyed', function (done) {
       this.timeout(10000)
 
-      var w = new BrowserWindow({
+      w = new BrowserWindow({
         show: false
       })
       ipcMain.once('send-sync-message', function (event) {
         event.returnValue = null
-        w.destroy()
         done()
       })
       w.loadURL('file://' + path.join(fixtures, 'api', 'send-sync-message.html'))
     })
 
     it('does not crash when reply is sent by multiple listeners', function (done) {
-      var w = new BrowserWindow({
+      w = new BrowserWindow({
         show: false
       })
       ipcMain.on('send-sync-message', function (event) {
@@ -322,7 +328,6 @@ describe('ipc module', function () {
       })
       ipcMain.on('send-sync-message', function (event) {
         event.returnValue = null
-        w.destroy()
         done()
       })
       w.loadURL('file://' + path.join(fixtures, 'api', 'send-sync-message.html'))
@@ -354,12 +359,6 @@ describe('ipc module', function () {
   })
 
   describe('remote listeners', function () {
-    var w = null
-
-    afterEach(function () {
-      w.destroy()
-    })
-
     it('can be added and removed correctly', function () {
       w = new BrowserWindow({
         show: false

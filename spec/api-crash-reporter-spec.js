@@ -3,6 +3,7 @@ const http = require('http')
 const multiparty = require('multiparty')
 const path = require('path')
 const url = require('url')
+const {closeWindow} = require('./window-helpers')
 
 const remote = require('electron').remote
 const app = remote.require('electron').app
@@ -20,7 +21,7 @@ describe('crash-reporter module', function () {
   })
 
   afterEach(function () {
-    w.destroy()
+    return closeWindow(w).then(function () { w = null })
   })
 
   if (process.mas) {
