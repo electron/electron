@@ -339,8 +339,8 @@ describe('browser-window module', function () {
       w = new BrowserWindow({
         show: false,
         frame: false,
-        width: 300,
-        height: 300
+        width: 400,
+        height: 400
       })
       var size = [400, 400]
       w.setContentSize(size[0], size[1])
@@ -351,13 +351,16 @@ describe('browser-window module', function () {
   })
 
   describe('BrowserWindow.setContentBounds(bounds)', function () {
-    it('sets the content size and position', function () {
-      var bounds = {x: 100, y: 100, width: 400, height: 400}
+    it('sets the content size and position', function (done) {
+      var bounds = {x: 60, y: 60, width: 250, height: 250}
+      w.once('resize', function () {
+        assert.deepEqual(w.getContentBounds(), bounds)
+        done()
+      })
       w.setContentBounds(bounds)
-      assert.deepEqual(w.getContentBounds(), bounds)
     })
 
-    it('works for a frameless window', function () {
+    it('works for a frameless window', function (done) {
       w.destroy()
       w = new BrowserWindow({
         show: false,
@@ -365,9 +368,12 @@ describe('browser-window module', function () {
         width: 300,
         height: 300
       })
-      var bounds = {x: 100, y: 100, width: 400, height: 400}
+      var bounds = {x: 60, y: 60, width: 250, height: 250}
+      w.once('resize', function () {
+        assert.deepEqual(w.getContentBounds(), bounds)
+        done()
+      })
       w.setContentBounds(bounds)
-      assert.deepEqual(w.getContentBounds(), bounds)
     })
   })
 
