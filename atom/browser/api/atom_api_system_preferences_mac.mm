@@ -123,9 +123,7 @@ bool SystemPreferences::IsDarkMode() {
 }
 
 bool SystemPreferences::IsSwipeTrackingFromScrollEventsEnabled() {
-  SEL selector = @selector(isSwipeTrackingFromScrollEventsEnabled);
-  return [NSEvent respondsToSelector:selector] &&
-         [NSEvent performSelector:selector];
+  return [NSEvent isSwipeTrackingFromScrollEventsEnabled];
 }
 
 }  // namespace api
