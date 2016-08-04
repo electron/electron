@@ -228,6 +228,18 @@ v8::Local<v8::Value> NativeImage::ToBitmap(v8::Isolate* isolate) {
                             bitmap->getSafeSize()).ToLocalChecked();
 }
 
+void noop(char*, void*) {}
+
+v8::Local<v8::Value> NativeImage::GetBitmap(v8::Isolate* isolate) {
+  const SkBitmap* bitmap = image_.ToSkBitmap();
+  SkPixelRef* ref = bitmap->pixelRef();
+  return node::Buffer::New(isolate,
+                            reinterpret_cast<char*>(ref->pixels()),
+                            bitmap->getSafeSize(),
+                            &noop,
+                            nullptr).ToLocalChecked();
+}
+
 v8::Local<v8::Value> NativeImage::ToJPEG(v8::Isolate* isolate, int quality) {
   std::vector<unsigned char> output;
   gfx::JPEG1xEncodedDataFromImage(image_, quality, &output);
@@ -361,6 +373,7 @@ void NativeImage::BuildPrototype(
       .SetMethod("toPNG", &NativeImage::ToPNG)
       .SetMethod("toJPEG", &NativeImage::ToJPEG)
       .SetMethod("toBitmap", &NativeImage::ToBitmap)
+      .SetMethod("getBitmap", &NativeImage::GetBitmap)
       .SetMethod("getNativeHandle", &NativeImage::GetNativeHandle)
       .SetMethod("toDataURL", &NativeImage::ToDataURL)
       .SetMethod("isEmpty", &NativeImage::IsEmpty)
