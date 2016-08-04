@@ -224,11 +224,11 @@ InspectableWebContentsImpl::InspectableWebContentsImpl(
       gfx::Rect display;
       if (web_contents->GetNativeView()) {
         display = display::Screen::GetScreen()->
-          GetDisplayNearestWindow(web_contents->GetNativeView()).bounds();
+            GetDisplayNearestWindow(web_contents->GetNativeView()).bounds();
       } else {
         display = display::Screen::GetScreen()->GetPrimaryDisplay().bounds();
       }
-      
+
       devtools_bounds_.set_x(display.x() + (display.width() - devtools_bounds_.width()) / 2);
       devtools_bounds_.set_y(display.y() + (display.height() - devtools_bounds_.height()) / 2);
     }

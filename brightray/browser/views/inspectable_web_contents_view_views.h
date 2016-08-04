@@ -56,7 +56,7 @@ class InspectableWebContentsViewViews : public InspectableWebContentsView,
 
   std::unique_ptr<views::Widget> devtools_window_;
   views::WebView* devtools_window_web_view_;
-  views::WebView* contents_web_view_;
+  views::View* contents_web_view_;
   views::WebView* devtools_web_view_;
 
   DevToolsContentsResizingStrategy strategy_;

@@ -5,6 +5,7 @@
 #include "browser/inspectable_web_contents_view_delegate.h"
 
 #include "base/strings/utf_string_conversions.h"
+#include "ui/views/controls/label.h"
 #include "ui/views/controls/webview/webview.h"
 #include "ui/views/widget/widget.h"
 #include "ui/views/widget/widget_delegate.h"
@@ -76,14 +77,21 @@ InspectableWebContentsViewViews::InspectableWebContentsViewViews(
     InspectableWebContentsImpl* inspectable_web_contents)
     : inspectable_web_contents_(inspectable_web_contents),
       devtools_window_web_view_(nullptr),
-      contents_web_view_(new views::WebView(nullptr)),
+      contents_web_view_(nullptr),
       devtools_web_view_(new views::WebView(nullptr)),
       devtools_visible_(false),
       devtools_window_delegate_(nullptr) {
   set_owned_by_client();
 
+  if (inspectable_web_contents_->GetWebContents()->GetNativeView()) {
+    views::WebView* contents_web_view = new views::WebView(nullptr);
+    contents_web_view->SetWebContents(inspectable_web_contents_->GetWebContents());
+    contents_web_view_ = contents_web_view;
+  } else {
+    contents_web_view_ = new views::Label(L"No content under offscreen mode");
+  }
+
   devtools_web_view_->SetVisible(false);
-  contents_web_view_->SetWebContents(inspectable_web_contents_->GetWebContents());
   AddChildView(devtools_web_view_);
   AddChildView(contents_web_view_);
 }
