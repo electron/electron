@@ -1769,6 +1769,15 @@ void WebContents::ZoomReset() {
                           content::PAGE_ZOOM_RESET);
 }
 
+int WebContents::GetZoomPercent() {
+  ui_zoom::ZoomController* zoom_controller =
+      ui_zoom::ZoomController::FromWebContents(web_contents());
+  if (!zoom_controller)
+    return 100;
+
+  return zoom_controller->GetZoomPercent();
+}
+
 int32_t WebContents::ID() const {
   return weak_map_id();
 }
@@ -1912,6 +1921,8 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
                   &WebContents::ZoomOut)
       .SetMethod("zoomReset",
                   &WebContents::ZoomReset)
+      .SetMethod("getZoomPercent",
+                  &WebContents::GetZoomPercent)
 #if defined(ENABLE_EXTENSIONS)
       .SetMethod("executeScriptInTab", &WebContents::ExecuteScriptInTab)
 #endif

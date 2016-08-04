@@ -181,6 +181,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void ZoomIn();
   void ZoomOut();
   void ZoomReset();
+  int GetZoomPercent();
 
 #if defined(ENABLE_EXTENSIONS)
   bool ExecuteScriptInTab(const std::string code_string,
