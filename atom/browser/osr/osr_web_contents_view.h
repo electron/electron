@@ -15,12 +15,12 @@ namespace atom {
 class OffScreenWebContentsView : public content::WebContentsView,
                                  public content::RenderViewHostDelegateView {
  public:
-  explicit OffScreenWebContentsView(bool transparent);
+  OffScreenWebContentsView(bool transparent, const OnPaintCallback& callback);
   ~OffScreenWebContentsView();
 
   void SetWebContents(content::WebContents*);
 
-  // content::WebContentsView
+  // content::WebContentsView:
   gfx::NativeView GetNativeView() const override;
   gfx::NativeView GetContentNativeView() const override;
   gfx::NativeWindow GetTopLevelNativeWindow() const override;
@@ -62,6 +62,7 @@ class OffScreenWebContentsView : public content::WebContentsView,
 
  private:
   const bool transparent_;
+  OnPaintCallback callback_;
 
   // Weak refs.
   OffScreenRenderWidgetHostView* view_;

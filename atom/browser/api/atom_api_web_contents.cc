@@ -314,7 +314,8 @@ WebContents::WebContents(v8::Isolate* isolate,
     options.Get("transparent", &transparent);
 
     content::WebContents::CreateParams params(session->browser_context());
-    auto* view = new OffScreenWebContentsView(transparent);
+    auto* view = new OffScreenWebContentsView(
+        transparent, base::Bind(&WebContents::OnPaint, base::Unretained(this)));
     params.view = view;
     params.delegate_view = view;
 
@@ -608,15 +609,8 @@ void WebContents::DidChangeThemeColor(SkColor theme_color) {
 
 void WebContents::DocumentLoadedInFrame(
     content::RenderFrameHost* render_frame_host) {
-  if (!render_frame_host->GetParent()) {
-    if (IsOffScreen()) {
-      auto* rwhv = web_contents()->GetRenderWidgetHostView();
-      static_cast<OffScreenRenderWidgetHostView*>(rwhv)->SetPaintCallback(
-          base::Bind(&WebContents::OnPaint, base::Unretained(this)));
-    }
-
+  if (!render_frame_host->GetParent())
     Emit("dom-ready");
-  }
 }
 
 void WebContents::DidFinishLoad(content::RenderFrameHost* render_frame_host,

@@ -338,15 +338,17 @@ class AtomBeginFrameTimer : public cc::DelayBasedTimeSourceClient {
 
 OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
     bool transparent,
+    const OnPaintCallback& callback,
     content::RenderWidgetHost* host,
     NativeWindow* native_window)
     : render_widget_host_(content::RenderWidgetHostImpl::From(host)),
       native_window_(native_window),
       software_output_device_(nullptr),
+      transparent_(transparent),
+      callback_(callback),
       frame_rate_(60),
       frame_rate_threshold_ms_(0),
       last_time_(base::Time::Now()),
-      transparent_(transparent),
       scale_factor_(kDefaultScaleFactor),
       is_showing_(!render_widget_host_->is_hidden()),
       size_(native_window->GetSize()),
@@ -783,20 +785,13 @@ void OffScreenRenderWidgetHostView::OnSetNeedsBeginFrames(bool enabled) {
   }
 }
 
-void OffScreenRenderWidgetHostView::SetPaintCallback(
-    const OnPaintCallback& callback) {
-  callback_ = callback;
-}
-
 void OffScreenRenderWidgetHostView::OnPaint(
     const gfx::Rect& damage_rect,
     const gfx::Size& bitmap_size,
-    const int pixel_size,
+    int pixel_size,
     void* bitmap_pixels) {
   TRACE_EVENT0("electron", "OffScreenRenderWidgetHostView::OnPaint");
-
-  if (!callback_.is_null())
-    callback_.Run(damage_rect, bitmap_size, pixel_size, bitmap_pixels);
+  callback_.Run(damage_rect, bitmap_size, pixel_size, bitmap_pixels);
 }
 
 void OffScreenRenderWidgetHostView::SetPainting(bool painting) {

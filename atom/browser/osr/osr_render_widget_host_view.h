@@ -63,6 +63,7 @@ class OffScreenRenderWidgetHostView
       public content::DelegatedFrameHostClient {
  public:
   OffScreenRenderWidgetHostView(bool transparent,
+                                const OnPaintCallback& callback,
                                 content::RenderWidgetHost* render_widget_host,
                                 NativeWindow* native_window);
   ~OffScreenRenderWidgetHostView() override;
@@ -189,10 +190,9 @@ class OffScreenRenderWidgetHostView
   void DestroyPlatformWidget();
 #endif
 
-  void SetPaintCallback(const OnPaintCallback& callback);
   void OnPaint(const gfx::Rect& damage_rect,
                const gfx::Size& bitmap_size,
-               const int pixel_size,
+               int pixel_size,
                void* bitmap_pixels);
 
   void SetPainting(bool painting);
@@ -214,6 +214,7 @@ class OffScreenRenderWidgetHostView
   NativeWindow* native_window_;
   OffScreenOutputDevice* software_output_device_;
 
+  const bool transparent_;
   OnPaintCallback callback_;
 
   int frame_rate_;
@@ -221,7 +222,6 @@ class OffScreenRenderWidgetHostView
 
   base::Time last_time_;
 
-  const bool transparent_;
   float scale_factor_;
   bool is_showing_;
   gfx::Vector2dF last_scroll_offset_;
