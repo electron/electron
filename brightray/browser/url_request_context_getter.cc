@@ -103,6 +103,10 @@ net::SSLConfigService* URLRequestContextGetter::Delegate::CreateSSLConfigService
   return new net::SSLConfigServiceDefaults;
 }
 
+std::vector<std::string> URLRequestContextGetter::Delegate::GetCookieableSchemes() {
+  return { "http", "https", "ws", "wss" };
+}
+
 URLRequestContextGetter::URLRequestContextGetter(
     Delegate* delegate,
     DevToolsNetworkControllerHandle* handle,

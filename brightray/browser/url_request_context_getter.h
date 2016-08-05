@@ -47,9 +47,7 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
         const base::FilePath& base_path);
     virtual std::unique_ptr<net::CertVerifier> CreateCertVerifier();
     virtual net::SSLConfigService* CreateSSLConfigService();
-    virtual std::vector<std::string> GetCookieableSchemes() {
-      return std::vector<std::string>();
-    }
+    virtual std::vector<std::string> GetCookieableSchemes();
   };
 
   URLRequestContextGetter(
