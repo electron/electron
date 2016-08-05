@@ -5,6 +5,10 @@
     # Set this to true when building with Clang.
     'clang%': 1,
 
+    'clang_warning_flags': [
+      '-Wno-undefined-var-template', # https://crbug.com/604888
+    ],
+
     'variables': {
       # The minimum macOS SDK version to use.
       'mac_sdk_min%': '10.10',
@@ -104,6 +108,7 @@
         'cflags_cc': [
           '-std=c++11',
         ],
+        'cflags': [ '<@(clang_warning_flags)' ],
         'xcode_settings': {
           'CC': '<(make_clang_dir)/bin/clang',
           'LDPLUSPLUS': '<(make_clang_dir)/bin/clang++',
@@ -111,6 +116,7 @@
             '-fcolor-diagnostics',
           ],
 
+          'WARNING_CFLAGS': ['<@(clang_warning_flags)'],
           'GCC_C_LANGUAGE_STANDARD': 'c99',  # -std=c99
           'CLANG_CXX_LIBRARY': 'libc++',  # -stdlib=libc++
           'CLANG_CXX_LANGUAGE_STANDARD': 'c++11',  # -std=c++11
