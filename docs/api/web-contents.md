@@ -467,7 +467,7 @@ Returns:
   * `y` Integer - The y coordinate on the image.
   * `width` Integer - The width of the dirty area.
   * `height` Integer - The height of the dirty area.
-* `image` [NativeImage](native-image.md) - The image data of the dirty rect
+* `image` [NativeImage](native-image.md) - The image data of the whole frame.
 
 Emitted when a new frame is generated. Only the dirty area is passed in the
 buffer.
@@ -477,7 +477,7 @@ const {BrowserWindow} = require('electron')
 
 let win = new BrowserWindow({webPreferences: {offscreen: true}})
 win.webContents.on('paint', (event, dirty, image) => {
-  // updateBitmap(dirty, image.toBitmap())
+  // updateBitmap(dirty, image.getBitmap())
 })
 win.loadURL('http://github.com')
 ```
