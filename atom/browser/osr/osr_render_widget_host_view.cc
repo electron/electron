@@ -476,7 +476,6 @@ void OffScreenRenderWidgetHostView::Show() {
     render_widget_host_->WasShown(ui::LatencyInfo());
   delegated_frame_host_->SetCompositor(compositor_.get());
   delegated_frame_host_->WasShown(ui::LatencyInfo());
-  compositor_->ScheduleFullRedraw();
 }
 
 void OffScreenRenderWidgetHostView::Hide() {
@@ -540,7 +539,7 @@ void OffScreenRenderWidgetHostView::OnSwapCompositorFrame(
   if (frame->delegated_frame_data) {
     if (software_output_device_) {
       if (!begin_frame_timer_.get()) {
-        software_output_device_->SetActive(true);
+        software_output_device_->SetActive(painting_);
       }
 
       delegated_frame_host_->SwapDelegatedFrame(output_surface_id,
@@ -780,7 +779,7 @@ void OffScreenRenderWidgetHostView::OnSetNeedsBeginFrames(bool enabled) {
   begin_frame_timer_->SetActive(enabled);
 
   if (software_output_device_) {
-    software_output_device_->SetActive(enabled);
+    software_output_device_->SetActive(enabled && painting_);
   }
 }
 
@@ -794,7 +793,7 @@ void OffScreenRenderWidgetHostView::SetPainting(bool painting) {
   painting_ = painting;
 
   if (software_output_device_) {
-    software_output_device_->SetActive(painting);
+    software_output_device_->SetActive(painting_);
   }
 }
 

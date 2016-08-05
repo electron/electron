@@ -1349,10 +1349,8 @@ void WebContents::StartPainting() {
 
   auto* osr_rwhv = static_cast<OffScreenRenderWidgetHostView*>(
       web_contents()->GetRenderWidgetHostView());
-  if (osr_rwhv) {
-    osr_rwhv->Show();
+  if (osr_rwhv)
     osr_rwhv->SetPainting(true);
-  }
 }
 
 void WebContents::StopPainting() {
@@ -1361,10 +1359,8 @@ void WebContents::StopPainting() {
 
   auto* osr_rwhv = static_cast<OffScreenRenderWidgetHostView*>(
       web_contents()->GetRenderWidgetHostView());
-  if (osr_rwhv) {
+  if (osr_rwhv)
     osr_rwhv->SetPainting(false);
-    osr_rwhv->Hide();
-  }
 }
 
 bool WebContents::IsPainting() const {
