@@ -685,6 +685,12 @@ dock 아이콘을 숨깁니다.
 
 dock 아이콘을 표시합니다.
 
+### `app.dock.isVisible()` _macOS_
+
+dock 아이콘이 보이는 상태인지 여부를 반환합니다. `app.dock.show()` 호출은
+비동기이므로 해당 메서드를 호출한 후 바로 이 메서드를 호출하면 `true`를 반환하지
+않을 수 있습니다.
+
 ### `app.dock.setMenu(menu)` _macOS_
 
 * `menu` [Menu](menu.md)

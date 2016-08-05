@@ -14,6 +14,11 @@ console.log(systemPreferences.isDarkMode());
 이 메서드는 시스템이 어두운 모드 상태인 경우 `true`를 반환하고 아닐 경우 `false`를
 반환합니다.
 
+### `systemPreferences.isSwipeTrackingFromScrollEventsEnabled()` _macOS_
+
+이 메서드는 페이지 간의 스와이프가 설정되어있을 때 `true`를 반환하고 그렇지 않은 경우
+`false`를 반환합니다.
+
 ### `systemPreferences.subscribeNotification(event, callback)` _macOS_
 
 * `event` String
