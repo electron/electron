@@ -4,6 +4,7 @@
 
 #include "atom/browser/atom_browser_context.h"
 
+#include "atom/browser/api/atom_api_protocol.h"
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/atom_download_manager_delegate.h"
 #include "atom/browser/browser.h"
@@ -88,9 +89,6 @@ AtomBrowserContext::AtomBrowserContext(
   use_cache_ = true;
   options.GetBoolean("cache", &use_cache_);
 
-  // Default schemes that should support cookies.
-  cookieable_schemes_ = {"http", "https", "ws", "wss"};
-
   // Initialize Pref Registry in brightray.
   InitPrefs();
 }
@@ -100,13 +98,6 @@ AtomBrowserContext::~AtomBrowserContext() {
 
 void AtomBrowserContext::SetUserAgent(const std::string& user_agent) {
   user_agent_ = user_agent;
-}
-
-void AtomBrowserContext::SetCookieableSchemes(
-    const std::vector<std::string>& schemes) {
-  if (!schemes.empty())
-    cookieable_schemes_.insert(cookieable_schemes_.end(),
-                               schemes.begin(), schemes.end());
 }
 
 net::NetworkDelegate* AtomBrowserContext::CreateNetworkDelegate() {
@@ -199,7 +190,11 @@ net::SSLConfigService* AtomBrowserContext::CreateSSLConfigService() {
 }
 
 std::vector<std::string> AtomBrowserContext::GetCookieableSchemes() {
-  return cookieable_schemes_;
+  auto default_schemes = brightray::BrowserContext::GetCookieableSchemes();
+  const auto& standard_schemes = atom::api::GetStandardSchemes();
+  default_schemes.insert(default_schemes.end(),
+                         standard_schemes.begin(), standard_schemes.end());
+  return default_schemes;
 }
 
 void AtomBrowserContext::RegisterPrefs(PrefRegistrySimple* pref_registry) {

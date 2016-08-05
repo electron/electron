@@ -42,10 +42,26 @@ void ClearJobFactoryInIO(
 
 }  // namespace
 
+std::vector<std::string> GetStandardSchemes() {
+  return g_standard_schemes;
+}
+
+void RegisterStandardSchemes(const std::vector<std::string>& schemes) {
+  g_standard_schemes = schemes;
+
+  auto* policy = content::ChildProcessSecurityPolicy::GetInstance();
+  for (const std::string& scheme : schemes) {
+    url::AddStandardScheme(scheme.c_str(), url::SCHEME_WITHOUT_PORT);
+    policy->RegisterWebSafeScheme(scheme);
+  }
+
+  base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(
+      atom::switches::kStandardSchemes, base::JoinString(schemes, ","));
+}
+
 Protocol::Protocol(v8::Isolate* isolate, AtomBrowserContext* browser_context)
     : request_context_getter_(browser_context->GetRequestContext()),
       weak_factory_(this) {
-  browser_context->SetCookieableSchemes(g_standard_schemes);
   Init(isolate);
 }
 
@@ -204,17 +220,7 @@ void RegisterStandardSchemes(
     return;
   }
 
-  auto policy = content::ChildProcessSecurityPolicy::GetInstance();
-  for (const auto& scheme : schemes) {
-    url::AddStandardScheme(scheme.c_str(), url::SCHEME_WITHOUT_PORT);
-    policy->RegisterWebSafeScheme(scheme);
-  }
-
-  auto command_line = base::CommandLine::ForCurrentProcess();
-  command_line->AppendSwitchASCII(atom::switches::kStandardSchemes,
-                                  base::JoinString(schemes, ","));
-
-  atom::api::g_standard_schemes = schemes;
+  atom::api::RegisterStandardSchemes(schemes);
 }
 
 void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
@@ -222,6 +228,7 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
   dict.SetMethod("registerStandardSchemes", &RegisterStandardSchemes);
+  dict.SetMethod("getStandardSchemes", &atom::api::GetStandardSchemes);
 }
 
 }  // namespace
