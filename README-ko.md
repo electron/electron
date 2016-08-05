@@ -5,8 +5,6 @@
 [![devDependency Status](https://david-dm.org/electron/electron/dev-status.svg)](https://david-dm.org/electron/electron#info=devDependencies)
 [![Join the Electron Community on Slack](http://atom-slack.herokuapp.com/badge.svg)](http://atom-slack.herokuapp.com/)
 
-### [Electron](https://github.com/electron/electron/) 한국어 참조 문서
-
 Electron 프레임워크는 JavaScript, HTML 그리고 CSS를 사용하여
 Cross-Platform 데스크톱 애플리케이션을 개발할 수 있도록 해주는 프레임워크입니다.
 [Node.js](https://nodejs.org/)와 [Chromium](http://www.chromium.org)을 기반으로
@@ -76,6 +74,7 @@ npm install electron-prebuilt --save-dev
 - [`electron-kr`](http://www.meetup.com/electron-kr/) *(한국)* 커뮤니티
 - [`electron-jp`](https://electron-jp-slackin.herokuapp.com/) *(일본)* 커뮤니티
 - [`electron-tr`](http://www.meetup.com/Electron-JS-Istanbul/) *(터키)* 커뮤니티
+- [`electron-id`](https://electron-id.slack.com) *(인도네시아)* 커뮤니티
 
 [awesome-electron](https://github.com/sindresorhus/awesome-electron) 프로젝트에
 커뮤니티가 운영중인 유용한 예시 애플리케이션과 도구, 리소스가 있으니 참고하기 바랍니다.
