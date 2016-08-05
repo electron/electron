@@ -6,8 +6,6 @@
 
 #import <Cocoa/Cocoa.h>
 
-#include "atom/browser/native_window_mac.h"
-
 #include "base/strings/utf_string_conversions.h"
 
 ui::AcceleratedWidgetMac*
@@ -15,6 +13,19 @@ atom::OffScreenRenderWidgetHostView::GetAcceleratedWidgetMac() const {
   if (browser_compositor_)
     return browser_compositor_->accelerated_widget_mac();
   return nullptr;
+}
+
+NSView* atom::OffScreenRenderWidgetHostView::AcceleratedWidgetGetNSView() const {
+  return [native_window_->GetNativeWindow() contentView];
+}
+
+void atom::OffScreenRenderWidgetHostView::AcceleratedWidgetGetVSyncParameters(
+    base::TimeTicks* timebase, base::TimeDelta* interval) const {
+  *timebase = base::TimeTicks();
+  *interval = base::TimeDelta();
+}
+
+void atom::OffScreenRenderWidgetHostView::AcceleratedWidgetSwapCompleted() {
 }
 
 void atom::OffScreenRenderWidgetHostView::SetActive(bool active) {
@@ -63,8 +74,7 @@ void atom::OffScreenRenderWidgetHostView::CreatePlatformWidget() {
 
   compositor_.reset(browser_compositor_->compositor());
   compositor_->SetRootLayer(root_layer_.get());
-  browser_compositor_->accelerated_widget_mac()->SetNSView(
-    static_cast<atom::NativeWindowMac*>(native_window_));
+  browser_compositor_->accelerated_widget_mac()->SetNSView(this);
   browser_compositor_->compositor()->SetVisible(true);
 
   compositor_->SetLocksWillTimeOut(true);

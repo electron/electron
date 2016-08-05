@@ -12,7 +12,6 @@
 
 #include "base/mac/scoped_nsobject.h"
 #include "atom/browser/native_window.h"
-#include "ui/accelerated_widget_mac/accelerated_widget_mac.h"
 
 @class AtomNSWindow;
 @class AtomNSWindowDelegate;
@@ -20,9 +19,7 @@
 
 namespace atom {
 
-class NativeWindowMac
-    : public NativeWindow,
-      public ui::AcceleratedWidgetMacNSView {
+class NativeWindowMac : public NativeWindow {
  public:
   NativeWindowMac(brightray::InspectableWebContents* inspectable_web_contents,
                   const mate::Dictionary& options,
@@ -92,12 +89,6 @@ class NativeWindowMac
 
   void SetVisibleOnAllWorkspaces(bool visible) override;
   bool IsVisibleOnAllWorkspaces() override;
-
-  // ui::AcceleratedWidgetMacNSView:
-  NSView* AcceleratedWidgetGetNSView() const override;
-  void AcceleratedWidgetGetVSyncParameters(
-      base::TimeTicks* timebase, base::TimeDelta* interval) const override;
-  void AcceleratedWidgetSwapCompleted() override;
 
   // Refresh the DraggableRegion views.
   void UpdateDraggableRegionViews() {
