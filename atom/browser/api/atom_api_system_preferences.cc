@@ -50,6 +50,10 @@ void SystemPreferences::BuildPrototype(
 #if defined(OS_WIN)
       .SetMethod("isAeroGlassEnabled", &SystemPreferences::IsAeroGlassEnabled)
 #elif defined(OS_MACOSX)
+      .SetMethod("postNotification",
+                 &SystemPreferences::PostNotification)
+      .SetMethod("postLocalNotification",
+                 &SystemPreferences::PostLocalNotification)
       .SetMethod("subscribeNotification",
                  &SystemPreferences::SubscribeNotification)
       .SetMethod("unsubscribeNotification",
