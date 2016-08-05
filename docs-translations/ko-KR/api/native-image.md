@@ -148,11 +148,19 @@ let image = nativeImage.createFromPath('/Users/somebody/images/icon.png');
 
 #### `image.toBitmap()`
 
-이미지의 raw 픽셀 데이터를 가지는 [Buffer][buffer]를 반환합니다.
+이미지의 raw 비트맵 픽셀 데이터를 가지는 [Buffer][buffer]의 복사본을 반환합니다.
 
 ### `image.toDataURL()`
 
 이미지를 data URL로 반환합니다.
+
+#### `image.getBitmap()`
+
+이미지의 raw 비트맵 픽셀 데이터를 가지는 [Buffer][buffer]를 반환합니다.
+
+`getBitmap()`과 `toBitmap()`의 차이는 `getBitmap()`은 비트맵 데이터를 복사하지
+않습니다. 그래서 버퍼를 현재 이벤트 루프 틱에 바로 반환해야 할 경우 유용하게 사용할 수
+있습니다. 그렇지 않은 경우 데이터가 변경되거나 소멸될 수 있습니다.
 
 ### `image.getNativeHandle()` _macOS_
 

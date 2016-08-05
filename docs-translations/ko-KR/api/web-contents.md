@@ -436,10 +436,6 @@ app.on('ready', () => {
 이 애플리케이션에서 포커스되어있는 웹 콘텐츠를 반환합니다. 포커스된 웹 콘텐츠가 없을
 경우 `null`을 반환합니다.
 
-#### Event: 'view-painted'
-
-페이지의 뷰가 다시 그려졌을 때 발생하는 이벤트입니다.
-
 ## Instance Methods
 
 `webContents`객체는 다음과 같은 인스턴스 메서드들을 가지고 있습니다.
@@ -482,6 +478,10 @@ let currentURL = win.webContents.getURL();
 ### `webContents.getTitle()`
 
 현재 웹 페이지의 제목을 반환합니다.
+
+#### `win.isDestroyed()`
+
+윈도우가 소멸되었는지 여부를 반환합니다.
 
 ### `webContents.isFocused()`
 

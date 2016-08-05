@@ -33,6 +33,7 @@ Electron에 대해 자주 묻는 질문이 있습니다. 이슈를 생성하기 
 * [Pepper 플래시 플러그인 사용하기](tutorial/using-pepper-flash-plugin.md)
 * [Widevine CDM 플러그인 사용하기](tutorial/using-widevine-cdm-plugin.md)
 * [Headless CI 시스템에서 테스팅하기 (Travis, Jenkins)](tutorial/testing-on-headless-ci.md)
+* [오프 스크린 랜더링](tutorial/offscreen-rendering.md)
 
 ## 튜토리얼
 
@@ -96,5 +97,6 @@ Electron에 대해 자주 묻는 질문이 있습니다. 이슈를 생성하기 
 * [빌드 설명서 (macOS)](development/build-instructions-osx.md)
 * [빌드 설명서 (Windows)](development/build-instructions-windows.md)
 * [빌드 설명서 (Linux)](development/build-instructions-linux.md)
+* [디버그 설명서 (macOS)](development/debug-instructions-macos.md)
 * [디버그 설명서 (Windows)](development/debug-instructions-windows.md)
 * [디버거 심볼 서버 설정](development/setting-up-symbol-server.md)

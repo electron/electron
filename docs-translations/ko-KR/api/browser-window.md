@@ -551,6 +551,10 @@ let win = new BrowserWindow({width: 800, height: 600});
 
 윈도우가 포커스되었는지 여부를 반환합니다.
 
+#### `win.isDestroyed()`
+
+윈도우가 소멸되었는지 여부를 반환합니다.
+
 #### `win.show()`
 
 윈도우를 표시하고 포커스합니다.
@@ -640,6 +644,11 @@ let win = new BrowserWindow({width: 800, height: 600});
 #### `win.getBounds()`
 
 윈도우의 width, height, x, y 값을 가지는 객체를 반환합니다.
+
+#### `win.getContentBounds()`
+
+윈도우의 클라이언트 영역 (웹 페이지)의 너비, 높이, x, y 값을 포함하는 객체를
+반환합니다.
 
 #### `win.setSize(width, height[, animate])`
 
