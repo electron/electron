@@ -230,4 +230,8 @@ $ cd electron-quick-start
 $ npm install && npm start
 ```
 
+더 많은 예시 앱을 보려면 대단한 Electron 커뮤니티에 의해 만들어진
+[보일러플레이트 리스트](http://electron.atom.io/community/#boilerplates)를
+참고하세요. 
+
 [share-data]: ../faq.md#어떻게-웹-페이지-간에-데이터를-공유할-수-있나요

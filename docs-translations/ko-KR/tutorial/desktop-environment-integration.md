@@ -35,8 +35,8 @@ myNotification.onclick = () => {
 * Windows 8.1과 8에선 [Application User Model ID][app-user-model-id]로 바로가기를
   만들어 놔야 합니다. 이 바로가기는 반드시 시작 화면에 설치되어 있어야 합니다. 참고로
   반드시 시작 화면에 고정 할 필요는 없습니다.
-* Windows 7과 그 이하 버전은 데스크톱 알림을 지원하지 않습니다.
-  혹시 "풍선 팝업 알림" 기능을 찾는다면 [Tray API][tray-balloon]를 사용하세요.
+* Windows 7은 데스크톱 알림을 지원하지 않습니다. 혹시 "풍선 팝업 알림" 기능을 찾는다면
+  [Tray API][tray-balloon]를 사용하세요.
 
 또한 알림 본문의 최대 길이는 250자 입니다. Windows 개발팀에선 알림 문자열을 200자
 이하로 유지하는 것을 권장합니다.

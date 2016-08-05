@@ -28,98 +28,39 @@ process.once('loaded', () => {
 
 ### `process.noAsar`
 
-Setting this to `true` can disable the support for `asar` archives in Node's
-built-in modules.
+이 속성을 `true`로 지정하면 Node 빌트인 모듈의 `asar` 아카이브 지원을 비활성화 시킬
+수 있습니다.
 
 ### `process.type`
 
-Current process's type, can be `"browser"` (i.e. main process) or `"renderer"`.
+현재 프로세스의 종류입니다. `"browser"` (메인 프로세스) 또는 `"renderer"`가 될 수
+있습니다.
 
 ### `process.versions.electron`
 
-Electron's version string.
+Electron의 버전 문자열입니다.
 
 ### `process.versions.chrome`
 
-Chrome's version string.
+Chrome의 버전 문자열입니다.
 
 ### `process.resourcesPath`
 
-Path to the resources directory.
+리소스 디렉토리의 경로입니다.
 
 ### `process.mas`
 
-For Mac App Store build, this property is `true`, for other builds it is
-`undefined`.
+Mac App Store 빌드에선 이 속성이 `true`가 됩니다. 다른 빌드에선 `undefined`가 됩니다.
 
 ### `process.windowsStore`
 
-If the app is running as a Windows Store app (appx), this property is `true`,
-for otherwise it is `undefined`.
+애플리케이션이 Windows Store 앱 (appx) 형태로 작동하고 있을 경우 이 속성이 `true`가
+됩니다. 그렇지 않은 경우 `undefined`가 됩니다.
 
 ### `process.defaultApp`
 
-When app is started by being passed as parameter to the default app, this
-property is `true` in the main process, otherwise it is `undefined`.
-
-## Methods
-
-The `process` object has the following method:
-
-### `process.crash()`
-
-Causes the main thread of the current process crash.
-
-### `process.hang()`
-
-Causes the main thread of the current process hang.
-
-### `process.setFdLimit(maxDescriptors)` _macOS_ _Linux_
-
-* `maxDescriptors` Integer
-
-Sets the file descriptor soft limit to `maxDescriptors` or the OS hard
-limit, whichever is lower for the current process.
-
-### `process.getProcessMemoryInfo()`
-
-Returns an object giving memory usage statistics about the current process. Note
-that all statistics are reported in Kilobytes.
-
-* `workingSetSize` - The amount of memory currently pinned to actual physical
-  RAM.
-* `peakWorkingSetSize` - The maximum amount of memory that has ever been pinned
-  to actual physical RAM.
-* `privateBytes` - The amount of memory not shared by other processes, such as
-  JS heap or HTML content.
-* `sharedBytes` - The amount of memory shared between processes, typically
-  memory consumed by the Electron code itself
-
-### `process.getSystemMemoryInfo()`
-
-Returns an object giving memory usage statistics about the entire system. Note
-that all statistics are reported in Kilobytes.
-
-* `total` - The total amount of physical memory in Kilobytes available to the
-  system.
-* `free` - The total amount of memory not being used by applications or disk
-  cache.
-
-On Windows / Linux:
-
-* `swapTotal` - The total amount of swap memory in Kilobytes available to the
-  system.
-* `swapFree` - The free amount of swap memory in Kilobytes available to the
-  system.
-
-----------------------------------------
-
-## Properties
-
-### `process.noAsar`
-
-이 속성을 `true`로 지정하면 Node 빌트인 모듈의 `asar` 아카이브 지원을 비활성화 시킬
-수 있습니다.
+애플리케이션이 기본 어플리케이션 형식으로 전달되는 인수와 함께 실행됐을 때, 메인
+프로세스에서 이 속성이 `true`가 되며 다른 경우엔 `undefined`가 됩니다.
 
 ## Methods
 
@@ -131,11 +72,36 @@ On Windows / Linux:
 
 ### `process.hang()`
 
-현재 프로세스의 주 스레드를 중단시킵니다.
+현재 프로세스의 메인 스레드를 중단시킵니다.
 
 ### `process.setFdLimit(maxDescriptors)` _macOS_ _Linux_
 
 * `maxDescriptors` Integer
 
-현재 프로세스 파일 디스크립터의 제한 값을 소프트 제한 `maxDescriptors`의 값이나 OS 하드
-제한 중 낮은 값으로 설정합니다.
+현재 프로세스 파일 디스크립터의 제한 값을 소프트 제한 `maxDescriptors`의 값이나 OS
+하드 제한 중 낮은 값으로 설정합니다.
+
+### `process.getProcessMemoryInfo()`
+
+현재 프로세스의 메모리 사용량에 대한 정보를 객체 형태로 반환합니다. 참고로 모든 사용량은
+킬로바이트로 표기됩니다.
+
+* `workingSetSize` Integer - 현재 실제 물리적 RAM에 예약된 메모리의 양.
+* `peakWorkingSetSize` Integer - 물리적 RAM에 예약된 메모리의 최대 사용량.
+* `privateBytes` Integer - 다른 프로세스에 공유되지 않은 JS 힙 또는 HTML 콘텐츠와
+  같은 메모리의 양.
+* `sharedBytes` Integer - 다른 프로세스와 공유된, 일반적으로 Electron 코드 자체에서
+  사용하는 메모리의 양.
+
+### `process.getSystemMemoryInfo()`
+
+전체 시스템의 메모리 사용량에 대한 정보를 객체 형태로 반환합니다. 참고로 모든 사용량은
+킬로바이트로 표기됩니다.
+
+* `total` Integer - 시스템에서 사용할 수 있는 킬로바이트 단위의 전체 물리적 메모리의
+  양.
+* `free` Integer - 애플리케이션이나 디스크 캐시로 사용되지 않은 메모리의 양.
+* `swapTotal` Integer - 시스템에서 사용할 수 있는 킬로바이트 단위의 스왑 메모리
+  전체 양.  _Windows_ _Linux_
+* `swapFree` Integer - 시스템에서 사용할 수 있는 킬로 바이트 단위의 사용되지 않은
+  스왑 메모리의 양. _Windows_ _Linux_

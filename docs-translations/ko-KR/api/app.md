@@ -184,7 +184,12 @@ Returns:
 * `error` String - 에러 코드
 * `certificate` Object
   * `data` Buffer - PEM 인코딩된 데이터
-  * `issuerName` String
+  * `issuerName` String - 인증서 발급자의 공통 이름
+  * `subjectName` String - 대상의 공통 이름
+  * `serialNumber` - DER 인코딩된 데이터
+  * `validStart` Integer - 인증서가 유효하기 시작한 날짜
+  * `validExpiry` Integer - 인증서가 만료되는 날짜
+  * `fingerprint` String - 인증서의 지문
 * `callback` Function
 
 `url`에 대한 `certificate` 인증서의 유효성 검증에 실패했을 때 발생하는 이벤트입니다.
@@ -212,7 +217,12 @@ Returns:
 * `url` URL
 * `certificateList` [Objects]
   * `data` Buffer - PEM으로 인코딩된 데이터
-  * `issuerName` String - 발급자의 공통 이름
+  * `issuerName` String - 인증서 발급자의 공통 이름
+  * `subjectName` String - 대상의 공통 이름
+  * `serialNumber` - DER 인코딩된 데이터
+  * `validStart` Integer - 인증서가 유효하기 시작한 날짜
+  * `validExpiry` Integer - 인증서가 만료되는 날짜
+  * `fingerprint` String - 인증서의 지문
 * `callback` Function
 
 클라이언트 인증이 요청되었을 때 발생하는 이벤트입니다.
@@ -687,21 +697,23 @@ dock 아이콘을 표시합니다.
 
 dock 아이콘의 `image`를 설정합니다.
 
-### `app.getLoginItemSettings()` _macOS_
+### `app.getLoginItemSettings()` _macOS_ _Windows_
 
 앱의 로그인 항목 설정을 객체로 반환합니다.
 
 * `openAtLogin` Boolean - 앱이 로그인시 열리도록 설정되어있는 경우 `true`를 반환.
 * `openAsHidden` Boolean - 앱이 로구인시 숨겨진 채로 열리도록 설정되어있는 경우
-  `true`를 반환.
+  `true`를 반환. 이 설정은 macOS에서만 지원됩니다.
 * `wasOpenedAtLogin` Boolean - 자동으로 로그인할 때 애플리케이션이 열려있었는지 여부.
+  이 설정은 macOS에서만 지원됩니다.
 * `wasOpenedAsHidden` Boolean - 앱이 숨겨진 로그인 항목처럼 열려있었는지 여부.
-  이는 앱이 시작시 어떤 윈도우도 열지 않을 것을 표시합니다.
+  이는 앱이 시작시 어떤 윈도우도 열지 않을 것을 표시합니다. 이 설정은 macOS에서만
+  지원됩니다.
 * `restoreState` Boolean - 앱이 이전 세션에서 상태를 복원하여 로그인 항목처럼
   열려있었는지 여부. 이는 앱이 마지막으로 종료되었던 때에 열려있었던 윈도우를 복원하는
-  것을 표시합니다.
+  것을 표시합니다. 이 설정은 macOS에서만 지원됩니다.
 
-### `app.setLoginItemSettings(settings)` _macOS_
+### `app.setLoginItemSettings(settings)` _macOS_ _Windows_
 
 * `settings` Object
   * `openAtLogin` Boolean - `true`로 지정하면 로그인시 애플리케이션을 열도록 하며
@@ -709,7 +721,8 @@ dock 아이콘의 `image`를 설정합니다.
   * `openAsHidden` Boolean - `true`로 지정하면 애플리케이션을 숨겨진 채로 열도록
     합니다. 기본값은 `false`입니다. 사용자가 시스템 설정에서 이 설정을 변경할 수
     있으며 앱이 열렸을 때 현재 값을 확인하려면
-    `app.getLoginItemStatus().wasOpenedAsHidden`를 확인해야 합니다.
+    `app.getLoginItemStatus().wasOpenedAsHidden`을 확인해야 합니다. 이 설정은
+    macOS에서만 지원됩니다.
 
 앱의 로그인 항목 설정을 지정합니다.
 
