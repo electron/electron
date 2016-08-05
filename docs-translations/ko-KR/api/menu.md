@@ -227,16 +227,14 @@ macOS의 네이티브 액션에 대해 자세히 알아보려면
 
 #### `menu.popup([browserWindow, x, y, positioningItem])`
 
-* `browserWindow` BrowserWindow (optional) - 기본값은 `null`입니다.
-* `x` Number (optional) - 기본값은 -1입니다.
-* `y` Number (만약 `x`를 지정한 경우 **필수 항목**) - 기본값은 -1입니다.
+* `browserWindow` BrowserWindow (optional) - 기본값은
+  `BrowserWindow.getFocusedWindow()`입니다.
+* `x` Number (optional) - 기본값은 현재 마우스의 위치입니다.
+* `y` Number (만약 `x`를 지정한 경우 **필수 항목**) - 기본값은 현재 마우스의 위치입니다.
 * `positioningItem` Number (optional) _macOS_ - 메뉴 팝업 시 마우스 커서에 바로
   위치시킬 메뉴 아이템의 인덱스. 기본값은 -1입니다.
 
-메뉴를 `browserWindow` 내부 팝업으로 표시합니다. 옵션으로 메뉴를 표시할 `(x,y)`
-좌표를 지정할 수 있습니다. 따로 좌표를 지정하지 않은 경우 마우스 커서 위치에 표시됩니다.
-`positioningItem` 속성은 메뉴 팝업 시 마우스 커서에 바로 위치시킬 메뉴 아이템의
-인덱스입니다. (macOS에서만 지원합니다)
+메뉴를 `browserWindow` 내부 팝업으로 표시합니다.
 
 #### `menu.append(menuItem)`
 

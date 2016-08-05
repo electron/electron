@@ -209,9 +209,9 @@ Returns:
   * `data` Buffer - PEM 인코딩된 데이터
   * `issuerName` String - 인증서 발급자의 공통 이름
   * `subjectName` String - 대상의 공통 이름
-  * `serialNumber` - DER 인코딩된 데이터
-  * `validStart` Integer - 인증서가 유효하기 시작한 날짜
-  * `validExpiry` Integer - 인증서가 만료되는 날짜
+  * `serialNumber` String - 문자열로 표현된 hex 값
+  * `validStart` Integer - 초 단위의 인증서가 유효하기 시작한 날짜
+  * `validExpiry` Integer - 초 단위의 인증서가 만료되는 날짜
   * `fingerprint` String - 인증서의 지문
 * `callback` Function
 
@@ -230,9 +230,9 @@ Returns:
   * `data` Buffer - PEM 인코딩된 데이터
   * `issuerName` String - 인증서 발급자의 공통 이름
   * `subjectName` String - 대상의 공통 이름
-  * `serialNumber` - DER 인코딩된 데이터
-  * `validStart` Integer - 인증서가 유효하기 시작한 날짜
-  * `validExpiry` Integer - 인증서가 만료되는 날짜
+  * `serialNumber` String - 문자열로 표현된 hex 값
+  * `validStart` Integer - 초 단위의 인증서가 유효하기 시작한 날짜
+  * `validExpiry` Integer - 초 단위의 인증서가 만료되는 날짜
   * `fingerprint` String - 인증서의 지문
 * `callback` Function
 
@@ -310,7 +310,13 @@ Returns:
 * `event` Event
 * `type` String
 * `image` NativeImage (optional)
-* `scale` Float (optional)
+* `scale` Float (optional) - 커스텀 커서의 스케일링 수치
+* `size` Object (optional) - `image`의 사이즈
+  * `width` Integer
+  * `height` Integer
+* `hotspot` Object (optional) - 커스텀 커서의 핫스팟 좌표
+  * `x` Integer - x 좌표
+  * `y` Integer - y 좌표
 
 커서 종류가 변경될 때 발생하는 이벤트입니다. `type` 인수는 다음 값이 될 수 있습니다:
 `default`, `crosshair`, `pointer`, `text`, `wait`, `help`, `e-resize`, `n-resize`,
@@ -322,8 +328,8 @@ Returns:
 `not-allowed`, `zoom-in`, `zoom-out`, `grab`, `grabbing`, `custom`.
 
 만약 `type` 인수가 `custom` 이고 `image` 인수가 `NativeImage`를 통한 커스텀
-커서를 지정했을 때, 해당 이미지로 커서가 변경됩니다. 또한 `scale` 인수는 이미지의
-크기를 조정합니다.
+커서를 지정했을 때, 해당 이미지로 커서가 변경됩니다. 또한 `scale`, `size` 그리고 `hotspot` 인수는
+커스텀 커서의 추가적인 정보를 포함합니다.
 
 ### Event: 'context-menu'
 
@@ -342,7 +348,7 @@ Returns:
     이미지, 오디오, 비디오입니다.
   * `mediaType` String - 컨텍스트 메뉴가 호출된 노드의 종류. 값은 `none`, `image`,
     `audio`, `video`, `canvas`, `file` 또는 `plugin`이 될 수 있습니다.
-  * `hasImageContent` Boolean - 컨텍스트 메뉴가 내용이 있는 이미지에서 호출되었는지
+  * `hasImageContents` Boolean - 컨텍스트 메뉴가 내용이 있는 이미지에서 호출되었는지
     여부.
   * `isEditable` Boolean - 컨텍스트를 편집할 수 있는지 여부.
   * `selectionText` String - 컨텍스트 메뉴가 호출된 부분에 있는 선택된 텍스트.
@@ -429,6 +435,10 @@ app.on('ready', () => {
 
 이 애플리케이션에서 포커스되어있는 웹 콘텐츠를 반환합니다. 포커스된 웹 콘텐츠가 없을
 경우 `null`을 반환합니다.
+
+#### Event: 'view-painted'
+
+페이지의 뷰가 다시 그려졌을 때 발생하는 이벤트입니다.
 
 ## Instance Methods
 
@@ -597,6 +607,13 @@ CSS 코드를 현재 웹 페이지에 삽입합니다.
 ### `webContents.copy()`
 
 웹 페이지에서 `copy` 편집 커맨드를 실행합니다.
+
+### `contents.copyImageAt(x, y)`
+
+* `x` Integer
+* `y` Integer
+
+주어진 위치에 있는 이미지를 클립보드로 복사합니다.
 
 ### `webContents.paste()`
 
@@ -882,7 +899,7 @@ app.on('ready', () => {
   `{x: 0, y: 0}`)
   * `x` Integer - 좌상단 모서리로부터의 x 축의 오프셋
   * `y` Integer - 좌상단 모서리로부터의 y 축의 오프셋
-* `deviceScaleFactor` Integer - 디바이스의 스케일 팩터(scale factor)를 지정합니다.
+* `deviceScaleFactor` Float - 디바이스의 스케일 팩터(scale factor)를 지정합니다.
 	(0일 경우 기본 디바이스 스케일 팩터를 기본으로 사용합니다. 기본값: `0`)
 * `viewSize` Object - 에뮬레이트 된 뷰의 크기를 지정합니다 (빈 값은 덮어쓰지 않는
   다는 것을 의미합니다)

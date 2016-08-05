@@ -607,7 +607,7 @@ let win = new BrowserWindow({width: 800, height: 600});
 
 #### `win.setAspectRatio(aspectRatio[, extraSize])` _macOS_
 
-* `aspectRatio` 유지하려 하는 콘텐츠 뷰 일부의 종횡비
+* `aspectRatio` Float - 유지하려 하는 콘텐츠 뷰 일부의 종횡비.
 * `extraSize` Object (optional) - 종횡비를 유지하는 동안 포함되지 않을 엑스트라 크기.
   * `width` Integer
   * `height` Integer
@@ -798,6 +798,9 @@ let win = new BrowserWindow({width: 800, height: 600});
 
 #### `win.setSheetOffset(offsetY[, offsetX])` _macOS_
 
+* `offsetY` Float
+* `offsetX` Float (optional)
+
 macOS에서 시트를 부착할 위치를 지정합니다. 기본적으로 시트는 윈도우의 프레임 바로
 아래의 위치에 부착됩니다. 아마도 이 기능은 보통 다음과 같이 HTML 렌더링된 툴바 밑에
 표시하기 위해 사용할 것입니다:
@@ -977,7 +980,8 @@ Linux 플랫폼에선 Unity 데스크톱 환경만 지원합니다. 그리고 �
   * `height` Integer - 영역의 높이
 
 작업 표시줄에 윈도우의 섬네일이 표시될 때 섬네일 이미지로 사용할 윈도우의 영역을
-지정합니다.
+지정합니다. 빈 영역을 지정하는 것으로 전체 윈도우의 섬네일로 초기화할 수 있습니다:
+`{x: 0, y: 0, width: 0, height: 0}`.
 
 #### `win.showDefinitionForSelection()` _macOS_
 

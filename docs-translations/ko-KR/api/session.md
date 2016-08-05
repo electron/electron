@@ -97,7 +97,7 @@ session.defaultSession.on('will-download', (event, item, webContents) => {
 
 세션의 HTTP 캐시를 비웁니다.
 
-#### `ses.clearStorageData([options, ]callback)`
+#### `ses.clearStorageData([options, callback])`
 
 * `options` Object (optional), proprties:
   * `origin` String - `scheme://host:port`와 같은 `window.location.origin` 규칙을
@@ -107,7 +107,7 @@ session.defaultSession.on('will-download', (event, item, webContents) => {
     `shadercache`, `websql`, `serviceworkers`
   * `quotas` Array - 비우려는 할당의 종류, 다음과 같은 타입을 포함할 수 있습니다:
     `temporary`, `persistent`, `syncable`.
-* `callback` Function - 작업이 완료되면 호출됩니다.
+* `callback` Function (optional) - 작업이 완료되면 호출됩니다.
 
 웹 스토리지의 데이터를 비웁니다.
 

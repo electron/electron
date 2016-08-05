@@ -78,6 +78,12 @@ Returns:
 통해 아무 경로도 설정하지 않을 경우 Electron은 기본 루틴 파일 저장을 실행합니다.
 (파일 대화 상자를 엽니다)
 
+### `downloadItem.getSavePath()`
+
+다운로드 아이템의 저장 경로를 반환합니다. 이 경로는
+`downloadItem.setSavePath(path)`로 설정된 경로나 나타난 저장 대화상자에서 선택한
+경로 중 하나가 될 수 있습니다.
+
 ### `downloadItem.pause()`
 
 다운로드를 일시 중지합니다.
