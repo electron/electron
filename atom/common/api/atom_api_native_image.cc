@@ -172,6 +172,9 @@ bool ReadImageSkiaFromICO(gfx::ImageSkia* image, HICON icon) {
 }
 #endif
 
+void Noop(char*, void*) {
+}
+
 }  // namespace
 
 NativeImage::NativeImage(v8::Isolate* isolate, const gfx::Image& image)
@@ -228,18 +231,6 @@ v8::Local<v8::Value> NativeImage::ToBitmap(v8::Isolate* isolate) {
                             bitmap->getSafeSize()).ToLocalChecked();
 }
 
-void noop(char*, void*) {}
-
-v8::Local<v8::Value> NativeImage::GetBitmap(v8::Isolate* isolate) {
-  const SkBitmap* bitmap = image_.ToSkBitmap();
-  SkPixelRef* ref = bitmap->pixelRef();
-  return node::Buffer::New(isolate,
-                            reinterpret_cast<char*>(ref->pixels()),
-                            bitmap->getSafeSize(),
-                            &noop,
-                            nullptr).ToLocalChecked();
-}
-
 v8::Local<v8::Value> NativeImage::ToJPEG(v8::Isolate* isolate, int quality) {
   std::vector<unsigned char> output;
   gfx::JPEG1xEncodedDataFromImage(image_, quality, &output);
@@ -256,6 +247,16 @@ std::string NativeImage::ToDataURL() {
   base::Base64Encode(data_url, &data_url);
   data_url.insert(0, "data:image/png;base64,");
   return data_url;
+}
+
+v8::Local<v8::Value> NativeImage::GetBitmap(v8::Isolate* isolate) {
+  const SkBitmap* bitmap = image_.ToSkBitmap();
+  SkPixelRef* ref = bitmap->pixelRef();
+  return node::Buffer::New(isolate,
+                           reinterpret_cast<char*>(ref->pixels()),
+                           bitmap->getSafeSize(),
+                           &Noop,
+                           nullptr).ToLocalChecked();
 }
 
 v8::Local<v8::Value> NativeImage::GetNativeHandle(v8::Isolate* isolate,
