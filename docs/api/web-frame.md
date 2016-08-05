@@ -119,7 +119,7 @@ console.log(webFrame.getResourceUsage())
 
 This will generate:
 
-```
+```javascript
 {
   images: {
     count: 22,
