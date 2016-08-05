@@ -109,6 +109,8 @@
       'common/main_delegate.cc',
       'common/main_delegate.h',
       'common/main_delegate_mac.mm',
+      'common/switches.cc',
+      'common/switches.h',
     ],
   },
 }

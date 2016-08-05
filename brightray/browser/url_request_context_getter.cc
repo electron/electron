@@ -10,6 +10,7 @@
 #include "browser/net/devtools_network_transaction_factory.h"
 #include "browser/net_log.h"
 #include "browser/network_delegate.h"
+#include "common/switches.h"
 
 #include "base/command_line.h"
 #include "base/memory/ptr_util.h"
@@ -55,51 +56,6 @@
 using content::BrowserThread;
 
 namespace brightray {
-
-namespace {
-
-// Comma-separated list of rules that control how hostnames are mapped.
-//
-// For example:
-//    "MAP * 127.0.0.1" --> Forces all hostnames to be mapped to 127.0.0.1
-//    "MAP *.google.com proxy" --> Forces all google.com subdomains to be
-//                                 resolved to "proxy".
-//    "MAP test.com [::1]:77 --> Forces "test.com" to resolve to IPv6 loopback.
-//                               Will also force the port of the resulting
-//                               socket address to be 77.
-//    "MAP * baz, EXCLUDE www.google.com" --> Remaps everything to "baz",
-//                                            except for "www.google.com".
-//
-// These mappings apply to the endpoint host in a net::URLRequest (the TCP
-// connect and host resolver in a direct connection, and the CONNECT in an http
-// proxy connection, and the endpoint host in a SOCKS proxy connection).
-const char kHostRules[] = "host-rules";
-
-// Don't use a proxy server, always make direct connections. Overrides any
-// other proxy server flags that are passed.
-const char kNoProxyServer[] = "no-proxy-server";
-
-// Uses a specified proxy server, overrides system settings. This switch only
-// affects HTTP and HTTPS requests.
-const char kProxyServer[] = "proxy-server";
-
-// Bypass specified proxy for the given semi-colon-separated list of hosts. This
-// flag has an effect only when --proxy-server is set.
-const char kProxyBypassList[] = "proxy-bypass-list";
-
-// Uses the pac script at the given URL.
-const char kProxyPacUrl[] = "proxy-pac-url";
-
-// Disable HTTP/2 and SPDY/3.1 protocols.
-const char kDisableHttp2[] = "disable-http2";
-
-// Whitelist containing servers for which Integrated Authentication is enabled.
-const char kAuthServerWhitelist[] = "auth-server-whitelist";
-
-// Whitelist containing servers for which Kerberos delegation is allowed.
-const char kAuthNegotiateDelegateWhitelist[] = "auth-negotiate-delegate-whitelist";
-
-}  // namespace
 
 std::string URLRequestContextGetter::Delegate::GetUserAgent() {
   return base::EmptyString();
@@ -216,12 +172,15 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
 
     std::unique_ptr<net::CookieStore> cookie_store = nullptr;
     if (in_memory_) {
-      cookie_store = content::CreateCookieStore(content::CookieStoreConfig());
+      auto cookie_config = content::CookieStoreConfig();
+      cookie_config.cookieable_schemes = delegate_->GetCookieableSchemes();
+      cookie_store = content::CreateCookieStore(cookie_config);
     } else {
       auto cookie_config = content::CookieStoreConfig(
           base_path_.Append(FILE_PATH_LITERAL("Cookies")),
           content::CookieStoreConfig::EPHEMERAL_SESSION_COOKIES,
           nullptr, nullptr);
+      cookie_config.cookieable_schemes = delegate_->GetCookieableSchemes();
       cookie_store = content::CreateCookieStore(cookie_config);
     }
     storage_->set_cookie_store(std::move(cookie_store));
@@ -238,28 +197,28 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     std::unique_ptr<net::HostResolver> host_resolver(net::HostResolver::CreateDefaultResolver(nullptr));
 
     // --host-resolver-rules
-    if (command_line.HasSwitch(switches::kHostResolverRules)) {
+    if (command_line.HasSwitch(::switches::kHostResolverRules)) {
       std::unique_ptr<net::MappedHostResolver> remapped_resolver(
           new net::MappedHostResolver(std::move(host_resolver)));
       remapped_resolver->SetRulesFromString(
-          command_line.GetSwitchValueASCII(switches::kHostResolverRules));
+          command_line.GetSwitchValueASCII(::switches::kHostResolverRules));
       host_resolver = std::move(remapped_resolver);
     }
 
     // --proxy-server
     net::DhcpProxyScriptFetcherFactory dhcp_factory;
-    if (command_line.HasSwitch(kNoProxyServer)) {
+    if (command_line.HasSwitch(switches::kNoProxyServer)) {
       storage_->set_proxy_service(net::ProxyService::CreateDirect());
-    } else if (command_line.HasSwitch(kProxyServer)) {
+    } else if (command_line.HasSwitch(switches::kProxyServer)) {
       net::ProxyConfig proxy_config;
       proxy_config.proxy_rules().ParseFromString(
-          command_line.GetSwitchValueASCII(kProxyServer));
+          command_line.GetSwitchValueASCII(switches::kProxyServer));
       proxy_config.proxy_rules().bypass_rules.ParseFromString(
-          command_line.GetSwitchValueASCII(kProxyBypassList));
+          command_line.GetSwitchValueASCII(switches::kProxyBypassList));
       storage_->set_proxy_service(net::ProxyService::CreateFixed(proxy_config));
-    } else if (command_line.HasSwitch(kProxyPacUrl)) {
+    } else if (command_line.HasSwitch(switches::kProxyPacUrl)) {
       auto proxy_config = net::ProxyConfig::CreateFromCustomPacURL(
-          GURL(command_line.GetSwitchValueASCII(kProxyPacUrl)));
+          GURL(command_line.GetSwitchValueASCII(switches::kProxyPacUrl)));
       proxy_config.set_pac_mandatory(true);
       storage_->set_proxy_service(net::ProxyService::CreateFixed(
           proxy_config));
@@ -287,15 +246,15 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
 #endif
 
     // --auth-server-whitelist
-    if (command_line.HasSwitch(kAuthServerWhitelist)) {
+    if (command_line.HasSwitch(switches::kAuthServerWhitelist)) {
       http_auth_preferences_->set_server_whitelist(
-          command_line.GetSwitchValueASCII(kAuthServerWhitelist));
+          command_line.GetSwitchValueASCII(switches::kAuthServerWhitelist));
     }
 
     // --auth-negotiate-delegate-whitelist
-    if (command_line.HasSwitch(kAuthNegotiateDelegateWhitelist)) {
+    if (command_line.HasSwitch(switches::kAuthNegotiateDelegateWhitelist)) {
       http_auth_preferences_->set_delegate_whitelist(
-          command_line.GetSwitchValueASCII(kAuthNegotiateDelegateWhitelist));
+          command_line.GetSwitchValueASCII(switches::kAuthNegotiateDelegateWhitelist));
     }
 
     auto auth_handler_factory =
@@ -326,19 +285,19 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     network_session_params.net_log = url_request_context_->net_log();
 
     // --disable-http2
-    if (command_line.HasSwitch(kDisableHttp2)) {
+    if (command_line.HasSwitch(switches::kDisableHttp2)) {
       network_session_params.enable_spdy31 = false;
       network_session_params.enable_http2 = false;
     }
 
     // --ignore-certificate-errors
-    if (command_line.HasSwitch(switches::kIgnoreCertificateErrors))
+    if (command_line.HasSwitch(::switches::kIgnoreCertificateErrors))
       network_session_params.ignore_certificate_errors = true;
 
     // --host-rules
-    if (command_line.HasSwitch(kHostRules)) {
+    if (command_line.HasSwitch(switches::kHostRules)) {
       host_mapping_rules_.reset(new net::HostMappingRules);
-      host_mapping_rules_->SetRulesFromString(command_line.GetSwitchValueASCII(kHostRules));
+      host_mapping_rules_->SetRulesFromString(command_line.GetSwitchValueASCII(switches::kHostRules));
       network_session_params.host_mapping_rules = host_mapping_rules_.get();
     }
 
