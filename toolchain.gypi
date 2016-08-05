@@ -7,6 +7,7 @@
 
     'clang_warning_flags': [
       '-Wno-undefined-var-template', # https://crbug.com/604888
+      '-Wno-varargs', # https://git.io/v6Olj
     ],
 
     'variables': {
