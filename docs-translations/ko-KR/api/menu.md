@@ -182,11 +182,11 @@ Menu.setApplicationMenu(menu);
 
 새로운 메뉴를 생성합니다.
 
-## Methods
+## Static Methods
 
-`menu` 클래스는 다음과 같은 메서드를 가지고 있습니다:
+`menu` 클래스는 다음과 같은 정적 메서드를 가지고 있습니다:
 
-### `Menu.setApplicationMenu(menu)`
+#### `Menu.setApplicationMenu(menu)`
 
 * `menu` Menu
 
@@ -195,12 +195,12 @@ Linux에선 각 창의 상단에 표시됩니다.
 
 **참고** 이 API는 `app`의 `ready` 이벤트가 발생한 이후에 호출해야 합니다.
 
-### `Menu.getApplicationMenu()`
+#### `Menu.getApplicationMenu()`
 
 설정되어있는 어플리케이션 메뉴를 반환합니다. (`Menu`의 인스턴스) 만약 없다면 `null`을
 반환합니다.
 
-### `Menu.sendActionToFirstResponder(action)` _macOS_
+#### `Menu.sendActionToFirstResponder(action)` _macOS_
 
 * `action` String
 
@@ -211,7 +211,7 @@ macOS의 네이티브 액션에 대해 자세히 알아보려면
 [macOS Cocoa Event Handling Guide](https://developer.apple.com/library/mac/documentation/Cocoa/Conceptual/EventOverview/EventArchitecture/EventArchitecture.html#//apple_ref/doc/uid/10000060i-CH3-SW7)
 문서를 참고하세요.
 
-### `Menu.buildFromTemplate(template)`
+#### `Menu.buildFromTemplate(template)`
 
 * `template` Array
 
@@ -221,11 +221,11 @@ macOS의 네이티브 액션에 대해 자세히 알아보려면
 또한 `template`에는 다른 속성도 추가할 수 있으며 메뉴가 만들어질 때 해당 메뉴 아이템의
 프로퍼티로 변환됩니다.
 
-## Instance Methods
+### Instance Methods
 
 `menu` 객체는 다음과 같은 인스턴스 메서드를 가지고 있습니다:
 
-### `menu.popup([browserWindow, x, y, positioningItem])`
+#### `menu.popup([browserWindow, x, y, positioningItem])`
 
 * `browserWindow` BrowserWindow (optional) - 기본값은 `null`입니다.
 * `x` Number (optional) - 기본값은 -1입니다.
@@ -238,24 +238,24 @@ macOS의 네이티브 액션에 대해 자세히 알아보려면
 `positioningItem` 속성은 메뉴 팝업 시 마우스 커서에 바로 위치시킬 메뉴 아이템의
 인덱스입니다. (macOS에서만 지원합니다)
 
-### `menu.append(menuItem)`
+#### `menu.append(menuItem)`
 
 * `menuItem` MenuItem
 
 메뉴의 리스트 끝에 `menuItem`을 삽입합니다.
 
-### `menu.insert(pos, menuItem)`
+#### `menu.insert(pos, menuItem)`
 
 * `pos` Integer
 * `menuItem` MenuItem
 
 `pos` 위치에 `menuItem`을 삽입합니다.
 
-## Instance Properties
+### Instance Properties
 
 `menu` 객체는 또한 다음과 같은 속성을 가지고 있습니다:
 
-### `menu.items`
+#### `menu.items`
 
 메뉴가 가지고 있는 메뉴 아이템들의 배열입니다.
 

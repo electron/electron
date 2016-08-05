@@ -122,6 +122,13 @@ appIcon.setContextMenu(contextMenu)
 
 트레이 아이콘에 파일이 드롭되면 발생하는 이벤트입니다.
 
+#### Event: 'drop-text' _macOS_
+
+* `event` Event
+* `text` String - 드롭된 텍스트의 문자열
+
+드래그된 텍스트가 트레이 아이콘에 드롭되면 발생하는 이벤트입니다.
+
 #### Event: 'drag-enter' _macOS_
 
 트레이 아이콘에 드래그 작업이 시작될 때 발생하는 이벤트입니다.

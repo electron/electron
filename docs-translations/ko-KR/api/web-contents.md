@@ -207,7 +207,12 @@ Returns:
 * `error` String - 에러 코드
 * `certificate` Object
   * `data` Buffer - PEM 인코딩된 데이터
-  * `issuerName` String
+  * `issuerName` String - 인증서 발급자의 공통 이름
+  * `subjectName` String - 대상의 공통 이름
+  * `serialNumber` - DER 인코딩된 데이터
+  * `validStart` Integer - 인증서가 유효하기 시작한 날짜
+  * `validExpiry` Integer - 인증서가 만료되는 날짜
+  * `fingerprint` String - 인증서의 지문
 * `callback` Function
 
 `url`에 대한 `certificate` 인증서의 유효성 검증에 실패했을 때 발생하는 이벤트입니다.
@@ -223,7 +228,12 @@ Returns:
 * `url` URL
 * `certificateList` [Objects]
   * `data` Buffer - PEM 인코딩된 데이터
-  * `issuerName` String - 인증서 발급자 이름
+  * `issuerName` String - 인증서 발급자의 공통 이름
+  * `subjectName` String - 대상의 공통 이름
+  * `serialNumber` - DER 인코딩된 데이터
+  * `validStart` Integer - 인증서가 유효하기 시작한 날짜
+  * `validExpiry` Integer - 인증서가 만료되는 날짜
+  * `fingerprint` String - 인증서의 지문
 * `callback` Function
 
 클라이언트 인증이 요청되었을 때 발생하는 이벤트입니다.
@@ -406,6 +416,20 @@ app.on('ready', () => {
 })
 ```
 
+## Static Methods
+
+`webContents` 클래스는 다음과 같은 정적 메서드를 가지고 있습니다:
+
+#### `webContents.getAllWebContents()`
+
+모든 웹 콘텐츠의 배열을 반환합니다. 이 배열은 윈도우, 웹뷰, 열린 개발자 도구 그리고
+개발자 도구 확장 기능의 백그라운드 페이지의 모든 웹 콘텐츠를 포함합니다.
+
+#### `webContents.getFocusedWebContents()`
+
+이 애플리케이션에서 포커스되어있는 웹 콘텐츠를 반환합니다. 포커스된 웹 콘텐츠가 없을
+경우 `null`을 반환합니다.
+
 ## Instance Methods
 
 `webContents`객체는 다음과 같은 인스턴스 메서드들을 가지고 있습니다.
@@ -448,6 +472,10 @@ let currentURL = win.webContents.getURL();
 ### `webContents.getTitle()`
 
 현재 웹 페이지의 제목을 반환합니다.
+
+### `webContents.isFocused()`
+
+웹 페이지가 포커스되어있는지 여부를 반환합니다.
 
 ### `webContents.isLoading()`
 

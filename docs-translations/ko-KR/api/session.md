@@ -19,16 +19,24 @@ let ses = win.webContents.session
 
 `session` 모듈은 다음과 같은 메서드를 가지고 있습니다:
 
-### session.fromPartition(partition)
+### session.fromPartition(partition[, options])
 
 * `partition` String
+* `options` Object
+  * `cache` Boolean - 캐시를 활성화할지 여부.
 
-`partition` 문자열로 부터 새로운 `Session` 인스턴스를 만들어 반환합니다.
+`partition` 문자열로부터 `Session` 인스턴스를 만들어 반환합니다. 이미 `partition`에
+해당하는 `Session`이 존재할 경우, 해당 세션이 반환됩니다. 그렇지않은 경우 `Session`
+인스턴스가 `options`에 맞춰 새로 생성됩니다.
 
 `partition`이 `persist:`로 시작하면 페이지는 지속성 세션을 사용하며 다른 모든 앱 내의
 페이지에서 같은 `partition`을 사용할 수 있습니다. 만약 `persist:` 접두어로 시작하지
 않으면 페이지는 인-메모리 세션을 사용합니다. `partition`을 지정하지 않으면 애플리케이션의
 기본 세션이 반환됩니다.
+
+`options`에 맞춰 `Session`을 생성하려면, `partition`에 해당하는 `Session`이 이미
+이전에 사용되지 않고 있는지 확인해야 합니다. 이미 존재하는 `Session` 객체의
+`options`를 변경하는 방법은 없습니다.
 
 ## Properties
 
