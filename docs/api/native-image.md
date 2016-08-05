@@ -163,11 +163,20 @@ Returns a [Buffer][buffer] that contains the image's `JPEG` encoded data.
 
 #### `image.toBitmap()`
 
-Returns a [Buffer][buffer] that contains the image's raw pixel data.
+Returns a [Buffer][buffer] that contains a copy of the image's raw bitmap pixel
+data.
 
 #### `image.toDataURL()`
 
 Returns the data URL of the image.
+
+#### `image.getBitmap()`
+
+Returns a [Buffer][buffer] that contains the image's raw bitmap pixel data.
+
+The difference between `getBitmap()` and `toBitmap()` is, `getBitmap()` does not
+copy the bitmap data, so you have to use the returned Buffer immediately in
+current event loop tick, otherwise the data might be changed or destroyed.
 
 #### `image.getNativeHandle()` _macOS_
 

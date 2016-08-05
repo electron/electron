@@ -37,19 +37,18 @@ const {app, BrowserWindow} = require('electron')
 
 app.disableHardwareAcceleration()
 
-let win = new BrowserWindow({
-  width: 800,
-  height: 1500,
-  webPreferences: {
-    offscreen: true
-  }
-})
-win.loadURL('http://github.com')
-
-win.webContents.setFrameRate(30)
-
-win.webContents.on('paint', (event, dirty, data) => {
-  // updateBitmap(dirty, data)
+let win
+app.once('ready', () => {
+  win = new BrowserWindow({
+    webPreferences: {
+      offscreen: true
+    }
+  })
+  win.loadURL('http://github.com')
+  win.webContents.on('paint', (event, dirty, image) => {
+    // updateBitmap(dirty, image.getBitmap())
+  })
+  win.webContents.setFrameRate(30)
 })
 ```
 

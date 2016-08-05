@@ -463,14 +463,11 @@ Returns:
 
 * `event` Event
 * `dirtyRect` Object
-  * `x` Number - the x coordinate on the bitmap
-  * `y` Number - the y coordinate on the bitmap
-  * `width` Number - the width of the dirty area
-  * `height` Number - the height of the dirty area
-* `data` Buffer - the bitmap data of the dirty rect
-* `bitmapSize` Object
-  * `width` Number - the width of the whole bitmap
-  * `height` Number - the height of the whole bitmap
+  * `x` Integer - The x coordinate on the image.
+  * `y` Integer - The y coordinate on the image.
+  * `width` Integer - The width of the dirty area.
+  * `height` Integer - The height of the dirty area.
+* `image` [NativeImage](native-image.md) - The image data of the whole frame.
 
 Emitted when a new frame is generated. Only the dirty area is passed in the
 buffer.
@@ -478,18 +475,11 @@ buffer.
 ```javascript
 const {BrowserWindow} = require('electron')
 
-let win = new BrowserWindow({
-  width: 800,
-  height: 1500,
-  webPreferences: {
-    offscreen: true
-  }
+let win = new BrowserWindow({webPreferences: {offscreen: true}})
+win.webContents.on('paint', (event, dirty, image) => {
+  // updateBitmap(dirty, image.getBitmap())
 })
 win.loadURL('http://github.com')
-
-win.webContents.on('paint', (event, dirty, data) => {
-  // updateBitmap(dirty, data)
-})
 ```
 
 ### Instance Methods

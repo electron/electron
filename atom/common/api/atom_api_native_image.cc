@@ -172,6 +172,9 @@ bool ReadImageSkiaFromICO(gfx::ImageSkia* image, HICON icon) {
 }
 #endif
 
+void Noop(char*, void*) {
+}
+
 }  // namespace
 
 NativeImage::NativeImage(v8::Isolate* isolate, const gfx::Image& image)
@@ -244,6 +247,16 @@ std::string NativeImage::ToDataURL() {
   base::Base64Encode(data_url, &data_url);
   data_url.insert(0, "data:image/png;base64,");
   return data_url;
+}
+
+v8::Local<v8::Value> NativeImage::GetBitmap(v8::Isolate* isolate) {
+  const SkBitmap* bitmap = image_.ToSkBitmap();
+  SkPixelRef* ref = bitmap->pixelRef();
+  return node::Buffer::New(isolate,
+                           reinterpret_cast<char*>(ref->pixels()),
+                           bitmap->getSafeSize(),
+                           &Noop,
+                           nullptr).ToLocalChecked();
 }
 
 v8::Local<v8::Value> NativeImage::GetNativeHandle(v8::Isolate* isolate,
@@ -361,6 +374,7 @@ void NativeImage::BuildPrototype(
       .SetMethod("toPNG", &NativeImage::ToPNG)
       .SetMethod("toJPEG", &NativeImage::ToJPEG)
       .SetMethod("toBitmap", &NativeImage::ToBitmap)
+      .SetMethod("getBitmap", &NativeImage::GetBitmap)
       .SetMethod("getNativeHandle", &NativeImage::GetNativeHandle)
       .SetMethod("toDataURL", &NativeImage::ToDataURL)
       .SetMethod("isEmpty", &NativeImage::IsEmpty)
