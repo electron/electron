@@ -89,5 +89,4 @@ void atom::OffScreenRenderWidgetHostView::DestroyPlatformWidget() {
   browser_compositor_->compositor()->SetVisible(false);
   browser_compositor_->compositor()->SetScaleAndSize(1.0, gfx::Size(0, 0));
   browser_compositor_->compositor()->SetRootLayer(NULL);
-  content::BrowserCompositorMac::Recycle(std::move(browser_compositor_));
 }
