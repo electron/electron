@@ -711,7 +711,10 @@ describe('browser-window module', function () {
         w.destroy()
         w = new BrowserWindow({show: false, resizable: false})
         assert.equal(w.isResizable(), false)
-        assert.equal(w.isMaximizable(), true)
+
+        if (process.platform === 'darwin') {
+          assert.equal(w.isMaximizable(), true)
+        }
       })
 
       it('can be changed with setResizable method', function () {
