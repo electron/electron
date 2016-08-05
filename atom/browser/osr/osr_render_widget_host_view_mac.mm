@@ -6,28 +6,15 @@
 
 #import <Cocoa/Cocoa.h>
 
+#include "atom/browser/native_window_mac.h"
+
 #include "base/strings/utf_string_conversions.h"
-#include "ui/accelerated_widget_mac/accelerated_widget_mac.h"
 
 ui::AcceleratedWidgetMac*
 atom::OffScreenRenderWidgetHostView::GetAcceleratedWidgetMac() const {
   if (browser_compositor_)
     return browser_compositor_->accelerated_widget_mac();
   return nullptr;
-}
-
-NSView* atom::OffScreenRenderWidgetHostView::AcceleratedWidgetGetNSView()
-    const {
-  return [window_ contentView];
-}
-
-void atom::OffScreenRenderWidgetHostView::AcceleratedWidgetGetVSyncParameters(
-    base::TimeTicks* timebase, base::TimeDelta* interval) const {
-  *timebase = base::TimeTicks();
-  *interval = base::TimeDelta();
-}
-
-void atom::OffScreenRenderWidgetHostView::AcceleratedWidgetSwapCompleted() {
 }
 
 void atom::OffScreenRenderWidgetHostView::SetActive(bool active) {
@@ -72,22 +59,12 @@ void atom::OffScreenRenderWidgetHostView::SelectionChanged(
 }
 
 void atom::OffScreenRenderWidgetHostView::CreatePlatformWidget() {
-  window_ = [[NSWindow alloc] initWithContentRect:NSMakeRect(0, 0, 1, 1)
-                                        styleMask:NSBorderlessWindowMask
-                                          backing:NSBackingStoreBuffered
-                                            defer:NO];
-
-  background_layer_ = [[[CALayer alloc] init] retain];
-  [background_layer_ setBackgroundColor:CGColorGetConstantColor(kCGColorClear)];
-  NSView* content_view = [window_ contentView];
-  [content_view setLayer:background_layer_];
-  [content_view setWantsLayer:YES];
-
   browser_compositor_ = content::BrowserCompositorMac::Create();
 
   compositor_.reset(browser_compositor_->compositor());
   compositor_->SetRootLayer(root_layer_.get());
-  browser_compositor_->accelerated_widget_mac()->SetNSView(this);
+  browser_compositor_->accelerated_widget_mac()->SetNSView(
+    static_cast<atom::NativeWindowMac*>(native_window_));
   browser_compositor_->compositor()->SetVisible(true);
 
   compositor_->SetLocksWillTimeOut(true);
@@ -95,15 +72,8 @@ void atom::OffScreenRenderWidgetHostView::CreatePlatformWidget() {
 }
 
 void atom::OffScreenRenderWidgetHostView::DestroyPlatformWidget() {
-  DCHECK(window_);
-
   ui::Compositor* compositor = compositor_.release();
   ALLOW_UNUSED_LOCAL(compositor);
-
-  [window_ close];
-  window_ = nil;
-  [background_layer_ release];
-  background_layer_ = nil;
 
   browser_compositor_->accelerated_widget_mac()->ResetNSView();
   browser_compositor_->compositor()->SetVisible(false);

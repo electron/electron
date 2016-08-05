@@ -56,9 +56,6 @@ class AtomBeginFrameTimer;
 
 class OffScreenRenderWidgetHostView
     : public content::RenderWidgetHostViewBase,
-#if defined(OS_MACOSX)
-      public ui::AcceleratedWidgetMacNSView,
-#endif
       public ui::CompositorDelegate,
       public content::DelegatedFrameHostClient {
  public:
@@ -173,14 +170,6 @@ class OffScreenRenderWidgetHostView
   bool IsAutoResizeEnabled() const;
   void OnSetNeedsBeginFrames(bool enabled);
 
-#if defined(OS_MACOSX)
-  // ui::AcceleratedWidgetMacNSView:
-  NSView* AcceleratedWidgetGetNSView() const override;
-  void AcceleratedWidgetGetVSyncParameters(
-      base::TimeTicks* timebase, base::TimeDelta* interval) const override;
-  void AcceleratedWidgetSwapCompleted() override;
-#endif  // defined(OS_MACOSX)
-
   void OnBeginFrameTimerTick();
   void SendBeginFrame(base::TimeTicks frame_time,
                       base::TimeDelta vsync_period);
@@ -233,8 +222,6 @@ class OffScreenRenderWidgetHostView
   std::unique_ptr<AtomBeginFrameTimer> begin_frame_timer_;
 
 #if defined(OS_MACOSX)
-  NSWindow* window_;
-  CALayer* background_layer_;
   std::unique_ptr<content::BrowserCompositorMac> browser_compositor_;
 
   // Selected text on the renderer.

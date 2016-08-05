@@ -1197,6 +1197,19 @@ void NativeWindowMac::SetCollectionBehavior(bool on, NSUInteger flag) {
   SetMaximizable(was_maximizable);
 }
 
+NSView* atom::NativeWindowMac::AcceleratedWidgetGetNSView() const {
+  return [window_ contentView];
+}
+
+void atom::NativeWindowMac::AcceleratedWidgetGetVSyncParameters(
+    base::TimeTicks* timebase, base::TimeDelta* interval) const {
+  *timebase = base::TimeTicks();
+  *interval = base::TimeDelta();
+}
+
+void atom::NativeWindowMac::AcceleratedWidgetSwapCompleted() {
+}
+
 // static
 NativeWindow* NativeWindow::Create(
     brightray::InspectableWebContents* inspectable_web_contents,
