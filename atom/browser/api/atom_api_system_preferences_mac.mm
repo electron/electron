@@ -28,6 +28,28 @@ std::map<int, id> g_id_map;
 
 }  // namespace
 
+void SystemPreferences::PostNotification(const std::string& name, 
+    const base::DictionaryValue& user_info) {
+  DoPostNotification(name, user_info, false);
+}
+
+void SystemPreferences::PostLocalNotification(const std::string& name, 
+    const base::DictionaryValue& user_info) {
+  DoPostNotification(name, user_info, true);
+}
+
+void SystemPreferences::DoPostNotification(const std::string& name, 
+    const base::DictionaryValue& user_info, bool is_local) {
+  NSNotificationCenter* center = is_local ?
+    [NSNotificationCenter defaultCenter] :
+    [NSDistributedNotificationCenter defaultCenter];
+  [center
+     postNotificationName:base::SysUTF8ToNSString(name)
+     object:nil
+     userInfo:DictionaryValueToNSDictionary(user_info)
+  ];
+}
+
 int SystemPreferences::SubscribeNotification(
     const std::string& name, const NotificationCallback& callback) {
   return DoSubscribeNotification(name, callback, false);
