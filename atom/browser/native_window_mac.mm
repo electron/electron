@@ -591,11 +591,9 @@ NativeWindowMac::NativeWindowMac(
 
   InstallView();
 
-  // Disable zoom button if window is not resizable.
   // Set maximizable state last to ensure zoom button does not get reset
   // by calls to other APIs.
-  if (!maximizable)
-    SetMaximizable(false);
+  SetMaximizable(maximizable);
 }
 
 NativeWindowMac::~NativeWindowMac() {
@@ -1178,27 +1176,25 @@ void NativeWindowMac::UpdateDraggableRegionViews(
 }
 
 void NativeWindowMac::SetStyleMask(bool on, NSUInteger flag) {
-  bool zoom_button_enabled = IsMaximizable();
+  bool was_maximizable = IsMaximizable();
   if (on)
     [window_ setStyleMask:[window_ styleMask] | flag];
   else
     [window_ setStyleMask:[window_ styleMask] & (~flag)];
   // Change style mask will make the zoom button revert to default, probably
   // a bug of Cocoa or macOS.
-  if (!zoom_button_enabled)
-    SetMaximizable(false);
+  SetMaximizable(was_maximizable);
 }
 
 void NativeWindowMac::SetCollectionBehavior(bool on, NSUInteger flag) {
-  bool zoom_button_enabled = IsMaximizable();
+  bool was_maximizable = IsMaximizable();
   if (on)
     [window_ setCollectionBehavior:[window_ collectionBehavior] | flag];
   else
     [window_ setCollectionBehavior:[window_ collectionBehavior] & (~flag)];
   // Change collectionBehavior will make the zoom button revert to default,
   // probably a bug of Cocoa or macOS.
-  if (!zoom_button_enabled)
-    SetMaximizable(false);
+  SetMaximizable(was_maximizable);
 }
 
 // static
