@@ -512,6 +512,30 @@ Adds `tasks` to the [Tasks][tasks] category of the JumpList on Windows.
   consists of two or more icons, set this value to identify the icon. If an
   icon file consists of one icon, this value is 0.
 
+### `app.setCategoryUserTasks(name, tasks)` _Windows_
+
+* `name` String - Name of the Tasks cateory
+* `tasks` Array - Array of `Task` objects
+
+Adds `tasks` to a custom category under the heading identified by `name`.
+
+`tasks` is an array of `Task` objects in the following format:
+
+`Task` Object:
+
+* `program` String - Path of the program to execute, usually you should
+  specify `process.execPath` which opens the current program.
+* `arguments` String - The command line arguments when `program` is
+  executed.
+* `title` String - The string to be displayed in a JumpList.
+* `description` String - Description of this task.
+* `iconPath` String - The absolute path to an icon to be displayed in a
+  JumpList, which can be an arbitrary resource file that contains an icon. You
+  can usually specify `process.execPath` to show the icon of the program.
+* `iconIndex` Integer - The icon index in the icon file. If an icon file
+  consists of two or more icons, set this value to identify the icon. If an
+  icon file consists of one icon, this value is 0.
+
 ### `app.makeSingleInstance(callback)`
 
 * `callback` Function

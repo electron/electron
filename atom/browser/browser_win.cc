@@ -125,6 +125,55 @@ void Browser::SetUserTasks(const std::vector<UserTask>& tasks) {
   destinations->CommitList();
 }
 
+void Browser::SetCategoryUserTasks(
+  const std::string& category_name,
+  const std::vector<UserTask>& tasks
+) {
+  std::wstring stemp = std::wstring(category_name.begin(), category_name.end());
+  LPCWSTR category_name_lpcwstr = stemp.c_str();
+
+  CComPtr<ICustomDestinationList> destinations;
+  if (FAILED(destinations.CoCreateInstance(CLSID_DestinationList)))
+    return;
+  if (FAILED(destinations->SetAppID(GetAppUserModelID())))
+    return;
+
+  UINT max_slots;
+  CComPtr<IObjectArray> removed;
+  if (FAILED(destinations->BeginList(&max_slots, IID_PPV_ARGS(&removed))))
+    return;
+
+  CComPtr<IObjectCollection> collection;
+  if (FAILED(collection.CoCreateInstance(CLSID_EnumerableObjectCollection)))
+    return;
+
+  for (auto& task : tasks) {
+    CComPtr<IShellLink> link;
+    if (FAILED(link.CoCreateInstance(CLSID_ShellLink)) ||
+        FAILED(link->SetPath(task.program.value().c_str())) ||
+        FAILED(link->SetArguments(task.arguments.c_str())) ||
+        FAILED(link->SetDescription(task.description.c_str())))
+      return;
+
+    if (!task.icon_path.empty() &&
+        FAILED(link->SetIconLocation(task.icon_path.value().c_str(),
+                                     task.icon_index)))
+      return;
+
+    CComQIPtr<IPropertyStore> property_store = link;
+    if (!base::win::SetStringValueForPropertyStore(property_store, PKEY_Title,
+                                                   task.title.c_str()))
+      return;
+
+    if (FAILED(collection->AddObject(link)))
+      return;
+  }
+
+  CComQIPtr<IObjectArray> task_array = collection;
+  destinations->AppendCategory(category_name_lpcwstr, task_array);
+  destinations->CommitList();
+}
+
 bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol) {
   if (protocol.empty())
     return false;
