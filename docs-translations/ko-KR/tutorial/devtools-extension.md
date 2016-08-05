@@ -31,7 +31,10 @@ Electron에 확장 기능을 로드하려면, Chrome 브라우저에서 다운�
    * macOS에선 `~/Library/Application Support/Google/Chrome/Default/Extensions`.
 4. 확장 기능의 경로를 `BrowserWindow.addDevToolsExtension` API로 전달합니다.
    React Developer Tools의 경우 다음과 비슷해야 합니다:
-   `~/Library/Application Support/Google/Chrome/Default/Extensions/fmkadmapgofadopljbjfkapdkoienihi/0.14.10_0`
+   `~/Library/Application Support/Google/Chrome/Default/Extensions/fmkadmapgofadopljbjfkapdkoienihi/0.15.0_0`
+
+**참고:** `BrowserWindow.addDevToolsExtension` API는 `app` 모듈의 `ready` 이벤트가
+발생하기 전까지 사용할 수 없습니다.
 
 확장 기능의 이름은 `BrowserWindow.addDevToolsExtension`에서 반환되며, 이 이름을
 `BrowserWindow.removeDevToolsExtension` API로 전달함으로써 해당하는 확장 기능을

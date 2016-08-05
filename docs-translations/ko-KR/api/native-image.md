@@ -26,12 +26,23 @@ const appIcon = new Tray(image);
 손실 없는 이미지 압축과 투명도 지원을 위해 `PNG` 사용을 권장합니다.
 
 Windows에서는 파일 경로로부터 `ICO` 포맷도 사용할 수 있으며, 가장 좋은 시각적 효과를
-얻기 위해 최소한 아이콘에 다음 사이즈를 포함하는 것을 권장합니다:
+얻기 위해 최소한 다음 사이즈를 포함하는 것을 권장합니다:
 
-* 16x16
-* 32x32
-* 64x64
+* 작은 아이콘
+ * 16x16 (100% DPI 스케일)
+ * 20x20 (125% DPI 스케일)
+ * 24x24 (150% DPI 스케일)
+ * 32x32 (200% DPI 스케일)
+* 큰 아이콘
+ * 32x32 (100% DPI 스케일)
+ * 40x40 (125% DPI 스케일)
+ * 48x48 (150% DPI 스케일)
+ * 64x64 (200% DPI 스케일)
 * 256x256
+
+[이 글][icons]의 *Size requirements* 섹션을 확인하세요.
+
+[icons]:https://msdn.microsoft.com/en-us/library/windows/desktop/dn742485(v=vs.85).aspx
 
 ## 고해상도 이미지
 
@@ -134,6 +145,10 @@ let image = nativeImage.createFromPath('/Users/somebody/images/icon.png');
 * `quality` Integer (**required**) 0 - 100 사이의 값
 
 `JPEG` 이미지를 인코딩한 데이터를 [Buffer][buffer]로 반환합니다.
+
+#### `image.toBitmap()`
+
+이미지의 raw 픽셀 데이터를 가지는 [Buffer][buffer]를 반환합니다.
 
 ### `image.toDataURL()`
 

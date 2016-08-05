@@ -59,16 +59,24 @@ $ python script\build.py -c D
 빌드가 모두 끝나면 `out/D` (디버그 타겟) 또는 `out/R` (릴리즈 타겟) 디렉터리에서
 `electron.exe` 실행 파일을 찾을 수 있습니다.
 
-## 64비트 빌드
+## 32비트 빌드
 
-64비트를 타겟으로 빌드 하려면 부트스트랩 스크립트를 실행할 때 `--target_arch=x64`
+32비트를 타겟으로 빌드 하려면 부트스트랩 스크립트를 실행할 때 `--target_arch=ia32`
 인수를 같이 넘겨주면 됩니다:
 
 ```powershell
-$ python script\bootstrap.py -v --target_arch=x64
+$ python script\bootstrap.py -v --target_arch=ia32
 ```
 
 다른 빌드 단계도 정확하게 같습니다.
+
+## Visual Studio 프로젝트
+
+Visual Studio 프로젝트를 생성하려면, `--msvs` 인수를 전달할 수 있습니다:
+
+```powershell
+$ python script\bootstrap.py --msvs
+```
 
 ## 테스트
 

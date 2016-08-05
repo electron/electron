@@ -173,12 +173,35 @@ appIcon.setContextMenu(contextMenu)
 
 상태바에서 트레이 아이콘 옆에 표시되는 제목 텍스트를 설정합니다.
 
-#### `tray.setHighlightMode(highlight)` _macOS_
+#### `tray.setHighlightMode(mode)` _macOS_
 
-* `highlight` Boolean
+* `mode` String 다음 값 중 하나가 될 수 있는 하이라이트 모드:
+  * `'selection'` - 트레이 아이콘이 클릭되었을 때와 콘텍스트 메뉴가 열렸을 때
+    하이라이트를 적용합니다. 이 값이 기본값입니다.
+  * `'always'` - 언제나 트레이 아이콘에 하이라이트를 적용합니다.
+  * `'never'` - 트레이 아이콘에 하이라이트를 아예 적용하지 않습니다.
 
-트레이 아이콘이 클릭됐을 때 아이콘의 배경이 파란색으로 하이라이트 될지 여부를 지정합니다.
-기본값은 true입니다.
+트레이 아이콘의 배경이 하이라이팅될 때를 지정합니다. (파란색)
+
+**참고:**  [`BrowserWindow`](browser-window.md)와 함께 `highlightMode`를 윈도우
+가시성에 따라 `'never'`와 `'always'` 사이에서 키거나 끌 수 있습니다.
+
+```javascript
+const {BrowserWindow, Tray} = require('electron')
+
+const win = new BrowserWindow({width: 800, height: 600})
+const tray = new Tray('/path/to/my/icon')
+
+tray.on('click', () => {
+  win.isVisible() ? win.hide() : win.show()
+})
+win.on('show', () => {
+  tray.setHighlightMode('always')
+})
+win.on('hide', () => {
+  tray.setHighlightMode('never')
+})
+```
 
 #### `tray.displayBalloon(options)` _Windows_
 
