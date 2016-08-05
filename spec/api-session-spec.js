@@ -153,6 +153,32 @@ describe('session module', function () {
         })
       })
     })
+
+    it('should set cookie for standard scheme', function (done) {
+      const standardScheme = remote.getGlobal('standardScheme')
+      const origin = standardScheme + '://fake-host'
+      session.defaultSession.cookies.set({
+        url: origin,
+        name: 'custom',
+        value: '1'
+      }, function (error) {
+        if (error) {
+          return done(error)
+        }
+        session.defaultSession.cookies.get({
+          url: origin
+        }, function (error, list) {
+          if (error) {
+            return done(error)
+          }
+          assert.equal(list.length, 1)
+          assert.equal(list[0].name, 'custom')
+          assert.equal(list[0].value, '1')
+          assert.equal(list[0].domain, 'fake-host')
+          done()
+        })
+      })
+    })
   })
 
   describe('ses.clearStorageData(options)', function () {

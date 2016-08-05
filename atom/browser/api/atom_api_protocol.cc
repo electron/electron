@@ -29,6 +29,9 @@ namespace api {
 
 namespace {
 
+// List of registered custom standard schemes.
+std::vector<std::string> g_standard_schemes;
+
 // Clear protocol handlers in IO thread.
 void ClearJobFactoryInIO(
     scoped_refptr<brightray::URLRequestContextGetter> request_context_getter) {
@@ -42,6 +45,7 @@ void ClearJobFactoryInIO(
 Protocol::Protocol(v8::Isolate* isolate, AtomBrowserContext* browser_context)
     : request_context_getter_(browser_context->GetRequestContext()),
       weak_factory_(this) {
+  browser_context->SetCookieableSchemes(g_standard_schemes);
   Init(isolate);
 }
 
@@ -209,6 +213,8 @@ void RegisterStandardSchemes(
   auto command_line = base::CommandLine::ForCurrentProcess();
   command_line->AppendSwitchASCII(atom::switches::kStandardSchemes,
                                   base::JoinString(schemes, ","));
+
+  atom::api::g_standard_schemes = schemes;
 }
 
 void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
