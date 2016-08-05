@@ -114,8 +114,8 @@ class NativeWindowMac : public NativeWindow {
 
  private:
   // NativeWindow:
-  gfx::Size ContentSizeToWindowSize(const gfx::Size& size) override;
-  gfx::Size WindowSizeToContentSize(const gfx::Size& size) override;
+  gfx::Rect ContentBoundsToWindowBounds(const gfx::Rect& bounds);
+  gfx::Rect WindowBoundsToContentBounds(const gfx::Rect& bounds);
   void UpdateDraggableRegions(
       const std::vector<DraggableRegion>& regions) override;
 

@@ -1043,22 +1043,30 @@ std::vector<gfx::Rect> NativeWindowMac::CalculateNonDraggableRegions(
   return result;
 }
 
-gfx::Size NativeWindowMac::ContentSizeToWindowSize(const gfx::Size& size) {
-  if (!has_frame())
-    return size;
-
-  NSRect content = NSMakeRect(0, 0, size.width(), size.height());
-  NSRect frame = [window_ frameRectForContentRect:content];
-  return gfx::Size(frame.size);
+gfx::Rect NativeWindowMac::ContentBoundsToWindowBounds(
+    const gfx::Rect& bounds) {
+  if (has_frame()) {
+    gfx::Rect window_bounds(
+        [window_ frameRectForContentRect:bounds.ToCGRect()]);
+    int frame_height = window_bounds.height() - bounds.height();
+    window_bounds.set_y(window_bounds.y() - frame_height);
+    return window_bounds;
+  } else {
+    return bounds;
+  }
 }
 
-gfx::Size NativeWindowMac::WindowSizeToContentSize(const gfx::Size& size) {
-  if (!has_frame())
-    return size;
-
-  NSRect frame = NSMakeRect(0, 0, size.width(), size.height());
-  NSRect content = [window_ contentRectForFrameRect:frame];
-  return gfx::Size(content.size);
+gfx::Rect NativeWindowMac::WindowBoundsToContentBounds(
+    const gfx::Rect& bounds) {
+  if (has_frame()) {
+    gfx::Rect content_bounds(
+        [window_ contentRectForFrameRect:bounds.ToCGRect()]);
+    int frame_height = bounds.height() - content_bounds.height();
+    content_bounds.set_y(content_bounds.y() + frame_height);
+    return content_bounds;
+  } else {
+    return bounds;
+  }
 }
 
 void NativeWindowMac::UpdateDraggableRegions(

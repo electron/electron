@@ -669,6 +669,23 @@ Resizes and moves the window to `width`, `height`, `x`, `y`.
 
 Returns an object that contains window's width, height, x and y values.
 
+#### `win.setContentBounds(options[, animate])`
+
+* `options` Object
+  * `x` Integer
+  * `y` Integer
+  * `width` Integer
+  * `height` Integer
+* `animate` Boolean (optional) _macOS_
+
+Resizes and moves the window's client area (e.g. the web page) to
+`width`, `height`, `x`, `y`.
+
+#### `win.getContentBounds()`
+
+Returns an object that contains the window's client area (e.g. the web page)
+width, height, x and y values.
+
 #### `win.setSize(width, height[, animate])`
 
 * `width` Integer

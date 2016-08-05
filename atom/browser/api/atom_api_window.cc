@@ -366,6 +366,16 @@ gfx::Rect Window::GetBounds() {
   return window_->GetBounds();
 }
 
+void Window::SetContentBounds(const gfx::Rect& bounds, mate::Arguments* args) {
+  bool animate = false;
+  args->GetNext(&animate);
+  window_->SetContentBounds(bounds, animate);
+}
+
+gfx::Rect Window::GetContentBounds() {
+  return window_->GetContentBounds();
+}
+
 void Window::SetSize(int width, int height, mate::Arguments* args) {
   bool animate = false;
   args->GetNext(&animate);
@@ -785,6 +795,8 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setBounds", &Window::SetBounds)
       .SetMethod("getSize", &Window::GetSize)
       .SetMethod("setSize", &Window::SetSize)
+      .SetMethod("getContentBounds", &Window::GetContentBounds)
+      .SetMethod("setContentBounds", &Window::SetContentBounds)
       .SetMethod("getContentSize", &Window::GetContentSize)
       .SetMethod("setContentSize", &Window::SetContentSize)
       .SetMethod("setMinimumSize", &Window::SetMinimumSize)

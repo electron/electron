@@ -91,6 +91,8 @@ class NativeWindow : public base::SupportsUserData,
   virtual gfx::Point GetPosition();
   virtual void SetContentSize(const gfx::Size& size, bool animate = false);
   virtual gfx::Size GetContentSize();
+  virtual void SetContentBounds(const gfx::Rect& bounds, bool animate = false);
+  virtual gfx::Rect GetContentBounds();
   virtual void SetSizeConstraints(
       const extensions::SizeConstraints& size_constraints);
   virtual extensions::SizeConstraints GetSizeConstraints();
@@ -238,9 +240,9 @@ class NativeWindow : public base::SupportsUserData,
   std::unique_ptr<SkRegion> DraggableRegionsToSkRegion(
       const std::vector<DraggableRegion>& regions);
 
-  // Converts between content size to window size.
-  virtual gfx::Size ContentSizeToWindowSize(const gfx::Size& size) = 0;
-  virtual gfx::Size WindowSizeToContentSize(const gfx::Size& size) = 0;
+  // Converts between content bounds and window bounds.
+  virtual gfx::Rect ContentBoundsToWindowBounds(const gfx::Rect& bounds) = 0;
+  virtual gfx::Rect WindowBoundsToContentBounds(const gfx::Rect& bounds) = 0;
 
   // Called when the window needs to update its draggable region.
   virtual void UpdateDraggableRegions(

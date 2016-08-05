@@ -68,6 +68,7 @@ class NativeWindowViews : public NativeWindow,
   bool IsFullscreen() const override;
   void SetBounds(const gfx::Rect& bounds, bool animate) override;
   gfx::Rect GetBounds() override;
+  gfx::Rect GetContentBounds() override;
   gfx::Size GetContentSize() override;
   void SetContentSizeConstraints(
       const extensions::SizeConstraints& size_constraints) override;
@@ -164,8 +165,8 @@ class NativeWindowViews : public NativeWindow,
 #endif
 
   // NativeWindow:
-  gfx::Size ContentSizeToWindowSize(const gfx::Size& size) override;
-  gfx::Size WindowSizeToContentSize(const gfx::Size& size) override;
+  gfx::Rect ContentBoundsToWindowBounds(const gfx::Rect& bounds) override;
+  gfx::Rect WindowBoundsToContentBounds(const gfx::Rect& bounds) override;
   void HandleKeyboardEvent(
       content::WebContents*,
       const content::NativeWebKeyboardEvent& event) override;

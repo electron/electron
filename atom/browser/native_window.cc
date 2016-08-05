@@ -219,34 +219,50 @@ gfx::Point NativeWindow::GetPosition() {
 }
 
 void NativeWindow::SetContentSize(const gfx::Size& size, bool animate) {
-  SetSize(ContentSizeToWindowSize(size), animate);
+  SetSize(ContentBoundsToWindowBounds(gfx::Rect(size)).size(), animate);
 }
 
 gfx::Size NativeWindow::GetContentSize() {
-  return WindowSizeToContentSize(GetSize());
+  return GetContentBounds().size();
+}
+
+void NativeWindow::SetContentBounds(const gfx::Rect& bounds, bool animate) {
+  SetBounds(ContentBoundsToWindowBounds(bounds), animate);
+}
+
+gfx::Rect NativeWindow::GetContentBounds() {
+  return WindowBoundsToContentBounds(GetBounds());
 }
 
 void NativeWindow::SetSizeConstraints(
     const extensions::SizeConstraints& window_constraints) {
   extensions::SizeConstraints content_constraints(GetContentSizeConstraints());
-  if (window_constraints.HasMaximumSize())
-    content_constraints.set_maximum_size(
-        WindowSizeToContentSize(window_constraints.GetMaximumSize()));
-  if (window_constraints.HasMinimumSize())
-    content_constraints.set_minimum_size(
-        WindowSizeToContentSize(window_constraints.GetMinimumSize()));
+  if (window_constraints.HasMaximumSize()) {
+    gfx::Rect max_bounds = WindowBoundsToContentBounds(
+        gfx::Rect(window_constraints.GetMaximumSize()));
+    content_constraints.set_maximum_size(max_bounds.size());
+  }
+  if (window_constraints.HasMinimumSize()) {
+    gfx::Rect min_bounds = WindowBoundsToContentBounds(
+        gfx::Rect(window_constraints.GetMinimumSize()));
+    content_constraints.set_minimum_size(min_bounds.size());
+  }
   SetContentSizeConstraints(content_constraints);
 }
 
 extensions::SizeConstraints NativeWindow::GetSizeConstraints() {
   extensions::SizeConstraints content_constraints = GetContentSizeConstraints();
   extensions::SizeConstraints window_constraints;
-  if (content_constraints.HasMaximumSize())
-    window_constraints.set_maximum_size(
-        ContentSizeToWindowSize(content_constraints.GetMaximumSize()));
-  if (content_constraints.HasMinimumSize())
-    window_constraints.set_minimum_size(
-        ContentSizeToWindowSize(content_constraints.GetMinimumSize()));
+  if (content_constraints.HasMaximumSize()) {
+    gfx::Rect max_bounds = ContentBoundsToWindowBounds(
+        gfx::Rect(content_constraints.GetMaximumSize()));
+    window_constraints.set_maximum_size(max_bounds.size());
+  }
+  if (content_constraints.HasMinimumSize()) {
+    gfx::Rect min_bounds = ContentBoundsToWindowBounds(
+        gfx::Rect(content_constraints.GetMinimumSize()));
+    window_constraints.set_minimum_size(min_bounds.size());
+  }
   return window_constraints;
 }
 
