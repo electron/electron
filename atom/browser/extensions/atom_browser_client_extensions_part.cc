@@ -18,6 +18,7 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/browser_url_handler.h"
 #include "content/public/browser/render_process_host.h"
+#include "content/public/browser/render_view_host.h"
 #include "content/public/browser/site_instance.h"
 #include "extensions/browser/extension_message_filter.h"
 #include "extensions/browser/extension_registry.h"
@@ -193,6 +194,11 @@ void AtomBrowserClientExtensionsPart::RegisterProfilePrefs(
   registry->RegisterDictionaryPref("content_settings");
   registry->RegisterStringPref(prefs::kApplicationLocale,
       extension_l10n_util::CurrentLocaleOrDefault());
+}
+
+void AtomBrowserClientExtensionsPart::OverrideWebkitPrefs(
+    content::RenderViewHost* host, content::WebPreferences* prefs) {
+  host->Send(new AtomMsg_UpdateWebKitPrefs(*prefs));
 }
 
 void AtomBrowserClientExtensionsPart::RenderProcessWillLaunch(

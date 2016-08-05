@@ -45,3 +45,5 @@ IPC_MESSAGE_CONTROL1(AtomMsg_UpdatePreferences, base::ListValue)
 // Update renderer content settings
 IPC_MESSAGE_CONTROL1(AtomMsg_UpdateContentSettings, base::DictionaryValue)
 
+// Update renderer content settings
+IPC_MESSAGE_CONTROL1(AtomMsg_UpdateWebKitPrefs, content::WebPreferences)

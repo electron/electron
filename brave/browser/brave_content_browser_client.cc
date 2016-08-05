@@ -138,6 +138,9 @@ void BraveContentBrowserClient::OverrideWebkitPrefs(
   // Custom preferences of guest page.
   auto web_contents = content::WebContents::FromRenderViewHost(host);
   atom::WebContentsPreferences::OverrideWebkitPrefs(web_contents, prefs);
+  #if defined(ENABLE_EXTENSIONS)
+    extensions_part_->OverrideWebkitPrefs(host, prefs);
+  #endif
 }
 
 

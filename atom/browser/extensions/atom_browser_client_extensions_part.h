@@ -24,6 +24,8 @@ class BrowserURLHandler;
 class ResourceContext;
 class SiteInstance;
 class RenderProcessHost;
+class RenderViewHost;
+struct WebPreferences;
 }
 
 namespace extensions {
@@ -52,6 +54,9 @@ class AtomBrowserClientExtensionsPart {
   static void RegisterProfilePrefs(PrefRegistrySimple* registry);
 
   static void SetApplicationLocale(std::string);
+
+  void OverrideWebkitPrefs(content::RenderViewHost* host,
+      content::WebPreferences* prefs);
 
   // // Helper function to call InfoMap::SetSigninProcess().
   // static void SetSigninProcess(content::SiteInstance* site_instance);

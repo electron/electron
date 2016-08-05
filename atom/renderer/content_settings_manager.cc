@@ -37,9 +37,15 @@ bool ContentSettingsManager::OnControlMessageReceived(
   bool handled = true;
   IPC_BEGIN_MESSAGE_MAP(ContentSettingsManager, message)
     IPC_MESSAGE_HANDLER(AtomMsg_UpdateContentSettings, OnUpdateContentSettings)
+    IPC_MESSAGE_HANDLER(AtomMsg_UpdateWebKitPrefs, OnUpdateWebKitPrefs)
     IPC_MESSAGE_UNHANDLED(handled = false)
   IPC_END_MESSAGE_MAP()
   return handled;
+}
+
+void ContentSettingsManager::OnUpdateWebKitPrefs(
+    const content::WebPreferences& web_preferences) {
+  web_preferences_ = content::WebPreferences(web_preferences);
 }
 
 void ContentSettingsManager::OnUpdateContentSettings(
@@ -66,11 +72,22 @@ ContentSetting ContentSettingsManager::GetSetting(
     GURL secondary_url,
     std::string content_type,
     bool incognito) {
+  bool default_value = true;
+  if (content_type == "cookies")
+    default_value = web_preferences_.cookie_enabled;
+  else if (content_type == "images")
+    default_value = web_preferences_.images_enabled;
+  else if (content_type == "javascript")
+    default_value = web_preferences_.javascript_enabled;
+  else if (content_type == "displayInsecureContent")
+    default_value = web_preferences_.allow_displaying_insecure_content;
+  else if (content_type == "runInsecureContent")
+    default_value = web_preferences_.allow_running_insecure_content;
+
   return GetContentSettingFromRules(primary_url,
                                     secondary_url,
                                     content_type,
-                                    content_type != "runInsecureContent"
-                                      ? true : false);
+                                    default_value);
 }
 
 std::vector<std::string> ContentSettingsManager::GetContentTypes() {
