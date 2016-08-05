@@ -27,7 +27,6 @@ class AtomBrowserContext : public brightray::BrowserContext {
       const base::DictionaryValue& options = base::DictionaryValue());
 
   void SetUserAgent(const std::string& user_agent);
-  void SetCookieableSchemes(const std::vector<std::string>& schemes);
 
   // brightray::URLRequestContextGetter::Delegate:
   net::NetworkDelegate* CreateNetworkDelegate() override;
@@ -59,7 +58,6 @@ class AtomBrowserContext : public brightray::BrowserContext {
   std::unique_ptr<AtomDownloadManagerDelegate> download_manager_delegate_;
   std::unique_ptr<WebViewManager> guest_manager_;
   std::unique_ptr<AtomPermissionManager> permission_manager_;
-  std::vector<std::string> cookieable_schemes_;
   std::string user_agent_;
   bool use_cache_;
 
