@@ -1183,6 +1183,15 @@ describe('browser-window module', function () {
       })
     })
 
+    it('returns result which contains getters', function (done) {
+      ipcRenderer.send('executeJavaScript', 'document.location', true)
+      ipcRenderer.once('executeJavaScript-response', function (event, result) {
+        assert.notDeepEqual(result, {})
+        assert.ok(result.href)
+        done()
+      })
+    })
+
     it('works after page load and during subframe load', function (done) {
       w.webContents.once('did-finish-load', function () {
         // initiate a sub-frame load, then try and execute script during it
