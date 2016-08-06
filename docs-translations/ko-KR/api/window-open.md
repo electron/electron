@@ -1,4 +1,4 @@
-﻿# `window.open` 함수
+1﻿# `window.open` 함수
 
 > 새 윈도우를 열고 URL을 로드합니다.
 
@@ -41,33 +41,33 @@
 
 `BrowserWindowProxy` 객체는 다음과 같은 인스턴스 메서드를 가지고 있습니다:
 
-#### `BrowserWindowProxy.blur()`
+#### `win.blur()`
 
 자식 윈도우의 포커스를 해제합니다.
 
-#### `BrowserWindowProxy.close()`
+#### `win.close()`
 
 자식 윈도우를 강제로 닫습니다. unload 이벤트가 발생하지 않습니다.
 
-#### `BrowserWindowProxy.closed`
+#### `win.closed`
 
 자식 윈도우가 닫히면 true로 설정됩니다.
 
-#### `BrowserWindowProxy.eval(code)`
+#### `win.eval(code)`
 
 * `code` String
 
 자식 윈도우에서 특정 스크립트를 실행합니다.
 
-#### `BrowserWindowProxy.focus()`
+#### `win.focus()`
 
 자식 윈도우에 포커스를 맞춥니다. (창을 맨 앞으로 가져옵니다)
 
-#### `BrowserWindowProxy.print()`
+#### `win.print()`
 
 자식 윈도우에 프린트 대화 상자를 호출합니다.
 
-#### `BrowserWindowProxy.postMessage(message, targetOrigin)`
+#### `win.postMessage(message, targetOrigin)`
 
 * `message` String
 * `targetOrigin` String
