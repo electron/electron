@@ -969,6 +969,14 @@ On Linux platform, only supports Unity desktop environment, you need to specify
 the `*.desktop` file name to `desktopName` field in `package.json`. By default,
 it will assume `app.getName().desktop`.
 
+#### `win.setProgressState(state)` _Windows_
+
+* `state` Possible states are `normal`, `error`, `paused`.
+
+Check the [ITaskbarList3::SetProgressState][SetProgressState] documentation for details.
+
+[SetProgressState]:https://msdn.microsoft.com/en-us/library/windows/desktop/dd391697(v=vs.85).aspx
+
 #### `win.setOverlayIcon(overlay, description)` _Windows_
 
 * `overlay` [NativeImage](native-image.md) - the icon to display on the bottom

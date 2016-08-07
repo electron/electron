@@ -44,6 +44,19 @@ bool GetThumbarButtonFlags(const std::vector<std::string>& flags,
   return true;
 }
 
+TBPFLAG GetProgressStateFlags(TaskbarHost::ProgressState state) {
+  switch (state) {
+    case TaskbarHost::PROGRESS_STATE_NORMAL:
+      return TBPF_NORMAL;
+    case TaskbarHost::PROGRESS_STATE_ERROR:
+      return TBPF_ERROR;
+    case TaskbarHost::PROGRESS_STATE_PAUSED:
+      return TBPF_PAUSED;
+    default:
+      return TBPF_NOPROGRESS;
+  }
+}
+
 }  // namespace
 
 TaskbarHost::TaskbarHost() : thumbar_buttons_added_(false) {
@@ -129,6 +142,14 @@ bool TaskbarHost::SetProgressBar(HWND window, double value) {
   else
     r = taskbar_->SetProgressValue(window, static_cast<int>(value * 100), 100);
   return SUCCEEDED(r);
+}
+
+bool TaskbarHost::SetProgressState(HWND window, ProgressState state) {
+  if (!InitializeTaskbar())
+    return false;
+
+  return SUCCEEDED(taskbar_->SetProgressState(
+      window, GetProgressStateFlags(state)));
 }
 
 bool TaskbarHost::SetOverlayIcon(
