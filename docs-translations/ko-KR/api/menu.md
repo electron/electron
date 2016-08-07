@@ -2,37 +2,20 @@
 
 > 네이티브 애플리케이션 메뉴와 컨텍스트 메뉴를 생성합니다.
 
-이 모듈은 메인 프로세스용 모듈이지만 `remote` 모듈을 통해 렌더러 프로세스에서도 사용할
-수 있습니다.
-
 각 메뉴는 여러 개의 [메뉴 아이템](menu-item.md)으로 구성되고 서브 메뉴를 가질 수도 있습니다.
 
-다음 예시는 웹 페이지 내에서 [remote](remote.md) 모듈을 활용하여 동적으로 메뉴를
-생성하는 예시입니다. 그리고 유저가 페이지에서 오른쪽 클릭을 할 때마다 마우스 위치에
-팝업 형태로 메뉴를 표시합니다:
+## 예시
 
-```html
-<!-- index.html -->
-<script>
-const {remote} = require('electron');
-const {Menu, MenuItem} = remote;
+`Menu` 클래스는 메인 프로세스에서만 사용할 수 있지만, [`remote`](remote.md) 모듈을
+통해 랜더러 프로세스에서도 사용할 수 있습니다.
 
-const menu = new Menu();
-menu.append(new MenuItem({label: 'MenuItem1', click() { console.log('item 1 clicked'); }}));
-menu.append(new MenuItem({type: 'separator'}));
-menu.append(new MenuItem({label: 'MenuItem2', type: 'checkbox', checked: true}));
+### 메인 프로세스
 
-window.addEventListener('contextmenu', (e) => {
-  e.preventDefault();
-  menu.popup(remote.getCurrentWindow());
-}, false);
-</script>
-```
-
-또 하나의 예를 들자면 다음 예시는 렌더러 프로세스에서 template API를 사용하여
-애플리케이션 메뉴를 만듭니다:
+다음은 템플릿 API를 사용하여 메인 프로세스에서 어플리케이션 메뉴를 생성하는 예시입니다:
 
 ```javascript
+const {Menu} = require('electron')
+
 const template = [
   {
     label: 'Edit',
@@ -63,7 +46,7 @@ const template = [
       },
       {
         role: 'selectall'
-      },
+      }
     ]
   },
   {
@@ -72,16 +55,15 @@ const template = [
       {
         label: 'Reload',
         accelerator: 'CmdOrCtrl+R',
-        click(item, focusedWindow) {
-          if (focusedWindow) focusedWindow.reload();
+        click (item, focusedWindow) {
+          if (focusedWindow) focusedWindow.reload()
         }
       },
       {
         label: 'Toggle Developer Tools',
         accelerator: process.platform === 'darwin' ? 'Alt+Command+I' : 'Ctrl+Shift+I',
-        click(item, focusedWindow) {
-          if (focusedWindow)
-            focusedWindow.webContents.toggleDevTools();
+        click (item, focusedWindow) {
+          if (focusedWindow) focusedWindow.webContents.toggleDevTools()
         }
       },
       {
@@ -100,7 +82,7 @@ const template = [
       },
       {
         role: 'close'
-      },
+      }
     ]
   },
   {
@@ -108,14 +90,14 @@ const template = [
     submenu: [
       {
         label: 'Learn More',
-        click() { require('electron').shell.openExternal('http://electron.atom.io'); }
-      },
+        click () { require('electron').shell.openExternal('http://electron.atom.io') }
+      }
     ]
-  },
-];
+  }
+]
 
 if (process.platform === 'darwin') {
-  const name = require('electron').remote.app.getName();
+  const name = require('electron').remote.app.getName()
   template.unshift({
     label: name,
     submenu: [
@@ -146,9 +128,9 @@ if (process.platform === 'darwin') {
       },
       {
         role: 'quit'
-      },
+      }
     ]
-  });
+  })
   // Window menu.
   template[3].submenu = [
     {
@@ -172,11 +154,34 @@ if (process.platform === 'darwin') {
       label: 'Bring All to Front',
       role: 'front'
     }
-  ];
+  ]
 }
 
-const menu = Menu.buildFromTemplate(template);
-Menu.setApplicationMenu(menu);
+const menu = Menu.buildFromTemplate(template)
+Menu.setApplicationMenu(menu)
+```
+
+### 렌더러 프로세스
+
+밑은 [`remote`](remote.md) 모듈을 사용하여 동적으로 웹 페이지 (렌더러 프로세스)에서
+메뉴를 직접적으로 생성하는 예시이며 오른쪽 클릭을 했을 때 메뉴를 표시합니다.
+
+```html
+<!-- index.html -->
+<script>
+const {remote} = require('electron')
+const {Menu, MenuItem} = remote
+
+const menu = new Menu()
+menu.append(new MenuItem({label: 'MenuItem1', click() { console.log('item 1 clicked') }}))
+menu.append(new MenuItem({type: 'separator'}))
+menu.append(new MenuItem({label: 'MenuItem2', type: 'checkbox', checked: true}))
+
+window.addEventListener('contextmenu', (e) => {
+  e.preventDefault()
+  menu.popup(remote.getCurrentWindow())
+}, false)
+</script>
 ```
 
 ## Class: Menu
