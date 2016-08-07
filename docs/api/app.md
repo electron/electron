@@ -512,6 +512,8 @@ Adds `tasks` to the [Tasks][tasks] category of the JumpList on Windows.
   consists of two or more icons, set this value to identify the icon. If an
   icon file consists of one icon, this value is 0.
 
+Returns `true` when the call succeeded, otherwise returns `false`.
+
 ### `app.makeSingleInstance(callback)`
 
 * `callback` Function

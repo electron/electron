@@ -79,22 +79,22 @@ void Browser::SetAppUserModelID(const base::string16& name) {
   SetCurrentProcessExplicitAppUserModelID(app_user_model_id_.c_str());
 }
 
-void Browser::SetUserTasks(const std::vector<UserTask>& tasks) {
+bool Browser::SetUserTasks(const std::vector<UserTask>& tasks) {
   CComPtr<ICustomDestinationList> destinations;
   if (FAILED(destinations.CoCreateInstance(CLSID_DestinationList)))
-    return;
+    return false;
   if (FAILED(destinations->SetAppID(GetAppUserModelID())))
-    return;
+    return false;
 
   // Start a transaction that updates the JumpList of this application.
   UINT max_slots;
   CComPtr<IObjectArray> removed;
   if (FAILED(destinations->BeginList(&max_slots, IID_PPV_ARGS(&removed))))
-    return;
+    return false;
 
   CComPtr<IObjectCollection> collection;
   if (FAILED(collection.CoCreateInstance(CLSID_EnumerableObjectCollection)))
-    return;
+    return false;
 
   for (auto& task : tasks) {
     CComPtr<IShellLink> link;
@@ -102,27 +102,27 @@ void Browser::SetUserTasks(const std::vector<UserTask>& tasks) {
         FAILED(link->SetPath(task.program.value().c_str())) ||
         FAILED(link->SetArguments(task.arguments.c_str())) ||
         FAILED(link->SetDescription(task.description.c_str())))
-      return;
+      return false;
 
     if (!task.icon_path.empty() &&
         FAILED(link->SetIconLocation(task.icon_path.value().c_str(),
                                      task.icon_index)))
-      return;
+      return false;
 
     CComQIPtr<IPropertyStore> property_store = link;
     if (!base::win::SetStringValueForPropertyStore(property_store, PKEY_Title,
                                                    task.title.c_str()))
-      return;
+      return false;
 
     if (FAILED(collection->AddObject(link)))
-      return;
+      return false;
   }
 
   // When the list is empty "AddUserTasks" could fail, so we don't check return
   // value for it.
   CComQIPtr<IObjectArray> task_array = collection;
   destinations->AddUserTasks(task_array);
-  destinations->CommitList();
+  return SUCCEEDED(destinations->CommitList());
 }
 
 bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol) {
