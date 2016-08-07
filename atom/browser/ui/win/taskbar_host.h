@@ -42,7 +42,10 @@ class TaskbarHost {
       HWND window, const gfx::Image& overlay, const std::string& text);
 
   // Set the region of the window to show as a thumbnail in taskbar.
-  bool TaskbarHost::SetThumbnailClip(HWND window, const gfx::Rect& region);
+  bool SetThumbnailClip(HWND window, const gfx::Rect& region);
+
+  // Set the tooltip for the thumbnail in taskbar.
+  bool SetThumbnailToolTip(HWND window, const std::string& tooltip);
 
   // Called by the window that there is a button in thumbar clicked.
   bool HandleThumbarButtonEvent(int button_id);

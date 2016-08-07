@@ -180,6 +180,7 @@ class Window : public mate::TrackableObject<Window>,
   void UnhookWindowMessage(UINT message);
   void UnhookAllWindowMessages();
   bool SetThumbnailClip(const gfx::Rect& region);
+  bool SetThumbnailToolTip(const std::string& tooltip);
 #endif
 
 #if defined(TOOLKIT_VIEWS)
