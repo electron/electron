@@ -276,6 +276,8 @@ On Windows it is
 * `defaultEncoding` String - 기본값 `ISO-8859-1`.
 * `backgroundThrottling` Boolean - 페이지가 백그라운드 상태에 진입할 때 애니메이션과
   타이머에 스로틀을 적용할지 여부입니다. 기본값은 `true`입니다.
+* `offscreen` Boolean - 브라우저 윈도우에 오프 스크린 랜더링을 적용할지 여부를
+  지정합니다. 기본값은 `false`입니다.
 
 ### Instance Events
 

@@ -422,6 +422,30 @@ app.on('ready', () => {
 })
 ```
 
+#### Event: 'paint'
+
+Returns:
+
+* `event` Event
+* `dirtyRect` Object
+  * `x` Integer - 이미지의 x 좌표.
+  * `y` Integer - 이미지의 y 좌표.
+  * `width` Integer - Dirty 영역의 너비.
+  * `height` Integer - Dirty 영역의 높이.
+* `image` [NativeImage](native-image.md) - 전체 프레임의 이미지 데이터.
+
+새 프레임이 생성되었을 때 발생하는 이벤트입니다. Dirty 영역만이 버퍼로 전달됩니다.
+
+```javascript
+const {BrowserWindow} = require('electron')
+
+let win = new BrowserWindow({webPreferences: {offscreen: true}})
+win.webContents.on('paint', (event, dirty, image) => {
+  // updateBitmap(dirty, image.toBitmap())
+})
+win.loadURL('http://github.com')
+```
+
 ## Static Methods
 
 `webContents` 클래스는 다음과 같은 정적 메서드를 가지고 있습니다:
@@ -591,6 +615,38 @@ CSS 코드를 현재 웹 페이지에 삽입합니다.
 ### `webContents.isAudioMuted()`
 
 현재 페이지가 음소거 되어있는지 여부를 반환합니다.
+
+#### `contents.setZoomFactor(factor)`
+
+* `factor` Number - 줌 수치.
+
+지정한 수치로 줌 수치를 변경합니다. 줌 수치는 100으로 나눈 값이며 300%는 3.0이 됩니다.
+
+#### `contents.getZoomFactor(callback)`
+
+* `callback` Function
+
+현재 줌 수치 값을 요청합니다. `callback`은 `callback(zoomFactor)` 형태로 호출됩니다.
+
+#### `contents.setZoomLevel(level)`
+
+* `level` Number - Zoom level
+
+지정한 수준으로 줌 수준을 변경합니다. 원본 크기는 0이고 각 값의 증가와 감소는 현재 줌을
+20% 크거나 작게 표현하고 각 크기는 원본 크기의 300%와 50%로 제한됩니다.
+
+#### `contents.getZoomLevel(callback)`
+
+* `callback` Function
+
+현재 줌 수준 값을 요청합니다. `callback`은 `callback(zoomLevel)` 형태로 호출됩니다.
+
+#### `contents.setZoomLevelLimits(minimumLevel, maximumLevel)`
+
+* `minimumLevel` Number
+* `maximumLevel` Number
+
+최대와 최소 값의 줌 수준 값을 지정합니다.
 
 ### `webContents.undo()`
 
@@ -1019,6 +1075,31 @@ win.webContents.on('did-finish-load', () => {
 ### `webContents.showDefinitionForSelection()` _macOS_
 
 페이지에서 선택된 단어에 대한 사전 검색 결과 팝업을 표시합니다.
+
+#### `contents.isOffscreen()`
+
+*오프 스크린 렌더링* 이 활성화되었는지 여부를 표시합니다.
+
+#### `contents.startPainting()`
+
+*오프 스크린 렌더링* 이 활성화되었고 페인팅 상태가 아니라면 페인팅을 시작합니다.
+
+#### `contents.stopPainting()`
+
+*오프 스크린 렌더링* 이 활성화되었고 페인팅 상태라면 페인팅을 중지합니다.
+
+#### `contents.isPainting()`
+
+*오프 스크린 렌더링* 이 활성화된 경우 현재 패인팅 상태를 반환합니다.
+
+#### `contents.setFrameRate(fps)`
+
+*오프 스크린 렌더링* 이 활성화된 경우 프레임 레이트를 지정한 숫자로 지정합니다. 1과 60
+사이의 값만 사용할 수 있습니다.
+
+#### `contents.getFrameRate()`
+
+*오프 스크린 렌더링* 이 활성화된 경우 현재 프레임 레이트를 반환합니다.
 
 ## Instance Properties
 
