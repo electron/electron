@@ -2,8 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_API_ATOM_API_MENU_VIEWS_H_
-#define ATOM_BROWSER_API_ATOM_API_MENU_VIEWS_H_
+#pragma once
 
 #include "atom/browser/api/atom_api_menu.h"
 #include "ui/display/screen.h"
@@ -26,5 +25,3 @@ class MenuViews : public Menu {
 }  // namespace api
 
 }  // namespace atom
-
-#endif  // ATOM_BROWSER_API_ATOM_API_MENU_VIEWS_H_

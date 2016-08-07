@@ -2,8 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_WEB_CONTENTS_PERMISSION_HELPER_H_
-#define ATOM_BROWSER_WEB_CONTENTS_PERMISSION_HELPER_H_
+#pragma once
 
 #include "content/public/browser/permission_type.h"
 #include "content/public/browser/web_contents_user_data.h"
@@ -50,5 +49,3 @@ class WebContentsPermissionHelper
 };
 
 }  // namespace atom
-
-#endif  // ATOM_BROWSER_WEB_CONTENTS_PERMISSION_HELPER_H_

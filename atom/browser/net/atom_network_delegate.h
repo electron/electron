@@ -2,8 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_NET_ATOM_NETWORK_DELEGATE_H_
-#define ATOM_BROWSER_NET_ATOM_NETWORK_DELEGATE_H_
+#pragma once
 
 #include <map>
 #include <set>
@@ -129,5 +128,3 @@ class AtomNetworkDelegate : public brightray::NetworkDelegate {
 };
 
 }   // namespace atom
-
-#endif  // ATOM_BROWSER_NET_ATOM_NETWORK_DELEGATE_H_

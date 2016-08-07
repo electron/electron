@@ -2,8 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_UI_VIEWS_GLOBAL_MENU_BAR_X11_H_
-#define ATOM_BROWSER_UI_VIEWS_GLOBAL_MENU_BAR_X11_H_
+#pragma once
 
 #include <string>
 
@@ -74,5 +73,3 @@ class GlobalMenuBarX11 {
 };
 
 }  // namespace atom
-
-#endif  // ATOM_BROWSER_UI_VIEWS_GLOBAL_MENU_BAR_X11_H_

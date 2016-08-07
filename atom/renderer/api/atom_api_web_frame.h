@@ -2,8 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_RENDERER_API_ATOM_API_WEB_FRAME_H_
-#define ATOM_RENDERER_API_ATOM_API_WEB_FRAME_H_
+#pragma once
 
 #include <memory>
 #include <string>
@@ -84,5 +83,3 @@ class WebFrame : public mate::Wrappable<WebFrame> {
 }  // namespace api
 
 }  // namespace atom
-
-#endif  // ATOM_RENDERER_API_ATOM_API_WEB_FRAME_H_

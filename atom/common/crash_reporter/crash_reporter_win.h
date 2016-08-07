@@ -2,8 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_COMMON_CRASH_REPORTER_CRASH_REPORTER_WIN_H_
-#define ATOM_COMMON_CRASH_REPORTER_CRASH_REPORTER_WIN_H_
+#pragma once
 
 #include <memory>
 #include <string>
@@ -69,5 +68,3 @@ class CrashReporterWin : public CrashReporter {
 };
 
 }  // namespace crash_reporter
-
-#endif  // ATOM_COMMON_CRASH_REPORTER_CRASH_REPORTER_WIN_H_

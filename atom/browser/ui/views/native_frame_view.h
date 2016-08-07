@@ -2,8 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_UI_VIEWS_NATIVE_FRAME_VIEW_H_
-#define ATOM_BROWSER_UI_VIEWS_NATIVE_FRAME_VIEW_H_
+#pragma once
 
 #include "ui/views/window/native_frame_view.h"
 
@@ -30,5 +29,3 @@ class NativeFrameView : public views::NativeFrameView {
 };
 
 }  // namespace atom
-
-#endif  // ATOM_BROWSER_UI_VIEWS_NATIVE_FRAME_VIEW_H_

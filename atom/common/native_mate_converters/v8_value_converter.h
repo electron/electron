@@ -2,8 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_COMMON_NATIVE_MATE_CONVERTERS_V8_VALUE_CONVERTER_H_
-#define ATOM_COMMON_NATIVE_MATE_CONVERTERS_V8_VALUE_CONVERTER_H_
+#pragma once
 
 #include "base/macros.h"
 #include "base/compiler_specific.h"
@@ -71,5 +70,3 @@ class V8ValueConverter {
 };
 
 }  // namespace atom
-
-#endif  // ATOM_COMMON_NATIVE_MATE_CONVERTERS_V8_VALUE_CONVERTER_H_

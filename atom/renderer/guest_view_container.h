@@ -2,8 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_RENDERER_GUEST_VIEW_CONTAINER_H_
-#define ATOM_RENDERER_GUEST_VIEW_CONTAINER_H_
+#pragma once
 
 #include "base/callback.h"
 #include "content/public/renderer/browser_plugin_delegate.h"
@@ -42,5 +41,3 @@ class GuestViewContainer : public content::BrowserPluginDelegate {
 };
 
 }  // namespace atom
-
-#endif  // ATOM_RENDERER_GUEST_VIEW_CONTAINER_H_

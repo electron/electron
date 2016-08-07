@@ -2,8 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_COMMON_PLATFORM_UTIL_H_
-#define ATOM_COMMON_PLATFORM_UTIL_H_
+#pragma once
 
 #include "build/build_config.h"
 
@@ -43,5 +42,3 @@ bool MoveItemToTrash(const base::FilePath& full_path);
 void Beep();
 
 }  // namespace platform_util
-
-#endif  // ATOM_COMMON_PLATFORM_UTIL_H_

@@ -2,8 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_API_ATOM_API_TRAY_H_
-#define ATOM_BROWSER_API_ATOM_API_TRAY_H_
+#pragma once
 
 #include <memory>
 #include <string>
@@ -80,5 +79,3 @@ class Tray : public mate::TrackableObject<Tray>,
 }  // namespace api
 
 }  // namespace atom
-
-#endif  // ATOM_BROWSER_API_ATOM_API_TRAY_H_

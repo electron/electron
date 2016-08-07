@@ -2,8 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_WEB_CONTENTS_PREFERENCES_H_
-#define ATOM_BROWSER_WEB_CONTENTS_PREFERENCES_H_
+#pragma once
 
 #include <vector>
 
@@ -62,5 +61,3 @@ class WebContentsPreferences
 };
 
 }  // namespace atom
-
-#endif  // ATOM_BROWSER_WEB_CONTENTS_PREFERENCES_H_

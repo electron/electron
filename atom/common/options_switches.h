@@ -2,8 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_COMMON_OPTIONS_SWITCHES_H_
-#define ATOM_COMMON_OPTIONS_SWITCHES_H_
+#pragma once
 
 namespace atom {
 
@@ -92,5 +91,3 @@ extern const char kWidevineCdmVersion[];
 }  // namespace switches
 
 }  // namespace atom
-
-#endif  // ATOM_COMMON_OPTIONS_SWITCHES_H_

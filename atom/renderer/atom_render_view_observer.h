@@ -2,8 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_RENDERER_ATOM_RENDER_VIEW_OBSERVER_H_
-#define ATOM_RENDERER_ATOM_RENDER_VIEW_OBSERVER_H_
+#pragma once
 
 #include "base/strings/string16.h"
 #include "content/public/renderer/render_view_observer.h"
@@ -44,5 +43,3 @@ class AtomRenderViewObserver : public content::RenderViewObserver {
 };
 
 }  // namespace atom
-
-#endif  // ATOM_RENDERER_ATOM_RENDER_VIEW_OBSERVER_H_

@@ -2,8 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_ATOM_BROWSER_CONTEXT_H_
-#define ATOM_BROWSER_ATOM_BROWSER_CONTEXT_H_
+#pragma once
 
 #include <string>
 #include <vector>
@@ -68,5 +67,3 @@ class AtomBrowserContext : public brightray::BrowserContext {
 };
 
 }  // namespace atom
-
-#endif  // ATOM_BROWSER_ATOM_BROWSER_CONTEXT_H_

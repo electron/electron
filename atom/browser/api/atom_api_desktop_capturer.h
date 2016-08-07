@@ -2,8 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_API_ATOM_API_DESKTOP_CAPTURER_H_
-#define ATOM_BROWSER_API_ATOM_API_DESKTOP_CAPTURER_H_
+#pragma once
 
 #include "atom/browser/api/event_emitter.h"
 #include "chrome/browser/media/desktop_media_list_observer.h"
@@ -47,5 +46,3 @@ class DesktopCapturer: public mate::EventEmitter<DesktopCapturer>,
 }  // namespace api
 
 }  // namespace atom
-
-#endif  // ATOM_BROWSER_API_ATOM_API_DESKTOP_CAPTURER_H_

@@ -2,8 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_LOGIN_HANDLER_H_
-#define ATOM_BROWSER_LOGIN_HANDLER_H_
+#pragma once
 
 #include "base/strings/string16.h"
 #include "base/synchronization/lock.h"
@@ -71,5 +70,3 @@ class LoginHandler : public content::ResourceDispatcherHostLoginDelegate {
 };
 
 }  // namespace atom
-
-#endif  // ATOM_BROWSER_LOGIN_HANDLER_H_

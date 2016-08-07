@@ -2,8 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_COMMON_ASAR_ASAR_UTIL_H_
-#define ATOM_COMMON_ASAR_ASAR_UTIL_H_
+#pragma once
 
 #include <memory>
 #include <string>
@@ -28,5 +27,3 @@ bool GetAsarArchivePath(const base::FilePath& full_path,
 bool ReadFileToString(const base::FilePath& path, std::string* contents);
 
 }  // namespace asar
-
-#endif  // ATOM_COMMON_ASAR_ASAR_UTIL_H_

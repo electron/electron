@@ -2,8 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_RENDERER_PREFERENCES_MANAGER_H_
-#define ATOM_RENDERER_PREFERENCES_MANAGER_H_
+#pragma once
 
 #include <memory>
 
@@ -31,5 +30,3 @@ class PreferencesManager : public content::RenderThreadObserver {
 };
 
 }  // namespace atom
-
-#endif  // ATOM_RENDERER_PREFERENCES_MANAGER_H_

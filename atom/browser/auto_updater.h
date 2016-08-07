@@ -2,8 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_AUTO_UPDATER_H_
-#define ATOM_BROWSER_AUTO_UPDATER_H_
+#pragma once
 
 #include <map>
 #include <string>
@@ -62,5 +61,3 @@ class AutoUpdater {
 };
 
 }  // namespace auto_updater
-
-#endif  // ATOM_BROWSER_AUTO_UPDATER_H_

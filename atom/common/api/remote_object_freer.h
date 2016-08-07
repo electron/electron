@@ -2,8 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_COMMON_API_REMOTE_OBJECT_FREER_H_
-#define ATOM_COMMON_API_REMOTE_OBJECT_FREER_H_
+#pragma once
 
 #include "atom/common/api/object_life_monitor.h"
 
@@ -28,5 +27,3 @@ class RemoteObjectFreer : public ObjectLifeMonitor {
 };
 
 }  // namespace atom
-
-#endif  // ATOM_COMMON_API_REMOTE_OBJECT_FREER_H_

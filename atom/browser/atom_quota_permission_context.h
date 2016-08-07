@@ -2,8 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_ATOM_QUOTA_PERMISSION_CONTEXT_H_
-#define ATOM_BROWSER_ATOM_QUOTA_PERMISSION_CONTEXT_H_
+#pragma once
 
 #include "content/public/browser/quota_permission_context.h"
 
@@ -27,5 +26,3 @@ class AtomQuotaPermissionContext : public content::QuotaPermissionContext {
 };
 
 }  // namespace atom
-
-#endif  // ATOM_BROWSER_ATOM_QUOTA_PERMISSION_CONTEXT_H_

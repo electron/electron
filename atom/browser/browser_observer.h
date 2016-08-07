@@ -2,8 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_BROWSER_OBSERVER_H_
-#define ATOM_BROWSER_BROWSER_OBSERVER_H_
+#pragma once
 
 #include <string>
 
@@ -68,5 +67,3 @@ class BrowserObserver {
 };
 
 }  // namespace atom
-
-#endif  // ATOM_BROWSER_BROWSER_OBSERVER_H_
