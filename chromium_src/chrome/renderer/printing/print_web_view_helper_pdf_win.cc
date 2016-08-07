@@ -113,6 +113,7 @@ bool PrintWebViewHelper::PrintPagesNative(blink::WebFrame* frame,
     printed_page_params.content_area = content_area_in_dpi[i];
     Send(new PrintHostMsg_DidPrintPage(routing_id(), printed_page_params));
     // Send the rest of the pages with an invalid metafile handle.
+    printed_page_params.metafile_data_handle.Close();
     printed_page_params.metafile_data_handle = base::SharedMemoryHandle();
   }
   return true;
@@ -198,22 +199,19 @@ bool PrintWebViewHelper::CopyMetafileDataToSharedMem(
   if (buf_size == 0)
     return false;
 
-  base::SharedMemory shared_buf;
-  // Allocate a shared memory buffer to hold the generated metafile data.
-  if (!shared_buf.CreateAndMapAnonymous(buf_size))
+  std::unique_ptr<base::SharedMemory> shared_buf(
+      content::RenderThread::Get()->HostAllocateSharedMemoryBuffer(buf_size));
+  if (!shared_buf)
     return false;
 
-  // Copy the bits into shared memory.
-  if (!metafile.GetData(shared_buf.memory(), buf_size))
+  if (!shared_buf->Map(buf_size))
     return false;
 
-  if (!shared_buf.GiveToProcess(base::GetCurrentProcessHandle(),
-                                shared_mem_handle)) {
+  if (!metafile.GetData(shared_buf->memory(), buf_size))
     return false;
-  }
 
-  Send(new PrintHostMsg_DuplicateSection(routing_id(), *shared_mem_handle,
-                                         shared_mem_handle));
+  *shared_mem_handle =
+      base::SharedMemory::DuplicateHandle(shared_buf->handle());
   return true;
 }
 
