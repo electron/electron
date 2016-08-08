@@ -7,7 +7,6 @@
 #import <Cocoa/Cocoa.h>
 
 #include "base/strings/utf_string_conversions.h"
-#include "ui/accelerated_widget_mac/accelerated_widget_mac.h"
 
 ui::AcceleratedWidgetMac*
 atom::OffScreenRenderWidgetHostView::GetAcceleratedWidgetMac() const {
@@ -16,9 +15,8 @@ atom::OffScreenRenderWidgetHostView::GetAcceleratedWidgetMac() const {
   return nullptr;
 }
 
-NSView* atom::OffScreenRenderWidgetHostView::AcceleratedWidgetGetNSView()
-    const {
-  return [window_ contentView];
+NSView* atom::OffScreenRenderWidgetHostView::AcceleratedWidgetGetNSView() const {
+  return [native_window_->GetNativeWindow() contentView];
 }
 
 void atom::OffScreenRenderWidgetHostView::AcceleratedWidgetGetVSyncParameters(
@@ -72,17 +70,6 @@ void atom::OffScreenRenderWidgetHostView::SelectionChanged(
 }
 
 void atom::OffScreenRenderWidgetHostView::CreatePlatformWidget() {
-  window_ = [[NSWindow alloc] initWithContentRect:NSMakeRect(0, 0, 1, 1)
-                                        styleMask:NSBorderlessWindowMask
-                                          backing:NSBackingStoreBuffered
-                                            defer:NO];
-
-  background_layer_ = [[[CALayer alloc] init] retain];
-  [background_layer_ setBackgroundColor:CGColorGetConstantColor(kCGColorClear)];
-  NSView* content_view = [window_ contentView];
-  [content_view setLayer:background_layer_];
-  [content_view setWantsLayer:YES];
-
   browser_compositor_ = content::BrowserCompositorMac::Create();
 
   compositor_.reset(browser_compositor_->compositor());
@@ -95,19 +82,11 @@ void atom::OffScreenRenderWidgetHostView::CreatePlatformWidget() {
 }
 
 void atom::OffScreenRenderWidgetHostView::DestroyPlatformWidget() {
-  DCHECK(window_);
-
   ui::Compositor* compositor = compositor_.release();
   ALLOW_UNUSED_LOCAL(compositor);
-
-  [window_ close];
-  window_ = nil;
-  [background_layer_ release];
-  background_layer_ = nil;
 
   browser_compositor_->accelerated_widget_mac()->ResetNSView();
   browser_compositor_->compositor()->SetVisible(false);
   browser_compositor_->compositor()->SetScaleAndSize(1.0, gfx::Size(0, 0));
   browser_compositor_->compositor()->SetRootLayer(NULL);
-  content::BrowserCompositorMac::Recycle(std::move(browser_compositor_));
 }

@@ -177,7 +177,7 @@ class OffScreenRenderWidgetHostView
   // ui::AcceleratedWidgetMacNSView:
   NSView* AcceleratedWidgetGetNSView() const override;
   void AcceleratedWidgetGetVSyncParameters(
-      base::TimeTicks* timebase, base::TimeDelta* interval) const override;
+        base::TimeTicks* timebase, base::TimeDelta* interval) const override;
   void AcceleratedWidgetSwapCompleted() override;
 #endif  // defined(OS_MACOSX)
 
