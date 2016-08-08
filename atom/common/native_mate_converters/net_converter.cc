@@ -83,6 +83,8 @@ void GetUploadData(base::ListValue* upload_data_list,
     return;
   const std::vector<std::unique_ptr<net::UploadElementReader>>* readers =
       upload_data->GetElementReaders();
+  if (!readers)
+    return;
   for (const auto& reader : *readers) {
     std::unique_ptr<base::DictionaryValue> upload_data_dict(
         new base::DictionaryValue);
