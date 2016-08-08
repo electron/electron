@@ -56,6 +56,9 @@ The `role` property can have following values:
 * `close` - Close current window
 * `quit`- Quit the application
 * `togglefullscreen`- Toggle full screen mode on the current window
+* `resetzoom` - Reset the focused page's zoom level to the original size
+* `zoomin` - Zoom in the focused page by 10%
+* `zoomout` - Zoom out the focused page by 10%
 
 On macOS `role` can also have following additional values:
 

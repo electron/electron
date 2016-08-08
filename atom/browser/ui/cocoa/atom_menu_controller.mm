@@ -181,11 +181,11 @@ Role kRolesMap[] = {
 
     // Set menu item's role.
     base::string16 role = model->GetRoleAt(index);
-    if (role.empty()) {
-      [item setTarget:self];
-    } else {
+    [item setTarget:self];
+    if (!role.empty()) {
       for (const Role& pair : kRolesMap) {
         if (role == base::ASCIIToUTF16(pair.role)) {
+          [item setTarget:nil];
           [item setAction:pair.selector];
           break;
         }
