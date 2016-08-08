@@ -217,6 +217,22 @@ app.once('ready', () => {
         }
       ]
     })
+    template[1].submenu.push(
+      {
+        type: 'separator'
+      },
+      {
+        label: 'Speech',
+        submenu: [
+          {
+            role: 'startspeaking'
+          },
+          {
+            role: 'stopspeaking'
+          }
+        ]
+      }
+    )
     template[3].submenu = [
       {
         role: 'close'

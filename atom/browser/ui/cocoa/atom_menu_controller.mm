@@ -35,6 +35,8 @@ Role kRolesMap[] = {
   { @selector(delete:), "delete" },
   { @selector(pasteAndMatchStyle:), "pasteandmatchstyle" },
   { @selector(selectAll:), "selectall" },
+  { @selector(startSpeaking:), "startspeaking" },
+  { @selector(stopSpeaking:), "stopspeaking" },
   { @selector(performMiniaturize:), "minimize" },
   { @selector(performClose:), "close" },
   { @selector(performZoom:), "zoom" },

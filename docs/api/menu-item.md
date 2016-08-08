@@ -63,6 +63,8 @@ On macOS `role` can also have following additional values:
 * `hide` - Map to the `hide` action
 * `hideothers` - Map to the `hideOtherApplications` action
 * `unhide` - Map to the `unhideAllApplications` action
+* `startspeaking` - Map to the `startSpeaking` action
+* `stopspeaking` - Map to the `stopSpeaking` action
 * `front` - Map to the `arrangeInFront` action
 * `zoom` - Map to the `performZoom` action
 * `window` - The submenu is a "Window" menu
