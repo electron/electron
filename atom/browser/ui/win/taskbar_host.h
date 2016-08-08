@@ -27,6 +27,12 @@ class TaskbarHost {
     base::Closure clicked_callback;
   };
 
+  enum ProgressState {
+    PROGRESS_STATE_NORMAL,
+    PROGRESS_STATE_ERROR,
+    PROGRESS_STATE_PAUSED,
+  };
+
   TaskbarHost();
   virtual ~TaskbarHost();
 
@@ -36,6 +42,9 @@ class TaskbarHost {
 
   // Set the progress state in taskbar.
   bool SetProgressBar(HWND window, double value);
+
+  // Set the progress state in taskbar.
+  bool SetProgressState(HWND window, ProgressState state);
 
   // Set the overlay icon in taskbar.
   bool SetOverlayIcon(

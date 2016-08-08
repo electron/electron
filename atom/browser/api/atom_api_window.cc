@@ -48,6 +48,26 @@ struct Converter<atom::TaskbarHost::ThumbarButton> {
   }
 };
 
+template<>
+struct Converter<atom::TaskbarHost::ProgressState> {
+  static bool FromV8(v8::Isolate* isolate, v8::Handle<v8::Value> val,
+                     atom::TaskbarHost::ProgressState* out) {
+    std::string progress_state;
+    if (!ConvertFromV8(isolate, val, &progress_state))
+      return false;
+    if (progress_state == "normal") {
+      *out = atom::TaskbarHost::PROGRESS_STATE_NORMAL;
+    } else if (progress_state == "error") {
+      *out = atom::TaskbarHost::PROGRESS_STATE_ERROR;
+    } else if (progress_state == "paused") {
+      *out = atom::TaskbarHost::PROGRESS_STATE_PAUSED;
+    } else {
+      return false;
+    }
+    return true;
+  }
+};
+
 }  // namespace mate
 #endif
 
@@ -588,6 +608,19 @@ void Window::SetProgressBar(double progress) {
   window_->SetProgressBar(progress);
 }
 
+#if defined(OS_WIN)
+bool Window::SetProgressState(mate::Arguments* args) {
+  TaskbarHost::ProgressState state;
+  if (!args->GetNext(&state)) {
+    args->ThrowError();
+    return false;
+  }
+  auto window = static_cast<NativeWindowViews*>(window_.get());
+  return window->taskbar_host().SetProgressState(
+      window_->GetAcceleratedWidget(), state);
+}
+#endif
+
 void Window::SetOverlayIcon(const gfx::Image& overlay,
                             const std::string& description) {
   window_->SetOverlayIcon(overlay, description);
@@ -847,6 +880,9 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("blurWebView", &Window::BlurWebView)
       .SetMethod("isWebViewFocused", &Window::IsWebViewFocused)
       .SetMethod("setProgressBar", &Window::SetProgressBar)
+#if defined(OS_WIN)
+      .SetMethod("setProgressState", &Window::SetProgressState)
+#endif
       .SetMethod("setOverlayIcon", &Window::SetOverlayIcon)
       .SetMethod("setThumbarButtons", &Window::SetThumbarButtons)
       .SetMethod("setMenu", &Window::SetMenu)
