@@ -143,7 +143,8 @@ class NativeWindow : public base::SupportsUserData,
   virtual gfx::AcceleratedWidget GetAcceleratedWidget() = 0;
 
   // Taskbar/Dock APIs.
-  virtual void SetProgressBar(double progress) = 0;
+  virtual void SetProgressBar(double progress,
+                              const std::string& mode) = 0;
   virtual void SetOverlayIcon(const gfx::Image& overlay,
                               const std::string& description) = 0;
 

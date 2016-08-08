@@ -117,18 +117,40 @@ bool TaskbarHost::SetThumbarButtons(
   return SUCCEEDED(r);
 }
 
-bool TaskbarHost::SetProgressBar(HWND window, double value) {
+bool TaskbarHost::SetProgressBar(
+  HWND window, double value, const std::string& mode) {
   if (!InitializeTaskbar())
     return false;
 
-  HRESULT r;
-  if (value > 1.0)
-    r = taskbar_->SetProgressState(window, TBPF_INDETERMINATE);
-  else if (value < 0)
-    r = taskbar_->SetProgressState(window, TBPF_NOPROGRESS);
-  else
-    r = taskbar_->SetProgressValue(window, static_cast<int>(value * 100), 100);
-  return SUCCEEDED(r);
+  HRESULT barR;
+  HRESULT stateR;
+
+  if (value > 1.0 || mode == "indeterminate") {
+    barR = taskbar_->SetProgressState(window, TBPF_INDETERMINATE);
+  } else if (value < 0 || mode == "none") {
+    barR = taskbar_->SetProgressState(window, TBPF_NOPROGRESS);
+  } else {
+    // Unless SetProgressState set a blocking state (TBPF_ERROR, TBPF_PAUSED)
+    // for the window, a call to SetProgressValue assumes the TBPF_NORMAL
+    // state even if it is not explicitly set.
+    // SetProgressValue overrides and clears the TBPF_INDETERMINATE state.
+    if (mode == "error") {
+      stateR = taskbar_->SetProgressState(window, TBPF_ERROR);
+    } else if (mode == "paused") {
+      stateR = taskbar_->SetProgressState(window, TBPF_PAUSED);
+    } else {
+      stateR = taskbar_->SetProgressState(window, TBPF_NORMAL);
+    }
+
+    if (SUCCEEDED(stateR)) {
+      int val = static_cast<int>(value * 100);
+      barR = taskbar_->SetProgressValue(window, val, 100);
+    } else {
+      return SUCCEEDED(stateR);
+    }
+  }
+
+  return SUCCEEDED(barR);
 }
 
 bool TaskbarHost::SetOverlayIcon(

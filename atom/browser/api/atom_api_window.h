@@ -155,7 +155,7 @@ class Window : public mate::TrackableObject<Window>,
   void SetIgnoreMouseEvents(bool ignore);
   void SetContentProtection(bool enable);
   void SetFocusable(bool focusable);
-  void SetProgressBar(double progress);
+  void SetProgressBar(double progress, mate::Arguments* args);
   void SetOverlayIcon(const gfx::Image& overlay,
                       const std::string& description);
   bool SetThumbarButtons(mate::Arguments* args);
