@@ -294,6 +294,15 @@ describe('ipc module', function () {
       })
       ipcRenderer.send('message', currentDate)
     })
+
+    it('can send objects with DOM class prototypes', function (done) {
+      ipcRenderer.once('message', function (event, value) {
+        assert.equal(value.protocol, 'file:')
+        assert.equal(value.hostname, '')
+        done()
+      })
+      ipcRenderer.send('message', document.location)
+    })
   })
 
   describe('ipc.sendSync', function () {
