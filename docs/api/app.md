@@ -460,6 +460,8 @@ system. Once registered, all links with `your-protocol://` will be opened with
 the current executable. The whole link, including protocol, will be passed to
 your application as a parameter.
 
+Returns `true` when the call succeeded, otherwise returns `false`.
+
 **Note:** On macOS, you can only register protocols that have been added to
 your app's `info.plist`, which can not be modified at runtime. You can however
 change the file with a simple text editor or script during build time.
@@ -473,6 +475,8 @@ The API uses the Windows Registry and LSSetDefaultHandlerForURLScheme internally
 
 This method checks if the current executable as the default handler for a
 protocol (aka URI scheme). If so, it will remove the app as the default handler.
+
+Returns `true` when the call succeeded, otherwise returns `false`.
 
 ### `app.isDefaultProtocolClient(protocol)` _macOS_ _Windows_
 
@@ -511,6 +515,8 @@ Adds `tasks` to the [Tasks][tasks] category of the JumpList on Windows.
 * `iconIndex` Integer - The icon index in the icon file. If an icon file
   consists of two or more icons, set this value to identify the icon. If an
   icon file consists of one icon, this value is 0.
+
+Returns `true` when the call succeeded, otherwise returns `false`.
 
 ### `app.makeSingleInstance(callback)`
 
