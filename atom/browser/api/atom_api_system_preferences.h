@@ -32,6 +32,10 @@ class SystemPreferences : public mate::EventEmitter<SystemPreferences> {
   using NotificationCallback = base::Callback<
     void(const std::string&, const base::DictionaryValue&)>;
 
+  void PostNotification(const std::string& name, 
+                        const base::DictionaryValue& user_info);  
+  void PostLocalNotification(const std::string& name, 
+                             const base::DictionaryValue& user_info);
   int SubscribeNotification(const std::string& name,
                             const NotificationCallback& callback);
   void UnsubscribeNotification(int id);
@@ -49,6 +53,9 @@ class SystemPreferences : public mate::EventEmitter<SystemPreferences> {
   ~SystemPreferences() override;
 
 #if defined(OS_MACOSX)
+  void DoPostNotification(const std::string& name, 
+                          const base::DictionaryValue& user_info
+                          bool is_local);  
   int DoSubscribeNotification(const std::string& name,
                               const NotificationCallback& callback,
                               bool is_local);
