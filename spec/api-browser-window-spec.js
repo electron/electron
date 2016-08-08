@@ -1206,6 +1206,15 @@ describe('browser-window module', function () {
       })
       w.loadURL(server.url)
     })
+
+    it('works with result objects that have DOM class prototypes', function (done) {
+      w.webContents.executeJavaScript('document.location', function (result) {
+        assert.equal(result.origin, server.url)
+        assert.equal(result.protocol, 'http:')
+        done()
+      })
+      w.loadURL(server.url)
+    })
   })
 
   describe('offscreen rendering', function () {
