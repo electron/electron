@@ -429,10 +429,10 @@ struct Converter<atom::NativeWindowMac::TitleBarStyle> {
 namespace atom {
 
 NativeWindowMac::NativeWindowMac(
-    brightray::InspectableWebContents* iWeb_contents,
+    brightray::InspectableWebContents* web_contents,
     const mate::Dictionary& options,
     NativeWindow* parent)
-    : NativeWindow(iWeb_contents, options, parent),
+    : NativeWindow(web_contents, options, parent),
       is_kiosk_(false),
       attention_request_id_(0),
       title_bar_style_(NORMAL),
@@ -575,11 +575,11 @@ NativeWindowMac::NativeWindowMac(
       if ([[event window] windowNumber] != [window_ windowNumber])
         return event;
 
-      if (!iWeb_contents)
+      if (!web_contents)
         return event;
 
       if (!began && is_edge_ && (([event phase] == NSEventPhaseMayBegin) ||
-                                  ([event phase] == NSEventPhaseBegan))) {
+                                 ([event phase] == NSEventPhaseBegan))) {
         this->NotifyWindowScrollTouchBegin();
         began = YES;
         is_edge_ = false;
@@ -598,25 +598,8 @@ NativeWindowMac::NativeWindowMac(
   // by calls to other APIs.
   SetMaximizable(maximizable);
 
-  RegisterInputEventObserver(web_contents()->GetRenderViewHost());
-}
-void NativeWindowMac::RegisterInputEventObserver(
-    content::RenderViewHost* host) {
-  if (host != nullptr)
-    host->GetWidget()->AddInputEventObserver(this);
-}
-
-void NativeWindowMac::UnregisterInputEventObserver(
-    content::RenderViewHost* host) {
-  if (host != nullptr)
-    host->GetWidget()->RemoveInputEventObserver(this);
-}
-
-void NativeWindowMac::RenderViewHostChanged(
-    content::RenderViewHost* old_host,
-    content::RenderViewHost* new_host) {
-  UnregisterInputEventObserver(old_host);
-  RegisterInputEventObserver(new_host);
+  RegisterInputEventObserver(
+      web_contents->GetWebContents()->GetRenderViewHost());
 }
 
 NativeWindowMac::~NativeWindowMac() {
@@ -1047,6 +1030,25 @@ bool NativeWindowMac::IsVisibleOnAllWorkspaces() {
   return collectionBehavior & NSWindowCollectionBehaviorCanJoinAllSpaces;
 }
 
+void NativeWindowMac::OnInputEvent(const blink::WebInputEvent& event) {
+  switch (event.type) {
+    case blink::WebInputEvent::GestureScrollBegin:
+    case blink::WebInputEvent::GestureScrollUpdate:
+    case blink::WebInputEvent::GestureScrollEnd:
+      is_edge_ = true;
+      break;
+    default:
+      break;
+  }
+}
+
+void NativeWindowMac::RenderViewHostChanged(
+    content::RenderViewHost* old_host,
+    content::RenderViewHost* new_host) {
+  UnregisterInputEventObserver(old_host);
+  RegisterInputEventObserver(new_host);
+}
+
 std::vector<gfx::Rect> NativeWindowMac::CalculateNonDraggableRegions(
     const std::vector<DraggableRegion>& regions, int width, int height) {
   std::vector<gfx::Rect> result;
@@ -1220,18 +1222,16 @@ void NativeWindowMac::SetCollectionBehavior(bool on, NSUInteger flag) {
   SetMaximizable(was_maximizable);
 }
 
-void NativeWindowMac::OnInputEvent(const blink::WebInputEvent& event) {
-  switch (event.type) {
-    case blink::WebInputEvent::GestureScrollBegin:
-    case blink::WebInputEvent::GestureScrollUpdate:
-    case blink::WebInputEvent::GestureScrollEnd:
-      {
-        is_edge_ = true;
-        break;
-      }
-    default:
-      break;
-  }
+void NativeWindowMac::RegisterInputEventObserver(
+    content::RenderViewHost* host) {
+  if (host)
+    host->GetWidget()->AddInputEventObserver(this);
+}
+
+void NativeWindowMac::UnregisterInputEventObserver(
+    content::RenderViewHost* host) {
+  if (host)
+    host->GetWidget()->RemoveInputEventObserver(this);
 }
 
 // static

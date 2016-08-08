@@ -10,8 +10,8 @@
 #include <string>
 #include <vector>
 
-#include "base/mac/scoped_nsobject.h"
 #include "atom/browser/native_window.h"
+#include "base/mac/scoped_nsobject.h"
 #include "content/public/browser/render_widget_host.h"
 
 @class AtomNSWindow;
@@ -88,11 +88,15 @@ class NativeWindowMac : public NativeWindow,
   void SetProgressBar(double progress) override;
   void SetOverlayIcon(const gfx::Image& overlay,
                       const std::string& description) override;
-
   void SetVisibleOnAllWorkspaces(bool visible) override;
   bool IsVisibleOnAllWorkspaces() override;
 
+  // content::RenderWidgetHost::InputEventObserver:
   void OnInputEvent(const blink::WebInputEvent& event) override;
+
+  // content::WebContentsObserver:
+  void RenderViewHostChanged(content::RenderViewHost* old_host,
+                             content::RenderViewHost* new_host) override;
 
   // Refresh the DraggableRegion views.
   void UpdateDraggableRegionViews() {
@@ -132,8 +136,6 @@ class NativeWindowMac : public NativeWindow,
 
   void RegisterInputEventObserver(content::RenderViewHost* host);
   void UnregisterInputEventObserver(content::RenderViewHost* host);
-  void RenderViewHostChanged(content::RenderViewHost* old_host,
-                             content::RenderViewHost* new_host);
 
   base::scoped_nsobject<AtomNSWindow> window_;
   base::scoped_nsobject<AtomNSWindowDelegate> window_delegate_;
@@ -156,6 +158,7 @@ class NativeWindowMac : public NativeWindow,
   // The "titleBarStyle" option.
   TitleBarStyle title_bar_style_;
 
+  // Whether user has scrolled the page to edge.
   bool is_edge_;
 
   DISALLOW_COPY_AND_ASSIGN(NativeWindowMac);
