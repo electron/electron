@@ -571,6 +571,8 @@ void App::BuildPrototype(
 #endif
 #if defined(OS_WIN)
       .SetMethod("setUserTasks", base::Bind(&Browser::SetUserTasks, browser))
+      .SetMethod("setCategoryUserTasks",
+                 base::Bind(&Browser::SetCategoryUserTasks, browser))
 #endif
 #if defined(OS_LINUX)
       .SetMethod("isUnityRunning",

@@ -158,6 +158,10 @@ class Browser : public WindowListObserver {
   // Add a custom task to jump list.
   void SetUserTasks(const std::vector<UserTask>& tasks);
 
+  // Add a custom category (and it's corressponding tasks) to a jump list.
+  void SetCategoryUserTasks(const std::string& categoryName,
+                            const std::vector<UserTask>& tasks);
+
   // Returns the application user model ID, if there isn't one, then create
   // one from app's name.
   // The returned string managed by Browser, and should not be modified.
