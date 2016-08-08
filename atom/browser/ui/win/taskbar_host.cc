@@ -158,6 +158,15 @@ bool TaskbarHost::SetThumbnailClip(HWND window, const gfx::Rect& region) {
   }
 }
 
+bool TaskbarHost::SetThumbnailToolTip(
+    HWND window, const std::string& tooltip) {
+  if (!InitializeTaskbar())
+    return false;
+
+  return SUCCEEDED(taskbar_->SetThumbnailTooltip(
+      window, base::UTF8ToUTF16(tooltip).c_str()));
+}
+
 bool TaskbarHost::HandleThumbarButtonEvent(int button_id) {
   if (ContainsKey(callback_map_, button_id)) {
     auto callback = callback_map_[button_id];

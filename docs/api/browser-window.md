@@ -1041,6 +1041,13 @@ hovering over the window in the taskbar. You can reset the thumbnail to be
 the entire window by specifying an empty region:
 `{x: 0, y: 0, width: 0, height: 0}`.
 
+#### `win.setThumbnailToolTip(toolTip)` _Windows_
+
+* `toolTip` String
+
+Sets the toolTip that is displayed when hovering over the window thumbnail
+in the taskbar.
+
 #### `win.showDefinitionForSelection()` _macOS_
 
 Same as `webContents.showDefinitionForSelection()`.

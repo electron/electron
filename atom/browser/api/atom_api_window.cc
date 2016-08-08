@@ -667,6 +667,12 @@ bool Window::SetThumbnailClip(const gfx::Rect& region) {
   return window->taskbar_host().SetThumbnailClip(
       window_->GetAcceleratedWidget(), region);
 }
+
+bool Window::SetThumbnailToolTip(const std::string& tooltip) {
+  auto window = static_cast<NativeWindowViews*>(window_.get());
+  return window->taskbar_host().SetThumbnailToolTip(
+      window_->GetAcceleratedWidget(), tooltip);
+}
 #endif
 
 #if defined(TOOLKIT_VIEWS)
@@ -858,6 +864,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("unhookWindowMessage", &Window::UnhookWindowMessage)
       .SetMethod("unhookAllWindowMessages", &Window::UnhookAllWindowMessages)
       .SetMethod("setThumbnailClip", &Window::SetThumbnailClip)
+      .SetMethod("setThumbnailToolTip", &Window::SetThumbnailToolTip)
 #endif
 #if defined(TOOLKIT_VIEWS)
       .SetMethod("setIcon", &Window::SetIcon)
