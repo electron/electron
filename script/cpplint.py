@@ -7,21 +7,13 @@ import sys
 from lib.util import execute
 
 IGNORE_FILES = [
-  os.path.join('atom', 'app', 'atom_main.cc'),
   os.path.join('atom', 'browser', 'mac', 'atom_application.h'),
   os.path.join('atom', 'browser', 'mac', 'atom_application_delegate.h'),
-  os.path.join('atom', 'browser', 'native_window_mac.h'),
   os.path.join('atom', 'browser', 'resources', 'win', 'resource.h'),
-  os.path.join('atom', 'browser', 'ui', 'cocoa', 'event_processing_window.h'),
   os.path.join('atom', 'browser', 'ui', 'cocoa', 'atom_menu_controller.h'),
-  os.path.join('atom', 'browser', 'ui', 'gtk', 'gtk_custom_menu.cc'),
-  os.path.join('atom', 'browser', 'ui', 'gtk', 'gtk_custom_menu_item.cc'),
   os.path.join('atom', 'common', 'api', 'api_messages.h'),
-  os.path.join('atom', 'common', 'api', 'atom_extensions.h'),
-  os.path.join('atom', 'common', 'atom_version.h'),
   os.path.join('atom', 'common', 'common_message_generator.cc'),
   os.path.join('atom', 'common', 'common_message_generator.h'),
-  os.path.join('atom', 'common', 'swap_or_assign.h'),
 ]
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
