@@ -352,10 +352,6 @@ base::Value* V8ValueConverter::FromV8Object(
       continue;
     }
 
-    // Skip all callbacks: crbug.com/139933
-    if (val->HasRealNamedCallbackProperty(key->ToString()))
-      continue;
-
     v8::String::Utf8Value name_utf8(key->ToString());
 
     v8::TryCatch try_catch;
