@@ -905,7 +905,7 @@ gfx::NativeWindow NativeWindowViews::GetNativeWindow() {
 }
 
 void NativeWindowViews::SetProgressBar(
-  double progress, const std::string& mode) {
+    double progress, const std::string& mode) {
 #if defined(OS_WIN)
   taskbar_host_.SetProgressBar(GetAcceleratedWidget(), progress, mode);
 #elif defined(USE_X11)
