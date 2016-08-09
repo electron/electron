@@ -10,6 +10,7 @@
 #include "base/win/scoped_gdi_object.h"
 #include "base/strings/utf_string_conversions.h"
 #include "third_party/skia/include/core/SkBitmap.h"
+#include "ui/display/win/screen_win.h"
 #include "ui/gfx/icon_util.h"
 
 namespace atom {
@@ -167,11 +168,8 @@ bool TaskbarHost::SetThumbnailClip(HWND window, const gfx::Rect& region) {
   if (region.IsEmpty()) {
     return SUCCEEDED(taskbar_->SetThumbnailClip(window, NULL));
   } else {
-    RECT rect;
-    rect.left = region.x();
-    rect.right = region.right();
-    rect.top = region.y();
-    rect.bottom = region.bottom();
+    RECT rect = display::win::ScreenWin::DIPToScreenRect(window, region)
+        .ToRECT();
     return SUCCEEDED(taskbar_->SetThumbnailClip(window, &rect));
   }
 }
