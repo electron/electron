@@ -45,8 +45,8 @@ void SystemPreferences::DoPostNotification(const std::string& name,
     [NSDistributedNotificationCenter defaultCenter];
   [center
      postNotificationName:base::SysUTF8ToNSString(name)
-     object:nil
-     userInfo:DictionaryValueToNSDictionary(user_info)
+                   object:nil
+                 userInfo:DictionaryValueToNSDictionary(user_info)
   ];
 }
 
