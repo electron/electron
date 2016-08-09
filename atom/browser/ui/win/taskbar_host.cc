@@ -168,13 +168,8 @@ bool TaskbarHost::SetThumbnailClip(HWND window, const gfx::Rect& region) {
   if (region.IsEmpty()) {
     return SUCCEEDED(taskbar_->SetThumbnailClip(window, NULL));
   } else {
-    gfx::Rect screen_rect = display::win::ScreenWin::DIPToScreenRect(window,
-                                                                     region);
-    RECT rect;
-    rect.left = screen_rect.x();
-    rect.right = screen_rect.right();
-    rect.top = screen_rect.y();
-    rect.bottom = screen_rect.bottom();
+    RECT rect = display::win::ScreenWin::DIPToScreenRect(window, region)
+        .ToRECT();
     return SUCCEEDED(taskbar_->SetThumbnailClip(window, &rect));
   }
 }
