@@ -17,6 +17,22 @@ This method returns `true` if the system is in Dark Mode, and `false` otherwise.
 
 This method returns `true` if the Swipe between pages setting is on, and `false` otherwise.
 
+### `systemPreferences.postNotification(event, userInfo)` _macOS_
+
+* `event` String
+* `userInfo` Dictionary
+
+Posts `event` as native notifications of macOS. The `userInfo` is an Object
+that contains the user information dictionary sent along with the notification.
+
+### `systemPreferences.postLocalNotification(event, userInfo)` _macOS_
+
+* `event` String
+* `userInfo` Dictionary
+
+Posts `event` as native notifications of macOS. The `userInfo` is an Object
+that contains the user information dictionary sent along with the notification.
+
 ### `systemPreferences.subscribeNotification(event, callback)` _macOS_
 
 * `event` String
