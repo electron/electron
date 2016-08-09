@@ -35,7 +35,7 @@ class TaskbarHost {
       HWND window, const std::vector<ThumbarButton>& buttons);
 
   // Set the progress state in taskbar.
-  bool SetProgressBar(HWND window, double value);
+  bool SetProgressBar(HWND window, double value, const std::string& mode);
 
   // Set the overlay icon in taskbar.
   bool SetOverlayIcon(

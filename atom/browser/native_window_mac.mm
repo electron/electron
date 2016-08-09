@@ -979,7 +979,7 @@ gfx::AcceleratedWidget NativeWindowMac::GetAcceleratedWidget() {
   return inspectable_web_contents()->GetView()->GetNativeView();
 }
 
-void NativeWindowMac::SetProgressBar(double progress) {
+void NativeWindowMac::SetProgressBar(double progress, const std::string& mode) {
   NSDockTile* dock_tile = [NSApp dockTile];
 
   // For the first time API invoked, we need to create a ContentView in DockTile.

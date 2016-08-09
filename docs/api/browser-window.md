@@ -956,9 +956,11 @@ Same as `webContents.reload`.
 Sets the `menu` as the window's menu bar, setting it to `null` will remove the
 menu bar.
 
-#### `win.setProgressBar(progress)`
+#### `win.setProgressBar(progress[, options])`
 
 * `progress` Double
+* `options` Object (optional)
+  * `mode` String _Windows_ - Mode for the progres bar (`none`, `normal`, `indeterminate`, `error`, or `paused`)
 
 Sets progress value in progress bar. Valid range is [0, 1.0].
 
@@ -968,6 +970,10 @@ Change to indeterminate mode when progress > 1.
 On Linux platform, only supports Unity desktop environment, you need to specify
 the `*.desktop` file name to `desktopName` field in `package.json`. By default,
 it will assume `app.getName().desktop`.
+
+On Windows, a mode can be passed. Accepted values are `none`, `normal`, 
+`indeterminate`, `error`, and `paused`. If you call `setProgressBar` without a
+mode set (but with a value within the valid range), `normal` will be assumed.
 
 #### `win.setOverlayIcon(overlay, description)` _Windows_
 

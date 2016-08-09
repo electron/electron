@@ -391,6 +391,24 @@ describe('browser-window module', function () {
         w.setProgressBar(-1)
       })
     })
+
+    it('sets the progress using "paused" mode', function () {
+      assert.doesNotThrow(function () {
+        w.setProgressBar(0.5, {mode: 'paused'})
+      })
+    })
+
+    it('sets the progress using "error" mode', function () {
+      assert.doesNotThrow(function () {
+        w.setProgressBar(0.5, {mode: 'error'})
+      })
+    })
+
+    it('sets the progress using "normal" mode', function () {
+      assert.doesNotThrow(function () {
+        w.setProgressBar(0.5, {mode: 'normal'})
+      })
+    })
   })
 
   describe('BrowserWindow.fromId(id)', function () {
