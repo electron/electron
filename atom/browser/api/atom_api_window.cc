@@ -587,9 +587,21 @@ void Window::SetFocusable(bool focusable) {
 void Window::SetProgressBar(double progress, mate::Arguments* args) {
   mate::Dictionary options;
   std::string mode;
+  NativeWindow::ProgressState state = NativeWindow::PROGRESS_NORMAL;
+
   args->GetNext(&options) && options.Get("mode", &mode);
 
-  window_->SetProgressBar(progress, mode);
+  if (mode == "error") {
+    state = NativeWindow::PROGRESS_ERROR;
+  } else if (mode == "paused") {
+    state = NativeWindow::PROGRESS_PAUSED;
+  } else if (mode == "indeterminate") {
+    state = NativeWindow::PROGRESS_INDETERMINATE;
+  } else if (mode == "none") {
+    state = NativeWindow::PROGRESS_NONE;
+  }
+
+  window_->SetProgressBar(progress, state);
 }
 
 void Window::SetOverlayIcon(const gfx::Image& overlay,

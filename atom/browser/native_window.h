@@ -143,8 +143,16 @@ class NativeWindow : public base::SupportsUserData,
   virtual gfx::AcceleratedWidget GetAcceleratedWidget() = 0;
 
   // Taskbar/Dock APIs.
+  enum ProgressState {
+    PROGRESS_NONE,               // no progress, no marking
+    PROGRESS_INDETERMINATE,      // progress, indeterminate
+    PROGRESS_ERROR,              // progress, errored (red)
+    PROGRESS_PAUSED,             // progress, paused (yellow)
+    PROGRESS_NORMAL,             // progress, not marked (green)
+  };
+
   virtual void SetProgressBar(double progress,
-                              const std::string& mode) = 0;
+                              const ProgressState state) = 0;
   virtual void SetOverlayIcon(const gfx::Image& overlay,
                               const std::string& description) = 0;
 
