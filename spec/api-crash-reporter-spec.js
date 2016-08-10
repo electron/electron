@@ -10,7 +10,7 @@ const app = remote.require('electron').app
 const crashReporter = remote.require('electron').crashReporter
 const BrowserWindow = remote.require('electron').BrowserWindow
 
-describe('crash-reporter module', function () {
+describe('crashReporter module', function () {
   var fixtures = path.resolve(__dirname, 'fixtures')
   var w = null
 
@@ -53,8 +53,13 @@ describe('crash-reporter module', function () {
         assert.equal(fields['_productName'], 'Zombies')
         assert.equal(fields['_companyName'], 'Umbrella Corporation')
         assert.equal(fields['_version'], app.getVersion())
-        res.end('abc-123-def')
-        done()
+
+        res.end('abc-123-def', () => {
+          assert.equal(crashReporter.getLastCrashReport().id, 'abc-123-def')
+          assert.notEqual(crashReporter.getUploadedReports().length, 0)
+          assert.equal(crashReporter.getUploadedReports()[0].id, 'abc-123-def')
+          done()
+        })
       })
     })
     var port = remote.process.port
