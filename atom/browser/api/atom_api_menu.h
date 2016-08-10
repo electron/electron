@@ -17,8 +17,17 @@ namespace atom {
 
 namespace api {
 
+class MenuObserver {
+ public:
+  virtual ~MenuObserver() {}
+
+  // Notifies the menu has been destroyed.
+  virtual void MenuDestroyed() {}
+};
+
 class Menu : public mate::TrackableObject<Menu>,
-             public AtomMenuModel::Delegate {
+             public AtomMenuModel::Delegate,
+             public MenuObserver {
  public:
   static mate::WrappableBase* New(mate::Arguments* args);
 
@@ -87,6 +96,11 @@ class Menu : public mate::TrackableObject<Menu>,
   bool IsEnabledAt(int index) const;
   bool IsVisibleAt(int index) const;
 
+  void AddObserver(MenuObserver* obs) { observers_.AddObserver(obs); }
+  void RemoveObserver(MenuObserver* obs) { observers_.RemoveObserver(obs); }
+  // MenuObserver methods.
+  void MenuDestroyed() override;
+
   // Stored delegate methods.
   base::Callback<bool(int)> is_checked_;
   base::Callback<bool(int)> is_enabled_;
@@ -94,6 +108,8 @@ class Menu : public mate::TrackableObject<Menu>,
   base::Callback<v8::Local<v8::Value>(int, bool)> get_accelerator_;
   base::Callback<void(v8::Local<v8::Value>, int)> execute_command_;
   base::Callback<void()> menu_will_show_;
+
+  base::ObserverList<MenuObserver> observers_;
 
   DISALLOW_COPY_AND_ASSIGN(Menu);
 };
