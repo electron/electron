@@ -103,11 +103,13 @@ def parse_args():
                       help='The shared library path of libchromiumcontent.')
   parser.add_argument('--libcc_static_library_path', required=False,
                       help='The static library path of libchromiumcontent.')
+  parser.add_argument('--defines', default='',
+                      help='The build variables passed to gyp')
   return parser.parse_args()
 
 
 def args_to_defines(args):
-  defines = ''
+  defines = args.defines
   if args.disable_clang:
     defines += ' clang=0'
   if args.clang_dir:
