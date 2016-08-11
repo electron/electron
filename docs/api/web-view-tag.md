@@ -710,6 +710,7 @@ this purpose.
 
 Returns:
 
+* `isMainPage` Boolean
 * `url` String
 
 Emitted when an in-page navigation happened.
