@@ -11,16 +11,13 @@ namespace mate {
 
 namespace {
 
-std::string V8TypeAsString(v8::Local<v8::Value> value) {
+std::string V8TypeAsString(v8::Isolate* isolate, v8::Local<v8::Value> value) {
   if (value.IsEmpty())
     return "<empty handle>";
-  if (value->IsUndefined())
-    return "undefined";
-  if (value->IsNull())
-    return "null";
+  v8::MaybeLocal<v8::String> details = value->ToDetailString(isolate);
   std::string result;
-  if (!ConvertFromV8(NULL, value, &result))
-    return std::string();
+  if (!details.IsEmpty())
+    ConvertFromV8(isolate, details.ToLocalChecked(), &result);
   return result;
 }
 
@@ -55,7 +52,7 @@ v8::Local<v8::Value> Arguments::ThrowError() const {
 
   return ThrowTypeError(base::StringPrintf(
       "Error processing argument at index %d, conversion failure from %s",
-      next_, V8TypeAsString((*info_)[next_]).c_str()));
+      next_, V8TypeAsString(isolate_, (*info_)[next_]).c_str()));
 }
 
 v8::Local<v8::Value> Arguments::ThrowError(const std::string& message) const {
