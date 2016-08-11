@@ -25,6 +25,7 @@
   "scripts": {
     "bootstrap": "python ./script/bootstrap.py",
     "build": "python ./script/build.py -c D",
+    "clean": "python ./script/clean.py",
     "coverage": "npm run instrument-code-coverage && npm test -- --use-instrumented-asar",
     "instrument-code-coverage": "electabul instrument --input-path ./lib --output-path ./out/coverage/electron.asar",
     "lint": "npm run lint-js && npm run lint-cpp && npm run lint-docs",
