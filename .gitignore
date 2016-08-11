@@ -18,5 +18,13 @@ node_modules/
 *.xcodeproj
 *.swp
 *.pyc
+*.VC.db
+*.VC.VC.opendb
+.vs/
+.vscode/
+*.vcxproj
+*.vcxproj.user
+*.vcxproj.filters
+*.sln
 debug.log
 npm-debug.log
