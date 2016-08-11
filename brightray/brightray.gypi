@@ -325,6 +325,7 @@
             '-Wno-unused-parameter',
             '-Wno-missing-field-initializers',
             '-Wno-deprecated-declarations',
+            '-Wno-undefined-var-template', # https://crbug.com/604888
             '-Wno-unneeded-internal-declaration',
             '-Wno-inconsistent-missing-override',
           ],
@@ -333,6 +334,7 @@
       ['OS=="linux"', {
         'cflags': [
           '-Wno-inconsistent-missing-override',
+          '-Wno-undefined-var-template', # https://crbug.com/604888
         ],
       }],
       ['OS=="win"', {
