@@ -53,7 +53,8 @@ RemoteObjectFreer::~RemoteObjectFreer() {
 }
 
 void RemoteObjectFreer::RunDestructor() {
-  content::RenderView* render_view = content::RenderView::FromRoutingID(routing_id_);
+  content::RenderView* render_view =
+      content::RenderView::FromRoutingID(routing_id_);
   if (!render_view)
     return;
 
