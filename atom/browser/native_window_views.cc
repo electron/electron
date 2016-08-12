@@ -726,10 +726,12 @@ void NativeWindowViews::SetSkipTaskbar(bool skip) {
                                     CLSCTX_INPROC_SERVER)) ||
       FAILED(taskbar->HrInit()))
     return;
-  if (skip)
+  if (skip) {
     taskbar->DeleteTab(GetAcceleratedWidget());
-  else
+  } else {
     taskbar->AddTab(GetAcceleratedWidget());
+    taskbar_host_.RestoreThumbarButtons(GetAcceleratedWidget());
+  }
 #elif defined(USE_X11)
   SetWMSpecState(GetAcceleratedWidget(), skip,
                  GetAtom("_NET_WM_STATE_SKIP_TASKBAR"));
