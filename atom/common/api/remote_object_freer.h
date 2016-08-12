@@ -23,6 +23,7 @@ class RemoteObjectFreer : public ObjectLifeMonitor {
 
  private:
   int object_id_;
+  int routing_id_;
 
   DISALLOW_COPY_AND_ASSIGN(RemoteObjectFreer);
 };

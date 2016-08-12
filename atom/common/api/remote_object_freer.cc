@@ -41,14 +41,19 @@ void RemoteObjectFreer::BindTo(
 RemoteObjectFreer::RemoteObjectFreer(
     v8::Isolate* isolate, v8::Local<v8::Object> target, int object_id)
     : ObjectLifeMonitor(isolate, target),
-      object_id_(object_id) {
+      object_id_(object_id),
+      routing_id_(0) {
+  content::RenderView* render_view = GetCurrentRenderView();
+  if (render_view) {
+    routing_id_ = render_view->GetRoutingID();
+  }
 }
 
 RemoteObjectFreer::~RemoteObjectFreer() {
 }
 
 void RemoteObjectFreer::RunDestructor() {
-  content::RenderView* render_view = GetCurrentRenderView();
+  content::RenderView* render_view = content::RenderView::FromRoutingID(routing_id_);
   if (!render_view)
     return;
 
