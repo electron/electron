@@ -102,6 +102,7 @@
             '-Wno-return-type',
             '-Wno-gnu-folding-constant',
             '-Wno-shift-negative-value',
+            '-Wno-varargs', # https://git.io/v6Olj
           ],
         },
         'conditions': [
@@ -117,6 +118,7 @@
               '-Wno-deprecated-declarations',
               '-Wno-return-type',
               '-Wno-shift-negative-value',
+              '-Wno-varargs', # https://git.io/v6Olj
               # Required when building as shared library.
               '-fPIC',
             ],
