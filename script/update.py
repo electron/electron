@@ -27,7 +27,7 @@ def main():
 def parse_args():
   parser = argparse.ArgumentParser(description='Update build configurations')
   parser.add_argument('--defines', default='',
-                      help='The definetions passed to gyp')
+                      help='The build variables passed to gyp')
   parser.add_argument('--msvs', action='store_true',
                       help='Generate Visual Studio project')
   return parser.parse_args()
