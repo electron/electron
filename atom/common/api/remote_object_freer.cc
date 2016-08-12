@@ -42,7 +42,7 @@ RemoteObjectFreer::RemoteObjectFreer(
     v8::Isolate* isolate, v8::Local<v8::Object> target, int object_id)
     : ObjectLifeMonitor(isolate, target),
       object_id_(object_id),
-      routing_id_(0) {
+      routing_id_(MSG_ROUTING_NONE) {
   content::RenderView* render_view = GetCurrentRenderView();
   if (render_view) {
     routing_id_ = render_view->GetRoutingID();
