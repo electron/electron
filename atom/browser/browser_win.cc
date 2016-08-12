@@ -7,10 +7,10 @@
 #include <windows.h>  // windows.h must be included first
 
 #include <atlbase.h>
-#include <propkey.h>
 #include <shlobj.h>
 #include <shobjidl.h>
 
+#include "atom/browser/ui/win/jump_list.h"
 #include "atom/common/atom_version.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "base/base_paths.h"
@@ -104,49 +104,27 @@ void Browser::SetAppUserModelID(const base::string16& name) {
 }
 
 bool Browser::SetUserTasks(const std::vector<UserTask>& tasks) {
-  CComPtr<ICustomDestinationList> destinations;
-  if (FAILED(destinations.CoCreateInstance(CLSID_DestinationList)))
-    return false;
-  if (FAILED(destinations->SetAppID(GetAppUserModelID())))
+  JumpList jump_list(GetAppUserModelID());
+  if (!jump_list.Begin())
     return false;
 
-  // Start a transaction that updates the JumpList of this application.
-  UINT max_slots;
-  CComPtr<IObjectArray> removed;
-  if (FAILED(destinations->BeginList(&max_slots, IID_PPV_ARGS(&removed))))
-    return false;
-
-  CComPtr<IObjectCollection> collection;
-  if (FAILED(collection.CoCreateInstance(CLSID_EnumerableObjectCollection)))
-    return false;
-
-  for (auto& task : tasks) {
-    CComPtr<IShellLink> link;
-    if (FAILED(link.CoCreateInstance(CLSID_ShellLink)) ||
-        FAILED(link->SetPath(task.program.value().c_str())) ||
-        FAILED(link->SetArguments(task.arguments.c_str())) ||
-        FAILED(link->SetDescription(task.description.c_str())))
-      return false;
-
-    if (!task.icon_path.empty() &&
-        FAILED(link->SetIconLocation(task.icon_path.value().c_str(),
-                                     task.icon_index)))
-      return false;
-
-    CComQIPtr<IPropertyStore> property_store = link;
-    if (!base::win::SetStringValueForPropertyStore(property_store, PKEY_Title,
-                                                   task.title.c_str()))
-      return false;
-
-    if (FAILED(collection->AddObject(link)))
-      return false;
+  JumpListCategory category;
+  category.type = JumpListCategory::Type::TASKS;
+  category.items.reserve(tasks.size());
+  JumpListItem item;
+  item.type = JumpListItem::Type::TASK;
+  for (const auto& task : tasks) {
+    item.title = task.title;
+    item.path = task.program;
+    item.arguments = task.arguments;
+    item.icon_path = task.icon_path;
+    item.icon_index = task.icon_index;
+    item.description = task.description;
+    category.items.push_back(item);
   }
 
-  // When the list is empty "AddUserTasks" could fail, so we don't check return
-  // value for it.
-  CComQIPtr<IObjectArray> task_array = collection;
-  destinations->AddUserTasks(task_array);
-  return SUCCEEDED(destinations->CommitList());
+  jump_list.AppendCategory(category);
+  return jump_list.Commit();
 }
 
 bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
