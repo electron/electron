@@ -146,6 +146,7 @@ void WebFrame::RegisterURLSchemeAsPrivileged(const std::string& scheme) {
       privileged_scheme);
   blink::WebSecurityPolicy::registerURLSchemeAsSupportingFetchAPI(
       privileged_scheme);
+  blink::WebSecurityPolicy::registerURLSchemeAsCORSEnabled(privileged_scheme);
 }
 
 void WebFrame::InsertText(const std::string& text) {
