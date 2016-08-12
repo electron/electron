@@ -55,6 +55,13 @@ void BraveContentBrowserClient::BrowserURLHandlerCreated(
 #endif
 }
 
+std::string BraveContentBrowserClient::GetAcceptLangs(
+    content::BrowserContext* context) {
+  // TODO(bridiver) - this should be set to all accept langs, not just
+  // the default locale
+  return GetApplicationLocale();
+}
+
 std::string BraveContentBrowserClient::GetApplicationLocale() {
   std::string locale;
 #if defined(ENABLE_EXTENSIONS)

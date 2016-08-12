@@ -43,6 +43,7 @@
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "brave/browser/brave_content_browser_client.h"
+#include "brave/browser/renderer_preferences_helper.h"
 #include "brightray/browser/inspectable_web_contents.h"
 #include "brightray/browser/inspectable_web_contents_view.h"
 #include "chrome/browser/printing/print_view_manager_basic.h"
@@ -328,6 +329,7 @@ WebContents::WebContents(v8::Isolate* isolate,
   AtomSecurityStateModelClient::CreateForWebContents(web_contents);
   // Initialize zoom state controller
   ui_zoom::ZoomController::CreateForWebContents(web_contents);
+  brave::RendererPreferencesHelper::CreateForWebContents(web_contents);
 
   web_contents->SetUserAgentOverride(GetBrowserContext()->GetUserAgent());
 

@@ -27,6 +27,7 @@ class BraveContentBrowserClient : public atom::AtomBrowserClient {
   BraveContentBrowserClient();
   virtual ~BraveContentBrowserClient();
 
+  std::string GetAcceptLangs(content::BrowserContext* browser_context) override;
   std::string GetApplicationLocale() override;
   void SetApplicationLocale(std::string locale);
  protected:

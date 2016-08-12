@@ -503,7 +503,8 @@ void Session::SetUserAgent(const std::string& user_agent,
   browser_context_->SetUserAgent(user_agent);
 
   std::string accept_lang = static_cast<brave::BraveContentBrowserClient*>(
-      brave::BraveContentBrowserClient::Get())->GetApplicationLocale();
+      brave::BraveContentBrowserClient::Get())->
+          GetAcceptLangs(browser_context());
   args->GetNext(&accept_lang);
 
   auto getter = browser_context_->GetRequestContext();

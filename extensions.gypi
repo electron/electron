@@ -75,6 +75,8 @@
       'brave/browser/brave_content_browser_client.cc',
       'brave/browser/brave_permission_manager.h',
       'brave/browser/brave_permission_manager.cc',
+      'brave/browser/renderer_preferences_helper.h',
+      'brave/browser/renderer_preferences_helper.cc',
       'brave/renderer/brave_content_renderer_client.cc',
       'brave/renderer/brave_content_renderer_client.h',
     ],
