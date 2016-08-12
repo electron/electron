@@ -674,7 +674,7 @@ void WebContents::DidFinishNavigation(
     if (is_main_frame && !is_in_page) {
       Emit("did-navigate", url);
     } else if (is_in_page) {
-      Emit("did-navigate-in-page", url);
+      Emit("did-navigate-in-page", url, is_main_frame);
     }
   } else {
     auto url = navigation_handle->GetURL();

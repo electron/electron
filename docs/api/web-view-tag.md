@@ -710,6 +710,7 @@ this purpose.
 
 Returns:
 
+* `isMainFrame` Boolean
 * `url` String
 
 Emitted when an in-page navigation happened.

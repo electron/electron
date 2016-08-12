@@ -185,6 +185,7 @@ Returns:
 
 * `event` Event
 * `url` String
+* `isMainFrame` Boolean
 
 Emitted when an in-page navigation happened.
 
