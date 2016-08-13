@@ -2,6 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+#include <string>
+
 #include "atom/browser/renderer_preferences_helper.h"
 
 #include "content/public/browser/web_contents.h"
@@ -31,4 +33,4 @@ void RendererPreferencesHelper::UpdateRendererPreferences() {
   web_contents_->GetRenderViewHost()->SyncRendererPrefs();
 }
 
-} // namespace atom
+}  // namespace atom
