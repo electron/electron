@@ -99,6 +99,44 @@ content::WebContents* AtomBrowserClient::GetWebContentsFromProcessID(
   return WebContentsPreferences::GetWebContentsFromProcessID(process_id);
 }
 
+bool AtomBrowserClient::ShouldCreateNewSiteInstance(
+    content::BrowserContext* browser_context,
+    content::SiteInstance* current_instance,
+    const GURL& url) {
+
+  if (url.SchemeIs(url::kJavaScriptScheme))
+    // "javacript:" scheme should always use same SiteInstance
+    return false;
+
+  if (!IsRendererSandboxed(current_instance->GetProcess()->GetID()))
+    // non-sandboxed renderers should always create a new SiteInstance
+    return true;
+
+  // Create new a SiteInstance if navigating to a different site.
+  auto src_url = current_instance->GetSiteURL();
+  return
+      !content::SiteInstance::IsSameWebSite(browser_context, src_url, url) &&
+      // `IsSameWebSite` doesn't seem to work for some URIs such as `file:`,
+      // handle these scenarios by comparing only the site as defined by
+      // `GetSiteForURL`.
+      content::SiteInstance::GetSiteForURL(browser_context, url) != src_url;
+}
+
+void AtomBrowserClient::AddSandboxedRendererId(int process_id) {
+  base::AutoLock auto_lock(sandboxed_renderers_lock_);
+  sandboxed_renderers_.insert(process_id);
+}
+
+void AtomBrowserClient::RemoveSandboxedRendererId(int process_id) {
+  base::AutoLock auto_lock(sandboxed_renderers_lock_);
+  sandboxed_renderers_.erase(process_id);
+}
+
+bool AtomBrowserClient::IsRendererSandboxed(int process_id) {
+  base::AutoLock auto_lock(sandboxed_renderers_lock_);
+  return sandboxed_renderers_.count(process_id);
+}
+
 void AtomBrowserClient::RenderProcessWillLaunch(
     content::RenderProcessHost* host) {
   int process_id = host->GetID();
@@ -106,6 +144,13 @@ void AtomBrowserClient::RenderProcessWillLaunch(
   host->AddFilter(new TtsMessageFilter(process_id, host->GetBrowserContext()));
   host->AddFilter(
       new WidevineCdmMessageFilter(process_id, host->GetBrowserContext()));
+
+  content::WebContents* web_contents = GetWebContentsFromProcessID(process_id);
+  if (WebContentsPreferences::IsSandboxed(web_contents)) {
+    AddSandboxedRendererId(host->GetID());
+    // ensure the sandboxed renderer id is removed later
+    host->AddObserver(this);
+  }
 }
 
 content::SpeechRecognitionManagerDelegate*
@@ -155,8 +200,7 @@ void AtomBrowserClient::OverrideSiteInstanceForNavigation(
     return;
   }
 
-  // Restart renderer process for all navigations except "javacript:" scheme.
-  if (url.SchemeIs(url::kJavaScriptScheme))
+  if (!ShouldCreateNewSiteInstance(browser_context, current_instance, url))
     return;
 
   scoped_refptr<content::SiteInstance> site_instance =
@@ -281,6 +325,11 @@ bool AtomBrowserClient::CanCreateWindow(
     bool* no_javascript_access) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
 
+  if (IsRendererSandboxed(render_process_id)) {
+    *no_javascript_access = false;
+    return true;
+  }
+
   if (delegate_) {
     content::BrowserThread::PostTask(content::BrowserThread::UI, FROM_HERE,
         base::Bind(&api::App::OnCreateWindow,
@@ -338,6 +387,7 @@ void AtomBrowserClient::RenderProcessHostDestroyed(
       break;
     }
   }
+  RemoveSandboxedRendererId(process_id);
 }
 
 }  // namespace atom

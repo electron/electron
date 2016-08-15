@@ -11,6 +11,7 @@
 #include "atom/browser/atom_browser_client.h"
 #include "atom/browser/relauncher.h"
 #include "atom/common/google_api_key.h"
+#include "atom/common/options_switches.h"
 #include "atom/renderer/atom_renderer_client.h"
 #include "atom/utility/atom_content_utility_client.h"
 #include "base/command_line.h"
@@ -29,7 +30,7 @@ namespace {
 const char* kRelauncherProcess = "relauncher";
 
 bool IsBrowserProcess(base::CommandLine* cmd) {
-  std::string process_type = cmd->GetSwitchValueASCII(switches::kProcessType);
+  std::string process_type = cmd->GetSwitchValueASCII(::switches::kProcessType);
   return process_type.empty();
 }
 
@@ -72,7 +73,7 @@ bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
 
   // Only enable logging when --enable-logging is specified.
   std::unique_ptr<base::Environment> env(base::Environment::Create());
-  if (!command_line->HasSwitch(switches::kEnableLogging) &&
+  if (!command_line->HasSwitch(::switches::kEnableLogging) &&
       !env->HasVar("ELECTRON_ENABLE_LOGGING")) {
     settings.logging_dest = logging::LOG_NONE;
     logging::SetMinLogLevel(logging::LOG_NUM_SEVERITIES);
@@ -115,17 +116,17 @@ void AtomMainDelegate::PreSandboxStartup() {
 
   auto command_line = base::CommandLine::ForCurrentProcess();
   std::string process_type = command_line->GetSwitchValueASCII(
-      switches::kProcessType);
+      ::switches::kProcessType);
 
   // Only append arguments for browser process.
   if (!IsBrowserProcess(command_line))
     return;
 
   // Disable renderer sandbox for most of node's functions.
-  command_line->AppendSwitch(switches::kNoSandbox);
+  command_line->AppendSwitch(::switches::kNoSandbox);
 
   // Allow file:// URIs to read other file:// URIs by default.
-  command_line->AppendSwitch(switches::kAllowFileAccessFromFiles);
+  command_line->AppendSwitch(::switches::kAllowFileAccessFromFiles);
 
 #if defined(OS_MACOSX)
   // Enable AVFoundation.
@@ -140,7 +141,13 @@ content::ContentBrowserClient* AtomMainDelegate::CreateContentBrowserClient() {
 
 content::ContentRendererClient*
     AtomMainDelegate::CreateContentRendererClient() {
-  renderer_client_.reset(new AtomRendererClient);
+  if (base::CommandLine::ForCurrentProcess()->HasSwitch(
+        switches::kEnableSandbox)) {
+    renderer_client_.reset(new content::ContentRendererClient);
+  } else {
+    renderer_client_.reset(new AtomRendererClient);
+  }
+
   return renderer_client_.get();
 }
 
