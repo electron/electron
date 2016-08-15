@@ -37,6 +37,7 @@
 #include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
+#include "atom/common/node_includes.h"
 #include "atom/common/options_switches.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
@@ -72,7 +73,9 @@
 #include "third_party/WebKit/public/web/WebFindOptions.h"
 #include "ui/display/screen.h"
 
-#include "atom/common/node_includes.h"
+#if !defined(OS_MACOSX)
+#include "ui/aura/window.h"
+#endif
 
 namespace {
 
@@ -1169,7 +1172,15 @@ void WebContents::Focus() {
 #if !defined(OS_MACOSX)
 bool WebContents::IsFocused() const {
   auto view = web_contents()->GetRenderWidgetHostView();
-  return view && view->HasFocus();
+  if (!view) return false;
+
+  if (GetType() != BACKGROUND_PAGE) {
+    auto window = web_contents()->GetTopLevelNativeWindow();
+    if (window && !window->IsVisible())
+      return false;
+  }
+
+  return view->HasFocus();
 }
 #endif
 
