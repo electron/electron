@@ -298,6 +298,7 @@ labeled as such.
 Returns:
 
 * `event` Event
+* `title` String
 
 Emitted when the document changed its title, calling `event.preventDefault()`
 will prevent the native window's title from changing.
