@@ -89,6 +89,10 @@ class Window : public mate::TrackableObject<Window>,
   #endif
 
  private:
+  void Init(v8::Isolate* isolate,
+            v8::Local<v8::Object> wrapper,
+            const mate::Dictionary& options,
+            mate::Handle<class WebContents> web_contents);
   // APIs for NativeWindow.
   void Close();
   void Focus();

@@ -86,6 +86,14 @@ Window::Window(v8::Isolate* isolate, v8::Local<v8::Object> wrapper,
     web_preferences.Set("transparent", transparent);
   // Creates the WebContents used by BrowserWindow.
   auto web_contents = WebContents::Create(isolate, web_preferences);
+
+  Init(isolate, wrapper, options, web_contents);
+}
+
+void Window::Init(v8::Isolate* isolate,
+                  v8::Local<v8::Object> wrapper,
+                  const mate::Dictionary& options,
+                  mate::Handle<class WebContents> web_contents) {
   web_contents_.Reset(isolate, web_contents.ToV8());
   api_web_contents_ = web_contents.get();
 
