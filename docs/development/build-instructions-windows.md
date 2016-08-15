@@ -38,7 +38,7 @@ there is no Visual Studio project generated.
 
 ```powershell
 $ cd electron
-$ python script\bootstrap.py -v
+$ npm run bootstrap
 ```
 
 ## Building
@@ -52,7 +52,7 @@ $ python script\build.py
 You can also only build the Debug target:
 
 ```powershell
-$ python script\build.py -c D
+$ npm run build
 ```
 
 After building is done, you can find `electron.exe` under `out\D` (debug
