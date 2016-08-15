@@ -416,7 +416,11 @@ struct Converter<atom::NativeWindowMac::TitleBarStyle> {
       *out = atom::NativeWindowMac::HIDDEN;
     } else if (title_bar_style == "hidden-inset" ||  // Deprecate this after 2.0
                title_bar_style == "hiddenInset") {
-      *out = atom::NativeWindowMac::HIDDEN_INSET;
+      if (base::mac::IsOSYosemiteOrLater()) {
+        *out = atom::NativeWindowMac::HIDDEN_INSET;
+      } else {
+        *out = atom::NativeWindowMac::HIDDEN;
+      }
     } else {
       return false;
     }
@@ -460,9 +464,7 @@ NativeWindowMac::NativeWindowMac(
   bool closable = true;
   options.Get(options::kClosable, &closable);
 
-  // New title bar styles are available in Yosemite or newer
-  if (base::mac::IsOSYosemiteOrLater())
-    options.Get(options::kTitleBarStyle, &title_bar_style_);
+  options.Get(options::kTitleBarStyle, &title_bar_style_);
 
   std::string windowType;
   options.Get(options::kType, &windowType);
@@ -1099,6 +1101,11 @@ void NativeWindowMac::UpdateDraggableRegions(
   UpdateDraggableRegionViews(regions);
 }
 
+void NativeWindowMac::ShowWindowButton(NSWindowButton button) {
+  auto view = [window_ standardWindowButton:button];
+  [view.superview addSubview:view positioned:NSWindowAbove relativeTo:nil];
+}
+
 void NativeWindowMac::InstallView() {
   // Make sure the bottom corner is rounded: http://crbug.com/396264.
   // But do not enable it on OS X 10.9 for transparent window, otherwise a
@@ -1127,8 +1134,15 @@ void NativeWindowMac::InstallView() {
     // The fullscreen button should always be hidden for frameless window.
     [[window_ standardWindowButton:NSWindowFullScreenButton] setHidden:YES];
 
-    if (title_bar_style_ != NORMAL)
+    if (title_bar_style_ != NORMAL) {
+      if (base::mac::IsOSMavericks()) {
+        ShowWindowButton(NSWindowZoomButton);
+        ShowWindowButton(NSWindowMiniaturizeButton);
+        ShowWindowButton(NSWindowCloseButton);
+      }
+
       return;
+    }
 
     // Hide the window buttons.
     [[window_ standardWindowButton:NSWindowZoomButton] setHidden:YES];
