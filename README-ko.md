@@ -31,10 +31,10 @@ Linux, Windows, macOS 용으로 미리 빌드된 Electron 바이너리와 디버
 
 ```sh
 # $PATH에 `electron` 커맨드를 등록하고 전역에 설치합니다.
-npm install electron-prebuilt -g
+npm install electron -g
 
 # 개발 의존성 모듈 형태로 설치합니다.
-npm install electron-prebuilt --save-dev
+npm install electron --save-dev
 ```
 
 ### 미러
