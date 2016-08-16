@@ -46,7 +46,7 @@ void Browser::ClearRecentDocuments() {
   [[NSDocumentController sharedDocumentController] clearRecentDocuments:nil];
 }
 
-bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol) {
+bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol, mate::Arguments* args) {
   NSString* identifier = [base::mac::MainBundle() bundleIdentifier];
   if (!identifier)
     return false;
@@ -74,7 +74,7 @@ bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol) {
   return return_code == noErr;
 }
 
-bool Browser::SetAsDefaultProtocolClient(const std::string& protocol) {
+bool Browser::SetAsDefaultProtocolClient(const std::string& protocol, mate::Arguments* args) {
   if (protocol.empty())
     return false;
 
@@ -89,7 +89,7 @@ bool Browser::SetAsDefaultProtocolClient(const std::string& protocol) {
   return return_code == noErr;
 }
 
-bool Browser::IsDefaultProtocolClient(const std::string& protocol) {
+bool Browser::IsDefaultProtocolClient(const std::string& protocol, mate::Arguments* args) {
   if (protocol.empty())
     return false;
 

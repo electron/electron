@@ -76,13 +76,13 @@ class Browser : public WindowListObserver {
   void SetAppUserModelID(const base::string16& name);
 
   // Remove the default protocol handler registry key
-  bool RemoveAsDefaultProtocolClient(const std::string& protocol);
+  bool RemoveAsDefaultProtocolClient(const std::string& protocol, mate::Arguments* args);
 
   // Set as default handler for a protocol.
-  bool SetAsDefaultProtocolClient(const std::string& protocol);
+  bool SetAsDefaultProtocolClient(const std::string& protocol, mate::Arguments* args);
 
   // Query the current state of default handler for a protocol.
-  bool IsDefaultProtocolClient(const std::string& protocol);
+  bool IsDefaultProtocolClient(const std::string& protocol, mate::Arguments* args);
 
   // Set/Get the badge count.
   bool SetBadgeCount(int count);

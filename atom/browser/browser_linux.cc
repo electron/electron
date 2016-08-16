@@ -35,15 +35,15 @@ void Browser::ClearRecentDocuments() {
 void Browser::SetAppUserModelID(const base::string16& name) {
 }
 
-bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol) {
+bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol, mate::Arguments* args) {
   return false;
 }
 
-bool Browser::SetAsDefaultProtocolClient(const std::string& protocol) {
+bool Browser::SetAsDefaultProtocolClient(const std::string& protocol, mate::Arguments* args) {
   return false;
 }
 
-bool Browser::IsDefaultProtocolClient(const std::string& protocol) {
+bool Browser::IsDefaultProtocolClient(const std::string& protocol, mate::Arguments* args) {
   return false;
 }
 
