@@ -22,7 +22,7 @@ console.log(contents)
 
 These methods can be accessed from the `webContents` module:
 
-```js
+```javascript
 const {webContents} = require('electron')
 console.log(webContents)
 ```
@@ -843,7 +843,7 @@ The `callback` will be called with `callback(error, data)` on completion. The
 
 By default, an empty `options` will be regarded as:
 
-```js
+```javascript
 {
   marginsType: 0,
   printBackground: false,
