@@ -453,8 +453,8 @@ Clears the recent documents list.
 * `protocol` String - The name of your protocol, without `://`. If you want your
   app to handle `electron://` links, call this method with `electron` as the
   parameter.
-* `path` String (optional) _Windows_
-* `args` Array (options) _Windows_
+* `path` String (optional) _Windows_ - Defaults to `process.execPath`
+* `args` Array (options) _Windows_ - Defaults to an empty array
 
 This method sets the current executable as the default handler for a protocol
 (aka URI scheme). It allows you to integrate your app deeper into the operating
