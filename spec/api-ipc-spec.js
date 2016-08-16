@@ -63,6 +63,16 @@ describe('ipc module', function () {
       assert.equal(a.foo.bar, 'baz')
     })
 
+    it('should work with static class members', function () {
+      var a = remote.require(path.join(fixtures, 'module', 'remote-static.js'))
+      assert.equal(typeof a.Foo, 'function')
+      assert.equal(a.Foo.foo(), 3)
+      assert.equal(a.Foo.bar, 'baz')
+
+      var foo = new a.Foo()
+      assert.equal(foo.baz(), 123)
+    })
+
     it('handles circular references in arrays and objects', function () {
       var a = remote.require(path.join(fixtures, 'module', 'circular.js'))
 
