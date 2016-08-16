@@ -85,7 +85,7 @@ void ToDictionary(base::DictionaryValue* details,
   std::unique_ptr<base::DictionaryValue> dict(new base::DictionaryValue);
   net::HttpRequestHeaders::Iterator it(headers);
   while (it.GetNext())
-    dict->SetString(it.name(), it.value());
+    dict->SetStringWithoutPathExpansion(it.name(), it.value());
   details->Set("requestHeaders", std::move(dict));
 }
 
