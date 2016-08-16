@@ -35,11 +35,10 @@ describe('webContents module', function () {
           return a.getId() - b.getId()
         })
 
-        assert.equal(all.length, 4)
+        assert.ok(all.length >= 4)
         assert.equal(all[0].getType(), 'window')
-        assert.equal(all[1].getType(), 'window')
-        assert.equal(all[2].getType(), 'remote')
-        assert.equal(all[3].getType(), 'webview')
+        assert.equal(all[all.length - 2].getType(), 'remote')
+        assert.equal(all[all.length - 1].getType(), 'webview')
 
         done()
       })
