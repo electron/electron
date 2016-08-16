@@ -52,7 +52,7 @@ bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
   if (!identifier)
     return false;
 
-  if (!Browser::IsDefaultProtocolClient(protocol))
+  if (!Browser::IsDefaultProtocolClient(protocol, args))
     return false;
 
   NSString* protocol_ns = [NSString stringWithUTF8String:protocol.c_str()];
