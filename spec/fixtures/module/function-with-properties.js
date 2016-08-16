@@ -1,4 +1,4 @@
-function foo() {}
+function foo () {}
 foo.bar = 'baz'
 foo.nested = {
   prop: 'yes'

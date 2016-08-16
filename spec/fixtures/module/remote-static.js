@@ -1,9 +1,9 @@
 class Foo {
-  static foo() {
+  static foo () {
     return 3
   }
 
-  baz() {
+  baz () {
     return 123
   }
 }
