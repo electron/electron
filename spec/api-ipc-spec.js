@@ -52,6 +52,17 @@ describe('ipc module', function () {
       comparePaths(path.normalize(remote.process.mainModule.paths[0]), path.resolve(__dirname, 'static', 'node_modules'))
     })
 
+    it('should work with function properties', function () {
+      var a = remote.require(path.join(fixtures, 'module', 'export-function-with-properties.js'))
+      assert.equal(typeof a, 'function')
+      assert.equal(a.bar, 'baz')
+
+      a = remote.require(path.join(fixtures, 'module', 'function-with-properties.js'))
+      assert.equal(typeof a, 'object')
+      assert.equal(typeof a.foo, 'function')
+      assert.equal(a.foo.bar, 'baz')
+    })
+
     it('handles circular references in arrays and objects', function () {
       var a = remote.require(path.join(fixtures, 'module', 'circular.js'))
 
