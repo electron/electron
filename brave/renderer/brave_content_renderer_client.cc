@@ -9,6 +9,8 @@
 #include "atom/renderer/content_settings_manager.h"
 #include "chrome/renderer/pepper/pepper_helper.h"
 #include "content/public/renderer/render_thread.h"
+#include "components/autofill/content/renderer/autofill_agent.h"
+#include "components/autofill/content/renderer/password_autofill_agent.h"
 #if defined(ENABLE_EXTENSIONS)
 #include "atom/renderer/extensions/atom_extensions_renderer_client.h"
 #include "atom/common/extensions/atom_extensions_client.h"
@@ -54,6 +56,10 @@ void BraveContentRendererClient::RenderFrameCreated(
   } else {
     new PepperHelper(render_frame);
   }
+  autofill::PasswordAutofillAgent* password_autofill_agent =
+    new autofill::PasswordAutofillAgent(render_frame);
+  new autofill::AutofillAgent(render_frame, password_autofill_agent,
+                    NULL);
 }
 
 void BraveContentRendererClient::RenderViewCreated(content::RenderView* render_view) {

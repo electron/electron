@@ -10,6 +10,7 @@
     'filenames.gypi',
     'vendor/native_mate/native_mate_files.gypi',
     'extensions.gypi',
+    'autofill.gypi',
   ],
   'target_defaults': {
     'msvs_disabled_warnings': [
@@ -233,10 +234,15 @@
       ],
       'sources': [
         '<@(lib_sources)',
+        '<@(autofill_sources)',
       ],
       'include_dirs': [
         '.',
         'chromium_src',
+        # autofill - TODO(bridiver) - move to autofill.gypi
+        '<(libchromiumcontent_dir)/gen/protoc_out',
+        '<(libchromiumcontent_src_dir)/third_party/protobuf/src',
+        # end autofill
         'vendor/brightray',
         'vendor/native_mate',
         # Include atom_natives.h.
@@ -280,6 +286,22 @@
               ],
             }],
           ]
+        }],
+        ['OS!="linux" and libchromiumcontent_component', {
+          'link_settings': {
+            # Following libraries are always linked statically.
+            'libraries': [ '<@(autofill_libraries)' ],
+          },
+        }],
+        ['OS=="linux" and libchromiumcontent_component', {
+          'link_settings': {
+            'libraries': [
+              # hack to handle cyclic dependencies
+              '-Wl,--start-group',
+              '<@(autofill_libraries)',
+              '-Wl,--end-group',
+            ],
+          }
         }],
         ['OS!="linux" and enable_extensions==1 and libchromiumcontent_component', {
           'link_settings': {

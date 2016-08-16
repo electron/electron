@@ -81,6 +81,7 @@ class Session: public mate::TrackableObject<Session>,
   v8::Local<v8::Value> Protocol(v8::Isolate* isolate);
   v8::Local<v8::Value> WebRequest(v8::Isolate* isolate);
   v8::Local<v8::Value> UserPrefs(v8::Isolate* isolate);
+  v8::Local<v8::Value> Autofill(v8::Isolate* isolate);
   bool Equal(Session* session) const;
 
  protected:
@@ -97,6 +98,7 @@ class Session: public mate::TrackableObject<Session>,
   v8::Global<v8::Value> protocol_;
   v8::Global<v8::Value> web_request_;
   v8::Global<v8::Value> user_prefs_;
+  v8::Global<v8::Value> autofill_;
 
   // The X-DevTools-Emulate-Network-Conditions-Client-Id.
   std::string devtools_network_emulation_client_id_;

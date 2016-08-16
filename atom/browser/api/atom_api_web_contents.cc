@@ -17,6 +17,7 @@
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/atom_security_state_model_client.h"
 #include "atom/browser/lib/bluetooth_chooser.h"
+#include "atom/browser/autofill/atom_autofill_client.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/net/atom_network_delegate.h"
 #include "atom/browser/osr/osr_output_device.h"
@@ -46,10 +47,13 @@
 #include "brave/browser/renderer_preferences_helper.h"
 #include "brightray/browser/inspectable_web_contents.h"
 #include "brightray/browser/inspectable_web_contents_view.h"
+#include "chrome/browser/browser_process.h"
 #include "chrome/browser/printing/print_view_manager_basic.h"
 #include "chrome/browser/printing/print_preview_message_handler.h"
 #include "chrome/browser/custom_handlers/protocol_handler_registry.h"
 #include "chrome/browser/custom_handlers/protocol_handler_registry_factory.h"
+#include "components/autofill/content/browser/content_autofill_driver_factory.h"
+#include "components/autofill/core/browser/autofill_manager.h"
 #include "components/ui/zoom/page_zoom.h"
 #include "components/ui/zoom/zoom_controller.h"
 #include "content/browser/renderer_host/render_widget_host_impl.h"
@@ -330,7 +334,16 @@ WebContents::WebContents(v8::Isolate* isolate,
   // Initialize zoom state controller
   ui_zoom::ZoomController::CreateForWebContents(web_contents);
   brave::RendererPreferencesHelper::CreateForWebContents(web_contents);
-
+  // Initialize autofill client
+  autofill::AtomAutofillClient::CreateForWebContents(web_contents);
+  std::string locale = static_cast<brave::BraveContentBrowserClient*>(
+      brave::BraveContentBrowserClient::Get())->GetApplicationLocale();
+  autofill::AtomAutofillClient::FromWebContents(web_contents)->Initialize(this);
+  autofill::ContentAutofillDriverFactory::CreateForWebContentsAndDelegate(
+      web_contents,
+      autofill::AtomAutofillClient::FromWebContents(web_contents),
+      locale,
+      autofill::AutofillManager::DISABLE_AUTOFILL_DOWNLOAD_MANAGER);
   web_contents->SetUserAgentOverride(GetBrowserContext()->GetUserAgent());
 
   if (IsGuest()) {
@@ -506,6 +519,12 @@ void WebContents::OnCreateWindow(const GURL& target_url,
     Emit("-new-window", target_url, frame_name, disposition);
   else
     Emit("new-window", target_url, frame_name, disposition);
+}
+
+void WebContents::AutofillSelect(const std::string& value,
+                                 int frontend_id, int index) {
+  autofill::AtomAutofillClient::FromWebContents(web_contents())->
+    DidAcceptSuggestion(value, frontend_id, index);
 }
 
 content::WebContents* WebContents::OpenURLFromTab(
@@ -1927,6 +1946,7 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
 #if defined(ENABLE_EXTENSIONS)
       .SetMethod("executeScriptInTab", &WebContents::ExecuteScriptInTab)
 #endif
+      .SetMethod("autofillSelect", &WebContents::AutofillSelect)
       .SetProperty("session", &WebContents::Session)
       .SetProperty("hostWebContents", &WebContents::HostWebContents)
       .SetProperty("devToolsWebContents", &WebContents::DevToolsWebContents)

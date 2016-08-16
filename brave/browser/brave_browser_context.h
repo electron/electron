@@ -10,6 +10,8 @@
 #include "atom/browser/atom_browser_context.h"
 #include "content/public/browser/host_zoom_map.h"
 #include "chrome/browser/ui/zoom/chrome_zoom_level_prefs.h"
+#include "components/autofill/core/browser/webdata/autofill_webdata_service.h"
+#include "components/webdata/common/web_database_service.h"
 
 class PrefChangeRegistrar;
 
@@ -76,6 +78,9 @@ class BraveBrowserContext : public atom::AtomBrowserContext {
   void AddOverlayPref(const std::string name) {
     overlay_pref_names_.push_back(name.c_str()); }
 
+  scoped_refptr<autofill::AutofillWebDataService>
+    GetAutofillWebdataService();
+
  private:
   void OnPrefsLoaded(bool success);
   void TrackZoomLevelsFromParent();
@@ -98,6 +103,9 @@ class BraveBrowserContext : public atom::AtomBrowserContext {
   BraveBrowserContext* original_context_;
   scoped_refptr<BraveBrowserContext> otr_context_;
   const std::string partition_;
+
+  scoped_refptr<autofill::AutofillWebDataService> autofill_data_;
+  scoped_refptr<WebDatabaseService> web_database_;
 
   DISALLOW_COPY_AND_ASSIGN(BraveBrowserContext);
 };
