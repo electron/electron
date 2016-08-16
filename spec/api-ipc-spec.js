@@ -59,9 +59,11 @@ describe('ipc module', function () {
 
       a = remote.require(path.join(fixtures, 'module', 'function-with-properties.js'))
       assert.equal(typeof a, 'object')
-      assert.equal(typeof a.foo, 'function')
+      assert.equal(a.foo(), 'hello')
       assert.equal(a.foo.bar, 'baz')
       assert.equal(a.foo.nested.prop, 'yes')
+      assert.equal(a.foo.method1(), 'world')
+      assert.equal(a.foo.method1.prop1(), 123)
     })
 
     it('should work with static class members', function () {
