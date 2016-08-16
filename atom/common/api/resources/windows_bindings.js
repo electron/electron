@@ -39,7 +39,11 @@ var binding = {
   },
 
   update: function (windowId, updateInfo, cb) {
-    console.warn('chrome.windows.update is not supported yet')
+    var responseId = ++id
+    cb && ipc.once('chrome-windows-update-response-' + responseId, function (evt, win) {
+      cb(win)
+    })
+    ipc.send('chrome-windows-update', responseId, windowId, updateInfo)
   },
 
   WINDOW_ID_NONE: -1,
