@@ -162,7 +162,8 @@ std::wstring protocolLaunchPath(std::string protocol, mate::Arguments* args) {
   return exe + L"\"%1\"";
 }
 
-bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol, mate::Arguments* args) {
+bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
+                                            mate::Arguments* args) {
   if (protocol.empty())
     return false;
 
@@ -204,7 +205,8 @@ bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol, mate::A
   }
 }
 
-bool Browser::SetAsDefaultProtocolClient(const std::string& protocol, mate::Arguments* args) {
+bool Browser::SetAsDefaultProtocolClient(const std::string& protocol,
+                                        mate::Arguments* args) {
   // HKEY_CLASSES_ROOT
   //    $PROTOCOL
   //       (Default) = "URL:$NAME"
@@ -251,7 +253,8 @@ bool Browser::SetAsDefaultProtocolClient(const std::string& protocol, mate::Argu
   return true;
 }
 
-bool Browser::IsDefaultProtocolClient(const std::string& protocol, mate::Arguments* args) {
+bool Browser::IsDefaultProtocolClient(const std::string& protocol,
+                                      mate::Arguments* args) {
   if (protocol.empty())
     return false;
 
