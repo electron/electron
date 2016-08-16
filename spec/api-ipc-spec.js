@@ -61,6 +61,7 @@ describe('ipc module', function () {
       assert.equal(typeof a, 'object')
       assert.equal(typeof a.foo, 'function')
       assert.equal(a.foo.bar, 'baz')
+      assert.equal(a.foo.nested.prop, 'yes')
     })
 
     it('should work with static class members', function () {
