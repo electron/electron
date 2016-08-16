@@ -6,7 +6,7 @@
     "electabul": "~0.0.4",
     "request": "*",
     "standard": "^7.1.2",
-    "standard-markdown": "^1.2.0"
+    "standard-markdown": "^1.2.1"
   },
   "optionalDependencies": {
     "runas": "^3.0.0"
