@@ -58,8 +58,8 @@ class ContentSettingsClient
   bool allowDatabase(const blink::WebString& name,
                      const blink::WebString& display_name,
                      unsigned long estimated_size) override;  // NOLINT
-  // void requestFileSystemAccessAsync(
-  //     const blink::WebContentSettingCallbacks& callbacks) override;
+  void requestFileSystemAccessAsync(
+          const blink::WebContentSettingCallbacks& callbacks) override;
   bool allowImage(bool enabled_per_settings,
                   const blink::WebURL& image_url) override;
   bool allowIndexedDB(const blink::WebString& name,

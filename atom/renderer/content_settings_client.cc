@@ -143,6 +143,36 @@ bool ContentSettingsClient::allowDatabase(const WebString& name,
   return allow;
 }
 
+
+void ContentSettingsClient::requestFileSystemAccessAsync(
+        const WebContentSettingCallbacks& callbacks) {
+  WebFrame* frame = render_frame()->GetWebFrame();
+  WebContentSettingCallbacks permissionCallbacks(callbacks);
+  if (frame->getSecurityOrigin().isUnique() ||
+      frame->top()->getSecurityOrigin().isUnique()) {
+      permissionCallbacks.doDeny();
+      return;
+  }
+
+  bool allow = true;
+  GURL secondary_url(
+      blink::WebStringToGURL(frame->getSecurityOrigin().toString()));
+  if (content_settings_manager_->content_settings()) {
+    allow =
+        content_settings_manager_->GetSetting(
+          GetOriginOrURL(frame),
+          secondary_url,
+          "cookies",
+          allow) != CONTENT_SETTING_BLOCK;
+  }
+  if (!allow) {
+      DidBlockContentType("filesystem", secondary_url.spec());
+      permissionCallbacks.doDeny();
+  } else {
+      permissionCallbacks.doAllow();
+  }
+}
+
 bool ContentSettingsClient::allowImage(bool enabled_per_settings,
                                          const WebURL& image_url) {
   if (enabled_per_settings && IsWhitelistedForContentSettings())
