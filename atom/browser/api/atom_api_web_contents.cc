@@ -55,7 +55,6 @@
 #include "content/browser/renderer_host/render_widget_host_impl.h"
 #include "content/public/browser/browser_plugin_guest_manager.h"
 #include "content/browser/web_contents/web_contents_impl.h"
-#include "content/common/view_messages.h"
 #include "content/public/browser/favicon_status.h"
 #include "content/public/browser/native_web_keyboard_event.h"
 #include "content/public/browser/navigation_details.h"
@@ -1482,7 +1481,6 @@ mate::Handle<WebContents> WebContents::Clone(const mate::Dictionary& options) {
 
   auto handle = mate::CreateHandle(
       isolate(), clone);
-  g_wrap_web_contents.Run(handle.ToV8());
 
   if (IsGuest()) {
     guest_delegate_->RegisterGuest(handle, guest_instance_id);

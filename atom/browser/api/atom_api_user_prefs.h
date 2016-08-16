@@ -32,7 +32,7 @@ class UserPrefs : public mate::TrackableObject<UserPrefs> {
 
   // mate::TrackableObject:
   static void BuildPrototype(v8::Isolate* isolate,
-                             v8::Local<v8::ObjectTemplate> prototype);
+                             v8::Local<v8::FunctionTemplate> prototype);
 
  protected:
   UserPrefs(v8::Isolate* isolate, content::BrowserContext* browser_context);

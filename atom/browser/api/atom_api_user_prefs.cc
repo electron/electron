@@ -175,8 +175,9 @@ mate::Handle<UserPrefs> UserPrefs::Create(
 
 // static
 void UserPrefs::BuildPrototype(v8::Isolate* isolate,
-                             v8::Local<v8::ObjectTemplate> prototype) {
-  mate::ObjectTemplateBuilder(isolate, prototype)
+                                v8::Local<v8::FunctionTemplate> prototype) {
+  prototype->SetClassName(mate::StringToV8(isolate, "UserPrefs"));
+  mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("registerStringPref", &UserPrefs::RegisterStringPref)
       .SetMethod("registerDictionaryPref", &UserPrefs::RegisterDictionaryPref)
       .SetMethod("registerListPref", &UserPrefs::RegisterListPref)
