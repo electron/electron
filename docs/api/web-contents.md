@@ -843,7 +843,7 @@ The `callback` will be called with `callback(error, data)` on completion. The
 
 By default, an empty `options` will be regarded as:
 
-```
+```js
 {
   marginsType: 0,
   printBackground: false,

@@ -119,7 +119,7 @@ console.log(webFrame.getResourceUsage())
 
 This will generate:
 
-```
+```js
 {
   images: {
     count: 22,
@@ -133,7 +133,7 @@ This will generate:
   xslStyleSheets: { /* same with "images" */ },
   fonts: { /* same with "images" */ },
   other: { /* same with "images" */ }
-})
+}
 ```
 
 ### `webFrame.clearCache()`
