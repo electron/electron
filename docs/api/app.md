@@ -178,7 +178,7 @@ Returns:
 * `url` URL
 * `error` String - The error code
 * `certificate` Object
-  * `data` Buffer - PEM encoded data
+  * `data` String - PEM encoded data
   * `issuerName` String - Issuer's Common Name
   * `subjectName` String - Subject's Common Name
   * `serialNumber` String - Hex value represented string
@@ -213,7 +213,7 @@ Returns:
 * `webContents` [WebContents](web-contents.md)
 * `url` URL
 * `certificateList` [Objects]
-  * `data` Buffer - PEM encoded data
+  * `data` String - PEM encoded data
   * `issuerName` String - Issuer's Common Name
   * `subjectName` String - Subject's Common Name
   * `serialNumber` String - Hex value represented string
