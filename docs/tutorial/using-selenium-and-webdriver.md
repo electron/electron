@@ -18,7 +18,7 @@ has helpers to access Electron APIs in your tests and bundles ChromeDriver.
 $ npm install --save-dev spectron
 ```
 
-```js
+```javascript
 // A simple test to verify a visible window is opened with a title
 var Application = require('spectron').Application
 var assert = require('assert')

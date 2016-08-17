@@ -359,7 +359,7 @@ the first item.
 
 Template:
 
-```
+```javascript
 [
   {label: '4', id: '4'},
   {label: '5', id: '5'},
@@ -381,7 +381,7 @@ Menu:
 
 Template:
 
-```
+```javascript
 [
   {label: 'a', position: 'endof=letters'},
   {label: '1', position: 'endof=numbers'},
