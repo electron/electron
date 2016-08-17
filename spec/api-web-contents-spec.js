@@ -70,4 +70,12 @@ describe('webContents module', function () {
       specWebContents.openDevTools()
     })
   })
+
+  describe('isFocused() API', function () {
+    it('returns false when the window is hidden', function () {
+      BrowserWindow.getAllWindows().forEach(function (window) {
+        assert.equal(!window.isVisible() && window.webContents.isFocused(), false)
+      })
+    })
+  })
 })
