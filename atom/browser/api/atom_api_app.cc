@@ -168,13 +168,12 @@ void OnClientCertificateSelected(
     return;
   }
 
-  v8::Local<v8::Object> data;
+  std::string data;
   if (!cert_data.Get("data", &data))
     return;
 
   auto certs = net::X509Certificate::CreateCertificateListFromBytes(
-      node::Buffer::Data(data), node::Buffer::Length(data),
-      net::X509Certificate::FORMAT_AUTO);
+      data.c_str(), data.length(), net::X509Certificate::FORMAT_AUTO);
   if (certs.size() > 0)
     delegate->ContinueWithCertificate(certs[0].get());
 }
