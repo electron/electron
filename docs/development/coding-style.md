@@ -23,8 +23,6 @@ etc.
 ## JavaScript
 
 * Write [standard](http://npm.im/standard) JavaScript style.
-* Files should **NOT** end with new line, because we want to match Google's
-  styles.
 * File names should be concatenated with `-` instead of `_`, e.g.
   `file-name.js` rather than `file_name.js`, because in
   [github/atom](https://github.com/github/atom) module names are usually in
