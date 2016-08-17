@@ -160,7 +160,7 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 - (void)windowDidMove:(NSNotification*)notification {
   // TODO(zcbenz): Remove the alias after figuring out a proper
-  // way to disptach move.
+  // way to dispatch move.
   shell_->NotifyWindowMove();
   shell_->NotifyWindowMoved();
 }
@@ -319,6 +319,13 @@ bool ScopedDisableResize::disable_resize_ = false;
     return frameRect;
   else
     return [super constrainFrameRect:frameRect toScreen:screen];
+}
+
+- (void)setFrame:(NSRect)windowFrame display:(BOOL)displayViews {
+  // constrainFrameRect is not called on hidden windows so disable adjusting
+  // the frame directly when resize is disabled
+  if (!ScopedDisableResize::IsResizeDisabled())
+    [super setFrame:windowFrame display:displayViews];
 }
 
 - (id)accessibilityAttributeValue:(NSString*)attribute {
@@ -784,9 +791,6 @@ void NativeWindowMac::SetContentSizeConstraints(
 }
 
 void NativeWindowMac::SetResizable(bool resizable) {
-  // Change styleMask for frameless causes the window to change size, so we have
-  // to explicitly disables that.
-  ScopedDisableResize disable_resize;
   SetStyleMask(resizable, NSResizableWindowMask);
 }
 
@@ -1201,6 +1205,10 @@ void NativeWindowMac::UpdateDraggableRegionViews(
 }
 
 void NativeWindowMac::SetStyleMask(bool on, NSUInteger flag) {
+  // Changing the styleMask of a frameless windows causes it to change size so
+  // we explicitly disable resizing while setting it.
+  ScopedDisableResize disable_resize;
+
   bool was_maximizable = IsMaximizable();
   if (on)
     [window_ setStyleMask:[window_ styleMask] | flag];

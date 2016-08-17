@@ -751,6 +751,36 @@ describe('browser-window module', function () {
   })
 
   describe('window states', function () {
+    it('does not resize frameless windows when states change', function () {
+      w.destroy()
+      w = new BrowserWindow({
+        frame: false,
+        width: 300,
+        height: 200,
+        show: false
+      })
+
+      w.setMinimizable(false)
+      w.setMinimizable(true)
+      assert.deepEqual(w.getSize(), [300, 200])
+
+      w.setResizable(false)
+      w.setResizable(true)
+      assert.deepEqual(w.getSize(), [300, 200])
+
+      w.setMaximizable(false)
+      w.setMaximizable(true)
+      assert.deepEqual(w.getSize(), [300, 200])
+
+      w.setFullScreenable(false)
+      w.setFullScreenable(true)
+      assert.deepEqual(w.getSize(), [300, 200])
+
+      w.setClosable(false)
+      w.setClosable(true)
+      assert.deepEqual(w.getSize(), [300, 200])
+    })
+
     describe('resizable state', function () {
       it('can be changed with resizable option', function () {
         w.destroy()
