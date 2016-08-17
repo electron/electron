@@ -64,6 +64,10 @@ describe('ipc module', function () {
       assert.equal(a.foo.nested.prop, 'yes')
       assert.equal(a.foo.method1(), 'world')
       assert.equal(a.foo.method1.prop1(), 123)
+
+      assert.ok(Object.keys(a.foo).includes('bar'))
+      assert.ok(Object.keys(a.foo).includes('nested'))
+      assert.ok(Object.keys(a.foo).includes('method1'))
     })
 
     it('should work with static class members', function () {
