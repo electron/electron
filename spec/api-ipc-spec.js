@@ -148,6 +148,10 @@ describe('ipc module', function () {
       assert.equal(property.property, 1127)
       property.property = 1007
       assert.equal(property.property, 1007)
+      assert.equal(property.getFunctionProperty(), 'foo-browser')
+      property.func.property = 'bar'
+      assert.equal(property.getFunctionProperty(), 'bar-browser')
+
       var property2 = remote.require(path.join(fixtures, 'module', 'property.js'))
       assert.equal(property2.property, 1007)
       property.property = 1127
