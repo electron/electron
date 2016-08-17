@@ -101,7 +101,7 @@ app.on('ready', function () {
 
   window = new BrowserWindow({
     title: 'Electron Tests',
-    show: false,
+    show: !global.isCi,
     width: 800,
     height: 600,
     webPreferences: {
