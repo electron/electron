@@ -258,17 +258,25 @@ void OnCapturePageDone(base::Callback<void(const gfx::Image&)> callback,
 }  // namespace
 
 WebContents::WebContents(v8::Isolate* isolate,
-                         content::WebContents* web_contents)
+                         content::WebContents* web_contents,
+                         Type type)
     : content::WebContentsObserver(web_contents),
       embedder_(nullptr),
-      type_(REMOTE),
+      type_(type),
       request_id_(0),
       background_throttling_(true),
       enable_devtools_(true) {
-  web_contents->SetUserAgentOverride(GetBrowserContext()->GetUserAgent());
 
-  Init(isolate);
-  AttachAsUserData(web_contents);
+  if (type == REMOTE) {
+    web_contents->SetUserAgentOverride(GetBrowserContext()->GetUserAgent());
+    Init(isolate);
+    AttachAsUserData(web_contents);
+  } else {
+    const mate::Dictionary options = mate::Dictionary::CreateEmpty(isolate);
+    auto session = Session::CreateFrom(isolate, GetBrowserContext());
+    session_.Reset(isolate, session.ToV8());
+    InitWithSessionAndOptions(isolate, web_contents, session, options);
+  }
 }
 
 WebContents::WebContents(v8::Isolate* isolate,
@@ -336,6 +344,13 @@ WebContents::WebContents(v8::Isolate* isolate,
     web_contents = content::WebContents::Create(params);
   }
 
+  InitWithSessionAndOptions(isolate, web_contents, session, options);
+}
+
+void WebContents::InitWithSessionAndOptions(v8::Isolate* isolate,
+                                            content::WebContents *web_contents,
+                                            mate::Handle<api::Session> session,
+                                            const mate::Dictionary& options) {
   Observe(web_contents);
   InitWithWebContents(web_contents, session->browser_context());
 
@@ -1605,7 +1620,15 @@ mate::Handle<WebContents> WebContents::CreateFrom(
     return mate::CreateHandle(isolate, static_cast<WebContents*>(existing));
 
   // Otherwise create a new WebContents wrapper object.
-  return mate::CreateHandle(isolate, new WebContents(isolate, web_contents));
+  return mate::CreateHandle(isolate, new WebContents(isolate, web_contents,
+        REMOTE));
+}
+
+mate::Handle<WebContents> WebContents::CreateFrom(
+    v8::Isolate* isolate, content::WebContents* web_contents, Type type) {
+  // Otherwise create a new WebContents wrapper object.
+  return mate::CreateHandle(isolate, new WebContents(isolate, web_contents,
+        type));
 }
 
 // static

@@ -58,6 +58,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
   // Create from an existing WebContents.
   static mate::Handle<WebContents> CreateFrom(
       v8::Isolate* isolate, content::WebContents* web_contents);
+  static mate::Handle<WebContents> CreateFrom(
+      v8::Isolate* isolate, content::WebContents* web_contents, Type type);
 
   // Create a new WebContents.
   static mate::Handle<WebContents> Create(
@@ -191,9 +193,16 @@ class WebContents : public mate::TrackableObject<WebContents>,
   v8::Local<v8::Value> Debugger(v8::Isolate* isolate);
 
  protected:
-  WebContents(v8::Isolate* isolate, content::WebContents* web_contents);
+  WebContents(v8::Isolate* isolate,
+              content::WebContents* web_contents,
+              Type type);
   WebContents(v8::Isolate* isolate, const mate::Dictionary& options);
   ~WebContents();
+
+  void InitWithSessionAndOptions(v8::Isolate* isolate,
+                                 content::WebContents *web_contents,
+                                 mate::Handle<class Session> session,
+                                 const mate::Dictionary& options);
 
   // content::WebContentsDelegate:
   bool AddMessageToConsole(content::WebContents* source,
