@@ -65,6 +65,7 @@ WebRequest::WebRequest(v8::Isolate* isolate,
 }
 
 WebRequest::~WebRequest() {
+  net::URLFetcher::CancelAll();
 }
 
 void WebRequest::OnURLFetchComplete(
