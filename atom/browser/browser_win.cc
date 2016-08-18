@@ -150,7 +150,8 @@ bool GetProtocolLaunchPath(mate::Arguments* args, base::string16* exe) {
   if (launchArgs.size() != 0) {
     launchArgString = base::JoinString(launchArgs, L" ");
   }
-  *exe = base::StringPrintf(L"\"%s\" %s \"%%1\"", exePath.c_str(), launchArgString.c_str());
+  *exe = base::StringPrintf(L"\"%s\" %s \"%%1\"",
+                            exePath.c_str(), launchArgString.c_str());
   return true;
 }
 
