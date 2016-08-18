@@ -21,6 +21,7 @@
 #include "base/win/registry.h"
 #include "base/win/windows_version.h"
 #include "atom/common/atom_version.h"
+#include "atom/common/native_mate_converters/string16_converter.h"
 
 namespace atom {
 
@@ -125,38 +126,31 @@ bool Browser::SetUserTasks(const std::vector<UserTask>& tasks) {
   return SUCCEEDED(destinations->CommitList());
 }
 
-bool GetProtocolLaunchPath(std::string protocol, mate::Arguments* args, std::wstring* exe) {
+bool GetProtocolLaunchPath(mate::Arguments* args, base::string16* exe) {
   // Read in optional exe path arg
-  std::wstring exePath;
-  std::string rawExePath;
+  base::string16 exePath;
 
   base::FilePath path;
 
-  if (!args->GetNext(&rawExePath)) {
+  if (!args->GetNext(&exePath)) {
     if (!PathService::Get(base::FILE_EXE, &path)) {
       LOG(ERROR) << "Error getting app exe path";
       return false;
     }
     // Executable Path
     exePath = path.value();
-  } else {
-    exePath.assign(rawExePath.begin(), rawExePath.end());
   }
 
   // Read in optional args arg
-  std::vector<std::string> launchArgs;
+  std::vector<base::string16> launchArgs;
   args->GetNext(&launchArgs);
 
-  *exe = L"\"" + exePath + L"\" ";
-
   // Parse launch args into a string of space spearated args
+  base::string16 launchArgString;
   if (launchArgs.size() != 0) {
-    std::string launchArgString = base::JoinString(launchArgs, " ");
-    std::wstring wLaunchArgString;
-    wLaunchArgString.assign(launchArgString.begin(), launchArgString.end());
-    *exe = *exe + L"\"" + wLaunchArgString + L"\"";
+    launchArgString = base::JoinString(launchArgs, L" ");
   }
-  *exe = *exe + L"\"%1\"";
+  *exe = base::StringPrintf(L"\"%s\" %s \"%%1\"", exePath.c_str(), launchArgString.c_str());
   return true;
 }
 
@@ -190,7 +184,7 @@ bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
     return true;
 
   std::wstring exe;
-  if (!GetProtocolLaunchPath(protocol, args, &exe)) {
+  if (!GetProtocolLaunchPath(args, &exe)) {
     return false;
   }
   if (exe == L"")
@@ -226,7 +220,7 @@ bool Browser::SetAsDefaultProtocolClient(const std::string& protocol,
     return false;
 
   std::wstring exe;
-  if (!GetProtocolLaunchPath(protocol, args, &exe)) {
+  if (!GetProtocolLaunchPath(args, &exe)) {
     return false;
   }
 
@@ -260,7 +254,7 @@ bool Browser::IsDefaultProtocolClient(const std::string& protocol,
     return false;
 
   std::wstring exe;
-  if (!GetProtocolLaunchPath(protocol, args, &exe)) {
+  if (!GetProtocolLaunchPath(args, &exe)) {
     return false;
   }
 
