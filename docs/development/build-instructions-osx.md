@@ -49,7 +49,7 @@ After building is done, you can find `Electron.app` under `out/D`.
 ## 32bit Support
 
 Electron can only be built for a 64bit target on OS X and there is no plan to
-support 32bit OS X in future.
+support 32bit OS X in the future.
 
 ## Tests
 
