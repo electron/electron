@@ -208,8 +208,7 @@ Possible values are:
     input sparingly.
 * On Windows, possible type is `toolbar`.
 
-The `titleBarStyle` option.
-Possible values are:
+Possible values of the `titleBarStyle` option are:
 
 * `default` or not specified, results in the standard gray opaque Mac title
   bar.
@@ -1120,7 +1119,7 @@ events.
 Prevents the window contents from being captured by other apps.
 
 On macOS it sets the NSWindow's sharingType to NSWindowSharingNone.
-On Windows it calls SetWindowDisplayAffinity with WDA_MONITOR.
+On Windows it calls SetWindowDisplayAffinity with `WDA_MONITOR`.
 
 #### `win.setFocusable(focusable)` _Windows_
 
