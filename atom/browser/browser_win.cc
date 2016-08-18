@@ -125,7 +125,7 @@ bool Browser::SetUserTasks(const std::vector<UserTask>& tasks) {
   return SUCCEEDED(destinations->CommitList());
 }
 
-std::wstring protocolLaunchPath(std::string protocol, mate::Arguments* args) {
+bool GetProtocolLaunchPath(std::string protocol, mate::Arguments* args, std::wstring* exe) {
   // Read in optional exe path arg
   std::wstring exePath;
   std::string rawExePath;
@@ -135,7 +135,7 @@ std::wstring protocolLaunchPath(std::string protocol, mate::Arguments* args) {
   if (!args->GetNext(&rawExePath)) {
     if (!PathService::Get(base::FILE_EXE, &path)) {
       LOG(ERROR) << "Error getting app exe path";
-      return L"";
+      return false;
     }
     // Executable Path
     exePath = path.value();
@@ -147,19 +147,17 @@ std::wstring protocolLaunchPath(std::string protocol, mate::Arguments* args) {
   std::vector<std::string> launchArgs;
   args->GetNext(&launchArgs);
 
-  std::wstring exe = L"\"" + exePath + L"\" ";
+  *exe = L"\"" + exePath + L"\" ";
 
   // Parse launch args into a string of space spearated args
   if (launchArgs.size() != 0) {
-    std::string launchArgString = "";
-    for (std::string launchArg : launchArgs) {
-      launchArgString = launchArgString + launchArg + " ";
-    }
+    std::string launchArgString = base::JoinString(launchArgs, " ");
     std::wstring wLaunchArgString;
     wLaunchArgString.assign(launchArgString.begin(), launchArgString.end());
-    exe = exe + L"\"" + wLaunchArgString + L"\"";
+    *exe = *exe + L"\"" + wLaunchArgString + L"\"";
   }
-  return exe + L"\"%1\"";
+  *exe = *exe + L"\"%1\"";
+  return true;
 }
 
 bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
@@ -191,7 +189,10 @@ bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
     // Default value not set, we can confirm that it is not set
     return true;
 
-  std::wstring exe = protocolLaunchPath(protocol, args);
+  std::wstring exe;
+  if (!GetProtocolLaunchPath(protocol, args, &exe)) {
+    return false;
+  }
   if (exe == L"")
     return false;
   if (keyVal == exe) {
@@ -224,8 +225,8 @@ bool Browser::SetAsDefaultProtocolClient(const std::string& protocol,
   if (protocol.empty())
     return false;
 
-  std::wstring exe = protocolLaunchPath(protocol, args);
-  if (exe == L"") {
+  std::wstring exe;
+  if (!GetProtocolLaunchPath(protocol, args, &exe)) {
     return false;
   }
 
@@ -258,9 +259,10 @@ bool Browser::IsDefaultProtocolClient(const std::string& protocol,
   if (protocol.empty())
     return false;
 
-  std::wstring exe = protocolLaunchPath(protocol, args);
-  if (exe == L"")
+  std::wstring exe;
+  if (!GetProtocolLaunchPath(protocol, args, &exe)) {
     return false;
+  }
 
   // Main Registry Key
   HKEY root = HKEY_CURRENT_USER;
