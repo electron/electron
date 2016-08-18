@@ -15,6 +15,7 @@
 #include "base/win/scoped_comptr.h"
 #include "ui/gfx/geometry/rect.h"
 #include "ui/gfx/image/image.h"
+#include "atom/browser/native_window.h"
 
 namespace atom {
 
@@ -37,7 +38,8 @@ class TaskbarHost {
   void RestoreThumbarButtons(HWND window);
 
   // Set the progress state in taskbar.
-  bool SetProgressBar(HWND window, double value, const std::string& mode);
+  bool SetProgressBar(
+      HWND window, double value, const NativeWindow::ProgressState state);
 
   // Set the overlay icon in taskbar.
   bool SetOverlayIcon(

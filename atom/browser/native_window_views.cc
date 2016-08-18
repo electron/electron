@@ -907,9 +907,9 @@ gfx::NativeWindow NativeWindowViews::GetNativeWindow() {
 }
 
 void NativeWindowViews::SetProgressBar(
-    double progress, const std::string& mode) {
+    double progress, NativeWindow::ProgressState state) {
 #if defined(OS_WIN)
-  taskbar_host_.SetProgressBar(GetAcceleratedWidget(), progress, mode);
+  taskbar_host_.SetProgressBar(GetAcceleratedWidget(), progress, state);
 #elif defined(USE_X11)
   if (unity::IsRunning()) {
     unity::SetProgressFraction(progress);

@@ -104,7 +104,7 @@ class NativeWindowViews : public NativeWindow,
   gfx::NativeWindow GetNativeWindow() override;
   void SetOverlayIcon(const gfx::Image& overlay,
                       const std::string& description) override;
-  void SetProgressBar(double value, const std::string& mode) override;
+  void SetProgressBar(double progress, const ProgressState state) override;
   void SetAutoHideMenuBar(bool auto_hide) override;
   bool IsMenuBarAutoHide() override;
   void SetMenuBarVisibility(bool visible) override;

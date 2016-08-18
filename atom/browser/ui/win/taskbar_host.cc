@@ -12,6 +12,7 @@
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "ui/display/win/screen_win.h"
 #include "ui/gfx/icon_util.h"
+#include "atom/browser/native_window.h"
 
 namespace atom {
 
@@ -127,23 +128,23 @@ void TaskbarHost::RestoreThumbarButtons(HWND window) {
 }
 
 bool TaskbarHost::SetProgressBar(
-    HWND window, double value, const std::string& mode) {
+    HWND window, double value, const NativeWindow::ProgressState state) {
   if (!InitializeTaskbar())
     return false;
 
   bool success;
-  if (value > 1.0 || mode == "indeterminate") {
+  if (value > 1.0 || state == NativeWindow::PROGRESS_INDETERMINATE) {
     success = SUCCEEDED(taskbar_->SetProgressState(window, TBPF_INDETERMINATE));
-  } else if (value < 0 || mode == "none") {
+  } else if (value < 0 || state == NativeWindow::PROGRESS_NONE) {
     success = SUCCEEDED(taskbar_->SetProgressState(window, TBPF_NOPROGRESS));
   } else {
     // Unless SetProgressState set a blocking state (TBPF_ERROR, TBPF_PAUSED)
     // for the window, a call to SetProgressValue assumes the TBPF_NORMAL
     // state even if it is not explicitly set.
     // SetProgressValue overrides and clears the TBPF_INDETERMINATE state.
-    if (mode == "error") {
+    if (state == NativeWindow::PROGRESS_ERROR) {
       success = SUCCEEDED(taskbar_->SetProgressState(window, TBPF_ERROR));
-    } else if (mode == "paused") {
+    } else if (state == NativeWindow::PROGRESS_PAUSED) {
       success = SUCCEEDED(taskbar_->SetProgressState(window, TBPF_PAUSED));
     } else {
       success = SUCCEEDED(taskbar_->SetProgressState(window, TBPF_NORMAL));
