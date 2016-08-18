@@ -606,7 +606,7 @@ bool Window::SetThumbarButtons(mate::Arguments* args) {
   }
   auto window = static_cast<NativeWindowViews*>(window_.get());
   return window->taskbar_host().SetThumbarButtons(
-      window->GetAcceleratedWidget(), buttons);
+      window_->GetAcceleratedWidget(), buttons);
 #else
   return false;
 #endif

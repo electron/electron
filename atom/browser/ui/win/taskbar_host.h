@@ -34,6 +34,8 @@ class TaskbarHost {
   bool SetThumbarButtons(
       HWND window, const std::vector<ThumbarButton>& buttons);
 
+  void RestoreThumbarButtons(HWND window);
+
   // Set the progress state in taskbar.
   bool SetProgressBar(HWND window, double value, const std::string& mode);
 
@@ -56,6 +58,8 @@ class TaskbarHost {
 
   using CallbackMap = std::map<int, base::Closure>;
   CallbackMap callback_map_;
+
+  std::vector<ThumbarButton> last_buttons_;
 
   // The COM object of taskbar.
   base::win::ScopedComPtr<ITaskbarList3> taskbar_;

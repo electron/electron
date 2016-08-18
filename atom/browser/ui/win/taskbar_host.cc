@@ -115,7 +115,15 @@ bool TaskbarHost::SetThumbarButtons(
     r = taskbar_->ThumbBarAddButtons(window, kMaxButtonsCount, thumb_buttons);
 
   thumbar_buttons_added_ = true;
+  last_buttons_ = buttons;
   return SUCCEEDED(r);
+}
+
+void TaskbarHost::RestoreThumbarButtons(HWND window) {
+  if (thumbar_buttons_added_) {
+    thumbar_buttons_added_ = false;
+    SetThumbarButtons(window, last_buttons_);
+  }
 }
 
 bool TaskbarHost::SetProgressBar(
