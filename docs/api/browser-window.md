@@ -950,8 +950,22 @@ Same as `webContents.capturePage([rect, ]callback)`.
 
 Same as `webContents.loadURL(url[, options])`.
 
-The `url` can be a remote address (e.g. `http://`) or a path to a local 
+The `url` can be a remote address (e.g. `http://`) or a path to a local
 HTML file using the `file://` protocol.
+
+To ensure that file URLs are properly formatted, it is recommended to use
+Node's [`url.format`](https://nodejs.org/api/url.html#url_url_format_urlobject)
+method:
+
+```javascript
+let url = require('url').format({
+  protocol: 'file',
+  slashes: true,
+  pathname: path.join(__dirname, 'index.html')
+})
+
+win.loadURL(url)
+```
 
 #### `win.reload()`
 
