@@ -37,19 +37,19 @@ app.on('will-quit', () => {
 ```
 
 To simulate local shortcuts, you can register the shortcut when the app obtains focus, 
-you can then then release the shortcut(s) when the app loses focus.
+then remove the shortcut(s) when the app loses focus.
 
 ```javascript
 const {app, globalShortcut} = require('electron')
 
 app.on('browser-window-focus', () => {
-    globalShortcut.register('F2', () => {
-        console.log('F2 is pressed')
-    })
+  globalShortcut.register('F2', () => {
+    console.log('F2 is pressed')
+  })
 })
 
 app.on('browser-window-blur', () => {
-    globalShortcut.unregisterAll()
+  globalShortcut.unregisterAll()
 })
 ```
 
