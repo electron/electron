@@ -433,6 +433,8 @@
       'atom/renderer/atom_render_view_observer.h',
       'atom/renderer/atom_renderer_client.cc',
       'atom/renderer/atom_renderer_client.h',
+      'atom/renderer/atom_sandboxed_renderer_client.cc',
+      'atom/renderer/atom_sandboxed_renderer_client.h',
       'atom/renderer/guest_view_container.cc',
       'atom/renderer/guest_view_container.h',
       'atom/renderer/node_array_buffer_bridge.cc',
