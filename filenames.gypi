@@ -424,6 +424,7 @@
       'atom/common/platform_util_linux.cc',
       'atom/common/platform_util_mac.mm',
       'atom/common/platform_util_win.cc',
+      'atom/renderer/api/atom_api_renderer_ipc.h',
       'atom/renderer/api/atom_api_renderer_ipc.cc',
       'atom/renderer/api/atom_api_spell_check_client.cc',
       'atom/renderer/api/atom_api_spell_check_client.h',
