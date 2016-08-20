@@ -238,7 +238,8 @@ WebContents::WebContents(v8::Isolate* isolate,
 
 WebContents::WebContents(v8::Isolate* isolate,
                          const mate::Dictionary& options,
-                         const content::WebContents::CreateParams* create_params)
+                         const content::WebContents::CreateParams*
+                             create_params)
     : embedder_(nullptr),
       type_(BROWSER_WINDOW),
       request_id_(0),
