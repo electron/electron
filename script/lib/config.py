@@ -8,7 +8,7 @@ import sys
 
 BASE_URL = os.getenv('LIBCHROMIUMCONTENT_MIRROR') or \
     'https://s3.amazonaws.com/brave-laptop-binaries/libchromiumcontent'
-LIBCHROMIUMCONTENT_COMMIT = 'c83968e30bf909cd169ca98d2a0adeaa331456a4'
+LIBCHROMIUMCONTENT_COMMIT = 'a36777ea0a2b7394e757d5ef03696676493991bc'
 
 PLATFORM = {
   'cygwin': 'win32',
