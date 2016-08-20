@@ -591,7 +591,7 @@ describe('protocol module', function () {
       })
     })
 
-    it('returns false when scheme is not registred', function (done) {
+    it('returns false when scheme is not registered', function (done) {
       protocol.isProtocolHandled('no-exist', function (result) {
         assert.equal(result, false)
         done()

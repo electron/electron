@@ -157,8 +157,8 @@ void Protocol::OnIOCompleted(
 std::string Protocol::ErrorCodeToString(ProtocolError error) {
   switch (error) {
     case PROTOCOL_FAIL: return "Failed to manipulate protocol factory";
-    case PROTOCOL_REGISTERED: return "The scheme has been registred";
-    case PROTOCOL_NOT_REGISTERED: return "The scheme has not been registred";
+    case PROTOCOL_REGISTERED: return "The scheme has been registered";
+    case PROTOCOL_NOT_REGISTERED: return "The scheme has not been registered";
     case PROTOCOL_INTERCEPTED: return "The scheme has been intercepted";
     case PROTOCOL_NOT_INTERCEPTED: return "The scheme has not been intercepted";
     default: return "Unexpected error";
