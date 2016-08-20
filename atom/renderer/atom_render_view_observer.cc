@@ -59,9 +59,33 @@ std::vector<v8::Local<v8::Value>> ListValueToVector(
   return result;
 }
 
-void EmitIPCEvent(blink::WebFrame* frame,
-                  const base::string16& channel,
-                  const base::ListValue& args) {
+base::StringPiece NetResourceProvider(int key) {
+  if (key == IDR_DIR_HEADER_HTML) {
+    base::StringPiece html_data =
+        ui::ResourceBundle::GetSharedInstance().GetRawDataResource(
+            IDR_DIR_HEADER_HTML);
+    return html_data;
+  }
+  return base::StringPiece();
+}
+
+}  // namespace
+
+AtomRenderViewObserver::AtomRenderViewObserver(
+    content::RenderView* render_view,
+    AtomRendererClient* renderer_client)
+    : content::RenderViewObserver(render_view),
+      document_created_(false) {
+  // Initialise resource for directory listing.
+  net::NetModule::SetResourceProvider(NetResourceProvider);
+}
+
+AtomRenderViewObserver::~AtomRenderViewObserver() {
+}
+
+void AtomRenderViewObserver::EmitIPCEvent(blink::WebFrame* frame,
+                                          const base::string16& channel,
+                                          const base::ListValue& args) {
   if (!frame || frame->isWebRemoteFrame())
     return;
 
@@ -85,30 +109,6 @@ void EmitIPCEvent(blink::WebFrame* frame,
     args_vector.insert(args_vector.begin(), event.GetHandle());
     mate::EmitEvent(isolate, ipc, channel, args_vector);
   }
-}
-
-base::StringPiece NetResourceProvider(int key) {
-  if (key == IDR_DIR_HEADER_HTML) {
-    base::StringPiece html_data =
-        ui::ResourceBundle::GetSharedInstance().GetRawDataResource(
-            IDR_DIR_HEADER_HTML);
-    return html_data;
-  }
-  return base::StringPiece();
-}
-
-}  // namespace
-
-AtomRenderViewObserver::AtomRenderViewObserver(
-    content::RenderView* render_view,
-    AtomRendererClient* renderer_client)
-    : content::RenderViewObserver(render_view),
-      document_created_(false) {
-  // Initialise resource for directory listing.
-  net::NetModule::SetResourceProvider(NetResourceProvider);
-}
-
-AtomRenderViewObserver::~AtomRenderViewObserver() {
 }
 
 void AtomRenderViewObserver::DidCreateDocumentElement(
