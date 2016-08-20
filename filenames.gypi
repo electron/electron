@@ -61,6 +61,7 @@
       'lib/renderer/api/desktop-capturer.js',
       'lib/renderer/api/exports/electron.js',
       'lib/renderer/api/ipc-renderer.js',
+      'lib/renderer/api/ipc-renderer-setup.js',
       'lib/renderer/api/remote.js',
       'lib/renderer/api/screen.js',
       'lib/renderer/api/web-frame.js',
