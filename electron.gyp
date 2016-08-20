@@ -5,6 +5,7 @@
     'company_name%': 'GitHub, Inc',
     'company_abbr%': 'github',
     'version%': '1.4.1',
+    'js2c_input_dir': '<(SHARED_INTERMEDIATE_DIR)/js2c',
   },
   'includes': [
     'filenames.gypi',
@@ -411,12 +412,28 @@
       ],
     },  # target app2asar
     {
+      'target_name': 'atom_js2c_copy',
+      'type': 'none',
+      'copies': [
+        {
+          'destination': '<(js2c_input_dir)',
+          'files': [
+            '<@(js2c_sources)',
+          ],
+        },
+      ],
+    },  # target atom_js2c_copy
+    {
       'target_name': 'atom_js2c',
       'type': 'none',
+      'dependencies': [
+        'atom_js2c_copy',
+      ],
       'actions': [
         {
           'action_name': 'atom_js2c',
           'inputs': [
+            # List all input files that should trigger a rebuild with js2c
             '<@(js2c_sources)',
           ],
           'outputs': [
@@ -426,7 +443,7 @@
             'python',
             'tools/js2c.py',
             '<@(_outputs)',
-            '<@(_inputs)',
+            '<(js2c_input_dir)',
           ],
         }
       ],
