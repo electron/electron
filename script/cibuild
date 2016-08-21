@@ -65,6 +65,11 @@ def main():
   execute([npm, 'install', 'npm@2.12.1'])
 
   log_versions()
+  # Add "./node_modules/.bin" to the beginning of $PATH, which will ensure
+  # future "npm" invocations use the right version.
+  node_bin_dir = os.path.join(SOURCE_ROOT, 'node_modules', '.bin')
+  os.environ['PATH'] = os.path.pathsep.join([node_bin_dir,
+                                             os.environ.get('PATH', '')])
 
   is_release = os.environ.has_key('ELECTRON_RELEASE')
   args = ['--target_arch=' + target_arch]

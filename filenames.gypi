@@ -70,6 +70,9 @@
       'lib/renderer/extensions/storage.js',
       'lib/renderer/extensions/web-navigation.js',
     ],
+    'browserify_entries': [
+      'lib/sandboxed_renderer/init.js',
+    ],
     'js2c_sources': [
       'lib/common/asar.js',
       'lib/common/asar_init.js',
