@@ -76,7 +76,7 @@ bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
 }
 
 bool Browser::SetAsDefaultProtocolClient(const std::string& protocol,
-                                        mate::Arguments* args) {
+                                         mate::Arguments* args) {
   if (protocol.empty())
     return false;
 
