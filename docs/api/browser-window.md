@@ -961,7 +961,7 @@ method:
 let url = require('url').format({
   protocol: 'file',
   slashes: true,
-  pathname: path.join(__dirname, 'index.html')
+  pathname: require('path').join(__dirname, 'index.html')
 })
 
 win.loadURL(url)
