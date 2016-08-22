@@ -170,7 +170,7 @@ electron .
 If you've installed it locally, then run:
 
 ```bash
-./node_modules/.bin/electron .
+"./node_modules/.bin/electron" .
 ```
 
 ### Manually Downloaded Electron Binary
