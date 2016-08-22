@@ -145,7 +145,7 @@ Creates a new `NativeImage` instance from `dataURL`.
 
 ## Class: NativeImage
 
-A native wrapper for images such as tray, dock, and application icons.
+> Natively wrap images such as tray, dock, and application icons.
 
 ### Instance Methods
 

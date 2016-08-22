@@ -29,8 +29,8 @@ console.log(webContents)
 
 ### `webContents.getAllWebContents()`
 
-Returns an array of all web contents. This will contain web contents for all
-windows, webviews, opened devtools, and devtools extension background pages.
+Returns an array of all `WebContents` instances. This will contain web contents
+for all windows, webviews, opened devtools, and devtools extension background pages.
 
 ### `webContents.getFocusedWebContents()`
 
@@ -38,6 +38,8 @@ Returns the web contents that is focused in this application, otherwise
 returns `null`.
 
 ## Class: WebContents
+
+> Render and control the contents of a BrowserWindow instance.
 
 ### Instance Events
 
@@ -1162,7 +1164,10 @@ Get the debugger instance for this webContents.
 
 ## Class: Debugger
 
-Debugger API serves as an alternate transport for [remote debugging protocol][rdp].
+> An alternate transport for Chrome's remote debugging protocol.
+
+Chrome Developer Tools has a [special binding][rdp] available at JavaScript
+runtime that allows interacting with pages and instrumenting them.
 
 ```javascript
 const {BrowserWindow} = require('electron')
