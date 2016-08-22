@@ -8,6 +8,7 @@
 #include <set>
 #include "atom/common/javascript_bindings.h"
 #include "atom/grit/atom_resources.h"  // NOLINT: This file is generated
+#include "brave/renderer/extensions/web_frame_bindings.h"
 #include "chrome/grit/renderer_resources.h"  // NOLINT: This file is generated
 #include "chrome/renderer/extensions/tabs_custom_bindings.h"
 #include "content/public/renderer/render_frame.h"
@@ -35,6 +36,10 @@ void AtomExtensionsDispatcherDelegate::RegisterNativeHandlers(
       std::unique_ptr<NativeHandler>(
           new atom::JavascriptBindings(
               context->GetRenderFrame()->GetRenderView(), context)));
+  module_system->RegisterNativeHandler(
+      "webFrame",
+      std::unique_ptr<NativeHandler>(
+          new brave::WebFrameBindings(context)));
   module_system->RegisterNativeHandler(
       "tabs",
       std::unique_ptr<NativeHandler>(

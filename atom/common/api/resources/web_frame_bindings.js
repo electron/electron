@@ -1,26 +1,12 @@
-var atom = requireNative('atom').GetBinding();
-var webFrame = atom.web_frame.webFrame;
+var webFrame = requireNative('webFrame');
 
 function setGlobal(path, value) {
   return webFrame.setGlobal(path.split('.'), value)
 }
 
 var binding = {
-  setZoomFactor: webFrame.setZoomFactor.bind(webFrame),
-  getZoomFactor: webFrame.getZoomFactor.bind(webFrame),
-  setZoomLevel: webFrame.setZoomLevel.bind(webFrame),
-  getZoomLevel: webFrame.getZoomLevel.bind(webFrame),
-  setZoomLevelLimits: webFrame.setZoomLevelLimits.bind(webFrame),
-  getPageScaleFactor: webFrame.getPageScaleFactor.bind(webFrame),
-  setPageScaleFactor: webFrame.setPageScaleFactor.bind(webFrame),
-  setPageScaleLimits: webFrame.setPageScaleLimits.bind(webFrame),
-  getTextZoomFactor: webFrame.getTextZoomFactor.bind(webFrame),
-  setTextZoomFactor: webFrame.setTextZoomFactor.bind(webFrame),
-  setSpellCheckProvider: webFrame.setSpellCheckProvider.bind(webFrame),
-  registerURLSchemeAsBypassingCSP: webFrame.registerURLSchemeAsBypassingCSP.bind(webFrame),
-  registerURLSchemeAsPrivileged: webFrame.registerURLSchemeAsPrivileged.bind(webFrame),
-  insertText: webFrame.insertText.bind(webFrame),
-  executeJavaScript: webFrame.executeJavaScript.bind(webFrame),
+  setSpellCheckProvider: webFrame.setSpellCheckProvider,
+  executeJavaScript: webFrame.executeJavaScript,
   setGlobal
 }
 

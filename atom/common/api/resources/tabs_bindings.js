@@ -1,7 +1,6 @@
 var binding = require('binding').Binding.create('tabs');
 
 var atom = requireNative('atom').GetBinding();
-var webFrame = atom.web_frame.webFrame;
 var messaging = require('messaging');
 var tabsNatives = requireNative('tabs');
 var OpenChannelToTab = tabsNatives.OpenChannelToTab;

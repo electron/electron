@@ -55,6 +55,8 @@
       'atom/renderer/extensions/atom_extensions_dispatcher_delegate.h',
       'atom/renderer/extensions/atom_extensions_renderer_client.cc',
       'atom/renderer/extensions/atom_extensions_renderer_client.h',
+      'brave/renderer/extensions/web_frame_bindings.cc',
+      'brave/renderer/extensions/web_frame_bindings.h',
       'chromium_src/chrome/browser/renderer_host/chrome_extension_message_filter.cc',
       'chromium_src/chrome/browser/renderer_host/chrome_extension_message_filter.h',
       'chromium_src/chrome/browser/ui/zoom/chrome_zoom_level_prefs.cc',

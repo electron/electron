@@ -4,52 +4,12 @@
     "description": "none",
     "functions": [
       {
-        "name": "setSpellCheckProvider",
+        "name": "setGlobal",
         "nocompile": true,
         "type": "function",
       },
       {
-        "name": "setZoomFactor",
-        "nocompile": true,
-        "type": "function"
-      },
-      {
-        "name": "getZoomFactor",
-        "nocompile": true,
-        "type": "function"
-      },
-      {
-        "name": "setZoomLevel",
-        "nocompile": true,
-        "type": "function"
-      },
-      {
-        "name": "getZoomLevel",
-        "nocompile": true,
-        "type": "function"
-      },
-      {
-        "name": "setZoomLevelLimits",
-        "nocompile": true,
-        "type": "function"
-      },
-      {
         "name": "setSpellCheckProvider",
-        "nocompile": true,
-        "type": "function"
-      },
-      {
-        "name": "registerURLSchemeAsBypassingCSP",
-        "nocompile": true,
-        "type": "function"
-      },
-      {
-        "name": "registerURLSchemeAsPrivileged",
-        "nocompile": true,
-        "type": "function"
-      },
-      {
-        "name": "insertText",
         "nocompile": true,
         "type": "function"
       },

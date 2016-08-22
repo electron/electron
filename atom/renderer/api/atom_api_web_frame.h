@@ -76,10 +76,6 @@ class WebFrame : public mate::Wrappable<WebFrame> {
   // Editing.
   void InsertText(const std::string& text);
 
-  // Set values in the main world global namespace
-  void SetGlobal(const std::vector<v8::Local<v8::String>> path,
-                  v8::Local<v8::Object> value);
-
   // Excecuting scripts.
   void ExecuteJavaScript(const base::string16& code, mate::Arguments* args);
 

@@ -9,45 +9,14 @@
 #include "atom/common/api/api_messages.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
-#include "atom/renderer/api/atom_api_web_frame.h"
 #include "atom/renderer/content_settings_manager.h"
-#include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_view.h"
-#include "extensions/renderer/script_context.h"
 #include "native_mate/dictionary.h"
-#include "third_party/WebKit/public/web/WebKit.h"
 #include "third_party/WebKit/public/web/WebView.h"
 #include "third_party/WebKit/public/web/WebLocalFrame.h"
 #include "third_party/WebKit/public/web/WebDocument.h"
 
 namespace {
-  // TODO(bridiver) This is copied from atom_api_renderer_ipc.cc
-  // and should be cleaned up
-  v8::Local<v8::Value> GetHiddenValue(v8::Isolate* isolate,
-                                      v8::Local<v8::Object> object,
-                                      v8::Local<v8::String> key) {
-    v8::Local<v8::Context> context = isolate->GetCurrentContext();
-    v8::Local<v8::Private> privateKey = v8::Private::ForApi(isolate, key);
-    v8::Local<v8::Value> value;
-    v8::Maybe<bool> result = object->HasPrivate(context, privateKey);
-    if (!(result.IsJust() && result.FromJust()))
-      return v8::Local<v8::Value>();
-    if (object->GetPrivate(context, privateKey).ToLocal(&value))
-      return value;
-    return v8::Local<v8::Value>();
-  }
-
-  void SetHiddenValue(v8::Isolate* isolate,
-                      v8::Local<v8::Object> object,
-                      v8::Local<v8::String> key,
-                      v8::Local<v8::Value> value) {
-    if (value.IsEmpty())
-      return;
-    v8::Local<v8::Context> context = isolate->GetCurrentContext();
-    v8::Local<v8::Private> privateKey = v8::Private::ForApi(isolate, key);
-    object->SetPrivate(context, privateKey, value);
-  }
-
   content::RenderView* GetCurrentRenderView() {
     blink::WebLocalFrame* frame =
       blink::WebLocalFrame::frameForCurrentContext();
@@ -127,51 +96,28 @@ void JavascriptBindings::GetBinding(
   DCHECK(frame);
 
   v8::Isolate* isolate = args.GetIsolate();
-  v8::HandleScope handle_scope(isolate);
+  mate::Dictionary binding(isolate, v8::Object::New(isolate));
 
-  v8::Local<v8::Context> context = frame->mainWorldScriptContext();
-  v8::Context::Scope context_scope(context);
+  mate::Dictionary ipc(isolate, v8::Object::New(isolate));
+  ipc.SetMethod("send", &IPCSend);
+  ipc.SetMethod("sendSync", &IPCSendSync);
+  binding.Set("ipc", ipc.GetHandle());
 
-  v8::Local<v8::String> atom_binding_string(
-      v8::String::NewFromUtf8(isolate, "atom_binding"));
-  v8::Local<v8::Object> global(context->Global());
-  v8::Local<v8::Value> atom_binding(
-      GetHiddenValue(isolate, global, atom_binding_string));
-  if (atom_binding.IsEmpty()) {
-    mate::Dictionary binding(isolate, v8::Object::New(isolate));
+  mate::Dictionary content_settings(isolate, v8::Object::New(isolate));
+  content_settings.SetMethod("get",
+      base::Bind(&ContentSettingsManager::GetSetting,
+        base::Unretained(ContentSettingsManager::GetInstance())));
+  content_settings.SetMethod("getContentTypes",
+      base::Bind(&ContentSettingsManager::GetContentTypes,
+        base::Unretained(ContentSettingsManager::GetInstance())));
+  content_settings.SetMethod("getCurrent",
+      base::Bind(&ContentSettingsManager::GetSetting,
+        base::Unretained(ContentSettingsManager::GetInstance()),
+        render_view()->GetWebView()->mainFrame()->document().url(),
+        frame->document().url()));
+  binding.Set("content_settings", content_settings);
 
-    mate::Dictionary v8_util(isolate, v8::Object::New(isolate));
-    v8_util.SetMethod("setHiddenValue", &SetHiddenValue);
-    v8_util.SetMethod("getHiddenValue", &GetHiddenValue);
-    binding.Set("v8_util", v8_util.GetHandle());
-
-    mate::Dictionary ipc(isolate, v8::Object::New(isolate));
-    ipc.SetMethod("send", &IPCSend);
-    ipc.SetMethod("sendSync", &IPCSendSync);
-    binding.Set("ipc", ipc.GetHandle());
-
-    mate::Dictionary web_frame(isolate, v8::Object::New(isolate));
-    web_frame.Set("webFrame", atom::api::WebFrame::Create(isolate));
-    binding.Set("web_frame", web_frame);
-
-    mate::Dictionary content_settings(isolate, v8::Object::New(isolate));
-    content_settings.SetMethod("get",
-        base::Bind(&ContentSettingsManager::GetSetting,
-          base::Unretained(ContentSettingsManager::GetInstance())));
-    content_settings.SetMethod("getContentTypes",
-        base::Bind(&ContentSettingsManager::GetContentTypes,
-          base::Unretained(ContentSettingsManager::GetInstance())));
-    content_settings.SetMethod("getCurrent",
-        base::Bind(&ContentSettingsManager::GetSetting,
-          base::Unretained(ContentSettingsManager::GetInstance()),
-          render_view()->GetWebView()->mainFrame()->document().url(),
-          frame->document().url()));
-    binding.Set("content_settings", content_settings);
-
-    atom_binding = binding.GetHandle();
-    SetHiddenValue(isolate, global, atom_binding_string, atom_binding);
-  }
-  args.GetReturnValue().Set(atom_binding);
+  args.GetReturnValue().Set(binding.GetHandle());
 }
 
 bool JavascriptBindings::OnMessageReceived(const IPC::Message& message) {
