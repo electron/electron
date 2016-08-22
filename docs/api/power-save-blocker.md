@@ -23,7 +23,7 @@ The `powerSaveBlocker` module has the following methods:
   * `prevent-app-suspension` - Prevent the application from being suspended.
     Keeps system active but allows screen to be turned off.  Example use cases:
     downloading a file or playing audio.
-  * `prevent-display-sleep`- Prevent the display from going to sleep. Keeps
+  * `prevent-display-sleep` - Prevent the display from going to sleep. Keeps
     system and screen active.  Example use case: playing video.
 
 Starts preventing the system from entering lower-power mode. Returns an integer

@@ -933,7 +933,6 @@ Opens the developer tools for the service worker context.
 #### `contents.send(channel[, arg1][, arg2][, ...])`
 
 * `channel` String
-* `arg` (optional)
 
 Send an asynchronous message to renderer process via `channel`, you can also
 send arbitrary arguments. Arguments will be serialized in JSON internally and
@@ -977,8 +976,8 @@ app.on('ready', () => {
 
 * `screenPosition` String - Specify the screen type to emulate
     (default: `desktop`)
-  * `desktop`
-  * `mobile`
+  * `desktop` - Desktop screen type
+  * `mobile` - Mobile screen type
 * `screenSize` Object - Set the emulated screen size (screenPosition == mobile)
   * `width` Integer - Set the emulated screen width
   * `height` Integer - Set the emulated screen height
