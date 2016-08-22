@@ -212,10 +212,14 @@ Sets download saving directory. By default, the download directory will be the
 #### `ses.enableNetworkEmulation(options)`
 
 * `options` Object
-  * `offline` Boolean - Whether to emulate network outage.
-  * `latency` Double - RTT in ms
-  * `downloadThroughput` Double - Download rate in Bps
-  * `uploadThroughput` Double - Upload rate in Bps
+  * `offline` Boolean (optional) - Whether to emulate network outage. Defaults
+    to false.
+  * `latency` Double (optional) - RTT in ms. Defaults to 0 which will disable
+    latency throttling.
+  * `downloadThroughput` Double (optional) - Download rate in Bps. Defaults to 0
+    which will disable download throttling.
+  * `uploadThroughput` Double (optional) - Upload rate in Bps. Defaults to 0
+    which will disable upload throttling.
 
 Emulates network with the given configuration for the `session`.
 
