@@ -510,9 +510,10 @@ describe('chromium feature', function () {
         }).then((reader) => {
           reader.read().then((r) => {
             reader.cancel()
+            done()
           })
         }).catch(function (e) {
-          done()
+          done(e)
         })
       })
     })

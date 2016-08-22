@@ -169,10 +169,11 @@ node::Environment* NodeBindings::CreateEnvironment(
       context->GetIsolate(), uv_default_loop(), context,
       args.size(), c_argv.get(), 0, nullptr);
 
-  // Node turns off AutorunMicrotasks, but we need it in web pages to match the
-  // behavior of Chrome.
-  if (!is_browser_)
-    context->GetIsolate()->SetAutorunMicrotasks(true);
+  // Node uses the deprecated SetAutorunMicrotasks(false) mode, we should switch
+  // to use the scoped policy to match blink's behavior.
+  if (!is_browser_) {
+    context->GetIsolate()->SetMicrotasksPolicy(v8::MicrotasksPolicy::kScoped);
+  }
 
   mate::Dictionary process(context->GetIsolate(), env->process_object());
   process.Set("type", process_type);
