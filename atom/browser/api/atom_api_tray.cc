@@ -8,7 +8,6 @@
 
 #include "atom/browser/api/atom_api_menu.h"
 #include "atom/browser/browser.h"
-#include "atom/browser/ui/tray_icon.h"
 #include "atom/common/api/atom_api_native_image.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
 #include "atom/common/native_mate_converters/image_converter.h"
@@ -18,28 +17,71 @@
 #include "native_mate/dictionary.h"
 #include "ui/gfx/image/image.h"
 
+namespace mate {
+
+template<>
+struct Converter<atom::TrayIcon::HighlightMode> {
+  static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
+                     atom::TrayIcon::HighlightMode* out) {
+    std::string mode;
+    if (ConvertFromV8(isolate, val, &mode)) {
+      if (mode == "always") {
+        *out = atom::TrayIcon::HighlightMode::ALWAYS;
+        return true;
+      }
+      if (mode == "selection") {
+        *out = atom::TrayIcon::HighlightMode::SELECTION;
+        return true;
+      }
+      if (mode == "never") {
+        *out = atom::TrayIcon::HighlightMode::NEVER;
+        return true;
+      }
+    }
+
+    // Support old boolean parameter
+    // TODO(kevinsawicki): Remove in 2.0, deprecate before then with warnings
+    bool highlight;
+    if (ConvertFromV8(isolate, val, &highlight)) {
+      if (highlight)
+        *out = atom::TrayIcon::HighlightMode::SELECTION;
+      else
+        *out = atom::TrayIcon::HighlightMode::NEVER;
+      return true;
+    }
+
+    return false;
+  }
+};
+}  // namespace mate
+
+
 namespace atom {
 
 namespace api {
 
-Tray::Tray(v8::Isolate* isolate, mate::Handle<NativeImage> image)
+Tray::Tray(v8::Isolate* isolate, v8::Local<v8::Object> wrapper,
+           mate::Handle<NativeImage> image)
     : tray_icon_(TrayIcon::Create()) {
   SetImage(isolate, image);
   tray_icon_->AddObserver(this);
+
+  InitWith(isolate, wrapper);
 }
 
 Tray::~Tray() {
+  // Destroy the native tray in next tick.
+  base::MessageLoop::current()->DeleteSoon(FROM_HERE, tray_icon_.release());
 }
 
 // static
-mate::WrappableBase* Tray::New(v8::Isolate* isolate,
-                               mate::Handle<NativeImage> image) {
+mate::WrappableBase* Tray::New(mate::Handle<NativeImage> image,
+                               mate::Arguments* args) {
   if (!Browser::Get()->is_ready()) {
-    isolate->ThrowException(v8::Exception::Error(mate::StringToV8(
-        isolate, "Cannot create Tray before app is ready")));
+    args->ThrowError("Cannot create Tray before app is ready");
     return nullptr;
   }
-  return new Tray(isolate, image);
+  return new Tray(args->isolate(), args->GetThis(), image);
 }
 
 void Tray::OnClicked(const gfx::Rect& bounds, int modifiers) {
@@ -72,6 +114,10 @@ void Tray::OnDrop() {
 
 void Tray::OnDropFiles(const std::vector<std::string>& files) {
   Emit("drop-files", files);
+}
+
+void Tray::OnDropText(const std::string& text) {
+  Emit("drop-text", text);
 }
 
 void Tray::OnDragEntered() {
@@ -111,8 +157,8 @@ void Tray::SetTitle(const std::string& title) {
   tray_icon_->SetTitle(title);
 }
 
-void Tray::SetHighlightMode(bool highlight) {
-  tray_icon_->SetHighlightMode(highlight);
+void Tray::SetHighlightMode(TrayIcon::HighlightMode mode) {
+  tray_icon_->SetHighlightMode(mode);
 }
 
 void Tray::DisplayBalloon(mate::Arguments* args,
@@ -155,8 +201,9 @@ gfx::Rect Tray::GetBounds() {
 
 // static
 void Tray::BuildPrototype(v8::Isolate* isolate,
-                          v8::Local<v8::ObjectTemplate> prototype) {
-  mate::ObjectTemplateBuilder(isolate, prototype)
+                          v8::Local<v8::FunctionTemplate> prototype) {
+  prototype->SetClassName(mate::StringToV8(isolate, "Tray"));
+  mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .MakeDestroyable()
       .SetMethod("setImage", &Tray::SetImage)
       .SetMethod("setPressedImage", &Tray::SetPressedImage)
@@ -176,14 +223,15 @@ void Tray::BuildPrototype(v8::Isolate* isolate,
 
 namespace {
 
+using atom::api::Tray;
+
 void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
-  using atom::api::Tray;
   v8::Isolate* isolate = context->GetIsolate();
-  v8::Local<v8::Function> constructor = mate::CreateConstructor<Tray>(
-      isolate, "Tray", base::Bind(&Tray::New));
+  Tray::SetConstructor(isolate, base::Bind(&Tray::New));
+
   mate::Dictionary dict(isolate, exports);
-  dict.Set("Tray", static_cast<v8::Local<v8::Value>>(constructor));
+  dict.Set("Tray", Tray::GetConstructor(isolate)->GetFunction());
 }
 
 }  // namespace

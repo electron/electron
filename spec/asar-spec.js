@@ -2,6 +2,7 @@ const assert = require('assert')
 const ChildProcess = require('child_process')
 const fs = require('fs')
 const path = require('path')
+const {closeWindow} = require('./window-helpers')
 
 const nativeImage = require('electron').nativeImage
 const remote = require('electron').remote
@@ -13,6 +14,11 @@ describe('asar package', function () {
   var fixtures = path.join(__dirname, 'fixtures')
 
   describe('node api', function () {
+    it('supports paths specified as a Buffer', function () {
+      var file = new Buffer(path.join(fixtures, 'asar', 'a.asar', 'file1'))
+      assert.equal(fs.existsSync(file), true)
+    })
+
     describe('fs.readFileSync', function () {
       it('does not leak fd', function () {
         var readCalls = 1
@@ -534,6 +540,70 @@ describe('asar package', function () {
       })
     })
 
+    describe('fs.access', function () {
+      it('accesses a normal file', function (done) {
+        var p = path.join(fixtures, 'asar', 'a.asar', 'file1')
+        fs.access(p, function (err) {
+          assert(err == null)
+          done()
+        })
+      })
+
+      it('throws an error when called with write mode', function (done) {
+        var p = path.join(fixtures, 'asar', 'a.asar', 'file1')
+        fs.access(p, fs.constants.R_OK | fs.constants.W_OK, function (err) {
+          assert.equal(err.code, 'EACCES')
+          done()
+        })
+      })
+
+      it('throws an error when called on non-existent file', function (done) {
+        var p = path.join(fixtures, 'asar', 'a.asar', 'not-exist')
+        fs.access(p, function (err) {
+          assert.equal(err.code, 'ENOENT')
+          done()
+        })
+      })
+
+      it('allows write mode for unpacked files', function (done) {
+        var p = path.join(fixtures, 'asar', 'unpack.asar', 'a.txt')
+        fs.access(p, fs.constants.R_OK | fs.constants.W_OK, function (err) {
+          assert(err == null)
+          done()
+        })
+      })
+    })
+
+    describe('fs.accessSync', function () {
+      it('accesses a normal file', function () {
+        var p = path.join(fixtures, 'asar', 'a.asar', 'file1')
+        assert.doesNotThrow(function () {
+          fs.accessSync(p)
+        })
+      })
+
+      it('throws an error when called with write mode', function () {
+        var p = path.join(fixtures, 'asar', 'a.asar', 'file1')
+        assert.throws(function () {
+          fs.accessSync(p, fs.constants.R_OK | fs.constants.W_OK)
+        }, /EACCES/)
+      })
+
+      it('throws an error when called on non-existent file', function () {
+        var p = path.join(fixtures, 'asar', 'a.asar', 'not-exist')
+        assert.throws(function () {
+          fs.accessSync(p)
+        }, /ENOENT/)
+      })
+
+      it('allows write mode for unpacked files', function () {
+        var p = path.join(fixtures, 'asar', 'unpack.asar', 'a.txt')
+        assert.doesNotThrow(function () {
+          fs.accessSync(p, fs.constants.R_OK | fs.constants.W_OK)
+        })
+      })
+    })
+
     describe('child_process.fork', function () {
       it('opens a normal js file', function (done) {
         var child = ChildProcess.fork(path.join(fixtures, 'asar', 'a.asar', 'ping.js'))
@@ -725,8 +795,8 @@ describe('asar package', function () {
 
     it('sets __dirname correctly', function (done) {
       after(function () {
-        w.destroy()
         ipcMain.removeAllListeners('dirname')
+        return closeWindow(w).then(function () { w = null })
       })
 
       var w = new BrowserWindow({
@@ -749,8 +819,8 @@ describe('asar package', function () {
 
     it('loads script tag in html', function (done) {
       after(function () {
-        w.destroy()
         ipcMain.removeAllListeners('ping')
+        return closeWindow(w).then(function () { w = null })
       })
 
       var w = new BrowserWindow({

@@ -54,7 +54,7 @@ describe('chromium feature', function () {
       w = new BrowserWindow({
         show: false
       })
-      w.webContents.on('ipc-message', function (event, args) {
+      w.webContents.once('ipc-message', function (event, args) {
         assert.deepEqual(args, ['hidden', true])
         done()
       })
@@ -69,7 +69,7 @@ describe('chromium feature', function () {
       w = new BrowserWindow({
         show: false
       })
-      w.webContents.on('ipc-message', function (event, args) {
+      w.webContents.once('ipc-message', function (event, args) {
         assert.deepEqual(args, ['hidden', false])
         done()
       })
@@ -278,7 +278,7 @@ describe('chromium feature', function () {
       w = new BrowserWindow({
         show: false
       })
-      w.webContents.on('ipc-message', function (event, args) {
+      w.webContents.once('ipc-message', function (event, args) {
         assert.deepEqual(args, ['opener', null])
         done()
       })

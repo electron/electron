@@ -20,7 +20,7 @@ class DesktopCapturer: public mate::EventEmitter<DesktopCapturer>,
   static mate::Handle<DesktopCapturer> Create(v8::Isolate* isolate);
 
   static void BuildPrototype(v8::Isolate* isolate,
-                             v8::Local<v8::ObjectTemplate> prototype);
+                             v8::Local<v8::FunctionTemplate> prototype);
 
   void StartHandling(bool capture_window,
                      bool capture_screen,

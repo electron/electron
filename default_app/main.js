@@ -91,14 +91,29 @@ app.once('ready', () => {
           }
         },
         {
-          role: 'togglefullscreen'
-        },
-        {
           label: 'Toggle Developer Tools',
           accelerator: process.platform === 'darwin' ? 'Alt+Command+I' : 'Ctrl+Shift+I',
           click (item, focusedWindow) {
             if (focusedWindow) focusedWindow.toggleDevTools()
           }
+        },
+        {
+          type: 'separator'
+        },
+        {
+          role: 'resetzoom'
+        },
+        {
+          role: 'zoomin'
+        },
+        {
+          role: 'zoomout'
+        },
+        {
+          type: 'separator'
+        },
+        {
+          role: 'togglefullscreen'
         }
       ]
     },
@@ -180,6 +195,22 @@ app.once('ready', () => {
         }
       ]
     })
+    template[1].submenu.push(
+      {
+        type: 'separator'
+      },
+      {
+        label: 'Speech',
+        submenu: [
+          {
+            role: 'startspeaking'
+          },
+          {
+            role: 'stopspeaking'
+          }
+        ]
+      }
+    )
     template[3].submenu = [
       {
         role: 'close'

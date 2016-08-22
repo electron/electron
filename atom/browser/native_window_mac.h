@@ -10,8 +10,9 @@
 #include <string>
 #include <vector>
 
-#include "base/mac/scoped_nsobject.h"
 #include "atom/browser/native_window.h"
+#include "base/mac/scoped_nsobject.h"
+#include "content/public/browser/render_widget_host.h"
 
 @class AtomNSWindow;
 @class AtomNSWindowDelegate;
@@ -19,7 +20,8 @@
 
 namespace atom {
 
-class NativeWindowMac : public NativeWindow {
+class NativeWindowMac : public NativeWindow,
+                        public content::RenderWidgetHost::InputEventObserver {
  public:
   NativeWindowMac(brightray::InspectableWebContents* inspectable_web_contents,
                   const mate::Dictionary& options,
@@ -80,16 +82,21 @@ class NativeWindowMac : public NativeWindow {
   bool IsDocumentEdited() override;
   void SetIgnoreMouseEvents(bool ignore) override;
   void SetContentProtection(bool enable) override;
-  bool HasModalDialog() override;
   void SetParentWindow(NativeWindow* parent) override;
   gfx::NativeWindow GetNativeWindow() override;
   gfx::AcceleratedWidget GetAcceleratedWidget() override;
-  void SetProgressBar(double progress) override;
+  void SetProgressBar(double progress, const ProgressState state) override;
   void SetOverlayIcon(const gfx::Image& overlay,
                       const std::string& description) override;
-
   void SetVisibleOnAllWorkspaces(bool visible) override;
   bool IsVisibleOnAllWorkspaces() override;
+
+  // content::RenderWidgetHost::InputEventObserver:
+  void OnInputEvent(const blink::WebInputEvent& event) override;
+
+  // content::WebContentsObserver:
+  void RenderViewHostChanged(content::RenderViewHost* old_host,
+                             content::RenderViewHost* new_host) override;
 
   // Refresh the DraggableRegion views.
   void UpdateDraggableRegionViews() {
@@ -115,10 +122,12 @@ class NativeWindowMac : public NativeWindow {
 
  private:
   // NativeWindow:
-  gfx::Size ContentSizeToWindowSize(const gfx::Size& size) override;
-  gfx::Size WindowSizeToContentSize(const gfx::Size& size) override;
+  gfx::Rect ContentBoundsToWindowBounds(const gfx::Rect& bounds);
+  gfx::Rect WindowBoundsToContentBounds(const gfx::Rect& bounds);
   void UpdateDraggableRegions(
       const std::vector<DraggableRegion>& regions) override;
+
+  void ShowWindowButton(NSWindowButton button);
 
   void InstallView();
   void UninstallView();
@@ -126,6 +135,9 @@ class NativeWindowMac : public NativeWindow {
   // Install the drag view, which will cover the whole window and decides
   // whehter we can drag.
   void UpdateDraggableRegionViews(const std::vector<DraggableRegion>& regions);
+
+  void RegisterInputEventObserver(content::RenderViewHost* host);
+  void UnregisterInputEventObserver(content::RenderViewHost* host);
 
   base::scoped_nsobject<AtomNSWindow> window_;
   base::scoped_nsobject<AtomNSWindowDelegate> window_delegate_;
@@ -147,6 +159,9 @@ class NativeWindowMac : public NativeWindow {
 
   // The "titleBarStyle" option.
   TitleBarStyle title_bar_style_;
+
+  // Whether user has scrolled the page to edge.
+  bool is_edge_;
 
   DISALLOW_COPY_AND_ASSIGN(NativeWindowMac);
 };

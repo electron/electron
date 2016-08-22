@@ -5,10 +5,9 @@
 #ifndef ATOM_BROWSER_NET_ATOM_CERT_VERIFIER_H_
 #define ATOM_BROWSER_NET_ATOM_CERT_VERIFIER_H_
 
+#include <memory>
 #include <string>
 
-#include "base/memory/ref_counted.h"
-#include "base/synchronization/lock.h"
 #include "net/cert/cert_verifier.h"
 
 namespace atom {
@@ -39,7 +38,6 @@ class AtomCertVerifier : public net::CertVerifier {
   bool SupportsOCSPStapling() override;
 
  private:
-  base::Lock lock_;
   VerifyProc verify_proc_;
   std::unique_ptr<net::CertVerifier> default_cert_verifier_;
 

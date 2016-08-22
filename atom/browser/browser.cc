@@ -155,6 +155,12 @@ void Browser::DidFinishLaunching() {
   FOR_EACH_OBSERVER(BrowserObserver, observers_, OnFinishLaunching());
 }
 
+void Browser::OnAccessibilitySupportChanged() {
+  FOR_EACH_OBSERVER(BrowserObserver,
+                    observers_,
+                    OnAccessibilitySupportChanged());
+}
+
 void Browser::RequestLogin(
     LoginHandler* login_handler,
     std::unique_ptr<base::DictionaryValue> request_details) {

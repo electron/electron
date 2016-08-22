@@ -56,7 +56,7 @@ class URLRequestAsarJob : public net::URLRequestJob {
   void Kill() override;
   int ReadRawData(net::IOBuffer* buf, int buf_size) override;
   bool IsRedirectResponse(GURL* location, int* http_status_code) override;
-  net::Filter* SetupFilter() const override;
+  std::unique_ptr<net::Filter> SetupFilter() const override;
   bool GetMimeType(std::string* mime_type) const override;
   void SetExtraRequestHeaders(const net::HttpRequestHeaders& headers) override;
   int GetResponseCode() const override;

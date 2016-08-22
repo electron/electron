@@ -2,6 +2,7 @@
 
 const assert = require('assert')
 const path = require('path')
+const {closeWindow} = require('./window-helpers')
 
 const {ipcRenderer, remote} = require('electron')
 const {ipcMain, webContents, BrowserWindow} = remote
@@ -16,6 +17,12 @@ const comparePaths = function (path1, path2) {
 
 describe('ipc module', function () {
   var fixtures = path.join(__dirname, 'fixtures')
+
+  var w = null
+
+  afterEach(function () {
+    return closeWindow(w).then(function () { w = null })
+  })
 
   describe('remote.require', function () {
     it('should returns same object for the same module', function () {
@@ -43,6 +50,58 @@ describe('ipc module', function () {
     it('should search module from the user app', function () {
       comparePaths(path.normalize(remote.process.mainModule.filename), path.resolve(__dirname, 'static', 'main.js'))
       comparePaths(path.normalize(remote.process.mainModule.paths[0]), path.resolve(__dirname, 'static', 'node_modules'))
+    })
+
+    it('handles circular references in arrays and objects', function () {
+      var a = remote.require(path.join(fixtures, 'module', 'circular.js'))
+
+      var arrayA = ['foo']
+      var arrayB = [arrayA, 'bar']
+      arrayA.push(arrayB)
+      assert.deepEqual(a.returnArgs(arrayA, arrayB), [
+        ['foo', [null, 'bar']],
+        [['foo', null], 'bar']
+      ])
+
+      var objectA = {foo: 'bar'}
+      var objectB = {baz: objectA}
+      objectA.objectB = objectB
+      assert.deepEqual(a.returnArgs(objectA, objectB), [
+        {foo: 'bar', objectB: {baz: null}},
+        {baz: {foo: 'bar', objectB: null}}
+      ])
+
+      arrayA = [1, 2, 3]
+      assert.deepEqual(a.returnArgs({foo: arrayA}, {bar: arrayA}), [
+        {foo: [1, 2, 3]},
+        {bar: [1, 2, 3]}
+      ])
+
+      objectA = {foo: 'bar'}
+      assert.deepEqual(a.returnArgs({foo: objectA}, {bar: objectA}), [
+        {foo: {foo: 'bar'}},
+        {bar: {foo: 'bar'}}
+      ])
+
+      arrayA = []
+      arrayA.push(arrayA)
+      assert.deepEqual(a.returnArgs(arrayA), [
+        [null]
+      ])
+
+      objectA = {}
+      objectA.foo = objectA
+      objectA.bar = 'baz'
+      assert.deepEqual(a.returnArgs(objectA), [
+        {foo: null, bar: 'baz'}
+      ])
+
+      objectA = {}
+      objectA.foo = {bar: objectA}
+      objectA.bar = 'baz'
+      assert.deepEqual(a.returnArgs(objectA), [
+        {foo: {bar: null}, bar: 'baz'}
+      ])
     })
   })
 
@@ -90,19 +149,24 @@ describe('ipc module', function () {
   })
 
   describe('remote value in browser', function () {
-    var print = path.join(fixtures, 'module', 'print_name.js')
+    const print = path.join(fixtures, 'module', 'print_name.js')
+    const printName = remote.require(print)
 
     it('keeps its constructor name for objects', function () {
-      var buf = new Buffer('test')
-      var printName = remote.require(print)
+      const buf = new Buffer('test')
       assert.equal(printName.print(buf), 'Buffer')
     })
 
     it('supports instanceof Date', function () {
-      var now = new Date()
-      var printName = remote.require(print)
+      const now = new Date()
       assert.equal(printName.print(now), 'Date')
       assert.deepEqual(printName.echo(now), now)
+    })
+
+    it('supports TypedArray', function () {
+      const values = [1, 2, 3, 4]
+      const typedArray = printName.typedArray(values)
+      assert.deepEqual(values, typedArray)
     })
   })
 
@@ -230,6 +294,15 @@ describe('ipc module', function () {
       })
       ipcRenderer.send('message', currentDate)
     })
+
+    it('can send objects with DOM class prototypes', function (done) {
+      ipcRenderer.once('message', function (event, value) {
+        assert.equal(value.protocol, 'file:')
+        assert.equal(value.hostname, '')
+        done()
+      })
+      ipcRenderer.send('message', document.location)
+    })
   })
 
   describe('ipc.sendSync', function () {
@@ -245,19 +318,18 @@ describe('ipc module', function () {
     it('does not crash when reply is not sent and browser is destroyed', function (done) {
       this.timeout(10000)
 
-      var w = new BrowserWindow({
+      w = new BrowserWindow({
         show: false
       })
       ipcMain.once('send-sync-message', function (event) {
         event.returnValue = null
-        w.destroy()
         done()
       })
       w.loadURL('file://' + path.join(fixtures, 'api', 'send-sync-message.html'))
     })
 
     it('does not crash when reply is sent by multiple listeners', function (done) {
-      var w = new BrowserWindow({
+      w = new BrowserWindow({
         show: false
       })
       ipcMain.on('send-sync-message', function (event) {
@@ -265,7 +337,6 @@ describe('ipc module', function () {
       })
       ipcMain.on('send-sync-message', function (event) {
         event.returnValue = null
-        w.destroy()
         done()
       })
       w.loadURL('file://' + path.join(fixtures, 'api', 'send-sync-message.html'))
@@ -297,12 +368,6 @@ describe('ipc module', function () {
   })
 
   describe('remote listeners', function () {
-    var w = null
-
-    afterEach(function () {
-      w.destroy()
-    })
-
     it('can be added and removed correctly', function () {
       w = new BrowserWindow({
         show: false

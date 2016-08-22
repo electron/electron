@@ -11,7 +11,6 @@
 #include "atom/common/api/locker.h"
 #include "atom/common/atom_command_line.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
-#include "atom/common/node_includes.h"
 #include "base/command_line.h"
 #include "base/base_paths.h"
 #include "base/environment.h"
@@ -21,6 +20,8 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/common/content_paths.h"
 #include "native_mate/dictionary.h"
+
+#include "atom/common/node_includes.h"
 
 using content::BrowserThread;
 
@@ -71,10 +72,6 @@ const int Function::kLineOffsetNotFound = -1;
 namespace atom {
 
 namespace {
-
-// Empty callback for async handle.
-void UvNoOp(uv_async_t* handle) {
-}
 
 // Convert the given vector to an array of C-strings. The strings in the
 // returned vector are only guaranteed valid so long as the vector of strings
@@ -172,6 +169,11 @@ node::Environment* NodeBindings::CreateEnvironment(
       context->GetIsolate(), uv_default_loop(), context,
       args.size(), c_argv.get(), 0, nullptr);
 
+  // Node turns off AutorunMicrotasks, but we need it in web pages to match the
+  // behavior of Chrome.
+  if (!is_browser_)
+    context->GetIsolate()->SetAutorunMicrotasks(true);
+
   mate::Dictionary process(context->GetIsolate(), env->process_object());
   process.Set("type", process_type);
   process.Set("resourcesPath", resources_path);
@@ -195,7 +197,7 @@ void NodeBindings::PrepareMessageLoop() {
 
   // Add dummy handle for libuv, otherwise libuv would quit when there is
   // nothing to do.
-  uv_async_init(uv_loop_, &dummy_uv_handle_, UvNoOp);
+  uv_async_init(uv_loop_, &dummy_uv_handle_, nullptr);
 
   // Start worker that will interrupt main loop when having uv events.
   uv_sem_init(&embed_sem_, 0);
@@ -216,7 +218,6 @@ void NodeBindings::UvRunOnce() {
   DCHECK(!is_browser_ || BrowserThread::CurrentlyOn(BrowserThread::UI));
 
   node::Environment* env = uv_env();
-  CHECK(env);
 
   // Use Locker in browser process.
   mate::Locker locker(env->isolate());
@@ -231,7 +232,7 @@ void NodeBindings::UvRunOnce() {
 
   // Deal with uv events.
   int r = uv_run(uv_loop_, UV_RUN_NOWAIT);
-  if (r == 0 || uv_loop_->stop_flag != 0)
+  if (r == 0)
     message_loop_->QuitWhenIdle();  // Quit from uv.
 
   // Tell the worker thread to continue polling.

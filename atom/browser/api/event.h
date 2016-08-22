@@ -21,7 +21,7 @@ class Event : public Wrappable<Event>,
   static Handle<Event> Create(v8::Isolate* isolate);
 
   static void BuildPrototype(v8::Isolate* isolate,
-                             v8::Local<v8::ObjectTemplate> prototype);
+                             v8::Local<v8::FunctionTemplate> prototype);
 
   // Pass the sender and message to be replied.
   void SetSenderAndMessage(content::WebContents* sender, IPC::Message* message);

@@ -20,7 +20,7 @@ class RenderProcessPreferences
       ForAllWebContents(v8::Isolate* isolate);
 
   static void BuildPrototype(v8::Isolate* isolate,
-                             v8::Local<v8::ObjectTemplate> prototype);
+                             v8::Local<v8::FunctionTemplate> prototype);
 
   int AddEntry(const base::DictionaryValue& entry);
   void RemoveEntry(int id);

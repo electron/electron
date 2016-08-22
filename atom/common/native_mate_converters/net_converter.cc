@@ -11,6 +11,7 @@
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "base/values.h"
+#include "base/strings/string_number_conversions.h"
 #include "native_mate/dictionary.h"
 #include "net/base/upload_bytes_element_reader.h"
 #include "net/base/upload_data_stream.h"
@@ -41,11 +42,17 @@ v8::Local<v8::Value> Converter<scoped_refptr<net::X509Certificate>>::ToV8(
   std::string encoded_data;
   net::X509Certificate::GetPEMEncoded(
       val->os_cert_handle(), &encoded_data);
-  auto buffer = node::Buffer::Copy(isolate,
-                                   encoded_data.data(),
-                                   encoded_data.size()).ToLocalChecked();
-  dict.Set("data", buffer);
+  dict.Set("data", encoded_data);
   dict.Set("issuerName", val->issuer().GetDisplayName());
+  dict.Set("subjectName", val->subject().GetDisplayName());
+  dict.Set("serialNumber", base::HexEncode(val->serial_number().data(),
+                                           val->serial_number().size()));
+  dict.Set("validStart", val->valid_start().ToDoubleT());
+  dict.Set("validExpiry", val->valid_expiry().ToDoubleT());
+  dict.Set("fingerprint",
+           net::HashValue(
+              val->CalculateFingerprint256(val->os_cert_handle())).ToString());
+
   return dict.GetHandle();
 }
 

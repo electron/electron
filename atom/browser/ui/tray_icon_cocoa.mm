@@ -9,7 +9,7 @@
 #include "ui/events/cocoa/cocoa_event_utils.h"
 #include "ui/gfx/image/image.h"
 #include "ui/gfx/mac/coordinate_conversion.h"
-#include "ui/gfx/screen.h"
+#include "ui/display/screen.h"
 
 namespace {
 
@@ -23,7 +23,7 @@ const CGFloat kVerticalTitleMargin = 2;
 @interface StatusItemView : NSView {
   atom::TrayIconCocoa* trayIcon_; // weak
   AtomMenuController* menuController_; // weak
-  BOOL isHighlightEnable_;
+  atom::TrayIcon::HighlightMode highlight_mode_;
   BOOL forceHighlight_;
   BOOL inMouseEventSequence_;
   base::scoped_nsobject<NSImage> image_;
@@ -39,12 +39,15 @@ const CGFloat kVerticalTitleMargin = 2;
 - (id)initWithImage:(NSImage*)image icon:(atom::TrayIconCocoa*)icon {
   image_.reset([image copy]);
   trayIcon_ = icon;
-  isHighlightEnable_ = YES;
+  highlight_mode_ = atom::TrayIcon::HighlightMode::SELECTION;
   forceHighlight_ = NO;
   inMouseEventSequence_ = NO;
 
   if ((self = [super initWithFrame: CGRectZero])) {
-    [self registerForDraggedTypes: @[NSFilenamesPboardType]];
+    [self registerForDraggedTypes: @[
+      NSFilenamesPboardType,
+      NSStringPboardType,
+    ]];
 
     // Create the status item.
     NSStatusItem * item = [[NSStatusBar systemStatusBar]
@@ -189,8 +192,9 @@ const CGFloat kVerticalTitleMargin = 2;
   alternateImage_.reset([image copy]);
 }
 
-- (void)setHighlight:(BOOL)highlight {
-  isHighlightEnable_ = highlight;
+- (void)setHighlight:(atom::TrayIcon::HighlightMode)mode {
+  highlight_mode_ = mode;
+  [self setNeedsDisplay:YES];
 }
 
 - (void)setTitle:(NSString*)title {
@@ -307,7 +311,12 @@ const CGFloat kVerticalTitleMargin = 2;
       dropFiles.push_back(base::SysNSStringToUTF8(file));
     trayIcon_->NotifyDropFiles(dropFiles);
     return YES;
+  } else if ([[pboard types] containsObject:NSStringPboardType]) {
+    NSString* dropText = [pboard stringForType:NSStringPboardType];
+    trayIcon_->NotifyDropText(base::SysNSStringToUTF8(dropText));
+    return YES;
   }
+
   return NO;
 }
 
@@ -320,10 +329,15 @@ const CGFloat kVerticalTitleMargin = 2;
 }
 
 - (BOOL)shouldHighlight {
-  if (isHighlightEnable_ && forceHighlight_)
-    return true;
-  BOOL isMenuOpen = menuController_ && [menuController_ isMenuOpen];
-  return isHighlightEnable_ && (inMouseEventSequence_ || isMenuOpen);
+  switch (highlight_mode_) {
+    case atom::TrayIcon::HighlightMode::ALWAYS:
+      return true;
+    case atom::TrayIcon::HighlightMode::NEVER:
+      return false;
+    case atom::TrayIcon::HighlightMode::SELECTION:
+      BOOL isMenuOpen = menuController_ && [menuController_ isMenuOpen];
+      return forceHighlight_ || inMouseEventSequence_ || isMenuOpen;
+  }
 }
 
 @end
@@ -361,8 +375,8 @@ void TrayIconCocoa::SetTitle(const std::string& title) {
   [status_item_view_ setTitle:base::SysUTF8ToNSString(title)];
 }
 
-void TrayIconCocoa::SetHighlightMode(bool highlight) {
-  [status_item_view_ setHighlight:highlight];
+void TrayIconCocoa::SetHighlightMode(TrayIcon::HighlightMode mode) {
+  [status_item_view_ setHighlight:mode];
 }
 
 void TrayIconCocoa::PopUpContextMenu(const gfx::Point& pos,

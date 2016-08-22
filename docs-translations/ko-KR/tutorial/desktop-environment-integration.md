@@ -310,6 +310,36 @@ win.setRepresentedFilename('/etc/passwd');
 win.setDocumentEdited(true);
 ```
 
+## 파일을 윈도우 밖으로 드래그할 수 있도록 만들기
+
+파일을 조작하는 특정 종류의 애플리케이션들에서 파일을 Electron에서 다른 애플리케이션으로
+드래그할 수 있는 기능은 중요합니다. 이 기능을 구현하려면 애플리케이션에서
+`ondragstart` 이벤트가 발생했을 때 `webContents.startDrag(item)` API를 호출해야
+합니다:
+
+웹 페이지에서:
+
+```html
+<a href="#" id="drag">item</a>
+<script type="text/javascript" charset="utf-8">
+  document.getElementById('drag').ondragstart = (event) => {
+    event.preventDefault()
+    ipcRenderer.send('ondragstart', '/path/to/item')
+  }
+</script>
+```
+
+메인 프로세스에서:
+
+```javascript
+ipcMain.on('ondragstart', (event, filePath) => {
+  event.sender.startDrag({
+    file: filePath,
+    icon: '/path/to/icon.png'
+  })
+})
+```
+
 [addrecentdocument]: ../api/app.md#appaddrecentdocumentpath-os-x-windows
 [clearrecentdocuments]: ../api/app.md#appclearrecentdocuments-os-x-windows
 [setusertaskstasks]: ../api/app.md#appsetusertaskstasks-windows

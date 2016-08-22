@@ -20,7 +20,7 @@ let win = new BrowserWindow({width: 800, height: 600});
 win.loadURL('https://github.com');
 ```
 
-**참고:** 반대로 메인 프로세스에서 렌더러 프로세스에 접근 하려면 [webContents.executeJavascript](web-contents.md#webcontentsexecutejavascriptcode-usergesture)
+**참고:** 반대로 메인 프로세스에서 렌더러 프로세스에 접근 하려면 [webContents.executeJavascript](web-contents.md#webcontentsexecutejavascriptcode-usergesture-callback)
 메서드를 사용하면 됩니다.
 
 ## Remote 객체
@@ -70,7 +70,7 @@ exports.withRendererCallback = (mapper) => {
 ;
 
 exports.withLocalCallback = () => {
-  return exports.mapNumbers(x => x + 1);
+  return [1,2,3].map(x => x + 1);
 };
 ```
 
@@ -82,7 +82,7 @@ const withRendererCb = mapNumbers.withRendererCallback(x => x + 1);
 
 const withLocalCb = mapNumbers.withLocalCallback();
 
-console.log(withRendererCb, withLocalCb); // [true, true, true], [2, 3, 4]
+console.log(withRendererCb, withLocalCb); // [undefined, undefined, undefined], [2, 3, 4]
 ```
 
 보다시피 동기적인 렌더러 콜백 함수의 반환 값은 예상되지 않은 값입니다. 그리고 메인

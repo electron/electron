@@ -43,7 +43,7 @@ void GracefulShutdownHandler(int signal) {
   struct sigaction action;
   memset(&action, 0, sizeof(action));
   action.sa_handler = SIG_DFL;
-  RAW_CHECK(sigaction(signal, &action, NULL) == 0);
+  RAW_CHECK(sigaction(signal, &action, nullptr) == 0);
 
   RAW_CHECK(g_pipe_pid == getpid());
   RAW_CHECK(g_shutdown_pipe_write_fd != -1);
@@ -171,7 +171,7 @@ void AtomBrowserMainParts::HandleSIGCHLD() {
   struct sigaction action;
   memset(&action, 0, sizeof(action));
   action.sa_handler = SIGCHLDHandler;
-  CHECK_EQ(sigaction(SIGCHLD, &action, NULL), 0);
+  CHECK_EQ(sigaction(SIGCHLD, &action, nullptr), 0);
 }
 
 void AtomBrowserMainParts::HandleShutdownSignals() {
@@ -211,15 +211,15 @@ void AtomBrowserMainParts::HandleShutdownSignals() {
   struct sigaction action;
   memset(&action, 0, sizeof(action));
   action.sa_handler = SIGTERMHandler;
-  CHECK_EQ(sigaction(SIGTERM, &action, NULL), 0);
+  CHECK_EQ(sigaction(SIGTERM, &action, nullptr), 0);
   // Also handle SIGINT - when the user terminates the browser via Ctrl+C. If
   // the browser process is being debugged, GDB will catch the SIGINT first.
   action.sa_handler = SIGINTHandler;
-  CHECK_EQ(sigaction(SIGINT, &action, NULL), 0);
+  CHECK_EQ(sigaction(SIGINT, &action, nullptr), 0);
   // And SIGHUP, for when the terminal disappears. On shutdown, many Linux
   // distros send SIGHUP, SIGTERM, and then SIGKILL.
   action.sa_handler = SIGHUPHandler;
-  CHECK_EQ(sigaction(SIGHUP, &action, NULL), 0);
+  CHECK_EQ(sigaction(SIGHUP, &action, nullptr), 0);
 }
 
 }  // namespace atom

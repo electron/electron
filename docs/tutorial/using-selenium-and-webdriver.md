@@ -18,7 +18,7 @@ has helpers to access Electron APIs in your tests and bundles ChromeDriver.
 $ npm install --save-dev spectron
 ```
 
-```js
+```javascript
 // A simple test to verify a visible window is opened with a title
 var Application = require('spectron').Application
 var assert = require('assert')
@@ -79,7 +79,7 @@ upstream, except that you have to manually specify how to connect chrome driver
 and where to find Electron's binary:
 
 ```javascript
-const webdriver = require('selenium-webdriver');
+const webdriver = require('selenium-webdriver')
 
 const driver = new webdriver.Builder()
   // The "9515" is the port opened by chrome driver.
@@ -87,22 +87,22 @@ const driver = new webdriver.Builder()
   .withCapabilities({
     chromeOptions: {
       // Here is the path to your Electron binary.
-      binary: '/Path-to-Your-App.app/Contents/MacOS/Electron',
+      binary: '/Path-to-Your-App.app/Contents/MacOS/Electron'
     }
   })
   .forBrowser('electron')
-  .build();
+  .build()
 
-driver.get('http://www.google.com');
-driver.findElement(webdriver.By.name('q')).sendKeys('webdriver');
-driver.findElement(webdriver.By.name('btnG')).click();
+driver.get('http://www.google.com')
+driver.findElement(webdriver.By.name('q')).sendKeys('webdriver')
+driver.findElement(webdriver.By.name('btnG')).click()
 driver.wait(() => {
- return driver.getTitle().then((title) => {
-   return title === 'webdriver - Google Search';
- });
-}, 1000);
+  return driver.getTitle().then((title) => {
+    return title === 'webdriver - Google Search'
+  })
+}, 1000)
 
-driver.quit();
+driver.quit()
 ```
 
 ## Setting up with WebdriverIO
@@ -132,7 +132,7 @@ $ npm install webdriverio
 ### 3. Connect to chrome driver
 
 ```javascript
-const webdriverio = require('webdriverio');
+const webdriverio = require('webdriverio')
 const options = {
   host: 'localhost', // Use localhost as chrome driver server
   port: 9515,        // "9515" is the port opened by chrome driver.
@@ -143,9 +143,9 @@ const options = {
       args: [/* cli arguments */]           // Optional, perhaps 'app=' + /path/to/your/app/
     }
   }
-};
+}
 
-let client = webdriverio.remote(options);
+let client = webdriverio.remote(options)
 
 client
   .init()
@@ -153,9 +153,9 @@ client
   .setValue('#q', 'webdriverio')
   .click('#btnG')
   .getTitle().then((title) => {
-    console.log('Title was: ' + title);
+    console.log('Title was: ' + title)
   })
-  .end();
+  .end()
 ```
 
 ## Workflow

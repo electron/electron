@@ -47,6 +47,8 @@ For API references, there are exceptions to this rule.
 * Use `bash` instead of `cmd` in code blocks (due to the syntax highlighter).
 * Lines should be wrapped at 80 columns.
 * No nesting lists more than 2 levels (due to the markdown renderer).
+* All `js` and `javascript` code blocks are linted with
+[standard-markdown](http://npm.im/standard-markdown).
 
 ## Picking words
 
@@ -96,10 +98,11 @@ Using `autoUpdater` as an example:
 * API classes or classes that are part of modules must be listed under a
   `## Class: TheClassName` chapter.
 * One page can have multiple classes.
-* The constructors must be listed with `###`-level titles.
-* The methods must be listed under an `### Instance Methods` chapter.
-* The events must be listed under an `### Instance Events` chapter.
-* The properties must be listed under an `### Instance Properties` chapter.
+* Constructors must be listed with `###`-level titles.
+* [Static Methods](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Classes/static) must be listed under a `### Static Methods` chapter.
+* [Instance Methods](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Classes#Prototype_methods) must be listed under an `### Instance Methods` chapter.
+* Instance Events must be listed under an `### Instance Events` chapter.
+* Instance Properties must be listed under an `### Instance Properties` chapter.
 
 Using the `Session` and `Cookies` classes as an example:
 

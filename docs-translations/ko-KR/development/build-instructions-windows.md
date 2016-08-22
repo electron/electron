@@ -10,7 +10,8 @@
 * [Node.js](http://nodejs.org/download/)
 * [Git](http://git-scm.com)
 
-현재 사용하고 있는 PC에 Windows를 설치하지 않았다면 [modern.ie](https://www.modern.ie/en-us/virtualization-tools#downloads)에서
+현재 사용하고 있는 PC에 Windows를 설치하지 않았다면
+[dev.microsoftedge.com](https://developer.microsoft.com/en-us/microsoft-edge/tools/vms/)에서
 사용 기한이 정해져있는 무료 가상머신 버전의 Windows를 받아 Electron을 빌드하는 방법도
 있습니다.
 

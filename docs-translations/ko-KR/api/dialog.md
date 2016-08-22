@@ -32,7 +32,7 @@ const {dialog} = require('electron').remote;
   * `filters` Array
   * `properties` Array - 대화 상자가 사용할 기능(모드)이 담긴 배열입니다.
     다음을 포함할 수 있습니다: `openFile`, `openDirectory`, `multiSelections`,
-    `createDirectory`
+    `createDirectory`, `showHiddenFiles`.
 * `callback` Function (optional)
 
 사용할 대화 상자의 기능이 담긴 배열입니다. 다음을 포함할 수 있습니다: `openFile`,

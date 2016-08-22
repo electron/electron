@@ -7,11 +7,14 @@
 
 #include "native_mate/converter.h"
 
+namespace display {
+class Display;
+}
+
 namespace gfx {
 class Point;
 class Size;
 class Rect;
-class Display;
 }
 
 namespace mate {
@@ -44,12 +47,12 @@ struct Converter<gfx::Rect> {
 };
 
 template<>
-struct Converter<gfx::Display> {
+struct Converter<display::Display> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                    const gfx::Display& val);
+                                    const display::Display& val);
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
-                     gfx::Display* out);
+                     display::Display* out);
 };
 
 }  // namespace mate

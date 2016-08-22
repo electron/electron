@@ -25,7 +25,7 @@ _リンクになっていないリストは未翻訳のものです。_
 * [DevTools エクステンション](tutorial/devtools-extension.md)
 * [Pepper Flashプラグインを使用する](tutorial/using-pepper-flash-plugin.md)
 * [Widevine CDMプラグインを使用する](tutorial/using-widevine-cdm-plugin.md)
-* Testing on Headless CI Systems (Travis, Jenkins) (tutorial/testing-on-headless-ci.md)
+* [継続的インテグレーションシステムによるテスト(Travis, Jenkins)](tutorial/testing-on-headless-ci.md)
 
 
 # チュートリアル
@@ -63,9 +63,9 @@ _リンクになっていないリストは未翻訳のものです。_
 * [powerSaveBlocker](api/power-save-blocker.md)
 * [protocol](api/protocol.md)
 * [session](api/session.md)
-* systemPreferences (api/system-preferences.md)
-* webContents (api/web-contents.md)
+* [systemPreferences](api/system-preferences.md)
 * [Tray](api/tray.md)
+* webContents (api/web-contents.md)
 
 ### Renderer Processのモジュール (Web Page):
 
@@ -85,12 +85,12 @@ _リンクになっていないリストは未翻訳のものです。_
 ## 開発
 
 
-* Coding Style (development/coding-style.md)
+* [コーディング規約](development/coding-style.md)
 * Source Code Directory Structure (development/source-code-directory-structure.md)
-* Technical Differences to NW.js  (formerly node-webkit)(development/atom-shell-vs-node-webkit.md)
+* [NW.js(node-webkit) との技術的違い](development/atom-shell-vs-node-webkit.md)
 * Build System Overview (development/build-system-overview.md)
-* Build Instructions (macOS) (development/build-instructions-osx.md)
+* [ビルド方法(macOS)](development/build-instructions-osx.md)
 * Build Instructions (Windows) (development/build-instructions-windows.md)
-* Build Instructions (Linux) (development/build-instructions-linux.md)
+* [ビルド方法(Linux)](development/build-instructions-linux.md)
 * Debug Instructions (Windows) (development/debug-instructions-windows.md)
 * Setting Up Symbol Server in debugger (development/setting-up-symbol-server.md)

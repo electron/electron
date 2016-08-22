@@ -6,7 +6,6 @@
 
 #include "atom/common/api/locker.h"
 #include "atom/common/node_includes.h"
-#include "base/memory/scoped_ptr.h"
 
 namespace mate {
 

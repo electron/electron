@@ -5,6 +5,7 @@
 #import "atom/browser/api/atom_api_menu_mac.h"
 
 #include "atom/browser/native_window.h"
+#include "atom/browser/unresponsive_suppressor.h"
 #include "base/message_loop/message_loop.h"
 #include "base/strings/sys_string_conversions.h"
 #include "brightray/browser/inspectable_web_contents.h"
@@ -17,7 +18,8 @@ namespace atom {
 
 namespace api {
 
-MenuMac::MenuMac(v8::Isolate* isolate) : Menu(isolate) {
+MenuMac::MenuMac(v8::Isolate* isolate, v8::Local<v8::Object> wrapper)
+    : Menu(isolate, wrapper) {
 }
 
 void MenuMac::PopupAt(Window* window, int x, int y, int positioning_item) {
@@ -67,6 +69,9 @@ void MenuMac::PopupAt(Window* window, int x, int y, int positioning_item) {
   if (rightmostMenuPoint > screenRight)
     position.x = position.x - [menu size].width;
 
+  // Don't emit unresponsive event when showing menu.
+  atom::UnresponsiveSuppressor suppressor;
+
   // Show the menu.
   [menu popUpMenuPositioningItem:item atLocation:position inView:view];
 }
@@ -90,8 +95,8 @@ void Menu::SendActionToFirstResponder(const std::string& action) {
 }
 
 // static
-mate::WrappableBase* Menu::Create(v8::Isolate* isolate) {
-  return new MenuMac(isolate);
+mate::WrappableBase* Menu::New(mate::Arguments* args) {
+  return new MenuMac(args->isolate(), args->GetThis());
 }
 
 }  // namespace api

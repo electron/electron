@@ -20,7 +20,8 @@ On Ubuntu, install the following libraries:
 $ sudo apt-get install build-essential clang libdbus-1-dev libgtk2.0-dev \
                        libnotify-dev libgnome-keyring-dev libgconf2-dev \
                        libasound2-dev libcap-dev libcups2-dev libxtst-dev \
-                       libxss1 libnss3-dev gcc-multilib g++-multilib curl
+                       libxss1 libnss3-dev gcc-multilib g++-multilib curl \
+                       gperf bison
 ```
 
 On Fedora, install the following libraries:
@@ -28,7 +29,8 @@ On Fedora, install the following libraries:
 ```bash
 $ sudo yum install clang dbus-devel gtk2-devel libnotify-devel libgnome-keyring-devel \
                    xorg-x11-server-utils libcap-devel cups-devel libXtst-devel \
-                   alsa-lib-devel libXrandr-devel GConf2-devel nss-devel
+                   alsa-lib-devel libXrandr-devel GConf2-devel nss-devel bison \
+                   gperf
 ```
 
 Other distributions may offer similar packages for installation via package

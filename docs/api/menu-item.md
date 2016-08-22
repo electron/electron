@@ -56,6 +56,9 @@ The `role` property can have following values:
 * `close` - Close current window
 * `quit`- Quit the application
 * `togglefullscreen`- Toggle full screen mode on the current window
+* `resetzoom` - Reset the focused page's zoom level to the original size
+* `zoomin` - Zoom in the focused page by 10%
+* `zoomout` - Zoom out the focused page by 10%
 
 On macOS `role` can also have following additional values:
 
@@ -63,6 +66,8 @@ On macOS `role` can also have following additional values:
 * `hide` - Map to the `hide` action
 * `hideothers` - Map to the `hideOtherApplications` action
 * `unhide` - Map to the `unhideAllApplications` action
+* `startspeaking` - Map to the `startSpeaking` action
+* `stopspeaking` - Map to the `stopSpeaking` action
 * `front` - Map to the `arrangeInFront` action
 * `zoom` - Map to the `performZoom` action
 * `window` - The submenu is a "Window" menu

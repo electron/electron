@@ -6,10 +6,10 @@ The following example shows how to quit the application when the last window is
 closed:
 
 ```javascript
-const {app} = require('electron');
+const {app} = require('electron')
 app.on('window-all-closed', () => {
-  app.quit();
-});
+  app.quit()
+})
 ```
 
 ## Events
@@ -178,8 +178,13 @@ Returns:
 * `url` URL
 * `error` String - The error code
 * `certificate` Object
-  * `data` Buffer - PEM encoded data
-  * `issuerName` String
+  * `data` String - PEM encoded data
+  * `issuerName` String - Issuer's Common Name
+  * `subjectName` String - Subject's Common Name
+  * `serialNumber` String - Hex value represented string
+  * `validStart` Integer - Start date of the certificate being valid in seconds
+  * `validExpiry` Integer - End date of the certificate being valid in seconds
+  * `fingerprint` String - Fingerprint of the certificate
 * `callback` Function
 
 Emitted when failed to verify the `certificate` for `url`, to trust the
@@ -187,15 +192,17 @@ certificate you should prevent the default behavior with
 `event.preventDefault()` and call `callback(true)`.
 
 ```javascript
+const {app} = require('electron')
+
 app.on('certificate-error', (event, webContents, url, error, certificate, callback) => {
   if (url === 'https://github.com') {
     // Verification logic.
-    event.preventDefault();
-    callback(true);
+    event.preventDefault()
+    callback(true)
   } else {
-    callback(false);
+    callback(false)
   }
-});
+})
 ```
 
 ### Event: 'select-client-certificate'
@@ -206,8 +213,13 @@ Returns:
 * `webContents` [WebContents](web-contents.md)
 * `url` URL
 * `certificateList` [Objects]
-  * `data` Buffer - PEM encoded data
+  * `data` String - PEM encoded data
   * `issuerName` String - Issuer's Common Name
+  * `subjectName` String - Subject's Common Name
+  * `serialNumber` String - Hex value represented string
+  * `validStart` Integer - Start date of the certificate being valid in seconds
+  * `validExpiry` Integer - End date of the certificate being valid in seconds
+  * `fingerprint` String - Fingerprint of the certificate
 * `callback` Function
 
 Emitted when a client certificate is requested.
@@ -218,10 +230,12 @@ and `callback` needs to be called with an entry filtered from the list. Using
 certificate from the store.
 
 ```javascript
+const {app} = require('electron')
+
 app.on('select-client-certificate', (event, webContents, url, list, callback) => {
-  event.preventDefault();
-  callback(list[0]);
-});
+  event.preventDefault()
+  callback(list[0])
+})
 ```
 
 ### Event: 'login'
@@ -249,15 +263,30 @@ should prevent the default behavior with `event.preventDefault()` and call
 `callback(username, password)` with the credentials.
 
 ```javascript
+const {app} = require('electron')
+
 app.on('login', (event, webContents, request, authInfo, callback) => {
-  event.preventDefault();
-  callback('username', 'secret');
-});
+  event.preventDefault()
+  callback('username', 'secret')
+})
 ```
 
 ### Event: 'gpu-process-crashed'
 
 Emitted when the gpu process crashes.
+
+### Event: 'accessibility-support-changed' _macOS_ _Windows_
+
+Returns:
+
+* `event` Event
+* `accessibilitySupportEnabled` Boolean - `true` when Chrome's accessibility
+  support is enabled, `false` otherwise.
+
+Emitted when Chrome's accessibility support changes. This event fires when
+assistive technologies, such as screen readers, are enabled or disabled.
+See https://www.chromium.org/developers/design-documents/accessibility for more
+details.
 
 ## Methods
 
@@ -308,6 +337,8 @@ An example of restarting current instance immediately and adding a new command
 line argument to the new instance:
 
 ```javascript
+const {app} = require('electron')
+
 app.relaunch({args: process.argv.slice(1) + ['--relaunch']})
 app.exit(0)
 ```
@@ -397,7 +428,7 @@ Overrides the current application's name.
 ### `app.getLocale()`
 
 Returns the current application locale. Possible return values are documented
-[here](app-locales.md).
+[here](locales.md).
 
 **Note:** When distributing your packaged app, you have to also ship the
 `locales` folder.
@@ -417,17 +448,24 @@ bar, and on macOS you can visit it from dock menu.
 
 Clears the recent documents list.
 
-### `app.setAsDefaultProtocolClient(protocol)` _macOS_ _Windows_
+### `app.setAsDefaultProtocolClient(protocol[, path, args])` _macOS_ _Windows_
 
 * `protocol` String - The name of your protocol, without `://`. If you want your
   app to handle `electron://` links, call this method with `electron` as the
   parameter.
+* `path` String (optional) _Windows_ - Defaults to `process.execPath`
+* `args` Array (optional) _Windows_ - Defaults to an empty array
 
 This method sets the current executable as the default handler for a protocol
 (aka URI scheme). It allows you to integrate your app deeper into the operating
 system. Once registered, all links with `your-protocol://` will be opened with
 the current executable. The whole link, including protocol, will be passed to
 your application as a parameter.
+
+On Windows you can provide optional parameters path, the path to your executable,
+and args, an array of arguments to be passed to your executable when it launches.
+
+Returns `true` when the call succeeded, otherwise returns `false`.
 
 **Note:** On macOS, you can only register protocols that have been added to
 your app's `info.plist`, which can not be modified at runtime. You can however
@@ -436,16 +474,22 @@ Please refer to [Apple's documentation][CFBundleURLTypes] for details.
 
 The API uses the Windows Registry and LSSetDefaultHandlerForURLScheme internally.
 
-### `app.removeAsDefaultProtocolClient(protocol)` _macOS_ _Windows_
+### `app.removeAsDefaultProtocolClient(protocol[, path, args])` _macOS_ _Windows_
 
 * `protocol` String - The name of your protocol, without `://`.
+* `path` String (optional) _Windows_ - Defaults to `process.execPath`
+* `args` Array (optional) _Windows_ - Defaults to an empty array
 
 This method checks if the current executable as the default handler for a
 protocol (aka URI scheme). If so, it will remove the app as the default handler.
 
-### `app.isDefaultProtocolClient(protocol)` _macOS_ _Windows_
+Returns `true` when the call succeeded, otherwise returns `false`.
+
+### `app.isDefaultProtocolClient(protocol[, path, args])` _macOS_ _Windows_
 
 * `protocol` String - The name of your protocol, without `://`.
+* `path` String (optional) _Windows_ - Defaults to `process.execPath`
+* `args` Array (optional) _Windows_ - Defaults to an empty array
 
 This method checks if the current executable is the default handler for a protocol
 (aka URI scheme). If so, it will return true. Otherwise, it will return false.
@@ -481,6 +525,8 @@ Adds `tasks` to the [Tasks][tasks] category of the JumpList on Windows.
   consists of two or more icons, set this value to identify the icon. If an
   icon file consists of one icon, this value is 0.
 
+Returns `true` when the call succeeded, otherwise returns `false`.
+
 ### `app.makeSingleInstance(callback)`
 
 * `callback` Function
@@ -514,24 +560,24 @@ An example of activating the window of primary instance when a second instance
 starts:
 
 ```javascript
-let myWindow = null;
+const {app} = require('electron')
+let myWindow = null
 
 const shouldQuit = app.makeSingleInstance((commandLine, workingDirectory) => {
   // Someone tried to run a second instance, we should focus our window.
   if (myWindow) {
-    if (myWindow.isMinimized()) myWindow.restore();
-    myWindow.focus();
+    if (myWindow.isMinimized()) myWindow.restore()
+    myWindow.focus()
   }
-});
+})
 
 if (shouldQuit) {
-  app.quit();
-  return;
+  app.quit()
 }
 
 // Create myWindow, load the rest of the app, etc...
 app.on('ready', () => {
-});
+})
 ```
 
 ### `app.releaseSingleInstance()`
@@ -598,22 +644,24 @@ Returns the current value displayed in the counter badge.
 
 Returns whether current desktop environment is Unity launcher.
 
-### `app.getLoginItemSettings()` _macOS_
+### `app.getLoginItemSettings()` _macOS_ _Windows_
 
 Return an Object with the login item settings of the app.
 
 * `openAtLogin` Boolean - `true` if the app is set to open at login.
 * `openAsHidden` Boolean - `true` if the app is set to open as hidden at login.
+  This setting is only supported on macOS.
 * `wasOpenedAtLogin` Boolean - `true` if the app was opened at login
-  automatically.
+  automatically. This setting is only supported on macOS.
 * `wasOpenedAsHidden` Boolean - `true` if the app was opened as a hidden login
   item. This indicates that the app should not open any windows at startup.
+  This setting is only supported on macOS.
 * `restoreState` Boolean - `true` if the app was opened as a login item that
   should restore the state from the previous session. This indicates that the
   app should restore the windows that were open the last time the app was
-  closed.
+  closed. This setting is only supported on macOS.
 
-### `app.setLoginItemSettings(settings)` _macOS_
+### `app.setLoginItemSettings(settings)` _macOS_ _Windows_
 
 * `settings` Object
   * `openAtLogin` Boolean - `true` to open the app at login, `false` to remove
@@ -621,9 +669,18 @@ Return an Object with the login item settings of the app.
   * `openAsHidden` Boolean - `true` to open the app as hidden. Defaults to
     `false`. The user can edit this setting from the System Preferences so
     `app.getLoginItemStatus().wasOpenedAsHidden` should be checked when the app
-    is opened to know the current value.
+    is opened to know the current value. This setting is only supported on
+    macOS.
 
 Set the app's login item settings.
+
+### `app.isAccessibilitySupportEnabled()` _macOS_ _Windows_
+
+Returns a `Boolean`, `true` if Chrome's accessibility support is enabled,
+`false` otherwise. This API will return `true` if the use of assistive
+technologies, such as screen readers, has been detected. See
+https://www.chromium.org/developers/design-documents/accessibility for more
+details.
 
 ### `app.commandLine.appendSwitch(switch[, value])`
 
@@ -682,6 +739,12 @@ Hides the dock icon.
 ### `app.dock.show()` _macOS_
 
 Shows the dock icon.
+
+### `app.dock.isVisible()` _macOS_
+
+Returns whether the dock icon is visible.
+The `app.dock.show()` call is asynchronous so this method might not
+return true immediately after that call.
 
 ### `app.dock.setMenu(menu)` _macOS_
 

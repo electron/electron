@@ -5,12 +5,12 @@
 #ifndef ATOM_COMMON_CRASH_REPORTER_CRASH_REPORTER_WIN_H_
 #define ATOM_COMMON_CRASH_REPORTER_CRASH_REPORTER_WIN_H_
 
+#include <memory>
 #include <string>
 #include <vector>
 
 #include "atom/common/crash_reporter/crash_reporter.h"
 #include "base/compiler_specific.h"
-#include "base/memory/scoped_ptr.h"
 #include "vendor/breakpad/src/client/windows/handler/exception_handler.h"
 
 namespace base {
@@ -62,6 +62,7 @@ class CrashReporterWin : public CrashReporter {
   google_breakpad::CustomClientInfo custom_info_;
 
   bool skip_system_crash_handler_;
+  bool code_range_registered_;
   std::unique_ptr<google_breakpad::ExceptionHandler> breakpad_;
 
   DISALLOW_COPY_AND_ASSIGN(CrashReporterWin);

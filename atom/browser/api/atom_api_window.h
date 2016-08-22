@@ -40,10 +40,10 @@ class WebContents;
 class Window : public mate::TrackableObject<Window>,
                public NativeWindowObserver {
  public:
-  static mate::WrappableBase* New(v8::Isolate* isolate, mate::Arguments* args);
+  static mate::WrappableBase* New(mate::Arguments* args);
 
   static void BuildPrototype(v8::Isolate* isolate,
-                             v8::Local<v8::ObjectTemplate> prototype);
+                             v8::Local<v8::FunctionTemplate> prototype);
 
   // Returns the BrowserWindow object from |native_window|.
   static v8::Local<v8::Value> From(v8::Isolate* isolate,
@@ -52,11 +52,9 @@ class Window : public mate::TrackableObject<Window>,
   NativeWindow* window() const { return window_.get(); }
 
  protected:
-  Window(v8::Isolate* isolate, const mate::Dictionary& options);
+  Window(v8::Isolate* isolate, v8::Local<v8::Object> wrapper,
+         const mate::Dictionary& options);
   ~Window() override;
-
-  // TrackableObject:
-  void AfterInit(v8::Isolate* isolate) override;
 
   // NativeWindowObserver:
   void WillCloseWindow(bool* prevent_default) override;
@@ -114,6 +112,8 @@ class Window : public mate::TrackableObject<Window>,
   std::vector<int> GetSize();
   void SetContentSize(int width, int height, mate::Arguments* args);
   std::vector<int> GetContentSize();
+  void SetContentBounds(const gfx::Rect& bounds, mate::Arguments* args);
+  gfx::Rect GetContentBounds();
   void SetMinimumSize(int width, int height);
   std::vector<int> GetMinimumSize();
   void SetMaximumSize(int width, int height);
@@ -155,7 +155,7 @@ class Window : public mate::TrackableObject<Window>,
   void SetIgnoreMouseEvents(bool ignore);
   void SetContentProtection(bool enable);
   void SetFocusable(bool focusable);
-  void SetProgressBar(double progress);
+  void SetProgressBar(double progress, mate::Arguments* args);
   void SetOverlayIcon(const gfx::Image& overlay,
                       const std::string& description);
   bool SetThumbarButtons(mate::Arguments* args);
@@ -179,6 +179,8 @@ class Window : public mate::TrackableObject<Window>,
   bool IsWindowMessageHooked(UINT message);
   void UnhookWindowMessage(UINT message);
   void UnhookAllWindowMessages();
+  bool SetThumbnailClip(const gfx::Rect& region);
+  bool SetThumbnailToolTip(const std::string& tooltip);
 #endif
 
 #if defined(TOOLKIT_VIEWS)

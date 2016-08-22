@@ -33,5 +33,36 @@ if (!process.mas) {
         autoUpdater.setFeedURL('')
       })
     })
+
+    describe('getFeedURL', function () {
+      it('returns a falsey value by default', function () {
+        assert.ok(!autoUpdater.getFeedURL())
+      })
+
+      it('correctly fetches the previously set FeedURL', function (done) {
+        if (process.platform !== 'win32') {
+          return done()
+        }
+
+        const updateURL = 'https://fake-update.electron.io'
+        autoUpdater.setFeedURL(updateURL)
+        assert.equal(autoUpdater.getFeedURL(), updateURL)
+        done()
+      })
+    })
+
+    describe('quitAndInstall', function () {
+      it('emits an error on Windows when no update is available', function (done) {
+        if (process.platform !== 'win32') {
+          return done()
+        }
+
+        ipcRenderer.once('auto-updater-error', function (event, message) {
+          assert.equal(message, 'No update available, can\'t quit and install')
+          done()
+        })
+        autoUpdater.quitAndInstall()
+      })
+    })
   })
 }

@@ -230,4 +230,4 @@ $ cd electron-quick-start
 $ npm install && npm start
 ```
 
-[share-data]: ../faq/electron-faq.md#어떻게-웹-페이지-간에-데이터를-공유할-수-있나요
+[share-data]: ../faq.md#어떻게-웹-페이지-간에-데이터를-공유할-수-있나요

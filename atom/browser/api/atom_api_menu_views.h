@@ -6,7 +6,7 @@
 #define ATOM_BROWSER_API_ATOM_API_MENU_VIEWS_H_
 
 #include "atom/browser/api/atom_api_menu.h"
-#include "ui/gfx/screen.h"
+#include "ui/display/screen.h"
 
 namespace atom {
 
@@ -14,7 +14,7 @@ namespace api {
 
 class MenuViews : public Menu {
  public:
-  explicit MenuViews(v8::Isolate* isolate);
+  MenuViews(v8::Isolate* isolate, v8::Local<v8::Object> wrapper);
 
  protected:
   void PopupAt(Window* window, int x, int y, int positioning_item) override;

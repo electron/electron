@@ -18,7 +18,7 @@ void TrayIcon::SetPressedImage(ImageType image) {
 void TrayIcon::SetTitle(const std::string& title) {
 }
 
-void TrayIcon::SetHighlightMode(bool highlight) {
+void TrayIcon::SetHighlightMode(TrayIcon::HighlightMode mode) {
 }
 
 void TrayIcon::DisplayBalloon(ImageType icon,
@@ -66,6 +66,10 @@ void TrayIcon::NotifyDrop() {
 
 void TrayIcon::NotifyDropFiles(const std::vector<std::string>& files) {
   FOR_EACH_OBSERVER(TrayIconObserver, observers_, OnDropFiles(files));
+}
+
+void TrayIcon::NotifyDropText(const std::string& text) {
+  FOR_EACH_OBSERVER(TrayIconObserver, observers_, OnDropText(text));
 }
 
 void TrayIcon::NotifyDragEntered() {

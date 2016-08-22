@@ -35,15 +35,18 @@ void Browser::ClearRecentDocuments() {
 void Browser::SetAppUserModelID(const base::string16& name) {
 }
 
-bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol) {
+bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
+                                            mate::Arguments* args) {
   return false;
 }
 
-bool Browser::SetAsDefaultProtocolClient(const std::string& protocol) {
+bool Browser::SetAsDefaultProtocolClient(const std::string& protocol,
+                                        mate::Arguments* args) {
   return false;
 }
 
-bool Browser::IsDefaultProtocolClient(const std::string& protocol) {
+bool Browser::IsDefaultProtocolClient(const std::string& protocol,
+                                      mate::Arguments* args) {
   return false;
 }
 
@@ -55,6 +58,13 @@ bool Browser::SetBadgeCount(int count) {
   } else {
     return false;
   }
+}
+
+void Browser::SetLoginItemSettings(LoginItemSettings settings) {
+}
+
+Browser::LoginItemSettings Browser::GetLoginItemSettings() {
+  return LoginItemSettings();
 }
 
 std::string Browser::GetExecutableFileVersion() const {

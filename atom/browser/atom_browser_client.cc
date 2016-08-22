@@ -202,7 +202,7 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
 void AtomBrowserClient::DidCreatePpapiPlugin(
     content::BrowserPpapiHost* host) {
   host->GetPpapiHost()->AddHostFactoryFilter(
-      make_scoped_ptr(new chrome::ChromeBrowserPepperHostFactory(host)));
+      base::WrapUnique(new chrome::ChromeBrowserPepperHostFactory(host)));
 }
 
 content::QuotaPermissionContext*

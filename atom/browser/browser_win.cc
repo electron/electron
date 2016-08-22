@@ -13,7 +13,6 @@
 #include "base/base_paths.h"
 #include "base/file_version_info.h"
 #include "base/files/file_path.h"
-#include "base/memory/scoped_ptr.h"
 #include "base/path_service.h"
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
@@ -22,6 +21,7 @@
 #include "base/win/registry.h"
 #include "base/win/windows_version.h"
 #include "atom/common/atom_version.h"
+#include "atom/common/native_mate_converters/string16_converter.h"
 
 namespace atom {
 
@@ -80,22 +80,22 @@ void Browser::SetAppUserModelID(const base::string16& name) {
   SetCurrentProcessExplicitAppUserModelID(app_user_model_id_.c_str());
 }
 
-void Browser::SetUserTasks(const std::vector<UserTask>& tasks) {
+bool Browser::SetUserTasks(const std::vector<UserTask>& tasks) {
   CComPtr<ICustomDestinationList> destinations;
   if (FAILED(destinations.CoCreateInstance(CLSID_DestinationList)))
-    return;
+    return false;
   if (FAILED(destinations->SetAppID(GetAppUserModelID())))
-    return;
+    return false;
 
   // Start a transaction that updates the JumpList of this application.
   UINT max_slots;
   CComPtr<IObjectArray> removed;
   if (FAILED(destinations->BeginList(&max_slots, IID_PPV_ARGS(&removed))))
-    return;
+    return false;
 
   CComPtr<IObjectCollection> collection;
   if (FAILED(collection.CoCreateInstance(CLSID_EnumerableObjectCollection)))
-    return;
+    return false;
 
   for (auto& task : tasks) {
     CComPtr<IShellLink> link;
@@ -103,38 +103,62 @@ void Browser::SetUserTasks(const std::vector<UserTask>& tasks) {
         FAILED(link->SetPath(task.program.value().c_str())) ||
         FAILED(link->SetArguments(task.arguments.c_str())) ||
         FAILED(link->SetDescription(task.description.c_str())))
-      return;
+      return false;
 
     if (!task.icon_path.empty() &&
         FAILED(link->SetIconLocation(task.icon_path.value().c_str(),
                                      task.icon_index)))
-      return;
+      return false;
 
     CComQIPtr<IPropertyStore> property_store = link;
     if (!base::win::SetStringValueForPropertyStore(property_store, PKEY_Title,
                                                    task.title.c_str()))
-      return;
+      return false;
 
     if (FAILED(collection->AddObject(link)))
-      return;
+      return false;
   }
 
   // When the list is empty "AddUserTasks" could fail, so we don't check return
   // value for it.
   CComQIPtr<IObjectArray> task_array = collection;
   destinations->AddUserTasks(task_array);
-  destinations->CommitList();
+  return SUCCEEDED(destinations->CommitList());
 }
 
-bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol) {
-  if (protocol.empty())
-    return false;
+bool GetProtocolLaunchPath(mate::Arguments* args, base::string16* exe) {
+  // Read in optional exe path arg
+  base::string16 exePath;
 
   base::FilePath path;
-  if (!PathService::Get(base::FILE_EXE, &path)) {
-    LOG(ERROR) << "Error getting app exe path";
-    return false;
+
+  if (!args->GetNext(&exePath)) {
+    if (!PathService::Get(base::FILE_EXE, &path)) {
+      LOG(ERROR) << "Error getting app exe path";
+      return false;
+    }
+    // Executable Path
+    exePath = path.value();
   }
+
+  // Read in optional args arg
+  std::vector<base::string16> launchArgs;
+  args->GetNext(&launchArgs);
+
+  // Parse launch args into a string of space spearated args
+  base::string16 launchArgString;
+  if (launchArgs.size() != 0) {
+    launchArgString = base::JoinString(launchArgs, L" ");
+  }
+  *exe = base::StringPrintf(L"\"%s\" %s \"%%1\"",
+                            exePath.c_str(), launchArgString.c_str());
+  return true;
+}
+
+bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
+                                            mate::Arguments* args) {
+  if (protocol.empty())
+    return false;
 
   // Main Registry Key
   HKEY root = HKEY_CURRENT_USER;
@@ -160,8 +184,12 @@ bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol) {
     // Default value not set, we can confirm that it is not set
     return true;
 
-  std::wstring exePath(path.value());
-  std::wstring exe = L"\"" + exePath + L"\" \"%1\"";
+  std::wstring exe;
+  if (!GetProtocolLaunchPath(args, &exe)) {
+    return false;
+  }
+  if (exe == L"")
+    return false;
   if (keyVal == exe) {
     // Let's kill the key
     if (FAILED(key.DeleteKey(L"shell")))
@@ -173,7 +201,8 @@ bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol) {
   }
 }
 
-bool Browser::SetAsDefaultProtocolClient(const std::string& protocol) {
+bool Browser::SetAsDefaultProtocolClient(const std::string& protocol,
+                                        mate::Arguments* args) {
   // HKEY_CLASSES_ROOT
   //    $PROTOCOL
   //       (Default) = "URL:$NAME"
@@ -191,9 +220,8 @@ bool Browser::SetAsDefaultProtocolClient(const std::string& protocol) {
   if (protocol.empty())
     return false;
 
-  base::FilePath path;
-  if (!PathService::Get(base::FILE_EXE, &path)) {
-    LOG(ERROR) << "Error getting app exe path";
+  std::wstring exe;
+  if (!GetProtocolLaunchPath(args, &exe)) {
     return false;
   }
 
@@ -208,10 +236,6 @@ bool Browser::SetAsDefaultProtocolClient(const std::string& protocol) {
   std::string cmdPathStr = keyPathStr + "\\shell\\open\\command";
   std::wstring cmdPath = std::wstring(cmdPathStr.begin(), cmdPathStr.end());
 
-  // Executable Path
-  std::wstring exePath(path.value());
-  std::wstring exe = L"\"" + exePath + L"\" \"%1\"";
-
   // Write information to registry
   base::win::RegKey key(root, keyPath.c_str(), KEY_ALL_ACCESS);
   if (FAILED(key.WriteValue(L"URL Protocol", L"")) ||
@@ -225,13 +249,13 @@ bool Browser::SetAsDefaultProtocolClient(const std::string& protocol) {
   return true;
 }
 
-bool Browser::IsDefaultProtocolClient(const std::string& protocol) {
+bool Browser::IsDefaultProtocolClient(const std::string& protocol,
+                                      mate::Arguments* args) {
   if (protocol.empty())
     return false;
 
-  base::FilePath path;
-  if (!PathService::Get(base::FILE_EXE, &path)) {
-    LOG(ERROR) << "Error getting app exe path";
+  std::wstring exe;
+  if (!GetProtocolLaunchPath(args, &exe)) {
     return false;
   }
 
@@ -259,8 +283,6 @@ bool Browser::IsDefaultProtocolClient(const std::string& protocol) {
     // Default value not set, we can confirm that it is not set
     return false;
 
-  std::wstring exePath(path.value());
-  std::wstring exe = L"\"" + exePath + L"\" \"%1\"";
   if (keyVal == exe) {
     // Default value is the same as current file path
     return true;
@@ -272,6 +294,39 @@ bool Browser::IsDefaultProtocolClient(const std::string& protocol) {
 bool Browser::SetBadgeCount(int count) {
   return false;
 }
+
+void Browser::SetLoginItemSettings(LoginItemSettings settings) {
+  std::wstring keyPath = L"Software\\Microsoft\\Windows\\CurrentVersion\\Run";
+  base::win::RegKey key(HKEY_CURRENT_USER, keyPath.c_str(), KEY_ALL_ACCESS);
+
+  if (settings.open_at_login) {
+    base::FilePath path;
+    if (PathService::Get(base::FILE_EXE, &path)) {
+      std::wstring exePath(path.value());
+      key.WriteValue(GetAppUserModelID(), exePath.c_str());
+    }
+  } else {
+    key.DeleteValue(GetAppUserModelID());
+  }
+}
+
+Browser::LoginItemSettings Browser::GetLoginItemSettings() {
+  LoginItemSettings settings;
+  std::wstring keyPath = L"Software\\Microsoft\\Windows\\CurrentVersion\\Run";
+  base::win::RegKey key(HKEY_CURRENT_USER, keyPath.c_str(), KEY_ALL_ACCESS);
+  std::wstring keyVal;
+
+  if (!FAILED(key.ReadValue(GetAppUserModelID(), &keyVal))) {
+    base::FilePath path;
+    if (PathService::Get(base::FILE_EXE, &path)) {
+      std::wstring exePath(path.value());
+      settings.open_at_login = keyVal == exePath;
+    }
+  }
+
+  return settings;
+}
+
 
 PCWSTR Browser::GetAppUserModelID() {
   if (app_user_model_id_.empty()) {

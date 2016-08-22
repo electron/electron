@@ -12,7 +12,7 @@ select the tag that matches your version.
 There are questions that are asked quite often, check this out before creating
 an issue:
 
-* [Electron FAQ](faq/electron-faq.md)
+* [Electron FAQ](faq.md)
 
 ## Guides
 
@@ -30,6 +30,7 @@ an issue:
 * [Using Pepper Flash Plugin](tutorial/using-pepper-flash-plugin.md)
 * [Using Widevine CDM Plugin](tutorial/using-widevine-cdm-plugin.md)
 * [Testing on Headless CI Systems (Travis, Jenkins)](tutorial/testing-on-headless-ci.md)
+* [Offscreen Rendering](tutorial/offscreen-rendering.md)
 
 ## Tutorials
 
@@ -93,5 +94,6 @@ an issue:
 * [Build Instructions (macOS)](development/build-instructions-osx.md)
 * [Build Instructions (Windows)](development/build-instructions-windows.md)
 * [Build Instructions (Linux)](development/build-instructions-linux.md)
+* [Debug Instructions (macOS)](development/debug-instructions-macos.md)
 * [Debug Instructions (Windows)](development/debug-instructions-windows.md)
 * [Setting Up Symbol Server in debugger](development/setting-up-symbol-server.md)

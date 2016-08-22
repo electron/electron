@@ -40,7 +40,7 @@ class App : public AtomBrowserClient::Delegate,
   static mate::Handle<App> Create(v8::Isolate* isolate);
 
   static void BuildPrototype(v8::Isolate* isolate,
-                             v8::Local<v8::ObjectTemplate> prototype);
+                             v8::Local<v8::FunctionTemplate> prototype);
 
   // Called when window with disposition needs to be created.
   void OnCreateWindow(const GURL& target_url,
@@ -72,6 +72,7 @@ class App : public AtomBrowserClient::Delegate,
   void OnFinishLaunching() override;
   void OnLogin(LoginHandler* login_handler,
                const base::DictionaryValue& request_details) override;
+  void OnAccessibilitySupportChanged() override;
 #if defined(OS_MACOSX)
   void OnContinueUserActivity(
       bool* prevent_default,
@@ -113,6 +114,7 @@ class App : public AtomBrowserClient::Delegate,
   void ReleaseSingleInstance();
   bool Relaunch(mate::Arguments* args);
   void DisableHardwareAcceleration(mate::Arguments* args);
+  bool IsAccessibilitySupportEnabled();
 #if defined(USE_NSS_CERTS)
   void ImportCertificate(const base::DictionaryValue& options,
                          const net::CompletionCallback& callback);

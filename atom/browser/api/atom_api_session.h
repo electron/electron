@@ -8,6 +8,7 @@
 #include <string>
 
 #include "atom/browser/api/trackable_object.h"
+#include "base/values.h"
 #include "content/public/browser/download_manager.h"
 #include "native_mate/handle.h"
 #include "net/base/completion_callback.h"
@@ -47,15 +48,16 @@ class Session: public mate::TrackableObject<Session>,
   static mate::Handle<Session> CreateFrom(
       v8::Isolate* isolate, AtomBrowserContext* browser_context);
 
-  // Gets the Session of |partition| and |in_memory|.
+  // Gets the Session of |partition|.
   static mate::Handle<Session> FromPartition(
-      v8::Isolate* isolate, const std::string& partition, bool in_memory);
+      v8::Isolate* isolate, const std::string& partition,
+      const base::DictionaryValue& options = base::DictionaryValue());
 
   AtomBrowserContext* browser_context() const { return browser_context_.get(); }
 
   // mate::TrackableObject:
   static void BuildPrototype(v8::Isolate* isolate,
-                             v8::Local<v8::ObjectTemplate> prototype);
+                             v8::Local<v8::FunctionTemplate> prototype);
 
   // Methods.
   void ResolveProxy(const GURL& url, ResolveProxyCallback callback);

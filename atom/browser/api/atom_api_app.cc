@@ -32,6 +32,7 @@
 #include "base/strings/string_util.h"
 #include "brightray/browser/brightray_paths.h"
 #include "chrome/common/chrome_paths.h"
+#include "content/public/browser/browser_accessibility_state.h"
 #include "content/public/browser/client_certificate_delegate.h"
 #include "content/public/browser/gpu_data_manager.h"
 #include "content/public/browser/render_frame_host.h"
@@ -71,7 +72,6 @@ struct Converter<Browser::UserTask> {
 };
 #endif
 
-#if defined(OS_MACOSX)
 template<>
 struct Converter<Browser::LoginItemSettings> {
   static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
@@ -96,8 +96,6 @@ struct Converter<Browser::LoginItemSettings> {
     return dict.GetHandle();
   }
 };
-#endif
-
 }  // namespace mate
 
 
@@ -170,13 +168,12 @@ void OnClientCertificateSelected(
     return;
   }
 
-  v8::Local<v8::Object> data;
+  std::string data;
   if (!cert_data.Get("data", &data))
     return;
 
   auto certs = net::X509Certificate::CreateCertificateListFromBytes(
-      node::Buffer::Data(data), node::Buffer::Length(data),
-      net::X509Certificate::FORMAT_AUTO);
+      data.c_str(), data.length(), net::X509Certificate::FORMAT_AUTO);
   if (certs.size() > 0)
     delegate->ContinueWithCertificate(certs[0].get());
 }
@@ -279,6 +276,10 @@ void App::OnWillFinishLaunching() {
 
 void App::OnFinishLaunching() {
   Emit("ready");
+}
+
+void App::OnAccessibilitySupportChanged() {
+  Emit("accessibility-support-changed", IsAccessibilitySupportEnabled());
 }
 
 #if defined(OS_MACOSX)
@@ -486,11 +487,16 @@ void App::DisableHardwareAcceleration(mate::Arguments* args) {
   content::GpuDataManager::GetInstance()->DisableHardwareAcceleration();
 }
 
+bool App::IsAccessibilitySupportEnabled() {
+  auto ax_state = content::BrowserAccessibilityState::GetInstance();
+  return ax_state->IsAccessibleBrowser();
+}
+
 #if defined(USE_NSS_CERTS)
 void App::ImportCertificate(
     const base::DictionaryValue& options,
     const net::CompletionCallback& callback) {
-  auto browser_context = brightray::BrowserContext::From("", false);
+  auto browser_context = AtomBrowserContext::From("", false);
   if (!certificate_manager_model_) {
     std::unique_ptr<base::DictionaryValue> copy = options.CreateDeepCopy();
     CertificateManagerModel::Create(
@@ -524,9 +530,10 @@ mate::Handle<App> App::Create(v8::Isolate* isolate) {
 
 // static
 void App::BuildPrototype(
-    v8::Isolate* isolate, v8::Local<v8::ObjectTemplate> prototype) {
+    v8::Isolate* isolate, v8::Local<v8::FunctionTemplate> prototype) {
+  prototype->SetClassName(mate::StringToV8(isolate, "App"));
   auto browser = base::Unretained(Browser::Get());
-  mate::ObjectTemplateBuilder(isolate, prototype)
+  mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("quit", base::Bind(&Browser::Quit, browser))
       .SetMethod("exit", base::Bind(&Browser::Exit, browser))
       .SetMethod("focus", base::Bind(&Browser::Focus, browser))
@@ -549,6 +556,10 @@ void App::BuildPrototype(
                  base::Bind(&Browser::RemoveAsDefaultProtocolClient, browser))
       .SetMethod("setBadgeCount", base::Bind(&Browser::SetBadgeCount, browser))
       .SetMethod("getBadgeCount", base::Bind(&Browser::GetBadgeCount, browser))
+      .SetMethod("getLoginItemSettings",
+                 base::Bind(&Browser::GetLoginItemSettings, browser))
+      .SetMethod("setLoginItemSettings",
+                 base::Bind(&Browser::SetLoginItemSettings, browser))
 #if defined(OS_MACOSX)
       .SetMethod("hide", base::Bind(&Browser::Hide, browser))
       .SetMethod("show", base::Bind(&Browser::Show, browser))
@@ -556,10 +567,6 @@ void App::BuildPrototype(
                  base::Bind(&Browser::SetUserActivity, browser))
       .SetMethod("getCurrentActivityType",
                  base::Bind(&Browser::GetCurrentActivityType, browser))
-      .SetMethod("getLoginItemSettings",
-                 base::Bind(&Browser::GetLoginItemSettings, browser))
-      .SetMethod("setLoginItemSettings",
-                 base::Bind(&Browser::SetLoginItemSettings, browser))
 #endif
 #if defined(OS_WIN)
       .SetMethod("setUserTasks", base::Bind(&Browser::SetUserTasks, browser))
@@ -578,6 +585,8 @@ void App::BuildPrototype(
       .SetMethod("makeSingleInstance", &App::MakeSingleInstance)
       .SetMethod("releaseSingleInstance", &App::ReleaseSingleInstance)
       .SetMethod("relaunch", &App::Relaunch)
+      .SetMethod("isAccessibilitySupportEnabled",
+                 &App::IsAccessibilitySupportEnabled)
       .SetMethod("disableHardwareAcceleration",
                  &App::DisableHardwareAcceleration);
 }
@@ -629,6 +638,7 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   auto command_line = base::CommandLine::ForCurrentProcess();
 
   mate::Dictionary dict(isolate, exports);
+  dict.Set("App", atom::api::App::GetConstructor(isolate)->GetFunction());
   dict.Set("app", atom::api::App::Create(isolate));
   dict.SetMethod("appendSwitch", &AppendSwitch);
   dict.SetMethod("appendArgument",
@@ -647,6 +657,7 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                  base::Bind(&Browser::DockGetBadgeText, browser));
   dict.SetMethod("dockHide", base::Bind(&Browser::DockHide, browser));
   dict.SetMethod("dockShow", base::Bind(&Browser::DockShow, browser));
+  dict.SetMethod("dockIsVisible", base::Bind(&Browser::DockIsVisible, browser));
   dict.SetMethod("dockSetMenu", &DockSetMenu);
   dict.SetMethod("dockSetIcon", base::Bind(&Browser::DockSetIcon, browser));
 #endif

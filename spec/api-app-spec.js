@@ -5,6 +5,7 @@ const net = require('net')
 const fs = require('fs')
 const path = require('path')
 const {remote} = require('electron')
+const {closeWindow} = require('./window-helpers')
 
 const {app, BrowserWindow, ipcMain} = remote
 
@@ -19,9 +20,6 @@ describe('electron module', function () {
     let window = null
 
     beforeEach(function () {
-      if (window != null) {
-        window.destroy()
-      }
       window = new BrowserWindow({
         show: false,
         width: 400,
@@ -30,10 +28,7 @@ describe('electron module', function () {
     })
 
     afterEach(function () {
-      if (window != null) {
-        window.destroy()
-      }
-      window = null
+      return closeWindow(window).then(function () { window = null })
     })
 
     it('always returns the internal electron module', function (done) {
@@ -191,10 +186,7 @@ describe('app module', function () {
     })
 
     afterEach(function () {
-      if (w != null) {
-        w.destroy()
-      }
-      w = null
+      return closeWindow(w).then(function () { w = null })
     })
 
     it('can import certificate into platform cert store', function (done) {
@@ -232,10 +224,7 @@ describe('app module', function () {
     var w = null
 
     afterEach(function () {
-      if (w != null) {
-        w.destroy()
-      }
-      w = null
+      return closeWindow(w).then(function () { w = null })
     })
 
     it('should emit browser-window-focus event when window is focused', function (done) {
@@ -300,7 +289,7 @@ describe('app module', function () {
   })
 
   describe('app.get/setLoginItemSettings API', function () {
-    if (process.platform !== 'darwin') return
+    if (process.platform === 'linux') return
 
     beforeEach(function () {
       app.setLoginItemSettings({openAtLogin: false})
@@ -323,7 +312,7 @@ describe('app module', function () {
       app.setLoginItemSettings({openAtLogin: true, openAsHidden: true})
       assert.deepEqual(app.getLoginItemSettings(), {
         openAtLogin: true,
-        openAsHidden: true,
+        openAsHidden: process.platform === 'darwin', // Only available on macOS
         wasOpenedAtLogin: false,
         wasOpenedAsHidden: false,
         restoreState: false
@@ -337,6 +326,12 @@ describe('app module', function () {
         wasOpenedAsHidden: false,
         restoreState: false
       })
+    })
+  })
+
+  describe('isAccessibilitySupportEnabled API', function () {
+    it('returns whether the Chrome has accessibility APIs enabled', function () {
+      assert.equal(typeof app.isAccessibilitySupportEnabled(), 'boolean')
     })
   })
 })

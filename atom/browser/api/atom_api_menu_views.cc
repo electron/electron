@@ -5,15 +5,17 @@
 #include "atom/browser/api/atom_api_menu_views.h"
 
 #include "atom/browser/native_window_views.h"
+#include "atom/browser/unresponsive_suppressor.h"
 #include "content/public/browser/render_widget_host_view.h"
-#include "ui/gfx/screen.h"
+#include "ui/display/screen.h"
 #include "ui/views/controls/menu/menu_runner.h"
 
 namespace atom {
 
 namespace api {
 
-MenuViews::MenuViews(v8::Isolate* isolate) : Menu(isolate) {
+MenuViews::MenuViews(v8::Isolate* isolate, v8::Local<v8::Object> wrapper)
+    : Menu(isolate, wrapper) {
 }
 
 void MenuViews::PopupAt(Window* window, int x, int y, int positioning_item) {
@@ -30,11 +32,14 @@ void MenuViews::PopupAt(Window* window, int x, int y, int positioning_item) {
   // (-1, -1) means showing on mouse location.
   gfx::Point location;
   if (x == -1 || y == -1) {
-    location = gfx::Screen::GetScreen()->GetCursorScreenPoint();
+    location = display::Screen::GetScreen()->GetCursorScreenPoint();
   } else {
     gfx::Point origin = view->GetViewBounds().origin();
     location = gfx::Point(origin.x() + x, origin.y() + y);
   }
+
+  // Don't emit unresponsive event when showing menu.
+  atom::UnresponsiveSuppressor suppressor;
 
   // Show the menu.
   views::MenuRunner menu_runner(
@@ -49,8 +54,8 @@ void MenuViews::PopupAt(Window* window, int x, int y, int positioning_item) {
 }
 
 // static
-mate::WrappableBase* Menu::Create(v8::Isolate* isolate) {
-  return new MenuViews(isolate);
+mate::WrappableBase* Menu::New(mate::Arguments* args) {
+  return new MenuViews(args->isolate(), args->GetThis());
 }
 
 }  // namespace api

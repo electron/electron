@@ -25,6 +25,7 @@
 #include "ui/gfx/geometry/size.h"
 #include "ui/gfx/image/image_skia.h"
 #include "ui/gfx/image/image_util.h"
+#include "third_party/skia/include/core/SkPixelRef.h"
 
 #if defined(OS_WIN)
 #include "atom/common/asar/archive.h"
@@ -63,10 +64,10 @@ float GetScaleFactorFromPath(const base::FilePath& path) {
 
   // We don't try to convert string to float here because it is very very
   // expensive.
-  for (unsigned i = 0; i < node::arraysize(kScaleFactorPairs); ++i) {
-    if (base::EndsWith(filename, kScaleFactorPairs[i].name,
+  for (const auto& kScaleFactorPair : kScaleFactorPairs) {
+    if (base::EndsWith(filename, kScaleFactorPair.name,
                        base::CompareCase::INSENSITIVE_ASCII))
-      return kScaleFactorPairs[i].scale;
+      return kScaleFactorPair.scale;
   }
 
   return 1.0f;
@@ -81,7 +82,7 @@ bool AddImageSkiaRep(gfx::ImageSkia* image,
   // Try PNG first.
   if (!gfx::PNGCodec::Decode(data, size, decoded.get()))
     // Try JPEG.
-    decoded.reset(gfx::JPEGCodec::Decode(data, size));
+    decoded = gfx::JPEGCodec::Decode(data, size);
 
   if (!decoded)
     return false;
@@ -171,6 +172,9 @@ bool ReadImageSkiaFromICO(gfx::ImageSkia* image, HICON icon) {
 }
 #endif
 
+void Noop(char*, void*) {
+}
+
 }  // namespace
 
 NativeImage::NativeImage(v8::Isolate* isolate, const gfx::Image& image)
@@ -219,6 +223,14 @@ v8::Local<v8::Value> NativeImage::ToPNG(v8::Isolate* isolate) {
                             static_cast<size_t>(png->size())).ToLocalChecked();
 }
 
+v8::Local<v8::Value> NativeImage::ToBitmap(v8::Isolate* isolate) {
+  const SkBitmap* bitmap = image_.ToSkBitmap();
+  SkPixelRef* ref = bitmap->pixelRef();
+  return node::Buffer::Copy(isolate,
+                            reinterpret_cast<const char*>(ref->pixels()),
+                            bitmap->getSafeSize()).ToLocalChecked();
+}
+
 v8::Local<v8::Value> NativeImage::ToJPEG(v8::Isolate* isolate, int quality) {
   std::vector<unsigned char> output;
   gfx::JPEG1xEncodedDataFromImage(image_, quality, &output);
@@ -235,6 +247,16 @@ std::string NativeImage::ToDataURL() {
   base::Base64Encode(data_url, &data_url);
   data_url.insert(0, "data:image/png;base64,");
   return data_url;
+}
+
+v8::Local<v8::Value> NativeImage::GetBitmap(v8::Isolate* isolate) {
+  const SkBitmap* bitmap = image_.ToSkBitmap();
+  SkPixelRef* ref = bitmap->pixelRef();
+  return node::Buffer::New(isolate,
+                           reinterpret_cast<char*>(ref->pixels()),
+                           bitmap->getSafeSize(),
+                           &Noop,
+                           nullptr).ToLocalChecked();
 }
 
 v8::Local<v8::Value> NativeImage::GetNativeHandle(v8::Isolate* isolate,
@@ -346,10 +368,13 @@ mate::Handle<NativeImage> NativeImage::CreateFromDataURL(
 
 // static
 void NativeImage::BuildPrototype(
-    v8::Isolate* isolate, v8::Local<v8::ObjectTemplate> prototype) {
-  mate::ObjectTemplateBuilder(isolate, prototype)
+    v8::Isolate* isolate, v8::Local<v8::FunctionTemplate> prototype) {
+  prototype->SetClassName(mate::StringToV8(isolate, "NativeImage"));
+  mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("toPNG", &NativeImage::ToPNG)
       .SetMethod("toJPEG", &NativeImage::ToJPEG)
+      .SetMethod("toBitmap", &NativeImage::ToBitmap)
+      .SetMethod("getBitmap", &NativeImage::GetBitmap)
       .SetMethod("getNativeHandle", &NativeImage::GetNativeHandle)
       .SetMethod("toDataURL", &NativeImage::ToDataURL)
       .SetMethod("isEmpty", &NativeImage::IsEmpty)

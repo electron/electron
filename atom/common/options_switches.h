@@ -48,7 +48,6 @@ extern const char kFocusable[];
 extern const char kWebPreferences[];
 
 // WebPreferences.
-extern const char kDirectWrite[];
 extern const char kZoomFactor[];
 extern const char kPreloadScript[];
 extern const char kPreloadURL[];

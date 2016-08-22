@@ -41,7 +41,7 @@ bool GetFilesNode(const base::DictionaryValue* root,
   // Test for symbol linked directory.
   std::string link;
   if (dir->GetStringWithoutPathExpansion("link", &link)) {
-    const base::DictionaryValue* linked_node = NULL;
+    const base::DictionaryValue* linked_node = nullptr;
     if (!GetNodeFromPath(link, root, &linked_node))
       return false;
     dir = linked_node;
@@ -60,7 +60,7 @@ bool GetChildNode(const base::DictionaryValue* root,
     return true;
   }
 
-  const base::DictionaryValue* files = NULL;
+  const base::DictionaryValue* files = nullptr;
   return GetFilesNode(root, dir, &files) &&
          files->GetDictionaryWithoutPathExpansion(name, out);
 }
@@ -78,7 +78,7 @@ bool GetNodeFromPath(std::string path,
   for (size_t delimiter_position = path.find_first_of(kSeparators);
        delimiter_position != std::string::npos;
        delimiter_position = path.find_first_of(kSeparators)) {
-    const base::DictionaryValue* child = NULL;
+    const base::DictionaryValue* child = nullptr;
     if (!GetChildNode(root, path.substr(0, delimiter_position), dir, &child))
       return false;
 

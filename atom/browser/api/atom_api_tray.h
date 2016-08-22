@@ -5,12 +5,13 @@
 #ifndef ATOM_BROWSER_API_ATOM_API_TRAY_H_
 #define ATOM_BROWSER_API_ATOM_API_TRAY_H_
 
+#include <memory>
 #include <string>
 #include <vector>
 
 #include "atom/browser/api/trackable_object.h"
+#include "atom/browser/ui/tray_icon.h"
 #include "atom/browser/ui/tray_icon_observer.h"
-#include "base/memory/scoped_ptr.h"
 #include "native_mate/handle.h"
 
 namespace gfx {
@@ -34,14 +35,15 @@ class NativeImage;
 class Tray : public mate::TrackableObject<Tray>,
              public TrayIconObserver {
  public:
-  static mate::WrappableBase* New(
-      v8::Isolate* isolate, mate::Handle<NativeImage> image);
+  static mate::WrappableBase* New(mate::Handle<NativeImage> image,
+                                  mate::Arguments* args);
 
   static void BuildPrototype(v8::Isolate* isolate,
-                             v8::Local<v8::ObjectTemplate> prototype);
+                             v8::Local<v8::FunctionTemplate> prototype);
 
  protected:
-  Tray(v8::Isolate* isolate, mate::Handle<NativeImage> image);
+  Tray(v8::Isolate* isolate, v8::Local<v8::Object> wrapper,
+       mate::Handle<NativeImage> image);
   ~Tray() override;
 
   // TrayIconObserver:
@@ -53,6 +55,7 @@ class Tray : public mate::TrackableObject<Tray>,
   void OnBalloonClosed() override;
   void OnDrop() override;
   void OnDropFiles(const std::vector<std::string>& files) override;
+  void OnDropText(const std::string& text) override;
   void OnDragEntered() override;
   void OnDragExited() override;
   void OnDragEnded() override;
@@ -61,7 +64,7 @@ class Tray : public mate::TrackableObject<Tray>,
   void SetPressedImage(v8::Isolate* isolate, mate::Handle<NativeImage> image);
   void SetToolTip(const std::string& tool_tip);
   void SetTitle(const std::string& title);
-  void SetHighlightMode(bool highlight);
+  void SetHighlightMode(TrayIcon::HighlightMode mode);
   void DisplayBalloon(mate::Arguments* args, const mate::Dictionary& options);
   void PopUpContextMenu(mate::Arguments* args);
   void SetContextMenu(v8::Isolate* isolate, mate::Handle<Menu> menu);

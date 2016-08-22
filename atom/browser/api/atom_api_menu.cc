@@ -19,9 +19,10 @@ namespace atom {
 
 namespace api {
 
-Menu::Menu(v8::Isolate* isolate)
+Menu::Menu(v8::Isolate* isolate, v8::Local<v8::Object> wrapper)
     : model_(new AtomMenuModel(this)),
-      parent_(NULL) {
+      parent_(nullptr) {
+  InitWith(isolate, wrapper);
 }
 
 Menu::~Menu() {
@@ -154,8 +155,9 @@ bool Menu::IsVisibleAt(int index) const {
 
 // static
 void Menu::BuildPrototype(v8::Isolate* isolate,
-                          v8::Local<v8::ObjectTemplate> prototype) {
-  mate::ObjectTemplateBuilder(isolate, prototype)
+                          v8::Local<v8::FunctionTemplate> prototype) {
+  prototype->SetClassName(mate::StringToV8(isolate, "Menu"));
+  mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .MakeDestroyable()
       .SetMethod("insertItem", &Menu::InsertItemAt)
       .SetMethod("insertCheckItem", &Menu::InsertCheckItemAt)
@@ -184,14 +186,15 @@ void Menu::BuildPrototype(v8::Isolate* isolate,
 
 namespace {
 
+using atom::api::Menu;
+
 void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
-  using atom::api::Menu;
   v8::Isolate* isolate = context->GetIsolate();
-  v8::Local<v8::Function> constructor = mate::CreateConstructor<Menu>(
-      isolate, "Menu", base::Bind(&Menu::Create));
+  Menu::SetConstructor(isolate, base::Bind(&Menu::New));
+
   mate::Dictionary dict(isolate, exports);
-  dict.Set("Menu", static_cast<v8::Local<v8::Value>>(constructor));
+  dict.Set("Menu", Menu::GetConstructor(isolate)->GetFunction());
 #if defined(OS_MACOSX)
   dict.SetMethod("setApplicationMenu", &Menu::SetApplicationMenu);
   dict.SetMethod("sendActionToFirstResponder",

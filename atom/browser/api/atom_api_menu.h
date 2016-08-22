@@ -5,13 +5,13 @@
 #ifndef ATOM_BROWSER_API_ATOM_API_MENU_H_
 #define ATOM_BROWSER_API_ATOM_API_MENU_H_
 
+#include <memory>
 #include <string>
 
 #include "atom/browser/api/atom_api_window.h"
 #include "atom/browser/api/trackable_object.h"
 #include "atom/browser/ui/atom_menu_model.h"
 #include "base/callback.h"
-#include "base/memory/scoped_ptr.h"
 
 namespace atom {
 
@@ -20,10 +20,10 @@ namespace api {
 class Menu : public mate::TrackableObject<Menu>,
              public AtomMenuModel::Delegate {
  public:
-  static mate::WrappableBase* Create(v8::Isolate* isolate);
+  static mate::WrappableBase* New(mate::Arguments* args);
 
   static void BuildPrototype(v8::Isolate* isolate,
-                             v8::Local<v8::ObjectTemplate> prototype);
+                             v8::Local<v8::FunctionTemplate> prototype);
 
 #if defined(OS_MACOSX)
   // Set the global menubar.
@@ -36,7 +36,7 @@ class Menu : public mate::TrackableObject<Menu>,
   AtomMenuModel* model() const { return model_.get(); }
 
  protected:
-  explicit Menu(v8::Isolate* isolate);
+  Menu(v8::Isolate* isolate, v8::Local<v8::Object> wrapper);
   ~Menu() override;
 
   // mate::Wrappable:

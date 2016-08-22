@@ -14,11 +14,14 @@
     'python': 'python',
     'openssl_fips': '',
     'openssl_no_asm': 1,
+    'use_openssl_def': 0,
+    'OPENSSL_PRODUCT': 'libopenssl.a',
     'node_release_urlbase': 'https://atom.io/download/atom-shell',
     'node_byteorder': '<!(node <(DEPTH)/tools/get-endianness.js)',
     'node_target_type': 'shared_library',
     'node_install_npm': 'false',
     'node_prefix': '',
+    'node_shared': 'true',
     'node_shared_cares': 'false',
     'node_shared_http_parser': 'false',
     'node_shared_libuv': 'false',
@@ -31,17 +34,20 @@
     'node_use_mdb': 'false',
     'node_use_openssl': 'true',
     'node_use_perfctr': 'false',
+    'node_use_v8_platform': 'false',
+    'node_use_bundled_v8': 'false',
     'uv_library': 'static_library',
     'uv_parent_path': 'vendor/node/deps/uv',
     'uv_use_dtrace': 'false',
     'V8_BASE': '',
     'v8_postmortem_support': 'false',
     'v8_enable_i18n_support': 'false',
+    'v8_inspector': 'false',
   },
   # Settings to compile node under Windows.
   'target_defaults': {
     'target_conditions': [
-      ['_target_name in ["libuv", "http_parser", "openssl", "cares", "node", "zlib"]', {
+      ['_target_name in ["libuv", "http_parser", "openssl", "openssl-cli", "cares", "node", "zlib"]', {
         'msvs_disabled_warnings': [
           4003,  # not enough actual parameters for macro 'V'
           4013,  # 'free' undefined; assuming extern returning int
@@ -96,6 +102,7 @@
             '-Wno-return-type',
             '-Wno-gnu-folding-constant',
             '-Wno-shift-negative-value',
+            '-Wno-varargs', # https://git.io/v6Olj
           ],
         },
         'conditions': [
@@ -111,6 +118,7 @@
               '-Wno-deprecated-declarations',
               '-Wno-return-type',
               '-Wno-shift-negative-value',
+              '-Wno-varargs', # https://git.io/v6Olj
               # Required when building as shared library.
               '-fPIC',
             ],
@@ -158,6 +166,7 @@
                         '_uspoof_open_56',
                         '_usearch_setPattern_56',
                         '?createInstance@Transliterator@icu_56@@SAPAV12@ABVUnicodeString@2@W4UTransDirection@@AAW4UErrorCode@@@Z',
+                        '??0MeasureFormat@icu_56@@QAE@ABVLocale@1@W4UMeasureFormatWidth@@AAW4UErrorCode@@@Z',
                       ],
                     }, {
                       'reference_symbols': [
@@ -171,6 +180,7 @@
                         'uspoof_open_56',
                         'usearch_setPattern_56',
                         '?createInstance@Transliterator@icu_56@@SAPEAV12@AEBVUnicodeString@2@W4UTransDirection@@AEAW4UErrorCode@@@Z',
+                        '??0MeasureFormat@icu_56@@QEAA@AEBVLocale@1@W4UMeasureFormatWidth@@AEAW4UErrorCode@@@Z',
                       ],
                     }],
                   ],

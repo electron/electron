@@ -31,10 +31,10 @@ Linux, Windows, macOS 용으로 미리 빌드된 Electron 바이너리와 디버
 
 ```sh
 # $PATH에 `electron` 커맨드를 등록하고 전역에 설치합니다.
-npm install electron-prebuilt -g
+npm install electron -g
 
 # 개발 의존성 모듈 형태로 설치합니다.
-npm install electron-prebuilt --save-dev
+npm install electron --save-dev
 ```
 
 ### 미러
@@ -75,6 +75,7 @@ npm install electron-prebuilt --save-dev
 - [`electron-br`](https://electron-br.slack.com) *(브라질)* 커뮤니티
 - [`electron-kr`](http://www.meetup.com/electron-kr/) *(한국)* 커뮤니티
 - [`electron-jp`](https://electron-jp-slackin.herokuapp.com/) *(일본)* 커뮤니티
+- [`electron-tr`](http://www.meetup.com/Electron-JS-Istanbul/) *(터키)* 커뮤니티
 
 [awesome-electron](https://github.com/sindresorhus/awesome-electron) 프로젝트에
 커뮤니티가 운영중인 유용한 예시 애플리케이션과 도구, 리소스가 있으니 참고하기 바랍니다.

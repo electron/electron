@@ -1,11 +1,11 @@
 # Distribuição de aplicações
 
 Para distribuir sua aplicação com o Electron, você deve nomear o diretório que contém sua aplicação como
-`app` e dentro deste diretório colocar os recursos que você está utilizando (no OSX
+`app` e dentro deste diretório colocar os recursos que você está utilizando (no macOS
 `Electron.app/Contents/Resources/`,
 no Linux e no Windows é em `resources/`):
 
-No OSX:
+No macOS:
 
 ```text
 electron/Electron.app/Contents/Resources/app/
@@ -37,7 +37,7 @@ Para usar um arquivo `asar` ao invés da pasta `app` você precisa mudar o nome 
 arquivo para `app.asar` e colocá-lo sob o diretório de recursos do Electron como
 mostrado abaixo, então o Electron vai ler o arquivo e iniciar a aplicação a partir dele.
 
-No OSX:
+No macOS:
 
 ```text
 electron/Electron.app/Contents/Resources/

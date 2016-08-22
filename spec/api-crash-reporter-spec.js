@@ -3,13 +3,14 @@ const http = require('http')
 const multiparty = require('multiparty')
 const path = require('path')
 const url = require('url')
+const {closeWindow} = require('./window-helpers')
 
 const remote = require('electron').remote
 const app = remote.require('electron').app
 const crashReporter = remote.require('electron').crashReporter
 const BrowserWindow = remote.require('electron').BrowserWindow
 
-describe('crash-reporter module', function () {
+describe('crashReporter module', function () {
   var fixtures = path.resolve(__dirname, 'fixtures')
   var w = null
 
@@ -20,7 +21,7 @@ describe('crash-reporter module', function () {
   })
 
   afterEach(function () {
-    w.destroy()
+    return closeWindow(w).then(function () { w = null })
   })
 
   if (process.mas) {
@@ -52,8 +53,13 @@ describe('crash-reporter module', function () {
         assert.equal(fields['_productName'], 'Zombies')
         assert.equal(fields['_companyName'], 'Umbrella Corporation')
         assert.equal(fields['_version'], app.getVersion())
-        res.end('abc-123-def')
-        done()
+
+        res.end('abc-123-def', () => {
+          assert.equal(crashReporter.getLastCrashReport().id, 'abc-123-def')
+          assert.notEqual(crashReporter.getUploadedReports().length, 0)
+          assert.equal(crashReporter.getUploadedReports()[0].id, 'abc-123-def')
+          done()
+        })
       })
     })
     var port = remote.process.port
@@ -87,6 +93,20 @@ describe('crash-reporter module', function () {
           submitURL: 'Missing companyName'
         })
       }, /companyName is a required option to crashReporter\.start/)
+    })
+
+    it('can be called multiple times', function () {
+      assert.doesNotThrow(function () {
+        crashReporter.start({
+          companyName: 'Umbrella Corporation',
+          submitURL: 'http://127.0.0.1/crashes'
+        })
+
+        crashReporter.start({
+          companyName: 'Umbrella Corporation 2',
+          submitURL: 'http://127.0.0.1/more-crashes'
+        })
+      })
     })
   })
 })

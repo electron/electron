@@ -31,7 +31,7 @@ void URLRequestStringJob::StartAsync(std::unique_ptr<base::Value> options) {
 
 void URLRequestStringJob::GetResponseInfo(net::HttpResponseInfo* info) {
   std::string status("HTTP/1.1 200 OK");
-  net::HttpResponseHeaders* headers = new net::HttpResponseHeaders(status);
+  auto* headers = new net::HttpResponseHeaders(status);
 
   headers->AddHeader(kCORSHeader);
 

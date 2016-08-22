@@ -35,8 +35,8 @@ porque la gestión de los recursos GUI nativos es peligrosa, y tiende a que ocur
 Si deseas realizar operaciones GUI en una página web, el proceso renderer de la página web debe comunicarse
 con el proceso principal, y solicitar a este que realice esas operaciones.
 
-En Electron, hemos proveído el módulo [ipc](../api/ipc-renderer.md) para la comunicación
-entre el proceso principal y el proceso renderer. Y también hay un módulo [remote](../api/remote.md)
+En Electron, hemos proveído el módulo [ipc](../../../docs/api/ipc-renderer.md) para la comunicación
+entre el proceso principal y el proceso renderer. Y también hay un módulo [remote](../../../docs/api/remote.md)
 para comunicación al estilo RPC.
 
 ## Escribe tu primera aplicación Electron

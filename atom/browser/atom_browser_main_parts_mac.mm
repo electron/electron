@@ -18,7 +18,7 @@ void AtomBrowserMainParts::PreMainMessageLoopStart() {
 
   // Set our own application delegate.
   AtomApplicationDelegate* delegate = [[AtomApplicationDelegate alloc] init];
-  [NSApp setDelegate:(id<NSFileManagerDelegate>)delegate];
+  [NSApp setDelegate:delegate];
 
   brightray::BrowserMainParts::PreMainMessageLoopStart();
 

@@ -36,8 +36,6 @@ class AtomSpeechRecognitionManagerDelegate
                            float noise_volume) override;
 
   // content::SpeechRecognitionManagerDelegate:
-  void GetDiagnosticInformation(bool* can_report_metrics,
-                                std::string* hardware_info) override;
   void CheckRecognitionIsAllowed(
       int session_id,
       base::Callback<void(bool ask_user, bool is_allowed)> callback) override;

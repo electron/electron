@@ -12,7 +12,7 @@ app. It doesn't have the same permissions as your web page and all interactions
 between your app and embedded content will be asynchronous. This keeps your app
 safe from the embedded content.
 
-For security purpose, `webview` can only be used in `BrowserWindow`s that have
+For security purposes, `webview` can only be used in `BrowserWindow`s that have
 `nodeIntegration` enabled.
 
 ## Example
@@ -35,20 +35,20 @@ and displays a "loading..." message during the load time:
 ```html
 <script>
   onload = () => {
-    const webview = document.getElementById('foo');
-    const indicator = document.querySelector('.indicator');
+    const webview = document.getElementById('foo')
+    const indicator = document.querySelector('.indicator')
 
     const loadstart = () => {
-      indicator.innerText = 'loading...';
-    };
+      indicator.innerText = 'loading...'
+    }
 
     const loadstop = () => {
-      indicator.innerText = '';
-    };
+      indicator.innerText = ''
+    }
 
-    webview.addEventListener('did-start-loading', loadstart);
-    webview.addEventListener('did-stop-loading', loadstop);
-  };
+    webview.addEventListener('did-start-loading', loadstart)
+    webview.addEventListener('did-stop-loading', loadstop)
+  }
 </script>
 ```
 
@@ -120,9 +120,6 @@ than the minimum values or greater than the maximum.
 
 If "on", the guest page in `webview` will have node integration and can use node
 APIs like `require` and `process` to access low level system resources.
-
-**Note:** Node integration will always be disabled in the `webview` if it is
-disabled on the parent window.
 
 ### `plugins`
 
@@ -226,9 +223,10 @@ The `webview` tag has the following methods:
 **Example**
 
 ```javascript
+const webview = document.getElementById('foo')
 webview.addEventListener('dom-ready', () => {
-  webview.openDevTools();
-});
+  webview.openDevTools()
+})
 ```
 
 ### `<webview>.loadURL(url[, options])`
@@ -491,7 +489,7 @@ examples.
 
 Sends an input `event` to the page.
 
-See [webContents.sendInputEvent](web-contents.md##webcontentssendinputeventevent)
+See [webContents.sendInputEvent](web-contents.md#webcontentssendinputeventevent)
 for detailed description of `event` object.
 
 ### `<webview>.showDefinitionForSelection()` _macOS_
@@ -621,9 +619,10 @@ The following example code forwards all log messages to the embedder's console
 without regard for log level or other properties.
 
 ```javascript
+const webview = document.getElementById('foo')
 webview.addEventListener('console-message', (e) => {
-  console.log('Guest page logged a message:', e.message);
-});
+  console.log('Guest page logged a message:', e.message)
+})
 ```
 
 ### Event: 'found-in-page'
@@ -641,12 +640,13 @@ Fired when a result is available for
 [`webview.findInPage`](web-view-tag.md#webviewtagfindinpage) request.
 
 ```javascript
+const webview = document.getElementById('foo')
 webview.addEventListener('found-in-page', (e) => {
-  if (e.result.finalUpdate)
-    webview.stopFindInPage('keepSelection');
-});
+  if (e.result.finalUpdate) webview.stopFindInPage('keepSelection')
+})
 
-const requestId = webview.findInPage('test');
+const requestId = webview.findInPage('test')
+console.log(requestId)
 ```
 
 ### Event: 'new-window'
@@ -665,14 +665,15 @@ Fired when the guest page attempts to open a new browser window.
 The following example code opens the new url in system's default browser.
 
 ```javascript
-const {shell} = require('electron');
+const {shell} = require('electron')
+const webview = document.getElementById('foo')
 
 webview.addEventListener('new-window', (e) => {
-  const protocol = require('url').parse(e.url).protocol;
+  const protocol = require('url').parse(e.url).protocol
   if (protocol === 'http:' || protocol === 'https:') {
-    shell.openExternal(e.url);
+    shell.openExternal(e.url)
   }
-});
+})
 ```
 
 ### Event: 'will-navigate'
@@ -709,6 +710,7 @@ this purpose.
 
 Returns:
 
+* `isMainFrame` Boolean
 * `url` String
 
 Emitted when an in-page navigation happened.
@@ -725,9 +727,10 @@ The following example code navigates the `webview` to `about:blank` when the
 guest attempts to close itself.
 
 ```javascript
+const webview = document.getElementById('foo')
 webview.addEventListener('close', () => {
-  webview.src = 'about:blank';
-});
+  webview.src = 'about:blank'
+})
 ```
 
 ### Event: 'ipc-message'
@@ -744,19 +747,20 @@ between guest page and embedder page:
 
 ```javascript
 // In embedder page.
+const webview = document.getElementById('foo')
 webview.addEventListener('ipc-message', (event) => {
-  console.log(event.channel);
+  console.log(event.channel)
   // Prints "pong"
-});
-webview.send('ping');
+})
+webview.send('ping')
 ```
 
 ```javascript
 // In guest page.
-const {ipcRenderer} = require('electron');
+const {ipcRenderer} = require('electron')
 ipcRenderer.on('ping', () => {
-  ipcRenderer.sendToHost('pong');
-});
+  ipcRenderer.sendToHost('pong')
+})
 ```
 
 ### Event: 'crashed'

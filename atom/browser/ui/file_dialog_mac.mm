@@ -71,7 +71,6 @@ void SetupDialog(NSSavePanel* dialog,
   if (default_filename)
     [dialog setNameFieldStringValue:default_filename];
 
-  [dialog setCanSelectHiddenExtension:YES];
   if (filters.empty())
     [dialog setAllowsOtherFileTypes:YES];
   else
@@ -86,6 +85,8 @@ void SetupDialogForProperties(NSOpenPanel* dialog, int properties) {
     [dialog setCanCreateDirectories:YES];
   if (properties & FILE_DIALOG_MULTI_SELECTIONS)
     [dialog setAllowsMultipleSelection:YES];
+  if (properties & FILE_DIALOG_SHOW_HIDDEN_FILES)
+    [dialog setShowsHiddenFiles:YES];
 }
 
 // Run modal dialog with parent window and return user's choice.
@@ -194,6 +195,7 @@ void ShowSaveDialog(atom::NativeWindow* parent_window,
   NSSavePanel* dialog = [NSSavePanel savePanel];
 
   SetupDialog(dialog, title, button_label, default_path, filters);
+  [dialog setCanSelectHiddenExtension:YES];
 
   __block SaveDialogCallback callback = c;
 

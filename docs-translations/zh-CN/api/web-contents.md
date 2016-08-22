@@ -420,7 +420,7 @@ var currentURL = win.webContents.getURL();
 
 * `muted` Boolean
 
-减缓当前也的 audio 的播放速度.
+减缓当前页的 audio 的播放速度.
 
 ### `webContents.isAudioMuted()`
 

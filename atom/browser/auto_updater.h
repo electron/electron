@@ -49,6 +49,7 @@ class AutoUpdater {
   static Delegate* GetDelegate();
   static void SetDelegate(Delegate* delegate);
 
+  static std::string GetFeedURL();
   static void SetFeedURL(const std::string& url,
                          const HeaderMap& requestHeaders);
   static void CheckForUpdates();

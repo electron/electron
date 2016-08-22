@@ -6,9 +6,9 @@
 #define ATOM_BROWSER_API_ATOM_API_POWER_SAVE_BLOCKER_H_
 
 #include <map>
+#include <memory>
 
 #include "atom/browser/api/trackable_object.h"
-#include "base/memory/scoped_ptr.h"
 #include "content/public/browser/power_save_blocker.h"
 #include "native_mate/handle.h"
 
@@ -25,7 +25,7 @@ class PowerSaveBlocker : public mate::TrackableObject<PowerSaveBlocker> {
   static mate::Handle<PowerSaveBlocker> Create(v8::Isolate* isolate);
 
   static void BuildPrototype(v8::Isolate* isolate,
-                             v8::Local<v8::ObjectTemplate> prototype);
+                             v8::Local<v8::FunctionTemplate> prototype);
 
  protected:
   explicit PowerSaveBlocker(v8::Isolate* isolate);

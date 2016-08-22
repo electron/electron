@@ -8,6 +8,7 @@ const dialog = electron.dialog
 const BrowserWindow = electron.BrowserWindow
 const protocol = electron.protocol
 
+const Coverage = require('electabul').Coverage
 const fs = require('fs')
 const path = require('path')
 const url = require('url')
@@ -63,6 +64,15 @@ ipcMain.on('echo', function (event, msg) {
   event.returnValue = msg
 })
 
+const coverage = new Coverage({
+  outputPath: path.join(__dirname, '..', '..', 'out', 'coverage')
+})
+coverage.setup()
+
+ipcMain.on('get-main-process-coverage', function (event) {
+  event.returnValue = global.__coverage__ || null
+})
+
 global.isCi = !!argv.ci
 if (global.isCi) {
   process.removeAllListeners('uncaughtException')
@@ -91,7 +101,7 @@ app.on('ready', function () {
 
   window = new BrowserWindow({
     title: 'Electron Tests',
-    show: false,
+    show: !global.isCi,
     width: 800,
     height: 600,
     webPreferences: {
@@ -142,7 +152,8 @@ app.on('ready', function () {
             item.getReceivedBytes(),
             item.getTotalBytes(),
             item.getContentDisposition(),
-            item.getFilename())
+            item.getFilename(),
+            item.getSavePath())
         })
         if (needCancel) item.cancel()
       }

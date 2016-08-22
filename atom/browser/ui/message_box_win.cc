@@ -12,6 +12,7 @@
 
 #include "atom/browser/browser.h"
 #include "atom/browser/native_window_views.h"
+#include "atom/browser/unresponsive_suppressor.h"
 #include "base/callback.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
@@ -198,7 +199,7 @@ int ShowMessageBox(NativeWindow* parent,
       static_cast<atom::NativeWindowViews*>(parent)->GetAcceleratedWidget() :
       NULL;
 
-  NativeWindow::DialogScope dialog_scope(parent);
+  atom::UnresponsiveSuppressor suppressor;
   return ShowMessageBoxUTF16(hwnd_parent,
                              type,
                              utf16_buttons,
@@ -239,6 +240,7 @@ void ShowMessageBox(NativeWindow* parent,
 }
 
 void ShowErrorBox(const base::string16& title, const base::string16& content) {
+  atom::UnresponsiveSuppressor suppressor;
   ShowMessageBoxUTF16(NULL, MESSAGE_BOX_TYPE_ERROR, {}, -1, 0, 0, L"Error",
                       title, content, gfx::ImageSkia());
 }

@@ -16,6 +16,8 @@
 #ifndef NET_TEST_EMBEDDED_TEST_SERVER_STREAM_LISTEN_SOCKET_H_
 #define NET_TEST_EMBEDDED_TEST_SERVER_STREAM_LISTEN_SOCKET_H_
 
+#include <memory>
+
 #include "build/build_config.h"
 
 #if defined(OS_WIN)
@@ -30,7 +32,6 @@
 
 #include "base/macros.h"
 #include "base/compiler_specific.h"
-#include "base/memory/scoped_ptr.h"
 #include "net/base/net_export.h"
 #include "net/socket/socket_descriptor.h"
 

@@ -65,7 +65,7 @@ def main():
 
   create_chrome_version_h()
   touch_config_gypi()
-  run_update(defines, args.disable_clang, args.clang_dir)
+  run_update(defines, args.msvs)
   update_electron_modules('spec', args.target_arch)
 
 
@@ -86,6 +86,8 @@ def parse_args():
                       action='store_true',
                       help='Run non-interactively by assuming "yes" to all ' \
                            'prompts.')
+  parser.add_argument('--msvs', action='store_true',
+                      help='Generate Visual Studio project')
   parser.add_argument('--target_arch', default=get_target_arch(),
                       help='Manually specify the arch to build for')
   parser.add_argument('--clang_dir', default='', help='Path to clang binaries')
@@ -101,11 +103,13 @@ def parse_args():
                       help='The shared library path of libchromiumcontent.')
   parser.add_argument('--libcc_static_library_path', required=False,
                       help='The static library path of libchromiumcontent.')
+  parser.add_argument('--defines', default='',
+                      help='The build variables passed to gyp')
   return parser.parse_args()
 
 
 def args_to_defines(args):
-  defines = ''
+  defines = args.defines
   if args.disable_clang:
     defines += ' clang=0'
   if args.clang_dir:
@@ -249,14 +253,14 @@ def touch_config_gypi():
       f.write(content)
 
 
-def run_update(defines, disable_clang, clang_dir):
-  env = os.environ.copy()
-  if not disable_clang and clang_dir == '':
-    # Build with prebuilt clang.
-    set_clang_env(env)
+def run_update(defines, msvs):
+  args = [sys.executable, os.path.join(SOURCE_ROOT, 'script', 'update.py')]
+  if defines:
+    args += ['--defines', defines]
+  if msvs:
+    args += ['--msvs']
 
-  update = os.path.join(SOURCE_ROOT, 'script', 'update.py')
-  execute_stdout([sys.executable, update, '--defines', defines], env)
+  execute_stdout(args)
 
 
 if __name__ == '__main__':
