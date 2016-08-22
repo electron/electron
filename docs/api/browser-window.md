@@ -14,7 +14,11 @@ win.on('closed', () => {
   win = null
 })
 
+// Load a remote URL
 win.loadURL('https://github.com')
+
+// Or load a local HTML file
+win.loadURL(`file://${__dirname}/app/index.html`)
 ```
 
 ## Frameless window
@@ -946,6 +950,23 @@ Same as `webContents.capturePage([rect, ]callback)`.
 
 Same as `webContents.loadURL(url[, options])`.
 
+The `url` can be a remote address (e.g. `http://`) or a path to a local
+HTML file using the `file://` protocol.
+
+To ensure that file URLs are properly formatted, it is recommended to use
+Node's [`url.format`](https://nodejs.org/api/url.html#url_url_format_urlobject)
+method:
+
+```javascript
+let url = require('url').format({
+  protocol: 'file',
+  slashes: true,
+  pathname: path.join(__dirname, 'index.html')
+})
+
+win.loadURL(url)
+```
+
 #### `win.reload()`
 
 Same as `webContents.reload`.
@@ -972,7 +993,7 @@ On Linux platform, only supports Unity desktop environment, you need to specify
 the `*.desktop` file name to `desktopName` field in `package.json`. By default,
 it will assume `app.getName().desktop`.
 
-On Windows, a mode can be passed. Accepted values are `none`, `normal`, 
+On Windows, a mode can be passed. Accepted values are `none`, `normal`,
 `indeterminate`, `error`, and `paused`. If you call `setProgressBar` without a
 mode set (but with a value within the valid range), `normal` will be assumed.
 

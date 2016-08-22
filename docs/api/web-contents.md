@@ -493,7 +493,7 @@ win.loadURL('http://github.com')
   * `userAgent` String - A user agent originating the request.
   * `extraHeaders` String - Extra headers separated by "\n"
 
-Loads the `url` in the window, the `url` must contain the protocol prefix,
+Loads the `url` in the window. The `url` must contain the protocol prefix,
 e.g. the `http://` or `file://`. If the load should bypass http cache then
 use the `pragma` header to achieve it.
 
