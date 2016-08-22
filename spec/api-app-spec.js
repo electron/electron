@@ -43,7 +43,7 @@ describe('electron module', function () {
 describe('app module', function () {
   describe('app.getVersion()', function () {
     it('returns the version field of package.json', function () {
-      assert.equal(app.getVersion(), '0.1.0')
+      assert.equal(app.getVersion(), '0.2.0')
     })
   })
 
