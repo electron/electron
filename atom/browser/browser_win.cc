@@ -21,6 +21,7 @@
 #include "base/win/registry.h"
 #include "base/win/windows_version.h"
 #include "atom/common/atom_version.h"
+#include "atom/common/native_mate_converters/string16_converter.h"
 
 namespace atom {
 
@@ -125,15 +126,39 @@ bool Browser::SetUserTasks(const std::vector<UserTask>& tasks) {
   return SUCCEEDED(destinations->CommitList());
 }
 
-bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol) {
-  if (protocol.empty())
-    return false;
+bool GetProtocolLaunchPath(mate::Arguments* args, base::string16* exe) {
+  // Read in optional exe path arg
+  base::string16 exePath;
 
   base::FilePath path;
-  if (!PathService::Get(base::FILE_EXE, &path)) {
-    LOG(ERROR) << "Error getting app exe path";
-    return false;
+
+  if (!args->GetNext(&exePath)) {
+    if (!PathService::Get(base::FILE_EXE, &path)) {
+      LOG(ERROR) << "Error getting app exe path";
+      return false;
+    }
+    // Executable Path
+    exePath = path.value();
   }
+
+  // Read in optional args arg
+  std::vector<base::string16> launchArgs;
+  args->GetNext(&launchArgs);
+
+  // Parse launch args into a string of space spearated args
+  base::string16 launchArgString;
+  if (launchArgs.size() != 0) {
+    launchArgString = base::JoinString(launchArgs, L" ");
+  }
+  *exe = base::StringPrintf(L"\"%s\" %s \"%%1\"",
+                            exePath.c_str(), launchArgString.c_str());
+  return true;
+}
+
+bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
+                                            mate::Arguments* args) {
+  if (protocol.empty())
+    return false;
 
   // Main Registry Key
   HKEY root = HKEY_CURRENT_USER;
@@ -159,8 +184,12 @@ bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol) {
     // Default value not set, we can confirm that it is not set
     return true;
 
-  std::wstring exePath(path.value());
-  std::wstring exe = L"\"" + exePath + L"\" \"%1\"";
+  std::wstring exe;
+  if (!GetProtocolLaunchPath(args, &exe)) {
+    return false;
+  }
+  if (exe == L"")
+    return false;
   if (keyVal == exe) {
     // Let's kill the key
     if (FAILED(key.DeleteKey(L"shell")))
@@ -172,7 +201,8 @@ bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol) {
   }
 }
 
-bool Browser::SetAsDefaultProtocolClient(const std::string& protocol) {
+bool Browser::SetAsDefaultProtocolClient(const std::string& protocol,
+                                        mate::Arguments* args) {
   // HKEY_CLASSES_ROOT
   //    $PROTOCOL
   //       (Default) = "URL:$NAME"
@@ -190,9 +220,8 @@ bool Browser::SetAsDefaultProtocolClient(const std::string& protocol) {
   if (protocol.empty())
     return false;
 
-  base::FilePath path;
-  if (!PathService::Get(base::FILE_EXE, &path)) {
-    LOG(ERROR) << "Error getting app exe path";
+  std::wstring exe;
+  if (!GetProtocolLaunchPath(args, &exe)) {
     return false;
   }
 
@@ -207,10 +236,6 @@ bool Browser::SetAsDefaultProtocolClient(const std::string& protocol) {
   std::string cmdPathStr = keyPathStr + "\\shell\\open\\command";
   std::wstring cmdPath = std::wstring(cmdPathStr.begin(), cmdPathStr.end());
 
-  // Executable Path
-  std::wstring exePath(path.value());
-  std::wstring exe = L"\"" + exePath + L"\" \"%1\"";
-
   // Write information to registry
   base::win::RegKey key(root, keyPath.c_str(), KEY_ALL_ACCESS);
   if (FAILED(key.WriteValue(L"URL Protocol", L"")) ||
@@ -224,13 +249,13 @@ bool Browser::SetAsDefaultProtocolClient(const std::string& protocol) {
   return true;
 }
 
-bool Browser::IsDefaultProtocolClient(const std::string& protocol) {
+bool Browser::IsDefaultProtocolClient(const std::string& protocol,
+                                      mate::Arguments* args) {
   if (protocol.empty())
     return false;
 
-  base::FilePath path;
-  if (!PathService::Get(base::FILE_EXE, &path)) {
-    LOG(ERROR) << "Error getting app exe path";
+  std::wstring exe;
+  if (!GetProtocolLaunchPath(args, &exe)) {
     return false;
   }
 
@@ -258,8 +283,6 @@ bool Browser::IsDefaultProtocolClient(const std::string& protocol) {
     // Default value not set, we can confirm that it is not set
     return false;
 
-  std::wstring exePath(path.value());
-  std::wstring exe = L"\"" + exePath + L"\" \"%1\"";
   if (keyVal == exe) {
     // Default value is the same as current file path
     return true;
