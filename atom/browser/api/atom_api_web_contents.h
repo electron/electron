@@ -20,6 +20,10 @@
 #include "native_mate/handle.h"
 #include "ui/gfx/image/image.h"
 
+namespace autofill {
+class AtomAutofillClient;
+}
+
 namespace blink {
 struct WebDeviceEmulationParams;
 }
@@ -230,6 +234,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void OnCreateWindow(const GURL& target_url,
                       const std::string& frame_name,
                       WindowOpenDisposition disposition);
+
+  void AutofillSelect(const std::string& value, int frontend_id, int index);
 
   // Returns the web preferences of current WebContents.
   v8::Local<v8::Value> GetWebPreferences(v8::Isolate* isolate);

@@ -5,11 +5,15 @@
 #include "brave/browser/brave_browser_context.h"
 
 #include "atom/browser/net/atom_url_request_job_factory.h"
+#include "base/path_service.h"
 #include "brave/browser/brave_permission_manager.h"
+#include "brightray/browser/brightray_paths.h"
 #include "chrome/browser/chrome_notification_types.h"
 #include "chrome/browser/custom_handlers/protocol_handler_registry.h"
 #include "chrome/browser/custom_handlers/protocol_handler_registry_factory.h"
 #include "chrome/common/pref_names.h"
+#include "components/autofill/core/browser/autofill_manager.h"
+#include "components/autofill/core/browser/webdata/autofill_table.h"
 #include "components/keyed_service/content/browser_context_dependency_manager.h"
 #include "components/prefs/json_pref_store.h"
 #include "components/prefs/pref_change_registrar.h"
@@ -19,6 +23,7 @@
 #include "components/syncable_prefs/pref_service_syncable_factory.h"
 #include "components/user_prefs/user_prefs.h"
 #include "components/ui/zoom/zoom_event_manager.h"
+#include "components/webdata/common/webdata_constants.h"
 #include "content/public/browser/notification_service.h"
 #include "content/public/browser/notification_source.h"
 #include "content/public/browser/browser_thread.h"
@@ -63,6 +68,11 @@ void NotifyOTRProfileDestroyedOnIOThread(void* original_profile,
 
 namespace brave {
 
+void DatabaseErrorCallback(sql::InitStatus status) {
+  // TODO(bridiver) - we should send a notification of failure
+  LOG(WARNING) << "initializing autocomplete database failed";
+}
+
 BraveBrowserContext::BraveBrowserContext(const std::string& partition,
                                        bool in_memory,
                                        const base::DictionaryValue& options)
@@ -90,6 +100,26 @@ BraveBrowserContext::BraveBrowserContext(const std::string& partition,
           base::Unretained(original_context_),
           base::Unretained(this)));
 #endif
+  } else {
+    // Initialize autofill db
+    base::FilePath user_dir;
+    PathService::Get(brightray::DIR_USER_DATA, &user_dir);
+    user_dir = user_dir.Append(kWebDataFilename);
+    user_dir = user_dir.AddExtension(FILE_PATH_LITERAL(partition));
+
+    CHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
+    web_database_ = new WebDatabaseService(user_dir,
+        BrowserThread::GetMessageLoopProxyForThread(BrowserThread::UI),
+        BrowserThread::GetMessageLoopProxyForThread(BrowserThread::DB));
+    web_database_->AddTable(base::WrapUnique(new autofill::AutofillTable));
+    web_database_->LoadDatabase();
+
+    autofill_data_ = new autofill::AutofillWebDataService(
+        web_database_,
+        BrowserThread::GetMessageLoopProxyForThread(BrowserThread::UI),
+        BrowserThread::GetMessageLoopProxyForThread(BrowserThread::DB),
+        base::Bind(&DatabaseErrorCallback));
+    autofill_data_->Init();
   }
 }
 
@@ -138,6 +168,9 @@ BraveBrowserContext::~BraveBrowserContext() {
 
   BrowserContextDependencyManager::GetInstance()->
       DestroyBrowserContextServices(this);
+
+  autofill_data_->ShutdownOnUIThread();
+  web_database_->ShutdownDatabase();
 }
 
 // static
@@ -283,6 +316,7 @@ void BraveBrowserContext::RegisterPrefs(PrefRegistrySimple* pref_registry) {
     // TODO(bridiver) - is this necessary or is it covered by
     // BrowserContextDependencyManager
     ProtocolHandlerRegistry::RegisterProfilePrefs(pref_registry_.get());
+    autofill::AutofillManager::RegisterProfilePrefs(pref_registry_.get());
 #if defined(ENABLE_EXTENSIONS)
     extensions::AtomBrowserClientExtensionsPart::RegisterProfilePrefs(
         pref_registry_.get());
@@ -351,6 +385,11 @@ BraveBrowserContext::CreateZoomLevelDelegate(const base::FilePath& partition_pat
   return base::WrapUnique(new ChromeZoomLevelPrefs(
       GetPrefs(), GetPath(), partition_path,
       ui_zoom::ZoomEventManager::GetForBrowserContext(this)->GetWeakPtr()));
+}
+
+scoped_refptr<autofill::AutofillWebDataService>
+BraveBrowserContext::GetAutofillWebdataService() {
+  return original_context()->autofill_data_;
 }
 
 }  // namespace brave
