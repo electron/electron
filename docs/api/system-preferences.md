@@ -43,9 +43,7 @@ Removes the subscriber with `id`.
 ### `systemPreferences.subscribeLocalNotification(event, callback)` _macOS_
 
 Same as `subscribeNotification`, but uses `NSNotificationCenter` for local defaults.
-This is necessary for events such as:
-
-* `NSUserDefaultsDidChangeNotification`
+This is necessary for events such as `NSUserDefaultsDidChangeNotification`
 
 ### `systemPreferences.unsubscribeLocalNotification(id)` _macOS_
 

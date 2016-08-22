@@ -20,7 +20,7 @@ const ses = win.webContents.session
 
 The `session` module has the following methods:
 
-### session.fromPartition(partition[, options])
+### `session.fromPartition(partition[, options])`
 
 * `partition` String
 * `options` Object
@@ -43,7 +43,7 @@ of an existing `Session` object.
 
 The `session` module has the following properties:
 
-### session.defaultSession
+### `session.defaultSession`
 
 Returns the default session object of the app.
 

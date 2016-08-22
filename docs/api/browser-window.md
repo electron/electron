@@ -985,7 +985,7 @@ The `flags` is an array that can include following `String`s:
 
 #### `win.setThumbnailClip(region)` _Windows_
 
-* `region` - Object
+* `region` Object - Region of the window
   * `x` Integer - x-position of region
   * `y` Integer - y-position of region
   * `width` Integer - width of region
