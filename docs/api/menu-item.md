@@ -8,7 +8,7 @@ See [`Menu`](menu.md) for examples.
 
 Create a new `MenuItem` with the following method:
 
-### new MenuItem(options)
+### `new MenuItem(options)`
 
 * `options` Object
   * `click` Function - Will be called with
