@@ -10,6 +10,8 @@
 #include <shlobj.h>
 #include <shobjidl.h>
 
+#include "atom/common/atom_version.h"
+#include "atom/common/native_mate_converters/string16_converter.h"
 #include "base/base_paths.h"
 #include "base/file_version_info.h"
 #include "base/files/file_path.h"
@@ -20,8 +22,6 @@
 #include "base/win/win_util.h"
 #include "base/win/registry.h"
 #include "base/win/windows_version.h"
-#include "atom/common/atom_version.h"
-#include "atom/common/native_mate_converters/string16_converter.h"
 
 namespace atom {
 
@@ -40,6 +40,28 @@ BOOL CALLBACK WindowsEnumerationHandler(HWND hwnd, LPARAM param) {
   }
 
   return TRUE;
+}
+
+bool GetProtocolLaunchPath(mate::Arguments* args, base::string16* exe) {
+  // Executable Path
+  if (!args->GetNext(exe)) {
+    base::FilePath path;
+    if (!PathService::Get(base::FILE_EXE, &path)) {
+      LOG(ERROR) << "Error getting app exe path";
+      return false;
+    }
+    *exe = path.value();
+  }
+
+  // Read in optional args arg
+  std::vector<base::string16> launch_args;
+  if (args->GetNext(&launch_args) && !launch_args.empty())
+    *exe = base::StringPrintf(L"\"%s\" %s \"%%1\"",
+                              exe->c_str(),
+                              base::JoinString(launch_args, L" ").c_str());
+  else
+    *exe = base::StringPrintf(L"\"%s\" \"%%1\"", exe->c_str());
+  return true;
 }
 
 }  // namespace
@@ -126,35 +148,6 @@ bool Browser::SetUserTasks(const std::vector<UserTask>& tasks) {
   return SUCCEEDED(destinations->CommitList());
 }
 
-bool GetProtocolLaunchPath(mate::Arguments* args, base::string16* exe) {
-  // Read in optional exe path arg
-  base::string16 exePath;
-
-  base::FilePath path;
-
-  if (!args->GetNext(&exePath)) {
-    if (!PathService::Get(base::FILE_EXE, &path)) {
-      LOG(ERROR) << "Error getting app exe path";
-      return false;
-    }
-    // Executable Path
-    exePath = path.value();
-  }
-
-  // Read in optional args arg
-  std::vector<base::string16> launchArgs;
-  args->GetNext(&launchArgs);
-
-  // Parse launch args into a string of space spearated args
-  base::string16 launchArgString;
-  if (launchArgs.size() != 0) {
-    launchArgString = base::JoinString(launchArgs, L" ");
-  }
-  *exe = base::StringPrintf(L"\"%s\" %s \"%%1\"",
-                            exePath.c_str(), launchArgString.c_str());
-  return true;
-}
-
 bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
                                             mate::Arguments* args) {
   if (protocol.empty())
@@ -162,12 +155,10 @@ bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
 
   // Main Registry Key
   HKEY root = HKEY_CURRENT_USER;
-  std::string keyPathStr = "Software\\Classes\\" + protocol;
-  std::wstring keyPath = std::wstring(keyPathStr.begin(), keyPathStr.end());
+  base::string16 keyPath = base::UTF8ToUTF16("Software\\Classes\\" + protocol);
 
   // Command Key
-  std::string cmdPathStr = keyPathStr + "\\shell\\open\\command";
-  std::wstring cmdPath = std::wstring(cmdPathStr.begin(), cmdPathStr.end());
+  base::string16 cmdPath = keyPath + L"\\shell\\open\\command";
 
   base::win::RegKey key;
   base::win::RegKey commandKey;
@@ -179,17 +170,15 @@ bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
     // Key doesn't even exist, we can confirm that it is not set
     return true;
 
-  std::wstring keyVal;
+  base::string16 keyVal;
   if (FAILED(commandKey.ReadValue(L"", &keyVal)))
     // Default value not set, we can confirm that it is not set
     return true;
 
-  std::wstring exe;
-  if (!GetProtocolLaunchPath(args, &exe)) {
+  base::string16 exe;
+  if (!GetProtocolLaunchPath(args, &exe))
     return false;
-  }
-  if (exe == L"")
-    return false;
+
   if (keyVal == exe) {
     // Let's kill the key
     if (FAILED(key.DeleteKey(L"shell")))
@@ -220,21 +209,17 @@ bool Browser::SetAsDefaultProtocolClient(const std::string& protocol,
   if (protocol.empty())
     return false;
 
-  std::wstring exe;
-  if (!GetProtocolLaunchPath(args, &exe)) {
+  base::string16 exe;
+  if (!GetProtocolLaunchPath(args, &exe))
     return false;
-  }
 
   // Main Registry Key
   HKEY root = HKEY_CURRENT_USER;
-  std::string keyPathStr = "Software\\Classes\\" + protocol;
-  std::wstring keyPath = std::wstring(keyPathStr.begin(), keyPathStr.end());
-  std::string urlDeclStr = "URL:" + protocol;
-  std::wstring urlDecl = std::wstring(urlDeclStr.begin(), urlDeclStr.end());
+  base::string16 keyPath = base::UTF8ToUTF16("Software\\Classes\\" + protocol);
+  base::string16 urlDecl = base::UTF8ToUTF16("URL:" + protocol);
 
   // Command Key
-  std::string cmdPathStr = keyPathStr + "\\shell\\open\\command";
-  std::wstring cmdPath = std::wstring(cmdPathStr.begin(), cmdPathStr.end());
+  base::string16 cmdPath = keyPath + L"\\shell\\open\\command";
 
   // Write information to registry
   base::win::RegKey key(root, keyPath.c_str(), KEY_ALL_ACCESS);
@@ -254,19 +239,16 @@ bool Browser::IsDefaultProtocolClient(const std::string& protocol,
   if (protocol.empty())
     return false;
 
-  std::wstring exe;
-  if (!GetProtocolLaunchPath(args, &exe)) {
+  base::string16 exe;
+  if (!GetProtocolLaunchPath(args, &exe))
     return false;
-  }
 
   // Main Registry Key
   HKEY root = HKEY_CURRENT_USER;
-  std::string keyPathStr = "Software\\Classes\\" + protocol;
-  std::wstring keyPath = std::wstring(keyPathStr.begin(), keyPathStr.end());
+  base::string16 keyPath = base::UTF8ToUTF16("Software\\Classes\\" + protocol);
 
   // Command Key
-  std::string cmdPathStr = keyPathStr + "\\shell\\open\\command";
-  std::wstring cmdPath = std::wstring(cmdPathStr.begin(), cmdPathStr.end());
+  base::string16 cmdPath = keyPath + L"\\shell\\open\\command";
 
   base::win::RegKey key;
   base::win::RegKey commandKey;
@@ -278,17 +260,13 @@ bool Browser::IsDefaultProtocolClient(const std::string& protocol,
     // Key doesn't exist, we can confirm that it is not set
     return false;
 
-  std::wstring keyVal;
+  base::string16 keyVal;
   if (FAILED(commandKey.ReadValue(L"", &keyVal)))
     // Default value not set, we can confirm that it is not set
     return false;
 
-  if (keyVal == exe) {
-    // Default value is the same as current file path
-    return true;
-  } else {
-    return false;
-  }
+  // Default value is the same as current file path
+  return keyVal == exe;
 }
 
 bool Browser::SetBadgeCount(int count) {
@@ -296,13 +274,13 @@ bool Browser::SetBadgeCount(int count) {
 }
 
 void Browser::SetLoginItemSettings(LoginItemSettings settings) {
-  std::wstring keyPath = L"Software\\Microsoft\\Windows\\CurrentVersion\\Run";
+  base::string16 keyPath = L"Software\\Microsoft\\Windows\\CurrentVersion\\Run";
   base::win::RegKey key(HKEY_CURRENT_USER, keyPath.c_str(), KEY_ALL_ACCESS);
 
   if (settings.open_at_login) {
     base::FilePath path;
     if (PathService::Get(base::FILE_EXE, &path)) {
-      std::wstring exePath(path.value());
+      base::string16 exePath(path.value());
       key.WriteValue(GetAppUserModelID(), exePath.c_str());
     }
   } else {
@@ -312,14 +290,14 @@ void Browser::SetLoginItemSettings(LoginItemSettings settings) {
 
 Browser::LoginItemSettings Browser::GetLoginItemSettings() {
   LoginItemSettings settings;
-  std::wstring keyPath = L"Software\\Microsoft\\Windows\\CurrentVersion\\Run";
+  base::string16 keyPath = L"Software\\Microsoft\\Windows\\CurrentVersion\\Run";
   base::win::RegKey key(HKEY_CURRENT_USER, keyPath.c_str(), KEY_ALL_ACCESS);
-  std::wstring keyVal;
+  base::string16 keyVal;
 
   if (!FAILED(key.ReadValue(GetAppUserModelID(), &keyVal))) {
     base::FilePath path;
     if (PathService::Get(base::FILE_EXE, &path)) {
-      std::wstring exePath(path.value());
+      base::string16 exePath(path.value());
       settings.open_at_login = keyVal == exePath;
     }
   }
