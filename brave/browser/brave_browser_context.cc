@@ -102,14 +102,10 @@ BraveBrowserContext::BraveBrowserContext(const std::string& partition,
 #endif
   } else {
     // Initialize autofill db
-    base::FilePath user_dir;
-    PathService::Get(brightray::DIR_USER_DATA, &user_dir);
-    user_dir = user_dir.Append(kWebDataFilename);
-    user_dir = user_dir.AddExtension(
-        base::FilePath::StringType(partition.begin(), partition.end()));
+    base::FilePath webDataPath = GetPath().Append(kWebDataFilename);
 
     CHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
-    web_database_ = new WebDatabaseService(user_dir,
+    web_database_ = new WebDatabaseService(webDataPath,
         BrowserThread::GetMessageLoopProxyForThread(BrowserThread::UI),
         BrowserThread::GetMessageLoopProxyForThread(BrowserThread::DB));
     web_database_->AddTable(base::WrapUnique(new autofill::AutofillTable));
