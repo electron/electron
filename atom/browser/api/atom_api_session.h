@@ -45,6 +45,11 @@ class Session: public mate::TrackableObject<Session>,
     STATS,
   };
 
+  enum class BlobIdType {
+    PUBLIC_URL,
+    UUID,
+  };
+
   // Gets or creates Session from the |browser_context|.
   static mate::Handle<Session> CreateFrom(
       v8::Isolate* isolate, AtomBrowserContext* browser_context);
@@ -77,8 +82,7 @@ class Session: public mate::TrackableObject<Session>,
   void AllowNTLMCredentialsForDomains(const std::string& domains);
   void SetUserAgent(const std::string& user_agent, mate::Arguments* args);
   std::string GetUserAgent();
-  void GetBlobDataForUUID(const std::string& uuid,
-                          const BlobDataCallback& calback);
+  void GetBlobData(mate::Arguments* args);
   v8::Local<v8::Value> Cookies(v8::Isolate* isolate);
   v8::Local<v8::Value> Protocol(v8::Isolate* isolate);
   v8::Local<v8::Value> WebRequest(v8::Isolate* isolate);

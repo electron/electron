@@ -354,7 +354,6 @@ void DidReadBlobData(const scoped_refptr<net::IOBuffer>& blob_data,
 }
 
 void DidCalculateBlobSize(
-    std::unique_ptr<storage::BlobDataHandle> blob_data_handle,
     std::shared_ptr<storage::BlobReader> blob_reader,
     const Session::BlobDataCallback& completion_callback,
     int result) {
@@ -383,19 +382,36 @@ void DidCalculateBlobSize(
     callback.Run(bytes_read);
 }
 
-void GetBlobDataForUUIDInIO(
-    const std::string& uuid,
+void GetBlobDataInIO(
+    const std::string& identifier,
+    Session::BlobIdType type,
     content::ChromeBlobStorageContext* blob_context,
     storage::FileSystemContext* file_system_context,
     const Session::BlobDataCallback& completion_callback) {
-  auto blob_data_handle = blob_context->context()->GetBlobDataFromUUID(uuid);
+  std::unique_ptr<storage::BlobDataHandle> blob_data_handle;
+  if (type == Session::BlobIdType::PUBLIC_URL) {
+    blob_data_handle =
+        blob_context->context()->GetBlobDataFromPublicURL(GURL(identifier));
+  } else if (type == Session::BlobIdType::UUID) {
+    blob_data_handle =
+        blob_context->context()->GetBlobDataFromUUID(identifier);
+  }
+
+  if (!blob_data_handle) {
+    std::unique_ptr<base::BinaryValue> dummy(new base::BinaryValue());
+    BrowserThread::PostTask(BrowserThread::UI, FROM_HERE,
+        base::Bind(&RunBlobDataCallback,
+                   completion_callback,
+                   base::Passed(&dummy)));
+    return;
+  }
+
   auto blob_reader = blob_data_handle->CreateReader(
       file_system_context,
       BrowserThread::GetMessageLoopProxyForThread(BrowserThread::FILE).get());
   std::shared_ptr<storage::BlobReader>
       shared_blob_reader(blob_reader.release());
   auto callback = base::Bind(&DidCalculateBlobSize,
-                             base::Passed(&blob_data_handle),
                              shared_blob_reader,
                              completion_callback);
   storage::BlobReader::Status size_status =
@@ -578,17 +594,33 @@ std::string Session::GetUserAgent() {
   return browser_context_->GetUserAgent();
 }
 
-void Session::GetBlobDataForUUID(
-    const std::string& uuid,
-    const BlobDataCallback& callback) {
+void Session::GetBlobData(mate::Arguments* args) {
+  std::string identifier;
+  BlobDataCallback callback;
+  BlobIdType type = BlobIdType::UUID;
+  if (!args->GetNext(&identifier)) {
+    args->ThrowError("Must pass uuid or public url");
+    return;
+  }
+
+  GURL public_url(identifier);
+  if (public_url.is_valid())
+    type = BlobIdType::PUBLIC_URL;
+
+  if (!args->GetNext(&callback)) {
+    args->ThrowError("Must pass Function");
+    return;
+  }
+
   content::ChromeBlobStorageContext* blob_context =
       content::ChromeBlobStorageContext::GetFor(browser_context());
   storage::FileSystemContext* file_system_context =
       content::BrowserContext::GetStoragePartition(
           browser_context(), nullptr)->GetFileSystemContext();
   BrowserThread::PostTask(BrowserThread::IO, FROM_HERE,
-      base::Bind(&GetBlobDataForUUIDInIO,
-                 uuid,
+      base::Bind(&GetBlobDataInIO,
+                 identifier,
+                 type,
                  blob_context,
                  file_system_context,
                  callback));
@@ -676,7 +708,7 @@ void Session::BuildPrototype(v8::Isolate* isolate,
                  &Session::AllowNTLMCredentialsForDomains)
       .SetMethod("setUserAgent", &Session::SetUserAgent)
       .SetMethod("getUserAgent", &Session::GetUserAgent)
-      .SetMethod("getBlobDataForUUID", &Session::GetBlobDataForUUID)
+      .SetMethod("getBlobData", &Session::GetBlobData)
       .SetProperty("cookies", &Session::Cookies)
       .SetProperty("protocol", &Session::Protocol)
       .SetProperty("webRequest", &Session::WebRequest);
