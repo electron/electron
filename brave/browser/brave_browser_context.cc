@@ -105,7 +105,8 @@ BraveBrowserContext::BraveBrowserContext(const std::string& partition,
     base::FilePath user_dir;
     PathService::Get(brightray::DIR_USER_DATA, &user_dir);
     user_dir = user_dir.Append(kWebDataFilename);
-    user_dir = user_dir.AddExtension(FILE_PATH_LITERAL(partition));
+    user_dir = user_dir.AddExtension(
+        base::FilePath::StringType(partition.begin(), partition.end()));
 
     CHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
     web_database_ = new WebDatabaseService(user_dir,
