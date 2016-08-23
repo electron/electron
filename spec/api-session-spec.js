@@ -402,4 +402,68 @@ describe('session module', function () {
       })
     })
   })
+
+  describe('ses.getblobData(identifier, callback)', function () {
+    it('returns blob data for public url', function (done) {
+      let data = JSON.stringify({
+        type: 'blob',
+        value: 'hello'
+      })
+      let blob = new Blob([data], {type: 'application/json'})
+      let blobURL = URL.createObjectURL(blob)
+      session.defaultSession.getBlobData(blobURL, function (result) {
+        assert.equal(result.toString(), data)
+        done()
+      })
+    })
+
+    it('returns blob data for uuid', function (done) {
+      const scheme = 'temp'
+      const protocol = session.defaultSession.protocol
+      const url = scheme + '://host'
+      before(function () {
+        if (w != null) w.destroy()
+        w = new BrowserWindow({show: false})
+      })
+
+      after(function (done) {
+        protocol.unregisterProtocol(scheme, () => {
+          closeWindow(w).then(() => {
+            w = null
+            done()
+          })
+        })
+      })
+
+      const postData = JSON.stringify({
+        type: 'blob',
+        value: 'hello'
+      })
+      const content = `<html>
+                       <script>
+                       const {webFrame} = require('electron')
+                       webFrame.registerURLSchemeAsPrivileged('${scheme}')
+                       let fd = new FormData();
+                       fd.append('file', new Blob(['${postData}'], {type:'application/json'}));
+                       fetch('${url}', {method:'POST', body: fd });
+                       </script>
+                       </html>`
+
+      protocol.registerStringProtocol(scheme, function (request, callback) {
+        if (request.method === 'GET') {
+          callback({data: content, mimeType: 'text/html'})
+        } else if (request.method === 'POST') {
+          let uuid = request.uploadData[1].blobUUID
+          assert(uuid)
+          session.defaultSession.getBlobData(uuid, function (result) {
+            assert.equal(result.toString(), postData)
+            done()
+          })
+        }
+      }, function (error) {
+        if (error) return done(error)
+        w.loadURL(url)
+      })
+    })
+  })
 })

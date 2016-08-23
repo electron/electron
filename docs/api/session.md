@@ -326,13 +326,13 @@ This doesn't affect existing `WebContents`, and each `WebContents` can use
 
 Returns a `String` representing the user agent for this session.
 
-#### `ses.getBlobDataForUUID(uuid, callback)`
+#### `ses.getBlobData(identifier, callback)`
 
-* `uuid` String
+* `identifier` String - Valid UUID or public blob URL.
 * `callback` Function
   * `result` Buffer - Blob data.
 
-Returns the blob data associated with `uuid`.
+Returns the blob data associated with the `identifier`.
 
 ### Instance Properties
 
