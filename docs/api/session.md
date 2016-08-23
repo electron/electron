@@ -357,8 +357,8 @@ app.on('ready', function () {
 
 > Query and modify a session's cookies.
 
-Instances of the `Cookies` class must be received by using `cookies` property of
-`Session` class.
+Instances of the `Cookies` class are accessed by using `cookies` property of
+a `Session`.
 
 For example:
 
@@ -452,8 +452,8 @@ Removes the cookies matching `url` and `name`, `callback` will called with
 
 > Intercept and modify the contents of a request at various stages of its lifetime.
 
-Instances of the `WebRequest` class must be received by using the `webRequest`
-property of the `Session` class.
+Instances of the `WebRequest` class are accessed by using the `webRequest`
+property of a `Session`.
 
 The methods of `WebRequest` accept an optional `filter` and a `listener`. The
 `listener` will be called with `listener(details)` when the API's event has
