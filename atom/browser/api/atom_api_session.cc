@@ -416,7 +416,7 @@ void Session::SetDownloadPath(const base::FilePath& path) {
 void Session::EnableNetworkEmulation(const mate::Dictionary& options) {
   std::unique_ptr<brightray::DevToolsNetworkConditions> conditions;
   bool offline = false;
-  double latency, download_throughput, upload_throughput;
+  double latency = 0.0, download_throughput = 0.0, upload_throughput = 0.0;
   if (options.Get("offline", &offline) && offline) {
     conditions.reset(new brightray::DevToolsNetworkConditions(offline));
   } else {
