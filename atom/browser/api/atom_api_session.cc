@@ -369,7 +369,7 @@ void DidCalculateBlobSize(
   uint64_t total_size = blob_reader->total_size();
   int bytes_read = 0;
   scoped_refptr<net::IOBuffer> blob_data =
-      new net::IOBuffer(total_size);
+      new net::IOBuffer(static_cast<size_t>(total_size));
   net::CompletionCallback callback = base::Bind(&DidReadBlobData,
                                                 base::RetainedRef(blob_data),
                                                 completion_callback);
