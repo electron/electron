@@ -1175,7 +1175,7 @@ bool WebContents::IsFocused() const {
   if (!view) return false;
 
   if (GetType() != BACKGROUND_PAGE) {
-    auto window = web_contents()->GetNativeView()->GetTopLevelWindow();
+    auto window = web_contents()->GetNativeView()->GetToplevelWindow();
     if (window && !window->IsVisible())
       return false;
   }
