@@ -1004,7 +1004,8 @@ void WebContents::InspectElement(int x, int y) {
   if (type_ == REMOTE)
     return;
 
-  OpenDevTools(nullptr);
+  if (!managed_web_contents()->GetDevToolsWebContents())
+    OpenDevTools(nullptr);
   scoped_refptr<content::DevToolsAgentHost> agent(
     content::DevToolsAgentHost::GetOrCreateFor(web_contents()));
   agent->InspectElement(x, y);
