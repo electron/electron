@@ -8,6 +8,7 @@
 #include "native_mate/converter.h"
 
 namespace base {
+class BinaryValue;
 class DictionaryValue;
 class ListValue;
 }
@@ -30,6 +31,12 @@ struct Converter<base::ListValue> {
                      base::ListValue* out);
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    const base::ListValue& val);
+};
+
+template<>
+struct Converter<base::BinaryValue> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const base::BinaryValue& val);
 };
 
 }  // namespace mate

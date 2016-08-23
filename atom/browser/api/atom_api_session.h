@@ -38,6 +38,7 @@ class Session: public mate::TrackableObject<Session>,
                public content::DownloadManager::Observer {
  public:
   using ResolveProxyCallback = base::Callback<void(std::string)>;
+  using BlobDataCallback = base::Callback<void(const base::BinaryValue&)>;
 
   enum class CacheAction {
     CLEAR,
@@ -76,6 +77,8 @@ class Session: public mate::TrackableObject<Session>,
   void AllowNTLMCredentialsForDomains(const std::string& domains);
   void SetUserAgent(const std::string& user_agent, mate::Arguments* args);
   std::string GetUserAgent();
+  void GetBlobDataForUUID(const std::string& uuid,
+                          const BlobDataCallback& calback);
   v8::Local<v8::Value> Cookies(v8::Isolate* isolate);
   v8::Local<v8::Value> Protocol(v8::Isolate* isolate);
   v8::Local<v8::Value> WebRequest(v8::Isolate* isolate);

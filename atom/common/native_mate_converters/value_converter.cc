@@ -51,4 +51,11 @@ v8::Local<v8::Value> Converter<base::ListValue>::ToV8(
   return converter->ToV8Value(&val, isolate->GetCurrentContext());
 }
 
+v8::Local<v8::Value> Converter<base::BinaryValue>::ToV8(
+    v8::Isolate* isolate,
+    const base::BinaryValue& val) {
+  std::unique_ptr<atom::V8ValueConverter> converter(new atom::V8ValueConverter);
+  return converter->ToV8Value(&val, isolate->GetCurrentContext());
+}
+
 }  // namespace mate

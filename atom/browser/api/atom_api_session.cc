@@ -33,11 +33,13 @@
 #include "brightray/browser/net/devtools_network_controller_handle.h"
 #include "chrome/common/pref_names.h"
 #include "components/prefs/pref_service.h"
+#include "content/browser/blob_storage/chrome_blob_storage_context.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/storage_partition.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 #include "net/base/load_flags.h"
+#include "net/base/io_buffer.h"
 #include "net/disk_cache/disk_cache.h"
 #include "net/dns/host_cache.h"
 #include "net/http/http_auth_handler_factory.h"
@@ -47,6 +49,9 @@
 #include "net/url_request/static_http_user_agent_settings.h"
 #include "net/url_request/url_request_context.h"
 #include "net/url_request/url_request_context_getter.h"
+#include "storage/browser/blob/blob_reader.h"
+#include "storage/browser/blob/blob_storage_context.h"
+#include "storage/browser/fileapi/file_system_context.h"
 #include "ui/base/l10n/l10n_util.h"
 
 using content::BrowserThread;
@@ -233,6 +238,12 @@ void RunCallbackInUI(const base::Callback<void(T...)>& callback, T... result) {
       BrowserThread::UI, FROM_HERE, base::Bind(callback, result...));
 }
 
+void RunBlobDataCallback(
+    const Session::BlobDataCallback& completion_callback,
+    std::unique_ptr<base::BinaryValue> result) {
+  completion_callback.Run(*(result.get()));
+}
+
 // Callback of HttpCache::GetBackend.
 void OnGetBackend(disk_cache::Backend** backend_ptr,
                   Session::CacheAction action,
@@ -328,6 +339,69 @@ void AllowNTLMCredentialsForDomainsInIO(
 void OnClearStorageDataDone(const base::Closure& callback) {
   if (!callback.is_null())
     callback.Run();
+}
+
+void DidReadBlobData(const scoped_refptr<net::IOBuffer>& blob_data,
+                     const Session::BlobDataCallback& completion_callback,
+                     int bytes_read) {
+  std::unique_ptr<base::BinaryValue> result(
+      base::BinaryValue::CreateWithCopiedBuffer(blob_data->data(),
+                                                bytes_read));
+  BrowserThread::PostTask(BrowserThread::UI, FROM_HERE,
+      base::Bind(&RunBlobDataCallback,
+                 completion_callback,
+                 base::Passed(&result)));
+}
+
+void DidCalculateBlobSize(
+    std::unique_ptr<storage::BlobDataHandle> blob_data_handle,
+    std::shared_ptr<storage::BlobReader> blob_reader,
+    const Session::BlobDataCallback& completion_callback,
+    int result) {
+  if (result != net::OK) {
+    std::unique_ptr<base::BinaryValue> dummy(new base::BinaryValue());
+    BrowserThread::PostTask(BrowserThread::UI, FROM_HERE,
+        base::Bind(&RunBlobDataCallback,
+                   completion_callback,
+                   base::Passed(&dummy)));
+    return;
+  }
+
+  uint64_t total_size = blob_reader->total_size();
+  int bytes_read = 0;
+  scoped_refptr<net::IOBuffer> blob_data =
+      new net::IOBuffer(total_size);
+  net::CompletionCallback callback = base::Bind(&DidReadBlobData,
+                                                base::RetainedRef(blob_data),
+                                                completion_callback);
+  storage::BlobReader::Status read_status = blob_reader->Read(
+      blob_data.get(),
+      total_size,
+      &bytes_read,
+      callback);
+  if (read_status != storage::BlobReader::Status::IO_PENDING)
+    callback.Run(bytes_read);
+}
+
+void GetBlobDataForUUIDInIO(
+    const std::string& uuid,
+    content::ChromeBlobStorageContext* blob_context,
+    storage::FileSystemContext* file_system_context,
+    const Session::BlobDataCallback& completion_callback) {
+  auto blob_data_handle = blob_context->context()->GetBlobDataFromUUID(uuid);
+  auto blob_reader = blob_data_handle->CreateReader(
+      file_system_context,
+      BrowserThread::GetMessageLoopProxyForThread(BrowserThread::FILE).get());
+  std::shared_ptr<storage::BlobReader>
+      shared_blob_reader(blob_reader.release());
+  auto callback = base::Bind(&DidCalculateBlobSize,
+                             base::Passed(&blob_data_handle),
+                             shared_blob_reader,
+                             completion_callback);
+  storage::BlobReader::Status size_status =
+      shared_blob_reader->CalculateSize(callback);
+  if (size_status != storage::BlobReader::Status::IO_PENDING)
+    callback.Run(net::OK);
 }
 
 }  // namespace
@@ -504,6 +578,22 @@ std::string Session::GetUserAgent() {
   return browser_context_->GetUserAgent();
 }
 
+void Session::GetBlobDataForUUID(
+    const std::string& uuid,
+    const BlobDataCallback& callback) {
+  content::ChromeBlobStorageContext* blob_context =
+      content::ChromeBlobStorageContext::GetFor(browser_context());
+  storage::FileSystemContext* file_system_context =
+      content::BrowserContext::GetStoragePartition(
+          browser_context(), nullptr)->GetFileSystemContext();
+  BrowserThread::PostTask(BrowserThread::IO, FROM_HERE,
+      base::Bind(&GetBlobDataForUUIDInIO,
+                 uuid,
+                 blob_context,
+                 file_system_context,
+                 callback));
+}
+
 v8::Local<v8::Value> Session::Cookies(v8::Isolate* isolate) {
   if (cookies_.IsEmpty()) {
     auto handle = atom::api::Cookies::Create(isolate, browser_context());
@@ -586,6 +676,7 @@ void Session::BuildPrototype(v8::Isolate* isolate,
                  &Session::AllowNTLMCredentialsForDomains)
       .SetMethod("setUserAgent", &Session::SetUserAgent)
       .SetMethod("getUserAgent", &Session::GetUserAgent)
+      .SetMethod("getBlobDataForUUID", &Session::GetBlobDataForUUID)
       .SetProperty("cookies", &Session::Cookies)
       .SetProperty("protocol", &Session::Protocol)
       .SetProperty("webRequest", &Session::WebRequest);
