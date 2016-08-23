@@ -49,11 +49,9 @@ describe('webContents module', function () {
   })
 
   describe('getFocusedWebContents() API', function () {
-    if (isCi) {
-      return
-    }
-
     it('returns the focused web contents', function (done) {
+      if (isCi) return done()
+
       const specWebContents = remote.getCurrentWebContents()
       assert.equal(specWebContents.getId(), webContents.getFocusedWebContents().getId())
 
@@ -68,6 +66,27 @@ describe('webContents module', function () {
       })
 
       specWebContents.openDevTools()
+    })
+
+    it('does not crash when called on a detached dev tools window', function (done) {
+      const specWebContents = w.webContents
+
+      specWebContents.once('devtools-opened', function () {
+        assert.doesNotThrow(function () {
+          webContents.getFocusedWebContents()
+        })
+        specWebContents.closeDevTools()
+      })
+
+      specWebContents.once('devtools-closed', function () {
+        assert.doesNotThrow(function () {
+          webContents.getFocusedWebContents()
+        })
+        done()
+      })
+
+      specWebContents.openDevTools({mode: 'detach'})
+      w.inspectElement(100, 100)
     })
   })
 
