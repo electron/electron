@@ -153,14 +153,14 @@ void AtomAutofillClient::ShowAutofillPopup(
     v8::HandleScope handle_scope(api_web_contents_->isolate());
     mate::Dictionary rect =
       mate::Dictionary::CreateEmpty(api_web_contents_->isolate());
-    // Convert element_bounds to be in screen space.
     gfx::Rect client_area = web_contents()->GetContainerBounds();
-    gfx::RectF element_bounds_in_screen_space =
-      element_bounds + client_area.OffsetFromOrigin();
-    rect.Set("x", element_bounds_in_screen_space.x());
-    rect.Set("y", element_bounds_in_screen_space.y());
-    rect.Set("width", element_bounds_in_screen_space.width());
-    rect.Set("height", element_bounds_in_screen_space.height());
+    rect.Set("x", element_bounds.x());
+    rect.Set("y", element_bounds.y());
+    rect.Set("width", element_bounds.width());
+    rect.Set("height", element_bounds.height());
+    rect.Set("clientWidth", client_area.width());
+    rect.Set("clientHeight", client_area.height());
+
     api_web_contents_->Emit("show-autofill-popup",
                             suggestions,
                             rect);
