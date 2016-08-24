@@ -94,6 +94,8 @@ class AtomBrowserClient : public brightray::BrowserClient,
                        int opener_render_view_id,
                        int opener_render_frame_id,
                        bool* no_javascript_access) override;
+  void GetAdditionalAllowedSchemesForFileSystem(
+      std::vector<std::string>* schemes) override;
 
   // brightray::BrowserClient:
   brightray::BrowserMainParts* OverrideCreateBrowserMainParts(
