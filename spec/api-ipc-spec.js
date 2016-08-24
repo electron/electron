@@ -170,7 +170,7 @@ describe('ipc module', function () {
       const objectWithBuffer = {a: 'foo', b: Buffer.from('bar')}
       assert.ok(objectWithBuffer.b.equals(printName.echo(objectWithBuffer).b))
 
-      const arrayWithBuffer = [1,2, Buffer.from('baz')]
+      const arrayWithBuffer = [1, 2, Buffer.from('baz')]
       assert.ok(arrayWithBuffer[2].equals(printName.echo(arrayWithBuffer)[2]))
     })
 
