@@ -977,8 +977,8 @@ app.on('ready', () => {
 * `parameters` Object
   * `screenPosition` String - Specify the screen type to emulate
       (default: `desktop`)
-    * `desktop` - Desktop screen type
-    * `mobile` - Mobile screen type
+    * `desktop` String - Desktop screen type
+    * `mobile` String - Mobile screen type
   * `screenSize` Object - Set the emulated screen size (screenPosition == mobile)
     * `width` Integer - Set the emulated screen width
     * `height` Integer - Set the emulated screen height
