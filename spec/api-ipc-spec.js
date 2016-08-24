@@ -163,6 +163,17 @@ describe('ipc module', function () {
       assert.deepEqual(printName.echo(now), now)
     })
 
+    it('supports instanceof Buffer', function () {
+      const buffer = Buffer.from('test')
+      assert.ok(buffer.equals(printName.echo(buffer)))
+
+      const objectWithBuffer = {a: 'foo', b: Buffer.from('bar')}
+      assert.ok(objectWithBuffer.b.equals(printName.echo(objectWithBuffer).b))
+
+      const arrayWithBuffer = [1,2, Buffer.from('baz')]
+      assert.ok(arrayWithBuffer[2].equals(printName.echo(arrayWithBuffer)[2]))
+    })
+
     it('supports TypedArray', function () {
       const values = [1, 2, 3, 4]
       const typedArray = printName.typedArray(values)
