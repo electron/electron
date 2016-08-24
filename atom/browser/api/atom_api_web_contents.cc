@@ -1004,7 +1004,8 @@ void WebContents::InspectElement(int x, int y) {
   if (type_ == REMOTE)
     return;
 
-  OpenDevTools(nullptr);
+  if (!managed_web_contents()->GetDevToolsWebContents())
+    OpenDevTools(nullptr);
   scoped_refptr<content::DevToolsAgentHost> agent(
     content::DevToolsAgentHost::GetOrCreateFor(web_contents()));
   agent->InspectElement(x, y);
@@ -1175,7 +1176,7 @@ bool WebContents::IsFocused() const {
   if (!view) return false;
 
   if (GetType() != BACKGROUND_PAGE) {
-    auto window = web_contents()->GetTopLevelNativeWindow();
+    auto window = web_contents()->GetNativeView()->GetToplevelWindow();
     if (window && !window->IsVisible())
       return false;
   }
