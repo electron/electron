@@ -966,7 +966,7 @@ describe('protocol module', function () {
       })
     })
 
-    it('can access files through FileSystem API', function (done) {
+    it('can access files through the FileSystem API', function (done) {
       let filePath = path.join(__dirname, 'fixtures', 'pages', 'filesystem.html')
       const handler = function (request, callback) {
         callback({path: filePath})

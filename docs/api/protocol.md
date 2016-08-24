@@ -47,10 +47,11 @@ non-standard schemes can not recognize relative URLs:
   <img src='test.png'>
 </body>
 ```
-Registering a scheme as standard, will allow access of files through
-the FileSystem API. Otherwise the renderer will throw a security error for the
-scheme. So in general if you want to register a custom protocol to replace the
-`http` protocol, you have to register it as standard scheme:
+
+Registering a scheme as standard will allow access to files through the
+[FileSystem API][file-system-api]. Otherwise the renderer will throw a security
+error for the scheme. So in general if you want to register a custom protocol to
+replace the `http` protocol, you have to register it as a standard scheme:
 
 ```javascript
 const {app, protocol} = require('electron')
@@ -229,3 +230,4 @@ which sends a new HTTP request as a response.
 Remove the interceptor installed for `scheme` and restore its original handler.
 
 [net-error]: https://code.google.com/p/chromium/codesearch#chromium/src/net/base/net_error_list.h
+[file-system-api]: https://developer.mozilla.org/en-US/docs/Web/API/LocalFileSystem
