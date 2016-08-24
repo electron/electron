@@ -175,11 +175,11 @@ describe('ipc module', function () {
     })
 
     it('supports TypedArray', function () {
-      let values = [1, 2, 3, 4]
+      const values = [1, 2, 3, 4]
       assert.deepEqual(printName.typedArray(values), values)
 
-      values = new Int16Array([1, 2, 3, 4])
-      assert.deepEqual(printName.typedArray(values), values)
+      const int16values = new Int16Array([1, 2, 3, 4])
+      assert.deepEqual(printName.typedArray(int16values), int16values)
     })
   })
 
@@ -309,7 +309,7 @@ describe('ipc module', function () {
     })
 
     it('can send instances of Buffer', function (done) {
-      var buffer = Buffer.from('hello')
+      const buffer = Buffer.from('hello')
       ipcRenderer.once('message', function (event, message) {
         assert.ok(buffer.equals(message))
         done()
