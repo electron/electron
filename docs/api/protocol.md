@@ -47,9 +47,10 @@ non-standard schemes can not recognize relative URLs:
   <img src='test.png'>
 </body>
 ```
-
-So if you want to register a custom protocol to replace the `http` protocol, you
-have to register it as standard scheme:
+Registering a scheme as standard, will allow access of files through
+the FileSystem API. Otherwise the renderer will throw a security error for the
+scheme. So in general if you want to register a custom protocol to replace the
+`http` protocol, you have to register it as standard scheme:
 
 ```javascript
 const {app, protocol} = require('electron')
