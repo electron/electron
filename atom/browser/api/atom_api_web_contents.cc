@@ -609,8 +609,12 @@ void WebContents::HandleKeyboardEvent(
     content::WebContents* source,
     const content::NativeWebKeyboardEvent& event) {
   if (type_ == WEB_VIEW && embedder_) {
-    // Send the unhandled keyboard events back to the embedder.
-    embedder_->HandleKeyboardEvent(source, event);
+    if (event.windowsKeyCode == ui::VKEY_ESCAPE) {
+      CommonWebContentsDelegate::HandleKeyboardEvent(source, event);
+    } else {
+      // Send the unhandled keyboard events back to the embedder.
+      embedder_->HandleKeyboardEvent(source, event);
+    }
   } else {
     // Go to the default keyboard handling.
     CommonWebContentsDelegate::HandleKeyboardEvent(source, event);
