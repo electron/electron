@@ -175,9 +175,11 @@ describe('ipc module', function () {
     })
 
     it('supports TypedArray', function () {
-      const values = [1, 2, 3, 4]
-      const typedArray = printName.typedArray(values)
-      assert.deepEqual(values, typedArray)
+      let values = [1, 2, 3, 4]
+      assert.deepEqual(printName.typedArray(values), values)
+
+      values = new Int16Array([1, 2, 3, 4])
+      assert.deepEqual(printName.typedArray(values), values)
     })
   })
 
