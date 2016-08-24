@@ -109,9 +109,12 @@ def log_versions():
 
 def setup_nodenv():
   if os.path.isdir('/usr/local/share/nodenv'):
-    os.environ['NODENV_ROOT'] = '/usr/local/share/nodenv'
-    os.environ['PATH'] = '/usr/local/share/nodenv/bin:/usr/local/share/nodenv/shims:' + os.environ['PATH']
-    os.environ['NODENV_VERSION'] = 'v0.10.21'
+    nodenv_root = os.path.join(os.environ['HOME'], '.nodenv')
+    os.environ['NODENV_ROOT'] = nodenv_root
+    os.environ['PATH'] = nodenv_root + '/bin:' + nodenv_root + '/shims:' + os.environ['PATH']
+    os.environ['NODENV_VERSION'] = 'v4.5.0'
+    subprocess.check_call(['/usr/local/share/nodenv/bin/nodenv', 'install', os.environ['NODENV_VERSION']])
+    subprocess.check_call(['/usr/local/share/nodenv/bin/nodenv', 'rehash'])
 
 
 if __name__ == '__main__':
