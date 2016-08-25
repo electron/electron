@@ -13,6 +13,10 @@
 #include "content/public/browser/browser_thread.h"
 #include "net/url_request/url_request.h"
 
+#if defined(ENABLE_EXTENSIONS)
+#include "extensions/browser/extension_api_frame_id_map.h"
+#endif
+
 using brightray::DevToolsNetworkTransaction;
 using content::BrowserThread;
 
@@ -69,6 +73,24 @@ bool MatchesFilterCondition(net::URLRequest* request,
   return false;
 }
 
+int GetTabId(net::URLRequest* request) {
+#if defined(ENABLE_EXTENSIONS)
+  int render_frame_id = -1;
+  int render_process_id = -1;
+  int tab_id = -1;
+  extensions::ExtensionApiFrameIdMap::FrameData frame_data;
+  if (content::ResourceRequestInfo::GetRenderFrameForRequest(
+          request, &render_process_id, &render_frame_id) &&
+      extensions::ExtensionApiFrameIdMap::Get()->GetCachedFrameDataOnIO(
+          render_process_id, render_frame_id, &frame_data)) {
+    tab_id = frame_data.tab_id;
+  }
+  return tab_id;
+#else
+  return -1;
+#endif
+}
+
 // Overloaded by multiple types to fill the |details| object.
 void ToDictionary(base::DictionaryValue* details, net::URLRequest* request) {
   FillRequestDetails(details, request);
@@ -80,6 +102,7 @@ void ToDictionary(base::DictionaryValue* details, net::URLRequest* request) {
   details->SetString("resourceType",
                      info ? ResourceTypeToString(info->GetResourceType())
                           : "other");
+  details->SetInteger("tabId", GetTabId(request));
 }
 
 void ToDictionary(base::DictionaryValue* details,
