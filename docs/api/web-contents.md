@@ -696,7 +696,7 @@ Executes the editing command `cut` in web page.
 
 Executes the editing command `copy` in web page.
 
-### `contents.copyImageAt(x, y)`
+#### `contents.copyImageAt(x, y)`
 
 * `x` Integer
 * `y` Integer
