@@ -4,7 +4,7 @@ const path = require('path')
 const qs = require('querystring')
 const {closeWindow} = require('./window-helpers')
 const remote = require('electron').remote
-const {BrowserWindow, protocol, webContents} = remote
+const {BrowserWindow, ipcMain, protocol, webContents} = remote
 
 describe('protocol module', function () {
   var protocolName = 'sp'
@@ -964,6 +964,19 @@ describe('protocol module', function () {
         })
         w.loadURL(origin)
       })
+    })
+
+    it('can access files through the FileSystem API', function (done) {
+      let filePath = path.join(__dirname, 'fixtures', 'pages', 'filesystem.html')
+      const handler = function (request, callback) {
+        callback({path: filePath})
+      }
+      protocol.registerFileProtocol(standardScheme, handler, function (error) {
+        if (error) return done(error)
+        w.loadURL(origin)
+      })
+      ipcMain.once('file-system-error', (event, err) => done(err))
+      ipcMain.once('file-system-write-end', () => done())
     })
   })
 })

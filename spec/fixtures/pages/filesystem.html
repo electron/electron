@@ -1,0 +1,24 @@
+<script>
+const {ipcRenderer} = require('electron')
+function onInitFs (fs) {
+  fs.root.getFile('log.txt', {create: true}, function (fileEntry) {
+    fileEntry.createWriter(function (fileWriter) {
+      var blob = new Blob(['Lorem Ipsum'], {type: 'text/plain'});
+      fileWriter.onwriteend = function() {
+        ipcRenderer.send('file-system-write-end')
+      };
+      fileWriter.onerror = errorHandler
+      fileWriter.write(blob);
+    }, errorHandler);
+  }, errorHandler);
+
+}
+
+navigator.webkitPersistentStorage.requestQuota(5 * 1024 * 1024, function (granted) {
+  webkitRequestFileSystem(TEMPORARY, granted, onInitFs, errorHandler);
+}, errorHandler)
+
+function errorHandler(e) {
+  ipcRenderer.send('file-system-error', e)
+}
+</script>

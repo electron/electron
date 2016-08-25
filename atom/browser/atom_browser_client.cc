@@ -9,6 +9,7 @@
 #endif
 
 #include "atom/browser/api/atom_api_app.h"
+#include "atom/browser/api/atom_api_protocol.h"
 #include "atom/browser/atom_access_token_store.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
@@ -23,8 +24,8 @@
 #include "base/command_line.h"
 #include "base/files/file_util.h"
 #include "base/stl_util.h"
-#include "base/strings/string_util.h"
 #include "base/strings/string_number_conversions.h"
+#include "base/strings/string_util.h"
 #include "chrome/browser/printing/printing_message_filter.h"
 #include "chrome/browser/renderer_host/pepper/chrome_browser_pepper_host_factory.h"
 #include "chrome/browser/renderer_host/pepper/widevine_cdm_message_filter.h"
@@ -277,6 +278,15 @@ bool AtomBrowserClient::CanCreateWindow(
   }
 
   return false;
+}
+
+void AtomBrowserClient::GetAdditionalAllowedSchemesForFileSystem(
+    std::vector<std::string>* additional_schemes) {
+  auto schemes_list = api::GetStandardSchemes();
+  if (!schemes_list.empty())
+    additional_schemes->insert(additional_schemes->end(),
+                               schemes_list.begin(),
+                               schemes_list.end());
 }
 
 brightray::BrowserMainParts* AtomBrowserClient::OverrideCreateBrowserMainParts(
