@@ -506,7 +506,7 @@ void NativeWindowViews::SetFullScreen(bool fullscreen) {
 #else
   if (IsVisible())
     window_->SetFullscreen(fullscreen);
-  else
+  else if (fullscreen)
     window_->native_widget_private()->ShowWithWindowState(
         ui::SHOW_STATE_FULLSCREEN);
 
