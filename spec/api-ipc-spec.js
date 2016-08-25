@@ -325,6 +325,22 @@ describe('ipc module', function () {
       })
       ipcRenderer.send('message', document.location)
     })
+
+    it('can send objects that both reference the same object', function (done) {
+      const child = {hello: 'world'}
+      const foo = {name: 'foo', child: child}
+      const bar = {name: 'bar', child: child}
+      const array = [foo, bar]
+
+      ipcRenderer.once('message', function (event, arrayValue, fooValue, barValue, childValue) {
+        assert.deepEqual(arrayValue, array)
+        assert.deepEqual(fooValue, foo)
+        assert.deepEqual(barValue, bar)
+        assert.deepEqual(childValue, child)
+        done()
+      })
+      ipcRenderer.send('message', array, foo, bar, child)
+    })
   })
 
   describe('ipc.sendSync', function () {
