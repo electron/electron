@@ -327,7 +327,7 @@ describe('session module', function () {
           assert.equal(state, 'interrupted')
           done()
         })
-        w.webContents.downloadURL('file://' + __dirname)
+        w.webContents.downloadURL('file://' + path.join(__dirname, 'does-not-exist.txt'))
       })
     })
   })
