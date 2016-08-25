@@ -163,10 +163,23 @@ describe('ipc module', function () {
       assert.deepEqual(printName.echo(now), now)
     })
 
+    it('supports instanceof Buffer', function () {
+      const buffer = Buffer.from('test')
+      assert.ok(buffer.equals(printName.echo(buffer)))
+
+      const objectWithBuffer = {a: 'foo', b: Buffer.from('bar')}
+      assert.ok(objectWithBuffer.b.equals(printName.echo(objectWithBuffer).b))
+
+      const arrayWithBuffer = [1, 2, Buffer.from('baz')]
+      assert.ok(arrayWithBuffer[2].equals(printName.echo(arrayWithBuffer)[2]))
+    })
+
     it('supports TypedArray', function () {
       const values = [1, 2, 3, 4]
-      const typedArray = printName.typedArray(values)
-      assert.deepEqual(values, typedArray)
+      assert.deepEqual(printName.typedArray(values), values)
+
+      const int16values = new Int16Array([1, 2, 3, 4])
+      assert.deepEqual(printName.typedArray(int16values), int16values)
     })
   })
 
@@ -286,13 +299,22 @@ describe('ipc module', function () {
       ipcRenderer.send('message', obj)
     })
 
-    it('can send instance of Date', function (done) {
+    it('can send instances of Date', function (done) {
       const currentDate = new Date()
       ipcRenderer.once('message', function (event, value) {
         assert.equal(value, currentDate.toISOString())
         done()
       })
       ipcRenderer.send('message', currentDate)
+    })
+
+    it('can send instances of Buffer', function (done) {
+      const buffer = Buffer.from('hello')
+      ipcRenderer.once('message', function (event, message) {
+        assert.ok(buffer.equals(message))
+        done()
+      })
+      ipcRenderer.send('message', buffer)
     })
 
     it('can send objects with DOM class prototypes', function (done) {
