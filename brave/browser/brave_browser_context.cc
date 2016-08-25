@@ -131,6 +131,9 @@ BraveBrowserContext::~BraveBrowserContext() {
     user_prefs_registrar_->RemoveAll();
 
   if (!IsOffTheRecord()) {
+    autofill_data_->ShutdownOnUIThread();
+    web_database_->ShutdownDatabase();
+
     // temporary fix for https://github.com/brave/browser-laptop/issues/2335
     // TODO(brivdiver) - it seems like something is holding onto a reference to
     // url_request_context_getter or the url_request_context and is preventing
@@ -165,9 +168,6 @@ BraveBrowserContext::~BraveBrowserContext() {
 
   BrowserContextDependencyManager::GetInstance()->
       DestroyBrowserContextServices(this);
-
-  autofill_data_->ShutdownOnUIThread();
-  web_database_->ShutdownDatabase();
 }
 
 // static
