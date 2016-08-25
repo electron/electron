@@ -38,6 +38,8 @@ origin preference.
 
 ## Class: BrowserWindowProxy
 
+> Manipulate the child browser window
+
 The `BrowserWindowProxy` object is returned from `window.open` and provides
 limited functionality with the child window.
 
