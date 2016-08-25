@@ -319,6 +319,17 @@ describe('session module', function () {
         })
       })
     })
+
+    describe('when a save path is specified and the URL is unavailable', function () {
+      it('does not display a save dialog and reports the done state as interrupted', function (done) {
+        ipcRenderer.sendSync('set-download-option', false, false)
+        ipcRenderer.once('download-done', (event, state) => {
+          assert.equal(state, 'interrupted')
+          done()
+        })
+        w.webContents.downloadURL('file://' + __dirname)
+      })
+    })
   })
 
   describe('ses.protocol', function () {
