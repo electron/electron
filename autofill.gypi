@@ -35,7 +35,7 @@
     ['OS=="win"', {
       'variables': {
         'autofill_libraries': [
-          '<(libchromiumcontent_dir)/addressinput_util.lib',
+          '<(libchromiumcontent_dir)/libaddressinput_util.lib',
           '<(libchromiumcontent_dir)/autofill_content_browser.lib',
           '<(libchromiumcontent_dir)/autofill_content_common.lib',
           '<(libchromiumcontent_dir)/autofill_content_mojo_bindings.lib',
@@ -45,8 +45,8 @@
           '<(libchromiumcontent_dir)/autofill_server_proto.lib',
           '<(libchromiumcontent_dir)/data_use_measurement_core.lib',
           '<(libchromiumcontent_dir)/google_apis.lib',
-          '<(libchromiumcontent_dir)/phonenumber.lib',
-          '<(libchromiumcontent_dir)/phonenumber_without_metadata.lib',
+          '<(libchromiumcontent_dir)/libphonenumber.lib',
+          '<(libchromiumcontent_dir)/libphonenumber_without_metadata.lib',
           '<(libchromiumcontent_dir)/signin_core_browser.lib',
           '<(libchromiumcontent_dir)/signin_core_common.lib',
           '<(libchromiumcontent_dir)/os_crypt.lib',

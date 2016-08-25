@@ -94,7 +94,6 @@
           '<(libchromiumcontent_dir)/libcld2_static.a',
           '<(libchromiumcontent_dir)/libcontent_settings_core_common.a',
           '<(libchromiumcontent_dir)/libcrx_file.a',
-          '<(libchromiumcontent_dir)/libdata_use_measurement_core.a',
           '<(libchromiumcontent_dir)/libdevice_usb.a',
           '<(libchromiumcontent_dir)/libextensions_api.a',
           '<(libchromiumcontent_dir)/libextensions_api_registration.a',
@@ -133,7 +132,6 @@
           '<(libchromiumcontent_dir)/cld2_static.lib',
           '<(libchromiumcontent_dir)/content_settings_core_common.lib',
           '<(libchromiumcontent_dir)/crx_file.lib',
-          '<(libchromiumcontent_dir)/data_use_measurement_core.lib',
           '<(libchromiumcontent_dir)/device_usb.lib',
           '<(libchromiumcontent_dir)/extensions_api.lib',
           '<(libchromiumcontent_dir)/extensions_api_registration.lib',
@@ -149,8 +147,6 @@
           '<(libchromiumcontent_dir)/mojo_cpp_bindings.lib',
           '<(libchromiumcontent_dir)/mojo_cpp_system.lib',
           '<(libchromiumcontent_dir)/mojo_js_bindings.lib',
-          '<(libchromiumcontent_dir)/phonenumber.lib',
-          '<(libchromiumcontent_dir)/phonenumber_without_metadata.lib',
           '<(libchromiumcontent_dir)/pref_registry.lib',
           '<(libchromiumcontent_dir)/re2.lib',
           '<(libchromiumcontent_dir)/snappy.lib',
@@ -167,9 +163,6 @@
     }],
   ],
   'target_defaults': {
-    'defines': [
-      'GOOGLE_PROTOBUF_NO_RTTI'
-    ],
     'conditions': [
       ['enable_extensions==1', {
         'defines': [
