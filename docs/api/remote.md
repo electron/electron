@@ -152,9 +152,11 @@ Returns the [`WebContents`](web-contents.md) object of this web page.
 Returns the global variable of `name` (e.g. `global[name]`) in the main
 process.
 
+## Properties
+
 ### `remote.process`
 
-Returns the `process` object in the main process. This is the same as
+The `process` object in the main process. This is the same as
 `remote.getGlobal('process')` but is cached.
 
 [rmi]: http://en.wikipedia.org/wiki/Java_remote_method_invocation

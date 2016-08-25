@@ -119,6 +119,9 @@ will be passed via `callback(response)`.
 
 ### `dialog.showErrorBox(title, content)`
 
+* `title` String - The title to display in the error box
+* `content` String - The text content to display in the error box
+
 Displays a modal dialog that shows an error message.
 
 This API can be called safely before the `ready` event the `app` module emits,
