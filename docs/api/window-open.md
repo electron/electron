@@ -53,10 +53,6 @@ Removes focus from the child window.
 
 Forcefully closes the child window without calling its unload event.
 
-#### `win.closed`
-
-Set to true after the child window gets closed.
-
 #### `win.eval(code)`
 
 * `code` String
@@ -81,3 +77,11 @@ origin preference.
 
 In addition to these methods, the child window implements `window.opener` object
 with no properties and a single method.
+
+### Instance Properties
+
+The `BrowserWindowProxy` object has the following instance properties:
+
+#### `win.closed`
+
+Set to true after the child window gets closed.
