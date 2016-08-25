@@ -28,6 +28,8 @@ namespace content {
 class WebContents;
 }
 
+class IdentityProvider;
+
 namespace autofill {
 
 class FormStructure;
@@ -90,6 +92,8 @@ class AtomAutofillClient
   atom::api::WebContents* api_web_contents_;
 
   base::WeakPtr<AutofillPopupDelegate> delegate_;
+
+  std::unique_ptr<IdentityProvider> identity_provider_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomAutofillClient);
 };
