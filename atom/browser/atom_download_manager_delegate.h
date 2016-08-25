@@ -46,6 +46,9 @@ class AtomDownloadManagerDelegate : public content::DownloadManagerDelegate {
   void GetNextId(const content::DownloadIdCallback& callback) override;
 
  private:
+  // Get the save path set on the associated api::DownloadItem object
+  void GetItemSavePath(content::DownloadItem* item, base::FilePath* path);
+
   content::DownloadManager* download_manager_;
   base::WeakPtrFactory<AtomDownloadManagerDelegate> weak_ptr_factory_;
 
