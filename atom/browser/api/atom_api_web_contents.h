@@ -104,6 +104,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void DownloadURL(const GURL& url);
   GURL GetURL() const;
   base::string16 GetTitle() const;
+  bool IsInitialBlankNavigation() const;
   bool IsLoading() const;
   bool IsLoadingMainFrame() const;
   bool IsWaitingForResponse() const;
