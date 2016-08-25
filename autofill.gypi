@@ -50,6 +50,7 @@
           '<(libchromiumcontent_dir)/signin_core_browser.lib',
           '<(libchromiumcontent_dir)/signin_core_common.lib',
           '<(libchromiumcontent_dir)/os_crypt.lib',
+          '-lcrypt32.lib',
         ],
       },
     }],
