@@ -137,7 +137,7 @@ void Window::WillCloseWindow(bool* prevent_default) {
   *prevent_default = Emit("close");
 }
 
-void Window::WillDestoryNativeObject() {
+void Window::WillDestroyNativeObject() {
   // Close all child windows before closing current window.
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());

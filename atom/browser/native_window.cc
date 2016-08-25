@@ -405,7 +405,7 @@ void NativeWindow::CloseContents(content::WebContents* source) {
   Observe(nullptr);
 
   FOR_EACH_OBSERVER(NativeWindowObserver, observers_,
-                    WillDestoryNativeObject());
+                    WillDestroyNativeObject());
 
   // When the web contents is gone, close the window immediately, but the
   // memory will not be freed until you call delete.

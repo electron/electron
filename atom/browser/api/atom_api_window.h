@@ -58,7 +58,7 @@ class Window : public mate::TrackableObject<Window>,
 
   // NativeWindowObserver:
   void WillCloseWindow(bool* prevent_default) override;
-  void WillDestoryNativeObject() override;
+  void WillDestroyNativeObject() override;
   void OnWindowClosed() override;
   void OnWindowBlur() override;
   void OnWindowFocus() override;
