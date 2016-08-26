@@ -185,7 +185,7 @@ Sets the title displayed aside of the tray icon in the status bar.
 
 #### `tray.setHighlightMode(mode)` _macOS_
 
-* `mode` String - highlight mode with one of the following values:
+* `mode` String - Highlight mode with one of the following values:
   * `selection` - Highlight the tray icon when it is clicked and also when
     its context menu is open. This is the default.
   * `always` - Always highlight the tray icon.
