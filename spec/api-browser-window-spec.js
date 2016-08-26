@@ -1255,10 +1255,9 @@ describe('browser-window module', function () {
       w.loadURL(server.url)
     })
 
-    it('works with result objects that have DOM class prototypes', function (done) {
+    it('converts DOM objects to empty objects', function (done) {
       w.webContents.executeJavaScript('document.location', function (result) {
-        assert.equal(result.origin, server.url)
-        assert.equal(result.protocol, 'http:')
+        assert.deepEqual(result, {})
         done()
       })
       w.loadURL(server.url)
