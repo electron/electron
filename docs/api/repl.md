@@ -5,9 +5,11 @@ The `repl` provides a Read-Eval-Print-Loop (REPL) implementation, also known as 
 ## Launching RELP
 
 Assuming you have electron or electron-prebuilt installed as a local project dependency:
+
 `./node_modules/.bin/electron --interactive`
 
 Assuming you have electron or electron-prebuilt installed globally:
+
 `electron --interactive`
 
 ### Commands and Special Keys
