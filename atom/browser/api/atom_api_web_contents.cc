@@ -609,12 +609,8 @@ void WebContents::HandleKeyboardEvent(
     content::WebContents* source,
     const content::NativeWebKeyboardEvent& event) {
   if (type_ == WEB_VIEW && embedder_) {
-    if (event.windowsKeyCode == ui::VKEY_ESCAPE) {
-      CommonWebContentsDelegate::HandleKeyboardEvent(source, event);
-    } else {
-      // Send the unhandled keyboard events back to the embedder.
-      embedder_->HandleKeyboardEvent(source, event);
-    }
+    // Send the unhandled keyboard events back to the embedder.
+    embedder_->HandleKeyboardEvent(source, event);
   } else {
     // Go to the default keyboard handling.
     CommonWebContentsDelegate::HandleKeyboardEvent(source, event);
@@ -949,6 +945,8 @@ bool WebContents::OnMessageReceived(const IPC::Message& message) {
 // be destroyed on close, and WebContentsDestroyed would be called for it, so
 // we need to make sure the api::WebContents is also deleted.
 void WebContents::WebContentsDestroyed() {
+  // clear our fullscreen state
+  ExitFullscreenModeForTab(web_contents());
   // This event is only for internal use, which is emitted when WebContents is
   // being destroyed.
   Emit("will-destroy");
