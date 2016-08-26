@@ -696,7 +696,7 @@ Executes the editing command `cut` in web page.
 
 Executes the editing command `copy` in web page.
 
-### `contents.copyImageAt(x, y)`
+#### `contents.copyImageAt(x, y)`
 
 * `x` Integer
 * `y` Integer
@@ -1127,6 +1127,8 @@ If *offscreen rendering* is enabled and painting, stop painting.
 If *offscreen rendering* is enabled returns whether it is currently painting.
 
 #### `contents.setFrameRate(fps)`
+
+* `fps` Integer
 
 If *offscreen rendering* is enabled sets the frame rate to the specified number.
 Only values between 1 and 60 are accepted.
