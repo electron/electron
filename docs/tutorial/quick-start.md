@@ -169,8 +169,16 @@ electron .
 
 If you've installed it locally, then run:
 
+#### macOS / Linux
+
 ```bash
-./node_modules/.bin/electron .
+$ ./node_modules/.bin/electron .
+```
+
+#### Windows
+
+```bash
+$ .\node_modules\.bin\electron .
 ```
 
 ### Manually Downloaded Electron Binary
