@@ -4,11 +4,12 @@
 
 #include "atom/browser/browser.h"
 
+#include <windows.h>  // windows.h must be included first
+
 #include <atlbase.h>
 #include <propkey.h>
 #include <shlobj.h>
 #include <shobjidl.h>
-#include <windows.h>
 
 #include "atom/common/atom_version.h"
 #include "atom/common/native_mate_converters/string16_converter.h"

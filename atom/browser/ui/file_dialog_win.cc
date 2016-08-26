@@ -4,10 +4,11 @@
 
 #include "atom/browser/ui/file_dialog.h"
 
+#include <windows.h>  // windows.h must be included first
+
 #include <atlbase.h>
 #include <commdlg.h>
 #include <shlobj.h>
-#include <windows.h>
 
 #include "atom/browser/native_window_views.h"
 #include "atom/browser/unresponsive_suppressor.h"

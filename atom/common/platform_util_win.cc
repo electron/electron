@@ -4,13 +4,14 @@
 
 #include "atom/common/platform_util.h"
 
+#include <windows.h>  // windows.h must be included first
+
 #include <atlbase.h>
 #include <comdef.h>
 #include <commdlg.h>
 #include <dwmapi.h>
 #include <shellapi.h>
 #include <shlobj.h>
-#include <windows.h>
 
 #include "base/bind.h"
 #include "base/bind_helpers.h"

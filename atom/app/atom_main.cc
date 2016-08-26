@@ -7,10 +7,11 @@
 #include <stdlib.h>
 
 #if defined(OS_WIN)
+#include <windows.h>  // windows.h must be included first
+
 #include <shellapi.h>
 #include <shellscalingapi.h>
 #include <tchar.h>
-#include <windows.h>
 
 #include "atom/app/atom_main_delegate.h"
 #include "atom/common/crash_reporter/win/crash_service_main.h"
