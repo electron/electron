@@ -9,8 +9,8 @@
 #include "base/environment.h"
 #include "base/strings/string_util.h"
 #include "dbus/bus.h"
-#include "dbus/object_proxy.h"
 #include "dbus/message.h"
+#include "dbus/object_proxy.h"
 #include "ui/base/x/x11_util.h"
 
 namespace atom {

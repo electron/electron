@@ -6,9 +6,9 @@
 
 #include <atlbase.h>
 #include <propkey.h>
-#include <windows.h>
 #include <shlobj.h>
 #include <shobjidl.h>
+#include <windows.h>
 
 #include "atom/common/atom_version.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
@@ -19,8 +19,8 @@
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
-#include "base/win/win_util.h"
 #include "base/win/registry.h"
+#include "base/win/win_util.h"
 #include "base/win/windows_version.h"
 
 namespace atom {

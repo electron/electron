@@ -5,16 +5,16 @@
 #include "atom/browser/ui/file_dialog.h"
 
 #include <atlbase.h>
-#include <windows.h>
 #include <commdlg.h>
 #include <shlobj.h>
+#include <windows.h>
 
 #include "atom/browser/native_window_views.h"
 #include "atom/browser/unresponsive_suppressor.h"
 #include "base/files/file_util.h"
 #include "base/i18n/case_conversion.h"
-#include "base/strings/string_util.h"
 #include "base/strings/string_split.h"
+#include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/threading/thread.h"
 #include "base/win/registry.h"

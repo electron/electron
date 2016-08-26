@@ -10,13 +10,13 @@
 #include <string>
 #include <vector>
 
-#include "ui/gfx/image/image.h"
 #include "atom/browser/api/trackable_object.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/native_window_observer.h"
 #include "atom/common/api/atom_api_native_image.h"
 #include "atom/common/key_weak_map.h"
 #include "native_mate/handle.h"
+#include "ui/gfx/image/image.h"
 
 class GURL;
 

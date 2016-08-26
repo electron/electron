@@ -6,8 +6,8 @@
 #define ATOM_BROWSER_API_EVENT_H_
 
 #include "content/public/browser/web_contents_observer.h"
-#include "native_mate/wrappable.h"
 #include "native_mate/handle.h"
+#include "native_mate/wrappable.h"
 
 namespace IPC {
 class Message;

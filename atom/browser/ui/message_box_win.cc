@@ -4,8 +4,8 @@
 
 #include "atom/browser/ui/message_box.h"
 
-#include <windows.h>
 #include <commctrl.h>
+#include <windows.h>
 
 #include <map>
 #include <vector>

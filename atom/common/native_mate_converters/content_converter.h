@@ -10,8 +10,8 @@
 #include "content/public/browser/permission_type.h"
 #include "content/public/common/menu_item.h"
 #include "content/public/common/stop_find_action.h"
-#include "third_party/WebKit/public/platform/modules/permissions/permission_status.mojom.h"
 #include "native_mate/converter.h"
+#include "third_party/WebKit/public/platform/modules/permissions/permission_status.mojom.h"
 
 namespace content {
 struct ContextMenuParams;

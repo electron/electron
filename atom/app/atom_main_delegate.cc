@@ -4,8 +4,8 @@
 
 #include "atom/app/atom_main_delegate.h"
 
-#include <string>
 #include <iostream>
+#include <string>
 
 #include "atom/app/atom_content_client.h"
 #include "atom/browser/atom_browser_client.h"

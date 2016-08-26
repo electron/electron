@@ -9,8 +9,8 @@
 #include "ui/base/dragdrop/drag_utils.h"
 #include "ui/base/dragdrop/file_info.h"
 #include "ui/base/dragdrop/os_exchange_data.h"
-#include "ui/gfx/geometry/point.h"
 #include "ui/display/screen.h"
+#include "ui/gfx/geometry/point.h"
 #include "ui/views/widget/widget.h"
 #include "ui/wm/public/drag_drop_client.h"
 

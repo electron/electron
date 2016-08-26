@@ -5,14 +5,14 @@
 #ifndef ATOM_BROWSER_UI_WIN_NOTIFY_ICON_H_
 #define ATOM_BROWSER_UI_WIN_NOTIFY_ICON_H_
 
-#include <windows.h>
 #include <shellapi.h>
+#include <windows.h>
 
 #include <string>
 
 #include "atom/browser/ui/tray_icon.h"
-#include "base/macros.h"
 #include "base/compiler_specific.h"
+#include "base/macros.h"
 #include "base/win/scoped_gdi_object.h"
 
 namespace gfx {

@@ -5,17 +5,16 @@
 #include "atom/common/api/atom_bindings.h"
 
 #include <algorithm>
-#include <string>
 #include <iostream>
+#include <string>
 
 #include "atom/common/atom_version.h"
 #include "atom/common/chrome_version.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
+#include "atom/common/node_includes.h"
 #include "base/logging.h"
 #include "base/process/process_metrics.h"
 #include "native_mate/dictionary.h"
-
-#include "atom/common/node_includes.h"
 
 namespace atom {
 
