@@ -10,7 +10,7 @@ import tempfile
 
 from io import StringIO
 from lib.config import PLATFORM, get_target_arch, get_chromedriver_version, \
-                       get_platform_key, get_env_var, s3_config, get_zip_name
+                       get_env_var, s3_config, get_zip_name
 from lib.util import electron_gyp, execute, get_electron_version, \
                      parse_version, scoped_cwd, s3put
 from lib.github import GitHub

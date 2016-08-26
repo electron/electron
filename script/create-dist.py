@@ -10,7 +10,7 @@ import stat
 
 from lib.config import LIBCHROMIUMCONTENT_COMMIT, BASE_URL, PLATFORM, \
                        get_target_arch, get_chromedriver_version, \
-                       get_platform_key, get_zip_name
+                       get_zip_name
 from lib.util import scoped_cwd, rm_rf, get_electron_version, make_zip, \
                      execute, electron_gyp
 
