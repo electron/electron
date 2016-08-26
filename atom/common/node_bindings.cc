@@ -185,6 +185,10 @@ node::Environment* NodeBindings::CreateEnvironment(
   base::FilePath helper_exec_path;
   PathService::Get(content::CHILD_PROCESS_EXE, &helper_exec_path);
   process.Set("helperExecPath", helper_exec_path);
+
+  if (base::CommandLine::ForCurrentProcess()->HasSwitch("debug-brk"))
+    process.Set("_debugWaitConnect", true);
+
   return env;
 }
 
