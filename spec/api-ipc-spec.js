@@ -328,6 +328,7 @@ describe('ipc module', function () {
 
     it('does not crash on HTTP request objects (regression)', function (done) {
       const request = http.request({port: 5000, hostname: '127.0.0.1', method: 'GET', path: '/'})
+      request.on('error', function () {})
       ipcRenderer.once('message', function (event, value) {
         assert.equal(value.method, 'GET')
         assert.equal(value.path, '/')
