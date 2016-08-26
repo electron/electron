@@ -73,3 +73,13 @@ def enable_verbose_mode():
 
 def is_verbose_mode():
   return verbose_mode
+
+
+def get_zip_name(name, version, suffix=''):
+  zip_name = '{0}-{1}-{2}-{3}'.format(name,
+                                      version,
+                                      get_platform_key(),
+                                      get_target_arch())
+  if suffix:
+    zip_name += '-' + suffix
+  return zip_name + '.zip'
