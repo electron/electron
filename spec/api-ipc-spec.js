@@ -1,6 +1,7 @@
 'use strict'
 
 const assert = require('assert')
+const http = require('http')
 const path = require('path')
 const {closeWindow} = require('./window-helpers')
 
@@ -323,6 +324,16 @@ describe('ipc module', function () {
         done()
       })
       ipcRenderer.send('message', document.location)
+    })
+
+    it('does not crash on HTTP request objects (regression)', function (done) {
+      const request = http.request({port: 5000, hostname: '127.0.0.1', method: 'GET', path: '/'})
+      ipcRenderer.once('message', function (event, value) {
+        assert.equal(value.method, 'GET')
+        assert.equal(value.path, '/')
+        done()
+      })
+      ipcRenderer.send('message', request)
     })
 
     it('can send objects that both reference the same object', function (done) {
