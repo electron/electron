@@ -32,6 +32,7 @@ class V8ValueConverter {
 
  private:
   class FromV8ValueState;
+  class ScopedUniquenessGuard;
 
   v8::Local<v8::Value> ToV8ValueImpl(v8::Isolate* isolate,
                                      const base::Value* value) const;

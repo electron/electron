@@ -35,8 +35,8 @@ process.stdout
 // Access console to reproduce #3482.
 console
 
-ipcMain.on('message', function (event, arg) {
-  event.sender.send('message', arg)
+ipcMain.on('message', function (event, ...args) {
+  event.sender.send('message', ...args)
 })
 
 // Write output to file if OUTPUT_TO_FILE is defined.

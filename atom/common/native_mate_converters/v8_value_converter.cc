@@ -49,19 +49,22 @@ class V8ValueConverter::FromV8ValueState {
   // other handle B in the map points to the same object as A. Note that A can
   // be unique even if there already is another handle with the same identity
   // hash (key) in the map, because two objects can have the same hash.
-  bool UpdateAndCheckUniqueness(v8::Local<v8::Object> handle) {
-    typedef HashToHandleMap::const_iterator Iterator;
-    int hash = handle->GetIdentityHash();
-    // We only compare using == with handles to objects with the same identity
-    // hash. Different hash obviously means different objects, but two objects
-    // in a couple of thousands could have the same identity hash.
-    std::pair<Iterator, Iterator> range = unique_map_.equal_range(hash);
-    for (auto it = range.first; it != range.second; ++it) {
-      // Operator == for handles actually compares the underlying objects.
-      if (it->second == handle)
-        return false;
-    }
+  bool AddToUniquenessCheck(v8::Local<v8::Object> handle) {
+    int hash;
+    auto iter = GetIteratorInMap(handle, &hash);
+    if (iter != unique_map_.end())
+      return false;
+
     unique_map_.insert(std::make_pair(hash, handle));
+    return true;
+  }
+
+  bool RemoveFromUniquenessCheck(v8::Local<v8::Object> handle) {
+    int unused_hash;
+    auto iter = GetIteratorInMap(handle, &unused_hash);
+    if (iter == unique_map_.end())
+      return false;
+    unique_map_.erase(iter);
     return true;
   }
 
@@ -70,10 +73,57 @@ class V8ValueConverter::FromV8ValueState {
   }
 
  private:
-  typedef std::multimap<int, v8::Local<v8::Object> > HashToHandleMap;
+  using HashToHandleMap = std::multimap<int, v8::Local<v8::Object>>;
+  using Iterator = HashToHandleMap::const_iterator;
+
+  Iterator GetIteratorInMap(v8::Local<v8::Object> handle, int* hash) {
+    *hash = handle->GetIdentityHash();
+    // We only compare using == with handles to objects with the same identity
+    // hash. Different hash obviously means different objects, but two objects
+    // in a couple of thousands could have the same identity hash.
+    std::pair<Iterator, Iterator> range = unique_map_.equal_range(*hash);
+    for (auto it = range.first; it != range.second; ++it) {
+      // Operator == for handles actually compares the underlying objects.
+      if (it->second == handle)
+        return it;
+    }
+    // Not found.
+    return unique_map_.end();
+  }
+
   HashToHandleMap unique_map_;
 
   int max_recursion_depth_;
+};
+
+// A class to ensure that objects/arrays that are being converted by
+// this V8ValueConverterImpl do not have cycles.
+//
+// An example of cycle: var v = {}; v = {key: v};
+// Not an example of cycle: var v = {}; a = [v, v]; or w = {a: v, b: v};
+class V8ValueConverter::ScopedUniquenessGuard {
+ public:
+  ScopedUniquenessGuard(V8ValueConverter::FromV8ValueState* state,
+                        v8::Local<v8::Object> value)
+      : state_(state),
+        value_(value),
+        is_valid_(state_->AddToUniquenessCheck(value_)) {}
+  ~ScopedUniquenessGuard() {
+    if (is_valid_) {
+      bool removed = state_->RemoveFromUniquenessCheck(value_);
+      DCHECK(removed);
+    }
+  }
+
+  bool is_valid() const { return is_valid_; }
+
+ private:
+  typedef std::multimap<int, v8::Local<v8::Object> > HashToHandleMap;
+  V8ValueConverter::FromV8ValueState* state_;
+  v8::Local<v8::Object> value_;
+  bool is_valid_;
+
+  DISALLOW_COPY_AND_ASSIGN(ScopedUniquenessGuard);
 };
 
 V8ValueConverter::V8ValueConverter()
@@ -281,7 +331,8 @@ base::Value* V8ValueConverter::FromV8Array(
     v8::Local<v8::Array> val,
     FromV8ValueState* state,
     v8::Isolate* isolate) const {
-  if (!state->UpdateAndCheckUniqueness(val))
+  ScopedUniquenessGuard uniqueness_guard(state, val);
+  if (!uniqueness_guard.is_valid())
     return base::Value::CreateNullValue().release();
 
   std::unique_ptr<v8::Context::Scope> scope;
@@ -328,7 +379,8 @@ base::Value* V8ValueConverter::FromV8Object(
     v8::Local<v8::Object> val,
     FromV8ValueState* state,
     v8::Isolate* isolate) const {
-  if (!state->UpdateAndCheckUniqueness(val))
+  ScopedUniquenessGuard uniqueness_guard(state, val);
+  if (!uniqueness_guard.is_valid())
     return base::Value::CreateNullValue().release();
 
   std::unique_ptr<v8::Context::Scope> scope;
