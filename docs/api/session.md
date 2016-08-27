@@ -563,7 +563,7 @@ response are visible by the time this listener is fired.
   * `timestamp` Double
   * `requestHeaders` Object
 
-#### `webRequest.onHeadersReceived([filter,]listener)`
+#### `webRequest.onHeadersReceived([filter, ]listener)`
 
 * `filter` Object
 * `listener` Function
