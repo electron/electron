@@ -17,59 +17,89 @@
 #include "third_party/WebKit/public/web/WebDocument.h"
 
 namespace {
-  content::RenderView* GetCurrentRenderView() {
-    blink::WebLocalFrame* frame =
-      blink::WebLocalFrame::frameForCurrentContext();
-    if (!frame)
-      return NULL;
 
-    blink::WebView* view = frame->view();
-    if (!view)
-      return NULL;  // can happen during closing.
+content::RenderView* GetCurrentRenderView() {
+  blink::WebLocalFrame* frame =
+    blink::WebLocalFrame::frameForCurrentContext();
+  if (!frame)
+    return NULL;
 
-    return content::RenderView::FromWebView(view);
-  }
+  blink::WebView* view = frame->view();
+  if (!view)
+    return NULL;  // can happen during closing.
 
-  void IPCSend(mate::Arguments* args,
-            const base::string16& channel,
-            const base::ListValue& arguments) {
-    content::RenderView* render_view = GetCurrentRenderView();
-    if (render_view == NULL)
-      return;
+  return content::RenderView::FromWebView(view);
+}
 
-    bool success = render_view->Send(new AtomViewHostMsg_Message(
-        render_view->GetRoutingID(), channel, arguments));
+v8::Local<v8::Value> GetHiddenValue(v8::Isolate* isolate,
+                                    v8::Local<v8::String> key) {
+  content::RenderView* render_view = GetCurrentRenderView();
+  v8::Local<v8::Context> context =
+      render_view->GetWebView()->mainFrame()->mainWorldScriptContext();
+  v8::Local<v8::Private> privateKey = v8::Private::ForApi(isolate, key);
+  v8::Local<v8::Value> value;
+  v8::Local<v8::Object> object = context->Global();
+  v8::Maybe<bool> result = object->HasPrivate(context, privateKey);
+  if (!(result.IsJust() && result.FromJust()))
+    return v8::Local<v8::Value>();
+  if (object->GetPrivate(context, privateKey).ToLocal(&value))
+    return value;
+  return v8::Local<v8::Value>();
+}
 
-    if (!success)
-      args->ThrowError("Unable to send AtomViewHostMsg_Message");
-  }
+void SetHiddenValue(v8::Isolate* isolate,
+                    v8::Local<v8::String> key,
+                    v8::Local<v8::Value> value) {
+  if (value.IsEmpty())
+    return;
+  content::RenderView* render_view = GetCurrentRenderView();
+  v8::Local<v8::Context> context =
+      render_view->GetWebView()->mainFrame()->mainWorldScriptContext();
+  v8::Local<v8::Private> privateKey = v8::Private::ForApi(isolate, key);
+  context->Global()->SetPrivate(context, privateKey, value);
+}
 
-  base::string16 IPCSendSync(mate::Arguments* args,
-                          const base::string16& channel,
-                          const base::ListValue& arguments) {
-    base::string16 json;
+void IPCSend(mate::Arguments* args,
+          const base::string16& channel,
+          const base::ListValue& arguments) {
+  content::RenderView* render_view = GetCurrentRenderView();
+  if (render_view == NULL)
+    return;
 
-    content::RenderView* render_view = GetCurrentRenderView();
-    if (render_view == NULL)
-      return json;
+  bool success = render_view->Send(new AtomViewHostMsg_Message(
+      render_view->GetRoutingID(), channel, arguments));
 
-    IPC::SyncMessage* message = new AtomViewHostMsg_Message_Sync(
-        render_view->GetRoutingID(), channel, arguments, &json);
-    bool success = render_view->Send(message);
+  if (!success)
+    args->ThrowError("Unable to send AtomViewHostMsg_Message");
+}
 
-    if (!success)
-      args->ThrowError("Unable to send AtomViewHostMsg_Message_Sync");
+base::string16 IPCSendSync(mate::Arguments* args,
+                        const base::string16& channel,
+                        const base::ListValue& arguments) {
+  base::string16 json;
 
+  content::RenderView* render_view = GetCurrentRenderView();
+  if (render_view == NULL)
     return json;
-  }
 
-  std::vector<v8::Local<v8::Value>> ListValueToVector(v8::Isolate* isolate,
-                                                  const base::ListValue& list) {
-    v8::Local<v8::Value> array = mate::ConvertToV8(isolate, list);
-    std::vector<v8::Local<v8::Value>> result;
-    mate::ConvertFromV8(isolate, array, &result);
-    return result;
-  }
+  IPC::SyncMessage* message = new AtomViewHostMsg_Message_Sync(
+      render_view->GetRoutingID(), channel, arguments, &json);
+  bool success = render_view->Send(message);
+
+  if (!success)
+    args->ThrowError("Unable to send AtomViewHostMsg_Message_Sync");
+
+  return json;
+}
+
+std::vector<v8::Local<v8::Value>> ListValueToVector(v8::Isolate* isolate,
+                                                const base::ListValue& list) {
+  v8::Local<v8::Value> array = mate::ConvertToV8(isolate, list);
+  std::vector<v8::Local<v8::Value>> result;
+  mate::ConvertFromV8(isolate, array, &result);
+  return result;
+}
+
 }  // namespace
 
 namespace atom {
@@ -102,6 +132,11 @@ void JavascriptBindings::GetBinding(
   ipc.SetMethod("send", &IPCSend);
   ipc.SetMethod("sendSync", &IPCSendSync);
   binding.Set("ipc", ipc.GetHandle());
+
+  mate::Dictionary v8(isolate, v8::Object::New(isolate));
+  v8.SetMethod("getHiddenValue", &GetHiddenValue);
+  v8.SetMethod("setHiddenValue", &SetHiddenValue);
+  binding.Set("v8", v8.GetHandle());
 
   mate::Dictionary content_settings(isolate, v8::Object::New(isolate));
   content_settings.SetMethod("get",
