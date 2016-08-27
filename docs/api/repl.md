@@ -2,7 +2,7 @@
 
 The `repl` provides a Read-Eval-Print-Loop (REPL) implementation, also known as an interactive toplevel. It is a simple, interactive computer programming environment that takes single user inputs (i.e. single expressions), evaluates them, and returns the result to the user.
 
-## Launching RELP
+## Launching REPL
 
 Assuming you have electron or electron-prebuilt installed as a local project dependency:
 
