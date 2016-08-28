@@ -38,7 +38,7 @@
     "cibuild-windows-ia32": "rm -Rf node_mdules && python ./script/cibuild --target_arch=ia32",
     "test": "python ./script/test.py",
     "browser-build": "npm run build && rsync -avz --delete out/D/Brave.app ../browser-laptop/node_modules/electron-prebuilt/dist/",
-    "browser-copy-windows": "xcopy .\\out\\D\\* ..\\browser-laptop\\node_modules\\electron-prebuild\\dist\\ /Y /S /I /F /R",
+    "browser-copy-windows": "xcopy .\\out\\D\\* ..\\browser-laptop\\node_modules\\electron-prebuilt\\dist\\ /Y /S /I /F /R",
     "libchromium-build": "../libchromiumcontent/script/bootstrap && ../libchromiumcontent/script/update && ../libchromiumcontent/script/build && ../libchromiumcontent/script/create-dist --no_zip",
     "libchromium-bootstrap": "./script/bootstrap.py -v --libcc_source_path ../libchromiumcontent/dist/main/src --libcc_shared_library_path ../libchromiumcontent/dist/main/shared_library --libcc_static_library_path ../libchromiumcontent/dist/main/static_library"
   }
