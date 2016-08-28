@@ -373,6 +373,8 @@ bool ContentSettingsClient::allowDisplayingInsecureContent(
 
   if (allow)
     DidDisplayInsecureContent(GURL(resource_url));
+  else
+    DidBlockDisplayInsecureContent(GURL(resource_url));
   return allow;
 }
 
@@ -394,6 +396,8 @@ bool ContentSettingsClient::allowRunningInsecureContent(
 
   if (allow)
     DidRunInsecureContent(GURL(resource_url));
+  else
+    DidBlockRunInsecureContent(GURL(resource_url));
   return allow;
 }
 
@@ -415,6 +419,23 @@ void ContentSettingsClient::DidRunInsecureContent(GURL resouce_url) {
         base::UTF8ToUTF16("did-run-insecure-content"), args));
 }
 
+void ContentSettingsClient::DidBlockDisplayInsecureContent(GURL resource_url) {
+  base::ListValue args;
+  args.AppendString(resource_url.spec());
+
+  auto rv = render_frame()->GetRenderView();
+  rv->Send(new AtomViewHostMsg_Message(rv->GetRoutingID(),
+      base::UTF8ToUTF16("did-block-display-insecure-content"), args));
+}
+
+void ContentSettingsClient::DidBlockRunInsecureContent(GURL resouce_url) {
+  base::ListValue args;
+    args.AppendString(resouce_url.spec());
+
+    auto rv = render_frame()->GetRenderView();
+    rv->Send(new AtomViewHostMsg_Message(rv->GetRoutingID(),
+        base::UTF8ToUTF16("did-block-run-insecure-content"), args));
+}
 
 void ContentSettingsClient::ClearBlockedContentSettings() {
   cached_storage_permissions_.clear();

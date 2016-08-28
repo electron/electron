@@ -81,6 +81,8 @@ class ContentSettingsClient
  private:
   void DidDisplayInsecureContent(GURL resource_url);
   void DidRunInsecureContent(GURL resouce_url);
+  void DidBlockDisplayInsecureContent(GURL resource_url);
+  void DidBlockRunInsecureContent(GURL resouce_url);
 
   // RenderFrameObserver implementation.
   void DidCommitProvisionalLoad(bool is_new_navigation,
