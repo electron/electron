@@ -318,11 +318,12 @@ describe('ipc module', function () {
       ipcRenderer.send('message', buffer)
     })
 
-    it('converts DOM objects to empty objects', function (done) {
+    it('can send objects with DOM class prototypes', function (done) {
       ipcRenderer.once('message', function (event, value) {
-        assert.deepEqual(value, {})
+        assert.equal(value.protocol, 'file:')
+        assert.equal(value.hostname, '')
         done()
-      })
+       })
       ipcRenderer.send('message', document.location)
     })
 
