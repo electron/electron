@@ -393,19 +393,6 @@ base::Value* V8ValueConverter::FromV8Object(
   std::unique_ptr<base::DictionaryValue> result(new base::DictionaryValue());
   v8::Local<v8::Array> property_names(val->GetOwnPropertyNames());
 
-  // Don't consider DOM objects. This check matches isHostObject() in Blink's
-  // bindings/v8/V8Binding.h used in structured cloning. It reads:
-  //
-  // If the object has any internal fields, then we won't be able to serialize
-  // or deserialize them; conveniently, this is also a quick way to detect DOM
-  // wrapper objects, because the mechanism for these relies on data stored in
-  // these fields.
-  //
-  // ANOTHER NOTE: returning an empty dictionary here to minimise surprise.
-  // See also http://crbug.com/330559.
-  if (val->InternalFieldCount())
-    return result.release();
-
   for (uint32_t i = 0; i < property_names->Length(); ++i) {
     v8::Local<v8::Value> key(property_names->Get(i));
 
@@ -427,6 +414,11 @@ base::Value* V8ValueConverter::FromV8Object(
                  << " threw an exception.";
       child_v8 = v8::Null(isolate);
     }
+
+    // Ignore external values since calling CreationContext() on them can
+    // crash
+    if (child_v8->IsExternal())
+      continue;
 
     std::unique_ptr<base::Value> child(
         FromV8ValueImpl(state, child_v8, isolate));
