@@ -6,13 +6,13 @@
 
 #include <string>
 
+#include "atom/browser/native_window.h"
 #include "base/stl_util.h"
-#include "base/win/scoped_gdi_object.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/win/scoped_gdi_object.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "ui/display/win/screen_win.h"
 #include "ui/gfx/icon_util.h"
-#include "atom/browser/native_window.h"
 
 namespace atom {
 

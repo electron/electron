@@ -7,9 +7,9 @@
 #include <string>
 #include <vector>
 
+#include "atom/common/options_switches.h"
 #include "base/command_line.h"
 #include "base/strings/string_split.h"
-#include "atom/common/options_switches.h"
 #include "content/public/browser/browser_thread.h"
 #include "net/socket/ssl_client_socket.h"
 #include "net/ssl/ssl_cipher_suite_names.h"

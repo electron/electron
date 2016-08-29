@@ -8,12 +8,12 @@
 #include <string>
 #include <vector>
 
-#include "base/macros.h"
-#include "base/compiler_specific.h"
-#include "base/observer_list.h"
-#include "base/strings/string16.h"
 #include "atom/browser/browser_observer.h"
 #include "atom/browser/window_list_observer.h"
+#include "base/compiler_specific.h"
+#include "base/macros.h"
+#include "base/observer_list.h"
+#include "base/strings/string16.h"
 #include "native_mate/arguments.h"
 
 #if defined(OS_WIN)

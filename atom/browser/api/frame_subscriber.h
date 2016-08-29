@@ -7,9 +7,9 @@
 
 #include "base/callback.h"
 #include "base/memory/weak_ptr.h"
+#include "content/public/browser/readback_types.h"
 #include "content/public/browser/render_widget_host_view.h"
 #include "content/public/browser/render_widget_host_view_frame_subscriber.h"
-#include "content/public/browser/readback_types.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "ui/gfx/geometry/size.h"
 #include "v8/include/v8.h"

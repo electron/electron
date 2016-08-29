@@ -9,15 +9,15 @@
 #include <set>
 #include <string>
 
-#include "brightray/browser/network_delegate.h"
 #include "base/callback.h"
 #include "base/synchronization/lock.h"
 #include "base/values.h"
+#include "brightray/browser/network_delegate.h"
+#include "content/public/browser/resource_request_info.h"
 #include "extensions/common/url_pattern.h"
 #include "net/base/net_errors.h"
 #include "net/http/http_request_headers.h"
 #include "net/http/http_response_headers.h"
-#include "content/public/browser/resource_request_info.h"
 
 namespace extensions {
 class URLPattern;

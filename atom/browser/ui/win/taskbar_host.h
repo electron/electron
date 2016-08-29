@@ -11,11 +11,11 @@
 #include <string>
 #include <vector>
 
+#include "atom/browser/native_window.h"
 #include "base/callback.h"
 #include "base/win/scoped_comptr.h"
 #include "ui/gfx/geometry/rect.h"
 #include "ui/gfx/image/image.h"
-#include "atom/browser/native_window.h"
 
 namespace atom {
 

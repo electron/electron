@@ -7,8 +7,8 @@
 
 #include <vector>
 
-#include "base/macros.h"
 #include "base/lazy_instance.h"
+#include "base/macros.h"
 #include "base/observer_list.h"
 
 namespace atom {

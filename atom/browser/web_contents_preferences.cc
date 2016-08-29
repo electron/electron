@@ -14,12 +14,12 @@
 #include "atom/common/options_switches.h"
 #include "base/command_line.h"
 #include "base/strings/string_number_conversions.h"
+#include "cc/base/switches.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/common/content_switches.h"
 #include "content/public/common/web_preferences.h"
 #include "native_mate/dictionary.h"
 #include "net/base/filename_util.h"
-#include "cc/base/switches.h"
 
 #if defined(OS_WIN)
 #include "ui/gfx/switches.h"

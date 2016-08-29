@@ -9,10 +9,10 @@
 #include <string>
 #include <vector>
 
-#include "brightray/browser/inspectable_web_contents_impl.h"
-#include "brightray/browser/inspectable_web_contents_delegate.h"
-#include "brightray/browser/inspectable_web_contents_view_delegate.h"
 #include "brightray/browser/devtools_file_system_indexer.h"
+#include "brightray/browser/inspectable_web_contents_delegate.h"
+#include "brightray/browser/inspectable_web_contents_impl.h"
+#include "brightray/browser/inspectable_web_contents_view_delegate.h"
 #include "content/public/browser/web_contents_delegate.h"
 
 using brightray::DevToolsFileSystemIndexer;

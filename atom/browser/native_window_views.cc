@@ -26,16 +26,16 @@
 #include "ui/views/background.h"
 #include "ui/views/controls/webview/unhandled_keyboard_event_handler.h"
 #include "ui/views/controls/webview/webview.h"
-#include "ui/views/window/client_view.h"
 #include "ui/views/widget/native_widget_private.h"
 #include "ui/views/widget/widget.h"
-#include "ui/wm/core/window_util.h"
+#include "ui/views/window/client_view.h"
 #include "ui/wm/core/shadow_types.h"
+#include "ui/wm/core/window_util.h"
 
 #if defined(USE_X11)
 #include "atom/browser/browser.h"
-#include "atom/browser/ui/views/global_menu_bar_x11.h"
 #include "atom/browser/ui/views/frameless_view.h"
+#include "atom/browser/ui/views/global_menu_bar_x11.h"
 #include "atom/browser/ui/views/native_frame_view.h"
 #include "atom/browser/ui/x/event_disabler.h"
 #include "atom/browser/ui/x/window_state_watcher.h"
@@ -51,9 +51,9 @@
 #include "atom/browser/ui/win/atom_desktop_window_tree_host_win.h"
 #include "skia/ext/skia_utils_win.h"
 #include "ui/base/win/shell.h"
-#include "ui/display/win/screen_win.h"
 #include "ui/display/display.h"
 #include "ui/display/screen.h"
+#include "ui/display/win/screen_win.h"
 #include "ui/views/widget/desktop_aura/desktop_native_widget_aura.h"
 #endif
 

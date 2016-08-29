@@ -4,9 +4,9 @@
 
 #include "atom/browser/api/frame_subscriber.h"
 
-#include "base/bind.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
 #include "atom/common/node_includes.h"
+#include "base/bind.h"
 #include "content/public/browser/render_widget_host.h"
 
 namespace atom {

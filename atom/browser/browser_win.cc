@@ -4,9 +4,10 @@
 
 #include "atom/browser/browser.h"
 
+#include <windows.h>  // windows.h must be included first
+
 #include <atlbase.h>
 #include <propkey.h>
-#include <windows.h>
 #include <shlobj.h>
 #include <shobjidl.h>
 
@@ -19,8 +20,8 @@
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
-#include "base/win/win_util.h"
 #include "base/win/registry.h"
+#include "base/win/win_util.h"
 #include "base/win/windows_version.h"
 
 namespace atom {

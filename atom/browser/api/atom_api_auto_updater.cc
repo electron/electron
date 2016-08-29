@@ -4,12 +4,12 @@
 
 #include "atom/browser/api/atom_api_auto_updater.h"
 
-#include "base/time/time.h"
 #include "atom/browser/browser.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/window_list.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/node_includes.h"
+#include "base/time/time.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 
