@@ -120,6 +120,8 @@ session.defaultSession.on('will-download', (event, item, webContents) => {
 * `config` Object
   * `pacScript` String - PAC 파일과 관련된 URL입니다.
   * `proxyRules` String - 사용할 프록시의 규칙을 나타냅니다.
+  * `proxyBypassRules` String - 어떤 URL이 프록시 설정을 무시되어야 하는지를
+    지정하는 규칙입니다.
 * `callback` Function - 작업이 완료되면 호출됩니다.
 
 프록시 설정을 적용합니다.
@@ -153,6 +155,43 @@ proxyURL = [<proxyScheme>"://"]<proxyHost>[":"<proxyPort>]
   문제가 발생하여 `foopy`를 사용할 수 없는 경우 프록시를 사용하지 않습니다.
 * `http=foopy;socks=foopy2` - http:// URL에 `foopy` HTTP 프록시를 사용합니다.
   그리고 `socks4://foopy2` 프록시를 다른 모든 URL에 사용합니다.
+
+`proxyBypassRules`는 밑에서 묘사된 규칙의 콤마로 구분된 목록입니다:
+
+* `[ URL_SCHEME "://" ] HOSTNAME_PATTERN [ ":" <port> ]`
+
+   Match all hostnames that match the pattern HOSTNAME_PATTERN.
+
+   예시:
+     "foobar.com", "*foobar.com", "*.foobar.com", "*foobar.com:99",
+     "https://x.*.y.com:99"
+
+ * `"." HOSTNAME_SUFFIX_PATTERN [ ":" PORT ]`
+
+   Match a particular domain suffix.
+
+   예시:
+     ".google.com", ".com", "http://.google.com"
+
+* `[ SCHEME "://" ] IP_LITERAL [ ":" PORT ]`
+
+   Match URLs which are IP address literals.
+
+   예시:
+     "127.0.1", "[0:0::1]", "[::1]", "http://[::1]:99"
+
+*  `IP_LITERAL "/" PREFIX_LENGHT_IN_BITS`
+
+   Match any URL that is to an IP literal that falls between the
+   given range. IP range is specified using CIDR notation.
+
+   예시:
+     "192.168.1.1/16", "fefe:13::abc/33".
+
+*  `<local>`
+
+   Match local addresses. The meaning of `<local>` is whether the
+   host matches one of: "127.0.0.1", "::1", "localhost".
 
 #### `ses.resolveProxy(url, callback)`
 
