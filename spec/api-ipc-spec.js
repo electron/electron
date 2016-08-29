@@ -323,7 +323,7 @@ describe('ipc module', function () {
         assert.equal(value.protocol, 'file:')
         assert.equal(value.hostname, '')
         done()
-       })
+      })
       ipcRenderer.send('message', document.location)
     })
 

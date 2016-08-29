@@ -1256,7 +1256,7 @@ describe('browser-window module', function () {
     })
 
     it('works with result objects that have DOM class prototypes', function (done) {
-       w.webContents.executeJavaScript('document.location', function (result) {
+      w.webContents.executeJavaScript('document.location', function (result) {
         assert.equal(result.origin, server.url)
         assert.equal(result.protocol, 'http:')
         done()
