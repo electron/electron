@@ -16,7 +16,11 @@ win.on('closed', () => {
   win = null;
 })
 
-win.loadURL('https://github.com');
+// 원격 URL 로드
+win.loadURL('https://github.com')
+
+// 또는 로컬 HTML 로드
+win.loadURL(`file://${__dirname}/app/index.html`)
 ```
 
 ## Frameless 윈도우
@@ -204,14 +208,14 @@ On Windows it is
     수 없습니다. 하지만 편법으로 `globalShortcut`을 통해 키 입력을 받을 수 있습니다.
 * Windows의 경우, 가능한 타입으론 `toolbar`가 있습니다.
 
-`titleBarStyle` 속성은 macOS 10.10 Yosemite 이후 버전만 지원하며, 다음 3가지 종류의
-값을 사용할 수 있습니다:
+`titleBarStyle`의 속성은 다음과 같습니다:
 
 * `default` 또는 미지정: 표준 Mac 회색 불투명 스타일을 사용합니다.
 * `hidden`: 타이틀 바를 숨기고 콘텐츠 전체를 윈도우 크기에 맞춥니다.
   타이틀 바는 없어지지만 표준 창 컨트롤 ("신호등 버튼")은 왼쪽 상단에 유지됩니다.
 * `hidden-inset`: `hidden` 타이틀 바 속성과 함께 신호등 버튼이 윈도우 모서리로부터
-  약간 더 안쪽으로 들어가도록합니다.
+  약간 더 안쪽으로 들어가도록합니다. 10.9 Mavericks에선 지원되지 않고 `hidden`으로
+  폴백합니다.
 
 `webPreferences` 속성은 다음과 같은 속성을 가질 수 있습니다:
 
@@ -290,6 +294,7 @@ On Windows it is
 Returns:
 
 * `event` Event
+* `title` String
 
 문서의 제목이 변경될 때 발생하는 이벤트입니다. `event.preventDefault()`를 호출하여
 네이티브 윈도우의 제목이 변경되는 것을 방지할 수 있습니다.
@@ -299,6 +304,7 @@ Returns:
 Returns:
 
 * `event` Event
+* `title` String
 
 윈도우가 닫히기 시작할 때 발생하는 이벤트입니다.
 이 이벤트는 DOM의 `beforeunload` 와 `unload` 이벤트 전에 발생합니다.
@@ -901,11 +907,41 @@ Windows 메시지 훅을 등록합니다. `callback`은 WndProc에서 메시지�
 
 #### `win.capturePage([rect, ]callback)`
 
+* `rect` Object (optional) - 캡쳐될 페이지의 영역
+  * `x` Integer
+  * `y` Integer
+  * `width` Integer
+  * `height` Integer
+* `callback` Function
+
 `webContents.capturePage([rect, ]callback)`와 같습니다.
 
 #### `win.loadURL(url[, options])`
 
+* `url` URL
+* `options` Object (optional)
+  * `httpReferrer` String - HTTP 리퍼러 URL.
+  * `userAgent` String - 요청을 보낸 사용자의 user agent.
+  * `extraHeaders` String - "\n"로 구분된 부가적인 헤더
+
 `webContents.loadURL(url[, options])` API와 같습니다.
+
+`url`은 원격 주소 (e.g. `http://`)가 되거나 `file://` 프로토콜을 사용하는 로컬 HTML
+경로가 될 수 있습니다.
+
+파일 URL이 올바른 형식으로 지정되었는지 확인하려면 Node의
+[`url.format`](https://nodejs.org/api/url.html#url_url_format_urlobject) 메서드를
+사용하는 것을 권장합니다.
+
+```javascript
+let url = require('url').format({
+  protocol: 'file',
+  slashes: true,
+  pathname: require('path').join(__dirname, 'index.html')
+})
+
+win.loadURL(url)
+```
 
 #### `win.reload()`
 
@@ -917,9 +953,12 @@ Windows 메시지 훅을 등록합니다. `callback`은 WndProc에서 메시지�
 
 지정한 `menu`를 윈도우의 메뉴로 설정합니다 `null`을 설정하면 메뉴를 제거합니다.
 
-#### `win.setProgressBar(progress)`
+#### `win.setProgressBar(progress[, options])`
 
 * `progress` Double
+* `options` Object (optional)
+  * `mode` String _Windows_ - 프로그래스 막대의 모드 (`none`, `normal`,
+    `indeterminate`, `error`, `paused`)
 
 작업표시줄에 표시되고 있는 애플리케이션 아이콘에 진행 상태를 표시합니다. [0, 1.0]
 사이의 값을 지정할 수 있습니다.
@@ -930,6 +969,11 @@ Windows 메시지 훅을 등록합니다. `callback`은 WndProc에서 메시지�
 Linux 플랫폼에선 Unity 데스크톱 환경만 지원합니다. 그리고 이 기능을 사용하려면
 `*.desktop` 파일을 생성한 후 `package.json`의 `desktopName` 필드에 파일 이름을
 지정해야 합니다. 기본적으로 `app.getName().desktop`을 통해 접근합니다.
+
+Windows에선 모드를 전달할 수 있습니다. 사용할 수 있는 값은 `none`, `normal`,
+`indeterminate`, `error`, 그리고 `paused`가 있습니다. 만약 모드 설정 없이
+`setProgressBar`를 호출하면 (올바른 범위의 값을 전달했을 때), `normal`이 기본적으로
+설정됩니다.
 
 #### `win.setOverlayIcon(overlay, description)` _Windows_
 
@@ -984,7 +1028,7 @@ Linux 플랫폼에선 Unity 데스크톱 환경만 지원합니다. 그리고 �
 
 #### `win.setThumbnailClip(region)` _Windows_
 
-* `region` - Object
+* `region` Object - Region of the window
   * `x` Integer - 영역의 x 위치
   * `y` Integer - 영역의 y 위치
   * `width` Integer - 영역의 너비
@@ -993,6 +1037,12 @@ Linux 플랫폼에선 Unity 데스크톱 환경만 지원합니다. 그리고 �
 작업 표시줄에 윈도우의 섬네일이 표시될 때 섬네일 이미지로 사용할 윈도우의 영역을
 지정합니다. 빈 영역을 지정하는 것으로 전체 윈도우의 섬네일로 초기화할 수 있습니다:
 `{x: 0, y: 0, width: 0, height: 0}`.
+
+#### `win.setThumbnailToolTip(toolTip)` _Windows_
+
+* `toolTip` String
+
+작업 표시줄의 윈도우 섬네일 위에 표시될 툴팁을 설정합니다.
 
 #### `win.showDefinitionForSelection()` _macOS_
 
@@ -1057,10 +1107,12 @@ Linux 플랫폼에선 Unity 데스크톱 환경만 지원합니다. 그리고 �
 
 #### `win.setContentProtection(enable)` _macOS_ _Windows_
 
+* `enable` Boolean
+
 윈도우 콘텐츠가 외부 어플리케이션에 의해 캡쳐되는 것을 막습니다.
 
 macOS에선 NSWindow의 sharingType을 NSWindowSharingNone로 설정합니다.
-Windows에선 WDA_MONITOR와 함께 SetWindowDisplayAffinity를 호출합니다.
+Windows에선 `WDA_MONITOR`와 함께 SetWindowDisplayAffinity를 호출합니다.
 
 #### `win.setFocusable(focusable)` _Windows_
 

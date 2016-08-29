@@ -19,7 +19,7 @@ let ses = win.webContents.session
 
 `session` 모듈은 다음과 같은 메서드를 가지고 있습니다:
 
-### session.fromPartition(partition[, options])
+### `session.fromPartition(partition[, options])`
 
 * `partition` String
 * `options` Object
@@ -42,11 +42,13 @@ let ses = win.webContents.session
 
 `session` 모듈은 다음과 같은 속성을 가지고 있습니다:
 
-### session.defaultSession
+### `session.defaultSession`
 
 애플리케이션의 기본 세션 객체를 반환합니다.
 
 ## Class: Session
+
+> 세션의 속성을 가져오거나 설정합니다.
 
 `session` 모듈을 사용하여 `Session` 객체를 생성할 수 있습니다:
 
@@ -211,10 +213,14 @@ proxyURL = [<proxyScheme>"://"]<proxyHost>[":"<proxyPort>]
 #### `ses.enableNetworkEmulation(options)`
 
 * `options` Object
-  * `offline` Boolean - 네트워크의 오프라인 상태 여부
-  * `latency` Double - 밀리세컨드 단위의 RTT
-  * `downloadThroughput` Double - Bps 단위의 다운로드 주기
-  * `uploadThroughput` Double - Bps 단위의 업로드 주기
+  * `offline` Boolean (optional) - 네트워크 연결 끊김을 에뮬레이트할지 여부입니다.
+    기본값은 false입니다.
+  * `latency` Double (optional) - 밀리세컨드당 RTT입니다. 기본값은 0이며 이는
+    레이턴시 스로틀링을 비활성화합니다.
+  * `downloadThroughput` Double (optional) - Bps 단위의 다운로드 속도입니다.
+    기본값은 0이며 이는 다운로드 스로틀링을 비활성화합니다.
+  * `uploadThroughput` Double (optional) - Bps 단위의 업로드 속도입니다. 기본값은
+    0이며 이는 업로드 스로틀링을 비활성화합니다.
 
 제공된 설정으로 `session`의 네트워크를 에뮬레이트합니다.
 
@@ -351,8 +357,9 @@ app.on('ready', function () {
 
 ## Class: Cookies
 
-`Cookies` 클래스는 쿠키를 탐색하고 조작하는 방법을 제공합니다. `Cookies` 클래스의
-인스턴스는 반드시 `Session` 클래스의 `cookies` 속성에서 접근해야 합니다.
+> 세션의 쿠키를 변경하거나 요청합니다.
+
+`Cookies` 클래스의 인스턴스는 `Session`의 `cookies` 속성을 통해 접근합니다.
 
 예를 들어:
 
@@ -442,9 +449,10 @@ session.defaultSession.cookies.set(cookie, (error) => {
 
 ## Class: WebRequest
 
-`WebRequest` 클래스는 생명 주기의 다양한 단계에서 요청의 콘텐츠를 조작하거나 가로채는
-방법을 제공합니다. `WebRequest` 클래스는 반드시 `Session` 클래스의 `webRequest`
-속성에서 접근해야 합니다.
+> 생명주기 동안의 다양한 단계를 가지는 요청의 컨텐츠를 가로채고 변경합니다.
+
+`WebRequest` 클래스의 인스턴스는 `Session`의 `webRequest` 속성을 통해 접근할 수
+있습니다.
 
 `WebRequest`의 메서드는 선택적인 `filter`와 `listener` 속성을 허용하며 `listener`는
 API의 이벤트가 발생했을 때 `listener(details)` 형식으로 호출되고, `details`는 요청에

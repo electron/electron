@@ -156,9 +156,9 @@ app.on('activate', () => {
 패키징 하고 패키징한 앱을 실행할 수 있습니다. 또한 Electron 실행파일을 다운로드 받아
 바로 실행해 볼 수도 있습니다.
 
-### electron-prebuilt
+### `electron`
 
-[`electron-prebuilt`](https://github.com/electron-userland/electron-prebuilt)는
+[`electron`](https://github.com/electron-userland/electron-prebuilt)은
 Electron의 미리 컴파일된 바이너리를 포함하는 `npm` 모듈입니다.
 
 만약 `npm`을 통해 전역에 이 모듈을 설치했다면, 애플리케이션 소스 디렉터리에서 다음
@@ -176,8 +176,16 @@ electron app
 
 npm 모듈을 로컬에 설치했다면 다음 명령으로 실행할 수 있습니다:
 
+#### macOS / Linux
+
 ```bash
-./node_modules/.bin/electron .
+$ ./node_modules/.bin/electron .
+```
+
+#### Windows
+
+```bash
+$ .\node_modules\.bin\electron .
 ```
 
 ### 다운로드 받은 Electron 바이너리 사용
@@ -232,6 +240,6 @@ $ npm install && npm start
 
 더 많은 예시 앱을 보려면 대단한 Electron 커뮤니티에 의해 만들어진
 [보일러플레이트 리스트](http://electron.atom.io/community/#boilerplates)를
-참고하세요. 
+참고하세요.
 
 [share-data]: ../faq.md#어떻게-웹-페이지-간에-데이터를-공유할-수-있나요
