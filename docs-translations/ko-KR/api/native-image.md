@@ -134,7 +134,7 @@ let image = nativeImage.createFromPath('/Users/somebody/images/icon.png')
 
 ## Class: NativeImage
 
-트레이, dock, 애플리케이션 아이콘을 위한 이미지의 네이티브 랩퍼입니다.
+네이티브로 랩핑된 트레이, dock, 애플리케이션 아이콘을 위한 이미지입니다.
 
 ### Instance Methods
 

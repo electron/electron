@@ -37,6 +37,8 @@
 
 ## Class: BrowserWindowProxy
 
+> 자식 브라우저 윈도우를 조작합니다
+
 ### Instance Methods
 
 `BrowserWindowProxy` 객체는 다음과 같은 인스턴스 메서드를 가지고 있습니다:
@@ -47,11 +49,7 @@
 
 #### `win.close()`
 
-자식 윈도우를 강제로 닫습니다. unload 이벤트가 발생하지 않습니다.
-
-#### `win.closed`
-
-자식 윈도우가 닫히면 true로 설정됩니다.
+자식 윈도우를 강제로 닫습니다. unload 이벤트가 발생하지 않습니다.  
 
 #### `win.eval(code)`
 
@@ -77,3 +75,11 @@
 
 참고로 자식 윈도우의 `window.opener` 객체에는 다른 속성 없이 이 메서드 한 개만
 구현되어 있습니다.
+
+### Instance Properties
+
+`BrowserWindowProxy` 객체는 다음과 같은 인스턴스 속성을 가지고 있습니다:
+
+#### `win.closed`
+
+자식 윈도우가 닫히면 true로 설정됩니다.

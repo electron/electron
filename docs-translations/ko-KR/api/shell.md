@@ -79,7 +79,9 @@ mailto: URL은 유저의 기본 이메일 에이전트로 URL을 엽니다.) 애
 
 ### `shell.readShortcutLink(shortcutPath)` _Windows_
 
-`shortcutPath`에 위치한 바로가기 링크를 해석하고, `shell.writeShortcutLink`
+* `shortcutPath` String
+
+`shortcutPath`에 위치한 바로가기 링크를 해석합니다. `shell.writeShortcutLink`
 메서드의 `options`에 묘사된 속성을 포함하는 객체를 반환합니다.
 
 오류가 발생하면 예외가 throw됩니다.

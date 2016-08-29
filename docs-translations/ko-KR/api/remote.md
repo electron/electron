@@ -149,9 +149,11 @@ const app = remote.app;
 
 메인 프로세스의 전역 변수(`name`)를 가져옵니다. (예시: `global[name]`)
 
+## Properties
+
 ### `remote.process`
 
-메인 프로세스의 `process` 객체를 반환합니다. `remote.getGlobal('process')`와
+메인 프로세스의 `process` 객체입니다. `remote.getGlobal('process')`와
 같습니다. 하지만 캐시 됩니다.
 
 [rmi]: http://en.wikipedia.org/wiki/Java_remote_method_invocation

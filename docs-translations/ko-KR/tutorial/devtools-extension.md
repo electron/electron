@@ -53,6 +53,7 @@ Electron에서 정상적으로 작동하는 것을 확인했으며 작동 여부
 * [jQuery Debugger](https://chrome.google.com/webstore/detail/jquery-debugger/dbhhnnnpaeobfddmlalhnehgclcmjimi)
 * [AngularJS Batarang](https://chrome.google.com/webstore/detail/angularjs-batarang/ighdmehidhipcmcojjgiloacoafjmpfk)
 * [Vue.js devtools](https://chrome.google.com/webstore/detail/vuejs-devtools/nhdogjmejiglipccpnnnanhbledajbpd)
+* [Cerebral Debugger](http://www.cerebraljs.com/documentation/the_debugger)
 
 ### 개발자 도구가 작동하지 않을 때 어떻게 해야 하나요?
 

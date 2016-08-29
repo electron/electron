@@ -18,7 +18,7 @@
 $ npm install --save-dev spectron
 ```
 
-```js
+```javascript
 // 윈도우가 제목과 함께 보이는지 검증하는 간단한 테스트.
 var Application = require('spectron').Application
 var assert = require('assert')

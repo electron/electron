@@ -70,6 +70,18 @@ const template = [
         type: 'separator'
       },
       {
+        role: 'resetzoom'
+      },
+      {
+        role: 'zoomin'
+      },
+      {
+        role: 'zoomout'
+      },
+      {
+        type: 'separator'
+      },
+      {
         role: 'togglefullscreen'
       }
     ]
@@ -131,6 +143,23 @@ if (process.platform === 'darwin') {
       }
     ]
   })
+  // Edit menu.
+  template[1].submenu.push(
+    {
+      type: 'separator'
+    },
+    {
+      label: 'Speech',
+      submenu: [
+        {
+          role: 'startspeaking'
+        },
+        {
+          role: 'stopspeaking'
+        }
+      ]
+    }
+  )
   // Window menu.
   template[3].submenu = [
     {

@@ -161,6 +161,7 @@ Returns:
 
 * `event` Event
 * `url` String
+* `isMainFrame` Boolean
 
 페이지 내의 탐색이 완료되면 발생하는 이벤트입니다.
 
@@ -206,7 +207,7 @@ Returns:
 * `url` URL
 * `error` String - 에러 코드
 * `certificate` Object
-  * `data` Buffer - PEM 인코딩된 데이터
+  * `data` String - PEM 인코딩된 데이터
   * `issuerName` String - 인증서 발급자의 공통 이름
   * `subjectName` String - 대상의 공통 이름
   * `serialNumber` String - 문자열로 표현된 hex 값
@@ -227,7 +228,7 @@ Returns:
 * `event` Event
 * `url` URL
 * `certificateList` [Objects]
-  * `data` Buffer - PEM 인코딩된 데이터
+  * `data` String - PEM 인코딩된 데이터
   * `issuerName` String - 인증서 발급자의 공통 이름
   * `subjectName` String - 대상의 공통 이름
   * `serialNumber` String - 문자열로 표현된 hex 값
@@ -452,8 +453,8 @@ win.loadURL('http://github.com')
 
 #### `webContents.getAllWebContents()`
 
-모든 웹 콘텐츠의 배열을 반환합니다. 이 배열은 윈도우, 웹뷰, 열린 개발자 도구 그리고
-개발자 도구 확장 기능의 백그라운드 페이지의 모든 웹 콘텐츠를 포함합니다.
+모든 `WebContents` 인스턴스의 배열을 반환합니다. 이 배열은 윈도우, 웹뷰, 열린 개발자
+도구 그리고 개발자 도구 확장 기능의 백그라운드 페이지의 모든 웹 콘텐츠를 포함합니다.
 
 #### `webContents.getFocusedWebContents()`
 
@@ -630,7 +631,7 @@ CSS 코드를 현재 웹 페이지에 삽입합니다.
 
 #### `contents.setZoomLevel(level)`
 
-* `level` Number - Zoom level
+* `level` Number - 줌 레벨.
 
 지정한 수준으로 줌 수준을 변경합니다. 원본 크기는 0이고 각 값의 증가와 감소는 현재 줌을
 20% 크거나 작게 표현하고 각 크기는 원본 크기의 300%와 50%로 제한됩니다.
@@ -903,7 +904,6 @@ win.webContents.on('devtools-opened', () => {
 ### `webContents.send(channel[, arg1][, arg2][, ...])`
 
 * `channel` String
-* `arg` (optional)
 
 `channel`을 통하여 렌더러 프로세스에 비동기 메시지를 보냅니다. 임의의 인수를 보낼수도
 있습니다. 인수들은 내부적으로 JSON 포맷으로 직렬화 되며, 이후 함수와 프로토타입 체인은
@@ -941,34 +941,33 @@ app.on('ready', () => {
 
 ### `webContents.enableDeviceEmulation(parameters)`
 
-`parameters` Object, properties:
-
-* `screenPosition` String - 에뮬레이트 할 화면 종료를 지정합니다
-    (기본값: `desktop`)
-  * `desktop`
-  * `mobile`
-* `screenSize` Object - 에뮬레이트 화면의 크기를 지정합니다 (screenPosition ==
-  mobile)
-  * `width` Integer - 에뮬레이트 화면의 너비를 지정합니다
-  * `height` Integer - 에뮬레이트 화면의 높이를 지정합니다
-* `viewPosition` Object - 화면에서 뷰의 위치 (screenPosition == mobile) (기본값:
-  `{x: 0, y: 0}`)
-  * `x` Integer - 좌상단 모서리로부터의 x 축의 오프셋
-  * `y` Integer - 좌상단 모서리로부터의 y 축의 오프셋
-* `deviceScaleFactor` Float - 디바이스의 스케일 팩터(scale factor)를 지정합니다.
-	(0일 경우 기본 디바이스 스케일 팩터를 기본으로 사용합니다. 기본값: `0`)
-* `viewSize` Object - 에뮬레이트 된 뷰의 크기를 지정합니다 (빈 값은 덮어쓰지 않는
-  다는 것을 의미합니다)
-  * `width` Integer - 에뮬레이트 된 뷰의 너비를 지정합니다
-  * `height` Integer - 에뮬레이트 된 뷰의 높이를 지정합니다
-* `fitToView` Boolean - 에뮬레이트의 뷰가 사용 가능한 공간에 맞추어 스케일 다운될지를
-		지정합니다 (기본값: `false`)
-* `offset` Object - 사용 가능한 공간에서 에뮬레이트 된 뷰의 오프셋을 지정합니다 (fit
-  to view 모드 외에서) (기본값: `{x: 0, y: 0}`)
-  * `x` Float - 좌상단 모서리에서 x 축의 오프셋을 지정합니다
-  * `y` Float - 좌상단 모서리에서 y 축의 오프셋을 지정합니다
-* `scale` Float - 사용 가능한 공간에서 에뮬레이드 된 뷰의 스케일 (fit to view 모드
-  외에서, 기본값: `1`)
+* `parameters` Object
+  * `screenPosition` String - 에뮬레이트 할 화면 종료를 지정합니다
+      (기본값: `desktop`)
+    * `desktop` String - Desktop screen type
+    * `mobile` String - Mobile screen type
+  * `screenSize` Object - 에뮬레이트 화면의 크기를 지정합니다 (screenPosition ==
+    mobile)
+    * `width` Integer - 에뮬레이트 화면의 너비를 지정합니다
+    * `height` Integer - 에뮬레이트 화면의 높이를 지정합니다
+  * `viewPosition` Object - 화면에서 뷰의 위치 (screenPosition == mobile) (기본값:
+    `{x: 0, y: 0}`)
+    * `x` Integer - 좌상단 모서리로부터의 x 축의 오프셋
+    * `y` Integer - 좌상단 모서리로부터의 y 축의 오프셋
+  * `deviceScaleFactor` Float - 디바이스의 스케일 팩터(scale factor)를 지정합니다.
+  	(0일 경우 기본 디바이스 스케일 팩터를 기본으로 사용합니다. 기본값: `0`)
+  * `viewSize` Object - 에뮬레이트 된 뷰의 크기를 지정합니다 (빈 값은 덮어쓰지 않는
+    다는 것을 의미합니다)
+    * `width` Integer - 에뮬레이트 된 뷰의 너비를 지정합니다
+    * `height` Integer - 에뮬레이트 된 뷰의 높이를 지정합니다
+  * `fitToView` Boolean - 에뮬레이트의 뷰가 사용 가능한 공간에 맞추어 스케일 다운될지를
+  		지정합니다 (기본값: `false`)
+  * `offset` Object - 사용 가능한 공간에서 에뮬레이트 된 뷰의 오프셋을 지정합니다 (fit
+    to view 모드 외에서) (기본값: `{x: 0, y: 0}`)
+    * `x` Float - 좌상단 모서리에서 x 축의 오프셋을 지정합니다
+    * `y` Float - 좌상단 모서리에서 y 축의 오프셋을 지정합니다
+  * `scale` Float - 사용 가능한 공간에서 에뮬레이드 된 뷰의 스케일 (fit to view 모드
+    외에서, 기본값: `1`)
 
 `parameters`로 디바이스 에뮬레이션을 사용합니다.
 
@@ -1093,6 +1092,8 @@ win.webContents.on('did-finish-load', () => {
 *오프 스크린 렌더링* 이 활성화된 경우 현재 패인팅 상태를 반환합니다.
 
 #### `contents.setFrameRate(fps)`
+
+* `fps` Integer
 
 *오프 스크린 렌더링* 이 활성화된 경우 프레임 레이트를 지정한 숫자로 지정합니다. 1과 60
 사이의 값만 사용할 수 있습니다.

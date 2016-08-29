@@ -480,6 +480,19 @@ Service worker에 대한 개발자 도구를 엽니다.
 `event` 객체에 대해 자세히 알아보려면 [webContents.sendInputEvent](web-contents.md#webcontentssendinputeventevent)를
 참고하세요.
 
+### `<webview>.setZoomFactor(factor)`
+
+* `factor` Number - 줌 수치.
+
+지정한 수치로 줌 수치를 변경합니다. 줌 수치는 100으로 나눈 값이며 300%는 3.0이 됩니다.
+
+### `<webview>.setZoomLevel(level)`
+
+* `level` Number - 줌 레벨.
+
+지정한 수준으로 줌 수준을 변경합니다. 원본 크기는 0이고 각 값의 증가와 감소는 현재 줌을
+20% 크거나 작게 표현하고 각 크기는 원본 크기의 300%와 50%로 제한됩니다.
+
 ### `<webview>.showDefinitionForSelection()` _macOS_
 
 페이지에서 선택된 단어에 대한 사전 검색 결과 팝업을 표시합니다.
@@ -694,6 +707,7 @@ Returns:
 Returns:
 
 * `url` String
+* `isMainFrame` Boolean
 
 페이지 내의 탐색이 완료되면 발생하는 이벤트입니다.
 
