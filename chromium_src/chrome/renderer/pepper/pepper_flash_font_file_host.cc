@@ -4,6 +4,7 @@
 
 #include "chrome/renderer/pepper/pepper_flash_font_file_host.h"
 
+#include "base/sys_byteorder.h"
 #include "build/build_config.h"
 #include "content/public/renderer/renderer_ppapi_host.h"
 #include "ppapi/c/pp_errors.h"
@@ -15,6 +16,8 @@
 
 #if defined(OS_LINUX) || defined(OS_OPENBSD)
 #include "content/public/common/child_process_sandbox_support_linux.h"
+#elif defined(OS_WIN)
+#include "third_party/skia/include/ports/SkFontMgr.h"
 #endif
 
 PepperFlashFontFileHost::PepperFlashFontFileHost(
@@ -31,7 +34,17 @@ PepperFlashFontFileHost::PepperFlashFontFileHost(
       description.italic,
       charset,
       PP_BROWSERFONT_TRUSTED_FAMILY_DEFAULT));
-#endif  // defined(OS_LINUX) || defined(OS_OPENBSD)
+#elif defined(OS_WIN) // defined(OS_LINUX) || defined(OS_OPENBSD)
+  int weight = description.weight;
+  if (weight == FW_DONTCARE)
+    weight = SkFontStyle::kNormal_Weight;
+  SkFontStyle style(weight, SkFontStyle::kNormal_Width,
+                    description.italic ? SkFontStyle::kItalic_Slant
+                                       : SkFontStyle::kUpright_Slant);
+  sk_sp<SkFontMgr> font_mgr(SkFontMgr::RefDefault());
+  typeface_ = sk_sp<SkTypeface>(
+      font_mgr->matchFamilyStyle(description.face.c_str(), style));
+#endif // defined(OS_WIN)
 }
 
 PepperFlashFontFileHost::~PepperFlashFontFileHost() {}
@@ -45,29 +58,48 @@ int32_t PepperFlashFontFileHost::OnResourceMessageReceived(
   PPAPI_END_MESSAGE_MAP()
   return PP_ERROR_FAILED;
 }
+bool PepperFlashFontFileHost::GetFontData(uint32_t table,
+                                          void* buffer,
+                                          size_t* length) {
+  bool result = false;
+#if defined(OS_LINUX) || defined(OS_OPENBSD)
+  int fd = fd_.get();
+  if (fd != -1)
+    result = content::GetFontTable(fd, table, 0 /* offset */,
+                 reinterpret_cast<uint8_t*>(buffer), length);
+#elif defined(OS_WIN)
+  if (typeface_) {
+    table = base::ByteSwap(table);
+    if (buffer == NULL) {
+      *length = typeface_->getTableSize(table);
+      if (*length > 0)
+        result = true;
+    } else {
+      size_t new_length = typeface_->getTableData(table, 0, *length, buffer);
+      if (new_length == *length)
+        result = true;
+    }
+  }
+#endif
+  return result;
+}
 
 int32_t PepperFlashFontFileHost::OnGetFontTable(
     ppapi::host::HostMessageContext* context,
     uint32_t table) {
   std::string contents;
   int32_t result = PP_ERROR_FAILED;
-#if defined(OS_LINUX) || defined(OS_OPENBSD)
-  int fd = fd_.get();
-  if (fd != -1) {
-    size_t length = 0;
-    if (content::GetFontTable(fd, table, 0 /* offset */, NULL, &length)) {
-      contents.resize(length);
-      uint8_t* contents_ptr =
-          reinterpret_cast<uint8_t*>(const_cast<char*>(contents.c_str()));
-      if (content::GetFontTable(
-              fd, table, 0 /* offset */, contents_ptr, &length)) {
-        result = PP_OK;
-      } else {
-        contents.clear();
-      }
-    }
+  size_t length = 0;
+  if (GetFontData(table, NULL, &length)) {
+	  contents.resize(length);
+	  uint8_t* contents_ptr =
+		  reinterpret_cast<uint8_t*>(const_cast<char*>(contents.c_str()));
+	  if (GetFontData(table, contents_ptr, &length)) {
+		  result = PP_OK;
+	  } else {
+		  contents.clear();
+	  }
   }
-#endif  // defined(OS_LINUX) || defined(OS_OPENBSD)
 
   context->reply_msg = PpapiPluginMsg_FlashFontFile_GetFontTableReply(contents);
   return result;
