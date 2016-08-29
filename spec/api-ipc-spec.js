@@ -332,11 +332,11 @@ describe('ipc module', function () {
       ipcRenderer.once('message', function (event, value) {
         assert.deepEqual(value.browserWindowOptions, webContents.browserWindowOptions)
         done()
-       })
+      })
       ipcRenderer.send('message', webContents)
     })
 
-    it('does not crash on HTTP request objects (regression)', function (done) {
+    it('does not crash on external objects (regression)', function (done) {
       const request = http.request({port: 5000, hostname: '127.0.0.1', method: 'GET', path: '/'})
       request.on('error', function () {})
       ipcRenderer.once('message', function (event, value) {
