@@ -31,12 +31,13 @@ void AppendVariationHeaders(const GURL& url,
                             net::HttpRequestHeaders* headers) {
 }
 }
-
+#if !defined(OS_LINUX)
 namespace rappor {
 void SampleDomainAndRegistryFromGURL(RapporService* rappor_service,
                                      const std::string& metric,
                                      const GURL& gurl) {}
 }  // namespace rappor
+#endif
 // end stubs
 
 namespace mate {
