@@ -362,6 +362,25 @@ describe('ipc module', function () {
       })
       ipcRenderer.send('message', array, foo, bar, child)
     })
+
+    it('inserts null for cyclic references', function (done) {
+      const array = [5]
+      array.push(array)
+
+      const child = {hello: 'world'}
+      child.child = child
+
+      ipcRenderer.once('message', function (event, arrayValue, childValue) {
+        assert.equal(arrayValue[0], 5)
+        assert.equal(arrayValue[1], null)
+
+        assert.equal(childValue.hello, 'world')
+        assert.equal(childValue.child, null)
+
+        done()
+      })
+      ipcRenderer.send('message', array, child)
+    })
   })
 
   describe('ipc.sendSync', function () {
