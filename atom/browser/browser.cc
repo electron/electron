@@ -48,7 +48,10 @@ void Browser::Quit() {
   window_list->CloseAllWindows();
 }
 
-void Browser::Exit(int code) {
+void Browser::Exit(mate::Arguments* args) {
+  int code = 0;
+  args->GetNext(&code);
+
   if (!AtomBrowserMainParts::Get()->SetExitCode(code)) {
     // Message loop is not ready, quit directly.
     exit(code);
