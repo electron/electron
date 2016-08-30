@@ -46,7 +46,7 @@ class Browser : public WindowListObserver {
   void Quit();
 
   // Exit the application immediately and set exit code.
-  void Exit(int code);
+  void Exit(mate::Arguments* args);
 
   // Cleanup everything and shutdown the application gracefully.
   void Shutdown();
