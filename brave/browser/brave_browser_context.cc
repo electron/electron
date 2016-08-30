@@ -100,23 +100,6 @@ BraveBrowserContext::BraveBrowserContext(const std::string& partition,
           base::Unretained(original_context_),
           base::Unretained(this)));
 #endif
-  } else {
-    // Initialize autofill db
-    base::FilePath webDataPath = GetPath().Append(kWebDataFilename);
-
-    CHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
-    web_database_ = new WebDatabaseService(webDataPath,
-        BrowserThread::GetMessageLoopProxyForThread(BrowserThread::UI),
-        BrowserThread::GetMessageLoopProxyForThread(BrowserThread::DB));
-    web_database_->AddTable(base::WrapUnique(new autofill::AutofillTable));
-    web_database_->LoadDatabase();
-
-    autofill_data_ = new autofill::AutofillWebDataService(
-        web_database_,
-        BrowserThread::GetMessageLoopProxyForThread(BrowserThread::UI),
-        BrowserThread::GetMessageLoopProxyForThread(BrowserThread::DB),
-        base::Bind(&DatabaseErrorCallback));
-    autofill_data_->Init();
   }
 }
 
@@ -363,6 +346,23 @@ void BraveBrowserContext::OnPrefsLoaded(bool success) {
 #endif
     content::BrowserContext::GetDefaultStoragePartition(this)->
         GetDOMStorageContext()->SetSaveSessionStorageOnDisk();
+
+    // Initialize autofill db
+    base::FilePath webDataPath = GetPath().Append(kWebDataFilename);
+
+    CHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
+    web_database_ = new WebDatabaseService(webDataPath,
+        BrowserThread::GetMessageLoopProxyForThread(BrowserThread::UI),
+        BrowserThread::GetMessageLoopProxyForThread(BrowserThread::DB));
+    web_database_->AddTable(base::WrapUnique(new autofill::AutofillTable));
+    web_database_->LoadDatabase();
+
+    autofill_data_ = new autofill::AutofillWebDataService(
+        web_database_,
+        BrowserThread::GetMessageLoopProxyForThread(BrowserThread::UI),
+        BrowserThread::GetMessageLoopProxyForThread(BrowserThread::DB),
+        base::Bind(&DatabaseErrorCallback));
+    autofill_data_->Init();
   }
 
   user_prefs_registrar_->Init(user_prefs_.get());
