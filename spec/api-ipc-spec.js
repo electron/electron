@@ -338,13 +338,16 @@ describe('ipc module', function () {
 
     it('does not crash on external objects (regression)', function (done) {
       const request = http.request({port: 5000, hostname: '127.0.0.1', method: 'GET', path: '/'})
+      const stream = request.agent.sockets['127.0.0.1:5000:'][0]._handle._externalStream
       request.on('error', function () {})
-      ipcRenderer.once('message', function (event, value) {
-        assert.equal(value.method, 'GET')
-        assert.equal(value.path, '/')
+      ipcRenderer.once('message', function (event, requestValue, externalStreamValue) {
+        assert.equal(requestValue.method, 'GET')
+        assert.equal(requestValue.path, '/')
+        assert.equal(externalStreamValue, null)
         done()
       })
-      ipcRenderer.send('message', request)
+
+      ipcRenderer.send('message', request, stream)
     })
 
     it('can send objects that both reference the same object', function (done) {
