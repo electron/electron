@@ -262,6 +262,9 @@ base::Value* V8ValueConverter::FromV8ValueImpl(
   if (state->HasReachedMaxRecursionDepth())
     return nullptr;
 
+  if (val->IsExternal())
+    return base::Value::CreateNullValue().release();
+
   if (val->IsNull())
     return base::Value::CreateNullValue().release();
 
@@ -414,11 +417,6 @@ base::Value* V8ValueConverter::FromV8Object(
                  << " threw an exception.";
       child_v8 = v8::Null(isolate);
     }
-
-    // Ignore external values since calling CreationContext() on them can
-    // crash
-    if (child_v8->IsExternal())
-      continue;
 
     std::unique_ptr<base::Value> child(
         FromV8ValueImpl(state, child_v8, isolate));
