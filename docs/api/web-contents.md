@@ -824,6 +824,8 @@ up system's default printer and default settings for printing.
 Calling `window.print()` in web page is equivalent to calling
 `webContents.print({silent: false, printBackground: false})`.
 
+Use `page-break-before: always; ` CSS style to force to print to a new page.
+
 #### `contents.printToPDF(options, callback)`
 
 * `options` Object
@@ -853,6 +855,8 @@ By default, an empty `options` will be regarded as:
   landscape: false
 }
 ```
+
+Use `page-break-before: always; ` CSS style to force to print to a new page.
 
 An example of `webContents.printToPDF`:
 
