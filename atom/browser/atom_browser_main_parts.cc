@@ -15,9 +15,11 @@
 #include "atom/common/api/atom_bindings.h"
 #include "atom/common/node_bindings.h"
 #include "atom/common/node_includes.h"
+#include "base/allocator/allocator_extension.h"
 #include "base/command_line.h"
 #include "base/files/file_util.h"
 #include "base/path_service.h"
+#include "base/memory/memory_pressure_monitor.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "brightray/browser/brightray_paths.h"
 #include "chrome/browser/browser_process.h"
@@ -131,6 +133,22 @@ void AtomBrowserMainParts::PostEarlyInitialization() {
   node_bindings_->set_uv_env(env);
 }
 
+void AtomBrowserMainParts::OnMemoryPressure(
+    base::MemoryPressureListener::MemoryPressureLevel memory_pressure_level) {
+  if (atom::Browser::Get()->is_shutting_down())
+    return;
+
+  base::allocator::ReleaseFreeMemory();
+
+  if (js_env_.get() && js_env_->isolate()) {
+    js_env_->isolate()->LowMemoryNotification();
+  }
+}
+
+void AtomBrowserMainParts::IdleHandler() {
+  base::allocator::ReleaseFreeMemory();
+}
+
 void AtomBrowserMainParts::PreMainMessageLoopRun() {
   js_env_->OnMessageLoopCreated();
 
@@ -146,8 +164,12 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
   // Start idle gc.
   gc_timer_.Start(
       FROM_HERE, base::TimeDelta::FromMinutes(1),
-      base::Bind(&v8::Isolate::LowMemoryNotification,
-                 base::Unretained(js_env_->isolate())));
+      base::Bind(&AtomBrowserMainParts::IdleHandler,
+                 base::Unretained(this)));
+
+  memory_pressure_listener_.reset(new base::MemoryPressureListener(
+      base::Bind(&AtomBrowserMainParts::OnMemoryPressure,
+        base::Unretained(this))));
 
   // Make sure the userData directory is created.
   base::FilePath user_data;

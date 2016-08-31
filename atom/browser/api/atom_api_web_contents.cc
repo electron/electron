@@ -16,8 +16,9 @@
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/atom_security_state_model_client.h"
-#include "atom/browser/lib/bluetooth_chooser.h"
 #include "atom/browser/autofill/atom_autofill_client.h"
+#include "atom/browser/browser.h"
+#include "atom/browser/lib/bluetooth_chooser.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/net/atom_network_delegate.h"
 #include "atom/browser/osr/osr_output_device.h"
@@ -58,6 +59,7 @@
 #include "components/ui/zoom/zoom_controller.h"
 #include "content/browser/renderer_host/render_widget_host_impl.h"
 #include "content/public/browser/browser_plugin_guest_manager.h"
+#include "content/public/browser/memory_pressure_controller.h"
 #include "content/browser/web_contents/web_contents_impl.h"
 #include "content/public/browser/favicon_status.h"
 #include "content/public/browser/native_web_keyboard_event.h"
@@ -363,6 +365,9 @@ WebContents::WebContents(v8::Isolate* isolate,
 
   Init(isolate);
   AttachAsUserData(web_contents);
+
+  memory_pressure_listener_.reset(new base::MemoryPressureListener(
+      base::Bind(&WebContents::OnMemoryPressure, base::Unretained(this))));
 }
 
 WebContents::~WebContents() {
@@ -1809,6 +1814,22 @@ int WebContents::GetZoomPercent() {
     return 100;
 
   return zoom_controller->GetZoomPercent();
+}
+
+void WebContents::OnMemoryPressure(
+    base::MemoryPressureListener::MemoryPressureLevel memory_pressure_level) {
+  if (atom::Browser::Get()->is_shutting_down())
+    return;
+
+  if (memory_pressure_level ==
+      base::MemoryPressureListener::MEMORY_PRESSURE_LEVEL_CRITICAL) {
+    web_contents()->GetController().ClearAllScreenshots();
+  }
+
+  if (!web_contents()->GetRenderWidgetHostView()->HasFocus()) {
+    content::MemoryPressureController::SendPressureNotification(
+      web_contents()->GetRenderProcessHost(), memory_pressure_level);
+  }
 }
 
 int32_t WebContents::ID() const {

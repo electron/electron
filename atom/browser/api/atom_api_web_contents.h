@@ -13,6 +13,7 @@
 #include "atom/browser/api/trackable_object.h"
 #include "atom/browser/common_web_contents_delegate.h"
 #include "atom/common/options_switches.h"
+#include "base/memory/memory_pressure_listener.h"
 #include "content/common/view_messages.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "content/public/common/favicon_url.h"
@@ -390,6 +391,9 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void DevToolsOpened() override;
   void DevToolsClosed() override;
 
+  void OnMemoryPressure(
+      base::MemoryPressureListener::MemoryPressureLevel memory_pressure_level);
+
  private:
   AtomBrowserContext* GetBrowserContext() const;
 
@@ -436,6 +440,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   // to continue loading the page once the tab is ready.
   std::unique_ptr<content::OpenURLParams> delayed_open_url_params_;
 
+  std::unique_ptr<base::MemoryPressureListener> memory_pressure_listener_;
   DISALLOW_COPY_AND_ASSIGN(WebContents);
 };
 

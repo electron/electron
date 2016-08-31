@@ -9,6 +9,7 @@
 #include <string>
 
 #include "base/callback.h"
+#include "base/memory/memory_pressure_listener.h"
 #include "base/timer/timer.h"
 #include "brightray/browser/browser_main_parts.h"
 #include "content/public/browser/browser_context.h"
@@ -60,6 +61,10 @@ class AtomBrowserMainParts : public brightray::BrowserMainParts {
   void PreMainMessageLoopStart() override;
 #endif
 
+  void OnMemoryPressure(
+      base::MemoryPressureListener::MemoryPressureLevel memory_pressure_level);
+  void IdleHandler();
+
  private:
 #if defined(OS_POSIX)
   // Set signal handlers.
@@ -90,6 +95,7 @@ class AtomBrowserMainParts : public brightray::BrowserMainParts {
   std::unique_ptr<NodeDebugger> node_debugger_;
 
   base::Timer gc_timer_;
+  std::unique_ptr<base::MemoryPressureListener> memory_pressure_listener_;
 
   // List of callbacks should be executed before destroying JS env.
   std::list<base::Closure> destructors_;
