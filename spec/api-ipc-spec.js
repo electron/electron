@@ -1,6 +1,7 @@
 'use strict'
 
 const assert = require('assert')
+const http = require('http')
 const path = require('path')
 const {closeWindow} = require('./window-helpers')
 
@@ -358,6 +359,29 @@ describe('ipc module', function () {
       ipcRenderer.send('message', document.location)
     })
 
+    it('can send Electron API objects', function (done) {
+      const webContents = remote.getCurrentWebContents()
+      ipcRenderer.once('message', function (event, value) {
+        assert.deepEqual(value.browserWindowOptions, webContents.browserWindowOptions)
+        done()
+      })
+      ipcRenderer.send('message', webContents)
+    })
+
+    it('does not crash on external objects (regression)', function (done) {
+      const request = http.request({port: 5000, hostname: '127.0.0.1', method: 'GET', path: '/'})
+      const stream = request.agent.sockets['127.0.0.1:5000:'][0]._handle._externalStream
+      request.on('error', function () {})
+      ipcRenderer.once('message', function (event, requestValue, externalStreamValue) {
+        assert.equal(requestValue.method, 'GET')
+        assert.equal(requestValue.path, '/')
+        assert.equal(externalStreamValue, null)
+        done()
+      })
+
+      ipcRenderer.send('message', request, stream)
+    })
+
     it('can send objects that both reference the same object', function (done) {
       const child = {hello: 'world'}
       const foo = {name: 'foo', child: child}
@@ -372,6 +396,25 @@ describe('ipc module', function () {
         done()
       })
       ipcRenderer.send('message', array, foo, bar, child)
+    })
+
+    it('inserts null for cyclic references', function (done) {
+      const array = [5]
+      array.push(array)
+
+      const child = {hello: 'world'}
+      child.child = child
+
+      ipcRenderer.once('message', function (event, arrayValue, childValue) {
+        assert.equal(arrayValue[0], 5)
+        assert.equal(arrayValue[1], null)
+
+        assert.equal(childValue.hello, 'world')
+        assert.equal(childValue.child, null)
+
+        done()
+      })
+      ipcRenderer.send('message', array, child)
     })
   })
 

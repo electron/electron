@@ -262,6 +262,9 @@ base::Value* V8ValueConverter::FromV8ValueImpl(
   if (state->HasReachedMaxRecursionDepth())
     return nullptr;
 
+  if (val->IsExternal())
+    return base::Value::CreateNullValue().release();
+
   if (val->IsNull())
     return base::Value::CreateNullValue().release();
 
