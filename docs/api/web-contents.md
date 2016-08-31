@@ -37,6 +37,12 @@ for all windows, webviews, opened devtools, and devtools extension background pa
 Returns the web contents that is focused in this application, otherwise
 returns `null`.
 
+### `webContents.fromId(id)`
+
+* `id` Integer
+
+Find a `WebContents` instance according to its ID.
+
 ## Class: WebContents
 
 > Render and control the contents of a BrowserWindow instance.
