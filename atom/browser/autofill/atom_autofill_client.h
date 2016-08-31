@@ -72,6 +72,7 @@ class AtomAutofillClient
       base::i18n::TextDirection text_direction,
       const std::vector<autofill::Suggestion>& suggestions,
       base::WeakPtr<AutofillPopupDelegate> delegate) override;
+  void PopupHidden();
   void UpdateAutofillPopupDataListValues(
       const std::vector<base::string16>& values,
       const std::vector<base::string16>& labels) override;
@@ -85,6 +86,8 @@ class AtomAutofillClient
   void OnFirstUserGestureObserved() override;
   bool IsContextSecure(const GURL& form_origin) override;
 
+  // content::WebContentsObserver implementation.
+  void WebContentsDestroyed() override;
  private:
   explicit AtomAutofillClient(content::WebContents* web_contents);
   friend class content::WebContentsUserData<AtomAutofillClient>;
