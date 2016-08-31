@@ -16,7 +16,10 @@
 #include "atom/common/node_bindings.h"
 #include "atom/common/node_includes.h"
 #include "base/command_line.h"
+#include "base/files/file_util.h"
+#include "base/path_service.h"
 #include "base/threading/thread_task_runner_handle.h"
+#include "brightray/browser/brightray_paths.h"
 #include "chrome/browser/browser_process.h"
 #include "content/public/browser/child_process_security_policy.h"
 #include "v8/include/v8-debug.h"
@@ -145,6 +148,11 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
       FROM_HERE, base::TimeDelta::FromMinutes(1),
       base::Bind(&v8::Isolate::LowMemoryNotification,
                  base::Unretained(js_env_->isolate())));
+
+  // Make sure the userData directory is created.
+  base::FilePath user_data;
+  if (PathService::Get(brightray::DIR_USER_DATA, &user_data))
+    base::CreateDirectoryAndGetError(user_data, nullptr);
 
   // PreProfileInit
   EnsureBrowserContextKeyedServiceFactoriesBuilt();
