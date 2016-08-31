@@ -52,6 +52,34 @@ describe('ipc module', function () {
       comparePaths(path.normalize(remote.process.mainModule.paths[0]), path.resolve(__dirname, 'static', 'node_modules'))
     })
 
+    it('should work with function properties', function () {
+      var a = remote.require(path.join(fixtures, 'module', 'export-function-with-properties.js'))
+      assert.equal(typeof a, 'function')
+      assert.equal(a.bar, 'baz')
+
+      a = remote.require(path.join(fixtures, 'module', 'function-with-properties.js'))
+      assert.equal(typeof a, 'object')
+      assert.equal(a.foo(), 'hello')
+      assert.equal(a.foo.bar, 'baz')
+      assert.equal(a.foo.nested.prop, 'yes')
+      assert.equal(a.foo.method1(), 'world')
+      assert.equal(a.foo.method1.prop1(), 123)
+
+      assert.ok(Object.keys(a.foo).includes('bar'))
+      assert.ok(Object.keys(a.foo).includes('nested'))
+      assert.ok(Object.keys(a.foo).includes('method1'))
+    })
+
+    it('should work with static class members', function () {
+      var a = remote.require(path.join(fixtures, 'module', 'remote-static.js'))
+      assert.equal(typeof a.Foo, 'function')
+      assert.equal(a.Foo.foo(), 3)
+      assert.equal(a.Foo.bar, 'baz')
+
+      var foo = new a.Foo()
+      assert.equal(foo.baz(), 123)
+    })
+
     it('handles circular references in arrays and objects', function () {
       var a = remote.require(path.join(fixtures, 'module', 'circular.js'))
 
@@ -120,6 +148,10 @@ describe('ipc module', function () {
       assert.equal(property.property, 1127)
       property.property = 1007
       assert.equal(property.property, 1007)
+      assert.equal(property.getFunctionProperty(), 'foo-browser')
+      property.func.property = 'bar'
+      assert.equal(property.getFunctionProperty(), 'bar-browser')
+
       var property2 = remote.require(path.join(fixtures, 'module', 'property.js'))
       assert.equal(property2.property, 1007)
       property.property = 1127
