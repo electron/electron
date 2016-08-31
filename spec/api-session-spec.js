@@ -404,19 +404,6 @@ describe('session module', function () {
   })
 
   describe('ses.getblobData(identifier, callback)', function () {
-    it('returns blob data for public url', function (done) {
-      let data = JSON.stringify({
-        type: 'blob',
-        value: 'hello'
-      })
-      let blob = new Blob([data], {type: 'application/json'})
-      let blobURL = URL.createObjectURL(blob)
-      session.defaultSession.getBlobData(blobURL, function (result) {
-        assert.equal(result.toString(), data)
-        done()
-      })
-    })
-
     it('returns blob data for uuid', function (done) {
       const scheme = 'temp'
       const protocol = session.defaultSession.protocol

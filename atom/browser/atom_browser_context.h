@@ -12,6 +12,7 @@
 
 namespace atom {
 
+class AtomBlobReader;
 class AtomDownloadManagerDelegate;
 class AtomNetworkDelegate;
 class AtomPermissionManager;
@@ -47,6 +48,7 @@ class AtomBrowserContext : public brightray::BrowserContext {
   // brightray::BrowserContext:
   void RegisterPrefs(PrefRegistrySimple* pref_registry) override;
 
+  AtomBlobReader* GetBlobReader();
   AtomNetworkDelegate* network_delegate() const { return network_delegate_; }
 
  protected:
@@ -58,6 +60,7 @@ class AtomBrowserContext : public brightray::BrowserContext {
   std::unique_ptr<AtomDownloadManagerDelegate> download_manager_delegate_;
   std::unique_ptr<WebViewManager> guest_manager_;
   std::unique_ptr<AtomPermissionManager> permission_manager_;
+  std::unique_ptr<AtomBlobReader> blob_reader_;
   std::string user_agent_;
   bool use_cache_;
 
