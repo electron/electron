@@ -236,6 +236,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
                       WindowOpenDisposition disposition);
 
   void AutofillSelect(const std::string& value, int frontend_id, int index);
+  void AutofillPopupHidden();
 
   // Returns the web preferences of current WebContents.
   v8::Local<v8::Value> GetWebPreferences(v8::Isolate* isolate);

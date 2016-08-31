@@ -48,6 +48,8 @@ struct Converter<autofill::Suggestion> {
     v8::Isolate* isolate, autofill::Suggestion val) {
     mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
     dict.Set("value", val.value);
+    dict.Set("label", val.label);
+    dict.Set("icon", val.icon);
     dict.Set("frontend_id", val.frontend_id);
     return dict.GetHandle();
   }
@@ -188,11 +190,18 @@ void AtomAutofillClient::ShowAutofillPopup(
     rect.Set("clientWidth", client_area.width());
     rect.Set("clientHeight", client_area.height());
 
-    api_web_contents_->Emit("show-autofill-popup",
+    // Give app a chance to cancel popup.
+    if (!api_web_contents_->Emit("show-autofill-popup",
                             suggestions,
-                            rect);
+                            rect))
+      delegate->OnPopupShown();
   }
-  delegate->OnPopupShown();
+}
+
+void AtomAutofillClient::PopupHidden() {
+  if (delegate_) {
+    delegate_->OnPopupHidden();
+  }
 }
 
 void AtomAutofillClient::UpdateAutofillPopupDataListValues(
@@ -205,8 +214,6 @@ void AtomAutofillClient::UpdateAutofillPopupDataListValues(
 }
 
 void AtomAutofillClient::HideAutofillPopup() {
-  // TODO(anthony): conflict with context menu
-  // delegate_.reset();
   if (api_web_contents_) {
     api_web_contents_->Emit("hide-autofill-popup");
   }
@@ -215,6 +222,10 @@ void AtomAutofillClient::HideAutofillPopup() {
 bool AtomAutofillClient::IsAutocompleteEnabled() {
   // For browser, Autocomplete is always enabled as part of Autofill.
   return GetPrefs()->GetBoolean(prefs::kAutofillEnabled);
+}
+
+void AtomAutofillClient::WebContentsDestroyed() {
+  api_web_contents_ = nullptr;
 }
 
 void AtomAutofillClient::PropagateAutofillPredictions(

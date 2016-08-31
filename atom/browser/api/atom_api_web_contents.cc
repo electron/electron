@@ -523,8 +523,17 @@ void WebContents::OnCreateWindow(const GURL& target_url,
 
 void WebContents::AutofillSelect(const std::string& value,
                                  int frontend_id, int index) {
-  autofill::AtomAutofillClient::FromWebContents(web_contents())->
-    DidAcceptSuggestion(value, frontend_id, index);
+  auto autofillClient =
+    autofill::AtomAutofillClient::FromWebContents(web_contents());
+  if (autofillClient)
+    autofillClient->DidAcceptSuggestion(value, frontend_id, index);
+}
+
+void WebContents::AutofillPopupHidden() {
+  auto autofillClient =
+    autofill::AtomAutofillClient::FromWebContents(web_contents());
+  if (autofillClient)
+    autofillClient->PopupHidden();
 }
 
 content::WebContents* WebContents::OpenURLFromTab(
@@ -1951,6 +1960,7 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("executeScriptInTab", &WebContents::ExecuteScriptInTab)
 #endif
       .SetMethod("autofillSelect", &WebContents::AutofillSelect)
+      .SetMethod("autofillPopupHidden", &WebContents::AutofillPopupHidden)
       .SetProperty("session", &WebContents::Session)
       .SetProperty("hostWebContents", &WebContents::HostWebContents)
       .SetProperty("devToolsWebContents", &WebContents::DevToolsWebContents)
