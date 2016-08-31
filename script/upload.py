@@ -10,7 +10,7 @@ import tempfile
 
 from io import StringIO
 from lib.config import PLATFORM, get_target_arch, get_chromedriver_version, \
-                       get_platform_key, get_env_var, s3_config
+                       get_env_var, s3_config, get_zip_name
 from lib.util import electron_gyp, execute, get_electron_version, \
                      parse_version, scoped_cwd, s3put
 from lib.github import GitHub
@@ -25,22 +25,11 @@ PRODUCT_NAME = electron_gyp()['product_name%']
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 OUT_DIR = os.path.join(SOURCE_ROOT, 'out', 'R')
 DIST_DIR = os.path.join(SOURCE_ROOT, 'dist')
-DIST_NAME = '{0}-{1}-{2}-{3}.zip'.format(PROJECT_NAME,
-                                         ELECTRON_VERSION,
-                                         get_platform_key(),
-                                         get_target_arch())
-SYMBOLS_NAME = '{0}-{1}-{2}-{3}-symbols.zip'.format(PROJECT_NAME,
-                                                    ELECTRON_VERSION,
-                                                    get_platform_key(),
-                                                    get_target_arch())
-DSYM_NAME = '{0}-{1}-{2}-{3}-dsym.zip'.format(PROJECT_NAME,
-                                              ELECTRON_VERSION,
-                                              get_platform_key(),
-                                              get_target_arch())
-PDB_NAME = '{0}-{1}-{2}-{3}-pdb.zip'.format(PROJECT_NAME,
-                                            ELECTRON_VERSION,
-                                            get_platform_key(),
-                                            get_target_arch())
+
+DIST_NAME = get_zip_name(PROJECT_NAME, ELECTRON_VERSION)
+SYMBOLS_NAME = get_zip_name(PROJECT_NAME, ELECTRON_VERSION, 'symbols')
+DSYM_NAME = get_zip_name(PROJECT_NAME, ELECTRON_VERSION, 'dsym')
+PDB_NAME = get_zip_name(PROJECT_NAME, ELECTRON_VERSION, 'pdb')
 
 
 def main():
@@ -94,17 +83,14 @@ def main():
     upload_electron(github, release, os.path.join(DIST_DIR, PDB_NAME))
 
   # Upload free version of ffmpeg.
-  ffmpeg = 'ffmpeg-{0}-{1}-{2}.zip'.format(
-      ELECTRON_VERSION, get_platform_key(), get_target_arch())
+  ffmpeg = get_zip_name('ffmpeg', ELECTRON_VERSION)
   upload_electron(github, release, os.path.join(DIST_DIR, ffmpeg))
 
   # Upload chromedriver and mksnapshot for minor version update.
   if parse_version(args.version)[2] == '0':
-    chromedriver = 'chromedriver-{0}-{1}-{2}.zip'.format(
-        get_chromedriver_version(), get_platform_key(), get_target_arch())
+    chromedriver = get_zip_name('chromedriver', get_chromedriver_version())
     upload_electron(github, release, os.path.join(DIST_DIR, chromedriver))
-    mksnapshot = 'mksnapshot-{0}-{1}-{2}.zip'.format(
-        ELECTRON_VERSION, get_platform_key(), get_target_arch())
+    mksnapshot = get_zip_name('mksnapshot', ELECTRON_VERSION)
     upload_electron(github, release, os.path.join(DIST_DIR, mksnapshot))
 
   if PLATFORM == 'win32' and not tag_exists:
