@@ -1146,6 +1146,11 @@ Only values between 1 and 60 are accepted.
 
 If *offscreen rendering* is enabled returns the current frame rate.
 
+#### `contents.invalidate()`
+
+If *offscreen rendering* is enabled invalidates the frame and generates a new
+one through the `'paint'` event.
+
 ### Instance Properties
 
 #### `contents.id`

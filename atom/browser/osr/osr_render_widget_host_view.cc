@@ -891,7 +891,6 @@ void OffScreenRenderWidgetHostView::SetupFrameRate(bool force) {
 void OffScreenRenderWidgetHostView::Invalidate() {
   const gfx::Rect& bounds_in_pixels = GetViewBounds();
 
-  printf("Invalidate\n");
   if (software_output_device_) {
     software_output_device_->OnPaint(bounds_in_pixels);
   } else if (copy_frame_generator_.get()) {
