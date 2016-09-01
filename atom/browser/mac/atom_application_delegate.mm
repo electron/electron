@@ -25,7 +25,16 @@
 }
 
 - (void)applicationDidFinishLaunching:(NSNotification*)notify {
-  atom::Browser::Get()->DidFinishLaunching();
+  NSUserNotification *user_notification = [notify userInfo][(id)@"NSApplicationLaunchUserNotificationKey"];
+
+  if (user_notification.userInfo != nil) {
+    std::unique_ptr<base::DictionaryValue> launch_info =
+      atom::NSDictionaryToDictionaryValue(user_notification.userInfo);
+    atom::Browser::Get()->DidFinishLaunching(*launch_info);
+  } else {
+    base::DictionaryValue* launch_info = new base::DictionaryValue();
+    atom::Browser::Get()->DidFinishLaunching(*launch_info);
+  }
 }
 
 - (NSMenu*)applicationDockMenu:(NSApplication*)sender {
@@ -64,7 +73,7 @@ continueUserActivity:(NSUserActivity*)userActivity
   restorationHandler:(void (^)(NSArray*restorableObjects))restorationHandler {
   std::string activity_type(base::SysNSStringToUTF8(userActivity.activityType));
   std::unique_ptr<base::DictionaryValue> user_info =
-      atom::NSDictionaryToDictionaryValue(userActivity.userInfo);
+    atom::NSDictionaryToDictionaryValue(userActivity.userInfo);
   if (!user_info)
     return NO;
 

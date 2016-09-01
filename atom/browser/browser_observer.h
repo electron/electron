@@ -46,7 +46,7 @@ class BrowserObserver {
 
   // The browser has finished loading.
   virtual void OnWillFinishLaunching() {}
-  virtual void OnFinishLaunching() {}
+  virtual void OnFinishLaunching(const base::DictionaryValue& launch_info) {}
 
   // The browser requests HTTP login.
   virtual void OnLogin(LoginHandler* login_handler,

@@ -156,7 +156,8 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
 #if !defined(OS_MACOSX)
   // The corresponding call in macOS is in AtomApplicationDelegate.
   Browser::Get()->WillFinishLaunching();
-  Browser::Get()->DidFinishLaunching();
+  base::DictionaryValue* empty_info = new base::DictionaryValue();
+  Browser::Get()->DidFinishLaunching(empty_info);
 #endif
 }
 

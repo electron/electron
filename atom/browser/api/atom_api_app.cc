@@ -274,8 +274,8 @@ void App::OnWillFinishLaunching() {
   Emit("will-finish-launching");
 }
 
-void App::OnFinishLaunching() {
-  Emit("ready");
+void App::OnFinishLaunching(const base::DictionaryValue& launch_info) {
+  Emit("ready", launch_info);
 }
 
 void App::OnAccessibilitySupportChanged() {
