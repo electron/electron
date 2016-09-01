@@ -210,7 +210,7 @@ def create_ffmpeg_zip():
 
 
 def create_symbols_zip():
-  dist_name = get_zip_name(PROJECT_NAME, ELECTRON_VERSION)
+  dist_name = get_zip_name(PROJECT_NAME, ELECTRON_VERSION, 'symbols')
   zip_file = os.path.join(DIST_DIR, dist_name)
   licenses = ['LICENSE', 'LICENSES.chromium.html', 'version']
 
