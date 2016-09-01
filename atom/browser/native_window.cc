@@ -11,6 +11,7 @@
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/browser.h"
+#include "atom/browser/osr/osr_render_widget_host_view.h"
 #include "atom/browser/unresponsive_suppressor.h"
 #include "atom/browser/window_list.h"
 #include "atom/common/api/api_messages.h"
@@ -207,8 +208,11 @@ void NativeWindow::SetSize(const gfx::Size& size, bool animate) {
   SetBounds(gfx::Rect(GetPosition(), size), animate);
 
   const auto view = web_contents()->GetRenderWidgetHostView();
-  if (view)
-    view->SetSize(size);
+  if (view) {
+    auto old_size = view->GetViewBounds().size();
+    if (old_size != size)
+      view->SetSize(size);
+  }
 }
 
 gfx::Size NativeWindow::GetSize() {
