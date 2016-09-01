@@ -26,9 +26,13 @@ class FilePath;
 
 namespace mate {
 class Arguments;
-}
+}  // namespace mate
 
 namespace atom {
+
+#if defined(OS_WIN)
+enum class JumpListResult : int;
+#endif
 
 namespace api {
 
@@ -119,6 +123,14 @@ class App : public AtomBrowserClient::Delegate,
   void ImportCertificate(const base::DictionaryValue& options,
                          const net::CompletionCallback& callback);
 #endif
+
+#if defined(OS_WIN)
+  // Get the current Jump List settings.
+  v8::Local<v8::Value> GetJumpListSettings();
+
+  // Set or remove a custom Jump List for the application.
+  JumpListResult SetJumpList(v8::Local<v8::Value> val, mate::Arguments* args);
+#endif  // defined(OS_WIN)
 
   std::unique_ptr<ProcessSingleton> process_singleton_;
 

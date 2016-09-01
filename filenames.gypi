@@ -294,6 +294,8 @@
       'atom/browser/ui/views/win_frame_view.h',
       'atom/browser/ui/win/atom_desktop_window_tree_host_win.cc',
       'atom/browser/ui/win/atom_desktop_window_tree_host_win.h',
+      'atom/browser/ui/win/jump_list.cc',
+      'atom/browser/ui/win/jump_list.h',
       'atom/browser/ui/win/message_handler_delegate.cc',
       'atom/browser/ui/win/message_handler_delegate.h',
       'atom/browser/ui/win/notify_icon_host.cc',
