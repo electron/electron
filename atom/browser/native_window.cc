@@ -11,7 +11,6 @@
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/browser.h"
-#include "atom/browser/osr/osr_render_widget_host_view.h"
 #include "atom/browser/unresponsive_suppressor.h"
 #include "atom/browser/window_list.h"
 #include "atom/common/api/api_messages.h"
