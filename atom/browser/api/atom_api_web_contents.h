@@ -164,6 +164,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   bool IsPainting() const;
   void SetFrameRate(int frame_rate);
   int GetFrameRate() const;
+  void Invalidate();
 
   // Callback triggered on permission response.
   void OnEnterFullscreenModeForTab(content::WebContents* source,

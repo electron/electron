@@ -193,6 +193,8 @@ class OffScreenRenderWidgetHostView
   ui::Layer* GetRootLayer() const;
   content::DelegatedFrameHost* GetDelegatedFrameHost() const;
 
+  void Invalidate();
+
   content::RenderWidgetHostImpl* render_widget_host() const
       { return render_widget_host_; }
   NativeWindow* window() const { return native_window_; }
