@@ -155,7 +155,8 @@ void Browser::DidFinishLaunching(const base::DictionaryValue& launch_info) {
     base::CreateDirectoryAndGetError(user_data, nullptr);
 
   is_ready_ = true;
-  FOR_EACH_OBSERVER(BrowserObserver, observers_, OnFinishLaunching(launch_info));
+  FOR_EACH_OBSERVER(BrowserObserver, observers_,
+    OnFinishLaunching(launch_info));
 }
 
 void Browser::OnAccessibilitySupportChanged() {
