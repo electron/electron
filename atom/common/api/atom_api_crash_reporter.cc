@@ -39,6 +39,8 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                  base::Bind(&CrashReporter::Start, report));
   dict.SetMethod("_getUploadedReports",
                  base::Bind(&CrashReporter::GetUploadedReports, report));
+  dict.SetMethod("setExtraParameters",
+                 base::Bind(&CrashReporter::SetExtraParameters, report));
 }
 
 }  // namespace

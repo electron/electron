@@ -58,6 +58,17 @@ sent or the crash reporter has not been started, `null` is returned.
 Returns all uploaded crash reports. Each report contains the date and uploaded
 ID.
 
+### `crashReporter.setExtraParameters(extra)`
+
+* `extra` Object - An object you can define that will be sent along with the
+  report. Only string properties are sent correctly, Nested objects are not
+  supported.
+
+Updates the extra value that will be sent along with the report. This allows
+you to add extra data while the crashReporter is already started. It could be
+possible that you did not have access to certain data while you wanted to start
+the crashReporter.
+
 ## crash-reporter Payload
 
 The crash reporter will send the following data to the `submitURL` as
