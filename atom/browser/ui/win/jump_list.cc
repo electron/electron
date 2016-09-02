@@ -249,7 +249,7 @@ JumpListResult JumpList::AppendCategory(const JumpListCategory& category) {
   if (appended_count == 0)
     return result;
 
-  if ((appended_count < category.items.size()) &&
+  if ((static_cast<size_t>(appended_count) < category.items.size()) &&
       (result == JumpListResult::SUCCESS)) {
     result = JumpListResult::GENERIC_ERROR;
   }
