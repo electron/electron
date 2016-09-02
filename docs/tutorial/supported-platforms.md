@@ -12,12 +12,12 @@ supported is macOS 10.9.
 Windows 7 and later are supported, older operating systems are not supported
 (and do not work).
 
-Both `x86` and `amd64` (x64) binaries are provided for Windows. Please note, the
-`ARM` version of Windows is not supported for now.
+Both `ia32` (`x86`) and `x64` (`amd64`) binaries are provided for Windows.
+Please note, the `ARM` version of Windows is not supported for now.
 
 ### Linux
 
-The prebuilt `ia32`(`i686`) and `x64`(`amd64`) binaries of Electron are built on
+The prebuilt `ia32` (`i686`) and `x64` (`amd64`) binaries of Electron are built on
 Ubuntu 12.04, the `arm` binary is built against ARM v7 with hard-float ABI and
 NEON for Debian Wheezy.
 
