@@ -1884,7 +1884,8 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("downloadURL", &WebContents::DownloadURL)
       .SetMethod("getURL", &WebContents::GetURL)
       .SetMethod("getTitle", &WebContents::GetTitle)
-      .SetMethod("isInitialBlankNavigation", &WebContents::IsInitialBlankNavigation)
+      .SetMethod("isInitialBlankNavigation",
+          &WebContents::IsInitialBlankNavigation)
       .SetMethod("isLoading", &WebContents::IsLoading)
       .SetMethod("isLoadingMainFrame", &WebContents::IsLoadingMainFrame)
       .SetMethod("isWaitingForResponse", &WebContents::IsWaitingForResponse)
