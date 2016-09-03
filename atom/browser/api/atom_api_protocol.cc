@@ -81,15 +81,15 @@ void RegisterStandardSchemes(const std::vector<std::string>& schemes) {
 }
 
 Protocol::Protocol(v8::Isolate* isolate, AtomBrowserContext* browser_context)
-    : request_context_getter_(browser_context->GetRequestContext()),
+    : browser_context_(browser_context),
       weak_factory_(this) {
   Init(isolate);
 }
 
 Protocol::~Protocol() {
   // content::BrowserThread::PostTask(
-  //     content::BrowserThread::IO, FROM_HERE,
-  //     base::Bind(ClearJobFactoryInIO, request_context_getter_));
+  //   content::BrowserThread::IO, FROM_HERE,
+  //   base::Bind(ClearJobFactoryInIO, browser_context_->GetRequestContext()));
 }
 
 void Protocol::RegisterServiceWorkerSchemes(
@@ -104,7 +104,7 @@ void Protocol::UnregisterProtocol(
   content::BrowserThread::PostTaskAndReplyWithResult(
       content::BrowserThread::IO, FROM_HERE,
       base::Bind(&Protocol::UnregisterProtocolInIO,
-                 request_context_getter_, scheme),
+          make_scoped_refptr(browser_context_->GetRequestContext()), scheme),
       base::Bind(&Protocol::OnIOCompleted,
                  GetWeakPtr(), callback));
 }
@@ -126,7 +126,7 @@ void Protocol::IsProtocolHandled(const std::string& scheme,
   content::BrowserThread::PostTaskAndReplyWithResult(
       content::BrowserThread::IO, FROM_HERE,
       base::Bind(&Protocol::IsProtocolHandledInIO,
-                 request_context_getter_, scheme),
+          make_scoped_refptr(browser_context_->GetRequestContext()), scheme),
       callback);
 }
 
@@ -144,7 +144,7 @@ void Protocol::UninterceptProtocol(
   content::BrowserThread::PostTaskAndReplyWithResult(
       content::BrowserThread::IO, FROM_HERE,
       base::Bind(&Protocol::UninterceptProtocolInIO,
-                 request_context_getter_, scheme),
+          make_scoped_refptr(browser_context_->GetRequestContext()), scheme),
       base::Bind(&Protocol::OnIOCompleted,
                  GetWeakPtr(), callback));
 }
@@ -159,11 +159,10 @@ Protocol::ProtocolError Protocol::UninterceptProtocolInIO(
 }
 
 const base::ListValue*
-Protocol::GetNavigatorHandlers(const std::string& partition) {
-  auto browser_context = atom::AtomBrowserContext::From(partition, false);
+Protocol::GetNavigatorHandlers() {
   ProtocolHandlerRegistry* registry =
       ProtocolHandlerRegistryFactory::GetForBrowserContext(
-          browser_context.get());
+          browser_context_);
   std::vector<std::string> protocols;
   registry->GetRegisteredProtocols(&protocols);
 
@@ -182,24 +181,20 @@ Protocol::GetNavigatorHandlers(const std::string& partition) {
   return result;
 }
 
-void Protocol::UnregisterNavigatorHandler(const std::string& partition,
-                                          const std::string& scheme,
+void Protocol::UnregisterNavigatorHandler(const std::string& scheme,
                                           const std::string& spec) {
   ProtocolHandler handler =
       ProtocolHandler::CreateProtocolHandler(scheme, GURL(spec));
-  auto browser_context = atom::AtomBrowserContext::From(partition, false);
   ProtocolHandlerRegistry* registry =
       ProtocolHandlerRegistryFactory::GetForBrowserContext(
-          browser_context.get());
+          browser_context_);
   registry->RemoveHandler(handler);
 }
 
-bool Protocol::IsNavigatorProtocolHandled(const std::string& partition,
-                                          const std::string& scheme) {
-  auto browser_context = atom::AtomBrowserContext::From(partition, false);
+bool Protocol::IsNavigatorProtocolHandled(const std::string& scheme) {
   ProtocolHandlerRegistry* registry =
       ProtocolHandlerRegistryFactory::GetForBrowserContext(
-          browser_context.get());
+          browser_context_);
   return registry->IsHandledProtocol(scheme);
 }
 
@@ -232,10 +227,10 @@ std::string Protocol::ErrorCodeToString(ProtocolError error) {
 }
 
 AtomURLRequestJobFactory* Protocol::GetJobFactoryInIO() const {
-  request_context_getter_->GetURLRequestContext();  // Force init.
+  browser_context_->GetRequestContext()->GetURLRequestContext();  // Force init.
   return static_cast<AtomURLRequestJobFactory*>(
       static_cast<brightray::URLRequestContextGetter*>(
-          request_context_getter_.get())->job_factory());
+          browser_context_->GetRequestContext())->job_factory());
 }
 
 // static

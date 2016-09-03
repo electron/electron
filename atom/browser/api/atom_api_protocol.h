@@ -104,7 +104,8 @@ class Protocol : public mate::TrackableObject<Protocol> {
     content::BrowserThread::PostTaskAndReplyWithResult(
         content::BrowserThread::IO, FROM_HERE,
         base::Bind(&Protocol::RegisterProtocolInIO<RequestJob>,
-                   request_context_getter_, isolate(), scheme, handler),
+            make_scoped_refptr(browser_context_->GetRequestContext()),
+            isolate(), scheme, handler),
         base::Bind(&Protocol::OnIOCompleted,
                    GetWeakPtr(), callback));
   }
@@ -150,7 +151,8 @@ class Protocol : public mate::TrackableObject<Protocol> {
     content::BrowserThread::PostTaskAndReplyWithResult(
         content::BrowserThread::IO, FROM_HERE,
         base::Bind(&Protocol::InterceptProtocolInIO<RequestJob>,
-                   request_context_getter_, isolate(), scheme, handler),
+            make_scoped_refptr(browser_context_->GetRequestContext()),
+            isolate(), scheme, handler),
         base::Bind(&Protocol::OnIOCompleted,
                    GetWeakPtr(), callback));
   }
@@ -181,12 +183,10 @@ class Protocol : public mate::TrackableObject<Protocol> {
       scoped_refptr<brightray::URLRequestContextGetter> request_context_getter,
       const std::string& scheme);
 
-  const base::ListValue* GetNavigatorHandlers(const std::string &partition);
-  void UnregisterNavigatorHandler(const std::string &partition,
-      const std::string& scheme,
+  const base::ListValue* GetNavigatorHandlers();
+  void UnregisterNavigatorHandler(const std::string& scheme,
       const std::string& spec);
-  bool IsNavigatorProtocolHandled(const std::string &partition,
-      const std::string &scheme);
+  bool IsNavigatorProtocolHandled(const std::string &scheme);
 
   // Convert error code to JS exception and call the callback.
   void OnIOCompleted(const CompletionCallback& callback, ProtocolError error);
@@ -200,7 +200,7 @@ class Protocol : public mate::TrackableObject<Protocol> {
     return weak_factory_.GetWeakPtr();
   }
 
-  scoped_refptr<brightray::URLRequestContextGetter> request_context_getter_;
+  AtomBrowserContext* browser_context_;  // not owned
   base::WeakPtrFactory<Protocol> weak_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(Protocol);
