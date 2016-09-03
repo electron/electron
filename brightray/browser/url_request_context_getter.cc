@@ -17,6 +17,7 @@
 #include "base/strings/string_util.h"
 #include "base/threading/sequenced_worker_pool.h"
 #include "base/threading/worker_pool.h"
+#include "components/cookie_config/cookie_store_util.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/cookie_store_factory.h"
 #include "content/public/common/content_switches.h"
@@ -185,6 +186,7 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
           content::CookieStoreConfig::EPHEMERAL_SESSION_COOKIES,
           nullptr, nullptr);
       cookie_config.cookieable_schemes = delegate_->GetCookieableSchemes();
+      cookie_config.crypto_delegate = cookie_config::GetCookieCryptoDelegate();
       cookie_store = content::CreateCookieStore(cookie_config);
     }
     storage_->set_cookie_store(std::move(cookie_store));
