@@ -1096,6 +1096,10 @@ base::string16 WebContents::GetTitle() const {
   return web_contents()->GetTitle();
 }
 
+bool WebContents::IsInitialBlankNavigation() const {
+  return web_contents()->GetController().IsInitialBlankNavigation();
+}
+
 bool WebContents::IsLoading() const {
   return web_contents()->IsLoading();
 }
@@ -1880,6 +1884,7 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("downloadURL", &WebContents::DownloadURL)
       .SetMethod("getURL", &WebContents::GetURL)
       .SetMethod("getTitle", &WebContents::GetTitle)
+      .SetMethod("isInitialBlankNavigation", &WebContents::IsInitialBlankNavigation)
       .SetMethod("isLoading", &WebContents::IsLoading)
       .SetMethod("isLoadingMainFrame", &WebContents::IsLoadingMainFrame)
       .SetMethod("isWaitingForResponse", &WebContents::IsWaitingForResponse)

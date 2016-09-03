@@ -248,6 +248,10 @@ Returns URL of guest page.
 
 Returns the title of guest page.
 
+### `<webview>.isInitialBlankNavigation()`
+
+Returns a boolean, whether guest page has not yet committed a navigation.
+
 ### `<webview>.isLoading()`
 
 Returns a boolean whether guest page is still loading resources.
