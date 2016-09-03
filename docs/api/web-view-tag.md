@@ -134,6 +134,18 @@ If "on", the guest page in `webview` will be able to use browser plugins.
 ```html
 <webview src="https://www.github.com/" preload="./test.js"></webview>
 ```
+Example:
+To declare global function:
+```javascript
+//test.js
+global.getHTML = function() {
+  return document.body.innerHTML;
+}
+```
+```javascript
+//website.js
+console.log(getHTML());
+```
 
 Specifies a script that will be loaded before other scripts run in the guest
 page. The protocol of script's URL must be either `file:` or `asar:`, because it
