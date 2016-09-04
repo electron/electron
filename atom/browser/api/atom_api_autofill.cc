@@ -149,7 +149,8 @@ namespace api {
 
 Autofill::Autofill(v8::Isolate* isolate,
                  content::BrowserContext* browser_context)
-      : browser_context_(browser_context) {
+      : browser_context_(browser_context),
+      weak_ptr_factory_(this) {
   Init(isolate);
 }
 
@@ -340,6 +341,71 @@ bool Autofill::RemoveCreditCard(const std::string guid) {
   return true;
 }
 
+void Autofill::ClearAutocompleteData() {
+  scoped_refptr<autofill::AutofillWebDataService> web_data_service =
+    static_cast<brave::BraveBrowserContext*>(browser_context_)
+    ->GetAutofillWebdataService();
+
+  if (web_data_service.get()) {
+    base::Time delete_begin;
+    base::Time delete_end;
+    // TODO(Anthony Tseng): Specify time range from front end
+    delete_begin = delete_begin.UnixEpoch();
+    delete_end = delete_end.Now();
+    web_data_service->RemoveFormElementsAddedBetween(delete_begin,
+                                                     delete_end);
+    // thread. So wait for it.
+    content::BrowserThread::PostTaskAndReply(content::BrowserThread::DB,
+      FROM_HERE,
+      base::Bind(&base::DoNothing),
+      base::Bind(&Autofill::OnClearedAutocompleteData,
+                 weak_ptr_factory_.GetWeakPtr()));
+
+    autofill::PersonalDataManager* data_manager =
+      autofill::PersonalDataManagerFactory::GetForBrowserContext(
+      browser_context_);
+    if (data_manager)
+      data_manager->Refresh();
+  }
+}
+
+void Autofill::ClearAutofillData() {
+  scoped_refptr<autofill::AutofillWebDataService> web_data_service =
+    static_cast<brave::BraveBrowserContext*>(browser_context_)
+    ->GetAutofillWebdataService();
+
+  if (web_data_service.get()) {
+    base::Time delete_begin;
+    base::Time delete_end;
+    // TODO(Anthony Tseng): Specify time range from front end
+    delete_begin = delete_begin.UnixEpoch();
+    delete_end = delete_end.Now();
+    web_data_service->RemoveAutofillDataModifiedBetween(delete_begin,
+                                                        delete_end);
+    // The above calls are done on the UI thread but do their work on the DB
+    // thread. So wait for it.
+    content::BrowserThread::PostTaskAndReply(content::BrowserThread::DB,
+      FROM_HERE,
+      base::Bind(&base::DoNothing),
+      base::Bind(&Autofill::OnClearedAutofillData,
+                 weak_ptr_factory_.GetWeakPtr()));
+
+    autofill::PersonalDataManager* data_manager =
+      autofill::PersonalDataManagerFactory::GetForBrowserContext(
+      browser_context_);
+    if (data_manager)
+      data_manager->Refresh();
+  }
+}
+
+void Autofill::OnClearedAutocompleteData() {
+  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+}
+
+void Autofill::OnClearedAutofillData() {
+  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+}
+
 // static
 mate::Handle<Autofill> Autofill::Create(
     v8::Isolate* isolate,
@@ -357,7 +423,9 @@ void Autofill::BuildPrototype(v8::Isolate* isolate,
     .SetMethod("removeProfile", &Autofill::RemoveProfile)
     .SetMethod("addCreditCard", &Autofill::AddCreditCard)
     .SetMethod("getCreditCard", &Autofill::GetCreditCard)
-    .SetMethod("removeCreditCard", &Autofill::RemoveCreditCard);
+    .SetMethod("removeCreditCard", &Autofill::RemoveCreditCard)
+    .SetMethod("clearAutocompleteData", &Autofill::ClearAutocompleteData)
+    .SetMethod("clearAutofillData", &Autofill::ClearAutofillData);
 }
 
 }  // namespace api

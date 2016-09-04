@@ -50,12 +50,20 @@ class Autofill : public mate::TrackableObject<Autofill> {
   autofill::CreditCard* GetCreditCard(std::string guid);
   bool RemoveCreditCard(const std::string guid);
 
+  void ClearAutocompleteData();
+  void ClearAutofillData();
+
   brave::BraveBrowserContext* browser_context() {
     return static_cast<brave::BraveBrowserContext*>(browser_context_);
   }
 
  private:
+  void OnClearedAutocompleteData();
+  void OnClearedAutofillData();
+
   content::BrowserContext* browser_context_;  // not owned
+
+  base::WeakPtrFactory<Autofill> weak_ptr_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(Autofill);
 };
