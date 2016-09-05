@@ -46,7 +46,6 @@ extern const char kBackgroundColor[];
 extern const char kHasShadow[];
 extern const char kFocusable[];
 extern const char kWebPreferences[];
-extern const char kDisableDevTools[];
 
 // WebPreferences.
 extern const char kZoomFactor[];
