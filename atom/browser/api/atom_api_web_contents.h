@@ -323,6 +323,9 @@ class WebContents : public mate::TrackableObject<WebContents>,
   // Whether background throttling is disabled.
   bool background_throttling_;
 
+  // // Whether to disable devtools.
+  bool disable_devtools_;
+
   DISALLOW_COPY_AND_ASSIGN(WebContents);
 };
 

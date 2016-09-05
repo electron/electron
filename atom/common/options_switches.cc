@@ -96,6 +96,9 @@ const char kNodeIntegration[] = "nodeIntegration";
 // Instancd ID of guest WebContents.
 const char kGuestInstanceID[] = "guestInstanceId";
 
+// Diable openDevTools.
+const char kDisableDevTools[] = "disableDevTools";
+
 // Web runtime features.
 const char kExperimentalFeatures[]       = "experimentalFeatures";
 const char kExperimentalCanvasFeatures[] = "experimentalCanvasFeatures";
