@@ -261,7 +261,8 @@ WebContents::WebContents(v8::Isolate* isolate,
       embedder_(nullptr),
       type_(REMOTE),
       request_id_(0),
-      background_throttling_(true) {
+      background_throttling_(true),
+      disable_devtools_(false) {
   web_contents->SetUserAgentOverride(GetBrowserContext()->GetUserAgent());
 
   Init(isolate);
@@ -273,7 +274,8 @@ WebContents::WebContents(v8::Isolate* isolate,
     : embedder_(nullptr),
       type_(BROWSER_WINDOW),
       request_id_(0),
-      background_throttling_(true) {
+      background_throttling_(true),
+      disable_devtools_(false) {
   // Read options.
   options.Get("backgroundThrottling", &background_throttling_);
 
